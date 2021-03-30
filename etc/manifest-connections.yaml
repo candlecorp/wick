@@ -1,0 +1,16 @@
+---
+actors:
+  - vinoreg.azurecr.io/actor-b:latest
+  - vinoreg.azurecr.io/actor-a:latest
+references:
+  - reference: MYREF_A
+    target: MCDA54L4UTI4QVIZF7GQDABLY6TFL2X3MAGDR5CIHW7UC7SRUASL5UTI
+  - reference: MYREF_B
+    target: MB7WPOGKTXIEJV7HPUPJIG2E4WRC5W737PZUEVL2HGIVKARWCY3PJUHS
+connections:
+  - from:
+      reference: MYREF_A
+      port: sample_output_b
+    to:
+      reference: MYREF_B
+      port: another_input

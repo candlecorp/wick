@@ -1,0 +1,33 @@
+[package]
+name = "vino"
+version = "0.1.0"
+authors = ["Jarrod Overson <jsoverson@gmail.com>"]
+edition = "2018"
+default-run = "vino"
+license-file = "LICENSE"
+description = "Application data flow platform"
+repository = "https://gitlab.com/vino-dev/vino"
+documentation = "https://vino.dev"
+readme = "README.md"
+
+
+[dependencies]
+wapc = { version = "0.10.1" }
+log = "0.4.11"
+pretty_env_logger = "0.4.0"
+anyhow = "1.0.34"
+wasmcloud-host = { path = "../wasmcloud/crates/wasmcloud-host", features = ["wasmtime"] }
+actix-rt = "2.1.0"
+nats = "0.8.6"
+structopt = "0.3.21"
+nkeys = "0.1.0"
+futures="0.3.13"
+serde_json = "1.0.64"
+serdeconv = "0.4.0"
+
+[dev-dependencies]
+
+
+[[bin]]
+name = "vino"
+path = "src/main.rs"
