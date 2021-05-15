@@ -607,9 +607,9 @@ dependencies = [
 
 [[package]]
 name = "crossbeam-channel"
-version = "0.5.0"
+version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dca26ee1f8d361640700bde38b2c37d8c22b3ce2d360e1fc1c74ea4b0aa7d775"
+checksum = "06ed27e177f16d65f0f0c22a213e17c696ace5dd64b14258b52f9417ccb52db4"
 dependencies = [
  "cfg-if 1.0.0",
  "crossbeam-utils",
@@ -668,17 +668,6 @@ name = "data-encoding"
 version = "2.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3ee2393c4a91429dffb4bedf19f4d6abf27d8a732c8ce4980305d782e5426d57"
-
-[[package]]
-name = "derive-new"
-version = "0.5.9"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3418329ca0ad70234b9735dc4ceed10af4df60eff9c8e7b06cb5e520d92c3535"
-dependencies = [
- "proc-macro2 1.0.24",
- "quote 1.0.9",
- "syn 1.0.64",
-]
 
 [[package]]
 name = "digest"
@@ -3297,9 +3286,11 @@ dependencies = [
 
 [[package]]
 name = "wasmcloud-control-interface"
-version = "0.2.1"
+version = "0.3.1"
 dependencies = [
  "actix-rt",
+ "chrono",
+ "crossbeam-channel",
  "data-encoding",
  "futures",
  "log",
@@ -3314,14 +3305,13 @@ dependencies = [
 
 [[package]]
 name = "wasmcloud-host"
-version = "0.16.0"
+version = "0.18.2"
 dependencies = [
  "actix",
  "actix-rt",
  "chrono",
  "crossbeam-channel",
  "data-encoding",
- "derive-new",
  "envmnt",
  "futures",
  "itertools",
