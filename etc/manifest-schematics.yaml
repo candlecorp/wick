@@ -1,0 +1,29 @@
+---
+schematics:
+  - name: test
+    components:
+      md5:
+        component: vinoreg.azurecr.io/md5:latest
+        public_key: MC2J5VOBMTEM6T732EFUY367HWBNL2FUAROQFJ6RUXDSIUOBI2HY4XP4
+      str2bytes:
+        component: vino::string-to-bytes
+        public_key: vino::string-to-bytes
+    connections:
+      - from:
+          instance: vino::schematic_input
+          port: input_data1
+        to:
+          instance: str2bytes
+          port: input
+      - from:
+          instance: str2bytes
+          port: output
+        to:
+          instance: md5
+          port: input
+      # - from:
+      #     instance: md5
+      #     port: output
+      #   to:
+      #     instance: vino::schematic_output
+      #     port: output_data1
