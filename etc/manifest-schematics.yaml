@@ -1,13 +1,13 @@
 ---
+actors:
+  - vinoreg.azurecr.io/md5:latest #MC2J5VOBMTEM6T732EFUY367HWBNL2FUAROQFJ6RUXDSIUOBI2HY4XP4
 schematics:
   - name: test
     components:
       md5:
-        component: vinoreg.azurecr.io/md5:latest
-        public_key: MC2J5VOBMTEM6T732EFUY367HWBNL2FUAROQFJ6RUXDSIUOBI2HY4XP4
+        ref: MC2J5VOBMTEM6T732EFUY367HWBNL2FUAROQFJ6RUXDSIUOBI2HY4XP4
       str2bytes:
-        component: vino::string-to-bytes
-        public_key: vino::string-to-bytes
+        ref: vino::string-to-bytes
     connections:
       - from:
           instance: vino::schematic_input
@@ -21,9 +21,9 @@ schematics:
         to:
           instance: md5
           port: input
-      # - from:
-      #     instance: md5
-      #     port: output
-      #   to:
-      #     instance: vino::schematic_output
-      #     port: output_data1
+      - from:
+          instance: md5
+          port: output
+        to:
+          instance: vino::schematic_output
+          port: output_data1

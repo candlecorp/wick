@@ -3,31 +3,33 @@
 set -e
 export RUST_LOG=wasmcloud_nats_kvcache=debug,polling=info,async_io=info,hyper=info,trace,cranelift_codegen=info,cranelift_wasm=info,wasmcloud_host::control_interface::ctlactor=debug,wasmcloud_host::capability::native_host=debug,wasmtime=info,want=info,tracing=info,wasmcloud_host::messagebus::latticecache_client=info,wasmcloud_host::messagebus::rpc_subscription=info,wasmcloud_host::messagebus::nats_subscriber=info
 
+echo "Building..."
+
+cargo build
+
 CMD="cargo run -q --"
 
-TX_ID=$($CMD ctl push test str2bytes '{"input":"this is a test string as input"}' --output json | jq -r '.[0].tx_id')
+echo "Running command"
 
-echo "Transaction ID of md5 input: $TX_ID"
+JSON=$($CMD ctl request test '{"input_data1":"this is a test string as input"}' --output json --encoder messagepack)
 
-if [[ "$TX_ID" == "" ]]; then
-  echo "NOT OK"
-  exit 1
-fi
+echo "JSON Output: $JSON"
 
-sleep 1
+echo "Parsing with jq"
 
-MD5=$($CMD ctl take test md5 output --tx_id $TX_ID --output json --encoder messagepack | jq -r ".response")
-echo "MD5: $MD5"
+OUTPUT=$(echo $JSON | jq -r ".response.output_data1")
+
+echo "Value grabbed from JSON: $OUTPUT"
 
 expected="edf4610a4844890420fe86901283a403"
 
-if [[ "$MD5" == "$expected" ]]; then
+if [[ "$OUTPUT" == "$expected" ]]; then
   echo "OK"
 else
   echo "NOT OK"
   echo "Expected:"
   echo $expected
   echo "Actual:"
-  echo $MD5
+  echo $OUTPUT
   exit 1
 fi
