@@ -6,7 +6,8 @@ use log::{Level, LevelFilter, Log, Metadata, Record, SetLoggerError};
 use serde_json::json;
 use structopt::lazy_static::lazy_static;
 
-use crate::options::Cli;
+use crate::commands::LoggingOpts;
+use anyhow::Result;
 
 const FILTER_ENV: &str = "VINO_LOG";
 use std::time::SystemTime;
@@ -26,7 +27,7 @@ fn set_level(builder: &mut Builder, level: LevelFilter) {
 }
 
 impl Logger {
-    fn new(cli: &Cli) -> Logger {
+    fn new(opts: &LoggingOpts) -> Logger {
         let mut builder = Builder::new();
 
         builder.filter_level(log::LevelFilter::Off);
@@ -35,11 +36,11 @@ impl Logger {
             builder.parse(filter);
         }
 
-        if cli.quiet {
+        if opts.quiet {
             set_level(&mut builder, log::LevelFilter::Off);
-        } else if cli.trace {
+        } else if opts.trace {
             set_level(&mut builder, log::LevelFilter::Trace);
-        } else if cli.debug {
+        } else if opts.debug {
             set_level(&mut builder, log::LevelFilter::Debug);
         } else {
             set_level(&mut builder, log::LevelFilter::Info);
@@ -47,13 +48,13 @@ impl Logger {
 
         Logger {
             inner: builder.build(),
-            verbose: cli.verbose,
-            json: cli.json,
+            verbose: opts.verbose,
+            json: opts.json,
         }
     }
 
-    pub fn init(cli: &Cli) -> Result<(), SetLoggerError> {
-        let logger = Self::new(cli);
+    pub fn init(opts: &LoggingOpts) -> Result<(), SetLoggerError> {
+        let logger = Self::new(opts);
 
         log::set_max_level(logger.inner.filter());
         log::set_boxed_logger(Box::new(logger))
