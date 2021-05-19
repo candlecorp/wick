@@ -202,6 +202,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cdb031dd78e28731d87d56cc8ffef4a8f36ca26c38fe2de700543e627f8a464a"
 
 [[package]]
+name = "automod"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0f5612d51b093aae5c215583cb1a4b45f694a9097ad742b4ab6882bff76a13fd"
+dependencies = [
+ "proc-macro2 1.0.24",
+ "quote 1.0.9",
+ "syn 1.0.64",
+]
+
+[[package]]
 name = "backtrace"
 version = "0.3.56"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -441,6 +452,17 @@ dependencies = [
  "textwrap",
  "unicode-width",
  "vec_map",
+]
+
+[[package]]
+name = "colored"
+version = "2.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b3616f750b84d8f0de8a58bda93e08e2a81ad3f523089b05f1dffecab48c6cbd"
+dependencies = [
+ "atty",
+ "lazy_static",
+ "winapi",
 ]
 
 [[package]]
@@ -1867,16 +1889,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ac74c624d6b2d21f425f752262f42188365d7b8ff1aff74c82e45136510a4857"
 
 [[package]]
-name = "pretty_env_logger"
-version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "926d36b9553851b8b0005f1275891b392ee4d2d833852c417ed025477350fb9d"
-dependencies = [
- "env_logger 0.7.1",
- "log",
-]
-
-[[package]]
 name = "proc-macro-error"
 version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3054,14 +3066,17 @@ version = "0.1.0"
 dependencies = [
  "actix-rt",
  "anyhow",
+ "chrono",
+ "colored",
+ "env_logger 0.8.3",
  "futures",
  "log",
  "nats 0.8.6",
  "nkeys 0.1.0",
- "pretty_env_logger",
  "serde_json",
  "serdeconv",
  "structopt",
+ "thiserror",
  "wapc",
  "wasmcloud-host",
 ]
@@ -3309,6 +3324,8 @@ version = "0.18.2"
 dependencies = [
  "actix",
  "actix-rt",
+ "anyhow",
+ "automod",
  "chrono",
  "crossbeam-channel",
  "data-encoding",
@@ -3561,7 +3578,9 @@ dependencies = [
 
 [[package]]
 name = "wasmtime-provider"
-version = "0.0.2"
+version = "0.0.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f5c7c526f953756c2f86dd652739495f0326168fed83cf1da0e602a028183ee6"
 dependencies = [
  "anyhow",
  "cap-std",
