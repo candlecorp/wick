@@ -37,7 +37,7 @@ impl Logger {
         }
 
         if opts.quiet {
-            set_level(&mut builder, log::LevelFilter::Off);
+            set_level(&mut builder, log::LevelFilter::Error);
         } else if opts.trace {
             set_level(&mut builder, log::LevelFilter::Trace);
         } else if opts.debug {

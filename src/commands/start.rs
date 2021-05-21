@@ -1,6 +1,6 @@
 use std::{fs::File, io::Read, path::PathBuf};
 
-use anyhow::Result;
+use crate::Result;
 use futures::try_join;
 use structopt::StructOpt;
 use wasmcloud_host::{HostBuilder, HostManifest};
@@ -10,7 +10,8 @@ use crate::{commands::init_logger, error::VinoError};
 use super::LoggingOpts;
 
 #[derive(Debug, Clone, StructOpt)]
-pub struct LoadCli {
+#[structopt(rename_all = "kebab-case")]
+pub struct StartCommand {
     #[structopt(flatten)]
     pub logging: LoggingOpts,
 
@@ -71,11 +72,11 @@ pub struct LoadCli {
     pub allowed_insecure: Vec<String>,
 
     /// Specifies a manifest file to apply to the host once started
-    #[structopt(long = "manifest", short = "m", parse(from_os_str))]
+    #[structopt(parse(from_os_str))]
     pub manifest: Option<PathBuf>,
 }
 
-pub(crate) async fn handle_command(command: LoadCli) -> Result<String, VinoError> {
+pub(crate) async fn handle_command(command: StartCommand) -> Result<String> {
     init_logger(&command.logging)?;
 
     if let Some(ref manifest_file) = command.manifest {

@@ -1,5 +1,5 @@
-pub mod load;
-pub use load::LoadCli;
+pub mod run;
+pub mod start;
 use structopt::{clap::AppSettings, StructOpt};
 
 use crate::{error::VinoError, logger::Logger};
@@ -25,7 +25,7 @@ fn parse_write_style(spec: &str) -> std::result::Result<WriteStyle, VinoError> {
 
 #[derive(StructOpt, Debug, Clone)]
 #[structopt(
-     global_settings(&[AppSettings::ColoredHelp, AppSettings::VersionlessSubcommands]),
+     global_settings(&[AppSettings::VersionlessSubcommands]),
      name = "vino", about = "Vino host runtime")]
 pub struct Cli {
     #[structopt(flatten)]
@@ -34,9 +34,12 @@ pub struct Cli {
 
 #[derive(Debug, Clone, StructOpt)]
 pub enum CliCommand {
-    /// Manage contents of local wasmcloud cache
-    #[structopt(name = "load")]
-    Load(LoadCli),
+    /// Start a host with a manifest and schematics
+    #[structopt(name = "start")]
+    Start(start::StartCommand),
+    /// Run a Vino component on its own
+    #[structopt(name = "run")]
+    Run(run::RunCli),
 }
 
 #[derive(StructOpt, Debug, Clone)]
