@@ -1,7 +1,9 @@
 use crate::Result;
 use anyhow::Context;
+use serde_json::{json, Value::String as JsonString};
 use std::{collections::HashMap, path::Path};
 use structopt::StructOpt;
+use vino_guest::OutputPayload;
 use wasmcloud_host::{deserialize, Actor, HostBuilder};
 
 use crate::{commands::init_logger, oci::fetch_oci_bytes, util::generate_run_manifest};
@@ -69,13 +71,34 @@ pub(crate) async fn handle_command(command: RunCli) -> Result<String> {
                 .map(|(k, v)| {
                     (
                         k.to_string(),
-                        deserialize(&v).unwrap_or_else(|e| {
-                            serde_json::Value::String(format!(
-                                "Error deserializing output for port {}: {}",
+                        deserialize::<OutputPayload>(&v).unwrap_or_else(|e| {
+                            OutputPayload::Error(format!(
+                                "Error deserializing output payload for port {}: {}",
                                 k,
-                                e.to_string()
+                                e.to_string(),
                             ))
                         }),
+                    )
+                })
+                .map(|(k, payload)| {
+                    (
+                        k,
+                        match payload {
+                            OutputPayload::Bytes(bytes) => {
+                                deserialize(&bytes).unwrap_or_else(|e| {
+                                    JsonString(format!(
+                                        "Error deserializing output payload: {}",
+                                        e.to_string(),
+                                    ))
+                                })
+                            }
+                            OutputPayload::Exception(e) => {
+                                json!({ "exception": e })
+                            }
+                            OutputPayload::Error(e) => {
+                                json!({ "error": e })
+                            }
+                        },
                     )
                 })
                 .collect();
