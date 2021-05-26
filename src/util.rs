@@ -1,10 +1,8 @@
 use crate::Result;
 use anyhow::Context;
 use std::collections::HashMap;
-use wasmcloud_host::{
-    manifest_definition::{ComponentDefinition, ConnectionDefinition, SchematicDefinition},
-    Actor, HostManifest,
-};
+use wasmcloud_host::vino::{ComponentDefinition, ConnectionDefinition, SchematicDefinition};
+use wasmcloud_host::{Actor, HostManifest};
 
 pub fn generate_run_manifest(
     actor_ref: String,

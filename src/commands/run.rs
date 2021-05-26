@@ -3,8 +3,7 @@ use anyhow::Context;
 use serde_json::{json, Value::String as JsonString};
 use std::{collections::HashMap, path::Path};
 use structopt::StructOpt;
-use vino_guest::OutputPayload;
-use wasmcloud_host::{deserialize, Actor, HostBuilder};
+use wasmcloud_host::{deserialize, Actor, HostBuilder, MessagePayload};
 
 use crate::{commands::init_logger, oci::fetch_oci_bytes, util::generate_run_manifest};
 
@@ -65,26 +64,14 @@ pub(crate) async fn handle_command(command: RunCli) -> Result<String> {
             debug!("Manifest applied, executing component");
             let raw_result = host.request("dynamic", json).await?;
             debug!("Raw result: {:?}", raw_result);
-            let msg_result: HashMap<String, Vec<u8>> = deserialize(&raw_result)?;
-            let result: serde_json::Value = msg_result
+            // let msg_result: HashMap<String, Vec<u8>> = deserialize(&raw_result)?;
+            let result: serde_json::Value = raw_result
                 .iter()
-                .map(|(k, v)| {
-                    (
-                        k.to_string(),
-                        deserialize::<OutputPayload>(&v).unwrap_or_else(|e| {
-                            OutputPayload::Error(format!(
-                                "Error deserializing output payload for port {}: {}",
-                                k,
-                                e.to_string(),
-                            ))
-                        }),
-                    )
-                })
                 .map(|(k, payload)| {
                     (
                         k,
                         match payload {
-                            OutputPayload::Bytes(bytes) => {
+                            MessagePayload::Bytes(bytes) => {
                                 deserialize(&bytes).unwrap_or_else(|e| {
                                     JsonString(format!(
                                         "Error deserializing output payload: {}",
@@ -92,12 +79,13 @@ pub(crate) async fn handle_command(command: RunCli) -> Result<String> {
                                     ))
                                 })
                             }
-                            OutputPayload::Exception(e) => {
+                            MessagePayload::Exception(e) => {
                                 json!({ "exception": e })
                             }
-                            OutputPayload::Error(e) => {
+                            MessagePayload::Error(e) => {
                                 json!({ "error": e })
                             }
+                            _ => json!({ "error": "Internal error, invalid format" }),
                         },
                     )
                 })

@@ -18,11 +18,21 @@ pub struct Logger {
 }
 
 lazy_static! {
-    static ref RELEVANT_MODULES: Vec<&'static str> = vec!["vino", "wasmcloud", "wasmcloud_host"];
+    static ref RELEVANT_MODULES: Vec<&'static str> =
+        vec!["vino", "wasmcloud", "wasmcloud_host", "wapc"];
+    static ref CHATTY_MODULES: Vec<&'static str> = vec![
+        "wasmcloud_host::capability::native_host",
+        "wasmcloud_nats_kvcache"
+    ];
 }
+
 fn set_level(builder: &mut Builder, level: LevelFilter) {
     for module in RELEVANT_MODULES.iter() {
         builder.filter_module(module, level);
+    }
+
+    for module in CHATTY_MODULES.iter() {
+        builder.filter_module(module, log::LevelFilter::Info);
     }
 }
 
@@ -32,10 +42,6 @@ impl Logger {
 
         builder.filter_level(log::LevelFilter::Off);
 
-        if let Ok(ref filter) = std::env::var(FILTER_ENV) {
-            builder.parse(filter);
-        }
-
         if opts.quiet {
             set_level(&mut builder, log::LevelFilter::Error);
         } else if opts.trace {
@@ -44,6 +50,10 @@ impl Logger {
             set_level(&mut builder, log::LevelFilter::Debug);
         } else {
             set_level(&mut builder, log::LevelFilter::Info);
+        }
+
+        if let Ok(ref filter) = std::env::var(FILTER_ENV) {
+            builder.parse(filter);
         }
 
         Logger {
