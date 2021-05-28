@@ -1,5 +1,7 @@
+pub mod exec;
 pub mod run;
 pub mod start;
+
 use structopt::{clap::AppSettings, StructOpt};
 
 use crate::{error::VinoError, logger::Logger};
@@ -11,7 +13,9 @@ pub fn get_args() -> Cli {
 }
 
 pub fn init_logger(opts: &LoggingOpts) -> Result<()> {
-    Logger::init(&opts).context("Failed to start logger")
+    Logger::init(&opts).context("Failed to start logger")?;
+    trace!("logger initialized");
+    Ok(())
 }
 
 fn parse_write_style(spec: &str) -> std::result::Result<WriteStyle, VinoError> {
@@ -34,12 +38,15 @@ pub struct Cli {
 
 #[derive(Debug, Clone, StructOpt)]
 pub enum CliCommand {
-    /// Start a host with a manifest and schematics
+    /// Start a long-running host with a manifest and schematics
     #[structopt(name = "start")]
     Start(start::StartCommand),
-    /// Run a Vino component on its own
+    /// Execute a Vino component on its own
+    #[structopt(name = "exec")]
+    Exec(exec::ExecCommand),
+    /// Load a manifest and run the default schematic
     #[structopt(name = "run")]
-    Run(run::RunCli),
+    Run(run::RunCommand),
 }
 
 #[derive(StructOpt, Debug, Clone)]

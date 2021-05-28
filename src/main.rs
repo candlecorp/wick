@@ -1,14 +1,6 @@
-pub(crate) mod commands;
-pub(crate) mod error;
-pub(crate) mod logger;
-pub(crate) mod oci;
-pub(crate) mod util;
+use vino::commands::{get_args, CliCommand};
 
-use commands::{get_args, CliCommand};
-use error::VinoError;
-
-pub type Result<T> = anyhow::Result<T, VinoError>;
-pub type Error = VinoError;
+use vino::Result;
 
 #[macro_use]
 extern crate log;
@@ -18,8 +10,9 @@ async fn main() -> Result<()> {
     let cli = get_args();
 
     let res = match cli.command {
-        CliCommand::Start(cmd) => commands::start::handle_command(cmd).await,
-        CliCommand::Run(cmd) => commands::run::handle_command(cmd).await,
+        CliCommand::Start(cmd) => vino::commands::start::handle_command(cmd).await,
+        CliCommand::Exec(cmd) => vino::commands::exec::handle_command(cmd).await,
+        CliCommand::Run(cmd) => vino::commands::run::handle_command(cmd).await,
     };
 
     std::process::exit(match res {
@@ -28,7 +21,7 @@ async fn main() -> Result<()> {
             0
         }
         Err(e) => {
-            eprintln!("Error: {}", e);
+            eprintln!("Vino exiting with error: {}", e);
             println!("Run with --info, --debug, or --trace for more information.");
             1
         }

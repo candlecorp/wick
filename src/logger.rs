@@ -21,8 +21,8 @@ lazy_static! {
     static ref RELEVANT_MODULES: Vec<&'static str> =
         vec!["vino", "wasmcloud", "wasmcloud_host", "wapc"];
     static ref CHATTY_MODULES: Vec<&'static str> = vec![
-        "wasmcloud_host::capability::native_host",
-        "wasmcloud_nats_kvcache"
+        // "wasmcloud_host::capability::native_host",
+        // "wasmcloud_nats_kvcache"
     ];
 }
 
@@ -32,7 +32,7 @@ fn set_level(builder: &mut Builder, level: LevelFilter) {
     }
 
     for module in CHATTY_MODULES.iter() {
-        builder.filter_module(module, log::LevelFilter::Info);
+        builder.filter_module(module, log::LevelFilter::Off);
     }
 }
 

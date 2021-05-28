@@ -5,9 +5,9 @@ export RUST_LOG=wasmcloud_nats_kvcache=debug,polling=info,async_io=info,hyper=in
 
 echo "Building..."
 
-cargo build
+cargo build -q
 
-CMD="cargo run -q --"
+CMD="cargo run --"
 
 echo "Running command"
 
@@ -21,7 +21,7 @@ OUTPUT=$(echo $JSON | jq -r ".response.output_data1")
 
 echo "Value grabbed from JSON: $OUTPUT"
 
-expected="edf4610a4844890420fe86901283a403"
+expected="this is a test string as input"
 
 if [[ "$OUTPUT" == "$expected" ]]; then
   echo "OK"

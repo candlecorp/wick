@@ -1,11 +1,17 @@
-use std::{fs::File, io::Read, path::PathBuf};
+use std::path::PathBuf;
 
-use crate::Result;
+use crate::{
+    util::{load_runconfig, nats_connection},
+    Result,
+};
+
+use vino_runtime::run_config::RunConfig;
+
 use futures::try_join;
 use structopt::StructOpt;
-use wasmcloud_host::{HostBuilder, HostManifest};
+use wasmcloud_host::HostBuilder;
 
-use crate::{commands::init_logger, error::VinoError};
+use crate::commands::init_logger;
 
 use super::LoggingOpts;
 
@@ -76,16 +82,13 @@ pub struct StartCommand {
     pub manifest: Option<PathBuf>,
 }
 
-pub(crate) async fn handle_command(command: StartCommand) -> Result<String> {
+pub async fn handle_command(command: StartCommand) -> Result<String> {
     init_logger(&command.logging)?;
 
-    if let Some(ref manifest_file) = command.manifest {
-        if !manifest_file.exists() {
-            return Err(VinoError::FileNotFound(
-                manifest_file.to_string_lossy().into(),
-            ));
-        }
-    }
+    let config = match command.manifest {
+        Some(file) => load_runconfig(file)?,
+        None => RunConfig::default(),
+    };
 
     debug!("Attempting connection to NATS server");
     let nats_url = &format!("{}:{}", command.rpc_host, command.rpc_port);
@@ -93,13 +96,15 @@ pub(crate) async fn handle_command(command: StartCommand) -> Result<String> {
         nats_url,
         command.rpc_jwt,
         command.rpc_seed,
-        command.rpc_credsfile,
+        command.rpc_credsfile.or(config.config.rpc_credentials),
     );
     let nc_control = nats_connection(
         nats_url,
         command.control_jwt,
         command.control_seed,
-        command.control_credsfile,
+        command
+            .control_credsfile
+            .or(config.config.control_credentials),
     );
 
     let mut host_builder = HostBuilder::new();
@@ -113,20 +118,17 @@ pub(crate) async fn handle_command(command: StartCommand) -> Result<String> {
         Err(e) => warn!("Could not connect to NATS, operating locally ({})", e),
     }
 
-    if command.allow_live_updates {
-        debug!("Enabling live updates");
-        host_builder = host_builder.enable_live_updates();
-    }
-    if command.allow_oci_latest {
+    if command.allow_oci_latest || config.config.allow_oci_latest {
         debug!("Enabling :latest tag");
         host_builder = host_builder.oci_allow_latest();
     }
-    if command.disable_strict_update_check {
-        debug!("Disabling strict update checks");
-        host_builder = host_builder.disable_strict_update_check();
-    }
+
     if !command.allowed_insecure.is_empty() {
         host_builder = host_builder.oci_allow_insecure(command.allowed_insecure);
+    }
+
+    if !config.config.allowed_insecure.is_empty() {
+        host_builder = host_builder.oci_allow_insecure(config.config.allowed_insecure);
     }
 
     let host = host_builder.build();
@@ -134,16 +136,9 @@ pub(crate) async fn handle_command(command: StartCommand) -> Result<String> {
     debug!("Starting host");
     match host.start().await {
         Ok(_) => {
-            if let Some(pb) = command.manifest {
-                debug!("Applying manifest");
-                if pb.exists() {
-                    let hm = HostManifest::from_path(pb, true)?;
-                    host.apply_manifest(hm).await?;
-                    info!("Manifest applied");
-                } else {
-                    error!("No file exists at location {}", pb.to_string_lossy());
-                }
-            }
+            debug!("Applying manifest");
+            host.apply_manifest(config.manifest).await?;
+            info!("Manifest applied");
         }
         Err(e) => {
             error!("Failed to start host: {}", e);
@@ -154,40 +149,4 @@ pub(crate) async fn handle_command(command: StartCommand) -> Result<String> {
     info!("Ctrl-C received, shutting down");
     host.stop().await;
     Ok("Done".to_string())
-}
-
-async fn nats_connection(
-    url: &str,
-    jwt: Option<String>,
-    seed: Option<String>,
-    credsfile: Option<String>,
-) -> Result<nats::asynk::Connection> {
-    if let (Some(jwt_file), Some(seed_val)) = (jwt, seed) {
-        let kp = nkeys::KeyPair::from_seed(&extract_arg_value(&seed_val)?)?;
-        // You must provide the JWT via a closure
-        Ok(nats::Options::with_jwt(
-            move || Ok(jwt_file.clone()),
-            move |nonce| kp.sign(nonce).unwrap(),
-        )
-        .connect_async(url)
-        .await?)
-    } else if let Some(credsfile_path) = credsfile {
-        Ok(nats::Options::with_credentials(credsfile_path)
-            .connect_async(url)
-            .await?)
-    } else {
-        Ok(nats::asynk::connect(url).await?)
-    }
-}
-
-/// Returns value from an argument that may be a file path or the value itself
-fn extract_arg_value(arg: &str) -> Result<String> {
-    match File::open(arg) {
-        Ok(mut f) => {
-            let mut value = String::new();
-            f.read_to_string(&mut value)?;
-            Ok(value)
-        }
-        Err(_) => Ok(arg.to_string()),
-    }
 }

@@ -1,28 +1,28 @@
 ---
 actors:
-  - vinoreg.azurecr.io/md5:latest #MC2J5VOBMTEM6T732EFUY367HWBNL2FUAROQFJ6RUXDSIUOBI2HY4XP4
+  - ./validate.wasm #MDZNW2K7QBTK23OP4HO4BGPXKRNG3IGJW47MZMAKLOZYM72MDGQ5VIAL
 schematics:
   - name: test
     components:
-      md5:
-        ref: MC2J5VOBMTEM6T732EFUY367HWBNL2FUAROQFJ6RUXDSIUOBI2HY4XP4
-      str2bytes:
-        ref: vino::string-to-bytes
+      validate_password:
+        ref: MDZNW2K7QBTK23OP4HO4BGPXKRNG3IGJW47MZMAKLOZYM72MDGQ5VIAL
+      log:
+        ref: vino::log
     connections:
       - from:
           instance: vino::schematic_input
           port: input_data1
         to:
-          instance: str2bytes
+          instance: log
           port: input
       - from:
-          instance: str2bytes
+          instance: log
           port: output
         to:
-          instance: md5
+          instance: validate_password
           port: input
       - from:
-          instance: md5
+          instance: validate_password
           port: output
         to:
           instance: vino::schematic_output

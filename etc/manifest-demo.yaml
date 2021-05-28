@@ -1,54 +1,33 @@
 ---
 actors:
-  - vinoreg.azurecr.io/item-add:latest # MDNTPZT6SYJC3Y2EFK5BHJKDSJJA5BVFOCSMOCLTB3PY7L5CU6ILM36O
-  - vinoreg.azurecr.io/item-list:latest # MCMGIUXNUMRTLBIVFNPDMGUJVGWMXKEXY434Q3NASFAOHIZXRBDZDTFB
-  - vinoreg.azurecr.io/item-get:latest # MBVUOE5NDIZRSK3J2HY2BPWJ5U2CDOEDCTKWID6VAOAPWUA52WX6ANK5
-capabilities:
-  - image_ref: wasmcloud.azurecr.io/redis:0.11.2
-references:
-  - reference: R_ITEM_ADD
-    target: MDNTPZT6SYJC3Y2EFK5BHJKDSJJA5BVFOCSMOCLTB3PY7L5CU6ILM36O
-  - reference: R_ITEM_LIST
-    target: MCMGIUXNUMRTLBIVFNPDMGUJVGWMXKEXY434Q3NASFAOHIZXRBDZDTFB
-  - reference: R_ITEM_GET
-    target: MBVUOE5NDIZRSK3J2HY2BPWJ5U2CDOEDCTKWID6VAOAPWUA52WX6ANK5
-  - reference: R_LOG_1
-    target: vino::log
-  - reference: R_LOG_2
-    target: vino::log
-  - reference: R_LOG_3
-    target: vino::log
-connections:
-  - from:
-      reference: R_ITEM_ADD
-      port: content_id
-    to:
-      reference: R_LOG_1
-      port: input
-  - from:
-      reference: R_ITEM_LIST
-      port: content_id
-    to:
-      reference: R_LOG_2
-      port: input
-  - from:
-      reference: R_ITEM_GET
-      port: content
-    to:
-      reference: R_LOG_3
-      port: input
+  # - ../vino-components/validate-password/build/validate_password_s.wasm #MDZNW2K7QBTK23OP4HO4BGPXKRNG3IGJW47MZMAKLOZYM72MDGQ5VIAL
+  - ../vino-components/item-add/build/item_add_s.wasm #MDNTPZT6SYJC3Y2EFK5BHJKDSJJA5BVFOCSMOCLTB3PY7L5CU6ILM36O
+schematics:
+  - name: test
+    components:
+      collection-add:
+        ref: MDNTPZT6SYJC3Y2EFK5BHJKDSJJA5BVFOCSMOCLTB3PY7L5CU6ILM36O
+    connections:
+      - from:
+          instance: vino::schematic_input
+          port: document
+        to:
+          instance: collection-add
+          port: document
+      - from:
+          instance: vino::schematic_input
+          port: collection_id
+        to:
+          instance: collection-add
+          port: collection_id
+      - from:
+          instance: collection-add
+          port: content_id
+        to:
+          instance: vino::schematic_output
+          port: content_id
 links:
   - actor: MDNTPZT6SYJC3Y2EFK5BHJKDSJJA5BVFOCSMOCLTB3PY7L5CU6ILM36O
-    contract_id: "wasmcloud:keyvalue"
-    provider_id: VAZVC4RX54J2NVCMCW7BPCAHGGG5XZXDBXFUMDUXGESTMQEJLC3YVZWB
-    values:
-      URL: redis://127.0.0.1:6379/
-  - actor: MCMGIUXNUMRTLBIVFNPDMGUJVGWMXKEXY434Q3NASFAOHIZXRBDZDTFB
-    contract_id: "wasmcloud:keyvalue"
-    provider_id: VAZVC4RX54J2NVCMCW7BPCAHGGG5XZXDBXFUMDUXGESTMQEJLC3YVZWB
-    values:
-      URL: redis://127.0.0.1:6379/
-  - actor: MBVUOE5NDIZRSK3J2HY2BPWJ5U2CDOEDCTKWID6VAOAPWUA52WX6ANK5
     contract_id: "wasmcloud:keyvalue"
     provider_id: VAZVC4RX54J2NVCMCW7BPCAHGGG5XZXDBXFUMDUXGESTMQEJLC3YVZWB
     values:

@@ -1,4 +1,0 @@
----
-actors:
-  - vinoreg.azurecr.io/actor-b:latest
-  - vinoreg.azurecr.io/actor-a:latest

@@ -1,17 +1,16 @@
-use crate::Result;
+use crate::{util::load_runconfig, Result};
 use anyhow::Context;
-use serde_json::{json, Value::String as JsonString};
-use std::{collections::HashMap, path::Path};
+use std::{collections::HashMap, io::Read, path::PathBuf};
 use structopt::StructOpt;
-use wasmcloud_host::{deserialize, Actor, HostBuilder, MessagePayload};
+use wasmcloud_host::HostBuilder;
 
-use crate::{commands::init_logger, oci::fetch_oci_bytes, util::generate_run_manifest};
+use crate::commands::init_logger;
 
 use super::LoggingOpts;
 
 #[derive(Debug, Clone, StructOpt)]
 #[structopt(rename_all = "kebab-case")]
-pub struct RunCli {
+pub struct RunCommand {
     #[structopt(flatten)]
     pub logging: LoggingOpts,
 
@@ -19,98 +18,66 @@ pub struct RunCli {
     #[structopt(long = "info")]
     pub info: bool,
 
-    /// Allows the use of HTTP registry connections to these registries
-    #[structopt(long = "allowed-insecure")]
-    pub allowed_insecure: Vec<String>,
+    /// JWT file for RPC authentication. Must be supplied with rpc_seed.
+    #[structopt(long = "rpc-jwt", env = "VINO_RPC_JWT", hide_env_values = true)]
+    pub rpc_jwt: Option<String>,
 
-    /// Input filename or URL
-    #[structopt()]
-    actor_ref: String,
+    /// Seed file or literal for RPC authentication. Must be supplied with rpc_jwt.
+    #[structopt(long = "rpc-seed", env = "VINO_RPC_SEED", hide_env_values = true)]
+    pub rpc_seed: Option<String>,
+
+    /// JWT file for control interface authentication. Must be supplied with control_seed.
+    #[structopt(long = "control-jwt", env = "VINO_CONTROL_JWT", hide_env_values = true)]
+    pub control_jwt: Option<String>,
+
+    /// Seed file or literal for control interface authentication. Must be supplied with control_jwt.
+    #[structopt(
+        long = "control-seed",
+        env = "VINO_CONTROL_SEED",
+        hide_env_values = true
+    )]
+    pub control_seed: Option<String>,
+
+    /// Manifest file
+    manifest: PathBuf,
 
     /// JSON data
-    #[structopt(default_value = "\"\"")]
-    data: String,
+    data: Option<String>,
 }
 
-pub(crate) async fn handle_command(command: RunCli) -> Result<String> {
+pub async fn handle_command(command: RunCommand) -> Result<String> {
     let mut logging = command.logging.clone();
     if !(command.info || command.logging.trace || command.logging.debug) {
         logging.quiet = true;
     }
     init_logger(&logging)?;
 
-    let mut host_builder = HostBuilder::new();
-    host_builder = host_builder.oci_allow_latest();
+    let data = match command.data {
+        None => {
+            eprintln!("No input passed, reading from <STDIN>");
+            let mut data = String::new();
+            std::io::stdin().read_to_string(&mut data)?;
+            data
+        }
+        Some(i) => i,
+    };
 
-    if !command.allowed_insecure.is_empty() {
-        host_builder = host_builder.oci_allow_insecure(command.allowed_insecure.clone());
-    }
+    let host_builder = HostBuilder::new();
 
     let host = host_builder.build();
-    let actor_ref = command.actor_ref.to_string();
 
-    let actor = fetch_actor(actor_ref.to_string(), true, command.allowed_insecure).await?;
-
-    let json_string = command.data;
     let json: HashMap<String, serde_json::value::Value> =
-        serde_json::from_str(&json_string).context("Could not deserialized JSON input data")?;
+        serde_json::from_str(&data).context("Could not deserialized JSON input data")?;
 
-    info!("Starting host");
-    match host.start().await {
-        Ok(_) => {
-            info!("Loading dynamic manifest");
-            let hm = generate_run_manifest(actor_ref, actor, &json)?;
-            host.apply_manifest(hm).await?;
-            debug!("Manifest applied, executing component");
-            let raw_result = host.request("dynamic", json).await?;
-            debug!("Raw result: {:?}", raw_result);
-            // let msg_result: HashMap<String, Vec<u8>> = deserialize(&raw_result)?;
-            let result: serde_json::Value = raw_result
-                .iter()
-                .map(|(k, payload)| {
-                    (
-                        k,
-                        match payload {
-                            MessagePayload::Bytes(bytes) => {
-                                deserialize(&bytes).unwrap_or_else(|e| {
-                                    JsonString(format!(
-                                        "Error deserializing output payload: {}",
-                                        e.to_string(),
-                                    ))
-                                })
-                            }
-                            MessagePayload::Exception(e) => {
-                                json!({ "exception": e })
-                            }
-                            MessagePayload::Error(e) => {
-                                json!({ "error": e })
-                            }
-                            _ => json!({ "error": "Internal error, invalid format" }),
-                        },
-                    )
-                })
-                .collect();
-            println!("{}", result);
-            info!("Done");
-            host.stop().await;
-        }
-        Err(e) => {
-            error!("Failed to start host: {}", e);
-        }
-    }
+    let config = load_runconfig(command.manifest)?;
+
+    let result = crate::run(config, json).await?;
+
+    debug!("Raw result: {:?}", result);
+
+    println!("{}", result);
+
+    host.stop().await;
+
     Ok("Done".to_string())
-}
-
-async fn fetch_actor(
-    actor_ref: String,
-    allow_latest: bool,
-    allowed_insecure: Vec<String>,
-) -> Result<Actor> {
-    let p = Path::new(&actor_ref);
-    if p.exists() {
-        Ok(wasmcloud_host::Actor::from_file(p)?)
-    } else {
-        let actor_bytes = fetch_oci_bytes(&actor_ref, allow_latest, &allowed_insecure).await?;
-        Ok(wasmcloud_host::Actor::from_slice(&actor_bytes)?)
-    }
 }

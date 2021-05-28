@@ -1,0 +1,55 @@
+#!/usr/bin/env vinox
+
+default_schematic = "retrieve"
+
+[config]
+allow_oci_latest = true
+
+[manifest]
+actors = [
+  "../vino-components/collection-get-item/build/collection_get_item_s.wasm",
+]
+
+[[manifest.capabilities]]
+image_ref = "wasmcloud.azurecr.io/redis:0.11.2"
+
+[[manifest.schematics]]
+name = "retrieve"
+
+[manifest.schematics.components.collection-get-item]
+ref = "MC3WXSC7RHYHI6RIKDSSED5E3XP5KZ7NXUA3DB7Z66KIVHTFY7SJ4WHF"
+
+[[manifest.schematics.connections]]
+[manifest.schematics.connections.from]
+instance = "vino::schematic_input"
+port = "collection_id"
+
+[manifest.schematics.connections.to]
+instance = "collection-get-item"
+port = "collection_id"
+
+[[manifest.schematics.connections]]
+[manifest.schematics.connections.from]
+instance = "vino::schematic_input"
+port = "content_id"
+
+[manifest.schematics.connections.to]
+instance = "collection-get-item"
+port = "content_id"
+
+[[manifest.schematics.connections]]
+[manifest.schematics.connections.from]
+instance = "collection-get-item"
+port = "document"
+
+[manifest.schematics.connections.to]
+instance = "vino::schematic_output"
+port = "document"
+
+[[manifest.links]]
+actor = "MC3WXSC7RHYHI6RIKDSSED5E3XP5KZ7NXUA3DB7Z66KIVHTFY7SJ4WHF"
+contract_id = "wasmcloud:keyvalue"
+provider_id = "VAZVC4RX54J2NVCMCW7BPCAHGGG5XZXDBXFUMDUXGESTMQEJLC3YVZWB"
+
+[manifest.links.values]
+URL = "redis://127.0.0.1:6379/"
