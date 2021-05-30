@@ -1,0 +1,90 @@
+<%
+
+const inputs = data.definitions.find(def => def.kind === 'TypeDefinition' && def.name.value === 'Inputs');
+const outputs = data.definitions.find(def => def.kind === 'TypeDefinition' && def.name.value === 'Outputs');
+
+function portStruct(port){return `GuestPort${utils.pascalCase(helpers.fieldName(port.name.value))}`};
+%>
+
+use crate::{deserialize, serialize, schematic_host::ConnectionDownstream, Result};
+use serde::{Deserialize, Serialize};
+use vino_guest::OutputPayload;
+
+pub(crate) struct Inputs {
+  <% for (let input of Object.values(inputs.fields)) { %>
+    pub <%- helpers.fieldName(input.name.value) %>: <%- helpers.expandType(input.type) %>,
+  <% } %>
+}
+
+pub(crate) fn inputs_list() -> Vec<String> {
+    vec![<%- inputs.fields.map(f => `"${f.name.value}".to_string()`).join(",") %>]
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct Outputs {
+    <% for (let output of Object.values(outputs.fields)) { %>
+    pub <%- helpers.fieldName(output.name.value) %>: <%- portStruct(output) %>,
+    <% } %>
+}
+
+
+pub(crate) fn outputs_list() -> Vec<String> {
+    vec![<%- outputs.fields.map(f => `"${f.name.value}".to_string()`).join(",") %>]
+}
+
+<% for (let output of Object.values(outputs.fields)) { %>
+#[derive(Debug, PartialEq, Clone)]
+pub struct <%- portStruct(output) %> {
+    connection: ConnectionDownstream,
+}
+impl  <%- portStruct(output) %> {
+    #[allow(dead_code)]
+    pub fn send(&self, payload: <%- helpers.expandType(output.type) %>) -> Result<()> {
+        self.connection.send(
+            "<%- helpers.fieldName(output.name.value) %>".to_string(),
+            serialize(OutputPayload::Bytes(serialize(payload)?))?,
+        )
+    }
+    #[allow(dead_code)]
+    pub fn exception(&self, message: String) -> Result<()> {
+        self.connection.send(
+            "<%- helpers.fieldName(output.name.value) %>".to_string(),
+            serialize(OutputPayload::Exception(message))?,
+        )
+    }
+}
+<% } %>
+
+
+pub fn get_outputs(connection: ConnectionDownstream) -> Outputs {
+    Outputs {
+        <%
+        for (let output of Object.values(outputs.fields)) {
+        %>
+        <%- helpers.fieldName(output.name.value) %>: <%- portStruct(output) %> {
+            connection,
+        },
+        <% } %>
+    }
+}
+
+
+#[derive(Debug, PartialEq, Deserialize, Serialize, Default, Clone)]
+pub struct InputEncoded {
+    <% for (let input of Object.values(inputs.fields)) { %>
+    #[serde(rename = "<%- helpers.fieldName(input.name.value) %>")]
+    pub <%- helpers.fieldName(input.name.value) %>: Vec<u8>,
+    <% } %>
+}
+pub(crate) fn deserialize_inputs(
+    args: InputEncoded,
+) -> std::result::Result<
+    Inputs,
+    std::boxed::Box<dyn std::error::Error + std::marker::Send + std::marker::Sync>,
+> {
+    Ok(Inputs {
+        <% for (let input of Object.values(inputs.fields)) { %>
+        <%- helpers.fieldName(input.name.value) %>: deserialize(&args.<%- helpers.fieldName(input.name.value) %>)?,
+        <% } %>
+    })
+}

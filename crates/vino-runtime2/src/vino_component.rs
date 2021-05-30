@@ -1,0 +1,222 @@
+use super::wapc_component_actor::WapcComponentActor;
+use super::NativeComponentActor;
+use crate::native_actors;
+use crate::network::ActorPorts;
+use crate::Result;
+use actix::Addr;
+use actix::SyncArbiter;
+use async_trait::async_trait;
+use std::fs::File;
+use std::io::prelude::*;
+use std::path::Path;
+use wascap::jwt::{Claims, Token};
+
+/// An actor is a WebAssembly module that conforms to the wasmCloud protocols and can securely
+/// consume capabilities exposed by capability providers.
+#[derive(Clone)]
+pub struct WapcComponent {
+    pub(crate) token: Token<wascap::jwt::Actor>,
+    pub(crate) bytes: Vec<u8>,
+    pub(crate) addr: Option<Addr<WapcComponentActor>>,
+}
+
+// pub type StartFuture<T> = Pin<Box<dyn Future<Output = Addr<T>> + Send>>;
+
+#[derive(Clone)]
+pub enum ComponentType {
+    Native,
+    WaPC,
+}
+
+pub trait VinoComponent: VinoComponentClone {
+    fn public_key(&self) -> String;
+    fn get_inputs(&self) -> Vec<String>;
+    fn get_outputs(&self) -> Vec<String>;
+    fn name(&self) -> String;
+    fn get_kind(&self) -> ComponentType;
+    fn claims(&self) -> Claims<wascap::jwt::Actor>;
+}
+
+pub type BoxedComponent = Box<dyn VinoComponent>;
+pub trait VinoComponentClone {
+    fn clone_box(&self) -> Box<dyn VinoComponent>;
+}
+
+impl<T: 'static + VinoComponent + Clone> VinoComponentClone for T {
+    fn clone_box(&self) -> Box<dyn VinoComponent> {
+        Box::new(self.clone())
+    }
+}
+
+impl Clone for BoxedComponent {
+    fn clone(&self) -> Self {
+        self.clone_box()
+    }
+}
+
+pub(crate) trait Start {
+    type Item;
+
+    fn start(&mut self, seed: String) -> Result<Addr<Self::Item>>
+    where
+        Self::Item: actix::Actor;
+}
+
+impl WapcComponent {
+    /// Create an actor from the bytes of a signed WebAssembly module. Attempting to load
+    /// an unsigned module, or a module signed improperly, will result in an error.
+    pub fn from_slice(buf: &[u8]) -> Result<WapcComponent> {
+        let token = wascap::wasm::extract_claims(&buf)?;
+        if let Some(t) = token {
+            Ok(WapcComponent {
+                token: t,
+                bytes: buf.to_vec(),
+                addr: None,
+            })
+        } else {
+            Err("Unable to extract embedded token from WebAssembly module".into())
+        }
+    }
+
+    /// Create an actor from a signed WebAssembly (`.wasm`) file.
+    pub fn from_file(path: impl AsRef<Path>) -> Result<WapcComponent> {
+        let mut file = File::open(path)?;
+        let mut buf = Vec::new();
+        file.read_to_end(&mut buf)?;
+
+        WapcComponent::from_slice(&buf)
+    }
+
+    /// Obtain the issuer's public key as it resides in the actor's token (the `iss` field of the JWT).
+    pub fn _issuer(&self) -> String {
+        self.token.claims.issuer.to_string()
+    }
+
+    /// Obtain the list of capabilities declared in this actor's embedded token.
+    pub fn _capabilities(&self) -> Vec<String> {
+        match self.token.claims.metadata.as_ref().unwrap().caps {
+            Some(ref caps) => caps.clone(),
+            None => vec![],
+        }
+    }
+
+    /// Obtain the list of tags in the actor's token.
+    pub fn _tags(&self) -> Vec<String> {
+        match self.token.claims.metadata.as_ref().unwrap().tags {
+            Some(ref tags) => tags.clone(),
+            None => vec![],
+        }
+    }
+}
+
+#[async_trait]
+impl VinoComponent for WapcComponent {
+    /// Obtain the actor's public key (The `sub` field of the JWT). It is safe to treat this value as a globally unique identifier.
+    fn public_key(&self) -> String {
+        self.token.claims.subject.to_string()
+    }
+
+    fn get_inputs(&self) -> Vec<String> {
+        match self.token.claims.metadata.as_ref().unwrap().inputs {
+            Some(ref n) => n.clone(),
+            None => vec![],
+        }
+    }
+
+    fn get_outputs(&self) -> Vec<String> {
+        match self.token.claims.metadata.as_ref().unwrap().outputs {
+            Some(ref n) => n.clone(),
+            None => vec![],
+        }
+    }
+
+    /// The actor's human-friendly display name
+    fn name(&self) -> String {
+        match self.token.claims.metadata.as_ref().unwrap().name {
+            Some(ref n) => n.to_string(),
+            None => "Unnamed".to_string(),
+        }
+    }
+
+    fn get_kind(&self) -> ComponentType {
+        ComponentType::WaPC
+    }
+
+    // Obtain the raw set of claims for this actor.
+    fn claims(&self) -> Claims<wascap::jwt::Actor> {
+        self.token.claims.clone()
+    }
+}
+
+impl Start for WapcComponent {
+    type Item = WapcComponentActor;
+    fn start(&mut self, _seed: String) -> Result<Addr<WapcComponentActor>> {
+        // let init = crate::wapc_component_actor::Initialize {
+        //     actor_bytes: self.bytes.clone(),
+        //     signing_seed: seed,
+        // };
+        let new_actor = SyncArbiter::start(1, WapcComponentActor::default);
+
+        // let new_actor = WapcComponentActor::default().start();
+        self.addr = Some(new_actor.clone());
+        // new_actor.send(init).await?;
+        Ok(new_actor)
+    }
+}
+
+#[derive(Clone)]
+pub struct NativeComponent {
+    pub id: String,
+    pub ports: ActorPorts,
+    pub(crate) addr: Option<Addr<NativeComponentActor>>,
+}
+
+impl NativeComponent {
+    pub fn from_id(name: String) -> Result<NativeComponent> {
+        match native_actors::get_native_actor(name.to_string()) {
+            Some(actor) => Ok(actor.get_def()),
+            None => Err(anyhow!("Could not find actor {}", name).into()),
+        }
+    }
+}
+
+#[async_trait]
+impl VinoComponent for NativeComponent {
+    /// Obtain the actor's public key (The `sub` field of the JWT). It is safe to treat this value as a globally unique identifier.
+    fn public_key(&self) -> String {
+        self.id.to_string()
+    }
+
+    fn get_inputs(&self) -> Vec<String> {
+        self.ports.inputs.clone()
+    }
+
+    fn get_outputs(&self) -> Vec<String> {
+        self.ports.outputs.clone()
+    }
+
+    /// The actor's human-friendly display name
+    fn name(&self) -> String {
+        self.id.to_string()
+    }
+
+    fn get_kind(&self) -> ComponentType {
+        ComponentType::Native
+    }
+
+    // Obtain the raw set of claims for this actor.
+    fn claims(&self) -> Claims<wascap::jwt::Actor> {
+        Claims::default()
+    }
+}
+
+impl Start for NativeComponent {
+    type Item = NativeComponentActor;
+    fn start(&mut self, _seed: String) -> Result<Addr<NativeComponentActor>> {
+        let native_actor = SyncArbiter::start(1, NativeComponentActor::default);
+        // native_actor
+        //     .send(native_component_actor::Initialize { name: self.name() })
+        //     .await?;
+        Ok(native_actor)
+    }
+}
