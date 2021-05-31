@@ -75,12 +75,15 @@ impl Handler<Invocation> for NativeComponentActor {
                     if let MessagePayload::Bytes(payload) = msg.msg {
                         trace!("executing actor {}", target);
                         let result = actor.job_wrapper(&payload);
-                        trace!("done executing actor {}", target);
+                        trace!("done executing actor {}: result: {:?}", target, result);
                         match result {
-                            Err(e) => InvocationResponse::error(msg.tx_id, e.to_string()),
+                            Err(e) => {
+                                error!("{}", e.to_string());
+                                InvocationResponse::error(msg.tx_id, e.to_string())
+                            }
                             Ok(p) => InvocationResponse::success(
                                 msg.tx_id,
-                                serialize(p).unwrap_or_else(|_| vec![]),
+                                serialize(p).unwrap_or_else(|_| serialize(Signal::Done).unwrap()),
                             ),
                         }
                     } else {

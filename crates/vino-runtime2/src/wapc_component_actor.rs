@@ -46,7 +46,7 @@ fn perform_initialization(
 ) -> Result<String> {
     let buf = msg.actor_bytes.clone();
     let actor = WapcComponent::from_slice(&buf)?;
-    let c = actor.token.claims.clone();
+    let claims = actor.token.claims.clone();
     let jwt = actor.token.jwt.to_string();
 
     // Ensure that the JWT we found on this actor is valid, not expired, can be used,
@@ -58,23 +58,33 @@ fn perform_initialization(
     #[cfg(feature = "wasm3")]
     let _engine = wasm3_provider::Wasm3EngineProvider::new(&buf);
 
-    let c2 = c.clone();
+    let cloned_claims = claims.clone();
     let seed = msg.signing_seed.to_string();
 
-    let guest = WapcHost::new(Box::new(engine), move |_id, bd, ns, op, payload| {
-        crate::dispatch::wapc_host_callback(
-            KeyPair::from_seed(&seed).unwrap(),
-            c2.clone(),
-            bd,
-            ns,
-            op,
-            payload,
-        )
-    });
+    let guest = WapcHost::new(
+        Box::new(engine),
+        move |id, binding, namespace, operation, payload| {
+            trace!(
+                "wapc callback {}  {}  {}  {} ",
+                id,
+                binding,   //tx-id
+                namespace, // SCHEMATIC_name||reference
+                operation  // port
+            );
+            crate::dispatch::wapc_host_callback(
+                KeyPair::from_seed(&seed).unwrap(),
+                cloned_claims.clone(),
+                binding,
+                namespace,
+                operation,
+                payload,
+            )
+        },
+    );
 
     match guest {
         Ok(g) => {
-            let _entity = VinoEntity::Component(c.subject.to_string());
+            let _entity = VinoEntity::Component(claims.subject.to_string());
             // let b = MessageBus::from_hostlocal_registry(&msg.host_id);
             // let recipient = ctx.address().recipient();
             // let _ = block_on(async move {
@@ -87,14 +97,14 @@ fn perform_initialization(
 
             me.state = Some(State {
                 guest_module: g,
-                claims: c.clone(),
+                claims: claims.clone(),
                 _seed: msg.signing_seed,
             });
             info!(
                 "Actor {} initialized",
                 &me.state.as_ref().unwrap().claims.subject
             );
-            Ok(c.subject)
+            Ok(claims.subject)
         }
         Err(_e) => {
             error!(
@@ -124,7 +134,6 @@ impl Handler<Invocation> for WapcComponentActor {
     type Result = InvocationResponse;
 
     fn handle(&mut self, msg: Invocation, _ctx: &mut Self::Context) -> Self::Result {
-        trace!("Invoking component");
         let state = self.state.as_ref().unwrap();
 
         debug!(

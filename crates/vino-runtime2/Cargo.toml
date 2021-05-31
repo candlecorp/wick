@@ -39,3 +39,4 @@ nkeys = "0.1.0"
 [dev-dependencies]
 env_logger = "0.8.3"
 test-env-log = "0.2.7"
+maplit = "1.0.2"

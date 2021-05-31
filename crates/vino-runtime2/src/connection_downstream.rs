@@ -31,15 +31,7 @@ pub struct ConnectionDownstream {
     pub reference: String,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-pub struct ConnectionTarget {
-    pub reference: String,
-    pub actor: String,
-    pub port: String,
-}
-
 impl ConnectionDownstream {
-    #[allow(dead_code)] //TODO REMOVE
     pub fn new(
         host_id: String,
         namespace: String,
@@ -68,16 +60,15 @@ impl ConnectionDownstream {
             OutputPayload::Exception(e) => MessagePayload::Exception(e),
             OutputPayload::Error(e) => MessagePayload::Error(e),
         };
-        network.do_send(OutputReady {
+        network.try_send(OutputReady {
             port: PortEntity {
                 name: port,
-                parent: self.actor.to_string(),
                 reference: self.reference.to_string(),
                 schematic: self.namespace.to_string(),
             },
             tx_id: self.tx_id.to_string(),
             payload,
-        });
+        })?;
         Ok(())
     }
 }

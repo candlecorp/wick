@@ -3,10 +3,10 @@ use std::time::Duration;
 
 use crate::anyhow::Context as AnyhowContext;
 use crate::connection_downstream::ConnectionDownstream;
-use crate::connection_downstream::ConnectionTarget;
 use crate::deserialize;
 use crate::dispatch::VinoEntity;
 use crate::error::VinoError;
+use crate::manifest::schematic_definition::{ConnectionDefinition, ConnectionTargetDefinition};
 use crate::network::ComponentMetadata2;
 use crate::network::MetadataMap;
 use crate::port_entity::PortEntity;
@@ -61,21 +61,13 @@ impl Actor for Schematic {
     }
 }
 
-// TODO REFACTOR OUT THESE WEIRD ABSTRACTIONS
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct ConnectionDefinition2 {
-    pub from: ConnectionTarget,
-    pub to: ConnectionTarget,
-}
-
 impl Schematic {
     fn get_downstream_recipient(&self, name: String) -> Option<Recipient<Invocation>> {
         trace!("getting downstream recipient {}", name);
         match self.definition.components.get(&name) {
             Some(comp) => self
                 .components
-                .get(&comp.actor_ref)
+                .get(&comp.id)
                 .map(|component| component.addr.clone()),
             None => None,
         }
@@ -89,9 +81,9 @@ impl Schematic {
             None => vec![],
         }
     }
-    fn get_connections(&self, reference: String, port: String) -> Vec<ConnectionDefinition2> {
+    fn get_connections(&self, reference: String, port: String) -> Vec<ConnectionDefinition> {
         let references = &self.references;
-        let connections: Vec<ConnectionDefinition2> = self
+        let connections: Vec<ConnectionDefinition> = self
             .definition
             .connections
             .iter()
@@ -122,16 +114,14 @@ impl Schematic {
                 if from_actor.is_none() || to_actor.is_none() {
                     return None;
                 }
-                Some(ConnectionDefinition2 {
-                    from: ConnectionTarget {
+                Some(ConnectionDefinition {
+                    from: ConnectionTargetDefinition {
                         port: connection.from.port.to_string(),
-                        reference: connection.from.instance.to_string(),
-                        actor: from_actor.unwrap().to_string(),
+                        instance: connection.from.instance.to_string(),
                     },
-                    to: ConnectionTarget {
+                    to: ConnectionTargetDefinition {
                         port: connection.to.port.to_string(),
-                        reference: connection.to.instance.to_string(),
-                        actor: to_actor.unwrap().to_string(),
+                        instance: connection.to.instance.to_string(),
                     },
                 })
             })
@@ -154,13 +144,16 @@ impl Schematic {
             .entry(tx_id.to_string())
             .or_insert_with(new_refmap);
 
-        let actor = port.parent.to_string();
-        trace!("pushing to {}[{}]", actor, port.name);
+        let actor = self
+            .references
+            .get(&reference)
+            .context(format!("Could not find reference {}", reference))?;
+        trace!("pushing to {}[{}]", reference, port.name);
         let key = reference.to_string();
-        let metadata = self
-            .components
-            .get(&actor)
-            .ok_or("Could not get component metadata")?;
+        let metadata = self.components.get(actor).ok_or(format!(
+            "Could not find metadata for {}. Component may have failed to load.",
+            actor
+        ))?;
 
         refmap
             .entry(key)
@@ -180,7 +173,7 @@ impl Schematic {
             self.host_id.to_string(),
             port.schematic.to_string(),
             tx_id.to_string(),
-            port.parent.to_string(),
+            actor.to_string(),
             reference,
         );
 
@@ -202,8 +195,8 @@ impl Schematic {
         Ok(ComponentStatus::Ready(Invocation::next(
             &tx_id,
             &kp,
-            VinoEntity::Schematic("TODOTHISISWRONG".to_string()),
-            VinoEntity::Component(port.parent.to_string()),
+            VinoEntity::Schematic(port.schematic.to_string()),
+            VinoEntity::Component(actor.to_string()),
             "job",
             serialized_data,
         )))
@@ -321,7 +314,7 @@ impl Handler<Initialize> for Schematic {
             .iter()
             .for_each(|(instance, actor)| {
                 self.references
-                    .insert(instance.to_string(), actor.actor_ref.to_string());
+                    .insert(instance.to_string(), actor.id.to_string());
             });
 
         self.definition = msg.schematic;
@@ -367,18 +360,6 @@ impl Handler<Request> for Schematic {
                 }
             }
             .into_actor(self),
-        )
-    }
-}
-
-impl Handler<Invocation> for Schematic {
-    type Result = ResponseActFuture<Self, InvocationResponse>;
-
-    fn handle(&mut self, msg: Invocation, _ctx: &mut Context<Self>) -> Self::Result {
-        trace!("Invoking schematic for target: {}", msg.target.url());
-        Box::pin(
-            async move { InvocationResponse::error(msg.tx_id, "TODO".to_string()) }
-                .into_actor(self),
         )
     }
 }
@@ -430,7 +411,7 @@ fn gen_packets(
     sm: &mut Schematic,
     tx_id: String,
     name: String,
-    mut bytemap: HashMap<String, Vec<u8>>,
+    bytemap: HashMap<String, Vec<u8>>,
 ) -> Result<Vec<MessagePacket>> {
     let schematic = &sm.definition;
     let _kp = KeyPair::from_seed(&sm.seed).context("Couldn't create keypair")?;
@@ -444,25 +425,19 @@ fn gen_packets(
         .iter()
         .filter(|conn| conn.from.instance == crate::SCHEMATIC_INPUT)
         .map(|conn| {
-            // TODO need to handle this better
-            let to_parent = schematic
-                .components
-                .get(&conn.to.instance)
-                .unwrap_or_else(|| panic!("Reference '{}' not found", conn.to.instance));
             let bytes = bytemap
-                .remove(&conn.from.port)
-                .unwrap_or_else(|| panic!("Port '{}' not found", conn.to.instance));
+                .get(&conn.from.port)
+                .unwrap_or_else(|| panic!("Output on port '{}' not found", conn.to.instance));
 
             MessagePacket {
                 target: PortEntity {
                     schematic: name.to_string(),
                     name: conn.to.port.to_string(),
-                    parent: to_parent.actor_ref.to_string(),
                     reference: conn.to.instance.to_string(),
                 },
                 origin: VinoEntity::Schematic(name.to_string()),
                 tx_id: tx_id.to_string(),
-                payload: MessagePayload::Bytes(bytes),
+                payload: MessagePayload::Bytes(bytes.clone()),
             }
         })
         .collect();
@@ -503,7 +478,7 @@ impl Handler<MessagePacket> for Schematic {
         trace!("Receiving on port {}:{}", port.reference, port.name);
 
         let reference = port.reference.to_string();
-        //TODO normalize output to the same buffers
+        //TODO normalize output to the same buffers as regular ports
         if reference == crate::SCHEMATIC_OUTPUT {
             return Box::pin(
                 async move {
@@ -520,10 +495,12 @@ impl Handler<MessagePacket> for Schematic {
 
         Box::pin(
             async move {
-                trace!("Component {} status : {:?}", reference, status);
-
                 match status {
-                    Err(err) => Err(format!("Error pushing IP to buffer: {}", err).into()),
+                    Err(err) => {
+                        let e = format!("Error handling IP: {}", err);
+                        error!("{}", e);
+                        Err(e.into())
+                    }
                     Ok(ComponentStatus::ShortCircuit(payload)) => match schematic_host
                         .send(ShortCircuit {
                             tx_id: tx_id.to_string(),
@@ -542,7 +519,7 @@ impl Handler<MessagePacket> for Schematic {
                         Ok(())
                     }
                     Ok(ComponentStatus::Ready(invocation)) => {
-                        let response = match receiver {
+                        let response: std::result::Result<Signal, _> = match receiver {
                             Some(receiver) => match receiver.send(invocation).await {
                                 Ok(response) => deserialize(&response.msg),
                                 Err(err) => Err(format!("Error executing job: {}", err).into()),
@@ -551,7 +528,7 @@ impl Handler<MessagePacket> for Schematic {
                         };
 
                         match response {
-                            Ok(Signal::Done) => Ok(()),
+                            Ok(_signal) => Ok(()),
                             Err(err) => {
                                 warn!(
                                     "Tx '{}': schematic '{}' short-circuiting from '{}': {}",
@@ -600,7 +577,7 @@ impl Handler<ShortCircuit> for Schematic {
         let payload = msg.payload;
 
         let outputs = self.get_outputs(reference.to_string());
-        let downstreams: Vec<ConnectionDefinition2> = outputs
+        let downstreams: Vec<ConnectionDefinition> = outputs
             .iter()
             .flat_map(|port| self.get_connections(reference.to_string(), port.to_string()))
             .collect();
@@ -610,9 +587,8 @@ impl Handler<ShortCircuit> for Schematic {
             .map(|conn| OutputReady {
                 tx_id: tx_id.to_string(),
                 port: PortEntity {
-                    reference: conn.from.reference.to_string(),
+                    reference: conn.from.instance.to_string(),
                     name: conn.from.port.to_string(),
-                    parent: conn.from.actor.to_string(),
                     schematic: schematic.to_string(),
                 },
                 payload: payload.clone(),
@@ -654,27 +630,24 @@ impl Handler<OutputReady> for Schematic {
         let reference = msg.port.reference;
         let port = msg.port.name;
         let tx_id = msg.tx_id;
-        let actor = msg.port.parent;
+
         let data = msg.payload;
         let schematic = msg.port.schematic;
 
         let defs = self.get_connections(reference.to_string(), port.to_string());
         let addr = ctx.address();
-
         let task = async move {
             let _kp = KeyPair::from_seed(&seed).unwrap();
             let origin = VinoEntity::Port(PortEntity {
                 schematic: schematic.to_string(),
                 name: port.to_string(),
                 reference: reference.to_string(),
-                parent: actor.to_string(),
             });
-            let make_packet = |conn: ConnectionDefinition2| {
+            let make_packet = |conn: ConnectionDefinition| {
                 let entity = PortEntity {
                     schematic: schematic.to_string(),
                     name: conn.to.port.to_string(),
-                    reference: conn.to.reference.to_string(),
-                    parent: conn.to.actor,
+                    reference: conn.to.instance,
                 };
                 MessagePacket {
                     tx_id: tx_id.clone(),
@@ -705,10 +678,12 @@ pub struct ResponseFuture {
 mod test {
 
     use crate::{
+        manifest::schematic_definition::{
+            ComponentDefinition, ConnectionDefinition, ConnectionTargetDefinition,
+        },
         network::ActorPorts,
         network::ComponentMetadata2,
-        {schematic_definition::ConnectionTargetDefinition, ComponentDefinition},
-        {wapc_component_actor::WapcComponentActor, ConnectionDefinition},
+        wapc_component_actor::WapcComponentActor,
     };
 
     use super::*;
@@ -727,7 +702,7 @@ mod test {
             "logger".to_string(),
             ComponentDefinition {
                 metadata: None,
-                actor_ref: "vino::log".to_string(),
+                id: "vino::log".to_string(),
             },
         );
         schem_def.connections.push(ConnectionDefinition {

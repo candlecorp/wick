@@ -5,5 +5,4 @@ pub struct PortEntity {
     pub schematic: String,
     pub reference: String,
     pub name: String,
-    pub parent: String,
 }

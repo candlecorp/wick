@@ -113,7 +113,6 @@ impl Future for SchematicResponse {
         let mut responses = SCHEMATIC_RESPONSES.lock();
         let tx_id = self.tx_id.to_string();
 
-        // TODO ALL OF THIS
         match ready {
             Ok(ready) => {
                 if ready {
@@ -125,7 +124,6 @@ impl Future for SchematicResponse {
                         Err(e) => Poll::Ready(InvocationResponse::error(tx_id, e.to_string())),
                     }
                 } else {
-                    trace!("Schematic is not ready");
                     cx.waker().wake_by_ref();
                     Poll::Pending
                 }

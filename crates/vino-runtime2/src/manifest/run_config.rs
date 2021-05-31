@@ -1,9 +1,9 @@
+use crate::manifest::runtime_definition::RuntimeManifest;
 use serde::{Deserialize, Serialize};
-use wasmcloud_host::HostManifest;
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct RunConfig {
-    pub manifest: HostManifest,
+    pub manifest: RuntimeManifest,
 
     #[serde(default = "DEFAULT_SCHEMATIC")]
     pub default_schematic: String,
@@ -36,32 +36,28 @@ pub struct CommonConfiguration {
     pub rpc_port: String,
 
     #[serde(default)]
-    pub rpc_credentials: Option<String>,
+    pub rpc_credsfile: Option<String>,
 
     #[serde(default)]
-    pub control_credentials: Option<String>,
+    pub rpc_jwt: Option<String>,
 
     #[serde(default)]
-    pub allow_oci_latest: bool,
+    pub rpc_seed: Option<String>,
 
-    #[serde(default)]
-    #[serde(skip_serializing_if = "Vec::is_empty")]
-    pub allowed_insecure: Vec<String>,
-}
-
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
-pub struct NatsConfiguration {
     #[serde(default = "DEFAULT_RPC_HOST")]
-    pub rpc_host: String,
+    pub control_host: String,
 
     #[serde(default = "DEFAULT_RPC_PORT")]
-    pub rpc_port: String,
+    pub control_port: String,
 
     #[serde(default)]
-    pub rpc_credentials: Option<String>,
+    pub control_credsfile: Option<String>,
 
     #[serde(default)]
-    pub control_credentials: Option<String>,
+    pub control_jwt: Option<String>,
+
+    #[serde(default)]
+    pub control_seed: Option<String>,
 
     #[serde(default)]
     pub allow_oci_latest: bool,

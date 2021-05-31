@@ -5,26 +5,22 @@ pub(crate) mod connection_downstream;
 pub(crate) mod dispatch;
 pub mod error;
 pub(crate) mod hlreg;
-pub mod manifest_definition;
+pub mod manifest;
 pub(crate) mod native_actors;
 pub(crate) mod native_component_actor;
 pub(crate) mod network;
 pub(crate) mod oci;
 pub(crate) mod port_entity;
 pub(crate) mod schematic;
-pub mod schematic_definition;
 pub(crate) mod schematic_response;
 pub(crate) mod serdes;
 pub(crate) mod vino_component;
 pub(crate) mod wapc_component_actor;
 
-pub use self::schematic_definition::{
-    ComponentDefinition, ConnectionDefinition, SchematicDefinition,
-};
+pub use self::manifest::runtime_definition::RuntimeManifest;
+pub use self::manifest::schematic_definition::SchematicDefinition;
 use crate::dispatch::MessagePayload;
-pub(crate) use manifest_definition::HostManifest;
 pub(crate) use native_component_actor::NativeComponentActor;
-// pub(crate) use schematic_host::{ConnectionDownstream, SchematicHost};
 
 pub use dispatch::{Invocation, InvocationResponse};
 pub use serdes::{deserialize, serialize};
@@ -35,6 +31,8 @@ pub const SYSTEM_ACTOR: &str = "system";
 pub const VINO_NAMESPACE: &str = "vino";
 pub const SCHEMATIC_INPUT: &str = "vino::schematic_input";
 pub const SCHEMATIC_OUTPUT: &str = "vino::schematic_output";
+
+pub use network::request;
 
 #[macro_use]
 mod native_macro;

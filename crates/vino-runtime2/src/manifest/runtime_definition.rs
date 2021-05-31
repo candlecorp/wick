@@ -29,7 +29,7 @@ pub use crate::SchematicDefinition;
 /// ```
 
 #[derive(Debug, Clone, Serialize, Default, Deserialize)]
-pub struct HostManifest {
+pub struct RuntimeManifest {
     #[serde(default)]
     #[serde(skip_serializing_if = "HashMap::is_empty")]
     #[doc(hidden)]

@@ -1,0 +1,41 @@
+schematics:
+  - name: first_schematic
+    components:
+      add:
+        id: vino::add
+    connections:
+      - from:
+          instance: vino::schematic_input
+          port: left
+        to:
+          instance: add
+          port: left
+      - from:
+          instance: vino::schematic_input
+          port: right
+        to:
+          instance: add
+          port: right
+      - from:
+          instance: add
+          port: output
+        to:
+          instance: vino::schematic_output
+          port: output
+  - name: second_schematic
+    components:
+      log:
+        id: vino::log
+    connections:
+      - from:
+          instance: vino::schematic_input
+          port: input
+        to:
+          instance: log
+          port: input
+      - from:
+          instance: log
+          port: output
+        to:
+          instance: vino::schematic_output
+          port: output

@@ -1,0 +1,38 @@
+---
+schematics:
+  - name: test
+    external:
+      - ref: ./tests/fixtures/validate.wasm
+        key: MDZNW2K7QBTK23OP4HO4BGPXKRNG3IGJW47MZMAKLOZYM72MDGQ5VIAL
+    components:
+      validate_password:
+        id: MDZNW2K7QBTK23OP4HO4BGPXKRNG3IGJW47MZMAKLOZYM72MDGQ5VIAL
+      log:
+        id: vino::log
+      log2:
+        id: vino::log
+    connections:
+      - from:
+          instance: vino::schematic_input
+          port: input_port1
+        to:
+          instance: log
+          port: input
+      - from:
+          instance: log
+          port: output
+        to:
+          instance: validate_password
+          port: input
+      - from:
+          instance: validate_password
+          port: output
+        to:
+          instance: log2
+          port: input
+      - from:
+          instance: log2
+          port: output
+        to:
+          instance: vino::schematic_output
+          port: output1

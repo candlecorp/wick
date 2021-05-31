@@ -5,7 +5,11 @@ use std::io::Read;
 use actix::dev::MessageResponse;
 use actix::prelude::Message;
 use actix::Actor;
+use futures::executor::block_on;
 
+use crate::hlreg::HostLocalSystemService;
+use crate::network::Network;
+use crate::network::WapcOutputReady;
 use crate::serialize;
 use crate::Result;
 use data_encoding::HEXUPPER;
@@ -67,7 +71,7 @@ impl InvocationResponse {
 
     /// Creates an error response
     pub fn error(tx_id: String, msg: String) -> InvocationResponse {
-        let payload = serialize(msg).unwrap_or_else(|_| vec![1, 1, 1, 1]);
+        let payload = serialize(msg).unwrap();
         InvocationResponse {
             msg: payload,
             tx_id,
@@ -82,7 +86,9 @@ where
 {
     fn handle(self, _: &mut A::Context, tx: Option<actix::dev::OneshotSender<Self>>) {
         if let Some(tx) = tx {
-            if tx.send(self).is_err() {} // TODO
+            if let Err(e) = tx.send(self) {
+                error!("InvocationResponse can't be sent : {:?}", e.msg);
+            }
         }
     }
 }
@@ -213,8 +219,8 @@ impl VinoEntity {
             VinoEntity::Component(name) => format!("{}://component/{}", URL_SCHEME, name),
             VinoEntity::Port(port) => {
                 format!(
-                    "{}://namespace/{}/port/{}/in/{}/{}",
-                    URL_SCHEME, port.schematic, port.parent, port.name, port.reference
+                    "{}://{}::{}:{}",
+                    URL_SCHEME, port.schematic, port.name, port.reference
                 )
             }
         }
@@ -226,19 +232,19 @@ impl VinoEntity {
             VinoEntity::Schematic(name) => format!("schematic:{}", name),
             VinoEntity::Component(name) => format!("component:{}", name),
             VinoEntity::Port(port) => {
-                format!("{}:in:{}:{}", port.parent, port.name, port.reference)
+                format!("{}::{}:{}", port.schematic, port.reference, port.name)
             }
         }
     }
 }
 
 pub(crate) fn wapc_host_callback(
-    _kp: KeyPair,
+    kp: KeyPair,
     claims: Claims<wascap::jwt::Actor>,
-    _link_name: &str,
-    namespace: &str,
-    operation: &str,
-    _payload: &[u8],
+    link_name: &str, // tx-id
+    namespace: &str, // SCHEMATIC_name||reference
+    operation: &str, // port
+    payload: &[u8],
 ) -> std::result::Result<Vec<u8>, Box<dyn ::std::error::Error + Sync + Send>> {
     trace!(
         "Guest {} invoking {}:{}",
@@ -246,5 +252,31 @@ pub(crate) fn wapc_host_callback(
         namespace,
         operation
     );
-    Ok(vec![])
+    let trimmed = namespace.trim_start_matches("SCHEMATIC_");
+    let split = trimmed.split("||").collect::<Vec<&str>>();
+    let schematic_name = split[0];
+    let reference_name = split[1];
+    trace!(
+        "Resolved target to namespace {} {}[{}] for actor {}",
+        schematic_name,
+        reference_name,
+        operation,
+        claims.subject
+    );
+    let network = Network::from_hostlocal_registry(&kp.public_key());
+
+    let msg = WapcOutputReady {
+        payload: payload.to_vec(),
+        port: PortEntity {
+            schematic: schematic_name.to_string(),
+            name: operation.to_string(),
+            reference: reference_name.to_string(),
+        },
+        tx_id: link_name.to_string(),
+    };
+
+    match block_on(async { network.send(msg).await }) {
+        Ok(_) => Ok(vec![]),
+        Err(_e) => Err("Mailbox error during host callback".into()),
+    }
 }

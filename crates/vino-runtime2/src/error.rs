@@ -1,3 +1,4 @@
+use actix::prelude::SendError;
 use anyhow::anyhow;
 use thiserror::Error;
 
@@ -73,5 +74,11 @@ impl From<&'static str> for VinoError {
 impl From<nkeys::error::Error> for VinoError {
     fn from(e: nkeys::error::Error) -> Self {
         VinoError::Other(anyhow!(e))
+    }
+}
+
+impl<M> From<SendError<M>> for VinoError {
+    fn from(e: SendError<M>) -> Self {
+        VinoError::Other(anyhow!(e.to_string()))
     }
 }
