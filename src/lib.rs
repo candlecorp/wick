@@ -1,8 +1,8 @@
 pub mod commands;
 pub mod error;
-pub(crate) mod logger;
+// pub(crate) mod logger;
 pub(crate) mod oci;
-pub mod util;
+pub mod utils;
 
 use std::collections::HashMap;
 
@@ -77,8 +77,8 @@ mod tests {
 
     #[actix_rt::test]
     async fn runs_crud_api_config() -> crate::Result<()> {
-        let manifest = include_bytes!("../examples/crud-api.vino");
-        let config = crate::util::parse_runconfig(String::from_utf8_lossy(manifest).into())?;
+        let manifest = include_bytes!("../examples/api.vino");
+        let config = crate::utils::parse_runconfig(String::from_utf8_lossy(manifest).into())?;
         let mut input: HashMap<String, serde_json::Value> = HashMap::new();
         input.insert(
             "content_id".to_string(),

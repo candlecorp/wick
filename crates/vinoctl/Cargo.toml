@@ -1,0 +1,31 @@
+[package]
+name = "vinoctl"
+version = "0.1.0"
+authors = ["Jarrod Overson <jsoverson@gmail.com>"]
+edition = "2018"
+default-run = "vinoctl"
+license-file = "LICENSE"
+description = "Application data flow platform"
+repository = "https://gitlab.com/vino-dev/vino"
+documentation = "https://vino.dev"
+readme = "README.md"
+
+[dependencies]
+log = "0.4.11"
+anyhow = "1.0.34"
+actix-rt = "2.1.0"
+structopt = "0.3.21"
+futures = "0.3.13"
+serde_json = "1.0.64"
+serde_yaml = "0.8.17"
+serde = "1.0.126"
+thiserror = "1.0.24"
+unsafe-io = "= 0.6.2"
+logger = { path = "../logger" }
+
+[dev-dependencies]
+
+
+[[bin]]
+name = "vinoctl"
+path = "src/main.rs"

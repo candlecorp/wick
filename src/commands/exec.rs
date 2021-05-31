@@ -1,19 +1,19 @@
-use crate::{util::fetch_actor, Result};
+use crate::{utils::fetch_actor, Result};
 use anyhow::Context;
 use serde_json::{json, Value::String as JsonString};
 use std::collections::HashMap;
 use structopt::StructOpt;
 use wasmcloud_host::{deserialize, HostBuilder, MessagePayload};
 
-use crate::{commands::init_logger, util::generate_exec_manifest};
+use crate::utils::generate_exec_manifest;
 
-use super::LoggingOpts;
+use super::LoggingOptions;
 
 #[derive(Debug, Clone, StructOpt)]
 #[structopt(rename_all = "kebab-case")]
 pub struct ExecCommand {
     #[structopt(flatten)]
-    pub logging: LoggingOpts,
+    pub logging: LoggingOptions,
 
     /// Turn on info logging
     #[structopt(long = "info")]
@@ -37,7 +37,7 @@ pub async fn handle_command(command: ExecCommand) -> Result<String> {
     if !(command.info || command.logging.trace || command.logging.debug) {
         logging.quiet = true;
     }
-    init_logger(&logging)?;
+    crate::utils::init_logger(&logging)?;
 
     let mut host_builder = HostBuilder::new();
     host_builder = host_builder.oci_allow_latest();
@@ -53,7 +53,7 @@ pub async fn handle_command(command: ExecCommand) -> Result<String> {
 
     let json_string = command.data;
     let json: HashMap<String, serde_json::value::Value> =
-        serde_json::from_str(&json_string).context("Could not deserialized JSON input data")?;
+        serde_json::from_str(&json_string).context("Could not deserialize JSON input data")?;
 
     info!("Starting host");
     match host.start().await {

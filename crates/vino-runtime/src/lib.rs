@@ -22,6 +22,7 @@ pub use self::manifest::schematic_definition::SchematicDefinition;
 use crate::dispatch::MessagePayload;
 pub(crate) use native_component_actor::NativeComponentActor;
 
+pub use crate::manifest::run_config::RunConfig;
 pub use dispatch::{Invocation, InvocationResponse};
 pub use serdes::{deserialize, serialize};
 

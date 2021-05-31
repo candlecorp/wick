@@ -1,5 +1,5 @@
 [package]
-name = "vino-runtime2"
+name = "vino-runtime"
 version = "0.1.0"
 authors = ["Jarrod Overson <jsoverson@gmail.com>"]
 edition = "2018"

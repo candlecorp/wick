@@ -1,0 +1,47 @@
+#!/usr/bin/env vinox
+---
+default_schematic: "logger"
+manifest:
+  schematics:
+    - name: logger
+      components:
+        logger:
+          ref: vino::log
+      connections:
+        - from:
+            instance: vino::schematic_input
+            port: input
+          to:
+            instance: logger
+            port: input
+        - from:
+            instance: logger
+            port: output
+          to:
+            instance: vino::schematic_output
+            port: output
+    - name: second_logger
+      components:
+        logger:
+          ref: vino::log
+        logger2:
+          ref: vino::log
+      connections:
+        - from:
+            instance: vino::schematic_input
+            port: input
+          to:
+            instance: logger
+            port: input
+        - from:
+            instance: logger
+            port: output
+          to:
+            instance: logger2
+            port: input
+        - from:
+            instance: logger2
+            port: output
+          to:
+            instance: vino::schematic_output
+            port: output

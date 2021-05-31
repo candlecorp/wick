@@ -2,29 +2,11 @@ pub mod exec;
 pub mod run;
 pub mod start;
 
+use logger::options::LoggingOptions;
 use structopt::{clap::AppSettings, StructOpt};
-
-use crate::{error::VinoError, logger::Logger};
-use anyhow::{Context, Result};
-use env_logger::WriteStyle;
 
 pub fn get_args() -> Cli {
     Cli::from_args()
-}
-
-pub fn init_logger(opts: &LoggingOpts) -> Result<()> {
-    Logger::init(&opts).context("Failed to start logger")?;
-    trace!("logger initialized");
-    Ok(())
-}
-
-fn parse_write_style(spec: &str) -> std::result::Result<WriteStyle, VinoError> {
-    match spec {
-        "auto" => Ok(WriteStyle::Auto),
-        "always" => Ok(WriteStyle::Always),
-        "never" => Ok(WriteStyle::Never),
-        _ => Err(VinoError::ConfigurationError),
-    }
 }
 
 #[derive(StructOpt, Debug, Clone)]
@@ -49,38 +31,66 @@ pub enum CliCommand {
     Run(run::RunCommand),
 }
 
-#[derive(StructOpt, Debug, Clone)]
-pub struct LoggingOpts {
-    /// Disables logging
-    #[structopt(long = "quiet", short = "q")]
-    pub quiet: bool,
+#[derive(Debug, Clone, StructOpt)]
+#[structopt(rename_all = "kebab-case")]
+pub struct NatsOptions {
+    /// Host for RPC connection, default = 0.0.0.0
+    #[structopt(long = "rpc-host", env = "VINO_RPC_HOST")]
+    pub rpc_host: Option<String>,
 
-    /// Outputs the version
-    #[structopt(long = "version", short = "v")]
-    pub version: bool,
+    /// Port for RPC connection, default = 4222
+    #[structopt(long = "rpc-port", env = "VINO_RPC_PORT")]
+    pub rpc_port: Option<String>,
 
-    /// Turns on verbose logging
-    #[structopt(long = "verbose", short = "V")]
-    pub verbose: bool,
+    /// JWT file for RPC authentication. Must be supplied with rpc_seed.
+    #[structopt(long = "rpc-jwt", env = "VINO_RPC_JWT", hide_env_values = true)]
+    pub rpc_jwt: Option<String>,
 
-    /// Turns on debug logging
-    #[structopt(long = "debug")]
-    pub debug: bool,
+    /// Seed file or literal for RPC authentication. Must be supplied with rpc_jwt.
+    #[structopt(long = "rpc-seed", env = "VINO_RPC_SEED", hide_env_values = true)]
+    pub rpc_seed: Option<String>,
 
-    /// Turns on trace logging
-    #[structopt(long = "trace")]
-    pub trace: bool,
+    /// Credsfile for RPC authentication
+    #[structopt(long = "rpc-credsfile", env = "VINO_RPC_CREDS", hide_env_values = true)]
+    pub rpc_credsfile: Option<String>,
 
-    /// Log as JSON
-    #[structopt(long = "json")]
-    pub json: bool,
+    /// Host for control interface, default = 0.0.0.0
+    #[structopt(long = "control-host", env = "VINO_RPC_HOST")]
+    pub control_host: Option<String>,
 
-    /// Log style
+    /// Port for control interface, default = 4222
+    #[structopt(long = "control-port", env = "VINO_RPC_PORT")]
+    pub control_port: Option<String>,
+
+    /// JWT file for control interface authentication. Must be supplied with control_seed.
+    #[structopt(long = "control-jwt", env = "VINO_CONTROL_JWT", hide_env_values = true)]
+    pub control_jwt: Option<String>,
+
+    /// Seed file or literal for control interface authentication. Must be supplied with control_jwt.
     #[structopt(
-        long = "log-style",
-        env = "VINO_LOG_STYLE",
-        parse(try_from_str = parse_write_style),
-        default_value="auto"
+        long = "control-seed",
+        env = "VINO_CONTROL_SEED",
+        hide_env_values = true
     )]
-    pub log_style: WriteStyle,
+    pub control_seed: Option<String>,
+
+    /// Credsfile for control interface authentication
+    #[structopt(
+        long = "control-credsfile",
+        env = "VINO_CONTROL_CREDS",
+        hide_env_values = true
+    )]
+    pub control_credsfile: Option<String>,
+}
+
+#[derive(Debug, Clone, StructOpt)]
+#[structopt(rename_all = "kebab-case")]
+pub struct HostOptions {
+    /// Allows the use of "latest" artifact tag
+    #[structopt(long = "allow-oci-latest", env = "VINO_ALLOW_LATEST")]
+    pub allow_oci_latest: Option<bool>,
+
+    /// Allows the use of HTTP registry connections to these registries
+    #[structopt(long = "allowed-insecure")]
+    pub allowed_insecure: Vec<String>,
 }
