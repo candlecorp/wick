@@ -7,11 +7,10 @@ use crate::deserialize;
 use crate::dispatch::VinoEntity;
 use crate::error::VinoError;
 use crate::manifest::schematic_definition::{ConnectionDefinition, ConnectionTargetDefinition};
-use crate::network::ComponentMetadata2;
 use crate::network::MetadataMap;
+use crate::network::{ComponentMetadata, MapInvocation, Network};
 use crate::port_entity::PortEntity;
 use crate::schematic_response::{get_schematic_output, push_to_schematic_output};
-use crate::serialize;
 use crate::MessagePayload;
 use actix::prelude::*;
 use futures::future::try_join_all;
@@ -35,18 +34,36 @@ enum ComponentStatus {
     Waiting,
     ShortCircuit(MessagePayload),
 }
-#[derive(Debug, Default)]
+
 pub struct Schematic {
+    pub network: Option<Addr<Network>>,
     pub host_id: String,
-    pub components: HashMap<String, ComponentMetadata2>,
+    pub components: HashMap<String, ComponentMetadata>,
     pub recipients: HashMap<String, Recipient<Invocation>>,
     pub seed: String,
     pub transaction_map: TransactionMap,
     pub references: HashMap<String, String>,
     pub definition: SchematicDefinition,
+    pub invocation_map: HashMap<String, ConnectionDownstream>,
 }
 
 impl Supervised for Schematic {}
+
+impl Default for Schematic {
+    fn default() -> Self {
+        Schematic {
+            network: None,
+            host_id: "".to_string(),
+            components: HashMap::new(),
+            recipients: HashMap::new(),
+            seed: "".to_string(),
+            transaction_map: TransactionMap::new(),
+            references: HashMap::new(),
+            definition: SchematicDefinition::default(),
+            invocation_map: HashMap::new(),
+        }
+    }
+}
 
 impl Actor for Schematic {
     type Context = Context<Self>;
@@ -148,7 +165,7 @@ impl Schematic {
             .references
             .get(&reference)
             .context(format!("Could not find reference {}", reference))?;
-        trace!("pushing to {}[{}]", reference, port.name);
+        trace!("pushing to {}", port);
         let key = reference.to_string();
         let metadata = self.components.get(actor).ok_or(format!(
             "Could not find metadata for {}. Component may have failed to load.",
@@ -169,36 +186,22 @@ impl Schematic {
 
         let payloads = get_component_data(refmap, &reference)?;
 
-        let downstream = ConnectionDownstream::new(
-            self.host_id.to_string(),
-            port.schematic.to_string(),
-            tx_id.to_string(),
-            actor.to_string(),
-            reference,
-        );
-
         let mut job_data: HashMap<String, Vec<u8>> = HashMap::new();
         for (port, payload) in payloads {
-            if let MessagePayload::Bytes(bytes) = payload {
+            if let MessagePayload::MessagePack(bytes) = payload {
                 job_data.insert(port, bytes);
             } else {
                 return Ok(ComponentStatus::ShortCircuit(payload));
             }
         }
 
-        let job_args = PassedJobArgs {
-            connection: downstream,
-            input: job_data,
-        };
-        let serialized_data = serialize(&job_args)?;
-
         Ok(ComponentStatus::Ready(Invocation::next(
             &tx_id,
             &kp,
             VinoEntity::Schematic(port.schematic.to_string()),
-            VinoEntity::Component(actor.to_string()),
+            VinoEntity::Component(reference.to_string()),
             "job",
-            serialized_data,
+            MessagePayload::MultiBytes(job_data),
         )))
     }
 }
@@ -247,7 +250,7 @@ fn new_refmap() -> InputRefMap {
     InputRefMap::new()
 }
 
-fn new_inputbuffer_map(metadata: &ComponentMetadata2) -> BufferMap {
+fn new_inputbuffer_map(metadata: &ComponentMetadata) -> BufferMap {
     trace!("creating new inputbuffer map for {:?}", metadata);
     metadata
         .ports
@@ -298,6 +301,7 @@ pub(crate) struct Initialize {
     pub schematic: SchematicDefinition,
     pub components: MetadataMap,
     pub seed: String,
+    pub network: Addr<Network>,
 }
 
 impl Handler<Initialize> for Schematic {
@@ -308,6 +312,7 @@ impl Handler<Initialize> for Schematic {
         self.seed = msg.seed;
         self.components = msg.components;
         self.host_id = msg.host_id;
+        self.network = Some(msg.network);
 
         msg.schematic
             .components
@@ -437,7 +442,7 @@ fn gen_packets(
                 },
                 origin: VinoEntity::Schematic(name.to_string()),
                 tx_id: tx_id.to_string(),
-                payload: MessagePayload::Bytes(bytes.clone()),
+                payload: MessagePayload::MessagePack(bytes.clone()),
             }
         })
         .collect();
@@ -475,7 +480,7 @@ impl Handler<MessagePacket> for Schematic {
         let port = msg.target;
         let payload = msg.payload;
         let tx_id = msg.tx_id;
-        trace!("Receiving on port {}:{}", port.reference, port.name);
+        trace!("Receiving on port {}", port);
 
         let reference = port.reference.to_string();
         //TODO normalize output to the same buffers as regular ports
@@ -492,6 +497,7 @@ impl Handler<MessagePacket> for Schematic {
         let schematic_host = ctx.address();
 
         let receiver = self.get_downstream_recipient(reference.to_string());
+        let network = self.network.clone().unwrap();
 
         Box::pin(
             async move {
@@ -519,6 +525,13 @@ impl Handler<MessagePacket> for Schematic {
                         Ok(())
                     }
                     Ok(ComponentStatus::Ready(invocation)) => {
+                        network.do_send(MapInvocation {
+                            inv_id: invocation.id.to_string(),
+                            tx_id: tx_id.clone(),
+                            schematic: name.to_string(),
+                            entity: invocation.target.clone(),
+                        });
+
                         let response: std::result::Result<Signal, _> = match receiver {
                             Some(receiver) => match receiver.send(invocation).await {
                                 Ok(response) => deserialize(&response.msg),
@@ -581,7 +594,10 @@ impl Handler<ShortCircuit> for Schematic {
             .iter()
             .flat_map(|port| self.get_connections(reference.to_string(), port.to_string()))
             .collect();
-        trace!("Connections to short {:?}", downstreams);
+        trace!(
+            "Connections to short {:?}",
+            ConnectionDefinition::print_all(&downstreams)
+        );
         let outputs: Vec<OutputReady> = downstreams
             .iter()
             .map(|conn| OutputReady {
@@ -595,7 +611,7 @@ impl Handler<ShortCircuit> for Schematic {
             })
             .collect();
         let schematic_host = ctx.address();
-        trace!("Short circuiting downstreams {:?}", outputs);
+
         let futures = outputs
             .into_iter()
             .map(move |message| schematic_host.send(message));
@@ -624,7 +640,7 @@ impl Handler<OutputReady> for Schematic {
     type Result = ResponseActFuture<Self, Result<()>>;
 
     fn handle(&mut self, msg: OutputReady, ctx: &mut Context<Self>) -> Self::Result {
-        trace!("Output ready");
+        trace!("Output ready on {}", msg.port);
         let seed = self.seed.to_string();
 
         let reference = msg.port.reference;
@@ -678,12 +694,13 @@ pub struct ResponseFuture {
 mod test {
 
     use crate::{
+        components::wapc_component_actor::WapcComponentActor,
         manifest::schematic_definition::{
             ComponentDefinition, ConnectionDefinition, ConnectionTargetDefinition,
         },
         network::ActorPorts,
-        network::ComponentMetadata2,
-        wapc_component_actor::WapcComponentActor,
+        network::ComponentMetadata,
+        util::hlreg::HostLocalSystemService,
     };
 
     use super::*;
@@ -728,7 +745,7 @@ mod test {
         let mut refs = MetadataMap::new();
         refs.insert(
             "logger".to_string(),
-            ComponentMetadata2 {
+            ComponentMetadata {
                 ports: ActorPorts {
                     inputs: vec!["input".to_string()],
                     outputs: vec!["output".to_string()],
@@ -739,6 +756,7 @@ mod test {
         let hostkey = KeyPair::new_server();
 
         addr.send(Initialize {
+            network: Network::from_hostlocal_registry(&KeyPair::new_server().public_key()),
             host_id: "test".to_string(),
             schematic: schem_def,
             components: refs,

@@ -1,7 +1,10 @@
+use std::time::Instant;
+
+use crate::components::vino_component::WapcComponent;
 use crate::dispatch::VinoEntity;
-use crate::vino_component::WapcComponent;
 
 use crate::dispatch::{Invocation, InvocationResponse, MessagePayload};
+use crate::serialize;
 use crate::Result;
 use actix::prelude::*;
 use log::info;
@@ -19,7 +22,7 @@ struct State {
     _seed: String,
 }
 
-#[derive(Message, Debug)]
+#[derive(Message)]
 #[rtype(result = "Result<()>")]
 pub(crate) struct Initialize {
     pub actor_bytes: Vec<u8>,
@@ -53,24 +56,26 @@ fn perform_initialization(
     // has a verified signature, etc.
     let _tv = wascap::jwt::validate_token::<wascap::jwt::Actor>(&jwt)?;
 
+    let time = Instant::now();
     #[cfg(feature = "wasmtime")]
-    let engine = { wasmtime_provider::WasmtimeEngineProvider::new(&buf, None) };
+    let engine = {
+        let engine = wasmtime_provider::WasmtimeEngineProvider::new(&buf, None);
+        trace!("Wasmtime loaded in {} μs", time.elapsed().as_micros());
+        engine
+    };
     #[cfg(feature = "wasm3")]
-    let _engine = wasm3_provider::Wasm3EngineProvider::new(&buf);
+    let engine = {
+        let engine = wasm3_provider::Wasm3EngineProvider::new(&buf);
+        trace!("wasm3 loaded in {} μs", time.elapsed().as_micros());
+        engine
+    };
 
     let cloned_claims = claims.clone();
     let seed = msg.signing_seed.to_string();
 
     let guest = WapcHost::new(
         Box::new(engine),
-        move |id, binding, namespace, operation, payload| {
-            trace!(
-                "wapc callback {}  {}  {}  {} ",
-                id,
-                binding,   //tx-id
-                namespace, // SCHEMATIC_name||reference
-                operation  // port
-            );
+        move |_id, binding, namespace, operation, payload| {
             crate::dispatch::wapc_host_callback(
                 KeyPair::from_seed(&seed).unwrap(),
                 cloned_claims.clone(),
@@ -84,17 +89,6 @@ fn perform_initialization(
 
     match guest {
         Ok(g) => {
-            let _entity = VinoEntity::Component(claims.subject.to_string());
-            // let b = MessageBus::from_hostlocal_registry(&msg.host_id);
-            // let recipient = ctx.address().recipient();
-            // let _ = block_on(async move {
-            //     b.send(Subscribe {
-            //         interest: entity,
-            //         subscriber: recipient,
-            //     })
-            //     .await
-            // });
-
             me.state = Some(State {
                 guest_module: g,
                 claims: claims.clone(),
@@ -135,6 +129,7 @@ impl Handler<Invocation> for WapcComponentActor {
 
     fn handle(&mut self, msg: Invocation, _ctx: &mut Self::Context) -> Self::Result {
         let state = self.state.as_ref().unwrap();
+        let inv_id = msg.id.to_string();
 
         debug!(
             "Actor Invocation - From {} to {}: {}",
@@ -144,14 +139,28 @@ impl Handler<Invocation> for WapcComponentActor {
         );
 
         if let VinoEntity::Component(_) = msg.target {
-            if let MessagePayload::Bytes(payload) = &msg.msg {
-                match state.guest_module.call(&msg.operation, &payload) {
-                    Ok(bytes) => InvocationResponse::success(msg.tx_id, bytes),
-                    Err(e) => {
-                        error!("Error invoking actor: {} (from {})", e, msg.target.url());
-                        debug!("Message: {:?}", &msg.msg);
-                        InvocationResponse::error(msg.tx_id, e.to_string())
+            if let MessagePayload::MultiBytes(payload) = &msg.msg {
+                let now = Instant::now();
+                match serialize((inv_id, payload)) {
+                    Ok(bytes) => {
+                        trace!("Serialized job input in {} μs", now.elapsed().as_micros());
+                        let now = Instant::now();
+                        match state.guest_module.call(&msg.operation, &bytes) {
+                            Ok(bytes) => {
+                                trace!("Actor call took {} μs", now.elapsed().as_micros());
+                                InvocationResponse::success(msg.tx_id, bytes)
+                            }
+                            Err(e) => {
+                                error!("Error invoking actor: {} (from {})", e, msg.target.url());
+                                debug!("Message: {:?}", &msg.msg);
+                                InvocationResponse::error(msg.tx_id, e.to_string())
+                            }
+                        }
                     }
+                    Err(e) => InvocationResponse::error(
+                        msg.tx_id,
+                        format!("Error serializing payload: {}", e),
+                    ),
                 }
             } else {
                 InvocationResponse::error(

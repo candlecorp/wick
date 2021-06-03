@@ -3,31 +3,6 @@ use std::collections::HashMap;
 
 pub use crate::SchematicDefinition;
 
-/// A host manifest contains a declarative profile of the host's desired state. The manifest
-/// can specify custom labels, a list of actors, a list of capability providers, and a list of
-/// link definitions. Environment substitution syntax can optionally be used within a manifest file so that
-/// information that may change across environments (like public keys) can change without requiring
-/// the manifest file to change.
-///
-/// # Examples
-///
-/// ```yaml
-/// labels:
-///     sample: "wasmcloud echo"
-/// actors:
-///     - "wasmcloud.azurecr.io/echo:0.2.0"
-/// capabilities:
-///     - image_ref: wasmcloud.azurecr.io/httpserver:0.11.1
-///       link_name: default
-/// links:
-///     - actor: ${ECHO_ACTOR:MBCFOPM6JW2APJLXJD3Z5O4CN7CPYJ2B4FTKLJUR5YR5MITIU7HD3WD5}
-///       provider_id: "VAG3QITQQ2ODAOWB5TTQSDJ53XK3SHBEIFNK4AYJ5RKAX2UNSCAPHA5M"
-///       contract_id: "wasmcloud:httpserver"
-///       link_name: default
-///       values:
-///         PORT: 8080
-/// ```
-
 #[derive(Debug, Clone, Serialize, Default, Deserialize)]
 pub struct RuntimeManifest {
     #[serde(default)]

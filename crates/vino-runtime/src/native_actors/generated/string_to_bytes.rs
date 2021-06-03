@@ -1,4 +1,5 @@
-use crate::{connection_downstream::ConnectionDownstream, deserialize, serialize, Result};
+use crate::components::native_component_actor::NativeCallback;
+use crate::{deserialize, serialize, Result};
 use serde::{Deserialize, Serialize};
 use vino_guest::OutputPayload;
 
@@ -10,39 +11,46 @@ pub(crate) fn inputs_list() -> Vec<String> {
     vec!["input".to_string()]
 }
 
-#[derive(Debug, PartialEq, Clone)]
-pub struct Outputs {
-    pub output: GuestPortOutput,
+pub struct Outputs<'a> {
+    pub output: GuestPortOutput<'a>,
 }
 
 pub(crate) fn outputs_list() -> Vec<String> {
     vec!["output".to_string()]
 }
 
-#[derive(Debug, PartialEq, Clone)]
-pub struct GuestPortOutput {
-    connection: ConnectionDownstream,
+pub struct GuestPortOutput<'a> {
+    inv_id: String,
+    callback: &'a NativeCallback,
 }
-impl GuestPortOutput {
+impl<'a> GuestPortOutput<'a> {
     #[allow(dead_code)]
     pub fn send(&self, payload: Vec<u8>) -> Result<()> {
-        self.connection.send(
-            "output".to_string(),
-            serialize(OutputPayload::Bytes(serialize(payload)?))?,
-        )
+        (self.callback)(
+            0,
+            &self.inv_id,
+            "",
+            "output",
+            &OutputPayload::MessagePack(serialize(payload)?),
+        )?;
+        Ok(())
     }
     #[allow(dead_code)]
     pub fn exception(&self, message: String) -> Result<()> {
-        self.connection.send(
-            "output".to_string(),
-            serialize(OutputPayload::Exception(message))?,
-        )
+        (self.callback)(
+            0,
+            &self.inv_id,
+            "",
+            "output",
+            &OutputPayload::Exception(message),
+        )?;
+        Ok(())
     }
 }
 
-pub fn get_outputs(connection: ConnectionDownstream) -> Outputs {
+pub fn get_outputs(callback: &NativeCallback, inv_id: String) -> Outputs {
     Outputs {
-        output: GuestPortOutput { connection },
+        output: GuestPortOutput { inv_id, callback },
     }
 }
 

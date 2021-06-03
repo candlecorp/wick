@@ -1,18 +1,19 @@
-use actix::{Recipient, SyncArbiter};
+use actix::{Addr, Recipient, SyncArbiter};
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, fmt::Display, path::Path};
 
-use crate::native_component_actor::{self, NativeComponentActor};
-use crate::vino_component::BoxedComponent;
-use crate::{wapc_component_actor, Result};
+use crate::components::native_component_actor::{self, NativeComponentActor};
+use crate::components::vino_component::BoxedComponent;
+use crate::network::Network;
+use crate::{components::wapc_component_actor, Result};
 
 use crate::{
-    oci::fetch_oci_bytes,
-    vino_component::{NativeComponent, VinoComponent, WapcComponent},
+    components::vino_component::{NativeComponent, VinoComponent, WapcComponent},
+    util::oci::fetch_oci_bytes,
     RuntimeManifest,
 };
 
-use crate::{dispatch::Invocation, wapc_component_actor::WapcComponentActor};
+use crate::{components::wapc_component_actor::WapcComponentActor, dispatch::Invocation};
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct SchematicDefinition {
@@ -119,6 +120,12 @@ impl ConnectionDefinition {
             to: to.into(),
         }
     }
+    pub fn print_all(list: &[Self]) -> String {
+        list.iter()
+            .map(|c| c.to_string())
+            .collect::<Vec<String>>()
+            .join(", ")
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -149,6 +156,7 @@ where
 pub(crate) async fn get_components(
     manifest: &RuntimeManifest,
     seed: String,
+    network: Addr<Network>,
     allow_latest: bool,
     allowed_insecure: &[String],
 ) -> Result<Vec<(BoxedComponent, Recipient<Invocation>)>> {
@@ -159,6 +167,7 @@ pub(crate) async fn get_components(
             let component = get_component(
                 component_ref.to_string(),
                 seed.clone(),
+                network.clone(),
                 allow_latest,
                 allowed_insecure,
             )
@@ -172,6 +181,7 @@ pub(crate) async fn get_components(
 pub(crate) async fn get_component(
     comp_ref: String,
     seed: String,
+    network: Addr<Network>,
     allow_latest: bool,
     allowed_insecure: &[String],
 ) -> Result<(BoxedComponent, Recipient<Invocation>)> {
@@ -205,7 +215,9 @@ pub(crate) async fn get_component(
                 let actor = SyncArbiter::start(1, NativeComponentActor::default);
                 actor
                     .send(native_component_actor::Initialize {
+                        network: network.clone(),
                         name: component.name(),
+                        seed,
                     })
                     .await??;
                 let recipient = actor.recipient::<Invocation>();

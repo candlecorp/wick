@@ -6,11 +6,14 @@ use actix::dev::MessageResponse;
 use actix::prelude::Message;
 use actix::Actor;
 use futures::executor::block_on;
+use vino_guest::OutputPayload;
 
-use crate::hlreg::HostLocalSystemService;
+use crate::network::GetReference;
 use crate::network::Network;
 use crate::network::WapcOutputReady;
+use crate::schematic::OutputReady;
 use crate::serialize;
+use crate::util::hlreg::HostLocalSystemService;
 use crate::Result;
 use data_encoding::HEXUPPER;
 use ring::digest::Context;
@@ -94,7 +97,7 @@ where
 }
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum MessagePayload {
-    Bytes(Vec<u8>),
+    MessagePack(Vec<u8>),
     MultiBytes(HashMap<String, Vec<u8>>),
     Exception(String),
     Error(String),
@@ -103,7 +106,7 @@ pub enum MessagePayload {
 impl MessagePayload {
     pub fn get_bytes(self) -> Result<Vec<u8>> {
         match self {
-            MessagePayload::Bytes(bytes) => Ok(bytes),
+            MessagePayload::MessagePack(bytes) => Ok(bytes),
             _ => Err(anyhow!("Invalid payload").into()),
         }
     }
@@ -111,18 +114,18 @@ impl MessagePayload {
 
 impl From<Vec<u8>> for MessagePayload {
     fn from(v: Vec<u8>) -> Self {
-        MessagePayload::Bytes(v)
+        MessagePayload::MessagePack(v)
     }
 }
 
 impl From<&Vec<u8>> for MessagePayload {
     fn from(v: &Vec<u8>) -> Self {
-        MessagePayload::Bytes(v.clone())
+        MessagePayload::MessagePack(v.clone())
     }
 }
 impl From<&[u8]> for MessagePayload {
     fn from(v: &[u8]) -> Self {
-        MessagePayload::Bytes(v.to_vec())
+        MessagePayload::MessagePack(v.to_vec())
     }
 }
 
@@ -167,7 +170,7 @@ pub(crate) fn invocation_hash(target_url: &str, origin_url: &str, msg: &MessageP
     cleanbytes.write_all(origin_url.as_bytes()).unwrap();
     cleanbytes.write_all(target_url.as_bytes()).unwrap();
     match msg {
-        MessagePayload::Bytes(bytes) => cleanbytes.write_all(&bytes).unwrap(),
+        MessagePayload::MessagePack(bytes) => cleanbytes.write_all(&bytes).unwrap(),
         MessagePayload::Exception(string) => cleanbytes.write_all(&string.as_bytes()).unwrap(),
         MessagePayload::Error(string) => cleanbytes.write_all(&string.as_bytes()).unwrap(),
         MessagePayload::MultiBytes(bytemap) => {
@@ -241,42 +244,102 @@ impl VinoEntity {
 pub(crate) fn wapc_host_callback(
     kp: KeyPair,
     claims: Claims<wascap::jwt::Actor>,
-    link_name: &str, // tx-id
-    namespace: &str, // SCHEMATIC_name||reference
-    operation: &str, // port
+    inv_id: &str,
+    namespace: &str,
+    port: &str,
     payload: &[u8],
 ) -> std::result::Result<Vec<u8>, Box<dyn ::std::error::Error + Sync + Send>> {
+    trace!("Guest {} invoking {}:{}", claims.subject, namespace, port);
+    let network = Network::from_hostlocal_registry(&kp.public_key());
+    let get_ref = network.send(GetReference {
+        inv_id: inv_id.to_string(),
+    });
+    match block_on(async { get_ref.await })? {
+        Some((tx_id, schematic, entity)) => match entity {
+            VinoEntity::Component(reference) => {
+                debug!(
+                    "Invocation ID {} resolves to tx {} and reference {}",
+                    inv_id, tx_id, reference
+                );
+                let msg = WapcOutputReady {
+                    payload: payload.to_vec(),
+                    port: PortEntity {
+                        name: port.to_string(),
+                        reference,
+                        schematic,
+                    },
+                    tx_id,
+                };
+                network.do_send(msg);
+                Ok(vec![])
+            }
+            ent => {
+                let e = format!("Reference not implemented. {}", ent);
+                error!("{}", e);
+                Err(anyhow!(e).into())
+            }
+        },
+        None => {
+            let e = format!("Can not resolve invocation {}", inv_id);
+            error!("{}", e);
+            Err(anyhow!(e).into())
+        }
+    }
+}
+
+pub(crate) fn native_host_callback(
+    kp: KeyPair,
+    inv_id: &str,
+    namespace: &str,
+    port: &str,
+    payload: &OutputPayload,
+) -> std::result::Result<Vec<u8>, Box<dyn ::std::error::Error + Sync + Send>> {
     trace!(
-        "Guest {} invoking {}:{}",
-        claims.subject,
+        "Native component callback [ns:{}] [port:{}] [inv:{}]",
         namespace,
-        operation
-    );
-    let trimmed = namespace.trim_start_matches("SCHEMATIC_");
-    let split = trimmed.split("||").collect::<Vec<&str>>();
-    let schematic_name = split[0];
-    let reference_name = split[1];
-    trace!(
-        "Resolved target to namespace {} {}[{}] for actor {}",
-        schematic_name,
-        reference_name,
-        operation,
-        claims.subject
+        port,
+        inv_id,
     );
     let network = Network::from_hostlocal_registry(&kp.public_key());
 
-    let msg = WapcOutputReady {
-        payload: payload.to_vec(),
-        port: PortEntity {
-            schematic: schematic_name.to_string(),
-            name: operation.to_string(),
-            reference: reference_name.to_string(),
-        },
-        tx_id: link_name.to_string(),
+    let payload = match payload {
+        OutputPayload::MessagePack(b) => MessagePayload::MessagePack(b.to_vec()),
+        OutputPayload::Exception(e) => MessagePayload::Exception(e.to_string()),
+        OutputPayload::Error(e) => MessagePayload::Error(e.to_string()),
     };
-
-    match block_on(async { network.send(msg).await }) {
-        Ok(_) => Ok(vec![]),
-        Err(_e) => Err("Mailbox error during host callback".into()),
+    let get_ref = network.send(GetReference {
+        inv_id: inv_id.to_string(),
+    });
+    match block_on(async { get_ref.await })? {
+        Some((tx_id, schematic, entity)) => match entity {
+            VinoEntity::Component(reference) => {
+                let port = PortEntity {
+                    name: port.to_string(),
+                    reference,
+                    schematic,
+                };
+                debug!(
+                    "Invocation {} resolves to {} for tx {}",
+                    inv_id, port, tx_id
+                );
+                let msg = OutputReady {
+                    port,
+                    tx_id,
+                    payload,
+                };
+                network.do_send(msg);
+                Ok(vec![])
+            }
+            ent => {
+                let e = format!("Reference not implemented. {}", ent);
+                error!("{}", e);
+                Err(anyhow!(e).into())
+            }
+        },
+        None => {
+            let e = format!("Can not resolve invocation {}", inv_id);
+            error!("{}", e);
+            Err(anyhow!(e).into())
+        }
     }
 }

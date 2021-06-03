@@ -6,7 +6,8 @@ const outputs = data.definitions.find(def => def.kind === 'TypeDefinition' && de
 function portStruct(port){return `GuestPort${utils.pascalCase(helpers.fieldName(port.name.value))}`};
 %>
 
-use crate::{deserialize, serialize, schematic_host::ConnectionDownstream, Result};
+use crate::components::native_component_actor::NativeCallback;
+use crate::{deserialize, serialize, Result};
 use serde::{Deserialize, Serialize};
 use vino_guest::OutputPayload;
 
@@ -20,49 +21,57 @@ pub(crate) fn inputs_list() -> Vec<String> {
     vec![<%- inputs.fields.map(f => `"${f.name.value}".to_string()`).join(",") %>]
 }
 
-#[derive(Debug, PartialEq, Clone)]
-pub struct Outputs {
+pub struct Outputs<'a> {
     <% for (let output of Object.values(outputs.fields)) { %>
-    pub <%- helpers.fieldName(output.name.value) %>: <%- portStruct(output) %>,
+    pub <%- helpers.fieldName(output.name.value) %>: <%- portStruct(output) %><'a>,
     <% } %>
 }
-
 
 pub(crate) fn outputs_list() -> Vec<String> {
     vec![<%- outputs.fields.map(f => `"${f.name.value}".to_string()`).join(",") %>]
 }
 
 <% for (let output of Object.values(outputs.fields)) { %>
-#[derive(Debug, PartialEq, Clone)]
-pub struct <%- portStruct(output) %> {
-    connection: ConnectionDownstream,
+pub struct <%- portStruct(output) %><'a> {
+    inv_id: String,
+    callback: &'a NativeCallback,
 }
-impl  <%- portStruct(output) %> {
+impl<'a>  <%- portStruct(output) %><'a> {
     #[allow(dead_code)]
     pub fn send(&self, payload: <%- helpers.expandType(output.type) %>) -> Result<()> {
-        self.connection.send(
-            "<%- helpers.fieldName(output.name.value) %>".to_string(),
-            serialize(OutputPayload::Bytes(serialize(payload)?))?,
-        )
+        (self.callback)(
+            0,
+            &self.inv_id,
+            "",
+            "<%- helpers.fieldName(output.name.value) %>",
+            &OutputPayload::MessagePack(serialize(payload)?),
+        )?;
+        Ok(())
     }
     #[allow(dead_code)]
     pub fn exception(&self, message: String) -> Result<()> {
-        self.connection.send(
-            "<%- helpers.fieldName(output.name.value) %>".to_string(),
-            serialize(OutputPayload::Exception(message))?,
-        )
+        (self.callback)(
+            0,
+            &self.inv_id,
+            "",
+            "<%- helpers.fieldName(output.name.value) %>",
+            &OutputPayload::Exception(message),
+        )?;
+        Ok(())
     }
 }
 <% } %>
 
-
-pub fn get_outputs(connection: ConnectionDownstream) -> Outputs {
+pub fn get_outputs(callback: &NativeCallback, inv_id: String) -> Outputs {
     Outputs {
         <%
-        for (let output of Object.values(outputs.fields)) {
+        let fields = Object.values(outputs.fields);
+        for (let i = 0; i < fields.length;i++) {
+          let output = fields[i];
         %>
         <%- helpers.fieldName(output.name.value) %>: <%- portStruct(output) %> {
-            connection,
+            inv_id<%- i === fields.length - 1 ? '' : ': inv_id.to_string()' %>,
+            callback,
         },
         <% } %>
     }

@@ -5,25 +5,32 @@ macro_rules! native_actor {(
 ) => {
 
     use crate::Result;
-    use crate::connection_downstream::ConnectionDownstream;
-    use crate::native_component_actor::NativeActor;
-    use crate::vino_component::NativeComponent;
+    use crate::components::native_component_actor::{NativeActor,NativeCallback};
+    use crate::components::vino_component::NativeComponent;
     use crate::network::ActorPorts;
-    use serde::Deserialize;
     use vino_guest::Signal;
 
     use super::generated::$component_name::{Inputs, Outputs, InputEncoded, get_outputs, inputs_list, outputs_list, deserialize_inputs};
 
-
-    #[derive(Deserialize)]
-    pub struct JobEncoded {
-      #[serde(rename = "connection")]
-      pub connection: ConnectionDownstream,
-      #[serde(rename = "input")]
-      pub input: InputEncoded,
+    pub struct Actor {
+      callback: Option<NativeCallback>
     }
 
-    pub struct Actor {}
+    impl<'a> Default for Actor {
+      fn default() -> Self {
+        Self {
+          callback: None,
+        }
+      }
+    }
+
+    impl Actor {
+      pub fn new(cb: NativeCallback) -> Self {
+        Actor {
+          callback: Some(cb)
+        }
+      }
+    }
 
     impl NativeActor for Actor {
       fn get_def(&self) -> NativeComponent {
@@ -33,7 +40,6 @@ macro_rules! native_actor {(
             inputs: self.get_input_ports(),
             outputs: self.get_output_ports()
           },
-          addr:None,
         }
       }
       fn get_name(&self) -> String {
@@ -47,12 +53,17 @@ macro_rules! native_actor {(
       }
 
       fn job_wrapper(&self, data: &[u8]) -> Result<Signal>{
-        let msg : JobEncoded = crate::deserialize(&data)?;
-        let inputs = deserialize_inputs(msg.input)?;
-        let outputs = get_outputs(msg.connection);
-        match job(inputs, outputs) {
-          Ok(data) => Ok(data),
-          Err(e) => Err(anyhow!("Error executing job: {}", e).into())
+        match &self.callback {
+          None => Err(anyhow!("No callback registered with native actor").into()),
+          Some(callback) => {
+            let (inv_id, input_encoded) : (String, InputEncoded) = crate::deserialize(&data)?;
+            let inputs = deserialize_inputs(input_encoded)?;
+            let outputs = get_outputs(callback, inv_id);
+            match job(inputs, outputs) {
+              Ok(data) => Ok(data),
+              Err(e) => Err(anyhow!("Error executing job: {}", e).into())
+            }
+          },
         }
       }
     }

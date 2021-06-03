@@ -2,14 +2,15 @@ use std::collections::HashMap;
 use std::fmt::Display;
 
 use super::schematic::Schematic;
+use crate::components::vino_component::BoxedComponent;
 use crate::deserialize;
 use crate::dispatch::MessagePayload;
-use crate::hlreg::HostLocalSystemService;
+use crate::dispatch::VinoEntity;
 use crate::manifest::schematic_definition::get_components;
 use crate::port_entity::PortEntity;
 use crate::schematic::OutputReady;
 use crate::serialize;
-use crate::vino_component;
+use crate::util::hlreg::HostLocalSystemService;
 use crate::Invocation;
 use crate::Result;
 use crate::RuntimeManifest;
@@ -17,7 +18,6 @@ use actix::dev::Message;
 use actix::prelude::*;
 use futures::future::try_join_all;
 use serde::Serialize;
-use vino_component::BoxedComponent;
 use vino_guest::OutputPayload;
 
 #[derive(Debug, Clone, Default)]
@@ -26,25 +26,8 @@ pub struct ActorPorts {
     pub outputs: Vec<String>,
 }
 
-impl ActorPorts {
-    pub fn new<I, A, O, B>(inputs: I, outputs: O) -> Self
-    where
-        I: IntoIterator<Item = A>,
-        A: Into<String>,
-        O: IntoIterator<Item = B>,
-        B: Into<String>,
-    {
-        ActorPorts {
-            inputs: inputs.into_iter().map(Into::into).collect(),
-            outputs: outputs.into_iter().map(Into::into).collect(),
-        }
-    }
-}
+impl ActorPorts {}
 
-#[derive(Debug, Default)]
-pub struct ComponentMetadata {
-    ports: super::ActorPorts,
-}
 pub struct Network {
     // host_labels: HashMap<String, String>,
     // kp: Option<KeyPair>,
@@ -56,6 +39,7 @@ pub struct Network {
     seed: String,
     schematics: HashMap<String, Addr<Schematic>>,
     manifest: RuntimeManifest,
+    invocation_map: HashMap<String, (String, String, VinoEntity)>,
 }
 
 #[derive(Default, Clone)]
@@ -65,12 +49,12 @@ pub struct ComponentRegistry {
 }
 
 #[derive(Debug, Clone)]
-pub struct ComponentMetadata2 {
+pub struct ComponentMetadata {
     pub ports: super::ActorPorts,
     pub addr: Recipient<Invocation>,
 }
 
-pub type MetadataMap = HashMap<String, ComponentMetadata2>;
+pub type MetadataMap = HashMap<String, ComponentMetadata>;
 
 impl ComponentRegistry {
     pub fn get_metadata(&self) -> Result<MetadataMap> {
@@ -84,7 +68,7 @@ impl ComponentRegistry {
 
             map.insert(
                 name.to_string(),
-                ComponentMetadata2 {
+                ComponentMetadata {
                     ports: ActorPorts {
                         inputs: component.get_inputs(),
                         outputs: component.get_outputs(),
@@ -93,7 +77,7 @@ impl ComponentRegistry {
                 },
             );
         }
-        trace!("Made metadata map : {:?}", map);
+        trace!("Built metadata map for {} components", map.len());
         Ok(map)
     }
 }
@@ -111,6 +95,7 @@ impl Default for Network {
             seed: "".to_string(),
             schematics: HashMap::new(),
             manifest: RuntimeManifest::default(),
+            invocation_map: HashMap::new(),
         }
     }
 }
@@ -151,7 +136,7 @@ pub async fn request<T: AsRef<str> + Display>(
         })
         .await??;
     trace!(
-        "result for {} took {} microseconds",
+        "result for {} took {} μs",
         schematic,
         time.elapsed().as_micros()
     );
@@ -170,7 +155,7 @@ pub(crate) struct Initialize {
 impl Handler<Initialize> for Network {
     type Result = ResponseActFuture<Self, Result<()>>;
 
-    fn handle(&mut self, msg: Initialize, _ctx: &mut Context<Self>) -> Self::Result {
+    fn handle(&mut self, msg: Initialize, ctx: &mut Context<Self>) -> Self::Result {
         trace!("Network initializing on {}", msg.host_id);
         self.host_id = msg.host_id;
         self.seed = msg.seed;
@@ -182,14 +167,22 @@ impl Handler<Initialize> for Network {
         let allow_latest = self.allow_latest;
         let allowed_insecure = self.allowed_insecure.clone();
         let schematics = manifest.schematics.clone();
+        let network = ctx.address();
 
         Box::pin(
             async move {
                 trace!("Getting components");
-                get_components(&manifest, seed.clone(), allow_latest, &allowed_insecure).await
+                get_components(
+                    &manifest,
+                    seed.clone(),
+                    network,
+                    allow_latest,
+                    &allowed_insecure,
+                )
+                .await
             }
             .into_actor(self)
-            .then(move |components, network, _ctx| {
+            .then(move |components, network, ctx| {
                 match components {
                     Ok(components) => {
                         for (component, recipient) in components {
@@ -218,6 +211,7 @@ impl Handler<Initialize> for Network {
                         (
                             schematic,
                             super::schematic::Initialize {
+                                network: ctx.address(),
                                 host_id: host_id.to_string(),
                                 schematic: schem_def.clone(),
                                 components: metadata.clone(),
@@ -238,6 +232,38 @@ impl Handler<Initialize> for Network {
                 .into_actor(network)
             }),
         )
+    }
+}
+
+#[derive(Message, Debug, Clone)]
+#[rtype(result = "Option<(String, String, VinoEntity)>")]
+pub(crate) struct GetReference {
+    pub inv_id: String,
+}
+
+impl Handler<GetReference> for Network {
+    type Result = Option<(String, String, VinoEntity)>;
+
+    fn handle(&mut self, msg: GetReference, _ctx: &mut Context<Self>) -> Self::Result {
+        self.invocation_map.get(&msg.inv_id).cloned()
+    }
+}
+
+#[derive(Message)]
+#[rtype(result = "()")]
+pub(crate) struct MapInvocation {
+    pub inv_id: String,
+    pub tx_id: String,
+    pub schematic: String,
+    pub entity: VinoEntity,
+}
+
+impl Handler<MapInvocation> for Network {
+    type Result = ();
+
+    fn handle(&mut self, msg: MapInvocation, _ctx: &mut Context<Self>) -> Self::Result {
+        self.invocation_map
+            .insert(msg.inv_id, (msg.tx_id, msg.schematic, msg.entity));
     }
 }
 
@@ -281,7 +307,7 @@ impl Handler<WapcOutputReady> for Network {
 
         let message_payload = match data {
             Ok(payload) => match payload {
-                OutputPayload::Bytes(b) => MessagePayload::Bytes(b),
+                OutputPayload::MessagePack(b) => MessagePayload::MessagePack(b),
                 OutputPayload::Exception(e) => MessagePayload::Exception(e),
                 OutputPayload::Error(e) => MessagePayload::Error(e),
             },
@@ -354,9 +380,9 @@ mod test {
 
     use super::super::dispatch::MessagePayload;
     use super::*;
-    use crate::hlreg::HostLocalSystemService;
     use crate::network::Initialize;
-    use crate::serdes::serialize;
+    use crate::util::hlreg::HostLocalSystemService;
+    use crate::util::serdes::serialize;
     use crate::RuntimeManifest;
     use wascap::prelude::KeyPair;
 
@@ -392,7 +418,7 @@ mod test {
         let output: MessagePayload = result.remove("output").unwrap();
         assert_eq!(
             output,
-            MessagePayload::Bytes(serialize(42 + 302309 + 302309)?)
+            MessagePayload::MessagePack(serialize(42 + 302309 + 302309)?)
         );
         Ok(())
     }
@@ -408,7 +434,10 @@ mod test {
         let mut result = request(&network, "test", data).await?;
 
         let output: MessagePayload = result.remove("output").unwrap();
-        assert_eq!(output, MessagePayload::Bytes(serialize("1234567890")?));
+        assert_eq!(
+            output,
+            MessagePayload::MessagePack(serialize("1234567890")?)
+        );
 
         let data = hashmap! {
             "input" => "1234",
@@ -457,7 +486,7 @@ mod test {
 
         trace!("result: {:?}", result);
         let output: MessagePayload = result.remove("output").unwrap();
-        assert_eq!(output, MessagePayload::Bytes(serialize(42 + 302309)?));
+        assert_eq!(output, MessagePayload::MessagePack(serialize(42 + 302309)?));
 
         let data = hashmap! {
             "input" => "some string",
@@ -467,7 +496,10 @@ mod test {
 
         trace!("result: {:?}", result);
         let output: MessagePayload = result.remove("output").unwrap();
-        assert_eq!(output, MessagePayload::Bytes(serialize("some string")?));
+        assert_eq!(
+            output,
+            MessagePayload::MessagePack(serialize("some string")?)
+        );
         Ok(())
     }
 }

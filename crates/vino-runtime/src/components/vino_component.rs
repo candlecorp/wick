@@ -1,5 +1,5 @@
 use super::wapc_component_actor::WapcComponentActor;
-use super::NativeComponentActor;
+use crate::components::native_component_actor::NativeComponentActor;
 use crate::native_actors;
 use crate::network::ActorPorts;
 use crate::Result;
@@ -11,8 +11,6 @@ use std::io::prelude::*;
 use std::path::Path;
 use wascap::jwt::{Claims, Token};
 
-/// An actor is a WebAssembly module that conforms to the wasmCloud protocols and can securely
-/// consume capabilities exposed by capability providers.
 #[derive(Clone)]
 pub struct WapcComponent {
     pub(crate) token: Token<wascap::jwt::Actor>,
@@ -168,12 +166,11 @@ impl Start for WapcComponent {
 pub struct NativeComponent {
     pub id: String,
     pub ports: ActorPorts,
-    pub(crate) addr: Option<Addr<NativeComponentActor>>,
 }
 
 impl NativeComponent {
     pub fn from_id(name: String) -> Result<NativeComponent> {
-        match native_actors::get_native_actor(name.to_string()) {
+        match native_actors::get_native_actor(&name) {
             Some(actor) => Ok(actor.get_def()),
             None => Err(anyhow!("Could not find actor {}", name).into()),
         }
