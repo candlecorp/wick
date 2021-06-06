@@ -23,7 +23,6 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use wascap::prelude::{Claims, KeyPair};
 
-use super::port_entity::PortEntity;
 /// An immutable representation of an invocation within wasmcloud
 #[derive(Debug, Clone, Serialize, Deserialize, Message, PartialEq)]
 #[rtype(result = "InvocationResponse")]
@@ -220,12 +219,10 @@ impl VinoEntity {
         match self {
             VinoEntity::Schematic(name) => format!("{}://schematic/{}", URL_SCHEME, name),
             VinoEntity::Component(name) => format!("{}://component/{}", URL_SCHEME, name),
-            VinoEntity::Port(port) => {
-                format!(
-                    "{}://{}::{}:{}",
-                    URL_SCHEME, port.schematic, port.name, port.reference
-                )
-            }
+            VinoEntity::Port(port) => format!(
+                "{}://{}::{}:{}",
+                URL_SCHEME, port.schematic, port.name, port.reference
+            ),
         }
     }
 
@@ -238,6 +235,19 @@ impl VinoEntity {
                 format!("{}::{}:{}", port.schematic, port.reference, port.name)
             }
         }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Eq, Hash)]
+pub struct PortEntity {
+    pub schematic: String,
+    pub reference: String,
+    pub name: String,
+}
+
+impl Display for PortEntity {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}::{}[{}]", self.schematic, self.reference, self.name)
     }
 }
 

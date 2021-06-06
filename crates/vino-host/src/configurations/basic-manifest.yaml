@@ -1,0 +1,25 @@
+---
+schematics:
+  - name: test
+    components:
+      add:
+        id: vino::add
+    connections:
+      - from:
+          instance: vino::schematic_input
+          port: left
+        to:
+          instance: add
+          port: left
+      - from:
+          instance: vino::schematic_input
+          port: right
+        to:
+          instance: add
+          port: right
+      - from:
+          instance: add
+          port: output
+        to:
+          instance: vino::schematic_output
+          port: output

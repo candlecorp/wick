@@ -1,7 +1,8 @@
 use super::wapc_component_actor::WapcComponentActor;
+use super::Inputs;
+use super::Outputs;
 use crate::components::native_component_actor::NativeComponentActor;
 use crate::native_actors;
-use crate::network::ActorPorts;
 use crate::Result;
 use actix::Addr;
 use actix::SyncArbiter;
@@ -165,7 +166,8 @@ impl Start for WapcComponent {
 #[derive(Clone)]
 pub struct NativeComponent {
     pub id: String,
-    pub ports: ActorPorts,
+    pub inputs: Inputs,
+    pub outputs: Outputs,
 }
 
 impl NativeComponent {
@@ -185,11 +187,11 @@ impl VinoComponent for NativeComponent {
     }
 
     fn get_inputs(&self) -> Vec<String> {
-        self.ports.inputs.clone()
+        self.inputs.clone()
     }
 
     fn get_outputs(&self) -> Vec<String> {
-        self.ports.outputs.clone()
+        self.outputs.clone()
     }
 
     /// The actor's human-friendly display name

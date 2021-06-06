@@ -50,8 +50,7 @@ pub type NativeCallback = Box<
 #[rtype(result = "Result<()>")]
 pub(crate) struct Initialize {
     pub name: String,
-    pub network: Addr<Network>,
-    pub seed: String,
+    pub signing_seed: String,
 }
 
 impl Handler<Initialize> for NativeComponentActor {
@@ -60,7 +59,7 @@ impl Handler<Initialize> for NativeComponentActor {
     fn handle(&mut self, msg: Initialize, _ctx: &mut Self::Context) -> Self::Result {
         trace!("Native actor initialized");
         self.name = msg.name;
-        self.seed = msg.seed;
+        self.seed = msg.signing_seed;
         let seed = self.seed.to_string();
 
         let callback: NativeCallback = Box::new(

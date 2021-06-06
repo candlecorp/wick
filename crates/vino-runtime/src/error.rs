@@ -19,6 +19,10 @@ pub enum VinoError {
     HostStartFailure(String),
     #[error("Failed to deserialize configuration {0}")]
     ConfigurationDeserialization(String),
+    #[error("Failed to serialize payload {0}")]
+    SerializationError(rmp_serde::encode::Error),
+    #[error("Failed to deserialize payload {0}")]
+    DeserializationError(rmp_serde::decode::Error),
     #[error(transparent)]
     Other(#[from] anyhow::Error),
 }

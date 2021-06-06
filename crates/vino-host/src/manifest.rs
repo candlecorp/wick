@@ -1,15 +1,32 @@
-use crate::manifest::runtime_definition::RuntimeManifest;
+use std::{fs::read_to_string, path::PathBuf};
+
+use crate::{error::VinoHostError, Result};
 use serde::{Deserialize, Serialize};
+use vino_runtime::manifest::network_manifest::NetworkManifest;
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
-pub struct RunConfig {
-    pub manifest: RuntimeManifest,
+pub struct HostManifest {
+    pub manifest: NetworkManifest,
 
     #[serde(default = "DEFAULT_SCHEMATIC")]
     pub default_schematic: String,
 
     #[serde(default)]
     pub config: CommonConfiguration,
+}
+
+impl HostManifest {
+    pub fn load_from_file(path: &PathBuf) -> Result<HostManifest> {
+        ensure!(
+            path.exists(),
+            VinoHostError::FileNotFound(path.to_string_lossy().to_string()),
+        );
+        let contents = read_to_string(path)?;
+        Self::from_yaml(&contents)
+    }
+    pub fn from_yaml(src: &str) -> Result<HostManifest> {
+        Ok(serde_yaml::from_str(src)?)
+    }
 }
 
 #[allow(non_snake_case)]
@@ -65,4 +82,24 @@ pub struct CommonConfiguration {
     #[serde(default)]
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub allowed_insecure: Vec<String>,
+}
+
+#[cfg(test)]
+mod test {
+    use std::{env, path::PathBuf};
+
+    use super::*;
+
+    #[test_env_log::test(actix_rt::test)]
+    async fn load_manifest() -> Result<()> {
+        let mut path = env::current_dir()?;
+        path.push("src");
+        path.push("configurations");
+        path.push("logger.yaml");
+        let manifest = HostManifest::load_from_file(&path)?;
+
+        assert_eq!(manifest.default_schematic, "logger");
+
+        Ok(())
+    }
 }

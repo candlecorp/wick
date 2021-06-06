@@ -7,7 +7,6 @@ macro_rules! native_actor {(
     use crate::Result;
     use crate::components::native_component_actor::{NativeActor,NativeCallback};
     use crate::components::vino_component::NativeComponent;
-    use crate::network::ActorPorts;
     use vino_guest::Signal;
 
     use super::generated::$component_name::{Inputs, Outputs, InputEncoded, get_outputs, inputs_list, outputs_list, deserialize_inputs};
@@ -36,10 +35,8 @@ macro_rules! native_actor {(
       fn get_def(&self) -> NativeComponent {
         NativeComponent {
           id: self.get_name(),
-          ports: ActorPorts{
-            inputs: self.get_input_ports(),
-            outputs: self.get_output_ports()
-          },
+          inputs: self.get_input_ports(),
+          outputs: self.get_output_ports()
         }
       }
       fn get_name(&self) -> String {

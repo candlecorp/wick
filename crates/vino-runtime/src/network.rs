@@ -3,30 +3,28 @@ use std::fmt::Display;
 
 use super::schematic::Schematic;
 use crate::components::vino_component::BoxedComponent;
+use crate::components::Inputs;
+use crate::components::Outputs;
 use crate::deserialize;
 use crate::dispatch::MessagePayload;
+use crate::dispatch::PortEntity;
 use crate::dispatch::VinoEntity;
 use crate::manifest::schematic_definition::get_components;
-use crate::port_entity::PortEntity;
 use crate::schematic::OutputReady;
 use crate::serialize;
 use crate::util::hlreg::HostLocalSystemService;
 use crate::Invocation;
+use crate::NetworkManifest;
 use crate::Result;
-use crate::RuntimeManifest;
 use actix::dev::Message;
 use actix::prelude::*;
+use anyhow::Context as AContext;
 use futures::future::try_join_all;
+use nkeys::KeyPair;
 use serde::Serialize;
 use vino_guest::OutputPayload;
 
-#[derive(Debug, Clone, Default)]
-pub struct ActorPorts {
-    pub inputs: Vec<String>,
-    pub outputs: Vec<String>,
-}
-
-impl ActorPorts {}
+#[derive(Clone)]
 
 pub struct Network {
     // host_labels: HashMap<String, String>,
@@ -36,50 +34,9 @@ pub struct Network {
     allowed_insecure: Vec<String>,
     registry: ComponentRegistry,
     host_id: String,
-    seed: String,
     schematics: HashMap<String, Addr<Schematic>>,
-    manifest: RuntimeManifest,
+    manifest: NetworkManifest,
     invocation_map: HashMap<String, (String, String, VinoEntity)>,
-}
-
-#[derive(Default, Clone)]
-pub struct ComponentRegistry {
-    pub components: HashMap<String, BoxedComponent>,
-    pub receivers: HashMap<String, Recipient<Invocation>>,
-}
-
-#[derive(Debug, Clone)]
-pub struct ComponentMetadata {
-    pub ports: super::ActorPorts,
-    pub addr: Recipient<Invocation>,
-}
-
-pub type MetadataMap = HashMap<String, ComponentMetadata>;
-
-impl ComponentRegistry {
-    pub fn get_metadata(&self) -> Result<MetadataMap> {
-        let mut map = MetadataMap::new();
-        for (name, component) in &self.components {
-            let recipient = self.receivers.get(name);
-            if recipient.is_none() {
-                return Err(anyhow!("Could not get recipient for {}", name).into());
-            }
-            let recipient = recipient.unwrap();
-
-            map.insert(
-                name.to_string(),
-                ComponentMetadata {
-                    ports: ActorPorts {
-                        inputs: component.get_inputs(),
-                        outputs: component.get_outputs(),
-                    },
-                    addr: recipient.clone(),
-                },
-            );
-        }
-        trace!("Built metadata map for {} components", map.len());
-        Ok(map)
-    }
 }
 
 impl Default for Network {
@@ -92,11 +49,16 @@ impl Default for Network {
             allowed_insecure: vec![],
             registry: ComponentRegistry::default(),
             host_id: "".to_string(),
-            seed: "".to_string(),
             schematics: HashMap::new(),
-            manifest: RuntimeManifest::default(),
+            manifest: NetworkManifest::default(),
             invocation_map: HashMap::new(),
         }
+    }
+}
+
+impl Network {
+    pub fn for_id(id: &str) -> Addr<Self> {
+        Network::from_hostlocal_registry(id)
     }
 }
 
@@ -115,11 +77,9 @@ impl Actor for Network {
     type Context = Context<Self>;
 }
 
-impl Network {}
-
 pub async fn request<T: AsRef<str> + Display>(
     network: &Addr<Network>,
-    schematic: T,
+    schematic: &str,
     data: HashMap<T, impl Serialize>,
 ) -> Result<HashMap<String, MessagePayload>> {
     let serialized_data: HashMap<String, Vec<u8>> = data
@@ -146,10 +106,10 @@ pub async fn request<T: AsRef<str> + Display>(
 
 #[derive(Message)]
 #[rtype(result = "Result<()>")]
-pub(crate) struct Initialize {
+pub struct Initialize {
     pub host_id: String,
     pub seed: String,
-    pub manifest: RuntimeManifest,
+    pub manifest: NetworkManifest,
 }
 
 impl Handler<Initialize> for Network {
@@ -158,28 +118,21 @@ impl Handler<Initialize> for Network {
     fn handle(&mut self, msg: Initialize, ctx: &mut Context<Self>) -> Self::Result {
         trace!("Network initializing on {}", msg.host_id);
         self.host_id = msg.host_id;
-        self.seed = msg.seed;
         self.manifest = msg.manifest;
-        let manifest = self.manifest.clone();
         let host_id = self.host_id.to_string();
-        let seed = self.seed.clone();
+
+        let manifest = self.manifest.clone();
+        let seed = msg.seed.clone();
+        let seed2 = msg.seed.clone();
 
         let allow_latest = self.allow_latest;
         let allowed_insecure = self.allowed_insecure.clone();
         let schematics = manifest.schematics.clone();
-        let network = ctx.address();
 
         Box::pin(
             async move {
                 trace!("Getting components");
-                get_components(
-                    &manifest,
-                    seed.clone(),
-                    network,
-                    allow_latest,
-                    &allowed_insecure,
-                )
-                .await
+                get_components(&manifest, seed, allow_latest, &allowed_insecure).await
             }
             .into_actor(self)
             .then(move |components, network, ctx| {
@@ -215,7 +168,7 @@ impl Handler<Initialize> for Network {
                                 host_id: host_id.to_string(),
                                 schematic: schem_def.clone(),
                                 components: metadata.clone(),
-                                seed: network.seed.clone(),
+                                seed: seed2.clone(),
                             },
                         )
                     })
@@ -372,6 +325,45 @@ impl Handler<Request> for Network {
     }
 }
 
+#[derive(Default, Clone)]
+pub struct ComponentRegistry {
+    pub components: HashMap<String, BoxedComponent>,
+    pub receivers: HashMap<String, Recipient<Invocation>>,
+}
+
+#[derive(Debug, Clone)]
+pub struct ComponentMetadata {
+    pub inputs: Inputs,
+    pub outputs: Outputs,
+    pub addr: Recipient<Invocation>,
+}
+
+pub type MetadataMap = HashMap<String, ComponentMetadata>;
+
+impl ComponentRegistry {
+    pub fn get_metadata(&self) -> Result<MetadataMap> {
+        let mut map = MetadataMap::new();
+        for (name, component) in &self.components {
+            let recipient = self.receivers.get(name);
+            if recipient.is_none() {
+                return Err(anyhow!("Could not get recipient for {}", name).into());
+            }
+            let recipient = recipient.unwrap();
+
+            map.insert(
+                name.to_string(),
+                ComponentMetadata {
+                    inputs: component.get_inputs(),
+                    outputs: component.get_outputs(),
+                    addr: recipient.clone(),
+                },
+            );
+        }
+        trace!("Built metadata map for {} components", map.len());
+        Ok(map)
+    }
+}
+
 #[cfg(test)]
 mod test {
     use actix::Addr;
@@ -383,11 +375,11 @@ mod test {
     use crate::network::Initialize;
     use crate::util::hlreg::HostLocalSystemService;
     use crate::util::serdes::serialize;
-    use crate::RuntimeManifest;
+    use crate::NetworkManifest;
     use wascap::prelude::KeyPair;
 
     async fn init_network(yaml: &str) -> Result<Addr<Network>> {
-        let manifest = serde_yaml::from_str::<RuntimeManifest>(&yaml)?;
+        let manifest = serde_yaml::from_str::<NetworkManifest>(&yaml)?;
         trace!("applying manifest");
         let kp = KeyPair::new_server();
 

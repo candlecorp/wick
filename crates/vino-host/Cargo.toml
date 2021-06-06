@@ -1,0 +1,31 @@
+[package]
+name = "vino-host"
+version = "0.1.0"
+authors = ["Jarrod Overson <jsoverson@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+# anyhow = "*"
+vino-runtime = { path = "../vino-runtime" }
+log = "*"
+env_logger = "*"
+actix = "0.11"
+actix-rt = "2.1.0"
+thiserror = "1.0.25"
+nkeys = "0.1.0"
+serde = { version = "1.0.126", features = ["derive"] }
+serde_yaml = "0.8.17"
+
+[dev-dependencies]
+test-env-log = "0.2.7"
+tokio = { version = "1", features = [
+  "net",
+  "rt-multi-thread",
+  "time",
+  "io-std",
+  "io-util",
+  "macros",
+] }
+maplit = "1.0.2"

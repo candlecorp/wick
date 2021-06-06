@@ -19,7 +19,6 @@ pub(crate) struct WapcComponentActor {
 struct State {
     guest_module: WapcHost,
     claims: Claims<wascap::jwt::Actor>,
-    _seed: String,
 }
 
 #[derive(Message)]
@@ -92,7 +91,6 @@ fn perform_initialization(
             me.state = Some(State {
                 guest_module: g,
                 claims: claims.clone(),
-                _seed: msg.signing_seed,
             });
             info!(
                 "Actor {} initialized",

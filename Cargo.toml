@@ -13,7 +13,7 @@ readme = "README.md"
 
 [dependencies]
 wapc = { version = "0.10.1" }
-vino-guest = { path = "../vino-guest" }
+vino-guest = { path = "./crates/vino-guest" }
 chrono = "0.4.19"
 colored = "2.0.0"
 log = "0.4.11"
@@ -50,4 +50,5 @@ members = [
   "crates/logger",
   "crates/vino-configfile",
   "crates/vino-runtime",
+  "crates/vino-host",
 ]

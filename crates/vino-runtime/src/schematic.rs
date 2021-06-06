@@ -2,14 +2,13 @@ use std::collections::{HashMap, VecDeque};
 use std::time::Duration;
 
 use crate::anyhow::Context as AnyhowContext;
-use crate::connection_downstream::ConnectionDownstream;
 use crate::deserialize;
+use crate::dispatch::PortEntity;
 use crate::dispatch::VinoEntity;
 use crate::error::VinoError;
 use crate::manifest::schematic_definition::{ConnectionDefinition, ConnectionTargetDefinition};
 use crate::network::MetadataMap;
 use crate::network::{ComponentMetadata, MapInvocation, Network};
-use crate::port_entity::PortEntity;
 use crate::schematic_response::{get_schematic_output, push_to_schematic_output};
 use crate::MessagePayload;
 use actix::prelude::*;
@@ -44,7 +43,6 @@ pub struct Schematic {
     pub transaction_map: TransactionMap,
     pub references: HashMap<String, String>,
     pub definition: SchematicDefinition,
-    pub invocation_map: HashMap<String, ConnectionDownstream>,
 }
 
 impl Supervised for Schematic {}
@@ -60,7 +58,6 @@ impl Default for Schematic {
             transaction_map: TransactionMap::new(),
             references: HashMap::new(),
             definition: SchematicDefinition::default(),
-            invocation_map: HashMap::new(),
         }
     }
 }
@@ -92,7 +89,7 @@ impl Schematic {
     fn get_outputs(&self, reference: String) -> Vec<String> {
         match self.references.get(&reference) {
             Some(actor) => match self.components.get(actor) {
-                Some(metadata) => metadata.ports.outputs.clone(),
+                Some(metadata) => metadata.outputs.clone(),
                 None => vec![],
             },
             None => vec![],
@@ -206,12 +203,6 @@ impl Schematic {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-struct PassedJobArgs {
-    connection: ConnectionDownstream,
-    input: HashMap<String, Vec<u8>>,
-}
-
 fn buffer_has_data(buffer: &PortBuffer) -> bool {
     !buffer.is_empty()
 }
@@ -253,7 +244,6 @@ fn new_refmap() -> InputRefMap {
 fn new_inputbuffer_map(metadata: &ComponentMetadata) -> BufferMap {
     trace!("creating new inputbuffer map for {:?}", metadata);
     metadata
-        .ports
         .inputs
         .iter()
         .map(|p| (p.to_string(), VecDeque::new()))
@@ -698,7 +688,6 @@ mod test {
         manifest::schematic_definition::{
             ComponentDefinition, ConnectionDefinition, ConnectionTargetDefinition,
         },
-        network::ActorPorts,
         network::ComponentMetadata,
         util::hlreg::HostLocalSystemService,
     };
@@ -746,10 +735,8 @@ mod test {
         refs.insert(
             "logger".to_string(),
             ComponentMetadata {
-                ports: ActorPorts {
-                    inputs: vec!["input".to_string()],
-                    outputs: vec!["output".to_string()],
-                },
+                inputs: vec!["input".to_string()],
+                outputs: vec!["output".to_string()],
                 addr: component_addr.recipient(),
             },
         );

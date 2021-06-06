@@ -1,3 +1,2 @@
-pub mod run_config;
-pub mod runtime_definition;
+pub mod network_manifest;
 pub mod schematic_definition;

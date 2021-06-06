@@ -30,3 +30,19 @@ pub fn deserialize<'de, T: Deserialize<'de>>(
         Err(e) => Err(format!("Failed to de-serialize: {}", e).into()),
     }
 }
+
+// pub fn serialize<T>(item: T) -> crate::Result<Vec<u8>>
+// where
+//     T: Serialize,
+// {
+//     let mut buf = Vec::new();
+//     item.serialize(&mut Serializer::new(&mut buf).with_struct_map())
+//         .map_err(VinoError::SerializationError)?;
+//     Ok(buf)
+// }
+
+// pub fn deserialize<'de, T: Deserialize<'de>>(buf: &[u8]) -> crate::Result<T> {
+//     let mut de = Deserializer::new(Cursor::new(buf));
+//     let a: T = Deserialize::deserialize(&mut de).map_err(VinoError::DeserializationError)?;
+//     Ok(a)
+// }

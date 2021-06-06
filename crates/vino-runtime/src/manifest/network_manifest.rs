@@ -4,7 +4,7 @@ use std::collections::HashMap;
 pub use crate::SchematicDefinition;
 
 #[derive(Debug, Clone, Serialize, Default, Deserialize)]
-pub struct RuntimeManifest {
+pub struct NetworkManifest {
     #[serde(default)]
     #[serde(skip_serializing_if = "HashMap::is_empty")]
     #[doc(hidden)]
