@@ -19,6 +19,10 @@ pub use crate::dispatch::MessagePayload;
 pub type Result<T> = anyhow::Result<T, error::VinoError>;
 pub type Error = error::VinoError;
 
+pub use crate::components::{
+    load_wasm, load_wasm_from_file, load_wasm_from_oci, vino_component::WapcComponent,
+};
+
 #[doc(hidden)]
 pub const SYSTEM_ACTOR: &str = "system";
 pub const VINO_NAMESPACE: &str = "vino";

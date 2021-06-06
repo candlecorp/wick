@@ -11,7 +11,6 @@ async fn main() -> Result<()> {
 
     let res = match cli.command {
         CliCommand::Start(cmd) => vino::commands::start::handle_command(cmd).await,
-        CliCommand::Exec(cmd) => vino::commands::exec::handle_command(cmd).await,
         CliCommand::Run(cmd) => vino::commands::run::handle_command(cmd).await,
     };
 

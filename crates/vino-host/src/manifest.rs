@@ -86,7 +86,7 @@ pub struct CommonConfiguration {
 
 #[cfg(test)]
 mod test {
-    use std::{env, path::PathBuf};
+    use std::env;
 
     use super::*;
 

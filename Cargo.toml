@@ -18,8 +18,6 @@ chrono = "0.4.19"
 colored = "2.0.0"
 log = "0.4.11"
 env_logger = "0.8.3"
-anyhow = "1.0.34"
-wasmcloud-host = { path = "../wasmcloud/crates/wasmcloud-host", features = ["wasmtime"] }
 actix-rt = "2.1.0"
 nats = "0.8.6"
 structopt = "0.3.21"
@@ -34,10 +32,12 @@ oci-distribution = "0.6"
 itertools = "0.10.0"
 unsafe-io = "= 0.6.2"
 vino-runtime = { path = "./crates/vino-runtime" }
+vino-host = { path = "./crates/vino-host" }
 logger = { path = "./crates/logger" }
 
 [dev-dependencies]
 test_bin = "0.3.0"
+maplit = "1.0.2"
 
 [[bin]]
 name = "vino"

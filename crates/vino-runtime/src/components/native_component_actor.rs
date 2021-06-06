@@ -3,7 +3,6 @@ use crate::native_actors;
 use crate::{serialize, Result};
 
 use crate::components::vino_component::NativeComponent;
-use crate::network::Network;
 use actix::prelude::*;
 use nkeys::KeyPair;
 use vino_guest::{OutputPayload, Signal};

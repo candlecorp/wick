@@ -140,12 +140,4 @@ mod test {
         assert!(!host.is_started());
         Ok(())
     }
-
-    #[test]
-    fn is_send() {
-        let h = HostBuilder::new().build();
-        assert_is_send(h);
-    }
-
-    fn assert_is_send<T: Send>(_input: T) {}
 }

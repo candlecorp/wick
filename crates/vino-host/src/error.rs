@@ -1,4 +1,3 @@
-use actix::prelude::SendError;
 use thiserror::Error;
 
 type BoxedErrorSyncSend = Box<dyn std::error::Error + Sync + std::marker::Send>;

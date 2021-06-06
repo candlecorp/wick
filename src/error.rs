@@ -1,7 +1,6 @@
-use anyhow::anyhow;
 use thiserror::Error;
 
-type WasmCloudError = Box<dyn std::error::Error + Sync + std::marker::Send>;
+// type BoxedSyncSendError = Box<dyn std::error::Error + Sync + std::marker::Send>;
 
 #[derive(Error, Debug)]
 pub enum VinoError {
@@ -18,27 +17,15 @@ pub enum VinoError {
     #[error("Failed to deserialize configuration {0}")]
     ConfigurationDeserialization(String),
     #[error(transparent)]
-    Other(#[from] anyhow::Error),
+    VinoHostError(#[from] vino_host::Error),
+    #[error(transparent)]
+    VinoRuntimeError(#[from] vino_runtime::Error),
+    #[error(transparent)]
+    IOError(#[from] std::io::Error),
+    #[error(transparent)]
+    SerdeJsonError(#[from] serde_json::Error),
+    #[error(transparent)]
+    LoggerError(#[from] log::SetLoggerError),
+    #[error("General error : {0}")]
+    Other(String),
 }
-
-impl From<WasmCloudError> for VinoError {
-    fn from(e: WasmCloudError) -> Self {
-        VinoError::Other(anyhow!(e))
-    }
-}
-
-impl From<std::io::Error> for VinoError {
-    fn from(e: std::io::Error) -> Self {
-        VinoError::Other(anyhow!(e))
-    }
-}
-
-impl From<nkeys::error::Error> for VinoError {
-    fn from(e: nkeys::error::Error) -> Self {
-        VinoError::Other(anyhow!(e))
-    }
-}
-
-// impl from<Box<ErrorImpl>> for VinoError {
-
-// }

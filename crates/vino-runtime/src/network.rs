@@ -18,9 +18,7 @@ use crate::NetworkManifest;
 use crate::Result;
 use actix::dev::Message;
 use actix::prelude::*;
-use anyhow::Context as AContext;
 use futures::future::try_join_all;
-use nkeys::KeyPair;
 use serde::Serialize;
 use vino_guest::OutputPayload;
 
@@ -115,7 +113,7 @@ pub struct Initialize {
 impl Handler<Initialize> for Network {
     type Result = ResponseActFuture<Self, Result<()>>;
 
-    fn handle(&mut self, msg: Initialize, ctx: &mut Context<Self>) -> Self::Result {
+    fn handle(&mut self, msg: Initialize, _ctx: &mut Context<Self>) -> Self::Result {
         trace!("Network initializing on {}", msg.host_id);
         self.host_id = msg.host_id;
         self.manifest = msg.manifest;
@@ -123,7 +121,7 @@ impl Handler<Initialize> for Network {
 
         let manifest = self.manifest.clone();
         let seed = msg.seed.clone();
-        let seed2 = msg.seed.clone();
+        let seed2 = msg.seed;
 
         let allow_latest = self.allow_latest;
         let allowed_insecure = self.allowed_insecure.clone();

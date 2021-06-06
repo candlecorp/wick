@@ -2,7 +2,6 @@ use crate::{
     utils::{load_runconfig, merge_runconfig},
     Result,
 };
-use anyhow::Context;
 use std::{collections::HashMap, io::Read, path::PathBuf};
 use structopt::StructOpt;
 
@@ -50,8 +49,7 @@ pub async fn handle_command(command: RunCommand) -> Result<String> {
         Some(i) => i,
     };
 
-    let json: HashMap<String, serde_json::value::Value> =
-        serde_json::from_str(&data).context("Could not deserialize JSON input data")?;
+    let json: HashMap<String, serde_json::value::Value> = serde_json::from_str(&data)?;
 
     let config = load_runconfig(command.manifest)?;
     let mut config = merge_runconfig(config, command.nats, command.host);

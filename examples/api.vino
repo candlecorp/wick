@@ -13,7 +13,7 @@ manifest:
     - name: create
       components:
         collection-add:
-          ref: MCBUNGMKZ6VXXCKADAEC77HTCN5WPBASVY2S3LBUGKU6D5JAGCQCA2ZZ
+          id: MCBUNGMKZ6VXXCKADAEC77HTCN5WPBASVY2S3LBUGKU6D5JAGCQCA2ZZ
       connections:
         - from:
             instance: vino::schematic_input
@@ -36,7 +36,7 @@ manifest:
     - name: retrieve
       components:
         collection-get-item:
-          ref: MC3WXSC7RHYHI6RIKDSSED5E3XP5KZ7NXUA3DB7Z66KIVHTFY7SJ4WHF
+          id: MC3WXSC7RHYHI6RIKDSSED5E3XP5KZ7NXUA3DB7Z66KIVHTFY7SJ4WHF
       connections:
         - from:
             instance: vino::schematic_input

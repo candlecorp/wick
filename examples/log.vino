@@ -6,7 +6,7 @@ manifest:
     - name: logger
       components:
         logger:
-          ref: vino::log
+          id: vino::log
       connections:
         - from:
             instance: vino::schematic_input

@@ -1,4 +1,3 @@
-pub mod exec;
 pub mod run;
 pub mod start;
 
@@ -23,9 +22,6 @@ pub enum CliCommand {
     /// Start a long-running host with a manifest and schematics
     #[structopt(name = "start")]
     Start(start::StartCommand),
-    /// Execute a Vino component on its own
-    #[structopt(name = "exec")]
-    Exec(exec::ExecCommand),
     /// Load a manifest and run the default schematic
     #[structopt(name = "run")]
     Run(run::RunCommand),

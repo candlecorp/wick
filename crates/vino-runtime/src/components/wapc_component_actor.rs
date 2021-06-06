@@ -12,7 +12,7 @@ use wapc::WapcHost;
 use wascap::prelude::{Claims, KeyPair};
 
 #[derive(Default)]
-pub(crate) struct WapcComponentActor {
+pub struct WapcComponentActor {
     state: Option<State>,
 }
 
@@ -70,7 +70,7 @@ fn perform_initialization(
     };
 
     let cloned_claims = claims.clone();
-    let seed = msg.signing_seed.to_string();
+    let seed = msg.signing_seed;
 
     let guest = WapcHost::new(
         Box::new(engine),

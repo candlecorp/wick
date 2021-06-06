@@ -9,10 +9,12 @@ pub struct NetworkManifest {
     #[serde(skip_serializing_if = "HashMap::is_empty")]
     #[doc(hidden)]
     pub labels: HashMap<String, String>,
+    #[deprecated]
     #[doc(hidden)]
     #[serde(default)]
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub actors: Vec<String>,
+    #[deprecated]
     #[doc(hidden)]
     #[serde(default)]
     #[serde(skip_serializing_if = "Vec::is_empty")]
@@ -25,9 +27,11 @@ pub struct NetworkManifest {
     #[serde(default)]
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub links: Vec<LinkEntry>,
+    #[deprecated]
     #[serde(default)]
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub references: Vec<ReferenceEntry>,
+    #[deprecated]
     #[serde(default)]
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub connections: Vec<ConnectionEntry>,
