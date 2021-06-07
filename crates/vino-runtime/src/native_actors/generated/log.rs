@@ -61,10 +61,7 @@ pub struct InputEncoded {
 }
 pub(crate) fn deserialize_inputs(
     args: InputEncoded,
-) -> std::result::Result<
-    Inputs,
-    std::boxed::Box<dyn std::error::Error + std::marker::Send + std::marker::Sync>,
-> {
+) -> std::result::Result<Inputs, Box<dyn std::error::Error + Send + Sync>> {
     Ok(Inputs {
         input: deserialize(&args.input)?,
     })

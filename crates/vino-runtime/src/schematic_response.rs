@@ -5,7 +5,7 @@ use futures::Future;
 use once_cell::sync::Lazy;
 use std::{collections::HashMap, pin::Pin, task::Poll};
 
-use crate::{serialize, InvocationResponse, MessagePayload};
+use crate::{serialize, Error, InvocationResponse, MessagePayload};
 
 use crate::Result;
 
@@ -18,13 +18,10 @@ static SCHEMATIC_RESPONSES: Lazy<Mutex<TransactionOutputs>> =
 pub(crate) fn is_response_ready(tx_id: &str, schematic_name: &str) -> Result<bool> {
     let mut responses = SCHEMATIC_RESPONSES.lock();
 
-    let outputs = responses.get_mut(&(tx_id.to_string(), schematic_name.to_string()));
+    let outputs = responses
+        .get_mut(&(tx_id.to_string(), schematic_name.to_string()))
+        .ok_or_else(|| Error::SchematicError(format!("Transaction {} not found", tx_id)))?;
 
-    if outputs.is_none() {
-        return Err(anyhow!("Transaction {} not found", tx_id).into());
-    }
-
-    let outputs = outputs.unwrap();
     let mut ready = true;
 
     for val in outputs.values() {
@@ -43,20 +40,16 @@ pub(crate) fn push_to_schematic_output(
     trace!("{:?}", data);
     let mut responses = SCHEMATIC_RESPONSES.lock();
 
-    match responses.get_mut(&(tx_id.to_string(), schematic.to_string())) {
-        Some(outputs) => {
-            outputs.insert(port.to_string(), Some(data));
-            Ok(())
-        }
-        None => {
-            let e = format!(
+    let outputs = responses
+        .get_mut(&(tx_id.to_string(), schematic.to_string()))
+        .ok_or_else(|| {
+            Error::SchematicError(format!(
                 "Schematic '{}' for transaction '{}' not initialized",
                 schematic, tx_id
-            );
-            error!("{}", e);
-            Err(e.into())
-        }
-    }
+            ))
+        })?;
+    outputs.insert(port.to_string(), Some(data));
+    Ok(())
 }
 
 pub(crate) fn initialize_schematic_output(tx_id: &str, schematic: &str, ports: Vec<String>) {

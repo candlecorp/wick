@@ -1,8 +1,6 @@
 use std::collections::{HashMap, VecDeque};
 use std::time::Duration;
 
-use crate::anyhow::Context as AnyhowContext;
-use crate::deserialize;
 use crate::dispatch::PortEntity;
 use crate::dispatch::VinoEntity;
 use crate::error::VinoError;
@@ -11,6 +9,7 @@ use crate::network::MetadataMap;
 use crate::network::{ComponentMetadata, MapInvocation, Network};
 use crate::schematic_response::{get_schematic_output, push_to_schematic_output};
 use crate::MessagePayload;
+use crate::{deserialize, Error};
 use actix::prelude::*;
 use futures::future::try_join_all;
 use serde::{Deserialize, Serialize};
@@ -34,6 +33,7 @@ enum ComponentStatus {
     ShortCircuit(MessagePayload),
 }
 
+#[derive(Debug)]
 pub struct Schematic {
     pub network: Option<Addr<Network>>,
     pub host_id: String,
@@ -158,16 +158,17 @@ impl Schematic {
             .entry(tx_id.to_string())
             .or_insert_with(new_refmap);
 
-        let actor = self
-            .references
-            .get(&reference)
-            .context(format!("Could not find reference {}", reference))?;
+        let actor = self.references.get(&reference).ok_or_else(|| {
+            Error::SchematicError(format!("Could not find reference {}", reference))
+        })?;
         trace!("pushing to {}", port);
         let key = reference.to_string();
-        let metadata = self.components.get(actor).ok_or(format!(
-            "Could not find metadata for {}. Component may have failed to load.",
-            actor
-        ))?;
+        let metadata = self.components.get(actor).ok_or_else(|| {
+            Error::SchematicError(format!(
+                "Could not find metadata for {}. Component may have failed to load.",
+                actor
+            ))
+        })?;
 
         refmap
             .entry(key)
@@ -264,12 +265,16 @@ fn push_to_portbuffer(
                     buffer.push_back(data);
                     Ok(())
                 }
-                None => {
-                    Err(format!("Invalid actor state: no portbuffer for port {:?}", port).into())
-                }
+                None => Err(Error::SchematicError(format!(
+                    "Invalid actor state: no portbuffer for port {:?}",
+                    port
+                ))),
             }
         }
-        None => Err(format!("Could not get portbuffer map for reference {}", ref_id).into()),
+        None => Err(Error::SchematicError(format!(
+            "Could not get portbuffer map for reference {}",
+            ref_id
+        ))),
     }
 }
 
@@ -343,16 +348,11 @@ impl Handler<Request> for Schematic {
 
         Box::pin(
             async move {
-                match invocations {
-                    Ok(invocations) => {
-                        match handle_schematic_invocation(invocations, host, tx_id, schematic).await
-                        {
-                            Ok(a) => Ok(SchematicResponse { payload: a.msg }),
-                            Err(e) => Err(e.to_string().into()),
-                        }
-                    }
-                    Err(e) => Err(e.to_string().into()),
-                }
+                let response =
+                    handle_schematic_invocation(invocations?, host, tx_id, schematic).await?;
+                Ok(SchematicResponse {
+                    payload: response.msg,
+                })
             }
             .into_actor(self),
         )
@@ -409,7 +409,7 @@ fn gen_packets(
     bytemap: HashMap<String, Vec<u8>>,
 ) -> Result<Vec<MessagePacket>> {
     let schematic = &sm.definition;
-    let _kp = KeyPair::from_seed(&sm.seed).context("Couldn't create keypair")?;
+    let _kp = KeyPair::from_seed(&sm.seed)?;
 
     let schematic_outputs = schematic.get_output_names();
 
@@ -449,7 +449,7 @@ async fn handle_schematic_invocation(
 
     invocations
         .await
-        .map_err(|e| format!("Error pushing to schematic ports: {}", e))?;
+        .map_err(|_| Error::SchematicError("Error pushing to schematic ports".into()))?;
 
     let response = schematic
         .send(ResponseFuture {
@@ -457,7 +457,7 @@ async fn handle_schematic_invocation(
             schematic: target,
         })
         .await
-        .map_err(|e| format!("Error pushing to schematic ports: {}", e))??;
+        .map_err(|e| Error::SchematicError(format!("Error pushing to schematic ports: {}", e)))??;
 
     Ok(response)
 }
@@ -493,9 +493,7 @@ impl Handler<MessagePacket> for Schematic {
             async move {
                 match status {
                     Err(err) => {
-                        let e = format!("Error handling IP: {}", err);
-                        error!("{}", e);
-                        Err(e.into())
+                        log_err!(Error::SchematicError(format!("Error handling IP: {}", err)))
                     }
                     Ok(ComponentStatus::ShortCircuit(payload)) => match schematic_host
                         .send(ShortCircuit {
@@ -507,7 +505,10 @@ impl Handler<MessagePacket> for Schematic {
                         .await
                     {
                         Ok(_) => Ok(()),
-                        Err(e) => Err(format!("Error deserializing job signal: {}", e).into()),
+                        Err(e) => Err(Error::SchematicError(format!(
+                            "Error deserializing job signal: {}",
+                            e
+                        ))),
                     },
 
                     Ok(ComponentStatus::Waiting) => {
@@ -527,7 +528,7 @@ impl Handler<MessagePacket> for Schematic {
                                 Ok(response) => deserialize(&response.msg),
                                 Err(err) => Err(format!("Error executing job: {}", err).into()),
                             },
-                            None => Err(anyhow!("No receiver found").into()),
+                            None => Err("No receiver found".into()),
                         };
 
                         match response {
@@ -547,9 +548,7 @@ impl Handler<MessagePacket> for Schematic {
                                         reference: reference.to_string(),
                                         payload: MessagePayload::Error(err.to_string()),
                                     })
-                                    .await
-                                    .map(|_| ())
-                                    .map_err(|e| e.to_string().into())
+                                    .await?
                             }
                         }
                     }
@@ -695,7 +694,7 @@ mod test {
     use super::*;
 
     #[test_env_log::test(actix_rt::test)]
-    async fn test_init() -> crate::Result<()> {
+    async fn test_init() -> Result<()> {
         trace!("test_init");
         // let actor = WapcComponentActor::default();
         let component_addr = SyncArbiter::start(1, WapcComponentActor::default);

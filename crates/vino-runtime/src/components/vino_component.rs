@@ -3,6 +3,7 @@ use super::Inputs;
 use super::Outputs;
 use crate::components::native_component_actor::NativeComponentActor;
 use crate::native_actors;
+use crate::Error;
 use crate::Result;
 use actix::Addr;
 use actix::SyncArbiter;
@@ -12,16 +13,18 @@ use std::io::prelude::*;
 use std::path::Path;
 use wascap::jwt::{Claims, Token};
 
-#[derive(Clone)]
+#[derive(Derivative, Clone)]
+#[derivative(Debug)]
 pub struct WapcComponent {
     pub(crate) token: Token<wascap::jwt::Actor>,
     pub(crate) bytes: Vec<u8>,
+    #[derivative(Debug = "ignore")]
     pub(crate) addr: Option<Addr<WapcComponentActor>>,
 }
 
 // pub type StartFuture<T> = Pin<Box<dyn Future<Output = Addr<T>> + Send>>;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum ComponentType {
     Native,
     WaPC,
@@ -174,7 +177,10 @@ impl NativeComponent {
     pub fn from_id(name: String) -> Result<NativeComponent> {
         match native_actors::get_native_actor(&name) {
             Some(actor) => Ok(actor.get_def()),
-            None => Err(anyhow!("Could not find actor {}", name).into()),
+            None => Err(Error::ComponentError(format!(
+                "Could not find actor {}",
+                name
+            ))),
         }
     }
 }

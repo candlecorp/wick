@@ -4,7 +4,7 @@ macro_rules! native_actor {(
   fn job($inputs_name:ident:Inputs, $outputs_name:ident:Outputs) -> Result<Signal> $fun:block
 ) => {
 
-    use crate::Result;
+    use crate::{Result, Error};
     use crate::components::native_component_actor::{NativeActor,NativeCallback};
     use crate::components::vino_component::NativeComponent;
     use vino_guest::Signal;
@@ -51,16 +51,13 @@ macro_rules! native_actor {(
 
       fn job_wrapper(&self, data: &[u8]) -> Result<Signal>{
         match &self.callback {
-          None => Err(anyhow!("No callback registered with native actor").into()),
           Some(callback) => {
             let (inv_id, input_encoded) : (String, InputEncoded) = crate::deserialize(&data)?;
             let inputs = deserialize_inputs(input_encoded)?;
             let outputs = get_outputs(callback, inv_id);
-            match job(inputs, outputs) {
-              Ok(data) => Ok(data),
-              Err(e) => Err(anyhow!("Error executing job: {}", e).into())
-            }
+            job(inputs, outputs)
           },
+          None => Err(Error::JobError(format!("No callback registered with native actor '{}'", self.get_name())))
         }
       }
     }

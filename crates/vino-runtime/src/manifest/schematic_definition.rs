@@ -4,6 +4,7 @@ use std::{collections::HashMap, fmt::Display, path::Path};
 
 use crate::components::native_component_actor::{self, NativeComponentActor};
 use crate::components::vino_component::BoxedComponent;
+use crate::Error;
 use crate::{components::wapc_component_actor, Result};
 
 use crate::{
@@ -63,7 +64,10 @@ impl SchematicDefinition {
                     return Ok(component.component_ref.to_string());
                 }
             }
-            Err(anyhow!("No external component found with alias or key {}", id).into())
+            Err(Error::SchematicError(format!(
+                "No external component found with alias or key {}",
+                id
+            )))
         }
     }
 }
@@ -202,7 +206,11 @@ pub(crate) async fn get_component(
                 let recipient = actor.recipient::<Invocation>();
                 Ok((Box::new(component), recipient))
             }
-            Err(e) => Err(anyhow!("Could not read file {}:{}", comp_ref, e.to_string()).into()),
+            Err(e) => Err(Error::SchematicError(format!(
+                "Could not read file {}:{}",
+                comp_ref,
+                e.to_string()
+            ))),
         }
     } else if comp_ref.starts_with("vino::") {
         match NativeComponent::from_id(comp_ref.to_string()) {
@@ -219,7 +227,10 @@ pub(crate) async fn get_component(
 
                 Ok((Box::new(component), recipient))
             }
-            Err(e) => Err(anyhow!("Could not load native component {}: {}", comp_ref, e).into()),
+            Err(e) => Err(Error::SchematicError(format!(
+                "Could not load native component {}: {}",
+                comp_ref, e
+            ))),
         }
     } else {
         // load actor from OCI
@@ -245,11 +256,10 @@ pub(crate) async fn get_component(
                 let recipient = actor.recipient::<Invocation>();
                 Ok((Box::new(component), recipient))
             }
-            Err(_) => Err(anyhow!(
+            Err(_) => Err(Error::SchematicError(format!(
                 "Could not find {} component on disk or in registry",
                 comp_ref,
-            )
-            .into()),
+            ))),
         }
     };
     component

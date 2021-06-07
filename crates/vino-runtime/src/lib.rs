@@ -1,3 +1,15 @@
+#![deny(
+    warnings,
+    missing_debug_implementations,
+    trivial_casts,
+    trivial_numeric_casts,
+    unsafe_code,
+    unstable_features,
+    unused_import_braces,
+    unused_qualifications,
+    // missing_docs
+)]
+
 pub(crate) mod components;
 pub(crate) mod dispatch;
 pub mod error;
@@ -16,7 +28,7 @@ pub use crate::util::serdes::{deserialize, serialize};
 
 pub use crate::dispatch::MessagePayload;
 
-pub type Result<T> = anyhow::Result<T, error::VinoError>;
+pub type Result<T> = std::result::Result<T, error::VinoError>;
 pub type Error = error::VinoError;
 
 pub use crate::components::{
@@ -33,4 +45,7 @@ pub const SCHEMATIC_OUTPUT: &str = "vino::schematic_output";
 extern crate log;
 
 #[macro_use]
-extern crate anyhow;
+extern crate derivative;
+
+#[macro_use]
+extern crate vino_macros;

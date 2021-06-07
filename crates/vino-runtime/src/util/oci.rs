@@ -1,5 +1,5 @@
+use crate::Error;
 use crate::{error::VinoError, Result};
-use anyhow::Context;
 use std::env::temp_dir;
 use std::io::{Read, Write};
 use std::path::PathBuf;
@@ -21,8 +21,8 @@ pub(crate) async fn fetch_oci_bytes(
     }
     let cf = cached_file(img);
     if !cf.exists() {
-        let img =
-            oci_distribution::Reference::from_str(img).context("Could not parse OCI reference")?;
+        let img = oci_distribution::Reference::from_str(img)
+            .map_err(|e| Error::OCIParseError(e.to_string()))?;
         let auth = if let Ok(u) = std::env::var(OCI_VAR_USER) {
             if let Ok(p) = std::env::var(OCI_VAR_PASSWORD) {
                 oci_distribution::secrets::RegistryAuth::Basic(u, p)
@@ -41,17 +41,15 @@ pub(crate) async fn fetch_oci_bytes(
 
         match imgdata {
             Ok(imgdata) => {
-                let mut f = std::fs::File::create(cf).context("Could not create cache file")?;
+                let mut f = std::fs::File::create(cf)?;
                 let content = imgdata
                     .layers
                     .iter()
                     .map(|l| l.data.clone())
                     .flatten()
                     .collect::<Vec<_>>();
-                f.write_all(&content)
-                    .context("Could not write actor bytes contents to cache file")?;
-                f.flush()
-                    .context("Failed while flushing data to cache file")?;
+                f.write_all(&content)?;
+                f.flush()?;
                 Ok(content)
             }
             Err(e) => {
@@ -61,10 +59,8 @@ pub(crate) async fn fetch_oci_bytes(
         }
     } else {
         let mut buf = vec![];
-        let mut f = std::fs::File::open(cached_file(img))
-            .context(format!("Could not open cache file {}", img))?;
-        f.read_to_end(&mut buf)
-            .context("Failed reading to the end of cache file")?;
+        let mut f = std::fs::File::open(cached_file(img))?;
+        f.read_to_end(&mut buf)?;
         Ok(buf)
     }
 }
@@ -88,11 +84,12 @@ async fn pull(
     img: &oci_distribution::Reference,
     auth: &oci_distribution::secrets::RegistryAuth,
 ) -> Result<oci_distribution::client::ImageData> {
-    Ok(client
+    client
         .pull(
             &img,
             &auth,
             vec![PROVIDER_ARCHIVE_MEDIA_TYPE, WASM_MEDIA_TYPE, OCI_MEDIA_TYPE],
         )
-        .await?)
+        .await
+        .map_err(|e| Error::OciFetchFailure(img.to_string(), e.to_string()))
 }

@@ -14,6 +14,7 @@ use crate::network::WapcOutputReady;
 use crate::schematic::OutputReady;
 use crate::serialize;
 use crate::util::hlreg::HostLocalSystemService;
+use crate::Error;
 use crate::Result;
 use data_encoding::HEXUPPER;
 use ring::digest::Context;
@@ -106,7 +107,7 @@ impl MessagePayload {
     pub fn get_bytes(self) -> Result<Vec<u8>> {
         match self {
             MessagePayload::MessagePack(bytes) => Ok(bytes),
-            _ => Err(anyhow!("Invalid payload").into()),
+            _ => Err(Error::PayloadError("Invalid payload".to_string())),
         }
     }
 }
@@ -286,13 +287,13 @@ pub(crate) fn wapc_host_callback(
             ent => {
                 let e = format!("Reference not implemented. {}", ent);
                 error!("{}", e);
-                Err(anyhow!(e).into())
+                Err(e.into())
             }
         },
         None => {
             let e = format!("Can not resolve invocation {}", inv_id);
             error!("{}", e);
-            Err(anyhow!(e).into())
+            Err(e.into())
         }
     }
 }
@@ -343,13 +344,13 @@ pub(crate) fn native_host_callback(
             ent => {
                 let e = format!("Reference not implemented. {}", ent);
                 error!("{}", e);
-                Err(anyhow!(e).into())
+                Err(e.into())
             }
         },
         None => {
             let e = format!("Can not resolve invocation {}", inv_id);
             error!("{}", e);
-            Err(anyhow!(e).into())
+            Err(e.into())
         }
     }
 }

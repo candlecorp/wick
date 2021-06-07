@@ -1,12 +1,22 @@
-use actix::prelude::SendError;
-use anyhow::anyhow;
 use thiserror::Error;
 
-type BoxedErrorSyncSend = Box<dyn std::error::Error + Sync + std::marker::Send>;
+type BoxedErrorSyncSend = Box<dyn std::error::Error + Sync + Send>;
 // type BoxedError = Box<dyn std::error::Error>;
 
 #[derive(Error, Debug)]
 pub enum VinoError {
+    #[error("Network error: {0}")]
+    NetworkError(String),
+    #[error("Schematic error: {0}")]
+    SchematicError(String),
+    #[error("Dispatch error: {0}")]
+    DispatchError(String),
+    #[error("Payload error: {0}")]
+    PayloadError(String),
+    #[error("Schematic error: {0}")]
+    ComponentError(String),
+    #[error("Job error: {0}")]
+    JobError(String),
     #[error("invalid configuration")]
     ConfigurationError,
     #[error("File not found {0}")]
@@ -24,65 +34,27 @@ pub enum VinoError {
     #[error("Failed to deserialize payload {0}")]
     DeserializationError(rmp_serde::decode::Error),
     #[error(transparent)]
-    Other(#[from] anyhow::Error),
-}
-
-impl From<BoxedErrorSyncSend> for VinoError {
-    fn from(e: BoxedErrorSyncSend) -> Self {
-        VinoError::Other(anyhow!(e))
-    }
-}
-
-impl From<serde_yaml::Error> for VinoError {
-    fn from(e: serde_yaml::Error) -> Self {
-        VinoError::Other(anyhow!(e))
-    }
-}
-
-impl From<wascap::Error> for VinoError {
-    fn from(e: wascap::Error) -> Self {
-        VinoError::Other(anyhow!(e))
-    }
-}
-
-impl From<bcrypt::BcryptError> for VinoError {
-    fn from(e: bcrypt::BcryptError) -> Self {
-        VinoError::Other(anyhow!(e))
-    }
-}
-
-impl From<actix::MailboxError> for VinoError {
-    fn from(e: actix::MailboxError) -> Self {
-        VinoError::Other(anyhow!(e))
-    }
-}
-
-impl From<std::io::Error> for VinoError {
-    fn from(e: std::io::Error) -> Self {
-        VinoError::Other(anyhow!(e))
-    }
-}
-
-impl From<String> for VinoError {
-    fn from(e: String) -> Self {
-        VinoError::Other(anyhow!(e))
-    }
+    YamlError(#[from] serde_yaml::Error),
+    #[error(transparent)]
+    ActixMailboxError(#[from] actix::MailboxError),
+    #[error(transparent)]
+    IOError(#[from] std::io::Error),
+    #[error(transparent)]
+    KeyPairError(#[from] nkeys::error::Error),
+    #[error(transparent)]
+    WascapError(#[from] wascap::Error),
+    #[error(transparent)]
+    BCryptError(#[from] bcrypt::BcryptError),
+    #[error("Could not parse OCI URL: {0}")]
+    OCIParseError(String),
+    #[error(transparent)]
+    OtherUpstream(#[from] BoxedErrorSyncSend),
+    #[error("General error : {0}")]
+    Other(String),
 }
 
 impl From<&'static str> for VinoError {
     fn from(e: &'static str) -> Self {
-        VinoError::Other(anyhow!(e))
-    }
-}
-
-impl From<nkeys::error::Error> for VinoError {
-    fn from(e: nkeys::error::Error) -> Self {
-        VinoError::Other(anyhow!(e))
-    }
-}
-
-impl<M> From<SendError<M>> for VinoError {
-    fn from(e: SendError<M>) -> Self {
-        VinoError::Other(anyhow!(e.to_string()))
+        VinoError::Other(e.to_string())
     }
 }

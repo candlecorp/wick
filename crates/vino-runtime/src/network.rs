@@ -13,6 +13,7 @@ use crate::manifest::schematic_definition::get_components;
 use crate::schematic::OutputReady;
 use crate::serialize;
 use crate::util::hlreg::HostLocalSystemService;
+use crate::Error;
 use crate::Invocation;
 use crate::NetworkManifest;
 use crate::Result;
@@ -22,7 +23,7 @@ use futures::future::try_join_all;
 use serde::Serialize;
 use vino_guest::OutputPayload;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 
 pub struct Network {
     // host_labels: HashMap<String, String>,
@@ -102,7 +103,7 @@ pub async fn request<T: AsRef<str> + Display>(
     Ok(result)
 }
 
-#[derive(Message)]
+#[derive(Message, Debug)]
 #[rtype(result = "Result<()>")]
 pub struct Initialize {
     pub host_id: String,
@@ -175,9 +176,10 @@ impl Handler<Initialize> for Network {
                     match try_join_all(inits.into_iter().map(|(schem, msg)| schem.send(msg))).await
                     {
                         Ok(_) => Ok(()),
-                        Err(e) => {
-                            Err(anyhow!("Error initializing schematics {}", e.to_string()).into())
-                        }
+                        Err(e) => Err(Error::NetworkError(format!(
+                            "Error initializing schematics {}",
+                            e.to_string()
+                        ))),
                     }
                 }
                 .into_actor(network)
@@ -228,7 +230,7 @@ impl Handler<OutputReady> for Network {
             async move {
                 match receiver {
                     Some(schematic) => Ok(schematic.send(msg).await??),
-                    None => Err(anyhow!("Pushing output failed").into()),
+                    None => Err(Error::NetworkError("Failed to propagate output".into())),
                 }
             }
             .into_actor(self),
@@ -274,7 +276,9 @@ impl Handler<WapcOutputReady> for Network {
                             payload: message_payload,
                         })
                         .await??),
-                    None => Err(anyhow!("Pushing output failed").into()),
+                    None => Err(Error::NetworkError(
+                        "Failed to propagate WASM component output".into(),
+                    )),
                 }
             }
             .into_actor(self),
@@ -299,24 +303,24 @@ impl Handler<Request> for Network {
 
         let tx_id = uuid::Uuid::new_v4();
         trace!("Invoking schematic '{}'", schematic_name);
-        let schematic = self.schematics.get(&schematic_name).cloned();
+        let schematic = self
+            .schematics
+            .get(&schematic_name)
+            .cloned()
+            .ok_or_else(|| {
+                Error::NetworkError(format!("Schematic '{}' not found", schematic_name))
+            });
 
         let request = super::schematic::Request {
             tx_id: tx_id.to_string(),
-            schematic: schematic_name.to_string(),
+            schematic: schematic_name,
             payload,
         };
 
         Box::pin(
             async move {
-                if let Some(schematic) = schematic {
-                    match schematic.send(request).await? {
-                        Ok(payload) => Ok(deserialize(&payload.payload)?),
-                        Err(e) => Err(e.to_string().into()),
-                    }
-                } else {
-                    Err(anyhow!("Schematic '{}' not found", schematic_name).into())
-                }
+                let payload = schematic?.send(request).await??;
+                Ok(deserialize(&payload.payload)?)
             }
             .into_actor(self),
         )
@@ -327,6 +331,15 @@ impl Handler<Request> for Network {
 pub struct ComponentRegistry {
     pub components: HashMap<String, BoxedComponent>,
     pub receivers: HashMap<String, Recipient<Invocation>>,
+}
+
+impl std::fmt::Debug for ComponentRegistry {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ComponentRegistry")
+            .field("components", &self.components.keys())
+            .field("receivers", &self.receivers.keys())
+            .finish()
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -344,7 +357,10 @@ impl ComponentRegistry {
         for (name, component) in &self.components {
             let recipient = self.receivers.get(name);
             if recipient.is_none() {
-                return Err(anyhow!("Could not get recipient for {}", name).into());
+                return Err(Error::NetworkError(format!(
+                    "Could not get recipient for {}",
+                    name
+                )));
             }
             let recipient = recipient.unwrap();
 
@@ -394,7 +410,7 @@ mod test {
     }
 
     #[test_env_log::test(actix_rt::test)]
-    async fn native_component() -> crate::Result<()> {
+    async fn native_component() -> Result<()> {
         let network = init_network(include_str!("./test/native-component.yaml")).await?;
 
         let data = hashmap! {
@@ -414,7 +430,7 @@ mod test {
     }
 
     #[test_env_log::test(actix_rt::test)]
-    async fn wapc_component() -> crate::Result<()> {
+    async fn wapc_component() -> Result<()> {
         let network = init_network(include_str!("./test/wapc-component.yaml")).await?;
 
         let data = hashmap! {
@@ -444,7 +460,7 @@ mod test {
     }
 
     #[test_env_log::test(actix_rt::test)]
-    async fn short_circuit() -> crate::Result<()> {
+    async fn short_circuit() -> Result<()> {
         let network = init_network(include_str!("./test/short-circuit.yaml")).await?;
 
         trace!("requesting schematic execution");
@@ -464,7 +480,7 @@ mod test {
     }
 
     #[test_env_log::test(actix_rt::test)]
-    async fn multiple_schematics() -> crate::Result<()> {
+    async fn multiple_schematics() -> Result<()> {
         let network = init_network(include_str!("./test/multiple-schematics.yaml")).await?;
 
         let data = hashmap! {
