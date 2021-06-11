@@ -34,15 +34,15 @@ enum ComponentStatus {
 }
 
 #[derive(Debug)]
-pub struct Schematic {
-    pub network: Option<Addr<Network>>,
-    pub host_id: String,
-    pub components: HashMap<String, ComponentMetadata>,
-    pub recipients: HashMap<String, Recipient<Invocation>>,
-    pub seed: String,
-    pub transaction_map: TransactionMap,
-    pub references: HashMap<String, String>,
-    pub definition: SchematicDefinition,
+pub(crate) struct Schematic {
+    pub(crate) network: Option<Addr<Network>>,
+    pub(crate) host_id: String,
+    pub(crate) components: HashMap<String, ComponentMetadata>,
+    pub(crate) recipients: HashMap<String, Recipient<Invocation>>,
+    pub(crate) seed: String,
+    pub(crate) transaction_map: TransactionMap,
+    pub(crate) references: HashMap<String, String>,
+    pub(crate) definition: SchematicDefinition,
 }
 
 impl Supervised for Schematic {}
@@ -292,11 +292,11 @@ fn push_to_portbuffer(
 #[derive(Message)]
 #[rtype(result = "()")]
 pub(crate) struct Initialize {
-    pub host_id: String,
-    pub schematic: SchematicDefinition,
-    pub components: MetadataMap,
-    pub seed: String,
-    pub network: Addr<Network>,
+    pub(crate) host_id: String,
+    pub(crate) schematic: SchematicDefinition,
+    pub(crate) components: MetadataMap,
+    pub(crate) seed: String,
+    pub(crate) network: Addr<Network>,
 }
 
 impl Handler<Initialize> for Schematic {
@@ -323,15 +323,15 @@ impl Handler<Initialize> for Schematic {
 
 #[derive(Message, Clone, Debug)]
 #[rtype(result = "Result<SchematicResponse>")]
-pub struct Request {
-    pub tx_id: String,
-    pub schematic: String,
-    pub payload: HashMap<String, Vec<u8>>,
+pub(crate) struct Request {
+    pub(crate) tx_id: String,
+    pub(crate) schematic: String,
+    pub(crate) payload: HashMap<String, Vec<u8>>,
 }
 
 #[derive(Debug)]
-pub struct SchematicResponse {
-    pub payload: Vec<u8>,
+pub(crate) struct SchematicResponse {
+    pub(crate) payload: Vec<u8>,
 }
 
 impl Handler<Request> for Schematic {
@@ -561,11 +561,11 @@ impl Handler<MessagePacket> for Schematic {
 
 #[derive(Message, Clone)]
 #[rtype(result = "Result<()>")]
-pub struct ShortCircuit {
-    pub tx_id: String,
-    pub schematic: String,
-    pub reference: String,
-    pub payload: MessagePayload,
+pub(crate) struct ShortCircuit {
+    pub(crate) tx_id: String,
+    pub(crate) schematic: String,
+    pub(crate) reference: String,
+    pub(crate) payload: MessagePayload,
 }
 
 impl Handler<ShortCircuit> for Schematic {
@@ -620,9 +620,9 @@ impl Handler<ShortCircuit> for Schematic {
 #[derive(Message, Debug, Clone)]
 #[rtype(result = "Result<()>")]
 pub(crate) struct OutputReady {
-    pub port: PortEntity,
-    pub tx_id: String,
-    pub payload: MessagePayload,
+    pub(crate) port: PortEntity,
+    pub(crate) tx_id: String,
+    pub(crate) payload: MessagePayload,
 }
 
 impl Handler<OutputReady> for Schematic {
@@ -674,9 +674,9 @@ impl Handler<OutputReady> for Schematic {
 
 #[derive(Message, Clone, Debug)]
 #[rtype(result = "Result<InvocationResponse>")]
-pub struct ResponseFuture {
-    pub schematic: String,
-    pub tx_id: String,
+pub(crate) struct ResponseFuture {
+    pub(crate) schematic: String,
+    pub(crate) tx_id: String,
 }
 
 #[cfg(test)]

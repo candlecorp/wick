@@ -7,8 +7,19 @@
     unstable_features,
     unused_import_braces,
     unused_qualifications,
+    unreachable_pub,
+    type_alias_bounds,
+    trivial_bounds,
+    mutable_transmutes,
+    invalid_value,
+    explicit_outlives_requirements,
+    deprecated,
+    clashing_extern_declarations,
+    clippy::expect_used,
+    clippy::explicit_deref_methods,
     // missing_docs
 )]
+#![warn(clippy::cognitive_complexity)]
 
 pub(crate) mod components;
 pub(crate) mod dispatch;

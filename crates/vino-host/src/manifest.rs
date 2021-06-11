@@ -1,4 +1,4 @@
-use std::{fs::read_to_string, path::PathBuf};
+use std::{fs::read_to_string, path::Path};
 
 use crate::{error::VinoHostError, Result};
 use serde::{Deserialize, Serialize};
@@ -16,15 +16,23 @@ pub struct HostManifest {
 }
 
 impl HostManifest {
-    pub fn load_from_file(path: &PathBuf) -> Result<HostManifest> {
+    pub fn load_from_file(path: &Path) -> Result<HostManifest> {
         ensure!(
             path.exists(),
             VinoHostError::FileNotFound(path.to_string_lossy().to_string()),
         );
         let contents = read_to_string(path)?;
-        Self::from_yaml(&contents)
+        Self::from_hocon(&contents).or_else(|e| {
+            debug!("Loading manifest as hocon failed: {}", e.to_string());
+            Self::from_yaml(&contents)
+        })
+    }
+    pub fn from_hocon(src: &str) -> Result<HostManifest> {
+        debug!("Trying to parse manifest as hocon");
+        Ok(hocon::de::from_str(src)?)
     }
     pub fn from_yaml(src: &str) -> Result<HostManifest> {
+        debug!("Trying to parse manifest as yaml");
         Ok(serde_yaml::from_str(src)?)
     }
 }
@@ -91,11 +99,24 @@ mod test {
     use super::*;
 
     #[test_env_log::test(actix_rt::test)]
-    async fn load_manifest() -> Result<()> {
+    async fn load_manifest_yaml() -> Result<()> {
         let mut path = env::current_dir()?;
         path.push("src");
         path.push("configurations");
         path.push("logger.yaml");
+        let manifest = HostManifest::load_from_file(&path)?;
+
+        assert_eq!(manifest.default_schematic, "logger");
+
+        Ok(())
+    }
+
+    #[test_env_log::test(actix_rt::test)]
+    async fn load_manifest_hocon() -> Result<()> {
+        let mut path = env::current_dir()?;
+        path.push("src");
+        path.push("configurations");
+        path.push("logger.manifest");
         let manifest = HostManifest::load_from_file(&path)?;
 
         assert_eq!(manifest.default_schematic, "logger");

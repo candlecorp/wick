@@ -12,7 +12,7 @@ use wapc::WapcHost;
 use wascap::prelude::{Claims, KeyPair};
 
 #[derive(Default)]
-pub struct WapcComponentActor {
+pub(crate) struct WapcComponentActor {
     state: Option<State>,
 }
 
@@ -24,8 +24,8 @@ struct State {
 #[derive(Message)]
 #[rtype(result = "Result<()>")]
 pub(crate) struct Initialize {
-    pub actor_bytes: Vec<u8>,
-    pub signing_seed: String,
+    pub(crate) actor_bytes: Vec<u8>,
+    pub(crate) signing_seed: String,
 }
 
 impl Handler<Initialize> for WapcComponentActor {

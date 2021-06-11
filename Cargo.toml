@@ -47,6 +47,7 @@ path = "src/main.rs"
 [workspace]
 members = [
   "crates/vinoctl",
+  "crates/vino-macros",
   "crates/logger",
   "crates/vino-configfile",
   "crates/vino-runtime",

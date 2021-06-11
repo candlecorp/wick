@@ -11,7 +11,7 @@ macro_rules! native_actor {(
 
     use super::generated::$component_name::{Inputs, Outputs, InputEncoded, get_outputs, inputs_list, outputs_list, deserialize_inputs};
 
-    pub struct Actor {
+    pub(crate) struct Actor {
       callback: Option<NativeCallback>
     }
 
@@ -24,7 +24,7 @@ macro_rules! native_actor {(
     }
 
     impl Actor {
-      pub fn new(cb: NativeCallback) -> Self {
+      pub(crate) fn new(cb: NativeCallback) -> Self {
         Actor {
           callback: Some(cb)
         }

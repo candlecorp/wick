@@ -26,7 +26,6 @@ fn load_configfile<T: AsRef<str>>(file: T) -> VinoConfig {
 
 #[cfg(test)]
 mod tests {
-
     use crate::load_configfile;
     fn init() {
         env_logger::init();

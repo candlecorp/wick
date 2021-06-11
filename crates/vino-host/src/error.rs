@@ -1,6 +1,6 @@
 use thiserror::Error;
 
-type BoxedErrorSyncSend = Box<dyn std::error::Error + Sync + std::marker::Send>;
+type BoxedErrorSyncSend = Box<dyn std::error::Error + Sync + Send>;
 // type BoxedError = Box<dyn std::error::Error>;
 
 #[derive(Error, Debug)]
@@ -23,6 +23,8 @@ pub enum VinoHostError {
     ConfigurationDeserialization(String),
     #[error(transparent)]
     YamlError(#[from] serde_yaml::Error),
+    #[error(transparent)]
+    HoconError(#[from] hocon::Error),
     #[error(transparent)]
     ActixMailboxError(#[from] actix::MailboxError),
     #[error(transparent)]

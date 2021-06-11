@@ -84,7 +84,7 @@ pub(crate) struct SchematicResponse {
 }
 
 impl SchematicResponse {
-    pub fn new(tx_id: &str, inv_id: &str, name: &str) -> Self {
+    pub(crate) fn new(tx_id: &str, inv_id: &str, name: &str) -> Self {
         SchematicResponse {
             tx_id: tx_id.to_string(),
             inv_id: inv_id.to_string(),

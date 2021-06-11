@@ -191,7 +191,7 @@ impl Handler<Initialize> for Network {
 #[derive(Message, Debug, Clone)]
 #[rtype(result = "Option<(String, String, VinoEntity)>")]
 pub(crate) struct GetReference {
-    pub inv_id: String,
+    pub(crate) inv_id: String,
 }
 
 impl Handler<GetReference> for Network {
@@ -205,10 +205,10 @@ impl Handler<GetReference> for Network {
 #[derive(Message)]
 #[rtype(result = "()")]
 pub(crate) struct MapInvocation {
-    pub inv_id: String,
-    pub tx_id: String,
-    pub schematic: String,
-    pub entity: VinoEntity,
+    pub(crate) inv_id: String,
+    pub(crate) tx_id: String,
+    pub(crate) schematic: String,
+    pub(crate) entity: VinoEntity,
 }
 
 impl Handler<MapInvocation> for Network {
@@ -241,9 +241,9 @@ impl Handler<OutputReady> for Network {
 #[derive(Message, Debug, Clone)]
 #[rtype(result = "Result<()>")]
 pub(crate) struct WapcOutputReady {
-    pub port: PortEntity,
-    pub tx_id: String,
-    pub payload: Vec<u8>,
+    pub(crate) port: PortEntity,
+    pub(crate) tx_id: String,
+    pub(crate) payload: Vec<u8>,
 }
 
 impl Handler<WapcOutputReady> for Network {
@@ -289,8 +289,8 @@ impl Handler<WapcOutputReady> for Network {
 #[derive(Message)]
 #[rtype(result = "Result<HashMap<String, MessagePayload>>")]
 pub(crate) struct Request {
-    pub schematic: String,
-    pub data: HashMap<String, Vec<u8>>,
+    pub(crate) schematic: String,
+    pub(crate) data: HashMap<String, Vec<u8>>,
 }
 
 impl Handler<Request> for Network {
@@ -329,8 +329,8 @@ impl Handler<Request> for Network {
 
 #[derive(Default, Clone)]
 pub struct ComponentRegistry {
-    pub components: HashMap<String, BoxedComponent>,
-    pub receivers: HashMap<String, Recipient<Invocation>>,
+    pub(crate) components: HashMap<String, BoxedComponent>,
+    pub(crate) receivers: HashMap<String, Recipient<Invocation>>,
 }
 
 impl std::fmt::Debug for ComponentRegistry {

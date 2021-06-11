@@ -1,13 +1,12 @@
-use crate::manifest::HostManifest;
 use actix::prelude::*;
-use nkeys::KeyPair;
 use serde::Serialize;
 use std::{collections::HashMap, fmt::Display, sync::RwLock};
-use vino_runtime::{error::VinoError, manifest::network_manifest::NetworkManifest, Network};
+use vino_runtime::{manifest::network_manifest::NetworkManifest, Network};
 
 use crate::Result;
 
 /// A Vino Host wraps a Vino runtime with server functionality like persistence,
+#[derive(Debug)]
 pub struct Host {
     pub(crate) host_id: String,
     pub(crate) seed: String,
@@ -71,7 +70,7 @@ impl Host {
         Ok(())
     }
 
-    fn ensure_started(&self) -> Result<()> {
+    fn _ensure_started(&self) -> Result<()> {
         ensure!(
             *self.started.read().unwrap(),
             crate::Error::InvalidHostState("Host not started".into())
@@ -110,7 +109,7 @@ mod test {
     #[test_env_log::test(actix_rt::test)]
     async fn ensure_started() -> Result<()> {
         let host = HostBuilder::new().start().await?;
-        host.ensure_started()?;
+        host._ensure_started()?;
         host.stop().await;
 
         assert!(!host.is_started());

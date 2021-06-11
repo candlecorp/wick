@@ -25,12 +25,12 @@ pub struct WapcComponent {
 // pub type StartFuture<T> = Pin<Box<dyn Future<Output = Addr<T>> + Send>>;
 
 #[derive(Clone, Debug)]
-pub enum ComponentType {
+pub(crate) enum ComponentType {
     Native,
     WaPC,
 }
 
-pub trait VinoComponent: VinoComponentClone {
+pub(crate) trait VinoComponent: VinoComponentClone {
     fn public_key(&self) -> String;
     fn get_inputs(&self) -> Vec<String>;
     fn get_outputs(&self) -> Vec<String>;
@@ -39,8 +39,8 @@ pub trait VinoComponent: VinoComponentClone {
     fn claims(&self) -> Claims<wascap::jwt::Actor>;
 }
 
-pub type BoxedComponent = Box<dyn VinoComponent>;
-pub trait VinoComponentClone {
+pub(crate) type BoxedComponent = Box<dyn VinoComponent>;
+pub(crate) trait VinoComponentClone {
     fn clone_box(&self) -> Box<dyn VinoComponent>;
 }
 
@@ -167,14 +167,14 @@ impl Start for WapcComponent {
 }
 
 #[derive(Clone)]
-pub struct NativeComponent {
-    pub id: String,
-    pub inputs: Inputs,
-    pub outputs: Outputs,
+pub(crate) struct NativeComponent {
+    pub(crate) id: String,
+    pub(crate) inputs: Inputs,
+    pub(crate) outputs: Outputs,
 }
 
 impl NativeComponent {
-    pub fn from_id(name: String) -> Result<NativeComponent> {
+    pub(crate) fn from_id(name: String) -> Result<NativeComponent> {
         match native_actors::get_native_actor(&name) {
             Some(actor) => Ok(actor.get_def()),
             None => Err(Error::ComponentError(format!(

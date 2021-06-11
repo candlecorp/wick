@@ -1,11 +1,11 @@
 use std::path::Path;
 
-pub mod native_component_actor;
-pub mod vino_component;
-pub mod wapc_component_actor;
+pub(crate) mod native_component_actor;
+pub(crate) mod vino_component;
+pub(crate) mod wapc_component_actor;
 
-pub type Inputs = Vec<String>;
-pub type Outputs = Vec<String>;
+pub(crate) type Inputs = Vec<String>;
+pub(crate) type Outputs = Vec<String>;
 
 use crate::Result;
 

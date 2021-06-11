@@ -5,6 +5,7 @@ use nkeys::KeyPair;
 use crate::{Host, Result};
 
 /// The HostBuilder builds the configuration for a Vino Host
+#[derive(Debug, Copy, Clone)]
 pub struct HostBuilder {}
 
 impl Default for HostBuilder {

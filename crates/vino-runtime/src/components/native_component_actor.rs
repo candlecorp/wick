@@ -32,7 +32,7 @@ pub(crate) trait NativeActor {
     fn job_wrapper(&self, data: &[u8]) -> Result<Signal>;
 }
 
-pub type NativeCallback = Box<
+pub(crate) type NativeCallback = Box<
     dyn Fn(
             u64,
             &str,
@@ -48,8 +48,8 @@ pub type NativeCallback = Box<
 #[derive(Message)]
 #[rtype(result = "Result<()>")]
 pub(crate) struct Initialize {
-    pub name: String,
-    pub signing_seed: String,
+    pub(crate) name: String,
+    pub(crate) signing_seed: String,
 }
 
 impl Handler<Initialize> for NativeComponentActor {

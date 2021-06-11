@@ -1,0 +1,25 @@
+default_schematic: "logger"
+
+manifest {
+    schematics {
+        name: "logger",
+        components {
+          logger {
+            id: "vino::log"
+          }
+        },
+        connections: [
+            {
+              from { instance: "vino::schematic_input", port: "input" },
+              to { instance: "logger", port: "input" },
+            },
+            {
+              from { instance: "logger", port: "output" },
+              to { instance: "vino::schematic_input", port: "output" },
+            },
+          ],
+      },
+  }
+
+
+

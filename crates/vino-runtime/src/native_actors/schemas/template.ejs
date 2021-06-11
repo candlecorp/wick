@@ -13,7 +13,7 @@ use vino_guest::OutputPayload;
 
 pub(crate) struct Inputs {
   <% for (let input of Object.values(inputs.fields)) { %>
-    pub <%- helpers.fieldName(input.name.value) %>: <%- helpers.expandType(input.type) %>,
+    pub (crate) <%- helpers.fieldName(input.name.value) %>: <%- helpers.expandType(input.type) %>,
   <% } %>
 }
 
@@ -21,9 +21,9 @@ pub(crate) fn inputs_list() -> Vec<String> {
     vec![<%- inputs.fields.map(f => `"${f.name.value}".to_string()`).join(",") %>]
 }
 
-pub struct Outputs<'a> {
+pub (crate) struct Outputs<'a> {
     <% for (let output of Object.values(outputs.fields)) { %>
-    pub <%- helpers.fieldName(output.name.value) %>: <%- portStruct(output) %><'a>,
+    pub (crate) <%- helpers.fieldName(output.name.value) %>: <%- portStruct(output) %><'a>,
     <% } %>
 }
 
@@ -32,13 +32,13 @@ pub(crate) fn outputs_list() -> Vec<String> {
 }
 
 <% for (let output of Object.values(outputs.fields)) { %>
-pub struct <%- portStruct(output) %><'a> {
+pub (crate) struct <%- portStruct(output) %><'a> {
     inv_id: String,
     callback: &'a NativeCallback,
 }
 impl<'a>  <%- portStruct(output) %><'a> {
     #[allow(dead_code)]
-    pub fn send(&self, payload: <%- helpers.expandType(output.type) %>) -> Result<()> {
+    pub (crate) fn send(&self, payload: <%- helpers.expandType(output.type) %>) -> Result<()> {
         (self.callback)(
             0,
             &self.inv_id,
@@ -49,7 +49,7 @@ impl<'a>  <%- portStruct(output) %><'a> {
         Ok(())
     }
     #[allow(dead_code)]
-    pub fn exception(&self, message: String) -> Result<()> {
+    pub (crate) fn exception(&self, message: String) -> Result<()> {
         (self.callback)(
             0,
             &self.inv_id,
@@ -62,7 +62,7 @@ impl<'a>  <%- portStruct(output) %><'a> {
 }
 <% } %>
 
-pub fn get_outputs(callback: &NativeCallback, inv_id: String) -> Outputs {
+pub (crate) fn get_outputs(callback: &NativeCallback, inv_id: String) -> Outputs {
     Outputs {
         <%
         let fields = Object.values(outputs.fields);
@@ -79,13 +79,13 @@ pub fn get_outputs(callback: &NativeCallback, inv_id: String) -> Outputs {
 
 
 #[derive(Debug, PartialEq, Deserialize, Serialize, Default, Clone)]
-pub struct InputEncoded {
+pub (crate) struct InputEncoded {
     <% for (let input of Object.values(inputs.fields)) { %>
     #[serde(rename = "<%- helpers.fieldName(input.name.value) %>")]
     pub <%- helpers.fieldName(input.name.value) %>: Vec<u8>,
     <% } %>
 }
-pub(crate) fn deserialize_inputs(
+pub (crate) fn deserialize_inputs(
     args: InputEncoded,
 ) -> std::result::Result<
     Inputs, Box<dyn std::error::Error + Send + Sync>,
