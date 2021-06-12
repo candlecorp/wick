@@ -21,11 +21,11 @@ pub(crate) mod macros;
 mod builder;
 mod error;
 mod host;
-pub mod manifest;
+pub mod host_definition;
 
 pub use builder::HostBuilder;
 pub use host::Host;
-pub use manifest::HostManifest;
+pub use host_definition::HostDefinition;
 
 pub type Result<T> = std::result::Result<T, error::VinoHostError>;
 pub type Error = error::VinoHostError;

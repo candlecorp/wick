@@ -9,13 +9,13 @@ use crate::deserialize;
 use crate::dispatch::MessagePayload;
 use crate::dispatch::PortEntity;
 use crate::dispatch::VinoEntity;
-use crate::manifest::schematic_definition::get_components;
+use crate::network_definition::NetworkDefinition;
 use crate::schematic::OutputReady;
+use crate::schematic_definition::get_components;
 use crate::serialize;
 use crate::util::hlreg::HostLocalSystemService;
 use crate::Error;
 use crate::Invocation;
-use crate::NetworkManifest;
 use crate::Result;
 use actix::dev::Message;
 use actix::prelude::*;
@@ -34,7 +34,7 @@ pub struct Network {
     registry: ComponentRegistry,
     host_id: String,
     schematics: HashMap<String, Addr<Schematic>>,
-    manifest: NetworkManifest,
+    definition: NetworkDefinition,
     invocation_map: HashMap<String, (String, String, VinoEntity)>,
 }
 
@@ -49,7 +49,7 @@ impl Default for Network {
             registry: ComponentRegistry::default(),
             host_id: "".to_string(),
             schematics: HashMap::new(),
-            manifest: NetworkManifest::default(),
+            definition: NetworkDefinition::default(),
             invocation_map: HashMap::new(),
         }
     }
@@ -108,7 +108,7 @@ pub async fn request<T: AsRef<str> + Display>(
 pub struct Initialize {
     pub host_id: String,
     pub seed: String,
-    pub manifest: NetworkManifest,
+    pub network: NetworkDefinition,
 }
 
 impl Handler<Initialize> for Network {
@@ -117,21 +117,22 @@ impl Handler<Initialize> for Network {
     fn handle(&mut self, msg: Initialize, _ctx: &mut Context<Self>) -> Self::Result {
         trace!("Network initializing on {}", msg.host_id);
         self.host_id = msg.host_id;
-        self.manifest = msg.manifest;
+
+        self.definition = msg.network;
         let host_id = self.host_id.to_string();
 
-        let manifest = self.manifest.clone();
+        let network = self.definition.clone();
         let seed = msg.seed.clone();
         let seed2 = msg.seed;
 
         let allow_latest = self.allow_latest;
         let allowed_insecure = self.allowed_insecure.clone();
-        let schematics = manifest.schematics.clone();
+        let schematics = self.definition.schematics.clone();
 
         Box::pin(
             async move {
                 trace!("Getting components");
-                get_components(&manifest, seed, allow_latest, &allowed_insecure).await
+                get_components(&network, seed, allow_latest, &allowed_insecure).await
             }
             .into_actor(self)
             .then(move |components, network, ctx| {
@@ -159,7 +160,7 @@ impl Handler<Initialize> for Network {
                         let schematic = Schematic::default().start();
                         network
                             .schematics
-                            .insert(schem_def.name.to_string(), schematic.clone());
+                            .insert(schem_def.get_name(), schematic.clone());
                         (
                             schematic,
                             super::schematic::Initialize {
@@ -354,6 +355,8 @@ pub type MetadataMap = HashMap<String, ComponentMetadata>;
 impl ComponentRegistry {
     pub fn get_metadata(&self) -> Result<MetadataMap> {
         let mut map = MetadataMap::new();
+        trace!("Building metadata map for {:?}", self);
+
         for (name, component) in &self.components {
             let recipient = self.receivers.get(name);
             if recipient.is_none() {
@@ -389,12 +392,12 @@ mod test {
     use crate::network::Initialize;
     use crate::util::hlreg::HostLocalSystemService;
     use crate::util::serdes::serialize;
-    use crate::NetworkManifest;
+    use vino_manifest::NetworkManifest;
     use wascap::prelude::KeyPair;
 
     async fn init_network(yaml: &str) -> Result<Addr<Network>> {
-        let manifest = serde_yaml::from_str::<NetworkManifest>(&yaml)?;
-        trace!("applying manifest");
+        let def = NetworkDefinition::new(&NetworkManifest::V0(serde_yaml::from_str(&yaml)?));
+        debug!("Manifest loaded");
         let kp = KeyPair::new_server();
 
         let network = super::Network::from_hostlocal_registry(&kp.public_key());
@@ -402,7 +405,7 @@ mod test {
             .send(Initialize {
                 host_id: kp.public_key(),
                 seed: kp.seed()?,
-                manifest,
+                network: def,
             })
             .await??;
         trace!("manifest applied");

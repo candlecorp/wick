@@ -1,11 +1,11 @@
 use std::path::PathBuf;
 
 use crate::{
-    utils::{load_runconfig, merge_runconfig},
+    utils::{merge_runconfig},
     Result,
 };
 
-use vino_host::{HostBuilder, HostManifest};
+use vino_host::{HostBuilder, HostDefinition};
 
 use structopt::StructOpt;
 #[derive(Debug, Clone, StructOpt)]
@@ -29,8 +29,8 @@ pub async fn handle_command(command: StartCommand) -> Result<String> {
     crate::utils::init_logger(&command.logging)?;
 
     let config = match command.manifest {
-        Some(file) => load_runconfig(file)?,
-        None => HostManifest::default(),
+        Some(file) => vino_host::HostDefinition::load_from_file(&file)?,
+        None => HostDefinition::default(),
     };
 
     let config = merge_runconfig(config, command.nats, command.host);
@@ -80,7 +80,7 @@ pub async fn handle_command(command: StartCommand) -> Result<String> {
     match host.start().await {
         Ok(_) => {
             debug!("Applying manifest");
-            host.start_network(config.manifest).await?;
+            host.start_network(config.network).await?;
             info!("Manifest applied");
         }
         Err(e) => {

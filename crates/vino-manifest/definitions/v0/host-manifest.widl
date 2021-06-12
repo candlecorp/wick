@@ -1,0 +1,23 @@
+namespace "vino-manifest::v0"
+
+type HostManifest {
+  version: string @required,
+  network: NetworkManifest,
+  default_schematic: string = "default",
+  nats: NatsConfiguration,
+}
+
+type NatsConfiguration {
+  rpc_host: string = "0.0.0.0"
+    rpc_port: string = "4222"
+    rpc_credsfile: string?,
+    rpc_jwt: string?,
+    rpc_seed: string?,
+    control_host: string = "0.0.0.0",
+    control_port: string = "4222",
+    control_credsfile: string?,
+    control_jwt: string?,
+    control_seed: string?,
+    allow_oci_latest: bool,
+    allowed_insecure: [string],
+}

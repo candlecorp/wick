@@ -7,7 +7,6 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-# anyhow = "*"
 vino-runtime = { path = "../vino-runtime" }
 log = "*"
 env_logger = "*"
@@ -18,6 +17,7 @@ nkeys = "0.1.0"
 serde = { version = "1.0.126", features = ["derive"] }
 serde_yaml = "0.8.17"
 hocon = "0.5.2"
+vino-manifest = { path = "../vino-manifest" }
 
 [dev-dependencies]
 test-env-log = "0.2.7"

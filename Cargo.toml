@@ -34,6 +34,7 @@ unsafe-io = "= 0.6.2"
 vino-runtime = { path = "./crates/vino-runtime" }
 vino-host = { path = "./crates/vino-host" }
 logger = { path = "./crates/logger" }
+vino-manifest = { path = "./crates/vino-manifest" }
 
 [dev-dependencies]
 test_bin = "0.3.0"
@@ -52,4 +53,5 @@ members = [
   "crates/vino-configfile",
   "crates/vino-runtime",
   "crates/vino-host",
+  "crates/vino-manifest",
 ]

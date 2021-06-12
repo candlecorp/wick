@@ -1,0 +1,21 @@
+
+{{#switch kind ~}}
+  {{#case "StringValue"}}
+  "{{value}}".to_string()
+  {{/case}}
+  {{#case "ObjectValue"}}
+    {{#if fields }}
+      {{panic "Unhandled default" . }}
+    {{/if}}
+    HashMap::new()
+  {{/case}}
+  {{#case "ListValue"}}
+    {{#if value }}
+      {{panic "Unhandled default" . }}
+    {{/if}}
+    Vec::new()
+  {{/case}}
+  {{#default}}
+  {{panic "unhandled value" . }}
+  {{/default}}
+{{~/switch}}

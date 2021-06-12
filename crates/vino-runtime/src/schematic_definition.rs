@@ -1,6 +1,8 @@
 use actix::{Recipient, SyncArbiter};
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, fmt::Display, path::Path};
+use std::collections::HashMap;
+use std::{fmt::Display, path::Path};
+use vino_manifest::SchematicManifest;
 
 use crate::components::native_component_actor::{self, NativeComponentActor};
 use crate::components::vino_component::BoxedComponent;
@@ -10,58 +12,69 @@ use crate::{components::wapc_component_actor, Result};
 use crate::{
     components::vino_component::{NativeComponent, VinoComponent, WapcComponent},
     util::oci::fetch_oci_bytes,
-    NetworkManifest,
 };
 
 use crate::{components::wapc_component_actor::WapcComponentActor, dispatch::Invocation};
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+use crate::network_definition::NetworkDefinition;
+
+#[derive(Debug, Clone, Default)]
 pub struct SchematicDefinition {
     pub name: String,
-    #[serde(default)]
-    #[serde(skip_serializing_if = "Vec::is_empty")]
-    pub external: Vec<ExternalComponentDefinition>,
-    #[serde(default)]
-    #[serde(skip_serializing_if = "HashMap::is_empty")]
-    pub components: HashMap<String, ComponentDefinition>,
-    #[serde(default)]
-    #[serde(skip_serializing_if = "Vec::is_empty")]
-    pub connections: Vec<ConnectionDefinition>,
-    #[serde(default)]
-    #[serde(skip_serializing_if = "HashMap::is_empty")]
-    pub constraints: HashMap<String, String>,
+    pub(crate) external: Vec<ExternalComponentDefinition>,
+    pub(crate) components: HashMap<String, ComponentDefinition>,
+    pub(crate) connections: Vec<ConnectionDefinition>,
+    pub(crate) constraints: HashMap<String, String>,
 }
 
 impl SchematicDefinition {
-    pub fn new(
-        name: &str,
-        external: Vec<ExternalComponentDefinition>,
-        components: Vec<(String, ComponentDefinition)>,
-        connections: Vec<ConnectionDefinition>,
-        constraints: Vec<(String, String)>,
-    ) -> Self {
-        SchematicDefinition {
-            name: name.to_string(),
-            external,
-            components: components.iter().cloned().collect(),
-            connections,
-            constraints: constraints.iter().cloned().collect(),
+    pub(crate) fn new(manifest: &SchematicManifest) -> Self {
+        match manifest {
+            SchematicManifest::V0(manifest) => Self {
+                name: manifest.name.clone(),
+                components: manifest
+                    .components
+                    .clone()
+                    .into_iter()
+                    .map(|(key, val)| (key, val.into()))
+                    .collect(),
+                connections: manifest
+                    .connections
+                    .clone()
+                    .into_iter()
+                    .map(|def| def.into())
+                    .collect(),
+                constraints: manifest.constraints.clone().into_iter().collect(),
+                external: manifest
+                    .external
+                    .clone()
+                    .into_iter()
+                    .map(|def| def.into())
+                    .collect(),
+            },
         }
     }
-    pub fn get_output_names(&self) -> Vec<String> {
+    pub(crate) fn get_name(&self) -> String {
+        self.name.clone()
+    }
+    pub(crate) fn get_component(&self, name: &str) -> Option<&ComponentDefinition> {
+        self.components.get(name)
+    }
+
+    pub(crate) fn get_output_names(&self) -> Vec<String> {
         self.connections
             .iter()
             .filter(|conn| conn.to.instance == crate::SCHEMATIC_OUTPUT)
             .map(|conn| conn.to.port.to_string())
             .collect()
     }
-    pub fn id_to_ref(&self, id: &str) -> Result<String> {
+    pub(crate) fn id_to_ref(&self, id: &str) -> Result<String> {
         if id.starts_with(crate::VINO_NAMESPACE) {
             Ok(id.to_string())
         } else {
             for component in &self.external {
                 if id == component.key || Some(id.to_string()) == component.alias {
-                    return Ok(component.component_ref.to_string());
+                    return Ok(component.reference.to_string());
                 }
             }
             Err(Error::SchematicError(format!(
@@ -71,34 +84,67 @@ impl SchematicDefinition {
         }
     }
 }
-#[derive(Debug, Clone, Serialize, Deserialize)]
+
+impl From<vino_manifest::v0::SchematicManifest> for SchematicDefinition {
+    fn from(def: vino_manifest::v0::SchematicManifest) -> Self {
+        Self::new(&vino_manifest::SchematicManifest::V0(def))
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct ExternalComponentDefinition {
     pub alias: Option<String>,
-    #[serde(rename = "ref")]
-    pub component_ref: String,
+    pub reference: String,
     pub key: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ComponentDefinition {
-    pub metadata: Option<String>,
-    #[serde(rename = "id")]
-    pub id: String,
-}
-
-impl ComponentDefinition {
-    pub fn new(actor_ref: impl ToString, metadata: Option<String>) -> Self {
-        ComponentDefinition {
-            id: actor_ref.to_string(),
-            metadata,
+impl From<vino_manifest::v0::ExternalComponentDefinition> for ExternalComponentDefinition {
+    fn from(def: vino_manifest::v0::ExternalComponentDefinition) -> Self {
+        Self {
+            alias: def.alias,
+            key: def.key,
+            reference: def.reference,
         }
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
+pub struct ComponentDefinition {
+    pub metadata: Option<String>,
+    pub id: String,
+}
+
+impl From<vino_manifest::v0::ComponentDefinition> for ComponentDefinition {
+    fn from(def: vino_manifest::v0::ComponentDefinition) -> Self {
+        ComponentDefinition {
+            id: def.id,
+            metadata: None,
+        }
+    }
+}
+
+impl From<&vino_manifest::v0::ComponentDefinition> for ComponentDefinition {
+    fn from(def: &vino_manifest::v0::ComponentDefinition) -> Self {
+        ComponentDefinition {
+            id: def.id.to_string(),
+            metadata: None,
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct ConnectionDefinition {
     pub from: ConnectionTargetDefinition,
     pub to: ConnectionTargetDefinition,
+}
+
+impl From<vino_manifest::v0::ConnectionDefinition> for ConnectionDefinition {
+    fn from(def: vino_manifest::v0::ConnectionDefinition) -> Self {
+        ConnectionDefinition {
+            from: def.from.into(),
+            to: def.to.into(),
+        }
+    }
 }
 
 impl Display for ConnectionDefinition {
@@ -113,16 +159,16 @@ impl Display for ConnectionTargetDefinition {
     }
 }
 
-impl ConnectionDefinition {
-    pub fn new(
-        from: impl Into<ConnectionTargetDefinition>,
-        to: impl Into<ConnectionTargetDefinition>,
-    ) -> Self {
-        ConnectionDefinition {
-            from: from.into(),
-            to: to.into(),
+impl From<vino_manifest::v0::ConnectionTargetDefinition> for ConnectionTargetDefinition {
+    fn from(def: vino_manifest::v0::ConnectionTargetDefinition) -> Self {
+        ConnectionTargetDefinition {
+            instance: def.instance,
+            port: def.port,
         }
     }
+}
+
+impl ConnectionDefinition {
     pub fn print_all(list: &[Self]) -> String {
         list.iter()
             .map(|c| c.to_string())
@@ -135,12 +181,6 @@ impl ConnectionDefinition {
 pub struct ConnectionTargetDefinition {
     pub instance: String,
     pub port: String,
-}
-
-impl ConnectionTargetDefinition {
-    pub fn new(instance: String, port: String) -> Self {
-        ConnectionTargetDefinition { instance, port }
-    }
 }
 
 impl<T, U> From<(T, U)> for ConnectionTargetDefinition
@@ -157,14 +197,18 @@ where
 }
 
 pub(crate) async fn get_components(
-    manifest: &NetworkManifest,
+    network: &NetworkDefinition,
     seed: String,
     allow_latest: bool,
     allowed_insecure: &[String],
 ) -> Result<Vec<(BoxedComponent, Recipient<Invocation>)>> {
     let mut v: Vec<(BoxedComponent, Recipient<Invocation>)> = Vec::new();
-    for schematic in &manifest.schematics {
+    debug!("getting components {:?}", network);
+
+    for schematic in &network.schematics {
+        debug!("{:?}", schematic);
         for comp in schematic.components.values() {
+            debug!("{:?}", comp);
             let component_ref = schematic.id_to_ref(&comp.id)?;
             let component = get_component(
                 component_ref.to_string(),
@@ -257,7 +301,7 @@ pub(crate) async fn get_component(
                 Ok((Box::new(component), recipient))
             }
             Err(_) => Err(Error::SchematicError(format!(
-                "Could not find {} component on disk or in registry",
+                "Could not find component '{}' on disk or in registry",
                 comp_ref,
             ))),
         }

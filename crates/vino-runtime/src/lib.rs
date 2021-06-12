@@ -24,18 +24,20 @@
 pub(crate) mod components;
 pub(crate) mod dispatch;
 pub mod error;
-pub mod manifest;
 pub(crate) mod native_actors;
 pub mod network;
+pub mod network_definition;
 pub(crate) mod schematic;
+pub mod schematic_definition;
 pub(crate) mod schematic_response;
 pub(crate) mod util;
 
 pub use crate::dispatch::{Invocation, InvocationResponse};
-pub use crate::manifest::network_manifest::NetworkManifest;
-pub use crate::manifest::schematic_definition::SchematicDefinition;
 pub use crate::network::{request, Network};
 pub use crate::util::serdes::{deserialize, serialize};
+
+pub use crate::network_definition::NetworkDefinition;
+pub use crate::schematic_definition::SchematicDefinition;
 
 pub use crate::dispatch::MessagePayload;
 

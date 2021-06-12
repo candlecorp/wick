@@ -1,4 +1,4 @@
-use std::{io, path::PathBuf};
+use std::path::PathBuf;
 
 use directories_next::BaseDirs;
 use serde::Deserialize;
@@ -7,6 +7,7 @@ pub struct VinoConfig {
     pub cache_dir: Option<String>,
 }
 
+#[allow(dead_code)]
 fn load_configfile<T: AsRef<str>>(file: T) -> VinoConfig {
     let mut dir = match BaseDirs::new() {
         Some(base_dirs) => base_dirs.home_dir().to_path_buf(),

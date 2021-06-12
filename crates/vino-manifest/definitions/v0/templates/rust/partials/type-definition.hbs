@@ -1,0 +1,31 @@
+
+{{#each fields}}
+  {{#if default}}
+#[allow(non_snake_case)]
+fn {{upperCase (snakeCase ../name.value)}}_{{upperCase name.value}}() -> {{> expand-type type }} {
+  {{> expand-value default}}
+}
+  {{/if}}
+{{/each}}
+
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct {{name.value}} {
+  {{#each fields}}
+    {{#withAnnotation "deprecated"}}
+    #[deprecated()]
+    {{/withAnnotation}}
+    {{#unlessAnnotation "required"}}
+      {{#if default}}
+      #[serde(default = "{{upperCase (snakeCase ../name.value)}}_{{upperCase name.value}}")]
+      {{else}}
+      #[serde(default)]
+      {{/if}}
+    {{/unlessAnnotation}}
+    {{#switch type.kind}}
+      {{#case "MapType"}}#[serde(skip_serializing_if = "HashMap::is_empty")]{{/case}}
+      {{#case "ListType"}}#[serde(skip_serializing_if = "Vec::is_empty")]{{/case}}
+    {{/switch}}
+    pub {{name.value}}: {{> expand-type type}},
+  {{/each}}
+}

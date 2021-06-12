@@ -1,7 +1,7 @@
 use actix::prelude::*;
 use serde::Serialize;
 use std::{collections::HashMap, fmt::Display, sync::RwLock};
-use vino_runtime::{manifest::network_manifest::NetworkManifest, Network};
+use vino_runtime::{Network, NetworkDefinition};
 
 use crate::Result;
 
@@ -32,7 +32,7 @@ impl Host {
         }
     }
 
-    pub async fn start_network(&mut self, manifest: NetworkManifest) -> Result<()> {
+    pub async fn start_network(&mut self, def: NetworkDefinition) -> Result<()> {
         ensure!(
             self.network.is_none(),
             crate::Error::InvalidHostState("Host already has a network running".into())
@@ -43,7 +43,7 @@ impl Host {
             .send(vino_runtime::network::Initialize {
                 host_id: self.host_id.to_string(),
                 seed: self.seed.to_string(),
-                manifest,
+                network: def,
             })
             .await??;
         Ok(())
@@ -93,7 +93,7 @@ mod test {
     use vino_runtime::deserialize;
     use vino_runtime::MessagePayload;
 
-    use crate::manifest::HostManifest;
+    use crate::host_definition::HostDefinition;
     use crate::HostBuilder;
     use crate::Result;
 
@@ -120,8 +120,8 @@ mod test {
     async fn request_from_network() -> Result<()> {
         let mut host = HostBuilder::new().start().await?;
         let file = PathBuf::from("src/configurations/logger.yaml");
-        let manifest = HostManifest::load_from_file(&file)?;
-        host.start_network(manifest.manifest).await?;
+        let manifest = HostDefinition::load_from_file(&file)?;
+        host.start_network(manifest.network).await?;
         let passed_data = "logging output";
         let data: HashMap<&str, &str> = hashmap! {
             "input" => passed_data,

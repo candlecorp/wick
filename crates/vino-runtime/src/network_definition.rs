@@ -1,43 +1,39 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use vino_manifest::NetworkManifest;
 
-pub use crate::SchematicDefinition;
+use crate::schematic_definition::SchematicDefinition;
 
-#[derive(Debug, Clone, Serialize, Default, Deserialize)]
-pub struct NetworkManifest {
-    #[serde(default)]
-    #[serde(skip_serializing_if = "HashMap::is_empty")]
-    #[doc(hidden)]
-    pub labels: HashMap<String, String>,
-    #[deprecated]
-    #[doc(hidden)]
-    #[serde(default)]
-    #[serde(skip_serializing_if = "Vec::is_empty")]
-    pub actors: Vec<String>,
-    #[deprecated]
-    #[doc(hidden)]
-    #[serde(default)]
-    #[serde(skip_serializing_if = "Vec::is_empty")]
-    pub components: Vec<String>,
-    #[doc(hidden)]
-    #[serde(default)]
-    #[serde(skip_serializing_if = "Vec::is_empty")]
-    pub capabilities: Vec<Capability>,
-    #[doc(hidden)]
-    #[serde(default)]
-    #[serde(skip_serializing_if = "Vec::is_empty")]
-    pub links: Vec<LinkEntry>,
-    #[deprecated]
-    #[serde(default)]
-    #[serde(skip_serializing_if = "Vec::is_empty")]
-    pub references: Vec<ReferenceEntry>,
-    #[deprecated]
-    #[serde(default)]
-    #[serde(skip_serializing_if = "Vec::is_empty")]
-    pub connections: Vec<ConnectionEntry>,
-    #[serde(default)]
-    #[serde(skip_serializing_if = "Vec::is_empty")]
+#[derive(Debug, Clone)]
+pub struct NetworkDefinition {
     pub schematics: Vec<SchematicDefinition>,
+}
+
+impl NetworkDefinition {
+    pub fn new(manifest: &NetworkManifest) -> Self {
+        match manifest {
+            NetworkManifest::V0(manifest) => Self {
+                schematics: manifest
+                    .schematics
+                    .clone()
+                    .into_iter()
+                    .map(|val| val.into())
+                    .collect(),
+            },
+        }
+    }
+}
+
+impl From<vino_manifest::v0::NetworkManifest> for NetworkDefinition {
+    fn from(def: vino_manifest::v0::NetworkManifest) -> Self {
+        Self::new(&vino_manifest::NetworkManifest::V0(def))
+    }
+}
+
+impl Default for NetworkDefinition {
+    fn default() -> Self {
+        Self { schematics: vec![] }
+    }
 }
 
 /// The description of a capability within a host manifest

@@ -4,9 +4,11 @@ use std::time::Duration;
 use crate::dispatch::PortEntity;
 use crate::dispatch::VinoEntity;
 use crate::error::VinoError;
-use crate::manifest::schematic_definition::{ConnectionDefinition, ConnectionTargetDefinition};
 use crate::network::MetadataMap;
 use crate::network::{ComponentMetadata, MapInvocation, Network};
+use crate::schematic_definition::{
+    ConnectionDefinition, ConnectionTargetDefinition, SchematicDefinition,
+};
 use crate::schematic_response::{get_schematic_output, push_to_schematic_output};
 use crate::MessagePayload;
 use crate::{deserialize, Error};
@@ -17,9 +19,7 @@ use vino_guest::Signal;
 use wascap::prelude::KeyPair;
 
 use super::dispatch::InvocationResponse;
-use super::{
-    dispatch::Invocation, schematic_response::initialize_schematic_output, SchematicDefinition,
-};
+use super::{dispatch::Invocation, schematic_response::initialize_schematic_output};
 use crate::Result;
 type TransactionMap = HashMap<String, InputRefMap>;
 type InputRefMap = HashMap<String, BufferMap>;
@@ -78,7 +78,7 @@ impl Actor for Schematic {
 impl Schematic {
     fn get_downstream_recipient(&self, name: String) -> Option<Recipient<Invocation>> {
         trace!("getting downstream recipient {}", name);
-        match self.definition.components.get(&name) {
+        match self.definition.get_component(&name) {
             Some(comp) => self
                 .components
                 .get(&comp.id)
@@ -303,7 +303,7 @@ impl Handler<Initialize> for Schematic {
     type Result = ();
 
     fn handle(&mut self, msg: Initialize, _ctx: &mut Self::Context) -> Self::Result {
-        trace!("Initializing schematic {}", msg.schematic.name);
+        trace!("Initializing schematic {}", msg.schematic.get_name());
         self.seed = msg.seed;
         self.components = msg.components;
         self.host_id = msg.host_id;
@@ -466,7 +466,7 @@ impl Handler<MessagePacket> for Schematic {
     type Result = ResponseActFuture<Self, Result<()>>;
 
     fn handle(&mut self, msg: MessagePacket, ctx: &mut Context<Self>) -> Self::Result {
-        let name = self.definition.name.to_string();
+        let name = self.definition.get_name();
         let port = msg.target;
         let payload = msg.payload;
         let tx_id = msg.tx_id;
@@ -684,10 +684,10 @@ mod test {
 
     use crate::{
         components::wapc_component_actor::WapcComponentActor,
-        manifest::schematic_definition::{
+        network::ComponentMetadata,
+        schematic_definition::{
             ComponentDefinition, ConnectionDefinition, ConnectionTargetDefinition,
         },
-        network::ComponentMetadata,
         util::hlreg::HostLocalSystemService,
     };
 
@@ -702,15 +702,15 @@ mod test {
         // let component_addr = actor.start();
         let schematic = Schematic::default();
         let addr = schematic.start();
-        let mut schem_def = SchematicDefinition::default();
-        schem_def.components.insert(
+        let mut schematic_def = SchematicDefinition::default();
+        schematic_def.components.insert(
             "logger".to_string(),
             ComponentDefinition {
                 metadata: None,
                 id: "vino::log".to_string(),
             },
         );
-        schem_def.connections.push(ConnectionDefinition {
+        schematic_def.connections.push(ConnectionDefinition {
             from: ConnectionTargetDefinition {
                 instance: "vino::schematic".to_string(),
                 port: "input".to_string(),
@@ -720,7 +720,7 @@ mod test {
                 port: "input".to_string(),
             },
         });
-        schem_def.connections.push(ConnectionDefinition {
+        schematic_def.connections.push(ConnectionDefinition {
             from: ConnectionTargetDefinition {
                 instance: "logger".to_string(),
                 port: "output".to_string(),
@@ -744,7 +744,7 @@ mod test {
         addr.send(Initialize {
             network: Network::from_hostlocal_registry(&KeyPair::new_server().public_key()),
             host_id: "test".to_string(),
-            schematic: schem_def,
+            schematic: schematic_def,
             components: refs,
             seed: hostkey.seed()?,
         })
@@ -753,7 +753,7 @@ mod test {
         input.insert("input".to_string(), vec![20]);
         let response = addr
             .send(super::Request {
-                tx_id: "rsat".to_string(),
+                tx_id: "some_id".to_string(),
                 schematic: "logger".to_string(),
                 payload: input,
             })

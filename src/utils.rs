@@ -1,26 +1,6 @@
-use crate::{
-    commands::{HostOptions, NatsOptions},
-    error::VinoError,
-    Result,
-};
+use crate::commands::{HostOptions, NatsOptions};
 use logger::LoggingOptions;
-use std::{fs::File, io::Read, path::PathBuf};
-use vino_host::HostManifest;
-
-pub fn load_runconfig(path: PathBuf) -> Result<HostManifest> {
-    trace!("Loading configuration from {}", path.to_string_lossy());
-    let mut file = File::open(path.clone())
-        .map_err(|_| VinoError::FileNotFound(path.to_string_lossy().into()))?;
-
-    let mut buf = String::new();
-    file.read_to_string(&mut buf)?;
-    parse_runconfig(buf)
-}
-
-pub fn parse_runconfig(src: String) -> Result<HostManifest> {
-    serde_yaml::from_slice::<HostManifest>(src.as_bytes())
-        .map_err(|e| VinoError::ConfigurationDeserialization(e.to_string()))
-}
+use vino_host::HostDefinition;
 
 fn this_or_that_option<T>(a: Option<T>, b: Option<T>) -> Option<T> {
     if a.is_some() {
@@ -30,10 +10,14 @@ fn this_or_that_option<T>(a: Option<T>, b: Option<T>) -> Option<T> {
     }
 }
 
-pub fn merge_runconfig(base: HostManifest, nats: NatsOptions, host: HostOptions) -> HostManifest {
-    HostManifest {
-        manifest: base.manifest,
-        config: vino_host::manifest::CommonConfiguration {
+pub fn merge_runconfig(
+    base: HostDefinition,
+    nats: NatsOptions,
+    host: HostOptions,
+) -> HostDefinition {
+    HostDefinition {
+        network: base.network,
+        config: vino_host::host_definition::CommonConfiguration {
             rpc_host: nats.rpc_host.unwrap_or(base.config.rpc_host),
             rpc_port: nats.rpc_port.unwrap_or(base.config.rpc_port),
             rpc_credsfile: this_or_that_option(nats.rpc_credsfile, base.config.rpc_credsfile),

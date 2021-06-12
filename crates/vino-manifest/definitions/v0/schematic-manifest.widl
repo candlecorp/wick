@@ -1,0 +1,29 @@
+
+type SchematicManifest {
+    name: string,
+    external: [ExternalComponentDefinition],
+    components: {string: ComponentDefinition},
+    connections: [ConnectionDefinition],
+    constraints: {string: string},
+}
+
+type ExternalComponentDefinition {
+    alias: string?,
+    reference: string @required,
+    key: string,
+}
+
+type ComponentDefinition {
+    metadata: string?,
+    id: string @required,
+}
+
+type ConnectionDefinition {
+    from: ConnectionTargetDefinition @required,
+    to: ConnectionTargetDefinition @required,
+}
+
+type ConnectionTargetDefinition {
+    instance: string @required,
+    port: string @required,
+}

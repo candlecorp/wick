@@ -1,0 +1,40 @@
+
+
+type NetworkManifest {
+    labels: {string: string},
+    capabilities: [Capability],
+    links: [LinkEntry],
+    schematics: [SchematicManifest],
+    actors: [string] @deprecated,
+    components: [string] @deprecated,
+    references: [ReferenceEntry] @deprecated,
+    connections: [ConnectionEntry] @deprecated,
+}
+
+type Capability {
+    image_ref: string,
+    link_name: string?,
+}
+
+type LinkEntry {
+    actor: string,
+    contract_id: string,
+    provider_id: string,
+    link_name: string?,
+    values: {string: string}?,
+}
+
+type ReferenceEntry {
+    reference: string,
+    target: string,
+}
+
+type ConnectionEntry {
+    from: ActorPortEntry,
+    to: ActorPortEntry,
+}
+
+type ActorPortEntry {
+    reference: string,
+    port: string,
+}

@@ -3256,6 +3256,7 @@ dependencies = [
  "unsafe-io",
  "vino-guest",
  "vino-host",
+ "vino-manifest",
  "vino-runtime",
  "wapc",
 ]
@@ -3301,12 +3302,26 @@ dependencies = [
  "test-env-log",
  "thiserror",
  "tokio",
+ "vino-manifest",
  "vino-runtime",
 ]
 
 [[package]]
 name = "vino-macros"
 version = "0.1.0"
+
+[[package]]
+name = "vino-manifest"
+version = "0.1.0"
+dependencies = [
+ "env_logger 0.8.3",
+ "hocon",
+ "log",
+ "serde 1.0.126",
+ "serde_yaml",
+ "test-env-log",
+ "thiserror",
+]
 
 [[package]]
 name = "vino-runtime"
@@ -3336,6 +3351,7 @@ dependencies = [
  "uuid",
  "vino-guest",
  "vino-macros",
+ "vino-manifest",
  "wapc",
  "wascap",
  "wasm3-provider",

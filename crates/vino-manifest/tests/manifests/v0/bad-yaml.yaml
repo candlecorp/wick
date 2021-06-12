@@ -1,8 +1,7 @@
-#!/usr/bin/env vinox
 ---
 version: "0"
 default_schematic: "logger"
-network:
+manifest:
   schematics:
     - name: logger
       components:

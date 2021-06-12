@@ -7,7 +7,7 @@ use std::collections::HashMap;
 
 use error::VinoError;
 use serde_json::{json, Value::String as JsonString};
-use vino_host::{HostBuilder, HostManifest};
+use vino_host::{HostBuilder, HostDefinition};
 use vino_runtime::{deserialize, MessagePayload};
 
 pub type Result<T> = std::result::Result<T, VinoError>;
@@ -18,7 +18,7 @@ extern crate log;
 
 pub type JsonMap = HashMap<String, serde_json::value::Value>;
 
-pub async fn run(manifest: HostManifest, data: JsonMap) -> Result<serde_json::Value> {
+pub async fn run(manifest: HostDefinition, data: JsonMap) -> Result<serde_json::Value> {
     let host_builder = HostBuilder::new();
 
     let mut host = host_builder.build();
@@ -27,7 +27,7 @@ pub async fn run(manifest: HostManifest, data: JsonMap) -> Result<serde_json::Va
 
     host.start().await?;
 
-    host.start_network(manifest.manifest).await?;
+    host.start_network(manifest.network).await?;
 
     info!("Manifest applied");
 
@@ -62,19 +62,20 @@ pub async fn run(manifest: HostManifest, data: JsonMap) -> Result<serde_json::Va
 
 #[cfg(test)]
 mod tests {
-    use std::collections::HashMap;
+
+    use std::path::{Path, PathBuf};
 
     use maplit::hashmap;
 
     #[actix_rt::test]
     async fn runs_log_config() -> crate::Result<()> {
-        let manifest = include_bytes!("../examples/log.vino");
-        let config = crate::utils::parse_runconfig(String::from_utf8_lossy(manifest).into())?;
+        let host_def =
+            vino_host::HostDefinition::load_from_file(&PathBuf::from("./examples/log.vino"))?;
         let input = hashmap! {
           "input".into() => "test-input".into()
         };
 
-        let result = crate::run(config, input).await?;
+        let result = crate::run(host_def, input).await?;
         assert_eq!(result.get("output").unwrap(), "test-input");
         Ok(())
     }

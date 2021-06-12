@@ -2,7 +2,7 @@
 schematics:
   - name: test
     external:
-      - ref: ./tests/fixtures/validate.wasm
+      - reference: ./tests/fixtures/validate.wasm
         key: MDZNW2K7QBTK23OP4HO4BGPXKRNG3IGJW47MZMAKLOZYM72MDGQ5VIAL
     components:
       validate:

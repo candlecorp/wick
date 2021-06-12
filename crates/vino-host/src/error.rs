@@ -17,6 +17,8 @@ pub enum VinoHostError {
     HostStartFailure(String),
     #[error(transparent)]
     VinoError(#[from] vino_runtime::Error),
+    #[error(transparent)]
+    ManifestError(#[from] vino_manifest::Error),
     #[error("Invalid host state for operation: {0}")]
     InvalidHostState(String),
     #[error("Failed to deserialize configuration {0}")]
