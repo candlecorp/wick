@@ -1,10 +1,10 @@
 use std::path::PathBuf;
 
 use log::debug;
-use vino_manifest::*;
+use vino_manifest::{error::ManifestError, *};
 
 #[test_env_log::test]
-fn load_manifest_yaml() -> Result<()> {
+fn load_manifest_yaml() -> Result<(), ManifestError> {
     let path = PathBuf::from("./tests/manifests/v0/logger.yaml");
     let manifest = HostManifest::load_from_file(&path)?;
 
@@ -15,7 +15,7 @@ fn load_manifest_yaml() -> Result<()> {
 }
 
 #[test_env_log::test]
-fn load_bad_manifest_yaml() -> Result<()> {
+fn load_bad_manifest_yaml() -> Result<(), ManifestError> {
     let path = PathBuf::from("./tests/manifests/v0/bad-yaml.yaml");
     let manifest = HostManifest::load_from_file(&path);
     if let Err(Error::YamlError(e)) = manifest {
@@ -28,7 +28,7 @@ fn load_bad_manifest_yaml() -> Result<()> {
 }
 
 #[test_env_log::test]
-fn load_manifest_hocon() -> Result<()> {
+fn load_manifest_hocon() -> Result<(), ManifestError> {
     let path = PathBuf::from("./tests/manifests/v0/logger.manifest");
     let manifest = HostManifest::load_from_file(&path)?;
 
@@ -39,7 +39,7 @@ fn load_manifest_hocon() -> Result<()> {
 }
 
 #[test_env_log::test]
-fn load_bad_manifest_hocon() -> Result<()> {
+fn load_bad_manifest_hocon() -> Result<(), ManifestError> {
     let path = PathBuf::from("./tests/manifests/v0/bad-hocon.manifest");
     let manifest = HostManifest::load_from_file(&path);
     if let Err(Error::HoconError(e)) = manifest {

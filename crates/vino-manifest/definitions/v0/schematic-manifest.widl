@@ -1,29 +1,56 @@
 
+"A definition for an individual Vino schematic"
 type SchematicManifest {
+  "Schematic name"
     name: string,
+
+  "A list of external components"
     external: [ExternalComponentDefinition],
+
+  "A map from component reference to its target"
     components: {string: ComponentDefinition},
+
+  "A list of connections from component to component"
     connections: [ConnectionDefinition],
-    constraints: {string: string},
+
+  "A map of constraints and values that limit where this schematic can run"
+  constraints: {string: string},
 }
 
+"An external component definition"
 type ExternalComponentDefinition {
-    alias: string?,
-    reference: string @required,
-    key: string,
+  "An alias to use for this component (local to this manifest only)"
+  alias: string?,
+
+  "The location reference (i.e. URL or file path)"
+  reference: string @required,
+
+  "A public key to verify the retrieved component's validity"
+  key: string,
 }
 
+"A single component definition"
 type ComponentDefinition {
-    metadata: string?,
-    id: string @required,
+  "The ID of the component (i.e. the alias, key, or namespace)"
+  id: string @required,
+
+  "Unused (reserved)"
+  metadata: {string:string}?,
 }
 
+"A connection between components"
 type ConnectionDefinition {
-    from: ConnectionTargetDefinition @required,
-    to: ConnectionTargetDefinition @required,
+  "The originating component (upstream)"
+  from: ConnectionTargetDefinition @required,
+
+  "The destination component (downstream)"
+  to: ConnectionTargetDefinition @required,
 }
 
+"A connection target"
 type ConnectionTargetDefinition {
-    instance: string @required,
-    port: string @required,
+  "The component reference"
+  instance: string @required,
+  "The component's port"
+  port: string @required,
 }

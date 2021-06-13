@@ -7,10 +7,10 @@
     {{/switch}}
   {{/case}}
   {{#case "MapType"}}
-    std::collections::HashMap<{{> expand-type keyType}}, {{> expand-type valueType}}>
+    HashMap<{{> expand-type keyType}}, {{> expand-type valueType}}>
   {{/case}}
   {{#case "ListType"}}
-    std::vec::Vec<{{> expand-type type}}>
+    Vec<{{> expand-type type}}>
   {{/case}}
   {{#case "Optional"}}
     Option<{{>expand-type type}}>

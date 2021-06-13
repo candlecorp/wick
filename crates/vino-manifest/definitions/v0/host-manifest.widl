@@ -1,23 +1,54 @@
 namespace "vino-manifest::v0"
 
+"The Host Manifest defines the starting state of a Vino host"
 type HostManifest {
+  "The manifest version"
   version: string @required,
+
+  "The configuration for a Vino network"
   network: NetworkManifest,
+
+  "The default schematic to execute if none is provided"
   default_schematic: string = "default",
+
+  "The NATS configuration to connect hosts"
   nats: NatsConfiguration,
 }
 
+"The NATS configuration"
 type NatsConfiguration {
+  "The host for the RPC layer"
   rpc_host: string = "0.0.0.0"
-    rpc_port: string = "4222"
-    rpc_credsfile: string?,
-    rpc_jwt: string?,
-    rpc_seed: string?,
-    control_host: string = "0.0.0.0",
-    control_port: string = "4222",
-    control_credsfile: string?,
-    control_jwt: string?,
-    control_seed: string?,
-    allow_oci_latest: bool,
-    allowed_insecure: [string],
+
+  "The port for the RPC layer"
+  rpc_port: string = "4222"
+
+  "The NATS credsfile for the RPC layer"
+  rpc_credsfile: string?,
+
+  "The JSON web token to use for authentication to the RPC layer"
+  rpc_jwt: string?,
+
+  "The seed to use for authentication to the RPC layer"
+  rpc_seed: string?,
+
+  "The host for the RPC layer"
+  control_host: string = "0.0.0.0",
+
+  "The port for the RPC layer"
+  control_port: string = "4222",
+
+  "The NATS credsfile for the RPC layer"
+  control_credsfile: string?,
+
+  "The JSON web token to use for authentication to the RPC layer"
+  control_jwt: string?,
+  "The seed to use for authentication to the RPC layer"
+  control_seed: string?,
+
+  "Enable :latest tags for OCI references"
+  allow_oci_latest: bool,
+
+  "A list of insecure registries to allow"
+  allowed_insecure: [string],
 }

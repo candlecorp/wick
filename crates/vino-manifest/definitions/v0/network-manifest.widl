@@ -1,40 +1,81 @@
 
-
+"A Vino network definition"
 type NetworkManifest {
+  "The labels that apply to this host"
     labels: {string: string},
-    capabilities: [Capability],
-    links: [LinkEntry],
+
+    "The links between capabilities and components"
     schematics: [SchematicManifest],
+
+    "deprecated"
+    capabilities: [Capability]  @deprecated,
+
+    "deprecated"
+    links: [LinkEntry] @deprecated,
+
+    "deprecated"
     actors: [string] @deprecated,
+
+    "deprecated"
     components: [string] @deprecated,
+
+    "deprecated"
     references: [ReferenceEntry] @deprecated,
+
+    "deprecated"
     connections: [ConnectionEntry] @deprecated,
 }
 
+"deprecated"
 type Capability {
-    image_ref: string,
-    link_name: string?,
+    "deprecated"
+    image_ref: string @deprecated,
+
+    "deprecated"
+    link_name: string? @deprecated,
 }
 
+"deprecated"
 type LinkEntry {
-    actor: string,
-    contract_id: string,
-    provider_id: string,
-    link_name: string?,
-    values: {string: string}?,
+    "deprecated"
+    actor: string @deprecated,
+
+    "deprecated"
+    contract_id: string @deprecated,
+
+    "deprecated"
+    provider_id: string @deprecated,
+
+    "deprecated"
+    link_name: string? @deprecated,
+
+    "deprecated"
+    values: {string: string}? @deprecated,
 }
 
+"deprecated"
 type ReferenceEntry {
-    reference: string,
-    target: string,
+    "deprecated"
+    reference: string @deprecated,
+
+    "deprecated"
+    target: string @deprecated,
 }
 
+"deprecated"
 type ConnectionEntry {
-    from: ActorPortEntry,
-    to: ActorPortEntry,
+    "deprecated"
+    from: ActorPortEntry @deprecated,
+
+    "deprecated"
+    to: ActorPortEntry @deprecated,
 }
 
+"deprecated"
 type ActorPortEntry {
-    reference: string,
-    port: string,
+    "deprecated"
+    reference: string @deprecated,
+
+    "deprecated"
+    port: string @deprecated,
 }
