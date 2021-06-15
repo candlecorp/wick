@@ -321,7 +321,7 @@ impl Handler<Request> for Network {
         Box::pin(
             async move {
                 let payload = schematic?.send(request).await??;
-                Ok(deserialize(&payload.payload)?)
+                deserialize(&payload.payload)
             }
             .into_actor(self),
         )
@@ -396,7 +396,7 @@ mod test {
     use wascap::prelude::KeyPair;
 
     async fn init_network(yaml: &str) -> Result<Addr<Network>> {
-        let def = NetworkDefinition::new(&NetworkManifest::V0(serde_yaml::from_str(&yaml)?));
+        let def = NetworkDefinition::new(&NetworkManifest::V0(serde_yaml::from_str(yaml)?));
         debug!("Manifest loaded");
         let kp = KeyPair::new_server();
 

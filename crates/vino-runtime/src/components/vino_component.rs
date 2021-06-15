@@ -166,11 +166,11 @@ impl Start for WapcComponent {
     }
 }
 
-#[derive(Clone)]
-pub(crate) struct NativeComponent {
-    pub(crate) id: String,
-    pub(crate) inputs: Inputs,
-    pub(crate) outputs: Outputs,
+#[derive(Clone, Debug)]
+pub struct NativeComponent {
+    pub id: String,
+    pub inputs: Inputs,
+    pub outputs: Outputs,
 }
 
 impl NativeComponent {

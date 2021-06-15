@@ -523,10 +523,10 @@ impl Handler<MessagePacket> for Schematic {
                             entity: invocation.target.clone(),
                         });
 
-                        let response: std::result::Result<Signal, _> = match receiver {
+                        let response: Result<Signal> = match receiver {
                             Some(receiver) => match receiver.send(invocation).await {
                                 Ok(response) => deserialize(&response.msg),
-                                Err(err) => Err(format!("Error executing job: {}", err).into()),
+                                Err(err) => Err(err.into()),
                             },
                             None => Err("No receiver found".into()),
                         };

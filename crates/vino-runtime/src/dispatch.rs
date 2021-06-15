@@ -157,7 +157,7 @@ impl Invocation {
             operation: op.to_string(),
             msg: payload,
             id: subject,
-            encoded_claims: claims.encode(&hostkey).unwrap(),
+            encoded_claims: claims.encode(hostkey).unwrap(),
             host_id: issuer,
             tx_id: tx_id.to_string(),
         }
@@ -170,13 +170,13 @@ pub(crate) fn invocation_hash(target_url: &str, origin_url: &str, msg: &MessageP
     cleanbytes.write_all(origin_url.as_bytes()).unwrap();
     cleanbytes.write_all(target_url.as_bytes()).unwrap();
     match msg {
-        MessagePayload::MessagePack(bytes) => cleanbytes.write_all(&bytes).unwrap(),
-        MessagePayload::Exception(string) => cleanbytes.write_all(&string.as_bytes()).unwrap(),
-        MessagePayload::Error(string) => cleanbytes.write_all(&string.as_bytes()).unwrap(),
+        MessagePayload::MessagePack(bytes) => cleanbytes.write_all(bytes).unwrap(),
+        MessagePayload::Exception(string) => cleanbytes.write_all(string.as_bytes()).unwrap(),
+        MessagePayload::Error(string) => cleanbytes.write_all(string.as_bytes()).unwrap(),
         MessagePayload::MultiBytes(bytemap) => {
             for (key, val) in bytemap {
                 cleanbytes.write_all(key.as_bytes()).unwrap();
-                cleanbytes.write_all(&val).unwrap();
+                cleanbytes.write_all(val).unwrap();
             }
         }
     }

@@ -86,8 +86,8 @@ async fn pull(
 ) -> Result<oci_distribution::client::ImageData> {
     client
         .pull(
-            &img,
-            &auth,
+            img,
+            auth,
             vec![PROVIDER_ARCHIVE_MEDIA_TYPE, WASM_MEDIA_TYPE, OCI_MEDIA_TYPE],
         )
         .await

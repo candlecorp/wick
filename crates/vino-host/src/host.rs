@@ -55,7 +55,7 @@ impl Host {
         payload: HashMap<T, impl Serialize>,
     ) -> Result<HashMap<String, vino_runtime::MessagePayload>> {
         match &self.network {
-            Some(network) => vino_runtime::request(&network, schematic, payload)
+            Some(network) => vino_runtime::request(network, schematic, payload)
                 .await
                 .map_err(crate::Error::VinoError),
             None => Err(crate::Error::InvalidHostState(

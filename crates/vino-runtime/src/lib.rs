@@ -21,7 +21,7 @@
 )]
 #![warn(clippy::cognitive_complexity)]
 
-pub(crate) mod components;
+pub mod components;
 pub(crate) mod dispatch;
 pub mod error;
 pub(crate) mod native_actors;

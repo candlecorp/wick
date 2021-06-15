@@ -8,10 +8,20 @@ use nkeys::KeyPair;
 use vino_guest::{OutputPayload, Signal};
 
 #[derive(Default)]
-pub(crate) struct NativeComponentActor {
+pub struct NativeComponentActor {
     component: Option<Box<dyn NativeActor>>,
     name: String,
     seed: String,
+}
+
+impl std::fmt::Debug for NativeComponentActor {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("NativeComponentActor")
+            .field("component", &Some("<removed>".to_string()))
+            .field("name", &self.name)
+            .field("seed", &self.seed)
+            .finish()
+    }
 }
 
 impl Actor for NativeComponentActor {
@@ -24,7 +34,7 @@ impl Actor for NativeComponentActor {
     fn stopped(&mut self, _ctx: &mut Self::Context) {}
 }
 
-pub(crate) trait NativeActor {
+pub trait NativeActor {
     fn get_def(&self) -> NativeComponent;
     fn get_name(&self) -> String;
     fn get_input_ports(&self) -> Vec<String>;
@@ -32,7 +42,7 @@ pub(crate) trait NativeActor {
     fn job_wrapper(&self, data: &[u8]) -> Result<Signal>;
 }
 
-pub(crate) type NativeCallback = Box<
+pub type NativeCallback = Box<
     dyn Fn(
             u64,
             &str,

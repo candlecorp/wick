@@ -54,4 +54,6 @@ members = [
   "crates/vino-runtime",
   "crates/vino-host",
   "crates/vino-manifest",
+  "crates/vino-provider",
+  "crates/vino-provider-test",
 ]

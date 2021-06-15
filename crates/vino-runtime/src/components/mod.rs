@@ -1,7 +1,7 @@
 use std::path::Path;
 
-pub(crate) mod native_component_actor;
-pub(crate) mod vino_component;
+pub mod native_component_actor;
+pub mod vino_component;
 pub(crate) mod wapc_component_actor;
 
 pub(crate) type Inputs = Vec<String>;

@@ -63,7 +63,7 @@ pub async fn run(manifest: HostDefinition, data: JsonMap) -> Result<serde_json::
 #[cfg(test)]
 mod tests {
 
-    use std::path::{Path, PathBuf};
+    use std::path::PathBuf;
 
     use maplit::hashmap;
 
