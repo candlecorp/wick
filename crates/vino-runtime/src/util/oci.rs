@@ -67,9 +67,9 @@ pub(crate) async fn fetch_oci_bytes(
 
 fn cached_file(img: &str) -> PathBuf {
     let path = temp_dir();
-    let path = path.join("wasmcloud_ocicache");
+    let path = path.join("vino");
+    let path = path.join("ocicache");
     let _ = ::std::fs::create_dir_all(&path);
-    // should produce a file like wasmcloud_azurecr_io_kvcounter_v1.bin
     let img = img.replace(":", "_");
     let img = img.replace("/", "_");
     let img = img.replace(".", "_");

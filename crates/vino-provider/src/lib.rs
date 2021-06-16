@@ -32,7 +32,12 @@ pub struct InitConfiguration {
 #[async_trait]
 pub trait VinoProvider {
     fn init(&self) -> Result<()>;
-    async fn request(&self, inv_id: &str, component: String, payload: Vec<u8>) -> Result<Receiver>;
+    async fn request(
+        &self,
+        inv_id: String,
+        component: String,
+        payload: Vec<u8>,
+    ) -> Result<Receiver>;
 }
 
 #[async_trait]

@@ -32,7 +32,7 @@ pub mod schematic_definition;
 pub(crate) mod schematic_response;
 pub(crate) mod util;
 
-pub use crate::dispatch::{Invocation, InvocationResponse};
+pub use crate::dispatch::{Invocation, InvocationResponse, PortEntity, VinoEntity};
 pub use crate::network::{request, Network};
 pub use crate::util::serdes::{deserialize, serialize};
 

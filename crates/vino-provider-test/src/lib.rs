@@ -29,7 +29,7 @@ impl VinoProvider for Provider {
     }
     async fn request(
         &self,
-        _inv_id: &str,
+        _inv_id: String,
         component: String,
         payload: Vec<u8>,
     ) -> Result<Receiver> {
@@ -66,7 +66,11 @@ mod tests {
         let payload = serialize((invocation_id, job_payload))?;
 
         let mut outputs = provider
-            .request(invocation_id, "vino::test::provider".to_string(), payload)
+            .request(
+                invocation_id.to_string(),
+                "vino::test::provider".to_string(),
+                payload,
+            )
             .await?;
         let payload = outputs.next().await.unwrap();
         println!("payload: {:?}", payload);

@@ -24,7 +24,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use wascap::prelude::{Claims, KeyPair};
 
-/// An immutable representation of an invocation within wasmcloud
+/// An invocation for a component, port, or schematic
 #[derive(Debug, Clone, Serialize, Deserialize, Message, PartialEq)]
 #[rtype(result = "InvocationResponse")]
 pub struct Invocation {
@@ -103,6 +103,12 @@ pub enum MessagePayload {
     Error(String),
 }
 
+impl Default for MessagePayload {
+    fn default() -> Self {
+        Self::MessagePack(vec![])
+    }
+}
+
 impl MessagePayload {
     pub fn get_bytes(self) -> Result<Vec<u8>> {
         match self {
@@ -140,13 +146,13 @@ impl Invocation {
         op: &str,
         msg: impl Into<MessagePayload>,
     ) -> Invocation {
-        let subject = format!("{}", Uuid::new_v4());
+        let invocation_id = format!("{}", Uuid::new_v4());
         let issuer = hostkey.public_key();
         let target_url = format!("{}/{}", target.url(), op);
         let payload = msg.into();
         let claims = Claims::<wascap::prelude::Invocation>::new(
             issuer.to_string(),
-            subject.to_string(),
+            invocation_id.to_string(),
             &target_url,
             &origin.url(),
             &invocation_hash(&target_url, &origin.url(), &payload),
@@ -156,7 +162,7 @@ impl Invocation {
             target,
             operation: op.to_string(),
             msg: payload,
-            id: subject,
+            id: invocation_id,
             encoded_claims: claims.encode(hostkey).unwrap(),
             host_id: issuer,
             tx_id: tx_id.to_string(),
@@ -239,7 +245,7 @@ impl VinoEntity {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Eq, Hash)]
+#[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize, Eq, Hash)]
 pub struct PortEntity {
     pub schematic: String,
     pub reference: String,

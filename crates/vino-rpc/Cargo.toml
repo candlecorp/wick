@@ -1,0 +1,22 @@
+[package]
+name = "vino-rpc"
+version = "0.1.0"
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+log = "0.4.14"
+rmp-futures = { path="../rmp-futures" }
+vino-runtime = { path="../vino-runtime" }
+vino-macros = { path="../vino-macros" }
+futures = { version="0.3.15", features=["unstable"] }
+tokio = { version="1.7.0", features=["macros", "rt", "time", "net", "io-util", "rt-multi-thread"] }
+thiserror = "1.0.25"
+serde = { version="1.0.118", features=["derive"] }
+
+[dev-dependencies]
+test-env-log = { version="0.2.7" }
+env_logger = "0.8.4"
+anyhow = "1.0.41"
+lazy_static = "1.4.0"

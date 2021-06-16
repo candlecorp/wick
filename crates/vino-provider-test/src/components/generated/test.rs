@@ -6,7 +6,7 @@ use vino_runtime::deserialize;
 
 #[derive(Debug, PartialEq, Deserialize, Serialize, Default, Clone)]
 pub struct Inputs {
-    pub(crate) input: String,
+    pub input: String,
 }
 
 pub(crate) fn inputs_list() -> Vec<String> {
