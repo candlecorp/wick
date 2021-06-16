@@ -151,7 +151,7 @@ mod tests {
         assert_is_send(h.clone());
         let provider = Provider::default();
         let result = provider
-            .request("inv_id", "component".to_string(), vec![])
+            .request("inv_id".to_string(), "component".to_string(), vec![])
             .await?;
 
         assert_is_send(result);
@@ -170,7 +170,7 @@ mod tests {
         }
         async fn request(
             &self,
-            _inv_id: &str,
+            _inv_id: String,
             _component: String,
             _payload: Vec<u8>,
         ) -> Result<Receiver> {
