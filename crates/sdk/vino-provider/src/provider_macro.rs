@@ -37,8 +37,7 @@ macro_rules! provider_component {(
       }
       async fn job_wrapper(&self, context:ProviderContext<Self::Context>, data: &[u8]) -> Result<Receiver> {
           trace!("Job passed data: {:?}", data);
-          let (inv_id, input_encoded) : (String, InputEncoded) = vino_runtime::deserialize(&data)?;
-          debug!("Invocation ID: {:?}", inv_id);
+          let input_encoded : InputEncoded = vino_runtime::deserialize(&data)?;
           let inputs = deserialize_inputs(input_encoded).map_err(ProviderError::InputDeserializationError)?;
           let (outputs, receiver) = get_outputs();
           job(inputs, outputs, context).await?;
