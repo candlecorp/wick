@@ -1,21 +1,25 @@
-use futures::lock::Mutex;
-use log::error;
-use rmp_futures::rpc::decode::{RpcMessage, RpcStream};
-use rmp_futures::rpc::encode::RpcSink;
-use rmp_futures::rpc::{MsgId, RequestDispatch};
-use vino_runtime::serialize;
-
 use std::sync::Arc;
 
-use tokio::net::tcp::OwnedReadHalf;
-use tokio::net::tcp::OwnedWriteHalf;
-
+use futures::lock::Mutex;
+use rmp_futures::rpc::decode::{
+  RpcMessage,
+  RpcStream,
+};
+use rmp_futures::rpc::encode::RpcSink;
+use rmp_futures::rpc::{
+  MsgId,
+  RequestDispatch,
+};
+use tokio::net::tcp::{
+  OwnedReadHalf,
+  OwnedWriteHalf,
+};
 use tokio::net::TcpStream;
+use vino_runtime::serialize;
 
-use crate::handlers;
-use crate::rpc::{self, VinoRpcMessage};
-
-use crate::{Error, Result};
+use crate::handlers::{self,};
+use crate::rpc::VinoRpcMessage;
+use crate::Result;
 
 pub type RpcResult = Result<RpcMessage<RpcStream<OwnedReadHalf>>>;
 #[derive(Debug)]
@@ -23,7 +27,6 @@ pub struct Peer {
   pub id: String,
   pub reader: Option<RpcStream<OwnedReadHalf>>,
   pub writer: Arc<Mutex<Option<OwnedWriteHalf>>>,
-  pub shutting_down: bool,
 }
 
 impl Peer {
@@ -35,21 +38,23 @@ impl Peer {
       id,
       reader: Some(reader),
       writer: Arc::new(Mutex::new(Some(writer))),
-      shutting_down: false,
     }
   }
   // #[instrument]
   pub async fn send(&self, msg: &VinoRpcMessage) -> Result<()> {
-    debug!("[{}] sending msg", self.id);
+    debug!("[{}] sending [{}] message", self.id, msg.op_name());
+    let operation = msg.op_name();
+    let value = serialize(msg)?;
+    self.send_raw(operation, &value).await
+  }
+  async fn send_raw(&self, method: &str, msg: &[u8]) -> Result<()> {
+    debug!("[{}] sending [{}] {} bytes", self.id, method, msg.len());
     let mut writer_option = self.writer.lock().await;
     let writer = writer_option.take().unwrap();
     let dispatch: RequestDispatch<OwnedReadHalf> = RequestDispatch::default();
-
     let sink = RpcSink::new(writer);
-    let operation = msg.op_name();
-    let value = serialize(msg)?;
-    let (args, _reply) = dispatch.write_request(sink, operation, 1).await;
-    let sink = args?.last().write_str_bytes(&value).await?;
+    let (args, _reply) = dispatch.write_request(sink, method, 1).await;
+    let sink = args?.last().write_str_bytes(msg).await?;
     writer_option.replace(sink.into_inner());
     Ok(())
   }
@@ -65,12 +70,10 @@ impl Peer {
     let mut writer_option = self.writer.lock().await;
     let writer = writer_option.take().unwrap();
     let sink = RpcSink::new(writer);
-    let value = serialize(&VinoRpcMessage::Ack(id.to_string()))?;
     let writer = sink
-      .write_ok_response(id, |rsp| rsp.write_str_bytes(&value))
-      .await
-      .unwrap()
-      .into_inner();
+      .write_ok_response(id, |rsp| rsp.write_bool(true))
+      .await?;
+    let writer = writer.into_inner();
     writer_option.replace(writer);
     Ok(())
   }
@@ -78,9 +81,7 @@ impl Peer {
   pub async fn next(&mut self) -> Result<Option<VinoRpcMessage>> {
     debug!("[{}] waiting for next message...", self.id);
     let mut reader = self.reader.take().unwrap();
-    if self.shutting_down {
-      return Err(Error::ShuttingDown);
-    }
+
     let (message, reader) = loop {
       let (m, r) = match reader.next().await? {
         RpcMessage::Request(req) => {
@@ -89,36 +90,12 @@ impl Peer {
           let method = req.method().await?;
           let (method, params) = method.into_string().await?;
           debug!("[{}] request method parsed to '{}'", self.id, method);
-          let (message, reader) = match method.as_ref() {
-            rpc::OP_INVOKE => handlers::handler(id, params).await?,
-            rpc::OP_ERROR => handlers::handler(id, params).await?,
-            rpc::OP_CLOSE => handlers::handler(id, params).await?,
-            rpc::OP_OUTPUT => handlers::handler(id, params).await?,
-            rpc::OP_ACK => {
-              error!("Ack request received. Ack only makes sense as a response.");
-              (None, params.params().await?.skip().await?)
-            }
-            rpc::OP_PING => {
-              trace!("<PING>");
-              self.send(&VinoRpcMessage::Pong).await?;
-              (None, params.params().await?.skip().await?)
-            }
-            rpc::OP_PONG => {
-              trace!("<PONG>");
-              (None, params.params().await?.skip().await?)
-            }
-            rpc::OP_SHUTDOWN => {
-              self.shutting_down = true;
-              (None, params.params().await?.skip().await?)
-            }
-            _ => panic!("unhandled method {}", method),
-          };
+          let (message, reader) = handlers::handle(&method, id, params).await?;
           self.send_response(id).await?;
           (message, reader)
         }
         RpcMessage::Response(resp) => {
           debug!("[{}] got response for ID:{}", self.id, resp.id());
-
           (None, resp.skip().await?)
         }
         RpcMessage::Notify(_nfy) => panic!("got notify"),
@@ -138,18 +115,26 @@ impl Peer {
 
 #[cfg(test)]
 mod tests {
-  use crate::rpc::{ClosePayload, OutputPayload};
+
   use tokio::net::TcpListener;
-  use vino_runtime::{Invocation, MessagePayload, VinoEntity};
+  use vino_runtime::{
+    Invocation,
+    MessagePayload,
+    VinoEntity,
+  };
 
   use super::*;
+  use crate::rpc::{
+    CloseMessage,
+    OutputMessage,
+  };
+  use crate::Error;
 
-  async fn make_server() -> tokio::task::JoinHandle<Result<()>> {
+  async fn make_server(port: &'static str) -> tokio::task::JoinHandle<Result<()>> {
     warn!("Starting server");
 
-    let listener = TcpListener::bind("127.0.0.1:12345").await.unwrap();
-    tokio::spawn(async move {
-      // loop {
+    let handle = tokio::spawn(async move {
+      let listener = TcpListener::bind(format!("127.0.0.1:{}", port)).await?;
       let socket = match listener.accept().await {
         Ok((socket, _)) => socket,
         Err(e) => {
@@ -157,10 +142,7 @@ mod tests {
         }
       };
       tokio::spawn(async move {
-        warn!(
-          "Server accepting stream from: {}",
-          socket.peer_addr().unwrap()
-        );
+        warn!("Server accepting stream from: {}", socket.peer_addr()?);
         let mut peer = Peer::new("server".to_string(), socket);
         loop {
           let next = peer.next().await?.unwrap();
@@ -170,9 +152,9 @@ mod tests {
               warn!("invoke: {}", invocation.id);
               assert_eq!(invocation.id, "INV_ID");
               peer
-                .send(&VinoRpcMessage::Output(OutputPayload {
+                .send(&VinoRpcMessage::Output(OutputMessage {
                   tx_id: invocation.tx_id,
-                  ..OutputPayload::default()
+                  ..OutputMessage::default()
                 }))
                 .await?
             }
@@ -180,7 +162,7 @@ mod tests {
               warn!("output.tx_id: {}", output.tx_id);
               assert_eq!(output.tx_id, "TX_ID");
               peer
-                .send(&VinoRpcMessage::Close(ClosePayload {
+                .send(&VinoRpcMessage::Close(CloseMessage {
                   tx_id: output.tx_id,
                   entity: output.entity,
                 }))
@@ -194,14 +176,11 @@ mod tests {
               warn!("err: {}", err);
               assert_eq!(err, "ERROR");
             }
-            VinoRpcMessage::Ack(id) => {
-              warn!("ack: {}", id);
+            VinoRpcMessage::Ping(s) => {
+              warn!("Server got ping: {}", s);
             }
-            VinoRpcMessage::Ping => {
-              warn!("Server got ping");
-            }
-            VinoRpcMessage::Pong => {
-              warn!("Server got pong");
+            VinoRpcMessage::Pong(s) => {
+              warn!("Server got pong: {}", s);
             }
             VinoRpcMessage::Shutdown => {
               warn!("Shutting down");
@@ -212,80 +191,65 @@ mod tests {
         warn!("Shutting down");
         Ok!(())
       });
-      // }
+      warn!("Connection running");
       Ok!(())
-    })
+    });
+    tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+    handle
   }
 
-  #[test_env_log::test]
-  fn test_invoke() -> anyhow::Result<()> {
+  #[test_env_log::test(tokio::test)]
+  async fn test_invoke() -> Result<()> {
     trace!("test invoke");
-
-    fn test() -> tokio::task::JoinHandle<Result<()>> {
-      tokio::task::spawn(async move {
-        let stream = TcpStream::connect("127.0.0.1:12345").await?;
-        info!("Connected to server");
-        let mut peer = Peer::new("client".to_string(), stream);
-        let invoke = VinoRpcMessage::Invoke(Invocation {
-          origin: VinoEntity::Component("".to_string()),
-          target: VinoEntity::Component("".to_string()),
-          operation: "".to_string(),
-          msg: MessagePayload::MessagePack(vec![]),
-          id: "INV_ID".to_string(),
-          tx_id: "TX_ID".to_string(),
-          encoded_claims: "".to_string(),
-          host_id: "".to_string(),
-        });
-        info!("Sending invocation");
-        peer.send(&invoke).await?;
-        info!("Sent");
-        let next = peer.next().await?.unwrap();
-        info!("Next was : {:?}", next);
-        if let VinoRpcMessage::Output(output) = next {
-          assert_eq!(output.tx_id, "TX_ID");
-        } else {
-          panic!("wrong message returned");
-        }
-        peer.send_shutdown().await?;
-        Ok!(())
-      })
+    let port = "12345";
+    let server = make_server(port).await;
+    let stream = TcpStream::connect(format!("127.0.0.1:{}", port)).await?;
+    info!("Connected to server");
+    let mut peer = Peer::new("client".to_string(), stream);
+    let invoke = VinoRpcMessage::Invoke(Invocation {
+      origin: VinoEntity::Component("".to_string()),
+      target: VinoEntity::Component("".to_string()),
+      msg: MessagePayload::MessagePack(vec![]),
+      id: "INV_ID".to_string(),
+      tx_id: "TX_ID".to_string(),
+      encoded_claims: "".to_string(),
+      host_id: "".to_string(),
+    });
+    info!("Sending invocation");
+    peer.send(&invoke).await?;
+    info!("Sent");
+    let next = peer.next().await?.unwrap();
+    info!("Next was : {:?}", next);
+    if let VinoRpcMessage::Output(output) = next {
+      assert_eq!(output.tx_id, "TX_ID");
+    } else {
+      panic!("wrong message returned");
     }
-    let (res1, res2) = tokio::runtime::Runtime::new()?
-      .block_on(async move { tokio::join!(make_server().await, test()) });
-    trace!("Futures complete");
-    let _server_response = res1?;
-    let _test_response = res2?;
+    peer.send_shutdown().await?;
+    server.await??;
 
     Ok(())
   }
 
-  #[test_env_log::test]
-  fn test_output() -> anyhow::Result<()> {
+  #[test_env_log::test(tokio::test)]
+  async fn test_output() -> Result<()> {
     trace!("test output");
+    let port = "12346";
+    let server = make_server(port).await;
+    let stream = TcpStream::connect(format!("127.0.0.1:{}", port)).await?;
 
-    fn test() -> tokio::task::JoinHandle<Result<()>> {
-      tokio::task::spawn(async move {
-        let stream = TcpStream::connect("127.0.0.1:12345").await?;
-        trace!("Connected to server");
-        let mut peer = Peer::new("client".to_string(), stream);
-        let msg = VinoRpcMessage::Output(OutputPayload {
-          tx_id: "TX_ID".to_string(),
-          ..Default::default()
-        });
-        peer.send(&msg).await?;
-        info!("Sent");
-        let next = peer.next().await?;
-        trace!("Next was : {:?}", next);
-        peer.send_shutdown().await?;
-        Ok!(())
-      })
-    }
-    let (res1, res2) = tokio::runtime::Runtime::new()?
-      .block_on(async move { tokio::join!(make_server().await, test()) });
-
-    trace!("Futures complete");
-    let _server_response = res1?;
-    let _test_response = res2?;
+    trace!("Connected to server");
+    let mut peer = Peer::new("client".to_string(), stream);
+    let msg = VinoRpcMessage::Output(OutputMessage {
+      tx_id: "TX_ID".to_string(),
+      ..Default::default()
+    });
+    peer.send(&msg).await?;
+    info!("Sent");
+    let next = peer.next().await?;
+    trace!("Next was : {:?}", next);
+    peer.send_shutdown().await?;
+    server.await??;
 
     Ok(())
   }

@@ -1,25 +1,29 @@
-pub mod provider_macro;
-
-pub mod port;
-
-pub mod error;
-
-pub type Result<T> = std::result::Result<T, crate::error::ProviderError>;
-
-use async_trait::async_trait;
-use error::ProviderError;
-use port::Receiver;
-use vino_guest::OutputPayload;
-
-use rmp_serde::{Deserializer, Serializer};
-use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::io::Cursor;
-use std::sync::Arc;
-use std::sync::Mutex;
+use std::sync::{
+  Arc,
+  Mutex,
+};
 
+use async_trait::async_trait;
+use port::Receiver;
+use rmp_serde::{
+  Deserializer,
+  Serializer,
+};
+use serde::{
+  Deserialize,
+  Serialize,
+};
+use vino_guest::OutputPayload;
+
+pub mod error;
+pub mod port;
+pub mod provider_macro;
+
+pub type Result<T> = std::result::Result<T, Error>;
+pub type Error = error::ProviderError;
 pub type ProviderCallback = Box<dyn Fn(u64, &str, &str, &str, &OutputPayload)>;
-
 pub type Context<T> = Arc<Mutex<T>>;
 
 pub const RPC_OP_INITIALIZE: &str = "rpc_init";
@@ -49,7 +53,7 @@ pub fn serialize_rpc_response(item: RPCResponse) -> Result<Vec<u8>> {
   let mut buf = Vec::new();
   match item.serialize(&mut Serializer::new(&mut buf).with_struct_map()) {
     Ok(_) => Ok(buf),
-    Err(e) => Err(ProviderError::RPCSerializationError(e)),
+    Err(e) => Err(Error::RPCSerializationError(e)),
   }
 }
 
@@ -58,7 +62,7 @@ pub fn deserialize_rpc_response(buf: &[u8]) -> Result<RPCResponse> {
   let mut de = Deserializer::new(Cursor::new(buf));
   match Deserialize::deserialize(&mut de) {
     Ok(t) => Ok(t),
-    Err(e) => Err(ProviderError::RPCDeserializationError(e)),
+    Err(e) => Err(Error::RPCDeserializationError(e)),
   }
 }
 

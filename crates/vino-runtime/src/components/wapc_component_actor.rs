@@ -1,15 +1,24 @@
 use std::time::Instant;
 
-use crate::components::vino_component::WapcComponent;
-use crate::dispatch::VinoEntity;
-
-use crate::dispatch::{Invocation, InvocationResponse, MessagePayload};
-use crate::serialize;
-use crate::Result;
 use actix::prelude::*;
 use log::info;
 use wapc::WapcHost;
-use wascap::prelude::{Claims, KeyPair};
+use wascap::prelude::{
+  Claims,
+  KeyPair,
+};
+
+use crate::components::vino_component::WapcComponent;
+use crate::dispatch::{
+  Invocation,
+  InvocationResponse,
+  MessagePayload,
+  VinoEntity,
+};
+use crate::{
+  serialize,
+  Result,
+};
 
 #[derive(Default)]
 pub(crate) struct WapcComponentActor {
@@ -130,10 +139,9 @@ impl Handler<Invocation> for WapcComponentActor {
     let inv_id = msg.id.to_string();
 
     debug!(
-      "Actor Invocation - From {} to {}: {}",
+      "Actor Invocation - From {} to {}",
       msg.origin.url(),
       msg.target.url(),
-      msg.operation
     );
 
     if let VinoEntity::Component(_) = msg.target {
@@ -143,7 +151,7 @@ impl Handler<Invocation> for WapcComponentActor {
           Ok(bytes) => {
             trace!("Serialized job input in {} μs", now.elapsed().as_micros());
             let now = Instant::now();
-            match state.guest_module.call(&msg.operation, &bytes) {
+            match state.guest_module.call("job", &bytes) {
               Ok(bytes) => {
                 trace!("Actor call took {} μs", now.elapsed().as_micros());
                 InvocationResponse::success(msg.tx_id, bytes)

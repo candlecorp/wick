@@ -1,26 +1,49 @@
-use std::collections::{HashMap, VecDeque};
+use std::collections::{
+  HashMap,
+  VecDeque,
+};
 use std::time::Duration;
 
-use crate::dispatch::PortEntity;
-use crate::dispatch::VinoEntity;
-use crate::error::VinoError;
-use crate::network::MetadataMap;
-use crate::network::{ComponentMetadata, MapInvocation, Network};
-use crate::schematic_definition::{
-  ConnectionDefinition, ConnectionTargetDefinition, SchematicDefinition,
-};
-use crate::schematic_response::{get_schematic_output, push_to_schematic_output};
-use crate::MessagePayload;
-use crate::{deserialize, Error};
 use actix::prelude::*;
 use futures::future::try_join_all;
-use serde::{Deserialize, Serialize};
+use serde::{
+  Deserialize,
+  Serialize,
+};
 use vino_guest::Signal;
 use wascap::prelude::KeyPair;
 
-use super::dispatch::InvocationResponse;
-use super::{dispatch::Invocation, schematic_response::initialize_schematic_output};
-use crate::Result;
+use super::dispatch::{
+  Invocation,
+  InvocationResponse,
+};
+use super::schematic_response::initialize_schematic_output;
+use crate::dispatch::{
+  PortEntity,
+  VinoEntity,
+};
+use crate::error::VinoError;
+use crate::network::{
+  ComponentMetadata,
+  MapInvocation,
+  MetadataMap,
+  Network,
+};
+use crate::schematic_definition::{
+  ConnectionDefinition,
+  ConnectionTargetDefinition,
+  SchematicDefinition,
+};
+use crate::schematic_response::{
+  get_schematic_output,
+  push_to_schematic_output,
+};
+use crate::{
+  deserialize,
+  Error,
+  MessagePayload,
+  Result,
+};
 type TransactionMap = HashMap<String, InputRefMap>;
 type InputRefMap = HashMap<String, BufferMap>;
 type BufferMap = HashMap<String, PortBuffer>;
@@ -197,7 +220,6 @@ impl Schematic {
       &kp,
       VinoEntity::Schematic(port.schematic.to_string()),
       VinoEntity::Component(reference.to_string()),
-      "job",
       MessagePayload::MultiBytes(job_data),
     )))
   }
@@ -681,14 +703,15 @@ pub(crate) struct ResponseFuture {
 #[cfg(test)]
 mod test {
 
-  use crate::{
-    components::wapc_component_actor::WapcComponentActor,
-    network::ComponentMetadata,
-    schematic_definition::{ComponentDefinition, ConnectionDefinition, ConnectionTargetDefinition},
-    util::hlreg::HostLocalSystemService,
-  };
-
   use super::*;
+  use crate::components::wapc_component_actor::WapcComponentActor;
+  use crate::network::ComponentMetadata;
+  use crate::schematic_definition::{
+    ComponentDefinition,
+    ConnectionDefinition,
+    ConnectionTargetDefinition,
+  };
+  use crate::util::hlreg::HostLocalSystemService;
 
   #[test_env_log::test(actix_rt::test)]
   async fn test_init() -> Result<()> {

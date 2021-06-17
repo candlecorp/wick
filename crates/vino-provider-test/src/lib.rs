@@ -1,11 +1,15 @@
-use async_trait::async_trait;
+use std::sync::{
+  Arc,
+  Mutex,
+};
 
-use std::sync::Arc;
-use std::sync::Mutex;
+use async_trait::async_trait;
 use vino_provider::error::ProviderError;
 use vino_provider::port::Receiver;
-use vino_provider::Result;
-use vino_provider::VinoProvider;
+use vino_provider::{
+  Result,
+  VinoProvider,
+};
 mod components;
 
 pub(crate) struct State {}
@@ -50,7 +54,10 @@ mod tests {
   use futures::prelude::*;
   use maplit::hashmap;
   use vino_guest::OutputPayload;
-  use vino_runtime::{deserialize, serialize};
+  use vino_runtime::{
+    deserialize,
+    serialize,
+  };
 
   use super::*;
 

@@ -5,32 +5,43 @@ use std::io::Read;
 use actix::dev::MessageResponse;
 use actix::prelude::Message;
 use actix::Actor;
-use futures::executor::block_on;
-use vino_guest::OutputPayload;
-
-use crate::network::GetReference;
-use crate::network::Network;
-use crate::network::WapcOutputReady;
-use crate::schematic::OutputReady;
-use crate::serialize;
-use crate::util::hlreg::HostLocalSystemService;
-use crate::Error;
-use crate::Result;
 use data_encoding::HEXUPPER;
-use ring::digest::Context;
-use ring::digest::Digest;
-use ring::digest::SHA256;
-use serde::{Deserialize, Serialize};
+use futures::executor::block_on;
+use ring::digest::{
+  Context,
+  Digest,
+  SHA256,
+};
+use serde::{
+  Deserialize,
+  Serialize,
+};
 use uuid::Uuid;
-use wascap::prelude::{Claims, KeyPair};
+use vino_guest::OutputPayload;
+use wascap::prelude::{
+  Claims,
+  KeyPair,
+};
+
+use crate::network::{
+  GetReference,
+  Network,
+  WapcOutputReady,
+};
+use crate::schematic::OutputReady;
+use crate::util::hlreg::HostLocalSystemService;
+use crate::{
+  serialize,
+  Error,
+  Result,
+};
 
 /// An invocation for a component, port, or schematic
-#[derive(Debug, Clone, Serialize, Deserialize, Message, PartialEq)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, Message, PartialEq)]
 #[rtype(result = "InvocationResponse")]
 pub struct Invocation {
   pub origin: VinoEntity,
   pub target: VinoEntity,
-  pub operation: String,
   pub msg: MessagePayload,
   pub id: String,
   pub tx_id: String,
@@ -46,10 +57,7 @@ where
   fn handle(self, _: &mut A::Context, tx: Option<actix::dev::OneshotSender<Self>>) {
     if let Some(tx) = tx {
       if let Err(e) = tx.send(self) {
-        error!(
-          "send error (call id:{} target:{:?} op:{})",
-          &e.id, &e.target, &e.operation
-        );
+        error!("send error (call id:{} target:{:?})", &e.id, &e.target);
       }
     }
   }
@@ -110,10 +118,10 @@ impl Default for MessagePayload {
 }
 
 impl MessagePayload {
-  pub fn get_bytes(self) -> Result<Vec<u8>> {
+  pub fn into_bytes(self) -> Result<Vec<u8>> {
     match self {
       MessagePayload::MessagePack(bytes) => Ok(bytes),
-      _ => Err(Error::PayloadError("Invalid payload".to_string())),
+      _ => Err(Error::PayloadConversionError("Invalid payload".to_string())),
     }
   }
 }
@@ -129,13 +137,27 @@ impl From<&Vec<u8>> for MessagePayload {
     MessagePayload::MessagePack(v.clone())
   }
 }
+
 impl From<&[u8]> for MessagePayload {
   fn from(v: &[u8]) -> Self {
     MessagePayload::MessagePack(v.to_vec())
   }
 }
 
+impl From<OutputPayload> for MessagePayload {
+  fn from(v: OutputPayload) -> Self {
+    match v {
+      OutputPayload::MessagePack(v) => MessagePayload::MessagePack(v),
+      OutputPayload::Exception(v) => MessagePayload::Exception(v),
+      OutputPayload::Error(v) => MessagePayload::Error(v),
+    }
+  }
+}
+
 impl Invocation {
+  pub fn uuid() -> String {
+    format!("{}", Uuid::new_v4())
+  }
   /// Creates an invocation with a specific transaction id, to correlate a chain of
   /// invocations.
   pub fn next(
@@ -143,12 +165,11 @@ impl Invocation {
     hostkey: &KeyPair,
     origin: VinoEntity,
     target: VinoEntity,
-    op: &str,
     msg: impl Into<MessagePayload>,
   ) -> Invocation {
-    let invocation_id = format!("{}", Uuid::new_v4());
+    let invocation_id = Invocation::uuid();
     let issuer = hostkey.public_key();
-    let target_url = format!("{}/{}", target.url(), op);
+    let target_url = target.url();
     let payload = msg.into();
     let claims = Claims::<wascap::prelude::Invocation>::new(
       issuer.to_string(),
@@ -160,7 +181,6 @@ impl Invocation {
     Invocation {
       origin,
       target,
-      operation: op.to_string(),
       msg: payload,
       id: invocation_id,
       encoded_claims: claims.encode(hostkey).unwrap(),
@@ -208,9 +228,17 @@ fn sha256_digest<R: Read>(mut reader: R) -> Result<Digest> {
 #[derive(Debug, Clone, Serialize, Deserialize, Message, PartialEq)]
 #[rtype(result = "InvocationResponse")]
 pub enum VinoEntity {
+  Test(String),
   Schematic(String),
   Port(PortEntity),
   Component(String),
+  Provider(String),
+}
+
+impl Default for VinoEntity {
+  fn default() -> Self {
+    Self::Test("default".to_string())
+  }
 }
 
 impl Display for VinoEntity {
@@ -224,8 +252,10 @@ impl VinoEntity {
   /// The URL of the entity
   pub fn url(&self) -> String {
     match self {
+      VinoEntity::Test(name) => format!("{}://test/{}", URL_SCHEME, name),
       VinoEntity::Schematic(name) => format!("{}://schematic/{}", URL_SCHEME, name),
       VinoEntity::Component(name) => format!("{}://component/{}", URL_SCHEME, name),
+      VinoEntity::Provider(name) => format!("{}://provider/{}", URL_SCHEME, name),
       VinoEntity::Port(port) => format!(
         "{}://{}::{}:{}",
         URL_SCHEME, port.schematic, port.name, port.reference
@@ -236,11 +266,20 @@ impl VinoEntity {
   /// The unique (public) key of the entity
   pub fn key(&self) -> String {
     match self {
+      VinoEntity::Test(name) => format!("test:{}", name),
       VinoEntity::Schematic(name) => format!("schematic:{}", name),
       VinoEntity::Component(name) => format!("component:{}", name),
+      VinoEntity::Provider(name) => format!("provider:{}", name),
       VinoEntity::Port(port) => {
         format!("{}::{}:{}", port.schematic, port.reference, port.name)
       }
+    }
+  }
+
+  pub fn into_provider(self) -> Result<String> {
+    match self {
+      VinoEntity::Provider(s) => Ok(s),
+      _ => Err(Error::ConversionError),
     }
   }
 }

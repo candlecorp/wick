@@ -5,14 +5,16 @@ type BoxedErrorSyncSend = Box<dyn std::error::Error + Sync + Send>;
 
 #[derive(Error, Debug)]
 pub enum VinoError {
+  #[error("Conversion error")]
+  ConversionError,
   #[error("Network error: {0}")]
   NetworkError(String),
   #[error("Schematic error: {0}")]
   SchematicError(String),
   #[error("Dispatch error: {0}")]
   DispatchError(String),
-  #[error("Payload error: {0}")]
-  PayloadError(String),
+  #[error("Payload conversion error")]
+  PayloadConversionError(String),
   #[error("Schematic error: {0}")]
   ComponentError(String),
   #[error("Job error: {0}")]

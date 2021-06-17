@@ -18,5 +18,3 @@ serde = { version="1.0.118", features=["derive"] }
 [dev-dependencies]
 test-env-log = { version="0.2.7" }
 env_logger = "0.8.4"
-anyhow = "1.0.41"
-lazy_static = "1.4.0"
