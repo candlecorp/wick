@@ -282,6 +282,13 @@ impl VinoEntity {
       _ => Err(Error::ConversionError),
     }
   }
+
+  pub fn into_component(self) -> Result<String> {
+    match self {
+      VinoEntity::Component(s) => Ok(s),
+      _ => Err(Error::ConversionError),
+    }
+  }
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize, Eq, Hash)]
@@ -305,42 +312,21 @@ pub(crate) fn wapc_host_callback(
   port: &str,
   payload: &[u8],
 ) -> std::result::Result<Vec<u8>, Box<dyn ::std::error::Error + Sync + Send>> {
-  trace!("Guest {} invoking {}:{}", claims.subject, namespace, port);
+  trace!(
+    "Guest {} invoking {}:{} (id:{})",
+    claims.subject,
+    namespace,
+    port,
+    inv_id
+  );
   let network = Network::from_hostlocal_registry(&kp.public_key());
-  let get_ref = network.send(GetReference {
-    inv_id: inv_id.to_string(),
-  });
-  match block_on(async { get_ref.await })? {
-    Some((tx_id, schematic, entity)) => match entity {
-      VinoEntity::Component(reference) => {
-        debug!(
-          "Invocation ID {} resolves to tx {} and reference {}",
-          inv_id, tx_id, reference
-        );
-        let msg = WapcOutputReady {
-          payload: payload.to_vec(),
-          port: PortEntity {
-            name: port.to_string(),
-            reference,
-            schematic,
-          },
-          tx_id,
-        };
-        network.do_send(msg);
-        Ok(vec![])
-      }
-      ent => {
-        let e = format!("Reference not implemented. {}", ent);
-        error!("{}", e);
-        Err(e.into())
-      }
-    },
-    None => {
-      let e = format!("Can not resolve invocation {}", inv_id);
-      error!("{}", e);
-      Err(e.into())
-    }
-  }
+  let msg = WapcOutputReady {
+    payload: payload.to_vec(),
+    port: port.to_string(),
+    invocation_id: inv_id.to_string(),
+  };
+  network.do_send(msg);
+  Ok(vec![])
 }
 
 pub(crate) fn native_host_callback(

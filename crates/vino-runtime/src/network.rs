@@ -1,27 +1,34 @@
 use std::collections::HashMap;
 use std::fmt::Display;
 
-use super::schematic::Schematic;
-use crate::components::vino_component::BoxedComponent;
-use crate::components::Inputs;
-use crate::components::Outputs;
-use crate::deserialize;
-use crate::dispatch::MessagePayload;
-use crate::dispatch::PortEntity;
-use crate::dispatch::VinoEntity;
-use crate::network_definition::NetworkDefinition;
-use crate::schematic::OutputReady;
-use crate::schematic_definition::get_components;
-use crate::serialize;
-use crate::util::hlreg::HostLocalSystemService;
-use crate::Error;
-use crate::Invocation;
-use crate::Result;
 use actix::dev::Message;
 use actix::prelude::*;
 use futures::future::try_join_all;
 use serde::Serialize;
 use vino_guest::OutputPayload;
+
+use super::schematic::Schematic;
+use crate::components::vino_component::BoxedComponent;
+use crate::components::{
+  Inputs,
+  Outputs,
+};
+use crate::dispatch::{
+  MessagePayload,
+  PortEntity,
+  VinoEntity,
+};
+use crate::network_definition::NetworkDefinition;
+use crate::schematic::OutputReady;
+use crate::schematic_definition::get_components;
+use crate::util::hlreg::HostLocalSystemService;
+use crate::{
+  deserialize,
+  serialize,
+  Error,
+  Invocation,
+  Result,
+};
 
 #[derive(Clone, Debug)]
 
@@ -242,8 +249,8 @@ impl Handler<OutputReady> for Network {
 #[derive(Message, Debug, Clone)]
 #[rtype(result = "Result<()>")]
 pub(crate) struct WapcOutputReady {
-  pub(crate) port: PortEntity,
-  pub(crate) tx_id: String,
+  pub(crate) port: String,
+  pub(crate) invocation_id: String,
   pub(crate) payload: Vec<u8>,
 }
 
@@ -251,10 +258,12 @@ impl Handler<WapcOutputReady> for Network {
   type Result = ResponseActFuture<Self, Result<()>>;
 
   fn handle(&mut self, msg: WapcOutputReady, _ctx: &mut Context<Self>) -> Self::Result {
-    let schematic_name = msg.port.schematic.to_string();
+    let metadata = self.invocation_map.get(&msg.invocation_id).cloned();
+
+    let (tx_id, schematic_name, entity) = metadata.unwrap();
+
     let receiver = self.schematics.get(&schematic_name).cloned();
     let payload = msg.payload;
-    let tx_id = msg.tx_id;
     let port = msg.port;
     let data =
       deserialize::<OutputPayload>(&payload).map_err(|e| MessagePayload::Error(e.to_string()));
@@ -269,6 +278,11 @@ impl Handler<WapcOutputReady> for Network {
     };
     Box::pin(
       async move {
+        let port = PortEntity {
+          name: port,
+          reference: entity.into_component()?,
+          schematic: schematic_name,
+        };
         match receiver {
           Some(schematic) => Ok(
             schematic
@@ -386,14 +400,14 @@ mod test {
   use actix::Addr;
   use maplit::hashmap;
   use test_env_log::test;
+  use vino_manifest::NetworkManifest;
+  use wascap::prelude::KeyPair;
 
   use super::super::dispatch::MessagePayload;
   use super::*;
   use crate::network::Initialize;
   use crate::util::hlreg::HostLocalSystemService;
   use crate::util::serdes::serialize;
-  use vino_manifest::NetworkManifest;
-  use wascap::prelude::KeyPair;
 
   async fn init_network(yaml: &str) -> Result<Addr<Network>> {
     let def = NetworkDefinition::new(&NetworkManifest::V0(serde_yaml::from_str(yaml)?));
