@@ -9,44 +9,44 @@ use crate::{Host, Result};
 pub struct HostBuilder {}
 
 impl Default for HostBuilder {
-    fn default() -> Self {
-        Self::new()
-    }
+  fn default() -> Self {
+    Self::new()
+  }
 }
 
 impl HostBuilder {
-    /// Creates a new host builder
-    pub fn new() -> HostBuilder {
-        HostBuilder {}
-    }
+  /// Creates a new host builder
+  pub fn new() -> HostBuilder {
+    HostBuilder {}
+  }
 
-    pub async fn start(self) -> Result<Host> {
-        let host = self.build();
-        host.start().await?;
-        Ok(host)
-    }
+  pub async fn start(self) -> Result<Host> {
+    let host = self.build();
+    host.start().await?;
+    Ok(host)
+  }
 
-    /// Constructs an instance of a Vino host.
-    pub fn build(self) -> Host {
-        let kp = KeyPair::new_server();
-        Host {
-            host_id: kp.public_key(),
-            seed: kp.seed().unwrap(),
-            started: RwLock::new(false),
-            network: None,
-        }
+  /// Constructs an instance of a Vino host.
+  pub fn build(self) -> Host {
+    let kp = KeyPair::new_server();
+    Host {
+      host_id: kp.public_key(),
+      seed: kp.seed().unwrap(),
+      started: RwLock::new(false),
+      network: None,
     }
+  }
 }
 
 #[cfg(test)]
 mod test {
-    use crate::HostBuilder;
+  use crate::HostBuilder;
 
-    #[test]
-    fn is_send() {
-        let h = HostBuilder::new().build();
-        assert_is_send(h);
-    }
+  #[test]
+  fn is_send() {
+    let h = HostBuilder::new().build();
+    assert_is_send(h);
+  }
 
-    fn assert_is_send<T: Send>(_input: T) {}
+  fn assert_is_send<T: Send>(_input: T) {}
 }

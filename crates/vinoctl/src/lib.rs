@@ -13,8 +13,8 @@ extern crate log;
 #[cfg(test)]
 mod tests {
 
-    #[actix_rt::test]
-    async fn runs_crud_api_config() -> crate::Result<()> {
-        Ok(())
-    }
+  #[actix_rt::test]
+  async fn runs_crud_api_config() -> crate::Result<()> {
+    Ok(())
+  }
 }

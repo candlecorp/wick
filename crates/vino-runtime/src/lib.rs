@@ -45,7 +45,7 @@ pub type Result<T> = std::result::Result<T, error::VinoError>;
 pub type Error = error::VinoError;
 
 pub use crate::components::{
-    load_wasm, load_wasm_from_file, load_wasm_from_oci, vino_component::WapcComponent,
+  load_wasm, load_wasm_from_file, load_wasm_from_oci, vino_component::WapcComponent,
 };
 
 #[doc(hidden)]

@@ -25,27 +25,27 @@ macro_rules! ensure {
 
 #[macro_export]
 macro_rules! log_err {
-    ($exp:expr) => {{
-        log::error!("{}", $exp);
-        Err($exp)
-    }};
+  ($exp:expr) => {{
+    log::error!("{}", $exp);
+    Err($exp)
+  }};
 }
 
 #[macro_export]
 macro_rules! returns {
-    ($type:ty) => {
-        if (false) {
-            return Err::<$type, crate::Error>("unused".into());
-        }
-    };
+  ($type:ty) => {
+    if (false) {
+      return Err::<$type, crate::Error>("unused".into());
+    }
+  };
 }
 
 #[macro_export]
 macro_rules! Ok {
-    ($exp:expr) => {
-        #[allow(unreachable_code)]
-        Ok::<_, crate::Error>($exp)
-    };
+  ($exp:expr) => {
+    #[allow(unreachable_code)]
+    Ok::<_, crate::Error>($exp)
+  };
 }
 
 #[cfg(test)]

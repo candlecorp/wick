@@ -9,22 +9,22 @@ use crate::{error::VinoError, Result};
 /// serialize could result in breaking incompatibilities.
 pub fn serialize<T>(item: T) -> Result<Vec<u8>>
 where
-    T: Serialize,
+  T: Serialize,
 {
-    let mut buf = Vec::new();
-    match item.serialize(&mut Serializer::new(&mut buf).with_struct_map()) {
-        Ok(_) => Ok(buf),
-        Err(e) => Err(VinoError::SerializationError(e)),
-    }
+  let mut buf = Vec::new();
+  match item.serialize(&mut Serializer::new(&mut buf).with_struct_map()) {
+    Ok(_) => Ok(buf),
+    Err(e) => Err(VinoError::SerializationError(e)),
+  }
 }
 
 /// The standard function for de-serializing codec structs from a format suitable
 /// for message exchange between actor and host. Use of any other function to
 /// deserialize could result in breaking incompatibilities.
 pub fn deserialize<'de, T: Deserialize<'de>>(buf: &[u8]) -> Result<T> {
-    let mut de = Deserializer::new(Cursor::new(buf));
-    match Deserialize::deserialize(&mut de) {
-        Ok(t) => Ok(t),
-        Err(e) => Err(VinoError::DeserializationError(e)),
-    }
+  let mut de = Deserializer::new(Cursor::new(buf));
+  match Deserialize::deserialize(&mut de) {
+    Ok(t) => Ok(t),
+    Err(e) => Err(VinoError::DeserializationError(e)),
+  }
 }
