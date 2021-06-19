@@ -1,0 +1,9 @@
+namespace "vino::collection::list"
+
+type Inputs {
+  collection_id: string
+}
+
+type Outputs {
+  document_ids: [string]
+}

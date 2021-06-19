@@ -1,0 +1,7 @@
+sudo: false
+language: rust
+
+# Add stable after 1.43. Examples don't build due to type length limit error
+rust:
+    - beta
+    - nightly

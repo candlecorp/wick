@@ -124,10 +124,7 @@ mod tests {
   };
 
   use super::*;
-  use crate::rpc::{
-    CloseMessage,
-    OutputMessage,
-  };
+  use crate::rpc::OutputMessage;
   use crate::Error;
 
   async fn make_server(port: &'static str) -> tokio::task::JoinHandle<Result<()>> {
@@ -153,20 +150,20 @@ mod tests {
               assert_eq!(invocation.id, "INV_ID");
               peer
                 .send(&VinoRpcMessage::Output(OutputMessage {
-                  tx_id: invocation.tx_id,
+                  invocation_id: invocation.id,
                   ..OutputMessage::default()
                 }))
                 .await?
             }
             VinoRpcMessage::Output(output) => {
-              warn!("output.tx_id: {}", output.tx_id);
-              assert_eq!(output.tx_id, "TX_ID");
-              peer
-                .send(&VinoRpcMessage::Close(CloseMessage {
-                  tx_id: output.tx_id,
-                  entity: output.entity,
-                }))
-                .await?
+              warn!("output.tx_id: {}", output.invocation_id);
+              assert_eq!(output.invocation_id, "INVOCATION_ID");
+              // peer
+              //   .send(&VinoRpcMessage::Close(CloseMessage {
+              //     tx_id: output.tx_id,
+              //     port: output.port,
+              //   }))
+              //   .await?
             }
             VinoRpcMessage::Close(close) => {
               warn!("close.tx_id: {}", close.tx_id);
@@ -221,7 +218,7 @@ mod tests {
     let next = peer.next().await?.unwrap();
     info!("Next was : {:?}", next);
     if let VinoRpcMessage::Output(output) = next {
-      assert_eq!(output.tx_id, "TX_ID");
+      assert_eq!(output.invocation_id, "INVOCATION_ID");
     } else {
       panic!("wrong message returned");
     }
@@ -241,7 +238,7 @@ mod tests {
     trace!("Connected to server");
     let mut peer = Peer::new("client".to_string(), stream);
     let msg = VinoRpcMessage::Output(OutputMessage {
-      tx_id: "TX_ID".to_string(),
+      invocation_id: "INVOCATION_ID".to_string(),
       ..Default::default()
     });
     peer.send(&msg).await?;

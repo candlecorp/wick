@@ -1,0 +1,58 @@
+// version of protocol buffer used
+syntax = "proto3";
+
+package vino;
+
+// Interface exported by the server.
+service ComponentRpc {
+  rpc Invoke(Invocation) returns (stream Output);
+  rpc Shutdown(ShutdownRequest) returns (Ack);
+}
+
+message MessagePayload {
+  PayloadKind kind = 1;
+  bytes value = 2;
+}
+
+enum PayloadKind {
+  Invalid = 0;
+  Test = 1;
+  MessagePack = 2;
+  MultiBytes = 3;
+  Exception = 4;
+  Error = 5;
+}
+
+message Entity {
+  enum EntityKind {
+    Invalid = 0;
+    Test = 1;
+    Schematic = 2;
+    Component = 3;
+    Provider = 4;
+    Port = 5;
+  }
+  string name = 1;
+  EntityKind kind = 2;
+}
+
+message Invocation {
+  Entity origin = 1;
+  Entity target = 2;
+  MessagePayload msg = 3;
+  string id = 4;
+  string tx_id = 5;
+  string encoded_claims = 6;
+  string host_id = 7;
+}
+
+message Output {
+  string port = 1;
+  string invocation_id = 2;
+  MessagePayload payload = 3;
+}
+
+message Ack {}
+
+message ShutdownRequest {}
+

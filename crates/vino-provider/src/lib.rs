@@ -34,8 +34,7 @@ pub struct InitConfiguration {
 }
 
 #[async_trait]
-pub trait VinoProvider {
-  fn init(&self) -> Result<()>;
+pub trait ProviderHandler: Send + Sync {
   async fn request(&self, inv_id: String, component: String, payload: Vec<u8>) -> Result<Receiver>;
 }
 

@@ -1,6 +1,10 @@
 extern crate rmp_serde as rmps;
-use serde::{Deserialize, Serialize};
 use std::fmt::Display;
+
+use serde::{
+  Deserialize,
+  Serialize,
+};
 
 #[derive(Deserialize, Serialize, Debug)]
 pub enum Signal {

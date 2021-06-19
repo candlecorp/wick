@@ -1,5 +1,5 @@
 [package]
-name = "vino-collection-inmemory"
+name = "vino-provider-test"
 version = "0.1.0"
 authors = ["Jarrod Overson <jsoverson@gmail.com>"]
 edition = "2018"

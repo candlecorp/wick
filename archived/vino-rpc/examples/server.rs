@@ -3,7 +3,6 @@ use tokio::net::TcpListener;
 use vino_macros::Ok;
 use vino_rpc::peer::Peer;
 use vino_rpc::rpc::{
-  CloseMessage,
   OutputMessage,
   VinoRpcMessage,
 };
@@ -43,20 +42,20 @@ async fn main() -> Result<()> {
               assert_eq!(invocation.id, "INV_ID");
               peer
                 .send(&VinoRpcMessage::Output(OutputMessage {
-                  tx_id: invocation.tx_id,
+                  invocation_id: invocation.id,
                   ..OutputMessage::default()
                 }))
                 .await?
             }
             VinoRpcMessage::Output(output) => {
-              trace!("output.tx_id: {}", output.tx_id);
-              assert_eq!(output.tx_id, "TX_ID");
-              peer
-                .send(&VinoRpcMessage::Close(CloseMessage {
-                  tx_id: output.tx_id,
-                  entity: output.entity,
-                }))
-                .await?
+              trace!("output.invocation_id: {}", output.invocation_id);
+              assert_eq!(output.invocation_id, "INVOCATION_ID");
+              // peer
+              //   .send(&VinoRpcMessage::Close(CloseMessage {
+              //     tx_id: output.tx_id,
+              //     entity: output.entity,
+              //   }))
+              //   .await?
             }
             VinoRpcMessage::Close(close) => {
               trace!("close.tx_id: {}", close.tx_id);

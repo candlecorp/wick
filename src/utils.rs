@@ -1,6 +1,10 @@
-use crate::commands::{HostOptions, NatsOptions};
 use logger::LoggingOptions;
 use vino_host::HostDefinition;
+
+use crate::commands::{
+  HostOptions,
+  NatsOptions,
+};
 
 fn this_or_that_option<T>(a: Option<T>, b: Option<T>) -> Option<T> {
   if a.is_some() {
@@ -39,7 +43,7 @@ pub fn merge_runconfig(
 
 pub fn init_logger(opts: &LoggingOptions) -> crate::Result<()> {
   logger::Logger::init(
-    &opts,
+    opts,
     &["logger", "vino", "wasmcloud", "wasmcloud_host", "wapc"],
     &[],
   )?;

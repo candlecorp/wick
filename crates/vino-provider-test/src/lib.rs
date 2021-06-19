@@ -7,13 +7,14 @@ use async_trait::async_trait;
 use vino_provider::error::ProviderError;
 use vino_provider::port::Receiver;
 use vino_provider::{
+  ProviderHandler,
   Result,
-  VinoProvider,
 };
 mod components;
 
 pub(crate) struct State {}
 
+#[derive(Clone)]
 pub struct Provider {
   context: Arc<Mutex<State>>,
 }
@@ -27,10 +28,7 @@ impl Provider {
 }
 
 #[async_trait]
-impl VinoProvider for Provider {
-  fn init(&self) -> Result<()> {
-    Ok(())
-  }
+impl ProviderHandler for Provider {
   async fn request(
     &self,
     _inv_id: String,
@@ -64,13 +62,12 @@ mod tests {
   #[test_env_log::test(tokio::test)]
   async fn request() -> Result<()> {
     let provider = Provider::default();
-    provider.init()?;
     let input = "some_input";
     let invocation_id = "INVOCATION_ID";
     let job_payload = hashmap! {
       "input".to_string() => serialize(input)?,
     };
-    let payload = serialize((invocation_id, job_payload))?;
+    let payload = serialize(job_payload)?;
 
     let mut outputs = provider
       .request(
@@ -79,8 +76,8 @@ mod tests {
         payload,
       )
       .await?;
-    let payload = outputs.next().await.unwrap();
-    println!("payload: {:?}", payload);
+    let (port_name, payload) = outputs.next().await.unwrap();
+    println!("payload from [{}]: {:?}", port_name, payload);
     let payload = match payload {
       OutputPayload::MessagePack(payload) => deserialize::<String>(&payload).ok(),
       _ => None,

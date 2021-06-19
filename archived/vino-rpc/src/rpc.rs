@@ -26,8 +26,8 @@ pub enum VinoRpcMessage {
 
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct OutputMessage {
-  pub entity: PortEntity,
-  pub tx_id: String,
+  pub port: String,
+  pub invocation_id: String,
   pub payload: MessagePayload,
 }
 

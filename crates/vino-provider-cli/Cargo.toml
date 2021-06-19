@@ -1,5 +1,5 @@
 [package]
-name = "vino-rpc"
+name = "vino-provider-cli"
 version = "0.1.0"
 edition = "2018"
 
@@ -8,6 +8,7 @@ edition = "2018"
 [dependencies]
 vino-provider = { path="../vino-provider" }
 vino-runtime = { path="../vino-runtime" }
+vino-rpc = { path="../vino-rpc" }
 vino-guest = { path="../vino-guest" }
 
 tonic = { version="0.4.3", features=["tls"] }

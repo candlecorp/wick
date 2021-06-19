@@ -1,32 +1,25 @@
 [package]
-name = "vino-rpc"
+name = "vino-provider-cli"
 version = "0.1.0"
 edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-vino-provider = { path="../vino-provider" }
 vino-runtime = { path="../vino-runtime" }
 vino-guest = { path="../vino-guest" }
-
-tonic = { version="0.4.3", features=["tls"] }
-prost = "0.7.0"
-prost-types = "0.7.0"
+vino-provider = { path="../vino-provider" }
+vino-rpc = { path="../vino-rpc" }
+vino-macros = { path="../vino-macros" }
 tokio = { version="1.4.0", features=["macros", "net", "rt-multi-thread"] }
-futures = "0.3.15"
-tokio-stream = "0.1.6"
 serde = { version="1.0.118", features=["derive"] }
-serde_json = "1.0.64"
-async-stream = "0.3.2"
-rand = "0.8.4"
-structopt = "0.3.21"
-log = "0.4.14"
-env_logger = "0.8.4"
+futures = "0.3.15"
+async-trait = "0.1.50"
 thiserror = "1.0.25"
-
-[build-dependencies]
-tonic-build = { version="0.4.2", features=["prost"] }
+rmp-serde = "0.15.5"
+structopt = "*"
+log = "*"
+env_logger = "0.8.4"
 
 [dev-dependencies]
 test-env-log = "0.2.7"

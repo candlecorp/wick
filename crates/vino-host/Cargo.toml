@@ -7,21 +7,21 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-vino-runtime = { path = "../vino-runtime" }
-log = "*"
-env_logger = "*"
+vino-runtime = { path="../vino-runtime" }
+log = "0.4.14"
 actix = "0.11"
 actix-rt = "2.1.0"
 thiserror = "1.0.25"
 nkeys = "0.1.0"
-serde = { version = "1.0.126", features = ["derive"] }
+serde = { version="1.0.126", features=["derive"] }
 serde_yaml = "0.8.17"
 hocon = "0.5.2"
-vino-manifest = { path = "../vino-manifest" }
+vino-manifest = { path="../vino-manifest" }
 
 [dev-dependencies]
 test-env-log = "0.2.7"
-tokio = { version = "1", features = [
+env_logger = "0.8.4"
+tokio = { version="1", features=[
   "net",
   "rt-multi-thread",
   "time",

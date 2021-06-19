@@ -19,17 +19,15 @@ colored = "2.0.0"
 log = "0.4.11"
 env_logger = "0.8.3"
 actix-rt = "2.1.0"
-nats = "0.8.6"
+# nats = "0.9.18"
 structopt = "0.3.21"
 nkeys = "0.1.0"
 futures = "0.3.13"
 serde_json = "1.0.64"
 serde_yaml = "0.8.17"
-serdeconv = "0.4.0"
 serde = "1.0.126"
 thiserror = "1.0.24"
 oci-distribution = "0.6"
-itertools = "0.10.0"
 unsafe-io = "= 0.6.2"
 vino-runtime = { path="./crates/vino-runtime" }
 vino-host = { path="./crates/vino-host" }
@@ -47,15 +45,14 @@ path = "src/main.rs"
 
 [workspace]
 members = [
-  "crates/vinoctl",
   "crates/vino-macros",
   "crates/logger",
-  "crates/vino-configfile",
   "crates/vino-runtime",
+  "crates/vino-rpc",
   "crates/vino-host",
   "crates/vino-manifest",
   "crates/vino-provider",
+  "crates/vino-provider-cli",
   "crates/vino-provider-test",
-  "crates/rmp-futures",
-  "crates/vino-rpc",
+  "crates/vino-interface-collection",
 ]

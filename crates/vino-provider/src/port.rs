@@ -1,12 +1,21 @@
-use serde::Serialize;
-use std::collections::{HashMap, VecDeque};
+use std::collections::{
+  HashMap,
+  VecDeque,
+};
 use std::pin::Pin;
-use std::sync::{Arc, Mutex};
-use std::task::{Context, Poll};
-use vino_guest::OutputPayload;
-use vino_runtime::serialize;
+use std::sync::{
+  Arc,
+  Mutex,
+};
+use std::task::{
+  Context,
+  Poll,
+};
 
 use futures::Stream;
+use serde::Serialize;
+use vino_guest::OutputPayload;
+use vino_runtime::serialize;
 
 pub trait Sender {
   type Payload: Serialize;
@@ -114,7 +123,7 @@ impl Receiver {
 }
 
 impl Stream for Receiver {
-  type Item = OutputPayload;
+  type Item = (String, OutputPayload);
 
   fn poll_next(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
     let mut all_closed = true;
@@ -122,7 +131,7 @@ impl Stream for Receiver {
       let mut port = port.lock().unwrap();
       if !port.buffer.is_empty() {
         return match port.buffer.pop_front() {
-          Some(payload) => Poll::Ready(Some(payload)),
+          Some(payload) => Poll::Ready(Some((port.name.clone(), payload))),
           None => unreachable!(),
         };
       } else if port.is_closed() {
@@ -140,44 +149,10 @@ impl Stream for Receiver {
 #[cfg(test)]
 mod tests {
 
-  use crate::{Result, VinoProvider};
-  use async_trait::async_trait;
-
-  use super::*;
+  use crate::Result;
 
   #[test_env_log::test(tokio::test)]
-  async fn is_send() -> Result<()> {
-    let h = Receiver::new(vec![Arc::new(Mutex::new(Port::new("input")))]);
-    assert_is_send(h.clone());
-    let provider = Provider::default();
-    let result = provider
-      .request("inv_id".to_string(), "component".to_string(), vec![])
-      .await?;
-
-    assert_is_send(result);
+  async fn test() -> Result<()> {
     Ok(())
   }
-  #[derive(Debug, Default)]
-  pub struct State {}
-
-  #[derive(Debug, Default)]
-  pub struct Provider {}
-
-  #[async_trait]
-  impl VinoProvider for Provider {
-    fn init(&self) -> Result<()> {
-      Ok(())
-    }
-    async fn request(
-      &self,
-      _inv_id: String,
-      _component: String,
-      _payload: Vec<u8>,
-    ) -> Result<Receiver> {
-      let streams = Receiver::new(vec![]);
-      Ok(streams)
-    }
-  }
-
-  fn assert_is_send<T: Sync + Send>(_input: T) {}
 }

@@ -1,0 +1,29 @@
+[package]
+name = "rmp-futures"
+description = "Async Rust MessagePack and MessagePack-RPC"
+version = "0.2.0"
+authors = ["Tyler Hall <tylerwhall@gmail.com>"]
+repository = "https://github.com/tylerwhall/rmp-futures"
+documentation = "https://docs.rs/rmp-futures"
+readme = "README.md"
+license = "MIT OR Apache-2.0"
+keywords = ["msgpack", "MessagePack"]
+categories = ["encoding", "asynchronous"]
+edition = "2018"
+
+[dependencies]
+byteorder = "1.4.3"
+enum-primitive-derive = "0.2.1"
+num-traits = "0.2.14"
+rmp = "0.8.10"
+rmpv = "0.4.7"
+slab = "0.4.3"
+futures = { version="0.3.15", features=["unstable"] }
+tokio = { version="1.7.0", features=["macros", "rt", "time", "net", "io-util", "rt-multi-thread"] }
+
+[features]
+read-initializer = ["futures/read-initializer"]
+
+[profile.release]
+lto = true
+debug = true

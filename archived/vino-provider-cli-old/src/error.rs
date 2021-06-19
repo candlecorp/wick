@@ -1,4 +1,8 @@
+use std::net::Ipv4Addr;
+
 use thiserror::Error;
+
+type BoxedSyncSendError = Box<dyn std::error::Error + Sync + std::marker::Send>;
 
 #[derive(Error, Debug)]
 pub enum CliError {
@@ -7,9 +11,11 @@ pub enum CliError {
   #[error(transparent)]
   IpAddrError(#[from] std::net::AddrParseError),
   #[error(transparent)]
-  IOError(#[from] std::io::Error),
+  RpcError(#[from] vino_rpc::Error),
   #[error(transparent)]
-  TransportError(#[from] tonic::transport::Error),
+  IOError(#[from] std::io::Error),
+  // #[error(transparent)]
+  // JoinError(#[from] tokio::task::JoinError),
   #[error(transparent)]
   JoinError(#[from] tokio::task::JoinError),
   #[error("General error : {0}")]

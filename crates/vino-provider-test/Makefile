@@ -1,53 +1,74 @@
-.PHONY: all deps codegen build clean doc test
+.PHONY: all codegen build clean doc test
 
-SCHEMA_DIR:=./schemas
-GENERATED_DIR:=./src/components/generated
+MAKEFLAGS += --no-print-directory --silent
 
-src/components/generated.rs:
-	echo "// This is generated, do not edit by hand" >> $@; \
-	for file in src/components/generated/*.rs; do \
-		FS_NAME=`basename -s .rs $$file | tr '-' '_'`; \
-		echo "pub (crate) mod $${FS_NAME};" >> $@; \
-	done
+SCHEMA_DIR := ./schemas
+COMPONENTS_DIR := ./src/components
+GENERATED_DIR := $(COMPONENTS_DIR)/generated
+GENERATED_MODULE_RS:=$(GENERATED_DIR)/mod.rs
+COMPONENTS_FACTORY_RS:=$(COMPONENTS_DIR)/mod.rs
 
-src/components/generated/%.rs:
-	BASENAME=$(shell basename -s .rs "$@"); \
-	WIDLNAME=$(shell basename -s .rs "$@" | tr '_' '-'); \
-	vino-codegen rust "${SCHEMA_DIR}/$$WIDLNAME.widl" -t provider-component | rustfmt --quiet >${GENERATED_DIR}/$$BASENAME.rs
+# Get list of WIDL files in SCHEMA_DIR
+SCHEMAS=$(wildcard ${SCHEMA_DIR}/*.widl)
 
-src/components.rs:
-	echo "" > ./all_schemas.widl;\
-	for file in ${SCHEMA_DIR}/*.widl; do \
-		FS_NAME=`basename -s .widl $$file`; \
-		echo "import * from \"$${FS_NAME}\"" >> ./all_schemas.widl; \
-	done; \
-	vino-codegen rust "./all_schemas.widl" -t provider-integration -r ${SCHEMA_DIR} | rustfmt --quiet >$@; \
-	# rm ./all_schemas.widl
+# Translate a list of WIDL files to GENERATED_DIR/file.rs (transposing hyphens to underscores)
+GENERATED_COMPONENTS := $(patsubst %.widl,%.rs,$(patsubst ${SCHEMA_DIR}%,${GENERATED_DIR}%,$(subst -,_,$(SCHEMAS))))
+# Strip the directory and extension of the generated components to get their rust module names
+GENERATED_FS_NAMES := $(patsubst %.rs,%,$(notdir $(GENERATED_COMPONENTS)))
+# Generate module import statements for the generated component modules
+GENERATED_MOD_IMPORTS := $(patsubst $(GENERATED_DIR)/%,pub (crate) mod %;,$(patsubst %.rs,%,$(GENERATED_COMPONENTS)))
+# Generate WIDL import statements for each of the found WIDL files
+GENERATED_WIDL_IMPORTS := $(patsubst $(SCHEMA_DIR)/%,import * from \"%\"\n,$(patsubst %.widl,%,$(SCHEMAS)))
 
-all: deps codegen build sign claims
+# Temporary file to house the WIDL imports
+TMP_SCHEMAS_FILE := ./.all_schemas.widl
 
-deps:
-	mkdir -p build
+# The header to prepend to generated files
+GENERATED_HEADER := /* This is generated, do not edit by hand */
+
+# Files to clean up on make clean
+CLEAN_FILES := $(GENERATED_COMPONENTS) $(GENERATED_MODULE_RS) $(COMPONENTS_FACTORY_RS)
+CLEAN_DIRS := $(GENERATED_DIR)
+
+# Defines rules like the following for each schema found :
+# src/components/generated/my_components.rs: schemas/my-component.widl | /src/components/generated
+define WIDL_CODEGEN
+$(patsubst %.widl,%.rs,$(patsubst ${SCHEMA_DIR}%,${GENERATED_DIR}%,$(subst -,_,$(1)))): $1 | ${GENERATED_DIR}
+endef
+
+# Call the above rule generator for each schema file
+$(foreach schema,$(SCHEMAS),$(eval $(call WIDL_CODEGEN,$(schema))))
+
+$(GENERATED_MODULE_RS):
+	echo "$(GENERATED_HEADER)\n$(GENERATED_MOD_IMPORTS)" | rustfmt > $@
+
+$(GENERATED_DIR):
+	mkdir $@
+
+$(GENERATED_COMPONENTS):
+	vino-codegen rust "$<" -t provider-component | rustfmt --quiet >$(subst -,_,$@)
+
+$(COMPONENTS_FACTORY_RS):
+	touch $(TMP_SCHEMAS_FILE)
+	echo "$(GENERATED_WIDL_IMPORTS)" > $(TMP_SCHEMAS_FILE)
+	vino-codegen rust "$(TMP_SCHEMAS_FILE)" -t provider-integration -r ${SCHEMA_DIR} | rustfmt --quiet >$@
+	rm $(TMP_SCHEMAS_FILE)
+
+all: codegen build
 
 codegen:
-	for file in ${SCHEMA_DIR}/*.widl; do \
-		FS_NAME=`basename -s .widl $$file | tr '-' '_'`; \
-		make ${GENERATED_DIR}/$$FS_NAME.rs; \
-	done; \
-	make src/components/generated.rs; \
-	make src/components.rs; \
+	make $(GENERATED_COMPONENTS)
+	make $(GENERATED_MODULE_RS)
+	make $(COMPONENTS_FACTORY_RS)
 
 build: codegen
 	cargo build --release
 
 clean:
-	# cargo clean
-	# rm -Rf build
-	rm src/components/generated.rs
-	rm src/components/generated/*.rs
-	rm src/components.rs
+	rm -f $(CLEAN_FILES)
+	rmdir $(CLEAN_DIRS)
 
 doc:
 
-test:
+test: codegen
 	cargo test

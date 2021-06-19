@@ -1,7 +1,17 @@
-use std::sync::{Arc, Mutex};
+use std::sync::{
+  Arc,
+  Mutex,
+};
 
-use serde::{Deserialize, Serialize};
-use vino_provider::port::{Port, Receiver, Sender};
+use serde::{
+  Deserialize,
+  Serialize,
+};
+use vino_provider::port::{
+  Port,
+  Receiver,
+  Sender,
+};
 use vino_runtime::deserialize;
 
 #[derive(Debug, PartialEq, Deserialize, Serialize, Default, Clone)]

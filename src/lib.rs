@@ -6,9 +6,16 @@ pub mod utils;
 use std::collections::HashMap;
 
 use error::VinoError;
-use serde_json::{json, Value::String as JsonString};
-use vino_host::{HostBuilder, HostDefinition};
-use vino_runtime::{deserialize, MessagePayload};
+use serde_json::json;
+use serde_json::Value::String as JsonString;
+use vino_host::{
+  HostBuilder,
+  HostDefinition,
+};
+use vino_runtime::{
+  deserialize,
+  MessagePayload,
+};
 
 pub type Result<T> = std::result::Result<T, VinoError>;
 pub type Error = VinoError;
@@ -41,7 +48,7 @@ pub async fn run(manifest: HostDefinition, data: JsonMap) -> Result<serde_json::
       (
         k.to_string(),
         match payload {
-          MessagePayload::MessagePack(bytes) => deserialize(&bytes).unwrap_or_else(|e| {
+          MessagePayload::MessagePack(bytes) => deserialize(bytes).unwrap_or_else(|e| {
             JsonString(format!(
               "Error deserializing output payload: {}",
               e.to_string(),
