@@ -1,5 +1,34 @@
-use serde::{Deserialize, Serialize};
+#![deny(
+  warnings,
+  missing_debug_implementations,
+  trivial_casts,
+  trivial_numeric_casts,
+  unsafe_code,
+  unstable_features,
+  unused_import_braces,
+  unused_qualifications,
+  unreachable_pub,
+  type_alias_bounds,
+  trivial_bounds,
+  mutable_transmutes,
+  invalid_value,
+  explicit_outlives_requirements,
+  deprecated,
+  clashing_extern_declarations,
+  clippy::expect_used,
+  clippy::explicit_deref_methods,
+  missing_docs
+)]
+#![warn(clippy::cognitive_complexity)]
+
 use std::collections::HashMap;
+
+use enum_primitive_derive::Primitive;
+use num_traits::FromPrimitive;
+use serde::{
+  Deserialize,
+  Serialize,
+};
 
 #[allow(non_snake_case)]
 fn HOST_MANIFEST_DEFAULT_SCHEMATIC() -> String {
@@ -220,6 +249,10 @@ pub struct SchematicManifest {
   #[serde(default)]
   #[serde(skip_serializing_if = "Vec::is_empty")]
   pub external: Vec<ExternalComponentDefinition>,
+  /// A list of providers and component collections
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub providers: Vec<ProviderDefinition>,
   /// A map from component reference to its target
   #[serde(default)]
   #[serde(skip_serializing_if = "HashMap::is_empty")]
@@ -246,6 +279,41 @@ pub struct ExternalComponentDefinition {
   /// A public key to verify the retrieved component&#x27;s validity
   #[serde(default)]
   pub key: String,
+}
+
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+/// A provider definition
+pub struct ProviderDefinition {
+  /// The namespace to reference the provider&#x27;s components on
+  #[serde(default)]
+  pub namespace: String,
+  /// The kind/type of the provider
+  #[serde(default)]
+  pub kind: ProviderKind,
+  /// The reference/location of the provider
+  #[serde(default)]
+  pub reference: String,
+  /// Data or configuration to pass to the provider initialization
+  #[serde(default)]
+  #[serde(skip_serializing_if = "HashMap::is_empty")]
+  pub data: HashMap<String, String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Copy, Eq, PartialEq, Primitive)]
+#[serde(deny_unknown_fields)]
+/// Kind of provider,
+pub enum ProviderKind {
+  /// Native providers included at compile-time in a Vino host
+  Native = 0,
+  /// The URL for a separately managed GRPC endpoint
+  GrpcUrl = 1,
+}
+
+impl Default for ProviderKind {
+  fn default() -> Self {
+    Self::from_u16(0).unwrap()
+  }
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]

@@ -1,7 +1,13 @@
+use std::collections::HashMap;
+use std::fmt::Display;
+use std::sync::RwLock;
+
 use actix::prelude::*;
 use serde::Serialize;
-use std::{collections::HashMap, fmt::Display, sync::RwLock};
-use vino_runtime::{Network, NetworkDefinition};
+use vino_runtime::{
+  Network,
+  NetworkDefinition,
+};
 
 use crate::Result;
 
@@ -90,12 +96,16 @@ mod test {
   use std::path::PathBuf;
 
   use maplit::hashmap;
-  use vino_runtime::deserialize;
-  use vino_runtime::MessagePayload;
+  use vino_runtime::{
+    deserialize,
+    MessagePayload,
+  };
 
   use crate::host_definition::HostDefinition;
-  use crate::HostBuilder;
-  use crate::Result;
+  use crate::{
+    HostBuilder,
+    Result,
+  };
 
   #[test_env_log::test(actix_rt::test)]
   async fn should_start_and_stop() -> Result<()> {

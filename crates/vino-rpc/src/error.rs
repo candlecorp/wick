@@ -1,9 +1,7 @@
 use thiserror::Error;
 
 #[derive(Error, Debug)]
-pub enum CliError {
-  #[error(transparent)]
-  VinoError(#[from] vino_runtime::Error),
+pub enum RpcError {
   #[error(transparent)]
   IpAddrError(#[from] std::net::AddrParseError),
   #[error(transparent)]

@@ -15,7 +15,7 @@ use std::task::{
 use futures::Stream;
 use serde::Serialize;
 use vino_guest::OutputPayload;
-use vino_runtime::serialize;
+use vino_transport::serialize;
 
 pub trait Sender {
   type Payload: Serialize;

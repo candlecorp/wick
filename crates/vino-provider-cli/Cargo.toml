@@ -7,7 +7,7 @@ edition = "2018"
 
 [dependencies]
 vino-provider = { path="../vino-provider" }
-vino-runtime = { path="../vino-runtime" }
+vino-transport = { path="../vino-transport" }
 vino-rpc = { path="../vino-rpc" }
 vino-guest = { path="../vino-guest" }
 

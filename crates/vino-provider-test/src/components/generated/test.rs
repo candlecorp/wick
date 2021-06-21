@@ -7,12 +7,12 @@ use serde::{
   Deserialize,
   Serialize,
 };
-use vino_provider::port::{
+use vino_rpc::port::{
   Port,
   Receiver,
   Sender,
 };
-use vino_runtime::deserialize;
+use vino_transport::deserialize;
 
 #[derive(Debug, PartialEq, Deserialize, Serialize, Default, Clone)]
 pub struct Inputs {

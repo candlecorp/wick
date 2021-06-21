@@ -4,6 +4,10 @@ use std::collections::{
 };
 use std::time::Duration;
 
+use actix::fut::{
+  err,
+  ok,
+};
 use actix::prelude::*;
 use futures::future::try_join_all;
 use serde::{
@@ -11,6 +15,7 @@ use serde::{
   Serialize,
 };
 use vino_guest::Signal;
+use vino_transport::deserialize;
 use wascap::prelude::KeyPair;
 
 use super::dispatch::{
@@ -26,10 +31,10 @@ use crate::error::VinoError;
 use crate::network::{
   ComponentMetadata,
   MapInvocation,
-  MetadataMap,
   Network,
 };
 use crate::schematic_definition::{
+  get_components_for_schematic,
   ConnectionDefinition,
   ConnectionTargetDefinition,
   SchematicDefinition,
@@ -39,7 +44,6 @@ use crate::schematic_response::{
   push_to_schematic_output,
 };
 use crate::{
-  deserialize,
   Error,
   MessagePayload,
   Result,
@@ -59,13 +63,18 @@ enum ComponentStatus {
 #[derive(Debug)]
 pub(crate) struct Schematic {
   pub(crate) network: Option<Addr<Network>>,
+  pub(crate) state: Option<SchematicState>,
   pub(crate) host_id: String,
-  pub(crate) components: HashMap<String, ComponentMetadata>,
   pub(crate) recipients: HashMap<String, Recipient<Invocation>>,
   pub(crate) seed: String,
   pub(crate) transaction_map: TransactionMap,
-  pub(crate) references: HashMap<String, String>,
   pub(crate) definition: SchematicDefinition,
+}
+
+#[derive(Default, Debug, Clone)]
+pub(crate) struct SchematicState {
+  pub(crate) components: HashMap<String, ComponentMetadata>,
+  pub(crate) references: HashMap<String, String>,
 }
 
 impl Supervised for Schematic {}
@@ -74,12 +83,11 @@ impl Default for Schematic {
   fn default() -> Self {
     Schematic {
       network: None,
+      state: None,
       host_id: "".to_string(),
-      components: HashMap::new(),
       recipients: HashMap::new(),
       seed: "".to_string(),
       transaction_map: TransactionMap::new(),
-      references: HashMap::new(),
       definition: SchematicDefinition::default(),
     }
   }
@@ -92,17 +100,15 @@ impl Actor for Schematic {
     trace!("Schematic started");
   }
 
-  fn stopped(&mut self, _ctx: &mut Self::Context) {
-    // NOTE: do not attempt to log asynchronously in a stopped function,
-    // resources (including stdout) may not be available
-  }
+  fn stopped(&mut self, _ctx: &mut Self::Context) {}
 }
 
 impl Schematic {
-  fn get_downstream_recipient(&self, name: String) -> Option<Recipient<Invocation>> {
-    trace!("getting downstream recipient {}", name);
-    match self.definition.get_component(&name) {
-      Some(comp) => self
+  fn get_downstream_recipient(&self, reference: String) -> Option<Recipient<Invocation>> {
+    let state = self.state.as_ref().unwrap();
+    trace!("getting downstream recipient {}", reference);
+    match self.definition.get_component(&reference) {
+      Some(comp) => state
         .components
         .get(&comp.id)
         .map(|component| component.addr.clone()),
@@ -110,8 +116,9 @@ impl Schematic {
     }
   }
   fn get_outputs(&self, reference: String) -> Vec<String> {
-    match self.references.get(&reference) {
-      Some(actor) => match self.components.get(actor) {
+    let state = self.state.as_ref().unwrap();
+    match state.references.get(&reference) {
+      Some(actor) => match state.components.get(actor) {
         Some(metadata) => metadata.outputs.clone(),
         None => vec![],
       },
@@ -119,7 +126,8 @@ impl Schematic {
     }
   }
   fn get_connections(&self, reference: String, port: String) -> Vec<ConnectionDefinition> {
-    let references = &self.references;
+    let state = self.state.as_ref().unwrap();
+    let references = &state.references;
     let connections: Vec<ConnectionDefinition> = self
       .definition
       .connections
@@ -170,6 +178,7 @@ impl Schematic {
     port: &PortEntity,
     data: MessagePayload,
   ) -> Result<ComponentStatus> {
+    let state = self.state.as_ref().unwrap();
     let reference = port.reference.to_string();
 
     let kp = KeyPair::from_seed(&self.seed)?;
@@ -179,13 +188,13 @@ impl Schematic {
       .entry(tx_id.to_string())
       .or_insert_with(new_refmap);
 
-    let actor = self
+    let actor = state
       .references
       .get(&reference)
       .ok_or_else(|| Error::SchematicError(format!("Could not find reference {}", reference)))?;
     trace!("pushing to {}", port);
     let key = reference.to_string();
-    let metadata = self.components.get(actor).ok_or_else(|| {
+    let metadata = state.components.get(actor).ok_or_else(|| {
       Error::SchematicError(format!(
         "Could not find metadata for {}. Component may have failed to load.",
         actor
@@ -299,48 +308,69 @@ fn push_to_portbuffer(
   }
 }
 
-// impl Handler<Initialize> for Schematic {
-//     type Result = ResponseActFuture<Self, Result<()>>;
-
-//     fn handle(&mut self, msg: Initialize, ctx: &mut Self::Context) -> Self::Result {
-//         trace!("Initializing schematic");
-//         let thing = async move { Ok(()) }.into_actor(self);
-
-//         Box::pin(thing)
-//     }
-// }
-
-#[derive(Message)]
-#[rtype(result = "()")]
+#[derive(Message, Debug, Clone, new)]
+#[rtype(result = "Result<()>")]
 pub(crate) struct Initialize {
-  pub(crate) host_id: String,
   pub(crate) schematic: SchematicDefinition,
-  pub(crate) components: MetadataMap,
+  pub(crate) host_id: String,
   pub(crate) seed: String,
   pub(crate) network: Addr<Network>,
+  pub(crate) allow_latest: bool,
+  pub(crate) allowed_insecure: Vec<String>,
+  // pub(crate) components: MetadataMap,
 }
 
 impl Handler<Initialize> for Schematic {
-  type Result = ();
+  type Result = ResponseActFuture<Self, Result<()>>;
 
   fn handle(&mut self, msg: Initialize, _ctx: &mut Self::Context) -> Self::Result {
     trace!("Initializing schematic {}", msg.schematic.get_name());
-    self.seed = msg.seed;
-    self.components = msg.components;
+    let seed = msg.seed;
+    let allow_latest = msg.allow_latest;
+    let allowed_insecure = msg.allowed_insecure;
+    let definition = msg.schematic;
+    self.seed = seed.clone();
+    self.definition = definition;
+
     self.host_id = msg.host_id;
     self.network = Some(msg.network);
 
-    msg
-      .schematic
+    let mut state = SchematicState::default();
+
+    self
+      .definition
       .components
       .iter()
       .for_each(|(instance, actor)| {
-        self
+        state
           .references
           .insert(instance.to_string(), actor.id.to_string());
       });
 
-    self.definition = msg.schematic;
+    self.state = Some(state);
+
+    Box::pin(
+      get_components_for_schematic(
+        self.definition.clone(),
+        seed,
+        allow_latest,
+        allowed_insecure,
+      )
+      .into_actor(self)
+      .then(|components, schematic, _ctx| {
+        let state = schematic.state.as_mut().unwrap();
+        match components {
+          Ok(components) => {
+            state.components = components;
+            ok(())
+          }
+          Err(e) => {
+            error!("{:?}", e);
+            err(e)
+          }
+        }
+      }),
+    )
   }
 }
 
@@ -547,7 +577,7 @@ impl Handler<MessagePacket> for Schematic {
 
             let response: Result<Signal> = match receiver {
               Some(receiver) => match receiver.send(invocation).await {
-                Ok(response) => deserialize(&response.msg),
+                Ok(response) => Ok(deserialize(&response.msg)?),
                 Err(err) => Err(err.into()),
               },
               None => Err("No receiver found".into()),
@@ -704,8 +734,6 @@ pub(crate) struct ResponseFuture {
 mod test {
 
   use super::*;
-  use crate::components::wapc_component_actor::WapcComponentActor;
-  use crate::network::ComponentMetadata;
   use crate::schematic_definition::{
     ComponentDefinition,
     ConnectionDefinition,
@@ -716,10 +744,6 @@ mod test {
   #[test_env_log::test(actix_rt::test)]
   async fn test_init() -> Result<()> {
     trace!("test_init");
-    // let actor = WapcComponentActor::default();
-    let component_addr = SyncArbiter::start(1, WapcComponentActor::default);
-
-    // let component_addr = actor.start();
     let schematic = Schematic::default();
     let addr = schematic.start();
     let mut schematic_def = SchematicDefinition::default();
@@ -750,15 +774,7 @@ mod test {
         port: "output".to_string(),
       },
     });
-    let mut refs = MetadataMap::new();
-    refs.insert(
-      "logger".to_string(),
-      ComponentMetadata {
-        inputs: vec!["input".to_string()],
-        outputs: vec!["output".to_string()],
-        addr: component_addr.recipient(),
-      },
-    );
+
     let hostkey = KeyPair::new_server();
 
     addr
@@ -766,10 +782,11 @@ mod test {
         network: Network::from_hostlocal_registry(&KeyPair::new_server().public_key()),
         host_id: "test".to_string(),
         schematic: schematic_def,
-        components: refs,
         seed: hostkey.seed()?,
+        allow_latest: true,
+        allowed_insecure: vec![],
       })
-      .await?;
+      .await??;
     let mut input: HashMap<String, Vec<u8>> = HashMap::new();
     input.insert("input".to_string(), vec![20]);
     let response = addr
@@ -780,8 +797,7 @@ mod test {
       })
       .await?;
     println!("{:?}", response);
-    // let futures = vec![];
-    // try_join_all(futures).await?;
+
     Ok(())
   }
 }

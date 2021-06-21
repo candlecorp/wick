@@ -2,10 +2,18 @@ use std::collections::HashMap;
 use std::fmt::Display;
 
 use actix::dev::Message;
+use actix::fut::{
+  err,
+  ok,
+};
 use actix::prelude::*;
 use futures::future::try_join_all;
 use serde::Serialize;
 use vino_guest::OutputPayload;
+use vino_transport::{
+  deserialize,
+  serialize,
+};
 
 use super::schematic::Schematic;
 use crate::components::vino_component::BoxedComponent;
@@ -20,11 +28,8 @@ use crate::dispatch::{
 };
 use crate::network_definition::NetworkDefinition;
 use crate::schematic::OutputReady;
-use crate::schematic_definition::get_components;
 use crate::util::hlreg::HostLocalSystemService;
 use crate::{
-  deserialize,
-  serialize,
   Error,
   Invocation,
   Result,
@@ -121,76 +126,51 @@ pub struct Initialize {
 impl Handler<Initialize> for Network {
   type Result = ResponseActFuture<Self, Result<()>>;
 
-  fn handle(&mut self, msg: Initialize, _ctx: &mut Context<Self>) -> Self::Result {
+  fn handle(&mut self, msg: Initialize, ctx: &mut Context<Self>) -> Self::Result {
     trace!("Network initializing on {}", msg.host_id);
     self.host_id = msg.host_id;
-
     self.definition = msg.network;
+
     let host_id = self.host_id.to_string();
-
-    let network = self.definition.clone();
-    let seed = msg.seed.clone();
-    let seed2 = msg.seed;
-
+    let seed = msg.seed;
     let allow_latest = self.allow_latest;
     let allowed_insecure = self.allowed_insecure.clone();
     let schematics = self.definition.schematics.clone();
+    let network_addr = ctx.address();
+
+    let actor_fut = async move {
+      let mut init_requests = vec![];
+      let mut addr_map = HashMap::new();
+
+      for definition in schematics {
+        let schematic = Schematic::default().start();
+        addr_map.insert(definition.get_name(), schematic.clone());
+        init_requests.push(schematic.send(super::schematic::Initialize {
+          network: network_addr.clone(),
+          host_id: host_id.to_string(),
+          seed: seed.clone(),
+          schematic: definition.clone(),
+          allow_latest,
+          allowed_insecure: allowed_insecure.clone(),
+        }))
+      }
+      try_join_all(init_requests).await?;
+      Ok!(addr_map)
+    };
 
     Box::pin(
-      async move {
-        trace!("Getting components");
-        get_components(&network, seed, allow_latest, &allowed_insecure).await
-      }
-      .into_actor(self)
-      .then(move |components, network, ctx| {
-        match components {
-          Ok(components) => {
-            for (component, recipient) in components {
-              network
-                .registry
-                .receivers
-                .insert(component.public_key(), recipient);
-              network
-                .registry
-                .components
-                .insert(component.public_key(), component);
-            }
+      actor_fut
+        .into_actor(self)
+        .then(move |addr_map, network, _ctx| match addr_map {
+          Ok(addr_map) => {
+            network.schematics = addr_map;
+            ok(())
           }
-          Err(e) => {
-            error!("Failed to load all components: {}", e);
-          }
-        };
-        let metadata = network.registry.get_metadata().unwrap_or_default();
-        let inits: Vec<(Addr<Schematic>, super::schematic::Initialize)> = schematics
-          .iter()
-          .map(|schem_def| {
-            let schematic = Schematic::default().start();
-            network
-              .schematics
-              .insert(schem_def.get_name(), schematic.clone());
-            (
-              schematic,
-              super::schematic::Initialize {
-                network: ctx.address(),
-                host_id: host_id.to_string(),
-                schematic: schem_def.clone(),
-                components: metadata.clone(),
-                seed: seed2.clone(),
-              },
-            )
-          })
-          .collect();
-        async move {
-          match try_join_all(inits.into_iter().map(|(schem, msg)| schem.send(msg))).await {
-            Ok(_) => Ok(()),
-            Err(e) => Err(Error::NetworkError(format!(
-              "Error initializing schematics {}",
-              e.to_string()
-            ))),
-          }
-        }
-        .into_actor(network)
-      }),
+          Err(e) => err(Error::NetworkError(format!(
+            "Error initializing schematics {}",
+            e.to_string()
+          ))),
+        }),
     )
   }
 }
@@ -335,7 +315,7 @@ impl Handler<Request> for Network {
     Box::pin(
       async move {
         let payload = schematic?.send(request).await??;
-        deserialize(&payload.payload)
+        Ok(deserialize(&payload.payload)?)
       }
       .into_actor(self),
     )
@@ -366,34 +346,7 @@ pub struct ComponentMetadata {
 
 pub type MetadataMap = HashMap<String, ComponentMetadata>;
 
-impl ComponentRegistry {
-  pub fn get_metadata(&self) -> Result<MetadataMap> {
-    let mut map = MetadataMap::new();
-    trace!("Building metadata map for {:?}", self);
-
-    for (name, component) in &self.components {
-      let recipient = self.receivers.get(name);
-      if recipient.is_none() {
-        return Err(Error::NetworkError(format!(
-          "Could not get recipient for {}",
-          name
-        )));
-      }
-      let recipient = recipient.unwrap();
-
-      map.insert(
-        name.to_string(),
-        ComponentMetadata {
-          inputs: component.get_inputs(),
-          outputs: component.get_outputs(),
-          addr: recipient.clone(),
-        },
-      );
-    }
-    trace!("Built metadata map for {} components", map.len());
-    Ok(map)
-  }
-}
+impl ComponentRegistry {}
 
 #[cfg(test)]
 mod test {
@@ -401,13 +354,13 @@ mod test {
   use maplit::hashmap;
   use test_env_log::test;
   use vino_manifest::NetworkManifest;
+  use vino_transport::serialize;
   use wascap::prelude::KeyPair;
 
   use super::super::dispatch::MessagePayload;
   use super::*;
   use crate::network::Initialize;
   use crate::util::hlreg::HostLocalSystemService;
-  use crate::util::serdes::serialize;
 
   async fn init_network(yaml: &str) -> Result<Addr<Network>> {
     let def = NetworkDefinition::new(&NetworkManifest::V0(serde_yaml::from_str(yaml)?));

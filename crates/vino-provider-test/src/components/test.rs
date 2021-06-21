@@ -1,3 +1,4 @@
+use anyhow::Result;
 use vino_provider::provider_component;
 
 use crate::State;

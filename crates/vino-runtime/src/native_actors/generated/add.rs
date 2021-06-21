@@ -1,11 +1,22 @@
-use crate::components::native_component_actor::NativeCallback;
-use crate::{deserialize, serialize, Result};
-use serde::{Deserialize, Serialize};
-use vino_guest::OutputPayload;
+use std::sync::{
+  Arc,
+  Mutex,
+};
 
+use serde::{
+  Deserialize,
+  Serialize,
+};
+use vino_rpc::port::{
+  Port,
+  Receiver,
+  Sender,
+};
+use vino_transport::deserialize;
+
+#[derive(Debug, PartialEq, Deserialize, Serialize, Default, Clone)]
 pub(crate) struct Inputs {
   pub(crate) left: u64,
-
   pub(crate) right: u64,
 }
 
@@ -13,63 +24,53 @@ pub(crate) fn inputs_list() -> Vec<String> {
   vec!["left".to_string(), "right".to_string()]
 }
 
-pub(crate) struct Outputs<'a> {
-  pub(crate) output: GuestPortOutput<'a>,
+#[derive(Debug, PartialEq, Deserialize, Serialize, Default, Clone)]
+pub(crate) struct InputEncoded {
+  #[serde(rename = "left")]
+  pub(crate) left: Vec<u8>,
+  #[serde(rename = "right")]
+  pub(crate) right: Vec<u8>,
+}
+
+pub(crate) fn deserialize_inputs(
+  args: InputEncoded,
+) -> Result<Inputs, Box<dyn std::error::Error + Send + Sync>> {
+  Ok(Inputs {
+    left: deserialize(&args.left)?,
+    right: deserialize(&args.right)?,
+  })
+}
+
+#[derive(Default)]
+pub(crate) struct Outputs {
+  pub(crate) output: OutputSender,
 }
 
 pub(crate) fn outputs_list() -> Vec<String> {
   vec!["output".to_string()]
 }
 
-pub(crate) struct GuestPortOutput<'a> {
-  inv_id: String,
-  callback: &'a NativeCallback,
+pub(crate) struct OutputSender {
+  port: Arc<Mutex<Port>>,
 }
-impl<'a> GuestPortOutput<'a> {
-  #[allow(dead_code)]
-  pub(crate) fn send(&self, payload: u64) -> Result<()> {
-    (self.callback)(
-      0,
-      &self.inv_id,
-      "",
-      "output",
-      &OutputPayload::MessagePack(serialize(payload)?),
-    )?;
-    Ok(())
+impl Default for OutputSender {
+  fn default() -> Self {
+    Self {
+      port: Arc::new(Mutex::new(Port::new("output"))),
+    }
   }
-  #[allow(dead_code)]
-  pub(crate) fn exception(&self, message: String) -> Result<()> {
-    (self.callback)(
-      0,
-      &self.inv_id,
-      "",
-      "output",
-      &OutputPayload::Exception(message),
-    )?;
-    Ok(())
+}
+impl Sender for OutputSender {
+  type Payload = u64;
+
+  fn get_port(&self) -> Arc<Mutex<Port>> {
+    self.port.clone()
   }
 }
 
-pub(crate) fn get_outputs(callback: &NativeCallback, inv_id: String) -> Outputs {
-  Outputs {
-    output: GuestPortOutput { inv_id, callback },
-  }
-}
-
-#[derive(Debug, PartialEq, Deserialize, Serialize, Default, Clone)]
-pub(crate) struct InputEncoded {
-  #[serde(rename = "left")]
-  pub(crate) left: Vec<u8>,
-
-  #[serde(rename = "right")]
-  pub(crate) right: Vec<u8>,
-}
-pub(crate) fn deserialize_inputs(
-  args: InputEncoded,
-) -> std::result::Result<Inputs, Box<dyn std::error::Error + Send + Sync>> {
-  Ok(Inputs {
-    left: deserialize(&args.left)?,
-
-    right: deserialize(&args.right)?,
-  })
+pub(crate) fn get_outputs() -> (Outputs, Receiver) {
+  let outputs = Outputs::default();
+  let ports = vec![outputs.output.port.clone()];
+  let receiver = Receiver::new(ports);
+  (outputs, receiver)
 }

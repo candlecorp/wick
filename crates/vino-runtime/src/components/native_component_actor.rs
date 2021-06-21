@@ -1,17 +1,38 @@
-use crate::dispatch::{Invocation, InvocationResponse, MessagePayload, VinoEntity};
-use crate::native_actors;
-use crate::{serialize, Result};
+use std::borrow::BorrowMut;
+use std::sync::{
+  Arc,
+  Mutex,
+};
+
+use actix::prelude::*;
+use futures::executor::block_on;
+use futures::StreamExt;
+use nkeys::KeyPair;
+use vino_guest::{
+  OutputPayload,
+  Signal,
+};
+use vino_transport::serialize;
 
 use crate::components::vino_component::NativeComponent;
-use actix::prelude::*;
-use nkeys::KeyPair;
-use vino_guest::{OutputPayload, Signal};
+use crate::dispatch::{
+  native_host_callback,
+  Invocation,
+  InvocationResponse,
+  MessagePayload,
+  VinoEntity,
+};
+use crate::native_actors::State;
+use crate::{
+  native_actors,
+  Result,
+};
 
 #[derive(Default)]
 pub struct NativeComponentActor {
-  component: Option<Box<dyn NativeActor>>,
   name: String,
   seed: String,
+  state: Option<Arc<Mutex<State>>>,
 }
 
 impl std::fmt::Debug for NativeComponentActor {
@@ -69,22 +90,7 @@ impl Handler<Initialize> for NativeComponentActor {
     trace!("Native actor initialized");
     self.name = msg.name;
     self.seed = msg.signing_seed;
-    let seed = self.seed.to_string();
-
-    let callback: NativeCallback = Box::new(
-      move |_id: u64, bind: &str, ns: &str, op: &str, payload: &OutputPayload| {
-        crate::dispatch::native_host_callback(
-          KeyPair::from_seed(&seed).unwrap(),
-          bind,
-          ns,
-          op,
-          payload,
-        )
-      },
-    );
-
-    self.component = native_actors::new_native_actor(&self.name, callback);
-
+    self.state = Some(Arc::new(Mutex::new(State {})));
     Ok(())
   }
 }
@@ -101,25 +107,47 @@ impl Handler<Invocation> for NativeComponentActor {
     let target = msg.target.url();
 
     let inv_id = msg.id;
+    let state = self.state.as_ref().unwrap().clone();
 
-    if let VinoEntity::Component(_) = &msg.target {
-      match &self.component {
-        Some(actor) => {
+    if let VinoEntity::Component(name) = &msg.target {
+      trace!("Getting actor by name: {:?}", name);
+      let component = native_actors::get_native_actor(name);
+      match component {
+        Some(component) => {
           if let MessagePayload::MultiBytes(payload) = msg.msg {
-            match serialize((inv_id, payload)) {
+            trace!("Payload is : {:?}", payload);
+            match serialize(payload) {
               Ok(payload) => {
                 trace!("executing actor {}", target);
-                let result = actor.job_wrapper(&payload);
-                trace!("done executing actor {}: result: {:?}", target, result);
-                match result {
+                // TODO fix async
+                let mut receiver = block_on(component.job_wrapper(state, &payload));
+                match receiver.borrow_mut() {
                   Err(e) => {
                     error!("{}", e.to_string());
                     InvocationResponse::error(msg.tx_id, e.to_string())
                   }
-                  Ok(p) => InvocationResponse::success(
-                    msg.tx_id,
-                    serialize(p).unwrap_or_else(|_| serialize(Signal::Done).unwrap()),
-                  ),
+                  Ok(receiver) => {
+                    loop {
+                      let next = block_on(receiver.next());
+                      if next.is_none() {
+                        break;
+                      }
+
+                      let (port_name, msg) = next.unwrap();
+                      let kp = KeyPair::from_seed(&self.seed).unwrap();
+                      trace!(
+                        "Native actor got output on port [{}]: result: {:?}",
+                        port_name,
+                        msg
+                      );
+                      let _result =
+                        native_host_callback(kp, &inv_id, "", &port_name, &msg).unwrap();
+                    }
+                    InvocationResponse::success(
+                      msg.tx_id,
+                      serialize("done").unwrap_or_else(|_| serialize(Signal::Done).unwrap()),
+                    )
+                  }
                 }
               }
               Err(e) => {
@@ -127,6 +155,7 @@ impl Handler<Invocation> for NativeComponentActor {
               }
             }
           } else {
+            trace!("Invalid payload");
             InvocationResponse::error(
               msg.tx_id,
               "Invalid payload sent from native actor".to_string(),
@@ -134,6 +163,8 @@ impl Handler<Invocation> for NativeComponentActor {
           }
         }
         None => {
+          trace!("Actor not found: {:?}", name);
+
           InvocationResponse::error(msg.tx_id, "Sent invocation for incorrect actor".to_string())
         }
       }

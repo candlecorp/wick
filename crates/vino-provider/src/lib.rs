@@ -6,7 +6,6 @@ use std::sync::{
 };
 
 use async_trait::async_trait;
-use port::Receiver;
 use rmp_serde::{
   Deserializer,
   Serializer,
@@ -16,9 +15,8 @@ use serde::{
   Serialize,
 };
 use vino_guest::OutputPayload;
-
+use vino_rpc::port::Receiver;
 pub mod error;
-pub mod port;
 pub mod provider_macro;
 
 pub type Result<T> = std::result::Result<T, Error>;
@@ -34,17 +32,16 @@ pub struct InitConfiguration {
 }
 
 #[async_trait]
-pub trait ProviderHandler: Send + Sync {
-  async fn request(&self, inv_id: String, component: String, payload: Vec<u8>) -> Result<Receiver>;
-}
-
-#[async_trait]
 pub trait VinoProviderComponent {
   type Context;
   fn get_name(&self) -> String;
   fn get_input_ports(&self) -> Vec<String>;
   fn get_output_ports(&self) -> Vec<String>;
-  async fn job_wrapper(&self, context: Arc<Mutex<Self::Context>>, data: &[u8]) -> Result<Receiver>;
+  async fn job_wrapper(
+    &self,
+    context: Arc<Mutex<Self::Context>>,
+    data: &[u8],
+  ) -> std::result::Result<Receiver, Box<dyn std::error::Error + Send + Sync>>;
 }
 
 /// The agreed-upon standard for RPC response serialization (message pack)

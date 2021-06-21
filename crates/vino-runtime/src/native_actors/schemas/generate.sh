@@ -17,22 +17,16 @@ echo "// This file is generated, do not edit" >$GENERATED_MODULE_FILE
 
 MOD_LINES="
 // This file is generated, do not edit
-use crate::components::native_component_actor::{NativeActor, NativeCallback};
 pub(crate) mod generated;
+use vino_provider::VinoProviderComponent;
 "
 
 GET_NATIVE_ACTOR_FN="
+pub (crate) struct State{}
+
 pub(crate) fn get_native_actor(
     name: &str,
-) -> Option<Box<dyn NativeActor>> {
-  match name {
-"
-
-NEW_NATIVE_ACTOR_FN="
-pub(crate) fn new_native_actor(
-    name: &str,
-    callback:NativeCallback,
-) -> Option<Box<dyn NativeActor>> {
+) -> Option<Box<dyn VinoProviderComponent<Context = State> + Sync + Send>>{
   match name {
 "
 
@@ -42,24 +36,14 @@ for WIDL_PATH in ${SCRIPT_DIR}/*.widl; do
   FS_MODULE_NAME=$(echo $MODULE_NAME | tr '-' '_')
   FS_MODULE_PATH="${GENERATED_SCHEMA_DIR}/${FS_MODULE_NAME}.rs"
   echo "Using $WIDL_FILE to generate $FS_MODULE_NAME.rs"
-  widl-template $WIDL_PATH $TEMPLATE >$FS_MODULE_PATH
+  vino-codegen rust $WIDL_PATH -t provider-component >$FS_MODULE_PATH
   echo "pub(crate) mod ${FS_MODULE_NAME};" >>$GENERATED_MODULE_FILE
   MOD_LINES="$MOD_LINES"$'\n'"pub(crate) mod ${FS_MODULE_NAME};"
-  GET_NATIVE_ACTOR_FN="$GET_NATIVE_ACTOR_FN"$'\n'"\"vino::${MODULE_NAME}\" => Some(Box::new(${FS_MODULE_NAME}::Actor::default())),"
-  NEW_NATIVE_ACTOR_FN="$NEW_NATIVE_ACTOR_FN"$'\n'"\"vino::${MODULE_NAME}\" => Some(Box::new(${FS_MODULE_NAME}::Actor::new(callback))),"
+  GET_NATIVE_ACTOR_FN="$GET_NATIVE_ACTOR_FN"$'\n'"\"${MODULE_NAME}\" => Some(Box::new(${FS_MODULE_NAME}::Component::default())),"
   rustfmt $FS_MODULE_PATH 2>/dev/null
 done
 echo "$MOD_LINES" >$NATIVE_ACTOR_MODULE_FILE
 echo "$GET_NATIVE_ACTOR_FN" >>$NATIVE_ACTOR_MODULE_FILE
-(
-  cat <<EOF
-        _ => None,
-    }
-}
-EOF
-) >>$NATIVE_ACTOR_MODULE_FILE
-
-echo "$NEW_NATIVE_ACTOR_FN" >>$NATIVE_ACTOR_MODULE_FILE
 (
   cat <<EOF
         _ => None,

@@ -7,7 +7,9 @@ macro_rules! native_actor {(
     use crate::{Result, Error};
     use crate::components::native_component_actor::{NativeActor,NativeCallback};
     use crate::components::vino_component::NativeComponent;
+    use vino_transport::deserialize;
     use vino_guest::Signal;
+    use vino_rpc::port::Sender;
 
     use super::generated::$component_name::{Inputs, Outputs, InputEncoded, get_outputs, inputs_list, outputs_list, deserialize_inputs};
 
@@ -48,11 +50,18 @@ macro_rules! native_actor {(
       fn get_output_ports(&self) -> Vec<String> {
         outputs_list()
       }
-
+      // async fn job_wrapper(&self, context:ProviderContext<Self::Context>, data: &[u8]) -> Result<Receiver> {
+      //     trace!("Job passed data: {:?}", data);
+      //     let input_encoded : InputEncoded = vino_transport::deserialize(&data)?;
+      //     let inputs = deserialize_inputs(input_encoded).map_err(ProviderError::InputDeserializationError)?;
+      //     let (outputs, receiver) = get_outputs();
+      //     job(inputs, outputs, context).await?;
+      //     Ok(receiver)
+      // }
       fn job_wrapper(&self, data: &[u8]) -> Result<Signal>{
         match &self.callback {
           Some(callback) => {
-            let (inv_id, input_encoded) : (String, InputEncoded) = crate::deserialize(&data)?;
+            let (inv_id, input_encoded) : (String, InputEncoded) = deserialize(&data)?;
             let inputs = deserialize_inputs(input_encoded)?;
             let outputs = get_outputs(callback, inv_id);
             job(inputs, outputs)

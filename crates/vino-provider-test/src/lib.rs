@@ -4,13 +4,13 @@ use std::sync::{
 };
 
 use async_trait::async_trait;
-use vino_provider::error::ProviderError;
-use vino_provider::port::Receiver;
-use vino_provider::{
-  ProviderHandler,
-  Result,
+use vino_rpc::port::Receiver;
+use vino_rpc::{
+  RpcHandler,
+  RpcResult,
 };
 mod components;
+use anyhow::anyhow;
 
 pub(crate) struct State {}
 
@@ -28,21 +28,21 @@ impl Provider {
 }
 
 #[async_trait]
-impl ProviderHandler for Provider {
+impl RpcHandler for Provider {
   async fn request(
     &self,
     _inv_id: String,
     component: String,
     payload: Vec<u8>,
-  ) -> Result<Receiver> {
+  ) -> RpcResult<Receiver> {
     let context = self.context.clone();
     let instance = components::get_component(&component);
     match instance {
       Some(instance) => {
         let future = instance.job_wrapper(context, &payload);
-        future.await
+        Ok(future.await?)
       }
-      None => Err(ProviderError::ComponentNotFound(component.to_string())),
+      None => Err(anyhow!("Component not found").into()),
     }
   }
 }
@@ -52,7 +52,7 @@ mod tests {
   use futures::prelude::*;
   use maplit::hashmap;
   use vino_guest::OutputPayload;
-  use vino_runtime::{
+  use vino_transport::{
     deserialize,
     serialize,
   };
@@ -60,7 +60,7 @@ mod tests {
   use super::*;
 
   #[test_env_log::test(tokio::test)]
-  async fn request() -> Result<()> {
+  async fn request() -> anyhow::Result<()> {
     let provider = Provider::default();
     let input = "some_input";
     let invocation_id = "INVOCATION_ID";
@@ -75,7 +75,8 @@ mod tests {
         "vino::test::provider".to_string(),
         payload,
       )
-      .await?;
+      .await
+      .expect("request failed");
     let (port_name, payload) = outputs.next().await.unwrap();
     println!("payload from [{}]: {:?}", port_name, payload);
     let payload = match payload {

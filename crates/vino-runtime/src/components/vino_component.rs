@@ -1,17 +1,28 @@
-use super::wapc_component_actor::WapcComponentActor;
-use super::Inputs;
-use super::Outputs;
-use crate::components::native_component_actor::NativeComponentActor;
-use crate::native_actors;
-use crate::Error;
-use crate::Result;
-use actix::Addr;
-use actix::SyncArbiter;
-use async_trait::async_trait;
 use std::fs::File;
 use std::io::prelude::*;
 use std::path::Path;
-use wascap::jwt::{Claims, Token};
+
+use actix::{
+  Addr,
+  SyncArbiter,
+};
+use async_trait::async_trait;
+use wascap::jwt::{
+  Claims,
+  Token,
+};
+
+use super::wapc_component_actor::WapcComponentActor;
+use super::{
+  Inputs,
+  Outputs,
+};
+use crate::components::native_component_actor::NativeComponentActor;
+use crate::{
+  native_actors,
+  Error,
+  Result,
+};
 
 #[derive(Derivative, Clone)]
 #[derivative(Debug)]
@@ -32,6 +43,7 @@ pub(crate) enum ComponentType {
 
 pub(crate) trait VinoComponent: VinoComponentClone {
   fn public_key(&self) -> String;
+  fn id(&self) -> String;
   fn get_inputs(&self) -> Vec<String>;
   fn get_outputs(&self) -> Vec<String>;
   fn name(&self) -> String;
@@ -113,9 +125,14 @@ impl WapcComponent {
 
 #[async_trait]
 impl VinoComponent for WapcComponent {
-  /// Obtain the actor's public key (The `sub` field of the JWT). It is safe to treat this value as a globally unique identifier.
+  /// Obtain the actor's public key (The `sub` field of the JWT).
   fn public_key(&self) -> String {
     self.token.claims.subject.to_string()
+  }
+
+  /// A globally referencable ID to this component
+  fn id(&self) -> String {
+    self.public_key()
   }
 
   fn get_inputs(&self) -> Vec<String> {
@@ -168,15 +185,21 @@ impl Start for WapcComponent {
 
 #[derive(Clone, Debug)]
 pub struct NativeComponent {
+  pub namespace: String,
   pub id: String,
   pub inputs: Inputs,
   pub outputs: Outputs,
 }
 
 impl NativeComponent {
-  pub(crate) fn from_id(name: String) -> Result<NativeComponent> {
+  pub(crate) fn from_id(namespace: String, name: String) -> Result<NativeComponent> {
     match native_actors::get_native_actor(&name) {
-      Some(actor) => Ok(actor.get_def()),
+      Some(actor) => Ok(NativeComponent {
+        namespace,
+        id: name,
+        inputs: actor.get_input_ports(),
+        outputs: actor.get_output_ports(),
+      }),
       None => Err(Error::ComponentError(format!(
         "Could not find actor {}",
         name
@@ -187,9 +210,12 @@ impl NativeComponent {
 
 #[async_trait]
 impl VinoComponent for NativeComponent {
-  /// Obtain the actor's public key (The `sub` field of the JWT). It is safe to treat this value as a globally unique identifier.
   fn public_key(&self) -> String {
-    self.id.to_string()
+    panic!()
+  }
+
+  fn id(&self) -> String {
+    format!("{}::{}", self.namespace, self.id)
   }
 
   fn get_inputs(&self) -> Vec<String> {

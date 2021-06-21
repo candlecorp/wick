@@ -1,13 +1,19 @@
-use actix::prelude::*;
-use parking_lot::Mutex;
+use std::collections::HashMap;
+use std::pin::Pin;
+use std::task::Poll;
 
+use actix::prelude::*;
 use futures::Future;
 use once_cell::sync::Lazy;
-use std::{collections::HashMap, pin::Pin, task::Poll};
+use parking_lot::Mutex;
+use vino_transport::serialize;
 
-use crate::{serialize, Error, InvocationResponse, MessagePayload};
-
-use crate::Result;
+use crate::{
+  Error,
+  InvocationResponse,
+  MessagePayload,
+  Result,
+};
 
 type SchematicOutput = HashMap<String, Option<MessagePayload>>;
 type TransactionOutputs = HashMap<(String, String), SchematicOutput>;

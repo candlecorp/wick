@@ -1,37 +1,26 @@
-use std::net::{
-  IpAddr,
-  Ipv4Addr,
-  SocketAddr,
-};
-use std::str::FromStr;
 use std::sync::Arc;
 
-use futures::StreamExt;
 use tokio::sync::{
   mpsc,
   Mutex,
 };
 use tokio_stream::wrappers::ReceiverStream;
-use tonic::transport::Server;
+use tokio_stream::StreamExt;
 use tonic::{
   Response,
   Status,
 };
 use vino_guest::OutputPayload;
-use vino_rpc::component_rpc_server::{
-  ComponentRpc,
-  ComponentRpcServer,
-};
-use vino_rpc::{
+use vino_transport::serialize;
+
+use crate::component_rpc_server::ComponentRpc;
+use crate::{
   MessagePayload,
   Output,
   PayloadKind,
-  RpcHandler,
 };
-use vino_transport::serialize;
-
 pub struct ComponentService {
-  pub provider: Arc<Mutex<dyn RpcHandler>>,
+  pub provider: Arc<Mutex<dyn crate::RpcHandler>>,
 }
 
 pub fn make_output(port: &str, inv_id: &str, payload: OutputPayload) -> Result<Output, Status> {
@@ -54,7 +43,7 @@ impl ComponentRpc for ComponentService {
 
   async fn invoke(
     &self,
-    request: tonic::Request<vino_rpc::Invocation>,
+    request: tonic::Request<crate::Invocation>,
   ) -> Result<tonic::Response<Self::InvokeStream>, tonic::Status> {
     println!("ListFeatures = {:?}", request);
 
@@ -104,71 +93,8 @@ impl ComponentRpc for ComponentService {
 
   async fn shutdown(
     &self,
-    _request: tonic::Request<vino_rpc::ShutdownRequest>,
-  ) -> Result<tonic::Response<vino_rpc::Ack>, tonic::Status> {
+    _request: tonic::Request<crate::ShutdownRequest>,
+  ) -> Result<tonic::Response<crate::Ack>, tonic::Status> {
     panic!("Unimplemented");
-  }
-}
-
-pub struct Options {
-  pub port: u16,
-
-  pub address: Ipv4Addr,
-}
-
-pub async fn init(
-  provider: Arc<Mutex<dyn RpcHandler>>,
-  opts: Option<Options>,
-) -> crate::Result<()> {
-  let opts = match opts {
-    Some(opts) => opts,
-    None => Options {
-      port: 54321,
-      address: Ipv4Addr::from_str("127.0.0.1")?,
-    },
-  };
-
-  let addr: SocketAddr = SocketAddr::new(IpAddr::V4(opts.address), opts.port);
-  trace!("Binding to {:?}", addr.to_string());
-
-  let component_service = ComponentService { provider };
-
-  let svc = ComponentRpcServer::new(component_service);
-
-  Server::builder().add_service(svc).serve(addr).await?;
-
-  trace!("Server started");
-
-  Ok(())
-}
-
-#[cfg(test)]
-mod tests {
-  use std::str::FromStr;
-  use std::time::Duration;
-
-  use vino_provider_test::Provider;
-
-  use super::*;
-  use crate::Result;
-
-  #[test_env_log::test(tokio::test)]
-  async fn test() -> Result<()> {
-    let init_handle = init(
-      Arc::new(Mutex::new(Provider::default())),
-      Some(Options {
-        port: 12345,
-        address: Ipv4Addr::from_str("127.0.0.1")?,
-      }),
-    );
-    tokio::select! {
-        _ = tokio::time::sleep(Duration::from_secs(1)) => {
-            println!("timeout reached");
-        }
-        _ = init_handle => {
-            panic!("server died");
-        }
-    };
-    Ok(())
   }
 }

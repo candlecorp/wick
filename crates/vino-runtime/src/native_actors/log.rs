@@ -1,10 +1,12 @@
-use crate::native_actor;
+use vino_provider::provider_component;
 
-native_actor! {
+use crate::Result;
+
+provider_component! {
   log,
-  fn job(input: Inputs, output: Outputs) -> Result<Signal> {
+  fn job(input: Inputs, output: Outputs, _context: Context<super::State>) -> Result<()> {
         println!("Logger: {}", input.input);
-        output.output.send(input.input)?;
-        Ok(Signal::Done)
+        output.output.send(input.input);
+        Ok(())
     }
 }

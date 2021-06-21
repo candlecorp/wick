@@ -36,6 +36,8 @@ pub enum VinoError {
   #[error("Failed to deserialize payload {0}")]
   DeserializationError(rmp_serde::decode::Error),
   #[error(transparent)]
+  TransportError(#[from] vino_transport::Error),
+  #[error(transparent)]
   YamlError(#[from] serde_yaml::Error),
   #[error(transparent)]
   ActixMailboxError(#[from] actix::MailboxError),

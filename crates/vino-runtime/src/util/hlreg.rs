@@ -1,8 +1,16 @@
-use actix::{Addr, System, SystemService};
+use std::any::{
+  Any,
+  TypeId,
+};
+use std::collections::HashMap;
+
+use actix::{
+  Addr,
+  System,
+  SystemService,
+};
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
-use std::any::{Any, TypeId};
-use std::collections::HashMap;
 
 type AnyMap = HashMap<TypeId, Box<dyn Any + Send>>;
 type ServiceMap = HashMap<String, AnyMap>;

@@ -1,17 +1,17 @@
 #[macro_export]
 macro_rules! provider_component {(
   $component_name:ident,
-  fn job($inputs_name:ident:Inputs, $outputs_name:ident:Outputs, $context_name: ident: Context<$context_type:ty>) -> Result<()> $fun:block
+  fn job($inputs_name:ident:Inputs, $outputs_name:ident:Outputs, $context_name: ident: Context<$context_type:ty>) -> $result_type:ty $fun:block
 ) => {
     use log::{debug,trace};
-    use vino_provider::{Result, error::ProviderError, Context as ProviderContext};
+    use vino_provider::{error::ProviderError, Context as ProviderContext};
     use vino_provider::VinoProviderComponent;
-    use vino_provider::port::{OutputStreams, Sender, Receiver};
+    use vino_rpc::port::{OutputStreams, Sender, Receiver};
     use async_trait::async_trait;
     use std::sync::{Arc, Mutex};
 
     use super::generated::$component_name::{Outputs, InputEncoded, get_outputs, inputs_list, outputs_list, deserialize_inputs};
-    pub use super::generated::$component_name::{Inputs};
+    pub(crate) use super::generated::$component_name::{Inputs};
 
     pub(crate) struct Component {}
 
@@ -35,16 +35,19 @@ macro_rules! provider_component {(
       fn get_output_ports(&self) -> Vec<String> {
         outputs_list()
       }
-      async fn job_wrapper(&self, context:ProviderContext<Self::Context>, data: &[u8]) -> Result<Receiver> {
+      async fn job_wrapper(&self, context:ProviderContext<Self::Context>, data: &[u8]) -> std::result::Result<Receiver, Box<dyn std::error::Error + Send + Sync>> {
           trace!("Job passed data: {:?}", data);
-          let input_encoded : InputEncoded = vino_runtime::deserialize(&data)?;
+          let input_encoded : InputEncoded = vino_transport::deserialize(&data)?;
           let inputs = deserialize_inputs(input_encoded).map_err(ProviderError::InputDeserializationError)?;
           let (outputs, receiver) = get_outputs();
-          job(inputs, outputs, context).await?;
-          Ok(receiver)
+          let result : $result_type = job(inputs, outputs, context).await;
+          match result {
+            Ok(_) => Ok(receiver),
+            Err(e) => Err(ProviderError::JobError("Job failed".to_string()).into())
+          }
       }
 
     }
 
-    pub(crate) async fn job($inputs_name: Inputs, $outputs_name: Outputs, $context_name: ProviderContext<$context_type>) -> Result<()> $fun
+    pub(crate) async fn job($inputs_name: Inputs, $outputs_name: Outputs, $context_name: ProviderContext<$context_type>) -> $result_type $fun
 }}

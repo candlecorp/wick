@@ -7,11 +7,13 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-serde = { version = "1.0.118", features = ["derive"] }
+serde = { version="1.0.118", features=["derive"] }
 thiserror = "1.0.25"
 log = "0.4.14"
 hocon = "0.5.2"
 serde_yaml = "0.8.17"
+num-traits = "0.2.14"
+enum-primitive-derive = "0.2.1"
 
 [dev-dependencies]
 test-env-log = "0.2.7"

@@ -11,19 +11,25 @@ wasmtime = ["wasmtime-provider"]
 wasm3 = ["wasm3-provider"]
 
 [dependencies]
-wasm3-provider = { version = "0.0.2", optional = true }
-serde = { version = "1.0.118", features = ["derive"] }
-actix = "0.11"
+vino-guest = { path="../vino-guest" }
+vino-macros = { path="../vino-macros" }
+vino-manifest = { path="../vino-manifest" }
+vino-provider = { path="../vino-provider" }
+vino-transport = { path="../vino-transport" }
+vino-rpc = { path="../vino-rpc" }
+wasm3-provider = { version="0.0.2", optional=true }
+serde = { version="1.0.118", features=["derive"] }
+actix = "0.12.0"
 actix-rt = "2.1.0"
 futures = "0.3"
 log = "0.4.11"
 serde_json = "1.0.59"
 serde_yaml = "0.8.14"
-uuid = { version = "0.8", features = ["serde", "v4"] }
+uuid = { version="0.8", features=["serde", "v4"] }
 wapc = "0.10.1"
-wascap = { path = "../../../wascap" }
+wascap = { path="../../../wascap" }
 async-trait = "0.1.50"
-wasmtime-provider = { version = "0.0.3", optional = true }
+wasmtime-provider = { version="0.0.3", optional=true }
 rmp-serde = "0.15.4"
 data-encoding = "2.3.1"
 ring = "0.16.19"
@@ -34,9 +40,7 @@ thiserror = "1.0.25"
 oci-distribution = "0.6.0"
 nkeys = "0.1.0"
 derivative = "2.2.0"
-vino-guest = { path = "../vino-guest" }
-vino-macros = { path = "../vino-macros" }
-vino-manifest = { path = "../vino-manifest" }
+derive-new = "0.5.9"
 
 [dev-dependencies]
 env_logger = "0.8.3"

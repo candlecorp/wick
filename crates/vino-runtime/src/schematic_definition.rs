@@ -1,22 +1,37 @@
-use actix::{Recipient, SyncArbiter};
-use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::{fmt::Display, path::Path};
+use std::fmt::Display;
+use std::path::Path;
+
+use actix::{
+  Recipient,
+  SyncArbiter,
+};
+use serde::{
+  Deserialize,
+  Serialize,
+};
 use vino_manifest::SchematicManifest;
 
-use crate::components::native_component_actor::{self, NativeComponentActor};
-use crate::components::vino_component::BoxedComponent;
-use crate::Error;
-use crate::{components::wapc_component_actor, Result};
-
-use crate::{
-  components::vino_component::{NativeComponent, VinoComponent, WapcComponent},
-  util::oci::fetch_oci_bytes,
+use crate::components::native_component_actor::{
+  self,
+  NativeComponentActor,
 };
-
-use crate::{components::wapc_component_actor::WapcComponentActor, dispatch::Invocation};
-
+use crate::components::vino_component::{
+  BoxedComponent,
+  NativeComponent,
+  VinoComponent,
+  WapcComponent,
+};
+use crate::components::wapc_component_actor;
+use crate::components::wapc_component_actor::WapcComponentActor;
+use crate::dispatch::Invocation;
+use crate::network::ComponentMetadata;
 use crate::network_definition::NetworkDefinition;
+use crate::util::oci::fetch_oci_bytes;
+use crate::{
+  Error,
+  Result,
+};
 
 #[derive(Debug, Clone, Default)]
 pub struct SchematicDefinition {
@@ -198,7 +213,7 @@ where
   }
 }
 
-pub(crate) async fn get_components(
+pub(crate) async fn _get_components(
   network: &NetworkDefinition,
   seed: String,
   allow_latest: bool,
@@ -225,6 +240,37 @@ pub(crate) async fn get_components(
   Ok(v)
 }
 
+pub(crate) async fn get_components_for_schematic(
+  schematic: SchematicDefinition,
+  seed: String,
+  allow_latest: bool,
+  allowed_insecure: Vec<String>,
+) -> Result<HashMap<String, ComponentMetadata>> {
+  let mut metadata_map: HashMap<String, ComponentMetadata> = HashMap::new();
+  debug!("getting components for schematic {:?}", schematic);
+
+  for comp in schematic.components.values() {
+    debug!("{:?}", comp);
+    let component_ref = schematic.id_to_ref(&comp.id)?;
+    let (component, addr) = get_component(
+      component_ref.to_string(),
+      seed.clone(),
+      allow_latest,
+      &allowed_insecure,
+    )
+    .await?;
+    metadata_map.insert(
+      component.id(),
+      ComponentMetadata {
+        inputs: component.get_inputs(),
+        outputs: component.get_outputs(),
+        addr,
+      },
+    );
+  }
+  Ok(metadata_map)
+}
+
 pub(crate) async fn get_component(
   comp_ref: String,
   seed: String,
@@ -248,7 +294,6 @@ pub(crate) async fn get_component(
             signing_seed: seed,
           })
           .await??;
-
         let recipient = actor.recipient::<Invocation>();
         Ok((Box::new(component), recipient))
       }
@@ -258,27 +303,41 @@ pub(crate) async fn get_component(
         e.to_string()
       ))),
     }
-  } else if comp_ref.starts_with("vino::") {
-    match NativeComponent::from_id(comp_ref.to_string()) {
-      Ok(component) => {
-        trace!("Starting native component '{}'", component.name(),);
-        let actor = SyncArbiter::start(1, NativeComponentActor::default);
-        actor
-          .send(native_component_actor::Initialize {
-            name: component.name(),
-            signing_seed: seed,
-          })
-          .await??;
-        let recipient = actor.recipient::<Invocation>();
-
-        Ok((Box::new(component), recipient))
-      }
-      Err(e) => Err(Error::SchematicError(format!(
-        "Could not load native component {}: {}",
-        comp_ref, e
-      ))),
-    }
   } else {
+    let providers = vec!["vino".to_string()];
+    for namespace in providers {
+      if comp_ref.starts_with(&format!("{}::", namespace)) {
+        trace!(
+          "registering component under the {} provider namespace",
+          namespace
+        );
+        let name = str::replace(&comp_ref, &format!("{}::", namespace), "");
+        // todo temporary and very hacky
+        if namespace == "vino" {
+          match NativeComponent::from_id(namespace, name) {
+            Ok(component) => {
+              trace!("Starting native component '{}'", component.name(),);
+              let actor = SyncArbiter::start(1, NativeComponentActor::default);
+              actor
+                .send(native_component_actor::Initialize {
+                  name: component.name(),
+                  signing_seed: seed,
+                })
+                .await??;
+              let recipient = actor.recipient::<Invocation>();
+
+              return Ok((Box::new(component), recipient));
+            }
+            Err(e) => {
+              return Err(Error::SchematicError(format!(
+                "Could not load native component {}: {}",
+                comp_ref, e
+              )))
+            }
+          }
+        }
+      }
+    }
     // load actor from OCI
     let component = fetch_oci_bytes(&comp_ref, allow_latest, allowed_insecure)
       .await

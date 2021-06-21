@@ -5,13 +5,16 @@ type SchematicManifest {
     name: string,
 
   "A list of external components"
-    external: [ExternalComponentDefinition],
+  external: [ExternalComponentDefinition],
+
+  "A list of providers and component collections"
+  providers: [ProviderDefinition],
 
   "A map from component reference to its target"
-    components: {string: ComponentDefinition},
+  components: {string: ComponentDefinition},
 
   "A list of connections from component to component"
-    connections: [ConnectionDefinition],
+  connections: [ConnectionDefinition],
 
   "A map of constraints and values that limit where this schematic can run"
   constraints: {string: string},
@@ -27,6 +30,29 @@ type ExternalComponentDefinition {
 
   "A public key to verify the retrieved component's validity"
   key: string,
+}
+
+"A provider definition"
+type ProviderDefinition {
+  "The namespace to reference the provider's components on"
+  namespace: string,
+
+  "The kind/type of the provider"
+  kind: ProviderKind,
+
+  "The reference/location of the provider"
+  reference: string,
+
+  "Data or configuration to pass to the provider initialization"
+  data: {string: string},
+}
+
+"Kind of provider,"
+enum ProviderKind {
+  "Native providers included at compile-time in a Vino host"
+  Native = 0,
+  "The URL for a separately managed GRPC endpoint"
+  GrpcUrl = 1,
 }
 
 "A single component definition"

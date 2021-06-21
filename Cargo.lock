@@ -27,6 +27,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "actix"
+version = "0.12.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3720d0064a0ce5c0de7bd93bdb0a6caebab2a9b5668746145d7b3b0c5da02914"
+dependencies = [
+ "actix-rt",
+ "actix_derive",
+ "bitflags",
+ "bytes 1.0.1",
+ "crossbeam-channel",
+ "futures-core",
+ "futures-sink",
+ "futures-task",
+ "futures-util",
+ "log",
+ "once_cell",
+ "parking_lot",
+ "pin-project-lite",
+ "smallvec",
+ "tokio",
+ "tokio-util",
+]
+
+[[package]]
 name = "actix-macros"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -668,6 +692,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "derive-new"
+version = "0.5.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3418329ca0ad70234b9735dc4ceed10af4df60eff9c8e7b06cb5e520d92c3535"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "digest"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -811,6 +846,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "80df024fbc5ac80f87dfef0d9f5209a252f2a497f7f42944cff24d8253cac065"
 dependencies = [
  "cfg-if 1.0.0",
+]
+
+[[package]]
+name = "enum-primitive-derive"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5f52288f9a7ebb08959188872b58e7eaa12af9cb47da8e94158e16da7e143340"
+dependencies = [
+ "num-traits",
+ "quote",
+ "syn",
 ]
 
 [[package]]
@@ -3069,7 +3115,7 @@ dependencies = [
 name = "vino-host"
 version = "0.1.0"
 dependencies = [
- "actix",
+ "actix 0.11.1",
  "actix-rt",
  "env_logger 0.8.4",
  "hocon",
@@ -3093,9 +3139,11 @@ version = "0.1.0"
 name = "vino-manifest"
 version = "0.1.0"
 dependencies = [
+ "enum-primitive-derive",
  "env_logger 0.8.4",
  "hocon",
  "log",
+ "num-traits",
  "serde",
  "serde_yaml",
  "test-env-log",
@@ -3115,7 +3163,8 @@ dependencies = [
  "thiserror",
  "tokio",
  "vino-guest",
- "vino-runtime",
+ "vino-rpc",
+ "vino-transport",
 ]
 
 [[package]]
@@ -3142,7 +3191,7 @@ dependencies = [
  "vino-provider",
  "vino-provider-test",
  "vino-rpc",
- "vino-runtime",
+ "vino-transport",
 ]
 
 [[package]]
@@ -3158,6 +3207,7 @@ dependencies = [
 name = "vino-provider-test"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "async-trait",
  "env_logger 0.8.4",
  "futures",
@@ -3166,11 +3216,11 @@ dependencies = [
  "maplit",
  "serde",
  "test-env-log",
- "thiserror",
  "tokio",
  "vino-guest",
  "vino-provider",
- "vino-runtime",
+ "vino-rpc",
+ "vino-transport",
 ]
 
 [[package]]
@@ -3178,6 +3228,7 @@ name = "vino-rpc"
 version = "0.1.0"
 dependencies = [
  "async-stream",
+ "async-trait",
  "env_logger 0.8.4",
  "futures",
  "log",
@@ -3194,21 +3245,21 @@ dependencies = [
  "tonic",
  "tonic-build",
  "vino-guest",
- "vino-provider",
  "vino-provider-test",
- "vino-runtime",
+ "vino-transport",
 ]
 
 [[package]]
 name = "vino-runtime"
 version = "0.1.0"
 dependencies = [
- "actix",
+ "actix 0.12.0",
  "actix-rt",
  "async-trait",
  "bcrypt",
  "data-encoding",
  "derivative",
+ "derive-new",
  "env_logger 0.8.4",
  "futures",
  "log",
@@ -3228,10 +3279,22 @@ dependencies = [
  "vino-guest",
  "vino-macros",
  "vino-manifest",
+ "vino-provider",
+ "vino-rpc",
+ "vino-transport",
  "wapc",
  "wascap",
  "wasm3-provider",
  "wasmtime-provider",
+]
+
+[[package]]
+name = "vino-transport"
+version = "0.1.0"
+dependencies = [
+ "rmp-serde",
+ "serde",
+ "thiserror",
 ]
 
 [[package]]

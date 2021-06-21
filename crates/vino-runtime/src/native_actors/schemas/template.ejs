@@ -7,7 +7,8 @@ function portStruct(port){return `GuestPort${utils.pascalCase(helpers.fieldName(
 %>
 
 use crate::components::native_component_actor::NativeCallback;
-use crate::{deserialize, serialize, Result};
+use crate::{ Result};
+use vino_transport::{deserialize, serialize}
 use serde::{Deserialize, Serialize};
 use vino_guest::OutputPayload;
 

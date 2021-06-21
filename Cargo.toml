@@ -50,6 +50,7 @@ members = [
   "crates/vino-runtime",
   "crates/vino-rpc",
   "crates/vino-host",
+  "crates/vino-transport",
   "crates/vino-manifest",
   "crates/vino-provider",
   "crates/vino-provider-cli",

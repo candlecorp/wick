@@ -18,6 +18,7 @@ use serde::{
 };
 use uuid::Uuid;
 use vino_guest::OutputPayload;
+use vino_transport::serialize;
 use wascap::prelude::{
   Claims,
   KeyPair,
@@ -31,7 +32,6 @@ use crate::network::{
 use crate::schematic::OutputReady;
 use crate::util::hlreg::HostLocalSystemService;
 use crate::{
-  serialize,
   Error,
   Result,
 };

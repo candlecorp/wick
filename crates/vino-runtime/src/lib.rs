@@ -32,20 +32,28 @@ pub mod schematic_definition;
 pub(crate) mod schematic_response;
 pub(crate) mod util;
 
-pub use crate::dispatch::{Invocation, InvocationResponse, PortEntity, VinoEntity};
-pub use crate::network::{request, Network};
-pub use crate::util::serdes::{deserialize, serialize};
-
+pub use crate::dispatch::{
+  Invocation,
+  InvocationResponse,
+  MessagePayload,
+  PortEntity,
+  VinoEntity,
+};
+pub use crate::network::{
+  request,
+  Network,
+};
 pub use crate::network_definition::NetworkDefinition;
 pub use crate::schematic_definition::SchematicDefinition;
-
-pub use crate::dispatch::MessagePayload;
 
 pub type Result<T> = std::result::Result<T, error::VinoError>;
 pub type Error = error::VinoError;
 
+pub use crate::components::vino_component::WapcComponent;
 pub use crate::components::{
-  load_wasm, load_wasm_from_file, load_wasm_from_oci, vino_component::WapcComponent,
+  load_wasm,
+  load_wasm_from_file,
+  load_wasm_from_oci,
 };
 
 #[doc(hidden)]
@@ -62,3 +70,6 @@ extern crate derivative;
 
 #[macro_use]
 extern crate vino_macros;
+
+#[macro_use]
+extern crate derive_new;

@@ -1,5 +1,6 @@
 use std::path::Path;
 
+// pub mod grpc_url_provider;
 pub mod native_component_actor;
 pub mod vino_component;
 pub(crate) mod wapc_component_actor;
@@ -7,9 +8,8 @@ pub(crate) mod wapc_component_actor;
 pub(crate) type Inputs = Vec<String>;
 pub(crate) type Outputs = Vec<String>;
 
-use crate::Result;
-
 use self::vino_component::WapcComponent;
+use crate::Result;
 
 pub fn load_wasm_from_file(path: impl AsRef<Path>) -> Result<WapcComponent> {
   WapcComponent::from_file(path)

@@ -2,6 +2,7 @@ use std::time::Instant;
 
 use actix::prelude::*;
 use log::info;
+use vino_transport::serialize;
 use wapc::WapcHost;
 use wascap::prelude::{
   Claims,
@@ -15,10 +16,7 @@ use crate::dispatch::{
   MessagePayload,
   VinoEntity,
 };
-use crate::{
-  serialize,
-  Result,
-};
+use crate::Result;
 
 #[derive(Default)]
 pub(crate) struct WapcComponentActor {

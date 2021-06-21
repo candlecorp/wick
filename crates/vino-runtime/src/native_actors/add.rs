@@ -1,9 +1,11 @@
-use crate::native_actor;
+use vino_provider::provider_component;
 
-native_actor! {
+use crate::Result;
+
+provider_component! {
   add,
-  fn job(input: Inputs, output: Outputs) -> Result<Signal> {
-        output.output.send(input.left + input.right)?;
-        Ok(Signal::Done)
+  fn job(input: Inputs, output: Outputs, _context: Context<super::State>) -> Result<()> {
+        output.output.send(input.left + input.right);
+        Ok(())
     }
 }
