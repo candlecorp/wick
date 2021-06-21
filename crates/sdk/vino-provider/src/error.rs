@@ -15,7 +15,7 @@ pub enum ProviderError {
   #[error("Invalid state for component '{0}'")]
   JobError(String),
   #[error(transparent)]
-  VinoError(#[from] vino_runtime::Error),
+  VinoError(#[from] vino_transport::Error),
   #[error(transparent)]
   IOError(#[from] std::io::Error),
   #[error("Error serializing payload")]
