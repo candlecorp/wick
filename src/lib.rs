@@ -12,10 +12,8 @@ use vino_host::{
   HostBuilder,
   HostDefinition,
 };
-use vino_runtime::{
-  deserialize,
-  MessagePayload,
-};
+use vino_runtime::MessagePayload;
+use vino_transport::deserialize;
 
 pub type Result<T> = std::result::Result<T, VinoError>;
 pub type Error = VinoError;

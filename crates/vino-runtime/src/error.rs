@@ -13,9 +13,11 @@ pub enum VinoError {
   SchematicError(String),
   #[error("Dispatch error: {0}")]
   DispatchError(String),
+  #[error("Provider error {0}")]
+  ProviderError(String),
   #[error("Payload conversion error")]
   PayloadConversionError(String),
-  #[error("Schematic error: {0}")]
+  #[error("Component error: {0}")]
   ComponentError(String),
   #[error("Job error: {0}")]
   JobError(String),
@@ -35,6 +37,8 @@ pub enum VinoError {
   SerializationError(rmp_serde::encode::Error),
   #[error("Failed to deserialize payload {0}")]
   DeserializationError(rmp_serde::decode::Error),
+  #[error(transparent)]
+  RpcUpstreamError(#[from] tonic::Status),
   #[error(transparent)]
   TransportError(#[from] vino_transport::Error),
   #[error(transparent)]

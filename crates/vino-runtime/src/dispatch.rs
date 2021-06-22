@@ -109,6 +109,7 @@ pub enum MessagePayload {
   MultiBytes(HashMap<String, Vec<u8>>),
   Exception(String),
   Error(String),
+  Test(String),
 }
 
 impl Default for MessagePayload {
@@ -120,7 +121,13 @@ impl Default for MessagePayload {
 impl MessagePayload {
   pub fn into_bytes(self) -> Result<Vec<u8>> {
     match self {
-      MessagePayload::MessagePack(bytes) => Ok(bytes),
+      MessagePayload::MessagePack(v) => Ok(v),
+      _ => Err(Error::PayloadConversionError("Invalid payload".to_string())),
+    }
+  }
+  pub fn into_multibytes(self) -> Result<HashMap<String, Vec<u8>>> {
+    match self {
+      MessagePayload::MultiBytes(v) => Ok(v),
       _ => Err(Error::PayloadConversionError("Invalid payload".to_string())),
     }
   }
@@ -150,6 +157,7 @@ impl From<OutputPayload> for MessagePayload {
       OutputPayload::MessagePack(v) => MessagePayload::MessagePack(v),
       OutputPayload::Exception(v) => MessagePayload::Exception(v),
       OutputPayload::Error(v) => MessagePayload::Error(v),
+      OutputPayload::Test(v) => MessagePayload::Test(v),
     }
   }
 }
@@ -205,6 +213,7 @@ pub(crate) fn invocation_hash(target_url: &str, origin_url: &str, msg: &MessageP
         cleanbytes.write_all(val).unwrap();
       }
     }
+    MessagePayload::Test(v) => cleanbytes.write_all(v.as_bytes()).unwrap(),
   }
   let digest = sha256_digest(cleanbytes.as_slice()).unwrap();
   HEXUPPER.encode(digest.as_ref())
@@ -231,8 +240,21 @@ pub enum VinoEntity {
   Test(String),
   Schematic(String),
   Port(PortEntity),
-  Component(String),
+  Component(ComponentEntity),
   Provider(String),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ComponentEntity {
+  pub id: String,
+  pub reference: String,
+  pub name: String,
+}
+
+impl Display for ComponentEntity {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    write!(f, "{}/{}", self.reference, self.id)
+  }
 }
 
 impl Default for VinoEntity {
@@ -246,6 +268,7 @@ impl Display for VinoEntity {
     write!(f, "{}", self.url())
   }
 }
+
 pub(crate) const URL_SCHEME: &str = "wasmbus";
 
 impl VinoEntity {
@@ -254,7 +277,7 @@ impl VinoEntity {
     match self {
       VinoEntity::Test(name) => format!("{}://test/{}", URL_SCHEME, name),
       VinoEntity::Schematic(name) => format!("{}://schematic/{}", URL_SCHEME, name),
-      VinoEntity::Component(name) => format!("{}://component/{}", URL_SCHEME, name),
+      VinoEntity::Component(e) => format!("{}://component/{}", URL_SCHEME, e.id),
       VinoEntity::Provider(name) => format!("{}://provider/{}", URL_SCHEME, name),
       VinoEntity::Port(port) => format!(
         "{}://{}::{}:{}",
@@ -268,7 +291,7 @@ impl VinoEntity {
     match self {
       VinoEntity::Test(name) => format!("test:{}", name),
       VinoEntity::Schematic(name) => format!("schematic:{}", name),
-      VinoEntity::Component(name) => format!("component:{}", name),
+      VinoEntity::Component(e) => format!("component:{}", e.id),
       VinoEntity::Provider(name) => format!("provider:{}", name),
       VinoEntity::Port(port) => {
         format!("{}::{}:{}", port.schematic, port.reference, port.name)
@@ -283,7 +306,7 @@ impl VinoEntity {
     }
   }
 
-  pub fn into_component(self) -> Result<String> {
+  pub fn into_component(self) -> Result<ComponentEntity> {
     match self {
       VinoEntity::Component(s) => Ok(s),
       _ => Err(Error::ConversionError),
@@ -348,16 +371,17 @@ pub(crate) fn native_host_callback(
     OutputPayload::MessagePack(b) => MessagePayload::MessagePack(b.to_vec()),
     OutputPayload::Exception(e) => MessagePayload::Exception(e.to_string()),
     OutputPayload::Error(e) => MessagePayload::Error(e.to_string()),
+    OutputPayload::Test(v) => MessagePayload::Test(v.to_string()),
   };
   let get_ref = network.send(GetReference {
     inv_id: inv_id.to_string(),
   });
   match block_on(async { get_ref.await })? {
     Some((tx_id, schematic, entity)) => match entity {
-      VinoEntity::Component(reference) => {
+      VinoEntity::Component(e) => {
         let port = PortEntity {
           name: port.to_string(),
-          reference,
+          reference: e.reference,
           schematic,
         };
         debug!(

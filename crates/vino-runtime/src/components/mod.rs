@@ -1,6 +1,6 @@
 use std::path::Path;
 
-// pub mod grpc_url_provider;
+pub mod grpc_url_provider;
 pub mod native_component_actor;
 pub mod vino_component;
 pub(crate) mod wapc_component_actor;

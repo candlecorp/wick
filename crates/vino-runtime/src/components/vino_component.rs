@@ -1,9 +1,13 @@
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::prelude::*;
 use std::path::Path;
 
 use actix::{
+  Actor,
   Addr,
+  Arbiter,
+  Recipient,
   SyncArbiter,
 };
 use async_trait::async_trait;
@@ -17,11 +21,19 @@ use super::{
   Inputs,
   Outputs,
 };
-use crate::components::native_component_actor::NativeComponentActor;
+use crate::components::native_component_actor::{
+  self,
+  NativeComponentActor,
+};
+use crate::components::wapc_component_actor;
+use crate::network::ComponentMetadata;
+use crate::util::oci::fetch_oci_bytes;
 use crate::{
   native_actors,
   Error,
+  Invocation,
   Result,
+  SchematicDefinition,
 };
 
 #[derive(Derivative, Clone)]
@@ -73,7 +85,7 @@ pub(crate) trait Start {
 
   fn start(&mut self, seed: String) -> Result<Addr<Self::Item>>
   where
-    Self::Item: actix::Actor;
+    Self::Item: Actor;
 }
 
 impl WapcComponent {
@@ -244,10 +256,144 @@ impl VinoComponent for NativeComponent {
 impl Start for NativeComponent {
   type Item = NativeComponentActor;
   fn start(&mut self, _seed: String) -> Result<Addr<NativeComponentActor>> {
-    let native_actor = SyncArbiter::start(1, NativeComponentActor::default);
+    let native_actor = NativeComponentActor::start_default();
     // native_actor
     //     .send(native_component_actor::Initialize { name: self.name() })
     //     .await?;
     Ok(native_actor)
   }
+}
+
+pub(crate) async fn get_components_for_schematic(
+  schematic: SchematicDefinition,
+  seed: String,
+  allow_latest: bool,
+  allowed_insecure: Vec<String>,
+) -> Result<HashMap<String, ComponentMetadata>> {
+  let mut metadata_map: HashMap<String, ComponentMetadata> = HashMap::new();
+  debug!("getting components for schematic {:?}", schematic);
+
+  for comp in schematic.components.values() {
+    debug!("{:?}", comp);
+    let component_ref = schematic.id_to_ref(&comp.id)?;
+    let (component, addr) = get_component(
+      component_ref.to_string(),
+      seed.clone(),
+      allow_latest,
+      &allowed_insecure,
+    )
+    .await?;
+    metadata_map.insert(
+      component.id(),
+      ComponentMetadata {
+        name: component.name(),
+        inputs: component.get_inputs(),
+        outputs: component.get_outputs(),
+        addr,
+      },
+    );
+  }
+  Ok(metadata_map)
+}
+
+pub(crate) async fn get_component(
+  comp_ref: String,
+  seed: String,
+  allow_latest: bool,
+  allowed_insecure: &[String],
+) -> Result<(BoxedComponent, Recipient<Invocation>)> {
+  let p = Path::new(&comp_ref);
+  let component: Result<(BoxedComponent, Recipient<Invocation>)> = if p.exists() {
+    // read actor from disk
+    match WapcComponent::from_file(p) {
+      Ok(component) => {
+        trace!(
+          "Starting wapc component '{}' from file {}",
+          component.name(),
+          p.to_string_lossy()
+        );
+        let actor = SyncArbiter::start(1, WapcComponentActor::default);
+        actor
+          .send(wapc_component_actor::Initialize {
+            actor_bytes: component.bytes.clone(),
+            signing_seed: seed,
+          })
+          .await??;
+        let recipient = actor.recipient::<Invocation>();
+        Ok((Box::new(component), recipient))
+      }
+      Err(e) => Err(Error::SchematicError(format!(
+        "Could not read file {}:{}",
+        comp_ref,
+        e.to_string()
+      ))),
+    }
+  } else {
+    let providers = vec!["vino".to_string()];
+    for namespace in providers {
+      if comp_ref.starts_with(&format!("{}::", namespace)) {
+        trace!(
+          "registering component under the {} provider namespace",
+          namespace
+        );
+        let name = str::replace(&comp_ref, &format!("{}::", namespace), "");
+        // todo temporary and very hacky
+        if namespace == "vino" {
+          match NativeComponent::from_id(namespace, name) {
+            Ok(component) => {
+              trace!("Starting native component '{}'", component.name(),);
+              let arbiter = Arbiter::new();
+              let actor = NativeComponentActor::start_in_arbiter(&arbiter.handle(), |_| {
+                NativeComponentActor::default()
+              });
+              actor
+                .send(native_component_actor::Initialize {
+                  name: component.name(),
+                  signing_seed: seed,
+                })
+                .await??;
+              let recipient = actor.recipient::<Invocation>();
+
+              return Ok((Box::new(component), recipient));
+            }
+            Err(e) => {
+              return Err(Error::SchematicError(format!(
+                "Could not load native component {}: {}",
+                comp_ref, e
+              )))
+            }
+          }
+        }
+      }
+    }
+    // load actor from OCI
+    let component = fetch_oci_bytes(&comp_ref, allow_latest, allowed_insecure)
+      .await
+      .and_then(|bytes| WapcComponent::from_slice(&bytes));
+    match component {
+      Ok(component) => {
+        trace!(
+          "Starting wapc component '{}' from URL {}",
+          component.name(),
+          comp_ref
+        );
+
+        let actor = SyncArbiter::start(1, WapcComponentActor::default);
+        actor
+          .send(wapc_component_actor::Initialize {
+            actor_bytes: component.bytes.clone(),
+            signing_seed: seed,
+          })
+          .await??;
+
+        let recipient = actor.recipient::<Invocation>();
+        Ok((Box::new(component), recipient))
+      }
+      Err(_) => Err(Error::SchematicError(format!(
+        "Could not find component '{}' on disk or in registry",
+        comp_ref,
+      ))),
+    }
+  };
+  component
 }

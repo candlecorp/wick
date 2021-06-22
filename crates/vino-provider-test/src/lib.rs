@@ -42,7 +42,7 @@ impl RpcHandler for Provider {
         let future = instance.job_wrapper(context, &payload);
         Ok(future.await?)
       }
-      None => Err(anyhow!("Component not found").into()),
+      None => Err(anyhow!("Component '{}' not found", component).into()),
     }
   }
 }

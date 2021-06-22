@@ -1,175 +1,310 @@
-// use actix::fut::ok;
-// use actix::prelude::*;
-// use vino_rpc::component_rpc_client::ComponentRpcClient;
+use actix::fut::{
+  err,
+  ok,
+};
+use actix::prelude::*;
+use futures::FutureExt;
+use rpc::component_rpc_client::ComponentRpcClient;
+use tokio::sync::mpsc::UnboundedSender;
+use tonic::transport::Channel;
+use vino_guest::OutputPayload;
+use vino_rpc as rpc;
+use vino_transport::{
+  deserialize,
+  serialize,
+};
 
-// use crate::dispatch::{
-//   Invocation,
-//   InvocationResponse,
-//   MessagePayload,
-//   VinoEntity,
-// };
-// use crate::Result;
+use crate::dispatch::{
+  Invocation,
+  InvocationResponse,
+  MessagePayload,
+};
+use crate::error::VinoError;
+use crate::Result;
 
-// #[derive(Default, Debug)]
-// pub struct GrpcUrlProvider {
-//   namespace: String,
-//   state: Option<State>,
-//   seed: String,
-// }
+#[derive(Default, Debug)]
+pub struct GrpcUrlProvider {
+  namespace: String,
+  state: Option<State>,
+  seed: String,
+}
 
-// #[derive(Debug)]
-// struct State {
-//   address: String,
-// }
+#[derive(Debug)]
+struct State {
+  pub(crate) client: ComponentRpcClient<Channel>,
+  pub(crate) sender: UnboundedSender<MessagePayload>,
+}
 
-// impl Actor for GrpcUrlProvider {
-//   type Context = Context<Self>;
+impl Actor for GrpcUrlProvider {
+  type Context = Context<Self>;
 
-//   fn started(&mut self, _ctx: &mut Self::Context) {
-//     trace!("GRPC Provider started");
-//   }
+  fn started(&mut self, _ctx: &mut Self::Context) {
+    debug!("GRPC Provider started");
+  }
 
-//   fn stopped(&mut self, _ctx: &mut Self::Context) {}
-// }
+  fn stopped(&mut self, _ctx: &mut Self::Context) {}
+}
 
-// #[derive(Message)]
-// #[rtype(result = "Result<()>")]
-// pub(crate) struct Initialize {
-//   pub(crate) namespace: String,
-//   pub(crate) address: String,
-//   pub(crate) _client: String,
-//   pub(crate) signing_seed: String,
-// }
+#[derive(Message)]
+#[rtype(result = "Result<()>")]
+pub(crate) struct Initialize {
+  pub(crate) namespace: String,
+  pub(crate) address: String,
+  pub(crate) signing_seed: String,
+  pub(crate) sender: UnboundedSender<MessagePayload>,
+}
 
-// impl Handler<Initialize> for GrpcUrlProvider {
-//   type Result = ResponseActFuture<Self, Result<()>>;
+impl Handler<Initialize> for GrpcUrlProvider {
+  type Result = ResponseActFuture<Self, Result<()>>;
 
-//   fn handle(&mut self, msg: Initialize, _ctx: &mut Self::Context) -> Self::Result {
-//     trace!("Native actor initialized");
-//     self.namespace = msg.namespace;
-//     self.seed = msg.signing_seed;
+  fn handle(&mut self, msg: Initialize, _ctx: &mut Self::Context) -> Self::Result {
+    debug!("Native actor initialized");
+    self.namespace = msg.namespace;
+    self.seed = msg.signing_seed;
+    let sender = msg.sender;
 
-//     let addr = msg.address;
+    let addr = msg.address;
 
-//     Box::pin(
-//       ComponentRpcClient::connect(addr)
-//         .into_actor(self)
-//         .then(|_client, _provider, _ctx| ok(())),
-//     )
-//   }
-// }
+    Box::pin(ComponentRpcClient::connect(addr).into_actor(self).then(
+      move |client, provider, _ctx| match client {
+        Ok(client) => {
+          provider.state = Some(State { client, sender });
+          ok(())
+        }
+        Err(e) => err(VinoError::ProviderError(format!(
+          "Could not connect to Rpc Client in GrpcUrlProvider: {}",
+          e
+        ))),
+      },
+    ))
+  }
+}
 
-// impl Handler<Invocation> for GrpcUrlProvider {
-//   type Result = InvocationResponse;
+impl Handler<Invocation> for GrpcUrlProvider {
+  type Result = ResponseFuture<InvocationResponse>;
 
-//   fn handle(&mut self, msg: Invocation, _ctx: &mut Self::Context) -> Self::Result {
-//     trace!(
-//       "Native actor Invocation - From {} to {}",
-//       msg.origin.url(),
-//       msg.target.url()
-//     );
-//     // let target = msg.target.url();
+  fn handle(&mut self, msg: Invocation, _ctx: &mut Self::Context) -> Self::Result {
+    debug!(
+      "Native actor Invocation - From {} to {}",
+      msg.origin.url(),
+      msg.target.url()
+    );
+    let target_url = msg.target.url();
+    let target = msg.target;
+    let payload = msg.msg;
+    let tx_id = msg.tx_id;
+    let tx_id2 = tx_id.clone();
+    let claims = msg.encoded_claims;
+    let host_id = msg.host_id;
 
-//     // let inv_id = msg.id;
+    let inv_id = msg.id;
+    let state = self.state.as_ref().unwrap();
+    // let seed = self.seed.clone();
+    let mut client = state.client.clone();
+    let sender = state.sender.clone();
+    let origin = msg.origin;
 
-//     if let VinoEntity::Provider(name) = &msg.target {
-//       trace!("Handling provider invocation for name: {}", name);
+    let fut = async move {
+      let entity = target
+        .into_component()
+        .map_err(|_| "Provider received invalid invocation")?;
+      debug!("Getting component: {}", entity);
+      let payload = payload
+        .into_multibytes()
+        .map_err(|_| VinoError::ComponentError("Provider sent invalid payload".into()))?;
+      debug!("Payload is : {:?}", payload);
+      let payload = serialize(payload).map_err(|_| "Could not serialize input payload")?;
 
-//       if let MessagePayload::MultiBytes(_payload) = msg.msg {
-//         InvocationResponse::error(msg.tx_id, "todo".to_string())
-//       } else {
-//         InvocationResponse::error(
-//           msg.tx_id,
-//           "Invalid payload sent from native actor".to_string(),
-//         )
-//       }
-//     } else {
-//       InvocationResponse::error(
-//         msg.tx_id,
-//         "Sent invocation for incorrect entity".to_string(),
-//       )
-//     }
-//   }
-// }
+      debug!("making external request {}", target_url);
 
-// #[cfg(test)]
-// mod test {
+      let invocation = rpc::Invocation {
+        origin: Some(rpc::Entity {
+          name: origin.key(),
+          kind: rpc::entity::EntityKind::Test.into(),
+        }),
+        target: Some(rpc::Entity {
+          name: entity.name,
+          kind: rpc::entity::EntityKind::Provider.into(),
+        }),
+        msg: Some(rpc::MessagePayload {
+          kind: rpc::PayloadKind::MultiBytes.into(),
+          value: payload,
+        }),
+        id: inv_id.to_string(),
+        tx_id: tx_id.to_string(),
+        encoded_claims: claims.to_string(),
+        host_id: host_id.to_string(),
+      };
 
-//   use std::net::{
-//     IpAddr,
-//     Ipv4Addr,
-//     SocketAddr,
-//   };
-//   use std::str::FromStr;
-//   use std::sync::Arc;
+      let stream = client.invoke(invocation).await?;
+      actix::spawn(async move {
+        let mut stream = stream.into_inner();
+        loop {
+          match stream.message().await {
+            Ok(next) => {
+              if next.is_none() {
+                break;
+              }
+              let output = next.unwrap();
 
-//   use super::*;
+              // let kp = KeyPair::from_seed(&seed).unwrap();
+              debug!(
+                "Provider Component for invocation {} got output on port [{}]: result: {:?}",
+                output.invocation_id, output.port, output.payload
+              );
+              let output_payload = output.payload.unwrap();
+              let kind: rpc::PayloadKind = rpc::PayloadKind::from_i32(output_payload.kind).unwrap();
+              debug!("Payload kind: {:?}", kind);
+              let payload = match kind {
+                rpc::PayloadKind::Error => OutputPayload::Error(
+                  deserialize(&output_payload.value)
+                    .unwrap_or_else(|_| "Can not deserialize output payload".to_string()),
+                ),
+                rpc::PayloadKind::Exception => OutputPayload::Exception(
+                  deserialize(&output_payload.value)
+                    .unwrap_or_else(|_| "Can not deserialize output payload".to_string()),
+                ),
+                rpc::PayloadKind::Invalid => {
+                  OutputPayload::Error("Invalid payload kind".to_string())
+                }
+                rpc::PayloadKind::Test => OutputPayload::Test(
+                  deserialize(&output_payload.value)
+                    .unwrap_or_else(|_| "Invalid payload kind".to_string()),
+                ),
+                rpc::PayloadKind::MessagePack => OutputPayload::MessagePack(output_payload.value),
+                rpc::PayloadKind::MultiBytes => {
+                  OutputPayload::Error("Invalid payload kind".to_string())
+                }
+              };
+              let result = sender.send(MessagePayload::from(payload));
+              match result {
+                Ok(_) => {
+                  debug!("successfully sent output payload to receiver");
+                }
+                Err(e) => {
+                  error!("error sending output payload to receiver: {}", e);
+                }
+              }
+              // let _result = native_host_callback(kp, &inv_id, "", &output.port, &payload).unwrap();
+            }
+            Err(e) => {
+              error!("Received error from GRPC Url Provider upstream: {} ", e);
+              break;
+            }
+          }
+        }
+      });
+      Ok!(InvocationResponse::success(tx_id, vec![],))
+    };
 
-//   async fn make_grpc_server() {
-//     let addr: SocketAddr = SocketAddr::new(IpAddr::V4(Ipv4Addr::from_str("127.0.0.1")), 54321);
+    Box::pin(fut.then(|result| async {
+      match result {
+        Ok(invocation) => invocation,
+        Err(e) => InvocationResponse::error(tx_id2, e.to_string()),
+      }
+    }))
+  }
+}
 
-//     trace!("Binding to {:?}", addr.to_string());
+#[cfg(test)]
+mod test {
 
-//     let component_service = ComponentService { provider };
+  use std::net::{
+    IpAddr,
+    Ipv4Addr,
+    SocketAddr,
+  };
+  use std::str::FromStr;
 
-//     let svc = ComponentRpcServer::new(component_service);
+  use maplit::hashmap;
+  use tokio::sync::mpsc::unbounded_channel;
+  use tonic::transport::Server;
+  use vino_provider_test::Provider;
+  use vino_rpc::component_rpc_server::ComponentRpcServer;
+  use vino_rpc::ComponentService;
+  use vino_transport::serialize;
 
-//     Server::builder().add_service(svc).serve(addr).await?;
+  use super::*;
+  use crate::dispatch::ComponentEntity;
+  use crate::VinoEntity;
 
-//     trace!("Server started");
-//   }
+  async fn make_grpc_server(provider: Provider) -> Result<()> {
+    let addr: SocketAddr =
+      SocketAddr::new(IpAddr::V4(Ipv4Addr::from_str("127.0.0.1").unwrap()), 54321);
 
-//   #[test_env_log::test(actix_rt::test)]
-//   async fn test_init() -> Result<()> {
-//     let init_handle = init(
-//       Arc::new(Mutex::new(Provider::default())),
-//       Some(Options {
-//         port: 12345,
-//         address: Ipv4Addr::from_str("127.0.0.1")?,
-//       }),
-//     );
-//     tokio::select! {
-//         _ = tokio::time::sleep(Duration::from_secs(1)) => {
-//             println!("timeout reached");
-//         }
-//         _ = init_handle => {
-//             panic!("server died");
-//         }
-//     };
+    debug!("Binding to {:?}", addr.to_string());
 
-//     trace!("test_init");
-//     let provider = GrpcUrlProvider::default();
-//     let addr = provider.start();
-//     let mut schematic_def = Initialize {
-//       namespace: "test",
-//       address: "",
-//       _client: (),
-//       signing_seed: (),
-//     };
+    let component_service = ComponentService::new(provider);
 
-//     let hostkey = KeyPair::new_server();
+    let svc = ComponentRpcServer::new(component_service);
 
-//     addr
-//       .send(Initialize {
-//         network: Network::from_hostlocal_registry(&KeyPair::new_server().public_key()),
-//         host_id: "test".to_string(),
-//         schematic: schematic_def,
-//         seed: hostkey.seed()?,
-//         allow_latest: true,
-//         allowed_insecure: vec![],
-//       })
-//       .await??;
-//     let mut input: HashMap<String, Vec<u8>> = HashMap::new();
-//     input.insert("input".to_string(), vec![20]);
-//     let response = addr
-//       .send(super::Request {
-//         tx_id: "some_id".to_string(),
-//         schematic: "logger".to_string(),
-//         payload: input,
-//       })
-//       .await?;
-//     println!("{:?}", response);
+    Server::builder()
+      .add_service(svc)
+      .serve(addr)
+      .await
+      .unwrap();
 
-//     Ok(())
-//   }
-// }
+    debug!("Server started");
+    Ok(())
+  }
+
+  #[test_env_log::test(actix_rt::test)]
+  async fn test_init() -> Result<()> {
+    let init_handle = make_grpc_server(Provider::default());
+
+    debug!("test_init");
+    let (tx, rx) = unbounded_channel();
+    let mut rx = rx;
+    let work = async move {
+      let grpc_provider = GrpcUrlProvider::start_default();
+      grpc_provider
+        .send(Initialize {
+          namespace: "test".to_string(),
+          address: "https://127.0.0.1:54321".to_string(),
+          signing_seed: "seed".to_string(),
+          sender: tx,
+        })
+        .await??;
+
+      grpc_provider
+        .send(Invocation {
+          origin: VinoEntity::Test("grpc".to_string()),
+          target: VinoEntity::Component(ComponentEntity {
+            id: "test::DEADBEEF".to_string(),
+            reference: "DEADBEEF".to_string(),
+            name: "test-component".to_string(),
+          }),
+          msg: MessagePayload::MultiBytes(hashmap! {
+            "input".to_string()=>serialize("test string payload")?
+          }),
+          id: Invocation::uuid(),
+          tx_id: Invocation::uuid(),
+          encoded_claims: "".to_string(),
+          host_id: Invocation::uuid(),
+        })
+        .await?;
+      Ok!(())
+    };
+    tokio::select! {
+        _ = work => {
+            debug!("Work complete");
+        }
+        _ = init_handle => {
+            panic!("server died");
+        }
+    };
+    let next = rx.recv().await;
+    match next {
+      Some(n) => {
+        let result: OutputPayload = match n {
+          MessagePayload::MessagePack(bytes) => deserialize(&bytes)?,
+          _ => panic!("Unexpected payload"),
+        };
+
+        debug!("Got next : {:?}", result);
+      }
+      None => panic!("Nothing received"),
+    }
+    Ok(())
+  }
+}

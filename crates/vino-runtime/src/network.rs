@@ -191,17 +191,17 @@ impl Handler<GetReference> for Network {
 
 #[derive(Message)]
 #[rtype(result = "()")]
-pub(crate) struct MapInvocation {
+pub(crate) struct RecordInvocationState {
   pub(crate) inv_id: String,
   pub(crate) tx_id: String,
   pub(crate) schematic: String,
   pub(crate) entity: VinoEntity,
 }
 
-impl Handler<MapInvocation> for Network {
+impl Handler<RecordInvocationState> for Network {
   type Result = ();
 
-  fn handle(&mut self, msg: MapInvocation, _ctx: &mut Context<Self>) -> Self::Result {
+  fn handle(&mut self, msg: RecordInvocationState, _ctx: &mut Context<Self>) -> Self::Result {
     self
       .invocation_map
       .insert(msg.inv_id, (msg.tx_id, msg.schematic, msg.entity));
@@ -253,6 +253,7 @@ impl Handler<WapcOutputReady> for Network {
         OutputPayload::MessagePack(b) => MessagePayload::MessagePack(b),
         OutputPayload::Exception(e) => MessagePayload::Exception(e),
         OutputPayload::Error(e) => MessagePayload::Error(e),
+        OutputPayload::Test(v) => MessagePayload::Test(v),
       },
       Err(e) => e,
     };
@@ -260,7 +261,7 @@ impl Handler<WapcOutputReady> for Network {
       async move {
         let port = PortEntity {
           name: port,
-          reference: entity.into_component()?,
+          reference: entity.into_component()?.reference,
           schematic: schematic_name,
         };
         match receiver {
@@ -339,6 +340,7 @@ impl std::fmt::Debug for ComponentRegistry {
 
 #[derive(Debug, Clone)]
 pub struct ComponentMetadata {
+  pub name: String,
   pub inputs: Inputs,
   pub outputs: Outputs,
   pub addr: Recipient<Invocation>,

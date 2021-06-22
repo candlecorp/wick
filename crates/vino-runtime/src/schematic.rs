@@ -14,8 +14,6 @@ use serde::{
   Deserialize,
   Serialize,
 };
-use vino_guest::Signal;
-use vino_transport::deserialize;
 use wascap::prelude::KeyPair;
 
 use super::dispatch::{
@@ -23,18 +21,19 @@ use super::dispatch::{
   InvocationResponse,
 };
 use super::schematic_response::initialize_schematic_output;
+use crate::components::vino_component::get_components_for_schematic;
 use crate::dispatch::{
+  ComponentEntity,
   PortEntity,
   VinoEntity,
 };
 use crate::error::VinoError;
 use crate::network::{
   ComponentMetadata,
-  MapInvocation,
   Network,
+  RecordInvocationState,
 };
 use crate::schematic_definition::{
-  get_components_for_schematic,
   ConnectionDefinition,
   ConnectionTargetDefinition,
   SchematicDefinition,
@@ -188,24 +187,30 @@ impl Schematic {
       .entry(tx_id.to_string())
       .or_insert_with(new_refmap);
 
-    let actor = state
+    let component_id = state
       .references
       .get(&reference)
       .ok_or_else(|| Error::SchematicError(format!("Could not find reference {}", reference)))?;
     trace!("pushing to {}", port);
     let key = reference.to_string();
-    let metadata = state.components.get(actor).ok_or_else(|| {
+    let metadata = state.components.get(component_id).ok_or_else(|| {
       Error::SchematicError(format!(
         "Could not find metadata for {}. Component may have failed to load.",
-        actor
+        component_id
       ))
     })?;
 
+    debug!("reference: {}", reference);
+    debug!("refmap key: {}", key);
     refmap
       .entry(key)
       .or_insert_with(|| new_inputbuffer_map(metadata));
+    debug!("port_name: {:?}", port.name);
+    debug!("refmap: {:?}", refmap);
 
     push_to_portbuffer(refmap, reference.to_string(), port.name.clone(), data)?;
+
+    debug!("refmap: {:?}", refmap);
 
     if !component_has_data(refmap, &reference) {
       return Ok(ComponentStatus::Waiting);
@@ -228,7 +233,11 @@ impl Schematic {
       &tx_id,
       &kp,
       VinoEntity::Schematic(port.schematic.to_string()),
-      VinoEntity::Component(reference.to_string()),
+      VinoEntity::Component(ComponentEntity {
+        id: component_id.to_string(),
+        name: metadata.name.to_string(),
+        reference,
+      }),
       MessagePayload::MultiBytes(job_data),
     )))
   }
@@ -447,7 +456,7 @@ impl Handler<ResponseFuture> for Schematic {
 
 #[derive(Debug, Clone, Serialize, Deserialize, Message, PartialEq)]
 #[rtype(result = "Result<()>")]
-struct MessagePacket {
+struct PayloadReceived {
   tx_id: String,
   origin: VinoEntity,
   target: PortEntity,
@@ -459,7 +468,7 @@ fn gen_packets(
   tx_id: String,
   name: String,
   bytemap: HashMap<String, Vec<u8>>,
-) -> Result<Vec<MessagePacket>> {
+) -> Result<Vec<PayloadReceived>> {
   let schematic = &sm.definition;
   let _kp = KeyPair::from_seed(&sm.seed)?;
 
@@ -467,7 +476,7 @@ fn gen_packets(
 
   initialize_schematic_output(&tx_id, &name, schematic_outputs);
 
-  let invocations: Vec<MessagePacket> = schematic
+  let invocations: Vec<PayloadReceived> = schematic
     .connections
     .iter()
     .filter(|conn| conn.from.instance == crate::SCHEMATIC_INPUT)
@@ -476,7 +485,7 @@ fn gen_packets(
         .get(&conn.from.port)
         .unwrap_or_else(|| panic!("Output on port '{}' not found", conn.to.instance));
 
-      MessagePacket {
+      PayloadReceived {
         target: PortEntity {
           schematic: name.to_string(),
           name: conn.to.port.to_string(),
@@ -492,7 +501,7 @@ fn gen_packets(
 }
 
 async fn handle_schematic_invocation(
-  invocations: Vec<MessagePacket>,
+  invocations: Vec<PayloadReceived>,
   schematic: Addr<Schematic>,
   tx_id: String,
   target: String,
@@ -514,10 +523,10 @@ async fn handle_schematic_invocation(
   Ok(response)
 }
 
-impl Handler<MessagePacket> for Schematic {
+impl Handler<PayloadReceived> for Schematic {
   type Result = ResponseActFuture<Self, Result<()>>;
 
-  fn handle(&mut self, msg: MessagePacket, ctx: &mut Context<Self>) -> Self::Result {
+  fn handle(&mut self, msg: PayloadReceived, ctx: &mut Context<Self>) -> Self::Result {
     let name = self.definition.get_name();
     let port = msg.target;
     let payload = msg.payload;
@@ -538,7 +547,7 @@ impl Handler<MessagePacket> for Schematic {
     let status = self.push_to_port(tx_id.to_string(), &port, payload);
     let schematic_host = ctx.address();
 
-    let receiver = self.get_downstream_recipient(reference.to_string());
+    let recipient = self.get_downstream_recipient(reference.to_string());
     let network = self.network.clone().unwrap();
 
     Box::pin(
@@ -568,16 +577,16 @@ impl Handler<MessagePacket> for Schematic {
             Ok(())
           }
           Ok(ComponentStatus::Ready(invocation)) => {
-            network.do_send(MapInvocation {
+            network.do_send(RecordInvocationState {
               inv_id: invocation.id.to_string(),
               tx_id: tx_id.clone(),
               schematic: name.to_string(),
               entity: invocation.target.clone(),
             });
 
-            let response: Result<Signal> = match receiver {
-              Some(receiver) => match receiver.send(invocation).await {
-                Ok(response) => Ok(deserialize(&response.msg)?),
+            let response: Result<()> = match recipient {
+              Some(recipient) => match recipient.send(invocation).await {
+                Ok(_) => Ok(()),
                 Err(err) => Err(err.into()),
               },
               None => Err("No receiver found".into()),
@@ -706,7 +715,7 @@ impl Handler<OutputReady> for Schematic {
           name: conn.to.port.to_string(),
           reference: conn.to.instance,
         };
-        MessagePacket {
+        PayloadReceived {
           tx_id: tx_id.clone(),
           origin: origin.clone(),
           target: entity,

@@ -15,8 +15,8 @@ use vino_rpc::port::{
 use vino_transport::deserialize;
 
 #[derive(Debug, PartialEq, Deserialize, Serialize, Default, Clone)]
-pub struct Inputs {
-  pub input: String,
+pub(crate) struct Inputs {
+  pub(crate) input: String,
 }
 
 pub(crate) fn inputs_list() -> Vec<String> {
@@ -26,19 +26,19 @@ pub(crate) fn inputs_list() -> Vec<String> {
 #[derive(Debug, PartialEq, Deserialize, Serialize, Default, Clone)]
 pub(crate) struct InputEncoded {
   #[serde(rename = "input")]
-  pub input: Vec<u8>,
+  pub(crate) input: Vec<u8>,
 }
 
 pub(crate) fn deserialize_inputs(
   args: InputEncoded,
-) -> std::result::Result<Inputs, Box<dyn std::error::Error + Send + Sync>> {
+) -> Result<Inputs, Box<dyn std::error::Error + Send + Sync>> {
   Ok(Inputs {
     input: deserialize(&args.input)?,
   })
 }
 
 #[derive(Default)]
-pub struct Outputs {
+pub(crate) struct Outputs {
   pub(crate) output: OutputSender,
 }
 
@@ -46,7 +46,7 @@ pub(crate) fn outputs_list() -> Vec<String> {
   vec!["output".to_string()]
 }
 
-pub struct OutputSender {
+pub(crate) struct OutputSender {
   port: Arc<Mutex<Port>>,
 }
 impl Default for OutputSender {
@@ -64,7 +64,7 @@ impl Sender for OutputSender {
   }
 }
 
-pub fn get_outputs() -> (Outputs, Receiver) {
+pub(crate) fn get_outputs() -> (Outputs, Receiver) {
   let outputs = Outputs::default();
   let ports = vec![outputs.output.port.clone()];
   let receiver = Receiver::new(ports);

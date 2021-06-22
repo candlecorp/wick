@@ -96,10 +96,8 @@ mod test {
   use std::path::PathBuf;
 
   use maplit::hashmap;
-  use vino_runtime::{
-    deserialize,
-    MessagePayload,
-  };
+  use vino_runtime::MessagePayload;
+  use vino_transport::deserialize;
 
   use crate::host_definition::HostDefinition;
   use crate::{

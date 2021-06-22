@@ -1,4 +1,4 @@
-namespace "vino::test::provider"
+namespace "test-component"
 
 type Inputs {
   input: string

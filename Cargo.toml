@@ -30,6 +30,7 @@ thiserror = "1.0.24"
 oci-distribution = "0.6"
 unsafe-io = "= 0.6.2"
 vino-runtime = { path="./crates/vino-runtime" }
+vino-transport = { path="./crates/vino-transport" }
 vino-host = { path="./crates/vino-host" }
 logger = { path="./crates/logger" }
 vino-manifest = { path="./crates/vino-manifest" }

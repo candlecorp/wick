@@ -18,9 +18,27 @@ use crate::{
   MessagePayload,
   Output,
   PayloadKind,
+  RpcHandler,
 };
 pub struct ComponentService {
   pub provider: Arc<Mutex<dyn crate::RpcHandler>>,
+}
+
+impl ComponentService {
+  pub fn new<T>(provider: T) -> Self
+  where
+    T: RpcHandler + 'static,
+  {
+    Self {
+      provider: Arc::new(Mutex::new(provider)),
+    }
+  }
+  pub fn new_shared<T>(provider: Arc<Mutex<T>>) -> Self
+  where
+    T: RpcHandler + 'static,
+  {
+    Self { provider }
+  }
 }
 
 pub fn make_output(port: &str, inv_id: &str, payload: OutputPayload) -> Result<Output, Status> {

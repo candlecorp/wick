@@ -35,6 +35,7 @@ impl Display for Signal {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum OutputPayload {
+  Test(String),
   MessagePack(Vec<u8>),
   Exception(String),
   Error(String),
