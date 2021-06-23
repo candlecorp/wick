@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use serde::Serialize;
 use tokio::sync::{
   mpsc,
   Mutex,
@@ -10,14 +11,14 @@ use tonic::{
   Response,
   Status,
 };
-use vino_guest::OutputPayload;
-use vino_transport::serialize;
+use vino_codec::messagepack::serialize;
+use vino_component::Output as ComponentOutput;
 
 use crate::component_rpc_server::ComponentRpc;
+use crate::output_kind::Data;
 use crate::{
-  MessagePayload,
   Output,
-  PayloadKind,
+  OutputKind,
   RpcHandler,
 };
 pub struct ComponentService {
@@ -41,17 +42,55 @@ impl ComponentService {
   }
 }
 
-pub fn make_output(port: &str, inv_id: &str, payload: OutputPayload) -> Result<Output, Status> {
-  match serialize(payload) {
-    Ok(bytes) => Ok(Output {
-      port: port.to_string(),
-      invocation_id: inv_id.to_string(),
-      payload: Some(MessagePayload {
-        kind: PayloadKind::MessagePack.into(),
-        value: bytes,
+pub fn make_output<T>(
+  port: &str,
+  inv_id: &str,
+  payload: ComponentOutput<T>,
+) -> Result<Output, Status>
+where
+  T: Serialize + Send,
+{
+  match payload {
+    ComponentOutput::V0(v) => match v {
+      vino_component::v0::Payload::Invalid => Ok(Output {
+        port: port.to_string(),
+        invocation_id: inv_id.to_string(),
+        payload: Some(OutputKind {
+          data: Some(Data::Invalid(true)),
+        }),
       }),
-    }),
-    Err(_) => Err(Status::failed_precondition("Could not serialize payload")),
+      vino_component::v0::Payload::Serializable(value) => match serialize(value) {
+        Ok(bytes) => Ok(Output {
+          port: port.to_string(),
+          invocation_id: inv_id.to_string(),
+          payload: Some(OutputKind {
+            data: Some(Data::Messagepack(bytes)),
+          }),
+        }),
+        Err(_) => Err(Status::failed_precondition("Could not serialize payload")),
+      },
+      vino_component::v0::Payload::Exception(msg) => Ok(Output {
+        port: port.to_string(),
+        invocation_id: inv_id.to_string(),
+        payload: Some(OutputKind {
+          data: Some(Data::Exception(msg)),
+        }),
+      }),
+      vino_component::v0::Payload::Error(msg) => Ok(Output {
+        port: port.to_string(),
+        invocation_id: inv_id.to_string(),
+        payload: Some(OutputKind {
+          data: Some(Data::Error(msg)),
+        }),
+      }),
+      vino_component::v0::Payload::MessagePack(bytes) => Ok(Output {
+        port: port.to_string(),
+        invocation_id: inv_id.to_string(),
+        payload: Some(OutputKind {
+          data: Some(Data::Messagepack(bytes)),
+        }),
+      }),
+    },
   }
 }
 
@@ -80,13 +119,7 @@ impl ComponentRpc for ComponentService {
         return;
       }
       let target = invocation.target.as_ref().unwrap();
-      if invocation.msg.is_none() {
-        tx.send(Err(Status::failed_precondition("No payload received")))
-          .await
-          .unwrap();
-        return;
-      }
-      let payload = invocation.msg.as_ref().unwrap().value.clone();
+      let payload = invocation.msg.clone();
       debug!("Executing component {}", target.name.to_string());
       match &mut provider
         .request(invocation_id.to_string(), target.name.to_string(), payload)
@@ -94,7 +127,7 @@ impl ComponentRpc for ComponentService {
       {
         Ok(receiver) => {
           while let Some((port_name, msg)) = receiver.next().await {
-            debug!("got output {:?}", msg);
+            debug!("got output on port {}", port_name);
             tx.send(make_output(&port_name, &invocation_id, msg))
               .await
               .unwrap();

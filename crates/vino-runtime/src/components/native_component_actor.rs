@@ -9,13 +9,7 @@ use futures::{
   StreamExt,
 };
 use nkeys::KeyPair;
-use vino_guest::{
-  OutputPayload,
-  Signal,
-};
-use vino_transport::serialize;
 
-use crate::components::vino_component::NativeComponent;
 use crate::dispatch::{
   native_host_callback,
   InvocationResponse,
@@ -54,27 +48,6 @@ impl Actor for NativeComponentActor {
 
   fn stopped(&mut self, _ctx: &mut Self::Context) {}
 }
-
-pub trait NativeActor {
-  fn get_def(&self) -> NativeComponent;
-  fn get_name(&self) -> String;
-  fn get_input_ports(&self) -> Vec<String>;
-  fn get_output_ports(&self) -> Vec<String>;
-  fn job_wrapper(&self, data: &[u8]) -> Result<Signal>;
-}
-
-pub type NativeCallback = Box<
-  dyn Fn(
-      u64,
-      &str,
-      &str,
-      &str,
-      &OutputPayload,
-    ) -> std::result::Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>>
-    + 'static
-    + Sync
-    + Send,
->;
 
 #[derive(Message)]
 #[rtype(result = "Result<()>")]
@@ -125,10 +98,9 @@ impl Handler<Invocation> for NativeComponentActor {
         .into_multibytes()
         .map_err(|_| error::VinoError::ComponentError("Provider sent invalid payload".into()))?;
       trace!("Payload is : {:?}", payload);
-      let payload = serialize(payload).map_err(|_| "Could not serialize input payload")?;
 
       trace!("executing actor {}", target_url);
-      let mut receiver = component.job_wrapper(state, &payload).await?;
+      let mut receiver = component.job_wrapper(state, payload).await?;
       actix::spawn(async move {
         loop {
           trace!("Native component {} waiting for output", entity);
@@ -139,12 +111,7 @@ impl Handler<Invocation> for NativeComponentActor {
 
           let (port_name, msg) = next.unwrap();
           let kp = KeyPair::from_seed(&seed).unwrap();
-          trace!(
-            "Native actor {} got output on port [{}]: result: {:?}",
-            entity,
-            port_name,
-            msg
-          );
+          trace!("Native actor {} got output on port [{}]", entity, port_name);
           let _result = native_host_callback(kp, &inv_id, "", &port_name, &msg).unwrap();
         }
       });

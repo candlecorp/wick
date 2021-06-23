@@ -9,7 +9,8 @@ edition = "2018"
 vino-provider = { path="../vino-provider" }
 vino-transport = { path="../vino-transport" }
 vino-rpc = { path="../vino-rpc" }
-vino-guest = { path="../vino-guest" }
+vino-component = { path="../vino-component" }
+vino-codec = { path="../vino-codec" }
 
 tonic = { version="0.4.3", features=["tls"] }
 prost = "0.7.0"
@@ -31,4 +32,4 @@ tonic-build = { version="0.4.2", features=["prost"] }
 
 [dev-dependencies]
 test-env-log = "0.2.7"
-vino-provider-test = { path="../vino-provider-test" }
+test-vino-provider = { path="../test-vino-provider" }

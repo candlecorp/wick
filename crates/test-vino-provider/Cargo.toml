@@ -1,5 +1,5 @@
 [package]
-name = "vino-provider-test"
+name = "test-vino-provider"
 version = "0.1.0"
 authors = ["Jarrod Overson <jsoverson@gmail.com>"]
 edition = "2018"
@@ -9,7 +9,8 @@ anyhow = "1.0.41"
 vino-provider = { path="../vino-provider" }
 vino-rpc = { path="../vino-rpc" }
 vino-transport = { path="../vino-transport" }
-vino-guest = { path="../vino-guest" }
+vino-codec = { path="../vino-codec" }
+vino-component = { path="../vino-component" }
 log = "0.4.14"
 serde = { version="1.0.118", features=["derive"] }
 lazy_static = "1.4.0"

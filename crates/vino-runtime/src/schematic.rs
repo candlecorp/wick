@@ -14,6 +14,7 @@ use serde::{
   Deserialize,
   Serialize,
 };
+use vino_transport::MessageTransport;
 use wascap::prelude::KeyPair;
 
 use super::dispatch::{
@@ -44,19 +45,18 @@ use crate::schematic_response::{
 };
 use crate::{
   Error,
-  MessagePayload,
   Result,
 };
 type TransactionMap = HashMap<String, InputRefMap>;
 type InputRefMap = HashMap<String, BufferMap>;
 type BufferMap = HashMap<String, PortBuffer>;
-type PortBuffer = VecDeque<MessagePayload>;
+type PortBuffer = VecDeque<MessageTransport>;
 
 #[derive(Debug)]
 enum ComponentStatus {
   Ready(Invocation),
   Waiting,
-  ShortCircuit(MessagePayload),
+  ShortCircuit(MessageTransport),
 }
 
 #[derive(Debug)]
@@ -175,7 +175,7 @@ impl Schematic {
     &mut self,
     tx_id: String,
     port: &PortEntity,
-    data: MessagePayload,
+    data: MessageTransport,
   ) -> Result<ComponentStatus> {
     let state = self.state.as_ref().unwrap();
     let reference = port.reference.to_string();
@@ -222,7 +222,7 @@ impl Schematic {
 
     let mut job_data: HashMap<String, Vec<u8>> = HashMap::new();
     for (port, payload) in payloads {
-      if let MessagePayload::MessagePack(bytes) = payload {
+      if let MessageTransport::MessagePack(bytes) = payload {
         job_data.insert(port, bytes);
       } else {
         return Ok(ComponentStatus::ShortCircuit(payload));
@@ -238,7 +238,7 @@ impl Schematic {
         name: metadata.name.to_string(),
         reference,
       }),
-      MessagePayload::MultiBytes(job_data),
+      MessageTransport::MultiBytes(job_data),
     )))
   }
 }
@@ -260,10 +260,10 @@ fn component_has_data(componentref_map: &InputRefMap, reference: &str) -> bool {
 fn get_component_data(
   componentref_map: &mut InputRefMap,
   reference: &str,
-) -> std::result::Result<HashMap<String, MessagePayload>, &'static str> {
+) -> std::result::Result<HashMap<String, MessageTransport>, &'static str> {
   match componentref_map.get_mut(reference) {
     Some(portbuffer_map) => {
-      let mut next: HashMap<String, MessagePayload> = HashMap::new();
+      let mut next: HashMap<String, MessageTransport> = HashMap::new();
       for (key, buffer) in portbuffer_map.iter_mut() {
         if let Some(value) = buffer.pop_front() {
           next.insert(key.to_string(), value);
@@ -294,7 +294,7 @@ fn push_to_portbuffer(
   component_ref_map: &mut InputRefMap,
   ref_id: String,
   port: String,
-  data: MessagePayload,
+  data: MessageTransport,
 ) -> Result<()> {
   match component_ref_map.get_mut(&ref_id) {
     Some(portbuffer_map) => {
@@ -460,7 +460,7 @@ struct PayloadReceived {
   tx_id: String,
   origin: VinoEntity,
   target: PortEntity,
-  payload: MessagePayload,
+  payload: MessageTransport,
 }
 
 fn gen_packets(
@@ -493,7 +493,7 @@ fn gen_packets(
         },
         origin: VinoEntity::Schematic(name.to_string()),
         tx_id: tx_id.to_string(),
-        payload: MessagePayload::MessagePack(bytes.clone()),
+        payload: MessageTransport::MessagePack(bytes.clone()),
       }
     })
     .collect();
@@ -607,7 +607,7 @@ impl Handler<PayloadReceived> for Schematic {
                     tx_id: tx_id.to_string(),
                     schematic: name.to_string(),
                     reference: reference.to_string(),
-                    payload: MessagePayload::Error(err.to_string()),
+                    payload: MessageTransport::Error(err.to_string()),
                   })
                   .await?
               }
@@ -626,7 +626,7 @@ pub(crate) struct ShortCircuit {
   pub(crate) tx_id: String,
   pub(crate) schematic: String,
   pub(crate) reference: String,
-  pub(crate) payload: MessagePayload,
+  pub(crate) payload: MessageTransport,
 }
 
 impl Handler<ShortCircuit> for Schematic {
@@ -683,7 +683,7 @@ impl Handler<ShortCircuit> for Schematic {
 pub(crate) struct OutputReady {
   pub(crate) port: PortEntity,
   pub(crate) tx_id: String,
-  pub(crate) payload: MessagePayload,
+  pub(crate) payload: MessageTransport,
 }
 
 impl Handler<OutputReady> for Schematic {

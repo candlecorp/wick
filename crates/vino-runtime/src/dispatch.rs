@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::fmt::Display;
 use std::io::Read;
 
@@ -6,6 +5,7 @@ use actix::dev::MessageResponse;
 use actix::prelude::Message;
 use actix::Actor;
 use data_encoding::HEXUPPER;
+use erased_serde::Serialize as ErasedSerialize;
 use futures::executor::block_on;
 use ring::digest::{
   Context,
@@ -17,8 +17,12 @@ use serde::{
   Serialize,
 };
 use uuid::Uuid;
-use vino_guest::OutputPayload;
-use vino_transport::serialize;
+use vino_codec::messagepack::serialize;
+use vino_component::{
+  v0,
+  Output,
+};
+use vino_transport::MessageTransport;
 use wascap::prelude::{
   Claims,
   KeyPair,
@@ -42,7 +46,7 @@ use crate::{
 pub struct Invocation {
   pub origin: VinoEntity,
   pub target: VinoEntity,
-  pub msg: MessagePayload,
+  pub msg: MessageTransport,
   pub id: String,
   pub tx_id: String,
   pub encoded_claims: String,
@@ -103,64 +107,6 @@ where
     }
   }
 }
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub enum MessagePayload {
-  MessagePack(Vec<u8>),
-  MultiBytes(HashMap<String, Vec<u8>>),
-  Exception(String),
-  Error(String),
-  Test(String),
-}
-
-impl Default for MessagePayload {
-  fn default() -> Self {
-    Self::MessagePack(vec![])
-  }
-}
-
-impl MessagePayload {
-  pub fn into_bytes(self) -> Result<Vec<u8>> {
-    match self {
-      MessagePayload::MessagePack(v) => Ok(v),
-      _ => Err(Error::PayloadConversionError("Invalid payload".to_string())),
-    }
-  }
-  pub fn into_multibytes(self) -> Result<HashMap<String, Vec<u8>>> {
-    match self {
-      MessagePayload::MultiBytes(v) => Ok(v),
-      _ => Err(Error::PayloadConversionError("Invalid payload".to_string())),
-    }
-  }
-}
-
-impl From<Vec<u8>> for MessagePayload {
-  fn from(v: Vec<u8>) -> Self {
-    MessagePayload::MessagePack(v)
-  }
-}
-
-impl From<&Vec<u8>> for MessagePayload {
-  fn from(v: &Vec<u8>) -> Self {
-    MessagePayload::MessagePack(v.clone())
-  }
-}
-
-impl From<&[u8]> for MessagePayload {
-  fn from(v: &[u8]) -> Self {
-    MessagePayload::MessagePack(v.to_vec())
-  }
-}
-
-impl From<OutputPayload> for MessagePayload {
-  fn from(v: OutputPayload) -> Self {
-    match v {
-      OutputPayload::MessagePack(v) => MessagePayload::MessagePack(v),
-      OutputPayload::Exception(v) => MessagePayload::Exception(v),
-      OutputPayload::Error(v) => MessagePayload::Error(v),
-      OutputPayload::Test(v) => MessagePayload::Test(v),
-    }
-  }
-}
 
 impl Invocation {
   pub fn uuid() -> String {
@@ -173,7 +119,7 @@ impl Invocation {
     hostkey: &KeyPair,
     origin: VinoEntity,
     target: VinoEntity,
-    msg: impl Into<MessagePayload>,
+    msg: impl Into<MessageTransport>,
   ) -> Invocation {
     let invocation_id = Invocation::uuid();
     let issuer = hostkey.public_key();
@@ -198,22 +144,27 @@ impl Invocation {
   }
 }
 
-pub(crate) fn invocation_hash(target_url: &str, origin_url: &str, msg: &MessagePayload) -> String {
+pub(crate) fn invocation_hash(
+  target_url: &str,
+  origin_url: &str,
+  msg: &MessageTransport,
+) -> String {
   use std::io::Write;
   let mut cleanbytes: Vec<u8> = Vec::new();
   cleanbytes.write_all(origin_url.as_bytes()).unwrap();
   cleanbytes.write_all(target_url.as_bytes()).unwrap();
   match msg {
-    MessagePayload::MessagePack(bytes) => cleanbytes.write_all(bytes).unwrap(),
-    MessagePayload::Exception(string) => cleanbytes.write_all(string.as_bytes()).unwrap(),
-    MessagePayload::Error(string) => cleanbytes.write_all(string.as_bytes()).unwrap(),
-    MessagePayload::MultiBytes(bytemap) => {
+    MessageTransport::MessagePack(bytes) => cleanbytes.write_all(bytes).unwrap(),
+    MessageTransport::Exception(string) => cleanbytes.write_all(string.as_bytes()).unwrap(),
+    MessageTransport::Error(string) => cleanbytes.write_all(string.as_bytes()).unwrap(),
+    MessageTransport::MultiBytes(bytemap) => {
       for (key, val) in bytemap {
         cleanbytes.write_all(key.as_bytes()).unwrap();
         cleanbytes.write_all(val).unwrap();
       }
     }
-    MessagePayload::Test(v) => cleanbytes.write_all(v.as_bytes()).unwrap(),
+    MessageTransport::Test(v) => cleanbytes.write_all(v.as_bytes()).unwrap(),
+    MessageTransport::Invalid => cleanbytes.write_all(&[0, 0, 0, 0, 0]).unwrap(),
   }
   let digest = sha256_digest(cleanbytes.as_slice()).unwrap();
   HEXUPPER.encode(digest.as_ref())
@@ -357,7 +308,7 @@ pub(crate) fn native_host_callback(
   inv_id: &str,
   namespace: &str,
   port: &str,
-  payload: &OutputPayload,
+  payload: &Output<Box<dyn ErasedSerialize + Send>>,
 ) -> std::result::Result<Vec<u8>, Box<dyn ::std::error::Error + Sync + Send>> {
   trace!(
     "Native component callback [ns:{}] [port:{}] [inv:{}]",
@@ -368,10 +319,16 @@ pub(crate) fn native_host_callback(
   let network = Network::from_hostlocal_registry(&kp.public_key());
 
   let payload = match payload {
-    OutputPayload::MessagePack(b) => MessagePayload::MessagePack(b.to_vec()),
-    OutputPayload::Exception(e) => MessagePayload::Exception(e.to_string()),
-    OutputPayload::Error(e) => MessagePayload::Error(e.to_string()),
-    OutputPayload::Test(v) => MessagePayload::Test(v.to_string()),
+    Output::V0(v0) => match v0 {
+      v0::Payload::Invalid => MessageTransport::Invalid,
+      v0::Payload::Serializable(v) => match serialize(v) {
+        Ok(bytes) => MessageTransport::MessagePack(bytes),
+        Err(_) => MessageTransport::Error("Could not serialize payload".into()),
+      },
+      v0::Payload::Exception(msg) => MessageTransport::Exception(msg.to_owned()),
+      v0::Payload::Error(msg) => MessageTransport::Error(msg.to_owned()),
+      v0::Payload::MessagePack(bytes) => MessageTransport::MessagePack(bytes.to_owned()),
+    },
   };
   let get_ref = network.send(GetReference {
     inv_id: inv_id.to_string(),

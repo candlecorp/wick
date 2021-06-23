@@ -2,7 +2,8 @@ use std::time::Instant;
 
 use actix::prelude::*;
 use log::info;
-use vino_transport::serialize;
+use vino_codec::messagepack::serialize;
+use vino_transport::MessageTransport;
 use wapc::WapcHost;
 use wascap::prelude::{
   Claims,
@@ -13,11 +14,9 @@ use crate::components::vino_component::WapcComponent;
 use crate::dispatch::{
   Invocation,
   InvocationResponse,
-  MessagePayload,
   VinoEntity,
 };
 use crate::Result;
-
 #[derive(Default)]
 pub(crate) struct WapcComponentActor {
   state: Option<State>,
@@ -82,6 +81,7 @@ fn perform_initialization(
   let guest = WapcHost::new(
     Box::new(engine),
     move |_id, binding, namespace, operation, payload| {
+      debug!("Payload direct from WASM: {:?}", payload);
       crate::dispatch::wapc_host_callback(
         KeyPair::from_seed(&seed).unwrap(),
         cloned_claims.clone(),
@@ -143,7 +143,7 @@ impl Handler<Invocation> for WapcComponentActor {
     );
 
     if let VinoEntity::Component(_) = msg.target {
-      if let MessagePayload::MultiBytes(payload) = &msg.msg {
+      if let MessageTransport::MultiBytes(payload) = &msg.msg {
         let now = Instant::now();
         match serialize((inv_id, payload)) {
           Ok(bytes) => {

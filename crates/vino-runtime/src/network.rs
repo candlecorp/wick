@@ -9,11 +9,13 @@ use actix::fut::{
 use actix::prelude::*;
 use futures::future::try_join_all;
 use serde::Serialize;
-use vino_guest::OutputPayload;
-use vino_transport::{
+use vino_codec::messagepack::{
   deserialize,
   serialize,
 };
+use vino_component::v0::Payload;
+use vino_component::Output;
+use vino_transport::MessageTransport;
 
 use super::schematic::Schematic;
 use crate::components::vino_component::BoxedComponent;
@@ -22,7 +24,6 @@ use crate::components::{
   Outputs,
 };
 use crate::dispatch::{
-  MessagePayload,
   PortEntity,
   VinoEntity,
 };
@@ -92,7 +93,7 @@ pub async fn request<T: AsRef<str> + Display>(
   network: &Addr<Network>,
   schematic: &str,
   data: HashMap<T, impl Serialize>,
-) -> Result<HashMap<String, MessagePayload>> {
+) -> Result<HashMap<String, MessageTransport>> {
   let serialized_data: HashMap<String, Vec<u8>> = data
     .iter()
     .map(|(k, v)| Ok((k.to_string(), serialize(&v)?)))
@@ -245,18 +246,26 @@ impl Handler<WapcOutputReady> for Network {
     let receiver = self.schematics.get(&schematic_name).cloned();
     let payload = msg.payload;
     let port = msg.port;
-    let data =
-      deserialize::<OutputPayload>(&payload).map_err(|e| MessagePayload::Error(e.to_string()));
-
-    let message_payload = match data {
+    // we won't get Serializable values from WaPC, this is to satisfy serde and the typechecker.
+    type Unnecessary = String;
+    debug!("Payload: {:?}", payload);
+    let message_payload: MessageTransport = match deserialize::<Output<Unnecessary>>(&payload) {
       Ok(payload) => match payload {
-        OutputPayload::MessagePack(b) => MessagePayload::MessagePack(b),
-        OutputPayload::Exception(e) => MessagePayload::Exception(e),
-        OutputPayload::Error(e) => MessagePayload::Error(e),
-        OutputPayload::Test(v) => MessagePayload::Test(v),
+        Output::V0(v0) => match v0 {
+          Payload::Invalid => MessageTransport::Invalid,
+          Payload::MessagePack(bytes) => MessageTransport::MessagePack(bytes),
+          Payload::Exception(msg) => MessageTransport::Exception(msg),
+          Payload::Error(msg) => MessageTransport::Error(msg),
+          Payload::Serializable(_) => MessageTransport::Invalid,
+        },
       },
-      Err(e) => e,
+      Err(err) => MessageTransport::Error(format!(
+        "Deserialization error for {}: {}",
+        port,
+        err.to_string()
+      )),
     };
+
     Box::pin(
       async move {
         let port = PortEntity {
@@ -285,14 +294,14 @@ impl Handler<WapcOutputReady> for Network {
 }
 
 #[derive(Message)]
-#[rtype(result = "Result<HashMap<String, MessagePayload>>")]
+#[rtype(result = "Result<HashMap<String, MessageTransport>>")]
 pub(crate) struct Request {
   pub(crate) schematic: String,
   pub(crate) data: HashMap<String, Vec<u8>>,
 }
 
 impl Handler<Request> for Network {
-  type Result = ResponseActFuture<Self, Result<HashMap<String, MessagePayload>>>;
+  type Result = ResponseActFuture<Self, Result<HashMap<String, MessageTransport>>>;
 
   fn handle(&mut self, msg: Request, _ctx: &mut Context<Self>) -> Self::Result {
     trace!("Requesting schematic '{}'", msg.schematic);
@@ -355,11 +364,11 @@ mod test {
   use actix::Addr;
   use maplit::hashmap;
   use test_env_log::test;
+  use vino_codec::messagepack::serialize;
   use vino_manifest::NetworkManifest;
-  use vino_transport::serialize;
+  use vino_transport::MessageTransport;
   use wascap::prelude::KeyPair;
 
-  use super::super::dispatch::MessagePayload;
   use super::*;
   use crate::network::Initialize;
   use crate::util::hlreg::HostLocalSystemService;
@@ -393,10 +402,10 @@ mod test {
     let mut result = request(&network, "test", data).await?;
 
     trace!("result: {:?}", result);
-    let output: MessagePayload = result.remove("output").unwrap();
+    let output: MessageTransport = result.remove("output").unwrap();
     assert_eq!(
       output,
-      MessagePayload::MessagePack(serialize(42 + 302309 + 302309)?)
+      MessageTransport::MessagePack(serialize(42 + 302309 + 302309)?)
     );
     Ok(())
   }
@@ -411,10 +420,11 @@ mod test {
 
     let mut result = request(&network, "test", data).await?;
 
-    let output: MessagePayload = result.remove("output").unwrap();
+    let output: MessageTransport = result.remove("output").unwrap();
+    trace!("output: {:?}", output);
     assert_eq!(
       output,
-      MessagePayload::MessagePack(serialize("1234567890")?)
+      MessageTransport::MessagePack(serialize("1234567890")?)
     );
 
     let data = hashmap! {
@@ -422,10 +432,10 @@ mod test {
     };
     let mut result = request(&network, "test", data).await?;
 
-    let output: MessagePayload = result.remove("output").unwrap();
+    let output: MessageTransport = result.remove("output").unwrap();
     assert_eq!(
       output,
-      MessagePayload::Exception("Password needs to be longer than 8 characters".to_string())
+      MessageTransport::Exception("Needs to be longer than 8 characters".to_string())
     );
 
     Ok(())
@@ -443,10 +453,10 @@ mod test {
     let mut result = request(&network, "test", data).await?;
 
     trace!("result: {:?}", result);
-    let output1: MessagePayload = result.remove("output1").unwrap();
+    let output1: MessageTransport = result.remove("output1").unwrap();
     assert_eq!(
       output1,
-      MessagePayload::Exception("Password needs to be longer than 8 characters".to_string())
+      MessageTransport::Exception("Needs to be longer than 8 characters".to_string())
     );
     Ok(())
   }
@@ -463,8 +473,11 @@ mod test {
     let mut result = request(&network, "first_schematic", data).await?;
 
     trace!("result: {:?}", result);
-    let output: MessagePayload = result.remove("output").unwrap();
-    assert_eq!(output, MessagePayload::MessagePack(serialize(42 + 302309)?));
+    let output: MessageTransport = result.remove("output").unwrap();
+    assert_eq!(
+      output,
+      MessageTransport::MessagePack(serialize(42 + 302309)?)
+    );
 
     let data = hashmap! {
         "input" => "some string",
@@ -473,10 +486,10 @@ mod test {
     let mut result = request(&network, "second_schematic", data).await?;
 
     trace!("result: {:?}", result);
-    let output: MessagePayload = result.remove("output").unwrap();
+    let output: MessageTransport = result.remove("output").unwrap();
     assert_eq!(
       output,
-      MessagePayload::MessagePack(serialize("some string")?)
+      MessageTransport::MessagePack(serialize("some string")?)
     );
     Ok(())
   }

@@ -5,19 +5,15 @@ use actix::fut::{
 use actix::prelude::*;
 use futures::FutureExt;
 use rpc::component_rpc_client::ComponentRpcClient;
+use rpc::output_kind::Data as PayloadType;
 use tokio::sync::mpsc::UnboundedSender;
 use tonic::transport::Channel;
-use vino_guest::OutputPayload;
 use vino_rpc as rpc;
-use vino_transport::{
-  deserialize,
-  serialize,
-};
+use vino_transport::MessageTransport;
 
 use crate::dispatch::{
   Invocation,
   InvocationResponse,
-  MessagePayload,
 };
 use crate::error::VinoError;
 use crate::Result;
@@ -32,7 +28,7 @@ pub struct GrpcUrlProvider {
 #[derive(Debug)]
 struct State {
   pub(crate) client: ComponentRpcClient<Channel>,
-  pub(crate) sender: UnboundedSender<MessagePayload>,
+  pub(crate) sender: UnboundedSender<MessageTransport>,
 }
 
 impl Actor for GrpcUrlProvider {
@@ -51,7 +47,7 @@ pub(crate) struct Initialize {
   pub(crate) namespace: String,
   pub(crate) address: String,
   pub(crate) signing_seed: String,
-  pub(crate) sender: UnboundedSender<MessagePayload>,
+  pub(crate) sender: UnboundedSender<MessageTransport>,
 }
 
 impl Handler<Initialize> for GrpcUrlProvider {
@@ -113,7 +109,6 @@ impl Handler<Invocation> for GrpcUrlProvider {
         .into_multibytes()
         .map_err(|_| VinoError::ComponentError("Provider sent invalid payload".into()))?;
       debug!("Payload is : {:?}", payload);
-      let payload = serialize(payload).map_err(|_| "Could not serialize input payload")?;
 
       debug!("making external request {}", target_url);
 
@@ -126,10 +121,7 @@ impl Handler<Invocation> for GrpcUrlProvider {
           name: entity.name,
           kind: rpc::entity::EntityKind::Provider.into(),
         }),
-        msg: Some(rpc::MessagePayload {
-          kind: rpc::PayloadKind::MultiBytes.into(),
-          value: payload,
-        }),
+        msg: payload,
         id: inv_id.to_string(),
         tx_id: tx_id.to_string(),
         encoded_claims: claims.to_string(),
@@ -153,30 +145,15 @@ impl Handler<Invocation> for GrpcUrlProvider {
                 output.invocation_id, output.port, output.payload
               );
               let output_payload = output.payload.unwrap();
-              let kind: rpc::PayloadKind = rpc::PayloadKind::from_i32(output_payload.kind).unwrap();
-              debug!("Payload kind: {:?}", kind);
-              let payload = match kind {
-                rpc::PayloadKind::Error => OutputPayload::Error(
-                  deserialize(&output_payload.value)
-                    .unwrap_or_else(|_| "Can not deserialize output payload".to_string()),
-                ),
-                rpc::PayloadKind::Exception => OutputPayload::Exception(
-                  deserialize(&output_payload.value)
-                    .unwrap_or_else(|_| "Can not deserialize output payload".to_string()),
-                ),
-                rpc::PayloadKind::Invalid => {
-                  OutputPayload::Error("Invalid payload kind".to_string())
-                }
-                rpc::PayloadKind::Test => OutputPayload::Test(
-                  deserialize(&output_payload.value)
-                    .unwrap_or_else(|_| "Invalid payload kind".to_string()),
-                ),
-                rpc::PayloadKind::MessagePack => OutputPayload::MessagePack(output_payload.value),
-                rpc::PayloadKind::MultiBytes => {
-                  OutputPayload::Error("Invalid payload kind".to_string())
-                }
+              debug!("Payload kind: {:?}", output_payload.data);
+              let payload = match output_payload.data.unwrap() {
+                PayloadType::Error(msg) => MessageTransport::Error(msg),
+                PayloadType::Exception(msg) => MessageTransport::Exception(msg),
+                PayloadType::Invalid(_) => MessageTransport::Error("Invalid payload".to_string()),
+                PayloadType::Test(msg) => MessageTransport::Test(msg),
+                PayloadType::Messagepack(bytes) => MessageTransport::MessagePack(bytes),
               };
-              let result = sender.send(MessagePayload::from(payload));
+              let result = sender.send(payload);
               match result {
                 Ok(_) => {
                   debug!("successfully sent output payload to receiver");
@@ -217,12 +194,15 @@ mod test {
   use std::str::FromStr;
 
   use maplit::hashmap;
+  use test_vino_provider::Provider;
   use tokio::sync::mpsc::unbounded_channel;
   use tonic::transport::Server;
-  use vino_provider_test::Provider;
+  use vino_codec::messagepack::{
+    deserialize,
+    serialize,
+  };
   use vino_rpc::component_rpc_server::ComponentRpcServer;
   use vino_rpc::ComponentService;
-  use vino_transport::serialize;
 
   use super::*;
   use crate::dispatch::ComponentEntity;
@@ -274,7 +254,7 @@ mod test {
             reference: "DEADBEEF".to_string(),
             name: "test-component".to_string(),
           }),
-          msg: MessagePayload::MultiBytes(hashmap! {
+          msg: MessageTransport::MultiBytes(hashmap! {
             "input".to_string()=>serialize("test string payload")?
           }),
           id: Invocation::uuid(),
@@ -294,10 +274,11 @@ mod test {
         }
     };
     let next = rx.recv().await;
+    debug!("got next: {:?}", next);
     match next {
       Some(n) => {
-        let result: OutputPayload = match n {
-          MessagePayload::MessagePack(bytes) => deserialize(&bytes)?,
+        let result: String = match n {
+          MessageTransport::MessagePack(bytes) => deserialize(&bytes)?,
           _ => panic!("Unexpected payload"),
         };
 

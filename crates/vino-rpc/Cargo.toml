@@ -7,7 +7,8 @@ edition = "2018"
 
 [dependencies]
 vino-transport = { path="../vino-transport" }
-vino-guest = { path="../vino-guest" }
+vino-component = { path="../vino-component" }
+vino-codec = { path="../vino-codec" }
 tonic = { version="0.4.3", features=["tls"] }
 prost = "0.7.0"
 prost-types = "0.7.0"
@@ -23,10 +24,11 @@ log = "0.4.14"
 env_logger = "0.8.4"
 thiserror = "1.0.25"
 async-trait = "0.1.50"
+erased-serde = "0.3.16"
 
 [build-dependencies]
 tonic-build = { version="0.4.2", features=["prost"] }
 
 [dev-dependencies]
 test-env-log = "0.2.7"
-vino-provider-test = { path="../vino-provider-test" }
+test-vino-provider = { path="../test-vino-provider" }

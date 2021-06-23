@@ -1,7 +1,4 @@
-use std::collections::{
-  HashMap,
-  VecDeque,
-};
+use std::collections::VecDeque;
 use std::pin::Pin;
 use std::sync::{
   Arc,
@@ -12,47 +9,59 @@ use std::task::{
   Poll,
 };
 
+use erased_serde::Serialize;
 use futures::Stream;
-use serde::Serialize;
-use vino_guest::OutputPayload;
-use vino_transport::serialize;
+use vino_component::v0::Payload as ComponentPayload;
+use vino_component::Output;
 
 pub trait Sender {
-  type Payload: Serialize;
+  /// The type of data that the port outputs
+  type PayloadType: Serialize + Send + 'static;
 
+  /// Get the port buffer that the sender can push to
   fn get_port(&self) -> Arc<Mutex<Port>>;
 
-  fn send(&self, payload: Self::Payload) {
-    match serialize(payload) {
-      Ok(payload) => self.push(OutputPayload::MessagePack(payload)),
-      Err(e) => self.push(OutputPayload::Error(e.to_string())),
-    }
+  /// Buffer a message
+  fn send(&self, data: Self::PayloadType) {
+    self.push(Output::V0(ComponentPayload::Serializable(Box::new(data))));
   }
-  fn done(&self, payload: Self::Payload) {
-    self.send(payload);
+
+  /// Buffer a message then close the port
+  fn done(&self, data: Self::PayloadType) {
+    self.send(data);
     self.close();
   }
 
-  fn push(&self, payload: OutputPayload) {
+  /// Buffer a complete Output message then close the port
+  fn push(&self, output: Output<Box<dyn Serialize + Send>>) {
     let port = self.get_port();
     let mut port = port.lock().unwrap();
-    port.buffer.push_back(payload);
+    port.buffer.push_back(output);
   }
 
-  fn send_message(&self, payload: OutputPayload) {
+  /// Buffer a payload
+  fn send_message(&self, payload: ComponentPayload<Box<dyn Serialize + Send>>) {
     let port = self.get_port();
     let mut port = port.lock().unwrap();
-    port.buffer.push_back(payload);
+    port.buffer.push_back(Output::V0(payload));
   }
-  fn done_message(&self, payload: OutputPayload) {
+
+  /// Buffer a payload then close the port
+  fn done_message(&self, payload: ComponentPayload<Box<dyn Serialize + Send>>) {
     self.send_message(payload);
     self.close();
   }
+
+  /// Buffer an exception
   fn send_exception(&self, payload: String) {
     let port = self.get_port();
     let mut port = port.lock().unwrap();
-    port.buffer.push_back(OutputPayload::Exception(payload));
+    port
+      .buffer
+      .push_back(Output::V0(ComponentPayload::Error(payload)));
   }
+
+  /// Buffer an exception then close the port
   fn done_exception(&self, payload: String) {
     self.send_exception(payload);
     self.close();
@@ -64,10 +73,9 @@ pub trait Sender {
   }
 }
 
-#[derive(Debug, Clone)]
 pub struct Port {
   name: String,
-  buffer: VecDeque<OutputPayload>,
+  buffer: VecDeque<Output<Box<dyn Serialize + Send>>>,
   status: PortStatus,
 }
 
@@ -92,8 +100,6 @@ pub enum PortStatus {
   Closed,
   Open,
 }
-
-pub type OutputStreams = HashMap<String, Arc<Mutex<Port>>>;
 
 #[derive()]
 pub struct Receiver {
@@ -123,7 +129,7 @@ impl Receiver {
 }
 
 impl Stream for Receiver {
-  type Item = (String, OutputPayload);
+  type Item = (String, Output<Box<dyn Serialize + Send>>);
 
   fn poll_next(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
     let mut all_closed = true;

@@ -2,11 +2,11 @@
 schematics:
   - name: test
     external:
-      - reference: ./tests/fixtures/validate.wasm
-        key: MDZNW2K7QBTK23OP4HO4BGPXKRNG3IGJW47MZMAKLOZYM72MDGQ5VIAL
+      - reference: ../test-wapc-component/build/test_component_s.wasm
+        key: MB3GAIGQVCZHMLKD4T2LGI6CILHNOIJPPSLV2VDDH3ARHXDDJ5WXFV35
     components:
       validate:
-        id: MDZNW2K7QBTK23OP4HO4BGPXKRNG3IGJW47MZMAKLOZYM72MDGQ5VIAL
+        id: MB3GAIGQVCZHMLKD4T2LGI6CILHNOIJPPSLV2VDDH3ARHXDDJ5WXFV35
       log:
         id: vino::log
     connections:

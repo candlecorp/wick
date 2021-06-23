@@ -1,0 +1,12 @@
+schema: schema.widl
+generates:
+  src/generated.rs:
+    module: "@vino/codegen-rust"
+    visitorClass: ModuleVisitor
+
+  src/lib.rs:
+    ifNotExists: true
+    module: "@vino/codegen-rust"
+    visitorClass: ScaffoldVisitor
+    config:
+      use: generated

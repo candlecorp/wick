@@ -6,16 +6,16 @@ use actix::prelude::*;
 use futures::Future;
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
-use vino_transport::serialize;
+use vino_codec::messagepack::serialize;
+use vino_transport::MessageTransport;
 
 use crate::{
   Error,
   InvocationResponse,
-  MessagePayload,
   Result,
 };
 
-type SchematicOutput = HashMap<String, Option<MessagePayload>>;
+type SchematicOutput = HashMap<String, Option<MessageTransport>>;
 type TransactionOutputs = HashMap<(String, String), SchematicOutput>;
 
 static SCHEMATIC_RESPONSES: Lazy<Mutex<TransactionOutputs>> =
@@ -40,10 +40,10 @@ pub(crate) fn push_to_schematic_output(
   tx_id: &str,
   schematic: &str,
   port: &str,
-  data: MessagePayload,
+  data: MessageTransport,
 ) -> Result<()> {
   trace!("Pushing output {}[{}] for tx: {}", schematic, port, tx_id);
-  trace!("{:?}", data);
+  trace!("Data: {:?}", data);
   let mut responses = SCHEMATIC_RESPONSES.lock();
 
   let outputs = responses

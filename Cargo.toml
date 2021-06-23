@@ -13,7 +13,7 @@ readme = "README.md"
 
 [dependencies]
 wapc = { version="0.10.1" }
-vino-guest = { path="./crates/vino-guest" }
+vino-component = { path="./crates/vino-component" }
 chrono = "0.4.19"
 colored = "2.0.0"
 log = "0.4.11"
@@ -34,6 +34,7 @@ vino-transport = { path="./crates/vino-transport" }
 vino-host = { path="./crates/vino-host" }
 logger = { path="./crates/logger" }
 vino-manifest = { path="./crates/vino-manifest" }
+vino-codec = { path="./crates/vino-codec" }
 
 [dev-dependencies]
 test_bin = "0.3.0"
@@ -52,9 +53,10 @@ members = [
   "crates/vino-rpc",
   "crates/vino-host",
   "crates/vino-transport",
+  "crates/vino-codec",
   "crates/vino-manifest",
   "crates/vino-provider",
   "crates/vino-provider-cli",
-  "crates/vino-provider-test",
-  "crates/vino-interface-collection",
+  "crates/test-vino-provider",
+  "crates/test-wapc-component",
 ]

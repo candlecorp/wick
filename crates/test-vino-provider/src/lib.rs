@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::sync::{
   Arc,
   Mutex,
@@ -33,13 +34,13 @@ impl RpcHandler for Provider {
     &self,
     _inv_id: String,
     component: String,
-    payload: Vec<u8>,
+    payload: HashMap<String, Vec<u8>>,
   ) -> RpcResult<Receiver> {
     let context = self.context.clone();
     let instance = components::get_component(&component);
     match instance {
       Some(instance) => {
-        let future = instance.job_wrapper(context, &payload);
+        let future = instance.job_wrapper(context, payload);
         Ok(future.await?)
       }
       None => Err(anyhow!("Component '{}' not found", component).into()),
@@ -51,10 +52,13 @@ impl RpcHandler for Provider {
 mod tests {
   use futures::prelude::*;
   use maplit::hashmap;
-  use vino_guest::OutputPayload;
-  use vino_transport::{
+  use vino_codec::messagepack::{
     deserialize,
     serialize,
+  };
+  use vino_component::{
+    v0,
+    Output,
   };
 
   use super::*;
@@ -67,20 +71,19 @@ mod tests {
     let job_payload = hashmap! {
       "input".to_string() => serialize(input)?,
     };
-    let payload = serialize(job_payload)?;
 
     let mut outputs = provider
       .request(
         invocation_id.to_string(),
-        "vino::test::provider".to_string(),
-        payload,
+        "test-component".to_string(),
+        job_payload,
       )
       .await
       .expect("request failed");
-    let (port_name, payload) = outputs.next().await.unwrap();
-    println!("payload from [{}]: {:?}", port_name, payload);
-    let payload = match payload {
-      OutputPayload::MessagePack(payload) => deserialize::<String>(&payload).ok(),
+    let (port_name, output) = outputs.next().await.unwrap();
+    println!("Received payload from [{}]", port_name);
+    let payload: String = match output {
+      Output::V0(v0::Payload::Serializable(payload)) => deserialize(&serialize(payload)?)?,
       _ => None,
     }
     .unwrap();

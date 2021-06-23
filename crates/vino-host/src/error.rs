@@ -18,6 +18,8 @@ pub enum VinoHostError {
   #[error(transparent)]
   VinoError(#[from] vino_runtime::Error),
   #[error(transparent)]
+  CodecError(#[from] vino_codec::Error),
+  #[error(transparent)]
   TransportError(#[from] vino_transport::Error),
   #[error(transparent)]
   ManifestError(#[from] vino_manifest::Error),

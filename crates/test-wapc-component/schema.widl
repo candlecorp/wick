@@ -1,0 +1,8 @@
+
+type Inputs {
+  input: String
+}
+
+type Outputs {
+  output: String
+}

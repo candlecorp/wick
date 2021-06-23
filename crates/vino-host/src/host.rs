@@ -8,6 +8,7 @@ use vino_runtime::{
   Network,
   NetworkDefinition,
 };
+use vino_transport::MessageTransport;
 
 use crate::Result;
 
@@ -59,7 +60,7 @@ impl Host {
     &self,
     schematic: &str,
     payload: HashMap<T, impl Serialize>,
-  ) -> Result<HashMap<String, vino_runtime::MessagePayload>> {
+  ) -> Result<HashMap<String, MessageTransport>> {
     match &self.network {
       Some(network) => vino_runtime::request(network, schematic, payload)
         .await
@@ -96,8 +97,8 @@ mod test {
   use std::path::PathBuf;
 
   use maplit::hashmap;
-  use vino_runtime::MessagePayload;
-  use vino_transport::deserialize;
+  use vino_codec::messagepack::deserialize;
+  use vino_transport::MessageTransport;
 
   use crate::host_definition::HostDefinition;
   use crate::{
@@ -136,7 +137,7 @@ mod test {
     };
     let mut result = host.request("logger", data).await?;
     let output = result.remove("output").unwrap();
-    if let MessagePayload::MessagePack(bytes) = output {
+    if let MessageTransport::MessagePack(bytes) = output {
       let output = deserialize::<String>(&bytes)?;
       assert_eq!(output, passed_data.to_string());
     } else {

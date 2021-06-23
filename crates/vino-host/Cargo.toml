@@ -18,6 +18,7 @@ serde_yaml = "0.8.17"
 hocon = "0.5.2"
 vino-manifest = { path="../vino-manifest" }
 vino-transport = { path="../vino-transport" }
+vino-codec = { path="../vino-codec" }
 
 [dev-dependencies]
 test-env-log = "0.2.7"

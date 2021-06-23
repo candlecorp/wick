@@ -8,9 +8,12 @@ function portStruct(port){return `GuestPort${utils.pascalCase(helpers.fieldName(
 
 use crate::components::native_component_actor::NativeCallback;
 use crate::{ Result};
-use vino_transport::{deserialize, serialize}
+use vino_codec::messagepack::{
+  deserialize,
+  serialize,
+};
 use serde::{Deserialize, Serialize};
-use vino_guest::OutputPayload;
+use vino_component::OutputPayload;
 
 pub(crate) struct Inputs {
   <% for (let input of Object.values(inputs.fields)) { %>

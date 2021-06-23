@@ -35,7 +35,6 @@ pub(crate) mod util;
 pub use crate::dispatch::{
   Invocation,
   InvocationResponse,
-  MessagePayload,
   PortEntity,
   VinoEntity,
 };

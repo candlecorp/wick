@@ -15,8 +15,7 @@ pub enum VinoError {
   DispatchError(String),
   #[error("Provider error {0}")]
   ProviderError(String),
-  #[error("Payload conversion error")]
-  PayloadConversionError(String),
+
   #[error("Component error: {0}")]
   ComponentError(String),
   #[error("Job error: {0}")]
@@ -39,6 +38,8 @@ pub enum VinoError {
   DeserializationError(rmp_serde::decode::Error),
   #[error(transparent)]
   RpcUpstreamError(#[from] tonic::Status),
+  #[error(transparent)]
+  CodecError(#[from] vino_codec::Error),
   #[error(transparent)]
   TransportError(#[from] vino_transport::Error),
   #[error(transparent)]

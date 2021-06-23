@@ -1,9 +1,23 @@
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MessagePayload {
-  #[prost(enumeration = "PayloadKind", tag = "1")]
-  pub kind: i32,
-  #[prost(bytes = "vec", tag = "2")]
-  pub value: ::prost::alloc::vec::Vec<u8>,
+pub struct OutputKind {
+  #[prost(oneof = "output_kind::Data", tags = "1, 2, 3, 4, 5")]
+  pub data: ::core::option::Option<output_kind::Data>,
+}
+/// Nested message and enum types in `OutputKind`.
+pub mod output_kind {
+  #[derive(Clone, PartialEq, ::prost::Oneof)]
+  pub enum Data {
+    #[prost(bytes, tag = "1")]
+    Messagepack(::prost::alloc::vec::Vec<u8>),
+    #[prost(string, tag = "2")]
+    Error(::prost::alloc::string::String),
+    #[prost(string, tag = "3")]
+    Exception(::prost::alloc::string::String),
+    #[prost(string, tag = "4")]
+    Test(::prost::alloc::string::String),
+    #[prost(bool, tag = "5")]
+    Invalid(bool),
+  }
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Entity {
@@ -31,8 +45,9 @@ pub struct Invocation {
   pub origin: ::core::option::Option<Entity>,
   #[prost(message, optional, tag = "2")]
   pub target: ::core::option::Option<Entity>,
-  #[prost(message, optional, tag = "3")]
-  pub msg: ::core::option::Option<MessagePayload>,
+  #[prost(map = "string, bytes", tag = "3")]
+  pub msg:
+    ::std::collections::HashMap<::prost::alloc::string::String, ::prost::alloc::vec::Vec<u8>>,
   #[prost(string, tag = "4")]
   pub id: ::prost::alloc::string::String,
   #[prost(string, tag = "5")]
@@ -49,22 +64,12 @@ pub struct Output {
   #[prost(string, tag = "2")]
   pub invocation_id: ::prost::alloc::string::String,
   #[prost(message, optional, tag = "3")]
-  pub payload: ::core::option::Option<MessagePayload>,
+  pub payload: ::core::option::Option<OutputKind>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Ack {}
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ShutdownRequest {}
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
-#[repr(i32)]
-pub enum PayloadKind {
-  Invalid = 0,
-  Test = 1,
-  MessagePack = 2,
-  MultiBytes = 3,
-  Exception = 4,
-  Error = 5,
-}
 #[doc = r" Generated client implementations."]
 pub mod component_rpc_client {
   #![allow(unused_variables, dead_code, missing_docs)]

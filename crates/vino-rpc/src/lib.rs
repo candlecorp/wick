@@ -3,6 +3,8 @@ pub mod error;
 pub mod generated;
 pub mod port;
 
+use std::collections::HashMap;
+
 use async_trait::async_trait;
 pub use component_service::ComponentService;
 pub use generated::vino::*;
@@ -20,7 +22,7 @@ pub trait RpcHandler: Send + Sync {
     &self,
     inv_id: String,
     component: String,
-    payload: Vec<u8>,
+    payload: HashMap<String, Vec<u8>>,
   ) -> std::result::Result<
     crate::port::Receiver,
     Box<dyn std::error::Error + Sync + std::marker::Send>,

@@ -14,14 +14,12 @@ use serde::{
   Deserialize,
   Serialize,
 };
-use vino_guest::OutputPayload;
 use vino_rpc::port::Receiver;
 pub mod error;
 pub mod provider_macro;
 
 pub type Result<T> = std::result::Result<T, Error>;
 pub type Error = error::ProviderError;
-pub type ProviderCallback = Box<dyn Fn(u64, &str, &str, &str, &OutputPayload)>;
 pub type Context<T> = Arc<Mutex<T>>;
 
 pub const RPC_OP_INITIALIZE: &str = "rpc_init";
@@ -40,7 +38,7 @@ pub trait VinoProviderComponent {
   async fn job_wrapper(
     &self,
     context: Arc<Mutex<Self::Context>>,
-    data: &[u8],
+    data: HashMap<String, Vec<u8>>,
   ) -> std::result::Result<Receiver, Box<dyn std::error::Error + Send + Sync>>;
 }
 

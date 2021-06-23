@@ -1,6 +1,6 @@
 .PHONY: all codegen build clean doc test
 
-MAKEFLAGS += --no-print-directory --silent
+MAKEFLAGS += --no-print-directory
 
 SCHEMA_DIR := ./schemas
 COMPONENTS_DIR := ./src/components
@@ -30,6 +30,8 @@ GENERATED_HEADER := /* This is generated, do not edit by hand */
 CLEAN_FILES := $(GENERATED_COMPONENTS) $(GENERATED_MODULE_RS) $(COMPONENTS_FACTORY_RS)
 CLEAN_DIRS := $(GENERATED_DIR)
 
+all: codegen build
+
 # Defines rules like the following for each schema found :
 # src/components/generated/my_components.rs: schemas/my-component.widl | /src/components/generated
 define WIDL_CODEGEN
@@ -54,7 +56,6 @@ $(COMPONENTS_FACTORY_RS):
 	vino-codegen rust "$(TMP_SCHEMAS_FILE)" -t provider-integration -r ${SCHEMA_DIR} | rustfmt --quiet >$@
 	rm $(TMP_SCHEMAS_FILE)
 
-all: codegen build
 
 codegen:
 	make $(GENERATED_COMPONENTS)

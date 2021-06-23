@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::sync::{
   Arc,
   Mutex,
@@ -7,12 +8,12 @@ use serde::{
   Deserialize,
   Serialize,
 };
+use vino_codec::messagepack::deserialize;
 use vino_rpc::port::{
   Port,
   Receiver,
   Sender,
 };
-use vino_transport::deserialize;
 
 #[derive(Debug, PartialEq, Deserialize, Serialize, Default, Clone)]
 pub(crate) struct Inputs {
@@ -30,10 +31,10 @@ pub(crate) struct InputEncoded {
 }
 
 pub(crate) fn deserialize_inputs(
-  args: InputEncoded,
+  map: &HashMap<String, Vec<u8>>,
 ) -> Result<Inputs, Box<dyn std::error::Error + Send + Sync>> {
   Ok(Inputs {
-    input: deserialize(&args.input)?,
+    input: deserialize(map.get("input").unwrap())?,
   })
 }
 
@@ -57,7 +58,7 @@ impl Default for OutputSender {
   }
 }
 impl Sender for OutputSender {
-  type Payload = Vec<u8>;
+  type PayloadType = Vec<u8>;
 
   fn get_port(&self) -> Arc<Mutex<Port>> {
     self.port.clone()

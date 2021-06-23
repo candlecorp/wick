@@ -11,11 +11,12 @@ wasmtime = ["wasmtime-provider"]
 wasm3 = ["wasm3-provider"]
 
 [dependencies]
-vino-guest = { path="../vino-guest" }
+vino-component = { path="../vino-component" }
 vino-macros = { path="../vino-macros" }
 vino-manifest = { path="../vino-manifest" }
 vino-provider = { path="../vino-provider" }
 vino-transport = { path="../vino-transport" }
+vino-codec = { path="../vino-codec" }
 vino-rpc = { path="../vino-rpc" }
 wasm3-provider = { version="0.0.2", optional=true }
 serde = { version="1.0.118", features=["derive"] }
@@ -44,10 +45,11 @@ derive-new = "0.5.9"
 tokio = { version="1.4.0", features=["macros", "net", "rt-multi-thread"] }
 tonic = { version="0.4.3", features=["tls"] }
 tokio-stream = "0.1.6"
+typetag = "0.1.7"
+erased-serde = "0.3.16"
 
 [dev-dependencies]
 env_logger = "0.8.3"
 test-env-log = "0.2.7"
 maplit = "1.0.2"
-vino-provider-test = { path="../vino-provider-test" }
-tonic = "0.4.3"
+test-vino-provider = { path="../test-vino-provider" }

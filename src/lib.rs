@@ -8,12 +8,12 @@ use std::collections::HashMap;
 use error::VinoError;
 use serde_json::json;
 use serde_json::Value::String as JsonString;
+use vino_codec::messagepack::deserialize;
 use vino_host::{
   HostBuilder,
   HostDefinition,
 };
-use vino_runtime::MessagePayload;
-use vino_transport::deserialize;
+use vino_transport::MessageTransport;
 
 pub type Result<T> = std::result::Result<T, VinoError>;
 pub type Error = VinoError;
@@ -46,14 +46,14 @@ pub async fn run(manifest: HostDefinition, data: JsonMap) -> Result<serde_json::
       (
         k.to_string(),
         match payload {
-          MessagePayload::MessagePack(bytes) => deserialize(bytes).unwrap_or_else(|e| {
+          MessageTransport::MessagePack(bytes) => deserialize(bytes).unwrap_or_else(|e| {
             JsonString(format!(
               "Error deserializing output payload: {}",
               e.to_string(),
             ))
           }),
-          MessagePayload::Exception(e) => json!({ "exception": e }),
-          MessagePayload::Error(e) => json!({ "error": e }),
+          MessageTransport::Exception(e) => json!({ "exception": e }),
+          MessageTransport::Error(e) => json!({ "error": e }),
           _ => json!({ "error": "Internal error, invalid format" }),
         },
       )
