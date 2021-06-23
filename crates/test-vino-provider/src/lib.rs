@@ -46,11 +46,26 @@ impl RpcHandler for Provider {
       None => Err(anyhow!("Component '{}' not found", component).into()),
     }
   }
+
+  async fn list_registered(&self) -> RpcResult<Vec<vino_rpc::HostedType>> {
+    let components = components::get_all_components();
+    Ok(
+      components
+        .into_iter()
+        .map(vino_rpc::HostedType::Component)
+        .collect(),
+    )
+  }
+
+  async fn report_statistics(&self, id: Option<String>) -> RpcResult<Vec<vino_rpc::Statistics>> {
+    todo!()
+  }
 }
 
 #[cfg(test)]
 mod tests {
   use futures::prelude::*;
+  use log::debug;
   use maplit::hashmap;
   use vino_codec::messagepack::{
     deserialize,
@@ -90,6 +105,16 @@ mod tests {
 
     println!("outputs: {:?}", payload);
     assert_eq!(payload, "some_input");
+
+    Ok(())
+  }
+
+  #[test_env_log::test(tokio::test)]
+  async fn list() -> anyhow::Result<()> {
+    let provider = Provider::default();
+
+    let response = provider.list_registered().await.expect("request failed");
+    debug!("list response : {:?}", response);
 
     Ok(())
   }

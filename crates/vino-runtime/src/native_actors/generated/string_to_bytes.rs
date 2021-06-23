@@ -20,8 +20,8 @@ pub(crate) struct Inputs {
   pub(crate) input: String,
 }
 
-pub(crate) fn inputs_list() -> Vec<String> {
-  vec!["input".to_string()]
+pub(crate) fn inputs_list() -> Vec<(String, String)> {
+  vec![("input".to_string(), "string".to_string())]
 }
 
 #[derive(Debug, PartialEq, Deserialize, Serialize, Default, Clone)]
@@ -43,8 +43,8 @@ pub(crate) struct Outputs {
   pub(crate) output: OutputSender,
 }
 
-pub(crate) fn outputs_list() -> Vec<String> {
-  vec!["output".to_string()]
+pub(crate) fn outputs_list() -> Vec<(String, String)> {
+  vec![("output".to_string(), "bytes".to_string())]
 }
 
 pub(crate) struct OutputSender {

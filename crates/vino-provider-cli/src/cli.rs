@@ -8,9 +8,9 @@ use std::sync::Arc;
 
 use tokio::sync::Mutex;
 use tonic::transport::Server;
-use vino_rpc::component_rpc_server::ComponentRpcServer;
+use vino_rpc::rpc::invocation_service_server::InvocationServiceServer;
 use vino_rpc::{
-  ComponentService,
+  InvocationServer,
   RpcHandler,
 };
 
@@ -35,9 +35,9 @@ pub async fn init(
   let addr: SocketAddr = SocketAddr::new(IpAddr::V4(opts.address), opts.port);
   trace!("Binding to {:?}", addr.to_string());
 
-  let component_service = ComponentService { provider };
+  let component_service = InvocationServer { provider };
 
-  let svc = ComponentRpcServer::new(component_service);
+  let svc = InvocationServiceServer::new(component_service);
 
   Server::builder().add_service(svc).serve(addr).await?;
 

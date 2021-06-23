@@ -4,11 +4,11 @@ use actix::fut::{
 };
 use actix::prelude::*;
 use futures::FutureExt;
-use rpc::component_rpc_client::ComponentRpcClient;
+use rpc::invocation_service_client::InvocationServiceClient;
 use rpc::output_kind::Data as PayloadType;
 use tokio::sync::mpsc::UnboundedSender;
 use tonic::transport::Channel;
-use vino_rpc as rpc;
+use vino_rpc::rpc;
 use vino_transport::MessageTransport;
 
 use crate::dispatch::{
@@ -27,7 +27,7 @@ pub struct GrpcUrlProvider {
 
 #[derive(Debug)]
 struct State {
-  pub(crate) client: ComponentRpcClient<Channel>,
+  pub(crate) client: InvocationServiceClient<Channel>,
   pub(crate) sender: UnboundedSender<MessageTransport>,
 }
 
@@ -61,18 +61,20 @@ impl Handler<Initialize> for GrpcUrlProvider {
 
     let addr = msg.address;
 
-    Box::pin(ComponentRpcClient::connect(addr).into_actor(self).then(
-      move |client, provider, _ctx| match client {
-        Ok(client) => {
-          provider.state = Some(State { client, sender });
-          ok(())
-        }
-        Err(e) => err(VinoError::ProviderError(format!(
-          "Could not connect to Rpc Client in GrpcUrlProvider: {}",
-          e
-        ))),
-      },
-    ))
+    Box::pin(
+      InvocationServiceClient::connect(addr)
+        .into_actor(self)
+        .then(move |client, provider, _ctx| match client {
+          Ok(client) => {
+            provider.state = Some(State { client, sender });
+            ok(())
+          }
+          Err(e) => err(VinoError::ProviderError(format!(
+            "Could not connect to Rpc Client in GrpcUrlProvider: {}",
+            e
+          ))),
+        }),
+    )
   }
 }
 
@@ -201,8 +203,8 @@ mod test {
     deserialize,
     serialize,
   };
-  use vino_rpc::component_rpc_server::ComponentRpcServer;
-  use vino_rpc::ComponentService;
+  use vino_rpc::rpc::invocation_service_server::InvocationServiceServer;
+  use vino_rpc::InvocationServer;
 
   use super::*;
   use crate::dispatch::ComponentEntity;
@@ -214,9 +216,9 @@ mod test {
 
     debug!("Binding to {:?}", addr.to_string());
 
-    let component_service = ComponentService::new(provider);
+    let component_service = InvocationServer::new(provider);
 
-    let svc = ComponentRpcServer::new(component_service);
+    let svc = InvocationServiceServer::new(component_service);
 
     Server::builder()
       .add_service(svc)
@@ -231,8 +233,6 @@ mod test {
   #[test_env_log::test(actix_rt::test)]
   async fn test_init() -> Result<()> {
     let init_handle = make_grpc_server(Provider::default());
-
-    debug!("test_init");
     let (tx, rx) = unbounded_channel();
     let mut rx = rx;
     let work = async move {
@@ -283,6 +283,7 @@ mod test {
         };
 
         debug!("Got next : {:?}", result);
+        assert_eq!(result, "test string payload");
       }
       None => panic!("Nothing received"),
     }

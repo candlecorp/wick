@@ -21,8 +21,11 @@ pub(crate) struct Inputs {
   pub(crate) cost: u32,
 }
 
-pub(crate) fn inputs_list() -> Vec<String> {
-  vec!["input".to_string(), "cost".to_string()]
+pub(crate) fn inputs_list() -> Vec<(String, String)> {
+  vec![
+    ("input".to_string(), "string".to_string()),
+    ("cost".to_string(), "u32".to_string()),
+  ]
 }
 
 #[derive(Debug, PartialEq, Deserialize, Serialize, Default, Clone)]
@@ -47,8 +50,8 @@ pub(crate) struct Outputs {
   pub(crate) output: OutputSender,
 }
 
-pub(crate) fn outputs_list() -> Vec<String> {
-  vec!["output".to_string()]
+pub(crate) fn outputs_list() -> Vec<(String, String)> {
+  vec![("output".to_string(), "string".to_string())]
 }
 
 pub(crate) struct OutputSender {

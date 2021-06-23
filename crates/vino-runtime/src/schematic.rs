@@ -22,7 +22,7 @@ use super::dispatch::{
   InvocationResponse,
 };
 use super::schematic_response::initialize_schematic_output;
-use crate::components::vino_component::get_components_for_schematic;
+use crate::components::vino_component::load_components;
 use crate::dispatch::{
   ComponentEntity,
   PortEntity,
@@ -359,7 +359,7 @@ impl Handler<Initialize> for Schematic {
     self.state = Some(state);
 
     Box::pin(
-      get_components_for_schematic(
+      load_components(
         self.definition.clone(),
         seed,
         allow_latest,
@@ -380,6 +380,68 @@ impl Handler<Initialize> for Schematic {
         }
       }),
     )
+  }
+}
+
+#[derive(Message, Debug, Clone, new)]
+#[rtype(result = "Result<()>")]
+pub(crate) struct InitializeProviders {
+  pub(crate) schematic: SchematicDefinition,
+  pub(crate) host_id: String,
+  pub(crate) seed: String,
+}
+
+impl Handler<InitializeProviders> for Schematic {
+  type Result = ResponseActFuture<Self, Result<()>>;
+
+  fn handle(&mut self, msg: InitializeProviders, _ctx: &mut Self::Context) -> Self::Result {
+    trace!(
+      "Starting providers for schematic {}",
+      msg.schematic.get_name()
+    );
+
+    // TODO:
+    // - Add provider handler that starts an arbiter
+    // - Add control layer to GrpcProviders so we can query information
+    //     like what components are handled and what ports those components have
+
+    // let schematic = msg.schematic;
+
+    // struct ProviderHandler {}
+
+    // let mut providers = vec![];
+
+    // for provider in &schematic.providers {
+    //   let namespace = provider.namespace;
+    //   match provider.kind {
+    //     ProviderKind::Native => {
+    //       trace!(
+    //         "registering component under the {} provider namespace",
+    //         namespace
+    //       );
+
+    //       let component = NativeComponent::from_id(namespace, name)?;
+    //       trace!("Starting native component '{}'", component.name(),);
+    //       let arbiter = Arbiter::new();
+    //       let actor = NativeComponentActor::start_in_arbiter(&arbiter.handle(), |_| {
+    //         NativeComponentActor::default()
+    //       });
+    //       actor
+    //         .send(native_component_actor::Initialize {
+    //           name: component.name(),
+    //           signing_seed: seed,
+    //         })
+    //         .await??;
+    //       let recipient = actor.recipient::<Invocation>();
+
+    //       return Ok((Box::new(component), recipient));
+    //     }
+    //     ProviderKind::GrpcUrl => {}
+    //   }
+    // }
+    // let seed = msg.seed;
+
+    Box::pin(ok(()).into_actor(self))
   }
 }
 

@@ -18,6 +18,7 @@ pub struct SchematicDefinition {
   pub(crate) external: Vec<ExternalComponentDefinition>,
   pub(crate) components: HashMap<String, ComponentDefinition>,
   pub(crate) connections: Vec<ConnectionDefinition>,
+  pub(crate) providers: Vec<ProviderDefinition>,
   pub(crate) constraints: HashMap<String, String>,
 }
 
@@ -34,6 +35,12 @@ impl SchematicDefinition {
           .collect(),
         connections: manifest
           .connections
+          .clone()
+          .into_iter()
+          .map(|def| def.into())
+          .collect(),
+        providers: manifest
+          .providers
           .clone()
           .into_iter()
           .map(|def| def.into())
@@ -123,6 +130,47 @@ impl From<&vino_manifest::v0::ComponentDefinition> for ComponentDefinition {
     ComponentDefinition {
       id: def.id.to_string(),
       metadata: None,
+    }
+  }
+}
+
+#[derive(Debug, Clone)]
+pub struct ProviderDefinition {
+  /// The namespace to reference the provider&#x27;s components on
+  pub namespace: String,
+  /// The kind/type of the provider
+  pub kind: ProviderKind,
+  /// The reference/location of the provider
+  pub reference: String,
+  /// Data or configuration to pass to the provider initialization
+  pub data: HashMap<String, String>,
+}
+
+impl From<vino_manifest::v0::ProviderDefinition> for ProviderDefinition {
+  fn from(def: vino_manifest::v0::ProviderDefinition) -> Self {
+    ProviderDefinition {
+      namespace: def.namespace,
+      kind: def.kind.into(),
+      reference: def.reference,
+      data: def.data,
+    }
+  }
+}
+
+#[derive(Debug, Clone)]
+/// Kind of provider,
+pub enum ProviderKind {
+  /// Native providers included at compile-time in a Vino host
+  Native = 0,
+  /// The URL for a separately managed GRPC endpoint
+  GrpcUrl = 1,
+}
+
+impl From<vino_manifest::v0::ProviderKind> for ProviderKind {
+  fn from(def: vino_manifest::v0::ProviderKind) -> Self {
+    match def {
+      vino_manifest::v0::ProviderKind::Native => ProviderKind::Native,
+      vino_manifest::v0::ProviderKind::GrpcUrl => ProviderKind::GrpcUrl,
     }
   }
 }

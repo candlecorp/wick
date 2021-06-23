@@ -14,18 +14,18 @@ use tonic::{
 use vino_codec::messagepack::serialize;
 use vino_component::Output as ComponentOutput;
 
-use crate::component_rpc_server::ComponentRpc;
-use crate::output_kind::Data;
-use crate::{
+use crate::rpc::invocation_service_server::InvocationService;
+use crate::rpc::output_kind::Data;
+use crate::rpc::{
   Output,
   OutputKind,
-  RpcHandler,
 };
-pub struct ComponentService {
+use crate::RpcHandler;
+pub struct InvocationServer {
   pub provider: Arc<Mutex<dyn crate::RpcHandler>>,
 }
 
-impl ComponentService {
+impl InvocationServer {
   pub fn new<T>(provider: T) -> Self
   where
     T: RpcHandler + 'static,
@@ -95,14 +95,14 @@ where
 }
 
 #[tonic::async_trait]
-impl ComponentRpc for ComponentService {
+impl InvocationService for InvocationServer {
   type InvokeStream = ReceiverStream<Result<Output, Status>>;
 
   async fn invoke(
     &self,
-    request: tonic::Request<crate::Invocation>,
+    request: tonic::Request<crate::rpc::Invocation>,
   ) -> Result<tonic::Response<Self::InvokeStream>, tonic::Status> {
-    println!("ListFeatures = {:?}", request);
+    debug!("Invocation = {:?}", request);
 
     let (tx, rx) = mpsc::channel(4);
     let provider = self.provider.clone();
@@ -142,10 +142,17 @@ impl ComponentRpc for ComponentService {
     Ok(Response::new(ReceiverStream::new(rx)))
   }
 
-  async fn shutdown(
+  async fn list(
     &self,
-    _request: tonic::Request<crate::ShutdownRequest>,
-  ) -> Result<tonic::Response<crate::Ack>, tonic::Status> {
-    panic!("Unimplemented");
+    request: tonic::Request<crate::rpc::ListRequest>,
+  ) -> Result<tonic::Response<crate::rpc::ListResponse>, tonic::Status> {
+    todo!()
+  }
+
+  async fn stats(
+    &self,
+    request: tonic::Request<crate::rpc::StatsRequest>,
+  ) -> Result<tonic::Response<crate::rpc::StatsResponse>, tonic::Status> {
+    todo!()
   }
 }

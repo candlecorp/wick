@@ -1,6 +1,11 @@
 .PHONY: all codegen build clean doc test
 
-MAKEFLAGS += --no-print-directory
+# Enforce bash as the shell for consistency
+SHELL := bash
+# Use bash strict mode
+.SHELLFLAGS := -eu -o pipefail -c
+MAKEFLAGS += --warn-undefined-variables
+MAKEFLAGS += --no-builtin-rules
 
 SCHEMA_DIR := ./schemas
 COMPONENTS_DIR := ./src/components
@@ -42,18 +47,18 @@ endef
 $(foreach schema,$(SCHEMAS),$(eval $(call WIDL_CODEGEN,$(schema))))
 
 $(GENERATED_MODULE_RS):
-	echo "$(GENERATED_HEADER)\n$(GENERATED_MOD_IMPORTS)" | rustfmt > $@
+	printf "$(GENERATED_HEADER)\\n$(GENERATED_MOD_IMPORTS)" > $@
 
 $(GENERATED_DIR):
 	mkdir $@
 
 $(GENERATED_COMPONENTS):
-	vino-codegen rust "$<" -t provider-component | rustfmt --quiet >$(subst -,_,$@)
+	vino-codegen rust "$<" -t provider-component >$(subst -,_,$@)
 
 $(COMPONENTS_FACTORY_RS):
 	touch $(TMP_SCHEMAS_FILE)
-	echo "$(GENERATED_WIDL_IMPORTS)" > $(TMP_SCHEMAS_FILE)
-	vino-codegen rust "$(TMP_SCHEMAS_FILE)" -t provider-integration -r ${SCHEMA_DIR} | rustfmt --quiet >$@
+	printf "$(GENERATED_WIDL_IMPORTS)" > $(TMP_SCHEMAS_FILE)
+	vino-codegen rust "$(TMP_SCHEMAS_FILE)" -t provider-integration -r ${SCHEMA_DIR} >$@
 	rm $(TMP_SCHEMAS_FILE)
 
 
@@ -61,6 +66,7 @@ codegen:
 	make $(GENERATED_COMPONENTS)
 	make $(GENERATED_MODULE_RS)
 	make $(COMPONENTS_FACTORY_RS)
+	cargo fmt
 
 build: codegen
 	cargo build --release

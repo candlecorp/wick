@@ -67,18 +67,44 @@ pub struct Output {
   pub payload: ::core::option::Option<OutputKind>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct Ack {}
+pub struct ListRequest {}
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct ShutdownRequest {}
+pub struct StatsRequest {}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ListResponse {
+  #[prost(message, repeated, tag = "1")]
+  pub component: ::prost::alloc::vec::Vec<Component>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct Component {
+  #[prost(string, tag = "1")]
+  pub name: ::prost::alloc::string::String,
+  #[prost(message, repeated, tag = "2")]
+  pub inputs: ::prost::alloc::vec::Vec<component::Port>,
+  #[prost(message, repeated, tag = "3")]
+  pub outputs: ::prost::alloc::vec::Vec<component::Port>,
+}
+/// Nested message and enum types in `Component`.
+pub mod component {
+  #[derive(Clone, PartialEq, ::prost::Message)]
+  pub struct Port {
+    #[prost(string, tag = "1")]
+    pub name: ::prost::alloc::string::String,
+    #[prost(string, tag = "2")]
+    pub r#type: ::prost::alloc::string::String,
+  }
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct StatsResponse {}
 #[doc = r" Generated client implementations."]
-pub mod component_rpc_client {
+pub mod invocation_service_client {
   #![allow(unused_variables, dead_code, missing_docs)]
   use tonic::codegen::*;
   #[doc = " Interface exported by the server."]
-  pub struct ComponentRpcClient<T> {
+  pub struct InvocationServiceClient<T> {
     inner: tonic::client::Grpc<T>,
   }
-  impl ComponentRpcClient<tonic::transport::Channel> {
+  impl InvocationServiceClient<tonic::transport::Channel> {
     #[doc = r" Attempt to create a new client by connecting to a given endpoint."]
     pub async fn connect<D>(dst: D) -> Result<Self, tonic::transport::Error>
     where
@@ -89,7 +115,7 @@ pub mod component_rpc_client {
       Ok(Self::new(conn))
     }
   }
-  impl<T> ComponentRpcClient<T>
+  impl<T> InvocationServiceClient<T>
   where
     T: tonic::client::GrpcService<tonic::body::BoxBody>,
     T::ResponseBody: Body + HttpBody + Send + 'static,
@@ -115,16 +141,16 @@ pub mod component_rpc_client {
         )
       })?;
       let codec = tonic::codec::ProstCodec::default();
-      let path = http::uri::PathAndQuery::from_static("/vino.ComponentRpc/Invoke");
+      let path = http::uri::PathAndQuery::from_static("/vino.InvocationService/Invoke");
       self
         .inner
         .server_streaming(request.into_request(), path, codec)
         .await
     }
-    pub async fn shutdown(
+    pub async fn list(
       &mut self,
-      request: impl tonic::IntoRequest<super::ShutdownRequest>,
-    ) -> Result<tonic::Response<super::Ack>, tonic::Status> {
+      request: impl tonic::IntoRequest<super::ListRequest>,
+    ) -> Result<tonic::Response<super::ListResponse>, tonic::Status> {
       self.inner.ready().await.map_err(|e| {
         tonic::Status::new(
           tonic::Code::Unknown,
@@ -132,30 +158,44 @@ pub mod component_rpc_client {
         )
       })?;
       let codec = tonic::codec::ProstCodec::default();
-      let path = http::uri::PathAndQuery::from_static("/vino.ComponentRpc/Shutdown");
+      let path = http::uri::PathAndQuery::from_static("/vino.InvocationService/List");
+      self.inner.unary(request.into_request(), path, codec).await
+    }
+    pub async fn stats(
+      &mut self,
+      request: impl tonic::IntoRequest<super::StatsRequest>,
+    ) -> Result<tonic::Response<super::StatsResponse>, tonic::Status> {
+      self.inner.ready().await.map_err(|e| {
+        tonic::Status::new(
+          tonic::Code::Unknown,
+          format!("Service was not ready: {}", e.into()),
+        )
+      })?;
+      let codec = tonic::codec::ProstCodec::default();
+      let path = http::uri::PathAndQuery::from_static("/vino.InvocationService/Stats");
       self.inner.unary(request.into_request(), path, codec).await
     }
   }
-  impl<T: Clone> Clone for ComponentRpcClient<T> {
+  impl<T: Clone> Clone for InvocationServiceClient<T> {
     fn clone(&self) -> Self {
       Self {
         inner: self.inner.clone(),
       }
     }
   }
-  impl<T> std::fmt::Debug for ComponentRpcClient<T> {
+  impl<T> std::fmt::Debug for InvocationServiceClient<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-      write!(f, "ComponentRpcClient {{ ... }}")
+      write!(f, "InvocationServiceClient {{ ... }}")
     }
   }
 }
 #[doc = r" Generated server implementations."]
-pub mod component_rpc_server {
+pub mod invocation_service_server {
   #![allow(unused_variables, dead_code, missing_docs)]
   use tonic::codegen::*;
-  #[doc = "Generated trait containing gRPC methods that should be implemented for use with ComponentRpcServer."]
+  #[doc = "Generated trait containing gRPC methods that should be implemented for use with InvocationServiceServer."]
   #[async_trait]
-  pub trait ComponentRpc: Send + Sync + 'static {
+  pub trait InvocationService: Send + Sync + 'static {
     #[doc = "Server streaming response type for the Invoke method."]
     type InvokeStream: futures_core::Stream<Item = Result<super::Output, tonic::Status>>
       + Send
@@ -165,18 +205,22 @@ pub mod component_rpc_server {
       &self,
       request: tonic::Request<super::Invocation>,
     ) -> Result<tonic::Response<Self::InvokeStream>, tonic::Status>;
-    async fn shutdown(
+    async fn list(
       &self,
-      request: tonic::Request<super::ShutdownRequest>,
-    ) -> Result<tonic::Response<super::Ack>, tonic::Status>;
+      request: tonic::Request<super::ListRequest>,
+    ) -> Result<tonic::Response<super::ListResponse>, tonic::Status>;
+    async fn stats(
+      &self,
+      request: tonic::Request<super::StatsRequest>,
+    ) -> Result<tonic::Response<super::StatsResponse>, tonic::Status>;
   }
   #[doc = " Interface exported by the server."]
   #[derive(Debug)]
-  pub struct ComponentRpcServer<T: ComponentRpc> {
+  pub struct InvocationServiceServer<T: InvocationService> {
     inner: _Inner<T>,
   }
   struct _Inner<T>(Arc<T>, Option<tonic::Interceptor>);
-  impl<T: ComponentRpc> ComponentRpcServer<T> {
+  impl<T: InvocationService> InvocationServiceServer<T> {
     pub fn new(inner: T) -> Self {
       let inner = Arc::new(inner);
       let inner = _Inner(inner, None);
@@ -188,9 +232,9 @@ pub mod component_rpc_server {
       Self { inner }
     }
   }
-  impl<T, B> Service<http::Request<B>> for ComponentRpcServer<T>
+  impl<T, B> Service<http::Request<B>> for InvocationServiceServer<T>
   where
-    T: ComponentRpc,
+    T: InvocationService,
     B: HttpBody + Send + Sync + 'static,
     B::Error: Into<StdError> + Send + 'static,
   {
@@ -203,10 +247,12 @@ pub mod component_rpc_server {
     fn call(&mut self, req: http::Request<B>) -> Self::Future {
       let inner = self.inner.clone();
       match req.uri().path() {
-        "/vino.ComponentRpc/Invoke" => {
+        "/vino.InvocationService/Invoke" => {
           #[allow(non_camel_case_types)]
-          struct InvokeSvc<T: ComponentRpc>(pub Arc<T>);
-          impl<T: ComponentRpc> tonic::server::ServerStreamingService<super::Invocation> for InvokeSvc<T> {
+          struct InvokeSvc<T: InvocationService>(pub Arc<T>);
+          impl<T: InvocationService> tonic::server::ServerStreamingService<super::Invocation>
+            for InvokeSvc<T>
+          {
             type Response = super::Output;
             type ResponseStream = T::InvokeStream;
             type Future = BoxFuture<tonic::Response<Self::ResponseStream>, tonic::Status>;
@@ -232,15 +278,15 @@ pub mod component_rpc_server {
           };
           Box::pin(fut)
         }
-        "/vino.ComponentRpc/Shutdown" => {
+        "/vino.InvocationService/List" => {
           #[allow(non_camel_case_types)]
-          struct ShutdownSvc<T: ComponentRpc>(pub Arc<T>);
-          impl<T: ComponentRpc> tonic::server::UnaryService<super::ShutdownRequest> for ShutdownSvc<T> {
-            type Response = super::Ack;
+          struct ListSvc<T: InvocationService>(pub Arc<T>);
+          impl<T: InvocationService> tonic::server::UnaryService<super::ListRequest> for ListSvc<T> {
+            type Response = super::ListResponse;
             type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
-            fn call(&mut self, request: tonic::Request<super::ShutdownRequest>) -> Self::Future {
+            fn call(&mut self, request: tonic::Request<super::ListRequest>) -> Self::Future {
               let inner = self.0.clone();
-              let fut = async move { (*inner).shutdown(request).await };
+              let fut = async move { (*inner).list(request).await };
               Box::pin(fut)
             }
           }
@@ -248,7 +294,35 @@ pub mod component_rpc_server {
           let fut = async move {
             let interceptor = inner.1.clone();
             let inner = inner.0;
-            let method = ShutdownSvc(inner);
+            let method = ListSvc(inner);
+            let codec = tonic::codec::ProstCodec::default();
+            let mut grpc = if let Some(interceptor) = interceptor {
+              tonic::server::Grpc::with_interceptor(codec, interceptor)
+            } else {
+              tonic::server::Grpc::new(codec)
+            };
+            let res = grpc.unary(method, req).await;
+            Ok(res)
+          };
+          Box::pin(fut)
+        }
+        "/vino.InvocationService/Stats" => {
+          #[allow(non_camel_case_types)]
+          struct StatsSvc<T: InvocationService>(pub Arc<T>);
+          impl<T: InvocationService> tonic::server::UnaryService<super::StatsRequest> for StatsSvc<T> {
+            type Response = super::StatsResponse;
+            type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
+            fn call(&mut self, request: tonic::Request<super::StatsRequest>) -> Self::Future {
+              let inner = self.0.clone();
+              let fut = async move { (*inner).stats(request).await };
+              Box::pin(fut)
+            }
+          }
+          let inner = self.inner.clone();
+          let fut = async move {
+            let interceptor = inner.1.clone();
+            let inner = inner.0;
+            let method = StatsSvc(inner);
             let codec = tonic::codec::ProstCodec::default();
             let mut grpc = if let Some(interceptor) = interceptor {
               tonic::server::Grpc::with_interceptor(codec, interceptor)
@@ -273,13 +347,13 @@ pub mod component_rpc_server {
       }
     }
   }
-  impl<T: ComponentRpc> Clone for ComponentRpcServer<T> {
+  impl<T: InvocationService> Clone for InvocationServiceServer<T> {
     fn clone(&self) -> Self {
       let inner = self.inner.clone();
       Self { inner }
     }
   }
-  impl<T: ComponentRpc> Clone for _Inner<T> {
+  impl<T: InvocationService> Clone for _Inner<T> {
     fn clone(&self) -> Self {
       Self(self.0.clone(), self.1.clone())
     }
@@ -289,7 +363,7 @@ pub mod component_rpc_server {
       write!(f, "{:?}", self.0)
     }
   }
-  impl<T: ComponentRpc> tonic::transport::NamedService for ComponentRpcServer<T> {
-    const NAME: &'static str = "vino.ComponentRpc";
+  impl<T: InvocationService> tonic::transport::NamedService for InvocationServiceServer<T> {
+    const NAME: &'static str = "vino.InvocationService";
   }
 }

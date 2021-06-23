@@ -1,12 +1,12 @@
-// version of protocol buffer used
 syntax = "proto3";
 
 package vino;
 
 // Interface exported by the server.
-service ComponentRpc {
+service InvocationService {
   rpc Invoke(Invocation) returns (stream Output);
-  rpc Shutdown(ShutdownRequest) returns (Ack);
+  rpc List(ListRequest) returns (ListResponse);
+  rpc Stats(StatsRequest) returns (StatsResponse);
 }
 
 message OutputKind {
@@ -18,7 +18,6 @@ message OutputKind {
     bool invalid = 5;
   }
 }
-
 
 message Entity {
   enum EntityKind {
@@ -49,7 +48,23 @@ message Output {
   OutputKind payload = 3;
 }
 
-message Ack {}
+message ListRequest {}
+message StatsRequest {}
 
-message ShutdownRequest {}
+message ListResponse {
+  repeated Component component = 1;
+}
 
+message Component {
+  message Port {
+    string name = 1;
+    string type = 2;
+  }
+  string name = 1;
+  repeated Port inputs = 2;
+  repeated Port outputs = 3;
+}
+
+message StatsResponse {
+
+}

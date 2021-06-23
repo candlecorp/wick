@@ -11,7 +11,7 @@ pub(crate) type Outputs = Vec<String>;
 use self::vino_component::WapcComponent;
 use crate::Result;
 
-pub fn load_wasm_from_file(path: impl AsRef<Path>) -> Result<WapcComponent> {
+pub fn load_wasm_from_file(path: &Path) -> Result<WapcComponent> {
   WapcComponent::from_file(path)
 }
 
