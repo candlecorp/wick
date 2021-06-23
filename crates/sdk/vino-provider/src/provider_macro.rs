@@ -6,12 +6,12 @@ macro_rules! provider_component {(
     use std::collections::HashMap;
     use log::{debug,trace};
     use vino_provider::{error::ProviderError, Context as ProviderContext};
-    use vino_provider::VinoProviderComponent;
+    use vino_provider::{VinoProviderComponent};
     use vino_rpc::port::{Sender, Receiver};
     use async_trait::async_trait;
     use std::sync::{Arc, Mutex};
 
-    use super::generated::$component_name::{Outputs, InputEncoded, get_outputs, inputs_list, outputs_list, deserialize_inputs};
+    pub(crate) use super::generated::$component_name::{Outputs, InputEncoded, get_outputs, inputs_list, outputs_list, deserialize_inputs};
     pub(crate) use super::generated::$component_name::{Inputs};
 
     pub(crate) struct Component {}
@@ -30,10 +30,10 @@ macro_rules! provider_component {(
       fn get_name(&self) -> String {
         format!("vino::{}",std::stringify!($component_name))
       }
-      fn get_input_ports(&self) -> Vec<String> {
+      fn get_input_ports(&self) -> Vec<(String, String)> {
         inputs_list()
       }
-      fn get_output_ports(&self) -> Vec<String> {
+      fn get_output_ports(&self) -> Vec<(String, String)> {
         outputs_list()
       }
       async fn job_wrapper(&self, context:ProviderContext<Self::Context>, data: HashMap<String,Vec<u8>>) -> std::result::Result<Receiver, Box<dyn std::error::Error + Send + Sync>> {

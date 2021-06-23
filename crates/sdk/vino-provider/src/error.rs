@@ -15,8 +15,6 @@ pub enum ProviderError {
   #[error("Invalid state for component '{0}'")]
   JobError(String),
   #[error(transparent)]
-  VinoError(#[from] vino_transport::Error),
-  #[error(transparent)]
   IOError(#[from] std::io::Error),
   #[error("Error serializing payload")]
   SerializationError(BoxedSyncSendError),
@@ -24,10 +22,6 @@ pub enum ProviderError {
   InputDeserializationError(BoxedSyncSendError),
   #[error("Error deserializing job payload {0}")]
   PayloadDeserializationError(BoxedSyncSendError),
-  #[error("Error deserializing RPC response {0}")]
-  RPCDeserializationError(rmp_serde::decode::Error),
-  #[error("Error serializing RPC response {0}")]
-  RPCSerializationError(rmp_serde::encode::Error),
   #[error("General error : {0}")]
   Other(String),
 }
