@@ -3,10 +3,11 @@ macro_rules! provider_component {(
   $component_name:ident,
   fn job($inputs_name:ident:Inputs, $outputs_name:ident:Outputs, $context_name: ident: Context<$context_type:ty>) -> $result_type:ty $fun:block
 ) => {
+    use std::collections::HashMap;
     use log::{debug,trace};
     use vino_provider::{error::ProviderError, Context as ProviderContext};
     use vino_provider::VinoProviderComponent;
-    use vino_rpc::port::{OutputStreams, Sender, Receiver};
+    use vino_rpc::port::{Sender, Receiver};
     use async_trait::async_trait;
     use std::sync::{Arc, Mutex};
 
@@ -35,10 +36,9 @@ macro_rules! provider_component {(
       fn get_output_ports(&self) -> Vec<String> {
         outputs_list()
       }
-      async fn job_wrapper(&self, context:ProviderContext<Self::Context>, data: &[u8]) -> std::result::Result<Receiver, Box<dyn std::error::Error + Send + Sync>> {
+      async fn job_wrapper(&self, context:ProviderContext<Self::Context>, data: HashMap<String,Vec<u8>>) -> std::result::Result<Receiver, Box<dyn std::error::Error + Send + Sync>> {
           trace!("Job passed data: {:?}", data);
-          let input_encoded : InputEncoded = vino_transport::deserialize(&data)?;
-          let inputs = deserialize_inputs(input_encoded).map_err(ProviderError::InputDeserializationError)?;
+          let inputs = deserialize_inputs(&data).map_err(ProviderError::InputDeserializationError)?;
           let (outputs, receiver) = get_outputs();
           let result : $result_type = job(inputs, outputs, context).await;
           match result {

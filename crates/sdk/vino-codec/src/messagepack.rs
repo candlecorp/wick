@@ -9,8 +9,19 @@ use serde::{
   Serialize,
 };
 
-use crate::error::TransportError;
+use crate::error::CodecError;
 use crate::Result;
+
+pub fn rmp_serialize<T>(item: T) -> std::result::Result<Vec<u8>, rmp_serde::encode::Error>
+where
+  T: Serialize,
+{
+  let mut buf = Vec::new();
+  match item.serialize(&mut Serializer::new(&mut buf).with_string_variants()) {
+    Ok(_) => Ok(buf),
+    Err(e) => Err(e),
+  }
+}
 
 /// The standard function for serializing codec structs into a format that can be
 /// used for message exchange between actor and host. Use of any other function to
@@ -19,11 +30,7 @@ pub fn serialize<T>(item: T) -> Result<Vec<u8>>
 where
   T: Serialize,
 {
-  let mut buf = Vec::new();
-  match item.serialize(&mut Serializer::new(&mut buf).with_struct_map()) {
-    Ok(_) => Ok(buf),
-    Err(e) => Err(TransportError::SerializationError(e)),
-  }
+  rmp_serialize(item).map_err(CodecError::SerializationError)
 }
 
 /// The standard function for de-serializing codec structs from a format suitable
@@ -33,6 +40,6 @@ pub fn deserialize<'de, T: Deserialize<'de>>(buf: &[u8]) -> Result<T> {
   let mut de = Deserializer::new(Cursor::new(buf));
   match Deserialize::deserialize(&mut de) {
     Ok(t) => Ok(t),
-    Err(e) => Err(TransportError::DeserializationError(e)),
+    Err(e) => Err(CodecError::DeserializationError(e)),
   }
 }
