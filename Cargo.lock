@@ -3253,6 +3253,25 @@ checksum = "5fecdca9a5291cc2b8dcf7dc02453fee791a280f3743cb0905f8822ae463b3fe"
 name = "vino"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
+ "env_logger 0.8.4",
+ "futures",
+ "log",
+ "maplit",
+ "test-env-log",
+ "test-vino-provider",
+ "test_bin",
+ "tokio",
+ "vino-codec",
+ "vino-component",
+ "vino-provider",
+ "vino-rpc",
+]
+
+[[package]]
+name = "vino-cli"
+version = "0.1.0"
+dependencies = [
  "actix-rt",
  "chrono",
  "colored",
@@ -3267,6 +3286,7 @@ dependencies = [
  "serde_json",
  "serde_yaml",
  "structopt",
+ "test-env-log",
  "test_bin",
  "thiserror",
  "unsafe-io",
@@ -3350,16 +3370,10 @@ version = "0.1.0"
 dependencies = [
  "async-trait",
  "env_logger 0.8.4",
- "futures",
- "rmp-serde",
- "serde",
  "test-env-log",
  "thiserror",
  "tokio",
- "vino-codec",
- "vino-component",
  "vino-rpc",
- "vino-transport",
 ]
 
 [[package]]
@@ -3407,7 +3421,6 @@ dependencies = [
  "serde_json",
  "structopt",
  "test-env-log",
- "test-vino-provider",
  "thiserror",
  "tokio",
  "tokio-stream",
@@ -3944,9 +3957,9 @@ dependencies = [
 
 [[package]]
 name = "wast"
-version = "33.0.0"
+version = "35.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1d04fe175c7f78214971293e7d8875673804e736092206a3a4544dbc12811c1b"
+checksum = "2ef140f1b49946586078353a453a1d28ba90adfc54dde75710bc1931de204d68"
 dependencies = [
  "leb128",
 ]
@@ -4119,14 +4132,14 @@ dependencies = [
 
 [[package]]
 name = "witx"
-version = "0.9.0"
+version = "0.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "df4a58e03db38d5e0762afc768ac9abacf826de59602b0a1dfa1b9099f03388e"
+checksum = "e366f27a5cabcddb2706a78296a40b8fcc451e1a6aba2fc1d94b4a01bdaaef4b"
 dependencies = [
  "anyhow",
  "log",
  "thiserror",
- "wast 33.0.0",
+ "wast 35.0.2",
 ]
 
 [[package]]

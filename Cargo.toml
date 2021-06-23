@@ -3,7 +3,6 @@ name = "vino"
 version = "0.1.0"
 authors = ["Jarrod Overson <jsoverson@gmail.com>"]
 edition = "2018"
-default-run = "vino"
 license-file = "LICENSE"
 description = "Application data flow platform"
 repository = "https://gitlab.com/vino-dev/vino"
@@ -12,41 +11,26 @@ readme = "README.md"
 
 
 [dependencies]
-wapc = { version="0.10.1" }
-vino-component = { path="./crates/vino-component" }
-chrono = "0.4.19"
-colored = "2.0.0"
-log = "0.4.11"
-env_logger = "0.8.3"
-actix-rt = "2.1.0"
-# nats = "0.9.18"
-structopt = "0.3.21"
-nkeys = "0.1.0"
-futures = "0.3.13"
-serde_json = "1.0.64"
-serde_yaml = "0.8.17"
-serde = "1.0.126"
-thiserror = "1.0.24"
-oci-distribution = "0.6"
-unsafe-io = "= 0.6.2"
-vino-runtime = { path="./crates/vino-runtime" }
-vino-transport = { path="./crates/vino-transport" }
-vino-host = { path="./crates/vino-host" }
-logger = { path="./crates/logger" }
-vino-manifest = { path="./crates/vino-manifest" }
-vino-codec = { path="./crates/vino-codec" }
+
 
 [dev-dependencies]
 test_bin = "0.3.0"
 maplit = "1.0.2"
-
-[[bin]]
-name = "vino"
-path = "src/main.rs"
-
+test-env-log = "0.2.7"
+tokio = { version="1.4.0", features=["macros", "net", "rt-multi-thread"] }
+futures = "0.3.15"
+vino-codec = { path="./crates/vino-codec" }
+vino-component = { path="./crates/vino-component" }
+vino-provider = { path="./crates/vino-provider" }
+test-vino-provider = { path="./crates/test-vino-provider" }
+vino-rpc = { path="./crates/vino-rpc" }
+log = "0.4.14"
+env_logger = "0.8.4"
+anyhow = "1.0.41"
 
 [workspace]
 members = [
+  "crates/vino-cli",
   "crates/vino-macros",
   "crates/logger",
   "crates/vino-runtime",

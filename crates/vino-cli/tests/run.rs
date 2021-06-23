@@ -1,10 +1,10 @@
 #[actix_rt::test]
-async fn run_log() -> vino::Result<()> {
+async fn run_log() -> vino_cli::Result<()> {
   let output = test_bin::get_test_bin("vino")
     .env_clear()
     .args(&[
       "run",
-      "./examples/log.vino",
+      "./manifests/log.vino",
       "{\"input\": \"testing123\"}",
       "--trace",
     ])

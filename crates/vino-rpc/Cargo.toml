@@ -31,4 +31,3 @@ tonic-build = { version="0.4.2", features=["prost"] }
 
 [dev-dependencies]
 test-env-log = "0.2.7"
-test-vino-provider = { path="../test-vino-provider" }

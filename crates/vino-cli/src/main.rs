@@ -1,6 +1,8 @@
-use vino::commands::{get_args, CliCommand};
-
-use vino::Result;
+use vino_cli::commands::{
+  get_args,
+  CliCommand,
+};
+use vino_cli::Result;
 
 #[macro_use]
 extern crate log;
@@ -10,8 +12,8 @@ async fn main() -> Result<()> {
   let cli = get_args();
 
   let res = match cli.command {
-    CliCommand::Start(cmd) => vino::commands::start::handle_command(cmd).await,
-    CliCommand::Run(cmd) => vino::commands::run::handle_command(cmd).await,
+    CliCommand::Start(cmd) => vino_cli::commands::start::handle_command(cmd).await,
+    CliCommand::Run(cmd) => vino_cli::commands::run::handle_command(cmd).await,
   };
 
   std::process::exit(match res {
