@@ -36,6 +36,8 @@ pub enum VinoError {
   SerializationError(rmp_serde::encode::Error),
   #[error("Failed to deserialize payload {0}")]
   DeserializationError(rmp_serde::decode::Error),
+  #[error("Failed to acquire a lock: {0}")]
+  LockError(&'static str),
   #[error(transparent)]
   RpcUpstreamError(#[from] tonic::Status),
   #[error(transparent)]
@@ -67,3 +69,4 @@ impl From<&'static str> for VinoError {
     VinoError::Other(e.to_string())
   }
 }
+

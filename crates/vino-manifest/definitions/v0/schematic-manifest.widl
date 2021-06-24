@@ -2,7 +2,7 @@
 "A definition for an individual Vino schematic"
 type SchematicManifest {
   "Schematic name"
-    name: string,
+  name: string @required,
 
   "A list of external components"
   external: [ExternalComponentDefinition],

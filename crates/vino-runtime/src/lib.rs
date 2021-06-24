@@ -1,5 +1,5 @@
 #![deny(
-    warnings,
+    // warnings,
     missing_debug_implementations,
     trivial_casts,
     trivial_numeric_casts,
@@ -7,7 +7,7 @@
     unstable_features,
     unused_import_braces,
     unused_qualifications,
-    unreachable_pub,
+    // unreachable_pub,
     type_alias_bounds,
     trivial_bounds,
     mutable_transmutes,
@@ -20,6 +20,49 @@
     // missing_docs
 )]
 #![warn(clippy::cognitive_complexity)]
+
+mod actix;
+
+#[macro_use]
+mod macros {
+  macro_rules! actix_try {
+    ($expr:expr $(,)?) => {
+      match $expr {
+        Ok(val) => val,
+        Err(err) => {
+          return ActorResult::reply(Err(From::from(err)));
+        }
+      }
+    };
+  }
+
+  macro_rules! try_fut {
+    ($expr:expr $(,)?) => {
+      match $expr {
+        Ok(val) => val,
+        Err(err) => {
+          return ActorResult::reply(actix::fut::ok(From::from(err)));
+        }
+      }
+    };
+  }
+
+  macro_rules! actix_bail {
+    ($expr:expr $(,)?) => {
+      match $expr {
+        Ok(val) => val,
+        Err(err) => {
+          return ActorResult::reply(err);
+        }
+      }
+    };
+  }
+  // macro_rules! actix_reply {
+  //   ($exp:expr) => {
+  //     return ActorResponse::reply($exp);
+  //   };
+  // }
+}
 
 pub mod components;
 pub(crate) mod dispatch;
@@ -43,6 +86,7 @@ pub use crate::network::{
   Network,
 };
 pub use crate::network_definition::NetworkDefinition;
+pub use crate::schematic::SchematicOutput;
 pub use crate::schematic_definition::SchematicDefinition;
 
 pub type Result<T> = std::result::Result<T, error::VinoError>;

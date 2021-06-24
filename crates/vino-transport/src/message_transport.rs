@@ -4,7 +4,6 @@ use serde::{
   Deserialize,
   Serialize,
 };
-use vino_codec::messagepack::serialize;
 use vino_component::{
   v0,
   Output,
@@ -64,20 +63,13 @@ impl From<&[u8]> for MessageTransport {
   }
 }
 
-impl<T> From<Output<T>> for MessageTransport
-where
-  T: Serialize + std::fmt::Debug,
-{
-  fn from(output: Output<T>) -> MessageTransport {
+impl From<Output> for MessageTransport {
+  fn from(output: Output) -> MessageTransport {
     match output {
       Output::V0(v) => match v {
-        v0::Payload::Serializable(v) => match serialize(v) {
-          Ok(bytes) => MessageTransport::MessagePack(bytes),
-          Err(e) => MessageTransport::Error(format!("Error serializing payload: {}", e)),
-        },
         v0::Payload::Exception(v) => MessageTransport::Exception(v),
         v0::Payload::Error(v) => MessageTransport::Error(v),
-        v0::Payload::Invalid => MessageTransport::Error("Invalid payload sent".to_string()),
+        v0::Payload::Invalid => MessageTransport::Invalid,
         v0::Payload::MessagePack(bytes) => MessageTransport::MessagePack(bytes),
       },
     }

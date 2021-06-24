@@ -49,7 +49,17 @@ message Output {
 }
 
 message ListRequest {}
-message StatsRequest {}
+message StatsRequest {
+  message Format {}
+  message Component {
+    string name = 1;
+    Format format = 2;
+  }
+  oneof kind {
+    Format all = 1;
+    Component component = 2;
+  }
+}
 
 message ListResponse {
   repeated Component component = 1;
@@ -60,11 +70,20 @@ message Component {
     string name = 1;
     string type = 2;
   }
+  enum ComponentKind {
+    Component = 0;
+    Schematic = 1;
+  }
   string name = 1;
-  repeated Port inputs = 2;
-  repeated Port outputs = 3;
+  ComponentKind kind = 2 ;
+  repeated Port inputs = 3;
+  repeated Port outputs = 4;
 }
 
 message StatsResponse {
+  repeated Statistic stats = 1;
+}
 
+message Statistic {
+  uint64 num_calls = 1;
 }

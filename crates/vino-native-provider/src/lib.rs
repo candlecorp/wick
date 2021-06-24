@@ -13,7 +13,8 @@ use vino_rpc::{
   Statistics,
 };
 mod components;
-use anyhow::anyhow;
+pub mod error;
+pub type Result<T> = std::result::Result<T, error::NativeError>;
 
 pub(crate) struct State {}
 
@@ -45,7 +46,7 @@ impl RpcHandler for Provider {
         let future = instance.job_wrapper(context, payload);
         Ok(future.await?)
       }
-      None => Err(anyhow!("Component '{}' not found", component).into()),
+      None => Err("TODO".into()),
     }
   }
 
@@ -106,7 +107,7 @@ mod tests {
   use super::*;
 
   #[test_env_log::test(tokio::test)]
-  async fn request() -> anyhow::Result<()> {
+  async fn request() -> Result<()> {
     let provider = Provider::default();
     let input = "some_input";
     let invocation_id = "INVOCATION_ID";
@@ -137,7 +138,7 @@ mod tests {
   }
 
   #[test_env_log::test(tokio::test)]
-  async fn list() -> anyhow::Result<()> {
+  async fn list() -> Result<()> {
     let provider = Provider::default();
 
     let response = provider.list_registered().await.expect("request failed");
@@ -164,7 +165,7 @@ mod tests {
   }
 
   #[test_env_log::test(tokio::test)]
-  async fn statistics() -> anyhow::Result<()> {
+  async fn statistics() -> Result<()> {
     let provider = Provider::default();
 
     let response = provider

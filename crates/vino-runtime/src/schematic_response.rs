@@ -2,7 +2,6 @@ use std::collections::HashMap;
 use std::pin::Pin;
 use std::task::Poll;
 
-use actix::prelude::*;
 use futures::Future;
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
@@ -15,8 +14,8 @@ use crate::{
   Result,
 };
 
-type SchematicOutput = HashMap<String, Option<MessageTransport>>;
-type TransactionOutputs = HashMap<(String, String), SchematicOutput>;
+type TransactionOutput = HashMap<String, Option<MessageTransport>>;
+type TransactionOutputs = HashMap<(String, String), TransactionOutput>;
 
 static SCHEMATIC_RESPONSES: Lazy<Mutex<TransactionOutputs>> =
   Lazy::new(|| Mutex::new(TransactionOutputs::new()));
@@ -64,16 +63,17 @@ pub(crate) fn initialize_schematic_output(tx_id: &str, schematic: &str, ports: V
     schematic,
     tx_id
   );
-  let mut outputs = SchematicOutput::new();
+  let mut outputs = TransactionOutput::new();
   for port in ports {
     outputs.insert(port.to_string(), None);
   }
+  trace!("Schematic output ports: {:?}", outputs);
   let mut responses = SCHEMATIC_RESPONSES.lock();
 
   responses.insert((tx_id.to_string(), schematic.to_string()), outputs);
 }
 
-pub(crate) fn get_schematic_output(tx_id: &str, schematic: &str) -> Result<SchematicResponse> {
+pub(crate) fn get_transaction_output(tx_id: &str, schematic: &str) -> Result<SchematicResponse> {
   let responses = SCHEMATIC_RESPONSES.lock();
 
   match responses.get(&(tx_id.to_string(), schematic.to_string())) {
@@ -97,10 +97,6 @@ impl SchematicResponse {
       name: name.to_string(),
     }
   }
-}
-
-impl Actor for SchematicResponse {
-  type Context = Context<Self>;
 }
 
 impl Future for SchematicResponse {

@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-use serde::Serialize;
 use tokio::sync::{
   mpsc,
   Mutex,
@@ -11,14 +10,16 @@ use tonic::{
   Response,
   Status,
 };
-use vino_codec::messagepack::serialize;
 use vino_component::Output as ComponentOutput;
 
 use crate::rpc::invocation_service_server::InvocationService;
 use crate::rpc::output_kind::Data;
 use crate::rpc::{
+  stats_request,
+  ListResponse,
   Output,
   OutputKind,
+  StatsResponse,
 };
 use crate::RpcHandler;
 pub struct InvocationServer {
@@ -42,14 +43,7 @@ impl InvocationServer {
   }
 }
 
-pub fn make_output<T>(
-  port: &str,
-  inv_id: &str,
-  payload: ComponentOutput<T>,
-) -> Result<Output, Status>
-where
-  T: Serialize + Send,
-{
+pub fn make_output(port: &str, inv_id: &str, payload: ComponentOutput) -> Result<Output, Status> {
   match payload {
     ComponentOutput::V0(v) => match v {
       vino_component::v0::Payload::Invalid => Ok(Output {
@@ -59,16 +53,6 @@ where
           data: Some(Data::Invalid(true)),
         }),
       }),
-      vino_component::v0::Payload::Serializable(value) => match serialize(value) {
-        Ok(bytes) => Ok(Output {
-          port: port.to_string(),
-          invocation_id: inv_id.to_string(),
-          payload: Some(OutputKind {
-            data: Some(Data::Messagepack(bytes)),
-          }),
-        }),
-        Err(_) => Err(Status::failed_precondition("Could not serialize payload")),
-      },
       vino_component::v0::Payload::Exception(msg) => Ok(Output {
         port: port.to_string(),
         invocation_id: inv_id.to_string(),
@@ -134,7 +118,7 @@ impl InvocationService for InvocationServer {
           }
         }
         Err(e) => {
-          tx.send(Err(Status::aborted(e.to_string()))).await.unwrap();
+          tx.send(Err(Status::internal(e.to_string()))).await.unwrap();
         }
       };
     });
@@ -144,15 +128,45 @@ impl InvocationService for InvocationServer {
 
   async fn list(
     &self,
-    request: tonic::Request<crate::rpc::ListRequest>,
+    _request: tonic::Request<crate::rpc::ListRequest>,
   ) -> Result<tonic::Response<crate::rpc::ListResponse>, tonic::Status> {
-    todo!()
+    let provider = self.provider.lock().await;
+
+    let list = provider
+      .list_registered()
+      .await
+      .map_err(|e| Status::internal(e.to_string()))?;
+
+    Ok(Response::new(ListResponse {
+      component: list.into_iter().collect(),
+    }))
   }
 
   async fn stats(
     &self,
     request: tonic::Request<crate::rpc::StatsRequest>,
   ) -> Result<tonic::Response<crate::rpc::StatsResponse>, tonic::Status> {
-    todo!()
+    let stats_request = request.get_ref();
+
+    let provider = self.provider.lock().await;
+    let kind = stats_request
+      .kind
+      .as_ref()
+      .ok_or_else(|| Status::failed_precondition("No kind given"))?;
+
+    let list = match kind {
+      stats_request::Kind::All(_format) => provider
+        .report_statistics(None)
+        .await
+        .map_err(|e| Status::internal(e.to_string()))?,
+      stats_request::Kind::Component(comp) => provider
+        .report_statistics(Some(comp.name.to_string()))
+        .await
+        .map_err(|e| Status::internal(e.to_string()))?,
+    };
+
+    Ok(Response::new(StatsResponse {
+      stats: list.into_iter().collect(),
+    }))
   }
 }

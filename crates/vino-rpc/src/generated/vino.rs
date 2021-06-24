@@ -69,7 +69,29 @@ pub struct Output {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ListRequest {}
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct StatsRequest {}
+pub struct StatsRequest {
+  #[prost(oneof = "stats_request::Kind", tags = "1, 2")]
+  pub kind: ::core::option::Option<stats_request::Kind>,
+}
+/// Nested message and enum types in `StatsRequest`.
+pub mod stats_request {
+  #[derive(Clone, PartialEq, ::prost::Message)]
+  pub struct Format {}
+  #[derive(Clone, PartialEq, ::prost::Message)]
+  pub struct Component {
+    #[prost(string, tag = "1")]
+    pub name: ::prost::alloc::string::String,
+    #[prost(message, optional, tag = "2")]
+    pub format: ::core::option::Option<Format>,
+  }
+  #[derive(Clone, PartialEq, ::prost::Oneof)]
+  pub enum Kind {
+    #[prost(message, tag = "1")]
+    All(Format),
+    #[prost(message, tag = "2")]
+    Component(Component),
+  }
+}
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ListResponse {
   #[prost(message, repeated, tag = "1")]
@@ -79,9 +101,11 @@ pub struct ListResponse {
 pub struct Component {
   #[prost(string, tag = "1")]
   pub name: ::prost::alloc::string::String,
-  #[prost(message, repeated, tag = "2")]
-  pub inputs: ::prost::alloc::vec::Vec<component::Port>,
+  #[prost(enumeration = "component::ComponentKind", tag = "2")]
+  pub kind: i32,
   #[prost(message, repeated, tag = "3")]
+  pub inputs: ::prost::alloc::vec::Vec<component::Port>,
+  #[prost(message, repeated, tag = "4")]
   pub outputs: ::prost::alloc::vec::Vec<component::Port>,
 }
 /// Nested message and enum types in `Component`.
@@ -93,9 +117,23 @@ pub mod component {
     #[prost(string, tag = "2")]
     pub r#type: ::prost::alloc::string::String,
   }
+  #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
+  #[repr(i32)]
+  pub enum ComponentKind {
+    Component = 0,
+    Schematic = 1,
+  }
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct StatsResponse {}
+pub struct StatsResponse {
+  #[prost(message, repeated, tag = "1")]
+  pub stats: ::prost::alloc::vec::Vec<Statistic>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct Statistic {
+  #[prost(uint64, tag = "1")]
+  pub num_calls: u64,
+}
 #[doc = r" Generated client implementations."]
 pub mod invocation_service_client {
   #![allow(unused_variables, dead_code, missing_docs)]

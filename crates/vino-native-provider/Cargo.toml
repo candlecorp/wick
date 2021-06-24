@@ -1,0 +1,25 @@
+[package]
+name = "vino-native-provider"
+version = "0.1.0"
+authors = ["Jarrod Overson <jsoverson@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+vino-provider = { path="../vino-provider" }
+vino-rpc = { path="../vino-rpc" }
+vino-transport = { path="../vino-transport" }
+vino-codec = { path="../vino-codec" }
+vino-component = { path="../vino-component" }
+log = "0.4.14"
+serde = { version="1.0.118", features=["derive"] }
+lazy_static = "1.4.0"
+async-trait = "0.1.50"
+futures = "0.3.15"
+tokio = { version="1.4.0", features=["macros", "rt-multi-thread"] }
+thiserror = "1.0.25"
+bcrypt = "0.10.0"
+
+[dev-dependencies]
+maplit = "1.0.2"
+test-env-log = "0.2.7"
+env_logger = "0.8.4"

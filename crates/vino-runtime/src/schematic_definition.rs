@@ -12,7 +12,7 @@ use crate::{
   Result,
 };
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct SchematicDefinition {
   pub name: String,
   pub(crate) external: Vec<ExternalComponentDefinition>,
@@ -23,7 +23,17 @@ pub struct SchematicDefinition {
 }
 
 impl SchematicDefinition {
-  pub(crate) fn new(manifest: &SchematicManifest) -> Self {
+  pub(crate) fn new(name: String) -> Self {
+    Self {
+      name,
+      external: Vec::new(),
+      components: HashMap::new(),
+      connections: Vec::new(),
+      providers: Vec::new(),
+      constraints: HashMap::new(),
+    }
+  }
+  pub(crate) fn from_manifest(manifest: &SchematicManifest) -> Self {
     match manifest {
       SchematicManifest::V0(manifest) => Self {
         name: manifest.name.clone(),
@@ -89,7 +99,7 @@ impl SchematicDefinition {
 
 impl From<vino_manifest::v0::SchematicManifest> for SchematicDefinition {
   fn from(def: vino_manifest::v0::SchematicManifest) -> Self {
-    Self::new(&vino_manifest::SchematicManifest::V0(def))
+    Self::from_manifest(&vino_manifest::SchematicManifest::V0(def))
   }
 }
 

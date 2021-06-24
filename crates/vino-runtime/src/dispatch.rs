@@ -5,8 +5,6 @@ use actix::dev::MessageResponse;
 use actix::prelude::Message;
 use actix::Actor;
 use data_encoding::HEXUPPER;
-use erased_serde::Serialize as ErasedSerialize;
-use futures::executor::block_on;
 use ring::digest::{
   Context,
   Digest,
@@ -18,10 +16,7 @@ use serde::{
 };
 use uuid::Uuid;
 use vino_codec::messagepack::serialize;
-use vino_component::{
-  v0,
-  Output,
-};
+use vino_component::Output;
 use vino_transport::MessageTransport;
 use wascap::prelude::{
   Claims,
@@ -29,11 +24,10 @@ use wascap::prelude::{
 };
 
 use crate::network::{
-  GetReference,
+  NativeOutputReady,
   Network,
   WapcOutputReady,
 };
-use crate::schematic::OutputReady;
 use crate::util::hlreg::HostLocalSystemService;
 use crate::{
   Error,
@@ -308,7 +302,7 @@ pub(crate) fn native_host_callback(
   inv_id: &str,
   namespace: &str,
   port: &str,
-  payload: &Output<Box<dyn ErasedSerialize + Send>>,
+  payload: Output,
 ) -> std::result::Result<Vec<u8>, Box<dyn ::std::error::Error + Sync + Send>> {
   trace!(
     "Native component callback [ns:{}] [port:{}] [inv:{}]",
@@ -317,52 +311,11 @@ pub(crate) fn native_host_callback(
     inv_id,
   );
   let network = Network::from_hostlocal_registry(&kp.public_key());
-
-  let payload = match payload {
-    Output::V0(v0) => match v0 {
-      v0::Payload::Invalid => MessageTransport::Invalid,
-      v0::Payload::Serializable(v) => match serialize(v) {
-        Ok(bytes) => MessageTransport::MessagePack(bytes),
-        Err(_) => MessageTransport::Error("Could not serialize payload".into()),
-      },
-      v0::Payload::Exception(msg) => MessageTransport::Exception(msg.to_owned()),
-      v0::Payload::Error(msg) => MessageTransport::Error(msg.to_owned()),
-      v0::Payload::MessagePack(bytes) => MessageTransport::MessagePack(bytes.to_owned()),
-    },
+  let msg = NativeOutputReady {
+    payload,
+    port: port.to_string(),
+    invocation_id: inv_id.to_string(),
   };
-  let get_ref = network.send(GetReference {
-    inv_id: inv_id.to_string(),
-  });
-  match block_on(async { get_ref.await })? {
-    Some((tx_id, schematic, entity)) => match entity {
-      VinoEntity::Component(e) => {
-        let port = PortEntity {
-          name: port.to_string(),
-          reference: e.reference,
-          schematic,
-        };
-        debug!(
-          "Invocation {} resolves to {} for tx {}",
-          inv_id, port, tx_id
-        );
-        let msg = OutputReady {
-          port,
-          tx_id,
-          payload,
-        };
-        network.do_send(msg);
-        Ok(vec![])
-      }
-      ent => {
-        let e = format!("Reference not implemented. {}", ent);
-        error!("{}", e);
-        Err(e.into())
-      }
-    },
-    None => {
-      let e = format!("Can not resolve invocation {}", inv_id);
-      error!("{}", e);
-      Err(e.into())
-    }
-  }
+  network.do_send(msg);
+  Ok(vec![])
 }

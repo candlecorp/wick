@@ -81,7 +81,7 @@ impl GuestPortOutput {
       &self.inv_id,
       "",
       "output",
-      &serialize(Output::V0(Payload::Serializable(payload)))?,
+      &serialize(Output::V0(Payload::to_messagepack(payload)))?,
     )
   }
   pub fn exception(&self, message: String) -> CallResult {
@@ -89,7 +89,7 @@ impl GuestPortOutput {
       &self.inv_id,
       "",
       "output",
-      &serialize(Output::V0::<String>(Payload::Exception(message)))?,
+      &serialize(Output::V0(Payload::Exception(message)))?,
     )
   }
 }

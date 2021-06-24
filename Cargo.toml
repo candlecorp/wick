@@ -40,6 +40,7 @@ members = [
   "crates/vino-codec",
   "crates/vino-manifest",
   "crates/vino-provider",
+  "crates/vino-native-provider",
   "crates/vino-provider-cli",
   "crates/test-vino-provider",
   "crates/test-wapc-component",

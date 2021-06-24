@@ -15,6 +15,7 @@ vino-component = { path="../vino-component" }
 vino-macros = { path="../vino-macros" }
 vino-manifest = { path="../vino-manifest" }
 vino-provider = { path="../vino-provider" }
+vino-native-provider = { path="../vino-native-provider" }
 vino-transport = { path="../vino-transport" }
 vino-codec = { path="../vino-codec" }
 vino-rpc = { path="../vino-rpc" }

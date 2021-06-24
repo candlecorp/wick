@@ -47,30 +47,25 @@ static ERROR_BYTES: [u8; 25] = [
 fn serializable() -> Result<()> {
   let user_data = "Hello world";
   let user_bytes = serialize(user_data)?;
-  let output = Output::V0(Payload::Serializable(user_data));
-  let output2 = Output::V0::<String>(Payload::MessagePack(user_bytes.clone()));
+  let output2 = Output::V0(Payload::MessagePack(user_bytes.clone()));
   debug!("test serializable()");
-  debug!("serializable: {:?}", output);
   debug!("messagepack: {:?}", output2);
-  let bytes = serialize(output)?;
   let bytes2 = serialize(output2)?;
-  debug!("serializable bytes: {:?}", bytes);
   debug!("messagepack bytes: {:?}", bytes2);
-  assert_eq!(bytes, bytes2);
-  let payload: Output<String> = deserialize(&STRING_BYTES)?;
+  let payload: Output = deserialize(&STRING_BYTES)?;
   assert_eq!(payload, Output::V0(Payload::MessagePack(user_bytes)));
-  assert_eq!(bytes, STRING_BYTES.to_vec());
+  assert_eq!(bytes2, STRING_BYTES.to_vec());
   Ok(())
 }
 
 #[test_env_log::test]
 fn exception() -> Result<()> {
   let user_data = "Test exception message";
-  let output = Output::V0::<String>(Payload::Exception(user_data.to_string()));
+  let output = Output::V0(Payload::Exception(user_data.to_string()));
   let bytes = serialize(output)?;
   debug!("bytes: {:?}", bytes);
   assert_eq!(bytes, EXCEPTION_BYTES.to_vec());
-  let payload: Output<String> = deserialize(&EXCEPTION_BYTES)?;
+  let payload: Output = deserialize(&EXCEPTION_BYTES)?;
   assert_eq!(
     payload,
     Output::V0(Payload::Exception(user_data.to_string()))
@@ -81,22 +76,22 @@ fn exception() -> Result<()> {
 #[test_env_log::test]
 fn error() -> Result<()> {
   let user_data = "Test error message";
-  let output = Output::V0::<String>(Payload::Error(user_data.to_string()));
+  let output = Output::V0(Payload::Error(user_data.to_string()));
   let bytes = serialize(output)?;
   debug!("bytes: {:?}", bytes);
   assert_eq!(bytes, ERROR_BYTES.to_vec());
-  let payload: Output<String> = deserialize(&ERROR_BYTES)?;
+  let payload: Output = deserialize(&ERROR_BYTES)?;
   assert_eq!(payload, Output::V0(Payload::Error(user_data.to_string())));
   Ok(())
 }
 
 #[test_env_log::test]
 fn invalid() -> Result<()> {
-  let output = Output::V0::<String>(Payload::Invalid);
+  let output = Output::V0(Payload::Invalid);
   let bytes = serialize(output)?;
   debug!("bytes: {:?}", bytes);
   // assert_eq!(bytes, ERROR_BYTES.to_vec());
-  let payload: Output<String> = deserialize(&bytes)?;
+  let payload: Output = deserialize(&bytes)?;
   assert_eq!(payload, Output::V0(Payload::Invalid));
   Ok(())
 }
@@ -106,12 +101,12 @@ fn basic_msgpack() -> Result<()> {
   let user_data = "Test error message";
   let user_bytes = serialize(user_data)?;
   debug!("user bytes: {:?}", user_bytes);
-  let output = Output::V0::<String>(Payload::MessagePack(user_bytes.clone()));
+  let output = Output::V0(Payload::MessagePack(user_bytes.clone()));
   debug!("output: {:?}", output);
   let bytes = serialize(output)?;
   debug!("bytes: {:?}", bytes);
   // assert_eq!(bytes, ERROR_BYTES.to_vec());
-  let payload: Output<Vec<u8>> = deserialize(&bytes)?;
+  let payload: Output = deserialize(&bytes)?;
   debug!("msgpack deserialized: {:?}", payload);
   assert_eq!(payload, Output::V0(Payload::MessagePack(user_bytes)));
   Ok(())
@@ -129,12 +124,35 @@ fn msgpack_struct() -> Result<()> {
   };
   let user_bytes = serialize(user_data)?;
   debug!("user bytes: {:?}", user_bytes);
-  let output = Output::V0::<String>(Payload::MessagePack(user_bytes.clone()));
+  let output = Output::V0(Payload::MessagePack(user_bytes.clone()));
   debug!("output: {:?}", output);
   let bytes = serialize(output)?;
   debug!("bytes: {:?}", bytes);
   // assert_eq!(bytes, ERROR_BYTES.to_vec());
-  let payload: Output<StructTwo> = deserialize(&bytes)?;
+  let payload: Output = deserialize(&bytes)?;
+  debug!("msgpack deserialized: {:?}", payload);
+  assert_eq!(payload, Output::V0(Payload::MessagePack(user_bytes)));
+  Ok(())
+}
+
+#[test_env_log::test]
+fn deserialize_unknown() -> Result<()> {
+  let user_data = StructOne {
+    one: 1,
+    two: "hello world".to_string(),
+    nested: StructTwo {
+      one: 32232,
+      two: "nested struct".to_string(),
+    },
+  };
+  let user_bytes = serialize(user_data)?;
+  debug!("user bytes: {:?}", user_bytes);
+  let output = Output::V0(Payload::MessagePack(user_bytes.clone()));
+  debug!("output: {:?}", output);
+  let bytes = serialize(output)?;
+  debug!("bytes: {:?}", bytes);
+  // assert_eq!(bytes, ERROR_BYTES.to_vec());
+  let payload: Output = deserialize(&bytes)?;
   debug!("msgpack deserialized: {:?}", payload);
   assert_eq!(payload, Output::V0(Payload::MessagePack(user_bytes)));
   Ok(())

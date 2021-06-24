@@ -32,7 +32,7 @@ async fn request() -> anyhow::Result<()> {
   let (port_name, output) = outputs.next().await.unwrap();
   println!("Received payload from [{}]", port_name);
   let payload: String = match output {
-    Output::V0(v0::Payload::Serializable(payload)) => deserialize(&serialize(payload)?)?,
+    Output::V0(v0::Payload::MessagePack(payload)) => deserialize(&payload)?,
     _ => None,
   }
   .unwrap();

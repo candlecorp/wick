@@ -231,7 +231,7 @@ mod test {
   }
 
   #[test_env_log::test(actix_rt::test)]
-  async fn test_init() -> Result<()> {
+  async fn test_initialize() -> Result<()> {
     let init_handle = make_grpc_server(Provider::default());
     let (tx, rx) = unbounded_channel();
     let mut rx = rx;

@@ -112,7 +112,7 @@ impl Handler<Invocation> for NativeComponentActor {
           let (port_name, msg) = next.unwrap();
           let kp = KeyPair::from_seed(&seed).unwrap();
           trace!("Native actor {} got output on port [{}]", entity, port_name);
-          let _result = native_host_callback(kp, &inv_id, "", &port_name, &msg).unwrap();
+          let _result = native_host_callback(kp, &inv_id, "", &port_name, msg).unwrap();
         }
       });
       Ok!(InvocationResponse::success(tx_id, vec![],))

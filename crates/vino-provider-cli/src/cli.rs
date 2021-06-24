@@ -57,7 +57,7 @@ mod tests {
   use crate::Result;
 
   #[test_env_log::test(tokio::test)]
-  async fn test() -> Result<()> {
+  async fn test_starts() -> Result<()> {
     let init_handle = init(
       Arc::new(Mutex::new(Provider::default())),
       Some(Options {

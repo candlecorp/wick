@@ -13,11 +13,11 @@ use vino_codec::messagepack::{
   deserialize,
   serialize,
 };
-use vino_component::v0::Payload;
 use vino_component::Output;
 use vino_transport::MessageTransport;
 
 use super::schematic::Schematic;
+use crate::actix::ActorResult;
 use crate::components::vino_component::BoxedComponent;
 use crate::components::{
   Inputs,
@@ -28,7 +28,10 @@ use crate::dispatch::{
   VinoEntity,
 };
 use crate::network_definition::NetworkDefinition;
-use crate::schematic::OutputReady;
+use crate::schematic::{
+  OutputReady,
+  SchematicOutput,
+};
 use crate::util::hlreg::HostLocalSystemService;
 use crate::{
   Error,
@@ -72,6 +75,13 @@ impl Network {
   pub fn for_id(id: &str) -> Addr<Self> {
     Network::from_hostlocal_registry(id)
   }
+  pub(crate) fn get_schematic(&self, id: &str) -> Result<Addr<Schematic>> {
+    self
+      .schematics
+      .get(id)
+      .cloned()
+      .ok_or_else(|| Error::NetworkError(format!("Schematic '{}' not found", id)))
+  }
 }
 
 impl Supervised for Network {}
@@ -93,7 +103,7 @@ pub async fn request<T: AsRef<str> + Display>(
   network: &Addr<Network>,
   schematic: &str,
   data: HashMap<T, impl Serialize>,
-) -> Result<HashMap<String, MessageTransport>> {
+) -> Result<SchematicOutput> {
   let serialized_data: HashMap<String, Vec<u8>> = data
     .iter()
     .map(|(k, v)| Ok((k.to_string(), serialize(&v)?)))
@@ -125,7 +135,7 @@ pub struct Initialize {
 }
 
 impl Handler<Initialize> for Network {
-  type Result = ResponseActFuture<Self, Result<()>>;
+  type Result = ActorResult<Self, Result<()>>;
 
   fn handle(&mut self, msg: Initialize, ctx: &mut Context<Self>) -> Self::Result {
     trace!("Network initializing on {}", msg.host_id);
@@ -159,7 +169,7 @@ impl Handler<Initialize> for Network {
       Ok!(addr_map)
     };
 
-    Box::pin(
+    ActorResult::reply_async(
       actor_fut
         .into_actor(self)
         .then(move |addr_map, network, _ctx| match addr_map {
@@ -227,18 +237,18 @@ impl Handler<OutputReady> for Network {
   }
 }
 
-#[derive(Message, Debug, Clone)]
+#[derive(Message)]
 #[rtype(result = "Result<()>")]
-pub(crate) struct WapcOutputReady {
+pub(crate) struct NativeOutputReady {
   pub(crate) port: String,
   pub(crate) invocation_id: String,
-  pub(crate) payload: Vec<u8>,
+  pub(crate) payload: Output,
 }
 
-impl Handler<WapcOutputReady> for Network {
-  type Result = ResponseActFuture<Self, Result<()>>;
+impl Handler<NativeOutputReady> for Network {
+  type Result = ActorResult<Self, Result<()>>;
 
-  fn handle(&mut self, msg: WapcOutputReady, _ctx: &mut Context<Self>) -> Self::Result {
+  fn handle(&mut self, msg: NativeOutputReady, _ctx: &mut Context<Self>) -> Self::Result {
     let metadata = self.invocation_map.get(&msg.invocation_id).cloned();
 
     let (tx_id, schematic_name, entity) = metadata.unwrap();
@@ -246,27 +256,12 @@ impl Handler<WapcOutputReady> for Network {
     let receiver = self.schematics.get(&schematic_name).cloned();
     let payload = msg.payload;
     let port = msg.port;
-    // we won't get Serializable values from WaPC, this is to satisfy serde and the typechecker.
-    type Unnecessary = String;
-    debug!("Payload: {:?}", payload);
-    let message_payload: MessageTransport = match deserialize::<Output<Unnecessary>>(&payload) {
-      Ok(payload) => match payload {
-        Output::V0(v0) => match v0 {
-          Payload::Invalid => MessageTransport::Invalid,
-          Payload::MessagePack(bytes) => MessageTransport::MessagePack(bytes),
-          Payload::Exception(msg) => MessageTransport::Exception(msg),
-          Payload::Error(msg) => MessageTransport::Error(msg),
-          Payload::Serializable(_) => MessageTransport::Invalid,
-        },
-      },
-      Err(err) => MessageTransport::Error(format!(
-        "Deserialization error for {}: {}",
-        port,
-        err.to_string()
-      )),
-    };
 
-    Box::pin(
+    // we won't get Serializable values from WaPC, this is to satisfy serde and the typechecker.
+    // debug!("Payload: {:?}", payload);
+    let message_payload = payload.into();
+
+    ActorResult::reply_async(
       async move {
         let port = PortEntity {
           name: port,
@@ -293,6 +288,40 @@ impl Handler<WapcOutputReady> for Network {
   }
 }
 
+#[derive(Message, Debug, Clone)]
+#[rtype(result = "Result<()>")]
+pub(crate) struct WapcOutputReady {
+  pub(crate) port: String,
+  pub(crate) invocation_id: String,
+  pub(crate) payload: Vec<u8>,
+}
+
+impl Handler<WapcOutputReady> for Network {
+  type Result = ActorResult<Self, Result<()>>;
+
+  fn handle(&mut self, msg: WapcOutputReady, ctx: &mut Context<Self>) -> Self::Result {
+    let invocation_id = msg.invocation_id;
+
+    let payload = msg.payload;
+    let port = msg.port;
+
+    debug!("Payload: {:?}", payload);
+    let payload: Output = actix_try!(deserialize(&payload));
+
+    let addr = ctx.address();
+    let task = async move {
+      addr
+        .send(NativeOutputReady {
+          port,
+          invocation_id,
+          payload,
+        })
+        .await?
+    };
+    ActorResult::reply_async(task.into_actor(self))
+  }
+}
+
 #[derive(Message)]
 #[rtype(result = "Result<HashMap<String, MessageTransport>>")]
 pub(crate) struct Request {
@@ -301,7 +330,7 @@ pub(crate) struct Request {
 }
 
 impl Handler<Request> for Network {
-  type Result = ResponseActFuture<Self, Result<HashMap<String, MessageTransport>>>;
+  type Result = ActorResult<Self, Result<SchematicOutput>>;
 
   fn handle(&mut self, msg: Request, _ctx: &mut Context<Self>) -> Self::Result {
     trace!("Requesting schematic '{}'", msg.schematic);
@@ -310,22 +339,19 @@ impl Handler<Request> for Network {
 
     let tx_id = uuid::Uuid::new_v4();
     trace!("Invoking schematic '{}'", schematic_name);
-    let schematic = self
-      .schematics
-      .get(&schematic_name)
-      .cloned()
-      .ok_or_else(|| Error::NetworkError(format!("Schematic '{}' not found", schematic_name)));
+    let schematic = actix_try!(self.get_schematic(&schematic_name));
 
     let request = super::schematic::Request {
       tx_id: tx_id.to_string(),
-      schematic: schematic_name,
+      schematic: schematic_name.to_string(),
       payload,
     };
 
-    Box::pin(
+    ActorResult::reply_async(
       async move {
-        let payload = schematic?.send(request).await??;
-        Ok(deserialize(&payload.payload)?)
+        let payload = schematic.send(request).await??;
+        trace!("Schematic {} finishing", schematic_name);
+        Ok(deserialize(&payload.msg)?)
       }
       .into_actor(self),
     )
@@ -401,8 +427,9 @@ mod test {
 
     let mut result = request(&network, "test", data).await?;
 
-    trace!("result: {:?}", result);
+    println!("Result: {:?}", result);
     let output: MessageTransport = result.remove("output").unwrap();
+    println!("Output: {:?}", output);
     assert_eq!(
       output,
       MessageTransport::MessagePack(serialize(42 + 302309 + 302309)?)
@@ -452,8 +479,9 @@ mod test {
 
     let mut result = request(&network, "test", data).await?;
 
-    trace!("result: {:?}", result);
+    println!("result: {:?}", result);
     let output1: MessageTransport = result.remove("output1").unwrap();
+    println!("Output: {:?}", output1);
     assert_eq!(
       output1,
       MessageTransport::Exception("Needs to be longer than 8 characters".to_string())
@@ -485,8 +513,9 @@ mod test {
 
     let mut result = request(&network, "second_schematic", data).await?;
 
-    trace!("result: {:?}", result);
+    println!("Result: {:?}", result);
     let output: MessageTransport = result.remove("output").unwrap();
+    println!("Output: {:?}", output);
     assert_eq!(
       output,
       MessageTransport::MessagePack(serialize("some string")?)

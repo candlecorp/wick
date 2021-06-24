@@ -243,7 +243,6 @@ pub struct ActorPortEntry {
 /// A definition for an individual Vino schematic
 pub struct SchematicManifest {
   /// Schematic name
-  #[serde(default)]
   pub name: String,
   /// A list of external components
   #[serde(default)]

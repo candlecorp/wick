@@ -9,8 +9,8 @@ use std::task::{
   Poll,
 };
 
-use erased_serde::Serialize;
 use futures::Stream;
+use serde::Serialize;
 use vino_component::v0::Payload as ComponentPayload;
 use vino_component::Output;
 
@@ -23,7 +23,7 @@ pub trait Sender {
 
   /// Buffer a message
   fn send(&self, data: Self::PayloadType) {
-    self.push(Output::V0(ComponentPayload::Serializable(Box::new(data))));
+    self.push(Output::V0(ComponentPayload::to_messagepack(data)));
   }
 
   /// Buffer a message then close the port
@@ -33,21 +33,21 @@ pub trait Sender {
   }
 
   /// Buffer a complete Output message then close the port
-  fn push(&self, output: Output<Box<dyn Serialize + Send>>) {
+  fn push(&self, output: Output) {
     let port = self.get_port();
     let mut port = port.lock().unwrap();
     port.buffer.push_back(output);
   }
 
   /// Buffer a payload
-  fn send_message(&self, payload: ComponentPayload<Box<dyn Serialize + Send>>) {
+  fn send_message(&self, payload: ComponentPayload) {
     let port = self.get_port();
     let mut port = port.lock().unwrap();
     port.buffer.push_back(Output::V0(payload));
   }
 
   /// Buffer a payload then close the port
-  fn done_message(&self, payload: ComponentPayload<Box<dyn Serialize + Send>>) {
+  fn done_message(&self, payload: ComponentPayload) {
     self.send_message(payload);
     self.close();
   }
@@ -75,7 +75,7 @@ pub trait Sender {
 
 pub struct Port {
   name: String,
-  buffer: VecDeque<Output<Box<dyn Serialize + Send>>>,
+  buffer: VecDeque<Output>,
   status: PortStatus,
 }
 
@@ -129,7 +129,7 @@ impl Receiver {
 }
 
 impl Stream for Receiver {
-  type Item = (String, Output<Box<dyn Serialize + Send>>);
+  type Item = (String, Output);
 
   fn poll_next(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
     let mut all_closed = true;
@@ -152,13 +152,13 @@ impl Stream for Receiver {
   }
 }
 
-#[cfg(test)]
-mod tests {
+// #[cfg(test)]
+// mod tests {
 
-  use crate::Result;
+//   use crate::Result;
 
-  #[test_env_log::test(tokio::test)]
-  async fn test() -> Result<()> {
-    Ok(())
-  }
-}
+//   #[test_env_log::test(tokio::test)]
+//   async fn test() -> Result<()> {
+//     Ok(())
+//   }
+// }
