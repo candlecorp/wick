@@ -1,7 +1,6 @@
 use std::path::Path;
 
 pub mod grpc_url_provider;
-pub mod native_component_actor;
 pub mod native_provider;
 pub mod provider_component;
 pub mod vino_component;
@@ -16,9 +15,7 @@ use vino_rpc::{
   Statistics,
 };
 
-use self::native_provider::NativeProvider;
 use self::vino_component::WapcComponent;
-use crate::actix::ActorResult;
 use crate::{
   Invocation,
   Result,
@@ -52,7 +49,6 @@ pub async fn load_wasm(
 }
 
 #[derive(Debug)]
-// #[rtype(result = "Result<ProviderResponse>")]
 pub(crate) enum ProviderMessage {
   Invoke(Invocation),
   List(ListRequest),
@@ -71,24 +67,28 @@ pub(crate) struct StatsRequest {}
 #[derive(Debug)]
 pub(crate) enum ProviderResponse {
   InvocationResponse,
-  ListResponse(Vec<HostedType>),
-  StatsResponse(Vec<Statistics>),
+  List(Vec<HostedType>),
+  Stats(Vec<Statistics>),
 }
 
 impl ProviderResponse {
-  pub fn into_list_response(self) -> Result<Vec<HostedType>> {
+  pub(crate) fn into_list_response(self) -> Result<Vec<HostedType>> {
     match self {
-      ProviderResponse::ListResponse(v) => Ok(v),
-      _ => Err(crate::error::VinoError::ConversionError),
+      ProviderResponse::List(v) => Ok(v),
+      _ => Err(crate::error::VinoError::ConversionError(
+        "into_list_response",
+      )),
     }
   }
-  pub fn into_stats_response(self) -> Result<Vec<Statistics>> {
+  pub(crate) fn into_stats_response(self) -> Result<Vec<Statistics>> {
     match self {
-      ProviderResponse::StatsResponse(v) => Ok(v),
-      _ => Err(crate::error::VinoError::ConversionError),
+      ProviderResponse::Stats(v) => Ok(v),
+      _ => Err(crate::error::VinoError::ConversionError(
+        "into_stats_response",
+      )),
     }
   }
-  pub fn into_invocation_response(self) -> Result<()> {
+  pub(crate) fn into_invocation_response(self) -> Result<()> {
     todo!()
   }
 }

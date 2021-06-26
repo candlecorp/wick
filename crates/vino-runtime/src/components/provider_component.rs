@@ -1,35 +1,25 @@
 use std::sync::Arc;
 
-use actix::fut::{
-  err,
-  ok,
-};
 use actix::prelude::*;
-use futures::{
-  FutureExt,
-  StreamExt,
-  TryFutureExt,
-};
-use nkeys::KeyPair;
+use futures::StreamExt;
+use tokio::sync::mpsc::unbounded_channel;
 use tokio::sync::Mutex;
 use vino_rpc::RpcHandler;
 
 use crate::actix::ActorResult;
-use crate::dispatch::{
-  native_host_callback,
-  InvocationResponse,
-};
+use crate::schematic::NativeOutputReady;
 use crate::{
-  error,
-  native_actors,
   Invocation,
+  InvocationResponse,
   Result,
 };
 
-#[derive(Default)]
+#[derive(Derivative, Default)]
+#[derivative(Debug)]
 pub struct ProviderComponent {
   name: String,
   seed: String,
+  #[derivative(Debug = "ignore")]
   state: Option<State>,
 }
 
@@ -37,21 +27,11 @@ struct State {
   provider: Arc<Mutex<dyn RpcHandler>>,
 }
 
-impl std::fmt::Debug for ProviderComponent {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    f.debug_struct("ProviderComponent")
-      .field("component", &Some("<removed>".to_string()))
-      .field("name", &self.name)
-      .field("seed", &self.seed)
-      .finish()
-  }
-}
-
 impl Actor for ProviderComponent {
   type Context = Context<Self>;
 
   fn started(&mut self, _ctx: &mut Self::Context) {
-    trace!("Native actor started");
+    trace!("Provider component started");
   }
 
   fn stopped(&mut self, _ctx: &mut Self::Context) {}
@@ -69,7 +49,7 @@ impl Handler<Initialize> for ProviderComponent {
   type Result = Result<()>;
 
   fn handle(&mut self, msg: Initialize, _ctx: &mut Self::Context) -> Self::Result {
-    trace!("ProviderComponent initialized");
+    trace!("ProviderComponent initialized for {}", msg.name);
     self.name = msg.name;
     self.seed = msg.seed;
     self.state = Some(State {
@@ -94,11 +74,11 @@ impl Handler<Invocation> for ProviderComponent {
       .into_multibytes()
       .map_err(|_e| InvocationResponse::error(tx_id.clone(), "Sent invalid payload".to_string())));
     let name = component.name;
-    let seed = self.seed.clone();
     let inv_id = msg.id;
 
     let request = async move {
       let provider = provider.lock().await;
+      let invocation_id = inv_id.clone();
       let receiver = provider
         .request(inv_id.clone(), name.clone(), message)
         .await;
@@ -109,6 +89,7 @@ impl Handler<Invocation> for ProviderComponent {
         );
       }
       let mut receiver = receiver.unwrap();
+      let (tx, rx) = unbounded_channel();
       actix::spawn(async move {
         loop {
           trace!("Provider component {} waiting for output", name);
@@ -118,12 +99,23 @@ impl Handler<Invocation> for ProviderComponent {
           }
 
           let (port_name, msg) = next.unwrap();
-          let kp = KeyPair::from_seed(&seed).unwrap();
           trace!("Native actor {} got output on port [{}]", name, port_name);
-          let _result = native_host_callback(kp, &inv_id, "", &port_name, msg).unwrap();
+          match tx.send(NativeOutputReady {
+            port: port_name.to_string(),
+            payload: msg,
+            invocation_id: invocation_id.to_string(),
+          }) {
+            Ok(_) => {
+              trace!("Sent output to port '{}' ", port_name);
+            }
+            Err(e) => {
+              error!("Error sending output on channel {}", e.to_string());
+              break;
+            }
+          }
         }
       });
-      InvocationResponse::success(tx_id, vec![])
+      InvocationResponse::stream(tx_id, rx)
     };
     ActorResult::reply_async(request.into_actor(self))
   }
@@ -139,7 +131,6 @@ mod test {
   use vino_transport::MessageTransport;
 
   use super::*;
-  use crate::components::ListRequest;
   use crate::dispatch::ComponentEntity;
   use crate::{
     Invocation,
@@ -147,14 +138,13 @@ mod test {
   };
 
   #[test_env_log::test(actix_rt::test)]
-  async fn test_native_provider_list() -> Result<()> {
+  async fn test_provider_component() -> Result<()> {
     let provider_component = ProviderComponent::default();
     let addr = provider_component.start();
     let provider = Provider::default();
 
     let hostkey = KeyPair::new_server();
     let host_id = KeyPair::new_server().public_key();
-    let tx_id = Invocation::uuid();
     let namespace = "test-namespace";
 
     addr
@@ -183,8 +173,11 @@ mod test {
         host_id,
       })
       .await?;
-
-    println!("response: {:?}", response);
+    let (_, mut rx) = response.to_stream()?;
+    let next: NativeOutputReady = rx.recv().await.unwrap();
+    let payload: String = next.payload.try_into()?;
+    println!("response: {:?}", payload);
+    assert_eq!(user_data, payload);
 
     Ok(())
   }

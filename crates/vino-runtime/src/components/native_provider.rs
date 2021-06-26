@@ -22,23 +22,18 @@ impl Default for NativeProvider {
   }
 }
 
+#[derive(Derivative)]
+#[derivative(Debug)]
 struct State {
-  provider: Box<dyn RpcHandler>,
-}
-
-impl std::fmt::Debug for State {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    f.debug_struct("Receiver")
-      .field("provider", &"<skipped>".to_string())
-      .finish()
-  }
+  #[derivative(Debug = "ignore")]
+  provider: Arc<Mutex<dyn RpcHandler>>,
 }
 
 impl Actor for NativeProvider {
   type Context = Context<Self>;
 
   fn started(&mut self, _ctx: &mut Self::Context) {
-    trace!("Native actor started");
+    trace!("Native provider actor started");
   }
 
   fn stopped(&mut self, _ctx: &mut Self::Context) {}
@@ -48,17 +43,16 @@ impl Actor for NativeProvider {
 #[rtype(result = "Result<()>")]
 pub(crate) struct Initialize {
   pub(crate) name: String,
-  pub(crate) host_id: String,
-  pub(crate) seed: String,
+  pub(crate) provider: Arc<Mutex<dyn RpcHandler>>,
 }
 
 impl Handler<Initialize> for NativeProvider {
   type Result = Result<()>;
 
-  fn handle(&mut self, _msg: Initialize, _ctx: &mut Self::Context) -> Self::Result {
-    trace!("Native actor initialized");
+  fn handle(&mut self, msg: Initialize, _ctx: &mut Self::Context) -> Self::Result {
+    trace!("Native provider initialized for '{}'", msg.name);
     self.state = Some(Arc::new(Mutex::new(State {
-      provider: Box::new(vino_native_provider::Provider::default()),
+      provider: msg.provider,
     })));
     Ok(())
   }
@@ -72,14 +66,18 @@ impl Handler<ProviderMessage> for NativeProvider {
 
     let task = async move {
       let state = state.lock().await;
+      let provider = state.provider.as_ref().lock().await;
       returns!(ProviderResponse);
       match msg {
         ProviderMessage::Invoke(_invocation) => todo!(),
         ProviderMessage::List(_req) => {
-          let list = state.provider.list_registered().await?;
-          Ok(ProviderResponse::ListResponse(list))
+          let list = provider.list_registered().await?;
+          Ok(ProviderResponse::List(list))
         }
-        ProviderMessage::Statistics(_req) => todo!(),
+        ProviderMessage::Statistics(_req) => {
+          let stats = provider.report_statistics(None).await?;
+          Ok(ProviderResponse::Stats(stats))
+        }
       }
     };
     ActorResult::reply_async(task.into_actor(self))
@@ -89,26 +87,18 @@ impl Handler<ProviderMessage> for NativeProvider {
 #[cfg(test)]
 mod test {
 
-  use nkeys::KeyPair;
-
   use super::*;
   use crate::components::ListRequest;
-  use crate::Invocation;
 
   #[test_env_log::test(actix_rt::test)]
   async fn test_native_provider_list() -> Result<()> {
     let provider = NativeProvider::default();
     let addr = provider.start();
 
-    let hostkey = KeyPair::new_server();
-    let host_id = KeyPair::new_server().public_key();
-    let tx_id = Invocation::uuid();
-
     addr
       .send(Initialize {
         name: "native-provider".to_string(),
-        host_id: host_id.to_string(),
-        seed: hostkey.seed()?,
+        provider: Arc::new(Mutex::new(vino_native_provider::Provider::default())),
       })
       .await??;
 

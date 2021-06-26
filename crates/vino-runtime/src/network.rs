@@ -9,33 +9,18 @@ use actix::fut::{
 use actix::prelude::*;
 use futures::future::try_join_all;
 use serde::Serialize;
-use vino_codec::messagepack::{
-  deserialize,
-  serialize,
-};
-use vino_component::Output;
+use vino_codec::messagepack::serialize;
 use vino_transport::MessageTransport;
 
 use super::schematic::Schematic;
 use crate::actix::ActorResult;
-use crate::components::vino_component::BoxedComponent;
-use crate::components::{
-  Inputs,
-  Outputs,
-};
-use crate::dispatch::{
-  PortEntity,
-  VinoEntity,
-};
+use crate::component_model::ComponentModel;
 use crate::network_definition::NetworkDefinition;
-use crate::schematic::{
-  OutputReady,
-  SchematicOutput,
-};
+use crate::schematic::SchematicOutput;
 use crate::util::hlreg::HostLocalSystemService;
 use crate::{
   Error,
-  Invocation,
+  InvocationResponse,
   Result,
 };
 
@@ -47,11 +32,9 @@ pub struct Network {
   // started: std::time::Instant,
   allow_latest: bool,
   allowed_insecure: Vec<String>,
-  registry: ComponentRegistry,
   host_id: String,
   schematics: HashMap<String, Addr<Schematic>>,
   definition: NetworkDefinition,
-  invocation_map: HashMap<String, (String, String, VinoEntity)>,
 }
 
 impl Default for Network {
@@ -62,15 +45,12 @@ impl Default for Network {
       // started: std::time::Instant::now(),
       allow_latest: false,
       allowed_insecure: vec![],
-      registry: ComponentRegistry::default(),
       host_id: "".to_string(),
       schematics: HashMap::new(),
       definition: NetworkDefinition::default(),
-      invocation_map: HashMap::new(),
     }
   }
 }
-
 impl Network {
   pub fn for_id(id: &str) -> Addr<Self> {
     Network::from_hostlocal_registry(id)
@@ -154,9 +134,10 @@ impl Handler<Initialize> for Network {
       let mut addr_map = HashMap::new();
 
       for definition in schematics {
-        let schematic = Schematic::default().start();
-        addr_map.insert(definition.get_name(), schematic.clone());
-        init_requests.push(schematic.send(super::schematic::Initialize {
+        let arbiter = Arbiter::new();
+        let addr = Schematic::start_in_arbiter(&arbiter.handle(), |_| Schematic::default());
+        addr_map.insert(definition.get_name(), addr.clone());
+        init_requests.push(addr.send(super::schematic::Initialize {
           network: network_addr.clone(),
           host_id: host_id.to_string(),
           seed: seed.clone(),
@@ -186,142 +167,6 @@ impl Handler<Initialize> for Network {
   }
 }
 
-#[derive(Message, Debug, Clone)]
-#[rtype(result = "Option<(String, String, VinoEntity)>")]
-pub(crate) struct GetReference {
-  pub(crate) inv_id: String,
-}
-
-impl Handler<GetReference> for Network {
-  type Result = Option<(String, String, VinoEntity)>;
-
-  fn handle(&mut self, msg: GetReference, _ctx: &mut Context<Self>) -> Self::Result {
-    self.invocation_map.get(&msg.inv_id).cloned()
-  }
-}
-
-#[derive(Message)]
-#[rtype(result = "()")]
-pub(crate) struct RecordInvocationState {
-  pub(crate) inv_id: String,
-  pub(crate) tx_id: String,
-  pub(crate) schematic: String,
-  pub(crate) entity: VinoEntity,
-}
-
-impl Handler<RecordInvocationState> for Network {
-  type Result = ();
-
-  fn handle(&mut self, msg: RecordInvocationState, _ctx: &mut Context<Self>) -> Self::Result {
-    self
-      .invocation_map
-      .insert(msg.inv_id, (msg.tx_id, msg.schematic, msg.entity));
-  }
-}
-
-impl Handler<OutputReady> for Network {
-  type Result = ResponseActFuture<Self, Result<()>>;
-
-  fn handle(&mut self, msg: OutputReady, _ctx: &mut Context<Self>) -> Self::Result {
-    let schematic_name = msg.port.schematic.to_string();
-    let receiver = self.schematics.get(&schematic_name).cloned();
-    Box::pin(
-      async move {
-        match receiver {
-          Some(schematic) => Ok(schematic.send(msg).await??),
-          None => Err(Error::NetworkError("Failed to propagate output".into())),
-        }
-      }
-      .into_actor(self),
-    )
-  }
-}
-
-#[derive(Message)]
-#[rtype(result = "Result<()>")]
-pub(crate) struct NativeOutputReady {
-  pub(crate) port: String,
-  pub(crate) invocation_id: String,
-  pub(crate) payload: Output,
-}
-
-impl Handler<NativeOutputReady> for Network {
-  type Result = ActorResult<Self, Result<()>>;
-
-  fn handle(&mut self, msg: NativeOutputReady, _ctx: &mut Context<Self>) -> Self::Result {
-    let metadata = self.invocation_map.get(&msg.invocation_id).cloned();
-
-    let (tx_id, schematic_name, entity) = metadata.unwrap();
-
-    let receiver = self.schematics.get(&schematic_name).cloned();
-    let payload = msg.payload;
-    let port = msg.port;
-
-    // we won't get Serializable values from WaPC, this is to satisfy serde and the typechecker.
-    // debug!("Payload: {:?}", payload);
-    let message_payload = payload.into();
-
-    ActorResult::reply_async(
-      async move {
-        let port = PortEntity {
-          name: port,
-          reference: entity.into_component()?.reference,
-          schematic: schematic_name,
-        };
-        match receiver {
-          Some(schematic) => Ok(
-            schematic
-              .send(OutputReady {
-                port,
-                tx_id,
-                payload: message_payload,
-              })
-              .await??,
-          ),
-          None => Err(Error::NetworkError(
-            "Failed to propagate WASM component output".into(),
-          )),
-        }
-      }
-      .into_actor(self),
-    )
-  }
-}
-
-#[derive(Message, Debug, Clone)]
-#[rtype(result = "Result<()>")]
-pub(crate) struct WapcOutputReady {
-  pub(crate) port: String,
-  pub(crate) invocation_id: String,
-  pub(crate) payload: Vec<u8>,
-}
-
-impl Handler<WapcOutputReady> for Network {
-  type Result = ActorResult<Self, Result<()>>;
-
-  fn handle(&mut self, msg: WapcOutputReady, ctx: &mut Context<Self>) -> Self::Result {
-    let invocation_id = msg.invocation_id;
-
-    let payload = msg.payload;
-    let port = msg.port;
-
-    debug!("Payload: {:?}", payload);
-    let payload: Output = actix_try!(deserialize(&payload));
-
-    let addr = ctx.address();
-    let task = async move {
-      addr
-        .send(NativeOutputReady {
-          port,
-          invocation_id,
-          payload,
-        })
-        .await?
-    };
-    ActorResult::reply_async(task.into_actor(self))
-  }
-}
-
 #[derive(Message)]
 #[rtype(result = "Result<HashMap<String, MessageTransport>>")]
 pub(crate) struct Request {
@@ -339,7 +184,7 @@ impl Handler<Request> for Network {
 
     let tx_id = uuid::Uuid::new_v4();
     trace!("Invoking schematic '{}'", schematic_name);
-    let schematic = actix_try!(self.get_schematic(&schematic_name));
+    let schematic = meh_actix!(self.get_schematic(&schematic_name));
 
     let request = super::schematic::Request {
       tx_id: tx_id.to_string(),
@@ -349,41 +194,33 @@ impl Handler<Request> for Network {
 
     ActorResult::reply_async(
       async move {
-        let payload = schematic.send(request).await??;
+        let payload: InvocationResponse = schematic.send(request).await??;
         trace!("Schematic {} finishing", schematic_name);
-        Ok(deserialize(&payload.msg)?)
+        match payload {
+          InvocationResponse::Success { msg, .. } => match msg {
+            MessageTransport::Invalid => todo!(),
+            MessageTransport::Exception(_) => todo!(),
+            MessageTransport::Error(_) => todo!(),
+            MessageTransport::MessagePack(_) => todo!(),
+            MessageTransport::MultiBytes(map) => Ok(
+              map
+                .into_iter()
+                .map(|(name, payload)| (name, From::from(&payload)))
+                .collect(),
+            ),
+            MessageTransport::Test(_) => todo!(),
+            MessageTransport::OutputMap(map) => Ok(map),
+          },
+          InvocationResponse::Stream { .. } => todo!(),
+          InvocationResponse::Error { msg, .. } => Err(Error::ExecutionError(msg)),
+        }
       }
       .into_actor(self),
     )
   }
 }
 
-#[derive(Default, Clone)]
-pub struct ComponentRegistry {
-  pub(crate) components: HashMap<String, BoxedComponent>,
-  pub(crate) receivers: HashMap<String, Recipient<Invocation>>,
-}
-
-impl std::fmt::Debug for ComponentRegistry {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    f.debug_struct("ComponentRegistry")
-      .field("components", &self.components.keys())
-      .field("receivers", &self.receivers.keys())
-      .finish()
-  }
-}
-
-#[derive(Debug, Clone)]
-pub struct ComponentMetadata {
-  pub name: String,
-  pub inputs: Inputs,
-  pub outputs: Outputs,
-  pub addr: Recipient<Invocation>,
-}
-
-pub type MetadataMap = HashMap<String, ComponentMetadata>;
-
-impl ComponentRegistry {}
+pub type MetadataMap = HashMap<String, ComponentModel>;
 
 #[cfg(test)]
 mod test {

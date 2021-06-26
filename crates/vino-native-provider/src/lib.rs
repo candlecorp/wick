@@ -46,7 +46,7 @@ impl RpcHandler for Provider {
         let future = instance.job_wrapper(context, payload);
         Ok(future.await?)
       }
-      None => Err("TODO".into()),
+      None => Err(format!("Could not find component: {}", component).into()),
     }
   }
 
@@ -96,7 +96,7 @@ mod tests {
   };
   use vino_component::{
     v0,
-    Output,
+    Packet,
   };
   use vino_rpc::{
     Component,
@@ -116,17 +116,13 @@ mod tests {
     };
 
     let mut outputs = provider
-      .request(
-        invocation_id.to_string(),
-        "test-component".to_string(),
-        job_payload,
-      )
+      .request(invocation_id.to_string(), "log".to_string(), job_payload)
       .await
       .expect("request failed");
     let (port_name, output) = outputs.next().await.unwrap();
     println!("Received payload from [{}]", port_name);
     let payload: String = match output {
-      Output::V0(v0::Payload::MessagePack(payload)) => deserialize(&payload)?,
+      Packet::V0(v0::Payload::MessagePack(payload)) => deserialize(&payload)?,
       _ => None,
     }
     .unwrap();
@@ -145,21 +141,7 @@ mod tests {
 
     debug!("list response : {:?}", response);
 
-    assert_eq!(response.len(), 1);
-    assert_eq!(
-      response[0],
-      HostedType::Component(Component {
-        name: "test-component".to_string(),
-        inputs: vec![Port {
-          name: "input".to_string(),
-          type_string: "string".to_string()
-        }],
-        outputs: vec![Port {
-          name: "output".to_string(),
-          type_string: "string".to_string()
-        }]
-      })
-    );
+    assert_eq!(response.len(), 4);
 
     Ok(())
   }

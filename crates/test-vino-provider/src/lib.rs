@@ -95,7 +95,7 @@ mod tests {
   };
   use vino_component::{
     v0,
-    Output,
+    Packet,
   };
   use vino_rpc::{
     Component,
@@ -125,7 +125,7 @@ mod tests {
     let (port_name, output) = outputs.next().await.unwrap();
     println!("Received payload from [{}]", port_name);
     let payload: String = match output {
-      Output::V0(v0::Payload::MessagePack(payload)) => deserialize(&payload)?,
+      Packet::V0(v0::Payload::MessagePack(payload)) => deserialize(&payload)?,
       _ => None,
     }
     .unwrap();

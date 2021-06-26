@@ -12,7 +12,7 @@ use std::task::{
 use futures::Stream;
 use serde::Serialize;
 use vino_component::v0::Payload as ComponentPayload;
-use vino_component::Output;
+use vino_component::Packet;
 
 pub trait Sender {
   /// The type of data that the port outputs
@@ -23,7 +23,7 @@ pub trait Sender {
 
   /// Buffer a message
   fn send(&self, data: Self::PayloadType) {
-    self.push(Output::V0(ComponentPayload::to_messagepack(data)));
+    self.push(Packet::V0(ComponentPayload::to_messagepack(data)));
   }
 
   /// Buffer a message then close the port
@@ -33,22 +33,22 @@ pub trait Sender {
   }
 
   /// Buffer a complete Output message then close the port
-  fn push(&self, output: Output) {
+  fn push(&self, output: Packet) {
     let port = self.get_port();
     let mut port = port.lock().unwrap();
     port.buffer.push_back(output);
   }
 
   /// Buffer a payload
-  fn send_message(&self, payload: ComponentPayload) {
+  fn send_message(&self, packet: Packet) {
     let port = self.get_port();
     let mut port = port.lock().unwrap();
-    port.buffer.push_back(Output::V0(payload));
+    port.buffer.push_back(packet);
   }
 
   /// Buffer a payload then close the port
-  fn done_message(&self, payload: ComponentPayload) {
-    self.send_message(payload);
+  fn done_message(&self, packet: Packet) {
+    self.send_message(packet);
     self.close();
   }
 
@@ -58,7 +58,7 @@ pub trait Sender {
     let mut port = port.lock().unwrap();
     port
       .buffer
-      .push_back(Output::V0(ComponentPayload::Error(payload)));
+      .push_back(Packet::V0(ComponentPayload::Error(payload)));
   }
 
   /// Buffer an exception then close the port
@@ -75,14 +75,14 @@ pub trait Sender {
 
 pub struct Port {
   name: String,
-  buffer: VecDeque<Output>,
+  buffer: VecDeque<Packet>,
   status: PortStatus,
 }
 
 impl Port {
-  pub fn new(name: &str) -> Self {
+  pub fn new(name: String) -> Self {
     Self {
-      name: name.to_string(),
+      name,
       buffer: VecDeque::new(),
       status: PortStatus::Open,
     }
@@ -91,6 +91,7 @@ impl Port {
     self.status == PortStatus::Closed
   }
   pub fn close(&mut self) {
+    trace!("Port {} is closing", self.name);
     self.status = PortStatus::Closed;
   }
 }
@@ -129,7 +130,7 @@ impl Receiver {
 }
 
 impl Stream for Receiver {
-  type Item = (String, Output);
+  type Item = (String, Packet);
 
   fn poll_next(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
     let mut all_closed = true;
@@ -145,6 +146,7 @@ impl Stream for Receiver {
       }
     }
     if all_closed {
+      trace!("Port stream is shutting down");
       Poll::Ready(None)
     } else {
       Poll::Pending

@@ -14,21 +14,15 @@ use serde::{
   Deserialize,
   Serialize,
 };
+use tokio::sync::mpsc::UnboundedReceiver;
 use uuid::Uuid;
-use vino_codec::messagepack::serialize;
-use vino_component::Output;
 use vino_transport::MessageTransport;
 use wascap::prelude::{
   Claims,
   KeyPair,
 };
 
-use crate::network::{
-  NativeOutputReady,
-  Network,
-  WapcOutputReady,
-};
-use crate::util::hlreg::HostLocalSystemService;
+use crate::schematic::NativeOutputReady;
 use crate::{
   Error,
   Result,
@@ -61,29 +55,66 @@ where
   }
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[doc(hidden)]
-pub struct InvocationResponse {
-  pub tx_id: String,
-  pub msg: Vec<u8>,
+#[derive(Debug)]
+pub enum InvocationResponse {
+  Success {
+    tx_id: String,
+    msg: MessageTransport,
+  },
+  Stream {
+    tx_id: String,
+    rx: UnboundedReceiver<NativeOutputReady>,
+  },
+  Error {
+    tx_id: String,
+    msg: String,
+  },
 }
 
 impl InvocationResponse {
-  /// Creates a successful invocation response. All invocation responses contain the
-  /// invocation ID to which they correlate
-  pub fn success(tx_id: String, payload: Vec<u8>) -> InvocationResponse {
-    InvocationResponse {
-      tx_id,
-      msg: payload,
-    }
+  /// Creates a successful invocation response stream. Response include the receiving end
+  /// of an unbounded channel to listen for future output.
+  pub fn stream(tx_id: String, rx: UnboundedReceiver<NativeOutputReady>) -> InvocationResponse {
+    InvocationResponse::Stream { tx_id, rx }
+  }
+
+  /// Creates a successful invocation response. Successful invocations include the payload for an
+  /// invocation
+  pub fn success(tx_id: String, msg: MessageTransport) -> InvocationResponse {
+    InvocationResponse::Success { tx_id, msg }
   }
 
   /// Creates an error response
   pub fn error(tx_id: String, msg: String) -> InvocationResponse {
-    let payload = serialize(msg).unwrap();
-    InvocationResponse {
-      msg: payload,
-      tx_id,
+    InvocationResponse::Error { tx_id, msg }
+  }
+
+  pub fn tx_id(&self) -> &str {
+    match self {
+      InvocationResponse::Stream { tx_id, .. } => tx_id,
+      InvocationResponse::Success { tx_id, .. } => tx_id,
+      InvocationResponse::Error { tx_id, .. } => tx_id,
+    }
+  }
+
+  pub fn to_stream(self) -> Result<(String, UnboundedReceiver<NativeOutputReady>)> {
+    match self {
+      InvocationResponse::Stream { tx_id, rx } => Ok((tx_id, rx)),
+      _ => Err(crate::Error::ConversionError("to_stream")),
+    }
+  }
+
+  pub fn to_success(self) -> Result<(String, MessageTransport)> {
+    match self {
+      InvocationResponse::Success { tx_id, msg } => Ok((tx_id, msg)),
+      _ => Err(crate::Error::ConversionError("to_success")),
+    }
+  }
+
+  pub fn to_error(self) -> Result<(String, String)> {
+    match self {
+      InvocationResponse::Error { tx_id, msg } => Ok((tx_id, msg)),
+      _ => Err(crate::Error::ConversionError("to_error")),
     }
   }
 }
@@ -96,7 +127,7 @@ where
   fn handle(self, _: &mut A::Context, tx: Option<actix::dev::OneshotSender<Self>>) {
     if let Some(tx) = tx {
       if let Err(e) = tx.send(self) {
-        error!("InvocationResponse can't be sent : {:?}", e.msg);
+        error!("InvocationResponse can't be sent for tx_id {}", e.tx_id());
       }
     }
   }
@@ -159,6 +190,14 @@ pub(crate) fn invocation_hash(
     }
     MessageTransport::Test(v) => cleanbytes.write_all(v.as_bytes()).unwrap(),
     MessageTransport::Invalid => cleanbytes.write_all(&[0, 0, 0, 0, 0]).unwrap(),
+    MessageTransport::OutputMap(map) => {
+      for (key, val) in map {
+        cleanbytes.write_all(key.as_bytes()).unwrap();
+        cleanbytes
+          .write_all(invocation_hash(origin_url, target_url, val).as_bytes())
+          .unwrap();
+      }
+    }
   }
   let digest = sha256_digest(cleanbytes.as_slice()).unwrap();
   HEXUPPER.encode(digest.as_ref())
@@ -247,14 +286,14 @@ impl VinoEntity {
   pub fn into_provider(self) -> Result<String> {
     match self {
       VinoEntity::Provider(s) => Ok(s),
-      _ => Err(Error::ConversionError),
+      _ => Err(Error::ConversionError("into_provider")),
     }
   }
 
   pub fn into_component(self) -> Result<ComponentEntity> {
     match self {
       VinoEntity::Component(s) => Ok(s),
-      _ => Err(Error::ConversionError),
+      _ => Err(Error::ConversionError("into_component")),
     }
   }
 }
@@ -266,56 +305,18 @@ pub struct PortEntity {
   pub name: String,
 }
 
-impl Display for PortEntity {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    write!(f, "{}::{}[{}]", self.schematic, self.reference, self.name)
+impl PortEntity {
+  pub fn new(schematic: String, reference: String, name: String) -> Self {
+    Self {
+      schematic,
+      reference,
+      name,
+    }
   }
 }
 
-pub(crate) fn wapc_host_callback(
-  kp: KeyPair,
-  claims: Claims<wascap::jwt::Actor>,
-  inv_id: &str,
-  namespace: &str,
-  port: &str,
-  payload: &[u8],
-) -> std::result::Result<Vec<u8>, Box<dyn ::std::error::Error + Sync + Send>> {
-  trace!(
-    "Guest {} invoking {}:{} (id:{})",
-    claims.subject,
-    namespace,
-    port,
-    inv_id
-  );
-  let network = Network::from_hostlocal_registry(&kp.public_key());
-  let msg = WapcOutputReady {
-    payload: payload.to_vec(),
-    port: port.to_string(),
-    invocation_id: inv_id.to_string(),
-  };
-  network.do_send(msg);
-  Ok(vec![])
-}
-
-pub(crate) fn native_host_callback(
-  kp: KeyPair,
-  inv_id: &str,
-  namespace: &str,
-  port: &str,
-  payload: Output,
-) -> std::result::Result<Vec<u8>, Box<dyn ::std::error::Error + Sync + Send>> {
-  trace!(
-    "Native component callback [ns:{}] [port:{}] [inv:{}]",
-    namespace,
-    port,
-    inv_id,
-  );
-  let network = Network::from_hostlocal_registry(&kp.public_key());
-  let msg = NativeOutputReady {
-    payload,
-    port: port.to_string(),
-    invocation_id: inv_id.to_string(),
-  };
-  network.do_send(msg);
-  Ok(vec![])
+impl Display for PortEntity {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    write!(f, "{}/{}[{}]", self.schematic, self.reference, self.name)
+  }
 }

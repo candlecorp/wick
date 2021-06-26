@@ -7,7 +7,7 @@
     unstable_features,
     unused_import_braces,
     unused_qualifications,
-    // unreachable_pub,
+    unreachable_pub,
     type_alias_bounds,
     trivial_bounds,
     mutable_transmutes,
@@ -21,27 +21,15 @@
 )]
 #![warn(clippy::cognitive_complexity)]
 
-mod actix;
-
 #[macro_use]
 mod macros {
-  macro_rules! actix_try {
+  macro_rules! meh_actix {
     ($expr:expr $(,)?) => {
       match $expr {
         Ok(val) => val,
         Err(err) => {
+          error!("Unexpected error: {}", err);
           return ActorResult::reply(Err(From::from(err)));
-        }
-      }
-    };
-  }
-
-  macro_rules! try_fut {
-    ($expr:expr $(,)?) => {
-      match $expr {
-        Ok(val) => val,
-        Err(err) => {
-          return ActorResult::reply(actix::fut::ok(From::from(err)));
         }
       }
     };
@@ -57,23 +45,52 @@ mod macros {
       }
     };
   }
-  // macro_rules! actix_reply {
-  //   ($exp:expr) => {
-  //     return ActorResponse::reply($exp);
-  //   };
-  // }
+
+  #[allow(unused_macros)]
+  macro_rules! log_tap {
+    ($expr:expr $(,)?) => {{
+      let _e = $expr;
+      trace!("{:?}", $expr);
+      _e
+    }};
+  }
+
+  macro_rules! meh {
+    ($expr:expr $(,)?) => {{
+      match $expr {
+        Ok(_) => {}
+        Err(e) => {
+          error!("Unexpected error: {}", e);
+        }
+      }
+    }};
+  }
 }
 
+mod actix;
+pub(crate) mod component_model;
 pub mod components;
 pub(crate) mod dispatch;
 pub mod error;
-pub(crate) mod native_actors;
 pub mod network;
 pub mod network_definition;
+pub(crate) mod provider_model;
 pub(crate) mod schematic;
 pub mod schematic_definition;
+pub(crate) mod schematic_model;
 pub(crate) mod schematic_response;
+mod transaction;
 pub(crate) mod util;
+
+pub mod prelude {
+  pub use crate::dispatch::Invocation;
+  pub use crate::{
+    Error,
+    Result,
+    SCHEMATIC_INPUT,
+    SCHEMATIC_OUTPUT,
+  };
+}
 
 pub use crate::dispatch::{
   Invocation,
@@ -99,11 +116,10 @@ pub use crate::components::{
   load_wasm_from_oci,
 };
 
-#[doc(hidden)]
-pub const SYSTEM_ACTOR: &str = "system";
-pub const VINO_NAMESPACE: &str = "vino";
-pub const SCHEMATIC_INPUT: &str = "vino::schematic_input";
-pub const SCHEMATIC_OUTPUT: &str = "vino::schematic_output";
+/// The reserved reference name for schematic input. Used in schematic manifests to denote schematic input.
+pub const SCHEMATIC_INPUT: &str = "::input";
+/// The reserved reference name for schematic output. Used in schematic manifests to denote schematic output.
+pub const SCHEMATIC_OUTPUT: &str = "::output";
 
 #[macro_use]
 extern crate log;
@@ -114,5 +130,6 @@ extern crate derivative;
 #[macro_use]
 extern crate vino_macros;
 
+#[allow(unused_imports)]
 #[macro_use]
-extern crate derive_new;
+extern crate log_derive;

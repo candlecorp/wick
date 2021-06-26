@@ -1,3 +1,5 @@
+use std::sync::PoisonError;
+
 use thiserror::Error;
 
 type BoxedErrorSyncSend = Box<dyn std::error::Error + Sync + Send>;
@@ -5,19 +7,24 @@ type BoxedErrorSyncSend = Box<dyn std::error::Error + Sync + Send>;
 
 #[derive(Error, Debug)]
 pub enum VinoError {
-  #[error("Conversion error")]
-  ConversionError,
+  #[error("Conversion error {0}")]
+  ConversionError(&'static str),
   #[error("Network error: {0}")]
   NetworkError(String),
+  #[error("Error executing request: {0}")]
+  ExecutionError(String),
   #[error("Schematic error: {0}")]
   SchematicError(String),
   #[error("Dispatch error: {0}")]
   DispatchError(String),
   #[error("Provider error {0}")]
   ProviderError(String),
-
+  #[error("WaPC WebAssembly Component error: {0}")]
+  WapcError(String),
   #[error("Component error: {0}")]
   ComponentError(String),
+  #[error("Failed to acquire a lock: {0}")]
+  LockError(String),
   #[error("Job error: {0}")]
   JobError(String),
   #[error("invalid configuration")]
@@ -36,8 +43,6 @@ pub enum VinoError {
   SerializationError(rmp_serde::encode::Error),
   #[error("Failed to deserialize payload {0}")]
   DeserializationError(rmp_serde::decode::Error),
-  #[error("Failed to acquire a lock: {0}")]
-  LockError(&'static str),
   #[error(transparent)]
   RpcUpstreamError(#[from] tonic::Status),
   #[error(transparent)]
@@ -47,6 +52,8 @@ pub enum VinoError {
   #[error(transparent)]
   YamlError(#[from] serde_yaml::Error),
   #[error(transparent)]
+  OutputError(#[from] vino_component::Error),
+  #[error(transparent)]
   ActixMailboxError(#[from] actix::MailboxError),
   #[error(transparent)]
   IOError(#[from] std::io::Error),
@@ -54,8 +61,6 @@ pub enum VinoError {
   KeyPairError(#[from] nkeys::error::Error),
   #[error(transparent)]
   WascapError(#[from] wascap::Error),
-  #[error(transparent)]
-  BCryptError(#[from] bcrypt::BcryptError),
   #[error("Could not parse OCI URL: {0}")]
   OCIParseError(String),
   #[error(transparent)]
@@ -64,9 +69,14 @@ pub enum VinoError {
   Other(String),
 }
 
+impl<T> From<PoisonError<std::sync::MutexGuard<'_, T>>> for VinoError {
+  fn from(lock_error: PoisonError<std::sync::MutexGuard<'_, T>>) -> Self {
+    VinoError::LockError(lock_error.to_string())
+  }
+}
+
 impl From<&'static str> for VinoError {
   fn from(e: &'static str) -> Self {
     VinoError::Other(e.to_string())
   }
 }
-

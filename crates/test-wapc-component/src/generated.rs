@@ -7,7 +7,7 @@ use vino_codec::messagepack::{
   serialize,
 };
 use vino_component::v0::Payload;
-use vino_component::Output;
+use vino_component::Packet;
 
 #[cfg(feature = "guest")]
 extern crate wapc_guest as guest;
@@ -79,17 +79,17 @@ impl GuestPortOutput {
   pub fn send(&self, payload: String) -> CallResult {
     host_call(
       &self.inv_id,
-      "",
       "output",
-      &serialize(Output::V0(Payload::to_messagepack(payload)))?,
+      "port",
+      &serialize(Packet::V0(Payload::to_messagepack(payload)))?,
     )
   }
   pub fn exception(&self, message: String) -> CallResult {
     host_call(
       &self.inv_id,
-      "",
       "output",
-      &serialize(Output::V0(Payload::Exception(message)))?,
+      "port",
+      &serialize(Packet::V0(Payload::Exception(message)))?,
     )
   }
 }

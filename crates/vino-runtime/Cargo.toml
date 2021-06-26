@@ -19,6 +19,7 @@ vino-native-provider = { path="../vino-native-provider" }
 vino-transport = { path="../vino-transport" }
 vino-codec = { path="../vino-codec" }
 vino-rpc = { path="../vino-rpc" }
+
 wasm3-provider = { version="0.0.2", optional=true }
 serde = { version="1.0.118", features=["derive"] }
 actix = "0.12.0"
@@ -35,22 +36,21 @@ wasmtime-provider = { version="0.0.3", optional=true }
 rmp-serde = "0.15.4"
 data-encoding = "2.3.1"
 ring = "0.16.19"
-bcrypt = "0.9.0"
 once_cell = "1.5.2"
 parking_lot = "0.11.1"
 thiserror = "1.0.25"
 oci-distribution = "0.6.0"
 nkeys = "0.1.0"
 derivative = "2.2.0"
-derive-new = "0.5.9"
 tokio = { version="1.4.0", features=["macros", "net", "rt-multi-thread"] }
 tonic = { version="0.4.3", features=["tls"] }
 tokio-stream = "0.1.6"
-typetag = "0.1.7"
-erased-serde = "0.3.16"
+itertools = "0.10.1"
+tracing = "0.1.26"
+log-derive = "0.4.1"
 
 [dev-dependencies]
 env_logger = "0.8.3"
-test-env-log = "0.2.7"
+test-env-log = { version="0.2.7" }
 maplit = "1.0.2"
 test-vino-provider = { path="../test-vino-provider" }

@@ -13,7 +13,7 @@ schematics:
         id: vino::log
     connections:
       - from:
-          instance: vino::schematic_input
+          instance: ::input
           port: input_port1
         to:
           instance: log
@@ -34,5 +34,5 @@ schematics:
           instance: log2
           port: output
         to:
-          instance: vino::schematic_output
+          instance: ::output
           port: output1

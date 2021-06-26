@@ -7,7 +7,6 @@ edition = "2018"
 [dependencies]
 vino-provider = { path="../vino-provider" }
 vino-rpc = { path="../vino-rpc" }
-vino-transport = { path="../vino-transport" }
 vino-codec = { path="../vino-codec" }
 vino-component = { path="../vino-component" }
 log = "0.4.14"

@@ -6,7 +6,7 @@ provider_component! {
   log,
   fn job(input: Inputs, output: Outputs, _context: Context<crate::State>) -> Result<()> {
         println!("Logger: {}", input.input);
-        output.output.send(input.input);
+        output.output.done(input.input);
         Ok(())
     }
 }

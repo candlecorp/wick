@@ -1,8 +1,0 @@
-type Inputs {
-  input: string
-  cost: u32
-}
-
-type Outputs {
-  output: string
-}

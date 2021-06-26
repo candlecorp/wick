@@ -27,6 +27,8 @@ vino-rpc = { path="./crates/vino-rpc" }
 log = "0.4.14"
 env_logger = "0.8.4"
 anyhow = "1.0.41"
+tracing = "*"
+tracing-subscriber = "0.2.18"
 
 [workspace]
 members = [

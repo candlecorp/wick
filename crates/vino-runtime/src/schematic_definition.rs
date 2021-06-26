@@ -7,12 +7,7 @@ use serde::{
 };
 use vino_manifest::SchematicManifest;
 
-use crate::{
-  Error,
-  Result,
-};
-
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct SchematicDefinition {
   pub name: String,
   pub(crate) external: Vec<ExternalComponentDefinition>,
@@ -68,8 +63,8 @@ impl SchematicDefinition {
   pub(crate) fn get_name(&self) -> String {
     self.name.clone()
   }
-  pub(crate) fn get_component(&self, name: &str) -> Option<&ComponentDefinition> {
-    self.components.get(name)
+  pub(crate) fn get_component(&self, reference: &str) -> Option<ComponentDefinition> {
+    self.components.get(reference).cloned()
   }
 
   pub(crate) fn get_output_names(&self) -> Vec<String> {
@@ -80,20 +75,14 @@ impl SchematicDefinition {
       .map(|conn| conn.to.port.to_string())
       .collect()
   }
-  pub(crate) fn id_to_ref(&self, id: &str) -> Result<String> {
-    if id.starts_with(crate::VINO_NAMESPACE) {
-      Ok(id.to_string())
-    } else {
-      for component in &self.external {
-        if id == component.key || Some(id.to_string()) == component.alias {
-          return Ok(component.reference.to_string());
-        }
-      }
-      Err(Error::SchematicError(format!(
-        "No external component found with alias or key {}",
-        id
-      )))
-    }
+
+  pub(crate) fn get_input_names(&self) -> Vec<String> {
+    self
+      .connections
+      .iter()
+      .filter(|conn| conn.to.instance == crate::SCHEMATIC_INPUT)
+      .map(|conn| conn.to.port.to_string())
+      .collect()
   }
 }
 
@@ -122,8 +111,26 @@ impl From<vino_manifest::v0::ExternalComponentDefinition> for ExternalComponentD
 
 #[derive(Debug, Clone)]
 pub struct ComponentDefinition {
+  /// Reserved
   pub metadata: Option<String>,
+  /// The ID used to reference the component. Can be a public key or fully qualified namespace reference
   pub id: String,
+}
+
+pub fn parse_namespace(id: &str) -> (Option<String>, String) {
+  if id.contains("::") {
+    id.split_once("::")
+      .map(|(ns, name)| (Some(ns.to_string()), name.to_string()))
+      .unwrap()
+  } else {
+    (None, id.to_string())
+  }
+}
+
+impl ComponentDefinition {
+  pub fn parse_namespace(&self) -> (Option<String>, String) {
+    parse_namespace(&self.id)
+  }
 }
 
 impl From<vino_manifest::v0::ComponentDefinition> for ComponentDefinition {

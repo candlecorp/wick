@@ -10,7 +10,7 @@ use tonic::{
   Response,
   Status,
 };
-use vino_component::Output as ComponentOutput;
+use vino_component::Packet;
 
 use crate::rpc::invocation_service_server::InvocationService;
 use crate::rpc::output_kind::Data;
@@ -43,9 +43,9 @@ impl InvocationServer {
   }
 }
 
-pub fn make_output(port: &str, inv_id: &str, payload: ComponentOutput) -> Result<Output, Status> {
+pub fn make_output(port: &str, inv_id: &str, payload: Packet) -> Result<Output, Status> {
   match payload {
-    ComponentOutput::V0(v) => match v {
+    Packet::V0(v) => match v {
       vino_component::v0::Payload::Invalid => Ok(Output {
         port: port.to_string(),
         invocation_id: inv_id.to_string(),

@@ -173,9 +173,10 @@ impl Handler<Invocation> for GrpcUrlProvider {
           }
         }
       });
-      Ok!(InvocationResponse::success(tx_id, vec![],))
+      todo!();
+      Ok!(InvocationResponse::error(tx_id, "TODO".to_string()))
     };
-
+    // todo!();
     Box::pin(fut.then(|result| async {
       match result {
         Ok(invocation) => invocation,

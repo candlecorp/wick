@@ -60,7 +60,7 @@ pub(crate) struct OutputSender {
 impl Default for OutputSender {
   fn default() -> Self {
     Self {
-      port: Arc::new(Mutex::new(Port::new("output"))),
+      port: Arc::new(Mutex::new(Port::new("output".into()))),
     }
   }
 }

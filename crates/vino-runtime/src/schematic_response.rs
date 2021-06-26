@@ -5,13 +5,13 @@ use std::task::Poll;
 use futures::Future;
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
-use vino_codec::messagepack::serialize;
 use vino_transport::MessageTransport;
 
 use crate::{
   Error,
   InvocationResponse,
   Result,
+  SchematicOutput,
 };
 
 type TransactionOutput = HashMap<String, Option<MessageTransport>>;
@@ -74,6 +74,7 @@ pub(crate) fn initialize_schematic_output(tx_id: &str, schematic: &str, ports: V
 }
 
 pub(crate) fn get_transaction_output(tx_id: &str, schematic: &str) -> Result<SchematicResponse> {
+  trace!("Getting transaction output future");
   let responses = SCHEMATIC_RESPONSES.lock();
 
   match responses.get(&(tx_id.to_string(), schematic.to_string())) {
@@ -113,10 +114,21 @@ impl Future for SchematicResponse {
         if ready {
           trace!("Schematic '{}' on tx '{}' is ready", self.name, self.tx_id);
           let outputs = responses.remove(&(self.tx_id.to_string(), self.name.to_string()));
-          match serialize(&outputs) {
-            Ok(bytes) => Poll::Ready(InvocationResponse::success(tx_id, bytes)),
-            Err(e) => Poll::Ready(InvocationResponse::error(tx_id, e.to_string())),
-          }
+          if outputs.is_none() {
+            return Poll::Ready(InvocationResponse::error(
+              tx_id,
+              "Transaction was ready, but nothing found".into(),
+            ));
+          };
+          let outputs: SchematicOutput = outputs
+            .unwrap()
+            .into_iter()
+            .map(|(name, opt)| (name, opt.unwrap()))
+            .collect();
+          Poll::Ready(InvocationResponse::success(
+            tx_id,
+            MessageTransport::OutputMap(outputs),
+          ))
         } else {
           cx.waker().wake_by_ref();
           Poll::Pending
