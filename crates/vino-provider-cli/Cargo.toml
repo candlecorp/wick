@@ -17,7 +17,7 @@ tokio-stream = "0.1.6"
 serde = { version="1.0.118", features=["derive"] }
 async-stream = "0.3.2"
 rand = "0.8.4"
-log = "0.4.14"
+tracing = "0.1.26"
 thiserror = "1.0.25"
 
 [build-dependencies]
@@ -27,3 +27,4 @@ tonic-build = { version="0.4.2", features=["prost"] }
 test-env-log = "0.2.7"
 test-vino-provider = { path="../test-vino-provider" }
 env_logger = "0.8.4"
+tracing-subscriber = "0.2.18"

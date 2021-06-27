@@ -3,6 +3,10 @@ use std::collections::HashMap;
 use actix::Recipient;
 
 use crate::component_model::ComponentModel;
+use crate::error::{
+  ValidationError,
+  VinoError,
+};
 use crate::provider_model::ProviderModel;
 use crate::schematic_definition::*;
 use crate::{
@@ -120,6 +124,7 @@ impl SchematicModel {
       .cloned()
       .collect()
   }
+
   pub(crate) fn get_schematic_outputs(&self) -> Vec<String> {
     self.definition.get_output_names()
   }
@@ -128,7 +133,7 @@ impl SchematicModel {
   }
   #[logfn(ok = "TRACE", err = "DEBUG")]
   pub(crate) fn get_component_metadata(&self, id: &str) -> Result<ComponentModel> {
-    trace!("getting component metadata {}", id);
+    trace!("Getting component metadata {}", id);
     let opt = match self.definition.get_component(id) {
       Some(comp) => {
         let (ns, name) = comp.parse_namespace();
@@ -148,7 +153,7 @@ impl SchematicModel {
     })
   }
   pub(crate) fn get_downstream_recipient(&self, reference: &str) -> Option<Recipient<Invocation>> {
-    trace!("getting downstream recipient {}", reference);
+    trace!("Getting downstream recipient {}", reference);
     self.get_component_metadata(reference).map(|c| c.addr).ok()
   }
   pub(crate) fn get_outputs(&self, reference: &str) -> Vec<String> {
@@ -186,6 +191,51 @@ impl SchematicModel {
       })
       .collect();
     connections
+  }
+}
+
+type ValidationResult<T> = std::result::Result<T, ValidationError>;
+pub(crate) struct Validator<'a> {
+  model: &'a SchematicModel,
+}
+
+impl<'a> Validator<'a> {
+  pub(crate) fn new(model: &'a SchematicModel) -> Self {
+    Validator { model }
+  }
+  pub(crate) fn validate_early_errors(model: &'a SchematicModel) -> Result<()> {
+    let validator = Validator::new(model);
+    let name = model.get_name();
+    let results: Vec<ValidationError> = vec![
+      validator.assert_schematic_outputs(),
+      validator.assert_schematic_inputs(),
+    ]
+    .into_iter()
+    .filter_map(|r| r.err())
+    .collect();
+    if results.is_empty() {
+      Ok(())
+    } else {
+      Err(VinoError::ValidationError(ValidationError::EarlyError(
+        name, results,
+      )))
+    }
+  }
+  fn assert_schematic_outputs(&self) -> ValidationResult<()> {
+    let ports = self.model.get_schematic_outputs();
+    if ports.is_empty() {
+      Err(ValidationError::NoOutputs)
+    } else {
+      Ok(())
+    }
+  }
+  fn assert_schematic_inputs(&self) -> ValidationResult<()> {
+    let ports = self.model.get_schematic_inputs();
+    if ports.is_empty() {
+      Err(ValidationError::NoInputs)
+    } else {
+      Ok(())
+    }
   }
 }
 
@@ -234,7 +284,7 @@ mod tests {
     let model = SchematicModel::new(schematic_def);
     assert_eq!(model.get_name(), schematic_name);
     println!("{:?}", model);
-    let test = model.get_component("logger").unwrap();
+    // let test = model.get_component("logger").unwrap();
     // assert_eq!(test.id, "test-namespace::logger");
 
     Ok(())

@@ -19,11 +19,10 @@
     clippy::explicit_deref_methods,
     // missing_docs
 )]
-#![warn(clippy::cognitive_complexity)]
 
 #[macro_use]
 mod macros {
-  macro_rules! meh_actix {
+  macro_rules! actix_try {
     ($expr:expr $(,)?) => {
       match $expr {
         Ok(val) => val,
@@ -35,7 +34,7 @@ mod macros {
     };
   }
 
-  macro_rules! actix_bail {
+  macro_rules! actix_ensure_ok {
     ($expr:expr $(,)?) => {
       match $expr {
         Ok(val) => val,
@@ -44,26 +43,6 @@ mod macros {
         }
       }
     };
-  }
-
-  #[allow(unused_macros)]
-  macro_rules! log_tap {
-    ($expr:expr $(,)?) => {{
-      let _e = $expr;
-      trace!("{:?}", $expr);
-      _e
-    }};
-  }
-
-  macro_rules! meh {
-    ($expr:expr $(,)?) => {{
-      match $expr {
-        Ok(_) => {}
-        Err(e) => {
-          error!("Unexpected error: {}", e);
-        }
-      }
-    }};
   }
 }
 
@@ -83,7 +62,13 @@ mod transaction;
 pub(crate) mod util;
 
 pub mod prelude {
-  pub use crate::dispatch::Invocation;
+  pub use vino_component::Packet;
+  pub use vino_transport::MessageTransport;
+
+  pub use crate::dispatch::{
+    Invocation,
+    InvocationResponse,
+  };
   pub use crate::{
     Error,
     Result,
@@ -117,18 +102,23 @@ pub use crate::components::{
 };
 
 /// The reserved reference name for schematic input. Used in schematic manifests to denote schematic input.
-pub const SCHEMATIC_INPUT: &str = "::input";
+pub const SCHEMATIC_INPUT: &str = "<input>";
 /// The reserved reference name for schematic output. Used in schematic manifests to denote schematic output.
-pub const SCHEMATIC_OUTPUT: &str = "::output";
+pub const SCHEMATIC_OUTPUT: &str = "<output>";
+/// The reserved port name to use when sending an asynchronous error from a component.
+pub const COMPONENT_ERROR: &str = "<error>";
 
-#[macro_use]
-extern crate log;
+// #[macro_use]
+// extern crate log;
 
 #[macro_use]
 extern crate derivative;
 
 #[macro_use]
 extern crate vino_macros;
+
+#[macro_use]
+extern crate tracing;
 
 #[allow(unused_imports)]
 #[macro_use]

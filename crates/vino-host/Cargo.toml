@@ -8,7 +8,7 @@ edition = "2018"
 
 [dependencies]
 vino-runtime = { path="../vino-runtime" }
-log = "0.4.14"
+tracing = "0.1.26"
 actix = "0.12"
 actix-rt = "2.1.0"
 thiserror = "1.0.25"
@@ -32,3 +32,4 @@ tokio = { version="1", features=[
   "macros",
 ] }
 maplit = "1.0.2"
+tracing-subscriber = "0.2.18"

@@ -65,11 +65,11 @@ impl Handler<Invocation> for ProviderComponent {
   fn handle(&mut self, msg: Invocation, _ctx: &mut Self::Context) -> Self::Result {
     let provider = self.state.as_ref().unwrap().provider.clone();
     let tx_id = msg.tx_id.clone();
-    let component = actix_bail!(msg
+    let component = actix_ensure_ok!(msg
       .target
       .into_component()
       .map_err(|_e| InvocationResponse::error(tx_id.clone(), "Sent invalid entity".to_string())));
-    let message = actix_bail!(msg
+    let message = actix_ensure_ok!(msg
       .msg
       .into_multibytes()
       .map_err(|_e| InvocationResponse::error(tx_id.clone(), "Sent invalid payload".to_string())));

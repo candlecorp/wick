@@ -47,30 +47,6 @@ impl From<BoxedErrorSyncSend> for VinoHostError {
   }
 }
 
-// impl From<wascap::Error> for VinoError {
-//     fn from(e: wascap::Error) -> Self {
-//         VinoError::Other(anyhow!(e))
-//     }
-// }
-
-// impl From<bcrypt::BcryptError> for VinoError {
-//     fn from(e: bcrypt::BcryptError) -> Self {
-//         VinoError::Other(anyhow!(e))
-//     }
-// }
-
-// impl From<actix::MailboxError> for VinoHostError {
-//     fn from(e: actix::MailboxError) -> Self {
-//         VinoHostError::Other(anyhow!(e))
-//     }
-// }
-
-// impl From<std::io::Error> for VinoHostError {
-//     fn from(e: std::io::Error) -> Self {
-//         VinoHostError::Other(anyhow!(e))
-//     }
-// }
-
 impl From<String> for VinoHostError {
   fn from(e: String) -> Self {
     VinoHostError::Other(e)
@@ -82,15 +58,3 @@ impl From<&'static str> for VinoHostError {
     VinoHostError::Other(e.to_string())
   }
 }
-
-// impl From<nkeys::error::Error> for VinoError {
-//     fn from(e: nkeys::error::Error) -> Self {
-//         VinoError::Other(anyhow!(e))
-//     }
-// }
-
-// impl<M> From<SendError<M>> for VinoHostError {
-//     fn from(e: SendError<M>) -> Self {
-//         VinoHostError::Other(anyhow!(e.to_string()))
-//     }
-// }

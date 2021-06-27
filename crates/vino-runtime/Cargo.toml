@@ -48,9 +48,13 @@ tokio-stream = "0.1.6"
 itertools = "0.10.1"
 tracing = "0.1.26"
 log-derive = "0.4.1"
+tracing-actix = "0.3.0"
 
 [dev-dependencies]
 env_logger = "0.8.3"
-test-env-log = { version="0.2.7" }
+test-env-log = { version="0.2.7", features=["trace"] }
 maplit = "1.0.2"
 test-vino-provider = { path="../test-vino-provider" }
+tracing-subscriber = "0.2.18"
+tracing-unwrap = "0.9.2"
+tracing-futures = "0.2.5"

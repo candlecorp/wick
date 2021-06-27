@@ -1,9 +1,20 @@
 use std::sync::PoisonError;
 
+use itertools::join;
 use thiserror::Error;
 
 type BoxedErrorSyncSend = Box<dyn std::error::Error + Sync + Send>;
 // type BoxedError = Box<dyn std::error::Error>;
+
+#[derive(Error, Debug)]
+pub enum ValidationError {
+  #[error("Schematic '{0}' has errors: {}", join(.1, ", "))]
+  EarlyError(String, Vec<ValidationError>),
+  #[error("Schematic has no outputs")]
+  NoOutputs,
+  #[error("Schematic has no inputs")]
+  NoInputs,
+}
 
 #[derive(Error, Debug)]
 pub enum VinoError {
@@ -43,6 +54,13 @@ pub enum VinoError {
   SerializationError(rmp_serde::encode::Error),
   #[error("Failed to deserialize payload {0}")]
   DeserializationError(rmp_serde::decode::Error),
+  #[error("Grpc Provider error: {0}")]
+  GrpcUrlProviderError(String),
+
+  #[error(transparent)]
+  ValidationError(#[from] ValidationError),
+  #[error(transparent)]
+  TonicError(#[from] tonic::transport::Error),
   #[error(transparent)]
   RpcUpstreamError(#[from] tonic::Status),
   #[error(transparent)]

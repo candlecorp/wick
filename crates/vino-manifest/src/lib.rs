@@ -23,10 +23,11 @@
 )]
 #![warn(clippy::cognitive_complexity)]
 
-use std::{fs::read_to_string, path::Path};
+use std::fs::read_to_string;
+use std::path::Path;
 
 use hocon::HoconLoader;
-use log::debug;
+use tracing::debug;
 
 /// Vino Manifest error
 pub mod error;

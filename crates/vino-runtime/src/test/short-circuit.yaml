@@ -1,6 +1,6 @@
 ---
 schematics:
-  - name: test
+  - name: short_circuit
     external:
       - reference: ../test-wapc-component/build/test_component_s.wasm
         key: MB3GAIGQVCZHMLKD4T2LGI6CILHNOIJPPSLV2VDDH3ARHXDDJ5WXFV35
@@ -13,7 +13,7 @@ schematics:
         id: vino::log
     connections:
       - from:
-          instance: ::input
+          instance: <input>
           port: input_port1
         to:
           instance: log
@@ -34,5 +34,5 @@ schematics:
           instance: log2
           port: output
         to:
-          instance: ::output
+          instance: <output>
           port: output1

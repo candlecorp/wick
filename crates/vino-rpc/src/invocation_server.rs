@@ -111,7 +111,7 @@ impl InvocationService for InvocationServer {
       {
         Ok(receiver) => {
           while let Some((port_name, msg)) = receiver.next().await {
-            debug!("got output on port {}", port_name);
+            debug!("Got output on port {}", port_name);
             tx.send(make_output(&port_name, &invocation_id, msg))
               .await
               .unwrap();
@@ -131,15 +131,17 @@ impl InvocationService for InvocationServer {
     _request: tonic::Request<crate::rpc::ListRequest>,
   ) -> Result<tonic::Response<crate::rpc::ListResponse>, tonic::Status> {
     let provider = self.provider.lock().await;
-
+    trace!("Listing registered components from provider");
     let list = provider
       .list_registered()
       .await
       .map_err(|e| Status::internal(e.to_string()))?;
+    trace!("Server: list is {:?}", list);
+    let response = ListResponse {
+      component: list.into_iter().map(From::from).collect(),
+    };
 
-    Ok(Response::new(ListResponse {
-      component: list.into_iter().collect(),
-    }))
+    Ok(Response::new(response))
   }
 
   async fn stats(
@@ -166,7 +168,7 @@ impl InvocationService for InvocationServer {
     };
 
     Ok(Response::new(StatsResponse {
-      stats: list.into_iter().collect(),
+      stats: list.into_iter().map(From::from).collect(),
     }))
   }
 }

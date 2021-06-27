@@ -5,13 +5,13 @@ schematics:
         id: vino::add
     connections:
       - from:
-          instance: ::input
+          instance: <input>
           port: left
         to:
           instance: add
           port: left
       - from:
-          instance: ::input
+          instance: <input>
           port: right
         to:
           instance: add
@@ -20,7 +20,7 @@ schematics:
           instance: add
           port: output
         to:
-          instance: ::output
+          instance: <output>
           port: output
   - name: second_schematic
     components:
@@ -28,7 +28,7 @@ schematics:
         id: vino::log
     connections:
       - from:
-          instance: ::input
+          instance: <input>
           port: input
         to:
           instance: log
@@ -37,5 +37,5 @@ schematics:
           instance: log
           port: output
         to:
-          instance: ::output
+          instance: <output>
           port: output

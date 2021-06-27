@@ -16,7 +16,7 @@ readme = "README.md"
 [dev-dependencies]
 test_bin = "0.3.0"
 maplit = "1.0.2"
-test-env-log = "0.2.7"
+test-env-log = { version="0.2.7", features=["trace"] }
 tokio = { version="1.4.0", features=["macros", "net", "rt-multi-thread"] }
 futures = "0.3.15"
 vino-codec = { path="./crates/vino-codec" }

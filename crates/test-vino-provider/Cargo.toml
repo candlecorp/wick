@@ -10,14 +10,18 @@ vino-provider = { path="../vino-provider" }
 vino-rpc = { path="../vino-rpc" }
 vino-codec = { path="../vino-codec" }
 vino-component = { path="../vino-component" }
-log = "0.4.14"
 serde = { version="1.0.118", features=["derive"] }
 lazy_static = "1.4.0"
 async-trait = "0.1.50"
 futures = "0.3.15"
 tokio = { version="1.4.0", features=["macros", "rt-multi-thread"] }
+log = "0.4.14"
 
 [dev-dependencies]
 maplit = "1.0.2"
 test-env-log = "0.2.7"
 env_logger = "0.8.4"
+structopt = "0.3.21"
+vino-provider-cli = { path="../vino-provider-cli" }
+tracing = "0.1.26"
+tracing-subscriber = "0.2.19"

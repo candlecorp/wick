@@ -1,3 +1,4 @@
+use std::convert::TryFrom;
 use std::fmt::Display;
 use std::io::Read;
 
@@ -22,7 +23,8 @@ use wascap::prelude::{
   KeyPair,
 };
 
-use crate::schematic::NativeOutputReady;
+use crate::error::VinoError;
+use crate::schematic::PushOutput;
 use crate::{
   Error,
   Result,
@@ -49,8 +51,48 @@ where
   fn handle(self, _: &mut A::Context, tx: Option<actix::dev::OneshotSender<Self>>) {
     if let Some(tx) = tx {
       if let Err(e) = tx.send(self) {
-        error!("send error (call id:{} target:{:?})", &e.id, &e.target);
+        error!("Send error (call id:{} target:{:?})", &e.id, &e.target);
       }
+    }
+  }
+}
+
+impl TryFrom<Invocation> for vino_rpc::rpc::Invocation {
+  type Error = VinoError;
+  fn try_from(inv: Invocation) -> Result<Self> {
+    Ok(vino_rpc::rpc::Invocation {
+      origin: Some(inv.origin.into()),
+      target: Some(inv.target.into()),
+      msg: inv.msg.into_multibytes()?,
+      id: inv.id,
+      tx_id: inv.tx_id,
+      encoded_claims: inv.encoded_claims,
+      host_id: inv.host_id,
+    })
+  }
+}
+
+impl From<VinoEntity> for vino_rpc::rpc::Entity {
+  fn from(ent: VinoEntity) -> Self {
+    use vino_rpc::rpc::entity::EntityKind;
+    use vino_rpc::rpc::Entity;
+    match ent {
+      VinoEntity::Test(v) => Entity {
+        name: v,
+        kind: EntityKind::Test.into(),
+      },
+      VinoEntity::Schematic(v) => Entity {
+        name: v,
+        kind: EntityKind::Schematic.into(),
+      },
+      VinoEntity::Component(v) => Entity {
+        name: v.name,
+        kind: EntityKind::Component.into(),
+      },
+      VinoEntity::Provider(v) => Entity {
+        name: v,
+        kind: EntityKind::Provider.into(),
+      },
     }
   }
 }
@@ -63,7 +105,7 @@ pub enum InvocationResponse {
   },
   Stream {
     tx_id: String,
-    rx: UnboundedReceiver<NativeOutputReady>,
+    rx: UnboundedReceiver<PushOutput>,
   },
   Error {
     tx_id: String,
@@ -74,7 +116,7 @@ pub enum InvocationResponse {
 impl InvocationResponse {
   /// Creates a successful invocation response stream. Response include the receiving end
   /// of an unbounded channel to listen for future output.
-  pub fn stream(tx_id: String, rx: UnboundedReceiver<NativeOutputReady>) -> InvocationResponse {
+  pub fn stream(tx_id: String, rx: UnboundedReceiver<PushOutput>) -> InvocationResponse {
     InvocationResponse::Stream { tx_id, rx }
   }
 
@@ -97,7 +139,7 @@ impl InvocationResponse {
     }
   }
 
-  pub fn to_stream(self) -> Result<(String, UnboundedReceiver<NativeOutputReady>)> {
+  pub fn to_stream(self) -> Result<(String, UnboundedReceiver<PushOutput>)> {
     match self {
       InvocationResponse::Stream { tx_id, rx } => Ok((tx_id, rx)),
       _ => Err(crate::Error::ConversionError("to_stream")),
@@ -220,10 +262,10 @@ fn sha256_digest<R: Read>(mut reader: R) -> Result<Digest> {
 
 #[derive(Debug, Clone, Serialize, Deserialize, Message, PartialEq)]
 #[rtype(result = "InvocationResponse")]
+/// The entity being referenced in an invocation.
 pub enum VinoEntity {
   Test(String),
   Schematic(String),
-  Port(PortEntity),
   Component(ComponentEntity),
   Provider(String),
 }
@@ -263,10 +305,6 @@ impl VinoEntity {
       VinoEntity::Schematic(name) => format!("{}://schematic/{}", URL_SCHEME, name),
       VinoEntity::Component(e) => format!("{}://component/{}", URL_SCHEME, e.id),
       VinoEntity::Provider(name) => format!("{}://provider/{}", URL_SCHEME, name),
-      VinoEntity::Port(port) => format!(
-        "{}://{}::{}:{}",
-        URL_SCHEME, port.schematic, port.name, port.reference
-      ),
     }
   }
 
@@ -277,9 +315,6 @@ impl VinoEntity {
       VinoEntity::Schematic(name) => format!("schematic:{}", name),
       VinoEntity::Component(e) => format!("component:{}", e.id),
       VinoEntity::Provider(name) => format!("provider:{}", name),
-      VinoEntity::Port(port) => {
-        format!("{}::{}:{}", port.schematic, port.reference, port.name)
-      }
     }
   }
 

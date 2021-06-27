@@ -80,8 +80,8 @@ impl SchematicDefinition {
     self
       .connections
       .iter()
-      .filter(|conn| conn.to.instance == crate::SCHEMATIC_INPUT)
-      .map(|conn| conn.to.port.to_string())
+      .filter(|conn| conn.from.instance == crate::SCHEMATIC_INPUT)
+      .map(|conn| conn.from.port.to_string())
       .collect()
   }
 }

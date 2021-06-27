@@ -1,19 +1,27 @@
+use std::collections::HashMap;
 use std::sync::Arc;
 
 use actix::prelude::*;
+use tokio::sync::mpsc::unbounded_channel;
 use tokio::sync::Mutex;
-use vino_rpc::RpcHandler;
+use tokio_stream::StreamExt;
+use vino_rpc::{
+  HostedType,
+  RpcHandler,
+};
 
 use super::{
   ProviderMessage,
   ProviderResponse,
 };
 use crate::actix::ActorResult;
-use crate::Result;
+use crate::component_model::ComponentModel;
+use crate::prelude::*;
+use crate::schematic::PushOutput;
 
 #[derive(Debug)]
 pub struct NativeProvider {
-  state: Option<Arc<Mutex<State>>>,
+  state: Option<State>,
 }
 
 impl Default for NativeProvider {
@@ -40,21 +48,138 @@ impl Actor for NativeProvider {
 }
 
 #[derive(Message)]
-#[rtype(result = "Result<()>")]
+#[rtype(result = "Result<HashMap<String, ComponentModel>>")]
 pub(crate) struct Initialize {
-  pub(crate) name: String,
+  pub(crate) namespace: String,
   pub(crate) provider: Arc<Mutex<dyn RpcHandler>>,
 }
 
 impl Handler<Initialize> for NativeProvider {
-  type Result = Result<()>;
+  type Result = ActorResult<Self, Result<HashMap<String, ComponentModel>>>;
 
-  fn handle(&mut self, msg: Initialize, _ctx: &mut Self::Context) -> Self::Result {
-    trace!("Native provider initialized for '{}'", msg.name);
-    self.state = Some(Arc::new(Mutex::new(State {
+  fn handle(&mut self, msg: Initialize, ctx: &mut Self::Context) -> Self::Result {
+    trace!("Native provider initialized for '{}'", msg.namespace);
+    let provider = msg.provider.clone();
+
+    self.state = Some(State {
       provider: msg.provider,
-    })));
-    Ok(())
+    });
+    let addr = ctx.address();
+    let init_components = InitializeComponents {
+      namespace: msg.namespace,
+      provider,
+    };
+    let task = async move { addr.send(init_components).await? }.into_actor(self);
+    ActorResult::reply_async(task)
+  }
+}
+
+#[derive(Message)]
+#[rtype(result = "Result<HashMap<String, ComponentModel>>")]
+pub(crate) struct InitializeComponents {
+  namespace: String,
+  provider: Arc<Mutex<dyn RpcHandler>>,
+}
+
+impl Handler<InitializeComponents> for NativeProvider {
+  type Result = ActorResult<Self, Result<HashMap<String, ComponentModel>>>;
+
+  fn handle(&mut self, msg: InitializeComponents, ctx: &mut Self::Context) -> Self::Result {
+    trace!("Initializing components '{}'", msg.namespace);
+    let provider = msg.provider;
+    let namespace = msg.namespace;
+    let addr = ctx.address();
+
+    let task = async move {
+      let provider = provider.lock().await;
+      let list = provider.list_registered().await?;
+      drop(provider);
+
+      let mut metadata: HashMap<String, ComponentModel> = HashMap::new();
+
+      for item in list {
+        match item {
+          HostedType::Component(component) => {
+            metadata.insert(
+              component.name.to_string(),
+              ComponentModel {
+                id: format!("{}::{}", namespace, component.name),
+                name: component.name,
+                inputs: component.inputs.into_iter().map(|p| p.name).collect(),
+                outputs: component.outputs.into_iter().map(|p| p.name).collect(),
+                addr: addr.clone().recipient(),
+              },
+            );
+          }
+          HostedType::Schematic(_) => panic!("Unimplemented"),
+        }
+      }
+      Ok(metadata)
+    };
+
+    ActorResult::reply_async(task.into_actor(self))
+  }
+}
+
+impl Handler<Invocation> for NativeProvider {
+  type Result = ActorResult<Self, InvocationResponse>;
+
+  fn handle(&mut self, msg: Invocation, _ctx: &mut Self::Context) -> Self::Result {
+    let provider = self.state.as_ref().unwrap().provider.clone();
+    let tx_id = msg.tx_id.clone();
+    let component = actix_ensure_ok!(msg
+      .target
+      .into_component()
+      .map_err(|_e| InvocationResponse::error(tx_id.clone(), "Sent invalid entity".to_string())));
+    let message = actix_ensure_ok!(msg
+      .msg
+      .into_multibytes()
+      .map_err(|_e| InvocationResponse::error(tx_id.clone(), "Sent invalid payload".to_string())));
+    let name = component.name;
+    let inv_id = msg.id;
+
+    let request = async move {
+      let provider = provider.lock().await;
+      let invocation_id = inv_id.clone();
+      let receiver = provider
+        .request(inv_id.clone(), name.clone(), message)
+        .await;
+      if let Err(e) = receiver {
+        return InvocationResponse::error(
+          tx_id,
+          format!("Provider component {} failed: {}", name, e.to_string()),
+        );
+      }
+      let mut receiver = receiver.unwrap();
+      let (tx, rx) = unbounded_channel();
+      actix::spawn(async move {
+        loop {
+          trace!("Provider component {} waiting for output", name);
+          let next = receiver.next().await;
+          if next.is_none() {
+            break;
+          }
+
+          let (port_name, msg) = next.unwrap();
+          trace!("Native actor {} got output on port [{}]", name, port_name);
+          match tx.send(PushOutput {
+            port: port_name.to_string(),
+            payload: msg,
+            invocation_id: invocation_id.to_string(),
+          }) {
+            Ok(_) => {
+              trace!("Sent output to port '{}' ", port_name);
+            }
+            Err(e) => {
+              error!("Error sending output on channel {}", e.to_string());
+              break;
+            }
+          }
+        }
+      });
+      InvocationResponse::stream(tx_id, rx)
+    };
+    ActorResult::reply_async(request.into_actor(self))
   }
 }
 
@@ -62,11 +187,11 @@ impl Handler<ProviderMessage> for NativeProvider {
   type Result = ActorResult<Self, Result<ProviderResponse>>;
 
   fn handle(&mut self, msg: ProviderMessage, _ctx: &mut Self::Context) -> Self::Result {
-    let state = self.state.as_ref().unwrap().clone();
+    let state = self.state.as_ref().unwrap();
+    let provider = state.provider.clone();
 
     let task = async move {
-      let state = state.lock().await;
-      let provider = state.provider.as_ref().lock().await;
+      let provider = provider.lock().await;
       returns!(ProviderResponse);
       match msg {
         ProviderMessage::Invoke(_invocation) => todo!(),
@@ -87,8 +212,14 @@ impl Handler<ProviderMessage> for NativeProvider {
 #[cfg(test)]
 mod test {
 
+  use maplit::hashmap;
+  use nkeys::KeyPair;
+  use vino_codec::messagepack::serialize;
+
   use super::*;
   use crate::components::ListRequest;
+  use crate::dispatch::ComponentEntity;
+  use crate::VinoEntity;
 
   #[test_env_log::test(actix_rt::test)]
   async fn test_native_provider_list() -> Result<()> {
@@ -97,7 +228,7 @@ mod test {
 
     addr
       .send(Initialize {
-        name: "native-provider".to_string(),
+        namespace: "native-provider".to_string(),
         provider: Arc::new(Mutex::new(vino_native_provider::Provider::default())),
       })
       .await??;
@@ -108,6 +239,49 @@ mod test {
     println!("response: {:?}", response);
     let list = response.into_list_response()?;
     assert_eq!(list.len(), 4);
+
+    Ok(())
+  }
+
+  #[test_env_log::test(actix_rt::test)]
+  async fn test_provider_component() -> Result<()> {
+    let provider = NativeProvider::default();
+    let addr = provider.start();
+    let hostkey = KeyPair::new_server();
+    let host_id = hostkey.public_key();
+    let namespace = "test-namespace";
+    addr
+      .send(Initialize {
+        namespace: "native-provider".to_string(),
+        provider: Arc::new(Mutex::new(vino_native_provider::Provider::default())),
+      })
+      .await??;
+
+    let user_data = "This is my payload";
+
+    let payload = hashmap! {"input".to_string()=> serialize(user_data)?};
+
+    let response = addr
+      .send(Invocation {
+        origin: VinoEntity::Test("test".to_string()),
+        target: VinoEntity::Component(ComponentEntity {
+          id: namespace.into(),
+          reference: "hmmm".into(),
+          name: "log".into(),
+        }),
+        msg: MessageTransport::MultiBytes(payload),
+        id: Invocation::uuid(),
+        tx_id: Invocation::uuid(),
+        encoded_claims: "".to_string(),
+        host_id,
+      })
+      .await?;
+
+    debug!("Response {:#?}", response);
+    let (_, mut rx) = response.to_stream()?;
+    let next: PushOutput = rx.recv().await.unwrap();
+    let payload: String = next.payload.try_into()?;
+    assert_eq!(user_data, payload);
 
     Ok(())
   }

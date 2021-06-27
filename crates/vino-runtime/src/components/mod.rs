@@ -2,7 +2,7 @@ use std::path::Path;
 
 pub mod grpc_url_provider;
 pub mod native_provider;
-pub mod provider_component;
+// pub mod provider_component;
 pub mod vino_component;
 pub(crate) mod wapc_component_actor;
 

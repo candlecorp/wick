@@ -12,13 +12,15 @@ use serde::{
   Deserialize,
   Serialize,
 };
+use vino_component::v0::Payload;
+use vino_component::Packet;
 
 pub type Result<T> = std::result::Result<T, error::RpcError>;
 pub type Error = crate::error::RpcError;
 pub type RpcResult<T> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>>;
 
 #[macro_use]
-extern crate log;
+extern crate tracing;
 
 #[derive(Debug, Default, Serialize, Deserialize, PartialEq)]
 pub struct Component {
@@ -86,21 +88,6 @@ pub trait RpcHandler: Send + Sync {
   async fn report_statistics(&self, id: Option<String>) -> RpcResult<Vec<crate::Statistics>>;
 }
 
-impl FromIterator<HostedType> for Vec<crate::rpc::Component> {
-  fn from_iter<T: IntoIterator<Item = HostedType>>(iter: T) -> Self {
-    iter.into_iter().collect()
-  }
-}
-impl FromIterator<crate::Port> for Vec<crate::rpc::component::Port> {
-  fn from_iter<T: IntoIterator<Item = crate::Port>>(iter: T) -> Self {
-    iter.into_iter().collect()
-  }
-}
-impl FromIterator<crate::Statistics> for Vec<crate::rpc::Statistic> {
-  fn from_iter<T: IntoIterator<Item = crate::Statistics>>(iter: T) -> Self {
-    iter.into_iter().collect()
-  }
-}
 impl From<HostedType> for crate::rpc::Component {
   fn from(v: HostedType) -> Self {
     match v {
@@ -115,8 +102,8 @@ impl From<crate::Component> for crate::generated::vino::Component {
     Self {
       name: v.name,
       kind: crate::rpc::component::ComponentKind::Component.into(),
-      inputs: v.inputs.into_iter().collect(),
-      outputs: v.outputs.into_iter().collect(),
+      inputs: v.inputs.into_iter().map(From::from).collect(),
+      outputs: v.outputs.into_iter().map(From::from).collect(),
     }
   }
 }
@@ -126,8 +113,8 @@ impl From<crate::Schematic> for crate::generated::vino::Component {
     Self {
       name: v.name,
       kind: crate::rpc::component::ComponentKind::Schematic.into(),
-      inputs: v.inputs.into_iter().collect(),
-      outputs: v.outputs.into_iter().collect(),
+      inputs: v.inputs.into_iter().map(From::from).collect(),
+      outputs: v.outputs.into_iter().map(From::from).collect(),
     }
   }
 }
@@ -141,10 +128,45 @@ impl From<crate::Port> for crate::generated::vino::component::Port {
   }
 }
 
+impl From<crate::generated::vino::component::Port> for crate::Port {
+  fn from(v: crate::generated::vino::component::Port) -> Self {
+    Self {
+      name: v.name,
+      type_string: v.r#type,
+    }
+  }
+}
+
 impl From<crate::Statistics> for crate::generated::vino::Statistic {
   fn from(v: crate::Statistics) -> Self {
     Self {
       num_calls: v.num_calls,
+    }
+  }
+}
+
+impl From<crate::generated::vino::Statistic> for crate::Statistics {
+  fn from(v: crate::generated::vino::Statistic) -> Self {
+    Self {
+      num_calls: v.num_calls,
+      execution_duration: ExecutionStatistics::default(),
+    }
+  }
+}
+
+#[allow(clippy::from_over_into)]
+impl Into<Packet> for rpc::OutputKind {
+  fn into(self) -> Packet {
+    use rpc::output_kind::Data;
+    match self.data {
+      Some(v) => match v {
+        Data::Messagepack(v) => Packet::V0(Payload::MessagePack(v)),
+        Data::Error(v) => Packet::V0(Payload::Error(v)),
+        Data::Exception(v) => Packet::V0(Payload::Exception(v)),
+        Data::Test(_) => Packet::V0(Payload::Invalid),
+        Data::Invalid(_) => Packet::V0(Payload::Invalid),
+      },
+      None => Packet::V0(Payload::Error("Response received without output".into())),
     }
   }
 }

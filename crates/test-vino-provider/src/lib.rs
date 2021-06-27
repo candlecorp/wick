@@ -87,8 +87,8 @@ impl RpcHandler for Provider {
 mod tests {
 
   use futures::prelude::*;
-  use log::debug;
   use maplit::hashmap;
+  use tracing::debug;
   use vino_codec::messagepack::{
     deserialize,
     serialize,

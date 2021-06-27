@@ -29,7 +29,7 @@ use crate::dispatch::{
   Invocation,
   InvocationResponse,
 };
-use crate::schematic::NativeOutputReady;
+use crate::schematic::PushOutput;
 use crate::Result;
 
 #[derive(Default)]
@@ -168,20 +168,14 @@ fn perform_initialization(
   let (tx, mut rx) = unbounded_channel();
   let guest = WapcHost::new(Box::new(engine), move |id, inv_id, port, op, payload| {
     debug!("Payload WaPC host callback: {:?}", payload);
-
-    match tx.send(WapcHostCallback {
+    meh!(tx.send(WapcHostCallback {
       port: port.to_string(),
       invocation_id: inv_id.to_string(),
       payload: payload.to_vec(),
       op: op.to_string(),
       id,
       kp: KeyPair::from_seed(&seed).unwrap(),
-    }) {
-      Ok(_) => {
-        trace!("Successfully sent output from Wapc host");
-      }
-      Err(e) => error!("Error sending output from WaPC host: {}", e),
-    };
+    }));
     Ok(vec![])
   });
   let invocation_map = me.invocation_map.clone();
@@ -241,11 +235,11 @@ impl Handler<Invocation> for WapcComponentActor {
   fn handle(&mut self, msg: Invocation, _ctx: &mut Self::Context) -> Self::Result {
     let tx_id = msg.tx_id.clone();
     let target = msg.target.url();
-    let component = actix_bail!(msg
+    let component = actix_ensure_ok!(msg
       .target
       .into_component()
       .map_err(|_e| InvocationResponse::error(tx_id.clone(), "Sent invalid entity".to_string())));
-    let message = actix_bail!(msg
+    let message = actix_ensure_ok!(msg
       .msg
       .into_multibytes()
       .map_err(|_e| InvocationResponse::error(tx_id.clone(), "Sent invalid payload".to_string())));
@@ -256,12 +250,12 @@ impl Handler<Invocation> for WapcComponentActor {
     let invocation_map = self.invocation_map.clone();
     let guest_module = state.guest_module.clone();
     let payload =
-      actix_bail!(
-        serialize((inv_id.clone(), message)).map_err(|e| InvocationResponse::error(
+      actix_ensure_ok!(serialize((inv_id.clone(), message)).map_err(
+        |e| InvocationResponse::error(
           tx_id.clone(),
           format!("Could not serialize payload for WaPC component: {}", e)
-        ))
-      );
+        )
+      ));
 
     let request = async move {
       let invocation_id = inv_id.clone();
@@ -295,7 +289,7 @@ impl Handler<Invocation> for WapcComponentActor {
 
           let (port_name, msg) = next.unwrap();
           trace!("Native actor {} got output on port [{}]", name, port_name);
-          match tx.send(NativeOutputReady {
+          match tx.send(PushOutput {
             port: port_name.to_string(),
             payload: msg,
             invocation_id: invocation_id.to_string(),
@@ -315,54 +309,3 @@ impl Handler<Invocation> for WapcComponentActor {
     ActorResult::reply_async(request.into_actor(self))
   }
 }
-
-// impl Handler<Invocation> for WapcComponentActor {
-//   type Result = InvocationResponse;
-
-//   fn handle(&mut self, msg: Invocation, _ctx: &mut Self::Context) -> Self::Result {
-//     let state = self.state.as_ref().unwrap();
-//     let inv_id = msg.id.to_string();
-
-//     debug!(
-//       "Actor Invocation - From {} to {}",
-//       msg.origin.url(),
-//       msg.target.url(),
-//     );
-
-//     if let VinoEntity::Component(_) = msg.target {
-//       if let MessageTransport::MultiBytes(payload) = &msg.msg {
-//         let now = Instant::now();
-//         match serialize((inv_id, payload)) {
-//           Ok(bytes) => {
-//             trace!("Serialized job input in {} μs", now.elapsed().as_micros());
-//             let now = Instant::now();
-//             match state.guest_module.call("job", &bytes) {
-//               Ok(bytes) => {
-//                 trace!("Actor call took {} μs", now.elapsed().as_micros());
-//                 InvocationResponse::success(msg.tx_id, bytes)
-//               }
-//               Err(e) => {
-//                 error!("Error invoking actor: {} (from {})", e, msg.target.url());
-//                 debug!("Message: {:?}", &msg.msg);
-//                 InvocationResponse::error(msg.tx_id, e.to_string())
-//               }
-//             }
-//           }
-//           Err(e) => {
-//             InvocationResponse::error(msg.tx_id, format!("Error serializing payload: {}", e))
-//           }
-//         }
-//       } else {
-//         InvocationResponse::error(
-//           msg.tx_id,
-//           "Invalid payload sent from wapc actor".to_string(),
-//         )
-//       }
-//     } else {
-//       InvocationResponse::error(
-//         msg.tx_id,
-//         "Invalid entity invoked from wapc actor".to_string(),
-//       )
-//     }
-//   }
-// }

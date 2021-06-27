@@ -29,7 +29,8 @@ use crate::{
 pub struct Network {
   // host_labels: HashMap<String, String>,
   // kp: Option<KeyPair>,
-  // started: std::time::Instant,
+  started: bool,
+  started_time: std::time::Instant,
   allow_latest: bool,
   allowed_insecure: Vec<String>,
   host_id: String,
@@ -42,7 +43,8 @@ impl Default for Network {
     Network {
       // host_labels: HashMap::new(),
       // kp: None,
-      // started: std::time::Instant::now(),
+      started: false,
+      started_time: std::time::Instant::now(),
       allow_latest: false,
       allowed_insecure: vec![],
       host_id: "".to_string(),
@@ -61,6 +63,13 @@ impl Network {
       .get(id)
       .cloned()
       .ok_or_else(|| Error::NetworkError(format!("Schematic '{}' not found", id)))
+  }
+  pub fn ensure_is_started(&self) -> Result<()> {
+    if self.started {
+      Ok(())
+    } else {
+      Err(Error::NetworkError("Network not started".into()))
+    }
   }
 }
 
@@ -102,7 +111,7 @@ pub async fn request<T: AsRef<str> + Display>(
     schematic,
     time.elapsed().as_micros()
   );
-  trace!("{:?}", result);
+  trace!("Result: {:?}", result);
   Ok(result)
 }
 
@@ -146,8 +155,19 @@ impl Handler<Initialize> for Network {
           allowed_insecure: allowed_insecure.clone(),
         }))
       }
-      try_join_all(init_requests).await?;
-      Ok!(addr_map)
+
+      match try_join_all(init_requests).await {
+        Ok(results) => {
+          let errors: Vec<Error> = results.into_iter().filter_map(|e| e.err()).collect();
+          if errors.is_empty() {
+            debug!("Schematics initialized");
+            Ok(addr_map)
+          } else {
+            Err(itertools::join(errors, ", "))
+          }
+        }
+        Err(e) => Err(e.to_string()),
+      }
     };
 
     ActorResult::reply_async(
@@ -155,12 +175,13 @@ impl Handler<Initialize> for Network {
         .into_actor(self)
         .then(move |addr_map, network, _ctx| match addr_map {
           Ok(addr_map) => {
+            network.started = true;
             network.schematics = addr_map;
             ok(())
           }
           Err(e) => err(Error::NetworkError(format!(
-            "Error initializing schematics {}",
-            e.to_string()
+            "Error initializing schematics: {}",
+            e
           ))),
         }),
     )
@@ -178,45 +199,39 @@ impl Handler<Request> for Network {
   type Result = ActorResult<Self, Result<SchematicOutput>>;
 
   fn handle(&mut self, msg: Request, _ctx: &mut Context<Self>) -> Self::Result {
-    trace!("Requesting schematic '{}'", msg.schematic);
+    actix_try!(self.ensure_is_started());
     let schematic_name = msg.schematic;
-    let payload = msg.data;
+    trace!("Requesting schematic '{}'", schematic_name);
 
-    let tx_id = uuid::Uuid::new_v4();
-    trace!("Invoking schematic '{}'", schematic_name);
-    let schematic = meh_actix!(self.get_schematic(&schematic_name));
+    let schematic = actix_try!(self.get_schematic(&schematic_name));
 
     let request = super::schematic::Request {
-      tx_id: tx_id.to_string(),
+      tx_id: uuid::Uuid::new_v4().to_string(),
       schematic: schematic_name.to_string(),
-      payload,
+      payload: msg.data,
     };
 
-    ActorResult::reply_async(
-      async move {
-        let payload: InvocationResponse = schematic.send(request).await??;
-        trace!("Schematic {} finishing", schematic_name);
-        match payload {
-          InvocationResponse::Success { msg, .. } => match msg {
-            MessageTransport::Invalid => todo!(),
-            MessageTransport::Exception(_) => todo!(),
-            MessageTransport::Error(_) => todo!(),
-            MessageTransport::MessagePack(_) => todo!(),
-            MessageTransport::MultiBytes(map) => Ok(
-              map
-                .into_iter()
-                .map(|(name, payload)| (name, From::from(&payload)))
-                .collect(),
-            ),
-            MessageTransport::Test(_) => todo!(),
-            MessageTransport::OutputMap(map) => Ok(map),
-          },
-          InvocationResponse::Stream { .. } => todo!(),
-          InvocationResponse::Error { msg, .. } => Err(Error::ExecutionError(msg)),
-        }
+    let task = async move {
+      let payload: InvocationResponse = schematic.send(request).await??;
+      trace!("Schematic {} finishing", schematic_name);
+      match payload {
+        InvocationResponse::Success { msg, .. } => match msg {
+          MessageTransport::OutputMap(map) => Ok(map),
+          MessageTransport::MultiBytes(map) => Ok(
+            map
+              .into_iter()
+              .map(|(name, payload)| (name, From::from(&payload)))
+              .collect(),
+          ),
+          _ => unreachable!(),
+        },
+        InvocationResponse::Stream { .. } => unreachable!(),
+        InvocationResponse::Error { msg, .. } => Err(Error::ExecutionError(msg)),
       }
-      .into_actor(self),
-    )
+    }
+    .into_actor(self);
+
+    ActorResult::reply_async(task)
   }
 }
 
@@ -249,7 +264,7 @@ mod test {
         network: def,
       })
       .await??;
-    trace!("manifest applied");
+    trace!("Manifest applied");
     Ok(network)
   }
 
@@ -262,7 +277,7 @@ mod test {
         "right" => 302309,
     };
 
-    let mut result = request(&network, "test", data).await?;
+    let mut result = request(&network, "native_component", data).await?;
 
     println!("Result: {:?}", result);
     let output: MessageTransport = result.remove("output").unwrap();
@@ -282,7 +297,7 @@ mod test {
         "input" => "1234567890",
     };
 
-    let mut result = request(&network, "test", data).await?;
+    let mut result = request(&network, "wapc_component", data).await?;
 
     let output: MessageTransport = result.remove("output").unwrap();
     trace!("output: {:?}", output);
@@ -294,7 +309,7 @@ mod test {
     let data = hashmap! {
         "input" => "1234",
     };
-    let mut result = request(&network, "test", data).await?;
+    let mut result = request(&network, "wapc_component", data).await?;
 
     let output: MessageTransport = result.remove("output").unwrap();
     assert_eq!(
@@ -314,7 +329,7 @@ mod test {
         "input_port1" => "short",
     };
 
-    let mut result = request(&network, "test", data).await?;
+    let mut result = request(&network, "short_circuit", data).await?;
 
     println!("result: {:?}", result);
     let output1: MessageTransport = result.remove("output1").unwrap();

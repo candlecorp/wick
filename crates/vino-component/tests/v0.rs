@@ -1,9 +1,9 @@
 use anyhow::Result;
-use log::debug;
 use serde::{
   Deserialize,
   Serialize,
 };
+use tracing::debug;
 use vino_codec::messagepack::{
   deserialize,
   serialize,

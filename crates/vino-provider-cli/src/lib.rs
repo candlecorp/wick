@@ -6,4 +6,4 @@ pub type Error = error::CliError;
 
 pub use cli::init;
 #[macro_use]
-extern crate log;
+extern crate tracing;

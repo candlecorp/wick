@@ -17,7 +17,7 @@ tokio-stream = "0.1.6"
 serde = { version="1.0.118", features=["derive"] }
 async-stream = "0.3.2"
 rand = "0.8.4"
-log = "0.4.14"
+tracing = "0.1.26"
 thiserror = "1.0.25"
 async-trait = "0.1.50"
 

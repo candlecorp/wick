@@ -1,6 +1,6 @@
 ---
 schematics:
-  - name: test
+  - name: wapc_component
     external:
       - reference: ../test-wapc-component/build/test_component_s.wasm
         key: MB3GAIGQVCZHMLKD4T2LGI6CILHNOIJPPSLV2VDDH3ARHXDDJ5WXFV35
@@ -11,7 +11,7 @@ schematics:
         id: vino::log
     connections:
       - from:
-          instance: ::input
+          instance: <input>
           port: input
         to:
           instance: log
@@ -26,5 +26,5 @@ schematics:
           instance: validate
           port: output
         to:
-          instance: ::output
+          instance: <output>
           port: output

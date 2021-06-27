@@ -9,6 +9,7 @@ vino-provider = { path="../vino-provider" }
 vino-rpc = { path="../vino-rpc" }
 vino-codec = { path="../vino-codec" }
 vino-component = { path="../vino-component" }
+tracing = "0.1.26"
 log = "0.4.14"
 serde = { version="1.0.118", features=["derive"] }
 lazy_static = "1.4.0"
@@ -22,3 +23,4 @@ bcrypt = "0.10.0"
 maplit = "1.0.2"
 test-env-log = "0.2.7"
 env_logger = "0.8.4"
+tracing-subscriber = "0.2.18"

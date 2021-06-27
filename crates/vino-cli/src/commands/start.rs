@@ -1,10 +1,13 @@
 use std::path::PathBuf;
 
-use crate::{utils::merge_runconfig, Result};
-
-use vino_host::{HostBuilder, HostDefinition};
-
 use structopt::StructOpt;
+use vino_host::{
+  HostBuilder,
+  HostDefinition,
+};
+
+use crate::utils::merge_runconfig;
+use crate::Result;
 #[derive(Debug, Clone, StructOpt)]
 #[structopt(rename_all = "kebab-case")]
 pub struct StartCommand {
@@ -32,7 +35,7 @@ pub async fn handle_command(command: StartCommand) -> Result<String> {
 
   let config = merge_runconfig(config, command.nats, command.host);
 
-  debug!("Attempting connection to NATS server");
+  // debug!("Attempting connection to NATS server");
   // let nats_url = &format!("{}:{}", config.config.rpc_host, config.config.rpc_port);
   // let nc_rpc = nats_connection(
   //     nats_url,

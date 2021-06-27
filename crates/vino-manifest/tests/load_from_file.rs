@@ -1,7 +1,8 @@
 use std::path::PathBuf;
 
-use log::debug;
-use vino_manifest::{error::ManifestError, *};
+use tracing::debug;
+use vino_manifest::error::ManifestError;
+use vino_manifest::*;
 
 #[test_env_log::test]
 fn load_manifest_yaml() -> Result<(), ManifestError> {

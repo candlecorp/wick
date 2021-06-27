@@ -36,7 +36,10 @@ use crate::schematic_definition::{
   ProviderKind,
   SchematicDefinition,
 };
-use crate::schematic_model::SchematicModel;
+use crate::schematic_model::{
+  SchematicModel,
+  Validator,
+};
 use crate::schematic_response::{
   get_transaction_output,
   push_to_schematic_output,
@@ -154,7 +157,7 @@ impl Handler<Initialize> for Schematic {
     let allow_latest = msg.allow_latest;
     let allowed_insecure = msg.allowed_insecure;
     let model = SchematicModel::new(msg.schematic);
-
+    actix_try!(Validator::validate_early_errors(&model));
     self.network = Some(msg.network);
 
     let provider_initialization = InitializeProviders {
@@ -321,16 +324,16 @@ impl Handler<InitializeComponents> for Schematic {
 
 #[derive(Message, Debug)]
 #[rtype(result = "Result<()>")]
-pub struct NativeOutputReady {
+pub struct PushOutput {
   pub port: String,
   pub invocation_id: String,
   pub payload: Packet,
 }
 
-impl Handler<NativeOutputReady> for Schematic {
+impl Handler<PushOutput> for Schematic {
   type Result = ActorResult<Self, Result<()>>;
 
-  fn handle(&mut self, msg: NativeOutputReady, ctx: &mut Context<Self>) -> Self::Result {
+  fn handle(&mut self, msg: PushOutput, ctx: &mut Context<Self>) -> Self::Result {
     let metadata = self.invocation_map.get(&msg.invocation_id).cloned();
     let (tx_id, schematic_name, entity) = metadata.unwrap();
     trace!(
@@ -387,7 +390,7 @@ impl Handler<Request> for Schematic {
     let state = self.state.as_ref().unwrap();
     let model = state.model.clone();
 
-    let invocations = meh_actix!(generate_packets(
+    let invocations = actix_try!(generate_packets(
       model,
       &state.seed,
       tx_id.to_string(),
@@ -447,7 +450,7 @@ impl Handler<GetTransactionOutput> for Schematic {
 #[rtype(result = "Result<()>")]
 struct PayloadReceived {
   tx_id: String,
-  origin: VinoEntity,
+  origin: PortEntity,
   target: PortEntity,
   payload: MessageTransport,
 }
@@ -476,12 +479,16 @@ fn generate_packets(
         .unwrap_or_else(|| panic!("Output on port '{}' not found", conn.to.instance));
 
       PayloadReceived {
+        origin: PortEntity {
+          schematic: name.to_string(),
+          name: conn.from.port.to_string(),
+          reference: conn.from.instance.to_string(),
+        },
         target: PortEntity {
           schematic: name.to_string(),
           name: conn.to.port.to_string(),
           reference: conn.to.instance.to_string(),
         },
-        origin: VinoEntity::Schematic(name.to_string()),
         tx_id: tx_id.to_string(),
         payload: MessageTransport::MessagePack(bytes.clone()),
       }
@@ -555,10 +562,10 @@ impl Handler<PayloadReceived> for Schematic {
     let status = if !payload.is_ok() {
       ComponentStatus::ShortCircuit(payload)
     } else {
-      meh_actix!(self
+      actix_try!(self
         .transaction_map
         .push_to_port(&tx_id, port.clone(), payload));
-      let metadata = meh_actix!({
+      let metadata = actix_try!({
         let lock = model.lock().unwrap();
         lock.get_component_metadata(&reference)
       });
@@ -575,9 +582,9 @@ impl Handler<PayloadReceived> for Schematic {
       if !ready {
         ComponentStatus::Waiting
       } else {
-        let kp = meh_actix!(KeyPair::from_seed(&state.seed));
+        let kp = actix_try!(KeyPair::from_seed(&state.seed));
         let def = self.get_component(&reference).unwrap();
-        let job_data = meh_actix!(self.transaction_map.take_from_ports(&tx_id, input_ports));
+        let job_data = actix_try!(self.transaction_map.take_from_ports(&tx_id, input_ports));
         ComponentStatus::Ready(Invocation::next(
           &tx_id,
           &kp,
@@ -646,12 +653,12 @@ impl Handler<PayloadReceived> for Schematic {
                     match schematic_host.send(next).await {
                       Ok(_) => {
                         debug!(
-                          "sent ready output to network for {}:{}:{}",
+                          "Sent ready output to network for {}:{}:{}",
                           tx_id, name, target
                         );
                       }
                       Err(e) => {
-                        error!("error sending ready output: {}", e);
+                        error!("Error sending ready output: {}", e);
                       }
                     };
                   }
@@ -762,11 +769,11 @@ impl Handler<OutputReady> for Schematic {
     let defs = self.get_connections(&reference, &port);
     let addr = ctx.address();
     let task = async move {
-      let origin = VinoEntity::Port(PortEntity {
+      let origin = PortEntity {
         schematic: schematic.to_string(),
         name: port.to_string(),
         reference: reference.to_string(),
-      });
+      };
       let to_message = |conn: ConnectionDefinition| PayloadReceived {
         tx_id: tx_id.clone(),
         origin: origin.clone(),
@@ -984,7 +991,7 @@ mod test {
       "logger".to_string(),
       ComponentDefinition {
         metadata: None,
-        id: "test-namespace::log".to_string(),
+        id: "test-namespace::test-component".to_string(),
       },
     );
     schematic_def.connections.push(ConnectionDefinition {
