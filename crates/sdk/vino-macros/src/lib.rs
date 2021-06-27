@@ -48,5 +48,39 @@ macro_rules! Ok {
   };
 }
 
+#[allow(unused_macros)]
+#[macro_export]
+macro_rules! log_tap {
+  ($expr:expr $(,)?) => {{
+    let _e = $expr;
+    log::trace!("{:?}", $expr);
+    _e
+  }};
+}
+
+#[macro_export]
+macro_rules! meh {
+  ($expr:expr $(,)?) => {{
+    match $expr {
+      Ok(_) => {}
+      Err(e) => {
+        log::error!("Unexpected error: {}", e);
+      }
+    }
+  }};
+}
+
+#[macro_export]
+macro_rules! bail {
+  ($expr:expr $(,)?) => {{
+    match $expr {
+      Ok(_) => {}
+      Err(e) => {
+        return e;
+      }
+    }
+  }};
+}
+
 #[cfg(test)]
 mod test {}
