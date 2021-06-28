@@ -10,8 +10,13 @@ pub(crate) type Inputs = Vec<String>;
 pub(crate) type Outputs = Vec<String>;
 
 use actix::prelude::*;
+use actix_rt::task::JoinHandle;
+use tonic::transport::Server;
+use vino_rpc::rpc::invocation_service_server::InvocationServiceServer;
 use vino_rpc::{
   HostedType,
+  InvocationServer,
+  RpcHandler,
   Statistics,
 };
 
@@ -91,4 +96,27 @@ impl ProviderResponse {
   pub(crate) fn into_invocation_response(self) -> Result<()> {
     todo!()
   }
+}
+
+pub(crate) fn make_grpc_server(
+  socket: tokio::net::TcpSocket,
+  provider: impl RpcHandler + 'static,
+) -> JoinHandle<std::result::Result<(), tonic::transport::Error>> {
+  let component_service = InvocationServer::new(provider);
+
+  let svc = InvocationServiceServer::new(component_service);
+
+  let listener = tokio_stream::wrappers::TcpListenerStream::new(socket.listen(1).unwrap());
+
+  tokio::spawn(
+    Server::builder()
+      .add_service(svc)
+      .serve_with_incoming(listener),
+  )
+}
+
+pub(crate) fn bind_new_socket() -> Result<tokio::net::TcpSocket> {
+  let socket = tokio::net::TcpSocket::new_v4()?;
+  socket.bind("127.0.0.1:0".parse().unwrap())?;
+  Ok(socket)
 }

@@ -9,7 +9,7 @@ network:
           id: vino::log
       connections:
         - from:
-            instance: vino::schematic_input
+            instance: <input>
             port: input
           to:
             instance: logger
@@ -18,5 +18,5 @@ network:
             instance: logger
             port: output
           to:
-            instance: vino::schematic_output
+            instance: <output>
             port: output

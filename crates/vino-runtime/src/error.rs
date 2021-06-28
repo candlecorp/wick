@@ -66,6 +66,8 @@ pub enum VinoError {
   #[error(transparent)]
   CodecError(#[from] vino_codec::Error),
   #[error(transparent)]
+  ManifestError(#[from] vino_manifest::Error),
+  #[error(transparent)]
   TransportError(#[from] vino_transport::Error),
   #[error(transparent)]
   YamlError(#[from] serde_yaml::Error),

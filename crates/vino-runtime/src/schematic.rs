@@ -803,6 +803,10 @@ mod test {
   };
 
   use super::*;
+  use crate::components::{
+    bind_new_socket,
+    make_grpc_server,
+  };
   use crate::schematic_definition::{
     ComponentDefinition,
     ConnectionDefinition,
@@ -976,6 +980,10 @@ mod test {
 
   #[test_env_log::test(actix_rt::test)]
   async fn test_grpc_url_provider() -> Result<()> {
+    let socket = bind_new_socket()?;
+    let port = socket.local_addr()?.port();
+    let init_handle = make_grpc_server(socket, test_vino_provider::Provider::default());
+
     let schematic = Schematic::default();
     let addr = schematic.start();
     let schematic_name = "logger";
@@ -984,7 +992,7 @@ mod test {
     schematic_def.providers.push(ProviderDefinition {
       namespace: "test-namespace".to_string(),
       kind: ProviderKind::GrpcUrl,
-      reference: "http://127.0.0.1:54321".to_string(),
+      reference: format!("http://127.0.0.1:{}", port),
       data: HashMap::new(),
     });
     schematic_def.components.insert(

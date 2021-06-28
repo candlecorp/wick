@@ -42,9 +42,9 @@ thiserror = "1.0.25"
 oci-distribution = "0.6.0"
 nkeys = "0.1.0"
 derivative = "2.2.0"
-tokio = { version="1.4.0", features=["macros", "net", "rt-multi-thread"] }
 tonic = { version="0.4.3", features=["tls"] }
-tokio-stream = "0.1.6"
+tokio = { version="1.4.0", features=["macros", "net", "rt-multi-thread"] }
+tokio-stream = { version="0.1.6", features=["net"] }
 itertools = "0.10.1"
 tracing = "0.1.26"
 log-derive = "0.4.1"

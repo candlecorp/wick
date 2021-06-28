@@ -239,11 +239,21 @@ pub type MetadataMap = HashMap<String, ComponentModel>;
 
 #[cfg(test)]
 mod test {
+  use std::fs;
+  use std::path::{
+    Path,
+    PathBuf,
+  };
+  use std::str::FromStr;
+
   use actix::Addr;
   use maplit::hashmap;
   use test_env_log::test;
   use vino_codec::messagepack::serialize;
-  use vino_manifest::NetworkManifest;
+  use vino_manifest::{
+    Loadable,
+    NetworkManifest,
+  };
   use vino_transport::MessageTransport;
   use wascap::prelude::KeyPair;
 
@@ -251,8 +261,12 @@ mod test {
   use crate::network::Initialize;
   use crate::util::hlreg::HostLocalSystemService;
 
-  async fn init_network(yaml: &str) -> Result<Addr<Network>> {
-    let def = NetworkDefinition::new(&NetworkManifest::V0(serde_yaml::from_str(yaml)?));
+  async fn init_network(path: &str) -> Result<Addr<Network>> {
+    let manifest = NetworkManifest::V0(vino_manifest::v0::NetworkManifest::from_yaml(
+      &fs::read_to_string(path)?,
+    )?);
+    println!("{:#?}", manifest);
+    let def = NetworkDefinition::new(&manifest);
     debug!("Manifest loaded");
     let kp = KeyPair::new_server();
 
@@ -270,7 +284,7 @@ mod test {
 
   #[test_env_log::test(actix_rt::test)]
   async fn native_component() -> Result<()> {
-    let network = init_network(include_str!("./test/native-component.yaml")).await?;
+    let network = init_network("./manifests/native-component.yaml").await?;
 
     let data = hashmap! {
         "left" => 42,
@@ -291,7 +305,7 @@ mod test {
 
   #[test_env_log::test(actix_rt::test)]
   async fn wapc_component() -> Result<()> {
-    let network = init_network(include_str!("./test/wapc-component.yaml")).await?;
+    let network = init_network("./manifests/wapc-component.yaml").await?;
 
     let data = hashmap! {
         "input" => "1234567890",
@@ -322,7 +336,7 @@ mod test {
 
   #[test_env_log::test(actix_rt::test)]
   async fn short_circuit() -> Result<()> {
-    let network = init_network(include_str!("./test/short-circuit.yaml")).await?;
+    let network = init_network("./manifests/short-circuit.yaml").await?;
 
     trace!("requesting schematic execution");
     let data = hashmap! {
@@ -343,7 +357,7 @@ mod test {
 
   #[test_env_log::test(actix_rt::test)]
   async fn multiple_schematics() -> Result<()> {
-    let network = init_network(include_str!("./test/multiple-schematics.yaml")).await?;
+    let network = init_network("./manifests/multiple-schematics.yaml").await?;
 
     let data = hashmap! {
         "left" => 42,

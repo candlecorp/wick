@@ -27,6 +27,7 @@ use std::fs::read_to_string;
 use std::path::Path;
 
 use hocon::HoconLoader;
+use serde::Deserialize;
 use tracing::debug;
 
 /// Vino Manifest error
@@ -61,9 +62,15 @@ pub enum SchematicManifest {
   V0(v0::SchematicManifest),
 }
 
-impl HostManifest {
-  /// Load a manifest from a file
-  pub fn load_from_file(path: &Path) -> Result<HostManifest> {
+trait DeserializeBorrowed<'de> {
+  type Deserialize: Deserialize<'de>;
+}
+
+/// The Loadable trait can be used for any deserializable struct that can be loaded from
+/// YAML, Hocon, or any other supported format.
+pub trait Loadable<T> {
+  /// Load struct from file by trying all the supported file formats
+  fn load_from_file(path: &Path) -> Result<T> {
     if !path.exists() {
       return Err(Error::FileNotFound(path.to_string_lossy().into()));
     }
@@ -86,8 +93,15 @@ impl HostManifest {
       }
     })
   }
+  /// Load as YAML
+  fn from_yaml(src: &str) -> Result<T>;
 
-  pub(crate) fn from_hocon(src: &str) -> Result<HostManifest> {
+  /// Load as Hocon
+  fn from_hocon(src: &str) -> Result<T>;
+}
+
+impl Loadable<HostManifest> for HostManifest {
+  fn from_hocon(src: &str) -> Result<HostManifest> {
     debug!("Trying to parse manifest as hocon");
     let raw = HoconLoader::new().strict().load_str(src)?.hocon()?;
 
@@ -100,7 +114,7 @@ impl HostManifest {
     }
   }
 
-  pub(crate) fn from_yaml(src: &str) -> Result<HostManifest> {
+  fn from_yaml(src: &str) -> Result<HostManifest> {
     debug!("Trying to parse manifest as yaml");
     let raw: serde_yaml::Value = serde_yaml::from_str(src)?;
 
@@ -109,5 +123,24 @@ impl HostManifest {
       "0" => Ok(HostManifest::V0(serde_yaml::from_str(src)?)),
       _ => Err(Error::VersionError(a.to_string())),
     }
+  }
+}
+
+impl Loadable<v0::NetworkManifest> for v0::NetworkManifest {
+  fn from_hocon(src: &str) -> Result<v0::NetworkManifest> {
+    debug!("Trying to parse manifest as hocon");
+    println!("src: {}", src);
+    let result = hocon::de::from_str(src).map_err(crate::Error::HoconError)?;
+    debug!("Hocon parsed successfully: {:?}", result);
+    Ok(result)
+  }
+
+  fn from_yaml(src: &str) -> Result<v0::NetworkManifest> {
+    debug!("Trying to parse manifest as yaml");
+    println!("src: {}", src);
+
+    let result = serde_yaml::from_str(src)?;
+    debug!("Yaml parsed successfully");
+    Ok(result)
   }
 }

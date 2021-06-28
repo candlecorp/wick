@@ -348,7 +348,6 @@ mod test {
     Ipv4Addr,
     SocketAddr,
   };
-  use std::str::FromStr;
   use std::time::Duration;
 
   use actix::clock::sleep;
@@ -363,29 +362,19 @@ mod test {
   use vino_transport::MessageTransport;
 
   use super::*;
+  use crate::components::{
+    bind_new_socket,
+    make_grpc_server,
+  };
   use crate::dispatch::ComponentEntity;
   use crate::VinoEntity;
-
-  #[instrument(skip(provider))]
-  fn make_grpc_server(
-    provider: Provider,
-  ) -> JoinHandle<std::result::Result<(), tonic::transport::Error>> {
-    let addr: SocketAddr =
-      SocketAddr::new(IpAddr::V4(Ipv4Addr::from_str("127.0.0.1").unwrap()), 54321);
-
-    debug!("Binding to {:?}", addr.to_string());
-
-    let component_service = InvocationServer::new(provider);
-
-    let svc = InvocationServiceServer::new(component_service);
-
-    tokio::spawn(Server::builder().add_service(svc).serve(addr))
-  }
 
   #[test_env_log::test(actix_rt::test)]
   #[instrument]
   async fn test_initialize() -> Result<()> {
-    let init_handle = make_grpc_server(Provider::default());
+    let socket = bind_new_socket()?;
+    let port = socket.local_addr()?.port();
+    let init_handle = make_grpc_server(socket, Provider::default());
     let user_data = "test string payload";
 
     let work = async move {
@@ -394,7 +383,7 @@ mod test {
       grpc_provider
         .send(Initialize {
           namespace: "test".to_string(),
-          address: "https://127.0.0.1:54321".to_string(),
+          address: format!("https://127.0.0.1:{}", port),
           signing_seed: "seed".to_string(),
         })
         .await??;

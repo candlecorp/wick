@@ -1,8 +1,12 @@
 use std::path::Path;
 
-use crate::Result;
-use vino_manifest::HostManifest;
+use vino_manifest::{
+  HostManifest,
+  Loadable,
+};
 use vino_runtime::NetworkDefinition;
+
+use crate::Result;
 
 #[derive(Debug, Clone, Default)]
 pub struct HostDefinition {
