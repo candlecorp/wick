@@ -1,4 +1,16 @@
 #[macro_export]
+macro_rules! meh {
+  ($expr:expr $(,)?) => {{
+    match $expr {
+      Ok(_) => {}
+      Err(e) => {
+        log::error!("Unexpected error: {}", e);
+      }
+    }
+  }};
+}
+
+#[macro_export]
 macro_rules! ensure {
     ($cond:expr $(,)?) => {
         $crate::ensure!(
@@ -55,18 +67,6 @@ macro_rules! log_tap {
     let _e = $expr;
     log::trace!("{:?}", $expr);
     _e
-  }};
-}
-
-#[macro_export]
-macro_rules! meh {
-  ($expr:expr $(,)?) => {{
-    match $expr {
-      Ok(_) => {}
-      Err(e) => {
-        log::error!("Unexpected error: {}", e);
-      }
-    }
   }};
 }
 
