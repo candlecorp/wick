@@ -1,11 +1,16 @@
-use vino_provider::provider_component;
+use vino_provider::Context;
+use vino_rpc::port::Sender;
 
-use crate::Result;
+pub(crate) use super::generated::add::{
+  Inputs,
+  Outputs,
+};
 
-provider_component! {
-  add,
-  fn job(input: Inputs, output: Outputs, _context: Context<crate::State>) -> Result<()> {
-        output.output.send(input.left + input.right);
-        Ok(())
-    }
+pub(crate) async fn job(
+  input: Inputs,
+  output: Outputs,
+  _context: Context<crate::State>,
+) -> std::result::Result<(), Box<dyn std::error::Error + Send + Sync>> {
+  output.output.send(input.left + input.right);
+  Ok(())
 }

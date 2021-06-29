@@ -1,0 +1,43 @@
+[package]
+name = "vinoc"
+version = "0.1.0"
+edition = "2018"
+default-run = "vinoc"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+wapc = { version="0.10.1" }
+vino-component = { path="../vino-component" }
+chrono = "0.4.19"
+colored = "2.0.0"
+log = "0.4.11"
+env_logger = "0.8.3"
+actix-rt = "2.1.0"
+# nats = "0.9.18"
+structopt = "0.3.21"
+nkeys = "0.1.0"
+futures = "0.3.13"
+serde_json = "1.0.64"
+serde_yaml = "0.8.17"
+serde = "1.0.126"
+thiserror = "1.0.24"
+oci-distribution = "0.6"
+unsafe-io = "= 0.6.2"
+logger = { path="../logger" }
+vino-runtime = { path="../vino-runtime" }
+vino-transport = { path="../vino-transport" }
+vino-host = { path="../vino-host" }
+vino-manifest = { path="../vino-manifest" }
+vino-codec = { path="../vino-codec" }
+vino-rpc = { path="../vino-rpc" }
+tonic = { version="0.4.3", features=["tls"] }
+
+[dev-dependencies]
+test_bin = "0.3.0"
+maplit = "1.0.2"
+test-env-log = "0.2.7"
+
+[[bin]]
+name = "vinoc"
+path = "src/main.rs"

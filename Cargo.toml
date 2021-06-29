@@ -33,6 +33,7 @@ tracing-subscriber = "0.2.18"
 [workspace]
 members = [
   "crates/vino-cli",
+  "crates/vino-ctl",
   "crates/vino-macros",
   "crates/logger",
   "crates/vino-runtime",
@@ -46,4 +47,5 @@ members = [
   "crates/vino-provider-cli",
   "crates/test-vino-provider",
   "crates/test-wapc-component",
+  "crates/vino-wellknown-document-collection",
 ]

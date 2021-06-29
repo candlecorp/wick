@@ -54,13 +54,13 @@ pub async fn load_wasm(
 }
 
 #[derive(Debug)]
-pub(crate) enum ProviderMessage {
+pub(crate) enum ProviderRequest {
   Invoke(Invocation),
   List(ListRequest),
   Statistics(StatsRequest),
 }
 
-impl Message for ProviderMessage {
+impl Message for ProviderRequest {
   type Result = Result<ProviderResponse>;
 }
 
@@ -96,27 +96,4 @@ impl ProviderResponse {
   pub(crate) fn into_invocation_response(self) -> Result<()> {
     todo!()
   }
-}
-
-pub(crate) fn make_grpc_server(
-  socket: tokio::net::TcpSocket,
-  provider: impl RpcHandler + 'static,
-) -> JoinHandle<std::result::Result<(), tonic::transport::Error>> {
-  let component_service = InvocationServer::new(provider);
-
-  let svc = InvocationServiceServer::new(component_service);
-
-  let listener = tokio_stream::wrappers::TcpListenerStream::new(socket.listen(1).unwrap());
-
-  tokio::spawn(
-    Server::builder()
-      .add_service(svc)
-      .serve_with_incoming(listener),
-  )
-}
-
-pub(crate) fn bind_new_socket() -> Result<tokio::net::TcpSocket> {
-  let socket = tokio::net::TcpSocket::new_v4()?;
-  socket.bind("127.0.0.1:0".parse().unwrap())?;
-  Ok(socket)
 }

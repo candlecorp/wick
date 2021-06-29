@@ -11,7 +11,7 @@ use vino_rpc::{
 };
 
 use super::{
-  ProviderMessage,
+  ProviderRequest,
   ProviderResponse,
 };
 use crate::actix::ActorResult;
@@ -183,10 +183,10 @@ impl Handler<Invocation> for NativeProvider {
   }
 }
 
-impl Handler<ProviderMessage> for NativeProvider {
+impl Handler<ProviderRequest> for NativeProvider {
   type Result = ActorResult<Self, Result<ProviderResponse>>;
 
-  fn handle(&mut self, msg: ProviderMessage, _ctx: &mut Self::Context) -> Self::Result {
+  fn handle(&mut self, msg: ProviderRequest, _ctx: &mut Self::Context) -> Self::Result {
     let state = self.state.as_ref().unwrap();
     let provider = state.provider.clone();
 
@@ -194,12 +194,12 @@ impl Handler<ProviderMessage> for NativeProvider {
       let provider = provider.lock().await;
       returns!(ProviderResponse);
       match msg {
-        ProviderMessage::Invoke(_invocation) => todo!(),
-        ProviderMessage::List(_req) => {
+        ProviderRequest::Invoke(_invocation) => todo!(),
+        ProviderRequest::List(_req) => {
           let list = provider.list_registered().await?;
           Ok(ProviderResponse::List(list))
         }
-        ProviderMessage::Statistics(_req) => {
+        ProviderRequest::Statistics(_req) => {
           let stats = provider.report_statistics(None).await?;
           Ok(ProviderResponse::Stats(stats))
         }
@@ -234,7 +234,7 @@ mod test {
       .await??;
 
     let response = addr
-      .send(super::super::ProviderMessage::List(ListRequest {}))
+      .send(super::super::ProviderRequest::List(ListRequest {}))
       .await??;
     println!("response: {:?}", response);
     let list = response.into_list_response()?;

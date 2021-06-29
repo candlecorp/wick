@@ -1,12 +1,17 @@
-use vino_provider::provider_component;
+use vino_provider::Context;
+use vino_rpc::port::Sender;
 
-use crate::Result;
+pub(crate) use super::generated::log::{
+  Inputs,
+  Outputs,
+};
 
-provider_component! {
-  log,
-  fn job(input: Inputs, output: Outputs, _context: Context<crate::State>) -> Result<()> {
-        println!("Logger: {}", input.input);
-        output.output.done(input.input);
-        Ok(())
-    }
+pub(crate) async fn job(
+  input: Inputs,
+  output: Outputs,
+  _context: Context<crate::State>,
+) -> std::result::Result<(), Box<dyn std::error::Error + Send + Sync>> {
+  println!("Logger: {}", input.input);
+  output.output.done(input.input);
+  Ok(())
 }

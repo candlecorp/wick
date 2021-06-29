@@ -12,5 +12,5 @@ pub struct ComponentModel {
   pub name: String,
   pub inputs: Inputs,
   pub outputs: Outputs,
-  pub addr: Recipient<Invocation>,
+  pub(crate) addr: Recipient<Invocation>,
 }

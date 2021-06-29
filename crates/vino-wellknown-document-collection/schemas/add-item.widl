@@ -1,0 +1,11 @@
+namespace "add-item"
+
+type Inputs {
+  document_id: string
+  collection_id: string
+  document: string
+}
+
+type Outputs {
+  document_id: string
+}

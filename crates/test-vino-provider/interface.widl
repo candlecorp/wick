@@ -1,0 +1,5 @@
+import { Inputs as TestComponentInputs, Outputs as TestComponentOutputs }  from "test-component"
+
+interface {
+  test_component(inputs: TestComponentInputs, outputs: TestComponentOutputs) @rename("test-component")
+}

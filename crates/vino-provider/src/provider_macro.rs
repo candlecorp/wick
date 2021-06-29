@@ -1,17 +1,16 @@
 #[macro_export]
 macro_rules! provider_component {(
   $component_name:ident,
-  fn job($inputs_name:ident:Inputs, $outputs_name:ident:Outputs, $context_name: ident: Context<$context_type:ty>) -> $result_type:ty $fun:block
+  fn job($inputs_name:ident:Inputs, $outputs_name:ident:Outputs, $context_name: ident: Context<$context_type:ty>) -> Result<()> $fun:block
 ) => {
     use std::collections::HashMap;
-    use log::{debug,trace};
+    use log::{trace};
     use vino_provider::{error::ProviderError, Context as ProviderContext};
     use vino_provider::{VinoProviderComponent};
     use vino_rpc::port::{Sender, Receiver};
     use async_trait::async_trait;
-    use std::sync::{Arc, Mutex};
 
-    pub(crate) use super::generated::$component_name::{Outputs, InputEncoded, get_outputs, inputs_list, outputs_list, deserialize_inputs};
+    pub(crate) use super::generated::$component_name::{Outputs, get_outputs, inputs_list, outputs_list, deserialize_inputs};
     pub(crate) use super::generated::$component_name::{Inputs};
 
     pub(crate) struct Component {}
@@ -40,7 +39,7 @@ macro_rules! provider_component {(
           trace!("Job passed data: {:?}", data);
           let inputs = deserialize_inputs(&data).map_err(ProviderError::InputDeserializationError)?;
           let (outputs, receiver) = get_outputs();
-          let result : $result_type = job(inputs, outputs, context).await;
+          let result = job(inputs, outputs, context).await;
           match result {
             Ok(_) => Ok(receiver),
             Err(e) => Err(ProviderError::JobError("Job failed".to_string()).into())
@@ -49,5 +48,5 @@ macro_rules! provider_component {(
 
     }
 
-    pub(crate) async fn job($inputs_name: Inputs, $outputs_name: Outputs, $context_name: ProviderContext<$context_type>) -> $result_type $fun
+    pub(crate) async fn job($inputs_name: Inputs, $outputs_name: Outputs, $context_name: ProviderContext<$context_type>) -> std::result::Result<(), Box<dyn std::error::Error + Send + Sync>> $fun
 }}

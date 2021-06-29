@@ -98,11 +98,6 @@ mod tests {
     v0,
     Packet,
   };
-  use vino_rpc::{
-    Component,
-    HostedType,
-    Port,
-  };
 
   use super::*;
 

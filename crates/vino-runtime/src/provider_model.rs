@@ -8,7 +8,7 @@ use crate::component_model::ComponentModel;
 use crate::components::{
   grpc_url_provider,
   native_provider,
-  ProviderMessage,
+  ProviderRequest,
 };
 use crate::prelude::*;
 use crate::schematic_definition::{
@@ -17,11 +17,10 @@ use crate::schematic_definition::{
 };
 
 #[derive(Debug)]
-pub(crate) struct ProviderModel {
+pub struct ProviderModel {
   pub(crate) arbiter: Arbiter,
-  pub(crate) namespace: String,
-  pub(crate) addr: Box<Recipient<ProviderMessage>>,
-  pub(crate) components: HashMap<String, ComponentModel>,
+  pub namespace: String,
+  pub components: HashMap<String, ComponentModel>,
 }
 
 pub(crate) async fn initialize_provider(
@@ -48,7 +47,6 @@ pub(crate) async fn initialize_provider(
       ProviderModel {
         arbiter,
         namespace,
-        addr: Box::new(addr.recipient()),
         components,
       }
     }
@@ -68,7 +66,6 @@ pub(crate) async fn initialize_provider(
       ProviderModel {
         arbiter,
         namespace,
-        addr: Box::new(addr.recipient()),
         components,
       }
     }

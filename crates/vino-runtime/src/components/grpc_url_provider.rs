@@ -21,7 +21,7 @@ use vino_rpc::{
 };
 
 use super::{
-  ProviderMessage,
+  ProviderRequest,
   ProviderResponse,
 };
 use crate::actix::ActorResult;
@@ -171,10 +171,10 @@ impl Handler<InitializeComponents> for GrpcUrlProvider {
   }
 }
 
-impl Handler<ProviderMessage> for GrpcUrlProvider {
+impl Handler<ProviderRequest> for GrpcUrlProvider {
   type Result = ActorResult<Self, Result<ProviderResponse>>;
 
-  fn handle(&mut self, msg: ProviderMessage, ctx: &mut Self::Context) -> Self::Result {
+  fn handle(&mut self, msg: ProviderRequest, ctx: &mut Self::Context) -> Self::Result {
     let state = self.state.as_ref().unwrap();
     let mut client = state.client.clone();
     let namespace = self.namespace.clone();
@@ -183,8 +183,8 @@ impl Handler<ProviderMessage> for GrpcUrlProvider {
     let task = async move {
       returns!(ProviderResponse);
       match msg {
-        ProviderMessage::Invoke(_invocation) => todo!(),
-        ProviderMessage::List(_req) => {
+        ProviderRequest::Invoke(_invocation) => todo!(),
+        ProviderRequest::List(_req) => {
           let list = client
             .list(ListRequest {})
             .instrument(debug_span!("client.list"))
@@ -216,7 +216,7 @@ impl Handler<ProviderMessage> for GrpcUrlProvider {
 
           Ok(ProviderResponse::List(hosted_types))
         }
-        ProviderMessage::Statistics(_req) => {
+        ProviderRequest::Statistics(_req) => {
           let stats = client
             .stats(StatsRequest {
               kind: Some(rpc::stats_request::Kind::All(Format {})),
@@ -343,29 +343,20 @@ impl Handler<Invocation> for GrpcUrlProvider {
 #[cfg(test)]
 mod test {
 
-  use std::net::{
-    IpAddr,
-    Ipv4Addr,
-    SocketAddr,
-  };
   use std::time::Duration;
 
   use actix::clock::sleep;
-  use actix_rt::task::JoinHandle;
   use maplit::hashmap;
   use test_vino_provider::Provider;
-  use tonic::transport::Server;
   use tracing::Instrument;
   use vino_codec::messagepack::serialize;
-  use vino_rpc::rpc::invocation_service_server::InvocationServiceServer;
-  use vino_rpc::InvocationServer;
+  use vino_rpc::{
+    bind_new_socket,
+    make_rpc_server,
+  };
   use vino_transport::MessageTransport;
 
   use super::*;
-  use crate::components::{
-    bind_new_socket,
-    make_grpc_server,
-  };
   use crate::dispatch::ComponentEntity;
   use crate::VinoEntity;
 
@@ -374,7 +365,7 @@ mod test {
   async fn test_initialize() -> Result<()> {
     let socket = bind_new_socket()?;
     let port = socket.local_addr()?.port();
-    let init_handle = make_grpc_server(socket, Provider::default());
+    let init_handle = make_rpc_server(socket, Provider::default());
     let user_data = "test string payload";
 
     let work = async move {

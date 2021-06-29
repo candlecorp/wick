@@ -240,11 +240,6 @@ pub type MetadataMap = HashMap<String, ComponentModel>;
 #[cfg(test)]
 mod test {
   use std::fs;
-  use std::path::{
-    Path,
-    PathBuf,
-  };
-  use std::str::FromStr;
 
   use actix::Addr;
   use maplit::hashmap;

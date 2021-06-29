@@ -20,11 +20,11 @@ type ComponentReference = String;
 type ComponentId = String;
 
 #[derive(Debug, Default)]
-pub(crate) struct SchematicModel {
-  pub(crate) definition: SchematicDefinition,
-  components: HashMap<ComponentId, ComponentModel>,
-  references: HashMap<ComponentReference, String>,
-  providers: HashMap<String, ProviderModel>,
+pub struct SchematicModel {
+  pub definition: SchematicDefinition,
+  pub components: HashMap<ComponentId, ComponentModel>,
+  pub references: HashMap<ComponentReference, String>,
+  pub providers: HashMap<String, ProviderModel>,
 }
 
 impl SchematicModel {

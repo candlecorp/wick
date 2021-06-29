@@ -1,17 +1,45 @@
+//! Vino RPC implementation
+
+#![deny(
+  warnings,
+  missing_debug_implementations,
+  trivial_casts,
+  trivial_numeric_casts,
+  unsafe_code,
+  unstable_features,
+  unused_import_braces,
+  unused_qualifications,
+  type_alias_bounds,
+  trivial_bounds,
+  mutable_transmutes,
+  invalid_value,
+  explicit_outlives_requirements,
+  deprecated,
+  clashing_extern_declarations,
+  clippy::expect_used,
+  clippy::explicit_deref_methods,
+  // missing_docs
+)]
+#![warn(clippy::cognitive_complexity)]
+
 pub mod error;
 pub mod generated;
 pub mod invocation_server;
 pub mod port;
 use std::collections::HashMap;
-use std::iter::FromIterator;
+use std::convert::TryFrom;
 
 use async_trait::async_trait;
 pub use generated::vino as rpc;
+use generated::vino::component::ComponentKind;
+use generated::vino::invocation_service_server::InvocationServiceServer;
 pub use invocation_server::InvocationServer;
 use serde::{
   Deserialize,
   Serialize,
 };
+use tokio::task::JoinHandle;
+use tonic::transport::Server;
 use vino_component::v0::Payload;
 use vino_component::Packet;
 
@@ -21,6 +49,9 @@ pub type RpcResult<T> = std::result::Result<T, Box<dyn std::error::Error + Send 
 
 #[macro_use]
 extern crate tracing;
+
+#[macro_use]
+extern crate derivative;
 
 #[derive(Debug, Default, Serialize, Deserialize, PartialEq)]
 pub struct Component {
@@ -84,8 +115,8 @@ pub trait RpcHandler: Send + Sync {
     component: String,
     payload: HashMap<String, Vec<u8>>,
   ) -> RpcResult<crate::port::Receiver>;
-  async fn list_registered(&self) -> RpcResult<Vec<crate::HostedType>>;
-  async fn report_statistics(&self, id: Option<String>) -> RpcResult<Vec<crate::Statistics>>;
+  async fn list_registered(&self) -> RpcResult<Vec<HostedType>>;
+  async fn report_statistics(&self, id: Option<String>) -> RpcResult<Vec<Statistics>>;
 }
 
 impl From<HostedType> for crate::rpc::Component {
@@ -97,8 +128,32 @@ impl From<HostedType> for crate::rpc::Component {
   }
 }
 
-impl From<crate::Component> for crate::generated::vino::Component {
-  fn from(v: crate::Component) -> Self {
+impl TryFrom<crate::rpc::Component> for HostedType {
+  type Error = Error;
+
+  fn try_from(value: crate::rpc::Component) -> Result<Self> {
+    let kind = ComponentKind::from_i32(value.kind)
+      .ok_or_else(|| Error::Other("Invalid component kind".to_string()))?;
+
+    match kind {
+      ComponentKind::Component => Ok(HostedType::Component(Component {
+        name: value.name,
+        inputs: value.inputs.into_iter().map(From::from).collect(),
+        outputs: value.outputs.into_iter().map(From::from).collect(),
+      })),
+      ComponentKind::Schematic => Ok(HostedType::Schematic(Schematic {
+        name: value.name,
+        inputs: value.inputs.into_iter().map(From::from).collect(),
+        outputs: value.outputs.into_iter().map(From::from).collect(),
+        provider: vec![],
+        components: vec![],
+      })),
+    }
+  }
+}
+
+impl From<Component> for crate::generated::vino::Component {
+  fn from(v: Component) -> Self {
     Self {
       name: v.name,
       kind: crate::rpc::component::ComponentKind::Component.into(),
@@ -108,8 +163,8 @@ impl From<crate::Component> for crate::generated::vino::Component {
   }
 }
 
-impl From<crate::Schematic> for crate::generated::vino::Component {
-  fn from(v: crate::Schematic) -> Self {
+impl From<Schematic> for crate::generated::vino::Component {
+  fn from(v: Schematic) -> Self {
     Self {
       name: v.name,
       kind: crate::rpc::component::ComponentKind::Schematic.into(),
@@ -119,8 +174,8 @@ impl From<crate::Schematic> for crate::generated::vino::Component {
   }
 }
 
-impl From<crate::Port> for crate::generated::vino::component::Port {
-  fn from(v: crate::Port) -> Self {
+impl From<Port> for crate::generated::vino::component::Port {
+  fn from(v: Port) -> Self {
     Self {
       name: v.name,
       r#type: v.type_string,
@@ -128,7 +183,7 @@ impl From<crate::Port> for crate::generated::vino::component::Port {
   }
 }
 
-impl From<crate::generated::vino::component::Port> for crate::Port {
+impl From<crate::generated::vino::component::Port> for Port {
   fn from(v: crate::generated::vino::component::Port) -> Self {
     Self {
       name: v.name,
@@ -137,15 +192,15 @@ impl From<crate::generated::vino::component::Port> for crate::Port {
   }
 }
 
-impl From<crate::Statistics> for crate::generated::vino::Statistic {
-  fn from(v: crate::Statistics) -> Self {
+impl From<Statistics> for crate::generated::vino::Statistic {
+  fn from(v: Statistics) -> Self {
     Self {
       num_calls: v.num_calls,
     }
   }
 }
 
-impl From<crate::generated::vino::Statistic> for crate::Statistics {
+impl From<crate::generated::vino::Statistic> for Statistics {
   fn from(v: crate::generated::vino::Statistic) -> Self {
     Self {
       num_calls: v.num_calls,
@@ -169,4 +224,27 @@ impl Into<Packet> for rpc::OutputKind {
       None => Packet::V0(Payload::Error("Response received without output".into())),
     }
   }
+}
+
+pub fn make_rpc_server(
+  socket: tokio::net::TcpSocket,
+  provider: impl RpcHandler + 'static,
+) -> JoinHandle<std::result::Result<(), tonic::transport::Error>> {
+  let component_service = InvocationServer::new(provider);
+
+  let svc = InvocationServiceServer::new(component_service);
+
+  let listener = tokio_stream::wrappers::TcpListenerStream::new(socket.listen(1).unwrap());
+
+  tokio::spawn(
+    Server::builder()
+      .add_service(svc)
+      .serve_with_incoming(listener),
+  )
+}
+
+pub fn bind_new_socket() -> Result<tokio::net::TcpSocket> {
+  let socket = tokio::net::TcpSocket::new_v4()?;
+  socket.bind("127.0.0.1:0".parse().unwrap())?;
+  Ok(socket)
 }

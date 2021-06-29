@@ -47,16 +47,16 @@ mod macros {
 }
 
 mod actix;
-pub(crate) mod component_model;
+pub mod component_model;
 pub mod components;
 pub(crate) mod dispatch;
 pub mod error;
 pub mod network;
 pub mod network_definition;
-pub(crate) mod provider_model;
+pub mod provider_model;
 pub(crate) mod schematic;
 pub mod schematic_definition;
-pub(crate) mod schematic_model;
+pub mod schematic_model;
 pub(crate) mod schematic_response;
 mod transaction;
 pub(crate) mod util;

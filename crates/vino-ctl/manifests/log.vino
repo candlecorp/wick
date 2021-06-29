@@ -1,0 +1,23 @@
+#!/usr/bin/env vinox
+---
+version: "0"
+default_schematic: "logger"
+network:
+  schematics:
+    - name: logger
+      components:
+        logger:
+          id: vino::log
+      connections:
+        - from:
+            instance: <input>
+            port: input
+          to:
+            instance: logger
+            port: input
+        - from:
+            instance: logger
+            port: output
+          to:
+            instance: <output>
+            port: output

@@ -73,6 +73,7 @@ pub trait Sender {
   }
 }
 
+#[derive(Debug, Clone)]
 pub struct Port {
   name: String,
   buffer: VecDeque<Packet>,

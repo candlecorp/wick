@@ -64,6 +64,8 @@ pub enum VinoError {
   #[error(transparent)]
   RpcUpstreamError(#[from] tonic::Status),
   #[error(transparent)]
+  RpcError(#[from] vino_rpc::Error),
+  #[error(transparent)]
   CodecError(#[from] vino_codec::Error),
   #[error(transparent)]
   ManifestError(#[from] vino_manifest::Error),

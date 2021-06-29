@@ -24,4 +24,6 @@ pub enum ProviderError {
   PayloadDeserializationError(BoxedSyncSendError),
   #[error("General error : {0}")]
   Other(String),
+  #[error(transparent)]
+  OtherUpstreamError(#[from] Box<dyn std::error::Error + Send + Sync>),
 }

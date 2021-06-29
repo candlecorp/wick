@@ -26,13 +26,13 @@ GENERATED_MOD_IMPORTS := $(patsubst $(GENERATED_DIR)/%,pub (crate) mod %;,$(pats
 GENERATED_WIDL_IMPORTS := $(patsubst $(SCHEMA_DIR)/%,import * from \"%\"\n,$(patsubst %.widl,%,$(SCHEMAS)))
 
 # Temporary file to house the WIDL imports
-TMP_SCHEMAS_FILE := ./.all_schemas.widl
+INTERFACE_FILE := ./interface.widl
 
 # The header to prepend to generated files
 GENERATED_HEADER := /* This is generated, do not edit by hand */
 
 # Files to clean up on make clean
-CLEAN_FILES := $(GENERATED_COMPONENTS) $(GENERATED_MODULE_RS) $(COMPONENTS_FACTORY_RS)
+CLEAN_FILES := $(GENERATED_COMPONENTS) $(GENERATED_MODULE_RS) $(COMPONENTS_FACTORY_RS) $(INTERFACE_FILE)
 CLEAN_DIRS := $(GENERATED_DIR)
 
 all: codegen build
@@ -55,12 +55,11 @@ $(GENERATED_DIR):
 $(GENERATED_COMPONENTS):
 	vino-codegen rust "$<" -t provider-component >$(subst -,_,$@)
 
-$(COMPONENTS_FACTORY_RS): $(SCHEMAS)
-	touch $(TMP_SCHEMAS_FILE)
-	printf "$(GENERATED_WIDL_IMPORTS)" > $(TMP_SCHEMAS_FILE)
-	vino-codegen rust "$(TMP_SCHEMAS_FILE)" -t provider-integration -r ${SCHEMA_DIR} >$@
-	rm $(TMP_SCHEMAS_FILE)
+$(INTERFACE_FILE): $(SCHEMAS)
+	vino-codegen widl -t interface -r $(SCHEMA_DIR) -d $(SCHEMA_DIR) -f -o $@
 
+$(COMPONENTS_FACTORY_RS): $(INTERFACE_FILE)
+	vino-codegen rust "$(INTERFACE_FILE)" -t provider-integration -r ${SCHEMA_DIR} >$@
 
 codegen:
 	make $(GENERATED_COMPONENTS)

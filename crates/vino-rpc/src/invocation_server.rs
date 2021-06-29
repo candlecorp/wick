@@ -1,5 +1,9 @@
 use std::sync::Arc;
 
+use rpc::{
+  ListResponse,
+  StatsResponse,
+};
 use tokio::sync::{
   mpsc,
   Mutex,
@@ -16,14 +20,19 @@ use crate::rpc::invocation_service_server::InvocationService;
 use crate::rpc::output_kind::Data;
 use crate::rpc::{
   stats_request,
-  ListResponse,
   Output,
   OutputKind,
-  StatsResponse,
 };
-use crate::RpcHandler;
+use crate::{
+  rpc,
+  RpcHandler,
+};
+
+#[derive(Derivative)]
+#[derivative(Debug)]
 pub struct InvocationServer {
-  pub provider: Arc<Mutex<dyn crate::RpcHandler>>,
+  #[derivative(Debug = "ignore")]
+  pub provider: Arc<Mutex<dyn RpcHandler>>,
 }
 
 impl InvocationServer {
@@ -84,8 +93,8 @@ impl InvocationService for InvocationServer {
 
   async fn invoke(
     &self,
-    request: tonic::Request<crate::rpc::Invocation>,
-  ) -> Result<tonic::Response<Self::InvokeStream>, tonic::Status> {
+    request: tonic::Request<rpc::Invocation>,
+  ) -> Result<Response<Self::InvokeStream>, Status> {
     debug!("Invocation = {:?}", request);
 
     let (tx, rx) = mpsc::channel(4);
@@ -128,8 +137,8 @@ impl InvocationService for InvocationServer {
 
   async fn list(
     &self,
-    _request: tonic::Request<crate::rpc::ListRequest>,
-  ) -> Result<tonic::Response<crate::rpc::ListResponse>, tonic::Status> {
+    _request: tonic::Request<rpc::ListRequest>,
+  ) -> Result<Response<ListResponse>, Status> {
     let provider = self.provider.lock().await;
     trace!("Listing registered components from provider");
     let list = provider
@@ -146,8 +155,8 @@ impl InvocationService for InvocationServer {
 
   async fn stats(
     &self,
-    request: tonic::Request<crate::rpc::StatsRequest>,
-  ) -> Result<tonic::Response<crate::rpc::StatsResponse>, tonic::Status> {
+    request: tonic::Request<rpc::StatsRequest>,
+  ) -> Result<Response<StatsResponse>, Status> {
     let stats_request = request.get_ref();
 
     let provider = self.provider.lock().await;

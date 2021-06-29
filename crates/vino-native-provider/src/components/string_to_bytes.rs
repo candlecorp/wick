@@ -1,11 +1,16 @@
-use vino_provider::provider_component;
+use vino_provider::Context;
+use vino_rpc::port::Sender;
 
-use crate::Result;
+pub(crate) use super::generated::string_to_bytes::{
+  Inputs,
+  Outputs,
+};
 
-provider_component! {
-  string_to_bytes,
-  fn job(input: Inputs, output: Outputs, _context: Context<crate::State>) -> Result<()> {
-        output.output.send(input.input.into_bytes());
-        Ok(())
-    }
+pub(crate) async fn job(
+  input: Inputs,
+  output: Outputs,
+  _context: Context<crate::State>,
+) -> std::result::Result<(), Box<dyn std::error::Error + Send + Sync>> {
+  output.output.send(input.input.into_bytes());
+  Ok(())
 }

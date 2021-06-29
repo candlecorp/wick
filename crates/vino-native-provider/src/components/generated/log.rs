@@ -4,11 +4,18 @@ use std::sync::{
   Mutex,
 };
 
+use async_trait::async_trait;
+use log::trace;
 use serde::{
   Deserialize,
   Serialize,
 };
 use vino_codec::messagepack::deserialize;
+use vino_provider::error::ProviderError;
+use vino_provider::{
+  Context as ProviderContext,
+  VinoProviderComponent,
+};
 use vino_rpc::port::{
   Port,
   Receiver,
@@ -70,4 +77,40 @@ pub(crate) fn get_outputs() -> (Outputs, Receiver) {
   let ports = vec![outputs.output.port.clone()];
   let receiver = Receiver::new(ports);
   (outputs, receiver)
+}
+
+pub(crate) struct Component {}
+impl Default for Component {
+  fn default() -> Self {
+    Self {}
+  }
+}
+
+#[async_trait]
+impl VinoProviderComponent for Component {
+  type Context = crate::State;
+
+  fn get_name(&self) -> String {
+    format!("vino::{}", "log")
+  }
+  fn get_input_ports(&self) -> Vec<(String, String)> {
+    inputs_list()
+  }
+  fn get_output_ports(&self) -> Vec<(String, String)> {
+    outputs_list()
+  }
+  async fn job_wrapper(
+    &self,
+    context: ProviderContext<Self::Context>,
+    data: HashMap<String, Vec<u8>>,
+  ) -> std::result::Result<Receiver, Box<dyn std::error::Error + Send + Sync>> {
+    trace!("Job passed data: {:?}", data);
+    let inputs = deserialize_inputs(&data).map_err(ProviderError::InputDeserializationError)?;
+    let (outputs, receiver) = get_outputs();
+    let result = super::super::log::job(inputs, outputs, context).await;
+    match result {
+      Ok(_) => Ok(receiver),
+      Err(e) => Err(ProviderError::JobError(format!("Job failed: {}", e.to_string())).into()),
+    }
+  }
 }
