@@ -127,15 +127,14 @@ pub(crate) struct InitializeComponents {
 impl Handler<InitializeComponents> for GrpcUrlProvider {
   type Result = ActorResult<Self, Result<HashMap<String, ComponentModel>>>;
 
-  #[tracing::instrument(level = tracing::Level::DEBUG, name = "GRPC Init components", skip(self, msg, ctx))]
-  fn handle(&mut self, msg: InitializeComponents, ctx: &mut Self::Context) -> Self::Result {
+  #[tracing::instrument(level = tracing::Level::DEBUG, name = "GRPC Init components", skip(self, msg, _ctx))]
+  fn handle(&mut self, msg: InitializeComponents, _ctx: &mut Self::Context) -> Self::Result {
     trace!(
       "Initializing components for GRPC Url Provider '{}'",
       msg.namespace
     );
     let mut client = msg.client;
     let namespace = msg.namespace;
-    let addr = ctx.address();
 
     let task = async move {
       let list = client
@@ -156,7 +155,6 @@ impl Handler<InitializeComponents> for GrpcUrlProvider {
             name: item.name.to_string(),
             inputs: item.inputs.iter().map(|p| p.name.clone()).collect(),
             outputs: item.outputs.iter().map(|p| p.name.clone()).collect(),
-            addr: addr.clone().recipient(),
           },
         );
       }
@@ -174,11 +172,9 @@ impl Handler<InitializeComponents> for GrpcUrlProvider {
 impl Handler<ProviderRequest> for GrpcUrlProvider {
   type Result = ActorResult<Self, Result<ProviderResponse>>;
 
-  fn handle(&mut self, msg: ProviderRequest, ctx: &mut Self::Context) -> Self::Result {
+  fn handle(&mut self, msg: ProviderRequest, _ctx: &mut Self::Context) -> Self::Result {
     let state = self.state.as_ref().unwrap();
     let mut client = state.client.clone();
-    let namespace = self.namespace.clone();
-    let addr = ctx.address();
 
     let task = async move {
       returns!(ProviderResponse);
@@ -192,26 +188,14 @@ impl Handler<ProviderRequest> for GrpcUrlProvider {
           debug!("Component list: {:?}", list);
           let list = list.into_inner();
 
-          let mut metadata: HashMap<String, ComponentModel> = HashMap::new();
           let mut hosted_types = vec![];
 
           for item in list.component {
-            let id = format!("{}::{}", namespace, item.name);
-            let input_names = item.inputs.iter().map(|p| p.name.clone()).collect();
-            let output_names = item.outputs.iter().map(|p| p.name.clone()).collect();
-            let model = ComponentModel {
-              id,
-              name: item.name.to_string(),
-              inputs: input_names,
-              outputs: output_names,
-              addr: addr.clone().recipient(),
-            };
             hosted_types.push(HostedType::Component(vino_rpc::Component {
-              name: model.name.clone(),
+              name: item.name.to_string(),
               inputs: item.inputs.into_iter().map(From::from).collect(),
               outputs: item.outputs.into_iter().map(From::from).collect(),
             }));
-            metadata.insert(item.name.to_string(), model);
           }
 
           Ok(ProviderResponse::List(hosted_types))

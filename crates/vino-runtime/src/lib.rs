@@ -108,9 +108,6 @@ pub const SCHEMATIC_OUTPUT: &str = "<output>";
 /// The reserved port name to use when sending an asynchronous error from a component.
 pub const COMPONENT_ERROR: &str = "<error>";
 
-// #[macro_use]
-// extern crate log;
-
 #[macro_use]
 extern crate derivative;
 
@@ -119,7 +116,3 @@ extern crate vino_macros;
 
 #[macro_use]
 extern crate tracing;
-
-#[allow(unused_imports)]
-#[macro_use]
-extern crate log_derive;

@@ -1,12 +1,13 @@
 ---
 schematics:
   - name: short_circuit
-    external:
-      - reference: ../test-wapc-component/build/test_component_s.wasm
-        key: MB3GAIGQVCZHMLKD4T2LGI6CILHNOIJPPSLV2VDDH3ARHXDDJ5WXFV35
+    providers:
+      - namespace: wapc
+        kind: WaPC
+        reference: ../test-wapc-component/build/test_component_s.wasm
     components:
       validate_password:
-        id: MB3GAIGQVCZHMLKD4T2LGI6CILHNOIJPPSLV2VDDH3ARHXDDJ5WXFV35
+        id: wapc::test-component
       log:
         id: vino::log
       log2:

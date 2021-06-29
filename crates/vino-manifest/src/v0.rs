@@ -307,6 +307,8 @@ pub enum ProviderKind {
   Native = 0,
   /// The URL for a separately managed GRPC endpoint
   GrpcUrl = 1,
+  /// A WaPC WebAssembly provider
+  WaPC = 2,
 }
 
 impl Default for ProviderKind {

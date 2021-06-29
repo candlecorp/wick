@@ -2,23 +2,18 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::path::Path;
 
-use actix::{
-  Actor,
-  Addr,
-};
+use actix::Addr;
 use async_trait::async_trait;
 use wascap::jwt::{
   Claims,
   Token,
 };
 
-use super::wapc_component_actor::WapcComponentActor;
+use super::wapc_provider::WapcProvider;
 use super::{
   Inputs,
   Outputs,
 };
-use crate::component_model::ComponentModel;
-use crate::components::wapc_component_actor;
 use crate::util::oci::fetch_oci_bytes;
 use crate::{
   Error,
@@ -31,7 +26,7 @@ pub struct WapcComponent {
   pub(crate) token: Token<wascap::jwt::Actor>,
   pub(crate) bytes: Vec<u8>,
   #[derivative(Debug = "ignore")]
-  pub(crate) addr: Option<Addr<WapcComponentActor>>,
+  pub(crate) addr: Option<Addr<WapcProvider>>,
 }
 
 #[derive(Clone, Debug)]
@@ -207,94 +202,21 @@ impl VinoComponent for NativeComponent {
   }
 }
 
-// #[derive(Clone, Debug)]
-// pub struct ProviderComponent {
-//   pub namespace: String,
-//   pub id: String,
-//   pub inputs: Inputs,
-//   pub outputs: Outputs,
-// }
-
-// impl ProviderComponent {
-//   pub(crate) fn from_id(namespace: String, name: String) -> Result<ProviderComponent> {
-//     match native_actors::get_native_actor(&name) {
-//       Some(actor) => Ok(ProviderComponent {
-//         namespace,
-//         id: name,
-//         inputs: actor.get_input_ports(),
-//         outputs: actor.get_output_ports(),
-//       }),
-//       None => Err(Error::ComponentError(format!(
-//         "Could not find actor {}",
-//         name
-//       ))),
-//     }
-//   }
-// }
-
-// #[async_trait]
-// impl VinoComponent for ProviderComponent {
-//   fn public_key(&self) -> String {
-//     panic!()
-//   }
-
-//   fn id(&self) -> String {
-//     format!("{}::{}", self.namespace, self.id)
-//   }
-
-//   fn get_inputs(&self) -> Vec<String> {
-//     self.inputs.clone()
-//   }
-
-//   fn get_outputs(&self) -> Vec<String> {
-//     self.outputs.clone()
-//   }
-
-//   /// The actor's human-friendly display name
-//   fn name(&self) -> String {
-//     self.id.to_string()
-//   }
-
-//   fn get_kind(&self) -> ComponentType {
-//     ComponentType::Native
-//   }
-
-//   // Obtain the raw set of claims for this actor.
-//   fn claims(&self) -> Claims<wascap::jwt::Actor> {
-//     Claims::default()
-//   }
-// }
-
-async fn start_wapc_actor_from_file(p: &Path, seed: String) -> Result<ComponentModel> {
+async fn start_wapc_actor_from_file(p: &Path) -> Result<WapcComponent> {
   let component = WapcComponent::from_file(p)?;
   trace!(
     "Starting wapc component '{}' from file {}",
     component.name(),
     p.to_string_lossy()
   );
-  let actor = WapcComponentActor::start_default();
-  actor
-    .send(wapc_component_actor::Initialize {
-      outputs: component.get_outputs(),
-      bytes: component.bytes.clone(),
-      signing_seed: seed,
-    })
-    .await??;
-  Ok(ComponentModel {
-    id: component.id(),
-    name: component.name(),
-    inputs: component.get_inputs(),
-    outputs: component.get_outputs(),
-    addr: actor.recipient(),
-  })
+  Ok(component)
 }
 
 async fn start_wapc_actor_from_oci(
   url: &str,
   allow_latest: bool,
   allowed_insecure: &[String],
-  seed: String,
-) -> Result<ComponentModel> {
+) -> Result<WapcComponent> {
   let component = fetch_oci_bytes(url, allow_latest, allowed_insecure)
     .await
     .and_then(|bytes| WapcComponent::from_slice(&bytes))
@@ -307,40 +229,24 @@ async fn start_wapc_actor_from_oci(
     url
   );
 
-  let actor = WapcComponentActor::start_default();
-  actor
-    .send(wapc_component_actor::Initialize {
-      outputs: component.get_outputs(),
-      bytes: component.bytes.clone(),
-      signing_seed: seed,
-    })
-    .await??;
-
-  Ok(ComponentModel {
-    id: component.id(),
-    name: component.name(),
-    inputs: component.get_inputs(),
-    outputs: component.get_outputs(),
-    addr: actor.recipient(),
-  })
+  Ok(component)
 }
 
 pub(crate) async fn load_component(
   comp_ref: String,
-  seed: String,
   allow_latest: bool,
   allowed_insecure: &[String],
-) -> Result<ComponentModel> {
+) -> Result<WapcComponent> {
   let p = Path::new(&comp_ref);
   let component = if p.exists() {
     debug!("{:?} exists on file system, loading from disk", p);
-    start_wapc_actor_from_file(p, seed).await
+    start_wapc_actor_from_file(p).await
   } else {
     debug!(
       "{:?} does not exist on file system, trying as OCI url",
       comp_ref
     );
-    start_wapc_actor_from_oci(&comp_ref, allow_latest, allowed_insecure, seed).await
+    start_wapc_actor_from_oci(&comp_ref, allow_latest, allowed_insecure).await
   };
   component
 }

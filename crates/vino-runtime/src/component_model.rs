@@ -1,10 +1,7 @@
-use actix::Recipient;
-
 use crate::components::{
   Inputs,
   Outputs,
 };
-use crate::prelude::*;
 
 #[derive(Debug, Clone)]
 pub struct ComponentModel {
@@ -12,5 +9,4 @@ pub struct ComponentModel {
   pub name: String,
   pub inputs: Inputs,
   pub outputs: Outputs,
-  pub(crate) addr: Recipient<Invocation>,
 }

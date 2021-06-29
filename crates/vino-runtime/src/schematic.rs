@@ -22,15 +22,18 @@ use super::dispatch::{
 };
 use super::schematic_response::initialize_schematic_output;
 use crate::actix::ActorResult;
-use crate::components::ProviderRequest;
 use crate::dispatch::{
   ComponentEntity,
   PortEntity,
   VinoEntity,
 };
 use crate::network::Network;
-use crate::provider_model::initialize_provider;
+use crate::provider_model::{
+  initialize_provider,
+  ProviderChannel,
+};
 use crate::schematic_definition::{
+  parse_namespace,
   ComponentDefinition,
   ConnectionDefinition,
   ProviderDefinition,
@@ -63,7 +66,7 @@ enum ComponentStatus {
 #[derive(Debug)]
 pub(crate) struct Schematic {
   network: Option<Addr<Network>>,
-  recipients: HashMap<String, Recipient<Invocation>>,
+  recipients: HashMap<String, ProviderChannel>,
   transaction_map: TransactionMap,
   invocation_map: HashMap<String, (String, String, VinoEntity)>,
   state: Option<State>,
@@ -122,9 +125,21 @@ impl Schematic {
     lock.get_component_definition(reference)
   }
   fn get_downstream_recipient(&self, reference: &str) -> Option<Recipient<Invocation>> {
+    trace!("Getting downstream recipient '{}'", reference);
+    let component = self.get_component(reference)?;
     let state = self.get_state();
     let lock = state.model.lock().unwrap();
-    lock.get_downstream_recipient(reference)
+    if !lock.has_component(&component.id) {
+      return None;
+    }
+    drop(lock);
+    trace!("Downstream recipient is: {:?}", component);
+    let (ns, _name) = match parse_namespace(&component.id) {
+      Ok(result) => result,
+      Err(_) => return None,
+    };
+    let channel = self.recipients.get(&ns)?;
+    Some(channel.recipient.clone())
   }
   fn get_outputs(&self, reference: &str) -> Vec<String> {
     let state = self.get_state();
@@ -165,17 +180,10 @@ impl Handler<Initialize> for Schematic {
       schematic: model.definition.clone(),
       host_id: msg.host_id.clone(),
       seed: seed.clone(),
-    };
-
-    let component_initialization = InitializeComponents {
-      schematic: model.definition.clone(),
-      host_id: msg.host_id.clone(),
-      seed: seed.clone(),
       allow_latest,
       allowed_insecure,
     };
     let addr = ctx.address();
-    let addr2 = ctx.address();
     let state = State {
       name: model.get_name(),
       seed,
@@ -183,11 +191,7 @@ impl Handler<Initialize> for Schematic {
       host_id: msg.host_id,
     };
     self.state = Some(state);
-    let task = async move { addr.send(provider_initialization).await }
-      .into_actor(self)
-      .then(move |_, this, _| {
-        async move { addr2.send(component_initialization).await? }.into_actor(this)
-      });
+    let task = async move { addr.send(provider_initialization).await? }.into_actor(self);
 
     ActorResult::reply_async(task)
   }
@@ -199,6 +203,8 @@ struct InitializeProviders {
   schematic: SchematicDefinition,
   host_id: String,
   seed: String,
+  allow_latest: bool,
+  allowed_insecure: Vec<String>,
 }
 
 /// Starts an actix arbiter for each provider
@@ -213,113 +219,56 @@ impl Handler<InitializeProviders> for Schematic {
     let seed = msg.seed.clone();
 
     let schematic = msg.schematic;
+    let allow_latest = msg.allow_latest;
+    let allowed_insecure = msg.allowed_insecure;
 
     let task = async move {
-      let mut providers = vec![
-        initialize_provider(
-          &ProviderDefinition {
-            namespace: "vino".to_string(),
-            kind: ProviderKind::Native,
-            reference: "".to_string(),
-            data: HashMap::new(),
-          },
-          seed.clone(),
-        )
-        .await?,
-      ];
+      let (channel, provider_model) = initialize_provider(
+        &ProviderDefinition {
+          namespace: "vino".to_string(),
+          kind: ProviderKind::Native,
+          reference: "".to_string(),
+          data: HashMap::new(),
+        },
+        seed.clone(),
+        false,
+        vec![],
+      )
+      .await?;
+      let mut channels = vec![channel];
+      let mut providers = vec![provider_model];
       for provider in &schematic.providers {
-        let handler = initialize_provider(provider, seed.clone()).await?;
-        providers.push(handler);
+        let (channel, provider_model) = initialize_provider(
+          provider,
+          seed.clone(),
+          allow_latest,
+          allowed_insecure.clone(),
+        )
+        .await?;
+        channels.push(channel);
+        providers.push(provider_model);
       }
-      Ok!(providers)
+      Ok!((channels, providers))
     };
 
-    ActorResult::reply_async(task.into_actor(self).map(|providers, this, _ctx| {
-      let state = this.get_state();
-      let mut model = state.model.lock().unwrap();
-      match providers {
-        Ok(providers) => providers
-          .into_iter()
-          .for_each(|provider| meh!(model.add_provider(provider))),
+    ActorResult::reply_async(task.into_actor(self).map(|result, this, _ctx| {
+      match result {
+        Ok((channels, providers)) => {
+          channels.into_iter().for_each(|channel| {
+            this.recipients.insert(channel.namespace.clone(), channel);
+          });
+          let state = this.get_state();
+          let mut model = state.model.lock().unwrap();
+          providers
+            .into_iter()
+            .for_each(|provider| meh!(model.add_provider(provider)));
+        }
         Err(e) => {
           error!("Error starting providers: {}", e);
         }
-      };
+      }
       Ok(())
     }))
-  }
-}
-
-#[derive(Message, Debug, Clone)]
-#[rtype(result = "Result<()>")]
-pub(crate) struct InitializeComponents {
-  pub(crate) schematic: SchematicDefinition,
-  pub(crate) host_id: String,
-  pub(crate) seed: String,
-  pub(crate) allow_latest: bool,
-  pub(crate) allowed_insecure: Vec<String>,
-}
-
-/// Starts an actix arbiter for each component
-impl Handler<InitializeComponents> for Schematic {
-  type Result = ActorResult<Self, Result<()>>;
-
-  fn handle(&mut self, msg: InitializeComponents, _ctx: &mut Self::Context) -> Self::Result {
-    trace!(
-      "Starting components for schematic {}",
-      msg.schematic.get_name()
-    );
-    let seed = msg.seed.clone();
-
-    let schematic = msg.schematic;
-    let allow_latest = msg.allow_latest;
-    let allowed_insecure = msg.allowed_insecure;
-    let state = self.get_state();
-    let model = state.model.clone();
-
-    let task = async move {
-      for (reference, def) in &schematic.components {
-        let lock = model.lock().unwrap();
-        if lock.has_component(&def.id) {
-          warn!("Component with id '{}' already loaded, skipping", def.id);
-          continue;
-        }
-        let external_definition = lock.lookup_external(&def.id);
-        drop(lock);
-        if external_definition.is_none() {
-          warn!(
-            "Component '{}' not started and has no external definition, skipping.",
-            def.id
-          );
-          continue;
-        }
-        let external_definition = external_definition.unwrap();
-
-        debug!(
-          "Loading component {}({}) from {}",
-          reference, def.id, external_definition.reference
-        );
-
-        let result = crate::components::vino_component::load_component(
-          external_definition.reference,
-          seed.clone(),
-          allow_latest,
-          &allowed_insecure,
-        )
-        .await;
-        let mut model = model.lock().unwrap();
-        match result {
-          Ok(component) => {
-            meh!(model.add_component(component));
-          }
-          Err(e) => {
-            error!("Failed to load component {}: {}", reference, e);
-          }
-        }
-      }
-      Ok!(())
-    };
-    ActorResult::reply_async(task.into_actor(self))
   }
 }
 
@@ -815,7 +764,6 @@ mod test {
     ProviderDefinition,
     ProviderKind,
   };
-  use crate::util::hlreg::HostLocalSystemService;
   use crate::{
     SCHEMATIC_INPUT,
     SCHEMATIC_OUTPUT,
@@ -861,7 +809,7 @@ mod test {
 
     addr
       .send(Initialize {
-        network: Network::from_hostlocal_registry(&host_id),
+        network: Network::from_registry(),
         host_id: host_id.to_string(),
         schematic: schematic_def,
         seed: kp.seed()?,
@@ -943,7 +891,7 @@ mod test {
 
     addr
       .send(Initialize {
-        network: Network::from_hostlocal_registry(&host_id),
+        network: Network::from_registry(),
         host_id: host_id.to_string(),
         schematic: schematic_def,
         seed: hostkey.seed()?,
@@ -1030,7 +978,7 @@ mod test {
 
     addr
       .send(Initialize {
-        network: Network::from_hostlocal_registry(&host_id),
+        network: Network::from_registry(),
         host_id: host_id.to_string(),
         schematic: schematic_def,
         seed: hostkey.seed()?,

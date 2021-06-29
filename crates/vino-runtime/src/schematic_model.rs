@@ -1,7 +1,5 @@
 use std::collections::HashMap;
 
-use actix::Recipient;
-
 use crate::component_model::ComponentModel;
 use crate::error::{
   ValidationError,
@@ -11,7 +9,6 @@ use crate::provider_model::ProviderModel;
 use crate::schematic_definition::*;
 use crate::{
   Error,
-  Invocation,
   Result,
   SchematicDefinition,
 };
@@ -39,15 +36,7 @@ impl SchematicModel {
       ..SchematicModel::default()
     }
   }
-  // Lookup the external component definition for an ID
-  pub(crate) fn lookup_external(&self, id: &str) -> Option<ExternalComponentDefinition> {
-    for component in &self.definition.external {
-      if id == component.key || Some(id.to_string()) == component.alias {
-        return Some(component.clone());
-      }
-    }
-    None
-  }
+
   pub(crate) fn get_name(&self) -> String {
     self.definition.get_name()
   }
@@ -55,17 +44,16 @@ impl SchematicModel {
     self.providers.contains_key(id)
   }
   pub(crate) fn has_component(&self, id: &str) -> bool {
-    let (ns, name) = parse_namespace(id);
+    let (ns, name) = match parse_namespace(id) {
+      Ok(r) => r,
+      Err(_) => return false,
+    };
     trace!("ns parts: {:?} and {}", ns, name);
-    if let Some(ns) = ns {
-      let provider = self.providers.get(&ns);
-      if let Some(provider) = provider {
-        provider.components.get(&name).is_some()
-      } else {
-        false
-      }
+    let provider = self.providers.get(&ns);
+    if let Some(provider) = provider {
+      provider.components.get(&name).is_some()
     } else {
-      self.components.contains_key(id)
+      false
     }
   }
   pub(crate) fn add_provider(&mut self, provider: ProviderModel) -> Result<()> {
@@ -79,42 +67,25 @@ impl SchematicModel {
       Ok(())
     }
   }
-  pub(crate) fn get_component(&self, reference: &str) -> Option<ComponentModel> {
-    self
-      .get_component_definition(reference)
-      .and_then(|def| self.get_component_model(&def.id))
-  }
   /// Gets a ComponentModel by component reference string
   pub(crate) fn get_component_model(&self, id: &str) -> Option<ComponentModel> {
-    let (ns, name) = parse_namespace(id);
+    let (ns, name) = match parse_namespace(id) {
+      Ok(result) => result,
+      Err(_) => return None,
+    };
     trace!("ns parts: {:?} and {}", ns, name);
-    if let Some(ns) = ns {
-      let provider = self.providers.get(&ns);
-      if let Some(provider) = provider {
-        provider.components.get(&name).cloned()
-      } else {
-        None
-      }
+    let provider = self.providers.get(&ns);
+    if let Some(provider) = provider {
+      provider.components.get(&name).cloned()
     } else {
-      self.components.get(id).cloned()
+      None
     }
   }
   /// Gets a ComponentDefinition by component reference string
   pub(crate) fn get_component_definition(&self, reference: &str) -> Option<ComponentDefinition> {
     self.definition.get_component(reference)
   }
-  #[logfn(ok = "TRACE", err = "DEBUG")]
-  pub(crate) fn add_component(&mut self, component: ComponentModel) -> Result<()> {
-    if self.has_component(&component.id) {
-      Err(Error::SchematicError(format!(
-        "Can not add another component with id '{}'",
-        component.id
-      )))
-    } else {
-      self.components.insert(component.id.to_string(), component);
-      Ok(())
-    }
-  }
+
   pub(crate) fn get_downstream_connections(&self, reference: &str) -> Vec<ConnectionDefinition> {
     self
       .definition
@@ -128,23 +99,21 @@ impl SchematicModel {
   pub(crate) fn get_schematic_outputs(&self) -> Vec<String> {
     self.definition.get_output_names()
   }
+
   pub(crate) fn get_schematic_inputs(&self) -> Vec<String> {
     self.definition.get_input_names()
   }
-  #[logfn(ok = "TRACE", err = "DEBUG")]
+
   pub(crate) fn get_component_metadata(&self, id: &str) -> Result<ComponentModel> {
     trace!("Getting component metadata {}", id);
     let opt = match self.definition.get_component(id) {
       Some(comp) => {
-        let (ns, name) = comp.parse_namespace();
+        let (ns, name) = comp.parse_namespace()?;
         trace!("{} parsed into {:?} | {}", id, ns, name);
-        match ns {
-          Some(ns) => self
-            .providers
-            .get(&ns)
-            .and_then(|p| p.components.get(&name)),
-          None => self.components.get(&comp.id),
-        }
+        self
+          .providers
+          .get(&ns)
+          .and_then(|p| p.components.get(&name))
       }
       None => None,
     };
@@ -152,10 +121,7 @@ impl SchematicModel {
       Error::SchematicError(format!("Could not found component metadata for {}", id))
     })
   }
-  pub(crate) fn get_downstream_recipient(&self, reference: &str) -> Option<Recipient<Invocation>> {
-    trace!("Getting downstream recipient {}", reference);
-    self.get_component_metadata(reference).map(|c| c.addr).ok()
-  }
+
   pub(crate) fn get_outputs(&self, reference: &str) -> Vec<String> {
     match self.references.get(reference) {
       Some(id) => match self.get_component_model(id) {
@@ -209,6 +175,7 @@ impl<'a> Validator<'a> {
     let results: Vec<ValidationError> = vec![
       validator.assert_schematic_outputs(),
       validator.assert_schematic_inputs(),
+      validator.assert_qualified_names(),
     ]
     .into_iter()
     .filter_map(|r| r.err())
@@ -235,6 +202,20 @@ impl<'a> Validator<'a> {
       Err(ValidationError::NoInputs)
     } else {
       Ok(())
+    }
+  }
+  fn assert_qualified_names(&self) -> ValidationResult<()> {
+    let component_definitions = self.model.components.values();
+    let mut errors = vec![];
+    for def in component_definitions {
+      if parse_namespace(&def.id).is_err() {
+        errors.push(def.id.clone());
+      }
+    }
+    if errors.is_empty() {
+      Ok(())
+    } else {
+      Err(ValidationError::NotFullyQualified(errors))
     }
   }
 }
@@ -284,8 +265,6 @@ mod tests {
     let model = SchematicModel::new(schematic_def);
     assert_eq!(model.get_name(), schematic_name);
     println!("{:?}", model);
-    // let test = model.get_component("logger").unwrap();
-    // assert_eq!(test.id, "test-namespace::logger");
 
     Ok(())
   }

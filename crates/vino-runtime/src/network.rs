@@ -17,7 +17,6 @@ use crate::actix::ActorResult;
 use crate::component_model::ComponentModel;
 use crate::network_definition::NetworkDefinition;
 use crate::schematic::SchematicOutput;
-use crate::util::hlreg::HostLocalSystemService;
 use crate::{
   Error,
   InvocationResponse,
@@ -54,9 +53,6 @@ impl Default for Network {
   }
 }
 impl Network {
-  pub fn for_id(id: &str) -> Addr<Self> {
-    Network::from_hostlocal_registry(id)
-  }
   pub(crate) fn get_schematic(&self, id: &str) -> Result<Addr<Schematic>> {
     self
       .schematics
@@ -81,8 +77,6 @@ impl SystemService for Network {
     ctx.set_mailbox_capacity(1000);
   }
 }
-
-impl HostLocalSystemService for Network {}
 
 impl Actor for Network {
   type Context = Context<Self>;
@@ -254,7 +248,6 @@ mod test {
 
   use super::*;
   use crate::network::Initialize;
-  use crate::util::hlreg::HostLocalSystemService;
 
   async fn init_network(path: &str) -> Result<Addr<Network>> {
     let manifest = NetworkManifest::V0(vino_manifest::v0::NetworkManifest::from_yaml(
@@ -265,7 +258,7 @@ mod test {
     debug!("Manifest loaded");
     let kp = KeyPair::new_server();
 
-    let network = super::Network::from_hostlocal_registry(&kp.public_key());
+    let network = super::Network::from_registry();
     network
       .send(Initialize {
         host_id: kp.public_key(),

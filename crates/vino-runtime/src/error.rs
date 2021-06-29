@@ -14,6 +14,8 @@ pub enum ValidationError {
   NoOutputs,
   #[error("Schematic has no inputs")]
   NoInputs,
+  #[error("Component definition(s) '{}' not fully qualified", join(.0, ", "))]
+  NotFullyQualified(Vec<String>),
 }
 
 #[derive(Error, Debug)]
@@ -71,8 +73,6 @@ pub enum VinoError {
   ManifestError(#[from] vino_manifest::Error),
   #[error(transparent)]
   TransportError(#[from] vino_transport::Error),
-  #[error(transparent)]
-  YamlError(#[from] serde_yaml::Error),
   #[error(transparent)]
   OutputError(#[from] vino_component::Error),
   #[error(transparent)]

@@ -84,11 +84,10 @@ pub(crate) struct InitializeComponents {
 impl Handler<InitializeComponents> for NativeProvider {
   type Result = ActorResult<Self, Result<HashMap<String, ComponentModel>>>;
 
-  fn handle(&mut self, msg: InitializeComponents, ctx: &mut Self::Context) -> Self::Result {
+  fn handle(&mut self, msg: InitializeComponents, _ctx: &mut Self::Context) -> Self::Result {
     trace!("Initializing components '{}'", msg.namespace);
     let provider = msg.provider;
     let namespace = msg.namespace;
-    let addr = ctx.address();
 
     let task = async move {
       let provider = provider.lock().await;
@@ -107,7 +106,6 @@ impl Handler<InitializeComponents> for NativeProvider {
                 name: component.name,
                 inputs: component.inputs.into_iter().map(|p| p.name).collect(),
                 outputs: component.outputs.into_iter().map(|p| p.name).collect(),
-                addr: addr.clone().recipient(),
               },
             );
           }

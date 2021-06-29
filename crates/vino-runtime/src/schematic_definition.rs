@@ -7,6 +7,11 @@ use serde::{
 };
 use vino_manifest::SchematicManifest;
 
+use crate::{
+  Error,
+  Result,
+};
+
 #[derive(Debug, Clone, Default)]
 pub struct SchematicDefinition {
   pub name: String,
@@ -117,18 +122,21 @@ pub struct ComponentDefinition {
   pub id: String,
 }
 
-pub fn parse_namespace(id: &str) -> (Option<String>, String) {
-  if id.contains("::") {
-    id.split_once("::")
-      .map(|(ns, name)| (Some(ns.to_string()), name.to_string()))
-      .unwrap()
+pub fn parse_namespace(id: &str) -> Result<(String, String)> {
+  if !id.contains("::") {
+    Err(Error::SchematicError(format!(
+      "Component name '{}' is not fully qualified with a namespace.",
+      id,
+    )))
   } else {
-    (None, id.to_string())
+    id.split_once("::")
+      .map(|(ns, name)| Ok((ns.to_string(), name.to_string())))
+      .unwrap()
   }
 }
 
 impl ComponentDefinition {
-  pub fn parse_namespace(&self) -> (Option<String>, String) {
+  pub fn parse_namespace(&self) -> Result<(String, String)> {
     parse_namespace(&self.id)
   }
 }
@@ -181,6 +189,8 @@ pub enum ProviderKind {
   Native = 0,
   /// The URL for a separately managed GRPC endpoint
   GrpcUrl = 1,
+
+  Wapc = 2,
 }
 
 impl From<vino_manifest::v0::ProviderKind> for ProviderKind {
@@ -188,6 +198,7 @@ impl From<vino_manifest::v0::ProviderKind> for ProviderKind {
     match def {
       vino_manifest::v0::ProviderKind::Native => ProviderKind::Native,
       vino_manifest::v0::ProviderKind::GrpcUrl => ProviderKind::GrpcUrl,
+      vino_manifest::v0::ProviderKind::WaPC => ProviderKind::Wapc,
     }
   }
 }

@@ -7,7 +7,6 @@ use std::time::Instant;
 
 use actix::prelude::*;
 use futures::StreamExt;
-use log::info;
 use tokio::sync::mpsc::unbounded_channel;
 use tokio::sync::Mutex as AsyncMutex;
 use vino_codec::messagepack::serialize;
@@ -17,13 +16,19 @@ use vino_rpc::port::{
   Receiver,
   Sender,
 };
+use vino_rpc::HostedType;
 use wapc::WapcHost;
 use wascap::prelude::{
   Claims,
   KeyPair,
 };
 
+use super::{
+  ProviderRequest,
+  ProviderResponse,
+};
 use crate::actix::ActorResult;
+use crate::component_model::ComponentModel;
 use crate::components::vino_component::WapcComponent;
 use crate::dispatch::{
   Invocation,
@@ -33,7 +38,7 @@ use crate::schematic::PushOutput;
 use crate::Result;
 
 #[derive(Default)]
-pub(crate) struct WapcComponentActor {
+pub(crate) struct WapcProvider {
   state: Option<State>,
   invocation_map: Arc<AsyncMutex<InvocationMap>>,
 }
@@ -41,9 +46,12 @@ pub(crate) struct WapcComponentActor {
 struct State {
   guest_module: Arc<AsyncMutex<WapcHost>>,
   claims: Claims<wascap::jwt::Actor>,
+  name: String,
+  inputs: Vec<String>,
+  outputs: Vec<String>,
 }
 
-impl Actor for WapcComponentActor {
+impl Actor for WapcProvider {
   type Context = Context<Self>;
 
   fn started(&mut self, _ctx: &mut Self::Context) {
@@ -69,7 +77,7 @@ impl Sender for OutputSender {
   }
 }
 
-impl WapcComponentActor {}
+impl WapcProvider {}
 
 #[derive(Default)]
 struct InvocationMap {
@@ -102,22 +110,34 @@ impl InvocationMap {
 }
 
 #[derive(Message)]
-#[rtype(result = "Result<()>")]
+#[rtype(result = "Result<HashMap<String, ComponentModel>>")]
 pub(crate) struct Initialize {
+  pub(crate) namespace: String,
   pub(crate) bytes: Vec<u8>,
+  pub(crate) name: String,
   pub(crate) outputs: Vec<String>,
+  pub(crate) inputs: Vec<String>,
   pub(crate) signing_seed: String,
 }
 
-impl Handler<Initialize> for WapcComponentActor {
-  type Result = Result<()>;
+impl Handler<Initialize> for WapcProvider {
+  type Result = Result<HashMap<String, ComponentModel>>;
 
   fn handle(&mut self, msg: Initialize, ctx: &mut Self::Context) -> Self::Result {
     trace!("Initializing component");
     self.invocation_map = Arc::new(AsyncMutex::new(InvocationMap::new(msg.outputs.clone())));
+    let name = msg.name.clone();
+    let component = ComponentModel {
+      id: format!("{}::{}", msg.namespace, msg.name),
+      name: name.clone(),
+      inputs: msg.inputs.clone(),
+      outputs: msg.outputs.clone(),
+    };
     let actor = perform_initialization(self, ctx, msg);
+    let mut map = HashMap::new();
+    map.insert(name, component);
     match actor {
-      Ok(_a) => Ok(()),
+      Ok(_a) => Ok(map),
       Err(e) => Err(e),
     }
   }
@@ -136,8 +156,8 @@ struct WapcHostCallback {
 }
 
 fn perform_initialization(
-  me: &mut WapcComponentActor,
-  ctx: &mut Context<WapcComponentActor>,
+  me: &mut WapcProvider,
+  ctx: &mut Context<WapcProvider>,
   msg: Initialize,
 ) -> Result<String> {
   let buf = msg.bytes;
@@ -209,6 +229,9 @@ fn perform_initialization(
   match guest {
     Ok(g) => {
       me.state = Some(State {
+        name: msg.name,
+        inputs: msg.inputs,
+        outputs: msg.outputs,
         claims: claims.clone(),
         guest_module: Arc::new(AsyncMutex::new(g)),
       });
@@ -229,7 +252,48 @@ fn perform_initialization(
   }
 }
 
-impl Handler<Invocation> for WapcComponentActor {
+impl Handler<ProviderRequest> for WapcProvider {
+  type Result = ActorResult<Self, Result<ProviderResponse>>;
+
+  fn handle(&mut self, msg: ProviderRequest, _ctx: &mut Self::Context) -> Self::Result {
+    let state = self.state.as_ref().unwrap();
+    //Temporary until WaPC modules host more than one component
+    let component = vino_rpc::Component {
+      name: state.name.clone(),
+      inputs: state
+        .inputs
+        .iter()
+        .map(|name| vino_rpc::Port {
+          name: name.clone(),
+          type_string: "TODO".to_string(),
+        })
+        .collect(),
+      outputs: state
+        .outputs
+        .clone()
+        .iter()
+        .map(|name| vino_rpc::Port {
+          name: name.clone(),
+          type_string: "TODO".to_string(),
+        })
+        .collect(),
+    };
+
+    let task = async move {
+      returns!(ProviderResponse);
+      match msg {
+        ProviderRequest::Invoke(_invocation) => todo!(),
+        ProviderRequest::List(_req) => Ok(ProviderResponse::List(vec![HostedType::Component(
+          component,
+        )])),
+        ProviderRequest::Statistics(_req) => Ok(ProviderResponse::Stats(vec![])),
+      }
+    };
+    ActorResult::reply_async(task.into_actor(self))
+  }
+}
+
+impl Handler<Invocation> for WapcProvider {
   type Result = ActorResult<Self, InvocationResponse>;
 
   fn handle(&mut self, msg: Invocation, _ctx: &mut Self::Context) -> Self::Result {

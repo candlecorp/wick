@@ -2,21 +2,15 @@ use std::path::Path;
 
 pub mod grpc_url_provider;
 pub mod native_provider;
-// pub mod provider_component;
 pub mod vino_component;
-pub(crate) mod wapc_component_actor;
+pub(crate) mod wapc_provider;
 
 pub(crate) type Inputs = Vec<String>;
 pub(crate) type Outputs = Vec<String>;
 
 use actix::prelude::*;
-use actix_rt::task::JoinHandle;
-use tonic::transport::Server;
-use vino_rpc::rpc::invocation_service_server::InvocationServiceServer;
 use vino_rpc::{
   HostedType,
-  InvocationServer,
-  RpcHandler,
   Statistics,
 };
 

@@ -25,9 +25,6 @@ serde = { version="1.0.118", features=["derive"] }
 actix = "0.12.0"
 actix-rt = "2.1.0"
 futures = "0.3"
-log = "0.4.11"
-serde_json = "1.0.59"
-serde_yaml = "0.8.14"
 uuid = { version="0.8", features=["serde", "v4"] }
 wapc = "0.10.1"
 wascap = { path="../../../wascap" }
@@ -47,8 +44,8 @@ tokio = { version="1.4.0", features=["macros", "net", "rt-multi-thread"] }
 tokio-stream = { version="0.1.6", features=["net"] }
 itertools = "0.10.1"
 tracing = "0.1.26"
-log-derive = "0.4.1"
 tracing-actix = "0.3.0"
+log = "0.4.14"
 
 [dev-dependencies]
 env_logger = "0.8.3"
