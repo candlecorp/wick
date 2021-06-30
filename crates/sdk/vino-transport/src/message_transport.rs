@@ -25,6 +25,14 @@ pub enum MessageTransport {
   MultiBytes(HashMap<String, Vec<u8>>),
   OutputMap(PortMap),
   Test(String),
+  Signal(MessageSignal),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub enum MessageSignal {
+  Close,
+  OpenBracket,
+  CloseBracket,
 }
 
 impl Default for MessageTransport {
@@ -43,6 +51,7 @@ impl MessageTransport {
       MessageTransport::Error(_) => false,
       MessageTransport::Invalid => false,
       MessageTransport::OutputMap(_) => true,
+      MessageTransport::Signal(_) => false,
     }
   }
   pub fn into_bytes(self) -> Result<Vec<u8>> {
@@ -93,6 +102,9 @@ impl From<Packet> for MessageTransport {
         v0::Payload::Error(v) => MessageTransport::Error(v),
         v0::Payload::Invalid => MessageTransport::Invalid,
         v0::Payload::MessagePack(bytes) => MessageTransport::MessagePack(bytes),
+        v0::Payload::Close => MessageTransport::Signal(MessageSignal::Close),
+        v0::Payload::OpenBracket => MessageTransport::Signal(MessageSignal::OpenBracket),
+        v0::Payload::CloseBracket => MessageTransport::Signal(MessageSignal::CloseBracket),
       },
     }
   }
