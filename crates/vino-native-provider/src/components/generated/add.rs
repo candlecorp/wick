@@ -18,7 +18,7 @@ use vino_provider::{
 };
 use vino_rpc::port::{
   Port,
-  Receiver,
+  PortStream,
   Sender,
 };
 
@@ -79,10 +79,10 @@ impl Sender for OutputSender {
   }
 }
 
-pub(crate) fn get_outputs() -> (Outputs, Receiver) {
+pub(crate) fn get_outputs() -> (Outputs, PortStream) {
   let outputs = Outputs::default();
   let ports = vec![outputs.output.port.clone()];
-  let receiver = Receiver::new(ports);
+  let receiver = PortStream::new(ports);
   (outputs, receiver)
 }
 
@@ -110,7 +110,7 @@ impl VinoProviderComponent for Component {
     &self,
     context: ProviderContext<Self::Context>,
     data: HashMap<String, Vec<u8>>,
-  ) -> std::result::Result<Receiver, Box<dyn std::error::Error + Send + Sync>> {
+  ) -> std::result::Result<PortStream, Box<dyn std::error::Error + Send + Sync>> {
     trace!("Job passed data: {:?}", data);
     let inputs = deserialize_inputs(&data).map_err(ProviderError::InputDeserializationError)?;
     let (outputs, receiver) = get_outputs();

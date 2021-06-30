@@ -17,7 +17,7 @@ use super::{
 use crate::actix::ActorResult;
 use crate::component_model::ComponentModel;
 use crate::prelude::*;
-use crate::schematic::PushOutput;
+use crate::schematic::ComponentOutput;
 
 #[derive(Debug)]
 pub struct NativeProvider {
@@ -160,7 +160,7 @@ impl Handler<Invocation> for NativeProvider {
 
           let (port_name, msg) = next.unwrap();
           trace!("Native actor {} got output on port [{}]", name, port_name);
-          match tx.send(PushOutput {
+          match tx.send(ComponentOutput {
             port: port_name.to_string(),
             payload: msg,
             invocation_id: invocation_id.to_string(),
@@ -246,7 +246,7 @@ mod test {
     let provider = NativeProvider::default();
     let addr = provider.start();
     let hostkey = KeyPair::new_server();
-    let host_id = hostkey.public_key();
+    let network_id = hostkey.public_key();
     let namespace = "test-namespace";
     addr
       .send(Initialize {
@@ -271,13 +271,13 @@ mod test {
         id: Invocation::uuid(),
         tx_id: Invocation::uuid(),
         encoded_claims: "".to_string(),
-        host_id,
+        network_id,
       })
       .await?;
 
     debug!("Response {:#?}", response);
     let (_, mut rx) = response.to_stream()?;
-    let next: PushOutput = rx.recv().await.unwrap();
+    let next: ComponentOutput = rx.recv().await.unwrap();
     let payload: String = next.payload.try_into()?;
     assert_eq!(user_data, payload);
 

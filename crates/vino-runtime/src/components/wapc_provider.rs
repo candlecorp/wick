@@ -1,8 +1,5 @@
 use std::collections::HashMap;
-use std::sync::{
-  Arc,
-  Mutex,
-};
+use std::sync::Arc;
 use std::time::Instant;
 
 use actix::prelude::*;
@@ -11,11 +8,7 @@ use tokio::sync::mpsc::unbounded_channel;
 use tokio::sync::Mutex as AsyncMutex;
 use vino_codec::messagepack::serialize;
 use vino_component::Packet;
-use vino_rpc::port::{
-  Port,
-  Receiver,
-  Sender,
-};
+use vino_rpc::port::Sender;
 use vino_rpc::HostedType;
 use wapc::WapcHost;
 use wascap::prelude::{
@@ -34,7 +27,8 @@ use crate::dispatch::{
   Invocation,
   InvocationResponse,
 };
-use crate::schematic::PushOutput;
+use crate::invocation_map::InvocationMap;
+use crate::schematic::ComponentOutput;
 use crate::Result;
 
 #[derive(Default)]
@@ -60,54 +54,8 @@ impl Actor for WapcProvider {
 
   fn stopped(&mut self, _ctx: &mut Self::Context) {}
 }
-pub(crate) struct OutputSender {
-  port: Arc<Mutex<Port>>,
-}
-impl OutputSender {
-  fn new(name: String) -> Self {
-    Self {
-      port: Arc::new(Mutex::new(Port::new(name))),
-    }
-  }
-}
-impl Sender for OutputSender {
-  type PayloadType = Vec<u8>;
-  fn get_port(&self) -> Arc<Mutex<Port>> {
-    self.port.clone()
-  }
-}
 
 impl WapcProvider {}
-
-#[derive(Default)]
-struct InvocationMap {
-  outputs: Vec<String>,
-  map: HashMap<String, HashMap<String, OutputSender>>,
-}
-
-impl InvocationMap {
-  fn new(outputs: Vec<String>) -> Self {
-    Self {
-      outputs,
-      ..InvocationMap::default()
-    }
-  }
-  fn new_invocation(&mut self, inv_id: String) -> Receiver {
-    let (tx, rx) = self.make_channel();
-    self.map.insert(inv_id, tx);
-    rx
-  }
-  fn make_channel(&self) -> (HashMap<String, OutputSender>, Receiver) {
-    let outputs: HashMap<String, OutputSender> = self
-      .outputs
-      .iter()
-      .map(|name| (name.clone(), OutputSender::new(name.clone())))
-      .collect();
-    let ports = outputs.iter().map(|(_, o)| o.port.clone()).collect();
-    let receiver = Receiver::new(ports);
-    (outputs, receiver)
-  }
-}
 
 #[derive(Message)]
 #[rtype(result = "Result<HashMap<String, ComponentModel>>")]
@@ -202,7 +150,7 @@ fn perform_initialization(
   actix::spawn(async move {
     while let Some(callback_data) = rx.recv().await {
       let invocation_map = invocation_map.lock().await;
-      let senders = invocation_map.map.get(&callback_data.invocation_id);
+      let senders = invocation_map.get(&callback_data.invocation_id);
       if senders.is_none() {
         error!(
           "Could not invocation map for {}",
@@ -353,7 +301,7 @@ impl Handler<Invocation> for WapcProvider {
 
           let (port_name, msg) = next.unwrap();
           trace!("Native actor {} got output on port [{}]", name, port_name);
-          match tx.send(PushOutput {
+          match tx.send(ComponentOutput {
             port: port_name.to_string(),
             payload: msg,
             invocation_id: invocation_id.to_string(),

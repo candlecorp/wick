@@ -16,7 +16,14 @@ message OutputKind {
     string exception = 3;
     string test = 4;
     bool invalid = 5;
+    OutputSignal signal = 6;
   }
+}
+
+enum OutputSignal {
+  Close = 0;
+  OpenBracket = 1;
+  CloseBracket = 2;
 }
 
 message Entity {
@@ -39,7 +46,7 @@ message Invocation {
   string id = 4;
   string tx_id = 5;
   string encoded_claims = 6;
-  string host_id = 7;
+  string network_id = 7;
 }
 
 message Output {

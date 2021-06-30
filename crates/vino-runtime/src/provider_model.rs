@@ -20,7 +20,7 @@ use crate::schematic_definition::{
   ProviderKind,
 };
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ProviderModel {
   pub namespace: String,
   pub components: HashMap<String, ComponentModel>,

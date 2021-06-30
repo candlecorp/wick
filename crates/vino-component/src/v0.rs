@@ -19,6 +19,15 @@ pub enum Payload {
   /// A MessagePack payload. Meant to pass through untouched until reaching its final destination, most commonly used with WaPC WebAssembly components.
   #[serde(rename = "3")]
   MessagePack(Vec<u8>),
+  /// A message that signifies the port is closed.
+  #[serde(rename = "4")]
+  Close,
+  /// A message that signals the start of bracketed data (think of it like an opening bracket '[')
+  #[serde(rename = "5")]
+  OpenBracket,
+  /// A message that signals the end of bracketed data (think of it like an closing bracket ']')
+  #[serde(rename = "6")]
+  CloseBracket,
 }
 
 impl Payload {

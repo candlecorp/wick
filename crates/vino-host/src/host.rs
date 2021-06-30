@@ -1,9 +1,15 @@
 use std::collections::HashMap;
 use std::fmt::Display;
+// use std::net::{
+//   Ipv4Addr,
+//   SocketAddr,
+// };
 use std::sync::RwLock;
 
 use actix::prelude::*;
 use serde::Serialize;
+// use tokio::sync::Mutex;
+// use vino_provider_cli::cli::Options as CliOpts;
 use vino_runtime::{
   Network,
   NetworkDefinition,
@@ -44,17 +50,32 @@ impl Host {
       self.network.is_none(),
       crate::Error::InvalidHostState("Host already has a network running".into())
     );
-    let network = vino_runtime::Network::for_id(&self.host_id);
+    let network = Network::from_registry();
     self.network = Some(network.clone());
     network
       .send(vino_runtime::network::Initialize {
-        host_id: self.host_id.to_string(),
+        network_id: self.host_id.to_string(),
         seed: self.seed.to_string(),
         network: def,
       })
       .await??;
     Ok(())
   }
+
+  // pub async fn start_rpc_server(
+  //   &mut self,
+  //   address: Ipv4Addr,
+  //   port: Option<u16>,
+  // ) -> Result<SocketAddr> {
+  //   let addr = tokio::spawn(vino_provider_cli::init(
+  //     Arc::new(Mutex::new(crate::host_provider::Provider::default())),
+  //     Some(CliOpts { port, address }),
+  //   ))
+  //   .await
+  //   .map_err(|e| Error::Other(format!("Join error: {}", e)))?
+  //   .map_err(|e| Error::Other(format!("Socket error: {}", e)))?;
+  //   Ok(addr)
+  // }
 
   pub async fn request<T: AsRef<str> + Display>(
     &self,
@@ -94,8 +115,10 @@ impl Host {
 #[cfg(test)]
 mod test {
   use std::collections::HashMap;
+  // use std::net::Ipv4Addr;
   use std::path::PathBuf;
 
+  // use std::str::FromStr;
   use maplit::hashmap;
   use vino_codec::messagepack::deserialize;
   use vino_transport::MessageTransport;
@@ -148,4 +171,31 @@ mod test {
     assert!(!host.is_started());
     Ok(())
   }
+
+  // #[test_env_log::test(actix_rt::test)]
+  // async fn request_from_rpc_server() -> Result<()> {
+  //   let mut host = HostBuilder::new().start().await?;
+  //   let file = PathBuf::from("src/configurations/logger.yaml");
+  //   let manifest = HostDefinition::load_from_file(&file)?;
+  //   host.start_network(manifest.network).await?;
+  //   host
+  //     .start_rpc_server(Ipv4Addr::from_str("127.0.0.1").unwrap(), Some(54321))
+  //     .await;
+  //   let passed_data = "logging output";
+  //   let data: HashMap<&str, &str> = hashmap! {
+  //       "input" => passed_data,
+  //   };
+  //   let mut result = host.request("logger", data).await?;
+  //   let output = result.remove("output").unwrap();
+  //   if let MessageTransport::MessagePack(bytes) = output {
+  //     let output = deserialize::<String>(&bytes)?;
+  //     assert_eq!(output, passed_data.to_string());
+  //   } else {
+  //     panic!();
+  //   }
+  //   host.stop().await;
+
+  //   assert!(!host.is_started());
+  //   Ok(())
+  // }
 }

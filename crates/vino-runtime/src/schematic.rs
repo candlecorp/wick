@@ -3,7 +3,6 @@ use std::sync::{
   Arc,
   Mutex,
 };
-use std::time::Duration;
 
 use actix::fut::future::ActorFutureExt;
 use actix::prelude::*;
@@ -12,7 +11,16 @@ use serde::{
   Deserialize,
   Serialize,
 };
-use vino_component::Packet;
+use tokio::sync::mpsc::{
+  unbounded_channel,
+  UnboundedReceiver,
+  UnboundedSender,
+};
+use vino_component::{
+  v0,
+  Packet,
+};
+use vino_transport::message_transport::MessageSignal;
 use vino_transport::MessageTransport;
 use wascap::prelude::KeyPair;
 
@@ -20,13 +28,14 @@ use super::dispatch::{
   Invocation,
   InvocationResponse,
 };
-use super::schematic_response::initialize_schematic_output;
 use crate::actix::ActorResult;
+use crate::component_model::ComponentModel;
 use crate::dispatch::{
   ComponentEntity,
   PortEntity,
   VinoEntity,
 };
+use crate::error::SchematicError;
 use crate::network::Network;
 use crate::provider_model::{
   initialize_provider,
@@ -44,10 +53,6 @@ use crate::schematic_model::{
   SchematicModel,
   Validator,
 };
-use crate::schematic_response::{
-  get_transaction_output,
-  push_to_schematic_output,
-};
 use crate::transaction::TransactionMap;
 use crate::{
   Error,
@@ -57,27 +62,20 @@ use crate::{
 pub type SchematicOutput = HashMap<String, MessageTransport>;
 
 #[derive(Debug)]
-enum ComponentStatus {
-  Ready(Invocation),
-  Waiting,
-  ShortCircuit(MessageTransport),
-}
-
-#[derive(Debug)]
 pub(crate) struct Schematic {
-  network: Option<Addr<Network>>,
   recipients: HashMap<String, ProviderChannel>,
-  transaction_map: TransactionMap,
   invocation_map: HashMap<String, (String, String, VinoEntity)>,
   state: Option<State>,
+  tx_external: HashMap<String, UnboundedSender<ComponentOutput>>,
+  tx_internal: HashMap<String, UnboundedSender<PayloadReceived>>,
 }
 
 #[derive(Debug)]
 struct State {
-  host_id: String,
   model: Arc<Mutex<SchematicModel>>,
   seed: String,
   name: String,
+  transaction_map: TransactionMap,
 }
 
 impl Supervised for Schematic {}
@@ -85,11 +83,11 @@ impl Supervised for Schematic {}
 impl Default for Schematic {
   fn default() -> Self {
     Schematic {
-      network: None,
       recipients: HashMap::new(),
-      transaction_map: TransactionMap::new(),
       invocation_map: HashMap::new(),
       state: None,
+      tx_external: HashMap::new(),
+      tx_internal: HashMap::new(),
     }
   }
 }
@@ -119,14 +117,36 @@ impl Schematic {
     let state = self.state.as_ref().unwrap();
     state
   }
-  fn get_component(&self, reference: &str) -> Option<ComponentDefinition> {
+  fn get_mut_state(&mut self) -> &mut State {
+    if self.state.is_none() {
+      panic!("Internal Error: schematic uninitialized");
+    }
+    let state = self.state.as_mut().unwrap();
+    state
+  }
+  fn new_transaction(
+    &mut self,
+    tx_id: String,
+    rx: UnboundedReceiver<PayloadReceived>,
+  ) -> UnboundedReceiver<TransactionUpdate> {
+    let state = self.get_mut_state();
+    state.transaction_map.new_transaction(tx_id, rx)
+  }
+
+  fn get_component_model(&self, reference: &str) -> Option<ComponentModel> {
+    let state = self.get_state();
+    let lock = state.model.lock().unwrap();
+    let def = lock.get_component_definition(reference)?;
+    lock.get_component_model(&def.id)
+  }
+  fn get_component_definition(&self, reference: &str) -> Option<ComponentDefinition> {
     let state = self.get_state();
     let lock = state.model.lock().unwrap();
     lock.get_component_definition(reference)
   }
-  fn get_downstream_recipient(&self, reference: &str) -> Option<Recipient<Invocation>> {
+  fn get_recipient(&self, reference: &str) -> Option<Recipient<Invocation>> {
     trace!("Getting downstream recipient '{}'", reference);
-    let component = self.get_component(reference)?;
+    let component = self.get_component_definition(reference)?;
     let state = self.get_state();
     let lock = state.model.lock().unwrap();
     if !lock.has_component(&component.id) {
@@ -157,7 +177,7 @@ impl Schematic {
 #[rtype(result = "Result<()>")]
 pub(crate) struct Initialize {
   pub(crate) schematic: SchematicDefinition,
-  pub(crate) host_id: String,
+  pub(crate) network_id: String,
   pub(crate) seed: String,
   pub(crate) network: Addr<Network>,
   pub(crate) allow_latest: bool,
@@ -174,11 +194,10 @@ impl Handler<Initialize> for Schematic {
     let allowed_insecure = msg.allowed_insecure;
     let model = SchematicModel::new(msg.schematic);
     actix_try!(Validator::validate_early_errors(&model));
-    self.network = Some(msg.network);
 
     let provider_initialization = InitializeProviders {
       schematic: model.definition.clone(),
-      host_id: msg.host_id.clone(),
+      network_id: msg.network_id,
       seed: seed.clone(),
       allow_latest,
       allowed_insecure,
@@ -187,8 +206,8 @@ impl Handler<Initialize> for Schematic {
     let state = State {
       name: model.get_name(),
       seed,
+      transaction_map: TransactionMap::new(model.clone()),
       model: Arc::new(Mutex::new(model)),
-      host_id: msg.host_id,
     };
     self.state = Some(state);
     let task = async move { addr.send(provider_initialization).await? }.into_actor(self);
@@ -201,7 +220,7 @@ impl Handler<Initialize> for Schematic {
 #[rtype(result = "Result<()>")]
 struct InitializeProviders {
   schematic: SchematicDefinition,
-  host_id: String,
+  network_id: String,
   seed: String,
   allow_latest: bool,
   allowed_insecure: Vec<String>,
@@ -274,16 +293,17 @@ impl Handler<InitializeProviders> for Schematic {
 
 #[derive(Message, Debug)]
 #[rtype(result = "Result<()>")]
-pub struct PushOutput {
+pub struct ComponentOutput {
   pub port: String,
   pub invocation_id: String,
   pub payload: Packet,
 }
 
-impl Handler<PushOutput> for Schematic {
+/// Maps output by invocation ID to its transaction and reference
+impl Handler<ComponentOutput> for Schematic {
   type Result = ActorResult<Self, Result<()>>;
 
-  fn handle(&mut self, msg: PushOutput, ctx: &mut Context<Self>) -> Self::Result {
+  fn handle(&mut self, msg: ComponentOutput, ctx: &mut Context<Self>) -> Self::Result {
     let metadata = self.invocation_map.get(&msg.invocation_id).cloned();
     let (tx_id, schematic_name, entity) = metadata.unwrap();
     trace!(
@@ -302,11 +322,10 @@ impl Handler<PushOutput> for Schematic {
         let port = PortEntity {
           name: port,
           reference: entity.into_component()?.reference,
-          schematic: schematic_name.to_string(),
         };
         trace!("Sending output ready to schematic");
         receiver
-          .send(OutputReady {
+          .send(OutputPortReady {
             port,
             tx_id,
             payload: payload.into(),
@@ -336,59 +355,199 @@ impl Handler<Request> for Schematic {
     let tx_id = msg.tx_id.to_string();
     let schematic = msg.schematic.to_string();
 
-    self.transaction_map.new_transaction(tx_id.to_string());
-    let state = self.state.as_ref().unwrap();
+    let (tx2, rx2) = unbounded_channel::<PayloadReceived>();
+    self.tx_internal.insert(tx_id.clone(), tx2);
+    let mut ready_rx = self.new_transaction(tx_id.to_string(), rx2);
+    let addr = ctx.address();
+    tokio::spawn(async move {
+      trace!("Waiting for payloads to act on {}", schematic);
+      while let Some(msg) = ready_rx.recv().await {
+        debug!("Received transaction update: {:?}", msg);
+        if let TransactionUpdate::SchematicDone(tx_id) = &msg {
+          info!("Transaction {} has completed", tx_id);
+          ready_rx.close();
+        }
+        meh!(addr.send(msg).await);
+      }
+      trace!("Finished with schematic request {}", schematic);
+      Ok!(())
+    });
+
+    let (tx, rx) = unbounded_channel::<ComponentOutput>();
+    self.tx_external.insert(tx_id.to_string(), tx);
+
+    let state = self.state.as_mut().unwrap();
     let model = state.model.clone();
 
     let invocations = actix_try!(generate_packets(
       model,
       &state.seed,
       tx_id.to_string(),
-      schematic.to_string(),
       msg.payload
     ));
 
     let host = ctx.address();
     ActorResult::reply_async(
-      async move { handle_schematic_invocation(invocations, host, tx_id, schematic).await }
+      async move { handle_schematic_invocation(invocations, host, tx_id, rx).await }
         .into_actor(self),
     )
   }
 }
 
 #[derive(Message, Clone, Debug)]
-#[rtype(result = "Result<InvocationResponse>")]
-pub(crate) struct GetTransactionOutput {
-  pub(crate) schematic: String,
-  pub(crate) tx_id: String,
+#[rtype(result = "Result<()>")]
+pub(crate) enum TransactionUpdate {
+  ReferenceReady(ReferenceReady),
+  SchematicOutput(SchematicOutputReceived),
+  SchematicDone(String),
+}
+impl Handler<TransactionUpdate> for Schematic {
+  type Result = ActorResult<Self, Result<()>>;
+
+  fn handle(&mut self, msg: TransactionUpdate, ctx: &mut Context<Self>) -> Self::Result {
+    let addr = ctx.address();
+    match msg {
+      TransactionUpdate::ReferenceReady(msg) => {
+        ActorResult::reply_async(async move { addr.send(msg).await? }.into_actor(self))
+      }
+      TransactionUpdate::SchematicOutput(msg) => {
+        ActorResult::reply_async(async move { addr.send(msg).await? }.into_actor(self))
+      }
+      TransactionUpdate::SchematicDone(tx_id) => {
+        let tx = actix_try!(self
+          .tx_external
+          .get(&tx_id)
+          .ok_or_else(|| SchematicError::TransactionNotFound(tx_id.clone())));
+
+        debug!("Sending output on transmitter");
+        let output_msg = ComponentOutput {
+          invocation_id: tx_id.clone(),
+          payload: Packet::V0(v0::Payload::Close),
+          port: "<system>".to_string(),
+        };
+        match tx.send(output_msg) {
+          Ok(_) => debug!("Sent output to receiver for tx {}", tx_id),
+          Err(e) => error!("Error sending output to receiver : {}", e),
+        }
+
+        ActorResult::reply(Ok(()))
+      }
+    }
+  }
 }
 
-impl Handler<GetTransactionOutput> for Schematic {
-  type Result = ActorResult<Self, Result<InvocationResponse>>;
+#[derive(Message, Clone, Debug)]
+#[rtype(result = "Result<()>")]
+pub(crate) struct ReferenceReady {
+  pub(crate) tx_id: String,
+  pub(crate) reference: String,
+  pub(crate) payload_map: HashMap<String, MessageTransport>,
+}
 
-  fn handle(&mut self, msg: GetTransactionOutput, _ctx: &mut Context<Self>) -> Self::Result {
-    trace!(
-      "Requesting future for schematic '{}' on tx {}",
-      msg.schematic,
-      msg.tx_id
-    );
+impl Handler<ReferenceReady> for Schematic {
+  type Result = ActorResult<Self, Result<()>>;
 
+  fn handle(&mut self, msg: ReferenceReady, ctx: &mut Context<Self>) -> Self::Result {
+    trace!("Reference '{}' is ready to continue", msg.reference);
+    let seed = self.get_state().seed.clone();
+    let reference = msg.reference.to_string();
     let tx_id = msg.tx_id;
 
-    let schematic_name = msg.schematic;
-    let timeout = Duration::from_millis(1000);
-    let schematic = get_transaction_output(&tx_id, &schematic_name);
+    let kp = actix_try!(KeyPair::from_seed(&seed));
+    let def = self.get_component_model(&msg.reference).unwrap();
+    let mut invoke_payload = HashMap::new();
+    for (name, payload) in msg.payload_map {
+      match payload {
+        MessageTransport::MessagePack(bytes) => {
+          invoke_payload.insert(name, bytes);
+        }
+        payload => {
+          let addr = ctx.address();
+          return ActorResult::reply_async(
+            async move {
+              addr
+                .send(ShortCircuit {
+                  payload,
+                  reference,
+                  tx_id,
+                })
+                .await?
+            }
+            .into_actor(self),
+          );
+        }
+      }
+    }
+
+    let invocation = Invocation::next(
+      &tx_id,
+      &kp,
+      VinoEntity::Schematic("<state>".to_string()),
+      VinoEntity::Component(ComponentEntity {
+        id: def.id,
+        name: def.name,
+        reference: msg.reference.to_string(),
+      }),
+      MessageTransport::MultiBytes(invoke_payload),
+    );
+    let handler = actix_try!(self
+      .get_recipient(&msg.reference)
+      .ok_or_else(|| Error::ReferenceError(reference.to_string())));
+
+    let addr = ctx.address();
+    let name = self.get_name();
 
     let task = async move {
-      match schematic {
-        Ok(future) => match actix_rt::time::timeout(timeout, future).await {
-          Ok(r) => Ok(r),
-          Err(e) => Ok(InvocationResponse::error(
+      addr.do_send(RecordInvocationState {
+        inv_id: invocation.id.to_string(),
+        tx_id: tx_id.clone(),
+        schematic: name.to_string(),
+        entity: invocation.target.clone(),
+      });
+      let target = invocation.target.url();
+
+      let response = handler.send(invocation).await?;
+
+      match response {
+        InvocationResponse::Success { .. } => unreachable!(),
+        InvocationResponse::Stream { tx_id, mut rx } => {
+          trace!(
+            "spawning task to handle output for {}:{}|{}",
             tx_id,
-            format!("Error waiting for schematic output: {}", e.to_string()),
-          )),
-        },
-        Err(e) => Ok(InvocationResponse::error(tx_id, e.to_string())),
+            name,
+            target
+          );
+          tokio::spawn(async move {
+            while let Some(next) = rx.recv().await {
+              match addr.send(next).await {
+                Ok(_) => {
+                  debug!(
+                    "Sent ready output to network for {}:{}:{}",
+                    tx_id, name, target
+                  );
+                }
+                Err(e) => {
+                  error!("Error sending ready output: {}", e);
+                }
+              };
+            }
+            trace!("Task finished")
+          });
+          Ok(())
+        }
+        InvocationResponse::Error { tx_id, msg } => {
+          warn!(
+            "Tx '{}': schematic '{}' short-circuiting from '{}': {}",
+            tx_id, name, reference, msg
+          );
+          addr
+            .send(ShortCircuit {
+              tx_id: tx_id.to_string(),
+              reference: reference.to_string(),
+              payload: MessageTransport::Error(msg),
+            })
+            .await?
+        }
       }
     };
 
@@ -396,30 +555,76 @@ impl Handler<GetTransactionOutput> for Schematic {
   }
 }
 
+#[derive(Message, Clone, Debug)]
+#[rtype(result = "Result<()>")]
+pub(crate) struct SchematicOutputReceived {
+  pub(crate) port: String,
+  pub(crate) tx_id: String,
+  pub(crate) payload: MessageTransport,
+}
+
+impl Handler<SchematicOutputReceived> for Schematic {
+  type Result = ActorResult<Self, Result<()>>;
+
+  fn handle(&mut self, msg: SchematicOutputReceived, _ctx: &mut Context<Self>) -> Self::Result {
+    trace!("Schematic port '{}' is ready", msg.port);
+
+    let tx = actix_try!(self
+      .tx_external
+      .get(&msg.tx_id)
+      .ok_or_else(|| SchematicError::TransactionNotFound(msg.tx_id.clone())));
+
+    debug!("Sending output on transmitter");
+    let err = Packet::V0(v0::Payload::Error(
+      "Invalid payload received as schematic output".to_string(),
+    ));
+    let output_msg = ComponentOutput {
+      invocation_id: msg.tx_id.clone(),
+      payload: match msg.payload {
+        MessageTransport::Invalid => Packet::V0(v0::Payload::Invalid),
+        MessageTransport::Exception(v) => Packet::V0(v0::Payload::Exception(v)),
+        MessageTransport::Error(v) => Packet::V0(v0::Payload::Error(v)),
+        MessageTransport::MessagePack(v) => Packet::V0(v0::Payload::MessagePack(v)),
+        MessageTransport::MultiBytes(_) => err,
+        MessageTransport::OutputMap(_) => err,
+        MessageTransport::Test(_) => err,
+        MessageTransport::Signal(v) => match v {
+          MessageSignal::Close => Packet::V0(v0::Payload::Close),
+          MessageSignal::OpenBracket => Packet::V0(v0::Payload::OpenBracket),
+          MessageSignal::CloseBracket => Packet::V0(v0::Payload::CloseBracket),
+        },
+      },
+      port: msg.port.clone(),
+    };
+    match tx.send(output_msg) {
+      Ok(_) => debug!("Sent output to receiver for tx {}", msg.tx_id),
+      Err(e) => error!("Error sending output to receiver : {}", e),
+    }
+
+    ActorResult::reply(Ok(()))
+  }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, Message, PartialEq)]
 #[rtype(result = "Result<()>")]
-struct PayloadReceived {
-  tx_id: String,
-  origin: PortEntity,
-  target: PortEntity,
-  payload: MessageTransport,
+pub struct PayloadReceived {
+  pub tx_id: String,
+  pub origin: PortEntity,
+  pub target: PortEntity,
+  pub payload: MessageTransport,
 }
 
 fn generate_packets(
   model: Arc<Mutex<SchematicModel>>,
   seed: &str,
   tx_id: String,
-  name: String,
   bytemap: HashMap<String, Vec<u8>>,
 ) -> Result<Vec<PayloadReceived>> {
   let model = model.lock()?;
-  let schematic_outputs = model.get_schematic_outputs();
   let first_connections = model.get_downstream_connections(crate::SCHEMATIC_INPUT);
   drop(model);
 
   let _kp = KeyPair::from_seed(seed)?;
-
-  initialize_schematic_output(&tx_id, &name, schematic_outputs);
 
   let invocations: Vec<PayloadReceived> = first_connections
     .iter()
@@ -430,12 +635,10 @@ fn generate_packets(
 
       PayloadReceived {
         origin: PortEntity {
-          schematic: name.to_string(),
           name: conn.from.port.to_string(),
           reference: conn.from.instance.to_string(),
         },
         target: PortEntity {
-          schematic: name.to_string(),
           name: conn.to.port.to_string(),
           reference: conn.to.instance.to_string(),
         },
@@ -447,11 +650,11 @@ fn generate_packets(
   Ok(invocations)
 }
 
-async fn handle_schematic_invocation<'a>(
+async fn handle_schematic_invocation(
   invocations: Vec<PayloadReceived>,
   schematic: Addr<Schematic>,
   tx_id: String,
-  target: String,
+  rx: UnboundedReceiver<ComponentOutput>,
 ) -> Result<InvocationResponse> {
   let invocations = try_join_all(invocations.into_iter().map(|inv| schematic.send(inv)));
 
@@ -459,17 +662,7 @@ async fn handle_schematic_invocation<'a>(
     .await
     .map_err(|_| Error::SchematicError("Error pushing to schematic ports".into()))?;
 
-  let response = schematic
-    .send(GetTransactionOutput {
-      tx_id: tx_id.to_string(),
-      schematic: target,
-    })
-    .await
-    .map_err(|e| {
-      Error::SchematicError(format!("Error waiting for schematic to complete: {}", e))
-    })??;
-
-  Ok(response)
+  Ok(InvocationResponse::stream(tx_id, rx))
 }
 
 #[derive(Message)]
@@ -495,147 +688,24 @@ impl Handler<RecordInvocationState> for Schematic {
 impl Handler<PayloadReceived> for Schematic {
   type Result = ActorResult<Self, Result<()>>;
 
-  fn handle(&mut self, msg: PayloadReceived, ctx: &mut Context<Self>) -> Self::Result {
-    let name = self.get_name();
-    let port = msg.target;
-    let payload = msg.payload;
-    let tx_id = msg.tx_id;
-    let state = self.state.as_ref().unwrap();
-    let model = state.model.clone();
+  fn handle(&mut self, msg: PayloadReceived, _ctx: &mut Context<Self>) -> Self::Result {
+    trace!("Payload received: {:?}", msg);
+    let port = msg.target.clone();
+    let tx_id = msg.tx_id.clone();
     trace!("Receiving on port {}", port);
 
-    let reference = port.reference.to_string();
-    //TODO normalize output to the same buffers as regular ports
-    if reference == crate::SCHEMATIC_OUTPUT {
-      return ActorResult::reply(push_to_schematic_output(&tx_id, &name, &port.name, payload));
-    }
-    let status = if !payload.is_ok() {
-      ComponentStatus::ShortCircuit(payload)
-    } else {
+    let transaction_handler =
       actix_try!(self
-        .transaction_map
-        .push_to_port(&tx_id, port.clone(), payload));
-      let metadata = actix_try!({
-        let lock = model.lock().unwrap();
-        lock.get_component_metadata(&reference)
-      });
-      let input_ports: Vec<PortEntity> = metadata
-        .inputs
-        .iter()
-        .map(|port_name| PortEntity {
-          schematic: self.get_name(),
-          reference: reference.to_string(),
-          name: port_name.to_string(),
-        })
-        .collect();
-      let ready = self.transaction_map.are_ports_ready(&tx_id, &input_ports);
-      if !ready {
-        ComponentStatus::Waiting
-      } else {
-        let kp = actix_try!(KeyPair::from_seed(&state.seed));
-        let def = self.get_component(&reference).unwrap();
-        let job_data = actix_try!(self.transaction_map.take_from_ports(&tx_id, input_ports));
-        ComponentStatus::Ready(Invocation::next(
-          &tx_id,
-          &kp,
-          VinoEntity::Schematic(port.schematic),
-          VinoEntity::Component(ComponentEntity {
-            id: def.id,
-            name: metadata.name,
-            reference: reference.to_string(),
-          }),
-          MessageTransport::MultiBytes(job_data),
-        ))
-      }
-    };
+        .tx_internal
+        .get(&tx_id)
+        .ok_or_else(|| Error::SchematicError(format!(
+          "Can not get transaction handler for tx {}",
+          tx_id
+        ))));
+    debug!("Sent output to transaction handler for {:?}", msg);
+    actix_try!(transaction_handler.send(msg));
 
-    let schematic_host = ctx.address();
-
-    let recipient = self.get_downstream_recipient(&reference);
-
-    ActorResult::reply_async(
-      async move {
-        match status {
-          ComponentStatus::ShortCircuit(payload) => match schematic_host
-            .send(ShortCircuit {
-              tx_id: tx_id.to_string(),
-              schematic: name,
-              reference,
-              payload,
-            })
-            .await
-          {
-            Ok(_) => Ok(()),
-            Err(e) => Err(Error::SchematicError(format!(
-              "Error deserializing job signal: {}",
-              e
-            ))),
-          },
-          ComponentStatus::Waiting => {
-            trace!("Component {} is still waiting on data", reference);
-            Ok(())
-          }
-          ComponentStatus::Ready(invocation) => {
-            schematic_host.do_send(RecordInvocationState {
-              inv_id: invocation.id.to_string(),
-              tx_id: tx_id.clone(),
-              schematic: name.to_string(),
-              entity: invocation.target.clone(),
-            });
-            let target = invocation.target.url();
-
-            let response: InvocationResponse = match recipient {
-              Some(recipient) => recipient.send(invocation).await?,
-              None => InvocationResponse::error(tx_id, "No recipient found".to_string()),
-            };
-
-            match response {
-              InvocationResponse::Success { .. } => unreachable!(),
-              InvocationResponse::Stream { tx_id, mut rx } => {
-                trace!(
-                  "spawning task to handle output for {}:{}|{}",
-                  tx_id,
-                  name,
-                  target
-                );
-                tokio::spawn(async move {
-                  while let Some(next) = rx.recv().await {
-                    match schematic_host.send(next).await {
-                      Ok(_) => {
-                        debug!(
-                          "Sent ready output to network for {}:{}:{}",
-                          tx_id, name, target
-                        );
-                      }
-                      Err(e) => {
-                        error!("Error sending ready output: {}", e);
-                      }
-                    };
-                  }
-                  trace!("Task finished")
-                });
-                Ok(())
-              }
-              InvocationResponse::Error { tx_id, msg } => {
-                warn!(
-                  "Tx '{}': schematic '{}' short-circuiting from '{}': {}",
-                  tx_id, name, reference, msg
-                );
-                schematic_host
-                  .send(ShortCircuit {
-                    tx_id: tx_id.to_string(),
-                    schematic: name.to_string(),
-                    reference: reference.to_string(),
-                    payload: MessageTransport::Error(msg),
-                  })
-                  .await?
-              }
-            }
-          }
-        }
-      }
-      .into_actor(self),
-    )
+    ActorResult::reply(Ok(()))
   }
 }
 
@@ -643,7 +713,6 @@ impl Handler<PayloadReceived> for Schematic {
 #[rtype(result = "Result<()>")]
 pub(crate) struct ShortCircuit {
   pub(crate) tx_id: String,
-  pub(crate) schematic: String,
   pub(crate) reference: String,
   pub(crate) payload: MessageTransport,
 }
@@ -655,7 +724,6 @@ impl Handler<ShortCircuit> for Schematic {
     trace!("Short circuiting component {}", msg.reference);
     let reference = msg.reference;
     let tx_id = msg.tx_id;
-    let schematic = msg.schematic;
     let payload = msg.payload;
 
     let outputs = self.get_outputs(&reference);
@@ -668,14 +736,13 @@ impl Handler<ShortCircuit> for Schematic {
       "Connections to short {:?}",
       ConnectionDefinition::print_all(&downstreams)
     );
-    let outputs: Vec<OutputReady> = downstreams
+    let outputs: Vec<OutputPortReady> = downstreams
       .iter()
-      .map(|conn| OutputReady {
+      .map(|conn| OutputPortReady {
         tx_id: tx_id.to_string(),
         port: PortEntity {
           reference: conn.from.instance.to_string(),
           name: conn.from.port.to_string(),
-          schematic: schematic.to_string(),
         },
         payload: payload.clone(),
       })
@@ -700,27 +767,25 @@ impl Handler<ShortCircuit> for Schematic {
 
 #[derive(Message, Debug, Clone)]
 #[rtype(result = "Result<()>")]
-pub(crate) struct OutputReady {
+pub(crate) struct OutputPortReady {
   pub(crate) port: PortEntity,
   pub(crate) tx_id: String,
   pub(crate) payload: MessageTransport,
 }
 
-impl Handler<OutputReady> for Schematic {
+impl Handler<OutputPortReady> for Schematic {
   type Result = ResponseActFuture<Self, Result<()>>;
 
-  fn handle(&mut self, msg: OutputReady, ctx: &mut Context<Self>) -> Self::Result {
+  fn handle(&mut self, msg: OutputPortReady, ctx: &mut Context<Self>) -> Self::Result {
     trace!("Output ready on {}", msg.port);
     let reference = msg.port.reference;
     let port = msg.port.name;
     let tx_id = msg.tx_id;
     let data = msg.payload;
-    let schematic = msg.port.schematic;
     let defs = self.get_connections(&reference, &port);
     let addr = ctx.address();
     let task = async move {
       let origin = PortEntity {
-        schematic: schematic.to_string(),
         name: port.to_string(),
         reference: reference.to_string(),
       };
@@ -728,7 +793,6 @@ impl Handler<OutputReady> for Schematic {
         tx_id: tx_id.clone(),
         origin: origin.clone(),
         target: PortEntity {
-          schematic: schematic.to_string(),
           name: conn.to.port.to_string(),
           reference: conn.to.instance,
         },
@@ -747,10 +811,7 @@ impl Handler<OutputReady> for Schematic {
 #[cfg(test)]
 mod test {
 
-  use vino_codec::messagepack::{
-    deserialize,
-    serialize,
-  };
+  use vino_codec::messagepack::serialize;
   use vino_rpc::{
     bind_new_socket,
     make_rpc_server,
@@ -772,7 +833,7 @@ mod test {
   #[test_env_log::test(actix_rt::test)]
   async fn test_basic_schematic() -> Result<()> {
     let kp = KeyPair::new_server();
-    let host_id = kp.public_key();
+    let network_id = kp.public_key();
     let tx_id = Invocation::uuid();
     let schematic = Schematic::default();
     let addr = schematic.start();
@@ -809,8 +870,8 @@ mod test {
 
     addr
       .send(Initialize {
-        network: Network::from_registry(),
-        host_id: host_id.to_string(),
+        network: Network::for_id(&network_id),
+        network_id: network_id.to_string(),
         schematic: schematic_def,
         seed: kp.seed()?,
         allow_latest: true,
@@ -828,16 +889,23 @@ mod test {
       })
       .await??;
     match response {
-      InvocationResponse::Success { msg, .. } => {
-        let mut map = msg.into_output_map()?;
-        let output = map.remove("output").unwrap();
-        let bytes = output.into_bytes()?;
-        println!("response: {:?}", map);
-        let payload: String = deserialize(&bytes)?;
-        println!("payload {:?}", payload);
-        assert_eq!(payload, user_data);
+      InvocationResponse::Success { .. } => panic!("should have gotten a stream"),
+
+      InvocationResponse::Stream { mut rx, .. } => {
+        debug!("Got stream");
+        let mut i = 0;
+
+        while let Some(next) = rx.recv().await {
+          i += 1;
+          let packet = next.payload;
+          debug!("Packet {}: {:?}", i, packet);
+          let payload: String = packet.try_into()?;
+          debug!("Payload {}", payload);
+          assert_eq!(payload, user_data);
+        }
+        debug!("Number of packets received: {}", i);
+        assert_eq!(i, 1);
       }
-      InvocationResponse::Stream { .. } => panic!("should not have gotten a stream"),
       InvocationResponse::Error { msg, .. } => panic!("{}", msg),
     };
 
@@ -886,13 +954,13 @@ mod test {
     });
 
     let hostkey = KeyPair::new_server();
-    let host_id = KeyPair::new_server().public_key();
+    let network_id = KeyPair::new_server().public_key();
     let tx_id = Invocation::uuid();
 
     addr
       .send(Initialize {
-        network: Network::from_registry(),
-        host_id: host_id.to_string(),
+        network: Network::for_id(&network_id),
+        network_id: network_id.to_string(),
         schematic: schematic_def,
         seed: hostkey.seed()?,
         allow_latest: true,
@@ -911,17 +979,23 @@ mod test {
       .await??;
 
     match response {
-      InvocationResponse::Success { msg, .. } => {
-        let mut map = msg.into_output_map()?;
-        debug!("map: {:?}", map);
-        let output = map.remove("output").unwrap();
-        let bytes = output.into_bytes()?;
-        println!("response: {:?}", map);
-        let payload: String = deserialize(&bytes)?;
-        println!("payload {:?}", payload);
-        assert_eq!(payload, user_data);
+      InvocationResponse::Success { .. } => panic!("should have gotten a stream"),
+
+      InvocationResponse::Stream { mut rx, .. } => {
+        debug!("Got stream");
+        let mut i = 0;
+
+        while let Some(next) = rx.recv().await {
+          i += 1;
+          let packet = next.payload;
+          debug!("Packet {}: {:?}", i, packet);
+          let payload: String = packet.try_into()?;
+          debug!("Payload {}", payload);
+          assert_eq!(payload, user_data);
+        }
+        debug!("Number of packets received: {}", i);
+        assert_eq!(i, 1);
       }
-      InvocationResponse::Stream { .. } => panic!("should not have gotten a stream"),
       InvocationResponse::Error { msg, .. } => panic!("{}", msg),
     };
     Ok(())
@@ -973,13 +1047,13 @@ mod test {
     });
 
     let hostkey = KeyPair::new_server();
-    let host_id = KeyPair::new_server().public_key();
+    let network_id = KeyPair::new_server().public_key();
     let tx_id = Invocation::uuid();
 
     addr
       .send(Initialize {
-        network: Network::from_registry(),
-        host_id: host_id.to_string(),
+        network: Network::for_id(&network_id),
+        network_id: network_id.to_string(),
         schematic: schematic_def,
         seed: hostkey.seed()?,
         allow_latest: true,
@@ -998,17 +1072,22 @@ mod test {
       .await??;
 
     match response {
-      InvocationResponse::Success { msg, .. } => {
-        let mut map = msg.into_output_map()?;
-        debug!("map: {:?}", map);
-        let output = map.remove("output").unwrap();
-        let bytes = output.into_bytes()?;
-        println!("response: {:?}", map);
-        let payload: String = deserialize(&bytes)?;
-        println!("payload {:?}", payload);
-        assert_eq!(payload, user_data);
+      InvocationResponse::Success { .. } => panic!("should have gotten a stream"),
+      InvocationResponse::Stream { mut rx, .. } => {
+        debug!("Got stream");
+        let mut i = 0;
+
+        while let Some(next) = rx.recv().await {
+          i += 1;
+          let packet = next.payload;
+          debug!("Packet {}: {:?}", i, packet);
+          let payload: String = packet.try_into()?;
+          debug!("Payload {}", payload);
+          assert_eq!(payload, user_data);
+        }
+        debug!("Number of packets received: {}", i);
+        assert_eq!(i, 1);
       }
-      InvocationResponse::Stream { .. } => panic!("should not have gotten a stream"),
       InvocationResponse::Error { msg, .. } => panic!("{}", msg),
     };
     Ok(())

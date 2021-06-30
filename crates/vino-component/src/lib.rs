@@ -44,6 +44,9 @@ impl Packet {
         v0::Payload::Exception(v) => Err(Error::Exception(v)),
         v0::Payload::Error(v) => Err(Error::Error(v)),
         v0::Payload::MessagePack(buf) => deserialize::<T>(&buf).map_err(Error::InternalError),
+        v0::Payload::Close => todo!(),
+        v0::Payload::OpenBracket => todo!(),
+        v0::Payload::CloseBracket => todo!(),
       },
     }
   }

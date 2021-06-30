@@ -2,6 +2,10 @@ use std::sync::PoisonError;
 
 use itertools::join;
 use thiserror::Error;
+use tokio::sync::mpsc::error::SendError;
+
+use crate::schematic::PayloadReceived;
+use crate::PortEntity;
 
 type BoxedErrorSyncSend = Box<dyn std::error::Error + Sync + Send>;
 // type BoxedError = Box<dyn std::error::Error>;
@@ -19,6 +23,16 @@ pub enum ValidationError {
 }
 
 #[derive(Error, Debug)]
+pub enum SchematicError {
+  #[error("Upstream port {0} not found")]
+  UpstreamNotFound(PortEntity),
+  #[error("Transaction {0} not found")]
+  TransactionNotFound(String),
+  #[error("Reference {0} not found")]
+  ReferenceNotFound(String),
+}
+
+#[derive(Error, Debug)]
 pub enum VinoError {
   #[error("Conversion error {0}")]
   ConversionError(&'static str),
@@ -28,6 +42,8 @@ pub enum VinoError {
   ExecutionError(String),
   #[error("Schematic error: {0}")]
   SchematicError(String),
+  #[error("Reference {0} not found")]
+  ReferenceError(String),
   #[error("Dispatch error: {0}")]
   DispatchError(String),
   #[error("Provider error {0}")]
@@ -59,6 +75,10 @@ pub enum VinoError {
   #[error("Grpc Provider error: {0}")]
   GrpcUrlProviderError(String),
 
+  #[error(transparent)]
+  SchematicErr(#[from] SchematicError),
+  #[error(transparent)]
+  TransactionChannelError(#[from] SendError<PayloadReceived>),
   #[error(transparent)]
   ValidationError(#[from] ValidationError),
   #[error(transparent)]

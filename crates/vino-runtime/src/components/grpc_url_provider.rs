@@ -31,7 +31,7 @@ use crate::dispatch::{
   InvocationResponse,
 };
 use crate::error::VinoError;
-use crate::schematic::PushOutput;
+use crate::schematic::ComponentOutput;
 use crate::Result;
 
 #[derive(Default, Debug)]
@@ -251,7 +251,7 @@ impl Handler<Invocation> for GrpcUrlProvider {
           if let Err(e) = next {
             let msg = format!("Error during GRPC stream: {}", e);
             error!("{}", msg);
-            match tx.send(PushOutput {
+            match tx.send(ComponentOutput {
               port: crate::COMPONENT_ERROR.to_string(),
               payload: Packet::V0(Payload::Error(msg)),
               invocation_id: invocation_id.to_string(),
@@ -275,7 +275,7 @@ impl Handler<Invocation> for GrpcUrlProvider {
           if payload.is_none() {
             let msg = "Received response but no payload";
             error!("{}", msg);
-            match tx.send(PushOutput {
+            match tx.send(ComponentOutput {
               port: crate::COMPONENT_ERROR.to_string(),
               payload: Packet::V0(Payload::Error(msg.to_string())),
               invocation_id: invocation_id.to_string(),
@@ -295,7 +295,7 @@ impl Handler<Invocation> for GrpcUrlProvider {
           }
           let port_name = output.port;
           trace!("Native actor {} got output on port [{}]", name, port_name);
-          match tx.send(PushOutput {
+          match tx.send(ComponentOutput {
             port: port_name.to_string(),
             payload: payload.unwrap().into(),
             invocation_id: invocation_id.to_string(),
@@ -378,7 +378,7 @@ mod test {
           id: Invocation::uuid(),
           tx_id: Invocation::uuid(),
           encoded_claims: "".to_string(),
-          host_id: Invocation::uuid(),
+          network_id: Invocation::uuid(),
         })
         .await?;
       Ok!(response)
@@ -390,7 +390,7 @@ mod test {
             match res {
               Ok(response)=>{
                 let (_, mut rx) = response.to_stream()?;
-                let next: PushOutput = rx.recv().await.unwrap();
+                let next: ComponentOutput = rx.recv().await.unwrap();
                 let payload: String = next.payload.try_into()?;
                 assert_eq!(user_data, payload);              },
               Err(e)=>{

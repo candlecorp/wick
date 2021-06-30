@@ -1,0 +1,19 @@
+---
+schematics:
+  - name: simple
+    components:
+      REF_ID_LOGGER:
+        id: vino::log
+    connections:
+      - from:
+          instance: <input>
+          port: input
+        to:
+          instance: REF_ID_LOGGER
+          port: input
+      - from:
+          instance: REF_ID_LOGGER
+          port: output
+        to:
+          instance: <output>
+          port: output

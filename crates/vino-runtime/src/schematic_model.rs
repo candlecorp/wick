@@ -9,32 +9,64 @@ use crate::provider_model::ProviderModel;
 use crate::schematic_definition::*;
 use crate::{
   Error,
+  PortEntity,
   Result,
   SchematicDefinition,
 };
 
 type ComponentReference = String;
 type ComponentId = String;
+type Namespace = String;
 
-#[derive(Debug, Default)]
+#[derive(Debug, Clone)]
 pub struct SchematicModel {
   pub definition: SchematicDefinition,
   pub components: HashMap<ComponentId, ComponentModel>,
   pub references: HashMap<ComponentReference, String>,
-  pub providers: HashMap<String, ProviderModel>,
+  pub providers: HashMap<Namespace, ProviderModel>,
+  pub connections: Vec<Connection>,
+  pub upstream_links: HashMap<PortEntity, PortEntity>,
+}
+
+#[derive(Debug, Clone)]
+pub struct Connection {
+  pub from: PortEntity,
+  pub to: PortEntity,
 }
 
 impl SchematicModel {
   pub(crate) fn new(definition: SchematicDefinition) -> Self {
-    let mut references = HashMap::new();
-    definition.components.iter().for_each(|(instance, actor)| {
-      references.insert(instance.to_string(), actor.id.to_string());
-    });
+    let references: HashMap<String, String> = definition
+      .components
+      .iter()
+      .map(|(instance, actor)| (instance.to_string(), actor.id.to_string()))
+      .collect();
+    let connections: Vec<Connection> = definition
+      .connections
+      .iter()
+      .cloned()
+      .map(|connection| Connection {
+        from: PortEntity::new(connection.from.instance, connection.from.port),
+        to: PortEntity::new(connection.to.instance, connection.to.port),
+      })
+      .collect();
+    let upstream_links = connections
+      .iter()
+      .cloned()
+      .map(|connection| (connection.to, connection.from))
+      .collect();
+
     Self {
       definition,
       references,
-      ..SchematicModel::default()
+      connections,
+      components: HashMap::new(),
+      providers: HashMap::new(),
+      upstream_links,
     }
+  }
+  pub(crate) fn get_upstream(&self, port: &PortEntity) -> Option<&PortEntity> {
+    self.upstream_links.get(port)
   }
 
   pub(crate) fn get_name(&self) -> String {
@@ -68,6 +100,13 @@ impl SchematicModel {
     }
   }
   /// Gets a ComponentModel by component reference string
+  pub(crate) fn get_component_by_ref(&self, reference: &str) -> Option<ComponentModel> {
+    self
+      .references
+      .get(reference)
+      .and_then(|id| self.get_component_model(id))
+  }
+  /// Gets a ComponentModel by component reference string
   pub(crate) fn get_component_model(&self, id: &str) -> Option<ComponentModel> {
     let (ns, name) = match parse_namespace(id) {
       Ok(result) => result,
@@ -75,15 +114,23 @@ impl SchematicModel {
     };
     trace!("ns parts: {:?} and {}", ns, name);
     let provider = self.providers.get(&ns);
-    if let Some(provider) = provider {
+    let result = if let Some(provider) = provider {
       provider.components.get(&name).cloned()
     } else {
       None
-    }
+    };
+    trace!("Component model lookup id:{} => {:?}", id, result);
+    result
   }
   /// Gets a ComponentDefinition by component reference string
   pub(crate) fn get_component_definition(&self, reference: &str) -> Option<ComponentDefinition> {
-    self.definition.get_component(reference)
+    let result = self.definition.get_component(reference);
+    trace!(
+      "Component definition lookup ref:{} => {:?}",
+      reference,
+      result
+    );
+    result
   }
 
   pub(crate) fn get_downstream_connections(&self, reference: &str) -> Vec<ConnectionDefinition> {
@@ -102,24 +149,6 @@ impl SchematicModel {
 
   pub(crate) fn get_schematic_inputs(&self) -> Vec<String> {
     self.definition.get_input_names()
-  }
-
-  pub(crate) fn get_component_metadata(&self, id: &str) -> Result<ComponentModel> {
-    trace!("Getting component metadata {}", id);
-    let opt = match self.definition.get_component(id) {
-      Some(comp) => {
-        let (ns, name) = comp.parse_namespace()?;
-        trace!("{} parsed into {:?} | {}", id, ns, name);
-        self
-          .providers
-          .get(&ns)
-          .and_then(|p| p.components.get(&name))
-      }
-      None => None,
-    };
-    opt.cloned().ok_or_else(|| {
-      Error::SchematicError(format!("Could not found component metadata for {}", id))
-    })
   }
 
   pub(crate) fn get_outputs(&self, reference: &str) -> Vec<String> {
@@ -223,8 +252,27 @@ impl<'a> Validator<'a> {
 #[cfg(test)]
 mod tests {
 
+  use std::fs;
+
+  use vino_manifest::{
+    Loadable,
+    NetworkManifest,
+  };
+
   use super::*;
   use crate::prelude::*;
+  use crate::NetworkDefinition;
+
+  fn load_network_manifest(path: &str) -> Result<NetworkDefinition> {
+    let manifest = NetworkManifest::V0(vino_manifest::v0::NetworkManifest::from_yaml(
+      &fs::read_to_string(path)?,
+    )?);
+    println!("{:#?}", manifest);
+    let def = NetworkDefinition::new(&manifest);
+    debug!("Manifest loaded");
+    Ok(def)
+  }
+
   #[test_env_log::test]
   fn test_basics() -> Result<()> {
     let schematic_name = "Test";
@@ -264,6 +312,67 @@ mod tests {
     });
     let model = SchematicModel::new(schematic_def);
     assert_eq!(model.get_name(), schematic_name);
+    println!("{:?}", model);
+
+    Ok(())
+  }
+
+  #[test_env_log::test]
+  fn test_validate_early_errors() -> Result<()> {
+    let def = load_network_manifest("./manifests/native-component.yaml")?;
+    let model = SchematicModel::new(def.schematics[0].clone());
+
+    println!("{:?}", model);
+    Validator::validate_early_errors(&model)?;
+    Ok(())
+  }
+
+  #[test_env_log::test]
+  fn test_connections() -> Result<()> {
+    let schematic_name = "Test";
+    let mut schematic_def = SchematicDefinition::new(schematic_name.to_string());
+    schematic_def.providers.push(ProviderDefinition {
+      namespace: "test-namespace".to_string(),
+      kind: ProviderKind::Native,
+      reference: "internal".to_string(),
+      data: HashMap::new(),
+    });
+    schematic_def.components.insert(
+      "logger".to_string(),
+      ComponentDefinition {
+        metadata: None,
+        id: "test-namespace::log".to_string(),
+      },
+    );
+    schematic_def.connections.push(ConnectionDefinition {
+      from: ConnectionTargetDefinition {
+        instance: SCHEMATIC_INPUT.to_string(),
+        port: "input".to_string(),
+      },
+      to: ConnectionTargetDefinition {
+        instance: "logger".to_string(),
+        port: "input".to_string(),
+      },
+    });
+    schematic_def.connections.push(ConnectionDefinition {
+      from: ConnectionTargetDefinition {
+        instance: "logger".to_string(),
+        port: "output".to_string(),
+      },
+      to: ConnectionTargetDefinition {
+        instance: SCHEMATIC_OUTPUT.to_string(),
+        port: "output".to_string(),
+      },
+    });
+    let model = SchematicModel::new(schematic_def);
+    assert_eq!(model.get_name(), schematic_name);
+
+    let upstream = model
+      .get_upstream(&PortEntity::new("logger".to_string(), "input".to_string()))
+      .unwrap();
+    assert_eq!(upstream.reference, SCHEMATIC_INPUT);
+    assert_eq!(upstream.name, "input");
+
     println!("{:?}", model);
 
     Ok(())

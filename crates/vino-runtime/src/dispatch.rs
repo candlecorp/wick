@@ -17,6 +17,9 @@ use serde::{
 };
 use tokio::sync::mpsc::UnboundedReceiver;
 use uuid::Uuid;
+use vino_component::v0::Payload;
+use vino_component::Packet;
+use vino_transport::message_transport::MessageSignal;
 use vino_transport::MessageTransport;
 use wascap::prelude::{
   Claims,
@@ -24,7 +27,7 @@ use wascap::prelude::{
 };
 
 use crate::error::VinoError;
-use crate::schematic::PushOutput;
+use crate::schematic::ComponentOutput;
 use crate::{
   Error,
   Result,
@@ -40,7 +43,7 @@ pub struct Invocation {
   pub id: String,
   pub tx_id: String,
   pub encoded_claims: String,
-  pub host_id: String,
+  pub network_id: String,
 }
 
 impl<A, M> MessageResponse<A, M> for Invocation
@@ -67,7 +70,7 @@ impl TryFrom<Invocation> for vino_rpc::rpc::Invocation {
       id: inv.id,
       tx_id: inv.tx_id,
       encoded_claims: inv.encoded_claims,
-      host_id: inv.host_id,
+      network_id: inv.network_id,
     })
   }
 }
@@ -105,7 +108,7 @@ pub enum InvocationResponse {
   },
   Stream {
     tx_id: String,
-    rx: UnboundedReceiver<PushOutput>,
+    rx: ResponseStream,
   },
   Error {
     tx_id: String,
@@ -113,11 +116,42 @@ pub enum InvocationResponse {
   },
 }
 
+#[derive(Debug)]
+pub struct ResponseStream {
+  rx: UnboundedReceiver<ComponentOutput>,
+}
+
+impl ResponseStream {
+  pub fn new(rx: UnboundedReceiver<ComponentOutput>) -> Self {
+    Self { rx }
+  }
+  pub async fn recv(&mut self) -> Option<ComponentOutput> {
+    let next = self.rx.recv().await;
+    trace!("Response stream received: {:?}", next);
+    next.and_then(|output| {
+      if output.payload == Packet::V0(Payload::Close) {
+        self.rx.close();
+        None
+      } else {
+        Some(output)
+      }
+    })
+  }
+}
+
+pub(crate) fn inv_error(tx_id: &str, msg: &str) -> InvocationResponse {
+  InvocationResponse::error(tx_id.to_string(), msg.to_string())
+}
+
 impl InvocationResponse {
   /// Creates a successful invocation response stream. Response include the receiving end
   /// of an unbounded channel to listen for future output.
-  pub fn stream(tx_id: String, rx: UnboundedReceiver<PushOutput>) -> InvocationResponse {
-    InvocationResponse::Stream { tx_id, rx }
+  pub fn stream(tx_id: String, rx: UnboundedReceiver<ComponentOutput>) -> InvocationResponse {
+    trace!("Creating stream");
+    InvocationResponse::Stream {
+      tx_id,
+      rx: ResponseStream::new(rx),
+    }
   }
 
   /// Creates a successful invocation response. Successful invocations include the payload for an
@@ -139,7 +173,7 @@ impl InvocationResponse {
     }
   }
 
-  pub fn to_stream(self) -> Result<(String, UnboundedReceiver<PushOutput>)> {
+  pub fn to_stream(self) -> Result<(String, ResponseStream)> {
     match self {
       InvocationResponse::Stream { tx_id, rx } => Ok((tx_id, rx)),
       _ => Err(crate::Error::ConversionError("to_stream")),
@@ -205,7 +239,7 @@ impl Invocation {
       msg: payload,
       id: invocation_id,
       encoded_claims: claims.encode(hostkey).unwrap(),
-      host_id: issuer,
+      network_id: issuer,
       tx_id: tx_id.to_string(),
     }
   }
@@ -240,6 +274,11 @@ pub(crate) fn invocation_hash(
           .unwrap();
       }
     }
+    MessageTransport::Signal(signal) => match signal {
+      MessageSignal::Close => cleanbytes.write_all(b"1").unwrap(),
+      MessageSignal::OpenBracket => cleanbytes.write_all(b"2").unwrap(),
+      MessageSignal::CloseBracket => cleanbytes.write_all(b"3").unwrap(),
+    },
   }
   let digest = sha256_digest(cleanbytes.as_slice()).unwrap();
   HEXUPPER.encode(digest.as_ref())
@@ -331,27 +370,29 @@ impl VinoEntity {
       _ => Err(Error::ConversionError("into_component")),
     }
   }
+
+  pub fn into_schematic(self) -> Result<String> {
+    match self {
+      VinoEntity::Schematic(s) => Ok(s),
+      _ => Err(Error::ConversionError("into_schematic")),
+    }
+  }
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize, Eq, Hash)]
 pub struct PortEntity {
-  pub schematic: String,
   pub reference: String,
   pub name: String,
 }
 
 impl PortEntity {
-  pub fn new(schematic: String, reference: String, name: String) -> Self {
-    Self {
-      schematic,
-      reference,
-      name,
-    }
+  pub fn new(reference: String, name: String) -> Self {
+    Self { reference, name }
   }
 }
 
 impl Display for PortEntity {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    write!(f, "{}/{}[{}]", self.schematic, self.reference, self.name)
+    write!(f, "{}[{}]", self.reference, self.name)
   }
 }

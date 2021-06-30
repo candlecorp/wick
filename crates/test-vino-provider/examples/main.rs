@@ -27,7 +27,7 @@ async fn main() -> anyhow::Result<()> {
   vino_provider_cli::init(
     Arc::new(Mutex::new(Provider::default())),
     Some(CliOpts {
-      port: opts.port,
+      port: Some(opts.port),
       address: opts.address,
     }),
   )

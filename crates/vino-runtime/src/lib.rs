@@ -51,15 +51,18 @@ pub mod component_model;
 pub mod components;
 pub(crate) mod dispatch;
 pub mod error;
+pub(crate) mod invocation_map;
 pub mod network;
 pub mod network_definition;
+// pub mod network_provider;
 pub mod provider_model;
 pub(crate) mod schematic;
 pub mod schematic_definition;
 pub mod schematic_model;
-pub(crate) mod schematic_response;
 mod transaction;
 pub(crate) mod util;
+
+// pub use network_provider::Provider as NetworkProvider;
 
 pub mod prelude {
   pub use vino_component::Packet;
@@ -68,6 +71,7 @@ pub mod prelude {
   pub use crate::dispatch::{
     Invocation,
     InvocationResponse,
+    ResponseStream,
   };
   pub use crate::{
     Error,

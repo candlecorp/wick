@@ -8,6 +8,8 @@ use actix::fut::{
 };
 use actix::prelude::*;
 use futures::future::try_join_all;
+use once_cell::sync::Lazy;
+use parking_lot::Mutex;
 use serde::Serialize;
 use vino_codec::messagepack::serialize;
 use vino_transport::MessageTransport;
@@ -15,10 +17,12 @@ use vino_transport::MessageTransport;
 use super::schematic::Schematic;
 use crate::actix::ActorResult;
 use crate::component_model::ComponentModel;
+use crate::dispatch::inv_error;
 use crate::network_definition::NetworkDefinition;
 use crate::schematic::SchematicOutput;
 use crate::{
   Error,
+  Invocation,
   InvocationResponse,
   Result,
 };
@@ -32,7 +36,7 @@ pub struct Network {
   started_time: std::time::Instant,
   allow_latest: bool,
   allowed_insecure: Vec<String>,
-  host_id: String,
+  id: String,
   schematics: HashMap<String, Addr<Schematic>>,
   definition: NetworkDefinition,
 }
@@ -46,13 +50,27 @@ impl Default for Network {
       started_time: std::time::Instant::now(),
       allow_latest: false,
       allowed_insecure: vec![],
-      host_id: "".to_string(),
+      id: "".to_string(),
       schematics: HashMap::new(),
       definition: NetworkDefinition::default(),
     }
   }
 }
+
+type ServiceMap = HashMap<String, Addr<Network>>;
+static HOST_REGISTRY: Lazy<Mutex<ServiceMap>> = Lazy::new(|| Mutex::new(HashMap::new()));
+
 impl Network {
+  pub fn for_id(network_id: &str) -> Addr<Self> {
+    trace!("getting network for host {}", network_id);
+    let sys = System::current();
+    let mut registry = HOST_REGISTRY.lock();
+    let addr = registry
+      .entry(network_id.to_string())
+      .or_insert_with(|| Network::start_service(sys.arbiter()));
+
+    addr.clone()
+  }
   pub(crate) fn get_schematic(&self, id: &str) -> Result<Addr<Schematic>> {
     self
       .schematics
@@ -112,7 +130,7 @@ pub async fn request<T: AsRef<str> + Display>(
 #[derive(Message, Debug)]
 #[rtype(result = "Result<()>")]
 pub struct Initialize {
-  pub host_id: String,
+  pub network_id: String,
   pub seed: String,
   pub network: NetworkDefinition,
 }
@@ -121,11 +139,11 @@ impl Handler<Initialize> for Network {
   type Result = ActorResult<Self, Result<()>>;
 
   fn handle(&mut self, msg: Initialize, ctx: &mut Context<Self>) -> Self::Result {
-    trace!("Network initializing on {}", msg.host_id);
-    self.host_id = msg.host_id;
+    trace!("Network initializing on {}", msg.network_id);
+    self.id = msg.network_id;
     self.definition = msg.network;
 
-    let host_id = self.host_id.to_string();
+    let network_id = self.id.to_string();
     let seed = msg.seed;
     let allow_latest = self.allow_latest;
     let allowed_insecure = self.allowed_insecure.clone();
@@ -142,7 +160,7 @@ impl Handler<Initialize> for Network {
         addr_map.insert(definition.get_name(), addr.clone());
         init_requests.push(addr.send(super::schematic::Initialize {
           network: network_addr.clone(),
-          host_id: host_id.to_string(),
+          network_id: network_id.to_string(),
           seed: seed.clone(),
           schematic: definition.clone(),
           allow_latest,
@@ -219,8 +237,61 @@ impl Handler<Request> for Network {
           ),
           _ => unreachable!(),
         },
-        InvocationResponse::Stream { .. } => unreachable!(),
+        InvocationResponse::Stream { mut rx, .. } => {
+          debug!("Got stream");
+          let mut map = HashMap::new();
+
+          while let Some(next) = rx.recv().await {
+            debug!("Received packet on port {}: {:?}", next.port, next.payload);
+            map.insert(next.port, next.payload.into());
+          }
+          Ok(map)
+        }
         InvocationResponse::Error { msg, .. } => Err(Error::ExecutionError(msg)),
+      }
+    }
+    .into_actor(self);
+
+    ActorResult::reply_async(task)
+  }
+}
+
+impl Handler<Invocation> for Network {
+  type Result = ActorResult<Self, InvocationResponse>;
+
+  fn handle(&mut self, msg: Invocation, _ctx: &mut Context<Self>) -> Self::Result {
+    let tx_id = uuid::Uuid::new_v4().to_string();
+    actix_ensure_ok!(self
+      .ensure_is_started()
+      .map_err(|e| inv_error(&tx_id, &e.to_string())));
+    let schematic_name = actix_ensure_ok!(msg
+      .origin
+      .into_schematic()
+      .map_err(|_| inv_error(&tx_id, "Sent invalid entity")));
+
+    trace!("Invoking schematic '{}'", schematic_name);
+
+    let schematic = actix_ensure_ok!(self
+      .get_schematic(&schematic_name)
+      .map_err(|e| inv_error(&tx_id, &e.to_string())));
+    let payload = actix_ensure_ok!(msg
+      .msg
+      .into_multibytes()
+      .map_err(|e| inv_error(&tx_id, &e.to_string())));
+
+    let request = super::schematic::Request {
+      tx_id: tx_id.clone(),
+      schematic: schematic_name,
+      payload,
+    };
+
+    let task = async move {
+      match schematic.send(request).await {
+        Ok(Ok(response)) => response,
+        Ok(Err(e)) => InvocationResponse::error(tx_id, format!("Error invoking schematic: {}", e)),
+        Err(e) => {
+          InvocationResponse::error(tx_id, format!("Internal error invoking schematic: {}", e))
+        }
       }
     }
     .into_actor(self);
@@ -257,17 +328,38 @@ mod test {
     let def = NetworkDefinition::new(&manifest);
     debug!("Manifest loaded");
     let kp = KeyPair::new_server();
+    let nid = kp.public_key();
 
-    let network = super::Network::from_registry();
+    let network = super::Network::for_id(&nid);
     network
       .send(Initialize {
-        host_id: kp.public_key(),
+        network_id: nid,
         seed: kp.seed()?,
         network: def,
       })
       .await??;
     trace!("Manifest applied");
     Ok(network)
+  }
+
+  #[test_env_log::test(actix_rt::test)]
+  async fn simple_schematic() -> Result<()> {
+    let network = init_network("./manifests/simple.yaml").await?;
+
+    let data = hashmap! {
+        "input" => "simple string",
+    };
+
+    let mut result = request(&network, "simple", data).await?;
+
+    println!("Result: {:?}", result);
+    let output: MessageTransport = result.remove("output").unwrap();
+    println!("Output: {:?}", output);
+    assert_eq!(
+      output,
+      MessageTransport::MessagePack(serialize("simple string")?)
+    );
+    Ok(())
   }
 
   #[test_env_log::test(actix_rt::test)]

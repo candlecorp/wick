@@ -31,6 +31,7 @@ pub enum VinoHostError {
   YamlError(#[from] serde_yaml::Error),
   #[error(transparent)]
   HoconError(#[from] hocon::Error),
+
   #[error(transparent)]
   ActixMailboxError(#[from] actix::MailboxError),
   #[error(transparent)]

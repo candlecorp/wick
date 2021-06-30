@@ -29,7 +29,7 @@ pub trait Sender {
   /// Buffer a message then close the port
   fn done(&self, data: Self::PayloadType) {
     self.send(data);
-    self.close();
+    self.send_message(Packet::V0(ComponentPayload::Close));
   }
 
   /// Buffer a complete Output message then close the port
@@ -49,7 +49,7 @@ pub trait Sender {
   /// Buffer a payload then close the port
   fn done_message(&self, packet: Packet) {
     self.send_message(packet);
-    self.close();
+    self.send_message(Packet::V0(ComponentPayload::Close));
   }
 
   /// Buffer an exception
@@ -104,11 +104,11 @@ pub enum PortStatus {
 }
 
 #[derive()]
-pub struct Receiver {
+pub struct PortStream {
   streams: Vec<Arc<Mutex<Port>>>,
 }
 
-impl std::fmt::Debug for Receiver {
+impl std::fmt::Debug for PortStream {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     f.debug_struct("Receiver")
       .field("streams", &self.streams.len())
@@ -116,7 +116,7 @@ impl std::fmt::Debug for Receiver {
   }
 }
 
-impl Clone for Receiver {
+impl Clone for PortStream {
   fn clone(&self) -> Self {
     Self {
       streams: self.streams.clone(),
@@ -124,13 +124,13 @@ impl Clone for Receiver {
   }
 }
 
-impl Receiver {
+impl PortStream {
   pub fn new(buffer: Vec<Arc<Mutex<Port>>>) -> Self {
     Self { streams: buffer }
   }
 }
 
-impl Stream for Receiver {
+impl Stream for PortStream {
   type Item = (String, Packet);
 
   fn poll_next(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
@@ -139,7 +139,12 @@ impl Stream for Receiver {
       let mut port = port.lock().unwrap();
       if !port.buffer.is_empty() {
         return match port.buffer.pop_front() {
-          Some(payload) => Poll::Ready(Some((port.name.clone(), payload))),
+          Some(payload) => {
+            if payload == Packet::V0(ComponentPayload::Close) {
+              port.close()
+            }
+            Poll::Ready(Some((port.name.clone(), payload)))
+          }
           None => unreachable!(),
         };
       } else if port.is_closed() {

@@ -22,6 +22,7 @@ use crate::rpc::{
   stats_request,
   Output,
   OutputKind,
+  OutputSignal,
 };
 use crate::{
   rpc,
@@ -81,6 +82,27 @@ pub fn make_output(port: &str, inv_id: &str, payload: Packet) -> Result<Output, 
         invocation_id: inv_id.to_string(),
         payload: Some(OutputKind {
           data: Some(Data::Messagepack(bytes)),
+        }),
+      }),
+      vino_component::v0::Payload::Close => Ok(Output {
+        port: port.to_string(),
+        invocation_id: inv_id.to_string(),
+        payload: Some(OutputKind {
+          data: Some(Data::Signal(OutputSignal::Close.into())),
+        }),
+      }),
+      vino_component::v0::Payload::OpenBracket => Ok(Output {
+        port: port.to_string(),
+        invocation_id: inv_id.to_string(),
+        payload: Some(OutputKind {
+          data: Some(Data::Signal(OutputSignal::OpenBracket.into())),
+        }),
+      }),
+      vino_component::v0::Payload::CloseBracket => Ok(Output {
+        port: port.to_string(),
+        invocation_id: inv_id.to_string(),
+        payload: Some(OutputKind {
+          data: Some(Data::Signal(OutputSignal::CloseBracket.into())),
         }),
       }),
     },

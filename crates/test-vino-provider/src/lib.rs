@@ -5,7 +5,7 @@ use std::sync::{
 };
 
 use async_trait::async_trait;
-use vino_rpc::port::Receiver;
+use vino_rpc::port::PortStream;
 use vino_rpc::{
   ExecutionStatistics,
   RpcHandler,
@@ -37,7 +37,7 @@ impl RpcHandler for Provider {
     _inv_id: String,
     component: String,
     payload: HashMap<String, Vec<u8>>,
-  ) -> RpcResult<Receiver> {
+  ) -> RpcResult<PortStream> {
     let context = self.context.clone();
     let instance = components::get_component(&component);
     match instance {

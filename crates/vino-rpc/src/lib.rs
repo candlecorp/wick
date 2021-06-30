@@ -32,6 +32,7 @@ use std::convert::TryFrom;
 use async_trait::async_trait;
 pub use generated::vino as rpc;
 use generated::vino::component::ComponentKind;
+use generated::vino::invocation_service_client::InvocationServiceClient;
 use generated::vino::invocation_service_server::InvocationServiceServer;
 pub use invocation_server::InvocationServer;
 use serde::{
@@ -39,9 +40,15 @@ use serde::{
   Serialize,
 };
 use tokio::task::JoinHandle;
-use tonic::transport::Server;
+use tonic::transport::{
+  Channel,
+  Server,
+  Uri,
+};
 use vino_component::v0::Payload;
 use vino_component::Packet;
+
+use crate::rpc::OutputSignal;
 
 pub type Result<T> = std::result::Result<T, error::RpcError>;
 pub type Error = crate::error::RpcError;
@@ -114,7 +121,7 @@ pub trait RpcHandler: Send + Sync {
     inv_id: String,
     component: String,
     payload: HashMap<String, Vec<u8>>,
-  ) -> RpcResult<crate::port::Receiver>;
+  ) -> RpcResult<crate::port::PortStream>;
   async fn list_registered(&self) -> RpcResult<Vec<HostedType>>;
   async fn report_statistics(&self, id: Option<String>) -> RpcResult<Vec<Statistics>>;
 }
@@ -220,12 +227,19 @@ impl Into<Packet> for rpc::OutputKind {
         Data::Exception(v) => Packet::V0(Payload::Exception(v)),
         Data::Test(_) => Packet::V0(Payload::Invalid),
         Data::Invalid(_) => Packet::V0(Payload::Invalid),
+        Data::Signal(signal) => match OutputSignal::from_i32(signal) {
+          Some(OutputSignal::Close) => Packet::V0(Payload::Close),
+          Some(OutputSignal::OpenBracket) => Packet::V0(Payload::OpenBracket),
+          Some(OutputSignal::CloseBracket) => Packet::V0(Payload::CloseBracket),
+          None => Packet::V0(Payload::Error("Sent an invalid signal".to_string())),
+        },
       },
       None => Packet::V0(Payload::Error("Response received without output".into())),
     }
   }
 }
 
+/// Build and spawn an RPC server for the passed provider
 pub fn make_rpc_server(
   socket: tokio::net::TcpSocket,
   provider: impl RpcHandler + 'static,
@@ -241,6 +255,11 @@ pub fn make_rpc_server(
       .add_service(svc)
       .serve_with_incoming(listener),
   )
+}
+
+/// Create an RPC client
+pub async fn make_rpc_client(uri: Uri) -> Result<InvocationServiceClient<Channel>> {
+  Ok(InvocationServiceClient::connect(uri).await?)
 }
 
 pub fn bind_new_socket() -> Result<tokio::net::TcpSocket> {
