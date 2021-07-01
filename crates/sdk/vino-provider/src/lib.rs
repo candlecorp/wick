@@ -7,7 +7,6 @@ use std::sync::{
 use async_trait::async_trait;
 use vino_rpc::port::PortStream;
 pub mod error;
-pub mod provider_macro;
 
 pub type Result<T> = std::result::Result<T, Error>;
 pub type Error = error::ProviderError;
@@ -26,4 +25,4 @@ pub trait VinoProviderComponent {
   ) -> std::result::Result<PortStream, Box<dyn std::error::Error + Send + Sync>>;
 }
 
-pub use vino_rpc::Component;
+pub use vino_rpc::ComponentSignature;
