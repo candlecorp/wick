@@ -1,4 +1,6 @@
+use std::net::Ipv4Addr;
 use std::path::PathBuf;
+use std::str::FromStr;
 
 use structopt::StructOpt;
 use vino_host::{
@@ -35,44 +37,7 @@ pub async fn handle_command(command: StartCommand) -> Result<String> {
 
   let config = merge_runconfig(config, command.nats, command.host);
 
-  // debug!("Attempting connection to NATS server");
-  // let nats_url = &format!("{}:{}", config.config.rpc_host, config.config.rpc_port);
-  // let nc_rpc = nats_connection(
-  //     nats_url,
-  //     config.config.rpc_jwt,
-  //     config.config.rpc_seed,
-  //     config.config.rpc_credsfile,
-  // );
-  // let nc_control = nats_connection(
-  //     nats_url,
-  //     config.config.control_jwt,
-  //     config.config.control_seed,
-  //     config.config.control_credsfile,
-  // );
-
   let host_builder = HostBuilder::new();
-
-  // match try_join!(nc_rpc, nc_control) {
-  //     Ok((nc_rpc, nc_control)) => {
-  //         host_builder = host_builder
-  //             .with_rpc_client(nc_rpc)
-  //             .with_control_client(nc_control);
-  //     }
-  //     Err(e) => warn!("Could not connect to NATS, operating locally ({})", e),
-  // }
-
-  // if config.config.allow_oci_latest {
-  //     debug!("Enabling :latest tag");
-  //     host_builder = host_builder.oci_allow_latest();
-  // }
-
-  // if !config.config.allowed_insecure.is_empty() {
-  //     debug!(
-  //         "Allowing insecure registries: {}",
-  //         config.config.allowed_insecure.join(", ")
-  //     );
-  //     host_builder = host_builder.oci_allow_insecure(config.config.allowed_insecure);
-  // }
 
   let mut host = host_builder.build();
 
@@ -82,6 +47,10 @@ pub async fn handle_command(command: StartCommand) -> Result<String> {
       debug!("Applying manifest");
       host.start_network(config.network).await?;
       info!("Manifest applied");
+      let addr = host
+        .start_rpc_server(Ipv4Addr::from_str("127.0.0.1").unwrap(), Some(54321))
+        .await?;
+      info!("Bound to {}", addr);
     }
     Err(e) => {
       error!("Failed to start host: {}", e);

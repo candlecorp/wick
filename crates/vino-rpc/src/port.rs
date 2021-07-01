@@ -130,8 +130,14 @@ impl PortStream {
   }
 }
 
+#[derive(Debug, Clone)]
+pub struct PortPacket {
+  pub port: String,
+  pub packet: Packet,
+}
+
 impl Stream for PortStream {
-  type Item = (String, Packet);
+  type Item = PortPacket;
 
   fn poll_next(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
     let mut all_closed = true;
@@ -143,7 +149,10 @@ impl Stream for PortStream {
             if payload == Packet::V0(ComponentPayload::Close) {
               port.close()
             }
-            Poll::Ready(Some((port.name.clone(), payload)))
+            Poll::Ready(Some(PortPacket {
+              port: port.name.clone(),
+              packet: payload,
+            }))
           }
           None => unreachable!(),
         };

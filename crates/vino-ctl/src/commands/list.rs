@@ -33,7 +33,7 @@ pub async fn handle_command(command: ListCommand) -> Result<String> {
 
   let mut converted: Vec<HostedType> = Vec::new();
 
-  for item in list.component {
+  for item in list.components {
     converted.push(item.try_into()?)
   }
 

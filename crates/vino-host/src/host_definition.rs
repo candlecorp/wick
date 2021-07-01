@@ -3,8 +3,8 @@ use std::path::Path;
 use vino_manifest::{
   HostManifest,
   Loadable,
+  NetworkDefinition,
 };
-use vino_runtime::NetworkDefinition;
 
 use crate::Result;
 

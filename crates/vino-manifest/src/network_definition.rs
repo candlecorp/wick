@@ -1,8 +1,12 @@
-use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use vino_manifest::NetworkManifest;
+
+use serde::{
+  Deserialize,
+  Serialize,
+};
 
 use crate::schematic_definition::SchematicDefinition;
+use crate::NetworkManifest;
 
 #[derive(Debug, Clone)]
 pub struct NetworkDefinition {
@@ -24,9 +28,9 @@ impl NetworkDefinition {
   }
 }
 
-impl From<vino_manifest::v0::NetworkManifest> for NetworkDefinition {
-  fn from(def: vino_manifest::v0::NetworkManifest) -> Self {
-    Self::new(&vino_manifest::NetworkManifest::V0(def))
+impl From<crate::v0::NetworkManifest> for NetworkDefinition {
+  fn from(def: crate::v0::NetworkManifest) -> Self {
+    Self::new(&crate::NetworkManifest::V0(def))
   }
 }
 

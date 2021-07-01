@@ -19,7 +19,7 @@
   clashing_extern_declarations,
   clippy::expect_used,
   clippy::explicit_deref_methods,
-  missing_docs
+  // missing_docs
 )]
 #![warn(clippy::cognitive_complexity)]
 
@@ -35,6 +35,23 @@ pub mod error;
 
 /// Version 0 (unstable) manifest
 pub mod v0;
+
+/// A version-normalized format of the network manifest for development
+pub mod network_definition;
+/// A version-normalized format of the schematic manifest for development
+pub mod schematic_definition;
+
+pub use network_definition::NetworkDefinition;
+pub use schematic_definition::{
+  parse_namespace,
+  ComponentDefinition,
+  ConnectionDefinition,
+  ConnectionTargetDefinition,
+  ExternalComponentDefinition,
+  ProviderDefinition,
+  ProviderKind,
+  SchematicDefinition,
+};
 
 /// The crate's error type
 pub type Error = error::ManifestError;
@@ -129,7 +146,6 @@ impl Loadable<HostManifest> for HostManifest {
 impl Loadable<v0::NetworkManifest> for v0::NetworkManifest {
   fn from_hocon(src: &str) -> Result<v0::NetworkManifest> {
     debug!("Trying to parse manifest as hocon");
-    println!("src: {}", src);
     let result = hocon::de::from_str(src).map_err(crate::Error::HoconError)?;
     debug!("Hocon parsed successfully: {:?}", result);
     Ok(result)
@@ -137,7 +153,6 @@ impl Loadable<v0::NetworkManifest> for v0::NetworkManifest {
 
   fn from_yaml(src: &str) -> Result<v0::NetworkManifest> {
     debug!("Trying to parse manifest as yaml");
-    println!("src: {}", src);
 
     let result = serde_yaml::from_str(src)?;
     debug!("Yaml parsed successfully");

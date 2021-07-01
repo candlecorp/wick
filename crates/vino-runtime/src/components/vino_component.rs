@@ -2,7 +2,6 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::path::Path;
 
-use actix::Addr;
 use async_trait::async_trait;
 use wascap::jwt::{
   Claims,
@@ -10,15 +9,11 @@ use wascap::jwt::{
 };
 
 use super::wapc_provider::WapcProvider;
-use super::{
-  Inputs,
-  Outputs,
-};
+use crate::dev::prelude::*;
+use crate::error::ComponentError;
 use crate::util::oci::fetch_oci_bytes;
-use crate::{
-  Error,
-  Result,
-};
+
+type Result<T> = std::result::Result<T, ComponentError>;
 
 #[derive(Derivative, Clone)]
 #[derivative(Debug)]
@@ -67,15 +62,13 @@ impl WapcComponent {
   /// an unsigned module, or a module signed improperly, will result in an error.
   pub fn from_slice(buf: &[u8]) -> Result<WapcComponent> {
     let token = wascap::wasm::extract_claims(&buf)?;
-    if let Some(t) = token {
+    token.map_or(Err(ComponentError::ClaimsError), |t| {
       Ok(WapcComponent {
         token: t,
         bytes: buf.to_vec(),
         addr: None,
       })
-    } else {
-      Err("Unable to extract embedded token from WebAssembly module".into())
-    }
+    })
   }
 
   /// Create an actor from a signed WebAssembly (`.wasm`) file.
@@ -84,18 +77,12 @@ impl WapcComponent {
     let mut buf = Vec::new();
     file.read_to_end(&mut buf)?;
 
-    WapcComponent::from_slice(&buf).map_err(|e| {
-      Error::SchematicError(format!(
-        "Could not read file {}: {}",
-        path.to_string_lossy(),
-        e.to_string()
-      ))
-    })
+    WapcComponent::from_slice(&buf).map_err(|_| ComponentError::FileNotFound(path.to_path_buf()))
   }
 
   /// Obtain the issuer's public key as it resides in the actor's token (the `iss` field of the JWT).
   pub fn _issuer(&self) -> String {
-    self.token.claims.issuer.to_string()
+    self.token.claims.issuer.clone()
   }
 
   /// Obtain the list of capabilities declared in this actor's embedded token.
@@ -119,7 +106,7 @@ impl WapcComponent {
 impl VinoComponent for WapcComponent {
   /// Obtain the actor's public key (The `sub` field of the JWT).
   fn public_key(&self) -> String {
-    self.token.claims.subject.to_string()
+    self.token.claims.subject.clone()
   }
 
   /// A globally referencable ID to this component
@@ -144,8 +131,8 @@ impl VinoComponent for WapcComponent {
   /// The actor's human-friendly display name
   fn name(&self) -> String {
     match self.token.claims.metadata.as_ref().unwrap().name {
-      Some(ref n) => n.to_string(),
-      None => "Unnamed".to_string(),
+      Some(ref n) => n.clone(),
+      None => "Unnamed".to_owned(),
     }
   }
 
@@ -160,11 +147,11 @@ impl VinoComponent for WapcComponent {
 }
 
 #[derive(Clone, Debug)]
-pub struct NativeComponent {
-  pub namespace: String,
-  pub id: String,
-  pub inputs: Inputs,
-  pub outputs: Outputs,
+pub(crate) struct NativeComponent {
+  pub(crate) namespace: String,
+  pub(crate) id: String,
+  pub(crate) inputs: Vec<String>,
+  pub(crate) outputs: Vec<String>,
 }
 
 impl NativeComponent {}
@@ -189,7 +176,7 @@ impl VinoComponent for NativeComponent {
 
   /// The actor's human-friendly display name
   fn name(&self) -> String {
-    self.id.to_string()
+    self.id.clone()
   }
 
   fn get_kind(&self) -> ComponentType {
@@ -217,12 +204,9 @@ async fn start_wapc_actor_from_oci(
   allow_latest: bool,
   allowed_insecure: &[String],
 ) -> Result<WapcComponent> {
-  let component = fetch_oci_bytes(url, allow_latest, allowed_insecure)
-    .await
-    .and_then(|bytes| WapcComponent::from_slice(&bytes))
-    .map_err(|_| {
-      Error::SchematicError(format!("Could not find component '{}' in registry", url,))
-    })?;
+  let bytes = fetch_oci_bytes(url, allow_latest, allowed_insecure).await?;
+  let component = WapcComponent::from_slice(&bytes)?;
+
   trace!(
     "Starting wapc component '{}' from URL {}",
     component.name(),

@@ -1,10 +1,8 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use actix::prelude::*;
 use tokio::sync::mpsc::unbounded_channel;
 use tokio::sync::Mutex;
-use tokio_stream::StreamExt;
 use vino_rpc::{
   HostedType,
   RpcHandler,
@@ -14,13 +12,11 @@ use super::{
   ProviderRequest,
   ProviderResponse,
 };
-use crate::actix::ActorResult;
-use crate::component_model::ComponentModel;
-use crate::prelude::*;
+use crate::dev::prelude::*;
 use crate::schematic::ComponentOutput;
 
 #[derive(Debug)]
-pub struct NativeProvider {
+pub(crate) struct NativeProvider {
   state: Option<State>,
 }
 
@@ -100,12 +96,12 @@ impl Handler<InitializeComponents> for NativeProvider {
         match item {
           HostedType::Component(component) => {
             metadata.insert(
-              component.name.to_string(),
+              component.name.clone(),
               ComponentModel {
                 id: format!("{}::{}", namespace, component.name),
                 name: component.name,
-                inputs: component.inputs.into_iter().map(|p| p.name).collect(),
-                outputs: component.outputs.into_iter().map(|p| p.name).collect(),
+                inputs: component.inputs.into_iter().map(From::from).collect(),
+                outputs: component.outputs.into_iter().map(From::from).collect(),
               },
             );
           }
@@ -128,11 +124,11 @@ impl Handler<Invocation> for NativeProvider {
     let component = actix_ensure_ok!(msg
       .target
       .into_component()
-      .map_err(|_e| InvocationResponse::error(tx_id.clone(), "Sent invalid entity".to_string())));
+      .map_err(|_e| InvocationResponse::error(tx_id.clone(), "Sent invalid entity".to_owned())));
     let message = actix_ensure_ok!(msg
       .msg
       .into_multibytes()
-      .map_err(|_e| InvocationResponse::error(tx_id.clone(), "Sent invalid payload".to_string())));
+      .map_err(|_e| InvocationResponse::error(tx_id.clone(), "Sent invalid payload".to_owned())));
     let name = component.name;
     let inv_id = msg.id;
 
@@ -158,15 +154,15 @@ impl Handler<Invocation> for NativeProvider {
             break;
           }
 
-          let (port_name, msg) = next.unwrap();
-          trace!("Native actor {} got output on port [{}]", name, port_name);
+          let output = next.unwrap();
+          trace!("Native actor {} got output on port [{}]", name, output.port);
           match tx.send(ComponentOutput {
-            port: port_name.to_string(),
-            payload: msg,
-            invocation_id: invocation_id.to_string(),
+            port: output.port.clone(),
+            payload: output.packet,
+            invocation_id: invocation_id.clone(),
           }) {
             Ok(_) => {
-              trace!("Sent output to port '{}' ", port_name);
+              trace!("Sent output to port '{}' ", output.port);
             }
             Err(e) => {
               error!("Error sending output on channel {}", e.to_string());
@@ -216,8 +212,8 @@ mod test {
 
   use super::*;
   use crate::components::ListRequest;
-  use crate::dispatch::ComponentEntity;
-  use crate::VinoEntity;
+  #[allow(unused_imports)]
+  use crate::test::prelude::*;
 
   #[test_env_log::test(actix_rt::test)]
   async fn test_native_provider_list() -> Result<()> {
@@ -226,7 +222,7 @@ mod test {
 
     addr
       .send(Initialize {
-        namespace: "native-provider".to_string(),
+        namespace: "native-provider".to_owned(),
         provider: Arc::new(Mutex::new(vino_native_provider::Provider::default())),
       })
       .await??;
@@ -250,34 +246,33 @@ mod test {
     let namespace = "test-namespace";
     addr
       .send(Initialize {
-        namespace: "native-provider".to_string(),
+        namespace: "native-provider".to_owned(),
         provider: Arc::new(Mutex::new(vino_native_provider::Provider::default())),
       })
       .await??;
 
     let user_data = "This is my payload";
 
-    let payload = hashmap! {"input".to_string()=> serialize(user_data)?};
+    let payload = hashmap! {"input".to_owned()=> serialize(user_data)?};
 
     let response = addr
       .send(Invocation {
-        origin: VinoEntity::Test("test".to_string()),
+        origin: VinoEntity::Test("test".to_owned()),
         target: VinoEntity::Component(ComponentEntity {
           id: namespace.into(),
           reference: "hmmm".into(),
           name: "log".into(),
         }),
         msg: MessageTransport::MultiBytes(payload),
-        id: Invocation::uuid(),
-        tx_id: Invocation::uuid(),
-        encoded_claims: "".to_string(),
+        id: get_uuid(),
+        tx_id: get_uuid(),
+        encoded_claims: "".to_owned(),
         network_id,
       })
       .await?;
 
-    debug!("Response {:#?}", response);
     let (_, mut rx) = response.to_stream()?;
-    let next: ComponentOutput = rx.recv().await.unwrap();
+    let next: ComponentOutput = rx.next().await.unwrap();
     let payload: String = next.payload.try_into()?;
     assert_eq!(user_data, payload);
 

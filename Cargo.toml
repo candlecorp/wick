@@ -47,5 +47,6 @@ members = [
   "crates/vino-provider-cli",
   "crates/test-vino-provider",
   "crates/test-wapc-component",
+  "crates/wascap",
   "crates/vino-wellknown-document-collection",
 ]

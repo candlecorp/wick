@@ -9,6 +9,8 @@ pub enum VinoHostError {
   ConfigurationError,
   #[error("File not found {0}")]
   FileNotFound(String),
+  #[error("No network started yet")]
+  NoNetwork,
   #[error("Configuration disallows fetching artifacts with the :latest tag ({0})")]
   LatestDisallowed(String),
   #[error("Could not fetch '{0}': {1}")]
@@ -31,7 +33,8 @@ pub enum VinoHostError {
   YamlError(#[from] serde_yaml::Error),
   #[error(transparent)]
   HoconError(#[from] hocon::Error),
-
+  #[error(transparent)]
+  RpcError(#[from] vino_rpc::Error),
   #[error(transparent)]
   ActixMailboxError(#[from] actix::MailboxError),
   #[error(transparent)]

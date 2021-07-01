@@ -1,6 +1,6 @@
 // This file is generated, do not edit
 use vino_provider::{
-  Component,
+  ComponentSignature,
   VinoProviderComponent,
 };
 pub(crate) mod generated;
@@ -22,9 +22,9 @@ pub(crate) fn get_component(
   }
 }
 
-pub(crate) fn get_all_components() -> Vec<Component> {
+pub(crate) fn get_all_components() -> Vec<ComponentSignature> {
   vec![
-    Component {
+    ComponentSignature {
       name: "add".to_string(),
       inputs: generated::add::inputs_list()
         .into_iter()
@@ -35,7 +35,7 @@ pub(crate) fn get_all_components() -> Vec<Component> {
         .map(From::from)
         .collect(),
     },
-    Component {
+    ComponentSignature {
       name: "bcrypt".to_string(),
       inputs: generated::bcrypt::inputs_list()
         .into_iter()
@@ -46,7 +46,7 @@ pub(crate) fn get_all_components() -> Vec<Component> {
         .map(From::from)
         .collect(),
     },
-    Component {
+    ComponentSignature {
       name: "log".to_string(),
       inputs: generated::log::inputs_list()
         .into_iter()
@@ -57,7 +57,7 @@ pub(crate) fn get_all_components() -> Vec<Component> {
         .map(From::from)
         .collect(),
     },
-    Component {
+    ComponentSignature {
       name: "string-to-bytes".to_string(),
       inputs: generated::string_to_bytes::inputs_list()
         .into_iter()

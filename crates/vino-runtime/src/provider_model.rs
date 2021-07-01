@@ -1,10 +1,8 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use actix::prelude::*;
 use tokio::sync::Mutex;
 
-use crate::component_model::ComponentModel;
 use crate::components::vino_component::{
   load_component,
   VinoComponent,
@@ -14,16 +12,12 @@ use crate::components::{
   native_provider,
   wapc_provider,
 };
-use crate::prelude::*;
-use crate::schematic_definition::{
-  ProviderDefinition,
-  ProviderKind,
-};
+use crate::dev::prelude::*;
 
 #[derive(Debug, Clone)]
-pub struct ProviderModel {
-  pub namespace: String,
-  pub components: HashMap<String, ComponentModel>,
+pub(crate) struct ProviderModel {
+  pub(crate) namespace: String,
+  pub(crate) components: HashMap<String, ComponentModel>,
 }
 
 #[derive(Debug)]
@@ -34,13 +28,13 @@ pub(crate) struct ProviderChannel {
 }
 
 pub(crate) async fn initialize_provider(
-  provider: &ProviderDefinition,
-  seed: String,
+  provider: ProviderDefinition,
+  seed: &str,
   allow_lastest: bool,
-  allowed_insecure: Vec<String>,
+  allowed_insecure: &[String],
 ) -> Result<(ProviderChannel, ProviderModel)> {
   let arbiter = Arbiter::new();
-  let namespace = provider.namespace.to_string();
+  let namespace = provider.namespace.clone();
   trace!("Registering provider under the namespace {}", namespace);
   let handle = arbiter.handle();
   let handler = match provider.kind {
@@ -52,7 +46,7 @@ pub(crate) async fn initialize_provider(
       let components = addr
         .send(native_provider::Initialize {
           provider: provider.clone(),
-          namespace: namespace.to_string(),
+          namespace: namespace.clone(),
         })
         .await??;
 
@@ -75,9 +69,9 @@ pub(crate) async fn initialize_provider(
 
       let components = addr
         .send(grpc_url_provider::Initialize {
-          namespace: namespace.to_string(),
-          address: provider.reference.to_string(),
-          signing_seed: seed.to_string(),
+          namespace: namespace.clone(),
+          address: provider.reference.clone(),
+          signing_seed: seed.to_owned(),
         })
         .await??;
 
@@ -99,16 +93,16 @@ pub(crate) async fn initialize_provider(
       });
 
       let component =
-        load_component(provider.reference.clone(), allow_lastest, &allowed_insecure).await?;
+        load_component(provider.reference.clone(), allow_lastest, allowed_insecure).await?;
 
       let components = addr
         .send(wapc_provider::Initialize {
-          namespace: namespace.to_string(),
-          signing_seed: seed.to_string(),
-          bytes: component.bytes.clone(),
+          namespace: namespace.clone(),
+          signing_seed: seed.to_owned(),
           name: component.name(),
           outputs: component.get_outputs(),
           inputs: component.get_inputs(),
+          bytes: component.bytes,
         })
         .await??;
 

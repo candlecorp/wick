@@ -24,6 +24,8 @@ pub async fn init(
   provider: Arc<Mutex<dyn RpcHandler>>,
   opts: Option<Options>,
 ) -> crate::Result<SocketAddr> {
+  debug!("Starting provider RPC server");
+
   let opts = match opts {
     Some(opts) => opts,
     None => Options {

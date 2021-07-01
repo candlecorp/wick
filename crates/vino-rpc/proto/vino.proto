@@ -69,7 +69,7 @@ message StatsRequest {
 }
 
 message ListResponse {
-  repeated Component component = 1;
+  repeated Component components = 1;
 }
 
 message Component {
@@ -85,6 +85,12 @@ message Component {
   ComponentKind kind = 2 ;
   repeated Port inputs = 3;
   repeated Port outputs = 4;
+  repeated Provider providers = 5;
+}
+
+message Provider {
+  string name = 1;
+  repeated Component components = 2;
 }
 
 message StatsResponse {

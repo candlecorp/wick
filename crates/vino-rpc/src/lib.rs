@@ -28,13 +28,16 @@ pub mod invocation_server;
 pub mod port;
 use std::collections::HashMap;
 use std::convert::TryFrom;
+use std::pin::Pin;
 
 use async_trait::async_trait;
+use futures::Stream;
 pub use generated::vino as rpc;
 use generated::vino::component::ComponentKind;
 use generated::vino::invocation_service_client::InvocationServiceClient;
 use generated::vino::invocation_service_server::InvocationServiceServer;
 pub use invocation_server::InvocationServer;
+use port::PortPacket;
 use serde::{
   Deserialize,
   Serialize,
@@ -60,45 +63,50 @@ extern crate tracing;
 #[macro_use]
 extern crate derivative;
 
-#[derive(Debug, Default, Serialize, Deserialize, PartialEq)]
-pub struct Component {
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
+pub struct ComponentSignature {
   pub name: String,
-  pub inputs: Vec<Port>,
-  pub outputs: Vec<Port>,
+  pub inputs: Vec<PortSignature>,
+  pub outputs: Vec<PortSignature>,
 }
 
-#[derive(Debug, Default, Serialize, Deserialize, PartialEq)]
-pub struct Port {
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
+pub struct PortSignature {
   pub name: String,
   pub type_string: String,
 }
 
-impl From<(String, String)> for Port {
+impl PortSignature {
+  pub fn new(name: String, type_string: String) -> Self {
+    Self { name, type_string }
+  }
+}
+
+impl From<(String, String)> for PortSignature {
   fn from(tup: (String, String)) -> Self {
     let (name, type_string) = tup;
     Self { name, type_string }
   }
 }
 
-#[derive(Debug, Default, Serialize, Deserialize, PartialEq)]
-pub struct Provider {
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
+pub struct ProviderSignature {
   pub name: String,
-  pub components: Vec<Component>,
+  pub components: Vec<ComponentSignature>,
 }
 
-#[derive(Debug, Default, Serialize, Deserialize, PartialEq)]
-pub struct Schematic {
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
+pub struct SchematicSignature {
   pub name: String,
-  pub inputs: Vec<Port>,
-  pub outputs: Vec<Port>,
-  pub provider: Vec<Provider>,
-  pub components: Vec<Component>,
+  pub inputs: Vec<PortSignature>,
+  pub outputs: Vec<PortSignature>,
+  pub providers: Vec<ProviderSignature>,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 pub enum HostedType {
-  Component(Component),
-  Schematic(Schematic),
+  Component(ComponentSignature),
+  Schematic(SchematicSignature),
 }
 
 #[derive(Debug, Default, Serialize, Deserialize, PartialEq)]
@@ -114,6 +122,8 @@ pub struct ExecutionStatistics {
   pub average: usize,
 }
 
+pub type BoxedPacketStream = Pin<Box<dyn Stream<Item = PortPacket> + Send>>;
+
 #[async_trait]
 pub trait RpcHandler: Send + Sync {
   async fn request(
@@ -121,7 +131,7 @@ pub trait RpcHandler: Send + Sync {
     inv_id: String,
     component: String,
     payload: HashMap<String, Vec<u8>>,
-  ) -> RpcResult<crate::port::PortStream>;
+  ) -> RpcResult<BoxedPacketStream>;
   async fn list_registered(&self) -> RpcResult<Vec<HostedType>>;
   async fn report_statistics(&self, id: Option<String>) -> RpcResult<Vec<Statistics>>;
 }
@@ -143,46 +153,75 @@ impl TryFrom<crate::rpc::Component> for HostedType {
       .ok_or_else(|| Error::Other("Invalid component kind".to_string()))?;
 
     match kind {
-      ComponentKind::Component => Ok(HostedType::Component(Component {
+      ComponentKind::Component => Ok(HostedType::Component(ComponentSignature {
         name: value.name,
         inputs: value.inputs.into_iter().map(From::from).collect(),
         outputs: value.outputs.into_iter().map(From::from).collect(),
       })),
-      ComponentKind::Schematic => Ok(HostedType::Schematic(Schematic {
+      ComponentKind::Schematic => Ok(HostedType::Schematic(SchematicSignature {
         name: value.name,
         inputs: value.inputs.into_iter().map(From::from).collect(),
         outputs: value.outputs.into_iter().map(From::from).collect(),
-        provider: vec![],
-        components: vec![],
+        providers: value.providers.into_iter().map(From::from).collect(),
       })),
     }
   }
 }
 
-impl From<Component> for crate::generated::vino::Component {
-  fn from(v: Component) -> Self {
+impl From<crate::generated::vino::Provider> for ProviderSignature {
+  fn from(v: crate::generated::vino::Provider) -> Self {
+    Self {
+      name: v.name,
+      components: v.components.into_iter().map(From::from).collect(),
+    }
+  }
+}
+
+impl From<crate::generated::vino::Component> for ComponentSignature {
+  fn from(v: crate::generated::vino::Component) -> Self {
+    Self {
+      name: v.name,
+      inputs: v.inputs.into_iter().map(From::from).collect(),
+      outputs: v.outputs.into_iter().map(From::from).collect(),
+    }
+  }
+}
+
+impl From<ComponentSignature> for crate::generated::vino::Component {
+  fn from(v: ComponentSignature) -> Self {
     Self {
       name: v.name,
       kind: crate::rpc::component::ComponentKind::Component.into(),
       inputs: v.inputs.into_iter().map(From::from).collect(),
       outputs: v.outputs.into_iter().map(From::from).collect(),
+      providers: vec![],
     }
   }
 }
 
-impl From<Schematic> for crate::generated::vino::Component {
-  fn from(v: Schematic) -> Self {
+impl From<SchematicSignature> for crate::generated::vino::Component {
+  fn from(v: SchematicSignature) -> Self {
     Self {
       name: v.name,
       kind: crate::rpc::component::ComponentKind::Schematic.into(),
       inputs: v.inputs.into_iter().map(From::from).collect(),
       outputs: v.outputs.into_iter().map(From::from).collect(),
+      providers: v.providers.into_iter().map(From::from).collect(),
     }
   }
 }
 
-impl From<Port> for crate::generated::vino::component::Port {
-  fn from(v: Port) -> Self {
+impl From<ProviderSignature> for crate::generated::vino::Provider {
+  fn from(v: ProviderSignature) -> Self {
+    Self {
+      name: v.name,
+      components: v.components.into_iter().map(From::from).collect(),
+    }
+  }
+}
+
+impl From<PortSignature> for crate::generated::vino::component::Port {
+  fn from(v: PortSignature) -> Self {
     Self {
       name: v.name,
       r#type: v.type_string,
@@ -190,7 +229,7 @@ impl From<Port> for crate::generated::vino::component::Port {
   }
 }
 
-impl From<crate::generated::vino::component::Port> for Port {
+impl From<crate::generated::vino::component::Port> for PortSignature {
   fn from(v: crate::generated::vino::component::Port) -> Self {
     Self {
       name: v.name,

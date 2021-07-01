@@ -1,15 +1,21 @@
 use std::collections::HashMap;
-use std::sync::Arc;
+use std::sync::{
+  Arc,
+  Mutex,
+};
 use std::time::Instant;
 
-use actix::prelude::*;
-use futures::StreamExt;
 use tokio::sync::mpsc::unbounded_channel;
 use tokio::sync::Mutex as AsyncMutex;
-use vino_codec::messagepack::serialize;
-use vino_component::Packet;
-use vino_rpc::port::Sender;
-use vino_rpc::HostedType;
+use vino_rpc::port::{
+  Port,
+  PortStream,
+  Sender,
+};
+use vino_rpc::{
+  HostedType,
+  PortSignature,
+};
 use wapc::WapcHost;
 use wascap::prelude::{
   Claims,
@@ -20,16 +26,12 @@ use super::{
   ProviderRequest,
   ProviderResponse,
 };
-use crate::actix::ActorResult;
-use crate::component_model::ComponentModel;
 use crate::components::vino_component::WapcComponent;
-use crate::dispatch::{
-  Invocation,
-  InvocationResponse,
-};
-use crate::invocation_map::InvocationMap;
+use crate::dev::prelude::*;
+use crate::error::ComponentError;
 use crate::schematic::ComponentOutput;
-use crate::Result;
+
+type Result<T> = std::result::Result<T, ComponentError>;
 
 #[derive(Default)]
 pub(crate) struct WapcProvider {
@@ -78,8 +80,24 @@ impl Handler<Initialize> for WapcProvider {
     let component = ComponentModel {
       id: format!("{}::{}", msg.namespace, msg.name),
       name: name.clone(),
-      inputs: msg.inputs.clone(),
-      outputs: msg.outputs.clone(),
+      inputs: msg
+        .inputs
+        .iter()
+        .cloned()
+        .map(|name| PortSignature {
+          name,
+          type_string: "TODO".to_owned(),
+        })
+        .collect(),
+      outputs: msg
+        .outputs
+        .iter()
+        .cloned()
+        .map(|name| PortSignature {
+          name,
+          type_string: "TODO".to_owned(),
+        })
+        .collect(),
     };
     let actor = perform_initialization(self, ctx, msg);
     let mut map = HashMap::new();
@@ -111,7 +129,7 @@ fn perform_initialization(
   let buf = msg.bytes;
   let actor = WapcComponent::from_slice(&buf)?;
   let claims = actor.token.claims.clone();
-  let jwt = actor.token.jwt.to_string();
+  let jwt = actor.token.jwt.clone();
 
   // Ensure that the JWT we found on this actor is valid, not expired, can be used,
   // has a verified signature, etc.
@@ -137,10 +155,10 @@ fn perform_initialization(
   let guest = WapcHost::new(Box::new(engine), move |id, inv_id, port, op, payload| {
     debug!("Payload WaPC host callback: {:?}", payload);
     meh!(tx.send(WapcHostCallback {
-      port: port.to_string(),
-      invocation_id: inv_id.to_string(),
+      port: port.to_owned(),
+      invocation_id: inv_id.to_owned(),
       payload: payload.to_vec(),
-      op: op.to_string(),
+      op: op.to_owned(),
       id,
       kp: KeyPair::from_seed(&seed).unwrap(),
     }));
@@ -195,34 +213,34 @@ fn perform_initialization(
         actor.token.claims.subject
       );
       ctx.stop();
-      Err("Failed to create a raw WebAssembly host".into())
+      Err(ComponentError::WapcError)
     }
   }
 }
 
 impl Handler<ProviderRequest> for WapcProvider {
-  type Result = ActorResult<Self, Result<ProviderResponse>>;
+  type Result = ActorResult<Self, crate::Result<ProviderResponse>>;
 
   fn handle(&mut self, msg: ProviderRequest, _ctx: &mut Self::Context) -> Self::Result {
     let state = self.state.as_ref().unwrap();
     //Temporary until WaPC modules host more than one component
-    let component = vino_rpc::Component {
+    let component = vino_rpc::ComponentSignature {
       name: state.name.clone(),
       inputs: state
         .inputs
         .iter()
-        .map(|name| vino_rpc::Port {
+        .map(|name| PortSignature {
           name: name.clone(),
-          type_string: "TODO".to_string(),
+          type_string: "TODO".to_owned(),
         })
         .collect(),
       outputs: state
         .outputs
         .clone()
         .iter()
-        .map(|name| vino_rpc::Port {
+        .map(|name| PortSignature {
           name: name.clone(),
-          type_string: "TODO".to_string(),
+          type_string: "TODO".to_owned(),
         })
         .collect(),
     };
@@ -250,24 +268,23 @@ impl Handler<Invocation> for WapcProvider {
     let component = actix_ensure_ok!(msg
       .target
       .into_component()
-      .map_err(|_e| InvocationResponse::error(tx_id.clone(), "Sent invalid entity".to_string())));
+      .map_err(|_e| InvocationResponse::error(tx_id.clone(), "Sent invalid entity".to_owned())));
     let message = actix_ensure_ok!(msg
       .msg
       .into_multibytes()
-      .map_err(|_e| InvocationResponse::error(tx_id.clone(), "Sent invalid payload".to_string())));
+      .map_err(|_e| InvocationResponse::error(tx_id.clone(), "Sent invalid payload".to_owned())));
     let name = component.name;
     let inv_id = msg.id;
 
     let state = self.state.as_ref().unwrap();
     let invocation_map = self.invocation_map.clone();
     let guest_module = state.guest_module.clone();
-    let payload =
-      actix_ensure_ok!(serialize((inv_id.clone(), message)).map_err(
-        |e| InvocationResponse::error(
-          tx_id.clone(),
-          format!("Could not serialize payload for WaPC component: {}", e)
-        )
-      ));
+    let payload = actix_ensure_ok!(mp_serialize((inv_id.clone(), message)).map_err(|e| {
+      InvocationResponse::error(
+        tx_id.clone(),
+        format!("Could not serialize payload for WaPC component: {}", e),
+      )
+    }));
 
     let request = async move {
       let invocation_id = inv_id.clone();
@@ -299,15 +316,15 @@ impl Handler<Invocation> for WapcProvider {
             break;
           }
 
-          let (port_name, msg) = next.unwrap();
-          trace!("Native actor {} got output on port [{}]", name, port_name);
+          let output = next.unwrap();
+          trace!("Native actor {} got output on port [{}]", name, output.port);
           match tx.send(ComponentOutput {
-            port: port_name.to_string(),
-            payload: msg,
-            invocation_id: invocation_id.to_string(),
+            port: output.port.clone(),
+            payload: output.packet,
+            invocation_id: invocation_id.clone(),
           }) {
             Ok(_) => {
-              trace!("Sent output to port '{}' ", port_name);
+              trace!("Sent output to port '{}' ", output.port);
             }
             Err(e) => {
               error!("Error sending output on channel {}", e.to_string());
@@ -319,5 +336,59 @@ impl Handler<Invocation> for WapcProvider {
       InvocationResponse::stream(tx_id, rx)
     };
     ActorResult::reply_async(request.into_actor(self))
+  }
+}
+
+pub(crate) struct OutputSender {
+  port: Arc<Mutex<Port>>,
+}
+impl OutputSender {
+  fn new(name: String) -> Self {
+    Self {
+      port: Arc::new(Mutex::new(Port::new(name))),
+    }
+  }
+}
+
+impl Sender for OutputSender {
+  type PayloadType = Vec<u8>;
+  fn get_port(&self) -> Arc<Mutex<Port>> {
+    self.port.clone()
+  }
+}
+
+#[derive(Default)]
+pub(crate) struct InvocationMap {
+  outputs: Vec<String>,
+  map: HashMap<String, HashMap<String, OutputSender>>,
+}
+
+impl InvocationMap {
+  pub(crate) fn new(outputs: Vec<String>) -> Self {
+    Self {
+      outputs,
+      ..InvocationMap::default()
+    }
+  }
+
+  pub(crate) fn get(&self, id: &str) -> Option<&HashMap<String, OutputSender>> {
+    self.map.get(id)
+  }
+
+  pub(crate) fn new_invocation(&mut self, inv_id: String) -> PortStream {
+    let (tx, rx) = self.make_channel();
+    self.map.insert(inv_id, tx);
+    rx
+  }
+
+  pub(crate) fn make_channel(&self) -> (HashMap<String, OutputSender>, PortStream) {
+    let outputs: HashMap<String, OutputSender> = self
+      .outputs
+      .iter()
+      .map(|name| (name.clone(), OutputSender::new(name.clone())))
+      .collect();
+    let ports = outputs.iter().map(|(_, o)| o.port.clone()).collect();
+    let receiver = PortStream::new(ports);
+    (outputs, receiver)
   }
 }

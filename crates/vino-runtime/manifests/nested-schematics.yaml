@@ -1,0 +1,52 @@
+schematics:
+  - name: parent
+    providers:
+      - namespace: child
+        kind: Schematic
+        reference: child
+    components:
+      add:
+        id: vino::add
+      child:
+        id:
+    connections:
+      - from:
+          instance: <input>
+          port: left
+        to:
+          instance: add
+          port: left
+      - from:
+          instance: <input>
+          port: right
+        to:
+          instance: add
+          port: right
+      - from:
+          instance: add
+          port: output
+        to:
+          instance: <output>
+          port: output
+      - from:
+          instance: add
+          port: output
+        to:
+          instance: <output>
+          port: output  - name: child
+    components:
+      log:
+        id: vino::log
+    connections:
+      - from:
+          instance: <input>
+          port: input
+        to:
+          instance: log
+          port: input
+      - from:
+          instance: log
+          port: output
+        to:
+          instance: <output>
+          port: output

@@ -5,35 +5,25 @@ use serde::{
   Deserialize,
   Serialize,
 };
-use vino_manifest::SchematicManifest;
 
 use crate::{
   Error,
   Result,
+  SchematicManifest,
 };
 
 #[derive(Debug, Clone, Default)]
 pub struct SchematicDefinition {
   pub name: String,
-  pub(crate) external: Vec<ExternalComponentDefinition>,
-  pub(crate) components: HashMap<String, ComponentDefinition>,
-  pub(crate) connections: Vec<ConnectionDefinition>,
-  pub(crate) providers: Vec<ProviderDefinition>,
-  pub(crate) constraints: HashMap<String, String>,
+  pub external: Vec<ExternalComponentDefinition>,
+  pub components: HashMap<String, ComponentDefinition>,
+  pub connections: Vec<ConnectionDefinition>,
+  pub providers: Vec<ProviderDefinition>,
+  pub constraints: HashMap<String, String>,
 }
 
 impl SchematicDefinition {
-  pub(crate) fn new(name: String) -> Self {
-    Self {
-      name,
-      external: Vec::new(),
-      components: HashMap::new(),
-      connections: Vec::new(),
-      providers: Vec::new(),
-      constraints: HashMap::new(),
-    }
-  }
-  pub(crate) fn from_manifest(manifest: &SchematicManifest) -> Self {
+  pub fn from_manifest(manifest: &SchematicManifest) -> Self {
     match manifest {
       SchematicManifest::V0(manifest) => Self {
         name: manifest.name.clone(),
@@ -65,35 +55,17 @@ impl SchematicDefinition {
       },
     }
   }
-  pub(crate) fn get_name(&self) -> String {
+  pub fn get_name(&self) -> String {
     self.name.clone()
   }
-  pub(crate) fn get_component(&self, reference: &str) -> Option<ComponentDefinition> {
+  pub fn get_component(&self, reference: &str) -> Option<ComponentDefinition> {
     self.components.get(reference).cloned()
-  }
-
-  pub(crate) fn get_output_names(&self) -> Vec<String> {
-    self
-      .connections
-      .iter()
-      .filter(|conn| conn.to.instance == crate::SCHEMATIC_OUTPUT)
-      .map(|conn| conn.to.port.to_string())
-      .collect()
-  }
-
-  pub(crate) fn get_input_names(&self) -> Vec<String> {
-    self
-      .connections
-      .iter()
-      .filter(|conn| conn.from.instance == crate::SCHEMATIC_INPUT)
-      .map(|conn| conn.from.port.to_string())
-      .collect()
   }
 }
 
-impl From<vino_manifest::v0::SchematicManifest> for SchematicDefinition {
-  fn from(def: vino_manifest::v0::SchematicManifest) -> Self {
-    Self::from_manifest(&vino_manifest::SchematicManifest::V0(def))
+impl From<crate::v0::SchematicManifest> for SchematicDefinition {
+  fn from(def: crate::v0::SchematicManifest) -> Self {
+    Self::from_manifest(&crate::SchematicManifest::V0(def))
   }
 }
 
@@ -104,8 +76,8 @@ pub struct ExternalComponentDefinition {
   pub key: String,
 }
 
-impl From<vino_manifest::v0::ExternalComponentDefinition> for ExternalComponentDefinition {
-  fn from(def: vino_manifest::v0::ExternalComponentDefinition) -> Self {
+impl From<crate::v0::ExternalComponentDefinition> for ExternalComponentDefinition {
+  fn from(def: crate::v0::ExternalComponentDefinition) -> Self {
     Self {
       alias: def.alias,
       key: def.key,
@@ -124,10 +96,7 @@ pub struct ComponentDefinition {
 
 pub fn parse_namespace(id: &str) -> Result<(String, String)> {
   if !id.contains("::") {
-    Err(Error::SchematicError(format!(
-      "Component name '{}' is not fully qualified with a namespace.",
-      id,
-    )))
+    Err(Error::ComponentIdError(id.to_string()))
   } else {
     id.split_once("::")
       .map(|(ns, name)| Ok((ns.to_string(), name.to_string())))
@@ -141,8 +110,8 @@ impl ComponentDefinition {
   }
 }
 
-impl From<vino_manifest::v0::ComponentDefinition> for ComponentDefinition {
-  fn from(def: vino_manifest::v0::ComponentDefinition) -> Self {
+impl From<crate::v0::ComponentDefinition> for ComponentDefinition {
+  fn from(def: crate::v0::ComponentDefinition) -> Self {
     ComponentDefinition {
       id: def.id,
       metadata: None,
@@ -150,8 +119,8 @@ impl From<vino_manifest::v0::ComponentDefinition> for ComponentDefinition {
   }
 }
 
-impl From<&vino_manifest::v0::ComponentDefinition> for ComponentDefinition {
-  fn from(def: &vino_manifest::v0::ComponentDefinition) -> Self {
+impl From<&crate::v0::ComponentDefinition> for ComponentDefinition {
+  fn from(def: &crate::v0::ComponentDefinition) -> Self {
     ComponentDefinition {
       id: def.id.to_string(),
       metadata: None,
@@ -171,8 +140,8 @@ pub struct ProviderDefinition {
   pub data: HashMap<String, String>,
 }
 
-impl From<vino_manifest::v0::ProviderDefinition> for ProviderDefinition {
-  fn from(def: vino_manifest::v0::ProviderDefinition) -> Self {
+impl From<crate::v0::ProviderDefinition> for ProviderDefinition {
+  fn from(def: crate::v0::ProviderDefinition) -> Self {
     ProviderDefinition {
       namespace: def.namespace,
       kind: def.kind.into(),
@@ -193,12 +162,12 @@ pub enum ProviderKind {
   Wapc = 2,
 }
 
-impl From<vino_manifest::v0::ProviderKind> for ProviderKind {
-  fn from(def: vino_manifest::v0::ProviderKind) -> Self {
+impl From<crate::v0::ProviderKind> for ProviderKind {
+  fn from(def: crate::v0::ProviderKind) -> Self {
     match def {
-      vino_manifest::v0::ProviderKind::Native => ProviderKind::Native,
-      vino_manifest::v0::ProviderKind::GrpcUrl => ProviderKind::GrpcUrl,
-      vino_manifest::v0::ProviderKind::WaPC => ProviderKind::Wapc,
+      crate::v0::ProviderKind::Native => ProviderKind::Native,
+      crate::v0::ProviderKind::GrpcUrl => ProviderKind::GrpcUrl,
+      crate::v0::ProviderKind::WaPC => ProviderKind::Wapc,
     }
   }
 }
@@ -209,8 +178,8 @@ pub struct ConnectionDefinition {
   pub to: ConnectionTargetDefinition,
 }
 
-impl From<vino_manifest::v0::ConnectionDefinition> for ConnectionDefinition {
-  fn from(def: vino_manifest::v0::ConnectionDefinition) -> Self {
+impl From<crate::v0::ConnectionDefinition> for ConnectionDefinition {
+  fn from(def: crate::v0::ConnectionDefinition) -> Self {
     ConnectionDefinition {
       from: def.from.into(),
       to: def.to.into(),
@@ -230,8 +199,8 @@ impl Display for ConnectionTargetDefinition {
   }
 }
 
-impl From<vino_manifest::v0::ConnectionTargetDefinition> for ConnectionTargetDefinition {
-  fn from(def: vino_manifest::v0::ConnectionTargetDefinition) -> Self {
+impl From<crate::v0::ConnectionTargetDefinition> for ConnectionTargetDefinition {
+  fn from(def: crate::v0::ConnectionTargetDefinition) -> Self {
     ConnectionTargetDefinition {
       instance: def.instance,
       port: def.port,

@@ -1,14 +1,25 @@
 pub mod options;
 
-use chrono::{DateTime, Utc};
-use colored::Colorize;
-use env_logger::filter::{Builder, Filter};
-
-use log::{Level, LevelFilter, Log, Metadata, Record, SetLoggerError};
-use serde_json::json;
-
 use anyhow::Result;
+use chrono::{
+  DateTime,
+  Utc,
+};
+use colored::Colorize;
+use env_logger::filter::{
+  Builder,
+  Filter,
+};
+use log::{
+  Level,
+  LevelFilter,
+  Log,
+  Metadata,
+  Record,
+  SetLoggerError,
+};
 pub use options::LoggingOptions;
+use serde_json::json;
 
 const FILTER_ENV: &str = "VINO_LOG";
 use std::time::SystemTime;

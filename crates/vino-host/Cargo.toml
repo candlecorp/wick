@@ -24,6 +24,7 @@ vino-codec = { path="../vino-codec" }
 vino-rpc = { path="../vino-rpc" }
 async-trait = "0.1.50"
 tokio = { version="1.4.0", features=["macros", "net", "rt-multi-thread"] }
+http = "0.2.4"
 
 [dev-dependencies]
 test-env-log = "0.2.7"

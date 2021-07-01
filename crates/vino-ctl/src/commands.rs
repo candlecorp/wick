@@ -23,13 +23,13 @@ pub struct Cli {
 
 #[derive(Debug, Clone, StructOpt)]
 pub enum CliCommand {
-  ///
-  #[structopt(name = "start")]
+  /// Invoke a component or schematic on a provider
+  #[structopt(name = "invoke")]
   Invoke(invoke::InvokeCommand),
-  ///
+  /// Query a provider for a list of its hosted components
   #[structopt(name = "list")]
   List(list::ListCommand),
-  ///
+  /// Query a provider for its runtime statistics
   #[structopt(name = "stats")]
   Stats(stats::StatsCommand),
 }

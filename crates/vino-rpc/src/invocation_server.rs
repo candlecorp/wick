@@ -141,7 +141,9 @@ impl InvocationService for InvocationServer {
         .await
       {
         Ok(receiver) => {
-          while let Some((port_name, msg)) = receiver.next().await {
+          while let Some(next) = receiver.next().await {
+            let port_name = next.port;
+            let msg = next.packet;
             debug!("Got output on port {}", port_name);
             tx.send(make_output(&port_name, &invocation_id, msg))
               .await
@@ -169,7 +171,7 @@ impl InvocationService for InvocationServer {
       .map_err(|e| Status::internal(e.to_string()))?;
     trace!("Server: list is {:?}", list);
     let response = ListResponse {
-      component: list.into_iter().map(From::from).collect(),
+      components: list.into_iter().map(From::from).collect(),
     };
 
     Ok(Response::new(response))

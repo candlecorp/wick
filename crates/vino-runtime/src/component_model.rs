@@ -1,18 +1,11 @@
-use crate::components::{
-  Inputs,
-  Outputs,
-};
+use vino_rpc::PortSignature;
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct ComponentModel {
+pub(crate) struct ComponentModel {
   /// The fully qualified name, including the namespace.
-  pub id: String,
+  pub(crate) id: String,
   /// The name of the component
-  pub name: String,
-  pub inputs: Inputs,
-  pub outputs: Outputs,
-}
-
-pub fn format_id(namespace: &str, name: &str) -> String {
-  format!("{}::{}", namespace, name)
+  pub(crate) name: String,
+  pub(crate) inputs: Vec<PortSignature>,
+  pub(crate) outputs: Vec<PortSignature>,
 }

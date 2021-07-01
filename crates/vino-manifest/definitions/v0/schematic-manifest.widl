@@ -55,6 +55,8 @@ enum ProviderKind {
   GrpcUrl = 1,
   "A WaPC WebAssembly provider"
   WaPC = 2,
+  "A schematic within the same network"
+  Schematic = 3,
 }
 
 "A single component definition"

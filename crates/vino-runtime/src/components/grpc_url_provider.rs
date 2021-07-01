@@ -1,15 +1,10 @@
 use std::collections::HashMap;
 use std::convert::TryInto;
 
-use actix::prelude::*;
-use futures::FutureExt;
 use rpc::invocation_service_client::InvocationServiceClient;
 use tokio::sync::mpsc::unbounded_channel;
 use tonic::transport::Channel;
-use tracing::Instrument;
 use tracing_actix::ActorInstrument;
-use vino_component::v0::Payload;
-use vino_component::Packet;
 use vino_rpc::rpc::stats_request::Format;
 use vino_rpc::rpc::{
   ListRequest,
@@ -26,6 +21,7 @@ use super::{
 };
 use crate::actix::ActorResult;
 use crate::component_model::ComponentModel;
+use crate::dev::prelude::*;
 use crate::dispatch::{
   Invocation,
   InvocationResponse,
@@ -35,7 +31,7 @@ use crate::schematic::ComponentOutput;
 use crate::Result;
 
 #[derive(Default, Debug)]
-pub struct GrpcUrlProvider {
+pub(crate) struct GrpcUrlProvider {
   namespace: String,
   state: Option<State>,
   seed: String,
@@ -147,14 +143,14 @@ impl Handler<InitializeComponents> for GrpcUrlProvider {
 
       let mut metadata: HashMap<String, ComponentModel> = HashMap::new();
 
-      for item in list.component {
+      for item in list.components {
         metadata.insert(
-          item.name.to_string(),
+          item.name.clone(),
           ComponentModel {
             id: format!("{}::{}", namespace, item.name),
-            name: item.name.to_string(),
-            inputs: item.inputs.iter().map(|p| p.name.clone()).collect(),
-            outputs: item.outputs.iter().map(|p| p.name.clone()).collect(),
+            name: item.name.clone(),
+            inputs: item.inputs.into_iter().map(From::from).collect(),
+            outputs: item.outputs.into_iter().map(From::from).collect(),
           },
         );
       }
@@ -190,9 +186,9 @@ impl Handler<ProviderRequest> for GrpcUrlProvider {
 
           let mut hosted_types = vec![];
 
-          for item in list.component {
-            hosted_types.push(HostedType::Component(vino_rpc::Component {
-              name: item.name.to_string(),
+          for item in list.components {
+            hosted_types.push(HostedType::Component(vino_rpc::ComponentSignature {
+              name: item.name.clone(),
               inputs: item.inputs.into_iter().map(From::from).collect(),
               outputs: item.outputs.into_iter().map(From::from).collect(),
             }));
@@ -232,13 +228,13 @@ impl Handler<Invocation> for GrpcUrlProvider {
       .target
       .clone()
       .into_component()
-      .map_err(|_e| InvocationResponse::error(tx_id.clone(), "Sent invalid entity".to_string())));
+      .map_err(|_e| InvocationResponse::error(tx_id.clone(), "Sent invalid entity".to_owned())));
 
     let name = component.name;
-    let inv_id = msg.id.to_string();
+    let inv_id = msg.id.clone();
     let invocation: rpc::Invocation = actix_ensure_ok!(msg
       .try_into()
-      .map_err(|_e| InvocationResponse::error(tx_id.clone(), "Sent invalid payload".to_string())));
+      .map_err(|_e| InvocationResponse::error(tx_id.clone(), "Sent invalid payload".to_owned())));
 
     let request = async move {
       let invocation_id = inv_id.clone();
@@ -252,9 +248,9 @@ impl Handler<Invocation> for GrpcUrlProvider {
             let msg = format!("Error during GRPC stream: {}", e);
             error!("{}", msg);
             match tx.send(ComponentOutput {
-              port: crate::COMPONENT_ERROR.to_string(),
-              payload: Packet::V0(Payload::Error(msg)),
-              invocation_id: invocation_id.to_string(),
+              port: crate::COMPONENT_ERROR.to_owned(),
+              payload: Packet::V0(packet::v0::Payload::Error(msg)),
+              invocation_id: invocation_id.clone(),
             }) {
               Ok(_) => {
                 trace!("Sent error to upstream, closing connection.");
@@ -276,9 +272,9 @@ impl Handler<Invocation> for GrpcUrlProvider {
             let msg = "Received response but no payload";
             error!("{}", msg);
             match tx.send(ComponentOutput {
-              port: crate::COMPONENT_ERROR.to_string(),
-              payload: Packet::V0(Payload::Error(msg.to_string())),
-              invocation_id: invocation_id.to_string(),
+              port: crate::COMPONENT_ERROR.to_owned(),
+              payload: Packet::V0(packet::v0::Payload::Error(msg.to_owned())),
+              invocation_id: invocation_id.clone(),
             }) {
               Ok(_) => {
                 trace!("Sent error to upstream");
@@ -296,9 +292,9 @@ impl Handler<Invocation> for GrpcUrlProvider {
           let port_name = output.port;
           trace!("Native actor {} got output on port [{}]", name, port_name);
           match tx.send(ComponentOutput {
-            port: port_name.to_string(),
+            port: port_name.clone(),
             payload: payload.unwrap().into(),
-            invocation_id: invocation_id.to_string(),
+            invocation_id: invocation_id.clone(),
           }) {
             Ok(_) => {
               trace!("Sent output to port '{}' ", port_name);
@@ -330,19 +326,15 @@ mod test {
   use std::time::Duration;
 
   use actix::clock::sleep;
-  use maplit::hashmap;
   use test_vino_provider::Provider;
-  use tracing::Instrument;
   use vino_codec::messagepack::serialize;
   use vino_rpc::{
     bind_new_socket,
     make_rpc_server,
   };
-  use vino_transport::MessageTransport;
 
   use super::*;
-  use crate::dispatch::ComponentEntity;
-  use crate::VinoEntity;
+  use crate::test::prelude::*;
 
   #[test_env_log::test(actix_rt::test)]
   #[instrument]
@@ -357,28 +349,28 @@ mod test {
       let grpc_provider = GrpcUrlProvider::start_default();
       grpc_provider
         .send(Initialize {
-          namespace: "test".to_string(),
+          namespace: "test".to_owned(),
           address: format!("https://127.0.0.1:{}", port),
-          signing_seed: "seed".to_string(),
+          signing_seed: "seed".to_owned(),
         })
         .await??;
       debug!("Initialized");
 
       let response = grpc_provider
         .send(Invocation {
-          origin: VinoEntity::Test("grpc".to_string()),
+          origin: VinoEntity::Test("grpc".to_owned()),
           target: VinoEntity::Component(ComponentEntity {
-            id: "test::REFERENCE".to_string(),
-            reference: "REFERENCE".to_string(),
-            name: "test-component".to_string(),
+            id: "test::REFERENCE".to_owned(),
+            reference: "REFERENCE".to_owned(),
+            name: "test-component".to_owned(),
           }),
           msg: MessageTransport::MultiBytes(hashmap! {
-            "input".to_string()=>serialize(user_data)?
+            "input".to_owned()=>serialize(user_data)?
           }),
-          id: Invocation::uuid(),
-          tx_id: Invocation::uuid(),
-          encoded_claims: "".to_string(),
-          network_id: Invocation::uuid(),
+          id: get_uuid(),
+          tx_id: get_uuid(),
+          encoded_claims: "".to_owned(),
+          network_id: get_uuid(),
         })
         .await?;
       Ok!(response)
@@ -390,7 +382,7 @@ mod test {
             match res {
               Ok(response)=>{
                 let (_, mut rx) = response.to_stream()?;
-                let next: ComponentOutput = rx.recv().await.unwrap();
+                let next: ComponentOutput = rx.next().await.unwrap();
                 let payload: String = next.payload.try_into()?;
                 assert_eq!(user_data, payload);              },
               Err(e)=>{

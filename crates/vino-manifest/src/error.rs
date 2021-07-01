@@ -13,6 +13,10 @@ pub enum ManifestError {
   #[error("File not found {0}")]
   FileNotFound(String),
 
+  /// Component id is not a fully qualified name with a namespace
+  #[error("Component id '{0}' is not a fully qualified name with a namespace")]
+  ComponentIdError(String),
+
   /// General deserialization error
   #[error("Failed to deserialize configuration {0}")]
   ConfigurationDeserialization(String),

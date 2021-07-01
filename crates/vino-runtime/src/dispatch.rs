@@ -1,11 +1,13 @@
+use std::cell::RefCell;
 use std::convert::TryFrom;
 use std::fmt::Display;
 use std::io::Read;
+use std::pin::Pin;
+use std::task::Poll;
 
 use actix::dev::MessageResponse;
-use actix::prelude::Message;
-use actix::Actor;
 use data_encoding::HEXUPPER;
+use futures::Stream;
 use ring::digest::{
   Context,
   Digest,
@@ -17,21 +19,13 @@ use serde::{
 };
 use tokio::sync::mpsc::UnboundedReceiver;
 use uuid::Uuid;
-use vino_component::v0::Payload;
-use vino_component::Packet;
-use vino_transport::message_transport::MessageSignal;
-use vino_transport::MessageTransport;
 use wascap::prelude::{
   Claims,
   KeyPair,
 };
 
-use crate::error::VinoError;
+use crate::dev::prelude::*;
 use crate::schematic::ComponentOutput;
-use crate::{
-  Error,
-  Result,
-};
 
 /// An invocation for a component, port, or schematic
 #[derive(Debug, Clone, Default, Serialize, Deserialize, Message, PartialEq)]
@@ -61,7 +55,7 @@ where
 }
 
 impl TryFrom<Invocation> for vino_rpc::rpc::Invocation {
-  type Error = VinoError;
+  type Error = Error;
   fn try_from(inv: Invocation) -> Result<Self> {
     Ok(vino_rpc::rpc::Invocation {
       origin: Some(inv.origin.into()),
@@ -118,34 +112,48 @@ pub enum InvocationResponse {
 
 #[derive(Debug)]
 pub struct ResponseStream {
-  rx: UnboundedReceiver<ComponentOutput>,
+  rx: RefCell<UnboundedReceiver<ComponentOutput>>,
+}
+
+impl Stream for ResponseStream {
+  type Item = ComponentOutput;
+
+  fn poll_next(self: Pin<&mut Self>, cx: &mut std::task::Context<'_>) -> Poll<Option<Self::Item>> {
+    let mut rx = self.rx.borrow_mut();
+    match rx.poll_recv(cx) {
+      Poll::Ready(opt) => match opt {
+        Some(output) => {
+          if output.payload == Packet::V0(packet::v0::Payload::Close) {
+            rx.close();
+            Poll::Ready(None)
+          } else {
+            Poll::Ready(Some(output))
+          }
+        }
+        None => Poll::Ready(None),
+      },
+      Poll::Pending => Poll::Pending,
+    }
+  }
 }
 
 impl ResponseStream {
+  #[must_use]
   pub fn new(rx: UnboundedReceiver<ComponentOutput>) -> Self {
-    Self { rx }
-  }
-  pub async fn recv(&mut self) -> Option<ComponentOutput> {
-    let next = self.rx.recv().await;
-    trace!("Response stream received: {:?}", next);
-    next.and_then(|output| {
-      if output.payload == Packet::V0(Payload::Close) {
-        self.rx.close();
-        None
-      } else {
-        Some(output)
-      }
-    })
+    Self {
+      rx: RefCell::new(rx),
+    }
   }
 }
 
 pub(crate) fn inv_error(tx_id: &str, msg: &str) -> InvocationResponse {
-  InvocationResponse::error(tx_id.to_string(), msg.to_string())
+  InvocationResponse::error(tx_id.to_owned(), msg.to_owned())
 }
 
 impl InvocationResponse {
   /// Creates a successful invocation response stream. Response include the receiving end
   /// of an unbounded channel to listen for future output.
+  #[must_use]
   pub fn stream(tx_id: String, rx: UnboundedReceiver<ComponentOutput>) -> InvocationResponse {
     trace!("Creating stream");
     InvocationResponse::Stream {
@@ -156,11 +164,13 @@ impl InvocationResponse {
 
   /// Creates a successful invocation response. Successful invocations include the payload for an
   /// invocation
+  #[must_use]
   pub fn success(tx_id: String, msg: MessageTransport) -> InvocationResponse {
     InvocationResponse::Success { tx_id, msg }
   }
 
   /// Creates an error response
+  #[must_use]
   pub fn error(tx_id: String, msg: String) -> InvocationResponse {
     InvocationResponse::Error { tx_id, msg }
   }
@@ -208,11 +218,10 @@ where
     }
   }
 }
-
+pub(crate) fn get_uuid() -> String {
+  format!("{}", Uuid::new_v4())
+}
 impl Invocation {
-  pub fn uuid() -> String {
-    format!("{}", Uuid::new_v4())
-  }
   /// Creates an invocation with a specific transaction id, to correlate a chain of
   /// invocations.
   pub fn next(
@@ -222,13 +231,13 @@ impl Invocation {
     target: VinoEntity,
     msg: impl Into<MessageTransport>,
   ) -> Invocation {
-    let invocation_id = Invocation::uuid();
+    let invocation_id = get_uuid();
     let issuer = hostkey.public_key();
     let target_url = target.url();
     let payload = msg.into();
     let claims = Claims::<wascap::prelude::Invocation>::new(
-      issuer.to_string(),
-      invocation_id.to_string(),
+      issuer.clone(),
+      invocation_id.clone(),
       &target_url,
       &origin.url(),
       &invocation_hash(&target_url, &origin.url(), &payload),
@@ -240,7 +249,7 @@ impl Invocation {
       id: invocation_id,
       encoded_claims: claims.encode(hostkey).unwrap(),
       network_id: issuer,
-      tx_id: tx_id.to_string(),
+      tx_id: tx_id.to_owned(),
     }
   }
 }
@@ -324,7 +333,7 @@ impl Display for ComponentEntity {
 
 impl Default for VinoEntity {
   fn default() -> Self {
-    Self::Test("default".to_string())
+    Self::Test("default".to_owned())
   }
 }
 
@@ -338,6 +347,7 @@ pub(crate) const URL_SCHEME: &str = "wasmbus";
 
 impl VinoEntity {
   /// The URL of the entity
+  #[must_use]
   pub fn url(&self) -> String {
     match self {
       VinoEntity::Test(name) => format!("{}://test/{}", URL_SCHEME, name),
@@ -348,6 +358,7 @@ impl VinoEntity {
   }
 
   /// The unique (public) key of the entity
+  #[must_use]
   pub fn key(&self) -> String {
     match self {
       VinoEntity::Test(name) => format!("test:{}", name),
@@ -380,19 +391,29 @@ impl VinoEntity {
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize, Eq, Hash)]
-pub struct PortEntity {
+pub struct PortReference {
   pub reference: String,
   pub name: String,
 }
 
-impl PortEntity {
+impl PortReference {
+  #[must_use]
   pub fn new(reference: String, name: String) -> Self {
     Self { reference, name }
   }
 }
 
-impl Display for PortEntity {
+impl Display for PortReference {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     write!(f, "{}[{}]", self.reference, self.name)
+  }
+}
+
+impl From<ConnectionTargetDefinition> for PortReference {
+  fn from(v: ConnectionTargetDefinition) -> Self {
+    PortReference {
+      name: v.port,
+      reference: v.instance,
+    }
   }
 }

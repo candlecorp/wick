@@ -44,7 +44,21 @@ pub fn merge_runconfig(
 pub fn init_logger(opts: &LoggingOptions) -> crate::Result<()> {
   logger::Logger::init(
     opts,
-    &["logger", "vino", "wasmcloud", "wasmcloud_host", "wapc"],
+    &[
+      "logger",
+      "vino_cli",
+      "vino_macros",
+      "vino_runtime",
+      "vino_rpc",
+      "vino_host",
+      "vino_transport",
+      "vino_codec",
+      "vino_manifest",
+      "vino_provider",
+      "vino_native_provider",
+      "vino_provider_cli",
+      "wapc",
+    ],
     &[],
   )?;
   Ok(())

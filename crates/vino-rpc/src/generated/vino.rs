@@ -97,7 +97,7 @@ pub mod stats_request {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ListResponse {
   #[prost(message, repeated, tag = "1")]
-  pub component: ::prost::alloc::vec::Vec<Component>,
+  pub components: ::prost::alloc::vec::Vec<Component>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Component {
@@ -109,6 +109,8 @@ pub struct Component {
   pub inputs: ::prost::alloc::vec::Vec<component::Port>,
   #[prost(message, repeated, tag = "4")]
   pub outputs: ::prost::alloc::vec::Vec<component::Port>,
+  #[prost(message, repeated, tag = "5")]
+  pub providers: ::prost::alloc::vec::Vec<Provider>,
 }
 /// Nested message and enum types in `Component`.
 pub mod component {
@@ -125,6 +127,13 @@ pub mod component {
     Component = 0,
     Schematic = 1,
   }
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct Provider {
+  #[prost(string, tag = "1")]
+  pub name: ::prost::alloc::string::String,
+  #[prost(message, repeated, tag = "2")]
+  pub components: ::prost::alloc::vec::Vec<Component>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct StatsResponse {

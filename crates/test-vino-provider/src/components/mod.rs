@@ -1,6 +1,6 @@
 // This file is generated, do not edit
 use vino_provider::{
-  Component,
+  ComponentSignature,
   VinoProviderComponent,
 };
 pub(crate) mod generated;
@@ -16,8 +16,8 @@ pub(crate) fn get_component(
   }
 }
 
-pub(crate) fn get_all_components() -> Vec<Component> {
-  vec![Component {
+pub(crate) fn get_all_components() -> Vec<ComponentSignature> {
+  vec![ComponentSignature {
     name: "test-component".to_string(),
     inputs: generated::test_component::inputs_list()
       .into_iter()

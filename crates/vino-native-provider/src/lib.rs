@@ -5,8 +5,8 @@ use std::sync::{
 };
 
 use async_trait::async_trait;
-use vino_rpc::port::PortStream;
 use vino_rpc::{
+  BoxedPacketStream,
   ExecutionStatistics,
   RpcHandler,
   RpcResult,
@@ -38,13 +38,13 @@ impl RpcHandler for Provider {
     _inv_id: String,
     component: String,
     payload: HashMap<String, Vec<u8>>,
-  ) -> RpcResult<PortStream> {
+  ) -> RpcResult<BoxedPacketStream> {
     let context = self.context.clone();
     let instance = components::get_component(&component);
     match instance {
       Some(instance) => {
         let future = instance.job_wrapper(context, payload);
-        Ok(future.await?)
+        Ok(Box::pin(future.await?))
       }
       None => Err(format!("Could not find component: {}", component).into()),
     }
@@ -114,9 +114,9 @@ mod tests {
       .request(invocation_id.to_string(), "log".to_string(), job_payload)
       .await
       .expect("request failed");
-    let (port_name, output) = outputs.next().await.unwrap();
-    println!("Received payload from [{}]", port_name);
-    let payload: String = match output {
+    let output = outputs.next().await.unwrap();
+    println!("Received payload from [{}]", output.port);
+    let payload: String = match output.packet {
       Packet::V0(v0::Payload::MessagePack(payload)) => deserialize(&payload)?,
       _ => None,
     }

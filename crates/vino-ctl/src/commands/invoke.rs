@@ -1,10 +1,4 @@
-use std::path::PathBuf;
-
 use structopt::StructOpt;
-use vino_host::{
-  HostBuilder,
-  HostDefinition,
-};
 
 use crate::Result;
 #[derive(Debug, Clone, StructOpt)]

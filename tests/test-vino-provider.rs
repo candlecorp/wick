@@ -29,9 +29,9 @@ async fn request() -> anyhow::Result<()> {
     )
     .await
     .expect("request failed");
-  let (port_name, output) = outputs.next().await.unwrap();
-  println!("Received payload from [{}]", port_name);
-  let payload: String = match output {
+  let output = outputs.next().await.unwrap();
+  println!("Received payload from [{}]", output.port);
+  let payload: String = match output.packet {
     Packet::V0(v0::Payload::MessagePack(payload)) => deserialize(&payload)?,
     _ => None,
   }

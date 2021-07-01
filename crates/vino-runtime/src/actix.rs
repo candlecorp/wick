@@ -10,7 +10,7 @@ enum ActorResponseTypeItem<A, I> {
 }
 
 /// A helper type that extends actix's own ActorResponse
-pub struct ActorResult<A, I> {
+pub(crate) struct ActorResult<A, I> {
   item: ActorResponseTypeItem<A, I>,
 }
 
@@ -18,8 +18,8 @@ impl<A, I> fmt::Debug for ActorResult<A, I> {
   fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
     let mut fmt = fmt.debug_struct("ActorResult");
     match self.item {
-      ActorResponseTypeItem::Result(_) => fmt.field("item", &"Result(_)".to_string()),
-      ActorResponseTypeItem::Fut(_) => fmt.field("item", &"Fut(_)".to_string()),
+      ActorResponseTypeItem::Result(_) => fmt.field("item", &"Result(_)"),
+      ActorResponseTypeItem::Fut(_) => fmt.field("item", &"Fut(_)"),
     }
     .finish()
   }
@@ -27,14 +27,14 @@ impl<A, I> fmt::Debug for ActorResult<A, I> {
 
 impl<A: Actor, I> ActorResult<A, I> {
   /// Creates a response.
-  pub fn reply(val: I) -> Self {
+  pub(crate) fn reply(val: I) -> Self {
     Self {
       item: ActorResponseTypeItem::Result(val),
     }
   }
 
   /// Creates an asynchronous response.
-  pub fn reply_async<T>(fut: T) -> Self
+  pub(crate) fn reply_async<T>(fut: T) -> Self
   where
     T: ActorFuture<A, Output = I> + 'static,
   {
@@ -60,17 +60,6 @@ where
     }
   }
 }
-
-// impl<A, I> fmt::Debug for ActorResult<A, I> {
-//   fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
-//     let mut fmt = fmt.debug_struct("ActorResult");
-//     match self.item {
-//       ActorResponseTypeItem::Result(_) => fmt.field("item", &"Result(_)".to_string()),
-//       ActorResponseTypeItem::Fut(_) => fmt.field("item", &"Fut(_)".to_string()),
-//     }
-//     .finish()
-//   }
-// }
 
 // Helper trait for send one shot message from Option<Sender> type.
 // None and error are ignored.
