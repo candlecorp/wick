@@ -12,13 +12,16 @@ use vino_rpc::SchematicSignature;
 
 use crate::dev::prelude::*;
 use crate::dispatch::inv_error;
-use crate::error::NetworkError;
-use crate::provider_model::initialize_network_provider;
+use crate::provider_model::{
+  create_network_provider_channel,
+  create_network_provider_model,
+};
 use crate::schematic::{
   GetSignature,
   ProviderInitResponse,
 };
 
+type Result<T> = std::result::Result<T, NetworkError>;
 #[derive(Clone, Debug)]
 
 pub(crate) struct NetworkService {
@@ -64,13 +67,13 @@ impl NetworkService {
       .schematics
       .get(id)
       .cloned()
-      .ok_or_else(|| NetworkError::SchematicNotFound(id.to_owned()).into())
+      .ok_or_else(|| NetworkError::SchematicNotFound(id.to_owned()))
   }
   pub(crate) fn ensure_is_started(&self) -> Result<()> {
     if self.started {
       Ok(())
     } else {
-      Err(NetworkError::NotStarted.into())
+      Err(NetworkError::NotStarted)
     }
   }
 }
@@ -117,11 +120,7 @@ impl Handler<Initialize> for NetworkService {
     let actor_fut = async move {
       let mut init_requests = vec![];
       let mut addr_map = HashMap::new();
-      let (channel, provider_model) = initialize_network_provider("self", network_id).await?;
-      let network_provider = ProviderInitResponse {
-        model: provider_model.clone(),
-        channel: channel.clone(),
-      };
+      let channel = create_network_provider_channel("self", network_id).await?;
 
       for definition in schematics {
         let arbiter = Arbiter::new();
@@ -129,41 +128,39 @@ impl Handler<Initialize> for NetworkService {
         addr_map.insert(definition.get_name(), addr.clone());
         init_requests.push(addr.send(super::schematic::Initialize {
           seed: seed.clone(),
-          network_provider: Some(network_provider.clone()),
+          network_provider_channel: Some(channel.clone()),
           schematic: definition.clone(),
           allow_latest,
           allowed_insecure: allowed_insecure.clone(),
         }));
       }
 
-      match try_join_all(init_requests).await {
-        Ok(results) => {
-          let errors: Vec<Error> = results.into_iter().filter_map(Result::err).collect();
-          if errors.is_empty() {
-            debug!("Schematics initialized");
-            Ok(addr_map)
-          } else {
-            Err(NetworkError::InitializationError(itertools::join(
-              errors, ", ",
-            )))
-          }
-        }
-        Err(e) => Err(NetworkError::InitializationError(e.to_string())),
+      let results = try_join_all(init_requests)
+        .await
+        .map_err::<NetworkError, _>(|_| InternalError(5001).into())?;
+
+      let errors: Vec<SchematicError> = results
+        .into_iter()
+        .filter_map(std::result::Result::err)
+        .collect();
+      if errors.is_empty() {
+        debug!("Schematics initialized");
+        Ok(addr_map)
+      } else {
+        Err(NetworkError::InitializationError(itertools::join(
+          errors, ", ",
+        )))
       }
     };
 
     ActorResult::reply_async(
       actor_fut
         .into_actor(self)
-        .then(move |addr_map, network, _ctx| match addr_map {
-          Ok(addr_map) => {
+        .then(move |result, network, _ctx| {
+          result.map_or_else(err, |addr_map| {
             network.schematics = addr_map;
             ok(())
-          }
-          Err(e) => {
-            network.started = false;
-            err(NetworkError::InitializationError(e.to_string()).into())
-          }
+          })
         }),
     )
   }
@@ -193,7 +190,10 @@ impl Handler<Request> for NetworkService {
     };
 
     let task = async move {
-      let payload: InvocationResponse = schematic.send(request).await??;
+      let payload: InvocationResponse = schematic
+        .send(request)
+        .await
+        .map_err(|_| InternalError(5003))??;
       trace!("Schematic {} finishing", schematic_name);
       match payload {
         InvocationResponse::Success { msg, .. } => match msg {
@@ -216,7 +216,7 @@ impl Handler<Request> for NetworkService {
           }
           Ok(map)
         }
-        InvocationResponse::Error { msg, .. } => Err(Error::ExecutionError(msg)),
+        InvocationResponse::Error { msg, .. } => Err(NetworkError::ExecutionError(msg)),
       }
     }
     .into_actor(self);
@@ -238,11 +238,13 @@ impl Handler<ListSchematics> for NetworkService {
     let requests = schematics
       .into_values()
       .map(|addr| addr.send(GetSignature {}));
-
+    type SchematicResult<T> = std::result::Result<T, SchematicError>;
     let task = async move {
-      let results: Vec<Result<SchematicSignature>> = try_join_all(requests).await?;
+      let results: Vec<SchematicResult<SchematicSignature>> = try_join_all(requests)
+        .await
+        .map_err(|_| InternalError(5004))?;
 
-      Ok(results.into_iter().map(Result::unwrap).collect())
+      Ok(results.into_iter().map(SchematicResult::unwrap).collect())
     }
     .into_actor(self);
 
@@ -303,7 +305,7 @@ mod test {
   use crate::test::prelude::*;
 
   #[test_env_log::test(actix_rt::test)]
-  async fn simple_schematic() -> Result<()> {
+  async fn simple_schematic() -> TestResult<()> {
     let (network, _) = init_network_from_yaml("./manifests/simple.yaml").await?;
 
     let data = hashmap! {
@@ -323,7 +325,7 @@ mod test {
   }
 
   #[test_env_log::test(actix_rt::test)]
-  async fn native_component() -> Result<()> {
+  async fn native_component() -> TestResult<()> {
     let (network, _) = init_network_from_yaml("./manifests/native-component.yaml").await?;
 
     let data = hashmap! {
@@ -344,7 +346,7 @@ mod test {
   }
 
   #[test_env_log::test(actix_rt::test)]
-  async fn nested_schematics() -> Result<()> {
+  async fn nested_schematics() -> TestResult<()> {
     let (network, _) = init_network_from_yaml("./manifests/nested-schematics.yaml").await?;
 
     let user_data = "user inputted data";
@@ -366,7 +368,7 @@ mod test {
   }
 
   #[test_env_log::test(actix_rt::test)]
-  async fn wapc_component() -> Result<()> {
+  async fn wapc_component() -> TestResult<()> {
     let (network, _) = init_network_from_yaml("./manifests/wapc-component.yaml").await?;
 
     let data = hashmap! {
@@ -397,7 +399,7 @@ mod test {
   }
 
   #[test_env_log::test(actix_rt::test)]
-  async fn short_circuit() -> Result<()> {
+  async fn short_circuit() -> TestResult<()> {
     let (network, _) = init_network_from_yaml("./manifests/short-circuit.yaml").await?;
 
     trace!("requesting schematic execution");
@@ -418,7 +420,7 @@ mod test {
   }
 
   #[test_env_log::test(actix_rt::test)]
-  async fn multiple_schematics() -> Result<()> {
+  async fn multiple_schematics() -> TestResult<()> {
     let (network, _) = init_network_from_yaml("./manifests/multiple-schematics.yaml").await?;
 
     let data = hashmap! {

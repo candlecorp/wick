@@ -26,10 +26,6 @@ use crate::dispatch::{
   Invocation,
   InvocationResponse,
 };
-use crate::error::{
-  ComponentError,
-  VinoError,
-};
 use crate::schematic::ComponentOutput;
 type Result<T> = std::result::Result<T, ComponentError>;
 

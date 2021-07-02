@@ -66,7 +66,7 @@ impl RpcHandler for Provider {
         port: output.port,
         packet: output.payload,
       }))),
-      InvocationResponse::Error { msg, .. } => Err(Box::new(Error::SchematicError(format!(
+      InvocationResponse::Error { msg, .. } => Err(Box::new(VinoError::InvocationError(format!(
         "Invocation failed: {}",
         msg
       )))),
@@ -111,6 +111,7 @@ mod tests {
 
   use super::*;
   use crate::test::prelude::*;
+  type Result<T> = std::result::Result<T, VinoError>;
 
   async fn request_log(provider: &Provider, data: &str) -> Result<String> {
     let job_payload = hashmap! {
@@ -135,7 +136,7 @@ mod tests {
   }
 
   #[test_env_log::test(actix_rt::test)]
-  async fn test_request_log() -> Result<()> {
+  async fn test_request_log() -> TestResult<()> {
     let (_, network_id) = init_network_from_yaml("./manifests/simple.yaml").await?;
 
     let provider = Provider::new(network_id);
@@ -147,7 +148,7 @@ mod tests {
   }
 
   #[test_env_log::test(actix_rt::test)]
-  async fn test_list() -> Result<()> {
+  async fn test_list() -> TestResult<()> {
     let (_, network_id) = init_network_from_yaml("./manifests/simple.yaml").await?;
     let provider = Provider::new(network_id);
     let list = provider.list_registered().await?;

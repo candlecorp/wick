@@ -3,6 +3,10 @@ use std::sync::Arc;
 
 use tokio::sync::Mutex;
 
+use crate::components::network_provider_service::{
+  self,
+  NetworkProviderService,
+};
 use crate::components::vino_component::{
   load_component,
   VinoComponent,
@@ -129,34 +133,40 @@ async fn initialize_wapc_provider(
   ))
 }
 
-pub(crate) async fn initialize_network_provider(
+pub(crate) async fn create_network_provider_channel(
   namespace: &str,
   network_id: String,
-) -> Result<(ProviderChannel, ProviderModel)> {
+) -> Result<ProviderChannel> {
   let arbiter = Arbiter::new();
   let handle = arbiter.handle();
-
   let provider = Arc::new(Mutex::new(crate::NetworkProvider::new(network_id)));
-  let addr = native_provider::NativeProvider::start_in_arbiter(&handle, |_| {
-    native_provider::NativeProvider::default()
-  });
-  let components = addr
-    .send(native_provider::Initialize {
+
+  let addr =
+    NetworkProviderService::start_in_arbiter(&handle, |_| NetworkProviderService::default());
+  addr
+    .send(network_provider_service::Initialize {
       provider: provider.clone(),
       namespace: namespace.to_owned(),
     })
     .await??;
+  Ok(ProviderChannel {
+    namespace: namespace.to_owned(),
+    recipient: addr.recipient(),
+  })
+}
 
-  Ok((
-    ProviderChannel {
-      namespace: namespace.to_owned(),
-      recipient: addr.recipient(),
-    },
-    ProviderModel {
-      namespace: namespace.to_owned(),
-      components,
-    },
-  ))
+pub(crate) async fn create_network_provider_model(
+  namespace: &str,
+  addr: Addr<NetworkProviderService>,
+) -> Result<ProviderModel> {
+  let components = addr
+    .send(network_provider_service::InitializeComponents {})
+    .await??;
+
+  Ok(ProviderModel {
+    namespace: namespace.to_owned(),
+    components,
+  })
 }
 
 pub(crate) async fn initialize_provider(

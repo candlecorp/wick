@@ -129,7 +129,6 @@ pub mod prelude {
   };
   pub use crate::network::Network;
   pub use crate::{
-    Error,
     SCHEMATIC_INPUT,
     SCHEMATIC_OUTPUT,
   };

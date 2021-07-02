@@ -13,13 +13,13 @@ use tokio::sync::mpsc::{
 };
 
 use crate::dev::prelude::*;
-use crate::error::SchematicError;
 use crate::schematic::{
   PayloadReceived,
   ReferenceReady,
   SchematicOutputReceived,
   TransactionUpdate,
 };
+type Result<T> = std::result::Result<T, TransactionError>;
 
 #[derive(Debug)]
 pub(crate) struct TransactionMap {
@@ -147,7 +147,7 @@ impl Transaction {
 
     let upstream = locked
       .get_upstream(port)
-      .ok_or_else(|| SchematicError::UpstreamNotFound(port.clone()))?;
+      .ok_or_else(|| TransactionError::UpstreamNotFound(port.clone()))?;
     Ok(self.has_data(port) || !self.is_closed(upstream))
   }
   fn receive(&mut self, from: PortReference, to: PortReference, payload: MessageTransport) {
@@ -191,9 +191,7 @@ impl Transaction {
 
     let mut map = HashMap::new();
     for port in ports {
-      let message = self.take_from_port(&port).ok_or_else(|| {
-        crate::Error::SchematicError("Tried to take from port that had none".to_owned())
-      })?;
+      let message = self.take_from_port(&port).ok_or(InternalError(7001))?;
       map.insert(port.name, message);
     }
     Ok(map)

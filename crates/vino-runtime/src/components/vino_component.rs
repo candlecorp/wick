@@ -13,8 +13,6 @@ use crate::dev::prelude::*;
 use crate::error::ComponentError;
 use crate::util::oci::fetch_oci_bytes;
 
-type Result<T> = std::result::Result<T, ComponentError>;
-
 #[derive(Derivative, Clone)]
 #[derivative(Debug)]
 pub struct WapcComponent {
@@ -60,7 +58,7 @@ impl Clone for BoxedComponent {
 impl WapcComponent {
   /// Create an actor from the bytes of a signed WebAssembly module. Attempting to load
   /// an unsigned module, or a module signed improperly, will result in an error.
-  pub fn from_slice(buf: &[u8]) -> Result<WapcComponent> {
+  pub fn from_slice(buf: &[u8]) -> Result<WapcComponent, ComponentError> {
     let token = wascap::wasm::extract_claims(&buf)?;
     token.map_or(Err(ComponentError::ClaimsError), |t| {
       Ok(WapcComponent {
@@ -72,12 +70,12 @@ impl WapcComponent {
   }
 
   /// Create an actor from a signed WebAssembly (`.wasm`) file.
-  pub fn from_file(path: &Path) -> Result<WapcComponent> {
+  pub fn from_file(path: &Path) -> Result<WapcComponent, CommonError> {
     let mut file = File::open(path)?;
     let mut buf = Vec::new();
     file.read_to_end(&mut buf)?;
 
-    WapcComponent::from_slice(&buf).map_err(|_| ComponentError::FileNotFound(path.to_path_buf()))
+    WapcComponent::from_slice(&buf).map_err(|_| CommonError::FileNotFound(path.to_path_buf()))
   }
 
   /// Obtain the issuer's public key as it resides in the actor's token (the `iss` field of the JWT).
@@ -189,7 +187,7 @@ impl VinoComponent for NativeComponent {
   }
 }
 
-async fn start_wapc_actor_from_file(p: &Path) -> Result<WapcComponent> {
+async fn start_wapc_actor_from_file(p: &Path) -> Result<WapcComponent, ComponentError> {
   let component = WapcComponent::from_file(p)?;
   trace!(
     "Starting wapc component '{}' from file {}",
@@ -203,7 +201,7 @@ async fn start_wapc_actor_from_oci(
   url: &str,
   allow_latest: bool,
   allowed_insecure: &[String],
-) -> Result<WapcComponent> {
+) -> Result<WapcComponent, ComponentError> {
   let bytes = fetch_oci_bytes(url, allow_latest, allowed_insecure).await?;
   let component = WapcComponent::from_slice(&bytes)?;
 
@@ -220,7 +218,7 @@ pub(crate) async fn load_component(
   comp_ref: String,
   allow_latest: bool,
   allowed_insecure: &[String],
-) -> Result<WapcComponent> {
+) -> Result<WapcComponent, ComponentError> {
   let p = Path::new(&comp_ref);
   let component = if p.exists() {
     debug!("{:?} exists on file system, loading from disk", p);

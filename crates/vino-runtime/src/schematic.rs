@@ -29,6 +29,8 @@ use crate::schematic_model::Connection;
 use crate::transaction::TransactionMap;
 use crate::validator::Validator;
 
+type Result<T> = std::result::Result<T, SchematicError>;
+
 #[derive(Debug)]
 pub(crate) struct Schematic {
   recipients: HashMap<String, ProviderChannel>,
@@ -74,10 +76,11 @@ impl Schematic {
   pub(crate) fn get_name(&self) -> String {
     self.get_state().name.clone()
   }
+
   fn validate_model(&mut self) -> Result<()> {
-    let mut model = self.get_mut_state().model.lock()?;
-    Validator::validate(&model)?;
-    Ok(model.finish_initialization()?)
+    let model = self.get_mut_state().model.lock()?;
+    Validator::validate_late_errors(&model)?;
+    Ok(())
   }
 
   fn get_state(&self) -> &State {
@@ -147,7 +150,7 @@ impl Schematic {
 #[rtype(result = "Result<()>")]
 pub(crate) struct Initialize {
   pub(crate) schematic: SchematicDefinition,
-  pub(crate) network_provider: Option<ProviderInitResponse>,
+  pub(crate) network_provider_channel: Option<ProviderChannel>,
   pub(crate) seed: String,
   pub(crate) allow_latest: bool,
   pub(crate) allowed_insecure: Vec<String>,
@@ -172,16 +175,15 @@ impl Handler<Initialize> for Schematic {
     actix_try!(Validator::validate_early_errors(&model));
     let model = Arc::new(Mutex::new(model));
     let allowed_insecure = msg.allowed_insecure;
-    let network_provider = msg.network_provider;
+    let network_provider_channel = msg.network_provider_channel;
 
     let task = initialize_providers(providers, seed.clone(), allow_latest, allowed_insecure)
       .into_actor(self)
       .map(|result, this, _ctx| {
         match result {
-          Ok((mut channels, mut providers)) => {
-            if let Some(network_provider) = network_provider {
-              channels.push(network_provider.channel);
-              providers.push(network_provider.model);
+          Ok((mut channels, providers)) => {
+            if let Some(network_provider_channel) = network_provider_channel {
+              channels.push(network_provider_channel);
             }
             this.recipients = channels
               .into_iter()
@@ -226,7 +228,7 @@ async fn initialize_providers(
     channels.push(channel);
     models.push(provider_model);
   }
-  Ok!((channels, models))
+  Ok((channels, models))
 }
 
 #[derive(Message, Debug, Clone)]
@@ -268,7 +270,8 @@ impl Handler<ComponentOutput> for Schematic {
             tx_id,
             payload: payload.into(),
           })
-          .await??;
+          .await
+          .map_err(|_| InternalError(6013))??;
         trace!("Sent output ready to schematic");
         Ok(())
       }
@@ -324,9 +327,9 @@ impl Handler<Request> for Schematic {
       async move {
         let invocations = try_join_all(invocations.into_iter().map(|inv| host.send(inv)));
 
-        invocations
-          .await
-          .map_err(|_| Error::SchematicError("Error pushing to schematic ports".into()))?;
+        invocations.await.map_err(|_| {
+          SchematicError::FailedPreRequestCondition("Error pushing to schematic ports".into())
+        })?;
 
         Ok(InvocationResponse::stream(tx_id, rx))
       }
@@ -349,12 +352,12 @@ impl Handler<TransactionUpdate> for Schematic {
     trace!("Transaction update: {:?}", msg);
     let addr = ctx.address();
     match msg {
-      TransactionUpdate::ReferenceReady(msg) => {
-        ActorResult::reply_async(async move { addr.send(msg).await? }.into_actor(self))
-      }
-      TransactionUpdate::SchematicOutput(msg) => {
-        ActorResult::reply_async(async move { addr.send(msg).await? }.into_actor(self))
-      }
+      TransactionUpdate::ReferenceReady(msg) => ActorResult::reply_async(
+        async move { addr.send(msg).await.map_err(|_| InternalError(6011))? }.into_actor(self),
+      ),
+      TransactionUpdate::SchematicOutput(msg) => ActorResult::reply_async(
+        async move { addr.send(msg).await.map_err(|_| InternalError(6012))? }.into_actor(self),
+      ),
       TransactionUpdate::SchematicDone(tx_id) => {
         let tx = actix_try!(self
           .tx_external
@@ -413,7 +416,8 @@ impl Handler<ReferenceReady> for Schematic {
                   reference,
                   tx_id,
                 })
-                .await?
+                .await
+                .map_err(|_| InternalError(6010))?
             }
             .into_actor(self),
           );
@@ -433,7 +437,7 @@ impl Handler<ReferenceReady> for Schematic {
     );
     let handler = actix_try!(self
       .get_recipient(&msg.reference)
-      .ok_or_else(|| Error::ReferenceError(reference.clone())));
+      .ok_or_else(|| SchematicError::ReferenceError(reference.clone())));
 
     let addr = ctx.address();
     let name = self.get_name();
@@ -446,7 +450,10 @@ impl Handler<ReferenceReady> for Schematic {
     let task = async move {
       let target = invocation.target.url();
 
-      let response = handler.send(invocation).await?;
+      let response = handler
+        .send(invocation)
+        .await
+        .map_err(|_| InternalError(6009))?;
 
       match response {
         InvocationResponse::Success { .. } => unreachable!(),
@@ -486,7 +493,8 @@ impl Handler<ReferenceReady> for Schematic {
               reference: reference.clone(),
               payload: MessageTransport::Error(msg),
             })
-            .await?
+            .await
+            .map_err(|_| InternalError(6007))?
         }
       }
     };
@@ -614,14 +622,7 @@ impl Handler<PayloadReceived> for Schematic {
     let tx_id = msg.tx_id.clone();
     trace!("Receiving on port {}", port);
 
-    let transaction_handler =
-      actix_try!(self
-        .tx_internal
-        .get(&tx_id)
-        .ok_or_else(|| Error::SchematicError(format!(
-          "Can not get transaction handler for tx {}",
-          tx_id
-        ))));
+    let transaction_handler = actix_try!(self.tx_internal.get(&tx_id).ok_or(InternalError(6003)));
     debug!("Sent output to transaction handler for {:?}", msg);
     actix_try!(transaction_handler.send(msg));
 
@@ -672,10 +673,10 @@ impl Handler<ShortCircuit> for Schematic {
 
     Box::pin(
       async move {
-        match try_join_all(futures).await {
-          Ok(_) => Ok(()),
-          Err(e) => Err(e.into()),
-        }
+        try_join_all(futures)
+          .await
+          .map_err(|_| InternalError(6002))?;
+        Ok(())
       }
       .into_actor(self),
     )
@@ -716,8 +717,8 @@ impl Handler<OutputPortReady> for Schematic {
         payload: data.clone(),
       };
       let invocations = try_join_all(defs.into_iter().map(to_message).map(|ips| addr.send(ips)));
-      invocations.await?;
-      Ok!(())
+      invocations.await.map_err(|_| InternalError(6001))?;
+      Ok(())
     }
     .into_actor(self);
 
@@ -736,7 +737,7 @@ mod test {
   use crate::test::prelude::*;
 
   #[test_env_log::test(actix_rt::test)]
-  async fn test_basic_schematic() -> Result<()> {
+  async fn test_basic_schematic() -> TestResult<()> {
     let kp = KeyPair::new_server();
     let tx_id = get_uuid();
     let schematic = Schematic::default();
@@ -771,7 +772,7 @@ mod test {
     addr
       .send(Initialize {
         schematic: schematic_def,
-        network_provider: None,
+        network_provider_channel: None,
         seed: kp.seed()?,
         allow_latest: true,
         allowed_insecure: vec![],
@@ -812,7 +813,7 @@ mod test {
   }
 
   #[test_env_log::test(actix_rt::test)]
-  async fn test_native_provider() -> Result<()> {
+  async fn test_native_provider() -> TestResult<()> {
     let schematic = Schematic::default();
     let addr = schematic.start();
     let schematic_name = "logger";
@@ -848,7 +849,7 @@ mod test {
     addr
       .send(Initialize {
         schematic: schematic_def,
-        network_provider: None,
+        network_provider_channel: None,
         seed: hostkey.seed()?,
         allow_latest: true,
         allowed_insecure: vec![],
@@ -889,7 +890,7 @@ mod test {
   }
 
   #[test_env_log::test(actix_rt::test)]
-  async fn test_grpc_url_provider() -> Result<()> {
+  async fn test_grpc_url_provider() -> TestResult<()> {
     let socket = bind_new_socket()?;
     let port = socket.local_addr()?.port();
     make_rpc_server(socket, test_vino_provider::Provider::default());
@@ -936,7 +937,7 @@ mod test {
       .send(Initialize {
         schematic: schematic_def,
         seed: hostkey.seed()?,
-        network_provider: None,
+        network_provider_channel: None,
         allow_latest: true,
         allowed_insecure: vec![],
       })

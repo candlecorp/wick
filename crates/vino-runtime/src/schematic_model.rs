@@ -104,15 +104,19 @@ impl SchematicModel {
       state: None,
     }
   }
+
   pub(crate) fn get_definition(&self) -> &SchematicDefinition {
     &self.definition
   }
+
   pub(crate) fn get_connections(&self) -> &Vec<Connection> {
     &self.connections
   }
+
   pub(crate) fn get_component_definitions(&self) -> Values<String, ComponentDefinition> {
     self.definition.components.values()
   }
+
   pub(crate) fn get_references(&self) -> Keys<String, ComponentDefinition> {
     self.definition.components.keys()
   }
@@ -197,11 +201,20 @@ impl SchematicModel {
     let provider = self.providers.get(&ns);
     provider.map_or(false, |provider| provider.components.get(&name).is_some())
   }
+
   pub(crate) fn commit_providers(&mut self, providers: Vec<ProviderModel>) {
     self.providers = providers
       .into_iter()
       .map(|p| (p.namespace.clone(), p))
       .collect();
+    // ensure state is reset;
+    self.state = None;
+  }
+
+  pub(crate) fn commit_self_provider(&mut self, provider: ProviderModel) {
+    self.providers.insert("self".to_owned(), provider);
+    // ensure state is reset;
+    self.state = None;
   }
 
   /// Gets a ComponentModel by component reference string
@@ -348,7 +361,7 @@ mod tests {
   use crate::test::prelude::*;
 
   #[test_env_log::test]
-  fn test_basics() -> Result<()> {
+  fn test_basics() -> Result<(), SchematicError> {
     let schematic_name = "Test";
     let mut schematic_def = new_schematic(schematic_name);
     schematic_def.providers.push(ProviderDefinition {

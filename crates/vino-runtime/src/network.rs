@@ -7,6 +7,7 @@ use crate::dev::prelude::*;
 pub use crate::network_provider::Provider as NetworkProvider;
 use crate::network_service::Initialize;
 
+type Result<T> = std::result::Result<T, NetworkError>;
 #[derive(Debug)]
 pub struct Network {
   pub id: String,
@@ -24,7 +25,7 @@ impl Network {
   }
   pub async fn init(&self) -> Result<()> {
     let kp = KeyPair::new_service();
-    let seed = kp.seed()?;
+    let seed = kp.seed().map_err(|_| InternalError(5103))?;
     self
       .addr
       .send(Initialize {
@@ -34,7 +35,8 @@ impl Network {
         allowed_insecure: self.allowed_insecure.clone(),
         allow_latest: self.allow_latest,
       })
-      .await??;
+      .await
+      .map_err(|_| InternalError(5102))??;
     Ok(())
   }
   pub async fn request<T, U>(
@@ -59,7 +61,8 @@ impl Network {
         schematic: schematic.as_ref().to_owned(),
         data: serialized_data,
       })
-      .await??;
+      .await
+      .map_err(|_| InternalError(5101))??;
     trace!(
       "result for {} took {} μs",
       schematic.as_ref().to_owned(),

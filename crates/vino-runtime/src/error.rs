@@ -10,7 +10,7 @@ use crate::dev::prelude::*;
 use crate::schematic::PayloadReceived;
 use crate::schematic_model::Connection;
 
-type BoxedErrorSyncSend = Box<dyn std::error::Error + Sync + Send>;
+pub(crate) type BoxedErrorSyncSend = Box<dyn std::error::Error + Sync + Send>;
 
 #[derive(Error, Debug, PartialEq)]
 pub enum ValidationError {
@@ -36,18 +36,34 @@ pub enum ValidationError {
   InvalidConnections(Vec<ValidationError>),
 }
 
-#[derive(Error, Debug, PartialEq)]
+#[derive(Error, Debug)]
 pub enum SchematicError {
   #[error("Schematic model not initialized")]
   ModelNotInitialized,
-  #[error("Upstream port {0} not found")]
-  UpstreamNotFound(PortReference),
   #[error("Transaction {0} not found")]
   TransactionNotFound(String),
   #[error("Reference {0} not found")]
   ReferenceNotFound(String),
+  #[error("Schematic failed pre-request condition")]
+  FailedPreRequestCondition(String),
   #[error("Schematic channel closed while data still available. This can happen when acting on output before waiting for the system to receive the final close and may not be a problem. Error: {0}")]
   SchematicClosedEarly(String),
+  #[error(transparent)]
+  CommonError(#[from] CommonError),
+  #[error(transparent)]
+  ValidationError(#[from] ValidationError),
+  #[error(transparent)]
+  KeyPairError(#[from] nkeys::error::Error),
+  #[error(transparent)]
+  ComponentError(#[from] ComponentError),
+  #[error(transparent)]
+  EntityError(#[from] vino_entity::Error),
+  #[error(transparent)]
+  InternalError(#[from] InternalError),
+  #[error("Reference {0} not found")]
+  ReferenceError(String),
+  #[error(transparent)]
+  TransactionChannelError(#[from] SendError<PayloadReceived>),
 }
 
 #[derive(Error, Debug)]
@@ -59,7 +75,17 @@ pub enum NetworkError {
   #[error("Error initializing: {0}")]
   InitializationError(String),
   #[error(transparent)]
+  SchematicError(#[from] SchematicError),
+  #[error(transparent)]
   ComponentError(#[from] ComponentError),
+  #[error(transparent)]
+  InternalError(#[from] InternalError),
+  #[error(transparent)]
+  CommonError(#[from] CommonError),
+  #[error("Error executing request: {0}")]
+  ExecutionError(String),
+  #[error(transparent)]
+  CodecError(#[from] vino_codec::Error),
 }
 
 #[derive(Error, Debug)]
@@ -70,8 +96,6 @@ pub enum ComponentError {
   WascapError(#[from] wascap::Error),
   #[error("Failed to create a raw WebAssembly host")]
   WapcError,
-  #[error("File not found {}", .0.to_string_lossy())]
-  FileNotFound(PathBuf),
   #[error(transparent)]
   ConversionError(#[from] ConversionError),
   #[error(transparent)]
@@ -94,6 +118,10 @@ pub enum ComponentError {
   CodecError(#[from] vino_codec::Error),
   #[error("Grpc Provider error: {0}")]
   GrpcUrlProviderError(String),
+  #[error(transparent)]
+  InternalError(#[from] InternalError),
+  #[error(transparent)]
+  CommonError(#[from] CommonError),
 }
 
 #[derive(Error, Debug)]
@@ -117,8 +145,43 @@ impl std::fmt::Display for ConversionError {
   }
 }
 
+#[derive(Error, Debug, Clone, Copy)]
+pub struct InternalError(pub i32);
+
+impl std::fmt::Display for InternalError {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    f.write_fmt(format_args!("Internal Error: {}", self.0))
+  }
+}
+
+#[derive(Error, Debug)]
+pub enum CommonError {
+  #[error("Failed to acquire a lock: {0}")]
+  LockError(String),
+  #[error(transparent)]
+  IOError(#[from] std::io::Error),
+  #[error("File not found {}", .0.to_string_lossy())]
+  FileNotFound(PathBuf),
+}
+
+#[derive(Error, Debug)]
+pub enum TransactionError {
+  #[error(transparent)]
+  CommonError(#[from] CommonError),
+  #[error(transparent)]
+  InternalError(#[from] InternalError),
+  #[error("Upstream port {0} not found")]
+  UpstreamNotFound(PortReference),
+}
+
 #[derive(Error, Debug)]
 pub enum VinoError {
+  #[error("Invocation error: {0}")]
+  InvocationError(String),
+  #[error(transparent)]
+  CommonError(#[from] CommonError),
+  #[error(transparent)]
+  TransactionError(#[from] TransactionError),
   #[error("Conversion error {0}")]
   ConversionError(&'static str),
   #[error("URL parse error {0}")]
@@ -127,20 +190,13 @@ pub enum VinoError {
   ComponentError(#[from] ComponentError),
   #[error(transparent)]
   NetworkError(#[from] NetworkError),
-  #[error("Error executing request: {0}")]
-  ExecutionError(String),
-  #[error("Schematic error: {0}")]
-  SchematicError(String),
-  #[error("Reference {0} not found")]
-  ReferenceError(String),
+
   #[error("Dispatch error: {0}")]
   DispatchError(String),
   #[error("Provider error {0}")]
   ProviderError(String),
   #[error("WaPC WebAssembly Component error: {0}")]
   WapcError(String),
-  #[error("Failed to acquire a lock: {0}")]
-  LockError(String),
   #[error("Job error: {0}")]
   JobError(String),
   #[error("invalid configuration")]
@@ -153,14 +209,12 @@ pub enum VinoError {
   SerializationError(rmp_serde::encode::Error),
   #[error("Failed to deserialize payload {0}")]
   DeserializationError(rmp_serde::decode::Error),
+
   #[error(transparent)]
   OciError(#[from] OciError),
   #[error(transparent)]
-  SchematicErr(#[from] SchematicError),
-  #[error(transparent)]
-  TransactionChannelError(#[from] SendError<PayloadReceived>),
-  #[error(transparent)]
-  ValidationError(#[from] ValidationError),
+  SchematicError(#[from] SchematicError),
+
   #[error(transparent)]
   TonicError(#[from] tonic::transport::Error),
   #[error(transparent)]
@@ -180,19 +234,38 @@ pub enum VinoError {
   #[error(transparent)]
   ActixMailboxError(#[from] MailboxError),
   #[error(transparent)]
-  IOError(#[from] std::io::Error),
-  #[error(transparent)]
   KeyPairError(#[from] nkeys::error::Error),
 
   #[error(transparent)]
   OtherUpstream(#[from] BoxedErrorSyncSend),
   #[error("General error : {0}")]
   Other(String),
+
+  #[error(transparent)]
+  IOError(#[from] std::io::Error),
 }
 
 impl<T> From<PoisonError<std::sync::MutexGuard<'_, T>>> for VinoError {
   fn from(lock_error: PoisonError<std::sync::MutexGuard<'_, T>>) -> Self {
-    VinoError::LockError(lock_error.to_string())
+    CommonError::LockError(lock_error.to_string()).into()
+  }
+}
+
+impl<T> From<PoisonError<std::sync::MutexGuard<'_, T>>> for NetworkError {
+  fn from(lock_error: PoisonError<std::sync::MutexGuard<'_, T>>) -> Self {
+    CommonError::LockError(lock_error.to_string()).into()
+  }
+}
+
+impl<T> From<PoisonError<std::sync::MutexGuard<'_, T>>> for SchematicError {
+  fn from(lock_error: PoisonError<std::sync::MutexGuard<'_, T>>) -> Self {
+    CommonError::LockError(lock_error.to_string()).into()
+  }
+}
+
+impl<T> From<PoisonError<std::sync::MutexGuard<'_, T>>> for TransactionError {
+  fn from(lock_error: PoisonError<std::sync::MutexGuard<'_, T>>) -> Self {
+    CommonError::LockError(lock_error.to_string()).into()
   }
 }
 

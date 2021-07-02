@@ -10,8 +10,6 @@ use vino_rpc::{
 };
 
 use crate::dev::prelude::*;
-type Result<T> = std::result::Result<T, ComponentError>;
-
 use crate::error::ComponentError;
 
 #[derive(Debug)]
@@ -22,7 +20,7 @@ pub(crate) enum ProviderRequest {
 }
 
 impl Message for ProviderRequest {
-  type Result = std::result::Result<ProviderResponse, ComponentError>;
+  type Result = Result<ProviderResponse, ComponentError>;
 }
 
 #[derive(Debug)]
@@ -38,22 +36,22 @@ pub(crate) enum ProviderResponse {
 }
 
 impl ProviderResponse {
-  pub(crate) fn into_list_response(self) -> Result<Vec<HostedType>> {
+  pub(crate) fn into_list_response(self) -> Result<Vec<HostedType>, ConversionError> {
     match self {
       ProviderResponse::List(v) => Ok(v),
-      _ => Err(crate::error::ConversionError("Provider response to list").into()),
+      _ => Err(ConversionError("Provider response to list")),
     }
   }
-  pub(crate) fn into_stats_response(self) -> Result<Vec<Statistics>> {
+  pub(crate) fn into_stats_response(self) -> Result<Vec<Statistics>, ConversionError> {
     match self {
       ProviderResponse::Stats(v) => Ok(v),
-      _ => Err(crate::error::ConversionError("Provider response to stats").into()),
+      _ => Err(ConversionError("Provider response to stats")),
     }
   }
-  pub(crate) fn into_invocation_response(self) -> Result<()> {
+  pub(crate) fn into_invocation_response(self) -> Result<(), ConversionError> {
     match self {
       ProviderResponse::InvocationResponse => Ok(()),
-      _ => Err(crate::error::ConversionError("Provider response to invocation response").into()),
+      _ => Err(ConversionError("Provider response to invocation response")),
     }
   }
 }

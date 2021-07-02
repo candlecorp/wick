@@ -2,7 +2,7 @@ use crate::dev::prelude::*;
 use crate::error::ValidationError;
 use crate::schematic_model::Connection;
 
-type ValidationResult<T> = std::result::Result<T, ValidationError>;
+type Result<T> = std::result::Result<T, ValidationError>;
 pub(crate) struct Validator<'a> {
   model: &'a SchematicModel,
   omit_namespaces: Vec<String>,
@@ -83,7 +83,7 @@ impl<'a> Validator<'a> {
     Self::validate_early_errors(model)?;
     Self::validate_late_errors(model)
   }
-  fn assert_no_dangling_references(&self) -> ValidationResult<()> {
+  fn assert_no_dangling_references(&self) -> Result<()> {
     let dangling: Vec<String> = self
       .model
       .get_connections()
@@ -108,7 +108,7 @@ impl<'a> Validator<'a> {
       Err(ValidationError::DanglingReference(dangling))
     }
   }
-  fn assert_ports_used(&self) -> ValidationResult<()> {
+  fn assert_ports_used(&self) -> Result<()> {
     let errors: Vec<ValidationError> = self
       .model
       .get_connections()
@@ -144,7 +144,7 @@ impl<'a> Validator<'a> {
         }
         validations
       })
-      .filter_map(ValidationResult::err)
+      .filter_map(Result::err)
       .collect();
 
     if errors.is_empty() {
@@ -163,7 +163,7 @@ impl<'a> Validator<'a> {
     should_omit(&def.namespace, &self.omit_namespaces)
   }
 
-  fn assert_component_models(&self) -> ValidationResult<()> {
+  fn assert_component_models(&self) -> Result<()> {
     let missing_components: Vec<String> = self
       .model
       .get_references()
@@ -182,7 +182,7 @@ impl<'a> Validator<'a> {
       Err(ValidationError::MissingComponentModels(missing_components))
     }
   }
-  fn assert_early_schematic_outputs(&self) -> ValidationResult<()> {
+  fn assert_early_schematic_outputs(&self) -> Result<()> {
     let ports = self.model.get_schematic_outputs();
     if ports.is_empty() {
       Err(ValidationError::NoOutputs)
@@ -190,7 +190,7 @@ impl<'a> Validator<'a> {
       Ok(())
     }
   }
-  fn assert_early_schematic_inputs(&self) -> ValidationResult<()> {
+  fn assert_early_schematic_inputs(&self) -> Result<()> {
     let ports = self.model.get_schematic_inputs();
     if ports.is_empty() {
       Err(ValidationError::NoInputs)
@@ -198,7 +198,7 @@ impl<'a> Validator<'a> {
       Ok(())
     }
   }
-  fn assert_early_qualified_names(&self) -> ValidationResult<()> {
+  fn assert_early_qualified_names(&self) -> Result<()> {
     let component_definitions = self.model.get_component_definitions();
     let mut errors = vec![];
     for def in component_definitions {
@@ -214,7 +214,7 @@ impl<'a> Validator<'a> {
   }
 }
 
-fn is_valid_input(connection: &Connection, to: &ComponentModel) -> ValidationResult<()> {
+fn is_valid_input(connection: &Connection, to: &ComponentModel) -> Result<()> {
   let to_port = &connection.to;
   let found_to_port = to.inputs.iter().find(|port| port.name == to_port.name);
 
@@ -228,7 +228,7 @@ fn is_valid_input(connection: &Connection, to: &ComponentModel) -> ValidationRes
     Ok(())
   }
 }
-fn is_valid_output(connection: &Connection, from: &ComponentModel) -> ValidationResult<()> {
+fn is_valid_output(connection: &Connection, from: &ComponentModel) -> Result<()> {
   let from_port = &connection.from;
   let found_from_port = from.outputs.iter().find(|port| port.name == from_port.name);
 
@@ -255,9 +255,10 @@ mod tests {
 
   use super::*;
   use crate::test::prelude::*;
+  type Result<T> = super::Result<T>;
 
   #[test_env_log::test]
-  fn test_validate_early_errors() -> Result<()> {
+  fn test_validate_early_errors() -> TestResult<()> {
     let def = load_network_manifest("./manifests/native-component.yaml")?;
     let model = SchematicModel::new(def.schematics[0].clone());
 
@@ -266,7 +267,7 @@ mod tests {
   }
 
   #[test_env_log::test]
-  fn test_invalid_ports() -> Result<()> {
+  fn test_invalid_ports() -> TestResult<()> {
     let def = load_network_manifest("./manifests/invalid-bad-ports.yaml")?;
     let mut model = SchematicModel::new(def.schematics[0].clone());
     let expected_inputs = vec![PortSignature {
@@ -304,7 +305,7 @@ mod tests {
   }
 
   #[test_env_log::test]
-  fn test_self() -> Result<()> {
+  fn test_self() -> TestResult<()> {
     // the "self" namespace can't be validated until the non-self parts of every schematic are complete;
     let def = load_network_manifest("./manifests/reference-self.yaml")?;
     let mut model = SchematicModel::new(def.schematics[0].clone());
@@ -458,7 +459,7 @@ mod tests {
   }
 
   #[test_env_log::test]
-  fn test_finish_initialization() -> Result<()> {
+  fn test_finish_initialization() -> TestResult<()> {
     let schematic_name = "Test";
     let mut schematic_def = new_schematic(schematic_name);
     schematic_def.providers.push(ProviderDefinition {

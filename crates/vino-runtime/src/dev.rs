@@ -5,7 +5,6 @@ pub(crate) mod prelude {
   pub(crate) use vino_entity::entity::{
     ComponentEntity,
     Entity,
-    SystemEntity,
   };
   pub(crate) use vino_manifest::{
     parse_namespace,
@@ -24,10 +23,13 @@ pub(crate) mod prelude {
     get_uuid,
     PortReference,
   };
+  pub(crate) use crate::error::{
+    InternalError,
+    *,
+  };
   pub(crate) use crate::network_service::NetworkService;
   pub(crate) use crate::prelude::*;
   pub(crate) use crate::provider_model::ProviderModel;
   pub(crate) use crate::schematic::Schematic;
   pub(crate) use crate::schematic_model::SchematicModel;
-  pub(crate) use crate::Result;
 }

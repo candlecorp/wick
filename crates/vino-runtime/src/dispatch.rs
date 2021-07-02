@@ -56,8 +56,8 @@ where
 }
 
 impl TryFrom<Invocation> for vino_rpc::rpc::Invocation {
-  type Error = Error;
-  fn try_from(inv: Invocation) -> Result<Self> {
+  type Error = VinoError;
+  fn try_from(inv: Invocation) -> Result<Self, VinoError> {
     Ok(vino_rpc::rpc::Invocation {
       origin: inv.origin.url(),
       target: inv.target.url(),
@@ -159,21 +159,21 @@ impl InvocationResponse {
     }
   }
 
-  pub fn to_stream(self) -> std::result::Result<(String, ResponseStream), ConversionError> {
+  pub fn to_stream(self) -> Result<(String, ResponseStream), ConversionError> {
     match self {
       InvocationResponse::Stream { tx_id, rx } => Ok((tx_id, rx)),
       _ => Err(ConversionError("InvocationResponse to stream")),
     }
   }
 
-  pub fn to_success(self) -> std::result::Result<(String, MessageTransport), ConversionError> {
+  pub fn to_success(self) -> Result<(String, MessageTransport), ConversionError> {
     match self {
       InvocationResponse::Success { tx_id, msg } => Ok((tx_id, msg)),
       _ => Err(ConversionError("InvocationResponse to success")),
     }
   }
 
-  pub fn to_error(self) -> std::result::Result<(String, String), ConversionError> {
+  pub fn to_error(self) -> Result<(String, String), ConversionError> {
     match self {
       InvocationResponse::Error { tx_id, msg } => Ok((tx_id, msg)),
       _ => Err(ConversionError("InvocationResponse to error")),
@@ -298,7 +298,7 @@ pub(crate) fn invocation_hash(
   HEXUPPER.encode(digest.as_ref())
 }
 
-fn sha256_digest<R: Read>(mut reader: R) -> Result<Digest> {
+fn sha256_digest<R: Read>(mut reader: R) -> Result<Digest, VinoError> {
   let mut context = Context::new(&SHA256);
   let mut buffer = [0; 1024];
 
