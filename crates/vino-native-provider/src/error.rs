@@ -8,6 +8,8 @@ pub enum NativeError {
   IOError(#[from] std::io::Error),
   #[error(transparent)]
   JoinError(#[from] tokio::task::JoinError),
+  #[error("Can not handle entity type {0}")]
+  InvalidEntity(String),
   #[error("General error : {0}")]
   Other(String),
 }

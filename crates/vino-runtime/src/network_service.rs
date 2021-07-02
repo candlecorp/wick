@@ -13,7 +13,11 @@ use vino_rpc::SchematicSignature;
 use crate::dev::prelude::*;
 use crate::dispatch::inv_error;
 use crate::error::NetworkError;
-use crate::schematic::GetSignature;
+use crate::provider_model::initialize_network_provider;
+use crate::schematic::{
+  GetSignature,
+  ProviderInitResponse,
+};
 
 #[derive(Clone, Debug)]
 
@@ -99,7 +103,10 @@ impl Handler<Initialize> for NetworkService {
 
   fn handle(&mut self, msg: Initialize, _ctx: &mut Context<Self>) -> Self::Result {
     trace!("Network initializing on {}", msg.network_id);
-    self.id = msg.network_id;
+    self.started = true;
+
+    self.id = msg.network_id.clone();
+    let network_id = msg.network_id;
     self.definition = msg.network;
     let allowed_insecure = msg.allowed_insecure;
 
@@ -110,6 +117,11 @@ impl Handler<Initialize> for NetworkService {
     let actor_fut = async move {
       let mut init_requests = vec![];
       let mut addr_map = HashMap::new();
+      let (channel, provider_model) = initialize_network_provider("self", network_id).await?;
+      let network_provider = ProviderInitResponse {
+        model: provider_model.clone(),
+        channel: channel.clone(),
+      };
 
       for definition in schematics {
         let arbiter = Arbiter::new();
@@ -117,6 +129,7 @@ impl Handler<Initialize> for NetworkService {
         addr_map.insert(definition.get_name(), addr.clone());
         init_requests.push(addr.send(super::schematic::Initialize {
           seed: seed.clone(),
+          network_provider: Some(network_provider.clone()),
           schematic: definition.clone(),
           allow_latest,
           allowed_insecure: allowed_insecure.clone(),
@@ -130,10 +143,12 @@ impl Handler<Initialize> for NetworkService {
             debug!("Schematics initialized");
             Ok(addr_map)
           } else {
-            Err(itertools::join(errors, ", "))
+            Err(NetworkError::InitializationError(itertools::join(
+              errors, ", ",
+            )))
           }
         }
-        Err(e) => Err(e.to_string()),
+        Err(e) => Err(NetworkError::InitializationError(e.to_string())),
       }
     };
 
@@ -142,11 +157,13 @@ impl Handler<Initialize> for NetworkService {
         .into_actor(self)
         .then(move |addr_map, network, _ctx| match addr_map {
           Ok(addr_map) => {
-            network.started = true;
             network.schematics = addr_map;
             ok(())
           }
-          Err(e) => err(NetworkError::InitializationError(e).into()),
+          Err(e) => {
+            network.started = false;
+            err(NetworkError::InitializationError(e.to_string()).into())
+          }
         }),
     )
   }
@@ -298,7 +315,7 @@ mod test {
     println!("Result: {:?}", result);
     let output: MessageTransport = result.remove("output").unwrap();
     println!("Output: {:?}", output);
-    assert_eq!(
+    equals!(
       output,
       MessageTransport::MessagePack(mp_serialize("simple string")?)
     );
@@ -319,7 +336,29 @@ mod test {
     println!("Result: {:?}", result);
     let output: MessageTransport = result.remove("output").unwrap();
     println!("Output: {:?}", output);
-    assert_eq!(
+    equals!(
+      output,
+      MessageTransport::MessagePack(mp_serialize(42 + 302309 + 302309)?)
+    );
+    Ok(())
+  }
+
+  #[test_env_log::test(actix_rt::test)]
+  async fn nested_schematics() -> Result<()> {
+    let (network, _) = init_network_from_yaml("./manifests/nested-schematics.yaml").await?;
+
+    let user_data = "user inputted data";
+
+    let data = hashmap! {
+        "parent_input" => user_data,
+    };
+
+    let mut result = network.request("parent", &data).await?;
+
+    println!("Result: {:?}", result);
+    let output: MessageTransport = result.remove("parent_output").unwrap();
+    println!("Output: {:?}", output);
+    equals!(
       output,
       MessageTransport::MessagePack(mp_serialize(42 + 302309 + 302309)?)
     );
@@ -338,7 +377,7 @@ mod test {
 
     let output: MessageTransport = result.remove("output").unwrap();
     trace!("output: {:?}", output);
-    assert_eq!(
+    equals!(
       output,
       MessageTransport::MessagePack(mp_serialize("1234567890")?)
     );
@@ -349,7 +388,7 @@ mod test {
     let mut result = network.request("wapc_component", &data).await?;
 
     let output: MessageTransport = result.remove("output").unwrap();
-    assert_eq!(
+    equals!(
       output,
       MessageTransport::Exception("Needs to be longer than 8 characters".to_owned())
     );
@@ -371,7 +410,7 @@ mod test {
     println!("result: {:?}", result);
     let output1: MessageTransport = result.remove("output1").unwrap();
     println!("Output: {:?}", output1);
-    assert_eq!(
+    equals!(
       output1,
       MessageTransport::Exception("Needs to be longer than 8 characters".to_owned())
     );
@@ -391,7 +430,7 @@ mod test {
 
     trace!("result: {:?}", result);
     let output: MessageTransport = result.remove("output").unwrap();
-    assert_eq!(
+    equals!(
       output,
       MessageTransport::MessagePack(mp_serialize(42 + 302309)?)
     );
@@ -405,7 +444,7 @@ mod test {
     println!("Result: {:?}", result);
     let output: MessageTransport = result.remove("output").unwrap();
     println!("Output: {:?}", output);
-    assert_eq!(
+    equals!(
       output,
       MessageTransport::MessagePack(mp_serialize("some string")?)
     );

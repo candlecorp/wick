@@ -5,6 +5,7 @@ use std::sync::{
 };
 
 use async_trait::async_trait;
+use vino_entity::Entity;
 use vino_rpc::{
   BoxedPacketStream,
   ExecutionStatistics,
@@ -35,11 +36,12 @@ impl RpcHandler for Provider {
   async fn request(
     &self,
     _inv_id: String,
-    component: String,
+    entity: Entity,
     payload: HashMap<String, Vec<u8>>,
   ) -> RpcResult<BoxedPacketStream> {
     let context = self.context.clone();
-    let instance = components::get_component(&component);
+    let component = entity.into_component()?;
+    let instance = components::get_component(&component.name);
     match instance {
       Some(instance) => {
         let future = instance.job_wrapper(context, payload);
@@ -114,12 +116,10 @@ mod tests {
       "input".to_string() => serialize(input)?,
     };
 
+    let entity = Entity::component("test-component", "unknown");
+
     let mut outputs = provider
-      .request(
-        invocation_id.to_string(),
-        "test-component".to_string(),
-        job_payload,
-      )
+      .request(invocation_id.to_string(), entity, job_payload)
       .await
       .expect("request failed");
     let output = outputs.next().await.unwrap();

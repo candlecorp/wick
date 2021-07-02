@@ -11,7 +11,7 @@ network:
       connections:
         - from:
             instance: <input>
-            port: input
+            port: schem_input
           to:
             instance: logger
             port: input
@@ -20,4 +20,4 @@ network:
             port: output
           to:
             instance: <output>
-            port: output
+            port: schem_output

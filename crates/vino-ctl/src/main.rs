@@ -19,12 +19,12 @@ async fn main() -> Result<()> {
 
   std::process::exit(match res {
     Ok(out) => {
-      info!("{}", out);
+      debug!("{}", out);
       0
     }
     Err(e) => {
-      println!("Vino exiting with error: {}", e);
-      println!("Run with --info, --debug, or --trace for more information.");
+      eprintln!("Vino exiting with error: {}", e);
+      eprintln!("Run with --info, --debug, or --trace for more information.");
       1
     }
   });

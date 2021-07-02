@@ -144,9 +144,9 @@ mod test {
     deserialize,
     serialize,
   };
+  use vino_entity::entity::Entity;
   use vino_rpc::make_rpc_client;
   use vino_rpc::rpc::Invocation;
-  use vino_runtime::VinoEntity;
   use vino_transport::MessageTransport;
 
   use crate::host_definition::HostDefinition;
@@ -214,8 +214,8 @@ mod test {
     };
     let mut response = client
       .invoke(Invocation {
-        origin: Some(VinoEntity::Test("test".to_string()).into()),
-        target: Some(VinoEntity::Schematic("logger".to_string()).into()),
+        origin: Entity::test("test").url(),
+        target: Entity::schematic("logger").url(),
         msg: data,
         id: "some inv".to_string(),
         tx_id: "some tx".to_string(),

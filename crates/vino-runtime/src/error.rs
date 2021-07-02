@@ -4,16 +4,18 @@ use std::sync::PoisonError;
 use itertools::join;
 use thiserror::Error;
 use tokio::sync::mpsc::error::SendError;
+use vino_rpc::PortSignature;
 
 use crate::dev::prelude::*;
 use crate::schematic::PayloadReceived;
+use crate::schematic_model::Connection;
 
 type BoxedErrorSyncSend = Box<dyn std::error::Error + Sync + Send>;
 
 #[derive(Error, Debug, PartialEq)]
 pub enum ValidationError {
   #[error("Schematic '{0}' has errors: {}", join(.1, ", "))]
-  Error(String, Vec<ValidationError>),
+  PostInitError(String, Vec<ValidationError>),
   #[error("Schematic '{0}' has errors: {}", join(.1, ", "))]
   EarlyError(String, Vec<ValidationError>),
   #[error("Schematic has no outputs")]
@@ -26,6 +28,12 @@ pub enum ValidationError {
   DanglingReference(Vec<String>),
   #[error("Component definition(s) '{}' not fully qualified", join(.0, ", "))]
   NotFullyQualified(Vec<String>),
+  #[error("Invalid output port '{}' on {}. Valid output ports are [{}]", .0.name, .1, join(.2, ", "))]
+  InvalidOutputPort(PortReference, Connection, Vec<PortSignature>),
+  #[error("Invalid input port '{}' on {}. Valid input ports are [{}]", .0.name, .1, join(.2, ", "))]
+  InvalidInputPort(PortReference, Connection, Vec<PortSignature>),
+  #[error("Invalid connections: \n  {}", join(.0, "\n  "))]
+  InvalidConnections(Vec<ValidationError>),
 }
 
 #[derive(Error, Debug, PartialEq)]
@@ -42,7 +50,7 @@ pub enum SchematicError {
   SchematicClosedEarly(String),
 }
 
-#[derive(Error, Debug, PartialEq)]
+#[derive(Error, Debug)]
 pub enum NetworkError {
   #[error("Network not started")]
   NotStarted,
@@ -50,6 +58,8 @@ pub enum NetworkError {
   SchematicNotFound(String),
   #[error("Error initializing: {0}")]
   InitializationError(String),
+  #[error(transparent)]
+  ComponentError(#[from] ComponentError),
 }
 
 #[derive(Error, Debug)]
@@ -63,11 +73,27 @@ pub enum ComponentError {
   #[error("File not found {}", .0.to_string_lossy())]
   FileNotFound(PathBuf),
   #[error(transparent)]
+  ConversionError(#[from] ConversionError),
+  #[error(transparent)]
   IOError(#[from] std::io::Error),
   #[error("Component not found, looked in {0}")]
   NotFound(String),
   #[error(transparent)]
   OciError(#[from] OciError),
+  #[error(transparent)]
+  ActixMailboxError(#[from] MailboxError),
+  #[error(transparent)]
+  RpcError(#[from] vino_rpc::Error),
+  #[error(transparent)]
+  OtherUpstream(#[from] BoxedErrorSyncSend),
+  #[error(transparent)]
+  RpcUpstreamError(#[from] tonic::Status),
+  #[error(transparent)]
+  OutputError(#[from] vino_component::Error),
+  #[error(transparent)]
+  CodecError(#[from] vino_codec::Error),
+  #[error("Grpc Provider error: {0}")]
+  GrpcUrlProviderError(String),
 }
 
 #[derive(Error, Debug)]
@@ -82,10 +108,21 @@ pub enum OciError {
   IOError(#[from] std::io::Error),
 }
 
+#[derive(Error, Debug, Clone, Copy)]
+pub struct ConversionError(pub &'static str);
+
+impl std::fmt::Display for ConversionError {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    f.write_str(self.0)
+  }
+}
+
 #[derive(Error, Debug)]
 pub enum VinoError {
   #[error("Conversion error {0}")]
   ConversionError(&'static str),
+  #[error("URL parse error {0}")]
+  ParseError(String),
   #[error(transparent)]
   ComponentError(#[from] ComponentError),
   #[error(transparent)]
@@ -116,8 +153,6 @@ pub enum VinoError {
   SerializationError(rmp_serde::encode::Error),
   #[error("Failed to deserialize payload {0}")]
   DeserializationError(rmp_serde::decode::Error),
-  #[error("Grpc Provider error: {0}")]
-  GrpcUrlProviderError(String),
   #[error(transparent)]
   OciError(#[from] OciError),
   #[error(transparent)]
@@ -130,6 +165,8 @@ pub enum VinoError {
   TonicError(#[from] tonic::transport::Error),
   #[error(transparent)]
   RpcUpstreamError(#[from] tonic::Status),
+  #[error(transparent)]
+  EntityError(#[from] vino_entity::Error),
   #[error(transparent)]
   RpcError(#[from] vino_rpc::Error),
   #[error(transparent)]

@@ -4,11 +4,6 @@ use nkeys::KeyPair;
 use serde::Serialize;
 
 use crate::dev::prelude::*;
-pub use crate::dispatch::{
-  ComponentEntity,
-  PortReference,
-  VinoEntity,
-};
 pub use crate::network_provider::Provider as NetworkProvider;
 use crate::network_service::Initialize;
 

@@ -45,14 +45,14 @@ impl RpcHandler for Provider {
   async fn request(
     &self,
     _inv_id: String,
-    component: String,
+    entity: Entity,
     payload: HashMap<String, Vec<u8>>,
   ) -> RpcResult<BoxedPacketStream> {
     let addr = NetworkService::for_id(&self.network_id);
     let result: InvocationResponse = addr
       .send(Invocation {
-        origin: VinoEntity::Schematic("<system>".to_owned()),
-        target: VinoEntity::Schematic(component),
+        origin: Entity::Schematic("<system>".to_owned()),
+        target: entity,
         msg: MessageTransport::MultiBytes(payload),
         id: get_uuid(),
         tx_id: get_uuid(),
@@ -77,7 +77,7 @@ impl RpcHandler for Provider {
     let addr = NetworkService::for_id(&self.network_id);
     let schematics = addr.send(ListSchematics {}).await??;
     let hosted_types = schematics.into_iter().map(HostedType::Schematic).collect();
-
+    highlight!("{:?}", hosted_types);
     Ok(hosted_types)
   }
 
@@ -119,14 +119,18 @@ mod tests {
     let invocation_id = "INVOCATION_ID";
 
     let mut outputs = provider
-      .request(invocation_id.to_owned(), "simple".to_owned(), job_payload)
+      .request(
+        invocation_id.to_owned(),
+        Entity::schematic("simple"),
+        job_payload,
+      )
       .await?;
     let output = outputs.next().await.unwrap();
     println!("payload from [{}]: {:?}", output.port, output.packet);
     let output_data: String = output.packet.try_into()?;
 
     println!("doc_id: {:?}", output_data);
-    assert_eq!(output_data, data);
+    equals!(output_data, data);
     Ok(output_data)
   }
 
@@ -148,7 +152,7 @@ mod tests {
     let provider = Provider::new(network_id);
     let list = provider.list_registered().await?;
     println!("components on network : {:?}", list);
-    assert_eq!(list.len(), 1);
+    equals!(list.len(), 1);
 
     Ok(())
   }

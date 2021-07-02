@@ -19,6 +19,7 @@ vino-native-provider = { path="../vino-native-provider" }
 vino-transport = { path="../vino-transport" }
 vino-codec = { path="../vino-codec" }
 vino-rpc = { path="../vino-rpc" }
+vino-entity = { path="../vino-entity" }
 
 wasm3-provider = { version="0.0.2", optional=true }
 serde = { version="1.0.118", features=["derive"] }
@@ -55,3 +56,4 @@ test-vino-provider = { path="../test-vino-provider" }
 tracing-subscriber = "0.2.18"
 tracing-unwrap = "0.9.2"
 tracing-futures = "0.2.5"
+pretty_assertions = "0.7.2"

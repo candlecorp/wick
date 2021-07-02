@@ -1,9 +1,0 @@
-import { Inputs as AddItemInputs, Outputs as AddItemOutputs }  from "add-item"
-import { Inputs as GetItemInputs, Outputs as GetItemOutputs }  from "get-item"
-import { Inputs as ListItemsInputs, Outputs as ListItemsOutputs }  from "list-items"
-
-interface {
-  add_item(inputs: AddItemInputs, outputs: AddItemOutputs) @rename("add-item")
-  get_item(inputs: GetItemInputs, outputs: GetItemOutputs) @rename("get-item")
-  list_items(inputs: ListItemsInputs, outputs: ListItemsOutputs) @rename("list-items")
-}

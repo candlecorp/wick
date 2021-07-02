@@ -123,7 +123,7 @@ impl Transaction {
   fn new(tx_id: String, model: Arc<Mutex<SchematicModel>>) -> Self {
     let locked = model.lock().unwrap();
     let port_statuses = locked
-      .connections
+      .get_connections()
       .iter()
       .flat_map(|conn| {
         [
@@ -180,7 +180,7 @@ impl Transaction {
   fn get_connected_ports(&self, reference: &str) -> Vec<PortReference> {
     let locked = self.model.lock().unwrap();
     locked
-      .connections
+      .get_connections()
       .iter()
       .filter(|conn| conn.to.reference == reference)
       .map(|conn| conn.to.clone())
@@ -271,10 +271,7 @@ mod tests {
     });
     schematic_def.components.insert(
       "REF_ID_LOGGER".to_owned(),
-      ComponentDefinition {
-        metadata: None,
-        id: "test-namespace::log".to_owned(),
-      },
+      ComponentDefinition::new("test-namespace", "log"),
     );
     schematic_def.connections.push(ConnectionDefinition {
       from: ConnectionTargetDefinition {
@@ -322,7 +319,7 @@ mod tests {
     assert!(transaction.is_port_ready(&to));
     trace!("taking from port");
     let output = transaction.take_from_port(&to);
-    assert_eq!(
+    equals!(
       output,
       Some(Packet::V0(Payload::MessagePack(vec![])).into())
     );
@@ -405,7 +402,7 @@ mod tests {
     });
     let msgs = handle.await.unwrap();
 
-    assert_eq!(msgs.len(), 4);
+    equals!(msgs.len(), 4);
 
     Ok(())
   }

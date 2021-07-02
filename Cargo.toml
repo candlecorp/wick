@@ -19,6 +19,7 @@ maplit = "1.0.2"
 test-env-log = { version="0.2.7", features=["trace"] }
 tokio = { version="1.4.0", features=["macros", "net", "rt-multi-thread"] }
 futures = "0.3.15"
+vino-entity = { path="./crates/vino-entity" }
 vino-codec = { path="./crates/vino-codec" }
 vino-component = { path="./crates/vino-component" }
 vino-provider = { path="./crates/vino-provider" }
@@ -45,8 +46,8 @@ members = [
   "crates/vino-provider",
   "crates/vino-native-provider",
   "crates/vino-provider-cli",
+  "crates/vino-entity",
   "crates/test-vino-provider",
   "crates/test-wapc-component",
   "crates/wascap",
-  "crates/vino-wellknown-document-collection",
 ]

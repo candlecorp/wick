@@ -1,4 +1,5 @@
 use thiserror::Error;
+use vino_codec::error::CodecError;
 
 // type BoxedSyncSendError = Box<dyn std::error::Error + Sync + std::marker::Send>;
 
@@ -18,6 +19,10 @@ pub enum ControlError {
   ConfigurationDeserialization(String),
   #[error(transparent)]
   RpcError(#[from] vino_rpc::Error),
+  #[error(transparent)]
+  CodecError(#[from] CodecError),
+  #[error(transparent)]
+  GrpcError(#[from] tonic::Status),
   #[error(transparent)]
   VinoHostError(#[from] vino_host::Error),
   #[error(transparent)]

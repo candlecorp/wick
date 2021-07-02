@@ -82,8 +82,8 @@ impl Sender for OutputSender {
 pub(crate) fn get_outputs() -> (Outputs, PortStream) {
   let outputs = Outputs::default();
   let ports = vec![outputs.output.port.clone()];
-  let receiver = PortStream::new(ports);
-  (outputs, receiver)
+  let stream = PortStream::new(ports);
+  (outputs, stream)
 }
 
 pub(crate) struct Component {}
@@ -113,10 +113,10 @@ impl VinoProviderComponent for Component {
   ) -> std::result::Result<PortStream, Box<dyn std::error::Error + Send + Sync>> {
     trace!("Job passed data: {:?}", data);
     let inputs = deserialize_inputs(&data).map_err(ProviderError::InputDeserializationError)?;
-    let (outputs, receiver) = get_outputs();
+    let (outputs, stream) = get_outputs();
     let result = super::super::add::job(inputs, outputs, context).await;
     match result {
-      Ok(_) => Ok(receiver),
+      Ok(_) => Ok(stream),
       Err(e) => Err(ProviderError::JobError(format!("Job failed: {}", e.to_string())).into()),
     }
   }

@@ -106,6 +106,7 @@ mod schematic;
 mod schematic_model;
 mod transaction;
 mod util;
+mod validator;
 pub use public::*;
 
 pub mod prelude {
@@ -147,6 +148,8 @@ pub const SCHEMATIC_INPUT: &str = "<input>";
 pub const SCHEMATIC_OUTPUT: &str = "<output>";
 /// The reserved port name to use when sending an asynchronous error from a component.
 pub const COMPONENT_ERROR: &str = "<error>";
+/// The reserved namespace for references to internal schematics.
+pub const SELF_NAMESPACE: &str = "self";
 
 #[macro_use]
 extern crate derivative;

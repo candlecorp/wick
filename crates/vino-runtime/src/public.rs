@@ -2,11 +2,6 @@ use std::path::Path;
 
 use crate::components::vino_component::WapcComponent;
 use crate::dev::prelude::*;
-pub use crate::dispatch::{
-  ComponentEntity,
-  PortReference,
-  VinoEntity,
-};
 pub use crate::network_provider::Provider as NetworkProvider;
 
 pub fn load_wasm_from_file(path: &Path) -> Result<WapcComponent> {

@@ -22,31 +22,11 @@ pub mod output_kind {
   }
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct Entity {
-  #[prost(string, tag = "1")]
-  pub name: ::prost::alloc::string::String,
-  #[prost(enumeration = "entity::EntityKind", tag = "2")]
-  pub kind: i32,
-}
-/// Nested message and enum types in `Entity`.
-pub mod entity {
-  #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
-  #[repr(i32)]
-  pub enum EntityKind {
-    Invalid = 0,
-    Test = 1,
-    Schematic = 2,
-    Component = 3,
-    Provider = 4,
-    Port = 5,
-  }
-}
-#[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Invocation {
-  #[prost(message, optional, tag = "1")]
-  pub origin: ::core::option::Option<Entity>,
-  #[prost(message, optional, tag = "2")]
-  pub target: ::core::option::Option<Entity>,
+  #[prost(string, tag = "1")]
+  pub origin: ::prost::alloc::string::String,
+  #[prost(string, tag = "2")]
+  pub target: ::prost::alloc::string::String,
   #[prost(map = "string, bytes", tag = "3")]
   pub msg:
     ::std::collections::HashMap<::prost::alloc::string::String, ::prost::alloc::vec::Vec<u8>>,

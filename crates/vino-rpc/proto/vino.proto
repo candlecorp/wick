@@ -26,22 +26,9 @@ enum OutputSignal {
   CloseBracket = 2;
 }
 
-message Entity {
-  enum EntityKind {
-    Invalid = 0;
-    Test = 1;
-    Schematic = 2;
-    Component = 3;
-    Provider = 4;
-    Port = 5;
-  }
-  string name = 1;
-  EntityKind kind = 2;
-}
-
 message Invocation {
-  Entity origin = 1;
-  Entity target = 2;
+  string origin = 1;
+  string target = 2;
   map<string, bytes> msg = 3;
   string id = 4;
   string tx_id = 5;

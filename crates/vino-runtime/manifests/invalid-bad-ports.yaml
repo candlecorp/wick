@@ -1,0 +1,18 @@
+schematics:
+  - name: logger
+    components:
+      logger:
+        id: vino::log
+    connections:
+      - from:
+          instance: <input>
+          port: schem_input
+        to:
+          instance: logger
+          port: log_input
+      - from:
+          instance: logger
+          port: log_output
+        to:
+          instance: <output>
+          port: schem_output

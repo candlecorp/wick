@@ -15,7 +15,7 @@ async fn run_log() -> vino_cli::Result<()> {
 
   assert_eq!(
     String::from_utf8_lossy(&output.stdout),
-    "Logger: testing123\n{\"output\":\"testing123\"}\n"
+    "Logger: testing123\n{\"schem_output\":\"testing123\"}\n"
   );
 
   Ok(())

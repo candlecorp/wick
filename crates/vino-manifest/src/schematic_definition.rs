@@ -1,4 +1,8 @@
 use std::collections::HashMap;
+use std::convert::{
+  TryFrom,
+  TryInto,
+};
 use std::fmt::Display;
 
 use serde::{
@@ -23,15 +27,16 @@ pub struct SchematicDefinition {
 }
 
 impl SchematicDefinition {
-  pub fn from_manifest(manifest: &SchematicManifest) -> Self {
-    match manifest {
+  pub fn from_manifest(manifest: &SchematicManifest) -> Result<Self> {
+    let def = match manifest {
       SchematicManifest::V0(manifest) => Self {
         name: manifest.name.clone(),
         components: manifest
           .components
           .clone()
           .into_iter()
-          .map(|(key, val)| (key, val.into()))
+          .map(|(key, val)| Ok((key, val.try_into()?)))
+          .filter_map(Result::ok)
           .collect(),
         connections: manifest
           .connections
@@ -53,7 +58,8 @@ impl SchematicDefinition {
           .map(|def| def.into())
           .collect(),
       },
-    }
+    };
+    Ok(def)
   }
   pub fn get_name(&self) -> String {
     self.name.clone()
@@ -63,9 +69,11 @@ impl SchematicDefinition {
   }
 }
 
-impl From<crate::v0::SchematicManifest> for SchematicDefinition {
-  fn from(def: crate::v0::SchematicManifest) -> Self {
-    Self::from_manifest(&crate::SchematicManifest::V0(def))
+impl TryFrom<crate::v0::SchematicManifest> for SchematicDefinition {
+  type Error = Error;
+
+  fn try_from(manifest: crate::v0::SchematicManifest) -> Result<Self> {
+    Self::from_manifest(&crate::SchematicManifest::V0(manifest))
   }
 }
 
@@ -92,6 +100,19 @@ pub struct ComponentDefinition {
   pub metadata: Option<String>,
   /// The ID used to reference the component. Can be a public key or fully qualified namespace reference
   pub id: String,
+  pub name: String,
+  pub namespace: String,
+}
+
+impl ComponentDefinition {
+  pub fn new(namespace: &str, name: &str) -> Self {
+    Self {
+      name: name.to_owned(),
+      namespace: name.to_owned(),
+      id: format!("{}::{}", namespace, name),
+      metadata: None,
+    }
+  }
 }
 
 pub fn parse_namespace(id: &str) -> Result<(String, String)> {
@@ -110,21 +131,29 @@ impl ComponentDefinition {
   }
 }
 
-impl From<crate::v0::ComponentDefinition> for ComponentDefinition {
-  fn from(def: crate::v0::ComponentDefinition) -> Self {
-    ComponentDefinition {
+impl TryFrom<crate::v0::ComponentDefinition> for ComponentDefinition {
+  type Error = Error;
+  fn try_from(def: crate::v0::ComponentDefinition) -> Result<Self> {
+    let (ns, name) = parse_namespace(&def.id)?;
+    Ok(ComponentDefinition {
       id: def.id,
+      namespace: ns,
+      name,
       metadata: None,
-    }
+    })
   }
 }
 
-impl From<&crate::v0::ComponentDefinition> for ComponentDefinition {
-  fn from(def: &crate::v0::ComponentDefinition) -> Self {
-    ComponentDefinition {
+impl TryFrom<&crate::v0::ComponentDefinition> for ComponentDefinition {
+  type Error = Error;
+  fn try_from(def: &crate::v0::ComponentDefinition) -> Result<Self> {
+    let (ns, name) = parse_namespace(&def.id)?;
+    Ok(ComponentDefinition {
       id: def.id.to_string(),
+      namespace: ns,
+      name,
       metadata: None,
-    }
+    })
   }
 }
 
@@ -160,6 +189,8 @@ pub enum ProviderKind {
   GrpcUrl = 1,
 
   Wapc = 2,
+
+  Schematic = 3,
 }
 
 impl From<crate::v0::ProviderKind> for ProviderKind {
@@ -168,6 +199,7 @@ impl From<crate::v0::ProviderKind> for ProviderKind {
       crate::v0::ProviderKind::Native => ProviderKind::Native,
       crate::v0::ProviderKind::GrpcUrl => ProviderKind::GrpcUrl,
       crate::v0::ProviderKind::WaPC => ProviderKind::Wapc,
+      crate::v0::ProviderKind::Schematic => ProviderKind::Schematic,
     }
   }
 }

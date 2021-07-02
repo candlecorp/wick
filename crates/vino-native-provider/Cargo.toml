@@ -9,6 +9,7 @@ vino-provider = { path="../vino-provider" }
 vino-rpc = { path="../vino-rpc" }
 vino-codec = { path="../vino-codec" }
 vino-component = { path="../vino-component" }
+vino-entity = { path="../vino-entity" }
 tracing = "0.1.26"
 log = "0.4.14"
 serde = { version="1.0.118", features=["derive"] }

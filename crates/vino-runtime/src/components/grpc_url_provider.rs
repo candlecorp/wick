@@ -26,9 +26,12 @@ use crate::dispatch::{
   Invocation,
   InvocationResponse,
 };
-use crate::error::VinoError;
+use crate::error::{
+  ComponentError,
+  VinoError,
+};
 use crate::schematic::ComponentOutput;
-use crate::Result;
+type Result<T> = std::result::Result<T, ComponentError>;
 
 #[derive(Default, Debug)]
 pub(crate) struct GrpcUrlProvider {
@@ -85,9 +88,9 @@ impl Handler<Initialize> for GrpcUrlProvider {
               client: client.clone(),
             })
             .await??;
-          Ok!((client, metadata))
+          Ok((client, metadata))
         }
-        Err(e) => Err(VinoError::GrpcUrlProviderError(format!(
+        Err(e) => Err(ComponentError::GrpcUrlProviderError(format!(
           "Could not connect client: {}",
           e
         ))),
@@ -147,7 +150,7 @@ impl Handler<InitializeComponents> for GrpcUrlProvider {
         metadata.insert(
           item.name.clone(),
           ComponentModel {
-            id: format!("{}::{}", namespace, item.name),
+            namespace: namespace.clone(),
             name: item.name.clone(),
             inputs: item.inputs.into_iter().map(From::from).collect(),
             outputs: item.outputs.into_iter().map(From::from).collect(),
@@ -173,7 +176,6 @@ impl Handler<ProviderRequest> for GrpcUrlProvider {
     let mut client = state.client.clone();
 
     let task = async move {
-      returns!(ProviderResponse);
       match msg {
         ProviderRequest::Invoke(_invocation) => todo!(),
         ProviderRequest::List(_req) => {
@@ -335,6 +337,7 @@ mod test {
 
   use super::*;
   use crate::test::prelude::*;
+  type Result<T> = super::Result<T>;
 
   #[test_env_log::test(actix_rt::test)]
   #[instrument]
@@ -358,9 +361,8 @@ mod test {
 
       let response = grpc_provider
         .send(Invocation {
-          origin: VinoEntity::Test("grpc".to_owned()),
-          target: VinoEntity::Component(ComponentEntity {
-            id: "test::REFERENCE".to_owned(),
+          origin: Entity::Test("grpc".to_owned()),
+          target: Entity::Component(ComponentEntity {
             reference: "REFERENCE".to_owned(),
             name: "test-component".to_owned(),
           }),
@@ -384,7 +386,7 @@ mod test {
                 let (_, mut rx) = response.to_stream()?;
                 let next: ComponentOutput = rx.next().await.unwrap();
                 let payload: String = next.payload.try_into()?;
-                assert_eq!(user_data, payload);              },
+                equals!(user_data, payload);              },
               Err(e)=>{
                 panic!("task failed: {}", e);
               }

@@ -1,20 +1,12 @@
 schematics:
   - name: parent
     components:
-      log1:
-        id: vino::log
       child_ref:
         id: self::child
     connections:
       - from:
           instance: <input>
           port: parent_input
-        to:
-          instance: log1
-          port: input
-      - from:
-          instance: log1
-          port: output
         to:
           instance: child_ref
           port: child_input

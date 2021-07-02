@@ -81,7 +81,7 @@ mod tests {
     };
 
     let result = crate::run(host_def, input).await?;
-    assert_eq!(result.get("output").unwrap(), "test-input");
+    assert_eq!(result.get("schem_output").unwrap(), "test-input");
     Ok(())
   }
 }

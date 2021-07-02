@@ -15,26 +15,24 @@ use tokio::sync::mpsc::{
   UnboundedReceiver,
   UnboundedSender,
 };
-use vino_manifest::schematic_definition::ProviderKind;
 use vino_rpc::SchematicSignature;
 use wascap::prelude::KeyPair;
 
 use crate::dev::prelude::*;
 use crate::error::SchematicError;
 use crate::provider_model::{
+  initialize_native_provider,
   initialize_provider,
   ProviderChannel,
 };
-use crate::schematic_model::{
-  Connection,
-  Validator,
-};
+use crate::schematic_model::Connection;
 use crate::transaction::TransactionMap;
+use crate::validator::Validator;
 
 #[derive(Debug)]
 pub(crate) struct Schematic {
   recipients: HashMap<String, ProviderChannel>,
-  invocation_map: HashMap<String, (String, String, VinoEntity)>,
+  invocation_map: HashMap<String, (String, String, Entity)>,
   state: Option<State>,
   tx_external: HashMap<String, UnboundedSender<ComponentOutput>>,
   tx_internal: HashMap<String, UnboundedSender<PayloadReceived>>,
@@ -138,20 +136,27 @@ impl Schematic {
     let lock = state.model.lock().unwrap();
     lock.get_outputs(reference)
   }
-  fn get_connections(&self, port: &PortReference) -> Vec<Connection> {
+  fn get_port_connections(&self, port: &PortReference) -> Vec<Connection> {
     let state = self.get_state();
     let lock = state.model.lock().unwrap();
-    lock.get_connections(port).clone()
+    lock.get_port_connections(port)
   }
 }
 
-#[derive(Message, Debug, Clone)]
+#[derive(Message, Debug)]
 #[rtype(result = "Result<()>")]
 pub(crate) struct Initialize {
   pub(crate) schematic: SchematicDefinition,
+  pub(crate) network_provider: Option<ProviderInitResponse>,
   pub(crate) seed: String,
   pub(crate) allow_latest: bool,
   pub(crate) allowed_insecure: Vec<String>,
+}
+
+#[derive(Debug, Clone)]
+pub(crate) struct ProviderInitResponse {
+  pub(crate) model: ProviderModel,
+  pub(crate) channel: ProviderChannel,
 }
 
 impl Handler<Initialize> for Schematic {
@@ -167,12 +172,17 @@ impl Handler<Initialize> for Schematic {
     actix_try!(Validator::validate_early_errors(&model));
     let model = Arc::new(Mutex::new(model));
     let allowed_insecure = msg.allowed_insecure;
+    let network_provider = msg.network_provider;
 
     let task = initialize_providers(providers, seed.clone(), allow_latest, allowed_insecure)
       .into_actor(self)
       .map(|result, this, _ctx| {
         match result {
-          Ok((channels, providers)) => {
+          Ok((mut channels, mut providers)) => {
+            if let Some(network_provider) = network_provider {
+              channels.push(network_provider.channel);
+              providers.push(network_provider.model);
+            }
             this.recipients = channels
               .into_iter()
               .map(|c| (c.namespace.clone(), c))
@@ -206,20 +216,10 @@ async fn initialize_providers(
   allow_latest: bool,
   allowed_insecure: Vec<String>,
 ) -> Result<(Vec<ProviderChannel>, Vec<ProviderModel>)> {
-  let (channel, provider_model) = initialize_provider(
-    ProviderDefinition {
-      namespace: "vino".to_owned(),
-      kind: ProviderKind::Native,
-      reference: "".to_owned(),
-      data: HashMap::new(),
-    },
-    &seed,
-    false,
-    &[],
-  )
-  .await?;
+  let (channel, provider_model) = initialize_native_provider("vino").await?;
   let mut channels = vec![channel];
   let mut models = vec![provider_model];
+
   for provider in providers {
     let (channel, provider_model) =
       initialize_provider(provider, &seed, allow_latest, &allowed_insecure).await?;
@@ -315,6 +315,8 @@ impl Handler<Request> for Schematic {
     let state = self.state.as_mut().unwrap();
     let model = state.model.clone();
 
+    highlight!("payload: {:?}", &msg.payload);
+
     let invocations = actix_try!(generate_packets(&model, &state.seed, &tx_id, &msg.payload));
 
     let host = ctx.address();
@@ -344,6 +346,7 @@ impl Handler<TransactionUpdate> for Schematic {
   type Result = ActorResult<Self, Result<()>>;
 
   fn handle(&mut self, msg: TransactionUpdate, ctx: &mut Context<Self>) -> Self::Result {
+    trace!("Transaction update: {:?}", msg);
     let addr = ctx.address();
     match msg {
       TransactionUpdate::ReferenceReady(msg) => {
@@ -421,9 +424,8 @@ impl Handler<ReferenceReady> for Schematic {
     let invocation = Invocation::next(
       &tx_id,
       &kp,
-      VinoEntity::Schematic("<state>".to_owned()),
-      VinoEntity::Component(ComponentEntity {
-        id: def.id,
+      Entity::Schematic("<state>".to_owned()),
+      Entity::Component(ComponentEntity {
         name: def.name,
         reference: msg.reference.clone(),
       }),
@@ -578,6 +580,10 @@ fn generate_packets(
   let model = model.lock()?;
   let first_connections = model.get_downstream_connections(SCHEMATIC_INPUT);
   drop(model);
+  trace!(
+    "Generating schematic invocations for connections: {}",
+    ConnectionDefinition::print_all(&first_connections)
+  );
 
   let _kp = KeyPair::from_seed(seed)?;
 
@@ -586,7 +592,7 @@ fn generate_packets(
     .map(|conn| {
       let bytes = bytemap
         .get(&conn.from.port)
-        .unwrap_or_else(|| panic!("Output on port '{}' not found", conn.to.instance));
+        .unwrap_or_else(|| panic!("Port {} not found", conn.from));
 
       PayloadReceived {
         origin: conn.from.into(),
@@ -644,7 +650,7 @@ impl Handler<ShortCircuit> for Schematic {
     trace!("Output ports for {} : {:?}", reference, outputs);
     let downstreams: Vec<Connection> = outputs
       .iter()
-      .flat_map(|port| self.get_connections(port))
+      .flat_map(|port| self.get_port_connections(port))
       .collect();
     trace!(
       "Connections to short {:?}",
@@ -689,7 +695,7 @@ impl Handler<OutputPortReady> for Schematic {
 
   fn handle(&mut self, msg: OutputPortReady, ctx: &mut Context<Self>) -> Self::Result {
     trace!("Output ready on {}", msg.port);
-    let defs = self.get_connections(&msg.port);
+    let defs = self.get_port_connections(&msg.port);
     let reference = msg.port.reference;
     let port = msg.port.name;
     let tx_id = msg.tx_id;
@@ -738,13 +744,9 @@ mod test {
     let schematic_name = "logger";
 
     let mut schematic_def = new_schematic(schematic_name);
-    schematic_def.components.insert(
-      "logger".to_owned(),
-      ComponentDefinition {
-        metadata: None,
-        id: "vino::log".to_owned(),
-      },
-    );
+    schematic_def
+      .components
+      .insert("logger".to_owned(), ComponentDefinition::new("vino", "log"));
     schematic_def.connections.push(ConnectionDefinition {
       from: ConnectionTargetDefinition {
         instance: SCHEMATIC_INPUT.to_owned(),
@@ -769,6 +771,7 @@ mod test {
     addr
       .send(Initialize {
         schematic: schematic_def,
+        network_provider: None,
         seed: kp.seed()?,
         allow_latest: true,
         allowed_insecure: vec![],
@@ -797,10 +800,10 @@ mod test {
           debug!("Packet {}: {:?}", i, packet);
           let payload: String = packet.try_into()?;
           debug!("Payload {}", payload);
-          assert_eq!(payload, user_data);
+          equals!(payload, user_data);
         }
         debug!("Number of packets received: {}", i);
-        assert_eq!(i, 1);
+        equals!(i, 1);
       }
       InvocationResponse::Error { msg, .. } => panic!("{}", msg),
     };
@@ -815,19 +818,9 @@ mod test {
     let schematic_name = "logger";
 
     let mut schematic_def = new_schematic(schematic_name);
-    schematic_def.providers.push(ProviderDefinition {
-      namespace: "test-namespace".to_owned(),
-      kind: ProviderKind::Native,
-      reference: "internal".to_owned(),
-      data: HashMap::new(),
-    });
-    schematic_def.components.insert(
-      "logger".to_owned(),
-      ComponentDefinition {
-        metadata: None,
-        id: "test-namespace::log".to_owned(),
-      },
-    );
+    schematic_def
+      .components
+      .insert("logger".to_owned(), ComponentDefinition::new("vino", "log"));
     schematic_def.connections.push(ConnectionDefinition {
       from: ConnectionTargetDefinition {
         instance: SCHEMATIC_INPUT.to_owned(),
@@ -855,6 +848,7 @@ mod test {
     addr
       .send(Initialize {
         schematic: schematic_def,
+        network_provider: None,
         seed: hostkey.seed()?,
         allow_latest: true,
         allowed_insecure: vec![],
@@ -884,10 +878,10 @@ mod test {
           debug!("Packet {}: {:?}", i, packet);
           let payload: String = packet.try_into()?;
           debug!("Payload {}", payload);
-          assert_eq!(payload, user_data);
+          equals!(payload, user_data);
         }
         debug!("Number of packets received: {}", i);
-        assert_eq!(i, 1);
+        equals!(i, 1);
       }
       InvocationResponse::Error { msg, .. } => panic!("{}", msg),
     };
@@ -911,13 +905,9 @@ mod test {
       reference: format!("http://127.0.0.1:{}", port),
       data: HashMap::new(),
     });
-    schematic_def.components.insert(
-      "logger".to_owned(),
-      ComponentDefinition {
-        metadata: None,
-        id: "test-namespace::test-component".to_owned(),
-      },
-    );
+    schematic_def
+      .components
+      .insert("logger".to_owned(), ComponentDefinition::new("vino", "log"));
     schematic_def.connections.push(ConnectionDefinition {
       from: ConnectionTargetDefinition {
         instance: SCHEMATIC_INPUT.to_owned(),
@@ -946,6 +936,7 @@ mod test {
       .send(Initialize {
         schematic: schematic_def,
         seed: hostkey.seed()?,
+        network_provider: None,
         allow_latest: true,
         allowed_insecure: vec![],
       })
@@ -973,10 +964,10 @@ mod test {
           debug!("Packet {}: {:?}", i, packet);
           let payload: String = packet.try_into()?;
           debug!("Payload {}", payload);
-          assert_eq!(payload, user_data);
+          equals!(payload, user_data);
         }
         debug!("Number of packets received: {}", i);
-        assert_eq!(i, 1);
+        equals!(i, 1);
       }
       InvocationResponse::Error { msg, .. } => panic!("{}", msg),
     };

@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::convert::TryInto;
 
 use serde::{
   Deserialize,
@@ -21,7 +22,8 @@ impl NetworkDefinition {
           .schematics
           .clone()
           .into_iter()
-          .map(|val| val.into())
+          .map(|val| val.try_into())
+          .filter_map(Result::ok)
           .collect(),
       },
     }

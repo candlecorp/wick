@@ -7,8 +7,17 @@ default-run = "vinoc"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-wapc = { version="0.10.1" }
 vino-component = { path="../vino-component" }
+vino-runtime = { path="../vino-runtime" }
+vino-transport = { path="../vino-transport" }
+vino-host = { path="../vino-host" }
+vino-manifest = { path="../vino-manifest" }
+vino-codec = { path="../vino-codec" }
+vino-rpc = { path="../vino-rpc" }
+vino-macros = { path="../vino-macros" }
+vino-entity = { path="../vino-entity" }
+logger = { path="../logger" }
+wapc = { version="0.10.1" }
 chrono = "0.4.19"
 colored = "2.0.0"
 log = "0.4.11"
@@ -24,13 +33,7 @@ serde = "1.0.126"
 thiserror = "1.0.24"
 oci-distribution = "0.6"
 unsafe-io = "= 0.6.2"
-logger = { path="../logger" }
-vino-runtime = { path="../vino-runtime" }
-vino-transport = { path="../vino-transport" }
-vino-host = { path="../vino-host" }
-vino-manifest = { path="../vino-manifest" }
-vino-codec = { path="../vino-codec" }
-vino-rpc = { path="../vino-rpc" }
+
 tonic = { version="0.4.3", features=["tls"] }
 
 [dev-dependencies]

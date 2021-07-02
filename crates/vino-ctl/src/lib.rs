@@ -21,6 +21,9 @@ pub type Error = ControlError;
 #[macro_use]
 extern crate log;
 
+#[macro_use]
+extern crate vino_macros;
+
 pub type JsonMap = HashMap<String, serde_json::value::Value>;
 
 pub async fn run(manifest: HostDefinition, data: JsonMap) -> Result<serde_json::Value> {

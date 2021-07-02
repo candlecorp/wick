@@ -8,6 +8,8 @@ edition = "2018"
 [dependencies]
 vino-component = { path="../vino-component" }
 vino-codec = { path="../vino-codec" }
+vino-entity = { path="../vino-entity" }
+vino-transport = { path="../vino-transport" }
 tonic = { version="0.4.3", features=["tls"] }
 prost = "0.7.0"
 prost-types = "0.7.0"

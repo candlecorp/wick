@@ -1,10 +1,12 @@
 use std::collections::HashMap;
+use std::str::FromStr;
 use std::sync::{
   Arc,
   Mutex,
 };
 
 use async_trait::async_trait;
+use vino_entity::Entity;
 use vino_rpc::{
   BoxedPacketStream,
   ExecutionStatistics,
@@ -12,6 +14,8 @@ use vino_rpc::{
   RpcResult,
   Statistics,
 };
+
+use crate::error::NativeError;
 mod components;
 pub mod error;
 pub type Result<T> = std::result::Result<T, error::NativeError>;
@@ -36,17 +40,21 @@ impl RpcHandler for Provider {
   async fn request(
     &self,
     _inv_id: String,
-    component: String,
+    entity: Entity,
     payload: HashMap<String, Vec<u8>>,
   ) -> RpcResult<BoxedPacketStream> {
     let context = self.context.clone();
-    let instance = components::get_component(&component);
+    let entity_url = entity.url();
+    let component = entity
+      .into_component()
+      .map_err(|_| NativeError::InvalidEntity(entity_url))?;
+    let instance = components::get_component(&component.name);
     match instance {
       Some(instance) => {
         let future = instance.job_wrapper(context, payload);
         Ok(Box::pin(future.await?))
       }
-      None => Err(format!("Could not find component: {}", component).into()),
+      None => Err(format!("Could not find component: {}", component.name).into()),
     }
   }
 
@@ -110,8 +118,10 @@ mod tests {
       "input".to_string() => serialize(input)?,
     };
 
+    let entity = Entity::component("log", "unknown");
+
     let mut outputs = provider
-      .request(invocation_id.to_string(), "log".to_string(), job_payload)
+      .request(invocation_id.to_string(), entity, job_payload)
       .await
       .expect("request failed");
     let output = outputs.next().await.unwrap();

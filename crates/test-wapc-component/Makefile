@@ -1,4 +1,4 @@
-.PHONY: clean doc test
+.PHONY: clean doc test codegen
 
 # Enforce bash as the shell for consistency
 SHELL := bash
@@ -55,3 +55,5 @@ doc:
 
 test:
 	cargo test
+
+codegen: $(GENERATED_FILES)

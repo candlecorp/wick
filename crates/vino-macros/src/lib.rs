@@ -55,7 +55,6 @@ macro_rules! returns {
 #[macro_export]
 macro_rules! Ok {
   ($exp:expr) => {
-    #[allow(unreachable_code)]
     Ok::<_, crate::Error>($exp)
   };
 }
@@ -71,6 +70,30 @@ macro_rules! log_tap {
 }
 
 #[macro_export]
+macro_rules! testlog {
+    ($($arg:tt)+) => (
+      if cfg!(test) {
+        log::trace!($($arg)+)
+      }
+    )
+}
+
+pub use colored;
+
+#[macro_export]
+macro_rules! highlight {
+    ($($arg:tt)+) => (
+      if cfg!(test) {
+        use vino_macros::colored::Colorize;
+        let indent = ">>>>>".to_owned().yellow().blink();
+        println!("{}", indent);
+        println!("{} {}", ">>>>>".yellow().blink() ,format!($($arg)+));
+        println!("{}", indent);
+      }
+    )
+}
+
+#[macro_export]
 macro_rules! bail {
   ($expr:expr $(,)?) => {{
     match $expr {
@@ -81,6 +104,3 @@ macro_rules! bail {
     }
   }};
 }
-
-#[cfg(test)]
-mod test {}

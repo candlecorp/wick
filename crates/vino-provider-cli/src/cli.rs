@@ -91,7 +91,7 @@ mod tests {
     let response = client.list(ListRequest {}).await.unwrap();
     let list = response.into_inner();
     println!("list: {:?}", list);
-    assert_eq!(list.component.len(), 1);
+    assert_eq!(list.components.len(), 1);
     Ok(())
   }
 }

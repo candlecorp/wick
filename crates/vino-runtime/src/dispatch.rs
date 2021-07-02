@@ -25,14 +25,15 @@ use wascap::prelude::{
 };
 
 use crate::dev::prelude::*;
+use crate::error::ConversionError;
 use crate::schematic::ComponentOutput;
 
 /// An invocation for a component, port, or schematic
 #[derive(Debug, Clone, Default, Serialize, Deserialize, Message, PartialEq)]
 #[rtype(result = "InvocationResponse")]
 pub struct Invocation {
-  pub origin: VinoEntity,
-  pub target: VinoEntity,
+  pub origin: Entity,
+  pub target: Entity,
   pub msg: MessageTransport,
   pub id: String,
   pub tx_id: String,
@@ -58,39 +59,14 @@ impl TryFrom<Invocation> for vino_rpc::rpc::Invocation {
   type Error = Error;
   fn try_from(inv: Invocation) -> Result<Self> {
     Ok(vino_rpc::rpc::Invocation {
-      origin: Some(inv.origin.into()),
-      target: Some(inv.target.into()),
+      origin: inv.origin.url(),
+      target: inv.target.url(),
       msg: inv.msg.into_multibytes()?,
       id: inv.id,
       tx_id: inv.tx_id,
       encoded_claims: inv.encoded_claims,
       network_id: inv.network_id,
     })
-  }
-}
-
-impl From<VinoEntity> for vino_rpc::rpc::Entity {
-  fn from(ent: VinoEntity) -> Self {
-    use vino_rpc::rpc::entity::EntityKind;
-    use vino_rpc::rpc::Entity;
-    match ent {
-      VinoEntity::Test(v) => Entity {
-        name: v,
-        kind: EntityKind::Test.into(),
-      },
-      VinoEntity::Schematic(v) => Entity {
-        name: v,
-        kind: EntityKind::Schematic.into(),
-      },
-      VinoEntity::Component(v) => Entity {
-        name: v.name,
-        kind: EntityKind::Component.into(),
-      },
-      VinoEntity::Provider(v) => Entity {
-        name: v,
-        kind: EntityKind::Provider.into(),
-      },
-    }
   }
 }
 
@@ -183,24 +159,24 @@ impl InvocationResponse {
     }
   }
 
-  pub fn to_stream(self) -> Result<(String, ResponseStream)> {
+  pub fn to_stream(self) -> std::result::Result<(String, ResponseStream), ConversionError> {
     match self {
       InvocationResponse::Stream { tx_id, rx } => Ok((tx_id, rx)),
-      _ => Err(crate::Error::ConversionError("to_stream")),
+      _ => Err(ConversionError("InvocationResponse to stream")),
     }
   }
 
-  pub fn to_success(self) -> Result<(String, MessageTransport)> {
+  pub fn to_success(self) -> std::result::Result<(String, MessageTransport), ConversionError> {
     match self {
       InvocationResponse::Success { tx_id, msg } => Ok((tx_id, msg)),
-      _ => Err(crate::Error::ConversionError("to_success")),
+      _ => Err(ConversionError("InvocationResponse to success")),
     }
   }
 
-  pub fn to_error(self) -> Result<(String, String)> {
+  pub fn to_error(self) -> std::result::Result<(String, String), ConversionError> {
     match self {
       InvocationResponse::Error { tx_id, msg } => Ok((tx_id, msg)),
-      _ => Err(crate::Error::ConversionError("to_error")),
+      _ => Err(ConversionError("InvocationResponse to error")),
     }
   }
 }
@@ -222,13 +198,42 @@ pub(crate) fn get_uuid() -> String {
   format!("{}", Uuid::new_v4())
 }
 impl Invocation {
+  /// Creates an invocation with a new transaction id
+  pub fn new(
+    hostkey: &KeyPair,
+    origin: Entity,
+    target: Entity,
+    msg: impl Into<MessageTransport>,
+  ) -> Invocation {
+    let tx_id = get_uuid();
+    let invocation_id = get_uuid();
+    let issuer = hostkey.public_key();
+    let target_url = target.url();
+    let payload = msg.into();
+    let claims = Claims::<wascap::prelude::Invocation>::new(
+      issuer.clone(),
+      invocation_id.clone(),
+      &target_url,
+      &origin.url(),
+      &invocation_hash(&target_url, &origin.url(), &payload),
+    );
+    Invocation {
+      origin,
+      target,
+      msg: payload,
+      id: invocation_id,
+      encoded_claims: claims.encode(hostkey).unwrap(),
+      network_id: issuer,
+      tx_id,
+    }
+  }
   /// Creates an invocation with a specific transaction id, to correlate a chain of
   /// invocations.
   pub fn next(
     tx_id: &str,
     hostkey: &KeyPair,
-    origin: VinoEntity,
-    target: VinoEntity,
+    origin: Entity,
+    target: Entity,
     msg: impl Into<MessageTransport>,
   ) -> Invocation {
     let invocation_id = get_uuid();
@@ -306,88 +311,6 @@ fn sha256_digest<R: Read>(mut reader: R) -> Result<Digest> {
   }
 
   Ok(context.finish())
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, Message, PartialEq)]
-#[rtype(result = "InvocationResponse")]
-/// The entity being referenced in an invocation.
-pub enum VinoEntity {
-  Test(String),
-  Schematic(String),
-  Component(ComponentEntity),
-  Provider(String),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub struct ComponentEntity {
-  pub id: String,
-  pub reference: String,
-  pub name: String,
-}
-
-impl Display for ComponentEntity {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    write!(f, "{}/{}", self.reference, self.id)
-  }
-}
-
-impl Default for VinoEntity {
-  fn default() -> Self {
-    Self::Test("default".to_owned())
-  }
-}
-
-impl Display for VinoEntity {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    write!(f, "{}", self.url())
-  }
-}
-
-pub(crate) const URL_SCHEME: &str = "wasmbus";
-
-impl VinoEntity {
-  /// The URL of the entity
-  #[must_use]
-  pub fn url(&self) -> String {
-    match self {
-      VinoEntity::Test(name) => format!("{}://test/{}", URL_SCHEME, name),
-      VinoEntity::Schematic(name) => format!("{}://schematic/{}", URL_SCHEME, name),
-      VinoEntity::Component(e) => format!("{}://component/{}", URL_SCHEME, e.id),
-      VinoEntity::Provider(name) => format!("{}://provider/{}", URL_SCHEME, name),
-    }
-  }
-
-  /// The unique (public) key of the entity
-  #[must_use]
-  pub fn key(&self) -> String {
-    match self {
-      VinoEntity::Test(name) => format!("test:{}", name),
-      VinoEntity::Schematic(name) => format!("schematic:{}", name),
-      VinoEntity::Component(e) => format!("component:{}", e.id),
-      VinoEntity::Provider(name) => format!("provider:{}", name),
-    }
-  }
-
-  pub fn into_provider(self) -> Result<String> {
-    match self {
-      VinoEntity::Provider(s) => Ok(s),
-      _ => Err(Error::ConversionError("into_provider")),
-    }
-  }
-
-  pub fn into_component(self) -> Result<ComponentEntity> {
-    match self {
-      VinoEntity::Component(s) => Ok(s),
-      _ => Err(Error::ConversionError("into_component")),
-    }
-  }
-
-  pub fn into_schematic(self) -> Result<String> {
-    match self {
-      VinoEntity::Schematic(s) => Ok(s),
-      _ => Err(Error::ConversionError("into_schematic")),
-    }
-  }
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize, Eq, Hash)]

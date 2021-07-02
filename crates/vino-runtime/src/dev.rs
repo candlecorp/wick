@@ -2,6 +2,11 @@ pub(crate) mod prelude {
   pub(crate) use actix::prelude::*;
   pub(crate) use futures::FutureExt;
   pub(crate) use tracing::Instrument;
+  pub(crate) use vino_entity::entity::{
+    ComponentEntity,
+    Entity,
+    SystemEntity,
+  };
   pub(crate) use vino_manifest::{
     parse_namespace,
     ComponentDefinition,
@@ -17,9 +22,7 @@ pub(crate) mod prelude {
   pub(crate) use crate::component_model::ComponentModel;
   pub(crate) use crate::dispatch::{
     get_uuid,
-    ComponentEntity,
     PortReference,
-    VinoEntity,
   };
   pub(crate) use crate::network_service::NetworkService;
   pub(crate) use crate::prelude::*;

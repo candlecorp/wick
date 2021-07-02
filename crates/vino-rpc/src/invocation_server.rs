@@ -1,3 +1,4 @@
+use std::str::FromStr;
 use std::sync::Arc;
 
 use rpc::{
@@ -126,18 +127,18 @@ impl InvocationService for InvocationServer {
       let invocation = request.get_ref();
       let provider = provider.lock().await;
       let invocation_id = invocation.id.to_string();
-
-      if invocation.target.is_none() {
-        tx.send(Err(Status::failed_precondition("No target specified")))
+      let entity = vino_entity::Entity::from_str(&invocation.target);
+      if let Err(e) = entity {
+        tx.send(Err(Status::failed_precondition(e.to_string())))
           .await
           .unwrap();
         return;
       }
-      let target = invocation.target.as_ref().unwrap();
+      let entity = entity.unwrap();
       let payload = invocation.msg.clone();
-      debug!("Executing component {}", target.name.to_string());
+      debug!("Executing component {}", entity.url());
       match &mut provider
-        .request(invocation_id.to_string(), target.name.to_string(), payload)
+        .request(invocation_id.to_string(), entity, payload)
         .await
       {
         Ok(receiver) => {

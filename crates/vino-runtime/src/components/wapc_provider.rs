@@ -78,7 +78,7 @@ impl Handler<Initialize> for WapcProvider {
     self.invocation_map = Arc::new(AsyncMutex::new(InvocationMap::new(msg.outputs.clone())));
     let name = msg.name.clone();
     let component = ComponentModel {
-      id: format!("{}::{}", msg.namespace, msg.name),
+      namespace: msg.namespace.clone(),
       name: name.clone(),
       inputs: msg
         .inputs
@@ -219,7 +219,7 @@ fn perform_initialization(
 }
 
 impl Handler<ProviderRequest> for WapcProvider {
-  type Result = ActorResult<Self, crate::Result<ProviderResponse>>;
+  type Result = ActorResult<Self, Result<ProviderResponse>>;
 
   fn handle(&mut self, msg: ProviderRequest, _ctx: &mut Self::Context) -> Self::Result {
     let state = self.state.as_ref().unwrap();
@@ -246,7 +246,6 @@ impl Handler<ProviderRequest> for WapcProvider {
     };
 
     let task = async move {
-      returns!(ProviderResponse);
       match msg {
         ProviderRequest::Invoke(_invocation) => todo!(),
         ProviderRequest::List(_req) => Ok(ProviderResponse::List(vec![HostedType::Component(

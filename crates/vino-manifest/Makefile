@@ -1,6 +1,6 @@
 # Need a Makefile primer? Head over to isaacs's tutorial: https://gist.github.com/isaacs/62a2d1825d04437c6f08
 
-.PHONY: format clean
+.PHONY: format clean codegen
 
 
 V0 := src/v0.rs
@@ -15,7 +15,9 @@ $(V0): $(V0_SOURCES)
 	widl-template $< $(V0_DEF)/templates/rust/root.hbs -p $(V0_DEF)/templates/rust/partials > $@
 
 clean:
-	rm $(V0)
+	rm -f $(V0)
+
+codegen: $(V0)
 
 format:
 	rustfmt $(V0)

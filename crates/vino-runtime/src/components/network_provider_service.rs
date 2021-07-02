@@ -18,11 +18,11 @@ use crate::schematic::ComponentOutput;
 type Result<T> = std::result::Result<T, ComponentError>;
 
 #[derive(Debug)]
-pub(crate) struct NativeProvider {
+pub(crate) struct NetworkProviderService {
   state: Option<State>,
 }
 
-impl Default for NativeProvider {
+impl Default for NetworkProviderService {
   fn default() -> Self {
     Self { state: None }
   }
@@ -33,9 +33,10 @@ impl Default for NativeProvider {
 struct State {
   #[derivative(Debug = "ignore")]
   provider: Arc<Mutex<dyn RpcHandler>>,
+  namespace: String,
 }
 
-impl Actor for NativeProvider {
+impl Actor for NetworkProviderService {
   type Context = Context<Self>;
 
   fn started(&mut self, _ctx: &mut Self::Context) {
@@ -46,14 +47,14 @@ impl Actor for NativeProvider {
 }
 
 #[derive(Message)]
-#[rtype(result = "Result<HashMap<String, ComponentModel>>")]
+#[rtype(result = "Result<()>")]
 pub(crate) struct Initialize {
   pub(crate) namespace: String,
   pub(crate) provider: Arc<Mutex<dyn RpcHandler>>,
 }
 
-impl Handler<Initialize> for NativeProvider {
-  type Result = ActorResult<Self, Result<HashMap<String, ComponentModel>>>;
+impl Handler<Initialize> for NetworkProviderService {
+  type Result = ActorResult<Self, Result<()>>;
 
   fn handle(&mut self, msg: Initialize, ctx: &mut Self::Context) -> Self::Result {
     trace!("Native provider initialized for '{}'", msg.namespace);
@@ -61,31 +62,29 @@ impl Handler<Initialize> for NativeProvider {
 
     self.state = Some(State {
       provider: msg.provider,
-    });
-    let addr = ctx.address();
-    let init_components = InitializeComponents {
       namespace: msg.namespace,
-      provider,
-    };
-    let task = async move { addr.send(init_components).await? }.into_actor(self);
-    ActorResult::reply_async(task)
+    });
+    // let addr = ctx.address();
+    // let init_components = InitializeComponents {
+    //   namespace: msg.namespace,
+    //   provider,
+    // };
+    ActorResult::reply(Ok(()))
   }
 }
 
 #[derive(Message)]
 #[rtype(result = "Result<HashMap<String, ComponentModel>>")]
-pub(crate) struct InitializeComponents {
-  namespace: String,
-  provider: Arc<Mutex<dyn RpcHandler>>,
-}
+pub(crate) struct InitializeComponents;
 
-impl Handler<InitializeComponents> for NativeProvider {
+impl Handler<InitializeComponents> for NetworkProviderService {
   type Result = ActorResult<Self, Result<HashMap<String, ComponentModel>>>;
 
-  fn handle(&mut self, msg: InitializeComponents, _ctx: &mut Self::Context) -> Self::Result {
-    trace!("Initializing components '{}'", msg.namespace);
-    let provider = msg.provider;
-    let namespace = msg.namespace;
+  fn handle(&mut self, _msg: InitializeComponents, _ctx: &mut Self::Context) -> Self::Result {
+    let state = self.state.as_ref().unwrap();
+    let provider = state.provider.clone();
+    let namespace = state.namespace.clone();
+    trace!("Initializing components '{}'", namespace);
 
     let task = async move {
       let provider = provider.lock().await;
@@ -117,7 +116,7 @@ impl Handler<InitializeComponents> for NativeProvider {
   }
 }
 
-impl Handler<Invocation> for NativeProvider {
+impl Handler<Invocation> for NetworkProviderService {
   type Result = ActorResult<Self, InvocationResponse>;
 
   fn handle(&mut self, msg: Invocation, _ctx: &mut Self::Context) -> Self::Result {
@@ -174,7 +173,7 @@ impl Handler<Invocation> for NativeProvider {
   }
 }
 
-impl Handler<ProviderRequest> for NativeProvider {
+impl Handler<ProviderRequest> for NetworkProviderService {
   type Result = ActorResult<Self, Result<ProviderResponse>>;
 
   fn handle(&mut self, msg: ProviderRequest, _ctx: &mut Self::Context) -> Self::Result {
@@ -213,7 +212,7 @@ mod test {
 
   #[test_env_log::test(actix_rt::test)]
   async fn test_native_provider_list() -> Result<()> {
-    let provider = NativeProvider::default();
+    let provider = NetworkProviderService::default();
     let addr = provider.start();
 
     addr
@@ -235,7 +234,7 @@ mod test {
 
   #[test_env_log::test(actix_rt::test)]
   async fn test_provider_component() -> Result<()> {
-    let provider = NativeProvider::default();
+    let provider = NetworkProviderService::default();
     let addr = provider.start();
     let hostkey = KeyPair::new_server();
     let network_id = hostkey.public_key();
