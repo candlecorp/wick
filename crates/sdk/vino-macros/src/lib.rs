@@ -64,7 +64,17 @@ macro_rules! Ok {
 macro_rules! log_tap {
   ($expr:expr $(,)?) => {{
     let _e = $expr;
-    log::trace!("{:?}", $expr);
+    use vino_macros::colored::Colorize;
+    let indent = "]]]]".to_owned().blue().blink();
+    let focus = "]]]]".to_owned().blue().blink();
+    println!(
+      "{}\n{} {}\n{}",
+      indent,
+      focus,
+      format!("{:?}", $expr),
+      indent
+    );
+
     _e
   }};
 }
@@ -73,7 +83,7 @@ macro_rules! log_tap {
 macro_rules! testlog {
     ($($arg:tt)+) => (
       if cfg!(test) {
-        log::trace!($($arg)+)
+        tracing::trace!($($arg)+)
       }
     )
 }
@@ -86,9 +96,10 @@ macro_rules! highlight {
       if cfg!(test) {
         use vino_macros::colored::Colorize;
         let indent = ">>>>>".to_owned().yellow().blink();
-        println!("{}", indent);
-        println!("{} {}", ">>>>>".yellow().blink() ,format!($($arg)+));
-        println!("{}", indent);
+        let focus = ">>>>>>".to_owned().red().blink();
+        let start = ">>>".to_owned().blue().blink();
+        let end =   ">>>".to_owned().blue().dimmed();
+        println!("{}\n{}\n{} {}\n{}\n{}", start,indent,focus,format!($($arg)+),indent,end);
       }
     )
 }
