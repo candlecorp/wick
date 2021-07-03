@@ -5,7 +5,7 @@ async fn run_log() -> vino_cli::Result<()> {
     .args(&[
       "run",
       "./manifests/log.vino",
-      "{\"input\": \"testing123\"}",
+      "{\"schem_input\": \"testing123\"}",
       "--trace",
     ])
     .output()

@@ -221,11 +221,11 @@ mod tests {
   use super::*;
   #[test]
   fn test() -> Result<()> {
-    let entity = Entity::from_str("ofp://some_id.component/name/reference")?;
+    let entity = Entity::from_str("ofp://some_id.component/reference")?;
     equals!(
       entity,
       Entity::Component(ComponentEntity {
-        name: "name".into(),
+        name: "some_id".into(),
         reference: "reference".into(),
       })
     );
@@ -242,10 +242,10 @@ mod tests {
     let entity = Entity::from_str("ofp://some_id.client/")?;
     equals!(entity, Entity::Client("some_id".into()));
 
-    let entity = Entity::from_str("ofp://test.system/msg=Hello")?;
+    let entity = Entity::from_str("ofp://test.system/?msg=Hello")?;
     equals!(entity, Entity::Test("Hello".into()));
 
-    let entity = Entity::from_str("ofp://other.system/msg=Else")?;
+    let entity = Entity::from_str("ofp://other.system/?msg=Else")?;
     equals!(
       entity,
       Entity::System(SystemEntity {

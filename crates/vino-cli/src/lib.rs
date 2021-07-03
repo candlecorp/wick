@@ -77,7 +77,7 @@ mod tests {
     let host_def =
       vino_host::HostDefinition::load_from_file(&PathBuf::from("./manifests/log.vino"))?;
     let input = hashmap! {
-      "input".into() => "test-input".into()
+      "schem_input".into() => "test-input".into()
     };
 
     let result = crate::run(host_def, input).await?;
