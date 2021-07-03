@@ -1,44 +1,35 @@
 use std::collections::HashMap;
 
-use actix::dev::Message;
-use actix::fut::{
-  err,
-  ok,
-};
-use futures::future::try_join_all;
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
 use vino_rpc::SchematicSignature;
 
+use super::messages::*;
 use crate::dev::prelude::*;
 use crate::dispatch::inv_error;
-use crate::provider_model::{
-  create_network_provider_channel,
+use crate::models::provider_model::{
   create_network_provider_model,
+  start_network_provider,
 };
-use crate::schematic::{
+use crate::schematic_service::messages::{
   GetSignature,
-  ProviderInitResponse,
+  UpdateProvider,
 };
 
 type Result<T> = std::result::Result<T, NetworkError>;
 #[derive(Clone, Debug)]
 
 pub(crate) struct NetworkService {
-  // host_labels: HashMap<String, String>,
-  // kp: Option<KeyPair>,
   started: bool,
   started_time: std::time::Instant,
   id: String,
-  schematics: HashMap<String, Addr<Schematic>>,
+  schematics: HashMap<String, Addr<SchematicService>>,
   definition: NetworkDefinition,
 }
 
 impl Default for NetworkService {
   fn default() -> Self {
     NetworkService {
-      // host_labels: HashMap::new(),
-      // kp: None,
       started: false,
       started_time: std::time::Instant::now(),
       id: "".to_owned(),
@@ -62,7 +53,7 @@ impl NetworkService {
 
     addr.clone()
   }
-  pub(crate) fn get_schematic(&self, id: &str) -> Result<Addr<Schematic>> {
+  pub(crate) fn get_schematic(&self, id: &str) -> Result<Addr<SchematicService>> {
     self
       .schematics
       .get(id)
@@ -91,21 +82,11 @@ impl Actor for NetworkService {
   type Context = Context<Self>;
 }
 
-#[derive(Message, Debug)]
-#[rtype(result = "Result<()>")]
-pub(crate) struct Initialize {
-  pub(crate) network_id: String,
-  pub(crate) seed: String,
-  pub(crate) network: NetworkDefinition,
-  pub(crate) allowed_insecure: Vec<String>,
-  pub(crate) allow_latest: bool,
-}
-
 impl Handler<Initialize> for NetworkService {
   type Result = ActorResult<Self, Result<()>>;
 
   fn handle(&mut self, msg: Initialize, _ctx: &mut Context<Self>) -> Self::Result {
-    trace!("Network initializing on {}", msg.network_id);
+    trace!("Network {} initializing", msg.network_id);
     self.started = true;
 
     self.id = msg.network_id.clone();
@@ -116,61 +97,79 @@ impl Handler<Initialize> for NetworkService {
     let seed = msg.seed;
     let allow_latest = msg.allow_latest;
     let schematics = self.definition.schematics.clone();
+    self.schematics = start_schematic_services(&schematics);
+    let address_map = self.schematics.clone();
 
-    let actor_fut = async move {
-      let mut init_requests = vec![];
-      let mut addr_map = HashMap::new();
-      let channel = create_network_provider_channel("self", network_id).await?;
-
-      for definition in schematics {
-        let arbiter = Arbiter::new();
-        let addr = Schematic::start_in_arbiter(&arbiter.handle(), |_| Schematic::default());
-        addr_map.insert(definition.get_name(), addr.clone());
-        init_requests.push(addr.send(super::schematic::Initialize {
+    let task = async move {
+      let provider_addr = start_network_provider(SELF_NAMESPACE, network_id).await?;
+      let channel = ProviderChannel {
+        namespace: SELF_NAMESPACE.to_owned(),
+        recipient: provider_addr.clone().recipient(),
+      };
+      let init_msgs = schematics.into_iter().map(|def| {
+        let addr = address_map.get(&def.name).unwrap();
+        addr.send(crate::schematic_service::messages::Initialize {
           seed: seed.clone(),
           network_provider_channel: Some(channel.clone()),
-          schematic: definition.clone(),
+          schematic: def,
           allow_latest,
           allowed_insecure: allowed_insecure.clone(),
-        }));
-      }
+        })
+      });
 
-      let results = try_join_all(init_requests)
-        .await
-        .map_err::<NetworkError, _>(|_| InternalError(5001).into())?;
+      let results = join_or_err(init_msgs, 5001).await?;
 
-      let errors: Vec<SchematicError> = results
-        .into_iter()
-        .filter_map(std::result::Result::err)
-        .collect();
+      let errors: Vec<SchematicError> = filter_map(results, |e| e.err());
       if errors.is_empty() {
         debug!("Schematics initialized");
-        Ok(addr_map)
+        Ok(provider_addr.clone())
       } else {
-        Err(NetworkError::InitializationError(itertools::join(
-          errors, ", ",
-        )))
+        Err(NetworkError::InitializationError(join(errors, ", ")))
       }
-    };
+    }
+    .into_actor(self)
+    .then(|result, network, _ctx| {
+      let schematics = network.schematics.clone();
+      async move {
+        let addr = result?;
+        for _ in 1..5 {
+          let result = create_network_provider_model("self", addr.clone()).await;
+          if result.is_err() {
+            continue;
+          }
+          let model = result.unwrap();
+          let result = join_or_err(
+            schematics.values().map(|addr| {
+              addr.send(UpdateProvider {
+                model: model.clone(),
+              })
+            }),
+            5020,
+          )
+          .await;
+          if result.is_ok() {
+            return Ok(());
+          }
+        }
+        Err(NetworkError::MaxTriesReached)
+      }
+      .into_actor(network)
+    });
 
-    ActorResult::reply_async(
-      actor_fut
-        .into_actor(self)
-        .then(move |result, network, _ctx| {
-          result.map_or_else(err, |addr_map| {
-            network.schematics = addr_map;
-            ok(())
-          })
-        }),
-    )
+    ActorResult::reply_async(task)
   }
 }
 
-#[derive(Message)]
-#[rtype(result = "Result<HashMap<String, MessageTransport>>")]
-pub(crate) struct Request {
-  pub(crate) schematic: String,
-  pub(crate) data: HashMap<String, Vec<u8>>,
+fn start_schematic_services(
+  schematics: &[SchematicDefinition],
+) -> HashMap<String, Addr<SchematicService>> {
+  trace!("Starting schematic arbiters");
+  map(schematics, |def| {
+    let arbiter = Arbiter::new();
+    let addr =
+      SchematicService::start_in_arbiter(&arbiter.handle(), |_| SchematicService::default());
+    (def.name.clone(), addr)
+  })
 }
 
 impl Handler<Request> for NetworkService {
@@ -183,7 +182,7 @@ impl Handler<Request> for NetworkService {
 
     let schematic = actix_try!(self.get_schematic(&schematic_name));
 
-    let request = super::schematic::Request {
+    let request = crate::schematic_service::messages::Request {
       tx_id: uuid::Uuid::new_v4().to_string(),
       schematic: schematic_name.clone(),
       payload: msg.data,
@@ -225,10 +224,6 @@ impl Handler<Request> for NetworkService {
   }
 }
 
-#[derive(Message)]
-#[rtype(result = "Result<Vec<SchematicSignature>>")]
-pub(crate) struct ListSchematics {}
-
 impl Handler<ListSchematics> for NetworkService {
   type Result = ActorResult<Self, Result<Vec<SchematicSignature>>>;
 
@@ -240,11 +235,16 @@ impl Handler<ListSchematics> for NetworkService {
       .map(|addr| addr.send(GetSignature {}));
     type SchematicResult<T> = std::result::Result<T, SchematicError>;
     let task = async move {
-      let results: Vec<SchematicResult<SchematicSignature>> = try_join_all(requests)
-        .await
-        .map_err(|_| InternalError(5004))?;
-
-      Ok(results.into_iter().map(SchematicResult::unwrap).collect())
+      let results: Vec<SchematicResult<SchematicSignature>> = join_or_err(requests, 5004).await?;
+      let mut signatures = vec![];
+      for result in results {
+        if let Err(err) = result {
+          warn!("Error requesting a schematic signature: {}", err);
+          continue;
+        }
+        signatures.push(result.unwrap());
+      }
+      Ok(signatures)
     }
     .into_actor(self);
 
@@ -260,10 +260,11 @@ impl Handler<Invocation> for NetworkService {
     actix_ensure_ok!(self
       .ensure_is_started()
       .map_err(|e| inv_error(&tx_id, &e.to_string())));
-    let schematic_name = actix_ensure_ok!(msg
-      .target
-      .into_schematic()
-      .map_err(|_| inv_error(&tx_id, "Sent invalid entity")));
+    let schematic_name = match msg.target {
+      Entity::Schematic(name) => name,
+      Entity::Component(c) => c.name,
+      _ => return ActorResult::reply(inv_error(&tx_id, "Sent invalid entity")),
+    };
 
     trace!("Invoking schematic '{}'", schematic_name);
 
@@ -275,7 +276,7 @@ impl Handler<Invocation> for NetworkService {
       .into_multibytes()
       .map_err(|e| inv_error(&tx_id, &e.to_string())));
 
-    let request = super::schematic::Request {
+    let request = crate::schematic_service::messages::Request {
       tx_id: tx_id.clone(),
       schematic: schematic_name,
       payload,
@@ -356,13 +357,12 @@ mod test {
     };
 
     let mut result = network.request("parent", &data).await?;
-
     println!("Result: {:?}", result);
     let output: MessageTransport = result.remove("parent_output").unwrap();
     println!("Output: {:?}", output);
     equals!(
       output,
-      MessageTransport::MessagePack(mp_serialize(42 + 302309 + 302309)?)
+      MessageTransport::MessagePack(mp_serialize(user_data)?)
     );
     Ok(())
   }

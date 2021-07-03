@@ -3,21 +3,21 @@ use std::sync::Arc;
 
 use tokio::sync::Mutex;
 
-use crate::components::network_provider_service::{
+use crate::dev::prelude::*;
+use crate::error::ComponentError;
+use crate::providers::network_provider_service::{
   self,
   NetworkProviderService,
 };
-use crate::components::vino_component::{
+use crate::providers::vino_component::{
   load_component,
   VinoComponent,
 };
-use crate::components::{
-  grpc_url_provider,
-  native_provider,
-  wapc_provider,
+use crate::providers::{
+  grpc_provider_service,
+  native_provider_service,
+  wapc_provider_service,
 };
-use crate::dev::prelude::*;
-use crate::error::ComponentError;
 type Result<T> = std::result::Result<T, ComponentError>;
 
 #[derive(Debug, Clone)]
@@ -39,11 +39,11 @@ pub(crate) async fn initialize_native_provider(
   let handle = arbiter.handle();
 
   let provider = Arc::new(Mutex::new(vino_native_provider::Provider::default()));
-  let addr = native_provider::NativeProvider::start_in_arbiter(&handle, |_| {
-    native_provider::NativeProvider::default()
+  let addr = native_provider_service::NativeProviderService::start_in_arbiter(&handle, |_| {
+    native_provider_service::NativeProviderService::default()
   });
   let components = addr
-    .send(native_provider::Initialize {
+    .send(native_provider_service::Initialize {
       provider: provider.clone(),
       namespace: namespace.to_owned(),
     })
@@ -69,12 +69,12 @@ async fn initialize_grpc_provider(
   let arbiter = Arbiter::new();
   let handle = arbiter.handle();
 
-  let addr = grpc_url_provider::GrpcUrlProvider::start_in_arbiter(&handle, |_| {
-    grpc_url_provider::GrpcUrlProvider::default()
+  let addr = grpc_provider_service::GrpcProviderService::start_in_arbiter(&handle, |_| {
+    grpc_provider_service::GrpcProviderService::default()
   });
 
   let components = addr
-    .send(grpc_url_provider::Initialize {
+    .send(grpc_provider_service::Initialize {
       namespace: namespace.to_owned(),
       address: provider.reference.clone(),
       signing_seed: seed.to_owned(),
@@ -103,15 +103,15 @@ async fn initialize_wapc_provider(
   let arbiter = Arbiter::new();
   let handle = arbiter.handle();
 
-  let addr = wapc_provider::WapcProvider::start_in_arbiter(&handle, |_| {
-    wapc_provider::WapcProvider::default()
+  let addr = wapc_provider_service::WapcProviderService::start_in_arbiter(&handle, |_| {
+    wapc_provider_service::WapcProviderService::default()
   });
 
   let component =
     load_component(provider.reference.clone(), allow_latest, allowed_insecure).await?;
 
   let components = addr
-    .send(wapc_provider::Initialize {
+    .send(wapc_provider_service::Initialize {
       namespace: namespace.to_owned(),
       signing_seed: seed.to_owned(),
       name: component.name(),
@@ -133,10 +133,11 @@ async fn initialize_wapc_provider(
   ))
 }
 
-pub(crate) async fn create_network_provider_channel(
+pub(crate) async fn start_network_provider(
   namespace: &str,
   network_id: String,
-) -> Result<ProviderChannel> {
+) -> Result<Addr<NetworkProviderService>> {
+  trace!("Starting network provider");
   let arbiter = Arbiter::new();
   let handle = arbiter.handle();
   let provider = Arc::new(Mutex::new(crate::NetworkProvider::new(network_id)));
@@ -149,10 +150,7 @@ pub(crate) async fn create_network_provider_channel(
       namespace: namespace.to_owned(),
     })
     .await??;
-  Ok(ProviderChannel {
-    namespace: namespace.to_owned(),
-    recipient: addr.recipient(),
-  })
+  Ok(addr)
 }
 
 pub(crate) async fn create_network_provider_model(

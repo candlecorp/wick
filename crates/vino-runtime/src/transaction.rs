@@ -13,7 +13,7 @@ use tokio::sync::mpsc::{
 };
 
 use crate::dev::prelude::*;
-use crate::schematic::{
+use crate::schematic_service::messages::{
   PayloadReceived,
   ReferenceReady,
   SchematicOutputReceived,
@@ -207,7 +207,7 @@ impl Transaction {
     self.buffermap.has_data(port)
   }
   fn are_ports_ready(&self, ports: &[PortReference]) -> bool {
-    itertools::all(ports, |ent| self.is_port_ready(ent))
+    all(ports, |ent| self.is_port_ready(ent))
   }
 }
 

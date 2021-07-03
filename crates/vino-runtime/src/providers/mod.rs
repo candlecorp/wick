@@ -1,8 +1,9 @@
-pub(crate) mod grpc_url_provider;
-pub(crate) mod native_provider;
+pub(crate) mod grpc_provider_service;
+pub(crate) mod native_provider_service;
+pub(crate) mod network_provider;
 pub(crate) mod network_provider_service;
 pub(crate) mod vino_component;
-pub(crate) mod wapc_provider;
+pub(crate) mod wapc_provider_service;
 
 use vino_rpc::{
   HostedType,

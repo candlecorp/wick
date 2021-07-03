@@ -16,7 +16,7 @@ use vino_rpc::{
 };
 
 use crate::dev::prelude::*;
-use crate::network_service::ListSchematics;
+use crate::network_service::messages::ListSchematics;
 
 #[derive(Debug, Default)]
 struct State {
@@ -75,9 +75,9 @@ impl RpcHandler for Provider {
 
   async fn list_registered(&self) -> RpcResult<Vec<HostedType>> {
     let addr = NetworkService::for_id(&self.network_id);
-    let schematics = addr.send(ListSchematics {}).await??;
+    let result = addr.send(ListSchematics {}).await?;
+    let schematics = result?;
     let hosted_types = schematics.into_iter().map(HostedType::Schematic).collect();
-    highlight!("{:?}", hosted_types);
     Ok(hosted_types)
   }
 

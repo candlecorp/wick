@@ -8,10 +8,10 @@ use wascap::jwt::{
   Token,
 };
 
-use super::wapc_provider::WapcProvider;
+use super::wapc_provider_service::WapcProviderService;
 use crate::dev::prelude::*;
 use crate::error::ComponentError;
-use crate::util::oci::fetch_oci_bytes;
+use crate::utils::oci::fetch_oci_bytes;
 
 #[derive(Derivative, Clone)]
 #[derivative(Debug)]
@@ -19,7 +19,7 @@ pub struct WapcComponent {
   pub(crate) token: Token<wascap::jwt::Actor>,
   pub(crate) bytes: Vec<u8>,
   #[derivative(Debug = "ignore")]
-  pub(crate) addr: Option<Addr<WapcProvider>>,
+  pub(crate) addr: Option<Addr<WapcProviderService>>,
 }
 
 #[derive(Clone, Debug)]

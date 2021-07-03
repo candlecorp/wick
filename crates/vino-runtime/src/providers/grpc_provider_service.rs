@@ -19,18 +19,12 @@ use super::{
   ProviderRequest,
   ProviderResponse,
 };
-use crate::actix::ActorResult;
-use crate::component_model::ComponentModel;
 use crate::dev::prelude::*;
-use crate::dispatch::{
-  Invocation,
-  InvocationResponse,
-};
-use crate::schematic::ComponentOutput;
+use crate::schematic_service::messages::ComponentOutput;
 type Result<T> = std::result::Result<T, ComponentError>;
 
 #[derive(Default, Debug)]
-pub(crate) struct GrpcUrlProvider {
+pub(crate) struct GrpcProviderService {
   namespace: String,
   state: Option<State>,
   seed: String,
@@ -42,7 +36,7 @@ struct State {
   components: HashMap<String, ComponentModel>,
 }
 
-impl Actor for GrpcUrlProvider {
+impl Actor for GrpcProviderService {
   type Context = Context<Self>;
 
   fn started(&mut self, _ctx: &mut Self::Context) {
@@ -60,7 +54,7 @@ pub(crate) struct Initialize {
   pub(crate) signing_seed: String,
 }
 
-impl Handler<Initialize> for GrpcUrlProvider {
+impl Handler<Initialize> for GrpcProviderService {
   type Result = ActorResult<Self, Result<HashMap<String, ComponentModel>>>;
 
   #[tracing::instrument(level = tracing::Level::DEBUG, name = "GRPC Init", skip(self, msg, ctx))]
@@ -119,7 +113,7 @@ pub(crate) struct InitializeComponents {
   client: InvocationServiceClient<Channel>,
 }
 
-impl Handler<InitializeComponents> for GrpcUrlProvider {
+impl Handler<InitializeComponents> for GrpcProviderService {
   type Result = ActorResult<Self, Result<HashMap<String, ComponentModel>>>;
 
   #[tracing::instrument(level = tracing::Level::DEBUG, name = "GRPC Init components", skip(self, msg, _ctx))]
@@ -164,7 +158,7 @@ impl Handler<InitializeComponents> for GrpcUrlProvider {
   }
 }
 
-impl Handler<ProviderRequest> for GrpcUrlProvider {
+impl Handler<ProviderRequest> for GrpcProviderService {
   type Result = ActorResult<Self, Result<ProviderResponse>>;
 
   fn handle(&mut self, msg: ProviderRequest, _ctx: &mut Self::Context) -> Self::Result {
@@ -213,7 +207,7 @@ impl Handler<ProviderRequest> for GrpcUrlProvider {
   }
 }
 
-impl Handler<Invocation> for GrpcUrlProvider {
+impl Handler<Invocation> for GrpcProviderService {
   type Result = ActorResult<Self, InvocationResponse>;
 
   #[tracing::instrument(level = tracing::Level::DEBUG, name = "GRPC Invocation", skip(self, msg, _ctx))]
@@ -222,17 +216,21 @@ impl Handler<Invocation> for GrpcUrlProvider {
     let mut client = state.client.clone();
     let tx_id = msg.tx_id.clone();
     let tx_id2 = msg.tx_id.clone();
-    let component = actix_ensure_ok!(msg
-      .target
-      .clone()
-      .into_component()
-      .map_err(|_e| InvocationResponse::error(tx_id.clone(), "Sent invalid entity".to_owned())));
+    let component =
+      actix_ensure_ok!(msg.target.clone().into_component().map_err(
+        |_e| InvocationResponse::error(
+          tx_id.clone(),
+          "GRPC provider sent invalid entity".to_owned()
+        )
+      ));
 
     let name = component.name;
     let inv_id = msg.id.clone();
-    let invocation: rpc::Invocation = actix_ensure_ok!(msg
-      .try_into()
-      .map_err(|_e| InvocationResponse::error(tx_id.clone(), "Sent invalid payload".to_owned())));
+    let invocation: rpc::Invocation =
+      actix_ensure_ok!(msg.try_into().map_err(|_e| InvocationResponse::error(
+        tx_id.clone(),
+        "GRPC provider sent invalid payload".to_owned()
+      )));
 
     let request = async move {
       let invocation_id = inv_id.clone();
@@ -345,7 +343,7 @@ mod test {
 
     let work = async move {
       sleep(Duration::from_secs(1)).await;
-      let grpc_provider = GrpcUrlProvider::start_default();
+      let grpc_provider = GrpcProviderService::start_default();
       grpc_provider
         .send(Initialize {
           namespace: "test".to_owned(),

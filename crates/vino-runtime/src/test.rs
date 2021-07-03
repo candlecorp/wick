@@ -29,9 +29,10 @@ pub(crate) async fn init_network_from_yaml(path: &str) -> TestResult<(Network, S
   let kp = KeyPair::new_server();
 
   let network = Network::new(def, &kp.seed()?);
-  network.init().await?;
-
-  trace!("Manifest applied");
+  debug!("Initializing network");
+  let init = network.init().await;
+  info!("Init status : {:?}", init);
+  init?;
 
   let network_id = network.id.clone();
   Ok((network, network_id))
@@ -55,38 +56,14 @@ pub(crate) fn new_schematic(name: &str) -> SchematicDefinition {
 
 #[derive(Error, Debug)]
 pub(crate) enum TestError {
-  #[error("Invocation error: {0}")]
-  InvocationError(String),
   #[error(transparent)]
   CommonError(#[from] CommonError),
-  #[error("Conversion error {0}")]
-  ConversionError(&'static str),
-  #[error("URL parse error {0}")]
-  ParseError(String),
   #[error(transparent)]
   ComponentError(#[from] ComponentError),
   #[error(transparent)]
   NetworkError(#[from] NetworkError),
   #[error(transparent)]
   VinoError(#[from] VinoError),
-  #[error("Dispatch error: {0}")]
-  DispatchError(String),
-  #[error("Provider error {0}")]
-  ProviderError(String),
-  #[error("WaPC WebAssembly Component error: {0}")]
-  WapcError(String),
-  #[error("Job error: {0}")]
-  JobError(String),
-  #[error("invalid configuration")]
-  ConfigurationError,
-  #[error("Could not start host: {0}")]
-  HostStartFailure(String),
-  #[error("Failed to deserialize configuration {0}")]
-  ConfigurationDeserialization(String),
-  #[error("Failed to serialize payload {0}")]
-  SerializationError(rmp_serde::encode::Error),
-  #[error("Failed to deserialize payload {0}")]
-  DeserializationError(rmp_serde::decode::Error),
 
   #[error(transparent)]
   OciError(#[from] OciError),
@@ -115,11 +92,11 @@ pub(crate) enum TestError {
   KeyPairError(#[from] nkeys::error::Error),
   #[error(transparent)]
   ValidationError(#[from] ValidationError),
+  #[error(transparent)]
+  ModelError(#[from] SchematicModelError),
 
   #[error(transparent)]
   OtherUpstream(#[from] BoxedErrorSyncSend),
-  #[error("General error : {0}")]
-  Other(String),
 
   #[error(transparent)]
   IOError(#[from] std::io::Error),

@@ -14,15 +14,15 @@ use super::{
 };
 use crate::dev::prelude::*;
 use crate::error::ComponentError;
-use crate::schematic::ComponentOutput;
+use crate::schematic_service::messages::ComponentOutput;
 type Result<T> = std::result::Result<T, ComponentError>;
 
 #[derive(Debug)]
-pub(crate) struct NetworkProviderService {
+pub(crate) struct NativeProviderService {
   state: Option<State>,
 }
 
-impl Default for NetworkProviderService {
+impl Default for NativeProviderService {
   fn default() -> Self {
     Self { state: None }
   }
@@ -33,10 +33,9 @@ impl Default for NetworkProviderService {
 struct State {
   #[derivative(Debug = "ignore")]
   provider: Arc<Mutex<dyn RpcHandler>>,
-  namespace: String,
 }
 
-impl Actor for NetworkProviderService {
+impl Actor for NativeProviderService {
   type Context = Context<Self>;
 
   fn started(&mut self, _ctx: &mut Self::Context) {
@@ -47,14 +46,14 @@ impl Actor for NetworkProviderService {
 }
 
 #[derive(Message)]
-#[rtype(result = "Result<()>")]
+#[rtype(result = "Result<HashMap<String, ComponentModel>>")]
 pub(crate) struct Initialize {
   pub(crate) namespace: String,
   pub(crate) provider: Arc<Mutex<dyn RpcHandler>>,
 }
 
-impl Handler<Initialize> for NetworkProviderService {
-  type Result = ActorResult<Self, Result<()>>;
+impl Handler<Initialize> for NativeProviderService {
+  type Result = ActorResult<Self, Result<HashMap<String, ComponentModel>>>;
 
   fn handle(&mut self, msg: Initialize, ctx: &mut Self::Context) -> Self::Result {
     trace!("Native provider initialized for '{}'", msg.namespace);
@@ -62,29 +61,31 @@ impl Handler<Initialize> for NetworkProviderService {
 
     self.state = Some(State {
       provider: msg.provider,
-      namespace: msg.namespace,
     });
-    // let addr = ctx.address();
-    // let init_components = InitializeComponents {
-    //   namespace: msg.namespace,
-    //   provider,
-    // };
-    ActorResult::reply(Ok(()))
+    let addr = ctx.address();
+    let init_components = InitializeComponents {
+      namespace: msg.namespace,
+      provider,
+    };
+    let task = async move { addr.send(init_components).await? }.into_actor(self);
+    ActorResult::reply_async(task)
   }
 }
 
 #[derive(Message)]
 #[rtype(result = "Result<HashMap<String, ComponentModel>>")]
-pub(crate) struct InitializeComponents;
+pub(crate) struct InitializeComponents {
+  namespace: String,
+  provider: Arc<Mutex<dyn RpcHandler>>,
+}
 
-impl Handler<InitializeComponents> for NetworkProviderService {
+impl Handler<InitializeComponents> for NativeProviderService {
   type Result = ActorResult<Self, Result<HashMap<String, ComponentModel>>>;
 
-  fn handle(&mut self, _msg: InitializeComponents, _ctx: &mut Self::Context) -> Self::Result {
-    let state = self.state.as_ref().unwrap();
-    let provider = state.provider.clone();
-    let namespace = state.namespace.clone();
-    trace!("Initializing components '{}'", namespace);
+  fn handle(&mut self, msg: InitializeComponents, _ctx: &mut Self::Context) -> Self::Result {
+    trace!("Initializing components '{}'", msg.namespace);
+    let provider = msg.provider;
+    let namespace = msg.namespace;
 
     let task = async move {
       let provider = provider.lock().await;
@@ -116,7 +117,7 @@ impl Handler<InitializeComponents> for NetworkProviderService {
   }
 }
 
-impl Handler<Invocation> for NetworkProviderService {
+impl Handler<Invocation> for NativeProviderService {
   type Result = ActorResult<Self, InvocationResponse>;
 
   fn handle(&mut self, msg: Invocation, _ctx: &mut Self::Context) -> Self::Result {
@@ -173,7 +174,7 @@ impl Handler<Invocation> for NetworkProviderService {
   }
 }
 
-impl Handler<ProviderRequest> for NetworkProviderService {
+impl Handler<ProviderRequest> for NativeProviderService {
   type Result = ActorResult<Self, Result<ProviderResponse>>;
 
   fn handle(&mut self, msg: ProviderRequest, _ctx: &mut Self::Context) -> Self::Result {
@@ -206,13 +207,13 @@ mod test {
   use vino_codec::messagepack::serialize;
 
   use super::*;
-  use crate::components::ListRequest;
+  use crate::providers::ListRequest;
   use crate::test::prelude::*;
   type Result<T> = super::Result<T>;
 
   #[test_env_log::test(actix_rt::test)]
   async fn test_native_provider_list() -> Result<()> {
-    let provider = NetworkProviderService::default();
+    let provider = NativeProviderService::default();
     let addr = provider.start();
 
     addr
@@ -234,7 +235,7 @@ mod test {
 
   #[test_env_log::test(actix_rt::test)]
   async fn test_provider_component() -> Result<()> {
-    let provider = NetworkProviderService::default();
+    let provider = NativeProviderService::default();
     let addr = provider.start();
     let hostkey = KeyPair::new_server();
     let network_id = hostkey.public_key();

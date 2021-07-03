@@ -34,6 +34,8 @@ pub enum VinoHostError {
   #[error(transparent)]
   HoconError(#[from] hocon::Error),
   #[error(transparent)]
+  NetworkError(#[from] vino_runtime::error::NetworkError),
+  #[error(transparent)]
   RpcError(#[from] vino_rpc::Error),
   #[error(transparent)]
   ActixMailboxError(#[from] actix::MailboxError),

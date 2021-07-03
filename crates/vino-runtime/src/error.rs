@@ -7,8 +7,7 @@ use tokio::sync::mpsc::error::SendError;
 use vino_rpc::PortSignature;
 
 use crate::dev::prelude::*;
-use crate::schematic::PayloadReceived;
-use crate::schematic_model::Connection;
+use crate::schematic_service::messages::PayloadReceived;
 
 pub(crate) type BoxedErrorSyncSend = Box<dyn std::error::Error + Sync + Send>;
 
@@ -22,6 +21,8 @@ pub enum ValidationError {
   NoOutputs,
   #[error("Schematic has no inputs")]
   NoInputs,
+  #[error(transparent)]
+  ModelError(#[from] SchematicModelError),
   #[error("The following component(s) have incomplete internal model(s): '{}'", join(.0, ", "))]
   MissingComponentModels(Vec<String>),
   #[error("Dangling reference(s): '{}'", join(.0, ", "))]
@@ -32,8 +33,18 @@ pub enum ValidationError {
   InvalidOutputPort(PortReference, Connection, Vec<PortSignature>),
   #[error("Invalid input port '{}' on {}. Valid input ports are [{}]", .0.name, .1, join(.2, ", "))]
   InvalidInputPort(PortReference, Connection, Vec<PortSignature>),
-  #[error("Invalid connections: \n  {}", join(.0, "\n  "))]
+  #[error("Invalid connections: {}", join(.0, ", "))]
   InvalidConnections(Vec<ValidationError>),
+}
+
+#[derive(Error, Debug, PartialEq)]
+pub enum SchematicModelError {
+  #[error("Schematic model not able to finish initialization")]
+  IncompleteInitialization,
+  #[error("Schematic model not initialized")]
+  ModelNotInitialized,
+  #[error("The reference '{0}' has an incomplete component model. Component may have failed to load or be in a partial state.")]
+  MissingComponentModel(String),
 }
 
 #[derive(Error, Debug)]
@@ -60,10 +71,10 @@ pub enum SchematicError {
   EntityError(#[from] vino_entity::Error),
   #[error(transparent)]
   InternalError(#[from] InternalError),
-  #[error("Reference {0} not found")]
-  ReferenceError(String),
   #[error(transparent)]
   TransactionChannelError(#[from] SendError<PayloadReceived>),
+  #[error(transparent)]
+  ModelError(#[from] SchematicModelError),
 }
 
 #[derive(Error, Debug)]
@@ -74,6 +85,8 @@ pub enum NetworkError {
   SchematicNotFound(String),
   #[error("Error initializing: {0}")]
   InitializationError(String),
+  #[error("Maximum number of tries reached when resolving internal schematic references")]
+  MaxTriesReached,
   #[error(transparent)]
   SchematicError(#[from] SchematicError),
   #[error(transparent)]

@@ -97,10 +97,7 @@ impl Host {
     payload: HashMap<U, impl Serialize + Sync>,
   ) -> Result<HashMap<String, MessageTransport>> {
     match &self.network {
-      Some(network) => network
-        .request(schematic, &payload)
-        .await
-        .map_err(crate::Error::VinoError),
+      Some(network) => Ok(network.request(schematic, &payload).await?),
       None => Err(crate::Error::InvalidHostState(
         "No network available".into(),
       )),

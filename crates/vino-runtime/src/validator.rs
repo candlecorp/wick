@@ -1,6 +1,4 @@
 use crate::dev::prelude::*;
-use crate::error::ValidationError;
-use crate::schematic_model::Connection;
 
 type Result<T> = std::result::Result<T, ValidationError>;
 pub(crate) struct Validator<'a> {
@@ -118,29 +116,24 @@ impl<'a> Validator<'a> {
         if connection.from.reference != SCHEMATIC_INPUT {
           let r = &connection.from.reference;
           match self.model.get_component_model_by_ref(r) {
-            Some(from) => validations.push(is_valid_output(connection, &from)),
-            None => {
+            Ok(from) => validations.push(is_valid_output(connection, &from)),
+            Err(e) => {
               if !self.should_omit_ref(r) {
-                validations.push(Err(ValidationError::MissingComponentModels(
-                  vec![r.clone()],
-                )));
+                validations.push(Err(e.into()));
               }
             }
           };
         }
         if connection.to.reference != SCHEMATIC_OUTPUT {
           let r = &connection.to.reference;
-
           match self.model.get_component_model_by_ref(r) {
-            Some(to) => validations.push(is_valid_input(connection, &to)),
-            None => {
+            Ok(to) => validations.push(is_valid_input(connection, &to)),
+            Err(e) => {
               if !self.should_omit_ref(r) {
-                validations.push(Err(ValidationError::MissingComponentModels(
-                  vec![r.clone()],
-                )));
+                validations.push(Err(e.into()));
               }
             }
-          }
+          };
         }
         validations
       })
@@ -507,7 +500,7 @@ mod tests {
     model.commit_providers(vec![provider]);
     let result = Validator::validate(&model);
     equals!(result, Ok(()));
-    model.finish_initialization()?;
+    model.partial_initialization()?;
     let schematic_inputs = model.get_schematic_input_signatures()?;
     equals!(
       schematic_inputs,

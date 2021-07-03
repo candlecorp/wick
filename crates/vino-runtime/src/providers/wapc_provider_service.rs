@@ -26,15 +26,15 @@ use super::{
   ProviderRequest,
   ProviderResponse,
 };
-use crate::components::vino_component::WapcComponent;
 use crate::dev::prelude::*;
 use crate::error::ComponentError;
-use crate::schematic::ComponentOutput;
+use crate::providers::vino_component::WapcComponent;
+use crate::schematic_service::messages::ComponentOutput;
 
 type Result<T> = std::result::Result<T, ComponentError>;
 
 #[derive(Default)]
-pub(crate) struct WapcProvider {
+pub(crate) struct WapcProviderService {
   state: Option<State>,
   invocation_map: Arc<AsyncMutex<InvocationMap>>,
 }
@@ -47,7 +47,7 @@ struct State {
   outputs: Vec<String>,
 }
 
-impl Actor for WapcProvider {
+impl Actor for WapcProviderService {
   type Context = Context<Self>;
 
   fn started(&mut self, _ctx: &mut Self::Context) {
@@ -57,7 +57,7 @@ impl Actor for WapcProvider {
   fn stopped(&mut self, _ctx: &mut Self::Context) {}
 }
 
-impl WapcProvider {}
+impl WapcProviderService {}
 
 #[derive(Message)]
 #[rtype(result = "Result<HashMap<String, ComponentModel>>")]
@@ -70,7 +70,7 @@ pub(crate) struct Initialize {
   pub(crate) signing_seed: String,
 }
 
-impl Handler<Initialize> for WapcProvider {
+impl Handler<Initialize> for WapcProviderService {
   type Result = Result<HashMap<String, ComponentModel>>;
 
   fn handle(&mut self, msg: Initialize, ctx: &mut Self::Context) -> Self::Result {
@@ -122,8 +122,8 @@ struct WapcHostCallback {
 }
 
 fn perform_initialization(
-  me: &mut WapcProvider,
-  ctx: &mut Context<WapcProvider>,
+  me: &mut WapcProviderService,
+  ctx: &mut Context<WapcProviderService>,
   msg: Initialize,
 ) -> Result<String> {
   let buf = msg.bytes;
@@ -218,7 +218,7 @@ fn perform_initialization(
   }
 }
 
-impl Handler<ProviderRequest> for WapcProvider {
+impl Handler<ProviderRequest> for WapcProviderService {
   type Result = ActorResult<Self, Result<ProviderResponse>>;
 
   fn handle(&mut self, msg: ProviderRequest, _ctx: &mut Self::Context) -> Self::Result {
@@ -258,20 +258,28 @@ impl Handler<ProviderRequest> for WapcProvider {
   }
 }
 
-impl Handler<Invocation> for WapcProvider {
+impl Handler<Invocation> for WapcProviderService {
   type Result = ActorResult<Self, InvocationResponse>;
 
   fn handle(&mut self, msg: Invocation, _ctx: &mut Self::Context) -> Self::Result {
     let tx_id = msg.tx_id.clone();
     let target = msg.target.url();
-    let component = actix_ensure_ok!(msg
-      .target
-      .into_component()
-      .map_err(|_e| InvocationResponse::error(tx_id.clone(), "Sent invalid entity".to_owned())));
-    let message = actix_ensure_ok!(msg
-      .msg
-      .into_multibytes()
-      .map_err(|_e| InvocationResponse::error(tx_id.clone(), "Sent invalid payload".to_owned())));
+    let component =
+      actix_ensure_ok!(msg
+        .target
+        .into_component()
+        .map_err(|_e| InvocationResponse::error(
+          tx_id.clone(),
+          "WaPC provider sent invalid entity".to_owned()
+        )));
+    let message =
+      actix_ensure_ok!(msg
+        .msg
+        .into_multibytes()
+        .map_err(|_e| InvocationResponse::error(
+          tx_id.clone(),
+          "WaPC provider sent invalid payload".to_owned()
+        )));
     let name = component.name;
     let inv_id = msg.id;
 

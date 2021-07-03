@@ -18,7 +18,6 @@
     clippy::needless_pass_by_value,
     clippy::option_option,
     clippy::redundant_else,
-    clippy::redundant_closure_for_method_calls,
     clippy::semicolon_if_nothing_returned,
     clippy::too_many_lines,
     clippy::trivially_copy_pass_by_ref,
@@ -92,20 +91,25 @@ mod macros {
   }
 }
 
-mod actix;
-mod component_model;
-mod components;
+#[macro_use]
+extern crate derivative;
+
+#[macro_use]
+extern crate vino_macros;
+
+#[macro_use]
+extern crate tracing;
+
 mod dispatch;
-mod error;
+pub mod error;
+mod models;
 pub mod network;
-mod network_provider;
 mod network_service;
-mod provider_model;
+mod providers;
 pub mod public;
-mod schematic;
-mod schematic_model;
+mod schematic_service;
 mod transaction;
-mod util;
+mod utils;
 mod validator;
 pub use public::*;
 
@@ -131,6 +135,7 @@ pub mod prelude {
   pub use crate::{
     SCHEMATIC_INPUT,
     SCHEMATIC_OUTPUT,
+    SELF_NAMESPACE,
   };
 }
 
@@ -149,12 +154,3 @@ pub const SCHEMATIC_OUTPUT: &str = "<output>";
 pub const COMPONENT_ERROR: &str = "<error>";
 /// The reserved namespace for references to internal schematics.
 pub const SELF_NAMESPACE: &str = "self";
-
-#[macro_use]
-extern crate derivative;
-
-#[macro_use]
-extern crate vino_macros;
-
-#[macro_use]
-extern crate tracing;

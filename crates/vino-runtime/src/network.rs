@@ -4,8 +4,8 @@ use nkeys::KeyPair;
 use serde::Serialize;
 
 use crate::dev::prelude::*;
-pub use crate::network_provider::Provider as NetworkProvider;
-use crate::network_service::Initialize;
+use crate::network_service::messages::Initialize;
+pub use crate::providers::network_provider::Provider as NetworkProvider;
 
 type Result<T> = std::result::Result<T, NetworkError>;
 #[derive(Debug)]
@@ -57,7 +57,7 @@ impl Network {
     let time = std::time::Instant::now();
     let result = self
       .addr
-      .send(crate::network_service::Request {
+      .send(crate::network_service::messages::Request {
         schematic: schematic.as_ref().to_owned(),
         data: serialized_data,
       })

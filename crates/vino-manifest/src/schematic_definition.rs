@@ -108,7 +108,7 @@ impl ComponentDefinition {
   pub fn new(namespace: &str, name: &str) -> Self {
     Self {
       name: name.to_owned(),
-      namespace: name.to_owned(),
+      namespace: namespace.to_owned(),
       id: format!("{}::{}", namespace, name),
       metadata: None,
     }

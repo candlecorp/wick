@@ -14,7 +14,7 @@ use vino_rpc::{
 use crate::dev::prelude::*;
 use crate::error::SchematicError;
 
-type Result<T> = std::result::Result<T, SchematicError>;
+type Result<T> = std::result::Result<T, SchematicModelError>;
 
 type ComponentReference = String;
 type Namespace = String;
@@ -121,23 +121,24 @@ impl SchematicModel {
     self.definition.components.keys()
   }
 
-  pub(crate) fn finish_initialization(&mut self) -> Result<()> {
-    // These are safe because we finish initializing after
-    // validating schematic model is sound.
+  fn populate_state(&mut self, omit_namespaces: &[String]) -> Result<()> {
     let inputs = self.get_schematic_inputs();
     let mut schematic_inputs = vec![];
     for input in inputs {
       let downstreams = self.get_downstreams(&input);
-      let downstream = &downstreams[0];
+
+      let downstream = downstreams.iter().find(|port| {
+        let def = self.get_component_definition(&port.reference).unwrap();
+        let skip = omit_namespaces.iter().find(|ns| ns == &&def.namespace);
+        skip.is_none()
+      });
+      if downstream.is_none() {
+        continue;
+      }
+      let downstream = downstream.unwrap();
       let model = self
         .get_component_model_by_ref(&downstream.reference)
         .unwrap();
-      trace!(
-        "input: {}, downstream: {:?}, model: {:?}",
-        input,
-        downstream,
-        model
-      );
       let downstream_signature = model
         .inputs
         .iter()
@@ -152,6 +153,11 @@ impl SchematicModel {
     let mut schematic_outputs = vec![];
     for output in outputs {
       let upstream = self.get_upstream(&output).unwrap();
+      let def = self.get_component_definition(&upstream.reference).unwrap();
+      let skip = omit_namespaces.iter().find(|ns| ns == &&def.namespace);
+      if skip.is_some() {
+        continue;
+      }
       let model = self
         .get_component_model_by_ref(&upstream.reference)
         .unwrap();
@@ -183,6 +189,14 @@ impl SchematicModel {
       schematic_outputs,
     });
     Ok(())
+  }
+
+  pub(crate) fn partial_initialization(&mut self) -> Result<()> {
+    self.populate_state(&["self".to_owned()])
+  }
+
+  pub(crate) fn final_initialization(&mut self) -> Result<()> {
+    self.populate_state(&[])
   }
 
   pub(crate) fn get_upstream(&self, port: &PortReference) -> Option<&PortReference> {
@@ -218,11 +232,12 @@ impl SchematicModel {
   }
 
   /// Gets a ComponentModel by component reference string
-  pub(crate) fn get_component_model_by_ref(&self, reference: &str) -> Option<ComponentModel> {
+  pub(crate) fn get_component_model_by_ref(&self, reference: &str) -> Result<ComponentModel> {
     self
       .references
       .get(reference)
       .and_then(|id| self.get_component_model(id))
+      .ok_or_else(|| SchematicModelError::MissingComponentModel(reference.to_owned()))
   }
 
   /// Gets a ComponentModel by component reference string
@@ -232,20 +247,12 @@ impl SchematicModel {
       Err(_) => return None,
     };
     let provider = self.providers.get(&ns);
-    let result = provider.and_then(|provider| provider.components.get(&name).cloned());
-    testlog!("Component model lookup id:{} => {:?}", id, result);
-    result
+    provider.and_then(|provider| provider.components.get(&name).cloned())
   }
 
   /// Gets a ComponentDefinition by component reference string
   pub(crate) fn get_component_definition(&self, reference: &str) -> Option<ComponentDefinition> {
-    let result = self.definition.get_component(reference);
-    testlog!(
-      "Component definition lookup ref:{} => {:?}",
-      reference,
-      result
-    );
-    result
+    self.definition.get_component(reference)
   }
 
   pub(crate) fn get_downstreams(&self, port: &PortReference) -> Vec<PortReference> {
@@ -284,7 +291,7 @@ impl SchematicModel {
     self
       .state
       .as_ref()
-      .ok_or(SchematicError::ModelNotInitialized)
+      .ok_or(SchematicModelError::ModelNotInitialized)
       .map(|state| &state.schematic_outputs)
   }
 
@@ -303,7 +310,7 @@ impl SchematicModel {
     self
       .state
       .as_ref()
-      .ok_or(SchematicError::ModelNotInitialized)
+      .ok_or(SchematicModelError::ModelNotInitialized)
       .map(|state| &state.schematic_inputs)
   }
 
@@ -311,7 +318,7 @@ impl SchematicModel {
     self
       .state
       .as_ref()
-      .ok_or(SchematicError::ModelNotInitialized)
+      .ok_or(SchematicModelError::ModelNotInitialized)
       .map(|state| &state.provider_signatures)
   }
 
