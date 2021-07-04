@@ -72,18 +72,8 @@ impl TryFrom<Invocation> for vino_rpc::rpc::Invocation {
 
 #[derive(Debug)]
 pub enum InvocationResponse {
-  Success {
-    tx_id: String,
-    msg: MessageTransport,
-  },
-  Stream {
-    tx_id: String,
-    rx: ResponseStream,
-  },
-  Error {
-    tx_id: String,
-    msg: String,
-  },
+  Stream { tx_id: String, rx: ResponseStream },
+  Error { tx_id: String, msg: String },
 }
 
 #[derive(Debug)]
@@ -138,13 +128,6 @@ impl InvocationResponse {
     }
   }
 
-  /// Creates a successful invocation response. Successful invocations include the payload for an
-  /// invocation
-  #[must_use]
-  pub fn success(tx_id: String, msg: MessageTransport) -> InvocationResponse {
-    InvocationResponse::Success { tx_id, msg }
-  }
-
   /// Creates an error response
   #[must_use]
   pub fn error(tx_id: String, msg: String) -> InvocationResponse {
@@ -154,7 +137,6 @@ impl InvocationResponse {
   pub fn tx_id(&self) -> &str {
     match self {
       InvocationResponse::Stream { tx_id, .. } => tx_id,
-      InvocationResponse::Success { tx_id, .. } => tx_id,
       InvocationResponse::Error { tx_id, .. } => tx_id,
     }
   }
@@ -163,13 +145,6 @@ impl InvocationResponse {
     match self {
       InvocationResponse::Stream { tx_id, rx } => Ok((tx_id, rx)),
       _ => Err(ConversionError("InvocationResponse to stream")),
-    }
-  }
-
-  pub fn to_success(self) -> Result<(String, MessageTransport), ConversionError> {
-    match self {
-      InvocationResponse::Success { tx_id, msg } => Ok((tx_id, msg)),
-      _ => Err(ConversionError("InvocationResponse to success")),
     }
   }
 

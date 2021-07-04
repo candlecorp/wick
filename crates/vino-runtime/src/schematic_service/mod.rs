@@ -202,8 +202,6 @@ mod test {
       ))
       .await?;
     match response {
-      InvocationResponse::Success { .. } => panic!("should have gotten a stream"),
-
       InvocationResponse::Stream { mut rx, .. } => {
         debug!("Got stream");
         let mut i = 0;
@@ -263,7 +261,6 @@ mod test {
       .await?;
 
     match response {
-      InvocationResponse::Success { .. } => panic!("should have gotten a stream"),
       InvocationResponse::Stream { mut rx, .. } => {
         debug!("Got stream");
         let mut i = 0;

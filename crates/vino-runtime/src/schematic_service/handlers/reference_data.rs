@@ -81,7 +81,6 @@ impl Handler<ReferenceData> for SchematicService {
         .map_err(|_| InternalError(6009))?;
 
       match response {
-        InvocationResponse::Success { .. } => unreachable!(),
         InvocationResponse::Stream { tx_id, mut rx } => {
           trace!(
             "spawning task to handle output for {}:{}|{}",

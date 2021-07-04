@@ -76,7 +76,6 @@ impl Network {
     );
 
     match response {
-      InvocationResponse::Success { .. } => unreachable!(),
       InvocationResponse::Stream { mut rx, .. } => {
         debug!("Got stream");
         let mut map = HashMap::new();

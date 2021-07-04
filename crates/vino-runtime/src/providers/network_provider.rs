@@ -61,7 +61,6 @@ impl RpcHandler for Provider {
       })
       .await?;
     match result {
-      InvocationResponse::Success { .. } => unreachable!(),
       InvocationResponse::Stream { rx, .. } => Ok(Box::pin(rx.map(|output| PortPacket {
         port: output.port,
         packet: output.payload,
