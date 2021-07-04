@@ -254,11 +254,8 @@ mod test {
 
     let response = addr
       .send(Invocation {
-        origin: Entity::Test("test".to_owned()),
-        target: Entity::Component(ComponentEntity {
-          reference: "hmmm".into(),
-          name: "log".into(),
-        }),
+        origin: Entity::test("test"),
+        target: Entity::component("log"),
         msg: MessageTransport::MultiBytes(payload),
         id: get_uuid(),
         tx_id: get_uuid(),

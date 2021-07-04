@@ -48,13 +48,13 @@ impl RpcHandler for Provider {
     let component = entity
       .into_component()
       .map_err(|_| NativeError::InvalidEntity(entity_url))?;
-    let instance = components::get_component(&component.name);
+    let instance = components::get_component(&component);
     match instance {
       Some(instance) => {
         let future = instance.job_wrapper(context, payload);
         Ok(Box::pin(future.await?))
       }
-      None => Err(format!("Could not find component: {}", component.name).into()),
+      None => Err(format!("Could not find component: {}", component).into()),
     }
   }
 
@@ -118,7 +118,7 @@ mod tests {
       "input".to_string() => serialize(input)?,
     };
 
-    let entity = Entity::component("log", "unknown");
+    let entity = Entity::component("log");
 
     let mut outputs = provider
       .request(invocation_id.to_string(), entity, job_payload)

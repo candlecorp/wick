@@ -31,7 +31,7 @@ impl Handler<ComponentOutput> for SchematicService {
       async move {
         let port = PortReference {
           name: port,
-          reference: entity.into_component()?.reference,
+          reference: entity.into_reference()?,
         };
         trace!("Sending output ready to schematic");
         receiver

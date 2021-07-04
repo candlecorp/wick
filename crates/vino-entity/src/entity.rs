@@ -25,7 +25,7 @@ pub enum Entity {
   /// A schematic
   Schematic(String),
   /// A component or anything that can be invoked like a component
-  Component(ComponentEntity),
+  Component(String),
   /// A provider (an entity that hosts a collection of components)
   Provider(String),
   /// A reference to an instance of an entity.
@@ -36,18 +36,6 @@ pub enum Entity {
 pub struct SystemEntity {
   pub name: String,
   pub value: String,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub struct ComponentEntity {
-  pub reference: String,
-  pub name: String,
-}
-
-impl Display for ComponentEntity {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    write!(f, "{}({})", self.name, self.reference)
-  }
 }
 
 impl Default for Entity {
@@ -97,24 +85,7 @@ impl FromStr for Entity {
         }
       }
       "schematic" => Ok(Entity::Schematic(id.into())),
-      "component" => {
-        let mut segments = url.path_segments().ok_or_else(|| {
-          Error::ParseError(format!(
-            "Invalid component URL, no path segments found in '{}'",
-            url
-          ))
-        })?;
-        let reference = segments.next().ok_or_else(|| {
-          Error::ParseError(format!(
-            "Invalid component URL, no reference path segment found in '{}'",
-            url
-          ))
-        })?;
-        Ok(Entity::Component(ComponentEntity {
-          name: id.into(),
-          reference: reference.into(),
-        }))
-      }
+      "component" => Ok(Entity::Component(id.into())),
       "provider" => Ok(Entity::Provider(id.into())),
       "client" => Ok(Entity::Client(id.into())),
       "host" => Ok(Entity::Host(id.into())),
@@ -126,11 +97,8 @@ impl FromStr for Entity {
   }
 }
 impl Entity {
-  pub fn component(name: &str, reference: &str) -> Self {
-    Self::Component(ComponentEntity {
-      name: name.to_owned(),
-      reference: reference.to_owned(),
-    })
+  pub fn component(name: &str) -> Self {
+    Self::Component(name.to_owned())
   }
 
   pub fn system(name: &str, value: &str) -> Self {
@@ -166,7 +134,7 @@ impl Entity {
     match self {
       Entity::Test(msg) => format!("{}://test.system/?msg={}", URL_SCHEME, msg),
       Entity::Schematic(name) => format!("{}://{}.schematic/", URL_SCHEME, name),
-      Entity::Component(e) => format!("{}://{}.component/{}", URL_SCHEME, e.name, e.reference),
+      Entity::Component(id) => format!("{}://{}.component/", URL_SCHEME, id),
       Entity::Provider(name) => format!("{}://{}.provider/", URL_SCHEME, name),
       Entity::Client(id) => format!("{}://{}.client/", URL_SCHEME, id),
       Entity::Host(id) => format!("{}://{}.host/", URL_SCHEME, id),
@@ -182,13 +150,20 @@ impl Entity {
     match self {
       Entity::Test(msg) => format!("system:test:{}", msg),
       Entity::Schematic(name) => format!("schematic:{}", name),
-      Entity::Component(e) => format!("component:{}:{}", e.name, e.reference),
+      Entity::Component(id) => format!("component:{}", id),
       Entity::Provider(name) => format!("provider:{}", name),
       Entity::Client(id) => format!("client:{}", id),
       Entity::Host(id) => format!("host:{}", id),
       Entity::System(e) => format!("system:{}:{}", e.name, e.value),
       Entity::Invalid => "system:invalid".to_owned(),
       Entity::Reference(id) => format!("reference:{}", id),
+    }
+  }
+
+  pub fn into_reference(self) -> Result<String> {
+    match self {
+      Entity::Reference(s) => Ok(s),
+      _ => Err(Error::ConversionError("into_provider")),
     }
   }
 
@@ -199,7 +174,7 @@ impl Entity {
     }
   }
 
-  pub fn into_component(self) -> Result<ComponentEntity> {
+  pub fn into_component(self) -> Result<String> {
     match self {
       Entity::Component(s) => Ok(s),
       _ => Err(Error::ConversionError("into_component")),
@@ -221,14 +196,8 @@ mod tests {
   use super::*;
   #[test]
   fn test() -> Result<()> {
-    let entity = Entity::from_str("ofp://some_id.component/reference")?;
-    equals!(
-      entity,
-      Entity::Component(ComponentEntity {
-        name: "some_id".into(),
-        reference: "reference".into(),
-      })
-    );
+    let entity = Entity::from_str("ofp://some_id.component/")?;
+    equals!(entity, Entity::Component("some_id".into()));
 
     let entity = Entity::from_str("ofp://some_id.schematic/")?;
     equals!(entity, Entity::Schematic("some_id".into()));

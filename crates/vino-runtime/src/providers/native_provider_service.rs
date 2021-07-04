@@ -121,6 +121,11 @@ impl Handler<Invocation> for NativeProviderService {
   type Result = ActorResult<Self, InvocationResponse>;
 
   fn handle(&mut self, msg: Invocation, _ctx: &mut Self::Context) -> Self::Result {
+    trace!(
+      "Got invocation from {} to {}",
+      msg.origin.url(),
+      msg.target.url()
+    );
     let provider = self.state.as_ref().unwrap().provider.clone();
     let tx_id = msg.tx_id.clone();
     let component = msg.target;
@@ -252,11 +257,8 @@ mod test {
 
     let response = addr
       .send(Invocation {
-        origin: Entity::Test("test".to_owned()),
-        target: Entity::Component(ComponentEntity {
-          reference: "hmmm".into(),
-          name: "log".into(),
-        }),
+        origin: Entity::test("test"),
+        target: Entity::component("log"),
         msg: MessageTransport::MultiBytes(payload),
         id: get_uuid(),
         tx_id: get_uuid(),

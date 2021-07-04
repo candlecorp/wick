@@ -53,11 +53,8 @@ impl Handler<ReferenceData> for SchematicService {
     let invocation = Invocation::next(
       &tx_id,
       &kp,
-      Entity::Schematic("<state>".to_owned()),
-      Entity::Component(ComponentEntity {
-        name: def.name,
-        reference: msg.reference.clone(),
-      }),
+      Entity::Schematic("<system>".to_owned()), // TODO need better origin
+      Entity::Component(def.name),
       MessageTransport::MultiBytes(invoke_payload),
     );
     let handler = actix_try!(self
@@ -69,7 +66,11 @@ impl Handler<ReferenceData> for SchematicService {
 
     self.invocation_map.insert(
       invocation.id.clone(),
-      (tx_id, name.clone(), invocation.target.clone()),
+      (
+        tx_id,
+        name.clone(),
+        Entity::Reference(msg.reference.clone()),
+      ),
     );
 
     let task = async move {

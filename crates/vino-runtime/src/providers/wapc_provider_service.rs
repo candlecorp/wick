@@ -280,7 +280,6 @@ impl Handler<Invocation> for WapcProviderService {
           tx_id.clone(),
           "WaPC provider sent invalid payload".to_owned()
         )));
-    let name = component.name;
     let inv_id = msg.id;
 
     let state = self.state.as_ref().unwrap();
@@ -317,14 +316,18 @@ impl Handler<Invocation> for WapcProviderService {
       let (tx, rx) = unbounded_channel();
       actix::spawn(async move {
         loop {
-          trace!("Provider component {} waiting for output", name);
+          trace!("Provider component {} waiting for output", component);
           let next = receiver.next().await;
           if next.is_none() {
             break;
           }
 
           let output = next.unwrap();
-          trace!("Native actor {} got output on port [{}]", name, output.port);
+          trace!(
+            "Native actor {} got output on port [{}]",
+            component,
+            output.port
+          );
           match tx.send(ComponentOutput {
             port: output.port.clone(),
             payload: output.packet,

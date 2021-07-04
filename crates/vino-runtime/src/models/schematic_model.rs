@@ -12,7 +12,6 @@ use vino_rpc::{
 };
 
 use crate::dev::prelude::*;
-use crate::error::SchematicError;
 
 type Result<T> = std::result::Result<T, SchematicModelError>;
 

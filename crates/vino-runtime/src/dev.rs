@@ -27,7 +27,6 @@ pub(crate) mod prelude {
   pub(crate) use itertools::*;
   pub(crate) use tracing::Instrument;
   pub(crate) use vino_entity::entity::{
-    ComponentEntity,
     Entity,
     SystemEntity,
   };

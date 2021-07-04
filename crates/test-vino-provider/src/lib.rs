@@ -41,7 +41,7 @@ impl RpcHandler for Provider {
   ) -> RpcResult<BoxedPacketStream> {
     let context = self.context.clone();
     let component = entity.into_component()?;
-    let instance = components::get_component(&component.name);
+    let instance = components::get_component(&component);
     match instance {
       Some(instance) => {
         let future = instance.job_wrapper(context, payload);
@@ -116,7 +116,7 @@ mod tests {
       "input".to_string() => serialize(input)?,
     };
 
-    let entity = Entity::component("test-component", "unknown");
+    let entity = Entity::component("test-component");
 
     let mut outputs = provider
       .request(invocation_id.to_string(), entity, job_payload)

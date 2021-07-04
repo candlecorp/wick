@@ -25,7 +25,7 @@ impl Handler<Invocation> for SchematicService {
     let target = msg.target.clone();
     let result = match target {
       Entity::Schematic(name) => handle_schematic(self, ctx.address(), &name, msg),
-      Entity::Component(c) => handle_schematic(self, ctx.address(), &c.name, msg),
+      Entity::Component(name) => handle_schematic(self, ctx.address(), &name, msg),
       Entity::Reference(reference) => self
         .get_component_definition(&reference)
         .map_or(Err(SchematicError::ReferenceNotFound(reference)), |def| {

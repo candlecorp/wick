@@ -224,7 +224,6 @@ impl Handler<Invocation> for GrpcProviderService {
         )
       ));
 
-    let name = component.name;
     let inv_id = msg.id.clone();
     let invocation: rpc::Invocation =
       actix_ensure_ok!(msg.try_into().map_err(|_e| InvocationResponse::error(
@@ -238,7 +237,7 @@ impl Handler<Invocation> for GrpcProviderService {
       let (tx, rx) = unbounded_channel();
       actix::spawn(async move {
         loop {
-          trace!("Provider component {} waiting for output", name);
+          trace!("Provider component {} waiting for output", component);
           let next = stream.message().await;
           if let Err(e) = next {
             let msg = format!("Error during GRPC stream: {}", e);
@@ -286,7 +285,11 @@ impl Handler<Invocation> for GrpcProviderService {
             continue;
           }
           let port_name = output.port;
-          trace!("Native actor {} got output on port [{}]", name, port_name);
+          trace!(
+            "Native actor {} got output on port [{}]",
+            component,
+            port_name
+          );
           match tx.send(ComponentOutput {
             port: port_name.clone(),
             payload: payload.unwrap().into(),
@@ -355,11 +358,8 @@ mod test {
 
       let response = grpc_provider
         .send(Invocation {
-          origin: Entity::Test("grpc".to_owned()),
-          target: Entity::Component(ComponentEntity {
-            reference: "REFERENCE".to_owned(),
-            name: "test-component".to_owned(),
-          }),
+          origin: Entity::test("grpc"),
+          target: Entity::component("test-component"),
           msg: MessageTransport::MultiBytes(hashmap! {
             "input".to_owned()=>serialize(user_data)?
           }),

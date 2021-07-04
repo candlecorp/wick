@@ -173,7 +173,6 @@ mod test {
   #[test_env_log::test(actix_rt::test)]
   async fn test_basic_schematic() -> TestResult<()> {
     let kp = KeyPair::new_server();
-    let tx_id = get_uuid();
     let schematic = SchematicService::default();
     let addr = schematic.start();
     let schematic_name = "logger";

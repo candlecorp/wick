@@ -13,7 +13,7 @@ impl Handler<Invocation> for NetworkService {
 
     let schematic_name = match target {
       Entity::Schematic(name) => name,
-      Entity::Component(c) => c.name,
+      Entity::Component(name) => name,
       _ => return ActorResult::reply(inv_error(&tx_id, "Sent invalid entity")),
     };
 
