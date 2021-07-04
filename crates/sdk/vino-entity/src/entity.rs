@@ -34,8 +34,8 @@ pub enum Entity {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct SystemEntity {
-  name: String,
-  value: String,
+  pub name: String,
+  pub value: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
