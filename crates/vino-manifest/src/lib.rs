@@ -27,6 +27,7 @@ use std::fs::read_to_string;
 use std::path::Path;
 
 use hocon::HoconLoader;
+use serde::de::DeserializeOwned;
 use serde::Deserialize;
 use tracing::debug;
 
@@ -112,9 +113,26 @@ pub trait Loadable<T> {
   }
   /// Load as YAML
   fn from_yaml(src: &str) -> Result<T>;
-
   /// Load as Hocon
   fn from_hocon(src: &str) -> Result<T>;
+}
+
+fn from_yaml<T>(src: &str) -> Result<T>
+where
+  T: DeserializeOwned,
+{
+  let result = serde_yaml::from_str(src)?;
+  debug!("Yaml parsed successfully");
+  Ok(result)
+}
+
+fn from_hocon<T>(src: &str) -> Result<T>
+where
+  T: DeserializeOwned,
+{
+  let result = hocon::de::from_str(src).map_err(crate::Error::HoconError)?;
+  debug!("Hocon parsed successfully");
+  Ok(result)
 }
 
 impl Loadable<HostManifest> for HostManifest {
@@ -126,36 +144,39 @@ impl Loadable<HostManifest> for HostManifest {
       .as_string()
       .unwrap_or_else(|| "Version not found".into());
     match a.as_str() {
-      "0" => Ok(HostManifest::V0(hocon::de::from_str(src)?)),
+      "0" => Ok(HostManifest::V0(from_hocon(src)?)),
       _ => Err(Error::VersionError(a.to_string())),
     }
   }
 
   fn from_yaml(src: &str) -> Result<HostManifest> {
     debug!("Trying to parse manifest as yaml");
-    let raw: serde_yaml::Value = serde_yaml::from_str(src)?;
+    let raw: serde_yaml::Value = from_yaml(src)?;
 
     let a = raw["version"].as_str().unwrap_or("Version not found");
     match a {
-      "0" => Ok(HostManifest::V0(serde_yaml::from_str(src)?)),
+      "0" => Ok(HostManifest::V0(from_yaml(src)?)),
       _ => Err(Error::VersionError(a.to_string())),
     }
   }
 }
 
 impl Loadable<v0::NetworkManifest> for v0::NetworkManifest {
-  fn from_hocon(src: &str) -> Result<v0::NetworkManifest> {
-    debug!("Trying to parse manifest as hocon");
-    let result = hocon::de::from_str(src).map_err(crate::Error::HoconError)?;
-    debug!("Hocon parsed successfully: {:?}", result);
-    Ok(result)
+  fn from_yaml(src: &str) -> Result<v0::NetworkManifest> {
+    from_yaml(src)
   }
 
-  fn from_yaml(src: &str) -> Result<v0::NetworkManifest> {
-    debug!("Trying to parse manifest as yaml");
+  fn from_hocon(src: &str) -> Result<v0::NetworkManifest> {
+    from_hocon(src)
+  }
+}
 
-    let result = serde_yaml::from_str(src)?;
-    debug!("Yaml parsed successfully");
-    Ok(result)
+impl Loadable<v0::SchematicManifest> for v0::SchematicManifest {
+  fn from_yaml(src: &str) -> Result<v0::SchematicManifest> {
+    from_yaml(src)
+  }
+
+  fn from_hocon(src: &str) -> Result<v0::SchematicManifest> {
+    from_hocon(src)
   }
 }

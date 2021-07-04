@@ -13,12 +13,10 @@ use tokio::sync::mpsc::{
 };
 
 use crate::dev::prelude::*;
-use crate::schematic_service::messages::{
-  PayloadReceived,
-  ReferenceReady,
-  SchematicOutputReceived,
-  TransactionUpdate,
-};
+use crate::schematic_service::handlers::payload_received::PayloadReceived;
+use crate::schematic_service::handlers::reference_data::ReferenceData;
+use crate::schematic_service::handlers::schematic_output::SchematicOutput;
+use crate::schematic_service::handlers::transaction_update::TransactionUpdate;
 type Result<T> = std::result::Result<T, TransactionError>;
 
 #[derive(Debug)]
@@ -61,13 +59,11 @@ impl TransactionMap {
         if output.target.reference == SCHEMATIC_OUTPUT {
           debug!("Received schematic output, pushing immediately...");
           if let Some(payload) = locked.take_from_port(&output.target) {
-            meh!(ready_tx.send(TransactionUpdate::SchematicOutput(
-              SchematicOutputReceived {
-                tx_id: tx_id.clone(),
-                port: output.target.name,
-                payload,
-              }
-            )));
+            meh!(ready_tx.send(TransactionUpdate::Result(SchematicOutput {
+              tx_id: tx_id.clone(),
+              port: output.target.name,
+              payload,
+            })));
           }
           for port in &locked.output_ports {
             if locked.has_active_upstream(port)? {
@@ -77,7 +73,7 @@ impl TransactionMap {
           }
           // If all connections to the schematic outputs are closed, then finish up.
           debug!("Sending schematic done");
-          meh!(ready_tx.send(TransactionUpdate::SchematicDone(tx_id.clone())));
+          meh!(ready_tx.send(TransactionUpdate::Done(tx_id.clone())));
           rx.close();
           continue;
         }
@@ -86,13 +82,11 @@ impl TransactionMap {
           debug!("Reference {} is ready, continuing...", output.target);
           let map = locked.take_inputs(&output.target.reference)?;
           drop(locked);
-          meh!(
-            ready_tx.send(TransactionUpdate::ReferenceReady(ReferenceReady {
-              tx_id: tx_id.clone(),
-              reference: output.target.reference,
-              payload_map: map
-            }))
-          );
+          meh!(ready_tx.send(TransactionUpdate::Transition(ReferenceData {
+            tx_id: tx_id.clone(),
+            reference: output.target.reference,
+            payload_map: map
+          })));
         } else {
           debug!("Reference is not ready, waiting...");
         }

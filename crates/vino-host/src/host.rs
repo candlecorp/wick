@@ -12,6 +12,7 @@ use actix::prelude::*;
 use nkeys::KeyPair;
 use serde::Serialize;
 use tokio::sync::Mutex;
+use vino_entity::Entity;
 use vino_provider_cli::cli::Options as CliOpts;
 use vino_runtime::network::NetworkBuilder;
 use vino_runtime::prelude::*;
@@ -97,7 +98,11 @@ impl Host {
     payload: HashMap<U, impl Serialize + Sync>,
   ) -> Result<HashMap<String, MessageTransport>> {
     match &self.network {
-      Some(network) => Ok(network.request(schematic, &payload).await?),
+      Some(network) => Ok(
+        network
+          .request(schematic, Entity::host(&self.host_id), &payload)
+          .await?,
+      ),
       None => Err(crate::Error::InvalidHostState(
         "No network available".into(),
       )),

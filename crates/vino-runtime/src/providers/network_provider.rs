@@ -16,7 +16,7 @@ use vino_rpc::{
 };
 
 use crate::dev::prelude::*;
-use crate::network_service::messages::ListSchematics;
+use crate::network_service::handlers::list_schematics::ListSchematics;
 
 #[derive(Debug, Default)]
 struct State {

@@ -14,6 +14,7 @@ hocon = "0.5.2"
 serde_yaml = "0.8.17"
 num-traits = "0.2.14"
 enum-primitive-derive = "0.2.1"
+serde-with-expand-env = "1.1.0"
 
 [dev-dependencies]
 test-env-log = "0.2.7"

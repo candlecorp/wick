@@ -3,8 +3,9 @@ default_schematic: "logger"
 version: "0"
 
 network {
-    schematics: [{
-        name: "logger",
+    schematics: [
+      {
+        name: "name_$TEST_ENV_VAR",
         components {
           logger {
             id: "vino::log"
@@ -20,7 +21,8 @@ network {
               to { instance: "vino::schematic_input", port: "output" },
             },
           ],
-      }],
+      }
+    ],
   }
 
 

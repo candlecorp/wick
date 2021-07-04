@@ -26,7 +26,7 @@ use wascap::prelude::{
 
 use crate::dev::prelude::*;
 use crate::error::ConversionError;
-use crate::schematic_service::messages::ComponentOutput;
+use crate::schematic_service::handlers::component_output::ComponentOutput;
 
 /// An invocation for a component, port, or schematic
 #[derive(Debug, Clone, Default, Serialize, Deserialize, Message, PartialEq)]

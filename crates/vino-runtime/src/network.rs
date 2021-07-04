@@ -4,7 +4,7 @@ use nkeys::KeyPair;
 use serde::Serialize;
 
 use crate::dev::prelude::*;
-use crate::network_service::messages::Initialize;
+use crate::network_service::handlers::initialize::Initialize;
 pub use crate::providers::network_provider::Provider as NetworkProvider;
 
 type Result<T> = std::result::Result<T, NetworkError>;
@@ -42,6 +42,7 @@ impl Network {
   pub async fn request<T, U>(
     &self,
     schematic: T,
+    origin: Entity,
     data: &HashMap<U, impl Serialize + Sync>,
   ) -> Result<HashMap<String, MessageTransport>>
   where
@@ -55,21 +56,39 @@ impl Network {
       .collect();
 
     let time = std::time::Instant::now();
-    let result = self
+    let payload = MessageTransport::MultiBytes(serialized_data);
+
+    let invocation = Invocation::new(
+      &self.kp,
+      origin,
+      Entity::Schematic(schematic.as_ref().to_owned()),
+      payload,
+    );
+    let response = self
       .addr
-      .send(crate::network_service::messages::Request {
-        schematic: schematic.as_ref().to_owned(),
-        data: serialized_data,
-      })
+      .send(invocation)
       .await
-      .map_err(|_| InternalError(5101))??;
+      .map_err(|_| InternalError(5101))?;
     trace!(
       "result for {} took {} μs",
       schematic.as_ref().to_owned(),
       time.elapsed().as_micros()
     );
-    trace!("Result: {:?}", result);
-    Ok(result)
+
+    match response {
+      InvocationResponse::Success { .. } => unreachable!(),
+      InvocationResponse::Stream { mut rx, .. } => {
+        debug!("Got stream");
+        let mut map = HashMap::new();
+        while let Some(next) = rx.next().await {
+          debug!("Received packet on port {}: {:?}", next.port, next.payload);
+          map.insert(next.port, next.payload.into());
+        }
+        trace!("Result: {:?}", map);
+        Ok(map)
+      }
+      InvocationResponse::Error { msg, .. } => Err(NetworkError::ExecutionError(msg)),
+    }
   }
 }
 

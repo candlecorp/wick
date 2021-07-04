@@ -7,7 +7,7 @@ use tokio::sync::mpsc::error::SendError;
 use vino_rpc::PortSignature;
 
 use crate::dev::prelude::*;
-use crate::schematic_service::messages::PayloadReceived;
+use crate::schematic_service::handlers::payload_received::PayloadReceived;
 
 pub(crate) type BoxedErrorSyncSend = Box<dyn std::error::Error + Sync + Send>;
 
@@ -99,6 +99,8 @@ pub enum NetworkError {
   ExecutionError(String),
   #[error(transparent)]
   CodecError(#[from] vino_codec::Error),
+  #[error(transparent)]
+  KeyPairError(#[from] nkeys::error::Error),
 }
 
 #[derive(Error, Debug)]

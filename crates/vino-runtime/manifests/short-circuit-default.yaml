@@ -1,0 +1,39 @@
+---
+schematics:
+  - name: short_circuit
+    providers:
+      - namespace: wapc
+        kind: WaPC
+        reference: ../test-wapc-component/build/test_component_s.wasm
+    components:
+      validate_password:
+        id: wapc::test-component
+      log:
+        id: vino::log
+      log2:
+        id: vino::log
+    connections:
+      - from:
+          instance: <input>
+          port: input_port1
+        to:
+          instance: log
+          port: input
+      - from:
+          instance: log
+          port: output
+        to:
+          instance: validate_password
+          port: input
+      - from:
+          instance: validate_password
+          port: output
+        to:
+          instance: log2
+          port: input
+      - from:
+          instance: log2
+          port: output
+        to:
+          instance: <output>
+          port: output1

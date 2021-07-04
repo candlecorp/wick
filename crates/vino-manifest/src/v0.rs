@@ -22,6 +22,7 @@
 #![warn(clippy::cognitive_complexity)]
 
 use serde::{Deserialize, Serialize};
+use serde_with_expand_env::with_expand_envs;
 use std::collections::HashMap;
 use num_traits::FromPrimitive;
 
@@ -48,6 +49,19 @@ pub struct HostManifest {
     /// The manifest version
       
       
+          #[serde(deserialize_with="with_expand_envs")]
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
     pub version: 
       String
       
@@ -56,6 +70,19 @@ pub struct HostManifest {
       #[serde(default)]
       
       
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
     pub network: 
       
       NetworkManifest
@@ -64,6 +91,19 @@ pub struct HostManifest {
       #[serde(default = "HOST_MANIFEST_DEFAULT_SCHEMATIC")]
       
       
+          #[serde(deserialize_with="with_expand_envs")]
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
     pub default_schematic: 
       String
       
@@ -72,6 +112,19 @@ pub struct HostManifest {
       #[serde(default)]
       
       
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
     pub nats: 
       
       NatsConfiguration
@@ -121,6 +174,19 @@ pub struct NatsConfiguration {
       #[serde(default = "NATS_CONFIGURATION_RPC_HOST")]
       
       
+          #[serde(deserialize_with="with_expand_envs")]
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
     pub rpc_host: 
       String
       
@@ -129,6 +195,19 @@ pub struct NatsConfiguration {
       #[serde(default = "NATS_CONFIGURATION_RPC_PORT")]
       
       
+          #[serde(deserialize_with="with_expand_envs")]
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
     pub rpc_port: 
       String
       
@@ -167,6 +246,19 @@ pub struct NatsConfiguration {
       #[serde(default = "NATS_CONFIGURATION_CONTROL_HOST")]
       
       
+          #[serde(deserialize_with="with_expand_envs")]
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
     pub control_host: 
       String
       
@@ -175,6 +267,19 @@ pub struct NatsConfiguration {
       #[serde(default = "NATS_CONFIGURATION_CONTROL_PORT")]
       
       
+          #[serde(deserialize_with="with_expand_envs")]
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
     pub control_port: 
       String
       
@@ -213,6 +318,19 @@ pub struct NatsConfiguration {
       #[serde(default)]
       
       
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          #[serde(deserialize_with="with_expand_envs")]
+          
     pub allow_oci_latest: 
       
       bool
@@ -341,6 +459,19 @@ pub struct Capability {
       #[serde(default)]
       
       
+          #[serde(deserialize_with="with_expand_envs")]
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
     pub image_ref: 
       String
       
@@ -370,6 +501,19 @@ pub struct LinkEntry {
       #[serde(default)]
       
       
+          #[serde(deserialize_with="with_expand_envs")]
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
     pub actor: 
       String
       
@@ -379,6 +523,19 @@ pub struct LinkEntry {
       #[serde(default)]
       
       
+          #[serde(deserialize_with="with_expand_envs")]
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
     pub contract_id: 
       String
       
@@ -388,6 +545,19 @@ pub struct LinkEntry {
       #[serde(default)]
       
       
+          #[serde(deserialize_with="with_expand_envs")]
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
     pub provider_id: 
       String
       
@@ -433,6 +603,19 @@ pub struct ReferenceEntry {
       #[serde(default)]
       
       
+          #[serde(deserialize_with="with_expand_envs")]
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
     pub reference: 
       String
       
@@ -442,6 +625,19 @@ pub struct ReferenceEntry {
       #[serde(default)]
       
       
+          #[serde(deserialize_with="with_expand_envs")]
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
     pub target: 
       String
       
@@ -460,6 +656,19 @@ pub struct ConnectionEntry {
       #[serde(default)]
       
       
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
     pub from: 
       
       ActorPortEntry
@@ -469,6 +678,19 @@ pub struct ConnectionEntry {
       #[serde(default)]
       
       
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
     pub to: 
       
       ActorPortEntry
@@ -487,6 +709,19 @@ pub struct ActorPortEntry {
       #[serde(default)]
       
       
+          #[serde(deserialize_with="with_expand_envs")]
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
     pub reference: 
       String
       
@@ -496,6 +731,19 @@ pub struct ActorPortEntry {
       #[serde(default)]
       
       
+          #[serde(deserialize_with="with_expand_envs")]
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
     pub port: 
       String
       
@@ -514,6 +762,19 @@ pub struct SchematicManifest {
     /// Schematic name
       
       
+          #[serde(deserialize_with="with_expand_envs")]
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
     pub name: 
       String
       
@@ -596,6 +857,19 @@ pub struct ExternalComponentDefinition {
     /// The location reference (i.e. URL or file path)
       
       
+          #[serde(deserialize_with="with_expand_envs")]
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
     pub reference: 
       String
       
@@ -604,6 +878,19 @@ pub struct ExternalComponentDefinition {
       #[serde(default)]
       
       
+          #[serde(deserialize_with="with_expand_envs")]
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
     pub key: 
       String
       
@@ -621,6 +908,19 @@ pub struct ProviderDefinition {
       #[serde(default)]
       
       
+          #[serde(deserialize_with="with_expand_envs")]
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
     pub namespace: 
       String
       
@@ -629,6 +929,19 @@ pub struct ProviderDefinition {
       #[serde(default)]
       
       
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
     pub kind: 
       
       ProviderKind
@@ -637,6 +950,19 @@ pub struct ProviderDefinition {
       #[serde(default)]
       
       
+          #[serde(deserialize_with="with_expand_envs")]
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
     pub reference: 
       String
       
@@ -690,6 +1016,19 @@ pub struct ComponentDefinition {
     /// The ID of the component (i.e. the alias, key, or namespace)
       
       
+          #[serde(deserialize_with="with_expand_envs")]
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
     pub id: 
       String
       
@@ -721,6 +1060,19 @@ pub struct ConnectionDefinition {
     /// The originating component (upstream)
       
       
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
     pub from: 
       
       ConnectionTargetDefinition
@@ -728,6 +1080,19 @@ pub struct ConnectionDefinition {
     /// The destination component (downstream)
       
       
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
     pub to: 
       
       ConnectionTargetDefinition
@@ -744,6 +1109,19 @@ pub struct ConnectionTargetDefinition {
     /// The component reference
       
       
+          #[serde(deserialize_with="with_expand_envs")]
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
     pub instance: 
       String
       
@@ -751,6 +1129,19 @@ pub struct ConnectionTargetDefinition {
     /// The component&#x27;s port
       
       
+          #[serde(deserialize_with="with_expand_envs")]
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
     pub port: 
       String
       

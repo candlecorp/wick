@@ -29,6 +29,7 @@ pub(crate) mod prelude {
   pub(crate) use vino_entity::entity::{
     ComponentEntity,
     Entity,
+    SystemEntity,
   };
   pub(crate) use vino_manifest::{
     parse_namespace,
@@ -44,6 +45,7 @@ pub(crate) mod prelude {
   pub(crate) use crate::dev::*;
   pub(crate) use crate::dispatch::{
     get_uuid,
+    inv_error,
     PortReference,
   };
   pub(crate) use crate::error::{

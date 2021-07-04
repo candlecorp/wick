@@ -11,6 +11,6 @@ pub(crate) async fn job(
   output: Outputs,
   _context: Context<crate::State>,
 ) -> std::result::Result<(), Box<dyn std::error::Error + Send + Sync>> {
-  output.output.done(input.input);
+  output.output.done(format!("TEST: {}", input.input));
   Ok(())
 }

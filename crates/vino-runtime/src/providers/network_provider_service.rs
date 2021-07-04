@@ -14,7 +14,7 @@ use super::{
 };
 use crate::dev::prelude::*;
 use crate::error::ComponentError;
-use crate::schematic_service::messages::ComponentOutput;
+use crate::schematic_service::handlers::component_output::ComponentOutput;
 type Result<T> = std::result::Result<T, ComponentError>;
 
 #[derive(Debug)]

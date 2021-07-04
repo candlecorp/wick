@@ -20,7 +20,7 @@ use super::{
   ProviderResponse,
 };
 use crate::dev::prelude::*;
-use crate::schematic_service::messages::ComponentOutput;
+use crate::schematic_service::handlers::component_output::ComponentOutput;
 type Result<T> = std::result::Result<T, ComponentError>;
 
 #[derive(Default, Debug)]
@@ -380,7 +380,8 @@ mod test {
                 let (_, mut rx) = response.to_stream()?;
                 let next: ComponentOutput = rx.next().await.unwrap();
                 let payload: String = next.payload.try_into()?;
-                equals!(user_data, payload);              },
+                equals!(payload, format!("TEST: {}", user_data));
+              },
               Err(e)=>{
                 panic!("task failed: {}", e);
               }

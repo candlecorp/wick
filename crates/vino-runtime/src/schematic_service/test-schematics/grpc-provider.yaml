@@ -1,0 +1,21 @@
+name: grpc
+providers:
+  - namespace: test-namespace
+    kind: GrpcUrl
+    reference: https://127.0.0.1:$TEST_PORT
+components:
+  external:
+    id: test-namespace::test-component
+connections:
+  - from:
+      instance: <input>
+      port: input
+    to:
+      instance: external
+      port: input
+  - from:
+      instance: external
+      port: output
+    to:
+      instance: <output>
+      port: output
