@@ -1097,6 +1097,16 @@ pub struct ConnectionDefinition {
       
       ConnectionTargetDefinition
 ,
+    /// The default value to provide in the event of an upstream Error or Exception
+      #[serde(default)]
+      
+      
+    pub default: 
+    Option<
+      String
+      
+>
+,
 }
     
     

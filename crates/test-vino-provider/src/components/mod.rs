@@ -5,7 +5,7 @@ use vino_provider::{
 };
 pub(crate) mod generated;
 
-pub mod test_component;
+pub(crate) mod test_component;
 
 pub(crate) fn get_component(
   name: &str,

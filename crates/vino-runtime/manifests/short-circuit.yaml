@@ -9,9 +9,9 @@ schematics:
       validate_password:
         id: wapc::validate
       log:
-        id: vino::log
+        id: vino-v0::log
       log2:
-        id: vino::log
+        id: vino-v0::log
     connections:
       - from:
           instance: <input>

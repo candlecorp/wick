@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::str::FromStr;
 use std::sync::{
   Arc,
   Mutex,
@@ -106,6 +105,7 @@ mod tests {
     v0,
     Packet,
   };
+  use vino_rpc::HostedType;
 
   use super::*;
 
@@ -141,12 +141,19 @@ mod tests {
   #[test_env_log::test(tokio::test)]
   async fn list() -> Result<()> {
     let provider = Provider::default();
+    let components = crate::components::get_all_components();
 
     let response = provider.list_registered().await.expect("request failed");
 
     debug!("list response : {:?}", response);
 
-    assert_eq!(response.len(), 4);
+    assert_eq!(components.len(), response.len());
+    for index in 0..components.len() {
+      assert_eq!(
+        HostedType::Component(components[index].clone()),
+        response[index]
+      );
+    }
 
     Ok(())
   }

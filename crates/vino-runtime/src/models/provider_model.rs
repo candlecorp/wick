@@ -35,7 +35,7 @@ pub(crate) async fn initialize_native_provider(
   let arbiter = Arbiter::new();
   let handle = arbiter.handle();
 
-  let provider = Arc::new(Mutex::new(vino_native_provider::Provider::default()));
+  let provider = Arc::new(Mutex::new(vino_native_components_v0::Provider::default()));
   let addr = native_provider_service::NativeProviderService::start_in_arbiter(&handle, |_| {
     native_provider_service::NativeProviderService::default()
   });

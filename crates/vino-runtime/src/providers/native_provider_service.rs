@@ -223,7 +223,7 @@ mod test {
     addr
       .send(Initialize {
         namespace: "native-provider".to_owned(),
-        provider: Arc::new(Mutex::new(vino_native_provider::Provider::default())),
+        provider: Arc::new(Mutex::new(vino_native_components_v0::Provider::default())),
       })
       .await??;
 
@@ -232,7 +232,7 @@ mod test {
       .await??;
     println!("response: {:?}", response);
     let list = response.into_list_response()?;
-    equals!(list.len(), 4);
+    equals!(list.len(), 5);
 
     Ok(())
   }
@@ -246,7 +246,7 @@ mod test {
     addr
       .send(Initialize {
         namespace: "native-provider".to_owned(),
-        provider: Arc::new(Mutex::new(vino_native_provider::Provider::default())),
+        provider: Arc::new(Mutex::new(vino_native_components_v0::Provider::default())),
       })
       .await??;
 

@@ -298,11 +298,11 @@ mod tests {
     let mut transaction = Transaction::new(tx_id, model);
     let from = PortReference {
       reference: "REF_ID_LOGGER1".into(),
-      name: "vino::log".into(),
+      name: "vino-v0::log".into(),
     };
     let to = PortReference {
       reference: "REF_ID_LOGGER2".into(),
-      name: "vino::log".into(),
+      name: "vino-v0::log".into(),
     };
     trace!("pushing to port");
     transaction.receive(

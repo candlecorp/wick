@@ -3,9 +3,9 @@ schematics:
   - name: native_component
     components:
       add:
-        id: vino::add
+        id: vino-v0::add
       add2:
-        id: vino::add
+        id: vino-v0::add
     connections:
       - from:
           instance: <input>

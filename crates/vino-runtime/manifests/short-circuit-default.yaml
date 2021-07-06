@@ -9,19 +9,13 @@ schematics:
       validate_password:
         id: wapc::test-component
       log:
-        id: vino::log
+        id: vino-v0::log
       log2:
-        id: vino::log
+        id: vino-v0::log
     connections:
       - from:
           instance: <input>
           port: input_port1
-        to:
-          instance: log
-          port: input
-      - from:
-          instance: log
-          port: output
         to:
           instance: validate_password
           port: input
@@ -37,3 +31,4 @@ schematics:
         to:
           instance: <output>
           port: output1
+        default: "there was an error"

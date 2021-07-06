@@ -1,5 +1,5 @@
 [package]
-name = "vino-native-provider"
+name = "vino-native-components-v0"
 version = "0.1.0"
 authors = ["Jarrod Overson <jsoverson@gmail.com>"]
 edition = "2018"

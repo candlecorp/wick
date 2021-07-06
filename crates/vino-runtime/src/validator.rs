@@ -272,7 +272,7 @@ mod tests {
       type_string: "bytes".to_owned(),
     }];
     let provider = ProviderModel {
-      namespace: "vino".to_owned(),
+      namespace: "vino-v0".to_owned(),
       components: hashmap! {
         "log".to_owned() => ComponentModel {
           namespace: "test-namespace".to_owned(),

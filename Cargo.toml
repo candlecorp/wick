@@ -34,7 +34,7 @@ tracing-subscriber = "0.2.18"
 [workspace]
 members = [
   "crates/vino-cli",
-  "crates/vino-ctl",
+  "crates/vinoc",
   "crates/vino-macros",
   "crates/logger",
   "crates/vino-runtime",
@@ -45,7 +45,7 @@ members = [
   "crates/vino-codec",
   "crates/vino-manifest",
   "crates/vino-provider",
-  "crates/vino-native-provider",
+  "crates/vino-native-components-v0",
   "crates/vino-provider-cli",
   "crates/vino-entity",
   "crates/test-vino-provider",

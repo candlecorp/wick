@@ -3,7 +3,7 @@ schematics:
   - name: simple
     components:
       REF_ID_LOGGER:
-        id: vino::log
+        id: vino-v0::log
     connections:
       - from:
           instance: <input>

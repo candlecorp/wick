@@ -2,7 +2,7 @@ schematics:
   - name: first_schematic
     components:
       add:
-        id: vino::add
+        id: vino-v0::add
     connections:
       - from:
           instance: <input>
@@ -25,7 +25,7 @@ schematics:
   - name: second_schematic
     components:
       log:
-        id: vino::log
+        id: vino-v0::log
     connections:
       - from:
           instance: <input>

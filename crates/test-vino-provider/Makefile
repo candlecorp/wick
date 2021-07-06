@@ -15,7 +15,8 @@ COMPONENTS_FACTORY_RS:=$(COMPONENTS_DIR)/mod.rs
 
 # Get list of WIDL files in SCHEMA_DIR
 SCHEMAS=$(wildcard ${SCHEMA_DIR}/*.widl)
-
+# Name of the package from Cargo.toml
+CRATE_NAME:=$(shell tomlq -f Cargo.toml package.name)
 # Translate a list of WIDL files to GENERATED_DIR/file.rs (transposing hyphens to underscores)
 GENERATED_COMPONENTS := $(patsubst %.widl,%.rs,$(patsubst ${SCHEMA_DIR}%,${GENERATED_DIR}%,$(subst -,_,$(SCHEMAS))))
 # Strip the directory and extension of the generated components to get their rust module names
@@ -58,11 +59,11 @@ $(GENERATED_DIR):
 $(GENERATED_COMPONENTS):
 	vino-codegen rust provider-component "$<" >$(subst -,_,$@)
 
-$(INTERFACE_FILE): $(SCHEMAS)
-	vino-codegen widl -t interface -r $(SCHEMA_DIR) -d $(SCHEMA_DIR) -f -o $@
+./interface.json: $(SCHEMAS)
+	vino-codegen json interface "$(CRATE_NAME)" $(SCHEMA_DIR) -f -o $@
 
-$(COMPONENTS_FACTORY_RS): $(INTERFACE_FILE)
-	vino-codegen rust provider-integration "$(INTERFACE_FILE)" -r ${SCHEMA_DIR} >$@
+$(COMPONENTS_FACTORY_RS): $(SCHEMAS)
+	vino-codegen rust provider-integration $(SCHEMA_DIR) >$@
 
 codegen:
 	make $(GENERATED_COMPONENTS)

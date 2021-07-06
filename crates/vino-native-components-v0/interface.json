@@ -1,0 +1,88 @@
+{
+  "name": "vino-native-components-v0",
+  "components": [
+    {
+      "name": "add",
+      "inputs": [
+        {
+          "name": "left",
+          "type_string": "u64"
+        },
+        {
+          "name": "right",
+          "type_string": "u64"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "output",
+          "type_string": "u64"
+        }
+      ]
+    },
+    {
+      "name": "bcrypt",
+      "inputs": [
+        {
+          "name": "input",
+          "type_string": "string"
+        },
+        {
+          "name": "cost",
+          "type_string": "u32"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "output",
+          "type_string": "string"
+        }
+      ]
+    },
+    {
+      "name": "log",
+      "inputs": [
+        {
+          "name": "input",
+          "type_string": "string"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "output",
+          "type_string": "string"
+        }
+      ]
+    },
+    {
+      "name": "short-circuit",
+      "inputs": [
+        {
+          "name": "input",
+          "type_string": "string"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "output",
+          "type_string": "string"
+        }
+      ]
+    },
+    {
+      "name": "string-to-bytes",
+      "inputs": [
+        {
+          "name": "input",
+          "type_string": "string"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "output",
+          "type_string": "bytes"
+        }
+      ]
+    }
+  ]
+}

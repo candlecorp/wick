@@ -2,7 +2,7 @@ schematics:
   - name: parent
     components:
       log1:
-        id: vino::log
+        id: vino-v0::log
       child_ref:
         id: self::child
     connections:
@@ -27,7 +27,7 @@ schematics:
   - name: child
     components:
       log2:
-        id: vino::log
+        id: vino-v0::log
     connections:
       - from:
           instance: <input>

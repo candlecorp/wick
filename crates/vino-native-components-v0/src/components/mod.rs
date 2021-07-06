@@ -5,10 +5,11 @@ use vino_provider::{
 };
 pub(crate) mod generated;
 
-pub mod add;
-pub mod bcrypt;
-pub mod log;
-pub mod string_to_bytes;
+pub(crate) mod add;
+pub(crate) mod bcrypt;
+pub(crate) mod log;
+pub(crate) mod short_circuit;
+pub(crate) mod string_to_bytes;
 
 pub(crate) fn get_component(
   name: &str,
@@ -17,6 +18,7 @@ pub(crate) fn get_component(
     "add" => Some(Box::new(generated::add::Component::default())),
     "bcrypt" => Some(Box::new(generated::bcrypt::Component::default())),
     "log" => Some(Box::new(generated::log::Component::default())),
+    "short-circuit" => Some(Box::new(generated::short_circuit::Component::default())),
     "string-to-bytes" => Some(Box::new(generated::string_to_bytes::Component::default())),
     _ => None,
   }
@@ -53,6 +55,17 @@ pub(crate) fn get_all_components() -> Vec<ComponentSignature> {
         .map(From::from)
         .collect(),
       outputs: generated::log::outputs_list()
+        .into_iter()
+        .map(From::from)
+        .collect(),
+    },
+    ComponentSignature {
+      name: "short-circuit".to_string(),
+      inputs: generated::short_circuit::inputs_list()
+        .into_iter()
+        .map(From::from)
+        .collect(),
+      outputs: generated::short_circuit::outputs_list()
         .into_iter()
         .map(From::from)
         .collect(),

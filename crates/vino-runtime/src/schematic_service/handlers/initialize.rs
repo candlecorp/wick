@@ -78,7 +78,7 @@ async fn initialize_providers(
   allow_latest: bool,
   allowed_insecure: Vec<String>,
 ) -> Result<(Vec<ProviderChannel>, Vec<ProviderModel>), SchematicError> {
-  let (channel, provider_model) = initialize_native_provider("vino").await?;
+  let (channel, provider_model) = initialize_native_provider("vino-v0").await?;
   let mut channels = vec![channel];
   let mut models = vec![provider_model];
 

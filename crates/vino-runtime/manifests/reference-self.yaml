@@ -19,7 +19,7 @@ schematics:
   - name: child
     components:
       log:
-        id: vino::log
+        id: vino-v0::log
     connections:
       - from:
           instance: <input>
