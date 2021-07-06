@@ -1,5 +1,5 @@
 use crate::dev::prelude::*;
-use crate::schematic_service::handlers::output_port_ready::OutputPortReady;
+use crate::schematic_service::handlers::output_message::OutputMessage;
 
 #[derive(Message, Clone)]
 #[rtype(result = "Result<(), SchematicError>")]
@@ -19,23 +19,28 @@ impl Handler<ShortCircuit> for SchematicService {
     let payload = msg.payload;
 
     let outputs = self.get_outputs(&reference);
+
     trace!("Output ports for {} : {:?}", reference, outputs);
+
     let downstreams: Vec<Connection> = outputs
       .iter()
       .flat_map(|port| self.get_port_connections(port))
       .collect();
+
     trace!(
       "Connections to short {:?}",
       Connection::print_all(&downstreams)
     );
-    let outputs: Vec<OutputPortReady> = downstreams
+
+    let outputs: Vec<OutputMessage> = downstreams
       .into_iter()
-      .map(|conn| OutputPortReady {
+      .map(|conn| OutputMessage {
         tx_id: tx_id.clone(),
         port: conn.from,
         payload: payload.clone(),
       })
       .collect();
+
     let schematic_host = ctx.address();
 
     let futures = outputs

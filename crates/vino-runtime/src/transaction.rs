@@ -13,8 +13,8 @@ use tokio::sync::mpsc::{
 };
 
 use crate::dev::prelude::*;
-use crate::schematic_service::handlers::payload_received::PayloadReceived;
-use crate::schematic_service::handlers::reference_data::ReferenceData;
+use crate::schematic_service::handlers::component_payload::ComponentPayload;
+use crate::schematic_service::handlers::input_message::InputMessage;
 use crate::schematic_service::handlers::schematic_output::SchematicOutput;
 use crate::schematic_service::handlers::transaction_update::TransactionUpdate;
 type Result<T> = std::result::Result<T, TransactionError>;
@@ -35,7 +35,7 @@ impl TransactionMap {
   pub(crate) fn new_transaction(
     &mut self,
     tx_id: String,
-    mut rx: UnboundedReceiver<PayloadReceived>,
+    mut rx: UnboundedReceiver<InputMessage>,
   ) -> UnboundedReceiver<TransactionUpdate> {
     let transaction = Arc::new(Mutex::new(Transaction::new(
       tx_id.clone(),
@@ -82,11 +82,13 @@ impl TransactionMap {
           debug!("Reference {} is ready, continuing...", output.target);
           let map = locked.take_inputs(&output.target.reference)?;
           drop(locked);
-          meh!(ready_tx.send(TransactionUpdate::Transition(ReferenceData {
-            tx_id: tx_id.clone(),
-            reference: output.target.reference,
-            payload_map: map
-          })));
+          meh!(
+            ready_tx.send(TransactionUpdate::Transition(ComponentPayload {
+              tx_id: tx_id.clone(),
+              reference: output.target.reference,
+              payload_map: map
+            }))
+          );
         } else {
           debug!("Reference is not ready, waiting...");
         }
@@ -326,14 +328,14 @@ mod tests {
   #[test_env_log::test(tokio::test)]
   async fn test_transaction_map() -> Result<()> {
     let model = make_model();
-    // TODO NEED TO MAKE THIS BORROWED
+
     let mut map = TransactionMap::new(model);
     let tx_id = get_uuid();
-    let (tx, rx) = unbounded_channel::<PayloadReceived>();
+    let (tx, rx) = unbounded_channel::<InputMessage>();
     let mut ready_rx = map.new_transaction(tx_id.clone(), rx);
 
     // First message sends from the schematic input to the component
-    meh!(tx.send(PayloadReceived {
+    meh!(tx.send(InputMessage {
       origin: PortReference {
         reference: SCHEMATIC_INPUT.to_owned(),
         name: "input".to_owned(),
@@ -346,7 +348,7 @@ mod tests {
       tx_id: get_uuid(),
     }));
     // Second closes the schematic input
-    meh!(tx.send(PayloadReceived {
+    meh!(tx.send(InputMessage {
       origin: PortReference {
         reference: SCHEMATIC_INPUT.to_owned(),
         name: "input".to_owned(),
@@ -359,7 +361,7 @@ mod tests {
       tx_id: get_uuid(),
     }));
     // Third simulates output from the component
-    meh!(tx.send(PayloadReceived {
+    meh!(tx.send(InputMessage {
       origin: PortReference {
         reference: "REF_ID_LOGGER".to_owned(),
         name: "output".to_owned(),
@@ -371,7 +373,7 @@ mod tests {
       payload: MessageTransport::Test("output payload".to_owned()),
       tx_id: get_uuid(),
     }));
-    meh!(tx.send(PayloadReceived {
+    meh!(tx.send(InputMessage {
       origin: PortReference {
         reference: "REF_ID_LOGGER".to_owned(),
         name: "output".to_owned(),

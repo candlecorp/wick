@@ -6,8 +6,7 @@ use std::sync::{
   Mutex,
 };
 
-use handlers::component_output::ComponentOutput;
-use handlers::payload_received::PayloadReceived;
+use handlers::input_message::InputMessage;
 use handlers::transaction_update::TransactionUpdate;
 use tokio::sync::mpsc::{
   UnboundedReceiver,
@@ -24,10 +23,9 @@ type Result<T> = std::result::Result<T, SchematicError>;
 #[derive(Debug)]
 pub(crate) struct SchematicService {
   recipients: HashMap<String, ProviderChannel>,
-  invocation_map: HashMap<String, (String, String, Entity)>,
   state: Option<State>,
-  tx_external: HashMap<String, UnboundedSender<ComponentOutput>>,
-  tx_internal: HashMap<String, UnboundedSender<PayloadReceived>>,
+  tx_external: HashMap<String, UnboundedSender<OutputPacket>>,
+  tx_internal: HashMap<String, UnboundedSender<InputMessage>>,
 }
 
 #[derive(Debug)]
@@ -44,7 +42,6 @@ impl Default for SchematicService {
   fn default() -> Self {
     SchematicService {
       recipients: HashMap::new(),
-      invocation_map: HashMap::new(),
       state: None,
       tx_external: HashMap::new(),
       tx_internal: HashMap::new(),
@@ -98,7 +95,7 @@ impl SchematicService {
   fn new_transaction(
     &mut self,
     tx_id: String,
-    rx: UnboundedReceiver<PayloadReceived>,
+    rx: UnboundedReceiver<InputMessage>,
   ) -> UnboundedReceiver<TransactionUpdate> {
     let state = self.get_state_mut();
     state.transaction_map.new_transaction(tx_id, rx)

@@ -38,6 +38,7 @@ members = [
   "crates/vino-macros",
   "crates/logger",
   "crates/vino-runtime",
+  "crates/vino-wascap",
   "crates/vino-rpc",
   "crates/vino-host",
   "crates/vino-transport",
@@ -49,5 +50,4 @@ members = [
   "crates/vino-entity",
   "crates/test-vino-provider",
   "crates/test-wapc-component",
-  "crates/wascap",
 ]

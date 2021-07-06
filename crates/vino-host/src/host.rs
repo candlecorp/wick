@@ -70,7 +70,7 @@ impl Host {
     );
     let seed = self.kp.seed()?;
 
-    let network = NetworkBuilder::new(def, &seed).build();
+    let network = NetworkBuilder::new(def, &seed)?.build();
     network.init().await?;
     self.network = Some(network);
     Ok(())

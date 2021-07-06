@@ -18,6 +18,7 @@ vino-provider = { path="../vino-provider" }
 vino-native-provider = { path="../vino-native-provider" }
 vino-transport = { path="../vino-transport" }
 vino-codec = { path="../vino-codec" }
+vino-wascap = { path="../vino-wascap" }
 vino-rpc = { path="../vino-rpc" }
 vino-entity = { path="../vino-entity" }
 
@@ -28,7 +29,6 @@ actix-rt = "2.1.0"
 futures = "0.3"
 uuid = { version="0.8", features=["serde", "v4"] }
 wapc = "0.10.1"
-wascap = { path="../wascap" }
 async-trait = "0.1.50"
 wasmtime-provider = { version="0.0.3", optional=true }
 rmp-serde = "0.15.4"
@@ -41,12 +41,13 @@ oci-distribution = "0.6.0"
 nkeys = "0.1.0"
 derivative = "2.2.0"
 tonic = { version="0.4.3", features=["tls"] }
-tokio = { version="1.4.0", features=["macros", "net", "rt-multi-thread"] }
+tokio = { version="1.4.0", features=["macros", "net", "time", "rt-multi-thread"] }
 tokio-stream = { version="0.1.6", features=["net"] }
 itertools = "0.10.1"
 tracing = "0.1.26"
 tracing-actix = "0.3.0"
 log = "0.4.14"
+backtrace = "0.3.60"
 
 [dev-dependencies]
 env_logger = "0.8.3"

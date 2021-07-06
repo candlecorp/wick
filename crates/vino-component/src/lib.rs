@@ -64,3 +64,12 @@ impl From<&Vec<u8>> for Packet {
     }
   }
 }
+
+impl From<&[u8]> for Packet {
+  fn from(buf: &[u8]) -> Self {
+    match deserialize::<Packet>(buf) {
+      Ok(packet) => packet,
+      Err(e) => Packet::V0(Payload::Error(format!("Error deserializing packet: {}", e))),
+    }
+  }
+}

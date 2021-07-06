@@ -14,7 +14,6 @@ use super::{
 };
 use crate::dev::prelude::*;
 use crate::error::ComponentError;
-use crate::schematic_service::handlers::component_output::ComponentOutput;
 type Result<T> = std::result::Result<T, ComponentError>;
 
 #[derive(Debug)]
@@ -155,7 +154,7 @@ impl Handler<Invocation> for NetworkProviderService {
 
           let output = next.unwrap();
           trace!("Native actor {} got output on port [{}]", url, output.port);
-          match tx.send(ComponentOutput {
+          match tx.send(OutputPacket {
             port: output.port.clone(),
             payload: output.packet,
             invocation_id: invocation_id.clone(),
@@ -265,7 +264,7 @@ mod test {
       .await?;
 
     let (_, mut rx) = response.to_stream()?;
-    let next: ComponentOutput = rx.next().await.unwrap();
+    let next: OutputPacket = rx.next().await.unwrap();
     let payload: String = next.payload.try_into()?;
     equals!(user_data, payload);
 

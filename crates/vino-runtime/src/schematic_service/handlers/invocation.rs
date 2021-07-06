@@ -11,8 +11,7 @@ use tokio::sync::mpsc::unbounded_channel;
 
 use crate::dev::prelude::*;
 use crate::dispatch::inv_error;
-use crate::schematic_service::handlers::component_output::ComponentOutput;
-use crate::schematic_service::handlers::payload_received::PayloadReceived;
+use crate::schematic_service::handlers::input_message::InputMessage;
 use crate::schematic_service::handlers::transaction_update::TransactionUpdate;
 
 type Result<T> = std::result::Result<T, SchematicError>;
@@ -56,7 +55,7 @@ fn handle_schematic(
   trace!("Requesting schematic '{}'", name);
   let tx_id = invocation.tx_id.clone();
 
-  let (trans_tx, trans_rx) = unbounded_channel::<PayloadReceived>();
+  let (trans_tx, trans_rx) = unbounded_channel::<InputMessage>();
   service.tx_internal.insert(tx_id.clone(), trans_tx);
 
   let mut ready_rx = service.new_transaction(tx_id.clone(), trans_rx);
@@ -73,7 +72,7 @@ fn handle_schematic(
     Ok!(())
   });
 
-  let (tx, rx) = unbounded_channel::<ComponentOutput>();
+  let (tx, rx) = unbounded_channel::<OutputPacket>();
   service.tx_external.insert(tx_id.clone(), tx);
 
   let state = service.state.as_mut().unwrap();
@@ -101,7 +100,7 @@ fn generate_packets(
   seed: &str,
   tx_id: &str,
   bytemap: &HashMap<String, Vec<u8>>,
-) -> Result<Vec<PayloadReceived>> {
+) -> Result<Vec<InputMessage>> {
   let model = model.lock()?;
   let first_connections = model.get_downstream_connections(SCHEMATIC_INPUT);
   drop(model);
@@ -112,14 +111,14 @@ fn generate_packets(
 
   let _kp = KeyPair::from_seed(seed)?;
 
-  let invocations: Vec<PayloadReceived> = first_connections
+  let invocations: Vec<InputMessage> = first_connections
     .into_iter()
     .map(|conn| {
       let bytes = bytemap
         .get(&conn.from.port)
         .unwrap_or_else(|| panic!("Port {} not found", conn.from));
 
-      PayloadReceived {
+      InputMessage {
         origin: conn.from.into(),
         target: conn.to.into(),
         tx_id: tx_id.to_owned(),

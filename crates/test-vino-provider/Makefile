@@ -49,17 +49,20 @@ $(foreach schema,$(SCHEMAS),$(eval $(call WIDL_CODEGEN,$(schema))))
 $(GENERATED_MODULE_RS):
 	printf "$(GENERATED_HEADER)\\n$(GENERATED_MOD_IMPORTS)" > $@
 
+$(COMPONENTS_DIR):
+	mkdir $@
+
 $(GENERATED_DIR):
 	mkdir $@
 
 $(GENERATED_COMPONENTS):
-	vino-codegen rust "$<" -t provider-component >$(subst -,_,$@)
+	vino-codegen rust provider-component "$<" >$(subst -,_,$@)
 
 $(INTERFACE_FILE): $(SCHEMAS)
 	vino-codegen widl -t interface -r $(SCHEMA_DIR) -d $(SCHEMA_DIR) -f -o $@
 
 $(COMPONENTS_FACTORY_RS): $(INTERFACE_FILE)
-	vino-codegen rust "$(INTERFACE_FILE)" -t provider-integration -r ${SCHEMA_DIR} >$@
+	vino-codegen rust provider-integration "$(INTERFACE_FILE)" -r ${SCHEMA_DIR} >$@
 
 codegen:
 	make $(GENERATED_COMPONENTS)

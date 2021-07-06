@@ -131,7 +131,7 @@ mod tests {
     .unwrap();
 
     println!("outputs: {:?}", payload);
-    assert_eq!(payload, "some_input");
+    assert_eq!(payload, "TEST: some_input");
 
     Ok(())
   }

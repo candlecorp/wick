@@ -16,7 +16,7 @@ use vino_manifest::{
   NetworkManifest,
   SchematicManifest,
 };
-use wascap::prelude::KeyPair;
+use vino_wascap::KeyPair;
 
 use crate::error::CommonError;
 use crate::test::prelude::*;
@@ -29,7 +29,7 @@ pub(crate) async fn init_network_from_yaml(path: &str) -> TestResult<(Network, S
   debug!("Manifest loaded");
   let kp = KeyPair::new_server();
 
-  let network = Network::new(def, &kp.seed()?);
+  let network = Network::new(def, &kp.seed()?)?;
   debug!("Initializing network");
   let init = network.init().await;
   info!("Init status : {:?}", init);

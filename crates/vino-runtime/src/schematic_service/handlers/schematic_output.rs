@@ -1,5 +1,4 @@
 use crate::dev::prelude::*;
-use crate::schematic_service::handlers::component_output::ComponentOutput;
 
 #[derive(Message, Clone, Debug)]
 #[rtype(result = "Result<(), SchematicError>")]
@@ -26,7 +25,7 @@ impl Handler<SchematicOutput> for SchematicService {
       "Invalid payload received as schematic output".to_owned(),
     ));
 
-    let output_msg = ComponentOutput {
+    let output_msg = OutputPacket {
       invocation_id: msg.tx_id,
       payload: match msg.payload {
         MessageTransport::Invalid => Packet::V0(packet::v0::Payload::Invalid),

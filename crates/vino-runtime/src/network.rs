@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::time::Duration;
 
 use nkeys::KeyPair;
 use serde::Serialize;
@@ -19,9 +20,8 @@ pub struct Network {
 }
 
 impl Network {
-  #[must_use]
-  pub fn new(definition: NetworkDefinition, seed: &str) -> Self {
-    NetworkBuilder::new(definition, seed).build()
+  pub fn new(definition: NetworkDefinition, seed: &str) -> Result<Self> {
+    Ok(NetworkBuilder::new(definition, seed)?.build())
   }
   pub async fn init(&self) -> Result<()> {
     let kp = KeyPair::new_service();
@@ -67,6 +67,7 @@ impl Network {
     let response = self
       .addr
       .send(invocation)
+      .timeout(Duration::from_secs(10))
       .await
       .map_err(|_| InternalError(5101))?;
     trace!(
@@ -103,17 +104,16 @@ pub struct NetworkBuilder {
 
 impl NetworkBuilder {
   /// Creates a new host builder
-  #[must_use]
-  pub fn new(definition: NetworkDefinition, seed: &str) -> Self {
-    let kp = KeyPair::from_seed(seed).unwrap();
+  pub fn new(definition: NetworkDefinition, seed: &str) -> Result<Self> {
+    let kp = KeyPair::from_seed(seed)?;
     let network_id = kp.public_key();
-    Self {
+    Ok(Self {
       definition,
       allow_latest: false,
       allowed_insecure: vec![],
       id: network_id,
       kp,
-    }
+    })
   }
 
   #[must_use]

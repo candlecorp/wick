@@ -57,6 +57,7 @@ pub fn init_logger(opts: &LoggingOptions) -> crate::Result<()> {
       "vino_provider",
       "vino_native_provider",
       "vino_provider_cli",
+      "vino_wascap",
       "wapc",
     ],
     &[],

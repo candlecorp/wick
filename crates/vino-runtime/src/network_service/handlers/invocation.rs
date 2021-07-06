@@ -1,5 +1,4 @@
 use crate::dev::prelude::*;
-type Result<T> = std::result::Result<T, NetworkError>;
 
 impl Handler<Invocation> for NetworkService {
   type Result = ActorResult<Self, InvocationResponse>;

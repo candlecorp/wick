@@ -19,14 +19,20 @@ use serde::{
 };
 use tokio::sync::mpsc::UnboundedReceiver;
 use uuid::Uuid;
-use wascap::prelude::{
+use vino_wascap::{
   Claims,
   KeyPair,
 };
 
 use crate::dev::prelude::*;
 use crate::error::ConversionError;
-use crate::schematic_service::handlers::component_output::ComponentOutput;
+
+#[derive(Debug, Clone)]
+pub struct OutputPacket {
+  pub port: String,
+  pub invocation_id: String,
+  pub payload: Packet,
+}
 
 /// An invocation for a component, port, or schematic
 #[derive(Debug, Clone, Default, Serialize, Deserialize, Message, PartialEq)]
@@ -78,11 +84,11 @@ pub enum InvocationResponse {
 
 #[derive(Debug)]
 pub struct ResponseStream {
-  rx: RefCell<UnboundedReceiver<ComponentOutput>>,
+  rx: RefCell<UnboundedReceiver<OutputPacket>>,
 }
 
 impl Stream for ResponseStream {
-  type Item = ComponentOutput;
+  type Item = OutputPacket;
 
   fn poll_next(self: Pin<&mut Self>, cx: &mut std::task::Context<'_>) -> Poll<Option<Self::Item>> {
     let mut rx = self.rx.borrow_mut();
@@ -105,7 +111,7 @@ impl Stream for ResponseStream {
 
 impl ResponseStream {
   #[must_use]
-  pub fn new(rx: UnboundedReceiver<ComponentOutput>) -> Self {
+  pub fn new(rx: UnboundedReceiver<OutputPacket>) -> Self {
     Self {
       rx: RefCell::new(rx),
     }
@@ -120,7 +126,7 @@ impl InvocationResponse {
   /// Creates a successful invocation response stream. Response include the receiving end
   /// of an unbounded channel to listen for future output.
   #[must_use]
-  pub fn stream(tx_id: String, rx: UnboundedReceiver<ComponentOutput>) -> InvocationResponse {
+  pub fn stream(tx_id: String, rx: UnboundedReceiver<OutputPacket>) -> InvocationResponse {
     trace!("Creating stream");
     InvocationResponse::Stream {
       tx_id,
@@ -185,7 +191,7 @@ impl Invocation {
     let issuer = hostkey.public_key();
     let target_url = target.url();
     let payload = msg.into();
-    let claims = Claims::<wascap::prelude::Invocation>::new(
+    let claims = Claims::<vino_wascap::Invocation>::new(
       issuer.clone(),
       invocation_id.clone(),
       &target_url,
@@ -215,7 +221,7 @@ impl Invocation {
     let issuer = hostkey.public_key();
     let target_url = target.url();
     let payload = msg.into();
-    let claims = Claims::<wascap::prelude::Invocation>::new(
+    let claims = Claims::<vino_wascap::Invocation>::new(
       issuer.clone(),
       invocation_id.clone(),
       &target_url,

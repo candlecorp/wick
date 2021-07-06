@@ -16,6 +16,7 @@ vino-codec = { path="../vino-codec" }
 vino-rpc = { path="../vino-rpc" }
 vino-macros = { path="../vino-macros" }
 vino-entity = { path="../vino-entity" }
+vino-wascap = { path="../vino-wascap" }
 logger = { path="../logger" }
 wapc = { version="0.10.1" }
 chrono = "0.4.19"

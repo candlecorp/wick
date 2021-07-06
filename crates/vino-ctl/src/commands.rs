@@ -1,5 +1,7 @@
+pub mod inspect;
 pub mod invoke;
 pub mod list;
+pub mod sign;
 pub mod stats;
 
 use std::net::Ipv4Addr;
@@ -32,6 +34,12 @@ pub enum CliCommand {
   /// Query a provider for its runtime statistics
   #[structopt(name = "stats")]
   Stats(stats::StatsCommand),
+  /// Sign a WaPC component
+  #[structopt(name = "sign")]
+  Sign(sign::SignCommand),
+  /// Inspect the claims of a signed WaPC component
+  #[structopt(name = "inspect")]
+  Inspect(inspect::InspectCommand),
 }
 
 #[derive(Debug, Clone, StructOpt)]

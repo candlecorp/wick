@@ -3,20 +3,21 @@ use std::collections::HashMap;
 use nkeys::KeyPair;
 
 use crate::dev::prelude::*;
+use crate::schematic_service::handlers::output_message::OutputMessage;
 use crate::schematic_service::handlers::short_circuit::ShortCircuit;
 
 #[derive(Message, Clone, Debug)]
 #[rtype(result = "Result<(), SchematicError>")]
-pub(crate) struct ReferenceData {
+pub(crate) struct ComponentPayload {
   pub(crate) tx_id: String,
   pub(crate) reference: String,
   pub(crate) payload_map: HashMap<String, MessageTransport>,
 }
 
-impl Handler<ReferenceData> for SchematicService {
+impl Handler<ComponentPayload> for SchematicService {
   type Result = ActorResult<Self, Result<(), SchematicError>>;
 
-  fn handle(&mut self, msg: ReferenceData, ctx: &mut Context<Self>) -> Self::Result {
+  fn handle(&mut self, msg: ComponentPayload, ctx: &mut Context<Self>) -> Self::Result {
     trace!("Reference '{}' is ready to continue", msg.reference);
     let seed = self.get_state().seed.clone();
     let reference = msg.reference.clone();
@@ -53,7 +54,7 @@ impl Handler<ReferenceData> for SchematicService {
     let invocation = Invocation::next(
       &tx_id,
       &kp,
-      Entity::Schematic("<system>".to_owned()), // TODO need better origin
+      Entity::system("SchematicService", "Component Invocation"),
       Entity::Component(def.name),
       MessageTransport::MultiBytes(invoke_payload),
     );
@@ -63,15 +64,6 @@ impl Handler<ReferenceData> for SchematicService {
 
     let addr = ctx.address();
     let name = self.get_name();
-
-    self.invocation_map.insert(
-      invocation.id.clone(),
-      (
-        tx_id,
-        name.clone(),
-        Entity::Reference(msg.reference.clone()),
-      ),
-    );
 
     let task = async move {
       let target = invocation.target.url();
@@ -90,16 +82,20 @@ impl Handler<ReferenceData> for SchematicService {
             target
           );
           tokio::spawn(async move {
-            while let Some(next) = rx.next().await {
-              match addr.send(next).await {
+            while let Some(packet) = rx.next().await {
+              let logmsg = format!("tx: {}, ref: {}, port: {}", tx_id, reference, packet.port);
+              let port = PortReference::new(reference.clone(), packet.port);
+              let msg = OutputMessage {
+                port,
+                tx_id: tx_id.clone(),
+                payload: packet.payload.into(),
+              };
+              match addr.send(msg).await {
                 Ok(_) => {
-                  debug!(
-                    "Sent ready output to network for {}:{}:{}",
-                    tx_id, name, target
-                  );
+                  trace!("Sent ready output to network {}", logmsg);
                 }
-                Err(e) => {
-                  error!("Error sending ready output: {}", e);
+                Err(_) => {
+                  error!("Error sending output {} {}", logmsg, InternalError(6013));
                 }
               };
             }

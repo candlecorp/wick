@@ -19,7 +19,7 @@
     clippy::option_option,
     clippy::redundant_else,
     clippy::semicolon_if_nothing_returned,
-    clippy::too_many_lines,
+    // clippy::too_many_lines,
     clippy::trivially_copy_pass_by_ref,
     clippy::unnested_or_patterns,
     clippy::future_not_send,
@@ -112,7 +112,6 @@ mod transaction;
 mod utils;
 mod validator;
 pub use public::*;
-
 pub mod prelude {
   pub use tokio_stream::StreamExt;
   pub use vino_codec::messagepack::{

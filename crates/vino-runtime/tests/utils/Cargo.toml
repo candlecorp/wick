@@ -12,6 +12,6 @@ vino-codec = { path="../../../vino-codec" }
 thiserror = "1.0.26"
 maplit = "1.0.2"
 pretty_assertions = "0.7.2"
-wascap = { path="../../../wascap" }
+vino-wascap = { path="../../../vino-wascap" }
 tracing = "0.1.26"
 nkeys = "0.1.0"

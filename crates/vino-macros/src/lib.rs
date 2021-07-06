@@ -93,14 +93,12 @@ pub use colored;
 #[macro_export]
 macro_rules! highlight {
     ($($arg:tt)+) => (
-      if cfg!(test) {
         use vino_macros::colored::Colorize;
         let indent = ">>>>>".to_owned().yellow().blink();
         let focus = ">>>>>>".to_owned().red().blink();
         let start = ">>>".to_owned().blue().blink();
         let end =   ">>>".to_owned().blue().dimmed();
         println!("{}\n{}\n{} {}\n{}\n{}", start,indent,focus,format!($($arg)+),indent,end);
-      }
     )
 }
 

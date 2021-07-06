@@ -7,7 +7,7 @@ schematics:
         reference: ../test-wapc-component/build/test_component_s.wasm
     components:
       validate_password:
-        id: wapc::test-component
+        id: wapc::validate
       log:
         id: vino::log
       log2:

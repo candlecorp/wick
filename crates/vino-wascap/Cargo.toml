@@ -1,0 +1,17 @@
+[package]
+name = "vino-wascap"
+version = "0.1.0"
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+wascap = { version="0.6.1" }
+serde = { version="1.0.118", features=["derive"] }
+vino-rpc = { path="../vino-rpc" }
+thiserror = "1.0.25"
+parity-wasm = "0.42.1"
+data-encoding = "2.3.2"
+ring = "0.16.20"
+nuid = "0.3.0"
+tracing = "0.1.26"

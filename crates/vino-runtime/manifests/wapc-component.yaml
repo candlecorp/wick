@@ -10,7 +10,7 @@ schematics:
     #     key: MB3GAIGQVCZHMLKD4T2LGI6CILHNOIJPPSLV2VDDH3ARHXDDJ5WXFV35
     components:
       validate:
-        id: wapc::test-component
+        id: wapc::validate
       log:
         id: vino::log
     connections:

@@ -7,7 +7,7 @@ use tokio::sync::mpsc::error::SendError;
 use vino_rpc::PortSignature;
 
 use crate::dev::prelude::*;
-use crate::schematic_service::handlers::payload_received::PayloadReceived;
+use crate::schematic_service::handlers::input_message::InputMessage;
 
 pub(crate) type BoxedErrorSyncSend = Box<dyn std::error::Error + Sync + Send>;
 
@@ -72,7 +72,7 @@ pub enum SchematicError {
   #[error(transparent)]
   InternalError(#[from] InternalError),
   #[error(transparent)]
-  TransactionChannelError(#[from] SendError<PayloadReceived>),
+  TransactionChannelError(#[from] SendError<InputMessage>),
   #[error(transparent)]
   ModelError(#[from] SchematicModelError),
 }
@@ -106,9 +106,9 @@ pub enum NetworkError {
 #[derive(Error, Debug)]
 pub enum ComponentError {
   #[error("Could not extract claims from component")]
-  ClaimsError,
+  ClaimsError(String),
   #[error(transparent)]
-  WascapError(#[from] wascap::Error),
+  WascapError(#[from] vino_wascap::error::ClaimsError),
   #[error("Failed to create a raw WebAssembly host")]
   WapcError,
   #[error(transparent)]

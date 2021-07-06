@@ -24,7 +24,7 @@ async fn request() -> anyhow::Result<()> {
   let mut outputs = provider
     .request(
       invocation_id.to_string(),
-      vino_entity::Entity::component("test-component", "unknown"),
+      vino_entity::Entity::component("test-component"),
       job_payload,
     )
     .await
@@ -38,7 +38,7 @@ async fn request() -> anyhow::Result<()> {
   .unwrap();
 
   println!("outputs: {:?}", payload);
-  assert_eq!(payload, "some_input");
+  assert_eq!(payload, "TEST: some_input");
 
   Ok(())
 }

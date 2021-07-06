@@ -17,7 +17,7 @@ use vino_manifest::{
 };
 use vino_runtime::error::*;
 use vino_runtime::network::Network;
-use wascap::prelude::KeyPair;
+use vino_wascap::KeyPair;
 
 pub async fn init_network_from_yaml(path: &str) -> TestResult<(Network, String)> {
   let manifest = NetworkManifest::V0(vino_manifest::v0::NetworkManifest::from_yaml(
@@ -27,7 +27,7 @@ pub async fn init_network_from_yaml(path: &str) -> TestResult<(Network, String)>
   debug!("Manifest loaded");
   let kp = KeyPair::new_server();
 
-  let network = Network::new(def, &kp.seed()?);
+  let network = Network::new(def, &kp.seed()?)?;
   debug!("Initializing network");
   let init = network.init().await;
   info!("Init status : {:?}", init);

@@ -9,10 +9,7 @@ use crate::providers::network_provider_service::{
   self,
   NetworkProviderService,
 };
-use crate::providers::vino_component::{
-  load_component,
-  VinoComponent,
-};
+use crate::providers::wapc_module::load_component;
 use crate::providers::{
   grpc_provider_service,
   native_provider_service,
@@ -114,9 +111,7 @@ async fn initialize_wapc_provider(
     .send(wapc_provider_service::Initialize {
       namespace: namespace.to_owned(),
       signing_seed: seed.to_owned(),
-      name: component.name(),
-      outputs: component.get_outputs(),
-      inputs: component.get_inputs(),
+      claims: component.claims(),
       bytes: component.bytes,
     })
     .await??;

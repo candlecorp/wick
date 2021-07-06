@@ -1,12 +1,11 @@
-use super::reference_data::ReferenceData;
+use super::component_payload::ComponentPayload;
 use super::schematic_output::SchematicOutput;
 use crate::dev::prelude::*;
-use crate::schematic_service::handlers::component_output::ComponentOutput;
 
 #[derive(Message, Clone, Debug)]
 #[rtype(result = "Result<(), SchematicError>")]
 pub(crate) enum TransactionUpdate {
-  Transition(ReferenceData),
+  Transition(ComponentPayload),
   Result(SchematicOutput),
   Done(String),
 }
@@ -31,7 +30,7 @@ impl Handler<TransactionUpdate> for SchematicService {
           .ok_or_else(|| SchematicError::TransactionNotFound(tx_id.clone())));
 
         debug!("Sending output on transmitter");
-        let output_msg = ComponentOutput {
+        let output_msg = OutputPacket {
           invocation_id: tx_id.clone(),
           payload: Packet::V0(packet::v0::Payload::Close),
           port: "<system>".to_owned(),

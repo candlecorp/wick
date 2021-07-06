@@ -1,18 +1,18 @@
 use crate::dev::prelude::*;
-use crate::schematic_service::handlers::payload_received::PayloadReceived;
+use crate::schematic_service::handlers::input_message::InputMessage;
 
 #[derive(Message, Debug, Clone)]
 #[rtype(result = "Result<(),SchematicError>")]
-pub(crate) struct OutputPortReady {
+pub(crate) struct OutputMessage {
   pub(crate) port: PortReference,
   pub(crate) tx_id: String,
   pub(crate) payload: MessageTransport,
 }
 
-impl Handler<OutputPortReady> for SchematicService {
+impl Handler<OutputMessage> for SchematicService {
   type Result = ResponseActFuture<Self, Result<(), SchematicError>>;
 
-  fn handle(&mut self, msg: OutputPortReady, ctx: &mut Context<Self>) -> Self::Result {
+  fn handle(&mut self, msg: OutputMessage, ctx: &mut Context<Self>) -> Self::Result {
     trace!("Output ready on {}", msg.port);
     let defs = self.get_port_connections(&msg.port);
     let reference = msg.port.reference;
@@ -20,12 +20,14 @@ impl Handler<OutputPortReady> for SchematicService {
     let tx_id = msg.tx_id;
     let data = msg.payload;
     let addr = ctx.address();
+
     let task = async move {
       let origin = PortReference {
         name: port.clone(),
         reference: reference.clone(),
       };
-      let to_message = |conn: Connection| PayloadReceived {
+
+      let to_message = |conn: Connection| InputMessage {
         tx_id: tx_id.clone(),
         origin: origin.clone(),
         target: PortReference {
@@ -34,6 +36,7 @@ impl Handler<OutputPortReady> for SchematicService {
         },
         payload: data.clone(),
       };
+
       join_or_err(
         defs.into_iter().map(to_message).map(|ips| addr.send(ips)),
         6001,
@@ -41,9 +44,8 @@ impl Handler<OutputPortReady> for SchematicService {
       .await?;
 
       Ok(())
-    }
-    .into_actor(self);
+    };
 
-    Box::pin(task)
+    Box::pin(task.into_actor(self))
   }
 }

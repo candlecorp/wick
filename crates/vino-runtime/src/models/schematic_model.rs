@@ -104,10 +104,6 @@ impl SchematicModel {
     }
   }
 
-  pub(crate) fn get_definition(&self) -> &SchematicDefinition {
-    &self.definition
-  }
-
   pub(crate) fn get_connections(&self) -> &Vec<Connection> {
     &self.connections
   }

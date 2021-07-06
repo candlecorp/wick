@@ -20,7 +20,6 @@ use super::{
   ProviderResponse,
 };
 use crate::dev::prelude::*;
-use crate::schematic_service::handlers::component_output::ComponentOutput;
 type Result<T> = std::result::Result<T, ComponentError>;
 
 #[derive(Default, Debug)]
@@ -242,7 +241,7 @@ impl Handler<Invocation> for GrpcProviderService {
           if let Err(e) = next {
             let msg = format!("Error during GRPC stream: {}", e);
             error!("{}", msg);
-            match tx.send(ComponentOutput {
+            match tx.send(OutputPacket {
               port: crate::COMPONENT_ERROR.to_owned(),
               payload: Packet::V0(packet::v0::Payload::Error(msg)),
               invocation_id: invocation_id.clone(),
@@ -266,7 +265,7 @@ impl Handler<Invocation> for GrpcProviderService {
           if payload.is_none() {
             let msg = "Received response but no payload";
             error!("{}", msg);
-            match tx.send(ComponentOutput {
+            match tx.send(OutputPacket {
               port: crate::COMPONENT_ERROR.to_owned(),
               payload: Packet::V0(packet::v0::Payload::Error(msg.to_owned())),
               invocation_id: invocation_id.clone(),
@@ -290,7 +289,7 @@ impl Handler<Invocation> for GrpcProviderService {
             component,
             port_name
           );
-          match tx.send(ComponentOutput {
+          match tx.send(OutputPacket {
             port: port_name.clone(),
             payload: payload.unwrap().into(),
             invocation_id: invocation_id.clone(),
@@ -378,7 +377,7 @@ mod test {
             match res {
               Ok(response)=>{
                 let (_, mut rx) = response.to_stream()?;
-                let next: ComponentOutput = rx.next().await.unwrap();
+                let next: OutputPacket = rx.next().await.unwrap();
                 let payload: String = next.payload.try_into()?;
                 equals!(payload, format!("TEST: {}", user_data));
               },
