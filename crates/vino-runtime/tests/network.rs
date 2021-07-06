@@ -1,3 +1,5 @@
+use std::convert::TryInto;
+
 use utils::*;
 use vino_entity::Entity;
 use vino_runtime::prelude::*;
@@ -131,7 +133,7 @@ async fn short_circuit() -> TestResult<()> {
   Ok(())
 }
 
-// #[test_env_log::test(actix_rt::test)]
+#[test_env_log::test(actix_rt::test)]
 async fn short_circuit_default() -> TestResult<()> {
   let (network, _) = init_network_from_yaml("./manifests/short-circuit-default.yaml").await?;
 
@@ -150,11 +152,13 @@ async fn short_circuit_default() -> TestResult<()> {
   println!("result: {:?}", result);
   let output1: MessageTransport = result.remove("output1").unwrap();
   println!("Output: {:?}", output1);
+  let result: String = mp_deserialize(&output1.into_bytes()?)?;
   equals!(
-    output1,
-    MessageTransport::MessagePack(mp_serialize(
-      "I got an error: Needs to be longer than 8 characters"
-    )?)
+    result,
+    format!(
+      "This is my default. Error was: {}",
+      "Needs to be longer than 8 characters"
+    )
   );
   Ok(())
 }

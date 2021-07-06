@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 use std::time::Duration;
 
-use nkeys::KeyPair;
 use serde::Serialize;
+use vino_wascap::KeyPair;
 
 use crate::dev::prelude::*;
 use crate::network_service::handlers::initialize::Initialize;
@@ -105,7 +105,7 @@ pub struct NetworkBuilder {
 impl NetworkBuilder {
   /// Creates a new host builder
   pub fn new(definition: NetworkDefinition, seed: &str) -> Result<Self> {
-    let kp = KeyPair::from_seed(seed)?;
+    let kp = keypair_from_seed(seed)?;
     let network_id = kp.public_key();
     Ok(Self {
       definition,

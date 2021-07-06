@@ -7,7 +7,7 @@ schematics:
         reference: ../test-wapc-component/build/test_component_s.wasm
     components:
       validate_password:
-        id: wapc::test-component
+        id: wapc::validate
       log:
         id: vino-v0::log
       log2:
@@ -31,4 +31,4 @@ schematics:
         to:
           instance: <output>
           port: output1
-        default: "there was an error"
+        default: '"This is my default. Error was: $ERROR"'

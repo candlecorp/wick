@@ -106,12 +106,11 @@ mod models;
 pub mod network;
 mod network_service;
 mod providers;
-pub mod public;
 mod schematic_service;
 mod transaction;
-mod utils;
+pub mod utils;
 mod validator;
-pub use public::*;
+
 pub mod prelude {
   pub use tokio_stream::StreamExt;
   pub use vino_codec::messagepack::{
@@ -131,6 +130,7 @@ pub mod prelude {
     ResponseStream,
   };
   pub use crate::network::Network;
+  pub use crate::utils::helpers::*;
   pub use crate::{
     SCHEMATIC_INPUT,
     SCHEMATIC_OUTPUT,

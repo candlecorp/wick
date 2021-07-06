@@ -1,7 +1,5 @@
 use std::collections::HashMap;
 
-use nkeys::KeyPair;
-
 use crate::dev::prelude::*;
 use crate::schematic_service::handlers::output_message::OutputMessage;
 use crate::schematic_service::handlers::short_circuit::ShortCircuit;
@@ -23,7 +21,7 @@ impl Handler<ComponentPayload> for SchematicService {
     let reference = msg.reference.clone();
     let tx_id = msg.tx_id;
 
-    let kp = actix_try!(KeyPair::from_seed(&seed));
+    let kp = actix_try!(keypair_from_seed(&seed));
     let def = self.get_component_model(&msg.reference).unwrap();
 
     let mut invoke_payload = HashMap::new();
@@ -104,10 +102,7 @@ impl Handler<ComponentPayload> for SchematicService {
           Ok(())
         }
         InvocationResponse::Error { tx_id, msg } => {
-          warn!(
-            "Tx '{}': schematic '{}' short-circuiting from '{}': {}",
-            tx_id, name, reference, msg
-          );
+          warn!("Tx '{}' short-circuiting '{}': {}", tx_id, reference, msg);
           addr
             .send(ShortCircuit {
               tx_id: tx_id.clone(),

@@ -44,7 +44,7 @@ impl Handler<SchematicOutput> for SchematicService {
       port: msg.port,
     };
 
-    meh!(tx.send(output_msg));
+    ok_or_log!(tx.send(output_msg));
 
     ActorResult::reply(Ok(()))
   }

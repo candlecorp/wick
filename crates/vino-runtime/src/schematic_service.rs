@@ -1,3 +1,4 @@
+pub(crate) mod default;
 pub(crate) mod handlers;
 
 use std::collections::HashMap;
@@ -157,7 +158,6 @@ pub(crate) struct ProviderInitResponse {
 mod test {
   use std::env;
 
-  use nkeys::KeyPair;
   use vino_rpc::{
     bind_new_socket,
     make_rpc_server,
@@ -180,7 +180,7 @@ mod test {
       .send(Initialize {
         schematic: def,
         network_provider_channel: None,
-        seed: kp.seed()?,
+        seed: kp.seed().unwrap(),
         allow_latest: true,
         allowed_insecure: vec![],
       })
@@ -237,7 +237,7 @@ mod test {
     addr
       .send(Initialize {
         schematic: def,
-        seed: kp.seed()?,
+        seed: kp.seed().unwrap(),
         network_provider_channel: None,
         allow_latest: true,
         allowed_insecure: vec![],

@@ -135,7 +135,7 @@ pub(crate) async fn start_network_provider(
   trace!("Starting network provider");
   let arbiter = Arbiter::new();
   let handle = arbiter.handle();
-  let provider = Arc::new(Mutex::new(crate::NetworkProvider::new(network_id)));
+  let provider = Arc::new(Mutex::new(NetworkProvider::new(network_id)));
 
   let addr =
     NetworkProviderService::start_in_arbiter(&handle, |_| NetworkProviderService::default());

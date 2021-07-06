@@ -1,7 +1,5 @@
 use std::collections::HashMap;
 
-use nkeys::KeyPair;
-
 use crate::dev::prelude::provider_model::{
   create_network_provider_model,
   start_network_provider,
@@ -34,7 +32,7 @@ impl Handler<Initialize> for NetworkService {
     let allowed_insecure = msg.allowed_insecure;
 
     let seed = msg.seed;
-    let kp = actix_try!(KeyPair::from_seed(&seed));
+    let kp = actix_try!(keypair_from_seed(&seed));
     self.state = Some(State { kp });
     let allow_latest = msg.allow_latest;
     let schematics = self.definition.schematics.clone();
@@ -65,7 +63,7 @@ impl Handler<Initialize> for NetworkService {
         debug!("Schematics initialized");
         Ok(provider_addr.clone())
       } else {
-        Err(NetworkError::InitializationError(join(errors, ", ")))
+        Err(NetworkError::InitializationError(errors))
       }
     }
     .into_actor(self)

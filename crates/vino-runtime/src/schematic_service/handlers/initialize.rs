@@ -31,7 +31,7 @@ impl Handler<Initialize> for SchematicService {
     let allow_latest = msg.allow_latest;
     let name = msg.schematic.name.clone();
     let providers = msg.schematic.providers.clone();
-    let model = SchematicModel::new(msg.schematic);
+    let model = actix_try!(SchematicModel::try_from(msg.schematic));
     actix_try!(Validator::validate_early_errors(&model));
     let model = Arc::new(Mutex::new(model));
     let allowed_insecure = msg.allowed_insecure;

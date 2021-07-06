@@ -302,8 +302,11 @@ pub struct PortReference {
 
 impl PortReference {
   #[must_use]
-  pub fn new(reference: String, name: String) -> Self {
-    Self { reference, name }
+  pub fn new<T: AsRef<str>, U: AsRef<str>>(reference: T, name: U) -> Self {
+    Self {
+      reference: reference.as_ref().to_owned(),
+      name: name.as_ref().to_owned(),
+    }
   }
 }
 

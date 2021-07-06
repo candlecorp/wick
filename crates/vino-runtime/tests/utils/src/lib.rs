@@ -81,8 +81,8 @@ pub enum TestError {
   CodecError(#[from] vino_codec::Error),
   #[error(transparent)]
   ManifestError(#[from] vino_manifest::Error),
-  // #[error(transparent)]
-  // TransportError(#[from] vino_transport::Error),
+  #[error(transparent)]
+  TransportError(#[from] vino_transport::Error),
   // #[error(transparent)]
   // OutputError(#[from] vino_component::Error),
   // #[error(transparent)]

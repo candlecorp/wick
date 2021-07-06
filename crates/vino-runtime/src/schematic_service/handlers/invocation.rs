@@ -6,7 +6,6 @@ use std::sync::{
 
 use futures::future::try_join_all;
 use futures::Future;
-use nkeys::KeyPair;
 use tokio::sync::mpsc::unbounded_channel;
 
 use crate::dev::prelude::*;
@@ -67,7 +66,7 @@ fn handle_schematic(
         info!("Schematic request finishing on transaction {}", tx_id);
         ready_rx.close();
       }
-      meh!(addr.send(msg).await);
+      ok_or_log!(addr.send(msg).await);
     }
     Ok!(())
   });
@@ -109,7 +108,7 @@ fn generate_packets(
     ConnectionDefinition::print_all(&first_connections)
   );
 
-  let _kp = KeyPair::from_seed(seed)?;
+  let _kp = keypair_from_seed(seed)?;
 
   let invocations: Vec<InputMessage> = first_connections
     .into_iter()
@@ -119,8 +118,7 @@ fn generate_packets(
         .unwrap_or_else(|| panic!("Port {} not found", conn.from));
 
       InputMessage {
-        origin: conn.from.into(),
-        target: conn.to.into(),
+        connection: Connection::new(conn.from.into(), conn.to.into()),
         tx_id: tx_id.to_owned(),
         payload: MessageTransport::MessagePack(bytes.clone()),
       }

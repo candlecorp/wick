@@ -2,7 +2,6 @@
 
 .PHONY: format clean codegen
 
-
 V0 := src/v0.rs
 V0_DEF := definitions/v0
 V0_WIDL := $(shell find $(V0_DEF) -type f -name '*.widl')
@@ -13,11 +12,9 @@ CLEAN_FILES:= $(V0)
 
 $(V0): $(V0_SOURCES)
 	widl-template $< $(V0_DEF)/templates/rust/root.hbs -p $(V0_DEF)/templates/rust/partials > $@
+	rustfmt $@
 
 clean:
 	rm -f $(V0)
 
 codegen: $(V0)
-
-format:
-	rustfmt $(V0)

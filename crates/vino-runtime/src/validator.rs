@@ -253,7 +253,7 @@ mod tests {
   #[test_env_log::test]
   fn test_validate_early_errors() -> TestResult<()> {
     let def = load_network_manifest("./manifests/native-component.yaml")?;
-    let model = SchematicModel::new(def.schematics[0].clone());
+    let model = SchematicModel::try_from(def.schematics[0].clone())?;
 
     Validator::validate_early_errors(&model)?;
     Ok(())
@@ -262,7 +262,7 @@ mod tests {
   #[test_env_log::test]
   fn test_invalid_ports() -> TestResult<()> {
     let def = load_network_manifest("./manifests/invalid-bad-ports.yaml")?;
-    let mut model = SchematicModel::new(def.schematics[0].clone());
+    let mut model = SchematicModel::try_from(def.schematics[0].clone())?;
     let expected_inputs = vec![PortSignature {
       name: "input".to_owned(),
       type_string: "string".to_owned(),
@@ -301,7 +301,7 @@ mod tests {
   fn test_self() -> TestResult<()> {
     // the "self" namespace can't be validated until the non-self parts of every schematic are complete;
     let def = load_network_manifest("./manifests/reference-self.yaml")?;
-    let mut model = SchematicModel::new(def.schematics[0].clone());
+    let mut model = SchematicModel::try_from(def.schematics[0].clone())?;
     let expected_inputs = vec![PortSignature {
       name: "input".to_owned(),
       type_string: "string".to_owned(),
@@ -365,26 +365,16 @@ mod tests {
       ComponentDefinition::new("test-namespace", "log"),
     );
     schematic_def.connections.push(ConnectionDefinition {
-      from: ConnectionTargetDefinition {
-        instance: SCHEMATIC_INPUT.to_owned(),
-        port: "input".to_owned(),
-      },
-      to: ConnectionTargetDefinition {
-        instance: "logger".to_owned(),
-        port: "input".to_owned(),
-      },
+      from: ConnectionTargetDefinition::new(SCHEMATIC_INPUT, "input"),
+      to: ConnectionTargetDefinition::new("logger", "input"),
+      default: None,
     });
     schematic_def.connections.push(ConnectionDefinition {
-      from: ConnectionTargetDefinition {
-        instance: "logger".to_owned(),
-        port: "output".to_owned(),
-      },
-      to: ConnectionTargetDefinition {
-        instance: SCHEMATIC_OUTPUT.to_owned(),
-        port: "output".to_owned(),
-      },
+      from: ConnectionTargetDefinition::new("logger", "output"),
+      to: ConnectionTargetDefinition::new(SCHEMATIC_OUTPUT, "output"),
+      default: None,
     });
-    let model = SchematicModel::new(schematic_def);
+    let model = SchematicModel::try_from(schematic_def)?;
     equals!(model.get_name(), schematic_name);
 
     let upstream = model
@@ -401,16 +391,11 @@ mod tests {
     let schematic_name = "Test";
     let mut schematic_def = new_schematic(schematic_name);
     schematic_def.connections.push(ConnectionDefinition {
-      from: ConnectionTargetDefinition {
-        instance: "dangling1".to_owned(),
-        port: "output".to_owned(),
-      },
-      to: ConnectionTargetDefinition {
-        instance: SCHEMATIC_OUTPUT.to_owned(),
-        port: "output".to_owned(),
-      },
+      from: ConnectionTargetDefinition::new("dangling1", "output"),
+      to: ConnectionTargetDefinition::new(SCHEMATIC_OUTPUT, "output"),
+      default: None,
     });
-    let model = SchematicModel::new(schematic_def);
+    let model = SchematicModel::try_from(schematic_def)?;
     equals!(model.get_name(), schematic_name);
     let result = Validator::validate_early_errors(&model);
     equals!(
@@ -435,7 +420,7 @@ mod tests {
       "logger".to_owned(),
       ComponentDefinition::new("test-namespace", "log"),
     );
-    let model = SchematicModel::new(schematic_def);
+    let model = SchematicModel::try_from(schematic_def)?;
     let result = Validator::validate_late_errors(&model);
     equals!(
       result,
@@ -466,26 +451,16 @@ mod tests {
       ComponentDefinition::new("test-namespace", "log"),
     );
     schematic_def.connections.push(ConnectionDefinition {
-      from: ConnectionTargetDefinition {
-        instance: SCHEMATIC_INPUT.to_owned(),
-        port: "input".to_owned(),
-      },
-      to: ConnectionTargetDefinition {
-        instance: "logger".to_owned(),
-        port: "input".to_owned(),
-      },
+      from: ConnectionTargetDefinition::new(SCHEMATIC_INPUT, "input"),
+      to: ConnectionTargetDefinition::new("logger", "input"),
+      default: None,
     });
     schematic_def.connections.push(ConnectionDefinition {
-      from: ConnectionTargetDefinition {
-        instance: "logger".to_owned(),
-        port: "output".to_owned(),
-      },
-      to: ConnectionTargetDefinition {
-        instance: SCHEMATIC_OUTPUT.to_owned(),
-        port: "output".to_owned(),
-      },
+      from: ConnectionTargetDefinition::new("logger", "output"),
+      to: ConnectionTargetDefinition::new(SCHEMATIC_OUTPUT, "output"),
+      default: None,
     });
-    let mut model = SchematicModel::new(schematic_def);
+    let mut model = SchematicModel::try_from(schematic_def)?;
     let provider = ProviderModel {
       namespace: "test-namespace".to_owned(),
       components: hashmap! {

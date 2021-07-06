@@ -7,6 +7,7 @@ edition = "2018"
 
 [dependencies]
 vino-runtime = { path="../../" }
+vino-transport = { path="../../../vino-transport" }
 vino-manifest = { path="../../../vino-manifest" }
 vino-codec = { path="../../../vino-codec" }
 thiserror = "1.0.26"

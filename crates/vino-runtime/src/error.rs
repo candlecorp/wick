@@ -21,8 +21,8 @@ pub enum ValidationError {
   NoOutputs,
   #[error("Schematic has no inputs")]
   NoInputs,
-  #[error(transparent)]
-  ModelError(#[from] SchematicModelError),
+  #[error("Model has an error: {0}")]
+  ModelError(String),
   #[error("The following component(s) have incomplete internal model(s): '{}'", join(.0, ", "))]
   MissingComponentModels(Vec<String>),
   #[error("Dangling reference(s): '{}'", join(.0, ", "))]
@@ -37,7 +37,13 @@ pub enum ValidationError {
   InvalidConnections(Vec<ValidationError>),
 }
 
-#[derive(Error, Debug, PartialEq)]
+impl From<SchematicModelError> for ValidationError {
+  fn from(e: SchematicModelError) -> Self {
+    ValidationError::ModelError(e.to_string())
+  }
+}
+
+#[derive(Error, Debug)]
 pub enum SchematicModelError {
   #[error("Schematic model not able to finish initialization")]
   IncompleteInitialization,
@@ -45,6 +51,8 @@ pub enum SchematicModelError {
   ModelNotInitialized,
   #[error("The reference '{0}' has an incomplete component model. Component may have failed to load or be in a partial state.")]
   MissingComponentModel(String),
+  #[error(transparent)]
+  DefaultsError(#[from] serde_json::error::Error),
 }
 
 #[derive(Error, Debug)]
@@ -64,8 +72,6 @@ pub enum SchematicError {
   #[error(transparent)]
   ValidationError(#[from] ValidationError),
   #[error(transparent)]
-  KeyPairError(#[from] nkeys::error::Error),
-  #[error(transparent)]
   ComponentError(#[from] ComponentError),
   #[error(transparent)]
   EntityError(#[from] vino_entity::Error),
@@ -75,6 +81,8 @@ pub enum SchematicError {
   TransactionChannelError(#[from] SendError<InputMessage>),
   #[error(transparent)]
   ModelError(#[from] SchematicModelError),
+  #[error(transparent)]
+  DefaultsError(#[from] serde_json::error::Error),
 }
 
 #[derive(Error, Debug)]
@@ -83,8 +91,8 @@ pub enum NetworkError {
   NotStarted,
   #[error("Schematic {0} not found")]
   SchematicNotFound(String),
-  #[error("Error initializing: {0}")]
-  InitializationError(String),
+  #[error("Error initializing: {}", join(.0, ", "))]
+  InitializationError(Vec<SchematicError>),
   #[error("Maximum number of tries reached when resolving internal schematic references")]
   MaxTriesReached,
   #[error(transparent)]
@@ -99,8 +107,6 @@ pub enum NetworkError {
   ExecutionError(String),
   #[error(transparent)]
   CodecError(#[from] vino_codec::Error),
-  #[error(transparent)]
-  KeyPairError(#[from] nkeys::error::Error),
 }
 
 #[derive(Error, Debug)]
@@ -173,10 +179,18 @@ impl std::fmt::Display for InternalError {
 pub enum CommonError {
   #[error("Failed to acquire a lock: {0}")]
   LockError(String),
+  #[error("Provided KeyPair has no associated seed")]
+  NoSeed,
+  #[error("Failed to create KeyPair from seed")]
+  KeyPairFailed,
+  #[error(transparent)]
+  DefaultsError(#[from] serde_json::error::Error),
   #[error(transparent)]
   IOError(#[from] std::io::Error),
   #[error("File not found {}", .0.to_string_lossy())]
   FileNotFound(PathBuf),
+  #[error(transparent)]
+  CodecError(#[from] vino_codec::Error),
 }
 
 #[derive(Error, Debug)]
@@ -220,10 +234,6 @@ pub enum VinoError {
   HostStartFailure(String),
   #[error("Failed to deserialize configuration {0}")]
   ConfigurationDeserialization(String),
-  #[error("Failed to serialize payload {0}")]
-  SerializationError(rmp_serde::encode::Error),
-  #[error("Failed to deserialize payload {0}")]
-  DeserializationError(rmp_serde::decode::Error),
 
   #[error(transparent)]
   OciError(#[from] OciError),
@@ -248,8 +258,6 @@ pub enum VinoError {
   OutputError(#[from] vino_component::Error),
   #[error(transparent)]
   ActixMailboxError(#[from] MailboxError),
-  #[error(transparent)]
-  KeyPairError(#[from] nkeys::error::Error),
 
   #[error(transparent)]
   OtherUpstream(#[from] BoxedErrorSyncSend),

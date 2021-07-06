@@ -2,9 +2,9 @@ pub(crate) mod handlers;
 
 use std::collections::HashMap;
 
-use nkeys::KeyPair;
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
+use vino_wascap::KeyPair;
 
 use crate::dev::prelude::*;
 

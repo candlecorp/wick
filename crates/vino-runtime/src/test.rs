@@ -29,7 +29,7 @@ pub(crate) async fn init_network_from_yaml(path: &str) -> TestResult<(Network, S
   debug!("Manifest loaded");
   let kp = KeyPair::new_server();
 
-  let network = Network::new(def, &kp.seed()?)?;
+  let network = Network::new(def, &kp.seed().map_err(|_| CommonError::NoSeed)?)?;
   debug!("Initializing network");
   let init = network.init().await;
   info!("Init status : {:?}", init);
@@ -93,17 +93,18 @@ pub(crate) enum TestError {
   #[error(transparent)]
   ManifestError(#[from] vino_manifest::Error),
   #[error(transparent)]
-  TransportError(#[from] vino_transport::Error),
+  TransportError(#[from] vino_transport::error::TransportError),
   #[error(transparent)]
   OutputError(#[from] vino_component::Error),
   #[error(transparent)]
   ActixMailboxError(#[from] MailboxError),
   #[error(transparent)]
-  KeyPairError(#[from] nkeys::error::Error),
-  #[error(transparent)]
   ValidationError(#[from] ValidationError),
   #[error(transparent)]
   ModelError(#[from] SchematicModelError),
+
+  #[error(transparent)]
+  JsonError(#[from] serde_json::Error),
 
   #[error(transparent)]
   OtherUpstream(#[from] BoxedErrorSyncSend),

@@ -15,25 +15,14 @@ impl Handler<OutputMessage> for SchematicService {
   fn handle(&mut self, msg: OutputMessage, ctx: &mut Context<Self>) -> Self::Result {
     trace!("Output ready on {}", msg.port);
     let defs = self.get_port_connections(&msg.port);
-    let reference = msg.port.reference;
-    let port = msg.port.name;
     let tx_id = msg.tx_id;
     let data = msg.payload;
     let addr = ctx.address();
 
     let task = async move {
-      let origin = PortReference {
-        name: port.clone(),
-        reference: reference.clone(),
-      };
-
-      let to_message = |conn: Connection| InputMessage {
+      let to_message = |connection: Connection| InputMessage {
         tx_id: tx_id.clone(),
-        origin: origin.clone(),
-        target: PortReference {
-          name: conn.to.name.clone(),
-          reference: conn.to.reference,
-        },
+        connection,
         payload: data.clone(),
       };
 

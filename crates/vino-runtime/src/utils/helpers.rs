@@ -30,3 +30,7 @@ pub async fn load_wasm(
     load_wasm_from_oci(actor_ref, allow_latest, allowed_insecure).await
   }
 }
+
+pub(crate) fn keypair_from_seed(seed: &str) -> Result<KeyPair, CommonError> {
+  KeyPair::from_seed(seed).map_err(|_| CommonError::KeyPairFailed)
+}

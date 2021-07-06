@@ -3,8 +3,16 @@ use std::collections::hash_map::{
   Values,
 };
 use std::collections::HashMap;
+use std::convert::{
+  TryFrom,
+  TryInto,
+};
 use std::fmt::Display;
 
+use serde::{
+  Deserialize,
+  Serialize,
+};
 use vino_provider::ComponentSignature;
 use vino_rpc::{
   PortSignature,
@@ -12,6 +20,7 @@ use vino_rpc::{
 };
 
 use crate::dev::prelude::*;
+use crate::schematic_service::default::parse_default;
 
 type Result<T> = std::result::Result<T, SchematicModelError>;
 
@@ -35,18 +44,49 @@ struct LoadedState {
   provider_signatures: Vec<ProviderSignature>,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Connection {
   pub(crate) from: PortReference,
   pub(crate) to: PortReference,
+  pub(crate) default: Option<serde_json::Value>,
 }
 
-impl From<ConnectionDefinition> for Connection {
-  fn from(v: ConnectionDefinition) -> Self {
-    Connection {
-      from: v.from.into(),
-      to: v.to.into(),
+impl Connection {
+  pub(crate) fn from_strs(from_name: &str, from_port: &str, to_name: &str, to_port: &str) -> Self {
+    Self {
+      from: PortReference::new(from_name, from_port),
+      to: PortReference::new(to_name, to_port),
+      default: None,
     }
+  }
+  pub(crate) fn print_all(list: &[Self]) -> String {
+    list
+      .iter()
+      .map(std::string::ToString::to_string)
+      .collect::<Vec<String>>()
+      .join(", ")
+  }
+  pub(crate) fn new(from: PortReference, to: PortReference) -> Self {
+    Self {
+      from,
+      to,
+      default: None,
+    }
+  }
+}
+
+impl TryFrom<&ConnectionDefinition> for Connection {
+  type Error = SchematicModelError;
+
+  fn try_from(v: &ConnectionDefinition) -> Result<Self> {
+    Ok(Connection {
+      from: v.from.clone().into(),
+      to: v.to.clone().into(),
+      default: match &v.default {
+        Some(json_str) => Some(parse_default(json_str)?),
+        None => None,
+      },
+    })
   }
 }
 
@@ -65,45 +105,39 @@ impl From<vino_manifest::v0::ConnectionTargetDefinition> for PortReference {
   }
 }
 
-impl Connection {
-  pub(crate) fn print_all(list: &[Self]) -> String {
-    list
-      .iter()
-      .map(std::string::ToString::to_string)
-      .collect::<Vec<String>>()
-      .join(", ")
-  }
-}
+impl TryFrom<SchematicDefinition> for SchematicModel {
+  type Error = SchematicModelError;
 
-impl SchematicModel {
-  pub(crate) fn new(definition: SchematicDefinition) -> Self {
+  fn try_from(definition: SchematicDefinition) -> Result<Self> {
     let references: HashMap<String, String> = definition
       .components
       .iter()
       .map(|(instance, actor)| (instance.clone(), actor.id.clone()))
       .collect();
-    let connections: Vec<Connection> = definition
-      .connections
-      .iter()
-      .cloned()
-      .map(From::from)
-      .collect();
+
+    let mut connections: Vec<Connection> = vec![];
+    for connection in &definition.connections {
+      connections.push(connection.try_into()?);
+    }
+
     let upstream_links = connections
       .iter()
       .cloned()
       .map(|connection| (connection.to, connection.from))
       .collect();
 
-    Self {
+    Ok(Self {
       definition,
       references,
       connections,
       providers: HashMap::new(),
       upstream_links,
       state: None,
-    }
+    })
   }
+}
 
+impl SchematicModel {
   pub(crate) fn get_connections(&self) -> &Vec<Connection> {
     &self.connections
   }
@@ -356,47 +390,15 @@ impl From<&ComponentModel> for ComponentSignature {
 #[cfg(test)]
 mod tests {
 
-  use std::collections::HashMap;
-
   use super::SchematicModel;
   #[allow(unused_imports)]
   use crate::test::prelude::*;
 
   #[test_env_log::test]
-  fn test_basics() -> Result<(), SchematicError> {
-    let schematic_name = "Test";
-    let mut schematic_def = new_schematic(schematic_name);
-    schematic_def.providers.push(ProviderDefinition {
-      namespace: "test-namespace".to_owned(),
-      kind: ProviderKind::Native,
-      reference: "internal".to_owned(),
-      data: HashMap::new(),
-    });
-    schematic_def.components.insert(
-      "logger".to_owned(),
-      ComponentDefinition::new("test-namespace", "log"),
-    );
-    schematic_def.connections.push(ConnectionDefinition {
-      from: ConnectionTargetDefinition {
-        instance: SCHEMATIC_INPUT.to_owned(),
-        port: "input".to_owned(),
-      },
-      to: ConnectionTargetDefinition {
-        instance: "logger".to_owned(),
-        port: "input".to_owned(),
-      },
-    });
-    schematic_def.connections.push(ConnectionDefinition {
-      from: ConnectionTargetDefinition {
-        instance: "logger".to_owned(),
-        port: "output".to_owned(),
-      },
-      to: ConnectionTargetDefinition {
-        instance: SCHEMATIC_OUTPUT.to_owned(),
-        port: "output".to_owned(),
-      },
-    });
-    let model = SchematicModel::new(schematic_def);
+  fn test_basics() -> Result<(), TestError> {
+    let schematic_name = "logger";
+    let def = load_schematic_manifest("./src/models/test-schematics/logger.yaml")?;
+    let model = SchematicModel::try_from(def)?;
     equals!(model.get_name(), schematic_name);
 
     Ok(())

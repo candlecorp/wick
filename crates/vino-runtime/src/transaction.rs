@@ -47,21 +47,21 @@ impl TransactionMap {
       trace!("Waiting for outputs on tx {}", tx_id);
       while let Some(output) = rx.recv().await {
         trace!(
-          ">>> Received message from {} to {} on tx {} : {:?} ",
-          output.origin,
-          output.target,
+          "Received message for connection {} on tx {} : {:?} ",
+          output.connection,
           tx_id,
           output.payload
         );
         let mut locked = transaction.lock()?;
-        locked.receive(output.origin.clone(), output.target.clone(), output.payload);
+        locked.receive(output.connection.clone(), output.payload);
+        let target = &output.connection.to;
 
-        if output.target.reference == SCHEMATIC_OUTPUT {
+        if target.reference == SCHEMATIC_OUTPUT {
           debug!("Received schematic output, pushing immediately...");
-          if let Some(payload) = locked.take_from_port(&output.target) {
-            meh!(ready_tx.send(TransactionUpdate::Result(SchematicOutput {
+          if let Some(payload) = locked.take_from_port(target) {
+            ok_or_log!(ready_tx.send(TransactionUpdate::Result(SchematicOutput {
               tx_id: tx_id.clone(),
-              port: output.target.name,
+              port: target.name.clone(),
               payload,
             })));
           }
@@ -73,19 +73,19 @@ impl TransactionMap {
           }
           // If all connections to the schematic outputs are closed, then finish up.
           debug!("Sending schematic done");
-          meh!(ready_tx.send(TransactionUpdate::Done(tx_id.clone())));
+          ok_or_log!(ready_tx.send(TransactionUpdate::Done(tx_id.clone())));
           rx.close();
           continue;
         }
 
-        if locked.is_reference_ready(&output.target) {
-          debug!("Reference {} is ready, continuing...", output.target);
-          let map = locked.take_inputs(&output.target.reference)?;
+        if locked.is_reference_ready(target) {
+          debug!("Reference {} is ready, continuing...", target);
+          let map = locked.take_inputs(&target.reference)?;
           drop(locked);
-          meh!(
+          ok_or_log!(
             ready_tx.send(TransactionUpdate::Transition(ComponentPayload {
               tx_id: tx_id.clone(),
-              reference: output.target.reference,
+              reference: target.reference.clone(),
               payload_map: map
             }))
           );
@@ -146,19 +146,21 @@ impl Transaction {
       .ok_or_else(|| TransactionError::UpstreamNotFound(port.clone()))?;
     Ok(self.has_data(port) || !self.is_closed(upstream))
   }
-  fn receive(&mut self, from: PortReference, to: PortReference, payload: MessageTransport) {
+  fn receive(&mut self, connection: Connection, payload: MessageTransport) {
     if let MessageTransport::Signal(signal) = payload {
       match signal {
         MessageSignal::Close => {
-          trace!("Port {} closing", from);
-          self.port_statuses.insert(from, PortStatus::Closed);
+          trace!("Port {} closing", connection.from);
+          self
+            .port_statuses
+            .insert(connection.from, PortStatus::Closed);
         }
         MessageSignal::OpenBracket => panic!("Not implemented"),
         MessageSignal::CloseBracket => panic!("Not implemented"),
       }
     } else {
-      debug!("Pushing to port buffer {}", to);
-      self.buffermap.push(to, payload);
+      debug!("Pushing to port buffer {}", connection.to);
+      self.buffermap.push(connection.to, payload);
     }
   }
   fn has_data(&self, port: &PortReference) -> bool {
@@ -254,7 +256,7 @@ mod tests {
   #[allow(unused_imports)]
   use crate::test::prelude::*;
 
-  fn make_model() -> Arc<Mutex<SchematicModel>> {
+  fn make_model() -> TestResult<Arc<Mutex<SchematicModel>>> {
     let schematic_name = "Test";
     let mut schematic_def = new_schematic(schematic_name);
     schematic_def.providers.push(ProviderDefinition {
@@ -268,32 +270,24 @@ mod tests {
       ComponentDefinition::new("test-namespace", "log"),
     );
     schematic_def.connections.push(ConnectionDefinition {
-      from: ConnectionTargetDefinition {
-        instance: SCHEMATIC_INPUT.to_owned(),
-        port: "input".to_owned(),
-      },
-      to: ConnectionTargetDefinition {
-        instance: "REF_ID_LOGGER".to_owned(),
-        port: "input".to_owned(),
-      },
+      from: ConnectionTargetDefinition::new(SCHEMATIC_INPUT, "input"),
+      to: ConnectionTargetDefinition::new("REF_ID_LOGGER", "input"),
+      default: None,
     });
     schematic_def.connections.push(ConnectionDefinition {
-      from: ConnectionTargetDefinition {
-        instance: "REF_ID_LOGGER".to_owned(),
-        port: "output".to_owned(),
-      },
-      to: ConnectionTargetDefinition {
-        instance: SCHEMATIC_OUTPUT.to_owned(),
-        port: "output".to_owned(),
-      },
+      from: ConnectionTargetDefinition::new("REF_ID_LOGGER", "output"),
+      to: ConnectionTargetDefinition::new(SCHEMATIC_OUTPUT, "output"),
+      default: None,
     });
-    Arc::new(Mutex::new(SchematicModel::new(schematic_def)))
+    Ok(Arc::new(Mutex::new(SchematicModel::try_from(
+      schematic_def,
+    )?)))
   }
 
   #[test_env_log::test]
-  fn test_transaction() -> Result<()> {
+  fn test_transaction() -> TestResult<()> {
     let tx_id = get_uuid();
-    let model = make_model();
+    let model = make_model()?;
 
     let mut transaction = Transaction::new(tx_id, model);
     let from = PortReference {
@@ -306,8 +300,7 @@ mod tests {
     };
     trace!("pushing to port");
     transaction.receive(
-      from.clone(),
-      to.clone(),
+      Connection::new(from.clone(), to.clone()),
       Packet::V0(Payload::MessagePack(vec![])).into(),
     );
     assert!(transaction.is_port_ready(&to));
@@ -318,16 +311,15 @@ mod tests {
       Some(Packet::V0(Payload::MessagePack(vec![])).into())
     );
     transaction.receive(
-      from,
-      to,
+      Connection::new(from, to),
       Packet::V0(Payload::Exception("oh no".into())).into(),
     );
     Ok(())
   }
 
   #[test_env_log::test(tokio::test)]
-  async fn test_transaction_map() -> Result<()> {
-    let model = make_model();
+  async fn test_transaction_map() -> TestResult<()> {
+    let model = make_model()?;
 
     let mut map = TransactionMap::new(model);
     let tx_id = get_uuid();
@@ -335,53 +327,27 @@ mod tests {
     let mut ready_rx = map.new_transaction(tx_id.clone(), rx);
 
     // First message sends from the schematic input to the component
-    meh!(tx.send(InputMessage {
-      origin: PortReference {
-        reference: SCHEMATIC_INPUT.to_owned(),
-        name: "input".to_owned(),
-      },
-      target: PortReference {
-        reference: "REF_ID_LOGGER".to_owned(),
-        name: "input".to_owned(),
-      },
+    ok_or_log!(tx.send(InputMessage {
+      connection: Connection::from_strs(SCHEMATIC_INPUT, "input", "REF_ID_LOGGER", "input"),
       payload: MessageTransport::Test("input payload".to_owned()),
       tx_id: get_uuid(),
     }));
     // Second closes the schematic input
-    meh!(tx.send(InputMessage {
-      origin: PortReference {
-        reference: SCHEMATIC_INPUT.to_owned(),
-        name: "input".to_owned(),
-      },
-      target: PortReference {
-        reference: "REF_ID_LOGGER".to_owned(),
-        name: "input".to_owned(),
-      },
+    ok_or_log!(tx.send(InputMessage {
+      connection: Connection::from_strs(SCHEMATIC_INPUT, "input", "REF_ID_LOGGER", "input"),
+
       payload: MessageTransport::Signal(MessageSignal::Close),
       tx_id: get_uuid(),
     }));
     // Third simulates output from the component
-    meh!(tx.send(InputMessage {
-      origin: PortReference {
-        reference: "REF_ID_LOGGER".to_owned(),
-        name: "output".to_owned(),
-      },
-      target: PortReference {
-        reference: SCHEMATIC_OUTPUT.to_owned(),
-        name: "output".to_owned(),
-      },
+    ok_or_log!(tx.send(InputMessage {
+      connection: Connection::from_strs("REF_ID_LOGGER", "output", SCHEMATIC_OUTPUT, "output"),
       payload: MessageTransport::Test("output payload".to_owned()),
       tx_id: get_uuid(),
     }));
-    meh!(tx.send(InputMessage {
-      origin: PortReference {
-        reference: "REF_ID_LOGGER".to_owned(),
-        name: "output".to_owned(),
-      },
-      target: PortReference {
-        reference: SCHEMATIC_OUTPUT.to_owned(),
-        name: "output".to_owned(),
-      },
+    // Fourth closes the output
+    ok_or_log!(tx.send(InputMessage {
+      connection: Connection::from_strs("REF_ID_LOGGER", "output", SCHEMATIC_OUTPUT, "output"),
       payload: MessageTransport::Signal(MessageSignal::Close),
       tx_id: get_uuid(),
     }));

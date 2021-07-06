@@ -207,7 +207,6 @@ impl Handler<ProviderRequest> for NativeProviderService {
 mod test {
 
   use maplit::hashmap;
-  use nkeys::KeyPair;
   use vino_codec::messagepack::serialize;
 
   use super::*;

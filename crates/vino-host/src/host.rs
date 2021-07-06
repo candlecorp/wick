@@ -16,7 +16,6 @@ use vino_entity::Entity;
 use vino_provider_cli::cli::Options as CliOpts;
 use vino_runtime::network::NetworkBuilder;
 use vino_runtime::prelude::*;
-use vino_runtime::NetworkProvider;
 use vino_transport::MessageTransport;
 
 use crate::{

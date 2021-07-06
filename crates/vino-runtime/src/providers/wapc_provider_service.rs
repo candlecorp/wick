@@ -152,7 +152,7 @@ fn perform_initialization(
   let map = invocation_map.clone();
 
   let guest = WapcHost::new(Box::new(engine), move |id, inv_id, port, op, payload| {
-    KeyPair::from_seed(&seed).unwrap();
+    let _kp = keypair_from_seed(&seed).unwrap();
     debug!("Payload WaPC host callback: {:?}", payload);
 
     let invocation_map = invocation_map.lock().unwrap();

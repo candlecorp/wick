@@ -204,10 +204,21 @@ impl From<crate::v0::ProviderKind> for ProviderKind {
   }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ConnectionDefinition {
   pub from: ConnectionTargetDefinition,
   pub to: ConnectionTargetDefinition,
+  pub default: Option<String>,
+}
+
+impl ConnectionDefinition {
+  pub fn print_all(list: &[Self]) -> String {
+    list
+      .iter()
+      .map(|c| c.to_string())
+      .collect::<Vec<String>>()
+      .join(", ")
+  }
 }
 
 impl From<crate::v0::ConnectionDefinition> for ConnectionDefinition {
@@ -215,6 +226,7 @@ impl From<crate::v0::ConnectionDefinition> for ConnectionDefinition {
     ConnectionDefinition {
       from: def.from.into(),
       to: def.to.into(),
+      default: def.default,
     }
   }
 }
@@ -222,6 +234,34 @@ impl From<crate::v0::ConnectionDefinition> for ConnectionDefinition {
 impl Display for ConnectionDefinition {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     write!(f, "{} => {}", self.from, self.to)
+  }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ConnectionTargetDefinition {
+  pub instance: String,
+  pub port: String,
+}
+
+impl ConnectionTargetDefinition {
+  pub fn new<T: AsRef<str>, U: AsRef<str>>(instance: T, port: U) -> Self {
+    Self {
+      instance: instance.as_ref().to_owned(),
+      port: port.as_ref().to_owned(),
+    }
+  }
+}
+
+impl<T, U> From<(T, U)> for ConnectionTargetDefinition
+where
+  T: Display,
+  U: Display,
+{
+  fn from((instance, port): (T, U)) -> Self {
+    ConnectionTargetDefinition {
+      instance: instance.to_string(),
+      port: port.to_string(),
+    }
   }
 }
 
@@ -236,35 +276,6 @@ impl From<crate::v0::ConnectionTargetDefinition> for ConnectionTargetDefinition 
     ConnectionTargetDefinition {
       instance: def.instance,
       port: def.port,
-    }
-  }
-}
-
-impl ConnectionDefinition {
-  pub fn print_all(list: &[Self]) -> String {
-    list
-      .iter()
-      .map(|c| c.to_string())
-      .collect::<Vec<String>>()
-      .join(", ")
-  }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ConnectionTargetDefinition {
-  pub instance: String,
-  pub port: String,
-}
-
-impl<T, U> From<(T, U)> for ConnectionTargetDefinition
-where
-  T: Display,
-  U: Display,
-{
-  fn from((instance, port): (T, U)) -> Self {
-    ConnectionTargetDefinition {
-      instance: instance.to_string(),
-      port: port.to_string(),
     }
   }
 }

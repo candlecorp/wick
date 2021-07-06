@@ -4,7 +4,6 @@ pub(crate) mod initialize;
 pub(crate) mod input_message;
 pub(crate) mod invocation;
 pub(crate) mod output_message;
-pub(crate) mod output_packet;
 pub(crate) mod schematic_output;
 pub(crate) mod short_circuit;
 pub(crate) mod transaction_update;

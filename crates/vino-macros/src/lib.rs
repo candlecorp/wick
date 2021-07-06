@@ -1,5 +1,5 @@
 #[macro_export]
-macro_rules! meh {
+macro_rules! ok_or_log {
   ($expr:expr $(,)?) => {{
     match $expr {
       Ok(_) => {}
