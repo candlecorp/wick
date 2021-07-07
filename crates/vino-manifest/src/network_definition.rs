@@ -1,26 +1,38 @@
-use std::collections::HashMap;
 use std::convert::TryInto;
-
-use serde::{
-  Deserialize,
-  Serialize,
-};
 
 use crate::schematic_definition::SchematicDefinition;
 use crate::NetworkManifest;
 
 #[derive(Debug, Clone)]
+
+/// The NetworkDefinition struct is a normalized representation of a Vino [NetworkManifest].
+/// It handles the job of translating manifest versions into a consistent data structure.
 pub struct NetworkDefinition {
+  /// A list of SchematicDefinitions
   pub schematics: Vec<SchematicDefinition>,
 }
 
-impl NetworkDefinition {
-  pub fn new(manifest: &NetworkManifest) -> Self {
+impl NetworkDefinition {}
+
+impl From<crate::v0::NetworkManifest> for NetworkDefinition {
+  fn from(def: crate::v0::NetworkManifest) -> Self {
+    Self {
+      schematics: def
+        .schematics
+        .into_iter()
+        .map(|val| val.try_into())
+        .filter_map(Result::ok)
+        .collect(),
+    }
+  }
+}
+
+impl From<NetworkManifest> for NetworkDefinition {
+  fn from(manifest: NetworkManifest) -> Self {
     match manifest {
       NetworkManifest::V0(manifest) => Self {
         schematics: manifest
           .schematics
-          .clone()
           .into_iter()
           .map(|val| val.try_into())
           .filter_map(Result::ok)
@@ -30,58 +42,8 @@ impl NetworkDefinition {
   }
 }
 
-impl From<crate::v0::NetworkManifest> for NetworkDefinition {
-  fn from(def: crate::v0::NetworkManifest) -> Self {
-    Self::new(&crate::NetworkManifest::V0(def))
-  }
-}
-
 impl Default for NetworkDefinition {
   fn default() -> Self {
     Self { schematics: vec![] }
   }
-}
-
-/// The description of a capability within a host manifest
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[doc(hidden)]
-pub struct Capability {
-  /// An image reference for this capability. If this is a file on disk, it will be used, otherwise
-  /// the system will assume it is an OCI registry image reference
-  pub image_ref: String,
-  /// The (optional) name of the link that identifies this instance of the capability
-  pub link_name: Option<String>,
-}
-
-/// A link definition describing the actor and capability provider involved, as well
-/// as the configuration values for that link
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[doc(hidden)]
-pub struct LinkEntry {
-  pub actor: String,
-  pub contract_id: String,
-  pub provider_id: String,
-  #[serde(default)]
-  #[serde(skip_serializing_if = "Option::is_none")]
-  pub link_name: Option<String>,
-  pub values: Option<HashMap<String, String>>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ReferenceEntry {
-  pub reference: String,
-  pub target: String,
-}
-
-/// A connection between two actor ports
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ConnectionEntry {
-  pub from: ActorPortEntry,
-  pub to: ActorPortEntry,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ActorPortEntry {
-  pub reference: String,
-  pub port: String,
 }

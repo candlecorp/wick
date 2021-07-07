@@ -4,9 +4,6 @@ type SchematicManifest {
   "Schematic name"
   name: string @required,
 
-  "A list of external components"
-  external: [ExternalComponentDefinition],
-
   "A list of providers and component collections"
   providers: [ProviderDefinition],
 
@@ -18,18 +15,6 @@ type SchematicManifest {
 
   "A map of constraints and values that limit where this schematic can run"
   constraints: {string: string},
-}
-
-"An external component definition"
-type ExternalComponentDefinition {
-  "An alias to use for this component (local to this manifest only)"
-  alias: string?,
-
-  "The location reference (i.e. URL or file path)"
-  reference: string @required,
-
-  "A public key to verify the retrieved component's validity"
-  key: string,
 }
 
 "A provider definition"
@@ -55,8 +40,6 @@ enum ProviderKind {
   GrpcUrl = 1,
   "A WaPC WebAssembly provider"
   WaPC = 2,
-  "A schematic within the same network"
-  Schematic = 3,
 }
 
 "A single component definition"
@@ -83,7 +66,7 @@ type ConnectionDefinition {
 "A connection target"
 type ConnectionTargetDefinition {
   "The component reference"
-  instance: string @required,
+  reference: string @required,
   "The component's port"
   port: string @required,
 }

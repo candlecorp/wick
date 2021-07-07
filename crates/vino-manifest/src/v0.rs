@@ -33,7 +33,7 @@ use serde_with_expand_env::with_expand_envs;
 
 #[allow(non_snake_case)]
 fn HOST_MANIFEST_DEFAULT_SCHEMATIC() -> String {
-  "default".to_string()
+  "default".to_owned()
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
@@ -58,19 +58,19 @@ pub struct HostManifest {
 
 #[allow(non_snake_case)]
 fn NATS_CONFIGURATION_RPC_HOST() -> String {
-  "0.0.0.0".to_string()
+  "0.0.0.0".to_owned()
 }
 #[allow(non_snake_case)]
 fn NATS_CONFIGURATION_RPC_PORT() -> String {
-  "4222".to_string()
+  "4222".to_owned()
 }
 #[allow(non_snake_case)]
 fn NATS_CONFIGURATION_CONTROL_HOST() -> String {
-  "0.0.0.0".to_string()
+  "0.0.0.0".to_owned()
 }
 #[allow(non_snake_case)]
 fn NATS_CONFIGURATION_CONTROL_PORT() -> String {
-  "4222".to_string()
+  "4222".to_owned()
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
@@ -133,126 +133,6 @@ pub struct NetworkManifest {
   #[serde(default)]
   #[serde(skip_serializing_if = "Vec::is_empty")]
   pub schematics: Vec<SchematicManifest>,
-  /// deprecated
-  #[deprecated()]
-  #[serde(default)]
-  #[serde(skip_serializing_if = "Vec::is_empty")]
-  pub capabilities: Vec<Capability>,
-  /// deprecated
-  #[deprecated()]
-  #[serde(default)]
-  #[serde(skip_serializing_if = "Vec::is_empty")]
-  pub links: Vec<LinkEntry>,
-  /// deprecated
-  #[deprecated()]
-  #[serde(default)]
-  #[serde(skip_serializing_if = "Vec::is_empty")]
-  pub actors: Vec<String>,
-  /// deprecated
-  #[deprecated()]
-  #[serde(default)]
-  #[serde(skip_serializing_if = "Vec::is_empty")]
-  pub components: Vec<String>,
-  /// deprecated
-  #[deprecated()]
-  #[serde(default)]
-  #[serde(skip_serializing_if = "Vec::is_empty")]
-  pub references: Vec<ReferenceEntry>,
-  /// deprecated
-  #[deprecated()]
-  #[serde(default)]
-  #[serde(skip_serializing_if = "Vec::is_empty")]
-  pub connections: Vec<ConnectionEntry>,
-}
-
-#[derive(Debug, Default, Clone, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-/// deprecated
-pub struct Capability {
-  /// deprecated
-  #[deprecated()]
-  #[serde(default)]
-  #[serde(deserialize_with = "with_expand_envs")]
-  pub image_ref: String,
-  /// deprecated
-  #[deprecated()]
-  #[serde(default)]
-  pub link_name: Option<String>,
-}
-
-#[derive(Debug, Default, Clone, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-/// deprecated
-pub struct LinkEntry {
-  /// deprecated
-  #[deprecated()]
-  #[serde(default)]
-  #[serde(deserialize_with = "with_expand_envs")]
-  pub actor: String,
-  /// deprecated
-  #[deprecated()]
-  #[serde(default)]
-  #[serde(deserialize_with = "with_expand_envs")]
-  pub contract_id: String,
-  /// deprecated
-  #[deprecated()]
-  #[serde(default)]
-  #[serde(deserialize_with = "with_expand_envs")]
-  pub provider_id: String,
-  /// deprecated
-  #[deprecated()]
-  #[serde(default)]
-  pub link_name: Option<String>,
-  /// deprecated
-  #[deprecated()]
-  #[serde(default)]
-  pub values: Option<HashMap<String, String>>,
-}
-
-#[derive(Debug, Default, Clone, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-/// deprecated
-pub struct ReferenceEntry {
-  /// deprecated
-  #[deprecated()]
-  #[serde(default)]
-  #[serde(deserialize_with = "with_expand_envs")]
-  pub reference: String,
-  /// deprecated
-  #[deprecated()]
-  #[serde(default)]
-  #[serde(deserialize_with = "with_expand_envs")]
-  pub target: String,
-}
-
-#[derive(Debug, Default, Clone, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-/// deprecated
-pub struct ConnectionEntry {
-  /// deprecated
-  #[deprecated()]
-  #[serde(default)]
-  pub from: ActorPortEntry,
-  /// deprecated
-  #[deprecated()]
-  #[serde(default)]
-  pub to: ActorPortEntry,
-}
-
-#[derive(Debug, Default, Clone, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-/// deprecated
-pub struct ActorPortEntry {
-  /// deprecated
-  #[deprecated()]
-  #[serde(default)]
-  #[serde(deserialize_with = "with_expand_envs")]
-  pub reference: String,
-  /// deprecated
-  #[deprecated()]
-  #[serde(default)]
-  #[serde(deserialize_with = "with_expand_envs")]
-  pub port: String,
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
@@ -263,10 +143,6 @@ pub struct SchematicManifest {
 
   #[serde(deserialize_with = "with_expand_envs")]
   pub name: String,
-  /// A list of external components
-  #[serde(default)]
-  #[serde(skip_serializing_if = "Vec::is_empty")]
-  pub external: Vec<ExternalComponentDefinition>,
   /// A list of providers and component collections
   #[serde(default)]
   #[serde(skip_serializing_if = "Vec::is_empty")]
@@ -283,23 +159,6 @@ pub struct SchematicManifest {
   #[serde(default)]
   #[serde(skip_serializing_if = "HashMap::is_empty")]
   pub constraints: HashMap<String, String>,
-}
-
-#[derive(Debug, Default, Clone, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-/// An external component definition
-pub struct ExternalComponentDefinition {
-  /// An alias to use for this component (local to this manifest only)
-  #[serde(default)]
-  pub alias: Option<String>,
-  /// The location reference (i.e. URL or file path)
-
-  #[serde(deserialize_with = "with_expand_envs")]
-  pub reference: String,
-  /// A public key to verify the retrieved component&#x27;s validity
-  #[serde(default)]
-  #[serde(deserialize_with = "with_expand_envs")]
-  pub key: String,
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
@@ -333,8 +192,6 @@ pub enum ProviderKind {
   GrpcUrl = 1,
   /// A WaPC WebAssembly provider
   WaPC = 2,
-  /// A schematic within the same network
-  Schematic = 3,
 }
 
 impl Default for ProviderKind {
@@ -376,7 +233,7 @@ pub struct ConnectionTargetDefinition {
   /// The component reference
 
   #[serde(deserialize_with = "with_expand_envs")]
-  pub instance: String,
+  pub reference: String,
   /// The component&#x27;s port
 
   #[serde(deserialize_with = "with_expand_envs")]

@@ -17,53 +17,29 @@ use crate::{
 };
 
 #[derive(Debug, Clone, Default)]
+/// The SchematicDefinition struct is a normalized representation of a Vino [SchematicManifest].
+/// It handles the job of translating manifest versions into a consistent data structure.
 pub struct SchematicDefinition {
+  /// The name of the schematic.
   pub name: String,
-  pub external: Vec<ExternalComponentDefinition>,
+  /// A mapping of references to the components they refer to.
   pub components: HashMap<String, ComponentDefinition>,
+  /// A list of connections from and to ports on references defined in the components field.
   pub connections: Vec<ConnectionDefinition>,
+  /// A list of [ProviderDefinition]s with namespaces and initialization configuration.
   pub providers: Vec<ProviderDefinition>,
+  /// Reserved
   pub constraints: HashMap<String, String>,
 }
 
 impl SchematicDefinition {
-  pub fn from_manifest(manifest: &SchematicManifest) -> Result<Self> {
-    let def = match manifest {
-      SchematicManifest::V0(manifest) => Self {
-        name: manifest.name.clone(),
-        components: manifest
-          .components
-          .clone()
-          .into_iter()
-          .map(|(key, val)| Ok((key, val.try_into()?)))
-          .filter_map(Result::ok)
-          .collect(),
-        connections: manifest
-          .connections
-          .clone()
-          .into_iter()
-          .map(|def| def.into())
-          .collect(),
-        providers: manifest
-          .providers
-          .clone()
-          .into_iter()
-          .map(|def| def.into())
-          .collect(),
-        constraints: manifest.constraints.clone().into_iter().collect(),
-        external: manifest
-          .external
-          .clone()
-          .into_iter()
-          .map(|def| def.into())
-          .collect(),
-      },
-    };
-    Ok(def)
-  }
+  /// Get the name as an owned [String]
+  #[must_use]
   pub fn get_name(&self) -> String {
     self.name.clone()
   }
+  /// Get a [ComponentDefinition] by reference
+  #[must_use]
   pub fn get_component(&self, reference: &str) -> Option<ComponentDefinition> {
     self.components.get(reference).cloned()
   }
@@ -73,38 +49,61 @@ impl TryFrom<crate::v0::SchematicManifest> for SchematicDefinition {
   type Error = Error;
 
   fn try_from(manifest: crate::v0::SchematicManifest) -> Result<Self> {
-    Self::from_manifest(&crate::SchematicManifest::V0(manifest))
+    Ok(Self {
+      name: manifest.name.clone(),
+      components: manifest
+        .components
+        .clone()
+        .into_iter()
+        .map(|(key, val)| Ok((key, val.try_into()?)))
+        .filter_map(Result::ok)
+        .collect(),
+      connections: manifest
+        .connections
+        .clone()
+        .into_iter()
+        .map(|def| def.into())
+        .collect(),
+      providers: manifest
+        .providers
+        .clone()
+        .into_iter()
+        .map(|def| def.into())
+        .collect(),
+      constraints: manifest.constraints.clone().into_iter().collect(),
+    })
   }
 }
 
-#[derive(Debug, Clone)]
-pub struct ExternalComponentDefinition {
-  pub alias: Option<String>,
-  pub reference: String,
-  pub key: String,
-}
+impl TryFrom<SchematicManifest> for SchematicDefinition {
+  type Error = Error;
 
-impl From<crate::v0::ExternalComponentDefinition> for ExternalComponentDefinition {
-  fn from(def: crate::v0::ExternalComponentDefinition) -> Self {
-    Self {
-      alias: def.alias,
-      key: def.key,
-      reference: def.reference,
-    }
+  fn try_from(manifest: SchematicManifest) -> Result<Self> {
+    let def = match manifest {
+      SchematicManifest::V0(manifest) => manifest.try_into()?,
+    };
+    Ok(def)
   }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+/// A definition of a component used to reference a component registered under a provider.
+/// Note: [ComponentDefinition] include embed the concept of a namespace so two identical
+/// components registered on different namespaces will not be equal.
 pub struct ComponentDefinition {
+  /// The component's name
+  pub name: String,
+  /// The namespace the component was registered under
+  pub namespace: String,
+  /// The fully qualified ID used to reference the component.
+  pub id: String,
   /// Reserved
   pub metadata: Option<String>,
-  /// The ID used to reference the component. Can be a public key or fully qualified namespace reference
-  pub id: String,
-  pub name: String,
-  pub namespace: String,
 }
 
 impl ComponentDefinition {
+  /// Quick way to create a [ComponentDefinition] from code. Used mostly in testing.
+  #[must_use]
   pub fn new(namespace: &str, name: &str) -> Self {
     Self {
       name: name.to_owned(),
@@ -115,30 +114,32 @@ impl ComponentDefinition {
   }
 }
 
-pub fn parse_namespace(id: &str) -> Result<(String, String)> {
+/// Parse a fully qualified component ID into its namespace & name parts
+pub fn parse_id(id: &str) -> Result<(&str, &str)> {
   if !id.contains("::") {
-    Err(Error::ComponentIdError(id.to_string()))
+    Err(Error::ComponentIdError(id.to_owned()))
   } else {
     id.split_once("::")
-      .map(|(ns, name)| Ok((ns.to_string(), name.to_string())))
+      .map(|(ns, name)| Ok((ns, name)))
       .unwrap()
   }
 }
 
 impl ComponentDefinition {
-  pub fn parse_namespace(&self) -> Result<(String, String)> {
-    parse_namespace(&self.id)
+  /// Parse a fully qualified component ID into its namespace & name parts
+  pub fn parse_id(&self) -> Result<(&str, &str)> {
+    parse_id(&self.id)
   }
 }
 
 impl TryFrom<crate::v0::ComponentDefinition> for ComponentDefinition {
   type Error = Error;
   fn try_from(def: crate::v0::ComponentDefinition) -> Result<Self> {
-    let (ns, name) = parse_namespace(&def.id)?;
+    let (ns, name) = parse_id(&def.id)?;
     Ok(ComponentDefinition {
-      id: def.id,
-      namespace: ns,
-      name,
+      id: def.id.clone(),
+      namespace: ns.to_owned(),
+      name: name.to_owned(),
       metadata: None,
     })
   }
@@ -147,19 +148,20 @@ impl TryFrom<crate::v0::ComponentDefinition> for ComponentDefinition {
 impl TryFrom<&crate::v0::ComponentDefinition> for ComponentDefinition {
   type Error = Error;
   fn try_from(def: &crate::v0::ComponentDefinition) -> Result<Self> {
-    let (ns, name) = parse_namespace(&def.id)?;
+    let (ns, name) = parse_id(&def.id)?;
     Ok(ComponentDefinition {
-      id: def.id.to_string(),
-      namespace: ns,
-      name,
+      id: def.id.clone(),
+      namespace: ns.to_owned(),
+      name: name.to_owned(),
       metadata: None,
     })
   }
 }
 
 #[derive(Debug, Clone)]
+/// A definition of a Vino Provider with its namespace, how to retrieve or access it and its configuration.
 pub struct ProviderDefinition {
-  /// The namespace to reference the provider&#x27;s components on
+  /// The namespace to reference the provider's components on
   pub namespace: String,
   /// The kind/type of the provider
   pub kind: ProviderKind,
@@ -180,17 +182,15 @@ impl From<crate::v0::ProviderDefinition> for ProviderDefinition {
   }
 }
 
-#[derive(Debug, Clone)]
-/// Kind of provider,
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// The kind of provider.
 pub enum ProviderKind {
   /// Native providers included at compile-time in a Vino host
   Native = 0,
   /// The URL for a separately managed GRPC endpoint
   GrpcUrl = 1,
-
+  /// A WaPC WebAssembly provider
   Wapc = 2,
-
-  Schematic = 3,
 }
 
 impl From<crate::v0::ProviderKind> for ProviderKind {
@@ -199,19 +199,25 @@ impl From<crate::v0::ProviderKind> for ProviderKind {
       crate::v0::ProviderKind::Native => ProviderKind::Native,
       crate::v0::ProviderKind::GrpcUrl => ProviderKind::GrpcUrl,
       crate::v0::ProviderKind::WaPC => ProviderKind::Wapc,
-      crate::v0::ProviderKind::Schematic => ProviderKind::Schematic,
     }
   }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+/// A [ConnectionDefinition] defines the link between an upstream and downstream port as well as
+/// the default value to use in the case of an exception.
 pub struct ConnectionDefinition {
+  /// The upstream [ConnectionTargetDefinition] (port)
   pub from: ConnectionTargetDefinition,
+  /// The downstream [ConnectionTargetDefinition] (port)
   pub to: ConnectionTargetDefinition,
+  /// The default data to use in the case of an Error, represented as a JSON string.
   pub default: Option<String>,
 }
 
 impl ConnectionDefinition {
+  /// Format a list of [ConnectionDefinition]s into a String
+  #[must_use]
   pub fn print_all(list: &[Self]) -> String {
     list
       .iter()
@@ -238,15 +244,20 @@ impl Display for ConnectionDefinition {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+
+/// A [ConnectionTargetDefinition] is the link to a port for a specific reference of a component.
 pub struct ConnectionTargetDefinition {
-  pub instance: String,
+  /// A schematic-wide unique identifier for a [ComponentDefinition]
+  pub reference: String,
+  /// A port on the referenced [ComponentDefinition]
   pub port: String,
 }
 
 impl ConnectionTargetDefinition {
-  pub fn new<T: AsRef<str>, U: AsRef<str>>(instance: T, port: U) -> Self {
+  /// Constructor for a [ConnectionTargetDefinition]. Used mostly in test code.
+  pub fn new<T: AsRef<str>, U: AsRef<str>>(reference: T, port: U) -> Self {
     Self {
-      instance: instance.as_ref().to_owned(),
+      reference: reference.as_ref().to_owned(),
       port: port.as_ref().to_owned(),
     }
   }
@@ -257,9 +268,9 @@ where
   T: Display,
   U: Display,
 {
-  fn from((instance, port): (T, U)) -> Self {
+  fn from((reference, port): (T, U)) -> Self {
     ConnectionTargetDefinition {
-      instance: instance.to_string(),
+      reference: reference.to_string(),
       port: port.to_string(),
     }
   }
@@ -267,14 +278,14 @@ where
 
 impl Display for ConnectionTargetDefinition {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    write!(f, "{}[{}]", self.instance, self.port)
+    write!(f, "{}[{}]", self.reference, self.port)
   }
 }
 
 impl From<crate::v0::ConnectionTargetDefinition> for ConnectionTargetDefinition {
   fn from(def: crate::v0::ConnectionTargetDefinition) -> Self {
     ConnectionTargetDefinition {
-      instance: def.instance,
+      reference: def.reference,
       port: def.port,
     }
   }

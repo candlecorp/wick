@@ -1,7 +1,7 @@
 
 {{#switch kind ~}}
   {{#case "StringValue"}}
-  "{{value}}".to_string()
+  "{{value}}".to_owned()
   {{/case}}
   {{#case "ObjectValue"}}
     {{#if fields }}
