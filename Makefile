@@ -1,4 +1,4 @@
-.PHONY: all codegen build clean test
+.PHONY: all codegen build clean test update-lint
 
 # Enforce bash as the shell for consistency
 SHELL := bash
@@ -37,3 +37,7 @@ build:
 test: build
 	cargo test --workspace
 
+update-lint:
+	@echo Checking git status...
+	@[[ -z `git status -s` ]]
+	@echo Good to go

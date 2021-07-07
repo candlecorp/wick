@@ -1,3 +1,7 @@
+// !!START_LINTS
+// Vino lints
+// Do not change anything between the START_LINTS and END_LINTS line.
+// This is automatically generated. Add exceptions after this section.
 #![deny(
     clippy::expect_used,
     clippy::explicit_deref_methods,
@@ -64,6 +68,9 @@
     while_true,
     // missing_docs
 )]
+// !!END_LINTS
+// Add exceptions here
+#![allow()]
 
 #[macro_use]
 mod macros {
