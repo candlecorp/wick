@@ -172,7 +172,6 @@ pub(crate) async fn initialize_provider(
   trace!("Registering provider under the namespace {}", namespace);
   match provider.kind {
     ProviderKind::Native => unreachable!(), ///// Should not be handled via this route
-    ProviderKind::Schematic => unreachable!(), // same
     ProviderKind::GrpcUrl => initialize_grpc_provider(provider, seed, &namespace).await,
     ProviderKind::Wapc => {
       initialize_wapc_provider(provider, seed, &namespace, allow_latest, allowed_insecure).await

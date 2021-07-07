@@ -10,14 +10,14 @@ network:
           id: vino-v0::log
       connections:
         - from:
-            instance: <input>
+            reference: <input>
             port: input
           to:
-            instance: logger
+            reference: logger
             port: input
         - from:
-            instance: logger
+            reference: logger
             port: output
           to:
-            instance: <output>
+            reference: <output>
             port: output

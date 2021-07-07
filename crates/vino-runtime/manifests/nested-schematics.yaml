@@ -7,22 +7,22 @@ schematics:
         id: self::child
     connections:
       - from:
-          instance: <input>
+          reference: <input>
           port: parent_input
         to:
-          instance: log1
+          reference: log1
           port: input
       - from:
-          instance: log1
+          reference: log1
           port: output
         to:
-          instance: child_ref
+          reference: child_ref
           port: child_input
       - from:
-          instance: child_ref
+          reference: child_ref
           port: child_output
         to:
-          instance: <output>
+          reference: <output>
           port: parent_output
   - name: child
     components:
@@ -30,14 +30,14 @@ schematics:
         id: vino-v0::log
     connections:
       - from:
-          instance: <input>
+          reference: <input>
           port: child_input
         to:
-          instance: log2
+          reference: log2
           port: input
       - from:
-          instance: log2
+          reference: log2
           port: output
         to:
-          instance: <output>
+          reference: <output>
           port: child_output

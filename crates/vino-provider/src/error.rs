@@ -1,6 +1,6 @@
 use thiserror::Error;
 
-type BoxedSyncSendError = Box<dyn std::error::Error + Sync + std::marker::Send>;
+type BoxedSyncSendError = Box<dyn std::error::Error + Sync + Send>;
 
 #[derive(Error, Debug)]
 pub enum ProviderError {

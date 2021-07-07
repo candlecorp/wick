@@ -66,7 +66,7 @@
     unused_parens,
     unused_qualifications,
     while_true,
-    missing_docs
+    // missing_docs
 )]
 // !!END_LINTS
 // Add exceptions here
@@ -91,16 +91,18 @@ use vino_rpc::{
 use crate::error::NativeError;
 mod components;
 pub mod error;
-pub type Result<T> = std::result::Result<T, error::NativeError>;
+pub type Result<T> = std::result::Result<T, NativeError>;
 
+#[derive(Clone, Debug)]
 pub(crate) struct State {}
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Provider {
   context: Arc<Mutex<State>>,
 }
 
 impl Provider {
+  #[must_use]
   pub fn default() -> Self {
     Self {
       context: Arc::new(Mutex::new(State {})),
@@ -141,7 +143,7 @@ impl RpcHandler for Provider {
     )
   }
 
-  async fn report_statistics(&self, id: Option<String>) -> RpcResult<Vec<vino_rpc::Statistics>> {
+  async fn report_statistics(&self, id: Option<String>) -> RpcResult<Vec<Statistics>> {
     // TODO Dummy implementation
     if id.is_some() {
       Ok(vec![Statistics {
@@ -189,15 +191,15 @@ mod tests {
     let input = "some_input";
     let invocation_id = "INVOCATION_ID";
     let job_payload = hashmap! {
-      "input".to_string() => serialize(input)?,
+      "input".to_owned() => serialize(input)?,
     };
 
     let entity = Entity::component("log");
 
     let mut outputs = provider
-      .request(invocation_id.to_string(), entity, job_payload)
+      .request(invocation_id.to_owned(), entity, job_payload)
       .await
-      .expect("request failed");
+      .unwrap();
     let output = outputs.next().await.unwrap();
     println!("Received payload from [{}]", output.port);
     let payload: String = match output.packet {
@@ -217,7 +219,7 @@ mod tests {
     let provider = Provider::default();
     let components = crate::components::get_all_components();
 
-    let response = provider.list_registered().await.expect("request failed");
+    let response = provider.list_registered().await.unwrap();
 
     debug!("list response : {:?}", response);
 
@@ -236,10 +238,7 @@ mod tests {
   async fn statistics() -> Result<()> {
     let provider = Provider::default();
 
-    let response = provider
-      .report_statistics(None)
-      .await
-      .expect("request failed");
+    let response = provider.report_statistics(None).await.unwrap();
 
     debug!("statistics response : {:?}", response);
 

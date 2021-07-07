@@ -61,6 +61,6 @@ impl From<String> for VinoHostError {
 
 impl From<&'static str> for VinoHostError {
   fn from(e: &'static str) -> Self {
-    VinoHostError::Other(e.to_string())
+    VinoHostError::Other(e.to_owned())
   }
 }

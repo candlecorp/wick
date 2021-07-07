@@ -12,12 +12,12 @@ network {
         },
         connections: [
             {
-              from { instance: "vino::schematic_input", port: "input" },
-              to { instance: "logger", port: "input" },
+              from { reference: "vino::schematic_input", port: "input" },
+              to { reference: "logger", port: "input" },
             },
             {
-              from { instance: "logger", port: "output" },
-              to { instance: "vino::schematic_input", port: "output" },
+              from { reference: "logger", port: "output" },
+              to { reference: "vino::schematic_input", port: "output" },
             },
           ],
       }],

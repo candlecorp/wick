@@ -66,7 +66,7 @@
     unused_parens,
     unused_qualifications,
     while_true,
-    missing_docs
+    // missing_docs
 )]
 // !!END_LINTS
 // Add exceptions here
@@ -123,14 +123,15 @@ pub fn extract_claims(contents: impl AsRef<[u8]>) -> Result<Option<Token<Compone
     let claims: Claims<ComponentClaims> = Claims::decode(&jwt)?;
     let hash = compute_hash_without_jwt(module)?;
 
-    if let Some(ref meta) = claims.metadata {
-      if meta.module_hash != hash {
-        Err(error::ClaimsError::InvalidModuleHash)
-      } else {
-        Ok(Some(Token { jwt, claims }))
-      }
+    let valid_hash = claims
+      .metadata
+      .as_ref()
+      .map_or(false, |meta| meta.module_hash == hash);
+
+    if valid_hash {
+      Ok(Some(Token { jwt, claims }))
     } else {
-      Err(error::ClaimsError::InvalidAlgorithm)
+      Err(error::ClaimsError::InvalidModuleHash)
     }
   }
 }
@@ -172,8 +173,8 @@ pub fn embed_claims(
 pub fn sign_buffer_with_claims(
   buf: impl AsRef<[u8]>,
   interface: ProviderSignature,
-  mod_kp: KeyPair,
-  acct_kp: KeyPair,
+  mod_kp: &KeyPair,
+  acct_kp: &KeyPair,
   expires_in_days: Option<u64>,
   not_before_days: Option<u64>,
   version: Option<String>,
@@ -195,7 +196,7 @@ pub fn sign_buffer_with_claims(
     }),
   };
 
-  embed_claims(buf.as_ref(), &claims, &acct_kp)
+  embed_claims(buf.as_ref(), &claims, acct_kp)
 }
 
 fn since_the_epoch() -> std::time::Duration {

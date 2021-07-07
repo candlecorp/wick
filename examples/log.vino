@@ -10,14 +10,14 @@ network:
           id: vino::log
       connections:
         - from:
-            instance: vino::schematic_input
+            reference: vino::schematic_input
             port: input
           to:
-            instance: logger
+            reference: logger
             port: input
         - from:
-            instance: logger
+            reference: logger
             port: output
           to:
-            instance: vino::schematic_output
+            reference: vino::schematic_output
             port: output

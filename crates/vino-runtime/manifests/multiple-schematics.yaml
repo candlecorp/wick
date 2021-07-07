@@ -5,22 +5,22 @@ schematics:
         id: vino-v0::add
     connections:
       - from:
-          instance: <input>
+          reference: <input>
           port: left
         to:
-          instance: add
+          reference: add
           port: left
       - from:
-          instance: <input>
+          reference: <input>
           port: right
         to:
-          instance: add
+          reference: add
           port: right
       - from:
-          instance: add
+          reference: add
           port: output
         to:
-          instance: <output>
+          reference: <output>
           port: output
   - name: second_schematic
     components:
@@ -28,14 +28,14 @@ schematics:
         id: vino-v0::log
     connections:
       - from:
-          instance: <input>
+          reference: <input>
           port: input
         to:
-          instance: log
+          reference: log
           port: input
       - from:
-          instance: log
+          reference: log
           port: output
         to:
-          instance: <output>
+          reference: <output>
           port: output

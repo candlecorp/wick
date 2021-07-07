@@ -1,6 +1,11 @@
-use crate::{utils::merge_runconfig, Result};
-use std::{collections::HashMap, io::Read, path::PathBuf};
+use std::collections::HashMap;
+use std::io::Read;
+use std::path::PathBuf;
+
 use structopt::StructOpt;
+
+use crate::utils::merge_runconfig;
+use crate::Result;
 
 #[derive(Debug, Clone, StructOpt)]
 #[structopt(rename_all = "kebab-case")]
@@ -59,5 +64,5 @@ pub async fn handle_command(command: RunCommand) -> Result<String> {
 
   println!("{}", result);
 
-  Ok("Done".to_string())
+  Ok("Done".to_owned())
 }

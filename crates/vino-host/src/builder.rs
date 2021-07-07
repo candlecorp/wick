@@ -19,6 +19,7 @@ impl Default for HostBuilder {
 
 impl HostBuilder {
   /// Creates a new host builder
+  #[must_use]
   pub fn new() -> HostBuilder {
     HostBuilder {}
   }
@@ -30,6 +31,7 @@ impl HostBuilder {
   }
 
   /// Constructs an instance of a Vino host.
+  #[must_use]
   pub fn build(self) -> Host {
     let kp = KeyPair::new_server();
     let host_id = kp.public_key();
@@ -47,10 +49,7 @@ mod test {
   use crate::HostBuilder;
 
   #[test]
-  fn is_send() {
-    let h = HostBuilder::new().build();
-    assert_is_send(h);
+  fn builds_default() {
+    let _h = HostBuilder::new().build();
   }
-
-  fn assert_is_send<T: Send>(_input: T) {}
 }

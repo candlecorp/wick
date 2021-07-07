@@ -21,29 +21,29 @@ ref = "MC3WXSC7RHYHI6RIKDSSED5E3XP5KZ7NXUA3DB7Z66KIVHTFY7SJ4WHF"
 
 [[manifest.schematics.connections]]
 [manifest.schematics.connections.from]
-instance = "vino::schematic_input"
+reference = "vino::schematic_input"
 port = "collection_id"
 
 [manifest.schematics.connections.to]
-instance = "collection-get-item"
+reference = "collection-get-item"
 port = "collection_id"
 
 [[manifest.schematics.connections]]
 [manifest.schematics.connections.from]
-instance = "vino::schematic_input"
+reference = "vino::schematic_input"
 port = "content_id"
 
 [manifest.schematics.connections.to]
-instance = "collection-get-item"
+reference = "collection-get-item"
 port = "content_id"
 
 [[manifest.schematics.connections]]
 [manifest.schematics.connections.from]
-instance = "collection-get-item"
+reference = "collection-get-item"
 port = "document"
 
 [manifest.schematics.connections.to]
-instance = "vino::schematic_output"
+reference = "vino::schematic_output"
 port = "document"
 
 [[manifest.links]]

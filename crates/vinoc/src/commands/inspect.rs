@@ -32,7 +32,7 @@ struct GenerateCommon {
   not_before_days: Option<u64>,
 }
 
-pub async fn handle_command(command: InspectCommand) -> Result<String> {
+pub async fn handle_command(command: InspectCommand) -> Result<()> {
   crate::utils::init_logger(&command.logging)?;
 
   let mut file = File::open(&command.module)?;
@@ -46,5 +46,5 @@ pub async fn handle_command(command: InspectCommand) -> Result<String> {
     None => error!("Error extracting claims"),
   }
 
-  Ok("Done".to_string())
+  Ok(())
 }

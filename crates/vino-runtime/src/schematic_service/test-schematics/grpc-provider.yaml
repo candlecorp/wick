@@ -8,14 +8,14 @@ components:
     id: test-namespace::test-component
 connections:
   - from:
-      instance: <input>
+      reference: <input>
       port: input
     to:
-      instance: external
+      reference: external
       port: input
   - from:
-      instance: external
+      reference: external
       port: output
     to:
-      instance: <output>
+      reference: <output>
       port: output

@@ -10,6 +10,7 @@ use logger::options::LoggingOptions;
 use structopt::clap::AppSettings;
 use structopt::StructOpt;
 
+#[must_use]
 pub fn get_args() -> Cli {
   Cli::from_args()
 }
@@ -42,7 +43,7 @@ pub enum CliCommand {
   Inspect(inspect::InspectCommand),
 }
 
-#[derive(Debug, Clone, StructOpt)]
+#[derive(Debug, Clone, Copy, StructOpt)]
 pub struct ConnectOptions {
   /// Port to listen on
   #[structopt(short, long)]

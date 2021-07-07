@@ -60,5 +60,5 @@ pub async fn handle_command(command: StartCommand) -> Result<String> {
   actix_rt::signal::ctrl_c().await.unwrap();
   info!("Ctrl-C received, shutting down");
   host.stop().await;
-  Ok("Done".to_string())
+  Ok("Done".to_owned())
 }

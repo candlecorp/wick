@@ -23,7 +23,7 @@ pub async fn init_network_from_yaml(path: &str) -> TestResult<(Network, String)>
   let manifest = NetworkManifest::V0(vino_manifest::v0::NetworkManifest::from_yaml(
     &fs::read_to_string(path)?,
   )?);
-  let def = NetworkDefinition::from(&manifest);
+  let def = NetworkDefinition::from(manifest);
   debug!("Manifest loaded");
   let kp = KeyPair::new_server();
 
@@ -41,7 +41,7 @@ pub fn load_network_manifest(path: &str) -> TestResult<NetworkDefinition> {
   let manifest = NetworkManifest::V0(vino_manifest::v0::NetworkManifest::from_yaml(
     &fs::read_to_string(path)?,
   )?);
-  let def = NetworkDefinition::from(&manifest);
+  let def = NetworkDefinition::from(manifest);
   debug!("Manifest loaded");
   Ok(def)
 }

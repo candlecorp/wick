@@ -32,6 +32,6 @@ pub struct ComponentClaims {
 
 impl WascapEntity for ComponentClaims {
   fn name(&self) -> String {
-    self.interface.name.to_string()
+    self.interface.name.clone()
   }
 }

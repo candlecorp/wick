@@ -6,20 +6,20 @@ schematics:
         id: vino::add
     connections:
       - from:
-          instance: vino::schematic_input
+          reference: vino::schematic_input
           port: left
         to:
-          instance: add
+          reference: add
           port: left
       - from:
-          instance: vino::schematic_input
+          reference: vino::schematic_input
           port: right
         to:
-          instance: add
+          reference: add
           port: right
       - from:
-          instance: add
+          reference: add
           port: output
         to:
-          instance: vino::schematic_output
+          reference: vino::schematic_output
           port: output

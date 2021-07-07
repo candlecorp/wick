@@ -53,10 +53,13 @@ impl PortSignature {
   }
 }
 
-impl From<(String, String)> for PortSignature {
-  fn from(tup: (String, String)) -> Self {
+impl From<(&str, &str)> for PortSignature {
+  fn from(tup: (&str, &str)) -> Self {
     let (name, type_string) = tup;
-    Self { name, type_string }
+    Self {
+      name: name.to_owned(),
+      type_string: type_string.to_owned(),
+    }
   }
 }
 

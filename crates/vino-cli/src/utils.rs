@@ -14,6 +14,7 @@ fn this_or_that_option<T>(a: Option<T>, b: Option<T>) -> Option<T> {
   }
 }
 
+#[must_use]
 pub fn merge_runconfig(
   base: HostDefinition,
   nats: NatsOptions,

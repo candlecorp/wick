@@ -96,6 +96,8 @@ clean:
 	rm -f $(CLEAN_FILES)
 	# rmdir $(CLEAN_DIRS)
 
+codegen: ./interface.json ./src/lib.rs $(GENERATED_MODULE)
+
 doc:
 
 test: build

@@ -10,20 +10,20 @@ schematics:
         ref: vino::log
     connections:
       - from:
-          instance: vino::schematic_input
+          reference: vino::schematic_input
           port: input_data1
         to:
-          instance: log
+          reference: log
           port: input
       - from:
-          instance: log
+          reference: log
           port: output
         to:
-          instance: validate_password
+          reference: validate_password
           port: input
       - from:
-          instance: validate_password
+          reference: validate_password
           port: output
         to:
-          instance: vino::schematic_output
+          reference: vino::schematic_output
           port: output_data1

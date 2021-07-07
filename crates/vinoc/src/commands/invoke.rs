@@ -27,7 +27,7 @@ pub struct InvokeCommand {
   data: Option<String>,
 }
 
-pub async fn handle_command(command: InvokeCommand) -> Result<String> {
+pub async fn handle_command(command: InvokeCommand) -> Result<()> {
   crate::utils::init_logger(&command.logging)?;
   let mut client = rpc_client(command.connection.address, command.connection.port).await?;
 
@@ -70,5 +70,5 @@ pub async fn handle_command(command: InvokeCommand) -> Result<String> {
 
   println!("{}", serde_json::to_string(&map)?);
 
-  Ok("Done".to_string())
+  Ok(())
 }

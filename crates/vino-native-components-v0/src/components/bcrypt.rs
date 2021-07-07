@@ -11,7 +11,7 @@ pub(crate) async fn job(
   input: Inputs,
   output: Outputs,
   _context: Context<crate::State>,
-) -> std::result::Result<(), Box<dyn std::error::Error + Send + Sync>> {
+) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
   let hashed = hash(input.input, input.cost).map_err(|e| {
     crate::error::NativeError::Other(format!("Error generating hash : {}", e.to_string()))
   })?;

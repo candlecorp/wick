@@ -2,7 +2,7 @@ use structopt::StructOpt;
 
 use crate::Result;
 
-#[derive(Debug, Clone, StructOpt)]
+#[derive(Debug, Clone, Copy, StructOpt)]
 #[structopt(rename_all = "kebab-case")]
 pub struct StatsCommand {
   #[structopt(flatten)]
@@ -12,8 +12,8 @@ pub struct StatsCommand {
   pub connection: super::ConnectOptions,
 }
 
-pub async fn handle_command(command: StatsCommand) -> Result<String> {
+pub async fn handle_command(command: StatsCommand) -> Result<()> {
   crate::utils::init_logger(&command.logging)?;
 
-  Ok("Done".to_string())
+  Ok(())
 }

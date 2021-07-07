@@ -28,11 +28,8 @@ pub(crate) struct Inputs {
   pub(crate) right: u64,
 }
 
-pub(crate) fn inputs_list() -> Vec<(String, String)> {
-  vec![
-    ("left".to_string(), "u64".to_string()),
-    ("right".to_string(), "u64".to_string()),
-  ]
+pub(crate) fn inputs_list() -> Vec<(&'static str, &'static str)> {
+  vec![("left", "u64"), ("right", "u64")]
 }
 
 #[derive(Debug, PartialEq, Deserialize, Serialize, Default, Clone)]
@@ -57,8 +54,8 @@ pub(crate) struct Outputs {
   pub(crate) output: OutputSender,
 }
 
-pub(crate) fn outputs_list() -> Vec<(String, String)> {
-  vec![("output".to_string(), "u64".to_string())]
+pub(crate) fn outputs_list() -> Vec<(&'static str, &'static str)> {
+  vec![("output", "u64")]
 }
 
 pub(crate) struct OutputSender {
@@ -100,17 +97,17 @@ impl VinoProviderComponent for Component {
   fn get_name(&self) -> String {
     format!("vino::{}", "add")
   }
-  fn get_input_ports(&self) -> Vec<(String, String)> {
+  fn get_input_ports(&self) -> Vec<(&'static str, &'static str)> {
     inputs_list()
   }
-  fn get_output_ports(&self) -> Vec<(String, String)> {
+  fn get_output_ports(&self) -> Vec<(&'static str, &'static str)> {
     outputs_list()
   }
   async fn job_wrapper(
     &self,
     context: ProviderContext<Self::Context>,
     data: HashMap<String, Vec<u8>>,
-  ) -> std::result::Result<PortStream, Box<dyn std::error::Error + Send + Sync>> {
+  ) -> Result<PortStream, Box<dyn std::error::Error + Send + Sync>> {
     trace!("Job passed data: {:?}", data);
     let inputs = deserialize_inputs(&data).map_err(ProviderError::InputDeserializationError)?;
     let (outputs, stream) = get_outputs();

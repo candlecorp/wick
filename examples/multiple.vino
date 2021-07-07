@@ -9,16 +9,16 @@ manifest:
           ref: vino::log
       connections:
         - from:
-            instance: vino::schematic_input
+            reference: vino::schematic_input
             port: input
           to:
-            instance: logger
+            reference: logger
             port: input
         - from:
-            instance: logger
+            reference: logger
             port: output
           to:
-            instance: vino::schematic_output
+            reference: vino::schematic_output
             port: output
     - name: second_logger
       components:
@@ -28,20 +28,20 @@ manifest:
           ref: vino::log
       connections:
         - from:
-            instance: vino::schematic_input
+            reference: vino::schematic_input
             port: input
           to:
-            instance: logger
-            port: input
-        - from:
-            instance: logger
-            port: output
-          to:
-            instance: logger2
+            reference: logger
             port: input
         - from:
-            instance: logger2
+            reference: logger
             port: output
           to:
-            instance: vino::schematic_output
+            reference: logger2
+            port: input
+        - from:
+            reference: logger2
+            port: output
+          to:
+            reference: vino::schematic_output
             port: output

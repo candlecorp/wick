@@ -8,32 +8,32 @@ schematics:
         id: vino-v0::add
     connections:
       - from:
-          instance: <input>
+          reference: <input>
           port: left
         to:
-          instance: add
+          reference: add
           port: left
       - from:
-          instance: <input>
+          reference: <input>
           port: right
         to:
-          instance: add
+          reference: add
           port: right
       - from:
-          instance: <input>
+          reference: <input>
           port: right
         to:
-          instance: add2
+          reference: add2
           port: right
       - from:
-          instance: add
+          reference: add
           port: output
         to:
-          instance: add2
+          reference: add2
           port: left
       - from:
-          instance: add2
+          reference: add2
           port: output
         to:
-          instance: <output>
+          reference: <output>
           port: output

@@ -50,6 +50,7 @@ pub struct CommonConfiguration {
 }
 
 impl CommonConfiguration {
+  #[must_use]
   pub fn new(manifest: &vino_manifest::v0::NatsConfiguration) -> Self {
     Self {
       rpc_host: manifest.rpc_host.clone(),

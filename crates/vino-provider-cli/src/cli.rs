@@ -13,7 +13,7 @@ use vino_rpc::{
   InvocationServer,
   RpcHandler,
 };
-
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Options {
   pub port: Option<u16>,
 

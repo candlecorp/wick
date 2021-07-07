@@ -2,8 +2,10 @@ pub mod run;
 pub mod start;
 
 use logger::options::LoggingOptions;
-use structopt::{clap::AppSettings, StructOpt};
+use structopt::clap::AppSettings;
+use structopt::StructOpt;
 
+#[must_use]
 pub fn get_args() -> Cli {
   Cli::from_args()
 }

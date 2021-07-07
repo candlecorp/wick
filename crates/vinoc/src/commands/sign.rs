@@ -55,7 +55,7 @@ struct GenerateCommon {
   not_before_days: Option<u64>,
 }
 
-pub async fn handle_command(command: SignCommand) -> Result<String> {
+pub async fn handle_command(command: SignCommand) -> Result<()> {
   crate::utils::init_logger(&command.logging)?;
   debug!("Signing module");
 
@@ -83,8 +83,8 @@ pub async fn handle_command(command: SignCommand) -> Result<String> {
   let signed = sign_buffer_with_claims(
     &buf,
     interface,
-    subject,
-    issuer,
+    &subject,
+    &issuer,
     command.common.expires_in_days,
     command.common.not_before_days,
     command.ver,
@@ -99,13 +99,13 @@ pub async fn handle_command(command: SignCommand) -> Result<String> {
         .unwrap()
         .to_str()
         .unwrap()
-        .to_string();
+        .to_owned();
       let module_name = PathBuf::from(command.source)
         .file_stem()
         .unwrap()
         .to_str()
         .unwrap()
-        .to_string();
+        .to_owned();
       // If path is empty, user supplied module in current directory
       if path.is_empty() {
         format!("./{}_s.wasm", module_name)
@@ -122,9 +122,9 @@ pub async fn handle_command(command: SignCommand) -> Result<String> {
       info!("Successfully signed {}", destination,);
     }
     Err(e) => {
-      error!("Error signing: {}", e)
+      error!("Error signing: {}", e);
     }
   }
 
-  Ok("Done".to_string())
+  Ok(())
 }

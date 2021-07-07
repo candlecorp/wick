@@ -25,7 +25,7 @@ pub(crate) async fn init_network_from_yaml(path: &str) -> TestResult<(Network, S
   let manifest = NetworkManifest::V0(vino_manifest::v0::NetworkManifest::from_yaml(
     &fs::read_to_string(path)?,
   )?);
-  let def = NetworkDefinition::from(&manifest);
+  let def = NetworkDefinition::from(manifest);
   debug!("Manifest loaded");
   let kp = KeyPair::new_server();
 
@@ -43,7 +43,7 @@ pub(crate) fn load_network_manifest(path: &str) -> TestResult<NetworkDefinition>
   let manifest = NetworkManifest::V0(vino_manifest::v0::NetworkManifest::from_yaml(
     &fs::read_to_string(path)?,
   )?);
-  let def = NetworkDefinition::from(&manifest);
+  let def = NetworkDefinition::from(manifest);
   debug!("Manifest loaded");
   Ok(def)
 }
@@ -52,7 +52,7 @@ pub(crate) fn load_schematic_manifest(path: &str) -> TestResult<SchematicDefinit
   let manifest = SchematicManifest::V0(vino_manifest::v0::SchematicManifest::from_yaml(
     &fs::read_to_string(path)?,
   )?);
-  let def = SchematicDefinition::try_from(&manifest)?;
+  let def = SchematicDefinition::try_from(manifest)?;
   debug!("Manifest loaded");
   Ok(def)
 }

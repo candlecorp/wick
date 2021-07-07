@@ -68,11 +68,11 @@
     unused_parens,
     unused_qualifications,
     while_true,
-    missing_docs
+    // missing_docs
 )]
 // !!END_LINTS
 // Add exceptions here
-#![allow()]
+#![allow(clippy::trivially_copy_pass_by_ref)]
 
 /// Logger options
 pub mod options;
@@ -116,7 +116,7 @@ fn set_level<T: AsRef<str>>(builder: &mut Builder, priority_modules: &[T], level
 
 impl Logger {
   fn new<T: AsRef<str>>(
-    opts: LoggingOptions,
+    opts: &LoggingOptions,
     priority_modules: &[T],
     chatty_modules: &[T],
   ) -> Logger {
@@ -149,11 +149,11 @@ impl Logger {
   }
   /// Initialize a logger with the passed options, the modules to log by default, and the modules to silence.
   pub fn init<T: AsRef<str>>(
-    opts: LoggingOptions,
+    opts: &LoggingOptions,
     priority_modules: &[T],
     chatty_modules: &[T],
   ) -> Result<(), SetLoggerError> {
-    let logger = Self::new(opts, priority_modules, chatty_modules);
+    let logger = Self::new(&opts, priority_modules, chatty_modules);
 
     log::set_max_level(logger.inner.filter());
     log::set_boxed_logger(Box::new(logger))?;

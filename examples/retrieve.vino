@@ -15,22 +15,22 @@ manifest:
           ref: MC3WXSC7RHYHI6RIKDSSED5E3XP5KZ7NXUA3DB7Z66KIVHTFY7SJ4WHF
       connections:
         - from:
-            instance: vino::schematic_input
+            reference: vino::schematic_input
             port: collection_id
           to:
-            instance: collection-get-item
+            reference: collection-get-item
             port: collection_id
         - from:
-            instance: vino::schematic_input
+            reference: vino::schematic_input
             port: content_id
           to:
-            instance: collection-get-item
+            reference: collection-get-item
             port: content_id
         - from:
-            instance: collection-get-item
+            reference: collection-get-item
             port: document
           to:
-            instance: vino::schematic_output
+            reference: vino::schematic_output
             port: document
   links:
     - actor: MC3WXSC7RHYHI6RIKDSSED5E3XP5KZ7NXUA3DB7Z66KIVHTFY7SJ4WHF

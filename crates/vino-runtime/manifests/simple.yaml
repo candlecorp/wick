@@ -6,14 +6,14 @@ schematics:
         id: vino-v0::log
     connections:
       - from:
-          instance: <input>
+          reference: <input>
           port: input
         to:
-          instance: REF_ID_LOGGER
+          reference: REF_ID_LOGGER
           port: input
       - from:
-          instance: REF_ID_LOGGER
+          reference: REF_ID_LOGGER
           port: output
         to:
-          instance: <output>
+          reference: <output>
           port: output

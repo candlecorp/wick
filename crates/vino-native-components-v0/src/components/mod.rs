@@ -27,7 +27,7 @@ pub(crate) fn get_component(
 pub(crate) fn get_all_components() -> Vec<ComponentSignature> {
   vec![
     ComponentSignature {
-      name: "add".to_string(),
+      name: "add".to_owned(),
       inputs: generated::add::inputs_list()
         .into_iter()
         .map(From::from)
@@ -38,7 +38,7 @@ pub(crate) fn get_all_components() -> Vec<ComponentSignature> {
         .collect(),
     },
     ComponentSignature {
-      name: "bcrypt".to_string(),
+      name: "bcrypt".to_owned(),
       inputs: generated::bcrypt::inputs_list()
         .into_iter()
         .map(From::from)
@@ -49,7 +49,7 @@ pub(crate) fn get_all_components() -> Vec<ComponentSignature> {
         .collect(),
     },
     ComponentSignature {
-      name: "log".to_string(),
+      name: "log".to_owned(),
       inputs: generated::log::inputs_list()
         .into_iter()
         .map(From::from)
@@ -60,7 +60,7 @@ pub(crate) fn get_all_components() -> Vec<ComponentSignature> {
         .collect(),
     },
     ComponentSignature {
-      name: "short-circuit".to_string(),
+      name: "short-circuit".to_owned(),
       inputs: generated::short_circuit::inputs_list()
         .into_iter()
         .map(From::from)
@@ -71,7 +71,7 @@ pub(crate) fn get_all_components() -> Vec<ComponentSignature> {
         .collect(),
     },
     ComponentSignature {
-      name: "string-to-bytes".to_string(),
+      name: "string-to-bytes".to_owned(),
       inputs: generated::string_to_bytes::inputs_list()
         .into_iter()
         .map(From::from)

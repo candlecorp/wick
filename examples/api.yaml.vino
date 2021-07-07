@@ -25,16 +25,16 @@
               [
                 {
                   from:
-                    { instance: "vino::schematic_input", port: collection_id },
-                  to: { instance: collection-get-item, port: collection_id },
+                    { reference: "vino::schematic_input", port: collection_id },
+                  to: { reference: collection-get-item, port: collection_id },
                 },
                 {
-                  from: { instance: "vino::schematic_input", port: content_id },
-                  to: { instance: collection-get-item, port: content_id },
+                  from: { reference: "vino::schematic_input", port: content_id },
+                  to: { reference: collection-get-item, port: content_id },
                 },
                 {
-                  from: { instance: collection-get-item, port: document },
-                  to: { instance: "vino::schematic_output", port: document },
+                  from: { reference: collection-get-item, port: document },
+                  to: { reference: "vino::schematic_output", port: document },
                 },
               ],
           },

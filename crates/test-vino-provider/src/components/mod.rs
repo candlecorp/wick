@@ -18,7 +18,7 @@ pub(crate) fn get_component(
 
 pub(crate) fn get_all_components() -> Vec<ComponentSignature> {
   vec![ComponentSignature {
-    name: "test-component".to_string(),
+    name: "test-component".to_owned(),
     inputs: generated::test_component::inputs_list()
       .into_iter()
       .map(From::from)

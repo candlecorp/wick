@@ -66,7 +66,7 @@
     unused_parens,
     unused_qualifications,
     while_true,
-    missing_docs
+    // missing_docs
 )]
 // !!END_LINTS
 // Add exceptions here
@@ -94,10 +94,7 @@ async fn main() -> Result<()> {
   };
 
   std::process::exit(match res {
-    Ok(out) => {
-      debug!("{}", out);
-      0
-    }
+    Ok(out) => 0,
     Err(e) => {
       eprintln!("Vino exiting with error: {}", e);
       eprintln!("Run with --info, --debug, or --trace for more information.");

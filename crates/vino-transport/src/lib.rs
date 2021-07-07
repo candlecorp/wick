@@ -70,7 +70,7 @@
     unused_parens,
     unused_qualifications,
     while_true,
-    missing_docs
+    // missing_docs
 )]
 // !!END_LINTS
 // Add exceptions here

@@ -94,7 +94,7 @@ impl Host {
   pub async fn request<T: AsRef<str> + Sync + Send, U: AsRef<str> + Sync + Send>(
     &self,
     schematic: T,
-    payload: HashMap<U, impl Serialize + Sync>,
+    payload: HashMap<U, impl Serialize + Sync + Send>,
   ) -> Result<HashMap<String, MessageTransport>> {
     match &self.network {
       Some(network) => Ok(
@@ -115,7 +115,7 @@ impl Host {
   }
 
   pub fn get_host_id(&self) -> String {
-    self.host_id.to_string()
+    self.host_id.clone()
   }
 
   fn _ensure_started(&self) -> Result<()> {
@@ -189,7 +189,7 @@ mod test {
     let output = result.remove("output").unwrap();
     if let MessageTransport::MessagePack(bytes) = output {
       let output = deserialize::<String>(&bytes)?;
-      assert_eq!(output, passed_data.to_string());
+      assert_eq!(&output, passed_data);
     } else {
       panic!();
     }
@@ -211,16 +211,16 @@ mod test {
     let mut client = make_rpc_client(Uri::from_str("https://127.0.0.1:54321").unwrap()).await?;
     let passed_data = "logging output";
     let data: HashMap<String, Vec<u8>> = hashmap! {
-        "input".to_string() => serialize(passed_data)?,
+        "input".to_owned() => serialize(passed_data)?,
     };
     let mut response = client
       .invoke(Invocation {
         origin: Entity::test("test").url(),
         target: Entity::schematic("logger").url(),
         msg: data,
-        id: "some inv".to_string(),
-        tx_id: "some tx".to_string(),
-        encoded_claims: "some claims".to_string(),
+        id: "some inv".to_owned(),
+        tx_id: "some tx".to_owned(),
+        encoded_claims: "some claims".to_owned(),
         network_id: host.host_id.clone(),
       })
       .await

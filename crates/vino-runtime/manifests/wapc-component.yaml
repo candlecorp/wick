@@ -15,20 +15,20 @@ schematics:
         id: vino-v0::log
     connections:
       - from:
-          instance: <input>
+          reference: <input>
           port: input
         to:
-          instance: log
-          port: input
-      - from:
-          instance: log
-          port: output
-        to:
-          instance: validate
+          reference: log
           port: input
       - from:
-          instance: validate
+          reference: log
           port: output
         to:
-          instance: <output>
+          reference: validate
+          port: input
+      - from:
+          reference: validate
+          port: output
+        to:
+          reference: <output>
           port: output

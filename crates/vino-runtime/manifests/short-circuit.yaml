@@ -14,26 +14,26 @@ schematics:
         id: vino-v0::log
     connections:
       - from:
-          instance: <input>
+          reference: <input>
           port: input_port1
         to:
-          instance: log
+          reference: log
           port: input
       - from:
-          instance: log
+          reference: log
           port: output
         to:
-          instance: validate_password
+          reference: validate_password
           port: input
       - from:
-          instance: validate_password
+          reference: validate_password
           port: output
         to:
-          instance: log2
+          reference: log2
           port: input
       - from:
-          instance: log2
+          reference: log2
           port: output
         to:
-          instance: <output>
+          reference: <output>
           port: output1

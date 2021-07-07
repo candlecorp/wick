@@ -100,7 +100,7 @@ impl From<vino_manifest::v0::ConnectionTargetDefinition> for PortReference {
   fn from(def: vino_manifest::v0::ConnectionTargetDefinition) -> Self {
     PortReference {
       name: def.port,
-      reference: def.instance,
+      reference: def.reference,
     }
   }
 }
@@ -241,8 +241,8 @@ impl SchematicModel {
       Ok(r) => r,
       Err(_) => return false,
     };
-    let provider = self.providers.get(&ns);
-    provider.map_or(false, |provider| provider.components.get(&name).is_some())
+    let provider = self.providers.get(ns);
+    provider.map_or(false, |provider| provider.components.get(name).is_some())
   }
 
   pub(crate) fn commit_providers(&mut self, providers: Vec<ProviderModel>) {
@@ -275,8 +275,8 @@ impl SchematicModel {
       Ok(result) => result,
       Err(_) => return None,
     };
-    let provider = self.providers.get(&ns);
-    provider.and_then(|provider| provider.components.get(&name).cloned())
+    let provider = self.providers.get(ns);
+    provider.and_then(|provider| provider.components.get(name).cloned())
   }
 
   /// Gets a ComponentDefinition by component reference string
