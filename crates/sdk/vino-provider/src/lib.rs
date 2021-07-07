@@ -66,7 +66,7 @@
     unused_parens,
     unused_qualifications,
     while_true,
-    missing_docs
+    // missing_docs
 )]
 // !!END_LINTS
 // Add exceptions here
@@ -90,8 +90,8 @@ pub type Context<T> = Arc<Mutex<T>>;
 pub trait VinoProviderComponent {
   type Context;
   fn get_name(&self) -> String;
-  fn get_input_ports(&self) -> Vec<(String, String)>;
-  fn get_output_ports(&self) -> Vec<(String, String)>;
+  fn get_input_ports(&self) -> Vec<(&'static str, &'static str)>;
+  fn get_output_ports(&self) -> Vec<(&'static str, &'static str)>;
   async fn job_wrapper(
     &self,
     context: Arc<Mutex<Self::Context>>,
