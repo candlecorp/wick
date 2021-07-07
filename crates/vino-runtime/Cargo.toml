@@ -58,7 +58,7 @@ tracing-subscriber = "0.2.18"
 tracing-unwrap = "0.9.2"
 tracing-futures = "0.2.5"
 pretty_assertions = "0.7.2"
-utils = { path="./tests/utils" }
+runtime-utils = { path="./tests/runtime-utils" }
 criterion = "0.3"
 
 [[bench]]

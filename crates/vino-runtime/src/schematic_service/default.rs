@@ -72,7 +72,7 @@ pub(crate) fn make_default_transport(json: &serde_json::Value, message: &str) ->
     |result| {
       mp_serialize(&result).map_or(
         MessageTransport::Error("Error serializing default value".to_owned()),
-        |bytes| MessageTransport::MessagePack(bytes),
+        MessageTransport::MessagePack,
       )
     },
   )

@@ -24,7 +24,7 @@ async fn main() -> anyhow::Result<()> {
   let opts = Options::from_args();
 
   env_logger::init();
-  vino_provider_cli::init(
+  vino_provider_cli::init_cli(
     Arc::new(Mutex::new(Provider::default())),
     Some(CliOpts {
       port: Some(opts.port),

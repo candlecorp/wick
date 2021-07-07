@@ -11,7 +11,7 @@ vino-component = { path="../vino-component" }
 vino-codec = { path="../vino-codec" }
 tonic = { version="0.4.3", features=["tls"] }
 prost = "0.7.0"
-tokio = { version="1.4.0", features=["macros", "net", "rt-multi-thread"] }
+tokio = { version="1.4.0", features=["macros", "net", "signal", "rt-multi-thread"] }
 futures = "0.3.15"
 tokio-stream = "0.1.6"
 serde = { version="1.0.118", features=["derive"] }

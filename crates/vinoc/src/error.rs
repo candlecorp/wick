@@ -11,8 +11,7 @@ pub enum ControlError {
   FileNotFound(String),
   #[error("Configuration disallows fetching artifacts with the :latest tag ({0})")]
   LatestDisallowed(String),
-  #[error("Could not fetch '{0}': {1}")]
-  OciFetchFailure(String, String),
+
   #[error("Could not start host: {0}")]
   HostStartFailure(String),
   #[error("Keypair error: {0}")]

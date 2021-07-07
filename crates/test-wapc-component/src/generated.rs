@@ -20,12 +20,13 @@ pub struct Handlers {}
 impl Handlers {
   pub fn register_validate(f: fn(validate::Inputs, validate::Outputs) -> HandlerResult<()>) {
     *VALIDATE.write().unwrap() = Some(f);
-    register_function(&"validate", validate_wrapper);
+    register_function("validate", validate_wrapper);
   }
 }
 
 #[cfg(feature = "guest")]
 lazy_static::lazy_static! {
+#[allow(clippy::type_complexity)]
 static ref VALIDATE: std::sync::RwLock<Option<fn(validate::Inputs, validate::Outputs) -> HandlerResult<()>>> = std::sync::RwLock::new(None);
 }
 

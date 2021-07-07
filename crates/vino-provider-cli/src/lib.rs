@@ -78,6 +78,9 @@ pub mod error;
 pub type Result<T> = std::result::Result<T, error::CliError>;
 pub type Error = error::CliError;
 
-pub use cli::init;
+pub use cli::{
+  init_cli,
+  start_server,
+};
 #[macro_use]
 extern crate tracing;

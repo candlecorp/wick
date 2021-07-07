@@ -52,13 +52,6 @@ pub struct Connection {
 }
 
 impl Connection {
-  pub(crate) fn from_strs(from_name: &str, from_port: &str, to_name: &str, to_port: &str) -> Self {
-    Self {
-      from: PortReference::new(from_name, from_port),
-      to: PortReference::new(to_name, to_port),
-      default: None,
-    }
-  }
   pub(crate) fn print_all(list: &[Self]) -> String {
     list
       .iter()

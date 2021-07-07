@@ -5,7 +5,6 @@ use std::sync::{
 };
 
 use async_trait::async_trait;
-use log::trace;
 use serde::{
   Deserialize,
   Serialize,
@@ -104,7 +103,6 @@ impl VinoProviderComponent for Component {
     context: ProviderContext<Self::Context>,
     data: HashMap<String, Vec<u8>>,
   ) -> Result<PortStream, Box<dyn std::error::Error + Send + Sync>> {
-    trace!("Job passed data: {:?}", data);
     let inputs = deserialize_inputs(&data).map_err(ProviderError::InputDeserializationError)?;
     let (outputs, stream) = get_outputs();
     let result = super::super::string_to_bytes::job(inputs, outputs, context).await;

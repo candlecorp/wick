@@ -14,25 +14,29 @@ readme = "README.md"
 
 
 [dev-dependencies]
-test_bin = "0.3.0"
-maplit = "1.0.2"
-test-env-log = { version="0.2.7", features=["trace"] }
-tokio = { version="1.4.0", features=["macros", "net", "rt-multi-thread"] }
-futures = "0.3.15"
 vino-entity = { path="./crates/vino-entity" }
 vino-codec = { path="./crates/vino-codec" }
 vino-component = { path="./crates/vino-component" }
 vino-provider = { path="./crates/vino-provider" }
+vino-transport = { path="./crates/vino-transport" }
 test-vino-provider = { path="./crates/test-vino-provider" }
 vino-rpc = { path="./crates/vino-rpc" }
+utils = { path="./tests/utils" }
+test_bin = "0.3.0"
+maplit = "1.0.2"
+test-env-log = { version="0.2.7", features=["trace"] }
+tokio = { version="1.4.0", features=["macros", "process", "time", "net", "rt-multi-thread"] }
+futures = "0.3.15"
 log = "0.4.14"
 env_logger = "0.8.4"
 anyhow = "1.0.41"
 tracing = "*"
 tracing-subscriber = "0.2.18"
+serde_json = "1.0.64"
 
 [workspace]
 members = [
+  "crates/tokio-test-bin",
   "crates/vino-cli",
   "crates/vinoc",
   "crates/vino-macros",
@@ -50,4 +54,5 @@ members = [
   "crates/vino-entity",
   "crates/test-vino-provider",
   "crates/test-wapc-component",
+  "crates/provider-collection-inmemory",
 ]

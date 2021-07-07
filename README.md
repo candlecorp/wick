@@ -6,6 +6,6 @@
 
 ## Dev dependencies
 
-ts-node
-typescript
-cargo-deny
+npm install
+cargo install cargo-deny
+cargo install cross

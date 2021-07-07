@@ -5,9 +5,6 @@ schematics:
       - namespace: wapc
         kind: WaPC
         reference: ../test-wapc-component/build/test_component_s.wasm
-    # external:
-    #   - reference: ../test-wapc-component/build/test_component_s.wasm
-    #     key: MB3GAIGQVCZHMLKD4T2LGI6CILHNOIJPPSLV2VDDH3ARHXDDJ5WXFV35
     components:
       validate:
         id: wapc::validate

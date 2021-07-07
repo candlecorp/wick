@@ -16,7 +16,7 @@ use nkeys::{
 };
 
 /// Retrieves a keypair by name in a specified directory, or $VINO_KEYS ($HOME/.vino/keys) if directory is not specified
-pub(crate) fn get(
+pub(crate) fn _get(
   keyname: &str,
   directory: Option<String>,
 ) -> Result<(), Box<dyn ::std::error::Error>> {
@@ -39,7 +39,7 @@ pub(crate) fn get(
 }
 
 /// Lists all keypairs (file extension .nk) in a specified directory or $VINO_KEYS($HOME/.vino/keys) if directory is not specified
-pub(crate) fn list(directory: Option<String>) -> Result<(), Box<dyn ::std::error::Error>> {
+pub(crate) fn _list(directory: Option<String>) -> Result<(), Box<dyn ::std::error::Error>> {
   let dir = determine_directory(directory)?;
 
   let mut keys = vec![];

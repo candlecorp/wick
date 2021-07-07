@@ -317,6 +317,14 @@ mod tests {
     Ok(())
   }
 
+  fn conn(from_name: &str, from_port: &str, to_name: &str, to_port: &str) -> Connection {
+    Connection {
+      from: PortReference::new(from_name, from_port),
+      to: PortReference::new(to_name, to_port),
+      default: None,
+    }
+  }
+
   #[test_env_log::test(tokio::test)]
   async fn test_transaction_map() -> TestResult<()> {
     let model = make_model()?;
@@ -328,26 +336,26 @@ mod tests {
 
     // First message sends from the schematic input to the component
     ok_or_log!(tx.send(InputMessage {
-      connection: Connection::from_strs(SCHEMATIC_INPUT, "input", "REF_ID_LOGGER", "input"),
+      connection: conn(SCHEMATIC_INPUT, "input", "REF_ID_LOGGER", "input"),
       payload: MessageTransport::Test("input payload".to_owned()),
       tx_id: get_uuid(),
     }));
     // Second closes the schematic input
     ok_or_log!(tx.send(InputMessage {
-      connection: Connection::from_strs(SCHEMATIC_INPUT, "input", "REF_ID_LOGGER", "input"),
+      connection: conn(SCHEMATIC_INPUT, "input", "REF_ID_LOGGER", "input"),
 
       payload: MessageTransport::Signal(MessageSignal::Close),
       tx_id: get_uuid(),
     }));
     // Third simulates output from the component
     ok_or_log!(tx.send(InputMessage {
-      connection: Connection::from_strs("REF_ID_LOGGER", "output", SCHEMATIC_OUTPUT, "output"),
+      connection: conn("REF_ID_LOGGER", "output", SCHEMATIC_OUTPUT, "output"),
       payload: MessageTransport::Test("output payload".to_owned()),
       tx_id: get_uuid(),
     }));
     // Fourth closes the output
     ok_or_log!(tx.send(InputMessage {
-      connection: Connection::from_strs("REF_ID_LOGGER", "output", SCHEMATIC_OUTPUT, "output"),
+      connection: conn("REF_ID_LOGGER", "output", SCHEMATIC_OUTPUT, "output"),
       payload: MessageTransport::Signal(MessageSignal::Close),
       tx_id: get_uuid(),
     }));

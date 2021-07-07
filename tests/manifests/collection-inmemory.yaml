@@ -1,0 +1,85 @@
+---
+version: "0"
+network:
+  schematics:
+    - name: add
+      providers:
+        - namespace: collection
+          kind: GrpcUrl
+          reference: https://127.0.0.1:$TEST_PORT
+      components:
+        add:
+          id: collection::add-item
+      connections:
+        - from:
+            reference: <input>
+            port: document_id
+          to:
+            reference: add
+            port: document_id
+        - from:
+            reference: <input>
+            port: collection_id
+          to:
+            reference: add
+            port: collection_id
+        - from:
+            reference: <input>
+            port: document
+          to:
+            reference: add
+            port: document
+        - from:
+            reference: add
+            port: document_id
+          to:
+            reference: <output>
+            port: document_id
+    - name: get
+      providers:
+        - namespace: collection
+          kind: GrpcUrl
+          reference: https://127.0.0.1:$TEST_PORT
+      components:
+        get:
+          id: collection::get-item
+      connections:
+        - from:
+            reference: <input>
+            port: collection_id
+          to:
+            reference: get
+            port: collection_id
+        - from:
+            reference: <input>
+            port: document_id
+          to:
+            reference: get
+            port: document_id
+        - from:
+            reference: get
+            port: document
+          to:
+            reference: <output>
+            port: document
+    - name: list
+      providers:
+        - namespace: collection
+          kind: GrpcUrl
+          reference: https://127.0.0.1:$TEST_PORT
+      components:
+        list:
+          id: collection::list-items
+      connections:
+        - from:
+            reference: <input>
+            port: collection_id
+          to:
+            reference: list
+            port: collection_id
+        - from:
+            reference: list
+            port: document_ids
+          to:
+            reference: <output>
+            port: document_ids

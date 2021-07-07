@@ -27,7 +27,7 @@ CRATE_NAME:=$(shell tomlq -f Cargo.toml package.name)
 CRATE_FS_NAME:=$(subst -,_,$(CRATE_NAME))
 # Version from Cargo.toml
 CRATE_VERSION:=$(shell tomlq -f Cargo.toml package.version)
-# Get the root director (respecting cargo workspaces)
+# Get the root directory (respecting cargo workspaces)
 WORKSPACE_ROOT:=$(shell cargo metadata --no-deps --format-version 1 -q | jq -r '.workspace_root')
 # Directory to copy artifacts to
 ARTIFACT_DIR:=build

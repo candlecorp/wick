@@ -80,8 +80,6 @@ pub mod v0;
 pub mod packet {
   pub use crate::v0;
 }
-/// The WasCap claims for a component module
-pub mod claims;
 
 use serde::{
   Deserialize,

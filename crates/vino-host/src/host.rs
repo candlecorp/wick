@@ -81,7 +81,7 @@ impl Host {
     port: Option<u16>,
   ) -> Result<SocketAddr> {
     let network_id = self.get_network_id()?;
-    let addr = tokio::spawn(vino_provider_cli::init(
+    let addr = tokio::spawn(vino_provider_cli::start_server(
       Arc::new(Mutex::new(NetworkProvider::new(network_id))),
       Some(CliOpts { port, address }),
     ))

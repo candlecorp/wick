@@ -78,9 +78,6 @@ use vinoc::commands::{
 };
 use vinoc::Result;
 
-#[macro_use]
-extern crate log;
-
 #[actix_rt::main]
 async fn main() -> Result<()> {
   let cli = get_args();
@@ -94,9 +91,9 @@ async fn main() -> Result<()> {
   };
 
   std::process::exit(match res {
-    Ok(out) => 0,
+    Ok(_) => 0,
     Err(e) => {
-      eprintln!("Vino exiting with error: {}", e);
+      eprintln!("vinoc exiting with error: {}", e);
       eprintln!("Run with --info, --debug, or --trace for more information.");
       1
     }

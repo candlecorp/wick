@@ -16,7 +16,6 @@ use vino_rpc::HostedType;
 use vino_wascap::{
   Claims,
   ComponentClaims,
-  KeyPair,
 };
 use wapc::WapcHost;
 
@@ -71,7 +70,6 @@ impl WapcProviderService {
 pub(crate) struct Initialize {
   pub(crate) namespace: String,
   pub(crate) bytes: Vec<u8>,
-  pub(crate) claims: Claims<ComponentClaims>,
   pub(crate) signing_seed: String,
 }
 
@@ -151,7 +149,7 @@ fn perform_initialization(
 
   let map = invocation_map.clone();
 
-  let guest = WapcHost::new(Box::new(engine), move |id, inv_id, port, op, payload| {
+  let guest = WapcHost::new(Box::new(engine), move |_id, inv_id, port, _op, payload| {
     let _kp = keypair_from_seed(&seed).unwrap();
     debug!("Payload WaPC host callback: {:?}", payload);
 

@@ -38,10 +38,7 @@ pub(crate) mod prelude {
     SchematicDefinition,
   };
   pub(crate) use vino_transport::message_transport::MessageSignal;
-  pub(crate) use vino_wascap::{
-    ComponentClaims,
-    KeyPair,
-  };
+  pub(crate) use vino_wascap::KeyPair;
 
   pub(crate) use crate::dev::*;
   pub(crate) use crate::dispatch::{
@@ -98,13 +95,4 @@ where
   T: FromIterator<B>,
 {
   source.iter().map(f).collect()
-}
-
-pub(crate) fn map_into<A, B, F>(source: Vec<A>, f: F) -> Vec<B>
-where
-  A: Sized,
-  B: Sized,
-  F: FnMut(A) -> B,
-{
-  source.into_iter().map(f).collect()
 }

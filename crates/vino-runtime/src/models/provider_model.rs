@@ -111,7 +111,6 @@ async fn initialize_wapc_provider(
     .send(wapc_provider_service::Initialize {
       namespace: namespace.to_owned(),
       signing_seed: seed.to_owned(),
-      claims: component.claims(),
       bytes: component.bytes,
     })
     .await??;

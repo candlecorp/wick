@@ -1,0 +1,32 @@
+[package]
+name = "tokio-test-bin"
+version = "0.3.0"
+authors = [
+  "Michael Mc Donnell <michael@mcdonnell.dk>",
+  "Jarrod Overson <jsoverson@gmail.com>",
+]
+edition = "2018"
+license = "MIT OR Apache-2.0"
+documentation = "https://docs.rs/test_bin"
+homepage = "https://github.com/MichaelMcDonnell/test_bin"
+repository = "https://github.com/MichaelMcDonnell/test_bin"
+readme = "README.md"
+description = """
+A crate for getting the crate binary in an integration test.
+"""
+
+
+[dependencies]
+tokio = { version="1.4.0", features=["process", "io-util"] }
+thiserror = "1.0.25"
+
+[dev-dependencies]
+tokio = { version="1.4.0", features=["macros", "process", "net", "rt-multi-thread"] }
+test-env-log = "0.2.7"
+tracing = "0.1.26"
+tracing-subscriber = "0.2.19"
+env_logger = "0.8.4"
+
+[[bin]]
+name = "test_bin"
+path = "src/main.rs"

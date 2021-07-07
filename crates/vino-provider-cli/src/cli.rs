@@ -6,6 +6,7 @@ use std::net::{
 use std::str::FromStr;
 use std::sync::Arc;
 
+use tokio::signal;
 use tokio::sync::Mutex;
 use tonic::transport::Server;
 use vino_rpc::rpc::invocation_service_server::InvocationServiceServer;
@@ -20,7 +21,7 @@ pub struct Options {
   pub address: Ipv4Addr,
 }
 
-pub async fn init(
+pub async fn start_server(
   provider: Arc<Mutex<dyn RpcHandler>>,
   opts: Option<Options>,
 ) -> crate::Result<SocketAddr> {
@@ -40,7 +41,7 @@ pub async fn init(
   socket.bind(SocketAddr::new(IpAddr::V4(opts.address), port))?;
   let addr = socket.local_addr()?;
 
-  trace!("Binding to {:?}", addr.to_string());
+  trace!("Binding to {}", addr);
 
   let component_service = InvocationServer { provider };
 
@@ -53,9 +54,19 @@ pub async fn init(
       .serve_with_incoming(listener),
   );
 
-  trace!("Server started");
-
   Ok(addr)
+}
+
+pub async fn init_cli(
+  provider: Arc<Mutex<dyn RpcHandler>>,
+  opts: Option<Options>,
+) -> crate::Result<()> {
+  let addr = start_server(provider, opts).await?;
+  info!("Server bound to {}", addr);
+  info!("Waiting for ctrl-C");
+  signal::ctrl_c().await?;
+
+  Ok(())
 }
 
 #[cfg(test)]
@@ -75,7 +86,7 @@ mod tests {
   async fn test_starts() -> Result<()> {
     let ip = Ipv4Addr::from_str("127.0.0.1")?;
     let port = 12345;
-    let addr = init(
+    let addr = start_server(
       Arc::new(Mutex::new(Provider::default())),
       Some(Options {
         port: Some(port),

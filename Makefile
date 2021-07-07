@@ -1,4 +1,4 @@
-.PHONY: all codegen build clean test update-lint
+.PHONY: all codegen build clean test update-lint build-docker
 
 # Enforce bash as the shell for consistency
 SHELL := bash
@@ -12,6 +12,8 @@ ROOT := $(shell pwd)
 
 # Get list of projects that have makefiles
 MAKEFILE_PROJECTS=$(wildcard ${CRATES_DIR}/*/Makefile)
+
+DOCKERFILES=$(wildcard docker/*/Dockerfile)
 
 all: codegen build
 
@@ -42,3 +44,35 @@ update-lint:
 	@[[ -z `git status -s` ]]
 	@echo Good to go
 	npm run update-lint
+
+TAG:=registry.lan:5000/vino
+
+build-docker: $(DOCKERFILES)
+	for file in $(DOCKERFILES); do \
+		docker build $$(dirname $$file) -t $(TAG)/$$(basename $$(dirname $$file)); \
+		docker push $(TAG)/$$(basename $$(dirname $$file)); \
+	done
+
+build-local:
+	rm -rf ./build/local; \
+	mkdir ./build/local; \
+	cargo build -p vino-cli ; \
+	cp target/debug/vino build/local/; \
+	cargo build -p vinoc; \
+	cp target/debug/vinoc build/local/; \
+	cargo build -p vino-collection-inmemory; \
+	cp target/debug/vino-collection-inmemory build/local/; \
+
+build-cross-debug:
+	rm -rf ./build; \
+	mkdir ./build; \
+	for file in $(DOCKERFILES); do \
+		TARGET="$$(basename $$(dirname $$file))"; \
+		mkdir ./build/$$TARGET; \
+		cross build -p vino-cli --target $$TARGET; \
+		cp target/$$TARGET/debug/vino build/$$TARGET/; \
+		cross build -p vinoc --target $$TARGET; \
+		cp target/$$TARGET/debug/vinoc build/$$TARGET/; \
+		cross build -p vino-collection-inmemory --target $$TARGET; \
+		cp target/$$TARGET/debug/vino-collection-inmemory build/$$TARGET/provider-collection-inmemory; \
+	done

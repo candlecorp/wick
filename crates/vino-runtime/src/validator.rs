@@ -77,7 +77,7 @@ impl<'a> Validator<'a> {
       Err(ValidationError::PostInitError(name, results))
     }
   }
-  pub(crate) fn validate(model: &'a SchematicModel) -> std::result::Result<(), ValidationError> {
+  pub(crate) fn _validate(model: &'a SchematicModel) -> std::result::Result<(), ValidationError> {
     Self::validate_early_errors(model)?;
     Self::validate_late_errors(model)
   }
@@ -316,8 +316,8 @@ mod tests {
         "log".to_owned() => ComponentModel {
           namespace: "test-namespace".to_owned(),
           name: "log".to_owned(),
-          inputs: expected_inputs.clone(),
-          outputs: expected_outputs.clone(),
+          inputs: expected_inputs,
+          outputs: expected_outputs,
         }
       },
     };
@@ -473,7 +473,7 @@ mod tests {
       },
     };
     model.commit_providers(vec![provider]);
-    let result = Validator::validate(&model);
+    let result = Validator::_validate(&model);
     equals!(result, Ok(()));
     model.partial_initialization()?;
     let schematic_inputs = model.get_schematic_input_signatures()?;
