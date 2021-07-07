@@ -12,6 +12,7 @@ use serde::{
 use crate::error::CodecError;
 use crate::Result;
 
+#[doc(hidden)]
 pub fn rmp_serialize<T>(item: T) -> std::result::Result<Vec<u8>, rmp_serde::encode::Error>
 where
   T: Serialize,

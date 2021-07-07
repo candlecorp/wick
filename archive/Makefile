@@ -41,3 +41,4 @@ update-lint:
 	@echo Checking git status...
 	@[[ -z `git status -s` ]]
 	@echo Good to go
+	npm run update-lint
