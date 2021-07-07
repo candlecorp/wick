@@ -133,6 +133,10 @@ pub struct NetworkManifest {
   #[serde(default)]
   #[serde(skip_serializing_if = "Vec::is_empty")]
   pub schematics: Vec<SchematicManifest>,
+  /// A list of providers and component collections
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub providers: Vec<ProviderDefinition>,
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]

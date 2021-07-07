@@ -183,6 +183,7 @@ mod test {
         seed: kp.seed().unwrap(),
         allow_latest: true,
         allowed_insecure: vec![],
+        global_providers: vec![],
       })
       .await??;
     let mut input: HashMap<String, Vec<u8>> = HashMap::new();
@@ -240,6 +241,7 @@ mod test {
         seed: kp.seed().unwrap(),
         network_provider_channel: None,
         allow_latest: true,
+        global_providers: vec![],
         allowed_insecure: vec![],
       })
       .await??;

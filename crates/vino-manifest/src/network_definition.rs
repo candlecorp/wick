@@ -1,7 +1,10 @@
 use std::convert::TryInto;
 
 use crate::schematic_definition::SchematicDefinition;
-use crate::NetworkManifest;
+use crate::{
+  NetworkManifest,
+  ProviderDefinition,
+};
 
 #[derive(Debug, Clone)]
 
@@ -10,6 +13,7 @@ use crate::NetworkManifest;
 pub struct NetworkDefinition {
   /// A list of SchematicDefinitions
   pub schematics: Vec<SchematicDefinition>,
+  pub providers: Vec<ProviderDefinition>,
 }
 
 impl NetworkDefinition {}
@@ -23,6 +27,12 @@ impl From<crate::v0::NetworkManifest> for NetworkDefinition {
         .map(|val| val.try_into())
         .filter_map(Result::ok)
         .collect(),
+      providers: def
+        .providers
+        .into_iter()
+        .map(|val| val.try_into())
+        .filter_map(Result::ok)
+        .collect(),
     }
   }
 }
@@ -30,20 +40,16 @@ impl From<crate::v0::NetworkManifest> for NetworkDefinition {
 impl From<NetworkManifest> for NetworkDefinition {
   fn from(manifest: NetworkManifest) -> Self {
     match manifest {
-      NetworkManifest::V0(manifest) => Self {
-        schematics: manifest
-          .schematics
-          .into_iter()
-          .map(|val| val.try_into())
-          .filter_map(Result::ok)
-          .collect(),
-      },
+      NetworkManifest::V0(manifest) => manifest.into(),
     }
   }
 }
 
 impl Default for NetworkDefinition {
   fn default() -> Self {
-    Self { schematics: vec![] }
+    Self {
+      schematics: vec![],
+      providers: vec![],
+    }
   }
 }

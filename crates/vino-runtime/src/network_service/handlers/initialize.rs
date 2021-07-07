@@ -28,6 +28,7 @@ impl Handler<Initialize> for NetworkService {
 
     self.id = msg.network_id.clone();
     let network_id = msg.network_id;
+    let global_providers = msg.network.providers.clone();
     self.definition = msg.network;
     let allowed_insecure = msg.allowed_insecure;
 
@@ -53,6 +54,7 @@ impl Handler<Initialize> for NetworkService {
           schematic: def,
           allow_latest,
           allowed_insecure: allowed_insecure.clone(),
+          global_providers: global_providers.clone(),
         })
       });
 

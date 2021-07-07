@@ -2,8 +2,11 @@
 "A Vino network definition"
 type NetworkManifest {
   "The labels that apply to this host"
-    labels: {string: string},
+  labels: {string: string},
 
-    "The links between capabilities and components"
-    schematics: [SchematicManifest],
+  "The links between capabilities and components"
+  schematics: [SchematicManifest],
+
+  "A list of providers and component collections"
+  providers: [ProviderDefinition],
 }

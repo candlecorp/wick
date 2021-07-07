@@ -198,3 +198,40 @@ async fn multiple_schematics() -> TestResult<()> {
   );
   Ok(())
 }
+
+#[test_env_log::test(actix_rt::test)]
+async fn global_providers() -> TestResult<()> {
+  let (network, _) = init_network_from_yaml("./manifests/global-provider-def.yaml").await?;
+
+  let data = hashmap! {
+      "input" => "some input",
+  };
+
+  let mut result = network
+    .request("first_schematic", Entity::test("global providers"), &data)
+    .await?;
+
+  trace!("result: {:?}", result);
+  let output: MessageTransport = result.remove("output").unwrap();
+  equals!(
+    output,
+    MessageTransport::MessagePack(mp_serialize("some input")?)
+  );
+
+  let data = hashmap! {
+      "input" => "other input",
+  };
+
+  let mut result = network
+    .request("second_schematic", Entity::test("global providers"), &data)
+    .await?;
+
+  println!("Result: {:?}", result);
+  let output: MessageTransport = result.remove("output").unwrap();
+  println!("Output: {:?}", output);
+  equals!(
+    output,
+    MessageTransport::MessagePack(mp_serialize("other input")?)
+  );
+  Ok(())
+}

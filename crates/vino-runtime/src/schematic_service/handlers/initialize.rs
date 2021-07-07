@@ -20,6 +20,7 @@ pub(crate) struct Initialize {
   pub(crate) seed: String,
   pub(crate) allow_latest: bool,
   pub(crate) allowed_insecure: Vec<String>,
+  pub(crate) global_providers: Vec<ProviderDefinition>,
 }
 
 impl Handler<Initialize> for SchematicService {
@@ -30,7 +31,7 @@ impl Handler<Initialize> for SchematicService {
     let seed = msg.seed;
     let allow_latest = msg.allow_latest;
     let name = msg.schematic.name.clone();
-    let providers = msg.schematic.providers.clone();
+    let providers = concat(vec![msg.global_providers, msg.schematic.providers.clone()]);
     let model = actix_try!(SchematicModel::try_from(msg.schematic));
     actix_try!(Validator::validate_early_errors(&model));
     let model = Arc::new(Mutex::new(model));
