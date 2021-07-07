@@ -30,14 +30,17 @@ use crate::{
   RpcHandler,
 };
 
+/// An implementation of a GRPC server for implementers of [RpcHandler] like Vino providers.
 #[derive(Derivative)]
 #[derivative(Debug)]
 pub struct InvocationServer {
+  /// The provider that will handle incoming requests
   #[derivative(Debug = "ignore")]
   pub provider: Arc<Mutex<dyn RpcHandler>>,
 }
 
 impl InvocationServer {
+  /// Constructor
   pub fn new<T>(provider: T) -> Self
   where
     T: RpcHandler + 'static,
@@ -46,6 +49,9 @@ impl InvocationServer {
       provider: Arc::new(Mutex::new(provider)),
     }
   }
+
+  /// Constructor that takes in a provider already wrapped in an Arc<Mutex<>>
+  #[must_use]
   pub fn new_shared<T>(provider: Arc<Mutex<T>>) -> Self
   where
     T: RpcHandler + 'static,
@@ -54,54 +60,54 @@ impl InvocationServer {
   }
 }
 
-pub fn make_output(port: &str, inv_id: &str, payload: Packet) -> Result<Output, Status> {
+fn make_output(port: &str, inv_id: &str, payload: Packet) -> Result<Output, Status> {
   match payload {
     Packet::V0(v) => match v {
       vino_component::v0::Payload::Invalid => Ok(Output {
-        port: port.to_string(),
-        invocation_id: inv_id.to_string(),
+        port: port.to_owned(),
+        invocation_id: inv_id.to_owned(),
         payload: Some(OutputKind {
           data: Some(Data::Invalid(true)),
         }),
       }),
       vino_component::v0::Payload::Exception(msg) => Ok(Output {
-        port: port.to_string(),
-        invocation_id: inv_id.to_string(),
+        port: port.to_owned(),
+        invocation_id: inv_id.to_owned(),
         payload: Some(OutputKind {
           data: Some(Data::Exception(msg)),
         }),
       }),
       vino_component::v0::Payload::Error(msg) => Ok(Output {
-        port: port.to_string(),
-        invocation_id: inv_id.to_string(),
+        port: port.to_owned(),
+        invocation_id: inv_id.to_owned(),
         payload: Some(OutputKind {
           data: Some(Data::Error(msg)),
         }),
       }),
       vino_component::v0::Payload::MessagePack(bytes) => Ok(Output {
-        port: port.to_string(),
-        invocation_id: inv_id.to_string(),
+        port: port.to_owned(),
+        invocation_id: inv_id.to_owned(),
         payload: Some(OutputKind {
           data: Some(Data::Messagepack(bytes)),
         }),
       }),
       vino_component::v0::Payload::Close => Ok(Output {
-        port: port.to_string(),
-        invocation_id: inv_id.to_string(),
+        port: port.to_owned(),
+        invocation_id: inv_id.to_owned(),
         payload: Some(OutputKind {
           data: Some(Data::Signal(OutputSignal::Close.into())),
         }),
       }),
       vino_component::v0::Payload::OpenBracket => Ok(Output {
-        port: port.to_string(),
-        invocation_id: inv_id.to_string(),
+        port: port.to_owned(),
+        invocation_id: inv_id.to_owned(),
         payload: Some(OutputKind {
           data: Some(Data::Signal(OutputSignal::OpenBracket.into())),
         }),
       }),
       vino_component::v0::Payload::CloseBracket => Ok(Output {
-        port: port.to_string(),
-        invocation_id: inv_id.to_string(),
+        port: port.to_owned(),
+        invocation_id: inv_id.to_owned(),
         payload: Some(OutputKind {
           data: Some(Data::Signal(OutputSignal::CloseBracket.into())),
         }),
@@ -126,7 +132,7 @@ impl InvocationService for InvocationServer {
     tokio::spawn(async move {
       let invocation = request.get_ref();
       let provider = provider.lock().await;
-      let invocation_id = invocation.id.to_string();
+      let invocation_id = invocation.id.clone();
       let entity = vino_entity::Entity::from_str(&invocation.target);
       if let Err(e) = entity {
         tx.send(Err(Status::failed_precondition(e.to_string())))
@@ -138,7 +144,7 @@ impl InvocationService for InvocationServer {
       let payload = invocation.msg.clone();
       debug!("Executing component {}", entity.url());
       match &mut provider
-        .request(invocation_id.to_string(), entity, payload)
+        .request(invocation_id.clone(), entity, payload)
         .await
       {
         Ok(receiver) => {
@@ -196,7 +202,7 @@ impl InvocationService for InvocationServer {
         .await
         .map_err(|e| Status::internal(e.to_string()))?,
       stats_request::Kind::Component(comp) => provider
-        .report_statistics(Some(comp.name.to_string()))
+        .report_statistics(Some(comp.name.clone()))
         .await
         .map_err(|e| Status::internal(e.to_string()))?,
     };

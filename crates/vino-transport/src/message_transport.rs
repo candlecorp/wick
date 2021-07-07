@@ -17,24 +17,38 @@ use crate::{
   Result,
 };
 
+/// A HashMap mapping from a port name to a MessageTransport object.
 pub type PortMap = HashMap<String, MessageTransport>;
 
+/// The [MessageTransport] is the primary way messages are sent around Vino Networks, Schematics, and is the representation that normalizes output [Packet]'s.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum MessageTransport {
+  /// An invalid message.
   Invalid,
+  /// A message carrying an exception.
   Exception(String),
+  /// A message carrying an error.
   Error(String),
+  /// A message carrying a MessagePack encoded list of bytes.
   MessagePack(Vec<u8>),
+  /// A message that contains a mapping of port names to encoded byte lists.
   MultiBytes(HashMap<String, Vec<u8>>),
+  /// A map of port names to [MessageTransport] messages they are associated with.
   OutputMap(PortMap),
+  /// A test message
   Test(String),
+  /// An internal signal
   Signal(MessageSignal),
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+/// Signals that need to be handled before propagating to a downstream consumer.
+#[derive(Debug, Clone, Copy, Eq, Serialize, Deserialize, PartialEq)]
 pub enum MessageSignal {
+  /// Indicates this channel is closing and should not be polled any further.
   Close,
+  /// Indicates that a message is coming down in chunks and this is the start.
   OpenBracket,
+  /// Indicates a chunked message has been completed.
   CloseBracket,
 }
 
@@ -44,17 +58,24 @@ impl Default for MessageTransport {
   }
 }
 
+/// A simplified JSON representation of a MessageTransport
+#[derive(Debug, Clone, Eq, Serialize, Deserialize, PartialEq)]
 pub struct JsonOutput {
   error_msg: Option<String>,
   error_type: JsonError,
   value: serde_json::Value,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+/// The kinds of errors that a [JsonOutput] can carry
+#[derive(Debug, Clone, Copy, Eq, Serialize, Deserialize, PartialEq)]
 pub enum JsonError {
+  /// No error
   None,
+  /// A message from a [MessageTransport::Exception]
   Exception,
+  /// A message from a [MessageTransport::Error]
   Error,
+  /// An error originating internally
   InternalError,
 }
 
@@ -71,6 +92,9 @@ impl Display for JsonError {
 }
 
 impl MessageTransport {
+  /// Returns `true` if the Message contains success data destined for a downstream
+  /// consumer, false for Errors, Exceptions, and otherwise.
+  #[must_use]
   pub fn is_ok(&self) -> bool {
     match self {
       MessageTransport::MessagePack(_) => true,
@@ -83,6 +107,9 @@ impl MessageTransport {
       MessageTransport::Signal(_) => false,
     }
   }
+
+  /// Converts a [MessageTransport] into [serde_json::Value] representation of a [JsonOutput]
+  #[must_use]
   pub fn into_json(self) -> serde_json::Value {
     let output = match self {
       MessageTransport::Invalid => JsonOutput {
@@ -142,24 +169,30 @@ impl MessageTransport {
     );
     serde_json::value::Value::Object(map)
   }
+
+  /// Attempts a conversion of a [MessageTransport] into the bytes of a [MessageTransport::MessagePack] variant
   pub fn into_bytes(self) -> Result<Vec<u8>> {
     match self {
       MessageTransport::MessagePack(v) => Ok(v),
-      _ => Err(Error::PayloadConversionError("Invalid payload".to_string())),
+      _ => Err(Error::PayloadConversionError("Invalid payload".to_owned())),
     }
   }
+
+  /// Attempts a conversion of a [MessageTransport] into the [PortMap] of a [MessageTransport::OutputMap] variant
   pub fn into_output_map(self) -> Result<PortMap> {
     match self {
       MessageTransport::OutputMap(v) => Ok(v),
       _ => Err(Error::PayloadConversionError(
-        "Invalid payload, not an output map".to_string(),
+        "Invalid payload, not an output map".to_owned(),
       )),
     }
   }
+
+  /// Attempts a conversion of a [MessageTransport] into a [HashMap<String, Vec<u8>>] from a [MessageTransport::MultiBytes] variant
   pub fn into_multibytes(self) -> Result<HashMap<String, Vec<u8>>> {
     match self {
       MessageTransport::MultiBytes(v) => Ok(v),
-      _ => Err(Error::PayloadConversionError("Invalid payload".to_string())),
+      _ => Err(Error::PayloadConversionError("Invalid payload".to_owned())),
     }
   }
 }

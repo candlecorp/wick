@@ -195,7 +195,7 @@ impl<'a> Validator<'a> {
     let component_definitions = self.model.get_component_definitions();
     let mut errors = vec![];
     for def in component_definitions {
-      if parse_namespace(&def.id).is_err() {
+      if parse_id(&def.id).is_err() {
         errors.push(def.id.clone());
       }
     }

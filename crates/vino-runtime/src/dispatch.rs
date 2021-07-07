@@ -320,7 +320,7 @@ impl From<ConnectionTargetDefinition> for PortReference {
   fn from(v: ConnectionTargetDefinition) -> Self {
     PortReference {
       name: v.port,
-      reference: v.instance,
+      reference: v.reference,
     }
   }
 }

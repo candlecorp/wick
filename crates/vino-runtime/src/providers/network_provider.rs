@@ -8,7 +8,7 @@ use async_trait::async_trait;
 use vino_rpc::port::PortPacket;
 use vino_rpc::{
   BoxedPacketStream,
-  ExecutionStatistics,
+  DurationStatistics,
   HostedType,
   RpcHandler,
   RpcResult,
@@ -85,7 +85,7 @@ impl RpcHandler for Provider {
     if id.is_some() {
       Ok(vec![Statistics {
         num_calls: 1,
-        execution_duration: ExecutionStatistics {
+        execution_duration: DurationStatistics {
           max_time: 0,
           min_time: 0,
           average: 0,
@@ -94,7 +94,7 @@ impl RpcHandler for Provider {
     } else {
       Ok(vec![Statistics {
         num_calls: 0,
-        execution_duration: ExecutionStatistics {
+        execution_duration: DurationStatistics {
           max_time: 0,
           min_time: 0,
           average: 0,

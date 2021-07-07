@@ -12,11 +12,11 @@ use crate::Result;
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 /// The entity being referenced across systems or services.
 pub enum Entity {
-  /// A system entity with the name "invalid". Used only for situations where a default is more useful than an error.
+  /// A [SystemEntity] with the name "invalid". Used only for situations where a default is more useful than an error.
   Invalid,
-  /// The system entity is used when communicating to or from the internals of another component. Used mostly by library developers.
+  /// The [SystemEntity] is used when communicating to or from the internals of another component. Used mostly by library developers.
   System(SystemEntity),
-  /// A system entity with the name "test". Used as the originating entity for tests.
+  /// A [SystemEntity] with the name "test". Used as the originating entity for tests.
   Test(String),
   /// A client entity used for requests.
   Client(String),
@@ -33,8 +33,11 @@ pub enum Entity {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+/// A struct to hold additional data for [SystemEntity]s
 pub struct SystemEntity {
+  /// The name of the [SystemEntity]
   pub name: String,
+  /// A freefrom string.
   pub value: String,
 }
 
@@ -97,10 +100,14 @@ impl FromStr for Entity {
   }
 }
 impl Entity {
+  /// Constructor for Entity::Component
+  #[must_use]
   pub fn component(name: &str) -> Self {
     Self::Component(name.to_owned())
   }
 
+  /// Constructor for Entity::System
+  #[must_use]
   pub fn system(name: &str, value: &str) -> Self {
     Self::System(SystemEntity {
       name: name.to_owned(),
@@ -108,22 +115,32 @@ impl Entity {
     })
   }
 
+  /// Constructor for Entity::Test
+  #[must_use]
   pub fn test(msg: &str) -> Self {
     Self::Test(msg.to_owned())
   }
 
+  /// Constructor for Entity::Provider
+  #[must_use]
   pub fn provider(id: &str) -> Self {
     Self::Provider(id.to_owned())
   }
 
+  /// Constructor for Entity::Schematic
+  #[must_use]
   pub fn schematic(id: &str) -> Self {
     Self::Schematic(id.to_owned())
   }
 
+  /// Constructor for Entity::Host
+  #[must_use]
   pub fn host(id: &str) -> Self {
     Self::Host(id.to_owned())
   }
 
+  /// Constructor for Entity::Client
+  #[must_use]
   pub fn client(id: &str) -> Self {
     Self::Client(id.to_owned())
   }
@@ -160,6 +177,7 @@ impl Entity {
     }
   }
 
+  /// Attempt to convert the entity into a Reference variant
   pub fn into_reference(self) -> Result<String> {
     match self {
       Entity::Reference(s) => Ok(s),
@@ -167,6 +185,7 @@ impl Entity {
     }
   }
 
+  /// Attempt to convert the entity into a Provider variant
   pub fn into_provider(self) -> Result<String> {
     match self {
       Entity::Provider(s) => Ok(s),
@@ -174,6 +193,7 @@ impl Entity {
     }
   }
 
+  /// Attempt to convert the entity into a Component variant
   pub fn into_component(self) -> Result<String> {
     match self {
       Entity::Component(s) => Ok(s),
@@ -181,6 +201,7 @@ impl Entity {
     }
   }
 
+  /// Attempt to convert the entity into a Schematic variant
   pub fn into_schematic(self) -> Result<String> {
     match self {
       Entity::Schematic(s) => Ok(s),

@@ -14,6 +14,8 @@ use serde::Serialize;
 use vino_component::v0::Payload as ComponentPayload;
 use vino_component::Packet;
 
+// TODO: get this out of here
+#[doc(hidden)]
 pub trait Sender {
   /// The type of data that the port outputs
   type PayloadType: Serialize + Send + 'static;
@@ -73,6 +75,9 @@ pub trait Sender {
   }
 }
 
+// TODO: get this out of here
+#[doc(hidden)]
+#[must_use]
 #[derive(Debug, Clone)]
 pub struct Port {
   name: String,
@@ -81,6 +86,7 @@ pub struct Port {
 }
 
 impl Port {
+  #[doc(hidden)]
   pub fn new(name: String) -> Self {
     Self {
       name,
@@ -88,21 +94,29 @@ impl Port {
       status: PortStatus::Open,
     }
   }
+  #[doc(hidden)]
+  #[must_use]
   pub fn is_closed(&self) -> bool {
     self.status == PortStatus::Closed
   }
+  #[doc(hidden)]
   pub fn close(&mut self) {
     trace!("Port {} is closing", self.name);
     self.status = PortStatus::Closed;
   }
 }
 
-#[derive(Debug, PartialEq, Clone)]
+// TODO: get this out of here
+#[doc(hidden)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum PortStatus {
   Closed,
   Open,
 }
 
+// TODO: get this out of here
+#[doc(hidden)]
+#[must_use]
 #[derive()]
 pub struct PortStream {
   streams: Vec<Arc<Mutex<Port>>>,
@@ -125,11 +139,14 @@ impl Clone for PortStream {
 }
 
 impl PortStream {
+  #[doc(hidden)]
   pub fn new(buffer: Vec<Arc<Mutex<Port>>>) -> Self {
     Self { streams: buffer }
   }
 }
 
+#[doc(hidden)]
+#[must_use]
 #[derive(Debug, Clone)]
 pub struct PortPacket {
   pub port: String,
@@ -147,7 +164,7 @@ impl Stream for PortStream {
         return match port.buffer.pop_front() {
           Some(payload) => {
             if payload == Packet::V0(ComponentPayload::Close) {
-              port.close()
+              port.close();
             }
             Poll::Ready(Some(PortPacket {
               port: port.name.clone(),

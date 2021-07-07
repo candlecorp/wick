@@ -29,7 +29,7 @@ pub(crate) mod prelude {
   pub(crate) use tracing::Instrument;
   pub(crate) use vino_entity::entity::Entity;
   pub(crate) use vino_manifest::{
-    parse_namespace,
+    parse_id,
     ComponentDefinition,
     ConnectionDefinition,
     ConnectionTargetDefinition,

@@ -237,7 +237,7 @@ impl SchematicModel {
   }
 
   pub(crate) fn has_component(&self, id: &str) -> bool {
-    let (ns, name) = match parse_namespace(id) {
+    let (ns, name) = match parse_id(id) {
       Ok(r) => r,
       Err(_) => return false,
     };
@@ -271,7 +271,7 @@ impl SchematicModel {
 
   /// Gets a ComponentModel by component reference string
   pub(crate) fn get_component_model(&self, id: &str) -> Option<ComponentModel> {
-    let (ns, name) = match parse_namespace(id) {
+    let (ns, name) = match parse_id(id) {
       Ok(result) => result,
       Err(_) => return None,
     };
@@ -290,7 +290,7 @@ impl SchematicModel {
       .connections
       .iter()
       .cloned()
-      .filter(|conn| conn.from.instance == port.reference && conn.from.port == port.name)
+      .filter(|conn| conn.from.reference == port.reference && conn.from.port == port.name)
       .map(|conn| conn.to.into())
       .collect()
   }
@@ -300,7 +300,7 @@ impl SchematicModel {
       .definition
       .connections
       .iter()
-      .filter(|conn| conn.from.instance == reference)
+      .filter(|conn| conn.from.reference == reference)
       .cloned()
       .collect()
   }
@@ -311,7 +311,7 @@ impl SchematicModel {
       .connections
       .iter()
       .cloned()
-      .filter(|conn| conn.to.instance == SCHEMATIC_OUTPUT)
+      .filter(|conn| conn.to.reference == SCHEMATIC_OUTPUT)
       .map(|conn| conn.to.into())
       .collect()
   }
@@ -330,7 +330,7 @@ impl SchematicModel {
       .connections
       .iter()
       .cloned()
-      .filter(|conn| conn.from.instance == SCHEMATIC_INPUT)
+      .filter(|conn| conn.from.reference == SCHEMATIC_INPUT)
       .map(|conn| conn.from.into())
       .collect()
   }

@@ -16,8 +16,6 @@ if (!match) {
 }
 const denyOnlyLints = match[0];
 
-console.log(denyOnlyLints);
-
 const replacementCandidates = ["lib.rs", "main.rs"];
 
 crates.forEach((crate) => {
@@ -36,7 +34,7 @@ crates.forEach((crate) => {
         console.log(`ADDING: ${relativePath}`);
         newSrc = [completeLints, rustSrc].join("\n");
       }
-      // console.log(newSrc);
+      fs.writeFileSync(candidatePath, newSrc);
     }
   });
 });

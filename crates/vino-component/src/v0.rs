@@ -31,6 +31,7 @@ pub enum Payload {
 }
 
 impl Payload {
+  /// A one-line way to turn a serializable object into a [Payload::MessagePack] variant
   pub fn to_messagepack(t: impl Serialize) -> Self {
     match rmp_serialize(t) {
       Ok(bytes) => Self::MessagePack(bytes),

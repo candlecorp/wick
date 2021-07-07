@@ -23,20 +23,31 @@ use crate::{
   Result,
 };
 
+/// The signature of a Vino component, including its input and output types.
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
 pub struct ComponentSignature {
+  /// The name of the component.
   pub name: String,
+  /// A list of input signatures
   pub inputs: Vec<PortSignature>,
+  /// A list of output signatures
   pub outputs: Vec<PortSignature>,
 }
 
+/// The signature of an individual port
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
 pub struct PortSignature {
+  /// Name of the port
   pub name: String,
+
+  /// The data type of the port
+  // TODO: Need to turn this into a more complex representation of port types
   pub type_string: String,
 }
 
 impl PortSignature {
+  /// Constructor
+  #[must_use]
   pub fn new(name: String, type_string: String) -> Self {
     Self { name, type_string }
   }
@@ -55,39 +66,58 @@ impl Display for PortSignature {
   }
 }
 
+/// Signature for Providers
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
 pub struct ProviderSignature {
+  /// Name of the provider
   pub name: String,
+  /// A list of [ComponentSignature]s the provider hosts.
   pub components: Vec<ComponentSignature>,
 }
 
+/// Signature for schematics, their ports, and their providers
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
 pub struct SchematicSignature {
+  /// Name of the schematic
   pub name: String,
+  /// A list of input ports
   pub inputs: Vec<PortSignature>,
+  /// A list of output ports
   pub outputs: Vec<PortSignature>,
+  /// A list of providers running on the schematic
   pub providers: Vec<ProviderSignature>,
 }
 
+/// An enum representing the types of components that can be hosted
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 pub enum HostedType {
+  /// A hosted component
   Component(ComponentSignature),
+  /// A hosted schematic
   Schematic(SchematicSignature),
 }
 
-#[derive(Debug, Default, Serialize, Deserialize, PartialEq)]
+/// Important statistics for the hosted components
+#[derive(Debug, Default, Clone, Copy, Serialize, Deserialize, PartialEq)]
 pub struct Statistics {
+  /// The number of times a component has been called
   pub num_calls: u64,
-  pub execution_duration: ExecutionStatistics,
+  /// Execution duration statistics
+  pub execution_duration: DurationStatistics,
 }
 
-#[derive(Debug, Default, Serialize, Deserialize, PartialEq)]
-pub struct ExecutionStatistics {
+/// Duration related statistics
+#[derive(Debug, Default, Clone, Copy, Serialize, Deserialize, PartialEq)]
+pub struct DurationStatistics {
+  /// The maximum duration
   pub max_time: usize,
+  /// The minimum duration
   pub min_time: usize,
+  /// The average duration
   pub average: usize,
 }
 
+/// The return type of RpcHandler requests
 pub type BoxedPacketStream = Pin<Box<dyn Stream<Item = PortPacket> + Send>>;
 
 impl From<HostedType> for crate::rpc::Component {
@@ -204,7 +234,7 @@ impl From<crate::generated::vino::Statistic> for Statistics {
   fn from(v: crate::generated::vino::Statistic) -> Self {
     Self {
       num_calls: v.num_calls,
-      execution_duration: ExecutionStatistics::default(),
+      execution_duration: DurationStatistics::default(),
     }
   }
 }
