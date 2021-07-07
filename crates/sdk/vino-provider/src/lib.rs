@@ -99,4 +99,5 @@ pub trait VinoProviderComponent {
   ) -> std::result::Result<PortStream, Box<dyn std::error::Error + Send + Sync>>;
 }
 
+pub use vino_entity as entity;
 pub use vino_rpc::ComponentSignature;

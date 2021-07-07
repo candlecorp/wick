@@ -10,6 +10,7 @@ edition = "2018"
 vino-rpc = { path="../vino-rpc" }
 async-trait = "0.1.50"
 thiserror = "1.0.25"
+vino-entity = { path="../vino-entity" }
 
 [dev-dependencies]
 env_logger = "0.8.4"

@@ -61,9 +61,10 @@ impl Default for MessageTransport {
 /// A simplified JSON representation of a MessageTransport
 #[derive(Debug, Clone, Eq, Serialize, Deserialize, PartialEq)]
 pub struct JsonOutput {
-  error_msg: Option<String>,
-  error_type: JsonError,
-  value: serde_json::Value,
+  pub error_msg: Option<String>,
+  // #[serde(skip_serializing_if = "Option::is_none")]
+  pub error_kind: JsonError,
+  pub value: serde_json::Value,
 }
 
 /// The kinds of errors that a [JsonOutput] can carry
@@ -115,23 +116,23 @@ impl MessageTransport {
       MessageTransport::Invalid => JsonOutput {
         value: serde_json::value::Value::Null,
         error_msg: Some("Invalid value".to_owned()),
-        error_type: JsonError::Error,
+        error_kind: JsonError::Error,
       },
       MessageTransport::Exception(v) => JsonOutput {
         value: serde_json::value::Value::Null,
         error_msg: Some(v),
-        error_type: JsonError::Exception,
+        error_kind: JsonError::Exception,
       },
       MessageTransport::Error(v) => JsonOutput {
         value: serde_json::value::Value::Null,
         error_msg: Some(v),
-        error_type: JsonError::Error,
+        error_kind: JsonError::Error,
       },
       MessageTransport::MessagePack(bytes) => match deserialize::<serde_json::Value>(&bytes) {
         Ok(payload) => JsonOutput {
           value: payload,
           error_msg: None,
-          error_type: JsonError::None,
+          error_kind: JsonError::None,
         },
         Err(e) => {
           let msg = format!(
@@ -142,7 +143,7 @@ impl MessageTransport {
           JsonOutput {
             value: serde_json::value::Value::Null,
             error_msg: Some(msg),
-            error_type: JsonError::InternalError,
+            error_kind: JsonError::InternalError,
           }
         }
       },
@@ -154,7 +155,7 @@ impl MessageTransport {
         JsonOutput {
           value: serde_json::value::Value::Null,
           error_msg: Some("Unhandled internal message".to_owned()),
-          error_type: JsonError::InternalError,
+          error_kind: JsonError::InternalError,
         }
       }
     };
@@ -165,7 +166,7 @@ impl MessageTransport {
     }
     map.insert(
       "error_kind".to_owned(),
-      serde_json::Value::String(output.error_type.to_string()),
+      serde_json::Value::String(output.error_kind.to_string()),
     );
     serde_json::value::Value::Object(map)
   }
