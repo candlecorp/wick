@@ -3,6 +3,7 @@ name = "vino-native-components-v0"
 version = "0.1.0"
 authors = ["Jarrod Overson <jsoverson@gmail.com>"]
 edition = "2018"
+license = "Apache-2.0"
 
 [dependencies]
 vino-provider = { path="../vino-provider" }

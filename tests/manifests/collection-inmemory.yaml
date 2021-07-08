@@ -1,12 +1,12 @@
 ---
 version: "0"
 network:
+  providers:
+    - namespace: collection
+      kind: GrpcUrl
+      reference: https://127.0.0.1:$TEST_PORT
   schematics:
     - name: add
-      providers:
-        - namespace: collection
-          kind: GrpcUrl
-          reference: https://127.0.0.1:$TEST_PORT
       components:
         add:
           id: collection::add-item
@@ -36,10 +36,6 @@ network:
             reference: <output>
             port: document_id
     - name: get
-      providers:
-        - namespace: collection
-          kind: GrpcUrl
-          reference: https://127.0.0.1:$TEST_PORT
       components:
         get:
           id: collection::get-item
@@ -63,10 +59,6 @@ network:
             reference: <output>
             port: document
     - name: list
-      providers:
-        - namespace: collection
-          kind: GrpcUrl
-          reference: https://127.0.0.1:$TEST_PORT
       components:
         list:
           id: collection::list-items

@@ -59,7 +59,7 @@ impl Connection {
       .collect::<Vec<String>>()
       .join(", ")
   }
-  pub(crate) fn new(from: PortReference, to: PortReference) -> Self {
+  pub fn new(from: PortReference, to: PortReference) -> Self {
     Self {
       from,
       to,
@@ -150,9 +150,11 @@ impl SchematicModel {
       let downstreams = self.get_downstreams(&input);
 
       let downstream = downstreams.iter().find(|port| {
-        let def = self.get_component_definition(&port.reference).unwrap();
-        let skip = omit_namespaces.iter().find(|ns| ns == &&def.namespace);
-        skip.is_none()
+        let def = self.get_component_definition(&port.reference);
+        match def {
+          Some(def) => !omit_namespaces.iter().any(|ns| ns == &def.namespace),
+          None => false,
+        }
       });
       if downstream.is_none() {
         continue;
@@ -175,9 +177,17 @@ impl SchematicModel {
     let mut schematic_outputs = vec![];
     for output in outputs {
       let upstream = self.get_upstream(&output).unwrap();
-      let def = self.get_component_definition(&upstream.reference).unwrap();
-      let skip = omit_namespaces.iter().find(|ns| ns == &&def.namespace);
-      if skip.is_some() {
+      let def = self.get_component_definition(&upstream.reference);
+      if def.is_none() {
+        warn!(
+          "Reference {} has no component definition",
+          upstream.reference
+        );
+        continue;
+      }
+      let def = def.unwrap();
+      let should_skip = omit_namespaces.iter().any(|ns| ns == &def.namespace);
+      if should_skip {
         continue;
       }
       let model = self
@@ -288,14 +298,15 @@ impl SchematicModel {
       .collect()
   }
 
-  pub(crate) fn get_downstream_connections(&self, reference: &str) -> Vec<ConnectionDefinition> {
+  pub(crate) fn get_downstream_connections<'a>(
+    &'a self,
+    reference: &'a str,
+  ) -> impl Iterator<Item = &'a ConnectionDefinition> {
     self
       .definition
       .connections
       .iter()
-      .filter(|conn| conn.from.reference == reference)
-      .cloned()
-      .collect()
+      .filter(move |conn| conn.from.reference == reference)
   }
 
   pub(crate) fn get_schematic_outputs(&self) -> Vec<PortReference> {

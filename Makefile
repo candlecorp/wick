@@ -32,9 +32,22 @@ clean:
 		cd $(ROOT); \
 	done
 
-build:
+build: ./build/local
 	cargo build --workspace
 	cd crates/test-wapc-component && make && cd $(ROOT)
+	cp target/debug/vino build/local/; \
+	cp target/debug/vinoc build/local/; \
+	cp target/debug/vino-collection-inmemory build/local/; \
+
+build-release: ./build/local
+	cargo build --workspace --release
+	cd crates/test-wapc-component && make && cd $(ROOT)
+	cp target/release/vino build/local/; \
+	cp target/release/vinoc build/local/; \
+	cp target/release/vino-collection-inmemory build/local/; \
+
+./build/local:
+	mkdir -p ./build/local
 
 test: build
 	cargo test --workspace
@@ -52,16 +65,6 @@ build-docker: $(DOCKERFILES)
 		docker build $$(dirname $$file) -t $(TAG)/$$(basename $$(dirname $$file)); \
 		docker push $(TAG)/$$(basename $$(dirname $$file)); \
 	done
-
-build-local:
-	rm -rf ./build/local; \
-	mkdir ./build/local; \
-	cargo build -p vino-cli ; \
-	cp target/debug/vino build/local/; \
-	cargo build -p vinoc; \
-	cp target/debug/vinoc build/local/; \
-	cargo build -p vino-collection-inmemory; \
-	cp target/debug/vino-collection-inmemory build/local/; \
 
 build-cross-debug:
 	rm -rf ./build; \

@@ -219,21 +219,21 @@ impl Invocation {
   ) -> Invocation {
     let invocation_id = get_uuid();
     let issuer = hostkey.public_key();
-    let target_url = target.url();
+    // let target_url = target.url();
     let payload = msg.into();
-    let claims = Claims::<vino_wascap::Invocation>::new(
-      issuer.clone(),
-      invocation_id.clone(),
-      &target_url,
-      &origin.url(),
-      &invocation_hash(&target_url, &origin.url(), &payload),
-    );
+    // let claims = Claims::<vino_wascap::Invocation>::new(
+    //   issuer.clone(),
+    //   invocation_id.clone(),
+    //   &target_url,
+    //   &origin.url(),
+    //   &invocation_hash(&target_url, &origin.url(), &payload),
+    // );
     Invocation {
       origin,
       target,
       msg: payload,
       id: invocation_id,
-      encoded_claims: claims.encode(hostkey).unwrap(),
+      encoded_claims: "".to_owned(), //claims.encode(hostkey).unwrap(),
       network_id: issuer,
       tx_id: tx_id.to_owned(),
     }

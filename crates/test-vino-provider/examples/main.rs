@@ -29,6 +29,9 @@ async fn main() -> anyhow::Result<()> {
     Some(CliOpts {
       port: Some(opts.port),
       address: opts.address,
+      pem: None,
+      ca: None,
+      key: None,
     }),
   )
   .await?;

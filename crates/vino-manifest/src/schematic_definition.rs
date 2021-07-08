@@ -215,18 +215,6 @@ pub struct ConnectionDefinition {
   pub default: Option<String>,
 }
 
-impl ConnectionDefinition {
-  /// Format a list of [ConnectionDefinition]s into a String
-  #[must_use]
-  pub fn print_all(list: &[Self]) -> String {
-    list
-      .iter()
-      .map(|c| c.to_string())
-      .collect::<Vec<String>>()
-      .join(", ")
-  }
-}
-
 impl From<crate::v0::ConnectionDefinition> for ConnectionDefinition {
   fn from(def: crate::v0::ConnectionDefinition) -> Self {
     ConnectionDefinition {

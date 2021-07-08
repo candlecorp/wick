@@ -11,7 +11,7 @@ use crate::{
   Result,
 };
 
-#[derive(Debug, Clone, Copy, StructOpt)]
+#[derive(Debug, Clone, StructOpt)]
 #[structopt(rename_all = "kebab-case")]
 pub struct ListCommand {
   #[structopt(flatten)]
@@ -23,7 +23,15 @@ pub struct ListCommand {
 
 pub async fn handle_command(command: ListCommand) -> Result<()> {
   crate::utils::init_logger(&command.logging)?;
-  let mut client = rpc_client(command.connection.address, command.connection.port).await?;
+  let mut client = rpc_client(
+    command.connection.address,
+    command.connection.port,
+    command.connection.pem,
+    command.connection.key,
+    command.connection.ca,
+    command.connection.domain,
+  )
+  .await?;
 
   let list = client.list(ListRequest {});
   debug!("Making list request");

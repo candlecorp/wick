@@ -3,6 +3,7 @@ use std::net::{
   Ipv4Addr,
   SocketAddr,
 };
+use std::path::PathBuf;
 use std::sync::{
   Arc,
   RwLock,
@@ -79,11 +80,20 @@ impl Host {
     &mut self,
     address: Ipv4Addr,
     port: Option<u16>,
+    pem: Option<PathBuf>,
+    key: Option<PathBuf>,
+    ca: Option<PathBuf>,
   ) -> Result<SocketAddr> {
     let network_id = self.get_network_id()?;
     let addr = tokio::spawn(vino_provider_cli::start_server(
       Arc::new(Mutex::new(NetworkProvider::new(network_id))),
-      Some(CliOpts { port, address }),
+      Some(CliOpts {
+        port,
+        address,
+        pem,
+        key,
+        ca,
+      }),
     ))
     .await
     .map_err(|e| Error::Other(format!("Join error: {}", e)))?
@@ -206,7 +216,13 @@ mod test {
     let manifest = HostDefinition::load_from_file(&file)?;
     host.start_network(manifest.network).await?;
     host
-      .start_rpc_server(Ipv4Addr::from_str("127.0.0.1").unwrap(), Some(54321))
+      .start_rpc_server(
+        Ipv4Addr::from_str("127.0.0.1").unwrap(),
+        Some(54321),
+        None,
+        None,
+        None,
+      )
       .await?;
     let mut client = make_rpc_client(Uri::from_str("https://127.0.0.1:54321").unwrap()).await?;
     let passed_data = "logging output";

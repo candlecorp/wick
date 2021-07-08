@@ -3,6 +3,7 @@ name = "vino-collection-inmemory"
 version = "0.1.0"
 authors = ["Jarrod Overson <jsoverson@gmail.com>"]
 edition = "2018"
+license = "Apache-2.0"
 
 [[bin]]
 name = "vino-collection-inmemory"

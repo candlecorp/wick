@@ -2,6 +2,7 @@
 name = "vino-wascap"
 version = "0.1.0"
 edition = "2018"
+license = "Apache-2.0"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -15,3 +16,6 @@ data-encoding = "2.3.2"
 ring = "0.16.20"
 nuid = "0.3.0"
 tracing = "0.1.26"
+
+[dev-dependencies]
+criterion = { version="0.3", features=[] }

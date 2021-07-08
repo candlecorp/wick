@@ -1,6 +1,5 @@
 use std::net::Ipv4Addr;
 use std::path::PathBuf;
-use std::str::FromStr;
 
 use structopt::StructOpt;
 use vino_host::{
@@ -25,6 +24,26 @@ pub struct StartCommand {
   /// Specifies a manifest file to apply to the host once started
   #[structopt(parse(from_os_str))]
   pub manifest: Option<PathBuf>,
+
+  /// The address to bind to
+  #[structopt(short, long, default_value = "127.0.0.1")]
+  pub address: Ipv4Addr,
+
+  /// The port to bind to
+  #[structopt(short, long, default_value = "8060")]
+  pub port: u16,
+
+  /// Path to pem file for TLS
+  #[structopt(long)]
+  pub pem: Option<PathBuf>,
+
+  /// Path to key file for TLS
+  #[structopt(long)]
+  pub key: Option<PathBuf>,
+
+  /// Path to ca pem file for TLS
+  #[structopt(long)]
+  pub ca: Option<PathBuf>,
 }
 
 pub async fn handle_command(command: StartCommand) -> Result<String> {
@@ -48,7 +67,17 @@ pub async fn handle_command(command: StartCommand) -> Result<String> {
       host.start_network(config.network).await?;
       info!("Manifest applied");
       let addr = host
-        .start_rpc_server(Ipv4Addr::from_str("127.0.0.1").unwrap(), Some(54321))
+        .start_rpc_server(
+          command.address,
+          if command.port == 0 {
+            None
+          } else {
+            Some(command.port)
+          },
+          command.pem,
+          command.key,
+          command.ca,
+        )
         .await?;
       info!("Bound to {}", addr);
     }

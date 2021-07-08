@@ -67,6 +67,8 @@ pub enum SchematicError {
   FailedPreRequestCondition(String),
   #[error("Schematic channel closed while data still available. This can happen when acting on output before waiting for the system to receive the final close and may not be a problem. Error: {0}")]
   SchematicClosedEarly(String),
+  #[error("Model invalid after validation: {0}")]
+  InvalidModel(u32),
   #[error(transparent)]
   CommonError(#[from] CommonError),
   #[error(transparent)]

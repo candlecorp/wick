@@ -1,8 +1,5 @@
 use std::collections::HashMap;
-use std::sync::{
-  Arc,
-  Mutex,
-};
+use std::convert::TryInto;
 
 use futures::future::try_join_all;
 use futures::Future;
@@ -63,7 +60,7 @@ fn handle_schematic(
   tokio::spawn(async move {
     while let Some(msg) = ready_rx.recv().await {
       if let TransactionUpdate::Done(tx_id) = &msg {
-        info!("Schematic request finishing on transaction {}", tx_id);
+        trace!("Schematic request finishing on transaction {}", tx_id);
         ready_rx.close();
       }
       ok_or_log!(addr.send(msg).await);
@@ -74,17 +71,17 @@ fn handle_schematic(
   let (tx, rx) = unbounded_channel::<OutputPacket>();
   service.tx_external.insert(tx_id.clone(), tx);
 
-  let state = service.state.as_mut().unwrap();
-  let model = state.model.clone();
-
   let payload = invocation.msg.into_multibytes().map_err(|_| {
     SchematicError::FailedPreRequestCondition("Schematic sent invalid payload".into())
   })?;
 
-  let payloads_rcvd = generate_packets(&model, &state.seed, &tx_id, &payload)?;
+  let model = service.get_state().model.lock()?;
+  let connections = model.get_downstream_connections(SCHEMATIC_INPUT);
+  let messages = generate_packets(connections, &tx_id, &payload)?;
+  drop(model);
 
   Ok(async move {
-    try_join_all(payloads_rcvd.into_iter().map(|inv| address.send(inv)))
+    try_join_all(messages.into_iter().map(|inv| address.send(inv)))
       .await
       .map_err(|_| {
         SchematicError::FailedPreRequestCondition("Error pushing to schematic ports".into())
@@ -94,35 +91,22 @@ fn handle_schematic(
   })
 }
 
-fn generate_packets(
-  model: &Arc<Mutex<SchematicModel>>,
-  seed: &str,
+fn generate_packets<'a>(
+  first_connections: impl Iterator<Item = &'a ConnectionDefinition>,
   tx_id: &str,
   bytemap: &HashMap<String, Vec<u8>>,
 ) -> Result<Vec<InputMessage>> {
-  let model = model.lock()?;
-  let first_connections = model.get_downstream_connections(SCHEMATIC_INPUT);
-  drop(model);
-  trace!(
-    "Generating schematic invocations for connections: {}",
-    ConnectionDefinition::print_all(&first_connections)
-  );
+  let mut messages: Vec<InputMessage> = vec![];
+  for conn in first_connections {
+    let bytes = bytemap.get(&conn.from.port).ok_or_else(|| {
+      SchematicError::FailedPreRequestCondition(format!("Port {} not found in input", conn.from))
+    })?;
+    messages.push(InputMessage {
+      connection: conn.try_into()?,
+      tx_id: tx_id.to_owned(),
+      payload: MessageTransport::MessagePack(bytes.clone()),
+    });
+  }
 
-  let _kp = keypair_from_seed(seed)?;
-
-  let invocations: Vec<InputMessage> = first_connections
-    .into_iter()
-    .map(|conn| {
-      let bytes = bytemap
-        .get(&conn.from.port)
-        .unwrap_or_else(|| panic!("Port {} not found", conn.from));
-
-      InputMessage {
-        connection: Connection::new(conn.from.into(), conn.to.into()),
-        tx_id: tx_id.to_owned(),
-        payload: MessageTransport::MessagePack(bytes.clone()),
-      }
-    })
-    .collect();
-  Ok(invocations)
+  Ok(messages)
 }

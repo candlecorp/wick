@@ -63,7 +63,7 @@ impl Handler<Initialize> for SchematicService {
 
     let state = State {
       name,
-      seed,
+      kp: KeyPair::from_seed(&seed).unwrap(),
       transaction_map: TransactionMap::new(model.clone()),
       model,
     };

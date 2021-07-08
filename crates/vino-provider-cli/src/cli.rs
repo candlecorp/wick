@@ -3,22 +3,34 @@ use std::net::{
   Ipv4Addr,
   SocketAddr,
 };
+use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::Arc;
 
 use tokio::signal;
 use tokio::sync::Mutex;
-use tonic::transport::Server;
+use tonic::transport::{
+  Certificate,
+  Identity,
+  Server,
+  ServerTlsConfig,
+};
 use vino_rpc::rpc::invocation_service_server::InvocationServiceServer;
 use vino_rpc::{
   InvocationServer,
   RpcHandler,
 };
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Options {
   pub port: Option<u16>,
 
   pub address: Ipv4Addr,
+
+  pub pem: Option<PathBuf>,
+
+  pub key: Option<PathBuf>,
+
+  pub ca: Option<PathBuf>,
 }
 
 pub async fn start_server(
@@ -32,6 +44,9 @@ pub async fn start_server(
     None => Options {
       port: None,
       address: Ipv4Addr::from_str("127.0.0.1")?,
+      pem: None,
+      key: None,
+      ca: None,
     },
   };
 
@@ -48,11 +63,35 @@ pub async fn start_server(
   let svc = InvocationServiceServer::new(component_service);
 
   let listener = tokio_stream::wrappers::TcpListenerStream::new(socket.listen(1).unwrap());
-  tokio::spawn(
+
+  let reflection = tonic_reflection::server::Builder::configure()
+    .build()
+    .unwrap();
+
+  let builder = if let (Some(pem), Some(key), Some(ca)) = (opts.pem, opts.key, opts.ca) {
+    let server_pem = tokio::fs::read(pem).await?;
+    let server_key = tokio::fs::read(key).await?;
+    let ca_pem = tokio::fs::read(ca).await?;
+    let ca = Certificate::from_pem(ca_pem);
+    let identity = Identity::from_pem(server_pem, server_key);
+    info!("Starting TLS server on {}", addr);
+    let tls = tonic::transport::ServerTlsConfig::new()
+      .identity(identity)
+      .client_ca_root(ca);
+
     Server::builder()
+      .tls_config(tls)?
+      .add_service(reflection)
       .add_service(svc)
-      .serve_with_incoming(listener),
-  );
+      .serve_with_incoming(listener)
+  } else {
+    info!("Starting insecure server on {}", addr);
+    Server::builder()
+      .add_service(reflection)
+      .add_service(svc)
+      .serve_with_incoming(listener)
+  };
+  tokio::spawn(builder);
 
   Ok(addr)
 }
@@ -91,6 +130,9 @@ mod tests {
       Some(Options {
         port: Some(port),
         address: Ipv4Addr::from_str("127.0.0.1")?,
+        pem: None,
+        ca: None,
+        key: None,
       }),
     )
     .await?;

@@ -29,6 +29,26 @@ async fn simple_schematic() -> TestResult<()> {
 }
 
 #[test_env_log::test(actix_rt::test)]
+async fn echo() -> TestResult<()> {
+  let (network, _) = init_network_from_yaml("./manifests/echo.yaml").await?;
+
+  let data = hashmap! {
+      "input" => "test-data",
+  };
+
+  let mut result = network.request("echo", Entity::test("echo"), &data).await?;
+
+  println!("Result: {:?}", result);
+  let output: MessageTransport = result.remove("output").unwrap();
+  println!("Output: {:?}", output);
+  equals!(
+    output,
+    MessageTransport::MessagePack(mp_serialize("test-data")?)
+  );
+  Ok(())
+}
+
+#[test_env_log::test(actix_rt::test)]
 async fn native_component() -> TestResult<()> {
   let (network, _) = init_network_from_yaml("./manifests/native-component.yaml").await?;
 

@@ -5,6 +5,7 @@ pub mod sign;
 pub mod stats;
 
 use std::net::Ipv4Addr;
+use std::path::PathBuf;
 
 use logger::options::LoggingOptions;
 use structopt::clap::AppSettings;
@@ -43,7 +44,7 @@ pub enum CliCommand {
   Inspect(inspect::InspectCommand),
 }
 
-#[derive(Debug, Clone, Copy, StructOpt)]
+#[derive(Debug, Clone, StructOpt)]
 pub struct ConnectOptions {
   /// Port to listen on
   #[structopt(short, long)]
@@ -52,4 +53,20 @@ pub struct ConnectOptions {
   /// IP address to bind to
   #[structopt(short, long, default_value = "127.0.0.1")]
   pub address: Ipv4Addr,
+
+  /// Path to pem file for TLS connections
+  #[structopt(long)]
+  pub pem: Option<PathBuf>,
+
+  /// Path to client key for TLS connections
+  #[structopt(long)]
+  pub key: Option<PathBuf>,
+
+  /// Path to CA pem for TLS connections
+  #[structopt(long)]
+  pub ca: Option<PathBuf>,
+
+  /// The domain to verify against the certificate
+  #[structopt(long)]
+  pub domain: Option<String>,
 }

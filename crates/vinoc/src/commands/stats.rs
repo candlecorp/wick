@@ -2,7 +2,7 @@ use structopt::StructOpt;
 
 use crate::Result;
 
-#[derive(Debug, Clone, Copy, StructOpt)]
+#[derive(Debug, Clone, StructOpt)]
 #[structopt(rename_all = "kebab-case")]
 pub struct StatsCommand {
   #[structopt(flatten)]

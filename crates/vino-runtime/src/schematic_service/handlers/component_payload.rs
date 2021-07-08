@@ -17,12 +17,11 @@ impl Handler<ComponentPayload> for SchematicService {
 
   fn handle(&mut self, msg: ComponentPayload, ctx: &mut Context<Self>) -> Self::Result {
     trace!("Reference '{}' is ready to continue", msg.reference);
-    let seed = self.get_state().seed.clone();
+    let kp = &self.get_state().kp;
     let reference = msg.reference.clone();
     let tx_id = msg.tx_id;
 
-    let kp = actix_try!(keypair_from_seed(&seed));
-    let def = self.get_component_model(&msg.reference).unwrap();
+    let def = actix_try!(self.get_component_model(&msg.reference));
 
     let mut invoke_payload = HashMap::new();
     for (name, payload) in msg.payload_map {
@@ -51,7 +50,7 @@ impl Handler<ComponentPayload> for SchematicService {
 
     let invocation = Invocation::next(
       &tx_id,
-      &kp,
+      kp,
       Entity::system("SchematicService", "Component Invocation"),
       Entity::Component(def.name),
       MessageTransport::MultiBytes(invoke_payload),

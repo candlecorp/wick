@@ -29,7 +29,15 @@ pub struct InvokeCommand {
 
 pub async fn handle_command(command: InvokeCommand) -> Result<()> {
   crate::utils::init_logger(&command.logging)?;
-  let mut client = rpc_client(command.connection.address, command.connection.port).await?;
+  let mut client = rpc_client(
+    command.connection.address,
+    command.connection.port,
+    command.connection.pem,
+    command.connection.key,
+    command.connection.ca,
+    command.connection.domain,
+  )
+  .await?;
 
   let data = match command.data {
     None => {

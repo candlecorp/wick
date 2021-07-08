@@ -8,6 +8,7 @@ description = "Application data flow platform"
 repository = "https://gitlab.com/vino-dev/vino"
 documentation = "https://vino.dev"
 readme = "README.md"
+license = "Apache-2.0"
 
 
 [dependencies]

@@ -32,7 +32,7 @@ pub(crate) struct SchematicService {
 #[derive(Debug)]
 struct State {
   model: Arc<Mutex<SchematicModel>>,
-  seed: String,
+  kp: KeyPair,
   name: String,
   transaction_map: TransactionMap,
 }
@@ -102,11 +102,14 @@ impl SchematicService {
     state.transaction_map.new_transaction(tx_id, rx)
   }
 
-  fn get_component_model(&self, reference: &str) -> Option<ComponentModel> {
+  fn get_component_model(&self, reference: &str) -> Result<ComponentModel> {
     let state = self.get_state();
     let lock = state.model.lock().unwrap();
-    let def = lock.get_component_definition(reference)?;
-    lock.get_component_model(&def.id)
+    let def = lock
+      .get_component_definition(reference)
+      .ok_or(SchematicError::InvalidModel(1))?;
+    let model = lock.get_component_model(&def.id);
+    Ok(model.ok_or(SchematicModelError::MissingComponentModel(def.id))?)
   }
 
   fn get_component_definition(&self, reference: &str) -> Option<ComponentDefinition> {

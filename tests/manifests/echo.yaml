@@ -1,0 +1,12 @@
+---
+version: "0"
+network:
+  schematics:
+    - name: echo
+      connections:
+        - from:
+            reference: <input>
+            port: input
+          to:
+            reference: <output>
+            port: output
