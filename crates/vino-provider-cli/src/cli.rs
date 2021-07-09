@@ -13,7 +13,6 @@ use tonic::transport::{
   Certificate,
   Identity,
   Server,
-  ServerTlsConfig,
 };
 use vino_rpc::rpc::invocation_service_server::InvocationServiceServer;
 use vino_rpc::{

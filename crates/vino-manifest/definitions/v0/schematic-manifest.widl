@@ -54,10 +54,10 @@ type ComponentDefinition {
 "A connection between components"
 type ConnectionDefinition {
   "The originating component (upstream)"
-  from: ConnectionTargetDefinition @required,
+  from: ConnectionTargetDefinition?,
 
   "The destination component (downstream)"
-  to: ConnectionTargetDefinition @required,
+  to: ConnectionTargetDefinition?,
 
   "The default value to provide in the event of an upstream Error or Exception"
   default: string?

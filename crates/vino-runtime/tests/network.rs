@@ -73,10 +73,9 @@ async fn native_component() -> TestResult<()> {
   Ok(())
 }
 
-// #[test_env_log::test(actix_rt::test)]
+#[test_env_log::test(actix_rt::test)]
 
 async fn defaults() -> TestResult<()> {
-  todo!();
   let (network, _) = init_network_from_yaml("./manifests/defaults.yaml").await?;
 
   let data: HashMap<String, String> = HashMap::new();
@@ -90,7 +89,7 @@ async fn defaults() -> TestResult<()> {
   println!("Output: {:?}", output);
   equals!(
     output,
-    MessageTransport::MessagePack(mp_serialize("1234512345")?)
+    MessageTransport::MessagePack(mp_serialize(1234512345)?)
   );
   Ok(())
 }

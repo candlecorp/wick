@@ -1,7 +1,7 @@
 use vino_rpc::SchematicSignature;
 
 use crate::dev::prelude::*;
-use crate::validator::Validator;
+use crate::models::validator::Validator;
 
 #[derive(Message, Clone, Debug)]
 #[rtype(result = "Result<SchematicSignature, SchematicError>")]

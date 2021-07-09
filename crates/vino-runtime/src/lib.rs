@@ -116,7 +116,6 @@ mod providers;
 mod schematic_service;
 mod transaction;
 pub mod utils;
-mod validator;
 
 pub mod prelude {
   pub use tokio_stream::StreamExt;

@@ -82,6 +82,8 @@ use serde::de::DeserializeOwned;
 use serde::Deserialize;
 use tracing::debug;
 
+pub mod default;
+
 /// Vino Manifest error
 pub mod error;
 

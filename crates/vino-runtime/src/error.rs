@@ -29,10 +29,18 @@ pub enum ValidationError {
   DanglingReference(Vec<String>),
   #[error("Component definition(s) '{}' not fully qualified", join(.0, ", "))]
   NotFullyQualified(Vec<String>),
-  #[error("Invalid output port '{}' on {}. Valid output ports are [{}]", .0.port, .1, join(.2, ", "))]
-  InvalidOutputPort(ConnectionTargetDefinition, Connection, Vec<PortSignature>),
-  #[error("Invalid input port '{}' on {}. Valid input ports are [{}]", .0.port, .1, join(.2, ", "))]
-  InvalidInputPort(ConnectionTargetDefinition, Connection, Vec<PortSignature>),
+  #[error("Invalid output port '{}' on {}. Valid output ports are [{}]", .0.get_port(), .1, join(.2, ", "))]
+  InvalidOutputPort(
+    ConnectionTargetDefinition,
+    ConnectionDefinition,
+    Vec<PortSignature>,
+  ),
+  #[error("Invalid input port '{}' on {}. Valid input ports are [{}]", .0.get_port(), .1, join(.2, ", "))]
+  InvalidInputPort(
+    ConnectionTargetDefinition,
+    ConnectionDefinition,
+    Vec<PortSignature>,
+  ),
   #[error("Invalid connections: {}", join(.0, ", "))]
   InvalidConnections(Vec<ValidationError>),
 }
@@ -85,6 +93,10 @@ pub enum SchematicError {
   ModelError(#[from] SchematicModelError),
   #[error(transparent)]
   DefaultsError(#[from] serde_json::error::Error),
+  #[error(transparent)]
+  CodecError(#[from] vino_codec::Error),
+  #[error(transparent)]
+  ManifestError(#[from] vino_manifest::Error),
 }
 
 #[derive(Error, Debug)]

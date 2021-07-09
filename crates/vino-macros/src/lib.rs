@@ -169,13 +169,41 @@ pub use colored;
 /// console output.
 macro_rules! highlight {
     ($($arg:tt)+) => (
+      {
         use vino_macros::colored::Colorize;
         let indent = ">>>>>".to_owned().yellow().blink();
         let focus = ">>>>>>".to_owned().red().blink();
         let start = ">>>".to_owned().blue().blink();
         let end =   ">>>".to_owned().blue().dimmed();
         println!("{}\n{}\n{} {}\n{}\n{}", start,indent,focus,format!($($arg)+),indent,end);
+      }
     )
+}
+
+#[macro_export]
+macro_rules! some_or_return {
+  ($opt:expr, $ret:expr $(,)?) => {{
+    match $opt {
+      Some(stuff) => stuff,
+      None => {
+        return $ret;
+      }
+    }
+  }};
+}
+
+#[macro_export]
+macro_rules! ok_or_return {
+  ($result:expr, $ret:expr $(,)?) => {{
+    highlight!("result: {:?}", $result);
+    highlight!("{:?}", $ret);
+    match $result {
+      Ok(stuff) => stuff,
+      Err(_) => {
+        return $ret;
+      }
+    }
+  }};
 }
 
 #[macro_export]

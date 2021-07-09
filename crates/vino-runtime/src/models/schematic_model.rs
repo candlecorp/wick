@@ -3,16 +3,9 @@ use std::collections::hash_map::{
   Values,
 };
 use std::collections::HashMap;
-use std::convert::{
-  TryFrom,
-  TryInto,
-};
-use std::fmt::Display;
+use std::convert::TryFrom;
 
-use serde::{
-  Deserialize,
-  Serialize,
-};
+use vino_manifest::schematic_definition::PortReference;
 use vino_provider::ComponentSignature;
 use vino_rpc::{
   PortSignature,
@@ -20,7 +13,6 @@ use vino_rpc::{
 };
 
 use crate::dev::prelude::*;
-use crate::schematic_service::default::parse_default;
 
 type Result<T> = std::result::Result<T, SchematicModelError>;
 
@@ -32,7 +24,6 @@ pub(crate) struct SchematicModel {
   definition: SchematicDefinition,
   references: HashMap<ComponentReference, String>,
   providers: HashMap<Namespace, ProviderModel>,
-  connections: Vec<Connection>,
   upstream_links: HashMap<ConnectionTargetDefinition, ConnectionTargetDefinition>,
   state: Option<LoadedState>,
 }
@@ -42,51 +33,6 @@ struct LoadedState {
   schematic_inputs: Vec<PortSignature>,
   schematic_outputs: Vec<PortSignature>,
   provider_signatures: Vec<ProviderSignature>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub struct Connection {
-  pub(crate) from: ConnectionTargetDefinition,
-  pub(crate) to: ConnectionTargetDefinition,
-  pub(crate) default: Option<serde_json::Value>,
-}
-
-impl Connection {
-  pub(crate) fn print_all(list: &[Self]) -> String {
-    list
-      .iter()
-      .map(std::string::ToString::to_string)
-      .collect::<Vec<String>>()
-      .join(", ")
-  }
-  pub fn new(from: ConnectionTargetDefinition, to: ConnectionTargetDefinition) -> Self {
-    Self {
-      from,
-      to,
-      default: None,
-    }
-  }
-}
-
-impl TryFrom<&ConnectionDefinition> for Connection {
-  type Error = SchematicModelError;
-
-  fn try_from(v: &ConnectionDefinition) -> Result<Self> {
-    Ok(Connection {
-      from: v.from.clone(),
-      to: v.to.clone(),
-      default: match &v.default {
-        Some(json_str) => Some(parse_default(json_str)?),
-        None => None,
-      },
-    })
-  }
-}
-
-impl Display for Connection {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    write!(f, "{} => {}", self.from, self.to)
-  }
 }
 
 impl TryFrom<SchematicDefinition> for SchematicModel {
@@ -99,12 +45,8 @@ impl TryFrom<SchematicDefinition> for SchematicModel {
       .map(|(instance, actor)| (instance.clone(), actor.id.clone()))
       .collect();
 
-    let mut connections: Vec<Connection> = vec![];
-    for connection in &definition.connections {
-      connections.push(connection.try_into()?);
-    }
-
-    let upstream_links = connections
+    let upstream_links = definition
+      .connections
       .iter()
       .cloned()
       .map(|connection| (connection.to, connection.from))
@@ -113,7 +55,6 @@ impl TryFrom<SchematicDefinition> for SchematicModel {
     Ok(Self {
       definition,
       references,
-      connections,
       providers: HashMap::new(),
       upstream_links,
       state: None,
@@ -122,8 +63,8 @@ impl TryFrom<SchematicDefinition> for SchematicModel {
 }
 
 impl SchematicModel {
-  pub(crate) fn get_connections(&self) -> &Vec<Connection> {
-    &self.connections
+  pub(crate) fn get_connections(&self) -> &Vec<ConnectionDefinition> {
+    &self.definition.connections
   }
 
   pub(crate) fn get_component_definitions(&self) -> Values<String, ComponentDefinition> {
@@ -141,7 +82,7 @@ impl SchematicModel {
       let downstreams = self.get_downstreams(&input);
 
       let downstream = downstreams.iter().find(|port| {
-        let def = self.get_component_definition(&port.reference);
+        let def = self.get_component_definition(port.get_reference());
         match def {
           Some(def) => !omit_namespaces.iter().any(|ns| ns == &def.namespace),
           None => false,
@@ -152,15 +93,15 @@ impl SchematicModel {
       }
       let downstream = downstream.unwrap();
       let model = self
-        .get_component_model_by_ref(&downstream.reference)
+        .get_component_model_by_ref(downstream.get_reference())
         .unwrap();
       let downstream_signature = model
         .inputs
         .iter()
-        .find(|port| port.name == downstream.port)
+        .find(|port| port.name == downstream.get_port())
         .unwrap();
       schematic_inputs.push(PortSignature {
-        name: input.port,
+        name: input.get_port_owned(),
         type_string: downstream_signature.type_string.clone(),
       });
     }
@@ -168,11 +109,11 @@ impl SchematicModel {
     let mut schematic_outputs = vec![];
     for output in outputs {
       let upstream = self.get_upstream(&output).unwrap();
-      let def = self.get_component_definition(&upstream.reference);
+      let def = self.get_component_definition(upstream.get_reference());
       if def.is_none() {
         warn!(
           "Reference {} has no component definition",
-          upstream.reference
+          upstream.get_reference()
         );
         continue;
       }
@@ -182,15 +123,15 @@ impl SchematicModel {
         continue;
       }
       let model = self
-        .get_component_model_by_ref(&upstream.reference)
+        .get_component_model_by_ref(upstream.get_reference())
         .unwrap();
       let downstream_signature = model
         .outputs
         .iter()
-        .find(|port| port.name == upstream.port)
+        .find(|port| upstream.matches_port(&port.name))
         .unwrap();
       schematic_outputs.push(PortSignature {
-        name: output.port,
+        name: output.get_port_owned(),
         type_string: downstream_signature.type_string.clone(),
       });
     }
@@ -290,8 +231,8 @@ impl SchematicModel {
       .connections
       .iter()
       .cloned()
-      .filter(|conn| conn.from.reference == port.reference && conn.from.port == port.port)
-      .map(|conn| conn.to.into())
+      .filter(|conn| &conn.from == port)
+      .map(|conn| conn.to)
       .collect()
   }
 
@@ -303,7 +244,7 @@ impl SchematicModel {
       .definition
       .connections
       .iter()
-      .filter(move |conn| conn.from.reference == reference)
+      .filter(move |conn| conn.from.matches_reference(reference))
   }
 
   pub(crate) fn get_schematic_outputs(&self) -> Vec<ConnectionTargetDefinition> {
@@ -312,8 +253,8 @@ impl SchematicModel {
       .connections
       .iter()
       .cloned()
-      .filter(|conn| conn.to.reference == SCHEMATIC_OUTPUT)
-      .map(|conn| conn.to.into())
+      .filter(|conn| conn.to.matches_reference(SCHEMATIC_OUTPUT))
+      .map(|conn| conn.to)
       .collect()
   }
 
@@ -331,8 +272,8 @@ impl SchematicModel {
       .connections
       .iter()
       .cloned()
-      .filter(|conn| conn.from.reference == SCHEMATIC_INPUT)
-      .map(|conn| conn.from.into())
+      .filter(|conn| conn.from.matches_reference(SCHEMATIC_INPUT))
+      .map(|conn| conn.from)
       .collect()
   }
 
@@ -358,9 +299,11 @@ impl SchematicModel {
         Some(component) => component
           .outputs
           .iter()
-          .map(|p| ConnectionTargetDefinition {
-            reference: reference.to_owned(),
-            port: p.name.clone(),
+          .map(|p| {
+            ConnectionTargetDefinition::from_port(PortReference {
+              reference: reference.to_owned(),
+              port: p.name.clone(),
+            })
           })
           .collect(),
         None => vec![],
@@ -368,13 +311,49 @@ impl SchematicModel {
       None => vec![],
     }
   }
-  pub(crate) fn get_port_connections(&self, port: &ConnectionTargetDefinition) -> Vec<Connection> {
+
+  // Find the upstream connection for a reference's port
+  pub(crate) fn get_upstream_connection<'a>(
+    &'a self,
+    port: &'a ConnectionTargetDefinition,
+  ) -> Option<&'a ConnectionDefinition> {
     self
+      .definition
       .connections
       .iter()
-      .cloned()
-      .filter(|connection| &connection.from == port || &connection.to == port)
-      .collect()
+      .find(move |connection| &connection.to == port)
+  }
+
+  // Find the upstream connections for a reference. Note: this relies on the connections
+  // from the definition only, not the component model.
+  pub(crate) fn get_upstream_connections_by_reference<'a>(
+    &'a self,
+    reference: &'a str,
+  ) -> impl Iterator<Item = &'a ConnectionDefinition> {
+    self
+      .definition
+      .connections
+      .iter()
+      .filter(move |connection| connection.to.matches_reference(reference))
+  }
+
+  pub(crate) fn get_port_connections<'a>(
+    &'a self,
+    port: &'a ConnectionTargetDefinition,
+  ) -> impl Iterator<Item = &'a ConnectionDefinition> {
+    self
+      .definition
+      .connections
+      .iter()
+      .filter(move |connection| &connection.from == port || &connection.to == port)
+  }
+
+  pub(crate) fn get_defaults(&self) -> impl Iterator<Item = &ConnectionDefinition> {
+    self
+      .definition
+      .connections
+      .iter()
+      .filter(move |connection| connection.from.is_none() && connection.has_default())
   }
 }
 
@@ -401,6 +380,22 @@ mod tests {
     let def = load_schematic_manifest("./src/models/test-schematics/logger.yaml")?;
     let model = SchematicModel::try_from(def)?;
     equals!(model.get_name(), schematic_name);
+
+    Ok(())
+  }
+
+  #[test_env_log::test]
+  fn test_find_defaults() -> Result<(), TestError> {
+    let schematic_name = "Test";
+    let mut schematic_def = new_schematic(schematic_name);
+    schematic_def.connections.push(ConnectionDefinition {
+      from: ConnectionTargetDefinition::none(),
+      to: ConnectionTargetDefinition::new(SCHEMATIC_OUTPUT, "output"),
+      default: Some(serde_json::Value::String("Default string".to_owned())),
+    });
+    let model = SchematicModel::try_from(schematic_def)?;
+    let num = model.get_defaults().count();
+    assert_eq!(num, 1);
 
     Ok(())
   }

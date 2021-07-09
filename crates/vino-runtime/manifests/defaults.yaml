@@ -1,0 +1,7 @@
+schematics:
+  - name: defaults
+    connections:
+      - default: "1234512345"
+        to:
+          reference: <output>
+          port: output

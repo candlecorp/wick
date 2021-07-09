@@ -16,8 +16,11 @@ serde_yaml = "0.8.17"
 num-traits = "0.2.14"
 enum-primitive-derive = "0.2.1"
 serde-with-expand-env = "1.1.0"
+serde_json = "1.0.64"
 
 [dev-dependencies]
 test-env-log = "0.2.7"
 env_logger = "0.8.3"
 tracing-subscriber = "0.2.18"
+anyhow = "1.0.41"
+pretty_assertions = "0.7.2"

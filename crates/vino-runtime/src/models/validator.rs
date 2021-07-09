@@ -87,14 +87,18 @@ impl<'a> Validator<'a> {
       .get_connections()
       .iter()
       .flat_map(|conn| {
-        let from = self.model.get_component_definition(&conn.from.reference);
-        let to = self.model.get_component_definition(&conn.to.reference);
+        let from = self
+          .model
+          .get_component_definition(conn.from.get_reference());
+        let to = self.model.get_component_definition(conn.to.get_reference());
         let mut none = vec![];
-        if from.is_none() && conn.from.reference != SCHEMATIC_INPUT {
-          none.push(Some(conn.from.reference.clone()));
+
+        if from.is_none() && !conn.has_default() && !conn.from.matches_reference(SCHEMATIC_INPUT) {
+          none.push(Some(conn.from.get_reference_owned()));
         }
-        if to.is_none() && conn.to.reference != SCHEMATIC_OUTPUT {
-          none.push(Some(conn.to.reference.clone()));
+
+        if to.is_none() && !conn.to.matches_reference(SCHEMATIC_OUTPUT) {
+          none.push(Some(conn.to.get_reference_owned()));
         }
         none
       })
@@ -113,19 +117,19 @@ impl<'a> Validator<'a> {
       .iter()
       .flat_map(|connection| {
         let mut validations = vec![];
-        if connection.from.reference != SCHEMATIC_INPUT {
-          let r = &connection.from.reference;
+        if !connection.from.matches_reference(SCHEMATIC_INPUT) {
+          let r = connection.from.get_reference();
           match self.model.get_component_model_by_ref(r) {
             Ok(from) => validations.push(is_valid_output(connection, &from)),
             Err(e) => {
-              if !self.should_omit_ref(r) {
+              if !connection.has_default() && !self.should_omit_ref(r) {
                 validations.push(Err(e.into()));
               }
             }
           };
         }
-        if connection.to.reference != SCHEMATIC_OUTPUT {
-          let r = &connection.to.reference;
+        if !connection.to.matches_reference(SCHEMATIC_OUTPUT) {
+          let r = connection.to.get_reference();
           match self.model.get_component_model_by_ref(r) {
             Ok(to) => validations.push(is_valid_input(connection, &to)),
             Err(e) => {
@@ -183,14 +187,39 @@ impl<'a> Validator<'a> {
       Ok(())
     }
   }
-  fn assert_early_schematic_inputs(&self) -> Result<()> {
-    let ports = self.model.get_schematic_inputs();
-    if ports.is_empty() {
-      Err(ValidationError::NoInputs)
-    } else {
-      Ok(())
+
+  // Validate that the passed port has an upstream that either connects
+  // to the schematic input or a port that has a default
+  fn validate_port_has_upstream_input(&self, port: &ConnectionTargetDefinition) -> bool {
+    let connection = some_or_return!(self.model.get_upstream_connection(port), false);
+    let connected_to_schematic_input = connection.from.matches_reference(SCHEMATIC_INPUT);
+    let has_default = connection.from.is_none() && connection.has_default();
+    if connected_to_schematic_input || has_default {
+      return true;
     }
+
+    let upstream_ref = connection.from.get_reference();
+    let upstream_connections = self
+      .model
+      .get_upstream_connections_by_reference(upstream_ref);
+    for conn in upstream_connections {
+      if self.validate_port_has_upstream_input(&conn.to) {
+        return true;
+      }
+    }
+    false
   }
+
+  fn assert_early_schematic_inputs(&self) -> Result<()> {
+    let ports = self.model.get_schematic_outputs();
+    for port in &ports {
+      if !self.validate_port_has_upstream_input(port) {
+        return Err(ValidationError::NoInputs);
+      }
+    }
+    Ok(())
+  }
+
   fn assert_early_qualified_names(&self) -> Result<()> {
     let component_definitions = self.model.get_component_definitions();
     let mut errors = vec![];
@@ -207,9 +236,12 @@ impl<'a> Validator<'a> {
   }
 }
 
-fn is_valid_input(connection: &Connection, to: &ComponentModel) -> Result<()> {
+fn is_valid_input(connection: &ConnectionDefinition, to: &ComponentModel) -> Result<()> {
   let to_port = &connection.to;
-  let found_to_port = to.inputs.iter().find(|port| port.name == to_port.port);
+  let found_to_port = to
+    .inputs
+    .iter()
+    .find(|port| to_port.matches_port(&port.name));
 
   if found_to_port.is_none() {
     Err(ValidationError::InvalidInputPort(
@@ -221,9 +253,12 @@ fn is_valid_input(connection: &Connection, to: &ComponentModel) -> Result<()> {
     Ok(())
   }
 }
-fn is_valid_output(connection: &Connection, from: &ComponentModel) -> Result<()> {
+fn is_valid_output(connection: &ConnectionDefinition, from: &ComponentModel) -> Result<()> {
   let from_port = &connection.from;
-  let found_from_port = from.outputs.iter().find(|port| port.name == from_port.port);
+  let found_from_port = from
+    .outputs
+    .iter()
+    .find(|port| from_port.matches_port(&port.name));
 
   if found_from_port.is_none() {
     Err(ValidationError::InvalidOutputPort(
@@ -245,6 +280,7 @@ mod tests {
     PortSignature,
     ProviderSignature,
   };
+  use ConnectionTargetDefinition as Target;
 
   use super::*;
   use crate::test::prelude::*;
@@ -365,26 +401,23 @@ mod tests {
       ComponentDefinition::new("test-namespace", "log"),
     );
     schematic_def.connections.push(ConnectionDefinition {
-      from: ConnectionTargetDefinition::new(SCHEMATIC_INPUT, "input"),
-      to: ConnectionTargetDefinition::new("logger", "input"),
+      from: Target::new(SCHEMATIC_INPUT, "input"),
+      to: Target::new("logger", "input"),
       default: None,
     });
     schematic_def.connections.push(ConnectionDefinition {
-      from: ConnectionTargetDefinition::new("logger", "output"),
-      to: ConnectionTargetDefinition::new(SCHEMATIC_OUTPUT, "output"),
+      from: Target::new("logger", "output"),
+      to: Target::new(SCHEMATIC_OUTPUT, "output"),
       default: None,
     });
     let model = SchematicModel::try_from(schematic_def)?;
     equals!(model.get_name(), schematic_name);
 
     let upstream = model
-      .get_upstream(&ConnectionTargetDefinition::new(
-        "logger".to_owned(),
-        "input".to_owned(),
-      ))
+      .get_upstream(&Target::new("logger".to_owned(), "input".to_owned()))
       .unwrap();
-    equals!(upstream.reference, SCHEMATIC_INPUT);
-    equals!(upstream.port, "input");
+    equals!(upstream.get_reference(), SCHEMATIC_INPUT);
+    equals!(upstream.get_port(), "input");
 
     Ok(())
   }
@@ -394,8 +427,8 @@ mod tests {
     let schematic_name = "Test";
     let mut schematic_def = new_schematic(schematic_name);
     schematic_def.connections.push(ConnectionDefinition {
-      from: ConnectionTargetDefinition::new("dangling1", "output"),
-      to: ConnectionTargetDefinition::new(SCHEMATIC_OUTPUT, "output"),
+      from: Target::new("dangling1", "output"),
+      to: Target::new(SCHEMATIC_OUTPUT, "output"),
       default: None,
     });
     let model = SchematicModel::try_from(schematic_def)?;
@@ -411,6 +444,25 @@ mod tests {
         ]
       ))
     );
+
+    Ok(())
+  }
+
+  #[test_env_log::test]
+  fn test_no_upstream() -> Result<()> {
+    let schematic_name = "Test";
+    let mut schematic_def = new_schematic(schematic_name);
+    schematic_def.connections.push(ConnectionDefinition {
+      from: Target::none(),
+      to: Target::new(SCHEMATIC_OUTPUT, "output"),
+      default: Some(serde_json::Value::String("Default string".to_owned())),
+    });
+    let model = SchematicModel::try_from(schematic_def)?;
+    equals!(model.get_name(), schematic_name);
+    let result = Validator::validate_early_errors(&model);
+    equals!(result, Ok(()));
+    let result = Validator::validate_late_errors(&model);
+    equals!(result, Ok(()));
 
     Ok(())
   }
@@ -453,16 +505,14 @@ mod tests {
       "logger".to_owned(),
       ComponentDefinition::new("test-namespace", "log"),
     );
-    schematic_def.connections.push(ConnectionDefinition {
-      from: ConnectionTargetDefinition::new(SCHEMATIC_INPUT, "input"),
-      to: ConnectionTargetDefinition::new("logger", "input"),
-      default: None,
-    });
-    schematic_def.connections.push(ConnectionDefinition {
-      from: ConnectionTargetDefinition::new("logger", "output"),
-      to: ConnectionTargetDefinition::new(SCHEMATIC_OUTPUT, "output"),
-      default: None,
-    });
+    schematic_def.connections.push(ConnectionDefinition::new(
+      Target::new(SCHEMATIC_INPUT, "input"),
+      Target::new("logger", "input"),
+    ));
+    schematic_def.connections.push(ConnectionDefinition::new(
+      Target::new("logger", "output"),
+      Target::new(SCHEMATIC_OUTPUT, "output"),
+    ));
     let mut model = SchematicModel::try_from(schematic_def)?;
     let provider = ProviderModel {
       namespace: "test-namespace".to_owned(),

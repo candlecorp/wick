@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::convert::TryInto;
 
 use futures::future::try_join_all;
 use futures::Future;
@@ -77,8 +76,11 @@ fn handle_schematic(
 
   let model = service.get_state().model.lock()?;
   let connections = model.get_downstream_connections(SCHEMATIC_INPUT);
-  let messages = generate_packets(connections, &tx_id, &payload)?;
+  let input_messages = make_input_packets(connections, &tx_id, &payload)?;
+  let defaults = model.get_defaults();
+  let defaults_messages = make_default_packets(defaults, &tx_id)?;
   drop(model);
+  let messages = concat(vec![input_messages, defaults_messages]);
 
   Ok(async move {
     try_join_all(messages.into_iter().map(|inv| address.send(inv)))
@@ -91,18 +93,36 @@ fn handle_schematic(
   })
 }
 
-fn generate_packets<'a>(
-  first_connections: impl Iterator<Item = &'a ConnectionDefinition>,
+fn make_input_packets<'a>(
+  connections: impl Iterator<Item = &'a ConnectionDefinition>,
   tx_id: &str,
   bytemap: &HashMap<String, Vec<u8>>,
 ) -> Result<Vec<InputMessage>> {
   let mut messages: Vec<InputMessage> = vec![];
-  for conn in first_connections {
-    let bytes = bytemap.get(&conn.from.port).ok_or_else(|| {
+  for conn in connections {
+    let bytes = bytemap.get(conn.from.get_port()).ok_or_else(|| {
       SchematicError::FailedPreRequestCondition(format!("Port {} not found in input", conn.from))
     })?;
     messages.push(InputMessage {
-      connection: conn.try_into()?,
+      connection: conn.clone(),
+      tx_id: tx_id.to_owned(),
+      payload: MessageTransport::MessagePack(bytes.clone()),
+    });
+  }
+
+  Ok(messages)
+}
+
+fn make_default_packets<'a>(
+  connections: impl Iterator<Item = &'a ConnectionDefinition>,
+  tx_id: &str,
+) -> Result<Vec<InputMessage>> {
+  let mut messages: Vec<InputMessage> = vec![];
+  for conn in connections {
+    let json = conn.process_default("")?;
+    let bytes = mp_serialize(&json)?;
+    messages.push(InputMessage {
+      connection: conn.clone(),
       tx_id: tx_id.to_owned(),
       payload: MessageTransport::MessagePack(bytes.clone()),
     });

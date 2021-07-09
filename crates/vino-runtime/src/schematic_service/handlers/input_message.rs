@@ -10,7 +10,7 @@ use crate::schematic_service::default::make_default_transport;
 #[rtype(result = "Result<(), SchematicError>")]
 pub struct InputMessage {
   pub tx_id: String,
-  pub connection: Connection,
+  pub connection: ConnectionDefinition,
   pub payload: MessageTransport,
 }
 

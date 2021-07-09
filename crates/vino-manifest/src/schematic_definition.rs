@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::collections::HashMap;
 use std::convert::{
   TryFrom,
@@ -10,6 +11,10 @@ use serde::{
   Serialize,
 };
 
+use crate::default::{
+  parse_default,
+  process_default,
+};
 use crate::{
   Error,
   Result,
@@ -62,7 +67,8 @@ impl TryFrom<crate::v0::SchematicManifest> for SchematicDefinition {
         .connections
         .clone()
         .into_iter()
-        .map(|def| def.into())
+        .map(|def| def.try_into())
+        .filter_map(Result::ok)
         .collect(),
       providers: manifest
         .providers
@@ -70,7 +76,7 @@ impl TryFrom<crate::v0::SchematicManifest> for SchematicDefinition {
         .into_iter()
         .map(|def| def.into())
         .collect(),
-      constraints: manifest.constraints.clone().into_iter().collect(),
+      constraints: manifest.constraints.into_iter().collect(),
     })
   }
 }
@@ -203,25 +209,123 @@ impl From<crate::v0::ProviderKind> for ProviderKind {
   }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 /// A [ConnectionDefinition] defines the link between an upstream and downstream port as well as
 /// the default value to use in the case of an exception.
+#[must_use]
 pub struct ConnectionDefinition {
   /// The upstream [ConnectionTargetDefinition] (port)
   pub from: ConnectionTargetDefinition,
   /// The downstream [ConnectionTargetDefinition] (port)
   pub to: ConnectionTargetDefinition,
   /// The default data to use in the case of an Error, represented as a JSON string.
-  pub default: Option<String>,
+  pub default: Option<serde_json::Value>,
 }
 
-impl From<crate::v0::ConnectionDefinition> for ConnectionDefinition {
-  fn from(def: crate::v0::ConnectionDefinition) -> Self {
-    ConnectionDefinition {
-      from: def.from.into(),
-      to: def.to.into(),
-      default: def.default,
+impl ConnectionDefinition {
+  pub fn new(from: ConnectionTargetDefinition, to: ConnectionTargetDefinition) -> Self {
+    Self {
+      from,
+      to,
+      default: None,
     }
+  }
+  #[must_use]
+  pub fn has_default(&self) -> bool {
+    self.default.is_some()
+  }
+  pub fn process_default(&self, err: &str) -> Result<Cow<serde_json::Value>> {
+    let json = self
+      .default
+      .as_ref()
+      .ok_or_else(|| Error::NoDefault(self.clone()))?;
+    process_default(Cow::Borrowed(json), err)
+      .map_err(|e| Error::DefaultsError(self.from.clone(), self.to.clone(), e))
+  }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
+/// A [ConnectionTargetDefinition] is a wrapper around an [Option<PortReference>].
+#[must_use]
+pub struct ConnectionTargetDefinition {
+  target: Option<PortReference>,
+}
+
+impl ConnectionTargetDefinition {
+  /// Constructor for a [PortReference]. Used mostly in test code.
+  pub fn new<T: AsRef<str>, U: AsRef<str>>(reference: T, port: U) -> Self {
+    Self {
+      target: Some(PortReference {
+        reference: reference.as_ref().to_owned(),
+        port: port.as_ref().to_owned(),
+      }),
+    }
+  }
+
+  pub fn none() -> Self {
+    Self { target: None }
+  }
+
+  #[must_use]
+  pub fn is_none(&self) -> bool {
+    self.target.is_none()
+  }
+
+  pub fn from_port(port: PortReference) -> Self {
+    Self { target: Some(port) }
+  }
+  #[must_use]
+  pub fn matches_reference(&self, reference: &str) -> bool {
+    self
+      .target
+      .as_ref()
+      .map_or(false, |p| p.reference == reference)
+  }
+
+  #[must_use]
+  pub fn matches_port(&self, port: &str) -> bool {
+    self.target.as_ref().map_or(false, |p| p.port == port)
+  }
+
+  #[must_use]
+  pub fn get_reference(&self) -> &str {
+    self.target.as_ref().map_or("<None>", |p| &p.reference)
+  }
+  #[must_use]
+  pub fn get_reference_owned(&self) -> String {
+    self
+      .target
+      .as_ref()
+      .map_or("<None>".to_owned(), |p| p.reference.clone())
+  }
+
+  #[must_use]
+  pub fn get_port(&self) -> &str {
+    self.target.as_ref().map_or("<None>", |p| &p.port)
+  }
+
+  #[must_use]
+  pub fn get_port_owned(&self) -> String {
+    self
+      .target
+      .as_ref()
+      .map_or("<None>".to_owned(), |p| p.port.clone())
+  }
+}
+
+impl TryFrom<crate::v0::ConnectionDefinition> for ConnectionDefinition {
+  type Error = Error;
+
+  fn try_from(def: crate::v0::ConnectionDefinition) -> Result<Self> {
+    let from: ConnectionTargetDefinition = def.from.try_into()?;
+    let to: ConnectionTargetDefinition = def.to.try_into()?;
+    let default = match &def.default {
+      Some(json_str) => Some(
+        parse_default(json_str).map_err(|e| Error::DefaultsError(from.clone(), to.clone(), e))?,
+      ),
+      None => None,
+    };
+    Ok(ConnectionDefinition { from, to, default })
   }
 }
 
@@ -231,18 +335,18 @@ impl Display for ConnectionDefinition {
   }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 
-/// A [ConnectionTargetDefinition] is the link to a port for a specific reference of a component.
-pub struct ConnectionTargetDefinition {
-  /// A schematic-wide unique identifier for a [ComponentDefinition]
+/// A [PortReference] is the link to a port for a specific reference of a component.
+pub struct PortReference {
+  /// A schematic-wide unique reference that maps to a [ComponentDefinition]
   pub reference: String,
   /// A port on the referenced [ComponentDefinition]
   pub port: String,
 }
 
-impl ConnectionTargetDefinition {
-  /// Constructor for a [ConnectionTargetDefinition]. Used mostly in test code.
+impl PortReference {
+  /// Constructor for a [PortReference]. Used mostly in test code.
   pub fn new<T: AsRef<str>, U: AsRef<str>>(reference: T, port: U) -> Self {
     Self {
       reference: reference.as_ref().to_owned(),
@@ -251,30 +355,57 @@ impl ConnectionTargetDefinition {
   }
 }
 
-impl<T, U> From<(T, U)> for ConnectionTargetDefinition
+impl Default for PortReference {
+  fn default() -> Self {
+    Self {
+      reference: "<None>".to_owned(),
+      port: "<None>".to_owned(),
+    }
+  }
+}
+
+impl<T, U> From<(T, U)> for PortReference
 where
-  T: Display,
-  U: Display,
+  T: AsRef<str>,
+  U: AsRef<str>,
 {
   fn from((reference, port): (T, U)) -> Self {
-    ConnectionTargetDefinition {
-      reference: reference.to_string(),
-      port: port.to_string(),
+    PortReference {
+      reference: reference.as_ref().to_owned(),
+      port: port.as_ref().to_owned(),
     }
   }
 }
 
 impl Display for ConnectionTargetDefinition {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    let default = PortReference::default();
+    let target = self.target.as_ref().unwrap_or(&default);
+    write!(f, "{}[{}]", target.reference, target.port)
+  }
+}
+
+impl Display for PortReference {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     write!(f, "{}[{}]", self.reference, self.port)
   }
 }
 
-impl From<crate::v0::ConnectionTargetDefinition> for ConnectionTargetDefinition {
+impl From<crate::v0::ConnectionTargetDefinition> for PortReference {
   fn from(def: crate::v0::ConnectionTargetDefinition) -> Self {
-    ConnectionTargetDefinition {
+    PortReference {
       reference: def.reference,
       port: def.port,
     }
+  }
+}
+
+impl TryFrom<Option<crate::v0::ConnectionTargetDefinition>> for ConnectionTargetDefinition {
+  type Error = Error;
+
+  fn try_from(def: Option<crate::v0::ConnectionTargetDefinition>) -> Result<Self> {
+    Ok(ConnectionTargetDefinition {
+      target: def.map(|c| c.into()),
+    })
   }
 }

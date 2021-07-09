@@ -56,12 +56,12 @@ impl TransactionMap {
         locked.receive(output.connection.clone(), output.payload);
         let target = &output.connection.to;
 
-        if target.reference == SCHEMATIC_OUTPUT {
+        if target.matches_reference(SCHEMATIC_OUTPUT) {
           debug!("Received schematic output, pushing immediately...");
           if let Some(payload) = locked.take_from_port(target) {
             ok_or_log!(ready_tx.send(TransactionUpdate::Result(SchematicOutput {
               tx_id: tx_id.clone(),
-              port: target.port.clone(),
+              port: target.get_port_owned(),
               payload,
             })));
           }
@@ -80,12 +80,12 @@ impl TransactionMap {
 
         if locked.is_reference_ready(target) {
           debug!("Reference {} is ready, continuing...", target);
-          let map = locked.take_inputs(&target.reference)?;
+          let map = locked.take_inputs(target.get_reference())?;
           drop(locked);
           ok_or_log!(
             ready_tx.send(TransactionUpdate::Transition(ComponentPayload {
               tx_id: tx_id.clone(),
-              reference: target.reference.clone(),
+              reference: target.get_reference_owned(),
               payload_map: map
             }))
           );
@@ -146,7 +146,7 @@ impl Transaction {
       .ok_or_else(|| TransactionError::UpstreamNotFound(port.clone()))?;
     Ok(self.has_data(port) || !self.is_closed(upstream))
   }
-  fn receive(&mut self, connection: Connection, payload: MessageTransport) {
+  fn receive(&mut self, connection: ConnectionDefinition, payload: MessageTransport) {
     if let MessageTransport::Signal(signal) = payload {
       match signal {
         MessageSignal::Close => {
@@ -180,7 +180,7 @@ impl Transaction {
     locked
       .get_connections()
       .iter()
-      .filter(|conn| conn.to.reference == reference)
+      .filter(|conn| conn.to.matches_reference(reference))
       .map(|conn| conn.to.clone())
       .collect()
   }
@@ -190,12 +190,12 @@ impl Transaction {
     let mut map = HashMap::new();
     for port in ports {
       let message = self.take_from_port(&port).ok_or(InternalError(7001))?;
-      map.insert(port.port, message);
+      map.insert(port.get_port_owned(), message);
     }
     Ok(map)
   }
   fn is_reference_ready(&self, port: &ConnectionTargetDefinition) -> bool {
-    let reference = port.reference.clone();
+    let reference = port.get_reference_owned();
     let ports = self.get_connected_ports(&reference);
     debug!("ref: {}, ports: {:?}", reference, ports);
     self.are_ports_ready(&ports)
@@ -290,17 +290,12 @@ mod tests {
     let model = make_model()?;
 
     let mut transaction = Transaction::new(tx_id, model);
-    let from = ConnectionTargetDefinition {
-      reference: "REF_ID_LOGGER1".into(),
-      port: "vino-v0::log".into(),
-    };
-    let to = ConnectionTargetDefinition {
-      reference: "REF_ID_LOGGER2".into(),
-      port: "vino-v0::log".into(),
-    };
+    let from = ConnectionTargetDefinition::new("REF_ID_LOGGER1", "vino-v0::log");
+    let to = ConnectionTargetDefinition::new("REF_ID_LOGGER2", "vino-v0::log");
+
     trace!("pushing to port");
     transaction.receive(
-      Connection::new(from.clone(), to.clone()),
+      ConnectionDefinition::new(from.clone(), to.clone()),
       Packet::V0(Payload::MessagePack(vec![])).into(),
     );
     assert!(transaction.is_port_ready(&to));
@@ -311,14 +306,14 @@ mod tests {
       Some(Packet::V0(Payload::MessagePack(vec![])).into())
     );
     transaction.receive(
-      Connection::new(from, to),
+      ConnectionDefinition::new(from, to),
       Packet::V0(Payload::Exception("oh no".into())).into(),
     );
     Ok(())
   }
 
-  fn conn(from_name: &str, from_port: &str, to_name: &str, to_port: &str) -> Connection {
-    Connection {
+  fn conn(from_name: &str, from_port: &str, to_name: &str, to_port: &str) -> ConnectionDefinition {
+    ConnectionDefinition {
       from: ConnectionTargetDefinition::new(from_name, from_port),
       to: ConnectionTargetDefinition::new(to_name, to_port),
       default: None,

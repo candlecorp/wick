@@ -20,7 +20,7 @@ impl Handler<OutputMessage> for SchematicService {
     let addr = ctx.address();
 
     let task = async move {
-      let to_message = |connection: Connection| InputMessage {
+      let to_message = |connection: ConnectionDefinition| InputMessage {
         tx_id: tx_id.clone(),
         connection,
         payload: data.clone(),

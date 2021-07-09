@@ -8,9 +8,9 @@ use crate::models::provider_model::{
   initialize_native_provider,
   initialize_provider,
 };
+use crate::models::validator::Validator;
 use crate::schematic_service::State;
 use crate::transaction::TransactionMap;
-use crate::validator::Validator;
 
 #[derive(Message, Debug)]
 #[rtype(result = "Result<(), SchematicError>")]

@@ -22,15 +22,12 @@ impl Handler<ShortCircuit> for SchematicService {
 
     trace!("Output ports for {} : {:?}", reference, outputs);
 
-    let downstreams: Vec<Connection> = outputs
+    let downstreams: Vec<ConnectionDefinition> = outputs
       .iter()
       .flat_map(|port| self.get_port_connections(port))
       .collect();
 
-    trace!(
-      "Connections to short {:?}",
-      Connection::print_all(&downstreams)
-    );
+    trace!("Connections to short {:?}", downstreams);
 
     let outputs: Vec<OutputMessage> = downstreams
       .into_iter()

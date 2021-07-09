@@ -1,5 +1,10 @@
 use thiserror::Error;
 
+use crate::{
+  ConnectionDefinition,
+  ConnectionTargetDefinition,
+};
+
 // type BoxedSyncSendError = Box<dyn std::error::Error + Sync + std::marker::Send>;
 
 /// Vino Manifest's Errors
@@ -32,6 +37,18 @@ pub enum ManifestError {
   /// Error deserializing YAML manifest
   #[error(transparent)]
   YamlError(#[from] serde_yaml::Error),
+
+  /// Default was requested when none present
+  #[error("Connection '{0}' does not have a default but one was requested")]
+  NoDefault(ConnectionDefinition),
+
+  /// Error deserializing default value
+  #[error("Error deserializing default value for connection: {0}=>{1} - Error was: '{2}'")]
+  DefaultsError(
+    ConnectionTargetDefinition,
+    ConnectionTargetDefinition,
+    serde_json::Error,
+  ),
 
   /// Miscellaneous error
   #[error("General error : {0}")]

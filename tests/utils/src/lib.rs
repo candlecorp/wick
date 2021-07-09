@@ -84,7 +84,7 @@ pub async fn vinoc_invoke(
       name,
       &serde_json::to_string(&data)?,
       "--port",
-      "54321",
+      "8060",
       "--trace",
     ])
     .stderr(Stdio::inherit())

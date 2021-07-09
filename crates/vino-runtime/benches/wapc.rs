@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 
-use actix::prelude::*;
 use criterion::{
   black_box,
   criterion_main,

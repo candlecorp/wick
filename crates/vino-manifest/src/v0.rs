@@ -222,9 +222,11 @@ pub struct ComponentDefinition {
 /// A connection between components
 pub struct ConnectionDefinition {
   /// The originating component (upstream)
-  pub from: ConnectionTargetDefinition,
+  #[serde(default)]
+  pub from: Option<ConnectionTargetDefinition>,
   /// The destination component (downstream)
-  pub to: ConnectionTargetDefinition,
+  #[serde(default)]
+  pub to: Option<ConnectionTargetDefinition>,
   /// The default value to provide in the event of an upstream Error or Exception
   #[serde(default)]
   pub default: Option<String>,

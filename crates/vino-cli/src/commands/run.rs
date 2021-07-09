@@ -35,7 +35,7 @@ pub struct RunCommand {
 }
 
 pub async fn handle_command(command: RunCommand) -> Result<String> {
-  let mut logging = command.logging.clone();
+  let mut logging = command.logging;
   if !(command.info || command.logging.trace || command.logging.debug) {
     logging.quiet = true;
   }

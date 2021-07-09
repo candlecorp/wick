@@ -16,8 +16,8 @@ use tokio::sync::mpsc::{
 
 use crate::dev::prelude::*;
 use crate::error::SchematicError;
+use crate::models::validator::Validator;
 use crate::transaction::TransactionMap;
-use crate::validator::Validator;
 
 type Result<T> = std::result::Result<T, SchematicError>;
 
@@ -138,10 +138,10 @@ impl SchematicService {
     lock.get_outputs(reference)
   }
 
-  fn get_port_connections(&self, port: &ConnectionTargetDefinition) -> Vec<Connection> {
+  fn get_port_connections(&self, port: &ConnectionTargetDefinition) -> Vec<ConnectionDefinition> {
     let state = self.get_state();
     let lock = state.model.lock().unwrap();
-    lock.get_port_connections(port)
+    lock.get_port_connections(port).cloned().collect()
   }
 
   fn update_network_provider(&mut self, model: ProviderModel) {
