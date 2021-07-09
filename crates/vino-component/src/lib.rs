@@ -104,8 +104,10 @@ pub enum Error {
   Exception(String),
   /// Packet was an Error
   Error(String),
-  /// An internal error occurred
-  InternalError(vino_codec::Error),
+  /// An error deserializing from MessagePack
+  DeserializationError(vino_codec::Error),
+  /// An Internal error given when the packet contained a message not destined for a consumer
+  InternalError,
 }
 
 impl std::fmt::Display for Error {
@@ -114,7 +116,8 @@ impl std::fmt::Display for Error {
       Error::Invalid => write!(f, "Invalid"),
       Error::Exception(v) => write!(f, "{}", v),
       Error::Error(v) => write!(f, "{}", v),
-      Error::InternalError(e) => write!(f, "{}", e.to_string()),
+      Error::DeserializationError(e) => write!(f, "{}", e.to_string()),
+      Error::InternalError => write!(f, "Internal Error"),
     }
   }
 }
@@ -129,10 +132,12 @@ impl Packet {
         v0::Payload::Invalid => Err(Error::Invalid),
         v0::Payload::Exception(v) => Err(Error::Exception(v)),
         v0::Payload::Error(v) => Err(Error::Error(v)),
-        v0::Payload::MessagePack(buf) => deserialize::<T>(&buf).map_err(Error::InternalError),
-        v0::Payload::Close => todo!(),
-        v0::Payload::OpenBracket => todo!(),
-        v0::Payload::CloseBracket => todo!(),
+        v0::Payload::MessagePack(buf) => {
+          deserialize::<T>(&buf).map_err(Error::DeserializationError)
+        }
+        v0::Payload::Close => Err(Error::InternalError),
+        v0::Payload::OpenBracket => Err(Error::InternalError),
+        v0::Payload::CloseBracket => Err(Error::InternalError),
       },
     }
   }

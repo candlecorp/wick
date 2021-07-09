@@ -13,21 +13,28 @@ impl Handler<OutputMessage> for SchematicService {
   type Result = ResponseActFuture<Self, Result<(), SchematicError>>;
 
   fn handle(&mut self, msg: OutputMessage, ctx: &mut Context<Self>) -> Self::Result {
-    trace!("Output ready on {}", msg.port);
-    let defs = self.get_port_connections(&msg.port);
-    let tx_id = msg.tx_id;
-    let data = msg.payload;
+    let log_prefix = format!("OutputMessage:{}:", msg.port);
+
+    let defs = if msg.port.matches_port(crate::COMPONENT_ERROR) {
+      error!("{} Component-wide error received", log_prefix);
+      self.get_downstream_connections(msg.port.get_reference())
+    } else {
+      trace!("{} Output ready", log_prefix);
+      self.get_port_connections(&msg.port)
+    };
+
     let addr = ctx.address();
 
     let task = async move {
-      let to_message = |connection: ConnectionDefinition| InputMessage {
-        tx_id: tx_id.clone(),
-        connection,
-        payload: data.clone(),
-      };
-
       join_or_err(
-        defs.into_iter().map(to_message).map(|ips| addr.send(ips)),
+        defs
+          .into_iter()
+          .map(|connection| InputMessage {
+            tx_id: msg.tx_id.clone(),
+            connection,
+            payload: msg.payload.clone(),
+          })
+          .map(|ips| addr.send(ips)),
         6001,
       )
       .await?;

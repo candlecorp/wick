@@ -25,18 +25,15 @@ impl Network {
   }
   pub async fn init(&self) -> Result<()> {
     let kp = KeyPair::new_service();
-    let seed = kp.seed().map_err(|_| InternalError(5103))?;
-    self
-      .addr
-      .send(Initialize {
-        network_id: self.id.clone(),
-        seed,
-        network: self.definition.clone(),
-        allowed_insecure: self.allowed_insecure.clone(),
-        allow_latest: self.allow_latest,
-      })
-      .await
-      .map_err(|_| InternalError(5102))??;
+    let seed = log_ie!(kp.seed(), 5103)?;
+    let init = Initialize {
+      network_id: self.id.clone(),
+      seed,
+      network: self.definition.clone(),
+      allowed_insecure: self.allowed_insecure.clone(),
+      allow_latest: self.allow_latest,
+    };
+    log_ie!(self.addr.send(init).await, 5102)??;
     Ok(())
   }
   pub async fn request<T, U>(
@@ -64,12 +61,16 @@ impl Network {
       Entity::Schematic(schematic.as_ref().to_owned()),
       payload,
     );
-    let response = self
-      .addr
-      .send(invocation)
-      .timeout(Duration::from_secs(10))
-      .await
-      .map_err(|_| InternalError(5101))?;
+
+    let response = log_ie!(
+      self
+        .addr
+        .send(invocation)
+        .timeout(Duration::from_secs(10))
+        .await,
+      5101
+    )?;
+
     trace!(
       "result for {} took {} μs",
       schematic.as_ref().to_owned(),

@@ -18,6 +18,7 @@ use serde::{
 };
 use tokio::sync::mpsc::UnboundedReceiver;
 use uuid::Uuid;
+use vino_rpc::port::PacketWrapper;
 use vino_wascap::{
   Claims,
   KeyPair,
@@ -31,6 +32,16 @@ pub struct OutputPacket {
   pub port: String,
   pub invocation_id: String,
   pub payload: Packet,
+}
+
+impl OutputPacket {
+  pub fn from_wrapper(wrapper: PacketWrapper, invocation_id: String) -> Self {
+    Self {
+      port: wrapper.port,
+      payload: wrapper.packet,
+      invocation_id,
+    }
+  }
 }
 
 /// An invocation for a component, port, or schematic

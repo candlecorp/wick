@@ -22,66 +22,54 @@ type Result<T> = std::result::Result<T, TransactionError>;
 #[derive(Debug)]
 pub(crate) struct TransactionMap {
   model: Arc<Mutex<SchematicModel>>,
-  map: HashMap<String, Arc<Mutex<Transaction>>>,
 }
 
 impl TransactionMap {
   pub(crate) fn new(model: Arc<Mutex<SchematicModel>>) -> Self {
-    Self {
-      model,
-      map: HashMap::new(),
-    }
+    Self { model }
   }
   pub(crate) fn new_transaction(
     &mut self,
     tx_id: String,
     mut rx: UnboundedReceiver<InputMessage>,
   ) -> UnboundedReceiver<TransactionUpdate> {
-    let transaction = Arc::new(Mutex::new(Transaction::new(
-      tx_id.clone(),
-      self.model.clone(),
-    )));
-    self.map.insert(tx_id.clone(), transaction.clone());
+    let mut transaction = Transaction::new(tx_id.clone(), self.model.clone());
+
     let (ready_tx, ready_rx) = unbounded_channel::<TransactionUpdate>();
+
     tokio::spawn(async move {
-      trace!("Waiting for outputs on tx {}", tx_id);
+      let log_prefix = format!("OutHandler:{}:", tx_id);
+      trace!("{} created", log_prefix);
       while let Some(output) = rx.recv().await {
-        trace!(
-          "Received message for connection {} on tx {} : {:?} ",
-          output.connection,
-          tx_id,
-          output.payload
-        );
-        let mut locked = transaction.lock()?;
-        locked.receive(output.connection.clone(), output.payload);
+        trace!("{} Received output for {}", log_prefix, output.connection,);
+        transaction.receive(output.connection.clone(), output.payload);
         let target = &output.connection.to;
+        let port = output.connection.to.get_port();
 
         if target.matches_reference(SCHEMATIC_OUTPUT) {
-          debug!("Received schematic output, pushing immediately...");
-          if let Some(payload) = locked.take_from_port(target) {
+          trace!("{} Received schematic output for {}", log_prefix, port,);
+
+          if let Some(payload) = transaction.take_from_port(target) {
             ok_or_log!(ready_tx.send(TransactionUpdate::Result(SchematicOutput {
               tx_id: tx_id.clone(),
-              port: target.get_port_owned(),
+              port: port.to_owned(),
               payload,
             })));
           }
-          for port in &locked.output_ports {
-            if locked.has_active_upstream(port)? {
-              debug!("Schematic still waiting for upstreams to finish");
+
+          for port in &transaction.output_ports {
+            if transaction.has_active_upstream(port)? {
+              trace!("{} Still waiting for upstreams to finish", log_prefix);
               continue;
             }
           }
           // If all connections to the schematic outputs are closed, then finish up.
-          debug!("Sending schematic done");
-          ok_or_log!(ready_tx.send(TransactionUpdate::Done(tx_id.clone())));
           rx.close();
-          continue;
-        }
+          ok_or_log!(ready_tx.send(TransactionUpdate::Done(tx_id.clone())));
+        } else if transaction.is_target_ready(target) {
+          trace!("{} Reference {} is ready", log_prefix, target);
 
-        if locked.is_reference_ready(target) {
-          debug!("Reference {} is ready, continuing...", target);
-          let map = locked.take_inputs(target.get_reference())?;
-          drop(locked);
+          let map = transaction.take_inputs(target)?;
           ok_or_log!(
             ready_tx.send(TransactionUpdate::Transition(ComponentPayload {
               tx_id: tx_id.clone(),
@@ -89,13 +77,12 @@ impl TransactionMap {
               payload_map: map
             }))
           );
-        } else {
-          debug!("Reference is not ready, waiting...");
         }
       }
-      debug!("Transaction {} finishing up", tx_id);
+      debug!("{} is finishing", log_prefix);
       Ok!(())
     });
+
     ready_rx
   }
 }
@@ -150,7 +137,6 @@ impl Transaction {
     if let MessageTransport::Signal(signal) = payload {
       match signal {
         MessageSignal::Close => {
-          trace!("Port {} closing", connection.from);
           self
             .port_statuses
             .insert(connection.from, PortStatus::Closed);
@@ -159,7 +145,6 @@ impl Transaction {
         MessageSignal::CloseBracket => panic!("Not implemented"),
       }
     } else {
-      debug!("Pushing to port buffer {}", connection.to);
       self.buffermap.push(connection.to, payload);
     }
   }
@@ -184,8 +169,11 @@ impl Transaction {
       .map(|conn| conn.to.clone())
       .collect()
   }
-  fn take_inputs(&mut self, reference: &str) -> Result<HashMap<String, MessageTransport>> {
-    let ports = self.get_connected_ports(reference);
+  fn take_inputs(
+    &mut self,
+    target: &ConnectionTargetDefinition,
+  ) -> Result<HashMap<String, MessageTransport>> {
+    let ports = self.get_connected_ports(target.get_reference());
 
     let mut map = HashMap::new();
     for port in ports {
@@ -194,14 +182,12 @@ impl Transaction {
     }
     Ok(map)
   }
-  fn is_reference_ready(&self, port: &ConnectionTargetDefinition) -> bool {
+  fn is_target_ready(&self, port: &ConnectionTargetDefinition) -> bool {
     let reference = port.get_reference_owned();
     let ports = self.get_connected_ports(&reference);
-    debug!("ref: {}, ports: {:?}", reference, ports);
     self.are_ports_ready(&ports)
   }
   fn is_port_ready(&self, port: &ConnectionTargetDefinition) -> bool {
-    debug!("Is port {} ready? {}", port, self.buffermap.has_data(port));
     self.buffermap.has_data(port)
   }
   fn are_ports_ready(&self, ports: &[ConnectionTargetDefinition]) -> bool {
@@ -335,27 +321,31 @@ mod tests {
       payload: MessageTransport::Test("input payload".to_owned()),
       tx_id: get_uuid(),
     }));
+
     // Second closes the schematic input
     ok_or_log!(tx.send(InputMessage {
       connection: conn(SCHEMATIC_INPUT, "input", "REF_ID_LOGGER", "input"),
-
       payload: MessageTransport::Signal(MessageSignal::Close),
       tx_id: get_uuid(),
     }));
+
     // Third simulates output from the component
     ok_or_log!(tx.send(InputMessage {
       connection: conn("REF_ID_LOGGER", "output", SCHEMATIC_OUTPUT, "output"),
       payload: MessageTransport::Test("output payload".to_owned()),
       tx_id: get_uuid(),
     }));
+
     // Fourth closes the output
     ok_or_log!(tx.send(InputMessage {
       connection: conn("REF_ID_LOGGER", "output", SCHEMATIC_OUTPUT, "output"),
       payload: MessageTransport::Signal(MessageSignal::Close),
       tx_id: get_uuid(),
     }));
+
     // Transaction should close automatically after this because all ports
     // are drained and closed.
+
     let handle = tokio::spawn(async move {
       let mut msgs = vec![];
       while let Some(payloadmsg) = ready_rx.recv().await {

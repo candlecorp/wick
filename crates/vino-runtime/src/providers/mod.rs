@@ -13,6 +13,8 @@ use vino_rpc::{
 use crate::dev::prelude::*;
 use crate::error::ComponentError;
 
+// This is mostly unused right now except for in tests. The goal was to migrate away
+// from actix but that has been put on hold until there are more integration tests.
 #[derive(Debug)]
 pub(crate) enum ProviderRequest {
   Invoke(Invocation),

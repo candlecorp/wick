@@ -148,13 +148,13 @@ impl PortStream {
 #[doc(hidden)]
 #[must_use]
 #[derive(Debug, Clone)]
-pub struct PortPacket {
+pub struct PacketWrapper {
   pub port: String,
   pub packet: Packet,
 }
 
 impl Stream for PortStream {
-  type Item = PortPacket;
+  type Item = PacketWrapper;
 
   fn poll_next(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
     let mut all_closed = true;
@@ -166,7 +166,7 @@ impl Stream for PortStream {
             if payload == Packet::V0(ComponentPayload::Close) {
               port.close();
             }
-            Poll::Ready(Some(PortPacket {
+            Poll::Ready(Some(PacketWrapper {
               port: port.name.clone(),
               packet: payload,
             }))

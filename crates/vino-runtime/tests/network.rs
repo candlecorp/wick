@@ -153,6 +153,24 @@ async fn wapc_component() -> TestResult<()> {
 }
 
 #[test_env_log::test(actix_rt::test)]
+async fn bad_wapc_component() -> TestResult<()> {
+  let (network, _) = init_network_from_yaml("./manifests/bad-wapc-component.yaml").await?;
+
+  let data = hashmap! {
+      "input" => "1234567890",
+  };
+
+  let mut result = network
+    .request("schematic", Entity::test("bad_wapc_component"), &data)
+    .await?;
+
+  let output: MessageTransport = result.remove("output").unwrap();
+  trace!("output: {:?}", output);
+  assert!(output.is_err());
+  Ok(())
+}
+
+#[test_env_log::test(actix_rt::test)]
 async fn short_circuit() -> TestResult<()> {
   let (network, _) = init_network_from_yaml("./manifests/short-circuit.yaml").await?;
 

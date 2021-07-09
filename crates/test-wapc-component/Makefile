@@ -47,7 +47,7 @@ SOURCE_FILES:=$(wildcard src/*.rs)
 GENERATED_HEADER := /* This is generated, do not edit by hand */
 
 # Files to clean up on make clean
-CLEAN_FILES := $(GENERATED_FILES) $(BUILD_ARTIFACT) $(SIGNED_ARTIFACT)
+CLEAN_FILES := $(GENERATED_FILES) $(BUILD_ARTIFACT) $(SIGNED_ARTIFACT) ./src/components/mod.rs
 CLEAN_DIRS :=
 
 $(SIGNED_ARTIFACT): $(BUILD_ARTIFACT) ./interface.json
@@ -73,30 +73,27 @@ $(ARTIFACT_DIR):
 	mkdir -p $(ARTIFACT_DIR)
 
 $(GENERATED_MODULE): $(SCHEMAS)
-	vino-codegen rust wapc-integration $(SCHEMA_DIR) -f -o $@
+	vino-codegen rust wapc-integration $(SCHEMA_DIR) -o $@
 	rustfmt $@
 
 ./interface.json: $(SCHEMAS)
-	vino-codegen json interface $(SCHEMA_DIR) -o interface.json -f
+	vino-codegen json interface "$(CRATE_NAME)" $(SCHEMA_DIR) -o interface.json -f
 
-./src/lib.rs: $(SCHEMAS)
-	vino-codegen rust wapc-lib $(SCHEMA_DIR) -o $@
+./src/components/mod.rs: $(SCHEMAS)
+	vino-codegen rust wapc-component-module $(SCHEMA_DIR) -o $@ -f
 	rustfmt $@
 
-
-$(BUILD_ARTIFACT): ./src/lib.rs $(ARTIFACT_DIR) $(SOURCE_FILES) $(GENERATED_MODULE) $($(GENERATED_COMPONENTS))
+$(BUILD_ARTIFACT): ./src/lib.rs ./src/components/mod.rs $(ARTIFACT_DIR) $(SOURCE_FILES) $(GENERATED_MODULE) $(GENERATED_COMPONENTS)
 	cargo build --target wasm32-unknown-unknown --release
 	cp $(WORKSPACE_ROOT)/target/wasm32-unknown-unknown/release/$(CRATE_FS_NAME).wasm build/
 
-all: build
-
-build: $(BUILD_ARTIFACT)
+all: $(SIGNED_ARTIFACT)
 
 clean:
 	rm -f $(CLEAN_FILES)
 	# rmdir $(CLEAN_DIRS)
 
-codegen: ./interface.json ./src/lib.rs $(GENERATED_MODULE)
+codegen: ./interface.json  $(GENERATED_COMPONENTS) $(GENERATED_MODULE) ./src/lib.rs
 
 doc:
 

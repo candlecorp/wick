@@ -6,6 +6,7 @@ use std::sync::{
 use std::time::Instant;
 
 use tokio::sync::mpsc::unbounded_channel;
+use vino_component::v0;
 use vino_provider::ComponentSignature;
 use vino_rpc::port::{
   Port,
@@ -36,7 +37,7 @@ pub(crate) struct WapcProviderService {
 }
 
 struct State {
-  guest_module: Arc<Mutex<WapcHost>>,
+  wapc_host: Arc<Mutex<WapcHost>>,
   claims: Claims<ComponentClaims>,
 }
 
@@ -107,14 +108,14 @@ impl Handler<Initialize> for WapcProviderService {
 }
 
 fn perform_initialization(
-  me: &mut WapcProviderService,
+  this: &mut WapcProviderService,
   ctx: &mut Context<WapcProviderService>,
   msg: Initialize,
 ) -> Result<String> {
   let buf = msg.bytes;
   let actor = WapcModule::from_slice(&buf)?;
   let claims = actor.token.claims.clone();
-  let jwt = actor.token.jwt.clone();
+  let jwt = actor.token.jwt;
 
   // Ensure that the JWT we found on this actor is valid, not expired, can be used,
   // has a verified signature, etc.
@@ -149,7 +150,7 @@ fn perform_initialization(
 
   let map = invocation_map.clone();
 
-  let guest = WapcHost::new(Box::new(engine), move |_id, inv_id, port, _op, payload| {
+  let wapc_result = WapcHost::new(Box::new(engine), move |_id, inv_id, port, _op, payload| {
     let _kp = keypair_from_seed(&seed).unwrap();
     debug!("Payload WaPC host callback: {:?}", payload);
 
@@ -159,38 +160,32 @@ fn perform_initialization(
       error!("Could not find invocation map for {}", inv_id);
       return Ok(vec![]);
     }
-    let sender = senders.unwrap().get(port);
-    if sender.is_none() {
-      error!(
-        "Could not get port sender for {} on transaction {}",
-        port, inv_id
-      );
-      return Ok(vec![]);
+    match senders.unwrap().get(port) {
+      Some(sender) => {
+        sender.send_message(payload.into());
+      }
+      None => {
+        error!(
+          "Could not get port sender for {} on transaction {}",
+          port, inv_id
+        );
+      }
     }
-    let port = sender.unwrap();
-    let packet: Packet = payload.into();
-    port.send_message(packet);
     Ok(vec![])
   });
 
-  match guest {
-    Ok(g) => {
-      me.invocation_map = map;
-      me.state = Some(State {
+  match wapc_result {
+    Ok(wapc_host) => {
+      this.invocation_map = map;
+      this.state = Some(State {
         claims: claims.clone(),
-        guest_module: Arc::new(Mutex::new(g)),
+        wapc_host: Arc::new(Mutex::new(wapc_host)),
       });
-      info!(
-        "Actor {} initialized",
-        &me.state.as_ref().unwrap().claims.subject
-      );
+      info!("Component {} initialized", claims.subject);
       Ok(claims.subject)
     }
     Err(_e) => {
-      error!(
-        "Failed to create a WebAssembly host for actor {}",
-        actor.token.claims.subject
-      );
+      error!("Error creating WebAssembly host for {}", claims.subject);
       ctx.stop();
       Err(ComponentError::WapcError)
     }
@@ -250,7 +245,7 @@ impl Handler<Invocation> for WapcProviderService {
 
     let state = self.state.as_ref().unwrap();
     let invocation_map = self.invocation_map.clone();
-    let guest_module = state.guest_module.clone();
+    let guest_module = state.wapc_host.clone();
     let payload = actix_ensure_ok!(mp_serialize((inv_id.clone(), message)).map_err(|e| {
       InvocationResponse::error(
         tx_id.clone(),
@@ -260,55 +255,61 @@ impl Handler<Invocation> for WapcProviderService {
 
     let request = async move {
       let invocation_id = inv_id.clone();
+      let log_prefix = format!("WaPC '{}':", component);
 
       let now = Instant::now();
       let mut locked = invocation_map.lock().unwrap();
-      let mut receiver = locked.new_invocation(inv_id, &component);
+      let mut output_rx = locked.new_invocation(inv_id, &component);
       drop(locked);
 
       let guest_module = guest_module.lock().unwrap();
-      match guest_module.call(&component, &payload) {
-        Ok(bytes) => {
-          debug!("Actor call took {} μs", now.elapsed().as_micros());
-          trace!("Actor responded with {:?}", bytes);
-        }
-        Err(e) => {
-          error!("Error invoking actor: {} (from {})", e, target);
-          debug!("Message: {:?}", &payload);
-        }
+      let call_result = guest_module.call(&component, &payload);
+      trace!("{} call took {} μs", log_prefix, now.elapsed().as_micros());
+      let (stream_tx, stream_rx) = unbounded_channel();
+
+      if let Err(e) = call_result {
+        let msg = format!("Error invoking actor: {} (from {})", e, target);
+        error!("{} {}", log_prefix, msg);
+        debug!("Message: {:?}", &payload);
+
+        let mut locked = invocation_map.lock().unwrap();
+        locked.finish_invocation(&invocation_id);
+        drop(locked);
+
+        ok_or_log!(stream_tx.send(OutputPacket {
+          invocation_id,
+          payload: Packet::V0(v0::Payload::Error(msg)),
+          port: crate::COMPONENT_ERROR.to_owned(),
+        }));
+      } else {
+        tokio::spawn(
+          async move {
+            trace!("{} output handler spawned", log_prefix);
+            loop {
+              let next = output_rx.next().await;
+              if next.is_none() {
+                break;
+              }
+
+              let output = next.unwrap();
+              trace!("{} got output on [{}]", log_prefix, output.port);
+              let packet = OutputPacket::from_wrapper(output, invocation_id.clone());
+              if let Err(e) = stream_tx.send(packet) {
+                error!("{} Error sending to channel {}", log_prefix, e.to_string());
+                break;
+              }
+            }
+            trace!("{} output handler finished", log_prefix);
+            invocation_id
+          }
+          .then(|inv_id| async move {
+            let mut locked = invocation_map.lock().unwrap();
+            locked.finish_invocation(&inv_id);
+          }),
+        );
       }
 
-      let (tx, rx) = unbounded_channel();
-      actix::spawn(async move {
-        loop {
-          trace!("Provider component {} waiting for output", component);
-          let next = receiver.next().await;
-          if next.is_none() {
-            break;
-          }
-
-          let output = next.unwrap();
-          trace!(
-            "Native actor {} got output on port [{}]",
-            component,
-            output.port
-          );
-          match tx.send(OutputPacket {
-            port: output.port.clone(),
-            payload: output.packet,
-            invocation_id: invocation_id.clone(),
-          }) {
-            Ok(_) => {
-              trace!("Sent output to port '{}' ", output.port);
-            }
-            Err(e) => {
-              error!("Error sending output on channel {}", e.to_string());
-              break;
-            }
-          }
-        }
-      });
-      InvocationResponse::stream(tx_id, rx)
+      InvocationResponse::stream(tx_id, stream_rx)
     };
     ActorResult::reply_async(request.into_actor(self))
   }
@@ -333,13 +334,18 @@ impl Sender for OutputSender {
 }
 
 #[derive(Default)]
-pub(crate) struct InvocationMap {
+struct InvocationMap {
   components: HashMap<String, ComponentSignature>,
-  map: HashMap<String, HashMap<String, OutputSender>>,
+  map: HashMap<String, InvocationMetadata>,
+}
+
+struct InvocationMetadata {
+  started: Instant,
+  portmap: HashMap<String, OutputSender>,
 }
 
 impl InvocationMap {
-  pub(crate) fn new(components: Vec<ComponentSignature>) -> Self {
+  fn new(components: Vec<ComponentSignature>) -> Self {
     let components = components
       .into_iter()
       .map(|c| (c.name.clone(), c))
@@ -352,20 +358,32 @@ impl InvocationMap {
 
   pub(crate) fn get(&self, inv_id: &str) -> Option<&HashMap<String, OutputSender>> {
     trace!("Getting transaction for {:?} in map {:p}", inv_id, self);
-    self.map.get(inv_id)
+    self.map.get(inv_id).map(|metadata| &metadata.portmap)
   }
 
-  pub(crate) fn new_invocation(&mut self, inv_id: String, component: &str) -> PortStream {
-    trace!("Inserting {:?} in map {:p}", inv_id, self);
-    let (tx, rx) = self.make_channel(component);
-    self.map.insert(inv_id, tx);
-    rx
+  fn new_invocation(&mut self, inv_id: String, component: &str) -> PortStream {
+    let (output_tx, output_rx) = self.make_channel(component);
+    self.map.insert(
+      inv_id,
+      InvocationMetadata {
+        portmap: output_tx,
+        started: Instant::now(),
+      },
+    );
+    output_rx
   }
 
-  pub(crate) fn make_channel(
-    &self,
-    component_name: &str,
-  ) -> (HashMap<String, OutputSender>, PortStream) {
+  fn finish_invocation(&mut self, inv_id: &str) {
+    let metadata = self.map.remove(inv_id);
+    if let Some(metadata) = metadata {
+      trace!(
+        "WaPC Invocation took {} μs",
+        metadata.started.elapsed().as_micros()
+      );
+    }
+  }
+
+  fn make_channel(&self, component_name: &str) -> (HashMap<String, OutputSender>, PortStream) {
     let component = self.components.get(component_name).unwrap();
     let outputs: HashMap<String, OutputSender> = component
       .outputs

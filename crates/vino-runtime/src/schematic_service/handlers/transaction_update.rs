@@ -10,34 +10,57 @@ pub(crate) enum TransactionUpdate {
   Done(String),
 }
 
+impl std::fmt::Display for TransactionUpdate {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    let name = match self {
+      TransactionUpdate::Transition(_) => "transition",
+      TransactionUpdate::Result(_) => "result",
+      TransactionUpdate::Done(_) => "done",
+    };
+    f.write_str(name)
+  }
+}
+
 impl Handler<TransactionUpdate> for SchematicService {
   type Result = ActorResult<Self, Result<(), SchematicError>>;
 
   fn handle(&mut self, msg: TransactionUpdate, ctx: &mut Context<Self>) -> Self::Result {
-    trace!("Transaction update: {:?}", msg);
     let addr = ctx.address();
     match msg {
-      TransactionUpdate::Transition(msg) => ActorResult::reply_async(
-        async move { addr.send(msg).await.map_err(|_| InternalError(6011))? }.into_actor(self),
-      ),
-      TransactionUpdate::Result(msg) => ActorResult::reply_async(
-        async move { addr.send(msg).await.map_err(|_| InternalError(6012))? }.into_actor(self),
-      ),
+      TransactionUpdate::Transition(msg) => {
+        trace!(
+          "Transaction:{}: transitioning to {}",
+          msg.tx_id,
+          msg.reference
+        );
+        ActorResult::reply_async(
+          async move { log_ie!(addr.send(msg).await, 6011)? }.into_actor(self),
+        )
+      }
+      TransactionUpdate::Result(msg) => {
+        trace!("Transaction:{}: received result", msg.tx_id);
+        ActorResult::reply_async(
+          async move { log_ie!(addr.send(msg).await, 6012)? }.into_actor(self),
+        )
+      }
       TransactionUpdate::Done(tx_id) => {
+        trace!("Transaction:{}: finished", tx_id);
         let tx = actix_try!(self
           .tx_external
           .get(&tx_id)
           .ok_or_else(|| SchematicError::TransactionNotFound(tx_id.clone())));
 
-        debug!("Sending output on transmitter");
         let output_msg = OutputPacket {
           invocation_id: tx_id.clone(),
           payload: Packet::V0(packet::v0::Payload::Close),
           port: "<system>".to_owned(),
         };
-        match tx.send(output_msg) {
-          Ok(_) => debug!("Sent output to receiver for tx {}", tx_id),
-          Err(e) => warn!("{}", SchematicError::SchematicClosedEarly(e.to_string())),
+        if tx.send(output_msg).is_err() {
+          warn!(
+            "Transaction:{} {}",
+            tx_id,
+            SchematicError::SchematicClosedEarly
+          );
         }
 
         ActorResult::reply(Ok(()))

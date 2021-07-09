@@ -5,10 +5,8 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum ClaimsError {
-  #[error("TODO")]
+  #[error("Invalid module hash")]
   InvalidModuleHash,
-  #[error("TODO")]
-  InvalidAlgorithm,
   #[error(transparent)]
   Utf8Error(#[from] FromUtf8Error),
   #[error(transparent)]

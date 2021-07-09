@@ -61,10 +61,6 @@ impl Actor for SchematicService {
 }
 
 impl SchematicService {
-  pub(crate) fn get_name(&self) -> String {
-    self.get_state().name.clone()
-  }
-
   fn validate_model(&mut self) -> Result<()> {
     let mut model = self.get_state_mut().model.lock()?;
     Validator::validate_late_errors(&model)?;
@@ -142,6 +138,15 @@ impl SchematicService {
     let state = self.get_state();
     let lock = state.model.lock().unwrap();
     lock.get_port_connections(port).cloned().collect()
+  }
+
+  fn get_downstream_connections(&self, reference: &str) -> Vec<ConnectionDefinition> {
+    let state = self.get_state();
+    let lock = state.model.lock().unwrap();
+    lock
+      .get_downstream_connections(reference)
+      .cloned()
+      .collect()
   }
 
   fn update_network_provider(&mut self, model: ProviderModel) {

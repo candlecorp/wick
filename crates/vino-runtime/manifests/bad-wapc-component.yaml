@@ -1,0 +1,23 @@
+---
+schematics:
+  - name: schematic
+    providers:
+      - namespace: wapc
+        kind: WaPC
+        reference: ../test-wapc-component/build/test_component_s.wasm
+    components:
+      error:
+        id: wapc::error
+    connections:
+      - from:
+          reference: <input>
+          port: input
+        to:
+          reference: error
+          port: input
+      - from:
+          reference: error
+          port: output
+        to:
+          reference: <output>
+          port: output

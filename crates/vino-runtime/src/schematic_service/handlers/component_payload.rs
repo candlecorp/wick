@@ -31,18 +31,9 @@ impl Handler<ComponentPayload> for SchematicService {
         }
         payload => {
           let addr = ctx.address();
+          let msg = ShortCircuit::new(tx_id, reference, payload);
           return ActorResult::reply_async(
-            async move {
-              addr
-                .send(ShortCircuit {
-                  payload,
-                  reference,
-                  tx_id,
-                })
-                .await
-                .map_err(|_| InternalError(6010))?
-            }
-            .into_actor(self),
+            async move { log_ie!(addr.send(msg).await, 6010,)? }.into_actor(self),
           );
         }
       }
@@ -60,41 +51,33 @@ impl Handler<ComponentPayload> for SchematicService {
       .ok_or_else(|| SchematicError::ReferenceNotFound(reference.clone())));
 
     let addr = ctx.address();
-    let name = self.get_name();
 
     let task = async move {
       let target = invocation.target.url();
 
-      let response = handler
-        .send(invocation)
-        .await
-        .map_err(|_| InternalError(6009))?;
+      let response = log_ie!(handler.send(invocation).await, 6009)?;
 
       match response {
         InvocationResponse::Stream { tx_id, mut rx } => {
-          trace!(
-            "spawning task to handle output for {}:{}|{}",
-            tx_id,
-            name,
-            target
-          );
+          let log_prefix = format!("Output:{}:{}:", tx_id, target);
+          trace!("{} handler spawned", log_prefix,);
           tokio::spawn(async move {
             while let Some(packet) = rx.next().await {
-              let logmsg = format!("tx: {}, ref: {}, port: {}", tx_id, reference, packet.port);
+              let logmsg = format!("ref: {}, port: {}", reference, packet.port);
               let port = ConnectionTargetDefinition::new(reference.clone(), packet.port);
               let msg = OutputMessage {
                 port,
                 tx_id: tx_id.clone(),
                 payload: packet.payload.into(),
               };
-              match addr.send(msg).await {
-                Ok(_) => {
-                  trace!("Sent ready output to network {}", logmsg);
-                }
-                Err(_) => {
-                  error!("Error sending output {} {}", logmsg, InternalError(6013));
-                }
-              };
+              if addr.send(msg).await.is_err() {
+                error!(
+                  "{} Error sending output {} {}",
+                  log_prefix,
+                  logmsg,
+                  InternalError(6013)
+                );
+              }
             }
             trace!("Task finished");
           });
@@ -102,14 +85,8 @@ impl Handler<ComponentPayload> for SchematicService {
         }
         InvocationResponse::Error { tx_id, msg } => {
           warn!("Tx '{}' short-circuiting '{}': {}", tx_id, reference, msg);
-          addr
-            .send(ShortCircuit {
-              tx_id: tx_id.clone(),
-              reference: reference.clone(),
-              payload: MessageTransport::Error(msg),
-            })
-            .await
-            .map_err(|_| InternalError(6007))?
+          let msg = ShortCircuit::new(tx_id, reference, MessageTransport::Error(msg));
+          log_ie!(addr.send(msg).await, 6007)?
         }
       }
     };

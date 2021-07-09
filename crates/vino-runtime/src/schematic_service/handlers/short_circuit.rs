@@ -9,6 +9,20 @@ pub(crate) struct ShortCircuit {
   pub(crate) payload: MessageTransport,
 }
 
+impl ShortCircuit {
+  pub(crate) fn new<T, U>(tx_id: T, reference: U, payload: MessageTransport) -> Self
+  where
+    T: AsRef<str>,
+    U: AsRef<str>,
+  {
+    Self {
+      tx_id: tx_id.as_ref().to_owned(),
+      reference: reference.as_ref().to_owned(),
+      payload,
+    }
+  }
+}
+
 impl Handler<ShortCircuit> for SchematicService {
   type Result = ResponseActFuture<Self, Result<(), SchematicError>>;
 

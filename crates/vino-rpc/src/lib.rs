@@ -87,7 +87,8 @@ pub mod generated;
 /// Module for the [InvocationServer] implementation
 pub mod invocation_server;
 
-/// TODO
+// TODO Need to get rid of or move this
+#[doc(hidden)]
 pub mod port;
 
 /// Utility and conversion types

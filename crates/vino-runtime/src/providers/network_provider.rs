@@ -5,7 +5,7 @@ use std::sync::{
 };
 
 use async_trait::async_trait;
-use vino_rpc::port::PortPacket;
+use vino_rpc::port::PacketWrapper;
 use vino_rpc::{
   BoxedPacketStream,
   DurationStatistics,
@@ -61,7 +61,7 @@ impl RpcHandler for Provider {
       })
       .await?;
     match result {
-      InvocationResponse::Stream { rx, .. } => Ok(Box::pin(rx.map(|output| PortPacket {
+      InvocationResponse::Stream { rx, .. } => Ok(Box::pin(rx.map(|output| PacketWrapper {
         port: output.port,
         packet: output.payload,
       }))),

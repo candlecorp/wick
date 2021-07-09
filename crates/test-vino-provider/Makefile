@@ -26,14 +26,11 @@ GENERATED_MOD_IMPORTS := $(patsubst $(GENERATED_DIR)/%,pub (crate) mod %;,$(pats
 # Generate WIDL import statements for each of the found WIDL files
 GENERATED_WIDL_IMPORTS := $(patsubst $(SCHEMA_DIR)/%,import * from \"%\"\n,$(patsubst %.widl,%,$(SCHEMAS)))
 
-# Temporary file to house the WIDL imports
-INTERFACE_FILE := ./interface.widl
-
 # The header to prepend to generated files
 GENERATED_HEADER := /* This is generated, do not edit by hand */
 
 # Files to clean up on make clean
-CLEAN_FILES := $(GENERATED_COMPONENTS) $(GENERATED_MODULE_RS) $(COMPONENTS_FACTORY_RS) $(INTERFACE_FILE)
+CLEAN_FILES := $(GENERATED_COMPONENTS) $(GENERATED_MODULE_RS) $(COMPONENTS_FACTORY_RS)
 CLEAN_DIRS := $(GENERATED_DIR)
 
 all: codegen build

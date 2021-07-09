@@ -109,6 +109,11 @@ impl MessageTransport {
     }
   }
 
+  #[must_use]
+  pub fn is_err(&self) -> bool {
+    matches!(self, MessageTransport::Error(_))
+  }
+
   /// Converts a [MessageTransport] into [serde_json::Value] representation of a [JsonOutput]
   #[must_use]
   pub fn into_json(self) -> serde_json::Value {

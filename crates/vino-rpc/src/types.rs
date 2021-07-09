@@ -13,7 +13,7 @@ use vino_transport::message_transport::MessageSignal;
 use vino_transport::MessageTransport;
 
 use crate::generated::vino::component::ComponentKind;
-use crate::port::PortPacket;
+use crate::port::PacketWrapper;
 use crate::rpc::{
   OutputKind,
   OutputSignal,
@@ -121,7 +121,7 @@ pub struct DurationStatistics {
 }
 
 /// The return type of RpcHandler requests
-pub type BoxedPacketStream = Pin<Box<dyn Stream<Item = PortPacket> + Send>>;
+pub type BoxedPacketStream = Pin<Box<dyn Stream<Item = PacketWrapper> + Send>>;
 
 impl From<HostedType> for crate::rpc::Component {
   fn from(v: HostedType) -> Self {
