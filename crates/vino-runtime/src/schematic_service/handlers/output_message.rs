@@ -4,7 +4,7 @@ use crate::schematic_service::handlers::input_message::InputMessage;
 #[derive(Message, Debug, Clone)]
 #[rtype(result = "Result<(),SchematicError>")]
 pub(crate) struct OutputMessage {
-  pub(crate) port: PortReference,
+  pub(crate) port: ConnectionTargetDefinition,
   pub(crate) tx_id: String,
   pub(crate) payload: MessageTransport,
 }

@@ -1,6 +1,5 @@
 use std::cell::RefCell;
 use std::convert::TryFrom;
-use std::fmt::Display;
 use std::io::Read;
 use std::pin::Pin;
 use std::task::Poll;
@@ -292,35 +291,4 @@ fn sha256_digest<R: Read>(mut reader: R) -> Result<Digest, VinoError> {
   }
 
   Ok(context.finish())
-}
-
-#[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize, Eq, Hash)]
-pub struct PortReference {
-  pub reference: String,
-  pub name: String,
-}
-
-impl PortReference {
-  #[must_use]
-  pub fn new<T: AsRef<str>, U: AsRef<str>>(reference: T, name: U) -> Self {
-    Self {
-      reference: reference.as_ref().to_owned(),
-      name: name.as_ref().to_owned(),
-    }
-  }
-}
-
-impl Display for PortReference {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    write!(f, "{}[{}]", self.reference, self.name)
-  }
-}
-
-impl From<ConnectionTargetDefinition> for PortReference {
-  fn from(v: ConnectionTargetDefinition) -> Self {
-    PortReference {
-      name: v.port,
-      reference: v.reference,
-    }
-  }
 }

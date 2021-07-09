@@ -209,7 +209,7 @@ impl<'a> Validator<'a> {
 
 fn is_valid_input(connection: &Connection, to: &ComponentModel) -> Result<()> {
   let to_port = &connection.to;
-  let found_to_port = to.inputs.iter().find(|port| port.name == to_port.name);
+  let found_to_port = to.inputs.iter().find(|port| port.name == to_port.port);
 
   if found_to_port.is_none() {
     Err(ValidationError::InvalidInputPort(
@@ -223,7 +223,7 @@ fn is_valid_input(connection: &Connection, to: &ComponentModel) -> Result<()> {
 }
 fn is_valid_output(connection: &Connection, from: &ComponentModel) -> Result<()> {
   let from_port = &connection.from;
-  let found_from_port = from.outputs.iter().find(|port| port.name == from_port.name);
+  let found_from_port = from.outputs.iter().find(|port| port.name == from_port.port);
 
   if found_from_port.is_none() {
     Err(ValidationError::InvalidOutputPort(
@@ -378,10 +378,13 @@ mod tests {
     equals!(model.get_name(), schematic_name);
 
     let upstream = model
-      .get_upstream(&PortReference::new("logger".to_owned(), "input".to_owned()))
+      .get_upstream(&ConnectionTargetDefinition::new(
+        "logger".to_owned(),
+        "input".to_owned(),
+      ))
       .unwrap();
     equals!(upstream.reference, SCHEMATIC_INPUT);
-    equals!(upstream.name, "input");
+    equals!(upstream.port, "input");
 
     Ok(())
   }

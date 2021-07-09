@@ -132,13 +132,13 @@ impl SchematicService {
     Some(channel.recipient.clone())
   }
 
-  fn get_outputs(&self, reference: &str) -> Vec<PortReference> {
+  fn get_outputs(&self, reference: &str) -> Vec<ConnectionTargetDefinition> {
     let state = self.get_state();
     let lock = state.model.lock().unwrap();
     lock.get_outputs(reference)
   }
 
-  fn get_port_connections(&self, port: &PortReference) -> Vec<Connection> {
+  fn get_port_connections(&self, port: &ConnectionTargetDefinition) -> Vec<Connection> {
     let state = self.get_state();
     let lock = state.model.lock().unwrap();
     lock.get_port_connections(port)

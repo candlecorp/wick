@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use runtime_utils::*;
 use vino_entity::Entity;
 use vino_runtime::prelude::*;
@@ -67,6 +69,28 @@ async fn native_component() -> TestResult<()> {
   equals!(
     output,
     MessageTransport::MessagePack(mp_serialize(42 + 302309 + 302309)?)
+  );
+  Ok(())
+}
+
+// #[test_env_log::test(actix_rt::test)]
+
+async fn defaults() -> TestResult<()> {
+  todo!();
+  let (network, _) = init_network_from_yaml("./manifests/defaults.yaml").await?;
+
+  let data: HashMap<String, String> = HashMap::new();
+
+  let mut result = network
+    .request("defaults", Entity::test("defaults"), &data)
+    .await?;
+
+  println!("Result: {:?}", result);
+  let output: MessageTransport = result.remove("output").unwrap();
+  println!("Output: {:?}", output);
+  equals!(
+    output,
+    MessageTransport::MessagePack(mp_serialize("1234512345")?)
   );
   Ok(())
 }

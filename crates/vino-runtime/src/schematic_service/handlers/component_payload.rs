@@ -81,7 +81,7 @@ impl Handler<ComponentPayload> for SchematicService {
           tokio::spawn(async move {
             while let Some(packet) = rx.next().await {
               let logmsg = format!("tx: {}, ref: {}, port: {}", tx_id, reference, packet.port);
-              let port = PortReference::new(reference.clone(), packet.port);
+              let port = ConnectionTargetDefinition::new(reference.clone(), packet.port);
               let msg = OutputMessage {
                 port,
                 tx_id: tx_id.clone(),

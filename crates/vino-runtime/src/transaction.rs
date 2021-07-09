@@ -61,7 +61,7 @@ impl TransactionMap {
           if let Some(payload) = locked.take_from_port(target) {
             ok_or_log!(ready_tx.send(TransactionUpdate::Result(SchematicOutput {
               tx_id: tx_id.clone(),
-              port: target.name.clone(),
+              port: target.port.clone(),
               payload,
             })));
           }
@@ -111,8 +111,8 @@ struct Transaction {
   tx_id: String,
   buffermap: BufferMap,
   model: Arc<Mutex<SchematicModel>>,
-  port_statuses: HashMap<PortReference, PortStatus>,
-  output_ports: Vec<PortReference>,
+  port_statuses: HashMap<ConnectionTargetDefinition, PortStatus>,
+  output_ports: Vec<ConnectionTargetDefinition>,
 }
 
 impl Transaction {
@@ -138,7 +138,7 @@ impl Transaction {
       output_ports,
     }
   }
-  pub(crate) fn has_active_upstream(&self, port: &PortReference) -> Result<bool> {
+  pub(crate) fn has_active_upstream(&self, port: &ConnectionTargetDefinition) -> Result<bool> {
     let locked = self.model.lock().unwrap();
 
     let upstream = locked
@@ -163,19 +163,19 @@ impl Transaction {
       self.buffermap.push(connection.to, payload);
     }
   }
-  fn has_data(&self, port: &PortReference) -> bool {
+  fn has_data(&self, port: &ConnectionTargetDefinition) -> bool {
     self.buffermap.has_data(port)
   }
-  fn is_closed(&self, port: &PortReference) -> bool {
+  fn is_closed(&self, port: &ConnectionTargetDefinition) -> bool {
     self
       .port_statuses
       .get(port)
       .map_or(true, |status| status == &PortStatus::Closed)
   }
-  fn take_from_port(&mut self, port: &PortReference) -> Option<MessageTransport> {
+  fn take_from_port(&mut self, port: &ConnectionTargetDefinition) -> Option<MessageTransport> {
     self.buffermap.take(port)
   }
-  fn get_connected_ports(&self, reference: &str) -> Vec<PortReference> {
+  fn get_connected_ports(&self, reference: &str) -> Vec<ConnectionTargetDefinition> {
     let locked = self.model.lock().unwrap();
     locked
       .get_connections()
@@ -190,40 +190,40 @@ impl Transaction {
     let mut map = HashMap::new();
     for port in ports {
       let message = self.take_from_port(&port).ok_or(InternalError(7001))?;
-      map.insert(port.name, message);
+      map.insert(port.port, message);
     }
     Ok(map)
   }
-  fn is_reference_ready(&self, port: &PortReference) -> bool {
+  fn is_reference_ready(&self, port: &ConnectionTargetDefinition) -> bool {
     let reference = port.reference.clone();
     let ports = self.get_connected_ports(&reference);
     debug!("ref: {}, ports: {:?}", reference, ports);
     self.are_ports_ready(&ports)
   }
-  fn is_port_ready(&self, port: &PortReference) -> bool {
+  fn is_port_ready(&self, port: &ConnectionTargetDefinition) -> bool {
     debug!("Is port {} ready? {}", port, self.buffermap.has_data(port));
     self.buffermap.has_data(port)
   }
-  fn are_ports_ready(&self, ports: &[PortReference]) -> bool {
+  fn are_ports_ready(&self, ports: &[ConnectionTargetDefinition]) -> bool {
     all(ports, |ent| self.is_port_ready(ent))
   }
 }
 
 #[derive(Debug, Default)]
 struct BufferMap {
-  map: HashMap<PortReference, PortBuffer>,
+  map: HashMap<ConnectionTargetDefinition, PortBuffer>,
 }
 
 impl BufferMap {
-  fn push(&mut self, port: PortReference, payload: MessageTransport) {
+  fn push(&mut self, port: ConnectionTargetDefinition, payload: MessageTransport) {
     let queue = self.map.entry(port).or_insert_with(PortBuffer::default);
     queue.push_back(payload);
   }
 
-  fn has_data(&self, port: &PortReference) -> bool {
+  fn has_data(&self, port: &ConnectionTargetDefinition) -> bool {
     self.map.get(port).map_or(false, PortBuffer::has_data)
   }
-  fn take(&mut self, port: &PortReference) -> Option<MessageTransport> {
+  fn take(&mut self, port: &ConnectionTargetDefinition) -> Option<MessageTransport> {
     self.map.get_mut(port).and_then(PortBuffer::pop_front)
   }
 }
@@ -290,13 +290,13 @@ mod tests {
     let model = make_model()?;
 
     let mut transaction = Transaction::new(tx_id, model);
-    let from = PortReference {
+    let from = ConnectionTargetDefinition {
       reference: "REF_ID_LOGGER1".into(),
-      name: "vino-v0::log".into(),
+      port: "vino-v0::log".into(),
     };
-    let to = PortReference {
+    let to = ConnectionTargetDefinition {
       reference: "REF_ID_LOGGER2".into(),
-      name: "vino-v0::log".into(),
+      port: "vino-v0::log".into(),
     };
     trace!("pushing to port");
     transaction.receive(
@@ -319,8 +319,8 @@ mod tests {
 
   fn conn(from_name: &str, from_port: &str, to_name: &str, to_port: &str) -> Connection {
     Connection {
-      from: PortReference::new(from_name, from_port),
-      to: PortReference::new(to_name, to_port),
+      from: ConnectionTargetDefinition::new(from_name, from_port),
+      to: ConnectionTargetDefinition::new(to_name, to_port),
       default: None,
     }
   }

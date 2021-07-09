@@ -45,7 +45,6 @@ pub(crate) mod prelude {
     get_uuid,
     inv_error,
     OutputPacket,
-    PortReference,
   };
   pub(crate) use crate::error::{
     InternalError,

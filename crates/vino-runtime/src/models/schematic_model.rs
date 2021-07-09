@@ -33,7 +33,7 @@ pub(crate) struct SchematicModel {
   references: HashMap<ComponentReference, String>,
   providers: HashMap<Namespace, ProviderModel>,
   connections: Vec<Connection>,
-  upstream_links: HashMap<PortReference, PortReference>,
+  upstream_links: HashMap<ConnectionTargetDefinition, ConnectionTargetDefinition>,
   state: Option<LoadedState>,
 }
 
@@ -46,8 +46,8 @@ struct LoadedState {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Connection {
-  pub(crate) from: PortReference,
-  pub(crate) to: PortReference,
+  pub(crate) from: ConnectionTargetDefinition,
+  pub(crate) to: ConnectionTargetDefinition,
   pub(crate) default: Option<serde_json::Value>,
 }
 
@@ -59,7 +59,7 @@ impl Connection {
       .collect::<Vec<String>>()
       .join(", ")
   }
-  pub fn new(from: PortReference, to: PortReference) -> Self {
+  pub fn new(from: ConnectionTargetDefinition, to: ConnectionTargetDefinition) -> Self {
     Self {
       from,
       to,
@@ -73,8 +73,8 @@ impl TryFrom<&ConnectionDefinition> for Connection {
 
   fn try_from(v: &ConnectionDefinition) -> Result<Self> {
     Ok(Connection {
-      from: v.from.clone().into(),
-      to: v.to.clone().into(),
+      from: v.from.clone(),
+      to: v.to.clone(),
       default: match &v.default {
         Some(json_str) => Some(parse_default(json_str)?),
         None => None,
@@ -86,15 +86,6 @@ impl TryFrom<&ConnectionDefinition> for Connection {
 impl Display for Connection {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     write!(f, "{} => {}", self.from, self.to)
-  }
-}
-
-impl From<vino_manifest::v0::ConnectionTargetDefinition> for PortReference {
-  fn from(def: vino_manifest::v0::ConnectionTargetDefinition) -> Self {
-    PortReference {
-      name: def.port,
-      reference: def.reference,
-    }
   }
 }
 
@@ -166,10 +157,10 @@ impl SchematicModel {
       let downstream_signature = model
         .inputs
         .iter()
-        .find(|port| port.name == downstream.name)
+        .find(|port| port.name == downstream.port)
         .unwrap();
       schematic_inputs.push(PortSignature {
-        name: input.name,
+        name: input.port,
         type_string: downstream_signature.type_string.clone(),
       });
     }
@@ -196,10 +187,10 @@ impl SchematicModel {
       let downstream_signature = model
         .outputs
         .iter()
-        .find(|port| port.name == upstream.name)
+        .find(|port| port.name == upstream.port)
         .unwrap();
       schematic_outputs.push(PortSignature {
-        name: output.name,
+        name: output.port,
         type_string: downstream_signature.type_string.clone(),
       });
     }
@@ -231,7 +222,10 @@ impl SchematicModel {
     self.populate_state(&[])
   }
 
-  pub(crate) fn get_upstream(&self, port: &PortReference) -> Option<&PortReference> {
+  pub(crate) fn get_upstream(
+    &self,
+    port: &ConnectionTargetDefinition,
+  ) -> Option<&ConnectionTargetDefinition> {
     self.upstream_links.get(port)
   }
 
@@ -287,13 +281,16 @@ impl SchematicModel {
     self.definition.get_component(reference)
   }
 
-  pub(crate) fn get_downstreams(&self, port: &PortReference) -> Vec<PortReference> {
+  pub(crate) fn get_downstreams(
+    &self,
+    port: &ConnectionTargetDefinition,
+  ) -> Vec<ConnectionTargetDefinition> {
     self
       .definition
       .connections
       .iter()
       .cloned()
-      .filter(|conn| conn.from.reference == port.reference && conn.from.port == port.name)
+      .filter(|conn| conn.from.reference == port.reference && conn.from.port == port.port)
       .map(|conn| conn.to.into())
       .collect()
   }
@@ -309,7 +306,7 @@ impl SchematicModel {
       .filter(move |conn| conn.from.reference == reference)
   }
 
-  pub(crate) fn get_schematic_outputs(&self) -> Vec<PortReference> {
+  pub(crate) fn get_schematic_outputs(&self) -> Vec<ConnectionTargetDefinition> {
     self
       .definition
       .connections
@@ -328,7 +325,7 @@ impl SchematicModel {
       .map(|state| &state.schematic_outputs)
   }
 
-  pub(crate) fn get_schematic_inputs(&self) -> Vec<PortReference> {
+  pub(crate) fn get_schematic_inputs(&self) -> Vec<ConnectionTargetDefinition> {
     self
       .definition
       .connections
@@ -355,15 +352,15 @@ impl SchematicModel {
       .map(|state| &state.provider_signatures)
   }
 
-  pub(crate) fn get_outputs(&self, reference: &str) -> Vec<PortReference> {
+  pub(crate) fn get_outputs(&self, reference: &str) -> Vec<ConnectionTargetDefinition> {
     match self.references.get(reference) {
       Some(id) => match self.get_component_model(id) {
         Some(component) => component
           .outputs
           .iter()
-          .map(|p| PortReference {
+          .map(|p| ConnectionTargetDefinition {
             reference: reference.to_owned(),
-            name: p.name.clone(),
+            port: p.name.clone(),
           })
           .collect(),
         None => vec![],
@@ -371,7 +368,7 @@ impl SchematicModel {
       None => vec![],
     }
   }
-  pub(crate) fn get_port_connections(&self, port: &PortReference) -> Vec<Connection> {
+  pub(crate) fn get_port_connections(&self, port: &ConnectionTargetDefinition) -> Vec<Connection> {
     self
       .connections
       .iter()

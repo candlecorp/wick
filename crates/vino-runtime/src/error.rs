@@ -29,10 +29,10 @@ pub enum ValidationError {
   DanglingReference(Vec<String>),
   #[error("Component definition(s) '{}' not fully qualified", join(.0, ", "))]
   NotFullyQualified(Vec<String>),
-  #[error("Invalid output port '{}' on {}. Valid output ports are [{}]", .0.name, .1, join(.2, ", "))]
-  InvalidOutputPort(PortReference, Connection, Vec<PortSignature>),
-  #[error("Invalid input port '{}' on {}. Valid input ports are [{}]", .0.name, .1, join(.2, ", "))]
-  InvalidInputPort(PortReference, Connection, Vec<PortSignature>),
+  #[error("Invalid output port '{}' on {}. Valid output ports are [{}]", .0.port, .1, join(.2, ", "))]
+  InvalidOutputPort(ConnectionTargetDefinition, Connection, Vec<PortSignature>),
+  #[error("Invalid input port '{}' on {}. Valid input ports are [{}]", .0.port, .1, join(.2, ", "))]
+  InvalidInputPort(ConnectionTargetDefinition, Connection, Vec<PortSignature>),
   #[error("Invalid connections: {}", join(.0, ", "))]
   InvalidConnections(Vec<ValidationError>),
 }
@@ -202,7 +202,7 @@ pub enum TransactionError {
   #[error(transparent)]
   InternalError(#[from] InternalError),
   #[error("Upstream port {0} not found")]
-  UpstreamNotFound(PortReference),
+  UpstreamNotFound(ConnectionTargetDefinition),
 }
 
 #[derive(Error, Debug)]

@@ -31,7 +31,6 @@ pub(crate) struct StatsRequest {}
 
 #[derive(Debug)]
 pub(crate) enum ProviderResponse {
-  InvocationResponse,
   List(Vec<HostedType>),
   Stats(Vec<Statistics>),
 }
@@ -47,12 +46,6 @@ impl ProviderResponse {
     match self {
       ProviderResponse::Stats(v) => Ok(v),
       _ => Err(ConversionError("Provider response to stats")),
-    }
-  }
-  pub(crate) fn into_invocation_response(self) -> Result<(), ConversionError> {
-    match self {
-      ProviderResponse::InvocationResponse => Ok(()),
-      _ => Err(ConversionError("Provider response to invocation response")),
     }
   }
 }
