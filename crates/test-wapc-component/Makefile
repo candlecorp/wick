@@ -36,8 +36,6 @@ BUILD_ARTIFACT:=$(ARTIFACT_DIR)/$(CRATE_FS_NAME).wasm
 # Path to copy artifact to
 SIGNED_ARTIFACT:=$(ARTIFACT_DIR)/$(CRATE_FS_NAME)_s.wasm
 
-RUSTFMT=rustfmt --edition=2018
-
 # Generated files
 GENERATED_FILES:=src/generated.rs
 # The source files for the wapc module

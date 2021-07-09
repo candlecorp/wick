@@ -72,6 +72,8 @@
 // Add exceptions here
 #![allow()]
 
+pub(crate) mod generated;
+
 use std::collections::HashMap;
 use std::sync::{
   Arc,
@@ -123,7 +125,7 @@ impl RpcHandler for Provider {
     let component = entity
       .into_component()
       .map_err(|_| NativeError::InvalidEntity(entity_url))?;
-    let instance = components::get_component(&component);
+    let instance = generated::get_component(&component);
     match instance {
       Some(instance) => {
         let future = instance.job_wrapper(context, payload);
@@ -134,7 +136,7 @@ impl RpcHandler for Provider {
   }
 
   async fn list_registered(&self) -> RpcResult<Vec<vino_rpc::HostedType>> {
-    let components = components::get_all_components();
+    let components = generated::get_all_components();
     Ok(
       components
         .into_iter()
@@ -217,7 +219,7 @@ mod tests {
   #[test_env_log::test(tokio::test)]
   async fn list() -> Result<()> {
     let provider = Provider::default();
-    let components = crate::components::get_all_components();
+    let components = crate::generated::get_all_components();
 
     let response = provider.list_registered().await.unwrap();
 

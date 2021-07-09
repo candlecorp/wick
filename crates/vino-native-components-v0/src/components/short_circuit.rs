@@ -1,10 +1,6 @@
 use vino_provider::Context;
-use vino_rpc::port::Sender;
 
-pub(crate) use super::generated::short_circuit::{
-  Inputs,
-  Outputs,
-};
+use crate::generated::short_circuit::*;
 
 pub(crate) async fn job(
   input: Inputs,

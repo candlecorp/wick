@@ -1,10 +1,7 @@
 use vino_provider::Context;
 use vino_rpc::port::Sender;
 
-pub(crate) use super::generated::string_to_bytes::{
-  Inputs,
-  Outputs,
-};
+use crate::generated::string_to_bytes::*;
 
 pub(crate) async fn job(
   input: Inputs,

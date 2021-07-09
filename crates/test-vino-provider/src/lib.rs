@@ -14,6 +14,7 @@ use vino_rpc::{
   Statistics,
 };
 mod components;
+pub(crate) mod generated;
 use anyhow::anyhow;
 
 pub(crate) struct State {}
@@ -41,7 +42,7 @@ impl RpcHandler for Provider {
   ) -> RpcResult<BoxedPacketStream> {
     let context = self.context.clone();
     let component = entity.into_component()?;
-    let instance = components::get_component(&component);
+    let instance = generated::get_component(&component);
     match instance {
       Some(instance) => {
         let future = instance.job_wrapper(context, payload);
@@ -52,7 +53,7 @@ impl RpcHandler for Provider {
   }
 
   async fn list_registered(&self) -> RpcResult<Vec<vino_rpc::HostedType>> {
-    let components = components::get_all_components();
+    let components = generated::get_all_components();
     Ok(
       components
         .into_iter()

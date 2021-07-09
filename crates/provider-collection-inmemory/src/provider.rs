@@ -15,7 +15,7 @@ use vino_rpc::{
   Statistics,
 };
 
-use crate::components;
+use crate::generated;
 
 #[derive(Debug, Default)]
 pub struct State {
@@ -47,7 +47,7 @@ impl RpcHandler for Provider {
     let context = self.context.clone();
     let component = entity.into_component()?;
     trace!("Provider running component {}", component);
-    match components::get_component(&component) {
+    match generated::get_component(&component) {
       Some(component) => {
         let future = component.job_wrapper(context, payload);
         let outputs = future.await?;
@@ -58,7 +58,7 @@ impl RpcHandler for Provider {
   }
 
   async fn list_registered(&self) -> RpcResult<Vec<vino_rpc::HostedType>> {
-    let components = components::get_all_components();
+    let components = generated::get_all_components();
     Ok(
       components
         .into_iter()

@@ -1,0 +1,20 @@
+{
+  "name": "test-vino-provider",
+  "components": [
+    {
+      "name": "test-component",
+      "inputs": [
+        {
+          "name": "input",
+          "type_string": "string"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "output",
+          "type_string": "string"
+        }
+      ]
+    }
+  ]
+}

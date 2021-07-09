@@ -219,7 +219,7 @@ mod test {
     let provider = NativeProviderService::default();
     let addr = provider.start();
 
-    addr
+    let components: HashMap<String, ComponentModel> = addr
       .send(Initialize {
         namespace: "native-provider".to_owned(),
         provider: Arc::new(Mutex::new(vino_native_components_v0::Provider::default())),
@@ -231,7 +231,11 @@ mod test {
       .await??;
     println!("response: {:?}", response);
     let list = response.into_list_response()?;
-    equals!(list.len(), 5);
+
+    for item in list {
+      let model = components.get(item.get_name());
+      assert!(model.is_some());
+    }
 
     Ok(())
   }

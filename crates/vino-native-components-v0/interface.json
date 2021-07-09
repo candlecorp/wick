@@ -40,6 +40,21 @@
       ]
     },
     {
+      "name": "error",
+      "inputs": [
+        {
+          "name": "input",
+          "type_string": "string"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "output",
+          "type_string": "string"
+        }
+      ]
+    },
+    {
       "name": "log",
       "inputs": [
         {

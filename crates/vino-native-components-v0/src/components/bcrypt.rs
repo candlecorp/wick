@@ -1,11 +1,7 @@
 use bcrypt::hash;
 use vino_provider::Context;
-use vino_rpc::port::Sender;
 
-pub(crate) use super::generated::bcrypt::{
-  Inputs,
-  Outputs,
-};
+use crate::generated::bcrypt::*;
 
 pub(crate) async fn job(
   input: Inputs,

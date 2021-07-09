@@ -100,6 +100,17 @@ pub enum HostedType {
   Schematic(SchematicSignature),
 }
 
+impl HostedType {
+  /// Get the name of the [HostedType] regardless of kind
+  #[must_use]
+  pub fn get_name(&self) -> &str {
+    match self {
+      HostedType::Component(c) => &c.name,
+      HostedType::Schematic(s) => &s.name,
+    }
+  }
+}
+
 /// Important statistics for the hosted components
 #[derive(Debug, Default, Clone, Copy, Serialize, Deserialize, PartialEq)]
 pub struct Statistics {

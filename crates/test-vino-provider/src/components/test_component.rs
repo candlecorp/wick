@@ -1,7 +1,7 @@
 use vino_provider::Context;
 use vino_rpc::port::Sender;
 
-pub(crate) use super::generated::test_component::{
+pub(crate) use crate::generated::test_component::{
   Inputs,
   Outputs,
 };

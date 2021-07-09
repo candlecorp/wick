@@ -1,10 +1,6 @@
 use vino_provider::Context;
-use vino_rpc::port::Sender;
 
-pub(crate) use super::generated::add_item::{
-  Inputs,
-  Outputs,
-};
+pub(crate) use crate::generated::add_item::*;
 
 pub(crate) async fn job(
   input: Inputs,
