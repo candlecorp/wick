@@ -32,7 +32,6 @@ serde_json = "1.0.64"
 serde_yaml = "0.8.17"
 serde = "1.0.126"
 thiserror = "1.0.24"
-unsafe-io = "= 0.6.2"
 
 tonic = { version="0.4.3", features=["tls"] }
 

@@ -334,7 +334,7 @@ dependencies = [
  "unsafe-io",
  "winapi",
  "winapi-util",
- "winx 0.25.0",
+ "winx",
 ]
 
 [[package]]
@@ -367,7 +367,7 @@ dependencies = [
  "cap-primitives",
  "once_cell",
  "posish",
- "winx 0.25.0",
+ "winx",
 ]
 
 [[package]]
@@ -495,12 +495,11 @@ checksum = "ea221b5284a47e40033bf9b66f35f984ec0ea2931eb03505246cd27a963f981b"
 
 [[package]]
 name = "cpp_demangle"
-version = "0.3.2"
+version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "44919ecaf6f99e8e737bc239408931c9a01e9a6c74814fee8242dd2506b65390"
+checksum = "8ea47428dc9d2237f3c6bc134472edfd63ebba0af932e783506dcfd66f10d18a"
 dependencies = [
  "cfg-if 1.0.0",
- "glob",
 ]
 
 [[package]]
@@ -628,6 +627,7 @@ dependencies = [
  "clap",
  "criterion-plot",
  "csv",
+ "futures",
  "itertools 0.10.1",
  "lazy_static",
  "num-traits",
@@ -640,6 +640,7 @@ dependencies = [
  "serde_derive",
  "serde_json",
  "tinytemplate",
+ "tokio",
  "walkdir",
 ]
 
@@ -1221,9 +1222,9 @@ checksum = "62aca2aba2d62b4a7f5b33f3712cb1b0692779a56fb510499d5c0aa594daeaf3"
 
 [[package]]
 name = "hashbrown"
-version = "0.9.1"
+version = "0.11.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d7afe4a420e3fe79967a00898cc1f4db7c8a49a9333a29f8a4bd76a253d5cd04"
+checksum = "ab5ef0d4909ef3724cc8cce6ccc8572c5c817592e9285f5464f8e86f8bd3726e"
 
 [[package]]
 name = "heck"
@@ -1321,9 +1322,9 @@ checksum = "9a3a5bfb195931eeb336b2a7b4d761daec841b97f947d34394601737a7bba5e4"
 
 [[package]]
 name = "hyper"
-version = "0.14.9"
+version = "0.14.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "07d6baa1b441335f3ce5098ac421fb6547c46dda735ca1bc6d0153c838f9dd83"
+checksum = "7728a72c4c7d72665fde02204bcbd93b247721025b222ef78606f14513e0fd03"
 dependencies = [
  "bytes 1.0.1",
  "futures-channel",
@@ -1398,9 +1399,9 @@ dependencies = [
 
 [[package]]
 name = "indexmap"
-version = "1.6.2"
+version = "1.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "824845a0bf897a9042383849b02c1bc219c2383772efcd5c6f9766fa4b81aef3"
+checksum = "bc633605454125dec4b66843673f01c7df2b89479b32e0ed634e43a91cff62a5"
 dependencies = [
  "autocfg",
  "hashbrown",
@@ -1414,6 +1415,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "61124eeebbd69b8190558df225adf7e4caafce0d743919e5d6b19652314ec5ec"
 dependencies = [
  "cfg-if 1.0.0",
+]
+
+[[package]]
+name = "io-lifetimes"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "609c23089c52d7edcf39d6cfd2cf581dcea7e059f80f1d91130887dceac77c1f"
+dependencies = [
+ "libc",
+ "rustc_version 0.4.0",
+ "winapi",
 ]
 
 [[package]]
@@ -1510,9 +1522,9 @@ checksum = "3576a87f2ba00f6f106fdfcd16db1d698d648a26ad8e0573cad8537c3c362d2a"
 
 [[package]]
 name = "libc"
-version = "0.2.97"
+version = "0.2.98"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "12b8adadd720df158f4d70dfe7ccc6adb0472d7c55ca83445f6a5ab3e36f8fb6"
+checksum = "320cfe77175da3a483efed4bc0adc1968ca050b098ce4f2f1c13a56626128790"
 
 [[package]]
 name = "libloading"
@@ -2409,6 +2421,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "runtime-utils"
+version = "0.1.0"
+dependencies = [
+ "maplit",
+ "nkeys",
+ "pretty_assertions",
+ "thiserror",
+ "tracing",
+ "vino-codec",
+ "vino-manifest",
+ "vino-runtime",
+ "vino-transport",
+ "vino-wascap",
+]
+
+[[package]]
 name = "rustc-demangle"
 version = "0.1.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2703,9 +2731,9 @@ dependencies = [
 
 [[package]]
 name = "signature"
-version = "1.3.0"
+version = "1.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0f0242b8e50dd9accdd56170e94ca1ebd223b098eb9c83539a6e367d0f36ae68"
+checksum = "c19772be3c4dd2ceaacf03cb41d5885f2a02c4d8804884918e3a258480803335"
 
 [[package]]
 name = "slab"
@@ -2749,9 +2777,9 @@ checksum = "8ea5119cdb4c55b55d432abb513a0429384878c15dde60cc77b1c99de1a95a6a"
 
 [[package]]
 name = "structopt"
-version = "0.3.21"
+version = "0.3.22"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5277acd7ee46e63e5168a80734c9f6ee81b1367a7d8772a2d765df2a3705d28c"
+checksum = "69b041cdcb67226aca307e6e7be44c8806423d83e018bd662360a93dabce4d71"
 dependencies = [
  "clap",
  "lazy_static",
@@ -2760,9 +2788,9 @@ dependencies = [
 
 [[package]]
 name = "structopt-derive"
-version = "0.4.14"
+version = "0.4.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5ba9cdfda491b814720b6b06e0cac513d922fc407582032e8706e9f137976f90"
+checksum = "7813934aecf5f51a54775e00068c237de98489463968231a51746bbbc03f9c10"
 dependencies = [
  "heck",
  "proc-macro-error",
@@ -2811,19 +2839,19 @@ dependencies = [
 
 [[package]]
 name = "system-interface"
-version = "0.6.3"
+version = "0.6.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1fd411f50bd848d1efefd5957d494eddc80979380e3c4f80b4ba2ebd26d1b673"
+checksum = "ef194146527a71113b76650b19c509b6537aa20b91f6702f1933e7b96b347736"
 dependencies = [
  "atty",
  "bitflags",
  "cap-fs-ext",
  "cap-std",
  "posish",
- "rustc_version 0.3.3",
+ "rustc_version 0.4.0",
  "unsafe-io",
  "winapi",
- "winx 0.23.0",
+ "winx",
 ]
 
 [[package]]
@@ -2987,9 +3015,9 @@ checksum = "cda74da7e1a664f795bb1f8a87ec406fb89a02522cf6e50620d016add6dbbf5c"
 
 [[package]]
 name = "tokio"
-version = "1.7.1"
+version = "1.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5fb2ed024293bb19f7a5dc54fe83bf86532a44c12a2bb8ba40d64a4509395ca2"
+checksum = "98c8b05dc14c75ea83d63dd391100353789f5f24b8b3866542a5e85c8be8e985"
 dependencies = [
  "autocfg",
  "bytes 1.0.1",
@@ -3007,9 +3035,9 @@ dependencies = [
 
 [[package]]
 name = "tokio-macros"
-version = "1.2.0"
+version = "1.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c49e3df43841dafb86046472506755d8501c5615673955f6aa17181125d13c37"
+checksum = "54473be61f4ebe4efd09cec9bd5d16fa51d70ea0192213d754d2d500457db110"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -3039,13 +3067,25 @@ dependencies = [
 
 [[package]]
 name = "tokio-stream"
-version = "0.1.6"
+version = "0.1.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f8864d706fdb3cc0843a49647ac892720dac98a6eeb818b77190592cf4994066"
+checksum = "7b2f3f698253f03119ac0102beaa64f67a67e08074d03a22d18784104543727f"
 dependencies = [
  "futures-core",
  "pin-project-lite",
  "tokio",
+]
+
+[[package]]
+name = "tokio-test-bin"
+version = "0.3.0"
+dependencies = [
+ "env_logger 0.8.4",
+ "test-env-log",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
 ]
 
 [[package]]
@@ -3111,6 +3151,21 @@ dependencies = [
  "prost-build",
  "quote",
  "syn",
+]
+
+[[package]]
+name = "tonic-reflection"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "56498d20188550337ea6c48ecf59d11646382dbfcd61051fb98c1093cfae3c21"
+dependencies = [
+ "bytes 1.0.1",
+ "prost",
+ "prost-types",
+ "tokio",
+ "tokio-stream",
+ "tonic",
+ "tonic-build",
 ]
 
 [[package]]
@@ -3308,9 +3363,9 @@ dependencies = [
 
 [[package]]
 name = "unicode-segmentation"
-version = "1.7.1"
+version = "1.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bb0d2e7be6ae3a5fa87eed5fb451aff96f2573d2694942e40543ae0bbe19c796"
+checksum = "8895849a949e7845e06bd6dc1aa51731a103c42707010a5b591c0038fb73385b"
 
 [[package]]
 name = "unicode-width"
@@ -3326,10 +3381,11 @@ checksum = "8ccb82d61f80a663efe1f787a51b16b5a51e3314d6ac365b08639f52387b33f3"
 
 [[package]]
 name = "unsafe-io"
-version = "0.6.2"
+version = "0.6.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0301dd0f2c21baed606faa2717fbfbb1a68b7e289ea29b40bc21a16f5ae9f5aa"
+checksum = "1598c579f79cdd11e677b3942b7bed5cb3369464cfd240f4c4a308ffaed6f5e4"
 dependencies = [
+ "io-lifetimes",
  "rustc_version 0.3.3",
  "winapi",
 ]
@@ -3367,10 +3423,14 @@ dependencies = [
 name = "utils"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "maplit",
  "nkeys",
  "pretty_assertions",
- "thiserror",
+ "regex",
+ "serde_json",
+ "tokio",
+ "tokio-test-bin",
  "tracing",
  "vino-codec",
  "vino-manifest",
@@ -3422,17 +3482,20 @@ dependencies = [
  "futures",
  "log",
  "maplit",
+ "serde_json",
  "test-env-log",
  "test-vino-provider",
  "test_bin",
  "tokio",
  "tracing",
  "tracing-subscriber",
+ "utils",
  "vino-codec",
  "vino-component",
  "vino-entity",
  "vino-provider",
  "vino-rpc",
+ "vino-transport",
 ]
 
 [[package]]
@@ -3456,7 +3519,6 @@ dependencies = [
  "test-env-log",
  "test_bin",
  "thiserror",
- "unsafe-io",
  "vino-codec",
  "vino-component",
  "vino-host",
@@ -3473,6 +3535,35 @@ dependencies = [
  "rmp-serde",
  "serde",
  "thiserror",
+]
+
+[[package]]
+name = "vino-collection-inmemory"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "backtrace",
+ "env_logger 0.8.4",
+ "futures",
+ "lazy_static",
+ "maplit",
+ "serde",
+ "serde_json",
+ "structopt",
+ "test-env-log",
+ "test_bin",
+ "thiserror",
+ "tokio",
+ "tokio-util",
+ "tonic",
+ "tracing",
+ "tracing-subscriber",
+ "vino-codec",
+ "vino-component",
+ "vino-provider",
+ "vino-provider-cli",
+ "vino-rpc",
+ "vino-runtime",
 ]
 
 [[package]]
@@ -3539,12 +3630,15 @@ dependencies = [
 name = "vino-manifest"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "enum-primitive-derive",
  "env_logger 0.8.4",
  "hocon",
  "num-traits",
+ "pretty_assertions",
  "serde",
  "serde-with-expand-env",
+ "serde_json",
  "serde_yaml",
  "test-env-log",
  "thiserror",
@@ -3585,6 +3679,7 @@ dependencies = [
  "test-env-log",
  "thiserror",
  "tokio",
+ "vino-entity",
  "vino-rpc",
 ]
 
@@ -3605,6 +3700,7 @@ dependencies = [
  "tokio-stream",
  "tonic",
  "tonic-build",
+ "tonic-reflection",
  "tracing",
  "tracing-subscriber",
  "vino-codec",
@@ -3644,13 +3740,13 @@ dependencies = [
  "actix",
  "actix-rt",
  "async-trait",
- "backtrace",
  "criterion",
  "data-encoding",
  "derivative",
  "env_logger 0.8.4",
  "futures",
  "itertools 0.10.1",
+ "lazy_static",
  "log",
  "maplit",
  "oci-distribution",
@@ -3658,6 +3754,7 @@ dependencies = [
  "parking_lot",
  "pretty_assertions",
  "ring",
+ "runtime-utils",
  "serde",
  "serde_json",
  "test-env-log",
@@ -3671,7 +3768,6 @@ dependencies = [
  "tracing-futures",
  "tracing-subscriber",
  "tracing-unwrap",
- "utils",
  "uuid",
  "vino-codec",
  "vino-component",
@@ -3705,6 +3801,7 @@ dependencies = [
 name = "vino-wascap"
 version = "0.1.0"
 dependencies = [
+ "criterion",
  "data-encoding",
  "nuid",
  "parity-wasm",
@@ -3729,7 +3826,6 @@ dependencies = [
  "logger",
  "maplit",
  "nkeys",
- "oci-distribution",
  "serde",
  "serde_json",
  "serde_yaml",
@@ -3738,7 +3834,6 @@ dependencies = [
  "test_bin",
  "thiserror",
  "tonic",
- "unsafe-io",
  "vino-codec",
  "vino-component",
  "vino-entity",
@@ -4384,16 +4479,6 @@ version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0120db82e8a1e0b9fb3345a539c478767c0048d842860994d96113d5b667bd69"
 dependencies = [
- "winapi",
-]
-
-[[package]]
-name = "winx"
-version = "0.23.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a316462681accd062e32c37f9d78128691a4690764917d13bd8ea041baf2913e"
-dependencies = [
- "bitflags",
  "winapi",
 ]
 

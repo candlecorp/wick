@@ -25,6 +25,9 @@ pub(crate) async fn rpc_client(
   let url = format!("https://{}:{}", address, port);
   let uri = Uri::from_str(&url)
     .map_err(|_| crate::Error::Other(format!("Could not create URI from: {}", url)))?;
+
+  // TODO: Need to decouple these options
+  // they don't all need to be provided together
   let channel = if let (Some(pem), Some(key), Some(ca), Some(domain)) = (pem, key, ca, domain) {
     let ca_pem = std::fs::read_to_string(ca)?;
     let client_pem = std::fs::read_to_string(pem)?;

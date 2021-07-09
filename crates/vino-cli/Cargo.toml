@@ -24,7 +24,6 @@ serde_yaml = "0.8.17"
 serde = "1.0.126"
 thiserror = "1.0.24"
 oci-distribution = "0.6"
-unsafe-io = "= 0.6.2"
 logger = { path="../logger" }
 vino-runtime = { path="../vino-runtime" }
 vino-transport = { path="../vino-transport" }

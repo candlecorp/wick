@@ -67,6 +67,8 @@ pub async fn start_server(
     .build()
     .unwrap();
 
+  // TODO: Need to decouple these options
+  // they don't all need to be provided together
   let builder = if let (Some(pem), Some(key), Some(ca)) = (opts.pem, opts.key, opts.ca) {
     let server_pem = tokio::fs::read(pem).await?;
     let server_key = tokio::fs::read(key).await?;
