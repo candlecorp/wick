@@ -11,7 +11,6 @@ vino-rpc = { path="../vino-rpc" }
 vino-component = { path="../vino-component" }
 vino-codec = { path="../vino-codec" }
 tonic = { version="0.4.3", features=["tls"] }
-prost = "0.7.0"
 tokio = { version="1.4.0", features=["macros", "net", "signal", "rt-multi-thread"] }
 futures = "0.3.15"
 tokio-stream = "0.1.6"
@@ -21,9 +20,6 @@ rand = "0.8.4"
 tracing = "0.1.26"
 thiserror = "1.0.25"
 tonic-reflection = "0.1.0"
-
-[build-dependencies]
-tonic-build = { version="0.4.2", features=["prost"] }
 
 [dev-dependencies]
 test-env-log = "0.2.7"

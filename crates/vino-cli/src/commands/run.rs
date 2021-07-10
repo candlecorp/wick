@@ -51,6 +51,8 @@ pub async fn handle_command(command: RunCommand) -> Result<String> {
     Some(i) => i,
   };
 
+  debug!("Received {} bytes of json", data.len());
+
   let json: HashMap<String, serde_json::value::Value> = serde_json::from_str(&data)?;
 
   let config = vino_host::HostDefinition::load_from_file(&command.manifest)?;

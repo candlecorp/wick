@@ -85,6 +85,7 @@ use serde::{
   Deserialize,
   Serialize,
 };
+pub use vino_codec as codec;
 use vino_codec::messagepack::deserialize;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]

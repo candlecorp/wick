@@ -14,12 +14,8 @@ GENERATED_MODULE := ./src/generated.rs
 # Get list of WIDL files in SCHEMA_DIR
 SCHEMAS=$(wildcard ${SCHEMA_DIR}/*.widl)
 
-# Translate a list of WIDL files to GENERATED_DIR/file.rs (transposing hyphens to underscores)
+# Translate a list of WIDL files to COMPONENTS_DIR/file.rs (transposing hyphens to underscores)
 GENERATED_COMPONENTS := $(patsubst %.widl,%.rs,$(patsubst ${SCHEMA_DIR}%,${COMPONENTS_DIR}%,$(subst -,_,$(SCHEMAS))))
-# Strip the directory and extension of the generated components to get their rust module names
-GENERATED_FS_NAMES := $(patsubst %.rs,%,$(notdir $(GENERATED_COMPONENTS)))
-# Generate WIDL import statements for each of the found WIDL files
-GENERATED_WIDL_IMPORTS := $(patsubst $(SCHEMA_DIR)/%,import * from \"%\"\n,$(patsubst %.widl,%,$(SCHEMAS)))
 
 # Name of the package from Cargo.toml
 CRATE_NAME:=$(shell tomlq -f Cargo.toml package.name)
@@ -36,22 +32,13 @@ BUILD_ARTIFACT:=$(ARTIFACT_DIR)/$(CRATE_FS_NAME).wasm
 # Path to copy artifact to
 SIGNED_ARTIFACT:=$(ARTIFACT_DIR)/$(CRATE_FS_NAME)_s.wasm
 
-# Generated files
-GENERATED_FILES:=src/generated.rs
-# The source files for the wapc module
-SOURCE_FILES:=$(wildcard src/*.rs)
-
-# The header to prepend to generated files
-GENERATED_HEADER := /* This is generated, do not edit by hand */
 
 # Files to clean up on make clean
-CLEAN_FILES := $(GENERATED_FILES) $(BUILD_ARTIFACT) $(SIGNED_ARTIFACT) ./src/components/mod.rs
-CLEAN_DIRS :=
+CLEAN_FILES := $(GENERATED_MODULE) $(BUILD_ARTIFACT) $(SIGNED_ARTIFACT) ./src/components/mod.rs
 
 $(SIGNED_ARTIFACT): $(BUILD_ARTIFACT) ./interface.json
 	vinoc sign $(BUILD_ARTIFACT) interface.json --ver=$(CRATE_VERSION) --rev=0
 	vinoc inspect $(SIGNED_ARTIFACT)
-#		 $(INPUTS) $(OUTPUTS)
 
 # Defines rules like the following for each schema found :
 # src/components/my_components.rs: schemas/my-component.widl /src/components
@@ -81,7 +68,7 @@ $(GENERATED_MODULE): $(SCHEMAS)
 	vino-codegen rust wapc-component-module $(SCHEMA_DIR) -o $@ -f
 	rustfmt $@
 
-$(BUILD_ARTIFACT): ./src/lib.rs ./src/components/mod.rs $(ARTIFACT_DIR) $(SOURCE_FILES) $(GENERATED_MODULE) $(GENERATED_COMPONENTS)
+$(BUILD_ARTIFACT): $(wildcard src/*.rs) ./src/lib.rs ./src/components/mod.rs $(ARTIFACT_DIR) $(GENERATED_MODULE) $(GENERATED_COMPONENTS)
 	cargo build --target wasm32-unknown-unknown --release
 	cp $(WORKSPACE_ROOT)/target/wasm32-unknown-unknown/release/$(CRATE_FS_NAME).wasm build/
 
@@ -89,7 +76,6 @@ all: $(SIGNED_ARTIFACT)
 
 clean:
 	rm -f $(CLEAN_FILES)
-	# rmdir $(CLEAN_DIRS)
 
 codegen: ./interface.json  $(GENERATED_COMPONENTS) $(GENERATED_MODULE) ./src/lib.rs
 

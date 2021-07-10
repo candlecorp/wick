@@ -8,7 +8,6 @@ use vino_wascap::{
   Token,
 };
 
-use super::wapc_provider_service::WapcProviderService;
 use crate::dev::prelude::*;
 use crate::error::ComponentError;
 use crate::utils::oci::fetch_oci_bytes;
@@ -16,10 +15,8 @@ use crate::utils::oci::fetch_oci_bytes;
 #[derive(Derivative, Clone)]
 #[derivative(Debug)]
 pub struct WapcModule {
-  pub(crate) token: Token<ComponentClaims>,
-  pub(crate) bytes: Vec<u8>,
-  #[derivative(Debug = "ignore")]
-  pub(crate) addr: Option<Addr<WapcProviderService>>,
+  pub token: Token<ComponentClaims>,
+  pub bytes: Vec<u8>,
 }
 
 impl WapcModule {
@@ -35,7 +32,6 @@ impl WapcModule {
         Ok(WapcModule {
           token: t,
           bytes: buf.to_vec(),
-          addr: None,
         })
       },
     )
@@ -51,11 +47,13 @@ impl WapcModule {
   }
 
   /// Obtain the issuer's public key as it resides in the actor's token (the `iss` field of the JWT).
+  #[must_use]
   pub fn _issuer(&self) -> String {
     self.token.claims.issuer.clone()
   }
 
   /// Obtain the list of tags in the actor's token.
+  #[must_use]
   pub fn _tags(&self) -> Vec<String> {
     match self.token.claims.metadata.as_ref().unwrap().tags {
       Some(ref tags) => tags.clone(),
@@ -64,16 +62,19 @@ impl WapcModule {
   }
 
   /// Obtain the actor's public key (The `sub` field of the JWT).
+  #[must_use]
   pub fn public_key(&self) -> String {
     self.token.claims.subject.clone()
   }
 
   /// A globally referencable ID to this component
+  #[must_use]
   pub fn id(&self) -> String {
     self.public_key()
   }
 
   /// The actor's human-friendly display name
+  #[must_use]
   pub fn name(&self) -> String {
     self
       .token
@@ -87,6 +88,7 @@ impl WapcModule {
   }
 
   // Obtain the raw set of claims for this actor.
+  #[must_use]
   pub fn claims(&self) -> Claims<ComponentClaims> {
     self.token.claims.clone()
   }

@@ -1,4 +1,7 @@
-use vino_codec::messagepack::{
+/**********************************************
+***** This file is generated, do not edit *****
+***********************************************/
+use vino_component::codec::messagepack::{
   deserialize,
   serialize,
 };

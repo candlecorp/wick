@@ -16,14 +16,10 @@ guest = []
 [dependencies]
 wapc-guest = "0.4.0"
 serde = { version="1.0.126", features=["derive"] }
-rmp-serde = "0.15.4"
 lazy_static = "1.4.0"
 vino-component = { path="../vino-component" }
-vino-codec = { path="../vino-codec" }
 
 [dev-dependencies]
-structopt = "0.3.17"
-base64 = "0.13.0"
 
 [profile.release]
 # Optimize for small code size

@@ -53,6 +53,7 @@ members = [
   "crates/vino-native-components-v0",
   "crates/vino-provider-cli",
   "crates/vino-entity",
+  "crates/winc",
   "crates/test-vino-provider",
   "crates/test-wapc-component",
   "crates/provider-collection-inmemory",
