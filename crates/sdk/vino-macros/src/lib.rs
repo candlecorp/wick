@@ -117,7 +117,7 @@ macro_rules! ensure {
 /// Wraps an error with a log statement
 macro_rules! log_err {
   ($exp:expr) => {{
-    log::error!("{}", $exp);
+    tracing::error!("{}", $exp);
     Err($exp)
   }};
 }

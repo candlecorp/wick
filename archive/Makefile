@@ -1,4 +1,4 @@
-.PHONY: all codegen build clean test update-lint build-docker
+.PHONY: all codegen install build clean test update-lint build-docker
 
 # Enforce bash as the shell for consistency
 SHELL := bash
@@ -15,41 +15,54 @@ MAKEFILE_PROJECTS=$(wildcard ${CRATES_DIR}/*/Makefile)
 
 DOCKERFILES=$(wildcard docker/*/Dockerfile)
 
-all: codegen build
+TEST_WASM=crates/test-wapc-component/build/test_component_s.wasm
+
+BINS=vino vinoc vino-collection-inmemory vow
+
+all: build
+
+# Defines rules for each of the BINS to copy them into build/local
+define COPY_BIN
+$(1): build
+	cp target/debug/$$@ build/local
+endef
+
+# Call the above rule generator for each BIN file
+$(foreach bin,$(BINS),$(eval $(call COPY_BIN,$(bin))))
 
 codegen:
-	for project in $(MAKEFILE_PROJECTS); do \
+	@for project in $(MAKEFILE_PROJECTS); do \
 		cd `dirname $$project`; \
+		echo "## Generating code for $$project"; \
 		make codegen; \
 		cd $(ROOT); \
 	done
 
 
 clean:
-	for project in $(MAKEFILE_PROJECTS); do \
+	@for project in $(MAKEFILE_PROJECTS); do \
 		cd `dirname $$project`; \
 		make clean; \
 		cd $(ROOT); \
 	done
 
-build: ./build/local
+install: $(BINS)
 	cargo build --workspace
+	cp build/local/* ~/.cargo/bin/
+
+build: ./build/local codegen
+	cargo build --workspace
+
+$(TEST_WASM):
 	cd crates/test-wapc-component && make && cd $(ROOT)
-	cp target/debug/vino build/local/; \
-	cp target/debug/vinoc build/local/; \
-	cp target/debug/vino-collection-inmemory build/local/; \
 
 build-release: ./build/local
 	cargo build --workspace --release
-	cd crates/test-wapc-component && make && cd $(ROOT)
-	cp target/release/vino build/local/; \
-	cp target/release/vinoc build/local/; \
-	cp target/release/vino-collection-inmemory build/local/; \
 
 ./build/local:
 	mkdir -p ./build/local
 
-test: build
+test: $(TEST_WASM)
 	cargo test --workspace
 
 update-lint:
