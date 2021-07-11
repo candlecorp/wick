@@ -59,5 +59,7 @@ members = [
   "crates/vow",
   "crates/test-vino-provider",
   "crates/provider-collection-inmemory",
+  "crates/wapc-rust",
+  "crates/wasm3-provider",
 ]
 exclude = ["crates/test-wapc-component"]
