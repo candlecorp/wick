@@ -103,7 +103,16 @@ pub async fn vinoc_invoke(
 #[derive(Debug)]
 pub enum Signal {
   Kill,
-  Continue,
+  Continue(String),
+}
+
+impl Signal {
+  pub fn to_port(self) -> String {
+    match self {
+      Signal::Continue(s) => s,
+      _ => panic!("not a continuation"),
+    }
+  }
 }
 
 pub async fn start_provider(
@@ -112,13 +121,15 @@ pub async fn start_provider(
   debug!("Starting provider bin: {}", name);
   let mut provider = tokio_test_bin::get_test_bin(name)
     .env_clear()
-    .stdout(Stdio::null())
+    .stdout(Stdio::piped())
     .stderr(Stdio::piped())
     .spawn()?;
 
   let stderr = provider.stderr.take().unwrap();
+  let stdout = provider.stdout.take().unwrap();
 
-  let mut reader = BufReader::new(stderr).lines();
+  let mut err_reader = BufReader::new(stderr).lines();
+  let mut out_reader = BufReader::new(stdout).lines();
 
   let (tx, mut rx) = mpsc::channel::<Signal>(1);
 
@@ -138,19 +149,34 @@ pub async fn start_provider(
   });
 
   let re = Regex::new(r"Server bound to 127.0.0.1:(\d+)").unwrap();
+  let (tx2, mut rx2) = mpsc::channel::<Signal>(1);
 
-  debug!("Reading provider STDERR to find its port");
-  let port = loop {
-    let line = reader.next_line().await?.unwrap();
-    debug!("Provider STDERR: {}", line);
-    if let Some(regex_match) = re.captures(&line) {
-      let port = regex_match.get(1).unwrap();
-      break port.as_str().to_owned();
+  tokio::spawn(async move {
+    debug!("Reading provider STDOUT");
+    while let Ok(Some(l)) = out_reader.next_line().await {
+      debug!("Provider STDOUT: {}", l);
+
+      if let Some(regex_match) = re.captures(&l) {
+        let port = regex_match.get(1).unwrap();
+        let _ = tx2.send(Signal::Continue(port.as_str().to_owned())).await;
+      }
     }
-  };
-  debug!("Provider listening on port {}", port);
+    debug!("Continuing");
+  });
 
-  Ok((tx, handle, port))
+  tokio::spawn(async move {
+    debug!("Reading provider STDERR");
+    while let Ok(Some(l)) = err_reader.next_line().await {
+      debug!("Provider STDERR: {}", l);
+    }
+    debug!("Continuing");
+  });
+
+  println!("Waiting for provider to start up");
+  let port = rx2.recv().await.unwrap();
+  println!("Provider started, continuing");
+
+  Ok((tx, handle, port.to_port()))
 }
 
 pub async fn start_vino(
@@ -186,6 +212,7 @@ pub async fn start_vino(
       }
     }
   });
+  let re = Regex::new(r"Bound to 127.0.0.1:(\d+)").unwrap();
 
   let (tx2, mut rx2) = mpsc::channel::<Signal>(1);
 
@@ -193,8 +220,10 @@ pub async fn start_vino(
     debug!("Reading host STDERR");
     while let Ok(Some(l)) = reader.next_line().await {
       debug!("Host STDERR: {}", l);
-      if l.contains("Bound to") {
-        let _ = tx2.send(Signal::Continue).await;
+
+      if let Some(regex_match) = re.captures(&l) {
+        let port = regex_match.get(1).unwrap();
+        let _ = tx2.send(Signal::Continue(port.as_str().to_owned())).await;
       }
     }
     debug!("Continuing");

@@ -74,8 +74,13 @@
 // Add exceptions here
 #![allow(clippy::trivially_copy_pass_by_ref, clippy::needless_borrow)]
 
+/// Error module for Logger
+pub mod error;
+
 /// Logger options
 pub mod options;
+
+use std::time::SystemTime;
 
 use anyhow::Result;
 use chrono::{
@@ -98,8 +103,10 @@ use log::{
 pub use options::LoggingOptions;
 use serde_json::json;
 
+use self::error::LoggerError;
+
 const FILTER_ENV: &str = "VINO_LOG";
-use std::time::SystemTime;
+
 /// The logger instance
 #[derive(Debug)]
 pub struct Logger {
@@ -108,32 +115,49 @@ pub struct Logger {
   json: bool,
 }
 
-fn set_level<T: AsRef<str>>(builder: &mut Builder, priority_modules: &[T], level: LevelFilter) {
+fn set_level(builder: &mut Builder, priority_modules: &[&str], level: LevelFilter) {
   for module in priority_modules.iter() {
     builder.filter_module(module.as_ref(), level);
   }
 }
 
 impl Logger {
-  fn new<T: AsRef<str>>(
-    opts: &LoggingOptions,
-    priority_modules: &[T],
-    chatty_modules: &[T],
-  ) -> Logger {
+  fn new(opts: &LoggingOptions) -> Logger {
     let mut builder = Builder::new();
+
+    let priority_modules = [
+      "logger",
+      "vino_cli",
+      "vinoc",
+      "vino_macros",
+      "vino_runtime",
+      "vino_rpc",
+      "vino_host",
+      "vino_transport",
+      "vino_codec",
+      "vino_manifest",
+      "vino_provider",
+      "vino_native_provider",
+      "vino_provider_cli",
+      "vino_wascap",
+      "wapc",
+      "vow",
+    ];
+
+    let chatty_modules: [&str; 0] = [];
 
     if let Ok(ref filter) = std::env::var(FILTER_ENV) {
       builder.parse(filter);
     } else {
       builder.filter_level(log::LevelFilter::Off);
       if opts.quiet {
-        set_level(&mut builder, priority_modules, log::LevelFilter::Error);
+        set_level(&mut builder, &priority_modules, log::LevelFilter::Error);
       } else if opts.trace {
-        set_level(&mut builder, priority_modules, log::LevelFilter::Trace);
+        set_level(&mut builder, &priority_modules, log::LevelFilter::Trace);
       } else if opts.debug {
-        set_level(&mut builder, priority_modules, log::LevelFilter::Debug);
+        set_level(&mut builder, &priority_modules, log::LevelFilter::Debug);
       } else {
-        set_level(&mut builder, priority_modules, log::LevelFilter::Info);
+        set_level(&mut builder, &priority_modules, log::LevelFilter::Info);
       }
 
       for module in chatty_modules.iter() {
@@ -148,12 +172,8 @@ impl Logger {
     }
   }
   /// Initialize a logger with the passed options, the modules to log by default, and the modules to silence.
-  pub fn init<T: AsRef<str>>(
-    opts: &LoggingOptions,
-    priority_modules: &[T],
-    chatty_modules: &[T],
-  ) -> Result<(), SetLoggerError> {
-    let logger = Self::new(&opts, priority_modules, chatty_modules);
+  pub fn init(opts: &LoggingOptions) -> Result<(), LoggerError> {
+    let logger = Self::new(&opts);
 
     log::set_max_level(logger.inner.filter());
     log::set_boxed_logger(Box::new(logger))?;

@@ -20,8 +20,3 @@ lazy_static = "1.4.0"
 vino-component = { path="../vino-component" }
 
 [dev-dependencies]
-
-[profile.release]
-# Optimize for small code size
-opt-level = "z"
-lto = true

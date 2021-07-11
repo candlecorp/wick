@@ -11,7 +11,6 @@ pub enum ControlError {
   FileNotFound(String),
   #[error("Configuration disallows fetching artifacts with the :latest tag ({0})")]
   LatestDisallowed(String),
-
   #[error("Could not start host: {0}")]
   HostStartFailure(String),
   #[error("Keypair error: {0}")]
@@ -20,6 +19,8 @@ pub enum ControlError {
   KeyPairNotProvided,
   #[error("Failed to deserialize configuration {0}")]
   ConfigurationDeserialization(String),
+  #[error(transparent)]
+  LoggerError(#[from] logger::error::LoggerError),
   #[error(transparent)]
   RpcError(#[from] vino_rpc::Error),
   #[error(transparent)]
@@ -38,8 +39,6 @@ pub enum ControlError {
   IOError(#[from] std::io::Error),
   #[error(transparent)]
   SerdeJsonError(#[from] serde_json::Error),
-  #[error(transparent)]
-  LoggerError(#[from] log::SetLoggerError),
   #[error("General error : {0}")]
   Other(String),
 }

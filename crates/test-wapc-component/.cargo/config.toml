@@ -1,0 +1,7 @@
+[build]
+target = "wasm32-unknown-unknown"
+
+[profile.release]
+# Optimize for small code size
+opt-level = "z"
+lto = true

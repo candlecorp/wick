@@ -1,0 +1,60 @@
+[package]
+name = "vow"
+version = "0.1.0"
+edition = "2018"
+license = "Apache-2.0"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+
+[features]
+default = ["wasm3"]
+wasmtime = ["wasmtime-provider"]
+wasm3 = ["wasm3-provider"]
+
+[dependencies]
+vino-runtime = { path = "../vino-runtime" }
+vino-rpc = { path = "../vino-rpc" }
+vino-provider-cli = { path = "../vino-provider-cli" }
+vino-component = { path = "../vino-component" }
+vino-codec = { path = "../vino-codec" }
+vino-wascap = { path = "../vino-wascap" }
+vino-provider = { path = "../vino-provider" }
+vino-transport = { path = "../vino-transport" }
+structopt = "0.3.22"
+rayon = "1.5.1"
+actix-rt = "2.2.0"
+actix = "0.12.0"
+serde_json = "1.0.64"
+
+# wasm3-provider = { version="0.0.2", optional=true }
+wasm3-provider = { path = "../wasm3-provider", optional = true }
+wasmtime-provider = { version = "0.0.3", optional = true }
+wapc = { path = "../wapc-rust" }
+
+tokio = { version = "1.8.1", features = [
+  "macros",
+  "net",
+  "signal",
+  "rt-multi-thread",
+] }
+futures = "0.3.15"
+tokio-stream = "0.1.7"
+serde = { version = "1.0.126", features = ["derive"] }
+async-stream = "0.3.2"
+tracing = "0.1.26"
+thiserror = "1.0.25"
+async-trait = "0.1.50"
+logger = { path = "../logger" }
+
+[dev-dependencies]
+test-env-log = "0.2.7"
+test-vino-provider = { path = "../test-vino-provider" }
+env_logger = "0.8.4"
+tracing-subscriber = "0.2.18"
+maplit = "1.0.2"
+anyhow = "1.0.42"
+
+[[bin]]
+name = "vow"
+path = "src/main.rs"

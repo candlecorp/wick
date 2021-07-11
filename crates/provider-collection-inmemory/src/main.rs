@@ -29,7 +29,6 @@ pub struct Options {
 
 #[tokio::main]
 async fn main() -> vino_collection_inmemory::Result<()> {
-  env::set_var("RUST_LOG", "trace");
   let opts = Options::from_args();
 
   env_logger::init();

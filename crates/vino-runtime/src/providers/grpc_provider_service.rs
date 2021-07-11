@@ -58,7 +58,7 @@ impl Handler<Initialize> for GrpcProviderService {
 
   #[tracing::instrument(level = tracing::Level::DEBUG, name = "GRPC Init", skip(self, msg, ctx))]
   fn handle(&mut self, msg: Initialize, ctx: &mut Self::Context) -> Self::Result {
-    debug!("GRPC Provider initialized");
+    debug!("GRPC Provider initializing");
 
     self.namespace = msg.namespace;
     self.seed = msg.signing_seed;
@@ -98,7 +98,7 @@ impl Handler<Initialize> for GrpcProviderService {
           });
           Ok(metadata)
         }
-        Err(e) => Err(e),
+        Err(e) => log_err!(e),
       });
 
     ActorResult::reply_async(chain)
@@ -122,6 +122,7 @@ impl Handler<InitializeComponents> for GrpcProviderService {
       msg.namespace
     );
     let mut client = msg.client;
+    debug!("{:?}", client);
     let namespace = msg.namespace;
 
     let task = async move {

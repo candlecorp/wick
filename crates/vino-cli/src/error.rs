@@ -25,7 +25,7 @@ pub enum VinoError {
   #[error(transparent)]
   SerdeJsonError(#[from] serde_json::Error),
   #[error(transparent)]
-  LoggerError(#[from] log::SetLoggerError),
+  LoggerError(#[from] logger::error::LoggerError),
   #[error("General error : {0}")]
   Other(String),
 }

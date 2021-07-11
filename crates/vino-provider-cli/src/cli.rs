@@ -61,7 +61,7 @@ pub async fn start_server(
 
   let svc = InvocationServiceServer::new(component_service);
 
-  let listener = tokio_stream::wrappers::TcpListenerStream::new(socket.listen(1).unwrap());
+  let listener = tokio_stream::wrappers::TcpListenerStream::new(socket.listen(32).unwrap());
 
   let reflection = tonic_reflection::server::Builder::configure()
     .build()
@@ -102,7 +102,7 @@ pub async fn init_cli(
   opts: Option<Options>,
 ) -> crate::Result<()> {
   let addr = start_server(provider, opts).await?;
-  info!("Server bound to {}", addr);
+  println!("Server bound to {}", addr);
   info!("Waiting for ctrl-C");
   signal::ctrl_c().await?;
 
