@@ -38,7 +38,6 @@ codegen:
 		cd $(ROOT); \
 	done
 
-
 clean:
 	@for project in $(MAKEFILE_PROJECTS); do \
 		cd `dirname $$project`; \

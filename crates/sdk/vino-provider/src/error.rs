@@ -1,4 +1,5 @@
 use thiserror::Error;
+use vino_rpc::error::RpcError;
 
 type BoxedSyncSendError = Box<dyn std::error::Error + Sync + Send>;
 
@@ -26,4 +27,35 @@ pub enum ProviderError {
   Other(String),
   #[error(transparent)]
   OtherUpstreamError(#[from] Box<dyn std::error::Error + Send + Sync>),
+}
+
+impl From<ProviderError> for Box<RpcError> {
+  fn from(e: ProviderError) -> Self {
+    Box::new(RpcError::ProviderError(e.to_string()))
+  }
+}
+
+#[derive(Error, Debug)]
+pub struct ProviderComponentError {
+  msg: String,
+}
+
+impl std::fmt::Display for ProviderComponentError {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    f.write_str(&self.msg)
+  }
+}
+
+impl ProviderComponentError {
+  pub fn new<T: AsRef<str>>(msg: T) -> Self {
+    Self {
+      msg: msg.as_ref().to_owned(),
+    }
+  }
+}
+
+impl From<Box<ProviderComponentError>> for Box<RpcError> {
+  fn from(e: Box<ProviderComponentError>) -> Self {
+    Box::new(RpcError::ComponentError(e.to_string()))
+  }
 }
