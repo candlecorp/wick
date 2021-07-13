@@ -3,12 +3,10 @@ use std::convert::TryFrom;
 
 use actix::prelude::*;
 use vino_codec::messagepack::serialize;
-use vino_component::Packet;
-use vino_runtime::prelude::{
-  MessageTransport,
-  WapcModule,
-};
+use vino_provider::ComponentSignature;
+use vino_rpc::port::PortStream;
 
+use crate::wapc_module::WapcModule;
 use crate::wasm_host::WasmHost;
 use crate::Result;
 
@@ -45,18 +43,29 @@ impl Handler<Initialize> for WasmService {
 }
 
 #[derive(Message, Debug)]
-#[rtype(result = "Result<HashMap<String, Packet>>")]
+#[rtype(result = "Result<PortStream>")]
 pub struct Call {
   pub component: String,
-  pub message: MessageTransport,
+  pub payload: HashMap<String, Vec<u8>>,
 }
 
 impl Handler<Call> for WasmService {
-  type Result = Result<HashMap<String, Packet>>;
+  type Result = Result<PortStream>;
 
   fn handle(&mut self, msg: Call, _ctx: &mut Self::Context) -> Self::Result {
-    let message = msg.message.into_multibytes()?;
-    let payload = serialize(("", message))?;
+    let payload = serialize(("", msg.payload))?;
     self.host.call(&msg.component, &payload)
+  }
+}
+
+#[derive(Message, Copy, Clone, Debug)]
+#[rtype(result = "Result<Vec<ComponentSignature>>")]
+pub struct GetComponents {}
+
+impl Handler<GetComponents> for WasmService {
+  type Result = Result<Vec<ComponentSignature>>;
+
+  fn handle(&mut self, _msg: GetComponents, _ctx: &mut Self::Context) -> Self::Result {
+    Ok(self.host.get_components().clone())
   }
 }

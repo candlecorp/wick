@@ -121,6 +121,8 @@ pub enum NetworkError {
   ExecutionError(String),
   #[error(transparent)]
   CodecError(#[from] vino_codec::Error),
+  #[error(transparent)]
+  RpcHandlerError(#[from] Box<vino_rpc::Error>),
 }
 
 #[derive(Error, Debug)]
@@ -129,6 +131,8 @@ pub enum ComponentError {
   ClaimsError(String),
   #[error(transparent)]
   WascapError(#[from] vino_wascap::error::ClaimsError),
+  #[error(transparent)]
+  WasmProviderError(#[from] vino_provider_wasm::Error),
   #[error("Failed to create a raw WebAssembly host")]
   WapcError,
   #[error(transparent)]
@@ -143,6 +147,8 @@ pub enum ComponentError {
   ActixMailboxError(#[from] MailboxError),
   #[error(transparent)]
   RpcError(#[from] vino_rpc::Error),
+  #[error(transparent)]
+  RpcHandlerError(#[from] Box<vino_rpc::Error>),
   #[error(transparent)]
   OtherUpstream(#[from] BoxedErrorSyncSend),
   #[error(transparent)]
@@ -272,7 +278,8 @@ pub enum VinoError {
   OutputError(#[from] vino_component::Error),
   #[error(transparent)]
   ActixMailboxError(#[from] MailboxError),
-
+  #[error(transparent)]
+  RpcHandlerError(#[from] Box<vino_rpc::Error>),
   #[error(transparent)]
   OtherUpstream(#[from] BoxedErrorSyncSend),
   #[error("General error : {0}")]

@@ -6,6 +6,7 @@ use std::sync::{
 
 use async_trait::async_trait;
 use vino_entity::Entity;
+use vino_rpc::error::RpcError;
 use vino_rpc::{
   BoxedPacketStream,
   DurationStatistics,
@@ -15,7 +16,6 @@ use vino_rpc::{
 };
 mod components;
 pub(crate) mod generated;
-use anyhow::anyhow;
 
 pub(crate) struct State {}
 
@@ -41,14 +41,23 @@ impl RpcHandler for Provider {
     payload: HashMap<String, Vec<u8>>,
   ) -> RpcResult<BoxedPacketStream> {
     let context = self.context.clone();
-    let component = entity.into_component()?;
+    let component = entity
+      .into_component()
+      .map_err(|e| RpcError::ProviderError(e.to_string()))?;
     let instance = generated::get_component(&component);
     match instance {
       Some(instance) => {
         let future = instance.job_wrapper(context, payload);
-        Ok(Box::pin(future.await?))
+        Ok(Box::pin(
+          future
+            .await
+            .map_err(|e| RpcError::ProviderError(e.to_string()))?,
+        ))
       }
-      None => Err(anyhow!("Component '{}' not found", component).into()),
+      None => Err(Box::new(RpcError::ProviderError(format!(
+        "Component '{}' not found",
+        component
+      )))),
     }
   }
 

@@ -7,14 +7,19 @@ use std::path::PathBuf;
 use std::str::FromStr;
 
 use crate::error::OciError;
+pub mod error;
+pub use error::OciError as Error;
 
-pub(crate) const OCI_VAR_USER: &str = "OCI_REGISTRY_USER";
-pub(crate) const OCI_VAR_PASSWORD: &str = "OCI_REGISTRY_PASSWORD";
+#[macro_use]
+extern crate tracing;
+
+pub const OCI_VAR_USER: &str = "OCI_REGISTRY_USER";
+pub const OCI_VAR_PASSWORD: &str = "OCI_REGISTRY_PASSWORD";
 const PROVIDER_ARCHIVE_MEDIA_TYPE: &str = "application/vnd.wasmcloud.provider.archive.layer.v1+par";
 const WASM_MEDIA_TYPE: &str = "application/vnd.module.wasm.content.layer.v1+wasm";
 const OCI_MEDIA_TYPE: &str = "application/vnd.oci.image.layer.v1.tar";
 
-pub(crate) async fn fetch_oci_bytes(
+pub async fn fetch_oci_bytes(
   img: &str,
   allow_latest: bool,
   allowed_insecure: &[String],

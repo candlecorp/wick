@@ -1,17 +1,13 @@
-use rayon::ThreadPoolBuildError;
 use thiserror::Error;
-use vino_provider::ComponentSignature;
 
 #[derive(Error, Debug)]
 pub enum VowError {
   #[error(transparent)]
   LoggerError(#[from] logger::error::LoggerError),
   #[error(transparent)]
-  ComponentError(#[from] vino_runtime::error::ComponentError),
+  ComponentError(#[from] vino_provider_wasm::Error),
   #[error(transparent)]
-  ThreadPoolBuildError(#[from] ThreadPoolBuildError),
-  #[error(transparent)]
-  WapcError(#[from] wapc::errors::Error),
+  RpcError(#[from] Box<vino_rpc::Error>),
   #[error(transparent)]
   CodecError(#[from] vino_codec::Error),
   #[error(transparent)]
@@ -19,7 +15,9 @@ pub enum VowError {
   #[error("JSON Serialization/Deserialization error : {0}")]
   JsonError(String),
   #[error(transparent)]
-  TransportError(#[from] vino_transport::error::TransportError),
+  TransportError(#[from] vino_transport::Error),
+  #[error(transparent)]
+  CliError(#[from] vino_provider_cli::Error),
   #[error("Invalid claims : {0}")]
   ClaimsError(String),
   #[error("General error : {0}")]

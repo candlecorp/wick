@@ -2,15 +2,11 @@ use std::collections::HashMap;
 use std::convert::TryFrom;
 use std::time::Instant;
 
-use futures::executor::block_on;
-use tokio_stream::StreamExt;
-use vino_component::Packet;
+use vino_provider::ComponentSignature;
 use vino_rpc::port::{
-  PacketWrapper,
   PortStream,
   Sender,
 };
-use vino_runtime::prelude::WapcModule;
 use vino_wascap::{
   Claims,
   ComponentClaims,
@@ -18,6 +14,7 @@ use vino_wascap::{
 use wapc::WapcHost;
 
 use crate::output_sender::OutputSender;
+use crate::wapc_module::WapcModule;
 use crate::{
   Error,
   Result,
@@ -65,7 +62,7 @@ impl TryFrom<&WapcModule> for WasmHost {
 }
 
 impl WasmHost {
-  pub fn call(&mut self, component_name: &str, payload: &[u8]) -> Result<HashMap<String, Packet>> {
+  pub fn call(&mut self, component_name: &str, payload: &[u8]) -> Result<PortStream> {
     let claims = &self.claims;
     let components = &claims.metadata.as_ref().unwrap().interface.components;
 
@@ -111,13 +108,21 @@ impl WasmHost {
     let _result = self.host.call(component_name, payload)?;
     debug!("Invocation response: {:?}", _result);
 
-    let mut map = HashMap::new();
-    let messages: Vec<PacketWrapper> = block_on(receiver.collect());
+    // let mut map = HashMap::new();
+    // let messages: Vec<PacketWrapper> = block_on(receiver.collect());
 
-    for message in messages {
-      map.insert(message.port, message.packet);
-    }
+    // for message in messages {
+    //   map.insert(message.port, message.packet);
+    // }
 
-    Ok(map)
+    // Ok(map)
+
+    Ok(receiver)
+  }
+
+  pub fn get_components(&self) -> &Vec<ComponentSignature> {
+    let claims = &self.claims;
+    let components = &claims.metadata.as_ref().unwrap().interface.components;
+    components
   }
 }

@@ -72,12 +72,12 @@ pub(crate) mod add_item {
     Serialize,
   };
   use vino_codec::messagepack::deserialize;
-  use vino_provider::error::ProviderError;
+  use vino_provider::error::ProviderComponentError;
   use vino_provider::{
     Context as ProviderContext,
     VinoProviderComponent,
   };
-  pub use vino_rpc::port::Sender;
+  pub(crate) use vino_rpc::port::Sender;
   use vino_rpc::port::{
     Port,
     PortStream,
@@ -176,13 +176,18 @@ pub(crate) mod add_item {
       &self,
       context: ProviderContext<Self::Context>,
       data: HashMap<String, Vec<u8>>,
-    ) -> Result<PortStream, Box<dyn std::error::Error + Send + Sync>> {
-      let inputs = deserialize_inputs(&data).map_err(ProviderError::InputDeserializationError)?;
+    ) -> Result<PortStream, Box<ProviderComponentError>> {
+      let inputs = deserialize_inputs(&data).map_err(|e| {
+        ProviderComponentError::new(format!("Input deserialization error: {}", e.to_string()))
+      })?;
       let (outputs, stream) = get_outputs();
       let result = crate::components::add_item::job(inputs, outputs, context).await;
       match result {
         Ok(_) => Ok(stream),
-        Err(e) => Err(ProviderError::JobError(format!("Job failed: {}", e.to_string())).into()),
+        Err(e) => Err(Box::new(ProviderComponentError::new(format!(
+          "Job failed: {}",
+          e.to_string()
+        )))),
       }
     }
   }
@@ -201,12 +206,12 @@ pub(crate) mod get_item {
     Serialize,
   };
   use vino_codec::messagepack::deserialize;
-  use vino_provider::error::ProviderError;
+  use vino_provider::error::ProviderComponentError;
   use vino_provider::{
     Context as ProviderContext,
     VinoProviderComponent,
   };
-  pub use vino_rpc::port::Sender;
+  pub(crate) use vino_rpc::port::Sender;
   use vino_rpc::port::{
     Port,
     PortStream,
@@ -297,13 +302,18 @@ pub(crate) mod get_item {
       &self,
       context: ProviderContext<Self::Context>,
       data: HashMap<String, Vec<u8>>,
-    ) -> Result<PortStream, Box<dyn std::error::Error + Send + Sync>> {
-      let inputs = deserialize_inputs(&data).map_err(ProviderError::InputDeserializationError)?;
+    ) -> Result<PortStream, Box<ProviderComponentError>> {
+      let inputs = deserialize_inputs(&data).map_err(|e| {
+        ProviderComponentError::new(format!("Input deserialization error: {}", e.to_string()))
+      })?;
       let (outputs, stream) = get_outputs();
       let result = crate::components::get_item::job(inputs, outputs, context).await;
       match result {
         Ok(_) => Ok(stream),
-        Err(e) => Err(ProviderError::JobError(format!("Job failed: {}", e.to_string())).into()),
+        Err(e) => Err(Box::new(ProviderComponentError::new(format!(
+          "Job failed: {}",
+          e.to_string()
+        )))),
       }
     }
   }
@@ -322,12 +332,12 @@ pub(crate) mod list_items {
     Serialize,
   };
   use vino_codec::messagepack::deserialize;
-  use vino_provider::error::ProviderError;
+  use vino_provider::error::ProviderComponentError;
   use vino_provider::{
     Context as ProviderContext,
     VinoProviderComponent,
   };
-  pub use vino_rpc::port::Sender;
+  pub(crate) use vino_rpc::port::Sender;
   use vino_rpc::port::{
     Port,
     PortStream,
@@ -414,13 +424,18 @@ pub(crate) mod list_items {
       &self,
       context: ProviderContext<Self::Context>,
       data: HashMap<String, Vec<u8>>,
-    ) -> Result<PortStream, Box<dyn std::error::Error + Send + Sync>> {
-      let inputs = deserialize_inputs(&data).map_err(ProviderError::InputDeserializationError)?;
+    ) -> Result<PortStream, Box<ProviderComponentError>> {
+      let inputs = deserialize_inputs(&data).map_err(|e| {
+        ProviderComponentError::new(format!("Input deserialization error: {}", e.to_string()))
+      })?;
       let (outputs, stream) = get_outputs();
       let result = crate::components::list_items::job(inputs, outputs, context).await;
       match result {
         Ok(_) => Ok(stream),
-        Err(e) => Err(ProviderError::JobError(format!("Job failed: {}", e.to_string())).into()),
+        Err(e) => Err(Box::new(ProviderComponentError::new(format!(
+          "Job failed: {}",
+          e.to_string()
+        )))),
       }
     }
   }

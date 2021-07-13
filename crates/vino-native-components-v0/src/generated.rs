@@ -108,7 +108,7 @@ pub(crate) mod add {
     Serialize,
   };
   use vino_codec::messagepack::deserialize;
-  use vino_provider::error::ProviderError;
+  use vino_provider::error::ProviderComponentError;
   use vino_provider::{
     Context as ProviderContext,
     VinoProviderComponent,
@@ -204,13 +204,18 @@ pub(crate) mod add {
       &self,
       context: ProviderContext<Self::Context>,
       data: HashMap<String, Vec<u8>>,
-    ) -> Result<PortStream, Box<dyn std::error::Error + Send + Sync>> {
-      let inputs = deserialize_inputs(&data).map_err(ProviderError::InputDeserializationError)?;
+    ) -> Result<PortStream, Box<ProviderComponentError>> {
+      let inputs = deserialize_inputs(&data).map_err(|e| {
+        ProviderComponentError::new(format!("Input deserialization error: {}", e.to_string()))
+      })?;
       let (outputs, stream) = get_outputs();
       let result = crate::components::add::job(inputs, outputs, context).await;
       match result {
         Ok(_) => Ok(stream),
-        Err(e) => Err(ProviderError::JobError(format!("Job failed: {}", e.to_string())).into()),
+        Err(e) => Err(Box::new(ProviderComponentError::new(format!(
+          "Job failed: {}",
+          e.to_string()
+        )))),
       }
     }
   }
@@ -229,7 +234,7 @@ pub(crate) mod bcrypt {
     Serialize,
   };
   use vino_codec::messagepack::deserialize;
-  use vino_provider::error::ProviderError;
+  use vino_provider::error::ProviderComponentError;
   use vino_provider::{
     Context as ProviderContext,
     VinoProviderComponent,
@@ -325,13 +330,18 @@ pub(crate) mod bcrypt {
       &self,
       context: ProviderContext<Self::Context>,
       data: HashMap<String, Vec<u8>>,
-    ) -> Result<PortStream, Box<dyn std::error::Error + Send + Sync>> {
-      let inputs = deserialize_inputs(&data).map_err(ProviderError::InputDeserializationError)?;
+    ) -> Result<PortStream, Box<ProviderComponentError>> {
+      let inputs = deserialize_inputs(&data).map_err(|e| {
+        ProviderComponentError::new(format!("Input deserialization error: {}", e.to_string()))
+      })?;
       let (outputs, stream) = get_outputs();
       let result = crate::components::bcrypt::job(inputs, outputs, context).await;
       match result {
         Ok(_) => Ok(stream),
-        Err(e) => Err(ProviderError::JobError(format!("Job failed: {}", e.to_string())).into()),
+        Err(e) => Err(Box::new(ProviderComponentError::new(format!(
+          "Job failed: {}",
+          e.to_string()
+        )))),
       }
     }
   }
@@ -350,7 +360,7 @@ pub(crate) mod error {
     Serialize,
   };
   use vino_codec::messagepack::deserialize;
-  use vino_provider::error::ProviderError;
+  use vino_provider::error::ProviderComponentError;
   use vino_provider::{
     Context as ProviderContext,
     VinoProviderComponent,
@@ -442,13 +452,18 @@ pub(crate) mod error {
       &self,
       context: ProviderContext<Self::Context>,
       data: HashMap<String, Vec<u8>>,
-    ) -> Result<PortStream, Box<dyn std::error::Error + Send + Sync>> {
-      let inputs = deserialize_inputs(&data).map_err(ProviderError::InputDeserializationError)?;
+    ) -> Result<PortStream, Box<ProviderComponentError>> {
+      let inputs = deserialize_inputs(&data).map_err(|e| {
+        ProviderComponentError::new(format!("Input deserialization error: {}", e.to_string()))
+      })?;
       let (outputs, stream) = get_outputs();
       let result = crate::components::error::job(inputs, outputs, context).await;
       match result {
         Ok(_) => Ok(stream),
-        Err(e) => Err(ProviderError::JobError(format!("Job failed: {}", e.to_string())).into()),
+        Err(e) => Err(Box::new(ProviderComponentError::new(format!(
+          "Job failed: {}",
+          e.to_string()
+        )))),
       }
     }
   }
@@ -467,7 +482,7 @@ pub(crate) mod log {
     Serialize,
   };
   use vino_codec::messagepack::deserialize;
-  use vino_provider::error::ProviderError;
+  use vino_provider::error::ProviderComponentError;
   use vino_provider::{
     Context as ProviderContext,
     VinoProviderComponent,
@@ -559,13 +574,18 @@ pub(crate) mod log {
       &self,
       context: ProviderContext<Self::Context>,
       data: HashMap<String, Vec<u8>>,
-    ) -> Result<PortStream, Box<dyn std::error::Error + Send + Sync>> {
-      let inputs = deserialize_inputs(&data).map_err(ProviderError::InputDeserializationError)?;
+    ) -> Result<PortStream, Box<ProviderComponentError>> {
+      let inputs = deserialize_inputs(&data).map_err(|e| {
+        ProviderComponentError::new(format!("Input deserialization error: {}", e.to_string()))
+      })?;
       let (outputs, stream) = get_outputs();
       let result = crate::components::log::job(inputs, outputs, context).await;
       match result {
         Ok(_) => Ok(stream),
-        Err(e) => Err(ProviderError::JobError(format!("Job failed: {}", e.to_string())).into()),
+        Err(e) => Err(Box::new(ProviderComponentError::new(format!(
+          "Job failed: {}",
+          e.to_string()
+        )))),
       }
     }
   }
@@ -584,7 +604,7 @@ pub(crate) mod short_circuit {
     Serialize,
   };
   use vino_codec::messagepack::deserialize;
-  use vino_provider::error::ProviderError;
+  use vino_provider::error::ProviderComponentError;
   use vino_provider::{
     Context as ProviderContext,
     VinoProviderComponent,
@@ -676,13 +696,18 @@ pub(crate) mod short_circuit {
       &self,
       context: ProviderContext<Self::Context>,
       data: HashMap<String, Vec<u8>>,
-    ) -> Result<PortStream, Box<dyn std::error::Error + Send + Sync>> {
-      let inputs = deserialize_inputs(&data).map_err(ProviderError::InputDeserializationError)?;
+    ) -> Result<PortStream, Box<ProviderComponentError>> {
+      let inputs = deserialize_inputs(&data).map_err(|e| {
+        ProviderComponentError::new(format!("Input deserialization error: {}", e.to_string()))
+      })?;
       let (outputs, stream) = get_outputs();
       let result = crate::components::short_circuit::job(inputs, outputs, context).await;
       match result {
         Ok(_) => Ok(stream),
-        Err(e) => Err(ProviderError::JobError(format!("Job failed: {}", e.to_string())).into()),
+        Err(e) => Err(Box::new(ProviderComponentError::new(format!(
+          "Job failed: {}",
+          e.to_string()
+        )))),
       }
     }
   }
@@ -701,7 +726,7 @@ pub(crate) mod string_to_bytes {
     Serialize,
   };
   use vino_codec::messagepack::deserialize;
-  use vino_provider::error::ProviderError;
+  use vino_provider::error::ProviderComponentError;
   use vino_provider::{
     Context as ProviderContext,
     VinoProviderComponent,
@@ -793,13 +818,18 @@ pub(crate) mod string_to_bytes {
       &self,
       context: ProviderContext<Self::Context>,
       data: HashMap<String, Vec<u8>>,
-    ) -> Result<PortStream, Box<dyn std::error::Error + Send + Sync>> {
-      let inputs = deserialize_inputs(&data).map_err(ProviderError::InputDeserializationError)?;
+    ) -> Result<PortStream, Box<ProviderComponentError>> {
+      let inputs = deserialize_inputs(&data).map_err(|e| {
+        ProviderComponentError::new(format!("Input deserialization error: {}", e.to_string()))
+      })?;
       let (outputs, stream) = get_outputs();
       let result = crate::components::string_to_bytes::job(inputs, outputs, context).await;
       match result {
         Ok(_) => Ok(stream),
-        Err(e) => Err(ProviderError::JobError(format!("Job failed: {}", e.to_string())).into()),
+        Err(e) => Err(Box::new(ProviderComponentError::new(format!(
+          "Job failed: {}",
+          e.to_string()
+        )))),
       }
     }
   }

@@ -96,8 +96,10 @@ pub trait VinoProviderComponent {
     &self,
     context: Arc<Mutex<Self::Context>>,
     data: HashMap<String, Vec<u8>>,
-  ) -> std::result::Result<PortStream, Box<dyn std::error::Error + Send + Sync>>;
+  ) -> std::result::Result<PortStream, Box<ProviderComponentError>>;
 }
 
 pub use vino_entity as entity;
 pub use vino_rpc::ComponentSignature;
+
+use self::error::ProviderComponentError;

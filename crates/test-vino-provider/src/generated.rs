@@ -46,15 +46,15 @@ pub(crate) mod test_component {
     Serialize,
   };
   use vino_codec::messagepack::deserialize;
-  use vino_provider::error::ProviderError;
+  use vino_provider::error::ProviderComponentError;
   use vino_provider::{
     Context as ProviderContext,
     VinoProviderComponent,
   };
+  pub(crate) use vino_rpc::port::Sender;
   use vino_rpc::port::{
     Port,
     PortStream,
-    Sender,
   };
 
   #[derive(Debug, PartialEq, Deserialize, Serialize, Default, Clone)]
@@ -138,13 +138,18 @@ pub(crate) mod test_component {
       &self,
       context: ProviderContext<Self::Context>,
       data: HashMap<String, Vec<u8>>,
-    ) -> Result<PortStream, Box<dyn std::error::Error + Send + Sync>> {
-      let inputs = deserialize_inputs(&data).map_err(ProviderError::InputDeserializationError)?;
+    ) -> Result<PortStream, Box<ProviderComponentError>> {
+      let inputs = deserialize_inputs(&data).map_err(|e| {
+        ProviderComponentError::new(format!("Input deserialization error: {}", e.to_string()))
+      })?;
       let (outputs, stream) = get_outputs();
       let result = crate::components::test_component::job(inputs, outputs, context).await;
       match result {
         Ok(_) => Ok(stream),
-        Err(e) => Err(ProviderError::JobError(format!("Job failed: {}", e.to_string())).into()),
+        Err(e) => Err(Box::new(ProviderComponentError::new(format!(
+          "Job failed: {}",
+          e.to_string()
+        )))),
       }
     }
   }

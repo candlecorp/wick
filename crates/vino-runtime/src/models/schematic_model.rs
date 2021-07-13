@@ -375,7 +375,7 @@ mod tests {
   use crate::test::prelude::*;
 
   #[test_env_log::test]
-  fn test_basics() -> Result<(), TestError> {
+  fn test_basics() -> TestResult<()> {
     let schematic_name = "logger";
     let def = load_schematic_manifest("./src/models/test-schematics/logger.yaml")?;
     let model = SchematicModel::try_from(def)?;
@@ -385,7 +385,7 @@ mod tests {
   }
 
   #[test_env_log::test]
-  fn test_find_defaults() -> Result<(), TestError> {
+  fn test_find_defaults() -> TestResult<()> {
     let schematic_name = "Test";
     let mut schematic_def = new_schematic(schematic_name);
     schematic_def.connections.push(ConnectionDefinition {

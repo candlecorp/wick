@@ -8,7 +8,6 @@ pub(crate) mod prelude {
 
   pub(crate) use actix::prelude::{
     Actor,
-    ActorContext,
     ActorFutureExt,
     Addr,
     Arbiter,

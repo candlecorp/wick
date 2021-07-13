@@ -3,9 +3,9 @@ use vino_provider::Context;
 use crate::generated::error::*;
 
 pub(crate) async fn job(
-  input: Inputs,
-  output: Outputs,
+  _input: Inputs,
+  _output: Outputs,
   _context: Context<crate::State>,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-  Ok(())
+  panic!("This component will always panic");
 }

@@ -2,8 +2,7 @@ pub(crate) mod grpc_provider_service;
 pub(crate) mod native_provider_service;
 pub(crate) mod network_provider;
 pub(crate) mod network_provider_service;
-pub(crate) mod wapc_module;
-pub(crate) mod wapc_provider_service;
+pub(crate) mod wasm_provider_service;
 
 use vino_rpc::{
   HostedType,

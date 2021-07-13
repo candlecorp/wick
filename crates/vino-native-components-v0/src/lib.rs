@@ -82,6 +82,7 @@ use std::sync::{
 
 use async_trait::async_trait;
 use vino_entity::Entity;
+use vino_rpc::error::RpcError;
 use vino_rpc::{
   BoxedPacketStream,
   DurationStatistics,
@@ -101,6 +102,12 @@ pub(crate) struct State {}
 #[derive(Clone, Debug)]
 pub struct Provider {
   context: Arc<Mutex<State>>,
+}
+
+impl From<NativeError> for Box<RpcError> {
+  fn from(e: NativeError) -> Self {
+    Box::new(RpcError::ProviderError(e.to_string()))
+  }
 }
 
 impl Provider {
@@ -129,9 +136,16 @@ impl RpcHandler for Provider {
     match instance {
       Some(instance) => {
         let future = instance.job_wrapper(context, payload);
-        Ok(Box::pin(future.await?))
+        Ok(Box::pin(
+          future
+            .await
+            .map_err(|e| RpcError::ProviderError(e.to_string()))?,
+        ))
       }
-      None => Err(format!("Could not find component: {}", component).into()),
+      None => Err(Box::new(RpcError::ProviderError(format!(
+        "Component '{}' not found",
+        component
+      )))),
     }
   }
 

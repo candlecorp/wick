@@ -25,6 +25,8 @@ GENERATED_HEADER := /* This is generated, do not edit by hand */
 # Files to clean up on make clean
 CLEAN_FILES :=  $(COMPONENTS_RS) $(GENERATED_RS)
 
+RUSTFMT=rustfmt --edition=2018
+
 all: codegen build
 
 # Defines rules like the following for each schema found :
@@ -49,7 +51,7 @@ $(COMPONENTS_DIR):
 	vino-codegen json interface "$(CRATE_NAME)" $(SCHEMA_DIR) -f -o $@
 
 $(GENERATED_RS): $(SCHEMAS)
-	vino-codegen rust provider-integration $(SCHEMA_DIR) >$@
+	vino-codegen rust provider-integration $(SCHEMA_DIR) -f -o $@
 
 codegen: $(USER_COMPONENTS)  $(GENERATED_RS) $(COMPONENTS_RS)
 	cargo fmt

@@ -9,11 +9,9 @@ use crate::providers::network_provider_service::{
   self,
   NetworkProviderService,
 };
-use crate::providers::wapc_module::load_component;
 use crate::providers::{
   grpc_provider_service,
   native_provider_service,
-  wapc_provider_service,
 };
 type Result<T> = std::result::Result<T, ComponentError>;
 
@@ -90,29 +88,35 @@ async fn initialize_grpc_provider(
   ))
 }
 
-async fn initialize_wapc_provider(
+async fn initialize_wasm_provider(
   provider: ProviderDefinition,
-  seed: &str,
+  _seed: &str,
   namespace: &str,
   allow_latest: bool,
   allowed_insecure: &[String],
 ) -> Result<(ProviderChannel, ProviderModel)> {
+  trace!("Starting network provider");
   let arbiter = Arbiter::new();
   let handle = arbiter.handle();
-
-  let addr = wapc_provider_service::WapcProviderService::start_in_arbiter(&handle, |_| {
-    wapc_provider_service::WapcProviderService::default()
-  });
-
   let component =
-    load_component(provider.reference.clone(), allow_latest, allowed_insecure).await?;
+    vino_provider_wasm::helpers::load_wasm(&provider.reference, allow_latest, allowed_insecure)
+      .await?;
+
+  let provider = Arc::new(Mutex::new(vino_provider_wasm::provider::Provider::new(
+    component, 5,
+  )));
+
+  let addr =
+    NetworkProviderService::start_in_arbiter(&handle, |_| NetworkProviderService::default());
+  addr
+    .send(network_provider_service::Initialize {
+      provider: provider.clone(),
+      namespace: namespace.to_owned(),
+    })
+    .await??;
 
   let components = addr
-    .send(wapc_provider_service::Initialize {
-      namespace: namespace.to_owned(),
-      signing_seed: seed.to_owned(),
-      bytes: component.bytes,
-    })
+    .send(network_provider_service::InitializeComponents {})
     .await??;
 
   Ok((
@@ -173,7 +177,7 @@ pub(crate) async fn initialize_provider(
     ProviderKind::Native => unreachable!(), ///// Should not be handled via this route
     ProviderKind::GrpcUrl => initialize_grpc_provider(provider, seed, &namespace).await,
     ProviderKind::Wapc => {
-      initialize_wapc_provider(provider, seed, &namespace, allow_latest, allowed_insecure).await
+      initialize_wasm_provider(provider, seed, &namespace, allow_latest, allowed_insecure).await
     }
   }
 }

@@ -14,7 +14,7 @@ use vino_transport::message_transport::{
 #[test_env_log::test(tokio::test)]
 async fn test_collection() -> utils::TestResult<()> {
   debug!("Starting provider");
-  let (p_tx, p_handle, port) = start_provider("vino-collection-inmemory").await?;
+  let (p_tx, p_handle, port) = start_provider("vino-collection-inmemory", &[]).await?;
 
   debug!("Starting host");
   let (h_tx, h_handle) = start_vino(

@@ -117,9 +117,11 @@ impl Signal {
 
 pub async fn start_provider(
   name: &str,
+  args: &[&str],
 ) -> Result<(Sender<Signal>, JoinHandle<Result<()>>, String)> {
   debug!("Starting provider bin: {}", name);
   let mut provider = tokio_test_bin::get_test_bin(name)
+    .args(args)
     .env_clear()
     .stdout(Stdio::piped())
     .stderr(Stdio::piped())

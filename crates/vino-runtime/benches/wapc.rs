@@ -8,10 +8,9 @@ use criterion::{
 use futures::executor::block_on;
 use lazy_static::lazy_static;
 use maplit::hashmap;
-use runtime_utils::{
-  init_network_from_yaml,
-  TestResult,
-};
+#[path = "../tests/runtime_utils/mod.rs"]
+mod utils;
+use utils::*;
 use vino_entity::Entity;
 use vino_runtime::network::Network;
 
@@ -48,7 +47,7 @@ pub fn bench_async_service(c: &mut Criterion, name: &str) {
   });
 }
 
-async fn wapc_component(input: (&Network, &Data, Entity)) -> TestResult<()> {
+async fn wapc_component(input: (&Network, &Data, Entity)) -> Result<()> {
   let (network, data, entity) = input;
   let _result = network.request("wapc_component", entity, data).await?;
   Ok(())

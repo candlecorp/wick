@@ -108,6 +108,7 @@ use wascap::wasm::days_from_now_to_jwt_time;
 
 pub mod error;
 pub(crate) type Result<T> = std::result::Result<T, error::ClaimsError>;
+pub use error::ClaimsError as Error;
 
 pub fn extract_claims(contents: impl AsRef<[u8]>) -> Result<Option<Token<ComponentClaims>>> {
   let module: Module = deserialize_buffer(contents.as_ref())?;

@@ -98,7 +98,6 @@ use log::{
   Log,
   Metadata,
   Record,
-  SetLoggerError,
 };
 pub use options::LoggingOptions;
 use serde_json::json;

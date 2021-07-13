@@ -60,7 +60,7 @@ pub async fn handle_command(command: InvokeCommand) -> Result<()> {
   let rpc_invocation: vino_rpc::rpc::Invocation = Invocation::new(
     &kp,
     Entity::Client(kp.public_key()),
-    Entity::Schematic(command.schematic),
+    Entity::Component(command.schematic),
     MessageTransport::MultiBytes(multibytes),
   )
   .try_into()?;

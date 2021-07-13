@@ -114,7 +114,7 @@ pub(crate) type Result<T> = std::result::Result<T, error::RpcError>;
 pub type Error = crate::error::RpcError;
 
 /// The Result type for [RpcHandler] implementations
-pub type RpcResult<T> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>>;
+pub type RpcResult<T> = std::result::Result<T, Box<error::RpcError>>;
 
 #[macro_use]
 extern crate tracing;

@@ -73,12 +73,18 @@
 #![allow()]
 
 pub mod error;
+pub mod helpers;
 pub(crate) mod output_sender;
+pub mod provider;
+pub mod wapc_module;
 pub mod wasm_host;
 pub mod wasm_service;
 
-pub type Result<T> = std::result::Result<T, error::VowError>;
-pub type Error = error::VowError;
+pub type Result<T> = std::result::Result<T, error::WasmProviderError>;
+pub type Error = error::WasmProviderError;
 
 #[macro_use]
 extern crate tracing;
+
+#[macro_use]
+extern crate derivative;

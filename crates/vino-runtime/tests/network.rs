@@ -1,15 +1,14 @@
 use std::collections::HashMap;
 
-use runtime_utils::*;
+#[path = "./runtime_utils/mod.rs"]
+mod utils;
+use utils::*;
 use vino_entity::Entity;
 use vino_runtime::prelude::*;
 use vino_transport::MessageTransport;
 
-#[macro_use]
-extern crate tracing;
-
 #[test_env_log::test(actix_rt::test)]
-async fn simple_schematic() -> TestResult<()> {
+async fn simple_schematic() -> Result<()> {
   let (network, _) = init_network_from_yaml("./manifests/simple.yaml").await?;
 
   let data = hashmap! {
@@ -31,7 +30,7 @@ async fn simple_schematic() -> TestResult<()> {
 }
 
 #[test_env_log::test(actix_rt::test)]
-async fn echo() -> TestResult<()> {
+async fn echo() -> Result<()> {
   let (network, _) = init_network_from_yaml("./manifests/echo.yaml").await?;
 
   let data = hashmap! {
@@ -51,7 +50,7 @@ async fn echo() -> TestResult<()> {
 }
 
 #[test_env_log::test(actix_rt::test)]
-async fn native_component() -> TestResult<()> {
+async fn native_component() -> Result<()> {
   let (network, _) = init_network_from_yaml("./manifests/native-component.yaml").await?;
 
   let data = hashmap! {
@@ -75,7 +74,7 @@ async fn native_component() -> TestResult<()> {
 
 #[test_env_log::test(actix_rt::test)]
 
-async fn defaults() -> TestResult<()> {
+async fn defaults() -> Result<()> {
   let (network, _) = init_network_from_yaml("./manifests/defaults.yaml").await?;
 
   let data: HashMap<String, String> = HashMap::new();
@@ -95,7 +94,7 @@ async fn defaults() -> TestResult<()> {
 }
 
 #[test_env_log::test(actix_rt::test)]
-async fn nested_schematics() -> TestResult<()> {
+async fn nested_schematics() -> Result<()> {
   let (network, _) = init_network_from_yaml("./manifests/nested-schematics.yaml").await?;
 
   let user_data = "user inputted data";
@@ -118,7 +117,7 @@ async fn nested_schematics() -> TestResult<()> {
 }
 
 #[test_env_log::test(actix_rt::test)]
-async fn wapc_component() -> TestResult<()> {
+async fn wapc_component() -> Result<()> {
   let (network, _) = init_network_from_yaml("./manifests/wapc-component.yaml").await?;
 
   let data = hashmap! {
@@ -153,7 +152,7 @@ async fn wapc_component() -> TestResult<()> {
 }
 
 #[test_env_log::test(actix_rt::test)]
-async fn bad_wapc_component() -> TestResult<()> {
+async fn bad_wapc_component() -> Result<()> {
   let (network, _) = init_network_from_yaml("./manifests/bad-wapc-component.yaml").await?;
 
   let data = hashmap! {
@@ -171,7 +170,7 @@ async fn bad_wapc_component() -> TestResult<()> {
 }
 
 #[test_env_log::test(actix_rt::test)]
-async fn short_circuit() -> TestResult<()> {
+async fn short_circuit() -> Result<()> {
   let (network, _) = init_network_from_yaml("./manifests/short-circuit.yaml").await?;
 
   let data = hashmap! {
@@ -193,7 +192,7 @@ async fn short_circuit() -> TestResult<()> {
 }
 
 #[test_env_log::test(actix_rt::test)]
-async fn short_circuit_default() -> TestResult<()> {
+async fn short_circuit_default() -> Result<()> {
   let (network, _) = init_network_from_yaml("./manifests/short-circuit-default.yaml").await?;
 
   let data = hashmap! {
@@ -223,7 +222,7 @@ async fn short_circuit_default() -> TestResult<()> {
 }
 
 #[test_env_log::test(actix_rt::test)]
-async fn multiple_schematics() -> TestResult<()> {
+async fn multiple_schematics() -> Result<()> {
   let (network, _) = init_network_from_yaml("./manifests/multiple-schematics.yaml").await?;
 
   let data = hashmap! {
@@ -261,7 +260,7 @@ async fn multiple_schematics() -> TestResult<()> {
 }
 
 #[test_env_log::test(actix_rt::test)]
-async fn global_providers() -> TestResult<()> {
+async fn global_providers() -> Result<()> {
   let (network, _) = init_network_from_yaml("./manifests/global-provider-def.yaml").await?;
 
   let data = hashmap! {

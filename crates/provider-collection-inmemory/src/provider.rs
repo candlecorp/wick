@@ -93,12 +93,12 @@ impl RpcHandler for Provider {
 
 #[cfg(test)]
 mod tests {
+  use anyhow::Result;
   use futures::prelude::*;
   use maplit::hashmap;
   use vino_codec::messagepack::serialize;
 
   use super::*;
-  use crate::Result;
 
   #[test]
   fn is_send() {

@@ -1,16 +1,14 @@
 pub(crate) mod prelude {
+  pub(crate) use anyhow::Result as TestResult;
   pub(crate) use maplit::hashmap;
   pub(crate) use pretty_assertions::assert_eq as equals;
 
   pub(crate) use super::*;
   pub(crate) use crate::dev::prelude::*;
-
-  pub(crate) type TestResult<T> = Result<T, TestError>;
 }
 
 use std::fs;
 
-use thiserror::Error;
 use vino_manifest::{
   Loadable,
   NetworkManifest,
@@ -62,53 +60,4 @@ pub(crate) fn new_schematic(name: &str) -> SchematicDefinition {
     name: name.to_owned(),
     ..SchematicDefinition::default()
   }
-}
-
-#[derive(Error, Debug)]
-pub(crate) enum TestError {
-  #[error(transparent)]
-  CommonError(#[from] CommonError),
-  #[error(transparent)]
-  ComponentError(#[from] ComponentError),
-  #[error(transparent)]
-  NetworkError(#[from] NetworkError),
-  #[error(transparent)]
-  VinoError(#[from] VinoError),
-
-  #[error(transparent)]
-  OciError(#[from] OciError),
-  #[error(transparent)]
-  SchematicError(#[from] SchematicError),
-
-  #[error(transparent)]
-  TonicError(#[from] tonic::transport::Error),
-  #[error(transparent)]
-  RpcUpstreamError(#[from] tonic::Status),
-  #[error(transparent)]
-  EntityError(#[from] vino_entity::Error),
-  #[error(transparent)]
-  RpcError(#[from] vino_rpc::Error),
-  #[error(transparent)]
-  CodecError(#[from] vino_codec::Error),
-  #[error(transparent)]
-  ManifestError(#[from] vino_manifest::Error),
-  #[error(transparent)]
-  TransportError(#[from] vino_transport::error::TransportError),
-  #[error(transparent)]
-  OutputError(#[from] vino_component::Error),
-  #[error(transparent)]
-  ActixMailboxError(#[from] MailboxError),
-  #[error(transparent)]
-  ValidationError(#[from] ValidationError),
-  #[error(transparent)]
-  ModelError(#[from] SchematicModelError),
-
-  #[error(transparent)]
-  JsonError(#[from] serde_json::Error),
-
-  #[error(transparent)]
-  OtherUpstream(#[from] BoxedErrorSyncSend),
-
-  #[error(transparent)]
-  IOError(#[from] std::io::Error),
 }

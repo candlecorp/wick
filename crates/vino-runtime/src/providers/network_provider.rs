@@ -5,6 +5,7 @@ use std::sync::{
 };
 
 use async_trait::async_trait;
+use vino_rpc::error::RpcError;
 use vino_rpc::port::PacketWrapper;
 use vino_rpc::{
   BoxedPacketStream,
@@ -59,13 +60,14 @@ impl RpcHandler for Provider {
         encoded_claims: "".to_owned(),
         network_id: get_uuid(),
       })
-      .await?;
+      .await
+      .map_err(|e| RpcError::ProviderError(e.to_string()))?;
     match result {
       InvocationResponse::Stream { rx, .. } => Ok(Box::pin(rx.map(|output| PacketWrapper {
         port: output.port,
         packet: output.payload,
       }))),
-      InvocationResponse::Error { msg, .. } => Err(Box::new(VinoError::InvocationError(format!(
+      InvocationResponse::Error { msg, .. } => Err(Box::new(RpcError::ProviderError(format!(
         "Invocation failed: {}",
         msg
       )))),
@@ -74,8 +76,11 @@ impl RpcHandler for Provider {
 
   async fn list_registered(&self) -> RpcResult<Vec<HostedType>> {
     let addr = NetworkService::for_id(&self.network_id);
-    let result = addr.send(ListSchematics {}).await?;
-    let schematics = result?;
+    let result = addr
+      .send(ListSchematics {})
+      .await
+      .map_err(|e| RpcError::ProviderError(e.to_string()))?;
+    let schematics = result.map_err(|e| RpcError::ProviderError(e.to_string()))?;
     let hosted_types = schematics.into_iter().map(HostedType::Schematic).collect();
     Ok(hosted_types)
   }

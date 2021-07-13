@@ -51,7 +51,7 @@ $(COMPONENTS_DIR):
 	vino-codegen json interface "$(CRATE_NAME)" $(SCHEMA_DIR) -f -o $@
 
 $(GENERATED_RS): $(SCHEMAS)
-	vino-codegen rust provider-integration $(SCHEMA_DIR) >$@
+	vino-codegen rust provider-integration $(SCHEMA_DIR) -f -o $@
 
 codegen: $(USER_COMPONENTS)  $(GENERATED_RS) $(COMPONENTS_RS)
 	cargo fmt
