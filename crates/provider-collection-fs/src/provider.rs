@@ -13,7 +13,6 @@ use vino_rpc::{
   DurationStatistics,
   RpcHandler,
   RpcResult,
-  Statistics,
 };
 
 use crate::generated;
@@ -24,6 +23,7 @@ pub struct State {
 }
 
 #[derive(Clone, Debug)]
+#[must_use]
 pub struct Provider {
   context: Arc<Mutex<State>>,
 }
@@ -70,7 +70,7 @@ impl RpcHandler for Provider {
   async fn report_statistics(&self, id: Option<String>) -> RpcResult<Vec<vino_rpc::Statistics>> {
     // TODO Dummy implementation
     if id.is_some() {
-      Ok(vec![Statistics {
+      Ok(vec![vino_rpc::Statistics {
         num_calls: 1,
         execution_duration: DurationStatistics {
           max_time: 0,
@@ -79,7 +79,7 @@ impl RpcHandler for Provider {
         },
       }])
     } else {
-      Ok(vec![Statistics {
+      Ok(vec![vino_rpc::Statistics {
         num_calls: 0,
         execution_duration: DurationStatistics {
           max_time: 0,
@@ -101,6 +101,7 @@ mod tests {
     v0,
     Packet,
   };
+  use vino_rpc::make_input;
 
   use super::*;
 
@@ -110,16 +111,16 @@ mod tests {
     collection_id: &str,
     document: &str,
   ) -> Result<()> {
-    let job_payload = hashmap! {
-      "document_id".to_string() => serialize(document_id)?,
-      "collection_id".to_string() => serialize(collection_id)?,
-      "document".to_string() => serialize(document)?
-    };
+    let job_payload = make_input(vec![
+      ("document_id", document_id),
+      ("collection_id", collection_id),
+      ("document", document),
+    ]);
     let invocation_id = "INVOCATION_ID";
 
     let mut outputs = provider
       .request(
-        invocation_id.to_string(),
+        invocation_id.to_owned(),
         Entity::component("add-item"),
         job_payload,
       )
@@ -134,15 +135,15 @@ mod tests {
   }
 
   async fn get_item(provider: &Provider, document_id: &str, collection_id: &str) -> Result<String> {
-    let job_payload = hashmap! {
-      "document_id".to_string() => serialize(document_id)?,
-      "collection_id".to_string() => serialize(collection_id)?,
-    };
+    let job_payload = make_input(vec![
+      ("document_id", document_id),
+      ("collection_id", collection_id),
+    ]);
     let invocation_id = "INVOCATION_ID";
 
     let mut outputs = provider
       .request(
-        invocation_id.to_string(),
+        invocation_id.to_owned(),
         Entity::component("get-item"),
         job_payload,
       )
@@ -157,15 +158,15 @@ mod tests {
   }
 
   async fn rm_item(provider: &Provider, document_id: &str, collection_id: &str) -> Result<()> {
-    let job_payload = hashmap! {
-      "document_id".to_string() => serialize(document_id)?,
-      "collection_id".to_string() => serialize(collection_id)?,
-    };
+    let job_payload = make_input(vec![
+      ("document_id", document_id),
+      ("collection_id", collection_id),
+    ]);
     let invocation_id = "INVOCATION_ID";
 
     let mut outputs = provider
       .request(
-        invocation_id.to_string(),
+        invocation_id.to_owned(),
         Entity::component("rm-item"),
         job_payload.clone(),
       )
@@ -175,7 +176,7 @@ mod tests {
 
     let mut outputs = provider
       .request(
-        invocation_id.to_string(),
+        invocation_id.to_owned(),
         Entity::component("get-item"),
         job_payload,
       )
@@ -188,14 +189,12 @@ mod tests {
   }
 
   async fn list_items(provider: &Provider, collection_id: &str) -> Result<Vec<String>> {
-    let job_payload = hashmap! {
-      "collection_id".to_string() => serialize(collection_id)?,
-    };
+    let job_payload = make_input(vec![("collection_id", collection_id)]);
     let invocation_id = "INVOCATION_ID";
 
     let mut outputs = provider
       .request(
-        invocation_id.to_string(),
+        invocation_id.to_owned(),
         Entity::component("list-items"),
         job_payload,
       )

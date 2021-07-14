@@ -5,7 +5,7 @@ pub(crate) async fn job(
   input: Inputs,
   output: Outputs,
   context: Context<crate::State>,
-) -> std::result::Result<(), Box<dyn std::error::Error + Send + Sync>> {
+) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
   let mut state = context.lock().unwrap();
   let content_key = format!("{}:{}", input.collection_id, input.document_id);
   state.documents.insert(content_key, input.document);
@@ -13,7 +13,7 @@ pub(crate) async fn job(
     .collections
     .entry(input.collection_id)
     .or_insert_with(Vec::new);
-  list.push(input.document_id.to_string());
+  list.push(input.document_id.clone());
   output.document_id.done(input.document_id);
   Ok(())
 }

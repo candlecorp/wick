@@ -28,6 +28,7 @@ pub mod add_item {
     pub document: String,
   }
 
+  #[must_use]
   pub fn inputs_list() -> Vec<(&'static str, &'static str)> {
     vec![
       ("document_id", "string"),
@@ -56,15 +57,17 @@ pub mod add_item {
     })
   }
 
-  #[derive(Default)]
+  #[derive(Default, Debug)]
   pub struct Outputs {
     pub document_id: DocumentIdSender,
   }
 
+  #[must_use]
   pub fn outputs_list() -> Vec<(&'static str, &'static str)> {
     vec![("document_id", "string")]
   }
 
+  #[derive(Debug)]
   pub struct DocumentIdSender {
     port: Arc<Mutex<Port>>,
   }
@@ -115,6 +118,7 @@ pub mod get_item {
     pub document_id: String,
   }
 
+  #[must_use]
   pub fn inputs_list() -> Vec<(&'static str, &'static str)> {
     vec![("collection_id", "string"), ("document_id", "string")]
   }
@@ -136,15 +140,17 @@ pub mod get_item {
     })
   }
 
-  #[derive(Default)]
+  #[derive(Default, Debug)]
   pub struct Outputs {
     pub document: DocumentSender,
   }
 
+  #[must_use]
   pub fn outputs_list() -> Vec<(&'static str, &'static str)> {
     vec![("document", "string")]
   }
 
+  #[derive(Debug)]
   pub struct DocumentSender {
     port: Arc<Mutex<Port>>,
   }
@@ -194,6 +200,7 @@ pub mod list_items {
     pub collection_id: String,
   }
 
+  #[must_use]
   pub fn inputs_list() -> Vec<(&'static str, &'static str)> {
     vec![("collection_id", "string")]
   }
@@ -212,15 +219,17 @@ pub mod list_items {
     })
   }
 
-  #[derive(Default)]
+  #[derive(Default, Debug)]
   pub struct Outputs {
     pub document_ids: DocumentIdsSender,
   }
 
+  #[must_use]
   pub fn outputs_list() -> Vec<(&'static str, &'static str)> {
     vec![("document_ids", "[string]")]
   }
 
+  #[derive(Debug)]
   pub struct DocumentIdsSender {
     port: Arc<Mutex<Port>>,
   }
@@ -271,6 +280,7 @@ pub mod rm_item {
     pub document_id: String,
   }
 
+  #[must_use]
   pub fn inputs_list() -> Vec<(&'static str, &'static str)> {
     vec![("collection_id", "string"), ("document_id", "string")]
   }
@@ -292,9 +302,10 @@ pub mod rm_item {
     })
   }
 
-  #[derive(Default)]
+  #[derive(Default, Debug)]
   pub struct Outputs {}
 
+  #[must_use]
   pub fn outputs_list() -> Vec<(&'static str, &'static str)> {
     vec![]
   }

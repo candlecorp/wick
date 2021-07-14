@@ -1,5 +1,5 @@
 use thiserror::Error;
-type BoxedError = Box<dyn std::error::Error + Sync + std::marker::Send>;
+type BoxedError = Box<dyn std::error::Error + Sync + Send>;
 
 #[derive(Error, Debug)]
 pub enum Error {
@@ -27,10 +27,4 @@ pub enum Error {
   UpstreamError(#[from] BoxedError),
   #[error(transparent)]
   JoinError(#[from] tokio::task::JoinError),
-}
-
-impl From<&str> for Error {
-  fn from(s: &str) -> Self {
-    Self::Other(s.to_string())
-  }
 }

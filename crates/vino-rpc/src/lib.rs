@@ -68,7 +68,7 @@
     unused_parens,
     unused_qualifications,
     while_true,
-    missing_docs
+    // missing_docs
 )]
 // !!END_LINTS
 // Add exceptions here
@@ -136,6 +136,22 @@ pub trait RpcHandler: Send + Sync {
   async fn list_registered(&self) -> RpcResult<Vec<HostedType>>;
   /// Report the statists for all registered entities
   async fn report_statistics(&self, id: Option<String>) -> RpcResult<Vec<Statistics>>;
+}
+
+#[must_use]
+pub fn make_input<K: AsRef<str>, V: serde::Serialize>(
+  entries: Vec<(K, V)>,
+) -> HashMap<String, Vec<u8>> {
+  entries
+    .into_iter()
+    .map(|(k, v)| {
+      Ok((
+        k.as_ref().to_owned(),
+        vino_codec::messagepack::serialize(v).unwrap(),
+      ))
+    })
+    .filter_map(Result::ok)
+    .collect()
 }
 
 /// Build and spawn an RPC server for the passed provider
