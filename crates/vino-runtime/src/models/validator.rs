@@ -161,6 +161,7 @@ impl<'a> Validator<'a> {
   }
 
   fn assert_component_models(&self) -> Result<()> {
+    eprintln!("Schematic model: {:#?}", self.model);
     let missing_components: Vec<String> = self
       .model
       .get_references()

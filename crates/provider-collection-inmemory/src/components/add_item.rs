@@ -1,6 +1,5 @@
+pub(crate) use vino_interfaces_collection::add_item::*;
 use vino_provider::Context;
-
-pub(crate) use crate::generated::add_item::*;
 
 pub(crate) async fn job(
   input: Inputs,

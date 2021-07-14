@@ -8,25 +8,27 @@ MAKEFLAGS += --warn-undefined-variables
 MAKEFLAGS += --no-builtin-rules
 
 SCHEMA_DIR := ./schemas
-COMPONENTS_DIR := ./src/components
 GENERATED_RS:=./src/generated.rs
-COMPONENTS_RS:=$(COMPONENTS_DIR)/mod.rs
 
+# Get list of WIDL files in SCHEMA_DIR
+SCHEMAS=$(wildcard ${SCHEMA_DIR}/*.widl)
 # Name of the package from Cargo.toml
 CRATE_NAME:=$(shell tomlq -f Cargo.toml package.name)
 
 # Files to clean up on make clean
-CLEAN_FILES := $(GENERATED_RS) $(COMPONENTS_RS)
+CLEAN_FILES := $(GENERATED_RS)
+
+RUSTFMT=rustfmt --edition=2018
 
 all: codegen build
 
-$(GENERATED_RS): ./interface.json
-	vino-codegen rust wellknown-integration $< -f -o $@
+./interface.json: $(SCHEMAS)
+	vino-codegen json interface "$(CRATE_NAME)" $(SCHEMA_DIR) -f -o $@
 
-$(COMPONENTS_RS): ./interface.json
-	vino-codegen rust wellknown-component-module $< -f -o $@
+$(GENERATED_RS): $(SCHEMAS)
+	vino-codegen rust interface $(SCHEMA_DIR) -f -o $@
 
-codegen: $(GENERATED_RS) $(COMPONENTS_RS)
+codegen: $(GENERATED_RS)
 	cargo fmt
 
 build: $(wildcard ./src/*.rs) $(GENERATED_RS) ./interface.json

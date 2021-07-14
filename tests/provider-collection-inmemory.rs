@@ -30,6 +30,7 @@ async fn test_collection() -> utils::TestResult<()> {
   let args = json!({ "collection_id" : collection_id, "document_id": doc_id, "document": document});
   println!("Storing document: {}", args);
   let result_add = vinoc_invoke("add", args).await?;
+  println!("Result: {:?}", result_add);
 
   let expected_add = JsonOutput {
     error_msg: None,
@@ -38,8 +39,9 @@ async fn test_collection() -> utils::TestResult<()> {
   };
 
   let args = json!({ "collection_id" : collection_id, "document_id": doc_id});
-  println!("Storing document: {}", args);
+  println!("Getting document: {}", args);
   let result_get = vinoc_invoke("get", args).await?;
+  println!("Result: {:?}", result_get);
 
   let expected_get = JsonOutput {
     error_msg: None,
@@ -48,8 +50,9 @@ async fn test_collection() -> utils::TestResult<()> {
   };
 
   let args = json!({ "collection_id": collection_id });
-  println!("Storing document: {}", args);
+  println!("Listing documents: {}", args);
   let result_list = vinoc_invoke("list", args).await?;
+  println!("Result: {:?}", result_list);
 
   let expected_list = JsonOutput {
     error_msg: None,

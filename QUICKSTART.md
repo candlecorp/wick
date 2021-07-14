@@ -79,6 +79,6 @@ $ vow ./build/test_component_s.wasm my-component '{"input":"my_input"}'
 {"output":{"error_kind":"None","value":"my_input"}}
 ```
 
-### Run your component in `vino`
+### Connect your component
 
 Docs TODO, but look at [vino-repo]/tests/manifests/wapc.yaml as an example

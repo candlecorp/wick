@@ -54,7 +54,7 @@ impl Actor for SchematicService {
   type Context = Context<Self>;
 
   fn started(&mut self, _ctx: &mut Self::Context) {
-    trace!("Schematic started");
+    trace!("Schematic service starting");
   }
 
   fn stopped(&mut self, _ctx: &mut Self::Context) {}

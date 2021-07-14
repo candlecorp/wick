@@ -1,12 +1,12 @@
 [package]
-name = "vino-collection-inmemory"
+name = "vino-collection-fs"
 version = "0.1.0"
 authors = ["Jarrod Overson <jsoverson@gmail.com>"]
 edition = "2018"
 license = "Apache-2.0"
 
 [[bin]]
-name = "vino-collection-inmemory"
+name = "vino-collection-fs"
 path = "src/main.rs"
 
 [dependencies]

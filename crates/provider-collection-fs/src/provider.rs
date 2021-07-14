@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::path::PathBuf;
 use std::sync::{
   Arc,
   Mutex,
@@ -17,21 +18,20 @@ use vino_rpc::{
 
 use crate::generated;
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct State {
-  pub documents: HashMap<String, String>,
-  pub collections: HashMap<String, Vec<String>>,
+  pub directory: PathBuf,
 }
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct Provider {
   context: Arc<Mutex<State>>,
 }
 
 impl Provider {
-  pub fn default() -> Self {
+  pub fn new(dir: PathBuf) -> Self {
     Self {
-      context: Arc::new(Mutex::new(State::default())),
+      context: Arc::new(Mutex::new(State { directory: dir })),
     }
   }
 }
@@ -97,6 +97,10 @@ mod tests {
   use futures::prelude::*;
   use maplit::hashmap;
   use vino_codec::messagepack::serialize;
+  use vino_component::{
+    v0,
+    Packet,
+  };
 
   use super::*;
 
@@ -152,6 +156,37 @@ mod tests {
     Ok(document)
   }
 
+  async fn rm_item(provider: &Provider, document_id: &str, collection_id: &str) -> Result<()> {
+    let job_payload = hashmap! {
+      "document_id".to_string() => serialize(document_id)?,
+      "collection_id".to_string() => serialize(collection_id)?,
+    };
+    let invocation_id = "INVOCATION_ID";
+
+    let mut outputs = provider
+      .request(
+        invocation_id.to_string(),
+        Entity::component("rm-item"),
+        job_payload.clone(),
+      )
+      .await?;
+    let output = outputs.next().await;
+    assert!(output.is_none());
+
+    let mut outputs = provider
+      .request(
+        invocation_id.to_string(),
+        Entity::component("get-item"),
+        job_payload,
+      )
+      .await?;
+
+    let output = outputs.next().await.unwrap();
+    println!("Output of post-rm get: {:?}", output);
+    assert!(matches!(output.packet, Packet::V0(v0::Payload::Error(_))));
+    Ok(())
+  }
+
   async fn list_items(provider: &Provider, collection_id: &str) -> Result<Vec<String>> {
     let job_payload = hashmap! {
       "collection_id".to_string() => serialize(collection_id)?,
@@ -176,37 +211,45 @@ mod tests {
 
   #[test_env_log::test(tokio::test)]
   async fn request_add_item() -> Result<()> {
-    let provider = Provider::default();
-    let document_id = "some_doc_id";
-    let collection_id = "some_collection_id";
+    let provider = Provider::new(std::env::temp_dir());
+    let document_id = "some_doc_id1";
+    let collection_id = "some_collection_id1";
     let document = "This is my document";
     add_item(&provider, document_id, collection_id, document).await?;
+    rm_item(&provider, document_id, collection_id).await?;
     Ok(())
   }
 
   #[test_env_log::test(tokio::test)]
   async fn request_get_item() -> Result<()> {
-    let provider = Provider::default();
-    let document_id = "some_doc_id";
-    let collection_id = "some_collection_id";
+    let provider = Provider::new(std::env::temp_dir());
+    let document_id = "some_doc_id2";
+    let collection_id = "some_collection_id2";
     let document = "This is my document";
     add_item(&provider, document_id, collection_id, document).await?;
     let doc = get_item(&provider, document_id, collection_id).await?;
     trace!("Doc is {}", doc);
     assert_eq!(doc, document);
+    rm_item(&provider, document_id, collection_id).await?;
 
     Ok(())
   }
 
   #[test_env_log::test(tokio::test)]
   async fn request_list_items() -> Result<()> {
-    let provider = Provider::default();
-    let collection_id = "some_collection_id";
-    add_item(&provider, "doc_id_1", collection_id, "content 1").await?;
-    add_item(&provider, "doc_id_2", collection_id, "content 2").await?;
-    let docs = list_items(&provider, collection_id).await?;
+    let provider = Provider::new(std::env::temp_dir());
+    let collection_id = "some_collection_id3";
+    let doc_id1 = "doc_id_1";
+    let doc_id2 = "doc_id_2";
 
+    add_item(&provider, doc_id1, collection_id, "content 1").await?;
+    add_item(&provider, doc_id2, collection_id, "content 2").await?;
+    let docs = list_items(&provider, collection_id).await?;
     assert_eq!(docs.len(), 2);
+    rm_item(&provider, doc_id1, collection_id).await?;
+    rm_item(&provider, doc_id2, collection_id).await?;
+    let docs = list_items(&provider, collection_id).await?;
+    assert_eq!(docs.len(), 0);
 
     Ok(())
   }

@@ -1,0 +1,8 @@
+namespace "rm-item"
+
+type Inputs {
+  collection_id: string
+  document_id: string
+}
+
+type Outputs {}

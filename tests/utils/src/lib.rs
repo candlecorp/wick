@@ -204,7 +204,7 @@ pub async fn start_vino(
   let handle = tokio::spawn(async move {
     select! {
       status = host.wait() => {
-        println!("host status was: {:?}", status);
+        println!("Host stopped early: {:?}", status?);
         Err(anyhow!("Host stopped early"))
       },
       _signal = rx.recv() => {
@@ -220,15 +220,16 @@ pub async fn start_vino(
 
   tokio::spawn(async move {
     debug!("Reading host STDERR");
-    while let Ok(Some(l)) = reader.next_line().await {
-      debug!("Host STDERR: {}", l);
+    loop {
+      if let Ok(Some(l)) = reader.next_line().await {
+        debug!("Host STDERR: {}", l);
 
-      if let Some(regex_match) = re.captures(&l) {
-        let port = regex_match.get(1).unwrap();
-        let _ = tx2.send(Signal::Continue(port.as_str().to_owned())).await;
+        if let Some(regex_match) = re.captures(&l) {
+          let port = regex_match.get(1).unwrap();
+          let _ = tx2.send(Signal::Continue(port.as_str().to_owned())).await;
+        }
       }
     }
-    debug!("Continuing");
   });
 
   println!("Waiting for host to start up");
