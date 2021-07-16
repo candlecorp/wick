@@ -41,40 +41,54 @@ pub(crate) fn parse_connection_target_v0(
     })
 }
 
+fn parse_from_or_default(
+    from: &str,
+    default_port: Option<&str>,
+) -> Result<(Option<v0::ConnectionTargetDefinition>, Option<String>), crate::Error> {
+    match parse_target_v0(from) {
+        Ok((from_ref, from_port)) => Ok((
+            Some(v0::ConnectionTargetDefinition {
+                port: from_port
+                    .or(default_port)
+                    .ok_or_else(|| crate::Error::NoDefaultPort(from.to_owned()))?
+                    .to_owned(),
+                reference: match from_ref {
+                    Some(DEFAULT_ID) => SCHEMATIC_INPUT,
+                    Some(v) => v,
+                    None => return Err(crate::Error::NoDefaultReference(from.to_owned())),
+                }
+                .to_owned(),
+            }),
+            None,
+        )),
+        // Validating JSON by parsing into a serde_json::Value is recommended by the docs
+        Err(_e) => match serde_json::from_str::<serde_json::Value>(from) {
+            Ok(_) => Ok((None, Some(from.to_owned()))),
+            Err(_e) => Err(crate::Error::ConnectionTargetSyntax(from.to_owned())),
+        },
+    }
+}
+
 pub(crate) fn parse_connection_v0(s: &str) -> Result<v0::ConnectionDefinition, crate::Error> {
     let s = s.trim();
     s.split_once(CONNECTION_SEPARATOR).map_or_else(
         || Err(crate::Error::ConnectionDefinitionSyntax(s.to_owned())),
         |(from, to)| {
-            let (from_ref, from_port) = parse_target_v0(from)?;
             let (to_ref, to_port) = parse_target_v0(to)?;
-            Ok(v0::ConnectionDefinition {
-                from: Some(v0::ConnectionTargetDefinition {
-                    port: from_port
-                        .or(to_port)
-                        .ok_or_else(|| crate::Error::NoDefaultPort(s.to_owned()))?
-                        .to_owned(),
-                    reference: match from_ref {
-                        Some(DEFAULT_ID) => SCHEMATIC_INPUT,
-                        Some(v) => v,
-                        None => return Err(crate::Error::NoDefaultReference(s.to_owned())),
-                    }
-                    .to_owned(),
-                }),
-                to: Some(v0::ConnectionTargetDefinition {
-                    port: to_port
-                        .or(from_port)
-                        .ok_or_else(|| crate::Error::NoDefaultPort(s.to_owned()))?
-                        .to_owned(),
-                    reference: match to_ref {
-                        Some(DEFAULT_ID) => SCHEMATIC_OUTPUT,
-                        Some(v) => v,
-                        None => return Err(crate::Error::NoDefaultReference(s.to_owned())),
-                    }
-                    .to_owned(),
-                }),
-                default: None,
-            })
+            let (from, default) = parse_from_or_default(from, to_port)?;
+            let to = Some(v0::ConnectionTargetDefinition {
+                port: to_port
+                    .map(|s| s.to_owned())
+                    .or_else(|| from.as_ref().map(|p| p.port.clone()))
+                    .ok_or_else(|| crate::Error::NoDefaultPort(s.to_owned()))?,
+                reference: match to_ref {
+                    Some(DEFAULT_ID) => SCHEMATIC_OUTPUT,
+                    Some(v) => v,
+                    None => return Err(crate::Error::NoDefaultReference(s.to_owned())),
+                }
+                .to_owned(),
+            });
+            Ok(v0::ConnectionDefinition { from, to, default })
         },
     )
 }
@@ -208,6 +222,23 @@ mod tests {
                     port: "port".to_owned()
                 }),
                 default: None
+            }
+        );
+        Ok(())
+    }
+
+    #[test_env_log::test]
+    fn test_connection_with_default_data() -> Result<()> {
+        let parsed = parse_connection_v0(r#""default"=>ref1[port]"#)?;
+        assert_eq!(
+            parsed,
+            v0::ConnectionDefinition {
+                from: None,
+                to: Some(v0::ConnectionTargetDefinition {
+                    reference: "ref1".to_owned(),
+                    port: "port".to_owned()
+                }),
+                default: Some(r#""default""#.to_owned())
             }
         );
         Ok(())
