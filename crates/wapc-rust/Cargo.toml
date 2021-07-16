@@ -14,7 +14,3 @@ exclude = [".assets"]
 
 [dependencies]
 log = "0.4.11"
-env_logger = "0.7"
-serde = { version = "1.0.114", features = ["derive"] }
-serde_json = "1.0.56"
-anyhow = "1.0.31"

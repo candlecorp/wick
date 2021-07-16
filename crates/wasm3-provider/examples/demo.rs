@@ -16,7 +16,6 @@ fn load_file(path: &str) -> Vec<u8> {
 }
 
 pub fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    env_logger::init();
     let n = Instant::now();
     let module_bytes = load_file(&std::env::args().skip(1).next().unwrap());
     let engine = Wasm3EngineProvider::new(&module_bytes);

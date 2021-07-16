@@ -22,6 +22,7 @@
 #![warn(clippy::cognitive_complexity)]
 
 use std::collections::HashMap;
+use std::str::FromStr;
 
 use enum_primitive_derive::Primitive;
 use num_traits::FromPrimitive;
@@ -36,7 +37,7 @@ fn HOST_MANIFEST_DEFAULT_SCHEMATIC() -> String {
   "default".to_owned()
 }
 
-#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 /// The Host Manifest defines the starting state of a Vino host
 pub struct HostManifest {
@@ -73,7 +74,7 @@ fn NATS_CONFIGURATION_CONTROL_PORT() -> String {
   "4222".to_owned()
 }
 
-#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 /// The NATS configuration
 pub struct NatsConfiguration {
@@ -121,7 +122,7 @@ pub struct NatsConfiguration {
   pub allowed_insecure: Vec<String>,
 }
 
-#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 /// A Vino network definition
 pub struct NetworkManifest {
@@ -139,7 +140,7 @@ pub struct NetworkManifest {
   pub providers: Vec<ProviderDefinition>,
 }
 
-#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 /// A definition for an individual Vino schematic
 pub struct SchematicManifest {
@@ -158,6 +159,7 @@ pub struct SchematicManifest {
   /// A list of connections from component to component
   #[serde(default)]
   #[serde(skip_serializing_if = "Vec::is_empty")]
+  #[serde(deserialize_with = "vec_connection")]
   pub connections: Vec<ConnectionDefinition>,
   /// A map of constraints and values that limit where this schematic can run
   #[serde(default)]
@@ -165,7 +167,7 @@ pub struct SchematicManifest {
   pub constraints: HashMap<String, String>,
 }
 
-#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 /// A provider definition
 pub struct ProviderDefinition {
@@ -204,7 +206,7 @@ impl Default for ProviderKind {
   }
 }
 
-#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 /// A single component definition
 pub struct ComponentDefinition {
@@ -217,22 +219,24 @@ pub struct ComponentDefinition {
   pub metadata: Option<HashMap<String, String>>,
 }
 
-#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 /// A connection between components
 pub struct ConnectionDefinition {
   /// The originating component (upstream)
   #[serde(default)]
+  #[serde(deserialize_with = "connection_target_shortform")]
   pub from: Option<ConnectionTargetDefinition>,
   /// The destination component (downstream)
   #[serde(default)]
+  #[serde(deserialize_with = "connection_target_shortform")]
   pub to: Option<ConnectionTargetDefinition>,
   /// The default value to provide in the event of an upstream Error or Exception
   #[serde(default)]
   pub default: Option<String>,
 }
 
-#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 /// A connection target
 pub struct ConnectionTargetDefinition {
@@ -244,4 +248,96 @@ pub struct ConnectionTargetDefinition {
 
   #[serde(deserialize_with = "with_expand_envs")]
   pub port: String,
+}
+
+impl FromStr for ConnectionDefinition {
+  type Err = crate::Error;
+
+  fn from_str(s: &str) -> Result<Self, Self::Err> {
+    crate::parse::parse_connection_v0(s)
+  }
+}
+
+impl FromStr for ConnectionTargetDefinition {
+  type Err = crate::Error;
+
+  fn from_str(s: &str) -> Result<Self, Self::Err> {
+    crate::parse::parse_connection_target_v0(s)
+  }
+}
+
+fn vec_connection<'de, D>(deserializer: D) -> Result<Vec<ConnectionDefinition>, D::Error>
+where
+  D: serde::Deserializer<'de>,
+{
+  struct ConnectionDefVisitor;
+  impl<'de> serde::de::Visitor<'de> for ConnectionDefVisitor {
+    type Value = Vec<ConnectionDefinition>;
+    fn expecting(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+      write!(f, "a list of connections")
+    }
+
+    fn visit_seq<A: serde::de::SeqAccess<'de>>(
+      self,
+      mut seq: A,
+    ) -> Result<Vec<ConnectionDefinition>, A::Error> {
+      let mut v = vec![];
+      while let Some(thing) = seq.next_element::<serde_value::Value>()? {
+        let result = match thing {
+          serde_value::Value::String(s) => ConnectionDefinition::from_str(&s)
+            .map_err(|e| serde::de::Error::custom(e.to_string()))?,
+          serde_value::Value::Map(map) => ConnectionDefinition::deserialize(
+            serde_value::ValueDeserializer::new(serde_value::Value::Map(map)),
+          )?,
+          _ => {
+            return Err(serde::de::Error::invalid_type(
+              serde::de::Unexpected::Other("other"),
+              &self,
+            ))
+          }
+        };
+        v.push(result);
+      }
+      Ok(v)
+    }
+  }
+
+  deserializer.deserialize_seq(ConnectionDefVisitor)
+}
+
+fn connection_target_shortform<'de, D>(
+  deserializer: D,
+) -> Result<Option<ConnectionTargetDefinition>, D::Error>
+where
+  D: serde::Deserializer<'de>,
+{
+  struct ConnectionTargetVisitor;
+
+  impl<'de> serde::de::Visitor<'de> for ConnectionTargetVisitor {
+    type Value = Option<ConnectionTargetDefinition>;
+
+    fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+      formatter.write_str("a connection target definition")
+    }
+
+    fn visit_str<E>(self, s: &str) -> Result<Self::Value, E>
+    where
+      E: serde::de::Error,
+    {
+      ConnectionTargetDefinition::from_str(s)
+        .map(Some)
+        .map_err(|e| serde::de::Error::custom(e.to_string()))
+    }
+
+    fn visit_map<A>(self, map: A) -> Result<Self::Value, A::Error>
+    where
+      A: serde::de::MapAccess<'de>,
+    {
+      Ok(Some(ConnectionTargetDefinition::deserialize(
+        serde::de::value::MapAccessDeserializer::new(map),
+      )?))
+    }
+  }
+
+  deserializer.deserialize_any(ConnectionTargetVisitor)
 }

@@ -95,8 +95,6 @@ impl RpcHandler for Provider {
 mod tests {
   use anyhow::Result;
   use futures::prelude::*;
-  use maplit::hashmap;
-  use vino_codec::messagepack::serialize;
   use vino_component::{
     v0,
     Packet,

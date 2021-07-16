@@ -13,7 +13,6 @@ keywords = ["sdk", "wapc", "webassembly", "wasm", "wasm3"]
 categories = ["wasm", "api-bindings"]
 
 [dependencies]
-wapc = { path="../wapc-rust" }
-wasm3 = { version="0.1.3", features=["build-bindgen"] }
+wapc = { path = "../wapc-rust" }
+wasm3 = { version = "0.1.3", features = ["build-bindgen"] }
 log = "0.4.11"
-env_logger = "0.8.3"

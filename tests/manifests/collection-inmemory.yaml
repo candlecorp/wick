@@ -11,67 +11,22 @@ network:
         add:
           id: collection::add-item
       connections:
-        - from:
-            reference: <input>
-            port: document_id
-          to:
-            reference: add
-            port: document_id
-        - from:
-            reference: <input>
-            port: collection_id
-          to:
-            reference: add
-            port: collection_id
-        - from:
-            reference: <input>
-            port: document
-          to:
-            reference: add
-            port: document
-        - from:
-            reference: add
-            port: document_id
-          to:
-            reference: <output>
-            port: document_id
+        - <input>[document_id] => add[document_id]
+        - <input>[collection_id] => add[collection_id]
+        - <input>[document] => add[document]
+        - add[document_id] => <output>[document_id]
     - name: get
       components:
         get:
           id: collection::get-item
       connections:
-        - from:
-            reference: <input>
-            port: collection_id
-          to:
-            reference: get
-            port: collection_id
-        - from:
-            reference: <input>
-            port: document_id
-          to:
-            reference: get
-            port: document_id
-        - from:
-            reference: get
-            port: document
-          to:
-            reference: <output>
-            port: document
+        - <input>[document_id] => get[document_id]
+        - <input>[collection_id] => get[collection_id]
+        - get[document] => <output>[document]
     - name: list
       components:
         list:
           id: collection::list-items
       connections:
-        - from:
-            reference: <input>
-            port: collection_id
-          to:
-            reference: list
-            port: collection_id
-        - from:
-            reference: list
-            port: document_ids
-          to:
-            reference: <output>
-            port: document_ids
+        - <input>[collection_id] => list[collection_id]
+        - list[document_ids] => <output>[document_ids]

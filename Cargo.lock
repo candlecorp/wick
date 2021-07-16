@@ -1875,6 +1875,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "ordered-float"
+version = "2.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "039f02eb0f69271f26abe3202189275d7aa2258b903cb0281b5de710a2570ff3"
+dependencies = [
+ "num-traits",
+]
+
+[[package]]
 name = "output_vt100"
 version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2588,6 +2597,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ec7505abeacaec74ae4778d9d9328fe5a5d04253220a85c4ee022239fc996d03"
 dependencies = [
  "serde_derive",
+]
+
+[[package]]
+name = "serde-value"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f3a1a3341211875ef120e117ea7fd5228530ae7e7036a779fdc9117be6b3282c"
+dependencies = [
+ "ordered-float",
+ "serde",
 ]
 
 [[package]]
@@ -3541,7 +3560,6 @@ dependencies = [
  "env_logger 0.8.4",
  "futures",
  "lazy_static",
- "maplit",
  "serde",
  "serde_json",
  "structopt",
@@ -3573,7 +3591,6 @@ dependencies = [
  "env_logger 0.8.4",
  "futures",
  "lazy_static",
- "maplit",
  "serde",
  "serde_json",
  "structopt",
@@ -3682,9 +3699,12 @@ dependencies = [
  "enum-primitive-derive",
  "env_logger 0.8.4",
  "hocon",
+ "lazy_static",
  "num-traits",
  "pretty_assertions",
+ "regex",
  "serde",
+ "serde-value",
  "serde-with-expand-env",
  "serde_json",
  "serde_yaml",
@@ -3782,7 +3802,6 @@ dependencies = [
  "vino-codec",
  "vino-component",
  "vino-provider",
- "vino-provider-cli",
  "vino-rpc",
  "vino-transport",
  "vino-wascap",
@@ -3985,11 +4004,7 @@ dependencies = [
 name = "wapc"
 version = "0.10.1"
 dependencies = [
- "anyhow",
- "env_logger 0.7.1",
  "log",
- "serde",
- "serde_json",
 ]
 
 [[package]]
@@ -4160,7 +4175,6 @@ dependencies = [
 name = "wasm3-provider"
 version = "0.0.3"
 dependencies = [
- "env_logger 0.8.4",
  "log",
  "wapc 0.10.1",
  "wasm3",
