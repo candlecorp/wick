@@ -71,6 +71,10 @@ impl SchematicModel {
     self.definition.components.values()
   }
 
+  pub(crate) fn get_provider_definitions(&self) -> &Vec<ProviderDefinition> {
+    &self.definition.providers
+  }
+
   pub(crate) fn get_references(&self) -> Keys<String, ComponentDefinition> {
     self.definition.components.keys()
   }

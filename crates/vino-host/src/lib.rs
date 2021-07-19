@@ -71,7 +71,6 @@
 // !!END_LINTS
 // Add exceptions here
 #![allow()]
-
 #![deny(
     warnings,
     missing_debug_implementations,

@@ -21,9 +21,13 @@ pub enum ValidationError {
   NoOutputs,
   #[error("Schematic has no inputs")]
   NoInputs,
+  // #[error("{0} points to an invalid or non-existant component")]
+  // InvalidComponent,
+  #[error("References point to components on the following non-existant namespaces: {}", join(.0, ", "))]
+  InvalidNamespaces(Vec<String>),
   #[error("Model has an error: {0}")]
   ModelError(String),
-  #[error("The following component(s) have incomplete internal model(s): '{}'", join(.0, ", "))]
+  #[error("The following component(s) are missing internal model(s): '{}'", join(.0, ", "))]
   MissingComponentModels(Vec<String>),
   #[error("Dangling reference(s): '{}'", join(.0, ", "))]
   DanglingReference(Vec<String>),

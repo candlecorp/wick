@@ -158,7 +158,6 @@ mod tests {
     let list = provider.list_registered().await?;
     println!("components on network : {:?}", list);
     equals!(list.len(), 1);
-
     Ok(())
   }
 }

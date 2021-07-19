@@ -1,4 +1,7 @@
-use vino_host::{Error, HostBuilder};
+use vino_host::{
+  Error,
+  HostBuilder,
+};
 
 #[actix_rt::main]
 async fn main() -> Result<(), Error> {
