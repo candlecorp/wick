@@ -5,19 +5,19 @@ default_schematic: "logger"
 network:
   schematics:
     - name: logger
-      components:
+      instances:
         logger:
-          id: vino-v0::log
+          id: vino::v0::log
       connections:
         - from:
-            reference: <input>
+            instance: <input>
             port: schem_input
           to:
-            reference: logger
+            instance: logger
             port: input
         - from:
-            reference: logger
+            instance: logger
             port: output
           to:
-            reference: <output>
+            instance: <output>
             port: schem_output

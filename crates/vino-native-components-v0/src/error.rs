@@ -7,6 +7,8 @@ pub enum NativeError {
   #[error(transparent)]
   IOError(#[from] std::io::Error),
   #[error(transparent)]
+  ComponentError(#[from] vino_component::Error),
+  #[error(transparent)]
   JoinError(#[from] tokio::task::JoinError),
   #[error("Can not handle entity type {0}")]
   InvalidEntity(String),

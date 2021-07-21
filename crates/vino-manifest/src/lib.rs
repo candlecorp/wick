@@ -96,8 +96,8 @@ pub mod network_definition;
 pub mod schematic_definition;
 
 pub use network_definition::NetworkDefinition;
+pub use parse::parse_id;
 pub use schematic_definition::{
-  parse_id,
   ComponentDefinition,
   ConnectionDefinition,
   ConnectionTargetDefinition,

@@ -3,11 +3,11 @@ version: "0"
 network:
   schematics:
     - name: simple
-      components:
+      instances:
         add:
-          id: vino-v0::add
+          id: vino::v0::add
         add2:
-          id: vino-v0::add
+          id: vino::v0::add
       connections:
         - from:
             reference: <input>

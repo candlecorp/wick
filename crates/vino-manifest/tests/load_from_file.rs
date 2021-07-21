@@ -30,6 +30,39 @@ fn load_bad_manifest_yaml() -> Result<(), ManifestError> {
 }
 
 #[test_env_log::test]
+fn load_shortform_hocon() -> Result<(), ManifestError> {
+  let path = PathBuf::from("./tests/manifests/v0/logger-shortform.manifest");
+  let manifest = HostManifest::load_from_file(&path)?;
+
+  let HostManifest::V0(manifest) = manifest;
+  assert_eq!(manifest.default_schematic, "logger");
+  let first_from = manifest.network.schematics[0].connections[0]
+    .from
+    .as_ref()
+    .unwrap();
+  let first_to = manifest.network.schematics[0].connections[0]
+    .to
+    .as_ref()
+    .unwrap();
+  assert_eq!(
+    first_from,
+    &v0::ConnectionTargetDefinition {
+      instance: "<input>".to_owned(),
+      port: "input".to_owned()
+    }
+  );
+  assert_eq!(
+    first_to,
+    &v0::ConnectionTargetDefinition {
+      instance: "logger".to_owned(),
+      port: "input".to_owned()
+    }
+  );
+
+  Ok(())
+}
+
+#[test_env_log::test]
 fn load_shortform_yaml() -> Result<(), ManifestError> {
   let path = PathBuf::from("./tests/manifests/v0/logger-shortform.yaml");
   let manifest = HostManifest::load_from_file(&path)?;
@@ -47,14 +80,14 @@ fn load_shortform_yaml() -> Result<(), ManifestError> {
   assert_eq!(
     first_from,
     &v0::ConnectionTargetDefinition {
-      reference: "<input>".to_owned(),
+      instance: "<input>".to_owned(),
       port: "input".to_owned()
     }
   );
   assert_eq!(
     first_to,
     &v0::ConnectionTargetDefinition {
-      reference: "logger".to_owned(),
+      instance: "logger".to_owned(),
       port: "input".to_owned()
     }
   );

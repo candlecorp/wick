@@ -5,27 +5,27 @@ schematics:
       - namespace: wapc
         kind: WaPC
         reference: ../test-wapc-component/build/test_component_s.wasm
-    components:
+    instances:
       validate:
         id: wapc::validate
       log:
-        id: vino-v0::log
+        id: vino::v0::log
     connections:
       - from:
-          reference: <input>
+          instance: <input>
           port: input
         to:
-          reference: log
-          port: input
-      - from:
-          reference: log
-          port: output
-        to:
-          reference: validate
+          instance: log
           port: input
       - from:
-          reference: validate
+          instance: log
           port: output
         to:
-          reference: <output>
+          instance: validate
+          port: input
+      - from:
+          instance: validate
+          port: output
+        to:
+          instance: <output>
           port: output

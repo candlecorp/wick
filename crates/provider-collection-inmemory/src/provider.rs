@@ -40,7 +40,6 @@ impl Provider {
 impl RpcHandler for Provider {
   async fn request(
     &self,
-    _inv_id: String,
     entity: Entity,
     payload: HashMap<String, Vec<u8>>,
   ) -> RpcResult<BoxedPacketStream> {
@@ -110,14 +109,9 @@ mod tests {
       ("collection_id", collection_id),
       ("document", document),
     ]);
-    let invocation_id = "INVOCATION_ID";
 
     let mut outputs = provider
-      .request(
-        invocation_id.to_owned(),
-        Entity::component("add-item"),
-        job_payload,
-      )
+      .request(Entity::component("add-item"), job_payload)
       .await?;
     let output = outputs.next().await.unwrap();
     println!("payload from [{}]: {:?}", output.port, output.packet);
@@ -133,14 +127,9 @@ mod tests {
       ("document_id", document_id),
       ("collection_id", collection_id),
     ]);
-    let invocation_id = "INVOCATION_ID";
 
     let mut outputs = provider
-      .request(
-        invocation_id.to_owned(),
-        Entity::component("get-item"),
-        job_payload,
-      )
+      .request(Entity::component("get-item"), job_payload)
       .await?;
 
     let output = outputs.next().await.unwrap();
@@ -153,14 +142,9 @@ mod tests {
 
   async fn list_items(provider: &Provider, collection_id: &str) -> Result<Vec<String>> {
     let job_payload = make_input(vec![("collection_id", collection_id)]);
-    let invocation_id = "INVOCATION_ID";
 
     let mut outputs = provider
-      .request(
-        invocation_id.to_owned(),
-        Entity::component("list-items"),
-        job_payload,
-      )
+      .request(Entity::component("list-items"), job_payload)
       .await?;
 
     let output = outputs.next().await.unwrap();

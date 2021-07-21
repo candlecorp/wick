@@ -135,7 +135,7 @@ impl Handler<Invocation> for NetworkProviderService {
     let request = async move {
       let provider = provider.lock().await;
       let invocation_id = inv_id.clone();
-      let receiver = provider.request(inv_id.clone(), component, message).await;
+      let receiver = provider.request(component, message).await;
       if let Err(e) = receiver {
         return InvocationResponse::error(
           tx_id,

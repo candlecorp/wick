@@ -7,7 +7,7 @@ network:
       reference: https://127.0.0.1:$TEST_PORT
   schematics:
     - name: add
-      components:
+      instances:
         add:
           id: collection::add-item
       connections:
@@ -16,7 +16,7 @@ network:
         - <input>[document] => add[document]
         - add[document_id] => <output>[document_id]
     - name: get
-      components:
+      instances:
         get:
           id: collection::get-item
       connections:
@@ -24,7 +24,7 @@ network:
         - <input>[collection_id] => get[collection_id]
         - get[document] => <output>[document]
     - name: list
-      components:
+      instances:
         list:
           id: collection::list-items
       connections:

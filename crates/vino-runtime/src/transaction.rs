@@ -251,7 +251,7 @@ mod tests {
       reference: "internal".to_owned(),
       data: HashMap::new(),
     });
-    schematic_def.components.insert(
+    schematic_def.instances.insert(
       "REF_ID_LOGGER".to_owned(),
       ComponentDefinition::new("test-namespace", "log"),
     );
@@ -276,8 +276,8 @@ mod tests {
     let model = make_model()?;
 
     let mut transaction = Transaction::new(tx_id, model);
-    let from = ConnectionTargetDefinition::new("REF_ID_LOGGER1", "vino-v0::log");
-    let to = ConnectionTargetDefinition::new("REF_ID_LOGGER2", "vino-v0::log");
+    let from = ConnectionTargetDefinition::new("REF_ID_LOGGER1", "vino::v0::log");
+    let to = ConnectionTargetDefinition::new("REF_ID_LOGGER2", "vino::v0::log");
 
     trace!("pushing to port");
     transaction.receive(

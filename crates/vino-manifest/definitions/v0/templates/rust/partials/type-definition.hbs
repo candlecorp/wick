@@ -29,7 +29,12 @@ pub struct {{name.value}} {
       {{/if}}
     {{/unlessAnnotation}}
     {{#switch type.kind}}
-      {{#case "MapType"}}#[serde(skip_serializing_if = "HashMap::is_empty")]{{/case}}
+      {{#case "MapType"}}
+      #[serde(skip_serializing_if = "HashMap::is_empty")]
+        {{#ifCond type.valueType.name.value "==" "ComponentDefinition"}}
+          #[serde(deserialize_with = "map_component_def")]
+        {{/ifCond}}
+      {{/case}}
       {{#case "ListType"}}
       #[serde(skip_serializing_if = "Vec::is_empty")]
         {{#ifCond type.type.name.value "==" "ConnectionDefinition"}}

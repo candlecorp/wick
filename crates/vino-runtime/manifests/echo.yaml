@@ -2,8 +2,8 @@ schematics:
   - name: echo
     connections:
       - from:
-          reference: <input>
+          instance: <input>
           port: input
         to:
-          reference: <output>
+          instance: <output>
           port: output

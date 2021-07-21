@@ -15,6 +15,7 @@ pub mod add_item {
     Serialize,
   };
   use vino_codec::messagepack::deserialize;
+  use vino_codec::Error;
   pub use vino_rpc::port::Sender;
   use vino_rpc::port::{
     Port,
@@ -51,9 +52,21 @@ pub mod add_item {
     map: &HashMap<String, Vec<u8>>,
   ) -> Result<Inputs, Box<dyn std::error::Error + Send + Sync>> {
     Ok(Inputs {
-      document_id: deserialize(map.get("document_id").unwrap())?,
-      collection_id: deserialize(map.get("collection_id").unwrap())?,
-      document: deserialize(map.get("document").unwrap())?,
+      document_id: deserialize(
+        map
+          .get("document_id")
+          .ok_or_else(|| Error::MissingInput("document_id".to_owned()))?,
+      )?,
+      collection_id: deserialize(
+        map
+          .get("collection_id")
+          .ok_or_else(|| Error::MissingInput("collection_id".to_owned()))?,
+      )?,
+      document: deserialize(
+        map
+          .get("document")
+          .ok_or_else(|| Error::MissingInput("document".to_owned()))?,
+      )?,
     })
   }
 
@@ -106,6 +119,7 @@ pub mod get_item {
     Serialize,
   };
   use vino_codec::messagepack::deserialize;
+  use vino_codec::Error;
   pub use vino_rpc::port::Sender;
   use vino_rpc::port::{
     Port,
@@ -135,8 +149,16 @@ pub mod get_item {
     map: &HashMap<String, Vec<u8>>,
   ) -> Result<Inputs, Box<dyn std::error::Error + Send + Sync>> {
     Ok(Inputs {
-      collection_id: deserialize(map.get("collection_id").unwrap())?,
-      document_id: deserialize(map.get("document_id").unwrap())?,
+      collection_id: deserialize(
+        map
+          .get("collection_id")
+          .ok_or_else(|| Error::MissingInput("collection_id".to_owned()))?,
+      )?,
+      document_id: deserialize(
+        map
+          .get("document_id")
+          .ok_or_else(|| Error::MissingInput("document_id".to_owned()))?,
+      )?,
     })
   }
 
@@ -189,6 +211,7 @@ pub mod list_items {
     Serialize,
   };
   use vino_codec::messagepack::deserialize;
+  use vino_codec::Error;
   pub use vino_rpc::port::Sender;
   use vino_rpc::port::{
     Port,
@@ -215,7 +238,11 @@ pub mod list_items {
     map: &HashMap<String, Vec<u8>>,
   ) -> Result<Inputs, Box<dyn std::error::Error + Send + Sync>> {
     Ok(Inputs {
-      collection_id: deserialize(map.get("collection_id").unwrap())?,
+      collection_id: deserialize(
+        map
+          .get("collection_id")
+          .ok_or_else(|| Error::MissingInput("collection_id".to_owned()))?,
+      )?,
     })
   }
 
@@ -268,6 +295,7 @@ pub mod rm_item {
     Serialize,
   };
   use vino_codec::messagepack::deserialize;
+  use vino_codec::Error;
   pub use vino_rpc::port::Sender;
   use vino_rpc::port::{
     Port,
@@ -297,8 +325,16 @@ pub mod rm_item {
     map: &HashMap<String, Vec<u8>>,
   ) -> Result<Inputs, Box<dyn std::error::Error + Send + Sync>> {
     Ok(Inputs {
-      collection_id: deserialize(map.get("collection_id").unwrap())?,
-      document_id: deserialize(map.get("document_id").unwrap())?,
+      collection_id: deserialize(
+        map
+          .get("collection_id")
+          .ok_or_else(|| Error::MissingInput("collection_id".to_owned()))?,
+      )?,
+      document_id: deserialize(
+        map
+          .get("document_id")
+          .ok_or_else(|| Error::MissingInput("document_id".to_owned()))?,
+      )?,
     })
   }
 

@@ -7,11 +7,11 @@ network:
         - namespace: wapc
           kind: WaPC
           reference: ./crates/test-wapc-component/build/test_component_s.wasm
-      components:
+      instances:
         validate:
           id: wapc::validate
         log:
-          id: vino-v0::log
+          id: vino::v0::log
       connections:
         - from:
             reference: <input>

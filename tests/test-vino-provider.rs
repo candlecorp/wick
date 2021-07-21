@@ -16,14 +16,12 @@ use vino_rpc::RpcHandler;
 async fn request() -> anyhow::Result<()> {
   let provider = Provider::default();
   let input = "some_input";
-  let invocation_id = "INVOCATION_ID";
   let job_payload = hashmap! {
     "input".to_string() => serialize(input)?,
   };
 
   let mut outputs = provider
     .request(
-      invocation_id.to_string(),
       vino_entity::Entity::component("test-component"),
       job_payload,
     )

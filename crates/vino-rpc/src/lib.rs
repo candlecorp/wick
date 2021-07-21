@@ -128,7 +128,6 @@ pub trait RpcHandler: Send + Sync {
   /// Handle an incoming request for a target entity
   async fn request(
     &self,
-    inv_id: String,
     entity: Entity,
     payload: HashMap<String, Vec<u8>>,
   ) -> RpcResult<BoxedPacketStream>;

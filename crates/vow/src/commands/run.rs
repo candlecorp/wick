@@ -57,11 +57,7 @@ pub(crate) async fn handle_command(opts: RunCommand) -> Result<()> {
   let provider = Provider::new(component, 5);
 
   let mut response = provider
-    .request(
-      "direct".to_owned(),
-      Entity::Component(opts.component_name),
-      multibytes,
-    )
+    .request(Entity::Component(opts.component_name), multibytes)
     .await?;
 
   let mut map = serde_json::Map::new();

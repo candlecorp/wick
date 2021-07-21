@@ -45,7 +45,6 @@ impl Provider {
 impl RpcHandler for Provider {
   async fn request(
     &self,
-    _inv_id: String,
     entity: Entity,
     payload: HashMap<String, Vec<u8>>,
   ) -> RpcResult<BoxedPacketStream> {
@@ -124,11 +123,7 @@ mod tests {
     let invocation_id = "INVOCATION_ID";
 
     let mut outputs = provider
-      .request(
-        invocation_id.to_owned(),
-        Entity::schematic("simple"),
-        job_payload,
-      )
+      .request(Entity::schematic("simple"), job_payload)
       .await?;
     let output = outputs.next().await.unwrap();
     println!("payload from [{}]: {:?}", output.port, output.packet);

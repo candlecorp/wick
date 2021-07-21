@@ -42,7 +42,6 @@ fn HOST_MANIFEST_DEFAULT_SCHEMATIC() -> String {
 /// The Host Manifest defines the starting state of a Vino host
 pub struct HostManifest {
   /// The manifest version
-
   #[serde(deserialize_with = "with_expand_envs")]
   pub version: String,
   /// The configuration for a Vino network
@@ -145,7 +144,6 @@ pub struct NetworkManifest {
 /// A definition for an individual Vino schematic
 pub struct SchematicManifest {
   /// Schematic name
-
   #[serde(deserialize_with = "with_expand_envs")]
   pub name: String,
   /// A list of providers and component collections
@@ -155,7 +153,8 @@ pub struct SchematicManifest {
   /// A map from component reference to its target
   #[serde(default)]
   #[serde(skip_serializing_if = "HashMap::is_empty")]
-  pub components: HashMap<String, ComponentDefinition>,
+  #[serde(deserialize_with = "map_component_def")]
+  pub instances: HashMap<String, ComponentDefinition>,
   /// A list of connections from component to component
   #[serde(default)]
   #[serde(skip_serializing_if = "Vec::is_empty")]
@@ -211,7 +210,6 @@ impl Default for ProviderKind {
 /// A single component definition
 pub struct ComponentDefinition {
   /// The ID of the component (i.e. the alias, key, or namespace)
-
   #[serde(deserialize_with = "with_expand_envs")]
   pub id: String,
   /// Unused (reserved)
@@ -240,14 +238,23 @@ pub struct ConnectionDefinition {
 #[serde(deny_unknown_fields)]
 /// A connection target
 pub struct ConnectionTargetDefinition {
-  /// The component reference
-
+  /// The instance name of the referenced component
   #[serde(deserialize_with = "with_expand_envs")]
-  pub reference: String,
+  pub instance: String,
   /// The component&#x27;s port
-
   #[serde(deserialize_with = "with_expand_envs")]
   pub port: String,
+}
+
+impl FromStr for ComponentDefinition {
+  type Err = crate::Error;
+
+  fn from_str(s: &str) -> Result<Self, Self::Err> {
+    Ok(Self {
+      id: s.to_owned(),
+      metadata: None,
+    })
+  }
 }
 
 impl FromStr for ConnectionDefinition {
@@ -264,6 +271,50 @@ impl FromStr for ConnectionTargetDefinition {
   fn from_str(s: &str) -> Result<Self, Self::Err> {
     crate::parse::parse_connection_target_v0(s)
   }
+}
+
+fn map_component_def<'de, D>(
+  deserializer: D,
+) -> Result<HashMap<String, ComponentDefinition>, D::Error>
+where
+  D: serde::Deserializer<'de>,
+{
+  struct ComponentDefinitionVisitor;
+  impl<'de> serde::de::Visitor<'de> for ComponentDefinitionVisitor {
+    type Value = HashMap<String, ComponentDefinition>;
+    fn expecting(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+      write!(f, "a list of connections")
+    }
+
+    fn visit_map<M>(self, mut access: M) -> Result<Self::Value, M::Error>
+    where
+      M: serde::de::MapAccess<'de>,
+    {
+      let mut map = HashMap::with_capacity(access.size_hint().unwrap_or(0));
+
+      while let Some((key, value)) = access.next_entry::<String, serde_value::Value>()? {
+        let result = match value {
+          serde_value::Value::String(s) => ComponentDefinition::from_str(&s)
+            .map_err(|e| serde::de::Error::custom(e.to_string()))?,
+          serde_value::Value::Map(map) => ComponentDefinition::deserialize(
+            serde_value::ValueDeserializer::new(serde_value::Value::Map(map)),
+          )?,
+          _ => {
+            return Err(serde::de::Error::invalid_type(
+              serde::de::Unexpected::Other("other"),
+              &self,
+            ))
+          }
+        };
+
+        map.insert(key, result);
+      }
+
+      Ok(map)
+    }
+  }
+
+  deserializer.deserialize_map(ComponentDefinitionVisitor)
 }
 
 fn vec_connection<'de, D>(deserializer: D) -> Result<Vec<ConnectionDefinition>, D::Error>

@@ -121,7 +121,7 @@ impl<'a> Validator<'a> {
     eprintln!("Namespaces {:?}", namespaces);
 
     // TODO: Make runtime-added namespaces easier to validate without hardcoding them like this
-    let internal_namespaces = vec!["vino-v0", "self"];
+    let internal_namespaces = vec!["vino::v0", "self"];
     let errors: Vec<String> = self
       .model
       .get_component_definitions()
@@ -335,7 +335,7 @@ mod tests {
       type_string: "bytes".to_owned(),
     }];
     let provider = ProviderModel {
-      namespace: "vino-v0".to_owned(),
+      namespace: "vino::v0".to_owned(),
       components: hashmap! {
         "log".to_owned() => ComponentModel {
           namespace: "test-namespace".to_owned(),
@@ -423,7 +423,7 @@ mod tests {
       reference: "internal".to_owned(),
       data: HashMap::new(),
     });
-    schematic_def.components.insert(
+    schematic_def.instances.insert(
       "logger".to_owned(),
       ComponentDefinition::new("test-namespace", "log"),
     );
@@ -454,7 +454,7 @@ mod tests {
   fn _test_invalid_namespace() -> TestResult<()> {
     let schematic_name = "Test";
     let mut schematic_def = new_schematic(schematic_name);
-    schematic_def.components.insert(
+    schematic_def.instances.insert(
       "logger".to_owned(),
       ComponentDefinition::new("nonexistant", "log"),
     );
@@ -529,7 +529,7 @@ mod tests {
   fn test_missing_models() -> Result<()> {
     let schematic_name = "Test";
     let mut schematic_def = new_schematic(schematic_name);
-    schematic_def.components.insert(
+    schematic_def.instances.insert(
       "logger".to_owned(),
       ComponentDefinition::new("test-namespace", "log"),
     );
@@ -558,7 +558,7 @@ mod tests {
       reference: "internal".to_owned(),
       data: HashMap::new(),
     });
-    schematic_def.components.insert(
+    schematic_def.instances.insert(
       "logger".to_owned(),
       ComponentDefinition::new("test-namespace", "log"),
     );

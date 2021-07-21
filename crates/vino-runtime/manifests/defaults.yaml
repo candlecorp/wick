@@ -3,5 +3,5 @@ schematics:
     connections:
       - default: "1234512345"
         to:
-          reference: <output>
+          instance: <output>
           port: output

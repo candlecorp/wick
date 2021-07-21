@@ -1,39 +1,39 @@
 ---
 schematics:
   - name: native_component
-    components:
+    instances:
       add:
-        id: vino-v0::add
+        id: vino::v0::add
       add2:
-        id: vino-v0::add
+        id: vino::v0::add
     connections:
       - from:
-          reference: <input>
+          instance: <input>
           port: left
         to:
-          reference: add
+          instance: add
           port: left
       - from:
-          reference: <input>
+          instance: <input>
           port: right
         to:
-          reference: add
+          instance: add
           port: right
       - from:
-          reference: <input>
+          instance: <input>
           port: right
         to:
-          reference: add2
+          instance: add2
           port: right
       - from:
-          reference: add
+          instance: add
           port: output
         to:
-          reference: add2
+          instance: add2
           port: left
       - from:
-          reference: add2
+          instance: add2
           port: output
         to:
-          reference: <output>
+          instance: <output>
           port: output

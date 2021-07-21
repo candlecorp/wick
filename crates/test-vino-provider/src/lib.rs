@@ -36,7 +36,6 @@ impl Provider {
 impl RpcHandler for Provider {
   async fn request(
     &self,
-    _inv_id: String,
     entity: Entity,
     payload: HashMap<String, Vec<u8>>,
   ) -> RpcResult<BoxedPacketStream> {
@@ -121,7 +120,6 @@ mod tests {
   async fn request() -> anyhow::Result<()> {
     let provider = Provider::default();
     let input = "some_input";
-    let invocation_id = "INVOCATION_ID";
     let job_payload = hashmap! {
       "input".to_string() => serialize(input)?,
     };
@@ -129,7 +127,7 @@ mod tests {
     let entity = Entity::component("test-component");
 
     let mut outputs = provider
-      .request(invocation_id.to_string(), entity, job_payload)
+      .request(entity, job_payload)
       .await
       .expect("request failed");
     let output = outputs.next().await.unwrap();

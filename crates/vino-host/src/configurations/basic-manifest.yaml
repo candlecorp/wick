@@ -1,25 +1,25 @@
 ---
 schematics:
   - name: test
-    components:
+    instances:
       add:
         id: vino::add
     connections:
       - from:
-          reference: vino::schematic_input
+          instance: vino::schematic_input
           port: left
         to:
-          reference: add
+          instance: add
           port: left
       - from:
-          reference: vino::schematic_input
+          instance: vino::schematic_input
           port: right
         to:
-          reference: add
+          instance: add
           port: right
       - from:
-          reference: add
+          instance: add
           port: output
         to:
-          reference: vino::schematic_output
+          instance: vino::schematic_output
           port: output

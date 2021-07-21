@@ -6,19 +6,19 @@ network {
     schematics: [
       {
         name: "name_$TEST_ENV_VAR",
-        components {
+        instances {
           logger {
             id: "vino::log"
           }
         },
         connections: [
             {
-              from { reference: "vino::schematic_input", port: "input" },
-              to { reference: "logger", port: "input" },
+              from { instance: "vino::schematic_input", port: "input" },
+              to { instance: "logger", port: "input" },
             },
             {
-              from { reference: "logger", port: "output" },
-              to { reference: "vino::schematic_input", port: "output" },
+              from { instance: "logger", port: "output" },
+              to { instance: "vino::schematic_input", port: "output" },
             },
           ],
       }

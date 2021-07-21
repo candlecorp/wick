@@ -9,6 +9,9 @@ pub enum CodecError {
   /// Error to proxy rmp_serde decoding errors
   #[error("Failed to deserialize payload {0}")]
   DeserializationError(rmp_serde::decode::Error),
+  /// Error to proxy rmp_serde decoding errors
+  #[error("Input data for port '{0}' missing")]
+  MissingInput(String),
 
   #[doc(hidden)]
   #[error("General error : {0}")]

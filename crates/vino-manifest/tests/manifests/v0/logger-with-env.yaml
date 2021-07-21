@@ -4,19 +4,19 @@ default_schematic: "logger"
 network:
   schematics:
     - name: name_$TEST_ENV_VAR
-      components:
+      instances:
         logger:
           id: vino::log
       connections:
         - from:
-            reference: vino::schematic_input
+            instance: vino::schematic_input
             port: input
           to:
-            reference: logger
+            instance: logger
             port: input
         - from:
-            reference: logger
+            instance: logger
             port: output
           to:
-            reference: vino::schematic_output
+            instance: vino::schematic_output
             port: output

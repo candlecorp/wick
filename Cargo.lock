@@ -196,9 +196,9 @@ checksum = "904dfeac50f3cdaba28fc6f57fdcddb75f49ed61346676a78c4ffe55877802fd"
 
 [[package]]
 name = "bcrypt"
-version = "0.10.0"
+version = "0.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1ff61734d6bd86e9739fe61bce08b753ae61ae76101dc2df8399eda2503d5a29"
+checksum = "f691e63585950d8c1c43644d11bab9073e40f5060dd2822734ae7c3dc69a3a80"
 dependencies = [
  "base64 0.13.0",
  "blowfish",
@@ -2908,6 +2908,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "test-interfaces-authentication"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "maplit",
+ "thiserror",
+ "tonic",
+ "tracing",
+ "vino-codec",
+ "vino-component",
+ "vino-provider",
+ "vino-rpc",
+]
+
+[[package]]
 name = "test-interfaces-collection"
 version = "0.1.0"
 dependencies = [
@@ -3512,6 +3527,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "vino-authentication-inmemory"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "bcrypt",
+ "env_logger 0.8.4",
+ "structopt",
+ "test-env-log",
+ "test-interfaces-authentication",
+ "thiserror",
+ "tokio",
+ "tokio-stream",
+ "tracing",
+ "tracing-subscriber",
+ "vino-interfaces-authentication",
+ "vino-provider",
+ "vino-provider-cli",
+ "vino-rpc",
+]
+
+[[package]]
 name = "vino-cli"
 version = "0.1.0"
 dependencies = [
@@ -3666,21 +3703,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "vino-interfaces-authentication"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "vino-codec",
+ "vino-rpc",
+]
+
+[[package]]
 name = "vino-interfaces-collection"
 version = "0.1.0"
 dependencies = [
- "anyhow",
- "env_logger 0.8.4",
- "maplit",
  "serde",
- "test-env-log",
- "tokio",
- "tonic",
- "tracing",
- "tracing-subscriber",
  "vino-codec",
- "vino-component",
- "vino-provider",
  "vino-rpc",
 ]
 
@@ -3712,6 +3748,7 @@ dependencies = [
  "thiserror",
  "tracing",
  "tracing-subscriber",
+ "unicode-segmentation",
 ]
 
 [[package]]
@@ -3719,7 +3756,6 @@ name = "vino-native-components-v0"
 version = "0.1.0"
 dependencies = [
  "async-trait",
- "bcrypt",
  "env_logger 0.8.4",
  "futures",
  "lazy_static",
@@ -3731,6 +3767,7 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-subscriber",
+ "uuid",
  "vino-codec",
  "vino-component",
  "vino-entity",

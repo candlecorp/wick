@@ -143,10 +143,7 @@ impl InvocationService for InvocationServer {
       let entity = entity.unwrap();
       let payload = invocation.msg.clone();
       debug!("Executing component {}", entity.url());
-      match &mut provider
-        .request(invocation_id.clone(), entity, payload)
-        .await
-      {
+      match &mut provider.request(entity, payload).await {
         Ok(receiver) => {
           while let Some(next) = receiver.next().await {
             let port_name = next.port;

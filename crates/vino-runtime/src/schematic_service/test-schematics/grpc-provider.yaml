@@ -3,19 +3,19 @@ providers:
   - namespace: test-namespace
     kind: GrpcUrl
     reference: https://127.0.0.1:$TEST_PORT
-components:
+instances:
   external:
     id: test-namespace::test-component
 connections:
   - from:
-      reference: <input>
+      instance: <input>
       port: input
     to:
-      reference: external
+      instance: external
       port: input
   - from:
-      reference: external
+      instance: external
       port: output
     to:
-      reference: <output>
+      instance: <output>
       port: output

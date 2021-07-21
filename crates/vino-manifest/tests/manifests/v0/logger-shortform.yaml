@@ -4,9 +4,8 @@ default_schematic: "logger"
 network:
   schematics:
     - name: logger
-      components:
-        logger:
-          id: vino::log
+      instances:
+        logger: vino::log
       connections:
         - <> => logger[input]
         - logger[output] => <>

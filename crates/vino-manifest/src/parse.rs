@@ -1,6 +1,10 @@
 use regex::Regex;
+use unicode_segmentation::UnicodeSegmentation;
 
-use crate::v0;
+use crate::{
+  v0,
+  Error,
+};
 
 lazy_static::lazy_static! {
     pub(crate) static ref CONNECTION_TARGET_REGEX_V0: Regex = Regex::new(&format!(r"^({}|{}|{}|\w*)(?:\[(\w*)\])?$", DEFAULT_ID, SCHEMATIC_INPUT, SCHEMATIC_OUTPUT)).unwrap();
@@ -19,9 +23,21 @@ pub const COMPONENT_ERROR: &str = "<error>";
 /// The reserved namespace for references to internal schematics.
 pub const SELF_NAMESPACE: &str = "self";
 
-pub(crate) fn parse_target_v0(s: &str) -> Result<(Option<&str>, Option<&str>), crate::Error> {
+type Result<T> = std::result::Result<T, Error>;
+
+/// Parse a fully qualified component ID into its namespace & name parts
+pub fn parse_id(id: &str) -> Result<(&str, &str)> {
+  if !id.contains("::") {
+    Err(Error::ComponentIdError(id.to_owned()))
+  } else {
+    id.rsplit_once("::")
+      .ok_or_else(|| Error::ComponentIdError(id.to_owned()))
+  }
+}
+
+pub(crate) fn parse_target_v0(s: &str) -> Result<(Option<&str>, Option<&str>)> {
   CONNECTION_TARGET_REGEX_V0.captures(s.trim()).map_or_else(
-    || Err(crate::Error::ConnectionTargetSyntax(s.to_owned())),
+    || Err(Error::ConnectionTargetSyntax(s.to_owned())),
     |captures| {
       Ok((
         captures.get(1).map(|m| m.as_str()),
@@ -31,12 +47,10 @@ pub(crate) fn parse_target_v0(s: &str) -> Result<(Option<&str>, Option<&str>), c
   )
 }
 
-pub(crate) fn parse_connection_target_v0(
-  s: &str,
-) -> Result<v0::ConnectionTargetDefinition, crate::Error> {
+pub(crate) fn parse_connection_target_v0(s: &str) -> Result<v0::ConnectionTargetDefinition> {
   let (t_ref, t_port) = parse_target_v0(s)?;
   Ok(v0::ConnectionTargetDefinition {
-    reference: t_ref.unwrap_or(DEFAULT_ID).to_owned(),
+    instance: t_ref.unwrap_or(DEFAULT_ID).to_owned(),
     port: t_port.unwrap_or(DEFAULT_ID).to_owned(),
   })
 }
@@ -44,18 +58,18 @@ pub(crate) fn parse_connection_target_v0(
 fn parse_from_or_default(
   from: &str,
   default_port: Option<&str>,
-) -> Result<(Option<v0::ConnectionTargetDefinition>, Option<String>), crate::Error> {
+) -> Result<(Option<v0::ConnectionTargetDefinition>, Option<String>)> {
   match parse_target_v0(from) {
     Ok((from_ref, from_port)) => Ok((
       Some(v0::ConnectionTargetDefinition {
         port: from_port
           .or(default_port)
-          .ok_or_else(|| crate::Error::NoDefaultPort(from.to_owned()))?
+          .ok_or_else(|| Error::NoDefaultPort(from.to_owned()))?
           .to_owned(),
-        reference: match from_ref {
+        instance: match from_ref {
           Some(DEFAULT_ID) => SCHEMATIC_INPUT,
           Some(v) => v,
-          None => return Err(crate::Error::NoDefaultReference(from.to_owned())),
+          None => return Err(Error::NoDefaultReference(from.to_owned())),
         }
         .to_owned(),
       }),
@@ -64,15 +78,15 @@ fn parse_from_or_default(
     // Validating JSON by parsing into a serde_json::Value is recommended by the docs
     Err(_e) => match serde_json::from_str::<serde_json::Value>(from) {
       Ok(_) => Ok((None, Some(from.to_owned()))),
-      Err(_e) => Err(crate::Error::ConnectionTargetSyntax(from.to_owned())),
+      Err(_e) => Err(Error::ConnectionTargetSyntax(from.to_owned())),
     },
   }
 }
 
-pub(crate) fn parse_connection_v0(s: &str) -> Result<v0::ConnectionDefinition, crate::Error> {
+pub(crate) fn parse_connection_v0(s: &str) -> Result<v0::ConnectionDefinition> {
   let s = s.trim();
   s.split_once(CONNECTION_SEPARATOR).map_or_else(
-    || Err(crate::Error::ConnectionDefinitionSyntax(s.to_owned())),
+    || Err(Error::ConnectionDefinitionSyntax(s.to_owned())),
     |(from, to)| {
       let (to_ref, to_port) = parse_target_v0(to)?;
       let (from, default) = parse_from_or_default(from, to_port)?;
@@ -80,11 +94,11 @@ pub(crate) fn parse_connection_v0(s: &str) -> Result<v0::ConnectionDefinition, c
         port: to_port
           .map(|s| s.to_owned())
           .or_else(|| from.as_ref().map(|p| p.port.clone()))
-          .ok_or_else(|| crate::Error::NoDefaultPort(s.to_owned()))?,
-        reference: match to_ref {
+          .ok_or_else(|| Error::NoDefaultPort(s.to_owned()))?,
+        instance: match to_ref {
           Some(DEFAULT_ID) => SCHEMATIC_OUTPUT,
           Some(v) => v,
-          None => return Err(crate::Error::NoDefaultReference(s.to_owned())),
+          None => return Err(Error::NoDefaultReference(s.to_owned())),
         }
         .to_owned(),
       });
@@ -134,11 +148,11 @@ mod tests {
       parsed,
       v0::ConnectionDefinition {
         from: Some(v0::ConnectionTargetDefinition {
-          reference: "ref1".to_owned(),
+          instance: "ref1".to_owned(),
           port: "in".to_owned()
         }),
         to: Some(v0::ConnectionTargetDefinition {
-          reference: "ref2".to_owned(),
+          instance: "ref2".to_owned(),
           port: "out".to_owned()
         }),
         default: None
@@ -154,11 +168,11 @@ mod tests {
       parsed,
       v0::ConnectionDefinition {
         from: Some(v0::ConnectionTargetDefinition {
-          reference: SCHEMATIC_INPUT.to_owned(),
+          instance: SCHEMATIC_INPUT.to_owned(),
           port: "in".to_owned()
         }),
         to: Some(v0::ConnectionTargetDefinition {
-          reference: "ref2".to_owned(),
+          instance: "ref2".to_owned(),
           port: "out".to_owned()
         }),
         default: None
@@ -174,11 +188,11 @@ mod tests {
       parsed,
       v0::ConnectionDefinition {
         from: Some(v0::ConnectionTargetDefinition {
-          reference: "ref1".to_owned(),
+          instance: "ref1".to_owned(),
           port: "in".to_owned()
         }),
         to: Some(v0::ConnectionTargetDefinition {
-          reference: SCHEMATIC_OUTPUT.to_owned(),
+          instance: SCHEMATIC_OUTPUT.to_owned(),
           port: "out".to_owned()
         }),
         default: None
@@ -194,11 +208,11 @@ mod tests {
       parsed,
       v0::ConnectionDefinition {
         from: Some(v0::ConnectionTargetDefinition {
-          reference: "ref1".to_owned(),
+          instance: "ref1".to_owned(),
           port: "port".to_owned()
         }),
         to: Some(v0::ConnectionTargetDefinition {
-          reference: SCHEMATIC_OUTPUT.to_owned(),
+          instance: SCHEMATIC_OUTPUT.to_owned(),
           port: "port".to_owned()
         }),
         default: None
@@ -214,11 +228,11 @@ mod tests {
       parsed,
       v0::ConnectionDefinition {
         from: Some(v0::ConnectionTargetDefinition {
-          reference: SCHEMATIC_INPUT.to_owned(),
+          instance: SCHEMATIC_INPUT.to_owned(),
           port: "port".to_owned()
         }),
         to: Some(v0::ConnectionTargetDefinition {
-          reference: "ref1".to_owned(),
+          instance: "ref1".to_owned(),
           port: "port".to_owned()
         }),
         default: None
@@ -235,7 +249,7 @@ mod tests {
       v0::ConnectionDefinition {
         from: None,
         to: Some(v0::ConnectionTargetDefinition {
-          reference: "ref1".to_owned(),
+          instance: "ref1".to_owned(),
           port: "port".to_owned()
         }),
         default: Some(r#""default""#.to_owned())

@@ -16,13 +16,14 @@ use crate::dev::prelude::*;
 
 type Result<T> = std::result::Result<T, SchematicModelError>;
 
+type ComponentId = String;
 type ComponentReference = String;
 type Namespace = String;
 
 #[derive(Debug, Clone)]
 pub(crate) struct SchematicModel {
   definition: SchematicDefinition,
-  references: HashMap<ComponentReference, String>,
+  references: HashMap<ComponentReference, ComponentId>,
   providers: HashMap<Namespace, ProviderModel>,
   upstream_links: HashMap<ConnectionTargetDefinition, ConnectionTargetDefinition>,
   state: Option<LoadedState>,
@@ -39,8 +40,8 @@ impl TryFrom<SchematicDefinition> for SchematicModel {
   type Error = SchematicModelError;
 
   fn try_from(definition: SchematicDefinition) -> Result<Self> {
-    let references: HashMap<String, String> = definition
-      .components
+    let references = definition
+      .instances
       .iter()
       .map(|(instance, actor)| (instance.clone(), actor.id.clone()))
       .collect();
@@ -68,7 +69,7 @@ impl SchematicModel {
   }
 
   pub(crate) fn get_component_definitions(&self) -> Values<String, ComponentDefinition> {
-    self.definition.components.values()
+    self.definition.instances.values()
   }
 
   pub(crate) fn get_provider_definitions(&self) -> &Vec<ProviderDefinition> {
@@ -76,7 +77,7 @@ impl SchematicModel {
   }
 
   pub(crate) fn get_references(&self) -> Keys<String, ComponentDefinition> {
-    self.definition.components.keys()
+    self.definition.instances.keys()
   }
 
   fn populate_state(&mut self, omit_namespaces: &[String]) -> Result<()> {
@@ -305,7 +306,7 @@ impl SchematicModel {
           .iter()
           .map(|p| {
             ConnectionTargetDefinition::from_port(PortReference {
-              reference: reference.to_owned(),
+              instance: reference.to_owned(),
               port: p.name.clone(),
             })
           })

@@ -8,7 +8,7 @@ type SchematicManifest {
   providers: [ProviderDefinition],
 
   "A map from component reference to its target"
-  components: {string: ComponentDefinition},
+  instances: {string: ComponentDefinition},
 
   "A list of connections from component to component"
   connections: [ConnectionDefinition],
@@ -65,8 +65,8 @@ type ConnectionDefinition {
 
 "A connection target"
 type ConnectionTargetDefinition {
-  "The component reference"
-  reference: string @required,
+  "The instance name of the referenced component"
+  instance: string @required,
   "The component's port"
   port: string @required,
 }

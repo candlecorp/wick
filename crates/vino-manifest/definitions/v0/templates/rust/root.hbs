@@ -40,6 +40,16 @@ use enum_primitive_derive::Primitive;
   {{/switch}}
 {{/each}}
 
+impl FromStr for ComponentDefinition {
+  type Err = crate::Error;
+
+  fn from_str(s: &str) -> Result<Self, Self::Err> {
+    Ok(Self {
+      id: s.to_owned(),
+      metadata: None,
+    })
+  }
+}
 
 impl FromStr for ConnectionDefinition {
     type Err = crate::Error;
@@ -55,6 +65,50 @@ impl FromStr for ConnectionTargetDefinition {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         crate::parse::parse_connection_target_v0(s)
     }
+}
+
+fn map_component_def<'de, D>(
+  deserializer: D,
+) -> Result<HashMap<String, ComponentDefinition>, D::Error>
+where
+  D: serde::Deserializer<'de>,
+{
+  struct ComponentDefinitionVisitor;
+  impl<'de> serde::de::Visitor<'de> for ComponentDefinitionVisitor {
+    type Value = HashMap<String, ComponentDefinition>;
+    fn expecting(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+      write!(f, "a list of connections")
+    }
+
+    fn visit_map<M>(self, mut access: M) -> Result<Self::Value, M::Error>
+    where
+      M: serde::de::MapAccess<'de>,
+    {
+      let mut map = HashMap::with_capacity(access.size_hint().unwrap_or(0));
+
+      while let Some((key, value)) = access.next_entry::<String, serde_value::Value>()? {
+        let result = match value {
+          serde_value::Value::String(s) => ComponentDefinition::from_str(&s)
+            .map_err(|e| serde::de::Error::custom(e.to_string()))?,
+          serde_value::Value::Map(map) => ComponentDefinition::deserialize(
+            serde_value::ValueDeserializer::new(serde_value::Value::Map(map)),
+          )?,
+          _ => {
+            return Err(serde::de::Error::invalid_type(
+              serde::de::Unexpected::Other("other"),
+              &self,
+            ))
+          }
+        };
+
+        map.insert(key, result);
+      }
+
+      Ok(map)
+    }
+  }
+
+  deserializer.deserialize_map(ComponentDefinitionVisitor)
 }
 
 fn vec_connection<'de, D>(deserializer: D) -> Result<Vec<ConnectionDefinition>, D::Error>

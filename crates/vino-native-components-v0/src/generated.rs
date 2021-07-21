@@ -14,11 +14,11 @@ pub(crate) fn get_component(
 ) -> Option<Box<dyn VinoProviderComponent<Context = crate::State> + Sync + Send>> {
   match name {
     "add" => Some(Box::new(generated::add::Component::default())),
-    "bcrypt" => Some(Box::new(generated::bcrypt::Component::default())),
     "error" => Some(Box::new(generated::error::Component::default())),
     "log" => Some(Box::new(generated::log::Component::default())),
     "short-circuit" => Some(Box::new(generated::short_circuit::Component::default())),
     "string-to-bytes" => Some(Box::new(generated::string_to_bytes::Component::default())),
+    "uuid" => Some(Box::new(generated::uuid::Component::default())),
     _ => None,
   }
 }
@@ -32,17 +32,6 @@ pub(crate) fn get_all_components() -> Vec<ComponentSignature> {
         .map(From::from)
         .collect(),
       outputs: generated::add::outputs_list()
-        .into_iter()
-        .map(From::from)
-        .collect(),
-    },
-    ComponentSignature {
-      name: "bcrypt".to_owned(),
-      inputs: generated::bcrypt::inputs_list()
-        .into_iter()
-        .map(From::from)
-        .collect(),
-      outputs: generated::bcrypt::outputs_list()
         .into_iter()
         .map(From::from)
         .collect(),
@@ -87,6 +76,17 @@ pub(crate) fn get_all_components() -> Vec<ComponentSignature> {
         .map(From::from)
         .collect(),
       outputs: generated::string_to_bytes::outputs_list()
+        .into_iter()
+        .map(From::from)
+        .collect(),
+    },
+    ComponentSignature {
+      name: "uuid".to_owned(),
+      inputs: generated::uuid::inputs_list()
+        .into_iter()
+        .map(From::from)
+        .collect(),
+      outputs: generated::uuid::outputs_list()
         .into_iter()
         .map(From::from)
         .collect(),
@@ -141,8 +141,18 @@ pub(crate) mod add {
     map: &HashMap<String, Vec<u8>>,
   ) -> Result<Inputs, Box<dyn std::error::Error + Send + Sync>> {
     Ok(Inputs {
-      left: deserialize(map.get("left").unwrap())?,
-      right: deserialize(map.get("right").unwrap())?,
+      left: deserialize(map.get("left").ok_or_else(|| {
+        ProviderComponentError::new(format!(
+          "Input data for '{}'' not found in passed payload",
+          "left"
+        ))
+      })?)?,
+      right: deserialize(map.get("right").ok_or_else(|| {
+        ProviderComponentError::new(format!(
+          "Input data for '{}'' not found in passed payload",
+          "right"
+        ))
+      })?)?,
     })
   }
 
@@ -220,132 +230,6 @@ pub(crate) mod add {
     }
   }
 }
-pub(crate) mod bcrypt {
-
-  use std::collections::HashMap;
-  use std::sync::{
-    Arc,
-    Mutex,
-  };
-
-  use async_trait::async_trait;
-  use serde::{
-    Deserialize,
-    Serialize,
-  };
-  use vino_codec::messagepack::deserialize;
-  use vino_provider::error::ProviderComponentError;
-  use vino_provider::{
-    Context as ProviderContext,
-    VinoProviderComponent,
-  };
-  pub(crate) use vino_rpc::port::Sender;
-  use vino_rpc::port::{
-    Port,
-    PortStream,
-  };
-
-  #[derive(Debug, PartialEq, Deserialize, Serialize, Default, Clone)]
-  pub(crate) struct Inputs {
-    pub(crate) input: String,
-    pub(crate) cost: u32,
-  }
-
-  pub(crate) fn inputs_list() -> Vec<(&'static str, &'static str)> {
-    vec![("input", "string"), ("cost", "u32")]
-  }
-
-  #[derive(Debug, PartialEq, Deserialize, Serialize, Default, Clone)]
-  pub(crate) struct InputEncoded {
-    #[serde(rename = "input")]
-    pub(crate) input: Vec<u8>,
-    #[serde(rename = "cost")]
-    pub(crate) cost: Vec<u8>,
-  }
-
-  pub(crate) fn deserialize_inputs(
-    map: &HashMap<String, Vec<u8>>,
-  ) -> Result<Inputs, Box<dyn std::error::Error + Send + Sync>> {
-    Ok(Inputs {
-      input: deserialize(map.get("input").unwrap())?,
-      cost: deserialize(map.get("cost").unwrap())?,
-    })
-  }
-
-  #[derive(Default)]
-  pub(crate) struct Outputs {
-    pub(crate) output: OutputSender,
-  }
-
-  pub(crate) fn outputs_list() -> Vec<(&'static str, &'static str)> {
-    vec![("output", "string")]
-  }
-
-  pub(crate) struct OutputSender {
-    port: Arc<Mutex<Port>>,
-  }
-  impl Default for OutputSender {
-    fn default() -> Self {
-      Self {
-        port: Arc::new(Mutex::new(Port::new("output".into()))),
-      }
-    }
-  }
-  impl Sender for OutputSender {
-    type PayloadType = String;
-
-    fn get_port(&self) -> Arc<Mutex<Port>> {
-      self.port.clone()
-    }
-  }
-
-  pub(crate) fn get_outputs() -> (Outputs, PortStream) {
-    let outputs = Outputs::default();
-    let ports = vec![outputs.output.port.clone()];
-    let stream = PortStream::new(ports);
-    (outputs, stream)
-  }
-
-  pub(crate) struct Component {}
-  impl Default for Component {
-    fn default() -> Self {
-      Self {}
-    }
-  }
-
-  #[async_trait]
-  impl VinoProviderComponent for Component {
-    type Context = crate::State;
-
-    fn get_name(&self) -> String {
-      format!("vino::{}", "bcrypt")
-    }
-    fn get_input_ports(&self) -> Vec<(&'static str, &'static str)> {
-      inputs_list()
-    }
-    fn get_output_ports(&self) -> Vec<(&'static str, &'static str)> {
-      outputs_list()
-    }
-    async fn job_wrapper(
-      &self,
-      context: ProviderContext<Self::Context>,
-      data: HashMap<String, Vec<u8>>,
-    ) -> Result<PortStream, Box<ProviderComponentError>> {
-      let inputs = deserialize_inputs(&data).map_err(|e| {
-        ProviderComponentError::new(format!("Input deserialization error: {}", e.to_string()))
-      })?;
-      let (outputs, stream) = get_outputs();
-      let result = crate::components::bcrypt::job(inputs, outputs, context).await;
-      match result {
-        Ok(_) => Ok(stream),
-        Err(e) => Err(Box::new(ProviderComponentError::new(format!(
-          "Job failed: {}",
-          e.to_string()
-        )))),
-      }
-    }
-  }
-}
 pub(crate) mod error {
 
   use std::collections::HashMap;
@@ -390,7 +274,12 @@ pub(crate) mod error {
     map: &HashMap<String, Vec<u8>>,
   ) -> Result<Inputs, Box<dyn std::error::Error + Send + Sync>> {
     Ok(Inputs {
-      input: deserialize(map.get("input").unwrap())?,
+      input: deserialize(map.get("input").ok_or_else(|| {
+        ProviderComponentError::new(format!(
+          "Input data for '{}'' not found in passed payload",
+          "input"
+        ))
+      })?)?,
     })
   }
 
@@ -512,7 +401,12 @@ pub(crate) mod log {
     map: &HashMap<String, Vec<u8>>,
   ) -> Result<Inputs, Box<dyn std::error::Error + Send + Sync>> {
     Ok(Inputs {
-      input: deserialize(map.get("input").unwrap())?,
+      input: deserialize(map.get("input").ok_or_else(|| {
+        ProviderComponentError::new(format!(
+          "Input data for '{}'' not found in passed payload",
+          "input"
+        ))
+      })?)?,
     })
   }
 
@@ -634,7 +528,12 @@ pub(crate) mod short_circuit {
     map: &HashMap<String, Vec<u8>>,
   ) -> Result<Inputs, Box<dyn std::error::Error + Send + Sync>> {
     Ok(Inputs {
-      input: deserialize(map.get("input").unwrap())?,
+      input: deserialize(map.get("input").ok_or_else(|| {
+        ProviderComponentError::new(format!(
+          "Input data for '{}'' not found in passed payload",
+          "input"
+        ))
+      })?)?,
     })
   }
 
@@ -756,7 +655,12 @@ pub(crate) mod string_to_bytes {
     map: &HashMap<String, Vec<u8>>,
   ) -> Result<Inputs, Box<dyn std::error::Error + Send + Sync>> {
     Ok(Inputs {
-      input: deserialize(map.get("input").unwrap())?,
+      input: deserialize(map.get("input").ok_or_else(|| {
+        ProviderComponentError::new(format!(
+          "Input data for '{}'' not found in passed payload",
+          "input"
+        ))
+      })?)?,
     })
   }
 
@@ -824,6 +728,121 @@ pub(crate) mod string_to_bytes {
       })?;
       let (outputs, stream) = get_outputs();
       let result = crate::components::string_to_bytes::job(inputs, outputs, context).await;
+      match result {
+        Ok(_) => Ok(stream),
+        Err(e) => Err(Box::new(ProviderComponentError::new(format!(
+          "Job failed: {}",
+          e.to_string()
+        )))),
+      }
+    }
+  }
+}
+pub(crate) mod uuid {
+
+  use std::collections::HashMap;
+  use std::sync::{
+    Arc,
+    Mutex,
+  };
+
+  use async_trait::async_trait;
+  use serde::{
+    Deserialize,
+    Serialize,
+  };
+  use vino_codec::messagepack::deserialize;
+  use vino_provider::error::ProviderComponentError;
+  use vino_provider::{
+    Context as ProviderContext,
+    VinoProviderComponent,
+  };
+  pub(crate) use vino_rpc::port::Sender;
+  use vino_rpc::port::{
+    Port,
+    PortStream,
+  };
+
+  #[derive(Debug, PartialEq, Deserialize, Serialize, Default, Clone)]
+  pub(crate) struct Inputs {}
+
+  pub(crate) fn inputs_list() -> Vec<(&'static str, &'static str)> {
+    vec![]
+  }
+
+  #[derive(Debug, PartialEq, Deserialize, Serialize, Default, Clone)]
+  pub(crate) struct InputEncoded {}
+
+  pub(crate) fn deserialize_inputs(
+    map: &HashMap<String, Vec<u8>>,
+  ) -> Result<Inputs, Box<dyn std::error::Error + Send + Sync>> {
+    Ok(Inputs {})
+  }
+
+  #[derive(Default)]
+  pub(crate) struct Outputs {
+    pub(crate) output: OutputSender,
+  }
+
+  pub(crate) fn outputs_list() -> Vec<(&'static str, &'static str)> {
+    vec![("output", "string")]
+  }
+
+  pub(crate) struct OutputSender {
+    port: Arc<Mutex<Port>>,
+  }
+  impl Default for OutputSender {
+    fn default() -> Self {
+      Self {
+        port: Arc::new(Mutex::new(Port::new("output".into()))),
+      }
+    }
+  }
+  impl Sender for OutputSender {
+    type PayloadType = String;
+
+    fn get_port(&self) -> Arc<Mutex<Port>> {
+      self.port.clone()
+    }
+  }
+
+  pub(crate) fn get_outputs() -> (Outputs, PortStream) {
+    let outputs = Outputs::default();
+    let ports = vec![outputs.output.port.clone()];
+    let stream = PortStream::new(ports);
+    (outputs, stream)
+  }
+
+  pub(crate) struct Component {}
+  impl Default for Component {
+    fn default() -> Self {
+      Self {}
+    }
+  }
+
+  #[async_trait]
+  impl VinoProviderComponent for Component {
+    type Context = crate::State;
+
+    fn get_name(&self) -> String {
+      format!("vino::{}", "uuid")
+    }
+    fn get_input_ports(&self) -> Vec<(&'static str, &'static str)> {
+      inputs_list()
+    }
+    fn get_output_ports(&self) -> Vec<(&'static str, &'static str)> {
+      outputs_list()
+    }
+    async fn job_wrapper(
+      &self,
+      context: ProviderContext<Self::Context>,
+      data: HashMap<String, Vec<u8>>,
+    ) -> Result<PortStream, Box<ProviderComponentError>> {
+      let inputs = deserialize_inputs(&data).map_err(|e| {
+        ProviderComponentError::new(format!("Input deserialization error: {}", e.to_string()))
+      })?;
+      let (outputs, stream) = get_outputs();
+      let result = crate::components::uuid::job(inputs, outputs, context).await;
       match result {
         Ok(_) => Ok(stream),
         Err(e) => Err(Box::new(ProviderComponentError::new(format!(

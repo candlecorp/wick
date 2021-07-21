@@ -76,7 +76,12 @@ pub(crate) mod test_component {
     map: &HashMap<String, Vec<u8>>,
   ) -> Result<Inputs, Box<dyn std::error::Error + Send + Sync>> {
     Ok(Inputs {
-      input: deserialize(map.get("input").unwrap())?,
+      input: deserialize(map.get("input").ok_or_else(|| {
+        ProviderComponentError::new(format!(
+          "Input data for '{}'' not found in passed payload",
+          "input"
+        ))
+      })?)?,
     })
   }
 

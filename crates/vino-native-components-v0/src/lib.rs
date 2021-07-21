@@ -123,7 +123,6 @@ impl Provider {
 impl RpcHandler for Provider {
   async fn request(
     &self,
-    _inv_id: String,
     entity: Entity,
     payload: HashMap<String, Vec<u8>>,
   ) -> RpcResult<BoxedPacketStream> {
@@ -189,6 +188,7 @@ mod tests {
   use futures::prelude::*;
   use log::debug;
   use maplit::hashmap;
+  use serde::Deserialize;
   use vino_codec::messagepack::{
     deserialize,
     serialize,
@@ -201,31 +201,43 @@ mod tests {
 
   use super::*;
 
-  #[test_env_log::test(tokio::test)]
-  async fn request() -> Result<()> {
+  async fn invoke<'de, T>(component: &str, payload: HashMap<String, Vec<u8>>) -> Result<T>
+  where
+    T: Deserialize<'de>,
+  {
     let provider = Provider::default();
+
+    let entity = Entity::component(component);
+
+    let mut outputs = provider.request(entity, payload).await.unwrap();
+    let output = outputs.next().await.unwrap();
+    println!("Received payload from [{}]", output.port);
+    Ok(output.packet.try_into()?)
+  }
+
+  #[test_env_log::test(tokio::test)]
+  async fn test_log() -> Result<()> {
     let input = "some_input";
-    let invocation_id = "INVOCATION_ID";
     let job_payload = hashmap! {
       "input".to_owned() => serialize(input)?,
     };
 
-    let entity = Entity::component("log");
-
-    let mut outputs = provider
-      .request(invocation_id.to_owned(), entity, job_payload)
-      .await
-      .unwrap();
-    let output = outputs.next().await.unwrap();
-    println!("Received payload from [{}]", output.port);
-    let payload: String = match output.packet {
-      Packet::V0(v0::Payload::MessagePack(payload)) => deserialize(&payload)?,
-      _ => None,
-    }
-    .unwrap();
+    let payload: String = invoke("log", job_payload).await?;
 
     println!("outputs: {:?}", payload);
     assert_eq!(payload, "some_input");
+
+    Ok(())
+  }
+
+  #[test_env_log::test(tokio::test)]
+  async fn test_uuid() -> Result<()> {
+    let job_payload = hashmap! {};
+
+    let payload: String = invoke("uuid", job_payload).await?;
+
+    println!("outputs: {:?}", payload);
+    assert_eq!(payload.len(), 36);
 
     Ok(())
   }

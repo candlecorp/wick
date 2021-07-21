@@ -15,6 +15,7 @@ use crate::default::{
   parse_default,
   process_default,
 };
+use crate::parse::parse_id;
 use crate::{
   Error,
   Result,
@@ -27,9 +28,9 @@ use crate::{
 pub struct SchematicDefinition {
   /// The name of the schematic.
   pub name: String,
-  /// A mapping of references to the components they refer to.
-  pub components: HashMap<String, ComponentDefinition>,
-  /// A list of connections from and to ports on references defined in the components field.
+  /// A mapping of instance names to the components they refer to.
+  pub instances: HashMap<String, ComponentDefinition>,
+  /// A list of connections from and to ports on instances defined in the instance map.
   pub connections: Vec<ConnectionDefinition>,
   /// A list of [ProviderDefinition]s with namespaces and initialization configuration.
   pub providers: Vec<ProviderDefinition>,
@@ -43,10 +44,10 @@ impl SchematicDefinition {
   pub fn get_name(&self) -> String {
     self.name.clone()
   }
-  /// Get a [ComponentDefinition] by reference
+  /// Get a [ComponentDefinition] by instance name
   #[must_use]
-  pub fn get_component(&self, reference: &str) -> Option<ComponentDefinition> {
-    self.components.get(reference).cloned()
+  pub fn get_component(&self, instance: &str) -> Option<ComponentDefinition> {
+    self.instances.get(instance).cloned()
   }
 }
 
@@ -56,8 +57,8 @@ impl TryFrom<crate::v0::SchematicManifest> for SchematicDefinition {
   fn try_from(manifest: crate::v0::SchematicManifest) -> Result<Self> {
     Ok(Self {
       name: manifest.name.clone(),
-      components: manifest
-        .components
+      instances: manifest
+        .instances
         .clone()
         .into_iter()
         .map(|(key, val)| Ok((key, val.try_into()?)))
@@ -101,7 +102,7 @@ pub struct ComponentDefinition {
   pub name: String,
   /// The namespace the component was registered under
   pub namespace: String,
-  /// The fully qualified ID used to reference the component.
+  /// The fully qualified ID for the referenced component.
   pub id: String,
   /// Reserved
   pub metadata: Option<String>,
@@ -117,17 +118,6 @@ impl ComponentDefinition {
       id: format!("{}::{}", namespace, name),
       metadata: None,
     }
-  }
-}
-
-/// Parse a fully qualified component ID into its namespace & name parts
-pub fn parse_id(id: &str) -> Result<(&str, &str)> {
-  if !id.contains("::") {
-    Err(Error::ComponentIdError(id.to_owned()))
-  } else {
-    id.split_once("::")
-      .map(|(ns, name)| Ok((ns, name)))
-      .unwrap()
   }
 }
 
@@ -257,10 +247,10 @@ pub struct ConnectionTargetDefinition {
 
 impl ConnectionTargetDefinition {
   /// Constructor for a [PortReference]. Used mostly in test code.
-  pub fn new<T: AsRef<str>, U: AsRef<str>>(reference: T, port: U) -> Self {
+  pub fn new<T: AsRef<str>, U: AsRef<str>>(instance: T, port: U) -> Self {
     Self {
       target: Some(PortReference {
-        reference: reference.as_ref().to_owned(),
+        instance: instance.as_ref().to_owned(),
         port: port.as_ref().to_owned(),
       }),
     }
@@ -283,7 +273,7 @@ impl ConnectionTargetDefinition {
     self
       .target
       .as_ref()
-      .map_or(false, |p| p.reference == reference)
+      .map_or(false, |p| p.instance == reference)
   }
 
   #[must_use]
@@ -293,14 +283,14 @@ impl ConnectionTargetDefinition {
 
   #[must_use]
   pub fn get_reference(&self) -> &str {
-    self.target.as_ref().map_or("<None>", |p| &p.reference)
+    self.target.as_ref().map_or("<None>", |p| &p.instance)
   }
   #[must_use]
   pub fn get_reference_owned(&self) -> String {
     self
       .target
       .as_ref()
-      .map_or("<None>".to_owned(), |p| p.reference.clone())
+      .map_or("<None>".to_owned(), |p| p.instance.clone())
   }
 
   #[must_use]
@@ -351,16 +341,16 @@ impl Display for ConnectionDefinition {
 /// A [PortReference] is the link to a port for a specific reference of a component.
 pub struct PortReference {
   /// A schematic-wide unique reference that maps to a [ComponentDefinition]
-  pub reference: String,
+  pub instance: String,
   /// A port on the referenced [ComponentDefinition]
   pub port: String,
 }
 
 impl PortReference {
   /// Constructor for a [PortReference]. Used mostly in test code.
-  pub fn new<T: AsRef<str>, U: AsRef<str>>(reference: T, port: U) -> Self {
+  pub fn new<T: AsRef<str>, U: AsRef<str>>(instance: T, port: U) -> Self {
     Self {
-      reference: reference.as_ref().to_owned(),
+      instance: instance.as_ref().to_owned(),
       port: port.as_ref().to_owned(),
     }
   }
@@ -369,7 +359,7 @@ impl PortReference {
 impl Default for PortReference {
   fn default() -> Self {
     Self {
-      reference: "<None>".to_owned(),
+      instance: "<None>".to_owned(),
       port: "<None>".to_owned(),
     }
   }
@@ -380,9 +370,9 @@ where
   T: AsRef<str>,
   U: AsRef<str>,
 {
-  fn from((reference, port): (T, U)) -> Self {
+  fn from((instance, port): (T, U)) -> Self {
     PortReference {
-      reference: reference.as_ref().to_owned(),
+      instance: instance.as_ref().to_owned(),
       port: port.as_ref().to_owned(),
     }
   }
@@ -392,20 +382,20 @@ impl Display for ConnectionTargetDefinition {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     let default = PortReference::default();
     let target = self.target.as_ref().unwrap_or(&default);
-    write!(f, "{}[{}]", target.reference, target.port)
+    write!(f, "{}[{}]", target.instance, target.port)
   }
 }
 
 impl Display for PortReference {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    write!(f, "{}[{}]", self.reference, self.port)
+    write!(f, "{}[{}]", self.instance, self.port)
   }
 }
 
 impl From<crate::v0::ConnectionTargetDefinition> for PortReference {
   fn from(def: crate::v0::ConnectionTargetDefinition) -> Self {
     PortReference {
-      reference: def.reference,
+      instance: def.instance,
       port: def.port,
     }
   }
@@ -418,5 +408,22 @@ impl TryFrom<Option<crate::v0::ConnectionTargetDefinition>> for ConnectionTarget
     Ok(ConnectionTargetDefinition {
       target: def.map(|c| c.into()),
     })
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+  #[test_env_log::test]
+  fn test_parse_id() -> Result<()> {
+    let id = "namespace::component_name";
+    let (ns, name) = parse_id(id)?;
+    assert_eq!(ns, "namespace");
+    assert_eq!(name, "component_name");
+    let id = "namespace::subns::component_name";
+    let (ns, name) = parse_id(id)?;
+    assert_eq!(ns, "namespace::subns");
+    assert_eq!(name, "component_name");
+    Ok(())
   }
 }

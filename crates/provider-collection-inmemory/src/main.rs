@@ -70,7 +70,7 @@
 )]
 // !!END_LINTS
 // Add exceptions here
-#![allow()]
+#![allow(clippy::expect_used)]
 
 use std::net::Ipv4Addr;
 use std::path::PathBuf;
