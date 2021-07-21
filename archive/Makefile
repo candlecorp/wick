@@ -17,7 +17,7 @@ DOCKERFILES=$(wildcard docker/*/Dockerfile)
 
 TEST_WASM=crates/test-wapc-component/build/test_component_s.wasm
 
-BINS=vino vinoc vino-collection-inmemory vow
+BINS=vino vinoc vino-collection-inmemory vow vino-authentication-inmemory vino-collection-fs
 
 all: build
 
