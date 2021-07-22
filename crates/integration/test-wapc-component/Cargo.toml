@@ -15,8 +15,8 @@ guest = []
 
 [dependencies]
 wapc-guest = "0.4.0"
-serde = { version="1.0.126", features=["derive"] }
+serde = { version = "1.0.126", features = ["derive"] }
 lazy_static = "1.4.0"
-vino-component = { path="../vino-component" }
+vino-component = { path = "../../vino-component" }
 
 [dev-dependencies]

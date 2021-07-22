@@ -19,7 +19,7 @@ async fn test_vow_serve() -> utils::TestResult<()> {
     &[
       "serve",
       "--port=8060",
-      "./crates/test-wapc-component/build/test_component_s.wasm",
+      "./crates/integration/test-wapc-component/build/test_component_s.wasm",
     ],
   )
   .await?;

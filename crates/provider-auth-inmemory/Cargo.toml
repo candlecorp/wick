@@ -10,7 +10,7 @@ name = "vino-authentication-inmemory"
 path = "src/main.rs"
 
 [dependencies]
-vino-interfaces-authentication = { path = "../interfaces-authentication" }
+vino-interfaces-authentication = { path = "../interfaces/interfaces-authentication" }
 vino-provider = { path = "../vino-provider" }
 vino-component = { path = "../vino-component" }
 thiserror = "1.0.25"
@@ -32,5 +32,5 @@ test-env-log = "0.2.7"
 anyhow = "1.0.42"
 tracing-subscriber = "0.2.19"
 tokio = { version = "1.4.0", features = ["macros"] }
-test-interfaces-authentication = { path = "../test-interfaces-authentication" }
+test-interfaces-authentication = { path = "../integration/test-interfaces-authentication" }
 rand = "0.8.4"

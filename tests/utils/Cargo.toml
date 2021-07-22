@@ -7,17 +7,23 @@ license = "Apache-2.0"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-vino-runtime = { path="../../crates/vino-runtime" }
-vino-transport = { path="../../crates/vino-transport" }
-vino-manifest = { path="../../crates/vino-manifest" }
-vino-codec = { path="../../crates/vino-codec" }
-vino-wascap = { path="../../crates/vino-wascap" }
+vino-runtime = { path = "../../crates/vino-runtime" }
+vino-transport = { path = "../../crates/vino-transport" }
+vino-manifest = { path = "../../crates/vino-manifest" }
+vino-codec = { path = "../../crates/vino-codec" }
+vino-wascap = { path = "../../crates/vino-wascap" }
 anyhow = "1.0.26"
 maplit = "1.0.2"
 pretty_assertions = "0.7.2"
 tracing = "0.1.26"
 nkeys = "0.1.0"
-tokio = { version="1.4.0", features=["macros", "process", "time", "net", "rt-multi-thread"] }
+tokio = { version = "1.4.0", features = [
+  "macros",
+  "process",
+  "time",
+  "net",
+  "rt-multi-thread",
+] }
 serde_json = "1.0.64"
-tokio-test-bin = { path="../../crates/tokio-test-bin" }
+tokio-test-bin = { path = "../../crates/forks/tokio-test-bin" }
 regex = "1"

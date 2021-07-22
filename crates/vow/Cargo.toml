@@ -37,7 +37,7 @@ logger = { path = "../logger" }
 
 [dev-dependencies]
 test-env-log = "0.2.7"
-test-vino-provider = { path = "../test-vino-provider" }
+test-vino-provider = { path = "../integration/test-vino-provider" }
 env_logger = "0.8.4"
 tracing-subscriber = "0.2.18"
 maplit = "1.0.2"

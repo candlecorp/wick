@@ -17,7 +17,7 @@ vino-codec = { path = "./crates/vino-codec" }
 vino-component = { path = "./crates/vino-component" }
 vino-provider = { path = "./crates/vino-provider" }
 vino-transport = { path = "./crates/vino-transport" }
-test-vino-provider = { path = "./crates/test-vino-provider" }
+test-vino-provider = { path = "./crates/integration/test-vino-provider" }
 vino-rpc = { path = "./crates/vino-rpc" }
 utils = { path = "./tests/utils" }
 test_bin = "0.3.0"
@@ -40,16 +40,19 @@ serde_json = "1.0.64"
 
 [workspace]
 members = [
-  "crates/interfaces-collection",
-  "crates/interfaces-authentication",
+  "crates/forks/tokio-test-bin",
+  "crates/forks/wapc-rust",
+  "crates/forks/wasm3-provider",
+  "crates/interfaces/interfaces-collection",
+  "crates/interfaces/interfaces-authentication",
+  "crates/integration/test-interfaces-collection",
+  "crates/integration/test-interfaces-authentication",
+  "crates/integration/test-vino-provider",
   "crates/logger",
   "crates/oci-utils",
   "crates/provider-auth-inmemory",
   "crates/provider-collection-fs",
   "crates/provider-collection-inmemory",
-  "crates/test-interfaces-collection",
-  "crates/test-vino-provider",
-  "crates/tokio-test-bin",
   "crates/vino-cli",
   "crates/vino-codec",
   "crates/vino-entity",
@@ -66,7 +69,5 @@ members = [
   "crates/vino-wascap",
   "crates/vinoc",
   "crates/vow",
-  "crates/wapc-rust",
-  "crates/wasm3-provider",
 ]
 exclude = ["crates/test-wapc-component"]

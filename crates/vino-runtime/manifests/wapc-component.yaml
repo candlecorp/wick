@@ -4,7 +4,7 @@ schematics:
     providers:
       - namespace: wapc
         kind: WaPC
-        reference: ../test-wapc-component/build/test_component_s.wasm
+        reference: ../integration/test-wapc-component/build/test_component_s.wasm
     instances:
       validate:
         id: wapc::validate

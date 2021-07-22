@@ -25,9 +25,9 @@ serde_json = "1.0.64"
 derivative = "2.2.0"
 
 # wasm3-provider = { version="0.0.2", optional=true }
-wasm3-provider = { path = "../wasm3-provider", optional = true }
+wasm3-provider = { path = "../forks/wasm3-provider", optional = true }
 wasmtime-provider = { version = "0.0.3", optional = true }
-wapc = { path = "../wapc-rust" }
+wapc = { path = "../forks/wapc-rust" }
 
 tokio = { version = "1.8.1", features = [
   "macros",
@@ -46,7 +46,7 @@ logger = { path = "../logger" }
 
 [dev-dependencies]
 test-env-log = "0.2.7"
-test-vino-provider = { path = "../test-vino-provider" }
+test-vino-provider = { path = "../integration/test-vino-provider" }
 env_logger = "0.8.4"
 tracing-subscriber = "0.2.18"
 maplit = "1.0.2"

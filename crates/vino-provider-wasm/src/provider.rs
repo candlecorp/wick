@@ -114,7 +114,7 @@ mod tests {
   #[test_env_log::test(actix::test)]
   async fn test_component() -> TestResult<()> {
     let component = crate::helpers::load_wasm_from_file(&PathBuf::from_str(
-      "../test-wapc-component/build/test_component_s.wasm",
+      "../integration/test-wapc-component/build/test_component_s.wasm",
     )?)?;
 
     let provider = Provider::new(component, 5);
@@ -126,10 +126,7 @@ mod tests {
     let invocation_id = "INVOCATION_ID";
 
     let mut outputs = provider
-      .request(
-        Entity::component("validate"),
-        job_payload,
-      )
+      .request(Entity::component("validate"), job_payload)
       .await?;
     let output = outputs.next().await.unwrap();
     println!("payload from [{}]: {:?}", output.port, output.packet);
