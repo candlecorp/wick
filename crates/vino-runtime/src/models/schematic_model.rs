@@ -17,13 +17,13 @@ use crate::dev::prelude::*;
 type Result<T> = std::result::Result<T, SchematicModelError>;
 
 type ComponentId = String;
-type ComponentReference = String;
+type ComponentInstance = String;
 type Namespace = String;
 
 #[derive(Debug, Clone)]
 pub(crate) struct SchematicModel {
   definition: SchematicDefinition,
-  references: HashMap<ComponentReference, ComponentId>,
+  instances: HashMap<ComponentInstance, ComponentId>,
   providers: HashMap<Namespace, ProviderModel>,
   upstream_links: HashMap<ConnectionTargetDefinition, ConnectionTargetDefinition>,
   state: Option<LoadedState>,
@@ -40,7 +40,7 @@ impl TryFrom<SchematicDefinition> for SchematicModel {
   type Error = SchematicModelError;
 
   fn try_from(definition: SchematicDefinition) -> Result<Self> {
-    let references = definition
+    let instances = definition
       .instances
       .iter()
       .map(|(instance, actor)| (instance.clone(), actor.id.clone()))
@@ -55,7 +55,7 @@ impl TryFrom<SchematicDefinition> for SchematicModel {
 
     Ok(Self {
       definition,
-      references,
+      instances: instances,
       providers: HashMap::new(),
       upstream_links,
       state: None,
@@ -76,7 +76,7 @@ impl SchematicModel {
     &self.definition.providers
   }
 
-  pub(crate) fn get_references(&self) -> Keys<String, ComponentDefinition> {
+  pub(crate) fn get_instances(&self) -> Keys<String, ComponentDefinition> {
     self.definition.instances.keys()
   }
 
@@ -87,7 +87,7 @@ impl SchematicModel {
       let downstreams = self.get_downstreams(&input);
 
       let downstream = downstreams.iter().find(|port| {
-        let def = self.get_component_definition(port.get_reference());
+        let def = self.get_component_definition(port.get_instance());
         match def {
           Some(def) => !omit_namespaces.iter().any(|ns| ns == &def.namespace),
           None => false,
@@ -98,7 +98,7 @@ impl SchematicModel {
       }
       let downstream = downstream.unwrap();
       let model = self
-        .get_component_model_by_ref(downstream.get_reference())
+        .get_component_model_by_instance(downstream.get_instance())
         .unwrap();
       let downstream_signature = model
         .inputs
@@ -114,11 +114,11 @@ impl SchematicModel {
     let mut schematic_outputs = vec![];
     for output in outputs {
       let upstream = self.get_upstream(&output).unwrap();
-      let def = self.get_component_definition(upstream.get_reference());
+      let def = self.get_component_definition(upstream.get_instance());
       if def.is_none() {
         warn!(
-          "Reference {} has no component definition",
-          upstream.get_reference()
+          "Instance {} has no component definition",
+          upstream.get_instance()
         );
         continue;
       }
@@ -128,7 +128,7 @@ impl SchematicModel {
         continue;
       }
       let model = self
-        .get_component_model_by_ref(upstream.get_reference())
+        .get_component_model_by_instance(upstream.get_instance())
         .unwrap();
       let downstream_signature = model
         .outputs
@@ -161,10 +161,12 @@ impl SchematicModel {
   }
 
   pub(crate) fn partial_initialization(&mut self) -> Result<()> {
+    trace!("Partial Initialization");
     self.populate_state(&["self".to_owned()])
   }
 
   pub(crate) fn final_initialization(&mut self) -> Result<()> {
+    trace!("Final Initialization");
     self.populate_state(&[])
   }
 
@@ -189,6 +191,14 @@ impl SchematicModel {
   }
 
   pub(crate) fn commit_providers(&mut self, providers: Vec<ProviderModel>) {
+    trace!(
+      "Adding providers {:?} to schematic '{}'",
+      providers
+        .iter()
+        .map(|p| &p.namespace)
+        .collect::<Vec<&String>>(),
+      self.get_name()
+    );
     self.providers = providers
       .into_iter()
       .map(|p| (p.namespace.clone(), p))
@@ -203,16 +213,15 @@ impl SchematicModel {
     self.state = None;
   }
 
-  /// Gets a ComponentModel by component reference string
-  pub(crate) fn get_component_model_by_ref(&self, reference: &str) -> Result<ComponentModel> {
+  /// Gets a ComponentModel by component instance string
+  pub(crate) fn get_component_model_by_instance(&self, instance: &str) -> Option<ComponentModel> {
     self
-      .references
-      .get(reference)
+      .instances
+      .get(instance)
       .and_then(|id| self.get_component_model(id))
-      .ok_or_else(|| SchematicModelError::MissingComponentModel(reference.to_owned()))
   }
 
-  /// Gets a ComponentModel by component reference string
+  /// Gets a ComponentModel by component id
   pub(crate) fn get_component_model(&self, id: &str) -> Option<ComponentModel> {
     let (ns, name) = match parse_id(id) {
       Ok(result) => result,
@@ -222,9 +231,9 @@ impl SchematicModel {
     provider.and_then(|provider| provider.components.get(name).cloned())
   }
 
-  /// Gets a ComponentDefinition by component reference string
-  pub(crate) fn get_component_definition(&self, reference: &str) -> Option<ComponentDefinition> {
-    self.definition.get_component(reference)
+  /// Gets a ComponentDefinition by component instance string
+  pub(crate) fn get_component_definition(&self, instance: &str) -> Option<ComponentDefinition> {
+    self.definition.get_component(instance)
   }
 
   pub(crate) fn get_downstreams(
@@ -243,13 +252,13 @@ impl SchematicModel {
 
   pub(crate) fn get_downstream_connections<'a>(
     &'a self,
-    reference: &'a str,
+    instance: &'a str,
   ) -> impl Iterator<Item = &'a ConnectionDefinition> {
     self
       .definition
       .connections
       .iter()
-      .filter(move |conn| conn.from.matches_reference(reference))
+      .filter(move |conn| conn.from.matches_instance(instance))
   }
 
   pub(crate) fn get_schematic_outputs(&self) -> Vec<ConnectionTargetDefinition> {
@@ -258,7 +267,7 @@ impl SchematicModel {
       .connections
       .iter()
       .cloned()
-      .filter(|conn| conn.to.matches_reference(SCHEMATIC_OUTPUT))
+      .filter(|conn| conn.to.matches_instance(SCHEMATIC_OUTPUT))
       .map(|conn| conn.to)
       .collect()
   }
@@ -277,7 +286,7 @@ impl SchematicModel {
       .connections
       .iter()
       .cloned()
-      .filter(|conn| conn.from.matches_reference(SCHEMATIC_INPUT))
+      .filter(|conn| conn.from.matches_instance(SCHEMATIC_INPUT))
       .map(|conn| conn.from)
       .collect()
   }
@@ -298,15 +307,15 @@ impl SchematicModel {
       .map(|state| &state.provider_signatures)
   }
 
-  pub(crate) fn get_outputs(&self, reference: &str) -> Vec<ConnectionTargetDefinition> {
-    match self.references.get(reference) {
+  pub(crate) fn get_outputs(&self, instance: &str) -> Vec<ConnectionTargetDefinition> {
+    match self.instances.get(instance) {
       Some(id) => match self.get_component_model(id) {
         Some(component) => component
           .outputs
           .iter()
           .map(|p| {
             ConnectionTargetDefinition::from_port(PortReference {
-              instance: reference.to_owned(),
+              instance: instance.to_owned(),
               port: p.name.clone(),
             })
           })
@@ -317,7 +326,7 @@ impl SchematicModel {
     }
   }
 
-  // Find the upstream connection for a reference's port
+  // Find the upstream connection for a instance's port
   pub(crate) fn get_upstream_connection<'a>(
     &'a self,
     port: &'a ConnectionTargetDefinition,
@@ -329,17 +338,17 @@ impl SchematicModel {
       .find(move |connection| &connection.to == port)
   }
 
-  // Find the upstream connections for a reference. Note: this relies on the connections
+  // Find the upstream connections for a instance. Note: this relies on the connections
   // from the definition only, not the component model.
-  pub(crate) fn get_upstream_connections_by_reference<'a>(
+  pub(crate) fn get_upstream_connections_by_instance<'a>(
     &'a self,
-    reference: &'a str,
+    instance: &'a str,
   ) -> impl Iterator<Item = &'a ConnectionDefinition> {
     self
       .definition
       .connections
       .iter()
-      .filter(move |connection| connection.to.matches_reference(reference))
+      .filter(move |connection| connection.to.matches_instance(instance))
   }
 
   pub(crate) fn get_port_connections<'a>(
@@ -375,16 +384,17 @@ impl From<&ComponentModel> for ComponentSignature {
 #[cfg(test)]
 mod tests {
 
-  use super::SchematicModel;
   #[allow(unused_imports)]
-  use crate::test::prelude::*;
-
+  use crate::test::prelude::{
+    assert_eq,
+    *,
+  };
   #[test_env_log::test]
   fn test_basics() -> TestResult<()> {
     let schematic_name = "logger";
     let def = load_schematic_manifest("./src/models/test-schematics/logger.yaml")?;
     let model = SchematicModel::try_from(def)?;
-    equals!(model.get_name(), schematic_name);
+    assert_eq!(model.get_name(), schematic_name);
 
     Ok(())
   }

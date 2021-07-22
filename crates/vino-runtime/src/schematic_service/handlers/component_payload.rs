@@ -8,7 +8,7 @@ use crate::schematic_service::handlers::short_circuit::ShortCircuit;
 #[rtype(result = "Result<(), SchematicError>")]
 pub(crate) struct ComponentPayload {
   pub(crate) tx_id: String,
-  pub(crate) reference: String,
+  pub(crate) instance: String,
   pub(crate) payload_map: HashMap<String, MessageTransport>,
 }
 
@@ -16,12 +16,12 @@ impl Handler<ComponentPayload> for SchematicService {
   type Result = ActorResult<Self, Result<(), SchematicError>>;
 
   fn handle(&mut self, msg: ComponentPayload, ctx: &mut Context<Self>) -> Self::Result {
-    trace!("Reference '{}' is ready to continue", msg.reference);
+    trace!("Reference '{}' is ready to continue", msg.instance);
     let kp = &self.get_state().kp;
-    let reference = msg.reference.clone();
+    let reference = msg.instance.clone();
     let tx_id = msg.tx_id;
 
-    let def = actix_try!(self.get_component_model(&msg.reference));
+    let def = actix_try!(self.get_component_model(&msg.instance));
 
     let mut invoke_payload = HashMap::new();
     for (name, payload) in msg.payload_map {
@@ -47,7 +47,7 @@ impl Handler<ComponentPayload> for SchematicService {
       MessageTransport::MultiBytes(invoke_payload),
     );
     let handler = actix_try!(self
-      .get_recipient(&msg.reference)
+      .get_recipient(&msg.instance)
       .ok_or_else(|| SchematicError::ReferenceNotFound(reference.clone())));
 
     let addr = ctx.address();

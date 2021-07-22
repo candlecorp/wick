@@ -4,68 +4,11 @@ use std::sync::PoisonError;
 use itertools::join;
 use thiserror::Error;
 use tokio::sync::mpsc::error::SendError;
-use vino_rpc::PortSignature;
 
 use crate::dev::prelude::*;
 use crate::schematic_service::handlers::input_message::InputMessage;
 
 pub(crate) type BoxedErrorSyncSend = Box<dyn std::error::Error + Sync + Send>;
-
-#[derive(Error, Debug, PartialEq)]
-pub enum ValidationError {
-  #[error("Schematic '{0}' has errors: {}", join(.1, ", "))]
-  PostInitError(String, Vec<ValidationError>),
-  #[error("Schematic '{0}' has errors: {}", join(.1, ", "))]
-  EarlyError(String, Vec<ValidationError>),
-  #[error("Schematic has no outputs")]
-  NoOutputs,
-  #[error("Schematic has no inputs")]
-  NoInputs,
-  // #[error("{0} points to an invalid or non-existant component")]
-  // InvalidComponent,
-  #[error("References point to components on the following non-existant namespaces: {}", join(.0, ", "))]
-  InvalidNamespaces(Vec<String>),
-  #[error("Model has an error: {0}")]
-  ModelError(String),
-  #[error("The following component(s) are missing internal model(s): '{}'", join(.0, ", "))]
-  MissingComponentModels(Vec<String>),
-  #[error("Dangling reference(s): '{}'", join(.0, ", "))]
-  DanglingReference(Vec<String>),
-  #[error("Component definition(s) '{}' not fully qualified", join(.0, ", "))]
-  NotFullyQualified(Vec<String>),
-  #[error("Invalid output port '{}' on {}. Valid output ports are [{}]", .0.get_port(), .1, join(.2, ", "))]
-  InvalidOutputPort(
-    ConnectionTargetDefinition,
-    ConnectionDefinition,
-    Vec<PortSignature>,
-  ),
-  #[error("Invalid input port '{}' on {}. Valid input ports are [{}]", .0.get_port(), .1, join(.2, ", "))]
-  InvalidInputPort(
-    ConnectionTargetDefinition,
-    ConnectionDefinition,
-    Vec<PortSignature>,
-  ),
-  #[error("Invalid connections: {}", join(.0, ", "))]
-  InvalidConnections(Vec<ValidationError>),
-}
-
-impl From<SchematicModelError> for ValidationError {
-  fn from(e: SchematicModelError) -> Self {
-    ValidationError::ModelError(e.to_string())
-  }
-}
-
-#[derive(Error, Debug)]
-pub enum SchematicModelError {
-  #[error("Schematic model not able to finish initialization")]
-  IncompleteInitialization,
-  #[error("Schematic model not initialized")]
-  ModelNotInitialized,
-  #[error("The reference '{0}' has an incomplete component model. Component may have failed to load or be in a partial state.")]
-  MissingComponentModel(String),
-  #[error(transparent)]
-  DefaultsError(#[from] serde_json::error::Error),
-}
 
 #[derive(Error, Debug)]
 pub enum SchematicError {
@@ -241,6 +184,8 @@ pub enum VinoError {
   ParseError(String),
   #[error(transparent)]
   ComponentError(#[from] ComponentError),
+  #[error(transparent)]
+  SchematicModelError(#[from] SchematicModelError),
   #[error(transparent)]
   NetworkError(#[from] NetworkError),
 

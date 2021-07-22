@@ -138,7 +138,7 @@ impl Handler<Invocation> for NativeProviderService {
     let request = async move {
       let provider = provider.lock().await;
       let invocation_id = inv_id.clone();
-      let receiver = provider.request( component, message).await;
+      let receiver = provider.request(component, message).await;
       if let Err(e) = receiver {
         return InvocationResponse::error(
           tx_id,
@@ -211,7 +211,7 @@ mod test {
 
   use super::*;
   use crate::providers::ListRequest;
-  use crate::test::prelude::*;
+  use crate::test::prelude::assert_eq;
   type Result<T> = super::Result<T>;
 
   #[test_env_log::test(actix_rt::test)]
@@ -272,7 +272,7 @@ mod test {
     let (_, mut rx) = response.to_stream()?;
     let next: OutputPacket = rx.next().await.unwrap();
     let payload: String = next.payload.try_into()?;
-    equals!(user_data, payload);
+    assert_eq!(user_data, payload);
 
     Ok(())
   }

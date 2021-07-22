@@ -3,6 +3,7 @@
 ***********************************************/
 
 pub(crate) mod add;
+pub(crate) mod concatenate;
 pub(crate) mod error;
 pub(crate) mod log;
 pub(crate) mod short_circuit;

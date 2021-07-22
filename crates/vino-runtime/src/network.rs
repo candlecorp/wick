@@ -78,13 +78,13 @@ impl Network {
     );
 
     match response {
-      InvocationResponse::Stream { mut rx, .. } => {
+      InvocationResponse::Stream { rx, .. } => {
         debug!("Got stream");
-        let mut map = HashMap::new();
-        while let Some(next) = rx.next().await {
-          debug!("Received packet on port {}: {:?}", next.port, next.payload);
-          map.insert(next.port, next.payload.into());
-        }
+        let outputs: Vec<OutputPacket> = rx.collect().await;
+        let map: HashMap<String, MessageTransport> = outputs
+          .into_iter()
+          .map(|p| (p.port, p.payload.into()))
+          .collect();
         trace!("Result: {:?}", map);
         Ok(map)
       }

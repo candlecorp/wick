@@ -6,7 +6,10 @@ use serde::{
   Deserialize,
   Serialize,
 };
-use vino_codec::messagepack::deserialize;
+use vino_codec::messagepack::{
+  deserialize,
+  rmp_deserialize,
+};
 use vino_component::{
   v0,
   Packet,
@@ -199,6 +202,22 @@ impl MessageTransport {
     match self {
       MessageTransport::MultiBytes(v) => Ok(v),
       _ => Err(Error::PayloadConversionError("Invalid payload".to_owned())),
+    }
+  }
+
+  /// Try to deserialize a [MessageTransport] into the target type
+  pub fn try_into<'de, T: Deserialize<'de>>(self) -> Result<T> {
+    match self {
+      MessageTransport::Invalid => Err(Error::Invalid),
+      MessageTransport::Exception(v) => Err(Error::Exception(v)),
+      MessageTransport::Error(v) => Err(Error::Error(v)),
+      MessageTransport::MessagePack(buf) => {
+        rmp_deserialize::<T>(&buf).map_err(Error::DeserializationError)
+      }
+      MessageTransport::MultiBytes(_) => todo!(),
+      MessageTransport::OutputMap(_) => todo!(),
+      MessageTransport::Test(_) => Err(Error::Invalid),
+      MessageTransport::Signal(_) => Err(Error::Invalid),
     }
   }
 }

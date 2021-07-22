@@ -131,7 +131,6 @@ mod tests {
       ("document_id", document_id),
       ("collection_id", collection_id),
     ]);
-    let invocation_id = "INVOCATION_ID";
 
     let mut outputs = provider
       .request(Entity::component("get-item"), job_payload)
@@ -163,7 +162,10 @@ mod tests {
 
     let output = outputs.next().await.unwrap();
     println!("Output of post-rm get: {:?}", output);
-    assert!(matches!(output.packet, Packet::V0(v0::Payload::Error(_))));
+    assert!(matches!(
+      output.packet,
+      Packet::V0(v0::Payload::Exception(_))
+    ));
     Ok(())
   }
 

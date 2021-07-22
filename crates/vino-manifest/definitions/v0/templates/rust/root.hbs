@@ -46,7 +46,7 @@ impl FromStr for ComponentDefinition {
   fn from_str(s: &str) -> Result<Self, Self::Err> {
     Ok(Self {
       id: s.to_owned(),
-      metadata: None,
+      config: None,
     })
   }
 }

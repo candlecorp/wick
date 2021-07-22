@@ -1,0 +1,10 @@
+namespace "list-users"
+
+type Inputs {
+  offset: i32
+  limit: i32
+}
+
+type Outputs {
+  users: {string:string}
+}

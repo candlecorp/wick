@@ -121,7 +121,7 @@ extern crate tracing;
 
 mod dispatch;
 pub mod error;
-mod models;
+pub mod models;
 pub mod network;
 mod network_service;
 mod providers;

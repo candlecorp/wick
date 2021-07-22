@@ -1,0 +1,36 @@
+[package]
+name = "vino-authentication-inmemory"
+version = "0.1.0"
+authors = ["Jarrod Overson <jsoverson@gmail.com>"]
+edition = "2018"
+license = "Apache-2.0"
+
+[[bin]]
+name = "vino-authentication-inmemory"
+path = "src/main.rs"
+
+[dependencies]
+vino-interfaces-authentication = { path = "../interfaces-authentication" }
+vino-provider = { path = "../vino-provider" }
+vino-component = { path = "../vino-component" }
+thiserror = "1.0.25"
+tracing = "0.1.26"
+async-trait = "0.1.50"
+vino-rpc = { path = "../vino-rpc" }
+tokio-stream = "0.1"
+tokio = { version = "1.4.0", features = ["rt"] }
+bcrypt = "0.10.1"
+
+#for bin
+structopt = "0.3.22"
+vino-provider-cli = { path = "../vino-provider-cli" }
+env_logger = "0.8.4"
+
+[dev-dependencies]
+vino-codec = { path = "../vino-codec" }
+test-env-log = "0.2.7"
+anyhow = "1.0.42"
+tracing-subscriber = "0.2.19"
+tokio = { version = "1.4.0", features = ["macros"] }
+test-interfaces-authentication = { path = "../test-interfaces-authentication" }
+rand = "0.8.4"

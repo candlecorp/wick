@@ -1,6 +1,6 @@
 use crate::dev::prelude::*;
 
-type Result<T> = std::result::Result<T, ValidationError>;
+type Result<T> = std::result::Result<T, Vec<ValidationErrorKind>>;
 pub(crate) struct Validator<'a> {
   model: &'a SchematicModel,
   omit_namespaces: Vec<String>,
@@ -26,19 +26,19 @@ impl<'a> Validator<'a> {
   ) -> std::result::Result<(), ValidationError> {
     let validator = Validator::new(model, vec!["self".to_owned()]);
     let name = model.get_name();
-    let results: Vec<ValidationError> = vec![
-      validator.assert_early_schematic_inputs(),
+    let results: Vec<ValidationErrorKind> = vec![
       validator.assert_early_schematic_outputs(),
       validator.assert_early_qualified_names(),
       validator.assert_no_dangling_references(),
     ]
     .into_iter()
     .filter_map(std::result::Result::err)
+    .flatten()
     .collect();
     if results.is_empty() {
       Ok(())
     } else {
-      Err(ValidationError::EarlyError(name, results))
+      Err(ValidationError::new(&name, results))
     }
   }
   pub(crate) fn validate_late_errors(
@@ -46,17 +46,18 @@ impl<'a> Validator<'a> {
   ) -> std::result::Result<(), ValidationError> {
     let validator = Validator::new(model, vec!["self".to_owned()]);
     let name = model.get_name();
-    let results: Vec<ValidationError> = vec![
+    let results: Vec<ValidationErrorKind> = vec![
       validator.assert_component_models(),
       validator.assert_ports_used(),
     ]
     .into_iter()
     .filter_map(std::result::Result::err)
+    .flatten()
     .collect();
     if results.is_empty() {
       Ok(())
     } else {
-      Err(ValidationError::PostInitError(name, results))
+      Err(ValidationError::new(&name, results))
     }
   }
   pub(crate) fn validate_final_errors(
@@ -64,18 +65,18 @@ impl<'a> Validator<'a> {
   ) -> std::result::Result<(), ValidationError> {
     let validator = Validator::new(model, vec![]);
     let name = model.get_name();
-    let results: Vec<ValidationError> = vec![
+    let results: Vec<ValidationErrorKind> = vec![
       validator.assert_component_models(),
       validator.assert_ports_used(),
-      // validator.assert_valid_namespaces(), TODO: Fix this check (need to revisit how internal namespaces are registered and resolved)
     ]
     .into_iter()
     .filter_map(std::result::Result::err)
+    .flatten()
     .collect();
     if results.is_empty() {
       Ok(())
     } else {
-      Err(ValidationError::PostInitError(name, results))
+      Err(ValidationError::new(&name, results))
     }
   }
   pub(crate) fn _validate(model: &'a SchematicModel) -> std::result::Result<(), ValidationError> {
@@ -83,98 +84,80 @@ impl<'a> Validator<'a> {
     Self::validate_late_errors(model)
   }
   fn assert_no_dangling_references(&self) -> Result<()> {
-    let dangling: Vec<String> = self
+    let dangling: Vec<ValidationErrorKind> = self
       .model
       .get_connections()
       .iter()
       .flat_map(|conn| {
         let from = self
           .model
-          .get_component_definition(conn.from.get_reference());
-        let to = self.model.get_component_definition(conn.to.get_reference());
+          .get_component_definition(conn.from.get_instance());
+        let to = self.model.get_component_definition(conn.to.get_instance());
         let mut none = vec![];
 
-        if from.is_none() && !conn.has_default() && !conn.from.matches_reference(SCHEMATIC_INPUT) {
-          none.push(Some(conn.from.get_reference_owned()));
+        if from.is_none() && !conn.has_default() && !conn.from.matches_instance(SCHEMATIC_INPUT) {
+          none.push(ValidationErrorKind::DanglingReference(
+            conn.from.get_instance_owned(),
+          ));
         }
 
-        if to.is_none() && !conn.to.matches_reference(SCHEMATIC_OUTPUT) {
-          none.push(Some(conn.to.get_reference_owned()));
+        if to.is_none() && !conn.to.matches_instance(SCHEMATIC_OUTPUT) {
+          none.push(ValidationErrorKind::DanglingReference(
+            conn.to.get_instance_owned(),
+          ));
         }
         none
       })
-      .flatten()
       .collect();
     if dangling.is_empty() {
       Ok(())
     } else {
-      Err(ValidationError::DanglingReference(dangling))
+      Err(dangling)
     }
   }
-  fn assert_valid_namespaces(&self) -> Result<()> {
-    eprintln!("Oh {:?}", self.model.get_provider_signatures());
-    let mut namespaces = self
-      .model
-      .get_provider_signatures()?
-      .iter()
-      .map(|def| def.name.clone());
-    eprintln!("Namespaces {:?}", namespaces);
 
-    // TODO: Make runtime-added namespaces easier to validate without hardcoding them like this
-    let internal_namespaces = vec!["vino::v0", "self"];
-    let errors: Vec<String> = self
-      .model
-      .get_component_definitions()
-      .filter_map(|c: &ComponentDefinition| {
-        (!(namespaces.any(|ns| ns == c.namespace)
-          || internal_namespaces.iter().any(|ns| ns == &c.namespace)))
-        .then(|| c.namespace.clone())
-      })
-      .collect();
-    if errors.is_empty() {
-      Ok(())
-    } else {
-      Err(ValidationError::InvalidNamespaces(errors))
-    }
-  }
   fn assert_ports_used(&self) -> Result<()> {
-    let errors: Vec<ValidationError> = self
+    let errors: Vec<ValidationErrorKind> = self
       .model
       .get_connections()
       .iter()
       .flat_map(|connection| {
         let mut validations = vec![];
-        if !connection.from.matches_reference(SCHEMATIC_INPUT) {
-          let r = connection.from.get_reference();
-          match self.model.get_component_model_by_ref(r) {
-            Ok(from) => validations.push(is_valid_output(connection, &from)),
-            Err(e) => {
+        if !connection.from.matches_instance(SCHEMATIC_INPUT) {
+          let r = connection.from.get_instance();
+          match self.model.get_component_model_by_instance(r) {
+            Some(from) => validations.push(is_valid_output(connection, &from)),
+            None => {
               if !connection.has_default() && !self.should_omit_ref(r) {
-                validations.push(Err(e.into()));
+                validations.push(Err(ValidationErrorKind::MissingComponentModel(
+                  r.to_owned(),
+                )));
               }
             }
           };
         }
-        if !connection.to.matches_reference(SCHEMATIC_OUTPUT) {
-          let r = connection.to.get_reference();
-          match self.model.get_component_model_by_ref(r) {
-            Ok(to) => validations.push(is_valid_input(connection, &to)),
-            Err(e) => {
+        if !connection.to.matches_instance(SCHEMATIC_OUTPUT) {
+          let r = connection.to.get_instance();
+          match self.model.get_component_model_by_instance(r) {
+            Some(to) => validations.push(is_valid_input(connection, &to)),
+            None => {
               if !self.should_omit_ref(r) {
-                validations.push(Err(e.into()));
+                validations.push(Err(ValidationErrorKind::MissingComponentModel(
+                  r.to_owned(),
+                )));
               }
             }
           };
         }
         validations
       })
-      .filter_map(Result::err)
+      .filter_map(|res| res.err())
       .collect();
 
     if errors.is_empty() {
       Ok(())
     } else {
-      Err(ValidationError::InvalidConnections(errors))
+      Err(errors)
     }
   }
   fn should_omit_ref(&self, reference: &str) -> bool {
@@ -188,28 +171,29 @@ impl<'a> Validator<'a> {
   }
 
   fn assert_component_models(&self) -> Result<()> {
-    let missing_components: Vec<String> = self
+    let missing_components: Vec<ValidationErrorKind> = self
       .model
-      .get_references()
+      .get_instances()
       .filter_map(|r| {
         let def = self.model.get_component_definition(r).unwrap();
 
         let model = self.model.get_component_model(&def.id);
         (model.is_none() && !self.should_omit_def(&def))
-          .then(|| format!("{}=>{}", r.clone(), def.id))
+          .then(|| ValidationErrorKind::MissingComponentModel(format!("{}=>{}", r.clone(), def.id)))
       })
       .collect();
 
     if missing_components.is_empty() {
       Ok(())
     } else {
-      Err(ValidationError::MissingComponentModels(missing_components))
+      Err(missing_components)
     }
   }
+
   fn assert_early_schematic_outputs(&self) -> Result<()> {
     let ports = self.model.get_schematic_outputs();
     if ports.is_empty() {
-      Err(ValidationError::NoOutputs)
+      Err(vec![ValidationErrorKind::NoOutputs])
     } else {
       Ok(())
     }
@@ -219,16 +203,16 @@ impl<'a> Validator<'a> {
   // to the schematic input or a port that has a default
   fn validate_port_has_upstream_input(&self, port: &ConnectionTargetDefinition) -> bool {
     let connection = some_or_return!(self.model.get_upstream_connection(port), false);
-    let connected_to_schematic_input = connection.from.matches_reference(SCHEMATIC_INPUT);
+    let connected_to_schematic_input = connection.from.matches_instance(SCHEMATIC_INPUT);
     let has_default = connection.from.is_none() && connection.has_default();
     if connected_to_schematic_input || has_default {
       return true;
     }
 
-    let upstream_ref = connection.from.get_reference();
+    let upstream_ref = connection.from.get_instance();
     let upstream_connections = self
       .model
-      .get_upstream_connections_by_reference(upstream_ref);
+      .get_upstream_connections_by_instance(upstream_ref);
     for conn in upstream_connections {
       if self.validate_port_has_upstream_input(&conn.to) {
         return true;
@@ -237,33 +221,26 @@ impl<'a> Validator<'a> {
     false
   }
 
-  fn assert_early_schematic_inputs(&self) -> Result<()> {
-    let ports = self.model.get_schematic_outputs();
-    for port in &ports {
-      if !self.validate_port_has_upstream_input(port) {
-        return Err(ValidationError::NoInputs);
-      }
-    }
-    Ok(())
-  }
-
   fn assert_early_qualified_names(&self) -> Result<()> {
     let component_definitions = self.model.get_component_definitions();
     let mut errors = vec![];
     for def in component_definitions {
       if parse_id(&def.id).is_err() {
-        errors.push(def.id.clone());
+        errors.push(ValidationErrorKind::NotFullyQualified(def.id.clone()));
       }
     }
     if errors.is_empty() {
       Ok(())
     } else {
-      Err(ValidationError::NotFullyQualified(errors))
+      Err(errors)
     }
   }
 }
 
-fn is_valid_input(connection: &ConnectionDefinition, to: &ComponentModel) -> Result<()> {
+fn is_valid_input(
+  connection: &ConnectionDefinition,
+  to: &ComponentModel,
+) -> std::result::Result<(), ValidationErrorKind> {
   let to_port = &connection.to;
   let found_to_port = to
     .inputs
@@ -271,7 +248,7 @@ fn is_valid_input(connection: &ConnectionDefinition, to: &ComponentModel) -> Res
     .find(|port| to_port.matches_port(&port.name));
 
   if found_to_port.is_none() {
-    Err(ValidationError::InvalidInputPort(
+    Err(ValidationErrorKind::InvalidInputPort(
       to_port.clone(),
       connection.clone(),
       to.inputs.clone(),
@@ -280,7 +257,10 @@ fn is_valid_input(connection: &ConnectionDefinition, to: &ComponentModel) -> Res
     Ok(())
   }
 }
-fn is_valid_output(connection: &ConnectionDefinition, from: &ComponentModel) -> Result<()> {
+fn is_valid_output(
+  connection: &ConnectionDefinition,
+  from: &ComponentModel,
+) -> std::result::Result<(), ValidationErrorKind> {
   let from_port = &connection.from;
   let found_from_port = from
     .outputs
@@ -288,7 +268,7 @@ fn is_valid_output(connection: &ConnectionDefinition, from: &ComponentModel) -> 
     .find(|port| from_port.matches_port(&port.name));
 
   if found_from_port.is_none() {
-    Err(ValidationError::InvalidOutputPort(
+    Err(ValidationErrorKind::InvalidOutputPort(
       from_port.clone(),
       connection.clone(),
       from.outputs.clone(),
@@ -301,7 +281,6 @@ fn is_valid_output(connection: &ConnectionDefinition, from: &ComponentModel) -> 
 #[cfg(test)]
 mod tests {
   use std::collections::HashMap;
-  use std::str::FromStr;
 
   use vino_provider::ComponentSignature;
   use vino_rpc::{
@@ -311,8 +290,10 @@ mod tests {
   use ConnectionTargetDefinition as Target;
 
   use super::*;
-  use crate::test::prelude::*;
-
+  use crate::test::prelude::{
+    assert_eq,
+    *,
+  };
   #[test_env_log::test]
   fn test_validate_early_errors() -> TestResult<()> {
     let def = load_network_manifest("./manifests/native-component.yaml")?;
@@ -349,14 +330,18 @@ mod tests {
     let result = Validator::validate_late_errors(&model);
     let first = &model.get_connections()[0];
     let second = &model.get_connections()[1];
-    let expected = ValidationError::PostInitError(
-      model.get_name(),
-      vec![ValidationError::InvalidConnections(vec![
-        ValidationError::InvalidInputPort(first.to.clone(), first.clone(), expected_inputs),
-        ValidationError::InvalidOutputPort(second.from.clone(), second.clone(), expected_outputs),
-      ])],
+    let expected = ValidationError::new(
+      &model.get_name(),
+      vec![
+        ValidationErrorKind::InvalidInputPort(first.to.clone(), first.clone(), expected_inputs),
+        ValidationErrorKind::InvalidOutputPort(
+          second.from.clone(),
+          second.clone(),
+          expected_outputs,
+        ),
+      ],
     );
-    equals!(result, Err(expected));
+    assert_eq!(result, Err(expected));
     Ok(())
   }
 
@@ -386,9 +371,9 @@ mod tests {
     };
     model.commit_providers(vec![provider]);
     let result = Validator::validate_early_errors(&model);
-    equals!(result, Ok(()));
+    assert_eq!(result, Ok(()));
     let result = Validator::validate_late_errors(&model);
-    equals!(result, Ok(()));
+    assert_eq!(result, Ok(()));
     let provider = ProviderModel {
       namespace: "self".to_owned(),
       components: hashmap! {
@@ -408,13 +393,13 @@ mod tests {
     };
     model.commit_providers(vec![provider]);
     let result = Validator::validate_final_errors(&model);
-    equals!(result, Ok(()));
+    assert_eq!(result, Ok(()));
 
     Ok(())
   }
 
   #[test_env_log::test]
-  fn test_connections() -> Result<()> {
+  fn test_connections() -> TestResult<()> {
     let schematic_name = "Test";
     let mut schematic_def = new_schematic(schematic_name);
     schematic_def.providers.push(ProviderDefinition {
@@ -438,50 +423,19 @@ mod tests {
       default: None,
     });
     let model = SchematicModel::try_from(schematic_def)?;
-    equals!(model.get_name(), schematic_name);
+    assert_eq!(model.get_name(), schematic_name);
 
     let upstream = model
       .get_upstream(&Target::new("logger".to_owned(), "input".to_owned()))
       .unwrap();
-    equals!(upstream.get_reference(), SCHEMATIC_INPUT);
-    equals!(upstream.get_port(), "input");
-
-    Ok(())
-  }
-
-  // #[test_env_log::test]
-  // TODO: This test is broken
-  fn _test_invalid_namespace() -> TestResult<()> {
-    let schematic_name = "Test";
-    let mut schematic_def = new_schematic(schematic_name);
-    schematic_def.instances.insert(
-      "logger".to_owned(),
-      ComponentDefinition::new("nonexistant", "log"),
-    );
-    schematic_def
-      .connections
-      .push(ConnectionDefinition::from_v0_str("<>=>logger[input]")?);
-    schematic_def
-      .connections
-      .push(ConnectionDefinition::from_v0_str("logger[output]=><>")?);
-    let model = SchematicModel::try_from(schematic_def)?;
-    equals!(model.get_name(), schematic_name);
-    let result = Validator::validate_late_errors(&model);
-    equals!(
-      result,
-      Err(ValidationError::EarlyError(
-        "Test".to_owned(),
-        vec![ValidationError::InvalidNamespaces(vec![
-          "nonexistant".to_owned(),
-        ]),]
-      ))
-    );
+    assert_eq!(upstream.get_instance(), SCHEMATIC_INPUT);
+    assert_eq!(upstream.get_port(), "input");
 
     Ok(())
   }
 
   #[test_env_log::test]
-  fn test_dangling_refs() -> Result<()> {
+  fn test_dangling_refs() -> TestResult<()> {
     let schematic_name = "Test";
     let mut schematic_def = new_schematic(schematic_name);
     schematic_def.connections.push(ConnectionDefinition {
@@ -490,16 +444,15 @@ mod tests {
       default: None,
     });
     let model = SchematicModel::try_from(schematic_def)?;
-    equals!(model.get_name(), schematic_name);
+    assert_eq!(model.get_name(), schematic_name);
     let result = Validator::validate_early_errors(&model);
-    equals!(
+    assert_eq!(
       result,
-      Err(ValidationError::EarlyError(
-        "Test".to_owned(),
-        vec![
-          ValidationError::NoInputs,
-          ValidationError::DanglingReference(vec!["dangling1".to_owned()]),
-        ]
+      Err(ValidationError::new(
+        schematic_name,
+        vec![ValidationErrorKind::DanglingReference(
+          "dangling1".to_owned()
+        ),]
       ))
     );
 
@@ -507,7 +460,7 @@ mod tests {
   }
 
   #[test_env_log::test]
-  fn test_no_upstream() -> Result<()> {
+  fn test_no_upstream() -> TestResult<()> {
     let schematic_name = "Test";
     let mut schematic_def = new_schematic(schematic_name);
     schematic_def.connections.push(ConnectionDefinition {
@@ -516,17 +469,17 @@ mod tests {
       default: Some(serde_json::Value::String("Default string".to_owned())),
     });
     let model = SchematicModel::try_from(schematic_def)?;
-    equals!(model.get_name(), schematic_name);
+    assert_eq!(model.get_name(), schematic_name);
     let result = Validator::validate_early_errors(&model);
-    equals!(result, Ok(()));
+    assert_eq!(result, Ok(()));
     let result = Validator::validate_late_errors(&model);
-    equals!(result, Ok(()));
+    assert_eq!(result, Ok(()));
 
     Ok(())
   }
 
   #[test_env_log::test]
-  fn test_missing_models() -> Result<()> {
+  fn test_missing_models() -> TestResult<()> {
     let schematic_name = "Test";
     let mut schematic_def = new_schematic(schematic_name);
     schematic_def.instances.insert(
@@ -535,13 +488,13 @@ mod tests {
     );
     let model = SchematicModel::try_from(schematic_def)?;
     let result = Validator::validate_late_errors(&model);
-    equals!(
+    assert_eq!(
       result,
-      Err(ValidationError::PostInitError(
-        "Test".to_owned(),
-        vec![ValidationError::MissingComponentModels(vec![
+      Err(ValidationError::new(
+        schematic_name,
+        vec![ValidationErrorKind::MissingComponentModel(
           "logger=>test-namespace::log".to_owned()
-        ]),]
+        )]
       ))
     );
 
@@ -584,10 +537,10 @@ mod tests {
     };
     model.commit_providers(vec![provider]);
     let result = Validator::_validate(&model);
-    equals!(result, Ok(()));
+    assert_eq!(result, Ok(()));
     model.partial_initialization()?;
     let schematic_inputs = model.get_schematic_input_signatures()?;
-    equals!(
+    assert_eq!(
       schematic_inputs,
       &vec![PortSignature {
         name: "input".to_owned(),
@@ -595,7 +548,7 @@ mod tests {
       }]
     );
     let schematic_outputs = model.get_schematic_output_signatures()?;
-    equals!(
+    assert_eq!(
       schematic_outputs,
       &vec![PortSignature {
         name: "output".to_owned(),
@@ -603,8 +556,8 @@ mod tests {
       }]
     );
     let provider_sigs = model.get_provider_signatures()?;
-    equals!(provider_sigs.len(), 1);
-    equals!(
+    assert_eq!(provider_sigs.len(), 1);
+    assert_eq!(
       provider_sigs[0],
       ProviderSignature {
         name: "test-namespace".to_owned(),

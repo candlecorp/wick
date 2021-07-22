@@ -31,7 +31,7 @@ impl Handler<TransactionUpdate> for SchematicService {
         trace!(
           "Transaction:{}: transitioning to {}",
           msg.tx_id,
-          msg.reference
+          msg.instance
         );
         ActorResult::reply_async(
           async move { log_ie!(addr.send(msg).await, 6011)? }.into_actor(self),

@@ -113,14 +113,16 @@ mod tests {
   use maplit::hashmap;
 
   use super::*;
-  use crate::test::prelude::*;
+  use crate::test::prelude::{
+    assert_eq,
+    *,
+  };
   type Result<T> = std::result::Result<T, VinoError>;
 
   async fn request_log(provider: &Provider, data: &str) -> Result<String> {
     let job_payload = hashmap! {
       "input".to_owned() => mp_serialize(data)?,
     };
-    let invocation_id = "INVOCATION_ID";
 
     let mut outputs = provider
       .request(Entity::schematic("simple"), job_payload)
@@ -130,7 +132,7 @@ mod tests {
     let output_data: String = output.packet.try_into()?;
 
     println!("doc_id: {:?}", output_data);
-    equals!(output_data, data);
+    assert_eq!(output_data, data);
     Ok(output_data)
   }
 
@@ -152,7 +154,7 @@ mod tests {
     let provider = Provider::new(network_id);
     let list = provider.list_registered().await?;
     println!("components on network : {:?}", list);
-    equals!(list.len(), 1);
+    assert_eq!(list.len(), 1);
     Ok(())
   }
 }

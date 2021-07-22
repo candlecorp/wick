@@ -94,6 +94,25 @@ async fn defaults() -> Result<()> {
 }
 
 #[test_env_log::test(actix_rt::test)]
+
+async fn no_inputs() -> Result<()> {
+  println!("Running no_inputs test");
+  let (network, _) = init_network_from_yaml("./manifests/no-inputs.yaml").await?;
+
+  let data: HashMap<String, String> = HashMap::new();
+
+  let mut result = network.request("test", Entity::test("test"), &data).await?;
+
+  println!("Result: {:?}", result);
+  let output: MessageTransport = result.remove("output").unwrap();
+  println!("Output: {:?}", output);
+  let uuid: String = output.try_into()?;
+  println!("uuid: {:?}", uuid);
+  assert_eq!(uuid.len(), 36);
+  Ok(())
+}
+
+#[test_env_log::test(actix_rt::test)]
 async fn nested_schematics() -> Result<()> {
   let (network, _) = init_network_from_yaml("./manifests/nested-schematics.yaml").await?;
 

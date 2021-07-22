@@ -7,15 +7,5 @@ instances:
   external:
     id: test-namespace::test-component
 connections:
-  - from:
-      instance: <input>
-      port: input
-    to:
-      instance: external
-      port: input
-  - from:
-      instance: external
-      port: output
-    to:
-      instance: <output>
-      port: output
+  - <> => external[input]
+  - external[output] => <>

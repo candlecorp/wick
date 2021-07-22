@@ -60,7 +60,7 @@ pub trait Sender {
     let mut port = port.lock().unwrap();
     port
       .buffer
-      .push_back(Packet::V0(ComponentPayload::Error(payload)));
+      .push_back(Packet::V0(ComponentPayload::Exception(payload)));
   }
 
   /// Buffer an exception then close the port
@@ -185,14 +185,3 @@ impl Stream for PortStream {
     }
   }
 }
-
-// #[cfg(test)]
-// mod tests {
-
-//   use crate::Result;
-
-//   #[test_env_log::test(tokio::test)]
-//   async fn test() -> Result<()> {
-//     Ok(())
-//   }
-// }

@@ -131,7 +131,6 @@ impl Handler<InitializeComponents> for GrpcProviderService {
         .instrument(debug_span!("client.list"));
       debug!("Making list request");
       let list = list.await?;
-      debug!("Component list: {:?}", list);
       let list = list.into_inner();
 
       let mut metadata: HashMap<String, ComponentModel> = HashMap::new();
@@ -147,6 +146,10 @@ impl Handler<InitializeComponents> for GrpcProviderService {
           },
         );
       }
+      for (name, model) in &metadata {
+        debug!("Component {} registering with metadata: {:?}", name, model);
+      }
+
       Ok(metadata)
     };
 
@@ -333,7 +336,10 @@ mod test {
   };
 
   use super::*;
-  use crate::test::prelude::*;
+  use crate::test::prelude::{
+    assert_eq,
+    *,
+  };
   type Result<T> = super::Result<T>;
 
   #[test_env_log::test(actix_rt::test)]
@@ -380,7 +386,7 @@ mod test {
                 let (_, mut rx) = response.to_stream()?;
                 let next: OutputPacket = rx.next().await.unwrap();
                 let payload: String = next.payload.try_into()?;
-                equals!(payload, format!("TEST: {}", user_data));
+                assert_eq!(payload, format!("TEST: {}", user_data));
               },
               Err(e)=>{
                 panic!("task failed: {}", e);

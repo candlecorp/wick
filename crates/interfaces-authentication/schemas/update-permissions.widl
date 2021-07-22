@@ -1,0 +1,10 @@
+namespace "update-permissions"
+
+type Inputs {
+  user_id: string
+  permissions: [string]
+}
+
+type Outputs {
+  permissions: [string]
+}

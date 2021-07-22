@@ -1,6 +1,14 @@
 # Vino monorepo
 
-TODO
+# Bugs
+
+- Component codegen for wellknown providers doesn't reference the proper module for input/outputs etc
+- interface.json's for wellknown interfaces needs to be located in a central repo
+- Type representation of components over RPC is just a string and needs to be more complex to represent valid types.
+
+## Todos
+
+- Codegen makefiles
 
 ## Good first contributions
 

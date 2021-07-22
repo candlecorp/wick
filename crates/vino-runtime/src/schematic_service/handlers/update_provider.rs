@@ -10,7 +10,7 @@ impl Handler<UpdateProvider> for SchematicService {
   type Result = Result<(), SchematicError>;
 
   fn handle(&mut self, msg: UpdateProvider, _ctx: &mut Context<Self>) -> Self::Result {
-    self.update_network_provider(msg.model);
+    self.update_network_provider(msg.model)?;
     self.validate_final()
   }
 }

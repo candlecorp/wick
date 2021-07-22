@@ -22,11 +22,32 @@ type Result<T> = std::result::Result<T, TransactionError>;
 #[derive(Debug)]
 pub(crate) struct TransactionMap {
   model: Arc<Mutex<SchematicModel>>,
+  // A list of references that don't have inputs and thus won't be triggered
+  // by an upstream's output message
+  autorun: Vec<String>,
 }
 
 impl TransactionMap {
   pub(crate) fn new(model: Arc<Mutex<SchematicModel>>) -> Self {
-    Self { model }
+    let locked = model.lock().unwrap();
+    // components that have no inputs need to be run now or lazily later
+    let autorun_instances = locked
+      .get_instances()
+      .filter_map(|instance| {
+        locked
+          .get_upstream_connections_by_instance(instance)
+          .next()
+          .is_none()
+          .then(|| instance.clone())
+      })
+      .collect();
+    drop(locked);
+    debug!("Instances {:?} are lazy", autorun_instances);
+
+    Self {
+      model,
+      autorun: autorun_instances,
+    }
   }
   pub(crate) fn new_transaction(
     &mut self,
@@ -37,6 +58,17 @@ impl TransactionMap {
 
     let (ready_tx, ready_rx) = unbounded_channel::<TransactionUpdate>();
 
+    // TODO: Instances with no ports should be run lazily, not automatically.
+    for instance in &self.autorun {
+      ok_or_log!(
+        ready_tx.send(TransactionUpdate::Transition(ComponentPayload {
+          tx_id: tx_id.clone(),
+          instance: instance.clone(),
+          payload_map: HashMap::new(),
+        }))
+      );
+    }
+
     tokio::spawn(async move {
       let log_prefix = format!("OutHandler:{}:", tx_id);
       trace!("{} created", log_prefix);
@@ -46,7 +78,7 @@ impl TransactionMap {
         let target = &output.connection.to;
         let port = output.connection.to.get_port();
 
-        if target.matches_reference(SCHEMATIC_OUTPUT) {
+        if target.matches_instance(SCHEMATIC_OUTPUT) {
           trace!("{} Received schematic output for {}", log_prefix, port,);
 
           if let Some(payload) = transaction.take_from_port(target) {
@@ -73,7 +105,7 @@ impl TransactionMap {
           ok_or_log!(
             ready_tx.send(TransactionUpdate::Transition(ComponentPayload {
               tx_id: tx_id.clone(),
-              reference: target.get_reference_owned(),
+              instance: target.get_instance_owned(),
               payload_map: map
             }))
           );
@@ -165,7 +197,7 @@ impl Transaction {
     locked
       .get_connections()
       .iter()
-      .filter(|conn| conn.to.matches_reference(reference))
+      .filter(|conn| conn.to.matches_instance(reference))
       .map(|conn| conn.to.clone())
       .collect()
   }
@@ -173,7 +205,7 @@ impl Transaction {
     &mut self,
     target: &ConnectionTargetDefinition,
   ) -> Result<HashMap<String, MessageTransport>> {
-    let ports = self.get_connected_ports(target.get_reference());
+    let ports = self.get_connected_ports(target.get_instance());
 
     let mut map = HashMap::new();
     for port in ports {
@@ -183,8 +215,7 @@ impl Transaction {
     Ok(map)
   }
   fn is_target_ready(&self, port: &ConnectionTargetDefinition) -> bool {
-    let reference = port.get_reference_owned();
-    let ports = self.get_connected_ports(&reference);
+    let ports = self.get_connected_ports(port.get_instance());
     self.are_ports_ready(&ports)
   }
   fn is_port_ready(&self, port: &ConnectionTargetDefinition) -> bool {
@@ -240,8 +271,10 @@ mod tests {
 
   use super::*;
   #[allow(unused_imports)]
-  use crate::test::prelude::*;
-
+  use crate::test::prelude::{
+    assert_eq,
+    *,
+  };
   fn make_model() -> TestResult<Arc<Mutex<SchematicModel>>> {
     let schematic_name = "Test";
     let mut schematic_def = new_schematic(schematic_name);
@@ -287,7 +320,7 @@ mod tests {
     assert!(transaction.is_port_ready(&to));
     trace!("taking from port");
     let output = transaction.take_from_port(&to);
-    equals!(
+    assert_eq!(
       output,
       Some(Packet::V0(Payload::MessagePack(vec![])).into())
     );
@@ -355,7 +388,7 @@ mod tests {
     });
     let msgs = handle.await.unwrap();
 
-    equals!(msgs.len(), 4);
+    assert_eq!(msgs.len(), 4);
 
     Ok(())
   }

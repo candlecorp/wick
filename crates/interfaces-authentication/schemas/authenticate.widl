@@ -1,0 +1,12 @@
+namespace "authenticate"
+
+type Inputs {
+  session: string
+  username: string
+  password: string
+}
+
+type Outputs {
+  session: string
+  user_id: string
+}

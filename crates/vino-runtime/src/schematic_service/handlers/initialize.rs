@@ -52,6 +52,7 @@ impl Handler<Initialize> for SchematicService {
               .collect();
             let mut model = this.get_state().model.lock().unwrap();
             model.commit_providers(providers);
+            model.partial_initialization()?;
           }
           Err(e) => {
             error!("Error starting providers: {}", e);

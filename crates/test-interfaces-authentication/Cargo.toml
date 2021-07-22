@@ -1,0 +1,23 @@
+[package]
+name = "test-interfaces-authentication"
+version = "0.1.0"
+authors = ["Jarrod Overson <jsoverson@gmail.com>"]
+edition = "2018"
+license = "Apache-2.0"
+
+[[bin]]
+name = "test-interfaces-authentication"
+path = "src/main.rs"
+
+[dependencies]
+thiserror = "1.0.25"
+vino-provider = { path = "../vino-provider" }
+vino-component = { path = "../vino-component" }
+vino-codec = { path = "../vino-codec" }
+vino-rpc = { path = "../vino-rpc" }
+
+tracing = "0.1.26"
+
+maplit = "1.0.2"
+tonic = "0.4.3"
+anyhow = "1.0.42"

@@ -1,0 +1,8 @@
+namespace "uuid"
+
+type Inputs {
+}
+
+type Outputs {
+  output: string
+}

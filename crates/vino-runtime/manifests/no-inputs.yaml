@@ -1,0 +1,7 @@
+---
+schematics:
+  - name: test
+    instances:
+      uuid: vino::v0::uuid
+    connections:
+      - uuid[output] => <>

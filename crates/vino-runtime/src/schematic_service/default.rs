@@ -23,8 +23,10 @@ mod tests {
   use vino_manifest::default::parse_default;
 
   use super::*;
-  use crate::test::prelude::*;
-
+  use crate::test::prelude::{
+    assert_eq,
+    *,
+  };
   #[test_env_log::test]
   fn test_to_transport() -> TestResult<()> {
     let json_str = r#"
@@ -36,7 +38,7 @@ mod tests {
     let err = "This is my error message";
     let message = make_default_transport(&json, err);
 
-    equals!(
+    assert_eq!(
       message,
       MessageTransport::MessagePack(mp_serialize(format!("Error: {}", err))?)
     );

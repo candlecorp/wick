@@ -149,10 +149,12 @@ impl SchematicService {
       .collect()
   }
 
-  fn update_network_provider(&mut self, model: ProviderModel) {
+  fn update_network_provider(&mut self, model: ProviderModel) -> Result<()> {
     let state = self.get_state_mut();
     let mut lock = state.model.lock().unwrap();
     lock.commit_self_provider(model);
+    lock.final_initialization()?;
+    Ok(())
   }
 }
 
@@ -173,7 +175,10 @@ mod test {
 
   use super::*;
   use crate::schematic_service::handlers::initialize::Initialize;
-  use crate::test::prelude::*;
+  use crate::test::prelude::{
+    assert_eq,
+    *,
+  };
 
   #[test_env_log::test(actix_rt::test)]
   async fn test_basic_schematic() -> TestResult<()> {
@@ -217,10 +222,10 @@ mod test {
           debug!("Packet {}: {:?}", i, packet);
           let payload: String = packet.try_into()?;
           debug!("Payload {}", payload);
-          equals!(payload, user_data);
+          assert_eq!(payload, user_data);
         }
         debug!("Number of packets received: {}", i);
-        equals!(i, 1);
+        assert_eq!(i, 1);
       }
       InvocationResponse::Error { msg, .. } => panic!("{}", msg),
     };
@@ -277,10 +282,10 @@ mod test {
           debug!("Packet {}: {:?}", i, packet);
           let payload: String = packet.try_into()?;
           debug!("Payload {}", payload);
-          equals!(payload, format!("TEST: {}", user_data));
+          assert_eq!(payload, format!("TEST: {}", user_data));
         }
         debug!("Number of packets received: {}", i);
-        equals!(i, 1);
+        assert_eq!(i, 1);
       }
       InvocationResponse::Error { msg, .. } => panic!("{}", msg),
     };

@@ -212,9 +212,9 @@ pub struct ComponentDefinition {
   /// The ID of the component (i.e. the alias, key, or namespace)
   #[serde(deserialize_with = "with_expand_envs")]
   pub id: String,
-  /// Unused (reserved)
+  /// Data to associate with the reference
   #[serde(default)]
-  pub metadata: Option<HashMap<String, String>>,
+  pub config: Option<HashMap<String, String>>,
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -252,7 +252,7 @@ impl FromStr for ComponentDefinition {
   fn from_str(s: &str) -> Result<Self, Self::Err> {
     Ok(Self {
       id: s.to_owned(),
-      metadata: None,
+      config: None,
     })
   }
 }

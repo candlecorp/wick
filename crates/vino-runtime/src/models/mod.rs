@@ -8,3 +8,7 @@ pub(crate) use provider_model::{
   ProviderModel,
 };
 pub(crate) use schematic_model::SchematicModel;
+
+pub mod error;
+
+pub use error::*;

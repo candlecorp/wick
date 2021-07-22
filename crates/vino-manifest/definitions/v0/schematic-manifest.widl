@@ -47,8 +47,8 @@ type ComponentDefinition {
   "The ID of the component (i.e. the alias, key, or namespace)"
   id: string @required,
 
-  "Unused (reserved)"
-  metadata: {string:string}?,
+  "Data to associate with the reference"
+  config: {string:string}?,
 }
 
 "A connection between components"

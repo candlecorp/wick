@@ -1,0 +1,10 @@
+namespace "has-permission"
+
+type Inputs {
+  user_id: string
+  permission: string
+}
+
+type Outputs {
+  user_id: string
+}

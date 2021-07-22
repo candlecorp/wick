@@ -105,7 +105,7 @@ pub struct ComponentDefinition {
   /// The fully qualified ID for the referenced component.
   pub id: String,
   /// Reserved
-  pub metadata: Option<String>,
+  pub config: Option<String>,
 }
 
 impl ComponentDefinition {
@@ -116,7 +116,7 @@ impl ComponentDefinition {
       name: name.to_owned(),
       namespace: namespace.to_owned(),
       id: format!("{}::{}", namespace, name),
-      metadata: None,
+      config: None,
     }
   }
 }
@@ -136,7 +136,7 @@ impl TryFrom<crate::v0::ComponentDefinition> for ComponentDefinition {
       id: def.id.clone(),
       namespace: ns.to_owned(),
       name: name.to_owned(),
-      metadata: None,
+      config: None,
     })
   }
 }
@@ -149,7 +149,7 @@ impl TryFrom<&crate::v0::ComponentDefinition> for ComponentDefinition {
       id: def.id.clone(),
       namespace: ns.to_owned(),
       name: name.to_owned(),
-      metadata: None,
+      config: None,
     })
   }
 }
@@ -269,7 +269,7 @@ impl ConnectionTargetDefinition {
     Self { target: Some(port) }
   }
   #[must_use]
-  pub fn matches_reference(&self, reference: &str) -> bool {
+  pub fn matches_instance(&self, reference: &str) -> bool {
     self
       .target
       .as_ref()
@@ -282,11 +282,11 @@ impl ConnectionTargetDefinition {
   }
 
   #[must_use]
-  pub fn get_reference(&self) -> &str {
+  pub fn get_instance(&self) -> &str {
     self.target.as_ref().map_or("<None>", |p| &p.instance)
   }
   #[must_use]
-  pub fn get_reference_owned(&self) -> String {
+  pub fn get_instance_owned(&self) -> String {
     self
       .target
       .as_ref()

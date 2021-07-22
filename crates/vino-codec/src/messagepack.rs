@@ -34,13 +34,17 @@ where
   rmp_serialize(item).map_err(CodecError::SerializationError)
 }
 
+#[doc(hidden)]
+pub fn rmp_deserialize<'de, T: Deserialize<'de>>(
+  buf: &[u8],
+) -> std::result::Result<T, rmp_serde::decode::Error> {
+  let mut de = Deserializer::new(Cursor::new(buf));
+  Deserialize::deserialize(&mut de)
+}
+
 /// The standard function for de-serializing codec structs from a format suitable
 /// for message exchange between actor and host. Use of any other function to
 /// deserialize could result in breaking incompatibilities.
 pub fn deserialize<'de, T: Deserialize<'de>>(buf: &[u8]) -> Result<T> {
-  let mut de = Deserializer::new(Cursor::new(buf));
-  match Deserialize::deserialize(&mut de) {
-    Ok(t) => Ok(t),
-    Err(e) => Err(CodecError::DeserializationError(e)),
-  }
+  rmp_deserialize(buf).map_err(CodecError::DeserializationError)
 }
