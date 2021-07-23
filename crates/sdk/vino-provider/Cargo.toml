@@ -8,12 +8,12 @@ license = "Apache-2.0"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-vino-rpc = { path="../vino-rpc" }
+vino-rpc = { path = "../vino-rpc" }
 async-trait = "0.1.50"
 thiserror = "1.0.25"
-vino-entity = { path="../vino-entity" }
+vino-entity = { path = "../vino-entity" }
 
 [dev-dependencies]
-env_logger = "0.8.4"
+env_logger = "0.9"
 test-env-log = "0.2.7"
-tokio = { version="1.4.0", features=["macros", "rt-multi-thread"] }
+tokio = { version = "1.4.0", features = ["macros", "rt-multi-thread"] }
