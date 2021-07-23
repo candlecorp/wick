@@ -72,7 +72,7 @@
 )]
 // !!END_LINTS
 // Add exceptions here
-#![allow()]
+#![allow(unused_qualifications)]
 
 use std::collections::HashMap;
 

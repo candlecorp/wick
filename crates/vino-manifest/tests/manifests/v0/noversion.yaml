@@ -1,9 +1,8 @@
 ---
-version: "0"
 default_schematic: "logger"
 network:
   schematics:
-    - name: name_$TEST_ENV_VAR
+    - name: logger
       instances:
         logger:
           id: vino::log

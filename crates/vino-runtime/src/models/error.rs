@@ -14,7 +14,7 @@ pub enum ValidationErrorKind {
   NoInputs,
   #[error("Model has an error: {0}")]
   ModelError(String),
-  #[error("The component '{0}' does not have a complete internal model")]
+  #[error("Can't find a model for '{0}', is it spelled correctly?")]
   MissingComponentModel(String),
   #[error("Dangling reference: '{0}'")]
   DanglingReference(String),

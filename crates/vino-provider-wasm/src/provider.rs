@@ -67,6 +67,7 @@ impl RpcHandler for Provider {
       .send(GetComponents {})
       .await
       .map_err(|e| RpcError::ProviderError(e.to_string()))??;
+    trace!("Wasm Provider components: {:?}", components);
     Ok(
       components
         .into_iter()
@@ -123,7 +124,6 @@ mod tests {
     let job_payload = hashmap! {
       "input".to_owned() => serialize(input)?,
     };
-    let invocation_id = "INVOCATION_ID";
 
     let mut outputs = provider
       .request(Entity::component("validate"), job_payload)

@@ -1,5 +1,4 @@
 use regex::Regex;
-use unicode_segmentation::UnicodeSegmentation;
 
 use crate::{
   v0,

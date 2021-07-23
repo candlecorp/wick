@@ -73,24 +73,29 @@ use tokio::task::JoinHandle;
 use tracing::debug;
 
 pub async fn vinoc_invoke(
+  port: &str,
   name: &str,
   data: Value,
 ) -> Result<HashMap<String, JsonOutput>, TestError> {
   debug!("Executing vinoc for schematic {}", name);
   let vinoc_output = tokio_test_bin::get_test_bin("vinoc")
     .env_clear()
+    .env("VINO_LOG", "trace")
     .args([
       "invoke",
       name,
       &serde_json::to_string(&data)?,
       "--port",
-      "8060",
+      port.to_string().as_str(),
       "--trace",
     ])
     .stderr(Stdio::inherit())
     .output()
     .await?;
-  debug!("Result from vinoc is {:?}", vinoc_output);
+  debug!(
+    "vinoc STDERR is \n {}",
+    String::from_utf8_lossy(&vinoc_output.stderr)
+  );
 
   let output = &String::from_utf8_lossy(&vinoc_output.stdout);
   debug!("Result from vinoc is {}", output);
@@ -118,11 +123,14 @@ impl Signal {
 pub async fn start_provider(
   name: &str,
   args: &[&str],
+  envs: &[(&str, &str)],
 ) -> Result<(Sender<Signal>, JoinHandle<Result<()>>, String)> {
   debug!("Starting provider bin: {}", name);
   let mut provider = tokio_test_bin::get_test_bin(name)
     .args(args)
     .env_clear()
+    .env("RUST_LOG", "debug")
+    .envs(envs.to_vec())
     .stdout(Stdio::piped())
     .stderr(Stdio::piped())
     .spawn()?;
@@ -135,15 +143,16 @@ pub async fn start_provider(
 
   let (tx, mut rx) = mpsc::channel::<Signal>(1);
 
-  debug!("Spawning task to handle provider");
+  debug!("Spawning task to handle '{}' process", name);
+  let name2 = name.to_owned();
   let handle = tokio::spawn(async move {
     select! {
       status = provider.wait() => {
-        println!("provider status was: {:?}", status);
-        Err(anyhow!("Provider stopped early"))
+        println!("{} status was: {:?}", name2, status);
+        Err(anyhow!("{} stopped early", name2))
       },
       _signal = rx.recv() => {
-        println!("provider received signal");
+        println!("{} received signal", name2);
         provider.kill().await?;
         Ok(())
       }
@@ -153,88 +162,32 @@ pub async fn start_provider(
   let re = Regex::new(r"Server bound to 127.0.0.1:(\d+)").unwrap();
   let (tx2, mut rx2) = mpsc::channel::<Signal>(1);
 
+  let name2 = name.to_owned();
   tokio::spawn(async move {
-    debug!("Reading provider STDOUT");
+    debug!("Reading '{}' STDOUT", name2);
     while let Ok(Some(l)) = out_reader.next_line().await {
-      debug!("Provider STDOUT: {}", l);
+      debug!("{} STDOUT: {}", name2, l);
 
       if let Some(regex_match) = re.captures(&l) {
         let port = regex_match.get(1).unwrap();
         let _ = tx2.send(Signal::Continue(port.as_str().to_owned())).await;
       }
     }
-    debug!("Continuing");
+    debug!("{} Continuing", name2);
   });
 
+  let name2 = name.to_owned();
   tokio::spawn(async move {
-    debug!("Reading provider STDERR");
+    debug!("Reading {} STDERR", name2);
     while let Ok(Some(l)) = err_reader.next_line().await {
-      debug!("Provider STDERR: {}", l);
+      debug!("{} STDERR: {}", name2, l);
     }
-    debug!("Continuing");
+    debug!("{} Continuing", name2);
   });
 
-  println!("Waiting for provider to start up");
+  println!("Waiting for {} to start up", name);
   let port = rx2.recv().await.unwrap();
-  println!("Provider started, continuing");
+  println!("{} started, continuing", name);
 
   Ok((tx, handle, port.to_port()))
-}
-
-pub async fn start_vino(
-  manifest: &str,
-  envs: Vec<(&str, &str)>,
-) -> Result<(Sender<Signal>, JoinHandle<Result<()>>)> {
-  debug!("Spawning host with env {:?}", envs);
-
-  let mut host = tokio_test_bin::get_test_bin("vino")
-    .env_clear()
-    .envs(envs)
-    .args(["start", manifest, "--trace"])
-    .stdout(Stdio::null())
-    .stderr(Stdio::piped())
-    .spawn()?;
-
-  let (tx, mut rx) = mpsc::channel::<Signal>(1);
-
-  let stderr = host.stderr.take().unwrap();
-  let mut reader = BufReader::new(stderr).lines();
-
-  debug!("Spawning task to handle host");
-  let handle = tokio::spawn(async move {
-    select! {
-      status = host.wait() => {
-        println!("Host stopped early: {:?}", status?);
-        Err(anyhow!("Host stopped early"))
-      },
-      _signal = rx.recv() => {
-        println!("host received signal");
-        host.kill().await?;
-        Ok(())
-      }
-    }
-  });
-  let re = Regex::new(r"Bound to 127.0.0.1:(\d+)").unwrap();
-
-  let (tx2, mut rx2) = mpsc::channel::<Signal>(1);
-
-  tokio::spawn(async move {
-    debug!("Reading host STDERR");
-    loop {
-      if let Ok(Some(l)) = reader.next_line().await {
-        debug!("Host STDERR: {}", l);
-
-        if let Some(regex_match) = re.captures(&l) {
-          let port = regex_match.get(1).unwrap();
-          let _ = tx2.send(Signal::Continue(port.as_str().to_owned())).await;
-        }
-      }
-    }
-  });
-
-  println!("Waiting for host to start up");
-  rx2.recv().await;
-  println!("Host started, continuing");
-
-  Ok((tx, handle))
 }

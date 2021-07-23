@@ -10,7 +10,7 @@ license = "Apache-2.0"
 vino-rpc = { path = "../vino-rpc" }
 vino-component = { path = "../vino-component" }
 vino-codec = { path = "../vino-codec" }
-tonic = { version = "0.4.3", features = ["tls"] }
+tonic = { version = "0.5.0", features = ["tls"] }
 tokio = { version = "1.4.0", features = [
   "macros",
   "fs",
@@ -25,10 +25,14 @@ async-stream = "0.3.2"
 rand = "0.8.4"
 tracing = "0.1.26"
 thiserror = "1.0.25"
-tonic-reflection = "0.1.0"
+tonic-reflection = "0.2.0"
+tonic-web = "0.1.0"
+structopt = "0.3.22"
 
 [dev-dependencies]
 test-env-log = "0.2.7"
 test-vino-provider = { path = "../integration/test-vino-provider" }
-env_logger = "0.8.4"
+env_logger = "0.9"
 tracing-subscriber = "0.2.18"
+reqwest = { version = "0.11", features = ["json"] }
+anyhow = "1.0.42"

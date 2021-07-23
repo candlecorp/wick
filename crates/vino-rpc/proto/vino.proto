@@ -31,8 +31,6 @@ message Invocation {
   string target = 2;
   map<string, bytes> msg = 3;
   string id = 4;
-  string tx_id = 5;
-  string encoded_claims = 6;
   string network_id = 7;
 }
 

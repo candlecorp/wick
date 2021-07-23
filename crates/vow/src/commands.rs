@@ -59,8 +59,4 @@ pub(crate) struct ConnectOptions {
   /// Path to CA pem for TLS connections
   #[structopt(long)]
   pub(crate) ca: Option<PathBuf>,
-
-  /// The domain to verify against the certificate
-  #[structopt(long)]
-  pub(crate) domain: Option<String>,
 }

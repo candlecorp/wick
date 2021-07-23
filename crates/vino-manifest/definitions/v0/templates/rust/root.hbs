@@ -77,7 +77,7 @@ where
   impl<'de> serde::de::Visitor<'de> for ComponentDefinitionVisitor {
     type Value = HashMap<String, ComponentDefinition>;
     fn expecting(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-      write!(f, "a list of connections")
+      write!(f, "a map of instances to their components")
     }
 
     fn visit_map<M>(self, mut access: M) -> Result<Self::Value, M::Error>

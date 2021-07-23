@@ -6,6 +6,7 @@ use vino_host::{
   HostBuilder,
   HostDefinition,
 };
+use vino_provider_cli::cli::DefaultCliOptions;
 
 use crate::utils::merge_runconfig;
 use crate::Result;
@@ -25,25 +26,8 @@ pub struct StartCommand {
   #[structopt(parse(from_os_str))]
   pub manifest: Option<PathBuf>,
 
-  /// The address to bind to
-  #[structopt(short, long, default_value = "127.0.0.1")]
-  pub address: Ipv4Addr,
-
-  /// The port to bind to
-  #[structopt(short, long, default_value = "8060")]
-  pub port: u16,
-
-  /// Path to pem file for TLS
-  #[structopt(long)]
-  pub pem: Option<PathBuf>,
-
-  /// Path to key file for TLS
-  #[structopt(long)]
-  pub key: Option<PathBuf>,
-
-  /// Path to ca pem file for TLS
-  #[structopt(long)]
-  pub ca: Option<PathBuf>,
+  #[structopt(flatten)]
+  pub server_options: DefaultCliOptions,
 }
 
 pub async fn handle_command(command: StartCommand) -> Result<String> {
@@ -66,20 +50,10 @@ pub async fn handle_command(command: StartCommand) -> Result<String> {
       debug!("Applying manifest");
       host.start_network(config.network).await?;
       info!("Manifest applied");
-      let addr = host
-        .start_rpc_server(
-          command.address,
-          if command.port == 0 {
-            None
-          } else {
-            Some(command.port)
-          },
-          command.pem,
-          command.key,
-          command.ca,
-        )
+      let metadata = host
+        .start_rpc_server(Some(command.server_options.into()))
         .await?;
-      info!("Bound to {}", addr);
+      println!("Server bound to {}", metadata.rpc_addr.unwrap());
     }
     Err(e) => {
       error!("Failed to start host: {}", e);

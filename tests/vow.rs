@@ -14,18 +14,19 @@ use vino_transport::message_transport::{
 #[test_env_log::test(tokio::test)]
 async fn test_vow_serve() -> utils::TestResult<()> {
   debug!("Starting provider");
-  let (p_tx, p_handle, _port) = start_provider(
+  let (p_tx, p_handle, port) = start_provider(
     "vow",
     &[
       "serve",
       "--port=8060",
       "./crates/integration/test-wapc-component/build/test_component_s.wasm",
     ],
+    &[],
   )
   .await?;
 
   let args = json!({ "input" : "test input"});
-  let actual = vinoc_invoke("validate", args).await?;
+  let actual = vinoc_invoke(&port, "validate", args).await?;
 
   let expected = JsonOutput {
     error_msg: None,

@@ -21,7 +21,7 @@ pub struct Cli {
 
 #[derive(Debug, Clone, StructOpt)]
 pub enum CliCommand {
-  /// Start a long-running host with a manifest and schematics
+  /// Start a persistent host from a manifest to serve requests to schematics
   #[structopt(name = "start")]
   Start(start::StartCommand),
   /// Load a manifest and run the default schematic

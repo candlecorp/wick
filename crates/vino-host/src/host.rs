@@ -1,9 +1,4 @@
 use std::collections::HashMap;
-use std::net::{
-  Ipv4Addr,
-  SocketAddr,
-};
-use std::path::PathBuf;
 use std::sync::{
   Arc,
   RwLock,
@@ -14,7 +9,10 @@ use nkeys::KeyPair;
 use serde::Serialize;
 use tokio::sync::Mutex;
 use vino_entity::Entity;
-use vino_provider_cli::cli::Options as CliOpts;
+use vino_provider_cli::cli::{
+  Options as CliOpts,
+  ServerMetadata,
+};
 use vino_runtime::network::NetworkBuilder;
 use vino_runtime::prelude::*;
 use vino_transport::MessageTransport;
@@ -76,29 +74,17 @@ impl Host {
     Ok(())
   }
 
-  pub async fn start_rpc_server(
-    &mut self,
-    address: Ipv4Addr,
-    port: Option<u16>,
-    pem: Option<PathBuf>,
-    key: Option<PathBuf>,
-    ca: Option<PathBuf>,
-  ) -> Result<SocketAddr> {
+  #[allow(clippy::too_many_arguments)]
+  pub async fn start_rpc_server(&mut self, opts: Option<CliOpts>) -> Result<ServerMetadata> {
     let network_id = self.get_network_id()?;
-    let addr = tokio::spawn(vino_provider_cli::start_server(
+    let metadata = tokio::spawn(vino_provider_cli::start_server(
       Arc::new(Mutex::new(NetworkProvider::new(network_id))),
-      Some(CliOpts {
-        port,
-        address,
-        pem,
-        key,
-        ca,
-      }),
+      opts,
     ))
     .await
     .map_err(|e| Error::Other(format!("Join error: {}", e)))?
     .map_err(|e| Error::Other(format!("Socket error: {}", e)))?;
-    Ok(addr)
+    Ok(metadata)
   }
 
   pub async fn request<T: AsRef<str> + Sync + Send, U: AsRef<str> + Sync + Send>(
@@ -156,6 +142,7 @@ mod test {
     serialize,
   };
   use vino_entity::entity::Entity;
+  use vino_provider_cli::cli::ServerOptions;
   use vino_rpc::make_rpc_client;
   use vino_rpc::rpc::Invocation;
   use vino_transport::MessageTransport;
@@ -216,13 +203,14 @@ mod test {
     let manifest = HostDefinition::load_from_file(&file)?;
     host.start_network(manifest.network).await?;
     host
-      .start_rpc_server(
-        Ipv4Addr::from_str("127.0.0.1").unwrap(),
-        Some(54321),
-        None,
-        None,
-        None,
-      )
+      .start_rpc_server(Some(super::CliOpts {
+        rpc: Some(ServerOptions {
+          address: Some(Ipv4Addr::from_str("127.0.0.1").unwrap()),
+          port: Some(54321),
+          ..Default::default()
+        }),
+        ..Default::default()
+      }))
       .await?;
     let mut client = make_rpc_client(Uri::from_str("https://127.0.0.1:54321").unwrap()).await?;
     let passed_data = "logging output";
@@ -235,8 +223,6 @@ mod test {
         target: Entity::schematic("logger").url(),
         msg: data,
         id: "some inv".to_owned(),
-        tx_id: "some tx".to_owned(),
-        encoded_claims: "some claims".to_owned(),
         network_id: host.host_id.clone(),
       })
       .await

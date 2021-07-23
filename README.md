@@ -5,6 +5,7 @@
 - Component codegen for wellknown providers doesn't reference the proper module for input/outputs etc
 - interface.json's for wellknown interfaces needs to be located in a central repo
 - Type representation of components over RPC is just a string and needs to be more complex to represent valid types.
+- WaPC components don't have the same output port interface (there is no done/done_exception, only send)
 
 ## Todos
 

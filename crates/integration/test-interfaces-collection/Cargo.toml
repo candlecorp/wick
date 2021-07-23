@@ -19,5 +19,5 @@ vino-rpc = { path = "../../vino-rpc" }
 tracing = "0.1.26"
 
 maplit = "1.0.2"
-tonic = "0.4.3"
+tonic = "0.5.0"
 anyhow = "1.0.42"

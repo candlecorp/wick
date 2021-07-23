@@ -82,14 +82,19 @@ impl SchematicModel {
 
   fn populate_state(&mut self, omit_namespaces: &[String]) -> Result<()> {
     let inputs = self.get_schematic_inputs();
-    let mut schematic_inputs = vec![];
-    for input in inputs {
-      let downstreams = self.get_downstreams(&input);
+    let mut input_signatures = vec![];
+    let should_skip_namespace = |namespace: &str| omit_namespaces.iter().any(|ns| ns == namespace);
 
-      let downstream = downstreams.iter().find(|port| {
+    for input in inputs {
+      // This loop grabs the first valid connection for each schematic
+      // input and assumes its type is the type of the input. This is true for now
+      // but that may not hold forever.
+      let to_ports = self.get_downstreams(&input);
+
+      let downstream = to_ports.iter().find(|port| {
         let def = self.get_component_definition(port.get_instance());
         match def {
-          Some(def) => !omit_namespaces.iter().any(|ns| ns == &def.namespace),
+          Some(def) => !should_skip_namespace(&def.namespace),
           None => false,
         }
       });
@@ -97,21 +102,26 @@ impl SchematicModel {
         continue;
       }
       let downstream = downstream.unwrap();
-      let model = self
-        .get_component_model_by_instance(downstream.get_instance())
-        .unwrap();
+      let model = match self.get_component_model_by_instance(downstream.get_instance()) {
+        Some(model) => model,
+        None => {
+          debug!("{} does not have valid model.", downstream.get_instance());
+          continue;
+        }
+      };
+
       let downstream_signature = model
         .inputs
         .iter()
         .find(|port| port.name == downstream.get_port())
         .unwrap();
-      schematic_inputs.push(PortSignature {
+      input_signatures.push(PortSignature {
         name: input.get_port_owned(),
         type_string: downstream_signature.type_string.clone(),
       });
     }
     let outputs = self.get_schematic_outputs();
-    let mut schematic_outputs = vec![];
+    let mut output_signatures = vec![];
     for output in outputs {
       let upstream = self.get_upstream(&output).unwrap();
       let def = self.get_component_definition(upstream.get_instance());
@@ -123,8 +133,7 @@ impl SchematicModel {
         continue;
       }
       let def = def.unwrap();
-      let should_skip = omit_namespaces.iter().any(|ns| ns == &def.namespace);
-      if should_skip {
+      if should_skip_namespace(&def.namespace) {
         continue;
       }
       let model = self
@@ -135,7 +144,7 @@ impl SchematicModel {
         .iter()
         .find(|port| upstream.matches_port(&port.name))
         .unwrap();
-      schematic_outputs.push(PortSignature {
+      output_signatures.push(PortSignature {
         name: output.get_port_owned(),
         type_string: downstream_signature.type_string.clone(),
       });
@@ -154,19 +163,17 @@ impl SchematicModel {
       .collect();
     self.state = Some(LoadedState {
       provider_signatures,
-      schematic_inputs,
-      schematic_outputs,
+      schematic_inputs: input_signatures,
+      schematic_outputs: output_signatures,
     });
     Ok(())
   }
 
   pub(crate) fn partial_initialization(&mut self) -> Result<()> {
-    trace!("Partial Initialization");
     self.populate_state(&["self".to_owned()])
   }
 
   pub(crate) fn final_initialization(&mut self) -> Result<()> {
-    trace!("Final Initialization");
     self.populate_state(&[])
   }
 

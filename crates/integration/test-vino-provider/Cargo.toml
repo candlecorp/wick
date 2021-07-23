@@ -21,7 +21,7 @@ log = "0.4.14"
 [dev-dependencies]
 maplit = "1.0.2"
 test-env-log = "0.2.7"
-env_logger = "0.8.4"
+env_logger = "0.9"
 structopt = "0.3.21"
 tracing = "0.1.26"
 tracing-subscriber = "0.2.19"

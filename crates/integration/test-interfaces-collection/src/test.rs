@@ -33,8 +33,6 @@ fn make_invocation(
     target: Entity::component(target).url(),
     msg: payload,
     id: "".to_string(),
-    tx_id: "".to_string(),
-    encoded_claims: "".to_string(),
     network_id: "".to_string(),
   })
 }

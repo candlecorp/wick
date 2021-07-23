@@ -138,7 +138,7 @@ mod tests {
 
   #[test_env_log::test(actix_rt::test)]
   async fn test_request_log() -> TestResult<()> {
-    let (_, network_id) = init_network_from_yaml("./manifests/simple.yaml").await?;
+    let (_, network_id) = init_network_from_yaml("./manifests/v0/network/simple.yaml").await?;
 
     let provider = Provider::new(network_id);
     let user_data = "string to log";
@@ -150,7 +150,7 @@ mod tests {
 
   #[test_env_log::test(actix_rt::test)]
   async fn test_list() -> TestResult<()> {
-    let (_, network_id) = init_network_from_yaml("./manifests/simple.yaml").await?;
+    let (_, network_id) = init_network_from_yaml("./manifests/v0/network/simple.yaml").await?;
     let provider = Provider::new(network_id);
     let list = provider.list_registered().await?;
     println!("components on network : {:?}", list);

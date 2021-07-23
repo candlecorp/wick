@@ -14,6 +14,10 @@ pub enum ManifestError {
   #[error("Invalid Manifest Version '{0}'")]
   VersionError(String),
 
+  /// No version found in the parsed manifest
+  #[error("Manifest needs a version")]
+  NoVersion,
+
   /// Manifest not found at the specified path
   #[error("File not found {0}")]
   FileNotFound(String),

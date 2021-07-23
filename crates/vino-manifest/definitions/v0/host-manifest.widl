@@ -3,7 +3,7 @@ namespace "vino-manifest::v0"
 "The Host Manifest defines the starting state of a Vino host"
 type HostManifest {
   "The manifest version"
-  version: string @required,
+  version: u8 @required,
 
   "The configuration for a Vino network"
   network: NetworkManifest,

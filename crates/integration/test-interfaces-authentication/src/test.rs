@@ -32,8 +32,6 @@ fn make_invocation(target: &str, payload: HashMap<String, Vec<u8>>) -> Result<In
     target: Entity::component(target).url(),
     msg: payload,
     id: "".to_string(),
-    tx_id: "".to_string(),
-    encoded_claims: "".to_string(),
     network_id: "".to_string(),
   })
 }

@@ -108,15 +108,6 @@ impl WasmHost {
     let _result = self.host.call(component_name, payload)?;
     debug!("Invocation response: {:?}", _result);
 
-    // let mut map = HashMap::new();
-    // let messages: Vec<PacketWrapper> = block_on(receiver.collect());
-
-    // for message in messages {
-    //   map.insert(message.port, message.packet);
-    // }
-
-    // Ok(map)
-
     Ok(receiver)
   }
 

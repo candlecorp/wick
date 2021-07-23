@@ -31,7 +31,7 @@ once_cell = "1.5.2"
 parking_lot = "0.11.1"
 thiserror = "1.0.26"
 derivative = "2.2.0"
-tonic = { version = "0.4.3", features = ["tls"] }
+tonic = { version = "0.5.0", features = ["tls"] }
 tokio = { version = "1.4.0", features = [
   "macros",
   "net",

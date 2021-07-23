@@ -8,30 +8,30 @@ license = "Apache-2.0"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-vino-runtime = { path="../vino-runtime" }
-vino-manifest = { path="../vino-manifest" }
-vino-transport = { path="../vino-transport" }
-vino-provider = { path="../vino-provider" }
-vino-provider-cli = { path="../vino-provider-cli" }
-vino-codec = { path="../vino-codec" }
-vino-rpc = { path="../vino-rpc" }
-vino-entity = { path="../vino-entity" }
+vino-runtime = { path = "../vino-runtime" }
+vino-manifest = { path = "../vino-manifest" }
+vino-transport = { path = "../vino-transport" }
+vino-provider = { path = "../vino-provider" }
+vino-provider-cli = { path = "../vino-provider-cli" }
+vino-codec = { path = "../vino-codec" }
+vino-rpc = { path = "../vino-rpc" }
+vino-entity = { path = "../vino-entity" }
 tracing = "0.1.26"
 actix = "0.12"
 actix-rt = "2.1.0"
 thiserror = "1.0.25"
 nkeys = "0.1.0"
-serde = { version="1.0.126", features=["derive"] }
+serde = { version = "1.0.126", features = ["derive"] }
 serde_yaml = "0.8.17"
 hocon = "0.5.2"
 async-trait = "0.1.50"
-tokio = { version="1.4.0", features=["macros", "net", "rt-multi-thread"] }
+tokio = { version = "1.4.0", features = ["macros", "net", "rt-multi-thread"] }
 http = "0.2.4"
 
 [dev-dependencies]
 test-env-log = "0.2.7"
-env_logger = "0.8.4"
-tokio = { version="1", features=[
+env_logger = "0.9"
+tokio = { version = "1", features = [
   "net",
   "rt-multi-thread",
   "time",

@@ -42,8 +42,9 @@ fn HOST_MANIFEST_DEFAULT_SCHEMATIC() -> String {
 /// The Host Manifest defines the starting state of a Vino host
 pub struct HostManifest {
   /// The manifest version
+
   #[serde(deserialize_with = "with_expand_envs")]
-  pub version: String,
+  pub version: u8,
   /// The configuration for a Vino network
   #[serde(default)]
   pub network: NetworkManifest,
@@ -283,7 +284,7 @@ where
   impl<'de> serde::de::Visitor<'de> for ComponentDefinitionVisitor {
     type Value = HashMap<String, ComponentDefinition>;
     fn expecting(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-      write!(f, "a list of connections")
+      write!(f, "a map of instances to their components")
     }
 
     fn visit_map<M>(self, mut access: M) -> Result<Self::Value, M::Error>

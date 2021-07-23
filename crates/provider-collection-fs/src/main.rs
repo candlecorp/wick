@@ -79,7 +79,7 @@ use std::sync::Arc;
 use structopt::StructOpt;
 use tokio::sync::Mutex;
 use vino_collection_fs::provider::Provider;
-use vino_provider_cli::cli::Options as CliOpts;
+use vino_provider_cli::cli::DefaultCliOptions;
 
 #[derive(Debug, Clone, StructOpt)]
 pub struct Options {
@@ -87,9 +87,8 @@ pub struct Options {
   #[structopt(short, long, env = "PARAMETER_VALUE")]
   pub directory: PathBuf,
 
-  /// Port to listen on
-  #[structopt(short, long)]
-  pub port: Option<u16>,
+  #[structopt(flatten)]
+  pub options: DefaultCliOptions,
 
   /// IP address to bind to
   #[structopt(short, long, default_value = "127.0.0.1")]
@@ -111,13 +110,7 @@ async fn main() -> vino_collection_fs::Result<()> {
   env_logger::init();
   vino_provider_cli::init_cli(
     Arc::new(Mutex::new(Provider::new(opts.directory))),
-    Some(CliOpts {
-      port: opts.port,
-      address: opts.address,
-      pem: opts.pem,
-      ca: None,
-      key: opts.key,
-    }),
+    Some(opts.options.into()),
   )
   .await?;
   Ok(())

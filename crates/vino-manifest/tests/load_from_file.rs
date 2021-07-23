@@ -17,13 +17,33 @@ fn load_manifest_yaml() -> Result<(), ManifestError> {
 }
 
 #[test_env_log::test]
+fn load_minimal() -> Result<(), ManifestError> {
+  let path = PathBuf::from("./tests/manifests/v0/minimal.yaml");
+  let manifest = HostManifest::load_from_file(&path)?;
+
+  let HostManifest::V0(manifest) = manifest;
+  assert_eq!(manifest.version, 0);
+
+  Ok(())
+}
+
+#[test_env_log::test]
+fn load_noversion_yaml() -> Result<(), ManifestError> {
+  let path = PathBuf::from("./tests/manifests/v0/noversion.yaml");
+  let result = HostManifest::load_from_file(&path);
+  println!("result: {:?}", result);
+  assert!(matches!(result, Err(ManifestError::NoVersion)));
+  Ok(())
+}
+
+#[test_env_log::test]
 fn load_bad_manifest_yaml() -> Result<(), ManifestError> {
   let path = PathBuf::from("./tests/manifests/v0/bad-yaml.yaml");
   let manifest = HostManifest::load_from_file(&path);
   if let Err(Error::YamlError(e)) = manifest {
     debug!("{:?}", e);
   } else {
-    panic!("Should have failed")
+    panic!("Should have failed with YamlError but got : {:?}", manifest);
   }
 
   Ok(())
@@ -108,25 +128,24 @@ fn load_manifest_hocon() -> Result<(), ManifestError> {
 
 #[test_env_log::test]
 
-fn load_manifest_env() -> Result<(), ManifestError> {
-  let path = PathBuf::from("./tests/manifests/v0/logger-with-env.yaml");
+fn load_env() -> Result<(), ManifestError> {
+  println!("Loading yaml");
+  let path = PathBuf::from("./tests/manifests/v0/env.yaml");
   env::set_var("TEST_ENV_VAR", "load_manifest_yaml_with_env");
   let manifest = HostManifest::load_from_file(&path)?;
 
   let HostManifest::V0(manifest) = manifest;
-  assert_eq!(manifest.default_schematic, "logger");
   assert_eq!(
     manifest.network.schematics[0].name,
     "name_load_manifest_yaml_with_env"
   );
-
-  let path = PathBuf::from("./tests/manifests/v0/logger-with-env.manifest");
+  println!("Loading hocon");
+  let path = PathBuf::from("./tests/manifests/v0/env.manifest");
   env::set_var("TEST_ENV_VAR", "load_manifest_hocon_env");
 
   let manifest = HostManifest::load_from_file(&path)?;
 
   let HostManifest::V0(manifest) = manifest;
-  assert_eq!(manifest.default_schematic, "logger");
   assert_eq!(
     manifest.network.schematics[0].name,
     "name_load_manifest_hocon_env"

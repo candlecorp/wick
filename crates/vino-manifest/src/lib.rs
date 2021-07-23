@@ -187,24 +187,34 @@ impl Loadable<HostManifest> for HostManifest {
   fn from_hocon(src: &str) -> Result<HostManifest> {
     debug!("Trying to parse manifest as hocon");
     let raw = HoconLoader::new().strict().load_str(src)?.hocon()?;
-
-    let a = raw["version"]
-      .as_string()
-      .unwrap_or_else(|| "Version not found".into());
-    match a.as_str() {
-      "0" => Ok(HostManifest::V0(from_hocon(src)?)),
-      _ => Err(Error::VersionError(a.clone())),
+    let raw_version = &raw["version"];
+    let version = raw_version.as_i64().unwrap_or_else(|| -> i64 {
+      raw_version
+        .as_string()
+        .and_then(|s| s.parse::<i64>().ok())
+        .unwrap_or(-1)
+    });
+    match version {
+      0 => Ok(HostManifest::V0(from_hocon(src)?)),
+      -1 => Err(Error::NoVersion),
+      _ => Err(Error::VersionError(version.to_string())),
     }
   }
 
   fn from_yaml(src: &str) -> Result<HostManifest> {
     debug!("Trying to parse manifest as yaml");
     let raw: serde_yaml::Value = from_yaml(src)?;
-
-    let a = raw["version"].as_str().unwrap_or("Version not found");
-    match a {
-      "0" => Ok(HostManifest::V0(from_yaml(src)?)),
-      _ => Err(Error::VersionError(a.to_owned())),
+    let raw_version = raw.get("version").ok_or(Error::NoVersion)?;
+    let version = raw_version.as_i64().unwrap_or_else(|| -> i64 {
+      raw_version
+        .as_str()
+        .and_then(|s| s.parse::<i64>().ok())
+        .unwrap_or(-1)
+    });
+    match version {
+      0 => Ok(HostManifest::V0(from_yaml(src)?)),
+      -1 => Err(Error::NoVersion),
+      _ => Err(Error::VersionError(version.to_string())),
     }
   }
 }

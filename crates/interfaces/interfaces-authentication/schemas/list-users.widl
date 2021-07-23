@@ -1,8 +1,8 @@
 namespace "list-users"
 
 type Inputs {
-  offset: i32
-  limit: i32
+  offset: u32
+  limit: u32
 }
 
 type Outputs {

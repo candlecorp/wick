@@ -79,8 +79,6 @@ impl TryFrom<Invocation> for vino_rpc::rpc::Invocation {
       target: inv.target.url(),
       msg: inv.msg.into_multibytes()?,
       id: inv.id,
-      tx_id: inv.tx_id,
-      encoded_claims: inv.encoded_claims,
       network_id: inv.network_id,
     })
   }

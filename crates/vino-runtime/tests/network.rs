@@ -9,7 +9,7 @@ use vino_transport::MessageTransport;
 
 #[test_env_log::test(actix_rt::test)]
 async fn simple_schematic() -> Result<()> {
-  let (network, _) = init_network_from_yaml("./manifests/simple.yaml").await?;
+  let (network, _) = init_network_from_yaml("./manifests/v0/network/simple.yaml").await?;
 
   let data = hashmap! {
       "input" => "simple string",
@@ -31,7 +31,7 @@ async fn simple_schematic() -> Result<()> {
 
 #[test_env_log::test(actix_rt::test)]
 async fn echo() -> Result<()> {
-  let (network, _) = init_network_from_yaml("./manifests/echo.yaml").await?;
+  let (network, _) = init_network_from_yaml("./manifests/v0/network/echo.yaml").await?;
 
   let data = hashmap! {
       "input" => "test-data",
@@ -51,7 +51,7 @@ async fn echo() -> Result<()> {
 
 #[test_env_log::test(actix_rt::test)]
 async fn native_component() -> Result<()> {
-  let (network, _) = init_network_from_yaml("./manifests/native-component.yaml").await?;
+  let (network, _) = init_network_from_yaml("./manifests/v0/network/native-component.yaml").await?;
 
   let data = hashmap! {
       "left" => 42,
@@ -75,7 +75,7 @@ async fn native_component() -> Result<()> {
 #[test_env_log::test(actix_rt::test)]
 
 async fn defaults() -> Result<()> {
-  let (network, _) = init_network_from_yaml("./manifests/defaults.yaml").await?;
+  let (network, _) = init_network_from_yaml("./manifests/v0/network/defaults.yaml").await?;
 
   let data: HashMap<String, String> = HashMap::new();
 
@@ -97,7 +97,7 @@ async fn defaults() -> Result<()> {
 
 async fn no_inputs() -> Result<()> {
   println!("Running no_inputs test");
-  let (network, _) = init_network_from_yaml("./manifests/no-inputs.yaml").await?;
+  let (network, _) = init_network_from_yaml("./manifests/v0/network/no-inputs.yaml").await?;
 
   let data: HashMap<String, String> = HashMap::new();
 
@@ -114,7 +114,8 @@ async fn no_inputs() -> Result<()> {
 
 #[test_env_log::test(actix_rt::test)]
 async fn nested_schematics() -> Result<()> {
-  let (network, _) = init_network_from_yaml("./manifests/nested-schematics.yaml").await?;
+  let (network, _) =
+    init_network_from_yaml("./manifests/v0/network/nested-schematics.yaml").await?;
 
   let user_data = "user inputted data";
 
@@ -137,7 +138,7 @@ async fn nested_schematics() -> Result<()> {
 
 #[test_env_log::test(actix_rt::test)]
 async fn wapc_component() -> Result<()> {
-  let (network, _) = init_network_from_yaml("./manifests/wapc-component.yaml").await?;
+  let (network, _) = init_network_from_yaml("./manifests/v0/network/wapc-component.yaml").await?;
 
   let data = hashmap! {
       "input" => "1234567890",
@@ -172,7 +173,8 @@ async fn wapc_component() -> Result<()> {
 
 #[test_env_log::test(actix_rt::test)]
 async fn bad_wapc_component() -> Result<()> {
-  let (network, _) = init_network_from_yaml("./manifests/bad-wapc-component.yaml").await?;
+  let (network, _) =
+    init_network_from_yaml("./manifests/v0/network/bad-wapc-component.yaml").await?;
 
   let data = hashmap! {
       "input" => "1234567890",
@@ -190,7 +192,7 @@ async fn bad_wapc_component() -> Result<()> {
 
 #[test_env_log::test(actix_rt::test)]
 async fn short_circuit() -> Result<()> {
-  let (network, _) = init_network_from_yaml("./manifests/short-circuit.yaml").await?;
+  let (network, _) = init_network_from_yaml("./manifests/v0/network/short-circuit.yaml").await?;
 
   let data = hashmap! {
       "input_port1" => "short",
@@ -212,7 +214,8 @@ async fn short_circuit() -> Result<()> {
 
 #[test_env_log::test(actix_rt::test)]
 async fn short_circuit_default() -> Result<()> {
-  let (network, _) = init_network_from_yaml("./manifests/short-circuit-default.yaml").await?;
+  let (network, _) =
+    init_network_from_yaml("./manifests/v0/network/short-circuit-default.yaml").await?;
 
   let data = hashmap! {
       "input_port1" => "short",
@@ -242,7 +245,8 @@ async fn short_circuit_default() -> Result<()> {
 
 #[test_env_log::test(actix_rt::test)]
 async fn multiple_schematics() -> Result<()> {
-  let (network, _) = init_network_from_yaml("./manifests/multiple-schematics.yaml").await?;
+  let (network, _) =
+    init_network_from_yaml("./manifests/v0/network/multiple-schematics.yaml").await?;
 
   let data = hashmap! {
       "left" => 42,
@@ -280,7 +284,8 @@ async fn multiple_schematics() -> Result<()> {
 
 #[test_env_log::test(actix_rt::test)]
 async fn global_providers() -> Result<()> {
-  let (network, _) = init_network_from_yaml("./manifests/global-provider-def.yaml").await?;
+  let (network, _) =
+    init_network_from_yaml("./manifests/v0/network/global-provider-def.yaml").await?;
 
   let data = hashmap! {
       "input" => "some input",
