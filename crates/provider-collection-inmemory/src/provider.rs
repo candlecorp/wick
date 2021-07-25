@@ -38,7 +38,7 @@ impl Provider {
 
 #[async_trait]
 impl RpcHandler for Provider {
-  async fn request(
+  async fn invoke(
     &self,
     entity: Entity,
     payload: HashMap<String, Vec<u8>>,
@@ -56,7 +56,7 @@ impl RpcHandler for Provider {
     }
   }
 
-  async fn list_registered(&self) -> RpcResult<Vec<vino_rpc::HostedType>> {
+  async fn get_list(&self) -> RpcResult<Vec<vino_rpc::HostedType>> {
     let components = generated::get_all_components();
     Ok(
       components
@@ -66,7 +66,7 @@ impl RpcHandler for Provider {
     )
   }
 
-  async fn report_statistics(&self, id: Option<String>) -> RpcResult<Vec<vino_rpc::Statistics>> {
+  async fn get_stats(&self, id: Option<String>) -> RpcResult<Vec<vino_rpc::Statistics>> {
     // TODO Dummy implementation
     if id.is_some() {
       Ok(vec![vino_rpc::Statistics {
@@ -111,7 +111,7 @@ mod tests {
     ]);
 
     let mut outputs = provider
-      .request(Entity::component("add-item"), job_payload)
+      .invoke(Entity::component("add-item"), job_payload)
       .await?;
     let output = outputs.next().await.unwrap();
     println!("payload from [{}]: {:?}", output.port, output.packet);
@@ -129,7 +129,7 @@ mod tests {
     ]);
 
     let mut outputs = provider
-      .request(Entity::component("get-item"), job_payload)
+      .invoke(Entity::component("get-item"), job_payload)
       .await?;
 
     let output = outputs.next().await.unwrap();
@@ -144,7 +144,7 @@ mod tests {
     let job_payload = make_input(vec![("collection_id", collection_id)]);
 
     let mut outputs = provider
-      .request(Entity::component("list-items"), job_payload)
+      .invoke(Entity::component("list-items"), job_payload)
       .await?;
 
     let output = outputs.next().await.unwrap();

@@ -34,7 +34,7 @@ impl Provider {
 
 #[async_trait]
 impl RpcHandler for Provider {
-  async fn request(
+  async fn invoke(
     &self,
     entity: Entity,
     payload: HashMap<String, Vec<u8>>,
@@ -60,7 +60,7 @@ impl RpcHandler for Provider {
     }
   }
 
-  async fn list_registered(&self) -> RpcResult<Vec<vino_rpc::HostedType>> {
+  async fn get_list(&self) -> RpcResult<Vec<vino_rpc::HostedType>> {
     let components = generated::get_all_components();
     Ok(
       components
@@ -70,7 +70,7 @@ impl RpcHandler for Provider {
     )
   }
 
-  async fn report_statistics(&self, id: Option<String>) -> RpcResult<Vec<vino_rpc::Statistics>> {
+  async fn get_stats(&self, id: Option<String>) -> RpcResult<Vec<vino_rpc::Statistics>> {
     // TODO Dummy implementation
     if id.is_some() {
       Ok(vec![Statistics {
@@ -127,7 +127,7 @@ mod tests {
     let entity = Entity::component("test-component");
 
     let mut outputs = provider
-      .request(entity, job_payload)
+      .invoke(entity, job_payload)
       .await
       .expect("request failed");
     let output = outputs.next().await.unwrap();
@@ -148,7 +148,7 @@ mod tests {
   async fn list() -> anyhow::Result<()> {
     let provider = Provider::default();
 
-    let response = provider.list_registered().await.expect("request failed");
+    let response = provider.get_list().await.expect("request failed");
 
     debug!("list response : {:?}", response);
 
@@ -175,10 +175,7 @@ mod tests {
   async fn statistics() -> anyhow::Result<()> {
     let provider = Provider::default();
 
-    let response = provider
-      .report_statistics(None)
-      .await
-      .expect("request failed");
+    let response = provider.get_stats(None).await.expect("request failed");
 
     debug!("statistics response : {:?}", response);
 

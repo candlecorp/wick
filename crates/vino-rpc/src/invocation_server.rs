@@ -18,12 +18,15 @@ use tonic::{
 use vino_component::Packet;
 
 use crate::rpc::invocation_service_server::InvocationService;
-use crate::rpc::output_kind::Data;
+use crate::rpc::output_kind::{
+  Data,
+  Kind,
+  OutputSignal,
+};
 use crate::rpc::{
   stats_request,
   Output,
   OutputKind,
-  OutputSignal,
 };
 use crate::{
   rpc,
@@ -67,27 +70,31 @@ fn make_output(port: &str, inv_id: &str, payload: Packet) -> Result<Output, Stat
         port: port.to_owned(),
         invocation_id: inv_id.to_owned(),
         payload: Some(OutputKind {
-          data: Some(Data::Invalid(true)),
+          kind: Kind::Invalid.into(),
+          data: None,
         }),
       }),
       vino_component::v0::Payload::Exception(msg) => Ok(Output {
         port: port.to_owned(),
         invocation_id: inv_id.to_owned(),
         payload: Some(OutputKind {
-          data: Some(Data::Exception(msg)),
+          kind: Kind::Exception.into(),
+          data: Some(Data::Message(msg)),
         }),
       }),
       vino_component::v0::Payload::Error(msg) => Ok(Output {
         port: port.to_owned(),
         invocation_id: inv_id.to_owned(),
         payload: Some(OutputKind {
-          data: Some(Data::Error(msg)),
+          kind: Kind::Error.into(),
+          data: Some(Data::Message(msg)),
         }),
       }),
       vino_component::v0::Payload::MessagePack(bytes) => Ok(Output {
         port: port.to_owned(),
         invocation_id: inv_id.to_owned(),
         payload: Some(OutputKind {
+          kind: Kind::MessagePack.into(),
           data: Some(Data::Messagepack(bytes)),
         }),
       }),
@@ -95,6 +102,7 @@ fn make_output(port: &str, inv_id: &str, payload: Packet) -> Result<Output, Stat
         port: port.to_owned(),
         invocation_id: inv_id.to_owned(),
         payload: Some(OutputKind {
+          kind: Kind::Signal.into(),
           data: Some(Data::Signal(OutputSignal::Close.into())),
         }),
       }),
@@ -102,6 +110,7 @@ fn make_output(port: &str, inv_id: &str, payload: Packet) -> Result<Output, Stat
         port: port.to_owned(),
         invocation_id: inv_id.to_owned(),
         payload: Some(OutputKind {
+          kind: Kind::Signal.into(),
           data: Some(Data::Signal(OutputSignal::OpenBracket.into())),
         }),
       }),
@@ -109,6 +118,7 @@ fn make_output(port: &str, inv_id: &str, payload: Packet) -> Result<Output, Stat
         port: port.to_owned(),
         invocation_id: inv_id.to_owned(),
         payload: Some(OutputKind {
+          kind: Kind::Signal.into(),
           data: Some(Data::Signal(OutputSignal::CloseBracket.into())),
         }),
       }),
@@ -143,7 +153,7 @@ impl InvocationService for InvocationServer {
       let entity = entity.unwrap();
       let payload = invocation.msg.clone();
       debug!("Executing component {}", entity.url());
-      match &mut provider.request(entity, payload).await {
+      match &mut provider.invoke(entity, payload).await {
         Ok(receiver) => {
           while let Some(next) = receiver.next().await {
             let port_name = next.port;
@@ -170,7 +180,7 @@ impl InvocationService for InvocationServer {
     let provider = self.provider.lock().await;
     trace!("Listing registered components from provider");
     let list = provider
-      .list_registered()
+      .get_list()
       .await
       .map_err(|e| Status::internal(e.to_string()))?;
     trace!("Server: list is {:?}", list);
@@ -195,11 +205,11 @@ impl InvocationService for InvocationServer {
 
     let list = match kind {
       stats_request::Kind::All(_format) => provider
-        .report_statistics(None)
+        .get_stats(None)
         .await
         .map_err(|e| Status::internal(e.to_string()))?,
       stats_request::Kind::Component(comp) => provider
-        .report_statistics(Some(comp.name.clone()))
+        .get_stats(Some(comp.name.clone()))
         .await
         .map_err(|e| Status::internal(e.to_string()))?,
     };

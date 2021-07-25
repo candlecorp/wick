@@ -9,15 +9,11 @@ use serde::{
 };
 use vino_component::v0::Payload;
 use vino_component::Packet;
-use vino_transport::message_transport::MessageSignal;
 use vino_transport::MessageTransport;
 
 use crate::generated::vino::component::ComponentKind;
 use crate::port::PacketWrapper;
-use crate::rpc::{
-  OutputKind,
-  OutputSignal,
-};
+use crate::rpc::OutputKind;
 use crate::{
   Error,
   Result,
@@ -256,46 +252,59 @@ impl From<crate::generated::vino::Statistic> for Statistics {
 #[allow(clippy::from_over_into)]
 impl Into<Packet> for OutputKind {
   fn into(self) -> Packet {
-    use crate::rpc::output_kind::Data;
-    match self.data {
-      Some(v) => match v {
-        Data::Messagepack(v) => Packet::V0(Payload::MessagePack(v)),
-        Data::Error(v) => Packet::V0(Payload::Error(v)),
-        Data::Exception(v) => Packet::V0(Payload::Exception(v)),
-        Data::Test(_) => Packet::V0(Payload::Invalid),
-        Data::Invalid(_) => Packet::V0(Payload::Invalid),
-        Data::Signal(signal) => match OutputSignal::from_i32(signal) {
+    use crate::rpc::output_kind::{
+      Data,
+      Kind,
+      OutputSignal,
+    };
+    let kind: Kind = match Kind::from_i32(self.kind) {
+      Some(v) => v,
+      None => return Packet::V0(Payload::Error(format!("Invalid kind {}", self.kind))),
+    };
+
+    match kind {
+      Kind::Invalid => Packet::V0(Payload::Invalid),
+      Kind::Error => match self.data {
+        Some(Data::Message(v)) => Packet::V0(Payload::Error(v)),
+        _ => Packet::V0(Payload::Error(
+          "Invalid Error output received: No message passed.".to_owned(),
+        )),
+      },
+      Kind::Exception => match self.data {
+        Some(Data::Message(v)) => Packet::V0(Payload::Error(v)),
+        _ => Packet::V0(Payload::Error(
+          "Invalid Error output received: No message passed.".to_owned(),
+        )),
+      },
+      Kind::Test => Packet::V0(Payload::Invalid),
+      Kind::MessagePack => match self.data {
+        Some(Data::Messagepack(v)) => Packet::V0(Payload::MessagePack(v)),
+        _ => Packet::V0(Payload::Error(
+          "Invalid MessagePack output received: No data passed as bytes.".to_owned(),
+        )),
+      },
+      Kind::Signal => match self.data {
+        Some(Data::Signal(v)) => match OutputSignal::from_i32(v) {
           Some(OutputSignal::Close) => Packet::V0(Payload::Close),
           Some(OutputSignal::OpenBracket) => Packet::V0(Payload::OpenBracket),
           Some(OutputSignal::CloseBracket) => Packet::V0(Payload::CloseBracket),
-          None => Packet::V0(Payload::Error("Sent an invalid signal".to_owned())),
+          _ => Packet::V0(Payload::Error(format!(
+            "Invalid Signal received: {:?}",
+            self.data
+          ))),
         },
+        _ => Packet::V0(Payload::Error(format!(
+          "Invalid Signal received: {:?}",
+          self.data
+        ))),
       },
-      None => Packet::V0(Payload::Error(
-        "Response received without output".to_owned(),
-      )),
     }
   }
 }
 
 impl From<OutputKind> for MessageTransport {
   fn from(v: OutputKind) -> Self {
-    use crate::rpc::output_kind::Data;
-    match v.data {
-      Some(v) => match v {
-        Data::Messagepack(v) => MessageTransport::MessagePack(v),
-        Data::Error(v) => MessageTransport::Error(v),
-        Data::Exception(v) => MessageTransport::Exception(v),
-        Data::Test(v) => MessageTransport::Test(v),
-        Data::Invalid(_) => MessageTransport::Invalid,
-        Data::Signal(signal) => match OutputSignal::from_i32(signal) {
-          Some(OutputSignal::Close) => MessageTransport::Signal(MessageSignal::Close),
-          Some(OutputSignal::OpenBracket) => MessageTransport::Signal(MessageSignal::CloseBracket),
-          Some(OutputSignal::CloseBracket) => MessageTransport::Signal(MessageSignal::OpenBracket),
-          None => MessageTransport::Error("Sent an invalid signal".to_owned()),
-        },
-      },
-      None => MessageTransport::Error("Response received without output".to_owned()),
-    }
+    let packet: Packet = v.into();
+    packet.into()
   }
 }

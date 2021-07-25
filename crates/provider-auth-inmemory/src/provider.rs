@@ -40,7 +40,7 @@ impl Provider {
 
 #[async_trait]
 impl RpcHandler for Provider {
-  async fn request(
+  async fn invoke(
     &self,
     entity: Entity,
     payload: HashMap<String, Vec<u8>>,
@@ -58,7 +58,7 @@ impl RpcHandler for Provider {
     }
   }
 
-  async fn list_registered(&self) -> RpcResult<Vec<vino_rpc::HostedType>> {
+  async fn get_list(&self) -> RpcResult<Vec<vino_rpc::HostedType>> {
     let components = generated::get_all_components();
     Ok(
       components
@@ -68,7 +68,7 @@ impl RpcHandler for Provider {
     )
   }
 
-  async fn report_statistics(&self, id: Option<String>) -> RpcResult<Vec<vino_rpc::Statistics>> {
+  async fn get_stats(&self, id: Option<String>) -> RpcResult<Vec<vino_rpc::Statistics>> {
     // TODO Dummy implementation
     if id.is_some() {
       Ok(vec![vino_rpc::Statistics {
@@ -127,7 +127,7 @@ mod tests {
     ]);
 
     let outputs = provider
-      .request(Entity::component("create-user"), job_payload)
+      .invoke(Entity::component("create-user"), job_payload)
       .await?;
 
     let outputs: Vec<PacketWrapper> = outputs.collect().await;
@@ -144,7 +144,7 @@ mod tests {
     let job_payload = make_input(vec![("username", username)]);
 
     let mut outputs = provider
-      .request(Entity::component("remove-user"), job_payload)
+      .invoke(Entity::component("remove-user"), job_payload)
       .await?;
 
     let output = outputs.next().await.unwrap();
@@ -164,7 +164,7 @@ mod tests {
     let job_payload = make_input(vec![("offset", offset), ("limit", limit)]);
 
     let mut outputs = provider
-      .request(Entity::component("list-users"), job_payload)
+      .invoke(Entity::component("list-users"), job_payload)
       .await?;
 
     let output = outputs.next().await.unwrap();
@@ -189,7 +189,7 @@ mod tests {
     ]);
 
     let mut outputs = provider
-      .request(Entity::component("authenticate"), job_payload)
+      .invoke(Entity::component("authenticate"), job_payload)
       .await?;
 
     let mut session = String::new();
@@ -219,7 +219,7 @@ mod tests {
     let job_payload = make_input(vec![("username", username)]);
 
     let mut outputs = provider
-      .request(Entity::component("get-id"), job_payload)
+      .invoke(Entity::component("get-id"), job_payload)
       .await?;
 
     let output = outputs.next().await.unwrap();
@@ -234,7 +234,7 @@ mod tests {
     let job_payload = make_input(vec![("session", session)]);
 
     let mut outputs = provider
-      .request(Entity::component("validate-session"), job_payload)
+      .invoke(Entity::component("validate-session"), job_payload)
       .await?;
 
     let output = outputs.next().await.unwrap();
@@ -253,7 +253,7 @@ mod tests {
     let mut job_payload = make_input(vec![("user_id", user_id)]);
     job_payload.insert("permissions".to_owned(), serialize(perms)?);
     let mut outputs = provider
-      .request(Entity::component("update-permissions"), job_payload)
+      .invoke(Entity::component("update-permissions"), job_payload)
       .await?;
 
     let output = outputs.next().await.unwrap();
@@ -267,7 +267,7 @@ mod tests {
   async fn has_permission(provider: &Provider, user_id: &str, perm: &str) -> Result<Packet> {
     let job_payload = make_input(vec![("user_id", user_id), ("permission", perm)]);
     let mut outputs = provider
-      .request(Entity::component("has-permission"), job_payload)
+      .invoke(Entity::component("has-permission"), job_payload)
       .await?;
 
     let output = outputs.next().await.unwrap();

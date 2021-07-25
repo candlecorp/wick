@@ -10,20 +10,26 @@ service InvocationService {
 }
 
 message OutputKind {
-  oneof data {
-    bytes messagepack = 1;
-    string error = 2;
-    string exception = 3;
-    string test = 4;
-    bool invalid = 5;
-    OutputSignal signal = 6;
+  enum Kind {
+    Invalid = 0;
+    Error = 1;
+    Exception = 2;
+    Test = 3;
+    MessagePack = 4;
+    Signal = 5;
   }
-}
+  enum OutputSignal {
+    Close = 0;
+    OpenBracket = 1;
+    CloseBracket = 2;
+  }
+  Kind kind = 1;
 
-enum OutputSignal {
-  Close = 0;
-  OpenBracket = 1;
-  CloseBracket = 2;
+  oneof data {
+    bytes messagepack = 2;
+    string message = 3;
+    OutputSignal signal = 4;
+  }
 }
 
 message Invocation {
@@ -53,9 +59,7 @@ message StatsRequest {
   }
 }
 
-message ListResponse {
-  repeated Component components = 1;
-}
+message ListResponse { repeated Component components = 1; }
 
 message Component {
   message Port {
@@ -67,7 +71,7 @@ message Component {
     Schematic = 1;
   }
   string name = 1;
-  ComponentKind kind = 2 ;
+  ComponentKind kind = 2;
   repeated Port inputs = 3;
   repeated Port outputs = 4;
   repeated Provider providers = 5;
@@ -78,10 +82,6 @@ message Provider {
   repeated Component components = 2;
 }
 
-message StatsResponse {
-  repeated Statistic stats = 1;
-}
+message StatsResponse { repeated Statistic stats = 1; }
 
-message Statistic {
-  uint64 num_calls = 1;
-}
+message Statistic { uint64 num_calls = 1; }

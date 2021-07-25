@@ -290,7 +290,7 @@ async fn test_update_permissions(port: &u16) -> Result<()> {
   assert_eq!(uid1, uid2);
   let packet = has_permission(&mut client, &uid1, "can't_do").await?;
   trace!("has perm packet {:?}", packet);
-  assert!(matches!(packet, Packet::V0(v0::Payload::Exception(_))));
+  assert!(matches!(packet, Packet::V0(v0::Payload::Error(_))));
 
   Ok(())
 }

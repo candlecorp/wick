@@ -41,7 +41,7 @@ impl Provider {
 
 #[async_trait]
 impl RpcHandler for Provider {
-  async fn request(
+  async fn invoke(
     &self,
     entity: Entity,
     payload: HashMap<String, Vec<u8>>,
@@ -70,7 +70,7 @@ impl RpcHandler for Provider {
     }
   }
 
-  async fn list_registered(&self) -> RpcResult<Vec<HostedType>> {
+  async fn get_list(&self) -> RpcResult<Vec<HostedType>> {
     let addr = NetworkService::for_id(&self.network_id);
     let result = addr
       .send(ListSchematics {})
@@ -81,7 +81,7 @@ impl RpcHandler for Provider {
     Ok(hosted_types)
   }
 
-  async fn report_statistics(&self, id: Option<String>) -> RpcResult<Vec<Statistics>> {
+  async fn get_stats(&self, id: Option<String>) -> RpcResult<Vec<Statistics>> {
     // TODO Dummy implementation
     if id.is_some() {
       Ok(vec![Statistics {
@@ -122,7 +122,7 @@ mod tests {
     };
 
     let mut outputs = provider
-      .request(Entity::schematic("simple"), job_payload)
+      .invoke(Entity::schematic("simple"), job_payload)
       .await?;
     let output = outputs.next().await.unwrap();
     println!("payload from [{}]: {:?}", output.port, output.packet);
@@ -149,7 +149,7 @@ mod tests {
   async fn test_list() -> TestResult<()> {
     let (_, network_id) = init_network_from_yaml("./manifests/v0/network/simple.yaml").await?;
     let provider = Provider::new(network_id);
-    let list = provider.list_registered().await?;
+    let list = provider.get_list().await?;
     println!("components on network : {:?}", list);
     assert_eq!(list.len(), 1);
     Ok(())

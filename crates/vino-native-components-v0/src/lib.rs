@@ -121,7 +121,7 @@ impl Provider {
 
 #[async_trait]
 impl RpcHandler for Provider {
-  async fn request(
+  async fn invoke(
     &self,
     entity: Entity,
     payload: HashMap<String, Vec<u8>>,
@@ -148,7 +148,7 @@ impl RpcHandler for Provider {
     }
   }
 
-  async fn list_registered(&self) -> RpcResult<Vec<vino_rpc::HostedType>> {
+  async fn get_list(&self) -> RpcResult<Vec<vino_rpc::HostedType>> {
     let components = generated::get_all_components();
     Ok(
       components
@@ -158,7 +158,7 @@ impl RpcHandler for Provider {
     )
   }
 
-  async fn report_statistics(&self, id: Option<String>) -> RpcResult<Vec<Statistics>> {
+  async fn get_stats(&self, id: Option<String>) -> RpcResult<Vec<Statistics>> {
     // TODO Dummy implementation
     if id.is_some() {
       Ok(vec![Statistics {
@@ -209,7 +209,7 @@ mod tests {
 
     let entity = Entity::component(component);
 
-    let mut outputs = provider.request(entity, payload).await.unwrap();
+    let mut outputs = provider.invoke(entity, payload).await.unwrap();
     let output = outputs.next().await.unwrap();
     println!("Received payload from [{}]", output.port);
     Ok(output.packet.try_into()?)
@@ -247,7 +247,7 @@ mod tests {
     let provider = Provider::default();
     let components = crate::generated::get_all_components();
 
-    let response = provider.list_registered().await.unwrap();
+    let response = provider.get_list().await.unwrap();
 
     debug!("list response : {:?}", response);
 
@@ -266,7 +266,7 @@ mod tests {
   async fn statistics() -> Result<()> {
     let provider = Provider::default();
 
-    let response = provider.report_statistics(None).await.unwrap();
+    let response = provider.get_stats(None).await.unwrap();
 
     debug!("statistics response : {:?}", response);
 

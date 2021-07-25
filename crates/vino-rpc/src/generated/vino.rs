@@ -1,23 +1,36 @@
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct OutputKind {
-  #[prost(oneof = "output_kind::Data", tags = "1, 2, 3, 4, 5, 6")]
+  #[prost(enumeration = "output_kind::Kind", tag = "1")]
+  pub kind: i32,
+  #[prost(oneof = "output_kind::Data", tags = "2, 3, 4")]
   pub data: ::core::option::Option<output_kind::Data>,
 }
 /// Nested message and enum types in `OutputKind`.
 pub mod output_kind {
+  #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
+  #[repr(i32)]
+  pub enum Kind {
+    Invalid = 0,
+    Error = 1,
+    Exception = 2,
+    Test = 3,
+    MessagePack = 4,
+    Signal = 5,
+  }
+  #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
+  #[repr(i32)]
+  pub enum OutputSignal {
+    Close = 0,
+    OpenBracket = 1,
+    CloseBracket = 2,
+  }
   #[derive(Clone, PartialEq, ::prost::Oneof)]
   pub enum Data {
-    #[prost(bytes, tag = "1")]
+    #[prost(bytes, tag = "2")]
     Messagepack(::prost::alloc::vec::Vec<u8>),
-    #[prost(string, tag = "2")]
-    Error(::prost::alloc::string::String),
     #[prost(string, tag = "3")]
-    Exception(::prost::alloc::string::String),
-    #[prost(string, tag = "4")]
-    Test(::prost::alloc::string::String),
-    #[prost(bool, tag = "5")]
-    Invalid(bool),
-    #[prost(enumeration = "super::OutputSignal", tag = "6")]
+    Message(::prost::alloc::string::String),
+    #[prost(enumeration = "OutputSignal", tag = "4")]
     Signal(i32),
   }
 }
@@ -120,13 +133,6 @@ pub struct StatsResponse {
 pub struct Statistic {
   #[prost(uint64, tag = "1")]
   pub num_calls: u64,
-}
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
-#[repr(i32)]
-pub enum OutputSignal {
-  Close = 0,
-  OpenBracket = 1,
-  CloseBracket = 2,
 }
 #[doc = r" Generated client implementations."]
 pub mod invocation_service_client {

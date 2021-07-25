@@ -80,7 +80,7 @@ impl Handler<InitializeComponents> for NetworkProviderService {
 
     let task = async move {
       let provider = provider.lock().await;
-      let list = provider.list_registered().await?;
+      let list = provider.get_list().await?;
       drop(provider);
 
       let mut metadata: HashMap<String, ComponentModel> = HashMap::new();
@@ -135,7 +135,7 @@ impl Handler<Invocation> for NetworkProviderService {
     let request = async move {
       let provider = provider.lock().await;
       let invocation_id = inv_id.clone();
-      let receiver = provider.request(component, message).await;
+      let receiver = provider.invoke(component, message).await;
       if let Err(e) = receiver {
         return InvocationResponse::error(
           tx_id,
@@ -185,11 +185,11 @@ impl Handler<ProviderRequest> for NetworkProviderService {
       match msg {
         ProviderRequest::Invoke(_invocation) => todo!(),
         ProviderRequest::List(_req) => {
-          let list = provider.list_registered().await?;
+          let list = provider.get_list().await?;
           Ok(ProviderResponse::List(list))
         }
         ProviderRequest::Statistics(_req) => {
-          let stats = provider.report_statistics(None).await?;
+          let stats = provider.get_stats(None).await?;
           Ok(ProviderResponse::Stats(stats))
         }
       }

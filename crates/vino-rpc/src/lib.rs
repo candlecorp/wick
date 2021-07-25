@@ -126,15 +126,15 @@ extern crate derivative;
 #[async_trait]
 pub trait RpcHandler: Send + Sync {
   /// Handle an incoming request for a target entity
-  async fn request(
+  async fn invoke(
     &self,
     entity: Entity,
     payload: HashMap<String, Vec<u8>>,
   ) -> RpcResult<BoxedPacketStream>;
   /// List the entities this [RpcHandler] manages
-  async fn list_registered(&self) -> RpcResult<Vec<HostedType>>;
+  async fn get_list(&self) -> RpcResult<Vec<HostedType>>;
   /// Report the statists for all registered entities
-  async fn report_statistics(&self, id: Option<String>) -> RpcResult<Vec<Statistics>>;
+  async fn get_stats(&self, id: Option<String>) -> RpcResult<Vec<Statistics>>;
 }
 
 #[must_use]
