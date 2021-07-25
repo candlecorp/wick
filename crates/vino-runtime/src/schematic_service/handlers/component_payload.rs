@@ -18,10 +18,10 @@ impl Handler<ComponentPayload> for SchematicService {
   fn handle(&mut self, msg: ComponentPayload, ctx: &mut Context<Self>) -> Self::Result {
     trace!("Reference '{}' is ready to continue", msg.instance);
     let kp = &self.get_state().kp;
-    let reference = msg.instance.clone();
+    let instance = msg.instance.clone();
     let tx_id = msg.tx_id;
 
-    let def = actix_try!(self.get_component_model(&msg.instance));
+    let def = actix_try!(self.get_component_definition(&instance));
 
     let mut invoke_payload = HashMap::new();
     for (name, payload) in msg.payload_map {
@@ -31,7 +31,7 @@ impl Handler<ComponentPayload> for SchematicService {
         }
         payload => {
           let addr = ctx.address();
-          let msg = ShortCircuit::new(tx_id, reference, payload);
+          let msg = ShortCircuit::new(tx_id, instance, payload);
           return ActorResult::reply_async(
             async move { log_ie!(addr.send(msg).await, 6010,)? }.into_actor(self),
           );
@@ -46,9 +46,7 @@ impl Handler<ComponentPayload> for SchematicService {
       Entity::Component(def.name),
       MessageTransport::MultiBytes(invoke_payload),
     );
-    let handler = actix_try!(self
-      .get_recipient(&msg.instance)
-      .ok_or_else(|| SchematicError::ReferenceNotFound(reference.clone())));
+    let handler = actix_try!(self.get_recipient(&msg.instance));
 
     let addr = ctx.address();
 
@@ -63,8 +61,8 @@ impl Handler<ComponentPayload> for SchematicService {
           trace!("{} handler spawned", log_prefix,);
           tokio::spawn(async move {
             while let Some(packet) = rx.next().await {
-              let logmsg = format!("ref: {}, port: {}", reference, packet.port);
-              let port = ConnectionTargetDefinition::new(reference.clone(), packet.port);
+              let logmsg = format!("ref: {}, port: {}", instance, packet.port);
+              let port = ConnectionTargetDefinition::new(instance.clone(), packet.port);
               let msg = OutputMessage {
                 port,
                 tx_id: tx_id.clone(),
@@ -84,8 +82,8 @@ impl Handler<ComponentPayload> for SchematicService {
           Ok(())
         }
         InvocationResponse::Error { tx_id, msg } => {
-          warn!("Tx '{}' short-circuiting '{}': {}", tx_id, reference, msg);
-          let msg = ShortCircuit::new(tx_id, reference, MessageTransport::Error(msg));
+          warn!("Tx '{}' short-circuiting '{}': {}", tx_id, instance, msg);
+          let msg = ShortCircuit::new(tx_id, instance, MessageTransport::Error(msg));
           log_ie!(addr.send(msg).await, 6007)?
         }
       }

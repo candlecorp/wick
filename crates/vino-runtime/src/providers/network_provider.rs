@@ -1,10 +1,8 @@
 use std::collections::HashMap;
-use std::sync::{
-  Arc,
-  Mutex,
-};
+use std::sync::Arc;
 
 use async_trait::async_trait;
+use parking_lot::Mutex;
 use vino_rpc::error::RpcError;
 use vino_rpc::port::PacketWrapper;
 use vino_rpc::{
@@ -56,7 +54,6 @@ impl RpcHandler for Provider {
         msg: MessageTransport::MultiBytes(payload),
         id: get_uuid(),
         tx_id: get_uuid(),
-        encoded_claims: "".to_owned(),
         network_id: get_uuid(),
       })
       .await

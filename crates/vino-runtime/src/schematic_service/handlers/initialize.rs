@@ -1,7 +1,6 @@
-use std::sync::{
-  Arc,
-  Mutex,
-};
+use std::sync::Arc;
+
+use parking_lot::Mutex;
 
 use crate::dev::prelude::*;
 use crate::models::provider_model::{
@@ -50,7 +49,7 @@ impl Handler<Initialize> for SchematicService {
               .into_iter()
               .map(|c| (c.namespace.clone(), c))
               .collect();
-            let mut model = this.get_state().model.lock().unwrap();
+            let mut model = this.get_state().model.lock();
             model.commit_providers(providers);
             model.partial_initialization()?;
           }

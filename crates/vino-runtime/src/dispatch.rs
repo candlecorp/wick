@@ -1,17 +1,10 @@
 use std::cell::RefCell;
 use std::convert::TryFrom;
-use std::io::Read;
 use std::pin::Pin;
 use std::task::Poll;
 
 use actix::dev::MessageResponse;
-use data_encoding::HEXUPPER;
 use futures::Stream;
-use ring::digest::{
-  Context,
-  Digest,
-  SHA256,
-};
 use serde::{
   Deserialize,
   Serialize,
@@ -19,10 +12,7 @@ use serde::{
 use tokio::sync::mpsc::UnboundedReceiver;
 use uuid::Uuid;
 use vino_rpc::port::PacketWrapper;
-use vino_wascap::{
-  Claims,
-  KeyPair,
-};
+use vino_wascap::KeyPair;
 
 use crate::dev::prelude::*;
 use crate::error::ConversionError;
@@ -53,7 +43,6 @@ pub struct Invocation {
   pub msg: MessageTransport,
   pub id: String,
   pub tx_id: String,
-  pub encoded_claims: String,
   pub network_id: String,
 }
 
@@ -197,21 +186,13 @@ impl Invocation {
     let tx_id = get_uuid();
     let invocation_id = get_uuid();
     let issuer = hostkey.public_key();
-    let target_url = target.url();
     let payload = msg.into();
-    let claims = Claims::<vino_wascap::Invocation>::new(
-      issuer.clone(),
-      invocation_id.clone(),
-      &target_url,
-      &origin.url(),
-      &invocation_hash(&target_url, &origin.url(), &payload),
-    );
+
     Invocation {
       origin,
       target,
       msg: payload,
       id: invocation_id,
-      encoded_claims: claims.encode(hostkey).unwrap(),
       network_id: issuer,
       tx_id,
     }
@@ -229,75 +210,13 @@ impl Invocation {
     let issuer = hostkey.public_key();
     // let target_url = target.url();
     let payload = msg.into();
-    // let claims = Claims::<vino_wascap::Invocation>::new(
-    //   issuer.clone(),
-    //   invocation_id.clone(),
-    //   &target_url,
-    //   &origin.url(),
-    //   &invocation_hash(&target_url, &origin.url(), &payload),
-    // );
     Invocation {
       origin,
       target,
       msg: payload,
       id: invocation_id,
-      encoded_claims: "".to_owned(), //claims.encode(hostkey).unwrap(),
       network_id: issuer,
       tx_id: tx_id.to_owned(),
     }
   }
-}
-
-pub(crate) fn invocation_hash(
-  target_url: &str,
-  origin_url: &str,
-  msg: &MessageTransport,
-) -> String {
-  use std::io::Write;
-  let mut cleanbytes: Vec<u8> = Vec::new();
-  cleanbytes.write_all(origin_url.as_bytes()).unwrap();
-  cleanbytes.write_all(target_url.as_bytes()).unwrap();
-  match msg {
-    MessageTransport::MessagePack(bytes) => cleanbytes.write_all(bytes).unwrap(),
-    MessageTransport::Exception(string) => cleanbytes.write_all(string.as_bytes()).unwrap(),
-    MessageTransport::Error(string) => cleanbytes.write_all(string.as_bytes()).unwrap(),
-    MessageTransport::MultiBytes(bytemap) => {
-      for (key, val) in bytemap {
-        cleanbytes.write_all(key.as_bytes()).unwrap();
-        cleanbytes.write_all(val).unwrap();
-      }
-    }
-    MessageTransport::Test(v) => cleanbytes.write_all(v.as_bytes()).unwrap(),
-    MessageTransport::Invalid => cleanbytes.write_all(&[0, 0, 0, 0, 0]).unwrap(),
-    MessageTransport::OutputMap(map) => {
-      for (key, val) in map {
-        cleanbytes.write_all(key.as_bytes()).unwrap();
-        cleanbytes
-          .write_all(invocation_hash(origin_url, target_url, val).as_bytes())
-          .unwrap();
-      }
-    }
-    MessageTransport::Signal(signal) => match signal {
-      MessageSignal::Close => cleanbytes.write_all(b"1").unwrap(),
-      MessageSignal::OpenBracket => cleanbytes.write_all(b"2").unwrap(),
-      MessageSignal::CloseBracket => cleanbytes.write_all(b"3").unwrap(),
-    },
-  }
-  let digest = sha256_digest(cleanbytes.as_slice()).unwrap();
-  HEXUPPER.encode(digest.as_ref())
-}
-
-fn sha256_digest<R: Read>(mut reader: R) -> Result<Digest, VinoError> {
-  let mut context = Context::new(&SHA256);
-  let mut buffer = [0; 1024];
-
-  loop {
-    let count = reader.read(&mut buffer)?;
-    if count == 0 {
-      break;
-    }
-    context.update(&buffer[..count]);
-  }
-
-  Ok(context.finish())
 }

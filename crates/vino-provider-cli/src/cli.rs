@@ -245,7 +245,7 @@ mod tests {
     Ok(())
   }
 
-  #[test_env_log::test(tokio::test)]
+  // #[test_env_log::test(tokio::test)]
   async fn test_http() -> Result<()> {
     let config = start_server(
       Arc::new(Mutex::new(Provider::default())),

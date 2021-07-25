@@ -153,18 +153,8 @@ pub(crate) mod add {
     map: &HashMap<String, Vec<u8>>,
   ) -> Result<Inputs, Box<dyn std::error::Error + Send + Sync>> {
     Ok(Inputs {
-      left: deserialize(map.get("left").ok_or_else(|| {
-        ProviderComponentError::new(format!(
-          "Input data for '{}'' not found in passed payload",
-          "left"
-        ))
-      })?)?,
-      right: deserialize(map.get("right").ok_or_else(|| {
-        ProviderComponentError::new(format!(
-          "Input data for '{}'' not found in passed payload",
-          "right"
-        ))
-      })?)?,
+      left: deserialize(map.get("left").unwrap())?,
+      right: deserialize(map.get("right").unwrap())?,
     })
   }
 
@@ -289,18 +279,8 @@ pub(crate) mod concatenate {
     map: &HashMap<String, Vec<u8>>,
   ) -> Result<Inputs, Box<dyn std::error::Error + Send + Sync>> {
     Ok(Inputs {
-      left: deserialize(map.get("left").ok_or_else(|| {
-        ProviderComponentError::new(format!(
-          "Input data for '{}'' not found in passed payload",
-          "left"
-        ))
-      })?)?,
-      right: deserialize(map.get("right").ok_or_else(|| {
-        ProviderComponentError::new(format!(
-          "Input data for '{}'' not found in passed payload",
-          "right"
-        ))
-      })?)?,
+      left: deserialize(map.get("left").unwrap())?,
+      right: deserialize(map.get("right").unwrap())?,
     })
   }
 
@@ -422,12 +402,7 @@ pub(crate) mod error {
     map: &HashMap<String, Vec<u8>>,
   ) -> Result<Inputs, Box<dyn std::error::Error + Send + Sync>> {
     Ok(Inputs {
-      input: deserialize(map.get("input").ok_or_else(|| {
-        ProviderComponentError::new(format!(
-          "Input data for '{}'' not found in passed payload",
-          "input"
-        ))
-      })?)?,
+      input: deserialize(map.get("input").unwrap())?,
     })
   }
 
@@ -549,12 +524,7 @@ pub(crate) mod log {
     map: &HashMap<String, Vec<u8>>,
   ) -> Result<Inputs, Box<dyn std::error::Error + Send + Sync>> {
     Ok(Inputs {
-      input: deserialize(map.get("input").ok_or_else(|| {
-        ProviderComponentError::new(format!(
-          "Input data for '{}'' not found in passed payload",
-          "input"
-        ))
-      })?)?,
+      input: deserialize(map.get("input").unwrap())?,
     })
   }
 
@@ -676,12 +646,7 @@ pub(crate) mod short_circuit {
     map: &HashMap<String, Vec<u8>>,
   ) -> Result<Inputs, Box<dyn std::error::Error + Send + Sync>> {
     Ok(Inputs {
-      input: deserialize(map.get("input").ok_or_else(|| {
-        ProviderComponentError::new(format!(
-          "Input data for '{}'' not found in passed payload",
-          "input"
-        ))
-      })?)?,
+      input: deserialize(map.get("input").unwrap())?,
     })
   }
 
@@ -803,12 +768,7 @@ pub(crate) mod string_to_bytes {
     map: &HashMap<String, Vec<u8>>,
   ) -> Result<Inputs, Box<dyn std::error::Error + Send + Sync>> {
     Ok(Inputs {
-      input: deserialize(map.get("input").ok_or_else(|| {
-        ProviderComponentError::new(format!(
-          "Input data for '{}'' not found in passed payload",
-          "input"
-        ))
-      })?)?,
+      input: deserialize(map.get("input").unwrap())?,
     })
   }
 

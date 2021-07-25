@@ -14,6 +14,8 @@ pub enum ValidationErrorKind {
   NoInputs,
   #[error("Model has an error: {0}")]
   ModelError(String),
+  #[error("Can not find definition for instance: {0}")]
+  InstanceNotFound(String),
   #[error("Can't find a model for '{0}', is it spelled correctly?")]
   MissingComponentModel(String),
   #[error("Dangling reference: '{0}'")]

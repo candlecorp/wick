@@ -2,13 +2,11 @@ pub(crate) mod default;
 pub(crate) mod handlers;
 
 use std::collections::HashMap;
-use std::sync::{
-  Arc,
-  Mutex,
-};
+use std::sync::Arc;
 
 use handlers::input_message::InputMessage;
 use handlers::transaction_update::TransactionUpdate;
+use parking_lot::Mutex;
 use tokio::sync::mpsc::{
   UnboundedReceiver,
   UnboundedSender,
@@ -62,13 +60,13 @@ impl Actor for SchematicService {
 
 impl SchematicService {
   fn validate_model(&mut self) -> Result<()> {
-    let mut model = self.get_state_mut().model.lock()?;
+    let mut model = self.get_state_mut().model.lock();
     Validator::validate_late_errors(&model)?;
     Ok(model.partial_initialization()?)
   }
 
   fn validate_final(&mut self) -> Result<()> {
-    let mut model = self.get_state_mut().model.lock()?;
+    let mut model = self.get_state_mut().model.lock();
     Validator::validate_final_errors(&model)?;
     Ok(model.final_initialization()?)
   }
@@ -98,60 +96,50 @@ impl SchematicService {
     state.transaction_map.new_transaction(tx_id, rx)
   }
 
-  fn get_component_model(&self, reference: &str) -> Result<ComponentModel> {
+  fn get_component_definition(&self, instance: &str) -> Result<ComponentDefinition> {
     let state = self.get_state();
-    let lock = state.model.lock().unwrap();
-    let def = lock
-      .get_component_definition(reference)
-      .ok_or(SchematicError::InvalidModel(1))?;
-    let model = lock.get_component_model(&def.id);
-    Ok(model.ok_or(SchematicModelError::MissingComponentModel(def.id))?)
+    let lock = state.model.lock();
+    lock
+      .get_component_definition(instance)
+      .ok_or_else(|| SchematicError::InstanceNotFound(instance.to_owned()))
   }
 
-  fn get_component_definition(&self, reference: &str) -> Option<ComponentDefinition> {
+  fn get_recipient(&self, instance: &str) -> Result<Recipient<Invocation>> {
+    trace!("Getting downstream recipient '{}'", instance);
+    let component = self.get_component_definition(instance)?;
     let state = self.get_state();
-    let lock = state.model.lock().unwrap();
-    lock.get_component_definition(reference)
-  }
-
-  fn get_recipient(&self, reference: &str) -> Option<Recipient<Invocation>> {
-    trace!("Getting downstream recipient '{}'", reference);
-    let component = self.get_component_definition(reference)?;
-    let state = self.get_state();
-    let lock = state.model.lock().unwrap();
+    let lock = state.model.lock();
+    let err = SchematicError::InstanceNotFound(instance.to_owned());
     if !lock.has_component(&component.id) {
-      return None;
+      return Err(err);
     }
     drop(lock);
     trace!("Downstream recipient is: {:?}", component);
-    let channel = self.recipients.get(&component.namespace)?;
-    Some(channel.recipient.clone())
+    let channel = self.recipients.get(&component.namespace).ok_or(err)?;
+    Ok(channel.recipient.clone())
   }
 
-  fn get_outputs(&self, reference: &str) -> Vec<ConnectionTargetDefinition> {
+  fn get_outputs(&self, instance: &str) -> Vec<ConnectionTargetDefinition> {
     let state = self.get_state();
-    let lock = state.model.lock().unwrap();
-    lock.get_outputs(reference)
+    let lock = state.model.lock();
+    lock.get_outputs(instance)
   }
 
   fn get_port_connections(&self, port: &ConnectionTargetDefinition) -> Vec<ConnectionDefinition> {
     let state = self.get_state();
-    let lock = state.model.lock().unwrap();
+    let lock = state.model.lock();
     lock.get_port_connections(port).cloned().collect()
   }
 
-  fn get_downstream_connections(&self, reference: &str) -> Vec<ConnectionDefinition> {
+  fn get_downstream_connections(&self, instance: &str) -> Vec<ConnectionDefinition> {
     let state = self.get_state();
-    let lock = state.model.lock().unwrap();
-    lock
-      .get_downstream_connections(reference)
-      .cloned()
-      .collect()
+    let lock = state.model.lock();
+    lock.get_downstream_connections(instance).cloned().collect()
   }
 
   fn update_network_provider(&mut self, model: ProviderModel) -> Result<()> {
     let state = self.get_state_mut();
-    let mut lock = state.model.lock().unwrap();
+    let mut lock = state.model.lock();
     lock.commit_self_provider(model);
     lock.final_initialization()?;
     Ok(())

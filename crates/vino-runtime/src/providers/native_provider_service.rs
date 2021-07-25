@@ -150,12 +150,10 @@ impl Handler<Invocation> for NativeProviderService {
       actix::spawn(async move {
         loop {
           trace!("Provider component {} waiting for output", url);
-          let next = receiver.next().await;
-          if next.is_none() {
-            break;
-          }
-
-          let output = next.unwrap();
+          let output = match receiver.next().await {
+            Some(v) => v,
+            None => break,
+          };
           trace!("Native actor {} got output on port [{}]", url, output.port);
           match tx.send(OutputPacket {
             port: output.port.clone(),
@@ -264,7 +262,6 @@ mod test {
         msg: MessageTransport::MultiBytes(payload),
         id: get_uuid(),
         tx_id: get_uuid(),
-        encoded_claims: "".to_owned(),
         network_id,
       })
       .await?;

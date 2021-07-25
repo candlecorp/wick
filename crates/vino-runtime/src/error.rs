@@ -16,8 +16,8 @@ pub enum SchematicError {
   ModelNotInitialized,
   #[error("Transaction {0} not found")]
   TransactionNotFound(String),
-  #[error("Reference {0} not found")]
-  ReferenceNotFound(String),
+  #[error("Instance {0} not found")]
+  InstanceNotFound(String),
   #[error("Schematic failed pre-request condition")]
   FailedPreRequestCondition(String),
   #[error("Schematic channel closed while data still available. This can happen when acting on output before waiting for the system to receive the final close and may not be a problem.")]
@@ -74,10 +74,6 @@ pub enum NetworkError {
 
 #[derive(Error, Debug)]
 pub enum ComponentError {
-  #[error("Could not extract claims from component")]
-  ClaimsError(String),
-  #[error(transparent)]
-  WascapError(#[from] vino_wascap::error::ClaimsError),
   #[error(transparent)]
   WasmProviderError(#[from] vino_provider_wasm::Error),
   #[error("Failed to create a raw WebAssembly host")]
@@ -231,9 +227,6 @@ pub enum VinoError {
   RpcHandlerError(#[from] Box<vino_rpc::Error>),
   #[error(transparent)]
   OtherUpstream(#[from] BoxedErrorSyncSend),
-  #[error("General error : {0}")]
-  Other(String),
-
   #[error(transparent)]
   IOError(#[from] std::io::Error),
 }
@@ -259,11 +252,5 @@ impl<T> From<PoisonError<std::sync::MutexGuard<'_, T>>> for SchematicError {
 impl<T> From<PoisonError<std::sync::MutexGuard<'_, T>>> for TransactionError {
   fn from(lock_error: PoisonError<std::sync::MutexGuard<'_, T>>) -> Self {
     CommonError::LockError(lock_error.to_string()).into()
-  }
-}
-
-impl From<&'static str> for VinoError {
-  fn from(e: &'static str) -> Self {
-    VinoError::Other(e.to_owned())
   }
 }

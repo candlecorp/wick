@@ -259,12 +259,11 @@ impl Handler<Invocation> for GrpcProviderService {
             }
             break;
           }
-          let next = next.unwrap();
+          let output = match next.unwrap() {
+            Some(v) => v,
+            None => break,
+          };
 
-          if next.is_none() {
-            break;
-          }
-          let output = next.unwrap();
           let payload = output.payload;
           if payload.is_none() {
             let msg = "Received response but no payload";
@@ -371,7 +370,6 @@ mod test {
           }),
           id: get_uuid(),
           tx_id: get_uuid(),
-          encoded_claims: "".to_owned(),
           network_id: get_uuid(),
         })
         .await?;

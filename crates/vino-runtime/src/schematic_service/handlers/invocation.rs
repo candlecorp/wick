@@ -22,9 +22,7 @@ impl Handler<Invocation> for SchematicService {
       Entity::Component(name) => handle_schematic(self, ctx.address(), &name, msg),
       Entity::Reference(reference) => self
         .get_component_definition(&reference)
-        .map_or(Err(SchematicError::ReferenceNotFound(reference)), |def| {
-          handle_schematic(self, ctx.address(), &def.id, msg)
-        }),
+        .and_then(|def| handle_schematic(self, ctx.address(), &def.id, msg)),
       _ => Err(SchematicError::FailedPreRequestCondition(
         "Schematic invoked with entity it doesn't handle".into(),
       )),
@@ -74,7 +72,7 @@ fn handle_schematic(
     SchematicError::FailedPreRequestCondition("Schematic sent invalid payload".into())
   })?;
 
-  let model = service.get_state().model.lock()?;
+  let model = service.get_state().model.lock();
   let connections = model.get_downstream_connections(SCHEMATIC_INPUT);
   let input_messages = make_input_packets(connections, &tx_id, &payload)?;
   let defaults = model.get_defaults();

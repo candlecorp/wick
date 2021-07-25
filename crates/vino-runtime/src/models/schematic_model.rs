@@ -55,7 +55,7 @@ impl TryFrom<SchematicDefinition> for SchematicModel {
 
     Ok(Self {
       definition,
-      instances: instances,
+      instances,
       providers: HashMap::new(),
       upstream_links,
       state: None,
@@ -98,10 +98,10 @@ impl SchematicModel {
           None => false,
         }
       });
-      if downstream.is_none() {
-        continue;
-      }
-      let downstream = downstream.unwrap();
+      let downstream = match downstream {
+        Some(d) => d,
+        None => continue,
+      };
       let model = match self.get_component_model_by_instance(downstream.get_instance()) {
         Some(model) => model,
         None => {
@@ -113,8 +113,20 @@ impl SchematicModel {
       let downstream_signature = model
         .inputs
         .iter()
-        .find(|port| port.name == downstream.get_port())
-        .unwrap();
+        .find(|port| port.name == downstream.get_port());
+
+      let downstream_signature = match downstream_signature {
+        Some(d) => d,
+        None => {
+          debug!(
+            "Model {:?} does not have expected port {}",
+            model,
+            downstream.get_port()
+          );
+          continue;
+        }
+      };
+
       input_signatures.push(PortSignature {
         name: input.get_port_owned(),
         type_string: downstream_signature.type_string.clone(),
@@ -123,30 +135,34 @@ impl SchematicModel {
     let outputs = self.get_schematic_outputs();
     let mut output_signatures = vec![];
     for output in outputs {
-      let upstream = self.get_upstream(&output).unwrap();
-      let def = self.get_component_definition(upstream.get_instance());
-      if def.is_none() {
-        warn!(
-          "Instance {} has no component definition",
-          upstream.get_instance()
-        );
-        continue;
-      }
-      let def = def.unwrap();
-      if should_skip_namespace(&def.namespace) {
-        continue;
-      }
-      let model = self
-        .get_component_model_by_instance(upstream.get_instance())
-        .unwrap();
-      let downstream_signature = model
-        .outputs
-        .iter()
-        .find(|port| upstream.matches_port(&port.name))
-        .unwrap();
+      let opt = self
+        .get_upstream(&output)
+        .and_then(|upstream| {
+          self
+            .get_component_model_by_instance(upstream.get_instance())
+            .map(|model| (upstream, model))
+        })
+        .and_then(|(upstream, model)| {
+          if should_skip_namespace(&model.namespace) {
+            return None;
+          }
+          model
+            .outputs
+            .iter()
+            .find(|port| upstream.matches_port(&port.name))
+            .map(|signature| signature.type_string.clone())
+        });
+      let signature = match opt {
+        Some(sig) => sig,
+        None => {
+          warn!("Could not find signature for output '{}'", output);
+          continue;
+        }
+      };
+
       output_signatures.push(PortSignature {
         name: output.get_port_owned(),
-        type_string: downstream_signature.type_string.clone(),
+        type_string: signature,
       });
     }
     let provider_signatures = self

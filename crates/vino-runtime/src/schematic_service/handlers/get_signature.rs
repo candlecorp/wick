@@ -12,7 +12,7 @@ impl Handler<GetSignature> for SchematicService {
 
   fn handle(&mut self, _msg: GetSignature, _ctx: &mut Context<Self>) -> Self::Result {
     let state = self.get_state_mut();
-    let mut model = state.model.lock()?;
+    let mut model = state.model.lock();
     Validator::validate_final_errors(&model)?;
     model.final_initialization()?;
 

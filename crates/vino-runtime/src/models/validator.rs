@@ -128,7 +128,7 @@ impl<'a> Validator<'a> {
           match self.model.get_component_model_by_instance(r) {
             Some(from) => validations.push(is_valid_output(connection, &from)),
             None => {
-              if !connection.has_default() && !self.should_omit_ref(r) {
+              if !connection.has_default() && !self.should_omit_instance(r) {
                 validations.push(Err(ValidationErrorKind::MissingComponentModel(
                   r.to_owned(),
                 )));
@@ -141,7 +141,7 @@ impl<'a> Validator<'a> {
           match self.model.get_component_model_by_instance(r) {
             Some(to) => validations.push(is_valid_input(connection, &to)),
             None => {
-              if !self.should_omit_ref(r) {
+              if !self.should_omit_instance(r) {
                 validations.push(Err(ValidationErrorKind::MissingComponentModel(
                   r.to_owned(),
                 )));
@@ -160,8 +160,8 @@ impl<'a> Validator<'a> {
       Err(errors)
     }
   }
-  fn should_omit_ref(&self, reference: &str) -> bool {
-    let option = self.model.get_component_definition(reference);
+  fn should_omit_instance(&self, instance: &str) -> bool {
+    let option = self.model.get_component_definition(instance);
     option.map_or(false, |def| {
       should_omit(&def.namespace, &self.omit_namespaces)
     })
@@ -175,11 +175,16 @@ impl<'a> Validator<'a> {
       .model
       .get_instances()
       .filter_map(|r| {
-        let def = self.model.get_component_definition(r).unwrap();
-
-        let model = self.model.get_component_model(&def.id);
-        (model.is_none() && !self.should_omit_def(&def))
-          .then(|| ValidationErrorKind::MissingComponentModel(format!("{}=>{}", r.clone(), def.id)))
+        self.model.get_component_definition(r).map_or(
+          Some(ValidationErrorKind::InstanceNotFound(r.clone())),
+          |def| {
+            let is_err =
+              self.model.get_component_model(&def.id).is_none() && !self.should_omit_def(&def);
+            is_err.then(|| {
+              ValidationErrorKind::MissingComponentModel(format!("{}=>{}", r.clone(), def.id))
+            })
+          },
+        )
       })
       .collect();
 

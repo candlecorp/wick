@@ -70,4 +70,4 @@ members = [
   "crates/vinoc",
   "crates/vow",
 ]
-exclude = ["crates/test-wapc-component"]
+exclude = ["crates/integration/test-wapc-component"]

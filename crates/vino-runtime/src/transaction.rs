@@ -2,11 +2,9 @@ use std::collections::{
   HashMap,
   VecDeque,
 };
-use std::sync::{
-  Arc,
-  Mutex,
-};
+use std::sync::Arc;
 
+use parking_lot::Mutex;
 use tokio::sync::mpsc::{
   unbounded_channel,
   UnboundedReceiver,
@@ -29,7 +27,7 @@ pub(crate) struct TransactionMap {
 
 impl TransactionMap {
   pub(crate) fn new(model: Arc<Mutex<SchematicModel>>) -> Self {
-    let locked = model.lock().unwrap();
+    let locked = model.lock();
     // components that have no inputs need to be run now or lazily later
     let autorun_instances = locked
       .get_instances()
@@ -136,7 +134,7 @@ struct Transaction {
 
 impl Transaction {
   fn new(tx_id: String, model: Arc<Mutex<SchematicModel>>) -> Self {
-    let locked = model.lock().unwrap();
+    let locked = model.lock();
     let port_statuses = locked
       .get_connections()
       .iter()
@@ -158,7 +156,7 @@ impl Transaction {
     }
   }
   pub(crate) fn has_active_upstream(&self, port: &ConnectionTargetDefinition) -> Result<bool> {
-    let locked = self.model.lock().unwrap();
+    let locked = self.model.lock();
 
     let upstream = locked
       .get_upstream(port)
@@ -193,7 +191,7 @@ impl Transaction {
     self.buffermap.take(port)
   }
   fn get_connected_ports(&self, reference: &str) -> Vec<ConnectionTargetDefinition> {
-    let locked = self.model.lock().unwrap();
+    let locked = self.model.lock();
     locked
       .get_connections()
       .iter()
@@ -386,7 +384,7 @@ mod tests {
       }
       msgs
     });
-    let msgs = handle.await.unwrap();
+    let msgs = handle.await?;
 
     assert_eq!(msgs.len(), 4);
 
