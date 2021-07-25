@@ -1,14 +1,9 @@
-use std::path::PathBuf;
-use std::sync::PoisonError;
-
 use itertools::join;
 use thiserror::Error;
 use tokio::sync::mpsc::error::SendError;
 
 use crate::dev::prelude::*;
 use crate::schematic_service::handlers::input_message::InputMessage;
-
-pub(crate) type BoxedErrorSyncSend = Box<dyn std::error::Error + Sync + Send>;
 
 #[derive(Error, Debug)]
 pub enum SchematicError {
@@ -82,18 +77,12 @@ pub enum ComponentError {
   ConversionError(#[from] ConversionError),
   #[error(transparent)]
   IOError(#[from] std::io::Error),
-  #[error("Component not found, looked in {0}")]
-  NotFound(String),
-  #[error(transparent)]
-  OciError(#[from] OciError),
   #[error(transparent)]
   ActixMailboxError(#[from] MailboxError),
   #[error(transparent)]
   RpcError(#[from] vino_rpc::Error),
   #[error(transparent)]
   RpcHandlerError(#[from] Box<vino_rpc::Error>),
-  #[error(transparent)]
-  OtherUpstream(#[from] BoxedErrorSyncSend),
   #[error(transparent)]
   RpcUpstreamError(#[from] tonic::Status),
   #[error(transparent)]
@@ -106,18 +95,6 @@ pub enum ComponentError {
   InternalError(#[from] InternalError),
   #[error(transparent)]
   CommonError(#[from] CommonError),
-}
-
-#[derive(Error, Debug)]
-pub enum OciError {
-  #[error("Configuration disallows fetching artifacts with the :latest tag ({0})")]
-  LatestDisallowed(String),
-  #[error("Could not fetch '{0}': {1}")]
-  OciFetchFailure(String, String),
-  #[error("Could not parse OCI URL {0}: {1}")]
-  OCIParseError(String, String),
-  #[error(transparent)]
-  IOError(#[from] std::io::Error),
 }
 
 #[derive(Error, Debug, Clone, Copy)]
@@ -140,8 +117,6 @@ impl std::fmt::Display for InternalError {
 
 #[derive(Error, Debug)]
 pub enum CommonError {
-  #[error("Failed to acquire a lock: {0}")]
-  LockError(String),
   #[error("Provided KeyPair has no associated seed")]
   NoSeed,
   #[error("Failed to create KeyPair from seed")]
@@ -150,8 +125,6 @@ pub enum CommonError {
   DefaultsError(#[from] serde_json::error::Error),
   #[error(transparent)]
   IOError(#[from] std::io::Error),
-  #[error("File not found {}", .0.to_string_lossy())]
-  FileNotFound(PathBuf),
   #[error(transparent)]
   CodecError(#[from] vino_codec::Error),
 }
@@ -168,43 +141,18 @@ pub enum TransactionError {
 
 #[derive(Error, Debug)]
 pub enum VinoError {
-  #[error("Invocation error: {0}")]
-  InvocationError(String),
   #[error(transparent)]
   CommonError(#[from] CommonError),
   #[error(transparent)]
   TransactionError(#[from] TransactionError),
-  #[error("Conversion error {0}")]
-  ConversionError(&'static str),
-  #[error("URL parse error {0}")]
-  ParseError(String),
   #[error(transparent)]
   ComponentError(#[from] ComponentError),
   #[error(transparent)]
   SchematicModelError(#[from] SchematicModelError),
   #[error(transparent)]
   NetworkError(#[from] NetworkError),
-
-  #[error("Dispatch error: {0}")]
-  DispatchError(String),
-  #[error("Provider error {0}")]
-  ProviderError(String),
-  #[error("WaPC WebAssembly Component error: {0}")]
-  WapcError(String),
-  #[error("Job error: {0}")]
-  JobError(String),
-  #[error("invalid configuration")]
-  ConfigurationError,
-  #[error("Could not start host: {0}")]
-  HostStartFailure(String),
-  #[error("Failed to deserialize configuration {0}")]
-  ConfigurationDeserialization(String),
-
-  #[error(transparent)]
-  OciError(#[from] OciError),
   #[error(transparent)]
   SchematicError(#[from] SchematicError),
-
   #[error(transparent)]
   TonicError(#[from] tonic::transport::Error),
   #[error(transparent)]
@@ -226,31 +174,5 @@ pub enum VinoError {
   #[error(transparent)]
   RpcHandlerError(#[from] Box<vino_rpc::Error>),
   #[error(transparent)]
-  OtherUpstream(#[from] BoxedErrorSyncSend),
-  #[error(transparent)]
   IOError(#[from] std::io::Error),
-}
-
-impl<T> From<PoisonError<std::sync::MutexGuard<'_, T>>> for VinoError {
-  fn from(lock_error: PoisonError<std::sync::MutexGuard<'_, T>>) -> Self {
-    CommonError::LockError(lock_error.to_string()).into()
-  }
-}
-
-impl<T> From<PoisonError<std::sync::MutexGuard<'_, T>>> for NetworkError {
-  fn from(lock_error: PoisonError<std::sync::MutexGuard<'_, T>>) -> Self {
-    CommonError::LockError(lock_error.to_string()).into()
-  }
-}
-
-impl<T> From<PoisonError<std::sync::MutexGuard<'_, T>>> for SchematicError {
-  fn from(lock_error: PoisonError<std::sync::MutexGuard<'_, T>>) -> Self {
-    CommonError::LockError(lock_error.to_string()).into()
-  }
-}
-
-impl<T> From<PoisonError<std::sync::MutexGuard<'_, T>>> for TransactionError {
-  fn from(lock_error: PoisonError<std::sync::MutexGuard<'_, T>>) -> Self {
-    CommonError::LockError(lock_error.to_string()).into()
-  }
 }
