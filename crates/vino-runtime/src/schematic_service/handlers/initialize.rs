@@ -9,7 +9,7 @@ use crate::models::provider_model::{
 };
 use crate::models::validator::Validator;
 use crate::schematic_service::State;
-use crate::transaction::TransactionMap;
+use crate::transaction::TransactionExecutor;
 
 #[derive(Message, Debug)]
 #[rtype(result = "Result<(), SchematicError>")]
@@ -64,7 +64,7 @@ impl Handler<Initialize> for SchematicService {
     let state = State {
       name,
       kp: KeyPair::from_seed(&seed).unwrap(),
-      transaction_map: TransactionMap::new(model.clone()),
+      transactions: TransactionExecutor::new(model.clone()),
       model,
     };
     self.state = Some(state);

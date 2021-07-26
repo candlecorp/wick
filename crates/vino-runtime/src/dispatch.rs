@@ -10,7 +10,6 @@ use serde::{
   Serialize,
 };
 use tokio::sync::mpsc::UnboundedReceiver;
-use uuid::Uuid;
 use vino_rpc::port::PacketWrapper;
 use vino_wascap::KeyPair;
 
@@ -172,9 +171,6 @@ where
     }
   }
 }
-pub(crate) fn get_uuid() -> String {
-  format!("{}", Uuid::new_v4())
-}
 impl Invocation {
   /// Creates an invocation with a new transaction id
   pub fn new(
@@ -187,7 +183,6 @@ impl Invocation {
     let invocation_id = get_uuid();
     let issuer = hostkey.public_key();
     let payload = msg.into();
-
     Invocation {
       origin,
       target,

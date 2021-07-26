@@ -1,13 +1,12 @@
 use std::collections::HashMap;
 
-use futures::future::try_join_all;
 use futures::Future;
 use tokio::sync::mpsc::unbounded_channel;
 
 use crate::dev::prelude::*;
 use crate::dispatch::inv_error;
-use crate::schematic_service::handlers::input_message::InputMessage;
 use crate::schematic_service::handlers::transaction_update::TransactionUpdate;
+use crate::schematic_service::input_message::InputMessage;
 
 type Result<T> = std::result::Result<T, SchematicError>;
 
@@ -40,25 +39,22 @@ impl Handler<Invocation> for SchematicService {
 }
 
 fn handle_schematic(
-  service: &mut SchematicService,
-  address: Addr<SchematicService>,
+  schematic: &mut SchematicService,
+  addr: Addr<SchematicService>,
   name: &str,
   invocation: Invocation,
 ) -> Result<impl Future<Output = Result<InvocationResponse>>> {
   trace!("Requesting schematic '{}'", name);
   let tx_id = invocation.tx_id.clone();
 
-  let (trans_tx, trans_rx) = unbounded_channel::<InputMessage>();
-  service.tx_internal.insert(tx_id.clone(), trans_tx);
+  let (mut outbound, inbound) = schematic.start(tx_id.clone());
+  schematic.tx_internal.insert(tx_id.clone(), inbound.clone());
 
-  let mut ready_rx = service.new_transaction(tx_id.clone(), trans_rx);
-
-  let addr = address.clone();
   tokio::spawn(async move {
-    while let Some(msg) = ready_rx.recv().await {
+    while let Some(msg) = outbound.recv().await {
       if let TransactionUpdate::Done(tx_id) = &msg {
         trace!("Schematic request finishing on transaction {}", tx_id);
-        ready_rx.close();
+        outbound.close();
       }
       ok_or_log!(addr.send(msg).await);
     }
@@ -66,29 +62,24 @@ fn handle_schematic(
   });
 
   let (tx, rx) = unbounded_channel::<OutputPacket>();
-  service.tx_external.insert(tx_id.clone(), tx);
+  schematic.tx_external.insert(tx_id.clone(), tx);
 
   let payload = invocation.msg.into_multibytes().map_err(|_| {
     SchematicError::FailedPreRequestCondition("Schematic sent invalid payload".into())
   })?;
 
-  let model = service.get_state().model.lock();
+  let model = schematic.get_state().model.lock();
   let connections = model.get_downstream_connections(SCHEMATIC_INPUT);
   let input_messages = make_input_packets(connections, &tx_id, &payload)?;
   let defaults = model.get_defaults();
   let defaults_messages = make_default_packets(defaults, &tx_id)?;
   drop(model);
   let messages = concat(vec![input_messages, defaults_messages]);
+  for message in messages {
+    inbound.send(TransactionUpdate::Update(message.handle_default()))?;
+  }
 
-  Ok(async move {
-    try_join_all(messages.into_iter().map(|inv| address.send(inv)))
-      .await
-      .map_err(|_| {
-        SchematicError::FailedPreRequestCondition("Error pushing to schematic ports".into())
-      })?;
-
-    Ok(InvocationResponse::stream(tx_id, rx))
-  })
+  Ok(async move { Ok(InvocationResponse::stream(tx_id, rx)) })
 }
 
 fn make_input_packets<'a>(

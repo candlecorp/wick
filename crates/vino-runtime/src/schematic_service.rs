@@ -4,18 +4,19 @@ pub(crate) mod handlers;
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use handlers::input_message::InputMessage;
 use handlers::transaction_update::TransactionUpdate;
 use parking_lot::Mutex;
 use tokio::sync::mpsc::{
   UnboundedReceiver,
   UnboundedSender,
 };
+pub(crate) mod input_message;
 
+use self::input_message::InputMessage;
 use crate::dev::prelude::*;
 use crate::error::SchematicError;
 use crate::models::validator::Validator;
-use crate::transaction::TransactionMap;
+use crate::transaction::TransactionExecutor;
 
 type Result<T> = std::result::Result<T, SchematicError>;
 
@@ -24,7 +25,7 @@ pub(crate) struct SchematicService {
   recipients: HashMap<String, ProviderChannel>,
   state: Option<State>,
   tx_external: HashMap<String, UnboundedSender<OutputPacket>>,
-  tx_internal: HashMap<String, UnboundedSender<InputMessage>>,
+  tx_internal: HashMap<String, UnboundedSender<TransactionUpdate>>,
 }
 
 #[derive(Debug)]
@@ -32,7 +33,7 @@ struct State {
   model: Arc<Mutex<SchematicModel>>,
   kp: KeyPair,
   name: String,
-  transaction_map: TransactionMap,
+  transactions: TransactionExecutor,
 }
 
 impl Supervised for SchematicService {}
@@ -87,13 +88,15 @@ impl SchematicService {
     state
   }
 
-  fn new_transaction(
+  fn start(
     &mut self,
     tx_id: String,
-    rx: UnboundedReceiver<InputMessage>,
-  ) -> UnboundedReceiver<TransactionUpdate> {
+  ) -> (
+    UnboundedReceiver<TransactionUpdate>,
+    UnboundedSender<TransactionUpdate>,
+  ) {
     let state = self.get_state_mut();
-    state.transaction_map.new_transaction(tx_id, rx)
+    state.transactions.new_transaction(tx_id)
   }
 
   fn get_component_definition(&self, instance: &str) -> Result<ComponentDefinition> {
@@ -143,6 +146,14 @@ impl SchematicService {
     lock.commit_self_provider(model);
     lock.final_initialization()?;
     Ok(())
+  }
+
+  fn update_transaction(&self, msg: InputMessage) -> Result<()> {
+    let inbound_tx = self
+      .tx_internal
+      .get(&msg.tx_id)
+      .ok_or(InternalError(6003))?;
+    Ok(inbound_tx.send(TransactionUpdate::Update(msg.handle_default()))?)
   }
 }
 

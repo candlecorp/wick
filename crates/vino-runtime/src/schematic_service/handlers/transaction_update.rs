@@ -1,13 +1,15 @@
 use super::component_payload::ComponentPayload;
 use super::schematic_output::SchematicOutput;
 use crate::dev::prelude::*;
+use crate::schematic_service::input_message::InputMessage;
 
 #[derive(Message, Clone, Debug)]
 #[rtype(result = "Result<(), SchematicError>")]
-pub(crate) enum TransactionUpdate {
+pub enum TransactionUpdate {
   Transition(ComponentPayload),
   Result(SchematicOutput),
   Done(String),
+  Update(InputMessage),
 }
 
 impl std::fmt::Display for TransactionUpdate {
@@ -16,6 +18,7 @@ impl std::fmt::Display for TransactionUpdate {
       TransactionUpdate::Transition(_) => "transition",
       TransactionUpdate::Result(_) => "result",
       TransactionUpdate::Done(_) => "done",
+      TransactionUpdate::Update(_) => "update",
     };
     f.write_str(name)
   }
@@ -65,6 +68,7 @@ impl Handler<TransactionUpdate> for SchematicService {
 
         ActorResult::reply(Ok(()))
       }
+      _ => unreachable!(),
     }
   }
 }

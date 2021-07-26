@@ -2,10 +2,10 @@ use crate::dev::prelude::*;
 
 #[derive(Message, Clone, Debug)]
 #[rtype(result = "Result<(), SchematicError>")]
-pub(crate) struct SchematicOutput {
-  pub(crate) port: String,
-  pub(crate) tx_id: String,
-  pub(crate) payload: MessageTransport,
+pub struct SchematicOutput {
+  pub port: String,
+  pub tx_id: String,
+  pub payload: MessageTransport,
 }
 
 impl Handler<SchematicOutput> for SchematicService {

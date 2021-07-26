@@ -196,8 +196,8 @@ impl<'a> Validator<'a> {
   }
 
   fn assert_early_schematic_outputs(&self) -> Result<()> {
-    let ports = self.model.get_schematic_outputs();
-    if ports.is_empty() {
+    let mut ports = self.model.get_schematic_outputs();
+    if ports.next().is_none() {
       Err(vec![ValidationErrorKind::NoOutputs])
     } else {
       Ok(())

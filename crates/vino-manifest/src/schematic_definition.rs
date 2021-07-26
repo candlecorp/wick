@@ -5,6 +5,7 @@ use std::convert::{
   TryInto,
 };
 use std::fmt::Display;
+use std::hash::Hash;
 
 use serde::{
   Deserialize,
@@ -254,6 +255,13 @@ impl ConnectionTargetDefinition {
         port: port.as_ref().to_owned(),
       }),
     }
+  }
+
+  pub fn get_key(&self) -> String {
+    if self.target.is_none() {
+      panic!("Attempted to take key of port with no target");
+    }
+    self.to_string()
   }
 
   pub fn none() -> Self {

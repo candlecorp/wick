@@ -41,7 +41,6 @@ pub(crate) mod prelude {
 
   pub(crate) use crate::dev::*;
   pub(crate) use crate::dispatch::{
-    get_uuid,
     inv_error,
     OutputPacket,
   };

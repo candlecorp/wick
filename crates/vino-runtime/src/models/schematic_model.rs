@@ -284,15 +284,13 @@ impl SchematicModel {
       .filter(move |conn| conn.from.matches_instance(instance))
   }
 
-  pub(crate) fn get_schematic_outputs(&self) -> Vec<ConnectionTargetDefinition> {
+  pub(crate) fn get_schematic_outputs(&self) -> impl Iterator<Item = &ConnectionTargetDefinition> {
     self
       .definition
       .connections
       .iter()
-      .cloned()
       .filter(|conn| conn.to.matches_instance(SCHEMATIC_OUTPUT))
-      .map(|conn| conn.to)
-      .collect()
+      .map(|conn| &conn.to)
   }
 
   pub(crate) fn get_schematic_output_signatures(&self) -> Result<&Vec<PortSignature>> {

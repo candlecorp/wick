@@ -1,7 +1,6 @@
 pub(crate) mod component_payload;
 pub(crate) mod get_signature;
 pub(crate) mod initialize;
-pub(crate) mod input_message;
 pub(crate) mod invocation;
 pub(crate) mod output_message;
 pub(crate) mod schematic_output;

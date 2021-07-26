@@ -6,10 +6,10 @@ use crate::schematic_service::handlers::short_circuit::ShortCircuit;
 
 #[derive(Message, Clone, Debug)]
 #[rtype(result = "Result<(), SchematicError>")]
-pub(crate) struct ComponentPayload {
-  pub(crate) tx_id: String,
-  pub(crate) instance: String,
-  pub(crate) payload_map: HashMap<String, MessageTransport>,
+pub struct ComponentPayload {
+  pub tx_id: String,
+  pub instance: String,
+  pub payload_map: HashMap<String, MessageTransport>,
 }
 
 impl Handler<ComponentPayload> for SchematicService {

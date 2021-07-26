@@ -1,5 +1,5 @@
 use crate::dev::prelude::*;
-use crate::schematic_service::handlers::input_message::InputMessage;
+use crate::schematic_service::input_message::InputMessage;
 
 #[derive(Message, Debug, Clone)]
 #[rtype(result = "Result<(),SchematicError>")]
@@ -10,9 +10,9 @@ pub(crate) struct OutputMessage {
 }
 
 impl Handler<OutputMessage> for SchematicService {
-  type Result = ResponseActFuture<Self, Result<(), SchematicError>>;
+  type Result = ActorResult<Self, Result<(), SchematicError>>;
 
-  fn handle(&mut self, msg: OutputMessage, ctx: &mut Context<Self>) -> Self::Result {
+  fn handle(&mut self, msg: OutputMessage, _ctx: &mut Context<Self>) -> Self::Result {
     let log_prefix = format!("OutputMessage:{}:", msg.port);
 
     let defs = if msg.port.matches_port(crate::COMPONENT_ERROR) {
@@ -23,25 +23,18 @@ impl Handler<OutputMessage> for SchematicService {
       self.get_port_connections(&msg.port)
     };
 
-    let addr = ctx.address();
+    for connection in defs {
+      let msg = InputMessage {
+        tx_id: msg.tx_id.clone(),
+        connection,
+        payload: msg.payload.clone(),
+      };
+      actix_try!(self
+        .update_transaction(msg)
+        .map_err(|_| InternalError(6001)));
+    }
 
-    let task = async move {
-      join_or_err(
-        defs
-          .into_iter()
-          .map(|connection| InputMessage {
-            tx_id: msg.tx_id.clone(),
-            connection,
-            payload: msg.payload.clone(),
-          })
-          .map(|ips| addr.send(ips)),
-        6001,
-      )
-      .await?;
-
-      Ok(())
-    };
-
-    Box::pin(task.into_actor(self))
+    let task = async move { Ok(()) }.into_actor(self);
+    ActorResult::reply_async(task)
   }
 }

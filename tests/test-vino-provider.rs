@@ -21,7 +21,7 @@ async fn request() -> anyhow::Result<()> {
   };
 
   let mut outputs = provider
-    .request(
+    .invoke(
       vino_entity::Entity::component("test-component"),
       job_payload,
     )
@@ -45,7 +45,7 @@ async fn request() -> anyhow::Result<()> {
 async fn list() -> anyhow::Result<()> {
   let provider = Provider::default();
 
-  let response = provider.list_registered().await.expect("request failed");
+  let response = provider.get_list().await.expect("request failed");
   debug!("list response : {:?}", response);
 
   Ok(())

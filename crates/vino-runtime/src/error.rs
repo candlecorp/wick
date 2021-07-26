@@ -3,7 +3,7 @@ use thiserror::Error;
 use tokio::sync::mpsc::error::SendError;
 
 use crate::dev::prelude::*;
-use crate::schematic_service::handlers::input_message::InputMessage;
+use crate::schematic_service::handlers::transaction_update::TransactionUpdate;
 
 #[derive(Error, Debug)]
 pub enum SchematicError {
@@ -30,7 +30,7 @@ pub enum SchematicError {
   #[error(transparent)]
   InternalError(#[from] InternalError),
   #[error(transparent)]
-  TransactionChannelError(#[from] SendError<InputMessage>),
+  TransactionChannelError(#[from] SendError<TransactionUpdate>),
   #[error(transparent)]
   ModelError(#[from] SchematicModelError),
   #[error(transparent)]
