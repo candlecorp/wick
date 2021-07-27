@@ -11,7 +11,7 @@ V0_SOURCES := $(V0_DEF)/manifest.widl $(V0_WIDL) $(V0_TEMPLATES)
 
 CLEAN_FILES:= $(V0)
 
-$(V0): $(V0_TEMPLATES) $(V0_SOURCES)
+$(V0): $(V0_SOURCES) $(V0_TEMPLATES)
 	widl-template $< $(V0_DEF)/templates/rust/root.hbs -p $(V0_DEF)/templates/rust/partials > $@
 	rustfmt $@
 

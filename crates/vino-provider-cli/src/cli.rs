@@ -25,21 +25,30 @@ pub(crate) const FILE_DESCRIPTOR_SET: &[u8] =
   include_bytes!("../../vino-rpc/src/generated/descriptors.bin");
 
 #[derive(Debug, Default, Clone, PartialEq)]
+/// Server configuration options
 pub struct Options {
+  /// RPC server options
   pub rpc: Option<ServerOptions>,
+  /// HTTP server options
   pub http: Option<ServerOptions>,
 }
 
 #[derive(Debug, Clone, Default, PartialEq)]
+/// Options to use when starting an RPC or HTTP server.
 pub struct ServerOptions {
+  /// The port to bind to.
   pub port: Option<u16>,
 
+  /// The address to bind to
   pub address: Option<Ipv4Addr>,
 
+  /// Path to pem file for TLS
   pub pem: Option<PathBuf>,
 
+  /// Path to key file for TLS
   pub key: Option<PathBuf>,
 
+  /// Path to CA file
   pub ca: Option<PathBuf>,
 }
 
@@ -66,6 +75,7 @@ impl From<DefaultCliOptions> for Options {
 
 #[derive(Debug, Default, Clone, StructOpt)]
 #[structopt(rename_all = "kebab-case")]
+/// Default command line options that downstream providers can use. This isn't required.
 pub struct DefaultCliOptions {
   /// Port to listen on
   #[structopt(short, long)]
@@ -97,11 +107,16 @@ pub struct DefaultCliOptions {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[must_use]
+/// Metadata for the running server.
 pub struct ServerMetadata {
+  /// The address of the RPC server if it is running.
   pub rpc_addr: Option<SocketAddr>,
+  /// The address of the HTTP server if it is running.
   pub http_addr: Option<SocketAddr>,
 }
 
+/// Starts an RPC and/or an HTTP server for the passed [RpcHandler]
 pub async fn start_server(
   provider: Arc<Mutex<dyn RpcHandler>>,
   opts: Option<Options>,
@@ -204,6 +219,8 @@ pub async fn start_server(
   })
 }
 
+/// Start a server with the passed [RpcHandler] and keep it
+/// running until the process receives a SIGINT (^C)
 pub async fn init_cli(
   provider: Arc<Mutex<dyn RpcHandler>>,
   opts: Option<Options>,
@@ -218,7 +235,6 @@ pub async fn init_cli(
 
 #[cfg(test)]
 mod tests {
-  use std::collections::HashMap;
   use std::str::FromStr;
   use std::time::Duration;
 
@@ -246,7 +262,7 @@ mod tests {
   }
 
   // #[test_env_log::test(tokio::test)]
-  async fn test_http() -> Result<()> {
+  async fn _test_http() -> Result<()> {
     let config = start_server(
       Arc::new(Mutex::new(Provider::default())),
       Some(Options {
@@ -279,7 +295,7 @@ mod tests {
       .await?;
 
     println!("http response: {:?}", resp);
-    todo!();
+    // todo!();
     Ok(())
   }
 }

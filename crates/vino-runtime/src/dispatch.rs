@@ -60,8 +60,8 @@ where
 }
 
 impl TryFrom<Invocation> for vino_rpc::rpc::Invocation {
-  type Error = VinoError;
-  fn try_from(inv: Invocation) -> Result<Self, VinoError> {
+  type Error = RuntimeError;
+  fn try_from(inv: Invocation) -> Result<Self, RuntimeError> {
     Ok(vino_rpc::rpc::Invocation {
       origin: inv.origin.url(),
       target: inv.target.url(),

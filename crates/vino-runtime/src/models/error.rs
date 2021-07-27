@@ -22,13 +22,13 @@ pub enum ValidationErrorKind {
   DanglingReference(String),
   #[error("Component definition '{0}' not fully qualified")]
   NotFullyQualified(String),
-  #[error("Invalid output port '{}' on {}. Valid output ports are [{}]", .0.get_port(), .1, join(.2, ", "))]
+  #[error("Invalid output port '{}' on {}. Valid output ports are [{}]", .0.get_port().unwrap_or("<No port>"), .1, join(.2, ", "))]
   InvalidOutputPort(
     ConnectionTargetDefinition,
     ConnectionDefinition,
     Vec<PortSignature>,
   ),
-  #[error("Invalid input port '{}' on {}. Valid input ports are [{}]", .0.get_port(), .1, join(.2, ", "))]
+  #[error("Invalid input port '{}' on {}. Valid input ports are [{}]", .0.get_port().unwrap_or("<No port>"), .1, join(.2, ", "))]
   InvalidInputPort(
     ConnectionTargetDefinition,
     ConnectionDefinition,

@@ -137,10 +137,12 @@ pub enum TransactionError {
   InternalError(#[from] InternalError),
   #[error("Upstream port {0} not found")]
   UpstreamNotFound(ConnectionTargetDefinition),
+  #[error(transparent)]
+  ManifestError(#[from] vino_manifest::Error),
 }
 
 #[derive(Error, Debug)]
-pub enum VinoError {
+pub enum RuntimeError {
   #[error(transparent)]
   CommonError(#[from] CommonError),
   #[error(transparent)]

@@ -85,10 +85,10 @@ pub struct NatsOptions {
 #[structopt(rename_all = "kebab-case")]
 pub struct HostOptions {
   /// Allows the use of "latest" artifact tag
-  #[structopt(long = "allow-oci-latest", env = "VINO_ALLOW_LATEST")]
-  pub allow_oci_latest: Option<bool>,
+  #[structopt(long = "allow-latest", env = "VINO_ALLOW_LATEST")]
+  pub allow_latest: Option<bool>,
 
   /// Allows the use of HTTP registry connections to these registries
-  #[structopt(long = "allowed-insecure")]
-  pub allowed_insecure: Vec<String>,
+  #[structopt(long = "insecure")]
+  pub insecure_registries: Vec<String>,
 }

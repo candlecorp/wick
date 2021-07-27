@@ -129,6 +129,7 @@ pub(crate) fn get_all_components() -> Vec<ComponentSignature> {
 }
 
 pub(crate) mod authenticate {
+  #![allow(unused)]
   use std::collections::HashMap;
 
   use async_trait::async_trait;
@@ -181,6 +182,7 @@ pub(crate) mod authenticate {
   }
 }
 pub(crate) mod create_user {
+  #![allow(unused)]
   use std::collections::HashMap;
 
   use async_trait::async_trait;
@@ -233,6 +235,7 @@ pub(crate) mod create_user {
   }
 }
 pub(crate) mod get_id {
+  #![allow(unused)]
   use std::collections::HashMap;
 
   use async_trait::async_trait;
@@ -285,6 +288,7 @@ pub(crate) mod get_id {
   }
 }
 pub(crate) mod has_permission {
+  #![allow(unused)]
   use std::collections::HashMap;
 
   use async_trait::async_trait;
@@ -337,6 +341,7 @@ pub(crate) mod has_permission {
   }
 }
 pub(crate) mod list_permissions {
+  #![allow(unused)]
   use std::collections::HashMap;
 
   use async_trait::async_trait;
@@ -389,6 +394,7 @@ pub(crate) mod list_permissions {
   }
 }
 pub(crate) mod list_users {
+  #![allow(unused)]
   use std::collections::HashMap;
 
   use async_trait::async_trait;
@@ -441,6 +447,7 @@ pub(crate) mod list_users {
   }
 }
 pub(crate) mod remove_user {
+  #![allow(unused)]
   use std::collections::HashMap;
 
   use async_trait::async_trait;
@@ -493,6 +500,7 @@ pub(crate) mod remove_user {
   }
 }
 pub(crate) mod update_permissions {
+  #![allow(unused)]
   use std::collections::HashMap;
 
   use async_trait::async_trait;
@@ -545,6 +553,7 @@ pub(crate) mod update_permissions {
   }
 }
 pub(crate) mod validate_session {
+  #![allow(unused)]
   use std::collections::HashMap;
 
   use async_trait::async_trait;

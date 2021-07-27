@@ -16,8 +16,11 @@ use crate::error::ComponentError;
 // from actix but that has been put on hold until there are more integration tests.
 #[derive(Debug)]
 pub(crate) enum ProviderRequest {
+  #[allow(unused)]
   Invoke(Invocation),
+  #[allow(unused)]
   List(ListRequest),
+  #[allow(unused)]
   Statistics(StatsRequest),
 }
 
@@ -37,12 +40,14 @@ pub(crate) enum ProviderResponse {
 }
 
 impl ProviderResponse {
+  #[allow(unused)]
   pub(crate) fn into_list_response(self) -> Result<Vec<HostedType>, ConversionError> {
     match self {
       ProviderResponse::List(v) => Ok(v),
       _ => Err(ConversionError("Provider response to list")),
     }
   }
+  #[allow(unused)]
   pub(crate) fn into_stats_response(self) -> Result<Vec<Statistics>, ConversionError> {
     match self {
       ProviderResponse::Stats(v) => Ok(v),

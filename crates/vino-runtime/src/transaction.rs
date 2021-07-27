@@ -82,7 +82,7 @@ impl TransactionExecutor {
             trace!("{}:Update for {}", log_prefix, input.connection,);
             transaction.receive(input.connection.clone(), input.payload);
             let target = &input.connection.to;
-            let port = input.connection.to.get_port();
+            let port = input.connection.to.get_port()?;
 
             if target.matches_instance(SCHEMATIC_OUTPUT) {
               trace!("{}:Result for port {}", log_prefix, port,);
@@ -111,7 +111,7 @@ impl TransactionExecutor {
               ok_or_log!(
                 inbound_tx.send(TransactionUpdate::Transition(ComponentPayload {
                   tx_id: tx_id.clone(),
-                  instance: target.get_instance_owned(),
+                  instance: target.get_instance_owned()?,
                   payload_map: map
                 }))
               );
@@ -213,17 +213,18 @@ impl Transaction {
     &mut self,
     target: &ConnectionTargetDefinition,
   ) -> Result<HashMap<String, MessageTransport>> {
-    let ports = self.get_connected_ports(target.get_instance());
+    let ports = self.get_connected_ports(target.get_instance()?);
 
     let mut map = HashMap::new();
     for port in ports {
       let message = self.take_from_port(&port).ok_or(InternalError(7001))?;
-      map.insert(port.get_port_owned(), message);
+      map.insert(port.get_port_owned()?, message);
     }
     Ok(map)
   }
   fn is_target_ready(&self, port: &ConnectionTargetDefinition) -> bool {
-    let ports = self.get_connected_ports(port.get_instance());
+    let port = ok_or_bail!(port.get_instance(), false);
+    let ports = self.get_connected_ports(port);
     self.are_ports_ready(&ports)
   }
   fn is_port_ready(&self, port: &ConnectionTargetDefinition) -> bool {

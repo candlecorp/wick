@@ -1,4 +1,3 @@
-use std::net::Ipv4Addr;
 use std::path::PathBuf;
 
 use structopt::StructOpt;
@@ -15,9 +14,6 @@ use crate::Result;
 pub struct StartCommand {
   #[structopt(flatten)]
   pub logging: super::LoggingOptions,
-
-  #[structopt(flatten)]
-  pub nats: super::NatsOptions,
 
   #[structopt(flatten)]
   pub host: super::HostOptions,
@@ -38,7 +34,7 @@ pub async fn handle_command(command: StartCommand) -> Result<String> {
     None => HostDefinition::default(),
   };
 
-  let config = merge_runconfig(config, command.nats, command.host);
+  let config = merge_runconfig(config, command.host);
 
   let host_builder = HostBuilder::new();
 

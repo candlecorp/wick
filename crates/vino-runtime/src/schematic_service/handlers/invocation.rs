@@ -89,7 +89,7 @@ fn make_input_packets<'a>(
 ) -> Result<Vec<InputMessage>> {
   let mut messages: Vec<InputMessage> = vec![];
   for conn in connections {
-    let bytes = bytemap.get(conn.from.get_port()).ok_or_else(|| {
+    let bytes = bytemap.get(conn.from.get_port()?).ok_or_else(|| {
       SchematicError::FailedPreRequestCondition(format!("Port {} not found in input", conn.from))
     })?;
     messages.push(InputMessage {

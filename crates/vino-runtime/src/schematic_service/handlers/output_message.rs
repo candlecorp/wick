@@ -17,7 +17,7 @@ impl Handler<OutputMessage> for SchematicService {
 
     let defs = if msg.port.matches_port(crate::COMPONENT_ERROR) {
       error!("{} Component-wide error received", log_prefix);
-      self.get_downstream_connections(msg.port.get_instance())
+      self.get_downstream_connections(actix_try!(msg.port.get_instance()))
     } else {
       trace!("{} Output ready", log_prefix);
       self.get_port_connections(&msg.port)

@@ -13,6 +13,7 @@ use crate::{
 pub struct NetworkDefinition {
   /// A list of SchematicDefinitions
   pub schematics: Vec<SchematicDefinition>,
+  /// A list of ProviderDefinitions
   pub providers: Vec<ProviderDefinition>,
 }
 

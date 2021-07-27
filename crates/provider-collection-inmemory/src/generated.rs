@@ -69,6 +69,7 @@ pub(crate) fn get_all_components() -> Vec<ComponentSignature> {
 }
 
 pub(crate) mod add_item {
+  #![allow(unused)]
   use std::collections::HashMap;
 
   use async_trait::async_trait;
@@ -121,6 +122,7 @@ pub(crate) mod add_item {
   }
 }
 pub(crate) mod get_item {
+  #![allow(unused)]
   use std::collections::HashMap;
 
   use async_trait::async_trait;
@@ -173,6 +175,7 @@ pub(crate) mod get_item {
   }
 }
 pub(crate) mod list_items {
+  #![allow(unused)]
   use std::collections::HashMap;
 
   use async_trait::async_trait;
@@ -225,6 +228,7 @@ pub(crate) mod list_items {
   }
 }
 pub(crate) mod rm_item {
+  #![allow(unused)]
   use std::collections::HashMap;
 
   use async_trait::async_trait;

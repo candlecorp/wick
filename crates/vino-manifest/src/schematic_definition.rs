@@ -214,6 +214,8 @@ pub struct ConnectionDefinition {
 }
 
 impl ConnectionDefinition {
+  /// Constructor for a [ConnectionDefinition]. This is mostly used in tests,
+  /// the most common way to get a [ConnectionDefinition] is by parsing a manifest.
   pub fn new(from: ConnectionTargetDefinition, to: ConnectionTargetDefinition) -> Self {
     Self {
       from,
@@ -221,18 +223,24 @@ impl ConnectionDefinition {
       default: None,
     }
   }
+
   #[must_use]
+  /// Returns true if the [ConnectionDefinition] has a default value set.
   pub fn has_default(&self) -> bool {
     self.default.is_some()
   }
+
+  /// Render default JSON template with the passed message.
   pub fn process_default(&self, err: &str) -> Result<Cow<serde_json::Value>> {
     let json = self
       .default
       .as_ref()
       .ok_or_else(|| Error::NoDefault(self.clone()))?;
     process_default(Cow::Borrowed(json), err)
-      .map_err(|e| Error::DefaultsError(self.from.clone(), self.to.clone(), e))
+      .map_err(|e| Error::DefaultsError(self.from.clone(), self.to.clone(), e.to_string()))
   }
+
+  /// Generate a [ConnectionDefinition] from short form syntax. See [docs.vino.dev](https://docs.vino.dev/docs/configuration/short-form-syntax/) for more info.
   pub fn from_v0_str(s: &str) -> Result<Self> {
     let parsed = crate::parse::parse_connection_v0(s)?;
     parsed.try_into()
@@ -257,56 +265,73 @@ impl ConnectionTargetDefinition {
     }
   }
 
+  /// Create a [ConnectionTargetDefinition] that points nowhere
   pub fn none() -> Self {
     Self { target: None }
   }
 
   #[must_use]
+  /// Delegates to `self.target.is_none()`
   pub fn is_none(&self) -> bool {
     self.target.is_none()
   }
 
+  /// Create a [ConnectionTargetDefinition] with the target set to the passed port.
   pub fn from_port(port: PortReference) -> Self {
     Self { target: Some(port) }
   }
   #[must_use]
-  pub fn matches_instance(&self, reference: &str) -> bool {
+  /// Convenience method to test if the target's instance matches the passed string.
+  pub fn matches_instance(&self, instance: &str) -> bool {
     self
       .target
       .as_ref()
-      .map_or(false, |p| p.instance == reference)
+      .map_or(false, |p| p.instance == instance)
   }
 
   #[must_use]
+  /// Convenience method to test if the target's port matches the passed string.
   pub fn matches_port(&self, port: &str) -> bool {
     self.target.as_ref().map_or(false, |p| p.port == port)
   }
 
-  #[must_use]
-  pub fn get_instance(&self) -> &str {
-    self.target.as_ref().map_or("<None>", |p| &p.instance)
-  }
-  #[must_use]
-  pub fn get_instance_owned(&self) -> String {
+  /// Get the target's instance if it exists.
+  pub fn get_instance(&self) -> Result<&str> {
     self
       .target
       .as_ref()
-      .map_or("<None>".to_owned(), |p| p.instance.clone())
+      .map(|s| s.instance.as_str())
+      .ok_or(crate::Error::NoTarget)
   }
 
-  #[must_use]
-  pub fn get_port(&self) -> &str {
-    self.target.as_ref().map_or("<None>", |p| &p.port)
-  }
-
-  #[must_use]
-  pub fn get_port_owned(&self) -> String {
+  /// Get the target's instance as an owned String if it exists.
+  pub fn get_instance_owned(&self) -> Result<String> {
     self
       .target
       .as_ref()
-      .map_or("<None>".to_owned(), |p| p.port.clone())
+      .map(|p| p.instance.clone())
+      .ok_or(crate::Error::NoTarget)
   }
 
+  /// Get the target's port if it exists.
+  pub fn get_port(&self) -> Result<&str> {
+    self
+      .target
+      .as_ref()
+      .map(|s| s.port.as_str())
+      .ok_or(crate::Error::NoTarget)
+  }
+
+  /// Get the target's port as an owned String if it exists.
+  pub fn get_port_owned(&self) -> Result<String> {
+    self
+      .target
+      .as_ref()
+      .map(|p| p.port.clone())
+      .ok_or(crate::Error::NoTarget)
+  }
+
+  /// Generate a [ConnectionTargetDefinition] from short form syntax. See [docs.vino.dev](https://docs.vino.dev/docs/configuration/short-form-syntax/) for more info.
   pub fn from_v0_str(s: &str) -> Result<Self> {
     let parsed = crate::parse::parse_connection_target_v0(s)?;
     Ok(Self {
@@ -323,7 +348,8 @@ impl TryFrom<crate::v0::ConnectionDefinition> for ConnectionDefinition {
     let to: ConnectionTargetDefinition = def.to.try_into()?;
     let default = match &def.default {
       Some(json_str) => Some(
-        parse_default(json_str).map_err(|e| Error::DefaultsError(from.clone(), to.clone(), e))?,
+        parse_default(json_str)
+          .map_err(|e| Error::DefaultsError(from.clone(), to.clone(), e.to_string()))?,
       ),
       None => None,
     };

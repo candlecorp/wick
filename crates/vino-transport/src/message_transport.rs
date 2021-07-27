@@ -64,9 +64,12 @@ impl Default for MessageTransport {
 /// A simplified JSON representation of a MessageTransport
 #[derive(Debug, Clone, Eq, Serialize, Deserialize, PartialEq)]
 pub struct JsonOutput {
+  /// Error message for the port if it exists.
   pub error_msg: Option<String>,
-  // #[serde(skip_serializing_if = "Option::is_none")]
+  #[serde(skip_serializing_if = "JsonError::is_none")]
+  /// The error kind if it exists.
   pub error_kind: JsonError,
+  /// The return value.
   pub value: serde_json::Value,
 }
 
@@ -95,6 +98,19 @@ impl Display for JsonError {
   }
 }
 
+impl JsonError {
+  #[must_use]
+  /// This is analagous to Option::is_none for a [JsonError] kind
+  pub fn is_none(&self) -> bool {
+    matches!(self, JsonError::None)
+  }
+  #[must_use]
+  /// This is analagous to Option::is_some for a [JsonError] kind
+  pub fn is_some(&self) -> bool {
+    !matches!(self, JsonError::None)
+  }
+}
+
 impl MessageTransport {
   /// Returns `true` if the Message contains success data destined for a downstream
   /// consumer, false for Errors, Exceptions, and otherwise.
@@ -113,8 +129,12 @@ impl MessageTransport {
   }
 
   #[must_use]
+  /// Returns true if the [MessageTransport] is holding an Error or Exception variant.
   pub fn is_err(&self) -> bool {
-    matches!(self, MessageTransport::Error(_))
+    matches!(
+      self,
+      MessageTransport::Error(_) | MessageTransport::Exception(_)
+    )
   }
 
   /// Converts a [MessageTransport] into [serde_json::Value] representation of a [JsonOutput]

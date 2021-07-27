@@ -5,10 +5,21 @@ type HostManifest {
   "The manifest version"
   version: u8 @required,
 
+  "Additional host configuration"
+  config: HostConfig,
+
   "The configuration for a Vino network"
   network: NetworkManifest,
 
   "The default schematic to execute if none is provided"
   default_schematic: string = "default",
 
+}
+
+"Host configuration options"
+type HostConfig {
+  "Whether or not to allow the :latest tag on remote artifacts"
+  allow_latest: bool,
+  "A list of registries to connect to insecurely (over HTTP vs HTTPS)"
+  insecure_registries: [string],
 }

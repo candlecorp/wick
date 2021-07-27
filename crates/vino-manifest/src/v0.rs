@@ -45,6 +45,9 @@ pub struct HostManifest {
 
   #[serde(deserialize_with = "with_expand_envs")]
   pub version: u8,
+  /// Additional host configuration
+  #[serde(default)]
+  pub config: HostConfig,
   /// The configuration for a Vino network
   #[serde(default)]
   pub network: NetworkManifest,
@@ -52,74 +55,20 @@ pub struct HostManifest {
   #[serde(default = "HOST_MANIFEST_DEFAULT_SCHEMATIC")]
   #[serde(deserialize_with = "with_expand_envs")]
   pub default_schematic: String,
-  /// The NATS configuration to connect hosts
-  #[serde(default)]
-  pub nats: NatsConfiguration,
-}
-
-#[allow(non_snake_case)]
-fn NATS_CONFIGURATION_RPC_HOST() -> String {
-  "0.0.0.0".to_owned()
-}
-#[allow(non_snake_case)]
-fn NATS_CONFIGURATION_RPC_PORT() -> String {
-  "4222".to_owned()
-}
-#[allow(non_snake_case)]
-fn NATS_CONFIGURATION_CONTROL_HOST() -> String {
-  "0.0.0.0".to_owned()
-}
-#[allow(non_snake_case)]
-fn NATS_CONFIGURATION_CONTROL_PORT() -> String {
-  "4222".to_owned()
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
-/// The NATS configuration
-pub struct NatsConfiguration {
-  /// The host for the RPC layer
-  #[serde(default = "NATS_CONFIGURATION_RPC_HOST")]
-  #[serde(deserialize_with = "with_expand_envs")]
-  pub rpc_host: String,
-  /// The port for the RPC layer
-  #[serde(default = "NATS_CONFIGURATION_RPC_PORT")]
-  #[serde(deserialize_with = "with_expand_envs")]
-  pub rpc_port: String,
-  /// The NATS credsfile for the RPC layer
-  #[serde(default)]
-  pub rpc_credsfile: Option<String>,
-  /// The JSON web token to use for authentication to the RPC layer
-  #[serde(default)]
-  pub rpc_jwt: Option<String>,
-  /// The seed to use for authentication to the RPC layer
-  #[serde(default)]
-  pub rpc_seed: Option<String>,
-  /// The host for the RPC layer
-  #[serde(default = "NATS_CONFIGURATION_CONTROL_HOST")]
-  #[serde(deserialize_with = "with_expand_envs")]
-  pub control_host: String,
-  /// The port for the RPC layer
-  #[serde(default = "NATS_CONFIGURATION_CONTROL_PORT")]
-  #[serde(deserialize_with = "with_expand_envs")]
-  pub control_port: String,
-  /// The NATS credsfile for the RPC layer
-  #[serde(default)]
-  pub control_credsfile: Option<String>,
-  /// The JSON web token to use for authentication to the RPC layer
-  #[serde(default)]
-  pub control_jwt: Option<String>,
-  /// The seed to use for authentication to the RPC layer
-  #[serde(default)]
-  pub control_seed: Option<String>,
-  /// Enable :latest tags for OCI references
+/// Host configuration options
+pub struct HostConfig {
+  /// Whether or not to allow the :latest tag on remote artifacts
   #[serde(default)]
   #[serde(deserialize_with = "with_expand_envs")]
-  pub allow_oci_latest: bool,
-  /// A list of insecure registries to allow
+  pub allow_latest: bool,
+  /// A list of registries to connect to insecurely (over HTTP vs HTTPS)
   #[serde(default)]
   #[serde(skip_serializing_if = "Vec::is_empty")]
-  pub allowed_insecure: Vec<String>,
+  pub insecure_registries: Vec<String>,
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -142,26 +91,26 @@ pub struct NetworkManifest {
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
-/// A definition for an individual Vino schematic
+/// A definition for an individual Vino schematic.
 pub struct SchematicManifest {
-  /// Schematic name
+  /// Schematic name.
   #[serde(deserialize_with = "with_expand_envs")]
   pub name: String,
-  /// A list of providers and component collections
+  /// A list of providers and component collections.
   #[serde(default)]
   #[serde(skip_serializing_if = "Vec::is_empty")]
   pub providers: Vec<ProviderDefinition>,
-  /// A map from component reference to its target
+  /// A map from component reference to its target.
   #[serde(default)]
   #[serde(skip_serializing_if = "HashMap::is_empty")]
   #[serde(deserialize_with = "map_component_def")]
   pub instances: HashMap<String, ComponentDefinition>,
-  /// A list of connections from component to component
+  /// A list of connections from component to component.
   #[serde(default)]
   #[serde(skip_serializing_if = "Vec::is_empty")]
   #[serde(deserialize_with = "vec_connection")]
   pub connections: Vec<ConnectionDefinition>,
-  /// A map of constraints and values that limit where this schematic can run
+  /// A map of constraints and values that limit where this schematic can run.
   #[serde(default)]
   #[serde(skip_serializing_if = "HashMap::is_empty")]
   pub constraints: HashMap<String, String>,
@@ -169,20 +118,20 @@ pub struct SchematicManifest {
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
-/// A provider definition
+/// A provider definition.
 pub struct ProviderDefinition {
-  /// The namespace to reference the provider&#x27;s components on
+  /// The namespace to reference the provider&#x27;s components on.
   #[serde(default)]
   #[serde(deserialize_with = "with_expand_envs")]
   pub namespace: String,
-  /// The kind/type of the provider
+  /// The kind/type of the provider.
   #[serde(default)]
   pub kind: ProviderKind,
-  /// The reference/location of the provider
+  /// The reference/location of the provider.
   #[serde(default)]
   #[serde(deserialize_with = "with_expand_envs")]
   pub reference: String,
-  /// Data or configuration to pass to the provider initialization
+  /// Data or configuration to pass to the provider initialization.
   #[serde(default)]
   #[serde(skip_serializing_if = "HashMap::is_empty")]
   pub data: HashMap<String, String>,
@@ -190,13 +139,13 @@ pub struct ProviderDefinition {
 
 #[derive(Debug, Clone, Serialize, Deserialize, Copy, Eq, PartialEq, Primitive)]
 #[serde(deny_unknown_fields)]
-/// Kind of provider,
+/// Kind of provider,.
 pub enum ProviderKind {
-  /// Native providers included at compile-time in a Vino host
+  /// Native providers included at compile-time in a Vino host.
   Native = 0,
-  /// The URL for a separately managed GRPC endpoint
+  /// The URL for a separately managed GRPC endpoint.
   GrpcUrl = 1,
-  /// A WaPC WebAssembly provider
+  /// A WaPC WebAssembly provider.
   WaPC = 2,
 }
 
@@ -208,41 +157,41 @@ impl Default for ProviderKind {
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
-/// A single component definition
+/// A single component definition.
 pub struct ComponentDefinition {
-  /// The ID of the component (i.e. the alias, key, or namespace)
+  /// The ID of the component (i.e. the alias, key, or namespace).
   #[serde(deserialize_with = "with_expand_envs")]
   pub id: String,
-  /// Data to associate with the reference
+  /// Data to associate with the reference.
   #[serde(default)]
   pub config: Option<HashMap<String, String>>,
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
-/// A connection between components
+/// A connection between components. This can be specified in short-form syntax (where applicable). See &lt;a href&#x3D;&#x27;https://docs.vino.dev/docs/configuration/short-form-syntax/&#x27;&gt;docs.vino.dev&lt;/a&gt; for more information.
 pub struct ConnectionDefinition {
-  /// The originating component (upstream)
+  /// The originating component from upstream.
   #[serde(default)]
   #[serde(deserialize_with = "connection_target_shortform")]
   pub from: Option<ConnectionTargetDefinition>,
-  /// The destination component (downstream)
+  /// The destination component (downstream).
   #[serde(default)]
   #[serde(deserialize_with = "connection_target_shortform")]
   pub to: Option<ConnectionTargetDefinition>,
-  /// The default value to provide in the event of an upstream Error or Exception
+  /// The default value to provide in the event of an upstream Error or Exception.
   #[serde(default)]
   pub default: Option<String>,
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
-/// A connection target
+/// A connection target e.g. a port on a reference. This can be specified in short-form syntax (where applicable).  See &lt;a href&#x3D;&#x27;https://docs.vino.dev/docs/configuration/short-form-syntax/&#x27;&gt;docs.vino.dev&lt;/a&gt; for more information.
 pub struct ConnectionTargetDefinition {
-  /// The instance name of the referenced component
+  /// The instance name of the referenced component.
   #[serde(deserialize_with = "with_expand_envs")]
   pub instance: String,
-  /// The component&#x27;s port
+  /// The component&#x27;s port.
   #[serde(deserialize_with = "with_expand_envs")]
   pub port: String,
 }

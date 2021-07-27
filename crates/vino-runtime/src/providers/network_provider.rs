@@ -114,7 +114,7 @@ mod tests {
     assert_eq,
     *,
   };
-  type Result<T> = std::result::Result<T, VinoError>;
+  type Result<T> = std::result::Result<T, RuntimeError>;
 
   async fn request_log(provider: &Provider, data: &str) -> Result<String> {
     let job_payload = hashmap! {

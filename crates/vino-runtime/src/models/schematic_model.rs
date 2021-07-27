@@ -72,10 +72,6 @@ impl SchematicModel {
     self.definition.instances.values()
   }
 
-  pub(crate) fn get_provider_definitions(&self) -> &Vec<ProviderDefinition> {
-    &self.definition.providers
-  }
-
   pub(crate) fn get_instances(&self) -> Keys<String, ComponentDefinition> {
     self.definition.instances.keys()
   }
@@ -92,43 +88,43 @@ impl SchematicModel {
       let to_ports = self.get_downstreams(&input);
 
       let downstream = to_ports.iter().find(|port| {
-        let def = self.get_component_definition(port.get_instance());
+        let instance_id = ok_or_bail!(port.get_instance(), false);
+        let def = self.get_component_definition(instance_id);
         match def {
           Some(def) => !should_skip_namespace(&def.namespace),
           None => false,
         }
       });
-      let downstream = match downstream {
-        Some(d) => d,
-        None => continue,
-      };
-      let model = match self.get_component_model_by_instance(downstream.get_instance()) {
+      let downstream = some_or_continue!(downstream);
+      let downstream_instance = ok_or_continue!(downstream.get_instance());
+
+      let model = match self.get_component_model_by_instance(downstream_instance) {
         Some(model) => model,
         None => {
-          debug!("{} does not have valid model.", downstream.get_instance());
+          debug!("{} does not have valid model.", downstream_instance);
           continue;
         }
       };
+      let downstream_port = ok_or_continue!(downstream.get_port());
 
       let downstream_signature = model
         .inputs
         .iter()
-        .find(|port| port.name == downstream.get_port());
+        .find(|port| port.name == downstream_port);
 
       let downstream_signature = match downstream_signature {
         Some(d) => d,
         None => {
           debug!(
             "Model {:?} does not have expected port {}",
-            model,
-            downstream.get_port()
+            model, downstream_port
           );
           continue;
         }
       };
 
       input_signatures.push(PortSignature {
-        name: input.get_port_owned(),
+        name: ok_or_continue!(input.get_port_owned()),
         type_string: downstream_signature.type_string.clone(),
       });
     }
@@ -137,10 +133,11 @@ impl SchematicModel {
     for output in outputs {
       let opt = self
         .get_upstream(&output)
-        .and_then(|upstream| {
-          self
-            .get_component_model_by_instance(upstream.get_instance())
-            .map(|model| (upstream, model))
+        .and_then(|upstream| match upstream.get_instance() {
+          Ok(instance) => self
+            .get_component_model_by_instance(instance)
+            .map(|model| (upstream, model)),
+          Err(_) => None,
         })
         .and_then(|(upstream, model)| {
           if should_skip_namespace(&model.namespace) {
@@ -161,7 +158,7 @@ impl SchematicModel {
       };
 
       output_signatures.push(PortSignature {
-        name: output.get_port_owned(),
+        name: ok_or_continue!(output.get_port_owned()),
         type_string: signature,
       });
     }
@@ -348,6 +345,7 @@ impl SchematicModel {
   }
 
   // Find the upstream connection for a instance's port
+  #[allow(unused)]
   pub(crate) fn get_upstream_connection<'a>(
     &'a self,
     port: &'a ConnectionTargetDefinition,

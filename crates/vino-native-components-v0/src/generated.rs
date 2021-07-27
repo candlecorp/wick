@@ -107,6 +107,7 @@ pub(crate) fn get_all_components() -> Vec<ComponentSignature> {
 }
 
 pub(crate) mod add {
+  #![allow(unused)]
 
   use std::collections::HashMap;
   use std::sync::{
@@ -243,6 +244,7 @@ pub(crate) mod add {
   }
 }
 pub(crate) mod concatenate {
+  #![allow(unused)]
 
   use std::collections::HashMap;
   use std::sync::{
@@ -379,6 +381,7 @@ pub(crate) mod concatenate {
   }
 }
 pub(crate) mod error {
+  #![allow(unused)]
 
   use std::collections::HashMap;
   use std::sync::{
@@ -506,6 +509,7 @@ pub(crate) mod error {
   }
 }
 pub(crate) mod log {
+  #![allow(unused)]
 
   use std::collections::HashMap;
   use std::sync::{
@@ -633,6 +637,7 @@ pub(crate) mod log {
   }
 }
 pub(crate) mod short_circuit {
+  #![allow(unused)]
 
   use std::collections::HashMap;
   use std::sync::{
@@ -760,6 +765,7 @@ pub(crate) mod short_circuit {
   }
 }
 pub(crate) mod string_to_bytes {
+  #![allow(unused)]
 
   use std::collections::HashMap;
   use std::sync::{
@@ -887,6 +893,7 @@ pub(crate) mod string_to_bytes {
   }
 }
 pub(crate) mod uuid {
+  #![allow(unused)]
 
   use std::collections::HashMap;
   use std::sync::{

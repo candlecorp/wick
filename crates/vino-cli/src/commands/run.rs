@@ -14,9 +14,6 @@ pub struct RunCommand {
   pub logging: super::LoggingOptions,
 
   #[structopt(flatten)]
-  pub nats: super::NatsOptions,
-
-  #[structopt(flatten)]
   pub host: super::HostOptions,
 
   /// Turn on info logging
@@ -57,7 +54,7 @@ pub async fn handle_command(command: RunCommand) -> Result<String> {
 
   let config = vino_host::HostDefinition::load_from_file(&command.manifest)?;
 
-  let mut config = merge_runconfig(config, command.nats, command.host);
+  let mut config = merge_runconfig(config, command.host);
   if command.default_schematic.is_some() {
     config.default_schematic = command.default_schematic.unwrap();
   }

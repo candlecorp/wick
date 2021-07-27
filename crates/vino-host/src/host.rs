@@ -202,7 +202,7 @@ mod test {
     let file = PathBuf::from("src/configurations/logger.yaml");
     let manifest = HostDefinition::load_from_file(&file)?;
     host.start_network(manifest.network).await?;
-    host
+    let _metadata = host
       .start_rpc_server(Some(super::CliOpts {
         rpc: Some(ServerOptions {
           address: Some(Ipv4Addr::from_str("127.0.0.1").unwrap()),
