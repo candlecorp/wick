@@ -1,72 +1,72 @@
 
-"A definition for an individual Vino schematic"
+"A definition for an individual Vino schematic."
 type SchematicManifest {
-  "Schematic name"
+  "Schematic name."
   name: string @required,
 
-  "A list of providers and component collections"
+  "A list of providers and component collections."
   providers: [ProviderDefinition],
 
-  "A map from component reference to its target"
+  "A map from component reference to its target."
   instances: {string: ComponentDefinition},
 
-  "A list of connections from component to component"
+  "A list of connections from component to component."
   connections: [ConnectionDefinition],
 
-  "A map of constraints and values that limit where this schematic can run"
+  "A map of constraints and values that limit where this schematic can run."
   constraints: {string: string},
 }
 
-"A provider definition"
+"A provider definition."
 type ProviderDefinition {
-  "The namespace to reference the provider's components on"
+  "The namespace to reference the provider's components on."
   namespace: string,
 
-  "The kind/type of the provider"
+  "The kind/type of the provider."
   kind: ProviderKind,
 
-  "The reference/location of the provider"
+  "The reference/location of the provider."
   reference: string,
 
-  "Data or configuration to pass to the provider initialization"
+  "Data or configuration to pass to the provider initialization."
   data: {string: string},
 }
 
-"Kind of provider,"
+"Kind of provider,."
 enum ProviderKind {
-  "Native providers included at compile-time in a Vino host"
+  "Native providers included at compile-time in a Vino host."
   Native = 0,
-  "The URL for a separately managed GRPC endpoint"
+  "The URL for a separately managed GRPC endpoint."
   GrpcUrl = 1,
-  "A WaPC WebAssembly provider"
+  "A WaPC WebAssembly provider."
   WaPC = 2,
 }
 
-"A single component definition"
+"A single component definition."
 type ComponentDefinition {
-  "The ID of the component (i.e. the alias, key, or namespace)"
+  "The ID of the component (i.e. the alias, key, or namespace)."
   id: string @required,
 
-  "Data to associate with the reference"
+  "Data to associate with the reference."
   config: {string:string}?,
 }
 
-"A connection between components"
+"A connection between components. This can be specified in short-form syntax (where applicable). See <a href='https://docs.vino.dev/docs/configuration/short-form-syntax/'>docs.vino.dev</a> for more information."
 type ConnectionDefinition {
-  "The originating component (upstream)"
+  "The originating component from upstream."
   from: ConnectionTargetDefinition?,
 
-  "The destination component (downstream)"
+  "The destination component (downstream)."
   to: ConnectionTargetDefinition?,
 
-  "The default value to provide in the event of an upstream Error or Exception"
+  "The default value to provide in the event of an upstream Error or Exception."
   default: string?
 }
 
-"A connection target"
+"A connection target e.g. a port on a reference. This can be specified in short-form syntax (where applicable).  See <a href='https://docs.vino.dev/docs/configuration/short-form-syntax/'>docs.vino.dev</a> for more information."
 type ConnectionTargetDefinition {
-  "The instance name of the referenced component"
+  "The instance name of the referenced component."
   instance: string @required,
-  "The component's port"
+  "The component's port."
   port: string @required,
 }

@@ -1,0 +1,13 @@
+<div class=manifest>
+{{~#each definitions~}}
+  {{~#switch kind~}}
+    {{~#case "ImportDefinition"}}
+      {{~#import from.value}}{{~> module ~}}{{~/import~}}
+    {{~/case~}}
+    {{~#default~}}
+    ## unhandled
+    panic!()
+    {{~/default~}}
+  {{~/switch~}}
+{{~/each~}}
+</div>

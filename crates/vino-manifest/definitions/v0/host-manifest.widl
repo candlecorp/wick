@@ -11,44 +11,4 @@ type HostManifest {
   "The default schematic to execute if none is provided"
   default_schematic: string = "default",
 
-  "The NATS configuration to connect hosts"
-  nats: NatsConfiguration,
-}
-
-"The NATS configuration"
-type NatsConfiguration {
-  "The host for the RPC layer"
-  rpc_host: string = "0.0.0.0"
-
-  "The port for the RPC layer"
-  rpc_port: string = "4222"
-
-  "The NATS credsfile for the RPC layer"
-  rpc_credsfile: string?,
-
-  "The JSON web token to use for authentication to the RPC layer"
-  rpc_jwt: string?,
-
-  "The seed to use for authentication to the RPC layer"
-  rpc_seed: string?,
-
-  "The host for the RPC layer"
-  control_host: string = "0.0.0.0",
-
-  "The port for the RPC layer"
-  control_port: string = "4222",
-
-  "The NATS credsfile for the RPC layer"
-  control_credsfile: string?,
-
-  "The JSON web token to use for authentication to the RPC layer"
-  control_jwt: string?,
-  "The seed to use for authentication to the RPC layer"
-  control_seed: string?,
-
-  "Enable :latest tags for OCI references"
-  allow_oci_latest: bool,
-
-  "A list of insecure registries to allow"
-  allowed_insecure: [string],
 }

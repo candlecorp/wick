@@ -257,13 +257,6 @@ impl ConnectionTargetDefinition {
     }
   }
 
-  pub fn get_key(&self) -> String {
-    if self.target.is_none() {
-      panic!("Attempted to take key of port with no target");
-    }
-    self.to_string()
-  }
-
   pub fn none() -> Self {
     Self { target: None }
   }
