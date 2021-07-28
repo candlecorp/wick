@@ -40,7 +40,7 @@ impl TryFrom<&WapcModule> for WasmHost {
     let time = Instant::now();
     #[cfg(feature = "wasmtime")]
     let engine = {
-      let engine = wasmtime_provider::WasmtimeEngineProvider::new(&buf, None);
+      let engine = wasmtime_provider::WasmtimeEngineProvider::new(&module.bytes, None);
       trace!("Wasmtime loaded in {} μs", time.elapsed().as_micros());
       engine
     };

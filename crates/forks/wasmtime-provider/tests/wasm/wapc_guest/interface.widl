@@ -1,0 +1,6 @@
+namespace "example:interface"
+
+interface {
+  echo{input:string}: string
+}
+

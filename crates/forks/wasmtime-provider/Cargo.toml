@@ -1,0 +1,31 @@
+[package]
+name = "wasmtime-provider"
+version = "0.0.3"
+authors = ["waPC Team"]
+edition = "2018"
+exclude = [".assets"]
+description = "A wasmtime engine provider for the waPC host"
+license = "Apache-2.0"
+homepage = "https://github.com/wapc/wasmtime-provider"
+documentation = "https://docs.rs/wasmtime-provider"
+readme = "README.md"
+keywords = ["sdk", "wapc", "webassembly", "wasm", "wasmtime"]
+categories = ["wasm", "api-bindings"]
+
+
+[dependencies]
+wapc = { path = "../wapc-rust" }
+log = "0.4.11"
+serde = { version = "1.0.114", features = ["derive"] }
+serde_json = "1.0.56"
+wasmtime = { version = "0.28.0" }
+wasmtime-wasi = "0.28.0"
+anyhow = "1.0.31"
+wasi-common = "0.28.0"
+wasi-cap-std-sync = "0.28.0"
+cap-std = "0.13"
+parking_lot = "0.11.1"
+
+[dev-dependencies]
+wascc-codec = "0.9.1"
+env_logger = "0.8.3"

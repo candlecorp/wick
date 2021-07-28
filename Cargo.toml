@@ -43,6 +43,7 @@ members = [
   "crates/forks/tokio-test-bin",
   "crates/forks/wapc-rust",
   "crates/forks/wasm3-provider",
+  "crates/forks/wasmtime-provider",
   "crates/interfaces/interfaces-collection",
   "crates/interfaces/interfaces-authentication",
   "crates/integration/test-interfaces-collection",

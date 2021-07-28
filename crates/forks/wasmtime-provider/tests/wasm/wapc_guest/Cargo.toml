@@ -1,0 +1,20 @@
+[package]
+name = "simple"
+version = "0.1.0"
+edition = "2018"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+wapc-guest = "0.4.0"
+serde = { version = "1.0.123" , features = ["derive"] }
+serde_json = "1.0.59"
+rmp-serde = "0.15.4"
+log = { version="0.4.13", features =["std","serde"]}
+lazy_static = "1.4.0"
+
+[profile.release]
+# Optimize for small code size
+opt-level = "s"
+lto = true

@@ -14,3 +14,4 @@ exclude = [".assets"]
 
 [dependencies]
 log = "0.4.11"
+parking_lot = "0.11.1"

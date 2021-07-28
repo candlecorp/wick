@@ -13,8 +13,6 @@ ROOT := $(shell pwd)
 # Get list of projects that have makefiles
 MAKEFILE_PROJECTS=$(wildcard ${CRATES_DIR}/*/Makefile) $(wildcard ${CRATES_DIR}/integration/Makefile) $(wildcard ${CRATES_DIR}/interfaces/Makefile)
 
-DOCKERFILES=$(wildcard docker/*/Dockerfile)
-
 TEST_WASM_DIR=$(CRATES_DIR)/integration/test-wapc-component
 TEST_WASM=$(TEST_WASM_DIR)/build/test_component_s.wasm
 
@@ -70,14 +68,6 @@ update-lint:
 	@[[ -z `git status -s` ]]
 	@echo Good to go
 	npm run update-lint
-
-TAG:=registry.lan:5000/vino
-
-build-docker: $(DOCKERFILES)
-	for file in $(DOCKERFILES); do \
-		docker build $$(dirname $$file) -t $(TAG)/$$(basename $$(dirname $$file)); \
-		docker push $(TAG)/$$(basename $$(dirname $$file)); \
-	done
 
 build-cross-debug:
 	rm -rf ./build; \

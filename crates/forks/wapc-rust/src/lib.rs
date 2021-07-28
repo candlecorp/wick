@@ -200,6 +200,8 @@ pub mod errors;
 /// A result type for errors that occur within the wapc library
 pub type Result<T> = std::result::Result<T, errors::Error>;
 
+type HostType = Arc<Mutex<ModuleState>>;
+
 use std::cell::RefCell;
 use std::error::Error;
 use std::sync::atomic::{
@@ -210,6 +212,8 @@ use std::sync::{
   Arc,
   RwLock,
 };
+
+use parking_lot::Mutex;
 
 static GLOBAL_MODULE_COUNT: AtomicU64 = AtomicU64::new(1);
 
@@ -340,7 +344,7 @@ impl ModuleState {
     };
     let result = {
       match self.host_callback {
-        Some(ref f) => f(id, binding, namespace, operation, &payload),
+        Some(ref f) => f(id, binding, namespace, operation, payload),
         None => Err("Missing host callback function!".into()),
       }
     };
@@ -372,10 +376,7 @@ impl ModuleState {
 pub trait WebAssemblyEngineProvider {
   /// Tell the engine provider that it can do whatever processing it needs to do for
   /// initialization and give it access to the module state
-  fn init(
-    &mut self,
-    host: Arc<RefCell<ModuleState>>,
-  ) -> std::result::Result<(), Box<dyn std::error::Error>>;
+  fn init(&mut self, host: HostType) -> std::result::Result<(), Box<dyn std::error::Error>>;
   /// Trigger the waPC function call. Engine provider is responsible for execution and using the appropriate methods
   /// on the module host. When this function is complete, the guest response and optionally the guest
   /// error must be set to represent the high-level call result
@@ -453,7 +454,7 @@ impl Invocation {
 /// operation name, other than that the operation name is a UTF-8 encoded string.
 pub struct WapcHost {
   engine: RefCell<Box<dyn WebAssemblyEngineProvider>>,
-  state: Arc<RefCell<ModuleState>>,
+  state: HostType,
 }
 
 impl std::fmt::Debug for WapcHost {
@@ -479,8 +480,8 @@ impl WapcHost {
       + Send,
   ) -> Result<Self> {
     let id = GLOBAL_MODULE_COUNT.fetch_add(1, Ordering::SeqCst);
-    //let state = Rc::new(RefCell::new(ModuleState::new(id, Box::new(host_callback))));
-    let state = Arc::new(RefCell::new(ModuleState::new(Box::new(host_callback), id)));
+    // let state = Rc::new(RefCell::new(ModuleState::new(id, Box::new(host_callback))));
+    let state = Arc::new(Mutex::new(ModuleState::new(Box::new(host_callback), id)));
 
     let mh = WapcHost {
       engine: RefCell::new(engine),
@@ -505,13 +506,10 @@ impl WapcHost {
       + Sync
       + Send,
   ) {
-    self
-      .state
-      .borrow_mut()
-      .set_host_callback(Box::new(host_callback));
+    self.state.lock().set_host_callback(Box::new(host_callback));
   }
 
-  fn initialize(&self, state: Arc<RefCell<ModuleState>>) -> Result<()> {
+  fn initialize(&self, state: HostType) -> Result<()> {
     match self.engine.borrow_mut().init(state) {
       Ok(_) => Ok(()),
       Err(e) => Err(crate::errors::new(
@@ -527,7 +525,7 @@ impl WapcHost {
   /// has instantiated multiple `WapcHost`s, then the single static host callback function
   /// will contain this value to allow disambiguation of modules
   pub fn id(&self) -> u64 {
-    self.state.borrow().id
+    self.state.lock().id
   }
 
   /// Invokes the `__guest_call` function within the guest module as per the waPC specification.
@@ -541,11 +539,11 @@ impl WapcHost {
     let inv = Invocation::new(op, payload.to_vec());
 
     {
-      *self.state.borrow_mut().guest_response.write().unwrap() = None;
-      *self.state.borrow_mut().guest_request.write().unwrap() = Some((inv).clone());
-      *self.state.borrow_mut().guest_error.write().unwrap() = None;
-      *self.state.borrow_mut().host_response.write().unwrap() = None;
-      *self.state.borrow_mut().host_error.write().unwrap() = None;
+      *self.state.lock().guest_response.write().unwrap() = None;
+      *self.state.lock().guest_request.write().unwrap() = Some((inv).clone());
+      *self.state.lock().guest_error.write().unwrap() = None;
+      *self.state.lock().host_response.write().unwrap() = None;
+      *self.state.lock().host_error.write().unwrap() = None;
     }
 
     let callresult = match self
@@ -562,7 +560,7 @@ impl WapcHost {
       }
     };
 
-    let state = self.state.borrow();
+    let state = self.state.lock();
 
     if callresult == 0 {
       // invocation failed

@@ -80,6 +80,7 @@ use std::cell::RefCell;
 use std::error::Error;
 use std::sync::Arc;
 
+use parking_lot::Mutex;
 use wapc::{
   ModuleState,
   WapcFunctions,
@@ -99,6 +100,8 @@ extern crate log;
 mod callbacks;
 
 const WASI_UNSTABLE: &str = "wasi_unstable";
+
+type HostType = Arc<Mutex<ModuleState>>;
 
 #[must_use]
 pub struct Wasm3EngineProvider {
@@ -121,7 +124,7 @@ struct InnerProvider {
 }
 
 impl WebAssemblyEngineProvider for Wasm3EngineProvider {
-  fn init(&mut self, host: Arc<RefCell<ModuleState>>) -> Result<(), Box<dyn Error>> {
+  fn init(&mut self, host: HostType) -> Result<(), Box<dyn Error>> {
     info!("Initializing Wasm3 Engine");
     let env = Environment::new()?;
     let rt = env.create_runtime(1024 * 120)?;
