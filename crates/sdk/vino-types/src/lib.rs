@@ -74,18 +74,5 @@
 // Add exceptions here
 #![allow(unsafe_code, missing_docs)] //TODO
 
-#[cfg(feature = "wasm")]
-/// Traits and functions for wasm providers
-pub mod wasm;
-
-#[cfg(feature = "native")]
-/// Traits and functions for native providers
-pub mod native;
-
-#[cfg(feature = "signatures")]
 /// Signatures of Vino types
 pub mod signatures;
-
-pub mod port_sender;
-
-pub use vino_codec as codec;

@@ -174,6 +174,17 @@ pub use colored;
 #[macro_export]
 /// Prints aggressively colorized output to the terminal. Useful for rapid debugging in a sea of
 /// terminal output.
+///
+/// ## Example
+///
+/// ```
+/// # use vino_macros::*;
+/// # fn main() {
+///
+/// let data = vec![1,2,3];
+/// highlight!("{:?}", data);
+/// # }
+/// ```
 macro_rules! highlight {
     ($($arg:tt)+) => (
       {
@@ -299,4 +310,42 @@ macro_rules! ok_or_bail {
       }
     }
   }};
+}
+
+#[macro_export]
+/// Create a **HashMap** from a list of key-value pairs
+///
+/// ## Example
+///
+/// ```
+/// # use vino_macros::*;
+/// # fn main() {
+///
+/// let mut map = transport_map!{
+///     "input1" => "Hello world",
+///     "other_input" => &64,
+/// };
+///
+/// let first_input: String = map.consume("input1").unwrap();
+/// let second_input: i8 = map.consume("other_input").unwrap();
+/// assert_eq!(first_input, "Hello world");
+/// assert_eq!(second_input, 64);
+/// # }
+/// ```
+macro_rules! transport_map {
+    (@single $($x:tt)*) => (());
+    (@count $($rest:expr),*) => (<[()]>::len(&[$(transport_map!(@single $rest)),*]));
+
+    ($($key:expr => $value:expr,)+) => { transport_map!($($key => $value),+) };
+    ($($key:expr => $value:expr),*) => {
+        {
+            let _cap = transport_map!(@count $($key),*);
+            let mut _map = ::std::collections::HashMap::with_capacity(_cap);
+            $(
+                #[allow(clippy::str_to_string)]
+                let _ = _map.insert($key.to_string(), vino_transport::MessageTransport::success(&$value.to_owned()));
+            )*
+            vino_transport::TransportMap::with_map(_map)
+        }
+    };
 }
