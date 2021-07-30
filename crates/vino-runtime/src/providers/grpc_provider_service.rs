@@ -5,14 +5,11 @@ use rpc::invocation_service_client::InvocationServiceClient;
 use tokio::sync::mpsc::unbounded_channel;
 use tonic::transport::Channel;
 use tracing_actix::ActorInstrument;
+use vino_rpc::rpc;
 use vino_rpc::rpc::stats_request::Format;
 use vino_rpc::rpc::{
   ListRequest,
   StatsRequest,
-};
-use vino_rpc::{
-  rpc,
-  HostedType,
 };
 
 use super::{
@@ -20,10 +17,13 @@ use super::{
   ProviderResponse,
 };
 use crate::dev::prelude::*;
-type Result<T> = std::result::Result<T, ComponentError>;
+type Result<T> = std::result::Result<T, ProviderError>;
+
+static PREFIX: &str = "PRV:GRPC";
 
 #[derive(Default, Debug)]
 pub(crate) struct GrpcProviderService {
+  prefix: String,
   namespace: String,
   state: Option<State>,
   seed: String,
@@ -39,7 +39,7 @@ impl Actor for GrpcProviderService {
   type Context = Context<Self>;
 
   fn started(&mut self, _ctx: &mut Self::Context) {
-    debug!("GRPC Provider started");
+    trace!("{}:Service:Start", PREFIX);
   }
 
   fn stopped(&mut self, _ctx: &mut Self::Context) {}
@@ -58,7 +58,7 @@ impl Handler<Initialize> for GrpcProviderService {
 
   #[tracing::instrument(level = tracing::Level::DEBUG, name = "GRPC Init", skip(self, msg, ctx))]
   fn handle(&mut self, msg: Initialize, ctx: &mut Self::Context) -> Self::Result {
-    debug!("GRPC Provider initializing");
+    trace!("{}:Init:{}", PREFIX, msg.namespace);
 
     self.namespace = msg.namespace;
     self.seed = msg.signing_seed;
@@ -79,7 +79,7 @@ impl Handler<Initialize> for GrpcProviderService {
             .await??;
           Ok((client, metadata))
         }
-        Err(e) => Err(ComponentError::GrpcUrlProviderError(format!(
+        Err(e) => Err(ProviderError::GrpcUrlProviderError(format!(
           "Could not connect client: {}",
           e
         ))),
@@ -117,12 +117,9 @@ impl Handler<InitializeComponents> for GrpcProviderService {
 
   #[tracing::instrument(level = tracing::Level::DEBUG, name = "GRPC Init components", skip(self, msg, _ctx))]
   fn handle(&mut self, msg: InitializeComponents, _ctx: &mut Self::Context) -> Self::Result {
-    trace!(
-      "Initializing components for GRPC Url Provider '{}'",
-      msg.namespace
-    );
+    trace!("{}:InitComponents:[NS:{}]", PREFIX, self.namespace);
+
     let mut client = msg.client;
-    debug!("{:?}", client);
     let namespace = msg.namespace;
 
     let task = async move {
@@ -182,7 +179,7 @@ impl Handler<ProviderRequest> for GrpcProviderService {
           let mut hosted_types = vec![];
 
           for item in list.components {
-            hosted_types.push(HostedType::Component(vino_rpc::ComponentSignature {
+            hosted_types.push(HostedType::Component(ComponentSignature {
               name: item.name.clone(),
               inputs: item.inputs.into_iter().map(From::from).collect(),
               outputs: item.outputs.into_iter().map(From::from).collect(),
@@ -215,19 +212,21 @@ impl Handler<Invocation> for GrpcProviderService {
 
   #[tracing::instrument(level = tracing::Level::DEBUG, name = "GRPC Invocation", skip(self, msg, _ctx))]
   fn handle(&mut self, msg: Invocation, _ctx: &mut Self::Context) -> Self::Result {
+    trace!(
+      "{}:[NS:{}]:Invoke: {} to {}",
+      PREFIX,
+      self.namespace,
+      msg.origin.url(),
+      msg.target.url()
+    );
+    let ns = self.namespace.clone();
+
     let state = self.state.as_ref().unwrap();
     let mut client = state.client.clone();
     let tx_id = msg.tx_id.clone();
     let tx_id2 = msg.tx_id.clone();
-    let component =
-      actix_ensure_ok!(msg.target.clone().into_component().map_err(
-        |_e| InvocationResponse::error(
-          tx_id.clone(),
-          "GRPC provider sent invalid entity".to_owned()
-        )
-      ));
+    let url = msg.target.url();
 
-    let inv_id = msg.id.clone();
     let invocation: rpc::Invocation =
       actix_ensure_ok!(msg.try_into().map_err(|_e| InvocationResponse::error(
         tx_id.clone(),
@@ -235,20 +234,18 @@ impl Handler<Invocation> for GrpcProviderService {
       )));
 
     let request = async move {
-      let invocation_id = inv_id.clone();
       let mut stream = client.invoke(invocation).await?.into_inner();
       let (tx, rx) = unbounded_channel();
       actix::spawn(async move {
         loop {
-          trace!("Provider component {} waiting for output", component);
+          trace!("{}:[NS:{}]:{}:WAIT", PREFIX, ns, url);
           let next = stream.message().await;
           if let Err(e) = next {
             let msg = format!("Error during GRPC stream: {}", e);
             error!("{}", msg);
-            match tx.send(OutputPacket {
+            match tx.send(InvocationTransport {
               port: crate::COMPONENT_ERROR.to_owned(),
-              payload: Packet::V0(packet::v0::Payload::Error(msg)),
-              invocation_id: invocation_id.clone(),
+              payload: MessageTransport::Error(msg),
             }) {
               Ok(_) => {
                 trace!("Sent error to upstream, closing connection.");
@@ -268,10 +265,9 @@ impl Handler<Invocation> for GrpcProviderService {
           if payload.is_none() {
             let msg = "Received response but no payload";
             error!("{}", msg);
-            match tx.send(OutputPacket {
+            match tx.send(InvocationTransport {
               port: crate::COMPONENT_ERROR.to_owned(),
-              payload: Packet::V0(packet::v0::Payload::Error(msg.to_owned())),
-              invocation_id: invocation_id.clone(),
+              payload: MessageTransport::Error(msg.to_owned()),
             }) {
               Ok(_) => {
                 trace!("Sent error to upstream");
@@ -286,19 +282,14 @@ impl Handler<Invocation> for GrpcProviderService {
             }
             continue;
           }
-          let port_name = output.port;
-          trace!(
-            "Native actor {} got output on port [{}]",
-            component,
-            port_name
-          );
-          match tx.send(OutputPacket {
-            port: port_name.clone(),
+          trace!("{}:[NS:{}]:{}:PORT:{}:RECV", PREFIX, ns, url, output.port);
+
+          match tx.send(InvocationTransport {
+            port: output.port.clone(),
             payload: payload.unwrap().into(),
-            invocation_id: invocation_id.clone(),
           }) {
             Ok(_) => {
-              trace!("Sent output to port '{}' ", port_name);
+              trace!("{}:[NS:{}]:{}:PORT:{}:SENT", PREFIX, ns, url, output.port);
             }
             Err(e) => {
               error!("Error sending output on channel {}", e.to_string());
@@ -328,17 +319,13 @@ mod test {
 
   use actix::clock::sleep;
   use test_vino_provider::Provider;
-  use vino_codec::messagepack::serialize;
   use vino_rpc::{
     bind_new_socket,
     make_rpc_server,
   };
 
   use super::*;
-  use crate::test::prelude::{
-    assert_eq,
-    *,
-  };
+  use crate::test::prelude::assert_eq;
   type Result<T> = super::Result<T>;
 
   #[test_env_log::test(actix_rt::test)]
@@ -365,9 +352,9 @@ mod test {
         .send(Invocation {
           origin: Entity::test("grpc"),
           target: Entity::component("test-component"),
-          msg: MessageTransport::MultiBytes(hashmap! {
-            "input".to_owned()=>serialize(user_data)?
-          }),
+          msg: transport_map! {
+            "input"=>user_data
+          },
           id: get_uuid(),
           tx_id: get_uuid(),
           network_id: get_uuid(),
@@ -382,7 +369,7 @@ mod test {
             match res {
               Ok(response)=>{
                 let (_, mut rx) = response.to_stream()?;
-                let next: OutputPacket = rx.next().await.unwrap();
+                let next: InvocationTransport = rx.next().await.unwrap();
                 let payload: String = next.payload.try_into()?;
                 assert_eq!(payload, format!("TEST: {}", user_data));
               },

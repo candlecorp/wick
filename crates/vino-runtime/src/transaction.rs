@@ -10,6 +10,7 @@ use tokio::sync::mpsc::{
   UnboundedReceiver,
   UnboundedSender,
 };
+use vino_transport::message_transport::TransportMap;
 
 use crate::dev::prelude::*;
 use crate::schematic_service::handlers::component_payload::ComponentPayload;
@@ -65,7 +66,7 @@ impl TransactionExecutor {
         inbound_tx.send(TransactionUpdate::Transition(ComponentPayload {
           tx_id: tx_id.clone(),
           instance: instance.clone(),
-          payload_map: HashMap::new(),
+          payload_map: TransportMap::new(),
         }))
       );
     }
@@ -105,7 +106,11 @@ impl TransactionExecutor {
               outbound_rx.close();
               ok_or_log!(inbound_tx.send(TransactionUpdate::Done(tx_id.clone())));
             } else if transaction.is_target_ready(target) {
-              trace!("{}:Transitioning to {}", log_prefix, target);
+              trace!(
+                "{}:Transitioning to instance '{}'",
+                log_prefix,
+                target.get_instance().unwrap_or("<No Instance>")
+              );
 
               let map = transaction.take_inputs(target)?;
               ok_or_log!(
@@ -209,10 +214,7 @@ impl Transaction {
       .map(|conn| conn.to.clone())
       .collect()
   }
-  fn take_inputs(
-    &mut self,
-    target: &ConnectionTargetDefinition,
-  ) -> Result<HashMap<String, MessageTransport>> {
+  fn take_inputs(&mut self, target: &ConnectionTargetDefinition) -> Result<TransportMap> {
     let ports = self.get_connected_ports(target.get_instance()?);
 
     let mut map = HashMap::new();
@@ -220,7 +222,7 @@ impl Transaction {
       let message = self.take_from_port(&port).ok_or(InternalError(7001))?;
       map.insert(port.get_port_owned()?, message);
     }
-    Ok(map)
+    Ok(TransportMap::with_map(map))
   }
   fn is_target_ready(&self, port: &ConnectionTargetDefinition) -> bool {
     let port = ok_or_bail!(port.get_instance(), false);
@@ -321,13 +323,13 @@ mod tests {
     let from = ConnectionTargetDefinition::new("REF_ID_LOGGER1", "vino::v0::log");
     let to = ConnectionTargetDefinition::new("REF_ID_LOGGER2", "vino::v0::log");
 
-    trace!("pushing to port");
+    println!("pushing to port");
     transaction.receive(
       ConnectionDefinition::new(from.clone(), to.clone()),
       Packet::V0(Payload::MessagePack(vec![])).into(),
     );
     assert!(transaction.is_port_ready(&to));
-    trace!("taking from port");
+    println!("taking from port");
     let output = transaction.take_from_port(&to);
     assert_eq!(
       output,

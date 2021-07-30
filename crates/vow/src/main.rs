@@ -3,7 +3,6 @@
 // Do not change anything between the START_LINTS and END_LINTS line.
 // This is automatically generated. Add exceptions after this section.
 #![deny(
-  clippy::expect_used,
   clippy::explicit_deref_methods,
   clippy::option_if_let_else,
   clippy::await_holding_lock,
@@ -70,7 +69,7 @@
 )]
 // !!END_LINTS
 // Add exceptions here
-#![allow(missing_docs)] // TODO
+#![allow(missing_docs, clippy::expect_used)] // TODO
 
 use structopt::clap::AppSettings;
 use structopt::StructOpt;

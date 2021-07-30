@@ -1,29 +1,35 @@
-use std::collections::HashMap;
+use std::collections::VecDeque;
 use std::convert::TryFrom;
+use std::sync::Arc;
 use std::time::Instant;
 
-use vino_provider::ComponentSignature;
-use vino_rpc::port::{
-  PortStream,
-  Sender,
+use parking_lot::Mutex;
+use tokio::sync::mpsc::unbounded_channel;
+use vino_component::Packet;
+use vino_transport::{
+  InvocationTransport,
+  MessageTransportStream,
 };
+use vino_types::signatures::ComponentSignature;
 use vino_wascap::{
   Claims,
   ComponentClaims,
 };
 use wapc::WapcHost;
 
-use crate::output_sender::OutputSender;
 use crate::wapc_module::WapcModule;
 use crate::{
   Error,
   Result,
 };
 
+type PortBuffer = VecDeque<(String, Vec<u8>)>;
+
 #[derive(Debug)]
 pub struct WasmHost {
   host: WapcHost,
   claims: Claims<ComponentClaims>,
+  buffer: Arc<Mutex<PortBuffer>>,
 }
 
 impl TryFrom<&WapcModule> for WasmHost {
@@ -41,74 +47,56 @@ impl TryFrom<&WapcModule> for WasmHost {
     #[cfg(feature = "wasmtime")]
     let engine = {
       let engine = wasmtime_provider::WasmtimeEngineProvider::new(&module.bytes, None);
-      trace!("Wasmtime loaded in {} μs", time.elapsed().as_micros());
+      trace!(
+        "PRV:WASM:Wasmtime loaded in {} μs",
+        time.elapsed().as_micros()
+      );
       engine
     };
     #[cfg(feature = "wasm3")]
     let engine = {
       let engine = wasm3_provider::Wasm3EngineProvider::new(&module.bytes);
-      trace!("wasm3 loaded in {} μs", time.elapsed().as_micros());
+      trace!("PRV:WASM:wasm3 loaded in {} μs", time.elapsed().as_micros());
       engine
     };
 
     let engine = Box::new(engine);
+    let buffer = Arc::new(Mutex::new(VecDeque::new()));
+    let inner = buffer.clone();
 
-    let host = WapcHost::new(engine, move |_, _, _, _, _| Ok(vec![]))?;
+    let host = WapcHost::new(engine, move |_id, _inv_id, port, _op, payload| {
+      trace!("PRV:WASM:WAPC_CALLBACK:{:?}", payload);
+      inner.lock().push_back((port.to_owned(), payload.to_vec()));
+      Ok(vec![])
+    })?;
     Ok(Self {
       claims: module.claims(),
       host,
+      buffer,
     })
   }
 }
 
 impl WasmHost {
-  pub fn call(&mut self, component_name: &str, payload: &[u8]) -> Result<PortStream> {
-    let claims = &self.claims;
-    let components = &claims.metadata.as_ref().unwrap().interface.components;
-
-    let component = components
-      .iter()
-      .find(|c| c.name == component_name)
-      .ok_or_else(|| {
-        Error::ComponentNotFound(
-          component_name.to_owned(),
-          components.iter().map(|c| c.name.clone()).collect(),
-        )
-      })?;
-
-    let senders: HashMap<String, OutputSender> = component
-      .outputs
-      .iter()
-      .map(|port| (port.name.clone(), OutputSender::new(port.name.clone())))
-      .collect();
-
-    let ports = senders.iter().map(|(_, o)| o.port.clone()).collect();
-    let receiver = PortStream::new(ports);
-
-    self
-      .host
-      .set_callback(move |_id, inv_id, port, _op, payload| {
-        debug!("Payload WaPC host callback: {:?}", payload);
-
-        match senders.get(port) {
-          Some(sender) => {
-            sender.send_message(payload.into());
-          }
-          None => {
-            error!(
-              "Could not get port sender for {} on transaction {}",
-              port, inv_id
-            );
-          }
-        }
-        Ok(vec![])
-      });
-
-    trace!("Calling component {}", component_name);
+  pub fn call(&mut self, component_name: &str, payload: &[u8]) -> Result<MessageTransportStream> {
+    {
+      self.buffer.lock().clear();
+    }
+    trace!("PRV:WASM:INVOKE:{}:START", component_name);
     let _result = self.host.call(component_name, payload)?;
-    debug!("Invocation response: {:?}", _result);
+    trace!("PRV:WASM:INVOKE:{}:FINISH", component_name);
+    let (tx, rx) = unbounded_channel();
+    let mut locked = self.buffer.lock();
+    while let Some((port, payload)) = locked.pop_front() {
+      let packet: Packet = (&payload).into();
+      let transport = InvocationTransport {
+        port,
+        payload: packet.into(),
+      };
+      tx.send(transport).map_err(|_| Error::SendError)?;
+    }
 
-    Ok(receiver)
+    Ok(MessageTransportStream::new(rx))
   }
 
   pub fn get_components(&self) -> &Vec<ComponentSignature> {

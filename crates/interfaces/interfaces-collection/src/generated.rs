@@ -3,29 +3,27 @@
 ***********************************************/
 
 pub mod add_item {
-
-  use std::collections::HashMap;
-  use std::sync::{
-    Arc,
-    Mutex,
-  };
-
   use serde::{
     Deserialize,
     Serialize,
   };
-  use vino_codec::messagepack::deserialize;
-  use vino_codec::Error;
-  pub use vino_rpc::port::Sender;
-  use vino_rpc::port::{
-    Port,
-    PortStream,
-  };
+  pub use vino_provider::native::prelude::*;
 
-  #[derive(Debug, PartialEq, Deserialize, Serialize, Default, Clone)]
+  pub fn populate_inputs(mut payload: TransportMap) -> Result<Inputs, TransportError> {
+    Ok(Inputs {
+      document_id: payload.consume("document_id")?,
+      collection_id: payload.consume("collection_id")?,
+      document: payload.consume("document")?,
+    })
+  }
+
+  #[derive(Debug, Deserialize, Serialize, Default, Clone)]
   pub struct Inputs {
+    #[serde(rename = "document_id")]
     pub document_id: String,
+    #[serde(rename = "collection_id")]
     pub collection_id: String,
+    #[serde(rename = "document")]
     pub document: String,
   }
 
@@ -38,41 +36,9 @@ pub mod add_item {
     ]
   }
 
-  #[derive(Debug, PartialEq, Deserialize, Serialize, Default, Clone)]
-  pub struct InputEncoded {
-    #[serde(rename = "document_id")]
-    pub document_id: Vec<u8>,
-    #[serde(rename = "collection_id")]
-    pub collection_id: Vec<u8>,
-    #[serde(rename = "document")]
-    pub document: Vec<u8>,
-  }
-
-  pub fn deserialize_inputs(
-    map: &HashMap<String, Vec<u8>>,
-  ) -> Result<Inputs, Box<dyn std::error::Error + Send + Sync>> {
-    Ok(Inputs {
-      document_id: deserialize(
-        map
-          .get("document_id")
-          .ok_or_else(|| Error::MissingInput("document_id".to_owned()))?,
-      )?,
-      collection_id: deserialize(
-        map
-          .get("collection_id")
-          .ok_or_else(|| Error::MissingInput("collection_id".to_owned()))?,
-      )?,
-      document: deserialize(
-        map
-          .get("document")
-          .ok_or_else(|| Error::MissingInput("document".to_owned()))?,
-      )?,
-    })
-  }
-
-  #[derive(Default, Debug)]
+  #[derive(Debug, Default)]
   pub struct Outputs {
-    pub document_id: DocumentIdSender,
+    pub document_id: DocumentIdPortSender,
   }
 
   #[must_use]
@@ -81,54 +47,56 @@ pub mod add_item {
   }
 
   #[derive(Debug)]
-  pub struct DocumentIdSender {
-    port: Arc<Mutex<Port>>,
+  pub struct DocumentIdPortSender {
+    port: Port,
   }
-  impl Default for DocumentIdSender {
+
+  impl Default for DocumentIdPortSender {
     fn default() -> Self {
       Self {
-        port: Arc::new(Mutex::new(Port::new("document_id".into()))),
+        port: Port::new("document_id".into()),
       }
     }
   }
-  impl Sender for DocumentIdSender {
+  impl PortSender for DocumentIdPortSender {
     type PayloadType = String;
 
-    fn get_port(&self) -> Arc<Mutex<Port>> {
-      self.port.clone()
+    fn get_port(&self) -> PacketSender {
+      self.port.channel.clone().unwrap()
+    }
+
+    fn get_port_name(&self) -> String {
+      self.port.name.clone()
     }
   }
 
-  pub fn get_outputs() -> (Outputs, PortStream) {
-    let outputs = Outputs::default();
-    let ports = vec![outputs.document_id.port.clone()];
-    let stream = PortStream::new(ports);
+  #[must_use]
+  pub fn get_outputs() -> (Outputs, MessageTransportStream) {
+    let mut outputs = Outputs::default();
+    let mut ports = vec![&mut outputs.document_id.port];
+    let stream = PortStream::create(&mut ports);
     (outputs, stream)
   }
 }
 pub mod get_item {
-
-  use std::collections::HashMap;
-  use std::sync::{
-    Arc,
-    Mutex,
-  };
-
   use serde::{
     Deserialize,
     Serialize,
   };
-  use vino_codec::messagepack::deserialize;
-  use vino_codec::Error;
-  pub use vino_rpc::port::Sender;
-  use vino_rpc::port::{
-    Port,
-    PortStream,
-  };
+  pub use vino_provider::native::prelude::*;
 
-  #[derive(Debug, PartialEq, Deserialize, Serialize, Default, Clone)]
+  pub fn populate_inputs(mut payload: TransportMap) -> Result<Inputs, TransportError> {
+    Ok(Inputs {
+      collection_id: payload.consume("collection_id")?,
+      document_id: payload.consume("document_id")?,
+    })
+  }
+
+  #[derive(Debug, Deserialize, Serialize, Default, Clone)]
   pub struct Inputs {
+    #[serde(rename = "collection_id")]
     pub collection_id: String,
+    #[serde(rename = "document_id")]
     pub document_id: String,
   }
 
@@ -137,34 +105,9 @@ pub mod get_item {
     vec![("collection_id", "string"), ("document_id", "string")]
   }
 
-  #[derive(Debug, PartialEq, Deserialize, Serialize, Default, Clone)]
-  pub struct InputEncoded {
-    #[serde(rename = "collection_id")]
-    pub collection_id: Vec<u8>,
-    #[serde(rename = "document_id")]
-    pub document_id: Vec<u8>,
-  }
-
-  pub fn deserialize_inputs(
-    map: &HashMap<String, Vec<u8>>,
-  ) -> Result<Inputs, Box<dyn std::error::Error + Send + Sync>> {
-    Ok(Inputs {
-      collection_id: deserialize(
-        map
-          .get("collection_id")
-          .ok_or_else(|| Error::MissingInput("collection_id".to_owned()))?,
-      )?,
-      document_id: deserialize(
-        map
-          .get("document_id")
-          .ok_or_else(|| Error::MissingInput("document_id".to_owned()))?,
-      )?,
-    })
-  }
-
-  #[derive(Default, Debug)]
+  #[derive(Debug, Default)]
   pub struct Outputs {
-    pub document: DocumentSender,
+    pub document: DocumentPortSender,
   }
 
   #[must_use]
@@ -173,53 +116,53 @@ pub mod get_item {
   }
 
   #[derive(Debug)]
-  pub struct DocumentSender {
-    port: Arc<Mutex<Port>>,
+  pub struct DocumentPortSender {
+    port: Port,
   }
-  impl Default for DocumentSender {
+
+  impl Default for DocumentPortSender {
     fn default() -> Self {
       Self {
-        port: Arc::new(Mutex::new(Port::new("document".into()))),
+        port: Port::new("document".into()),
       }
     }
   }
-  impl Sender for DocumentSender {
+  impl PortSender for DocumentPortSender {
     type PayloadType = String;
 
-    fn get_port(&self) -> Arc<Mutex<Port>> {
-      self.port.clone()
+    fn get_port(&self) -> PacketSender {
+      self.port.channel.clone().unwrap()
+    }
+
+    fn get_port_name(&self) -> String {
+      self.port.name.clone()
     }
   }
 
-  pub fn get_outputs() -> (Outputs, PortStream) {
-    let outputs = Outputs::default();
-    let ports = vec![outputs.document.port.clone()];
-    let stream = PortStream::new(ports);
+  #[must_use]
+  pub fn get_outputs() -> (Outputs, MessageTransportStream) {
+    let mut outputs = Outputs::default();
+    let mut ports = vec![&mut outputs.document.port];
+    let stream = PortStream::create(&mut ports);
     (outputs, stream)
   }
 }
 pub mod list_items {
-
-  use std::collections::HashMap;
-  use std::sync::{
-    Arc,
-    Mutex,
-  };
-
   use serde::{
     Deserialize,
     Serialize,
   };
-  use vino_codec::messagepack::deserialize;
-  use vino_codec::Error;
-  pub use vino_rpc::port::Sender;
-  use vino_rpc::port::{
-    Port,
-    PortStream,
-  };
+  pub use vino_provider::native::prelude::*;
 
-  #[derive(Debug, PartialEq, Deserialize, Serialize, Default, Clone)]
+  pub fn populate_inputs(mut payload: TransportMap) -> Result<Inputs, TransportError> {
+    Ok(Inputs {
+      collection_id: payload.consume("collection_id")?,
+    })
+  }
+
+  #[derive(Debug, Deserialize, Serialize, Default, Clone)]
   pub struct Inputs {
+    #[serde(rename = "collection_id")]
     pub collection_id: String,
   }
 
@@ -228,27 +171,9 @@ pub mod list_items {
     vec![("collection_id", "string")]
   }
 
-  #[derive(Debug, PartialEq, Deserialize, Serialize, Default, Clone)]
-  pub struct InputEncoded {
-    #[serde(rename = "collection_id")]
-    pub collection_id: Vec<u8>,
-  }
-
-  pub fn deserialize_inputs(
-    map: &HashMap<String, Vec<u8>>,
-  ) -> Result<Inputs, Box<dyn std::error::Error + Send + Sync>> {
-    Ok(Inputs {
-      collection_id: deserialize(
-        map
-          .get("collection_id")
-          .ok_or_else(|| Error::MissingInput("collection_id".to_owned()))?,
-      )?,
-    })
-  }
-
-  #[derive(Default, Debug)]
+  #[derive(Debug, Default)]
   pub struct Outputs {
-    pub document_ids: DocumentIdsSender,
+    pub document_ids: DocumentIdsPortSender,
   }
 
   #[must_use]
@@ -257,54 +182,56 @@ pub mod list_items {
   }
 
   #[derive(Debug)]
-  pub struct DocumentIdsSender {
-    port: Arc<Mutex<Port>>,
+  pub struct DocumentIdsPortSender {
+    port: Port,
   }
-  impl Default for DocumentIdsSender {
+
+  impl Default for DocumentIdsPortSender {
     fn default() -> Self {
       Self {
-        port: Arc::new(Mutex::new(Port::new("document_ids".into()))),
+        port: Port::new("document_ids".into()),
       }
     }
   }
-  impl Sender for DocumentIdsSender {
+  impl PortSender for DocumentIdsPortSender {
     type PayloadType = Vec<String>;
 
-    fn get_port(&self) -> Arc<Mutex<Port>> {
-      self.port.clone()
+    fn get_port(&self) -> PacketSender {
+      self.port.channel.clone().unwrap()
+    }
+
+    fn get_port_name(&self) -> String {
+      self.port.name.clone()
     }
   }
 
-  pub fn get_outputs() -> (Outputs, PortStream) {
-    let outputs = Outputs::default();
-    let ports = vec![outputs.document_ids.port.clone()];
-    let stream = PortStream::new(ports);
+  #[must_use]
+  pub fn get_outputs() -> (Outputs, MessageTransportStream) {
+    let mut outputs = Outputs::default();
+    let mut ports = vec![&mut outputs.document_ids.port];
+    let stream = PortStream::create(&mut ports);
     (outputs, stream)
   }
 }
 pub mod rm_item {
-
-  use std::collections::HashMap;
-  use std::sync::{
-    Arc,
-    Mutex,
-  };
-
   use serde::{
     Deserialize,
     Serialize,
   };
-  use vino_codec::messagepack::deserialize;
-  use vino_codec::Error;
-  pub use vino_rpc::port::Sender;
-  use vino_rpc::port::{
-    Port,
-    PortStream,
-  };
+  pub use vino_provider::native::prelude::*;
 
-  #[derive(Debug, PartialEq, Deserialize, Serialize, Default, Clone)]
+  pub fn populate_inputs(mut payload: TransportMap) -> Result<Inputs, TransportError> {
+    Ok(Inputs {
+      collection_id: payload.consume("collection_id")?,
+      document_id: payload.consume("document_id")?,
+    })
+  }
+
+  #[derive(Debug, Deserialize, Serialize, Default, Clone)]
   pub struct Inputs {
+    #[serde(rename = "collection_id")]
     pub collection_id: String,
+    #[serde(rename = "document_id")]
     pub document_id: String,
   }
 
@@ -313,32 +240,7 @@ pub mod rm_item {
     vec![("collection_id", "string"), ("document_id", "string")]
   }
 
-  #[derive(Debug, PartialEq, Deserialize, Serialize, Default, Clone)]
-  pub struct InputEncoded {
-    #[serde(rename = "collection_id")]
-    pub collection_id: Vec<u8>,
-    #[serde(rename = "document_id")]
-    pub document_id: Vec<u8>,
-  }
-
-  pub fn deserialize_inputs(
-    map: &HashMap<String, Vec<u8>>,
-  ) -> Result<Inputs, Box<dyn std::error::Error + Send + Sync>> {
-    Ok(Inputs {
-      collection_id: deserialize(
-        map
-          .get("collection_id")
-          .ok_or_else(|| Error::MissingInput("collection_id".to_owned()))?,
-      )?,
-      document_id: deserialize(
-        map
-          .get("document_id")
-          .ok_or_else(|| Error::MissingInput("document_id".to_owned()))?,
-      )?,
-    })
-  }
-
-  #[derive(Default, Debug)]
+  #[derive(Debug, Default)]
   pub struct Outputs {}
 
   #[must_use]
@@ -346,10 +248,11 @@ pub mod rm_item {
     vec![]
   }
 
-  pub fn get_outputs() -> (Outputs, PortStream) {
-    let outputs = Outputs::default();
-    let ports = vec![];
-    let stream = PortStream::new(ports);
+  #[must_use]
+  pub fn get_outputs() -> (Outputs, MessageTransportStream) {
+    let mut outputs = Outputs::default();
+    let mut ports = vec![];
+    let stream = PortStream::create(&mut ports);
     (outputs, stream)
   }
 }

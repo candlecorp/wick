@@ -7,7 +7,6 @@ pub type TestResult<T> = Result<T, TestError>;
 #[macro_use]
 extern crate tracing;
 
-use std::collections::HashMap;
 use std::fs;
 
 use vino_manifest::{
@@ -76,9 +75,10 @@ pub async fn vinoc_invoke(
   port: &str,
   name: &str,
   data: Value,
-) -> Result<HashMap<String, JsonOutput>, TestError> {
+) -> Result<Vec<JsonOutput>, TestError> {
   debug!("Executing vinoc for schematic {}", name);
-  let vinoc_output = tokio_test_bin::get_test_bin("vinoc")
+  let mut bin = tokio_test_bin::get_test_bin("vinoc");
+  let proc = bin
     .env_clear()
     .env("VINO_LOG", "trace")
     .args([
@@ -89,20 +89,27 @@ pub async fn vinoc_invoke(
       port.to_string().as_str(),
       "--trace",
     ])
-    .stderr(Stdio::inherit())
-    .output()
-    .await?;
+    .stderr(Stdio::inherit());
+  println!("Command is {:?}", proc);
+  let vinoc_output = proc.output().await?;
+
   debug!(
     "vinoc STDERR is \n {}",
     String::from_utf8_lossy(&vinoc_output.stderr)
   );
 
-  let output = &String::from_utf8_lossy(&vinoc_output.stdout);
-  debug!("Result from vinoc is {}", output);
+  let string = String::from_utf8_lossy(&vinoc_output.stdout);
+  println!("Result from vinoc is {:?}", string);
+  let output: Vec<_> = string.trim().split('\n').collect();
+  println!("Num lines:{:?}", output.len());
+  let json: Vec<JsonOutput> = output
+    .iter()
+    .map(|l| serde_json::from_str(l).unwrap())
+    .collect();
 
-  let result: HashMap<String, JsonOutput> = serde_json::from_str(output)?;
+  println!("JSON Results: {:?}", json);
 
-  Ok(result)
+  Ok(json)
 }
 
 #[derive(Debug)]
@@ -126,14 +133,17 @@ pub async fn start_provider(
   envs: &[(&str, &str)],
 ) -> Result<(Sender<Signal>, JoinHandle<Result<()>>, String)> {
   debug!("Starting provider bin: {}", name);
-  let mut provider = tokio_test_bin::get_test_bin(name)
+
+  let mut bin = tokio_test_bin::get_test_bin(name);
+  let cmd = bin
     .args(args)
     .env_clear()
     .env("RUST_LOG", "debug")
     .envs(envs.to_vec())
     .stdout(Stdio::piped())
-    .stderr(Stdio::piped())
-    .spawn()?;
+    .stderr(Stdio::piped());
+  println!("Command is {:?}", cmd);
+  let mut provider = cmd.spawn()?;
 
   let stderr = provider.stderr.take().unwrap();
   let stdout = provider.stdout.take().unwrap();
@@ -186,6 +196,7 @@ pub async fn start_provider(
   });
 
   println!("Waiting for {} to start up", name);
+
   let port = rx2.recv().await.unwrap();
   println!("{} started, continuing", name);
 

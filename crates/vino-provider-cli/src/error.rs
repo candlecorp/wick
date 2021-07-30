@@ -10,6 +10,9 @@ pub enum CliError {
   /// An error parsing an IP address
   IpAddrError(#[from] std::net::AddrParseError),
   #[error(transparent)]
+  /// An error from the logger
+  LoggerError(#[from] logger::error::LoggerError),
+  #[error(transparent)]
   /// An IO error binding to a port or similar.
   IOError(#[from] std::io::Error),
   #[error(transparent)]

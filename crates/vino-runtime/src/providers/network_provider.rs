@@ -4,11 +4,9 @@ use std::sync::Arc;
 use async_trait::async_trait;
 use parking_lot::Mutex;
 use vino_rpc::error::RpcError;
-use vino_rpc::port::PacketWrapper;
 use vino_rpc::{
-  BoxedPacketStream,
+  BoxedTransportStream,
   DurationStatistics,
-  HostedType,
   RpcHandler,
   RpcResult,
   Statistics,
@@ -41,17 +39,13 @@ impl Provider {
 
 #[async_trait]
 impl RpcHandler for Provider {
-  async fn invoke(
-    &self,
-    entity: Entity,
-    payload: HashMap<String, Vec<u8>>,
-  ) -> RpcResult<BoxedPacketStream> {
+  async fn invoke(&self, entity: Entity, payload: TransportMap) -> RpcResult<BoxedTransportStream> {
     let addr = NetworkService::for_id(&self.network_id);
     let result: InvocationResponse = addr
       .send(Invocation {
         origin: Entity::Schematic("<system>".to_owned()),
         target: entity,
-        msg: MessageTransport::MultiBytes(payload),
+        msg: payload,
         id: get_uuid(),
         tx_id: get_uuid(),
         network_id: get_uuid(),
@@ -59,10 +53,7 @@ impl RpcHandler for Provider {
       .await
       .map_err(|e| RpcError::ProviderError(e.to_string()))?;
     match result {
-      InvocationResponse::Stream { rx, .. } => Ok(Box::pin(rx.map(|output| PacketWrapper {
-        port: output.port,
-        packet: output.payload,
-      }))),
+      InvocationResponse::Stream { rx, .. } => Ok(Box::pin(rx)),
       InvocationResponse::Error { msg, .. } => Err(Box::new(RpcError::ProviderError(format!(
         "Invocation failed: {}",
         msg
@@ -107,7 +98,6 @@ impl RpcHandler for Provider {
 
 #[cfg(test)]
 mod tests {
-  use maplit::hashmap;
 
   use super::*;
   use crate::test::prelude::{
@@ -117,16 +107,16 @@ mod tests {
   type Result<T> = std::result::Result<T, RuntimeError>;
 
   async fn request_log(provider: &Provider, data: &str) -> Result<String> {
-    let job_payload = hashmap! {
-      "input".to_owned() => mp_serialize(data)?,
+    let job_payload = transport_map! {
+      "input" => data,
     };
 
     let mut outputs = provider
       .invoke(Entity::schematic("simple"), job_payload)
       .await?;
     let output = outputs.next().await.unwrap();
-    println!("payload from [{}]: {:?}", output.port, output.packet);
-    let output_data: String = output.packet.try_into()?;
+    println!("payload from [{}]: {:?}", output.port, output.payload);
+    let output_data: String = output.payload.try_into()?;
 
     println!("doc_id: {:?}", output_data);
     assert_eq!(output_data, data);

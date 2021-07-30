@@ -36,12 +36,9 @@ mod tests {
     let json = parse_default(json_str)?;
 
     let err = "This is my error message";
-    let message = make_default_transport(&json, err);
+    let message: String = make_default_transport(&json, err).try_into()?;
 
-    assert_eq!(
-      message,
-      MessageTransport::MessagePack(mp_serialize(format!("Error: {}", err))?)
-    );
+    assert_eq!(message, format!("Error: {}", err));
 
     Ok(())
   }

@@ -72,45 +72,20 @@
 )]
 // !!END_LINTS
 // Add exceptions here
-#![allow()]
+#![allow(unsafe_code, missing_docs)] //TODO
 
-use std::collections::HashMap;
-use std::sync::{
-  Arc,
-  Mutex,
-};
+#[cfg(feature = "wasm")]
+/// Traits and functions for wasm providers
+pub mod wasm;
 
-use async_trait::async_trait;
-use vino_rpc::port::PortStream;
-/// The crate's error module
-pub mod error;
+#[cfg(feature = "native")]
+/// Traits and functions for native providers
+pub mod native;
 
-/// The crate's error type
-pub type Error = error::ProviderError;
+#[cfg(feature = "signatures")]
+/// Signatures of Vino types
+pub mod signatures;
 
-/// The type of a provider's context.
-pub type Context<T> = Arc<Mutex<T>>;
+pub mod port_sender;
 
-#[async_trait]
-/// Trait used by auto-generated provider components. You shouldn't need to implement this if you are using Vino's code generator.
-pub trait VinoProviderComponent {
-  /// The provider context to pass to the component.
-  type Context;
-  /// To return the name of the component.
-  fn get_name(&self) -> String;
-  /// To return the input ports and type signatures.
-  fn get_input_ports(&self) -> Vec<(&'static str, &'static str)>;
-  /// To return the output ports and type signatures.
-  fn get_output_ports(&self) -> Vec<(&'static str, &'static str)>;
-  /// The wrapper method that is called to execute the component's job.
-  async fn job_wrapper(
-    &self,
-    context: Arc<Mutex<Self::Context>>,
-    data: HashMap<String, Vec<u8>>,
-  ) -> Result<PortStream, Box<ProviderComponentError>>;
-}
-
-pub use vino_entity as entity;
-pub use vino_rpc::ComponentSignature;
-
-use self::error::ProviderComponentError;
+pub use vino_codec as codec;

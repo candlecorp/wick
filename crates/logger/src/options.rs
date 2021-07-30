@@ -11,7 +11,7 @@ fn parse_write_style(spec: &str) -> anyhow::Result<WriteStyle> {
   }
 }
 
-#[derive(StructOpt, Debug, Clone, Copy)]
+#[derive(StructOpt, Debug, Default, Clone, Copy)]
 /// Logging options that can be used directly or via [StructOpt]
 pub struct LoggingOptions {
   /// Disables logging

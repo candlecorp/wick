@@ -105,11 +105,11 @@
       "inputs": [
         {
           "name": "offset",
-          "type_string": "i32"
+          "type_string": "u32"
         },
         {
           "name": "limit",
-          "type_string": "i32"
+          "type_string": "u32"
         }
       ],
       "outputs": [

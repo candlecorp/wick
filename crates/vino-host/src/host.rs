@@ -15,7 +15,6 @@ use vino_provider_cli::cli::{
 };
 use vino_runtime::network::NetworkBuilder;
 use vino_runtime::prelude::*;
-use vino_transport::MessageTransport;
 
 use crate::{
   Error,
@@ -91,7 +90,7 @@ impl Host {
     &self,
     schematic: T,
     payload: HashMap<U, impl Serialize + Sync + Send>,
-  ) -> Result<HashMap<String, MessageTransport>> {
+  ) -> Result<MessageTransportStream> {
     match &self.network {
       Some(network) => Ok(
         network
@@ -137,15 +136,15 @@ mod test {
 
   use http::Uri;
   use maplit::hashmap;
-  use vino_codec::messagepack::{
-    deserialize,
-    serialize,
-  };
   use vino_entity::entity::Entity;
+  use vino_macros::transport_map;
   use vino_provider_cli::cli::ServerOptions;
-  use vino_rpc::make_rpc_client;
   use vino_rpc::rpc::Invocation;
-  use vino_transport::MessageTransport;
+  use vino_rpc::{
+    convert_transport_map,
+    make_rpc_client,
+  };
+  use vino_runtime::prelude::StreamExt;
 
   use crate::host_definition::HostDefinition;
   use crate::{
@@ -182,14 +181,12 @@ mod test {
     let data: HashMap<&str, &str> = hashmap! {
         "input" => passed_data,
     };
-    let mut result = host.request("logger", data).await?;
-    let output = result.remove("output").unwrap();
-    if let MessageTransport::MessagePack(bytes) = output {
-      let output = deserialize::<String>(&bytes)?;
-      assert_eq!(&output, passed_data);
-    } else {
-      panic!();
-    }
+    let stream = host.request("logger", data).await?;
+    let mut messages: Vec<_> = stream.collect().await;
+    assert_eq!(messages.len(), 1);
+    let output = messages.pop().unwrap();
+    let result: String = output.payload.try_into()?;
+    assert_eq!(result, passed_data);
     host.stop().await;
 
     assert!(!host.is_started());
@@ -209,19 +206,20 @@ mod test {
           port: Some(54321),
           ..Default::default()
         }),
+        logging: None,
         ..Default::default()
       }))
       .await?;
     let mut client = make_rpc_client(Uri::from_str("https://127.0.0.1:54321").unwrap()).await?;
     let passed_data = "logging output";
-    let data: HashMap<String, Vec<u8>> = hashmap! {
-        "input".to_owned() => serialize(passed_data)?,
+    let data = transport_map! {
+        "input" => passed_data,
     };
     let mut response = client
       .invoke(Invocation {
         origin: Entity::test("test").url(),
         target: Entity::schematic("logger").url(),
-        msg: data,
+        msg: convert_transport_map(data),
         id: "some inv".to_owned(),
         network_id: host.host_id.clone(),
       })

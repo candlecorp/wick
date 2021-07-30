@@ -1,5 +1,3 @@
-use vino_rpc::SchematicSignature;
-
 use crate::dev::prelude::*;
 use crate::schematic_service::handlers::get_signature::GetSignature;
 

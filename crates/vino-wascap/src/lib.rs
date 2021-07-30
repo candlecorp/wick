@@ -99,7 +99,7 @@ use ring::digest::{
   Digest,
   SHA256,
 };
-use vino_rpc::ProviderSignature;
+use vino_types::signatures::ProviderSignature;
 pub use wascap::jwt::Token;
 pub use wascap::prelude::{
   validate_token,

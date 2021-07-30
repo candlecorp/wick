@@ -192,9 +192,6 @@
 //! |----------|------------|-------------|
 //! | __guest_call | op_len: i32<br/>msg_len: i32 | Invoked by the host to start an RPC exchange with the guest module |
 
-#[macro_use]
-extern crate log;
-
 pub mod errors;
 
 /// A result type for errors that occur within the wapc library
@@ -362,7 +359,7 @@ impl ModuleState {
 
   /// Invoked when the guest module wants to write a message to the host's `stdout`
   pub fn do_console_log(&self, msg: &str) {
-    info!("Guest module {}: {}", self.id, msg);
+    println!("{}", msg);
   }
 
   pub fn set_host_callback(&mut self, callback: Box<HostCallback>) {

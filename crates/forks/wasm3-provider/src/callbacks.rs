@@ -34,18 +34,18 @@ pub(crate) fn host_call(
 pub(crate) fn guest_request(ctx: &CallContext, op_ptr: i32, ptr: i32, host: &HostType) {
   if let Some(inv) = host.lock().get_guest_request() {
     write_bytes_to_memory(ctx, ptr, &inv.msg);
-    write_bytes_to_memory(ctx, op_ptr, &inv.operation.as_bytes());
+    write_bytes_to_memory(ctx, op_ptr, inv.operation.as_bytes());
   }
 }
 
 pub(crate) fn host_response(ctx: &CallContext, ptr: i32, host: &HostType) {
   if let Some(ref r) = host.lock().get_host_response() {
-    write_bytes_to_memory(ctx, ptr, &r);
+    write_bytes_to_memory(ctx, ptr, r);
   }
 }
 
 pub(crate) fn host_response_length(_ctx: &CallContext, host: &HostType) -> i32 {
-  host.lock().get_host_response().unwrap_or(vec![]).len() as _
+  host.lock().get_host_response().unwrap_or_default().len() as _
 }
 
 pub(crate) fn console_log(ctx: &CallContext, ptr: i32, len: i32, host: &HostType) {

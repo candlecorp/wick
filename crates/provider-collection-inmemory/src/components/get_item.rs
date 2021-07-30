@@ -1,18 +1,17 @@
 pub(crate) use vino_interfaces_collection::get_item::*;
-use vino_provider::Context;
 
 pub(crate) async fn job(
   input: Inputs,
   output: Outputs,
   context: Context<crate::State>,
-) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+) -> JobResult {
   let state = context.lock().unwrap();
   let content_key = format!("{}:{}", input.collection_id, input.document_id);
   match state.documents.get(&content_key) {
-    Some(content) => output.document.done(content.to_string()),
+    Some(content) => output.document.done(content)?,
     None => output
       .document
-      .done_exception(format!("No content with id {} found", content_key)),
+      .done_exception(format!("No content with id {} found", content_key))?,
   };
   Ok(())
 }

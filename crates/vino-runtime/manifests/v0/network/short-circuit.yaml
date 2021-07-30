@@ -8,32 +8,10 @@ schematics:
     instances:
       validate_password:
         id: wapc::validate
-      log:
-        id: vino::v0::log
-      log2:
-        id: vino::v0::log
+      cat:
+        id: vino::v0::concatenate
     connections:
-      - from:
-          instance: <input>
-          port: input_port1
-        to:
-          instance: log
-          port: input
-      - from:
-          instance: log
-          port: output
-        to:
-          instance: validate_password
-          port: input
-      - from:
-          instance: validate_password
-          port: output
-        to:
-          instance: log2
-          port: input
-      - from:
-          instance: log2
-          port: output
-        to:
-          instance: <output>
-          port: output1
+      - <> => validate_password[input]
+      - validate_password[output] => cat[left]
+      - '"suffix should not be added" => cat[right]'
+      - cat[output] => <>

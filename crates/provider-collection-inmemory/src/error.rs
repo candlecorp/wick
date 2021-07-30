@@ -18,9 +18,9 @@ pub enum Error {
   #[error(transparent)]
   IoError(#[from] std::io::Error),
   #[error(transparent)]
-  ProviderSdkError(#[from] vino_provider::Error),
+  ProviderSdkError(#[from] vino_provider::native::Error),
   #[error(transparent)]
-  ComponentError(#[from] vino_component::Error),
+  ComponentError(#[from] vino_component::error::DeserializationError),
   #[error(transparent)]
   CodecError(#[from] vino_codec::Error),
   #[error(transparent)]

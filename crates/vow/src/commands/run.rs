@@ -1,10 +1,11 @@
-use std::collections::HashMap;
 use std::io::Read;
 
 use structopt::StructOpt;
 use tokio_stream::StreamExt;
-use vino_codec::messagepack::serialize;
-use vino_provider::entity::Entity;
+use vino_provider::native::prelude::{
+  Entity,
+  TransportMap,
+};
 use vino_provider_wasm::provider::Provider;
 use vino_rpc::RpcHandler;
 use vino_transport::MessageTransport;
@@ -42,27 +43,22 @@ pub(crate) async fn handle_command(opts: RunCommand) -> Result<()> {
     Some(i) => i,
   };
 
-  let json: HashMap<String, serde_json::value::Value> = serde_json::from_str(&data)?;
-  let multibytes: HashMap<String, Vec<u8>> = json
-    .into_iter()
-    .map(|(name, val)| Ok((name, serialize(val)?)))
-    .filter_map(Result::ok)
-    .collect();
+  let payload = TransportMap::from_json_str(&data)?;
 
   debug!("Loading wasm {}", opts.wasm);
   let component =
     vino_provider_wasm::helpers::load_wasm(&opts.wasm, opts.pull.latest, &opts.pull.insecure)
       .await?;
 
-  let provider = Provider::new(component, 5);
+  let provider = Provider::new(component, 1);
 
   let mut response = provider
-    .invoke(Entity::Component(opts.component_name), multibytes)
+    .invoke(Entity::Component(opts.component_name), payload)
     .await?;
 
   let mut map = serde_json::Map::new();
   while let Some(message) = response.next().await {
-    let transport: MessageTransport = message.packet.into();
+    let transport: MessageTransport = message.payload.into();
     map.insert(message.port, transport.into_json());
   }
 

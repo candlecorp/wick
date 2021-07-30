@@ -7,9 +7,9 @@ license = "Apache-2.0"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-wascap = { version="0.6.1" }
-serde = { version="1.0.118", features=["derive"] }
-vino-rpc = { path="../vino-rpc" }
+wascap = { version = "0.6.1" }
+serde = { version = "1.0.118", features = ["derive"] }
+vino-types = { path = "../vino-types" }
 thiserror = "1.0.25"
 parity-wasm = "0.42.1"
 data-encoding = "2.3.2"
@@ -18,4 +18,4 @@ nuid = "0.3.0"
 tracing = "0.1.26"
 
 [dev-dependencies]
-criterion = { version="0.3", features=[] }
+criterion = { version = "0.3", features = [] }

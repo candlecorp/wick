@@ -11,7 +11,7 @@ path = "src/main.rs"
 
 [dependencies]
 thiserror = "1.0.25"
-vino-provider = { path = "../../vino-provider" }
+vino-provider = { path = "../../vino-provider", features = ["native"] }
 vino-component = { path = "../../vino-component" }
 vino-codec = { path = "../../vino-codec" }
 vino-rpc = { path = "../../vino-rpc" }

@@ -26,10 +26,10 @@ impl Handler<Initialize> for SchematicService {
   type Result = ActorResult<Self, Result<(), SchematicError>>;
 
   fn handle(&mut self, msg: Initialize, _ctx: &mut Self::Context) -> Self::Result {
-    trace!("Initializing schematic {}", msg.schematic.get_name());
+    trace!("SC:{}:INIT", msg.schematic.get_name());
     let seed = msg.seed;
     let allow_latest = msg.allow_latest;
-    let name = msg.schematic.name.clone();
+    self.name = msg.schematic.name.clone();
     let providers = concat(vec![msg.global_providers, msg.schematic.providers.clone()]);
     let model = actix_try!(SchematicModel::try_from(msg.schematic));
     actix_try!(Validator::validate_early_errors(&model));
@@ -62,7 +62,6 @@ impl Handler<Initialize> for SchematicService {
     let task = task.map(|_, this, _| this.validate_model());
 
     let state = State {
-      name,
       kp: KeyPair::from_seed(&seed).unwrap(),
       transactions: TransactionExecutor::new(model.clone()),
       model,

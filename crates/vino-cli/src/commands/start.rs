@@ -11,24 +11,19 @@ use crate::utils::merge_runconfig;
 use crate::Result;
 #[derive(Debug, Clone, StructOpt)]
 #[structopt(rename_all = "kebab-case")]
-pub struct StartCommand {
+pub(crate) struct StartCommand {
   #[structopt(flatten)]
-  pub logging: super::LoggingOptions,
-
-  #[structopt(flatten)]
-  pub host: super::HostOptions,
+  pub(crate) host: super::HostOptions,
 
   /// Specifies a manifest file to apply to the host once started
   #[structopt(parse(from_os_str))]
-  pub manifest: Option<PathBuf>,
+  pub(crate) manifest: Option<PathBuf>,
 
   #[structopt(flatten)]
-  pub server_options: DefaultCliOptions,
+  pub(crate) server_options: DefaultCliOptions,
 }
 
-pub async fn handle_command(command: StartCommand) -> Result<String> {
-  crate::utils::init_logger(&command.logging)?;
-
+pub(crate) async fn handle_command(command: StartCommand) -> Result<String> {
   let config = match command.manifest {
     Some(file) => vino_host::HostDefinition::load_from_file(&file)?,
     None => HostDefinition::default(),

@@ -6,11 +6,12 @@ edition = "2018"
 license = "Apache-2.0"
 
 [dependencies]
-vino-provider = { path = "../../vino-provider" }
+vino-provider = { path = "../../vino-provider", features = ["native"] }
 vino-rpc = { path = "../../vino-rpc" }
 vino-entity = { path = "../../vino-entity" }
 vino-codec = { path = "../../vino-codec" }
 vino-component = { path = "../../vino-component" }
+vino-types = { path = "../../vino-types" }
 serde = { version = "1.0.118", features = ["derive"] }
 lazy_static = "1.4.0"
 async-trait = "0.1.50"

@@ -2,9 +2,10 @@ use std::collections::HashMap;
 
 #[path = "./runtime_utils/mod.rs"]
 mod utils;
+use tokio_stream::StreamExt;
 use utils::*;
 use vino_entity::Entity;
-use vino_runtime::prelude::*;
+use vino_runtime::prelude::InvocationTransport;
 use vino_transport::MessageTransport;
 
 #[test_env_log::test(actix_rt::test)]
@@ -15,17 +16,19 @@ async fn simple_schematic() -> Result<()> {
       "input" => "simple string",
   };
 
-  let mut result = network
+  let result = network
     .request("simple", Entity::test("simple schematic"), &data)
     .await?;
 
   println!("Result: {:?}", result);
-  let output: MessageTransport = result.remove("output").unwrap();
-  println!("Output: {:?}", output);
-  equals!(
-    output,
-    MessageTransport::MessagePack(mp_serialize("simple string")?)
-  );
+  let mut messages: Vec<InvocationTransport> = result.collect().await;
+  assert_eq!(messages.len(), 1);
+
+  let msg: InvocationTransport = messages.pop().unwrap();
+  println!("Output: {:?}", msg);
+  let output: String = msg.payload.try_into()?;
+
+  equals!(output, "simple string");
   Ok(())
 }
 
@@ -37,15 +40,17 @@ async fn echo() -> Result<()> {
       "input" => "test-data",
   };
 
-  let mut result = network.request("echo", Entity::test("echo"), &data).await?;
+  let result = network.request("echo", Entity::test("echo"), &data).await?;
 
   println!("Result: {:?}", result);
-  let output: MessageTransport = result.remove("output").unwrap();
-  println!("Output: {:?}", output);
-  equals!(
-    output,
-    MessageTransport::MessagePack(mp_serialize("test-data")?)
-  );
+  let mut messages: Vec<InvocationTransport> = result.collect().await;
+  assert_eq!(messages.len(), 1);
+
+  let msg: InvocationTransport = messages.pop().unwrap();
+  println!("Output: {:?}", msg);
+  let output: String = msg.payload.try_into()?;
+
+  equals!(output, "test-data");
   Ok(())
 }
 
@@ -58,17 +63,19 @@ async fn native_component() -> Result<()> {
       "right" => 302309,
   };
 
-  let mut result = network
+  let result = network
     .request("native_component", Entity::test("native component"), &data)
     .await?;
 
   println!("Result: {:?}", result);
-  let output: MessageTransport = result.remove("output").unwrap();
-  println!("Output: {:?}", output);
-  equals!(
-    output,
-    MessageTransport::MessagePack(mp_serialize(42 + 302309 + 302309)?)
-  );
+  let mut messages: Vec<InvocationTransport> = result.collect().await;
+  assert_eq!(messages.len(), 1);
+
+  let msg: InvocationTransport = messages.pop().unwrap();
+  println!("Output: {:?}", msg);
+  let output: i64 = msg.payload.try_into()?;
+
+  equals!(output, 42 + 302309 + 302309);
   Ok(())
 }
 
@@ -79,17 +86,19 @@ async fn defaults() -> Result<()> {
 
   let data: HashMap<String, String> = HashMap::new();
 
-  let mut result = network
+  let result = network
     .request("defaults", Entity::test("defaults"), &data)
     .await?;
 
   println!("Result: {:?}", result);
-  let output: MessageTransport = result.remove("output").unwrap();
-  println!("Output: {:?}", output);
-  equals!(
-    output,
-    MessageTransport::MessagePack(mp_serialize(1234512345)?)
-  );
+  let mut messages: Vec<InvocationTransport> = result.collect().await;
+  assert_eq!(messages.len(), 1);
+
+  let msg: InvocationTransport = messages.pop().unwrap();
+  println!("Output: {:?}", msg);
+  let output: i64 = msg.payload.try_into()?;
+
+  equals!(output, 1234512345);
   Ok(())
 }
 
@@ -101,14 +110,16 @@ async fn no_inputs() -> Result<()> {
 
   let data: HashMap<String, String> = HashMap::new();
 
-  let mut result = network.request("test", Entity::test("test"), &data).await?;
+  let result = network.request("test", Entity::test("test"), &data).await?;
+  let mut messages: Vec<InvocationTransport> = result.collect().await;
+  assert_eq!(messages.len(), 1);
 
-  println!("Result: {:?}", result);
-  let output: MessageTransport = result.remove("output").unwrap();
-  println!("Output: {:?}", output);
-  let uuid: String = output.try_into()?;
-  println!("uuid: {:?}", uuid);
-  assert_eq!(uuid.len(), 36);
+  let msg: InvocationTransport = messages.pop().unwrap();
+  println!("Output: {:?}", msg);
+  let output: String = msg.payload.try_into()?;
+
+  println!("uuid: {:?}", output);
+  assert_eq!(output.len(), 36);
   Ok(())
 }
 
@@ -123,48 +134,57 @@ async fn nested_schematics() -> Result<()> {
       "parent_input" => user_data,
   };
 
-  let mut result = network
+  let result = network
     .request("parent", Entity::test("nested_schematics"), &data)
     .await?;
   println!("Result: {:?}", result);
-  let output: MessageTransport = result.remove("parent_output").unwrap();
-  println!("Output: {:?}", output);
-  equals!(
-    output,
-    MessageTransport::MessagePack(mp_serialize(user_data)?)
-  );
+  let mut messages: Vec<InvocationTransport> = result.collect().await;
+  assert_eq!(messages.len(), 1);
+
+  let msg: InvocationTransport = messages.pop().unwrap();
+  println!("Output: {:?}", msg);
+  let output: String = msg.payload.try_into()?;
+  equals!(output, user_data);
   Ok(())
 }
 
 #[test_env_log::test(actix_rt::test)]
-async fn wapc_component() -> Result<()> {
+async fn good_wapc_component() -> Result<()> {
   let (network, _) = init_network_from_yaml("./manifests/v0/network/wapc-component.yaml").await?;
 
   let data = hashmap! {
       "input" => "1234567890",
   };
 
-  let mut result = network
+  println!("Requesting first run");
+  let result = network
     .request("wapc_component", Entity::test("wapc_component"), &data)
     .await?;
 
-  let output: MessageTransport = result.remove("output").unwrap();
-  trace!("output: {:?}", output);
-  equals!(
-    output,
-    MessageTransport::MessagePack(mp_serialize("1234567890")?)
-  );
+  let mut messages: Vec<InvocationTransport> = result.collect().await;
+  assert_eq!(messages.len(), 1);
+
+  let output: InvocationTransport = messages.pop().unwrap();
+  let result: String = output.payload.try_into()?;
+  println!("Output for first run: {:?}", result);
+  equals!(result, "1234567890");
 
   let data = hashmap! {
       "input" => "1234",
   };
-  let mut result = network
+
+  println!("Requesting second run");
+  let result = network
     .request("wapc_component", Entity::test("wapc_component"), &data)
     .await?;
 
-  let output: MessageTransport = result.remove("output").unwrap();
+  let mut messages: Vec<InvocationTransport> = result.collect().await;
+  assert_eq!(messages.len(), 1);
+
+  let output: InvocationTransport = messages.pop().unwrap();
+
   equals!(
-    output,
+    output.payload,
     MessageTransport::Exception("Needs to be longer than 8 characters".to_owned())
   );
 
@@ -180,40 +200,46 @@ async fn bad_wapc_component() -> Result<()> {
       "input" => "1234567890",
   };
 
-  let mut result = network
+  let result = network
     .request("schematic", Entity::test("bad_wapc_component"), &data)
     .await?;
 
-  let output: MessageTransport = result.remove("output").unwrap();
-  trace!("output: {:?}", output);
-  assert!(output.is_err());
+  let mut messages: Vec<InvocationTransport> = result.collect().await;
+  assert_eq!(messages.len(), 1);
+
+  let output: InvocationTransport = messages.pop().unwrap();
+
+  println!("output: {:?}", output);
+  assert!(output.payload.is_err());
   Ok(())
 }
 
 #[test_env_log::test(actix_rt::test)]
-async fn short_circuit() -> Result<()> {
+async fn short_circuit_to_output() -> Result<()> {
   let (network, _) = init_network_from_yaml("./manifests/v0/network/short-circuit.yaml").await?;
 
   let data = hashmap! {
-      "input_port1" => "short",
+      "input" => "short",
   };
 
-  let mut result = network
+  let result = network
     .request("short_circuit", Entity::test("short circuit"), &data)
     .await?;
 
-  println!("result: {:?}", result);
-  let output1: MessageTransport = result.remove("output1").unwrap();
-  println!("Output: {:?}", output1);
+  let mut messages: Vec<InvocationTransport> = result.collect().await;
+  assert_eq!(messages.len(), 1);
+
+  let output: InvocationTransport = messages.pop().unwrap();
+  println!("Output: {:?}", output);
   equals!(
-    output1,
+    output.payload,
     MessageTransport::Exception("Needs to be longer than 8 characters".to_owned())
   );
   Ok(())
 }
 
 #[test_env_log::test(actix_rt::test)]
-async fn short_circuit_default() -> Result<()> {
+async fn short_circuit_with_default() -> Result<()> {
   let (network, _) =
     init_network_from_yaml("./manifests/v0/network/short-circuit-default.yaml").await?;
 
@@ -221,7 +247,7 @@ async fn short_circuit_default() -> Result<()> {
       "input_port1" => "short",
   };
 
-  let mut result = network
+  let result = network
     .request(
       "short_circuit",
       Entity::test("short circuit default"),
@@ -229,12 +255,13 @@ async fn short_circuit_default() -> Result<()> {
     )
     .await?;
 
-  println!("result: {:?}", result);
-  let output1: MessageTransport = result.remove("output1").unwrap();
-  println!("Output: {:?}", output1);
-  let result: String = mp_deserialize(&output1.into_bytes()?)?;
+  let mut messages: Vec<InvocationTransport> = result.collect().await;
+  assert_eq!(messages.len(), 1);
+
+  let output: String = messages.pop().unwrap().payload.try_into()?;
+  println!("Output: {:?}", output);
   equals!(
-    result,
+    output,
     format!(
       "This is my default. Error was: {}",
       "Needs to be longer than 8 characters"
@@ -253,32 +280,28 @@ async fn multiple_schematics() -> Result<()> {
       "right" => 302309,
   };
 
-  let mut result = network
+  let result = network
     .request("first_schematic", Entity::test("multi schematics"), &data)
     .await?;
+  let mut messages: Vec<InvocationTransport> = result.collect().await;
+  assert_eq!(messages.len(), 1);
 
-  trace!("result: {:?}", result);
-  let output: MessageTransport = result.remove("output").unwrap();
-  equals!(
-    output,
-    MessageTransport::MessagePack(mp_serialize(42 + 302309)?)
-  );
+  let output: i64 = messages.pop().unwrap().payload.try_into()?;
+  equals!(output, 42 + 302309);
 
   let data = hashmap! {
       "input" => "some string",
   };
 
-  let mut result = network
+  let result = network
     .request("second_schematic", Entity::test("multi schematics"), &data)
     .await?;
+  let mut messages: Vec<InvocationTransport> = result.collect().await;
+  assert_eq!(messages.len(), 1);
 
-  println!("Result: {:?}", result);
-  let output: MessageTransport = result.remove("output").unwrap();
+  let output: String = messages.pop().unwrap().payload.try_into()?;
   println!("Output: {:?}", output);
-  equals!(
-    output,
-    MessageTransport::MessagePack(mp_serialize("some string")?)
-  );
+  equals!(output, "some string");
   Ok(())
 }
 
@@ -291,31 +314,29 @@ async fn global_providers() -> Result<()> {
       "input" => "some input",
   };
 
-  let mut result = network
+  let result = network
     .request("first_schematic", Entity::test("global providers"), &data)
     .await?;
 
-  trace!("result: {:?}", result);
-  let output: MessageTransport = result.remove("output").unwrap();
-  equals!(
-    output,
-    MessageTransport::MessagePack(mp_serialize("some input")?)
-  );
+  let mut messages: Vec<InvocationTransport> = result.collect().await;
+  assert_eq!(messages.len(), 1);
+
+  let output: String = messages.pop().unwrap().payload.try_into()?;
+
+  equals!(output, "some input");
 
   let data = hashmap! {
       "input" => "other input",
   };
 
-  let mut result = network
+  let result = network
     .request("second_schematic", Entity::test("global providers"), &data)
     .await?;
+  let mut messages: Vec<InvocationTransport> = result.collect().await;
+  assert_eq!(messages.len(), 1);
 
-  println!("Result: {:?}", result);
-  let output: MessageTransport = result.remove("output").unwrap();
+  let output: String = messages.pop().unwrap().payload.try_into()?;
   println!("Output: {:?}", output);
-  equals!(
-    output,
-    MessageTransport::MessagePack(mp_serialize("other input")?)
-  );
+  equals!(output, "other input");
   Ok(())
 }

@@ -9,14 +9,15 @@ license = "Apache-2.0"
 vino-component = { path = "../vino-component" }
 vino-macros = { path = "../vino-macros" }
 vino-manifest = { path = "../vino-manifest" }
-vino-provider = { path = "../vino-provider" }
+vino-provider = { path = "../vino-provider", features = ["native"] }
 vino-provider-wasm = { path = "../vino-provider-wasm" }
-vino-native-components-v0 = { path = "../vino-native-components-v0" }
+vino-native-api-0 = { path = "../provider-native-api-0" }
 vino-transport = { path = "../vino-transport" }
 vino-codec = { path = "../vino-codec" }
 vino-wascap = { path = "../vino-wascap" }
 vino-rpc = { path = "../vino-rpc" }
 vino-entity = { path = "../vino-entity" }
+vino-types = { path = "../vino-types" }
 
 serde = { version = "1.0.118", features = ["derive"] }
 serde_json = "1.0.64"

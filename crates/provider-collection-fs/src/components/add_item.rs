@@ -1,7 +1,6 @@
 use std::fs;
 
 pub(crate) use vino_interfaces_collection::add_item::*;
-use vino_provider::Context;
 
 pub(crate) async fn job(
   input: Inputs,
@@ -18,6 +17,6 @@ pub(crate) async fn job(
   }
   path.push(&input.document_id);
   fs::write(path, input.document)?;
-  output.document_id.done(input.document_id);
+  output.document_id.done(&input.document_id)?;
   Ok(())
 }

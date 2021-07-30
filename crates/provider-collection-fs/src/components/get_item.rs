@@ -1,7 +1,6 @@
 use std::fs;
 
 pub(crate) use vino_interfaces_collection::get_item::*;
-use vino_provider::Context;
 
 pub(crate) async fn job(
   input: Inputs,
@@ -16,10 +15,10 @@ pub(crate) async fn job(
   if !path.exists() {
     output
       .document
-      .done_exception(format!("No document in path {}", path.to_string_lossy()));
+      .done_exception(format!("No document in path {}", path.to_string_lossy()))?;
     return Ok(());
   }
   let contents = fs::read_to_string(path)?;
-  output.document.done(contents);
+  output.document.done(&contents)?;
   Ok(())
 }

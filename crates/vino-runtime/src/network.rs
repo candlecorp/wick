@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::time::Duration;
 
 use serde::Serialize;
+use vino_transport::message_transport::TransportMap;
 use vino_wascap::KeyPair;
 
 use crate::dev::prelude::*;
@@ -23,6 +24,7 @@ impl Network {
   pub fn new(definition: NetworkDefinition, seed: &str) -> Result<Self> {
     Ok(NetworkBuilder::new(definition, seed)?.build())
   }
+
   pub async fn init(&self) -> Result<()> {
     let kp = KeyPair::new_service();
     let seed = log_ie!(kp.seed(), 5103)?;
@@ -36,24 +38,30 @@ impl Network {
     log_ie!(self.addr.send(init).await, 5102)??;
     Ok(())
   }
+
   pub async fn request<T, U>(
     &self,
     schematic: T,
     origin: Entity,
     data: &HashMap<U, impl Serialize + Sync>,
-  ) -> Result<HashMap<String, MessageTransport>>
+  ) -> Result<MessageTransportStream>
   where
     T: AsRef<str> + Send + Sync,
     U: AsRef<str> + Send + Sync,
   {
-    let serialized_data: HashMap<String, Vec<u8>> = data
+    let serialized_data: HashMap<String, MessageTransport> = data
       .iter()
-      .map(|(k, v)| Ok((k.as_ref().to_owned(), mp_serialize(&v)?)))
+      .map(|(k, v)| {
+        Ok((
+          k.as_ref().to_owned(),
+          MessageTransport::MessagePack(mp_serialize(&v)?),
+        ))
+      })
       .filter_map(Result::ok)
       .collect();
 
     let time = std::time::Instant::now();
-    let payload = MessageTransport::MultiBytes(serialized_data);
+    let payload = TransportMap::with_map(serialized_data);
 
     let invocation = Invocation::new(
       &self.kp,
@@ -72,22 +80,12 @@ impl Network {
     )?;
 
     trace!(
-      "result for {} took {} μs",
+      "NETWORK:Result for {} took {} μs",
       schematic.as_ref().to_owned(),
       time.elapsed().as_micros()
     );
-
     match response {
-      InvocationResponse::Stream { rx, .. } => {
-        debug!("Got stream");
-        let outputs: Vec<OutputPacket> = rx.collect().await;
-        let map: HashMap<String, MessageTransport> = outputs
-          .into_iter()
-          .map(|p| (p.port, p.payload.into()))
-          .collect();
-        trace!("Result: {:?}", map);
-        Ok(map)
-      }
+      InvocationResponse::Stream { rx, .. } => Ok(rx),
       InvocationResponse::Error { msg, .. } => Err(NetworkError::ExecutionError(msg)),
     }
   }

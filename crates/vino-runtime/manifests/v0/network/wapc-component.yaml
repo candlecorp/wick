@@ -8,18 +8,10 @@ schematics:
     instances:
       validate:
         id: wapc::validate
-      log:
-        id: vino::v0::log
     connections:
       - from:
           instance: <input>
           port: input
-        to:
-          instance: log
-          port: input
-      - from:
-          instance: log
-          port: output
         to:
           instance: validate
           port: input

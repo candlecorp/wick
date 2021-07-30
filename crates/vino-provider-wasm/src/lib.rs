@@ -74,7 +74,6 @@
 
 pub mod error;
 pub mod helpers;
-pub(crate) mod output_sender;
 pub mod provider;
 pub mod wapc_module;
 pub mod wasm_host;

@@ -1,15 +1,12 @@
-use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::{
   Arc,
   Mutex,
 };
 
-use async_trait::async_trait;
-use vino_provider::entity::Entity;
-use vino_provider::error::ProviderError;
+use vino_provider::native::prelude::*;
 use vino_rpc::{
-  BoxedPacketStream,
+  BoxedTransportStream,
   DurationStatistics,
   RpcHandler,
   RpcResult,
@@ -38,17 +35,13 @@ impl Provider {
 
 #[async_trait]
 impl RpcHandler for Provider {
-  async fn invoke(
-    &self,
-    entity: Entity,
-    payload: HashMap<String, Vec<u8>>,
-  ) -> RpcResult<BoxedPacketStream> {
+  async fn invoke(&self, entity: Entity, payload: TransportMap) -> RpcResult<BoxedTransportStream> {
     let context = self.context.clone();
     let component = entity.into_component()?;
     trace!("Provider running component {}", component);
     match generated::get_component(&component) {
       Some(component) => {
-        let future = component.job_wrapper(context, payload);
+        let future = component.execute(context, payload);
         let outputs = future.await?;
         Ok(Box::pin(outputs))
       }
@@ -56,14 +49,9 @@ impl RpcHandler for Provider {
     }
   }
 
-  async fn get_list(&self) -> RpcResult<Vec<vino_rpc::HostedType>> {
+  async fn get_list(&self) -> RpcResult<Vec<HostedType>> {
     let components = generated::get_all_components();
-    Ok(
-      components
-        .into_iter()
-        .map(vino_rpc::HostedType::Component)
-        .collect(),
-    )
+    Ok(components.into_iter().map(HostedType::Component).collect())
   }
 
   async fn get_stats(&self, id: Option<String>) -> RpcResult<Vec<vino_rpc::Statistics>> {
@@ -94,10 +82,7 @@ impl RpcHandler for Provider {
 mod tests {
   use anyhow::Result;
   use futures::prelude::*;
-  use vino_component::{
-    v0,
-    Packet,
-  };
+  use vino_provider::native::prelude::*;
   use vino_rpc::make_input;
 
   use super::*;
@@ -118,8 +103,8 @@ mod tests {
       .invoke(Entity::component("add-item"), job_payload)
       .await?;
     let output = outputs.next().await.unwrap();
-    println!("payload from [{}]: {:?}", output.port, output.packet);
-    let doc_id: String = output.packet.try_into()?;
+    println!("payload from [{}]: {:?}", output.port, output.payload);
+    let doc_id: String = output.payload.try_into()?;
 
     println!("doc_id: {:?}", doc_id);
     assert_eq!(doc_id, document_id);
@@ -137,8 +122,8 @@ mod tests {
       .await?;
 
     let output = outputs.next().await.unwrap();
-    println!("payload from [{}]: {:?}", output.port, output.packet);
-    let document: String = output.packet.try_into()?;
+    println!("payload from [{}]: {:?}", output.port, output.payload);
+    let document: String = output.payload.try_into()?;
 
     println!("document: {:?}", document);
     Ok(document)
@@ -162,10 +147,7 @@ mod tests {
 
     let output = outputs.next().await.unwrap();
     println!("Output of post-rm get: {:?}", output);
-    assert!(matches!(
-      output.packet,
-      Packet::V0(v0::Payload::Exception(_))
-    ));
+    assert!(matches!(output.payload, MessageTransport::Exception(_)));
     Ok(())
   }
 
@@ -177,8 +159,8 @@ mod tests {
       .await?;
 
     let output = outputs.next().await.unwrap();
-    println!("payload from [{}]: {:?}", output.port, output.packet);
-    let document_ids: Vec<String> = output.packet.try_into()?;
+    println!("payload from [{}]: {:?}", output.port, output.payload);
+    let document_ids: Vec<String> = output.payload.try_into()?;
 
     println!("document_ids: {:?}", document_ids);
     Ok(document_ids)

@@ -9,7 +9,7 @@ service InvocationService {
   rpc Stats(StatsRequest) returns (StatsResponse);
 }
 
-message OutputKind {
+message MessageKind {
   enum Kind {
     Invalid = 0;
     Error = 1;
@@ -17,6 +17,7 @@ message OutputKind {
     Test = 3;
     MessagePack = 4;
     Signal = 5;
+    JSON = 6;
   }
   enum OutputSignal {
     Close = 0;
@@ -29,13 +30,14 @@ message OutputKind {
     bytes messagepack = 2;
     string message = 3;
     OutputSignal signal = 4;
+    string json = 5;
   }
 }
 
 message Invocation {
   string origin = 1;
   string target = 2;
-  map<string, bytes> msg = 3;
+  map<string, MessageKind> msg = 3;
   string id = 4;
   string network_id = 7;
 }
@@ -43,7 +45,7 @@ message Invocation {
 message Output {
   string port = 1;
   string invocation_id = 2;
-  OutputKind payload = 3;
+  MessageKind payload = 3;
 }
 
 message ListRequest {}

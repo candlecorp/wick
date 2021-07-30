@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use vino_transport::message_transport::TransportMap;
 
 use crate::dev::prelude::*;
 use crate::schematic_service::handlers::output_message::OutputMessage;
@@ -9,46 +9,40 @@ use crate::schematic_service::handlers::short_circuit::ShortCircuit;
 pub struct ComponentPayload {
   pub tx_id: String,
   pub instance: String,
-  pub payload_map: HashMap<String, MessageTransport>,
+  pub payload_map: TransportMap,
 }
 
 impl Handler<ComponentPayload> for SchematicService {
   type Result = ActorResult<Self, Result<(), SchematicError>>;
 
   fn handle(&mut self, msg: ComponentPayload, ctx: &mut Context<Self>) -> Self::Result {
-    trace!("Reference '{}' is ready to continue", msg.instance);
+    trace!("SC:{}:{}:READY", self.name, msg.instance);
     let kp = &self.get_state().kp;
     let instance = msg.instance.clone();
     let tx_id = msg.tx_id;
 
     let def = actix_try!(self.get_component_definition(&instance));
 
-    let mut invoke_payload = HashMap::new();
-    for (name, payload) in msg.payload_map {
-      match payload {
-        MessageTransport::MessagePack(bytes) => {
-          invoke_payload.insert(name, bytes);
-        }
-        payload => {
-          let addr = ctx.address();
-          let msg = ShortCircuit::new(tx_id, instance, payload);
-          return ActorResult::reply_async(
-            async move { log_ie!(addr.send(msg).await, 6010,)? }.into_actor(self),
-          );
-        }
-      }
+    if msg.payload_map.has_error() {
+      let err_payload = msg.payload_map.take_error().unwrap();
+      let addr = ctx.address();
+      let msg = ShortCircuit::new(tx_id, instance, err_payload);
+      return ActorResult::reply_async(
+        async move { log_ie!(addr.send(msg).await, 6010,)? }.into_actor(self),
+      );
     }
 
     let invocation = Invocation::next(
       &tx_id,
       kp,
-      Entity::system("SchematicService", "Component Invocation"),
+      Entity::schematic(&self.name),
       Entity::Component(def.name),
-      MessageTransport::MultiBytes(invoke_payload),
+      msg.payload_map,
     );
     let handler = actix_try!(self.get_recipient(&msg.instance));
 
     let addr = ctx.address();
+    let sc_name = self.name.clone();
 
     let task = async move {
       let target = invocation.target.url();
@@ -57,8 +51,8 @@ impl Handler<ComponentPayload> for SchematicService {
 
       match response {
         InvocationResponse::Stream { tx_id, mut rx } => {
-          let log_prefix = format!("Output:{}:{}:", tx_id, target);
-          trace!("{} handler spawned", log_prefix,);
+          let log_prefix = format!("SC:{}:Output:{}:{}:", sc_name, tx_id, target);
+          trace!("{}:Spawning handler", log_prefix,);
           tokio::spawn(async move {
             while let Some(packet) = rx.next().await {
               let logmsg = format!("ref: {}, port: {}", instance, packet.port);
@@ -66,7 +60,7 @@ impl Handler<ComponentPayload> for SchematicService {
               let msg = OutputMessage {
                 port,
                 tx_id: tx_id.clone(),
-                payload: packet.payload.into(),
+                payload: packet.payload,
               };
               if addr.send(msg).await.is_err() {
                 error!(
@@ -77,7 +71,7 @@ impl Handler<ComponentPayload> for SchematicService {
                 );
               }
             }
-            trace!("Task finished");
+            trace!("{}:Task finished", log_prefix);
           });
           Ok(())
         }

@@ -1,7 +1,6 @@
 use std::fs;
 
 pub(crate) use vino_interfaces_collection::list_items::*;
-use vino_provider::Context;
 
 pub(crate) async fn job(
   input: Inputs,
@@ -15,16 +14,15 @@ pub(crate) async fn job(
   if !path.exists() {
     output
       .document_ids
-      .done_exception(format!("No directory found at {}", path.to_string_lossy()));
+      .done_exception(format!("No directory found at {}", path.to_string_lossy()))?;
     return Ok(());
   }
 
   let contents = fs::read_dir(path)?;
-  output.document_ids.done(
-    contents
-      .filter_map(Result::ok)
-      .map(|dir| dir.file_name().to_string_lossy().into())
-      .collect(),
-  );
+  let list: Vec<_> = contents
+    .filter_map(Result::ok)
+    .map(|dir| dir.file_name().to_string_lossy().into())
+    .collect();
+  output.document_ids.done(&list)?;
   Ok(())
 }

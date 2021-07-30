@@ -4,16 +4,13 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 
 use crate::dev::prelude::*;
-use crate::error::ComponentError;
-use crate::providers::network_provider_service::{
-  self,
-  NetworkProviderService,
-};
+use crate::error::ProviderError;
+use crate::providers::native_provider_service::NativeProviderService;
 use crate::providers::{
   grpc_provider_service,
   native_provider_service,
 };
-type Result<T> = std::result::Result<T, ComponentError>;
+type Result<T> = std::result::Result<T, ProviderError>;
 
 #[derive(Debug, Clone)]
 pub(crate) struct ProviderModel {
@@ -33,15 +30,19 @@ pub(crate) async fn initialize_native_provider(
   let arbiter = Arbiter::new();
   let handle = arbiter.handle();
 
-  let provider = Arc::new(Mutex::new(vino_native_components_v0::Provider::default()));
+  let provider = Arc::new(Mutex::new(vino_native_api_0::Provider::default()));
   let addr = native_provider_service::NativeProviderService::start_in_arbiter(&handle, |_| {
     native_provider_service::NativeProviderService::default()
   });
-  let components = addr
+  addr
     .send(native_provider_service::Initialize {
       provider: provider.clone(),
       namespace: namespace.to_owned(),
     })
+    .await??;
+
+  let components = addr
+    .send(native_provider_service::InitializeComponents {})
     .await??;
 
   Ok((
@@ -95,7 +96,6 @@ async fn initialize_wasm_provider(
   allow_latest: bool,
   allowed_insecure: &[String],
 ) -> Result<(ProviderChannel, ProviderModel)> {
-  trace!("Starting network provider");
   let arbiter = Arbiter::new();
   let handle = arbiter.handle();
   let component =
@@ -103,20 +103,19 @@ async fn initialize_wasm_provider(
       .await?;
 
   let provider = Arc::new(Mutex::new(vino_provider_wasm::provider::Provider::new(
-    component, 5,
+    component, 2,
   )));
 
-  let addr =
-    NetworkProviderService::start_in_arbiter(&handle, |_| NetworkProviderService::default());
+  let addr = NativeProviderService::start_in_arbiter(&handle, |_| NativeProviderService::default());
   addr
-    .send(network_provider_service::Initialize {
+    .send(native_provider_service::Initialize {
       provider: provider.clone(),
       namespace: namespace.to_owned(),
     })
     .await??;
 
   let components = addr
-    .send(network_provider_service::InitializeComponents {})
+    .send(native_provider_service::InitializeComponents {})
     .await??;
 
   Ok((
@@ -134,16 +133,14 @@ async fn initialize_wasm_provider(
 pub(crate) async fn start_network_provider(
   namespace: &str,
   network_id: String,
-) -> Result<Addr<NetworkProviderService>> {
-  trace!("Starting network provider");
+) -> Result<Addr<NativeProviderService>> {
   let arbiter = Arbiter::new();
   let handle = arbiter.handle();
   let provider = Arc::new(Mutex::new(NetworkProvider::new(network_id)));
 
-  let addr =
-    NetworkProviderService::start_in_arbiter(&handle, |_| NetworkProviderService::default());
+  let addr = NativeProviderService::start_in_arbiter(&handle, |_| NativeProviderService::default());
   addr
-    .send(network_provider_service::Initialize {
+    .send(native_provider_service::Initialize {
       provider: provider.clone(),
       namespace: namespace.to_owned(),
     })
@@ -153,10 +150,10 @@ pub(crate) async fn start_network_provider(
 
 pub(crate) async fn create_network_provider_model(
   namespace: &str,
-  addr: Addr<NetworkProviderService>,
+  addr: Addr<NativeProviderService>,
 ) -> Result<ProviderModel> {
   let components = addr
-    .send(network_provider_service::InitializeComponents {})
+    .send(native_provider_service::InitializeComponents {})
     .await??;
 
   Ok(ProviderModel {
@@ -172,9 +169,9 @@ pub(crate) async fn initialize_provider(
   allowed_insecure: &[String],
 ) -> Result<(ProviderChannel, ProviderModel)> {
   let namespace = provider.namespace.clone();
-  trace!("Registering provider under the namespace {}", namespace);
+  trace!("PRV:Registering namespace {}", namespace);
   match provider.kind {
-    ProviderKind::Native => unreachable!(), ///// Should not be handled via this route
+    ProviderKind::Native => unreachable!(), // Should not be handled via this route
     ProviderKind::GrpcUrl => initialize_grpc_provider(provider, seed, &namespace).await,
     ProviderKind::Wapc => {
       initialize_wasm_provider(provider, seed, &namespace, allow_latest, allowed_insecure).await

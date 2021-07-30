@@ -11,7 +11,7 @@ CRATES_DIR := ./crates
 ROOT := $(shell pwd)
 
 # Get list of projects that have makefiles
-MAKEFILE_PROJECTS=$(wildcard ${CRATES_DIR}/*/Makefile) $(wildcard ${CRATES_DIR}/integration/Makefile) $(wildcard ${CRATES_DIR}/interfaces/Makefile)
+MAKEFILE_PROJECTS=$(wildcard ${CRATES_DIR}/*/Makefile) $(wildcard ${CRATES_DIR}/integration/*/Makefile) $(wildcard ${CRATES_DIR}/interfaces/*/Makefile)
 
 TEST_WASM_DIR=$(CRATES_DIR)/integration/test-wapc-component
 TEST_WASM=$(TEST_WASM_DIR)/build/test_component_s.wasm

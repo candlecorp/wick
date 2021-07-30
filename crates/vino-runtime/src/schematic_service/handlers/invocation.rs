@@ -1,7 +1,6 @@
-use std::collections::HashMap;
-
 use futures::Future;
 use tokio::sync::mpsc::unbounded_channel;
+use vino_transport::TransportMap;
 
 use crate::dev::prelude::*;
 use crate::dispatch::inv_error;
@@ -17,11 +16,11 @@ impl Handler<Invocation> for SchematicService {
     let tx_id = msg.tx_id.clone();
     let target = msg.target.clone();
     let result = match target {
-      Entity::Schematic(name) => handle_schematic(self, ctx.address(), &name, msg),
-      Entity::Component(name) => handle_schematic(self, ctx.address(), &name, msg),
+      Entity::Schematic(name) => handle_schematic(self, ctx.address(), &name, &msg),
+      Entity::Component(name) => handle_schematic(self, ctx.address(), &name, &msg),
       Entity::Reference(reference) => self
         .get_component_definition(&reference)
-        .and_then(|def| handle_schematic(self, ctx.address(), &def.id, msg)),
+        .and_then(|def| handle_schematic(self, ctx.address(), &def.id, &msg)),
       _ => Err(SchematicError::FailedPreRequestCondition(
         "Schematic invoked with entity it doesn't handle".into(),
       )),
@@ -42,18 +41,19 @@ fn handle_schematic(
   schematic: &mut SchematicService,
   addr: Addr<SchematicService>,
   name: &str,
-  invocation: Invocation,
+  invocation: &Invocation,
 ) -> Result<impl Future<Output = Result<InvocationResponse>>> {
-  trace!("Requesting schematic '{}'", name);
   let tx_id = invocation.tx_id.clone();
+  trace!("SC:{}:{}:INVOKE", name, tx_id);
 
   let (mut outbound, inbound) = schematic.start(tx_id.clone());
   schematic.tx_internal.insert(tx_id.clone(), inbound.clone());
 
+  let name = name.to_owned();
   tokio::spawn(async move {
     while let Some(msg) = outbound.recv().await {
       if let TransactionUpdate::Done(tx_id) = &msg {
-        trace!("Schematic request finishing on transaction {}", tx_id);
+        trace!("SC:{}:{}:DONE", name, tx_id);
         outbound.close();
       }
       ok_or_log!(addr.send(msg).await);
@@ -61,16 +61,12 @@ fn handle_schematic(
     Ok!(())
   });
 
-  let (tx, rx) = unbounded_channel::<OutputPacket>();
+  let (tx, rx) = unbounded_channel::<InvocationTransport>();
   schematic.tx_external.insert(tx_id.clone(), tx);
-
-  let payload = invocation.msg.into_multibytes().map_err(|_| {
-    SchematicError::FailedPreRequestCondition("Schematic sent invalid payload".into())
-  })?;
 
   let model = schematic.get_state().model.lock();
   let connections = model.get_downstream_connections(SCHEMATIC_INPUT);
-  let input_messages = make_input_packets(connections, &tx_id, &payload)?;
+  let input_messages = make_input_packets(connections, &tx_id, &invocation.msg)?;
   let defaults = model.get_defaults();
   let defaults_messages = make_default_packets(defaults, &tx_id)?;
   drop(model);
@@ -85,17 +81,17 @@ fn handle_schematic(
 fn make_input_packets<'a>(
   connections: impl Iterator<Item = &'a ConnectionDefinition>,
   tx_id: &str,
-  bytemap: &HashMap<String, Vec<u8>>,
+  map: &TransportMap,
 ) -> Result<Vec<InputMessage>> {
   let mut messages: Vec<InputMessage> = vec![];
   for conn in connections {
-    let bytes = bytemap.get(conn.from.get_port()?).ok_or_else(|| {
+    let transport = map.get(conn.from.get_port()?).ok_or_else(|| {
       SchematicError::FailedPreRequestCondition(format!("Port {} not found in input", conn.from))
     })?;
     messages.push(InputMessage {
       connection: conn.clone(),
       tx_id: tx_id.to_owned(),
-      payload: MessageTransport::MessagePack(bytes.clone()),
+      payload: transport.clone(),
     });
   }
 

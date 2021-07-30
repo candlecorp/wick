@@ -10,6 +10,7 @@ MAKEFLAGS += --no-builtin-rules
 SCHEMA_DIR := ./schemas
 COMPONENTS_DIR := ./src/components
 GENERATED_MODULE := ./src/generated.rs
+COMPONENTS_MODULE := $(COMPONENTS_DIR)/mod.rs
 
 # Get list of WIDL files in SCHEMA_DIR
 SCHEMAS=$(wildcard ${SCHEMA_DIR}/*.widl)
@@ -41,9 +42,10 @@ $(SIGNED_ARTIFACT): $(BUILD_ARTIFACT) ./interface.json
 	vinoc inspect $(SIGNED_ARTIFACT)
 
 # Defines rules like the following for each schema found :
-# src/components/my_components.rs: schemas/my-component.widl /src/components
+# src/components/my_components.rs: schemas/my-component.widl
 define WIDL_CODEGEN
-$(patsubst %.widl,%.rs,$(patsubst ${SCHEMA_DIR}%,${COMPONENTS_DIR}%,$(subst -,_,$(1)))): $1 ${COMPONENTS_DIR}
+$(patsubst %.widl,%.rs,$(patsubst ${SCHEMA_DIR}%,${COMPONENTS_DIR}%,$(subst -,_,$(1)))): $1
+	@mkdir -p $$(dir $$@)
 	vino-codegen rust wapc-component $(notdir $(basename $(subst -,_,$(1)))) -o $$@
 	rustfmt $$@
 endef
@@ -51,24 +53,20 @@ endef
 # Call the above rule generator for each schema file
 $(foreach schema,$(SCHEMAS),$(eval $(call WIDL_CODEGEN,$(schema))))
 
-$(COMPONENTS_DIR):
-	mkdir $@
-
-$(ARTIFACT_DIR):
-	mkdir -p $(ARTIFACT_DIR)
-
 $(GENERATED_MODULE): $(SCHEMAS)
-	vino-codegen rust wapc-integration $(SCHEMA_DIR) -o $@
+	vino-codegen rust wapc-integration $(SCHEMA_DIR) -f -o $@
 	rustfmt $@
 
 ./interface.json: $(SCHEMAS)
 	vino-codegen json interface "$(CRATE_NAME)" $(SCHEMA_DIR) -o interface.json -f
 
-./src/components/mod.rs: $(SCHEMAS)
+$(COMPONENTS_MODULE): $(SCHEMAS)
+	@mkdir -p $(dir $@)
 	vino-codegen rust wapc-component-module $(SCHEMA_DIR) -o $@ -f
 	rustfmt $@
 
-$(BUILD_ARTIFACT): $(wildcard src/*.rs) ./src/lib.rs ./src/components/mod.rs $(ARTIFACT_DIR) $(GENERATED_MODULE) $(GENERATED_COMPONENTS)
+$(BUILD_ARTIFACT): $(wildcard src/*.rs) ./src/lib.rs $(COMPONENTS_MODULE) $(GENERATED_MODULE) $(GENERATED_COMPONENTS)
+	@mkdir -p $(dir $@)
 	cargo build --target wasm32-unknown-unknown --release
 	cp $(WORKSPACE_ROOT)/target/wasm32-unknown-unknown/release/$(CRATE_FS_NAME).wasm build/
 
@@ -77,7 +75,7 @@ all: $(SIGNED_ARTIFACT)
 clean:
 	rm -f $(CLEAN_FILES)
 
-codegen: ./interface.json  $(GENERATED_COMPONENTS) $(GENERATED_MODULE) ./src/lib.rs
+codegen: ./interface.json  $(GENERATED_COMPONENTS) $(COMPONENTS_MODULE) $(GENERATED_MODULE) ./src/lib.rs
 
 doc:
 

@@ -18,13 +18,13 @@ vino-rpc = { path = "../vino-rpc" }
 vino-macros = { path = "../vino-macros" }
 vino-entity = { path = "../vino-entity" }
 vino-wascap = { path = "../vino-wascap" }
+vino-types = { path = "../vino-types" }
 logger = { path = "../logger" }
 wapc = { version = "0.10.1" }
 chrono = "0.4.19"
 colored = "2.0.0"
 log = "0.4.11"
 env_logger = "0.9.0"
-actix-rt = "2.1.0"
 structopt = "0.3.21"
 nkeys = "0.1.0"
 futures = "0.3.13"
@@ -32,7 +32,12 @@ serde_json = "1.0.64"
 serde_yaml = "0.8.17"
 serde = "1.0.126"
 thiserror = "1.0.24"
-
+tokio = { version = "1.8.1", features = [
+  "macros",
+  "net",
+  "signal",
+  "rt-multi-thread",
+] }
 tonic = { version = "0.5.0", features = ["tls"] }
 
 [dev-dependencies]

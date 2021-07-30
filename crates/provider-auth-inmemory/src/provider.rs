@@ -5,10 +5,9 @@ use std::sync::{
 };
 
 use async_trait::async_trait;
-use vino_provider::entity::Entity;
-use vino_provider::error::ProviderError;
+use vino_provider::native::prelude::*;
 use vino_rpc::{
-  BoxedPacketStream,
+  BoxedTransportStream,
   DurationStatistics,
   RpcHandler,
   RpcResult,
@@ -40,17 +39,13 @@ impl Provider {
 
 #[async_trait]
 impl RpcHandler for Provider {
-  async fn invoke(
-    &self,
-    entity: Entity,
-    payload: HashMap<String, Vec<u8>>,
-  ) -> RpcResult<BoxedPacketStream> {
+  async fn invoke(&self, entity: Entity, payload: TransportMap) -> RpcResult<BoxedTransportStream> {
     let context = self.context.clone();
     let component = entity.into_component()?;
     trace!("Provider running component {}", component);
     match generated::get_component(&component) {
       Some(component) => {
-        let future = component.job_wrapper(context, payload);
+        let future = component.execute(context, payload);
         let outputs = future.await?;
         Ok(Box::pin(outputs))
       }
@@ -58,14 +53,9 @@ impl RpcHandler for Provider {
     }
   }
 
-  async fn get_list(&self) -> RpcResult<Vec<vino_rpc::HostedType>> {
+  async fn get_list(&self) -> RpcResult<Vec<HostedType>> {
     let components = generated::get_all_components();
-    Ok(
-      components
-        .into_iter()
-        .map(vino_rpc::HostedType::Component)
-        .collect(),
-    )
+    Ok(components.into_iter().map(HostedType::Component).collect())
   }
 
   async fn get_stats(&self, id: Option<String>) -> RpcResult<Vec<vino_rpc::Statistics>> {
@@ -95,18 +85,11 @@ impl RpcHandler for Provider {
 #[cfg(test)]
 mod tests {
   use anyhow::Result;
-  use rand::{
-    distributions::Alphanumeric,
-    Rng,
-  }; // 0.8
+  use rand::distributions::Alphanumeric;
+  use rand::Rng;
   use tokio_stream::StreamExt;
-  use vino_codec::messagepack::serialize;
-  use vino_component::{
-    v0,
-    Packet,
-  };
+  use vino_provider::native::prelude::*;
   use vino_rpc::make_input;
-  use vino_rpc::port::PacketWrapper;
 
   use super::*;
 
@@ -130,10 +113,10 @@ mod tests {
       .invoke(Entity::component("create-user"), job_payload)
       .await?;
 
-    let outputs: Vec<PacketWrapper> = outputs.collect().await;
+    let outputs: Vec<InvocationTransport> = outputs.collect().await;
     let output = &outputs[0];
-    println!("payload from [{}]: {:?}", output.port, output.packet);
-    let user_id: String = output.packet.clone().try_into()?;
+    println!("payload from [{}]: {:?}", output.port, output.payload);
+    let user_id: String = output.payload.clone().try_into()?;
 
     println!("user_id: {:?}", user_id);
     // assert_eq!(user_id, username);
@@ -148,8 +131,8 @@ mod tests {
       .await?;
 
     let output = outputs.next().await.unwrap();
-    println!("payload from [{}]: {:?}", output.port, output.packet);
-    let user_id: String = output.packet.try_into()?;
+    println!("payload from [{}]: {:?}", output.port, output.payload);
+    let user_id: String = output.payload.try_into()?;
 
     println!("user_id: {:?}", user_id);
     // assert_eq!(user_id, username);
@@ -168,8 +151,8 @@ mod tests {
       .await?;
 
     let output = outputs.next().await.unwrap();
-    println!("payload from [{}]: {:?}", output.port, output.packet);
-    let users: HashMap<String, String> = output.packet.try_into()?;
+    println!("payload from [{}]: {:?}", output.port, output.payload);
+    let users: HashMap<String, String> = output.payload.try_into()?;
 
     println!("list of users: {:?}", users);
     // assert_eq!(user_id, username);
@@ -188,21 +171,29 @@ mod tests {
       ("session", session),
     ]);
 
-    let mut outputs = provider
+    let outputs = provider
       .invoke(Entity::component("authenticate"), job_payload)
       .await?;
 
     let mut session = String::new();
     let mut user_id = String::new();
-    while let Some(next) = outputs.next().await {
-      println!("Got output from [{}]: {:?}", next.port, next.packet);
+    // let mut messages = vec![];
+    // while let Some(a) = outputs.next().await {
+    //   trace!("!!! got something: {:?}", a);
+    //   messages.push(a);
+    // }
+
+    let messages: Vec<_> = outputs.collect().await;
+    assert_eq!(messages.len(), 2);
+    for next in messages {
+      println!("Got output from [{}]: {:?}", next.port, next.payload);
       if next.port == "session" {
-        let decoded: Result<String, _> = next.packet.try_into();
+        let decoded: Result<String, _> = next.payload.try_into();
         if let Ok(s) = decoded {
           session = s;
         }
       } else if next.port == "user_id" {
-        let decoded: Result<String, _> = next.packet.try_into();
+        let decoded: Result<String, _> = next.payload.try_into();
         if let Ok(s) = decoded {
           user_id = s;
         }
@@ -211,7 +202,7 @@ mod tests {
       }
     }
 
-    println!("session: {}, user_id: {}", session, user_id);
+    // println!("session: {}, user_id: {}", session, user_id);
     Ok((session, user_id))
   }
 
@@ -223,8 +214,8 @@ mod tests {
       .await?;
 
     let output = outputs.next().await.unwrap();
-    println!("payload from [{}]: {:?}", output.port, output.packet);
-    let user_id: String = output.packet.try_into()?;
+    println!("payload from [{}]: {:?}", output.port, output.payload);
+    let user_id: String = output.payload.try_into()?;
 
     println!("user_id: {:?}", user_id);
     Ok(user_id)
@@ -238,8 +229,8 @@ mod tests {
       .await?;
 
     let output = outputs.next().await.unwrap();
-    println!("payload from [{}]: {:?}", output.port, output.packet);
-    let user_id: String = output.packet.try_into()?;
+    println!("payload from [{}]: {:?}", output.port, output.payload);
+    let user_id: String = output.payload.try_into()?;
 
     println!("user_id: {:?}", user_id);
     Ok(user_id)
@@ -251,28 +242,35 @@ mod tests {
     perms: &[&str],
   ) -> Result<Vec<String>> {
     let mut job_payload = make_input(vec![("user_id", user_id)]);
-    job_payload.insert("permissions".to_owned(), serialize(perms)?);
+    job_payload.insert(
+      "permissions".to_owned(),
+      MessageTransport::messagepack(perms),
+    );
     let mut outputs = provider
       .invoke(Entity::component("update-permissions"), job_payload)
       .await?;
 
     let output = outputs.next().await.unwrap();
-    println!("payload from [{}]: {:?}", output.port, output.packet);
-    let permissions: Vec<String> = output.packet.try_into()?;
+    println!("payload from [{}]: {:?}", output.port, output.payload);
+    let permissions: Vec<String> = output.payload.try_into()?;
     assert_eq!(permissions, perms);
 
     Ok(permissions)
   }
 
-  async fn has_permission(provider: &Provider, user_id: &str, perm: &str) -> Result<Packet> {
+  async fn has_permission(
+    provider: &Provider,
+    user_id: &str,
+    perm: &str,
+  ) -> Result<MessageTransport> {
     let job_payload = make_input(vec![("user_id", user_id), ("permission", perm)]);
     let mut outputs = provider
       .invoke(Entity::component("has-permission"), job_payload)
       .await?;
 
     let output = outputs.next().await.unwrap();
-    println!("payload from [{}]: {:?}", output.port, output.packet);
-    Ok(output.packet)
+    println!("payload from [{}]: {:?}", output.port, output.payload);
+    Ok(output.payload)
   }
 
   #[test_env_log::test(tokio::test)]
@@ -381,7 +379,7 @@ mod tests {
       "User ID '{}' does not have permission '{}'",
       uid, "can't_do"
     );
-    assert_eq!(result, Packet::V0(v0::Payload::Exception(expected_err)));
+    assert_eq!(result, MessageTransport::Exception(expected_err));
     Ok(())
   }
 }

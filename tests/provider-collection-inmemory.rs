@@ -73,15 +73,9 @@ async fn test_collection() -> utils::TestResult<()> {
   };
 
   let result = panic::catch_unwind(|| {
-    equals!(
-      result_add,
-      hashmap! {"document_id".to_owned() => expected_add}
-    );
-    equals!(result_get, hashmap! {"document".to_owned() => expected_get});
-    equals!(
-      result_list,
-      hashmap! {"document_ids".to_owned() => expected_list}
-    );
+    equals!(result_add, vec![expected_add]);
+    equals!(result_get, vec![expected_get]);
+    equals!(result_list, vec![expected_list]);
   });
 
   h_tx.send(Signal::Kill).await?;

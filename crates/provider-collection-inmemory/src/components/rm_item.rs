@@ -1,5 +1,4 @@
 pub(crate) use vino_interfaces_collection::rm_item::*;
-use vino_provider::Context;
 
 pub(crate) async fn job(
   input: Inputs,

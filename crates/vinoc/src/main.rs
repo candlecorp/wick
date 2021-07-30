@@ -70,29 +70,42 @@
 )]
 // !!END_LINTS
 // Add exceptions here
-#![allow(missing_docs)] //todo
+#![allow(missing_docs, clippy::expect_used)] //todo
 
-use vinoc::commands::{
-  get_args,
-  CliCommand,
-};
-use vinoc::Result;
+pub mod commands;
+pub mod error;
+pub mod keys;
+mod rpc_client;
+pub mod utils;
 
-#[actix_rt::main]
+use error::ControlError;
+
+pub type Result<T> = std::result::Result<T, ControlError>;
+pub type Error = ControlError;
+
+#[macro_use]
+extern crate log;
+
+use log::debug;
+
+use self::commands::*;
+
+#[tokio::main]
 async fn main() -> Result<()> {
   let cli = get_args();
 
   let res = match cli.command {
-    CliCommand::Invoke(cmd) => vinoc::commands::invoke::handle_command(cmd).await,
-    CliCommand::Stats(cmd) => vinoc::commands::stats::handle_command(cmd).await,
-    CliCommand::List(cmd) => vinoc::commands::list::handle_command(cmd).await,
-    CliCommand::Sign(cmd) => vinoc::commands::sign::handle_command(cmd).await,
-    CliCommand::Inspect(cmd) => vinoc::commands::inspect::handle_command(cmd).await,
+    CliCommand::Invoke(cmd) => commands::invoke::handle_command(cmd).await,
+    CliCommand::Stats(cmd) => commands::stats::handle_command(cmd).await,
+    CliCommand::List(cmd) => commands::list::handle_command(cmd).await,
+    CliCommand::Sign(cmd) => commands::sign::handle_command(cmd).await,
+    CliCommand::Inspect(cmd) => commands::inspect::handle_command(cmd).await,
   };
 
   std::process::exit(match res {
     Ok(_) => 0,
     Err(e) => {
+      debug!("Error: {:?}", e);
       eprintln!("vinoc exiting with error: {}", e);
       eprintln!("Run with --info, --debug, or --trace for more information.");
       1

@@ -1,26 +1,21 @@
-pub mod run;
-pub mod start;
+pub(crate) mod run;
+pub(crate) mod start;
 
 use logger::options::LoggingOptions;
 use structopt::clap::AppSettings;
 use structopt::StructOpt;
 
-#[must_use]
-pub fn get_args() -> Cli {
-  Cli::from_args()
-}
-
 #[derive(StructOpt, Debug, Clone)]
 #[structopt(
      global_settings(&[AppSettings::VersionlessSubcommands]),
      name = "vino", about = "Vino host runtime")]
-pub struct Cli {
+pub(crate) struct Cli {
   #[structopt(flatten)]
-  pub command: CliCommand,
+  pub(crate) command: CliCommand,
 }
 
 #[derive(Debug, Clone, StructOpt)]
-pub enum CliCommand {
+pub(crate) enum CliCommand {
   /// Start a persistent host from a manifest to serve requests to schematics
   #[structopt(name = "start")]
   Start(start::StartCommand),
@@ -31,64 +26,12 @@ pub enum CliCommand {
 
 #[derive(Debug, Clone, StructOpt)]
 #[structopt(rename_all = "kebab-case")]
-pub struct NatsOptions {
-  /// Host for RPC connection, default = 0.0.0.0
-  #[structopt(long = "rpc-host", env = "VINO_RPC_HOST")]
-  pub rpc_host: Option<String>,
-
-  /// Port for RPC connection, default = 4222
-  #[structopt(long = "rpc-port", env = "VINO_RPC_PORT")]
-  pub rpc_port: Option<String>,
-
-  /// JWT file for RPC authentication. Must be supplied with rpc_seed.
-  #[structopt(long = "rpc-jwt", env = "VINO_RPC_JWT", hide_env_values = true)]
-  pub rpc_jwt: Option<String>,
-
-  /// Seed file or literal for RPC authentication. Must be supplied with rpc_jwt.
-  #[structopt(long = "rpc-seed", env = "VINO_RPC_SEED", hide_env_values = true)]
-  pub rpc_seed: Option<String>,
-
-  /// Credsfile for RPC authentication
-  #[structopt(long = "rpc-credsfile", env = "VINO_RPC_CREDS", hide_env_values = true)]
-  pub rpc_credsfile: Option<String>,
-
-  /// Host for control interface, default = 0.0.0.0
-  #[structopt(long = "control-host", env = "VINO_RPC_HOST")]
-  pub control_host: Option<String>,
-
-  /// Port for control interface, default = 4222
-  #[structopt(long = "control-port", env = "VINO_RPC_PORT")]
-  pub control_port: Option<String>,
-
-  /// JWT file for control interface authentication. Must be supplied with control_seed.
-  #[structopt(long = "control-jwt", env = "VINO_CONTROL_JWT", hide_env_values = true)]
-  pub control_jwt: Option<String>,
-
-  /// Seed file or literal for control interface authentication. Must be supplied with control_jwt.
-  #[structopt(
-    long = "control-seed",
-    env = "VINO_CONTROL_SEED",
-    hide_env_values = true
-  )]
-  pub control_seed: Option<String>,
-
-  /// Credsfile for control interface authentication
-  #[structopt(
-    long = "control-credsfile",
-    env = "VINO_CONTROL_CREDS",
-    hide_env_values = true
-  )]
-  pub control_credsfile: Option<String>,
-}
-
-#[derive(Debug, Clone, StructOpt)]
-#[structopt(rename_all = "kebab-case")]
-pub struct HostOptions {
+pub(crate) struct HostOptions {
   /// Allows the use of "latest" artifact tag
   #[structopt(long = "allow-latest", env = "VINO_ALLOW_LATEST")]
-  pub allow_latest: Option<bool>,
+  pub(crate) allow_latest: Option<bool>,
 
   /// Allows the use of HTTP registry connections to these registries
   #[structopt(long = "insecure")]
-  pub insecure_registries: Vec<String>,
+  pub(crate) insecure_registries: Vec<String>,
 }

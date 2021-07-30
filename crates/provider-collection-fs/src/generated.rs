@@ -2,14 +2,11 @@
 ***** This file is generated, do not edit *****
 ***********************************************/
 
-use vino_provider::{
-  ComponentSignature,
-  VinoProviderComponent,
-};
+pub(crate) use vino_provider::native::prelude::*;
 
 pub(crate) fn get_component(
   name: &str,
-) -> Option<Box<dyn VinoProviderComponent<Context = crate::State> + Sync + Send>> {
+) -> Option<Box<dyn NativeComponent<State = crate::State> + Sync + Send>> {
   match name {
     "add-item" => Some(Box::new(self::add_item::Component::default())),
     "get-item" => Some(Box::new(self::get_item::Component::default())),
@@ -74,46 +71,27 @@ pub(crate) mod add_item {
 
   use async_trait::async_trait;
   use vino_interfaces_collection::add_item::*;
-  use vino_provider::error::ProviderComponentError;
-  use vino_provider::{
-    Context as ProviderContext,
-    VinoProviderComponent,
-  };
-  use vino_rpc::port::PortStream;
+  use vino_provider::native::prelude::*;
 
+  #[derive(Default)]
   pub(crate) struct Component {}
-  impl Default for Component {
-    fn default() -> Self {
-      Self {}
-    }
-  }
 
   #[async_trait]
-  impl VinoProviderComponent for Component {
-    type Context = crate::State;
-
-    fn get_name(&self) -> String {
-      format!("vino::{}", "add-item")
-    }
-    fn get_input_ports(&self) -> Vec<(&'static str, &'static str)> {
-      inputs_list()
-    }
-    fn get_output_ports(&self) -> Vec<(&'static str, &'static str)> {
-      outputs_list()
-    }
-    async fn job_wrapper(
+  impl NativeComponent for Component {
+    type State = crate::State;
+    async fn execute(
       &self,
-      context: ProviderContext<Self::Context>,
-      data: HashMap<String, Vec<u8>>,
-    ) -> Result<PortStream, Box<ProviderComponentError>> {
-      let inputs = deserialize_inputs(&data).map_err(|e| {
-        ProviderComponentError::new(format!("Input deserialization error: {}", e.to_string()))
+      context: Context<Self::State>,
+      data: TransportMap,
+    ) -> Result<MessageTransportStream, Box<NativeComponentError>> {
+      let inputs = populate_inputs(data).map_err(|e| {
+        NativeComponentError::new(format!("Input deserialization error: {}", e.to_string()))
       })?;
       let (outputs, stream) = get_outputs();
       let result = crate::components::add_item::job(inputs, outputs, context).await;
       match result {
         Ok(_) => Ok(stream),
-        Err(e) => Err(Box::new(ProviderComponentError::new(format!(
+        Err(e) => Err(Box::new(NativeComponentError::new(format!(
           "Job failed: {}",
           e.to_string()
         )))),
@@ -127,46 +105,27 @@ pub(crate) mod get_item {
 
   use async_trait::async_trait;
   use vino_interfaces_collection::get_item::*;
-  use vino_provider::error::ProviderComponentError;
-  use vino_provider::{
-    Context as ProviderContext,
-    VinoProviderComponent,
-  };
-  use vino_rpc::port::PortStream;
+  use vino_provider::native::prelude::*;
 
+  #[derive(Default)]
   pub(crate) struct Component {}
-  impl Default for Component {
-    fn default() -> Self {
-      Self {}
-    }
-  }
 
   #[async_trait]
-  impl VinoProviderComponent for Component {
-    type Context = crate::State;
-
-    fn get_name(&self) -> String {
-      format!("vino::{}", "get-item")
-    }
-    fn get_input_ports(&self) -> Vec<(&'static str, &'static str)> {
-      inputs_list()
-    }
-    fn get_output_ports(&self) -> Vec<(&'static str, &'static str)> {
-      outputs_list()
-    }
-    async fn job_wrapper(
+  impl NativeComponent for Component {
+    type State = crate::State;
+    async fn execute(
       &self,
-      context: ProviderContext<Self::Context>,
-      data: HashMap<String, Vec<u8>>,
-    ) -> Result<PortStream, Box<ProviderComponentError>> {
-      let inputs = deserialize_inputs(&data).map_err(|e| {
-        ProviderComponentError::new(format!("Input deserialization error: {}", e.to_string()))
+      context: Context<Self::State>,
+      data: TransportMap,
+    ) -> Result<MessageTransportStream, Box<NativeComponentError>> {
+      let inputs = populate_inputs(data).map_err(|e| {
+        NativeComponentError::new(format!("Input deserialization error: {}", e.to_string()))
       })?;
       let (outputs, stream) = get_outputs();
       let result = crate::components::get_item::job(inputs, outputs, context).await;
       match result {
         Ok(_) => Ok(stream),
-        Err(e) => Err(Box::new(ProviderComponentError::new(format!(
+        Err(e) => Err(Box::new(NativeComponentError::new(format!(
           "Job failed: {}",
           e.to_string()
         )))),
@@ -180,46 +139,27 @@ pub(crate) mod list_items {
 
   use async_trait::async_trait;
   use vino_interfaces_collection::list_items::*;
-  use vino_provider::error::ProviderComponentError;
-  use vino_provider::{
-    Context as ProviderContext,
-    VinoProviderComponent,
-  };
-  use vino_rpc::port::PortStream;
+  use vino_provider::native::prelude::*;
 
+  #[derive(Default)]
   pub(crate) struct Component {}
-  impl Default for Component {
-    fn default() -> Self {
-      Self {}
-    }
-  }
 
   #[async_trait]
-  impl VinoProviderComponent for Component {
-    type Context = crate::State;
-
-    fn get_name(&self) -> String {
-      format!("vino::{}", "list-items")
-    }
-    fn get_input_ports(&self) -> Vec<(&'static str, &'static str)> {
-      inputs_list()
-    }
-    fn get_output_ports(&self) -> Vec<(&'static str, &'static str)> {
-      outputs_list()
-    }
-    async fn job_wrapper(
+  impl NativeComponent for Component {
+    type State = crate::State;
+    async fn execute(
       &self,
-      context: ProviderContext<Self::Context>,
-      data: HashMap<String, Vec<u8>>,
-    ) -> Result<PortStream, Box<ProviderComponentError>> {
-      let inputs = deserialize_inputs(&data).map_err(|e| {
-        ProviderComponentError::new(format!("Input deserialization error: {}", e.to_string()))
+      context: Context<Self::State>,
+      data: TransportMap,
+    ) -> Result<MessageTransportStream, Box<NativeComponentError>> {
+      let inputs = populate_inputs(data).map_err(|e| {
+        NativeComponentError::new(format!("Input deserialization error: {}", e.to_string()))
       })?;
       let (outputs, stream) = get_outputs();
       let result = crate::components::list_items::job(inputs, outputs, context).await;
       match result {
         Ok(_) => Ok(stream),
-        Err(e) => Err(Box::new(ProviderComponentError::new(format!(
+        Err(e) => Err(Box::new(NativeComponentError::new(format!(
           "Job failed: {}",
           e.to_string()
         )))),
@@ -233,46 +173,27 @@ pub(crate) mod rm_item {
 
   use async_trait::async_trait;
   use vino_interfaces_collection::rm_item::*;
-  use vino_provider::error::ProviderComponentError;
-  use vino_provider::{
-    Context as ProviderContext,
-    VinoProviderComponent,
-  };
-  use vino_rpc::port::PortStream;
+  use vino_provider::native::prelude::*;
 
+  #[derive(Default)]
   pub(crate) struct Component {}
-  impl Default for Component {
-    fn default() -> Self {
-      Self {}
-    }
-  }
 
   #[async_trait]
-  impl VinoProviderComponent for Component {
-    type Context = crate::State;
-
-    fn get_name(&self) -> String {
-      format!("vino::{}", "rm-item")
-    }
-    fn get_input_ports(&self) -> Vec<(&'static str, &'static str)> {
-      inputs_list()
-    }
-    fn get_output_ports(&self) -> Vec<(&'static str, &'static str)> {
-      outputs_list()
-    }
-    async fn job_wrapper(
+  impl NativeComponent for Component {
+    type State = crate::State;
+    async fn execute(
       &self,
-      context: ProviderContext<Self::Context>,
-      data: HashMap<String, Vec<u8>>,
-    ) -> Result<PortStream, Box<ProviderComponentError>> {
-      let inputs = deserialize_inputs(&data).map_err(|e| {
-        ProviderComponentError::new(format!("Input deserialization error: {}", e.to_string()))
+      context: Context<Self::State>,
+      data: TransportMap,
+    ) -> Result<MessageTransportStream, Box<NativeComponentError>> {
+      let inputs = populate_inputs(data).map_err(|e| {
+        NativeComponentError::new(format!("Input deserialization error: {}", e.to_string()))
       })?;
       let (outputs, stream) = get_outputs();
       let result = crate::components::rm_item::job(inputs, outputs, context).await;
       match result {
         Ok(_) => Ok(stream),
-        Err(e) => Err(Box::new(ProviderComponentError::new(format!(
+        Err(e) => Err(Box::new(NativeComponentError::new(format!(
           "Job failed: {}",
           e.to_string()
         )))),

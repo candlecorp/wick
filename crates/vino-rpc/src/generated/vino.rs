@@ -1,12 +1,12 @@
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct OutputKind {
-  #[prost(enumeration = "output_kind::Kind", tag = "1")]
+pub struct MessageKind {
+  #[prost(enumeration = "message_kind::Kind", tag = "1")]
   pub kind: i32,
-  #[prost(oneof = "output_kind::Data", tags = "2, 3, 4")]
-  pub data: ::core::option::Option<output_kind::Data>,
+  #[prost(oneof = "message_kind::Data", tags = "2, 3, 4, 5")]
+  pub data: ::core::option::Option<message_kind::Data>,
 }
-/// Nested message and enum types in `OutputKind`.
-pub mod output_kind {
+/// Nested message and enum types in `MessageKind`.
+pub mod message_kind {
   #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
   #[repr(i32)]
   pub enum Kind {
@@ -16,6 +16,7 @@ pub mod output_kind {
     Test = 3,
     MessagePack = 4,
     Signal = 5,
+    Json = 6,
   }
   #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
   #[repr(i32)]
@@ -32,6 +33,8 @@ pub mod output_kind {
     Message(::prost::alloc::string::String),
     #[prost(enumeration = "OutputSignal", tag = "4")]
     Signal(i32),
+    #[prost(string, tag = "5")]
+    Json(::prost::alloc::string::String),
   }
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -40,9 +43,8 @@ pub struct Invocation {
   pub origin: ::prost::alloc::string::String,
   #[prost(string, tag = "2")]
   pub target: ::prost::alloc::string::String,
-  #[prost(map = "string, bytes", tag = "3")]
-  pub msg:
-    ::std::collections::HashMap<::prost::alloc::string::String, ::prost::alloc::vec::Vec<u8>>,
+  #[prost(map = "string, message", tag = "3")]
+  pub msg: ::std::collections::HashMap<::prost::alloc::string::String, MessageKind>,
   #[prost(string, tag = "4")]
   pub id: ::prost::alloc::string::String,
   #[prost(string, tag = "7")]
@@ -55,7 +57,7 @@ pub struct Output {
   #[prost(string, tag = "2")]
   pub invocation_id: ::prost::alloc::string::String,
   #[prost(message, optional, tag = "3")]
-  pub payload: ::core::option::Option<OutputKind>,
+  pub payload: ::core::option::Option<MessageKind>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ListRequest {}

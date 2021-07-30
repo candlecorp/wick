@@ -13,13 +13,13 @@ impl Handler<OutputMessage> for SchematicService {
   type Result = ActorResult<Self, Result<(), SchematicError>>;
 
   fn handle(&mut self, msg: OutputMessage, _ctx: &mut Context<Self>) -> Self::Result {
-    let log_prefix = format!("OutputMessage:{}:", msg.port);
+    let log_prefix = format!("SC:{}:OUTPUT:{}:", self.name, msg.port);
 
     let defs = if msg.port.matches_port(crate::COMPONENT_ERROR) {
-      error!("{} Component-wide error received", log_prefix);
+      error!("{}Component-wide error received", log_prefix);
       self.get_downstream_connections(actix_try!(msg.port.get_instance()))
     } else {
-      trace!("{} Output ready", log_prefix);
+      trace!("{}Output ready", log_prefix);
       self.get_port_connections(&msg.port)
     };
 

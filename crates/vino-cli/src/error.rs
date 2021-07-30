@@ -23,6 +23,8 @@ pub enum VinoError {
   #[error(transparent)]
   IOError(#[from] std::io::Error),
   #[error(transparent)]
+  TransportError(#[from] vino_transport::error::TransportError),
+  #[error(transparent)]
   SerdeJsonError(#[from] serde_json::Error),
   #[error(transparent)]
   LoggerError(#[from] logger::error::LoggerError),

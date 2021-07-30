@@ -1,12 +1,12 @@
 [package]
-name = "vino-native-components-v0"
+name = "vino-native-api-0"
 version = "0.1.0"
 authors = ["Jarrod Overson <jsoverson@gmail.com>"]
 edition = "2018"
 license = "Apache-2.0"
 
 [dependencies]
-vino-provider = { path = "../vino-provider" }
+vino-provider = { path = "../vino-provider", features = ["native"] }
 vino-rpc = { path = "../vino-rpc" }
 vino-codec = { path = "../vino-codec" }
 vino-component = { path = "../vino-component" }
@@ -26,3 +26,4 @@ maplit = "1.0.2"
 test-env-log = "0.2.7"
 env_logger = "0.9"
 tracing-subscriber = "0.2.18"
+vino-transport = { path = "../vino-transport" }

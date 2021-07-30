@@ -6,11 +6,7 @@ use std::collections::HashMap;
 use std::convert::TryFrom;
 
 use vino_manifest::schematic_definition::PortReference;
-use vino_provider::ComponentSignature;
-use vino_rpc::{
-  PortSignature,
-  ProviderSignature,
-};
+use vino_provider::native::prelude::*;
 
 use crate::dev::prelude::*;
 
@@ -132,7 +128,7 @@ impl SchematicModel {
     let mut output_signatures = vec![];
     for output in outputs {
       let opt = self
-        .get_upstream(&output)
+        .get_upstream(output)
         .and_then(|upstream| match upstream.get_instance() {
           Ok(instance) => self
             .get_component_model_by_instance(instance)
@@ -212,12 +208,13 @@ impl SchematicModel {
 
   pub(crate) fn commit_providers(&mut self, providers: Vec<ProviderModel>) {
     trace!(
-      "Adding providers {:?} to schematic '{}'",
+      "SC:{}:PROVIDERS:[{}]",
+      self.get_name(),
       providers
         .iter()
-        .map(|p| &p.namespace)
-        .collect::<Vec<&String>>(),
-      self.get_name()
+        .map(|p| p.namespace.clone())
+        .collect::<Vec<String>>()
+        .join(", "),
     );
     self.providers = providers
       .into_iter()

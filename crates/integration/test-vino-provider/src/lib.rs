@@ -1,14 +1,12 @@
-use std::collections::HashMap;
 use std::sync::{
   Arc,
   Mutex,
 };
 
-use async_trait::async_trait;
-use vino_entity::Entity;
+use vino_provider::native::prelude::*;
 use vino_rpc::error::RpcError;
 use vino_rpc::{
-  BoxedPacketStream,
+  BoxedTransportStream,
   DurationStatistics,
   RpcHandler,
   RpcResult,
@@ -34,11 +32,7 @@ impl Provider {
 
 #[async_trait]
 impl RpcHandler for Provider {
-  async fn invoke(
-    &self,
-    entity: Entity,
-    payload: HashMap<String, Vec<u8>>,
-  ) -> RpcResult<BoxedPacketStream> {
+  async fn invoke(&self, entity: Entity, payload: TransportMap) -> RpcResult<BoxedTransportStream> {
     let context = self.context.clone();
     let component = entity
       .into_component()
@@ -46,7 +40,7 @@ impl RpcHandler for Provider {
     let instance = generated::get_component(&component);
     match instance {
       Some(instance) => {
-        let future = instance.job_wrapper(context, payload);
+        let future = instance.execute(context, payload);
         Ok(Box::pin(
           future
             .await
@@ -60,14 +54,9 @@ impl RpcHandler for Provider {
     }
   }
 
-  async fn get_list(&self) -> RpcResult<Vec<vino_rpc::HostedType>> {
+  async fn get_list(&self) -> RpcResult<Vec<HostedType>> {
     let components = generated::get_all_components();
-    Ok(
-      components
-        .into_iter()
-        .map(vino_rpc::HostedType::Component)
-        .collect(),
-    )
+    Ok(components.into_iter().map(HostedType::Component).collect())
   }
 
   async fn get_stats(&self, id: Option<String>) -> RpcResult<Vec<vino_rpc::Statistics>> {
@@ -100,19 +89,7 @@ mod tests {
   use futures::prelude::*;
   use maplit::hashmap;
   use tracing::debug;
-  use vino_codec::messagepack::{
-    deserialize,
-    serialize,
-  };
-  use vino_component::{
-    v0,
-    Packet,
-  };
-  use vino_rpc::{
-    ComponentSignature,
-    HostedType,
-    PortSignature,
-  };
+  use vino_provider::native::prelude::*;
 
   use super::*;
 
@@ -120,23 +97,16 @@ mod tests {
   async fn request() -> anyhow::Result<()> {
     let provider = Provider::default();
     let input = "some_input";
-    let job_payload = hashmap! {
-      "input".to_string() => serialize(input)?,
-    };
+    let job_payload = TransportMap::with_map(hashmap! {
+      "input".to_string() => MessageTransport::messagepack(input),
+    });
 
     let entity = Entity::component("test-component");
 
-    let mut outputs = provider
-      .invoke(entity, job_payload)
-      .await
-      .expect("request failed");
+    let mut outputs = provider.invoke(entity, job_payload).await?;
     let output = outputs.next().await.unwrap();
     println!("Received payload from [{}]", output.port);
-    let payload: String = match output.packet {
-      Packet::V0(v0::Payload::MessagePack(payload)) => deserialize(&payload)?,
-      _ => None,
-    }
-    .unwrap();
+    let payload: String = output.payload.try_into().unwrap();
 
     println!("outputs: {:?}", payload);
     assert_eq!(payload, "TEST: some_input");
@@ -148,7 +118,7 @@ mod tests {
   async fn list() -> anyhow::Result<()> {
     let provider = Provider::default();
 
-    let response = provider.get_list().await.expect("request failed");
+    let response = provider.get_list().await?;
 
     debug!("list response : {:?}", response);
 
@@ -175,7 +145,7 @@ mod tests {
   async fn statistics() -> anyhow::Result<()> {
     let provider = Provider::default();
 
-    let response = provider.get_stats(None).await.expect("request failed");
+    let response = provider.get_stats(None).await?;
 
     debug!("statistics response : {:?}", response);
 

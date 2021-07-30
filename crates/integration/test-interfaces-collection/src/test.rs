@@ -6,13 +6,16 @@ use tonic::transport::Channel;
 use tracing::*;
 use vino_codec::messagepack::serialize;
 use vino_component::Packet;
-use vino_provider::entity::Entity;
+use vino_provider::native::prelude::*;
 use vino_rpc::rpc::invocation_service_client::InvocationServiceClient;
 use vino_rpc::rpc::{
   Invocation,
   ListRequest,
 };
-use vino_rpc::RpcHandler;
+use vino_rpc::{
+  convert_transport_map,
+  RpcHandler,
+};
 
 async fn list_components(port: &u16) -> Result<Vec<vino_rpc::rpc::Component>> {
   let mut client = InvocationServiceClient::connect(format!("http://127.0.0.1:{}", port)).await?;
@@ -31,7 +34,12 @@ fn make_invocation(
   Ok(Invocation {
     origin: Entity::test(origin).url(),
     target: Entity::component(target).url(),
-    msg: payload,
+    msg: convert_transport_map(TransportMap::with_map(
+      payload
+        .into_iter()
+        .map(|(k, v)| (k, MessageTransport::MessagePack(v)))
+        .collect(),
+    )),
     id: "".to_string(),
     network_id: "".to_string(),
   })
@@ -44,9 +52,9 @@ async fn add_item(
   doc: &str,
 ) -> Result<String> {
   let payload = hashmap! {
-    "document_id".to_string()=> serialize(doc_id.to_string())?,
-    "document".to_string()=> serialize(doc.to_string())?,
-    "collection_id".to_string()=> serialize(coll_id.to_string())?,
+    "document_id".to_string()=> serialize(doc_id)?,
+    "document".to_string()=> serialize(doc)?,
+    "collection_id".to_string()=> serialize(coll_id)?,
   };
   let invocation = make_invocation("add_item", "add-item", payload)?;
   let invocation_id = invocation.id.to_string();

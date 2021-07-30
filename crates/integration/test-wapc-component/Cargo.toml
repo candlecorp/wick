@@ -7,16 +7,14 @@ edition = "2018"
 license = "Apache-2.0"
 
 [lib]
-crate-type = ["cdylib", "rlib"]
+crate-type = ["cdylib"]
 
 [features]
 default = ["guest"]
 guest = []
 
 [dependencies]
-wapc-guest = "0.4.0"
 serde = { version = "1.0.126", features = ["derive"] }
-lazy_static = "1.4.0"
-vino-component = { path = "../../vino-component" }
+vino-provider = { path = "../../vino-provider", features = ["wasm"] }
 
 [dev-dependencies]

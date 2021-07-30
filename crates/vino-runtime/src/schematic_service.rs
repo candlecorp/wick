@@ -22,9 +22,10 @@ type Result<T> = std::result::Result<T, SchematicError>;
 
 #[derive(Debug)]
 pub(crate) struct SchematicService {
+  name: String,
   recipients: HashMap<String, ProviderChannel>,
   state: Option<State>,
-  tx_external: HashMap<String, UnboundedSender<OutputPacket>>,
+  tx_external: HashMap<String, UnboundedSender<InvocationTransport>>,
   tx_internal: HashMap<String, UnboundedSender<TransactionUpdate>>,
 }
 
@@ -32,7 +33,6 @@ pub(crate) struct SchematicService {
 struct State {
   model: Arc<Mutex<SchematicModel>>,
   kp: KeyPair,
-  name: String,
   transactions: TransactionExecutor,
 }
 
@@ -41,6 +41,7 @@ impl Supervised for SchematicService {}
 impl Default for SchematicService {
   fn default() -> Self {
     SchematicService {
+      name: "".to_owned(),
       recipients: HashMap::new(),
       state: None,
       tx_external: HashMap::new(),
@@ -53,7 +54,7 @@ impl Actor for SchematicService {
   type Context = Context<Self>;
 
   fn started(&mut self, _ctx: &mut Self::Context) {
-    trace!("Schematic service starting");
+    trace!("SC:Service starting");
   }
 
   fn stopped(&mut self, _ctx: &mut Self::Context) {}
@@ -108,16 +109,16 @@ impl SchematicService {
   }
 
   fn get_recipient(&self, instance: &str) -> Result<Recipient<Invocation>> {
-    trace!("Getting downstream recipient '{}'", instance);
     let component = self.get_component_definition(instance)?;
     let state = self.get_state();
     let lock = state.model.lock();
     let err = SchematicError::InstanceNotFound(instance.to_owned());
     if !lock.has_component(&component.id) {
+      warn!("SC:{}:{} does not have a valid model.", self.name, instance);
       return Err(err);
     }
     drop(lock);
-    trace!("Downstream recipient is: {:?}", component);
+    trace!("SC:{}:{} points to {}", self.name, instance, component.id);
     let channel = self.recipients.get(&component.namespace).ok_or(err)?;
     Ok(channel.recipient.clone())
   }
@@ -171,6 +172,7 @@ mod test {
     bind_new_socket,
     make_rpc_server,
   };
+  use vino_transport::message_transport::TransportMap;
 
   use super::*;
   use crate::schematic_service::handlers::initialize::Initialize;
@@ -198,10 +200,14 @@ mod test {
         global_providers: vec![],
       })
       .await??;
-    let mut input: HashMap<String, Vec<u8>> = HashMap::new();
+    let mut input: HashMap<String, MessageTransport> = HashMap::new();
     let user_data = "this is test input";
-    input.insert("input".to_owned(), mp_serialize(user_data)?);
-    let payload = MessageTransport::MultiBytes(input);
+    input.insert(
+      "input".to_owned(),
+      MessageTransport::MessagePack(mp_serialize(user_data)?),
+    );
+
+    let payload = TransportMap::with_map(input);
     let response: InvocationResponse = addr
       .send(Invocation::new(
         &kp,
@@ -257,16 +263,16 @@ mod test {
         allowed_insecure: vec![],
       })
       .await??;
-    let mut input: HashMap<String, Vec<u8>> = HashMap::new();
+
+    let mut input = TransportMap::new();
     let user_data = "Hello world";
-    input.insert("input".to_owned(), mp_serialize(user_data)?);
-    let payload = MessageTransport::MultiBytes(input);
+    input.insert("input", MessageTransport::messagepack(user_data));
     let response: InvocationResponse = addr
       .send(Invocation::new(
         &kp,
         Entity::test("basic"),
         Entity::schematic(schematic_name),
-        payload,
+        input,
       ))
       .await?;
 

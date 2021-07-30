@@ -3,7 +3,7 @@ use std::convert::TryInto;
 use structopt::StructOpt;
 use vino_rpc;
 use vino_rpc::rpc::ListRequest;
-use vino_rpc::HostedType;
+use vino_types::signatures::HostedType;
 
 use crate::rpc_client::rpc_client;
 use crate::{

@@ -2,7 +2,6 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::path::Path;
 
-use oci_utils::fetch_oci_bytes;
 use vino_wascap::{
   Claims,
   ComponentClaims,
@@ -91,50 +90,4 @@ impl WapcModule {
   pub fn claims(&self) -> Claims<ComponentClaims> {
     self.token.claims.clone()
   }
-}
-
-async fn start_wapc_actor_from_file(p: &Path) -> Result<WapcModule, WasmProviderError> {
-  let component = WapcModule::from_file(p)?;
-  trace!(
-    "Starting wapc component '{}' from file {}",
-    component.name(),
-    p.to_string_lossy()
-  );
-  Ok(component)
-}
-
-async fn start_wapc_actor_from_oci(
-  url: &str,
-  allow_latest: bool,
-  allowed_insecure: &[String],
-) -> Result<WapcModule, WasmProviderError> {
-  let bytes = fetch_oci_bytes(url, allow_latest, allowed_insecure).await?;
-  let component = WapcModule::from_slice(&bytes)?;
-
-  trace!(
-    "Starting wapc component '{}' from URL {}",
-    component.name(),
-    url
-  );
-
-  Ok(component)
-}
-
-pub async fn load_component(
-  comp_ref: String,
-  allow_latest: bool,
-  allowed_insecure: &[String],
-) -> Result<WapcModule, WasmProviderError> {
-  let p = Path::new(&comp_ref);
-  let component = if p.exists() {
-    debug!("{:?} exists on file system, loading from disk", p);
-    start_wapc_actor_from_file(p).await
-  } else {
-    debug!(
-      "{:?} does not exist on file system, trying as OCI url",
-      comp_ref
-    );
-    start_wapc_actor_from_oci(&comp_ref, allow_latest, allowed_insecure).await
-  };
-  component
 }

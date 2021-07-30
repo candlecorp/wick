@@ -1,4 +1,4 @@
-use vino_rpc::PortSignature;
+use crate::dev::prelude::*;
 
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) struct ComponentModel {

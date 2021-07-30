@@ -30,6 +30,10 @@ pub enum RpcError {
   #[error("Error: {0}")]
   ComponentError(String),
 
+  /// Error sending output to channel
+  #[error("Error sending output to channel")]
+  SendError,
+
   /// General Error
   #[error("General error : {0}")]
   Other(String),
@@ -44,6 +48,24 @@ impl From<tokio::task::JoinError> for RpcError {
 impl From<std::io::Error> for RpcError {
   fn from(e: std::io::Error) -> Self {
     RpcError::InternalError(format!("IO Error: {}", e))
+  }
+}
+
+impl From<vino_provider::native::Error> for Box<RpcError> {
+  fn from(e: vino_provider::native::Error) -> Self {
+    Box::new(RpcError::ProviderError(e.to_string()))
+  }
+}
+
+impl From<Box<vino_provider::native::Error>> for Box<RpcError> {
+  fn from(e: Box<vino_provider::native::Error>) -> Self {
+    Box::new(RpcError::ProviderError(e.to_string()))
+  }
+}
+
+impl From<Box<vino_provider::native::error::NativeComponentError>> for Box<RpcError> {
+  fn from(e: Box<vino_provider::native::error::NativeComponentError>) -> Self {
+    Box::new(RpcError::ProviderError(e.to_string()))
   }
 }
 

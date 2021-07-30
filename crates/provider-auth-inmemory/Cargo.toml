@@ -11,7 +11,7 @@ path = "src/main.rs"
 
 [dependencies]
 vino-interfaces-authentication = { path = "../interfaces/interfaces-authentication" }
-vino-provider = { path = "../vino-provider" }
+vino-provider = { path = "../vino-provider", features = ["native"] }
 vino-component = { path = "../vino-component" }
 thiserror = "1.0.25"
 tracing = "0.1.26"

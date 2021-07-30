@@ -2,7 +2,7 @@ use serde::{
   Deserialize,
   Serialize,
 };
-use vino_rpc::ProviderSignature;
+use vino_types::signatures::ProviderSignature;
 use wascap::jwt::WascapEntity;
 
 /// The metadata that corresponds to an actor module

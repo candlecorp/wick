@@ -25,7 +25,9 @@ pub enum WasmProviderError {
   TransportError(#[from] vino_transport::error::TransportError),
   #[error("Invalid claims : {0}")]
   ClaimsError(String),
-  #[error("General error : {0}")]
+  #[error("Error sending output to stream.")]
+  SendError,
+  #[error("Internal Error : {0}")]
   Other(String),
   #[error("Internal Error : {0}")]
   InternalError(u32),

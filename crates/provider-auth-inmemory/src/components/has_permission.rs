@@ -1,22 +1,20 @@
 use vino_interfaces_authentication::has_permission::*;
-use vino_provider::error::ProviderComponentError;
-use vino_provider::Context;
 
 pub(crate) async fn job(
   input: Inputs,
   output: Outputs,
   context: Context<crate::State>,
-) -> Result<(), Box<ProviderComponentError>> {
+) -> JobResult {
   let state = context.lock().unwrap();
   if let Some(perms) = state.permissions.get(&input.user_id) {
     if perms.contains(&input.permission) {
-      output.user_id.done(input.user_id);
+      output.user_id.done(&input.user_id)?;
       return Ok(());
     }
   }
   output.user_id.done_exception(format!(
     "User ID '{}' does not have permission '{}'",
     input.user_id, input.permission
-  ));
+  ))?;
   Ok(())
 }

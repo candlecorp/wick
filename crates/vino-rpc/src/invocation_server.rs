@@ -15,20 +15,22 @@ use tonic::{
   Response,
   Status,
 };
-use vino_component::Packet;
+use vino_transport::message_transport::MessageSignal;
+use vino_transport::MessageTransport;
 
 use crate::rpc::invocation_service_server::InvocationService;
-use crate::rpc::output_kind::{
+use crate::rpc::message_kind::{
   Data,
   Kind,
   OutputSignal,
 };
 use crate::rpc::{
   stats_request,
+  MessageKind,
   Output,
-  OutputKind,
 };
 use crate::{
+  convert_messagekind_map,
   rpc,
   RpcHandler,
 };
@@ -63,66 +65,93 @@ impl InvocationServer {
   }
 }
 
-fn make_output(port: &str, inv_id: &str, payload: Packet) -> Result<Output, Status> {
+fn make_output(port: &str, inv_id: &str, payload: MessageTransport) -> Result<Output, Status> {
   match payload {
-    Packet::V0(v) => match v {
-      vino_component::v0::Payload::Invalid => Ok(Output {
-        port: port.to_owned(),
-        invocation_id: inv_id.to_owned(),
-        payload: Some(OutputKind {
-          kind: Kind::Invalid.into(),
-          data: None,
-        }),
+    MessageTransport::Invalid => Ok(Output {
+      port: port.to_owned(),
+      invocation_id: inv_id.to_owned(),
+      payload: Some(MessageKind {
+        kind: Kind::Invalid.into(),
+        data: None,
       }),
-      vino_component::v0::Payload::Exception(msg) => Ok(Output {
-        port: port.to_owned(),
-        invocation_id: inv_id.to_owned(),
-        payload: Some(OutputKind {
-          kind: Kind::Exception.into(),
-          data: Some(Data::Message(msg)),
-        }),
+    }),
+    MessageTransport::Exception(msg) => Ok(Output {
+      port: port.to_owned(),
+      invocation_id: inv_id.to_owned(),
+      payload: Some(MessageKind {
+        kind: Kind::Exception.into(),
+        data: Some(Data::Message(msg)),
       }),
-      vino_component::v0::Payload::Error(msg) => Ok(Output {
-        port: port.to_owned(),
-        invocation_id: inv_id.to_owned(),
-        payload: Some(OutputKind {
-          kind: Kind::Error.into(),
-          data: Some(Data::Message(msg)),
-        }),
+    }),
+    MessageTransport::Error(msg) => Ok(Output {
+      port: port.to_owned(),
+      invocation_id: inv_id.to_owned(),
+      payload: Some(MessageKind {
+        kind: Kind::Error.into(),
+        data: Some(Data::Message(msg)),
       }),
-      vino_component::v0::Payload::MessagePack(bytes) => Ok(Output {
-        port: port.to_owned(),
-        invocation_id: inv_id.to_owned(),
-        payload: Some(OutputKind {
-          kind: Kind::MessagePack.into(),
-          data: Some(Data::Messagepack(bytes)),
-        }),
+    }),
+    MessageTransport::MessagePack(bytes) => Ok(Output {
+      port: port.to_owned(),
+      invocation_id: inv_id.to_owned(),
+      payload: Some(MessageKind {
+        kind: Kind::MessagePack.into(),
+        data: Some(Data::Messagepack(bytes)),
       }),
-      vino_component::v0::Payload::Close => Ok(Output {
+    }),
+    MessageTransport::Test(_) => todo!(),
+    MessageTransport::Signal(signal) => match signal {
+      MessageSignal::Close => Ok(Output {
         port: port.to_owned(),
         invocation_id: inv_id.to_owned(),
-        payload: Some(OutputKind {
+        payload: Some(MessageKind {
           kind: Kind::Signal.into(),
           data: Some(Data::Signal(OutputSignal::Close.into())),
         }),
       }),
-      vino_component::v0::Payload::OpenBracket => Ok(Output {
+      MessageSignal::OpenBracket => Ok(Output {
         port: port.to_owned(),
         invocation_id: inv_id.to_owned(),
-        payload: Some(OutputKind {
+        payload: Some(MessageKind {
           kind: Kind::Signal.into(),
           data: Some(Data::Signal(OutputSignal::OpenBracket.into())),
         }),
       }),
-      vino_component::v0::Payload::CloseBracket => Ok(Output {
+      MessageSignal::CloseBracket => Ok(Output {
         port: port.to_owned(),
         invocation_id: inv_id.to_owned(),
-        payload: Some(OutputKind {
+        payload: Some(MessageKind {
           kind: Kind::Signal.into(),
           data: Some(Data::Signal(OutputSignal::CloseBracket.into())),
         }),
       }),
     },
+    MessageTransport::Success(v) => match serde_json::to_string(&v) {
+      Ok(json) => Ok(Output {
+        port: port.to_owned(),
+        invocation_id: inv_id.to_owned(),
+        payload: Some(MessageKind {
+          kind: Kind::Json.into(),
+          data: Some(Data::Json(json)),
+        }),
+      }),
+      Err(e) => Ok(Output {
+        port: port.to_owned(),
+        invocation_id: inv_id.to_owned(),
+        payload: Some(MessageKind {
+          kind: Kind::Error.into(),
+          data: Some(Data::Message(e.to_string())),
+        }),
+      }),
+    },
+    MessageTransport::Json(json) => Ok(Output {
+      port: port.to_owned(),
+      invocation_id: inv_id.to_owned(),
+      payload: Some(MessageKind {
+        kind: Kind::Json.into(),
+        data: Some(Data::Json(json)),
+      }),
+    }),
   }
 }
 
@@ -151,13 +180,13 @@ impl InvocationService for InvocationServer {
         return;
       }
       let entity = entity.unwrap();
-      let payload = invocation.msg.clone();
+      let payload = convert_messagekind_map(&invocation.msg);
       debug!("Executing component {}", entity.url());
       match &mut provider.invoke(entity, payload).await {
         Ok(receiver) => {
           while let Some(next) = receiver.next().await {
             let port_name = next.port;
-            let msg = next.packet;
+            let msg = next.payload;
             debug!("Got output on port {}", port_name);
             tx.send(make_output(&port_name, &invocation_id, msg))
               .await

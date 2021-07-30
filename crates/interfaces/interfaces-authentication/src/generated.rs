@@ -3,29 +3,27 @@
 ***********************************************/
 
 pub mod authenticate {
-
-  use std::collections::HashMap;
-  use std::sync::{
-    Arc,
-    Mutex,
-  };
-
   use serde::{
     Deserialize,
     Serialize,
   };
-  use vino_codec::messagepack::deserialize;
-  use vino_codec::Error;
-  pub use vino_rpc::port::Sender;
-  use vino_rpc::port::{
-    Port,
-    PortStream,
-  };
+  pub use vino_provider::native::prelude::*;
 
-  #[derive(Debug, PartialEq, Deserialize, Serialize, Default, Clone)]
+  pub fn populate_inputs(mut payload: TransportMap) -> Result<Inputs, TransportError> {
+    Ok(Inputs {
+      session: payload.consume("session")?,
+      username: payload.consume("username")?,
+      password: payload.consume("password")?,
+    })
+  }
+
+  #[derive(Debug, Deserialize, Serialize, Default, Clone)]
   pub struct Inputs {
+    #[serde(rename = "session")]
     pub session: String,
+    #[serde(rename = "username")]
     pub username: String,
+    #[serde(rename = "password")]
     pub password: String,
   }
 
@@ -38,42 +36,10 @@ pub mod authenticate {
     ]
   }
 
-  #[derive(Debug, PartialEq, Deserialize, Serialize, Default, Clone)]
-  pub struct InputEncoded {
-    #[serde(rename = "session")]
-    pub session: Vec<u8>,
-    #[serde(rename = "username")]
-    pub username: Vec<u8>,
-    #[serde(rename = "password")]
-    pub password: Vec<u8>,
-  }
-
-  pub fn deserialize_inputs(
-    map: &HashMap<String, Vec<u8>>,
-  ) -> Result<Inputs, Box<dyn std::error::Error + Send + Sync>> {
-    Ok(Inputs {
-      session: deserialize(
-        map
-          .get("session")
-          .ok_or_else(|| Error::MissingInput("session".to_owned()))?,
-      )?,
-      username: deserialize(
-        map
-          .get("username")
-          .ok_or_else(|| Error::MissingInput("username".to_owned()))?,
-      )?,
-      password: deserialize(
-        map
-          .get("password")
-          .ok_or_else(|| Error::MissingInput("password".to_owned()))?,
-      )?,
-    })
-  }
-
-  #[derive(Default, Debug)]
+  #[derive(Debug, Default)]
   pub struct Outputs {
-    pub session: SessionSender,
-    pub user_id: UserIdSender,
+    pub session: SessionPortSender,
+    pub user_id: UserIdPortSender,
   }
 
   #[must_use]
@@ -82,73 +48,82 @@ pub mod authenticate {
   }
 
   #[derive(Debug)]
-  pub struct SessionSender {
-    port: Arc<Mutex<Port>>,
+  pub struct SessionPortSender {
+    port: Port,
   }
-  impl Default for SessionSender {
+
+  impl Default for SessionPortSender {
     fn default() -> Self {
       Self {
-        port: Arc::new(Mutex::new(Port::new("session".into()))),
+        port: Port::new("session".into()),
       }
     }
   }
-  impl Sender for SessionSender {
+  impl PortSender for SessionPortSender {
     type PayloadType = String;
 
-    fn get_port(&self) -> Arc<Mutex<Port>> {
-      self.port.clone()
+    fn get_port(&self) -> PacketSender {
+      self.port.channel.clone().unwrap()
+    }
+
+    fn get_port_name(&self) -> String {
+      self.port.name.clone()
     }
   }
   #[derive(Debug)]
-  pub struct UserIdSender {
-    port: Arc<Mutex<Port>>,
+  pub struct UserIdPortSender {
+    port: Port,
   }
-  impl Default for UserIdSender {
+
+  impl Default for UserIdPortSender {
     fn default() -> Self {
       Self {
-        port: Arc::new(Mutex::new(Port::new("user_id".into()))),
+        port: Port::new("user_id".into()),
       }
     }
   }
-  impl Sender for UserIdSender {
+  impl PortSender for UserIdPortSender {
     type PayloadType = String;
 
-    fn get_port(&self) -> Arc<Mutex<Port>> {
-      self.port.clone()
+    fn get_port(&self) -> PacketSender {
+      self.port.channel.clone().unwrap()
+    }
+
+    fn get_port_name(&self) -> String {
+      self.port.name.clone()
     }
   }
 
-  pub fn get_outputs() -> (Outputs, PortStream) {
-    let outputs = Outputs::default();
-    let ports = vec![outputs.session.port.clone(), outputs.user_id.port.clone()];
-    let stream = PortStream::new(ports);
+  #[must_use]
+  pub fn get_outputs() -> (Outputs, MessageTransportStream) {
+    let mut outputs = Outputs::default();
+    let mut ports = vec![&mut outputs.session.port, &mut outputs.user_id.port];
+    let stream = PortStream::create(&mut ports);
     (outputs, stream)
   }
 }
 pub mod create_user {
-
-  use std::collections::HashMap;
-  use std::sync::{
-    Arc,
-    Mutex,
-  };
-
   use serde::{
     Deserialize,
     Serialize,
   };
-  use vino_codec::messagepack::deserialize;
-  use vino_codec::Error;
-  pub use vino_rpc::port::Sender;
-  use vino_rpc::port::{
-    Port,
-    PortStream,
-  };
+  pub use vino_provider::native::prelude::*;
 
-  #[derive(Debug, PartialEq, Deserialize, Serialize, Default, Clone)]
+  pub fn populate_inputs(mut payload: TransportMap) -> Result<Inputs, TransportError> {
+    Ok(Inputs {
+      user_id: payload.consume("user_id")?,
+      username: payload.consume("username")?,
+      password: payload.consume("password")?,
+    })
+  }
+
+  #[derive(Debug, Deserialize, Serialize, Default, Clone)]
   pub struct Inputs {
+    #[serde(rename = "user_id")]
     pub user_id: String,
+    #[serde(rename = "username")]
     pub username: String,
+    #[serde(rename = "password")]
     pub password: String,
   }
 
@@ -161,41 +136,9 @@ pub mod create_user {
     ]
   }
 
-  #[derive(Debug, PartialEq, Deserialize, Serialize, Default, Clone)]
-  pub struct InputEncoded {
-    #[serde(rename = "user_id")]
-    pub user_id: Vec<u8>,
-    #[serde(rename = "username")]
-    pub username: Vec<u8>,
-    #[serde(rename = "password")]
-    pub password: Vec<u8>,
-  }
-
-  pub fn deserialize_inputs(
-    map: &HashMap<String, Vec<u8>>,
-  ) -> Result<Inputs, Box<dyn std::error::Error + Send + Sync>> {
-    Ok(Inputs {
-      user_id: deserialize(
-        map
-          .get("user_id")
-          .ok_or_else(|| Error::MissingInput("user_id".to_owned()))?,
-      )?,
-      username: deserialize(
-        map
-          .get("username")
-          .ok_or_else(|| Error::MissingInput("username".to_owned()))?,
-      )?,
-      password: deserialize(
-        map
-          .get("password")
-          .ok_or_else(|| Error::MissingInput("password".to_owned()))?,
-      )?,
-    })
-  }
-
-  #[derive(Default, Debug)]
+  #[derive(Debug, Default)]
   pub struct Outputs {
-    pub user_id: UserIdSender,
+    pub user_id: UserIdPortSender,
   }
 
   #[must_use]
@@ -204,53 +147,53 @@ pub mod create_user {
   }
 
   #[derive(Debug)]
-  pub struct UserIdSender {
-    port: Arc<Mutex<Port>>,
+  pub struct UserIdPortSender {
+    port: Port,
   }
-  impl Default for UserIdSender {
+
+  impl Default for UserIdPortSender {
     fn default() -> Self {
       Self {
-        port: Arc::new(Mutex::new(Port::new("user_id".into()))),
+        port: Port::new("user_id".into()),
       }
     }
   }
-  impl Sender for UserIdSender {
+  impl PortSender for UserIdPortSender {
     type PayloadType = String;
 
-    fn get_port(&self) -> Arc<Mutex<Port>> {
-      self.port.clone()
+    fn get_port(&self) -> PacketSender {
+      self.port.channel.clone().unwrap()
+    }
+
+    fn get_port_name(&self) -> String {
+      self.port.name.clone()
     }
   }
 
-  pub fn get_outputs() -> (Outputs, PortStream) {
-    let outputs = Outputs::default();
-    let ports = vec![outputs.user_id.port.clone()];
-    let stream = PortStream::new(ports);
+  #[must_use]
+  pub fn get_outputs() -> (Outputs, MessageTransportStream) {
+    let mut outputs = Outputs::default();
+    let mut ports = vec![&mut outputs.user_id.port];
+    let stream = PortStream::create(&mut ports);
     (outputs, stream)
   }
 }
 pub mod get_id {
-
-  use std::collections::HashMap;
-  use std::sync::{
-    Arc,
-    Mutex,
-  };
-
   use serde::{
     Deserialize,
     Serialize,
   };
-  use vino_codec::messagepack::deserialize;
-  use vino_codec::Error;
-  pub use vino_rpc::port::Sender;
-  use vino_rpc::port::{
-    Port,
-    PortStream,
-  };
+  pub use vino_provider::native::prelude::*;
 
-  #[derive(Debug, PartialEq, Deserialize, Serialize, Default, Clone)]
+  pub fn populate_inputs(mut payload: TransportMap) -> Result<Inputs, TransportError> {
+    Ok(Inputs {
+      username: payload.consume("username")?,
+    })
+  }
+
+  #[derive(Debug, Deserialize, Serialize, Default, Clone)]
   pub struct Inputs {
+    #[serde(rename = "username")]
     pub username: String,
   }
 
@@ -259,27 +202,9 @@ pub mod get_id {
     vec![("username", "string")]
   }
 
-  #[derive(Debug, PartialEq, Deserialize, Serialize, Default, Clone)]
-  pub struct InputEncoded {
-    #[serde(rename = "username")]
-    pub username: Vec<u8>,
-  }
-
-  pub fn deserialize_inputs(
-    map: &HashMap<String, Vec<u8>>,
-  ) -> Result<Inputs, Box<dyn std::error::Error + Send + Sync>> {
-    Ok(Inputs {
-      username: deserialize(
-        map
-          .get("username")
-          .ok_or_else(|| Error::MissingInput("username".to_owned()))?,
-      )?,
-    })
-  }
-
-  #[derive(Default, Debug)]
+  #[derive(Debug, Default)]
   pub struct Outputs {
-    pub user_id: UserIdSender,
+    pub user_id: UserIdPortSender,
   }
 
   #[must_use]
@@ -288,54 +213,56 @@ pub mod get_id {
   }
 
   #[derive(Debug)]
-  pub struct UserIdSender {
-    port: Arc<Mutex<Port>>,
+  pub struct UserIdPortSender {
+    port: Port,
   }
-  impl Default for UserIdSender {
+
+  impl Default for UserIdPortSender {
     fn default() -> Self {
       Self {
-        port: Arc::new(Mutex::new(Port::new("user_id".into()))),
+        port: Port::new("user_id".into()),
       }
     }
   }
-  impl Sender for UserIdSender {
+  impl PortSender for UserIdPortSender {
     type PayloadType = String;
 
-    fn get_port(&self) -> Arc<Mutex<Port>> {
-      self.port.clone()
+    fn get_port(&self) -> PacketSender {
+      self.port.channel.clone().unwrap()
+    }
+
+    fn get_port_name(&self) -> String {
+      self.port.name.clone()
     }
   }
 
-  pub fn get_outputs() -> (Outputs, PortStream) {
-    let outputs = Outputs::default();
-    let ports = vec![outputs.user_id.port.clone()];
-    let stream = PortStream::new(ports);
+  #[must_use]
+  pub fn get_outputs() -> (Outputs, MessageTransportStream) {
+    let mut outputs = Outputs::default();
+    let mut ports = vec![&mut outputs.user_id.port];
+    let stream = PortStream::create(&mut ports);
     (outputs, stream)
   }
 }
 pub mod has_permission {
-
-  use std::collections::HashMap;
-  use std::sync::{
-    Arc,
-    Mutex,
-  };
-
   use serde::{
     Deserialize,
     Serialize,
   };
-  use vino_codec::messagepack::deserialize;
-  use vino_codec::Error;
-  pub use vino_rpc::port::Sender;
-  use vino_rpc::port::{
-    Port,
-    PortStream,
-  };
+  pub use vino_provider::native::prelude::*;
 
-  #[derive(Debug, PartialEq, Deserialize, Serialize, Default, Clone)]
+  pub fn populate_inputs(mut payload: TransportMap) -> Result<Inputs, TransportError> {
+    Ok(Inputs {
+      user_id: payload.consume("user_id")?,
+      permission: payload.consume("permission")?,
+    })
+  }
+
+  #[derive(Debug, Deserialize, Serialize, Default, Clone)]
   pub struct Inputs {
+    #[serde(rename = "user_id")]
     pub user_id: String,
+    #[serde(rename = "permission")]
     pub permission: String,
   }
 
@@ -344,34 +271,9 @@ pub mod has_permission {
     vec![("user_id", "string"), ("permission", "string")]
   }
 
-  #[derive(Debug, PartialEq, Deserialize, Serialize, Default, Clone)]
-  pub struct InputEncoded {
-    #[serde(rename = "user_id")]
-    pub user_id: Vec<u8>,
-    #[serde(rename = "permission")]
-    pub permission: Vec<u8>,
-  }
-
-  pub fn deserialize_inputs(
-    map: &HashMap<String, Vec<u8>>,
-  ) -> Result<Inputs, Box<dyn std::error::Error + Send + Sync>> {
-    Ok(Inputs {
-      user_id: deserialize(
-        map
-          .get("user_id")
-          .ok_or_else(|| Error::MissingInput("user_id".to_owned()))?,
-      )?,
-      permission: deserialize(
-        map
-          .get("permission")
-          .ok_or_else(|| Error::MissingInput("permission".to_owned()))?,
-      )?,
-    })
-  }
-
-  #[derive(Default, Debug)]
+  #[derive(Debug, Default)]
   pub struct Outputs {
-    pub user_id: UserIdSender,
+    pub user_id: UserIdPortSender,
   }
 
   #[must_use]
@@ -380,53 +282,53 @@ pub mod has_permission {
   }
 
   #[derive(Debug)]
-  pub struct UserIdSender {
-    port: Arc<Mutex<Port>>,
+  pub struct UserIdPortSender {
+    port: Port,
   }
-  impl Default for UserIdSender {
+
+  impl Default for UserIdPortSender {
     fn default() -> Self {
       Self {
-        port: Arc::new(Mutex::new(Port::new("user_id".into()))),
+        port: Port::new("user_id".into()),
       }
     }
   }
-  impl Sender for UserIdSender {
+  impl PortSender for UserIdPortSender {
     type PayloadType = String;
 
-    fn get_port(&self) -> Arc<Mutex<Port>> {
-      self.port.clone()
+    fn get_port(&self) -> PacketSender {
+      self.port.channel.clone().unwrap()
+    }
+
+    fn get_port_name(&self) -> String {
+      self.port.name.clone()
     }
   }
 
-  pub fn get_outputs() -> (Outputs, PortStream) {
-    let outputs = Outputs::default();
-    let ports = vec![outputs.user_id.port.clone()];
-    let stream = PortStream::new(ports);
+  #[must_use]
+  pub fn get_outputs() -> (Outputs, MessageTransportStream) {
+    let mut outputs = Outputs::default();
+    let mut ports = vec![&mut outputs.user_id.port];
+    let stream = PortStream::create(&mut ports);
     (outputs, stream)
   }
 }
 pub mod list_permissions {
-
-  use std::collections::HashMap;
-  use std::sync::{
-    Arc,
-    Mutex,
-  };
-
   use serde::{
     Deserialize,
     Serialize,
   };
-  use vino_codec::messagepack::deserialize;
-  use vino_codec::Error;
-  pub use vino_rpc::port::Sender;
-  use vino_rpc::port::{
-    Port,
-    PortStream,
-  };
+  pub use vino_provider::native::prelude::*;
 
-  #[derive(Debug, PartialEq, Deserialize, Serialize, Default, Clone)]
+  pub fn populate_inputs(mut payload: TransportMap) -> Result<Inputs, TransportError> {
+    Ok(Inputs {
+      user_id: payload.consume("user_id")?,
+    })
+  }
+
+  #[derive(Debug, Deserialize, Serialize, Default, Clone)]
   pub struct Inputs {
+    #[serde(rename = "user_id")]
     pub user_id: String,
   }
 
@@ -435,27 +337,9 @@ pub mod list_permissions {
     vec![("user_id", "string")]
   }
 
-  #[derive(Debug, PartialEq, Deserialize, Serialize, Default, Clone)]
-  pub struct InputEncoded {
-    #[serde(rename = "user_id")]
-    pub user_id: Vec<u8>,
-  }
-
-  pub fn deserialize_inputs(
-    map: &HashMap<String, Vec<u8>>,
-  ) -> Result<Inputs, Box<dyn std::error::Error + Send + Sync>> {
-    Ok(Inputs {
-      user_id: deserialize(
-        map
-          .get("user_id")
-          .ok_or_else(|| Error::MissingInput("user_id".to_owned()))?,
-      )?,
-    })
-  }
-
-  #[derive(Default, Debug)]
+  #[derive(Debug, Default)]
   pub struct Outputs {
-    pub permissions: PermissionsSender,
+    pub permissions: PermissionsPortSender,
   }
 
   #[must_use]
@@ -464,90 +348,67 @@ pub mod list_permissions {
   }
 
   #[derive(Debug)]
-  pub struct PermissionsSender {
-    port: Arc<Mutex<Port>>,
+  pub struct PermissionsPortSender {
+    port: Port,
   }
-  impl Default for PermissionsSender {
+
+  impl Default for PermissionsPortSender {
     fn default() -> Self {
       Self {
-        port: Arc::new(Mutex::new(Port::new("permissions".into()))),
+        port: Port::new("permissions".into()),
       }
     }
   }
-  impl Sender for PermissionsSender {
+  impl PortSender for PermissionsPortSender {
     type PayloadType = Vec<String>;
 
-    fn get_port(&self) -> Arc<Mutex<Port>> {
-      self.port.clone()
+    fn get_port(&self) -> PacketSender {
+      self.port.channel.clone().unwrap()
+    }
+
+    fn get_port_name(&self) -> String {
+      self.port.name.clone()
     }
   }
 
-  pub fn get_outputs() -> (Outputs, PortStream) {
-    let outputs = Outputs::default();
-    let ports = vec![outputs.permissions.port.clone()];
-    let stream = PortStream::new(ports);
+  #[must_use]
+  pub fn get_outputs() -> (Outputs, MessageTransportStream) {
+    let mut outputs = Outputs::default();
+    let mut ports = vec![&mut outputs.permissions.port];
+    let stream = PortStream::create(&mut ports);
     (outputs, stream)
   }
 }
 pub mod list_users {
-
-  use std::collections::HashMap;
-  use std::sync::{
-    Arc,
-    Mutex,
-  };
-
   use serde::{
     Deserialize,
     Serialize,
   };
-  use vino_codec::messagepack::deserialize;
-  use vino_codec::Error;
-  pub use vino_rpc::port::Sender;
-  use vino_rpc::port::{
-    Port,
-    PortStream,
-  };
+  pub use vino_provider::native::prelude::*;
 
-  #[derive(Debug, PartialEq, Deserialize, Serialize, Default, Clone)]
+  pub fn populate_inputs(mut payload: TransportMap) -> Result<Inputs, TransportError> {
+    Ok(Inputs {
+      offset: payload.consume("offset")?,
+      limit: payload.consume("limit")?,
+    })
+  }
+
+  #[derive(Debug, Deserialize, Serialize, Default, Clone)]
   pub struct Inputs {
-    pub offset: i32,
-    pub limit: i32,
+    #[serde(rename = "offset")]
+    pub offset: u32,
+    #[serde(rename = "limit")]
+    pub limit: u32,
   }
 
   #[must_use]
   pub fn inputs_list() -> Vec<(&'static str, &'static str)> {
-    vec![("offset", "i32"), ("limit", "i32")]
+    vec![("offset", "u32"), ("limit", "u32")]
   }
 
-  #[derive(Debug, PartialEq, Deserialize, Serialize, Default, Clone)]
-  pub struct InputEncoded {
-    #[serde(rename = "offset")]
-    pub offset: Vec<u8>,
-    #[serde(rename = "limit")]
-    pub limit: Vec<u8>,
-  }
-
-  pub fn deserialize_inputs(
-    map: &HashMap<String, Vec<u8>>,
-  ) -> Result<Inputs, Box<dyn std::error::Error + Send + Sync>> {
-    Ok(Inputs {
-      offset: deserialize(
-        map
-          .get("offset")
-          .ok_or_else(|| Error::MissingInput("offset".to_owned()))?,
-      )?,
-      limit: deserialize(
-        map
-          .get("limit")
-          .ok_or_else(|| Error::MissingInput("limit".to_owned()))?,
-      )?,
-    })
-  }
-
-  #[derive(Default, Debug)]
+  #[derive(Debug, Default)]
   pub struct Outputs {
-    pub users: UsersSender,
+    pub users: UsersPortSender,
   }
 
   #[must_use]
@@ -556,53 +417,53 @@ pub mod list_users {
   }
 
   #[derive(Debug)]
-  pub struct UsersSender {
-    port: Arc<Mutex<Port>>,
+  pub struct UsersPortSender {
+    port: Port,
   }
-  impl Default for UsersSender {
+
+  impl Default for UsersPortSender {
     fn default() -> Self {
       Self {
-        port: Arc::new(Mutex::new(Port::new("users".into()))),
+        port: Port::new("users".into()),
       }
     }
   }
-  impl Sender for UsersSender {
-    type PayloadType = HashMap<String, String>;
+  impl PortSender for UsersPortSender {
+    type PayloadType = std::collections::HashMap<String, String>;
 
-    fn get_port(&self) -> Arc<Mutex<Port>> {
-      self.port.clone()
+    fn get_port(&self) -> PacketSender {
+      self.port.channel.clone().unwrap()
+    }
+
+    fn get_port_name(&self) -> String {
+      self.port.name.clone()
     }
   }
 
-  pub fn get_outputs() -> (Outputs, PortStream) {
-    let outputs = Outputs::default();
-    let ports = vec![outputs.users.port.clone()];
-    let stream = PortStream::new(ports);
+  #[must_use]
+  pub fn get_outputs() -> (Outputs, MessageTransportStream) {
+    let mut outputs = Outputs::default();
+    let mut ports = vec![&mut outputs.users.port];
+    let stream = PortStream::create(&mut ports);
     (outputs, stream)
   }
 }
 pub mod remove_user {
-
-  use std::collections::HashMap;
-  use std::sync::{
-    Arc,
-    Mutex,
-  };
-
   use serde::{
     Deserialize,
     Serialize,
   };
-  use vino_codec::messagepack::deserialize;
-  use vino_codec::Error;
-  pub use vino_rpc::port::Sender;
-  use vino_rpc::port::{
-    Port,
-    PortStream,
-  };
+  pub use vino_provider::native::prelude::*;
 
-  #[derive(Debug, PartialEq, Deserialize, Serialize, Default, Clone)]
+  pub fn populate_inputs(mut payload: TransportMap) -> Result<Inputs, TransportError> {
+    Ok(Inputs {
+      username: payload.consume("username")?,
+    })
+  }
+
+  #[derive(Debug, Deserialize, Serialize, Default, Clone)]
   pub struct Inputs {
+    #[serde(rename = "username")]
     pub username: String,
   }
 
@@ -611,27 +472,9 @@ pub mod remove_user {
     vec![("username", "string")]
   }
 
-  #[derive(Debug, PartialEq, Deserialize, Serialize, Default, Clone)]
-  pub struct InputEncoded {
-    #[serde(rename = "username")]
-    pub username: Vec<u8>,
-  }
-
-  pub fn deserialize_inputs(
-    map: &HashMap<String, Vec<u8>>,
-  ) -> Result<Inputs, Box<dyn std::error::Error + Send + Sync>> {
-    Ok(Inputs {
-      username: deserialize(
-        map
-          .get("username")
-          .ok_or_else(|| Error::MissingInput("username".to_owned()))?,
-      )?,
-    })
-  }
-
-  #[derive(Default, Debug)]
+  #[derive(Debug, Default)]
   pub struct Outputs {
-    pub user_id: UserIdSender,
+    pub user_id: UserIdPortSender,
   }
 
   #[must_use]
@@ -640,54 +483,56 @@ pub mod remove_user {
   }
 
   #[derive(Debug)]
-  pub struct UserIdSender {
-    port: Arc<Mutex<Port>>,
+  pub struct UserIdPortSender {
+    port: Port,
   }
-  impl Default for UserIdSender {
+
+  impl Default for UserIdPortSender {
     fn default() -> Self {
       Self {
-        port: Arc::new(Mutex::new(Port::new("user_id".into()))),
+        port: Port::new("user_id".into()),
       }
     }
   }
-  impl Sender for UserIdSender {
+  impl PortSender for UserIdPortSender {
     type PayloadType = String;
 
-    fn get_port(&self) -> Arc<Mutex<Port>> {
-      self.port.clone()
+    fn get_port(&self) -> PacketSender {
+      self.port.channel.clone().unwrap()
+    }
+
+    fn get_port_name(&self) -> String {
+      self.port.name.clone()
     }
   }
 
-  pub fn get_outputs() -> (Outputs, PortStream) {
-    let outputs = Outputs::default();
-    let ports = vec![outputs.user_id.port.clone()];
-    let stream = PortStream::new(ports);
+  #[must_use]
+  pub fn get_outputs() -> (Outputs, MessageTransportStream) {
+    let mut outputs = Outputs::default();
+    let mut ports = vec![&mut outputs.user_id.port];
+    let stream = PortStream::create(&mut ports);
     (outputs, stream)
   }
 }
 pub mod update_permissions {
-
-  use std::collections::HashMap;
-  use std::sync::{
-    Arc,
-    Mutex,
-  };
-
   use serde::{
     Deserialize,
     Serialize,
   };
-  use vino_codec::messagepack::deserialize;
-  use vino_codec::Error;
-  pub use vino_rpc::port::Sender;
-  use vino_rpc::port::{
-    Port,
-    PortStream,
-  };
+  pub use vino_provider::native::prelude::*;
 
-  #[derive(Debug, PartialEq, Deserialize, Serialize, Default, Clone)]
+  pub fn populate_inputs(mut payload: TransportMap) -> Result<Inputs, TransportError> {
+    Ok(Inputs {
+      user_id: payload.consume("user_id")?,
+      permissions: payload.consume("permissions")?,
+    })
+  }
+
+  #[derive(Debug, Deserialize, Serialize, Default, Clone)]
   pub struct Inputs {
+    #[serde(rename = "user_id")]
     pub user_id: String,
+    #[serde(rename = "permissions")]
     pub permissions: Vec<String>,
   }
 
@@ -696,34 +541,9 @@ pub mod update_permissions {
     vec![("user_id", "string"), ("permissions", "[string]")]
   }
 
-  #[derive(Debug, PartialEq, Deserialize, Serialize, Default, Clone)]
-  pub struct InputEncoded {
-    #[serde(rename = "user_id")]
-    pub user_id: Vec<u8>,
-    #[serde(rename = "permissions")]
-    pub permissions: Vec<u8>,
-  }
-
-  pub fn deserialize_inputs(
-    map: &HashMap<String, Vec<u8>>,
-  ) -> Result<Inputs, Box<dyn std::error::Error + Send + Sync>> {
-    Ok(Inputs {
-      user_id: deserialize(
-        map
-          .get("user_id")
-          .ok_or_else(|| Error::MissingInput("user_id".to_owned()))?,
-      )?,
-      permissions: deserialize(
-        map
-          .get("permissions")
-          .ok_or_else(|| Error::MissingInput("permissions".to_owned()))?,
-      )?,
-    })
-  }
-
-  #[derive(Default, Debug)]
+  #[derive(Debug, Default)]
   pub struct Outputs {
-    pub permissions: PermissionsSender,
+    pub permissions: PermissionsPortSender,
   }
 
   #[must_use]
@@ -732,53 +552,53 @@ pub mod update_permissions {
   }
 
   #[derive(Debug)]
-  pub struct PermissionsSender {
-    port: Arc<Mutex<Port>>,
+  pub struct PermissionsPortSender {
+    port: Port,
   }
-  impl Default for PermissionsSender {
+
+  impl Default for PermissionsPortSender {
     fn default() -> Self {
       Self {
-        port: Arc::new(Mutex::new(Port::new("permissions".into()))),
+        port: Port::new("permissions".into()),
       }
     }
   }
-  impl Sender for PermissionsSender {
+  impl PortSender for PermissionsPortSender {
     type PayloadType = Vec<String>;
 
-    fn get_port(&self) -> Arc<Mutex<Port>> {
-      self.port.clone()
+    fn get_port(&self) -> PacketSender {
+      self.port.channel.clone().unwrap()
+    }
+
+    fn get_port_name(&self) -> String {
+      self.port.name.clone()
     }
   }
 
-  pub fn get_outputs() -> (Outputs, PortStream) {
-    let outputs = Outputs::default();
-    let ports = vec![outputs.permissions.port.clone()];
-    let stream = PortStream::new(ports);
+  #[must_use]
+  pub fn get_outputs() -> (Outputs, MessageTransportStream) {
+    let mut outputs = Outputs::default();
+    let mut ports = vec![&mut outputs.permissions.port];
+    let stream = PortStream::create(&mut ports);
     (outputs, stream)
   }
 }
 pub mod validate_session {
-
-  use std::collections::HashMap;
-  use std::sync::{
-    Arc,
-    Mutex,
-  };
-
   use serde::{
     Deserialize,
     Serialize,
   };
-  use vino_codec::messagepack::deserialize;
-  use vino_codec::Error;
-  pub use vino_rpc::port::Sender;
-  use vino_rpc::port::{
-    Port,
-    PortStream,
-  };
+  pub use vino_provider::native::prelude::*;
 
-  #[derive(Debug, PartialEq, Deserialize, Serialize, Default, Clone)]
+  pub fn populate_inputs(mut payload: TransportMap) -> Result<Inputs, TransportError> {
+    Ok(Inputs {
+      session: payload.consume("session")?,
+    })
+  }
+
+  #[derive(Debug, Deserialize, Serialize, Default, Clone)]
   pub struct Inputs {
+    #[serde(rename = "session")]
     pub session: String,
   }
 
@@ -787,27 +607,9 @@ pub mod validate_session {
     vec![("session", "string")]
   }
 
-  #[derive(Debug, PartialEq, Deserialize, Serialize, Default, Clone)]
-  pub struct InputEncoded {
-    #[serde(rename = "session")]
-    pub session: Vec<u8>,
-  }
-
-  pub fn deserialize_inputs(
-    map: &HashMap<String, Vec<u8>>,
-  ) -> Result<Inputs, Box<dyn std::error::Error + Send + Sync>> {
-    Ok(Inputs {
-      session: deserialize(
-        map
-          .get("session")
-          .ok_or_else(|| Error::MissingInput("session".to_owned()))?,
-      )?,
-    })
-  }
-
-  #[derive(Default, Debug)]
+  #[derive(Debug, Default)]
   pub struct Outputs {
-    pub user_id: UserIdSender,
+    pub user_id: UserIdPortSender,
   }
 
   #[must_use]
@@ -816,28 +618,34 @@ pub mod validate_session {
   }
 
   #[derive(Debug)]
-  pub struct UserIdSender {
-    port: Arc<Mutex<Port>>,
+  pub struct UserIdPortSender {
+    port: Port,
   }
-  impl Default for UserIdSender {
+
+  impl Default for UserIdPortSender {
     fn default() -> Self {
       Self {
-        port: Arc::new(Mutex::new(Port::new("user_id".into()))),
+        port: Port::new("user_id".into()),
       }
     }
   }
-  impl Sender for UserIdSender {
+  impl PortSender for UserIdPortSender {
     type PayloadType = String;
 
-    fn get_port(&self) -> Arc<Mutex<Port>> {
-      self.port.clone()
+    fn get_port(&self) -> PacketSender {
+      self.port.channel.clone().unwrap()
+    }
+
+    fn get_port_name(&self) -> String {
+      self.port.name.clone()
     }
   }
 
-  pub fn get_outputs() -> (Outputs, PortStream) {
-    let outputs = Outputs::default();
-    let ports = vec![outputs.user_id.port.clone()];
-    let stream = PortStream::new(ports);
+  #[must_use]
+  pub fn get_outputs() -> (Outputs, MessageTransportStream) {
+    let mut outputs = Outputs::default();
+    let mut ports = vec![&mut outputs.user_id.port];
+    let stream = PortStream::create(&mut ports);
     (outputs, stream)
   }
 }

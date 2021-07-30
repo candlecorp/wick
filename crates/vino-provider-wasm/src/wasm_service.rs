@@ -3,8 +3,8 @@ use std::convert::TryFrom;
 
 use actix::prelude::*;
 use vino_codec::messagepack::serialize;
-use vino_provider::ComponentSignature;
-use vino_rpc::port::PortStream;
+use vino_transport::MessageTransportStream;
+use vino_types::signatures::ComponentSignature;
 
 use crate::wapc_module::WapcModule;
 use crate::wasm_host::WasmHost;
@@ -43,17 +43,18 @@ impl Handler<Initialize> for WasmService {
 }
 
 #[derive(Message, Debug)]
-#[rtype(result = "Result<PortStream>")]
+#[rtype(result = "Result<MessageTransportStream>")]
 pub struct Call {
   pub component: String,
   pub payload: HashMap<String, Vec<u8>>,
 }
 
 impl Handler<Call> for WasmService {
-  type Result = Result<PortStream>;
+  type Result = Result<MessageTransportStream>;
 
   fn handle(&mut self, msg: Call, _ctx: &mut Self::Context) -> Self::Result {
-    let payload = serialize(("", msg.payload))?;
+    let payload = ("", msg.payload);
+    let payload = serialize(&payload)?;
     self.host.call(&msg.component, &payload)
   }
 }

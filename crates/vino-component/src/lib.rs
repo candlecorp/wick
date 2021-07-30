@@ -72,98 +72,14 @@
 )]
 // !!END_LINTS
 // Add exceptions here
-#![allow()]
+#![allow(unsafe_code, missing_docs)] //TODO
 
 /// Version 0 of the output format
 pub mod v0;
-/// Module for Packet, the abstraction over different versions
-pub mod packet {
-  pub use crate::v0;
-}
 
-use serde::{
-  Deserialize,
-  Serialize,
-};
+pub mod error;
+
 pub use vino_codec as codec;
-use vino_codec::messagepack::deserialize;
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-/// The output payload that component's push out of output ports
-pub enum Packet {
-  /// Version 0 of the payload format (unstable)
-  #[serde(rename = "0")]
-  V0(v0::Payload),
-}
-
-/// The error type used when attempting to deserialize a [Packet]
-#[derive(Debug)]
-pub enum Error {
-  /// Invalid payload
-  Invalid,
-  /// Packet was an Exception
-  Exception(String),
-  /// Packet was an Error
-  Error(String),
-  /// An error deserializing from MessagePack
-  DeserializationError(vino_codec::Error),
-  /// An Internal error given when the packet contained a message not destined for a consumer
-  InternalError,
-}
-
-impl std::fmt::Display for Error {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    match self {
-      Error::Invalid => write!(f, "Invalid"),
-      Error::Exception(v) => write!(f, "{}", v),
-      Error::Error(v) => write!(f, "{}", v),
-      Error::DeserializationError(e) => write!(f, "{}", e.to_string()),
-      Error::InternalError => write!(f, "Internal Error"),
-    }
-  }
-}
-
-impl std::error::Error for Error {}
-
-impl Packet {
-  /// Try to deserialize a [Packet] into the target type
-  pub fn try_into<'de, T: Deserialize<'de>>(self) -> Result<T, Error> {
-    match self {
-      Packet::V0(v) => match v {
-        v0::Payload::Invalid => Err(Error::Invalid),
-        v0::Payload::Exception(v) => Err(Error::Exception(v)),
-        v0::Payload::Error(v) => Err(Error::Error(v)),
-        v0::Payload::MessagePack(buf) => {
-          deserialize::<T>(&buf).map_err(Error::DeserializationError)
-        }
-        v0::Payload::Close => Err(Error::InternalError),
-        v0::Payload::OpenBracket => Err(Error::InternalError),
-        v0::Payload::CloseBracket => Err(Error::InternalError),
-      },
-    }
-  }
-}
-
-impl From<&Vec<u8>> for Packet {
-  fn from(buf: &Vec<u8>) -> Self {
-    match deserialize::<Packet>(buf) {
-      Ok(packet) => packet,
-      Err(e) => Packet::V0(v0::Payload::Error(format!(
-        "Error deserializing packet: {}",
-        e
-      ))),
-    }
-  }
-}
-
-impl From<&[u8]> for Packet {
-  fn from(buf: &[u8]) -> Self {
-    match deserialize::<Packet>(buf) {
-      Ok(packet) => packet,
-      Err(e) => Packet::V0(v0::Payload::Error(format!(
-        "Error deserializing packet: {}",
-        e
-      ))),
-    }
-  }
-}
+/// Module for [Packet], the versioned Vino message structure.
+pub mod packet;
+pub use packet::*;

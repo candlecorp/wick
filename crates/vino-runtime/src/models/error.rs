@@ -2,7 +2,6 @@ use std::fmt::Display;
 
 use itertools::join;
 use thiserror::Error;
-use vino_rpc::PortSignature;
 
 use crate::dev::prelude::*;
 

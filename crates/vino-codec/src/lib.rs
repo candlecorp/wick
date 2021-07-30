@@ -77,8 +77,12 @@
 
 /// The crate's error module
 pub mod error;
-/// MessagePack related serialization/deserialization
+/// JSON serialization/deserialization
+pub mod json;
+/// MessagePack serialization/deserialization
 pub mod messagepack;
+/// Serialization/deserialization implementations to raw [serde_value]s
+pub mod raw;
 
 /// The crate's Result type
 pub type Result<T> = std::result::Result<T, error::CodecError>;

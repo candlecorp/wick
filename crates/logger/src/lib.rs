@@ -126,6 +126,7 @@ impl Logger {
 
     let priority_modules = [
       "logger",
+      "vino",
       "vino_cli",
       "vinoc",
       "vino_macros",
@@ -220,6 +221,8 @@ impl Log for Logger {
     // Check if the record is matched by the logger before logging
     if self.inner.matches(record) {
       eprintln!("{}", self.format(record));
+    } else {
+      eprintln!("Filtered: {}", self.format(record));
     }
   }
 

@@ -35,7 +35,7 @@ async fn test_vow_serve() -> utils::TestResult<()> {
   };
 
   let result = panic::catch_unwind(|| {
-    equals!(actual, hashmap! {"output".to_owned() => expected});
+    equals!(actual, vec![expected]);
   });
 
   p_tx.send(Signal::Kill).await?;

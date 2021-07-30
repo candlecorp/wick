@@ -82,12 +82,13 @@ mod builder;
 mod error;
 mod host;
 pub mod host_definition;
+pub mod run;
 
 pub use builder::HostBuilder;
 pub use host::Host;
 pub use host_definition::HostDefinition;
 
-pub type Result<T> = std::result::Result<T, error::VinoHostError>;
+pub(crate) type Result<T> = std::result::Result<T, error::VinoHostError>;
 pub type Error = error::VinoHostError;
 
 #[cfg(test)]

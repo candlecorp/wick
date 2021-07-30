@@ -27,21 +27,24 @@ impl Handler<ShortCircuit> for SchematicService {
   type Result = ResponseActFuture<Self, Result<(), SchematicError>>;
 
   fn handle(&mut self, msg: ShortCircuit, ctx: &mut Context<Self>) -> Self::Result {
-    trace!("Short circuiting component {}", msg.reference);
+    trace!("SC:{}:{}:SHORT", self.name, msg.reference);
     let reference = msg.reference;
     let tx_id = msg.tx_id;
     let payload = msg.payload;
 
     let outputs = self.get_outputs(&reference);
 
-    trace!("Output ports for {} : {:?}", reference, outputs);
-
     let downstreams: Vec<ConnectionDefinition> = outputs
       .iter()
       .flat_map(|port| self.get_port_connections(port))
       .collect();
 
-    trace!("Connections to short {:?}", downstreams);
+    trace!(
+      "SC:{}:{}:SHORT:Connections {}",
+      self.name,
+      reference,
+      join(&downstreams, ", ")
+    );
 
     let outputs: Vec<OutputMessage> = downstreams
       .into_iter()

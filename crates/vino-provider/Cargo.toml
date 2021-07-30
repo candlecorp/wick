@@ -7,11 +7,35 @@ license = "Apache-2.0"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+
+[features]
+default = []
+wasm = []
+signatures = []
+native = [
+  "thiserror",
+  "async-trait",
+  "tokio",
+  "tokio-stream",
+  "log",
+  "vino-transport",
+  "vino-types",
+]
+
 [dependencies]
-vino-rpc = { path = "../vino-rpc" }
-async-trait = "0.1.50"
-thiserror = "1.0.25"
+vino-component = { path = "../vino-component" }
 vino-entity = { path = "../vino-entity" }
+vino-codec = { path = "../vino-codec" }
+serde = { version = "1.0.126", features = ["derive"] }
+
+# For native providers
+vino-types = { path = "../vino-types", optional = true }
+vino-transport = { path = "../vino-transport", optional = true }
+async-trait = { version = "0.1.50", optional = true }
+thiserror = { version = "1.0.25", optional = true }
+tokio = { version = "1.4.0", features = [], optional = true }
+tokio-stream = { version = "0.1.6", features = [], optional = true }
+log = { version = "0.4.14", optional = true }
 
 [dev-dependencies]
 env_logger = "0.9"

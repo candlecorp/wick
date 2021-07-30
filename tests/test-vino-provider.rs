@@ -1,23 +1,15 @@
 use futures::prelude::*;
 use log::debug;
-use maplit::hashmap;
 use test_vino_provider::Provider;
-use vino_codec::messagepack::{
-  deserialize,
-  serialize,
-};
-use vino_component::{
-  v0,
-  Packet,
-};
+use vino_macros::*;
 use vino_rpc::RpcHandler;
 
 #[test_env_log::test(tokio::test)]
 async fn request() -> anyhow::Result<()> {
   let provider = Provider::default();
   let input = "some_input";
-  let job_payload = hashmap! {
-    "input".to_string() => serialize(input)?,
+  let job_payload = transport_map! {
+    "input" => input,
   };
 
   let mut outputs = provider
@@ -25,15 +17,10 @@ async fn request() -> anyhow::Result<()> {
       vino_entity::Entity::component("test-component"),
       job_payload,
     )
-    .await
-    .expect("request failed");
+    .await?;
   let output = outputs.next().await.unwrap();
   println!("Received payload from [{}]", output.port);
-  let payload: String = match output.packet {
-    Packet::V0(v0::Payload::MessagePack(payload)) => deserialize(&payload)?,
-    _ => None,
-  }
-  .unwrap();
+  let payload: String = output.payload.try_into()?;
 
   println!("outputs: {:?}", payload);
   assert_eq!(payload, "TEST: some_input");
@@ -45,7 +32,7 @@ async fn request() -> anyhow::Result<()> {
 async fn list() -> anyhow::Result<()> {
   let provider = Provider::default();
 
-  let response = provider.get_list().await.expect("request failed");
+  let response = provider.get_list().await?;
   debug!("list response : {:?}", response);
 
   Ok(())

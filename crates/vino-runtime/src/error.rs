@@ -24,7 +24,7 @@ pub enum SchematicError {
   #[error(transparent)]
   ValidationError(#[from] ValidationError),
   #[error(transparent)]
-  ComponentError(#[from] ComponentError),
+  ComponentError(#[from] ProviderError),
   #[error(transparent)]
   EntityError(#[from] vino_entity::Error),
   #[error(transparent)]
@@ -54,7 +54,7 @@ pub enum NetworkError {
   #[error(transparent)]
   SchematicError(#[from] SchematicError),
   #[error(transparent)]
-  ComponentError(#[from] ComponentError),
+  ComponentError(#[from] ProviderError),
   #[error(transparent)]
   InternalError(#[from] InternalError),
   #[error(transparent)]
@@ -68,7 +68,9 @@ pub enum NetworkError {
 }
 
 #[derive(Error, Debug)]
-pub enum ComponentError {
+pub enum ProviderError {
+  #[error("Provider uninitialized")]
+  Uninitialized,
   #[error(transparent)]
   WasmProviderError(#[from] vino_provider_wasm::Error),
   #[error("Failed to create a raw WebAssembly host")]
@@ -86,7 +88,7 @@ pub enum ComponentError {
   #[error(transparent)]
   RpcUpstreamError(#[from] tonic::Status),
   #[error(transparent)]
-  OutputError(#[from] vino_component::Error),
+  OutputError(#[from] vino_component::error::DeserializationError),
   #[error(transparent)]
   CodecError(#[from] vino_codec::Error),
   #[error("Grpc Provider error: {0}")]
@@ -95,6 +97,8 @@ pub enum ComponentError {
   InternalError(#[from] InternalError),
   #[error(transparent)]
   CommonError(#[from] CommonError),
+  #[error(transparent)]
+  TransportError(#[from] vino_transport::Error),
 }
 
 #[derive(Error, Debug, Clone, Copy)]
@@ -148,7 +152,7 @@ pub enum RuntimeError {
   #[error(transparent)]
   TransactionError(#[from] TransactionError),
   #[error(transparent)]
-  ComponentError(#[from] ComponentError),
+  ComponentError(#[from] ProviderError),
   #[error(transparent)]
   SchematicModelError(#[from] SchematicModelError),
   #[error(transparent)]
@@ -170,7 +174,7 @@ pub enum RuntimeError {
   #[error(transparent)]
   TransportError(#[from] vino_transport::Error),
   #[error(transparent)]
-  OutputError(#[from] vino_component::Error),
+  OutputError(#[from] vino_component::error::DeserializationError),
   #[error(transparent)]
   ActixMailboxError(#[from] MailboxError),
   #[error(transparent)]

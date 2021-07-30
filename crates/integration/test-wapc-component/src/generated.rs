@@ -1,64 +1,57 @@
 /**********************************************
 ***** This file is generated, do not edit *****
 ***********************************************/
-use vino_component::codec::messagepack::{
-  deserialize,
-  serialize,
-};
-use wapc_guest::{
-  host_call,
-  register_function,
-  CallResult,
-  HandlerResult,
-};
 
-pub fn register_handlers() {
-  Handlers::register_error(crate::components::error::job);
-  Handlers::register_validate(crate::components::validate::job);
-}
+use vino_provider::wasm::prelude::*;
 
-#[cfg(feature = "guest")]
-pub struct Handlers {}
+type Result<T> = std::result::Result<T, Error>;
 
-#[cfg(feature = "guest")]
-impl Handlers {
-  pub fn register_error(f: fn(error::Inputs, error::Outputs) -> HandlerResult<()>) {
-    *ERROR.write().unwrap() = Some(f);
-    register_function("error", error_wrapper);
+#[no_mangle]
+pub(crate) extern "C" fn __guest_call(op_len: i32, req_len: i32) -> i32 {
+  use std::slice;
+
+  let buf: Vec<u8> = Vec::with_capacity(req_len as _);
+  let req_ptr = buf.as_ptr();
+
+  let opbuf: Vec<u8> = Vec::with_capacity(op_len as _);
+  let op_ptr = opbuf.as_ptr();
+
+  let (slice, op) = unsafe {
+    wapc::__guest_request(op_ptr, req_ptr);
+    (
+      slice::from_raw_parts(req_ptr, req_len as _),
+      slice::from_raw_parts(op_ptr, op_len as _),
+    )
+  };
+
+  let op_str = ::std::str::from_utf8(op).unwrap();
+
+  match Dispatcher::dispatch(op_str, slice) {
+    Ok(response) => {
+      unsafe { wapc::__guest_response(response.as_ptr(), response.len()) }
+      1
+    }
+    Err(e) => {
+      let errmsg = format!("Guest call failed: {}", e);
+      unsafe {
+        wapc::__guest_error(errmsg.as_ptr(), errmsg.len() as _);
+      }
+      0
+    }
   }
-  pub fn register_validate(f: fn(validate::Inputs, validate::Outputs) -> HandlerResult<()>) {
-    *VALIDATE.write().unwrap() = Some(f);
-    register_function("validate", validate_wrapper);
+}
+
+pub struct Dispatcher {}
+impl Dispatch for Dispatcher {
+  fn dispatch(op: &str, payload: &[u8]) -> CallResult {
+    let payload = IncomingPayload::from_buffer(payload)?;
+    let result = match op {
+      "error" => error::Component::new().execute(&payload),
+      "validate" => validate::Component::new().execute(&payload),
+      _ => Err(Error::JobNotFound(op.to_owned())),
+    }?;
+    Ok(serialize(&result)?)
   }
-}
-
-#[cfg(feature = "guest")]
-lazy_static::lazy_static! {
-#[allow(clippy::type_complexity)]
-static ref ERROR: std::sync::RwLock<Option<error::JobSignature>> = std::sync::RwLock::new(None);
-#[allow(clippy::type_complexity)]
-static ref VALIDATE: std::sync::RwLock<Option<validate::JobSignature>> = std::sync::RwLock::new(None);
-}
-
-#[cfg(feature = "guest")]
-fn error_wrapper(input_payload: &[u8]) -> CallResult {
-  use error::*;
-  let (inv_id, input_encoded): (String, InputEncoded) = deserialize(input_payload)?;
-  let outputs = get_outputs(&inv_id);
-  let inputs: Inputs = deserialize_inputs(input_encoded)?;
-  let lock = ERROR.read().unwrap().unwrap();
-  let result = lock(inputs, outputs)?;
-  Ok(serialize(result)?)
-}
-#[cfg(feature = "guest")]
-fn validate_wrapper(input_payload: &[u8]) -> CallResult {
-  use validate::*;
-  let (inv_id, input_encoded): (String, InputEncoded) = deserialize(input_payload)?;
-  let outputs = get_outputs(&inv_id);
-  let inputs: Inputs = deserialize_inputs(input_encoded)?;
-  let lock = VALIDATE.read().unwrap().unwrap();
-  let result = lock(inputs, outputs)?;
-  Ok(serialize(result)?)
 }
 
 pub(crate) mod error {
@@ -66,39 +59,44 @@ pub(crate) mod error {
     Deserialize,
     Serialize,
   };
-  use vino_component::v0::Payload;
-  use vino_component::Packet;
+  pub use vino_provider::wasm::{
+    console_log,
+    GuestPort,
+    JobResult,
+  };
 
   use super::*;
+  use crate::components::error as implementation;
 
-  pub(crate) type JobSignature = fn(Inputs, Outputs) -> HandlerResult<()>;
+  pub(crate) struct Component {}
 
-  // Implementation for error
-  #[derive(Debug, PartialEq, Deserialize, Serialize, Default, Clone)]
-  pub struct InputEncoded {
-    #[serde(rename = "input")]
-    pub input: Vec<u8>,
+  impl Component {
+    pub fn new() -> Self {
+      Self {}
+    }
+  }
+  impl WapcComponent for Component {
+    fn execute(&self, payload: &IncomingPayload) -> JobResult {
+      let inputs = populate_inputs(payload)?;
+      let outputs = get_outputs(&payload.inv_id);
+      implementation::job(inputs, outputs)
+    }
   }
 
-  pub(crate) fn deserialize_inputs(
-    args: InputEncoded,
-  ) -> std::result::Result<
-    Inputs,
-    std::boxed::Box<dyn std::error::Error + std::marker::Send + std::marker::Sync>,
-  > {
+  fn populate_inputs(payload: &IncomingPayload) -> Result<Inputs> {
     Ok(Inputs {
-      input: deserialize(&args.input)?,
+      input: deserialize(payload.get("input")?)?,
     })
   }
 
   #[cfg(feature = "guest")]
-  #[derive(Debug, PartialEq, Deserialize, Serialize, Default, Clone)]
-  pub struct Inputs {
+  #[derive(Debug, Deserialize, Serialize, Default, Clone)]
+  pub(crate) struct Inputs {
     #[serde(rename = "input")]
     pub input: String,
   }
 
-  pub(crate) fn get_outputs(inv_id: &str) -> Outputs<'_> {
+  fn get_outputs(inv_id: &str) -> Outputs {
     Outputs {
       output: GuestPortOutput { inv_id },
     }
@@ -109,29 +107,18 @@ pub(crate) mod error {
     inv_id: &'a str,
   }
 
-  impl<'a> GuestPortOutput<'a> {
-    #[allow(unused)]
-    pub fn send(&self, payload: String) -> CallResult {
-      host_call(
-        self.inv_id,
-        "output",
-        "port",
-        &serialize(Packet::V0(Payload::to_messagepack(payload)))?,
-      )
+  impl<'a> GuestPort for GuestPortOutput<'a> {
+    type Output = String;
+    fn get_name(&self) -> String {
+      "output".to_string()
     }
-    #[allow(unused)]
-    pub fn exception(&self, message: String) -> CallResult {
-      host_call(
-        self.inv_id,
-        "output",
-        "port",
-        &serialize(Packet::V0(Payload::Exception(message)))?,
-      )
+    fn get_invocation_id(&self) -> String {
+      self.inv_id.to_owned()
     }
   }
 
   #[cfg(feature = "guest")]
-  #[derive(Debug, PartialEq, Clone)]
+  #[derive(Debug)]
   pub struct Outputs<'a> {
     pub output: GuestPortOutput<'a>,
   }
@@ -141,39 +128,44 @@ pub(crate) mod validate {
     Deserialize,
     Serialize,
   };
-  use vino_component::v0::Payload;
-  use vino_component::Packet;
+  pub use vino_provider::wasm::{
+    console_log,
+    GuestPort,
+    JobResult,
+  };
 
   use super::*;
+  use crate::components::validate as implementation;
 
-  pub(crate) type JobSignature = fn(Inputs, Outputs) -> HandlerResult<()>;
+  pub(crate) struct Component {}
 
-  // Implementation for validate
-  #[derive(Debug, PartialEq, Deserialize, Serialize, Default, Clone)]
-  pub struct InputEncoded {
-    #[serde(rename = "input")]
-    pub input: Vec<u8>,
+  impl Component {
+    pub fn new() -> Self {
+      Self {}
+    }
+  }
+  impl WapcComponent for Component {
+    fn execute(&self, payload: &IncomingPayload) -> JobResult {
+      let inputs = populate_inputs(payload)?;
+      let outputs = get_outputs(&payload.inv_id);
+      implementation::job(inputs, outputs)
+    }
   }
 
-  pub(crate) fn deserialize_inputs(
-    args: InputEncoded,
-  ) -> std::result::Result<
-    Inputs,
-    std::boxed::Box<dyn std::error::Error + std::marker::Send + std::marker::Sync>,
-  > {
+  fn populate_inputs(payload: &IncomingPayload) -> Result<Inputs> {
     Ok(Inputs {
-      input: deserialize(&args.input)?,
+      input: deserialize(payload.get("input")?)?,
     })
   }
 
   #[cfg(feature = "guest")]
-  #[derive(Debug, PartialEq, Deserialize, Serialize, Default, Clone)]
-  pub struct Inputs {
+  #[derive(Debug, Deserialize, Serialize, Default, Clone)]
+  pub(crate) struct Inputs {
     #[serde(rename = "input")]
     pub input: String,
   }
 
-  pub(crate) fn get_outputs(inv_id: &str) -> Outputs<'_> {
+  fn get_outputs(inv_id: &str) -> Outputs {
     Outputs {
       output: GuestPortOutput { inv_id },
     }
@@ -184,29 +176,18 @@ pub(crate) mod validate {
     inv_id: &'a str,
   }
 
-  impl<'a> GuestPortOutput<'a> {
-    #[allow(unused)]
-    pub fn send(&self, payload: String) -> CallResult {
-      host_call(
-        self.inv_id,
-        "output",
-        "port",
-        &serialize(Packet::V0(Payload::to_messagepack(payload)))?,
-      )
+  impl<'a> GuestPort for GuestPortOutput<'a> {
+    type Output = String;
+    fn get_name(&self) -> String {
+      "output".to_string()
     }
-    #[allow(unused)]
-    pub fn exception(&self, message: String) -> CallResult {
-      host_call(
-        self.inv_id,
-        "output",
-        "port",
-        &serialize(Packet::V0(Payload::Exception(message)))?,
-      )
+    fn get_invocation_id(&self) -> String {
+      self.inv_id.to_owned()
     }
   }
 
   #[cfg(feature = "guest")]
-  #[derive(Debug, PartialEq, Clone)]
+  #[derive(Debug)]
   pub struct Outputs<'a> {
     pub output: GuestPortOutput<'a>,
   }

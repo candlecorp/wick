@@ -7,7 +7,7 @@ use std::path::PathBuf;
 
 use nkeys::KeyPairType;
 use structopt::StructOpt;
-use vino_rpc::ProviderSignature;
+use vino_types::signatures::ProviderSignature;
 use vino_wascap::sign_buffer_with_claims;
 
 use crate::keys::extract_keypair;

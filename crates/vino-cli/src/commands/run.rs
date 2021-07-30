@@ -3,26 +3,27 @@ use std::io::Read;
 use std::path::PathBuf;
 
 use structopt::StructOpt;
+use vino_runtime::prelude::StreamExt;
 
 use crate::utils::merge_runconfig;
 use crate::Result;
 
 #[derive(Debug, Clone, StructOpt)]
 #[structopt(rename_all = "kebab-case")]
-pub struct RunCommand {
+pub(crate) struct RunCommand {
   #[structopt(flatten)]
-  pub logging: super::LoggingOptions,
+  pub(crate) logging: super::LoggingOptions,
 
   #[structopt(flatten)]
-  pub host: super::HostOptions,
+  pub(crate) host: super::HostOptions,
 
   /// Turn on info logging
   #[structopt(long = "info")]
-  pub info: bool,
+  pub(crate) info: bool,
 
   /// Default schematic to run
   #[structopt(long, short, env = "VINO_DEFAULT_SCHEMATIC")]
-  pub default_schematic: Option<String>,
+  pub(crate) default_schematic: Option<String>,
 
   /// Manifest file
   manifest: PathBuf,
@@ -31,12 +32,12 @@ pub struct RunCommand {
   data: Option<String>,
 }
 
-pub async fn handle_command(command: RunCommand) -> Result<String> {
+pub(crate) async fn handle_command(command: RunCommand) -> Result<String> {
   let mut logging = command.logging;
   if !(command.info || command.logging.trace || command.logging.debug) {
     logging.quiet = true;
   }
-  crate::utils::init_logger(&logging)?;
+  logger::Logger::init(&logging)?;
 
   let data = match command.data {
     None => {
@@ -59,9 +60,10 @@ pub async fn handle_command(command: RunCommand) -> Result<String> {
     config.default_schematic = command.default_schematic.unwrap();
   }
 
-  let result = crate::run(config, json).await?;
-
-  println!("{}", result);
+  let mut result = vino_host::run::run(config, json).await?;
+  while let Some(next) = result.next().await {
+    println!("{}", next.payload.into_json());
+  }
 
   Ok("Done".to_owned())
 }

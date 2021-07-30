@@ -5,11 +5,15 @@ authors = ["Jarrod Overson <jsoverson@gmail.com>"]
 edition = "2018"
 license = "Apache-2.0"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[features]
+default = ["wasm"]
+wasm = []
+native = []
 
 [dependencies]
 serde = { version = "1.0.126", features = ["derive"] }
 vino-codec = { path = "../vino-codec" }
+serde-value = "0.7.0"
 
 [dev-dependencies]
 env_logger = "0.9"

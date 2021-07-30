@@ -36,14 +36,16 @@ pub(crate) mod prelude {
     ProviderKind,
     SchematicDefinition,
   };
-  pub(crate) use vino_transport::message_transport::MessageSignal;
+  pub(crate) use vino_transport::message_transport::{
+    MessageSignal,
+    MessageTransport,
+    TransportMap,
+  };
+  pub(crate) use vino_types::signatures::*;
   pub(crate) use vino_wascap::KeyPair;
 
   pub(crate) use crate::dev::*;
-  pub(crate) use crate::dispatch::{
-    inv_error,
-    OutputPacket,
-  };
+  pub(crate) use crate::dispatch::inv_error;
   pub(crate) use crate::error::{
     InternalError,
     *,
@@ -52,8 +54,10 @@ pub(crate) mod prelude {
   pub(crate) use crate::models::*;
   pub(crate) use crate::network_service::NetworkService;
   pub(crate) use crate::prelude::*;
+  pub(crate) use crate::providers::network_provider::Provider as NetworkProvider;
   pub(crate) use crate::schematic_service::SchematicService;
   pub(crate) use crate::utils::actix::ActorResult;
+  pub(crate) use crate::utils::helpers::*;
 }
 
 pub(crate) trait SendableTryFuture: TryFuture + Send {}

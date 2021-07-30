@@ -72,19 +72,18 @@
 // Add exceptions here
 #![allow(missing_docs, clippy::too_many_lines)]
 
-pub(crate) mod generated;
+pub mod generated;
 
-use std::collections::HashMap;
 use std::sync::{
   Arc,
   Mutex,
 };
 
-use async_trait::async_trait;
 use vino_entity::Entity;
+use vino_provider::native::prelude::*;
 use vino_rpc::error::RpcError;
 use vino_rpc::{
-  BoxedPacketStream,
+  BoxedTransportStream,
   DurationStatistics,
   RpcHandler,
   RpcResult,
@@ -121,11 +120,7 @@ impl Provider {
 
 #[async_trait]
 impl RpcHandler for Provider {
-  async fn invoke(
-    &self,
-    entity: Entity,
-    payload: HashMap<String, Vec<u8>>,
-  ) -> RpcResult<BoxedPacketStream> {
+  async fn invoke(&self, entity: Entity, payload: TransportMap) -> RpcResult<BoxedTransportStream> {
     let context = self.context.clone();
     let entity_url = entity.url();
     let component = entity
@@ -134,12 +129,11 @@ impl RpcHandler for Provider {
     let instance = generated::get_component(&component);
     match instance {
       Some(instance) => {
-        let future = instance.job_wrapper(context, payload);
-        Ok(Box::pin(
-          future
-            .await
-            .map_err(|e| RpcError::ProviderError(e.to_string()))?,
-        ))
+        let stream = instance
+          .execute(context, payload)
+          .await
+          .map_err(|e| RpcError::ProviderError(e.to_string()))?;
+        Ok(Box::pin(stream))
       }
       None => Err(Box::new(RpcError::ProviderError(format!(
         "Component '{}' not found",
@@ -148,14 +142,9 @@ impl RpcHandler for Provider {
     }
   }
 
-  async fn get_list(&self) -> RpcResult<Vec<vino_rpc::HostedType>> {
+  async fn get_list(&self) -> RpcResult<Vec<HostedType>> {
     let components = generated::get_all_components();
-    Ok(
-      components
-        .into_iter()
-        .map(vino_rpc::HostedType::Component)
-        .collect(),
-    )
+    Ok(components.into_iter().map(HostedType::Component).collect())
   }
 
   async fn get_stats(&self, id: Option<String>) -> RpcResult<Vec<Statistics>> {
@@ -188,15 +177,14 @@ mod tests {
   use futures::prelude::*;
   use log::debug;
   use maplit::hashmap;
-  use serde::Deserialize;
-  use vino_codec::messagepack::serialize;
-  use vino_rpc::HostedType;
+  use serde::de::DeserializeOwned;
+  use vino_provider::native::prelude::*;
 
   use super::*;
 
-  async fn invoke<'de, T>(component: &str, payload: HashMap<String, Vec<u8>>) -> Result<T>
+  async fn invoke<T>(component: &str, payload: TransportMap) -> Result<T>
   where
-    T: Deserialize<'de>,
+    T: DeserializeOwned,
   {
     let provider = Provider::default();
 
@@ -205,15 +193,15 @@ mod tests {
     let mut outputs = provider.invoke(entity, payload).await.unwrap();
     let output = outputs.next().await.unwrap();
     println!("Received payload from [{}]", output.port);
-    Ok(output.packet.try_into()?)
+    Ok(output.payload.try_into()?)
   }
 
   #[test_env_log::test(tokio::test)]
   async fn test_log() -> Result<()> {
     let input = "some_input";
-    let job_payload = hashmap! {
-      "input".to_owned() => serialize(input)?,
-    };
+    let job_payload = TransportMap::with_map(hashmap! {
+      "input".to_owned() => MessageTransport::messagepack(input),
+    });
 
     let payload: String = invoke("log", job_payload).await?;
 
@@ -225,7 +213,7 @@ mod tests {
 
   #[test_env_log::test(tokio::test)]
   async fn test_uuid() -> Result<()> {
-    let job_payload = hashmap! {};
+    let job_payload = TransportMap::new();
 
     let payload: String = invoke("uuid", job_payload).await?;
 

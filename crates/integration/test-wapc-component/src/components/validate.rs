@@ -2,8 +2,6 @@ use std::error::Error;
 use std::fmt::Display;
 use std::usize;
 
-use wapc_guest::prelude::*;
-
 use crate::generated::validate::*;
 
 #[derive(Debug)]
@@ -34,17 +32,21 @@ impl Error for LengthError {
 static MINIMUM_LENGTH: usize = 8;
 static MAXIMUM_LENGTH: usize = 512;
 
-pub(crate) fn job(input: Inputs, output: Outputs) -> HandlerResult<()> {
+pub(crate) fn job(input: Inputs, output: Outputs) -> JobResult {
+  console_log("In job");
   let password = input.input;
   if password.len() < MINIMUM_LENGTH {
+    console_log("too short");
     output.output.exception(LengthError::TooShort.to_string())?;
     return Ok(());
   }
   if password.len() > MAXIMUM_LENGTH {
+    console_log("too long");
     output.output.exception(LengthError::TooLong.to_string())?;
     return Ok(());
   }
-  output.output.send(password)?;
+  console_log("just right");
+  output.output.send(&password)?;
 
   Ok(())
 }

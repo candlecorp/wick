@@ -140,15 +140,18 @@ pub mod prelude {
     Packet,
   };
   pub use vino_manifest::NetworkDefinition;
-  pub use vino_transport::MessageTransport;
+  pub use vino_transport::{
+    InvocationTransport,
+    MessageTransport,
+    MessageTransportStream,
+  };
 
   pub use crate::dispatch::{
     Invocation,
     InvocationResponse,
-    ResponseStream,
   };
   pub use crate::network::Network;
-  pub use crate::utils::helpers::*;
+  pub use crate::providers::network_provider::Provider as NetworkProvider;
   pub use crate::{
     SCHEMATIC_INPUT,
     SCHEMATIC_OUTPUT,
@@ -169,5 +172,7 @@ pub const SCHEMATIC_INPUT: &str = "<input>";
 pub const SCHEMATIC_OUTPUT: &str = "<output>";
 /// The reserved port name to use when sending an asynchronous error from a component.
 pub const COMPONENT_ERROR: &str = "<error>";
+/// The name of system-originating messages on a port, schematic, or origin.
+pub const SYSTEM_ID: &str = "<system>";
 /// The reserved namespace for references to internal schematics.
 pub const SELF_NAMESPACE: &str = "self";

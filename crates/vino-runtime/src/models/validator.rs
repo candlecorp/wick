@@ -8,9 +8,7 @@ pub(crate) struct Validator<'a> {
 
 fn should_omit(ns: &str, list: &[String]) -> bool {
   let omit = list.iter().find(|name| name == &ns);
-  if omit.is_some() {
-    trace!("Omitting {}", ns);
-  }
+
   omit.is_some()
 }
 
@@ -289,11 +287,7 @@ fn is_valid_output(
 mod tests {
   use std::collections::HashMap;
 
-  use vino_provider::ComponentSignature;
-  use vino_rpc::{
-    PortSignature,
-    ProviderSignature,
-  };
+  use vino_provider::native::prelude::*;
   use ConnectionTargetDefinition as Target;
 
   use super::*;

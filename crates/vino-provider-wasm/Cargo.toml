@@ -15,14 +15,17 @@ vino-rpc = { path = "../vino-rpc" }
 vino-component = { path = "../vino-component" }
 vino-codec = { path = "../vino-codec" }
 vino-wascap = { path = "../vino-wascap" }
-vino-provider = { path = "../vino-provider" }
+vino-provider = { path = "../vino-provider", features = ["native"] }
 vino-transport = { path = "../vino-transport" }
+vino-types = { path = "../vino-types" }
 oci-utils = { path = "../oci-utils" }
 structopt = "0.3.22"
 actix-rt = "2.2.0"
 actix = "0.12.0"
 serde_json = "1.0.64"
 derivative = "2.2.0"
+tokio = { version = "1.4.0", features = [] }
+parking_lot = "0.11.1"
 
 # wasm3-provider = { version="0.0.2", optional=true }
 # wasmtime-provider = { version = "0.0.3", optional = true }
@@ -30,12 +33,6 @@ wasm3-provider = { path = "../forks/wasm3-provider", optional = true }
 wasmtime-provider = { path = "../forks/wasmtime-provider", optional = true }
 wapc = { path = "../forks/wapc-rust" }
 
-tokio = { version = "1.8.1", features = [
-  "macros",
-  "net",
-  "signal",
-  "rt-multi-thread",
-] }
 futures = "0.3.15"
 tokio-stream = "0.1.7"
 serde = { version = "1.0.126", features = ["derive"] }

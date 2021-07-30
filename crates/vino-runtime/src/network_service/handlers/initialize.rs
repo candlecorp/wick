@@ -23,7 +23,7 @@ impl Handler<Initialize> for NetworkService {
   type Result = ActorResult<Self, Result<()>>;
 
   fn handle(&mut self, msg: Initialize, _ctx: &mut Context<Self>) -> Self::Result {
-    trace!("Network {} initializing", msg.network_id);
+    trace!("NETWORK:INIT:{}", msg.network_id);
     self.started = true;
 
     self.id = msg.network_id.clone();
@@ -104,7 +104,7 @@ impl Handler<Initialize> for NetworkService {
 fn start_schematic_services(
   schematics: &[SchematicDefinition],
 ) -> HashMap<String, Addr<SchematicService>> {
-  trace!("Starting schematic arbiters");
+  trace!("NETWORK:Starting schematic services");
   map(schematics, |def| {
     let arbiter = Arbiter::new();
     let addr =

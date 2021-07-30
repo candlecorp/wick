@@ -1,5 +1,5 @@
 #[actix_rt::test]
-async fn run_log() -> vino_cli::Result<()> {
+async fn run_log() {
   let output = test_bin::get_test_bin("vino")
     .env_clear()
     .args(&[
@@ -9,14 +9,12 @@ async fn run_log() -> vino_cli::Result<()> {
       "--trace",
     ])
     .output()
-    .expect("Failed to start my_binary");
+    .expect("bin");
 
   println!("{}", String::from_utf8_lossy(&output.stderr));
 
   assert_eq!(
     String::from_utf8_lossy(&output.stdout),
-    "Logger: testing123\n{\"schem_output\":\"testing123\"}\n"
+    "Logger: testing123\n{\"error_kind\":\"None\",\"value\":\"testing123\"}\n"
   );
-
-  Ok(())
 }

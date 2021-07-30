@@ -43,7 +43,7 @@ static HOST_REGISTRY: Lazy<Mutex<ServiceMap>> = Lazy::new(|| Mutex::new(HashMap:
 
 impl NetworkService {
   pub(crate) fn for_id(network_id: &str) -> Addr<Self> {
-    trace!("getting network for host {}", network_id);
+    trace!("NETWORK:GET:{}", network_id);
     let sys = System::current();
     let mut registry = HOST_REGISTRY.lock();
     let addr = registry
@@ -72,7 +72,7 @@ impl Supervised for NetworkService {}
 
 impl SystemService for NetworkService {
   fn service_started(&mut self, ctx: &mut Context<Self>) {
-    trace!("Network started");
+    trace!("NETWORK:Service starting");
     ctx.set_mailbox_capacity(1000);
   }
 }

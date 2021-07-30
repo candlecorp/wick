@@ -3,28 +3,22 @@ use std::sync::Arc;
 
 use tokio::sync::mpsc::unbounded_channel;
 use tokio::sync::Mutex;
-use vino_rpc::{
-  HostedType,
-  RpcHandler,
-};
+use vino_rpc::RpcHandler;
 
 use super::{
   ProviderRequest,
   ProviderResponse,
 };
 use crate::dev::prelude::*;
-use crate::error::ComponentError;
-type Result<T> = std::result::Result<T, ComponentError>;
+use crate::error::ProviderError;
+type Result<T> = std::result::Result<T, ProviderError>;
 
-#[derive(Debug)]
+static PREFIX: &str = "PRV:NATIVE";
+
+#[derive(Debug, Default)]
 pub(crate) struct NativeProviderService {
+  namespace: String,
   state: Option<State>,
-}
-
-impl Default for NativeProviderService {
-  fn default() -> Self {
-    Self { state: None }
-  }
 }
 
 #[derive(Derivative)]
@@ -38,53 +32,49 @@ impl Actor for NativeProviderService {
   type Context = Context<Self>;
 
   fn started(&mut self, _ctx: &mut Self::Context) {
-    trace!("Native provider actor started");
+    trace!("{}:Service:Start", PREFIX);
   }
 
   fn stopped(&mut self, _ctx: &mut Self::Context) {}
 }
 
 #[derive(Message)]
-#[rtype(result = "Result<HashMap<String, ComponentModel>>")]
+#[rtype(result = "Result<()>")]
 pub(crate) struct Initialize {
   pub(crate) namespace: String,
   pub(crate) provider: Arc<Mutex<dyn RpcHandler>>,
 }
 
 impl Handler<Initialize> for NativeProviderService {
-  type Result = ActorResult<Self, Result<HashMap<String, ComponentModel>>>;
+  type Result = ActorResult<Self, Result<()>>;
 
-  fn handle(&mut self, msg: Initialize, ctx: &mut Self::Context) -> Self::Result {
-    trace!("Native provider initialized for '{}'", msg.namespace);
-    let provider = msg.provider.clone();
+  fn handle(&mut self, msg: Initialize, _ctx: &mut Self::Context) -> Self::Result {
+    self.namespace = msg.namespace.clone();
+    trace!("{}:Init:{}", PREFIX, self.namespace);
 
     self.state = Some(State {
       provider: msg.provider,
     });
-    let addr = ctx.address();
-    let init_components = InitializeComponents {
-      namespace: msg.namespace,
-      provider,
-    };
-    let task = async move { addr.send(init_components).await? }.into_actor(self);
-    ActorResult::reply_async(task)
+    ActorResult::reply(Ok(()))
   }
 }
 
 #[derive(Message)]
 #[rtype(result = "Result<HashMap<String, ComponentModel>>")]
-pub(crate) struct InitializeComponents {
-  namespace: String,
-  provider: Arc<Mutex<dyn RpcHandler>>,
-}
+pub(crate) struct InitializeComponents {}
 
 impl Handler<InitializeComponents> for NativeProviderService {
   type Result = ActorResult<Self, Result<HashMap<String, ComponentModel>>>;
 
-  fn handle(&mut self, msg: InitializeComponents, _ctx: &mut Self::Context) -> Self::Result {
-    trace!("Initializing components '{}'", msg.namespace);
-    let provider = msg.provider;
-    let namespace = msg.namespace;
+  fn handle(&mut self, _msg: InitializeComponents, _ctx: &mut Self::Context) -> Self::Result {
+    trace!("{}:InitComponents:[NS:{}]", PREFIX, self.namespace);
+
+    let state = some_or_bail!(
+      &self.state,
+      ActorResult::reply(Err(ProviderError::Uninitialized))
+    );
+    let provider = state.provider.clone();
+    let namespace = self.namespace.clone();
 
     let task = async move {
       let provider = provider.lock().await;
@@ -106,7 +96,17 @@ impl Handler<InitializeComponents> for NativeProviderService {
               },
             );
           }
-          HostedType::Schematic(_) => panic!("Unimplemented"),
+          HostedType::Schematic(component) => {
+            metadata.insert(
+              component.name.clone(),
+              ComponentModel {
+                namespace: namespace.clone(),
+                name: component.name,
+                inputs: component.inputs.into_iter().map(From::from).collect(),
+                outputs: component.outputs.into_iter().map(From::from).collect(),
+              },
+            );
+          }
         }
       }
       Ok(metadata)
@@ -121,23 +121,22 @@ impl Handler<Invocation> for NativeProviderService {
 
   fn handle(&mut self, msg: Invocation, _ctx: &mut Self::Context) -> Self::Result {
     trace!(
-      "Got invocation from {} to {}",
+      "{}:[NS:{}]:Invoke: {} to {}",
+      PREFIX,
+      self.namespace,
       msg.origin.url(),
       msg.target.url()
     );
+    let ns = self.namespace.clone();
+
     let provider = self.state.as_ref().unwrap().provider.clone();
     let tx_id = msg.tx_id.clone();
     let component = msg.target;
-    let message = actix_ensure_ok!(msg
-      .msg
-      .into_multibytes()
-      .map_err(|_e| InvocationResponse::error(tx_id.clone(), "Sent invalid payload".to_owned())));
+    let message = msg.msg;
     let url = component.url();
-    let inv_id = msg.id;
 
     let request = async move {
       let provider = provider.lock().await;
-      let invocation_id = inv_id.clone();
       let receiver = provider.invoke(component, message).await;
       if let Err(e) = receiver {
         return InvocationResponse::error(
@@ -149,19 +148,18 @@ impl Handler<Invocation> for NativeProviderService {
       let (tx, rx) = unbounded_channel();
       actix::spawn(async move {
         loop {
-          trace!("Provider component {} waiting for output", url);
+          trace!("{}:[NS:{}]:{}:WAIT", PREFIX, ns, url);
           let output = match receiver.next().await {
             Some(v) => v,
             None => break,
           };
-          trace!("Native actor {} got output on port [{}]", url, output.port);
-          match tx.send(OutputPacket {
+          trace!("{}:[NS:{}]:{}:PORT:{}:RECV", PREFIX, ns, url, output.port);
+          match tx.send(InvocationTransport {
             port: output.port.clone(),
-            payload: output.packet,
-            invocation_id: invocation_id.clone(),
+            payload: output.payload,
           }) {
             Ok(_) => {
-              trace!("Sent output to port '{}' ", output.port);
+              trace!("{}:[NS:{}]:{}:PORT:{}:SENT", PREFIX, ns, url, output.port);
             }
             Err(e) => {
               error!("Error sending output on channel {}", e.to_string());
@@ -204,9 +202,6 @@ impl Handler<ProviderRequest> for NativeProviderService {
 #[cfg(test)]
 mod test {
 
-  use maplit::hashmap;
-  use vino_codec::messagepack::serialize;
-
   use super::*;
   use crate::providers::ListRequest;
   use crate::test::prelude::assert_eq;
@@ -217,12 +212,14 @@ mod test {
     let provider = NativeProviderService::default();
     let addr = provider.start();
 
-    let components: HashMap<String, ComponentModel> = addr
+    addr
       .send(Initialize {
         namespace: "native-provider".to_owned(),
-        provider: Arc::new(Mutex::new(vino_native_components_v0::Provider::default())),
+        provider: Arc::new(Mutex::new(vino_native_api_0::Provider::default())),
       })
       .await??;
+
+    let components: HashMap<String, ComponentModel> = addr.send(InitializeComponents {}).await??;
 
     let response = addr
       .send(super::super::ProviderRequest::List(ListRequest {}))
@@ -247,19 +244,19 @@ mod test {
     addr
       .send(Initialize {
         namespace: "native-provider".to_owned(),
-        provider: Arc::new(Mutex::new(vino_native_components_v0::Provider::default())),
+        provider: Arc::new(Mutex::new(vino_native_api_0::Provider::default())),
       })
       .await??;
 
     let user_data = "This is my payload";
 
-    let payload = hashmap! {"input".to_owned()=> serialize(user_data)?};
+    let payload = transport_map! {"input" => user_data};
 
     let response = addr
       .send(Invocation {
         origin: Entity::test("test"),
         target: Entity::component("log"),
-        msg: MessageTransport::MultiBytes(payload),
+        msg: payload,
         id: get_uuid(),
         tx_id: get_uuid(),
         network_id,
@@ -267,7 +264,7 @@ mod test {
       .await?;
 
     let (_, mut rx) = response.to_stream()?;
-    let next: OutputPacket = rx.next().await.unwrap();
+    let next: InvocationTransport = rx.next().await.unwrap();
     let payload: String = next.payload.try_into()?;
     assert_eq!(user_data, payload);
 

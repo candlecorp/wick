@@ -1,16 +1,11 @@
 pub(crate) mod grpc_provider_service;
 pub(crate) mod native_provider_service;
 pub(crate) mod network_provider;
-pub(crate) mod network_provider_service;
-pub(crate) mod wasm_provider_service;
 
-use vino_rpc::{
-  HostedType,
-  Statistics,
-};
+use vino_rpc::Statistics;
 
 use crate::dev::prelude::*;
-use crate::error::ComponentError;
+use crate::error::ProviderError;
 
 // This is mostly unused right now except for in tests. The goal was to migrate away
 // from actix but that has been put on hold until there are more integration tests.
@@ -25,7 +20,7 @@ pub(crate) enum ProviderRequest {
 }
 
 impl Message for ProviderRequest {
-  type Result = Result<ProviderResponse, ComponentError>;
+  type Result = Result<ProviderResponse, ProviderError>;
 }
 
 #[derive(Debug)]

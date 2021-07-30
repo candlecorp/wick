@@ -9,13 +9,16 @@ use vino_component::{
   v0,
   Packet,
 };
-use vino_provider::entity::Entity;
+use vino_provider::native::prelude::*;
 use vino_rpc::rpc::invocation_service_client::InvocationServiceClient;
 use vino_rpc::rpc::{
   Invocation,
   ListRequest,
 };
-use vino_rpc::RpcHandler;
+use vino_rpc::{
+  convert_transport_map,
+  RpcHandler,
+};
 
 async fn list_components(port: &u16) -> Result<Vec<vino_rpc::rpc::Component>> {
   let mut client = InvocationServiceClient::connect(format!("http://127.0.0.1:{}", port)).await?;
@@ -30,7 +33,12 @@ fn make_invocation(target: &str, payload: HashMap<String, Vec<u8>>) -> Result<In
   Ok(Invocation {
     origin: Entity::test("test").url(),
     target: Entity::component(target).url(),
-    msg: payload,
+    msg: convert_transport_map(TransportMap::with_map(
+      payload
+        .into_iter()
+        .map(|(k, v)| (k, MessageTransport::MessagePack(v)))
+        .collect(),
+    )),
     id: "".to_string(),
     network_id: "".to_string(),
   })
@@ -80,8 +88,8 @@ async fn list_users(
   limit: i32,
 ) -> Result<HashMap<String, String>> {
   let payload = hashmap! {
-    "limit".to_string() => serialize(limit)?,
-    "offset".to_string() => serialize(offset)?,
+    "limit".to_string() => serialize(&limit)?,
+    "offset".to_string() => serialize(&offset)?,
   };
   let invocation = make_invocation("list-users", payload)?;
   let mut stream = client.invoke(invocation).await?.into_inner();
@@ -98,7 +106,7 @@ async fn authenticate(
   username: &str,
   password: &str,
   session: &str,
-) -> Result<String> {
+) -> Result<(String, String)> {
   let payload = hashmap! {
     "username".to_string()=> serialize(username)?,
     "password".to_string()=> serialize(password)?,
@@ -108,11 +116,16 @@ async fn authenticate(
   let invocation = make_invocation("authenticate", payload)?;
   let mut stream = client.invoke(invocation).await?.into_inner();
 
-  let next = stream.message().await?.unwrap();
-  println!("Output = {:?}", next);
-  assert_eq!(next.port, "session");
-  let next: Packet = next.payload.unwrap().into();
-  Ok(next.try_into()?)
+  let mut result = ("<session>".to_owned(), "<user_id>".to_owned());
+  while let Some(next) = stream.message().await? {
+    println!("Output = {:?}", next);
+    match next.port.as_str() {
+      "session" => result.0 = next.payload.unwrap().try_into()?,
+      "user_id" => result.1 = next.payload.unwrap().try_into()?,
+      _ => panic!("Got output from unexpected port"),
+    }
+  }
+  Ok(result)
 }
 
 async fn validate_session(
@@ -126,11 +139,15 @@ async fn validate_session(
   let invocation = make_invocation("validate-session", payload)?;
   let mut stream = client.invoke(invocation).await?.into_inner();
 
-  let next = stream.message().await?.unwrap();
-  println!("Output = {:?}", next);
-  assert_eq!(next.port, "user_id");
-  let next: Packet = next.payload.unwrap().into();
-  Ok(next.try_into()?)
+  let mut result = "bad".to_owned();
+  while let Some(next) = stream.message().await? {
+    println!("Output = {:?}", next);
+    match next.port.as_str() {
+      "user_id" => result = next.payload.unwrap().try_into()?,
+      _ => panic!("Got output from unexpected port"),
+    }
+  }
+  Ok(result)
 }
 
 async fn update_permissions(
@@ -146,11 +163,15 @@ async fn update_permissions(
   let invocation = make_invocation("update-permissions", payload)?;
   let mut stream = client.invoke(invocation).await?.into_inner();
 
-  let next = stream.message().await?.unwrap();
-  println!("Output = {:?}", next);
-  assert_eq!(next.port, "permissions");
-  let next: Packet = next.payload.unwrap().into();
-  Ok(next.try_into()?)
+  let mut result = vec![];
+  while let Some(next) = stream.message().await? {
+    println!("Output = {:?}", next);
+    match next.port.as_str() {
+      "permissions" => result = next.payload.unwrap().try_into()?,
+      _ => panic!("Got output from unexpected port"),
+    }
+  }
+  Ok(result)
 }
 
 async fn list_permissions(
@@ -164,11 +185,15 @@ async fn list_permissions(
   let invocation = make_invocation("list-permissions", payload)?;
   let mut stream = client.invoke(invocation).await?.into_inner();
 
-  let next = stream.message().await?.unwrap();
-  println!("Output = {:?}", next);
-  assert_eq!(next.port, "permissions");
-  let next: Packet = next.payload.unwrap().into();
-  Ok(next.try_into()?)
+  let mut result = vec![];
+  while let Some(next) = stream.message().await? {
+    println!("Output = {:?}", next);
+    match next.port.as_str() {
+      "permissions" => result = next.payload.unwrap().try_into()?,
+      _ => panic!("Got output from unexpected port"),
+    }
+  }
+  Ok(result)
 }
 
 async fn has_permission(
@@ -183,12 +208,15 @@ async fn has_permission(
 
   let invocation = make_invocation("has-permission", payload)?;
   let mut stream = client.invoke(invocation).await?.into_inner();
-
-  let next = stream.message().await?.unwrap();
-  println!("Output = {:?}", next);
-  assert_eq!(next.port, "user_id");
-  let next: Packet = next.payload.unwrap().into();
-  Ok(next)
+  let mut result: Option<Packet> = None;
+  while let Some(next) = stream.message().await? {
+    println!("Output = {:?}", next);
+    match next.port.as_str() {
+      "user_id" => result = next.payload.map(|p| p.into_packet()),
+      _ => panic!("Got output from unexpected port"),
+    }
+  }
+  Ok(result.unwrap())
 }
 
 async fn get_id(client: &mut InvocationServiceClient<Channel>, username: &str) -> Result<String> {
@@ -198,12 +226,15 @@ async fn get_id(client: &mut InvocationServiceClient<Channel>, username: &str) -
 
   let invocation = make_invocation("get-id", payload)?;
   let mut stream = client.invoke(invocation).await?.into_inner();
-
-  let next = stream.message().await?.unwrap();
-  println!("Output = {:?}", next);
-  assert_eq!(next.port, "user_id");
-  let next: Packet = next.payload.unwrap().into();
-  Ok(next.try_into()?)
+  let mut result = "bad".to_owned();
+  while let Some(next) = stream.message().await? {
+    println!("Output = {:?}", next);
+    match next.port.as_str() {
+      "user_id" => result = next.payload.unwrap().try_into()?,
+      _ => panic!("Got output from unexpected port"),
+    }
+  }
+  Ok(result)
 }
 
 async fn test_create_user(port: &u16) -> Result<()> {
@@ -246,7 +277,7 @@ async fn test_authenticate(port: &u16) -> Result<()> {
   let password = "password123";
   let _user_id2 = create_user(&mut client, username, user_id, password).await?;
   let session_in = "session in";
-  let session_out = authenticate(&mut client, username, password, session_in).await?;
+  let (session_out, _user_id) = authenticate(&mut client, username, password, session_in).await?;
   trace!("Session is {}", session_out);
   assert_eq!(session_out, session_in);
 
@@ -261,7 +292,7 @@ async fn test_validate_session(port: &u16) -> Result<()> {
   let password = "password123";
   let uid1 = create_user(&mut client, username, uid0, password).await?;
   let session_in = "session in";
-  let session = authenticate(&mut client, username, password, session_in).await?;
+  let (session, _user_id) = authenticate(&mut client, username, password, session_in).await?;
   trace!("Session is {:?}", session);
   let uid2 = validate_session(&mut client, &session).await?;
   assert_eq!(uid0, uid1);
@@ -300,7 +331,7 @@ pub async fn test_api(provider: impl RpcHandler + 'static) -> Result<()> {
   let port = socket.local_addr()?.port();
   vino_rpc::make_rpc_server(socket, provider);
 
-  let components = list_components(&port).await?;
+  let _components = list_components(&port).await?;
   // println!("Reported components: {:#?}", components);
   // assert_eq!(components.len(), 3);
   println!("Testing create-user");

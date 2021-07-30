@@ -1,111 +1,32 @@
+use std::collections::HashMap;
 use std::convert::TryFrom;
-use std::fmt::Display;
 use std::pin::Pin;
 
 use futures::Stream;
+use serde::de::DeserializeOwned;
 use serde::{
   Deserialize,
   Serialize,
 };
+use vino_component::error::DeserializationError;
 use vino_component::v0::Payload;
 use vino_component::Packet;
-use vino_transport::MessageTransport;
+use vino_transport::message_transport::TransportMap;
+use vino_transport::{
+  InvocationTransport,
+  MessageTransport,
+};
+use vino_types::signatures::*;
 
 use crate::generated::vino::component::ComponentKind;
-use crate::port::PacketWrapper;
-use crate::rpc::OutputKind;
+use crate::rpc::{
+  message_kind,
+  MessageKind,
+};
 use crate::{
   Error,
   Result,
 };
-
-/// The signature of a Vino component, including its input and output types.
-#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
-pub struct ComponentSignature {
-  /// The name of the component.
-  pub name: String,
-  /// A list of input signatures
-  pub inputs: Vec<PortSignature>,
-  /// A list of output signatures
-  pub outputs: Vec<PortSignature>,
-}
-
-/// The signature of an individual port
-#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
-pub struct PortSignature {
-  /// Name of the port
-  pub name: String,
-
-  /// The data type of the port
-  // TODO: Need to turn this into a more complex representation of port types
-  pub type_string: String,
-}
-
-impl PortSignature {
-  /// Constructor
-  #[must_use]
-  pub fn new(name: String, type_string: String) -> Self {
-    Self { name, type_string }
-  }
-}
-
-impl From<(&str, &str)> for PortSignature {
-  fn from(tup: (&str, &str)) -> Self {
-    let (name, type_string) = tup;
-    Self {
-      name: name.to_owned(),
-      type_string: type_string.to_owned(),
-    }
-  }
-}
-
-impl Display for PortSignature {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    f.write_fmt(format_args!("{}: {}", self.name, self.type_string))
-  }
-}
-
-/// Signature for Providers
-#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
-pub struct ProviderSignature {
-  /// Name of the provider
-  pub name: String,
-  /// A list of [ComponentSignature]s the provider hosts.
-  pub components: Vec<ComponentSignature>,
-}
-
-/// Signature for schematics, their ports, and their providers
-#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
-pub struct SchematicSignature {
-  /// Name of the schematic
-  pub name: String,
-  /// A list of input ports
-  pub inputs: Vec<PortSignature>,
-  /// A list of output ports
-  pub outputs: Vec<PortSignature>,
-  /// A list of providers running on the schematic
-  pub providers: Vec<ProviderSignature>,
-}
-
-/// An enum representing the types of components that can be hosted
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
-pub enum HostedType {
-  /// A hosted component
-  Component(ComponentSignature),
-  /// A hosted schematic
-  Schematic(SchematicSignature),
-}
-
-impl HostedType {
-  /// Get the name of the [HostedType] regardless of kind
-  #[must_use]
-  pub fn get_name(&self) -> &str {
-    match self {
-      HostedType::Component(c) => &c.name,
-      HostedType::Schematic(s) => &s.name,
-    }
-  }
-}
 
 /// Important statistics for the hosted components
 #[derive(Debug, Default, Clone, Copy, Serialize, Deserialize, PartialEq)]
@@ -127,8 +48,11 @@ pub struct DurationStatistics {
   pub average: usize,
 }
 
+// /// The return type of RpcHandler requests
+// pub type BoxedPacketStream = Pin<Box<dyn Stream<Item = InvocationPacket> + Send>>;
+
 /// The return type of RpcHandler requests
-pub type BoxedPacketStream = Pin<Box<dyn Stream<Item = PacketWrapper> + Send>>;
+pub type BoxedTransportStream = Pin<Box<dyn Stream<Item = InvocationTransport> + Send>>;
 
 impl From<HostedType> for crate::rpc::Component {
   fn from(v: HostedType) -> Self {
@@ -250,9 +174,9 @@ impl From<crate::generated::vino::Statistic> for Statistics {
 }
 
 #[allow(clippy::from_over_into)]
-impl Into<Packet> for OutputKind {
+impl Into<Packet> for MessageKind {
   fn into(self) -> Packet {
-    use crate::rpc::output_kind::{
+    use crate::rpc::message_kind::{
       Data,
       Kind,
       OutputSignal,
@@ -280,7 +204,7 @@ impl Into<Packet> for OutputKind {
       Kind::MessagePack => match self.data {
         Some(Data::Messagepack(v)) => Packet::V0(Payload::MessagePack(v)),
         _ => Packet::V0(Payload::Error(
-          "Invalid MessagePack output received: No data passed as bytes.".to_owned(),
+          "Invalid MessagePack output received: No data passed as 'bytes'.".to_owned(),
         )),
       },
       Kind::Signal => match self.data {
@@ -298,13 +222,95 @@ impl Into<Packet> for OutputKind {
           self.data
         ))),
       },
+      Kind::Json => match self.data {
+        Some(Data::Json(v)) => Packet::V0(Payload::Json(v)),
+        _ => Packet::V0(Payload::Error(
+          "Invalid JSON output received: No data passed as 'json'.".to_owned(),
+        )),
+      },
     }
   }
 }
 
-impl From<OutputKind> for MessageTransport {
-  fn from(v: OutputKind) -> Self {
+impl MessageKind {
+  /// Converts a [MessageKind] into a [Packet]
+  #[must_use]
+  pub fn into_packet(self) -> Packet {
+    self.into()
+  }
+  /// Converts a [MessageKind] into a [MessageTransport]
+  #[must_use]
+  pub fn into_transport(self) -> Packet {
+    self.into()
+  }
+  /// Attempt to deserialize a [MessageKind] into the destination type
+  pub fn try_into<T: DeserializeOwned>(self) -> std::result::Result<T, DeserializationError> {
+    self.into_packet().try_into()
+  }
+}
+
+impl From<MessageKind> for MessageTransport {
+  fn from(v: MessageKind) -> Self {
     let packet: Packet = v.into();
     packet.into()
   }
+}
+
+impl From<MessageTransport> for MessageKind {
+  fn from(v: MessageTransport) -> Self {
+    let kind: i32 = match v {
+      MessageTransport::Invalid => message_kind::Kind::Invalid,
+      MessageTransport::Exception(_) => message_kind::Kind::Exception,
+      MessageTransport::Error(_) => message_kind::Kind::Error,
+      MessageTransport::MessagePack(_) => message_kind::Kind::MessagePack,
+      MessageTransport::Test(_) => message_kind::Kind::Test,
+      MessageTransport::Signal(_) => message_kind::Kind::Signal,
+      MessageTransport::Success(_) => message_kind::Kind::Json,
+      MessageTransport::Json(_) => message_kind::Kind::Json,
+    }
+    .into();
+    let data = match v {
+      MessageTransport::Invalid => None,
+      MessageTransport::Exception(v) => Some(message_kind::Data::Message(v)),
+      MessageTransport::Error(v) => Some(message_kind::Data::Message(v)),
+      MessageTransport::MessagePack(v) => Some(message_kind::Data::Messagepack(v)),
+      MessageTransport::Test(v) => Some(message_kind::Data::Message(v)),
+      MessageTransport::Signal(signal) => match signal {
+        vino_transport::message_transport::MessageSignal::Close => Some(
+          message_kind::Data::Signal(message_kind::OutputSignal::Close.into()),
+        ),
+        vino_transport::message_transport::MessageSignal::OpenBracket => Some(
+          message_kind::Data::Signal(message_kind::OutputSignal::OpenBracket.into()),
+        ),
+        vino_transport::message_transport::MessageSignal::CloseBracket => Some(
+          message_kind::Data::Signal(message_kind::OutputSignal::CloseBracket.into()),
+        ),
+      },
+      MessageTransport::Success(val) => match vino_codec::json::serialize(&val) {
+        Ok(json) => Some(message_kind::Data::Json(json)),
+        Err(e) => Some(message_kind::Data::Message(e.to_string())),
+      },
+      MessageTransport::Json(json) => Some(message_kind::Data::Json(json)),
+    };
+    MessageKind { kind, data }
+  }
+}
+
+/// Converts a HashMap of [MessageKind] to a [TransportMap]
+pub fn convert_messagekind_map(rpc_map: &HashMap<String, MessageKind>) -> TransportMap {
+  let mut transport_map = TransportMap::new();
+  for (k, v) in rpc_map {
+    transport_map.insert(k, v.clone().into());
+  }
+  transport_map
+}
+
+/// Converts a [TransportMap] to a HashMap of [MessageKind]
+#[must_use]
+pub fn convert_transport_map(transport_map: TransportMap) -> HashMap<String, MessageKind> {
+  let mut rpc_map: HashMap<String, MessageKind> = HashMap::new();
+  for (k, v) in transport_map.into_inner() {
+    rpc_map.insert(k, v.clone().into());
+  }
+  rpc_map
 }

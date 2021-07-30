@@ -26,7 +26,7 @@ pub(crate) fn guest_request_func(store: impl AsContextMut, host: HostType) -> Fu
         caller.as_context(),
         memory,
         op_ptr.unwrap(),
-        &inv.operation.as_bytes(),
+        inv.operation.as_bytes(),
       );
     }
     Ok(())
@@ -129,7 +129,7 @@ pub(crate) fn host_response_func(store: impl AsContextMut, host: HostType) -> Fu
       if let Some(ref e) = host.lock().get_host_response() {
         let memory = get_caller_memory(&mut caller).unwrap();
         let ptr = params[0].i32();
-        write_bytes_to_memory(caller.as_context(), memory, ptr.unwrap(), &e);
+        write_bytes_to_memory(caller.as_context(), memory, ptr.unwrap(), e);
       }
       Ok(())
     },

@@ -1,16 +1,20 @@
-use std::collections::HashMap;
 use std::convert::TryInto;
 use std::io::Read;
 
 use nkeys::KeyPair;
 use structopt::StructOpt;
-use vino_codec::messagepack::serialize;
 use vino_entity::entity::Entity;
 use vino_runtime::prelude::Invocation;
-use vino_transport::MessageTransport;
+use vino_transport::{
+  MessageTransport,
+  TransportMap,
+};
 
 use crate::rpc_client::rpc_client;
-use crate::Result;
+use crate::{
+  Error,
+  Result,
+};
 #[derive(Debug, Clone, StructOpt)]
 #[structopt(rename_all = "kebab-case")]
 pub struct InvokeCommand {
@@ -49,34 +53,31 @@ pub async fn handle_command(command: InvokeCommand) -> Result<()> {
     Some(i) => i,
   };
 
-  let json: HashMap<String, serde_json::value::Value> = serde_json::from_str(&data)?;
-  let multibytes: HashMap<String, Vec<u8>> = json
-    .into_iter()
-    .map(|(name, val)| Ok!((name, serialize(val)?)))
-    .filter_map(Result::ok)
-    .collect();
+  let payload = TransportMap::from_json_str(&data)?;
+
   let kp = KeyPair::new_server();
 
   let rpc_invocation: vino_rpc::rpc::Invocation = Invocation::new(
     &kp,
     Entity::Client(kp.public_key()),
     Entity::Component(command.schematic),
-    MessageTransport::MultiBytes(multibytes),
+    payload,
   )
   .try_into()?;
 
   debug!("Making invocation request");
-  let response = client.invoke(rpc_invocation).await?;
+  let response = client
+    .invoke(rpc_invocation)
+    .await
+    .map_err(|e| Error::InvocationError(e.to_string()))?;
   debug!("Invocation response: {:?}", response);
   let mut stream = response.into_inner();
 
-  let mut map = serde_json::Map::new();
   while let Some(message) = stream.message().await? {
     let transport: MessageTransport = message.payload.unwrap().into();
-    map.insert(message.port, transport.into_json());
-  }
 
-  println!("{}", serde_json::to_string(&map)?);
+    println!("{}", transport.into_json());
+  }
 
   Ok(())
 }

@@ -5,15 +5,16 @@ use actix::{
   SyncArbiter,
 };
 use async_trait::async_trait;
-use vino_provider::entity::Entity;
+use vino_provider::native::prelude::*;
 use vino_rpc::error::RpcError;
 use vino_rpc::{
-  BoxedPacketStream,
+  BoxedTransportStream,
   DurationStatistics,
   RpcHandler,
   RpcResult,
   Statistics,
 };
+use vino_transport::message_transport::TransportMap;
 
 use crate::wapc_module::WapcModule;
 use crate::wasm_service::{
@@ -36,6 +37,7 @@ pub struct Provider {
 impl Provider {
   #[must_use]
   pub fn new(module: WapcModule, threads: usize) -> Self {
+    debug!("PRV:WASM:START:{} Threads", threads);
     let addr = SyncArbiter::start(threads, move || WasmService::new(&module));
 
     Self { context: addr }
@@ -44,36 +46,43 @@ impl Provider {
 
 #[async_trait]
 impl RpcHandler for Provider {
-  async fn invoke(
-    &self,
-    entity: Entity,
-    payload: HashMap<String, Vec<u8>>,
-  ) -> RpcResult<BoxedPacketStream> {
+  async fn invoke(&self, entity: Entity, payload: TransportMap) -> RpcResult<BoxedTransportStream> {
+    trace!("PRV:WASM:INVOKE:[{}]", entity);
     let context = self.context.clone();
     let component = entity
       .into_component()
       .map_err(|e| RpcError::ProviderError(e.to_string()))?;
-    trace!("Provider running component {}", component);
+    let messagepack_map = payload
+      .try_into_messagepack_bytes()
+      .map_err(|e| RpcError::ProviderError(e.to_string()))?;
+
     let outputs = context
-      .send(Call { component, payload })
+      .send(Call {
+        component,
+        payload: messagepack_map,
+      })
       .await
       .map_err(|e| RpcError::ProviderError(e.to_string()))??;
     Ok(Box::pin(outputs))
   }
 
-  async fn get_list(&self) -> RpcResult<Vec<vino_rpc::HostedType>> {
+  async fn get_list(&self) -> RpcResult<Vec<HostedType>> {
     let context = self.context.clone();
     let components = context
       .send(GetComponents {})
       .await
       .map_err(|e| RpcError::ProviderError(e.to_string()))??;
-    trace!("Wasm Provider components: {:?}", components);
-    Ok(
+
+    trace!(
+      "PRV:WASM:COMPONENTS:[{}]",
       components
-        .into_iter()
-        .map(vino_rpc::HostedType::Component)
-        .collect(),
-    )
+        .iter()
+        .map(|c| c.name.clone())
+        .collect::<Vec<_>>()
+        .join(",")
+    );
+
+    Ok(components.into_iter().map(HostedType::Component).collect())
   }
 
   async fn get_stats(&self, id: Option<String>) -> RpcResult<Vec<Statistics>> {
@@ -108,7 +117,7 @@ mod tests {
   use anyhow::Result as TestResult;
   use futures::prelude::*;
   use maplit::hashmap;
-  use vino_codec::messagepack::serialize;
+  use vino_provider::native::prelude::*;
 
   use super::*;
 
@@ -118,19 +127,19 @@ mod tests {
       "../integration/test-wapc-component/build/test_component_s.wasm",
     )?)?;
 
-    let provider = Provider::new(component, 5);
+    let provider = Provider::new(component, 2);
     let input = "Hello world";
 
-    let job_payload = hashmap! {
-      "input".to_owned() => serialize(input)?,
-    };
+    let job_payload = TransportMap::with_map(hashmap! {
+      "input".to_owned() => MessageTransport::messagepack(input),
+    });
 
     let mut outputs = provider
       .invoke(Entity::component("validate"), job_payload)
       .await?;
     let output = outputs.next().await.unwrap();
-    println!("payload from [{}]: {:?}", output.port, output.packet);
-    let output: String = output.packet.try_into()?;
+    println!("payload from [{}]: {:?}", output.port, output.payload);
+    let output: String = output.payload.try_into()?;
 
     println!("output: {:?}", output);
     assert_eq!(output, input);

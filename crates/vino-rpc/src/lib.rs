@@ -74,8 +74,6 @@
 // Add exceptions here
 #![allow(unused_qualifications)]
 
-use std::collections::HashMap;
-
 use async_trait::async_trait;
 
 /// Error module
@@ -86,10 +84,6 @@ pub mod generated;
 
 /// Module for the [InvocationServer] implementation
 pub mod invocation_server;
-
-// TODO Need to get rid of or move this
-#[doc(hidden)]
-pub mod port;
 
 /// Utility and conversion types
 pub mod types;
@@ -107,6 +101,9 @@ use tonic::transport::{
 };
 pub use types::*;
 use vino_entity::Entity;
+use vino_transport::message_transport::TransportMap;
+use vino_transport::MessageTransport;
+use vino_types::signatures::HostedType;
 
 pub(crate) type Result<T> = std::result::Result<T, error::RpcError>;
 
@@ -126,32 +123,22 @@ extern crate derivative;
 #[async_trait]
 pub trait RpcHandler: Send + Sync {
   /// Handle an incoming request for a target entity
-  async fn invoke(
-    &self,
-    entity: Entity,
-    payload: HashMap<String, Vec<u8>>,
-  ) -> RpcResult<BoxedPacketStream>;
+  async fn invoke(&self, entity: Entity, payload: TransportMap) -> RpcResult<BoxedTransportStream>;
   /// List the entities this [RpcHandler] manages
   async fn get_list(&self) -> RpcResult<Vec<HostedType>>;
   /// Report the statists for all registered entities
   async fn get_stats(&self, id: Option<String>) -> RpcResult<Vec<Statistics>>;
 }
 
-#[must_use]
 #[doc(hidden)]
-pub fn make_input<K: AsRef<str>, V: serde::Serialize>(
-  entries: Vec<(K, V)>,
-) -> HashMap<String, Vec<u8>> {
-  entries
-    .into_iter()
-    .map(|(k, v)| {
-      Ok((
-        k.as_ref().to_owned(),
-        vino_codec::messagepack::serialize(v).unwrap(),
-      ))
-    })
-    .filter_map(Result::ok)
-    .collect()
+pub fn make_input<K: AsRef<str>, V: serde::Serialize>(entries: Vec<(K, V)>) -> TransportMap {
+  TransportMap::with_map(
+    entries
+      .into_iter()
+      .map(|(k, v)| Ok((k.as_ref().to_owned(), MessageTransport::success(&v))))
+      .filter_map(Result::ok)
+      .collect(),
+  )
 }
 
 /// Build and spawn an RPC server for the passed provider

@@ -34,7 +34,15 @@ pub enum ControlError {
   #[error(transparent)]
   VinoRuntimeError(#[from] vino_runtime::Error),
   #[error(transparent)]
-  ConnectionError(#[from] tonic::transport::Error),
+  TransportError(#[from] vino_transport::Error),
+  #[error("Invocation failed: {0}")]
+  InvocationError(String),
+  #[error("Error setting TLS configuration: {0}")]
+  TlsConfigError(String),
+  #[error("Connection failed: {0}")]
+  ConnectionError(String),
+  #[error("Internal error: {0}")]
+  InternalError(String),
   #[error(transparent)]
   IOError(#[from] std::io::Error),
   #[error(transparent)]
@@ -46,5 +54,17 @@ pub enum ControlError {
 impl From<nkeys::error::Error> for ControlError {
   fn from(e: nkeys::error::Error) -> Self {
     ControlError::KeyPairError(e.to_string())
+  }
+}
+
+// TODO: Submit PRs to improve tonic's error handling
+impl From<tonic::transport::Error> for ControlError {
+  fn from(e: tonic::transport::Error) -> Self {
+    let debug = format!("{:?}", e);
+    if debug.contains("Connection refused") {
+      Self::ConnectionError("Connection refused".to_owned())
+    } else {
+      Self::InternalError("Internal error: TONIC".to_owned())
+    }
   }
 }

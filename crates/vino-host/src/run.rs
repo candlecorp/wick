@@ -72,32 +72,18 @@
 // Add exceptions here
 #![allow(missing_docs)] // todo
 
-pub mod commands;
-pub mod error;
-// pub(crate) mod logger;
-pub mod utils;
-
 use std::collections::HashMap;
 
-use error::VinoError;
-use serde_json::json;
-use serde_json::Value::String as JsonString;
-use vino_codec::messagepack::deserialize;
-use vino_host::{
+use vino_transport::MessageTransportStream;
+
+use crate::{
   HostBuilder,
   HostDefinition,
 };
-use vino_transport::MessageTransport;
-
-pub type Result<T> = std::result::Result<T, VinoError>;
-pub type Error = VinoError;
-
-#[macro_use]
-extern crate log;
 
 pub type JsonMap = HashMap<String, serde_json::value::Value>;
 
-pub async fn run(manifest: HostDefinition, data: JsonMap) -> Result<serde_json::Value> {
+pub async fn run(manifest: HostDefinition, data: JsonMap) -> crate::Result<MessageTransportStream> {
   let host_builder = HostBuilder::new();
 
   let mut host = host_builder.build();
@@ -112,31 +98,7 @@ pub async fn run(manifest: HostDefinition, data: JsonMap) -> Result<serde_json::
 
   let raw_result = host.request(&manifest.default_schematic, data).await?;
 
-  debug!("Raw result: {:?}", raw_result);
-
-  let result: serde_json::Value = raw_result
-    .iter()
-    .map(|(k, payload)| {
-      (
-        k.to_string(),
-        match payload {
-          MessageTransport::MessagePack(bytes) => deserialize(bytes).unwrap_or_else(|e| {
-            JsonString(format!(
-              "Error deserializing output payload: {}",
-              e.to_string(),
-            ))
-          }),
-          MessageTransport::Exception(e) => json!({ "exception": e }),
-          MessageTransport::Error(e) => json!({ "error": e }),
-          _ => json!({ "error": "Internal error, invalid format" }),
-        },
-      )
-    })
-    .collect();
-
-  host.stop().await;
-
-  Ok(result)
+  Ok(raw_result)
 }
 
 #[cfg(test)]
@@ -145,17 +107,27 @@ mod tests {
   use std::path::PathBuf;
 
   use maplit::hashmap;
+  use vino_runtime::prelude::StreamExt;
+
+  use crate::HostDefinition;
 
   #[actix_rt::test]
   async fn runs_log_config() -> crate::Result<()> {
-    let host_def =
-      vino_host::HostDefinition::load_from_file(&PathBuf::from("./manifests/log.vino"))?;
+    let host_def = HostDefinition::load_from_file(&PathBuf::from("./manifests/log.vino"))?;
     let input = hashmap! {
       "schem_input".into() => "test-input".into()
     };
 
-    let result = crate::run(host_def, input).await?;
-    assert_eq!(result.get("schem_output").unwrap(), "test-input");
+    let mut result = super::run(host_def, input).await?;
+    let mut output: String = "".to_owned();
+    while let Some(next) = result.next().await {
+      println!("Output = {:?}", next);
+      match next.port.as_str() {
+        "schem_output" => output = next.payload.try_into()?,
+        _ => panic!("Got output from unexpected port"),
+      }
+    }
+    assert_eq!(output, "test-input");
     Ok(())
   }
 }

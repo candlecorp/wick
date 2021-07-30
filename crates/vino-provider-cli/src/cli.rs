@@ -7,6 +7,7 @@ use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::Arc;
 
+use logger::LoggingOptions;
 use structopt::StructOpt;
 use tokio::signal;
 use tokio::sync::Mutex;
@@ -24,16 +25,18 @@ use vino_rpc::{
 pub(crate) const FILE_DESCRIPTOR_SET: &[u8] =
   include_bytes!("../../vino-rpc/src/generated/descriptors.bin");
 
-#[derive(Debug, Default, Clone, PartialEq)]
+#[derive(Debug, Default, Clone)]
 /// Server configuration options
 pub struct Options {
   /// RPC server options
   pub rpc: Option<ServerOptions>,
   /// HTTP server options
   pub http: Option<ServerOptions>,
+  /// Logging options
+  pub logging: Option<LoggingOptions>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq)]
+#[derive(Debug, Clone, Default)]
 /// Options to use when starting an RPC or HTTP server.
 pub struct ServerOptions {
   /// The port to bind to.
@@ -69,11 +72,12 @@ impl From<DefaultCliOptions> for Options {
         key: None,
         ca: None,
       }),
+      logging: Some(opts.logging),
     }
   }
 }
 
-#[derive(Debug, Default, Clone, StructOpt)]
+#[derive(Debug, Clone, StructOpt)]
 #[structopt(rename_all = "kebab-case")]
 /// Default command line options that downstream providers can use. This isn't required.
 pub struct DefaultCliOptions {
@@ -104,6 +108,10 @@ pub struct DefaultCliOptions {
   /// Port to use for HTTP
   #[structopt(long)]
   pub http_port: Option<u16>,
+
+  /// Logging options
+  #[structopt(flatten)]
+  pub logging: LoggingOptions,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -124,6 +132,10 @@ pub async fn start_server(
   debug!("Starting provider RPC server");
 
   let opts = opts.unwrap_or_default();
+  if let Some(log_options) = opts.logging {
+    logger::Logger::init(&log_options)?;
+  }
+
   let rpc_options = opts.rpc.unwrap_or_default();
 
   let port = rpc_options.port.unwrap_or(0);
@@ -276,6 +288,7 @@ mod tests {
           port: Some(8111),
           ..Default::default()
         }),
+        logging: None,
       }),
     )
     .await?;

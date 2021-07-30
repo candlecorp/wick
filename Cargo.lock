@@ -129,9 +129,9 @@ dependencies = [
 
 [[package]]
 name = "async-trait"
-version = "0.1.50"
+version = "0.1.51"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0b98e84bbb4cbcdd97da190ba0c58a1bb0de2c1fdf67d159e192ed766aeca722"
+checksum = "44318e776df68115a881de9a8fd1b9e53368d7a4a5ce4cc48517da3393233a5e"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2662,9 +2662,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.64"
+version = "1.0.66"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "799e97dc9fdae36a5c8b8f2cae9ce2ee9fdce2058c57a93e6099d919fd982f79"
+checksum = "336b10da19a12ad094b59d870ebde26a45402e5b470add4b5fd03c5048a32127"
 dependencies = [
  "itoa",
  "ryu",
@@ -2979,6 +2979,7 @@ dependencies = [
  "vino-entity",
  "vino-provider",
  "vino-rpc",
+ "vino-types",
 ]
 
 [[package]]
@@ -3571,6 +3572,7 @@ dependencies = [
  "vino-codec",
  "vino-component",
  "vino-entity",
+ "vino-macros",
  "vino-provider",
  "vino-rpc",
  "vino-transport",
@@ -3638,6 +3640,8 @@ version = "0.1.0"
 dependencies = [
  "rmp-serde 0.15.5",
  "serde",
+ "serde-value",
+ "serde_json",
  "thiserror",
 ]
 
@@ -3710,6 +3714,7 @@ dependencies = [
  "anyhow",
  "env_logger 0.9.0",
  "serde",
+ "serde-value",
  "test-env-log",
  "tracing",
  "tracing-subscriber",
@@ -3740,6 +3745,7 @@ dependencies = [
  "maplit",
  "nkeys",
  "serde",
+ "serde_json",
  "serde_yaml",
  "test-env-log",
  "thiserror",
@@ -3748,6 +3754,7 @@ dependencies = [
  "tracing-subscriber",
  "vino-codec",
  "vino-entity",
+ "vino-macros",
  "vino-manifest",
  "vino-provider",
  "vino-provider-cli",
@@ -3761,8 +3768,11 @@ name = "vino-interfaces-authentication"
 version = "0.1.0"
 dependencies = [
  "serde",
- "vino-codec",
+ "tracing",
+ "vino-component",
+ "vino-provider",
  "vino-rpc",
+ "vino-transport",
 ]
 
 [[package]]
@@ -3770,8 +3780,10 @@ name = "vino-interfaces-collection"
 version = "0.1.0"
 dependencies = [
  "serde",
- "vino-codec",
+ "vino-component",
+ "vino-provider",
  "vino-rpc",
+ "vino-transport",
 ]
 
 [[package]]
@@ -3780,6 +3792,7 @@ version = "0.1.0"
 dependencies = [
  "colored",
  "tracing",
+ "vino-transport",
 ]
 
 [[package]]
@@ -3806,7 +3819,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "vino-native-components-v0"
+name = "vino-native-api-0"
 version = "0.1.0"
 dependencies = [
  "async-trait",
@@ -3827,6 +3840,7 @@ dependencies = [
  "vino-entity",
  "vino-provider",
  "vino-rpc",
+ "vino-transport",
 ]
 
 [[package]]
@@ -3835,11 +3849,17 @@ version = "0.1.0"
 dependencies = [
  "async-trait",
  "env_logger 0.9.0",
+ "log",
+ "serde",
  "test-env-log",
  "thiserror",
  "tokio",
+ "tokio-stream",
+ "vino-codec",
+ "vino-component",
  "vino-entity",
- "vino-rpc",
+ "vino-transport",
+ "vino-types",
 ]
 
 [[package]]
@@ -3850,6 +3870,7 @@ dependencies = [
  "async-stream",
  "env_logger 0.9.0",
  "futures",
+ "logger",
  "rand 0.8.4",
  "reqwest",
  "serde",
@@ -3884,6 +3905,7 @@ dependencies = [
  "logger",
  "maplit",
  "oci-utils",
+ "parking_lot",
  "serde",
  "serde_json",
  "structopt",
@@ -3899,6 +3921,7 @@ dependencies = [
  "vino-provider",
  "vino-rpc",
  "vino-transport",
+ "vino-types",
  "vino-wascap",
  "wapc 0.10.1",
  "wasm3-provider",
@@ -3917,6 +3940,7 @@ dependencies = [
  "prost-types",
  "rand 0.8.4",
  "serde",
+ "serde_json",
  "test-env-log",
  "thiserror",
  "tokio",
@@ -3927,7 +3951,9 @@ dependencies = [
  "vino-codec",
  "vino-component",
  "vino-entity",
+ "vino-provider",
  "vino-transport",
+ "vino-types",
 ]
 
 [[package]]
@@ -3968,11 +3994,12 @@ dependencies = [
  "vino-entity",
  "vino-macros",
  "vino-manifest",
- "vino-native-components-v0",
+ "vino-native-api-0",
  "vino-provider",
  "vino-provider-wasm",
  "vino-rpc",
  "vino-transport",
+ "vino-types",
  "vino-wascap",
 ]
 
@@ -3980,13 +4007,24 @@ dependencies = [
 name = "vino-transport"
 version = "0.1.0"
 dependencies = [
+ "lazy_static",
  "log",
  "rmp-serde 0.15.5",
  "serde",
+ "serde-value",
  "serde_json",
  "thiserror",
+ "tokio",
+ "tokio-stream",
  "vino-codec",
  "vino-component",
+]
+
+[[package]]
+name = "vino-types"
+version = "0.1.0"
+dependencies = [
+ "serde",
 ]
 
 [[package]]
@@ -4001,7 +4039,7 @@ dependencies = [
  "serde",
  "thiserror",
  "tracing",
- "vino-rpc",
+ "vino-types",
  "wascap",
 ]
 
@@ -4009,7 +4047,6 @@ dependencies = [
 name = "vinoc"
 version = "0.1.0"
 dependencies = [
- "actix-rt",
  "chrono",
  "colored",
  "env_logger 0.9.0",
@@ -4025,6 +4062,7 @@ dependencies = [
  "test-env-log",
  "test_bin",
  "thiserror",
+ "tokio",
  "tonic",
  "vino-codec",
  "vino-component",
@@ -4035,6 +4073,7 @@ dependencies = [
  "vino-rpc",
  "vino-runtime",
  "vino-transport",
+ "vino-types",
  "vino-wascap",
  "wapc 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
@@ -4044,6 +4083,7 @@ name = "vow"
 version = "0.1.0"
 dependencies = [
  "actix",
+ "actix-rt",
  "anyhow",
  "async-stream",
  "async-trait",
@@ -4052,6 +4092,7 @@ dependencies = [
  "logger",
  "maplit",
  "serde",
+ "serde-value",
  "serde_json",
  "structopt",
  "test-env-log",

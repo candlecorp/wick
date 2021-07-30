@@ -76,7 +76,6 @@
   missing_debug_implementations
 )]
 
-use std::cell::RefCell;
 use std::error::Error;
 use std::sync::Arc;
 
@@ -128,9 +127,9 @@ impl WebAssemblyEngineProvider for Wasm3EngineProvider {
     info!("Initializing Wasm3 Engine");
     let env = Environment::new()?;
     let rt = env.create_runtime(1024 * 120)?;
-    let module = Module::parse(&env, &self.modbytes).map_err(|e| Box::new(e))?;
+    let module = Module::parse(&env, &self.modbytes).map_err(Box::new)?;
 
-    let mut module = rt.load_module(module).map_err(|e| Box::new(e))?;
+    let mut module = rt.load_module(module).map_err(Box::new)?;
 
     let mod_name = module.name().to_owned();
 
@@ -232,7 +231,7 @@ impl WebAssemblyEngineProvider for Wasm3EngineProvider {
       warn!("Module did not import __host_error");
     }
 
-    let h = host.clone();
+    let h = host;
     if let Err(_e) = module.link_closure(
       HOST_NAMESPACE,
       WapcFunctions::HOST_ERROR_LEN_FN,
