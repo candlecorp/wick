@@ -30,5 +30,5 @@ schematics:
           port: output
         to:
           instance: <output>
-          port: output1
+          port: output
         default: '"This is my default. Error was: $ERROR"'

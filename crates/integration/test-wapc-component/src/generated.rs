@@ -46,6 +46,7 @@ impl Dispatch for Dispatcher {
   fn dispatch(op: &str, payload: &[u8]) -> CallResult {
     let payload = IncomingPayload::from_buffer(payload)?;
     let result = match op {
+      "copy" => copy::Component::new().execute(&payload),
       "error" => error::Component::new().execute(&payload),
       "validate" => validate::Component::new().execute(&payload),
       _ => Err(Error::JobNotFound(op.to_owned())),
@@ -54,6 +55,78 @@ impl Dispatch for Dispatcher {
   }
 }
 
+pub(crate) mod copy {
+  use serde::{
+    Deserialize,
+    Serialize,
+  };
+  pub use vino_provider::wasm::{
+    console_log,
+    JobResult,
+    PortSender,
+  };
+
+  use super::*;
+  use crate::components::copy as implementation;
+
+  pub(crate) struct Component {}
+
+  impl Component {
+    pub fn new() -> Self {
+      Self {}
+    }
+  }
+  impl WapcComponent for Component {
+    fn execute(&self, payload: &IncomingPayload) -> JobResult {
+      let inputs = populate_inputs(payload)?;
+      let outputs = get_outputs(&payload.inv_id);
+      implementation::job(inputs, outputs)
+    }
+  }
+
+  fn populate_inputs(payload: &IncomingPayload) -> Result<Inputs> {
+    Ok(Inputs {
+      input: deserialize(payload.get("input")?)?,
+      times: deserialize(payload.get("times")?)?,
+    })
+  }
+
+  #[cfg(feature = "guest")]
+  #[derive(Debug, Deserialize, Serialize, Default, Clone)]
+  pub(crate) struct Inputs {
+    #[serde(rename = "input")]
+    pub input: String,
+    #[serde(rename = "times")]
+    pub times: i8,
+  }
+
+  fn get_outputs(inv_id: &str) -> Outputs {
+    Outputs {
+      output: GuestPortOutput { inv_id },
+    }
+  }
+
+  #[derive(Debug, PartialEq, Clone)]
+  pub struct GuestPortOutput<'a> {
+    inv_id: &'a str,
+  }
+
+  impl<'a> PortSender for GuestPortOutput<'a> {
+    type Output = String;
+    fn get_name(&self) -> String {
+      "output".to_string()
+    }
+    fn get_invocation_id(&self) -> String {
+      self.inv_id.to_owned()
+    }
+  }
+
+  #[cfg(feature = "guest")]
+  #[derive(Debug)]
+  pub struct Outputs<'a> {
+    pub output: GuestPortOutput<'a>,
+  }
+}
 pub(crate) mod error {
   use serde::{
     Deserialize,
@@ -61,8 +134,8 @@ pub(crate) mod error {
   };
   pub use vino_provider::wasm::{
     console_log,
-    GuestPort,
     JobResult,
+    PortSender,
   };
 
   use super::*;
@@ -107,7 +180,7 @@ pub(crate) mod error {
     inv_id: &'a str,
   }
 
-  impl<'a> GuestPort for GuestPortOutput<'a> {
+  impl<'a> PortSender for GuestPortOutput<'a> {
     type Output = String;
     fn get_name(&self) -> String {
       "output".to_string()
@@ -130,8 +203,8 @@ pub(crate) mod validate {
   };
   pub use vino_provider::wasm::{
     console_log,
-    GuestPort,
     JobResult,
+    PortSender,
   };
 
   use super::*;
@@ -176,7 +249,7 @@ pub(crate) mod validate {
     inv_id: &'a str,
   }
 
-  impl<'a> GuestPort for GuestPortOutput<'a> {
+  impl<'a> PortSender for GuestPortOutput<'a> {
     type Output = String;
     fn get_name(&self) -> String {
       "output".to_string()

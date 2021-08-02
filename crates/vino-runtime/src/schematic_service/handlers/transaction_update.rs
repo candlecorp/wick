@@ -1,12 +1,17 @@
+use tokio::time::error::Elapsed;
+
 use super::component_payload::ComponentPayload;
 use super::schematic_output::SchematicOutput;
 use crate::dev::prelude::*;
 use crate::schematic_service::input_message::InputMessage;
 
-#[derive(Message, Clone, Debug)]
+#[derive(Message, Debug)]
 #[rtype(result = "Result<(), SchematicError>")]
 pub enum TransactionUpdate {
-  Transition(ComponentPayload),
+  Drained,
+  Timeout(Elapsed),
+  Transition(ConnectionTargetDefinition),
+  Execute(ComponentPayload),
   Result(SchematicOutput),
   Done(String),
   Update(InputMessage),
@@ -15,7 +20,10 @@ pub enum TransactionUpdate {
 impl std::fmt::Display for TransactionUpdate {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     let name = match self {
+      TransactionUpdate::Drained => "drained",
+      TransactionUpdate::Timeout(_) => "timeout",
       TransactionUpdate::Transition(_) => "transition",
+      TransactionUpdate::Execute(_) => "execute",
       TransactionUpdate::Result(_) => "result",
       TransactionUpdate::Done(_) => "done",
       TransactionUpdate::Update(_) => "update",
@@ -30,24 +38,27 @@ impl Handler<TransactionUpdate> for SchematicService {
   fn handle(&mut self, msg: TransactionUpdate, ctx: &mut Context<Self>) -> Self::Result {
     let addr = ctx.address();
     match msg {
-      TransactionUpdate::Transition(msg) => ActorResult::reply_async(
-        async move { log_ie!(addr.send(msg).await, 6011)? }.into_actor(self),
+      TransactionUpdate::Execute(msg) => ActorResult::reply_async(
+        async move { log_ie!(addr.send(msg).await, 6051)? }.into_actor(self),
       ),
       TransactionUpdate::Result(msg) => {
         trace!("TX:{}: received result", msg.tx_id);
         ActorResult::reply_async(
-          async move { log_ie!(addr.send(msg).await, 6012)? }.into_actor(self),
+          async move { log_ie!(addr.send(msg).await, 6052)? }.into_actor(self),
         )
       }
       TransactionUpdate::Done(tx_id) => {
         trace!("TX:{}: finished", tx_id);
-        let tx = actix_try!(self
-          .tx_external
-          .get(&tx_id)
-          .ok_or_else(|| SchematicError::TransactionNotFound(tx_id.clone())));
+        let tx = actix_try!(
+          self
+            .tx_external
+            .get(&tx_id)
+            .ok_or_else(|| SchematicError::TransactionNotFound(tx_id.clone())),
+          6041
+        );
 
-        let output_msg = InvocationTransport {
-          payload: MessageTransport::close(),
+        let output_msg = TransportWrapper {
+          payload: MessageTransport::done(),
           port: "<system>".to_owned(),
         };
         if tx.send(output_msg).is_err() {

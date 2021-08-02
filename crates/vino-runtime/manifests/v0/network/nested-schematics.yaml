@@ -1,5 +1,5 @@
 schematics:
-  - name: parent
+  - name: nested_parent
     instances:
       log1:
         id: vino::v0::log

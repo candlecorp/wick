@@ -37,16 +37,20 @@ pub(crate) fn job(input: Inputs, output: Outputs) -> JobResult {
   let password = input.input;
   if password.len() < MINIMUM_LENGTH {
     console_log("too short");
-    output.output.exception(LengthError::TooShort.to_string())?;
+    output
+      .output
+      .done_exception(LengthError::TooShort.to_string())?;
     return Ok(());
   }
   if password.len() > MAXIMUM_LENGTH {
     console_log("too long");
-    output.output.exception(LengthError::TooLong.to_string())?;
+    output
+      .output
+      .done_exception(LengthError::TooLong.to_string())?;
     return Ok(());
   }
   console_log("just right");
-  output.output.send(&password)?;
+  output.output.done(&password)?;
 
   Ok(())
 }

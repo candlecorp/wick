@@ -6,11 +6,13 @@ use std::convert::{
 };
 use std::fmt::Display;
 use std::hash::Hash;
+use std::str::FromStr;
 
 use serde::{
   Deserialize,
   Serialize,
 };
+use vino_transport::MessageTransport;
 
 use crate::default::{
   parse_default,
@@ -247,96 +249,140 @@ impl ConnectionDefinition {
   }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
+/// Configuration specific to a [ConnectionTargetDefinition].
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SenderData {
+  inner: serde_json::Value,
+}
+
+impl SenderData {
+  /// Serialize a passed value into [SenderData].
+  pub fn from_value<T: Serialize>(value: &T) -> Result<SenderData> {
+    let value: serde_json::Value =
+      serde_json::to_value(value).map_err(|e| Error::InvalidSenderData(e.to_string()))?;
+    Ok(SenderData { inner: value })
+  }
+
+  /// Create a message out of [SenderData].
+  pub fn as_message(&self) -> MessageTransport {
+    MessageTransport::success(&self.inner)
+  }
+}
+
+impl FromStr for SenderData {
+  type Err = Error;
+
+  fn from_str(s: &str) -> Result<Self> {
+    let value: serde_json::Value =
+      serde_json::from_str(s).map_err(|e| Error::InvalidSenderData(e.to_string()))?;
+    Ok(SenderData { inner: value })
+  }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 /// A [ConnectionTargetDefinition] is a wrapper around an [Option<PortReference>].
 #[must_use]
 pub struct ConnectionTargetDefinition {
-  target: Option<PortReference>,
+  target: PortReference,
+  data: Option<SenderData>,
 }
+
+impl Hash for ConnectionTargetDefinition {
+  fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+    self.target.hash(state);
+  }
+}
+
+impl PartialEq for ConnectionTargetDefinition {
+  fn eq(&self, other: &Self) -> bool {
+    self.target == other.target
+  }
+}
+
+impl Eq for ConnectionTargetDefinition {}
 
 impl ConnectionTargetDefinition {
   /// Constructor for a [PortReference]. Used mostly in test code.
   pub fn new<T: AsRef<str>, U: AsRef<str>>(instance: T, port: U) -> Self {
     Self {
-      target: Some(PortReference {
+      target: PortReference {
         instance: instance.as_ref().to_owned(),
         port: port.as_ref().to_owned(),
-      }),
+      },
+      data: None,
     }
   }
 
   /// Create a [ConnectionTargetDefinition] that points nowhere
-  pub fn none() -> Self {
-    Self { target: None }
+  pub fn sender(config: Option<SenderData>) -> Self {
+    Self {
+      target: PortReference {
+        instance: crate::parse::SENDER_ID.to_owned(),
+        port: crate::parse::SENDER_PORT.to_owned(),
+      },
+      data: config,
+    }
+  }
+
+  /// Getter for the target's [SenderData].
+  #[must_use]
+  pub fn get_data(&self) -> Option<&SenderData> {
+    self.data.as_ref()
   }
 
   #[must_use]
-  /// Delegates to `self.target.is_none()`
-  pub fn is_none(&self) -> bool {
-    self.target.is_none()
+  /// Returns true if the target is a componentless data sender.
+  pub fn is_sender(&self) -> bool {
+    self.target.instance == crate::parse::SENDER_ID && self.target.port == crate::parse::SENDER_PORT
   }
 
   /// Create a [ConnectionTargetDefinition] with the target set to the passed port.
   pub fn from_port(port: PortReference) -> Self {
-    Self { target: Some(port) }
+    Self {
+      target: port,
+      data: None,
+    }
   }
   #[must_use]
   /// Convenience method to test if the target's instance matches the passed string.
   pub fn matches_instance(&self, instance: &str) -> bool {
-    self
-      .target
-      .as_ref()
-      .map_or(false, |p| p.instance == instance)
+    self.target.instance == instance
   }
 
   #[must_use]
   /// Convenience method to test if the target's port matches the passed string.
   pub fn matches_port(&self, port: &str) -> bool {
-    self.target.as_ref().map_or(false, |p| p.port == port)
+    self.target.port == port
   }
 
-  /// Get the target's instance if it exists.
-  pub fn get_instance(&self) -> Result<&str> {
-    self
-      .target
-      .as_ref()
-      .map(|s| s.instance.as_str())
-      .ok_or(crate::Error::NoTarget)
+  /// Get the target's instance.
+  #[must_use]
+  pub fn get_instance(&self) -> &str {
+    &self.target.instance
   }
 
-  /// Get the target's instance as an owned String if it exists.
-  pub fn get_instance_owned(&self) -> Result<String> {
-    self
-      .target
-      .as_ref()
-      .map(|p| p.instance.clone())
-      .ok_or(crate::Error::NoTarget)
+  /// Get the target's instance as an owned String.
+  #[must_use]
+  pub fn get_instance_owned(&self) -> String {
+    self.target.instance.clone()
   }
 
-  /// Get the target's port if it exists.
-  pub fn get_port(&self) -> Result<&str> {
-    self
-      .target
-      .as_ref()
-      .map(|s| s.port.as_str())
-      .ok_or(crate::Error::NoTarget)
+  /// Get the target's port.
+  #[must_use]
+  pub fn get_port(&self) -> &str {
+    &self.target.port
   }
 
   /// Get the target's port as an owned String if it exists.
-  pub fn get_port_owned(&self) -> Result<String> {
-    self
-      .target
-      .as_ref()
-      .map(|p| p.port.clone())
-      .ok_or(crate::Error::NoTarget)
+  #[must_use]
+  pub fn get_port_owned(&self) -> String {
+    self.target.port.clone()
   }
 
   /// Generate a [ConnectionTargetDefinition] from short form syntax. See [docs.vino.dev](https://docs.vino.dev/docs/configuration/short-form-syntax/) for more info.
   pub fn from_v0_str(s: &str) -> Result<Self> {
     let parsed = crate::parse::parse_connection_target_v0(s)?;
-    Ok(Self {
-      target: Some(parsed.into()),
-    })
+    parsed.try_into()
   }
 }
 
@@ -407,9 +453,7 @@ where
 
 impl Display for ConnectionTargetDefinition {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    let default = PortReference::default();
-    let target = self.target.as_ref().unwrap_or(&default);
-    write!(f, "{}[{}]", target.instance, target.port)
+    write!(f, "{}[{}]", self.target.instance, self.target.port)
   }
 }
 
@@ -428,12 +472,17 @@ impl From<crate::v0::ConnectionTargetDefinition> for PortReference {
   }
 }
 
-impl TryFrom<Option<crate::v0::ConnectionTargetDefinition>> for ConnectionTargetDefinition {
+impl TryFrom<crate::v0::ConnectionTargetDefinition> for ConnectionTargetDefinition {
   type Error = Error;
 
-  fn try_from(def: Option<crate::v0::ConnectionTargetDefinition>) -> Result<Self> {
+  fn try_from(def: crate::v0::ConnectionTargetDefinition) -> Result<Self> {
+    let data = match &def.data {
+      Some(json) => Some(SenderData::from_str(json)?),
+      None => None,
+    };
     Ok(ConnectionTargetDefinition {
-      target: def.map(|c| c.into()),
+      target: def.into(),
+      data,
     })
   }
 }

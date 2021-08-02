@@ -25,6 +25,7 @@ pub(crate) mod prelude {
   };
   pub(crate) use futures::FutureExt;
   pub(crate) use itertools::*;
+  pub(crate) use tokio_stream::StreamExt;
   pub(crate) use tracing::Instrument;
   pub(crate) use vino_entity::entity::Entity;
   pub(crate) use vino_manifest::{
@@ -40,17 +41,15 @@ pub(crate) mod prelude {
     MessageSignal,
     MessageTransport,
     TransportMap,
+    TransportWrapper,
   };
   pub(crate) use vino_types::signatures::*;
   pub(crate) use vino_wascap::KeyPair;
 
   pub(crate) use crate::dev::*;
   pub(crate) use crate::dispatch::inv_error;
-  pub(crate) use crate::error::{
-    InternalError,
-    *,
-  };
-  pub(crate) use crate::models::component_model::ComponentModel;
+  pub(crate) use crate::error::*;
+  pub(crate) use crate::models::component_model::*;
   pub(crate) use crate::models::*;
   pub(crate) use crate::network_service::NetworkService;
   pub(crate) use crate::prelude::*;

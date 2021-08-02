@@ -2,6 +2,7 @@ pub(crate) mod prelude {
   pub(crate) use anyhow::Result as TestResult;
   pub(crate) use maplit::hashmap;
   pub(crate) use pretty_assertions::assert_eq;
+  pub(crate) use vino_macros::transport_map;
 
   pub(crate) use super::*;
   pub(crate) use crate::dev::prelude::*;

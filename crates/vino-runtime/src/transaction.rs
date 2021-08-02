@@ -1,280 +1,127 @@
-use std::collections::{
-  HashMap,
-  VecDeque,
-};
+use std::collections::VecDeque;
 use std::sync::Arc;
 
 use parking_lot::Mutex;
-use tokio::sync::mpsc::{
-  unbounded_channel,
-  UnboundedReceiver,
-  UnboundedSender,
-};
 use vino_transport::message_transport::TransportMap;
 
+use self::ports::PortStatuses;
 use crate::dev::prelude::*;
 use crate::schematic_service::handlers::component_payload::ComponentPayload;
-use crate::schematic_service::handlers::schematic_output::SchematicOutput;
 use crate::schematic_service::handlers::transaction_update::TransactionUpdate;
+use crate::schematic_service::input_message::InputMessage;
 type Result<T> = std::result::Result<T, TransactionError>;
 
-#[derive(Debug)]
-pub(crate) struct TransactionExecutor {
-  model: Arc<Mutex<SchematicModel>>,
-  // A list of references that don't have inputs and thus won't be triggered
-  // by an upstream's output message
-  autorun: Vec<String>,
-}
-
-impl TransactionExecutor {
-  pub(crate) fn new(model: Arc<Mutex<SchematicModel>>) -> Self {
-    let locked = model.lock();
-    // components that have no inputs need to be run now or lazily later
-    let autorun_instances = locked
-      .get_instances()
-      .filter_map(|instance| {
-        locked
-          .get_upstream_connections_by_instance(instance)
-          .next()
-          .is_none()
-          .then(|| instance.clone())
-      })
-      .collect();
-    drop(locked);
-    debug!("Instances {:?} are lazy", autorun_instances);
-
-    Self {
-      model,
-      autorun: autorun_instances,
-    }
-  }
-  pub(crate) fn new_transaction(
-    &mut self,
-    tx_id: String,
-  ) -> (
-    UnboundedReceiver<TransactionUpdate>,
-    UnboundedSender<TransactionUpdate>,
-  ) {
-    let mut transaction = Transaction::new(tx_id.clone(), self.model.clone());
-
-    let (inbound_tx, inbound_rx) = unbounded_channel::<TransactionUpdate>();
-    let (outbound_tx, mut outbound_rx) = unbounded_channel::<TransactionUpdate>();
-
-    // TODO: Instances with no ports should be run lazily, not automatically.
-    for instance in &self.autorun {
-      ok_or_log!(
-        inbound_tx.send(TransactionUpdate::Transition(ComponentPayload {
-          tx_id: tx_id.clone(),
-          instance: instance.clone(),
-          payload_map: TransportMap::new(),
-        }))
-      );
-    }
-
-    tokio::spawn(async move {
-      let log_prefix = format!("TX:{}:", tx_id);
-      trace!("{}:Start", log_prefix);
-      while let Some(msg) = outbound_rx.recv().await {
-        match msg {
-          TransactionUpdate::Transition(_) => todo!(),
-          TransactionUpdate::Result(_) => todo!(),
-          TransactionUpdate::Done(_) => todo!(),
-          TransactionUpdate::Update(input) => {
-            trace!("{}:Update for {}", log_prefix, input.connection,);
-            transaction.receive(input.connection.clone(), input.payload);
-            let target = &input.connection.to;
-            let port = input.connection.to.get_port()?;
-
-            if target.matches_instance(SCHEMATIC_OUTPUT) {
-              trace!("{}:Result for port {}", log_prefix, port,);
-
-              if let Some(payload) = transaction.take_from_port(target) {
-                ok_or_log!(inbound_tx.send(TransactionUpdate::Result(SchematicOutput {
-                  tx_id: tx_id.clone(),
-                  port: port.to_owned(),
-                  payload,
-                })));
-              }
-
-              for port in &transaction.output_ports {
-                if transaction.has_active_upstream(port)? {
-                  trace!("{}:Waiting", log_prefix);
-                  continue;
-                }
-              }
-              // If all connections to the schematic outputs are closed, then finish up.
-              outbound_rx.close();
-              ok_or_log!(inbound_tx.send(TransactionUpdate::Done(tx_id.clone())));
-            } else if transaction.is_target_ready(target) {
-              trace!(
-                "{}:Transitioning to instance '{}'",
-                log_prefix,
-                target.get_instance().unwrap_or("<No Instance>")
-              );
-
-              let map = transaction.take_inputs(target)?;
-              ok_or_log!(
-                inbound_tx.send(TransactionUpdate::Transition(ComponentPayload {
-                  tx_id: tx_id.clone(),
-                  instance: target.get_instance_owned()?,
-                  payload_map: map
-                }))
-              );
-            }
-          }
-        };
-      }
-      debug!("{}:Done", log_prefix);
-      Ok!(())
-    });
-
-    (inbound_rx, outbound_tx)
-  }
-}
-
-#[derive(Debug, PartialEq, Eq)]
-enum PortStatus {
-  Open,
-  Closed,
-}
+pub(crate) mod executor;
+pub(crate) mod ports;
 
 #[derive(Debug)]
 struct Transaction {
   tx_id: String,
-  buffermap: BufferMap,
   model: Arc<Mutex<SchematicModel>>,
-  port_statuses: HashMap<ConnectionTargetDefinition, PortStatus>,
+  ports: PortStatuses,
   output_ports: Vec<ConnectionTargetDefinition>,
+  schematic_name: String,
+  senders: Vec<ConnectionDefinition>,
+  generators: Vec<ConnectionDefinition>,
 }
 
 impl Transaction {
   fn new(tx_id: String, model: Arc<Mutex<SchematicModel>>) -> Self {
+    let ports = PortStatuses::new(tx_id.clone(), model.clone());
     let locked = model.lock();
-    let port_statuses = locked
-      .get_connections()
-      .iter()
-      .flat_map(|conn| {
-        [
-          (conn.to.clone(), PortStatus::Open),
-          (conn.from.clone(), PortStatus::Open),
-        ]
-      })
-      .collect();
+    let senders: Vec<_> = locked.get_senders().cloned().collect();
+    let generators: Vec<_> = locked.get_generators().cloned().collect();
+
+    let schematic_name = locked.get_name();
+
     let output_ports = locked.get_schematic_outputs().cloned().collect();
     drop(locked);
     Self {
       tx_id,
-      buffermap: BufferMap::default(),
       model,
-      port_statuses,
+      ports,
       output_ports,
+      schematic_name,
+      senders,
+      generators,
     }
   }
-  pub(crate) fn has_active_upstream(&self, port: &ConnectionTargetDefinition) -> Result<bool> {
+
+  pub(crate) fn log_prefix(&self) -> String {
+    format!("TX:{}({}):", self.tx_id, self.schematic_name)
+  }
+
+  pub(crate) fn has_active_upstream(&self, port: &ConnectionTargetDefinition) -> bool {
     let locked = self.model.lock();
 
-    let upstream = locked
-      .get_upstream(port)
-      .ok_or_else(|| TransactionError::UpstreamNotFound(port.clone()))?;
-    Ok(self.has_data(port) || !self.is_closed(upstream))
+    let upstream = some_or_bail!(locked.get_upstream(port), false);
+    let has_data = self.ports.has_data(port);
+    let is_closed = self.ports.is_closed(upstream);
+    let is_sender = upstream.is_sender();
+    let is_generator = locked.is_generator(upstream.get_instance());
+    let active = has_data || (!is_closed && !is_sender && !is_generator);
+    trace!(
+      "TX:PORT:[{}]:HAS_DATA[{}]:IS_OPEN[{}]:IS_SENDER[{}]:IS_GENERATOR[{}]:IS_ACTIVE[{}]",
+      upstream,
+      has_data,
+      !is_closed,
+      is_sender,
+      is_generator,
+      active
+    );
+    active
   }
-  fn receive(&mut self, connection: ConnectionDefinition, payload: MessageTransport) {
-    if let MessageTransport::Signal(signal) = payload {
-      match signal {
-        MessageSignal::Close => {
-          self
-            .port_statuses
-            .insert(connection.from, PortStatus::Closed);
-        }
-        MessageSignal::OpenBracket => panic!("Not implemented"),
-        MessageSignal::CloseBracket => panic!("Not implemented"),
+
+  fn is_done(&self) -> bool {
+    for port in &self.output_ports {
+      if !self.ports.is_closed(port) {
+        return false;
       }
-    } else {
-      self.buffermap.push(connection.to, payload);
     }
+    true
   }
-  fn has_data(&self, port: &ConnectionTargetDefinition) -> bool {
-    self.buffermap.has_data(port)
-  }
-  fn is_closed(&self, port: &ConnectionTargetDefinition) -> bool {
-    self
-      .port_statuses
-      .get(port)
-      .map_or(true, |status| status == &PortStatus::Closed)
-  }
-  fn take_from_port(&mut self, port: &ConnectionTargetDefinition) -> Option<MessageTransport> {
-    self.buffermap.take(port)
-  }
-  fn get_connected_ports(&self, reference: &str) -> Vec<ConnectionTargetDefinition> {
-    let locked = self.model.lock();
-    locked
-      .get_connections()
-      .iter()
-      .filter(|conn| conn.to.matches_instance(reference))
-      .map(|conn| conn.to.clone())
-      .collect()
-  }
-  fn take_inputs(&mut self, target: &ConnectionTargetDefinition) -> Result<TransportMap> {
-    let ports = self.get_connected_ports(target.get_instance()?);
 
-    let mut map = HashMap::new();
-    for port in ports {
-      let message = self.take_from_port(&port).ok_or(InternalError(7001))?;
-      map.insert(port.get_port_owned()?, message);
+  fn check_senders(&mut self) -> VecDeque<TransactionUpdate> {
+    let mut messages = VecDeque::new();
+
+    for sender in &self.senders {
+      if self.ports.is_waiting(&sender.to) {
+        self.ports.set_idle(&sender.to);
+        match sender.from.get_data() {
+          Some(data) => {
+            messages.push_back(TransactionUpdate::Update(InputMessage {
+              connection: sender.clone(),
+              payload: data.as_message(),
+              tx_id: self.tx_id.clone(),
+            }));
+          }
+          None => {
+            debug!("{}{:?}", self.log_prefix(), sender);
+            error!("Schematic '{}' has a sender defined for connection '{}' but has no data to send. This is likely a bug in the schematic.", self.schematic_name, sender);
+          }
+        }
+      }
     }
-    Ok(TransportMap::with_map(map))
-  }
-  fn is_target_ready(&self, port: &ConnectionTargetDefinition) -> bool {
-    let port = ok_or_bail!(port.get_instance(), false);
-    let ports = self.get_connected_ports(port);
-    self.are_ports_ready(&ports)
-  }
-  fn is_port_ready(&self, port: &ConnectionTargetDefinition) -> bool {
-    self.buffermap.has_data(port)
-  }
-  fn are_ports_ready(&self, ports: &[ConnectionTargetDefinition]) -> bool {
-    all(ports, |ent| self.is_port_ready(ent))
+
+    for generator in &self.generators {
+      if self.ports.is_waiting(&generator.to) {
+        self.ports.set_idle(&generator.to);
+        messages.push_back(TransactionUpdate::Execute(ComponentPayload {
+          tx_id: self.tx_id.clone(),
+          instance: generator.from.get_instance_owned(),
+          payload_map: TransportMap::new(),
+        }));
+      }
+    }
+    messages
   }
 }
 
-#[derive(Debug, Default)]
-struct BufferMap {
-  map: HashMap<ConnectionTargetDefinition, PortBuffer>,
-}
-
-impl BufferMap {
-  fn push(&mut self, port: ConnectionTargetDefinition, payload: MessageTransport) {
-    let queue = self.map.entry(port).or_insert_with(PortBuffer::default);
-    queue.push_back(payload);
-  }
-
-  fn has_data(&self, port: &ConnectionTargetDefinition) -> bool {
-    self.map.get(port).map_or(false, PortBuffer::has_data)
-  }
-  fn take(&mut self, port: &ConnectionTargetDefinition) -> Option<MessageTransport> {
-    self.map.get_mut(port).and_then(PortBuffer::pop_front)
-  }
-}
-
-#[derive(Debug, Default)]
-struct PortBuffer {
-  buffer: VecDeque<MessageTransport>,
-}
-
-impl PortBuffer {
-  fn push_back(&mut self, payload: MessageTransport) {
-    self.buffer.push_back(payload);
-  }
-  fn has_data(&self) -> bool {
-    !self.buffer.is_empty()
-  }
-
-  fn pop_front(&mut self) -> Option<MessageTransport> {
-    self.buffer.pop_front()
-  }
-}
 #[cfg(test)]
 mod tests {
+  use std::collections::HashMap;
+  use std::time::Duration;
+
   use vino_component::packet::v0::Payload;
   use vino_component::Packet;
   use vino_transport::message_transport::MessageSignal;
@@ -286,6 +133,7 @@ mod tests {
     assert_eq,
     *,
   };
+  use crate::transaction::executor::TransactionExecutor;
   fn make_model() -> TestResult<Arc<Mutex<SchematicModel>>> {
     let schematic_name = "Test";
     let mut schematic_def = new_schematic(schematic_name);
@@ -299,16 +147,16 @@ mod tests {
       "REF_ID_LOGGER".to_owned(),
       ComponentDefinition::new("test-namespace", "log"),
     );
-    schematic_def.connections.push(ConnectionDefinition {
-      from: ConnectionTargetDefinition::new(SCHEMATIC_INPUT, "input"),
-      to: ConnectionTargetDefinition::new("REF_ID_LOGGER", "input"),
-      default: None,
-    });
-    schematic_def.connections.push(ConnectionDefinition {
-      from: ConnectionTargetDefinition::new("REF_ID_LOGGER", "output"),
-      to: ConnectionTargetDefinition::new(SCHEMATIC_OUTPUT, "output"),
-      default: None,
-    });
+    schematic_def
+      .connections
+      .push(ConnectionDefinition::from_v0_str(
+        "<>=>REF_ID_LOGGER[input]",
+      )?);
+    schematic_def
+      .connections
+      .push(ConnectionDefinition::from_v0_str(
+        "REF_ID_LOGGER[output]=><>",
+      )?);
     Ok(Arc::new(Mutex::new(SchematicModel::try_from(
       schematic_def,
     )?)))
@@ -320,25 +168,25 @@ mod tests {
     let model = make_model()?;
 
     let mut transaction = Transaction::new(tx_id, model);
-    let from = ConnectionTargetDefinition::new("REF_ID_LOGGER1", "vino::v0::log");
-    let to = ConnectionTargetDefinition::new("REF_ID_LOGGER2", "vino::v0::log");
+    let from = ConnectionTargetDefinition::new("<input>", "input");
+    let to = ConnectionTargetDefinition::new("REF_ID_LOGGER", "input");
 
     println!("pushing to port");
-    transaction.receive(
-      ConnectionDefinition::new(from.clone(), to.clone()),
-      Packet::V0(Payload::MessagePack(vec![])).into(),
-    );
-    assert!(transaction.is_port_ready(&to));
+    let connection = ConnectionDefinition::new(from, to.clone());
+    transaction
+      .ports
+      .receive(&connection, Packet::V0(Payload::MessagePack(vec![])).into());
+    assert!(transaction.ports.is_port_ready(&to));
     println!("taking from port");
-    let output = transaction.take_from_port(&to);
-    assert_eq!(
-      output,
-      Some(Packet::V0(Payload::MessagePack(vec![])).into())
+    let output = transaction.ports.take_from_port(&to);
+    assert_eq!(output, Some(MessageTransport::MessagePack(vec![])));
+    transaction.ports.receive(
+      &connection,
+      Packet::V0(Payload::Exception("!!".into())).into(),
     );
-    transaction.receive(
-      ConnectionDefinition::new(from, to),
-      Packet::V0(Payload::Exception("oh no".into())).into(),
-    );
+    let output = transaction.ports.take_from_port(&to);
+    assert!(matches!(output, Some(MessageTransport::Exception(_))));
+
     Ok(())
   }
 
@@ -354,50 +202,60 @@ mod tests {
   async fn test_transaction_map() -> TestResult<()> {
     let model = make_model()?;
 
-    let mut map = TransactionExecutor::new(model);
+    let mut map = TransactionExecutor::new(model, Duration::from_millis(100));
     let tx_id = get_uuid();
     let (mut ready_rx, tx) = map.new_transaction(tx_id.clone());
 
     // First message sends from the schematic input to the component
-    ok_or_log!(tx.send(TransactionUpdate::Update(InputMessage {
+    tx.send(TransactionUpdate::Update(InputMessage {
       connection: conn(SCHEMATIC_INPUT, "input", "REF_ID_LOGGER", "input"),
       payload: MessageTransport::Test("input payload".to_owned()),
-      tx_id: get_uuid(),
-    })));
+      tx_id: tx_id.clone(),
+    }))?;
 
     // Second closes the schematic input
-    ok_or_log!(tx.send(TransactionUpdate::Update(InputMessage {
+    tx.send(TransactionUpdate::Update(InputMessage {
       connection: conn(SCHEMATIC_INPUT, "input", "REF_ID_LOGGER", "input"),
-      payload: MessageTransport::Signal(MessageSignal::Close),
-      tx_id: get_uuid(),
-    })));
+      payload: MessageTransport::Signal(MessageSignal::Done),
+      tx_id: tx_id.clone(),
+    }))?;
 
     // Third simulates output from the component
-    ok_or_log!(tx.send(TransactionUpdate::Update(InputMessage {
+    tx.send(TransactionUpdate::Update(InputMessage {
       connection: conn("REF_ID_LOGGER", "output", SCHEMATIC_OUTPUT, "output"),
       payload: MessageTransport::Test("output payload".to_owned()),
-      tx_id: get_uuid(),
-    })));
+      tx_id: tx_id.clone(),
+    }))?;
 
-    // Fourth closes the output
-    ok_or_log!(tx.send(TransactionUpdate::Update(InputMessage {
+    // Second closes the schematic input
+    tx.send(TransactionUpdate::Update(InputMessage {
       connection: conn("REF_ID_LOGGER", "output", SCHEMATIC_OUTPUT, "output"),
-      payload: MessageTransport::Signal(MessageSignal::Close),
-      tx_id: get_uuid(),
-    })));
+      payload: MessageTransport::Signal(MessageSignal::Done),
+      tx_id: tx_id.clone(),
+    }))?;
 
-    // Transaction should close automatically after this because all ports
-    // are drained and closed.
+    // Transaction should close automatically after this because the schematic
+    // is complete
 
     let handle = tokio::spawn(async move {
       let mut msgs = vec![];
       while let Some(payloadmsg) = ready_rx.recv().await {
+        println!("Got message : {:?}", payloadmsg);
         msgs.push(payloadmsg);
       }
       msgs
     });
     let msgs = handle.await?;
+    println!("Transaction Updates {:#?}", msgs);
 
+    // 1 execute the component
+    assert!(matches!(msgs[0], TransactionUpdate::Execute(_)));
+    // 2 get result for schematic
+    assert!(matches!(msgs[1], TransactionUpdate::Result(_)));
+    // 3 get done signal for schematic port
+    assert!(matches!(msgs[2], TransactionUpdate::Result(_)));
+    // 4 get done update for schematic transaction
+    assert!(matches!(msgs[3], TransactionUpdate::Done(_)));
     assert_eq!(msgs.len(), 4);
 
     Ok(())

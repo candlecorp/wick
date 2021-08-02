@@ -1,6 +1,6 @@
 ---
 schematics:
-  - name: test
+  - name: uuid
     instances:
       uuid: vino::v0::uuid
     connections:

@@ -1,8 +1,8 @@
-use std::cell::RefCell;
+/// Module for a [MessageTransportStream]
+pub mod stream;
+
 use std::collections::HashMap;
 use std::fmt::Display;
-use std::pin::Pin;
-use std::task::Poll;
 
 use log::error;
 use serde::de::DeserializeOwned;
@@ -10,8 +10,6 @@ use serde::{
   Deserialize,
   Serialize,
 };
-use tokio::sync::mpsc::UnboundedReceiver;
-use tokio_stream::Stream;
 use vino_codec::{
   json,
   messagepack,
@@ -19,14 +17,29 @@ use vino_codec::{
 };
 use vino_component::{
   v0,
-  InvocationPacket,
   Packet,
+  PacketWrapper,
 };
 
 use crate::{
   Error,
   Result,
 };
+
+lazy_static::lazy_static! {
+  /// A static close message
+    pub static ref CLOSE_MESSAGE: MessageTransport = {
+      MessageTransport::Signal(MessageSignal::Done)
+    };
+
+  /// A static system close message
+    pub static ref SYSTEM_CLOSE_MESSAGE: TransportWrapper = {
+      TransportWrapper::new(
+        crate::SYSTEM_ID,
+        MessageTransport::Signal(MessageSignal::Done)
+      )
+    };
+}
 
 /// A HashMap mapping from a port name to a MessageTransport object.
 pub type PortMap = HashMap<String, MessageTransport>;
@@ -56,8 +69,10 @@ pub enum MessageTransport {
 /// Signals that need to be handled before propagating to a downstream consumer.
 #[derive(Debug, Clone, Copy, Eq, Serialize, Deserialize, PartialEq)]
 pub enum MessageSignal {
-  /// Indicates this channel is closing and should not be polled any further.
-  Close,
+  // /// Indicates this channel is closing and should not be polled any further.
+  // Close,
+  /// Indicates the job that opened this port is finished with it.
+  Done,
   /// Indicates that a message is coming down in chunks and this is the start.
   OpenBracket,
   /// Indicates a chunked message has been completed.
@@ -281,6 +296,41 @@ fn handle_result_conversion(result: std::result::Result<serde_json::Value, Strin
   }
 }
 
+impl Display for MessageTransport {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    if let MessageTransport::Signal(signal) = self {
+      return write!(f, "Signal({})", signal.to_string());
+    }
+    write!(
+      f,
+      "{}",
+      match self {
+        MessageTransport::Invalid => "Invalid",
+        MessageTransport::Exception(_) => "Exception",
+        MessageTransport::Error(_) => "Error",
+        MessageTransport::MessagePack(_) => "MessagePack",
+        MessageTransport::Test(_) => "Test",
+        MessageTransport::Signal(_) => unreachable!(),
+        MessageTransport::Success(_) => "Success",
+        MessageTransport::Json(_) => "JSON",
+      }
+    )
+  }
+}
+
+impl Display for MessageSignal {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    f.write_fmt(format_args!(
+      "{}",
+      match self {
+        MessageSignal::Done => "Done",
+        MessageSignal::OpenBracket => "OpenBracket",
+        MessageSignal::CloseBracket => "CloseBracket",
+      }
+    ))
+  }
+}
+
 impl MessageTransport {
   /// Returns `true` if the Message contains success data destined for a downstream
   /// consumer, false for Errors, Exceptions, and otherwise.
@@ -305,6 +355,12 @@ impl MessageTransport {
       self,
       MessageTransport::Error(_) | MessageTransport::Exception(_)
     )
+  }
+
+  #[must_use]
+  /// Returns true if the [MessageTransport] is an [MessageTransport::Signal] variant.
+  pub fn is_signal(&self) -> bool {
+    matches!(self, Self::Signal(_))
   }
 
   /// Converts a [MessageTransport] into [serde_json::Value] representation of a [JsonOutput]
@@ -381,9 +437,9 @@ impl MessageTransport {
     }
   }
 
-  /// A utility function for [MessageTransport::Signal(MessageSignal::Close)]
-  pub fn close() -> Self {
-    MessageTransport::Signal(MessageSignal::Close)
+  /// A utility function for [MessageTransport::Signal(MessageSignal::Done)]
+  pub fn done() -> Self {
+    MessageTransport::Signal(MessageSignal::Done)
   }
 
   /// Attempts a conversion of a [MessageTransport] into the bytes of a [MessageTransport::MessagePack] variant
@@ -462,7 +518,7 @@ impl From<Packet> for MessageTransport {
         v0::Payload::MessagePack(bytes) => MessageTransport::MessagePack(bytes),
         v0::Payload::Json(v) => MessageTransport::Json(v),
         v0::Payload::Success(v) => MessageTransport::Success(v),
-        v0::Payload::Close => MessageTransport::Signal(MessageSignal::Close),
+        v0::Payload::Done => MessageTransport::Signal(MessageSignal::Done),
         v0::Payload::OpenBracket => MessageTransport::Signal(MessageSignal::OpenBracket),
         v0::Payload::CloseBracket => MessageTransport::Signal(MessageSignal::CloseBracket),
       },
@@ -470,58 +526,33 @@ impl From<Packet> for MessageTransport {
   }
 }
 
-/// A [MessageTransportStream] is a stream of [MessageTransport]s
-#[derive(Debug)]
-pub struct MessageTransportStream {
-  // port_statuses: HashMap<String, PortStatus>,
-  rx: RefCell<UnboundedReceiver<InvocationTransport>>,
-}
-
-impl MessageTransportStream {
-  #[doc(hidden)]
-  #[must_use]
-  pub fn new(rx: UnboundedReceiver<InvocationTransport>) -> Self {
-    Self {
-      rx: RefCell::new(rx),
-    }
-  }
-}
-
-lazy_static::lazy_static! {
-    static ref CLOSE_MESSAGE: MessageTransport = {
-      MessageTransport::Signal(MessageSignal::Close)
-    };
-}
-
-impl Stream for MessageTransportStream {
-  type Item = InvocationTransport;
-
-  fn poll_next(self: Pin<&mut Self>, cx: &mut std::task::Context<'_>) -> Poll<Option<Self::Item>> {
-    let mut rx = self.rx.borrow_mut();
-    match rx.poll_recv(cx) {
-      Poll::Ready(Some(wrapper)) => {
-        if wrapper.port == crate::SYSTEM_ID && CLOSE_MESSAGE.eq(&wrapper.payload) {
-          Poll::Ready(None)
-        } else {
-          Poll::Ready(Some(wrapper))
-        }
-      }
-      other => other,
-    }
-  }
-}
-
-/// An [InvocationTransport] is a wrapper around a [MessageTransport] with the port name and invocation id embedded in it.
+/// An [TransportWrapper] is a wrapper around a [MessageTransport] with the port name and invocation id embedded in it.
 #[derive(Debug, Clone, PartialEq)]
-pub struct InvocationTransport {
+#[must_use]
+pub struct TransportWrapper {
   /// The port the message originated from
   pub port: String,
   /// The port's output
   pub payload: MessageTransport,
 }
 
-impl From<InvocationPacket> for InvocationTransport {
-  fn from(p: InvocationPacket) -> Self {
+impl TransportWrapper {
+  /// Constructor for manually created [TransportWrapper]s.
+  pub fn new(port: &str, payload: MessageTransport) -> Self {
+    Self {
+      port: port.to_owned(),
+      payload,
+    }
+  }
+
+  /// Attempt to deserialize the contained [MessageTransport] into the destination value.
+  pub fn try_into<T: DeserializeOwned>(self) -> Result<T> {
+    self.payload.try_into()
+  }
+}
+
+impl From<PacketWrapper> for TransportWrapper {
+  fn from(p: PacketWrapper) -> Self {
     Self {
       port: p.port,
       payload: p.payload.into(),

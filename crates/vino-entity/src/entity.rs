@@ -26,6 +26,7 @@ pub enum Entity {
   Schematic(String),
   /// A component or anything that can be invoked like a component
   Component(String),
+  // Component { namespace: String, name: String },
   /// A provider (an entity that hosts a collection of components)
   Provider(String),
   /// A reference to an instance of an entity.

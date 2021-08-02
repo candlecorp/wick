@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::time::Duration;
 
 use crate::dev::prelude::provider_model::{
   create_network_provider_model,
@@ -17,6 +18,7 @@ pub(crate) struct Initialize {
   pub(crate) network: NetworkDefinition,
   pub(crate) allowed_insecure: Vec<String>,
   pub(crate) allow_latest: bool,
+  pub(crate) timeout: Duration,
 }
 
 impl Handler<Initialize> for NetworkService {
@@ -33,12 +35,13 @@ impl Handler<Initialize> for NetworkService {
     let allowed_insecure = msg.allowed_insecure;
 
     let seed = msg.seed;
-    let kp = actix_try!(keypair_from_seed(&seed));
+    let kp = actix_try!(keypair_from_seed(&seed), 5002);
     self.state = Some(State { kp });
     let allow_latest = msg.allow_latest;
     let schematics = self.definition.schematics.clone();
     self.schematics = start_schematic_services(&schematics);
     let address_map = self.schematics.clone();
+    let timeout = msg.timeout;
 
     let task = async move {
       let provider_addr = start_network_provider(SELF_NAMESPACE, network_id).await?;
@@ -55,6 +58,7 @@ impl Handler<Initialize> for NetworkService {
           allow_latest,
           allowed_insecure: allowed_insecure.clone(),
           global_providers: global_providers.clone(),
+          timeout,
         })
       });
 

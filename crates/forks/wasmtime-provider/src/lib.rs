@@ -91,14 +91,19 @@ impl WebAssemblyEngineProvider for WasmtimeEngineProvider {
       host.clone(),
       &self.linker,
     )?;
+
     let instance_ref = Arc::new(RwLock::new(instance));
+
     let gc = guest_call_fn(self.store.as_context_mut(), instance_ref.clone())?;
+
     self.inner = Some(EngineInner {
       instance: instance_ref,
       guest_call_fn: gc,
       host,
     });
+
     self.initialize()?;
+
     Ok(())
   }
 
@@ -155,6 +160,7 @@ impl WasmtimeEngineProvider {
         ext.into_func().unwrap().call(&mut self.store, &[])?;
       }
     }
+
     Ok(())
   }
 }
@@ -167,8 +173,13 @@ fn instance_from_buffer(
   linker: &Linker<WapcStore>,
 ) -> Result<Instance, Box<dyn Error>> {
   let module = Module::new(engine, buf).unwrap();
+
   let imports = arrange_imports(&module, state, store, linker);
-  Ok(wasmtime::Instance::new(store.as_context_mut(), &module, imports?.as_slice()).unwrap())
+
+  let instance =
+    wasmtime::Instance::new(store.as_context_mut(), &module, imports?.as_slice()).unwrap();
+
+  Ok(instance)
 }
 
 /// wasmtime requires that the list of callbacks be "zippable" with the list

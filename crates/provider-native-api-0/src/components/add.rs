@@ -6,6 +6,6 @@ pub(crate) async fn job(
   _context: Context<crate::State>,
 ) -> JobResult {
   let result = input.left + input.right;
-  output.output.send(&result)?;
+  output.output.done(&result)?;
   Ok(())
 }

@@ -74,18 +74,7 @@
 // Add exceptions here
 #![allow()]
 
-#[macro_export]
-/// TODO need to get rid of this
-macro_rules! ok_or_log {
-  ($expr:expr $(,)?) => {{
-    match $expr {
-      Ok(_) => {}
-      Err(e) => {
-        log::error!("Unexpected error: {}", e);
-      }
-    }
-  }};
-}
+pub use tracing;
 
 #[macro_export]
 /// Test a condition and if it is false, return the supplied error
@@ -168,6 +157,13 @@ macro_rules! testlog {
       }
     )
 }
+
+use std::collections::HashMap;
+use std::sync::{
+  Arc,
+  Mutex,
+};
+use std::time::Instant;
 
 pub use colored;
 
@@ -348,4 +344,55 @@ macro_rules! transport_map {
             vino_transport::TransportMap::with_map(_map)
         }
     };
+}
+
+lazy_static::lazy_static!(
+  #[doc(hidden)]
+  pub static ref START_TIMES: Arc<Mutex<HashMap<String, Instant>>> = {
+    Arc::new(Mutex::new(HashMap::new()))
+  };
+);
+
+#[macro_export]
+#[doc(hidden)]
+macro_rules! mark {
+  () => {{
+    let _ = vino_macros::START_TIMES.lock().and_then(|mut h| {
+      h.insert(function_path!(), std::time::Instant::now());
+      let msg = format!("BENCH::mark:{}:{}", function_path!(), line!());
+      use vino_macros::colored::Colorize;
+      println!("{}", msg.yellow());
+      Ok(())
+    });
+  }};
+}
+
+#[macro_export]
+#[doc(hidden)]
+macro_rules! function_path {
+  () => {{
+    fn f() {}
+    fn type_name_of<T>(_: T) -> &'static str {
+      std::any::type_name::<T>()
+    }
+    let name = type_name_of(f);
+    name[..name.len() - 16].to_owned()
+  }};
+}
+
+#[macro_export]
+#[doc(hidden)]
+macro_rules! elapsed {
+  () => {{
+    let _ = vino_macros::START_TIMES.lock().and_then(|h| {
+      let time = h.get(&function_path!());
+      let elapsed = time
+        .map(|t| t.elapsed().as_micros().to_string())
+        .unwrap_or("no start time marked...".to_owned());
+      use vino_macros::colored::Colorize;
+      let msg = format!("BENCH::{}:{}: +{}", function_path!(), line!(), elapsed).yellow();
+      println!("{}", msg);
+      Ok(())
+    });
+  }};
 }

@@ -1,6 +1,6 @@
 use thiserror::Error;
 use tokio::sync::mpsc::error::SendError;
-use vino_component::InvocationPacket;
+use vino_component::PacketWrapper;
 
 #[derive(Error, Debug)]
 /// Vino Provider's error type
@@ -56,8 +56,8 @@ impl From<String> for NativeComponentError {
   }
 }
 
-impl From<SendError<InvocationPacket>> for Error {
-  fn from(_: SendError<InvocationPacket>) -> Self {
+impl From<SendError<PacketWrapper>> for Error {
+  fn from(_: SendError<PacketWrapper>) -> Self {
     Self::SendError
   }
 }

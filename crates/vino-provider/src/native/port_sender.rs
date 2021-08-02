@@ -14,14 +14,12 @@ use tokio_stream::{
 };
 use vino_component::v0::Payload as ComponentPayload;
 use vino_component::{
-  InvocationPacket,
   Packet,
+  PacketWrapper,
 };
-use vino_transport::message_transport::MessageSignal;
 use vino_transport::{
-  InvocationTransport,
-  MessageTransport,
   MessageTransportStream,
+  TransportWrapper,
 };
 
 use super::error::Error;
@@ -35,7 +33,7 @@ pub trait PortSender {
   type PayloadType: Serialize + Send + 'static;
 
   /// Get the port buffer that the sender can push to
-  fn get_port(&self) -> UnboundedSender<InvocationPacket>;
+  fn get_port(&self) -> UnboundedSender<PacketWrapper>;
 
   /// Get the port's name
   fn get_port_name(&self) -> String;
@@ -48,12 +46,12 @@ pub trait PortSender {
   /// Buffer a message then close the port
   fn done(&self, data: &Self::PayloadType) -> Result {
     self.send(data)?;
-    self.send_message(Packet::V0(ComponentPayload::Close))
+    self.send_message(Packet::V0(ComponentPayload::Done))
   }
 
   /// Buffer a complete Output message then close the port
   fn push(&self, output: Packet) -> Result {
-    self.get_port().send(InvocationPacket {
+    self.get_port().send(PacketWrapper {
       payload: output,
       port: self.get_port_name(),
     })?;
@@ -62,7 +60,7 @@ pub trait PortSender {
 
   /// Buffer a payload
   fn send_message(&self, packet: Packet) -> Result {
-    self.get_port().send(InvocationPacket {
+    self.get_port().send(PacketWrapper {
       payload: packet,
       port: self.get_port_name(),
     })?;
@@ -72,12 +70,12 @@ pub trait PortSender {
   /// Buffer a payload then close the port
   fn done_message(&self, packet: Packet) -> Result {
     self.send_message(packet)?;
-    self.send_message(Packet::V0(ComponentPayload::Close))
+    self.send_message(Packet::V0(ComponentPayload::Done))
   }
 
   /// Buffer an exception
   fn send_exception(&self, payload: String) -> Result {
-    self.get_port().send(InvocationPacket {
+    self.get_port().send(PacketWrapper {
       payload: Packet::V0(ComponentPayload::Exception(payload)),
       port: self.get_port_name(),
     })?;
@@ -87,21 +85,20 @@ pub trait PortSender {
   /// Buffer an exception then close the port
   fn done_exception(&self, payload: String) -> Result {
     self.send_exception(payload)?;
-    self.send_message(Packet::V0(ComponentPayload::Close))
+    self.send_message(Packet::V0(ComponentPayload::Done))
   }
 
   fn close(&self) -> Result {
-    self.send_message(Packet::V0(ComponentPayload::Close))
+    self.send_message(Packet::V0(ComponentPayload::Done))
   }
 }
 
-// TODO: This should be somewhere else
 #[doc(hidden)]
 #[must_use]
 #[derive(Debug, Clone)]
 pub struct Port {
   pub name: String,
-  pub channel: Option<UnboundedSender<InvocationPacket>>,
+  pub channel: Option<UnboundedSender<PacketWrapper>>,
   status: PortStatus,
 }
 
@@ -119,7 +116,7 @@ impl Port {
   pub fn is_closed(&self) -> bool {
     self.status == PortStatus::Closed
   }
-  pub fn create_channel(&mut self) -> UnboundedReceiver<InvocationPacket> {
+  pub fn create_channel(&mut self) -> UnboundedReceiver<PacketWrapper> {
     let (tx, rx) = unbounded_channel();
     self.channel = Some(tx);
     rx
@@ -130,7 +127,6 @@ impl Port {
   }
 }
 
-// TODO: This should be somewhere else
 #[doc(hidden)]
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum PortStatus {
@@ -138,7 +134,6 @@ pub enum PortStatus {
   Open,
 }
 
-// TODO: This should be somewhere else
 #[doc(hidden)]
 #[must_use]
 #[derive(Debug, Clone, Copy)]
@@ -148,8 +143,8 @@ impl PortStream {
   #[doc(hidden)]
   #[must_use]
   pub fn create(buffer: &mut [&mut Port]) -> MessageTransportStream {
-    let (tx, rx) = unbounded_channel::<InvocationTransport>();
-    let channels: HashMap<String, UnboundedReceiverStream<InvocationPacket>> = buffer
+    let (tx, rx) = unbounded_channel::<TransportWrapper>();
+    let channels: HashMap<String, UnboundedReceiverStream<PacketWrapper>> = buffer
       .iter_mut()
       .map(|p| {
         (
@@ -164,13 +159,8 @@ impl PortStream {
     }
     tokio::spawn(async move {
       while let Some((_, v)) = map.next().await {
-        let transport: InvocationTransport = v.into();
-        if matches!(
-          transport.payload,
-          MessageTransport::Signal(MessageSignal::Close)
-        ) {
-          continue;
-        }
+        let transport: TransportWrapper = v.into();
+
         if let Err(e) = tx.send(transport) {
           error!("Internal error sending to aggregated output stream {}", e);
         }

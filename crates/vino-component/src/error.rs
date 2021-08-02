@@ -16,11 +16,13 @@ pub enum DeserializationError {
 impl std::fmt::Display for DeserializationError {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     match self {
-      DeserializationError::Invalid => write!(f, "Invalid"),
-      DeserializationError::Exception(v) => write!(f, "{}", v),
-      DeserializationError::Error(v) => write!(f, "{}", v),
-      DeserializationError::DeserializationError(e) => write!(f, "{}", e.to_string()),
-      DeserializationError::InternalError => write!(f, "Internal Error"),
+      DeserializationError::Invalid => write!(f, "Refused to deserialize invalid payload"),
+      DeserializationError::Exception(v) => write!(f, "Exception: {}", v),
+      DeserializationError::Error(v) => write!(f, "Error: {}", v),
+      DeserializationError::DeserializationError(e) => {
+        write!(f, "Deserialization Error: {}", e.to_string())
+      }
+      DeserializationError::InternalError => write!(f, "Internal Deserialization Error"),
     }
   }
 }

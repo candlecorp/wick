@@ -69,6 +69,8 @@ pub enum NetworkError {
 
 #[derive(Error, Debug)]
 pub enum ProviderError {
+  #[error(transparent)]
+  InvocationError(#[from] InvocationError),
   #[error("Provider uninitialized")]
   Uninitialized,
   #[error(transparent)]
@@ -119,6 +121,12 @@ impl std::fmt::Display for InternalError {
   }
 }
 
+impl From<i32> for InternalError {
+  fn from(num: i32) -> Self {
+    InternalError(num)
+  }
+}
+
 #[derive(Error, Debug)]
 pub enum CommonError {
   #[error("Provided KeyPair has no associated seed")]
@@ -146,7 +154,15 @@ pub enum TransactionError {
 }
 
 #[derive(Error, Debug)]
+#[error("Invocation error: {0}")]
+pub struct InvocationError(pub String);
+
+#[derive(Error, Debug)]
 pub enum RuntimeError {
+  #[error(transparent)]
+  InvocationError(#[from] InvocationError),
+  #[error(transparent)]
+  InternalError(#[from] InternalError),
   #[error(transparent)]
   CommonError(#[from] CommonError),
   #[error(transparent)]

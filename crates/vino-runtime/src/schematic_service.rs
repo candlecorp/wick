@@ -12,11 +12,10 @@ use tokio::sync::mpsc::{
 };
 pub(crate) mod input_message;
 
-use self::input_message::InputMessage;
 use crate::dev::prelude::*;
 use crate::error::SchematicError;
 use crate::models::validator::Validator;
-use crate::transaction::TransactionExecutor;
+use crate::transaction::executor::TransactionExecutor;
 
 type Result<T> = std::result::Result<T, SchematicError>;
 
@@ -25,8 +24,8 @@ pub(crate) struct SchematicService {
   name: String,
   recipients: HashMap<String, ProviderChannel>,
   state: Option<State>,
-  tx_external: HashMap<String, UnboundedSender<InvocationTransport>>,
-  tx_internal: HashMap<String, UnboundedSender<TransactionUpdate>>,
+  tx_external: HashMap<String, UnboundedSender<TransportWrapper>>,
+  executor: HashMap<String, UnboundedSender<TransactionUpdate>>,
 }
 
 #[derive(Debug)]
@@ -45,7 +44,7 @@ impl Default for SchematicService {
       recipients: HashMap::new(),
       state: None,
       tx_external: HashMap::new(),
-      tx_internal: HashMap::new(),
+      executor: HashMap::new(),
     }
   }
 }
@@ -118,7 +117,12 @@ impl SchematicService {
       return Err(err);
     }
     drop(lock);
-    trace!("SC:{}:{} points to {}", self.name, instance, component.id);
+    trace!(
+      "SC:{}:INSTANCE[{}]->[{}]",
+      self.name,
+      instance,
+      component.id
+    );
     let channel = self.recipients.get(&component.namespace).ok_or(err)?;
     Ok(channel.recipient.clone())
   }
@@ -148,14 +152,6 @@ impl SchematicService {
     lock.final_initialization()?;
     Ok(())
   }
-
-  fn update_transaction(&self, msg: InputMessage) -> Result<()> {
-    let inbound_tx = self
-      .tx_internal
-      .get(&msg.tx_id)
-      .ok_or(InternalError(6003))?;
-    Ok(inbound_tx.send(TransactionUpdate::Update(msg.handle_default()))?)
-  }
 }
 
 #[derive(Debug, Clone)]
@@ -167,6 +163,7 @@ pub(crate) struct ProviderInitResponse {
 #[cfg(test)]
 mod test {
   use std::env;
+  use std::time::Duration;
 
   use vino_rpc::{
     bind_new_socket,
@@ -178,8 +175,11 @@ mod test {
   use crate::schematic_service::handlers::initialize::Initialize;
   use crate::test::prelude::{
     assert_eq,
+    transport_map,
     *,
   };
+
+  static TIMEOUT: u64 = 100;
 
   #[test_env_log::test(actix_rt::test)]
   async fn test_basic_schematic() -> TestResult<()> {
@@ -198,16 +198,12 @@ mod test {
         allow_latest: true,
         allowed_insecure: vec![],
         global_providers: vec![],
+        timeout: Duration::from_millis(TIMEOUT),
       })
       .await??;
-    let mut input: HashMap<String, MessageTransport> = HashMap::new();
     let user_data = "this is test input";
-    input.insert(
-      "input".to_owned(),
-      MessageTransport::MessagePack(mp_serialize(user_data)?),
-    );
+    let payload = transport_map! {"input"=> user_data};
 
-    let payload = TransportMap::with_map(input);
     let response: InvocationResponse = addr
       .send(Invocation::new(
         &kp,
@@ -216,24 +212,18 @@ mod test {
         payload,
       ))
       .await?;
-    match response {
-      InvocationResponse::Stream { mut rx, .. } => {
-        debug!("Got stream");
-        let mut i = 0;
+    let mut rx = response.ok()?;
+    debug!("Got stream");
+    let mut packets: Vec<_> = rx.collect_port("output").await;
+    println!("Packets: {:?}", packets);
+    assert_eq!(packets.len(), 1);
 
-        while let Some(next) = rx.next().await {
-          i += 1;
-          let packet = next.payload;
-          debug!("Packet {}: {:?}", i, packet);
-          let payload: String = packet.try_into()?;
-          debug!("Payload {}", payload);
-          assert_eq!(payload, user_data);
-        }
-        debug!("Number of packets received: {}", i);
-        assert_eq!(i, 1);
-      }
-      InvocationResponse::Error { msg, .. } => panic!("{}", msg),
-    };
+    let packet = packets.remove(0);
+    debug!("Packet {:?}", packet);
+    let payload: String = packet.try_into()?;
+    debug!("Payload {}", payload);
+    assert_eq!(payload, user_data);
+    assert_eq!(rx.buffered_size(), (0, 0));
 
     Ok(())
   }
@@ -261,6 +251,7 @@ mod test {
         allow_latest: true,
         global_providers: vec![],
         allowed_insecure: vec![],
+        timeout: Duration::from_millis(TIMEOUT),
       })
       .await??;
 
@@ -275,25 +266,17 @@ mod test {
         input,
       ))
       .await?;
+    let mut result = response.ok()?;
 
-    match response {
-      InvocationResponse::Stream { mut rx, .. } => {
-        debug!("Got stream");
-        let mut i = 0;
+    debug!("Got stream");
+    let mut messages: Vec<TransportWrapper> = result.collect_port("output").await;
+    debug!("Messages {:?}", messages);
+    assert_eq!(messages.len(), 1);
+    let payload: String = messages.remove(0).payload.try_into()?;
+    debug!("Payload {}", payload);
+    assert_eq!(payload, format!("TEST: {}", user_data));
+    assert_eq!(result.buffered_size(), (0, 0));
 
-        while let Some(next) = rx.next().await {
-          i += 1;
-          let packet = next.payload;
-          debug!("Packet {}: {:?}", i, packet);
-          let payload: String = packet.try_into()?;
-          debug!("Payload {}", payload);
-          assert_eq!(payload, format!("TEST: {}", user_data));
-        }
-        debug!("Number of packets received: {}", i);
-        assert_eq!(i, 1);
-      }
-      InvocationResponse::Error { msg, .. } => panic!("{}", msg),
-    };
     Ok(())
   }
 }

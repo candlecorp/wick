@@ -405,6 +405,7 @@ name = "vino-macros"
 version = "0.1.0"
 dependencies = [
  "colored",
+ "lazy_static",
  "tracing",
  "vino-transport",
 ]

@@ -23,6 +23,7 @@ pub(crate) struct SchematicModel {
   providers: HashMap<Namespace, ProviderModel>,
   upstream_links: HashMap<ConnectionTargetDefinition, ConnectionTargetDefinition>,
   state: Option<LoadedState>,
+  raw_ports: HashMap<String, RawPorts>,
 }
 
 #[derive(Debug, Clone)]
@@ -49,14 +50,30 @@ impl TryFrom<SchematicDefinition> for SchematicModel {
       .map(|connection| (connection.to, connection.from))
       .collect();
 
+    let raw_ports = get_raw_ports(&definition)?;
+
     Ok(Self {
       definition,
       instances,
       providers: HashMap::new(),
       upstream_links,
       state: None,
+      raw_ports,
     })
   }
+}
+
+pub(crate) fn get_raw_ports(def: &SchematicDefinition) -> Result<HashMap<String, RawPorts>> {
+  let mut map = HashMap::new();
+  for connection in &def.connections {
+    let from = connection.from.get_instance_owned();
+    let ports = map.entry(from).or_insert_with(RawPorts::default);
+    ports.outputs.insert(connection.from.clone());
+    let to = connection.to.get_instance_owned();
+    let ports = map.entry(to).or_insert_with(RawPorts::default);
+    ports.inputs.insert(connection.to.clone());
+  }
+  Ok(map)
 }
 
 impl SchematicModel {
@@ -72,6 +89,10 @@ impl SchematicModel {
     self.definition.instances.keys()
   }
 
+  pub(crate) fn get_raw_ports(&self) -> &HashMap<String, RawPorts> {
+    &self.raw_ports
+  }
+
   fn populate_state(&mut self, omit_namespaces: &[String]) -> Result<()> {
     let inputs = self.get_schematic_inputs();
     let mut input_signatures = vec![];
@@ -84,7 +105,7 @@ impl SchematicModel {
       let to_ports = self.get_downstreams(&input);
 
       let downstream = to_ports.iter().find(|port| {
-        let instance_id = ok_or_bail!(port.get_instance(), false);
+        let instance_id = port.get_instance();
         let def = self.get_component_definition(instance_id);
         match def {
           Some(def) => !should_skip_namespace(&def.namespace),
@@ -92,7 +113,7 @@ impl SchematicModel {
         }
       });
       let downstream = some_or_continue!(downstream);
-      let downstream_instance = ok_or_continue!(downstream.get_instance());
+      let downstream_instance = downstream.get_instance();
 
       let model = match self.get_component_model_by_instance(downstream_instance) {
         Some(model) => model,
@@ -101,7 +122,7 @@ impl SchematicModel {
           continue;
         }
       };
-      let downstream_port = ok_or_continue!(downstream.get_port());
+      let downstream_port = downstream.get_port();
 
       let downstream_signature = model
         .inputs
@@ -120,7 +141,7 @@ impl SchematicModel {
       };
 
       input_signatures.push(PortSignature {
-        name: ok_or_continue!(input.get_port_owned()),
+        name: input.get_port_owned(),
         type_string: downstream_signature.type_string.clone(),
       });
     }
@@ -129,11 +150,10 @@ impl SchematicModel {
     for output in outputs {
       let opt = self
         .get_upstream(output)
-        .and_then(|upstream| match upstream.get_instance() {
-          Ok(instance) => self
-            .get_component_model_by_instance(instance)
-            .map(|model| (upstream, model)),
-          Err(_) => None,
+        .and_then(|upstream| {
+          self
+            .get_component_model_by_instance(upstream.get_instance())
+            .map(|model| (upstream, model))
         })
         .and_then(|(upstream, model)| {
           if should_skip_namespace(&model.namespace) {
@@ -154,7 +174,7 @@ impl SchematicModel {
       };
 
       output_signatures.push(PortSignature {
-        name: ok_or_continue!(output.get_port_owned()),
+        name: output.get_port_owned(),
         type_string: signature,
       });
     }
@@ -306,6 +326,17 @@ impl SchematicModel {
       .collect()
   }
 
+  pub(crate) fn is_generator(&self, instance: &str) -> bool {
+    if instance == SCHEMATIC_INPUT {
+      false
+    } else {
+      self
+        .get_raw_ports()
+        .get(instance)
+        .map_or(false, |rp| rp.inputs.is_empty())
+    }
+  }
+
   pub(crate) fn get_schematic_input_signatures(&self) -> Result<&Vec<PortSignature>> {
     self
       .state
@@ -356,7 +387,7 @@ impl SchematicModel {
 
   // Find the upstream connections for a instance. Note: this relies on the connections
   // from the definition only, not the component model.
-  pub(crate) fn get_upstream_connections_by_instance<'a>(
+  pub(crate) fn _get_upstream_connections_by_instance<'a>(
     &'a self,
     instance: &'a str,
   ) -> impl Iterator<Item = &'a ConnectionDefinition> {
@@ -378,12 +409,19 @@ impl SchematicModel {
       .filter(move |connection| &connection.from == port || &connection.to == port)
   }
 
-  pub(crate) fn get_defaults(&self) -> impl Iterator<Item = &ConnectionDefinition> {
+  pub(crate) fn get_senders(&self) -> impl Iterator<Item = &ConnectionDefinition> {
     self
       .definition
       .connections
       .iter()
-      .filter(move |connection| connection.from.is_none() && connection.has_default())
+      .filter(move |connection| connection.from.is_sender())
+  }
+  pub(crate) fn get_generators(&self) -> impl Iterator<Item = &ConnectionDefinition> {
+    self
+      .definition
+      .connections
+      .iter()
+      .filter(move |connection| self.is_generator(connection.from.get_instance()))
   }
 }
 
@@ -420,12 +458,12 @@ mod tests {
     let schematic_name = "Test";
     let mut schematic_def = new_schematic(schematic_name);
     schematic_def.connections.push(ConnectionDefinition {
-      from: ConnectionTargetDefinition::none(),
+      from: ConnectionTargetDefinition::sender(None),
       to: ConnectionTargetDefinition::new(SCHEMATIC_OUTPUT, "output"),
       default: Some(serde_json::Value::String("Default string".to_owned())),
     });
     let model = SchematicModel::try_from(schematic_def)?;
-    let num = model.get_defaults().count();
+    let num = model.get_senders().count();
     assert_eq!(num, 1);
 
     Ok(())

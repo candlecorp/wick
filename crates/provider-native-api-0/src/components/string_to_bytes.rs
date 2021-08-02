@@ -5,6 +5,6 @@ pub(crate) async fn job(
   output: Outputs,
   _context: Context<crate::State>,
 ) -> JobResult {
-  output.output.send(&input.input.into_bytes())?;
+  output.output.done(&input.input.into_bytes())?;
   Ok(())
 }

@@ -20,7 +20,7 @@ message MessageKind {
     JSON = 6;
   }
   enum OutputSignal {
-    Close = 0;
+    Done = 0;
     OpenBracket = 1;
     CloseBracket = 2;
   }

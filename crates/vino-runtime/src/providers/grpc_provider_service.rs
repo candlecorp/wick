@@ -126,7 +126,7 @@ impl Handler<InitializeComponents> for GrpcProviderService {
       let list = client
         .list(ListRequest {})
         .instrument(debug_span!("client.list"));
-      debug!("Making list request");
+      trace!("{}:LIST:[NS:{}]", PREFIX, namespace);
       let list = list.await?;
       let list = list.into_inner();
 
@@ -144,7 +144,7 @@ impl Handler<InitializeComponents> for GrpcProviderService {
         );
       }
       for (name, model) in &metadata {
-        debug!("Component {} registering with metadata: {:?}", name, model);
+        debug!("{}:REGISTER:[NS:{}]{:?}", PREFIX, name, model);
       }
 
       Ok(metadata)
@@ -243,7 +243,7 @@ impl Handler<Invocation> for GrpcProviderService {
           if let Err(e) = next {
             let msg = format!("Error during GRPC stream: {}", e);
             error!("{}", msg);
-            match tx.send(InvocationTransport {
+            match tx.send(TransportWrapper {
               port: crate::COMPONENT_ERROR.to_owned(),
               payload: MessageTransport::Error(msg),
             }) {
@@ -265,7 +265,7 @@ impl Handler<Invocation> for GrpcProviderService {
           if payload.is_none() {
             let msg = "Received response but no payload";
             error!("{}", msg);
-            match tx.send(InvocationTransport {
+            match tx.send(TransportWrapper {
               port: crate::COMPONENT_ERROR.to_owned(),
               payload: MessageTransport::Error(msg.to_owned()),
             }) {
@@ -284,7 +284,7 @@ impl Handler<Invocation> for GrpcProviderService {
           }
           trace!("{}:[NS:{}]:{}:PORT:{}:RECV", PREFIX, ns, url, output.port);
 
-          match tx.send(InvocationTransport {
+          match tx.send(TransportWrapper {
             port: output.port.clone(),
             payload: payload.unwrap().into(),
           }) {
@@ -368,8 +368,8 @@ mod test {
             debug!("Work complete");
             match res {
               Ok(response)=>{
-                let (_, mut rx) = response.to_stream()?;
-                let next: InvocationTransport = rx.next().await.unwrap();
+                let mut rx = response.ok()?;
+                let next: TransportWrapper = rx.next().await.unwrap();
                 let payload: String = next.payload.try_into()?;
                 assert_eq!(payload, format!("TEST: {}", user_data));
               },

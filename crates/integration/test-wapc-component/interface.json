@@ -2,6 +2,25 @@
   "name": "test-component",
   "components": [
     {
+      "name": "copy",
+      "inputs": [
+        {
+          "name": "input",
+          "type_string": "string"
+        },
+        {
+          "name": "times",
+          "type_string": "i8"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "output",
+          "type_string": "string"
+        }
+      ]
+    },
+    {
       "name": "error",
       "inputs": [
         {

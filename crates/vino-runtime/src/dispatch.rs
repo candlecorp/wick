@@ -11,7 +11,6 @@ use vino_transport::message_transport::TransportMap;
 use vino_wascap::KeyPair;
 
 use crate::dev::prelude::*;
-use crate::error::ConversionError;
 
 /// An invocation for a component, port, or schematic
 #[derive(Debug, Clone, Default, Serialize, Deserialize, Message)]
@@ -72,7 +71,7 @@ impl InvocationResponse {
   /// Creates a successful invocation response stream. Response include the receiving end
   /// of an unbounded channel to listen for future output.
   #[must_use]
-  pub fn stream(tx_id: String, rx: UnboundedReceiver<InvocationTransport>) -> InvocationResponse {
+  pub fn stream(tx_id: String, rx: UnboundedReceiver<TransportWrapper>) -> InvocationResponse {
     InvocationResponse::Stream {
       tx_id,
       rx: MessageTransportStream::new(rx),
@@ -92,17 +91,10 @@ impl InvocationResponse {
     }
   }
 
-  pub fn to_stream(self) -> Result<(String, MessageTransportStream), ConversionError> {
+  pub fn ok(self) -> Result<MessageTransportStream, InvocationError> {
     match self {
-      InvocationResponse::Stream { tx_id, rx } => Ok((tx_id, rx)),
-      _ => Err(ConversionError("InvocationResponse to stream")),
-    }
-  }
-
-  pub fn to_error(self) -> Result<(String, String), ConversionError> {
-    match self {
-      InvocationResponse::Error { tx_id, msg } => Ok((tx_id, msg)),
-      _ => Err(ConversionError("InvocationResponse to error")),
+      InvocationResponse::Stream { rx, .. } => Ok(rx),
+      InvocationResponse::Error { msg, .. } => Err(InvocationError(msg)),
     }
   }
 }

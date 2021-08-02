@@ -21,14 +21,14 @@ impl Handler<ComponentPayload> for SchematicService {
     let instance = msg.instance.clone();
     let tx_id = msg.tx_id;
 
-    let def = actix_try!(self.get_component_definition(&instance));
+    let def = actix_try!(self.get_component_definition(&instance), 6011);
 
     if msg.payload_map.has_error() {
       let err_payload = msg.payload_map.take_error().unwrap();
       let addr = ctx.address();
       let msg = ShortCircuit::new(tx_id, instance, err_payload);
       return ActorResult::reply_async(
-        async move { log_ie!(addr.send(msg).await, 6010,)? }.into_actor(self),
+        async move { log_ie!(addr.send(msg).await, 6012,)? }.into_actor(self),
       );
     }
 
@@ -39,7 +39,7 @@ impl Handler<ComponentPayload> for SchematicService {
       Entity::Component(def.name),
       msg.payload_map,
     );
-    let handler = actix_try!(self.get_recipient(&msg.instance));
+    let handler = actix_try!(self.get_recipient(&msg.instance), 6010);
 
     let addr = ctx.address();
     let sc_name = self.name.clone();

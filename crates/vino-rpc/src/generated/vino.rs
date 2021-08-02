@@ -21,7 +21,7 @@ pub mod message_kind {
   #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
   #[repr(i32)]
   pub enum OutputSignal {
-    Close = 0,
+    Done = 0,
     OpenBracket = 1,
     CloseBracket = 2,
   }

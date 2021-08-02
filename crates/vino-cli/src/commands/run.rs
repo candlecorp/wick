@@ -61,8 +61,15 @@ pub(crate) async fn handle_command(command: RunCommand) -> Result<String> {
   }
 
   let mut result = vino_host::run::run(config, json).await?;
-  while let Some(next) = result.next().await {
-    println!("{}", next.payload.into_json());
+  while let Some(message) = result.next().await {
+    if message.payload.is_signal() {
+      debug!(
+        "Skipping signal '{}' on port '{}'",
+        message.payload, message.port
+      );
+    } else {
+      println!("{}", message.payload.into_json());
+    }
   }
 
   Ok("Done".to_owned())

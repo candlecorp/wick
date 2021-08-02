@@ -7,6 +7,6 @@ pub(crate) async fn job(
 ) -> JobResult {
   let mut state = context.lock().unwrap();
   let list = state.collections.entry(input.collection_id).or_default();
-  output.document_ids.done(&list)?;
+  output.document_ids.done(list)?;
   Ok(())
 }

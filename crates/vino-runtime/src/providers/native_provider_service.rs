@@ -138,6 +138,7 @@ impl Handler<Invocation> for NativeProviderService {
     let request = async move {
       let provider = provider.lock().await;
       let receiver = provider.invoke(component, message).await;
+      drop(provider);
       if let Err(e) = receiver {
         return InvocationResponse::error(
           tx_id,
@@ -154,7 +155,7 @@ impl Handler<Invocation> for NativeProviderService {
             None => break,
           };
           trace!("{}:[NS:{}]:{}:PORT:{}:RECV", PREFIX, ns, url, output.port);
-          match tx.send(InvocationTransport {
+          match tx.send(TransportWrapper {
             port: output.port.clone(),
             payload: output.payload,
           }) {
@@ -263,8 +264,8 @@ mod test {
       })
       .await?;
 
-    let (_, mut rx) = response.to_stream()?;
-    let next: InvocationTransport = rx.next().await.unwrap();
+    let mut rx = response.ok()?;
+    let next: TransportWrapper = rx.next().await.unwrap();
     let payload: String = next.payload.try_into()?;
     assert_eq!(user_data, payload);
 

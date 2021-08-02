@@ -21,7 +21,7 @@ impl InputMessage {
         MessageTransport::Error(msg) => make_default_transport(default, &msg),
         MessageTransport::Invalid => make_default_transport(default, "Internal Error: 7801"),
         MessageTransport::Test(_) => make_default_transport(default, "Internal Error: 7804"),
-        MessageTransport::Signal(_) => make_default_transport(default, "Internal Error: 7805"),
+        MessageTransport::Signal(_) => self.payload,
         MessageTransport::MessagePack(_) => self.payload,
         MessageTransport::Success(_) => self.payload,
         MessageTransport::Json(_) => self.payload,

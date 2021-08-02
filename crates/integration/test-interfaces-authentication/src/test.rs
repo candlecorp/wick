@@ -119,6 +119,9 @@ async fn authenticate(
   let mut result = ("<session>".to_owned(), "<user_id>".to_owned());
   while let Some(next) = stream.message().await? {
     println!("Output = {:?}", next);
+    if next.is_signal() {
+      continue;
+    }
     match next.port.as_str() {
       "session" => result.0 = next.payload.unwrap().try_into()?,
       "user_id" => result.1 = next.payload.unwrap().try_into()?,
@@ -142,6 +145,9 @@ async fn validate_session(
   let mut result = "bad".to_owned();
   while let Some(next) = stream.message().await? {
     println!("Output = {:?}", next);
+    if next.is_signal() {
+      continue;
+    }
     match next.port.as_str() {
       "user_id" => result = next.payload.unwrap().try_into()?,
       _ => panic!("Got output from unexpected port"),
@@ -166,6 +172,9 @@ async fn update_permissions(
   let mut result = vec![];
   while let Some(next) = stream.message().await? {
     println!("Output = {:?}", next);
+    if next.is_signal() {
+      continue;
+    }
     match next.port.as_str() {
       "permissions" => result = next.payload.unwrap().try_into()?,
       _ => panic!("Got output from unexpected port"),
@@ -188,6 +197,9 @@ async fn list_permissions(
   let mut result = vec![];
   while let Some(next) = stream.message().await? {
     println!("Output = {:?}", next);
+    if next.is_signal() {
+      continue;
+    }
     match next.port.as_str() {
       "permissions" => result = next.payload.unwrap().try_into()?,
       _ => panic!("Got output from unexpected port"),
@@ -211,6 +223,9 @@ async fn has_permission(
   let mut result: Option<Packet> = None;
   while let Some(next) = stream.message().await? {
     println!("Output = {:?}", next);
+    if next.is_signal() {
+      continue;
+    }
     match next.port.as_str() {
       "user_id" => result = next.payload.map(|p| p.into_packet()),
       _ => panic!("Got output from unexpected port"),
@@ -229,6 +244,9 @@ async fn get_id(client: &mut InvocationServiceClient<Channel>, username: &str) -
   let mut result = "bad".to_owned();
   while let Some(next) = stream.message().await? {
     println!("Output = {:?}", next);
+    if next.is_signal() {
+      continue;
+    }
     match next.port.as_str() {
       "user_id" => result = next.payload.unwrap().try_into()?,
       _ => panic!("Got output from unexpected port"),

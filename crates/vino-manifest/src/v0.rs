@@ -174,11 +174,11 @@ pub struct ConnectionDefinition {
   /// The originating component from upstream.
   #[serde(default)]
   #[serde(deserialize_with = "connection_target_shortform")]
-  pub from: Option<ConnectionTargetDefinition>,
+  pub from: ConnectionTargetDefinition,
   /// The destination component (downstream).
   #[serde(default)]
   #[serde(deserialize_with = "connection_target_shortform")]
-  pub to: Option<ConnectionTargetDefinition>,
+  pub to: ConnectionTargetDefinition,
   /// The default value to provide in the event of an upstream Error or Exception.
   #[serde(default)]
   pub default: Option<String>,
@@ -194,6 +194,9 @@ pub struct ConnectionTargetDefinition {
   /// The component&#x27;s port.
   #[serde(deserialize_with = "with_expand_envs")]
   pub port: String,
+  /// Data to send automatically. Parsed as JSON. (only used for &lt;sender&gt; instances).
+  #[serde(default)]
+  pub data: Option<String>,
 }
 
 impl FromStr for ComponentDefinition {
@@ -308,14 +311,14 @@ where
 
 fn connection_target_shortform<'de, D>(
   deserializer: D,
-) -> Result<Option<ConnectionTargetDefinition>, D::Error>
+) -> Result<ConnectionTargetDefinition, D::Error>
 where
   D: serde::Deserializer<'de>,
 {
   struct ConnectionTargetVisitor;
 
   impl<'de> serde::de::Visitor<'de> for ConnectionTargetVisitor {
-    type Value = Option<ConnectionTargetDefinition>;
+    type Value = ConnectionTargetDefinition;
 
     fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
       formatter.write_str("a connection target definition")
@@ -325,18 +328,14 @@ where
     where
       E: serde::de::Error,
     {
-      ConnectionTargetDefinition::from_str(s)
-        .map(Some)
-        .map_err(|e| serde::de::Error::custom(e.to_string()))
+      ConnectionTargetDefinition::from_str(s).map_err(|e| serde::de::Error::custom(e.to_string()))
     }
 
     fn visit_map<A>(self, map: A) -> Result<Self::Value, A::Error>
     where
       A: serde::de::MapAccess<'de>,
     {
-      Ok(Some(ConnectionTargetDefinition::deserialize(
-        serde::de::value::MapAccessDeserializer::new(map),
-      )?))
+      ConnectionTargetDefinition::deserialize(serde::de::value::MapAccessDeserializer::new(map))
     }
   }
 

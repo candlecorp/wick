@@ -1,0 +1,14 @@
+---
+schematics:
+  - name: test
+    providers:
+      - namespace: wapc
+        kind: WaPC
+        reference: ../integration/test-wapc-component/build/test_component_s.wasm
+    instances:
+      copy:
+        id: wapc::copy
+    connections:
+      - <> => copy[input]
+      - "5 => copy[times]"
+      - copy[output] => <>

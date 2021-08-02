@@ -1,5 +1,5 @@
 schematics:
-  - name: parent
+  - name: refself-parent
     instances:
       child_ref:
         id: self::child

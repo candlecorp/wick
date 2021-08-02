@@ -37,7 +37,7 @@ impl Packet {
         v0::Payload::Json(v) => {
           json::deserialize::<T>(v.as_str()).map_err(DeserializationError::DeserializationError)
         }
-        v0::Payload::Close => Err(DeserializationError::InternalError),
+        v0::Payload::Done => Err(DeserializationError::InternalError),
         v0::Payload::OpenBracket => Err(DeserializationError::InternalError),
         v0::Payload::CloseBracket => Err(DeserializationError::InternalError),
       },
@@ -70,8 +70,8 @@ impl From<&[u8]> for Packet {
 }
 
 #[derive(Debug, Clone)]
-/// An [InvocationPacket] is a wrapper around a [Packet] with the port name and invocation id embedded in it.
-pub struct InvocationPacket {
+/// An [PacketWrapper] is a wrapper around a [Packet] with the port name and invocation id embedded in it.
+pub struct PacketWrapper {
   pub port: String,
   pub payload: Packet,
 }

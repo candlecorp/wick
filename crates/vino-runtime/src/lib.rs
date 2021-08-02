@@ -74,24 +74,25 @@
 
 #[macro_use]
 mod macros {
+
   /// log_ie!(Result, u16) takes a result and an error number, maps the error to an InternalError and logs it.
   macro_rules! log_ie {
     ($expr:expr, $errnum: literal $(,)?) => {{
       let result = $expr;
       let ie = InternalError($errnum);
       if result.is_err() {
-        error!("{}", ie);
+        tracing::error!("{}", ie);
       }
       result.map_err(|_| ie)
     }};
   }
 
   macro_rules! actix_try {
-    ($expr:expr $(,)?) => {
+    ($expr:expr, $errnum: literal $(,)?) => {
       match $expr {
         Ok(val) => val,
         Err(err) => {
-          error!("Unexpected error: {}", err);
+          error!("Unexpected error ({}): {}", $errnum, err);
           return ActorResult::reply(Err(From::from(err)));
         }
       }
@@ -141,9 +142,9 @@ pub mod prelude {
   };
   pub use vino_manifest::NetworkDefinition;
   pub use vino_transport::{
-    InvocationTransport,
     MessageTransport,
     MessageTransportStream,
+    TransportWrapper,
   };
 
   pub use crate::dispatch::{

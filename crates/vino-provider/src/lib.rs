@@ -72,7 +72,7 @@
 )]
 // !!END_LINTS
 // Add exceptions here
-#![allow(unsafe_code, missing_docs)] //TODO
+#![allow(missing_docs)] //TODO
 
 #[cfg(feature = "wasm")]
 /// Traits and functions for wasm providers
@@ -88,4 +88,39 @@ pub mod signatures;
 
 pub mod port_sender;
 
+use std::str::FromStr;
+
 pub use vino_codec as codec;
+
+#[allow(missing_debug_implementations, missing_copy_implementations)]
+#[must_use]
+pub enum OutputSignal {
+  Output,
+  OutputDone,
+  Done,
+}
+
+impl OutputSignal {
+  #[must_use]
+  pub fn to_str(&self) -> &'static str {
+    match self {
+      OutputSignal::Output => "1",
+      OutputSignal::OutputDone => "2",
+      OutputSignal::Done => "3",
+    }
+  }
+}
+
+impl FromStr for OutputSignal {
+  type Err = ();
+
+  fn from_str(s: &str) -> Result<Self, Self::Err> {
+    let result = match s {
+      "1" => OutputSignal::Output,
+      "2" => OutputSignal::OutputDone,
+      "3" => OutputSignal::Done,
+      _ => return Err(()),
+    };
+    Ok(result)
+  }
+}

@@ -1,13 +1,26 @@
+#![allow(
+  unsafe_code,
+  missing_docs,
+  missing_debug_implementations,
+  missing_copy_implementations
+)]
+
 use std::collections::HashMap;
 pub mod wapc;
 
-use serde::Serialize;
-use vino_codec::messagepack::{deserialize, serialize};
+use vino_codec::messagepack::{
+  deserialize,
+  serialize,
+};
 
 pub mod error;
-
+pub mod port_sender;
 pub use error::Error;
-use vino_component::{v0, Packet};
+pub use port_sender::PortSender;
+use vino_component::{
+  v0,
+  Packet,
+};
 
 use crate::wasm::wapc::*;
 type Result<T> = std::result::Result<T, Error>;
@@ -17,19 +30,44 @@ pub type CallResult = Result<Vec<u8>>;
 
 pub mod prelude {
   pub use super::{
-    console_log, wapc, CallResult, Dispatch, Error, GuestPort, IncomingPayload, JobResult,
+    console_log,
+    wapc,
+    CallResult,
+    Dispatch,
+    Error,
+    IncomingPayload,
+    JobResult,
+    PortSender,
     WapcComponent,
   };
-  pub use crate::codec::messagepack::{deserialize, serialize};
+  pub use crate::codec::messagepack::{
+    deserialize,
+    serialize,
+  };
 }
 
-pub fn port_output(invocation_id: &str, port_name: &str, packet: v0::Payload) -> CallResult {
+use crate::OutputSignal;
+
+pub fn port_send(invocation_id: &str, port_name: &str, packet: v0::Payload) -> CallResult {
   host_call(
     invocation_id,
     port_name,
-    "port",
+    OutputSignal::Output.to_str(),
     &serialize(&Packet::V0(packet))?,
   )
+}
+
+pub fn port_send_close(invocation_id: &str, port_name: &str, packet: v0::Payload) -> CallResult {
+  host_call(
+    invocation_id,
+    port_name,
+    OutputSignal::OutputDone.to_str(),
+    &serialize(&Packet::V0(packet))?,
+  )
+}
+
+pub fn port_close(invocation_id: &str, port_name: &str) -> CallResult {
+  host_call(invocation_id, port_name, OutputSignal::Done.to_str(), &[])
 }
 
 /// The function through which all host calls take place.
@@ -77,7 +115,6 @@ pub fn console_log(s: &str) {
   }
 }
 
-#[derive(Debug)]
 pub struct IncomingPayload {
   pub inv_id: String,
   encoded: HashMap<String, Vec<u8>>,
@@ -106,24 +143,4 @@ pub trait WapcComponent {
 
 pub trait Dispatch {
   fn dispatch(op: &str, payload: &[u8]) -> CallResult;
-}
-
-pub trait GuestPort {
-  type Output: Serialize;
-  fn send(&self, payload: &Self::Output) -> CallResult {
-    port_output(
-      &self.get_invocation_id(),
-      &self.get_name(),
-      v0::Payload::to_messagepack(payload),
-    )
-  }
-  fn exception(&self, message: String) -> CallResult {
-    port_output(
-      &self.get_invocation_id(),
-      "output",
-      v0::Payload::Exception(message),
-    )
-  }
-  fn get_invocation_id(&self) -> String;
-  fn get_name(&self) -> String;
 }

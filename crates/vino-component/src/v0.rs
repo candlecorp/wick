@@ -20,9 +20,9 @@ pub enum Payload {
   /// A MessagePack payload that has not yet been deserialized
   #[serde(rename = "3")]
   MessagePack(Vec<u8>),
-  /// A message that signifies the port is closed.
+  /// A message that signifies the port is done.
   #[serde(rename = "4")]
-  Close,
+  Done,
   /// A message that signals the start of bracketed data (think of it like an opening bracket '[')
   #[serde(rename = "5")]
   OpenBracket,

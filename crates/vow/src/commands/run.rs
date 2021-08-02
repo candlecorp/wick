@@ -8,7 +8,6 @@ use vino_provider::native::prelude::{
 };
 use vino_provider_wasm::provider::Provider;
 use vino_rpc::RpcHandler;
-use vino_transport::MessageTransport;
 
 use crate::Result;
 
@@ -58,8 +57,14 @@ pub(crate) async fn handle_command(opts: RunCommand) -> Result<()> {
 
   let mut map = serde_json::Map::new();
   while let Some(message) = response.next().await {
-    let transport: MessageTransport = message.payload.into();
-    map.insert(message.port, transport.into_json());
+    if message.payload.is_signal() {
+      debug!(
+        "Skipping signal '{}' on port '{}'",
+        message.payload, message.port
+      );
+    } else {
+      map.insert(message.port, message.payload.into_json());
+    }
   }
 
   println!("{}", serde_json::to_string(&map)?);

@@ -54,10 +54,10 @@ type ComponentDefinition {
 "A connection between components. This can be specified in short-form syntax (where applicable). See <a href='https://docs.vino.dev/docs/configuration/short-form-syntax/'>docs.vino.dev</a> for more information."
 type ConnectionDefinition {
   "The originating component from upstream."
-  from: ConnectionTargetDefinition?,
+  from: ConnectionTargetDefinition,
 
   "The destination component (downstream)."
-  to: ConnectionTargetDefinition?,
+  to: ConnectionTargetDefinition,
 
   "The default value to provide in the event of an upstream Error or Exception."
   default: string?
@@ -69,4 +69,6 @@ type ConnectionTargetDefinition {
   instance: string @required,
   "The component's port."
   port: string @required,
+  "Data to send automatically. Parsed as JSON. (only used for <sender> instances)."
+  data: string?,
 }

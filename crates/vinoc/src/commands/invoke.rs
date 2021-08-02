@@ -75,8 +75,11 @@ pub async fn handle_command(command: InvokeCommand) -> Result<()> {
 
   while let Some(message) = stream.message().await? {
     let transport: MessageTransport = message.payload.unwrap().into();
-
-    println!("{}", transport.into_json());
+    if transport.is_signal() {
+      debug!("Skipping signal {}", transport);
+    } else {
+      println!("{}", transport.into_json());
+    }
   }
 
   Ok(())

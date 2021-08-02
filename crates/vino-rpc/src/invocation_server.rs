@@ -101,12 +101,12 @@ fn make_output(port: &str, inv_id: &str, payload: MessageTransport) -> Result<Ou
     }),
     MessageTransport::Test(_) => todo!(),
     MessageTransport::Signal(signal) => match signal {
-      MessageSignal::Close => Ok(Output {
+      MessageSignal::Done => Ok(Output {
         port: port.to_owned(),
         invocation_id: inv_id.to_owned(),
         payload: Some(MessageKind {
           kind: Kind::Signal.into(),
-          data: Some(Data::Signal(OutputSignal::Close.into())),
+          data: Some(Data::Signal(OutputSignal::Done.into())),
         }),
       }),
       MessageSignal::OpenBracket => Ok(Output {

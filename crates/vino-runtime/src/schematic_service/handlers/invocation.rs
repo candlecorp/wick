@@ -1,5 +1,6 @@
 use futures::Future;
 use tokio::sync::mpsc::unbounded_channel;
+use vino_transport::message_transport::CLOSE_MESSAGE;
 use vino_transport::TransportMap;
 
 use crate::dev::prelude::*;
@@ -44,33 +45,37 @@ fn handle_schematic(
   invocation: &Invocation,
 ) -> Result<impl Future<Output = Result<InvocationResponse>>> {
   let tx_id = invocation.tx_id.clone();
-  trace!("SC:{}:{}:INVOKE", name, tx_id);
+  let log_prefix = format!("SC:{}:{}", name, tx_id);
+  trace!("{}:INVOKE", log_prefix);
 
   let (mut outbound, inbound) = schematic.start(tx_id.clone());
-  schematic.tx_internal.insert(tx_id.clone(), inbound.clone());
+  schematic.executor.insert(tx_id.clone(), inbound.clone());
 
-  let name = name.to_owned();
   tokio::spawn(async move {
     while let Some(msg) = outbound.recv().await {
-      if let TransactionUpdate::Done(tx_id) = &msg {
-        trace!("SC:{}:{}:DONE", name, tx_id);
-        outbound.close();
+      let done = matches!(msg, TransactionUpdate::Done(_));
+      if log_ie!(addr.send(msg).await, 6005).is_err() {
+        break;
+      };
+      if done {
+        trace!("{}:DONE", log_prefix);
+        break;
       }
-      ok_or_log!(addr.send(msg).await);
     }
+    outbound.close();
+    trace!("{}:STOPPING", log_prefix);
     Ok!(())
   });
 
-  let (tx, rx) = unbounded_channel::<InvocationTransport>();
+  let (tx, rx) = unbounded_channel::<TransportWrapper>();
   schematic.tx_external.insert(tx_id.clone(), tx);
 
   let model = schematic.get_state().model.lock();
   let connections = model.get_downstream_connections(SCHEMATIC_INPUT);
   let input_messages = make_input_packets(connections, &tx_id, &invocation.msg)?;
-  let defaults = model.get_defaults();
-  let defaults_messages = make_default_packets(defaults, &tx_id)?;
+
   drop(model);
-  let messages = concat(vec![input_messages, defaults_messages]);
+  let messages = concat(vec![input_messages]);
   for message in messages {
     inbound.send(TransactionUpdate::Update(message.handle_default()))?;
   }
@@ -85,7 +90,7 @@ fn make_input_packets<'a>(
 ) -> Result<Vec<InputMessage>> {
   let mut messages: Vec<InputMessage> = vec![];
   for conn in connections {
-    let transport = map.get(conn.from.get_port()?).ok_or_else(|| {
+    let transport = map.get(conn.from.get_port()).ok_or_else(|| {
       SchematicError::FailedPreRequestCondition(format!("Port {} not found in input", conn.from))
     })?;
     messages.push(InputMessage {
@@ -93,23 +98,10 @@ fn make_input_packets<'a>(
       tx_id: tx_id.to_owned(),
       payload: transport.clone(),
     });
-  }
-
-  Ok(messages)
-}
-
-fn make_default_packets<'a>(
-  connections: impl Iterator<Item = &'a ConnectionDefinition>,
-  tx_id: &str,
-) -> Result<Vec<InputMessage>> {
-  let mut messages: Vec<InputMessage> = vec![];
-  for conn in connections {
-    let json = conn.process_default("")?;
-    let bytes = mp_serialize(&json)?;
     messages.push(InputMessage {
       connection: conn.clone(),
       tx_id: tx_id.to_owned(),
-      payload: MessageTransport::MessagePack(bytes.clone()),
+      payload: CLOSE_MESSAGE.clone(),
     });
   }
 

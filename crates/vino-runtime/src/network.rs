@@ -9,7 +9,7 @@ use crate::dev::prelude::*;
 use crate::network_service::handlers::initialize::Initialize;
 pub use crate::providers::network_provider::Provider as NetworkProvider;
 
-type Result<T> = std::result::Result<T, NetworkError>;
+type Result<T> = std::result::Result<T, RuntimeError>;
 #[derive(Debug)]
 pub struct Network {
   pub id: String,
@@ -18,6 +18,7 @@ pub struct Network {
   allow_latest: bool,
   allowed_insecure: Vec<String>,
   kp: KeyPair,
+  timeout: Duration,
 }
 
 impl Network {
@@ -34,6 +35,7 @@ impl Network {
       network: self.definition.clone(),
       allowed_insecure: self.allowed_insecure.clone(),
       allow_latest: self.allow_latest,
+      timeout: self.timeout,
     };
     log_ie!(self.addr.send(init).await, 5102)??;
     Ok(())
@@ -70,7 +72,7 @@ impl Network {
       payload,
     );
 
-    let response = log_ie!(
+    let response: InvocationResponse = log_ie!(
       self
         .addr
         .send(invocation)
@@ -84,10 +86,7 @@ impl Network {
       schematic.as_ref().to_owned(),
       time.elapsed().as_micros()
     );
-    match response {
-      InvocationResponse::Stream { rx, .. } => Ok(rx),
-      InvocationResponse::Error { msg, .. } => Err(NetworkError::ExecutionError(msg)),
-    }
+    Ok(response.ok()?)
   }
 }
 
@@ -99,6 +98,7 @@ pub struct NetworkBuilder {
   definition: NetworkDefinition,
   kp: KeyPair,
   id: String,
+  timeout: Duration,
 }
 
 impl NetworkBuilder {
@@ -111,8 +111,17 @@ impl NetworkBuilder {
       allow_latest: false,
       allowed_insecure: vec![],
       id: network_id,
+      timeout: Duration::from_secs(5),
       kp,
     })
+  }
+
+  #[must_use]
+  pub fn timeout(self, val: Duration) -> Self {
+    Self {
+      timeout: val,
+      ..self
+    }
   }
 
   #[must_use]
@@ -142,6 +151,7 @@ impl NetworkBuilder {
       allow_latest: self.allow_latest,
       allowed_insecure: self.allowed_insecure,
       kp: self.kp,
+      timeout: self.timeout,
     }
   }
 }

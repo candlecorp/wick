@@ -13,8 +13,8 @@ use vino_component::v0::Payload;
 use vino_component::Packet;
 use vino_transport::message_transport::TransportMap;
 use vino_transport::{
-  InvocationTransport,
   MessageTransport,
+  TransportWrapper,
 };
 use vino_types::signatures::*;
 
@@ -22,6 +22,7 @@ use crate::generated::vino::component::ComponentKind;
 use crate::rpc::{
   message_kind,
   MessageKind,
+  Output,
 };
 use crate::{
   Error,
@@ -48,11 +49,8 @@ pub struct DurationStatistics {
   pub average: usize,
 }
 
-// /// The return type of RpcHandler requests
-// pub type BoxedPacketStream = Pin<Box<dyn Stream<Item = InvocationPacket> + Send>>;
-
 /// The return type of RpcHandler requests
-pub type BoxedTransportStream = Pin<Box<dyn Stream<Item = InvocationTransport> + Send>>;
+pub type BoxedTransportStream = Pin<Box<dyn Stream<Item = TransportWrapper> + Send>>;
 
 impl From<HostedType> for crate::rpc::Component {
   fn from(v: HostedType) -> Self {
@@ -209,7 +207,7 @@ impl Into<Packet> for MessageKind {
       },
       Kind::Signal => match self.data {
         Some(Data::Signal(v)) => match OutputSignal::from_i32(v) {
-          Some(OutputSignal::Close) => Packet::V0(Payload::Close),
+          Some(OutputSignal::Done) => Packet::V0(Payload::Done),
           Some(OutputSignal::OpenBracket) => Packet::V0(Payload::OpenBracket),
           Some(OutputSignal::CloseBracket) => Packet::V0(Payload::CloseBracket),
           _ => Packet::V0(Payload::Error(format!(
@@ -247,6 +245,23 @@ impl MessageKind {
   pub fn try_into<T: DeserializeOwned>(self) -> std::result::Result<T, DeserializationError> {
     self.into_packet().try_into()
   }
+
+  /// Utility function to determine if [MessageKind] is a Signal
+  #[must_use]
+  pub fn is_signal(&self) -> bool {
+    let kind: Option<message_kind::Kind> = message_kind::Kind::from_i32(self.kind);
+    matches!(kind, Some(message_kind::Kind::Signal))
+  }
+}
+
+impl Output {
+  /// Utility function to determine if [MessageKind] is a Signal
+  #[must_use]
+  pub fn is_signal(&self) -> bool {
+    let num = self.payload.as_ref().map_or(-1, |p| p.kind);
+    let kind: Option<message_kind::Kind> = message_kind::Kind::from_i32(num);
+    matches!(kind, Some(message_kind::Kind::Signal))
+  }
 }
 
 impl From<MessageKind> for MessageTransport {
@@ -276,9 +291,9 @@ impl From<MessageTransport> for MessageKind {
       MessageTransport::MessagePack(v) => Some(message_kind::Data::Messagepack(v)),
       MessageTransport::Test(v) => Some(message_kind::Data::Message(v)),
       MessageTransport::Signal(signal) => match signal {
-        vino_transport::message_transport::MessageSignal::Close => Some(
-          message_kind::Data::Signal(message_kind::OutputSignal::Close.into()),
-        ),
+        vino_transport::message_transport::MessageSignal::Done => Some(message_kind::Data::Signal(
+          message_kind::OutputSignal::Done.into(),
+        )),
         vino_transport::message_transport::MessageSignal::OpenBracket => Some(
           message_kind::Data::Signal(message_kind::OutputSignal::OpenBracket.into()),
         ),

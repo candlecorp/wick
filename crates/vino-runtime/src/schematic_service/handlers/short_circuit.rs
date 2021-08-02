@@ -27,7 +27,7 @@ impl Handler<ShortCircuit> for SchematicService {
   type Result = ResponseActFuture<Self, Result<(), SchematicError>>;
 
   fn handle(&mut self, msg: ShortCircuit, ctx: &mut Context<Self>) -> Self::Result {
-    trace!("SC:{}:{}:SHORT", self.name, msg.reference);
+    trace!("SC:{}:{}:BYPASS", self.name, msg.reference);
     let reference = msg.reference;
     let tx_id = msg.tx_id;
     let payload = msg.payload;
@@ -40,7 +40,7 @@ impl Handler<ShortCircuit> for SchematicService {
       .collect();
 
     trace!(
-      "SC:{}:{}:SHORT:Connections {}",
+      "SC:{}:{}:BYPASS:Connections {}",
       self.name,
       reference,
       join(&downstreams, ", ")
@@ -48,10 +48,19 @@ impl Handler<ShortCircuit> for SchematicService {
 
     let outputs: Vec<OutputMessage> = downstreams
       .into_iter()
-      .map(|conn| OutputMessage {
-        tx_id: tx_id.clone(),
-        port: conn.from,
-        payload: payload.clone(),
+      .flat_map(|conn| {
+        vec![
+          OutputMessage {
+            tx_id: tx_id.clone(),
+            port: conn.from.clone(),
+            payload: payload.clone(),
+          },
+          OutputMessage {
+            tx_id: tx_id.clone(),
+            port: conn.from,
+            payload: MessageTransport::done(),
+          },
+        ]
       })
       .collect();
 

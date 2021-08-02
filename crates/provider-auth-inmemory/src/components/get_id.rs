@@ -10,6 +10,6 @@ pub(crate) async fn job(
     .user_ids
     .get(&input.username)
     .ok_or_else(|| NativeComponentError::new(format!("User '{}' not found", input.username)))?;
-  output.user_id.done(&user_id)?;
+  output.user_id.done(user_id)?;
   Ok(())
 }

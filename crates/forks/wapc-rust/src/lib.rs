@@ -507,7 +507,7 @@ impl WapcHost {
   }
 
   fn initialize(&self, state: HostType) -> Result<()> {
-    match self.engine.borrow_mut().init(state) {
+    let result = match self.engine.borrow_mut().init(state) {
       Ok(_) => Ok(()),
       Err(e) => Err(crate::errors::new(
         crate::errors::ErrorKind::GuestCallFailure(format!(
@@ -515,7 +515,8 @@ impl WapcHost {
           e
         )),
       )),
-    }
+    };
+    result
   }
 
   /// Returns a reference to the unique identifier of this module. If a parent process

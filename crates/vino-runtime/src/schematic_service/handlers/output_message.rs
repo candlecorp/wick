@@ -1,4 +1,5 @@
 use crate::dev::prelude::*;
+use crate::schematic_service::handlers::transaction_update::TransactionUpdate;
 use crate::schematic_service::input_message::InputMessage;
 
 #[derive(Message, Debug, Clone)]
@@ -17,24 +18,35 @@ impl Handler<OutputMessage> for SchematicService {
 
     let defs = if msg.port.matches_port(crate::COMPONENT_ERROR) {
       error!("{}Component-wide error received", log_prefix);
-      self.get_downstream_connections(actix_try!(msg.port.get_instance()))
+      self.get_downstream_connections(msg.port.get_instance())
     } else {
       trace!("{}Output ready", log_prefix);
       self.get_port_connections(&msg.port)
     };
 
     for connection in defs {
-      let msg = InputMessage {
+      let upstream_port = connection.from.to_string();
+      let next = InputMessage {
         tx_id: msg.tx_id.clone(),
         connection,
         payload: msg.payload.clone(),
       };
-      actix_try!(self
-        .update_transaction(msg)
-        .map_err(|_| InternalError(6001)));
+
+      let send_result = self
+        .executor
+        .get(&msg.tx_id)
+        .map(|e| e.send(TransactionUpdate::Update(next.handle_default())))
+        .ok_or(InternalError(6003));
+
+      if let Err(e) = send_result {
+        debug!("{}ERROR:6001 {:?}", log_prefix, e);
+        warn!(
+          "Error sending message in transaction {}. This is likely a bug in the upstream (i.e. {})",
+          msg.tx_id, upstream_port
+        );
+      }
     }
 
-    let task = async move { Ok(()) }.into_actor(self);
-    ActorResult::reply_async(task)
+    ActorResult::reply(Ok(()))
   }
 }

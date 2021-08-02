@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use std::time::Duration;
 
 use parking_lot::Mutex;
 
@@ -9,7 +10,7 @@ use crate::models::provider_model::{
 };
 use crate::models::validator::Validator;
 use crate::schematic_service::State;
-use crate::transaction::TransactionExecutor;
+use crate::transaction::executor::TransactionExecutor;
 
 #[derive(Message, Debug)]
 #[rtype(result = "Result<(), SchematicError>")]
@@ -20,6 +21,7 @@ pub(crate) struct Initialize {
   pub(crate) allow_latest: bool,
   pub(crate) allowed_insecure: Vec<String>,
   pub(crate) global_providers: Vec<ProviderDefinition>,
+  pub(crate) timeout: Duration,
 }
 
 impl Handler<Initialize> for SchematicService {
@@ -31,8 +33,8 @@ impl Handler<Initialize> for SchematicService {
     let allow_latest = msg.allow_latest;
     self.name = msg.schematic.name.clone();
     let providers = concat(vec![msg.global_providers, msg.schematic.providers.clone()]);
-    let model = actix_try!(SchematicModel::try_from(msg.schematic));
-    actix_try!(Validator::validate_early_errors(&model));
+    let model = actix_try!(SchematicModel::try_from(msg.schematic), 6021);
+    actix_try!(Validator::validate_early_errors(&model), 6022);
     let model = Arc::new(Mutex::new(model));
     let allowed_insecure = msg.allowed_insecure;
     let network_provider_channel = msg.network_provider_channel;
@@ -63,7 +65,7 @@ impl Handler<Initialize> for SchematicService {
 
     let state = State {
       kp: KeyPair::from_seed(&seed).unwrap(),
-      transactions: TransactionExecutor::new(model.clone()),
+      transactions: TransactionExecutor::new(model.clone(), msg.timeout),
       model,
     };
     self.state = Some(state);

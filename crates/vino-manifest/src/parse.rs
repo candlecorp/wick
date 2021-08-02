@@ -6,7 +6,7 @@ use crate::{
 };
 
 lazy_static::lazy_static! {
-    pub(crate) static ref CONNECTION_TARGET_REGEX_V0: Regex = Regex::new(&format!(r"^({}|{}|{}|\w*)(?:\[(\w*)\])?$", DEFAULT_ID, SCHEMATIC_INPUT, SCHEMATIC_OUTPUT)).unwrap();
+    pub(crate) static ref CONNECTION_TARGET_REGEX_V0: Regex = Regex::new(&format!(r"^({}|{}|{}|[a-zA-Z][a-zA-Z0-9_]*)(?:\[(\w*)\])?$", DEFAULT_ID, SCHEMATIC_INPUT, SCHEMATIC_OUTPUT)).unwrap();
 }
 
 pub(crate) static CONNECTION_SEPARATOR: &str = "=>";
@@ -21,6 +21,10 @@ pub const SCHEMATIC_OUTPUT: &str = "<output>";
 pub const COMPONENT_ERROR: &str = "<error>";
 /// The reserved namespace for references to internal schematics.
 pub const SELF_NAMESPACE: &str = "self";
+/// The reserved name for components that send static data.
+pub static SENDER_ID: &str = "<sender>";
+/// The name of SENDER's output port
+pub static SENDER_PORT: &str = "output";
 
 type Result<T> = std::result::Result<T, Error>;
 
@@ -39,8 +43,8 @@ pub(crate) fn parse_target_v0(s: &str) -> Result<(Option<&str>, Option<&str>)> {
     || Err(Error::ConnectionTargetSyntax(s.to_owned())),
     |captures| {
       Ok((
-        captures.get(1).map(|m| m.as_str()),
-        captures.get(2).map(|m| m.as_str()),
+        captures.get(1).map(|m| m.as_str().trim()),
+        captures.get(2).map(|m| m.as_str().trim()),
       ))
     },
   )
@@ -51,32 +55,35 @@ pub(crate) fn parse_connection_target_v0(s: &str) -> Result<v0::ConnectionTarget
   Ok(v0::ConnectionTargetDefinition {
     instance: t_ref.unwrap_or(DEFAULT_ID).to_owned(),
     port: t_port.unwrap_or(DEFAULT_ID).to_owned(),
+    data: None,
   })
 }
 
-fn parse_from_or_default(
+fn parse_from_or_sender(
   from: &str,
   default_port: Option<&str>,
-) -> Result<(Option<v0::ConnectionTargetDefinition>, Option<String>)> {
+) -> Result<v0::ConnectionTargetDefinition> {
   match parse_target_v0(from) {
-    Ok((from_ref, from_port)) => Ok((
-      Some(v0::ConnectionTargetDefinition {
-        port: from_port
-          .or(default_port)
-          .ok_or_else(|| Error::NoDefaultPort(from.to_owned()))?
-          .to_owned(),
-        instance: match from_ref {
-          Some(DEFAULT_ID) => SCHEMATIC_INPUT,
-          Some(v) => v,
-          None => return Err(Error::NoDefaultReference(from.to_owned())),
-        }
+    Ok((from_ref, from_port)) => Ok(v0::ConnectionTargetDefinition {
+      port: from_port
+        .or(default_port)
+        .ok_or_else(|| Error::NoDefaultPort(from.to_owned()))?
         .to_owned(),
-      }),
-      None,
-    )),
+      instance: match from_ref {
+        Some(DEFAULT_ID) => SCHEMATIC_INPUT,
+        Some(v) => v,
+        None => return Err(Error::NoDefaultReference(from.to_owned())),
+      }
+      .to_owned(),
+      data: None,
+    }),
     // Validating JSON by parsing into a serde_json::Value is recommended by the docs
     Err(_e) => match serde_json::from_str::<serde_json::Value>(from) {
-      Ok(_) => Ok((None, Some(from.to_owned()))),
+      Ok(_) => Ok(v0::ConnectionTargetDefinition {
+        instance: SENDER_ID.to_owned(),
+        port: SENDER_PORT.to_owned(),
+        data: Some(from.trim().to_owned()),
+      }),
       Err(_e) => Err(Error::ConnectionTargetSyntax(from.to_owned())),
     },
   }
@@ -88,11 +95,11 @@ pub(crate) fn parse_connection_v0(s: &str) -> Result<v0::ConnectionDefinition> {
     || Err(Error::ConnectionDefinitionSyntax(s.to_owned())),
     |(from, to)| {
       let (to_ref, to_port) = parse_target_v0(to)?;
-      let (from, default) = parse_from_or_default(from, to_port)?;
-      let to = Some(v0::ConnectionTargetDefinition {
+      let from = parse_from_or_sender(from, to_port)?;
+      let to = v0::ConnectionTargetDefinition {
         port: to_port
           .map(|s| s.to_owned())
-          .or_else(|| from.as_ref().map(|p| p.port.clone()))
+          .or_else(|| Some(from.port.clone()))
           .ok_or_else(|| Error::NoDefaultPort(s.to_owned()))?,
         instance: match to_ref {
           Some(DEFAULT_ID) => SCHEMATIC_OUTPUT,
@@ -100,8 +107,13 @@ pub(crate) fn parse_connection_v0(s: &str) -> Result<v0::ConnectionDefinition> {
           None => return Err(Error::NoDefaultReference(s.to_owned())),
         }
         .to_owned(),
-      });
-      Ok(v0::ConnectionDefinition { from, to, default })
+        data: None,
+      };
+      Ok(v0::ConnectionDefinition {
+        from,
+        to,
+        default: None,
+      })
     },
   )
 }
@@ -146,14 +158,38 @@ mod tests {
     assert_eq!(
       parsed,
       v0::ConnectionDefinition {
-        from: Some(v0::ConnectionTargetDefinition {
+        from: v0::ConnectionTargetDefinition {
           instance: "ref1".to_owned(),
-          port: "in".to_owned()
-        }),
-        to: Some(v0::ConnectionTargetDefinition {
+          port: "in".to_owned(),
+          data: None,
+        },
+        to: v0::ConnectionTargetDefinition {
           instance: "ref2".to_owned(),
-          port: "out".to_owned()
-        }),
+          port: "out".to_owned(),
+          data: None,
+        },
+        default: None
+      }
+    );
+    Ok(())
+  }
+
+  #[test_env_log::test]
+  fn test_bare_num_default() -> Result<()> {
+    let parsed = parse_connection_v0("5 => ref2[out]")?;
+    assert_eq!(
+      parsed,
+      v0::ConnectionDefinition {
+        from: v0::ConnectionTargetDefinition {
+          instance: SENDER_ID.to_owned(),
+          port: SENDER_PORT.to_owned(),
+          data: Some("5".to_owned()),
+        },
+        to: v0::ConnectionTargetDefinition {
+          instance: "ref2".to_owned(),
+          port: "out".to_owned(),
+          data: None,
+        },
         default: None
       }
     );
@@ -166,14 +202,16 @@ mod tests {
     assert_eq!(
       parsed,
       v0::ConnectionDefinition {
-        from: Some(v0::ConnectionTargetDefinition {
+        from: v0::ConnectionTargetDefinition {
           instance: SCHEMATIC_INPUT.to_owned(),
-          port: "in".to_owned()
-        }),
-        to: Some(v0::ConnectionTargetDefinition {
+          port: "in".to_owned(),
+          data: None,
+        },
+        to: v0::ConnectionTargetDefinition {
           instance: "ref2".to_owned(),
-          port: "out".to_owned()
-        }),
+          port: "out".to_owned(),
+          data: None,
+        },
         default: None
       }
     );
@@ -186,14 +224,16 @@ mod tests {
     assert_eq!(
       parsed,
       v0::ConnectionDefinition {
-        from: Some(v0::ConnectionTargetDefinition {
+        from: v0::ConnectionTargetDefinition {
           instance: "ref1".to_owned(),
-          port: "in".to_owned()
-        }),
-        to: Some(v0::ConnectionTargetDefinition {
+          port: "in".to_owned(),
+          data: None,
+        },
+        to: v0::ConnectionTargetDefinition {
           instance: SCHEMATIC_OUTPUT.to_owned(),
-          port: "out".to_owned()
-        }),
+          port: "out".to_owned(),
+          data: None,
+        },
         default: None
       }
     );
@@ -206,14 +246,16 @@ mod tests {
     assert_eq!(
       parsed,
       v0::ConnectionDefinition {
-        from: Some(v0::ConnectionTargetDefinition {
+        from: v0::ConnectionTargetDefinition {
           instance: "ref1".to_owned(),
-          port: "port".to_owned()
-        }),
-        to: Some(v0::ConnectionTargetDefinition {
+          port: "port".to_owned(),
+          data: None,
+        },
+        to: v0::ConnectionTargetDefinition {
           instance: SCHEMATIC_OUTPUT.to_owned(),
-          port: "port".to_owned()
-        }),
+          port: "port".to_owned(),
+          data: None,
+        },
         default: None
       }
     );
@@ -226,14 +268,16 @@ mod tests {
     assert_eq!(
       parsed,
       v0::ConnectionDefinition {
-        from: Some(v0::ConnectionTargetDefinition {
+        from: v0::ConnectionTargetDefinition {
           instance: SCHEMATIC_INPUT.to_owned(),
-          port: "port".to_owned()
-        }),
-        to: Some(v0::ConnectionTargetDefinition {
+          port: "port".to_owned(),
+          data: None,
+        },
+        to: v0::ConnectionTargetDefinition {
           instance: "ref1".to_owned(),
-          port: "port".to_owned()
-        }),
+          port: "port".to_owned(),
+          data: None,
+        },
         default: None
       }
     );
@@ -246,12 +290,39 @@ mod tests {
     assert_eq!(
       parsed,
       v0::ConnectionDefinition {
-        from: None,
-        to: Some(v0::ConnectionTargetDefinition {
+        from: v0::ConnectionTargetDefinition {
+          instance: SENDER_ID.to_owned(),
+          port: SENDER_PORT.to_owned(),
+          data: Some(r#""default""#.to_owned()),
+        },
+        to: v0::ConnectionTargetDefinition {
           instance: "ref1".to_owned(),
-          port: "port".to_owned()
-        }),
-        default: Some(r#""default""#.to_owned())
+          port: "port".to_owned(),
+          data: None,
+        },
+        default: None
+      }
+    );
+    Ok(())
+  }
+
+  #[test_env_log::test]
+  fn regression_1() -> Result<()> {
+    let parsed = parse_connection_v0(r#""1234512345" => <>[output]"#)?;
+    assert_eq!(
+      parsed,
+      v0::ConnectionDefinition {
+        from: v0::ConnectionTargetDefinition {
+          instance: SENDER_ID.to_owned(),
+          port: SENDER_PORT.to_owned(),
+          data: Some(r#""1234512345""#.to_owned()),
+        },
+        to: v0::ConnectionTargetDefinition {
+          instance: SCHEMATIC_OUTPUT.to_owned(),
+          port: "output".to_owned(),
+          data: None,
+        },
+        default: None
       }
     );
     Ok(())

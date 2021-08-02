@@ -113,7 +113,7 @@ mod tests {
       .invoke(Entity::component("create-user"), job_payload)
       .await?;
 
-    let outputs: Vec<InvocationTransport> = outputs.collect().await;
+    let outputs: Vec<TransportWrapper> = outputs.collect().await;
     let output = &outputs[0];
     println!("payload from [{}]: {:?}", output.port, output.payload);
     let user_id: String = output.payload.clone().try_into()?;
@@ -184,9 +184,12 @@ mod tests {
     // }
 
     let messages: Vec<_> = outputs.collect().await;
-    assert_eq!(messages.len(), 2);
+    assert_eq!(messages.len(), 4);
     for next in messages {
       println!("Got output from [{}]: {:?}", next.port, next.payload);
+      if next.payload.is_signal() {
+        continue;
+      }
       if next.port == "session" {
         let decoded: Result<String, _> = next.payload.try_into();
         if let Ok(s) = decoded {

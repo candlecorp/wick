@@ -3791,6 +3791,7 @@ name = "vino-macros"
 version = "0.1.0"
 dependencies = [
  "colored",
+ "lazy_static",
  "tracing",
  "vino-transport",
 ]
@@ -3816,6 +3817,7 @@ dependencies = [
  "thiserror",
  "tracing",
  "tracing-subscriber",
+ "vino-transport",
 ]
 
 [[package]]
@@ -4007,15 +4009,19 @@ dependencies = [
 name = "vino-transport"
 version = "0.1.0"
 dependencies = [
+ "env_logger 0.9.0",
  "lazy_static",
  "log",
  "rmp-serde 0.15.5",
  "serde",
  "serde-value",
  "serde_json",
+ "test-env-log",
  "thiserror",
  "tokio",
  "tokio-stream",
+ "tracing",
+ "tracing-subscriber",
  "vino-codec",
  "vino-component",
 ]

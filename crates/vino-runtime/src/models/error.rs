@@ -21,13 +21,13 @@ pub enum ValidationErrorKind {
   DanglingReference(String),
   #[error("Component definition '{0}' not fully qualified")]
   NotFullyQualified(String),
-  #[error("Invalid output port '{}' on {}. Valid output ports are [{}]", .0.get_port().unwrap_or("<No port>"), .1, join(.2, ", "))]
+  #[error("Invalid output port '{}' on {}. Valid output ports are [{}]", .0.get_port(), .1, join(.2, ", "))]
   InvalidOutputPort(
     ConnectionTargetDefinition,
     ConnectionDefinition,
     Vec<PortSignature>,
   ),
-  #[error("Invalid input port '{}' on {}. Valid input ports are [{}]", .0.get_port().unwrap_or("<No port>"), .1, join(.2, ", "))]
+  #[error("Invalid input port '{}' on {}. Valid input ports are [{}]", .0.get_port(), .1, join(.2, ", "))]
   InvalidInputPort(
     ConnectionTargetDefinition,
     ConnectionDefinition,
@@ -75,6 +75,8 @@ pub enum SchematicModelError {
   IncompleteInitialization,
   #[error("Schematic model not initialized")]
   ModelNotInitialized,
+  #[error(transparent)]
+  ManifestError(#[from] vino_manifest::Error),
   #[error("The reference '{0}' has an incomplete component model. Component may have failed to load or be in a partial state.")]
   MissingComponentModel(String),
   #[error(transparent)]

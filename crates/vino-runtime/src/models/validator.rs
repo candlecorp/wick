@@ -89,23 +89,26 @@ impl<'a> Validator<'a> {
       .flat_map(|conn| {
         let mut none = vec![];
 
-        if let Ok(from_instance) = conn.from.get_instance() {
-          let from = self.model.get_component_definition(from_instance);
-          if from.is_none() && !conn.has_default() && !conn.from.matches_instance(SCHEMATIC_INPUT) {
-            none.push(ValidationErrorKind::DanglingReference(
-              from_instance.to_owned(),
-            ));
-          }
+        let from_instance = conn.from.get_instance();
+        let from = self.model.get_component_definition(from_instance);
+        if from.is_none()
+          && !conn.has_default()
+          && !conn.from.is_sender()
+          && !conn.from.matches_instance(SCHEMATIC_INPUT)
+        {
+          none.push(ValidationErrorKind::DanglingReference(
+            from_instance.to_owned(),
+          ));
         }
 
-        if let Ok(to_instance) = conn.to.get_instance() {
-          let to = self.model.get_component_definition(to_instance);
-          if to.is_none() && !conn.to.matches_instance(SCHEMATIC_OUTPUT) {
-            none.push(ValidationErrorKind::DanglingReference(
-              to_instance.to_owned(),
-            ));
-          }
+        let to_instance = conn.to.get_instance();
+        let to = self.model.get_component_definition(to_instance);
+        if to.is_none() && !conn.to.matches_instance(SCHEMATIC_OUTPUT) {
+          none.push(ValidationErrorKind::DanglingReference(
+            to_instance.to_owned(),
+          ));
         }
+
         none
       })
       .collect();
@@ -123,8 +126,8 @@ impl<'a> Validator<'a> {
       .iter()
       .flat_map(|connection| {
         let mut validations = vec![];
-        if !connection.from.matches_instance(SCHEMATIC_INPUT) {
-          let r = connection.from.get_instance().unwrap_or_default();
+        if !connection.from.is_sender() && !connection.from.matches_instance(SCHEMATIC_INPUT) {
+          let r = connection.from.get_instance();
           match self.model.get_component_model_by_instance(r) {
             Some(from) => validations.push(is_valid_output(connection, &from)),
             None => {
@@ -137,7 +140,7 @@ impl<'a> Validator<'a> {
           };
         }
         if !connection.to.matches_instance(SCHEMATIC_OUTPUT) {
-          let r = connection.to.get_instance().unwrap_or_default();
+          let r = connection.to.get_instance();
           match self.model.get_component_model_by_instance(r) {
             Some(to) => validations.push(is_valid_input(connection, &to)),
             None => {
@@ -208,16 +211,11 @@ impl<'a> Validator<'a> {
   // to the schematic input or a port that has a default
   fn _validate_port_has_upstream_input(&self, port: &ConnectionTargetDefinition) -> bool {
     let connection = some_or_bail!(self.model.get_upstream_connection(port), false);
-    let connected_to_schematic_input = connection.from.matches_instance(SCHEMATIC_INPUT);
-    let has_default = connection.from.is_none() && connection.has_default();
-    if connected_to_schematic_input || has_default {
-      return true;
-    }
 
-    let upstream_ref = ok_or_bail!(connection.from.get_instance(), false);
+    let upstream_ref = connection.from.get_instance();
     let upstream_connections = self
       .model
-      .get_upstream_connections_by_instance(upstream_ref);
+      ._get_upstream_connections_by_instance(upstream_ref);
     for conn in upstream_connections {
       if self._validate_port_has_upstream_input(&conn.to) {
         return true;
@@ -286,7 +284,9 @@ fn is_valid_output(
 #[cfg(test)]
 mod tests {
   use std::collections::HashMap;
+  use std::str::FromStr;
 
+  use vino_manifest::schematic_definition::SenderData;
   use vino_provider::native::prelude::*;
   use ConnectionTargetDefinition as Target;
 
@@ -429,8 +429,8 @@ mod tests {
     let upstream = model
       .get_upstream(&Target::new("logger".to_owned(), "input".to_owned()))
       .unwrap();
-    assert_eq!(upstream.get_instance()?, SCHEMATIC_INPUT);
-    assert_eq!(upstream.get_port()?, "input");
+    assert_eq!(upstream.get_instance(), SCHEMATIC_INPUT);
+    assert_eq!(upstream.get_port(), "input");
 
     Ok(())
   }
@@ -461,13 +461,13 @@ mod tests {
   }
 
   #[test_env_log::test]
-  fn test_no_upstream() -> TestResult<()> {
+  fn test_sender() -> TestResult<()> {
     let schematic_name = "Test";
     let mut schematic_def = new_schematic(schematic_name);
     schematic_def.connections.push(ConnectionDefinition {
-      from: Target::none(),
+      from: Target::sender(Some(SenderData::from_str("\"Default string\"")?)),
       to: Target::new(SCHEMATIC_OUTPUT, "output"),
-      default: Some(serde_json::Value::String("Default string".to_owned())),
+      default: None,
     });
     let model = SchematicModel::try_from(schematic_def)?;
     assert_eq!(model.get_name(), schematic_name);

@@ -3,6 +3,11 @@ use std::path::PathBuf;
 
 use tracing::debug;
 use vino_manifest::error::ManifestError;
+use vino_manifest::parse::{
+  SCHEMATIC_OUTPUT,
+  SENDER_ID,
+  SENDER_PORT,
+};
 use vino_manifest::*;
 
 #[test_env_log::test]
@@ -56,26 +61,22 @@ fn load_shortform_hocon() -> Result<(), ManifestError> {
 
   let HostManifest::V0(manifest) = manifest;
   assert_eq!(manifest.default_schematic, "logger");
-  let first_from = manifest.network.schematics[0].connections[0]
-    .from
-    .as_ref()
-    .unwrap();
-  let first_to = manifest.network.schematics[0].connections[0]
-    .to
-    .as_ref()
-    .unwrap();
+  let first_from = &manifest.network.schematics[0].connections[0].from;
+  let first_to = &manifest.network.schematics[0].connections[0].to;
   assert_eq!(
     first_from,
     &v0::ConnectionTargetDefinition {
       instance: "<input>".to_owned(),
-      port: "input".to_owned()
+      port: "input".to_owned(),
+      data: None,
     }
   );
   assert_eq!(
     first_to,
     &v0::ConnectionTargetDefinition {
       instance: "logger".to_owned(),
-      port: "input".to_owned()
+      port: "input".to_owned(),
+      data: None
     }
   );
 
@@ -89,26 +90,22 @@ fn load_shortform_yaml() -> Result<(), ManifestError> {
 
   let HostManifest::V0(manifest) = manifest;
   assert_eq!(manifest.default_schematic, "logger");
-  let first_from = manifest.network.schematics[0].connections[0]
-    .from
-    .as_ref()
-    .unwrap();
-  let first_to = manifest.network.schematics[0].connections[0]
-    .to
-    .as_ref()
-    .unwrap();
+  let first_from = &manifest.network.schematics[0].connections[0].from;
+  let first_to = &manifest.network.schematics[0].connections[0].to;
   assert_eq!(
     first_from,
     &v0::ConnectionTargetDefinition {
       instance: "<input>".to_owned(),
-      port: "input".to_owned()
+      port: "input".to_owned(),
+      data: None,
     }
   );
   assert_eq!(
     first_to,
     &v0::ConnectionTargetDefinition {
       instance: "logger".to_owned(),
-      port: "input".to_owned()
+      port: "input".to_owned(),
+      data: None,
     }
   );
 
@@ -163,6 +160,34 @@ fn load_bad_manifest_hocon() -> Result<(), ManifestError> {
   } else {
     panic!("Should have failed")
   }
+
+  Ok(())
+}
+
+#[test_env_log::test]
+fn load_sender_yaml() -> Result<(), ManifestError> {
+  let path = PathBuf::from("./tests/manifests/v0/sender.yaml");
+  let manifest = HostManifest::load_from_file(&path)?;
+
+  let HostManifest::V0(manifest) = manifest;
+  let first_from = &manifest.network.schematics[0].connections[0].from;
+  let first_to = &manifest.network.schematics[0].connections[0].to;
+  assert_eq!(
+    first_from,
+    &v0::ConnectionTargetDefinition {
+      instance: SENDER_ID.to_owned(),
+      port: SENDER_PORT.to_owned(),
+      data: Some(r#""1234512345""#.to_owned()),
+    }
+  );
+  assert_eq!(
+    first_to,
+    &v0::ConnectionTargetDefinition {
+      instance: SCHEMATIC_OUTPUT.to_owned(),
+      port: "output".to_owned(),
+      data: None,
+    }
+  );
 
   Ok(())
 }

@@ -144,7 +144,6 @@ mod test {
     convert_transport_map,
     make_rpc_client,
   };
-  use vino_runtime::prelude::StreamExt;
 
   use crate::host_definition::HostDefinition;
   use crate::{
@@ -181,8 +180,8 @@ mod test {
     let data: HashMap<&str, &str> = hashmap! {
         "input" => passed_data,
     };
-    let stream = host.request("logger", data).await?;
-    let mut messages: Vec<_> = stream.collect().await;
+    let mut stream = host.request("logger", data).await?;
+    let mut messages: Vec<_> = stream.collect_port("output").await;
     assert_eq!(messages.len(), 1);
     let output = messages.pop().unwrap();
     let result: String = output.payload.try_into()?;

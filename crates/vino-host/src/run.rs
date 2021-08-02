@@ -107,7 +107,7 @@ mod tests {
   use std::path::PathBuf;
 
   use maplit::hashmap;
-  use vino_runtime::prelude::StreamExt;
+  use vino_transport::TransportWrapper;
 
   use crate::HostDefinition;
 
@@ -119,14 +119,9 @@ mod tests {
     };
 
     let mut result = super::run(host_def, input).await?;
-    let mut output: String = "".to_owned();
-    while let Some(next) = result.next().await {
-      println!("Output = {:?}", next);
-      match next.port.as_str() {
-        "schem_output" => output = next.payload.try_into()?,
-        _ => panic!("Got output from unexpected port"),
-      }
-    }
+    let mut messages: Vec<TransportWrapper> = result.collect_port("schem_output").await;
+    let output: String = messages.remove(0).payload.try_into()?;
+
     assert_eq!(output, "test-input");
     Ok(())
   }

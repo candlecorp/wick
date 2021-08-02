@@ -70,6 +70,10 @@ pub enum ManifestError {
     String,
   ),
 
+  /// Error parsing or serializing Sender data
+  #[error("Error parsing or serializing Sender data: {0}")]
+  InvalidSenderData(String),
+
   /// Error attempting to get details of a target that doesn't exist.
   #[error("Attempted to grab data from a target that doesn't exist")]
   NoTarget,

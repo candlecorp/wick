@@ -4,7 +4,9 @@ edition = "2018"
 license = "Apache-2.0"
 name = "vino-manifest"
 version = "0.1.0"
+
 [dependencies]
+vino-transport = { path = "../vino-transport" }
 enum-primitive-derive = "0.2.1"
 hocon = "0.5.2"
 lazy_static = "1.4.0"

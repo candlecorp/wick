@@ -1,0 +1,7 @@
+---
+version: 0
+network:
+  schematics:
+    - name: sender
+      connections:
+        - '"1234512345" => <>[output]'
