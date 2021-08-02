@@ -38,20 +38,20 @@ pub mod prelude {
     UnboundedReceiver,
     UnboundedSender,
   };
-  pub type PacketSender = UnboundedSender<InvocationPacket>;
-  pub type PacketReceiver = UnboundedReceiver<InvocationPacket>;
+  pub type PacketSender = UnboundedSender<PacketWrapper>;
+  pub type PacketReceiver = UnboundedReceiver<PacketWrapper>;
   pub use async_trait::async_trait;
-  pub use vino_component::InvocationPacket;
+  pub use vino_component::PacketWrapper;
   pub use vino_entity::{
     Entity,
     Error as EntityError,
   };
   pub use vino_transport::error::TransportError;
+  pub use vino_transport::message_transport::stream::MessageTransportStream;
   pub use vino_transport::message_transport::{
-    InvocationTransport,
     MessageTransport,
-    MessageTransportStream,
     TransportMap,
+    TransportWrapper,
   };
   pub use vino_types::signatures::*;
 

@@ -4,8 +4,8 @@ use vino_codec::error::CodecError;
 #[derive(Debug)]
 pub enum Error {
   HostError(String),
-  JobNotFound(String),
   CodecError(CodecError),
+  JobNotFound(String),
   MissingInput(String),
 }
 
@@ -17,14 +17,12 @@ impl From<CodecError> for Error {
 
 impl std::fmt::Display for Error {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    write!(f, "Invalid")
-    // match self {
-    //   Error::Invalid => write!(f, "Invalid"),
-    //   Error::Exception(v) => write!(f, "{}", v),
-    //   Error::Error(v) => write!(f, "{}", v),
-    //   Error::DeserializationError(e) => write!(f, "{}", e.to_string()),
-    //   Error::InternalError => write!(f, "Internal Error"),
-    // }
+    match self {
+      Error::HostError(v) => write!(f, "Host Error: {}", v),
+      Error::JobNotFound(v) => write!(f, "Component not found: {}", v),
+      Error::CodecError(e) => write!(f, "Codec Error: {}", e),
+      Error::MissingInput(v) => write!(f, "Missing Input: {}", v),
+    }
   }
 }
 

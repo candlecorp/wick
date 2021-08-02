@@ -86,11 +86,11 @@ pub type Result<T> = std::result::Result<T, error::TransportError>;
 /// The crate's Error type
 pub type Error = error::TransportError;
 
+pub use message_transport::stream::MessageTransportStream;
 pub use message_transport::{
-  InvocationTransport,
   MessageTransport,
-  MessageTransportStream,
   TransportMap,
+  TransportWrapper,
 };
 /// The name of system-originating messages on a port, schematic, or origin.
 pub const SYSTEM_ID: &str = "<system>";

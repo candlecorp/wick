@@ -11,3 +11,4 @@ license = "Apache-2.0"
 colored = "2.0.0"
 tracing = "0.1.26"
 vino-transport = { path = "../vino-transport" }
+lazy_static = "1.4.0"
