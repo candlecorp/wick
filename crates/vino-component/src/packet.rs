@@ -70,8 +70,10 @@ impl From<&[u8]> for Packet {
 }
 
 #[derive(Debug, Clone)]
-/// An [PacketWrapper] is a wrapper around a [Packet] with the port name and invocation id embedded in it.
+/// A [PacketWrapper] is a wrapper around a [Packet] with the port name embedded.
 pub struct PacketWrapper {
+  /// The port name.
   pub port: String,
+  /// The wrapped packet [Packet].
   pub payload: Packet,
 }

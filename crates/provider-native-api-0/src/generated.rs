@@ -173,12 +173,12 @@ pub(crate) mod add {
 
   #[derive(Debug)]
   pub(crate) struct OutputPortSender {
-    port: Port,
+    port: PortChannel,
   }
   impl Default for OutputPortSender {
     fn default() -> Self {
       Self {
-        port: Port::new("output".into()),
+        port: PortChannel::new("output".into()),
       }
     }
   }
@@ -198,7 +198,7 @@ pub(crate) mod add {
   pub(crate) fn get_outputs() -> (Outputs, MessageTransportStream) {
     let mut outputs = Outputs::default();
     let mut ports = vec![&mut outputs.output.port];
-    let stream = PortStream::create(&mut ports);
+    let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)
   }
 }
@@ -272,12 +272,12 @@ pub(crate) mod concatenate {
 
   #[derive(Debug)]
   pub(crate) struct OutputPortSender {
-    port: Port,
+    port: PortChannel,
   }
   impl Default for OutputPortSender {
     fn default() -> Self {
       Self {
-        port: Port::new("output".into()),
+        port: PortChannel::new("output".into()),
       }
     }
   }
@@ -297,7 +297,7 @@ pub(crate) mod concatenate {
   pub(crate) fn get_outputs() -> (Outputs, MessageTransportStream) {
     let mut outputs = Outputs::default();
     let mut ports = vec![&mut outputs.output.port];
-    let stream = PortStream::create(&mut ports);
+    let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)
   }
 }
@@ -368,12 +368,12 @@ pub(crate) mod error {
 
   #[derive(Debug)]
   pub(crate) struct OutputPortSender {
-    port: Port,
+    port: PortChannel,
   }
   impl Default for OutputPortSender {
     fn default() -> Self {
       Self {
-        port: Port::new("output".into()),
+        port: PortChannel::new("output".into()),
       }
     }
   }
@@ -393,7 +393,7 @@ pub(crate) mod error {
   pub(crate) fn get_outputs() -> (Outputs, MessageTransportStream) {
     let mut outputs = Outputs::default();
     let mut ports = vec![&mut outputs.output.port];
-    let stream = PortStream::create(&mut ports);
+    let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)
   }
 }
@@ -464,12 +464,12 @@ pub(crate) mod log {
 
   #[derive(Debug)]
   pub(crate) struct OutputPortSender {
-    port: Port,
+    port: PortChannel,
   }
   impl Default for OutputPortSender {
     fn default() -> Self {
       Self {
-        port: Port::new("output".into()),
+        port: PortChannel::new("output".into()),
       }
     }
   }
@@ -489,7 +489,7 @@ pub(crate) mod log {
   pub(crate) fn get_outputs() -> (Outputs, MessageTransportStream) {
     let mut outputs = Outputs::default();
     let mut ports = vec![&mut outputs.output.port];
-    let stream = PortStream::create(&mut ports);
+    let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)
   }
 }
@@ -560,12 +560,12 @@ pub(crate) mod short_circuit {
 
   #[derive(Debug)]
   pub(crate) struct OutputPortSender {
-    port: Port,
+    port: PortChannel,
   }
   impl Default for OutputPortSender {
     fn default() -> Self {
       Self {
-        port: Port::new("output".into()),
+        port: PortChannel::new("output".into()),
       }
     }
   }
@@ -585,7 +585,7 @@ pub(crate) mod short_circuit {
   pub(crate) fn get_outputs() -> (Outputs, MessageTransportStream) {
     let mut outputs = Outputs::default();
     let mut ports = vec![&mut outputs.output.port];
-    let stream = PortStream::create(&mut ports);
+    let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)
   }
 }
@@ -656,12 +656,12 @@ pub(crate) mod string_to_bytes {
 
   #[derive(Debug)]
   pub(crate) struct OutputPortSender {
-    port: Port,
+    port: PortChannel,
   }
   impl Default for OutputPortSender {
     fn default() -> Self {
       Self {
-        port: Port::new("output".into()),
+        port: PortChannel::new("output".into()),
       }
     }
   }
@@ -681,7 +681,7 @@ pub(crate) mod string_to_bytes {
   pub(crate) fn get_outputs() -> (Outputs, MessageTransportStream) {
     let mut outputs = Outputs::default();
     let mut ports = vec![&mut outputs.output.port];
-    let stream = PortStream::create(&mut ports);
+    let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)
   }
 }
@@ -747,12 +747,12 @@ pub(crate) mod uuid {
 
   #[derive(Debug)]
   pub(crate) struct OutputPortSender {
-    port: Port,
+    port: PortChannel,
   }
   impl Default for OutputPortSender {
     fn default() -> Self {
       Self {
-        port: Port::new("output".into()),
+        port: PortChannel::new("output".into()),
       }
     }
   }
@@ -772,7 +772,7 @@ pub(crate) mod uuid {
   pub(crate) fn get_outputs() -> (Outputs, MessageTransportStream) {
     let mut outputs = Outputs::default();
     let mut ports = vec![&mut outputs.output.port];
-    let stream = PortStream::create(&mut ports);
+    let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)
   }
 }

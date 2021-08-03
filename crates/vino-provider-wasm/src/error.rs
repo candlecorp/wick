@@ -1,5 +1,3 @@
-use std::path::PathBuf;
-
 use thiserror::Error;
 use vino_rpc::error::RpcError;
 
@@ -23,8 +21,10 @@ pub enum WasmProviderError {
   JsonError(String),
   #[error(transparent)]
   TransportError(#[from] vino_transport::error::TransportError),
-  #[error("Invalid claims : {0}")]
-  ClaimsError(String),
+  #[error("Claims error: {0}")]
+  ClaimsError(vino_wascap::wascap::Error),
+  #[error("Could not extract claims from component. Is it a signed WebAssembly module?")]
+  ClaimsExtraction,
   #[error("Error sending output to stream.")]
   SendError,
   #[error("Internal Error : {0}")]
@@ -35,8 +35,6 @@ pub enum WasmProviderError {
   KeyPairFailed,
   #[error("Component '{0}' not found. Valid components are: {}", .1.join(", "))]
   ComponentNotFound(String, Vec<String>),
-  #[error("File not found {}", .0.to_string_lossy())]
-  FileNotFound(PathBuf),
 }
 
 impl From<serde_json::error::Error> for WasmProviderError {

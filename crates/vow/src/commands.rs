@@ -4,7 +4,6 @@ pub(crate) mod serve;
 use std::net::Ipv4Addr;
 use std::path::PathBuf;
 
-use logger::options::LoggingOptions;
 use structopt::clap::AppSettings;
 use structopt::StructOpt;
 

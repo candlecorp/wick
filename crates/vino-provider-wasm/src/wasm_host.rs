@@ -47,16 +47,16 @@ impl TryFrom<&WapcModule> for WasmHost {
 
     // Ensure that the JWT we found on this actor is valid, not expired, can be used,
     // has a verified signature, etc.
-    vino_wascap::validate_token::<ComponentClaims>(jwt)
-      .map_err(|e| Error::ClaimsError(e.to_string()))?;
+    vino_wascap::validate_token::<ComponentClaims>(jwt).map_err(Error::ClaimsError)?;
 
     let time = Instant::now();
+    vino_macros::mark!();
     #[cfg(feature = "wasmtime")]
     #[allow(unused)]
     let engine = {
       let engine = wasmtime_provider::WasmtimeEngineProvider::new(&module.bytes, None);
       trace!(
-        "PRV:WASM:Wasmtime loaded in {} μs",
+        "PRV:WASM:Wasmtime thread loaded in {} μs",
         time.elapsed().as_micros()
       );
       engine
@@ -65,16 +65,21 @@ impl TryFrom<&WapcModule> for WasmHost {
     #[allow(unused)]
     let engine = {
       let engine = wasm3_provider::Wasm3EngineProvider::new(&module.bytes);
-      trace!("PRV:WASM:wasm3 loaded in {} μs", time.elapsed().as_micros());
+      trace!(
+        "PRV:WASM:wasm3 thread loaded in {} μs",
+        time.elapsed().as_micros()
+      );
       engine
     };
+    vino_macros::elapsed!();
 
     let engine = Box::new(engine);
     let buffer = Arc::new(Mutex::new(PortBuffer::new()));
-    let inner = buffer.clone();
+    let inner_buffer = buffer.clone();
     let closed_ports = Arc::new(Mutex::new(HashSet::new()));
     let closed_inner = closed_ports.clone();
 
+    vino_macros::elapsed!();
     let host = WapcHost::new(engine, move |_id, _inv_id, port, output_signal, payload| {
       trace!("PRV:WASM:WAPC_CALLBACK:{:?}", payload);
       match OutputSignal::from_str(output_signal) {
@@ -83,7 +88,9 @@ impl TryFrom<&WapcModule> for WasmHost {
             if closed_inner.lock().contains(port) {
               Err("Closed".into())
             } else {
-              inner.lock().push_back((port.to_owned(), payload.into()));
+              inner_buffer
+                .lock()
+                .push_back((port.to_owned(), payload.into()));
               Ok(vec![])
             }
           }
@@ -91,8 +98,10 @@ impl TryFrom<&WapcModule> for WasmHost {
             if closed_inner.lock().contains(port) {
               Err("Closed".into())
             } else {
-              inner.lock().push_back((port.to_owned(), payload.into()));
-              inner
+              inner_buffer
+                .lock()
+                .push_back((port.to_owned(), payload.into()));
+              inner_buffer
                 .lock()
                 .push_back((port.to_owned(), Packet::V0(Payload::Done)));
               closed_inner.lock().insert(port.to_owned());
@@ -100,7 +109,7 @@ impl TryFrom<&WapcModule> for WasmHost {
             }
           }
           OutputSignal::Done => {
-            inner
+            inner_buffer
               .lock()
               .push_back((port.to_owned(), Packet::V0(Payload::Done)));
             closed_inner.lock().insert(port.to_owned());
@@ -110,8 +119,9 @@ impl TryFrom<&WapcModule> for WasmHost {
         Err(_) => Err("Invalid signal".into()),
       }
     })?;
-    trace!(
-      "PRV:WASM:Wasmtime initialized in {} μs",
+    vino_macros::elapsed!();
+    info!(
+      "Wasmtime thread initialized in {} μs",
       time.elapsed().as_micros()
     );
     Ok(Self {

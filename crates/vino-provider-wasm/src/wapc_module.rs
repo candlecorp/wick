@@ -1,5 +1,3 @@
-use std::fs::File;
-use std::io::prelude::*;
 use std::path::Path;
 
 use vino_wascap::{
@@ -22,26 +20,19 @@ impl WapcModule {
   /// an unsigned module, or a module signed improperly, will result in an error.
   pub fn from_slice(buf: &[u8]) -> Result<WapcModule, WasmProviderError> {
     let token = vino_wascap::extract_claims(&buf)?;
-    token.map_or(
-      Err(WasmProviderError::ClaimsError(
-        "Could not extract claims from component".to_owned(),
-      )),
-      |t| {
-        Ok(WapcModule {
-          token: t,
-          bytes: buf.to_vec(),
-        })
-      },
-    )
+    token.map_or(Err(WasmProviderError::ClaimsExtraction), |t| {
+      Ok(WapcModule {
+        token: t,
+        bytes: buf.to_vec(),
+      })
+    })
   }
 
   /// Create an actor from a signed WebAssembly (`.wasm`) file.
-  pub fn from_file(path: &Path) -> Result<WapcModule, WasmProviderError> {
-    let mut file = File::open(path)?;
-    let mut buf = Vec::new();
-    file.read_to_end(&mut buf)?;
+  pub async fn from_file(path: &Path) -> Result<WapcModule, WasmProviderError> {
+    let file = tokio::fs::read(path).await?;
 
-    WapcModule::from_slice(&buf).map_err(|_| WasmProviderError::FileNotFound(path.to_path_buf()))
+    WapcModule::from_slice(&file)
   }
 
   /// Obtain the issuer's public key as it resides in the actor's token (the `iss` field of the JWT).

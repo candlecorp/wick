@@ -1,10 +1,11 @@
 use thiserror::Error;
+use vino_runtime::error::RuntimeError;
 
 type BoxedErrorSyncSend = Box<dyn std::error::Error + Sync + Send>;
 // type BoxedError = Box<dyn std::error::Error>;
 
 #[derive(Error, Debug)]
-pub enum VinoHostError {
+pub enum HostError {
   #[error("invalid configuration")]
   ConfigurationError,
   #[error("File not found {0}")]
@@ -18,7 +19,7 @@ pub enum VinoHostError {
   #[error("Could not start host: {0}")]
   HostStartFailure(String),
   #[error(transparent)]
-  VinoError(#[from] vino_runtime::Error),
+  RuntimeError(#[from] Box<vino_runtime::Error>),
   #[error(transparent)]
   CodecError(#[from] vino_codec::Error),
   #[error(transparent)]
@@ -47,20 +48,26 @@ pub enum VinoHostError {
   Other(String),
 }
 
-impl From<BoxedErrorSyncSend> for VinoHostError {
+impl From<BoxedErrorSyncSend> for HostError {
   fn from(e: BoxedErrorSyncSend) -> Self {
-    VinoHostError::Other(e.to_string())
+    HostError::Other(e.to_string())
   }
 }
 
-impl From<String> for VinoHostError {
+impl From<String> for HostError {
   fn from(e: String) -> Self {
-    VinoHostError::Other(e)
+    HostError::Other(e)
   }
 }
 
-impl From<&'static str> for VinoHostError {
+impl From<&'static str> for HostError {
   fn from(e: &'static str) -> Self {
-    VinoHostError::Other(e.to_owned())
+    HostError::Other(e.to_owned())
+  }
+}
+
+impl From<RuntimeError> for HostError {
+  fn from(e: RuntimeError) -> Self {
+    HostError::RuntimeError(Box::new(e))
   }
 }

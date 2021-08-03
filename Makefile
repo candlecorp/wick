@@ -1,4 +1,3 @@
-.PHONY: all codegen install build clean test update-lint build-docker
 
 # Enforce bash as the shell for consistency
 SHELL := bash
@@ -17,6 +16,8 @@ TEST_WASM_DIR=$(CRATES_DIR)/integration/test-wapc-component
 TEST_WASM=$(TEST_WASM_DIR)/build/test_component_s.wasm
 
 BINS=vino vinoc vino-collection-inmemory vow vino-authentication-inmemory vino-collection-fs
+
+.PHONY: all codegen install build clean test update-lint build-release wasm
 
 all: build
 
@@ -45,7 +46,7 @@ clean:
 	done
 
 install: $(BINS)
-	cargo build --workspace
+	cargo build --workspace --release
 	cp build/local/* ~/.cargo/bin/
 
 build: ./build/local codegen
@@ -59,6 +60,8 @@ build-release: ./build/local
 
 ./build/local:
 	mkdir -p ./build/local
+
+wasm: $(TEST_WASM)
 
 test: $(TEST_WASM)
 	cargo test --workspace

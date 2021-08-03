@@ -72,14 +72,16 @@
 )]
 // !!END_LINTS
 // Add exceptions here
-#![allow(unsafe_code, missing_docs)] //TODO
-
+#![allow()]
+//
 /// Version 0 of the output format
 pub mod v0;
 
+/// The crate's error module
 pub mod error;
 
 pub use vino_codec as codec;
+
 /// Module for [Packet], the versioned Vino message structure.
 pub mod packet;
 pub use packet::*;

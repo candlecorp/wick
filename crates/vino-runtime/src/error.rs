@@ -52,7 +52,7 @@ pub enum NetworkError {
   #[error("Maximum number of tries reached when resolving internal schematic references")]
   MaxTriesReached,
   #[error(transparent)]
-  SchematicError(#[from] SchematicError),
+  SchematicError(#[from] Box<SchematicError>),
   #[error(transparent)]
   ComponentError(#[from] ProviderError),
   #[error(transparent)]

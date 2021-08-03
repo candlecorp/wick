@@ -3,8 +3,6 @@ use thiserror::Error;
 #[derive(Error, Debug)]
 pub enum VowError {
   #[error(transparent)]
-  LoggerError(#[from] logger::error::LoggerError),
-  #[error(transparent)]
   ComponentError(#[from] vino_provider_wasm::Error),
   #[error(transparent)]
   RpcError(#[from] Box<vino_rpc::Error>),

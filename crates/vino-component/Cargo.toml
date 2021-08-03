@@ -11,8 +11,8 @@ wasm = []
 native = []
 
 [dependencies]
-serde = { version = "1.0.126", features = ["derive"] }
 vino-codec = { path = "../vino-codec" }
+serde = { version = "1.0.126", features = ["derive"] }
 serde-value = "0.7.0"
 
 [dev-dependencies]

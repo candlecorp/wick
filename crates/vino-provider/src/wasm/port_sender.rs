@@ -14,14 +14,14 @@ pub trait PortSender {
     port_send(
       &self.get_invocation_id(),
       &self.get_name(),
-      v0::Payload::to_messagepack(payload),
+      v0::Payload::messagepack(payload),
     )
   }
   fn done(&self, payload: &Self::Output) -> CallResult {
     port_send_close(
       &self.get_invocation_id(),
       &self.get_name(),
-      v0::Payload::to_messagepack(payload),
+      v0::Payload::messagepack(payload),
     )
   }
   fn exception(&self, message: String) -> CallResult {

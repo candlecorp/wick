@@ -20,13 +20,14 @@ pub(crate) struct ServeCommand {
 }
 
 pub(crate) async fn handle_command(opts: ServeCommand) -> Result<()> {
+  vino_provider_cli::init_logging(&opts.cli.logging)?;
   debug!("Loading wasm {}", opts.wasm);
   let component =
     vino_provider_wasm::helpers::load_wasm(&opts.wasm, opts.pull.latest, &opts.pull.insecure)
       .await?;
 
   vino_provider_cli::init_cli(
-    Arc::new(Mutex::new(Provider::new(component, 5))),
+    Arc::new(Mutex::new(Provider::try_from_module(component, 5)?)),
     Some(opts.cli.into()),
   )
   .await?;

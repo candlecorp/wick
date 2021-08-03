@@ -5,10 +5,8 @@ authors = ["Jarrod Overson <jsoverson@gmail.com>"]
 edition = "2018"
 license = "Apache-2.0"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
+vino-transport = { path = "../vino-transport" }
 colored = "2.0.0"
 tracing = "0.1.26"
-vino-transport = { path = "../vino-transport" }
 lazy_static = "1.4.0"

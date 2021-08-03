@@ -52,7 +52,7 @@ pub fn port_send(invocation_id: &str, port_name: &str, packet: v0::Payload) -> C
   host_call(
     invocation_id,
     port_name,
-    OutputSignal::Output.to_str(),
+    OutputSignal::Output.as_str(),
     &serialize(&Packet::V0(packet))?,
   )
 }
@@ -61,13 +61,13 @@ pub fn port_send_close(invocation_id: &str, port_name: &str, packet: v0::Payload
   host_call(
     invocation_id,
     port_name,
-    OutputSignal::OutputDone.to_str(),
+    OutputSignal::OutputDone.as_str(),
     &serialize(&Packet::V0(packet))?,
   )
 }
 
 pub fn port_close(invocation_id: &str, port_name: &str) -> CallResult {
-  host_call(invocation_id, port_name, OutputSignal::Done.to_str(), &[])
+  host_call(invocation_id, port_name, OutputSignal::Done.as_str(), &[])
 }
 
 /// The function through which all host calls take place.

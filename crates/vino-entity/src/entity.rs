@@ -198,6 +198,7 @@ impl Entity {
   pub fn into_component(self) -> Result<String> {
     match self {
       Entity::Component(s) => Ok(s),
+      Entity::Schematic(s) => Ok(s),
       _ => Err(Error::ConversionError("into_component")),
     }
   }

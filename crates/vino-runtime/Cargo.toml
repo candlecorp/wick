@@ -44,7 +44,7 @@ tracing-actix = "0.3.0"
 log = "0.4.14"
 
 [dev-dependencies]
-env_logger = "0.8.3"
+env_logger = "0.9"
 test-env-log = { version = "0.2.7", features = ["trace"] }
 maplit = "1.0.2"
 test-vino-provider = { path = "../integration/test-vino-provider" }

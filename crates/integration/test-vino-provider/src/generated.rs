@@ -96,12 +96,12 @@ pub(crate) mod test_component {
 
   #[derive(Debug)]
   pub(crate) struct OutputPortSender {
-    port: Port,
+    port: PortChannel,
   }
   impl Default for OutputPortSender {
     fn default() -> Self {
       Self {
-        port: Port::new("output".into()),
+        port: PortChannel::new("output".into()),
       }
     }
   }
@@ -121,7 +121,7 @@ pub(crate) mod test_component {
   pub(crate) fn get_outputs() -> (Outputs, MessageTransportStream) {
     let mut outputs = Outputs::default();
     let mut ports = vec![&mut outputs.output.port];
-    let stream = PortStream::create(&mut ports);
+    let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)
   }
 }

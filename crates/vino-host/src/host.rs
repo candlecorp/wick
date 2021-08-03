@@ -73,7 +73,6 @@ impl Host {
     Ok(())
   }
 
-  #[allow(clippy::too_many_arguments)]
   pub async fn start_rpc_server(&mut self, opts: Option<CliOpts>) -> Result<ServerMetadata> {
     let network_id = self.get_network_id()?;
     let metadata = tokio::spawn(vino_provider_cli::start_server(
@@ -205,7 +204,6 @@ mod test {
           port: Some(54321),
           ..Default::default()
         }),
-        logging: None,
         ..Default::default()
       }))
       .await?;

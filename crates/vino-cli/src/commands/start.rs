@@ -35,6 +35,8 @@ pub(crate) async fn handle_command(command: StartCommand) -> Result<String> {
 
   let mut host = host_builder.build();
 
+  vino_provider_cli::init_logging(&command.server_options.logging)?;
+
   debug!("Starting host");
   match host.start().await {
     Ok(_) => {

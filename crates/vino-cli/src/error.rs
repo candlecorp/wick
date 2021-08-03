@@ -17,6 +17,8 @@ pub enum VinoError {
   #[error("Failed to deserialize configuration {0}")]
   ConfigurationDeserialization(String),
   #[error(transparent)]
+  CliError(#[from] vino_provider_cli::Error),
+  #[error(transparent)]
   VinoHostError(#[from] vino_host::Error),
   #[error(transparent)]
   VinoRuntimeError(#[from] vino_runtime::Error),

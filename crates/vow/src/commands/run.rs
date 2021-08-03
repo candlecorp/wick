@@ -6,6 +6,7 @@ use vino_provider::native::prelude::{
   Entity,
   TransportMap,
 };
+use vino_provider_cli::LoggingOptions;
 use vino_provider_wasm::provider::Provider;
 use vino_rpc::RpcHandler;
 
@@ -24,14 +25,14 @@ pub(crate) struct RunCommand {
   data: Option<String>,
 
   #[structopt(flatten)]
-  pub(crate) logging: super::LoggingOptions,
+  pub(crate) logging: LoggingOptions,
 
   #[structopt(flatten)]
   pub(crate) pull: super::PullOptions,
 }
 
 pub(crate) async fn handle_command(opts: RunCommand) -> Result<()> {
-  logger::Logger::init(&opts.logging)?;
+  vino_provider_cli::init_logging(&opts.logging)?;
   let data = match opts.data {
     None => {
       eprintln!("No input passed, reading from <STDIN>");
@@ -49,7 +50,7 @@ pub(crate) async fn handle_command(opts: RunCommand) -> Result<()> {
     vino_provider_wasm::helpers::load_wasm(&opts.wasm, opts.pull.latest, &opts.pull.insecure)
       .await?;
 
-  let provider = Provider::new(component, 1);
+  let provider = Provider::try_from_module(component, 1)?;
 
   let mut response = provider
     .invoke(Entity::Component(opts.component_name), payload)

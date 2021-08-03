@@ -8,7 +8,7 @@ macro_rules! ensure {
     };
     ($cond:expr, $msg:literal $(,)?) => {
         if !$cond {
-            return Err($crate::error::VinoHostError::Other($msg.to_owned()));
+            return Err($crate::error::HostError::Other($msg.to_owned()));
         }
     };
     ($cond:expr, $err:expr $(,)?) => {

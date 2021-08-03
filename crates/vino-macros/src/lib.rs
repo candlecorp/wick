@@ -134,7 +134,7 @@ macro_rules! Ok {
 macro_rules! log_tap {
   ($expr:expr $(,)?) => {{
     let _e = $expr;
-    use vino_macros::colored::Colorize;
+    use $crate::colored::Colorize;
     let indent = "]]]]".to_owned().blue().blink();
     println!(
       "{}\n{} {}\n{}",
@@ -184,7 +184,7 @@ pub use colored;
 macro_rules! highlight {
     ($($arg:tt)+) => (
       {
-        use vino_macros::colored::Colorize;
+        use $crate::colored::Colorize;
         let indent = ">>>>>".to_owned().yellow().blink();
         let focus = ">>>>>>".to_owned().red().blink();
         let start = ">>>".to_owned().blue().blink();
@@ -357,10 +357,10 @@ lazy_static::lazy_static!(
 #[doc(hidden)]
 macro_rules! mark {
   () => {{
-    let _ = vino_macros::START_TIMES.lock().and_then(|mut h| {
-      h.insert(function_path!(), std::time::Instant::now());
-      let msg = format!("BENCH::mark:{}:{}", function_path!(), line!());
-      use vino_macros::colored::Colorize;
+    let _ = $crate::START_TIMES.lock().and_then(|mut h| {
+      h.insert($crate::function_path!(), std::time::Instant::now());
+      let msg = format!("BENCH::mark:{}:{}", $crate::function_path!(), line!());
+      use $crate::colored::Colorize;
       println!("{}", msg.yellow());
       Ok(())
     });
@@ -384,13 +384,19 @@ macro_rules! function_path {
 #[doc(hidden)]
 macro_rules! elapsed {
   () => {{
-    let _ = vino_macros::START_TIMES.lock().and_then(|h| {
-      let time = h.get(&function_path!());
+    let _ = $crate::START_TIMES.lock().and_then(|h| {
+      let time = h.get(&$crate::function_path!());
       let elapsed = time
         .map(|t| t.elapsed().as_micros().to_string())
         .unwrap_or("no start time marked...".to_owned());
-      use vino_macros::colored::Colorize;
-      let msg = format!("BENCH::{}:{}: +{}", function_path!(), line!(), elapsed).yellow();
+      use $crate::colored::Colorize;
+      let msg = format!(
+        "BENCH::{}:{}: +{}",
+        $crate::function_path!(),
+        line!(),
+        elapsed
+      )
+      .yellow();
       println!("{}", msg);
       Ok(())
     });

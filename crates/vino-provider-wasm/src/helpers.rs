@@ -3,8 +3,8 @@ use std::path::Path;
 use crate::error::WasmProviderError;
 pub use crate::wapc_module::WapcModule;
 
-pub fn load_wasm_from_file(path: &Path) -> Result<WapcModule, WasmProviderError> {
-  WapcModule::from_file(path)
+pub async fn load_wasm_from_file(path: &Path) -> Result<WapcModule, WasmProviderError> {
+  WapcModule::from_file(path).await
 }
 
 pub async fn load_wasm_from_oci(
@@ -24,7 +24,7 @@ pub async fn load_wasm(
   let path = Path::new(&location);
   if path.exists() {
     debug!("PRV:WASM:AS_FILE:{}", location);
-    Ok(WapcModule::from_file(path)?)
+    Ok(WapcModule::from_file(path).await?)
   } else {
     debug!("PRV:WASM:AS_OCI:{}", location);
     load_wasm_from_oci(location, allow_latest, allowed_insecure).await

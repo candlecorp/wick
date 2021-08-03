@@ -20,11 +20,18 @@ pub struct WasmService {
 }
 
 impl WasmService {
-  #[must_use]
-  pub fn new(module: &WapcModule) -> Self {
-    Self {
+  pub fn new(host: WasmHost) -> Self {
+    Self { host }
+  }
+}
+
+impl TryFrom<&WapcModule> for WasmService {
+  type Error = crate::Error;
+
+  fn try_from(module: &WapcModule) -> Result<Self> {
+    Ok(Self {
       host: WasmHost::try_from(module).unwrap(),
-    }
+    })
   }
 }
 

@@ -78,6 +78,7 @@
 
 /// The crate's error module;
 pub mod error;
+
 /// The core module
 pub mod message_transport;
 

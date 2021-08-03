@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::convert::TryFrom;
 
 use actix::{
   Addr,
@@ -17,11 +18,13 @@ use vino_rpc::{
 use vino_transport::message_transport::TransportMap;
 
 use crate::wapc_module::WapcModule;
+use crate::wasm_host::WasmHost;
 use crate::wasm_service::{
   Call,
   GetComponents,
   WasmService,
 };
+use crate::Error;
 
 #[derive(Debug, Default)]
 pub struct State {
@@ -35,12 +38,15 @@ pub struct Provider {
 }
 
 impl Provider {
-  #[must_use]
-  pub fn new(module: WapcModule, threads: usize) -> Self {
+  pub fn try_from_module(module: WapcModule, threads: usize) -> Result<Self, Error> {
     debug!("PRV:WASM:START:{} Threads", threads);
-    let addr = SyncArbiter::start(threads, move || WasmService::new(&module));
 
-    Self { context: addr }
+    let addr = SyncArbiter::start(threads, move || {
+      let host = WasmHost::try_from(&module).unwrap();
+      WasmService::new(host)
+    });
+
+    Ok(Self { context: addr })
   }
 }
 
@@ -115,8 +121,8 @@ mod tests {
   use std::str::FromStr;
 
   use anyhow::Result as TestResult;
-  use futures::prelude::*;
   use maplit::hashmap;
+  use tokio_stream::StreamExt;
   use vino_provider::native::prelude::*;
 
   use super::*;
@@ -125,9 +131,10 @@ mod tests {
   async fn test_component() -> TestResult<()> {
     let component = crate::helpers::load_wasm_from_file(&PathBuf::from_str(
       "../integration/test-wapc-component/build/test_component_s.wasm",
-    )?)?;
+    )?)
+    .await?;
 
-    let provider = Provider::new(component, 2);
+    let provider = Provider::try_from_module(component, 2)?;
     let input = "Hello world";
 
     let job_payload = TransportMap::with_map(hashmap! {

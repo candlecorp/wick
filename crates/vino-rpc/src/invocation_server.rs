@@ -232,7 +232,7 @@ impl InvocationService for InvocationServer {
       .as_ref()
       .ok_or_else(|| Status::failed_precondition("No kind given"))?;
 
-    let list = match kind {
+    let stats = match kind {
       stats_request::Kind::All(_format) => provider
         .get_stats(None)
         .await
@@ -244,7 +244,7 @@ impl InvocationService for InvocationServer {
     };
 
     Ok(Response::new(StatsResponse {
-      stats: list.into_iter().map(From::from).collect(),
+      stats: stats.into_iter().map(From::from).collect(),
     }))
   }
 }

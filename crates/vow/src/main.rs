@@ -73,6 +73,7 @@
 
 use structopt::clap::AppSettings;
 use structopt::StructOpt;
+use vino_provider_cli::LoggingOptions;
 
 pub(crate) mod commands;
 pub mod error;
@@ -95,7 +96,7 @@ pub struct CliOptions {
   data: Option<String>,
 
   #[structopt(flatten)]
-  pub logging: logger::LoggingOptions,
+  pub logging: LoggingOptions,
 }
 
 #[derive(StructOpt, Debug, Clone)]

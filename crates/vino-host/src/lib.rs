@@ -88,8 +88,8 @@ pub use builder::HostBuilder;
 pub use host::Host;
 pub use host_definition::HostDefinition;
 
-pub(crate) type Result<T> = std::result::Result<T, error::VinoHostError>;
-pub type Error = error::VinoHostError;
+pub(crate) type Result<T> = std::result::Result<T, error::HostError>;
+pub type Error = error::HostError;
 
 #[cfg(test)]
 mod test {}

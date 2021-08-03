@@ -100,6 +100,7 @@ use ring::digest::{
   SHA256,
 };
 use vino_types::signatures::ProviderSignature;
+pub use wascap;
 pub use wascap::jwt::Token;
 pub use wascap::prelude::{
   validate_token,

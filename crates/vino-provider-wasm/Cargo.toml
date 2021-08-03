@@ -18,13 +18,14 @@ vino-wascap = { path = "../vino-wascap" }
 vino-provider = { path = "../vino-provider", features = ["native"] }
 vino-transport = { path = "../vino-transport" }
 vino-types = { path = "../vino-types" }
+vino-macros = { path = "../vino-macros" }
 oci-utils = { path = "../oci-utils" }
 structopt = "0.3.22"
 actix-rt = "2.2.0"
 actix = "0.12.0"
 serde_json = "1.0.64"
 derivative = "2.2.0"
-tokio = { version = "1.4.0", features = [] }
+tokio = { version = "1.4.0", features = ["fs"] }
 parking_lot = "0.11.1"
 
 # wasm3-provider = { version="0.0.2", optional=true }

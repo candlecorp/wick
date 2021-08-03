@@ -32,8 +32,6 @@ pub struct Options {
   pub rpc: Option<ServerOptions>,
   /// HTTP server options
   pub http: Option<ServerOptions>,
-  /// Logging options
-  pub logging: Option<LoggingOptions>,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -72,8 +70,13 @@ impl From<DefaultCliOptions> for Options {
         key: None,
         ca: None,
       }),
-      logging: Some(opts.logging),
     }
+  }
+}
+
+impl From<DefaultCliOptions> for LoggingOptions {
+  fn from(opts: DefaultCliOptions) -> Self {
+    opts.logging
   }
 }
 
@@ -112,6 +115,10 @@ pub struct DefaultCliOptions {
   /// Logging options
   #[structopt(flatten)]
   pub logging: LoggingOptions,
+
+  /// Outputs the version
+  #[structopt(long = "version", short = "v")]
+  pub version: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -124,6 +131,13 @@ pub struct ServerMetadata {
   pub http_addr: Option<SocketAddr>,
 }
 
+/// Initializes logging with Vino's logger
+pub fn init_logging(options: &LoggingOptions) -> crate::Result<()> {
+  logger::Logger::init(options)?;
+
+  Ok(())
+}
+
 /// Starts an RPC and/or an HTTP server for the passed [RpcHandler]
 pub async fn start_server(
   provider: Arc<Mutex<dyn RpcHandler>>,
@@ -132,9 +146,6 @@ pub async fn start_server(
   debug!("Starting provider RPC server");
 
   let opts = opts.unwrap_or_default();
-  if let Some(log_options) = opts.logging {
-    logger::Logger::init(&log_options)?;
-  }
 
   let rpc_options = opts.rpc.unwrap_or_default();
 
@@ -288,7 +299,6 @@ mod tests {
           port: Some(8111),
           ..Default::default()
         }),
-        logging: None,
       }),
     )
     .await?;

@@ -1,13 +1,14 @@
-use anyhow::anyhow;
 use env_logger::WriteStyle;
 use structopt::StructOpt;
 
-fn parse_write_style(spec: &str) -> anyhow::Result<WriteStyle> {
+use crate::error::LoggerError;
+
+fn parse_write_style(spec: &str) -> Result<WriteStyle, LoggerError> {
   match spec {
     "auto" => Ok(WriteStyle::Auto),
     "always" => Ok(WriteStyle::Always),
     "never" => Ok(WriteStyle::Never),
-    _ => Err(anyhow!("Configuration error")),
+    _ => Err(LoggerError::StyleParse),
   }
 }
 
@@ -17,10 +18,6 @@ pub struct LoggingOptions {
   /// Disables logging
   #[structopt(long = "quiet", short = "q")]
   pub quiet: bool,
-
-  /// Outputs the version
-  #[structopt(long = "version", short = "v")]
-  pub version: bool,
 
   /// Turns on verbose logging
   #[structopt(long = "verbose", short = "V")]
@@ -38,12 +35,12 @@ pub struct LoggingOptions {
   #[structopt(long = "json")]
   pub json: bool,
 
-  /// Log style
+  /// Print log output as color. Options are auto | always | never.
   #[structopt(
-        long = "log-style",
-        env = "VINO_LOG_STYLE",
+        long = "color",
+        env = "LOG_COLOR",
         parse(try_from_str = parse_write_style),
         default_value="auto"
     )]
-  pub log_style: WriteStyle,
+  pub color: WriteStyle,
 }

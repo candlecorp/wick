@@ -1572,14 +1572,15 @@ dependencies = [
 name = "logger"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "chrono",
  "colored",
- "env_logger 0.8.4",
+ "env_logger 0.9.0",
+ "lazy_static",
  "log",
  "serde_json",
  "structopt",
  "thiserror",
+ "tracing",
 ]
 
 [[package]]
@@ -3610,7 +3611,7 @@ dependencies = [
  "actix-rt",
  "chrono",
  "colored",
- "env_logger 0.8.4",
+ "env_logger 0.9.0",
  "futures",
  "log",
  "logger",
@@ -3802,7 +3803,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "enum-primitive-derive",
- "env_logger 0.8.4",
+ "env_logger 0.9.0",
  "hocon",
  "lazy_static",
  "num-traits",
@@ -3920,6 +3921,7 @@ dependencies = [
  "tracing-subscriber",
  "vino-codec",
  "vino-component",
+ "vino-macros",
  "vino-provider",
  "vino-rpc",
  "vino-transport",
@@ -3968,7 +3970,7 @@ dependencies = [
  "async-trait",
  "criterion",
  "derivative",
- "env_logger 0.8.4",
+ "env_logger 0.9.0",
  "futures",
  "itertools 0.10.1",
  "lazy_static",
@@ -4095,7 +4097,6 @@ dependencies = [
  "async-trait",
  "env_logger 0.9.0",
  "futures",
- "logger",
  "maplit",
  "serde",
  "serde-value",

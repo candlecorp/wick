@@ -48,13 +48,13 @@ pub mod add_item {
 
   #[derive(Debug)]
   pub struct DocumentIdPortSender {
-    port: Port,
+    port: PortChannel,
   }
 
   impl Default for DocumentIdPortSender {
     fn default() -> Self {
       Self {
-        port: Port::new("document_id".into()),
+        port: PortChannel::new("document_id".into()),
       }
     }
   }
@@ -74,7 +74,7 @@ pub mod add_item {
   pub fn get_outputs() -> (Outputs, MessageTransportStream) {
     let mut outputs = Outputs::default();
     let mut ports = vec![&mut outputs.document_id.port];
-    let stream = PortStream::create(&mut ports);
+    let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)
   }
 }
@@ -117,13 +117,13 @@ pub mod get_item {
 
   #[derive(Debug)]
   pub struct DocumentPortSender {
-    port: Port,
+    port: PortChannel,
   }
 
   impl Default for DocumentPortSender {
     fn default() -> Self {
       Self {
-        port: Port::new("document".into()),
+        port: PortChannel::new("document".into()),
       }
     }
   }
@@ -143,7 +143,7 @@ pub mod get_item {
   pub fn get_outputs() -> (Outputs, MessageTransportStream) {
     let mut outputs = Outputs::default();
     let mut ports = vec![&mut outputs.document.port];
-    let stream = PortStream::create(&mut ports);
+    let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)
   }
 }
@@ -183,13 +183,13 @@ pub mod list_items {
 
   #[derive(Debug)]
   pub struct DocumentIdsPortSender {
-    port: Port,
+    port: PortChannel,
   }
 
   impl Default for DocumentIdsPortSender {
     fn default() -> Self {
       Self {
-        port: Port::new("document_ids".into()),
+        port: PortChannel::new("document_ids".into()),
       }
     }
   }
@@ -209,7 +209,7 @@ pub mod list_items {
   pub fn get_outputs() -> (Outputs, MessageTransportStream) {
     let mut outputs = Outputs::default();
     let mut ports = vec![&mut outputs.document_ids.port];
-    let stream = PortStream::create(&mut ports);
+    let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)
   }
 }
@@ -252,7 +252,7 @@ pub mod rm_item {
   pub fn get_outputs() -> (Outputs, MessageTransportStream) {
     let mut outputs = Outputs::default();
     let mut ports = vec![];
-    let stream = PortStream::create(&mut ports);
+    let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)
   }
 }

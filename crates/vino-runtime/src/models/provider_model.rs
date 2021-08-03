@@ -102,9 +102,9 @@ async fn initialize_wasm_provider(
     vino_provider_wasm::helpers::load_wasm(&provider.reference, allow_latest, allowed_insecure)
       .await?;
 
-  let provider = Arc::new(Mutex::new(vino_provider_wasm::provider::Provider::new(
-    component, 2,
-  )));
+  let provider = Arc::new(Mutex::new(
+    vino_provider_wasm::provider::Provider::try_from_module(component, 2)?,
+  ));
 
   let addr = NativeProviderService::start_in_arbiter(&handle, |_| NativeProviderService::default());
   addr
