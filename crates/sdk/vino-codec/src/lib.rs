@@ -77,10 +77,15 @@
 
 /// The crate's error module
 pub mod error;
+
 /// JSON serialization/deserialization
+#[cfg(feature = "json")]
 pub mod json;
+
 /// MessagePack serialization/deserialization
+#[cfg(feature = "messagepack")]
 pub mod messagepack;
+
 /// Serialization/deserialization implementations to raw [serde_value]s
 pub mod raw;
 

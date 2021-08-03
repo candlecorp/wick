@@ -72,7 +72,7 @@
 )]
 // !!END_LINTS
 // Add exceptions here
-#![allow(missing_docs)] //TODO
+#![allow()]
 
 #[cfg(feature = "wasm")]
 /// Traits and functions for wasm providers
@@ -86,23 +86,26 @@ pub mod native;
 /// Signatures of Vino types
 pub mod signatures;
 
-pub mod port_sender;
-
 use std::str::FromStr;
 
 pub use vino_codec as codec;
 
 #[allow(missing_debug_implementations, missing_copy_implementations)]
 #[must_use]
+/// The [OutputSignal] enum is a way of combining port output and messaging signal into one message. Used for WASM modules to reduce the number of calls between the host and guest.
 pub enum OutputSignal {
+  /// A single output.
   Output,
+  /// An output and a done signal.
   OutputDone,
+  /// A done signal.
   Done,
 }
 
 impl OutputSignal {
   #[must_use]
-  pub fn to_str(&self) -> &'static str {
+  #[doc(hidden)]
+  pub fn as_str(&self) -> &'static str {
     match self {
       OutputSignal::Output => "1",
       OutputSignal::OutputDone => "2",

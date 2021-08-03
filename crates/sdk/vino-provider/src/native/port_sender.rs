@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use log::*;
 use serde::Serialize;
 use tokio::sync::mpsc::{
@@ -26,30 +24,29 @@ use super::error::Error;
 
 type Result = std::result::Result<(), Error>;
 
-// TODO: This should be somewhere else
-#[doc(hidden)]
+/// The native PortSender trait. This trait encapsulates sending messages out of native ports.
 pub trait PortSender {
-  /// The type of data that the port outputs
+  /// The type of data that the port outputs.
   type PayloadType: Serialize + Send + 'static;
 
-  /// Get the port buffer that the sender can push to
+  /// Get the port buffer that the sender can push to.
   fn get_port(&self) -> UnboundedSender<PacketWrapper>;
 
-  /// Get the port's name
+  /// Get the port's name.
   fn get_port_name(&self) -> String;
 
-  /// Buffer a message
+  /// Buffer a message.
   fn send(&self, data: &Self::PayloadType) -> Result {
     self.push(Packet::V0(ComponentPayload::success(data)))
   }
 
-  /// Buffer a message then close the port
+  /// Buffer a message then close the port.
   fn done(&self, data: &Self::PayloadType) -> Result {
     self.send(data)?;
     self.send_message(Packet::V0(ComponentPayload::Done))
   }
 
-  /// Buffer a complete Output message then close the port
+  /// Buffer a complete Output message then close the port.
   fn push(&self, output: Packet) -> Result {
     self.get_port().send(PacketWrapper {
       payload: output,
@@ -58,7 +55,7 @@ pub trait PortSender {
     Ok(())
   }
 
-  /// Buffer a payload
+  /// Buffer a payload.
   fn send_message(&self, packet: Packet) -> Result {
     self.get_port().send(PacketWrapper {
       payload: packet,
@@ -67,13 +64,13 @@ pub trait PortSender {
     Ok(())
   }
 
-  /// Buffer a payload then close the port
+  /// Buffer a payload then close the port.
   fn done_message(&self, packet: Packet) -> Result {
     self.send_message(packet)?;
     self.send_message(Packet::V0(ComponentPayload::Done))
   }
 
-  /// Buffer an exception
+  /// Buffer an exception.
   fn send_exception(&self, payload: String) -> Result {
     self.get_port().send(PacketWrapper {
       payload: Packet::V0(ComponentPayload::Exception(payload)),
@@ -82,81 +79,56 @@ pub trait PortSender {
     Ok(())
   }
 
-  /// Buffer an exception then close the port
+  /// Buffer an exception then close the port.
   fn done_exception(&self, payload: String) -> Result {
     self.send_exception(payload)?;
     self.send_message(Packet::V0(ComponentPayload::Done))
   }
 
+  /// Signal that a job is finished with the port.
   fn close(&self) -> Result {
     self.send_message(Packet::V0(ComponentPayload::Done))
   }
 }
 
-#[doc(hidden)]
+/// A [PortChannel] wraps an unbounded channel with a port name.
 #[must_use]
 #[derive(Debug, Clone)]
-pub struct Port {
+pub struct PortChannel {
+  /// Port name.
   pub name: String,
+  /// An [UnboundedSender<PacketWrapper>] after initialized.
   pub channel: Option<UnboundedSender<PacketWrapper>>,
-  status: PortStatus,
 }
 
-impl Port {
-  #[doc(hidden)]
+impl PortChannel {
+  /// Constructor for a [PortChannel].
   pub fn new(name: String) -> Self {
     Self {
       name,
       channel: None,
-      status: PortStatus::Open,
     }
   }
-  #[doc(hidden)]
-  #[must_use]
-  pub fn is_closed(&self) -> bool {
-    self.status == PortStatus::Closed
-  }
-  pub fn create_channel(&mut self) -> UnboundedReceiver<PacketWrapper> {
+
+  /// Initialize the [PortChannel] and return a receiver.
+  pub fn init(&mut self) -> UnboundedReceiver<PacketWrapper> {
     let (tx, rx) = unbounded_channel();
     self.channel = Some(tx);
     rx
   }
-  #[doc(hidden)]
-  pub fn close(&mut self) {
-    self.status = PortStatus::Closed;
-  }
-}
 
-#[doc(hidden)]
-#[derive(Debug, PartialEq, Clone, Copy)]
-pub enum PortStatus {
-  Closed,
-  Open,
-}
-
-#[doc(hidden)]
-#[must_use]
-#[derive(Debug, Clone, Copy)]
-pub struct PortStream {}
-
-impl PortStream {
-  #[doc(hidden)]
-  #[must_use]
-  pub fn create(buffer: &mut [&mut Port]) -> MessageTransportStream {
+  /// Merge a list of [PortChannel]s into a MessageTransportStream
+  pub fn merge_all(buffer: &mut [&mut PortChannel]) -> MessageTransportStream {
     let (tx, rx) = unbounded_channel::<TransportWrapper>();
-    let channels: HashMap<String, UnboundedReceiverStream<PacketWrapper>> = buffer
-      .iter_mut()
-      .map(|p| {
-        (
-          p.name.clone(),
-          UnboundedReceiverStream::new(p.create_channel()),
-        )
-      })
-      .collect();
+
     let mut map = StreamMap::new();
-    for (k, v) in channels {
-      map.insert(k, v);
+    for channel in buffer {
+      map.insert(
+        channel.name.clone(),
+        UnboundedReceiverStream::new(channel.init()),
+      );
     }
+
     tokio::spawn(async move {
       while let Some((_, v)) = map.next().await {
         let transport: TransportWrapper = v.into();

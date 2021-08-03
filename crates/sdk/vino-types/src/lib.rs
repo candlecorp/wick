@@ -72,7 +72,7 @@
 )]
 // !!END_LINTS
 // Add exceptions here
-#![allow(unsafe_code, missing_docs)] //TODO
+#![allow()]
 
 /// Signatures of Vino types
 pub mod signatures;

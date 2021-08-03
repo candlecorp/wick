@@ -1,14 +1,13 @@
 [package]
 name = "vino-entity"
 version = "0.1.0"
+authors = ["Jarrod Overson <jsoverson@gmail.com>"]
 edition = "2018"
 license = "Apache-2.0"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
-vino-macros = { path="../vino-macros" }
-serde = { version="1.0.118", features=["derive"] }
+vino-macros = { path = "../vino-macros" }
+serde = { version = "1.0.118", features = ["derive"] }
 thiserror = "1.0.25"
 url = "2.2.2"
 

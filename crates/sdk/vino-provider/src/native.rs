@@ -3,13 +3,16 @@ use std::sync::{
   Mutex,
 };
 
+/// Module for native provider errors
 pub mod error;
 use async_trait::async_trait;
 pub use error::Error;
+/// Module for native ports
 pub mod port_sender;
 
 /// The type of a provider's context.
 pub type Context<T> = Arc<Mutex<T>>;
+/// The JobResult for native components
 pub type JobResult = Result<(), NativeComponentError>;
 
 #[async_trait]
@@ -33,12 +36,15 @@ use vino_transport::{
 
 use self::prelude::NativeComponentError;
 
+/// A list of imports that are common to native providers.
 pub mod prelude {
   use tokio::sync::mpsc::{
     UnboundedReceiver,
     UnboundedSender,
   };
+  /// Type alias for [UnboundedSender<PacketWrapper>];
   pub type PacketSender = UnboundedSender<PacketWrapper>;
+  /// Type alias for [UnboundedReceiver<PacketWrapper>];
   pub type PacketReceiver = UnboundedReceiver<PacketWrapper>;
   pub use async_trait::async_trait;
   pub use vino_component::PacketWrapper;
@@ -60,10 +66,8 @@ pub mod prelude {
     NativeComponentError,
   };
   pub use super::port_sender::{
-    Port,
+    PortChannel,
     PortSender,
-    PortStatus,
-    PortStream,
   };
   pub use super::{
     Context,
