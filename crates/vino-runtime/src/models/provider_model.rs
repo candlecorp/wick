@@ -30,7 +30,7 @@ pub(crate) async fn initialize_native_provider(
   let arbiter = Arbiter::new();
   let handle = arbiter.handle();
 
-  let provider = Arc::new(Mutex::new(vino_native_api_0::Provider::default()));
+  let provider = Box::new(vino_native_api_0::Provider::default());
   let addr = native_provider_service::NativeProviderService::start_in_arbiter(&handle, |_| {
     native_provider_service::NativeProviderService::default()
   });
@@ -72,7 +72,7 @@ async fn initialize_grpc_provider(
   let components = addr
     .send(grpc_provider_service::Initialize {
       namespace: namespace.to_owned(),
-      address: provider.reference.clone(),
+      address: provider.reference,
       signing_seed: seed.to_owned(),
     })
     .await??;
@@ -102,9 +102,9 @@ async fn initialize_wasm_provider(
     vino_provider_wasm::helpers::load_wasm(&provider.reference, allow_latest, allowed_insecure)
       .await?;
 
-  let provider = Arc::new(Mutex::new(
-    vino_provider_wasm::provider::Provider::try_from_module(component, 2)?,
-  ));
+  let provider = Box::new(vino_provider_wasm::provider::Provider::try_from_module(
+    component, 2,
+  )?);
 
   let addr = NativeProviderService::start_in_arbiter(&handle, |_| NativeProviderService::default());
   addr
@@ -136,7 +136,7 @@ pub(crate) async fn start_network_provider(
 ) -> Result<Addr<NativeProviderService>> {
   let arbiter = Arbiter::new();
   let handle = arbiter.handle();
-  let provider = Arc::new(Mutex::new(NetworkProvider::new(network_id)));
+  let provider = Box::new(NetworkProvider::new(network_id));
 
   let addr = NativeProviderService::start_in_arbiter(&handle, |_| NativeProviderService::default());
   addr
@@ -168,8 +168,8 @@ pub(crate) async fn initialize_provider(
   allow_latest: bool,
   allowed_insecure: &[String],
 ) -> Result<(ProviderChannel, ProviderModel)> {
+  trace!("PRV:Registering namespace {}", provider.namespace);
   let namespace = provider.namespace.clone();
-  trace!("PRV:Registering namespace {}", namespace);
   match provider.kind {
     ProviderKind::Native => unreachable!(), // Should not be handled via this route
     ProviderKind::GrpcUrl => initialize_grpc_provider(provider, seed, &namespace).await,

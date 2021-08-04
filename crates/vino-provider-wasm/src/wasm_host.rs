@@ -50,7 +50,6 @@ impl TryFrom<&WapcModule> for WasmHost {
     vino_wascap::validate_token::<ComponentClaims>(jwt).map_err(Error::ClaimsError)?;
 
     let time = Instant::now();
-    vino_macros::mark!();
     #[cfg(feature = "wasmtime")]
     #[allow(unused)]
     let engine = {
@@ -71,61 +70,53 @@ impl TryFrom<&WapcModule> for WasmHost {
       );
       engine
     };
-    vino_macros::elapsed!();
 
     let engine = Box::new(engine);
     let buffer = Arc::new(Mutex::new(PortBuffer::new()));
-    let inner_buffer = buffer.clone();
+    let buffer_inner = buffer.clone();
     let closed_ports = Arc::new(Mutex::new(HashSet::new()));
-    let closed_inner = closed_ports.clone();
+    let ports_inner = closed_ports.clone();
 
-    vino_macros::elapsed!();
     let host = WapcHost::new(engine, move |_id, _inv_id, port, output_signal, payload| {
       trace!("PRV:WASM:WAPC_CALLBACK:{:?}", payload);
+      let mut ports_locked = ports_inner.lock();
+      let mut buffer_locked = buffer_inner.lock();
       match OutputSignal::from_str(output_signal) {
         Ok(signal) => match signal {
           OutputSignal::Output => {
-            if closed_inner.lock().contains(port) {
+            if ports_locked.contains(port) {
               Err("Closed".into())
             } else {
-              inner_buffer
-                .lock()
-                .push_back((port.to_owned(), payload.into()));
+              buffer_locked.push_back((port.to_owned(), payload.into()));
               Ok(vec![])
             }
           }
           OutputSignal::OutputDone => {
-            if closed_inner.lock().contains(port) {
+            if ports_locked.contains(port) {
               Err("Closed".into())
             } else {
-              inner_buffer
-                .lock()
-                .push_back((port.to_owned(), payload.into()));
-              inner_buffer
-                .lock()
-                .push_back((port.to_owned(), Packet::V0(Payload::Done)));
-              closed_inner.lock().insert(port.to_owned());
+              buffer_locked.push_back((port.to_owned(), payload.into()));
+              buffer_locked.push_back((port.to_owned(), Packet::V0(Payload::Done)));
+              ports_locked.insert(port.to_owned());
               Ok(vec![])
             }
           }
           OutputSignal::Done => {
-            inner_buffer
-              .lock()
-              .push_back((port.to_owned(), Packet::V0(Payload::Done)));
-            closed_inner.lock().insert(port.to_owned());
+            buffer_locked.push_back((port.to_owned(), Packet::V0(Payload::Done)));
+            ports_locked.insert(port.to_owned());
             Ok(vec![])
           }
         },
         Err(_) => Err("Invalid signal".into()),
       }
     })?;
-    vino_macros::elapsed!();
+
     info!(
       "Wasmtime thread initialized in {} μs",
       time.elapsed().as_micros()
     );
     Ok(Self {
-      claims: module.claims(),
+      claims: module.claims().clone(),
       host,
       buffer,
       closed_ports,

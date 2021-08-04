@@ -83,7 +83,8 @@ pub mod options;
 /// The main Logger module
 pub mod logger;
 
-pub use logger::Logger;
 pub use options::LoggingOptions;
+
+pub use crate::logger::Logger;
 
 const FILTER_ENV: &str = "VINO_LOG";

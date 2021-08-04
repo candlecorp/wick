@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 
 use anyhow::Result;
+use log::*;
 use maplit::hashmap;
 use tonic::transport::Channel;
-use tracing::*;
 use vino_codec::messagepack::serialize;
 use vino_component::Packet;
 use vino_provider::native::prelude::*;
@@ -15,6 +15,7 @@ use vino_rpc::rpc::{
 use vino_rpc::{
   convert_transport_map,
   RpcHandler,
+  RpcHandlerType,
 };
 
 async fn list_components(port: &u16) -> Result<Vec<vino_rpc::rpc::Component>> {
@@ -193,10 +194,10 @@ async fn request_list_items(port: &u16) -> Result<()> {
   Ok(())
 }
 
-pub async fn test_api(provider: impl RpcHandler + 'static) -> Result<()> {
+pub async fn test_api(provider: RpcHandlerType) -> Result<()> {
   let socket = vino_rpc::bind_new_socket()?;
   let port = socket.local_addr()?.port();
-  vino_rpc::make_rpc_server(socket, provider);
+  let _server = vino_rpc::make_rpc_server(socket, provider);
 
   let components = list_components(&port).await?;
   println!("Reported components: {:#?}", components);

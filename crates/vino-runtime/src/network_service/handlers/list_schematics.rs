@@ -16,9 +16,12 @@ impl Handler<ListSchematics> for NetworkService {
     let requests = schematics
       .into_values()
       .map(|addr| addr.send(GetSignature {}));
-    type SchematicResult<T> = std::result::Result<T, SchematicError>;
     let task = async move {
-      let results: Vec<SchematicResult<SchematicSignature>> = join_or_err(requests, 5004).await?;
+      let mut results = Vec::new();
+      for msg in requests {
+        results.push(msg.await.map_err(|_| InternalError(5004))?);
+      }
+
       let mut signatures = vec![];
       for result in results {
         if let Err(err) = result {

@@ -83,4 +83,4 @@ pub type Error = error::Error;
 pub type Result<T> = std::result::Result<T, Error>;
 
 #[macro_use]
-extern crate tracing;
+extern crate log;

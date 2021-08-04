@@ -1,13 +1,14 @@
 use std::collections::VecDeque;
+use std::rc::Rc;
 use std::sync::Arc;
 
 use parking_lot::Mutex;
 use vino_transport::message_transport::TransportMap;
 
+use self::executor::SchematicOutput;
 use self::ports::PortStatuses;
 use crate::dev::prelude::*;
 use crate::schematic_service::handlers::component_payload::ComponentPayload;
-use crate::schematic_service::handlers::transaction_update::TransactionUpdate;
 use crate::schematic_service::input_message::InputMessage;
 type Result<T> = std::result::Result<T, TransactionError>;
 
@@ -15,9 +16,35 @@ pub(crate) mod executor;
 pub(crate) mod ports;
 
 #[derive(Debug)]
+pub enum TransactionUpdate {
+  Drained,
+  Error(String),
+  Transition(ConnectionTargetDefinition),
+  Execute(ComponentPayload),
+  Result(SchematicOutput),
+  Done(String),
+  Update(InputMessage),
+}
+
+impl std::fmt::Display for TransactionUpdate {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    let name = match self {
+      TransactionUpdate::Drained => "drained",
+      TransactionUpdate::Error(_) => "timeout",
+      TransactionUpdate::Transition(_) => "transition",
+      TransactionUpdate::Execute(_) => "execute",
+      TransactionUpdate::Result(_) => "result",
+      TransactionUpdate::Done(_) => "done",
+      TransactionUpdate::Update(_) => "update",
+    };
+    f.write_str(name)
+  }
+}
+
+#[derive(Debug)]
 struct Transaction {
   tx_id: String,
-  model: Arc<Mutex<SchematicModel>>,
+  model: SharedModel,
   ports: PortStatuses,
   output_ports: Vec<ConnectionTargetDefinition>,
   schematic_name: String,
@@ -26,16 +53,14 @@ struct Transaction {
 }
 
 impl Transaction {
-  fn new(tx_id: String, model: Arc<Mutex<SchematicModel>>) -> Self {
-    let ports = PortStatuses::new(tx_id.clone(), model.clone());
-    let locked = model.lock();
-    let senders: Vec<_> = locked.get_senders().cloned().collect();
-    let generators: Vec<_> = locked.get_generators().cloned().collect();
-
-    let schematic_name = locked.get_name();
-
-    let output_ports = locked.get_schematic_outputs().cloned().collect();
-    drop(locked);
+  fn new(tx_id: String, model: SharedModel) -> Self {
+    let ports = PortStatuses::new(tx_id.clone(), &model);
+    let readable = model.read();
+    let senders: Vec<_> = readable.get_senders().cloned().collect();
+    let generators: Vec<_> = readable.get_generators().cloned().collect();
+    let schematic_name = readable.get_name();
+    let output_ports = readable.get_schematic_outputs().cloned().collect();
+    drop(readable);
     Self {
       tx_id,
       model,
@@ -52,13 +77,12 @@ impl Transaction {
   }
 
   pub(crate) fn has_active_upstream(&self, port: &ConnectionTargetDefinition) -> bool {
-    let locked = self.model.lock();
-
-    let upstream = some_or_bail!(locked.get_upstream(port), false);
+    let model = self.model.read();
+    let upstream = some_or_bail!(model.get_upstream(port), false);
     let has_data = self.ports.has_data(port);
     let is_closed = self.ports.is_closed(upstream);
     let is_sender = upstream.is_sender();
-    let is_generator = locked.is_generator(upstream.get_instance());
+    let is_generator = self.ports.is_generator(upstream.get_instance());
     let active = has_data || (!is_closed && !is_sender && !is_generator);
     trace!(
       "TX:PORT:[{}]:HAS_DATA[{}]:IS_OPEN[{}]:IS_SENDER[{}]:IS_GENERATOR[{}]:IS_ACTIVE[{}]",
@@ -122,6 +146,7 @@ mod tests {
   use std::collections::HashMap;
   use std::time::Duration;
 
+  use parking_lot::RwLock;
   use vino_component::packet::v0::Payload;
   use vino_component::Packet;
   use vino_transport::message_transport::MessageSignal;
@@ -134,7 +159,7 @@ mod tests {
     *,
   };
   use crate::transaction::executor::TransactionExecutor;
-  fn make_model() -> TestResult<Arc<Mutex<SchematicModel>>> {
+  fn make_model() -> TestResult<Arc<RwLock<SchematicModel>>> {
     let schematic_name = "Test";
     let mut schematic_def = new_schematic(schematic_name);
     schematic_def.providers.push(ProviderDefinition {
@@ -157,7 +182,7 @@ mod tests {
       .push(ConnectionDefinition::from_v0_str(
         "REF_ID_LOGGER[output]=><>",
       )?);
-    Ok(Arc::new(Mutex::new(SchematicModel::try_from(
+    Ok(Arc::new(RwLock::new(SchematicModel::try_from(
       schematic_def,
     )?)))
   }

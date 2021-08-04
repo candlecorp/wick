@@ -52,9 +52,9 @@ impl RpcHandler for Provider {
       })
       .await
       .map_err(|e| RpcError::ProviderError(e.to_string()))?;
-    match result {
-      InvocationResponse::Stream { rx, .. } => Ok(Box::pin(rx)),
-      InvocationResponse::Error { msg, .. } => Err(Box::new(RpcError::ProviderError(format!(
+    match result.ok() {
+      Ok(stream) => Ok(Box::pin(stream)),
+      Err(msg) => Err(Box::new(RpcError::ProviderError(format!(
         "Invocation failed: {}",
         msg
       )))),

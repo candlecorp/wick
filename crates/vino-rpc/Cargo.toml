@@ -13,6 +13,7 @@ vino-entity = { path = "../vino-entity" }
 vino-transport = { path = "../vino-transport" }
 vino-types = { path = "../vino-types" }
 vino-provider = { path = "../vino-provider", features = ["native"] }
+vino-macros = { path = "../vino-macros" }
 
 tonic = { version = "0.5.0", features = ["tls"] }
 prost = "0.8.0"
@@ -24,10 +25,12 @@ serde = { version = "1.0.118", features = ["derive"] }
 serde_json = "1.0.65"
 async-stream = "0.3.2"
 rand = "0.8.4"
-tracing = "0.1.26"
+log = "0.4"
 thiserror = "1.0.25"
 async-trait = "0.1.50"
 derivative = "2.2.0"
+parking_lot = { version = "0.11.1", features = [] }
+dyn-clone = "1.0.4"
 
 [build-dependencies]
 tonic-build = { version = "0.5.1", features = ["prost"] }

@@ -72,10 +72,7 @@
 // Add exceptions here
 #![allow(clippy::expect_used, missing_docs)]
 
-use std::sync::Arc;
-
 use structopt::StructOpt;
-use tokio::sync::Mutex;
 use vino_authentication_inmemory::provider::Provider;
 pub use vino_provider_cli::cli::DefaultCliOptions;
 
@@ -84,6 +81,6 @@ async fn main() -> Result<(), vino_authentication_inmemory::Error> {
   let opts = DefaultCliOptions::from_args();
 
   env_logger::init();
-  vino_provider_cli::init_cli(Arc::new(Mutex::new(Provider::default())), Some(opts.into())).await?;
+  vino_provider_cli::init_cli(Box::new(Provider::default()), Some(opts.into())).await?;
   Ok(())
 }

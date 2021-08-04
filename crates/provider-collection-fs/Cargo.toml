@@ -22,16 +22,11 @@ serde = { version = "1.0.118", features = ["derive"] }
 lazy_static = "1.4.0"
 async-trait = "0.1.50"
 futures = "0.3.15"
-tokio = { version = "1.4.0", features = [
-  "macros",
-  "rt",
-  "sync",
-  "rt-multi-thread",
-] }
+tokio = { version = "1.4.0", features = ["macros", "sync", "rt-multi-thread"] }
 env_logger = "0.9"
 tokio-util = { version = "0.6.7", features = ["codec"] }
 structopt = "0.3.21"
-tracing = "0.1.26"
+log = "0.4"
 
 [dev-dependencies]
 test-env-log = "0.2.7"
@@ -40,6 +35,5 @@ serde_json = "1.0.64"
 backtrace = "0.3.60"
 test_bin = "0.3.0"
 tonic = "0.5.0"
-tracing-subscriber = "0.2.19"
 anyhow = "1.0.42"
 test-interfaces-collection = { path = "../integration/test-interfaces-collection" }

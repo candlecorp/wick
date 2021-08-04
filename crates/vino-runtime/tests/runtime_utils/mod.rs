@@ -1,9 +1,9 @@
 use std::fs;
 
 pub use anyhow::Result;
+pub use log::*;
 pub use maplit::hashmap;
 pub use pretty_assertions::assert_eq as equals;
-pub use tracing::*;
 use vino_manifest::{
   Loadable,
   NetworkDefinition,

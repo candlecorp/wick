@@ -12,20 +12,17 @@ hocon = "0.5.2"
 lazy_static = "1.4.0"
 num-traits = "0.2.14"
 regex = "1"
+serde = "1.0"
 serde-value = "0.7.0"
 serde-with-expand-env = "1.1.0"
 serde_json = "1.0.64"
 serde_yaml = "0.8.17"
 thiserror = "1.0.25"
-tracing = "0.1.26"
-
-[dependencies.serde]
-features = ["derive"]
-version = "1.0.118"
+log = "0.4"
+vino-macros = { path = "../vino-macros" }
 
 [dev-dependencies]
 anyhow = "1.0.41"
 env_logger = "0.9"
 pretty_assertions = "0.7.2"
 test-env-log = "0.2.7"
-tracing-subscriber = "0.2.18"

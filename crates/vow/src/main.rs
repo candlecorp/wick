@@ -81,7 +81,7 @@ pub mod error;
 pub(crate) type Result<T> = std::result::Result<T, error::VowError>;
 
 #[macro_use]
-extern crate tracing;
+extern crate log;
 
 #[derive(Debug, Clone, StructOpt)]
 #[structopt(rename_all = "kebab-case")]
@@ -117,7 +117,7 @@ async fn main() {
       std::process::exit(0);
     }
     Err(e) => {
-      tracing::error!("{}", e.to_string());
+      log::error!("{}", e.to_string());
       std::process::exit(1);
     }
   }

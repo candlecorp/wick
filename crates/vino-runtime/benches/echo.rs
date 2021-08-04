@@ -5,7 +5,6 @@ use criterion::{
   criterion_main,
   Criterion,
 };
-use futures::executor::block_on;
 use lazy_static::lazy_static;
 use maplit::hashmap;
 #[path = "../tests/runtime_utils/mod.rs"]
@@ -16,8 +15,10 @@ use vino_runtime::network::Network;
 
 lazy_static! {
   pub static ref NETWORK: Network = {
-    let (network, _) =
-      block_on(init_network_from_yaml("./manifests/v0/wapc-component.yaml")).unwrap();
+    let rt = actix_rt::System::new();
+    let (network, _) = rt
+      .block_on(init_network_from_yaml("./manifests/v0/network/echo.yaml"))
+      .unwrap();
     network
   };
   pub static ref DATA: Data = hashmap! {
@@ -35,28 +36,27 @@ pub fn bench_async_service(c: &mut Criterion, name: &str) {
   c.bench_function(name, move |b| {
     b.iter_custom(|_iters| {
       let start = std::time::Instant::now();
-      // benchmark body
-      rt.block_on(wapc_component(black_box((
-        &NETWORK,
-        &DATA,
-        ENTITY.to_owned(),
-      ))))
-      .unwrap();
+      let args: (&Network, &Data, Entity) = black_box((&NETWORK, &DATA, ENTITY.to_owned()));
+      let result = rt.block_on(run(args));
+      println!("{:?}", result);
       // check that at least first request succeeded
       start.elapsed()
     })
   });
 }
 
-async fn wapc_component(input: (&Network, &Data, Entity)) -> Result<()> {
+async fn run(input: (&Network, &Data, Entity)) -> Result<()> {
   let (network, data, entity) = input;
-  let _result = network.request("wapc_component", entity, data).await?;
+  println!("bef");
+  let _result = network.request("echo", entity, data).await?;
+  println!("aft");
   Ok(())
 }
 
 pub fn service_benches() {
+  env_logger::init();
   let mut criterion: Criterion<_> = Criterion::default().configure_from_args();
-  bench_async_service(&mut criterion, "wapc request");
+  bench_async_service(&mut criterion, "echo");
 }
 
 criterion_main!(service_benches);

@@ -1,7 +1,11 @@
+use std::rc::Rc;
 use std::sync::Arc;
 use std::time::Duration;
 
-use parking_lot::Mutex;
+use parking_lot::{
+  Mutex,
+  RwLock,
+};
 
 use crate::dev::prelude::*;
 use crate::models::provider_model::{
@@ -33,15 +37,16 @@ impl Handler<Initialize> for SchematicService {
     let allow_latest = msg.allow_latest;
     self.name = msg.schematic.name.clone();
     let providers = concat(vec![msg.global_providers, msg.schematic.providers.clone()]);
-    let model = actix_try!(SchematicModel::try_from(msg.schematic), 6021);
+    let mut model = actix_try!(SchematicModel::try_from(msg.schematic), 6021);
     actix_try!(Validator::validate_early_errors(&model), 6022);
-    let model = Arc::new(Mutex::new(model));
     let allowed_insecure = msg.allowed_insecure;
     let network_provider_channel = msg.network_provider_channel;
+    let model = Arc::new(RwLock::new(model));
+    let model_inner = model.clone();
 
     let task = initialize_providers(providers, seed.clone(), allow_latest, allowed_insecure)
       .into_actor(self)
-      .map(|result, this, _ctx| {
+      .map(move |result, this, _ctx| {
         match result {
           Ok((mut channels, providers)) => {
             if let Some(network_provider_channel) = network_provider_channel {
@@ -51,7 +56,7 @@ impl Handler<Initialize> for SchematicService {
               .into_iter()
               .map(|c| (c.namespace.clone(), c))
               .collect();
-            let mut model = this.get_state().model.lock();
+            let mut model = this.get_model().write();
             model.commit_providers(providers);
             model.partial_initialization()?;
           }

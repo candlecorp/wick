@@ -17,7 +17,7 @@ vino-codec = { path = "../vino-codec" }
 vino-rpc = { path = "../vino-rpc" }
 vino-entity = { path = "../vino-entity" }
 vino-macros = { path = "../vino-macros" }
-tracing = "0.1.26"
+log = "0.4"
 actix = "0.12"
 actix-rt = "2.1.0"
 thiserror = "1.0.25"
@@ -42,4 +42,3 @@ tokio = { version = "1", features = [
   "macros",
 ] }
 maplit = "1.0.2"
-tracing-subscriber = "0.2.18"

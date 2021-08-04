@@ -21,7 +21,7 @@ impl Handler<ComponentPayload> for SchematicService {
     let instance = msg.instance.clone();
     let tx_id = msg.tx_id;
 
-    let def = actix_try!(self.get_component_definition(&instance), 6011);
+    let def = actix_try!(get_component_definition(self.get_model(), &instance), 6011);
 
     if msg.payload_map.has_error() {
       let err_payload = msg.payload_map.take_error().unwrap();

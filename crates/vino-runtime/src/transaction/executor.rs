@@ -1,9 +1,16 @@
 use std::collections::VecDeque;
+use std::rc::Rc;
 use std::sync::Arc;
-use std::time::Duration;
+use std::time::{
+  Duration,
+  Instant,
+};
 
 use actix::clock::timeout;
-use parking_lot::Mutex;
+use parking_lot::{
+  Mutex,
+  RwLock,
+};
 use tokio::sync::mpsc::{
   unbounded_channel,
   UnboundedReceiver,
@@ -13,16 +20,21 @@ use tokio::sync::mpsc::{
 use super::Transaction;
 use crate::dev::prelude::*;
 use crate::schematic_service::handlers::component_payload::ComponentPayload;
-use crate::schematic_service::handlers::schematic_output::SchematicOutput;
-use crate::schematic_service::handlers::transaction_update::TransactionUpdate;
+
+#[derive(Clone, Debug)]
+pub struct SchematicOutput {
+  pub tx_id: String,
+  pub payload: TransportWrapper,
+}
+
 #[derive(Debug)]
 pub(crate) struct TransactionExecutor {
-  model: Arc<Mutex<SchematicModel>>,
+  model: Arc<RwLock<SchematicModel>>,
   timeout: Duration,
 }
 
 impl TransactionExecutor {
-  pub(crate) fn new(model: Arc<Mutex<SchematicModel>>, timeout: Duration) -> Self {
+  pub(crate) fn new(model: SharedModel, timeout: Duration) -> Self {
     Self { model, timeout }
   }
   #[allow(clippy::too_many_lines)]
@@ -67,7 +79,7 @@ impl TransactionExecutor {
           match timeout(expire, outbound_rx.recv()).await {
             Ok(Some(msg)) => msg,
             Ok(None) => TransactionUpdate::Drained,
-            Err(e) => TransactionUpdate::Timeout(e),
+            Err(_) => TransactionUpdate::Error(format!("Timeout ({})ms", expire.as_millis())),
           }
         };
 
@@ -76,9 +88,8 @@ impl TransactionExecutor {
             trace!("{}:DRAINED", iter_prefix);
             self_msgs.push_back(TransactionUpdate::Done(tx_id.clone()));
           }
-          TransactionUpdate::Timeout(e) => {
+          TransactionUpdate::Error(e) => {
             trace!("{}:TIMEOUT:{}", iter_prefix, e);
-            trace!("Port statuses: \n{:#?}", transaction.ports);
             warn!("Transaction {} timeout out waiting for next message. This can happen if a component does not close its ports when finished sending.", tx_id);
             self_msgs.push_back(TransactionUpdate::Done(tx_id.clone()));
           }
@@ -104,18 +115,7 @@ impl TransactionExecutor {
               trace!("{}:CLOSING:{}", iter_prefix, target);
               transaction.ports.close(&target);
             }
-            // if transaction.ports.is_closed(&target) {
-            //   ok_or_continue!(log_ie!(
-            //     inbound_tx.send(TransactionUpdate::Result(SchematicOutput {
-            //       payload: TransportWrapper {
-            //         payload: MessageTransport::done(),
-            //         port
-            //       },
-            //       tx_id: tx_id.clone()
-            //     })),
-            //     9003
-            //   ));
-            // }
+
             if !transaction.is_done() {
               trace!("{}:WAIT", iter_prefix);
               // continue the base loop

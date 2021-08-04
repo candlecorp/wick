@@ -5,7 +5,6 @@ use vino_transport::TransportMap;
 
 use crate::dev::prelude::*;
 use crate::dispatch::inv_error;
-use crate::schematic_service::handlers::transaction_update::TransactionUpdate;
 use crate::schematic_service::input_message::InputMessage;
 
 type Result<T> = std::result::Result<T, SchematicError>;
@@ -19,8 +18,7 @@ impl Handler<Invocation> for SchematicService {
     let result = match target {
       Entity::Schematic(name) => handle_schematic(self, ctx.address(), &name, &msg),
       Entity::Component(name) => handle_schematic(self, ctx.address(), &name, &msg),
-      Entity::Reference(reference) => self
-        .get_component_definition(&reference)
+      Entity::Reference(reference) => get_component_definition(self.get_model(), &reference)
         .and_then(|def| handle_schematic(self, ctx.address(), &def.id, &msg)),
       _ => Err(SchematicError::FailedPreRequestCondition(
         "Schematic invoked with entity it doesn't handle".into(),
@@ -50,31 +48,44 @@ fn handle_schematic(
 
   let (mut outbound, inbound) = schematic.start(tx_id.clone());
   schematic.executor.insert(tx_id.clone(), inbound.clone());
+  let (tx, rx) = unbounded_channel::<TransportWrapper>();
 
   tokio::spawn(async move {
     while let Some(msg) = outbound.recv().await {
-      let done = matches!(msg, TransactionUpdate::Done(_));
-      if log_ie!(addr.send(msg).await, 6005).is_err() {
-        break;
-      };
-      if done {
-        trace!("{}:DONE", log_prefix);
-        break;
+      match msg {
+        TransactionUpdate::Done(tx_id) => {
+          let output_msg = TransportWrapper {
+            payload: MessageTransport::done(),
+            port: "<system>".to_owned(),
+          };
+          if tx.send(output_msg).is_err() {
+            warn!("TX:{} {}", tx_id, SchematicError::SchematicClosedEarly);
+          }
+
+          trace!("{}:DONE", log_prefix);
+          break;
+        }
+        TransactionUpdate::Result(a) => {
+          if let Err(e) = tx.send(a.payload) {
+            error!("Error sending result {}", e);
+          }
+        }
+        TransactionUpdate::Execute(a) => {
+          if let Err(e) = addr.send(a).await {
+            error!("Error sending execute command {}", e);
+          }
+        }
+        _ => {
+          warn!("Should I be getting this?");
+        }
       }
     }
-    outbound.close();
+    drop(outbound);
     trace!("{}:STOPPING", log_prefix);
     Ok!(())
   });
 
-  let (tx, rx) = unbounded_channel::<TransportWrapper>();
-  schematic.tx_external.insert(tx_id.clone(), tx);
-
-  let model = schematic.get_state().model.lock();
-  let connections = model.get_downstream_connections(SCHEMATIC_INPUT);
-  let input_messages = make_input_packets(connections, &tx_id, &invocation.msg)?;
-
-  drop(model);
+  let input_messages = make_input_packets(schematic.get_model(), &tx_id, &invocation.msg)?;
   let messages = concat(vec![input_messages]);
   for message in messages {
     inbound.send(TransactionUpdate::Update(message.handle_default()))?;
@@ -83,11 +94,13 @@ fn handle_schematic(
   Ok(async move { Ok(InvocationResponse::stream(tx_id, rx)) })
 }
 
-fn make_input_packets<'a>(
-  connections: impl Iterator<Item = &'a ConnectionDefinition>,
+fn make_input_packets(
+  model: &SharedModel,
   tx_id: &str,
   map: &TransportMap,
 ) -> Result<Vec<InputMessage>> {
+  let model = model.read();
+  let connections = model.get_downstream_connections(SCHEMATIC_INPUT);
   let mut messages: Vec<InputMessage> = vec![];
   for conn in connections {
     let transport = map.get(conn.from.get_port()).ok_or_else(|| {

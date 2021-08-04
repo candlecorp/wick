@@ -88,7 +88,7 @@ pub mod error;
 pub use error::OciError as Error;
 
 #[macro_use]
-extern crate tracing;
+extern crate log;
 
 /// The ENV variable holding the OCI username
 pub const OCI_VAR_USER: &str = "OCI_REGISTRY_USER";
@@ -131,8 +131,8 @@ pub async fn fetch_oci_bytes(
         let mut f = std::fs::File::create(cf)?;
         let content = imgdata
           .layers
-          .iter()
-          .flat_map(|l| l.data.clone())
+          .into_iter()
+          .flat_map(|l| l.data)
           .collect::<Vec<_>>();
         f.write_all(&content)?;
         f.flush()?;

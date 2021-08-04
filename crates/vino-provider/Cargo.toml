@@ -23,6 +23,7 @@ native = [
 vino-component = { path = "../vino-component" }
 vino-entity = { path = "../vino-entity" }
 vino-codec = { path = "../vino-codec" }
+vino-macros = { path = "../vino-macros" }
 serde = { version = "1.0.126", features = ["derive"] }
 
 # For native providers

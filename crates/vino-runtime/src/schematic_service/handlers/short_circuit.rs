@@ -32,11 +32,11 @@ impl Handler<ShortCircuit> for SchematicService {
     let tx_id = msg.tx_id;
     let payload = msg.payload;
 
-    let outputs = self.get_outputs(&reference);
+    let outputs = get_outputs(self.get_model(), &reference);
 
     let downstreams: Vec<ConnectionDefinition> = outputs
       .iter()
-      .flat_map(|port| self.get_port_connections(port))
+      .flat_map(|port| get_port_connections(self.get_model(), port))
       .collect();
 
     trace!(
@@ -72,7 +72,10 @@ impl Handler<ShortCircuit> for SchematicService {
 
     Box::pin(
       async move {
-        join_or_err(futures, 6002).await?;
+        for msg in futures {
+          msg.await.map_err(|_| InternalError(6002))??;
+        }
+
         Ok(())
       }
       .into_actor(self),

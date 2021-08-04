@@ -70,7 +70,7 @@
 )]
 // !!END_LINTS
 // Add exceptions here
-#![allow(missing_docs)] // todo
+#![allow(missing_docs, clippy::expect_used)] // todo
 
 use std::collections::HashMap;
 
@@ -111,7 +111,7 @@ mod tests {
 
   use crate::HostDefinition;
 
-  #[actix_rt::test]
+  #[actix::test]
   async fn runs_log_config() -> crate::Result<()> {
     let host_def = HostDefinition::load_from_file(&PathBuf::from("./manifests/log.vino"))?;
     let input = hashmap! {

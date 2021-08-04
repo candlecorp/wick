@@ -11,6 +11,6 @@ vino-rpc = { path = "../../vino-rpc" }
 vino-component = { path = "../../vino-component" }
 vino-provider = { path = "../../vino-provider", features = ["native"] }
 serde = { version = "1.0.118", features = ["derive"] }
-tracing = "0.1.26"
+log = "0.4"
 
 [dev-dependencies]

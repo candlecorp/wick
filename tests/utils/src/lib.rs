@@ -5,7 +5,7 @@ use vino_transport::message_transport::JsonOutput;
 pub type TestResult<T> = Result<T, TestError>;
 
 #[macro_use]
-extern crate tracing;
+extern crate log;
 
 use std::fs;
 
@@ -69,7 +69,6 @@ use tokio::sync::mpsc::{
   Sender,
 };
 use tokio::task::JoinHandle;
-use tracing::debug;
 
 pub async fn vinoc_invoke(
   port: &str,

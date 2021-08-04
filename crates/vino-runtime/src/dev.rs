@@ -2,7 +2,6 @@ use std::iter::FromIterator;
 
 use futures::TryFuture;
 
-use crate::dev::prelude::*;
 pub(crate) mod prelude {
   pub(crate) use std::convert::TryFrom;
 
@@ -26,7 +25,6 @@ pub(crate) mod prelude {
   pub(crate) use futures::FutureExt;
   pub(crate) use itertools::*;
   pub(crate) use tokio_stream::StreamExt;
-  pub(crate) use tracing::Instrument;
   pub(crate) use vino_entity::entity::Entity;
   pub(crate) use vino_manifest::{
     parse_id,
@@ -50,33 +48,19 @@ pub(crate) mod prelude {
   pub(crate) use crate::dispatch::inv_error;
   pub(crate) use crate::error::*;
   pub(crate) use crate::models::component_model::*;
+  pub(crate) use crate::models::provider_model::*;
+  pub(crate) use crate::models::schematic_model::*;
   pub(crate) use crate::models::*;
   pub(crate) use crate::network_service::NetworkService;
   pub(crate) use crate::prelude::*;
   pub(crate) use crate::providers::network_provider::Provider as NetworkProvider;
   pub(crate) use crate::schematic_service::SchematicService;
+  pub(crate) use crate::transaction::TransactionUpdate;
   pub(crate) use crate::utils::actix::ActorResult;
   pub(crate) use crate::utils::helpers::*;
 }
 
 pub(crate) trait SendableTryFuture: TryFuture + Send {}
-
-#[allow(clippy::future_not_send)]
-pub(crate) async fn join_or_err<I>(
-  i: I,
-  error_num: i32,
-) -> Result<Vec<<<I as IntoIterator>::Item as TryFuture>::Ok>, InternalError>
-where
-  I: IntoIterator,
-  I::Item: TryFuture,
-{
-  use futures::future::try_join_all;
-  Ok(
-    try_join_all(i)
-      .await
-      .map_err(|_| InternalError(error_num))?,
-  )
-}
 
 pub(crate) fn filter_map<A, B, F>(source: Vec<A>, f: F) -> Vec<B>
 where

@@ -62,7 +62,10 @@ impl Handler<Initialize> for NetworkService {
         })
       });
 
-      let results = join_or_err(init_msgs, 5001).await?;
+      let mut results = Vec::new();
+      for msg in init_msgs {
+        results.push(msg.await.map_err(|_| InternalError(5001))?);
+      }
 
       let errors: Vec<SchematicError> = filter_map(results, |e| e.err());
       if errors.is_empty() {
@@ -77,24 +80,28 @@ impl Handler<Initialize> for NetworkService {
       let schematics = network.schematics.clone();
       async move {
         let addr = result?;
+        // TODO Make cross-schematic resolution smarter.
         for _ in 1..5 {
           let result = create_network_provider_model("self", addr.clone()).await;
           if result.is_err() {
             continue;
           }
           let model = result.unwrap();
-          let result = join_or_err(
-            schematics.values().map(|addr| {
-              addr.send(UpdateProvider {
-                model: model.clone(),
-              })
-            }),
-            5020,
-          )
-          .await;
-          if result.is_ok() {
-            return Ok(());
+          let mut results = Vec::new();
+          for addr in schematics.values() {
+            results.push(
+              addr
+                .send(UpdateProvider {
+                  model: model.clone(),
+                })
+                .await
+                .map_err(|_| InternalError(5001))?,
+            );
           }
+          if results.iter().any(|r| r.is_err()) {
+            continue;
+          }
+          return Ok(());
         }
         Err(NetworkError::MaxTriesReached)
       }

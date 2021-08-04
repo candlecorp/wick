@@ -62,21 +62,18 @@ impl TryFrom<crate::v0::SchematicManifest> for SchematicDefinition {
       name: manifest.name.clone(),
       instances: manifest
         .instances
-        .clone()
         .into_iter()
         .map(|(key, val)| Ok((key, val.try_into()?)))
         .filter_map(Result::ok)
         .collect(),
       connections: manifest
         .connections
-        .clone()
         .into_iter()
         .map(|def| def.try_into())
         .filter_map(Result::ok)
         .collect(),
       providers: manifest
         .providers
-        .clone()
         .into_iter()
         .map(|def| def.into())
         .collect(),

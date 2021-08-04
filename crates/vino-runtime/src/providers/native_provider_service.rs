@@ -3,7 +3,11 @@ use std::sync::Arc;
 
 use tokio::sync::mpsc::unbounded_channel;
 use tokio::sync::Mutex;
-use vino_rpc::RpcHandler;
+use vino_rpc::{
+  clone_box,
+  RpcHandler,
+  RpcHandlerType,
+};
 
 use super::{
   ProviderRequest,
@@ -25,7 +29,7 @@ pub(crate) struct NativeProviderService {
 #[derivative(Debug)]
 struct State {
   #[derivative(Debug = "ignore")]
-  provider: Arc<Mutex<dyn RpcHandler>>,
+  provider: RpcHandlerType,
 }
 
 impl Actor for NativeProviderService {
@@ -42,7 +46,7 @@ impl Actor for NativeProviderService {
 #[rtype(result = "Result<()>")]
 pub(crate) struct Initialize {
   pub(crate) namespace: String,
-  pub(crate) provider: Arc<Mutex<dyn RpcHandler>>,
+  pub(crate) provider: RpcHandlerType,
 }
 
 impl Handler<Initialize> for NativeProviderService {
@@ -73,11 +77,10 @@ impl Handler<InitializeComponents> for NativeProviderService {
       &self.state,
       ActorResult::reply(Err(ProviderError::Uninitialized))
     );
-    let provider = state.provider.clone();
+    let provider = clone_box(&*state.provider);
     let namespace = self.namespace.clone();
 
     let task = async move {
-      let provider = provider.lock().await;
       let list = provider.get_list().await?;
       drop(provider);
 
@@ -129,14 +132,15 @@ impl Handler<Invocation> for NativeProviderService {
     );
     let ns = self.namespace.clone();
 
-    let provider = self.state.as_ref().unwrap().provider.clone();
+    let state = self.state.as_ref().unwrap();
+    let provider = clone_box(&*state.provider);
+
     let tx_id = msg.tx_id.clone();
     let component = msg.target;
     let message = msg.msg;
     let url = component.url();
 
     let request = async move {
-      let provider = provider.lock().await;
       let receiver = provider.invoke(component, message).await;
       drop(provider);
       if let Err(e) = receiver {
@@ -180,10 +184,9 @@ impl Handler<ProviderRequest> for NativeProviderService {
 
   fn handle(&mut self, msg: ProviderRequest, _ctx: &mut Self::Context) -> Self::Result {
     let state = self.state.as_ref().unwrap();
-    let provider = state.provider.clone();
+    let provider = clone_box(&*state.provider);
 
     let task = async move {
-      let provider = provider.lock().await;
       match msg {
         ProviderRequest::Invoke(_invocation) => todo!(),
         ProviderRequest::List(_req) => {
@@ -216,7 +219,7 @@ mod test {
     addr
       .send(Initialize {
         namespace: "native-provider".to_owned(),
-        provider: Arc::new(Mutex::new(vino_native_api_0::Provider::default())),
+        provider: Box::new(vino_native_api_0::Provider::default()),
       })
       .await??;
 
@@ -245,7 +248,7 @@ mod test {
     addr
       .send(Initialize {
         namespace: "native-provider".to_owned(),
-        provider: Arc::new(Mutex::new(vino_native_api_0::Provider::default())),
+        provider: Box::new(vino_native_api_0::Provider::default()),
       })
       .await??;
 

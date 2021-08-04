@@ -17,6 +17,18 @@ pub enum Error {
   #[error("Error sending output to channel")]
   SendError,
 
+  /// Tried to receive from an empty channel
+  #[error("Nothing in channel to receive")]
+  ChannelEmpty,
+
+  /// Tried to send to a closed channel
+  #[error("Tried to send a message to a closed channel")]
+  SendChannelClosed,
+
+  /// Tried to receive from a closed channel
+  #[error("Tried to send a message to a closed channel")]
+  ReceiveChannelClosed,
+
   /// Unspecified upstream error
   #[error(transparent)]
   OtherUpstreamError(#[from] Box<dyn std::error::Error + Send + Sync>),

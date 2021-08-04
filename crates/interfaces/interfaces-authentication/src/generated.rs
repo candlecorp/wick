@@ -62,8 +62,12 @@ pub mod authenticate {
   impl PortSender for SessionPortSender {
     type PayloadType = String;
 
-    fn get_port(&self) -> PacketSender {
-      self.port.channel.clone().unwrap()
+    fn get_port(&self) -> Result<&PortChannel, ProviderError> {
+      if self.port.is_closed() {
+        Err(ProviderError::SendChannelClosed)
+      } else {
+        Ok(&self.port)
+      }
     }
 
     fn get_port_name(&self) -> String {
@@ -85,8 +89,12 @@ pub mod authenticate {
   impl PortSender for UserIdPortSender {
     type PayloadType = String;
 
-    fn get_port(&self) -> PacketSender {
-      self.port.channel.clone().unwrap()
+    fn get_port(&self) -> Result<&PortChannel, ProviderError> {
+      if self.port.is_closed() {
+        Err(ProviderError::SendChannelClosed)
+      } else {
+        Ok(&self.port)
+      }
     }
 
     fn get_port_name(&self) -> String {
@@ -161,8 +169,12 @@ pub mod create_user {
   impl PortSender for UserIdPortSender {
     type PayloadType = String;
 
-    fn get_port(&self) -> PacketSender {
-      self.port.channel.clone().unwrap()
+    fn get_port(&self) -> Result<&PortChannel, ProviderError> {
+      if self.port.is_closed() {
+        Err(ProviderError::SendChannelClosed)
+      } else {
+        Ok(&self.port)
+      }
     }
 
     fn get_port_name(&self) -> String {
@@ -227,8 +239,12 @@ pub mod get_id {
   impl PortSender for UserIdPortSender {
     type PayloadType = String;
 
-    fn get_port(&self) -> PacketSender {
-      self.port.channel.clone().unwrap()
+    fn get_port(&self) -> Result<&PortChannel, ProviderError> {
+      if self.port.is_closed() {
+        Err(ProviderError::SendChannelClosed)
+      } else {
+        Ok(&self.port)
+      }
     }
 
     fn get_port_name(&self) -> String {
@@ -296,8 +312,12 @@ pub mod has_permission {
   impl PortSender for UserIdPortSender {
     type PayloadType = String;
 
-    fn get_port(&self) -> PacketSender {
-      self.port.channel.clone().unwrap()
+    fn get_port(&self) -> Result<&PortChannel, ProviderError> {
+      if self.port.is_closed() {
+        Err(ProviderError::SendChannelClosed)
+      } else {
+        Ok(&self.port)
+      }
     }
 
     fn get_port_name(&self) -> String {
@@ -362,8 +382,12 @@ pub mod list_permissions {
   impl PortSender for PermissionsPortSender {
     type PayloadType = Vec<String>;
 
-    fn get_port(&self) -> PacketSender {
-      self.port.channel.clone().unwrap()
+    fn get_port(&self) -> Result<&PortChannel, ProviderError> {
+      if self.port.is_closed() {
+        Err(ProviderError::SendChannelClosed)
+      } else {
+        Ok(&self.port)
+      }
     }
 
     fn get_port_name(&self) -> String {
@@ -431,8 +455,12 @@ pub mod list_users {
   impl PortSender for UsersPortSender {
     type PayloadType = std::collections::HashMap<String, String>;
 
-    fn get_port(&self) -> PacketSender {
-      self.port.channel.clone().unwrap()
+    fn get_port(&self) -> Result<&PortChannel, ProviderError> {
+      if self.port.is_closed() {
+        Err(ProviderError::SendChannelClosed)
+      } else {
+        Ok(&self.port)
+      }
     }
 
     fn get_port_name(&self) -> String {
@@ -497,8 +525,12 @@ pub mod remove_user {
   impl PortSender for UserIdPortSender {
     type PayloadType = String;
 
-    fn get_port(&self) -> PacketSender {
-      self.port.channel.clone().unwrap()
+    fn get_port(&self) -> Result<&PortChannel, ProviderError> {
+      if self.port.is_closed() {
+        Err(ProviderError::SendChannelClosed)
+      } else {
+        Ok(&self.port)
+      }
     }
 
     fn get_port_name(&self) -> String {
@@ -566,8 +598,12 @@ pub mod update_permissions {
   impl PortSender for PermissionsPortSender {
     type PayloadType = Vec<String>;
 
-    fn get_port(&self) -> PacketSender {
-      self.port.channel.clone().unwrap()
+    fn get_port(&self) -> Result<&PortChannel, ProviderError> {
+      if self.port.is_closed() {
+        Err(ProviderError::SendChannelClosed)
+      } else {
+        Ok(&self.port)
+      }
     }
 
     fn get_port_name(&self) -> String {
@@ -632,8 +668,12 @@ pub mod validate_session {
   impl PortSender for UserIdPortSender {
     type PayloadType = String;
 
-    fn get_port(&self) -> PacketSender {
-      self.port.channel.clone().unwrap()
+    fn get_port(&self) -> Result<&PortChannel, ProviderError> {
+      if self.port.is_closed() {
+        Err(ProviderError::SendChannelClosed)
+      } else {
+        Ok(&self.port)
+      }
     }
 
     fn get_port_name(&self) -> String {

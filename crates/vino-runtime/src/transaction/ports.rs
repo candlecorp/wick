@@ -17,13 +17,14 @@ pub(crate) struct PortStatuses {
   tx_id: String,
   schematic_name: String,
   inner: RefCell<HashMap<ConnectionTargetDefinition, PortStatus>>,
-  model: Arc<Mutex<SchematicModel>>,
+  raw_ports: HashMap<String, RawPorts>,
 }
 
 impl PortStatuses {
-  pub(crate) fn new(tx_id: String, model: Arc<Mutex<SchematicModel>>) -> Self {
-    let locked = model.lock();
-    let port_statuses = locked
+  pub(crate) fn new(tx_id: String, model: &SharedModel) -> Self {
+    let raw_ports = get_incoming_ports(model);
+    let readable = model.read();
+    let port_statuses = readable
       .get_connections()
       .iter()
       .flat_map(|conn| {
@@ -33,12 +34,11 @@ impl PortStatuses {
         ]
       })
       .collect();
-    let schematic_name = locked.get_name();
-    drop(locked);
+    let schematic_name = readable.get_name();
     Self {
-      model,
       buffermap: BufferMap::default(),
       inner: RefCell::new(port_statuses),
+      raw_ports,
       schematic_name,
       tx_id,
     }
@@ -110,6 +110,13 @@ impl PortStatuses {
       .map_or(true, |status| status == &PortStatus::Closed)
   }
 
+  pub(crate) fn is_generator(&self, instance: &str) -> bool {
+    self
+      .raw_ports
+      .get(instance)
+      .map_or(false, |rp| rp.inputs.is_empty())
+  }
+
   pub(crate) fn close(&mut self, port: &ConnectionTargetDefinition) -> &mut Self {
     if self.check_port_status(port, &PortStatus::HasData) {
       self.update_port_status(port, PortStatus::Closing);
@@ -118,10 +125,18 @@ impl PortStatuses {
     }
     self
   }
+
   pub(crate) fn close_connection(&mut self, target: &ConnectionDefinition) -> &mut Self {
     self.close(&target.from);
     self.close(&target.to);
     self
+  }
+
+  pub(crate) fn get_incoming_ports(&self, instance: &str) -> Vec<ConnectionTargetDefinition> {
+    self
+      .raw_ports
+      .get(instance)
+      .map_or(vec![], |rp| rp.inputs.iter().cloned().collect())
   }
 
   pub(crate) fn buffer(
@@ -149,16 +164,6 @@ impl PortStatuses {
       self.set_idle(port);
     }
     result
-  }
-
-  pub(crate) fn get_incoming_ports(&self, instance: &str) -> Vec<ConnectionTargetDefinition> {
-    let locked = self.model.lock();
-    locked
-      .get_raw_ports()
-      .get(instance)
-      .map_or(vec![], |rp: &RawPorts| -> Vec<_> {
-        rp.inputs.iter().cloned().collect()
-      })
   }
 
   pub(crate) fn receive(

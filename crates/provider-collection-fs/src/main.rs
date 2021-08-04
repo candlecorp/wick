@@ -74,10 +74,8 @@
 
 use std::net::Ipv4Addr;
 use std::path::PathBuf;
-use std::sync::Arc;
 
 use structopt::StructOpt;
-use tokio::sync::Mutex;
 use vino_collection_fs::provider::Provider;
 use vino_provider_cli::cli::DefaultCliOptions;
 
@@ -109,7 +107,7 @@ async fn main() -> vino_collection_fs::Result<()> {
 
   env_logger::init();
   vino_provider_cli::init_cli(
-    Arc::new(Mutex::new(Provider::new(opts.directory))),
+    Box::new(Provider::new(opts.directory)),
     Some(opts.options.into()),
   )
   .await?;

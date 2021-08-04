@@ -4,7 +4,6 @@ use std::convert::TryInto;
 use rpc::invocation_service_client::InvocationServiceClient;
 use tokio::sync::mpsc::unbounded_channel;
 use tonic::transport::Channel;
-use tracing_actix::ActorInstrument;
 use vino_rpc::rpc;
 use vino_rpc::rpc::stats_request::Format;
 use vino_rpc::rpc::{
@@ -56,7 +55,6 @@ pub(crate) struct Initialize {
 impl Handler<Initialize> for GrpcProviderService {
   type Result = ActorResult<Self, Result<HashMap<String, ComponentModel>>>;
 
-  #[tracing::instrument(level = tracing::Level::DEBUG, name = "GRPC Init", skip(self, msg, ctx))]
   fn handle(&mut self, msg: Initialize, ctx: &mut Self::Context) -> Self::Result {
     trace!("{}:Init:{}", PREFIX, msg.namespace);
 
@@ -89,7 +87,6 @@ impl Handler<Initialize> for GrpcProviderService {
     let chain = task
       .then(after)
       .into_actor(self)
-      .actor_instrument(debug_span!("actor"))
       .map(|result, this, _ctx| match result {
         Ok((client, metadata)) => {
           this.state = Some(State {
@@ -115,7 +112,6 @@ pub(crate) struct InitializeComponents {
 impl Handler<InitializeComponents> for GrpcProviderService {
   type Result = ActorResult<Self, Result<HashMap<String, ComponentModel>>>;
 
-  #[tracing::instrument(level = tracing::Level::DEBUG, name = "GRPC Init components", skip(self, msg, _ctx))]
   fn handle(&mut self, msg: InitializeComponents, _ctx: &mut Self::Context) -> Self::Result {
     trace!("{}:InitComponents:[NS:{}]", PREFIX, self.namespace);
 
@@ -123,9 +119,7 @@ impl Handler<InitializeComponents> for GrpcProviderService {
     let namespace = msg.namespace;
 
     let task = async move {
-      let list = client
-        .list(ListRequest {})
-        .instrument(debug_span!("client.list"));
+      let list = client.list(ListRequest {});
       trace!("{}:LIST:[NS:{}]", PREFIX, namespace);
       let list = list.await?;
       let list = list.into_inner();
@@ -150,11 +144,7 @@ impl Handler<InitializeComponents> for GrpcProviderService {
       Ok(metadata)
     };
 
-    ActorResult::reply_async(
-      task
-        .into_actor(self)
-        .actor_instrument(span!(tracing::Level::DEBUG, "actor")),
-    )
+    ActorResult::reply_async(task.into_actor(self))
   }
 }
 
@@ -169,10 +159,7 @@ impl Handler<ProviderRequest> for GrpcProviderService {
       match msg {
         ProviderRequest::Invoke(_invocation) => todo!(),
         ProviderRequest::List(_req) => {
-          let list = client
-            .list(ListRequest {})
-            .instrument(debug_span!("client.list"))
-            .await?;
+          let list = client.list(ListRequest {}).await?;
           debug!("Component list: {:?}", list);
           let list = list.into_inner();
 
@@ -193,7 +180,6 @@ impl Handler<ProviderRequest> for GrpcProviderService {
             .stats(StatsRequest {
               kind: Some(rpc::stats_request::Kind::All(Format {})),
             })
-            .instrument(debug_span!("client.stats"))
             .await?;
           let stats = stats.into_inner();
 
@@ -210,7 +196,6 @@ impl Handler<ProviderRequest> for GrpcProviderService {
 impl Handler<Invocation> for GrpcProviderService {
   type Result = ActorResult<Self, InvocationResponse>;
 
-  #[tracing::instrument(level = tracing::Level::DEBUG, name = "GRPC Invocation", skip(self, msg, _ctx))]
   fn handle(&mut self, msg: Invocation, _ctx: &mut Self::Context) -> Self::Result {
     trace!(
       "{}:[NS:{}]:Invoke: {} to {}",
@@ -300,15 +285,10 @@ impl Handler<Invocation> for GrpcProviderService {
       });
       Ok!(InvocationResponse::stream(tx_id, rx))
     };
-    ActorResult::reply_async(
-      request
-        .into_actor(self)
-        .actor_instrument(span!(tracing::Level::DEBUG, "actor"))
-        .map(|result, _, _| match result {
-          Ok(response) => response,
-          Err(e) => InvocationResponse::error(tx_id2, format!("GRPC Invocation failed: {}", e)),
-        }),
-    )
+    ActorResult::reply_async(request.into_actor(self).map(|result, _, _| match result {
+      Ok(response) => response,
+      Err(e) => InvocationResponse::error(tx_id2, format!("GRPC Invocation failed: {}", e)),
+    }))
   }
 }
 
@@ -329,11 +309,10 @@ mod test {
   type Result<T> = super::Result<T>;
 
   #[test_env_log::test(actix_rt::test)]
-  #[instrument]
   async fn test_initialize() -> Result<()> {
     let socket = bind_new_socket()?;
     let port = socket.local_addr()?.port();
-    let init_handle = make_rpc_server(socket, Provider::default());
+    let init_handle = make_rpc_server(socket, Box::new(Provider::default()));
     let user_data = "test string payload";
 
     let work = async move {
@@ -361,8 +340,7 @@ mod test {
         })
         .await?;
       Ok!(response)
-    }
-    .instrument(tracing::info_span!("task"));
+    };
     tokio::select! {
         res = work => {
             debug!("Work complete");

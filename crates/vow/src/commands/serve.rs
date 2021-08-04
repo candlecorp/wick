@@ -1,7 +1,4 @@
-use std::sync::Arc;
-
 use structopt::StructOpt;
-use tokio::sync::Mutex;
 use vino_provider_cli::cli::DefaultCliOptions;
 use vino_provider_wasm::provider::Provider;
 
@@ -27,7 +24,7 @@ pub(crate) async fn handle_command(opts: ServeCommand) -> Result<()> {
       .await?;
 
   vino_provider_cli::init_cli(
-    Arc::new(Mutex::new(Provider::try_from_module(component, 5)?)),
+    Box::new(Provider::try_from_module(component, 5)?),
     Some(opts.cli.into()),
   )
   .await?;

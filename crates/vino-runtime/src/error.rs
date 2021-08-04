@@ -3,7 +3,6 @@ use thiserror::Error;
 use tokio::sync::mpsc::error::SendError;
 
 use crate::dev::prelude::*;
-use crate::schematic_service::handlers::transaction_update::TransactionUpdate;
 
 #[derive(Error, Debug)]
 pub enum SchematicError {

@@ -1,5 +1,4 @@
 use crate::dev::prelude::*;
-use crate::schematic_service::handlers::transaction_update::TransactionUpdate;
 use crate::schematic_service::input_message::InputMessage;
 
 #[derive(Message, Debug, Clone)]
@@ -18,10 +17,10 @@ impl Handler<OutputMessage> for SchematicService {
 
     let defs = if msg.port.matches_port(crate::COMPONENT_ERROR) {
       error!("{}Component-wide error received", log_prefix);
-      self.get_downstream_connections(msg.port.get_instance())
+      get_downstream_connections(self.get_model(), msg.port.get_instance())
     } else {
       trace!("{}Output ready", log_prefix);
-      self.get_port_connections(&msg.port)
+      get_port_connections(self.get_model(), &msg.port)
     };
 
     for connection in defs {

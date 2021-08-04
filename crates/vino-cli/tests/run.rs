@@ -1,4 +1,4 @@
-#[actix_rt::test]
+#[actix::test]
 async fn run_log() {
   let output = test_bin::get_test_bin("vino")
     .env_clear()

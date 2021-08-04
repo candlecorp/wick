@@ -43,6 +43,14 @@ impl Packet {
       },
     }
   }
+
+  #[must_use]
+  /// Does the [Packet] signify the originating job is completed?
+  pub fn is_done(&self) -> bool {
+    match self {
+      Packet::V0(v) => matches!(v, v0::Payload::Done | v0::Payload::Error(_)),
+    }
+  }
 }
 
 impl From<&Vec<u8>> for Packet {

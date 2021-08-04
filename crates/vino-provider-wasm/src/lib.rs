@@ -83,7 +83,7 @@ pub type Result<T> = std::result::Result<T, error::WasmProviderError>;
 pub type Error = error::WasmProviderError;
 
 #[macro_use]
-extern crate tracing;
+extern crate log;
 
 #[macro_use]
 extern crate derivative;

@@ -1,7 +1,7 @@
 use std::env;
 use std::path::PathBuf;
 
-use tracing::debug;
+use log::debug;
 use vino_manifest::error::ManifestError;
 use vino_manifest::parse::{
   SCHEMATIC_OUTPUT,

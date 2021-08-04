@@ -5,12 +5,10 @@ use std::net::{
 };
 use std::path::PathBuf;
 use std::str::FromStr;
-use std::sync::Arc;
 
 use logger::LoggingOptions;
 use structopt::StructOpt;
 use tokio::signal;
-use tokio::sync::Mutex;
 use tonic::transport::{
   Certificate,
   Identity,
@@ -19,7 +17,7 @@ use tonic::transport::{
 use vino_rpc::rpc::invocation_service_server::InvocationServiceServer;
 use vino_rpc::{
   InvocationServer,
-  RpcHandler,
+  RpcHandlerType,
 };
 
 pub(crate) const FILE_DESCRIPTOR_SET: &[u8] =
@@ -140,7 +138,7 @@ pub fn init_logging(options: &LoggingOptions) -> crate::Result<()> {
 
 /// Starts an RPC and/or an HTTP server for the passed [RpcHandler]
 pub async fn start_server(
-  provider: Arc<Mutex<dyn RpcHandler>>,
+  provider: RpcHandlerType,
   opts: Option<Options>,
 ) -> crate::Result<ServerMetadata> {
   debug!("Starting provider RPC server");
@@ -244,10 +242,7 @@ pub async fn start_server(
 
 /// Start a server with the passed [RpcHandler] and keep it
 /// running until the process receives a SIGINT (^C)
-pub async fn init_cli(
-  provider: Arc<Mutex<dyn RpcHandler>>,
-  opts: Option<Options>,
-) -> crate::Result<()> {
+pub async fn init_cli(provider: RpcHandlerType, opts: Option<Options>) -> crate::Result<()> {
   let config = start_server(provider, opts).await?;
   println!("Server bound to {}", config.rpc_addr.unwrap());
   info!("Waiting for ctrl-C");
@@ -272,7 +267,7 @@ mod tests {
 
   #[test_env_log::test(tokio::test)]
   async fn test_starts() -> Result<()> {
-    let config = start_server(Arc::new(Mutex::new(Provider::default())), None).await?;
+    let config = start_server(Box::new(Provider::default()), None).await?;
     let addr = config.rpc_addr.unwrap();
     sleep(Duration::from_millis(100)).await;
     let uri = Uri::from_str(&format!("https://{}:{}", addr.ip(), addr.port())).unwrap();
@@ -287,7 +282,7 @@ mod tests {
   // #[test_env_log::test(tokio::test)]
   async fn _test_http() -> Result<()> {
     let config = start_server(
-      Arc::new(Mutex::new(Provider::default())),
+      Box::new(Provider::default()),
       Some(Options {
         rpc: Some(ServerOptions {
           address: Some(Ipv4Addr::from_str("127.0.0.1")?),

@@ -1,14 +1,10 @@
 use std::str::FromStr;
-use std::sync::Arc;
 
 use rpc::{
   ListResponse,
   StatsResponse,
 };
-use tokio::sync::{
-  mpsc,
-  Mutex,
-};
+use tokio::sync::mpsc;
 use tokio_stream::wrappers::ReceiverStream;
 use tokio_stream::StreamExt;
 use tonic::{
@@ -32,7 +28,7 @@ use crate::rpc::{
 use crate::{
   convert_messagekind_map,
   rpc,
-  RpcHandler,
+  RpcHandlerType,
 };
 
 /// An implementation of a GRPC server for implementers of [RpcHandler] like Vino providers.
@@ -41,26 +37,19 @@ use crate::{
 pub struct InvocationServer {
   /// The provider that will handle incoming requests
   #[derivative(Debug = "ignore")]
-  pub provider: Arc<Mutex<dyn RpcHandler>>,
+  pub provider: RpcHandlerType,
 }
 
 impl InvocationServer {
   /// Constructor
-  pub fn new<T>(provider: T) -> Self
-  where
-    T: RpcHandler + 'static,
-  {
-    Self {
-      provider: Arc::new(Mutex::new(provider)),
-    }
+  #[must_use]
+  pub fn new(provider: RpcHandlerType) -> Self {
+    Self { provider }
   }
 
   /// Constructor that takes in a provider already wrapped in an Arc<Mutex<>>
   #[must_use]
-  pub fn new_shared<T>(provider: Arc<Mutex<T>>) -> Self
-  where
-    T: RpcHandler + 'static,
-  {
+  pub fn new_shared(provider: RpcHandlerType) -> Self {
     Self { provider }
   }
 }
@@ -166,38 +155,35 @@ impl InvocationService for InvocationServer {
     debug!("Invocation = {:?}", request);
 
     let (tx, rx) = mpsc::channel(4);
-    let provider = self.provider.clone();
-
-    tokio::spawn(async move {
-      let invocation = request.get_ref();
-      let provider = provider.lock().await;
-      let invocation_id = invocation.id.clone();
-      let entity = vino_entity::Entity::from_str(&invocation.target);
-      if let Err(e) = entity {
-        tx.send(Err(Status::failed_precondition(e.to_string())))
-          .await
-          .unwrap();
-        return;
-      }
+    let invocation = request.get_ref();
+    let invocation_id = invocation.id.clone();
+    let entity = vino_entity::Entity::from_str(&invocation.target);
+    if let Err(e) = entity {
+      tx.send(Err(Status::failed_precondition(e.to_string())))
+        .await
+        .unwrap();
+    } else {
       let entity = entity.unwrap();
       let payload = convert_messagekind_map(&invocation.msg);
       debug!("Executing component {}", entity.url());
-      match &mut provider.invoke(entity, payload).await {
-        Ok(receiver) => {
-          while let Some(next) = receiver.next().await {
-            let port_name = next.port;
-            let msg = next.payload;
-            debug!("Got output on port {}", port_name);
-            tx.send(make_output(&port_name, &invocation_id, msg))
-              .await
-              .unwrap();
-          }
+      let result = self.provider.invoke(entity, payload).await;
+      tokio::spawn(async move {
+        if let Err(e) = result {
+          let message = e.to_string();
+          tx.send(Err(Status::internal(message))).await.unwrap();
+          return;
         }
-        Err(e) => {
-          tx.send(Err(Status::internal(e.to_string()))).await.unwrap();
+        let mut receiver = result.unwrap();
+        while let Some(next) = receiver.next().await {
+          let port_name = next.port;
+          let msg = next.payload;
+          debug!("Got output on port {}", port_name);
+          tx.send(make_output(&port_name, &invocation_id, msg))
+            .await
+            .unwrap();
         }
-      };
-    });
+      });
+    }
 
     Ok(Response::new(ReceiverStream::new(rx)))
   }
@@ -206,12 +192,9 @@ impl InvocationService for InvocationServer {
     &self,
     _request: tonic::Request<rpc::ListRequest>,
   ) -> Result<Response<ListResponse>, Status> {
-    let provider = self.provider.lock().await;
     trace!("Listing registered components from provider");
-    let list = provider
-      .get_list()
-      .await
-      .map_err(|e| Status::internal(e.to_string()))?;
+    let future = self.provider.get_list();
+    let list = future.await.map_err(|e| Status::internal(e.to_string()))?;
     trace!("Server: list is {:?}", list);
     let response = ListResponse {
       components: list.into_iter().map(From::from).collect(),
@@ -226,25 +209,43 @@ impl InvocationService for InvocationServer {
   ) -> Result<Response<StatsResponse>, Status> {
     let stats_request = request.get_ref();
 
-    let provider = self.provider.lock().await;
     let kind = stats_request
       .kind
       .as_ref()
       .ok_or_else(|| Status::failed_precondition("No kind given"))?;
 
-    let stats = match kind {
-      stats_request::Kind::All(_format) => provider
-        .get_stats(None)
-        .await
-        .map_err(|e| Status::internal(e.to_string()))?,
-      stats_request::Kind::Component(comp) => provider
-        .get_stats(Some(comp.name.clone()))
-        .await
-        .map_err(|e| Status::internal(e.to_string()))?,
+    let future = match kind {
+      stats_request::Kind::All(_format) => self.provider.get_stats(None),
+      stats_request::Kind::Component(comp) => self.provider.get_stats(Some(comp.name.clone())),
     };
+
+    let stats = future.await.map_err(|e| Status::internal(e.to_string()))?;
 
     Ok(Response::new(StatsResponse {
       stats: stats.into_iter().map(From::from).collect(),
     }))
   }
 }
+
+// pub struct RpcWrapper {
+//   provider: Arc<Mutex<dyn RpcHandler>>,
+// }
+
+// #[async_trait::async_trait]
+// impl RpcHandler for RpcWrapper {
+//   async fn invoke(
+//     &self,
+//     entity: vino_entity::Entity,
+//     payload: vino_transport::TransportMap,
+//   ) -> crate::RpcResult<crate::BoxedTransportStream> {
+//     self.inner
+//   }
+
+//   async fn get_list(&self) -> crate::RpcResult<Vec<vino_types::signatures::HostedType>> {
+//     todo!()
+//   }
+
+//   async fn get_stats(&self, id: Option<String>) -> crate::RpcResult<Vec<crate::Statistics>> {
+//     todo!()
+//   }
+// }

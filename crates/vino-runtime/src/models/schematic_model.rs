@@ -206,6 +206,12 @@ impl SchematicModel {
     self.populate_state(&[])
   }
 
+  pub(crate) fn get_upstreams(
+    &self,
+  ) -> &HashMap<ConnectionTargetDefinition, ConnectionTargetDefinition> {
+    &self.upstream_links
+  }
+
   pub(crate) fn get_upstream(
     &self,
     port: &ConnectionTargetDefinition,

@@ -54,7 +54,7 @@ pub(crate) async fn handle_command(command: StartCommand) -> Result<String> {
   }
 
   info!("Waiting for Ctrl-C");
-  actix_rt::signal::ctrl_c().await.unwrap();
+  let _ = tokio::signal::ctrl_c().await;
   info!("Ctrl-C received, shutting down");
   host.stop().await;
   Ok("Done".to_owned())

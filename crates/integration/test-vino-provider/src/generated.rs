@@ -108,8 +108,12 @@ pub(crate) mod test_component {
   impl PortSender for OutputPortSender {
     type PayloadType = String;
 
-    fn get_port(&self) -> PacketSender {
-      self.port.channel.clone().unwrap()
+    fn get_port(&self) -> Result<&PortChannel, ProviderError> {
+      if self.port.is_closed() {
+        Err(ProviderError::SendChannelClosed)
+      } else {
+        Ok(&self.port)
+      }
     }
 
     fn get_port_name(&self) -> String {

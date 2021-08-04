@@ -13,8 +13,9 @@ vino-component = { path = "../vino-component" }
 chrono = "0.4.19"
 colored = "2.0.0"
 log = "0.4.11"
+actix = "0.12.0"
 env_logger = "0.9"
-actix-rt = "2.1.0"
+actix-rt = "2.2.0"
 # nats = "0.9.18"
 structopt = "0.3.21"
 nkeys = "0.1.0"
@@ -31,6 +32,7 @@ vino-transport = { path = "../vino-transport" }
 vino-host = { path = "../vino-host" }
 vino-manifest = { path = "../vino-manifest" }
 vino-codec = { path = "../vino-codec" }
+tokio = { version = "1.4.0", features = ["macros", "rt-multi-thread"] }
 
 [dev-dependencies]
 test_bin = "0.3.0"

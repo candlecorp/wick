@@ -70,7 +70,7 @@
 )]
 // !!END_LINTS
 // Add exceptions here
-#![allow(missing_docs)] // TODO
+#![allow(missing_docs, unused)] // TODO
 
 #[macro_use]
 mod macros {
@@ -81,7 +81,8 @@ mod macros {
       let result = $expr;
       let ie = InternalError($errnum);
       if result.is_err() {
-        tracing::error!("{}", ie);
+        log::debug!("{:?}", result);
+        log::error!("{}", ie);
       }
       result.map_err(|_| ie)
     }};
@@ -118,7 +119,7 @@ extern crate derivative;
 extern crate vino_macros;
 
 #[macro_use]
-extern crate tracing;
+extern crate log;
 
 mod dispatch;
 pub mod error;

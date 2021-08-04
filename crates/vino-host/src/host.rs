@@ -1,13 +1,8 @@
 use std::collections::HashMap;
-use std::sync::{
-  Arc,
-  RwLock,
-};
+use std::sync::RwLock;
 
-use actix::prelude::*;
 use nkeys::KeyPair;
 use serde::Serialize;
-use tokio::sync::Mutex;
 use vino_entity::Entity;
 use vino_provider_cli::cli::{
   Options as CliOpts,
@@ -43,9 +38,6 @@ impl Host {
   pub async fn stop(&self) {
     debug!("Host stopping");
     *self.started.write().unwrap() = false;
-    if let Some(system) = System::try_current() {
-      system.stop();
-    }
   }
 
   pub fn get_network(&self) -> Result<&Network> {
@@ -76,7 +68,7 @@ impl Host {
   pub async fn start_rpc_server(&mut self, opts: Option<CliOpts>) -> Result<ServerMetadata> {
     let network_id = self.get_network_id()?;
     let metadata = tokio::spawn(vino_provider_cli::start_server(
-      Arc::new(Mutex::new(NetworkProvider::new(network_id))),
+      Box::new(NetworkProvider::new(network_id)),
       opts,
     ))
     .await
@@ -103,7 +95,7 @@ impl Host {
   }
 
   pub async fn wait_for_sigint(&self) -> Result<()> {
-    actix_rt::signal::ctrl_c().await.unwrap();
+    tokio::signal::ctrl_c().await.unwrap();
     debug!("SIGINT received");
     Ok(())
   }
@@ -117,7 +109,6 @@ impl Host {
       *self.started.read().unwrap(),
       crate::Error::InvalidHostState("Host not started".into())
     );
-    ensure!(System::try_current().is_some(), "No actix rt system found.");
     Ok(())
   }
 
@@ -150,7 +141,7 @@ mod test {
     Result,
   };
 
-  #[test_env_log::test(actix_rt::test)]
+  #[test_env_log::test(actix::test)]
   async fn should_start_and_stop() -> Result<()> {
     let host = HostBuilder::new().start().await?;
     host.stop().await;
@@ -159,7 +150,7 @@ mod test {
     Ok(())
   }
 
-  #[test_env_log::test(actix_rt::test)]
+  #[test_env_log::test(actix::test)]
   async fn ensure_started() -> Result<()> {
     let host = HostBuilder::new().start().await?;
     host._ensure_started()?;
@@ -169,7 +160,7 @@ mod test {
     Ok(())
   }
 
-  #[test_env_log::test(actix_rt::test)]
+  #[test_env_log::test(actix::test)]
   async fn request_from_network() -> Result<()> {
     let mut host = HostBuilder::new().start().await?;
     let file = PathBuf::from("src/configurations/logger.yaml");
@@ -191,7 +182,7 @@ mod test {
     Ok(())
   }
 
-  #[test_env_log::test(actix_rt::test)]
+  #[test_env_log::test(actix::test)]
   async fn request_from_rpc_server() -> Result<()> {
     let mut host = HostBuilder::new().start().await?;
     let file = PathBuf::from("src/configurations/logger.yaml");
@@ -218,7 +209,7 @@ mod test {
         target: Entity::schematic("logger").url(),
         msg: convert_transport_map(data),
         id: "some inv".to_owned(),
-        network_id: host.host_id.clone(),
+        network_id: host.get_host_id(),
       })
       .await
       .unwrap()

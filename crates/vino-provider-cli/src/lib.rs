@@ -92,4 +92,4 @@ pub use cli::{
 pub use logger::LoggingOptions;
 
 #[macro_use]
-extern crate tracing;
+extern crate log;

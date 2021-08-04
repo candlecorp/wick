@@ -88,6 +88,8 @@ pub mod invocation_server;
 /// Utility and conversion types
 pub mod types;
 
+pub use dyn_clone::clone_box;
+use dyn_clone::DynClone;
 /// Module with generated Tonic & Protobuf code
 pub use generated::vino as rpc;
 use generated::vino::invocation_service_client::InvocationServiceClient;
@@ -114,20 +116,32 @@ pub type Error = crate::error::RpcError;
 pub type RpcResult<T> = std::result::Result<T, Box<error::RpcError>>;
 
 #[macro_use]
-extern crate tracing;
+extern crate log;
 
 #[macro_use]
 extern crate derivative;
 
+/// The type of RpcHandler the default invocation server takes
+pub type RpcHandlerType = Box<dyn RpcHandler + Send + Sync + 'static>;
+
 /// A trait that implementers of the RPC interface should implement
 #[async_trait]
-pub trait RpcHandler: Send + Sync {
+pub trait RpcHandler: DynClone + Sync {
   /// Handle an incoming request for a target entity
-  async fn invoke(&self, entity: Entity, payload: TransportMap) -> RpcResult<BoxedTransportStream>;
+  async fn invoke(
+    &self,
+    entity: Entity,
+    payload: TransportMap,
+  ) -> std::result::Result<BoxedTransportStream, Box<error::RpcError>>;
+
   /// List the entities this [RpcHandler] manages
-  async fn get_list(&self) -> RpcResult<Vec<HostedType>>;
+  async fn get_list(&self) -> std::result::Result<Vec<HostedType>, Box<error::RpcError>>;
+
   /// Report the statists for all registered entities
-  async fn get_stats(&self, id: Option<String>) -> RpcResult<Vec<Statistics>>;
+  async fn get_stats(
+    &self,
+    id: Option<String>,
+  ) -> std::result::Result<Vec<Statistics>, Box<error::RpcError>>;
 }
 
 #[doc(hidden)]
@@ -142,9 +156,10 @@ pub fn make_input<K: AsRef<str>, V: serde::Serialize>(entries: Vec<(K, V)>) -> T
 }
 
 /// Build and spawn an RPC server for the passed provider
+#[must_use]
 pub fn make_rpc_server(
   socket: tokio::net::TcpSocket,
-  provider: impl RpcHandler + 'static,
+  provider: RpcHandlerType,
 ) -> JoinHandle<std::result::Result<(), tonic::transport::Error>> {
   let component_service = InvocationServer::new(provider);
 

@@ -87,8 +87,8 @@ impl RpcHandler for Provider {
 mod tests {
 
   use futures::prelude::*;
+  use log::*;
   use maplit::hashmap;
-  use tracing::debug;
   use vino_provider::native::prelude::*;
 
   use super::*;

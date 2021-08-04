@@ -2,10 +2,13 @@ pub(crate) mod default;
 pub(crate) mod handlers;
 
 use std::collections::HashMap;
+use std::rc::Rc;
 use std::sync::Arc;
 
-use handlers::transaction_update::TransactionUpdate;
-use parking_lot::Mutex;
+use parking_lot::{
+  Mutex,
+  RwLock,
+};
 use tokio::sync::mpsc::{
   UnboundedReceiver,
   UnboundedSender,
@@ -24,13 +27,12 @@ pub(crate) struct SchematicService {
   name: String,
   recipients: HashMap<String, ProviderChannel>,
   state: Option<State>,
-  tx_external: HashMap<String, UnboundedSender<TransportWrapper>>,
   executor: HashMap<String, UnboundedSender<TransactionUpdate>>,
 }
 
 #[derive(Debug)]
 struct State {
-  model: Arc<Mutex<SchematicModel>>,
+  model: Arc<RwLock<SchematicModel>>,
   kp: KeyPair,
   transactions: TransactionExecutor,
 }
@@ -43,7 +45,6 @@ impl Default for SchematicService {
       name: "".to_owned(),
       recipients: HashMap::new(),
       state: None,
-      tx_external: HashMap::new(),
       executor: HashMap::new(),
     }
   }
@@ -61,14 +62,14 @@ impl Actor for SchematicService {
 
 impl SchematicService {
   fn validate_model(&mut self) -> Result<()> {
-    let mut model = self.get_state_mut().model.lock();
-    Validator::validate_late_errors(&model)?;
+    let mut model = &mut self.get_model().write();
+    Validator::validate_late_errors(model)?;
     Ok(model.partial_initialization()?)
   }
 
   fn validate_final(&mut self) -> Result<()> {
-    let mut model = self.get_state_mut().model.lock();
-    Validator::validate_final_errors(&model)?;
+    let mut model = &mut self.get_model().write();
+    Validator::validate_final_errors(model)?;
     Ok(model.final_initialization()?)
   }
 
@@ -99,24 +100,18 @@ impl SchematicService {
     state.transactions.new_transaction(tx_id)
   }
 
-  fn get_component_definition(&self, instance: &str) -> Result<ComponentDefinition> {
-    let state = self.get_state();
-    let lock = state.model.lock();
-    lock
-      .get_component_definition(instance)
-      .ok_or_else(|| SchematicError::InstanceNotFound(instance.to_owned()))
+  fn get_model(&self) -> &SharedModel {
+    &self.get_state().model
   }
 
   fn get_recipient(&self, instance: &str) -> Result<Recipient<Invocation>> {
-    let component = self.get_component_definition(instance)?;
-    let state = self.get_state();
-    let lock = state.model.lock();
+    let component = get_component_definition(self.get_model(), instance)?;
+    let model = self.get_model().read();
     let err = SchematicError::InstanceNotFound(instance.to_owned());
-    if !lock.has_component(&component.id) {
+    if !model.has_component(&component.id) {
       warn!("SC:{}:{} does not have a valid model.", self.name, instance);
       return Err(err);
     }
-    drop(lock);
     trace!(
       "SC:{}:INSTANCE[{}]->[{}]",
       self.name,
@@ -127,29 +122,10 @@ impl SchematicService {
     Ok(channel.recipient.clone())
   }
 
-  fn get_outputs(&self, instance: &str) -> Vec<ConnectionTargetDefinition> {
-    let state = self.get_state();
-    let lock = state.model.lock();
-    lock.get_outputs(instance)
-  }
-
-  fn get_port_connections(&self, port: &ConnectionTargetDefinition) -> Vec<ConnectionDefinition> {
-    let state = self.get_state();
-    let lock = state.model.lock();
-    lock.get_port_connections(port).cloned().collect()
-  }
-
-  fn get_downstream_connections(&self, instance: &str) -> Vec<ConnectionDefinition> {
-    let state = self.get_state();
-    let lock = state.model.lock();
-    lock.get_downstream_connections(instance).cloned().collect()
-  }
-
-  fn update_network_provider(&mut self, model: ProviderModel) -> Result<()> {
-    let state = self.get_state_mut();
-    let mut lock = state.model.lock();
-    lock.commit_self_provider(model);
-    lock.final_initialization()?;
+  fn update_network_provider(&mut self, provider_model: ProviderModel) -> Result<()> {
+    let mut model = self.get_model().write();
+    model.commit_self_provider(provider_model);
+    model.final_initialization()?;
     Ok(())
   }
 }
@@ -232,7 +208,7 @@ mod test {
   async fn test_grpc_url_provider() -> TestResult<()> {
     let socket = bind_new_socket()?;
     let port = socket.local_addr()?.port();
-    make_rpc_server(socket, test_vino_provider::Provider::default());
+    make_rpc_server(socket, Box::new(test_vino_provider::Provider::default()));
     env::set_var("TEST_PORT", port.to_string());
     let def =
       load_schematic_manifest("./src/schematic_service/test-schematics/grpc-provider.yaml")?;

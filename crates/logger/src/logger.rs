@@ -10,16 +10,15 @@ use env_logger::filter::{
   Filter,
 };
 use env_logger::WriteStyle;
-use log::Level;
-use serde_json::json;
-use tracing::log::{
+use log::{
   set_boxed_logger,
   set_max_level,
+  Level,
   LevelFilter,
   Log,
   Record,
 };
-use tracing::trace;
+use serde_json::json;
 
 use crate::error::LoggerError;
 use crate::{
@@ -101,7 +100,7 @@ impl Logger {
     set_max_level(logger.inner.filter());
 
     set_boxed_logger(Box::new(logger))?;
-    trace!("logger initialized");
+    log::trace!("logger initialized");
     Ok(())
   }
 
@@ -155,14 +154,8 @@ impl Log for Logger {
 
   fn log(&self, record: &Record) {
     // Check if the record is matched by the logger before logging
-    if record.target().contains("vino") {
-      if self.inner.matches(record) {
-        eprintln!("{}", self.format(record));
-      } else {
-        eprintln!("Vino Filtered: {}", self.format(record));
-      }
-    } else {
-      eprintln!("Filtered: {}", self.format(record));
+    if self.inner.matches(record) {
+      eprintln!("{}", self.format(record));
     }
   }
 

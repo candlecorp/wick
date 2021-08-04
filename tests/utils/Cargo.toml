@@ -15,7 +15,7 @@ vino-wascap = { path = "../../crates/vino-wascap" }
 anyhow = "1.0.26"
 maplit = "1.0.2"
 pretty_assertions = "0.7.2"
-tracing = "0.1.26"
+log = "0.4"
 nkeys = "0.1.0"
 tokio = { version = "1.4.0", features = [
   "macros",
