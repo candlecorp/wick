@@ -2,7 +2,6 @@ use log::*;
 use serde::Serialize;
 use tokio::sync::mpsc::{
   unbounded_channel,
-  UnboundedReceiver,
   UnboundedSender,
 };
 use tokio_stream::wrappers::UnboundedReceiverStream;
@@ -30,7 +29,7 @@ pub trait PortSender {
   type PayloadType: Serialize + Send + 'static;
 
   /// Get the port buffer that the sender can push to.
-  fn get_port(&self) -> UnboundedSender<PacketWrapper>;
+  fn get_port(&self) -> std::result::Result<&PortChannel, Error>;
 
   /// Get the port's name.
   fn get_port_name(&self) -> String;
@@ -48,7 +47,7 @@ pub trait PortSender {
 
   /// Buffer a complete Output message then close the port.
   fn push(&self, output: Packet) -> Result {
-    self.get_port().send(PacketWrapper {
+    self.get_port()?.send(PacketWrapper {
       payload: output,
       port: self.get_port_name(),
     })?;
@@ -57,7 +56,7 @@ pub trait PortSender {
 
   /// Buffer a payload.
   fn send_message(&self, packet: Packet) -> Result {
-    self.get_port().send(PacketWrapper {
+    self.get_port()?.send(PacketWrapper {
       payload: packet,
       port: self.get_port_name(),
     })?;
@@ -72,7 +71,7 @@ pub trait PortSender {
 
   /// Buffer an exception.
   fn send_exception(&self, payload: String) -> Result {
-    self.get_port().send(PacketWrapper {
+    self.get_port()?.send(PacketWrapper {
       payload: Packet::V0(ComponentPayload::Exception(payload)),
       port: self.get_port_name(),
     })?;
@@ -97,8 +96,7 @@ pub trait PortSender {
 pub struct PortChannel {
   /// Port name.
   pub name: String,
-  /// An [UnboundedSender<PacketWrapper>] after initialized.
-  pub channel: Option<UnboundedSender<PacketWrapper>>,
+  incoming: Option<UnboundedSender<PacketWrapper>>,
 }
 
 impl PortChannel {
@@ -106,38 +104,56 @@ impl PortChannel {
   pub fn new(name: String) -> Self {
     Self {
       name,
-      channel: None,
+      incoming: None,
     }
   }
 
   /// Initialize the [PortChannel] and return a receiver.
-  pub fn init(&mut self) -> UnboundedReceiver<PacketWrapper> {
+  pub fn open(&mut self) -> UnboundedReceiverStream<PacketWrapper> {
     let (tx, rx) = unbounded_channel();
-    self.channel = Some(tx);
-    rx
+    self.incoming = Some(tx);
+    UnboundedReceiverStream::new(rx)
+  }
+
+  /// Drop the incoming channel, closing the upstream.
+  pub fn close(&mut self) {
+    self.incoming.take();
+  }
+
+  /// Returns true if the port still has an active upstream.
+  #[must_use]
+  pub fn is_closed(&self) -> bool {
+    self.incoming.is_none()
+  }
+
+  /// Send a messages to the channel.
+  pub fn send(&self, msg: PacketWrapper) -> Result {
+    let incoming = self.incoming.as_ref().ok_or(Error::SendChannelClosed)?;
+    incoming.send(msg)?;
+    Ok(())
   }
 
   /// Merge a list of [PortChannel]s into a MessageTransportStream
   pub fn merge_all(buffer: &mut [&mut PortChannel]) -> MessageTransportStream {
     let (tx, rx) = unbounded_channel::<TransportWrapper>();
 
-    let mut map = StreamMap::new();
+    let mut channels = StreamMap::new();
     for channel in buffer {
-      map.insert(
-        channel.name.clone(),
-        UnboundedReceiverStream::new(channel.init()),
-      );
+      channels.insert(channel.name.clone(), channel.open());
     }
 
     tokio::spawn(async move {
-      while let Some((_, v)) = map.next().await {
-        let transport: TransportWrapper = v.into();
-
-        if let Err(e) = tx.send(transport) {
-          error!("Internal error sending to aggregated output stream {}", e);
-        }
+      while let Some((_, msg)) = channels.next().await {
+        match tx.send(msg.into()) {
+          Ok(_) => {}
+          Err(e) => {
+            error!("Unexpected error sending to aggregated stream: {}", e);
+          }
+        };
       }
+      trace!("Port closing");
     });
+
     MessageTransportStream::new(rx)
   }
 }

@@ -19,7 +19,6 @@ use crate::TransportWrapper;
 /// A [MessageTransportStream] is a stream of [MessageTransport]s
 #[derive(Debug)]
 pub struct MessageTransportStream {
-  // port_statuses: HashMap<String, PortStatus>,
   rx: RefCell<UnboundedReceiver<TransportWrapper>>,
   buffer: HashMap<String, Vec<TransportWrapper>>,
   collected: bool,
@@ -43,14 +42,15 @@ impl Stream for MessageTransportStream {
   fn poll_next(self: Pin<&mut Self>, cx: &mut std::task::Context<'_>) -> Poll<Option<Self::Item>> {
     let mut rx = self.rx.borrow_mut();
     match rx.poll_recv(cx) {
-      Poll::Ready(Some(wrapper)) => {
-        if SYSTEM_CLOSE_MESSAGE.eq(&wrapper) {
+      Poll::Ready(Some(msg)) => {
+        if SYSTEM_CLOSE_MESSAGE.eq(&msg) {
           Poll::Ready(None)
         } else {
-          Poll::Ready(Some(wrapper))
+          Poll::Ready(Some(msg))
         }
       }
-      other => other,
+      Poll::Ready(None) => Poll::Ready(None),
+      Poll::Pending => Poll::Pending,
     }
   }
 }
@@ -65,7 +65,6 @@ impl MessageTransportStream {
       for message in all {
         let buff = buffer.entry(message.port.clone()).or_insert_with(Vec::new);
         // If we've collected everything, we don't care about Close messages
-        log::trace!("Collected: {:?}", message);
         if CLOSE_MESSAGE.ne(&message.payload) {
           buff.push(message);
         }

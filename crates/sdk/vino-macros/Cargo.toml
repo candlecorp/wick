@@ -8,5 +8,5 @@ license = "Apache-2.0"
 [dependencies]
 vino-transport = { path = "../vino-transport" }
 colored = "2.0.0"
-tracing = "0.1.26"
+log = "0.4"
 lazy_static = "1.4.0"

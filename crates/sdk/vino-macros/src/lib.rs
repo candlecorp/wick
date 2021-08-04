@@ -74,7 +74,7 @@
 // Add exceptions here
 #![allow()]
 
-pub use tracing;
+pub use log;
 
 #[macro_export]
 /// Test a condition and if it is false, return the supplied error
@@ -106,7 +106,7 @@ macro_rules! ensure {
 /// Turns an expression into an error while logging it.
 macro_rules! log_err {
   ($exp:expr) => {{
-    tracing::error!("{}", $exp);
+    log::error!("{}", $exp);
     Err($exp)
   }};
 }
@@ -153,7 +153,7 @@ macro_rules! log_tap {
 macro_rules! testlog {
     ($($arg:tt)+) => (
       if cfg!(test) {
-        tracing::debug!($($arg)+)
+        log::debug!($($arg)+)
       }
     )
 }
@@ -233,6 +233,7 @@ macro_rules! some_or_bail {
 /// # fn main() {
 ///
 /// for i in vec![Some(1), None, Some(2)] {
+
 ///   println!("Starting loop");
 ///   let num = some_or_continue!(i);
 ///   println!("Got {}", num);
@@ -258,6 +259,7 @@ macro_rules! some_or_continue {
 /// # fn main() {
 ///
 /// for i in vec![Ok(1), Err("Oh no"), Ok(2)] {
+
 ///   println!("Starting loop");
 ///   let num = ok_or_continue!(i);
 ///   println!("Got {}", num);
@@ -269,7 +271,7 @@ macro_rules! ok_or_continue {
     match $opt {
       Ok(stuff) => stuff,
       Err(e) => {
-        tracing::debug!("Unexpected but recoverable error: {}", e.to_string());
+        log::debug!("Unexpected but recoverable error: {}", e.to_string());
         continue;
       }
     }
@@ -301,7 +303,7 @@ macro_rules! ok_or_bail {
     match $result {
       Ok(stuff) => stuff,
       Err(e) => {
-        tracing::debug!("Unexpected but recoverable error: {}", e.to_string());
+        log::debug!("Unexpected but recoverable error: {}", e.to_string());
         return $ret;
       }
     }
@@ -391,7 +393,7 @@ macro_rules! elapsed {
         .unwrap_or("no start time marked...".to_owned());
       use $crate::colored::Colorize;
       let msg = format!(
-        "BENCH::{}:{}: +{}",
+        "BENCH::{}:{}: +{}μs",
         $crate::function_path!(),
         line!(),
         elapsed
