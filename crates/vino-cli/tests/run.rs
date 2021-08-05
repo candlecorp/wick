@@ -1,5 +1,5 @@
 #[actix::test]
-async fn run_log() {
+async fn vino_run() {
   let output = test_bin::get_test_bin("vino")
     .env_clear()
     .args(&[
@@ -15,6 +15,6 @@ async fn run_log() {
 
   assert_eq!(
     String::from_utf8_lossy(&output.stdout),
-    "Logger: testing123\n{\"error_kind\":\"None\",\"value\":\"testing123\"}\n"
+    "Logger: testing123\n{\"value\":\"testing123\"}\n"
   );
 }

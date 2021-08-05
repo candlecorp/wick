@@ -17,7 +17,7 @@ impl Handler<Invocation> for SchematicService {
     let target = msg.target.clone();
     let result = match target {
       Entity::Schematic(name) => handle_schematic(self, ctx.address(), &name, &msg),
-      Entity::Component(name) => handle_schematic(self, ctx.address(), &name, &msg),
+      Entity::Component(_, name) => handle_schematic(self, ctx.address(), &name, &msg),
       Entity::Reference(reference) => get_component_definition(self.get_model(), &reference)
         .and_then(|def| handle_schematic(self, ctx.address(), &def.id, &msg)),
       _ => Err(SchematicError::FailedPreRequestCondition(
@@ -85,11 +85,17 @@ fn handle_schematic(
     Ok!(())
   });
 
-  let input_messages = make_input_packets(schematic.get_model(), &tx_id, &invocation.msg)?;
-  let messages = concat(vec![input_messages]);
-  for message in messages {
-    inbound.send(TransactionUpdate::Update(message.handle_default()))?;
-  }
+  match make_input_packets(schematic.get_model(), &tx_id, &invocation.msg) {
+    Ok(messages) => {
+      for message in messages {
+        inbound.send(TransactionUpdate::Update(message.handle_default()))?;
+      }
+    }
+    Err(e) => {
+      inbound.send(TransactionUpdate::Error(e.to_string()))?;
+      return Err(e);
+    }
+  };
 
   Ok(async move { Ok(InvocationResponse::stream(tx_id, rx)) })
 }
@@ -104,7 +110,10 @@ fn make_input_packets(
   let mut messages: Vec<InputMessage> = vec![];
   for conn in connections {
     let transport = map.get(conn.from.get_port()).ok_or_else(|| {
-      SchematicError::FailedPreRequestCondition(format!("Port {} not found in input", conn.from))
+      SchematicError::FailedPreRequestCondition(format!(
+        "Port {} not found in transport payload",
+        conn.from
+      ))
     })?;
     messages.push(InputMessage {
       connection: conn.clone(),

@@ -3,7 +3,7 @@ name = "vino-host"
 version = "0.1.0"
 authors = ["Jarrod Overson <jsoverson@gmail.com>"]
 edition = "2018"
-license = "Apache-2.0"
+license = "BSD-3-Clause"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -15,6 +15,7 @@ vino-provider = { path = "../vino-provider", features = ["native"] }
 vino-provider-cli = { path = "../vino-provider-cli" }
 vino-codec = { path = "../vino-codec" }
 vino-rpc = { path = "../vino-rpc" }
+vino-invocation-server = { path = "../vino-invocation-server" }
 vino-entity = { path = "../vino-entity" }
 vino-macros = { path = "../vino-macros" }
 log = "0.4"

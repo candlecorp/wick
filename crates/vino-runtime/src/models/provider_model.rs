@@ -1,7 +1,4 @@
 use std::collections::HashMap;
-use std::sync::Arc;
-
-use tokio::sync::Mutex;
 
 use crate::dev::prelude::*;
 use crate::error::ProviderError;
@@ -168,7 +165,7 @@ pub(crate) async fn initialize_provider(
   allow_latest: bool,
   allowed_insecure: &[String],
 ) -> Result<(ProviderChannel, ProviderModel)> {
-  trace!("PRV:Registering namespace {}", provider.namespace);
+  trace!("Registering namespace {}", provider.namespace);
   let namespace = provider.namespace.clone();
   match provider.kind {
     ProviderKind::Native => unreachable!(), // Should not be handled via this route

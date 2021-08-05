@@ -83,22 +83,22 @@ use std::path::PathBuf;
 use std::str::FromStr;
 
 use crate::error::OciError;
-/// This crate's error module
+/// This crate's error module.
 pub mod error;
 pub use error::OciError as Error;
 
 #[macro_use]
 extern crate log;
 
-/// The ENV variable holding the OCI username
+/// The ENV variable holding the OCI username.
 pub const OCI_VAR_USER: &str = "OCI_REGISTRY_USER";
-/// The ENV variable holding the OCI password
+/// The ENV variable holding the OCI password.
 pub const OCI_VAR_PASSWORD: &str = "OCI_REGISTRY_PASSWORD";
 
 const WASM_MEDIA_TYPE: &str = "application/vnd.module.wasm.content.layer.v1+wasm";
 const OCI_MEDIA_TYPE: &str = "application/vnd.oci.image.layer.v1.tar";
 
-/// Retrieve a payload from an OCI url
+/// Retrieve a payload from an OCI url.
 pub async fn fetch_oci_bytes(
   img: &str,
   allow_latest: bool,
@@ -122,7 +122,12 @@ pub async fn fetch_oci_bytes(
     };
 
     let protocol = oci_distribution::client::ClientProtocol::HttpsExcept(allowed_insecure.to_vec());
-    let config = oci_distribution::client::ClientConfig { protocol };
+    let config = oci_distribution::client::ClientConfig {
+      protocol,
+      accept_invalid_hostnames: false,
+      accept_invalid_certificates: false,
+      extra_root_certificates: vec![],
+    };
     let mut c = oci_distribution::Client::new(config);
     let imgdata = pull(&mut c, &img, &auth).await;
 

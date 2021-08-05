@@ -75,7 +75,7 @@
 pub mod error;
 pub use error::VinoError as Error;
 
-pub type Result<T> = std::result::Result<T, Error>;
+pub(crate) type Result<T> = std::result::Result<T, Error>;
 
 #[macro_use]
 extern crate log;

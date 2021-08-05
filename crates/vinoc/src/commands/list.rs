@@ -6,10 +6,7 @@ use vino_rpc::rpc::ListRequest;
 use vino_types::signatures::HostedType;
 
 use crate::rpc_client::rpc_client;
-use crate::{
-  Error,
-  Result,
-};
+use crate::Result;
 
 #[derive(Debug, Clone, StructOpt)]
 #[structopt(rename_all = "kebab-case")]
@@ -21,23 +18,19 @@ pub struct ListCommand {
   pub connection: super::ConnectOptions,
 }
 
-pub async fn handle_command(command: ListCommand) -> Result<()> {
-  crate::utils::init_logger(&command.logging)?;
+pub async fn handle_command(opts: ListCommand) -> Result<()> {
+  crate::utils::init_logger(&opts.logging)?;
   let mut client = rpc_client(
-    command.connection.address,
-    command.connection.port,
-    command.connection.pem,
-    command.connection.key,
-    command.connection.ca,
-    command.connection.domain,
+    opts.connection.address,
+    opts.connection.port,
+    opts.connection.pem,
+    opts.connection.key,
+    opts.connection.ca,
+    opts.connection.domain,
   )
   .await?;
 
-  let list = client.list(ListRequest {});
-  debug!("Making list request");
-  let list = list.await.map_err(|e| Error::Other(e.to_string()))?;
-  debug!("Component list: {:?}", list);
-  let list = list.into_inner();
+  let list = client.list(ListRequest {}).await?;
 
   let mut converted: Vec<HostedType> = Vec::new();
 

@@ -1,4 +1,4 @@
-//! Vino provider
+//! The Vino types crate contains types and signatures used by Vino tools.
 
 // !!START_LINTS
 // Vino lints
@@ -74,5 +74,5 @@
 // Add exceptions here
 #![allow()]
 
-/// Signatures of Vino types
+/// Signatures of Vino types.
 pub mod signatures;

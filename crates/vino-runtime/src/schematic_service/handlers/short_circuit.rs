@@ -46,28 +46,16 @@ impl Handler<ShortCircuit> for SchematicService {
       join(&downstreams, ", ")
     );
 
-    let outputs: Vec<OutputMessage> = downstreams
-      .into_iter()
-      .flat_map(|conn| {
-        vec![
-          OutputMessage {
-            tx_id: tx_id.clone(),
-            port: conn.from.clone(),
-            payload: payload.clone(),
-          },
-          OutputMessage {
-            tx_id: tx_id.clone(),
-            port: conn.from,
-            payload: MessageTransport::done(),
-          },
-        ]
-      })
-      .collect();
-
     let schematic_host = ctx.address();
 
-    let futures = outputs
+    let futures = downstreams
       .into_iter()
+      .flat_map(move |conn| {
+        vec![
+          OutputMessage::new(&tx_id, conn.from.clone(), payload.clone()),
+          OutputMessage::new(&tx_id, conn.from, MessageTransport::done()),
+        ]
+      })
       .map(move |message| schematic_host.send(message));
 
     Box::pin(

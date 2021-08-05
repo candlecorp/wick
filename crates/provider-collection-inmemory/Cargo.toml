@@ -3,7 +3,7 @@ name = "vino-collection-inmemory"
 version = "0.1.0"
 authors = ["Jarrod Overson <jsoverson@gmail.com>"]
 edition = "2018"
-license = "Apache-2.0"
+license = "BSD-3-Clause"
 
 [[bin]]
 name = "vino-collection-inmemory"
@@ -13,13 +13,11 @@ path = "src/main.rs"
 thiserror = "1.0.25"
 vino-provider = { path = "../vino-provider", features = ["native"] }
 vino-provider-cli = { path = "../vino-provider-cli" }
-vino-component = { path = "../vino-component" }
-vino-codec = { path = "../vino-codec" }
+vino-packet = { path = "../vino-packet" }
 vino-rpc = { path = "../vino-rpc" }
-vino-runtime = { path = "../vino-runtime" }
-vino-interfaces-collection = { path = "../interfaces/interfaces-collection" }
+vino-macros = { path = "../vino-macros" }
+vino-interface-collection = { path = "../interfaces/interface-collection" }
 serde = { version = "1.0.118", features = ["derive"] }
-lazy_static = "1.4.0"
 async-trait = "0.1.50"
 futures = "0.3.15"
 tokio = { version = "1.4.0", features = ["macros", "sync", "rt-multi-thread"] }
@@ -35,4 +33,4 @@ backtrace = "0.3.60"
 test_bin = "0.3.0"
 tonic = "0.5.0"
 anyhow = "1.0.42"
-test-interfaces-collection = { path = "../integration/test-interfaces-collection" }
+test-interface-collection = { path = "../integration/test-interface-collection" }

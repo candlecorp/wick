@@ -72,7 +72,6 @@
 // Add exceptions here
 #![allow(clippy::expect_used, missing_docs)] //todo
 
-use std::net::Ipv4Addr;
 use std::path::PathBuf;
 
 use structopt::StructOpt;
@@ -81,31 +80,19 @@ use vino_provider_cli::cli::DefaultCliOptions;
 
 #[derive(Debug, Clone, StructOpt)]
 pub struct Options {
-  /// IP address to bind to
+  /// IP address to bind to.
   #[structopt(short, long, env = "PARAMETER_VALUE")]
   pub directory: PathBuf,
 
   #[structopt(flatten)]
   pub options: DefaultCliOptions,
-
-  /// IP address to bind to
-  #[structopt(short, long, default_value = "127.0.0.1")]
-  pub address: Ipv4Addr,
-
-  /// Path to pem file for TLS
-  #[structopt(long)]
-  pub pem: Option<PathBuf>,
-
-  /// Path to key file for TLS
-  #[structopt(long)]
-  pub key: Option<PathBuf>,
 }
 
 #[tokio::main]
-async fn main() -> vino_collection_fs::Result<()> {
+async fn main() -> Result<(), vino_provider_cli::Error> {
   let opts = Options::from_args();
 
-  env_logger::init();
+  vino_provider_cli::init_logging(&opts.options.logging)?;
   vino_provider_cli::init_cli(
     Box::new(Provider::new(opts.directory)),
     Some(opts.options.into()),

@@ -1,10 +1,6 @@
-use vino_interfaces_authentication::validate_session::*;
+use vino_interface_authentication::validate_session::*;
 
-pub(crate) async fn job(
-  input: Inputs,
-  output: Outputs,
-  context: Context<crate::State>,
-) -> JobResult {
+pub(crate) async fn job(input: Inputs, output: Outputs, context: crate::Context) -> JobResult {
   let state = context.lock().unwrap();
   let user_id = state
     .sessions

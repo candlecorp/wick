@@ -1,13 +1,9 @@
 use std::collections::HashMap;
 use std::convert::TryInto;
 
-use vino_interfaces_authentication::list_users::*;
+use vino_interface_authentication::list_users::*;
 
-pub(crate) async fn job(
-  input: Inputs,
-  output: Outputs,
-  context: Context<crate::State>,
-) -> JobResult {
+pub(crate) async fn job(input: Inputs, output: Outputs, context: crate::Context) -> JobResult {
   let state = context.lock().unwrap();
   let users: HashMap<String, String> = state
     .user_ids

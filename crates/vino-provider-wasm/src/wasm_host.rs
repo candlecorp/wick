@@ -9,11 +9,11 @@ use std::time::Instant;
 
 use parking_lot::Mutex;
 use tokio::sync::mpsc::unbounded_channel;
-use vino_component::v0::Payload;
-use vino_component::Packet;
+use vino_packet::v0::Payload;
+use vino_packet::Packet;
 use vino_provider::OutputSignal;
 use vino_transport::{
-  MessageTransportStream,
+  TransportStream,
   TransportWrapper,
 };
 use vino_types::signatures::ComponentSignature;
@@ -55,7 +55,7 @@ impl TryFrom<&WapcModule> for WasmHost {
     let engine = {
       let engine = wasmtime_provider::WasmtimeEngineProvider::new(&module.bytes, None);
       trace!(
-        "PRV:WASM:Wasmtime thread loaded in {} μs",
+        "WASM:Wasmtime thread loaded in {} μs",
         time.elapsed().as_micros()
       );
       engine
@@ -65,7 +65,7 @@ impl TryFrom<&WapcModule> for WasmHost {
     let engine = {
       let engine = wasm3_provider::Wasm3EngineProvider::new(&module.bytes);
       trace!(
-        "PRV:WASM:wasm3 thread loaded in {} μs",
+        "WASM:wasm3 thread loaded in {} μs",
         time.elapsed().as_micros()
       );
       engine
@@ -78,7 +78,7 @@ impl TryFrom<&WapcModule> for WasmHost {
     let ports_inner = closed_ports.clone();
 
     let host = WapcHost::new(engine, move |_id, _inv_id, port, output_signal, payload| {
-      trace!("PRV:WASM:WAPC_CALLBACK:{:?}", payload);
+      trace!("WASM:WAPC_CALLBACK:{:?}", payload);
       let mut ports_locked = ports_inner.lock();
       let mut buffer_locked = buffer_inner.lock();
       match OutputSignal::from_str(output_signal) {
@@ -110,9 +110,14 @@ impl TryFrom<&WapcModule> for WasmHost {
         Err(_) => Err("Invalid signal".into()),
       }
     })?;
-
-    info!(
-      "Wasmtime thread initialized in {} μs",
+    #[cfg(feature = "wasmtime")]
+    debug!(
+      "WASM:Wasmtime thread initialized in {} μs",
+      time.elapsed().as_micros()
+    );
+    #[cfg(feature = "wasm3")]
+    debug!(
+      "WASM:Wasm3 thread initialized in {} μs",
       time.elapsed().as_micros()
     );
     Ok(Self {
@@ -125,14 +130,14 @@ impl TryFrom<&WapcModule> for WasmHost {
 }
 
 impl WasmHost {
-  pub fn call(&mut self, component_name: &str, payload: &[u8]) -> Result<MessageTransportStream> {
+  pub fn call(&mut self, component_name: &str, payload: &[u8]) -> Result<TransportStream> {
     {
       self.buffer.lock().clear();
       self.closed_ports.lock().clear();
     }
-    trace!("PRV:WASM:INVOKE:{}:START", component_name);
+    trace!("WASM:INVOKE:{}:START", component_name);
     let _result = self.host.call(component_name, payload)?;
-    trace!("PRV:WASM:INVOKE:{}:FINISH", component_name);
+    trace!("WASM:INVOKE:{}:FINISH", component_name);
     let (tx, rx) = unbounded_channel();
     let mut locked = self.buffer.lock();
     while let Some((port, payload)) = locked.pop_front() {
@@ -143,7 +148,7 @@ impl WasmHost {
       tx.send(transport).map_err(|_| Error::SendError)?;
     }
 
-    Ok(MessageTransportStream::new(rx))
+    Ok(TransportStream::new(rx))
   }
 
   pub fn get_components(&self) -> &Vec<ComponentSignature> {

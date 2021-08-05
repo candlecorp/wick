@@ -33,23 +33,19 @@ static MINIMUM_LENGTH: usize = 8;
 static MAXIMUM_LENGTH: usize = 512;
 
 pub(crate) fn job(input: Inputs, output: Outputs) -> JobResult {
-  console_log("In job");
   let password = input.input;
   if password.len() < MINIMUM_LENGTH {
-    console_log("too short");
     output
       .output
       .done_exception(LengthError::TooShort.to_string())?;
     return Ok(());
   }
   if password.len() > MAXIMUM_LENGTH {
-    console_log("too long");
     output
       .output
       .done_exception(LengthError::TooLong.to_string())?;
     return Ok(());
   }
-  console_log("just right");
   output.output.done(&password)?;
 
   Ok(())

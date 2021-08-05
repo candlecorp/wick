@@ -1,5 +1,5 @@
 {
-  "name": "vino-interfaces-authentication",
+  "name": "vino-interface-authentication",
   "components": [
     {
       "name": "authenticate",

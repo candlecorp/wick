@@ -6,6 +6,6 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-oci-distribution = "0.6.0"
+oci-distribution = "0.7.0"
 thiserror = "1.0.26"
 log = "0.4"

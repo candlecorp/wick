@@ -12,9 +12,9 @@ pub enum SchematicError {
   TransactionNotFound(String),
   #[error("Instance {0} not found")]
   InstanceNotFound(String),
-  #[error("Schematic failed pre-request condition")]
+  #[error("Schematic failed pre-request condition: {0}")]
   FailedPreRequestCondition(String),
-  #[error("Schematic channel closed while data still available. This can happen when acting on output before waiting for the system to receive the final close and may not be a problem.")]
+  #[error("Schematic channel closed while data still available. This can happen when the client disconnects early either due to an error or acting on the stream without waiting for it to complete.")]
   SchematicClosedEarly,
   #[error("Model invalid after validation: {0}")]
   InvalidModel(u32),
@@ -86,10 +86,12 @@ pub enum ProviderError {
   RpcError(#[from] vino_rpc::Error),
   #[error(transparent)]
   RpcHandlerError(#[from] Box<vino_rpc::Error>),
+  #[error("Upstream RPC error: {0}")]
+  RpcUpstreamError(String),
   #[error(transparent)]
-  RpcUpstreamError(#[from] tonic::Status),
+  OutputError(#[from] vino_packet::error::DeserializationError),
   #[error(transparent)]
-  OutputError(#[from] vino_component::error::DeserializationError),
+  RpcServerError(#[from] vino_invocation_server::Error),
   #[error(transparent)]
   CodecError(#[from] vino_codec::Error),
   #[error("Grpc Provider error: {0}")]
@@ -175,10 +177,6 @@ pub enum RuntimeError {
   #[error(transparent)]
   SchematicError(#[from] SchematicError),
   #[error(transparent)]
-  TonicError(#[from] tonic::transport::Error),
-  #[error(transparent)]
-  RpcUpstreamError(#[from] tonic::Status),
-  #[error(transparent)]
   EntityError(#[from] vino_entity::Error),
   #[error(transparent)]
   RpcError(#[from] vino_rpc::Error),
@@ -189,7 +187,7 @@ pub enum RuntimeError {
   #[error(transparent)]
   TransportError(#[from] vino_transport::Error),
   #[error(transparent)]
-  OutputError(#[from] vino_component::error::DeserializationError),
+  OutputError(#[from] vino_packet::error::DeserializationError),
   #[error(transparent)]
   ActixMailboxError(#[from] MailboxError),
   #[error(transparent)]

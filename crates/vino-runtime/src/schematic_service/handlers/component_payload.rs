@@ -17,7 +17,6 @@ impl Handler<ComponentPayload> for SchematicService {
 
   fn handle(&mut self, msg: ComponentPayload, ctx: &mut Context<Self>) -> Self::Result {
     trace!("SC:{}:{}:READY", self.name, msg.instance);
-    let kp = &self.get_state().kp;
     let instance = msg.instance.clone();
     let tx_id = msg.tx_id;
 
@@ -34,9 +33,8 @@ impl Handler<ComponentPayload> for SchematicService {
 
     let invocation = Invocation::next(
       &tx_id,
-      kp,
       Entity::schematic(&self.name),
-      Entity::Component(def.name),
+      Entity::component(def.namespace, def.name),
       msg.payload_map,
     );
     let handler = actix_try!(self.get_recipient(&msg.instance), 6010);

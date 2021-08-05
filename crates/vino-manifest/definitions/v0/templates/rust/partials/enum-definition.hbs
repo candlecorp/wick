@@ -11,12 +11,12 @@ fn {{upperCase (snakeCase ../name.value)}}_{{upperCase name.value}}() -> {{> exp
 #[derive(Debug, Clone, Serialize, Deserialize, Copy, Eq, PartialEq, Primitive)]
 #[serde(deny_unknown_fields)]
 {{#if description}}
-/// {{description.value}}
+/// {{{description.value}}}.
 {{/if}}
 pub enum {{name.value}} {
   {{#each values}}
     {{#if description}}
-    /// {{description.value}}
+    /// {{description.value}}.
     {{/if}}
     {{#withAnnotation "deprecated"}}
     #[deprecated()]

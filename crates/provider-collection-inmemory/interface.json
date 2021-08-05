@@ -1,5 +1,5 @@
 {
-  "name": "vino-interfaces-collection",
+  "name": "vino-interface-collection",
   "components": [
     {
       "name": "add-item",

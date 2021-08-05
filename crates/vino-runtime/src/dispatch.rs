@@ -8,11 +8,10 @@ use serde::{
 use tokio::sync::mpsc::UnboundedReceiver;
 use vino_rpc::convert_transport_map;
 use vino_transport::message_transport::TransportMap;
-use vino_wascap::KeyPair;
 
 use crate::dev::prelude::*;
 
-/// An invocation for a component, port, or schematic
+/// An invocation for a component, port, or schematic.
 #[derive(Debug, Clone, Default, Serialize, Deserialize, Message)]
 #[rtype(result = "InvocationResponse")]
 pub struct Invocation {
@@ -21,7 +20,6 @@ pub struct Invocation {
   pub msg: TransportMap,
   pub id: String,
   pub tx_id: String,
-  pub network_id: String,
 }
 
 impl<A, M> MessageResponse<A, M> for Invocation
@@ -46,21 +44,14 @@ impl TryFrom<Invocation> for vino_rpc::rpc::Invocation {
       target: inv.target.url(),
       msg: convert_transport_map(inv.msg),
       id: inv.id,
-      network_id: inv.network_id,
     })
   }
 }
 
 #[derive(Debug)]
 pub enum InvocationResponse {
-  Stream {
-    tx_id: String,
-    rx: MessageTransportStream,
-  },
-  Error {
-    tx_id: String,
-    msg: String,
-  },
+  Stream { tx_id: String, rx: TransportStream },
+  Error { tx_id: String, msg: String },
 }
 
 pub(crate) fn inv_error(tx_id: &str, msg: &str) -> InvocationResponse {
@@ -68,17 +59,17 @@ pub(crate) fn inv_error(tx_id: &str, msg: &str) -> InvocationResponse {
 }
 
 impl InvocationResponse {
-  /// Creates a successful invocation response stream. Response include the receiving end
+  /// Creates a successful invocation response stream. Response include the receiving end.
   /// of an unbounded channel to listen for future output.
   #[must_use]
   pub fn stream(tx_id: String, rx: UnboundedReceiver<TransportWrapper>) -> InvocationResponse {
     InvocationResponse::Stream {
       tx_id,
-      rx: MessageTransportStream::new(rx),
+      rx: TransportStream::new(rx),
     }
   }
 
-  /// Creates an error response
+  /// Creates an error response.
   #[must_use]
   pub fn error(tx_id: String, msg: String) -> InvocationResponse {
     InvocationResponse::Error { tx_id, msg }
@@ -91,7 +82,7 @@ impl InvocationResponse {
     }
   }
 
-  pub fn ok(self) -> Result<MessageTransportStream, InvocationError> {
+  pub fn ok(self) -> Result<TransportStream, InvocationError> {
     match self {
       InvocationResponse::Stream { rx, .. } => Ok(rx),
       InvocationResponse::Error { msg, .. } => Err(InvocationError(msg)),
@@ -113,40 +104,30 @@ where
   }
 }
 impl Invocation {
-  /// Creates an invocation with a new transaction id
+  /// Creates an invocation with a new transaction id.
   #[must_use]
-  pub fn new(hostkey: &KeyPair, origin: Entity, target: Entity, msg: TransportMap) -> Invocation {
+  pub fn new(origin: Entity, target: Entity, msg: TransportMap) -> Invocation {
     let tx_id = get_uuid();
     let invocation_id = get_uuid();
-    let issuer = hostkey.public_key();
 
     Invocation {
       origin,
       target,
       msg,
       id: invocation_id,
-      network_id: issuer,
       tx_id,
     }
   }
-  /// Creates an invocation with a specific transaction id, to correlate a chain of
+  /// Creates an invocation with a specific transaction id, to correlate a chain of.
   /// invocations.
   #[must_use]
-  pub fn next(
-    tx_id: &str,
-    hostkey: &KeyPair,
-    origin: Entity,
-    target: Entity,
-    msg: TransportMap,
-  ) -> Invocation {
+  pub fn next(tx_id: &str, origin: Entity, target: Entity, msg: TransportMap) -> Invocation {
     let invocation_id = get_uuid();
-    let issuer = hostkey.public_key();
     Invocation {
       origin,
       target,
       msg,
       id: invocation_id,
-      network_id: issuer,
       tx_id: tx_id.to_owned(),
     }
   }

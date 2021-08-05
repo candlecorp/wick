@@ -1,5 +1,4 @@
 use std::collections::VecDeque;
-use std::rc::Rc;
 use std::sync::Arc;
 use std::time::{
   Duration,
@@ -7,10 +6,7 @@ use std::time::{
 };
 
 use actix::clock::timeout;
-use parking_lot::{
-  Mutex,
-  RwLock,
-};
+use parking_lot::RwLock;
 use tokio::sync::mpsc::{
   unbounded_channel,
   UnboundedReceiver,
@@ -63,12 +59,18 @@ impl TransactionExecutor {
         iter += 1;
 
         let mut sender_messages = transaction.check_senders();
-        trace!("{}:{} SENDER MESSAGES", iter_prefix, sender_messages.len());
+        if !sender_messages.is_empty() {
+          trace!(
+            "{}:{} generated messages",
+            iter_prefix,
+            sender_messages.len()
+          );
+        }
 
         self_msgs.append(&mut sender_messages);
 
         trace!(
-          "{}:NEXTWAIT:(internal:{},timeout:{:?})",
+          "{}:NEXTWAIT:(queue:{},timeout:{:?})",
           iter_prefix,
           self_msgs.len(),
           expire
@@ -76,10 +78,11 @@ impl TransactionExecutor {
         let msg = if let Some(msg) = self_msgs.pop_front() {
           msg
         } else {
+          let actual = Instant::now();
           match timeout(expire, outbound_rx.recv()).await {
             Ok(Some(msg)) => msg,
             Ok(None) => TransactionUpdate::Drained,
-            Err(_) => TransactionUpdate::Error(format!("Timeout ({})ms", expire.as_millis())),
+            Err(_) => TransactionUpdate::Timeout(actual.elapsed()),
           }
         };
 
@@ -88,9 +91,14 @@ impl TransactionExecutor {
             trace!("{}:DRAINED", iter_prefix);
             self_msgs.push_back(TransactionUpdate::Done(tx_id.clone()));
           }
+          TransactionUpdate::Timeout(d) => {
+            trace!("{}:TIMEOUT:{}ms", iter_prefix, d.as_millis());
+            warn!("Transaction {} timeout waiting for next message. This can happen if a component does not close its ports when finished sending.", tx_id);
+            self_msgs.push_back(TransactionUpdate::Done(tx_id.clone()));
+          }
           TransactionUpdate::Error(e) => {
-            trace!("{}:TIMEOUT:{}", iter_prefix, e);
-            warn!("Transaction {} timeout out waiting for next message. This can happen if a component does not close its ports when finished sending.", tx_id);
+            trace!("{}:ERROR:{}", iter_prefix, e);
+            warn!("Transaction {} error: {}", tx_id, e);
             self_msgs.push_back(TransactionUpdate::Done(tx_id.clone()));
           }
           TransactionUpdate::Execute(payload) => {
@@ -107,7 +115,7 @@ impl TransactionExecutor {
             }));
           }
           TransactionUpdate::Result(output) => {
-            trace!("{}:RESULT:{}", iter_prefix, output.payload.port,);
+            trace!("{}:RESULT:PORT[{}]", iter_prefix, output.payload.port,);
             let port = output.payload.port.clone();
             let _ = log_ie!(inbound_tx.send(TransactionUpdate::Result(output)), 9002);
             let target = ConnectionTargetDefinition::new(SCHEMATIC_OUTPUT, &port);
@@ -156,7 +164,7 @@ impl TransactionExecutor {
           }
         };
       }
-      debug!("{}:STOPPING", log_prefix);
+      debug!("{}STOPPING", log_prefix);
       Ok!(())
     });
 

@@ -14,7 +14,7 @@ async fn request() -> anyhow::Result<()> {
 
   let mut outputs = provider
     .invoke(
-      vino_entity::Entity::component("test-component"),
+      vino_entity::Entity::component_direct("test-component"),
       job_payload,
     )
     .await?;

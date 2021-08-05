@@ -14,21 +14,19 @@ use tonic::transport::{
   Identity,
   Server,
 };
+use vino_invocation_server::InvocationServer;
 use vino_rpc::rpc::invocation_service_server::InvocationServiceServer;
-use vino_rpc::{
-  InvocationServer,
-  RpcHandlerType,
-};
+use vino_rpc::BoxedRpcHandler;
 
 pub(crate) const FILE_DESCRIPTOR_SET: &[u8] =
   include_bytes!("../../vino-rpc/src/generated/descriptors.bin");
 
 #[derive(Debug, Default, Clone)]
-/// Server configuration options
+/// Server configuration options.
 pub struct Options {
-  /// RPC server options
+  /// RPC server options.
   pub rpc: Option<ServerOptions>,
-  /// HTTP server options
+  /// HTTP server options.
   pub http: Option<ServerOptions>,
 }
 
@@ -38,16 +36,16 @@ pub struct ServerOptions {
   /// The port to bind to.
   pub port: Option<u16>,
 
-  /// The address to bind to
+  /// The address to bind to.
   pub address: Option<Ipv4Addr>,
 
-  /// Path to pem file for TLS
+  /// Path to pem file for TLS.
   pub pem: Option<PathBuf>,
 
-  /// Path to key file for TLS
+  /// Path to key file for TLS.
   pub key: Option<PathBuf>,
 
-  /// Path to CA file
+  /// Path to CA file.
   pub ca: Option<PathBuf>,
 }
 
@@ -82,39 +80,39 @@ impl From<DefaultCliOptions> for LoggingOptions {
 #[structopt(rename_all = "kebab-case")]
 /// Default command line options that downstream providers can use. This isn't required.
 pub struct DefaultCliOptions {
-  /// Port to listen on
+  /// Port to listen on.
   #[structopt(short, long)]
   pub port: Option<u16>,
 
-  /// IP address to bind to
+  /// IP address to bind to.
   #[structopt(short, long)]
   pub address: Option<Ipv4Addr>,
 
-  /// Path to pem file for TLS
+  /// Path to pem file for TLS.
   #[structopt(long)]
   pub pem: Option<PathBuf>,
 
-  /// Path to key file for TLS
+  /// Path to key file for TLS.
   #[structopt(long)]
   pub key: Option<PathBuf>,
 
-  /// Path to certificate authority
+  /// Path to certificate authority.
   #[structopt(long)]
   pub ca: Option<PathBuf>,
 
-  /// Address for the optional HTTP server
+  /// Address for the optional HTTP server.
   #[structopt(long)]
   pub http_address: Option<Ipv4Addr>,
 
-  /// Port to use for HTTP
+  /// Port to use for HTTP.
   #[structopt(long)]
   pub http_port: Option<u16>,
 
-  /// Logging options
+  /// Logging options.
   #[structopt(flatten)]
   pub logging: LoggingOptions,
 
-  /// Outputs the version
+  /// Outputs the version.
   #[structopt(long = "version", short = "v")]
   pub version: bool,
 }
@@ -129,19 +127,19 @@ pub struct ServerMetadata {
   pub http_addr: Option<SocketAddr>,
 }
 
-/// Initializes logging with Vino's logger
+/// Initializes logging with Vino's logger.
 pub fn init_logging(options: &LoggingOptions) -> crate::Result<()> {
-  logger::Logger::init(options)?;
+  logger::init(options);
 
   Ok(())
 }
 
-/// Starts an RPC and/or an HTTP server for the passed [RpcHandler]
+/// Starts an RPC and/or an HTTP server for the passed [vino_rpc::RpcHandler].
 pub async fn start_server(
-  provider: RpcHandlerType,
+  provider: BoxedRpcHandler,
   opts: Option<Options>,
 ) -> crate::Result<ServerMetadata> {
-  debug!("Starting provider RPC server");
+  debug!("Starting RPC server");
 
   let opts = opts.unwrap_or_default();
 
@@ -158,7 +156,7 @@ pub async fn start_server(
 
   trace!("Binding RPC server to {} (Port: {})", addr, addr.port());
 
-  let component_service = InvocationServer { provider };
+  let component_service = InvocationServer::new(provider);
 
   let svc = InvocationServiceServer::new(component_service);
 
@@ -169,19 +167,17 @@ pub async fn start_server(
     .build()
     .unwrap();
 
-  // TODO: Need to decouple these options
-  // they don't all need to be provided together
   let mut builder = Server::builder();
 
   if let (Some(pem), Some(key)) = (rpc_options.pem, rpc_options.key) {
     let server_pem = tokio::fs::read(pem).await?;
     let server_key = tokio::fs::read(key).await?;
     let identity = Identity::from_pem(server_pem, server_key);
-    info!("Starting TLS server on {}", addr);
+    info!("Starting secure server on {}", addr);
     let mut tls = tonic::transport::ServerTlsConfig::new().identity(identity);
 
     if let Some(ca) = rpc_options.ca {
-      info!("Adding CA root from {}", ca.to_string_lossy());
+      debug!("Adding CA root from {}", ca.to_string_lossy());
       let ca_pem = tokio::fs::read(ca).await?;
       let ca = Certificate::from_pem(ca_pem);
       tls = tls.client_ca_root(ca);
@@ -190,8 +186,7 @@ pub async fn start_server(
     builder = builder.tls_config(tls)?;
   } else {
     if let Some(ca) = rpc_options.ca {
-      info!("Adding CA root from {}", ca.to_string_lossy());
-
+      debug!("Adding CA root from {}", ca.to_string_lossy());
       let ca_pem = tokio::fs::read(ca).await?;
       let ca = Certificate::from_pem(ca_pem);
       let tls = tonic::transport::ServerTlsConfig::new().client_ca_root(ca);
@@ -211,7 +206,6 @@ pub async fn start_server(
     socket.bind(SocketAddr::new(IpAddr::V4(address), port))?;
     let addr = socket.local_addr()?;
 
-    trace!("Binding HTTP Server to {} (Port: {})", addr, addr.port());
     let listener = tokio_stream::wrappers::TcpListenerStream::new(socket.listen(512).unwrap());
 
     let web_service = tonic_web::config().allow_all_origins().enable(svc.clone());
@@ -240,11 +234,10 @@ pub async fn start_server(
   })
 }
 
-/// Start a server with the passed [RpcHandler] and keep it
-/// running until the process receives a SIGINT (^C)
-pub async fn init_cli(provider: RpcHandlerType, opts: Option<Options>) -> crate::Result<()> {
-  let config = start_server(provider, opts).await?;
-  println!("Server bound to {}", config.rpc_addr.unwrap());
+/// Start a server with the passed [vino_rpc::RpcHandler] and keep it.
+/// running until the process receives a SIGINT (^C).
+pub async fn init_cli(provider: BoxedRpcHandler, opts: Option<Options>) -> crate::Result<()> {
+  let _ = start_server(provider, opts).await?;
   info!("Waiting for ctrl-C");
   signal::ctrl_c().await?;
 
@@ -260,7 +253,7 @@ mod tests {
   use test_vino_provider::Provider;
   use tokio::time::sleep;
   use tonic::transport::Uri;
-  use vino_rpc::make_rpc_client;
+  use vino_invocation_server::make_rpc_client;
   use vino_rpc::rpc::ListRequest;
 
   use super::*;

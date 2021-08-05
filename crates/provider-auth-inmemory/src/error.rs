@@ -13,18 +13,10 @@ pub enum Error {
   RpcError(#[from] vino_rpc::Error),
   #[error(transparent)]
   CliError(#[from] vino_provider_cli::Error),
-  // #[error(transparent)]
-  // VinoError(#[from] vino_runtime::Error),
   #[error(transparent)]
   IoError(#[from] std::io::Error),
   #[error(transparent)]
   ProviderSdkError(#[from] vino_provider::native::Error),
-  // #[error(transparent)]
-  // ComponentError(#[from] vino_component::Error),
-  // #[error(transparent)]
-  // CodecError(#[from] vino_codec::Error),
   #[error(transparent)]
   UpstreamError(#[from] BoxedError),
-  // #[error(transparent)]
-  // JoinError(#[from] tokio::task::JoinError),
 }

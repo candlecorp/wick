@@ -1,9 +1,15 @@
 [package]
 name = "vino-entity"
 version = "0.1.0"
-authors = ["Jarrod Overson <jsoverson@gmail.com>"]
 edition = "2018"
-license = "Apache-2.0"
+license = "BSD-3-Clause"
+description = "Entities found in a Vino network"
+documentation = "https://docs.vino.dev"
+keywords = ["vino", "flow"]
+exclude = ["tests/*", ".github/*", ".gitignore"]
+
+[badges]
+maintenance = { status = "actively-developed" }
 
 [dependencies]
 vino-macros = { path = "../vino-macros" }

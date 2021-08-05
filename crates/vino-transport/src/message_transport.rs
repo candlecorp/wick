@@ -1,4 +1,4 @@
-/// Module for a [MessageTransportStream]
+/// Module for a [TransportStream]
 pub mod stream;
 
 use std::collections::HashMap;
@@ -15,7 +15,7 @@ use vino_codec::{
   messagepack,
   raw,
 };
-use vino_component::{
+use vino_packet::{
   v0,
   Packet,
   PacketWrapper,
@@ -40,9 +40,6 @@ lazy_static::lazy_static! {
       )
     };
 }
-
-/// A HashMap mapping from a port name to a MessageTransport object.
-pub type PortMap = HashMap<String, MessageTransport>;
 
 /// The [MessageTransport] is the primary way messages are sent around Vino Networks, Schematics, and is the representation that normalizes output [Packet]'s.
 #[must_use]
@@ -103,13 +100,17 @@ impl TransportMap {
 
   /// Deserialize a JSON Object into a [TransportMap]
   pub fn from_json_str(json: &str) -> Result<Self> {
-    let json: HashMap<String, serde_value::Value> = json::deserialize(json).map_err(de_err)?;
-    Ok(TransportMap::with_map(
-      json
-        .into_iter()
-        .map(|(name, val)| (name, MessageTransport::Success(val)))
-        .collect(),
-    ))
+    if json.trim() == "" {
+      Ok(TransportMap::new())
+    } else {
+      let json: HashMap<String, serde_value::Value> = json::deserialize(json).map_err(de_err)?;
+      Ok(TransportMap::with_map(
+        json
+          .into_iter()
+          .map(|(name, val)| (name, MessageTransport::Success(val)))
+          .collect(),
+      ))
+    }
   }
 
   /// Insert a MessageTransport by port name
@@ -145,6 +146,18 @@ impl TransportMap {
       MessageTransport::MessagePack(bytes) => messagepack::deserialize(&bytes).map_err(de_err),
       MessageTransport::Success(v) => raw::deserialize(v).map_err(de_err),
       MessageTransport::Json(v) => json::deserialize(&v).map_err(de_err),
+    }
+  }
+
+  /// Transpose any ports named "output" to "input". This is for a better user experience when
+  /// trying to pipe components together without a full runtime. This should never be done
+  /// without also providing a way to turn it off.
+  #[doc(hidden)]
+  pub fn transpose_output_name(&mut self) {
+    let output = self.0.remove("output");
+    if let Some(msg) = output {
+      debug!("Transposing [output] to [input]");
+      self.0.insert("input".to_owned(), msg);
     }
   }
 
@@ -217,12 +230,17 @@ fn de_err<T: Display>(e: T) -> Error {
 
 /// A simplified JSON representation of a MessageTransport
 #[derive(Debug, Clone, Eq, Serialize, Deserialize, PartialEq)]
-pub struct JsonOutput {
+pub struct TransportJson {
   /// Error message for the port if it exists.
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub error_msg: Option<String>,
-  #[serde(skip_serializing_if = "JsonError::is_none")]
+
   /// The error kind if it exists.
+  #[serde(default)]
+  #[serde(skip_serializing_if = "JsonError::is_none")]
   pub error_kind: JsonError,
+
   /// The return value.
   pub value: serde_json::Value,
 }
@@ -238,6 +256,12 @@ pub enum JsonError {
   Error,
   /// An error originating internally
   InternalError,
+}
+
+impl Default for JsonError {
+  fn default() -> Self {
+    JsonError::None
+  }
 }
 
 impl Display for JsonError {
@@ -265,18 +289,20 @@ impl JsonError {
   }
 }
 
-fn unhandled_conversion(transport: &MessageTransport) -> JsonOutput {
+fn unhandled_conversion(transport: &MessageTransport) -> TransportJson {
   error!("Unhandled  JSON conversion: {:?}", transport);
-  JsonOutput {
+  TransportJson {
     value: serde_json::value::Value::Null,
     error_msg: Some(format!("Internal error converting {:?} to JSON", transport)),
     error_kind: JsonError::InternalError,
   }
 }
 
-fn handle_result_conversion(result: std::result::Result<serde_json::Value, String>) -> JsonOutput {
+fn handle_result_conversion(
+  result: std::result::Result<serde_json::Value, String>,
+) -> TransportJson {
   match result {
-    Ok(payload) => JsonOutput {
+    Ok(payload) => TransportJson {
       value: payload,
       error_msg: None,
       error_kind: JsonError::None,
@@ -287,7 +313,7 @@ fn handle_result_conversion(result: std::result::Result<serde_json::Value, Strin
         e
       );
       error!("{}", msg);
-      JsonOutput {
+      TransportJson {
         value: serde_json::value::Value::Null,
         error_msg: Some(msg),
         error_kind: JsonError::InternalError,
@@ -367,17 +393,17 @@ impl MessageTransport {
   #[must_use]
   pub fn into_json(self) -> serde_json::Value {
     let output = match self {
-      MessageTransport::Invalid => JsonOutput {
+      MessageTransport::Invalid => TransportJson {
         value: serde_json::value::Value::Null,
         error_msg: Some("Invalid value".to_owned()),
         error_kind: JsonError::Error,
       },
-      MessageTransport::Exception(v) => JsonOutput {
+      MessageTransport::Exception(v) => TransportJson {
         value: serde_json::value::Value::Null,
         error_msg: Some(v),
         error_kind: JsonError::Exception,
       },
-      MessageTransport::Error(v) => JsonOutput {
+      MessageTransport::Error(v) => TransportJson {
         value: serde_json::value::Value::Null,
         error_msg: Some(v),
         error_kind: JsonError::Error,
@@ -400,10 +426,12 @@ impl MessageTransport {
     if let Some(msg) = output.error_msg {
       map.insert("error_msg".to_owned(), serde_json::Value::String(msg));
     }
-    map.insert(
-      "error_kind".to_owned(),
-      serde_json::Value::String(output.error_kind.to_string()),
-    );
+    if output.error_kind.is_some() {
+      map.insert(
+        "error_kind".to_owned(),
+        serde_json::Value::String(output.error_kind.to_string()),
+      );
+    }
     serde_json::value::Value::Object(map)
   }
 
@@ -440,14 +468,6 @@ impl MessageTransport {
   /// A utility function for [MessageTransport::Signal(MessageSignal::Done)]
   pub fn done() -> Self {
     MessageTransport::Signal(MessageSignal::Done)
-  }
-
-  /// Attempts a conversion of a [MessageTransport] into the bytes of a [MessageTransport::MessagePack] variant
-  pub fn into_bytes(self) -> Result<Vec<u8>> {
-    match self {
-      MessageTransport::MessagePack(v) => Ok(v),
-      _ => Err(Error::PayloadConversionError("Invalid payload".to_owned())),
-    }
   }
 
   /// Try to deserialize a [MessageTransport] into the target type
@@ -548,6 +568,17 @@ impl TransportWrapper {
   /// Attempt to deserialize the contained [MessageTransport] into the destination value.
   pub fn try_into<T: DeserializeOwned>(self) -> Result<T> {
     self.payload.try_into()
+  }
+
+  /// Converts a [MessageTransport] into [serde_json::Value] representation of a [JsonOutput]
+  #[must_use]
+  pub fn into_json(self) -> serde_json::Value {
+    let payload = self.payload.into_json();
+
+    let mut map = serde_json::Map::new();
+    map.insert(self.port, payload);
+
+    serde_json::value::Value::Object(map)
   }
 }
 

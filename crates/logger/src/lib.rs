@@ -74,17 +74,17 @@
 // Add exceptions here
 #![allow(clippy::trivially_copy_pass_by_ref, clippy::needless_borrow)]
 
-/// Error module for Logger
+/// Error module for Logger.
 pub mod error;
 
-/// Logger options
+/// Logger options.
 pub mod options;
 
-/// The main Logger module
+/// The main Logger module.
 pub mod logger;
 
 pub use options::LoggingOptions;
 
-pub use crate::logger::Logger;
+pub use crate::logger::init;
 
 const FILTER_ENV: &str = "VINO_LOG";

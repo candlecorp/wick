@@ -1,10 +1,6 @@
-pub(crate) use vino_interfaces_collection::add_item::*;
+pub(crate) use vino_interface_collection::add_item::*;
 
-pub(crate) async fn job(
-  input: Inputs,
-  output: Outputs,
-  context: Context<crate::State>,
-) -> JobResult {
+pub(crate) async fn job(input: Inputs, output: Outputs, context: crate::Context) -> JobResult {
   let mut state = context.lock().unwrap();
   let content_key = format!("{}:{}", input.collection_id, input.document_id);
   state.documents.insert(content_key, input.document);

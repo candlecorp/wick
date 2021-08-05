@@ -6,105 +6,60 @@ use vino_provider::native::prelude::*;
 
 use crate::generated;
 
-pub(crate) fn get_component(
-  name: &str,
-) -> Option<Box<dyn NativeComponent<State = crate::State> + Sync + Send>> {
-  match name {
-    "add" => Some(Box::new(generated::add::Component::default())),
-    "concatenate" => Some(Box::new(generated::concatenate::Component::default())),
-    "error" => Some(Box::new(generated::error::Component::default())),
-    "log" => Some(Box::new(generated::log::Component::default())),
-    "short-circuit" => Some(Box::new(generated::short_circuit::Component::default())),
-    "string-to-bytes" => Some(Box::new(generated::string_to_bytes::Component::default())),
-    "uuid" => Some(Box::new(generated::uuid::Component::default())),
-    _ => None,
+#[derive(Debug)]
+pub(crate) struct Dispatcher {}
+#[async_trait]
+impl Dispatch for Dispatcher {
+  type Context = crate::Context;
+  async fn dispatch(
+    op: &str,
+    context: Self::Context,
+    data: TransportMap,
+  ) -> Result<TransportStream, Box<NativeComponentError>> {
+    use generated::*;
+    let result = match op {
+      "add" => add::Component::default().execute(context, data).await,
+      "concatenate" => {
+        concatenate::Component::default()
+          .execute(context, data)
+          .await
+      }
+      "error" => error::Component::default().execute(context, data).await,
+      "log" => log::Component::default().execute(context, data).await,
+      "short-circuit" => {
+        short_circuit::Component::default()
+          .execute(context, data)
+          .await
+      }
+      "string-to-bytes" => {
+        string_to_bytes::Component::default()
+          .execute(context, data)
+          .await
+      }
+      "uuid" => uuid::Component::default().execute(context, data).await,
+      _ => Err(Box::new(NativeComponentError::new(format!(
+        "Component not found on this provider: {}",
+        op
+      )))),
+    }?;
+    Ok(result)
   }
 }
 
 pub(crate) fn get_all_components() -> Vec<ComponentSignature> {
   vec![
-    ComponentSignature {
-      name: "add".to_owned(),
-      inputs: generated::add::inputs_list()
-        .into_iter()
-        .map(From::from)
-        .collect(),
-      outputs: generated::add::outputs_list()
-        .into_iter()
-        .map(From::from)
-        .collect(),
-    },
-    ComponentSignature {
-      name: "concatenate".to_owned(),
-      inputs: generated::concatenate::inputs_list()
-        .into_iter()
-        .map(From::from)
-        .collect(),
-      outputs: generated::concatenate::outputs_list()
-        .into_iter()
-        .map(From::from)
-        .collect(),
-    },
-    ComponentSignature {
-      name: "error".to_owned(),
-      inputs: generated::error::inputs_list()
-        .into_iter()
-        .map(From::from)
-        .collect(),
-      outputs: generated::error::outputs_list()
-        .into_iter()
-        .map(From::from)
-        .collect(),
-    },
-    ComponentSignature {
-      name: "log".to_owned(),
-      inputs: generated::log::inputs_list()
-        .into_iter()
-        .map(From::from)
-        .collect(),
-      outputs: generated::log::outputs_list()
-        .into_iter()
-        .map(From::from)
-        .collect(),
-    },
-    ComponentSignature {
-      name: "short-circuit".to_owned(),
-      inputs: generated::short_circuit::inputs_list()
-        .into_iter()
-        .map(From::from)
-        .collect(),
-      outputs: generated::short_circuit::outputs_list()
-        .into_iter()
-        .map(From::from)
-        .collect(),
-    },
-    ComponentSignature {
-      name: "string-to-bytes".to_owned(),
-      inputs: generated::string_to_bytes::inputs_list()
-        .into_iter()
-        .map(From::from)
-        .collect(),
-      outputs: generated::string_to_bytes::outputs_list()
-        .into_iter()
-        .map(From::from)
-        .collect(),
-    },
-    ComponentSignature {
-      name: "uuid".to_owned(),
-      inputs: generated::uuid::inputs_list()
-        .into_iter()
-        .map(From::from)
-        .collect(),
-      outputs: generated::uuid::outputs_list()
-        .into_iter()
-        .map(From::from)
-        .collect(),
-    },
+    generated::add::signature(),
+    generated::concatenate::signature(),
+    generated::error::signature(),
+    generated::log::signature(),
+    generated::short_circuit::signature(),
+    generated::string_to_bytes::signature(),
+    generated::uuid::signature(),
   ]
 }
 
 pub(crate) mod add {
-  #![allow(unused)]
+  #![allow(unused, unreachable_pub)]
   use std::collections::HashMap;
 
   use async_trait::async_trait;
@@ -112,20 +67,27 @@ pub(crate) mod add {
     Deserialize,
     Serialize,
   };
-  use vino_codec::messagepack::deserialize;
   pub(crate) use vino_provider::native::prelude::*;
+
+  pub(crate) fn signature() -> ComponentSignature {
+    ComponentSignature {
+      name: "add".to_owned(),
+      inputs: PortSignature::from_list(inputs_list()),
+      outputs: PortSignature::from_list(outputs_list()),
+    }
+  }
 
   #[derive(Default)]
   pub(crate) struct Component {}
 
   #[async_trait]
   impl NativeComponent for Component {
-    type State = crate::State;
+    type Context = crate::Context;
     async fn execute(
       &self,
-      context: Context<Self::State>,
+      context: Self::Context,
       data: TransportMap,
-    ) -> Result<MessageTransportStream, Box<NativeComponentError>> {
+    ) -> Result<TransportStream, Box<NativeComponentError>> {
       let inputs = populate_inputs(data).map_err(|e| {
         NativeComponentError::new(format!("Input deserialization error: {}", e.to_string()))
       })?;
@@ -141,7 +103,7 @@ pub(crate) mod add {
     }
   }
 
-  pub(crate) fn populate_inputs(mut payload: TransportMap) -> Result<Inputs, TransportError> {
+  pub fn populate_inputs(mut payload: TransportMap) -> Result<Inputs, TransportError> {
     Ok(Inputs {
       left: payload.consume("left")?,
       right: payload.consume("right")?,
@@ -149,32 +111,37 @@ pub(crate) mod add {
   }
 
   #[derive(Debug, Deserialize, Serialize, Default, Clone)]
-  pub(crate) struct Inputs {
+  pub struct Inputs {
     #[serde(rename = "left")]
-    pub(crate) left: u64,
+    pub left: u64,
     #[serde(rename = "right")]
-    pub(crate) right: u64,
+    pub right: u64,
   }
 
+  static INPUTS_LIST: &[(&str, &str)] = &[("left", "u64"), ("right", "u64")];
+
   #[must_use]
-  pub(crate) fn inputs_list() -> Vec<(&'static str, &'static str)> {
-    vec![("left", "u64"), ("right", "u64")]
+  pub fn inputs_list() -> &'static [(&'static str, &'static str)] {
+    INPUTS_LIST
   }
 
   #[derive(Debug, Default)]
-  pub(crate) struct Outputs {
-    pub(crate) output: OutputPortSender,
+  pub struct Outputs {
+    pub output: OutputPortSender,
   }
 
+  static OUTPUTS_LIST: &[(&str, &str)] = &[("output", "u64")];
+
   #[must_use]
-  pub(crate) fn outputs_list() -> Vec<(&'static str, &'static str)> {
-    vec![("output", "u64")]
+  pub fn outputs_list() -> &'static [(&'static str, &'static str)] {
+    OUTPUTS_LIST
   }
 
   #[derive(Debug)]
-  pub(crate) struct OutputPortSender {
+  pub struct OutputPortSender {
     port: PortChannel,
   }
+
   impl Default for OutputPortSender {
     fn default() -> Self {
       Self {
@@ -199,7 +166,7 @@ pub(crate) mod add {
   }
 
   #[must_use]
-  pub(crate) fn get_outputs() -> (Outputs, MessageTransportStream) {
+  pub fn get_outputs() -> (Outputs, TransportStream) {
     let mut outputs = Outputs::default();
     let mut ports = vec![&mut outputs.output.port];
     let stream = PortChannel::merge_all(&mut ports);
@@ -207,7 +174,7 @@ pub(crate) mod add {
   }
 }
 pub(crate) mod concatenate {
-  #![allow(unused)]
+  #![allow(unused, unreachable_pub)]
   use std::collections::HashMap;
 
   use async_trait::async_trait;
@@ -215,20 +182,27 @@ pub(crate) mod concatenate {
     Deserialize,
     Serialize,
   };
-  use vino_codec::messagepack::deserialize;
   pub(crate) use vino_provider::native::prelude::*;
+
+  pub(crate) fn signature() -> ComponentSignature {
+    ComponentSignature {
+      name: "concatenate".to_owned(),
+      inputs: PortSignature::from_list(inputs_list()),
+      outputs: PortSignature::from_list(outputs_list()),
+    }
+  }
 
   #[derive(Default)]
   pub(crate) struct Component {}
 
   #[async_trait]
   impl NativeComponent for Component {
-    type State = crate::State;
+    type Context = crate::Context;
     async fn execute(
       &self,
-      context: Context<Self::State>,
+      context: Self::Context,
       data: TransportMap,
-    ) -> Result<MessageTransportStream, Box<NativeComponentError>> {
+    ) -> Result<TransportStream, Box<NativeComponentError>> {
       let inputs = populate_inputs(data).map_err(|e| {
         NativeComponentError::new(format!("Input deserialization error: {}", e.to_string()))
       })?;
@@ -244,7 +218,7 @@ pub(crate) mod concatenate {
     }
   }
 
-  pub(crate) fn populate_inputs(mut payload: TransportMap) -> Result<Inputs, TransportError> {
+  pub fn populate_inputs(mut payload: TransportMap) -> Result<Inputs, TransportError> {
     Ok(Inputs {
       left: payload.consume("left")?,
       right: payload.consume("right")?,
@@ -252,32 +226,37 @@ pub(crate) mod concatenate {
   }
 
   #[derive(Debug, Deserialize, Serialize, Default, Clone)]
-  pub(crate) struct Inputs {
+  pub struct Inputs {
     #[serde(rename = "left")]
-    pub(crate) left: String,
+    pub left: String,
     #[serde(rename = "right")]
-    pub(crate) right: String,
+    pub right: String,
   }
 
+  static INPUTS_LIST: &[(&str, &str)] = &[("left", "string"), ("right", "string")];
+
   #[must_use]
-  pub(crate) fn inputs_list() -> Vec<(&'static str, &'static str)> {
-    vec![("left", "string"), ("right", "string")]
+  pub fn inputs_list() -> &'static [(&'static str, &'static str)] {
+    INPUTS_LIST
   }
 
   #[derive(Debug, Default)]
-  pub(crate) struct Outputs {
-    pub(crate) output: OutputPortSender,
+  pub struct Outputs {
+    pub output: OutputPortSender,
   }
 
+  static OUTPUTS_LIST: &[(&str, &str)] = &[("output", "string")];
+
   #[must_use]
-  pub(crate) fn outputs_list() -> Vec<(&'static str, &'static str)> {
-    vec![("output", "string")]
+  pub fn outputs_list() -> &'static [(&'static str, &'static str)] {
+    OUTPUTS_LIST
   }
 
   #[derive(Debug)]
-  pub(crate) struct OutputPortSender {
+  pub struct OutputPortSender {
     port: PortChannel,
   }
+
   impl Default for OutputPortSender {
     fn default() -> Self {
       Self {
@@ -302,7 +281,7 @@ pub(crate) mod concatenate {
   }
 
   #[must_use]
-  pub(crate) fn get_outputs() -> (Outputs, MessageTransportStream) {
+  pub fn get_outputs() -> (Outputs, TransportStream) {
     let mut outputs = Outputs::default();
     let mut ports = vec![&mut outputs.output.port];
     let stream = PortChannel::merge_all(&mut ports);
@@ -310,7 +289,7 @@ pub(crate) mod concatenate {
   }
 }
 pub(crate) mod error {
-  #![allow(unused)]
+  #![allow(unused, unreachable_pub)]
   use std::collections::HashMap;
 
   use async_trait::async_trait;
@@ -318,20 +297,27 @@ pub(crate) mod error {
     Deserialize,
     Serialize,
   };
-  use vino_codec::messagepack::deserialize;
   pub(crate) use vino_provider::native::prelude::*;
+
+  pub(crate) fn signature() -> ComponentSignature {
+    ComponentSignature {
+      name: "error".to_owned(),
+      inputs: PortSignature::from_list(inputs_list()),
+      outputs: PortSignature::from_list(outputs_list()),
+    }
+  }
 
   #[derive(Default)]
   pub(crate) struct Component {}
 
   #[async_trait]
   impl NativeComponent for Component {
-    type State = crate::State;
+    type Context = crate::Context;
     async fn execute(
       &self,
-      context: Context<Self::State>,
+      context: Self::Context,
       data: TransportMap,
-    ) -> Result<MessageTransportStream, Box<NativeComponentError>> {
+    ) -> Result<TransportStream, Box<NativeComponentError>> {
       let inputs = populate_inputs(data).map_err(|e| {
         NativeComponentError::new(format!("Input deserialization error: {}", e.to_string()))
       })?;
@@ -347,37 +333,42 @@ pub(crate) mod error {
     }
   }
 
-  pub(crate) fn populate_inputs(mut payload: TransportMap) -> Result<Inputs, TransportError> {
+  pub fn populate_inputs(mut payload: TransportMap) -> Result<Inputs, TransportError> {
     Ok(Inputs {
       input: payload.consume("input")?,
     })
   }
 
   #[derive(Debug, Deserialize, Serialize, Default, Clone)]
-  pub(crate) struct Inputs {
+  pub struct Inputs {
     #[serde(rename = "input")]
-    pub(crate) input: String,
+    pub input: String,
   }
 
+  static INPUTS_LIST: &[(&str, &str)] = &[("input", "string")];
+
   #[must_use]
-  pub(crate) fn inputs_list() -> Vec<(&'static str, &'static str)> {
-    vec![("input", "string")]
+  pub fn inputs_list() -> &'static [(&'static str, &'static str)] {
+    INPUTS_LIST
   }
 
   #[derive(Debug, Default)]
-  pub(crate) struct Outputs {
-    pub(crate) output: OutputPortSender,
+  pub struct Outputs {
+    pub output: OutputPortSender,
   }
 
+  static OUTPUTS_LIST: &[(&str, &str)] = &[("output", "string")];
+
   #[must_use]
-  pub(crate) fn outputs_list() -> Vec<(&'static str, &'static str)> {
-    vec![("output", "string")]
+  pub fn outputs_list() -> &'static [(&'static str, &'static str)] {
+    OUTPUTS_LIST
   }
 
   #[derive(Debug)]
-  pub(crate) struct OutputPortSender {
+  pub struct OutputPortSender {
     port: PortChannel,
   }
+
   impl Default for OutputPortSender {
     fn default() -> Self {
       Self {
@@ -402,7 +393,7 @@ pub(crate) mod error {
   }
 
   #[must_use]
-  pub(crate) fn get_outputs() -> (Outputs, MessageTransportStream) {
+  pub fn get_outputs() -> (Outputs, TransportStream) {
     let mut outputs = Outputs::default();
     let mut ports = vec![&mut outputs.output.port];
     let stream = PortChannel::merge_all(&mut ports);
@@ -410,7 +401,7 @@ pub(crate) mod error {
   }
 }
 pub(crate) mod log {
-  #![allow(unused)]
+  #![allow(unused, unreachable_pub)]
   use std::collections::HashMap;
 
   use async_trait::async_trait;
@@ -418,20 +409,27 @@ pub(crate) mod log {
     Deserialize,
     Serialize,
   };
-  use vino_codec::messagepack::deserialize;
   pub(crate) use vino_provider::native::prelude::*;
+
+  pub(crate) fn signature() -> ComponentSignature {
+    ComponentSignature {
+      name: "log".to_owned(),
+      inputs: PortSignature::from_list(inputs_list()),
+      outputs: PortSignature::from_list(outputs_list()),
+    }
+  }
 
   #[derive(Default)]
   pub(crate) struct Component {}
 
   #[async_trait]
   impl NativeComponent for Component {
-    type State = crate::State;
+    type Context = crate::Context;
     async fn execute(
       &self,
-      context: Context<Self::State>,
+      context: Self::Context,
       data: TransportMap,
-    ) -> Result<MessageTransportStream, Box<NativeComponentError>> {
+    ) -> Result<TransportStream, Box<NativeComponentError>> {
       let inputs = populate_inputs(data).map_err(|e| {
         NativeComponentError::new(format!("Input deserialization error: {}", e.to_string()))
       })?;
@@ -447,37 +445,42 @@ pub(crate) mod log {
     }
   }
 
-  pub(crate) fn populate_inputs(mut payload: TransportMap) -> Result<Inputs, TransportError> {
+  pub fn populate_inputs(mut payload: TransportMap) -> Result<Inputs, TransportError> {
     Ok(Inputs {
       input: payload.consume("input")?,
     })
   }
 
   #[derive(Debug, Deserialize, Serialize, Default, Clone)]
-  pub(crate) struct Inputs {
+  pub struct Inputs {
     #[serde(rename = "input")]
-    pub(crate) input: String,
+    pub input: String,
   }
 
+  static INPUTS_LIST: &[(&str, &str)] = &[("input", "string")];
+
   #[must_use]
-  pub(crate) fn inputs_list() -> Vec<(&'static str, &'static str)> {
-    vec![("input", "string")]
+  pub fn inputs_list() -> &'static [(&'static str, &'static str)] {
+    INPUTS_LIST
   }
 
   #[derive(Debug, Default)]
-  pub(crate) struct Outputs {
-    pub(crate) output: OutputPortSender,
+  pub struct Outputs {
+    pub output: OutputPortSender,
   }
 
+  static OUTPUTS_LIST: &[(&str, &str)] = &[("output", "string")];
+
   #[must_use]
-  pub(crate) fn outputs_list() -> Vec<(&'static str, &'static str)> {
-    vec![("output", "string")]
+  pub fn outputs_list() -> &'static [(&'static str, &'static str)] {
+    OUTPUTS_LIST
   }
 
   #[derive(Debug)]
-  pub(crate) struct OutputPortSender {
+  pub struct OutputPortSender {
     port: PortChannel,
   }
+
   impl Default for OutputPortSender {
     fn default() -> Self {
       Self {
@@ -502,7 +505,7 @@ pub(crate) mod log {
   }
 
   #[must_use]
-  pub(crate) fn get_outputs() -> (Outputs, MessageTransportStream) {
+  pub fn get_outputs() -> (Outputs, TransportStream) {
     let mut outputs = Outputs::default();
     let mut ports = vec![&mut outputs.output.port];
     let stream = PortChannel::merge_all(&mut ports);
@@ -510,7 +513,7 @@ pub(crate) mod log {
   }
 }
 pub(crate) mod short_circuit {
-  #![allow(unused)]
+  #![allow(unused, unreachable_pub)]
   use std::collections::HashMap;
 
   use async_trait::async_trait;
@@ -518,20 +521,27 @@ pub(crate) mod short_circuit {
     Deserialize,
     Serialize,
   };
-  use vino_codec::messagepack::deserialize;
   pub(crate) use vino_provider::native::prelude::*;
+
+  pub(crate) fn signature() -> ComponentSignature {
+    ComponentSignature {
+      name: "short-circuit".to_owned(),
+      inputs: PortSignature::from_list(inputs_list()),
+      outputs: PortSignature::from_list(outputs_list()),
+    }
+  }
 
   #[derive(Default)]
   pub(crate) struct Component {}
 
   #[async_trait]
   impl NativeComponent for Component {
-    type State = crate::State;
+    type Context = crate::Context;
     async fn execute(
       &self,
-      context: Context<Self::State>,
+      context: Self::Context,
       data: TransportMap,
-    ) -> Result<MessageTransportStream, Box<NativeComponentError>> {
+    ) -> Result<TransportStream, Box<NativeComponentError>> {
       let inputs = populate_inputs(data).map_err(|e| {
         NativeComponentError::new(format!("Input deserialization error: {}", e.to_string()))
       })?;
@@ -547,37 +557,42 @@ pub(crate) mod short_circuit {
     }
   }
 
-  pub(crate) fn populate_inputs(mut payload: TransportMap) -> Result<Inputs, TransportError> {
+  pub fn populate_inputs(mut payload: TransportMap) -> Result<Inputs, TransportError> {
     Ok(Inputs {
       input: payload.consume("input")?,
     })
   }
 
   #[derive(Debug, Deserialize, Serialize, Default, Clone)]
-  pub(crate) struct Inputs {
+  pub struct Inputs {
     #[serde(rename = "input")]
-    pub(crate) input: String,
+    pub input: String,
   }
 
+  static INPUTS_LIST: &[(&str, &str)] = &[("input", "string")];
+
   #[must_use]
-  pub(crate) fn inputs_list() -> Vec<(&'static str, &'static str)> {
-    vec![("input", "string")]
+  pub fn inputs_list() -> &'static [(&'static str, &'static str)] {
+    INPUTS_LIST
   }
 
   #[derive(Debug, Default)]
-  pub(crate) struct Outputs {
-    pub(crate) output: OutputPortSender,
+  pub struct Outputs {
+    pub output: OutputPortSender,
   }
 
+  static OUTPUTS_LIST: &[(&str, &str)] = &[("output", "string")];
+
   #[must_use]
-  pub(crate) fn outputs_list() -> Vec<(&'static str, &'static str)> {
-    vec![("output", "string")]
+  pub fn outputs_list() -> &'static [(&'static str, &'static str)] {
+    OUTPUTS_LIST
   }
 
   #[derive(Debug)]
-  pub(crate) struct OutputPortSender {
+  pub struct OutputPortSender {
     port: PortChannel,
   }
+
   impl Default for OutputPortSender {
     fn default() -> Self {
       Self {
@@ -602,7 +617,7 @@ pub(crate) mod short_circuit {
   }
 
   #[must_use]
-  pub(crate) fn get_outputs() -> (Outputs, MessageTransportStream) {
+  pub fn get_outputs() -> (Outputs, TransportStream) {
     let mut outputs = Outputs::default();
     let mut ports = vec![&mut outputs.output.port];
     let stream = PortChannel::merge_all(&mut ports);
@@ -610,7 +625,7 @@ pub(crate) mod short_circuit {
   }
 }
 pub(crate) mod string_to_bytes {
-  #![allow(unused)]
+  #![allow(unused, unreachable_pub)]
   use std::collections::HashMap;
 
   use async_trait::async_trait;
@@ -618,20 +633,27 @@ pub(crate) mod string_to_bytes {
     Deserialize,
     Serialize,
   };
-  use vino_codec::messagepack::deserialize;
   pub(crate) use vino_provider::native::prelude::*;
+
+  pub(crate) fn signature() -> ComponentSignature {
+    ComponentSignature {
+      name: "string-to-bytes".to_owned(),
+      inputs: PortSignature::from_list(inputs_list()),
+      outputs: PortSignature::from_list(outputs_list()),
+    }
+  }
 
   #[derive(Default)]
   pub(crate) struct Component {}
 
   #[async_trait]
   impl NativeComponent for Component {
-    type State = crate::State;
+    type Context = crate::Context;
     async fn execute(
       &self,
-      context: Context<Self::State>,
+      context: Self::Context,
       data: TransportMap,
-    ) -> Result<MessageTransportStream, Box<NativeComponentError>> {
+    ) -> Result<TransportStream, Box<NativeComponentError>> {
       let inputs = populate_inputs(data).map_err(|e| {
         NativeComponentError::new(format!("Input deserialization error: {}", e.to_string()))
       })?;
@@ -647,37 +669,42 @@ pub(crate) mod string_to_bytes {
     }
   }
 
-  pub(crate) fn populate_inputs(mut payload: TransportMap) -> Result<Inputs, TransportError> {
+  pub fn populate_inputs(mut payload: TransportMap) -> Result<Inputs, TransportError> {
     Ok(Inputs {
       input: payload.consume("input")?,
     })
   }
 
   #[derive(Debug, Deserialize, Serialize, Default, Clone)]
-  pub(crate) struct Inputs {
+  pub struct Inputs {
     #[serde(rename = "input")]
-    pub(crate) input: String,
+    pub input: String,
   }
 
+  static INPUTS_LIST: &[(&str, &str)] = &[("input", "string")];
+
   #[must_use]
-  pub(crate) fn inputs_list() -> Vec<(&'static str, &'static str)> {
-    vec![("input", "string")]
+  pub fn inputs_list() -> &'static [(&'static str, &'static str)] {
+    INPUTS_LIST
   }
 
   #[derive(Debug, Default)]
-  pub(crate) struct Outputs {
-    pub(crate) output: OutputPortSender,
+  pub struct Outputs {
+    pub output: OutputPortSender,
   }
 
+  static OUTPUTS_LIST: &[(&str, &str)] = &[("output", "bytes")];
+
   #[must_use]
-  pub(crate) fn outputs_list() -> Vec<(&'static str, &'static str)> {
-    vec![("output", "bytes")]
+  pub fn outputs_list() -> &'static [(&'static str, &'static str)] {
+    OUTPUTS_LIST
   }
 
   #[derive(Debug)]
-  pub(crate) struct OutputPortSender {
+  pub struct OutputPortSender {
     port: PortChannel,
   }
+
   impl Default for OutputPortSender {
     fn default() -> Self {
       Self {
@@ -702,7 +729,7 @@ pub(crate) mod string_to_bytes {
   }
 
   #[must_use]
-  pub(crate) fn get_outputs() -> (Outputs, MessageTransportStream) {
+  pub fn get_outputs() -> (Outputs, TransportStream) {
     let mut outputs = Outputs::default();
     let mut ports = vec![&mut outputs.output.port];
     let stream = PortChannel::merge_all(&mut ports);
@@ -710,7 +737,7 @@ pub(crate) mod string_to_bytes {
   }
 }
 pub(crate) mod uuid {
-  #![allow(unused)]
+  #![allow(unused, unreachable_pub)]
   use std::collections::HashMap;
 
   use async_trait::async_trait;
@@ -718,20 +745,27 @@ pub(crate) mod uuid {
     Deserialize,
     Serialize,
   };
-  use vino_codec::messagepack::deserialize;
   pub(crate) use vino_provider::native::prelude::*;
+
+  pub(crate) fn signature() -> ComponentSignature {
+    ComponentSignature {
+      name: "uuid".to_owned(),
+      inputs: PortSignature::from_list(inputs_list()),
+      outputs: PortSignature::from_list(outputs_list()),
+    }
+  }
 
   #[derive(Default)]
   pub(crate) struct Component {}
 
   #[async_trait]
   impl NativeComponent for Component {
-    type State = crate::State;
+    type Context = crate::Context;
     async fn execute(
       &self,
-      context: Context<Self::State>,
+      context: Self::Context,
       data: TransportMap,
-    ) -> Result<MessageTransportStream, Box<NativeComponentError>> {
+    ) -> Result<TransportStream, Box<NativeComponentError>> {
       let inputs = populate_inputs(data).map_err(|e| {
         NativeComponentError::new(format!("Input deserialization error: {}", e.to_string()))
       })?;
@@ -747,32 +781,37 @@ pub(crate) mod uuid {
     }
   }
 
-  pub(crate) fn populate_inputs(mut payload: TransportMap) -> Result<Inputs, TransportError> {
+  pub fn populate_inputs(mut payload: TransportMap) -> Result<Inputs, TransportError> {
     Ok(Inputs {})
   }
 
   #[derive(Debug, Deserialize, Serialize, Default, Clone)]
-  pub(crate) struct Inputs {}
+  pub struct Inputs {}
+
+  static INPUTS_LIST: &[(&str, &str)] = &[];
 
   #[must_use]
-  pub(crate) fn inputs_list() -> Vec<(&'static str, &'static str)> {
-    vec![]
+  pub fn inputs_list() -> &'static [(&'static str, &'static str)] {
+    INPUTS_LIST
   }
 
   #[derive(Debug, Default)]
-  pub(crate) struct Outputs {
-    pub(crate) output: OutputPortSender,
+  pub struct Outputs {
+    pub output: OutputPortSender,
   }
 
+  static OUTPUTS_LIST: &[(&str, &str)] = &[("output", "string")];
+
   #[must_use]
-  pub(crate) fn outputs_list() -> Vec<(&'static str, &'static str)> {
-    vec![("output", "string")]
+  pub fn outputs_list() -> &'static [(&'static str, &'static str)] {
+    OUTPUTS_LIST
   }
 
   #[derive(Debug)]
-  pub(crate) struct OutputPortSender {
+  pub struct OutputPortSender {
     port: PortChannel,
   }
+
   impl Default for OutputPortSender {
     fn default() -> Self {
       Self {
@@ -797,7 +836,7 @@ pub(crate) mod uuid {
   }
 
   #[must_use]
-  pub(crate) fn get_outputs() -> (Outputs, MessageTransportStream) {
+  pub fn get_outputs() -> (Outputs, TransportStream) {
     let mut outputs = Outputs::default();
     let mut ports = vec![&mut outputs.output.port];
     let stream = PortChannel::merge_all(&mut ports);

@@ -9,12 +9,10 @@ use async_trait::async_trait;
 use vino_provider::native::prelude::*;
 use vino_rpc::error::RpcError;
 use vino_rpc::{
-  BoxedTransportStream,
-  DurationStatistics,
   RpcHandler,
   RpcResult,
-  Statistics,
 };
+use vino_transport::message_transport::stream::BoxedTransportStream;
 use vino_transport::message_transport::TransportMap;
 
 use crate::wapc_module::WapcModule;
@@ -27,7 +25,7 @@ use crate::wasm_service::{
 use crate::Error;
 
 #[derive(Debug, Default)]
-pub struct State {
+pub struct Context {
   pub documents: HashMap<String, String>,
   pub collections: HashMap<String, Vec<String>>,
 }
@@ -39,7 +37,7 @@ pub struct Provider {
 
 impl Provider {
   pub fn try_from_module(module: WapcModule, threads: usize) -> Result<Self, Error> {
-    debug!("PRV:WASM:START:{} Threads", threads);
+    debug!("WASM:START:{} Threads", threads);
 
     let addr = SyncArbiter::start(threads, move || {
       let host = WasmHost::try_from(&module).unwrap();
@@ -53,11 +51,9 @@ impl Provider {
 #[async_trait]
 impl RpcHandler for Provider {
   async fn invoke(&self, entity: Entity, payload: TransportMap) -> RpcResult<BoxedTransportStream> {
-    trace!("PRV:WASM:INVOKE:[{}]", entity);
+    trace!("WASM:INVOKE:[{}]", entity);
     let context = self.context.clone();
-    let component = entity
-      .into_component()
-      .map_err(|e| RpcError::ProviderError(e.to_string()))?;
+    let component = entity.name();
     let messagepack_map = payload
       .try_into_messagepack_bytes()
       .map_err(|e| RpcError::ProviderError(e.to_string()))?;
@@ -80,7 +76,7 @@ impl RpcHandler for Provider {
       .map_err(|e| RpcError::ProviderError(e.to_string()))??;
 
     trace!(
-      "PRV:WASM:COMPONENTS:[{}]",
+      "WASM:COMPONENTS:[{}]",
       components
         .iter()
         .map(|c| c.name.clone())
@@ -89,29 +85,6 @@ impl RpcHandler for Provider {
     );
 
     Ok(components.into_iter().map(HostedType::Component).collect())
-  }
-
-  async fn get_stats(&self, id: Option<String>) -> RpcResult<Vec<Statistics>> {
-    // TODO Dummy implementation
-    if id.is_some() {
-      Ok(vec![Statistics {
-        num_calls: 1,
-        execution_duration: DurationStatistics {
-          max_time: 0,
-          min_time: 0,
-          average: 0,
-        },
-      }])
-    } else {
-      Ok(vec![Statistics {
-        num_calls: 0,
-        execution_duration: DurationStatistics {
-          max_time: 0,
-          min_time: 0,
-          average: 0,
-        },
-      }])
-    }
   }
 }
 
@@ -142,7 +115,7 @@ mod tests {
     });
 
     let mut outputs = provider
-      .invoke(Entity::component("validate"), job_payload)
+      .invoke(Entity::component_direct("validate"), job_payload)
       .await?;
     let output = outputs.next().await.unwrap();
     println!("payload from [{}]: {:?}", output.port, output.payload);

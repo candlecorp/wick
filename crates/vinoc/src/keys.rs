@@ -15,7 +15,7 @@ use nkeys::{
   KeyPairType,
 };
 
-/// Retrieves a keypair by name in a specified directory, or $VINO_KEYS ($HOME/.vino/keys) if directory is not specified
+/// Retrieves a keypair by name in a specified directory, or $VINO_KEYS ($HOME/.vino/keys) if directory is not specified.
 pub(crate) fn _get(
   keyname: &str,
   directory: Option<String>,
@@ -38,7 +38,7 @@ pub(crate) fn _get(
   }
 }
 
-/// Lists all keypairs (file extension .nk) in a specified directory or $VINO_KEYS($HOME/.vino/keys) if directory is not specified
+/// Lists all keypairs (file extension .nk) in a specified directory or $VINO_KEYS($HOME/.vino/keys) if directory is not specified.
 pub(crate) fn _list(directory: Option<String>) -> Result<(), Box<dyn ::std::error::Error>> {
   let dir = determine_directory(directory)?;
 
@@ -70,8 +70,8 @@ fn determine_directory(directory: Option<String>) -> Result<String, Error> {
   }
 }
 
-/// Helper function to locate and extract keypair from user input
-/// Returns a tuple of the keypair and optional autogenerate message
+/// Helper function to locate and extract keypair from user input.
+/// Returns a tuple of the keypair and optional autogenerate message.
 pub(crate) fn extract_keypair(
   module_path: Option<String>,
   directory: Option<String>,
@@ -105,12 +105,7 @@ pub(crate) fn extract_keypair(
       }
       // No default key, generating for user
       Err(_e) => {
-        info!(
-          "No keypair found in \"{}\".
-We will generate one for you and place it there.
-If you'd like to use alternative keys, you can supply them as a flag.\n",
-          path
-        );
+        info!("No keypair found in \"{}\", generating a new pair.", path);
 
         let kp = KeyPair::new(keygen_type);
         let seed = kp.seed()?;

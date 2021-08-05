@@ -80,7 +80,7 @@ pub use vino_provider_cli::cli::DefaultCliOptions;
 async fn main() -> Result<(), vino_authentication_inmemory::Error> {
   let opts = DefaultCliOptions::from_args();
 
-  env_logger::init();
+  vino_provider_cli::init_logging(&opts.logging)?;
   vino_provider_cli::init_cli(Box::new(Provider::default()), Some(opts.into())).await?;
   Ok(())
 }

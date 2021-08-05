@@ -18,64 +18,64 @@ pub struct SignCommand {
   #[structopt(flatten)]
   pub logging: super::LoggingOptions,
 
-  /// File to read
+  /// File to read.
   pub(crate) source: String,
 
-  /// File path to the JSON representation of the actor interface
+  /// File path to the JSON representation of the actor interface.
   pub(crate) interface: String,
 
-  /// Destination for signed module. If this flag is not provided, the signed module will be placed in the same directory as the source with a "_s" suffix
+  /// Destination for signed module. If this flag is not provided, the signed module will be placed in the same directory as the source with a "_s" suffix.
   #[structopt(short = "d", long = "destination")]
   destination: Option<String>,
 
   #[structopt(flatten)]
   common: GenerateCommon,
 
-  ///
+  /// Version to embed in the signed claims.
   #[structopt(long)]
   ver: Option<String>,
 
-  ///
+  /// Revision number to embed in the signed claims.
   #[structopt(long)]
   rev: Option<u32>,
 }
 
 #[derive(Debug, Clone, StructOpt)]
 struct GenerateCommon {
-  /// Location of key files for signing. Defaults to $VINO_KEYS ($HOME/.vino/keys)
+  /// Location of key files for signing. Defaults to $VINO_KEYS ($HOME/.vino/keys).
   #[structopt(long = "directory", env = "VINO_KEYS", hide_env_values = true)]
   directory: Option<String>,
 
-  /// Indicates the token expires in the given amount of days. If this option is left off, the token will never expire
+  /// Set the token expiration to # days. If this option is left off, the token will never expire.
   #[structopt(short = "x", long = "expires")]
   expires_in_days: Option<u64>,
 
-  /// Period in days that must elapse before this token is valid. If this option is left off, the token will be valid immediately
+  /// Period in days that must elapse before this token is valid. If this option is left off, the token will be valid immediately.
   #[structopt(short = "b", long = "nbf")]
   not_before_days: Option<u64>,
 }
 
-pub async fn handle_command(command: SignCommand) -> Result<()> {
-  crate::utils::init_logger(&command.logging)?;
+pub async fn handle_command(opts: SignCommand) -> Result<()> {
+  crate::utils::init_logger(&opts.logging)?;
   debug!("Signing module");
 
-  let json = std::fs::read_to_string(command.interface)?;
+  let json = std::fs::read_to_string(opts.interface)?;
 
   let interface: ProviderSignature = serde_json::from_str(&json)?;
 
-  let mut sfile = File::open(&command.source).unwrap();
+  let mut sfile = File::open(&opts.source).unwrap();
   let mut buf = Vec::new();
   sfile.read_to_end(&mut buf).unwrap();
 
   let issuer = extract_keypair(
-    Some(command.source.clone()),
-    command.common.directory.clone(),
+    Some(opts.source.clone()),
+    opts.common.directory.clone(),
     KeyPairType::Account,
   )?;
 
   let subject = extract_keypair(
-    Some(command.source.clone()),
-    command.common.directory.clone(),
+    Some(opts.source.clone()),
+    opts.common.directory.clone(),
     KeyPairType::Module,
   )?;
 
@@ -85,22 +85,22 @@ pub async fn handle_command(command: SignCommand) -> Result<()> {
     interface,
     &subject,
     &issuer,
-    command.common.expires_in_days,
-    command.common.not_before_days,
-    command.ver,
-    command.rev,
+    opts.common.expires_in_days,
+    opts.common.not_before_days,
+    opts.ver,
+    opts.rev,
   )?;
 
-  let destination = match command.destination.clone() {
+  let destination = match opts.destination.clone() {
     Some(d) => d,
     None => {
-      let path = PathBuf::from(command.source.clone())
+      let path = PathBuf::from(opts.source.clone())
         .parent()
         .unwrap()
         .to_str()
         .unwrap()
         .to_owned();
-      let module_name = PathBuf::from(command.source)
+      let module_name = PathBuf::from(opts.source)
         .file_stem()
         .unwrap()
         .to_str()

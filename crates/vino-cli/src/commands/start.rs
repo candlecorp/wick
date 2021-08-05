@@ -15,7 +15,7 @@ pub(crate) struct StartCommand {
   #[structopt(flatten)]
   pub(crate) host: super::HostOptions,
 
-  /// Specifies a manifest file to apply to the host once started
+  /// Specifies a manifest file to apply to the host once started.
   #[structopt(parse(from_os_str))]
   pub(crate) manifest: Option<PathBuf>,
 
@@ -46,7 +46,8 @@ pub(crate) async fn handle_command(command: StartCommand) -> Result<String> {
       let metadata = host
         .start_rpc_server(Some(command.server_options.into()))
         .await?;
-      println!("Server bound to {}", metadata.rpc_addr.unwrap());
+      let addr = metadata.rpc_addr.unwrap();
+      info!("Server bound to {} on port {}", addr.ip(), addr.port());
     }
     Err(e) => {
       error!("Failed to start host: {}", e);

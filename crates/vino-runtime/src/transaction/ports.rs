@@ -4,9 +4,6 @@ use std::collections::{
   HashMap,
   VecDeque,
 };
-use std::sync::Arc;
-
-use parking_lot::Mutex;
 
 use super::Result;
 use crate::dev::prelude::*;

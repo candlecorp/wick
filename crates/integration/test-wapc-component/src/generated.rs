@@ -32,7 +32,7 @@ pub(crate) extern "C" fn __guest_call(op_len: i32, req_len: i32) -> i32 {
       1
     }
     Err(e) => {
-      let errmsg = format!("Guest call failed: {}", e);
+      let errmsg = e.to_string();
       unsafe {
         wapc::__guest_error(errmsg.as_ptr(), errmsg.len() as _);
       }
@@ -40,6 +40,8 @@ pub(crate) extern "C" fn __guest_call(op_len: i32, req_len: i32) -> i32 {
     }
   }
 }
+
+static ALL_COMPONENTS: &[&str] = &["copy", "error", "validate"];
 
 pub struct Dispatcher {}
 impl Dispatch for Dispatcher {
@@ -49,7 +51,10 @@ impl Dispatch for Dispatcher {
       "copy" => copy::Component::new().execute(&payload),
       "error" => error::Component::new().execute(&payload),
       "validate" => validate::Component::new().execute(&payload),
-      _ => Err(Error::JobNotFound(op.to_owned())),
+      _ => Err(Error::ComponentNotFound(
+        op.to_owned(),
+        ALL_COMPONENTS.join(", "),
+      )),
     }?;
     Ok(serialize(&result)?)
   }
@@ -79,7 +84,7 @@ pub(crate) mod copy {
   impl WapcComponent for Component {
     fn execute(&self, payload: &IncomingPayload) -> JobResult {
       let inputs = populate_inputs(payload)?;
-      let outputs = get_outputs(&payload.inv_id);
+      let outputs = get_outputs();
       implementation::job(inputs, outputs)
     }
   }
@@ -100,31 +105,26 @@ pub(crate) mod copy {
     pub times: i8,
   }
 
-  fn get_outputs(inv_id: &str) -> Outputs {
+  fn get_outputs() -> Outputs {
     Outputs {
-      output: GuestPortOutput { inv_id },
+      output: GuestPortOutput {},
     }
   }
 
   #[derive(Debug, PartialEq, Clone)]
-  pub struct GuestPortOutput<'a> {
-    inv_id: &'a str,
-  }
+  pub struct GuestPortOutput {}
 
-  impl<'a> PortSender for GuestPortOutput<'a> {
-    type Output = String;
+  impl PortSender for GuestPortOutput {
+    type PayloadType = String;
     fn get_name(&self) -> String {
       "output".to_string()
-    }
-    fn get_invocation_id(&self) -> String {
-      self.inv_id.to_owned()
     }
   }
 
   #[cfg(feature = "guest")]
   #[derive(Debug)]
-  pub struct Outputs<'a> {
-    pub output: GuestPortOutput<'a>,
+  pub struct Outputs {
+    pub output: GuestPortOutput,
   }
 }
 pub(crate) mod error {
@@ -151,7 +151,7 @@ pub(crate) mod error {
   impl WapcComponent for Component {
     fn execute(&self, payload: &IncomingPayload) -> JobResult {
       let inputs = populate_inputs(payload)?;
-      let outputs = get_outputs(&payload.inv_id);
+      let outputs = get_outputs();
       implementation::job(inputs, outputs)
     }
   }
@@ -169,31 +169,26 @@ pub(crate) mod error {
     pub input: String,
   }
 
-  fn get_outputs(inv_id: &str) -> Outputs {
+  fn get_outputs() -> Outputs {
     Outputs {
-      output: GuestPortOutput { inv_id },
+      output: GuestPortOutput {},
     }
   }
 
   #[derive(Debug, PartialEq, Clone)]
-  pub struct GuestPortOutput<'a> {
-    inv_id: &'a str,
-  }
+  pub struct GuestPortOutput {}
 
-  impl<'a> PortSender for GuestPortOutput<'a> {
-    type Output = String;
+  impl PortSender for GuestPortOutput {
+    type PayloadType = String;
     fn get_name(&self) -> String {
       "output".to_string()
-    }
-    fn get_invocation_id(&self) -> String {
-      self.inv_id.to_owned()
     }
   }
 
   #[cfg(feature = "guest")]
   #[derive(Debug)]
-  pub struct Outputs<'a> {
-    pub output: GuestPortOutput<'a>,
+  pub struct Outputs {
+    pub output: GuestPortOutput,
   }
 }
 pub(crate) mod validate {
@@ -220,7 +215,7 @@ pub(crate) mod validate {
   impl WapcComponent for Component {
     fn execute(&self, payload: &IncomingPayload) -> JobResult {
       let inputs = populate_inputs(payload)?;
-      let outputs = get_outputs(&payload.inv_id);
+      let outputs = get_outputs();
       implementation::job(inputs, outputs)
     }
   }
@@ -238,30 +233,25 @@ pub(crate) mod validate {
     pub input: String,
   }
 
-  fn get_outputs(inv_id: &str) -> Outputs {
+  fn get_outputs() -> Outputs {
     Outputs {
-      output: GuestPortOutput { inv_id },
+      output: GuestPortOutput {},
     }
   }
 
   #[derive(Debug, PartialEq, Clone)]
-  pub struct GuestPortOutput<'a> {
-    inv_id: &'a str,
-  }
+  pub struct GuestPortOutput {}
 
-  impl<'a> PortSender for GuestPortOutput<'a> {
-    type Output = String;
+  impl PortSender for GuestPortOutput {
+    type PayloadType = String;
     fn get_name(&self) -> String {
       "output".to_string()
-    }
-    fn get_invocation_id(&self) -> String {
-      self.inv_id.to_owned()
     }
   }
 
   #[cfg(feature = "guest")]
   #[derive(Debug)]
-  pub struct Outputs<'a> {
-    pub output: GuestPortOutput<'a>,
+  pub struct Outputs {
+    pub output: GuestPortOutput,
   }
 }

@@ -39,7 +39,6 @@ message Invocation {
   string target = 2;
   map<string, MessageKind> msg = 3;
   string id = 4;
-  string network_id = 7;
 }
 
 message Output {
@@ -49,17 +48,7 @@ message Output {
 }
 
 message ListRequest {}
-message StatsRequest {
-  message Format {}
-  message Component {
-    string name = 1;
-    Format format = 2;
-  }
-  oneof kind {
-    Format all = 1;
-    Component component = 2;
-  }
-}
+message StatsRequest {}
 
 message ListResponse { repeated Component components = 1; }
 
@@ -86,4 +75,15 @@ message Provider {
 
 message StatsResponse { repeated Statistic stats = 1; }
 
-message Statistic { uint64 num_calls = 1; }
+message Statistic {
+  string name = 1;
+  uint32 runs = 2;
+  uint32 errors = 3;
+  DurationStatistics execution_statistics = 4;
+ }
+
+message DurationStatistics {
+  uint64 min = 1;
+  uint64 max = 2;
+  uint64 average = 3;
+}

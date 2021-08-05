@@ -10,25 +10,25 @@ use serde::{
 pub struct ComponentSignature {
   /// The name of the component.
   pub name: String,
-  /// A list of input signatures
+  /// A list of input signatures.
   pub inputs: Vec<PortSignature>,
-  /// A list of output signatures
+  /// A list of output signatures.
   pub outputs: Vec<PortSignature>,
 }
 
-/// The signature of an individual port
+/// The signature of an individual port.
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
 pub struct PortSignature {
-  /// Name of the port
+  /// Name of the port.
   pub name: String,
 
-  /// The data type of the port
+  /// The data type of the port.
   // TODO: Need to turn this into a more complex representation of port types
   pub type_string: String,
 }
 
 impl PortSignature {
-  /// Constructor
+  /// Constructor.
   #[must_use]
   pub fn new(name: String, type_string: String) -> Self {
     Self { name, type_string }
@@ -51,39 +51,39 @@ impl Display for PortSignature {
   }
 }
 
-/// Signature for Providers
+/// Signature for Providers.
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
 pub struct ProviderSignature {
-  /// Name of the provider
+  /// Name of the provider.
   pub name: String,
   /// A list of [ComponentSignature]s the provider hosts.
   pub components: Vec<ComponentSignature>,
 }
 
-/// Signature for schematics, their ports, and their providers
+/// Signature for schematics, their ports, and their providers.
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
 pub struct SchematicSignature {
-  /// Name of the schematic
+  /// Name of the schematic.
   pub name: String,
-  /// A list of input ports
+  /// A list of input ports.
   pub inputs: Vec<PortSignature>,
-  /// A list of output ports
+  /// A list of output ports.
   pub outputs: Vec<PortSignature>,
-  /// A list of providers running on the schematic
+  /// A list of providers running on the schematic.
   pub providers: Vec<ProviderSignature>,
 }
 
-/// An enum representing the types of components that can be hosted
+/// An enum representing the types of components that can be hosted.
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 pub enum HostedType {
-  /// A hosted component
+  /// A hosted component.
   Component(ComponentSignature),
-  /// A hosted schematic
+  /// A hosted schematic.
   Schematic(SchematicSignature),
 }
 
 impl HostedType {
-  /// Get the name of the [HostedType] regardless of kind
+  /// Get the name of the [HostedType] regardless of kind.
   #[must_use]
   pub fn get_name(&self) -> &str {
     match self {

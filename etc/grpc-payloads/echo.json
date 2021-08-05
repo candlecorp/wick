@@ -1,5 +1,5 @@
 {
   "origin": "ofp://NC6INPB6YIFA53UHP26M7ECHSKTVXTHHEWHFX6ILDZYTGY7NF3PQOGJF.client/",
-  "target": "ofp://echo.schematic/",
+  "target": "ofp://echo.schem/",
   "msg": { "input": { "kind": 4, "messagepack": "q0hlbGxvIHdvcmxk" } }
 }

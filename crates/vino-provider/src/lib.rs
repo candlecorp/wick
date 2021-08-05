@@ -1,4 +1,14 @@
-//! Vino provider
+//! The Vino provider crate contains the necessary pieces for Native
+//! or WebAssembly providers written in Rust.
+//!
+//! This library is not meant to be integrated manually. Vino uses
+//! code generators to automate most integration and — while backwards compatibility
+//! is a top priority — the generated code is considered the primary consumer. If you
+//! end up using this library to fit other use cases, please open an issue to let us know
+//! so we can track that usage.
+//!
+//! To use this library or learn more about code generation, check out the docs at
+//! [docs.vino.dev](https://docs.vino.dev/docs/concepts/codegen/).
 
 // !!START_LINTS
 // Vino lints
@@ -75,15 +85,15 @@
 #![allow()]
 
 #[cfg(feature = "wasm")]
-/// Traits and functions for wasm providers
+/// Traits and functions for wasm providers.
 pub mod wasm;
 
 #[cfg(feature = "native")]
-/// Traits and functions for native providers
+/// Traits and functions for native providers.
 pub mod native;
 
 #[cfg(feature = "signatures")]
-/// Signatures of Vino types
+/// Signatures of Vino types.
 pub mod signatures;
 
 use std::str::FromStr;

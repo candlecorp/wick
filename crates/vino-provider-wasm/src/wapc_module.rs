@@ -16,7 +16,7 @@ pub struct WapcModule {
 }
 
 impl WapcModule {
-  /// Create an actor from the bytes of a signed WebAssembly module. Attempting to load
+  /// Create an actor from the bytes of a signed WebAssembly module. Attempting to load.
   /// an unsigned module, or a module signed improperly, will result in an error.
   pub fn from_slice(buf: &[u8]) -> Result<WapcModule, WasmProviderError> {
     let token = vino_wascap::extract_claims(&buf)?;
@@ -41,13 +41,13 @@ impl WapcModule {
     &self.token.claims.subject
   }
 
-  /// A globally referencable ID to this component
+  /// A globally referencable ID to this component.
   #[must_use]
   pub fn id(&self) -> &String {
     self.public_key()
   }
 
-  /// The actor's human-friendly display name
+  /// The actor's human-friendly display name.
   #[must_use]
   pub fn name(&self) -> &String {
     &self.token.claims.metadata.as_ref().unwrap().interface.name

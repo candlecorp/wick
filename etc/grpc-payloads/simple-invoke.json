@@ -1,6 +1,6 @@
 {
   "origin": "ofp://NC6INPB6YIFA53UHP26M7ECHSKTVXTHHEWHFX6ILDZYTGY7NF3PQOGJF.client/",
-  "target": "ofp://simple.schematic/",
+  "target": "ofp://simple.schem/",
   "msg": { "left": "Kg==", "right": "zQg/" },
   "id": "4b1d9164-0181-4d00-940f-c23d16a0b707",
   "tx_id": "f3dadb61-ad86-4454-9e7f-345db7262e86",

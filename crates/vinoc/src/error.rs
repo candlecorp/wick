@@ -1,6 +1,8 @@
 use thiserror::Error;
 use vino_codec::error::CodecError;
 
+use crate::rpc_client;
+
 // type BoxedSyncSendError = Box<dyn std::error::Error + Sync + std::marker::Send>;
 
 #[derive(Error, Debug)]
@@ -21,6 +23,8 @@ pub enum ControlError {
   ConfigurationDeserialization(String),
   #[error(transparent)]
   LoggerError(#[from] logger::error::LoggerError),
+  #[error(transparent)]
+  RpcClientError(#[from] rpc_client::RpcClientError),
   #[error(transparent)]
   RpcError(#[from] vino_rpc::Error),
   #[error(transparent)]
@@ -60,7 +64,7 @@ impl From<nkeys::error::Error> for ControlError {
 // TODO: Submit PRs to improve tonic's error handling
 impl From<tonic::transport::Error> for ControlError {
   fn from(e: tonic::transport::Error) -> Self {
-    let debug = format!("{:?}", e);
+    let debug = format!("Tonic error: {:?}", e);
     if debug.contains("Connection refused") {
       Self::ConnectionError("Connection refused".to_owned())
     } else {

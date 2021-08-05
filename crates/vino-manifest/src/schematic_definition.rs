@@ -37,17 +37,17 @@ pub struct SchematicDefinition {
   pub connections: Vec<ConnectionDefinition>,
   /// A list of [ProviderDefinition]s with namespaces and initialization configuration.
   pub providers: Vec<ProviderDefinition>,
-  /// Reserved
+  /// Reserved.
   pub constraints: HashMap<String, String>,
 }
 
 impl SchematicDefinition {
-  /// Get the name as an owned [String]
+  /// Get the name as an owned [String].
   #[must_use]
   pub fn get_name(&self) -> String {
     self.name.clone()
   }
-  /// Get a [ComponentDefinition] by instance name
+  /// Get a [ComponentDefinition] by instance name.
   #[must_use]
   pub fn get_component(&self, instance: &str) -> Option<ComponentDefinition> {
     self.instances.get(instance).cloned()
@@ -95,16 +95,16 @@ impl TryFrom<SchematicManifest> for SchematicDefinition {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 /// A definition of a component used to reference a component registered under a provider.
-/// Note: [ComponentDefinition] include embed the concept of a namespace so two identical
+/// Note: [ComponentDefinition] include embed the concept of a namespace so two identical.
 /// components registered on different namespaces will not be equal.
 pub struct ComponentDefinition {
-  /// The component's name
+  /// The component's name.
   pub name: String,
-  /// The namespace the component was registered under
+  /// The namespace the component was registered under.
   pub namespace: String,
   /// The fully qualified ID for the referenced component.
   pub id: String,
-  /// Reserved
+  /// Reserved.
   pub config: Option<String>,
 }
 
@@ -122,7 +122,7 @@ impl ComponentDefinition {
 }
 
 impl ComponentDefinition {
-  /// Parse a fully qualified component ID into its namespace & name parts
+  /// Parse a fully qualified component ID into its namespace & name parts.
   pub fn parse_id(&self) -> Result<(&str, &str)> {
     parse_id(&self.id)
   }
@@ -157,13 +157,13 @@ impl TryFrom<&crate::v0::ComponentDefinition> for ComponentDefinition {
 #[derive(Debug, Clone)]
 /// A definition of a Vino Provider with its namespace, how to retrieve or access it and its configuration.
 pub struct ProviderDefinition {
-  /// The namespace to reference the provider's components on
+  /// The namespace to reference the provider's components on.
   pub namespace: String,
-  /// The kind/type of the provider
+  /// The kind/type of the provider.
   pub kind: ProviderKind,
-  /// The reference/location of the provider
+  /// The reference/location of the provider.
   pub reference: String,
-  /// Data or configuration to pass to the provider initialization
+  /// Data or configuration to pass to the provider initialization.
   pub data: HashMap<String, String>,
 }
 
@@ -181,11 +181,11 @@ impl From<crate::v0::ProviderDefinition> for ProviderDefinition {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 /// The kind of provider.
 pub enum ProviderKind {
-  /// Native providers included at compile-time in a Vino host
+  /// Native providers included at compile-time in a Vino host.
   Native = 0,
-  /// The URL for a separately managed GRPC endpoint
+  /// The URL for a separately managed GRPC endpoint.
   GrpcUrl = 1,
-  /// A WaPC WebAssembly provider
+  /// A WaPC WebAssembly provider.
   Wapc = 2,
 }
 
@@ -200,20 +200,20 @@ impl From<crate::v0::ProviderKind> for ProviderKind {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-/// A [ConnectionDefinition] defines the link between an upstream and downstream port as well as
+/// A [ConnectionDefinition] defines the link between an upstream and downstream port as well as.
 /// the default value to use in the case of an exception.
 #[must_use]
 pub struct ConnectionDefinition {
-  /// The upstream [ConnectionTargetDefinition] (port)
+  /// The upstream [ConnectionTargetDefinition] (port).
   pub from: ConnectionTargetDefinition,
-  /// The downstream [ConnectionTargetDefinition] (port)
+  /// The downstream [ConnectionTargetDefinition] (port).
   pub to: ConnectionTargetDefinition,
   /// The default data to use in the case of an Error, represented as a JSON string.
   pub default: Option<serde_json::Value>,
 }
 
 impl ConnectionDefinition {
-  /// Constructor for a [ConnectionDefinition]. This is mostly used in tests,
+  /// Constructor for a [ConnectionDefinition]. This is mostly used in tests,.
   /// the most common way to get a [ConnectionDefinition] is by parsing a manifest.
   pub fn new(from: ConnectionTargetDefinition, to: ConnectionTargetDefinition) -> Self {
     Self {
@@ -310,7 +310,7 @@ impl ConnectionTargetDefinition {
     }
   }
 
-  /// Create a [ConnectionTargetDefinition] that points nowhere
+  /// Create a [ConnectionTargetDefinition] that points nowhere.
   pub fn sender(config: Option<SenderData>) -> Self {
     Self {
       target: PortReference {
@@ -410,9 +410,9 @@ impl Display for ConnectionDefinition {
 
 /// A [PortReference] is the link to a port for a specific reference of a component.
 pub struct PortReference {
-  /// A schematic-wide unique reference that maps to a [ComponentDefinition]
+  /// A schematic-wide unique reference that maps to a [ComponentDefinition].
   pub instance: String,
-  /// A port on the referenced [ComponentDefinition]
+  /// A port on the referenced [ComponentDefinition].
   pub port: String,
 }
 

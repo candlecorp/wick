@@ -80,13 +80,15 @@ pub mod utils;
 
 use error::ControlError;
 
-pub type Result<T> = std::result::Result<T, ControlError>;
+pub(crate) type Result<T> = std::result::Result<T, ControlError>;
 pub type Error = ControlError;
 
 #[macro_use]
 extern crate log;
 
 use log::debug;
+
+static BIN_NAME: &str = "vinoc";
 
 use self::commands::*;
 
@@ -106,7 +108,7 @@ async fn main() -> Result<()> {
     Ok(_) => 0,
     Err(e) => {
       debug!("Error: {:?}", e);
-      eprintln!("vinoc exiting with error: {}", e);
+      eprintln!("{} exiting with error: {}", BIN_NAME, e);
       eprintln!("Run with --info, --debug, or --trace for more information.");
       1
     }

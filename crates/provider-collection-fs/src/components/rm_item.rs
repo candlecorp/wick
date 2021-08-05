@@ -1,11 +1,11 @@
 use std::fs;
 
-pub(crate) use vino_interfaces_collection::rm_item::*;
+pub(crate) use vino_interface_collection::rm_item::*;
 
 pub(crate) async fn job(
   input: Inputs,
   _output: Outputs,
-  context: Context<crate::State>,
+  context: crate::Context,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
   let state = context.lock().unwrap();
   let mut path = state.directory.clone();

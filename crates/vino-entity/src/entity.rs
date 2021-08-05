@@ -7,7 +7,6 @@ use serde::{
 };
 
 use crate::error::EntityError as Error;
-use crate::Result;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 /// The entity being referenced across systems or services.
@@ -22,21 +21,21 @@ pub enum Entity {
   Client(String),
   /// A Host entity used for entities that serve responses to requests.
   Host(String),
-  /// A schematic
+  /// A schematic.
   Schematic(String),
-  /// A component or anything that can be invoked like a component
-  Component(String),
+  /// A component or anything that can be invoked like a component.
+  Component(String, String),
   // Component { namespace: String, name: String },
-  /// A provider (an entity that hosts a collection of components)
+  /// A provider (an entity that hosts a collection of components).
   Provider(String),
   /// A reference to an instance of an entity.
   Reference(String),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-/// A struct to hold additional data for [SystemEntity]s
+/// A struct to hold additional data for [SystemEntity]s.
 pub struct SystemEntity {
-  /// The name of the [SystemEntity]
+  /// The name of the [SystemEntity].
   pub name: String,
   /// A freefrom string.
   pub value: String,
@@ -59,7 +58,7 @@ pub(crate) const URL_SCHEME: &str = "ofp";
 impl FromStr for Entity {
   type Err = Error;
 
-  fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+  fn from_str(s: &str) -> Result<Self, Self::Err> {
     use url::Url;
     let url = Url::parse(s).map_err(|e| Error::ParseError(e.to_string()))?;
     ensure!(
@@ -73,26 +72,32 @@ impl FromStr for Entity {
       .split_once(".")
       .ok_or_else(|| Error::ParseError(format!("Invalid authority format '{}', no dot.", host)))?;
     match kind {
-      "system" => {
+      "sys" => {
         let (_, msg) = url
           .query_pairs()
           .find(|(k, _v)| k == "msg")
           .unwrap_or(("".into(), "".into()));
 
         if id == "test" {
-          Ok(Entity::Test(msg.into()))
+          Ok(Entity::test(msg))
         } else {
-          Ok(Entity::System(SystemEntity {
-            name: id.into(),
-            value: msg.into(),
-          }))
+          Ok(Entity::system(id, msg))
         }
       }
-      "schematic" => Ok(Entity::Schematic(id.into())),
-      "component" => Ok(Entity::Component(id.into())),
-      "provider" => Ok(Entity::Provider(id.into())),
-      "client" => Ok(Entity::Client(id.into())),
-      "host" => Ok(Entity::Host(id.into())),
+      "schem" => Ok(Entity::schematic(id)),
+      "prov" => {
+        if let Some(mut segments) = url.path_segments() {
+          if let Some(name) = segments.next() {
+            if !name.is_empty() {
+              return Ok(Entity::component(id, name));
+            }
+          }
+        }
+
+        Ok(Entity::provider(id))
+      }
+      "client" => Ok(Entity::client(id)),
+      "host" => Ok(Entity::host(id)),
       _ => Err(Error::ParseError(format!(
         "Invalid authority kind: {}",
         kind
@@ -101,113 +106,87 @@ impl FromStr for Entity {
   }
 }
 impl Entity {
-  /// Constructor for Entity::Component
+  /// Constructor for [Entity::Component].
   #[must_use]
-  pub fn component(name: &str) -> Self {
-    Self::Component(name.to_owned())
+  pub fn component<T: AsRef<str>, U: AsRef<str>>(ns: T, name: U) -> Self {
+    Self::Component(ns.as_ref().to_owned(), name.as_ref().to_owned())
   }
 
-  /// Constructor for Entity::System
+  /// Constructor for [Entity::Component] without a namespace, used when
+  /// the namespace is irrelevant. Caution: this is not portable.
   #[must_use]
-  pub fn system(name: &str, value: &str) -> Self {
+  pub fn component_direct<T: AsRef<str>>(name: T) -> Self {
+    Self::Component("__direct".to_owned(), name.as_ref().to_owned())
+  }
+
+  /// Constructor for Entity::System.
+  #[must_use]
+  pub fn system<T: AsRef<str>, U: AsRef<str>>(name: T, value: U) -> Self {
     Self::System(SystemEntity {
-      name: name.to_owned(),
-      value: value.to_owned(),
+      name: name.as_ref().to_owned(),
+      value: value.as_ref().to_owned(),
     })
   }
 
-  /// Constructor for Entity::Test
+  /// Constructor for Entity::Test.
   #[must_use]
-  pub fn test(msg: &str) -> Self {
-    Self::Test(msg.to_owned())
+  pub fn test<T: AsRef<str>>(msg: T) -> Self {
+    Self::Test(msg.as_ref().to_owned())
   }
 
-  /// Constructor for Entity::Provider
+  /// Constructor for Entity::Provider.
   #[must_use]
-  pub fn provider(id: &str) -> Self {
-    Self::Provider(id.to_owned())
+  pub fn provider<T: AsRef<str>>(id: T) -> Self {
+    Self::Provider(id.as_ref().to_owned())
   }
 
-  /// Constructor for Entity::Schematic
+  /// Constructor for Entity::Schematic.
   #[must_use]
-  pub fn schematic(id: &str) -> Self {
-    Self::Schematic(id.to_owned())
+  pub fn schematic<T: AsRef<str>>(id: T) -> Self {
+    Self::Schematic(id.as_ref().to_owned())
   }
 
-  /// Constructor for Entity::Host
+  /// Constructor for Entity::Host.
   #[must_use]
-  pub fn host(id: &str) -> Self {
-    Self::Host(id.to_owned())
+  pub fn host<T: AsRef<str>>(id: T) -> Self {
+    Self::Host(id.as_ref().to_owned())
   }
 
-  /// Constructor for Entity::Client
+  /// Constructor for Entity::Client.
   #[must_use]
-  pub fn client(id: &str) -> Self {
-    Self::Client(id.to_owned())
+  pub fn client<T: AsRef<str>>(id: T) -> Self {
+    Self::Client(id.as_ref().to_owned())
   }
 
-  /// The URL of the entity
+  /// The URL of the entity.
   #[must_use]
   pub fn url(&self) -> String {
     match self {
-      Entity::Test(msg) => format!("{}://test.system/?msg={}", URL_SCHEME, msg),
-      Entity::Schematic(name) => format!("{}://{}.schematic/", URL_SCHEME, name),
-      Entity::Component(id) => format!("{}://{}.component/", URL_SCHEME, id),
-      Entity::Provider(name) => format!("{}://{}.provider/", URL_SCHEME, name),
+      Entity::Test(msg) => format!("{}://test.sys/?msg={}", URL_SCHEME, msg),
+      Entity::Schematic(name) => format!("{}://{}.schem/", URL_SCHEME, name),
+      Entity::Component(ns, id) => format!("{}://{}.prov/{}", URL_SCHEME, ns, id),
+      Entity::Provider(name) => format!("{}://{}.prov/", URL_SCHEME, name),
       Entity::Client(id) => format!("{}://{}.client/", URL_SCHEME, id),
       Entity::Host(id) => format!("{}://{}.host/", URL_SCHEME, id),
-      Entity::System(e) => format!("{}://{}.system/?msg={}", URL_SCHEME, e.name, e.value),
-      Entity::Invalid => format!("{}://invalid.system/", URL_SCHEME),
+      Entity::System(e) => format!("{}://{}.sys/?msg={}", URL_SCHEME, e.name, e.value),
+      Entity::Invalid => format!("{}://invalid.sys/", URL_SCHEME),
       Entity::Reference(id) => format!("{}://{}.ref/", URL_SCHEME, id),
     }
   }
 
-  /// The unique (public) key of the entity
+  /// The name of the entity.
   #[must_use]
-  pub fn key(&self) -> String {
+  pub fn name(&self) -> String {
     match self {
-      Entity::Test(msg) => format!("system:test:{}", msg),
-      Entity::Schematic(name) => format!("schematic:{}", name),
-      Entity::Component(id) => format!("component:{}", id),
-      Entity::Provider(name) => format!("provider:{}", name),
-      Entity::Client(id) => format!("client:{}", id),
-      Entity::Host(id) => format!("host:{}", id),
-      Entity::System(e) => format!("system:{}:{}", e.name, e.value),
-      Entity::Invalid => "system:invalid".to_owned(),
-      Entity::Reference(id) => format!("reference:{}", id),
-    }
-  }
-
-  /// Attempt to convert the entity into a Reference variant
-  pub fn into_reference(self) -> Result<String> {
-    match self {
-      Entity::Reference(s) => Ok(s),
-      _ => Err(Error::ConversionError("into_provider")),
-    }
-  }
-
-  /// Attempt to convert the entity into a Provider variant
-  pub fn into_provider(self) -> Result<String> {
-    match self {
-      Entity::Provider(s) => Ok(s),
-      _ => Err(Error::ConversionError("into_provider")),
-    }
-  }
-
-  /// Attempt to convert the entity into a Component variant
-  pub fn into_component(self) -> Result<String> {
-    match self {
-      Entity::Component(s) => Ok(s),
-      Entity::Schematic(s) => Ok(s),
-      _ => Err(Error::ConversionError("into_component")),
-    }
-  }
-
-  /// Attempt to convert the entity into a Schematic variant
-  pub fn into_schematic(self) -> Result<String> {
-    match self {
-      Entity::Schematic(s) => Ok(s),
-      _ => Err(Error::ConversionError("into_schematic")),
+      Entity::Test(_) => "test".to_owned(),
+      Entity::Schematic(name) => name.clone(),
+      Entity::Component(_, id) => id.clone(),
+      Entity::Provider(name) => name.clone(),
+      Entity::Client(id) => id.clone(),
+      Entity::Host(id) => id.clone(),
+      Entity::System(e) => e.name.clone(),
+      Entity::Invalid => "<invalid>".to_owned(),
+      Entity::Reference(id) => id.clone(),
     }
   }
 }
@@ -218,26 +197,26 @@ mod tests {
 
   use super::*;
   #[test]
-  fn test() -> Result<()> {
-    let entity = Entity::from_str("ofp://some_id.component/")?;
-    equals!(entity, Entity::Component("some_id".into()));
+  fn test() -> Result<(), Error> {
+    let entity = Entity::from_str("ofp://namespace.prov/comp_name")?;
+    equals!(entity, Entity::component("namespace", "comp_name"));
 
-    let entity = Entity::from_str("ofp://some_id.schematic/")?;
-    equals!(entity, Entity::Schematic("some_id".into()));
+    let entity = Entity::from_str("ofp://schem_id.schem/")?;
+    equals!(entity, Entity::schematic("schem_id"));
 
-    let entity = Entity::from_str("ofp://some_id.provider/")?;
-    equals!(entity, Entity::Provider("some_id".into()));
+    let entity = Entity::from_str("ofp://prov_ns.prov/")?;
+    equals!(entity, Entity::provider("prov_ns"));
 
-    let entity = Entity::from_str("ofp://some_id.host/")?;
-    equals!(entity, Entity::Host("some_id".into()));
+    let entity = Entity::from_str("ofp://host_id.host/")?;
+    equals!(entity, Entity::host("host_id"));
 
-    let entity = Entity::from_str("ofp://some_id.client/")?;
-    equals!(entity, Entity::Client("some_id".into()));
+    let entity = Entity::from_str("ofp://client_id.client/")?;
+    equals!(entity, Entity::client("client_id"));
 
-    let entity = Entity::from_str("ofp://test.system/?msg=Hello")?;
-    equals!(entity, Entity::Test("Hello".into()));
+    let entity = Entity::from_str("ofp://test.sys/?msg=Hello")?;
+    equals!(entity, Entity::test("Hello"));
 
-    let entity = Entity::from_str("ofp://other.system/?msg=Else")?;
+    let entity = Entity::from_str("ofp://other.sys/?msg=Else")?;
     equals!(
       entity,
       Entity::System(SystemEntity {

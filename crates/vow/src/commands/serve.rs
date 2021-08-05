@@ -6,14 +6,18 @@ use crate::Result;
 #[derive(Debug, Clone, StructOpt)]
 #[structopt(rename_all = "kebab-case")]
 pub(crate) struct ServeCommand {
-  /// Path or URL to WebAssembly binary
-  pub(crate) wasm: String,
-
   #[structopt(flatten)]
   pub(crate) cli: DefaultCliOptions,
 
   #[structopt(flatten)]
   pub(crate) pull: super::PullOptions,
+
+  /// Path or URL to WebAssembly binary.
+  pub(crate) wasm: String,
+
+  /// The number of threads to start.
+  #[structopt(long, short = "t", default_value = "2")]
+  threads: u8,
 }
 
 pub(crate) async fn handle_command(opts: ServeCommand) -> Result<()> {

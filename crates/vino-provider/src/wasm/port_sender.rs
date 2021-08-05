@@ -1,5 +1,5 @@
 use serde::Serialize;
-use vino_component::v0;
+use vino_packet::v0;
 
 use super::{
   port_close,
@@ -8,39 +8,36 @@ use super::{
   CallResult,
 };
 
+/// The WebAssembly-based PortSender trait. This trait encapsulates sending messages out of a WebAssembly component's ports.
 pub trait PortSender {
-  type Output: Serialize;
-  fn send(&self, payload: &Self::Output) -> CallResult {
-    port_send(
-      &self.get_invocation_id(),
-      &self.get_name(),
-      v0::Payload::messagepack(payload),
-    )
+  /// The type of data that the port outputs.
+  type PayloadType: Serialize;
+
+  /// Send a message.
+  fn send(&self, payload: &Self::PayloadType) -> CallResult {
+    port_send(&self.get_name(), v0::Payload::messagepack(payload))
   }
-  fn done(&self, payload: &Self::Output) -> CallResult {
-    port_send_close(
-      &self.get_invocation_id(),
-      &self.get_name(),
-      v0::Payload::messagepack(payload),
-    )
+
+  /// Send a message then close the port.
+  fn done(&self, payload: &Self::PayloadType) -> CallResult {
+    port_send_close(&self.get_name(), v0::Payload::messagepack(payload))
   }
-  fn exception(&self, message: String) -> CallResult {
-    port_send(
-      &self.get_invocation_id(),
-      &self.get_name(),
-      v0::Payload::Exception(message),
-    )
+
+  /// Send an exception.
+  fn send_exception(&self, message: String) -> CallResult {
+    port_send(&self.get_name(), v0::Payload::Exception(message))
   }
+
+  /// Send an exception then close the port.
   fn done_exception(&self, message: String) -> CallResult {
-    port_send_close(
-      &self.get_invocation_id(),
-      &self.get_name(),
-      v0::Payload::Exception(message),
-    )
+    port_send_close(&self.get_name(), v0::Payload::Exception(message))
   }
+
+  /// Signal that a job is finished with the port.
   fn close(&self) -> CallResult {
-    port_close(&self.get_invocation_id(), &self.get_name())
+    port_close(&self.get_name())
   }
-  fn get_invocation_id(&self) -> String;
+
+  /// Get the name of the port.
   fn get_name(&self) -> String;
 }

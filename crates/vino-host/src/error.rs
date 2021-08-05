@@ -23,6 +23,8 @@ pub enum HostError {
   #[error(transparent)]
   CodecError(#[from] vino_codec::Error),
   #[error(transparent)]
+  RpcServerError(#[from] vino_invocation_server::Error),
+  #[error(transparent)]
   TransportError(#[from] vino_transport::Error),
   #[error(transparent)]
   ManifestError(#[from] vino_manifest::Error),

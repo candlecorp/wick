@@ -35,6 +35,7 @@ pub(crate) mod prelude {
     ProviderKind,
     SchematicDefinition,
   };
+  pub(crate) use vino_transport::message_transport::stream::BoxedTransportStream;
   pub(crate) use vino_transport::message_transport::{
     MessageSignal,
     MessageTransport,

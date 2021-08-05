@@ -86,13 +86,13 @@ extern crate log;
 #[derive(Debug, Clone, StructOpt)]
 #[structopt(rename_all = "kebab-case")]
 pub struct CliOptions {
-  /// Path to WebAssembly binary
+  /// Path to WebAssembly binary.
   wasm: String,
 
-  /// The name of the component to execute
+  /// The name of the component to execute.
   component_name: String,
 
-  /// JSON data
+  /// JSON data.
   data: Option<String>,
 
   #[structopt(flatten)]
@@ -102,25 +102,29 @@ pub struct CliOptions {
 #[derive(StructOpt, Debug, Clone)]
 #[structopt(
      global_settings(&[AppSettings::VersionlessSubcommands]),
-     name = "vow", about = "Vino WebAssembly Wrapper")]
+     name = BIN_NAME, about = "Vino WebAssembly Wrapper")]
 pub(crate) struct Cli {
   #[structopt(flatten)]
   pub(crate) command: commands::CliCommand,
 }
 
+static BIN_NAME: &str = "vow";
+
 #[actix::main]
 async fn main() {
   let opts = Cli::from_args();
 
-  match run(opts).await {
-    Ok(_) => {
-      std::process::exit(0);
-    }
+  let res = run(opts).await;
+
+  std::process::exit(match res {
+    Ok(_) => 0,
     Err(e) => {
-      log::error!("{}", e.to_string());
-      std::process::exit(1);
+      debug!("Error: {:?}", e);
+      eprintln!("{} exiting with error: {}", BIN_NAME, e);
+      eprintln!("Run with --info, --debug, or --trace for more information.");
+      1
     }
-  }
+  });
 }
 
 async fn run(opts: Cli) -> Result<()> {

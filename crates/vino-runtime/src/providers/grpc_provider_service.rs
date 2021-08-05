@@ -3,22 +3,14 @@ use std::convert::TryInto;
 
 use rpc::invocation_service_client::InvocationServiceClient;
 use tokio::sync::mpsc::unbounded_channel;
-use tonic::transport::Channel;
+use vino_invocation_server::InvocationClient;
 use vino_rpc::rpc;
-use vino_rpc::rpc::stats_request::Format;
-use vino_rpc::rpc::{
-  ListRequest,
-  StatsRequest,
-};
+use vino_rpc::rpc::ListRequest;
 
-use super::{
-  ProviderRequest,
-  ProviderResponse,
-};
 use crate::dev::prelude::*;
 type Result<T> = std::result::Result<T, ProviderError>;
 
-static PREFIX: &str = "PRV:GRPC";
+static PREFIX: &str = "GRPC";
 
 #[derive(Default, Debug)]
 pub(crate) struct GrpcProviderService {
@@ -30,7 +22,7 @@ pub(crate) struct GrpcProviderService {
 
 #[derive(Debug)]
 struct State {
-  client: InvocationServiceClient<Channel>,
+  client: InvocationClient,
   components: HashMap<String, ComponentModel>,
 }
 
@@ -66,7 +58,7 @@ impl Handler<Initialize> for GrpcProviderService {
     let namespace = self.namespace.clone();
 
     let task = InvocationServiceClient::connect(address);
-    let after = |client: std::result::Result<InvocationServiceClient<Channel>, _>| async move {
+    let after = |client: std::result::Result<InvocationClient, _>| async move {
       match client {
         Ok(client) => {
           let metadata = addr
@@ -106,7 +98,7 @@ impl Handler<Initialize> for GrpcProviderService {
 #[rtype(result = "Result<HashMap<String, ComponentModel>>")]
 pub(crate) struct InitializeComponents {
   namespace: String,
-  client: InvocationServiceClient<Channel>,
+  client: InvocationClient,
 }
 
 impl Handler<InitializeComponents> for GrpcProviderService {
@@ -121,7 +113,9 @@ impl Handler<InitializeComponents> for GrpcProviderService {
     let task = async move {
       let list = client.list(ListRequest {});
       trace!("{}:LIST:[NS:{}]", PREFIX, namespace);
-      let list = list.await?;
+      let list = list
+        .await
+        .map_err(|e| ProviderError::RpcUpstreamError(e.to_string()))?;
       let list = list.into_inner();
 
       let mut metadata: HashMap<String, ComponentModel> = HashMap::new();
@@ -147,52 +141,6 @@ impl Handler<InitializeComponents> for GrpcProviderService {
     ActorResult::reply_async(task.into_actor(self))
   }
 }
-
-impl Handler<ProviderRequest> for GrpcProviderService {
-  type Result = ActorResult<Self, Result<ProviderResponse>>;
-
-  fn handle(&mut self, msg: ProviderRequest, _ctx: &mut Self::Context) -> Self::Result {
-    let state = self.state.as_ref().unwrap();
-    let mut client = state.client.clone();
-
-    let task = async move {
-      match msg {
-        ProviderRequest::Invoke(_invocation) => todo!(),
-        ProviderRequest::List(_req) => {
-          let list = client.list(ListRequest {}).await?;
-          debug!("Component list: {:?}", list);
-          let list = list.into_inner();
-
-          let mut hosted_types = vec![];
-
-          for item in list.components {
-            hosted_types.push(HostedType::Component(ComponentSignature {
-              name: item.name.clone(),
-              inputs: item.inputs.into_iter().map(From::from).collect(),
-              outputs: item.outputs.into_iter().map(From::from).collect(),
-            }));
-          }
-
-          Ok(ProviderResponse::List(hosted_types))
-        }
-        ProviderRequest::Statistics(_req) => {
-          let stats = client
-            .stats(StatsRequest {
-              kind: Some(rpc::stats_request::Kind::All(Format {})),
-            })
-            .await?;
-          let stats = stats.into_inner();
-
-          Ok(ProviderResponse::Stats(
-            stats.stats.into_iter().map(From::from).collect(),
-          ))
-        }
-      }
-    };
-    ActorResult::reply_async(task.into_actor(self))
-  }
-}
-
 impl Handler<Invocation> for GrpcProviderService {
   type Result = ActorResult<Self, InvocationResponse>;
 
@@ -219,7 +167,11 @@ impl Handler<Invocation> for GrpcProviderService {
       )));
 
     let request = async move {
-      let mut stream = client.invoke(invocation).await?.into_inner();
+      let mut stream = client
+        .invoke(invocation)
+        .await
+        .map_err(|e| ProviderError::RpcUpstreamError(e.to_string()))?
+        .into_inner();
       let (tx, rx) = unbounded_channel();
       actix::spawn(async move {
         loop {
@@ -283,7 +235,7 @@ impl Handler<Invocation> for GrpcProviderService {
           }
         }
       });
-      Ok!(InvocationResponse::stream(tx_id, rx))
+      Ok::<InvocationResponse, ProviderError>(InvocationResponse::stream(tx_id, rx))
     };
     ActorResult::reply_async(request.into_actor(self).map(|result, _, _| match result {
       Ok(response) => response,
@@ -299,7 +251,7 @@ mod test {
 
   use actix::clock::sleep;
   use test_vino_provider::Provider;
-  use vino_rpc::{
+  use vino_invocation_server::{
     bind_new_socket,
     make_rpc_server,
   };
@@ -330,13 +282,12 @@ mod test {
       let response = grpc_provider
         .send(Invocation {
           origin: Entity::test("grpc"),
-          target: Entity::component("test-component"),
+          target: Entity::component_direct("test-component"),
           msg: transport_map! {
             "input"=>user_data
           },
           id: get_uuid(),
           tx_id: get_uuid(),
-          network_id: get_uuid(),
         })
         .await?;
       Ok!(response)

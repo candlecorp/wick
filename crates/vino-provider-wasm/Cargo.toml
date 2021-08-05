@@ -12,7 +12,7 @@ wasm3 = ["wasm3-provider"]
 
 [dependencies]
 vino-rpc = { path = "../vino-rpc" }
-vino-component = { path = "../vino-component" }
+vino-packet = { path = "../vino-packet" }
 vino-codec = { path = "../vino-codec" }
 vino-wascap = { path = "../vino-wascap" }
 vino-provider = { path = "../vino-provider", features = ["native"] }

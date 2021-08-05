@@ -2,15 +2,16 @@
 name = "vino-provider-cli"
 version = "0.1.0"
 edition = "2018"
-license = "Apache-2.0"
+license = "BSD-3-Clause"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 vino-rpc = { path = "../vino-rpc" }
 logger = { path = "../logger" }
-vino-component = { path = "../vino-component" }
+vino-packet = { path = "../vino-packet" }
 vino-codec = { path = "../vino-codec" }
+vino-invocation-server = { path = "../vino-invocation-server" }
 tonic = { version = "0.5.0", features = ["tls"] }
 tokio = { version = "1.4.0", features = [
   "macros",

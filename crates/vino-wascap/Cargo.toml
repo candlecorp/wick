@@ -2,7 +2,7 @@
 name = "vino-wascap"
 version = "0.1.0"
 edition = "2018"
-license = "Apache-2.0"
+license = "BSD-3-Clause"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

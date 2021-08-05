@@ -16,7 +16,7 @@ use crate::{
   Result,
 };
 
-/// A Vino Host wraps a Vino runtime with server functionality like persistence,
+/// A Vino Host wraps a Vino runtime with server functionality like persistence,.
 #[derive(Debug)]
 pub struct Host {
   pub(crate) host_id: String,
@@ -26,7 +26,7 @@ pub struct Host {
 }
 
 impl Host {
-  /// Starts the host. This call is non-blocking, so it is up to the consumer
+  /// Starts the host. This call is non-blocking, so it is up to the consumer.
   /// to provide some form of parking or waiting (e.g. host.wait_for_sigint()).
   pub async fn start(&self) -> Result<()> {
     debug!("Host starting");
@@ -81,7 +81,7 @@ impl Host {
     &self,
     schematic: T,
     payload: HashMap<U, impl Serialize + Sync + Send>,
-  ) -> Result<MessageTransportStream> {
+  ) -> Result<TransportStream> {
     match &self.network {
       Some(network) => Ok(
         network
@@ -127,13 +127,11 @@ mod test {
   use http::Uri;
   use maplit::hashmap;
   use vino_entity::entity::Entity;
+  use vino_invocation_server::make_rpc_client;
   use vino_macros::transport_map;
   use vino_provider_cli::cli::ServerOptions;
+  use vino_rpc::convert_transport_map;
   use vino_rpc::rpc::Invocation;
-  use vino_rpc::{
-    convert_transport_map,
-    make_rpc_client,
-  };
 
   use crate::host_definition::HostDefinition;
   use crate::{
@@ -209,7 +207,6 @@ mod test {
         target: Entity::schematic("logger").url(),
         msg: convert_transport_map(data),
         id: "some inv".to_owned(),
-        network_id: host.get_host_id(),
       })
       .await
       .unwrap()

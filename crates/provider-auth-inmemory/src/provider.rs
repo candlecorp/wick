@@ -6,14 +6,17 @@ use std::sync::{
 
 use async_trait::async_trait;
 use vino_provider::native::prelude::*;
+use vino_rpc::error::RpcError;
 use vino_rpc::{
-  BoxedTransportStream,
-  DurationStatistics,
   RpcHandler,
   RpcResult,
 };
 
-use crate::generated;
+use crate::generated::{
+  self,
+  Dispatcher,
+};
+pub(crate) type Context = Arc<Mutex<State>>;
 
 #[derive(Debug, Default)]
 pub struct State {
@@ -41,44 +44,18 @@ impl Provider {
 impl RpcHandler for Provider {
   async fn invoke(&self, entity: Entity, payload: TransportMap) -> RpcResult<BoxedTransportStream> {
     let context = self.context.clone();
-    let component = entity.into_component()?;
-    trace!("Provider running component {}", component);
-    match generated::get_component(&component) {
-      Some(component) => {
-        let future = component.execute(context, payload);
-        let outputs = future.await?;
-        Ok(Box::pin(outputs))
-      }
-      None => Err(ProviderError::ComponentNotFound(component).into()),
-    }
+    debug!("Dispatching to {}", entity.url());
+    let component = entity.name();
+    let stream = Dispatcher::dispatch(&component, context, payload)
+      .await
+      .map_err(|e| RpcError::ProviderError(e.to_string()))?;
+
+    Ok(Box::pin(stream))
   }
 
   async fn get_list(&self) -> RpcResult<Vec<HostedType>> {
     let components = generated::get_all_components();
     Ok(components.into_iter().map(HostedType::Component).collect())
-  }
-
-  async fn get_stats(&self, id: Option<String>) -> RpcResult<Vec<vino_rpc::Statistics>> {
-    // TODO Dummy implementation
-    if id.is_some() {
-      Ok(vec![vino_rpc::Statistics {
-        num_calls: 1,
-        execution_duration: DurationStatistics {
-          max_time: 0,
-          min_time: 0,
-          average: 0,
-        },
-      }])
-    } else {
-      Ok(vec![vino_rpc::Statistics {
-        num_calls: 0,
-        execution_duration: DurationStatistics {
-          max_time: 0,
-          min_time: 0,
-          average: 0,
-        },
-      }])
-    }
   }
 }
 
@@ -88,8 +65,8 @@ mod tests {
   use rand::distributions::Alphanumeric;
   use rand::Rng;
   use tokio_stream::StreamExt;
+  use vino_macros::transport_map;
   use vino_provider::native::prelude::*;
-  use vino_rpc::make_input;
 
   use super::*;
 
@@ -103,14 +80,14 @@ mod tests {
 
   async fn create_user(provider: &Provider, username: &str, password: &str) -> Result<String> {
     let user_id = rand_string();
-    let job_payload = make_input(vec![
-      ("user_id", user_id.as_str()),
-      ("username", username),
-      ("password", password),
-    ]);
+    let job_payload = transport_map! {
+      "user_id"=> user_id.as_str(),
+      "username"=> username,
+      "password"=> password,
+    };
 
     let outputs = provider
-      .invoke(Entity::component("create-user"), job_payload)
+      .invoke(Entity::component_direct("create-user"), job_payload)
       .await?;
 
     let outputs: Vec<TransportWrapper> = outputs.collect().await;
@@ -124,10 +101,11 @@ mod tests {
   }
 
   async fn remove_user(provider: &Provider, username: &str) -> Result<String> {
-    let job_payload = make_input(vec![("username", username)]);
-
+    let job_payload = transport_map! {
+      "username"=> username,
+    };
     let mut outputs = provider
-      .invoke(Entity::component("remove-user"), job_payload)
+      .invoke(Entity::component_direct("remove-user"), job_payload)
       .await?;
 
     let output = outputs.next().await.unwrap();
@@ -144,10 +122,13 @@ mod tests {
     offset: u32,
     limit: u32,
   ) -> Result<HashMap<String, String>> {
-    let job_payload = make_input(vec![("offset", offset), ("limit", limit)]);
+    let job_payload = transport_map! {
+      "offset"=> offset,
+      "limit"=> limit,
+    };
 
     let mut outputs = provider
-      .invoke(Entity::component("list-users"), job_payload)
+      .invoke(Entity::component_direct("list-users"), job_payload)
       .await?;
 
     let output = outputs.next().await.unwrap();
@@ -165,14 +146,13 @@ mod tests {
     password: &str,
     session: &str,
   ) -> Result<(String, String)> {
-    let job_payload = make_input(vec![
-      ("username", username),
-      ("password", password),
-      ("session", session),
-    ]);
-
+    let job_payload = transport_map! {
+      "password"=> password,
+      "username"=> username,
+      "session"=> session,
+    };
     let outputs = provider
-      .invoke(Entity::component("authenticate"), job_payload)
+      .invoke(Entity::component_direct("authenticate"), job_payload)
       .await?;
 
     let mut session = String::new();
@@ -210,10 +190,11 @@ mod tests {
   }
 
   async fn get_id(provider: &Provider, username: &str) -> Result<String> {
-    let job_payload = make_input(vec![("username", username)]);
-
+    let job_payload = transport_map! {
+      "username"=> username,
+    };
     let mut outputs = provider
-      .invoke(Entity::component("get-id"), job_payload)
+      .invoke(Entity::component_direct("get-id"), job_payload)
       .await?;
 
     let output = outputs.next().await.unwrap();
@@ -225,10 +206,11 @@ mod tests {
   }
 
   async fn validate_session(provider: &Provider, session: &str) -> Result<String> {
-    let job_payload = make_input(vec![("session", session)]);
-
+    let job_payload = transport_map! {
+      "session"=> session,
+    };
     let mut outputs = provider
-      .invoke(Entity::component("validate-session"), job_payload)
+      .invoke(Entity::component_direct("validate-session"), job_payload)
       .await?;
 
     let output = outputs.next().await.unwrap();
@@ -244,13 +226,12 @@ mod tests {
     user_id: &str,
     perms: &[&str],
   ) -> Result<Vec<String>> {
-    let mut job_payload = make_input(vec![("user_id", user_id)]);
-    job_payload.insert(
-      "permissions".to_owned(),
-      MessageTransport::messagepack(perms),
-    );
+    let job_payload = transport_map! {
+      "user_id"=> user_id,
+      "permissions"=> perms,
+    };
     let mut outputs = provider
-      .invoke(Entity::component("update-permissions"), job_payload)
+      .invoke(Entity::component_direct("update-permissions"), job_payload)
       .await?;
 
     let output = outputs.next().await.unwrap();
@@ -266,9 +247,12 @@ mod tests {
     user_id: &str,
     perm: &str,
   ) -> Result<MessageTransport> {
-    let job_payload = make_input(vec![("user_id", user_id), ("permission", perm)]);
+    let job_payload = transport_map! {
+      "user_id"=> user_id,
+      "permission"=> perm,
+    };
     let mut outputs = provider
-      .invoke(Entity::component("has-permission"), job_payload)
+      .invoke(Entity::component_direct("has-permission"), job_payload)
       .await?;
 
     let output = outputs.next().await.unwrap();

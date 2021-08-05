@@ -76,112 +76,46 @@
 
 use async_trait::async_trait;
 
-/// Error module
+/// Error module.
 pub mod error;
 
 #[doc(hidden)]
 pub mod generated;
 
-/// Module for the [InvocationServer] implementation
-pub mod invocation_server;
-
-/// Utility and conversion types
+/// Utility and conversion types.
 pub mod types;
 
 pub use dyn_clone::clone_box;
 use dyn_clone::DynClone;
-/// Module with generated Tonic & Protobuf code
+/// Module with generated Tonic & Protobuf code.
 pub use generated::vino as rpc;
-use generated::vino::invocation_service_client::InvocationServiceClient;
-use generated::vino::invocation_service_server::InvocationServiceServer;
-pub use invocation_server::InvocationServer;
-use tokio::task::JoinHandle;
-use tonic::transport::{
-  Channel,
-  Server,
-  Uri,
-};
 pub use types::*;
 use vino_entity::Entity;
+use vino_transport::message_transport::stream::BoxedTransportStream;
 use vino_transport::message_transport::TransportMap;
-use vino_transport::MessageTransport;
 use vino_types::signatures::HostedType;
 
 pub(crate) type Result<T> = std::result::Result<T, error::RpcError>;
 
-/// The crate's error type
+/// The crate's error type.
 pub type Error = crate::error::RpcError;
 
-/// The Result type for [RpcHandler] implementations
+/// The Result type for [RpcHandler] implementations.
 pub type RpcResult<T> = std::result::Result<T, Box<error::RpcError>>;
 
-#[macro_use]
-extern crate log;
+/// The type of RpcHandler the default invocation server takes.
+pub type BoxedRpcHandler = Box<dyn RpcHandler + Send + Sync + 'static>;
 
-#[macro_use]
-extern crate derivative;
-
-/// The type of RpcHandler the default invocation server takes
-pub type RpcHandlerType = Box<dyn RpcHandler + Send + Sync + 'static>;
-
-/// A trait that implementers of the RPC interface should implement
+/// A trait that implementers of the RPC interface should implement.
 #[async_trait]
 pub trait RpcHandler: DynClone + Sync {
-  /// Handle an incoming request for a target entity
+  /// Handle an incoming request for a target entity.
   async fn invoke(
     &self,
     entity: Entity,
     payload: TransportMap,
   ) -> std::result::Result<BoxedTransportStream, Box<error::RpcError>>;
 
-  /// List the entities this [RpcHandler] manages
+  /// List the entities this [RpcHandler] manages.
   async fn get_list(&self) -> std::result::Result<Vec<HostedType>, Box<error::RpcError>>;
-
-  /// Report the statists for all registered entities
-  async fn get_stats(
-    &self,
-    id: Option<String>,
-  ) -> std::result::Result<Vec<Statistics>, Box<error::RpcError>>;
-}
-
-#[doc(hidden)]
-pub fn make_input<K: AsRef<str>, V: serde::Serialize>(entries: Vec<(K, V)>) -> TransportMap {
-  TransportMap::with_map(
-    entries
-      .into_iter()
-      .map(|(k, v)| Ok((k.as_ref().to_owned(), MessageTransport::success(&v))))
-      .filter_map(Result::ok)
-      .collect(),
-  )
-}
-
-/// Build and spawn an RPC server for the passed provider
-#[must_use]
-pub fn make_rpc_server(
-  socket: tokio::net::TcpSocket,
-  provider: RpcHandlerType,
-) -> JoinHandle<std::result::Result<(), tonic::transport::Error>> {
-  let component_service = InvocationServer::new(provider);
-
-  let svc = InvocationServiceServer::new(component_service);
-
-  let listener = tokio_stream::wrappers::TcpListenerStream::new(socket.listen(1).unwrap());
-
-  tokio::spawn(
-    Server::builder()
-      .add_service(svc)
-      .serve_with_incoming(listener),
-  )
-}
-
-/// Create an RPC client
-pub async fn make_rpc_client(uri: Uri) -> Result<InvocationServiceClient<Channel>> {
-  Ok(InvocationServiceClient::connect(uri).await?)
-}
-
-#[doc(hidden)]
-pub fn bind_new_socket() -> Result<tokio::net::TcpSocket> {
-  let socket = tokio::net::TcpSocket::new_v4()?;
-  socket.bind("127.0.0.1:0".parse().unwrap())?;
-  Ok(socket)
 }

@@ -2,13 +2,9 @@ use bcrypt::{
   hash,
   DEFAULT_COST,
 };
-use vino_interfaces_authentication::create_user::*;
+use vino_interface_authentication::create_user::*;
 
-pub(crate) async fn job(
-  input: Inputs,
-  output: Outputs,
-  context: Context<crate::State>,
-) -> JobResult {
+pub(crate) async fn job(input: Inputs, output: Outputs, context: crate::Context) -> JobResult {
   let hashed = hash(input.password, DEFAULT_COST)
     .map_err(|e| NativeComponentError::new(format!("Hashing failed: {}", e.to_string())))?;
   let mut state = context.lock().unwrap();

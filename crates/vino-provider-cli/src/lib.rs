@@ -81,7 +81,7 @@ pub mod error;
 
 pub(crate) type Result<T> = std::result::Result<T, error::CliError>;
 
-/// The crate's error type;
+/// The crate's error type;.
 pub type Error = error::CliError;
 
 pub use cli::{

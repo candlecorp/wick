@@ -23,10 +23,10 @@ pub async fn load_wasm(
 ) -> Result<WapcModule, WasmProviderError> {
   let path = Path::new(&location);
   if path.exists() {
-    debug!("PRV:WASM:AS_FILE:{}", location);
+    debug!("WASM:AS_FILE:{}", location);
     Ok(WapcModule::from_file(path).await?)
   } else {
-    debug!("PRV:WASM:AS_OCI:{}", location);
+    debug!("WASM:AS_OCI:{}", location);
     load_wasm_from_oci(location, allow_latest, allowed_insecure).await
   }
 }

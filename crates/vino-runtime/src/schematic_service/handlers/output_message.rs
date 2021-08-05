@@ -9,6 +9,20 @@ pub(crate) struct OutputMessage {
   pub(crate) payload: MessageTransport,
 }
 
+impl OutputMessage {
+  pub(crate) fn new<T: AsRef<str>>(
+    tx_id: T,
+    port: ConnectionTargetDefinition,
+    payload: MessageTransport,
+  ) -> Self {
+    Self {
+      tx_id: tx_id.as_ref().to_owned(),
+      port,
+      payload,
+    }
+  }
+}
+
 impl Handler<OutputMessage> for SchematicService {
   type Result = ActorResult<Self, Result<(), SchematicError>>;
 

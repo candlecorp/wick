@@ -7,7 +7,7 @@ use crate::{
   Result,
 };
 
-/// The HostBuilder builds the configuration for a Vino Host
+/// The HostBuilder builds the configuration for a Vino Host.
 #[derive(Debug, Copy, Clone)]
 pub struct HostBuilder {}
 
@@ -18,7 +18,7 @@ impl Default for HostBuilder {
 }
 
 impl HostBuilder {
-  /// Creates a new host builder
+  /// Creates a new host builder.
   #[must_use]
   pub fn new() -> HostBuilder {
     HostBuilder {}

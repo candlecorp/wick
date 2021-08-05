@@ -8,7 +8,7 @@ use serde_json::json;
 use utils::*;
 use vino_transport::message_transport::{
   JsonError,
-  JsonOutput,
+  TransportJson,
 };
 
 #[test_env_log::test(tokio::test)]
@@ -28,10 +28,11 @@ async fn test_vow_serve() -> utils::TestResult<()> {
   let args = json!({ "input" : "test input"});
   let actual = vinoc_invoke(&port, "validate", args).await?;
 
-  let expected = JsonOutput {
-    error_msg: None,
-    error_kind: JsonError::None,
-    value: json!("test input"),
+  let expected = hashmap! { "output".to_owned() => TransportJson {
+      error_msg: None,
+      error_kind: JsonError::None,
+      value: json!("test input"),
+    }
   };
 
   let result = panic::catch_unwind(|| {

@@ -5,14 +5,18 @@ use std::sync::{
 };
 
 use vino_provider::native::prelude::*;
+use vino_rpc::error::RpcError;
 use vino_rpc::{
-  BoxedTransportStream,
-  DurationStatistics,
   RpcHandler,
   RpcResult,
 };
 
-use crate::generated;
+use crate::generated::{
+  self,
+  Dispatcher,
+};
+
+pub(crate) type Context = Arc<Mutex<State>>;
 
 #[derive(Debug, Default)]
 pub struct State {
@@ -38,44 +42,18 @@ impl Provider {
 impl RpcHandler for Provider {
   async fn invoke(&self, entity: Entity, payload: TransportMap) -> RpcResult<BoxedTransportStream> {
     let context = self.context.clone();
-    let component = entity.into_component()?;
-    trace!("Provider running component {}", component);
-    match generated::get_component(&component) {
-      Some(component) => {
-        let future = component.execute(context, payload);
-        let outputs = future.await?;
-        Ok(Box::pin(outputs))
-      }
-      None => Err(ProviderError::ComponentNotFound(component).into()),
-    }
+    debug!("Dispatching to {}", entity.url());
+    let component = entity.name();
+    let stream = Dispatcher::dispatch(&component, context, payload)
+      .await
+      .map_err(|e| RpcError::ProviderError(e.to_string()))?;
+
+    Ok(Box::pin(stream))
   }
 
   async fn get_list(&self) -> RpcResult<Vec<HostedType>> {
     let components = generated::get_all_components();
     Ok(components.into_iter().map(HostedType::Component).collect())
-  }
-
-  async fn get_stats(&self, id: Option<String>) -> RpcResult<Vec<vino_rpc::Statistics>> {
-    // TODO Dummy implementation
-    if id.is_some() {
-      Ok(vec![vino_rpc::Statistics {
-        num_calls: 1,
-        execution_duration: DurationStatistics {
-          max_time: 0,
-          min_time: 0,
-          average: 0,
-        },
-      }])
-    } else {
-      Ok(vec![vino_rpc::Statistics {
-        num_calls: 0,
-        execution_duration: DurationStatistics {
-          max_time: 0,
-          min_time: 0,
-          average: 0,
-        },
-      }])
-    }
   }
 }
 
@@ -83,7 +61,7 @@ impl RpcHandler for Provider {
 mod tests {
   use anyhow::Result;
   use futures::prelude::*;
-  use vino_rpc::make_input;
+  use vino_macros::transport_map;
 
   use super::*;
 
@@ -93,14 +71,14 @@ mod tests {
     collection_id: &str,
     document: &str,
   ) -> Result<()> {
-    let job_payload = make_input(vec![
-      ("document_id", document_id),
-      ("collection_id", collection_id),
-      ("document", document),
-    ]);
+    let job_payload = transport_map! {
+      "document_id"=> document_id,
+      "collection_id"=> collection_id,
+      "document"=> document,
+    };
 
     let mut outputs = provider
-      .invoke(Entity::component("add-item"), job_payload)
+      .invoke(Entity::component_direct("add-item"), job_payload)
       .await?;
     let output = outputs.next().await.unwrap();
     println!("payload from [{}]: {:?}", output.port, output.payload);
@@ -112,13 +90,12 @@ mod tests {
   }
 
   async fn get_item(provider: &Provider, document_id: &str, collection_id: &str) -> Result<String> {
-    let job_payload = make_input(vec![
-      ("document_id", document_id),
-      ("collection_id", collection_id),
-    ]);
-
+    let job_payload = transport_map! {
+      "document_id"=> document_id,
+      "collection_id"=> collection_id,
+    };
     let mut outputs = provider
-      .invoke(Entity::component("get-item"), job_payload)
+      .invoke(Entity::component_direct("get-item"), job_payload)
       .await?;
 
     let output = outputs.next().await.unwrap();
@@ -130,10 +107,11 @@ mod tests {
   }
 
   async fn list_items(provider: &Provider, collection_id: &str) -> Result<Vec<String>> {
-    let job_payload = make_input(vec![("collection_id", collection_id)]);
-
+    let job_payload = transport_map! {
+      "collection_id"=> collection_id,
+    };
     let mut outputs = provider
-      .invoke(Entity::component("list-items"), job_payload)
+      .invoke(Entity::component_direct("list-items"), job_payload)
       .await?;
 
     let output = outputs.next().await.unwrap();

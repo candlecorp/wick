@@ -81,21 +81,21 @@ use hocon::HoconLoader;
 use log::debug;
 use serde::de::DeserializeOwned;
 
-/// Module for processing JSON templates used for default values
+/// Module for processing JSON templates used for default values.
 pub mod default;
 
 /// Module for parsing parts of a manifest.
 pub mod parse;
 
-/// Vino Manifest error
+/// Vino Manifest error.
 pub mod error;
 
-/// Version 0 (unstable) manifest
+/// Version 0 (unstable) manifest.
 pub mod v0;
 
-/// A version-normalized format of the network manifest for development
+/// A version-normalized format of the network manifest for development.
 pub mod network_definition;
-/// A version-normalized format of the schematic manifest for development
+/// A version-normalized format of the schematic manifest for development.
 pub mod schematic_definition;
 
 pub use network_definition::NetworkDefinition;
@@ -111,36 +111,36 @@ pub use schematic_definition::{
 
 use crate::error::ManifestError;
 
-/// The crate's error type
+/// The crate's error type.
 pub type Error = ManifestError;
 
 pub(crate) type Result<T> = std::result::Result<T, Error>;
 
-/// Enum for the possible versions of a Host Manifest
+/// Enum for the possible versions of a Host Manifest.
 #[derive(Debug, Clone)]
 pub enum HostManifest {
-  /// Version 0 Host Manifest
+  /// Version 0 Host Manifest.
   V0(v0::HostManifest),
 }
 
-/// Enum for the possible versions of a Network Manifest
+/// Enum for the possible versions of a Network Manifest.
 #[derive(Debug, Clone)]
 pub enum NetworkManifest {
-  /// Version 0 Network Manifest
+  /// Version 0 Network Manifest.
   V0(v0::NetworkManifest),
 }
 
-/// Enum for the possible versions of a Schematic Manifest
+/// Enum for the possible versions of a Schematic Manifest.
 #[derive(Debug, Clone)]
 pub enum SchematicManifest {
-  /// Version 0 Schematic Manifest
+  /// Version 0 Schematic Manifest.
   V0(v0::SchematicManifest),
 }
 
-/// The Loadable trait can be used for any deserializable struct that can be loaded from
+/// The Loadable trait can be used for any deserializable struct that can be loaded from.
 /// YAML, Hocon, or any other supported format.
 pub trait Loadable<T> {
-  /// Load struct from file by trying all the supported file formats
+  /// Load struct from file by trying all the supported file formats.
   fn load_from_file(path: &Path) -> Result<T> {
     if !path.exists() {
       return Err(Error::FileNotFound(path.to_string_lossy().into()));
@@ -148,7 +148,6 @@ pub trait Loadable<T> {
     debug!("Reading manifest from {}", path.to_string_lossy());
     let contents = read_to_string(path)?;
     Self::from_hocon(&contents).or_else(|e| {
-      debug!("{:?}", e);
       match &e {
         Error::VersionError(_) => Err(e),
         Error::HoconError(hocon::Error::Deserialization { message }) => {
@@ -164,9 +163,9 @@ pub trait Loadable<T> {
       }
     })
   }
-  /// Load as YAML
+  /// Load as YAML.
   fn from_yaml(src: &str) -> Result<T>;
-  /// Load as Hocon
+  /// Load as Hocon.
   fn from_hocon(src: &str) -> Result<T>;
 }
 

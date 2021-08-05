@@ -23,12 +23,12 @@ pub const COMPONENT_ERROR: &str = "<error>";
 pub const SELF_NAMESPACE: &str = "self";
 /// The reserved name for components that send static data.
 pub static SENDER_ID: &str = "<sender>";
-/// The name of SENDER's output port
+/// The name of SENDER's output port.
 pub static SENDER_PORT: &str = "output";
 
 type Result<T> = std::result::Result<T, Error>;
 
-/// Parse a fully qualified component ID into its namespace & name parts
+/// Parse a fully qualified component ID into its namespace & name parts.
 pub fn parse_id(id: &str) -> Result<(&str, &str)> {
   if !id.contains("::") {
     Err(Error::ComponentIdError(id.to_owned()))

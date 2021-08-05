@@ -11,9 +11,9 @@ use crate::{
 /// The NetworkDefinition struct is a normalized representation of a Vino [NetworkManifest].
 /// It handles the job of translating manifest versions into a consistent data structure.
 pub struct NetworkDefinition {
-  /// A list of SchematicDefinitions
+  /// A list of SchematicDefinitions.
   pub schematics: Vec<SchematicDefinition>,
-  /// A list of ProviderDefinitions
+  /// A list of ProviderDefinitions.
   pub providers: Vec<ProviderDefinition>,
 }
 

@@ -1,39 +1,25 @@
-use std::collections::HashMap;
-use std::sync::Arc;
-
 use async_trait::async_trait;
-use parking_lot::Mutex;
 use vino_rpc::error::RpcError;
 use vino_rpc::{
-  BoxedTransportStream,
-  DurationStatistics,
   RpcHandler,
   RpcResult,
-  Statistics,
 };
 
 use crate::dev::prelude::*;
 use crate::network_service::handlers::list_schematics::ListSchematics;
 
 #[derive(Debug, Default)]
-struct State {
-  documents: HashMap<String, String>,
-  collections: HashMap<String, Vec<String>>,
-}
+struct State {}
 
 #[derive(Clone, Debug)]
 pub struct Provider {
   network_id: String,
-  context: Arc<Mutex<State>>,
 }
 
 impl Provider {
   #[must_use]
   pub fn new(network_id: String) -> Self {
-    Self {
-      network_id,
-      context: Arc::new(Mutex::new(State::default())),
-    }
+    Self { network_id }
   }
 }
 
@@ -41,6 +27,7 @@ impl Provider {
 impl RpcHandler for Provider {
   async fn invoke(&self, entity: Entity, payload: TransportMap) -> RpcResult<BoxedTransportStream> {
     let addr = NetworkService::for_id(&self.network_id);
+
     let result: InvocationResponse = addr
       .send(Invocation {
         origin: Entity::Schematic("<system>".to_owned()),
@@ -48,7 +35,6 @@ impl RpcHandler for Provider {
         msg: payload,
         id: get_uuid(),
         tx_id: get_uuid(),
-        network_id: get_uuid(),
       })
       .await
       .map_err(|e| RpcError::ProviderError(e.to_string()))?;
@@ -70,29 +56,6 @@ impl RpcHandler for Provider {
     let schematics = result.map_err(|e| RpcError::ProviderError(e.to_string()))?;
     let hosted_types = schematics.into_iter().map(HostedType::Schematic).collect();
     Ok(hosted_types)
-  }
-
-  async fn get_stats(&self, id: Option<String>) -> RpcResult<Vec<Statistics>> {
-    // TODO Dummy implementation
-    if id.is_some() {
-      Ok(vec![Statistics {
-        num_calls: 1,
-        execution_duration: DurationStatistics {
-          max_time: 0,
-          min_time: 0,
-          average: 0,
-        },
-      }])
-    } else {
-      Ok(vec![Statistics {
-        num_calls: 0,
-        execution_duration: DurationStatistics {
-          max_time: 0,
-          min_time: 0,
-          average: 0,
-        },
-      }])
-    }
   }
 }
 

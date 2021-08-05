@@ -6,10 +6,7 @@ pub(crate) mod validator;
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use parking_lot::{
-  Mutex,
-  RwLock,
-};
+use parking_lot::RwLock;
 pub(crate) use schematic_model::SchematicModel;
 
 use crate::dev::prelude::*;

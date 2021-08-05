@@ -77,10 +77,9 @@ pub mod error;
 pub(crate) mod generated;
 pub mod provider;
 
-pub(crate) use provider::State;
+pub(crate) use provider::Context;
 
 pub type Error = error::Error;
-pub type Result<T> = std::result::Result<T, Error>;
 
 #[macro_use]
 extern crate log;

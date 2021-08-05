@@ -46,7 +46,7 @@ impl Network {
     schematic: T,
     origin: Entity,
     data: &HashMap<U, impl Serialize + Sync>,
-  ) -> Result<MessageTransportStream>
+  ) -> Result<TransportStream>
   where
     T: AsRef<str> + Send + Sync,
     U: AsRef<str> + Send + Sync,
@@ -66,7 +66,6 @@ impl Network {
     let payload = TransportMap::with_map(serialized_data);
 
     let invocation = Invocation::new(
-      &self.kp,
       origin,
       Entity::Schematic(schematic.as_ref().to_owned()),
       payload,
@@ -90,7 +89,7 @@ impl Network {
   }
 }
 
-/// The HostBuilder builds the configuration for a Vino Host
+/// The HostBuilder builds the configuration for a Vino Host.
 #[derive(Debug)]
 pub struct NetworkBuilder {
   allow_latest: bool,
@@ -102,7 +101,7 @@ pub struct NetworkBuilder {
 }
 
 impl NetworkBuilder {
-  /// Creates a new host builder
+  /// Creates a new host builder.
   pub fn new(definition: NetworkDefinition, seed: &str) -> Result<Self> {
     let kp = keypair_from_seed(seed)?;
     let network_id = kp.public_key();

@@ -74,7 +74,10 @@
 // Add exceptions here
 #![allow()]
 
-pub use log;
+pub use {
+  log,
+  vino_transport,
+};
 
 #[macro_export]
 /// Test a condition and if it is false, return the supplied error
@@ -122,7 +125,7 @@ macro_rules! Ok {
 
 #[allow(unused_macros)]
 #[macro_export]
-/// Wrap an expression that prints colorized debug output to the terminal while returning the original expression. Useful for logging without disturbing the code's structure.
+/// Wrap an expression that prints debug output to the terminal while returning the original expression. Useful for logging without disturbing the code's structure.
 ///
 /// ```
 /// # use vino_macros::*;
@@ -134,8 +137,7 @@ macro_rules! Ok {
 macro_rules! log_tap {
   ($expr:expr $(,)?) => {{
     let _e = $expr;
-    use $crate::colored::Colorize;
-    let indent = "]]]]".to_owned().blue().blink();
+    let indent = "]]]]";
     println!(
       "{}\n{} {}\n{}",
       indent,
@@ -150,7 +152,7 @@ macro_rules! log_tap {
 
 #[macro_export]
 /// Debug logging that only occurs during tests
-macro_rules! testlog {
+macro_rules! logtest {
     ($($arg:tt)+) => (
       if cfg!(test) {
         log::debug!($($arg)+)
@@ -165,10 +167,8 @@ use std::sync::{
 };
 use std::time::Instant;
 
-pub use colored;
-
 #[macro_export]
-/// Prints aggressively colorized output to the terminal. Useful for rapid debugging in a sea of
+/// Aggressively prints to the terminal. Useful for rapid debugging in a sea of
 /// terminal output.
 ///
 /// ## Example
@@ -184,11 +184,10 @@ pub use colored;
 macro_rules! highlight {
     ($($arg:tt)+) => (
       {
-        use $crate::colored::Colorize;
-        let indent = ">>>>>".to_owned().yellow().blink();
-        let focus = ">>>>>>".to_owned().red().blink();
-        let start = ">>>".to_owned().blue().blink();
-        let end =   ">>>".to_owned().blue().dimmed();
+        let indent = ">>>>>";
+        let focus = ">>>>>>";
+        let start = ">>>";
+        let end =   ">>>";
         println!("{}\n{}\n{} {}\n{}\n{}", start,indent,focus,format!($($arg)+),indent,end);
       }
     )
@@ -341,9 +340,9 @@ macro_rules! transport_map {
             let mut _map = ::std::collections::HashMap::with_capacity(_cap);
             $(
                 #[allow(clippy::str_to_string)]
-                let _ = _map.insert($key.to_string(), vino_transport::MessageTransport::success(&$value.to_owned()));
+                let _ = _map.insert($key.to_string(), $crate::vino_transport::MessageTransport::success(&$value.to_owned()));
             )*
-            vino_transport::TransportMap::with_map(_map)
+            $crate::vino_transport::TransportMap::with_map(_map)
         }
     };
 }
@@ -362,8 +361,7 @@ macro_rules! mark {
     let _ = $crate::START_TIMES.lock().and_then(|mut h| {
       h.insert($crate::function_path!(), std::time::Instant::now());
       let msg = format!("BENCH::mark:{}:{}", $crate::function_path!(), line!());
-      use $crate::colored::Colorize;
-      println!("{}", msg.yellow());
+      println!("{}", msg);
       Ok(())
     });
   }};
@@ -391,15 +389,12 @@ macro_rules! elapsed {
       let elapsed = time
         .map(|t| t.elapsed().as_micros().to_string())
         .unwrap_or("no start time marked...".to_owned());
-      use $crate::colored::Colorize;
-      let msg = format!(
+      println!(
         "BENCH::{}:{}: +{}μs",
         $crate::function_path!(),
         line!(),
         elapsed
-      )
-      .yellow();
-      println!("{}", msg);
+      );
       Ok(())
     });
   }};

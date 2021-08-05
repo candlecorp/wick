@@ -74,16 +74,16 @@
 
 use std::collections::HashMap;
 
-use vino_transport::MessageTransportStream;
+use vino_transport::TransportStream;
 
 use crate::{
   HostBuilder,
   HostDefinition,
 };
 
-pub type JsonMap = HashMap<String, serde_json::value::Value>;
+type JsonMap = HashMap<String, serde_json::value::Value>;
 
-pub async fn run(manifest: HostDefinition, data: JsonMap) -> crate::Result<MessageTransportStream> {
+pub async fn run(manifest: HostDefinition, data: JsonMap) -> crate::Result<TransportStream> {
   let host_builder = HostBuilder::new();
 
   let mut host = host_builder.build();

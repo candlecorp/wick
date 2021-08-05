@@ -4,7 +4,7 @@ use parity_wasm::SerializationError;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
-/// Vino WasCap's error type
+/// Vino WasCap's error type.
 pub enum ClaimsError {
   #[error("Invalid module hash")]
   /// Error returned when a module's hash does not match the hash embedded in its token.
@@ -27,6 +27,6 @@ pub enum ClaimsError {
   SerializationError(#[from] SerializationError),
 
   #[error("General error : {0}")]
-  /// General error
+  /// General error.
   Other(String),
 }

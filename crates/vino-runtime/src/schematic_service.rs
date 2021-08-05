@@ -2,13 +2,9 @@ pub(crate) mod default;
 pub(crate) mod handlers;
 
 use std::collections::HashMap;
-use std::rc::Rc;
 use std::sync::Arc;
 
-use parking_lot::{
-  Mutex,
-  RwLock,
-};
+use parking_lot::RwLock;
 use tokio::sync::mpsc::{
   UnboundedReceiver,
   UnboundedSender,
@@ -62,13 +58,13 @@ impl Actor for SchematicService {
 
 impl SchematicService {
   fn validate_model(&mut self) -> Result<()> {
-    let mut model = &mut self.get_model().write();
+    let model = &mut self.get_model().write();
     Validator::validate_late_errors(model)?;
     Ok(model.partial_initialization()?)
   }
 
   fn validate_final(&mut self) -> Result<()> {
-    let mut model = &mut self.get_model().write();
+    let model = &mut self.get_model().write();
     Validator::validate_final_errors(model)?;
     Ok(model.final_initialization()?)
   }
@@ -141,7 +137,7 @@ mod test {
   use std::env;
   use std::time::Duration;
 
-  use vino_rpc::{
+  use vino_invocation_server::{
     bind_new_socket,
     make_rpc_server,
   };
@@ -182,7 +178,6 @@ mod test {
 
     let response: InvocationResponse = addr
       .send(Invocation::new(
-        &kp,
         Entity::test("basic"),
         Entity::schematic(schematic_name),
         payload,
@@ -208,7 +203,7 @@ mod test {
   async fn test_grpc_url_provider() -> TestResult<()> {
     let socket = bind_new_socket()?;
     let port = socket.local_addr()?.port();
-    make_rpc_server(socket, Box::new(test_vino_provider::Provider::default()));
+    let _ = make_rpc_server(socket, Box::new(test_vino_provider::Provider::default()));
     env::set_var("TEST_PORT", port.to_string());
     let def =
       load_schematic_manifest("./src/schematic_service/test-schematics/grpc-provider.yaml")?;
@@ -236,7 +231,6 @@ mod test {
     input.insert("input", MessageTransport::messagepack(user_data));
     let response: InvocationResponse = addr
       .send(Invocation::new(
-        &kp,
         Entity::test("basic"),
         Entity::schematic(schematic_name),
         input,

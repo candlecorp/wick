@@ -8,7 +8,7 @@ use serde_json::json;
 use utils::*;
 use vino_transport::message_transport::{
   JsonError,
-  JsonOutput,
+  TransportJson,
 };
 
 #[test_env_log::test(tokio::test)]
@@ -44,10 +44,12 @@ async fn test_collection() -> utils::TestResult<()> {
   let result_add = vinoc_invoke(&h_port, "add", args).await?;
   println!("Result: {:?}", result_add);
 
-  let expected_add = JsonOutput {
-    error_msg: None,
-    error_kind: JsonError::None,
-    value: json!("some_document"),
+  let expected_add = hashmap! {
+    "document_id".to_owned() => TransportJson {
+      error_msg: None,
+      error_kind: JsonError::None,
+      value: json!("some_document"),
+    }
   };
 
   let args = json!({ "collection_id" : collection_id, "document_id": doc_id});
@@ -55,21 +57,24 @@ async fn test_collection() -> utils::TestResult<()> {
   let result_get = vinoc_invoke(&h_port, "get", args).await?;
   println!("Result: {:?}", result_get);
 
-  let expected_get = JsonOutput {
+  let expected_get = hashmap! {
+    "document".to_owned() => TransportJson {
     error_msg: None,
     error_kind: JsonError::None,
     value: json!(document),
-  };
+  }};
 
   let args = json!({ "collection_id": collection_id });
   println!("Listing documents: {}", args);
   let result_list = vinoc_invoke(&h_port, "list", args).await?;
   println!("Result: {:?}", result_list);
 
-  let expected_list = JsonOutput {
-    error_msg: None,
-    error_kind: JsonError::None,
-    value: json!([doc_id]),
+  let expected_list = hashmap! {
+      "document_ids".to_owned() => TransportJson {
+      error_msg: None,
+      error_kind: JsonError::None,
+      value: json!([doc_id]),
+    }
   };
 
   let result = panic::catch_unwind(|| {

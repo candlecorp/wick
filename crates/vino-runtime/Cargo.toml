@@ -3,10 +3,10 @@ name = "vino-runtime"
 version = "0.1.0"
 authors = ["Jarrod Overson <jsoverson@gmail.com>"]
 edition = "2018"
-license = "Apache-2.0"
+license = "BSD-3-Clause"
 
 [dependencies]
-vino-component = { path = "../vino-component" }
+vino-packet = { path = "../vino-packet" }
 vino-macros = { path = "../vino-macros" }
 vino-manifest = { path = "../vino-manifest" }
 vino-provider = { path = "../vino-provider", features = ["native"] }
@@ -18,6 +18,7 @@ vino-wascap = { path = "../vino-wascap" }
 vino-rpc = { path = "../vino-rpc" }
 vino-entity = { path = "../vino-entity" }
 vino-types = { path = "../vino-types" }
+vino-invocation-server = { path = "../vino-invocation-server" }
 
 serde = { version = "1.0.118", features = ["derive"] }
 serde_json = "1.0.64"
@@ -30,23 +31,16 @@ once_cell = "1.5.2"
 parking_lot = { version = "0.11.1", features = [] }
 thiserror = "1.0.26"
 derivative = "2.2.0"
-tonic = { version = "0.5.0", features = ["tls"] }
-tokio = { version = "1.4.0", features = [
-  "macros",
-  "net",
-  "time",
-  "rt-multi-thread",
-] }
-tokio-stream = { version = "0.1.6", features = ["net"] }
+tokio = { version = "1.4.0", features = ["macros", "time", "rt-multi-thread"] }
+tokio-stream = { version = "0.1.6", features = [] }
 itertools = "0.10.1"
 log = "0.4.14"
 
 [dev-dependencies]
-env_logger = "0.9"
-test-env-log = { version = "0.2.7" }
-maplit = "1.0.2"
 test-vino-provider = { path = "../integration/test-vino-provider" }
-
+env_logger = "0.9"
+test-env-log = "0.2.7"
+maplit = "1.0.2"
 pretty_assertions = "0.7.2"
 criterion = { version = "0.3.5", features = ["async", "async_tokio"] }
 lazy_static = "1.4.0"

@@ -17,18 +17,18 @@ pub(crate) struct RunCommand {
   #[structopt(flatten)]
   pub(crate) host: super::HostOptions,
 
-  /// Turn on info logging
+  /// Turn on info logging.
   #[structopt(long = "info")]
   pub(crate) info: bool,
 
-  /// Default schematic to run
+  /// Default schematic to run.
   #[structopt(long, short, env = "VINO_DEFAULT_SCHEMATIC")]
   pub(crate) default_schematic: Option<String>,
 
-  /// Manifest file
+  /// Manifest file.
   manifest: PathBuf,
 
-  /// JSON data
+  /// JSON data.
   data: Option<String>,
 }
 
@@ -37,7 +37,7 @@ pub(crate) async fn handle_command(command: RunCommand) -> Result<String> {
   if !(command.info || command.logging.trace || command.logging.debug) {
     logging.quiet = true;
   }
-  logger::Logger::init(&logging)?;
+  logger::init(&logging);
 
   let data = match command.data {
     None => {

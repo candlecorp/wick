@@ -1,11 +1,18 @@
 use vino_codec::error::CodecError;
 
-/// The error type used when attempting to deserialize a [Packet]
+/// The error type used when attempting to deserialize a [vino_packet::Packet].
 #[derive(Debug)]
 pub enum Error {
+  /// An error returned from the WaPC host, the system running the WebAssembly module.
   HostError(String),
+
+  /// A serialization or deserialization error.
   CodecError(CodecError),
-  JobNotFound(String),
+
+  /// The requested component was not found in this module.
+  ComponentNotFound(String, String),
+
+  /// An input the component expects was not found.
   MissingInput(String),
 }
 
@@ -18,10 +25,14 @@ impl From<CodecError> for Error {
 impl std::fmt::Display for Error {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     match self {
-      Error::HostError(v) => write!(f, "Host Error: {}", v),
-      Error::JobNotFound(v) => write!(f, "Component not found: {}", v),
-      Error::CodecError(e) => write!(f, "Codec Error: {}", e),
-      Error::MissingInput(v) => write!(f, "Missing Input: {}", v),
+      Error::HostError(v) => write!(f, "Host error: {}", v),
+      Error::ComponentNotFound(v, valid) => write!(
+        f,
+        "Component '{}' not found. Valid components are: {}",
+        v, valid
+      ),
+      Error::CodecError(e) => write!(f, "Codec error: {}", e),
+      Error::MissingInput(v) => write!(f, "Missing input for port '{}'", v),
     }
   }
 }

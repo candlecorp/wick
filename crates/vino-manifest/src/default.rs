@@ -1,11 +1,11 @@
 use std::borrow::Cow;
 
-/// Parse a JSON template
+/// Parse a JSON template.
 pub fn parse_default(json_str: &str) -> Result<serde_json::Value, serde_json::Error> {
   serde_json::from_str(json_str)
 }
 
-/// The string to replace in the JSON template
+/// The string to replace in the JSON template.
 pub const ERROR_STR: &str = "$ERROR";
 
 /// Render the JSON template while replacing any instance of [ERROR_STR] with the passed message.

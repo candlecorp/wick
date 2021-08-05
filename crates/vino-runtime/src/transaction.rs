@@ -1,8 +1,6 @@
 use std::collections::VecDeque;
-use std::rc::Rc;
-use std::sync::Arc;
+use std::time::Duration;
 
-use parking_lot::Mutex;
 use vino_transport::message_transport::TransportMap;
 
 use self::executor::SchematicOutput;
@@ -19,6 +17,7 @@ pub(crate) mod ports;
 pub enum TransactionUpdate {
   Drained,
   Error(String),
+  Timeout(Duration),
   Transition(ConnectionTargetDefinition),
   Execute(ComponentPayload),
   Result(SchematicOutput),
@@ -30,7 +29,8 @@ impl std::fmt::Display for TransactionUpdate {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     let name = match self {
       TransactionUpdate::Drained => "drained",
-      TransactionUpdate::Error(_) => "timeout",
+      TransactionUpdate::Error(_) => "error",
+      TransactionUpdate::Timeout(_) => "timeout",
       TransactionUpdate::Transition(_) => "transition",
       TransactionUpdate::Execute(_) => "execute",
       TransactionUpdate::Result(_) => "result",
@@ -144,11 +144,12 @@ impl Transaction {
 #[cfg(test)]
 mod tests {
   use std::collections::HashMap;
+  use std::sync::Arc;
   use std::time::Duration;
 
   use parking_lot::RwLock;
-  use vino_component::packet::v0::Payload;
-  use vino_component::Packet;
+  use vino_packet::packet::v0::Payload;
+  use vino_packet::Packet;
   use vino_transport::message_transport::MessageSignal;
 
   use super::*;

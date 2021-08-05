@@ -1,16 +1,18 @@
 use std::collections::HashMap;
-use std::convert::TryFrom;
-use std::pin::Pin;
+use std::convert::{
+  TryFrom,
+  TryInto,
+};
+use std::time::Duration;
 
-use futures::Stream;
 use serde::de::DeserializeOwned;
 use serde::{
   Deserialize,
   Serialize,
 };
-use vino_component::error::DeserializationError;
-use vino_component::v0::Payload;
-use vino_component::Packet;
+use vino_packet::error::DeserializationError;
+use vino_packet::v0::Payload;
+use vino_packet::Packet;
 use vino_transport::message_transport::TransportMap;
 use vino_transport::{
   MessageTransport,
@@ -29,28 +31,57 @@ use crate::{
   Result,
 };
 
-/// Important statistics for the hosted components
-#[derive(Debug, Default, Clone, Copy, Serialize, Deserialize, PartialEq)]
+/// Important statistics for the hosted components.
+#[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Statistics {
-  /// The number of times a component has been called
-  pub num_calls: u64,
-  /// Execution duration statistics
-  pub execution_duration: DurationStatistics,
+  /// The name of the component.
+  pub name: String,
+  /// The number of times a component has been called.
+  pub runs: u32,
+  /// The number of times the component resulted in an unrecoverable error.
+  pub errors: u32,
+  /// Execution duration statistics.
+  pub execution_duration: Option<DurationStatistics>,
 }
 
-/// Duration related statistics
-#[derive(Debug, Default, Clone, Copy, Serialize, Deserialize, PartialEq)]
+mod as_micros {
+  use std::convert::TryInto;
+  use std::time::Duration;
+
+  use serde::{
+    Deserialize,
+    Deserializer,
+    Serializer,
+  };
+
+  pub(crate) fn serialize<S>(duration: &Duration, serializer: S) -> Result<S::Ok, S::Error>
+  where
+    S: Serializer,
+  {
+    serializer.serialize_u64(duration.as_micros().try_into().unwrap_or(u64::MAX))
+  }
+  pub(crate) fn deserialize<'de, D>(deserializer: D) -> Result<Duration, D::Error>
+  where
+    D: Deserializer<'de>,
+  {
+    let micros = u64::deserialize(deserializer)?;
+    Ok(Duration::from_micros(micros))
+  }
+}
+
+/// Duration related statistics.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
 pub struct DurationStatistics {
-  /// The maximum duration
-  pub max_time: usize,
-  /// The minimum duration
-  pub min_time: usize,
-  /// The average duration
-  pub average: usize,
+  /// The maximum duration.
+  #[serde(with = "as_micros")]
+  pub max_time: Duration,
+  /// The minimum duration.
+  #[serde(with = "as_micros")]
+  pub min_time: Duration,
+  /// The average duration.
+  #[serde(with = "as_micros")]
+  pub average: Duration,
 }
-
-/// The return type of RpcHandler requests
-pub type BoxedTransportStream = Pin<Box<dyn Stream<Item = TransportWrapper> + Send>>;
 
 impl From<HostedType> for crate::rpc::Component {
   fn from(v: HostedType) -> Self {
@@ -66,7 +97,7 @@ impl TryFrom<crate::rpc::Component> for HostedType {
 
   fn try_from(value: crate::rpc::Component) -> Result<Self> {
     let kind =
-      ComponentKind::from_i32(value.kind).ok_or_else(|| Error::InvalidOutputKind(value.kind))?;
+      ComponentKind::from_i32(value.kind).ok_or_else(|| Error::InvalidComponentKind(value.kind))?;
 
     match kind {
       ComponentKind::Component => Ok(HostedType::Component(ComponentSignature {
@@ -157,7 +188,10 @@ impl From<crate::generated::vino::component::Port> for PortSignature {
 impl From<Statistics> for crate::generated::vino::Statistic {
   fn from(v: Statistics) -> Self {
     Self {
-      num_calls: v.num_calls,
+      name: v.name,
+      runs: v.runs,
+      errors: v.errors,
+      execution_statistics: v.execution_duration.map(From::from),
     }
   }
 }
@@ -165,8 +199,30 @@ impl From<Statistics> for crate::generated::vino::Statistic {
 impl From<crate::generated::vino::Statistic> for Statistics {
   fn from(v: crate::generated::vino::Statistic) -> Self {
     Self {
-      num_calls: v.num_calls,
-      execution_duration: DurationStatistics::default(),
+      name: v.name,
+      runs: v.runs,
+      errors: v.errors,
+      execution_duration: v.execution_statistics.map(From::from),
+    }
+  }
+}
+
+impl From<crate::generated::vino::DurationStatistics> for DurationStatistics {
+  fn from(dur: crate::generated::vino::DurationStatistics) -> Self {
+    Self {
+      average: Duration::from_micros(dur.average),
+      min_time: Duration::from_micros(dur.min),
+      max_time: Duration::from_micros(dur.max),
+    }
+  }
+}
+
+impl From<DurationStatistics> for crate::generated::vino::DurationStatistics {
+  fn from(dur: DurationStatistics) -> Self {
+    Self {
+      average: dur.average.as_micros().try_into().unwrap_or(u64::MAX),
+      min: dur.min_time.as_micros().try_into().unwrap_or(u64::MAX),
+      max: dur.max_time.as_micros().try_into().unwrap_or(u64::MAX),
     }
   }
 }
@@ -231,22 +287,22 @@ impl Into<Packet> for MessageKind {
 }
 
 impl MessageKind {
-  /// Converts a [MessageKind] into a [Packet]
+  /// Converts a [MessageKind] into a [Packet].
   #[must_use]
   pub fn into_packet(self) -> Packet {
     self.into()
   }
-  /// Converts a [MessageKind] into a [MessageTransport]
+  /// Converts a [MessageKind] into a [MessageTransport].
   #[must_use]
   pub fn into_transport(self) -> Packet {
     self.into()
   }
-  /// Attempt to deserialize a [MessageKind] into the destination type
+  /// Attempt to deserialize a [MessageKind] into the destination type.
   pub fn try_into<T: DeserializeOwned>(self) -> std::result::Result<T, DeserializationError> {
     self.into_packet().try_into()
   }
 
-  /// Utility function to determine if [MessageKind] is a Signal
+  /// Utility function to determine if [MessageKind] is a Signal.
   #[must_use]
   pub fn is_signal(&self) -> bool {
     let kind: Option<message_kind::Kind> = message_kind::Kind::from_i32(self.kind);
@@ -255,12 +311,31 @@ impl MessageKind {
 }
 
 impl Output {
-  /// Utility function to determine if [MessageKind] is a Signal
+  /// Utility function to determine if [MessageKind] is a Signal.
   #[must_use]
   pub fn is_signal(&self) -> bool {
     let num = self.payload.as_ref().map_or(-1, |p| p.kind);
     let kind: Option<message_kind::Kind> = message_kind::Kind::from_i32(num);
     matches!(kind, Some(message_kind::Kind::Signal))
+  }
+
+  /// Convert the Output to JSON object value. This will not fail. If there is an error, the return value will be a serialized wrapper for a [MessageTransport::Error].
+  #[must_use]
+  pub fn into_json(self) -> serde_json::Value {
+    let transport: TransportWrapper = self.into();
+    transport.into_json()
+  }
+}
+
+impl From<Output> for TransportWrapper {
+  fn from(v: Output) -> Self {
+    Self {
+      port: v.port,
+      payload: v.payload.map_or(
+        MessageTransport::Error("Could not decode RPC message".to_owned()),
+        |p| p.into(),
+      ),
+    }
   }
 }
 
@@ -311,7 +386,7 @@ impl From<MessageTransport> for MessageKind {
   }
 }
 
-/// Converts a HashMap of [MessageKind] to a [TransportMap]
+/// Converts a HashMap of [MessageKind] to a [TransportMap].
 pub fn convert_messagekind_map(rpc_map: &HashMap<String, MessageKind>) -> TransportMap {
   let mut transport_map = TransportMap::new();
   for (k, v) in rpc_map {
@@ -320,7 +395,7 @@ pub fn convert_messagekind_map(rpc_map: &HashMap<String, MessageKind>) -> Transp
   transport_map
 }
 
-/// Converts a [TransportMap] to a HashMap of [MessageKind]
+/// Converts a [TransportMap] to a HashMap of [MessageKind].
 #[must_use]
 pub fn convert_transport_map(transport_map: TransportMap) -> HashMap<String, MessageKind> {
   let mut rpc_map: HashMap<String, MessageKind> = HashMap::new();

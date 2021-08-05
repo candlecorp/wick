@@ -3,20 +3,21 @@ name = "vino-authentication-inmemory"
 version = "0.1.0"
 authors = ["Jarrod Overson <jsoverson@gmail.com>"]
 edition = "2018"
-license = "Apache-2.0"
+license = "BSD-3-Clause"
 
 [[bin]]
 name = "vino-authentication-inmemory"
 path = "src/main.rs"
 
 [dependencies]
-vino-interfaces-authentication = { path = "../interfaces/interfaces-authentication" }
+vino-interface-authentication = { path = "../interfaces/interface-authentication" }
 vino-provider = { path = "../vino-provider", features = ["native"] }
-vino-component = { path = "../vino-component" }
+vino-packet = { path = "../vino-packet" }
+vino-rpc = { path = "../vino-rpc" }
+vino-macros = { path = "../vino-macros" }
 thiserror = "1.0.25"
 log = "0.4"
 async-trait = "0.1.50"
-vino-rpc = { path = "../vino-rpc" }
 tokio-stream = "0.1"
 tokio = { version = "1.4.0", features = ["rt-multi-thread"] }
 bcrypt = "0.10.1"
@@ -31,5 +32,5 @@ vino-codec = { path = "../vino-codec" }
 test-env-log = "0.2.7"
 anyhow = "1.0.42"
 tokio = { version = "1.4.0", features = ["macros"] }
-test-interfaces-authentication = { path = "../integration/test-interfaces-authentication" }
+test-interface-authentication = { path = "../integration/test-interface-authentication" }
 rand = "0.8.4"

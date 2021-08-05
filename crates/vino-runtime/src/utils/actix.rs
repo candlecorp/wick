@@ -9,7 +9,7 @@ enum ActorResponseTypeItem<A, I> {
   Fut(Pin<Box<dyn ActorFuture<A, Output = I>>>),
 }
 
-/// A helper type that extends actix's own ActorResponse
+/// A helper type that extends actix's own ActorResponse.
 pub(crate) struct ActorResult<A, I> {
   item: ActorResponseTypeItem<A, I>,
 }

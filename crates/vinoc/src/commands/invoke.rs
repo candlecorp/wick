@@ -1,20 +1,14 @@
-use std::convert::TryInto;
-use std::io::Read;
-
-use nkeys::KeyPair;
 use structopt::StructOpt;
-use vino_entity::entity::Entity;
-use vino_runtime::prelude::Invocation;
-use vino_transport::{
-  MessageTransport,
-  TransportMap,
+use tokio::io::{
+  self,
+  AsyncBufReadExt,
+  BufReader,
 };
+use vino_rpc::rpc::Output;
+use vino_transport::TransportWrapper;
 
 use crate::rpc_client::rpc_client;
-use crate::{
-  Error,
-  Result,
-};
+use crate::Result;
 #[derive(Debug, Clone, StructOpt)]
 #[structopt(rename_all = "kebab-case")]
 pub struct InvokeCommand {
@@ -24,63 +18,61 @@ pub struct InvokeCommand {
   #[structopt(flatten)]
   pub connection: super::ConnectOptions,
 
-  /// Schematic to invoke
+  /// Skip additional I/O processing done for CLI usage.
+  #[structopt(long, short)]
+  raw: bool,
+
+  /// Schematic to invoke.
   pub schematic: String,
 
-  /// JSON map of data to send to each input port
-  data: Option<String>,
+  /// JSON map of data to use as the component payload.
+  data: Vec<String>,
 }
 
-pub async fn handle_command(command: InvokeCommand) -> Result<()> {
-  crate::utils::init_logger(&command.logging)?;
+pub async fn handle_command(opts: InvokeCommand) -> Result<()> {
+  crate::utils::init_logger(&opts.logging)?;
   let mut client = rpc_client(
-    command.connection.address,
-    command.connection.port,
-    command.connection.pem,
-    command.connection.key,
-    command.connection.ca,
-    command.connection.domain,
+    opts.connection.address,
+    opts.connection.port,
+    opts.connection.pem,
+    opts.connection.key,
+    opts.connection.ca,
+    opts.connection.domain,
   )
   .await?;
 
-  let data = match command.data {
-    None => {
+  if opts.data.is_empty() {
+    if atty::is(atty::Stream::Stdin) {
       eprintln!("No input passed, reading from <STDIN>");
-      let mut data = String::new();
-      std::io::stdin().read_to_string(&mut data)?;
-      data
     }
-    Some(i) => i,
-  };
-
-  let payload = TransportMap::from_json_str(&data)?;
-
-  let kp = KeyPair::new_server();
-
-  let rpc_invocation: vino_rpc::rpc::Invocation = Invocation::new(
-    &kp,
-    Entity::Client(kp.public_key()),
-    Entity::Component(command.schematic),
-    payload,
-  )
-  .try_into()?;
-
-  debug!("Making invocation request");
-  let response = client
-    .invoke(rpc_invocation)
-    .await
-    .map_err(|e| Error::InvocationError(e.to_string()))?;
-  debug!("Invocation response: {:?}", response);
-  let mut stream = response.into_inner();
-
-  while let Some(message) = stream.message().await? {
-    let transport: MessageTransport = message.payload.unwrap().into();
-    if transport.is_signal() {
-      debug!("Skipping signal {}", transport);
-    } else {
-      println!("{}", transport.into_json());
+    let reader = BufReader::new(io::stdin());
+    let mut lines = reader.lines();
+    while let Some(line) = lines.next_line().await? {
+      let stream = client
+        .invoke_from_json(opts.schematic.clone(), &line, opts.raw)
+        .await?;
+      print_stream_json(stream, opts.raw).await?;
+    }
+  } else {
+    for message in opts.data {
+      let stream = client
+        .invoke_from_json(opts.schematic.clone(), &message, opts.raw)
+        .await?;
+      print_stream_json(stream, opts.raw).await?;
     }
   }
 
+  Ok(())
+}
+
+async fn print_stream_json(mut stream: tonic::Streaming<Output>, raw: bool) -> Result<()> {
+  while let Some(message) = stream.message().await? {
+    let wrapper: TransportWrapper = message.into();
+    if wrapper.payload.is_signal() && !raw {
+      debug!("STDIN is interactive, skipping signal: {}", wrapper.payload);
+    } else {
+      println!("{}", wrapper.into_json());
+    }
+  }
   Ok(())
 }

@@ -1,0 +1,32 @@
+[package]
+name = "vino-invocation-server"
+version = "0.1.0"
+edition = "2018"
+license = "BSD-3-Clause"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+vino-rpc = { path = "../vino-rpc" }
+vino-entity = { path = "../vino-entity" }
+vino-transport = { path = "../vino-transport" }
+vino-types = { path = "../vino-types" }
+vino-macros = { path = "../vino-macros" }
+
+
+tonic = { version = "0.5.0", features = ["tls"] }
+tokio = { version = "1.4.0", features = ["macros", "net", "rt-multi-thread"] }
+futures = "0.3.15"
+tokio-stream = { version = "0.1.6", features = ["net"] }
+serde = { version = "1.0.118", features = ["derive"] }
+serde_json = "1.0.65"
+rand = "0.8.4"
+log = "0.4"
+thiserror = "1.0.25"
+async-trait = "0.1.50"
+derivative = "2.2.0"
+parking_lot = { version = "0.11.1", features = [] }
+dyn-clone = "1.0.4"
+
+[dev-dependencies]
+test-env-log = "0.2.7"

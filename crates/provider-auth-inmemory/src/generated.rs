@@ -4,125 +4,83 @@
 
 pub(crate) use vino_provider::native::prelude::*;
 
-pub(crate) fn get_component(
-  name: &str,
-) -> Option<Box<dyn NativeComponent<State = crate::State> + Sync + Send>> {
-  match name {
-    "authenticate" => Some(Box::new(self::authenticate::Component::default())),
-    "create-user" => Some(Box::new(self::create_user::Component::default())),
-    "get-id" => Some(Box::new(self::get_id::Component::default())),
-    "has-permission" => Some(Box::new(self::has_permission::Component::default())),
-    "list-permissions" => Some(Box::new(self::list_permissions::Component::default())),
-    "list-users" => Some(Box::new(self::list_users::Component::default())),
-    "remove-user" => Some(Box::new(self::remove_user::Component::default())),
-    "update-permissions" => Some(Box::new(self::update_permissions::Component::default())),
-    "validate-session" => Some(Box::new(self::validate_session::Component::default())),
-    _ => None,
-  }
-}
-
 pub(crate) fn get_all_components() -> Vec<ComponentSignature> {
   vec![
-    ComponentSignature {
-      name: "authenticate".to_owned(),
-      inputs: vino_interfaces_authentication::authenticate::inputs_list()
-        .into_iter()
-        .map(From::from)
-        .collect(),
-      outputs: vino_interfaces_authentication::authenticate::outputs_list()
-        .into_iter()
-        .map(From::from)
-        .collect(),
-    },
-    ComponentSignature {
-      name: "create-user".to_owned(),
-      inputs: vino_interfaces_authentication::create_user::inputs_list()
-        .into_iter()
-        .map(From::from)
-        .collect(),
-      outputs: vino_interfaces_authentication::create_user::outputs_list()
-        .into_iter()
-        .map(From::from)
-        .collect(),
-    },
-    ComponentSignature {
-      name: "get-id".to_owned(),
-      inputs: vino_interfaces_authentication::get_id::inputs_list()
-        .into_iter()
-        .map(From::from)
-        .collect(),
-      outputs: vino_interfaces_authentication::get_id::outputs_list()
-        .into_iter()
-        .map(From::from)
-        .collect(),
-    },
-    ComponentSignature {
-      name: "has-permission".to_owned(),
-      inputs: vino_interfaces_authentication::has_permission::inputs_list()
-        .into_iter()
-        .map(From::from)
-        .collect(),
-      outputs: vino_interfaces_authentication::has_permission::outputs_list()
-        .into_iter()
-        .map(From::from)
-        .collect(),
-    },
-    ComponentSignature {
-      name: "list-permissions".to_owned(),
-      inputs: vino_interfaces_authentication::list_permissions::inputs_list()
-        .into_iter()
-        .map(From::from)
-        .collect(),
-      outputs: vino_interfaces_authentication::list_permissions::outputs_list()
-        .into_iter()
-        .map(From::from)
-        .collect(),
-    },
-    ComponentSignature {
-      name: "list-users".to_owned(),
-      inputs: vino_interfaces_authentication::list_users::inputs_list()
-        .into_iter()
-        .map(From::from)
-        .collect(),
-      outputs: vino_interfaces_authentication::list_users::outputs_list()
-        .into_iter()
-        .map(From::from)
-        .collect(),
-    },
-    ComponentSignature {
-      name: "remove-user".to_owned(),
-      inputs: vino_interfaces_authentication::remove_user::inputs_list()
-        .into_iter()
-        .map(From::from)
-        .collect(),
-      outputs: vino_interfaces_authentication::remove_user::outputs_list()
-        .into_iter()
-        .map(From::from)
-        .collect(),
-    },
-    ComponentSignature {
-      name: "update-permissions".to_owned(),
-      inputs: vino_interfaces_authentication::update_permissions::inputs_list()
-        .into_iter()
-        .map(From::from)
-        .collect(),
-      outputs: vino_interfaces_authentication::update_permissions::outputs_list()
-        .into_iter()
-        .map(From::from)
-        .collect(),
-    },
-    ComponentSignature {
-      name: "validate-session".to_owned(),
-      inputs: vino_interfaces_authentication::validate_session::inputs_list()
-        .into_iter()
-        .map(From::from)
-        .collect(),
-      outputs: vino_interfaces_authentication::validate_session::outputs_list()
-        .into_iter()
-        .map(From::from)
-        .collect(),
-    },
+    vino_interface_authentication::authenticate::signature(),
+    vino_interface_authentication::create_user::signature(),
+    vino_interface_authentication::get_id::signature(),
+    vino_interface_authentication::has_permission::signature(),
+    vino_interface_authentication::list_permissions::signature(),
+    vino_interface_authentication::list_users::signature(),
+    vino_interface_authentication::remove_user::signature(),
+    vino_interface_authentication::update_permissions::signature(),
+    vino_interface_authentication::validate_session::signature(),
   ]
+}
+
+#[derive(Debug)]
+pub(crate) struct Dispatcher {}
+#[async_trait]
+impl Dispatch for Dispatcher {
+  type Context = crate::Context;
+  async fn dispatch(
+    op: &str,
+    context: Self::Context,
+    data: TransportMap,
+  ) -> Result<TransportStream, Box<NativeComponentError>> {
+    let result = match op {
+      "authenticate" => {
+        self::authenticate::Component::default()
+          .execute(context, data)
+          .await
+      }
+      "create-user" => {
+        self::create_user::Component::default()
+          .execute(context, data)
+          .await
+      }
+      "get-id" => {
+        self::get_id::Component::default()
+          .execute(context, data)
+          .await
+      }
+      "has-permission" => {
+        self::has_permission::Component::default()
+          .execute(context, data)
+          .await
+      }
+      "list-permissions" => {
+        self::list_permissions::Component::default()
+          .execute(context, data)
+          .await
+      }
+      "list-users" => {
+        self::list_users::Component::default()
+          .execute(context, data)
+          .await
+      }
+      "remove-user" => {
+        self::remove_user::Component::default()
+          .execute(context, data)
+          .await
+      }
+      "update-permissions" => {
+        self::update_permissions::Component::default()
+          .execute(context, data)
+          .await
+      }
+      "validate-session" => {
+        self::validate_session::Component::default()
+          .execute(context, data)
+          .await
+      }
+      _ => Err(Box::new(NativeComponentError::new(format!(
+        "Component not found on this provider: {}",
+        op
+      )))),
+    }?;
+    Ok(result)
+  }
 }
 
 pub(crate) mod authenticate {
@@ -130,7 +88,7 @@ pub(crate) mod authenticate {
   use std::collections::HashMap;
 
   use async_trait::async_trait;
-  use vino_interfaces_authentication::authenticate::*;
+  use vino_interface_authentication::authenticate::*;
   use vino_provider::native::prelude::*;
 
   #[derive(Default)]
@@ -138,12 +96,12 @@ pub(crate) mod authenticate {
 
   #[async_trait]
   impl NativeComponent for Component {
-    type State = crate::State;
+    type Context = crate::Context;
     async fn execute(
       &self,
-      context: Context<Self::State>,
+      context: Self::Context,
       data: TransportMap,
-    ) -> Result<MessageTransportStream, Box<NativeComponentError>> {
+    ) -> Result<TransportStream, Box<NativeComponentError>> {
       let inputs = populate_inputs(data).map_err(|e| {
         NativeComponentError::new(format!("Input deserialization error: {}", e.to_string()))
       })?;
@@ -164,7 +122,7 @@ pub(crate) mod create_user {
   use std::collections::HashMap;
 
   use async_trait::async_trait;
-  use vino_interfaces_authentication::create_user::*;
+  use vino_interface_authentication::create_user::*;
   use vino_provider::native::prelude::*;
 
   #[derive(Default)]
@@ -172,12 +130,12 @@ pub(crate) mod create_user {
 
   #[async_trait]
   impl NativeComponent for Component {
-    type State = crate::State;
+    type Context = crate::Context;
     async fn execute(
       &self,
-      context: Context<Self::State>,
+      context: Self::Context,
       data: TransportMap,
-    ) -> Result<MessageTransportStream, Box<NativeComponentError>> {
+    ) -> Result<TransportStream, Box<NativeComponentError>> {
       let inputs = populate_inputs(data).map_err(|e| {
         NativeComponentError::new(format!("Input deserialization error: {}", e.to_string()))
       })?;
@@ -198,7 +156,7 @@ pub(crate) mod get_id {
   use std::collections::HashMap;
 
   use async_trait::async_trait;
-  use vino_interfaces_authentication::get_id::*;
+  use vino_interface_authentication::get_id::*;
   use vino_provider::native::prelude::*;
 
   #[derive(Default)]
@@ -206,12 +164,12 @@ pub(crate) mod get_id {
 
   #[async_trait]
   impl NativeComponent for Component {
-    type State = crate::State;
+    type Context = crate::Context;
     async fn execute(
       &self,
-      context: Context<Self::State>,
+      context: Self::Context,
       data: TransportMap,
-    ) -> Result<MessageTransportStream, Box<NativeComponentError>> {
+    ) -> Result<TransportStream, Box<NativeComponentError>> {
       let inputs = populate_inputs(data).map_err(|e| {
         NativeComponentError::new(format!("Input deserialization error: {}", e.to_string()))
       })?;
@@ -232,7 +190,7 @@ pub(crate) mod has_permission {
   use std::collections::HashMap;
 
   use async_trait::async_trait;
-  use vino_interfaces_authentication::has_permission::*;
+  use vino_interface_authentication::has_permission::*;
   use vino_provider::native::prelude::*;
 
   #[derive(Default)]
@@ -240,12 +198,12 @@ pub(crate) mod has_permission {
 
   #[async_trait]
   impl NativeComponent for Component {
-    type State = crate::State;
+    type Context = crate::Context;
     async fn execute(
       &self,
-      context: Context<Self::State>,
+      context: Self::Context,
       data: TransportMap,
-    ) -> Result<MessageTransportStream, Box<NativeComponentError>> {
+    ) -> Result<TransportStream, Box<NativeComponentError>> {
       let inputs = populate_inputs(data).map_err(|e| {
         NativeComponentError::new(format!("Input deserialization error: {}", e.to_string()))
       })?;
@@ -266,7 +224,7 @@ pub(crate) mod list_permissions {
   use std::collections::HashMap;
 
   use async_trait::async_trait;
-  use vino_interfaces_authentication::list_permissions::*;
+  use vino_interface_authentication::list_permissions::*;
   use vino_provider::native::prelude::*;
 
   #[derive(Default)]
@@ -274,12 +232,12 @@ pub(crate) mod list_permissions {
 
   #[async_trait]
   impl NativeComponent for Component {
-    type State = crate::State;
+    type Context = crate::Context;
     async fn execute(
       &self,
-      context: Context<Self::State>,
+      context: Self::Context,
       data: TransportMap,
-    ) -> Result<MessageTransportStream, Box<NativeComponentError>> {
+    ) -> Result<TransportStream, Box<NativeComponentError>> {
       let inputs = populate_inputs(data).map_err(|e| {
         NativeComponentError::new(format!("Input deserialization error: {}", e.to_string()))
       })?;
@@ -300,7 +258,7 @@ pub(crate) mod list_users {
   use std::collections::HashMap;
 
   use async_trait::async_trait;
-  use vino_interfaces_authentication::list_users::*;
+  use vino_interface_authentication::list_users::*;
   use vino_provider::native::prelude::*;
 
   #[derive(Default)]
@@ -308,12 +266,12 @@ pub(crate) mod list_users {
 
   #[async_trait]
   impl NativeComponent for Component {
-    type State = crate::State;
+    type Context = crate::Context;
     async fn execute(
       &self,
-      context: Context<Self::State>,
+      context: Self::Context,
       data: TransportMap,
-    ) -> Result<MessageTransportStream, Box<NativeComponentError>> {
+    ) -> Result<TransportStream, Box<NativeComponentError>> {
       let inputs = populate_inputs(data).map_err(|e| {
         NativeComponentError::new(format!("Input deserialization error: {}", e.to_string()))
       })?;
@@ -334,7 +292,7 @@ pub(crate) mod remove_user {
   use std::collections::HashMap;
 
   use async_trait::async_trait;
-  use vino_interfaces_authentication::remove_user::*;
+  use vino_interface_authentication::remove_user::*;
   use vino_provider::native::prelude::*;
 
   #[derive(Default)]
@@ -342,12 +300,12 @@ pub(crate) mod remove_user {
 
   #[async_trait]
   impl NativeComponent for Component {
-    type State = crate::State;
+    type Context = crate::Context;
     async fn execute(
       &self,
-      context: Context<Self::State>,
+      context: Self::Context,
       data: TransportMap,
-    ) -> Result<MessageTransportStream, Box<NativeComponentError>> {
+    ) -> Result<TransportStream, Box<NativeComponentError>> {
       let inputs = populate_inputs(data).map_err(|e| {
         NativeComponentError::new(format!("Input deserialization error: {}", e.to_string()))
       })?;
@@ -368,7 +326,7 @@ pub(crate) mod update_permissions {
   use std::collections::HashMap;
 
   use async_trait::async_trait;
-  use vino_interfaces_authentication::update_permissions::*;
+  use vino_interface_authentication::update_permissions::*;
   use vino_provider::native::prelude::*;
 
   #[derive(Default)]
@@ -376,12 +334,12 @@ pub(crate) mod update_permissions {
 
   #[async_trait]
   impl NativeComponent for Component {
-    type State = crate::State;
+    type Context = crate::Context;
     async fn execute(
       &self,
-      context: Context<Self::State>,
+      context: Self::Context,
       data: TransportMap,
-    ) -> Result<MessageTransportStream, Box<NativeComponentError>> {
+    ) -> Result<TransportStream, Box<NativeComponentError>> {
       let inputs = populate_inputs(data).map_err(|e| {
         NativeComponentError::new(format!("Input deserialization error: {}", e.to_string()))
       })?;
@@ -402,7 +360,7 @@ pub(crate) mod validate_session {
   use std::collections::HashMap;
 
   use async_trait::async_trait;
-  use vino_interfaces_authentication::validate_session::*;
+  use vino_interface_authentication::validate_session::*;
   use vino_provider::native::prelude::*;
 
   #[derive(Default)]
@@ -410,12 +368,12 @@ pub(crate) mod validate_session {
 
   #[async_trait]
   impl NativeComponent for Component {
-    type State = crate::State;
+    type Context = crate::Context;
     async fn execute(
       &self,
-      context: Context<Self::State>,
+      context: Self::Context,
       data: TransportMap,
-    ) -> Result<MessageTransportStream, Box<NativeComponentError>> {
+    ) -> Result<TransportStream, Box<NativeComponentError>> {
       let inputs = populate_inputs(data).map_err(|e| {
         NativeComponentError::new(format!("Input deserialization error: {}", e.to_string()))
       })?;

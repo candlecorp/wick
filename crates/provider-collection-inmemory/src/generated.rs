@@ -4,65 +4,53 @@
 
 pub(crate) use vino_provider::native::prelude::*;
 
-pub(crate) fn get_component(
-  name: &str,
-) -> Option<Box<dyn NativeComponent<State = crate::State> + Sync + Send>> {
-  match name {
-    "add-item" => Some(Box::new(self::add_item::Component::default())),
-    "get-item" => Some(Box::new(self::get_item::Component::default())),
-    "list-items" => Some(Box::new(self::list_items::Component::default())),
-    "rm-item" => Some(Box::new(self::rm_item::Component::default())),
-    _ => None,
-  }
-}
-
 pub(crate) fn get_all_components() -> Vec<ComponentSignature> {
   vec![
-    ComponentSignature {
-      name: "add-item".to_owned(),
-      inputs: vino_interfaces_collection::add_item::inputs_list()
-        .into_iter()
-        .map(From::from)
-        .collect(),
-      outputs: vino_interfaces_collection::add_item::outputs_list()
-        .into_iter()
-        .map(From::from)
-        .collect(),
-    },
-    ComponentSignature {
-      name: "get-item".to_owned(),
-      inputs: vino_interfaces_collection::get_item::inputs_list()
-        .into_iter()
-        .map(From::from)
-        .collect(),
-      outputs: vino_interfaces_collection::get_item::outputs_list()
-        .into_iter()
-        .map(From::from)
-        .collect(),
-    },
-    ComponentSignature {
-      name: "list-items".to_owned(),
-      inputs: vino_interfaces_collection::list_items::inputs_list()
-        .into_iter()
-        .map(From::from)
-        .collect(),
-      outputs: vino_interfaces_collection::list_items::outputs_list()
-        .into_iter()
-        .map(From::from)
-        .collect(),
-    },
-    ComponentSignature {
-      name: "rm-item".to_owned(),
-      inputs: vino_interfaces_collection::rm_item::inputs_list()
-        .into_iter()
-        .map(From::from)
-        .collect(),
-      outputs: vino_interfaces_collection::rm_item::outputs_list()
-        .into_iter()
-        .map(From::from)
-        .collect(),
-    },
+    vino_interface_collection::add_item::signature(),
+    vino_interface_collection::get_item::signature(),
+    vino_interface_collection::list_items::signature(),
+    vino_interface_collection::rm_item::signature(),
   ]
+}
+
+#[derive(Debug)]
+pub(crate) struct Dispatcher {}
+#[async_trait]
+impl Dispatch for Dispatcher {
+  type Context = crate::Context;
+  async fn dispatch(
+    op: &str,
+    context: Self::Context,
+    data: TransportMap,
+  ) -> Result<TransportStream, Box<NativeComponentError>> {
+    let result = match op {
+      "add-item" => {
+        self::add_item::Component::default()
+          .execute(context, data)
+          .await
+      }
+      "get-item" => {
+        self::get_item::Component::default()
+          .execute(context, data)
+          .await
+      }
+      "list-items" => {
+        self::list_items::Component::default()
+          .execute(context, data)
+          .await
+      }
+      "rm-item" => {
+        self::rm_item::Component::default()
+          .execute(context, data)
+          .await
+      }
+      _ => Err(Box::new(NativeComponentError::new(format!(
+        "Component not found on this provider: {}",
+        op
+      )))),
+    }?;
+    Ok(result)
+  }
 }
 
 pub(crate) mod add_item {
@@ -70,7 +58,7 @@ pub(crate) mod add_item {
   use std::collections::HashMap;
 
   use async_trait::async_trait;
-  use vino_interfaces_collection::add_item::*;
+  use vino_interface_collection::add_item::*;
   use vino_provider::native::prelude::*;
 
   #[derive(Default)]
@@ -78,12 +66,12 @@ pub(crate) mod add_item {
 
   #[async_trait]
   impl NativeComponent for Component {
-    type State = crate::State;
+    type Context = crate::Context;
     async fn execute(
       &self,
-      context: Context<Self::State>,
+      context: Self::Context,
       data: TransportMap,
-    ) -> Result<MessageTransportStream, Box<NativeComponentError>> {
+    ) -> Result<TransportStream, Box<NativeComponentError>> {
       let inputs = populate_inputs(data).map_err(|e| {
         NativeComponentError::new(format!("Input deserialization error: {}", e.to_string()))
       })?;
@@ -104,7 +92,7 @@ pub(crate) mod get_item {
   use std::collections::HashMap;
 
   use async_trait::async_trait;
-  use vino_interfaces_collection::get_item::*;
+  use vino_interface_collection::get_item::*;
   use vino_provider::native::prelude::*;
 
   #[derive(Default)]
@@ -112,12 +100,12 @@ pub(crate) mod get_item {
 
   #[async_trait]
   impl NativeComponent for Component {
-    type State = crate::State;
+    type Context = crate::Context;
     async fn execute(
       &self,
-      context: Context<Self::State>,
+      context: Self::Context,
       data: TransportMap,
-    ) -> Result<MessageTransportStream, Box<NativeComponentError>> {
+    ) -> Result<TransportStream, Box<NativeComponentError>> {
       let inputs = populate_inputs(data).map_err(|e| {
         NativeComponentError::new(format!("Input deserialization error: {}", e.to_string()))
       })?;
@@ -138,7 +126,7 @@ pub(crate) mod list_items {
   use std::collections::HashMap;
 
   use async_trait::async_trait;
-  use vino_interfaces_collection::list_items::*;
+  use vino_interface_collection::list_items::*;
   use vino_provider::native::prelude::*;
 
   #[derive(Default)]
@@ -146,12 +134,12 @@ pub(crate) mod list_items {
 
   #[async_trait]
   impl NativeComponent for Component {
-    type State = crate::State;
+    type Context = crate::Context;
     async fn execute(
       &self,
-      context: Context<Self::State>,
+      context: Self::Context,
       data: TransportMap,
-    ) -> Result<MessageTransportStream, Box<NativeComponentError>> {
+    ) -> Result<TransportStream, Box<NativeComponentError>> {
       let inputs = populate_inputs(data).map_err(|e| {
         NativeComponentError::new(format!("Input deserialization error: {}", e.to_string()))
       })?;
@@ -172,7 +160,7 @@ pub(crate) mod rm_item {
   use std::collections::HashMap;
 
   use async_trait::async_trait;
-  use vino_interfaces_collection::rm_item::*;
+  use vino_interface_collection::rm_item::*;
   use vino_provider::native::prelude::*;
 
   #[derive(Default)]
@@ -180,12 +168,12 @@ pub(crate) mod rm_item {
 
   #[async_trait]
   impl NativeComponent for Component {
-    type State = crate::State;
+    type Context = crate::Context;
     async fn execute(
       &self,
-      context: Context<Self::State>,
+      context: Self::Context,
       data: TransportMap,
-    ) -> Result<MessageTransportStream, Box<NativeComponentError>> {
+    ) -> Result<TransportStream, Box<NativeComponentError>> {
       let inputs = populate_inputs(data).map_err(|e| {
         NativeComponentError::new(format!("Input deserialization error: {}", e.to_string()))
       })?;

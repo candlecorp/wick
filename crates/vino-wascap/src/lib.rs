@@ -110,12 +110,12 @@ pub use wascap::prelude::{
 };
 use wascap::wasm::days_from_now_to_jwt_time;
 
-/// The crate's error module
+/// The crate's error module.
 pub mod error;
 pub(crate) type Result<T> = std::result::Result<T, error::ClaimsError>;
 pub use error::ClaimsError as Error;
 
-/// Extract the claims embedded in a [Token]
+/// Extract the claims embedded in a [Token].
 pub fn extract_claims(contents: impl AsRef<[u8]>) -> Result<Option<Token<ComponentClaims>>> {
   let module: Module = deserialize_buffer(contents.as_ref())?;
   let sections: Vec<&CustomSection> = module
@@ -143,12 +143,12 @@ pub fn extract_claims(contents: impl AsRef<[u8]>) -> Result<Option<Token<Compone
   }
 }
 
-/// This function will embed a set of claims inside the bytecode of a WebAssembly module. The claims
+/// This function will embed a set of claims inside the bytecode of a WebAssembly module. The claims.
 /// are converted into a JWT and signed using the provided `KeyPair`.
-/// According to the WebAssembly [custom section](https://webassembly.github.io/spec/core/appendix/custom.html)
-/// specification, arbitary sets of bytes can be stored in a WebAssembly module without impacting
-/// parsers or interpreters. Returns a vector of bytes representing the new WebAssembly module which can
-/// be saved to a `.wasm` file
+/// According to the WebAssembly [custom section](https://webassembly.github.io/spec/core/appendix/custom.html).
+/// specification, arbitary sets of bytes can be stored in a WebAssembly module without impacting.
+/// parsers or interpreters. Returns a vector of bytes representing the new WebAssembly module which can.
+/// be saved to a `.wasm` file.
 pub fn embed_claims(
   orig_bytecode: &[u8],
   claims: &Claims<ComponentClaims>,

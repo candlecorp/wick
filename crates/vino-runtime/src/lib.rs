@@ -70,7 +70,7 @@
 )]
 // !!END_LINTS
 // Add exceptions here
-#![allow(missing_docs, unused)] // TODO
+#![allow(missing_docs)] // TODO
 
 #[macro_use]
 mod macros {
@@ -81,7 +81,7 @@ mod macros {
       let result = $expr;
       let ie = InternalError($errnum);
       if result.is_err() {
-        log::debug!("{:?}", result);
+        log::debug!("Internal error: {:?}", result);
         log::error!("{}", ie);
       }
       result.map_err(|_| ie)
@@ -137,14 +137,14 @@ pub mod prelude {
     deserialize as mp_deserialize,
     serialize as mp_serialize,
   };
-  pub use vino_component::{
+  pub use vino_manifest::NetworkDefinition;
+  pub use vino_packet::{
     packet,
     Packet,
   };
-  pub use vino_manifest::NetworkDefinition;
   pub use vino_transport::{
     MessageTransport,
-    MessageTransportStream,
+    TransportStream,
     TransportWrapper,
   };
 
@@ -165,7 +165,6 @@ pub(crate) mod dev;
 #[cfg(test)]
 pub(crate) mod test;
 
-pub type Result<T> = std::result::Result<T, error::RuntimeError>;
 pub type Error = error::RuntimeError;
 
 /// The reserved reference name for schematic input. Used in schematic manifests to denote schematic input.

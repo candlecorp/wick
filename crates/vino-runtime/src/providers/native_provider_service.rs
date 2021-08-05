@@ -1,23 +1,16 @@
 use std::collections::HashMap;
-use std::sync::Arc;
 
 use tokio::sync::mpsc::unbounded_channel;
-use tokio::sync::Mutex;
 use vino_rpc::{
   clone_box,
-  RpcHandler,
-  RpcHandlerType,
+  BoxedRpcHandler,
 };
 
-use super::{
-  ProviderRequest,
-  ProviderResponse,
-};
 use crate::dev::prelude::*;
 use crate::error::ProviderError;
 type Result<T> = std::result::Result<T, ProviderError>;
 
-static PREFIX: &str = "PRV:NATIVE";
+static PREFIX: &str = "NATIVE";
 
 #[derive(Debug, Default)]
 pub(crate) struct NativeProviderService {
@@ -29,7 +22,7 @@ pub(crate) struct NativeProviderService {
 #[derivative(Debug)]
 struct State {
   #[derivative(Debug = "ignore")]
-  provider: RpcHandlerType,
+  provider: BoxedRpcHandler,
 }
 
 impl Actor for NativeProviderService {
@@ -46,7 +39,7 @@ impl Actor for NativeProviderService {
 #[rtype(result = "Result<()>")]
 pub(crate) struct Initialize {
   pub(crate) namespace: String,
-  pub(crate) provider: RpcHandlerType,
+  pub(crate) provider: BoxedRpcHandler,
 }
 
 impl Handler<Initialize> for NativeProviderService {
@@ -179,72 +172,17 @@ impl Handler<Invocation> for NativeProviderService {
   }
 }
 
-impl Handler<ProviderRequest> for NativeProviderService {
-  type Result = ActorResult<Self, Result<ProviderResponse>>;
-
-  fn handle(&mut self, msg: ProviderRequest, _ctx: &mut Self::Context) -> Self::Result {
-    let state = self.state.as_ref().unwrap();
-    let provider = clone_box(&*state.provider);
-
-    let task = async move {
-      match msg {
-        ProviderRequest::Invoke(_invocation) => todo!(),
-        ProviderRequest::List(_req) => {
-          let list = provider.get_list().await?;
-          Ok(ProviderResponse::List(list))
-        }
-        ProviderRequest::Statistics(_req) => {
-          let stats = provider.get_stats(None).await?;
-          Ok(ProviderResponse::Stats(stats))
-        }
-      }
-    };
-    ActorResult::reply_async(task.into_actor(self))
-  }
-}
-
 #[cfg(test)]
 mod test {
 
   use super::*;
-  use crate::providers::ListRequest;
   use crate::test::prelude::assert_eq;
   type Result<T> = super::Result<T>;
-
-  #[test_env_log::test(actix_rt::test)]
-  async fn test_native_provider_list() -> Result<()> {
-    let provider = NativeProviderService::default();
-    let addr = provider.start();
-
-    addr
-      .send(Initialize {
-        namespace: "native-provider".to_owned(),
-        provider: Box::new(vino_native_api_0::Provider::default()),
-      })
-      .await??;
-
-    let components: HashMap<String, ComponentModel> = addr.send(InitializeComponents {}).await??;
-
-    let response = addr
-      .send(super::super::ProviderRequest::List(ListRequest {}))
-      .await??;
-    println!("response: {:?}", response);
-    let list = response.into_list_response()?;
-
-    for item in list {
-      let model = components.get(item.get_name());
-      assert!(model.is_some());
-    }
-
-    Ok(())
-  }
 
   #[test_env_log::test(actix_rt::test)]
   async fn test_provider_component() -> Result<()> {
     let provider = NativeProviderService::default();
     let addr = provider.start();
-    let hostkey = KeyPair::new_server();
-    let network_id = hostkey.public_key();
     addr
       .send(Initialize {
         namespace: "native-provider".to_owned(),
@@ -259,11 +197,10 @@ mod test {
     let response = addr
       .send(Invocation {
         origin: Entity::test("test"),
-        target: Entity::component("log"),
+        target: Entity::component_direct("log"),
         msg: payload,
         id: get_uuid(),
         tx_id: get_uuid(),
-        network_id,
       })
       .await?;
 

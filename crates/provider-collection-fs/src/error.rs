@@ -14,15 +14,11 @@ pub enum Error {
   #[error(transparent)]
   CliError(#[from] vino_provider_cli::Error),
   #[error(transparent)]
-  VinoError(#[from] vino_runtime::Error),
-  #[error(transparent)]
   IoError(#[from] std::io::Error),
   #[error(transparent)]
   ProviderSdkError(#[from] vino_provider::native::Error),
   #[error(transparent)]
-  ComponentError(#[from] vino_component::error::DeserializationError),
-  #[error(transparent)]
-  CodecError(#[from] vino_codec::Error),
+  ComponentError(#[from] vino_packet::error::DeserializationError),
   #[error(transparent)]
   UpstreamError(#[from] BoxedError),
   #[error(transparent)]

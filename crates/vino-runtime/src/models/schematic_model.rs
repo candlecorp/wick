@@ -168,7 +168,7 @@ impl SchematicModel {
       let signature = match opt {
         Some(sig) => sig,
         None => {
-          warn!("Could not find signature for output '{}'", output);
+          logtest!("Could not find signature for output '{}'", output);
           continue;
         }
       };
@@ -204,12 +204,6 @@ impl SchematicModel {
 
   pub(crate) fn final_initialization(&mut self) -> Result<()> {
     self.populate_state(&[])
-  }
-
-  pub(crate) fn get_upstreams(
-    &self,
-  ) -> &HashMap<ConnectionTargetDefinition, ConnectionTargetDefinition> {
-    &self.upstream_links
   }
 
   pub(crate) fn get_upstream(
@@ -256,7 +250,7 @@ impl SchematicModel {
     self.state = None;
   }
 
-  /// Gets a ComponentModel by component instance string
+  /// Gets a ComponentModel by component instance string.
   pub(crate) fn get_component_model_by_instance(&self, instance: &str) -> Option<ComponentModel> {
     self
       .instances
@@ -264,7 +258,7 @@ impl SchematicModel {
       .and_then(|id| self.get_component_model(id))
   }
 
-  /// Gets a ComponentModel by component id
+  /// Gets a ComponentModel by component id.
   pub(crate) fn get_component_model(&self, id: &str) -> Option<ComponentModel> {
     let (ns, name) = match parse_id(id) {
       Ok(result) => result,
@@ -274,7 +268,7 @@ impl SchematicModel {
     provider.and_then(|provider| provider.components.get(name).cloned())
   }
 
-  /// Gets a ComponentDefinition by component instance string
+  /// Gets a ComponentDefinition by component instance string.
   pub(crate) fn get_component_definition(&self, instance: &str) -> Option<ComponentDefinition> {
     self.definition.get_component(instance)
   }

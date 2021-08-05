@@ -74,33 +74,25 @@
 
 pub mod generated;
 
-use std::sync::{
-  Arc,
-  Mutex,
-};
-
 use vino_entity::Entity;
 use vino_provider::native::prelude::*;
 use vino_rpc::error::RpcError;
 use vino_rpc::{
-  BoxedTransportStream,
-  DurationStatistics,
   RpcHandler,
   RpcResult,
-  Statistics,
 };
 
 use crate::error::NativeError;
+use crate::generated::Dispatcher;
 mod components;
 pub mod error;
-pub type Result<T> = std::result::Result<T, NativeError>;
 
 #[derive(Clone, Debug)]
-pub(crate) struct State {}
+pub(crate) struct Context {}
 
 #[derive(Clone, Debug)]
 pub struct Provider {
-  context: Arc<Mutex<State>>,
+  context: Context,
 }
 
 impl From<NativeError> for Box<RpcError> {
@@ -113,7 +105,7 @@ impl Provider {
   #[must_use]
   pub fn default() -> Self {
     Self {
-      context: Arc::new(Mutex::new(State {})),
+      context: Context {},
     }
   }
 }
@@ -122,52 +114,17 @@ impl Provider {
 impl RpcHandler for Provider {
   async fn invoke(&self, entity: Entity, payload: TransportMap) -> RpcResult<BoxedTransportStream> {
     let context = self.context.clone();
-    let entity_url = entity.url();
-    let component = entity
-      .into_component()
-      .map_err(|_| NativeError::InvalidEntity(entity_url))?;
-    let instance = generated::get_component(&component);
-    match instance {
-      Some(instance) => {
-        let stream = instance
-          .execute(context, payload)
-          .await
-          .map_err(|e| RpcError::ProviderError(e.to_string()))?;
-        Ok(Box::pin(stream))
-      }
-      None => Err(Box::new(RpcError::ProviderError(format!(
-        "Component '{}' not found",
-        component
-      )))),
-    }
+    let component = entity.name();
+    let stream = Dispatcher::dispatch(&component, context, payload)
+      .await
+      .map_err(|e| RpcError::ProviderError(e.to_string()))?;
+
+    Ok(Box::pin(stream))
   }
 
   async fn get_list(&self) -> RpcResult<Vec<HostedType>> {
     let components = generated::get_all_components();
     Ok(components.into_iter().map(HostedType::Component).collect())
-  }
-
-  async fn get_stats(&self, id: Option<String>) -> RpcResult<Vec<Statistics>> {
-    // TODO Dummy implementation
-    if id.is_some() {
-      Ok(vec![Statistics {
-        num_calls: 1,
-        execution_duration: DurationStatistics {
-          max_time: 0,
-          min_time: 0,
-          average: 0,
-        },
-      }])
-    } else {
-      Ok(vec![Statistics {
-        num_calls: 0,
-        execution_duration: DurationStatistics {
-          max_time: 0,
-          min_time: 0,
-          average: 0,
-        },
-      }])
-    }
   }
 }
 
@@ -181,6 +138,7 @@ mod tests {
   use vino_provider::native::prelude::*;
 
   use super::*;
+  type Result<T> = std::result::Result<T, NativeError>;
 
   async fn invoke<T>(component: &str, payload: TransportMap) -> Result<T>
   where
@@ -188,7 +146,7 @@ mod tests {
   {
     let provider = Provider::default();
 
-    let entity = Entity::component(component);
+    let entity = Entity::component_direct(component);
 
     let mut outputs = provider.invoke(entity, payload).await.unwrap();
     let output = outputs.next().await.unwrap();
@@ -239,19 +197,6 @@ mod tests {
         response[index]
       );
     }
-
-    Ok(())
-  }
-
-  #[test_env_log::test(tokio::test)]
-  async fn statistics() -> Result<()> {
-    let provider = Provider::default();
-
-    let response = provider.get_stats(None).await.unwrap();
-
-    debug!("statistics response : {:?}", response);
-
-    assert_eq!(response.len(), 1);
 
     Ok(())
   }

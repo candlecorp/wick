@@ -1,9 +1,8 @@
 [package]
-name = "vino"
+name = "vino-root"
 version = "0.1.0"
 authors = ["Jarrod Overson <jsoverson@gmail.com>"]
 edition = "2018"
-license-file = "LICENSE"
 description = "Application data flow platform"
 repository = "https://gitlab.com/vino-dev/vino"
 documentation = "https://vino.dev"
@@ -14,16 +13,17 @@ readme = "README.md"
 [dev-dependencies]
 vino-entity = { path = "./crates/vino-entity" }
 vino-codec = { path = "./crates/vino-codec" }
-vino-component = { path = "./crates/vino-component" }
+vino-packet = { path = "./crates/vino-packet" }
 vino-provider = { path = "./crates/vino-provider", features = ["native"] }
 vino-transport = { path = "./crates/vino-transport" }
+vino-interface-collection = { path = "./crates/interfaces/interface-collection" }
 test-vino-provider = { path = "./crates/integration/test-vino-provider" }
 vino-rpc = { path = "./crates/vino-rpc" }
 vino-macros = { path = "./crates/vino-macros" }
 utils = { path = "./tests/utils" }
 test_bin = "0.3.0"
 maplit = "1.0.2"
-test-env-log = { version = "0.2.7", features = ["trace"] }
+test-env-log = { version = "0.2.7" }
 tokio = { version = "1.4.0", features = [
   "macros",
   "process",
@@ -35,8 +35,6 @@ futures = "0.3.15"
 log = "0.4.14"
 env_logger = "0.9"
 anyhow = "1.0.41"
-tracing = "*"
-tracing-subscriber = "0.2.18"
 serde_json = "1.0.64"
 
 [workspace]
@@ -45,10 +43,10 @@ members = [
   "crates/forks/wapc-rust",
   "crates/forks/wasm3-provider",
   "crates/forks/wasmtime-provider",
-  "crates/interfaces/interfaces-collection",
-  "crates/interfaces/interfaces-authentication",
-  "crates/integration/test-interfaces-collection",
-  "crates/integration/test-interfaces-authentication",
+  "crates/interfaces/interface-collection",
+  "crates/interfaces/interface-authentication",
+  "crates/integration/test-interface-collection",
+  "crates/integration/test-interface-authentication",
   "crates/integration/test-vino-provider",
   "crates/logger",
   "crates/oci-utils",
@@ -59,6 +57,7 @@ members = [
   "crates/vino-cli",
   "crates/vino-codec",
   "crates/vino-entity",
+  "crates/vino-invocation-server",
   "crates/vino-host",
   "crates/vino-macros",
   "crates/vino-manifest",
