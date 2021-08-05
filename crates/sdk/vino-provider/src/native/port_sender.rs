@@ -101,9 +101,9 @@ pub struct PortChannel {
 
 impl PortChannel {
   /// Constructor for a [PortChannel].
-  pub fn new(name: String) -> Self {
+  pub fn new<T: AsRef<str>>(name: T) -> Self {
     Self {
-      name,
+      name: name.as_ref().to_owned(),
       incoming: None,
     }
   }
@@ -155,5 +155,160 @@ impl PortChannel {
     });
 
     TransportStream::new(rx)
+  }
+}
+
+#[cfg(test)]
+mod tests {
+
+  use vino_packet::v0;
+
+  use super::*;
+  struct StringSender {
+    port: PortChannel,
+  }
+  impl PortSender for StringSender {
+    type PayloadType = String;
+
+    fn get_port(&self) -> std::result::Result<&PortChannel, Error> {
+      Ok(&self.port)
+    }
+
+    fn get_port_name(&self) -> String {
+      self.port.name.clone()
+    }
+  }
+
+  struct I64Sender {
+    port: PortChannel,
+  }
+  impl PortSender for I64Sender {
+    type PayloadType = i64;
+
+    fn get_port(&self) -> std::result::Result<&PortChannel, Error> {
+      Ok(&self.port)
+    }
+
+    fn get_port_name(&self) -> String {
+      self.port.name.clone()
+    }
+  }
+
+  #[test_env_log::test(tokio::test)]
+  async fn test_merge() -> Result {
+    // This sets up the ports, sends data on them, then
+    // drops the ports, thus closing them.
+    let mut aggregated = {
+      let mut port1 = StringSender {
+        port: PortChannel::new("test1"),
+      };
+      let mut port2 = I64Sender {
+        port: PortChannel::new("test2"),
+      };
+
+      let aggregated = PortChannel::merge_all(&mut [&mut port1.port, &mut port2.port]);
+
+      port1.send(&"First".to_owned())?;
+      port2.send(&1)?;
+      port1.done(&"Second".to_owned())?;
+      port2.done(&2)?;
+
+      aggregated
+    };
+    let mut messages: Vec<TransportWrapper> = aggregated.collect_port("test1").await;
+    assert_eq!(messages.len(), 2);
+    assert_eq!(aggregated.buffered_size(), (1, 2));
+    let payload: String = messages.remove(0).try_into().unwrap();
+    println!("Payload a1: {}", payload);
+    assert_eq!(payload, "First");
+    let payload: String = messages.remove(0).try_into().unwrap();
+    println!("Payload a2: {}", payload);
+    assert_eq!(payload, "Second");
+
+    let mut messages: Vec<TransportWrapper> = aggregated.collect_port("test2").await;
+    assert_eq!(messages.len(), 2);
+    assert_eq!(aggregated.buffered_size(), (0, 0));
+    let payload: i64 = messages.remove(0).try_into().unwrap();
+    println!("Payload b1: {}", payload);
+    assert_eq!(payload, 1);
+    let payload: i64 = messages.remove(0).try_into().unwrap();
+    println!("Payload b2: {}", payload);
+    assert_eq!(payload, 2);
+
+    Ok(())
+  }
+
+  #[test_env_log::test(tokio::test)]
+  async fn test_send() -> Result {
+    let mut port1 = StringSender {
+      port: PortChannel::new("test1"),
+    };
+    let mut rx = port1.port.open();
+
+    port1.send(&"first".to_owned())?;
+
+    let message: TransportWrapper = rx.next().await.unwrap().into();
+    let payload: String = message.payload.try_into().unwrap();
+
+    assert_eq!(payload, "first");
+
+    Ok(())
+  }
+
+  #[test_env_log::test(tokio::test)]
+  async fn test_done() -> Result {
+    let mut port1 = StringSender {
+      port: PortChannel::new("test1"),
+    };
+    let mut rx = port1.port.open();
+
+    port1.done(&"done".to_owned())?;
+
+    let message: TransportWrapper = rx.next().await.unwrap().into();
+    let payload: String = message.payload.try_into().unwrap();
+
+    assert_eq!(payload, "done");
+    let message = rx.next().await.unwrap();
+    assert_eq!(message.payload, Packet::V0(v0::Payload::Done));
+    Ok(())
+  }
+
+  #[test_env_log::test(tokio::test)]
+  async fn test_exception() -> Result {
+    let mut port1 = StringSender {
+      port: PortChannel::new("test1"),
+    };
+    let mut rx = port1.port.open();
+
+    port1.send_exception("exc".to_owned())?;
+
+    let message = rx.next().await.unwrap();
+
+    assert_eq!(
+      message.payload,
+      Packet::V0(v0::Payload::Exception("exc".to_owned()))
+    );
+
+    Ok(())
+  }
+
+  #[test_env_log::test(tokio::test)]
+  async fn test_done_exception() -> Result {
+    let mut port1 = StringSender {
+      port: PortChannel::new("test1"),
+    };
+    let mut rx = port1.port.open();
+
+    port1.done_exception("exc".to_owned())?;
+
+    let message = rx.next().await.unwrap();
+
+    assert_eq!(
+      message.payload,
+      Packet::V0(v0::Payload::Exception("exc".to_owned()))
+    );
+    let message = rx.next().await.unwrap();
+    assert_eq!(message.payload, Packet::V0(v0::Payload::Done));
+    Ok(())
   }
 }

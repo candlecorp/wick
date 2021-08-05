@@ -28,17 +28,33 @@ use crate::{
 
 lazy_static::lazy_static! {
   /// A static close message
-    pub static ref CLOSE_MESSAGE: MessageTransport = {
-      MessageTransport::Signal(MessageSignal::Done)
-    };
+  pub static ref CLOSE_MESSAGE: MessageTransport = {
+    MessageTransport::Signal(MessageSignal::Done)
+  };
 
   /// A static system close message
-    pub static ref SYSTEM_CLOSE_MESSAGE: TransportWrapper = {
-      TransportWrapper::new(
-        crate::SYSTEM_ID,
-        MessageTransport::Signal(MessageSignal::Done)
-      )
+  pub static ref SYSTEM_CLOSE_MESSAGE: TransportWrapper = {
+    TransportWrapper::new(
+      crate::SYSTEM_ID,
+      MessageTransport::Signal(MessageSignal::Done)
+    )
+  };
+  /// An error representing there was a major problem in
+  /// the MessageTransport deserialization.
+  pub static ref JSON_ERROR: serde_json::Value = {
+    let error = TransportJson {
+      value: serde_json::value::Value::Null,
+      signal: None,
+      error_msg: Some("Error serializing packet into JSON.".to_owned()),
+      error_kind: JsonError::InternalError,
     };
+    match json::to_value(&error) {
+      Ok(v) => v,
+      Err(e) => {
+        panic!("Error creating an internal error! Error was : {}", e)
+      }
+    }
+  };
 }
 
 /// The [MessageTransport] is the primary way messages are sent around Vino Networks, Schematics, and is the representation that normalizes output [Packet]'s.
@@ -47,18 +63,25 @@ lazy_static::lazy_static! {
 pub enum MessageTransport {
   /// An invalid message.
   Invalid,
+
   /// A message carrying an exception.
   Exception(String),
+
   /// A message carrying an error.
   Error(String),
+
   /// A message carrying a MessagePack encoded list of bytes.
   MessagePack(Vec<u8>),
+
   /// A test message
   Test(String),
+
   /// An internal signal
   Signal(MessageSignal),
+
   /// A success value in an intermediary format
   Success(serde_value::Value),
+
   /// A JSON String
   Json(String),
 }
@@ -66,12 +89,12 @@ pub enum MessageTransport {
 /// Signals that need to be handled before propagating to a downstream consumer.
 #[derive(Debug, Clone, Copy, Eq, Serialize, Deserialize, PartialEq)]
 pub enum MessageSignal {
-  // /// Indicates this channel is closing and should not be polled any further.
-  // Close,
   /// Indicates the job that opened this port is finished with it.
   Done,
+
   /// Indicates that a message is coming down in chunks and this is the start.
   OpenBracket,
+
   /// Indicates a chunked message has been completed.
   CloseBracket,
 }
@@ -84,7 +107,7 @@ impl Default for MessageTransport {
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 #[must_use]
-/// A wrapper for a map of String to [MessageTransport]
+/// A wrapper for a map of [String]s to [MessageTransport]
 pub struct TransportMap(HashMap<String, MessageTransport>);
 
 impl TransportMap {
@@ -113,7 +136,7 @@ impl TransportMap {
     }
   }
 
-  /// Insert a MessageTransport by port name
+  /// Insert a [MessageTransport] by port name
   pub fn insert<T: AsRef<str>>(
     &mut self,
     port: T,
@@ -128,7 +151,7 @@ impl TransportMap {
     self.0.get(port)
   }
 
-  /// Remove a key from the map and attempt to deserialize it into the destination type
+  /// Remove a key from the held map and attempt to deserialize it into the destination type
   pub fn consume<T: DeserializeOwned>(&mut self, key: &str) -> Result<T> {
     let v = self.0.remove(key).ok_or_else(|| {
       Error::DeserializationError(format!("TransportMap does not have field '{}'", key))
@@ -189,11 +212,12 @@ impl TransportMap {
     self.0
   }
 
-  /// Attempts to normalize the [TransportMap] into messagepacked bytes by serializing success formats or throwing an error.
+  /// Attempts to normalize the [TransportMap] into messagepacked bytes
+  /// by serializing success formats or throwing an error.
   pub fn try_into_messagepack_bytes(self) -> Result<HashMap<String, Vec<u8>>> {
     let mut map = HashMap::new();
     let err = Error::SerializationError(
-      "Transport map contained payloads that could not be converted to bytes.".to_owned(),
+      "Transport map contained payloads that could not be serialized.".to_owned(),
     );
     for (k, v) in self.0 {
       let e = Err(err.clone());
@@ -241,6 +265,11 @@ pub struct TransportJson {
   #[serde(skip_serializing_if = "JsonError::is_none")]
   pub error_kind: JsonError,
 
+  /// The Signal if the message was a [MessageTransport::Signal]
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub signal: Option<MessageSignal>,
+
   /// The return value.
   pub value: serde_json::Value,
 }
@@ -250,10 +279,13 @@ pub struct TransportJson {
 pub enum JsonError {
   /// No error
   None,
+
   /// A message from a [MessageTransport::Exception]
   Exception,
+
   /// A message from a [MessageTransport::Error]
   Error,
+
   /// An error originating internally
   InternalError,
 }
@@ -270,7 +302,7 @@ impl Display for JsonError {
       JsonError::None => "None",
       JsonError::Exception => "Exception",
       JsonError::Error => "Error",
-      JsonError::InternalError => "InternalError",
+      JsonError::InternalError => "Internal Error",
     };
     f.write_str(s)
   }
@@ -278,12 +310,12 @@ impl Display for JsonError {
 
 impl JsonError {
   #[must_use]
-  /// This is analagous to Option::is_none for a [JsonError] kind
+  /// This is analogous to Option::is_none for a [JsonError] kind
   pub fn is_none(&self) -> bool {
     matches!(self, JsonError::None)
   }
   #[must_use]
-  /// This is analagous to Option::is_some for a [JsonError] kind
+  /// This is analogous to Option::is_some for a [JsonError] kind
   pub fn is_some(&self) -> bool {
     !matches!(self, JsonError::None)
   }
@@ -293,6 +325,7 @@ fn unhandled_conversion(transport: &MessageTransport) -> TransportJson {
   error!("Unhandled  JSON conversion: {:?}", transport);
   TransportJson {
     value: serde_json::value::Value::Null,
+    signal: None,
     error_msg: Some(format!("Internal error converting {:?} to JSON", transport)),
     error_kind: JsonError::InternalError,
   }
@@ -304,6 +337,7 @@ fn handle_result_conversion(
   match result {
     Ok(payload) => TransportJson {
       value: payload,
+      signal: None,
       error_msg: None,
       error_kind: JsonError::None,
     },
@@ -315,6 +349,7 @@ fn handle_result_conversion(
       error!("{}", msg);
       TransportJson {
         value: serde_json::value::Value::Null,
+        signal: None,
         error_msg: Some(msg),
         error_kind: JsonError::InternalError,
       }
@@ -359,7 +394,7 @@ impl Display for MessageSignal {
 
 impl MessageTransport {
   /// Returns `true` if the Message contains success data destined for a downstream
-  /// consumer, false for Errors, Exceptions, and otherwise.
+  /// consumer, `false` for Errors, Exceptions, and otherwise.
   #[must_use]
   pub fn is_ok(&self) -> bool {
     match self {
@@ -384,27 +419,31 @@ impl MessageTransport {
   }
 
   #[must_use]
-  /// Returns true if the [MessageTransport] is an [MessageTransport::Signal] variant.
+  /// Returns true if the [MessageTransport] is a [MessageTransport::Signal] variant.
   pub fn is_signal(&self) -> bool {
     matches!(self, Self::Signal(_))
   }
 
-  /// Converts a [MessageTransport] into [serde_json::Value] representation of a [JsonOutput]
+  /// Converts a [MessageTransport] into [serde_json::Value]
+  /// representation of a [TransportJson]
   #[must_use]
   pub fn into_json(self) -> serde_json::Value {
     let output = match self {
       MessageTransport::Invalid => TransportJson {
         value: serde_json::value::Value::Null,
+        signal: None,
         error_msg: Some("Invalid value".to_owned()),
         error_kind: JsonError::Error,
       },
       MessageTransport::Exception(v) => TransportJson {
         value: serde_json::value::Value::Null,
+        signal: None,
         error_msg: Some(v),
         error_kind: JsonError::Exception,
       },
       MessageTransport::Error(v) => TransportJson {
         value: serde_json::value::Value::Null,
+        signal: None,
         error_msg: Some(v),
         error_kind: JsonError::Error,
       },
@@ -418,21 +457,27 @@ impl MessageTransport {
         json::deserialize::<serde_json::Value>(&v).map_err(|e| e.to_string()),
       ),
       MessageTransport::Test(_) => unhandled_conversion(&self),
-      MessageTransport::Signal(_) => unhandled_conversion(&self),
+      MessageTransport::Signal(s) => TransportJson {
+        value: serde_json::value::Value::Null,
+        signal: Some(s),
+        error_msg: None,
+        error_kind: JsonError::None,
+      },
     };
 
-    let mut map = serde_json::Map::new();
-    map.insert("value".to_owned(), output.value);
-    if let Some(msg) = output.error_msg {
-      map.insert("error_msg".to_owned(), serde_json::Value::String(msg));
-    }
-    if output.error_kind.is_some() {
-      map.insert(
-        "error_kind".to_owned(),
-        serde_json::Value::String(output.error_kind.to_string()),
-      );
-    }
-    serde_json::value::Value::Object(map)
+    // let mut map = serde_json::Map::new();
+    // map.insert("value".to_owned(), output.value);
+    // if let Some(msg) = output.error_msg {
+    //   map.insert("error_msg".to_owned(), serde_json::Value::String(msg));
+    // }
+    // if output.error_kind.is_some() {
+    //   map.insert(
+    //     "error_kind".to_owned(),
+    //     serde_json::Value::String(output.error_kind.to_string()),
+    //   );
+    // }
+    // serde_json::value::Value::Object(map)
+    json::to_value(&output).unwrap_or_else(|_| JSON_ERROR.clone())
   }
 
   /// Creates a [MessageTransport] by serializing a passed object with messagepack
@@ -546,18 +591,18 @@ impl From<Packet> for MessageTransport {
   }
 }
 
-/// An [TransportWrapper] is a wrapper around a [MessageTransport] with the port name and invocation id embedded in it.
+/// A [TransportWrapper] is a wrapper around a [MessageTransport] with the port name it originated from.
 #[derive(Debug, Clone, PartialEq)]
 #[must_use]
 pub struct TransportWrapper {
-  /// The port the message originated from
+  /// The port the message originated from.
   pub port: String,
-  /// The port's output
+  /// The port's output.
   pub payload: MessageTransport,
 }
 
 impl TransportWrapper {
-  /// Constructor for manually created [TransportWrapper]s.
+  /// Constructor for [TransportWrapper]s.
   pub fn new(port: &str, payload: MessageTransport) -> Self {
     Self {
       port: port.to_owned(),
@@ -570,7 +615,8 @@ impl TransportWrapper {
     self.payload.try_into()
   }
 
-  /// Converts a [MessageTransport] into [serde_json::Value] representation of a [JsonOutput]
+  /// Converts the embedded [MessageTransport] into a [serde_json::Value::Object]
+  /// map of port names to [TransportJson]s
   #[must_use]
   pub fn into_json(self) -> serde_json::Value {
     let payload = self.payload.into_json();
@@ -588,5 +634,18 @@ impl From<PacketWrapper> for TransportWrapper {
       port: p.port,
       payload: p.payload.into(),
     }
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+  #[test_env_log::test]
+  fn serializes_done() -> Result<()> {
+    let close = MessageTransport::done();
+    let value = close.into_json();
+    println!("Value: {}", value);
+    assert_eq!(value.to_string(), r#"{"signal":"Done","value":null}"#);
+    Ok(())
   }
 }

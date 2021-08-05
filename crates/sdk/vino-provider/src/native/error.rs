@@ -9,10 +9,6 @@ pub enum Error {
   #[error("Component '{0}' not found on this provider")]
   ComponentNotFound(String),
 
-  /// Send error.
-  #[error(transparent)]
-  IOError(#[from] std::io::Error),
-
   /// Error sending output to channel.
   #[error("Error sending output to channel")]
   SendError,

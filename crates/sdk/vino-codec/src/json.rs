@@ -7,6 +7,14 @@ use crate::error::CodecError;
 use crate::Result;
 
 #[doc(hidden)]
+pub fn to_value<T>(item: &T) -> std::result::Result<serde_json::Value, serde_json::Error>
+where
+  T: Serialize,
+{
+  serde_json::to_value(item)
+}
+
+#[doc(hidden)]
 pub fn json_serialize<T>(item: &T) -> std::result::Result<String, serde_json::Error>
 where
   T: Serialize,
