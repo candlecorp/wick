@@ -11,7 +11,7 @@ wasm = []
 native = []
 
 [dependencies]
-vino-codec = { path = "../vino-codec" }
+vino-codec = { path = "../vino-codec", features = ["messagepack"] }
 serde = { version = "1.0.126", features = ["derive"] }
 serde-value = "0.7.0"
 
