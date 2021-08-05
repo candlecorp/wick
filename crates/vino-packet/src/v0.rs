@@ -6,7 +6,8 @@ use vino_codec::messagepack::rmp_serialize;
 use vino_codec::raw::raw_serialize;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-/// A component's output data (version 0: unstable).
+
+/// A component's output data.
 pub enum Payload {
   /// Invalid payload. Used when a default is needed.
   #[serde(rename = "0")]
@@ -20,7 +21,7 @@ pub enum Payload {
   #[serde(rename = "2")]
   Error(String),
 
-  /// A MessagePack payload that has not yet been deserialized.
+  /// A MessagePack success payload.
   #[serde(rename = "3")]
   MessagePack(Vec<u8>),
 
@@ -42,7 +43,7 @@ pub enum Payload {
   #[serde(rename = "7")]
   Success(serde_value::Value),
 
-  /// A JSON payload that has not yet been deserialized.
+  /// A JSON success payload.
   #[serde(rename = "8")]
   Json(String),
 }
