@@ -1,4 +1,5 @@
-/// Module for a [TransportStream]
+/// Module for the [crate::MessageTransport], [crate::TransportWrapper], and the JSON
+/// representations of each.
 pub mod stream;
 
 use std::collections::HashMap;
@@ -274,7 +275,7 @@ pub struct TransportJson {
   pub value: serde_json::Value,
 }
 
-/// The kinds of errors that a [JsonOutput] can carry
+/// The kinds of errors that a [TransportJson] can carry
 #[derive(Debug, Clone, Copy, Eq, Serialize, Deserialize, PartialEq)]
 pub enum JsonError {
   /// No error

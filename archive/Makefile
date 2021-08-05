@@ -19,7 +19,7 @@ CLEAN_FILES := $(READMES)
 
 ##@ Main targets
 
-.PHONY: all clean test update-lint build
+.PHONY: all clean test update-lint build publish readmes
 
 all: build  ## Alias for make build
 
@@ -37,7 +37,10 @@ build: ## Build everything in the workspace
 
 test: ## Test all crates in the workspace
 	cargo deny check licenses --hide-inclusion-graph
+	cargo doc --no-deps --workspace --all-features
 	cargo test --workspace --all-features
+
+publish: test ## Publish crates to crates.io
 
 update-lint: ## Update clippy lint definitions in sub crates
 	@echo Checking git status...

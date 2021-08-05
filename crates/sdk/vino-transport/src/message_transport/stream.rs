@@ -34,7 +34,7 @@ pub fn map_to_json(
   })
 }
 
-/// A [TransportStream] is a stream of [MessageTransport]s.
+/// A [TransportStream] is a stream of [crate::TransportWrapper]s.
 #[derive(Debug)]
 pub struct TransportStream {
   rx: RefCell<UnboundedReceiver<TransportWrapper>>,

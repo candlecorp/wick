@@ -1,4 +1,4 @@
-/// The error type used when attempting to deserialize a [Packet].
+/// The error type used when attempting to deserialize a [crate::Packet].
 #[derive(Debug)]
 pub enum DeserializationError {
   /// Invalid payload.
