@@ -1,6 +1,6 @@
 [package]
 name = "vino-types"
-version = "0.5.0"
+version = "0.6.2"
 edition = "2018"
 license = "BSD-3-Clause"
 description = "Types used by the Vino tool chain"
