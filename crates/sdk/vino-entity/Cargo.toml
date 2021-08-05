@@ -1,18 +1,20 @@
 [package]
 name = "vino-entity"
-version = "0.1.0"
+version = "0.5.0"
 edition = "2018"
 license = "BSD-3-Clause"
 description = "Entities found in a Vino network"
 documentation = "https://docs.vino.dev"
 keywords = ["vino", "flow"]
 exclude = ["tests/*", ".github/*", ".gitignore"]
+repository = "https://github.com/vinodotdev/vino-sdk"
+homepage = "https://docs.vino.dev"
 
 [badges]
 maintenance = { status = "actively-developed" }
 
 [dependencies]
-vino-macros = { path = "../vino-macros" }
+vino-macros = { path = "../vino-macros", version = "0.5.0" }
 serde = { version = "1.0.118", features = ["derive"] }
 thiserror = "1.0.25"
 url = "2.2.2"
