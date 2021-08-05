@@ -1,6 +1,15 @@
 //! Vino Transport contains the structures and methods for communicating
 //! across entity boundaries. It handles abstracting payload versions and
 //! implementations so they can be used easily.
+//!
+//! The [MessageTransport] struct normalizes [vino_packet::Packet]s for
+//! the Vino tools.
+//!
+//! The [TransportWrapper] wraps a [MessageTransport] along with the port name
+//! it originated from.
+//!
+//! A [TransportStream] is a stream of [TransportWrapper]s.
+//!
 
 // !!START_LINTS
 // Vino lints
@@ -76,22 +85,25 @@
 // Add exceptions here
 #![allow()]
 
-/// The crate's error module;
+/// The crate's error module;.
 pub mod error;
 
-/// The core module
+/// The core module that contains the [MessageTransport] and [TransportWrapper]
 pub mod message_transport;
 
-/// The crate's Result type
-pub type Result<T> = std::result::Result<T, error::TransportError>;
-/// The crate's Error type
+pub(crate) type Result<T> = std::result::Result<T, error::TransportError>;
+/// The crate's Error type.
 pub type Error = error::TransportError;
 
-pub use message_transport::stream::MessageTransportStream;
+pub use message_transport::stream::TransportStream;
 pub use message_transport::{
   MessageTransport,
   TransportMap,
   TransportWrapper,
 };
+
 /// The name of system-originating messages on a port, schematic, or origin.
 pub const SYSTEM_ID: &str = "<system>";
+
+#[macro_use]
+extern crate log;

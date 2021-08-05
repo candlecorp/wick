@@ -24,8 +24,8 @@ where
   }
 }
 
-/// The standard function for serializing codec structs into a format that can be
-/// used for message exchange between actor and host. Use of any other function to
+/// The standard function for serializing codec structs into a format that can be.
+/// used for message exchange between actor and host. Use of any other function to.
 /// serialize could result in breaking incompatibilities.
 pub fn serialize<T>(item: &T) -> Result<Vec<u8>>
 where
@@ -42,8 +42,8 @@ pub fn rmp_deserialize<'de, T: Deserialize<'de>>(
   Deserialize::deserialize(&mut de)
 }
 
-/// The standard function for de-serializing codec structs from a format suitable
-/// for message exchange between actor and host. Use of any other function to
+/// The standard function for de-serializing codec structs from a format suitable.
+/// for message exchange between actor and host. Use of any other function to.
 /// deserialize could result in breaking incompatibilities.
 pub fn deserialize<'de, T: Deserialize<'de>>(buf: &[u8]) -> Result<T> {
   rmp_deserialize(buf).map_err(CodecError::MessagePackDeserializationError)

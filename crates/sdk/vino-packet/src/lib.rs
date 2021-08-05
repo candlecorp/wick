@@ -1,4 +1,16 @@
-//! The Vino types crate contains types and signatures used by Vino tools.
+//! The Vino packet crate contains the consistent message structure for arbitrary output
+//! from Vino components and providers.
+//!
+//! Components output versioned payloads (e.g. a [v0::Payload]) which then get
+//! wrapped into a [Packet] to normalize differences across versions.
+//!
+//! [Packet]s are designed for backwards compatibility but that compatibility layer is
+//! strictly between the component and [Packet], not for consumers of the [Packet].
+//! [Packet]s are not meant to be long lived and you should have a compatibility layer
+//! between [Packet]s and your system if you depend on this crate. For example, Vino
+//! uses [vino-transport](https://crates.io/crates/vino-transport) to keep
+//! a dependent platform insulated from [Packet] changes.
+//!
 
 // !!START_LINTS
 // Vino lints
@@ -73,6 +85,15 @@
 // !!END_LINTS
 // Add exceptions here
 #![allow()]
+//
+/// Version 0 of the output format.
+pub mod v0;
 
-/// Signatures of Vino types.
-pub mod signatures;
+/// The crate's error module.
+pub mod error;
+
+pub use vino_codec as codec;
+
+/// Module for [Packet], the versioned Vino message structure.
+pub mod packet;
+pub use packet::*;

@@ -3,7 +3,10 @@ name = "vino-provider"
 version = "0.1.0"
 authors = ["Jarrod Overson <jsoverson@gmail.com>"]
 edition = "2018"
-license = "Apache-2.0"
+license = "BSD-3-Clause"
+
+[badges]
+maintenance = { status = "actively-developed" }
 
 [features]
 default = []
@@ -17,10 +20,11 @@ native = [
   "log",
   "vino-transport",
   "vino-types",
+  "dyn-clone",
 ]
 
 [dependencies]
-vino-component = { path = "../vino-component" }
+vino-packet = { path = "../vino-packet" }
 vino-entity = { path = "../vino-entity" }
 vino-codec = { path = "../vino-codec" }
 vino-macros = { path = "../vino-macros" }
@@ -34,6 +38,7 @@ thiserror = { version = "1.0.25", optional = true }
 tokio = { version = "1.4.0", features = [], optional = true }
 tokio-stream = { version = "0.1.6", features = [], optional = true }
 log = { version = "0.4.14", optional = true }
+dyn-clone = { version = "1.0.4", optional = true }
 
 [dev-dependencies]
 env_logger = "0.9"

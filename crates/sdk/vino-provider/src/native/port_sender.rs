@@ -9,13 +9,13 @@ use tokio_stream::{
   StreamExt,
   StreamMap,
 };
-use vino_component::v0::Payload as ComponentPayload;
-use vino_component::{
+use vino_packet::v0::Payload as ComponentPayload;
+use vino_packet::{
   Packet,
   PacketWrapper,
 };
 use vino_transport::{
-  MessageTransportStream,
+  TransportStream,
   TransportWrapper,
 };
 
@@ -34,18 +34,18 @@ pub trait PortSender {
   /// Get the port's name.
   fn get_port_name(&self) -> String;
 
-  /// Buffer a message.
+  /// Send a message.
   fn send(&self, data: &Self::PayloadType) -> Result {
     self.push(Packet::V0(ComponentPayload::success(data)))
   }
 
-  /// Buffer a message then close the port.
+  /// Send a message then close the port.
   fn done(&self, data: &Self::PayloadType) -> Result {
     self.send(data)?;
     self.send_message(Packet::V0(ComponentPayload::Done))
   }
 
-  /// Buffer a complete Output message then close the port.
+  /// Send a complete Output message then close the port.
   fn push(&self, output: Packet) -> Result {
     self.get_port()?.send(PacketWrapper {
       payload: output,
@@ -54,7 +54,7 @@ pub trait PortSender {
     Ok(())
   }
 
-  /// Buffer a payload.
+  /// Send a payload.
   fn send_message(&self, packet: Packet) -> Result {
     self.get_port()?.send(PacketWrapper {
       payload: packet,
@@ -63,13 +63,13 @@ pub trait PortSender {
     Ok(())
   }
 
-  /// Buffer a payload then close the port.
+  /// Send a payload then close the port.
   fn done_message(&self, packet: Packet) -> Result {
     self.send_message(packet)?;
     self.send_message(Packet::V0(ComponentPayload::Done))
   }
 
-  /// Buffer an exception.
+  /// Send an exception.
   fn send_exception(&self, payload: String) -> Result {
     self.get_port()?.send(PacketWrapper {
       payload: Packet::V0(ComponentPayload::Exception(payload)),
@@ -78,7 +78,7 @@ pub trait PortSender {
     Ok(())
   }
 
-  /// Buffer an exception then close the port.
+  /// Send an exception then close the port.
   fn done_exception(&self, payload: String) -> Result {
     self.send_exception(payload)?;
     self.send_message(Packet::V0(ComponentPayload::Done))
@@ -133,8 +133,8 @@ impl PortChannel {
     Ok(())
   }
 
-  /// Merge a list of [PortChannel]s into a MessageTransportStream
-  pub fn merge_all(buffer: &mut [&mut PortChannel]) -> MessageTransportStream {
+  /// Merge a list of [PortChannel]s into a TransportStream.
+  pub fn merge_all(buffer: &mut [&mut PortChannel]) -> TransportStream {
     let (tx, rx) = unbounded_channel::<TransportWrapper>();
 
     let mut channels = StreamMap::new();
@@ -154,6 +154,6 @@ impl PortChannel {
       trace!("Port closing");
     });
 
-    MessageTransportStream::new(rx)
+    TransportStream::new(rx)
   }
 }

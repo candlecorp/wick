@@ -1,5 +1,132 @@
-//! The Vino Codec crate contains the serialization and deserialization functions and structures
-//! for communicating in and out of Vino Components
+//! The Vino Codec crate contains the serialization and deserialization functions
+//! and structures for communicating in and out of Vino Components.
+//!
+//! ### JSON
+//!
+//! Serializes to a [serde_json::Value] which can be printed as a JSON string.
+//!
+//! #### `json::serialize`
+//!
+//! ```
+//! use vino_codec::{json, Error};
+//! use serde::{Serialize, Deserialize};
+//!
+//! pub fn main() -> Result<(), Error> {
+//!
+//!   #[derive(Serialize, Deserialize)]
+//!   struct Point {
+//!     x: i32,
+//!     y: i32,
+//!   }
+//!
+//!   let point = Point { x: 200, y: 193 };
+//!
+//!   let value = json::serialize(&point)?;
+//!   println!("{:?}", value);
+//!
+//!   assert_eq!(value, r#"{"x":200,"y":193}"#);
+//!   Ok(())
+//! }
+//! ```
+//!
+//! #### `json::deserialize`
+//!
+//! ```
+//! use vino_codec::{json, Error};
+//! use serde::{Serialize, Deserialize};
+//!
+//! pub fn main() -> Result<(), Error> {
+//!   #[derive(Serialize, Deserialize, Debug, PartialEq)]
+//!   struct Point {
+//!     x: i32,
+//!     y: i32,
+//!   }
+//!
+//!   let json = r#"{"x":200,"y":193}"#;
+//!
+//!   let instance: Point = json::deserialize(&json)?;
+//!
+//!   assert_eq!(instance, Point { x: 200, y: 193 });
+//!   Ok(())
+//! }
+//!
+//! ```
+//!
+//! ### MessagePack
+//!
+//! Serializes to a MessagePack [Vec<u8>].
+//!
+//! #### `messagepack::serialize`
+//!
+//! ```
+//! use vino_codec::{messagepack, Error};
+//! use serde::{Serialize, Deserialize};
+//!
+//! pub fn main() -> Result<(), Error> {
+//!   #[derive(Serialize, Deserialize)]
+//!   struct Point {
+//!     x: i32,
+//!     y: i32,
+//!   }
+//!
+//!   let point = Point { x: 200, y: 193 };
+//!
+//!   let value = messagepack::serialize(&point)?;
+//!   println!("{:?}", value);
+//!
+//!   let expected: Vec<u8> = vec![146, 204, 200, 204, 193];
+//!   assert_eq!(value, expected);
+//!   Ok(())
+//! }
+//! ```
+//!
+//! #### `messagepack::deserialize`
+//!
+//! ```
+//! use vino_codec::{messagepack, Error};
+//! use serde::{Serialize, Deserialize};
+//!
+//! pub fn main() -> Result<(), Error> {
+//!   #[derive(Serialize, Deserialize, Debug, PartialEq)]
+//!   struct Point {
+//!     x: i32,
+//!     y: i32,
+//!   }
+//!
+//!   let slice = vec![146, 204, 200, 204, 193];
+//!
+//!   let instance: Point = messagepack::deserialize(&slice)?;
+//!
+//!   assert_eq!(instance, Point { x: 200, y: 193 });
+//!   Ok(())
+//! }
+//! ```
+//!
+//! ### Raw
+//!
+//! The [raw] module uses [serde_value] as an intermediary format to pass around.
+//!
+//! ```
+//! use vino_codec::{raw, Error};
+//! use serde::{Serialize, Deserialize};
+//!
+//! pub fn main() -> Result<(), Error> {
+//!   #[derive(Serialize, Deserialize, Debug, PartialEq)]
+//!   struct Point {
+//!     x: i32,
+//!     y: i32,
+//!   }
+//!
+//!   let point = Point { x: 200, y: 193 };
+//!
+//!   let value = raw::serialize(&point)?;
+//!   let instance: Point = raw::deserialize(value)?;
+//!
+//!   assert_eq!(instance, Point { x: 200, y: 193 });
+//!   Ok(())
+//! }
+//!```
+//!
 
 // !!START_LINTS
 // Vino lints
@@ -75,22 +202,22 @@
 // Add exceptions here
 #![allow()]
 
-/// The crate's error module
+/// The crate's error module.
 pub mod error;
 
-/// JSON serialization/deserialization
+/// JSON serialization/deserialization.
 #[cfg(feature = "json")]
 pub mod json;
 
-/// MessagePack serialization/deserialization
+/// MessagePack serialization/deserialization.
 #[cfg(feature = "messagepack")]
 pub mod messagepack;
 
-/// Serialization/deserialization implementations to raw [serde_value]s
+/// Serialization/deserialization implementations to raw [serde_value]s.
 pub mod raw;
 
-/// The crate's Result type
-pub type Result<T> = std::result::Result<T, error::CodecError>;
+/// The crate's Result type.
+pub(crate) type Result<T> = std::result::Result<T, error::CodecError>;
 
-/// The crate's Error type
+/// The crate's Error type.
 pub type Error = error::CodecError;

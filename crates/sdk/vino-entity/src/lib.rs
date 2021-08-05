@@ -1,4 +1,7 @@
-//! Vino [Entity] objects are representations of the unique entities that exist with Vino Networks.
+//! The Vino entity contains the [Entity] structure and methods to translate
+//! entities to and from URLs.
+//!
+//! Vino entities are any origin or target that can exist in a Vino network.
 
 // !!START_LINTS
 // Vino lints
@@ -74,14 +77,11 @@
 // Add exceptions here
 #![allow()]
 
-/// Vino entities
+/// Vino entities.
 pub mod entity;
 
-/// Crate errors
+/// Crate errors.
 pub mod error;
-
-/// Crate's Result type
-pub type Result<T> = std::result::Result<T, error::EntityError>;
 
 pub use entity::{
   Entity,

@@ -16,16 +16,34 @@ use super::{
 };
 use crate::TransportWrapper;
 
-/// A [MessageTransportStream] is a stream of [MessageTransport]s
+/// A boxed [Stream] that produces [TransportWrapper]s
+pub type BoxedTransportStream = Pin<Box<dyn Stream<Item = TransportWrapper> + Send>>;
+
+/// Converts a [Stream] of [TransportWrapper]s into a stream of [serde_json::Value]s, optionally omitting signals.
+pub fn map_to_json(
+  stream: impl Stream<Item = TransportWrapper>,
+  print_signals: bool,
+) -> impl Stream<Item = serde_json::Value> {
+  stream.filter_map(move |wrapper| {
+    if wrapper.payload.is_signal() && !print_signals {
+      debug!("Skipping signal : {:?}", wrapper.payload);
+      None
+    } else {
+      Some(wrapper.into_json())
+    }
+  })
+}
+
+/// A [TransportStream] is a stream of [MessageTransport]s.
 #[derive(Debug)]
-pub struct MessageTransportStream {
+pub struct TransportStream {
   rx: RefCell<UnboundedReceiver<TransportWrapper>>,
   buffer: HashMap<String, Vec<TransportWrapper>>,
   collected: bool,
 }
 
-impl MessageTransportStream {
-  #[doc(hidden)]
+impl TransportStream {
+  /// Constructor for [TransportStream].
   #[must_use]
   pub fn new(rx: UnboundedReceiver<TransportWrapper>) -> Self {
     Self {
@@ -36,7 +54,7 @@ impl MessageTransportStream {
   }
 }
 
-impl Stream for MessageTransportStream {
+impl Stream for TransportStream {
   type Item = TransportWrapper;
 
   fn poll_next(self: Pin<&mut Self>, cx: &mut std::task::Context<'_>) -> Poll<Option<Self::Item>> {
@@ -55,7 +73,7 @@ impl Stream for MessageTransportStream {
   }
 }
 
-impl MessageTransportStream {
+impl TransportStream {
   /// Collect all the [TransportWrapper] items associated with the passed port.
   pub async fn collect_port<B: FromIterator<TransportWrapper>>(&mut self, port: &str) -> B {
     if !self.collected {
@@ -110,7 +128,7 @@ mod tests {
     tx.send(TransportWrapper::new("A", message.clone()))?;
     tx.send(TransportWrapper::new("B", message.clone()))?;
     tx.send(SYSTEM_CLOSE_MESSAGE.clone())?;
-    let mut stream = MessageTransportStream::new(rx);
+    let mut stream = TransportStream::new(rx);
 
     let a_msgs: Vec<_> = stream.collect_port("A").await;
     assert_eq!(stream.buffered_size(), (1, 2));
