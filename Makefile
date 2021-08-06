@@ -80,6 +80,7 @@ wasm: $(TEST_WASM)
 
 test: $(TEST_WASM)
 	cargo deny check licenses --hide-inclusion-graph
+	cargo build --workspace # necessary to ensure binaries are built
 	cargo test --workspace
 
 update-lint:

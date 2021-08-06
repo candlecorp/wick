@@ -100,7 +100,7 @@ async fn initialize_wasm_provider(
       .await?;
 
   let provider = Box::new(vino_provider_wasm::provider::Provider::try_from_module(
-    component, 2,
+    &component, 2,
   )?);
 
   let addr = NativeProviderService::start_in_arbiter(&handle, |_| NativeProviderService::default());

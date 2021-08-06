@@ -38,7 +38,7 @@ pub(crate) struct RunCommand {
 
   /// A port=value string where value is JSON to pass as input.
   #[structopt(long, short)]
-  input: Vec<String>,
+  data: Vec<String>,
 }
 
 pub(crate) async fn handle_command(opts: RunCommand) -> Result<()> {
@@ -49,9 +49,9 @@ pub(crate) async fn handle_command(opts: RunCommand) -> Result<()> {
     vino_provider_wasm::helpers::load_wasm(&opts.wasm, opts.pull.latest, &opts.pull.insecure)
       .await?;
 
-  let provider = Provider::try_from_module(component, 1)?;
+  let provider = Provider::try_from_module(&component, 1)?;
 
-  if opts.input.is_empty() {
+  if opts.data.is_empty() {
     if atty::is(atty::Stream::Stdin) {
       eprintln!("No input passed, reading from <STDIN>");
     }
@@ -71,7 +71,7 @@ pub(crate) async fn handle_command(opts: RunCommand) -> Result<()> {
       print_stream_json(stream, opts.raw).await?;
     }
   } else {
-    let mut payload = TransportMap::from_kv_json(&opts.input)?;
+    let mut payload = TransportMap::from_kv_json(&opts.data)?;
     payload.transpose_output_name();
     let stream = provider
       .invoke(

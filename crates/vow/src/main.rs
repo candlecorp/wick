@@ -21,7 +21,6 @@
   clippy::needless_pass_by_value,
   clippy::option_option,
   clippy::redundant_else,
-  clippy::semicolon_if_nothing_returned,
   clippy::too_many_lines,
   clippy::trivially_copy_pass_by_ref,
   clippy::unnested_or_patterns,
@@ -69,7 +68,11 @@
 )]
 // !!END_LINTS
 // Add exceptions here
-#![allow(missing_docs, clippy::expect_used)] // TODO
+#![allow(
+  missing_docs, // TODO
+  clippy::expect_used, // because of tokio::main
+  clippy::semicolon_if_nothing_returned // because of tokio::main
+)]
 
 use structopt::clap::AppSettings;
 use structopt::StructOpt;
@@ -110,13 +113,13 @@ pub(crate) struct Cli {
 
 static BIN_NAME: &str = "vow";
 
-#[actix::main]
+#[tokio::main]
 async fn main() {
   let opts = Cli::from_args();
 
   let res = run(opts).await;
 
-  std::process::exit(match res {
+  let result = match res {
     Ok(_) => 0,
     Err(e) => {
       debug!("Error: {:?}", e);
@@ -124,7 +127,9 @@ async fn main() {
       eprintln!("Run with --info, --debug, or --trace for more information.");
       1
     }
-  });
+  };
+
+  std::process::exit(result);
 }
 
 async fn run(opts: Cli) -> Result<()> {

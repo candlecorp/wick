@@ -18,21 +18,21 @@ async fn test_vow_serve() -> utils::TestResult<()> {
     "vow",
     &[
       "serve",
-      "--port=8060",
       "./crates/integration/test-wapc-component/build/test_component_s.wasm",
     ],
     &[],
   )
   .await?;
+  let input_data = "test input";
 
-  let args = json!({ "input" : "test input"});
+  let args = vec![format!("input=\"{}\"", input_data)];
   let actual = vinoc_invoke(&port, "validate", args).await?;
 
   let expected = hashmap! { "output".to_owned() => TransportJson {
       signal: None,
       error_msg: None,
       error_kind: JsonError::None,
-      value: json!("test input"),
+      value: json!(input_data),
     }
   };
 

@@ -1,11 +1,10 @@
 use std::collections::HashMap;
 use std::convert::TryFrom;
+use std::sync::Arc;
 
-use actix::{
-  Addr,
-  SyncArbiter,
-};
 use async_trait::async_trait;
+use parking_lot::RwLock;
+use vino_codec::messagepack::serialize;
 use vino_provider::native::prelude::*;
 use vino_rpc::error::RpcError;
 use vino_rpc::{
@@ -17,11 +16,6 @@ use vino_transport::message_transport::TransportMap;
 
 use crate::wapc_module::WapcModule;
 use crate::wasm_host::WasmHost;
-use crate::wasm_service::{
-  Call,
-  GetComponents,
-  WasmService,
-};
 use crate::Error;
 
 #[derive(Debug, Default)]
@@ -32,19 +26,16 @@ pub struct Context {
 
 #[derive(Clone, Debug)]
 pub struct Provider {
-  context: Addr<WasmService>,
+  host: Arc<RwLock<WasmHost>>,
 }
 
 impl Provider {
-  pub fn try_from_module(module: WapcModule, threads: usize) -> Result<Self, Error> {
+  pub fn try_from_module(module: &WapcModule, threads: usize) -> Result<Self, Error> {
     debug!("WASM:START:{} Threads", threads);
 
-    let addr = SyncArbiter::start(threads, move || {
-      let host = WasmHost::try_from(&module).unwrap();
-      WasmService::new(host)
-    });
+    let host = Arc::new(RwLock::new(WasmHost::try_from(module)?));
 
-    Ok(Self { context: addr })
+    Ok(Self { host })
   }
 }
 
@@ -52,28 +43,21 @@ impl Provider {
 impl RpcHandler for Provider {
   async fn invoke(&self, entity: Entity, payload: TransportMap) -> RpcResult<BoxedTransportStream> {
     trace!("WASM:INVOKE:[{}]", entity);
-    let context = self.context.clone();
     let component = entity.name();
     let messagepack_map = payload
       .try_into_messagepack_bytes()
       .map_err(|e| RpcError::ProviderError(e.to_string()))?;
+    let payload =
+      serialize(&messagepack_map).map_err(|e| RpcError::ProviderError(e.to_string()))?;
 
-    let outputs = context
-      .send(Call {
-        component,
-        payload: messagepack_map,
-      })
-      .await
-      .map_err(|e| RpcError::ProviderError(e.to_string()))??;
+    let outputs = self.host.write().call(&component, &payload)?;
+
     Ok(Box::pin(outputs))
   }
 
   async fn get_list(&self) -> RpcResult<Vec<HostedType>> {
-    let context = self.context.clone();
-    let components = context
-      .send(GetComponents {})
-      .await
-      .map_err(|e| RpcError::ProviderError(e.to_string()))??;
+    let host = self.host.read();
+    let components = host.get_components();
 
     trace!(
       "WASM:COMPONENTS:[{}]",
@@ -84,7 +68,13 @@ impl RpcHandler for Provider {
         .join(",")
     );
 
-    Ok(components.into_iter().map(HostedType::Component).collect())
+    Ok(
+      components
+        .iter()
+        .cloned()
+        .map(HostedType::Component)
+        .collect(),
+    )
   }
 }
 
@@ -100,14 +90,14 @@ mod tests {
 
   use super::*;
 
-  #[test_env_log::test(actix::test)]
+  #[test_env_log::test(tokio::test)]
   async fn test_component() -> TestResult<()> {
     let component = crate::helpers::load_wasm_from_file(&PathBuf::from_str(
       "../integration/test-wapc-component/build/test_component_s.wasm",
     )?)
     .await?;
 
-    let provider = Provider::try_from_module(component, 2)?;
+    let provider = Provider::try_from_module(&component, 2)?;
     let input = "Hello world";
 
     let job_payload = TransportMap::with_map(hashmap! {

@@ -8,6 +8,10 @@ repository = "https://gitlab.com/vino-dev/vino"
 documentation = "https://vino.dev"
 readme = "README.md"
 
+[profile.release]
+opt-level = 3
+lto = true
+
 [dependencies]
 
 [dev-dependencies]
@@ -39,31 +43,16 @@ serde_json = "1.0.64"
 
 [workspace]
 members = [
-  "crates/forks/tokio-test-bin",
-  "crates/forks/wapc-rust",
-  "crates/forks/wasm3-provider",
-  "crates/forks/wasmtime-provider",
-  "crates/interfaces/interface-collection",
-  "crates/interfaces/interface-authentication",
-  "crates/integration/test-interface-collection",
-  "crates/integration/test-interface-authentication",
-  "crates/integration/test-vino-provider",
-  "crates/logger",
-  "crates/oci-utils",
-  "crates/provider-auth-inmemory",
-  "crates/provider-collection-fs",
-  "crates/provider-collection-inmemory",
-  "crates/provider-native-api-0",
-  "crates/vino-cli",
-  "crates/vino-invocation-server",
-  "crates/vino-host",
-  "crates/vino-manifest",
-  "crates/vino-provider-cli",
-  "crates/vino-provider-wasm",
-  "crates/vino-rpc",
-  "crates/vino-runtime",
-  "crates/vino-wascap",
-  "crates/vinoc",
-  "crates/vow",
+  "crates/forks/*",
+  "crates/interfaces/*",
+  "crates/integration/*",
+  "crates/*",
 ]
-exclude = ["crates/integration/test-wapc-component", "sdk/"]
+exclude = [
+  "crates/integration/test-wapc-component",
+  "sdk/",
+  "forks/",
+  "crates/forks",
+  "crates/integration",
+  "crates/interfaces",
+]

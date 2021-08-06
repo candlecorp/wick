@@ -1,3 +1,4 @@
 [submodule "sdk"]
-	path = sdk
-	url = git@github.com:vinodotdev/vino-sdk.git
+path = sdk
+url = git@github.com:vinodotdev/vino-sdk.git
+branch = main

@@ -28,7 +28,7 @@ pub(crate) async fn handle_command(opts: ServeCommand) -> Result<()> {
       .await?;
 
   vino_provider_cli::init_cli(
-    Box::new(Provider::try_from_module(component, 5)?),
+    Box::new(Provider::try_from_module(&component, 5)?),
     Some(opts.cli.into()),
   )
   .await?;

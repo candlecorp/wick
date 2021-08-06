@@ -76,21 +76,25 @@ use tokio::task::JoinHandle;
 pub async fn vinoc_invoke(
   port: &str,
   name: &str,
-  data: Value,
+  data: Vec<String>,
 ) -> Result<Vec<HashMap<String, TransportJson>>, TestError> {
   println!("Executing vinoc for schematic {}", name);
+  let inputs = data
+    .into_iter()
+    .flat_map(|kv| vec!["--data".to_owned(), kv])
+    .collect::<Vec<String>>();
+  println!("Inputs: {:?}", inputs);
   let mut bin = tokio_test_bin::get_test_bin("vinoc");
   let proc = bin
     .env_clear()
-    .env("VINO_LOG", "trace")
     .args([
       "invoke",
       name,
-      &serde_json::to_string(&data)?,
       "--port",
       port.to_string().as_str(),
       "--trace",
     ])
+    .args(inputs)
     .stderr(Stdio::inherit());
   println!("Command is {:?}", proc);
   let vinoc_output = proc.output().await?;

@@ -39,8 +39,12 @@ async fn test_collection() -> utils::TestResult<()> {
   let doc_id = "some_document";
   let document = "this is a document";
 
-  let args = json!({ "collection_id" : collection_id, "document_id": doc_id, "document": document});
-  println!("Storing document: {}", args);
+  let args = vec![
+    format!("collection_id=\"{}\"", collection_id),
+    format!("document_id=\"{}\"", doc_id),
+    format!("document=\"{}\"", document),
+  ];
+  println!("Storing document: {:?}", args);
   let result_add = vinoc_invoke(&h_port, "add", args).await?;
   println!("Result: {:?}", result_add);
 
@@ -52,9 +56,11 @@ async fn test_collection() -> utils::TestResult<()> {
       value: json!("some_document"),
     }
   };
-
-  let args = json!({ "collection_id" : collection_id, "document_id": doc_id});
-  println!("Getting document: {}", args);
+  let args = vec![
+    format!("collection_id=\"{}\"", collection_id),
+    format!("document_id=\"{}\"", doc_id),
+  ];
+  println!("Getting document: {:?}", args);
   let result_get = vinoc_invoke(&h_port, "get", args).await?;
   println!("Result: {:?}", result_get);
 
@@ -66,8 +72,8 @@ async fn test_collection() -> utils::TestResult<()> {
     value: json!(document),
   }};
 
-  let args = json!({ "collection_id": collection_id });
-  println!("Listing documents: {}", args);
+  let args = vec![format!("collection_id=\"{}\"", collection_id)];
+  println!("Listing documents: {:?}", args);
   let result_list = vinoc_invoke(&h_port, "list", args).await?;
   println!("Result: {:?}", result_list);
 

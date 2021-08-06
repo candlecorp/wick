@@ -30,7 +30,7 @@ pub struct InvokeCommand {
 
   /// A port=value string where value is JSON to pass as input.
   #[structopt(long, short)]
-  input: Vec<String>,
+  data: Vec<String>,
 }
 
 pub async fn handle_command(opts: InvokeCommand) -> Result<()> {
@@ -45,7 +45,7 @@ pub async fn handle_command(opts: InvokeCommand) -> Result<()> {
   )
   .await?;
 
-  if opts.input.is_empty() {
+  if opts.data.is_empty() {
     if atty::is(atty::Stream::Stdin) {
       eprintln!("No input passed, reading from <STDIN>");
     }
@@ -58,7 +58,7 @@ pub async fn handle_command(opts: InvokeCommand) -> Result<()> {
       print_stream_json(stream, opts.raw).await?;
     }
   } else {
-    let mut payload = TransportMap::from_kv_json(&opts.input)?;
+    let mut payload = TransportMap::from_kv_json(&opts.data)?;
     if !opts.raw {
       payload.transpose_output_name();
     }

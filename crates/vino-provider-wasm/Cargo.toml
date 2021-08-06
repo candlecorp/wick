@@ -6,9 +6,9 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-default = ["wasm3"]
+default = ["wasmtime"]
 wasmtime = ["wasmtime-provider"]
-wasm3 = ["wasm3-provider"]
+# wasm3 = ["wasm3-provider"]
 
 [dependencies]
 vino-rpc = { path = "../vino-rpc" }
@@ -23,16 +23,11 @@ vino-types = { path = "../../sdk/crates/vino-types" }
 vino-macros = { path = "../../sdk/crates/vino-macros" }
 oci-utils = { path = "../oci-utils" }
 structopt = "0.3.22"
-actix-rt = "2.2.0"
-actix = "0.12.0"
 serde_json = "1.0.64"
 derivative = "2.2.0"
 tokio = { version = "1.4.0", features = ["fs"] }
 parking_lot = "0.11.1"
 
-# wasm3-provider = { version="0.0.2", optional=true }
-# wasmtime-provider = { version = "0.0.3", optional = true }
-wasm3-provider = { path = "../forks/wasm3-provider", optional = true }
 wasmtime-provider = { path = "../forks/wasmtime-provider", optional = true }
 wapc = { path = "../forks/wapc-rust" }
 

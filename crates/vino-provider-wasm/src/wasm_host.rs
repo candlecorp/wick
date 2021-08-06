@@ -50,22 +50,12 @@ impl TryFrom<&WapcModule> for WasmHost {
     vino_wascap::validate_token::<ComponentClaims>(jwt).map_err(Error::ClaimsError)?;
 
     let time = Instant::now();
-    #[cfg(feature = "wasmtime")]
-    #[allow(unused)]
+
     let engine = {
-      let engine = wasmtime_provider::WasmtimeEngineProvider::new(&module.bytes, None);
+      let engine =
+        wasmtime_provider::WasmtimeEngineProvider::new(&module.bytes, None, None).unwrap();
       trace!(
-        "WASM:Wasmtime thread loaded in {} μs",
-        time.elapsed().as_micros()
-      );
-      engine
-    };
-    #[cfg(feature = "wasm3")]
-    #[allow(unused)]
-    let engine = {
-      let engine = wasm3_provider::Wasm3EngineProvider::new(&module.bytes);
-      trace!(
-        "WASM:wasm3 thread loaded in {} μs",
+        "WASM:Wasmtime instance loaded in {} μs",
         time.elapsed().as_micros()
       );
       engine
@@ -110,16 +100,11 @@ impl TryFrom<&WapcModule> for WasmHost {
         Err(_) => Err("Invalid signal".into()),
       }
     })?;
-    #[cfg(feature = "wasmtime")]
     debug!(
-      "WASM:Wasmtime thread initialized in {} μs",
+      "WASM:Wasmtime initialized in {} μs",
       time.elapsed().as_micros()
     );
-    #[cfg(feature = "wasm3")]
-    debug!(
-      "WASM:Wasm3 thread initialized in {} μs",
-      time.elapsed().as_micros()
-    );
+
     Ok(Self {
       claims: module.claims().clone(),
       host,

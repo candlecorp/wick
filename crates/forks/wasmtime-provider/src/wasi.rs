@@ -5,6 +5,7 @@ use std::path::{
   PathBuf,
 };
 
+use cap_std::ambient_authority;
 use cap_std::fs::Dir;
 use wasi_common::WasiCtx;
 
@@ -31,11 +32,17 @@ pub(crate) fn compute_preopen_dirs(
   let mut preopen_dirs = Vec::new();
 
   for dir in dirs.iter() {
-    preopen_dirs.push((dir.clone(), unsafe { Dir::open_ambient_dir(dir)? }));
+    preopen_dirs.push((
+      dir.clone(),
+      Dir::open_ambient_dir(dir, ambient_authority())?,
+    ));
   }
 
   for (guest, host) in map_dirs.iter() {
-    preopen_dirs.push((guest.clone(), unsafe { Dir::open_ambient_dir(host)? }));
+    preopen_dirs.push((
+      guest.clone(),
+      Dir::open_ambient_dir(host, ambient_authority())?,
+    ));
   }
 
   Ok(preopen_dirs)

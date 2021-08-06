@@ -1,5 +1,3 @@
-use std::error::Error;
-
 use parking_lot::Mutex;
 use wapc::{
   ModuleState,
@@ -10,6 +8,7 @@ use wapc::{
 };
 use wasmtime::{
   AsContextMut,
+  Config,
   Engine,
   Extern,
   ExternType,
@@ -25,6 +24,8 @@ use wasmtime_wasi::WasiCtx;
 const WASI_UNSTABLE_NAMESPACE: &str = "wasi_unstable";
 const WASI_SNAPSHOT_PREVIEW1_NAMESPACE: &str = "wasi_snapshot_preview1";
 
+use std::error::Error;
+use std::path::Path;
 use std::sync::{
   Arc,
   RwLock,
@@ -59,8 +60,19 @@ pub struct WasmtimeEngineProvider {
 
 impl WasmtimeEngineProvider {
   /// Creates a new instance of the wasmtime provider
-  pub fn new(buf: &[u8], wasi: Option<WasiParams>) -> WasmtimeEngineProvider {
-    let engine = Engine::default();
+  pub fn new(
+    buf: &[u8],
+    wasi: Option<WasiParams>,
+    cache_path: Option<&Path>,
+  ) -> anyhow::Result<WasmtimeEngineProvider> {
+    let mut config = Config::new();
+    config.strategy(wasmtime::Strategy::Cranelift)?;
+    if let Some(cache) = cache_path {
+      config.cache_config_load(cache)?;
+    } else if let Err(e) = config.cache_config_load_default() {
+      warn!("Wasmtime cache configuration not found ({}). Repeated loads will speed up significantly with a cache configuration. See https://docs.wasmtime.dev/cli-cache.html for more information.",e);
+    }
+    let engine = Engine::new(&config)?;
     let mut linker: Linker<WapcStore> = Linker::new(&engine);
     wasmtime_wasi::add_to_linker(&mut linker, |s| &mut s.wasi_ctx).unwrap();
     let wasi_default = WasiParams::default();
@@ -72,13 +84,13 @@ impl WasmtimeEngineProvider {
     )
     .unwrap();
     let store = Store::new(&engine, WapcStore { wasi_ctx });
-    WasmtimeEngineProvider {
+    Ok(WasmtimeEngineProvider {
       inner: None,
       modbytes: buf.to_vec(),
       store,
       engine,
       linker,
-    }
+    })
   }
 }
 
