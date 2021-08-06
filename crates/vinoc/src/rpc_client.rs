@@ -122,19 +122,38 @@ impl RpcClient {
     Ok(result.into_inner())
   }
 
-  pub(crate) async fn invoke(
+  pub(crate) async fn invoke_raw(
     &mut self,
     request: vino_rpc::rpc::Invocation,
   ) -> Result<tonic::Streaming<vino_rpc::rpc::Output>, RpcClientError> {
     debug!("Making list request");
     let result = self.inner.invoke(request).await?;
-    debug!("List result: {:?}", result);
+    debug!("Invocation result: {:?}", result);
     Ok(result.into_inner())
+  }
+
+  pub(crate) async fn invoke(
+    &mut self,
+    component: String,
+    payload: TransportMap,
+  ) -> Result<tonic::Streaming<vino_rpc::rpc::Output>, RpcClientError> {
+    let kp = KeyPair::new_server();
+
+    let rpc_invocation: vino_rpc::rpc::Invocation = Invocation::new(
+      Entity::client(kp.public_key()),
+      Entity::component_direct(component),
+      payload,
+    )
+    .try_into()?;
+
+    let stream = self.invoke_raw(rpc_invocation).await?;
+
+    Ok(stream)
   }
 
   pub(crate) async fn invoke_from_json(
     &mut self,
-    schematic: String,
+    component: String,
     data: &str,
     transpose: bool,
   ) -> Result<tonic::Streaming<vino_rpc::rpc::Output>, RpcClientError> {
@@ -143,17 +162,6 @@ impl RpcClient {
       payload.transpose_output_name();
     }
 
-    let kp = KeyPair::new_server();
-
-    let rpc_invocation: vino_rpc::rpc::Invocation = Invocation::new(
-      Entity::client(kp.public_key()),
-      Entity::component_direct(schematic),
-      payload,
-    )
-    .try_into()?;
-
-    let stream = self.invoke(rpc_invocation).await?;
-
-    Ok(stream)
+    self.invoke(component, payload).await
   }
 }

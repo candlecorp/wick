@@ -13,7 +13,6 @@ use vino_provider_cli::LoggingOptions;
 use vino_provider_wasm::provider::Provider;
 use vino_rpc::RpcHandler;
 use vino_transport::message_transport::stream::map_to_json;
-use vino_transport::MessageTransport;
 
 use crate::error::VowError;
 use crate::Result;
@@ -39,7 +38,7 @@ pub(crate) struct RunCommand {
 
   /// A port=value string where value is JSON to pass as input.
   #[structopt(long, short)]
-  port: Vec<String>,
+  input: Vec<String>,
 }
 
 pub(crate) async fn handle_command(opts: RunCommand) -> Result<()> {
@@ -52,7 +51,7 @@ pub(crate) async fn handle_command(opts: RunCommand) -> Result<()> {
 
   let provider = Provider::try_from_module(component, 1)?;
 
-  if opts.port.is_empty() {
+  if opts.input.is_empty() {
     if atty::is(atty::Stream::Stdin) {
       eprintln!("No input passed, reading from <STDIN>");
     }
@@ -72,19 +71,7 @@ pub(crate) async fn handle_command(opts: RunCommand) -> Result<()> {
       print_stream_json(stream, opts.raw).await?;
     }
   } else {
-    let mut payload = TransportMap::new();
-    for input in opts.port {
-      match input.split_once("=") {
-        Some((name, value)) => {
-          debug!("PORT:'{}', VALUE:'{}'", name, value);
-          payload.insert(name, MessageTransport::Json(value.to_owned()));
-        }
-        None => {
-          error!("--port values need to be in port=value format, e.g. '--port input=my message'");
-          continue;
-        }
-      }
-    }
+    let mut payload = TransportMap::from_kv_json(&opts.input)?;
     payload.transpose_output_name();
     let stream = provider
       .invoke(

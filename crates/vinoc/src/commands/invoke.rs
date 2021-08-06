@@ -5,7 +5,10 @@ use tokio::io::{
   BufReader,
 };
 use vino_rpc::rpc::Output;
-use vino_transport::TransportWrapper;
+use vino_transport::{
+  TransportMap,
+  TransportWrapper,
+};
 
 use crate::rpc_client::rpc_client;
 use crate::Result;
@@ -25,8 +28,9 @@ pub struct InvokeCommand {
   /// Schematic to invoke.
   pub schematic: String,
 
-  /// JSON map of data to use as the component payload.
-  data: Vec<String>,
+  /// A port=value string where value is JSON to pass as input.
+  #[structopt(long, short)]
+  input: Vec<String>,
 }
 
 pub async fn handle_command(opts: InvokeCommand) -> Result<()> {
@@ -41,7 +45,7 @@ pub async fn handle_command(opts: InvokeCommand) -> Result<()> {
   )
   .await?;
 
-  if opts.data.is_empty() {
+  if opts.input.is_empty() {
     if atty::is(atty::Stream::Stdin) {
       eprintln!("No input passed, reading from <STDIN>");
     }
@@ -49,17 +53,17 @@ pub async fn handle_command(opts: InvokeCommand) -> Result<()> {
     let mut lines = reader.lines();
     while let Some(line) = lines.next_line().await? {
       let stream = client
-        .invoke_from_json(opts.schematic.clone(), &line, opts.raw)
+        .invoke_from_json(opts.schematic.clone(), &line, !opts.raw)
         .await?;
       print_stream_json(stream, opts.raw).await?;
     }
   } else {
-    for message in opts.data {
-      let stream = client
-        .invoke_from_json(opts.schematic.clone(), &message, opts.raw)
-        .await?;
-      print_stream_json(stream, opts.raw).await?;
+    let mut payload = TransportMap::from_kv_json(&opts.input)?;
+    if !opts.raw {
+      payload.transpose_output_name();
     }
+    let stream = client.invoke(opts.schematic.clone(), payload).await?;
+    print_stream_json(stream, opts.raw).await?;
   }
 
   Ok(())
@@ -69,7 +73,10 @@ async fn print_stream_json(mut stream: tonic::Streaming<Output>, raw: bool) -> R
   while let Some(message) = stream.message().await? {
     let wrapper: TransportWrapper = message.into();
     if wrapper.payload.is_signal() && !raw {
-      debug!("STDIN is interactive, skipping signal: {}", wrapper.payload);
+      debug!(
+        "Skipping signal '{}' in output, pass --raw to print.",
+        wrapper.payload
+      );
     } else {
       println!("{}", wrapper.into_json());
     }
