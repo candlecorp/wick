@@ -60,28 +60,31 @@ pub mod prelude {
 use crate::OutputSignal;
 
 /// Send a [Packet] out the named port.
-pub fn port_send(port_name: &str, packet: v0::Payload) -> CallResult {
+pub fn port_send(port_name: &str, packet: v0::Payload) -> Result<()> {
   host_call(
     "",
     port_name,
     OutputSignal::Output.as_str(),
     &serialize(&Packet::V0(packet))?,
-  )
+  )?;
+  Ok(())
 }
 
 /// Send a [Packet] out the named port and immediately close it.
-pub fn port_send_close(port_name: &str, packet: v0::Payload) -> CallResult {
+pub fn port_send_close(port_name: &str, packet: v0::Payload) -> Result<()> {
   host_call(
     "",
     port_name,
     OutputSignal::OutputDone.as_str(),
     &serialize(&Packet::V0(packet))?,
-  )
+  )?;
+  Ok(())
 }
 
 /// Close the referenced port.
-pub fn port_close(port_name: &str) -> CallResult {
-  host_call("", port_name, OutputSignal::Done.as_str(), &[])
+pub fn port_close(port_name: &str) -> Result<()> {
+  host_call("", port_name, OutputSignal::Done.as_str(), &[])?;
+  Ok(())
 }
 
 /// The function through which all host calls take place.

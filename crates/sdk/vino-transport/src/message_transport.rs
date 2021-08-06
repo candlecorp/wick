@@ -127,11 +127,11 @@ impl TransportMap {
     if json.trim() == "" {
       Ok(TransportMap::new())
     } else {
-      let json: HashMap<String, serde_value::Value> = json::deserialize(json).map_err(de_err)?;
+      let json: HashMap<String, TransportJson> = json::deserialize(json).map_err(de_err)?;
       Ok(TransportMap::with_map(
         json
           .into_iter()
-          .map(|(name, val)| (name, MessageTransport::Success(val)))
+          .map(|(name, val)| (name, val.into()))
           .collect(),
       ))
     }
@@ -217,17 +217,25 @@ impl TransportMap {
   /// by serializing success formats or throwing an error.
   pub fn try_into_messagepack_bytes(self) -> Result<HashMap<String, Vec<u8>>> {
     let mut map = HashMap::new();
-    let err = Error::SerializationError(
-      "Transport map contained payloads that could not be serialized.".to_owned(),
-    );
     for (k, v) in self.0 {
-      let e = Err(err.clone());
       let bytes = match v {
-        MessageTransport::Invalid => e,
-        MessageTransport::Exception(_) => e,
-        MessageTransport::Error(_) => e,
-        MessageTransport::Test(_) => e,
-        MessageTransport::Signal(_) => e,
+        MessageTransport::Invalid => Err(Error::SerializationError(
+          "Refusing to serialize an invalid payload".to_owned(),
+        )),
+        MessageTransport::Exception(e) => Err(Error::SerializationError(format!(
+          "Exceptions need to be processed by a runtime, not sent to components. Error was: {}",
+          e
+        ))),
+        MessageTransport::Error(e) => Err(Error::SerializationError(format!(
+          "Errors need to be processed by a runtime, not sent to components. Error was: {}",
+          e
+        ))),
+        MessageTransport::Test(_) => Err(Error::SerializationError(
+          "Refusing to serialize a test payload.".to_owned(),
+        )),
+        MessageTransport::Signal(_) => Err(Error::SerializationError(
+          "Signal messages need to be processed by a runtime, not sent to components.".to_owned(),
+        )),
         MessageTransport::MessagePack(bytes) => Ok(bytes),
         MessageTransport::Success(v) => {
           let bytes = messagepack::serialize(&v).map_err(ser_err)?;
@@ -273,6 +281,32 @@ pub struct TransportJson {
 
   /// The return value.
   pub value: serde_json::Value,
+}
+
+impl From<TransportJson> for MessageTransport {
+  fn from(v: TransportJson) -> Self {
+    match v.error_kind {
+      JsonError::None => match v.signal {
+        Some(signal) => MessageTransport::Signal(signal),
+        None => {
+          // We just parsed JSON and are now turning part of it
+          // back into JSON which doesn't feel good. This is only
+          // used for command line testing and piping but if it ends
+          // up being used for more it will need to be better handled.
+          MessageTransport::Json(v.value.to_string())
+        }
+      },
+      JsonError::Exception => match v.error_msg {
+        Some(err) => MessageTransport::Exception(err),
+        None => MessageTransport::Exception("<No message passed with exception>".to_owned()),
+      },
+      JsonError::Error => match v.error_msg {
+        Some(err) => MessageTransport::Error(err),
+        None => MessageTransport::Error("<No message passed with exception>".to_owned()),
+      },
+      JsonError::InternalError => MessageTransport::Error("Internal Error (10001)".to_owned()),
+    }
+  }
 }
 
 /// The kinds of errors that a [TransportJson] can carry
