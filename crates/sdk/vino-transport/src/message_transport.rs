@@ -137,6 +137,26 @@ impl TransportMap {
     }
   }
 
+  /// Turn a list of "field=value" strings into a [TransportMap] of [MessageTransport::Json] items.
+  pub fn from_kv_json(values: &[String]) -> Result<Self> {
+    let mut payload = TransportMap::new();
+    for input in values {
+      match input.split_once("=") {
+        Some((name, value)) => {
+          debug!("PORT:'{}', VALUE:'{}'", name, value);
+          payload.insert(name, MessageTransport::Json(value.to_owned()));
+        }
+        None => {
+          return Err(Error::DeserializationError(format!(
+            "Invalid port=value pair: '{}'",
+            input
+          )))
+        }
+      }
+    }
+    Ok(payload)
+  }
+
   /// Insert a [MessageTransport] by port name
   pub fn insert<T: AsRef<str>>(
     &mut self,
