@@ -12,13 +12,15 @@ wasm3 = ["wasm3-provider"]
 
 [dependencies]
 vino-rpc = { path = "../vino-rpc" }
-vino-packet = { path = "../vino-packet" }
-vino-codec = { path = "../vino-codec" }
+vino-packet = { path = "../../sdk/crates/vino-packet" }
+vino-codec = { path = "../../sdk/crates/vino-codec" }
 vino-wascap = { path = "../vino-wascap" }
-vino-provider = { path = "../vino-provider", features = ["native"] }
-vino-transport = { path = "../vino-transport" }
-vino-types = { path = "../vino-types" }
-vino-macros = { path = "../vino-macros" }
+vino-provider = { path = "../../sdk/crates/vino-provider", features = [
+  "native",
+] }
+vino-transport = { path = "../../sdk/crates/vino-transport" }
+vino-types = { path = "../../sdk/crates/vino-types" }
+vino-macros = { path = "../../sdk/crates/vino-macros" }
 oci-utils = { path = "../oci-utils" }
 structopt = "0.3.22"
 actix-rt = "2.2.0"

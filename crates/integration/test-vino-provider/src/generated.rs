@@ -120,7 +120,7 @@ pub(crate) mod test_component {
   impl Default for OutputPortSender {
     fn default() -> Self {
       Self {
-        port: PortChannel::new("output".into()),
+        port: PortChannel::new("output"),
       }
     }
   }

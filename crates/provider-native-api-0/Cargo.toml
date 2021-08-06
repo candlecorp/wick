@@ -6,10 +6,12 @@ edition = "2018"
 license = "BSD-3-Clause"
 
 [dependencies]
-vino-provider = { path = "../vino-provider", features = ["native"] }
+vino-provider = { path = "../../sdk/crates/vino-provider", features = [
+  "native",
+] }
 vino-rpc = { path = "../vino-rpc" }
-vino-packet = { path = "../vino-packet" }
-vino-entity = { path = "../vino-entity" }
+vino-packet = { path = "../../sdk/crates/vino-packet" }
+vino-entity = { path = "../../sdk/crates/vino-entity" }
 log = "0.4"
 serde = { version = "1.0.118", features = ["derive"] }
 async-trait = "0.1.50"
@@ -22,4 +24,4 @@ uuid = { version = "0.8.2", features = ["v4"] }
 maplit = "1.0.2"
 test-env-log = "0.2.7"
 env_logger = "0.9"
-vino-transport = { path = "../vino-transport" }
+vino-transport = { path = "../../sdk/crates/vino-transport" }

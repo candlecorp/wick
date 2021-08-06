@@ -10,14 +10,16 @@ license = "BSD-3-Clause"
 [dependencies]
 vino-runtime = { path = "../vino-runtime" }
 vino-manifest = { path = "../vino-manifest" }
-vino-transport = { path = "../vino-transport" }
-vino-provider = { path = "../vino-provider", features = ["native"] }
+vino-transport = { path = "../../sdk/crates/vino-transport" }
+vino-provider = { path = "../../sdk/crates/vino-provider", features = [
+  "native",
+] }
 vino-provider-cli = { path = "../vino-provider-cli" }
-vino-codec = { path = "../vino-codec" }
+vino-codec = { path = "../../sdk/crates/vino-codec" }
 vino-rpc = { path = "../vino-rpc" }
 vino-invocation-server = { path = "../vino-invocation-server" }
-vino-entity = { path = "../vino-entity" }
-vino-macros = { path = "../vino-macros" }
+vino-entity = { path = "../../sdk/crates/vino-entity" }
+vino-macros = { path = "../../sdk/crates/vino-macros" }
 log = "0.4"
 actix = "0.12"
 actix-rt = "2.1.0"

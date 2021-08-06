@@ -145,7 +145,7 @@ pub(crate) mod add {
   impl Default for OutputPortSender {
     fn default() -> Self {
       Self {
-        port: PortChannel::new("output".into()),
+        port: PortChannel::new("output"),
       }
     }
   }
@@ -260,7 +260,7 @@ pub(crate) mod concatenate {
   impl Default for OutputPortSender {
     fn default() -> Self {
       Self {
-        port: PortChannel::new("output".into()),
+        port: PortChannel::new("output"),
       }
     }
   }
@@ -372,7 +372,7 @@ pub(crate) mod error {
   impl Default for OutputPortSender {
     fn default() -> Self {
       Self {
-        port: PortChannel::new("output".into()),
+        port: PortChannel::new("output"),
       }
     }
   }
@@ -484,7 +484,7 @@ pub(crate) mod log {
   impl Default for OutputPortSender {
     fn default() -> Self {
       Self {
-        port: PortChannel::new("output".into()),
+        port: PortChannel::new("output"),
       }
     }
   }
@@ -596,7 +596,7 @@ pub(crate) mod short_circuit {
   impl Default for OutputPortSender {
     fn default() -> Self {
       Self {
-        port: PortChannel::new("output".into()),
+        port: PortChannel::new("output"),
       }
     }
   }
@@ -708,7 +708,7 @@ pub(crate) mod string_to_bytes {
   impl Default for OutputPortSender {
     fn default() -> Self {
       Self {
-        port: PortChannel::new("output".into()),
+        port: PortChannel::new("output"),
       }
     }
   }
@@ -815,7 +815,7 @@ pub(crate) mod uuid {
   impl Default for OutputPortSender {
     fn default() -> Self {
       Self {
-        port: PortChannel::new("output".into()),
+        port: PortChannel::new("output"),
       }
     }
   }

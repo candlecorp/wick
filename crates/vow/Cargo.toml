@@ -10,12 +10,14 @@ license = "BSD-3-Clause"
 vino-runtime = { path = "../vino-runtime" }
 vino-rpc = { path = "../vino-rpc" }
 vino-provider-cli = { path = "../vino-provider-cli" }
-vino-packet = { path = "../vino-packet" }
-vino-codec = { path = "../vino-codec" }
+vino-packet = { path = "../../sdk/crates/vino-packet" }
+vino-codec = { path = "../../sdk/crates/vino-codec" }
 vino-wascap = { path = "../vino-wascap" }
-vino-provider = { path = "../vino-provider", features = ["native"] }
+vino-provider = { path = "../../sdk/crates/vino-provider", features = [
+  "native",
+] }
 vino-provider-wasm = { path = "../vino-provider-wasm" }
-vino-transport = { path = "../vino-transport" }
+vino-transport = { path = "../../sdk/crates/vino-transport" }
 
 structopt = "0.3.22"
 serde_json = "1.0.64"

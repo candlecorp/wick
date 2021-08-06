@@ -9,14 +9,14 @@ license = "BSD-3-Clause"
 [dependencies]
 wascap = { version = "0.6.1" }
 serde = { version = "1.0.118", features = ["derive"] }
-vino-types = { path = "../vino-types" }
+vino-types = { path = "../../sdk/crates/vino-types" }
 thiserror = "1.0.25"
 parity-wasm = "0.42.1"
 data-encoding = "2.3.2"
 ring = "0.16.20"
 nuid = "0.3.0"
 log = "0.4"
-vino-macros = { path = "../vino-macros" }
+vino-macros = { path = "../../sdk/crates/vino-macros" }
 
 [dev-dependencies]
 criterion = { version = "0.3", features = [] }

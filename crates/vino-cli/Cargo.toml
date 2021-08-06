@@ -8,7 +8,7 @@ license = "BSD-3-Clause"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-vino-packet = { path = "../vino-packet" }
+vino-packet = { path = "../../sdk/crates/vino-packet" }
 log = "0.4.11"
 actix = "0.12.0"
 actix-rt = "2.2.0"
@@ -22,10 +22,10 @@ thiserror = "1.0.24"
 logger = { path = "../logger" }
 vino-provider-cli = { path = "../vino-provider-cli" }
 vino-runtime = { path = "../vino-runtime" }
-vino-transport = { path = "../vino-transport" }
+vino-transport = { path = "../../sdk/crates/vino-transport" }
 vino-host = { path = "../vino-host" }
 vino-manifest = { path = "../vino-manifest" }
-vino-codec = { path = "../vino-codec" }
+vino-codec = { path = "../../sdk/crates/vino-codec" }
 tokio = { version = "1.4.0", features = ["macros", "rt-multi-thread"] }
 
 [dev-dependencies]

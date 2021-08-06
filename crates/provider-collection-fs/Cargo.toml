@@ -11,11 +11,13 @@ path = "src/main.rs"
 
 [dependencies]
 thiserror = "1.0.25"
-vino-provider = { path = "../vino-provider", features = ["native"] }
+vino-provider = { path = "../../sdk/crates/vino-provider", features = [
+  "native",
+] }
 vino-provider-cli = { path = "../vino-provider-cli" }
-vino-packet = { path = "../vino-packet" }
+vino-packet = { path = "../../sdk/crates/vino-packet" }
 vino-rpc = { path = "../vino-rpc" }
-vino-macros = { path = "../vino-macros" }
+vino-macros = { path = "../../sdk/crates/vino-macros" }
 vino-interface-collection = { path = "../interfaces/interface-collection" }
 serde = { version = "1.0.118", features = ["derive"] }
 async-trait = "0.1.50"

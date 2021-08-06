@@ -67,7 +67,7 @@ pub mod add_item {
   impl Default for DocumentIdPortSender {
     fn default() -> Self {
       Self {
-        port: PortChannel::new("document_id".into()),
+        port: PortChannel::new("document_id"),
       }
     }
   }
@@ -153,7 +153,7 @@ pub mod get_item {
   impl Default for DocumentPortSender {
     fn default() -> Self {
       Self {
-        port: PortChannel::new("document".into()),
+        port: PortChannel::new("document"),
       }
     }
   }
@@ -236,7 +236,7 @@ pub mod list_items {
   impl Default for DocumentIdsPortSender {
     fn default() -> Self {
       Self {
-        port: PortChannel::new("document_ids".into()),
+        port: PortChannel::new("document_ids"),
       }
     }
   }

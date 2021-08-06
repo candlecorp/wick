@@ -303,7 +303,7 @@ dependencies = [
 
 [[package]]
 name = "vino-codec"
-version = "0.1.0"
+version = "0.6.2"
 dependencies = [
  "rmp-serde",
  "serde",
@@ -314,7 +314,7 @@ dependencies = [
 
 [[package]]
 name = "vino-entity"
-version = "0.1.0"
+version = "0.6.2"
 dependencies = [
  "serde",
  "thiserror",
@@ -324,7 +324,7 @@ dependencies = [
 
 [[package]]
 name = "vino-macros"
-version = "0.1.0"
+version = "0.6.2"
 dependencies = [
  "lazy_static",
  "log",
@@ -333,7 +333,7 @@ dependencies = [
 
 [[package]]
 name = "vino-packet"
-version = "0.1.0"
+version = "0.6.2"
 dependencies = [
  "serde",
  "serde-value",
@@ -342,7 +342,7 @@ dependencies = [
 
 [[package]]
 name = "vino-provider"
-version = "0.1.0"
+version = "0.6.2"
 dependencies = [
  "serde",
  "vino-codec",
@@ -353,7 +353,7 @@ dependencies = [
 
 [[package]]
 name = "vino-transport"
-version = "0.1.0"
+version = "0.6.2"
 dependencies = [
  "lazy_static",
  "log",

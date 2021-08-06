@@ -6,18 +6,20 @@ edition = "2018"
 license = "BSD-3-Clause"
 
 [dependencies]
-vino-packet = { path = "../vino-packet" }
-vino-macros = { path = "../vino-macros" }
+vino-packet = { path = "../../sdk/crates/vino-packet" }
+vino-macros = { path = "../../sdk/crates/vino-macros" }
 vino-manifest = { path = "../vino-manifest" }
-vino-provider = { path = "../vino-provider", features = ["native"] }
+vino-provider = { path = "../../sdk/crates/vino-provider", features = [
+  "native",
+] }
 vino-provider-wasm = { path = "../vino-provider-wasm" }
 vino-native-api-0 = { path = "../provider-native-api-0" }
-vino-transport = { path = "../vino-transport" }
-vino-codec = { path = "../vino-codec" }
+vino-transport = { path = "../../sdk/crates/vino-transport" }
+vino-codec = { path = "../../sdk/crates/vino-codec" }
 vino-wascap = { path = "../vino-wascap" }
 vino-rpc = { path = "../vino-rpc" }
-vino-entity = { path = "../vino-entity" }
-vino-types = { path = "../vino-types" }
+vino-entity = { path = "../../sdk/crates/vino-entity" }
+vino-types = { path = "../../sdk/crates/vino-types" }
 vino-invocation-server = { path = "../vino-invocation-server" }
 
 serde = { version = "1.0.118", features = ["derive"] }

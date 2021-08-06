@@ -36,6 +36,36 @@
       ]
     },
     {
+      "name": "reverse",
+      "inputs": [
+        {
+          "name": "input",
+          "type_string": "string"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "output",
+          "type_string": "string"
+        }
+      ]
+    },
+    {
+      "name": "uppercase",
+      "inputs": [
+        {
+          "name": "input",
+          "type_string": "string"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "output",
+          "type_string": "string"
+        }
+      ]
+    },
+    {
       "name": "validate",
       "inputs": [
         {

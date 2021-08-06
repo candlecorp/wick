@@ -8,9 +8,9 @@ license = "Apache-2.0"
 
 [dependencies]
 vino-runtime = { path = "../../crates/vino-runtime" }
-vino-transport = { path = "../../crates/vino-transport" }
+vino-transport = { path = "../../sdk/crates/vino-transport" }
 vino-manifest = { path = "../../crates/vino-manifest" }
-vino-codec = { path = "../../crates/vino-codec" }
+vino-codec = { path = "../../sdk/crates/vino-codec" }
 vino-wascap = { path = "../../crates/vino-wascap" }
 anyhow = "1.0.26"
 maplit = "1.0.2"

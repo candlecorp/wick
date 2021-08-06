@@ -48,6 +48,7 @@ async fn test_collection() -> utils::TestResult<()> {
     "document_id".to_owned() => TransportJson {
       error_msg: None,
       error_kind: JsonError::None,
+      signal: None,
       value: json!("some_document"),
     }
   };
@@ -61,6 +62,7 @@ async fn test_collection() -> utils::TestResult<()> {
     "document".to_owned() => TransportJson {
     error_msg: None,
     error_kind: JsonError::None,
+    signal: None,
     value: json!(document),
   }};
 
@@ -73,6 +75,7 @@ async fn test_collection() -> utils::TestResult<()> {
       "document_ids".to_owned() => TransportJson {
       error_msg: None,
       error_kind: JsonError::None,
+      signal: None,
       value: json!([doc_id]),
     }
   };

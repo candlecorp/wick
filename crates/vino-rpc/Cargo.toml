@@ -7,13 +7,15 @@ license = "BSD-3-Clause"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-vino-packet = { path = "../vino-packet" }
-vino-codec = { path = "../vino-codec" }
-vino-entity = { path = "../vino-entity" }
-vino-transport = { path = "../vino-transport" }
-vino-types = { path = "../vino-types" }
-vino-provider = { path = "../vino-provider", features = ["native"] }
-vino-macros = { path = "../vino-macros" }
+vino-packet = { path = "../../sdk/crates/vino-packet" }
+vino-codec = { path = "../../sdk/crates/vino-codec" }
+vino-entity = { path = "../../sdk/crates/vino-entity" }
+vino-transport = { path = "../../sdk/crates/vino-transport" }
+vino-types = { path = "../../sdk/crates/vino-types" }
+vino-provider = { path = "../../sdk/crates/vino-provider", features = [
+  "native",
+] }
+vino-macros = { path = "../../sdk/crates/vino-macros" }
 
 tonic = { version = "0.5.0", features = ["tls"] }
 prost = "0.8.0"

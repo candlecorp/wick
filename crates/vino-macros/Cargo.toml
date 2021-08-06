@@ -13,6 +13,6 @@ exclude = ["tests/*", ".github/*", ".gitignore"]
 maintenance = { status = "actively-developed" }
 
 [dependencies]
-vino-transport = { path = "../vino-transport" }
+vino-transport = { path = "../../sdk/crates/vino-transport" }
 log = "0.4"
 lazy_static = "1.4.0"

@@ -15,6 +15,8 @@ guest = []
 
 [dependencies]
 serde = { version = "1.0.126", features = ["derive"] }
-vino-provider = { path = "../../vino-provider", features = ["wasm"] }
+vino-provider = { path = "../../../sdk/crates/vino-provider", features = [
+  "wasm",
+] }
 
 [dev-dependencies]

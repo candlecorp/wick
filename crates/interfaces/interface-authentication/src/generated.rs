@@ -68,7 +68,7 @@ pub mod authenticate {
   impl Default for SessionPortSender {
     fn default() -> Self {
       Self {
-        port: PortChannel::new("session".into()),
+        port: PortChannel::new("session"),
       }
     }
   }
@@ -95,7 +95,7 @@ pub mod authenticate {
   impl Default for UserIdPortSender {
     fn default() -> Self {
       Self {
-        port: PortChannel::new("user_id".into()),
+        port: PortChannel::new("user_id"),
       }
     }
   }
@@ -188,7 +188,7 @@ pub mod create_user {
   impl Default for UserIdPortSender {
     fn default() -> Self {
       Self {
-        port: PortChannel::new("user_id".into()),
+        port: PortChannel::new("user_id"),
       }
     }
   }
@@ -271,7 +271,7 @@ pub mod get_id {
   impl Default for UserIdPortSender {
     fn default() -> Self {
       Self {
-        port: PortChannel::new("user_id".into()),
+        port: PortChannel::new("user_id"),
       }
     }
   }
@@ -357,7 +357,7 @@ pub mod has_permission {
   impl Default for UserIdPortSender {
     fn default() -> Self {
       Self {
-        port: PortChannel::new("user_id".into()),
+        port: PortChannel::new("user_id"),
       }
     }
   }
@@ -440,7 +440,7 @@ pub mod list_permissions {
   impl Default for PermissionsPortSender {
     fn default() -> Self {
       Self {
-        port: PortChannel::new("permissions".into()),
+        port: PortChannel::new("permissions"),
       }
     }
   }
@@ -526,7 +526,7 @@ pub mod list_users {
   impl Default for UsersPortSender {
     fn default() -> Self {
       Self {
-        port: PortChannel::new("users".into()),
+        port: PortChannel::new("users"),
       }
     }
   }
@@ -609,7 +609,7 @@ pub mod remove_user {
   impl Default for UserIdPortSender {
     fn default() -> Self {
       Self {
-        port: PortChannel::new("user_id".into()),
+        port: PortChannel::new("user_id"),
       }
     }
   }
@@ -695,7 +695,7 @@ pub mod update_permissions {
   impl Default for PermissionsPortSender {
     fn default() -> Self {
       Self {
-        port: PortChannel::new("permissions".into()),
+        port: PortChannel::new("permissions"),
       }
     }
   }
@@ -778,7 +778,7 @@ pub mod validate_session {
   impl Default for UserIdPortSender {
     fn default() -> Self {
       Self {
-        port: PortChannel::new("user_id".into()),
+        port: PortChannel::new("user_id"),
       }
     }
   }

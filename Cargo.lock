@@ -3517,7 +3517,7 @@ dependencies = [
 
 [[package]]
 name = "vino-codec"
-version = "0.1.0"
+version = "0.6.2"
 dependencies = [
  "rmp-serde 0.15.5",
  "serde",
@@ -3584,9 +3584,8 @@ dependencies = [
 
 [[package]]
 name = "vino-entity"
-version = "0.1.0"
+version = "0.6.2"
 dependencies = [
- "pretty_assertions",
  "serde",
  "thiserror",
  "url 2.2.2",
@@ -3674,7 +3673,7 @@ dependencies = [
 
 [[package]]
 name = "vino-macros"
-version = "0.1.0"
+version = "0.6.2"
 dependencies = [
  "lazy_static",
  "log",
@@ -3728,27 +3727,21 @@ dependencies = [
 
 [[package]]
 name = "vino-packet"
-version = "0.1.0"
+version = "0.6.2"
 dependencies = [
- "anyhow",
- "env_logger 0.9.0",
- "log",
  "serde",
  "serde-value",
- "test-env-log",
  "vino-codec",
 ]
 
 [[package]]
 name = "vino-provider"
-version = "0.1.0"
+version = "0.6.2"
 dependencies = [
  "async-trait",
  "dyn-clone",
- "env_logger 0.9.0",
  "log",
  "serde",
- "test-env-log",
  "thiserror",
  "tokio",
  "tokio-stream",
@@ -3926,15 +3919,13 @@ dependencies = [
 
 [[package]]
 name = "vino-transport"
-version = "0.1.0"
+version = "0.6.2"
 dependencies = [
- "env_logger 0.9.0",
  "lazy_static",
  "log",
  "serde",
  "serde-value",
  "serde_json",
- "test-env-log",
  "thiserror",
  "tokio",
  "tokio-stream",
@@ -3944,7 +3935,7 @@ dependencies = [
 
 [[package]]
 name = "vino-types"
-version = "0.1.0"
+version = "0.6.2"
 dependencies = [
  "serde",
 ]

@@ -4,8 +4,8 @@ use thiserror::Error;
 pub enum VowError {
   #[error(transparent)]
   ComponentError(#[from] vino_provider_wasm::Error),
-  #[error(transparent)]
-  RpcError(#[from] Box<vino_rpc::Error>),
+  #[error("Component panicked: {0}")]
+  ComponentPanic(Box<vino_rpc::Error>),
   #[error(transparent)]
   CodecError(#[from] vino_codec::Error),
   #[error(transparent)]

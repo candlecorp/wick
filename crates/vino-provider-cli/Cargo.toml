@@ -9,8 +9,8 @@ license = "BSD-3-Clause"
 [dependencies]
 vino-rpc = { path = "../vino-rpc" }
 logger = { path = "../logger" }
-vino-packet = { path = "../vino-packet" }
-vino-codec = { path = "../vino-codec" }
+vino-packet = { path = "../../sdk/crates/vino-packet" }
+vino-codec = { path = "../../sdk/crates/vino-codec" }
 vino-invocation-server = { path = "../vino-invocation-server" }
 tonic = { version = "0.5.0", features = ["tls"] }
 tokio = { version = "1.4.0", features = [

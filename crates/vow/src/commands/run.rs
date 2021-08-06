@@ -13,7 +13,9 @@ use vino_provider_cli::LoggingOptions;
 use vino_provider_wasm::provider::Provider;
 use vino_rpc::RpcHandler;
 use vino_transport::message_transport::stream::map_to_json;
+use vino_transport::MessageTransport;
 
+use crate::error::VowError;
 use crate::Result;
 
 #[derive(Debug, Clone, StructOpt)]
@@ -35,8 +37,9 @@ pub(crate) struct RunCommand {
   /// Name of the component to execute.
   component_name: String,
 
-  /// JSON data to pass as the component's inputs.
-  data: Vec<String>,
+  /// A port=value string where value is JSON to pass as input.
+  #[structopt(long, short)]
+  port: Vec<String>,
 }
 
 pub(crate) async fn handle_command(opts: RunCommand) -> Result<()> {
@@ -49,13 +52,14 @@ pub(crate) async fn handle_command(opts: RunCommand) -> Result<()> {
 
   let provider = Provider::try_from_module(component, 1)?;
 
-  if opts.data.is_empty() {
+  if opts.port.is_empty() {
     if atty::is(atty::Stream::Stdin) {
       eprintln!("No input passed, reading from <STDIN>");
     }
     let reader = io::BufReader::new(io::stdin());
     let mut lines = reader.lines();
     while let Some(line) = lines.next_line().await? {
+      debug!("STDIN:'{}'", line);
       let mut payload = TransportMap::from_json_str(&line)?;
       payload.transpose_output_name();
       let stream = provider
@@ -63,21 +67,33 @@ pub(crate) async fn handle_command(opts: RunCommand) -> Result<()> {
           Entity::component_direct(opts.component_name.clone()),
           payload,
         )
-        .await?;
+        .await
+        .map_err(VowError::ComponentPanic)?;
       print_stream_json(stream, opts.raw).await?;
     }
   } else {
-    for message in opts.data {
-      let mut payload = TransportMap::from_json_str(&message)?;
-      payload.transpose_output_name();
-      let stream = provider
-        .invoke(
-          Entity::component_direct(opts.component_name.clone()),
-          payload,
-        )
-        .await?;
-      print_stream_json(stream, opts.raw).await?;
+    let mut payload = TransportMap::new();
+    for input in opts.port {
+      match input.split_once("=") {
+        Some((name, value)) => {
+          debug!("PORT:'{}', VALUE:'{}'", name, value);
+          payload.insert(name, MessageTransport::Json(value.to_owned()));
+        }
+        None => {
+          error!("--port values need to be in port=value format, e.g. '--port input=my message'");
+          continue;
+        }
+      }
     }
+    payload.transpose_output_name();
+    let stream = provider
+      .invoke(
+        Entity::component_direct(opts.component_name.clone()),
+        payload,
+      )
+      .await
+      .map_err(VowError::ComponentPanic)?;
+    print_stream_json(stream, opts.raw).await?;
   }
 
   Ok(())

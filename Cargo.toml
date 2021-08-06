@@ -11,15 +11,15 @@ readme = "README.md"
 [dependencies]
 
 [dev-dependencies]
-vino-entity = { path = "./crates/vino-entity" }
-vino-codec = { path = "./crates/vino-codec" }
-vino-packet = { path = "./crates/vino-packet" }
-vino-provider = { path = "./crates/vino-provider", features = ["native"] }
-vino-transport = { path = "./crates/vino-transport" }
+vino-entity = { path = "./sdk/crates/vino-entity" }
+vino-codec = { path = "./sdk/crates/vino-codec" }
+vino-packet = { path = "./sdk/crates/vino-packet" }
+vino-provider = { path = "./sdk/crates/vino-provider", features = ["native"] }
+vino-transport = { path = "./sdk/crates/vino-transport" }
 vino-interface-collection = { path = "./crates/interfaces/interface-collection" }
 test-vino-provider = { path = "./crates/integration/test-vino-provider" }
 vino-rpc = { path = "./crates/vino-rpc" }
-vino-macros = { path = "./crates/vino-macros" }
+vino-macros = { path = "./sdk/crates/vino-macros" }
 utils = { path = "./tests/utils" }
 test_bin = "0.3.0"
 maplit = "1.0.2"
@@ -55,21 +55,15 @@ members = [
   "crates/provider-collection-inmemory",
   "crates/provider-native-api-0",
   "crates/vino-cli",
-  "crates/vino-codec",
-  "crates/vino-entity",
   "crates/vino-invocation-server",
   "crates/vino-host",
-  "crates/vino-macros",
   "crates/vino-manifest",
-  "crates/vino-provider",
   "crates/vino-provider-cli",
   "crates/vino-provider-wasm",
   "crates/vino-rpc",
   "crates/vino-runtime",
-  "crates/vino-transport",
-  "crates/vino-types",
   "crates/vino-wascap",
   "crates/vinoc",
   "crates/vow",
 ]
-exclude = ["crates/integration/test-wapc-component"]
+exclude = ["crates/integration/test-wapc-component", "sdk/"]

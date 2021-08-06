@@ -29,6 +29,7 @@ async fn test_vow_serve() -> utils::TestResult<()> {
   let actual = vinoc_invoke(&port, "validate", args).await?;
 
   let expected = hashmap! { "output".to_owned() => TransportJson {
+      signal: None,
       error_msg: None,
       error_kind: JsonError::None,
       value: json!("test input"),

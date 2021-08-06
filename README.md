@@ -1,5 +1,14 @@
 # Vino monorepo
 
+## Dependencies
+
+make
+rust/cargo
+node
+cargo-deny
+vino-codegen
+tomlq
+
 # Bugs
 
 - Component codegen for wellknown providers doesn't reference the proper module for input/outputs etc

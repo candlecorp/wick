@@ -8,17 +8,17 @@ license = "BSD-3-Clause"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-vino-packet = { path = "../vino-packet" }
+vino-packet = { path = "../../sdk/crates/vino-packet" }
 vino-runtime = { path = "../vino-runtime" }
-vino-transport = { path = "../vino-transport" }
+vino-transport = { path = "../../sdk/crates/vino-transport" }
 vino-host = { path = "../vino-host" }
 vino-manifest = { path = "../vino-manifest" }
-vino-codec = { path = "../vino-codec" }
+vino-codec = { path = "../../sdk/crates/vino-codec" }
 vino-rpc = { path = "../vino-rpc" }
-vino-macros = { path = "../vino-macros" }
-vino-entity = { path = "../vino-entity" }
+vino-macros = { path = "../../sdk/crates/vino-macros" }
+vino-entity = { path = "../../sdk/crates/vino-entity" }
 vino-wascap = { path = "../vino-wascap" }
-vino-types = { path = "../vino-types" }
+vino-types = { path = "../../sdk/crates/vino-types" }
 
 logger = { path = "../logger" }
 log = "0.4.11"

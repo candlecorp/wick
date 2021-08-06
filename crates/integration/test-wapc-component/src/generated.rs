@@ -41,7 +41,7 @@ pub(crate) extern "C" fn __guest_call(op_len: i32, req_len: i32) -> i32 {
   }
 }
 
-static ALL_COMPONENTS: &[&str] = &["copy", "error", "validate"];
+static ALL_COMPONENTS: &[&str] = &["copy", "error", "reverse", "uppercase", "validate"];
 
 pub struct Dispatcher {}
 impl Dispatch for Dispatcher {
@@ -50,6 +50,8 @@ impl Dispatch for Dispatcher {
     let result = match op {
       "copy" => copy::Component::new().execute(&payload),
       "error" => error::Component::new().execute(&payload),
+      "reverse" => reverse::Component::new().execute(&payload),
+      "uppercase" => uppercase::Component::new().execute(&payload),
       "validate" => validate::Component::new().execute(&payload),
       _ => Err(Error::ComponentNotFound(
         op.to_owned(),
@@ -140,6 +142,134 @@ pub(crate) mod error {
 
   use super::*;
   use crate::components::error as implementation;
+
+  pub(crate) struct Component {}
+
+  impl Component {
+    pub fn new() -> Self {
+      Self {}
+    }
+  }
+  impl WapcComponent for Component {
+    fn execute(&self, payload: &IncomingPayload) -> JobResult {
+      let inputs = populate_inputs(payload)?;
+      let outputs = get_outputs();
+      implementation::job(inputs, outputs)
+    }
+  }
+
+  fn populate_inputs(payload: &IncomingPayload) -> Result<Inputs> {
+    Ok(Inputs {
+      input: deserialize(payload.get("input")?)?,
+    })
+  }
+
+  #[cfg(feature = "guest")]
+  #[derive(Debug, Deserialize, Serialize, Default, Clone)]
+  pub(crate) struct Inputs {
+    #[serde(rename = "input")]
+    pub input: String,
+  }
+
+  fn get_outputs() -> Outputs {
+    Outputs {
+      output: GuestPortOutput {},
+    }
+  }
+
+  #[derive(Debug, PartialEq, Clone)]
+  pub struct GuestPortOutput {}
+
+  impl PortSender for GuestPortOutput {
+    type PayloadType = String;
+    fn get_name(&self) -> String {
+      "output".to_string()
+    }
+  }
+
+  #[cfg(feature = "guest")]
+  #[derive(Debug)]
+  pub struct Outputs {
+    pub output: GuestPortOutput,
+  }
+}
+pub(crate) mod reverse {
+  use serde::{
+    Deserialize,
+    Serialize,
+  };
+  pub use vino_provider::wasm::{
+    console_log,
+    JobResult,
+    PortSender,
+  };
+
+  use super::*;
+  use crate::components::reverse as implementation;
+
+  pub(crate) struct Component {}
+
+  impl Component {
+    pub fn new() -> Self {
+      Self {}
+    }
+  }
+  impl WapcComponent for Component {
+    fn execute(&self, payload: &IncomingPayload) -> JobResult {
+      let inputs = populate_inputs(payload)?;
+      let outputs = get_outputs();
+      implementation::job(inputs, outputs)
+    }
+  }
+
+  fn populate_inputs(payload: &IncomingPayload) -> Result<Inputs> {
+    Ok(Inputs {
+      input: deserialize(payload.get("input")?)?,
+    })
+  }
+
+  #[cfg(feature = "guest")]
+  #[derive(Debug, Deserialize, Serialize, Default, Clone)]
+  pub(crate) struct Inputs {
+    #[serde(rename = "input")]
+    pub input: String,
+  }
+
+  fn get_outputs() -> Outputs {
+    Outputs {
+      output: GuestPortOutput {},
+    }
+  }
+
+  #[derive(Debug, PartialEq, Clone)]
+  pub struct GuestPortOutput {}
+
+  impl PortSender for GuestPortOutput {
+    type PayloadType = String;
+    fn get_name(&self) -> String {
+      "output".to_string()
+    }
+  }
+
+  #[cfg(feature = "guest")]
+  #[derive(Debug)]
+  pub struct Outputs {
+    pub output: GuestPortOutput,
+  }
+}
+pub(crate) mod uppercase {
+  use serde::{
+    Deserialize,
+    Serialize,
+  };
+  pub use vino_provider::wasm::{
+    console_log,
+    JobResult,
+    PortSender,
+  };
+
+  use super::*;
+  use crate::components::uppercase as implementation;
 
   pub(crate) struct Component {}
 
