@@ -4,17 +4,7 @@ pub(crate) mod serve;
 use std::net::Ipv4Addr;
 use std::path::PathBuf;
 
-use structopt::clap::AppSettings;
 use structopt::StructOpt;
-
-#[derive(StructOpt, Debug, Clone)]
-#[structopt(
-     global_settings(&[AppSettings::VersionlessSubcommands]),
-     name = "vino", about = "Vino host runtime")]
-pub(crate) struct Cli {
-  #[structopt(flatten)]
-  pub(crate) command: CliCommand,
-}
 
 #[derive(Debug, Clone, StructOpt)]
 pub(crate) enum CliCommand {

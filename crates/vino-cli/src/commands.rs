@@ -8,7 +8,7 @@ use structopt::StructOpt;
 #[derive(StructOpt, Debug, Clone)]
 #[structopt(
      global_settings(&[AppSettings::VersionlessSubcommands]),
-     name = "vino", about = "Vino host runtime")]
+     name = "vino", about = "Vino host")]
 pub(crate) struct Cli {
   #[structopt(flatten)]
   pub(crate) command: CliCommand,

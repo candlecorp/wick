@@ -19,7 +19,7 @@ pub fn get_args() -> Cli {
 #[derive(StructOpt, Debug, Clone)]
 #[structopt(
      global_settings(&[AppSettings::VersionlessSubcommands]),
-     name = "vino", about = "Vino host runtime")]
+     name = crate::BIN_NAME, about = "Vino controller")]
 pub struct Cli {
   #[structopt(flatten)]
   pub command: CliCommand,

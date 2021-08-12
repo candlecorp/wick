@@ -3809,7 +3809,7 @@ dependencies = [
 
 [[package]]
 name = "vinoc"
-version = "0.1.0"
+version = "0.3.1"
 dependencies = [
  "atty",
  "futures",
@@ -3839,7 +3839,7 @@ dependencies = [
 
 [[package]]
 name = "vow"
-version = "0.1.0"
+version = "0.2.8"
 dependencies = [
  "anyhow",
  "atty",
