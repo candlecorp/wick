@@ -42,17 +42,17 @@ pub struct SignCommand {
 
 #[derive(Debug, Clone, StructOpt)]
 struct GenerateCommon {
-  /// Location of key files for signing. Defaults to $VINO_KEYS ($HOME/.vino/keys).
+  /// Location of key files for signing. Defaults to $VINO_KEYS ($HOME/.vino/keys or %USERPROFILE%/.vino/keys on Windows).
   #[structopt(long = "directory", env = "VINO_KEYS", hide_env_values = true)]
   directory: Option<String>,
 
-  /// Set the token expiration to # days. If this option is left off, the token will never expire.
+  /// Set the token expiration in days. By default the token will never expire.
   #[structopt(short = "x", long = "expires")]
   expires_in_days: Option<u64>,
 
-  /// Period in days that must elapse before this token is valid. If this option is left off, the token will be valid immediately.
-  #[structopt(short = "b", long = "nbf")]
-  not_before_days: Option<u64>,
+  /// Period in days before token becomes valid. By default the token will be valid immediately.
+  #[structopt(short = "b", long)]
+  not_before: Option<u64>,
 }
 
 pub async fn handle_command(opts: SignCommand) -> Result<()> {
@@ -86,7 +86,7 @@ pub async fn handle_command(opts: SignCommand) -> Result<()> {
     &subject,
     &issuer,
     opts.common.expires_in_days,
-    opts.common.not_before_days,
+    opts.common.not_before,
     opts.ver,
     opts.rev,
   )?;

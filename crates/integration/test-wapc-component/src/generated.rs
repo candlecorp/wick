@@ -98,7 +98,6 @@ pub(crate) mod copy {
     })
   }
 
-  #[cfg(feature = "guest")]
   #[derive(Debug, Deserialize, Serialize, Default, Clone)]
   pub(crate) struct Inputs {
     #[serde(rename = "input")]
@@ -123,7 +122,6 @@ pub(crate) mod copy {
     }
   }
 
-  #[cfg(feature = "guest")]
   #[derive(Debug)]
   pub struct Outputs {
     pub output: GuestPortOutput,
@@ -164,7 +162,6 @@ pub(crate) mod error {
     })
   }
 
-  #[cfg(feature = "guest")]
   #[derive(Debug, Deserialize, Serialize, Default, Clone)]
   pub(crate) struct Inputs {
     #[serde(rename = "input")]
@@ -187,7 +184,6 @@ pub(crate) mod error {
     }
   }
 
-  #[cfg(feature = "guest")]
   #[derive(Debug)]
   pub struct Outputs {
     pub output: GuestPortOutput,
@@ -228,7 +224,6 @@ pub(crate) mod reverse {
     })
   }
 
-  #[cfg(feature = "guest")]
   #[derive(Debug, Deserialize, Serialize, Default, Clone)]
   pub(crate) struct Inputs {
     #[serde(rename = "input")]
@@ -251,7 +246,6 @@ pub(crate) mod reverse {
     }
   }
 
-  #[cfg(feature = "guest")]
   #[derive(Debug)]
   pub struct Outputs {
     pub output: GuestPortOutput,
@@ -292,7 +286,6 @@ pub(crate) mod uppercase {
     })
   }
 
-  #[cfg(feature = "guest")]
   #[derive(Debug, Deserialize, Serialize, Default, Clone)]
   pub(crate) struct Inputs {
     #[serde(rename = "input")]
@@ -315,7 +308,6 @@ pub(crate) mod uppercase {
     }
   }
 
-  #[cfg(feature = "guest")]
   #[derive(Debug)]
   pub struct Outputs {
     pub output: GuestPortOutput,
@@ -356,7 +348,6 @@ pub(crate) mod validate {
     })
   }
 
-  #[cfg(feature = "guest")]
   #[derive(Debug, Deserialize, Serialize, Default, Clone)]
   pub(crate) struct Inputs {
     #[serde(rename = "input")]
@@ -379,7 +370,6 @@ pub(crate) mod validate {
     }
   }
 
-  #[cfg(feature = "guest")]
   #[derive(Debug)]
   pub struct Outputs {
     pub output: GuestPortOutput,
