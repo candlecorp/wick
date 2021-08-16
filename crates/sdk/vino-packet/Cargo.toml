@@ -21,7 +21,7 @@ native = []
 [dependencies]
 vino-codec = { path = "../vino-codec", features = [
   "messagepack",
-], version = "0.6.1" }
+], version = "0.7.0" }
 serde = { version = "1.0.126", features = ["derive"] }
 serde-value = "0.7.0"
 

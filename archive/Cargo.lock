@@ -484,7 +484,7 @@ dependencies = [
 
 [[package]]
 name = "vino-codec"
-version = "0.6.2"
+version = "0.7.0"
 dependencies = [
  "rmp-serde",
  "serde",
@@ -495,7 +495,7 @@ dependencies = [
 
 [[package]]
 name = "vino-entity"
-version = "0.6.2"
+version = "0.7.0"
 dependencies = [
  "pretty_assertions",
  "serde",
@@ -506,7 +506,7 @@ dependencies = [
 
 [[package]]
 name = "vino-macros"
-version = "0.6.2"
+version = "0.7.0"
 dependencies = [
  "lazy_static",
  "log",
@@ -515,7 +515,7 @@ dependencies = [
 
 [[package]]
 name = "vino-packet"
-version = "0.6.2"
+version = "0.7.0"
 dependencies = [
  "anyhow",
  "env_logger",
@@ -528,7 +528,7 @@ dependencies = [
 
 [[package]]
 name = "vino-provider"
-version = "0.6.2"
+version = "0.7.0"
 dependencies = [
  "async-trait",
  "dyn-clone",
@@ -549,7 +549,7 @@ dependencies = [
 
 [[package]]
 name = "vino-transport"
-version = "0.6.2"
+version = "0.7.0"
 dependencies = [
  "env_logger",
  "lazy_static",
@@ -567,7 +567,7 @@ dependencies = [
 
 [[package]]
 name = "vino-types"
-version = "0.6.2"
+version = "0.7.0"
 dependencies = [
  "serde",
 ]
