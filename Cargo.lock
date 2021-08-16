@@ -3324,7 +3324,7 @@ dependencies = [
  "tokio-stream",
  "vino-codec",
  "vino-interface-authentication",
- "vino-macros 0.6.2",
+ "vino-macros 0.7.0",
  "vino-packet",
  "vino-provider",
  "vino-provider-cli",
@@ -3361,7 +3361,7 @@ dependencies = [
 
 [[package]]
 name = "vino-codec"
-version = "0.6.2"
+version = "0.7.0"
 dependencies = [
  "rmp-serde",
  "serde",
@@ -3391,7 +3391,7 @@ dependencies = [
  "tokio-util",
  "tonic",
  "vino-interface-collection",
- "vino-macros 0.6.2",
+ "vino-macros 0.7.0",
  "vino-packet",
  "vino-provider",
  "vino-provider-cli",
@@ -3419,7 +3419,7 @@ dependencies = [
  "tokio-util",
  "tonic",
  "vino-interface-collection",
- "vino-macros 0.6.2",
+ "vino-macros 0.7.0",
  "vino-packet",
  "vino-provider",
  "vino-provider-cli",
@@ -3428,12 +3428,12 @@ dependencies = [
 
 [[package]]
 name = "vino-entity"
-version = "0.6.2"
+version = "0.7.0"
 dependencies = [
  "serde",
  "thiserror",
  "url 2.2.2",
- "vino-macros 0.6.2",
+ "vino-macros 0.7.0",
 ]
 
 [[package]]
@@ -3458,7 +3458,7 @@ dependencies = [
  "vino-codec",
  "vino-entity",
  "vino-invocation-server",
- "vino-macros 0.6.2",
+ "vino-macros 0.7.0",
  "vino-manifest",
  "vino-provider",
  "vino-provider-cli",
@@ -3509,7 +3509,7 @@ dependencies = [
  "tokio-stream",
  "tonic",
  "vino-entity",
- "vino-macros 0.6.2",
+ "vino-macros 0.7.0",
  "vino-rpc",
  "vino-transport",
  "vino-types",
@@ -3526,7 +3526,7 @@ dependencies = [
 
 [[package]]
 name = "vino-macros"
-version = "0.6.2"
+version = "0.7.0"
 dependencies = [
  "lazy_static",
  "log",
@@ -3553,7 +3553,7 @@ dependencies = [
  "serde_yaml",
  "test-env-log",
  "thiserror",
- "vino-macros 0.6.2",
+ "vino-macros 0.7.0",
  "vino-transport",
 ]
 
@@ -3580,7 +3580,7 @@ dependencies = [
 
 [[package]]
 name = "vino-packet"
-version = "0.6.2"
+version = "0.7.0"
 dependencies = [
  "serde",
  "serde-value",
@@ -3589,7 +3589,7 @@ dependencies = [
 
 [[package]]
 name = "vino-provider"
-version = "0.6.2"
+version = "0.7.0"
 dependencies = [
  "async-trait",
  "dyn-clone",
@@ -3600,7 +3600,7 @@ dependencies = [
  "tokio-stream",
  "vino-codec",
  "vino-entity",
- "vino-macros 0.6.2",
+ "vino-macros 0.7.0",
  "vino-packet",
  "vino-transport",
  "vino-types",
@@ -3658,7 +3658,7 @@ dependencies = [
  "tokio",
  "tokio-stream",
  "vino-codec",
- "vino-macros 0.6.2",
+ "vino-macros 0.7.0",
  "vino-packet",
  "vino-provider",
  "vino-rpc",
@@ -3687,7 +3687,7 @@ dependencies = [
  "vino-codec",
  "vino-entity",
  "vino-interface-collection",
- "vino-macros 0.6.2",
+ "vino-macros 0.7.0",
  "vino-packet",
  "vino-provider",
  "vino-rpc",
@@ -3718,7 +3718,7 @@ dependencies = [
  "tonic-build",
  "vino-codec",
  "vino-entity",
- "vino-macros 0.6.2",
+ "vino-macros 0.7.0",
  "vino-packet",
  "vino-provider",
  "vino-transport",
@@ -3755,7 +3755,7 @@ dependencies = [
  "vino-codec",
  "vino-entity",
  "vino-invocation-server",
- "vino-macros 0.6.2",
+ "vino-macros 0.7.0",
  "vino-manifest",
  "vino-native-api-0",
  "vino-packet",
@@ -3769,7 +3769,7 @@ dependencies = [
 
 [[package]]
 name = "vino-transport"
-version = "0.6.2"
+version = "0.7.0"
 dependencies = [
  "lazy_static",
  "log",
@@ -3785,7 +3785,7 @@ dependencies = [
 
 [[package]]
 name = "vino-types"
-version = "0.6.2"
+version = "0.7.0"
 dependencies = [
  "serde",
 ]
@@ -3802,7 +3802,7 @@ dependencies = [
  "ring",
  "serde",
  "thiserror",
- "vino-macros 0.6.2",
+ "vino-macros 0.7.0",
  "vino-types",
  "wascap",
 ]
@@ -3827,7 +3827,7 @@ dependencies = [
  "vino-codec",
  "vino-entity",
  "vino-host",
- "vino-macros 0.6.2",
+ "vino-macros 0.7.0",
  "vino-manifest",
  "vino-packet",
  "vino-rpc",
