@@ -1,6 +1,6 @@
 [package]
 name = "vino-entity"
-version = "0.6.2"
+version = "0.7.0"
 edition = "2018"
 license = "BSD-3-Clause"
 description = "Entities found in a Vino network"
@@ -14,7 +14,7 @@ homepage = "https://docs.vino.dev"
 maintenance = { status = "actively-developed" }
 
 [dependencies]
-vino-macros = { path = "../vino-macros", version = "=0.6.2" }
+vino-macros = { path = "../vino-macros", version = "0.7.0" }
 serde = { version = "1.0.118", features = ["derive"] }
 thiserror = "1.0.25"
 url = "2.2.2"

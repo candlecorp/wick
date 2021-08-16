@@ -1,6 +1,6 @@
 [package]
 name = "vino-packet"
-version = "0.6.2"
+version = "0.7.0"
 authors = ["Jarrod Overson <jsoverson@gmail.com>"]
 edition = "2018"
 license = "BSD-3-Clause"

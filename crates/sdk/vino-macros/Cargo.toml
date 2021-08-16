@@ -1,6 +1,6 @@
 [package]
 name = "vino-macros"
-version = "0.6.2"
+version = "0.7.0"
 edition = "2018"
 license = "BSD-3-Clause"
 description = "Macros use by vino tools"
@@ -15,6 +15,6 @@ homepage = "https://docs.vino.dev"
 maintenance = { status = "actively-developed" }
 
 [dependencies]
-vino-transport = { path = "../vino-transport", version = "=0.6.2" }
+vino-transport = { path = "../vino-transport", version = "0.7.0" }
 log = "0.4"
 lazy_static = "1.4.0"
