@@ -24,7 +24,7 @@ pub struct SignCommand {
   /// File path to the JSON representation of the actor interface.
   pub(crate) interface: String,
 
-  /// Destination for signed module. If this flag is not provided, the signed module will be placed in the same directory as the source with a "_s" suffix.
+  /// Destination for signed module. By default the the destination is the same as the input with a "_s" suffix.
   #[structopt(short = "d", long = "destination")]
   destination: Option<String>,
 
