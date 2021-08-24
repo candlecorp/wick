@@ -34,6 +34,7 @@ pub fn init(opts: &LoggingOptions) {
     "vino_cli",
     "vino_host",
     "vino_invocation-server",
+    "vino_lattice",
     "vino_macros",
     "vino_manifest",
     "vino_provider-cli",

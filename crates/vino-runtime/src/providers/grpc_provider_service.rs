@@ -3,6 +3,7 @@ use std::convert::TryInto;
 
 use rpc::invocation_service_client::InvocationServiceClient;
 use tokio::sync::mpsc::unbounded_channel;
+use tokio_stream::wrappers::UnboundedReceiverStream;
 use vino_invocation_server::InvocationClient;
 use vino_rpc::rpc;
 use vino_rpc::rpc::ListRequest;
@@ -235,6 +236,7 @@ impl Handler<Invocation> for GrpcProviderService {
           }
         }
       });
+      let rx = UnboundedReceiverStream::new(rx);
       Ok::<InvocationResponse, ProviderError>(InvocationResponse::stream(tx_id, rx))
     };
     ActorResult::reply_async(request.into_actor(self).map(|result, _, _| match result {

@@ -76,6 +76,9 @@
 
 use async_trait::async_trait;
 
+/// The Vino RPC Client
+pub mod client;
+
 /// Error module.
 pub mod error;
 

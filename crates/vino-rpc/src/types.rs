@@ -20,6 +20,7 @@ use vino_transport::{
 };
 use vino_types::signatures::*;
 
+use crate::error::RpcError;
 use crate::generated::vino::component::ComponentKind;
 use crate::rpc::{
   message_kind,
@@ -324,6 +325,19 @@ impl Output {
   pub fn into_json(self) -> serde_json::Value {
     let transport: TransportWrapper = self.into();
     transport.into_json()
+  }
+
+  /// Attempt to deserialize the payload into the destination type
+  pub fn try_into<T: DeserializeOwned>(self) -> Result<T> {
+    let transport: TransportWrapper = self.into();
+    transport
+      .try_into()
+      .map_err(|e| RpcError::Other(e.to_string()))
+  }
+
+  /// Convert the RPC output into a [TransportWrapper]
+  pub fn into_transport_wrapper(self) -> TransportWrapper {
+    self.into()
   }
 }
 

@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use tokio::sync::mpsc::unbounded_channel;
+use tokio_stream::wrappers::UnboundedReceiverStream;
 use vino_rpc::{
   clone_box,
   BoxedRpcHandler,
@@ -166,6 +167,8 @@ impl Handler<Invocation> for NativeProviderService {
           }
         }
       });
+      let rx = UnboundedReceiverStream::new(rx);
+
       InvocationResponse::stream(tx_id, rx)
     };
     ActorResult::reply_async(request.into_actor(self))

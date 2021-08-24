@@ -9,6 +9,7 @@ use std::time::Instant;
 
 use parking_lot::Mutex;
 use tokio::sync::mpsc::unbounded_channel;
+use tokio_stream::wrappers::UnboundedReceiverStream;
 use vino_packet::v0::Payload;
 use vino_packet::Packet;
 use vino_provider::OutputSignal;
@@ -133,7 +134,7 @@ impl WasmHost {
       tx.send(transport).map_err(|_| Error::SendError)?;
     }
 
-    Ok(TransportStream::new(rx))
+    Ok(TransportStream::new(UnboundedReceiverStream::new(rx)))
   }
 
   pub fn get_components(&self) -> &Vec<ComponentSignature> {

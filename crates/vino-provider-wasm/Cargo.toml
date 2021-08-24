@@ -33,7 +33,6 @@ wapc = { path = "../forks/wapc-rust" }
 
 futures = "0.3.15"
 tokio-stream = "0.1.7"
-serde = { version = "1.0.126", features = ["derive"] }
 async-stream = "0.3.2"
 log = "0.4"
 thiserror = "1.0.25"

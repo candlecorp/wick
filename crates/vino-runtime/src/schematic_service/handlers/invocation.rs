@@ -1,5 +1,6 @@
 use futures::Future;
 use tokio::sync::mpsc::unbounded_channel;
+use tokio_stream::wrappers::UnboundedReceiverStream;
 use vino_transport::message_transport::CLOSE_MESSAGE;
 use vino_transport::TransportMap;
 
@@ -96,6 +97,7 @@ fn handle_schematic(
       return Err(e);
     }
   };
+  let rx = UnboundedReceiverStream::new(rx);
 
   Ok(async move { Ok(InvocationResponse::stream(tx_id, rx)) })
 }

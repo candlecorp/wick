@@ -1,11 +1,11 @@
 use std::convert::TryFrom;
 
 use actix::dev::MessageResponse;
+use futures::Stream;
 use serde::{
   Deserialize,
   Serialize,
 };
-use tokio::sync::mpsc::UnboundedReceiver;
 use vino_rpc::convert_transport_map;
 use vino_transport::message_transport::TransportMap;
 
@@ -62,7 +62,10 @@ impl InvocationResponse {
   /// Creates a successful invocation response stream. Response include the receiving end.
   /// of an unbounded channel to listen for future output.
   #[must_use]
-  pub fn stream(tx_id: String, rx: UnboundedReceiver<TransportWrapper>) -> InvocationResponse {
+  pub fn stream(
+    tx_id: String,
+    rx: impl Stream<Item = TransportWrapper> + Send + 'static,
+  ) -> InvocationResponse {
     InvocationResponse::Stream {
       tx_id,
       rx: TransportStream::new(rx),
