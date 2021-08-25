@@ -23,8 +23,8 @@ log = "0.4.14"
 
 [dev-dependencies]
 maplit = "1.0.2"
-test-env-log = "0.2.7"
-env_logger = "0.9"
+test-logger = { path = "../../test-logger" }
+logger = { path = "../../logger" }
 structopt = "0.3.21"
 log = "0.4"
 anyhow = "1.0.41"

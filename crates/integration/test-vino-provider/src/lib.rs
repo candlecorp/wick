@@ -53,7 +53,7 @@ mod tests {
 
   use super::*;
 
-  #[test_env_log::test(tokio::test)]
+  #[test_logger::test(tokio::test)]
   async fn request() -> anyhow::Result<()> {
     let provider = Provider::default();
     let input = "some_input";
@@ -74,7 +74,7 @@ mod tests {
     Ok(())
   }
 
-  #[test_env_log::test(tokio::test)]
+  #[test_logger::test(tokio::test)]
   async fn list() -> anyhow::Result<()> {
     let provider = Provider::default();
 
