@@ -1,9 +1,0 @@
-schematics:
-  - name: echo
-    connections:
-      - from:
-          instance: <input>
-          port: input
-        to:
-          instance: <output>
-          port: output

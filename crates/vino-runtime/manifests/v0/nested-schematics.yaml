@@ -1,0 +1,45 @@
+version: 0
+network:
+  schematics:
+    - name: nested_parent
+      instances:
+        log1:
+          id: vino::v0::log
+        child_ref:
+          id: self::child
+      connections:
+        - from:
+            instance: <input>
+            port: parent_input
+          to:
+            instance: log1
+            port: input
+        - from:
+            instance: log1
+            port: output
+          to:
+            instance: child_ref
+            port: child_input
+        - from:
+            instance: child_ref
+            port: child_output
+          to:
+            instance: <output>
+            port: parent_output
+    - name: child
+      instances:
+        log2:
+          id: vino::v0::log
+      connections:
+        - from:
+            instance: <input>
+            port: child_input
+          to:
+            instance: log2
+            port: input
+        - from:
+            instance: log2
+            port: output
+          to:
+            instance: <output>
+            port: child_output

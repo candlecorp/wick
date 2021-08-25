@@ -11,8 +11,8 @@ pub(crate) mod prelude {
 use std::fs;
 
 use vino_manifest::{
+  HostManifest,
   Loadable,
-  NetworkManifest,
   SchematicManifest,
 };
 use vino_wascap::KeyPair;
@@ -20,13 +20,8 @@ use vino_wascap::KeyPair;
 use crate::error::CommonError;
 use crate::test::prelude::*;
 pub(crate) async fn init_network_from_yaml(path: &str) -> TestResult<(Network, String)> {
-  let manifest = NetworkManifest::V0(vino_manifest::v0::NetworkManifest::from_yaml(
-    &fs::read_to_string(path)?,
-  )?);
-  let def = NetworkDefinition::from(manifest);
-  debug!("Manifest loaded");
+  let def = load_network_definition(path)?;
   let kp = KeyPair::new_server();
-
   let network = Network::new(def, &kp.seed().map_err(|_| CommonError::NoSeed)?)?;
   debug!("Initializing network");
   let init = network.init().await;
@@ -37,11 +32,9 @@ pub(crate) async fn init_network_from_yaml(path: &str) -> TestResult<(Network, S
   Ok((network, network_id))
 }
 
-pub(crate) fn load_network_manifest(path: &str) -> TestResult<NetworkDefinition> {
-  let manifest = NetworkManifest::V0(vino_manifest::v0::NetworkManifest::from_yaml(
-    &fs::read_to_string(path)?,
-  )?);
-  let def = NetworkDefinition::from(manifest);
+pub(crate) fn load_network_definition(path: &str) -> TestResult<NetworkDefinition> {
+  let manifest = HostManifest::from_yaml(&fs::read_to_string(path)?)?;
+  let def = NetworkDefinition::from(manifest.network());
   debug!("Manifest loaded");
   Ok(def)
 }

@@ -55,6 +55,13 @@ pub(crate) mod prelude {
   pub(crate) use crate::network_service::NetworkService;
   pub(crate) use crate::prelude::*;
   pub(crate) use crate::providers::network_provider::Provider as NetworkProvider;
+  pub(crate) use crate::providers::{
+    create_network_provider_model,
+    initialize_native_provider,
+    initialize_provider,
+    start_network_provider,
+    ProviderChannel,
+  };
   pub(crate) use crate::schematic_service::SchematicService;
   pub(crate) use crate::transaction::TransactionUpdate;
   pub(crate) use crate::utils::actix::ActorResult;

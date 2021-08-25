@@ -17,7 +17,7 @@ lazy_static! {
   static ref NETWORK: Network = {
     let rt = actix_rt::System::new();
     let (network, _) = rt
-      .block_on(init_network_from_yaml("./manifests/v0/network/echo.yaml"))
+      .block_on(init_network_from_yaml("./manifests/v0/echo.yaml"))
       .unwrap();
     network
   };

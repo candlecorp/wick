@@ -1,0 +1,11 @@
+version: 0
+network:
+  id: network-two
+  schematics:
+    - name: logger
+      instances:
+        log:
+          id: vino::v0::log
+      connections:
+        - <>[child_input] => log[input]
+        - log[output] => <>[child_output]

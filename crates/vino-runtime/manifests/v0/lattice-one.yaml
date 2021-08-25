@@ -1,0 +1,15 @@
+version: 0
+network:
+  id: network-one
+  schematics:
+    - name: refself-parent
+      providers:
+        - kind: Lattice
+          namespace: external_network
+          reference: ofp://network-two.net/
+      instances:
+        logger:
+          id: external_network::logger
+      connections:
+        - <>[parent_input] => logger[child_input]
+        - logger[child_output] => <>[parent_output]

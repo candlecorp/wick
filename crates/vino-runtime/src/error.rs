@@ -1,8 +1,9 @@
-use itertools::join;
 use thiserror::Error;
 use tokio::sync::mpsc::error::SendError;
 
 use crate::dev::prelude::*;
+pub use crate::network_service::error::NetworkError;
+pub use crate::providers::error::ProviderError;
 
 #[derive(Error, Debug)]
 pub enum SchematicError {
@@ -38,70 +39,6 @@ pub enum SchematicError {
   CodecError(#[from] vino_codec::Error),
   #[error(transparent)]
   ManifestError(#[from] vino_manifest::Error),
-}
-
-#[derive(Error, Debug)]
-pub enum NetworkError {
-  #[error("Network not started")]
-  NotStarted,
-  #[error("Schematic {0} not found")]
-  SchematicNotFound(String),
-  #[error("Error initializing: {}", join(.0, ", "))]
-  InitializationError(Vec<SchematicError>),
-  #[error("Maximum number of tries reached when resolving internal schematic references")]
-  MaxTriesReached,
-  #[error(transparent)]
-  SchematicError(#[from] Box<SchematicError>),
-  #[error(transparent)]
-  ComponentError(#[from] ProviderError),
-  #[error(transparent)]
-  InternalError(#[from] InternalError),
-  #[error(transparent)]
-  CommonError(#[from] CommonError),
-  #[error("Error executing request: {0}")]
-  ExecutionError(String),
-  #[error(transparent)]
-  CodecError(#[from] vino_codec::Error),
-  #[error(transparent)]
-  RpcHandlerError(#[from] Box<vino_rpc::Error>),
-}
-
-#[derive(Error, Debug)]
-pub enum ProviderError {
-  #[error(transparent)]
-  InvocationError(#[from] InvocationError),
-  #[error("Provider uninitialized")]
-  Uninitialized,
-  #[error(transparent)]
-  WasmProviderError(#[from] vino_provider_wasm::Error),
-  #[error("Failed to create a raw WebAssembly host")]
-  WapcError,
-  #[error(transparent)]
-  ConversionError(#[from] ConversionError),
-  #[error(transparent)]
-  IOError(#[from] std::io::Error),
-  #[error(transparent)]
-  ActixMailboxError(#[from] MailboxError),
-  #[error(transparent)]
-  RpcError(#[from] vino_rpc::Error),
-  #[error(transparent)]
-  RpcHandlerError(#[from] Box<vino_rpc::Error>),
-  #[error("Upstream RPC error: {0}")]
-  RpcUpstreamError(String),
-  #[error(transparent)]
-  OutputError(#[from] vino_packet::error::DeserializationError),
-  #[error(transparent)]
-  RpcServerError(#[from] vino_invocation_server::Error),
-  #[error(transparent)]
-  CodecError(#[from] vino_codec::Error),
-  #[error("Grpc Provider error: {0}")]
-  GrpcUrlProviderError(String),
-  #[error(transparent)]
-  InternalError(#[from] InternalError),
-  #[error(transparent)]
-  CommonError(#[from] CommonError),
-  #[error(transparent)]
-  TransportError(#[from] vino_transport::Error),
 }
 
 #[derive(Error, Debug, Clone, Copy)]
@@ -188,10 +125,16 @@ pub enum RuntimeError {
   TransportError(#[from] vino_transport::Error),
   #[error(transparent)]
   OutputError(#[from] vino_packet::error::DeserializationError),
-  #[error(transparent)]
-  ActixMailboxError(#[from] MailboxError),
+  #[error("Mailbox closed")]
+  MailboxClosed,
   #[error(transparent)]
   RpcHandlerError(#[from] Box<vino_rpc::Error>),
   #[error(transparent)]
   IOError(#[from] std::io::Error),
+}
+
+impl From<MailboxError> for RuntimeError {
+  fn from(_: MailboxError) -> Self {
+    RuntimeError::MailboxClosed
+  }
 }

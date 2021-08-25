@@ -2,12 +2,22 @@
 
 ## Dependencies
 
+### Root project
+
 make
 rust/cargo
 node
 cargo-deny
+
+### WASM
+
 vino-codegen
 tomlq
+
+### Manifest codegen
+
+prettier
+widl-template
 
 # Bugs
 

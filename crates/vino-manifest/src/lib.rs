@@ -118,20 +118,38 @@ pub(crate) type Result<T> = std::result::Result<T, Error>;
 
 /// Enum for the possible versions of a Host Manifest.
 #[derive(Debug, Clone)]
+#[must_use]
 pub enum HostManifest {
   /// Version 0 Host Manifest.
   V0(v0::HostManifest),
 }
 
+impl HostManifest {
+  /// Extract the [NetworkManifest] from the [HostManifest].
+  pub fn network(self) -> NetworkManifest {
+    match self {
+      HostManifest::V0(manifest) => manifest.network.into(),
+    }
+  }
+}
+
 /// Enum for the possible versions of a Network Manifest.
 #[derive(Debug, Clone)]
+#[must_use]
 pub enum NetworkManifest {
   /// Version 0 Network Manifest.
   V0(v0::NetworkManifest),
 }
 
+impl From<v0::NetworkManifest> for NetworkManifest {
+  fn from(v: v0::NetworkManifest) -> Self {
+    NetworkManifest::V0(v)
+  }
+}
+
 /// Enum for the possible versions of a Schematic Manifest.
 #[derive(Debug, Clone)]
+#[must_use]
 pub enum SchematicManifest {
   /// Version 0 Schematic Manifest.
   V0(v0::SchematicManifest),

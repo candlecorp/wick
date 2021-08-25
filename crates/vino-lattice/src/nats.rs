@@ -28,10 +28,10 @@ use crate::error::LatticeError;
 
 type Result<T> = std::result::Result<T, LatticeError>;
 static RPC_STREAM_NAME: &str = "rpc";
-
+#[derive(Debug, Clone)]
 pub struct NatsOptions {
   pub address: String,
-  pub namespace: String,
+  pub client_id: String,
   pub creds_path: Option<String>,
   pub token: Option<String>,
 }
@@ -46,7 +46,6 @@ lazy_static::lazy_static! {
 #[derive(Clone, Debug)]
 pub(crate) struct Nats {
   nc: Connection,
-  namespace: String,
 }
 
 impl Nats {
@@ -59,18 +58,17 @@ impl Nats {
       nats::Options::new()
     };
 
-    let namespace = nopts.namespace.clone();
     let nc = RT
       .spawn_blocking(move || {
-        debug!("LATTICE:CONNECT[{},{}]", nopts.namespace, nopts.address);
+        debug!("LATTICE:CONNECT[{},{}]", nopts.client_id, nopts.address);
         opts
-          .with_name(&nopts.namespace)
+          .with_name(&nopts.client_id)
           .connect(&nopts.address)
           .map_err(LatticeError::ConnectionError)
       })
       .await??;
 
-    Ok(Self { nc, namespace })
+    Ok(Self { nc })
   }
 
   pub(crate) async fn create_stream(&self, stream_config: StreamConfig) -> Result<StreamInfo> {

@@ -42,7 +42,7 @@ use syn::{
 /// # use logging::info;
 /// # // Note that no test would actually run, regardless of `no_run`,
 /// # // because we do not invoke the function.
-/// #[test_env_log::test]
+/// #[test_logger::test]
 /// fn it_works() {
 ///   info!("Checking whether it still works...");
 ///   assert_eq!(2 + 2, 4);
@@ -55,7 +55,7 @@ use syn::{
 /// the `#[test]` attribute on a per-module basis:
 /// ```rust,no_run
 /// # mod fordoctest {
-/// use test_env_log::test;
+/// use test_logger::test;
 ///
 /// #[test]
 /// fn it_still_works() {
@@ -69,7 +69,7 @@ use syn::{
 /// to run async tests:
 /// ```
 /// # mod fordoctest {
-/// use test_env_log::test;
+/// use test_logger::test;
 ///
 /// #[test(tokio::test)]
 /// async fn it_still_works() {

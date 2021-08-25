@@ -2,8 +2,12 @@
 name = "test-logger"
 version = "0.0.0"
 edition = "2018"
+authors = [
+  "Daniel Mueller <deso@posteo.net>",
+  "Jarrod Overson <jsoverson@gmail.com>",
+]
+include = ["src/lib.rs", "LICENSE-*", "README.md"]
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [lib]
 proc-macro = true
@@ -17,3 +21,4 @@ proc-macro-crate = "1.0.0"
 
 [dev-dependencies]
 logging = { version = "0.4", package = "log" }
+tokio = { version = "1.10.1", features = ["macros"] }

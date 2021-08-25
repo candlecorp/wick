@@ -1,0 +1,19 @@
+"{{name.value}}": {
+  "$anchor": "#{{name.value}}",
+  "additionalProperties": false,
+  "properties": {
+    {{#join fields "," ~}}
+    "{{name.value}}" : {
+      {{#if description}}
+      "description": "{{description.value}}",
+      {{/if}}
+      {{> expand-type type }}
+    }
+    {{~/join}}
+  },
+  "required": [
+      {{~#each fields~}}
+        {{#withAnnotation 'required'}}"{{../name.value}}",{{/withAnnotation}}
+      {{~/each~}}
+  ]
+},

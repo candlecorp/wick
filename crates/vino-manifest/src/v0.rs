@@ -75,15 +75,18 @@ pub struct HostConfig {
 #[serde(deny_unknown_fields)]
 /// A Vino network definition.
 pub struct NetworkManifest {
-  /// The labels that apply to this host.
+  /// The unique identifier for this Network..
+  #[serde(default)]
+  pub id: Option<String>,
+  /// The labels that apply to this network..
   #[serde(default)]
   #[serde(skip_serializing_if = "HashMap::is_empty")]
   pub labels: HashMap<String, String>,
-  /// The links between capabilities and components.
+  /// The links between capabilities and components..
   #[serde(default)]
   #[serde(skip_serializing_if = "Vec::is_empty")]
   pub schematics: Vec<SchematicManifest>,
-  /// A list of providers and component collections.
+  /// A list of providers and component collections..
   #[serde(default)]
   #[serde(skip_serializing_if = "Vec::is_empty")]
   pub providers: Vec<ProviderDefinition>,

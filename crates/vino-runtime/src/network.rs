@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::time::Duration;
 
 use serde::Serialize;
+use vino_lattice::nats::NatsOptions;
 use vino_transport::message_transport::TransportMap;
 use vino_wascap::KeyPair;
 
@@ -11,6 +12,7 @@ pub use crate::providers::network_provider::Provider as NetworkProvider;
 
 type Result<T> = std::result::Result<T, RuntimeError>;
 #[derive(Debug)]
+#[must_use]
 pub struct Network {
   pub id: String,
   definition: NetworkDefinition,
@@ -19,6 +21,7 @@ pub struct Network {
   allowed_insecure: Vec<String>,
   kp: KeyPair,
   timeout: Duration,
+  lattice_config: Option<NatsOptions>,
 }
 
 impl Network {
@@ -32,6 +35,7 @@ impl Network {
     let init = Initialize {
       network_id: self.id.clone(),
       seed,
+      lattice_config: self.lattice_config.clone(),
       network: self.definition.clone(),
       allowed_insecure: self.allowed_insecure.clone(),
       allow_latest: self.allow_latest,
@@ -91,12 +95,17 @@ impl Network {
 
 /// The HostBuilder builds the configuration for a Vino Host.
 #[derive(Debug)]
+#[must_use]
 pub struct NetworkBuilder {
   allow_latest: bool,
   allowed_insecure: Vec<String>,
   definition: NetworkDefinition,
   kp: KeyPair,
   id: String,
+  nats_address: Option<String>,
+  // namespace: String,
+  nats_creds_path: Option<String>,
+  nats_token: Option<String>,
   timeout: Duration,
 }
 
@@ -111,11 +120,13 @@ impl NetworkBuilder {
       allowed_insecure: vec![],
       id: network_id,
       timeout: Duration::from_secs(5),
+      nats_address: None,
+      nats_creds_path: None,
+      nats_token: None,
       kp,
     })
   }
 
-  #[must_use]
   pub fn timeout(self, val: Duration) -> Self {
     Self {
       timeout: val,
@@ -123,7 +134,6 @@ impl NetworkBuilder {
     }
   }
 
-  #[must_use]
   pub fn allow_latest(self, val: bool) -> Self {
     Self {
       allow_latest: val,
@@ -131,7 +141,6 @@ impl NetworkBuilder {
     }
   }
 
-  #[must_use]
   pub fn allow_insecure(self, registries: Vec<String>) -> Self {
     Self {
       allowed_insecure: registries,
@@ -139,10 +148,51 @@ impl NetworkBuilder {
     }
   }
 
+  pub fn nats_address(self, nats_address: String) -> Self {
+    Self {
+      nats_address: Some(nats_address),
+      ..self
+    }
+  }
+
+  pub fn from_env(self) -> Self {
+    let mut me = self;
+    if let Ok(nats_address) = std::env::var("NATS_URL") {
+      me = Self {
+        nats_address: Some(nats_address),
+        ..me
+      }
+    };
+    me
+  }
+
+  pub fn nats_creds_path(self, nats_creds_path: String) -> Self {
+    Self {
+      nats_creds_path: Some(nats_creds_path),
+      ..self
+    }
+  }
+
+  pub fn nats_token(self, nats_token: String) -> Self {
+    Self {
+      nats_token: Some(nats_token),
+      ..self
+    }
+  }
+
   /// Constructs an instance of a Vino host.
-  #[must_use]
   pub fn build(self) -> Network {
     let addr = crate::network_service::NetworkService::for_id(&self.id);
+    let nats_options = match self.nats_address {
+      Some(addr) => Some(NatsOptions {
+        address: addr,
+        creds_path: self.nats_creds_path,
+        token: self.nats_token,
+        client_id: self.kp.public_key(),
+      }),
+      None => None,
+    };
+
     Network {
       addr,
       definition: self.definition,
@@ -151,6 +201,7 @@ impl NetworkBuilder {
       allowed_insecure: self.allowed_insecure,
       kp: self.kp,
       timeout: self.timeout,
+      lattice_config: nats_options,
     }
   }
 }

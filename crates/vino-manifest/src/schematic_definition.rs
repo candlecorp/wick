@@ -187,6 +187,8 @@ pub enum ProviderKind {
   GrpcUrl = 1,
   /// A WaPC WebAssembly provider.
   Wapc = 2,
+  /// A provider accessible via a connected lattice.
+  Lattice = 3,
 }
 
 impl From<crate::v0::ProviderKind> for ProviderKind {
@@ -195,6 +197,7 @@ impl From<crate::v0::ProviderKind> for ProviderKind {
       crate::v0::ProviderKind::Native => ProviderKind::Native,
       crate::v0::ProviderKind::GrpcUrl => ProviderKind::GrpcUrl,
       crate::v0::ProviderKind::WaPC => ProviderKind::Wapc,
+      crate::v0::ProviderKind::Lattice => ProviderKind::Lattice,
     }
   }
 }

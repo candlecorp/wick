@@ -1,0 +1,226 @@
+{
+  "title": "JSON schema for Vino host manifests",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "$defs": {
+    "HostManifest": {
+      "$anchor": "#HostManifest",
+      "additionalProperties": false,
+      "properties": {
+        "version": {
+          "description": "The manifest version",
+
+          "type": "number"
+        },
+        "config": {
+          "description": "Additional host configuration",
+
+          "$ref": "#/$defs/HostConfig"
+        },
+        "network": {
+          "description": "The configuration for a Vino network",
+
+          "$ref": "#/$defs/NetworkManifest"
+        },
+        "default_schematic": {
+          "description": "The default schematic to execute if none is provided",
+          "type": "string"
+        }
+      },
+      "required": ["version"]
+    },
+
+    "HostConfig": {
+      "$anchor": "#HostConfig",
+      "additionalProperties": false,
+      "properties": {
+        "allow_latest": {
+          "description": "Whether or not to allow the :latest tag on remote artifacts",
+
+          "type": "boolean"
+        },
+        "insecure_registries": {
+          "description": "A list of registries to connect to insecurely (over HTTP vs HTTPS)",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": []
+    },
+
+    "NetworkManifest": {
+      "$anchor": "#NetworkManifest",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "description": "The unique identifier for this Network.",
+          "required": false,
+          "type": "string"
+        },
+        "labels": {
+          "description": "The labels that apply to this network.",
+          "type": "object",
+          "patternProperties": {
+            "[a-zA-Z0-9][a-zA-Z0-9_]*": { "type": "string" }
+          }
+        },
+        "schematics": {
+          "description": "The links between capabilities and components.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SchematicManifest"
+          }
+        },
+        "providers": {
+          "description": "A list of providers and component collections.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ProviderDefinition"
+          }
+        }
+      },
+      "required": []
+    },
+
+    "SchematicManifest": {
+      "$anchor": "#SchematicManifest",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "description": "Schematic name.",
+          "type": "string"
+        },
+        "providers": {
+          "description": "A list of providers and component collections.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ProviderDefinition"
+          }
+        },
+        "instances": {
+          "description": "A map from component reference to its target.",
+          "type": "object",
+          "patternProperties": {
+            "[a-zA-Z0-9][a-zA-Z0-9_]*": {
+              "$ref": "#/$defs/ComponentDefinition"
+            }
+          }
+        },
+        "connections": {
+          "description": "A list of connections from component to component.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ConnectionDefinition"
+          }
+        },
+        "constraints": {
+          "description": "A map of constraints and values that limit where this schematic can run.",
+          "type": "object",
+          "patternProperties": {
+            "[a-zA-Z0-9][a-zA-Z0-9_]*": { "type": "string" }
+          }
+        }
+      },
+      "required": ["name"]
+    },
+
+    "ProviderDefinition": {
+      "$anchor": "#ProviderDefinition",
+      "additionalProperties": false,
+      "properties": {
+        "namespace": {
+          "description": "The namespace to reference the provider&#x27;s components on.",
+          "type": "string"
+        },
+        "kind": {
+          "description": "The kind/type of the provider.",
+
+          "$ref": "#/$defs/ProviderKind"
+        },
+        "reference": {
+          "description": "The reference/location of the provider.",
+          "type": "string"
+        },
+        "data": {
+          "description": "Data or configuration to pass to the provider initialization.",
+          "type": "object",
+          "patternProperties": {
+            "[a-zA-Z0-9][a-zA-Z0-9_]*": { "type": "string" }
+          }
+        }
+      },
+      "required": []
+    },
+
+    "ProviderKind": {
+      "enum": ["Native", "GrpcUrl", "WaPC", "Lattice"]
+    },
+
+    "ComponentDefinition": {
+      "$anchor": "#ComponentDefinition",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "description": "The ID of the component (i.e. the alias, key, or namespace).",
+          "type": "string"
+        },
+        "config": {
+          "description": "Data to associate with the reference.",
+          "required": false,
+          "type": "object",
+          "patternProperties": {
+            "[a-zA-Z0-9][a-zA-Z0-9_]*": { "type": "string" }
+          }
+        }
+      },
+      "required": ["id"]
+    },
+
+    "ConnectionDefinition": {
+      "$anchor": "#ConnectionDefinition",
+      "additionalProperties": false,
+      "properties": {
+        "from": {
+          "description": "The originating component from upstream.",
+
+          "$ref": "#/$defs/ConnectionTargetDefinition"
+        },
+        "to": {
+          "description": "The destination component (downstream).",
+
+          "$ref": "#/$defs/ConnectionTargetDefinition"
+        },
+        "default": {
+          "description": "The default value to provide in the event of an upstream Error or Exception.",
+          "required": false,
+          "type": "string"
+        }
+      },
+      "required": []
+    },
+
+    "ConnectionTargetDefinition": {
+      "$anchor": "#ConnectionTargetDefinition",
+      "additionalProperties": false,
+      "properties": {
+        "instance": {
+          "description": "The instance name of the referenced component.",
+          "type": "string"
+        },
+        "port": {
+          "description": "The component&#x27;s port.",
+          "type": "string"
+        },
+        "data": {
+          "description": "Data to send automatically. Parsed as JSON. (only used for &lt;sender&gt; instances).",
+          "required": false,
+          "type": "string"
+        }
+      },
+      "required": ["instance", "port"]
+    }
+  },
+  "oneOf": [{ "$ref": "#/$defs/HostManifest" }]
+}

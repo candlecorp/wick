@@ -1,9 +1,12 @@
+pub mod error;
 pub(crate) mod handlers;
 
 use std::collections::HashMap;
+use std::sync::Arc;
 
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
+use vino_lattice::lattice::Lattice;
 use vino_wascap::KeyPair;
 
 use crate::dev::prelude::*;
@@ -18,6 +21,7 @@ pub(crate) struct NetworkService {
   id: String,
   schematics: HashMap<String, Addr<SchematicService>>,
   definition: NetworkDefinition,
+  lattice: Option<Arc<Lattice>>,
 }
 
 #[derive(Debug)]
@@ -34,6 +38,7 @@ impl Default for NetworkService {
       state: None,
       schematics: HashMap::new(),
       definition: NetworkDefinition::default(),
+      lattice: None,
     }
   }
 }

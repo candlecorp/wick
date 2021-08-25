@@ -45,7 +45,7 @@ type Result<T> = std::result::Result<T, LatticeError>;
 #[derive(Debug, Clone)]
 pub struct LatticeBuilder {
   address: String,
-  namespace: String,
+  client_id: String,
   credential_path: Option<String>,
   token: Option<String>,
 }
@@ -56,7 +56,7 @@ impl LatticeBuilder {
   pub fn new<T: AsRef<str>, U: AsRef<str>>(address: T, namespace: U) -> Self {
     Self {
       address: address.as_ref().to_owned(),
-      namespace: namespace.as_ref().to_owned(),
+      client_id: namespace.as_ref().to_owned(),
       credential_path: None,
       token: None,
     }
@@ -67,9 +67,53 @@ impl LatticeBuilder {
     let var = std::env::var("NATS_URL").map_err(|_| LatticeError::NatsEnvVar)?;
     Ok(Self {
       address: var,
-      namespace: namespace.as_ref().to_owned(),
+      client_id: namespace.as_ref().to_owned(),
       credential_path: None,
       token: None,
+    })
+  }
+
+  /// Set the address.
+  pub fn address(self, address: impl AsRef<str>) -> Result<Self> {
+    Ok(Self {
+      address: address.as_ref().to_owned(),
+      ..self
+    })
+  }
+
+  /// Set the client ID (ususally the public key of the connecting host).
+  pub fn client_id(self, client_id: impl AsRef<str>) -> Result<Self> {
+    Ok(Self {
+      client_id: client_id.as_ref().to_owned(),
+      ..self
+    })
+  }
+
+  /// Set the NATS auth token.
+  pub fn token(self, token: impl AsRef<str>) -> Result<Self> {
+    Ok(Self {
+      token: Some(token.as_ref().to_owned()),
+      ..self
+    })
+  }
+
+  /// Set the path to the NATS creds file.
+  pub fn credential_path(self, credential_path: impl AsRef<str>) -> Result<Self> {
+    Ok(Self {
+      credential_path: Some(credential_path.as_ref().to_owned()),
+      ..self
+    })
+  }
+
+  /// Populate lattice configuration with a premade [NatsOptions] object
+  pub fn with_opts(self, opts: NatsOptions) -> Result<Self> {
+    #[allow(clippy::needless_update)]
+    Ok(Self {
+      address: opts.address,
+      client_id: opts.client_id,
+      token: opts.token,
+      credential_path: opts.creds_path,
+      ..self
     })
   }
 
@@ -77,7 +121,7 @@ impl LatticeBuilder {
   pub async fn build(self) -> Result<Lattice> {
     Lattice::connect(NatsOptions {
       address: self.address,
-      namespace: self.namespace,
+      client_id: self.client_id,
       creds_path: self.credential_path,
       token: self.token,
     })
@@ -360,9 +404,7 @@ mod test {
     LatticeBuilder,
   };
 
-  #[test_logger::test(tokio::test)]
-  async fn test_invoke() -> Result<()> {
-    println!("test-invoke");
+  async fn get_lattice() -> Result<(Lattice, String)> {
     let lattice_builder = LatticeBuilder::new_from_env("test").unwrap();
     let lattice = lattice_builder.build().await.unwrap();
     let namespace = "some_namespace_id".to_owned();
@@ -370,6 +412,13 @@ mod test {
       .handle_namespace(namespace.clone(), || Box::new(Provider::default()))
       .await
       .unwrap();
+
+    Ok((lattice, namespace))
+  }
+
+  #[test_logger::test(tokio::test)]
+  async fn test_invoke() -> Result<()> {
+    let (lattice, namespace) = get_lattice().await?;
     let component_name = "test-component";
     let user_input = String::from("Hello world");
     let entity = vino_entity::Entity::component(namespace, component_name);
@@ -389,30 +438,18 @@ mod test {
 
   #[test_logger::test(tokio::test)]
   async fn test_list() -> Result<()> {
-    let lattice_builder = LatticeBuilder::new_from_env("test").unwrap();
-    let lattice = lattice_builder.build().await.unwrap();
-    let namespace = "some_namespace_id".to_owned();
-    lattice
-      .handle_namespace(namespace.clone(), || Box::new(Provider::default()))
-      .await
-      .unwrap();
-    let namespace = "some_namespace_id".to_owned();
+    let (lattice, namespace) = get_lattice().await?;
     let namespaces = lattice.list_namespaces().await?;
     println!("Lattice namespaces: {:?}", namespaces);
-    assert_eq!(namespaces, vec![namespace]);
+
+    assert!(namespaces.contains(&namespace));
 
     Ok(())
   }
 
   #[test_logger::test(tokio::test)]
   async fn test_list_namespace_components() -> Result<()> {
-    let lattice_builder = LatticeBuilder::new_from_env("test").unwrap();
-    let lattice = lattice_builder.build().await.unwrap();
-    let namespace = "some_namespace_id".to_owned();
-    lattice
-      .handle_namespace(namespace.clone(), || Box::new(Provider::default()))
-      .await
-      .unwrap();
+    let (lattice, namespace) = get_lattice().await?;
     let components = lattice.list_components(namespace).await?;
     println!("Components on namespace: {:?}", components);
     assert_eq!(

@@ -1,4 +1,0 @@
-schematics:
-  - name: senders
-    connections:
-      - '"1234512345" => <>[output]'

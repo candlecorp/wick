@@ -1,0 +1,37 @@
+version: 0
+network:
+  schematics:
+    - name: refself-parent
+      instances:
+        child_ref:
+          id: self::child
+      connections:
+        - from:
+            instance: <input>
+            port: parent_input
+          to:
+            instance: child_ref
+            port: child_input
+        - from:
+            instance: child_ref
+            port: child_output
+          to:
+            instance: <output>
+            port: parent_output
+    - name: child
+      instances:
+        log:
+          id: vino::v0::log
+      connections:
+        - from:
+            instance: <input>
+            port: child_input
+          to:
+            instance: log
+            port: input
+        - from:
+            instance: log
+            port: output
+          to:
+            instance: <output>
+            port: child_output

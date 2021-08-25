@@ -2,12 +2,9 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use parking_lot::RwLock;
+use vino_lattice::lattice::Lattice;
 
 use crate::dev::prelude::*;
-use crate::models::provider_model::{
-  initialize_native_provider,
-  initialize_provider,
-};
 use crate::models::validator::Validator;
 use crate::schematic_service::State;
 use crate::transaction::executor::TransactionExecutor;
@@ -18,6 +15,7 @@ pub(crate) struct Initialize {
   pub(crate) schematic: SchematicDefinition,
   pub(crate) network_provider_channel: Option<ProviderChannel>,
   pub(crate) seed: String,
+  pub(crate) lattice: Option<Arc<Lattice>>,
   pub(crate) allow_latest: bool,
   pub(crate) allowed_insecure: Vec<String>,
   pub(crate) global_providers: Vec<ProviderDefinition>,
@@ -39,28 +37,34 @@ impl Handler<Initialize> for SchematicService {
     let network_provider_channel = msg.network_provider_channel;
     let model = Arc::new(RwLock::new(model));
 
-    let task = initialize_providers(providers, seed.clone(), allow_latest, allowed_insecure)
-      .into_actor(self)
-      .map(move |result, this, _ctx| {
-        match result {
-          Ok((mut channels, providers)) => {
-            if let Some(network_provider_channel) = network_provider_channel {
-              channels.push(network_provider_channel);
-            }
-            this.recipients = channels
-              .into_iter()
-              .map(|c| (c.namespace.clone(), c))
-              .collect();
-            let mut model = this.get_model().write();
-            model.commit_providers(providers);
-            model.partial_initialization()?;
+    let task = initialize_providers(
+      providers,
+      seed.clone(),
+      msg.lattice,
+      allow_latest,
+      allowed_insecure,
+    )
+    .into_actor(self)
+    .map(move |result, this, _ctx| {
+      match result {
+        Ok((mut channels, providers)) => {
+          if let Some(network_provider_channel) = network_provider_channel {
+            channels.push(network_provider_channel);
           }
-          Err(e) => {
-            error!("Error starting providers: {}", e);
-          }
+          this.recipients = channels
+            .into_iter()
+            .map(|c| (c.namespace.clone(), c))
+            .collect();
+          let mut model = this.get_model().write();
+          model.commit_providers(providers);
+          model.partial_initialization()?;
         }
-        Ok!(())
-      });
+        Err(e) => {
+          error!("Error starting providers: {}", e);
+        }
+      }
+      Ok!(())
+    });
     let task = task.map(|_, this, _| this.validate_model());
 
     let state = State {
@@ -77,6 +81,7 @@ impl Handler<Initialize> for SchematicService {
 async fn initialize_providers(
   providers: Vec<ProviderDefinition>,
   seed: String,
+  lattice: Option<Arc<Lattice>>,
   allow_latest: bool,
   allowed_insecure: Vec<String>,
 ) -> Result<(Vec<ProviderChannel>, Vec<ProviderModel>), SchematicError> {
@@ -86,7 +91,7 @@ async fn initialize_providers(
 
   for provider in providers {
     let (channel, provider_model) =
-      initialize_provider(provider, &seed, allow_latest, &allowed_insecure).await?;
+      initialize_provider(provider, &seed, &lattice, allow_latest, &allowed_insecure).await?;
     channels.push(channel);
     models.push(provider_model);
   }

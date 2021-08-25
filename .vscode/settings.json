@@ -1,3 +1,8 @@
 {
-  "git.ignoreLimitWarning": true
+  "git.ignoreLimitWarning": true,
+  "yaml.schemas": {
+    "crates/vino-manifest/json-schema/v0/manifest.json": [
+      "crates/vino-runtime/manifests/v0/*.yaml"
+    ]
+  }
 }

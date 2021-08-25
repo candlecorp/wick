@@ -297,7 +297,7 @@ mod tests {
   };
   #[test_env_log::test]
   fn test_validate_early_errors() -> TestResult<()> {
-    let def = load_network_manifest("./manifests/v0/network/native-component.yaml")?;
+    let def = load_network_definition("./manifests/v0/native-component.yaml")?;
     let model = SchematicModel::try_from(def.schematics[0].clone())?;
 
     Validator::validate_early_errors(&model)?;
@@ -306,7 +306,7 @@ mod tests {
 
   #[test_env_log::test]
   fn test_invalid_ports() -> TestResult<()> {
-    let def = load_network_manifest("./manifests/v0/network/invalid-bad-ports.yaml")?;
+    let def = load_network_definition("./manifests/v0/invalid-bad-ports.yaml")?;
     let mut model = SchematicModel::try_from(def.schematics[0].clone())?;
     let expected_inputs = vec![PortSignature {
       name: "input".to_owned(),
@@ -349,7 +349,7 @@ mod tests {
   #[test_env_log::test]
   fn test_self() -> TestResult<()> {
     // the "self" namespace can't be validated until the non-self parts of every schematic are complete;
-    let def = load_network_manifest("./manifests/v0/network/reference-self.yaml")?;
+    let def = load_network_definition("./manifests/v0/reference-self.yaml")?;
     let mut model = SchematicModel::try_from(def.schematics[0].clone())?;
     let expected_inputs = vec![PortSignature {
       name: "input".to_owned(),

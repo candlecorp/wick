@@ -13,6 +13,8 @@ vino-provider = { path = "../../sdk/crates/vino-provider", features = [
   "native",
 ] }
 vino-provider-wasm = { path = "../vino-provider-wasm" }
+vino-provider-lattice = { path = "../vino-provider-lattice" }
+vino-lattice = { path = "../vino-lattice" }
 vino-native-api-0 = { path = "../provider-native-api-0" }
 vino-transport = { path = "../../sdk/crates/vino-transport" }
 vino-codec = { path = "../../sdk/crates/vino-codec" }

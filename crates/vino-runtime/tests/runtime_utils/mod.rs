@@ -5,24 +5,28 @@ pub use log::*;
 pub use maplit::hashmap;
 pub use pretty_assertions::assert_eq as equals;
 use vino_manifest::{
+  HostManifest,
   Loadable,
   NetworkDefinition,
   NetworkManifest,
   SchematicDefinition,
 };
-use vino_runtime::network::Network;
+use vino_runtime::network::{
+  Network,
+  NetworkBuilder,
+};
 use vino_wascap::KeyPair;
 
 #[allow(dead_code)]
 pub async fn init_network_from_yaml(path: &str) -> Result<(Network, String)> {
-  let manifest = NetworkManifest::V0(vino_manifest::v0::NetworkManifest::from_yaml(
-    &fs::read_to_string(path)?,
-  )?);
-  let def = NetworkDefinition::from(manifest);
+  let manifest = HostManifest::from_yaml(&fs::read_to_string(path)?)?;
+  let def = NetworkDefinition::from(manifest.network());
   debug!("Manifest loaded");
   let kp = KeyPair::new_server();
 
-  let network = Network::new(def, &kp.seed()?)?;
+  let builder = NetworkBuilder::new(def, &kp.seed()?)?;
+  let network = builder.from_env().build();
+
   debug!("Initializing network");
   let init = network.init().await;
   info!("Init status : {:?}", init);
