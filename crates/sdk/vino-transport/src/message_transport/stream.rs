@@ -1,10 +1,12 @@
+use core::task::{
+  Context,
+  Poll,
+};
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::iter::FromIterator;
 use std::pin::Pin;
-use std::task::Poll;
 
-use tokio::sync::mpsc::UnboundedReceiver;
 use tokio_stream::{
   Stream,
   StreamExt,
@@ -35,19 +37,28 @@ pub fn map_to_json(
 }
 
 /// A [TransportStream] is a stream of [crate::TransportWrapper]s.
-#[derive(Debug)]
 pub struct TransportStream {
-  rx: RefCell<UnboundedReceiver<TransportWrapper>>,
+  rx: RefCell<Pin<Box<dyn Stream<Item = TransportWrapper> + Send>>>,
   buffer: HashMap<String, Vec<TransportWrapper>>,
   collected: bool,
+}
+
+impl std::fmt::Debug for TransportStream {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    f.debug_struct("TransportStream")
+      .field("rx", &String::from("<Ignored>"))
+      .field("buffer", &self.buffer)
+      .field("collected", &self.collected)
+      .finish()
+  }
 }
 
 impl TransportStream {
   /// Constructor for [TransportStream].
   #[must_use]
-  pub fn new(rx: UnboundedReceiver<TransportWrapper>) -> Self {
+  pub fn new(rx: impl Stream<Item = TransportWrapper> + Send + 'static) -> Self {
     Self {
-      rx: RefCell::new(rx),
+      rx: RefCell::new(Box::pin(rx)),
       buffer: HashMap::new(),
       collected: false,
     }
@@ -57,9 +68,10 @@ impl TransportStream {
 impl Stream for TransportStream {
   type Item = TransportWrapper;
 
-  fn poll_next(self: Pin<&mut Self>, cx: &mut std::task::Context<'_>) -> Poll<Option<Self::Item>> {
-    let mut rx = self.rx.borrow_mut();
-    match rx.poll_recv(cx) {
+  fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
+    let mut inner = self.rx.borrow_mut();
+    let pinned = Pin::new(&mut *inner);
+    match pinned.poll_next(cx) {
       Poll::Ready(Some(msg)) => {
         if SYSTEM_CLOSE_MESSAGE.eq(&msg) {
           Poll::Ready(None)
@@ -115,6 +127,7 @@ mod tests {
 
   use tokio::sync::mpsc::error::SendError;
   use tokio::sync::mpsc::unbounded_channel;
+  use tokio_stream::wrappers::UnboundedReceiverStream;
 
   use super::*;
   use crate::MessageTransport;
@@ -128,7 +141,7 @@ mod tests {
     tx.send(TransportWrapper::new("A", message.clone()))?;
     tx.send(TransportWrapper::new("B", message.clone()))?;
     tx.send(SYSTEM_CLOSE_MESSAGE.clone())?;
-    let mut stream = TransportStream::new(rx);
+    let mut stream = TransportStream::new(UnboundedReceiverStream::new(rx));
 
     let a_msgs: Vec<_> = stream.collect_port("A").await;
     assert_eq!(stream.buffered_size(), (1, 2));

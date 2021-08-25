@@ -647,7 +647,7 @@ impl From<Packet> for MessageTransport {
 }
 
 /// A [TransportWrapper] is a wrapper around a [MessageTransport] with the port name it originated from.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[must_use]
 pub struct TransportWrapper {
   /// The port the message originated from.
@@ -661,6 +661,14 @@ impl TransportWrapper {
   pub fn new(port: &str, payload: MessageTransport) -> Self {
     Self {
       port: port.to_owned(),
+      payload,
+    }
+  }
+
+  /// Constructor for a [TransportWrapper] with a port of [crate::SYSTEM_ID] indicating an internal error occurred.
+  pub fn internal_error(payload: MessageTransport) -> Self {
+    Self {
+      port: crate::SYSTEM_ID.to_owned(),
       payload,
     }
   }

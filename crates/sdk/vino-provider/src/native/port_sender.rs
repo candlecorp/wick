@@ -151,10 +151,9 @@ impl PortChannel {
           }
         };
       }
-      trace!("Port closing");
     });
 
-    TransportStream::new(rx)
+    TransportStream::new(UnboundedReceiverStream::new(rx))
   }
 }
 
