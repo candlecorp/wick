@@ -96,14 +96,14 @@ fn expand_logging_init() -> Tokens {
   let found_crate = crate_name("logger").expect("logger needs to be added in `Cargo.toml`");
 
   match found_crate {
-    FoundCrate::Itself => quote!(crate::init(&crate::LoggingOptions {
+    FoundCrate::Itself => quote!(let _ = crate::try_init(&crate::LoggingOptions {
       trace: true,
       verbose:true,
       ..Default::default()
     });),
     FoundCrate::Name(name) => {
       let ident = Ident::new(&name, Span::call_site());
-      quote!( #ident::init(&#ident::LoggingOptions {
+      quote!( let _ = #ident::try_init(&#ident::LoggingOptions {
         trace: true,
         verbose:true,
         ..Default::default()

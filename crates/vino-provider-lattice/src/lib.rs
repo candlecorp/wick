@@ -1,5 +1,3 @@
-//! Vino's logger crate
-
 // !!START_LINTS
 // Vino lints
 // Do not change anything between the START_LINTS and END_LINTS line.
@@ -72,22 +70,12 @@
 )]
 // !!END_LINTS
 // Add exceptions here
-#![allow(clippy::trivially_copy_pass_by_ref, clippy::needless_borrow)]
+#![allow(missing_docs)]
 
-/// Error module for Logger.
 pub mod error;
+pub mod provider;
 
-/// Logger options.
-pub mod options;
+pub type Error = error::LatticeProviderError;
 
-/// The main Logger module.
-pub mod logger;
-
-pub use options::LoggingOptions;
-
-pub use crate::logger::{
-  init,
-  try_init,
-};
-
-const FILTER_ENV: &str = "VINO_LOG";
+#[macro_use]
+extern crate log;

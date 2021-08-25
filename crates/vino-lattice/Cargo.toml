@@ -1,0 +1,33 @@
+[package]
+name = "vino-lattice"
+version = "0.0.0"
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+# nats = { path = "../../../nats.rs" }
+nats = "0.13.0"
+log = "0.4.14"
+thiserror = "1.0.26"
+vino-rpc = { path = "../vino-rpc" }
+vino-transport = { path = "../../sdk/crates/vino-transport" }
+vino-entity = { path = "../../sdk/crates/vino-entity" }
+vino-types = { path = "../../sdk/crates/vino-types" }
+vino-codec = { path = "../../sdk/crates/vino-codec" }
+nkeys = "0.1.0"
+serde = { version = "1.0.126", features = ["derive"] }
+tokio = { version = "1.4.0", features = ["rt-multi-thread"] }
+tokio-stream = { version = "0.1.7" }
+futures = "0.3.16"
+lazy_static = "1.4.0"
+parking_lot = { version = "0.11.1", features = [] }
+
+[dev-dependencies]
+logger = { path = "../logger" }
+test-logger = { path = "../test-logger" }
+anyhow = "1.0.43"
+test-vino-provider = { path = "../integration/test-vino-provider" }
+tokio = { version = "1.4.0", features = ["macros", "rt-multi-thread"] }
+tokio-stream = { version = "0.1.7" }
+async_once = "0.2.1"

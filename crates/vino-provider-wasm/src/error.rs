@@ -3,8 +3,6 @@ use vino_rpc::error::RpcError;
 
 #[derive(Error, Debug)]
 pub enum WasmProviderError {
-  #[error(transparent)]
-  LoggerError(#[from] logger::error::LoggerError),
   #[error("Component error : {0}")]
   ComponentError(String),
   #[error(transparent)]

@@ -147,6 +147,8 @@ pub enum ProviderKind {
   GrpcUrl = 1,
   /// A WaPC WebAssembly provider..
   WaPC = 2,
+  /// A provider accessible via a connected lattice..
+  Lattice = 3,
 }
 
 impl Default for ProviderKind {

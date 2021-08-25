@@ -12,6 +12,7 @@ use log::{
 };
 use serde_json::json;
 
+use crate::error::LoggerError;
 use crate::{
   LoggingOptions,
   FILTER_ENV,
@@ -23,8 +24,15 @@ fn set_level(builder: &mut Builder, priority_modules: &[&str], level: LevelFilte
   }
 }
 
-/// The logger instance.
+/// Initialize a logger or panic on failure
 pub fn init(opts: &LoggingOptions) {
+  if let Err(e) = try_init(opts) {
+    panic!("Error initializing logger: {}", e);
+  }
+}
+
+/// Initialize a logger
+pub fn try_init(opts: &LoggingOptions) -> Result<(), LoggerError> {
   let mut builder = Builder::new();
 
   let priority_modules = [
@@ -77,8 +85,9 @@ pub fn init(opts: &LoggingOptions) {
 
   builder
     .format(move |buf, record| format(buf, record, json, verbose))
-    .init();
+    .try_init()?;
   log::trace!("Logger initialized");
+  Ok(())
 }
 
 fn format(buf: &mut Formatter, record: &Record, json: bool, verbose: bool) -> std::io::Result<()> {

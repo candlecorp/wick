@@ -37,9 +37,9 @@ async-stream = "0.3.2"
 log = "0.4"
 thiserror = "1.0.25"
 async-trait = "0.1.50"
-logger = { path = "../logger" }
 
 [dev-dependencies]
+logger = { path = "../logger" }
 test-env-log = "0.2.7"
 test-vino-provider = { path = "../integration/test-vino-provider" }
 env_logger = "0.9"
