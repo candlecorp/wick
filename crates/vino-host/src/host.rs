@@ -139,7 +139,7 @@ mod test {
     Result,
   };
 
-  #[test_env_log::test(actix::test)]
+  #[test_logger::test(actix::test)]
   async fn should_start_and_stop() -> Result<()> {
     let host = HostBuilder::new().start().await?;
     host.stop().await;
@@ -148,7 +148,7 @@ mod test {
     Ok(())
   }
 
-  #[test_env_log::test(actix::test)]
+  #[test_logger::test(actix::test)]
   async fn ensure_started() -> Result<()> {
     let host = HostBuilder::new().start().await?;
     host._ensure_started()?;
@@ -158,7 +158,7 @@ mod test {
     Ok(())
   }
 
-  #[test_env_log::test(actix::test)]
+  #[test_logger::test(actix::test)]
   async fn request_from_network() -> Result<()> {
     let mut host = HostBuilder::new().start().await?;
     let file = PathBuf::from("src/configurations/logger.yaml");
@@ -180,7 +180,7 @@ mod test {
     Ok(())
   }
 
-  #[test_env_log::test(actix::test)]
+  #[test_logger::test(actix::test)]
   async fn request_from_rpc_server() -> Result<()> {
     let mut host = HostBuilder::new().start().await?;
     let file = PathBuf::from("src/configurations/logger.yaml");

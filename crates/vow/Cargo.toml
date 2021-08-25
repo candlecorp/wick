@@ -35,9 +35,10 @@ thiserror = "1.0.25"
 atty = "0.2.14"
 
 [dev-dependencies]
-test-env-log = "0.2.7"
+logger = { path = "../logger" }
+test-logger = { path = "../test-logger" }
 test-vino-provider = { path = "../integration/test-vino-provider" }
-env_logger = "0.9"
+
 maplit = "1.0.2"
 anyhow = "1.0.42"
 

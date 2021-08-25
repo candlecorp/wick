@@ -260,7 +260,7 @@ mod tests {
     Ok(output.payload)
   }
 
-  #[test_env_log::test(tokio::test)]
+  #[test_logger::test(tokio::test)]
   async fn test_create_user() -> Result<()> {
     let provider = Provider::default();
     let username = "user@foo.com";
@@ -271,7 +271,7 @@ mod tests {
     Ok(())
   }
 
-  #[test_env_log::test(tokio::test)]
+  #[test_logger::test(tokio::test)]
   async fn test_list_users() -> Result<()> {
     let provider = Provider::default();
     let username = "user@foo.com";
@@ -280,7 +280,7 @@ mod tests {
     Ok(())
   }
 
-  #[test_env_log::test(tokio::test)]
+  #[test_logger::test(tokio::test)]
   async fn test_list_and_remove_user() -> Result<()> {
     let provider = Provider::default();
     let username = "user@foo.com";
@@ -298,7 +298,7 @@ mod tests {
     Ok(())
   }
 
-  #[test_env_log::test(tokio::test)]
+  #[test_logger::test(tokio::test)]
   async fn test_authenticate() -> Result<()> {
     let provider = Provider::default();
     let username = "user@foo.com";
@@ -314,7 +314,7 @@ mod tests {
     Ok(())
   }
 
-  #[test_env_log::test(tokio::test)]
+  #[test_logger::test(tokio::test)]
   async fn test_validate_session() -> Result<()> {
     let provider = Provider::default();
     let username = "user@foo.com";
@@ -332,7 +332,7 @@ mod tests {
     Ok(())
   }
 
-  #[test_env_log::test(tokio::test)]
+  #[test_logger::test(tokio::test)]
   async fn test_update_perms() -> Result<()> {
     let provider = Provider::default();
     let username = "user@foo.com";
@@ -346,7 +346,7 @@ mod tests {
     Ok(())
   }
 
-  #[test_env_log::test(tokio::test)]
+  #[test_logger::test(tokio::test)]
   async fn test_has_perm() -> Result<()> {
     let provider = Provider::default();
     let username = "user@foo.com";

@@ -10,7 +10,7 @@ use vino_manifest::parse::{
 };
 use vino_manifest::*;
 
-#[test_env_log::test]
+#[test_logger::test]
 fn load_manifest_yaml() -> Result<(), ManifestError> {
   let path = PathBuf::from("./tests/manifests/v0/logger.yaml");
   let manifest = HostManifest::load_from_file(&path)?;
@@ -21,7 +21,7 @@ fn load_manifest_yaml() -> Result<(), ManifestError> {
   Ok(())
 }
 
-#[test_env_log::test]
+#[test_logger::test]
 fn load_minimal() -> Result<(), ManifestError> {
   let path = PathBuf::from("./tests/manifests/v0/minimal.yaml");
   let manifest = HostManifest::load_from_file(&path)?;
@@ -32,7 +32,7 @@ fn load_minimal() -> Result<(), ManifestError> {
   Ok(())
 }
 
-#[test_env_log::test]
+#[test_logger::test]
 fn load_noversion_yaml() -> Result<(), ManifestError> {
   let path = PathBuf::from("./tests/manifests/v0/noversion.yaml");
   let result = HostManifest::load_from_file(&path);
@@ -41,7 +41,7 @@ fn load_noversion_yaml() -> Result<(), ManifestError> {
   Ok(())
 }
 
-#[test_env_log::test]
+#[test_logger::test]
 fn load_bad_manifest_yaml() -> Result<(), ManifestError> {
   let path = PathBuf::from("./tests/manifests/v0/bad-yaml.yaml");
   let manifest = HostManifest::load_from_file(&path);
@@ -54,7 +54,7 @@ fn load_bad_manifest_yaml() -> Result<(), ManifestError> {
   Ok(())
 }
 
-#[test_env_log::test]
+#[test_logger::test]
 fn load_shortform_hocon() -> Result<(), ManifestError> {
   let path = PathBuf::from("./tests/manifests/v0/logger-shortform.manifest");
   let manifest = HostManifest::load_from_file(&path)?;
@@ -83,7 +83,7 @@ fn load_shortform_hocon() -> Result<(), ManifestError> {
   Ok(())
 }
 
-#[test_env_log::test]
+#[test_logger::test]
 fn load_shortform_yaml() -> Result<(), ManifestError> {
   let path = PathBuf::from("./tests/manifests/v0/logger-shortform.yaml");
   let manifest = HostManifest::load_from_file(&path)?;
@@ -112,7 +112,7 @@ fn load_shortform_yaml() -> Result<(), ManifestError> {
   Ok(())
 }
 
-#[test_env_log::test]
+#[test_logger::test]
 fn load_manifest_hocon() -> Result<(), ManifestError> {
   let path = PathBuf::from("./tests/manifests/v0/logger.manifest");
   let manifest = HostManifest::load_from_file(&path)?;
@@ -123,7 +123,7 @@ fn load_manifest_hocon() -> Result<(), ManifestError> {
   Ok(())
 }
 
-#[test_env_log::test]
+#[test_logger::test]
 
 fn load_env() -> Result<(), ManifestError> {
   println!("Loading yaml");
@@ -151,7 +151,7 @@ fn load_env() -> Result<(), ManifestError> {
   Ok(())
 }
 
-#[test_env_log::test]
+#[test_logger::test]
 fn load_bad_manifest_hocon() -> Result<(), ManifestError> {
   let path = PathBuf::from("./tests/manifests/v0/bad-hocon.manifest");
   let manifest = HostManifest::load_from_file(&path);
@@ -164,7 +164,7 @@ fn load_bad_manifest_hocon() -> Result<(), ManifestError> {
   Ok(())
 }
 
-#[test_env_log::test]
+#[test_logger::test]
 fn load_sender_yaml() -> Result<(), ManifestError> {
   let path = PathBuf::from("./tests/manifests/v0/sender.yaml");
   let manifest = HostManifest::load_from_file(&path)?;

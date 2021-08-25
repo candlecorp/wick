@@ -42,8 +42,9 @@ log = "0.4.14"
 
 [dev-dependencies]
 test-vino-provider = { path = "../integration/test-vino-provider" }
-env_logger = "0.9"
-test-env-log = "0.2.7"
+
+logger = { path = "../logger" }
+test-logger = { path = "../test-logger" }
 maplit = "1.0.2"
 pretty_assertions = "0.7.2"
 criterion = { version = "0.3.5", features = ["async", "async_tokio"] }

@@ -40,8 +40,8 @@ async-trait = "0.1.50"
 
 [dev-dependencies]
 logger = { path = "../logger" }
-test-env-log = "0.2.7"
+test-logger = { path = "../test-logger" }
 test-vino-provider = { path = "../integration/test-vino-provider" }
-env_logger = "0.9"
+
 maplit = "1.0.2"
 anyhow = "1.0.42"

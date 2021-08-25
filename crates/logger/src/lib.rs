@@ -87,6 +87,7 @@ pub use options::LoggingOptions;
 
 pub use crate::logger::{
   init,
+  init_defaults,
   try_init,
 };
 

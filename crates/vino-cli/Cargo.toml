@@ -31,7 +31,8 @@ tokio = { version = "1.4.0", features = ["macros", "rt-multi-thread"] }
 [dev-dependencies]
 test_bin = "0.3.0"
 maplit = "1.0.2"
-test-env-log = "0.2.7"
+logger = { path = "../logger" }
+test-logger = { path = "../test-logger" }
 
 [[bin]]
 name = "vino"

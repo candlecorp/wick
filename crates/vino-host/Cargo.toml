@@ -34,8 +34,9 @@ tokio = { version = "1.4.0", features = ["macros", "net", "rt-multi-thread"] }
 http = "0.2.4"
 
 [dev-dependencies]
-test-env-log = "0.2.7"
-env_logger = "0.9"
+logger = { path = "../logger" }
+test-logger = { path = "../test-logger" }
+
 tokio = { version = "1", features = [
   "net",
   "rt-multi-thread",

@@ -490,7 +490,7 @@ impl TryFrom<crate::v0::ConnectionTargetDefinition> for ConnectionTargetDefiniti
 #[cfg(test)]
 mod tests {
   use super::*;
-  #[test_env_log::test]
+  #[test_logger::test]
   fn test_parse_id() -> Result<()> {
     let id = "namespace::component_name";
     let (ns, name) = parse_id(id)?;

@@ -124,35 +124,35 @@ mod tests {
   use pretty_assertions::assert_eq;
 
   use super::*;
-  #[test_env_log::test]
+  #[test_logger::test]
   fn test_reserved() -> Result<()> {
     let parsed = parse_target_v0("<input>[foo]")?;
     assert_eq!(parsed, (Some("<input>"), Some("foo")));
     Ok(())
   }
 
-  #[test_env_log::test]
+  #[test_logger::test]
   fn test_basic() -> Result<()> {
     let parsed = parse_target_v0("ref[foo]")?;
     assert_eq!(parsed, (Some("ref"), Some("foo")));
     Ok(())
   }
 
-  #[test_env_log::test]
+  #[test_logger::test]
   fn test_default_with_port() -> Result<()> {
     let parsed = parse_target_v0("<>[foo]")?;
     assert_eq!(parsed, (Some(DEFAULT_ID), Some("foo")));
     Ok(())
   }
 
-  #[test_env_log::test]
+  #[test_logger::test]
   fn test_default() -> Result<()> {
     let parsed = parse_target_v0("<>")?;
     assert_eq!(parsed, (Some(DEFAULT_ID), None));
     Ok(())
   }
 
-  #[test_env_log::test]
+  #[test_logger::test]
   fn test_connection_basic() -> Result<()> {
     let parsed = parse_connection_v0("ref1[in]=>ref2[out]")?;
     assert_eq!(
@@ -174,7 +174,7 @@ mod tests {
     Ok(())
   }
 
-  #[test_env_log::test]
+  #[test_logger::test]
   fn test_bare_num_default() -> Result<()> {
     let parsed = parse_connection_v0("5 => ref2[out]")?;
     assert_eq!(
@@ -196,7 +196,7 @@ mod tests {
     Ok(())
   }
 
-  #[test_env_log::test]
+  #[test_logger::test]
   fn test_connection_default_input_named_port() -> Result<()> {
     let parsed = parse_connection_v0("<>[in]=>ref2[out]")?;
     assert_eq!(
@@ -218,7 +218,7 @@ mod tests {
     Ok(())
   }
 
-  #[test_env_log::test]
+  #[test_logger::test]
   fn test_connection_default_output_named_port() -> Result<()> {
     let parsed = parse_connection_v0("ref1[in]=><>[out]")?;
     assert_eq!(
@@ -240,7 +240,7 @@ mod tests {
     Ok(())
   }
 
-  #[test_env_log::test]
+  #[test_logger::test]
   fn test_connection_default_output() -> Result<()> {
     let parsed = parse_connection_v0("ref1[port]=><>")?;
     assert_eq!(
@@ -262,7 +262,7 @@ mod tests {
     Ok(())
   }
 
-  #[test_env_log::test]
+  #[test_logger::test]
   fn test_connection_default_input() -> Result<()> {
     let parsed = parse_connection_v0("<>=>ref1[port]")?;
     assert_eq!(
@@ -284,7 +284,7 @@ mod tests {
     Ok(())
   }
 
-  #[test_env_log::test]
+  #[test_logger::test]
   fn test_connection_with_default_data() -> Result<()> {
     let parsed = parse_connection_v0(r#""default"=>ref1[port]"#)?;
     assert_eq!(
@@ -306,7 +306,7 @@ mod tests {
     Ok(())
   }
 
-  #[test_env_log::test]
+  #[test_logger::test]
   fn regression_1() -> Result<()> {
     let parsed = parse_connection_v0(r#""1234512345" => <>[output]"#)?;
     assert_eq!(

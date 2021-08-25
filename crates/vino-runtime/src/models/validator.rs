@@ -295,7 +295,7 @@ mod tests {
     assert_eq,
     *,
   };
-  #[test_env_log::test]
+  #[test_logger::test]
   fn test_validate_early_errors() -> TestResult<()> {
     let def = load_network_definition("./manifests/v0/native-component.yaml")?;
     let model = SchematicModel::try_from(def.schematics[0].clone())?;
@@ -304,7 +304,7 @@ mod tests {
     Ok(())
   }
 
-  #[test_env_log::test]
+  #[test_logger::test]
   fn test_invalid_ports() -> TestResult<()> {
     let def = load_network_definition("./manifests/v0/invalid-bad-ports.yaml")?;
     let mut model = SchematicModel::try_from(def.schematics[0].clone())?;
@@ -346,7 +346,7 @@ mod tests {
     Ok(())
   }
 
-  #[test_env_log::test]
+  #[test_logger::test]
   fn test_self() -> TestResult<()> {
     // the "self" namespace can't be validated until the non-self parts of every schematic are complete;
     let def = load_network_definition("./manifests/v0/reference-self.yaml")?;
@@ -399,7 +399,7 @@ mod tests {
     Ok(())
   }
 
-  #[test_env_log::test]
+  #[test_logger::test]
   fn test_connections() -> TestResult<()> {
     let schematic_name = "Test";
     let mut schematic_def = new_schematic(schematic_name);
@@ -435,7 +435,7 @@ mod tests {
     Ok(())
   }
 
-  #[test_env_log::test]
+  #[test_logger::test]
   fn test_dangling_refs() -> TestResult<()> {
     let schematic_name = "Test";
     let mut schematic_def = new_schematic(schematic_name);
@@ -460,7 +460,7 @@ mod tests {
     Ok(())
   }
 
-  #[test_env_log::test]
+  #[test_logger::test]
   fn test_sender() -> TestResult<()> {
     let schematic_name = "Test";
     let mut schematic_def = new_schematic(schematic_name);
@@ -479,7 +479,7 @@ mod tests {
     Ok(())
   }
 
-  #[test_env_log::test]
+  #[test_logger::test]
   fn test_missing_models() -> TestResult<()> {
     let schematic_name = "Test";
     let mut schematic_def = new_schematic(schematic_name);
@@ -502,7 +502,7 @@ mod tests {
     Ok(())
   }
 
-  #[test_env_log::test]
+  #[test_logger::test]
   fn test_finish_initialization() -> TestResult<()> {
     let schematic_name = "Test";
     let mut schematic_def = new_schematic(schematic_name);

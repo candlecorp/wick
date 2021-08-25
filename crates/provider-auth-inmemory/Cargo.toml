@@ -27,11 +27,12 @@ bcrypt = "0.10.1"
 #for bin
 structopt = "0.3.22"
 vino-provider-cli = { path = "../vino-provider-cli" }
-env_logger = "0.9"
+
 
 [dev-dependencies]
 vino-codec = { path = "../../sdk/crates/vino-codec" }
-test-env-log = "0.2.7"
+logger = { path = "../logger" }
+test-logger = { path = "../test-logger" }
 anyhow = "1.0.42"
 tokio = { version = "1.4.0", features = ["macros"] }
 test-interface-authentication = { path = "../integration/test-interface-authentication" }

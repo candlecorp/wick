@@ -182,7 +182,7 @@ mod test {
   use crate::test::prelude::assert_eq;
   type Result<T> = super::Result<T>;
 
-  #[test_env_log::test(actix_rt::test)]
+  #[test_logger::test(actix_rt::test)]
   async fn test_provider_component() -> Result<()> {
     let provider = NativeProviderService::default();
     let addr = provider.start();

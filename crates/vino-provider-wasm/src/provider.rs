@@ -90,7 +90,7 @@ mod tests {
 
   use super::*;
 
-  #[test_env_log::test(tokio::test)]
+  #[test_logger::test(tokio::test)]
   async fn test_component() -> TestResult<()> {
     let component = crate::helpers::load_wasm_from_file(&PathBuf::from_str(
       "../integration/test-wapc-component/build/test_component_s.wasm",

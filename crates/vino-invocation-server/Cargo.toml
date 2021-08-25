@@ -29,4 +29,5 @@ parking_lot = { version = "0.11.1", features = [] }
 dyn-clone = "1.0.4"
 
 [dev-dependencies]
-test-env-log = "0.2.7"
+logger = { path = "../logger" }
+test-logger = { path = "../test-logger" }

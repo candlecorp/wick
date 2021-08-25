@@ -38,4 +38,5 @@ dyn-clone = "1.0.4"
 tonic-build = { version = "0.5.2", features = ["prost"] }
 
 [dev-dependencies]
-test-env-log = "0.2.7"
+logger = { path = "../logger" }
+test-logger = { path = "../test-logger" }

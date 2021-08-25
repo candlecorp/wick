@@ -188,7 +188,7 @@ mod tests {
     )?)))
   }
 
-  #[test_env_log::test]
+  #[test_logger::test]
   fn test_transaction() -> TestResult<()> {
     let tx_id = get_uuid();
     let model = make_model()?;
@@ -224,7 +224,7 @@ mod tests {
     }
   }
 
-  #[test_env_log::test(tokio::test)]
+  #[test_logger::test(tokio::test)]
   async fn test_transaction_map() -> TestResult<()> {
     let model = make_model()?;
 

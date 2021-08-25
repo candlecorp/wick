@@ -153,7 +153,7 @@ mod test {
 
   static TIMEOUT: u64 = 100;
 
-  #[test_env_log::test(actix_rt::test)]
+  #[test_logger::test(actix_rt::test)]
   async fn test_basic_schematic() -> TestResult<()> {
     let kp = KeyPair::new_server();
     let schematic = SchematicService::default();
@@ -200,7 +200,7 @@ mod test {
     Ok(())
   }
 
-  #[test_env_log::test(actix_rt::test)]
+  #[test_logger::test(actix_rt::test)]
   async fn test_grpc_url_provider() -> TestResult<()> {
     let socket = bind_new_socket()?;
     let port = socket.local_addr()?.port();

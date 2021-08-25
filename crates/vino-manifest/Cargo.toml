@@ -23,6 +23,7 @@ vino-macros = { path = "../../sdk/crates/vino-macros" }
 
 [dev-dependencies]
 anyhow = "1.0.41"
-env_logger = "0.9"
+
 pretty_assertions = "0.7.2"
-test-env-log = "0.2.7"
+logger = { path = "../logger" }
+test-logger = { path = "../test-logger" }

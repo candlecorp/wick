@@ -262,7 +262,7 @@ mod test {
   use crate::test::prelude::assert_eq;
   type Result<T> = super::Result<T>;
 
-  #[test_env_log::test(actix_rt::test)]
+  #[test_logger::test(actix_rt::test)]
   async fn test_initialize() -> Result<()> {
     let socket = bind_new_socket()?;
     let port = socket.local_addr()?.port();

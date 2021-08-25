@@ -8,7 +8,7 @@ use vino_entity::Entity;
 use vino_runtime::prelude::TransportWrapper;
 use vino_transport::MessageTransport;
 
-#[test_env_log::test(actix_rt::test)]
+#[test_logger::test(actix_rt::test)]
 async fn simple_schematic() -> Result<()> {
   let (network, _) = init_network_from_yaml("./manifests/v0/simple.yaml").await?;
 
@@ -33,7 +33,7 @@ async fn simple_schematic() -> Result<()> {
   Ok(())
 }
 
-#[test_env_log::test(actix_rt::test)]
+#[test_logger::test(actix_rt::test)]
 async fn echo() -> Result<()> {
   let (network, _) = init_network_from_yaml("./manifests/v0/echo.yaml").await?;
 
@@ -56,7 +56,7 @@ async fn echo() -> Result<()> {
   Ok(())
 }
 
-#[test_env_log::test(actix_rt::test)]
+#[test_logger::test(actix_rt::test)]
 async fn native_component() -> Result<()> {
   let (network, _) = init_network_from_yaml("./manifests/v0/native-component.yaml").await?;
 
@@ -82,7 +82,7 @@ async fn native_component() -> Result<()> {
   Ok(())
 }
 
-#[test_env_log::test(actix_rt::test)]
+#[test_logger::test(actix_rt::test)]
 
 async fn senders() -> Result<()> {
   let (network, _) = init_network_from_yaml("./manifests/v0/senders.yaml").await?;
@@ -106,7 +106,7 @@ async fn senders() -> Result<()> {
   Ok(())
 }
 
-#[test_env_log::test(actix_rt::test)]
+#[test_logger::test(actix_rt::test)]
 
 async fn no_inputs() -> Result<()> {
   println!("Running no_inputs test");
@@ -129,7 +129,7 @@ async fn no_inputs() -> Result<()> {
   Ok(())
 }
 
-#[test_env_log::test(actix_rt::test)]
+#[test_logger::test(actix_rt::test)]
 async fn nested_schematics() -> Result<()> {
   let (network, _) = init_network_from_yaml("./manifests/v0/nested-schematics.yaml").await?;
 
@@ -154,7 +154,7 @@ async fn nested_schematics() -> Result<()> {
   Ok(())
 }
 
-#[test_env_log::test(actix_rt::test)]
+#[test_logger::test(actix_rt::test)]
 async fn good_wapc_component() -> Result<()> {
   let (network, _) = init_network_from_yaml("./manifests/v0/wapc-component.yaml").await?;
 
@@ -197,7 +197,7 @@ async fn good_wapc_component() -> Result<()> {
   Ok(())
 }
 
-#[test_env_log::test(actix_rt::test)]
+#[test_logger::test(actix_rt::test)]
 async fn wapc_stream() -> Result<()> {
   let (network, _) = init_network_from_yaml("./manifests/v0/wapc-stream.yaml").await?;
 
@@ -221,7 +221,7 @@ async fn wapc_stream() -> Result<()> {
   Ok(())
 }
 
-#[test_env_log::test(actix_rt::test)]
+#[test_logger::test(actix_rt::test)]
 async fn bad_wapc_component() -> Result<()> {
   let (network, _) = init_network_from_yaml("./manifests/v0/bad-wapc-component.yaml").await?;
 
@@ -244,7 +244,7 @@ async fn bad_wapc_component() -> Result<()> {
   Ok(())
 }
 
-#[test_env_log::test(actix_rt::test)]
+#[test_logger::test(actix_rt::test)]
 async fn short_circuit_to_output() -> Result<()> {
   let (network, _) = init_network_from_yaml("./manifests/v0/short-circuit.yaml").await?;
 
@@ -268,7 +268,7 @@ async fn short_circuit_to_output() -> Result<()> {
   Ok(())
 }
 
-#[test_env_log::test(actix_rt::test)]
+#[test_logger::test(actix_rt::test)]
 async fn short_circuit_with_default() -> Result<()> {
   let (network, _) = init_network_from_yaml("./manifests/v0/short-circuit-default.yaml").await?;
 
@@ -299,7 +299,7 @@ async fn short_circuit_with_default() -> Result<()> {
   Ok(())
 }
 
-#[test_env_log::test(actix_rt::test)]
+#[test_logger::test(actix_rt::test)]
 async fn multiple_schematics() -> Result<()> {
   let (network, _) = init_network_from_yaml("./manifests/v0/multiple-schematics.yaml").await?;
 
@@ -333,7 +333,7 @@ async fn multiple_schematics() -> Result<()> {
   Ok(())
 }
 
-#[test_env_log::test(actix_rt::test)]
+#[test_logger::test(actix_rt::test)]
 async fn global_providers() -> Result<()> {
   let (network, _) = init_network_from_yaml("./manifests/v0/global-provider-def.yaml").await?;
 

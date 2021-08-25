@@ -88,7 +88,7 @@ mod tests {
     Ok(new_json.into_owned())
   }
 
-  #[test_env_log::test]
+  #[test_logger::test]
   fn test_cow_impl() -> TestResult<()> {
     let json_str = r#"
     "Error: $ERROR"
@@ -107,7 +107,7 @@ mod tests {
     Ok(())
   }
 
-  #[test_env_log::test]
+  #[test_logger::test]
   fn test_string_no_sub() -> TestResult<()> {
     let json_str = r#"
     "My default"
@@ -120,7 +120,7 @@ mod tests {
     Ok(())
   }
 
-  #[test_env_log::test]
+  #[test_logger::test]
   fn test_string_with_sub() -> TestResult<()> {
     let json_str = r#"
     "Error: $ERROR"
@@ -135,7 +135,7 @@ mod tests {
     Ok(())
   }
 
-  #[test_env_log::test]
+  #[test_logger::test]
   fn test_obj_no_sub() -> TestResult<()> {
     let json_str = r#"
     {"method":"GET"}
@@ -160,7 +160,7 @@ mod tests {
     Ok(())
   }
 
-  #[test_env_log::test]
+  #[test_logger::test]
   fn test_obj_with_sub() -> TestResult<()> {
     let json_str = r#"
     {"method":"GET: $ERROR"}
@@ -185,7 +185,7 @@ mod tests {
     Ok(())
   }
 
-  #[test_env_log::test]
+  #[test_logger::test]
   fn test_arr_no_sub() -> TestResult<()> {
     let json_str = r#"
     ["this", "that"]
@@ -203,7 +203,7 @@ mod tests {
     Ok(())
   }
 
-  #[test_env_log::test]
+  #[test_logger::test]
   fn test_arr_with_sub() -> TestResult<()> {
     let json_str = r#"
     ["this", "$ERROR"]

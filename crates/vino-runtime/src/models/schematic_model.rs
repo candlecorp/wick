@@ -443,7 +443,7 @@ mod tests {
     assert_eq,
     *,
   };
-  #[test_env_log::test]
+  #[test_logger::test]
   fn test_basics() -> TestResult<()> {
     let schematic_name = "logger";
     let def = load_schematic_manifest("./src/models/test-schematics/logger.yaml")?;
@@ -453,7 +453,7 @@ mod tests {
     Ok(())
   }
 
-  #[test_env_log::test]
+  #[test_logger::test]
   fn test_find_defaults() -> TestResult<()> {
     let schematic_name = "Test";
     let mut schematic_def = new_schematic(schematic_name);

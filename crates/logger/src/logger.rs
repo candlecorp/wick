@@ -25,6 +25,13 @@ fn set_level(builder: &mut Builder, priority_modules: &[&str], level: LevelFilte
 }
 
 /// Initialize a logger or panic on failure
+pub fn init_defaults() {
+  if let Err(e) = try_init(&LoggingOptions::default()) {
+    panic!("Error initializing logger: {}", e);
+  }
+}
+
+/// Initialize a logger or panic on failure
 pub fn init(opts: &LoggingOptions) {
   if let Err(e) = try_init(opts) {
     panic!("Error initializing logger: {}", e);

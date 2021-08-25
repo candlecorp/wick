@@ -258,7 +258,7 @@ mod tests {
 
   use super::*;
 
-  #[test_env_log::test(tokio::test)]
+  #[test_logger::test(tokio::test)]
   async fn test_starts() -> Result<()> {
     let config = start_server(Box::new(Provider::default()), None).await?;
     let addr = config.rpc_addr.unwrap();
@@ -272,7 +272,7 @@ mod tests {
     Ok(())
   }
 
-  // #[test_env_log::test(tokio::test)]
+  // #[test_logger::test(tokio::test)]
   async fn _test_http() -> Result<()> {
     let config = start_server(
       Box::new(Provider::default()),

@@ -22,6 +22,7 @@ uuid = { version = "0.8.2", features = ["v4"] }
 
 [dev-dependencies]
 maplit = "1.0.2"
-test-env-log = "0.2.7"
-env_logger = "0.9"
+logger = { path = "../logger" }
+test-logger = { path = "../test-logger" }
+
 vino-transport = { path = "../../sdk/crates/vino-transport" }

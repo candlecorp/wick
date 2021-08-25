@@ -86,7 +86,7 @@ mod tests {
     Ok(output_data)
   }
 
-  #[test_env_log::test(actix_rt::test)]
+  #[test_logger::test(actix_rt::test)]
   async fn test_request_log() -> TestResult<()> {
     let (_, network_id) = init_network_from_yaml("./manifests/v0/simple.yaml").await?;
 
@@ -98,7 +98,7 @@ mod tests {
     Ok(())
   }
 
-  #[test_env_log::test(actix_rt::test)]
+  #[test_logger::test(actix_rt::test)]
   async fn test_list() -> TestResult<()> {
     let (_, network_id) = init_network_from_yaml("./manifests/v0/simple.yaml").await?;
     let provider = Provider::new(network_id);

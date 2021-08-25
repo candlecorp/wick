@@ -54,7 +54,7 @@ async fn run(input: (&Network, &Data, Entity)) -> Result<()> {
 }
 
 fn service_benches() {
-  env_logger::init();
+  logger::init_defaults();
   let mut criterion: Criterion<_> = Criterion::default().configure_from_args();
   bench_async_service(&mut criterion, "echo");
 }

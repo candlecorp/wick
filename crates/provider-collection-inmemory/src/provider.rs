@@ -122,7 +122,7 @@ mod tests {
     Ok(document_ids)
   }
 
-  #[test_env_log::test(tokio::test)]
+  #[test_logger::test(tokio::test)]
   async fn request_add_item() -> Result<()> {
     let provider = Provider::default();
     let document_id = "some_doc_id";
@@ -132,7 +132,7 @@ mod tests {
     Ok(())
   }
 
-  #[test_env_log::test(tokio::test)]
+  #[test_logger::test(tokio::test)]
   async fn request_get_item() -> Result<()> {
     let provider = Provider::default();
     let document_id = "some_doc_id";
@@ -146,7 +146,7 @@ mod tests {
     Ok(())
   }
 
-  #[test_env_log::test(tokio::test)]
+  #[test_logger::test(tokio::test)]
   async fn request_list_items() -> Result<()> {
     let provider = Provider::default();
     let collection_id = "some_collection_id";

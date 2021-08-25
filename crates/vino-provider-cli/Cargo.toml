@@ -32,8 +32,9 @@ tonic-web = "0.1.0"
 structopt = "0.3.22"
 
 [dev-dependencies]
-test-env-log = "0.2.7"
+logger = { path = "../logger" }
+test-logger = { path = "../test-logger" }
 test-vino-provider = { path = "../integration/test-vino-provider" }
-env_logger = "0.9"
+
 reqwest = { version = "0.11", features = ["json"] }
 anyhow = "1.0.42"

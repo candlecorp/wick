@@ -154,7 +154,7 @@ mod tests {
     Ok(output.payload.try_into()?)
   }
 
-  #[test_env_log::test(tokio::test)]
+  #[test_logger::test(tokio::test)]
   async fn test_log() -> Result<()> {
     let input = "some_input";
     let job_payload = TransportMap::with_map(hashmap! {
@@ -169,7 +169,7 @@ mod tests {
     Ok(())
   }
 
-  #[test_env_log::test(tokio::test)]
+  #[test_logger::test(tokio::test)]
   async fn test_uuid() -> Result<()> {
     let job_payload = TransportMap::new();
 
@@ -181,7 +181,7 @@ mod tests {
     Ok(())
   }
 
-  #[test_env_log::test(tokio::test)]
+  #[test_logger::test(tokio::test)]
   async fn list() -> Result<()> {
     let provider = Provider::default();
     let components = crate::generated::get_all_components();
