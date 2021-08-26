@@ -11,6 +11,8 @@ use crate::{
 /// The NetworkDefinition struct is a normalized representation of a Vino [NetworkManifest].
 /// It handles the job of translating manifest versions into a consistent data structure.
 pub struct NetworkDefinition {
+  /// The name of the Network if provided.
+  pub name: Option<String>,
   /// A list of SchematicDefinitions.
   pub schematics: Vec<SchematicDefinition>,
   /// A list of ProviderDefinitions.
@@ -22,6 +24,7 @@ impl NetworkDefinition {}
 impl From<crate::v0::NetworkManifest> for NetworkDefinition {
   fn from(def: crate::v0::NetworkManifest) -> Self {
     Self {
+      name: def.name,
       schematics: def
         .schematics
         .into_iter()
@@ -49,6 +52,7 @@ impl From<NetworkManifest> for NetworkDefinition {
 impl Default for NetworkDefinition {
   fn default() -> Self {
     Self {
+      name: None,
       schematics: vec![],
       providers: vec![],
     }

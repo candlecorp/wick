@@ -17,7 +17,7 @@ vino-types = { path = "../../sdk/crates/vino-types" }
 vino-codec = { path = "../../sdk/crates/vino-codec" }
 nkeys = "0.1.0"
 serde = { version = "1.0.126", features = ["derive"] }
-tokio = { version = "1.4.0", features = ["rt-multi-thread"] }
+tokio = { version = "1.4.0", features = ["time", "rt-multi-thread"] }
 tokio-stream = { version = "0.1.7" }
 futures = "0.3.16"
 lazy_static = "1.4.0"

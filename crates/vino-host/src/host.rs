@@ -44,12 +44,12 @@ impl Host {
     self.network.as_ref().ok_or(Error::NoNetwork)
   }
 
-  pub fn get_network_id(&self) -> Result<String> {
+  pub fn get_network_uid(&self) -> Result<String> {
     self
       .network
       .as_ref()
       .ok_or(Error::NoNetwork)
-      .map(|network| network.id.clone())
+      .map(|network| network.uid.clone())
   }
 
   pub async fn start_network(&mut self, def: NetworkDefinition) -> Result<()> {
@@ -66,9 +66,9 @@ impl Host {
   }
 
   pub async fn start_rpc_server(&mut self, opts: Option<CliOpts>) -> Result<ServerMetadata> {
-    let network_id = self.get_network_id()?;
+    let nuid = self.get_network_uid()?;
     let metadata = tokio::spawn(vino_provider_cli::start_server(
-      Box::new(NetworkProvider::new(network_id)),
+      Box::new(NetworkProvider::new(nuid)),
       opts,
     ))
     .await

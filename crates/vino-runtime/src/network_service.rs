@@ -18,7 +18,7 @@ pub(crate) struct NetworkService {
   started: bool,
   started_time: std::time::Instant,
   state: Option<State>,
-  id: String,
+  uid: String,
   schematics: HashMap<String, Addr<SchematicService>>,
   definition: NetworkDefinition,
   lattice: Option<Arc<Lattice>>,
@@ -34,7 +34,7 @@ impl Default for NetworkService {
     NetworkService {
       started: false,
       started_time: std::time::Instant::now(),
-      id: "".to_owned(),
+      uid: "".to_owned(),
       state: None,
       schematics: HashMap::new(),
       definition: NetworkDefinition::default(),
@@ -47,12 +47,12 @@ type ServiceMap = HashMap<String, Addr<NetworkService>>;
 static HOST_REGISTRY: Lazy<Mutex<ServiceMap>> = Lazy::new(|| Mutex::new(HashMap::new()));
 
 impl NetworkService {
-  pub(crate) fn for_id(network_id: &str) -> Addr<Self> {
-    trace!("NETWORK:GET:{}", network_id);
+  pub(crate) fn for_id(uid: &str) -> Addr<Self> {
+    trace!("NETWORK:GET:{}", uid);
     let sys = System::current();
     let mut registry = HOST_REGISTRY.lock();
     let addr = registry
-      .entry(network_id.to_owned())
+      .entry(uid.to_owned())
       .or_insert_with(|| NetworkService::start_service(sys.arbiter()));
 
     addr.clone()

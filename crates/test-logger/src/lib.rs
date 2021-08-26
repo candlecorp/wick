@@ -98,14 +98,12 @@ fn expand_logging_init() -> Tokens {
   match found_crate {
     FoundCrate::Itself => quote!(let _ = crate::try_init(&crate::LoggingOptions {
       trace: true,
-      verbose:true,
       ..Default::default()
     });),
     FoundCrate::Name(name) => {
       let ident = Ident::new(&name, Span::call_site());
       quote!( let _ = #ident::try_init(&#ident::LoggingOptions {
         trace: true,
-        verbose:true,
         ..Default::default()
       }); )
     }

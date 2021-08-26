@@ -192,7 +192,6 @@ where
   T: DeserializeOwned,
 {
   let result = serde_yaml::from_str(src).map_err(|e| ManifestError::YamlError(e.to_string()))?;
-  debug!("Yaml parsed successfully");
   Ok(result)
 }
 
@@ -201,7 +200,6 @@ where
   T: DeserializeOwned,
 {
   let result = hocon::de::from_str(src).map_err(crate::Error::HoconError)?;
-  debug!("Hocon parsed successfully");
   Ok(result)
 }
 
@@ -209,6 +207,7 @@ impl Loadable<HostManifest> for HostManifest {
   fn from_hocon(src: &str) -> Result<HostManifest> {
     debug!("Trying to parse manifest as hocon");
     let raw = HoconLoader::new().strict().load_str(src)?.hocon()?;
+    debug!("Hocon parsed successfully");
     let raw_version = &raw["version"];
     let version = raw_version.as_i64().unwrap_or_else(|| -> i64 {
       raw_version
@@ -226,6 +225,7 @@ impl Loadable<HostManifest> for HostManifest {
   fn from_yaml(src: &str) -> Result<HostManifest> {
     debug!("Trying to parse manifest as yaml");
     let raw: serde_yaml::Value = from_yaml(src)?;
+    debug!("Yaml parsed successfully");
     let raw_version = raw.get("version").ok_or(Error::NoVersion)?;
     let version = raw_version.as_i64().unwrap_or_else(|| -> i64 {
       raw_version

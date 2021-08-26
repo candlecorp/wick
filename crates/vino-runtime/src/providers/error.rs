@@ -47,3 +47,9 @@ impl From<vino_provider_lattice::error::LatticeProviderError> for ProviderError 
     ProviderError::Lattice(e.to_string())
   }
 }
+
+impl From<vino_lattice::Error> for ProviderError {
+  fn from(e: vino_lattice::Error) -> Self {
+    ProviderError::Lattice(e.to_string())
+  }
+}

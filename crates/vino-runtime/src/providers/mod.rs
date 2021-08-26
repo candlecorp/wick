@@ -131,9 +131,9 @@ async fn initialize_lattice_provider(
   let arbiter = Arbiter::new();
   let handle = arbiter.handle();
 
-  let provider = Box::new(
-    vino_provider_lattice::provider::Provider::new(provider.reference.clone(), lattice).await?,
-  );
+  let entity = Entity::provider(provider.reference);
+
+  let provider = Box::new(vino_provider_lattice::provider::Provider::new(entity, lattice).await?);
 
   let addr = NativeProviderService::start_in_arbiter(&handle, |_| NativeProviderService::default());
   addr
@@ -160,18 +160,23 @@ async fn initialize_lattice_provider(
 }
 
 pub(crate) async fn start_network_provider(
-  namespace: &str,
+  network_name: Option<String>,
+  lattice: Option<Arc<Lattice>>,
   network_id: String,
 ) -> Result<Addr<NativeProviderService>> {
   let arbiter = Arbiter::new();
   let handle = arbiter.handle();
+  if let (Some(name), Some(lattice)) = (network_name, lattice) {
+    let provider = Box::new(NetworkProvider::new(network_id.clone()));
+    lattice.handle_namespace(name, move || provider).await?;
+  }
   let provider = Box::new(NetworkProvider::new(network_id));
 
   let addr = NativeProviderService::start_in_arbiter(&handle, |_| NativeProviderService::default());
   addr
     .send(native_provider_service::Initialize {
       provider: provider.clone(),
-      namespace: namespace.to_owned(),
+      namespace: SELF_NAMESPACE.to_owned(),
     })
     .await??;
   Ok(addr)

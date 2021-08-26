@@ -77,7 +77,7 @@ pub struct HostConfig {
 pub struct NetworkManifest {
   /// The unique identifier for this Network..
   #[serde(default)]
-  pub id: Option<String>,
+  pub name: Option<String>,
   /// The labels that apply to this network..
   #[serde(default)]
   #[serde(skip_serializing_if = "HashMap::is_empty")]

@@ -32,8 +32,8 @@ pub async fn init_network_from_yaml(path: &str) -> Result<(Network, String)> {
   info!("Init status : {:?}", init);
   init?;
 
-  let network_id = network.id.clone();
-  Ok((network, network_id))
+  let nuid = network.uid.clone();
+  Ok((network, nuid))
 }
 
 #[allow(dead_code)]

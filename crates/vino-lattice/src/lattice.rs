@@ -3,6 +3,7 @@ use std::sync::{
   RwLock,
 };
 use std::thread;
+use std::time::Duration;
 
 use log::{
   debug,
@@ -24,7 +25,10 @@ use vino_codec::messagepack::{
   serialize,
 };
 use vino_entity::Entity;
-use vino_rpc::RpcHandler;
+use vino_rpc::{
+  BoxedRpcHandler,
+  RpcHandler,
+};
 use vino_transport::{
   MessageTransport,
   TransportMap,
@@ -48,6 +52,7 @@ pub struct LatticeBuilder {
   client_id: String,
   credential_path: Option<String>,
   token: Option<String>,
+  timeout: Duration,
 }
 
 impl LatticeBuilder {
@@ -59,17 +64,21 @@ impl LatticeBuilder {
       client_id: namespace.as_ref().to_owned(),
       credential_path: None,
       token: None,
+      timeout: Duration::from_secs(5),
     }
   }
 
   /// Creates a new [LatticeBuilder] using the environment variable NATS_URL for the address.
   pub fn new_from_env<T: AsRef<str>>(namespace: T) -> Result<Self> {
-    let var = std::env::var("NATS_URL").map_err(|_| LatticeError::NatsEnvVar)?;
+    let address =
+      std::env::var("NATS_URL").map_err(|_| LatticeError::NatsEnvVar("NATS_URL".to_owned()))?;
+
     Ok(Self {
-      address: var,
+      address,
       client_id: namespace.as_ref().to_owned(),
       credential_path: None,
       token: None,
+      timeout: Duration::from_secs(5),
     })
   }
 
@@ -124,6 +133,7 @@ impl LatticeBuilder {
       client_id: self.client_id,
       creds_path: self.credential_path,
       token: self.token,
+      timeout: self.timeout,
     })
     .await
   }
@@ -166,7 +176,7 @@ impl Lattice {
 
   pub async fn handle_namespace<F>(&self, namespace: String, handler: F) -> Result<()>
   where
-    F: Fn() -> Box<dyn RpcHandler + Send>,
+    F: FnOnce() -> BoxedRpcHandler,
   {
     debug!("LATTICE:HANDLER[{}]:REGISTER", namespace);
     let mut consumer = self.nats.create_consumer(namespace.to_owned()).await?;
@@ -314,17 +324,17 @@ impl Lattice {
     self.nats.list_consumers(RPC_STREAM_NAME.to_owned()).await
   }
 
-  pub async fn list_components(&self, namespace: String) -> Result<Vec<HostedType>> {
-    debug!("LATTICE:LIST[{}]", namespace);
+  pub async fn list_components(&self, entity: Entity) -> Result<Vec<HostedType>> {
+    debug!("LATTICE:LIST[{}]", entity);
 
     // Create unique inbox subject to listen on for the reply
     let reply = self.nats.new_inbox().await;
     let sub = self.nats.subscribe(reply.clone()).await?;
 
-    let topic = rpc_message_topic(&self.rpc_stream_topic, &namespace);
+    let topic = rpc_message_topic(&self.rpc_stream_topic, &entity.name());
     let msg = LatticeRpcMessage::List {
       reply_to: reply,
-      namespace,
+      namespace: entity.name(),
     };
     let payload = serialize(&msg).map_err(|e| LatticeError::MessageSerialization(e.to_string()))?;
     self.nats.publish(topic, payload).await?;
@@ -389,6 +399,7 @@ mod test {
   use log::*;
   use test_vino_provider::Provider;
   use tokio_stream::StreamExt;
+  use vino_entity::Entity;
   use vino_transport::{
     MessageTransport,
     TransportMap,
@@ -450,7 +461,8 @@ mod test {
   #[test_logger::test(tokio::test)]
   async fn test_list_namespace_components() -> Result<()> {
     let (lattice, namespace) = get_lattice().await?;
-    let components = lattice.list_components(namespace).await?;
+    let entity = Entity::provider(namespace);
+    let components = lattice.list_components(entity).await?;
     println!("Components on namespace: {:?}", components);
     assert_eq!(
       components,

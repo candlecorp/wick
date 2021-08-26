@@ -54,7 +54,7 @@
       "$anchor": "#NetworkManifest",
       "additionalProperties": false,
       "properties": {
-        "id": {
+        "name": {
           "description": "The unique identifier for this Network.",
           "required": false,
           "type": "string"

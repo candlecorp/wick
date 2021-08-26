@@ -28,7 +28,7 @@ pub(crate) async fn init_network_from_yaml(path: &str) -> TestResult<(Network, S
   info!("Init status : {:?}", init);
   init?;
 
-  let network_id = network.id.clone();
+  let network_id = network.uid.clone();
   Ok((network, network_id))
 }
 

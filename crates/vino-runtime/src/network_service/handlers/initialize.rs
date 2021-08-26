@@ -13,7 +13,7 @@ type Result<T> = std::result::Result<T, NetworkError>;
 #[derive(Message, Debug)]
 #[rtype(result = "Result<()>")]
 pub(crate) struct Initialize {
-  pub(crate) network_id: String,
+  pub(crate) network_uid: String,
   pub(crate) seed: String,
   pub(crate) network: NetworkDefinition,
   pub(crate) allowed_insecure: Vec<String>,
@@ -26,10 +26,10 @@ impl Handler<Initialize> for NetworkService {
   type Result = ActorResult<Self, Result<()>>;
 
   fn handle(&mut self, msg: Initialize, _ctx: &mut Context<Self>) -> Self::Result {
-    trace!("NETWORK:INIT:{}", msg.network_id);
+    trace!("NETWORK:INIT:{}", msg.network_uid);
     self.started = true;
 
-    let network_id = msg.network_id;
+    let nuid = msg.network_uid;
     let global_providers = msg.network.providers.clone();
     let allowed_insecure = msg.allowed_insecure;
     let seed = msg.seed;
@@ -43,15 +43,16 @@ impl Handler<Initialize> for NetworkService {
 
     self.schematics = address_map.clone();
     self.state = Some(State { kp });
-    self.id = network_id.clone();
+    self.uid = nuid.clone();
     self.definition = msg.network;
+    let name = self.definition.name.clone();
 
     let task = async move {
       let lattice = match lattice_config {
         Some(config) => Some(Arc::new(Lattice::connect(config).await?)),
         None => None,
       };
-      let provider_addr = start_network_provider(SELF_NAMESPACE, network_id).await?;
+      let provider_addr = start_network_provider(name, lattice.clone(), nuid).await?;
       let channel = ProviderChannel {
         namespace: SELF_NAMESPACE.to_owned(),
         recipient: provider_addr.clone().recipient(),

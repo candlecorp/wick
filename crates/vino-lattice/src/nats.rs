@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use std::time::Duration;
 
 use log::{
   debug,
@@ -22,6 +23,7 @@ use tokio::runtime::{
   Builder,
   Runtime,
 };
+use tokio::time::timeout;
 use vino_codec::messagepack::deserialize;
 
 use crate::error::LatticeError;
@@ -34,6 +36,7 @@ pub struct NatsOptions {
   pub client_id: String,
   pub creds_path: Option<String>,
   pub token: Option<String>,
+  pub timeout: Duration,
 }
 
 lazy_static::lazy_static! {
@@ -46,6 +49,7 @@ lazy_static::lazy_static! {
 #[derive(Clone, Debug)]
 pub(crate) struct Nats {
   nc: Connection,
+  pub timeout: Duration,
 }
 
 impl Nats {
@@ -58,6 +62,8 @@ impl Nats {
       nats::Options::new()
     };
 
+    let timeout = nopts.timeout;
+
     let nc = RT
       .spawn_blocking(move || {
         debug!("LATTICE:CONNECT[{},{}]", nopts.client_id, nopts.address);
@@ -68,7 +74,7 @@ impl Nats {
       })
       .await??;
 
-    Ok(Self { nc })
+    Ok(Self { nc, timeout })
   }
 
   pub(crate) async fn create_stream(&self, stream_config: StreamConfig) -> Result<StreamInfo> {
@@ -127,7 +133,10 @@ impl Nats {
           .map_err(|e| LatticeError::PublishFail(e.to_string()))
       })
       .await??;
-    Ok(NatsSubscription { inner: sub })
+    Ok(NatsSubscription {
+      inner: sub,
+      timeout: self.timeout,
+    })
   }
 
   pub(crate) async fn list_consumers(&self, stream_name: String) -> Result<Vec<String>> {
@@ -163,19 +172,22 @@ impl Nats {
 
 pub(crate) struct NatsSubscription {
   inner: Subscription,
+  timeout: Duration,
 }
 
 impl NatsSubscription {
   pub(crate) async fn next(&self) -> Result<Option<Message>> {
     let sub = self.inner.clone();
-    let result = RT
-      .spawn_blocking(move || {
-        trace!("LATTICE:SUB:WAIT");
-        let a = sub.next();
-        trace!("LATTICE:SUB:CONTINUE");
-        a
-      })
-      .await?;
+    let task = RT.spawn_blocking(move || {
+      trace!("LATTICE:SUB:WAIT");
+      let a = sub.next();
+      trace!("LATTICE:SUB:CONTINUE");
+      a
+    });
+    let result = timeout(self.timeout, task)
+      .await
+      .map_err(|_| LatticeError::WaitTimeout)??;
+
     Ok(result)
   }
 }

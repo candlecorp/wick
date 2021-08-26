@@ -2,7 +2,7 @@
 "A Vino network definition"
 type NetworkManifest {
   "The unique identifier for this Network."
-  id: string?,
+  name: string?,
 
   "The labels that apply to this network."
   labels: {string: string},

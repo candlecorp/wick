@@ -33,8 +33,11 @@ pub enum LatticeError {
   #[error("Failed to query list of namespaces on lattice: {0}")]
   ListFail(String),
 
-  #[error("To initialize a Lattice from the environment, NATS_URL must be set.")]
-  NatsEnvVar,
+  #[error("To initialize a Lattice from the environment, {0} must be set.")]
+  NatsEnvVar(String),
+
+  #[error("Timeout out waiting for result from lattice")]
+  WaitTimeout,
 }
 
 impl From<JoinError> for LatticeError {

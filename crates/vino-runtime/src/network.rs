@@ -14,7 +14,7 @@ type Result<T> = std::result::Result<T, RuntimeError>;
 #[derive(Debug)]
 #[must_use]
 pub struct Network {
-  pub id: String,
+  pub uid: String,
   definition: NetworkDefinition,
   addr: Addr<NetworkService>,
   allow_latest: bool,
@@ -33,7 +33,7 @@ impl Network {
     let kp = KeyPair::new_service();
     let seed = log_ie!(kp.seed(), 5103)?;
     let init = Initialize {
-      network_id: self.id.clone(),
+      network_uid: self.uid.clone(),
       seed,
       lattice_config: self.lattice_config.clone(),
       network: self.definition.clone(),
@@ -101,9 +101,8 @@ pub struct NetworkBuilder {
   allowed_insecure: Vec<String>,
   definition: NetworkDefinition,
   kp: KeyPair,
-  id: String,
+  uid: String,
   nats_address: Option<String>,
-  // namespace: String,
   nats_creds_path: Option<String>,
   nats_token: Option<String>,
   timeout: Duration,
@@ -113,12 +112,12 @@ impl NetworkBuilder {
   /// Creates a new host builder.
   pub fn new(definition: NetworkDefinition, seed: &str) -> Result<Self> {
     let kp = keypair_from_seed(seed)?;
-    let network_id = kp.public_key();
+    let nuid = kp.public_key();
     Ok(Self {
       definition,
       allow_latest: false,
       allowed_insecure: vec![],
-      id: network_id,
+      uid: nuid,
       timeout: Duration::from_secs(5),
       nats_address: None,
       nats_creds_path: None,
@@ -127,23 +126,20 @@ impl NetworkBuilder {
     })
   }
 
-  pub fn timeout(self, val: Duration) -> Self {
+  pub fn timeout(self, timeout: Duration) -> Self {
+    Self { timeout, ..self }
+  }
+
+  pub fn allow_latest(self, allow_latest: bool) -> Self {
     Self {
-      timeout: val,
+      allow_latest,
       ..self
     }
   }
 
-  pub fn allow_latest(self, val: bool) -> Self {
+  pub fn allow_insecure(self, allowed_insecure: Vec<String>) -> Self {
     Self {
-      allow_latest: val,
-      ..self
-    }
-  }
-
-  pub fn allow_insecure(self, registries: Vec<String>) -> Self {
-    Self {
-      allowed_insecure: registries,
+      allowed_insecure,
       ..self
     }
   }
@@ -182,13 +178,14 @@ impl NetworkBuilder {
 
   /// Constructs an instance of a Vino host.
   pub fn build(self) -> Network {
-    let addr = crate::network_service::NetworkService::for_id(&self.id);
+    let addr = crate::network_service::NetworkService::for_id(&self.uid);
     let nats_options = match self.nats_address {
       Some(addr) => Some(NatsOptions {
         address: addr,
         creds_path: self.nats_creds_path,
         token: self.nats_token,
         client_id: self.kp.public_key(),
+        timeout: self.timeout,
       }),
       None => None,
     };
@@ -196,7 +193,7 @@ impl NetworkBuilder {
     Network {
       addr,
       definition: self.definition,
-      id: self.id,
+      uid: self.uid,
       allow_latest: self.allow_latest,
       allowed_insecure: self.allowed_insecure,
       kp: self.kp,

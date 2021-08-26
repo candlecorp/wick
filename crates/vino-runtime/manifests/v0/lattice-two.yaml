@@ -1,6 +1,6 @@
 version: 0
 network:
-  id: network-two
+  name: network-two
   schematics:
     - name: logger
       instances:
