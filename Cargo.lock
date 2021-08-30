@@ -162,12 +162,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "async_once"
-version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "58f8f7a882f8fffee0bdbb0580033b01613b50781e03c02713da0599ed90b595"
-
-[[package]]
 name = "atomic-waker"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3696,8 +3690,8 @@ dependencies = [
 name = "vino-lattice"
 version = "0.0.0"
 dependencies = [
+ "actix-rt",
  "anyhow",
- "async_once",
  "futures",
  "lazy_static",
  "log",

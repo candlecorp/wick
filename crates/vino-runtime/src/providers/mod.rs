@@ -131,9 +131,8 @@ async fn initialize_lattice_provider(
   let arbiter = Arbiter::new();
   let handle = arbiter.handle();
 
-  let entity = Entity::provider(provider.reference);
-
-  let provider = Box::new(vino_provider_lattice::provider::Provider::new(entity, lattice).await?);
+  let provider =
+    Box::new(vino_provider_lattice::provider::Provider::new(provider.reference, lattice).await?);
 
   let addr = NativeProviderService::start_in_arbiter(&handle, |_| NativeProviderService::default());
   addr

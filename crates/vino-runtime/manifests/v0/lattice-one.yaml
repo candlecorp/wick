@@ -2,7 +2,7 @@ version: 0
 network:
   name: network-one
   schematics:
-    - name: refself-parent
+    - name: schematic-one
       providers:
         - kind: Lattice
           namespace: external_network

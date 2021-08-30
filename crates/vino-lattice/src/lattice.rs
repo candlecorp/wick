@@ -14,7 +14,6 @@ use nats::jetstream::{
   RetentionPolicy,
   StreamConfig,
 };
-use tokio::runtime::Builder;
 use tokio::spawn;
 use tokio::sync::mpsc::unbounded_channel;
 use tokio::task::JoinHandle;
@@ -25,10 +24,7 @@ use vino_codec::messagepack::{
   serialize,
 };
 use vino_entity::Entity;
-use vino_rpc::{
-  BoxedRpcHandler,
-  RpcHandler,
-};
+use vino_rpc::BoxedRpcHandler;
 use vino_transport::{
   MessageTransport,
   TransportMap,
@@ -185,11 +181,13 @@ impl Lattice {
     let nc = self.nats.clone();
 
     thread::spawn(|| {
-      let rt = Builder::new_multi_thread()
-        .thread_name(format!("lattice_handler_{}", namespace))
-        .build()
-        .unwrap();
-      rt.block_on(async move {
+      // let rt = Builder::new_multi_thread()
+      //   .thread_name(format!("lattice_handler_{}", namespace))
+      //   .build()
+      //   .unwrap();
+      let system = actix_rt::System::new();
+
+      system.block_on(async move {
         debug!("LATTICE:HANDLER[{}]:OPEN", namespace);
         while let Ok(nats_msg) = consumer.next().await {
           let result: Result<LatticeRpcMessage> = nats_msg.deserialize();
@@ -324,17 +322,17 @@ impl Lattice {
     self.nats.list_consumers(RPC_STREAM_NAME.to_owned()).await
   }
 
-  pub async fn list_components(&self, entity: Entity) -> Result<Vec<HostedType>> {
-    debug!("LATTICE:LIST[{}]", entity);
+  pub async fn list_components(&self, namespace: String) -> Result<Vec<HostedType>> {
+    debug!("LATTICE:LIST[{}]", namespace);
 
     // Create unique inbox subject to listen on for the reply
     let reply = self.nats.new_inbox().await;
     let sub = self.nats.subscribe(reply.clone()).await?;
 
-    let topic = rpc_message_topic(&self.rpc_stream_topic, &entity.name());
+    let topic = rpc_message_topic(&self.rpc_stream_topic, &namespace);
     let msg = LatticeRpcMessage::List {
       reply_to: reply,
-      namespace: entity.name(),
+      namespace,
     };
     let payload = serialize(&msg).map_err(|e| LatticeError::MessageSerialization(e.to_string()))?;
     self.nats.publish(topic, payload).await?;
@@ -395,11 +393,9 @@ impl LatticeRpcResponse {
 #[cfg(test)]
 mod test {
   use anyhow::Result;
-  use async_once::AsyncOnce;
   use log::*;
   use test_vino_provider::Provider;
   use tokio_stream::StreamExt;
-  use vino_entity::Entity;
   use vino_transport::{
     MessageTransport,
     TransportMap,
@@ -461,8 +457,7 @@ mod test {
   #[test_logger::test(tokio::test)]
   async fn test_list_namespace_components() -> Result<()> {
     let (lattice, namespace) = get_lattice().await?;
-    let entity = Entity::provider(namespace);
-    let components = lattice.list_components(entity).await?;
+    let components = lattice.list_components(namespace).await?;
     println!("Components on namespace: {:?}", components);
     assert_eq!(
       components,

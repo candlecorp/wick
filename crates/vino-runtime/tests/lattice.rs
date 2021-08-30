@@ -18,7 +18,7 @@ async fn multi_host_lattice() -> Result<()> {
   };
 
   let mut result = network1
-    .request("simple", Entity::test("multi_host_lattice"), &data)
+    .request("schematic-one", Entity::test("multi_host_lattice"), &data)
     .await?;
 
   println!("Result: {:?}", result);

@@ -20,13 +20,13 @@ pub struct Context {
 
 #[derive(Clone, Debug)]
 pub struct Provider {
-  entity: Entity,
+  namespace: String,
   lattice: Arc<Lattice>,
 }
 
 impl Provider {
-  pub async fn new(entity: Entity, lattice: Arc<Lattice>) -> Result<Self, Error> {
-    Ok(Self { entity, lattice })
+  pub async fn new(namespace: String, lattice: Arc<Lattice>) -> Result<Self, Error> {
+    Ok(Self { namespace, lattice })
   }
 }
 
@@ -34,6 +34,8 @@ impl Provider {
 impl RpcHandler for Provider {
   async fn invoke(&self, entity: Entity, payload: TransportMap) -> RpcResult<BoxedTransportStream> {
     trace!("PROV:LATTICE:INVOKE:[{}]", entity);
+    //
+    let entity = Entity::Component(self.namespace.clone(), entity.name());
 
     let stream = self
       .lattice
@@ -47,7 +49,7 @@ impl RpcHandler for Provider {
   async fn get_list(&self) -> RpcResult<Vec<HostedType>> {
     let components = self
       .lattice
-      .list_components(self.entity.clone())
+      .list_components(self.namespace.clone())
       .await
       .map_err(|e| RpcError::ProviderError(e.to_string()))?;
 
@@ -78,9 +80,7 @@ mod tests {
       })
       .await?;
 
-    let entity = Entity::provider(ns);
-
-    let provider = Provider::new(entity, Arc::new(lattice)).await?;
+    let provider = Provider::new(ns.to_owned(), Arc::new(lattice)).await?;
     let user_data = "Hello world";
 
     let job_payload = TransportMap::with_map(hashmap! {
