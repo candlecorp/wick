@@ -369,19 +369,6 @@ macro_rules! mark {
 
 #[macro_export]
 #[doc(hidden)]
-macro_rules! function_path {
-  () => {{
-    fn f() {}
-    fn type_name_of<T>(_: T) -> &'static str {
-      std::any::type_name::<T>()
-    }
-    let name = type_name_of(f);
-    name[..name.len() - 16].to_owned()
-  }};
-}
-
-#[macro_export]
-#[doc(hidden)]
 macro_rules! elapsed {
   () => {{
     let _ = $crate::START_TIMES.lock().and_then(|h| {
@@ -397,5 +384,17 @@ macro_rules! elapsed {
       );
       Ok(())
     });
+  }};
+}
+#[macro_export]
+#[doc(hidden)]
+macro_rules! function_path {
+  () => {{
+    fn f() {}
+    fn type_name_of<T>(_: T) -> &'static str {
+      std::any::type_name::<T>()
+    }
+    let name = type_name_of(f);
+    name[..name.len() - 16].to_owned()
   }};
 }
