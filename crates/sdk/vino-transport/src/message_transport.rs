@@ -283,6 +283,7 @@ fn de_err<T: Display>(e: T) -> Error {
 
 /// A simplified JSON representation of a MessageTransport
 #[derive(Debug, Clone, Eq, Serialize, Deserialize, PartialEq)]
+#[must_use]
 pub struct TransportJson {
   /// Error message for the port if it exists.
   #[serde(default)]
@@ -331,6 +332,7 @@ impl From<TransportJson> for MessageTransport {
 
 /// The kinds of errors that a [TransportJson] can carry
 #[derive(Debug, Clone, Copy, Eq, Serialize, Deserialize, PartialEq)]
+#[must_use]
 pub enum JsonError {
   /// No error
   None,

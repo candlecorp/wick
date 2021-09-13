@@ -10,6 +10,7 @@ use crate::error::EntityError as Error;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 /// The entity being referenced across systems or services.
+#[must_use]
 pub enum Entity {
   /// A [SystemEntity] with the name "invalid". Used only for situations where a default is more useful than an error.
   Invalid,
@@ -107,20 +108,18 @@ impl FromStr for Entity {
 }
 impl Entity {
   /// Constructor for [Entity::Component].
-  #[must_use]
+
   pub fn component<T: AsRef<str>, U: AsRef<str>>(ns: T, name: U) -> Self {
     Self::Component(ns.as_ref().to_owned(), name.as_ref().to_owned())
   }
 
   /// Constructor for [Entity::Component] without a namespace, used when
   /// the namespace is irrelevant. Caution: this is not portable.
-  #[must_use]
   pub fn component_direct<T: AsRef<str>>(name: T) -> Self {
     Self::Component("__direct".to_owned(), name.as_ref().to_owned())
   }
 
   /// Constructor for Entity::System.
-  #[must_use]
   pub fn system<T: AsRef<str>, U: AsRef<str>>(name: T, value: U) -> Self {
     Self::System(SystemEntity {
       name: name.as_ref().to_owned(),
@@ -129,31 +128,26 @@ impl Entity {
   }
 
   /// Constructor for Entity::Test.
-  #[must_use]
   pub fn test<T: AsRef<str>>(msg: T) -> Self {
     Self::Test(msg.as_ref().to_owned())
   }
 
   /// Constructor for Entity::Provider.
-  #[must_use]
   pub fn provider<T: AsRef<str>>(id: T) -> Self {
     Self::Provider(id.as_ref().to_owned())
   }
 
   /// Constructor for Entity::Schematic.
-  #[must_use]
   pub fn schematic<T: AsRef<str>>(id: T) -> Self {
     Self::Schematic(id.as_ref().to_owned())
   }
 
   /// Constructor for Entity::Host.
-  #[must_use]
   pub fn host<T: AsRef<str>>(id: T) -> Self {
     Self::Host(id.as_ref().to_owned())
   }
 
   /// Constructor for Entity::Client.
-  #[must_use]
   pub fn client<T: AsRef<str>>(id: T) -> Self {
     Self::Client(id.as_ref().to_owned())
   }

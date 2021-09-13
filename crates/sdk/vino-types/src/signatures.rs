@@ -18,6 +18,7 @@ pub struct ComponentSignature {
 
 /// The signature of an individual port.
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
+#[must_use]
 pub struct PortSignature {
   /// Name of the port.
   pub name: String,
@@ -29,7 +30,6 @@ pub struct PortSignature {
 
 impl PortSignature {
   /// Constructor.
-  #[must_use]
   pub fn new(name: String, type_string: String) -> Self {
     Self { name, type_string }
   }
