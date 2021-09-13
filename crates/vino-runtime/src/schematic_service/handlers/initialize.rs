@@ -43,6 +43,7 @@ impl Handler<Initialize> for SchematicService {
       msg.lattice,
       allow_latest,
       allowed_insecure,
+      msg.timeout,
     )
     .into_actor(self)
     .map(move |result, this, _ctx| {
@@ -84,14 +85,22 @@ async fn initialize_providers(
   lattice: Option<Arc<Lattice>>,
   allow_latest: bool,
   allowed_insecure: Vec<String>,
+  timeout: Duration,
 ) -> Result<(Vec<ProviderChannel>, Vec<ProviderModel>), SchematicError> {
   let (channel, provider_model) = initialize_native_provider("vino::v0").await?;
   let mut channels = vec![channel];
   let mut models = vec![provider_model];
 
   for provider in providers {
-    let (channel, provider_model) =
-      initialize_provider(provider, &seed, &lattice, allow_latest, &allowed_insecure).await?;
+    let (channel, provider_model) = initialize_provider(
+      provider,
+      &seed,
+      lattice.clone(),
+      allow_latest,
+      &allowed_insecure,
+      timeout,
+    )
+    .await?;
     channels.push(channel);
     models.push(provider_model);
   }

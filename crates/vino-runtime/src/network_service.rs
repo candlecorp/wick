@@ -3,13 +3,16 @@ pub(crate) mod handlers;
 
 use std::collections::HashMap;
 use std::sync::Arc;
+use std::time::Duration;
 
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
 use vino_lattice::lattice::Lattice;
+use vino_manifest::Loadable;
 use vino_wascap::KeyPair;
 
 use crate::dev::prelude::*;
+use crate::network_service::handlers::initialize::Initialize;
 
 type Result<T> = std::result::Result<T, NetworkError>;
 #[derive(Debug)]
@@ -22,6 +25,8 @@ pub(crate) struct NetworkService {
   schematics: HashMap<String, Addr<SchematicService>>,
   definition: NetworkDefinition,
   lattice: Option<Arc<Lattice>>,
+  allow_latest: bool,
+  insecure: Vec<String>,
 }
 
 #[derive(Debug)]
@@ -39,6 +44,8 @@ impl Default for NetworkService {
       schematics: HashMap::new(),
       definition: NetworkDefinition::default(),
       lattice: None,
+      allow_latest: false,
+      insecure: vec![],
     }
   }
 }
@@ -56,6 +63,33 @@ impl NetworkService {
       .or_insert_with(|| NetworkService::start_service(sys.arbiter()));
 
     addr.clone()
+  }
+  pub(crate) async fn start_from_manifest(
+    location: &str,
+    seed: &str,
+    allow_latest: bool,
+    allowed_insecure: Vec<String>,
+    lattice: Option<Arc<Lattice>>,
+    timeout: Duration,
+  ) -> Result<String> {
+    let bytes = vino_loader::get_bytes(location, allow_latest, &allowed_insecure).await?;
+    let manifest = vino_manifest::HostManifest::load_from_bytes(&bytes)?;
+    let def = NetworkDefinition::from(manifest.network());
+    let kp = KeyPair::from_seed(seed).unwrap();
+
+    let addr = NetworkService::for_id(&kp.public_key());
+    let init = Initialize {
+      network: def,
+      network_uid: kp.public_key(),
+      seed: seed.to_owned(),
+      allowed_insecure,
+      allow_latest,
+      lattice,
+      timeout,
+    };
+    addr.send(init).await.map_err(|_| InternalError(8009))??;
+
+    Ok(kp.public_key())
   }
   pub(crate) fn get_schematic_addr(&self, id: &str) -> Result<Addr<SchematicService>> {
     self

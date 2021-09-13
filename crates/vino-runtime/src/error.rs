@@ -77,6 +77,10 @@ pub enum CommonError {
   IOError(#[from] std::io::Error),
   #[error(transparent)]
   CodecError(#[from] vino_codec::Error),
+  #[error("Loading/fetching failed: {0}")]
+  Loading(String),
+  #[error("Failed to read manifest: {0}")]
+  Manifest(String),
 }
 
 #[derive(Error, Debug)]
@@ -131,6 +135,14 @@ pub enum RuntimeError {
   RpcHandlerError(#[from] Box<vino_rpc::Error>),
   #[error(transparent)]
   IOError(#[from] std::io::Error),
+  #[error("Lattice error: {0}")]
+  Lattice(String),
+}
+
+impl From<vino_lattice::Error> for RuntimeError {
+  fn from(e: vino_lattice::Error) -> Self {
+    RuntimeError::Lattice(e.to_string())
+  }
 }
 
 impl From<MailboxError> for RuntimeError {

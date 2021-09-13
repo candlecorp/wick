@@ -1,5 +1,10 @@
 use std::path::Path;
 
+use vino_loader::{
+  get_bytes,
+  get_bytes_from_oci,
+};
+
 use crate::error::WasmProviderError;
 pub use crate::wapc_module::WapcModule;
 
@@ -12,7 +17,7 @@ pub async fn load_wasm_from_oci(
   allow_latest: bool,
   allowed_insecure: &[String],
 ) -> Result<WapcModule, WasmProviderError> {
-  let actor_bytes = oci_utils::fetch_oci_bytes(path, allow_latest, allowed_insecure).await?;
+  let actor_bytes = get_bytes_from_oci(path, allow_latest, allowed_insecure).await?;
   Ok(WapcModule::from_slice(&actor_bytes)?)
 }
 
@@ -21,12 +26,6 @@ pub async fn load_wasm(
   allow_latest: bool,
   allowed_insecure: &[String],
 ) -> Result<WapcModule, WasmProviderError> {
-  let path = Path::new(&location);
-  if path.exists() {
-    debug!("WASM:AS_FILE:{}", location);
-    Ok(WapcModule::from_file(path).await?)
-  } else {
-    debug!("WASM:AS_OCI:{}", location);
-    load_wasm_from_oci(location, allow_latest, allowed_insecure).await
-  }
+  let bytes = get_bytes(location, allow_latest, allowed_insecure).await?;
+  WapcModule::from_slice(&bytes)
 }

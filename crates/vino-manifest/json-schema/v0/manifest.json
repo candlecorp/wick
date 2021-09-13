@@ -155,7 +155,7 @@
     },
 
     "ProviderKind": {
-      "enum": ["Native", "GrpcUrl", "WaPC", "Lattice"]
+      "enum": ["Native", "GrpcUrl", "WaPC", "Lattice", "Network"]
     },
 
     "ComponentDefinition": {

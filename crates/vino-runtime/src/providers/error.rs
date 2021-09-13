@@ -40,6 +40,8 @@ pub enum ProviderError {
   TransportError(#[from] vino_transport::Error),
   #[error("Lattice error: {0}")]
   Lattice(String),
+  #[error("Error intializing subnetwork: {0}")]
+  SubNetwork(String),
 }
 
 impl From<vino_provider_lattice::error::LatticeProviderError> for ProviderError {

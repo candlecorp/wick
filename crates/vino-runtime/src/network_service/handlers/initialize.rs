@@ -3,7 +3,6 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use vino_lattice::lattice::Lattice;
-use vino_lattice::nats::NatsOptions;
 
 use crate::dev::prelude::*;
 use crate::network_service::State;
@@ -18,7 +17,7 @@ pub(crate) struct Initialize {
   pub(crate) network: NetworkDefinition,
   pub(crate) allowed_insecure: Vec<String>,
   pub(crate) allow_latest: bool,
-  pub(crate) lattice_config: Option<NatsOptions>,
+  pub(crate) lattice: Option<Arc<Lattice>>,
   pub(crate) timeout: Duration,
 }
 
@@ -35,7 +34,7 @@ impl Handler<Initialize> for NetworkService {
     let seed = msg.seed;
     let allow_latest = msg.allow_latest;
     let timeout = msg.timeout;
-    let lattice_config = msg.lattice_config;
+    let lattice = msg.lattice;
 
     let kp = actix_try!(keypair_from_seed(&seed), 5002);
     let schematics = msg.network.schematics.clone();
@@ -48,10 +47,6 @@ impl Handler<Initialize> for NetworkService {
     let name = self.definition.name.clone();
 
     let task = async move {
-      let lattice = match lattice_config {
-        Some(config) => Some(Arc::new(Lattice::connect(config).await?)),
-        None => None,
-      };
       let provider_addr = start_network_provider(name, lattice.clone(), nuid).await?;
       let channel = ProviderChannel {
         namespace: SELF_NAMESPACE.to_owned(),

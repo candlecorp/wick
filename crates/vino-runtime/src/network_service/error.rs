@@ -25,12 +25,16 @@ pub enum NetworkError {
   CodecError(#[from] vino_codec::Error),
   #[error(transparent)]
   RpcHandlerError(#[from] Box<vino_rpc::Error>),
-  #[error("Lattice error: {0}")]
-  Lattice(String),
 }
 
-impl From<vino_lattice::Error> for NetworkError {
-  fn from(e: vino_lattice::Error) -> Self {
-    NetworkError::Lattice(e.to_string())
+impl From<vino_loader::Error> for NetworkError {
+  fn from(e: vino_loader::Error) -> Self {
+    NetworkError::CommonError(CommonError::Loading(e.to_string()))
+  }
+}
+
+impl From<vino_manifest::Error> for NetworkError {
+  fn from(e: vino_manifest::Error) -> Self {
+    NetworkError::CommonError(CommonError::Manifest(e.to_string()))
   }
 }

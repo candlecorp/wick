@@ -2,7 +2,6 @@ use std::collections::HashMap;
 
 #[path = "./runtime_utils/mod.rs"]
 mod utils;
-use tokio_stream::StreamExt;
 use utils::*;
 use vino_entity::Entity;
 use vino_runtime::prelude::TransportWrapper;
@@ -107,7 +106,6 @@ async fn senders() -> Result<()> {
 }
 
 #[test_logger::test(actix_rt::test)]
-
 async fn no_inputs() -> Result<()> {
   println!("Running no_inputs test");
   let (network, _) = init_network_from_yaml("./manifests/v0/no-inputs.yaml").await?;
@@ -218,29 +216,6 @@ async fn wapc_stream() -> Result<()> {
     equals!(result, "Hello world");
   }
 
-  Ok(())
-}
-
-#[test_logger::test(actix_rt::test)]
-async fn bad_wapc_component() -> Result<()> {
-  let (network, _) = init_network_from_yaml("./manifests/v0/bad-wapc-component.yaml").await?;
-
-  let data = hashmap! {
-      "input" => "1234567890",
-  };
-
-  let result = network
-    .request("schematic", Entity::test("bad_wapc_component"), &data)
-    .await?;
-
-  let mut messages: Vec<TransportWrapper> = result.collect().await;
-  println!("{:?}", messages);
-  assert_eq!(messages.len(), 1);
-
-  let output: TransportWrapper = messages.pop().unwrap();
-
-  println!("output: {:?}", output);
-  assert!(output.payload.is_err());
   Ok(())
 }
 
@@ -365,5 +340,27 @@ async fn global_providers() -> Result<()> {
   let output: String = messages.pop().unwrap().payload.try_into()?;
   println!("Output: {:?}", output);
   equals!(output, "other input");
+  Ok(())
+}
+
+#[test_logger::test(actix_rt::test)]
+async fn subnetworks() -> Result<()> {
+  let (network, _) = init_network_from_yaml("./manifests/v0/sub-network-parent.yaml").await?;
+
+  let data = hashmap! {
+      "input" => "some input",
+  };
+
+  let mut result = network
+    .request("parent", Entity::test("subnetworks"), &data)
+    .await?;
+
+  let mut messages: Vec<TransportWrapper> = result.collect_port("output").await;
+  assert_eq!(messages.len(), 1);
+
+  let output: String = messages.pop().unwrap().payload.try_into()?;
+
+  equals!(output, "some input");
+
   Ok(())
 }

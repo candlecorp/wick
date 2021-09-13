@@ -181,6 +181,25 @@ pub trait Loadable<T> {
       }
     })
   }
+  /// Load struct from bytes by attempting to parse all the supported file formats.
+  fn load_from_bytes(bytes: &[u8]) -> Result<T> {
+    let contents = String::from_utf8_lossy(bytes);
+    Self::from_hocon(&contents).or_else(|e| {
+      match &e {
+        Error::VersionError(_) => Err(e),
+        Error::HoconError(hocon::Error::Deserialization { message }) => {
+          // Hocon doesn't differentiate errors for disallowed fields and a bad parse
+          if message.contains("unknown field") {
+            debug!("Invalid field found in hocon");
+            Err(e)
+          } else {
+            Self::from_yaml(&contents)
+          }
+        }
+        _ => Self::from_yaml(&contents),
+      }
+    })
+  }
   /// Load as YAML.
   fn from_yaml(src: &str) -> Result<T>;
   /// Load as Hocon.

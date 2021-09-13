@@ -142,7 +142,7 @@ pub struct ProviderDefinition {
 
 #[derive(Debug, Clone, Serialize, Deserialize, Copy, Eq, PartialEq, Primitive)]
 #[serde(deny_unknown_fields)]
-/// Kind of provider,..
+/// Kind of provider..
 pub enum ProviderKind {
   /// Native providers included at compile-time in a Vino host..
   Native = 0,
@@ -152,6 +152,8 @@ pub enum ProviderKind {
   WaPC = 2,
   /// A provider accessible via a connected lattice..
   Lattice = 3,
+  /// A local or remote Network definition..
+  Network = 4,
 }
 
 impl Default for ProviderKind {

@@ -13,8 +13,8 @@ pub enum WasmProviderError {
   CodecError(#[from] vino_codec::Error),
   #[error(transparent)]
   IoError(#[from] std::io::Error),
-  #[error(transparent)]
-  OciError(#[from] oci_utils::Error),
+  #[error("Could not load reference: {0}")]
+  Loading(String),
   #[error("JSON Serialization/Deserialization error : {0}")]
   JsonError(String),
   #[error(transparent)]
@@ -44,5 +44,11 @@ impl From<serde_json::error::Error> for WasmProviderError {
 impl From<WasmProviderError> for Box<RpcError> {
   fn from(e: WasmProviderError) -> Self {
     Box::new(RpcError::ProviderError(e.to_string()))
+  }
+}
+
+impl From<vino_loader::Error> for WasmProviderError {
+  fn from(e: vino_loader::Error) -> Self {
+    WasmProviderError::Loading(e.to_string())
   }
 }

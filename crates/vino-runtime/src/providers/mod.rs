@@ -4,6 +4,7 @@ pub(crate) mod native_provider_service;
 pub(crate) mod network_provider;
 
 use std::sync::Arc;
+use std::time::Duration;
 
 use vino_lattice::lattice::Lattice;
 
@@ -123,6 +124,51 @@ async fn initialize_wasm_provider(
   ))
 }
 
+async fn initialize_network_provider<'a>(
+  provider: ProviderDefinition,
+  namespace: &'a str,
+  opts: NetworkOptions<'a>,
+) -> Result<(ProviderChannel, ProviderModel)> {
+  let arbiter = Arbiter::new();
+  let handle = arbiter.handle();
+
+  let network_id: String = NetworkService::start_from_manifest(
+    &provider.reference,
+    opts.seed,
+    opts.allow_latest,
+    opts.insecure.to_owned(),
+    opts.lattice.clone(),
+    opts.timeout,
+  )
+  .await
+  .map_err(|e| ProviderError::SubNetwork(e.to_string()))?;
+
+  let provider = Box::new(network_provider::Provider::new(network_id));
+
+  let addr = NativeProviderService::start_in_arbiter(&handle, |_| NativeProviderService::default());
+  addr
+    .send(native_provider_service::Initialize {
+      provider: provider.clone(),
+      namespace: namespace.to_owned(),
+    })
+    .await??;
+
+  let components = addr
+    .send(native_provider_service::InitializeComponents {})
+    .await??;
+
+  Ok((
+    ProviderChannel {
+      namespace: namespace.to_owned(),
+      recipient: addr.recipient(),
+    },
+    ProviderModel {
+      namespace: namespace.to_owned(),
+      components,
+    },
+  ))
+}
+
 async fn initialize_lattice_provider(
   provider: ProviderDefinition,
   namespace: &str,
@@ -195,16 +241,33 @@ pub(crate) async fn create_network_provider_model(
   })
 }
 
+pub(crate) struct NetworkOptions<'a> {
+  seed: &'a str,
+  lattice: &'a Option<Arc<Lattice>>,
+  allow_latest: bool,
+  insecure: &'a [String],
+  timeout: Duration,
+}
+
 pub(crate) async fn initialize_provider(
   provider: ProviderDefinition,
   seed: &str,
-  lattice: &Option<Arc<Lattice>>,
+  lattice: Option<Arc<Lattice>>,
   allow_latest: bool,
   allowed_insecure: &[String],
+  timeout: Duration,
 ) -> Result<(ProviderChannel, ProviderModel)> {
   trace!("Registering namespace {}", provider.namespace);
   let namespace = provider.namespace.clone();
+  let opts = NetworkOptions {
+    seed,
+    allow_latest,
+    insecure: allowed_insecure,
+    lattice: &lattice,
+    timeout,
+  };
   match provider.kind {
+    ProviderKind::Network => initialize_network_provider(provider, &namespace, opts).await,
     ProviderKind::Native => unreachable!(), // Should not be handled via this route
     ProviderKind::GrpcUrl => initialize_grpc_provider(provider, seed, &namespace).await,
     ProviderKind::Wapc => {

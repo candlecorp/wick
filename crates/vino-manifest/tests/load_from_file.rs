@@ -84,6 +84,18 @@ fn load_shortform_hocon() -> Result<(), ManifestError> {
 }
 
 #[test_logger::test]
+fn load_providers_yaml() -> Result<(), ManifestError> {
+  let path = PathBuf::from("./tests/manifests/v0/providers.yaml");
+  let manifest = HostManifest::load_from_file(&path)?;
+
+  let HostManifest::V0(manifest) = manifest;
+  assert_eq!(manifest.network.name, Some("providers".to_owned()));
+  assert_eq!(manifest.network.providers.len(), 5);
+
+  Ok(())
+}
+
+#[test_logger::test]
 fn load_shortform_yaml() -> Result<(), ManifestError> {
   let path = PathBuf::from("./tests/manifests/v0/logger-shortform.yaml");
   let manifest = HostManifest::load_from_file(&path)?;

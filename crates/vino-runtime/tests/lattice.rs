@@ -1,12 +1,8 @@
-use std::collections::HashMap;
-
 #[path = "./runtime_utils/mod.rs"]
 mod utils;
-use tokio_stream::StreamExt;
 use utils::*;
 use vino_entity::Entity;
 use vino_runtime::prelude::TransportWrapper;
-use vino_transport::MessageTransport;
 
 #[test_logger::test(actix_rt::test)]
 async fn multi_host_lattice() -> Result<()> {

@@ -15,13 +15,13 @@ vino-rpc = { path = "../vino-rpc" }
 vino-packet = { path = "../../sdk/crates/vino-packet" }
 vino-codec = { path = "../../sdk/crates/vino-codec" }
 vino-wascap = { path = "../vino-wascap" }
+vino-loader = { path = "../vino-loader" }
 vino-provider = { path = "../../sdk/crates/vino-provider", features = [
   "native",
 ] }
 vino-transport = { path = "../../sdk/crates/vino-transport" }
 vino-types = { path = "../../sdk/crates/vino-types" }
 vino-macros = { path = "../../sdk/crates/vino-macros" }
-oci-utils = { path = "../oci-utils" }
 structopt = "0.3.22"
 serde_json = "1.0.64"
 derivative = "2.2.0"

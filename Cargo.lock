@@ -3713,6 +3713,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "vino-loader"
+version = "0.0.0"
+dependencies = [
+ "log",
+ "oci-utils",
+ "thiserror",
+ "tokio",
+]
+
+[[package]]
 name = "vino-macros"
 version = "0.1.0"
 dependencies = [
@@ -3862,7 +3872,6 @@ dependencies = [
  "log",
  "logger",
  "maplit",
- "oci-utils",
  "parking_lot",
  "serde_json",
  "structopt",
@@ -3872,6 +3881,7 @@ dependencies = [
  "tokio",
  "tokio-stream",
  "vino-codec",
+ "vino-loader",
  "vino-macros 0.7.0",
  "vino-packet",
  "vino-provider",
@@ -3971,6 +3981,7 @@ dependencies = [
  "vino-entity",
  "vino-invocation-server",
  "vino-lattice",
+ "vino-loader",
  "vino-macros 0.7.0",
  "vino-manifest",
  "vino-native-api-0",

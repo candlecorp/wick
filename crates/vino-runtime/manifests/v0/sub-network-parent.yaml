@@ -1,0 +1,15 @@
+---
+version: 0
+network:
+  schematics:
+    - name: parent
+      providers:
+        - namespace: subnet
+          kind: Network
+          reference: ./manifests/v0/sub-network-child.yaml
+      instances:
+        child:
+          id: subnet::child_schematic
+      connections:
+        - <>[input] => child[input]
+        - child[output] => <>[output]

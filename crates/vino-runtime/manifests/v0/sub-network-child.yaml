@@ -1,0 +1,11 @@
+---
+version: 0
+network:
+  schematics:
+    - name: child_schematic
+      instances:
+        log:
+          id: vino::v0::log
+      connections:
+        - <>[input] => log[input]
+        - log[output] => <>[output]

@@ -9,6 +9,7 @@ license = "BSD-3-Clause"
 vino-packet = { path = "../../sdk/crates/vino-packet" }
 vino-macros = { path = "../../sdk/crates/vino-macros" }
 vino-manifest = { path = "../vino-manifest" }
+vino-loader = { path = "../vino-loader" }
 vino-provider = { path = "../../sdk/crates/vino-provider", features = [
   "native",
 ] }

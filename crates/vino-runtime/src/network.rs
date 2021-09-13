@@ -1,7 +1,9 @@
 use std::collections::HashMap;
+use std::sync::Arc;
 use std::time::Duration;
 
 use serde::Serialize;
+use vino_lattice::lattice::Lattice;
 use vino_lattice::nats::NatsOptions;
 use vino_transport::message_transport::TransportMap;
 use vino_wascap::KeyPair;
@@ -32,10 +34,14 @@ impl Network {
   pub async fn init(&self) -> Result<()> {
     let kp = KeyPair::new_service();
     let seed = log_ie!(kp.seed(), 5103)?;
+    let lattice = match &self.lattice_config {
+      Some(config) => Some(Arc::new(Lattice::connect(config.clone()).await?)),
+      None => None,
+    };
     let init = Initialize {
       network_uid: self.uid.clone(),
       seed,
-      lattice_config: self.lattice_config.clone(),
+      lattice,
       network: self.definition.clone(),
       allowed_insecure: self.allowed_insecure.clone(),
       allow_latest: self.allow_latest,
