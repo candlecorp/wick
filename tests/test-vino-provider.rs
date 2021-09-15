@@ -4,7 +4,7 @@ use test_vino_provider::Provider;
 use vino_macros::*;
 use vino_rpc::RpcHandler;
 
-#[test_env_log::test(tokio::test)]
+#[test_logger::test(tokio::test)]
 async fn request() -> anyhow::Result<()> {
   let provider = Provider::default();
   let input = "some_input";
@@ -28,7 +28,7 @@ async fn request() -> anyhow::Result<()> {
   Ok(())
 }
 
-#[test_env_log::test(tokio::test)]
+#[test_logger::test(tokio::test)]
 async fn list() -> anyhow::Result<()> {
   let provider = Provider::default();
 

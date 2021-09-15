@@ -58,7 +58,6 @@ pub(crate) mod prelude {
   pub(crate) use crate::providers::{
     create_network_provider_model,
     initialize_native_provider,
-    initialize_provider,
     start_network_provider,
     ProviderChannel,
   };
@@ -69,15 +68,6 @@ pub(crate) mod prelude {
 }
 
 pub(crate) trait SendableTryFuture: TryFuture + Send {}
-
-pub(crate) fn filter_map<A, B, F>(source: Vec<A>, f: F) -> Vec<B>
-where
-  A: Sized,
-  B: Sized,
-  F: FnMut(A) -> Option<B>,
-{
-  source.into_iter().filter_map(f).collect()
-}
 
 pub(crate) fn map<A, B, F, T>(source: &[A], f: F) -> T
 where

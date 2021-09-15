@@ -3,9 +3,10 @@ use std::io::Read;
 use std::path::PathBuf;
 
 use structopt::StructOpt;
+use vino_manifest::host_definition::HostDefinition;
 use vino_runtime::prelude::StreamExt;
 
-use crate::utils::merge_runconfig;
+use crate::utils::merge_config;
 use crate::Result;
 
 #[derive(Debug, Clone, StructOpt)]
@@ -53,9 +54,9 @@ pub(crate) async fn handle_command(command: RunCommand) -> Result<String> {
 
   let json: HashMap<String, serde_json::value::Value> = serde_json::from_str(&data)?;
 
-  let config = vino_host::HostDefinition::load_from_file(&command.manifest)?;
+  let config = HostDefinition::load_from_file(&command.manifest)?;
 
-  let mut config = merge_runconfig(config, command.host);
+  let mut config = merge_config(config, command.host, None);
   if command.default_schematic.is_some() {
     config.default_schematic = command.default_schematic.unwrap();
   }

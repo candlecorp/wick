@@ -11,16 +11,18 @@ use vino_transport::message_transport::{
   TransportJson,
 };
 
-#[test_env_log::test(tokio::test)]
+#[test_logger::test(tokio::test)]
 async fn test_collection() -> utils::TestResult<()> {
   debug!("Starting provider");
-  let (p_tx, p_handle, port) = start_provider("vino-collection-inmemory", &[], &[]).await?;
+  let (p_tx, p_handle, port) =
+    start_provider("vino-collection-inmemory", &["--rpc", "--trace"], &[]).await?;
   debug!("Starting host");
   let (h_tx, h_handle, h_port) = start_provider(
     "vino",
     &[
       "start",
       "./tests/manifests/collection-inmemory.yaml",
+      "--rpc",
       "--trace",
     ],
     &[("TEST_PORT", &port)],

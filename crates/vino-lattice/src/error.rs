@@ -38,6 +38,9 @@ pub enum LatticeError {
 
   #[error("Timeout out waiting for result from lattice")]
   WaitTimeout,
+
+  #[error("Invalid file path: {0}")]
+  BadPath(String),
 }
 
 impl From<JoinError> for LatticeError {

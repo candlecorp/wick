@@ -1,11 +1,19 @@
 use std::sync::Arc;
 use std::time::Duration;
 
+use actix::ActorTryFutureExt;
 use parking_lot::RwLock;
 use vino_lattice::lattice::Lattice;
 
 use crate::dev::prelude::*;
 use crate::models::validator::Validator;
+use crate::providers::{
+  initialize_grpc_provider,
+  initialize_lattice_provider,
+  initialize_network_provider,
+  initialize_wasm_provider,
+  NetworkOptions,
+};
 use crate::schematic_service::State;
 use crate::transaction::executor::TransactionExecutor;
 
@@ -39,37 +47,34 @@ impl Handler<Initialize> for SchematicService {
 
     let task = initialize_providers(
       providers,
-      seed.clone(),
+      seed,
       msg.lattice,
       allow_latest,
       allowed_insecure,
       msg.timeout,
     )
     .into_actor(self)
-    .map(move |result, this, _ctx| {
-      match result {
-        Ok((mut channels, providers)) => {
-          if let Some(network_provider_channel) = network_provider_channel {
-            channels.push(network_provider_channel);
-          }
-          this.recipients = channels
-            .into_iter()
-            .map(|c| (c.namespace.clone(), c))
-            .collect();
-          let mut model = this.get_model().write();
-          model.commit_providers(providers);
-          model.partial_initialization()?;
-        }
-        Err(e) => {
-          error!("Error starting providers: {}", e);
-        }
+    .map_ok(move |(mut channels, providers), schematic, _ctx| {
+      if let Some(network_provider_channel) = network_provider_channel {
+        channels.push(network_provider_channel);
       }
-      Ok!(())
+      schematic.recipients = channels
+        .into_iter()
+        .map(|c| (c.namespace.clone(), c))
+        .collect();
+      let mut model = schematic.get_model().write();
+      model.commit_providers(providers);
+      Ok::<_, SchematicError>(model.partial_initialization()?)
+    })
+    .map(|result, _schematic, _| {
+      if result.is_ok() {
+        _schematic.validate_model()
+      } else {
+        result?
+      }
     });
-    let task = task.map(|_, this, _| this.validate_model());
 
     let state = State {
-      kp: KeyPair::from_seed(&seed).unwrap(),
       transactions: TransactionExecutor::new(model.clone(), msg.timeout),
       model,
     };
@@ -91,18 +96,39 @@ async fn initialize_providers(
   let mut channels = vec![channel];
   let mut models = vec![provider_model];
 
+  let num_providers = providers.len();
   for provider in providers {
-    let (channel, provider_model) = initialize_provider(
-      provider,
-      &seed,
-      lattice.clone(),
-      allow_latest,
-      &allowed_insecure,
-      timeout,
-    )
-    .await?;
+    let namespace = provider.namespace.clone();
+    debug!("KIND: {:?}", provider.kind);
+
+    let result = match provider.kind {
+      ProviderKind::Network => {
+        let opts = NetworkOptions {
+          seed: &seed,
+          allow_latest,
+          insecure: &allowed_insecure,
+          lattice: &lattice,
+          timeout,
+        };
+        initialize_network_provider(provider, &namespace, opts).await},
+      ProviderKind::Native => unreachable!(), // Should not be handled via this route
+      ProviderKind::GrpcUrl => initialize_grpc_provider(provider, &seed, &namespace).await,
+      ProviderKind::Wapc => {
+        initialize_wasm_provider(provider, &namespace, allow_latest, &allowed_insecure).await
+      }
+      ProviderKind::Lattice => match &lattice {
+        Some(lattice) => initialize_lattice_provider(provider, &namespace, lattice.clone()).await,
+        None => Err(ProviderError::Lattice(
+          "Attempted to initialize a lattice provider without an active lattice connection. Did you enable the lattice on the command line or in a manifest?"
+            .to_owned(),
+        )),
+      },
+    };
+    debug!("RESULT: {:?}", result);
+    let (channel, provider_model) = result?;
     channels.push(channel);
     models.push(provider_model);
   }
+  trace!("SC:PROVIDERS:REGISTERED[{}]", num_providers);
   Ok((channels, models))
 }

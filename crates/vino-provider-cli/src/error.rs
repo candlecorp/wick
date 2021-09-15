@@ -21,4 +21,7 @@ pub enum CliError {
   #[error(transparent)]
   /// An internal error running asynchronous jobs.
   JoinError(#[from] tokio::task::JoinError),
+  #[error(transparent)]
+  /// An error connecting or communicating over the lattice.
+  Lattice(#[from] vino_lattice::Error),
 }

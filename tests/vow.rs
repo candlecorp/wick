@@ -11,7 +11,7 @@ use vino_transport::message_transport::{
   TransportJson,
 };
 
-#[test_env_log::test(tokio::test)]
+#[test_logger::test(tokio::test)]
 async fn test_vow_serve() -> utils::TestResult<()> {
   debug!("Starting provider");
   let (p_tx, p_handle, port) = start_provider(
@@ -19,6 +19,7 @@ async fn test_vow_serve() -> utils::TestResult<()> {
     &[
       "serve",
       "./crates/integration/test-wapc-component/build/test_component_s.wasm",
+      "--rpc",
     ],
     &[],
   )

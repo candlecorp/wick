@@ -5,7 +5,7 @@ use vino_host::{
 
 #[actix_rt::main]
 async fn main() -> Result<(), Error> {
-  let host = HostBuilder::new().build();
+  let mut host = HostBuilder::new().build();
   host.start().await?;
 
   println!("Host started, waiting for ctrl-c / SIGINT");

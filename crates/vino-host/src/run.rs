@@ -74,17 +74,16 @@
 
 use std::collections::HashMap;
 
+use vino_manifest::host_definition::HostDefinition;
 use vino_transport::TransportStream;
 
-use crate::{
-  HostBuilder,
-  HostDefinition,
-};
+use crate::HostBuilder;
 
 type JsonMap = HashMap<String, serde_json::value::Value>;
 
 pub async fn run(manifest: HostDefinition, data: JsonMap) -> crate::Result<TransportStream> {
-  let host_builder = HostBuilder::new();
+  let default_schematic = manifest.default_schematic.clone();
+  let host_builder = HostBuilder::from_definition(manifest);
 
   let mut host = host_builder.build();
 
@@ -92,11 +91,9 @@ pub async fn run(manifest: HostDefinition, data: JsonMap) -> crate::Result<Trans
 
   host.start().await?;
 
-  host.start_network(manifest.network).await?;
-
   info!("Manifest applied");
 
-  let raw_result = host.request(&manifest.default_schematic, data).await?;
+  let raw_result = host.request(&default_schematic, data).await?;
 
   Ok(raw_result)
 }
@@ -107,9 +104,8 @@ mod tests {
   use std::path::PathBuf;
 
   use maplit::hashmap;
+  use vino_manifest::host_definition::HostDefinition;
   use vino_transport::TransportWrapper;
-
-  use crate::HostDefinition;
 
   #[actix::test]
   async fn runs_log_config() -> crate::Result<()> {

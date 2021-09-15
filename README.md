@@ -25,6 +25,26 @@ widl-template
 - interface.json's for wellknown interfaces needs to be located in a central repo
 - Type representation of components over RPC is just a string and needs to be more complex to represent valid types.
 
+## Error codes
+
+### 1XXX
+
+### 2XXX
+
+### 3XXX
+
+### 4XXX
+
+### 5XXX Network Error
+
+### 6XXX Schematic Error
+
+### 7XXX Transaction Error
+
+### 8XXX
+
+### 9XXX
+
 # Doc links
 
 - docs.vino.dev/codegen

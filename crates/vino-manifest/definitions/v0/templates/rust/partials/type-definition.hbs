@@ -11,12 +11,12 @@ fn {{upperCase (snakeCase ../name.value)}}_{{upperCase name.value}}() -> {{> exp
 #[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 {{#if description}}
-/// {{{description.value}}}.
+/// {{{description.value}}}
 {{/if}}
 pub struct {{name.value}} {
   {{#each fields}}
     {{#if description}}
-    /// {{description.value}}.
+    /// {{description.value}}
     {{/if}}
     {{#withAnnotation "deprecated"}}
     #[deprecated()]

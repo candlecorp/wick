@@ -135,7 +135,7 @@ pub enum RuntimeError {
   RpcHandlerError(#[from] Box<vino_rpc::Error>),
   #[error(transparent)]
   IOError(#[from] std::io::Error),
-  #[error("Lattice error: {0}")]
+  #[error("{0}")]
   Lattice(String),
 }
 

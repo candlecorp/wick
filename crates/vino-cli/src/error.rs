@@ -1,4 +1,5 @@
 use thiserror::Error;
+use vino_manifest::error::ManifestError;
 
 // type BoxedSyncSendError = Box<dyn std::error::Error + Sync + std::marker::Send>;
 
@@ -32,4 +33,12 @@ pub enum VinoError {
   LoggerError(#[from] logger::error::LoggerError),
   #[error("General error : {0}")]
   Other(String),
+  #[error("Manifest failed to load : {0}")]
+  ManifestLoadFailure(String),
+}
+
+impl From<ManifestError> for VinoError {
+  fn from(e: ManifestError) -> Self {
+    VinoError::ManifestLoadFailure(e.to_string())
+  }
 }

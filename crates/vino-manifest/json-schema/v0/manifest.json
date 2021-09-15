@@ -8,22 +8,22 @@
       "additionalProperties": false,
       "properties": {
         "version": {
-          "description": "The manifest version",
+          "description": "The manifest version.",
 
           "type": "number"
         },
-        "config": {
-          "description": "Additional host configuration",
+        "host": {
+          "description": "Additional host configuration.",
 
           "$ref": "#/$defs/HostConfig"
         },
         "network": {
-          "description": "The configuration for a Vino network",
+          "description": "The configuration for a Vino network.",
 
           "$ref": "#/$defs/NetworkManifest"
         },
         "default_schematic": {
-          "description": "The default schematic to execute if none is provided",
+          "description": "The default schematic to execute if none is provided.",
           "type": "string"
         }
       },
@@ -35,16 +35,117 @@
       "additionalProperties": false,
       "properties": {
         "allow_latest": {
-          "description": "Whether or not to allow the :latest tag on remote artifacts",
+          "description": "Whether or not to allow the :latest tag on remote artifacts.",
 
           "type": "boolean"
         },
         "insecure_registries": {
-          "description": "A list of registries to connect to insecurely (over HTTP vs HTTPS)",
+          "description": "A list of registries to connect to insecurely (over HTTP vs HTTPS).",
           "type": "array",
           "items": {
             "type": "string"
           }
+        },
+        "timeout": {
+          "description": "The timeout for network requests (in ms).",
+
+          "type": "number"
+        },
+        "id": {
+          "description": "The ID for this host, used to identify the host over the lattice.",
+          "required": false,
+          "type": "string"
+        },
+        "expose": {
+          "description": "The schematics to expose via RPC or the lattice, if any.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "lattice": {
+          "description": "The lattice configuration.",
+          "required": false,
+
+          "$ref": "#/$defs/LatticeConfig"
+        },
+        "rpc": {
+          "description": "Configuration for the GRPC server.",
+          "required": false,
+
+          "$ref": "#/$defs/HttpConfig"
+        },
+        "http": {
+          "description": "Configuration for the HTTP 1 server (development only).",
+          "required": false,
+
+          "$ref": "#/$defs/HttpConfig"
+        }
+      },
+      "required": []
+    },
+
+    "HttpConfig": {
+      "$anchor": "#HttpConfig",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "description": "Enable/disable the server.",
+
+          "type": "boolean"
+        },
+        "port": {
+          "description": "The port to bind to.",
+          "required": false,
+
+          "type": "number"
+        },
+        "address": {
+          "description": "The address to bind to.",
+          "required": false,
+          "type": "string"
+        },
+        "pem": {
+          "description": "Path to pem file for TLS.",
+          "required": false,
+          "type": "string"
+        },
+        "key": {
+          "description": "Path to key file for TLS.",
+          "required": false,
+          "type": "string"
+        },
+        "ca": {
+          "description": "Path to CA file.",
+          "required": false,
+          "type": "string"
+        }
+      },
+      "required": []
+    },
+
+    "LatticeConfig": {
+      "$anchor": "#LatticeConfig",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "description": "Enable/disable the lattice connection.",
+
+          "type": "boolean"
+        },
+        "address": {
+          "description": "The address of the NATS server.",
+          "type": "string"
+        },
+        "creds_path": {
+          "description": "The path to the NATS credsfile.",
+          "required": false,
+          "type": "string"
+        },
+        "token": {
+          "description": "The NATS token.",
+          "required": false,
+          "type": "string"
         }
       },
       "required": []

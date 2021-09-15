@@ -1,3 +1,4 @@
+use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -30,11 +31,12 @@ use crate::error::LatticeError;
 
 type Result<T> = std::result::Result<T, LatticeError>;
 static RPC_STREAM_NAME: &str = "rpc";
+
 #[derive(Debug, Clone)]
 pub struct NatsOptions {
   pub address: String,
   pub client_id: String,
-  pub creds_path: Option<String>,
+  pub creds_path: Option<PathBuf>,
   pub token: Option<String>,
   pub timeout: Duration,
 }

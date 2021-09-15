@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
 
+use actix::ActorTryFutureExt;
 use vino_lattice::lattice::Lattice;
 
 use crate::dev::prelude::*;
@@ -44,50 +45,43 @@ impl Handler<Initialize> for NetworkService {
     self.state = Some(State { kp });
     self.uid = nuid.clone();
     self.definition = msg.network;
-    let name = self.definition.name.clone();
 
     let task = async move {
-      let provider_addr = start_network_provider(name, lattice.clone(), nuid).await?;
+      let provider_addr = start_network_provider(nuid).await?;
       let channel = ProviderChannel {
         namespace: SELF_NAMESPACE.to_owned(),
         recipient: provider_addr.clone().recipient(),
       };
-      let init_msgs = schematics.into_iter().map(|def| {
+      for def in schematics {
         let addr = address_map.get(&def.name).unwrap();
-        addr.send(crate::schematic_service::handlers::initialize::Initialize {
-          seed: seed.clone(),
-          lattice: lattice.clone(),
-          network_provider_channel: Some(channel.clone()),
-          schematic: def,
-          allow_latest,
-          allowed_insecure: allowed_insecure.clone(),
-          global_providers: global_providers.clone(),
-          timeout,
-        })
-      });
+        let name = def.name.clone();
+        trace!("NETWORK:SCHEMATIC[{}]", name);
 
-      let mut results = Vec::new();
-      for msg in init_msgs {
-        results.push(msg.await.map_err(|_| InternalError(5001))?);
+        addr
+          .send(crate::schematic_service::handlers::initialize::Initialize {
+            seed: seed.clone(),
+            lattice: lattice.clone(),
+            network_provider_channel: Some(channel.clone()),
+            schematic: def,
+            allow_latest,
+            allowed_insecure: allowed_insecure.clone(),
+            global_providers: global_providers.clone(),
+            timeout,
+          })
+          .await
+          .map_err(|_| InternalError(5001))??;
+
+        trace!("NETWORK:SCHEMATIC[{}]:INITIALIZED", name);
       }
 
-      let errors: Vec<SchematicError> = filter_map(results, |e| e.err());
-      if errors.is_empty() {
-        debug!("Schematics initialized");
-        Ok((provider_addr.clone(), lattice))
-      } else {
-        Err(NetworkError::InitializationError(errors))
-      }
+      debug!("Schematics initialized");
+      Ok((provider_addr.clone(), lattice))
     }
     .into_actor(self)
-    .then(|result, network, _ctx| {
+    .and_then(|(addr, lattice), network, _ctx| {
       let schematics = network.schematics.clone();
-      if let Err(e) = result {
-        error!("Initialization error: {}", e);
-        panic!();
-      }
-      let (addr, lattice) = result.unwrap();
       network.lattice = lattice;
+      trace!("NETWORK:PROVIDER:SELF:START");
       async move {
         // TODO Make cross-schematic resolution smarter.
         for _ in 1..5 {

@@ -16,7 +16,7 @@ pub(crate) struct ServeCommand {
   pub(crate) wasm: String,
 
   /// The number of threads to start.
-  #[structopt(long, short = "t", default_value = "2")]
+  #[structopt(long, default_value = "2")]
   threads: u8,
 }
 
@@ -28,7 +28,15 @@ pub(crate) async fn handle_command(opts: ServeCommand) -> Result<()> {
       .await?;
 
   vino_provider_cli::init_cli(
-    Box::new(Provider::try_from_module(&component, 5)?),
+    Box::new(move || {
+      Box::new(match Provider::try_from_module(&component, 5) {
+        Ok(provider) => provider,
+        Err(e) => {
+          error!("Error starting WebAssembly provider: {}", e);
+          panic!();
+        }
+      })
+    }),
     Some(opts.cli.into()),
   )
   .await?;

@@ -109,6 +109,9 @@ pub type RpcResult<T> = std::result::Result<T, Box<error::RpcError>>;
 /// The type of RpcHandler the default invocation server takes.
 pub type BoxedRpcHandler = Box<dyn RpcHandler + Send + Sync + 'static>;
 
+/// A function that produces a BoxedRpcHandler.
+pub type RpcFactory = Box<dyn Fn() -> BoxedRpcHandler + Send + Sync + 'static>;
+
 /// A trait that implementers of the RPC interface should implement.
 #[async_trait]
 pub trait RpcHandler: DynClone + Sync {

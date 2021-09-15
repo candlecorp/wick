@@ -6,9 +6,16 @@ use structopt::clap::AppSettings;
 use structopt::StructOpt;
 
 #[derive(StructOpt, Debug, Clone)]
-#[structopt(
-     global_settings(&[AppSettings::VersionlessSubcommands]),
-     name = "vino", about = "Vino host")]
+#[structopt(global_settings(
+  &[
+    AppSettings::VersionlessSubcommands,
+    AppSettings::ColoredHelp,
+    AppSettings::DeriveDisplayOrder,
+    AppSettings::UnifiedHelpMessage
+  ]),
+  name = "vino",
+  about = "Vino host"
+)]
 pub(crate) struct Cli {
   #[structopt(flatten)]
   pub(crate) command: CliCommand,
@@ -16,7 +23,7 @@ pub(crate) struct Cli {
 
 #[derive(Debug, Clone, StructOpt)]
 pub(crate) enum CliCommand {
-  /// Start a persistent host from a manifest to serve requests to schematics.
+  /// Start a persistent host from a manifest.
   #[structopt(name = "start")]
   Start(start::StartCommand),
   /// Load a manifest and run the default schematic.
@@ -25,7 +32,6 @@ pub(crate) enum CliCommand {
 }
 
 #[derive(Debug, Clone, StructOpt)]
-#[structopt(rename_all = "kebab-case")]
 pub(crate) struct HostOptions {
   /// Allows the use of "latest" artifact tag.
   #[structopt(long = "allow-latest", env = "VINO_ALLOW_LATEST")]

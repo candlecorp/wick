@@ -29,7 +29,6 @@ pub(crate) struct SchematicService {
 #[derive(Debug)]
 struct State {
   model: Arc<RwLock<SchematicModel>>,
-  kp: KeyPair,
   transactions: TransactionExecutor,
 }
 

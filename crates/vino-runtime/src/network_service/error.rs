@@ -7,12 +7,14 @@ pub enum NetworkError {
   NotStarted,
   #[error("Schematic {0} not found")]
   SchematicNotFound(String),
+  #[error("Error initializing: {0}")]
+  InitFailure(String),
   #[error("Error initializing: {}", join(.0, ", "))]
-  InitializationError(Vec<SchematicError>),
+  SchematicInitFailure(Vec<SchematicError>),
   #[error("Maximum number of tries reached when resolving internal schematic references")]
   MaxTriesReached,
-  #[error(transparent)]
-  SchematicError(#[from] Box<SchematicError>),
+  #[error("Schematic Error: {0}")]
+  SchematicError(String),
   #[error(transparent)]
   ComponentError(#[from] ProviderError),
   #[error(transparent)]
@@ -25,6 +27,12 @@ pub enum NetworkError {
   CodecError(#[from] vino_codec::Error),
   #[error(transparent)]
   RpcHandlerError(#[from] Box<vino_rpc::Error>),
+}
+
+impl From<SchematicError> for NetworkError {
+  fn from(e: SchematicError) -> Self {
+    NetworkError::SchematicError(e.to_string())
+  }
 }
 
 impl From<vino_loader::Error> for NetworkError {

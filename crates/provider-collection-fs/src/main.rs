@@ -91,10 +91,11 @@ pub struct Options {
 #[tokio::main]
 async fn main() -> Result<(), vino_provider_cli::Error> {
   let opts = Options::from_args();
+  let directory = opts.directory;
 
   vino_provider_cli::init_logging(&opts.options.logging)?;
   vino_provider_cli::init_cli(
-    Box::new(Provider::new(opts.directory)),
+    Box::new(move || Box::new(Provider::new(directory.clone()))),
     Some(opts.options.into()),
   )
   .await?;

@@ -3,6 +3,9 @@
   {{#case "StringValue"}}
   "{{value}}".to_owned()
   {{/case}}
+  {{#case "IntValue"}}
+  {{value}}
+  {{/case}}
   {{#case "ObjectValue"}}
     {{#if fields }}
       {{panic "Unhandled default" . }}

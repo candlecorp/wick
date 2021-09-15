@@ -34,12 +34,12 @@ use serde_with_expand_env::with_expand_envs;
 
 #[allow(non_snake_case)]
 fn HOST_MANIFEST_DEFAULT_SCHEMATIC() -> String {
-  "default".to_owned()
+  "main".to_owned()
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
-/// The Host Manifest defines the starting state of a Vino host.
+/// A manifest defines the starting state of a Vino host and network.
 pub struct HostManifest {
   /// The manifest version.
 
@@ -47,7 +47,7 @@ pub struct HostManifest {
   pub version: u8,
   /// Additional host configuration.
   #[serde(default)]
-  pub config: HostConfig,
+  pub host: HostConfig,
   /// The configuration for a Vino network.
   #[serde(default)]
   pub network: NetworkManifest,
@@ -55,6 +55,11 @@ pub struct HostManifest {
   #[serde(default = "HOST_MANIFEST_DEFAULT_SCHEMATIC")]
   #[serde(deserialize_with = "with_expand_envs")]
   pub default_schematic: String,
+}
+
+#[allow(non_snake_case)]
+fn HOST_CONFIG_TIMEOUT() -> u64 {
+  5000
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -69,24 +74,89 @@ pub struct HostConfig {
   #[serde(default)]
   #[serde(skip_serializing_if = "Vec::is_empty")]
   pub insecure_registries: Vec<String>,
+  /// The timeout for network requests (in ms).
+  #[serde(default = "HOST_CONFIG_TIMEOUT")]
+  #[serde(deserialize_with = "with_expand_envs")]
+  pub timeout: u64,
+  /// The ID for this host, used to identify the host over the lattice.
+  #[serde(default)]
+  pub id: Option<String>,
+  /// The schematics to expose via RPC or the lattice, if any.
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub expose: Vec<String>,
+  /// The lattice configuration.
+  #[serde(default)]
+  pub lattice: Option<LatticeConfig>,
+  /// Configuration for the GRPC server.
+  #[serde(default)]
+  pub rpc: Option<HttpConfig>,
+  /// Configuration for the HTTP 1 server (development only).
+  #[serde(default)]
+  pub http: Option<HttpConfig>,
+}
+
+#[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+/// Configuration for HTTP/S servers.
+pub struct HttpConfig {
+  /// Enable/disable the server.
+  #[serde(default)]
+  #[serde(deserialize_with = "with_expand_envs")]
+  pub enabled: bool,
+  /// The port to bind to.
+  #[serde(default)]
+  pub port: Option<u16>,
+  /// The address to bind to.
+  #[serde(default)]
+  pub address: Option<String>,
+  /// Path to pem file for TLS.
+  #[serde(default)]
+  pub pem: Option<String>,
+  /// Path to key file for TLS.
+  #[serde(default)]
+  pub key: Option<String>,
+  /// Path to CA file.
+  #[serde(default)]
+  pub ca: Option<String>,
+}
+
+#[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+/// Configuration used to connect to the lattice.
+pub struct LatticeConfig {
+  /// Enable/disable the lattice connection.
+  #[serde(default)]
+  #[serde(deserialize_with = "with_expand_envs")]
+  pub enabled: bool,
+  /// The address of the NATS server.
+  #[serde(default)]
+  #[serde(deserialize_with = "with_expand_envs")]
+  pub address: String,
+  /// The path to the NATS credsfile.
+  #[serde(default)]
+  pub creds_path: Option<String>,
+  /// The NATS token.
+  #[serde(default)]
+  pub token: Option<String>,
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 /// A Vino network definition.
 pub struct NetworkManifest {
-  /// The unique identifier for this Network..
+  /// The unique identifier for this Network.
   #[serde(default)]
   pub name: Option<String>,
-  /// The labels that apply to this network..
+  /// The labels that apply to this network.
   #[serde(default)]
   #[serde(skip_serializing_if = "HashMap::is_empty")]
   pub labels: HashMap<String, String>,
-  /// The links between capabilities and components..
+  /// The links between capabilities and components.
   #[serde(default)]
   #[serde(skip_serializing_if = "Vec::is_empty")]
   pub schematics: Vec<SchematicManifest>,
-  /// A list of providers and component collections..
+  /// A list of providers and component collections.
   #[serde(default)]
   #[serde(skip_serializing_if = "Vec::is_empty")]
   pub providers: Vec<ProviderDefinition>,
@@ -94,26 +164,26 @@ pub struct NetworkManifest {
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
-/// A definition for an individual Vino schematic..
+/// A definition for an individual Vino schematic.
 pub struct SchematicManifest {
-  /// Schematic name..
+  /// Schematic name.
   #[serde(deserialize_with = "with_expand_envs")]
   pub name: String,
-  /// A list of providers and component collections..
+  /// A list of providers and component collections.
   #[serde(default)]
   #[serde(skip_serializing_if = "Vec::is_empty")]
   pub providers: Vec<ProviderDefinition>,
-  /// A map from component reference to its target..
+  /// A map from component reference to its target.
   #[serde(default)]
   #[serde(skip_serializing_if = "HashMap::is_empty")]
   #[serde(deserialize_with = "map_component_def")]
   pub instances: HashMap<String, ComponentDefinition>,
-  /// A list of connections from component to component..
+  /// A list of connections from component to component.
   #[serde(default)]
   #[serde(skip_serializing_if = "Vec::is_empty")]
   #[serde(deserialize_with = "vec_connection")]
   pub connections: Vec<ConnectionDefinition>,
-  /// A map of constraints and values that limit where this schematic can run..
+  /// A map of constraints and values that limit where this schematic can run.
   #[serde(default)]
   #[serde(skip_serializing_if = "HashMap::is_empty")]
   pub constraints: HashMap<String, String>,
@@ -121,20 +191,20 @@ pub struct SchematicManifest {
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
-/// A provider definition..
+/// A provider definition.
 pub struct ProviderDefinition {
-  /// The namespace to reference the provider&#x27;s components on..
+  /// The namespace to reference the provider&#x27;s components on.
   #[serde(default)]
   #[serde(deserialize_with = "with_expand_envs")]
   pub namespace: String,
-  /// The kind/type of the provider..
+  /// The kind/type of the provider.
   #[serde(default)]
   pub kind: ProviderKind,
-  /// The reference/location of the provider..
+  /// The reference/location of the provider.
   #[serde(default)]
   #[serde(deserialize_with = "with_expand_envs")]
   pub reference: String,
-  /// Data or configuration to pass to the provider initialization..
+  /// Data or configuration to pass to the provider initialization.
   #[serde(default)]
   #[serde(skip_serializing_if = "HashMap::is_empty")]
   pub data: HashMap<String, String>,
@@ -142,17 +212,17 @@ pub struct ProviderDefinition {
 
 #[derive(Debug, Clone, Serialize, Deserialize, Copy, Eq, PartialEq, Primitive)]
 #[serde(deny_unknown_fields)]
-/// Kind of provider..
+/// Kind of provider.
 pub enum ProviderKind {
-  /// Native providers included at compile-time in a Vino host..
+  /// Native providers included at compile-time in a Vino host.
   Native = 0,
-  /// The URL for a separately managed GRPC endpoint..
+  /// The URL for a separately managed GRPC endpoint.
   GrpcUrl = 1,
-  /// A WaPC WebAssembly provider..
+  /// A WaPC WebAssembly provider.
   WaPC = 2,
-  /// A provider accessible via a connected lattice..
+  /// A provider accessible via a connected lattice.
   Lattice = 3,
-  /// A local or remote Network definition..
+  /// A local or remote Network definition.
   Network = 4,
 }
 
@@ -164,44 +234,44 @@ impl Default for ProviderKind {
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
-/// A single component definition..
+/// A single component definition.
 pub struct ComponentDefinition {
-  /// The ID of the component (i.e. the alias, key, or namespace)..
+  /// The ID of the component (i.e. the alias, key, or namespace).
   #[serde(deserialize_with = "with_expand_envs")]
   pub id: String,
-  /// Data to associate with the reference..
+  /// Data to associate with the reference.
   #[serde(default)]
   pub config: Option<HashMap<String, String>>,
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
-/// A connection between components. This can be specified in short-form syntax (where applicable). See <a href='https://docs.vino.dev/docs/configuration/short-form-syntax/'>docs.vino.dev</a> for more information..
+/// A connection between components. This can be specified in short-form syntax (where applicable). See <a href='https://docs.vino.dev/docs/configuration/short-form-syntax/'>docs.vino.dev</a> for more information.
 pub struct ConnectionDefinition {
-  /// The originating component from upstream..
+  /// The originating component from upstream.
   #[serde(default)]
   #[serde(deserialize_with = "connection_target_shortform")]
   pub from: ConnectionTargetDefinition,
-  /// The destination component (downstream)..
+  /// The destination component (downstream).
   #[serde(default)]
   #[serde(deserialize_with = "connection_target_shortform")]
   pub to: ConnectionTargetDefinition,
-  /// The default value to provide in the event of an upstream Error or Exception..
+  /// The default value to provide in the event of an upstream Error or Exception.
   #[serde(default)]
   pub default: Option<String>,
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
-/// A connection target e.g. a port on a reference. This can be specified in short-form syntax (where applicable).  See <a href='https://docs.vino.dev/docs/configuration/short-form-syntax/'>docs.vino.dev</a> for more information..
+/// A connection target e.g. a port on a reference. This can be specified in short-form syntax (where applicable).  See <a href='https://docs.vino.dev/docs/configuration/short-form-syntax/'>docs.vino.dev</a> for more information.
 pub struct ConnectionTargetDefinition {
-  /// The instance name of the referenced component..
+  /// The instance name of the referenced component.
   #[serde(deserialize_with = "with_expand_envs")]
   pub instance: String,
-  /// The component&#x27;s port..
+  /// The component&#x27;s port.
   #[serde(deserialize_with = "with_expand_envs")]
   pub port: String,
-  /// Data to send automatically. Parsed as JSON. (only used for &lt;sender&gt; instances)..
+  /// Data to send automatically. Parsed as JSON. (only used for &lt;sender&gt; instances).
   #[serde(default)]
   pub data: Option<String>,
 }

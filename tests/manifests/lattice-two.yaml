@@ -1,4 +1,9 @@
 version: 0
+host:
+  rpc:
+    enabled: true
+  lattice:
+    enabled: true
 network:
   name: network-two
   schematics:

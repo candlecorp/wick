@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+use std::str::FromStr;
 use std::sync::{
   Arc,
   RwLock,
@@ -46,7 +48,7 @@ type Result<T> = std::result::Result<T, LatticeError>;
 pub struct LatticeBuilder {
   address: String,
   client_id: String,
-  credential_path: Option<String>,
+  credential_path: Option<PathBuf>,
   token: Option<String>,
   timeout: Duration,
 }
@@ -105,7 +107,10 @@ impl LatticeBuilder {
   /// Set the path to the NATS creds file.
   pub fn credential_path(self, credential_path: impl AsRef<str>) -> Result<Self> {
     Ok(Self {
-      credential_path: Some(credential_path.as_ref().to_owned()),
+      credential_path: Some(
+        PathBuf::from_str(credential_path.as_ref())
+          .map_err(|e| LatticeError::BadPath(e.to_string()))?,
+      ),
       ..self
     })
   }

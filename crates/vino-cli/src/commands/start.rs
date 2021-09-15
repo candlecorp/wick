@@ -1,16 +1,16 @@
 use std::path::PathBuf;
 
 use structopt::StructOpt;
-use vino_host::{
-  HostBuilder,
-  HostDefinition,
+use vino_host::HostBuilder;
+use vino_manifest::host_definition::HostDefinition;
+use vino_provider_cli::cli::{
+  print_info,
+  DefaultCliOptions,
 };
-use vino_provider_cli::cli::DefaultCliOptions;
 
-use crate::utils::merge_runconfig;
+use crate::utils::merge_config;
 use crate::Result;
 #[derive(Debug, Clone, StructOpt)]
-#[structopt(rename_all = "kebab-case")]
 pub(crate) struct StartCommand {
   #[structopt(flatten)]
   pub(crate) host: super::HostOptions,
@@ -25,35 +25,28 @@ pub(crate) struct StartCommand {
 
 pub(crate) async fn handle_command(command: StartCommand) -> Result<String> {
   let config = match command.manifest {
-    Some(file) => vino_host::HostDefinition::load_from_file(&file)?,
+    Some(file) => HostDefinition::load_from_file(&file)?,
     None => HostDefinition::default(),
   };
 
-  let config = merge_runconfig(config, command.host);
+  vino_provider_cli::init_logging(&command.server_options.logging)?;
 
-  let host_builder = HostBuilder::new();
+  let config = merge_config(config, command.host, Some(command.server_options));
+
+  let host_builder = HostBuilder::from_definition(config);
 
   let mut host = host_builder.build();
 
-  vino_provider_cli::init_logging(&command.server_options.logging)?;
-
-  debug!("Starting host");
-  match host.start().await {
-    Ok(_) => {
-      debug!("Applying manifest");
-      host.start_network(config.network).await?;
-      info!("Manifest applied");
-      let metadata = host
-        .start_rpc_server(Some(command.server_options.into()))
-        .await?;
-      let addr = metadata.rpc_addr.unwrap();
-      info!("Server bound to {} on port {}", addr.ip(), addr.port());
+  host.start().await?;
+  info!("Host started");
+  match host.get_server_info() {
+    Some(info) => {
+      print_info(info);
     }
-    Err(e) => {
-      error!("Failed to start host: {}", e);
+    None => {
+      warn!("No server information available, did you intend to start a host without GRPC or a lattice connection?");
     }
-  }
-
+  };
   info!("Waiting for Ctrl-C");
   let _ = tokio::signal::ctrl_c().await;
   info!("Ctrl-C received, shutting down");

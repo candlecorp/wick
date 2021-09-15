@@ -78,6 +78,14 @@ pub enum ManifestError {
   #[error("Attempted to grab data from a target that doesn't exist")]
   NoTarget,
 
+  /// File path in manifest is invalid.
+  #[error("Invalid file path: {0}")]
+  BadPath(String),
+
+  /// IP address in manifest is invalid.
+  #[error("Invalid IP Address: {0}")]
+  BadIpAddress(String),
+
   /// Miscellaneous error.
   #[error("General error : {0}")]
   Other(String),

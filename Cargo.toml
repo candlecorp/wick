@@ -20,6 +20,7 @@ vino-codec = { path = "./sdk/crates/vino-codec" }
 vino-packet = { path = "./sdk/crates/vino-packet" }
 vino-provider = { path = "./sdk/crates/vino-provider", features = ["native"] }
 vino-transport = { path = "./sdk/crates/vino-transport" }
+logger = { path = "./crates/logger" }
 vino-interface-collection = { path = "./crates/interfaces/interface-collection" }
 test-vino-provider = { path = "./crates/integration/test-vino-provider" }
 vino-rpc = { path = "./crates/vino-rpc" }
@@ -37,7 +38,7 @@ tokio = { version = "1.4.0", features = [
 ] }
 futures = "0.3.15"
 log = "0.4.14"
-env_logger = "0.9"
+test-logger = { path = "./crates/test-logger" }
 anyhow = "1.0.41"
 serde_json = "1.0.64"
 

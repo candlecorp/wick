@@ -104,7 +104,8 @@ async fn main() -> Result<()> {
       0
     }
     Err(e) => {
-      eprintln!("Vino exiting with error: {}", e);
+      error!("Error: {}", e);
+      eprintln!("\nVino exited with error: {}", e);
       eprintln!("Run with --info, --debug, or --trace for more information.");
       1
     }

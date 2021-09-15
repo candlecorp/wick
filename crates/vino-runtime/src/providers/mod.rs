@@ -22,6 +22,7 @@ pub(crate) struct ProviderChannel {
 pub(crate) async fn initialize_native_provider(
   namespace: &str,
 ) -> Result<(ProviderChannel, ProviderModel)> {
+  trace!("PROV:NATIVE:NS[{}]:REGISTERING", namespace);
   let arbiter = Arbiter::new();
   let handle = arbiter.handle();
 
@@ -52,11 +53,12 @@ pub(crate) async fn initialize_native_provider(
   ))
 }
 
-async fn initialize_grpc_provider(
+pub(crate) async fn initialize_grpc_provider(
   provider: ProviderDefinition,
   seed: &str,
   namespace: &str,
 ) -> Result<(ProviderChannel, ProviderModel)> {
+  trace!("PROV:GRPC:NS[{}]:REGISTERING", provider.namespace);
   let arbiter = Arbiter::new();
   let handle = arbiter.handle();
 
@@ -84,12 +86,13 @@ async fn initialize_grpc_provider(
   ))
 }
 
-async fn initialize_wasm_provider(
+pub(crate) async fn initialize_wasm_provider(
   provider: ProviderDefinition,
   namespace: &str,
   allow_latest: bool,
   allowed_insecure: &[String],
 ) -> Result<(ProviderChannel, ProviderModel)> {
+  trace!("PROV:WASM:NS[{}]:REGISTERING", provider.namespace);
   let arbiter = Arbiter::new();
   let handle = arbiter.handle();
   let component =
@@ -124,11 +127,12 @@ async fn initialize_wasm_provider(
   ))
 }
 
-async fn initialize_network_provider<'a>(
+pub(crate) async fn initialize_network_provider<'a>(
   provider: ProviderDefinition,
   namespace: &'a str,
   opts: NetworkOptions<'a>,
 ) -> Result<(ProviderChannel, ProviderModel)> {
+  trace!("PROV:NETWORK:NS[{}]:REGISTERING", provider.namespace);
   let arbiter = Arbiter::new();
   let handle = arbiter.handle();
 
@@ -169,11 +173,12 @@ async fn initialize_network_provider<'a>(
   ))
 }
 
-async fn initialize_lattice_provider(
+pub(crate) async fn initialize_lattice_provider(
   provider: ProviderDefinition,
   namespace: &str,
   lattice: Arc<Lattice>,
 ) -> Result<(ProviderChannel, ProviderModel)> {
+  trace!("PROV:LATTICE:NS[{}]:REGISTERING", provider.namespace);
   let arbiter = Arbiter::new();
   let handle = arbiter.handle();
 
@@ -205,16 +210,12 @@ async fn initialize_lattice_provider(
 }
 
 pub(crate) async fn start_network_provider(
-  network_name: Option<String>,
-  lattice: Option<Arc<Lattice>>,
   network_id: String,
 ) -> Result<Addr<NativeProviderService>> {
+  trace!("PROV:NETWORK[{}]", network_id);
   let arbiter = Arbiter::new();
   let handle = arbiter.handle();
-  if let (Some(name), Some(lattice)) = (network_name, lattice) {
-    let provider = Box::new(NetworkProvider::new(network_id.clone()));
-    lattice.handle_namespace(name, move || provider).await?;
-  }
+
   let provider = Box::new(NetworkProvider::new(network_id));
 
   let addr = NativeProviderService::start_in_arbiter(&handle, |_| NativeProviderService::default());
@@ -242,43 +243,9 @@ pub(crate) async fn create_network_provider_model(
 }
 
 pub(crate) struct NetworkOptions<'a> {
-  seed: &'a str,
-  lattice: &'a Option<Arc<Lattice>>,
-  allow_latest: bool,
-  insecure: &'a [String],
-  timeout: Duration,
-}
-
-pub(crate) async fn initialize_provider(
-  provider: ProviderDefinition,
-  seed: &str,
-  lattice: Option<Arc<Lattice>>,
-  allow_latest: bool,
-  allowed_insecure: &[String],
-  timeout: Duration,
-) -> Result<(ProviderChannel, ProviderModel)> {
-  trace!("Registering namespace {}", provider.namespace);
-  let namespace = provider.namespace.clone();
-  let opts = NetworkOptions {
-    seed,
-    allow_latest,
-    insecure: allowed_insecure,
-    lattice: &lattice,
-    timeout,
-  };
-  match provider.kind {
-    ProviderKind::Network => initialize_network_provider(provider, &namespace, opts).await,
-    ProviderKind::Native => unreachable!(), // Should not be handled via this route
-    ProviderKind::GrpcUrl => initialize_grpc_provider(provider, seed, &namespace).await,
-    ProviderKind::Wapc => {
-      initialize_wasm_provider(provider, &namespace, allow_latest, allowed_insecure).await
-    }
-    ProviderKind::Lattice => match lattice {
-      Some(lattice) => initialize_lattice_provider(provider, &namespace, lattice.clone()).await,
-      None => Err(ProviderError::Lattice(
-        "Attempted to initialize a lattice provider without an active lattice connection"
-          .to_owned(),
-      )),
-    },
-  }
+  pub(crate) seed: &'a str,
+  pub(crate) lattice: &'a Option<Arc<Lattice>>,
+  pub(crate) allow_latest: bool,
+  pub(crate) insecure: &'a [String],
+  pub(crate) timeout: Duration,
 }

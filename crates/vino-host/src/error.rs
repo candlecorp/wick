@@ -48,6 +48,12 @@ pub enum HostError {
   KeyPairError(#[from] nkeys::error::Error),
   #[error("General error : {0}")]
   Other(String),
+  #[error("{0}")]
+  Lattice(String),
+  #[error("Unparseable IP address: {0}")]
+  BadIpAddress(String),
+  #[error("Invalid file path: {0}")]
+  BadPath(String),
 }
 
 impl From<BoxedErrorSyncSend> for HostError {
@@ -71,5 +77,11 @@ impl From<&'static str> for HostError {
 impl From<RuntimeError> for HostError {
   fn from(e: RuntimeError) -> Self {
     HostError::RuntimeError(Box::new(e))
+  }
+}
+
+impl From<vino_lattice::Error> for HostError {
+  fn from(e: vino_lattice::Error) -> Self {
+    HostError::Lattice(e.to_string())
   }
 }

@@ -25,13 +25,13 @@ BINS=vino vinoc vino-collection-inmemory vow vino-authentication-inmemory vino-c
 all: build
 
 # Defines rules for each of the BINS to copy them into build/local
-define COPY_BIN
+define BUILD_BIN
 $(1): build
 	cp target/debug/$$@ build/local
 endef
 
 # Call the above rule generator for each BIN file
-$(foreach bin,$(BINS),$(eval $(call COPY_BIN,$(bin))))
+$(foreach bin,$(BINS),$(eval $(call BUILD_BIN,$(bin))))
 
 codegen:
 	@for project in $(MAKEFILE_PROJECTS); do \
@@ -65,7 +65,7 @@ install: $(BINS)
 	cp build/local/* ~/.cargo/bin/
 
 build: ./build/local codegen
-	cargo build --workspace
+	cargo build --workspace --all
 
 $(TEST_WASM):
 	cd $(TEST_WASM_DIR) && make && cd $(ROOT)

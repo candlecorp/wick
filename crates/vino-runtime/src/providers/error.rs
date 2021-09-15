@@ -38,7 +38,7 @@ pub enum ProviderError {
   CommonError(#[from] CommonError),
   #[error(transparent)]
   TransportError(#[from] vino_transport::Error),
-  #[error("Lattice error: {0}")]
+  #[error("{0}")]
   Lattice(String),
   #[error("Error intializing subnetwork: {0}")]
   SubNetwork(String),

@@ -1,5 +1,5 @@
 
-"A Vino network definition"
+"A Vino network definition."
 type NetworkManifest {
   "The unique identifier for this Network."
   name: string?,

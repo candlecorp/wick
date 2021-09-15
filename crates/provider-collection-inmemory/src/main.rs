@@ -80,6 +80,10 @@ use vino_provider_cli::cli::DefaultCliOptions;
 async fn main() -> Result<(), vino_collection_inmemory::Error> {
   let opts = DefaultCliOptions::from_args();
   vino_provider_cli::init_logging(&opts.logging)?;
-  vino_provider_cli::init_cli(Box::new(Provider::default()), Some(opts.into())).await?;
+  vino_provider_cli::init_cli(
+    Box::new(|| Box::new(Provider::default())),
+    Some(opts.into()),
+  )
+  .await?;
   Ok(())
 }

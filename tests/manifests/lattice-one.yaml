@@ -1,4 +1,10 @@
 version: 0
+host:
+  timeout: 5000
+  rpc:
+    enabled: true
+  lattice:
+    enabled: true
 network:
   name: network-one
   schematics:

@@ -14,6 +14,7 @@ use crate::dev::prelude::*;
 /// An invocation for a component, port, or schematic.
 #[derive(Debug, Clone, Default, Serialize, Deserialize, Message)]
 #[rtype(result = "InvocationResponse")]
+#[must_use]
 pub struct Invocation {
   pub origin: Entity,
   pub target: Entity,
@@ -49,6 +50,7 @@ impl TryFrom<Invocation> for vino_rpc::rpc::Invocation {
 }
 
 #[derive(Debug)]
+#[must_use]
 pub enum InvocationResponse {
   Stream { tx_id: String, rx: TransportStream },
   Error { tx_id: String, msg: String },
@@ -61,7 +63,6 @@ pub(crate) fn inv_error(tx_id: &str, msg: &str) -> InvocationResponse {
 impl InvocationResponse {
   /// Creates a successful invocation response stream. Response include the receiving end.
   /// of an unbounded channel to listen for future output.
-  #[must_use]
   pub fn stream(
     tx_id: String,
     rx: impl Stream<Item = TransportWrapper> + Send + 'static,
@@ -73,7 +74,6 @@ impl InvocationResponse {
   }
 
   /// Creates an error response.
-  #[must_use]
   pub fn error(tx_id: String, msg: String) -> InvocationResponse {
     InvocationResponse::Error { tx_id, msg }
   }
@@ -108,7 +108,7 @@ where
 }
 impl Invocation {
   /// Creates an invocation with a new transaction id.
-  #[must_use]
+
   pub fn new(origin: Entity, target: Entity, msg: TransportMap) -> Invocation {
     let tx_id = get_uuid();
     let invocation_id = get_uuid();
@@ -123,7 +123,6 @@ impl Invocation {
   }
   /// Creates an invocation with a specific transaction id, to correlate a chain of.
   /// invocations.
-  #[must_use]
   pub fn next(tx_id: &str, origin: Entity, target: Entity, msg: TransportMap) -> Invocation {
     let invocation_id = get_uuid();
     Invocation {

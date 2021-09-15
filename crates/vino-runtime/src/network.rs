@@ -4,7 +4,6 @@ use std::time::Duration;
 
 use serde::Serialize;
 use vino_lattice::lattice::Lattice;
-use vino_lattice::nats::NatsOptions;
 use vino_transport::message_transport::TransportMap;
 use vino_wascap::KeyPair;
 
@@ -23,31 +22,29 @@ pub struct Network {
   allowed_insecure: Vec<String>,
   kp: KeyPair,
   timeout: Duration,
-  lattice_config: Option<NatsOptions>,
+  lattice: Option<Arc<Lattice>>,
 }
 
 impl Network {
   pub fn new(definition: NetworkDefinition, seed: &str) -> Result<Self> {
-    Ok(NetworkBuilder::new(definition, seed)?.build())
+    Ok(NetworkBuilder::from_definition(definition, seed)?.build())
   }
 
   pub async fn init(&self) -> Result<()> {
+    trace!("NETWORK:INIT");
     let kp = KeyPair::new_service();
     let seed = log_ie!(kp.seed(), 5103)?;
-    let lattice = match &self.lattice_config {
-      Some(config) => Some(Arc::new(Lattice::connect(config.clone()).await?)),
-      None => None,
-    };
     let init = Initialize {
       network_uid: self.uid.clone(),
       seed,
-      lattice,
+      lattice: self.lattice.clone(),
       network: self.definition.clone(),
       allowed_insecure: self.allowed_insecure.clone(),
       allow_latest: self.allow_latest,
       timeout: self.timeout,
     };
     log_ie!(self.addr.send(init).await, 5102)??;
+    trace!("NETWORK:INIT:COMPLETE");
     Ok(())
   }
 
@@ -61,6 +58,7 @@ impl Network {
     T: AsRef<str> + Send + Sync,
     U: AsRef<str> + Send + Sync,
   {
+    trace!("NETWORK:REQUEST[{}]", schematic.as_ref());
     let serialized_data: HashMap<String, MessageTransport> = data
       .iter()
       .map(|(k, v)| {
@@ -91,8 +89,8 @@ impl Network {
     )?;
 
     trace!(
-      "NETWORK:Result for {} took {} μs",
-      schematic.as_ref().to_owned(),
+      "NETWORK:REQUEST[{}]:COMPLETE[duration {} μs]",
+      schematic.as_ref(),
       time.elapsed().as_micros()
     );
     Ok(response.ok()?)
@@ -108,15 +106,13 @@ pub struct NetworkBuilder {
   definition: NetworkDefinition,
   kp: KeyPair,
   uid: String,
-  nats_address: Option<String>,
-  nats_creds_path: Option<String>,
-  nats_token: Option<String>,
+  lattice: Option<Arc<Lattice>>,
   timeout: Duration,
 }
 
 impl NetworkBuilder {
   /// Creates a new host builder.
-  pub fn new(definition: NetworkDefinition, seed: &str) -> Result<Self> {
+  pub fn from_definition(definition: NetworkDefinition, seed: &str) -> Result<Self> {
     let kp = keypair_from_seed(seed)?;
     let nuid = kp.public_key();
     Ok(Self {
@@ -125,9 +121,7 @@ impl NetworkBuilder {
       allowed_insecure: vec![],
       uid: nuid,
       timeout: Duration::from_secs(5),
-      nats_address: None,
-      nats_creds_path: None,
-      nats_token: None,
+      lattice: None,
       kp,
     })
   }
@@ -150,34 +144,9 @@ impl NetworkBuilder {
     }
   }
 
-  pub fn nats_address(self, nats_address: String) -> Self {
+  pub fn lattice(self, lattice: Arc<Lattice>) -> Self {
     Self {
-      nats_address: Some(nats_address),
-      ..self
-    }
-  }
-
-  pub fn from_env(self) -> Self {
-    let mut me = self;
-    if let Ok(nats_address) = std::env::var("NATS_URL") {
-      me = Self {
-        nats_address: Some(nats_address),
-        ..me
-      }
-    };
-    me
-  }
-
-  pub fn nats_creds_path(self, nats_creds_path: String) -> Self {
-    Self {
-      nats_creds_path: Some(nats_creds_path),
-      ..self
-    }
-  }
-
-  pub fn nats_token(self, nats_token: String) -> Self {
-    Self {
-      nats_token: Some(nats_token),
+      lattice: Some(lattice),
       ..self
     }
   }
@@ -185,16 +154,6 @@ impl NetworkBuilder {
   /// Constructs an instance of a Vino host.
   pub fn build(self) -> Network {
     let addr = crate::network_service::NetworkService::for_id(&self.uid);
-    let nats_options = match self.nats_address {
-      Some(addr) => Some(NatsOptions {
-        address: addr,
-        creds_path: self.nats_creds_path,
-        token: self.nats_token,
-        client_id: self.kp.public_key(),
-        timeout: self.timeout,
-      }),
-      None => None,
-    };
 
     Network {
       addr,
@@ -204,7 +163,7 @@ impl NetworkBuilder {
       allowed_insecure: self.allowed_insecure,
       kp: self.kp,
       timeout: self.timeout,
-      lattice_config: nats_options,
+      lattice: self.lattice,
     }
   }
 }

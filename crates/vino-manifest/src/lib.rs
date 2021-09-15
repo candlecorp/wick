@@ -93,8 +93,12 @@ pub mod error;
 /// Version 0 (unstable) manifest.
 pub mod v0;
 
+/// A version-normalized format of the manifest for development.
+pub mod host_definition;
+
 /// A version-normalized format of the network manifest for development.
 pub mod network_definition;
+
 /// A version-normalized format of the schematic manifest for development.
 pub mod schematic_definition;
 

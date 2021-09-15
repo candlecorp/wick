@@ -78,15 +78,14 @@ extern crate log;
 #[macro_use]
 pub(crate) mod macros;
 
-mod builder;
 mod error;
 mod host;
-pub mod host_definition;
 pub mod run;
 
-pub use builder::HostBuilder;
-pub use host::Host;
-pub use host_definition::HostDefinition;
+pub use host::{
+  Host,
+  HostBuilder,
+};
 
 pub(crate) type Result<T> = std::result::Result<T, error::HostError>;
 pub type Error = error::HostError;
