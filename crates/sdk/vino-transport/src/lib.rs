@@ -105,5 +105,8 @@ pub use message_transport::{
 /// The name of system-originating messages on a port, schematic, or origin.
 pub const SYSTEM_ID: &str = "<system>";
 
+/// The reserved port name to use when a component returns an error before it has a chance to send it to an output port.
+pub const COMPONENT_ERROR: &str = "<error>";
+
 #[macro_use]
 extern crate log;

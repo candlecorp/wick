@@ -3,6 +3,7 @@
 pub mod stream;
 
 use std::collections::HashMap;
+use std::convert::TryFrom;
 use std::fmt::Display;
 
 use log::error;
@@ -22,6 +23,7 @@ use vino_packet::{
   PacketWrapper,
 };
 
+use crate::error::TransportError;
 use crate::{
   Error,
   Result,
@@ -62,27 +64,35 @@ lazy_static::lazy_static! {
 #[must_use]
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum MessageTransport {
+  #[serde(rename = "0")]
   /// An invalid message.
   Invalid,
 
+  #[serde(rename = "1")]
   /// A message carrying an exception.
   Exception(String),
 
+  #[serde(rename = "2")]
   /// A message carrying an error.
   Error(String),
 
+  #[serde(rename = "3")]
   /// A message carrying a MessagePack encoded list of bytes.
   MessagePack(Vec<u8>),
 
+  #[serde(rename = "4")]
   /// A test message
   Test(String),
 
+  #[serde(rename = "5")]
   /// An internal signal
   Signal(MessageSignal),
 
+  #[serde(rename = "7")]
   /// A success value in an intermediary format
   Success(serde_value::Value),
 
+  #[serde(rename = "8")]
   /// A JSON String
   Json(String),
 }
@@ -270,6 +280,30 @@ impl TransportMap {
       map.insert(k, bytes);
     }
     Ok(map)
+  }
+}
+
+impl<K, V> TryFrom<&HashMap<K, V>> for TransportMap
+where
+  K: AsRef<str> + Send + Sync,
+  V: Serialize + Sync,
+{
+  type Error = TransportError;
+
+  fn try_from(v: &HashMap<K, V>) -> Result<Self> {
+    let serialized_data: HashMap<String, MessageTransport> = v
+      .iter()
+      .map(|(k, v)| {
+        Ok((
+          k.as_ref().to_owned(),
+          MessageTransport::MessagePack(messagepack::serialize(&v).map_err(ser_err)?),
+        ))
+      })
+      .filter_map(Result::ok)
+      .collect();
+
+    let payload = TransportMap::with_map(serialized_data);
+    Ok(payload)
   }
 }
 
@@ -522,18 +556,6 @@ impl MessageTransport {
       },
     };
 
-    // let mut map = serde_json::Map::new();
-    // map.insert("value".to_owned(), output.value);
-    // if let Some(msg) = output.error_msg {
-    //   map.insert("error_msg".to_owned(), serde_json::Value::String(msg));
-    // }
-    // if output.error_kind.is_some() {
-    //   map.insert(
-    //     "error_kind".to_owned(),
-    //     serde_json::Value::String(output.error_kind.to_string()),
-    //   );
-    // }
-    // serde_json::value::Value::Object(map)
     json::to_value(&output).unwrap_or_else(|_| JSON_ERROR.clone())
   }
 
@@ -667,10 +689,10 @@ impl TransportWrapper {
     }
   }
 
-  /// Constructor for a [TransportWrapper] with a port of [crate::SYSTEM_ID] indicating an internal error occurred.
+  /// Constructor for a [TransportWrapper] with a port of [crate::COMPONENT_ERROR] indicating an internal error occurred.
   pub fn internal_error(payload: MessageTransport) -> Self {
     Self {
-      port: crate::SYSTEM_ID.to_owned(),
+      port: crate::COMPONENT_ERROR.to_owned(),
       payload,
     }
   }
