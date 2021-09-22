@@ -102,8 +102,6 @@ pub struct ComponentDefinition {
   pub name: String,
   /// The namespace the component was registered under.
   pub namespace: String,
-  /// The fully qualified ID for the referenced component.
-  pub id: String,
   /// Reserved.
   pub config: Option<String>,
 }
@@ -115,16 +113,20 @@ impl ComponentDefinition {
     Self {
       name: name.to_owned(),
       namespace: namespace.to_owned(),
-      id: format!("{}::{}", namespace, name),
       config: None,
     }
   }
+
+  /// Returns the fully qualified ID for the component, i.e. namespace::name.
+  #[must_use]
+  pub fn id(&self) -> String {
+    format!("{}::{}", self.namespace, self.name)
+  }
 }
 
-impl ComponentDefinition {
-  /// Parse a fully qualified component ID into its namespace & name parts.
-  pub fn parse_id(&self) -> Result<(&str, &str)> {
-    parse_id(&self.id)
+impl Display for ComponentDefinition {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    write!(f, "{}", self.id())
   }
 }
 
@@ -133,7 +135,6 @@ impl TryFrom<crate::v0::ComponentDefinition> for ComponentDefinition {
   fn try_from(def: crate::v0::ComponentDefinition) -> Result<Self> {
     let (ns, name) = parse_id(&def.id)?;
     Ok(ComponentDefinition {
-      id: def.id.clone(),
       namespace: ns.to_owned(),
       name: name.to_owned(),
       config: None,
@@ -146,7 +147,6 @@ impl TryFrom<&crate::v0::ComponentDefinition> for ComponentDefinition {
   fn try_from(def: &crate::v0::ComponentDefinition) -> Result<Self> {
     let (ns, name) = parse_id(&def.id)?;
     Ok(ComponentDefinition {
-      id: def.id.clone(),
       namespace: ns.to_owned(),
       name: name.to_owned(),
       config: None,

@@ -2,7 +2,7 @@
 {{#each fields}}
   {{#if default}}
 #[allow(non_snake_case)]
-fn {{upperCase (snakeCase ../name.value)}}_{{upperCase name.value}}() -> {{> expand-type type }} {
+pub(crate) fn {{upperCase (snakeCase ../name.value)}}_{{upperCase name.value}}() -> {{> expand-type type }} {
   {{> expand-value default}}
 }
   {{/if}}

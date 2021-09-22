@@ -11,6 +11,7 @@ use std::str::FromStr;
 use std::time::Duration;
 
 use crate::error::ManifestError;
+use crate::v0::HOST_CONFIG_TIMEOUT;
 use crate::{
   HostManifest,
   Loadable,
@@ -37,11 +38,23 @@ impl TryFrom<HostManifest> for HostDefinition {
 
   fn try_from(manifest: HostManifest) -> Result<Self> {
     let result = match manifest {
-      HostManifest::V0(manifest) => Self {
-        host: manifest.host.clone().try_into()?,
-        default_schematic: manifest.default_schematic.clone(),
-        network: manifest.network.into(),
-      },
+      HostManifest::V0(manifest) => {
+        // Hack. This is due to serde/serde_yaml using Default::default() implementations
+        // even if the inner struct is filled with #[serde(default="...")] attributes.
+        // See: https://github.com/serde-rs/serde/issues/1416
+        // See: https://github.com/dtolnay/request-for-implementation/issues/4
+        // See: https://github.com/TedDriggs/serde_default (unpublished and out of date)
+        let mut host_config: HostConfig = manifest.host.clone().try_into()?;
+        if host_config.timeout == Duration::from_millis(0) {
+          host_config.timeout = Duration::from_millis(HOST_CONFIG_TIMEOUT());
+        }
+        // End hack.
+        Self {
+          host: host_config,
+          default_schematic: manifest.default_schematic.clone(),
+          network: manifest.network.into(),
+        }
+      }
     };
     Ok(result)
   }
@@ -86,14 +99,19 @@ pub struct HostConfig {
 pub struct HttpConfig {
   /// Enable/disable the server.
   pub enabled: bool,
+
   /// The port to bind to.
   pub port: Option<u16>,
+
   /// The address to bind to.
   pub address: Option<Ipv4Addr>,
+
   /// Path to pem file for TLS.
   pub pem: Option<PathBuf>,
+
   /// Path to key file for TLS.
   pub key: Option<PathBuf>,
+
   /// Path to CA file.
   pub ca: Option<PathBuf>,
 }
@@ -103,10 +121,13 @@ pub struct HttpConfig {
 pub struct LatticeConfig {
   /// Enable/disable the lattice connection.
   pub enabled: bool,
+
   /// The address of the NATS server.
   pub address: String,
+
   /// The path to the NATS credsfile.
   pub creds_path: Option<PathBuf>,
+
   /// The NATS token.
   pub token: Option<String>,
 }

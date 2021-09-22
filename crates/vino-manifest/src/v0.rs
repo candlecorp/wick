@@ -33,7 +33,7 @@ use serde::{
 use serde_with_expand_env::with_expand_envs;
 
 #[allow(non_snake_case)]
-fn HOST_MANIFEST_DEFAULT_SCHEMATIC() -> String {
+pub(crate) fn HOST_MANIFEST_DEFAULT_SCHEMATIC() -> String {
   "main".to_owned()
 }
 
@@ -58,7 +58,7 @@ pub struct HostManifest {
 }
 
 #[allow(non_snake_case)]
-fn HOST_CONFIG_TIMEOUT() -> u64 {
+pub(crate) fn HOST_CONFIG_TIMEOUT() -> u64 {
   5000
 }
 
