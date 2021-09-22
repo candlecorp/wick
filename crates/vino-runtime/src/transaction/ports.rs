@@ -211,7 +211,7 @@ impl PortStatuses {
 
     let mut map = HashMap::new();
     for port in ports {
-      let message = self.take_from_port(&port).ok_or(InternalError(7001))?;
+      let message = self.take_from_port(&port).ok_or(InternalError::E7001)?;
       map.insert(port.get_port_owned(), message);
     }
     Ok(TransportMap::with_map(map))

@@ -40,7 +40,7 @@ impl TryFrom<SchematicDefinition> for SchematicModel {
     let instances = definition
       .instances
       .iter()
-      .map(|(instance, actor)| (instance.clone(), actor.id.clone()))
+      .map(|(instance, component)| (instance.clone(), component.id()))
       .collect();
 
     let upstream_links = definition
@@ -217,18 +217,15 @@ impl SchematicModel {
     self.definition.get_name()
   }
 
-  pub(crate) fn has_component(&self, id: &str) -> bool {
-    let (ns, name) = match parse_id(id) {
-      Ok(r) => r,
-      Err(_) => return false,
-    };
-    let provider = self.providers.get(ns);
+  pub(crate) fn has_component(&self, component: &ComponentDefinition) -> bool {
+    let name = &component.name;
+    let provider = self.providers.get(&component.namespace);
     provider.map_or(false, |provider| provider.components.get(name).is_some())
   }
 
   pub(crate) fn commit_providers(&mut self, providers: Vec<ProviderModel>) {
     trace!(
-      "SC:{}:PROVIDERS:[{}]",
+      "SC[{}]PROVIDERS:[{}]",
       self.get_name(),
       providers
         .iter()

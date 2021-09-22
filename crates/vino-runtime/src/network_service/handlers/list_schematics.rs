@@ -19,7 +19,7 @@ impl Handler<ListSchematics> for NetworkService {
     let task = async move {
       let mut results = Vec::new();
       for msg in requests {
-        results.push(msg.await.map_err(|_| InternalError(5004))?);
+        results.push(msg.await.map_err(|_| InternalError::E5004)?);
       }
 
       let mut signatures = vec![];

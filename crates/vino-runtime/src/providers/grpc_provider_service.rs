@@ -142,18 +142,17 @@ impl Handler<InitializeComponents> for GrpcProviderService {
     ActorResult::reply_async(task.into_actor(self))
   }
 }
+
 impl Handler<Invocation> for GrpcProviderService {
   type Result = ActorResult<Self, InvocationResponse>;
 
   fn handle(&mut self, msg: Invocation, _ctx: &mut Self::Context) -> Self::Result {
     trace!(
-      "{}:[NS:{}]:Invoke: {} to {}",
+      "{}:INVOKE:[{}]=>[{}]",
       PREFIX,
-      self.namespace,
       msg.origin.url(),
       msg.target.url()
     );
-    let ns = self.namespace.clone();
 
     let state = self.state.as_ref().unwrap();
     let mut client = state.client.clone();
@@ -176,13 +175,13 @@ impl Handler<Invocation> for GrpcProviderService {
       let (tx, rx) = unbounded_channel();
       actix::spawn(async move {
         loop {
-          trace!("{}:[NS:{}]:{}:WAIT", PREFIX, ns, url);
+          trace!("{}[{}]:WAIT", PREFIX, url);
           let next = stream.message().await;
           if let Err(e) = next {
             let msg = format!("Error during GRPC stream: {}", e);
             error!("{}", msg);
             match tx.send(TransportWrapper {
-              port: crate::COMPONENT_ERROR.to_owned(),
+              port: vino_transport::COMPONENT_ERROR.to_owned(),
               payload: MessageTransport::Error(msg),
             }) {
               Ok(_) => {
@@ -204,7 +203,7 @@ impl Handler<Invocation> for GrpcProviderService {
             let msg = "Received response but no payload";
             error!("{}", msg);
             match tx.send(TransportWrapper {
-              port: crate::COMPONENT_ERROR.to_owned(),
+              port: vino_transport::COMPONENT_ERROR.to_owned(),
               payload: MessageTransport::Error(msg.to_owned()),
             }) {
               Ok(_) => {
@@ -220,14 +219,14 @@ impl Handler<Invocation> for GrpcProviderService {
             }
             continue;
           }
-          trace!("{}:[NS:{}]:{}:PORT:{}:RECV", PREFIX, ns, url, output.port);
+          trace!("{}[{}]:PORT[{}]:RECV", PREFIX, url, output.port);
 
           match tx.send(TransportWrapper {
             port: output.port.clone(),
             payload: payload.unwrap().into(),
           }) {
             Ok(_) => {
-              trace!("{}:[NS:{}]:{}:PORT:{}:SENT", PREFIX, ns, url, output.port);
+              trace!("{}[{}]:PORT[{}]:SENT", PREFIX, url, output.port);
             }
             Err(e) => {
               error!("Error sending output on channel {}", e.to_string());

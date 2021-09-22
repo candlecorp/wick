@@ -1,0 +1,7 @@
+name: error
+instances:
+  error:
+    id: vino::v0::error
+connections:
+  - <> => error[input]
+  - error[output] => <>

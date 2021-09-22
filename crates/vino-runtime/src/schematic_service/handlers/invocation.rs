@@ -20,7 +20,7 @@ impl Handler<Invocation> for SchematicService {
       Entity::Schematic(name) => handle_schematic(self, ctx.address(), &name, &msg),
       Entity::Component(_, name) => handle_schematic(self, ctx.address(), &name, &msg),
       Entity::Reference(reference) => get_component_definition(self.get_model(), &reference)
-        .and_then(|def| handle_schematic(self, ctx.address(), &def.id, &msg)),
+        .and_then(|def| handle_schematic(self, ctx.address(), &def.id(), &msg)),
       _ => Err(SchematicError::FailedPreRequestCondition(
         "Schematic invoked with entity it doesn't handle".into(),
       )),
@@ -44,7 +44,7 @@ fn handle_schematic(
   invocation: &Invocation,
 ) -> Result<impl Future<Output = Result<InvocationResponse>>> {
   let tx_id = invocation.tx_id.clone();
-  let log_prefix = format!("SC:{}:{}", name, tx_id);
+  let log_prefix = format!("SC[{}]:{}", name, tx_id);
   trace!("{}:INVOKE", log_prefix);
 
   let (mut outbound, inbound) = schematic.start(tx_id.clone());
@@ -76,8 +76,8 @@ fn handle_schematic(
             error!("Error sending execute command {}", e);
           }
         }
-        _ => {
-          warn!("Should I be getting this?");
+        rest => {
+          warn!("Unhandled state: {:?}", rest);
         }
       }
     }

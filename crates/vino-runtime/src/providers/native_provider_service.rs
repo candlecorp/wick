@@ -118,13 +118,11 @@ impl Handler<Invocation> for NativeProviderService {
 
   fn handle(&mut self, msg: Invocation, _ctx: &mut Self::Context) -> Self::Result {
     trace!(
-      "{}:[NS:{}]:Invoke: {} to {}",
+      "{}:INVOKE:[{}]=>[{}]",
       PREFIX,
-      self.namespace,
       msg.origin.url(),
       msg.target.url()
     );
-    let ns = self.namespace.clone();
 
     let state = self.state.as_ref().unwrap();
     let provider = clone_box(&*state.provider);
@@ -137,36 +135,43 @@ impl Handler<Invocation> for NativeProviderService {
     let request = async move {
       let receiver = provider.invoke(component, message).await;
       drop(provider);
-      if let Err(e) = receiver {
-        return InvocationResponse::error(
-          tx_id,
-          format!("Provider component {} failed: {}", url, e.to_string()),
-        );
-      }
-      let mut receiver = receiver.unwrap();
       let (tx, rx) = unbounded_channel();
-      actix::spawn(async move {
-        loop {
-          trace!("{}:[NS:{}]:{}:WAIT", PREFIX, ns, url);
-          let output = match receiver.next().await {
-            Some(v) => v,
-            None => break,
-          };
-          trace!("{}:[NS:{}]:{}:PORT:{}:RECV", PREFIX, ns, url, output.port);
-          match tx.send(TransportWrapper {
-            port: output.port.clone(),
-            payload: output.payload,
-          }) {
-            Ok(_) => {
-              trace!("{}:[NS:{}]:{}:PORT:{}:SENT", PREFIX, ns, url, output.port);
+      match receiver {
+        Ok(mut receiver) => {
+          trace!("{}[{}]:START", PREFIX, url);
+          actix::spawn(async move {
+            loop {
+              trace!("{}[{}]:WAIT", PREFIX, url);
+              let output = match receiver.next().await {
+                Some(v) => v,
+                None => break,
+              };
+              trace!("{}[{}]:PORT[{}]:RECV", PREFIX, url, output.port);
+              match tx.send(TransportWrapper {
+                port: output.port.clone(),
+                payload: output.payload,
+              }) {
+                Ok(_) => {
+                  trace!("{}[{}]:PORT[{}]:SENT", PREFIX, url, output.port);
+                }
+                Err(e) => {
+                  error!("Error sending output on channel {}", e.to_string());
+                  break;
+                }
+              }
             }
-            Err(e) => {
-              error!("Error sending output on channel {}", e.to_string());
-              break;
-            }
-          }
+          });
         }
-      });
+        Err(e) => {
+          error!("Error invoking component: {}", e.to_string());
+          let txresult = tx.send(TransportWrapper {
+            port: vino_transport::COMPONENT_ERROR.to_owned(),
+            payload: MessageTransport::Error(e.to_string()),
+          });
+          let _ = map_err!(txresult, InternalError::E8001);
+        }
+      }
+
       let rx = UnboundedReceiverStream::new(rx);
 
       InvocationResponse::stream(tx_id, rx)

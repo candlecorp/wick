@@ -87,7 +87,7 @@ impl NetworkService {
       lattice,
       timeout,
     };
-    addr.send(init).await.map_err(|_| InternalError(8009))??;
+    addr.send(init).await.map_err(|_| InternalError::E5001)??;
 
     Ok(kp.public_key())
   }

@@ -1,14 +1,14 @@
-use std::collections::HashMap;
+use std::convert::TryInto;
 use std::sync::Arc;
 use std::time::Duration;
 
-use serde::Serialize;
 use vino_lattice::lattice::Lattice;
 use vino_transport::message_transport::TransportMap;
 use vino_wascap::KeyPair;
 
 use crate::dev::prelude::*;
 use crate::network_service::handlers::initialize::Initialize;
+use crate::network_service::handlers::list_schematics::ListSchematics;
 pub use crate::providers::network_provider::Provider as NetworkProvider;
 
 type Result<T> = std::result::Result<T, RuntimeError>;
@@ -33,7 +33,7 @@ impl Network {
   pub async fn init(&self) -> Result<()> {
     trace!("NETWORK:INIT");
     let kp = KeyPair::new_service();
-    let seed = log_ie!(kp.seed(), 5103)?;
+    let seed = map_err!(kp.seed(), InternalError::E5103)?;
     let init = Initialize {
       network_uid: self.uid.clone(),
       seed,
@@ -43,7 +43,7 @@ impl Network {
       allow_latest: self.allow_latest,
       timeout: self.timeout,
     };
-    log_ie!(self.addr.send(init).await, 5102)??;
+    map_err!(self.addr.send(init).await, InternalError::E5102)??;
     trace!("NETWORK:INIT:COMPLETE");
     Ok(())
   }
@@ -52,26 +52,17 @@ impl Network {
     &self,
     schematic: T,
     origin: Entity,
-    data: &HashMap<U, impl Serialize + Sync>,
+    data: U,
   ) -> Result<TransportStream>
   where
     T: AsRef<str> + Send + Sync,
-    U: AsRef<str> + Send + Sync,
+    U: TryInto<TransportMap> + Send + Sync,
   {
     trace!("NETWORK:REQUEST[{}]", schematic.as_ref());
-    let serialized_data: HashMap<String, MessageTransport> = data
-      .iter()
-      .map(|(k, v)| {
-        Ok((
-          k.as_ref().to_owned(),
-          MessageTransport::MessagePack(mp_serialize(&v)?),
-        ))
-      })
-      .filter_map(Result::ok)
-      .collect();
-
     let time = std::time::Instant::now();
-    let payload = TransportMap::with_map(serialized_data);
+    let payload = data
+      .try_into()
+      .map_err(|_| RuntimeError::Serialization("Could not serialize input payload".to_owned()))?;
 
     let invocation = Invocation::new(
       origin,
@@ -79,13 +70,9 @@ impl Network {
       payload,
     );
 
-    let response: InvocationResponse = log_ie!(
-      self
-        .addr
-        .send(invocation)
-        .timeout(Duration::from_secs(10))
-        .await,
-      5101
+    let response = map_err!(
+      self.addr.send(invocation).timeout(self.timeout).await,
+      InternalError::E5101
     )?;
 
     trace!(
@@ -94,6 +81,17 @@ impl Network {
       time.elapsed().as_micros()
     );
     Ok(response.ok()?)
+  }
+
+  pub async fn list_schematics(&self) -> Result<Vec<SchematicSignature>> {
+    trace!("NETWORK:LIST_SCHEMATICS");
+    let msg = ListSchematics {};
+    let response = map_err!(
+      self.addr.send(msg).timeout(self.timeout).await,
+      InternalError::E5102
+    )?;
+    trace!("NETWORK:LIST_SCHEMATICS:COMPLETE");
+    Ok(response?)
   }
 }
 

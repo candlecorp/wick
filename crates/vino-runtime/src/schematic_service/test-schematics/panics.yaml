@@ -1,0 +1,7 @@
+name: panic
+instances:
+  panic:
+    id: vino::v0::panic
+connections:
+  - <> => panic[input]
+  - panic[output] => <>

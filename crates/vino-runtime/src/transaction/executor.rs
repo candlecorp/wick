@@ -102,11 +102,14 @@ impl TransactionExecutor {
             self_msgs.push_back(TransactionUpdate::Done(tx_id.clone()));
           }
           TransactionUpdate::Execute(payload) => {
-            trace!("{}:EXECUTE:[{}]", iter_prefix, payload.instance);
-            let _ = log_ie!(inbound_tx.send(TransactionUpdate::Execute(payload)), 9001);
+            trace!("{}:EXECUTE[{}]", iter_prefix, payload.instance);
+            let _ = map_err!(
+              inbound_tx.send(TransactionUpdate::Execute(payload)),
+              InternalError::E9001
+            );
           }
           TransactionUpdate::Transition(target) => {
-            trace!("{}:TRANSITION:[{}]", iter_prefix, target.get_instance());
+            trace!("{}:TRANSITION:TO[{}]", iter_prefix, target.get_instance());
             let map = transaction.ports.take_inputs(&target)?;
             self_msgs.push_back(TransactionUpdate::Execute(ComponentPayload {
               tx_id: tx_id.clone(),
@@ -117,7 +120,10 @@ impl TransactionExecutor {
           TransactionUpdate::Result(output) => {
             trace!("{}:RESULT:PORT[{}]", iter_prefix, output.payload.port,);
             let port = output.payload.port.clone();
-            let _ = log_ie!(inbound_tx.send(TransactionUpdate::Result(output)), 9002);
+            let _ = map_err!(
+              inbound_tx.send(TransactionUpdate::Result(output)),
+              InternalError::E9002
+            );
             let target = ConnectionTargetDefinition::new(SCHEMATIC_OUTPUT, &port);
             if !transaction.has_active_upstream(&target) {
               trace!("{}:CLOSING:{}", iter_prefix, target);
@@ -137,7 +143,10 @@ impl TransactionExecutor {
           TransactionUpdate::Done(tx_id) => {
             trace!("{}:DONE", iter_prefix);
             outbound_rx.close();
-            let _ = log_ie!(inbound_tx.send(TransactionUpdate::Done(tx_id)), 9004);
+            let _ = map_err!(
+              inbound_tx.send(TransactionUpdate::Done(tx_id)),
+              InternalError::E9004
+            );
             break;
           }
           TransactionUpdate::Update(input) => {

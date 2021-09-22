@@ -34,7 +34,7 @@ impl Handler<Initialize> for SchematicService {
   type Result = ActorResult<Self, Result<(), SchematicError>>;
 
   fn handle(&mut self, msg: Initialize, _ctx: &mut Self::Context) -> Self::Result {
-    trace!("SC:{}:INIT", msg.schematic.get_name());
+    trace!("SC[{}]:INIT", msg.schematic.get_name());
     let seed = msg.seed;
     let allow_latest = msg.allow_latest;
     self.name = msg.schematic.name.clone();
@@ -58,9 +58,9 @@ impl Handler<Initialize> for SchematicService {
       if let Some(network_provider_channel) = network_provider_channel {
         channels.push(network_provider_channel);
       }
-      schematic.recipients = channels
+      schematic.providers = channels
         .into_iter()
-        .map(|c| (c.namespace.clone(), c))
+        .map(|prv_channel| (prv_channel.namespace.clone(), prv_channel))
         .collect();
       let mut model = schematic.get_model().write();
       model.commit_providers(providers);
@@ -99,7 +99,6 @@ async fn initialize_providers(
   let num_providers = providers.len();
   for provider in providers {
     let namespace = provider.namespace.clone();
-    debug!("KIND: {:?}", provider.kind);
 
     let result = match provider.kind {
       ProviderKind::Network => {
@@ -124,7 +123,6 @@ async fn initialize_providers(
         )),
       },
     };
-    debug!("RESULT: {:?}", result);
     let (channel, provider_model) = result?;
     channels.push(channel);
     models.push(provider_model);

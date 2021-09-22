@@ -69,7 +69,7 @@ impl Handler<Initialize> for NetworkService {
             timeout,
           })
           .await
-          .map_err(|_| InternalError(5001))??;
+          .map_err(|_| InternalError::E5001)??;
 
         trace!("NETWORK:SCHEMATIC[{}]:INITIALIZED", name);
       }
@@ -98,7 +98,7 @@ impl Handler<Initialize> for NetworkService {
                   model: model.clone(),
                 })
                 .await
-                .map_err(|_| InternalError(5001))?,
+                .map_err(|_| InternalError::E5001)?,
             );
           }
           if results.iter().any(|r| r.is_err()) {

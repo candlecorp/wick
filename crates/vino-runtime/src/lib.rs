@@ -76,15 +76,15 @@
 mod macros {
 
   /// log_ie!(Result, u16) takes a result and an error number, maps the error to an InternalError and logs it.
-  macro_rules! log_ie {
-    ($expr:expr, $errnum: literal $(,)?) => {{
+  macro_rules! map_err {
+    ($expr:expr, $err:expr) => {{
       let result = $expr;
-      let ie = InternalError($errnum);
+      let err = $err;
       if result.is_err() {
         log::debug!("Internal error: {:?}", result);
-        log::error!("{}", ie);
+        log::error!("{}", err);
       }
-      result.map_err(|_| ie)
+      result.map_err(|_| err)
     }};
   }
 
@@ -169,11 +169,9 @@ pub type Error = error::RuntimeError;
 
 /// The reserved reference name for schematic input. Used in schematic manifests to denote schematic input.
 pub const SCHEMATIC_INPUT: &str = "<input>";
+
 /// The reserved reference name for schematic output. Used in schematic manifests to denote schematic output.
 pub const SCHEMATIC_OUTPUT: &str = "<output>";
-/// The reserved port name to use when sending an asynchronous error from a component.
-pub const COMPONENT_ERROR: &str = "<error>";
-/// The name of system-originating messages on a port, schematic, or origin.
-pub const SYSTEM_ID: &str = "<system>";
+
 /// The reserved namespace for references to internal schematics.
 pub const SELF_NAMESPACE: &str = "self";

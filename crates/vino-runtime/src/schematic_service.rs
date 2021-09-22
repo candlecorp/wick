@@ -21,7 +21,7 @@ type Result<T> = std::result::Result<T, SchematicError>;
 #[derive(Debug)]
 pub(crate) struct SchematicService {
   name: String,
-  recipients: HashMap<String, ProviderChannel>,
+  providers: HashMap<String, ProviderChannel>,
   state: Option<State>,
   executor: HashMap<String, UnboundedSender<TransactionUpdate>>,
 }
@@ -38,7 +38,7 @@ impl Default for SchematicService {
   fn default() -> Self {
     SchematicService {
       name: "".to_owned(),
-      recipients: HashMap::new(),
+      providers: HashMap::new(),
       state: None,
       executor: HashMap::new(),
     }
@@ -99,21 +99,24 @@ impl SchematicService {
     &self.get_state().model
   }
 
-  fn get_recipient(&self, instance: &str) -> Result<Recipient<Invocation>> {
+  fn get_provider(&self, instance: &str) -> Result<Recipient<Invocation>> {
     let component = get_component_definition(self.get_model(), instance)?;
     let model = self.get_model().read();
     let err = SchematicError::InstanceNotFound(instance.to_owned());
-    if !model.has_component(&component.id) {
-      warn!("SC:{}:{} does not have a valid model.", self.name, instance);
+    if !model.has_component(&component) {
+      warn!(
+        "SC[{}]: {} does not have a valid model.",
+        self.name, instance
+      );
       return Err(err);
     }
     trace!(
-      "SC:{}:INSTANCE[{}]->[{}]",
+      "SC[{}]:INSTANCE[{}]->[{}]",
       self.name,
       instance,
-      component.id
+      component.id()
     );
-    let channel = self.recipients.get(&component.namespace).ok_or(err)?;
+    let channel = self.providers.get(&component.namespace).ok_or(err)?;
     Ok(channel.recipient.clone())
   }
 
@@ -150,7 +153,7 @@ mod test {
     *,
   };
 
-  static TIMEOUT: u64 = 100;
+  static TIMEOUT: u64 = 1000;
 
   #[test_logger::test(actix_rt::test)]
   async fn test_basic_schematic() -> TestResult<()> {
@@ -194,6 +197,102 @@ mod test {
     let payload: String = packet.try_into()?;
     debug!("Payload {}", payload);
     assert_eq!(payload, user_data);
+    assert_eq!(rx.buffered_size(), (0, 0));
+
+    Ok(())
+  }
+
+  #[test_logger::test(actix_rt::test)]
+  async fn test_schematic_with_errors() -> TestResult<()> {
+    let kp = KeyPair::new_server();
+    let schematic = SchematicService::default();
+    let addr = schematic.start();
+    let schematic_name = "error";
+
+    let def = load_schematic_manifest("./src/schematic_service/test-schematics/errors.yaml")?;
+
+    addr
+      .send(Initialize {
+        schematic: def,
+        network_provider_channel: None,
+        seed: kp.seed().unwrap(),
+        allow_latest: true,
+        lattice: None,
+        allowed_insecure: vec![],
+        global_providers: vec![],
+        timeout: Duration::from_millis(TIMEOUT),
+      })
+      .await??;
+    let user_data = "this is test input";
+    let payload = transport_map! {"input"=> user_data};
+
+    let response: InvocationResponse = addr
+      .send(Invocation::new(
+        Entity::test("basic"),
+        Entity::schematic(schematic_name),
+        payload,
+      ))
+      .await?;
+    let mut rx = response.ok()?;
+    debug!("Got stream");
+    let mut packets: Vec<_> = rx.collect_port("output").await;
+    debug!("Packets: {:?}", packets);
+    assert_eq!(packets.len(), 1);
+
+    let packet = packets.remove(0);
+    debug!("Packet {:?}", packet);
+    assert_eq!(
+      packet.payload,
+      MessageTransport::Error("This component will always error".to_owned())
+    );
+    assert_eq!(rx.buffered_size(), (0, 0));
+
+    Ok(())
+  }
+
+  #[test_logger::test(actix_rt::test)]
+  async fn test_schematic_that_panics() -> TestResult<()> {
+    let kp = KeyPair::new_server();
+    let schematic = SchematicService::default();
+    let addr = schematic.start();
+    let schematic_name = "panic";
+
+    let def = load_schematic_manifest("./src/schematic_service/test-schematics/panics.yaml")?;
+
+    addr
+      .send(Initialize {
+        schematic: def,
+        network_provider_channel: None,
+        seed: kp.seed().unwrap(),
+        allow_latest: true,
+        lattice: None,
+        allowed_insecure: vec![],
+        global_providers: vec![],
+        timeout: Duration::from_millis(TIMEOUT),
+      })
+      .await??;
+    let user_data = "this is test input";
+    let payload = transport_map! {"input"=> user_data};
+
+    let response: InvocationResponse = addr
+      .send(Invocation::new(
+        Entity::test("basic"),
+        Entity::schematic(schematic_name),
+        payload,
+      ))
+      .await?;
+    let mut rx = response.ok()?;
+    debug!("Got stream");
+    let mut packets: Vec<_> = rx.collect_port("output").await;
+    debug!("Packets: {:?}", packets);
+    assert_eq!(packets.len(), 1);
+
+    let packet = packets.remove(0);
+    debug!("Packet {:?}", packet);
+    assert_eq!(
+      packet.payload,
+      MessageTransport::Error("Component panicked: panic".to_owned())
+    );
     assert_eq!(rx.buffered_size(), (0, 0));
 
     Ok(())

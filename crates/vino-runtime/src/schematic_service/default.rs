@@ -27,6 +27,7 @@ mod tests {
     assert_eq,
     *,
   };
+
   #[test_logger::test]
   fn test_to_transport() -> TestResult<()> {
     let json_str = r#"

@@ -51,17 +51,28 @@ impl std::fmt::Display for ConversionError {
 }
 
 #[derive(Error, Debug, Clone, Copy)]
-pub struct InternalError(pub i32);
+pub enum InternalError {
+  E6012,
+  E6013,
+  E6002,
+  E6003,
+  E6007,
+  E6009,
+  E9001,
+  E9002,
+  E9004,
+  E7001,
+  E5001,
+  E5101,
+  E5102,
+  E5103,
+  E8001,
+  E5004,
+}
 
 impl std::fmt::Display for InternalError {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    f.write_fmt(format_args!("Internal Error: {}", self.0))
-  }
-}
-
-impl From<i32> for InternalError {
-  fn from(num: i32) -> Self {
-    InternalError(num)
+    f.write_fmt(format_args!("Internal Error: {}", self))
   }
 }
 
@@ -137,6 +148,8 @@ pub enum RuntimeError {
   IOError(#[from] std::io::Error),
   #[error("{0}")]
   Lattice(String),
+  #[error("{0}")]
+  Serialization(String),
 }
 
 impl From<vino_lattice::Error> for RuntimeError {

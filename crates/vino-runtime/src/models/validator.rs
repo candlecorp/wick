@@ -182,9 +182,9 @@ impl<'a> Validator<'a> {
           Some(ValidationErrorKind::InstanceNotFound(r.clone())),
           |def| {
             let is_err =
-              self.model.get_component_model(&def.id).is_none() && !self.should_omit_def(&def);
+              self.model.get_component_model(&def.id()).is_none() && !self.should_omit_def(&def);
             is_err.then(|| {
-              ValidationErrorKind::MissingComponentModel(format!("{}=>{}", r.clone(), def.id))
+              ValidationErrorKind::MissingComponentModel(format!("{}=>{}", r.clone(), def.id()))
             })
           },
         )
@@ -228,8 +228,8 @@ impl<'a> Validator<'a> {
     let component_definitions = self.model.get_component_definitions();
     let mut errors = vec![];
     for def in component_definitions {
-      if parse_id(&def.id).is_err() {
-        errors.push(ValidationErrorKind::NotFullyQualified(def.id.clone()));
+      if parse_id(&def.id()).is_err() {
+        errors.push(ValidationErrorKind::NotFullyQualified(def.id()));
       }
     }
     if errors.is_empty() {
