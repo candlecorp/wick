@@ -1,0 +1,236 @@
+{
+  "name": "vino-interface-keyvalue",
+  "components": [
+    {
+      "name": "delete",
+      "inputs": [
+        {
+          "name": "key",
+          "type_string": "string"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "key",
+          "type_string": "string"
+        }
+      ]
+    },
+    {
+      "name": "exists",
+      "inputs": [
+        {
+          "name": "key",
+          "type_string": "string"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "key",
+          "type_string": "string"
+        }
+      ]
+    },
+    {
+      "name": "key-get",
+      "inputs": [
+        {
+          "name": "key",
+          "type_string": "string"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "value",
+          "type_string": "string"
+        }
+      ]
+    },
+    {
+      "name": "key-increment",
+      "inputs": [
+        {
+          "name": "key",
+          "type_string": "string"
+        },
+        {
+          "name": "value",
+          "type_string": "i32"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "output",
+          "type_string": "i32"
+        }
+      ]
+    },
+    {
+      "name": "key-set",
+      "inputs": [
+        {
+          "name": "key",
+          "type_string": "string"
+        },
+        {
+          "name": "value",
+          "type_string": "string"
+        },
+        {
+          "name": "expires",
+          "type_string": "u32"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "key",
+          "type_string": "string"
+        }
+      ]
+    },
+    {
+      "name": "list-add",
+      "inputs": [
+        {
+          "name": "key",
+          "type_string": "string"
+        },
+        {
+          "name": "value",
+          "type_string": "string"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "key",
+          "type_string": "string"
+        }
+      ]
+    },
+    {
+      "name": "list-range",
+      "inputs": [
+        {
+          "name": "key",
+          "type_string": "string"
+        },
+        {
+          "name": "start",
+          "type_string": "i32"
+        },
+        {
+          "name": "end",
+          "type_string": "i32"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "values",
+          "type_string": "[string]"
+        }
+      ]
+    },
+    {
+      "name": "list-remove",
+      "inputs": [
+        {
+          "name": "key",
+          "type_string": "string"
+        },
+        {
+          "name": "value",
+          "type_string": "string"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "value",
+          "type_string": "string"
+        }
+      ]
+    },
+    {
+      "name": "set-add",
+      "inputs": [
+        {
+          "name": "key",
+          "type_string": "string"
+        },
+        {
+          "name": "value",
+          "type_string": "string"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "key",
+          "type_string": "string"
+        }
+      ]
+    },
+    {
+      "name": "set-get",
+      "inputs": [
+        {
+          "name": "key",
+          "type_string": "string"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "values",
+          "type_string": "[string]"
+        }
+      ]
+    },
+    {
+      "name": "set-intersection",
+      "inputs": [
+        {
+          "name": "keys",
+          "type_string": "[string]"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "keys",
+          "type_string": "[string]"
+        }
+      ]
+    },
+    {
+      "name": "set-remove",
+      "inputs": [
+        {
+          "name": "key",
+          "type_string": "string"
+        },
+        {
+          "name": "value",
+          "type_string": "string"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "value",
+          "type_string": "string"
+        }
+      ]
+    },
+    {
+      "name": "set-union",
+      "inputs": [
+        {
+          "name": "keys",
+          "type_string": "[string]"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "keys",
+          "type_string": "[string]"
+        }
+      ]
+    }
+  ]
+}

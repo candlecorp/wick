@@ -1,0 +1,37 @@
+[package]
+name = "vino-keyvalue-redis"
+version = "0.0.0"
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+vino-provider = { path = "../../sdk/crates/vino-provider", features = [
+  "native",
+] }
+vino-provider-cli = { path = "../vino-provider-cli" }
+vino-packet = { path = "../../sdk/crates/vino-packet" }
+vino-rpc = { path = "../vino-rpc" }
+vino-macros = { path = "../../sdk/crates/vino-macros" }
+vino-interface-keyvalue = { path = "../interfaces/interface-keyvalue" }
+redis = { version = "0.21", features = ["tokio-comp"] }
+thiserror = "1.0.25"
+serde = { version = "1.0", features = ["derive"] }
+async-trait = "0.1.50"
+futures = "0.3.15"
+tokio = { version = "1.12", features = ["macros", "sync", "rt-multi-thread"] }
+
+tokio-util = { version = "0.6.7", features = ["codec"] }
+structopt = "0.3.21"
+log = "0.4"
+
+[dev-dependencies]
+logger = { path = "../logger" }
+test-logger = { path = "../test-logger" }
+serde_json = "1.0.64"
+backtrace = "0.3.60"
+test_bin = "0.3.0"
+tonic = "0.5.0"
+anyhow = "1.0.42"
+test-interface-keyvalue = { path = "../integration/test-interface-keyvalue" }
+rand = "0.8.4"
