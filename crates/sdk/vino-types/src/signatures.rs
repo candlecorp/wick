@@ -85,7 +85,7 @@ pub struct SchematicSignature {
   pub inputs: Vec<PortSignature>,
   /// A list of output ports.
   pub outputs: Vec<PortSignature>,
-  /// A list of providers running on the schematic.
+  /// A list of providers linked to the schematic.
   pub providers: Vec<ProviderSignature>,
 }
 
