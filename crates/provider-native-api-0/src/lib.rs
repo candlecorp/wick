@@ -70,7 +70,12 @@
 )]
 // !!END_LINTS
 // Add exceptions here
-#![allow(missing_docs, clippy::too_many_lines)]
+#![allow(
+  missing_docs,
+  clippy::too_many_lines,
+  missing_copy_implementations,
+  clippy::let_and_return
+)]
 
 pub mod generated;
 
@@ -115,9 +120,8 @@ impl RpcHandler for Provider {
   async fn invoke(&self, entity: Entity, payload: TransportMap) -> RpcResult<BoxedTransportStream> {
     let context = self.context.clone();
     let component = entity.name();
-    let stream = Dispatcher::dispatch(&component, context, payload)
-      .await
-      .map_err(|e| RpcError::ProviderError(e.to_string()))?;
+    let result = Dispatcher::dispatch(&component, context, payload).await;
+    let stream = result.map_err(|e| RpcError::ProviderError(e.to_string()))?;
 
     Ok(Box::pin(stream))
   }
