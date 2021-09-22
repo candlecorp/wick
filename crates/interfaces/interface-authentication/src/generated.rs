@@ -36,6 +36,25 @@ pub mod authenticate {
     pub password: String,
   }
 
+  impl From<Inputs> for TransportMap {
+    fn from(inputs: Inputs) -> TransportMap {
+      let mut map = TransportMap::new();
+      map.insert(
+        "session".to_owned(),
+        MessageTransport::success(&inputs.session),
+      );
+      map.insert(
+        "username".to_owned(),
+        MessageTransport::success(&inputs.username),
+      );
+      map.insert(
+        "password".to_owned(),
+        MessageTransport::success(&inputs.password),
+      );
+      map
+    }
+  }
+
   static INPUTS_LIST: &[(&str, &str)] = &[
     ("session", "string"),
     ("username", "string"),
@@ -157,6 +176,25 @@ pub mod create_user {
     pub password: String,
   }
 
+  impl From<Inputs> for TransportMap {
+    fn from(inputs: Inputs) -> TransportMap {
+      let mut map = TransportMap::new();
+      map.insert(
+        "user_id".to_owned(),
+        MessageTransport::success(&inputs.user_id),
+      );
+      map.insert(
+        "username".to_owned(),
+        MessageTransport::success(&inputs.username),
+      );
+      map.insert(
+        "password".to_owned(),
+        MessageTransport::success(&inputs.password),
+      );
+      map
+    }
+  }
+
   static INPUTS_LIST: &[(&str, &str)] = &[
     ("user_id", "string"),
     ("username", "string"),
@@ -242,6 +280,17 @@ pub mod get_id {
   pub struct Inputs {
     #[serde(rename = "username")]
     pub username: String,
+  }
+
+  impl From<Inputs> for TransportMap {
+    fn from(inputs: Inputs) -> TransportMap {
+      let mut map = TransportMap::new();
+      map.insert(
+        "username".to_owned(),
+        MessageTransport::success(&inputs.username),
+      );
+      map
+    }
   }
 
   static INPUTS_LIST: &[(&str, &str)] = &[("username", "string")];
@@ -330,6 +379,21 @@ pub mod has_permission {
     pub permission: String,
   }
 
+  impl From<Inputs> for TransportMap {
+    fn from(inputs: Inputs) -> TransportMap {
+      let mut map = TransportMap::new();
+      map.insert(
+        "user_id".to_owned(),
+        MessageTransport::success(&inputs.user_id),
+      );
+      map.insert(
+        "permission".to_owned(),
+        MessageTransport::success(&inputs.permission),
+      );
+      map
+    }
+  }
+
   static INPUTS_LIST: &[(&str, &str)] = &[("user_id", "string"), ("permission", "string")];
 
   #[must_use]
@@ -411,6 +475,17 @@ pub mod list_permissions {
   pub struct Inputs {
     #[serde(rename = "user_id")]
     pub user_id: String,
+  }
+
+  impl From<Inputs> for TransportMap {
+    fn from(inputs: Inputs) -> TransportMap {
+      let mut map = TransportMap::new();
+      map.insert(
+        "user_id".to_owned(),
+        MessageTransport::success(&inputs.user_id),
+      );
+      map
+    }
   }
 
   static INPUTS_LIST: &[(&str, &str)] = &[("user_id", "string")];
@@ -499,6 +574,18 @@ pub mod list_users {
     pub limit: u32,
   }
 
+  impl From<Inputs> for TransportMap {
+    fn from(inputs: Inputs) -> TransportMap {
+      let mut map = TransportMap::new();
+      map.insert(
+        "offset".to_owned(),
+        MessageTransport::success(&inputs.offset),
+      );
+      map.insert("limit".to_owned(), MessageTransport::success(&inputs.limit));
+      map
+    }
+  }
+
   static INPUTS_LIST: &[(&str, &str)] = &[("offset", "u32"), ("limit", "u32")];
 
   #[must_use]
@@ -580,6 +667,17 @@ pub mod remove_user {
   pub struct Inputs {
     #[serde(rename = "username")]
     pub username: String,
+  }
+
+  impl From<Inputs> for TransportMap {
+    fn from(inputs: Inputs) -> TransportMap {
+      let mut map = TransportMap::new();
+      map.insert(
+        "username".to_owned(),
+        MessageTransport::success(&inputs.username),
+      );
+      map
+    }
   }
 
   static INPUTS_LIST: &[(&str, &str)] = &[("username", "string")];
@@ -668,6 +766,21 @@ pub mod update_permissions {
     pub permissions: Vec<String>,
   }
 
+  impl From<Inputs> for TransportMap {
+    fn from(inputs: Inputs) -> TransportMap {
+      let mut map = TransportMap::new();
+      map.insert(
+        "user_id".to_owned(),
+        MessageTransport::success(&inputs.user_id),
+      );
+      map.insert(
+        "permissions".to_owned(),
+        MessageTransport::success(&inputs.permissions),
+      );
+      map
+    }
+  }
+
   static INPUTS_LIST: &[(&str, &str)] = &[("user_id", "string"), ("permissions", "[string]")];
 
   #[must_use]
@@ -749,6 +862,17 @@ pub mod validate_session {
   pub struct Inputs {
     #[serde(rename = "session")]
     pub session: String,
+  }
+
+  impl From<Inputs> for TransportMap {
+    fn from(inputs: Inputs) -> TransportMap {
+      let mut map = TransportMap::new();
+      map.insert(
+        "session".to_owned(),
+        MessageTransport::success(&inputs.session),
+      );
+      map
+    }
   }
 
   static INPUTS_LIST: &[(&str, &str)] = &[("session", "string")];
