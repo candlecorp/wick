@@ -18,7 +18,7 @@ ROOT_RUST_CRATES=$(wildcard ${CRATES_DIR}/*/Cargo.toml)
 TEST_WASM_DIR=$(CRATES_DIR)/integration/test-wapc-component
 TEST_WASM=$(TEST_WASM_DIR)/build/test_component_s.wasm
 
-BINS=vino vinoc vino-collection-inmemory vow vino-authentication-inmemory vino-collection-fs
+BINS=vino vinoc vino-collection-inmemory vow vino-authentication-inmemory vino-collection-fs vino-keyvalue-redis
 
 .PHONY: all codegen install install-release  clean test update-lint build build-release wasm
 

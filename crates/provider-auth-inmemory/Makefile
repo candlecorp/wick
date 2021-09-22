@@ -40,7 +40,10 @@ $(foreach name,$(COMPONENT_NAMES),$(eval $(call COMPONENT_GEN,$(name))))
 $(GENERATED_RS): ./interface.json
 	vino-codegen rust wellknown-integration $< -f -o $@
 
-$(COMPONENTS_RS): ./interface.json
+$(COMPONENTS_DIR):
+	mkdir $@
+
+$(COMPONENTS_RS): ./interface.json $(COMPONENTS_DIR)
 	vino-codegen rust wellknown-component-module $< -f -o $@
 
 codegen: ${GENERATED_COMPONENTS} $(GENERATED_RS) $(COMPONENTS_RS)
