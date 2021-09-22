@@ -1,0 +1,15 @@
+namespace "list-remove"
+
+"Removes an item from the list."
+type Inputs {
+  "The list's key."
+  key: string,
+
+  "Value to remove."
+  value: string
+}
+
+type Outputs {
+  "The element that was removed."
+  value: string
+}

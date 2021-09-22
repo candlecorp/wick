@@ -1,0 +1,11 @@
+namespace "exists"
+
+type Inputs {
+  "The key to check."
+  key: string,
+}
+
+type Outputs {
+  "The key that was checked."
+  key: string,
+}

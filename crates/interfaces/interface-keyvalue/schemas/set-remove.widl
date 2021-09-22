@@ -1,0 +1,14 @@
+namespace "set-remove"
+
+type Inputs {
+  "The set's key."
+  key: string,
+
+  "The value to remove."
+  value: string
+}
+
+type Outputs {
+  "The value that was removed."
+  value: string
+}

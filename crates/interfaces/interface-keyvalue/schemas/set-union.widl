@@ -1,0 +1,9 @@
+namespace "set-union"
+
+type Inputs {
+  keys: [string]
+}
+
+type Outputs {
+  keys: [string]
+}

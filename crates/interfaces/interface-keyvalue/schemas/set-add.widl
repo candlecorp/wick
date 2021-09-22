@@ -1,0 +1,14 @@
+namespace "set-add"
+
+type Inputs {
+  "The set's key."
+  key: string,
+
+  "The value to add to the set."
+  value: string
+}
+
+type Outputs {
+  "The key that was set."
+  key: string
+}
