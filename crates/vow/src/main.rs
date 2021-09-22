@@ -69,6 +69,7 @@
 // !!END_LINTS
 // Add exceptions here
 #![allow(
+  clippy::future_not_send,
   missing_docs, // TODO
   clippy::expect_used, // because of tokio::main
   clippy::semicolon_if_nothing_returned // because of tokio::main
@@ -134,6 +135,7 @@ async fn main() {
 
 async fn run(opts: Cli) -> Result<()> {
   match opts.command {
+    commands::CliCommand::Test(cmd) => commands::test::handle_command(cmd).await,
     commands::CliCommand::Run(cmd) => commands::run::handle_command(cmd).await,
     commands::CliCommand::Serve(cmd) => commands::serve::handle_command(cmd).await,
   }

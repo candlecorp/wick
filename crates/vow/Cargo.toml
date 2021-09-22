@@ -7,6 +7,7 @@ license = "BSD-3-Clause"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+vino-test = { path = "../vino-test" }
 vino-runtime = { path = "../vino-runtime" }
 vino-rpc = { path = "../vino-rpc" }
 vino-provider-cli = { path = "../vino-provider-cli" }

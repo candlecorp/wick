@@ -1,5 +1,6 @@
 pub(crate) mod run;
 pub(crate) mod serve;
+pub(crate) mod test;
 
 use std::net::Ipv4Addr;
 use std::path::PathBuf;
@@ -8,6 +9,9 @@ use structopt::StructOpt;
 
 #[derive(Debug, Clone, StructOpt)]
 pub(crate) enum CliCommand {
+  /// Run a test file with the given component.
+  #[structopt(name = "test")]
+  Test(test::TestCommand),
   /// Query a provider for a list of its hosted components.
   #[structopt(name = "run")]
   Run(run::RunCommand),
