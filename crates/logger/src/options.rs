@@ -32,8 +32,8 @@ pub struct LoggingOptions {
   pub trace: bool,
 
   /// Log as JSON.
-  #[structopt(long = "json")]
-  pub json: bool,
+  #[structopt(long = "log-json")]
+  pub log_json: bool,
 
   /// Print log output as color. Options are auto | always | never.
   #[structopt(

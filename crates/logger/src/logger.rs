@@ -90,7 +90,7 @@ pub fn try_init(opts: &LoggingOptions) -> Result<(), LoggerError> {
       builder.filter_module(module.as_ref(), LevelFilter::Off);
     }
   }
-  let json = opts.json;
+  let json = opts.log_json;
   let verbose = opts.verbose;
 
   builder
