@@ -471,6 +471,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "combine"
+version = "4.6.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a909e4d93292cd8e9c42e189f61681eff9d67b6541f96b8a1a737f23737bd001"
+dependencies = [
+ "bytes 1.0.1",
+ "futures-core",
+ "memchr",
+ "pin-project-lite",
+ "tokio",
+ "tokio-util",
+]
+
+[[package]]
 name = "concurrent-queue"
 version = "1.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2155,9 +2169,9 @@ checksum = "bc881b2c22681370c6a780e47af9840ef841837bc98118431d4e1868bd0c1086"
 
 [[package]]
 name = "proc-macro2"
-version = "1.0.28"
+version = "1.0.29"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5c7ed8b8c7b886ea3ed7dde405212185f423ab44682667c8c6dd14aa1d9f6612"
+checksum = "b9f5105d4fdaab20335ca9565e106a5d9b82b6219b5ba735731124ac6711d23d"
 dependencies = [
  "unicode-xid",
 ]
@@ -2341,6 +2355,26 @@ dependencies = [
  "crossbeam-utils",
  "lazy_static",
  "num_cpus",
+]
+
+[[package]]
+name = "redis"
+version = "0.21.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "202c5bf92cad3d57605c366e644a7fbf305a83f19754fc66678c6265dcc9b8b4"
+dependencies = [
+ "async-trait",
+ "bytes 1.0.1",
+ "combine",
+ "dtoa",
+ "futures-util",
+ "itoa",
+ "percent-encoding 2.1.0",
+ "pin-project-lite",
+ "sha1",
+ "tokio",
+ "tokio-util",
+ "url 2.2.2",
 ]
 
 [[package]]
@@ -2709,15 +2743,21 @@ dependencies = [
 
 [[package]]
 name = "serde_yaml"
-version = "0.8.17"
+version = "0.8.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "15654ed4ab61726bf918a39cb8d98a2e2995b002387807fa6ba58fdf7f59bb23"
+checksum = "d8c608a35705a5d3cdc9fbe403147647ff34b921f8e833e49306df898f9b20af"
 dependencies = [
  "dtoa",
- "linked-hash-map",
+ "indexmap",
  "serde",
  "yaml-rust",
 ]
+
+[[package]]
+name = "sha1"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2579985fda508104f7587689507983eadd6a6e84dd35d6d115361f530916fa0d"
 
 [[package]]
 name = "sha2"
@@ -2849,9 +2889,9 @@ dependencies = [
 
 [[package]]
 name = "syn"
-version = "1.0.74"
+version = "1.0.76"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1873d832550d4588c3dbc20f01361ab00bfe741048f71e3fecf145a7cc18b29c"
+checksum = "c6f107db402c2c2055242dbf4d2af0e69197202e9faacbef9571bbe47f5a1b84"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2958,6 +2998,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "test-interface-keyvalue"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "log",
+ "maplit",
+ "thiserror",
+ "vino-codec",
+ "vino-invocation-server",
+ "vino-packet",
+ "vino-provider",
+ "vino-rpc",
+]
+
+[[package]]
 name = "test-logger"
 version = "0.0.0"
 dependencies = [
@@ -3005,18 +3060,18 @@ dependencies = [
 
 [[package]]
 name = "thiserror"
-version = "1.0.26"
+version = "1.0.29"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "93119e4feac1cbe6c798c34d3a53ea0026b0b1de6a120deef895137c0529bfe2"
+checksum = "602eca064b2d83369e2b2f34b09c70b605402801927c65c11071ac911d299b88"
 dependencies = [
  "thiserror-impl",
 ]
 
 [[package]]
 name = "thiserror-impl"
-version = "1.0.26"
+version = "1.0.29"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "060d69a0afe7796bf42e9e2ff91f5ee691fb15c53d38b4b62a9a53eb23164745"
+checksum = "bad553cc2c78e8de258400763a647e80e6d1b31ee237275d756f6836d204494c"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -3061,9 +3116,9 @@ checksum = "cda74da7e1a664f795bb1f8a87ec406fb89a02522cf6e50620d016add6dbbf5c"
 
 [[package]]
 name = "tokio"
-version = "1.10.1"
+version = "1.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "92036be488bb6594459f2e03b60e42df6f937fe6ca5c5ffdcb539c6b84dc40f5"
+checksum = "c2c2416fdedca8443ae44b4527de1ea633af61d8f7169ffa6e72c5b53d24efcc"
 dependencies = [
  "autocfg",
  "bytes 1.0.1",
@@ -3506,6 +3561,7 @@ version = "0.1.0"
 dependencies = [
  "actix",
  "actix-rt",
+ "atty",
  "futures",
  "log",
  "logger",
@@ -3526,6 +3582,7 @@ dependencies = [
  "vino-provider-cli",
  "vino-runtime",
  "vino-transport",
+ "vino-types",
 ]
 
 [[package]]
@@ -3617,7 +3674,6 @@ dependencies = [
  "http 0.2.4",
  "log",
  "logger",
- "maplit",
  "nkeys",
  "serde",
  "serde_json",
@@ -3628,6 +3684,7 @@ dependencies = [
  "vino-codec",
  "vino-entity",
  "vino-invocation-server",
+ "vino-lattice",
  "vino-macros 0.7.0",
  "vino-manifest",
  "vino-provider",
@@ -3661,6 +3718,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "vino-interface-keyvalue"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "vino-packet",
+ "vino-provider",
+ "vino-rpc",
+ "vino-transport",
+]
+
+[[package]]
 name = "vino-invocation-server"
 version = "0.1.0"
 dependencies = [
@@ -3684,6 +3752,36 @@ dependencies = [
  "vino-rpc",
  "vino-transport",
  "vino-types",
+]
+
+[[package]]
+name = "vino-keyvalue-redis"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "backtrace",
+ "futures",
+ "log",
+ "logger",
+ "rand 0.8.4",
+ "redis",
+ "serde",
+ "serde_json",
+ "structopt",
+ "test-interface-keyvalue",
+ "test-logger",
+ "test_bin",
+ "thiserror",
+ "tokio",
+ "tokio-util",
+ "tonic",
+ "vino-interface-keyvalue",
+ "vino-macros 0.7.0",
+ "vino-packet",
+ "vino-provider",
+ "vino-provider-cli",
+ "vino-rpc",
 ]
 
 [[package]]
@@ -3822,6 +3920,7 @@ dependencies = [
  "futures",
  "log",
  "logger",
+ "nkeys",
  "rand 0.8.4",
  "reqwest",
  "serde",
@@ -3836,6 +3935,7 @@ dependencies = [
  "tonic-web",
  "vino-codec",
  "vino-invocation-server",
+ "vino-lattice",
  "vino-packet",
  "vino-rpc",
 ]
@@ -3898,12 +3998,13 @@ name = "vino-root"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "env_logger 0.9.0",
  "futures",
  "log",
+ "logger",
  "maplit",
  "serde_json",
  "test-env-log",
+ "test-logger",
  "test-vino-provider",
  "test_bin",
  "tokio",
@@ -3993,6 +4094,16 @@ dependencies = [
  "vino-transport",
  "vino-types",
  "vino-wascap",
+]
+
+[[package]]
+name = "vino-test"
+version = "0.0.0"
+dependencies = [
+ "serde",
+ "serde-value",
+ "serde_yaml",
+ "thiserror",
 ]
 
 [[package]]
@@ -4091,6 +4202,7 @@ dependencies = [
  "vino-provider-wasm",
  "vino-rpc",
  "vino-runtime",
+ "vino-test",
  "vino-transport",
  "vino-wascap",
 ]

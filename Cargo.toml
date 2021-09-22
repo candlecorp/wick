@@ -49,6 +49,7 @@ members = [
   "crates/integration/*",
   "crates/*",
 ]
+
 exclude = [
   "crates/integration/test-wapc-component",
   "sdk/",

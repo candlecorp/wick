@@ -41,7 +41,7 @@ widl-template
 
 ### 7XXX Transaction Error
 
-### 8XXX
+### 8XXX Provider Error
 
 ### 9XXX
 
@@ -52,6 +52,10 @@ widl-template
 ## Todos
 
 - Codegen makefiles
+- Create a repo for encoded MessageTransports, TransportMaps, and LatticeRpcMessages to ensure cross-compatibility.
+- figure out how to make the wellknown interface.json better (right now it's just copying the generated file)
+- add better types to interface.json/signatures
+- Make component codegen for providers using interface.json generated the proper includes.
 
 ## Good first contributions
 
