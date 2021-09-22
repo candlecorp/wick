@@ -36,6 +36,25 @@ pub mod add_item {
     pub document: String,
   }
 
+  impl From<Inputs> for TransportMap {
+    fn from(inputs: Inputs) -> TransportMap {
+      let mut map = TransportMap::new();
+      map.insert(
+        "document_id".to_owned(),
+        MessageTransport::success(&inputs.document_id),
+      );
+      map.insert(
+        "collection_id".to_owned(),
+        MessageTransport::success(&inputs.collection_id),
+      );
+      map.insert(
+        "document".to_owned(),
+        MessageTransport::success(&inputs.document),
+      );
+      map
+    }
+  }
+
   static INPUTS_LIST: &[(&str, &str)] = &[
     ("document_id", "string"),
     ("collection_id", "string"),
@@ -126,6 +145,21 @@ pub mod get_item {
     pub document_id: String,
   }
 
+  impl From<Inputs> for TransportMap {
+    fn from(inputs: Inputs) -> TransportMap {
+      let mut map = TransportMap::new();
+      map.insert(
+        "collection_id".to_owned(),
+        MessageTransport::success(&inputs.collection_id),
+      );
+      map.insert(
+        "document_id".to_owned(),
+        MessageTransport::success(&inputs.document_id),
+      );
+      map
+    }
+  }
+
   static INPUTS_LIST: &[(&str, &str)] = &[("collection_id", "string"), ("document_id", "string")];
 
   #[must_use]
@@ -207,6 +241,17 @@ pub mod list_items {
   pub struct Inputs {
     #[serde(rename = "collection_id")]
     pub collection_id: String,
+  }
+
+  impl From<Inputs> for TransportMap {
+    fn from(inputs: Inputs) -> TransportMap {
+      let mut map = TransportMap::new();
+      map.insert(
+        "collection_id".to_owned(),
+        MessageTransport::success(&inputs.collection_id),
+      );
+      map
+    }
   }
 
   static INPUTS_LIST: &[(&str, &str)] = &[("collection_id", "string")];
@@ -293,6 +338,21 @@ pub mod rm_item {
     pub collection_id: String,
     #[serde(rename = "document_id")]
     pub document_id: String,
+  }
+
+  impl From<Inputs> for TransportMap {
+    fn from(inputs: Inputs) -> TransportMap {
+      let mut map = TransportMap::new();
+      map.insert(
+        "collection_id".to_owned(),
+        MessageTransport::success(&inputs.collection_id),
+      );
+      map.insert(
+        "document_id".to_owned(),
+        MessageTransport::success(&inputs.document_id),
+      );
+      map
+    }
   }
 
   static INPUTS_LIST: &[(&str, &str)] = &[("collection_id", "string"), ("document_id", "string")];

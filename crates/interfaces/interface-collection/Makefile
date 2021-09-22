@@ -28,7 +28,7 @@ all: codegen build
 $(GENERATED_RS): $(SCHEMAS)
 	vino-codegen rust interface $(SCHEMA_DIR) -f -o $@
 
-codegen: $(GENERATED_RS)
+codegen: $(GENERATED_RS) ./interface.json
 	cargo fmt
 
 build: $(wildcard ./src/*.rs) $(GENERATED_RS) ./interface.json
