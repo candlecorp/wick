@@ -98,4 +98,35 @@ mod tests {
     assert_eq!(output, format!("TEST: {}", user_data));
     Ok(())
   }
+
+  #[test_logger::test(tokio::test)]
+  async fn test_error() -> TestResult<()> {
+    let lattice_builder = LatticeBuilder::new_from_env("test")?;
+    let lattice = lattice_builder.build().await?;
+    let ns = "some_namespace";
+
+    lattice
+      .handle_namespace(ns.to_owned(), || {
+        Box::new(test_vino_provider::Provider::default())
+      })
+      .await?;
+
+    let provider = Provider::new(ns.to_owned(), Arc::new(lattice)).await?;
+    let user_data = "Hello world";
+
+    let job_payload = TransportMap::with_map(hashmap! {
+      "input".to_owned() => MessageTransport::messagepack(user_data),
+    });
+
+    let mut outputs = provider
+      .invoke(Entity::component(ns, "error"), job_payload)
+      .await?;
+    let output = outputs.next().await.unwrap();
+    println!("payload from [{}]: {:?}", output.port, output.payload);
+    assert_eq!(
+      output.payload,
+      MessageTransport::Error("This always errors".to_owned())
+    );
+    Ok(())
+  }
 }
