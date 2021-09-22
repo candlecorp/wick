@@ -46,4 +46,3 @@ tokio = { version = "1", features = [
   "io-util",
   "macros",
 ] }
-maplit = "1.0.2"

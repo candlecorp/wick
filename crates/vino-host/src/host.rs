@@ -1,23 +1,21 @@
-use std::collections::HashMap;
-use std::sync::{
-  Arc,
-  RwLock,
-};
+use std::convert::TryInto;
+use std::sync::Arc;
 
 use nkeys::KeyPair;
-use serde::Serialize;
 use vino_entity::Entity;
 use vino_lattice::lattice::Lattice;
 use vino_lattice::nats::NatsOptions;
 use vino_manifest::host_definition::HostDefinition;
+use vino_provider::native::prelude::SchematicSignature;
 use vino_provider_cli::cli::{
   LatticeOptions,
   Options as HostOptions,
-  ServerMetadata,
   ServerOptions,
+  ServerState,
 };
 use vino_runtime::network::NetworkBuilder;
 use vino_runtime::prelude::*;
+use vino_transport::TransportMap;
 
 use crate::{
   Error,
@@ -28,13 +26,12 @@ use crate::{
 #[must_use]
 #[derive(Debug)]
 pub struct Host {
-  started: RwLock<bool>,
   id: String,
   kp: KeyPair,
   network: Option<Network>,
   lattice: Option<Arc<Lattice>>,
   manifest: HostDefinition,
-  server_metadata: Option<ServerMetadata>,
+  server_metadata: Option<ServerState>,
 }
 
 impl Host {
@@ -42,38 +39,60 @@ impl Host {
   /// to wait with a method like `host.wait_for_sigint()`.
   pub async fn start(&mut self) -> Result<()> {
     debug!("Host starting");
-    *self.started.write().unwrap() = true;
 
-    if let Some(lconfig) = &self.manifest.host.lattice {
-      if lconfig.enabled {
-        info!("Connecting to lattice at {}", lconfig.address);
-        let lattice = Lattice::connect(NatsOptions {
-          address: lconfig.address.clone(),
-          client_id: self.get_host_id(),
-          creds_path: lconfig.creds_path.clone(),
-          token: lconfig.token.clone(),
-          timeout: self.manifest.host.timeout,
-        })
-        .await?;
-        self.lattice = Some(Arc::new(lattice));
-      }
-    }
-
+    self.lattice = self.get_lattice().await?;
     self.start_network().await?;
-    let metadata = self.start_servers().await?;
-    self.server_metadata = Some(metadata);
+    let state = self.start_servers().await?;
+    self.server_metadata = Some(state);
 
     Ok(())
   }
 
-  pub fn get_server_info(&self) -> &Option<ServerMetadata> {
+  pub async fn connect_to_lattice(&mut self) -> Result<()> {
+    self.lattice = self.get_lattice().await?;
+    Ok(())
+  }
+
+  async fn get_lattice(&self) -> Result<Option<Arc<Lattice>>> {
+    if let Some(config) = &self.manifest.host.lattice {
+      if config.enabled {
+        debug!("Connecting to lattice at {}", config.address);
+        let lattice = Lattice::connect(NatsOptions {
+          address: config.address.clone(),
+          client_id: self.get_host_id(),
+          creds_path: config.creds_path.clone(),
+          token: config.token.clone(),
+          timeout: self.manifest.host.timeout,
+        })
+        .await?;
+        Ok(Some(Arc::new(lattice)))
+      } else {
+        Ok(None)
+      }
+    } else {
+      Ok(None)
+    }
+  }
+
+  pub async fn list_schematics(&self) -> Result<Vec<SchematicSignature>> {
+    match &self.network {
+      Some(network) => Ok(network.list_schematics().await?),
+      None => Err(Error::NoNetwork),
+    }
+  }
+
+  #[must_use]
+  pub fn get_server_info(&self) -> &Option<ServerState> {
     &self.server_metadata
   }
 
   /// Stops a running host.
-  pub async fn stop(&self) {
+  pub async fn stop(&mut self) {
     debug!("Host stopping");
-    *self.started.write().unwrap() = false;
+    self.lattice = None;
+    self.network = None;
+    self.server_metadata = None;
+    // TODO: Need to gracefully shutdown started servers.
   }
 
   pub fn get_network(&self) -> Result<&Network> {
@@ -88,7 +107,7 @@ impl Host {
       .map(|network| network.uid.clone())
   }
 
-  async fn start_network(&mut self) -> Result<()> {
+  pub async fn start_network(&mut self) -> Result<()> {
     ensure!(
       self.network.is_none(),
       crate::Error::InvalidHostState("Host already has a network running".into())
@@ -100,6 +119,12 @@ impl Host {
     if let Some(lattice) = &self.lattice {
       network_builder = network_builder.lattice(lattice.clone());
     }
+    network_builder = network_builder.allow_latest(self.manifest.host.allow_latest);
+    network_builder =
+      network_builder.allow_insecure(self.manifest.host.insecure_registries.clone());
+    if let Some(lattice) = &self.lattice {
+      network_builder = network_builder.lattice(lattice.clone());
+    }
 
     let network = network_builder.build();
     network.init().await?;
@@ -107,7 +132,7 @@ impl Host {
     Ok(())
   }
 
-  async fn start_servers(&mut self) -> Result<ServerMetadata> {
+  async fn start_servers(&mut self) -> Result<ServerState> {
     let nuid = self.get_network_uid()?;
 
     #[allow(clippy::manual_map)]
@@ -163,15 +188,15 @@ impl Host {
     Ok(metadata)
   }
 
-  pub async fn request<T: AsRef<str> + Sync + Send, U: AsRef<str> + Sync + Send>(
-    &self,
-    schematic: T,
-    payload: HashMap<U, impl Serialize + Sync + Send>,
-  ) -> Result<TransportStream> {
+  pub async fn request<T, U>(&self, schematic: T, payload: U) -> Result<TransportStream>
+  where
+    T: AsRef<str> + Sync + Send,
+    U: TryInto<TransportMap> + Send + Sync,
+  {
     match &self.network {
       Some(network) => Ok(
         network
-          .request(schematic, Entity::host(&self.id), &payload)
+          .request(schematic, Entity::host(&self.id), payload)
           .await?,
       ),
       None => Err(crate::Error::InvalidHostState(
@@ -186,20 +211,14 @@ impl Host {
     Ok(())
   }
 
+  #[must_use]
   pub fn get_host_id(&self) -> String {
     self.id.clone()
   }
 
-  fn _ensure_started(&self) -> Result<()> {
-    ensure!(
-      *self.started.read().unwrap(),
-      crate::Error::InvalidHostState("Host not started".into())
-    );
-    Ok(())
-  }
-
+  #[must_use]
   pub fn is_started(&self) -> bool {
-    *self.started.read().unwrap()
+    self.network.is_some()
   }
 }
 
@@ -247,7 +266,6 @@ impl HostBuilder {
     Host {
       kp,
       id: host_id,
-      started: RwLock::new(false),
       network: None,
       lattice: None,
       manifest: self.manifest,
@@ -258,13 +276,11 @@ impl HostBuilder {
 
 #[cfg(test)]
 mod test {
-  use std::collections::HashMap;
   use std::net::Ipv4Addr;
   use std::path::PathBuf;
   use std::str::FromStr;
 
   use http::Uri;
-  use maplit::hashmap;
   use vino_entity::entity::Entity;
   use vino_invocation_server::make_rpc_client;
   use vino_macros::transport_map;
@@ -293,24 +309,13 @@ mod test {
   }
 
   #[test_logger::test(actix::test)]
-  async fn ensure_started() -> Result<()> {
-    let mut host = HostBuilder::new().build();
-    host.start().await?;
-    host._ensure_started()?;
-    host.stop().await;
-
-    assert!(!host.is_started());
-    Ok(())
-  }
-
-  #[test_logger::test(actix::test)]
   async fn request_from_network() -> Result<()> {
     let file = PathBuf::from("src/configurations/logger.yaml");
     let manifest = HostDefinition::load_from_file(&file)?;
     let mut host = HostBuilder::from_definition(manifest).build();
     host.start().await?;
     let passed_data = "logging output";
-    let data: HashMap<&str, &str> = hashmap! {
+    let data = transport_map! {
         "input" => passed_data,
     };
     let mut stream = host.request("logger", data).await?;

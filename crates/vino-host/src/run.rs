@@ -72,16 +72,15 @@
 // Add exceptions here
 #![allow(missing_docs, clippy::expect_used)] // todo
 
-use std::collections::HashMap;
-
 use vino_manifest::host_definition::HostDefinition;
-use vino_transport::TransportStream;
+use vino_transport::{
+  TransportMap,
+  TransportStream,
+};
 
 use crate::HostBuilder;
 
-type JsonMap = HashMap<String, serde_json::value::Value>;
-
-pub async fn run(manifest: HostDefinition, data: JsonMap) -> crate::Result<TransportStream> {
+pub async fn run(manifest: HostDefinition, data: TransportMap) -> crate::Result<TransportStream> {
   let default_schematic = manifest.default_schematic.clone();
   let host_builder = HostBuilder::from_definition(manifest);
 
@@ -103,15 +102,15 @@ mod tests {
 
   use std::path::PathBuf;
 
-  use maplit::hashmap;
+  use vino_macros::transport_map;
   use vino_manifest::host_definition::HostDefinition;
   use vino_transport::TransportWrapper;
 
   #[actix::test]
   async fn runs_log_config() -> crate::Result<()> {
     let host_def = HostDefinition::load_from_file(&PathBuf::from("./manifests/log.vino"))?;
-    let input = hashmap! {
-      "schem_input".into() => "test-input".into()
+    let input = transport_map! {
+      "schem_input" => "test-input"
     };
 
     let mut result = super::run(host_def, input).await?;
