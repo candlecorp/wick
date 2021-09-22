@@ -17,8 +17,13 @@ pub(crate) fn merge_config(
   local_cli_opts: HostOptions,
   server_cli_opts: Option<DefaultCliOptions>,
 ) -> HostDefinition {
+  debug!(
+    "local_cli_opts.allow_latest {:?}",
+    local_cli_opts.allow_latest
+  );
+  debug!("def.host.allow_latest {:?}", def.host.allow_latest);
   let mut host_config = HostConfig {
-    allow_latest: local_cli_opts.allow_latest.unwrap_or(def.host.allow_latest),
+    allow_latest: local_cli_opts.allow_latest || def.host.allow_latest,
     insecure_registries: vec![
       def.host.insecure_registries,
       local_cli_opts.insecure_registries,
@@ -119,30 +124,30 @@ pub(crate) fn merge_config(
         log_override(
           "lattice.enabled",
           &mut manifest_opts.enabled,
-          cli_opts.lattice_enabled,
+          cli_opts.lattice.lattice_enabled,
         );
       }
-      if let Some(to) = cli_opts.nats_url {
+      if let Some(to) = cli_opts.lattice.nats_url {
         log_override("lattice.address", &mut manifest_opts.address, to);
       }
-      if let Some(to) = cli_opts.nats_credsfile {
+      if let Some(to) = cli_opts.lattice.nats_credsfile {
         log_override(
           "lattice.creds_path",
           &mut manifest_opts.creds_path,
           Some(to),
         );
       }
-      if let Some(to) = cli_opts.nats_token {
+      if let Some(to) = cli_opts.lattice.nats_token {
         debug!("Overriding manifest value for 'host.lattice.token'");
         manifest_opts.token = Some(to);
       }
       Some(manifest_opts)
-    } else if let Some(url) = cli_opts.nats_url {
+    } else if let Some(url) = cli_opts.lattice.nats_url {
       Some(LatticeConfig {
-        enabled: cli_opts.http_enabled,
+        enabled: cli_opts.lattice.lattice_enabled,
         address: url,
-        creds_path: cli_opts.nats_credsfile,
-        token: cli_opts.nats_token,
+        creds_path: cli_opts.lattice.nats_credsfile,
+        token: cli_opts.lattice.nats_token,
       })
     } else {
       None

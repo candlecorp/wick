@@ -24,12 +24,12 @@ pub(crate) struct StartCommand {
 }
 
 pub(crate) async fn handle_command(command: StartCommand) -> Result<String> {
+  vino_provider_cli::init_logging(&command.server_options.logging)?;
+
   let config = match command.manifest {
     Some(file) => HostDefinition::load_from_file(&file)?,
     None => HostDefinition::default(),
   };
-
-  vino_provider_cli::init_logging(&command.server_options.logging)?;
 
   let config = merge_config(config, command.host, Some(command.server_options));
 

@@ -1,10 +1,22 @@
-use std::collections::HashMap;
-use std::io::Read;
 use std::path::PathBuf;
 
 use structopt::StructOpt;
+use tokio::io::{
+  self,
+  AsyncBufReadExt,
+};
+use vino_host::HostBuilder;
 use vino_manifest::host_definition::HostDefinition;
+use vino_provider_cli::cli::{
+  DefaultCliOptions,
+  LatticeCliOptions,
+};
 use vino_runtime::prelude::StreamExt;
+use vino_transport::message_transport::stream::map_to_json;
+use vino_transport::{
+  TransportMap,
+  TransportStream,
+};
 
 use crate::utils::merge_config;
 use crate::Result;
@@ -16,21 +28,29 @@ pub(crate) struct RunCommand {
   pub(crate) logging: super::LoggingOptions,
 
   #[structopt(flatten)]
+  pub(crate) lattice: LatticeCliOptions,
+
+  #[structopt(flatten)]
   pub(crate) host: super::HostOptions,
 
   /// Turn on info logging.
   #[structopt(long = "info")]
   pub(crate) info: bool,
 
-  /// Default schematic to run.
-  #[structopt(long, short, env = "VINO_DEFAULT_SCHEMATIC")]
-  pub(crate) default_schematic: Option<String>,
+  /// A port=value string where value is JSON to pass as input.
+  #[structopt(long, short)]
+  data: Vec<String>,
+
+  /// Skip additional I/O processing done for CLI usage.
+  #[structopt(long, short)]
+  raw: bool,
 
   /// Manifest file.
   manifest: PathBuf,
 
-  /// JSON data.
-  data: Option<String>,
+  /// Default schematic to run.
+  #[structopt()]
+  default_schematic: Option<String>,
 }
 
 pub(crate) async fn handle_command(command: RunCommand) -> Result<String> {
@@ -40,38 +60,53 @@ pub(crate) async fn handle_command(command: RunCommand) -> Result<String> {
   }
   logger::init(&logging);
 
-  let data = match command.data {
-    None => {
-      eprintln!("No input passed, reading from <STDIN>");
-      let mut data = String::new();
-      std::io::stdin().read_to_string(&mut data)?;
-      data
-    }
-    Some(i) => i,
-  };
-
-  debug!("Received {} bytes of json", data.len());
-
-  let json: HashMap<String, serde_json::value::Value> = serde_json::from_str(&data)?;
-
   let config = HostDefinition::load_from_file(&command.manifest)?;
 
-  let mut config = merge_config(config, command.host, None);
+  let server_options = DefaultCliOptions {
+    lattice: command.lattice,
+    ..Default::default()
+  };
+
+  let mut config = merge_config(config, command.host, Some(server_options));
   if command.default_schematic.is_some() {
     config.default_schematic = command.default_schematic.unwrap();
   }
+  let default_schematic = config.default_schematic.clone();
 
-  let mut result = vino_host::run::run(config, json).await?;
-  while let Some(message) = result.next().await {
-    if message.payload.is_signal() {
-      debug!(
-        "Skipping signal '{}' on port '{}'",
-        message.payload, message.port
-      );
-    } else {
-      println!("{}", message.payload.into_json());
+  let host_builder = HostBuilder::from_definition(config);
+
+  let mut host = host_builder.build();
+  host.connect_to_lattice().await?;
+  host.start_network().await?;
+
+  if command.data.is_empty() {
+    if atty::is(atty::Stream::Stdin) {
+      eprintln!("No input passed, reading from <STDIN>");
     }
+    let reader = io::BufReader::new(io::stdin());
+    let mut lines = reader.lines();
+    while let Some(line) = lines.next_line().await? {
+      debug!("STDIN:'{}'", line);
+      let mut payload = TransportMap::from_json_str(&line)?;
+      payload.transpose_output_name();
+      let stream = host.request(&default_schematic, payload).await?;
+
+      print_stream_json(stream, command.raw).await?;
+    }
+  } else {
+    let mut payload = TransportMap::from_kv_json(&command.data)?;
+    payload.transpose_output_name();
+    let stream = host.request(&default_schematic, payload).await?;
+    print_stream_json(stream, command.raw).await?;
   }
 
   Ok("Done".to_owned())
+}
+
+async fn print_stream_json(stream: TransportStream, raw: bool) -> Result<()> {
+  let mut json_stream = map_to_json(stream, raw);
+  while let Some(message) = json_stream.next().await {
+    println!("{}", message);
+  }
+  Ok(())
 }

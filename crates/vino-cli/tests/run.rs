@@ -5,7 +5,7 @@ async fn vino_run() {
     .args(&[
       "run",
       "./manifests/log.vino",
-      "{\"schem_input\": \"testing123\"}",
+      "--data=schem_input=\"testing123\"",
       "--trace",
     ])
     .output()
@@ -15,6 +15,6 @@ async fn vino_run() {
 
   assert_eq!(
     String::from_utf8_lossy(&output.stdout),
-    "Logger: testing123\n{\"value\":\"testing123\"}\n"
+    "Logger: testing123\n{\"schem_output\":{\"value\":\"testing123\"}}\n"
   );
 }

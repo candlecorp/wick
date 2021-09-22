@@ -1,3 +1,4 @@
+pub(crate) mod list;
 pub(crate) mod run;
 pub(crate) mod start;
 
@@ -29,13 +30,16 @@ pub(crate) enum CliCommand {
   /// Load a manifest and run the default schematic.
   #[structopt(name = "run")]
   Run(run::RunCommand),
+  /// Print the schematics and their accessible components for the passed manifest.
+  #[structopt(name = "list")]
+  List(list::ListCommand),
 }
 
 #[derive(Debug, Clone, StructOpt)]
 pub(crate) struct HostOptions {
   /// Allows the use of "latest" artifact tag.
-  #[structopt(long = "allow-latest", env = "VINO_ALLOW_LATEST")]
-  pub(crate) allow_latest: Option<bool>,
+  #[structopt(long = "allow-latest")]
+  pub(crate) allow_latest: bool,
 
   /// Allows the use of HTTP registry connections to these registries.
   #[structopt(long = "insecure")]

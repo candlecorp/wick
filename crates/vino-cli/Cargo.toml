@@ -26,7 +26,9 @@ vino-transport = { path = "../../sdk/crates/vino-transport" }
 vino-host = { path = "../vino-host" }
 vino-manifest = { path = "../vino-manifest" }
 vino-codec = { path = "../../sdk/crates/vino-codec" }
+vino-types = { path = "../../sdk/crates/vino-types" }
 tokio = { version = "1.4.0", features = ["macros", "rt-multi-thread"] }
+atty = "0.2.14"
 
 [dev-dependencies]
 test_bin = "0.3.0"

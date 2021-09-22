@@ -95,6 +95,7 @@ async fn main() -> Result<()> {
 
   let res = match cli.command {
     CliCommand::Start(cmd) => commands::start::handle_command(cmd).await,
+    CliCommand::List(cmd) => commands::list::handle_command(cmd).await,
     CliCommand::Run(cmd) => commands::run::handle_command(cmd).await,
   };
 
