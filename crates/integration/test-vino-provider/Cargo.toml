@@ -22,7 +22,6 @@ tokio = { version = "1.4.0", features = ["macros", "rt-multi-thread"] }
 log = "0.4.14"
 
 [dev-dependencies]
-maplit = "1.0.2"
 test-logger = { path = "../../test-logger" }
 logger = { path = "../../logger" }
 structopt = "0.3.21"

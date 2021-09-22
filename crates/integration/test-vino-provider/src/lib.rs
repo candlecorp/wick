@@ -48,7 +48,6 @@ mod tests {
 
   use futures::prelude::*;
   use log::*;
-  use maplit::hashmap;
   use vino_provider::native::prelude::*;
 
   use super::*;

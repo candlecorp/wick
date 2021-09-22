@@ -2,6 +2,21 @@
   "name": "test-vino-provider",
   "components": [
     {
+      "name": "error",
+      "inputs": [
+        {
+          "name": "input",
+          "type_string": "string"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "output",
+          "type_string": "string"
+        }
+      ]
+    },
+    {
       "name": "test-component",
       "inputs": [
         {
