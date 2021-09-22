@@ -141,9 +141,10 @@ impl LatticeBuilder {
 }
 
 // static PREFIX: &str = "ofp";
-static RPC_STREAM_NAME: &str = "rpc";
+static RPC_STREAM_TOPIC: &str = "rpc";
 
 #[derive(Debug, Clone)]
+#[must_use]
 pub struct Lattice {
   nats: Nats,
   rpc_stream_topic: String,
@@ -154,7 +155,7 @@ impl Lattice {
   pub async fn connect(opts: NatsOptions) -> Result<Self> {
     let nats = Nats::connect(opts).await?;
 
-    let rpc_stream_topic = RPC_STREAM_NAME.to_owned();
+    let rpc_stream_topic = RPC_STREAM_TOPIC.to_owned();
 
     let subjects = vec![format!("{}.*", rpc_stream_topic)];
     let stream_config = StreamConfig {
@@ -209,9 +210,7 @@ impl Lattice {
           };
           match msg {
             LatticeRpcMessage::List { reply_to, .. } => {
-              println!("pre get_list");
               let result = provider.get_list().await;
-              println!("post get_list");
               match result {
                 Ok(components) => {
                   let response = LatticeRpcResponse::List(components);
@@ -221,6 +220,7 @@ impl Lattice {
                   }
                 }
                 Err(e) => {
+                  error!("Provider component list resulted in error: {}", e);
                   let response = LatticeRpcResponse::Error(e.to_string());
                   if let Err(e) = nc.publish(reply_to, response.serialize()).await {
                     error!("Error sending response to lattice: {}", e);
@@ -233,6 +233,7 @@ impl Lattice {
               entity,
               payload,
             } => {
+              let entity_url = entity.url();
               let result = provider.invoke(entity, payload).await;
               match result {
                 Ok(mut stream) => {
@@ -245,6 +246,10 @@ impl Lattice {
                   }
                 }
                 Err(e) => {
+                  error!(
+                    "Provider invocation for {} resulted in error: {}",
+                    entity_url, e
+                  );
                   let response = LatticeRpcResponse::Error(e.to_string());
                   if let Err(e) = nc.publish(reply_to, response.serialize()).await {
                     error!("Error sending response to lattice: {}", e);
@@ -298,7 +303,7 @@ impl Lattice {
     spawn(async move {
       while let Ok(Some(lattice_msg)) = sub.next().await {
         debug!(
-          "LATTICE:INVOKE[{}]:NEXT:DATA:{:?}",
+          "LATTICE:INVOKE[{}]:RESULT:DATA:{:?}",
           entity_string, lattice_msg.data
         );
         let result = match deserialize::<LatticeRpcResponse>(&lattice_msg.data) {
@@ -307,7 +312,7 @@ impl Lattice {
             tx.send(TransportWrapper::internal_error(MessageTransport::Error(e)))
           }
           Err(e) => tx.send(TransportWrapper::new(
-            vino_transport::SYSTEM_ID,
+            vino_transport::COMPONENT_ERROR,
             MessageTransport::Error(e.to_string()),
           )),
           _ => unreachable!(),
@@ -324,7 +329,7 @@ impl Lattice {
   }
 
   pub async fn list_namespaces(&self) -> Result<Vec<String>> {
-    self.nats.list_consumers(RPC_STREAM_NAME.to_owned()).await
+    self.nats.list_consumers(RPC_STREAM_TOPIC.to_owned()).await
   }
 
   pub async fn list_components(&self, namespace: String) -> Result<Vec<HostedType>> {
@@ -356,7 +361,7 @@ impl Lattice {
   }
 
   pub async fn get_total_pending(&self) -> Result<u64> {
-    let info = self.nats.stream_info(RPC_STREAM_NAME.to_owned()).await?;
+    let info = self.nats.stream_info(RPC_STREAM_TOPIC.to_owned()).await?;
     let state = info.state;
     Ok(state.messages)
   }
@@ -368,23 +373,28 @@ fn rpc_message_topic(prefix: &str, ns: &str) -> String {
 
 #[derive(Debug, serde::Deserialize, serde::Serialize)]
 pub enum LatticeRpcMessage {
+  #[serde(rename = "0")]
   Invocation {
     reply_to: String,
     entity: vino_entity::Entity,
     payload: TransportMap,
   },
-  List {
-    reply_to: String,
-    namespace: String,
-  },
+
+  #[serde(rename = "1")]
+  List { reply_to: String, namespace: String },
 }
 
 impl LatticeRpcMessage {}
 
-#[derive(serde::Deserialize, serde::Serialize, Debug)]
+#[derive(serde::Deserialize, serde::Serialize, Debug, PartialEq)]
 pub enum LatticeRpcResponse {
+  #[serde(rename = "0")]
   Output(TransportWrapper),
+
+  #[serde(rename = "1")]
   List(Vec<HostedType>),
+
+  #[serde(rename = "2")]
   Error(String),
 }
 
@@ -401,9 +411,11 @@ mod test {
   use log::*;
   use test_vino_provider::Provider;
   use tokio_stream::StreamExt;
+  use vino_codec::messagepack::deserialize;
   use vino_transport::{
     MessageTransport,
     TransportMap,
+    TransportWrapper,
   };
   use vino_types::signatures::{
     ComponentSignature,
@@ -415,6 +427,7 @@ mod test {
     Lattice,
     LatticeBuilder,
   };
+  use crate::lattice::LatticeRpcResponse;
 
   async fn get_lattice() -> Result<(Lattice, String)> {
     let lattice_builder = LatticeBuilder::new_from_env("test").unwrap();
@@ -426,6 +439,21 @@ mod test {
       .unwrap();
 
     Ok((lattice, namespace))
+  }
+
+  #[test_logger::test]
+  fn test_serde() -> Result<()> {
+    let data = "Yay".to_owned();
+    let expected = LatticeRpcResponse::Output(TransportWrapper {
+      port: "port-name".to_owned(),
+      payload: MessageTransport::success(&data),
+    });
+    let bytes = expected.serialize();
+    debug!("{:?}", bytes);
+    let actual: LatticeRpcResponse = deserialize(&bytes)?;
+    assert_eq!(expected, actual);
+
+    Ok(())
   }
 
   #[test_logger::test(tokio::test)]
@@ -449,6 +477,28 @@ mod test {
   }
 
   #[test_logger::test(tokio::test)]
+  async fn test_error() -> Result<()> {
+    let (lattice, namespace) = get_lattice().await?;
+    let component_name = "error";
+    let user_input = String::from("Hello world");
+    let entity = vino_entity::Entity::component(namespace, component_name);
+    let mut payload = TransportMap::new();
+    payload.insert("input", MessageTransport::success(&user_input));
+    println!("Sending payload: {:?}", payload);
+    let mut stream = lattice.invoke(entity, payload).await?;
+    println!("Sent payload, received stream");
+
+    let msg = stream.next().await.unwrap();
+    println!("msg: {:?}", msg);
+    assert_eq!(
+      msg.payload,
+      MessageTransport::Error("This always errors".to_owned())
+    );
+
+    Ok(())
+  }
+
+  #[test_logger::test(tokio::test)]
   async fn test_list() -> Result<()> {
     let (lattice, namespace) = get_lattice().await?;
     let namespaces = lattice.list_namespaces().await?;
@@ -464,9 +514,8 @@ mod test {
     let (lattice, namespace) = get_lattice().await?;
     let components = lattice.list_components(namespace).await?;
     println!("Components on namespace: {:?}", components);
-    assert_eq!(
-      components,
-      vec![HostedType::Component(ComponentSignature {
+    assert!(
+      components.contains(&HostedType::Component(ComponentSignature {
         name: "test-component".to_owned(),
         inputs: vec![PortSignature {
           name: "input".to_owned(),
@@ -476,7 +525,7 @@ mod test {
           name: "output".to_owned(),
           type_string: "string".to_owned()
         }],
-      })]
+      }))
     );
     Ok(())
   }

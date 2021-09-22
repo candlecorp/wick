@@ -68,7 +68,12 @@ impl Nats {
 
     let nc = RT
       .spawn_blocking(move || {
-        debug!("LATTICE:CONNECT[{},{}]", nopts.client_id, nopts.address);
+        trace!(
+          "LATTICE:CONNECT[{}]:ID[{}]:TIMEOUT[{:?}]",
+          nopts.address,
+          nopts.client_id,
+          nopts.timeout
+        );
         opts
           .with_name(&nopts.client_id)
           .connect(&nopts.address)
