@@ -40,6 +40,7 @@ pub type CallResult = Result<Vec<u8>>;
 
 /// Common imports for WebAssembly providers and components.
 pub mod prelude {
+  pub use super::error::ComponentError;
   pub use super::{
     console_log,
     wapc,

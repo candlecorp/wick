@@ -50,6 +50,13 @@ impl NativeComponentError {
       msg: msg.as_ref().to_owned(),
     }
   }
+
+  /// Utility function to create a [Box<NativeComponentError>].
+  pub fn boxed<T: AsRef<str>>(msg: T) -> Box<Self> {
+    Box::new(Self {
+      msg: msg.as_ref().to_owned(),
+    })
+  }
 }
 
 impl From<&'static str> for NativeComponentError {
