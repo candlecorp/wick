@@ -5,6 +5,7 @@ use std::net::{
 };
 use std::path::PathBuf;
 use std::str::FromStr;
+use std::sync::Arc;
 use std::time::Duration;
 
 use logger::LoggingOptions;
@@ -113,12 +114,12 @@ impl From<DefaultCliOptions> for Options {
     });
 
     #[allow(clippy::option_if_let_else)]
-    let lattice = if let Some(url) = opts.nats_url {
+    let lattice = if let Some(url) = opts.lattice.nats_url {
       Some(LatticeOptions {
-        enabled: opts.lattice_enabled,
+        enabled: opts.lattice.lattice_enabled,
         address: url,
-        creds_path: opts.nats_credsfile,
-        token: opts.nats_token,
+        creds_path: opts.lattice.nats_credsfile,
+        token: opts.lattice.nats_token,
       })
     } else {
       None
@@ -142,8 +143,7 @@ impl From<DefaultCliOptions> for LoggingOptions {
   }
 }
 
-#[derive(Debug, Clone, StructOpt)]
-#[structopt(rename_all = "kebab-case")]
+#[derive(Debug, Clone, Default, StructOpt)]
 /// Command line options for providers.
 pub struct DefaultCliOptions {
   /// The unique ID of this client.
@@ -162,21 +162,9 @@ pub struct DefaultCliOptions {
   #[structopt(long = "version", short = "v")]
   pub version: bool,
 
-  /// Enable the lattice connection.
-  #[structopt(long = "lattice")]
-  pub lattice_enabled: bool,
-
-  /// The url of the NATS server (in IP:PORT format).
-  #[structopt(long = "nats", env = "NATS_URL")]
-  pub nats_url: Option<String>,
-
-  /// The path to the NATS credsfile.
-  #[structopt(long = "nats-credsfile", env = "NATS_CREDSFILE")]
-  pub nats_credsfile: Option<PathBuf>,
-
-  /// The NATS token.
-  #[structopt(long = "nats-token", env = "NATS_TOKEN", hide_env_values = true)]
-  pub nats_token: Option<String>,
+  #[structopt(flatten)]
+  /// Options for connecting to a lattice.
+  pub lattice: LatticeCliOptions,
 
   /// Enable the rpc server.
   #[structopt(long = "rpc")]
@@ -227,22 +215,42 @@ pub struct DefaultCliOptions {
   pub http_ca: Option<PathBuf>,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Default, StructOpt)]
+/// Command line options for providers.
+pub struct LatticeCliOptions {
+  /// Enable the lattice connection.
+  #[structopt(long = "lattice")]
+  pub lattice_enabled: bool,
+
+  /// The url of the NATS server (in IP:PORT format).
+  #[structopt(long = "nats", env = "NATS_URL")]
+  pub nats_url: Option<String>,
+
+  /// The path to the NATS credsfile.
+  #[structopt(long = "nats-credsfile", env = "NATS_CREDSFILE")]
+  pub nats_credsfile: Option<PathBuf>,
+
+  /// The NATS token.
+  #[structopt(long = "nats-token", env = "NATS_TOKEN", hide_env_values = true)]
+  pub nats_token: Option<String>,
+}
+
+#[derive(Debug, Clone)]
 #[must_use]
 /// Metadata for the running server.
-pub struct ServerMetadata {
+pub struct ServerState {
   /// The address of the RPC server if it is running.
   pub rpc_addr: Option<SocketAddr>,
   /// The address of the HTTP server if it is running.
   pub http_addr: Option<SocketAddr>,
   /// True if we're connected to the lattice, false otherwise.
-  pub lattice_connected: bool,
+  pub lattice: Option<Arc<Lattice>>,
   /// The ID of the server.
   pub id: String,
 }
 
 #[doc(hidden)]
-pub fn print_info(info: &ServerMetadata) {
+pub fn print_info(info: &ServerState) {
   let mut something_started = false;
   if let Some(addr) = info.rpc_addr {
     something_started = true;
@@ -252,9 +260,9 @@ pub fn print_info(info: &ServerMetadata) {
     something_started = true;
     info!("HTTP server bound to {} on port {}", addr.ip(), addr.port());
   }
-  if info.lattice_connected {
+  if info.lattice.is_some() {
     something_started = true;
-    info!("Host connected to lattice with id {}", info.id);
+    info!("Host connected to lattice with id '{}'", info.id);
   }
   if !something_started {
     warn!("No server information available, did you intend to start a host without GRPC or a lattice connection?");
@@ -270,7 +278,7 @@ pub fn init_logging(options: &LoggingOptions) -> Result<()> {
 }
 
 /// Starts an RPC and/or an HTTP server for the passed [vino_rpc::RpcHandler].
-pub async fn start_server(provider: RpcFactory, opts: Option<Options>) -> Result<ServerMetadata> {
+pub async fn start_server(provider: RpcFactory, opts: Option<Options>) -> Result<ServerState> {
   debug!("Starting server with options: {:?}", opts);
 
   let opts = opts.unwrap_or_default();
@@ -301,23 +309,23 @@ pub async fn start_server(provider: RpcFactory, opts: Option<Options>) -> Result
     None
   };
 
-  let lattice_connected = match &opts.lattice {
+  let lattice = match &opts.lattice {
     Some(lattice) => {
       if lattice.enabled {
-        connect_to_lattice(lattice, opts.id.clone(), provider, opts.timeout).await?;
-        true
+        let lattice = connect_to_lattice(lattice, opts.id.clone(), provider, opts.timeout).await?;
+        Some(lattice)
       } else {
-        false
+        None
       }
     }
-    None => false,
+    None => None,
   };
 
-  Ok(ServerMetadata {
+  Ok(ServerState {
     id: opts.id,
     rpc_addr,
     http_addr,
-    lattice_connected,
+    lattice,
   })
 }
 
@@ -326,8 +334,12 @@ async fn connect_to_lattice(
   id: String,
   factory: RpcFactory,
   timeout: Duration,
-) -> Result<()> {
-  info!("Connecting to lattice...");
+) -> Result<Arc<Lattice>> {
+  info!(
+    "Connecting to lattice at {} with timeout of {} ms...",
+    opts.address,
+    timeout.as_millis()
+  );
   let lattice = Lattice::connect(NatsOptions {
     address: opts.address.clone(),
     client_id: id.clone(),
@@ -338,7 +350,7 @@ async fn connect_to_lattice(
   .await?;
   info!("Registering '{}' on lattice...", id);
   lattice.handle_namespace(id, factory).await?;
-  Ok(())
+  Ok(Arc::new(lattice))
 }
 
 async fn start_http_server(
@@ -475,7 +487,7 @@ mod tests {
     let response = client.list(ListRequest {}).await.unwrap();
     let list = response.into_inner();
     println!("list: {:?}", list);
-    assert_eq!(list.components.len(), 1);
+    assert_eq!(list.components.len(), 2);
     Ok(())
   }
 
