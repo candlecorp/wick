@@ -1,6 +1,10 @@
 use std::path::PathBuf;
 
 use structopt::StructOpt;
+use tap::{
+  TestBlock,
+  TestRunner,
+};
 use tokio_stream::StreamExt;
 use vino_provider::native::prelude::{
   Entity,
@@ -29,7 +33,7 @@ pub(crate) struct TestCommand {
   /// The path to the data file.
   data_path: PathBuf,
 }
-#[allow(clippy::future_not_send)]
+#[allow(clippy::future_not_send, clippy::too_many_lines)]
 pub(crate) async fn handle_command(opts: TestCommand) -> Result<()> {
   vino_provider_cli::init_logging(&opts.logging)?;
 
@@ -40,9 +44,14 @@ pub(crate) async fn handle_command(opts: TestCommand) -> Result<()> {
 
   let provider = Provider::try_from_module(&component, 1)?;
 
-  let data = vino_test::read_data(opts.data_path).map_err(|e| VowError::Other(e.to_string()))?;
+  let data = vino_test::read_data(opts.data_path.clone())
+    .map_err(|e| VowError::NotFound(opts.data_path.clone(), e.to_string()))?;
 
-  let mut harness = TestHarness::new();
+  let mut harness = TestRunner::new(Some(format!(
+    "Vow test for : {}",
+    opts.data_path.to_string_lossy()
+  )));
+
   for test in data {
     let mut payload = TransportMap::new();
     let entity = Entity::component_direct(test.component.clone());
@@ -55,53 +64,99 @@ pub(crate) async fn handle_command(opts: TestCommand) -> Result<()> {
       .await
       .map_err(VowError::ComponentPanic)?;
     let outputs: Vec<_> = stream.collect().await;
+    let description = test
+      .description
+      .map_or_else(String::new, |desc| format!(" - {}", desc));
+    let mut test_block = TestBlock::new(Some(format!(
+      "Component '{}'{}",
+      test.component, description
+    )));
 
-    println!("# Component '{}'", test.component);
-
-    for (i, output) in test.outputs.iter().enumerate() {
+    for (i, output) in test.outputs.into_iter().enumerate() {
       let result = outputs[i].port == output.port;
-      harness.register(move || result, "port name".to_owned());
+      test_block.add_test(
+        move || result,
+        format!("Output port name is '{}'", output.port),
+        make_diagnostic(&outputs[i].port, &output.port),
+      );
+
+      if let Some(value) = &output.payload.value {
+        let actual_payload = outputs[i].payload.clone();
+
+        let actual_value: Result<serde_value::Value> =
+          actual_payload.try_into().map_err(VowError::TransportError);
+        let expected_value = value.clone();
+
+        let diagnostic = Some(vec![
+          format!(
+            "Actual: {:?}",
+            match &actual_value {
+              Ok(v) => format!("{:?}", v),
+              Err(e) => format!("Could not deserialize payload, message was : {}", e),
+            }
+          ),
+          format!("Expected: {:?}", expected_value),
+        ]);
+
+        test_block.add_test(
+          move || match actual_value {
+            Ok(val) => val == expected_value,
+            Err(_e) => false,
+          },
+          "Payload value matches",
+          diagnostic,
+        );
+      }
+      if let Some(error_kind) = output.payload.error_kind {
+        let actual_payload = outputs[i].payload.clone();
+
+        let diag = Some(vec![format!(
+          "Expected an {} error kind, but payload was: {:?}",
+          error_kind, actual_payload
+        )]);
+
+        test_block.add_test(
+          move || match actual_payload {
+            MessageTransport::Exception(_) => (error_kind == "Exception"),
+            MessageTransport::Error(_) => (error_kind == "Error"),
+            _ => false,
+          },
+          "Error kind matches",
+          diag,
+        );
+      }
+      if let Some(error_msg) = output.payload.error_msg {
+        let actual_payload = outputs[i].payload.clone();
+
+        let diag = Some(vec![format!(
+          "Expected error message '{}', but payload was: {:?}",
+          error_msg, actual_payload
+        )]);
+
+        test_block.add_test(
+          move || match actual_payload {
+            MessageTransport::Exception(msg) => (error_msg == msg),
+            MessageTransport::Error(msg) => (error_msg == msg),
+            _ => false,
+          },
+          "Error message matches",
+          diag,
+        );
+      }
     }
+    harness.add_block(test_block);
   }
-  harness.run();
+  harness.print();
 
   Ok(())
 }
 
-struct TestHarness {
-  tests: Vec<TestCase>,
-}
-
-impl TestHarness {
-  pub(crate) fn new() -> Self {
-    TestHarness { tests: vec![] }
-  }
-  pub(crate) fn register(&mut self, test: impl FnOnce() -> bool + 'static, description: String) {
-    self.tests.push(TestCase {
-      test: Box::new(test),
-      description,
-    });
-  }
-  pub(crate) fn run(self) {
-    println!("1..{}", self.tests.len());
-    for (i, test) in self.tests.into_iter().enumerate() {
-      let desc = test.description.clone();
-      if test.exec() {
-        println!("ok {} Component '{}': port name", i, desc);
-      } else {
-        println!("not ok {} {} port name", i, desc);
-      }
-    }
-  }
-}
-
-struct TestCase {
-  test: Box<dyn FnOnce() -> bool>,
-  description: String,
-}
-
-impl TestCase {
-  pub(crate) fn exec(self) -> bool {
-    (self.test)()
-  }
+fn make_diagnostic<T: std::fmt::Debug, U: std::fmt::Debug>(
+  actual: &T,
+  expected: &U,
+) -> Option<Vec<String>> {
+  Some(vec![
+    format!("Actual: {:?}", actual),
+    format!("Expected: {:?}", expected),
+  ])
 }

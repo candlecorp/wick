@@ -28,8 +28,8 @@ pub struct OutputData {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct SerializedTransport {
   pub value: Option<serde_value::Value>,
-  pub error_kind: Option<serde_value::Value>,
-  pub error_msg: Option<serde_value::Value>,
+  pub error_kind: Option<String>,
+  pub error_msg: Option<String>,
 }
 
 pub fn read_data(path: PathBuf) -> Result<Vec<TestData>, error::TestError> {

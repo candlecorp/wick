@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -16,11 +18,13 @@ pub enum VowError {
   TransportError(#[from] vino_transport::Error),
   #[error(transparent)]
   CliError(#[from] vino_provider_cli::Error),
-  #[error("Invalid claims : {0}")]
+  #[error("Invalid claims: {0}")]
   ClaimsError(String),
-  #[error("General error : {0}")]
+  #[error("General error: {0}")]
   Other(String),
-  #[error("Internal Error : {0}")]
+  #[error("Read error for '{0}' : {1}")]
+  NotFound(PathBuf, String),
+  #[error("Internal Error: {0}")]
   InternalError(u32),
   #[error("Component '{0}' not found. Valid components are: {}", .1.join(", "))]
   ComponentNotFound(String, Vec<String>),
