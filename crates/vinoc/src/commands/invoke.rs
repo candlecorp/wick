@@ -21,6 +21,10 @@ pub struct InvokeCommand {
   #[structopt(flatten)]
   pub connection: super::ConnectOptions,
 
+  /// Don't read input from STDIN.
+  #[structopt(long = "no-input")]
+  pub(crate) no_input: bool,
+
   /// Skip additional I/O processing done for CLI usage.
   #[structopt(long, short)]
   raw: bool,
@@ -45,9 +49,9 @@ pub async fn handle_command(opts: InvokeCommand) -> Result<()> {
   )
   .await?;
 
-  if opts.data.is_empty() {
+  if opts.data.is_empty() && !opts.no_input {
     if atty::is(atty::Stream::Stdin) {
-      eprintln!("No input passed, reading from <STDIN>");
+      eprintln!("No input passed, reading from <STDIN>. Pass --no-input to disable.");
     }
     let reader = BufReader::new(io::stdin());
     let mut lines = reader.lines();
