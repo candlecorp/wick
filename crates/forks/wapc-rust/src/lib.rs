@@ -241,7 +241,7 @@ impl WapcFunctions {
 }
 
 /// Parameters defining the options for enabling WASI on a module (if applicable)
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 #[must_use]
 pub struct WasiParams {
   pub argv: Vec<String>,
