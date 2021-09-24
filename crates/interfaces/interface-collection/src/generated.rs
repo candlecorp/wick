@@ -26,7 +26,7 @@ pub mod add_item {
     })
   }
 
-  #[derive(Debug, Deserialize, Serialize, Default, Clone)]
+  #[derive(Debug, Deserialize, Serialize, Clone)]
   pub struct Inputs {
     #[serde(rename = "document_id")]
     pub document_id: String,
@@ -43,14 +43,17 @@ pub mod add_item {
         "document_id".to_owned(),
         MessageTransport::success(&inputs.document_id),
       );
+
       map.insert(
         "collection_id".to_owned(),
         MessageTransport::success(&inputs.collection_id),
       );
+
       map.insert(
         "document".to_owned(),
         MessageTransport::success(&inputs.document),
       );
+
       map
     }
   }
@@ -91,8 +94,6 @@ pub mod add_item {
     }
   }
   impl PortSender for DocumentIdPortSender {
-    type PayloadType = String;
-
     fn get_port(&self) -> Result<&PortChannel, ProviderError> {
       if self.port.is_closed() {
         Err(ProviderError::SendChannelClosed)
@@ -137,7 +138,7 @@ pub mod get_item {
     })
   }
 
-  #[derive(Debug, Deserialize, Serialize, Default, Clone)]
+  #[derive(Debug, Deserialize, Serialize, Clone)]
   pub struct Inputs {
     #[serde(rename = "collection_id")]
     pub collection_id: String,
@@ -152,10 +153,12 @@ pub mod get_item {
         "collection_id".to_owned(),
         MessageTransport::success(&inputs.collection_id),
       );
+
       map.insert(
         "document_id".to_owned(),
         MessageTransport::success(&inputs.document_id),
       );
+
       map
     }
   }
@@ -192,8 +195,6 @@ pub mod get_item {
     }
   }
   impl PortSender for DocumentPortSender {
-    type PayloadType = String;
-
     fn get_port(&self) -> Result<&PortChannel, ProviderError> {
       if self.port.is_closed() {
         Err(ProviderError::SendChannelClosed)
@@ -237,7 +238,7 @@ pub mod list_items {
     })
   }
 
-  #[derive(Debug, Deserialize, Serialize, Default, Clone)]
+  #[derive(Debug, Deserialize, Serialize, Clone)]
   pub struct Inputs {
     #[serde(rename = "collection_id")]
     pub collection_id: String,
@@ -250,6 +251,7 @@ pub mod list_items {
         "collection_id".to_owned(),
         MessageTransport::success(&inputs.collection_id),
       );
+
       map
     }
   }
@@ -286,8 +288,6 @@ pub mod list_items {
     }
   }
   impl PortSender for DocumentIdsPortSender {
-    type PayloadType = Vec<String>;
-
     fn get_port(&self) -> Result<&PortChannel, ProviderError> {
       if self.port.is_closed() {
         Err(ProviderError::SendChannelClosed)
@@ -332,7 +332,7 @@ pub mod rm_item {
     })
   }
 
-  #[derive(Debug, Deserialize, Serialize, Default, Clone)]
+  #[derive(Debug, Deserialize, Serialize, Clone)]
   pub struct Inputs {
     #[serde(rename = "collection_id")]
     pub collection_id: String,
@@ -347,10 +347,12 @@ pub mod rm_item {
         "collection_id".to_owned(),
         MessageTransport::success(&inputs.collection_id),
       );
+
       map.insert(
         "document_id".to_owned(),
         MessageTransport::success(&inputs.document_id),
       );
+
       map
     }
   }

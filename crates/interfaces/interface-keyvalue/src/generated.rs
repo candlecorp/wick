@@ -24,7 +24,7 @@ pub mod delete {
     })
   }
 
-  #[derive(Debug, Deserialize, Serialize, Default, Clone)]
+  #[derive(Debug, Deserialize, Serialize, Clone)]
   pub struct Inputs {
     #[serde(rename = "key")]
     pub key: String,
@@ -34,6 +34,7 @@ pub mod delete {
     fn from(inputs: Inputs) -> TransportMap {
       let mut map = TransportMap::new();
       map.insert("key".to_owned(), MessageTransport::success(&inputs.key));
+
       map
     }
   }
@@ -70,8 +71,6 @@ pub mod delete {
     }
   }
   impl PortSender for KeyPortSender {
-    type PayloadType = String;
-
     fn get_port(&self) -> Result<&PortChannel, ProviderError> {
       if self.port.is_closed() {
         Err(ProviderError::SendChannelClosed)
@@ -115,7 +114,7 @@ pub mod exists {
     })
   }
 
-  #[derive(Debug, Deserialize, Serialize, Default, Clone)]
+  #[derive(Debug, Deserialize, Serialize, Clone)]
   pub struct Inputs {
     #[serde(rename = "key")]
     pub key: String,
@@ -125,6 +124,7 @@ pub mod exists {
     fn from(inputs: Inputs) -> TransportMap {
       let mut map = TransportMap::new();
       map.insert("key".to_owned(), MessageTransport::success(&inputs.key));
+
       map
     }
   }
@@ -138,10 +138,10 @@ pub mod exists {
 
   #[derive(Debug, Default)]
   pub struct Outputs {
-    pub key: KeyPortSender,
+    pub exists: ExistsPortSender,
   }
 
-  static OUTPUTS_LIST: &[(&str, &str)] = &[("key", "string")];
+  static OUTPUTS_LIST: &[(&str, &str)] = &[("exists", "bool")];
 
   #[must_use]
   pub fn outputs_list() -> &'static [(&'static str, &'static str)] {
@@ -149,20 +149,18 @@ pub mod exists {
   }
 
   #[derive(Debug)]
-  pub struct KeyPortSender {
+  pub struct ExistsPortSender {
     port: PortChannel,
   }
 
-  impl Default for KeyPortSender {
+  impl Default for ExistsPortSender {
     fn default() -> Self {
       Self {
-        port: PortChannel::new("key"),
+        port: PortChannel::new("exists"),
       }
     }
   }
-  impl PortSender for KeyPortSender {
-    type PayloadType = String;
-
+  impl PortSender for ExistsPortSender {
     fn get_port(&self) -> Result<&PortChannel, ProviderError> {
       if self.port.is_closed() {
         Err(ProviderError::SendChannelClosed)
@@ -179,7 +177,7 @@ pub mod exists {
   #[must_use]
   pub fn get_outputs() -> (Outputs, TransportStream) {
     let mut outputs = Outputs::default();
-    let mut ports = vec![&mut outputs.key.port];
+    let mut ports = vec![&mut outputs.exists.port];
     let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)
   }
@@ -206,7 +204,7 @@ pub mod key_get {
     })
   }
 
-  #[derive(Debug, Deserialize, Serialize, Default, Clone)]
+  #[derive(Debug, Deserialize, Serialize, Clone)]
   pub struct Inputs {
     #[serde(rename = "key")]
     pub key: String,
@@ -216,6 +214,7 @@ pub mod key_get {
     fn from(inputs: Inputs) -> TransportMap {
       let mut map = TransportMap::new();
       map.insert("key".to_owned(), MessageTransport::success(&inputs.key));
+
       map
     }
   }
@@ -252,8 +251,6 @@ pub mod key_get {
     }
   }
   impl PortSender for ValuePortSender {
-    type PayloadType = String;
-
     fn get_port(&self) -> Result<&PortChannel, ProviderError> {
       if self.port.is_closed() {
         Err(ProviderError::SendChannelClosed)
@@ -298,7 +295,7 @@ pub mod key_increment {
     })
   }
 
-  #[derive(Debug, Deserialize, Serialize, Default, Clone)]
+  #[derive(Debug, Deserialize, Serialize, Clone)]
   pub struct Inputs {
     #[serde(rename = "key")]
     pub key: String,
@@ -310,7 +307,9 @@ pub mod key_increment {
     fn from(inputs: Inputs) -> TransportMap {
       let mut map = TransportMap::new();
       map.insert("key".to_owned(), MessageTransport::success(&inputs.key));
+
       map.insert("value".to_owned(), MessageTransport::success(&inputs.value));
+
       map
     }
   }
@@ -347,8 +346,6 @@ pub mod key_increment {
     }
   }
   impl PortSender for OutputPortSender {
-    type PayloadType = i32;
-
     fn get_port(&self) -> Result<&PortChannel, ProviderError> {
       if self.port.is_closed() {
         Err(ProviderError::SendChannelClosed)
@@ -394,7 +391,7 @@ pub mod key_set {
     })
   }
 
-  #[derive(Debug, Deserialize, Serialize, Default, Clone)]
+  #[derive(Debug, Deserialize, Serialize, Clone)]
   pub struct Inputs {
     #[serde(rename = "key")]
     pub key: String,
@@ -408,11 +405,14 @@ pub mod key_set {
     fn from(inputs: Inputs) -> TransportMap {
       let mut map = TransportMap::new();
       map.insert("key".to_owned(), MessageTransport::success(&inputs.key));
+
       map.insert("value".to_owned(), MessageTransport::success(&inputs.value));
+
       map.insert(
         "expires".to_owned(),
         MessageTransport::success(&inputs.expires),
       );
+
       map
     }
   }
@@ -450,8 +450,6 @@ pub mod key_set {
     }
   }
   impl PortSender for KeyPortSender {
-    type PayloadType = String;
-
     fn get_port(&self) -> Result<&PortChannel, ProviderError> {
       if self.port.is_closed() {
         Err(ProviderError::SendChannelClosed)
@@ -496,7 +494,7 @@ pub mod list_add {
     })
   }
 
-  #[derive(Debug, Deserialize, Serialize, Default, Clone)]
+  #[derive(Debug, Deserialize, Serialize, Clone)]
   pub struct Inputs {
     #[serde(rename = "key")]
     pub key: String,
@@ -508,7 +506,9 @@ pub mod list_add {
     fn from(inputs: Inputs) -> TransportMap {
       let mut map = TransportMap::new();
       map.insert("key".to_owned(), MessageTransport::success(&inputs.key));
+
       map.insert("value".to_owned(), MessageTransport::success(&inputs.value));
+
       map
     }
   }
@@ -545,8 +545,6 @@ pub mod list_add {
     }
   }
   impl PortSender for KeyPortSender {
-    type PayloadType = String;
-
     fn get_port(&self) -> Result<&PortChannel, ProviderError> {
       if self.port.is_closed() {
         Err(ProviderError::SendChannelClosed)
@@ -592,7 +590,7 @@ pub mod list_range {
     })
   }
 
-  #[derive(Debug, Deserialize, Serialize, Default, Clone)]
+  #[derive(Debug, Deserialize, Serialize, Clone)]
   pub struct Inputs {
     #[serde(rename = "key")]
     pub key: String,
@@ -606,8 +604,11 @@ pub mod list_range {
     fn from(inputs: Inputs) -> TransportMap {
       let mut map = TransportMap::new();
       map.insert("key".to_owned(), MessageTransport::success(&inputs.key));
+
       map.insert("start".to_owned(), MessageTransport::success(&inputs.start));
+
       map.insert("end".to_owned(), MessageTransport::success(&inputs.end));
+
       map
     }
   }
@@ -644,8 +645,6 @@ pub mod list_range {
     }
   }
   impl PortSender for ValuesPortSender {
-    type PayloadType = Vec<String>;
-
     fn get_port(&self) -> Result<&PortChannel, ProviderError> {
       if self.port.is_closed() {
         Err(ProviderError::SendChannelClosed)
@@ -690,7 +689,7 @@ pub mod list_remove {
     })
   }
 
-  #[derive(Debug, Deserialize, Serialize, Default, Clone)]
+  #[derive(Debug, Deserialize, Serialize, Clone)]
   pub struct Inputs {
     #[serde(rename = "key")]
     pub key: String,
@@ -702,7 +701,9 @@ pub mod list_remove {
     fn from(inputs: Inputs) -> TransportMap {
       let mut map = TransportMap::new();
       map.insert("key".to_owned(), MessageTransport::success(&inputs.key));
+
       map.insert("value".to_owned(), MessageTransport::success(&inputs.value));
+
       map
     }
   }
@@ -739,8 +740,6 @@ pub mod list_remove {
     }
   }
   impl PortSender for ValuePortSender {
-    type PayloadType = String;
-
     fn get_port(&self) -> Result<&PortChannel, ProviderError> {
       if self.port.is_closed() {
         Err(ProviderError::SendChannelClosed)
@@ -785,7 +784,7 @@ pub mod set_add {
     })
   }
 
-  #[derive(Debug, Deserialize, Serialize, Default, Clone)]
+  #[derive(Debug, Deserialize, Serialize, Clone)]
   pub struct Inputs {
     #[serde(rename = "key")]
     pub key: String,
@@ -797,7 +796,9 @@ pub mod set_add {
     fn from(inputs: Inputs) -> TransportMap {
       let mut map = TransportMap::new();
       map.insert("key".to_owned(), MessageTransport::success(&inputs.key));
+
       map.insert("value".to_owned(), MessageTransport::success(&inputs.value));
+
       map
     }
   }
@@ -834,8 +835,6 @@ pub mod set_add {
     }
   }
   impl PortSender for KeyPortSender {
-    type PayloadType = String;
-
     fn get_port(&self) -> Result<&PortChannel, ProviderError> {
       if self.port.is_closed() {
         Err(ProviderError::SendChannelClosed)
@@ -879,7 +878,7 @@ pub mod set_get {
     })
   }
 
-  #[derive(Debug, Deserialize, Serialize, Default, Clone)]
+  #[derive(Debug, Deserialize, Serialize, Clone)]
   pub struct Inputs {
     #[serde(rename = "key")]
     pub key: String,
@@ -889,6 +888,7 @@ pub mod set_get {
     fn from(inputs: Inputs) -> TransportMap {
       let mut map = TransportMap::new();
       map.insert("key".to_owned(), MessageTransport::success(&inputs.key));
+
       map
     }
   }
@@ -925,8 +925,6 @@ pub mod set_get {
     }
   }
   impl PortSender for ValuesPortSender {
-    type PayloadType = Vec<String>;
-
     fn get_port(&self) -> Result<&PortChannel, ProviderError> {
       if self.port.is_closed() {
         Err(ProviderError::SendChannelClosed)
@@ -970,7 +968,7 @@ pub mod set_intersection {
     })
   }
 
-  #[derive(Debug, Deserialize, Serialize, Default, Clone)]
+  #[derive(Debug, Deserialize, Serialize, Clone)]
   pub struct Inputs {
     #[serde(rename = "keys")]
     pub keys: Vec<String>,
@@ -980,6 +978,7 @@ pub mod set_intersection {
     fn from(inputs: Inputs) -> TransportMap {
       let mut map = TransportMap::new();
       map.insert("keys".to_owned(), MessageTransport::success(&inputs.keys));
+
       map
     }
   }
@@ -1016,8 +1015,6 @@ pub mod set_intersection {
     }
   }
   impl PortSender for KeysPortSender {
-    type PayloadType = Vec<String>;
-
     fn get_port(&self) -> Result<&PortChannel, ProviderError> {
       if self.port.is_closed() {
         Err(ProviderError::SendChannelClosed)
@@ -1062,7 +1059,7 @@ pub mod set_remove {
     })
   }
 
-  #[derive(Debug, Deserialize, Serialize, Default, Clone)]
+  #[derive(Debug, Deserialize, Serialize, Clone)]
   pub struct Inputs {
     #[serde(rename = "key")]
     pub key: String,
@@ -1074,7 +1071,9 @@ pub mod set_remove {
     fn from(inputs: Inputs) -> TransportMap {
       let mut map = TransportMap::new();
       map.insert("key".to_owned(), MessageTransport::success(&inputs.key));
+
       map.insert("value".to_owned(), MessageTransport::success(&inputs.value));
+
       map
     }
   }
@@ -1111,8 +1110,6 @@ pub mod set_remove {
     }
   }
   impl PortSender for ValuePortSender {
-    type PayloadType = String;
-
     fn get_port(&self) -> Result<&PortChannel, ProviderError> {
       if self.port.is_closed() {
         Err(ProviderError::SendChannelClosed)
@@ -1156,7 +1153,7 @@ pub mod set_union {
     })
   }
 
-  #[derive(Debug, Deserialize, Serialize, Default, Clone)]
+  #[derive(Debug, Deserialize, Serialize, Clone)]
   pub struct Inputs {
     #[serde(rename = "keys")]
     pub keys: Vec<String>,
@@ -1166,6 +1163,7 @@ pub mod set_union {
     fn from(inputs: Inputs) -> TransportMap {
       let mut map = TransportMap::new();
       map.insert("keys".to_owned(), MessageTransport::success(&inputs.keys));
+
       map
     }
   }
@@ -1202,8 +1200,6 @@ pub mod set_union {
     }
   }
   impl PortSender for KeysPortSender {
-    type PayloadType = Vec<String>;
-
     fn get_port(&self) -> Result<&PortChannel, ProviderError> {
       if self.port.is_closed() {
         Err(ProviderError::SendChannelClosed)

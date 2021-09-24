@@ -26,7 +26,7 @@ pub mod authenticate {
     })
   }
 
-  #[derive(Debug, Deserialize, Serialize, Default, Clone)]
+  #[derive(Debug, Deserialize, Serialize, Clone)]
   pub struct Inputs {
     #[serde(rename = "session")]
     pub session: String,
@@ -43,14 +43,17 @@ pub mod authenticate {
         "session".to_owned(),
         MessageTransport::success(&inputs.session),
       );
+
       map.insert(
         "username".to_owned(),
         MessageTransport::success(&inputs.username),
       );
+
       map.insert(
         "password".to_owned(),
         MessageTransport::success(&inputs.password),
       );
+
       map
     }
   }
@@ -92,8 +95,6 @@ pub mod authenticate {
     }
   }
   impl PortSender for SessionPortSender {
-    type PayloadType = String;
-
     fn get_port(&self) -> Result<&PortChannel, ProviderError> {
       if self.port.is_closed() {
         Err(ProviderError::SendChannelClosed)
@@ -119,8 +120,6 @@ pub mod authenticate {
     }
   }
   impl PortSender for UserIdPortSender {
-    type PayloadType = String;
-
     fn get_port(&self) -> Result<&PortChannel, ProviderError> {
       if self.port.is_closed() {
         Err(ProviderError::SendChannelClosed)
@@ -166,7 +165,7 @@ pub mod create_user {
     })
   }
 
-  #[derive(Debug, Deserialize, Serialize, Default, Clone)]
+  #[derive(Debug, Deserialize, Serialize, Clone)]
   pub struct Inputs {
     #[serde(rename = "user_id")]
     pub user_id: String,
@@ -183,14 +182,17 @@ pub mod create_user {
         "user_id".to_owned(),
         MessageTransport::success(&inputs.user_id),
       );
+
       map.insert(
         "username".to_owned(),
         MessageTransport::success(&inputs.username),
       );
+
       map.insert(
         "password".to_owned(),
         MessageTransport::success(&inputs.password),
       );
+
       map
     }
   }
@@ -231,8 +233,6 @@ pub mod create_user {
     }
   }
   impl PortSender for UserIdPortSender {
-    type PayloadType = String;
-
     fn get_port(&self) -> Result<&PortChannel, ProviderError> {
       if self.port.is_closed() {
         Err(ProviderError::SendChannelClosed)
@@ -276,7 +276,7 @@ pub mod get_id {
     })
   }
 
-  #[derive(Debug, Deserialize, Serialize, Default, Clone)]
+  #[derive(Debug, Deserialize, Serialize, Clone)]
   pub struct Inputs {
     #[serde(rename = "username")]
     pub username: String,
@@ -289,6 +289,7 @@ pub mod get_id {
         "username".to_owned(),
         MessageTransport::success(&inputs.username),
       );
+
       map
     }
   }
@@ -325,8 +326,6 @@ pub mod get_id {
     }
   }
   impl PortSender for UserIdPortSender {
-    type PayloadType = String;
-
     fn get_port(&self) -> Result<&PortChannel, ProviderError> {
       if self.port.is_closed() {
         Err(ProviderError::SendChannelClosed)
@@ -371,7 +370,7 @@ pub mod has_permission {
     })
   }
 
-  #[derive(Debug, Deserialize, Serialize, Default, Clone)]
+  #[derive(Debug, Deserialize, Serialize, Clone)]
   pub struct Inputs {
     #[serde(rename = "user_id")]
     pub user_id: String,
@@ -386,10 +385,12 @@ pub mod has_permission {
         "user_id".to_owned(),
         MessageTransport::success(&inputs.user_id),
       );
+
       map.insert(
         "permission".to_owned(),
         MessageTransport::success(&inputs.permission),
       );
+
       map
     }
   }
@@ -426,8 +427,6 @@ pub mod has_permission {
     }
   }
   impl PortSender for UserIdPortSender {
-    type PayloadType = String;
-
     fn get_port(&self) -> Result<&PortChannel, ProviderError> {
       if self.port.is_closed() {
         Err(ProviderError::SendChannelClosed)
@@ -471,7 +470,7 @@ pub mod list_permissions {
     })
   }
 
-  #[derive(Debug, Deserialize, Serialize, Default, Clone)]
+  #[derive(Debug, Deserialize, Serialize, Clone)]
   pub struct Inputs {
     #[serde(rename = "user_id")]
     pub user_id: String,
@@ -484,6 +483,7 @@ pub mod list_permissions {
         "user_id".to_owned(),
         MessageTransport::success(&inputs.user_id),
       );
+
       map
     }
   }
@@ -520,8 +520,6 @@ pub mod list_permissions {
     }
   }
   impl PortSender for PermissionsPortSender {
-    type PayloadType = Vec<String>;
-
     fn get_port(&self) -> Result<&PortChannel, ProviderError> {
       if self.port.is_closed() {
         Err(ProviderError::SendChannelClosed)
@@ -566,7 +564,7 @@ pub mod list_users {
     })
   }
 
-  #[derive(Debug, Deserialize, Serialize, Default, Clone)]
+  #[derive(Debug, Deserialize, Serialize, Clone)]
   pub struct Inputs {
     #[serde(rename = "offset")]
     pub offset: u32,
@@ -581,7 +579,9 @@ pub mod list_users {
         "offset".to_owned(),
         MessageTransport::success(&inputs.offset),
       );
+
       map.insert("limit".to_owned(), MessageTransport::success(&inputs.limit));
+
       map
     }
   }
@@ -618,8 +618,6 @@ pub mod list_users {
     }
   }
   impl PortSender for UsersPortSender {
-    type PayloadType = std::collections::HashMap<String, String>;
-
     fn get_port(&self) -> Result<&PortChannel, ProviderError> {
       if self.port.is_closed() {
         Err(ProviderError::SendChannelClosed)
@@ -663,7 +661,7 @@ pub mod remove_user {
     })
   }
 
-  #[derive(Debug, Deserialize, Serialize, Default, Clone)]
+  #[derive(Debug, Deserialize, Serialize, Clone)]
   pub struct Inputs {
     #[serde(rename = "username")]
     pub username: String,
@@ -676,6 +674,7 @@ pub mod remove_user {
         "username".to_owned(),
         MessageTransport::success(&inputs.username),
       );
+
       map
     }
   }
@@ -712,8 +711,6 @@ pub mod remove_user {
     }
   }
   impl PortSender for UserIdPortSender {
-    type PayloadType = String;
-
     fn get_port(&self) -> Result<&PortChannel, ProviderError> {
       if self.port.is_closed() {
         Err(ProviderError::SendChannelClosed)
@@ -758,7 +755,7 @@ pub mod update_permissions {
     })
   }
 
-  #[derive(Debug, Deserialize, Serialize, Default, Clone)]
+  #[derive(Debug, Deserialize, Serialize, Clone)]
   pub struct Inputs {
     #[serde(rename = "user_id")]
     pub user_id: String,
@@ -773,10 +770,12 @@ pub mod update_permissions {
         "user_id".to_owned(),
         MessageTransport::success(&inputs.user_id),
       );
+
       map.insert(
         "permissions".to_owned(),
         MessageTransport::success(&inputs.permissions),
       );
+
       map
     }
   }
@@ -813,8 +812,6 @@ pub mod update_permissions {
     }
   }
   impl PortSender for PermissionsPortSender {
-    type PayloadType = Vec<String>;
-
     fn get_port(&self) -> Result<&PortChannel, ProviderError> {
       if self.port.is_closed() {
         Err(ProviderError::SendChannelClosed)
@@ -858,7 +855,7 @@ pub mod validate_session {
     })
   }
 
-  #[derive(Debug, Deserialize, Serialize, Default, Clone)]
+  #[derive(Debug, Deserialize, Serialize, Clone)]
   pub struct Inputs {
     #[serde(rename = "session")]
     pub session: String,
@@ -871,6 +868,7 @@ pub mod validate_session {
         "session".to_owned(),
         MessageTransport::success(&inputs.session),
       );
+
       map
     }
   }
@@ -907,8 +905,6 @@ pub mod validate_session {
     }
   }
   impl PortSender for UserIdPortSender {
-    type PayloadType = String;
-
     fn get_port(&self) -> Result<&PortChannel, ProviderError> {
       if self.port.is_closed() {
         Err(ProviderError::SendChannelClosed)

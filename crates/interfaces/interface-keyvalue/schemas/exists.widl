@@ -6,6 +6,5 @@ type Inputs {
 }
 
 type Outputs {
-  "The key that was checked."
-  key: string,
+  exists: bool,
 }
