@@ -76,7 +76,7 @@ impl Handler<ComponentPayload> for SchematicService {
         }
         InvocationResponse::Error { tx_id, msg } => {
           warn!("Tx '{}' short-circuiting '{}': {}", tx_id, instance, msg);
-          let msg = ShortCircuit::new(tx_id, instance, MessageTransport::Error(msg));
+          let msg = ShortCircuit::new(tx_id, instance, MessageTransport::error(msg));
           map_err!(addr.send(msg).await, InternalError::E6007)?
         }
       }

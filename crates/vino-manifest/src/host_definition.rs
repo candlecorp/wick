@@ -66,6 +66,12 @@ impl HostDefinition {
     let manifest = crate::HostManifest::load_from_file(path)?;
     HostDefinition::try_from(manifest)
   }
+
+  /// Utility function to automate loading a manifest from a byte array.
+  pub fn load_from_bytes(src: &[u8]) -> Result<HostDefinition> {
+    let manifest = crate::HostManifest::load_from_bytes(src)?;
+    HostDefinition::try_from(manifest)
+  }
 }
 
 #[derive(Debug, Clone, Default)]

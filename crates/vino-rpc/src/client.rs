@@ -80,7 +80,7 @@ impl RpcClient {
         Ok(o) => o.into(),
         Err(e) => TransportWrapper {
           port: vino_transport::COMPONENT_ERROR.to_owned(),
-          payload: MessageTransport::Error(format!(
+          payload: MessageTransport::error(format!(
             "Error converting RPC output to MessageTransports: {}",
             e
           )),

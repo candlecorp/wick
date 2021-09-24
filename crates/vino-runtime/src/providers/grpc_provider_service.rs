@@ -182,7 +182,7 @@ impl Handler<Invocation> for GrpcProviderService {
             error!("{}", msg);
             match tx.send(TransportWrapper {
               port: vino_transport::COMPONENT_ERROR.to_owned(),
-              payload: MessageTransport::Error(msg),
+              payload: MessageTransport::error(msg),
             }) {
               Ok(_) => {
                 trace!("Sent error to upstream, closing connection.");
@@ -204,7 +204,7 @@ impl Handler<Invocation> for GrpcProviderService {
             error!("{}", msg);
             match tx.send(TransportWrapper {
               port: vino_transport::COMPONENT_ERROR.to_owned(),
-              payload: MessageTransport::Error(msg.to_owned()),
+              payload: MessageTransport::error(msg.to_owned()),
             }) {
               Ok(_) => {
                 trace!("Sent error to upstream");

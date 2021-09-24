@@ -37,8 +37,10 @@ pub(crate) mod prelude {
   };
   pub(crate) use vino_transport::message_transport::stream::BoxedTransportStream;
   pub(crate) use vino_transport::message_transport::{
+    Failure,
     MessageSignal,
     MessageTransport,
+    Success,
     TransportMap,
     TransportWrapper,
   };

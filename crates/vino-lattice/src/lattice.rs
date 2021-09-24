@@ -309,11 +309,11 @@ impl Lattice {
         let result = match deserialize::<LatticeRpcResponse>(&lattice_msg.data) {
           Ok(LatticeRpcResponse::Output(wrapper)) => tx.send(wrapper),
           Ok(LatticeRpcResponse::Error(e)) => {
-            tx.send(TransportWrapper::internal_error(MessageTransport::Error(e)))
+            tx.send(TransportWrapper::internal_error(MessageTransport::error(e)))
           }
           Err(e) => tx.send(TransportWrapper::new(
             vino_transport::COMPONENT_ERROR,
-            MessageTransport::Error(e.to_string()),
+            MessageTransport::error(e.to_string()),
           )),
           _ => unreachable!(),
         };
@@ -492,7 +492,7 @@ mod test {
     println!("msg: {:?}", msg);
     assert_eq!(
       msg.payload,
-      MessageTransport::Error("This always errors".to_owned())
+      MessageTransport::error("This always errors".to_owned())
     );
 
     Ok(())

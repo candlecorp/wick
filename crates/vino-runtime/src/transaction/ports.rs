@@ -170,12 +170,13 @@ impl PortStatuses {
   ) -> &Self {
     let from = &connection.from;
     let to = Cow::Borrowed(&connection.to);
-    match payload {
-      MessageTransport::Invalid => self.close_connection(connection),
-      MessageTransport::Exception(_) => self.buffer(to, payload),
-      MessageTransport::Error(_) => self.close_connection(connection).buffer(to, payload),
-      MessageTransport::MessagePack(_) => self.buffer(to, payload),
-      MessageTransport::Test(_) => self.buffer(to, payload),
+    match &payload {
+      MessageTransport::Success(_) => self.buffer(to, payload),
+      MessageTransport::Failure(failure) => match failure {
+        Failure::Invalid => self.close_connection(connection),
+        Failure::Exception(_) => self.buffer(to, payload),
+        Failure::Error(_) => self.close_connection(connection).buffer(to, payload),
+      },
       MessageTransport::Signal(signal) => match signal {
         MessageSignal::Done => {
           let is_schem_input = connection.from.matches_instance(SCHEMATIC_INPUT);
@@ -198,8 +199,6 @@ impl PortStatuses {
         MessageSignal::OpenBracket => panic!("Not implemented"),
         MessageSignal::CloseBracket => panic!("Not implemented"),
       },
-      MessageTransport::Success(_) => self.buffer(to, payload),
-      MessageTransport::Json(_) => self.buffer(to, payload),
     }
   }
 

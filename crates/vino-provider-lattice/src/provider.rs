@@ -125,7 +125,7 @@ mod tests {
     println!("payload from [{}]: {:?}", output.port, output.payload);
     assert_eq!(
       output.payload,
-      MessageTransport::Error("This always errors".to_owned())
+      MessageTransport::error("This always errors".to_owned())
     );
     Ok(())
   }

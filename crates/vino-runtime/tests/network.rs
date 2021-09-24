@@ -189,7 +189,7 @@ async fn good_wapc_component() -> Result<()> {
 
   equals!(
     output.payload,
-    MessageTransport::Exception("Needs to be longer than 8 characters".to_owned())
+    MessageTransport::exception("Needs to be longer than 8 characters".to_owned())
   );
 
   Ok(())
@@ -238,7 +238,7 @@ async fn short_circuit_to_output() -> Result<()> {
   println!("Output: {:?}", output);
   equals!(
     output.payload,
-    MessageTransport::Exception("Needs to be longer than 8 characters".to_owned())
+    MessageTransport::exception("Needs to be longer than 8 characters".to_owned())
   );
   Ok(())
 }

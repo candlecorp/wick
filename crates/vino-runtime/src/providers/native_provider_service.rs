@@ -166,7 +166,7 @@ impl Handler<Invocation> for NativeProviderService {
           error!("Error invoking component: {}", e.to_string());
           let txresult = tx.send(TransportWrapper {
             port: vino_transport::COMPONENT_ERROR.to_owned(),
-            payload: MessageTransport::Error(e.to_string()),
+            payload: MessageTransport::error(e.to_string()),
           });
           let _ = map_err!(txresult, InternalError::E8001);
         }

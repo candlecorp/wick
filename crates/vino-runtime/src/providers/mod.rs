@@ -99,8 +99,9 @@ pub(crate) async fn initialize_wasm_provider(
     vino_provider_wasm::helpers::load_wasm(&provider.reference, allow_latest, allowed_insecure)
       .await?;
 
-  let provider = Box::new(vino_provider_wasm::provider::Provider::try_from_module(
-    &component, 2,
+  // TODO need to propagate wasi params from manifest
+  let provider = Box::new(vino_provider_wasm::provider::Provider::try_load(
+    &component, 2, None,
   )?);
 
   let addr = NativeProviderService::start_in_arbiter(&handle, |_| NativeProviderService::default());

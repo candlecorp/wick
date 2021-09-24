@@ -150,7 +150,6 @@ mod tests {
   use parking_lot::RwLock;
   use vino_packet::packet::v0::Payload;
   use vino_packet::Packet;
-  use vino_transport::message_transport::MessageSignal;
 
   use super::*;
   use crate::schematic_service::input_message::InputMessage;
@@ -205,13 +204,19 @@ mod tests {
     assert!(transaction.ports.is_port_ready(&to));
     println!("taking from port");
     let output = transaction.ports.take_from_port(&to);
-    assert_eq!(output, Some(MessageTransport::MessagePack(vec![])));
+    assert_eq!(
+      output,
+      Some(MessageTransport::Success(Success::MessagePack(vec![])))
+    );
     transaction.ports.receive(
       &connection,
       Packet::V0(Payload::Exception("!!".into())).into(),
     );
     let output = transaction.ports.take_from_port(&to);
-    assert!(matches!(output, Some(MessageTransport::Exception(_))));
+    assert!(matches!(
+      output,
+      Some(MessageTransport::Failure(Failure::Exception(_)))
+    ));
 
     Ok(())
   }
@@ -235,7 +240,7 @@ mod tests {
     // First message sends from the schematic input to the component
     tx.send(TransactionUpdate::Update(InputMessage {
       connection: conn(SCHEMATIC_INPUT, "input", "REF_ID_LOGGER", "input"),
-      payload: MessageTransport::Test("input payload".to_owned()),
+      payload: MessageTransport::success(&"input payload"),
       tx_id: tx_id.clone(),
     }))?;
 
@@ -249,7 +254,7 @@ mod tests {
     // Third simulates output from the component
     tx.send(TransactionUpdate::Update(InputMessage {
       connection: conn("REF_ID_LOGGER", "output", SCHEMATIC_OUTPUT, "output"),
-      payload: MessageTransport::Test("output payload".to_owned()),
+      payload: MessageTransport::success(&"output payload"),
       tx_id: tx_id.clone(),
     }))?;
 

@@ -1,17 +1,16 @@
 use std::borrow::Cow;
 
 use vino_manifest::default::process_default;
-use vino_transport::MessageTransport;
 
 use crate::dev::prelude::*;
 
 pub(crate) fn make_default_transport(json: &serde_json::Value, message: &str) -> MessageTransport {
   process_default(Cow::Borrowed(json), message).map_or(
-    MessageTransport::Error("Error processing default value".to_owned()),
+    MessageTransport::error("Error processing default value"),
     |result| {
       mp_serialize(&result).map_or(
-        MessageTransport::Error("Error serializing default value".to_owned()),
-        MessageTransport::MessagePack,
+        MessageTransport::error("Error serializing default value"),
+        |bytes| MessageTransport::Success(Success::MessagePack(bytes)),
       )
     },
   )

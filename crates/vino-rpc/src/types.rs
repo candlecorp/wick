@@ -13,7 +13,10 @@ use serde::{
 use vino_packet::error::DeserializationError;
 use vino_packet::v0::Payload;
 use vino_packet::Packet;
-use vino_transport::message_transport::TransportMap;
+use vino_transport::message_transport::{
+  Failure,
+  TransportMap,
+};
 use vino_transport::{
   MessageTransport,
   TransportWrapper,
@@ -346,7 +349,7 @@ impl From<Output> for TransportWrapper {
     Self {
       port: v.port,
       payload: v.payload.map_or(
-        MessageTransport::Error("Could not decode RPC message".to_owned()),
+        MessageTransport::Failure(Failure::Error("Could not decode RPC message".to_owned())),
         |p| p.into(),
       ),
     }
@@ -362,23 +365,46 @@ impl From<MessageKind> for MessageTransport {
 
 impl From<MessageTransport> for MessageKind {
   fn from(v: MessageTransport) -> Self {
-    let kind: i32 = match v {
-      MessageTransport::Invalid => message_kind::Kind::Invalid,
-      MessageTransport::Exception(_) => message_kind::Kind::Exception,
-      MessageTransport::Error(_) => message_kind::Kind::Error,
-      MessageTransport::MessagePack(_) => message_kind::Kind::MessagePack,
-      MessageTransport::Test(_) => message_kind::Kind::Test,
+    let kind: i32 = match &v {
+      MessageTransport::Success(v) => match v {
+        vino_transport::message_transport::Success::MessagePack(_) => {
+          message_kind::Kind::MessagePack
+        }
+        vino_transport::message_transport::Success::Serialized(_) => message_kind::Kind::Json,
+        vino_transport::message_transport::Success::Json(_) => message_kind::Kind::Json,
+      },
+      MessageTransport::Failure(v) => match v {
+        vino_transport::message_transport::Failure::Invalid => message_kind::Kind::Invalid,
+        vino_transport::message_transport::Failure::Exception(_) => message_kind::Kind::Exception,
+        vino_transport::message_transport::Failure::Error(_) => message_kind::Kind::Error,
+      },
       MessageTransport::Signal(_) => message_kind::Kind::Signal,
-      MessageTransport::Success(_) => message_kind::Kind::Json,
-      MessageTransport::Json(_) => message_kind::Kind::Json,
     }
     .into();
     let data = match v {
-      MessageTransport::Invalid => None,
-      MessageTransport::Exception(v) => Some(message_kind::Data::Message(v)),
-      MessageTransport::Error(v) => Some(message_kind::Data::Message(v)),
-      MessageTransport::MessagePack(v) => Some(message_kind::Data::Messagepack(v)),
-      MessageTransport::Test(v) => Some(message_kind::Data::Message(v)),
+      MessageTransport::Success(v) => match v {
+        vino_transport::message_transport::Success::MessagePack(v) => {
+          Some(message_kind::Data::Messagepack(v))
+        }
+        vino_transport::message_transport::Success::Serialized(val) => {
+          match vino_codec::json::serialize(&val) {
+            Ok(json) => Some(message_kind::Data::Json(json)),
+            Err(e) => Some(message_kind::Data::Message(e.to_string())),
+          }
+        }
+        vino_transport::message_transport::Success::Json(json) => {
+          Some(message_kind::Data::Json(json))
+        }
+      },
+      MessageTransport::Failure(v) => match v {
+        vino_transport::message_transport::Failure::Invalid => None,
+        vino_transport::message_transport::Failure::Exception(v) => {
+          Some(message_kind::Data::Message(v))
+        }
+        vino_transport::message_transport::Failure::Error(v) => {
+          Some(message_kind::Data::Message(v))
+        }
+      },
       MessageTransport::Signal(signal) => match signal {
         vino_transport::message_transport::MessageSignal::Done => Some(message_kind::Data::Signal(
           message_kind::OutputSignal::Done.into(),
@@ -390,11 +416,6 @@ impl From<MessageTransport> for MessageKind {
           message_kind::Data::Signal(message_kind::OutputSignal::CloseBracket.into()),
         ),
       },
-      MessageTransport::Success(val) => match vino_codec::json::serialize(&val) {
-        Ok(json) => Some(message_kind::Data::Json(json)),
-        Err(e) => Some(message_kind::Data::Message(e.to_string())),
-      },
-      MessageTransport::Json(json) => Some(message_kind::Data::Json(json)),
     };
     MessageKind { kind, data }
   }

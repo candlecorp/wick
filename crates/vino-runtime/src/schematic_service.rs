@@ -243,7 +243,7 @@ mod test {
     debug!("Packet {:?}", packet);
     assert_eq!(
       packet.payload,
-      MessageTransport::Error("This component will always error".to_owned())
+      MessageTransport::error("This component will always error")
     );
     assert_eq!(rx.buffered_size(), (0, 0));
 
@@ -291,7 +291,7 @@ mod test {
     debug!("Packet {:?}", packet);
     assert_eq!(
       packet.payload,
-      MessageTransport::Error("Component panicked: panic".to_owned())
+      MessageTransport::error("Component panicked: panic")
     );
     assert_eq!(rx.buffered_size(), (0, 0));
 
