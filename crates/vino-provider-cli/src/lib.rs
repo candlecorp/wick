@@ -75,8 +75,12 @@
 
 /// The CLI module.
 pub mod cli;
+
 /// The crate's error module.
 pub mod error;
+
+/// Utility functions.
+pub mod utils;
 
 pub(crate) type Result<T> = std::result::Result<T, error::CliError>;
 

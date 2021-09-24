@@ -13,6 +13,7 @@ logger = { path = "../logger" }
 vino-packet = { path = "../../sdk/crates/vino-packet" }
 vino-codec = { path = "../../sdk/crates/vino-codec" }
 vino-invocation-server = { path = "../vino-invocation-server" }
+vino-transport = { path = "../../sdk/crates/vino-transport" }
 tonic = { version = "0.5.0", features = ["tls"] }
 tokio = { version = "1.4.0", features = [
   "macros",
@@ -24,6 +25,7 @@ tokio = { version = "1.4.0", features = [
 futures = "0.3.15"
 tokio-stream = "0.1.6"
 serde = { version = "1.0.118", features = ["derive"] }
+serde_json = "1.0.68"
 async-stream = "0.3.2"
 rand = "0.8.4"
 log = "0.4"

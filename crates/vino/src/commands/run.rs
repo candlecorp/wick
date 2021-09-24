@@ -1,5 +1,3 @@
-use std::path::PathBuf;
-
 use structopt::StructOpt;
 use tokio::io::{
   self,
@@ -11,6 +9,7 @@ use vino_provider_cli::cli::{
   DefaultCliOptions,
   LatticeCliOptions,
 };
+use vino_provider_cli::utils::parse_args;
 use vino_runtime::prelude::StreamExt;
 use vino_transport::message_transport::stream::map_to_json;
 use vino_transport::{
@@ -37,6 +36,10 @@ pub(crate) struct RunCommand {
   #[structopt(long = "info")]
   pub(crate) info: bool,
 
+  /// Don't read input from STDIN.
+  #[structopt(long = "no-input")]
+  pub(crate) no_input: bool,
+
   /// A port=value string where value is JSON to pass as input.
   #[structopt(long, short)]
   data: Vec<String>,
@@ -45,31 +48,43 @@ pub(crate) struct RunCommand {
   #[structopt(long, short)]
   raw: bool,
 
-  /// Manifest file.
-  manifest: PathBuf,
+  /// Manifest file or OCI url.
+  manifest: String,
 
   /// Default schematic to run.
-  #[structopt()]
   default_schematic: Option<String>,
+
+  /// Arguments to pass as inputs to a schematic.
+  #[structopt(set = structopt::clap::ArgSettings::Last)]
+  args: Vec<String>,
 }
 
-pub(crate) async fn handle_command(command: RunCommand) -> Result<String> {
-  let mut logging = command.logging;
-  if !(command.info || command.logging.trace || command.logging.debug) {
+pub(crate) async fn handle_command(opts: RunCommand) -> Result<String> {
+  let mut logging = opts.logging;
+  if !(opts.info || opts.logging.trace || opts.logging.debug) {
     logging.quiet = true;
   }
   logger::init(&logging);
+  debug!("rest: {:?}", opts.args);
 
-  let config = HostDefinition::load_from_file(&command.manifest)?;
+  let manifest_src = vino_loader::get_bytes(
+    &opts.manifest,
+    opts.host.allow_latest,
+    &opts.host.insecure_registries,
+  )
+  .await
+  .map_err(|e| crate::error::VinoError::ManifestLoadFail(e.to_string()))?;
+
+  let manifest = HostDefinition::load_from_bytes(&manifest_src)?;
 
   let server_options = DefaultCliOptions {
-    lattice: command.lattice,
+    lattice: opts.lattice,
     ..Default::default()
   };
 
-  let mut config = merge_config(config, command.host, Some(server_options));
-  if command.default_schematic.is_some() {
-    config.default_schematic = command.default_schematic.unwrap();
+  let mut config = merge_config(manifest, opts.host, Some(server_options));
+  if opts.default_schematic.is_some() {
+    config.default_schematic = opts.default_schematic.unwrap();
   }
   let default_schematic = config.default_schematic.clone();
 
@@ -79,25 +94,46 @@ pub(crate) async fn handle_command(command: RunCommand) -> Result<String> {
   host.connect_to_lattice().await?;
   host.start_network().await?;
 
-  if command.data.is_empty() {
+  let schematics = host.list_schematics().await?;
+  let target_schematic = schematics
+    .iter()
+    .find(|signature| signature.name == default_schematic);
+
+  let mut check_stdin = !opts.no_input && opts.data.is_empty() && opts.args.is_empty();
+  if let Some(target_schematic) = target_schematic {
+    if target_schematic.inputs.is_empty() {
+      check_stdin = false;
+    }
+  }
+
+  if check_stdin {
     if atty::is(atty::Stream::Stdin) {
-      eprintln!("No input passed, reading from <STDIN>");
+      eprintln!("No input passed, reading from <STDIN>. Pass --no-input to disable.");
     }
     let reader = io::BufReader::new(io::stdin());
     let mut lines = reader.lines();
     while let Some(line) = lines.next_line().await? {
       debug!("STDIN:'{}'", line);
       let mut payload = TransportMap::from_json_str(&line)?;
-      payload.transpose_output_name();
+      if !opts.raw {
+        payload.transpose_output_name();
+      }
       let stream = host.request(&default_schematic, payload).await?;
 
-      print_stream_json(stream, command.raw).await?;
+      print_stream_json(stream, opts.raw).await?;
     }
   } else {
-    let mut payload = TransportMap::from_kv_json(&command.data)?;
-    payload.transpose_output_name();
-    let stream = host.request(&default_schematic, payload).await?;
-    print_stream_json(stream, command.raw).await?;
+    let mut data_map = TransportMap::from_kv_json(&opts.data)?;
+
+    let mut rest_arg_map = parse_args(&opts.args)?;
+    if !opts.raw {
+      data_map.transpose_output_name();
+      rest_arg_map.transpose_output_name();
+    }
+    data_map.merge(rest_arg_map);
+
+    let stream = host.request(&default_schematic, data_map).await?;
+    print_stream_json(stream, opts.raw).await?;
   }
 
   Ok("Done".to_owned())

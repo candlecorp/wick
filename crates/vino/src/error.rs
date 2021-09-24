@@ -7,6 +7,8 @@ use vino_manifest::error::ManifestError;
 pub enum VinoError {
   #[error("invalid configuration")]
   ConfigurationError,
+  #[error("Manifest load failed: {0}")]
+  ManifestLoadFail(String),
   #[error("File not found {0}")]
   FileNotFound(String),
   #[error("Configuration disallows fetching artifacts with the :latest tag ({0})")]

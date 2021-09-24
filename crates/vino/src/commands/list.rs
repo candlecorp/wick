@@ -34,20 +34,20 @@ pub(crate) struct ListCommand {
   pub(crate) schematic: Option<String>,
 }
 
-pub(crate) async fn handle_command(command: ListCommand) -> Result<String> {
-  vino_provider_cli::init_logging(&command.logging)?;
+pub(crate) async fn handle_command(opts: ListCommand) -> Result<String> {
+  vino_provider_cli::init_logging(&opts.logging)?;
 
-  let config = match command.manifest {
+  let config = match opts.manifest {
     Some(file) => HostDefinition::load_from_file(&file)?,
     None => HostDefinition::default(),
   };
 
   let server_options = DefaultCliOptions {
-    lattice: command.lattice,
+    lattice: opts.lattice,
     ..Default::default()
   };
 
-  let mut config = merge_config(config, command.host, Some(server_options));
+  let mut config = merge_config(config, opts.host, Some(server_options));
   // Disable everything but the lattice
   config.host.rpc = None;
   config.host.http = None;
@@ -58,14 +58,14 @@ pub(crate) async fn handle_command(command: ListCommand) -> Result<String> {
   host.connect_to_lattice().await?;
   host.start_network().await?;
   let mut list = host.list_schematics().await?;
-  if let Some(schematic) = command.schematic {
+  if let Some(schematic) = opts.schematic {
     let target = list.into_iter().find(|sc| sc.name == schematic);
     list = match target {
       Some(t) => vec![t],
       None => vec![],
     };
   }
-  if command.json {
+  if opts.json {
     let json = serde_json::to_string(&list)?;
     println!("{}", json);
   } else {

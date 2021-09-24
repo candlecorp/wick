@@ -34,4 +34,12 @@ pub enum CliError {
   #[error("{0}")]
   /// A general configuration error.
   Configuration(String),
+
+  #[error("Found argument '{0}' which wasn't expected, or isn't valid in this context")]
+  /// Error parsing arguments into a [vino_transport::TransportMap].
+  InvalidArgument(String),
+
+  #[error("Found argument '{0}' which requires a value but no value was supplied")]
+  /// Dangling arguments (e.g. --arg instead of --arg value or --arg=value)
+  MissingArgumentValue(String),
 }

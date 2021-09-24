@@ -1,5 +1,3 @@
-use std::path::PathBuf;
-
 use structopt::StructOpt;
 use vino_host::HostBuilder;
 use vino_manifest::host_definition::HostDefinition;
@@ -15,23 +13,27 @@ pub(crate) struct StartCommand {
   #[structopt(flatten)]
   pub(crate) host: super::HostOptions,
 
-  /// Specifies a manifest file to apply to the host once started.
-  #[structopt(parse(from_os_str))]
-  pub(crate) manifest: Option<PathBuf>,
+  /// Manifest file path or OCI url.
+  pub(crate) manifest: String,
 
   #[structopt(flatten)]
   pub(crate) server_options: DefaultCliOptions,
 }
 
-pub(crate) async fn handle_command(command: StartCommand) -> Result<String> {
-  vino_provider_cli::init_logging(&command.server_options.logging)?;
+pub(crate) async fn handle_command(opts: StartCommand) -> Result<String> {
+  vino_provider_cli::init_logging(&opts.server_options.logging)?;
 
-  let config = match command.manifest {
-    Some(file) => HostDefinition::load_from_file(&file)?,
-    None => HostDefinition::default(),
-  };
+  let manifest_src = vino_loader::get_bytes(
+    &opts.manifest,
+    opts.host.allow_latest,
+    &opts.host.insecure_registries,
+  )
+  .await
+  .map_err(|e| crate::error::VinoError::ManifestLoadFail(e.to_string()))?;
 
-  let config = merge_config(config, command.host, Some(command.server_options));
+  let manifest = HostDefinition::load_from_bytes(&manifest_src)?;
+
+  let config = merge_config(manifest, opts.host, Some(opts.server_options));
 
   let host_builder = HostBuilder::from_definition(config);
 
