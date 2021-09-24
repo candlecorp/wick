@@ -96,6 +96,10 @@ pub mod native;
 /// Signatures of Vino types.
 pub mod signatures;
 
+#[cfg(feature = "native")]
+/// Raw value type.
+pub mod raw;
+
 use std::str::FromStr;
 
 pub use vino_codec as codec;

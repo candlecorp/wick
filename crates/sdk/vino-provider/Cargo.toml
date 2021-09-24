@@ -51,3 +51,4 @@ dyn-clone = { version = "1.0.4", optional = true }
 env_logger = "0.9"
 test-env-log = "0.2.7"
 tokio = { version = "1.4.0", features = ["macros", "rt-multi-thread"] }
+anyhow = "1.0.44"

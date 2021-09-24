@@ -44,6 +44,7 @@ pub mod prelude {
     Entity,
     Error as EntityError,
   };
+  pub use vino_packet::v1::Payload;
   pub use vino_packet::PacketWrapper;
   pub use vino_transport::error::TransportError;
   pub use vino_transport::message_transport::stream::{
@@ -70,6 +71,7 @@ pub mod prelude {
     JobResult,
     NativeComponent,
   };
+  pub use crate::raw::RawPacket;
 }
 
 #[doc(hidden)]

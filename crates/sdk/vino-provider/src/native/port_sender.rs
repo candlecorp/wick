@@ -1,5 +1,4 @@
 use log::*;
-use serde::Serialize;
 use tokio::sync::mpsc::{
   unbounded_channel,
   UnboundedSender,
@@ -9,7 +8,7 @@ use tokio_stream::{
   StreamExt,
   StreamMap,
 };
-use vino_packet::v0::Payload as ComponentPayload;
+use vino_packet::v1::Payload as ComponentPayload;
 use vino_packet::{
   Packet,
   PacketWrapper,
@@ -25,9 +24,6 @@ type Result = std::result::Result<(), Error>;
 
 /// The native PortSender trait. This trait encapsulates sending messages out of native ports.
 pub trait PortSender {
-  /// The type of data that the port outputs.
-  type PayloadType: Serialize + Send + 'static;
-
   /// Get the port buffer that the sender can push to.
   fn get_port(&self) -> std::result::Result<&PortChannel, Error>;
 
@@ -35,17 +31,17 @@ pub trait PortSender {
   fn get_port_name(&self) -> String;
 
   /// Send a message.
-  fn send(&self, data: &Self::PayloadType) -> Result {
-    self.push(Packet::V0(ComponentPayload::success(data)))
+  fn send(&self, data: impl Into<ComponentPayload>) -> Result {
+    self.push(Packet::V1(data.into()))
   }
 
   /// Send a message then close the port.
-  fn done(&self, data: &Self::PayloadType) -> Result {
+  fn done(&self, data: impl Into<ComponentPayload>) -> Result {
     self.send(data)?;
-    self.send_message(Packet::V0(ComponentPayload::Done))
+    self.send_message(Packet::V1(ComponentPayload::done()))
   }
 
-  /// Send a complete Output message then close the port.
+  /// Send a complete [Packet] then close the port.
   fn push(&self, output: Packet) -> Result {
     self.get_port()?.send(PacketWrapper {
       payload: output,
@@ -54,7 +50,7 @@ pub trait PortSender {
     Ok(())
   }
 
-  /// Send a payload.
+  /// Send a complete [Packet].
   fn send_message(&self, packet: Packet) -> Result {
     self.get_port()?.send(PacketWrapper {
       payload: packet,
@@ -66,13 +62,13 @@ pub trait PortSender {
   /// Send a payload then close the port.
   fn done_message(&self, packet: Packet) -> Result {
     self.send_message(packet)?;
-    self.send_message(Packet::V0(ComponentPayload::Done))
+    self.send_message(ComponentPayload::done().into())
   }
 
   /// Send an exception.
   fn send_exception(&self, payload: String) -> Result {
     self.get_port()?.send(PacketWrapper {
-      payload: Packet::V0(ComponentPayload::Exception(payload)),
+      payload: ComponentPayload::exception(payload).into(),
       port: self.get_port_name(),
     })?;
     Ok(())
@@ -81,12 +77,12 @@ pub trait PortSender {
   /// Send an exception then close the port.
   fn done_exception(&self, payload: String) -> Result {
     self.send_exception(payload)?;
-    self.send_message(Packet::V0(ComponentPayload::Done))
+    self.send_message(ComponentPayload::done().into())
   }
 
   /// Signal that a job is finished with the port.
   fn close(&self) -> Result {
-    self.send_message(Packet::V0(ComponentPayload::Done))
+    self.send_message(ComponentPayload::done().into())
   }
 }
 
@@ -160,15 +156,13 @@ impl PortChannel {
 #[cfg(test)]
 mod tests {
 
-  use vino_packet::v0;
+  use vino_packet::v1::Payload;
 
   use super::*;
   struct StringSender {
     port: PortChannel,
   }
   impl PortSender for StringSender {
-    type PayloadType = String;
-
     fn get_port(&self) -> std::result::Result<&PortChannel, Error> {
       Ok(&self.port)
     }
@@ -182,8 +176,6 @@ mod tests {
     port: PortChannel,
   }
   impl PortSender for I64Sender {
-    type PayloadType = i64;
-
     fn get_port(&self) -> std::result::Result<&PortChannel, Error> {
       Ok(&self.port)
     }
@@ -207,13 +199,14 @@ mod tests {
 
       let aggregated = PortChannel::merge_all(&mut [&mut port1.port, &mut port2.port]);
 
-      port1.send(&"First".to_owned())?;
-      port2.send(&1)?;
-      port1.done(&"Second".to_owned())?;
-      port2.done(&2)?;
+      port1.send(Payload::success(&"First"))?;
+      port2.send(Payload::success(&1))?;
+      port1.done(Payload::success(&"Second"))?;
+      port2.done(Payload::success(&2))?;
 
       aggregated
     };
+
     let mut messages: Vec<TransportWrapper> = aggregated.collect_port("test1").await;
     assert_eq!(messages.len(), 2);
     assert_eq!(aggregated.buffered_size(), (1, 2));
@@ -244,7 +237,7 @@ mod tests {
     };
     let mut rx = port1.port.open();
 
-    port1.send(&"first".to_owned())?;
+    port1.send(Payload::success(&"first"))?;
 
     let message: TransportWrapper = rx.next().await.unwrap().into();
     let payload: String = message.payload.try_into().unwrap();
@@ -261,14 +254,14 @@ mod tests {
     };
     let mut rx = port1.port.open();
 
-    port1.done(&"done".to_owned())?;
+    port1.done(Payload::success(&"done"))?;
 
     let message: TransportWrapper = rx.next().await.unwrap().into();
     let payload: String = message.payload.try_into().unwrap();
 
     assert_eq!(payload, "done");
     let message = rx.next().await.unwrap();
-    assert_eq!(message.payload, Packet::V0(v0::Payload::Done));
+    assert_eq!(message.payload, Payload::done().into());
     Ok(())
   }
 
@@ -283,10 +276,7 @@ mod tests {
 
     let message = rx.next().await.unwrap();
 
-    assert_eq!(
-      message.payload,
-      Packet::V0(v0::Payload::Exception("exc".to_owned()))
-    );
+    assert_eq!(message.payload, Payload::exception("exc").into());
 
     Ok(())
   }
@@ -302,12 +292,9 @@ mod tests {
 
     let message = rx.next().await.unwrap();
 
-    assert_eq!(
-      message.payload,
-      Packet::V0(v0::Payload::Exception("exc".to_owned()))
-    );
+    assert_eq!(message.payload, Payload::exception("exc").into());
     let message = rx.next().await.unwrap();
-    assert_eq!(message.payload, Packet::V0(v0::Payload::Done));
+    assert_eq!(message.payload, Payload::done().into());
     Ok(())
   }
 }
