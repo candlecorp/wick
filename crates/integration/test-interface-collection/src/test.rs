@@ -1,9 +1,5 @@
-use std::collections::HashMap;
-
 use anyhow::Result;
 use log::*;
-use maplit::hashmap;
-use vino_codec::messagepack::serialize;
 use vino_invocation_server::{
   bind_new_socket,
   make_rpc_server,
@@ -30,36 +26,28 @@ async fn list_components(port: &u16) -> Result<Vec<vino_rpc::rpc::Component>> {
   Ok(response.components)
 }
 
-fn make_invocation(
-  origin: &str,
-  target: &str,
-  payload: HashMap<String, Vec<u8>>,
-) -> Result<Invocation> {
+fn make_invocation(origin: &str, target: &str, payload: TransportMap) -> Result<Invocation> {
   Ok(Invocation {
     origin: Entity::test(origin).url(),
     target: Entity::component_direct(target).url(),
-    msg: convert_transport_map(TransportMap::with_map(
-      payload
-        .into_iter()
-        .map(|(k, v)| (k, MessageTransport::MessagePack(v)))
-        .collect(),
-    )),
+    msg: convert_transport_map(payload),
     id: "".to_string(),
   })
 }
 
 async fn add_item(
   client: &mut InvocationClient,
-  coll_id: &str,
-  doc_id: &str,
-  doc: &str,
+  collection_id: &str,
+  document_id: &str,
+  document: &str,
 ) -> Result<String> {
-  let payload = hashmap! {
-    "document_id".to_string()=> serialize(doc_id)?,
-    "document".to_string()=> serialize(doc)?,
-    "collection_id".to_string()=> serialize(coll_id)?,
+  let inputs = vino_interface_collection::generated::add_item::Inputs {
+    document_id: document_id.to_owned(),
+    document: document.to_owned(),
+    collection_id: collection_id.to_owned(),
   };
-  let invocation = make_invocation("add_item", "add-item", payload)?;
+
+  let invocation = make_invocation("add_item", "add-item", inputs.into())?;
   let invocation_id = invocation.id.to_string();
   let mut stream = client.invoke(invocation).await?.into_inner();
 
@@ -76,12 +64,11 @@ async fn get_item(
   collection_id: &str,
   document_id: &str,
 ) -> Result<String> {
-  let payload = hashmap! {
-    "document_id".to_string() => serialize(document_id)?,
-    "collection_id".to_string() => serialize(collection_id)?,
+  let inputs = vino_interface_collection::generated::get_item::Inputs {
+    document_id: document_id.to_owned(),
+    collection_id: collection_id.to_owned(),
   };
-
-  let invocation = make_invocation("get-item", "get-item", payload)?;
+  let invocation = make_invocation("get-item", "get-item", inputs.into())?;
   let invocation_id = invocation.id.to_string();
   let mut stream = client.invoke(invocation).await?.into_inner();
 
@@ -98,12 +85,11 @@ async fn rm_item(
   collection_id: &str,
   document_id: &str,
 ) -> Result<()> {
-  let payload = hashmap! {
-    "document_id".to_string() => serialize(document_id)?,
-    "collection_id".to_string() => serialize(collection_id)?,
+  let inputs = vino_interface_collection::generated::rm_item::Inputs {
+    document_id: document_id.to_owned(),
+    collection_id: collection_id.to_owned(),
   };
-
-  let invocation = make_invocation("rm-item", "rm-item", payload)?;
+  let invocation = make_invocation("rm-item", "rm-item", inputs.into())?;
   let mut stream = client.invoke(invocation).await?.into_inner();
 
   let next = stream.message().await?;
@@ -112,11 +98,10 @@ async fn rm_item(
 }
 
 async fn list_items(client: &mut InvocationClient, collection_id: &str) -> Result<Vec<String>> {
-  let payload = hashmap! {
-    "collection_id".to_string() => serialize(collection_id)?,
+  let inputs = vino_interface_collection::generated::list_items::Inputs {
+    collection_id: collection_id.to_owned(),
   };
-
-  let invocation = make_invocation("list-item", "list-items", payload)?;
+  let invocation = make_invocation("list-item", "list-items", inputs.into())?;
   let invocation_id = invocation.id.to_string();
   let mut stream = client.invoke(invocation).await?.into_inner();
 

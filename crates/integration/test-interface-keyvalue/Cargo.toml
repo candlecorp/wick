@@ -1,5 +1,5 @@
 [package]
-name = "test-interface-collection"
+name = "test-interface-keyvalue"
 version = "0.1.0"
 authors = ["Jarrod Overson <jsoverson@gmail.com>"]
 edition = "2018"
@@ -15,10 +15,11 @@ vino-provider = { path = "../../../sdk/crates/vino-provider", features = [
   "native",
 ] }
 vino-packet = { path = "../../../sdk/crates/vino-packet" }
+vino-codec = { path = "../../../sdk/crates/vino-codec" }
 vino-rpc = { path = "../../vino-rpc" }
 vino-invocation-server = { path = "../../vino-invocation-server" }
-vino-interface-collection = { path = "../../interfaces/interface-collection" }
 
 log = "0.4"
 
+maplit = "1.0.2"
 anyhow = "1.0.42"

@@ -15,10 +15,9 @@ vino-provider = { path = "../../../sdk/crates/vino-provider", features = [
   "native",
 ] }
 vino-packet = { path = "../../../sdk/crates/vino-packet" }
-vino-codec = { path = "../../../sdk/crates/vino-codec" }
 vino-rpc = { path = "../../vino-rpc" }
 vino-invocation-server = { path = "../../vino-invocation-server" }
+vino-interface-authentication = { path = "../../interfaces/interface-authentication" }
 
 log = "0.4"
-maplit = "1.0.2"
 anyhow = "1.0.42"

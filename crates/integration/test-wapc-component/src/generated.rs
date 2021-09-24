@@ -67,6 +67,7 @@ pub(crate) mod copy {
     Deserialize,
     Serialize,
   };
+  pub use vino_provider::wasm::error::ComponentError;
   pub use vino_provider::wasm::{
     console_log,
     JobResult,
@@ -132,6 +133,7 @@ pub(crate) mod error {
     Deserialize,
     Serialize,
   };
+  pub use vino_provider::wasm::error::ComponentError;
   pub use vino_provider::wasm::{
     console_log,
     JobResult,
@@ -194,6 +196,7 @@ pub(crate) mod reverse {
     Deserialize,
     Serialize,
   };
+  pub use vino_provider::wasm::error::ComponentError;
   pub use vino_provider::wasm::{
     console_log,
     JobResult,
@@ -256,6 +259,7 @@ pub(crate) mod uppercase {
     Deserialize,
     Serialize,
   };
+  pub use vino_provider::wasm::error::ComponentError;
   pub use vino_provider::wasm::{
     console_log,
     JobResult,
@@ -318,6 +322,7 @@ pub(crate) mod validate {
     Deserialize,
     Serialize,
   };
+  pub use vino_provider::wasm::error::ComponentError;
   pub use vino_provider::wasm::{
     console_log,
     JobResult,

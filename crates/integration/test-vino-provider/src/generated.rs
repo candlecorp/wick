@@ -95,7 +95,7 @@ pub(crate) mod error {
     })
   }
 
-  #[derive(Debug, Deserialize, Serialize, Default, Clone)]
+  #[derive(Debug, Deserialize, Serialize, Clone)]
   pub struct Inputs {
     #[serde(rename = "input")]
     pub input: String,
@@ -105,6 +105,7 @@ pub(crate) mod error {
     fn from(inputs: Inputs) -> TransportMap {
       let mut map = TransportMap::new();
       map.insert("input".to_owned(), MessageTransport::success(&inputs.input));
+
       map
     }
   }
@@ -141,8 +142,6 @@ pub(crate) mod error {
     }
   }
   impl PortSender for OutputPortSender {
-    type PayloadType = String;
-
     fn get_port(&self) -> Result<&PortChannel, ProviderError> {
       if self.port.is_closed() {
         Err(ProviderError::SendChannelClosed)
@@ -221,7 +220,7 @@ pub(crate) mod test_component {
     })
   }
 
-  #[derive(Debug, Deserialize, Serialize, Default, Clone)]
+  #[derive(Debug, Deserialize, Serialize, Clone)]
   pub struct Inputs {
     #[serde(rename = "input")]
     pub input: String,
@@ -231,6 +230,7 @@ pub(crate) mod test_component {
     fn from(inputs: Inputs) -> TransportMap {
       let mut map = TransportMap::new();
       map.insert("input".to_owned(), MessageTransport::success(&inputs.input));
+
       map
     }
   }
@@ -267,8 +267,6 @@ pub(crate) mod test_component {
     }
   }
   impl PortSender for OutputPortSender {
-    type PayloadType = String;
-
     fn get_port(&self) -> Result<&PortChannel, ProviderError> {
       if self.port.is_closed() {
         Err(ProviderError::SendChannelClosed)

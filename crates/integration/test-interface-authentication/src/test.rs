@@ -2,8 +2,6 @@ use std::collections::HashMap;
 
 use anyhow::Result;
 use log::*;
-use maplit::hashmap;
-use vino_codec::messagepack::serialize;
 use vino_invocation_server::{
   bind_new_socket,
   make_rpc_server,
@@ -32,16 +30,11 @@ async fn list_components(port: &u16) -> Result<Vec<vino_rpc::rpc::Component>> {
   Ok(response.components)
 }
 
-fn make_invocation(target: &str, payload: HashMap<String, Vec<u8>>) -> Result<Invocation> {
+fn make_invocation(target: &str, payload: TransportMap) -> Result<Invocation> {
   Ok(Invocation {
     origin: Entity::test("test").url(),
     target: Entity::component_direct(target).url(),
-    msg: convert_transport_map(TransportMap::with_map(
-      payload
-        .into_iter()
-        .map(|(k, v)| (k, MessageTransport::MessagePack(v)))
-        .collect(),
-    )),
+    msg: convert_transport_map(payload),
     id: "".to_string(),
   })
 }
@@ -52,12 +45,12 @@ async fn create_user(
   user_id: &str,
   password: &str,
 ) -> Result<String> {
-  let payload = hashmap! {
-    "user_id".to_string() => serialize(user_id)?,
-    "username".to_string() => serialize(username)?,
-    "password".to_string()=> serialize(password)?,
+  let inputs = vino_interface_authentication::generated::create_user::Inputs {
+    user_id: user_id.to_owned(),
+    username: username.to_owned(),
+    password: password.to_owned(),
   };
-  let invocation = make_invocation("create-user", payload)?;
+  let invocation = make_invocation("create-user", inputs.into())?;
   let mut stream = client.invoke(invocation).await?.into_inner();
 
   let next = stream.message().await?.unwrap();
@@ -68,10 +61,10 @@ async fn create_user(
 }
 
 async fn remove_user(client: &mut InvocationClient, username: &str) -> Result<String> {
-  let payload = hashmap! {
-    "username".to_string() => serialize(username)?,
+  let inputs = vino_interface_authentication::generated::remove_user::Inputs {
+    username: username.to_owned(),
   };
-  let invocation = make_invocation("remove-user", payload)?;
+  let invocation = make_invocation("remove-user", inputs.into())?;
   let mut stream = client.invoke(invocation).await?.into_inner();
 
   let next = stream.message().await?.unwrap();
@@ -83,14 +76,12 @@ async fn remove_user(client: &mut InvocationClient, username: &str) -> Result<St
 
 async fn list_users(
   client: &mut InvocationClient,
-  offset: i32,
-  limit: i32,
+  offset: u32,
+  limit: u32,
 ) -> Result<HashMap<String, String>> {
-  let payload = hashmap! {
-    "limit".to_string() => serialize(&limit)?,
-    "offset".to_string() => serialize(&offset)?,
-  };
-  let invocation = make_invocation("list-users", payload)?;
+  let inputs = vino_interface_authentication::generated::list_users::Inputs { offset, limit };
+
+  let invocation = make_invocation("list-users", inputs.into())?;
   let mut stream = client.invoke(invocation).await?.into_inner();
 
   let next = stream.message().await?.unwrap();
@@ -106,13 +97,13 @@ async fn authenticate(
   password: &str,
   session: &str,
 ) -> Result<(String, String)> {
-  let payload = hashmap! {
-    "username".to_string()=> serialize(username)?,
-    "password".to_string()=> serialize(password)?,
-    "session".to_string()=> serialize(session)?,
+  let inputs = vino_interface_authentication::generated::authenticate::Inputs {
+    session: session.to_owned(),
+    username: username.to_owned(),
+    password: password.to_owned(),
   };
 
-  let invocation = make_invocation("authenticate", payload)?;
+  let invocation = make_invocation("authenticate", inputs.into())?;
   let mut stream = client.invoke(invocation).await?.into_inner();
 
   let mut result = ("<session>".to_owned(), "<user_id>".to_owned());
@@ -131,11 +122,11 @@ async fn authenticate(
 }
 
 async fn validate_session(client: &mut InvocationClient, session: &str) -> Result<String> {
-  let payload = hashmap! {
-    "session".to_string()=> serialize(session)?,
+  let inputs = vino_interface_authentication::generated::validate_session::Inputs {
+    session: session.to_owned(),
   };
 
-  let invocation = make_invocation("validate-session", payload)?;
+  let invocation = make_invocation("validate-session", inputs.into())?;
   let mut stream = client.invoke(invocation).await?.into_inner();
 
   let mut result = "bad".to_owned();
@@ -155,14 +146,14 @@ async fn validate_session(client: &mut InvocationClient, session: &str) -> Resul
 async fn update_permissions(
   client: &mut InvocationClient,
   user_id: &str,
-  permissions: &[&str],
+  permissions: &[String],
 ) -> Result<Vec<String>> {
-  let payload = hashmap! {
-    "user_id".to_string()=> serialize(user_id)?,
-    "permissions".to_string()=> serialize(permissions)?,
+  let inputs = vino_interface_authentication::generated::update_permissions::Inputs {
+    user_id: user_id.to_owned(),
+    permissions: permissions.to_vec(),
   };
 
-  let invocation = make_invocation("update-permissions", payload)?;
+  let invocation = make_invocation("update-permissions", inputs.into())?;
   let mut stream = client.invoke(invocation).await?.into_inner();
 
   let mut result = vec![];
@@ -180,11 +171,10 @@ async fn update_permissions(
 }
 
 async fn list_permissions(client: &mut InvocationClient, user_id: &str) -> Result<Vec<String>> {
-  let payload = hashmap! {
-    "user_id".to_string()=> serialize(user_id)?,
+  let inputs = vino_interface_authentication::generated::list_permissions::Inputs {
+    user_id: user_id.to_owned(),
   };
-
-  let invocation = make_invocation("list-permissions", payload)?;
+  let invocation = make_invocation("list-permissions", inputs.into())?;
   let mut stream = client.invoke(invocation).await?.into_inner();
 
   let mut result = vec![];
@@ -206,12 +196,12 @@ async fn has_permission(
   user_id: &str,
   permission: &str,
 ) -> Result<Packet> {
-  let payload = hashmap! {
-    "user_id".to_string()=> serialize(user_id)?,
-    "permission".to_string()=> serialize(permission)?,
+  let inputs = vino_interface_authentication::generated::has_permission::Inputs {
+    user_id: user_id.to_owned(),
+    permission: permission.to_owned(),
   };
 
-  let invocation = make_invocation("has-permission", payload)?;
+  let invocation = make_invocation("has-permission", inputs.into())?;
   let mut stream = client.invoke(invocation).await?.into_inner();
   let mut result: Option<Packet> = None;
   while let Some(next) = stream.message().await? {
@@ -228,11 +218,11 @@ async fn has_permission(
 }
 
 async fn get_id(client: &mut InvocationClient, username: &str) -> Result<String> {
-  let payload = hashmap! {
-    "username".to_string()=> serialize(username)?,
+  let inputs = vino_interface_authentication::generated::get_id::Inputs {
+    username: username.to_owned(),
   };
 
-  let invocation = make_invocation("get-id", payload)?;
+  let invocation = make_invocation("get-id", inputs.into())?;
   let mut stream = client.invoke(invocation).await?.into_inner();
   let mut result = "bad".to_owned();
   while let Some(next) = stream.message().await? {
@@ -319,7 +309,7 @@ async fn test_update_permissions(port: &u16) -> Result<()> {
   let uid0 = "someid4";
   let password = "password123";
   let uid1 = create_user(&mut client, username, uid0, password).await?;
-  let perms_in = ["can_do"];
+  let perms_in = ["can_do".to_owned()];
   let perms_out = update_permissions(&mut client, &uid1, &perms_in).await?;
   trace!("perms out {:?}", perms_out);
   assert_eq!(perms_out, perms_in);
