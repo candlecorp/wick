@@ -97,7 +97,10 @@ pub type Error = error::TransportError;
 
 pub use message_transport::stream::TransportStream;
 pub use message_transport::{
+  Failure,
+  MessageSignal,
   MessageTransport,
+  Success,
   TransportMap,
   TransportWrapper,
 };

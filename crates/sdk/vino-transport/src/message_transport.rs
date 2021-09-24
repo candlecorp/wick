@@ -19,6 +19,7 @@ use vino_codec::{
 };
 use vino_packet::{
   v0,
+  v1,
   Packet,
   PacketWrapper,
 };
@@ -64,6 +65,40 @@ lazy_static::lazy_static! {
 #[must_use]
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum MessageTransport {
+  /// TODO
+  #[serde(rename = "0")]
+  Success(Success),
+
+  /// TODO
+  #[serde(rename = "1")]
+  Failure(Failure),
+
+  #[serde(rename = "3")]
+  /// An internal signal
+  Signal(MessageSignal),
+}
+
+/// TODO
+#[must_use]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub enum Success {
+  #[serde(rename = "0")]
+  /// A message carrying a MessagePack encoded list of bytes.
+  MessagePack(Vec<u8>),
+
+  #[serde(rename = "1")]
+  /// A success value in an intermediary format
+  Serialized(serde_value::Value),
+
+  #[serde(rename = "2")]
+  /// A JSON String
+  Json(String),
+}
+
+/// TODO
+#[must_use]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub enum Failure {
   #[serde(rename = "0")]
   /// An invalid message.
   Invalid,
@@ -75,26 +110,6 @@ pub enum MessageTransport {
   #[serde(rename = "2")]
   /// A message carrying an error.
   Error(String),
-
-  #[serde(rename = "3")]
-  /// A message carrying a MessagePack encoded list of bytes.
-  MessagePack(Vec<u8>),
-
-  #[serde(rename = "4")]
-  /// A test message
-  Test(String),
-
-  #[serde(rename = "5")]
-  /// An internal signal
-  Signal(MessageSignal),
-
-  #[serde(rename = "7")]
-  /// A success value in an intermediary format
-  Success(serde_value::Value),
-
-  #[serde(rename = "8")]
-  /// A JSON String
-  Json(String),
 }
 
 /// Signals that need to be handled before propagating to a downstream consumer.
@@ -110,9 +125,222 @@ pub enum MessageSignal {
   CloseBracket,
 }
 
-impl Default for MessageTransport {
-  fn default() -> Self {
-    Self::Invalid
+impl MessageTransport {
+  /// Returns `true` if the Message contains success data destined for a downstream
+  /// consumer, `false` for Errors, Exceptions, and otherwise.
+  #[must_use]
+  pub fn is_ok(&self) -> bool {
+    matches!(self, MessageTransport::Success(_))
+  }
+
+  #[must_use]
+  /// Returns true if the [MessageTransport] is holding an Error or Exception variant.
+  pub fn is_err(&self) -> bool {
+    matches!(self, MessageTransport::Failure(_))
+  }
+
+  #[must_use]
+  /// Returns true if the [MessageTransport] is a [MessageTransport::Signal] variant.
+  pub fn is_signal(&self) -> bool {
+    matches!(self, Self::Signal(_))
+  }
+
+  /// Converts a [MessageTransport] into [serde_json::Value]
+  /// representation of a [TransportJson]
+  #[must_use]
+  pub fn into_json(self) -> serde_json::Value {
+    let output = match self {
+      MessageTransport::Success(success) => match success {
+        Success::MessagePack(bytes) => handle_result_conversion(
+          messagepack::deserialize::<serde_json::Value>(&bytes).map_err(|e| e.to_string()),
+        ),
+        Success::Serialized(v) => handle_result_conversion(
+          raw::deserialize::<serde_json::Value>(v).map_err(|e| e.to_string()),
+        ),
+        Success::Json(v) => handle_result_conversion(
+          json::deserialize::<serde_json::Value>(&v).map_err(|e| e.to_string()),
+        ),
+      },
+      MessageTransport::Failure(failure) => match failure {
+        Failure::Invalid => TransportJson {
+          value: serde_json::value::Value::Null,
+          signal: None,
+          error_msg: Some("Invalid value".to_owned()),
+          error_kind: JsonError::Error,
+        },
+        Failure::Exception(v) => TransportJson {
+          value: serde_json::value::Value::Null,
+          signal: None,
+          error_msg: Some(v),
+          error_kind: JsonError::Exception,
+        },
+        Failure::Error(v) => TransportJson {
+          value: serde_json::value::Value::Null,
+          signal: None,
+          error_msg: Some(v),
+          error_kind: JsonError::Error,
+        },
+      },
+      MessageTransport::Signal(s) => TransportJson {
+        value: serde_json::value::Value::Null,
+        signal: Some(s),
+        error_msg: None,
+        error_kind: JsonError::None,
+      },
+    };
+
+    json::to_value(&output).unwrap_or_else(|_| JSON_ERROR.clone())
+  }
+
+  /// Creates a [MessageTransport] by serializing a passed object with messagepack
+  pub fn messagepack<T: ?Sized + Serialize>(item: &T) -> Self {
+    match messagepack::serialize(item) {
+      Ok(bytes) => Self::Success(Success::MessagePack(bytes)),
+      Err(e) => Self::Failure(Failure::Error(format!(
+        "Error serializing into messagepack: {}",
+        e.to_string()
+      ))),
+    }
+  }
+
+  /// Creates a [MessageTransport] by serializing a passed object into a raw intermediary format
+  pub fn success<T: Serialize>(item: &T) -> Self {
+    match raw::serialize(item) {
+      Ok(v) => Self::Success(Success::Serialized(v)),
+      Err(e) => Self::Failure(Failure::Error(format!(
+        "Error serializing into raw intermediary format: {}",
+        e.to_string()
+      ))),
+    }
+  }
+
+  /// Creates a [MessageTransport] by serializing a passed object into JSON
+  pub fn json<T: Serialize>(item: &T) -> Self {
+    match json::serialize(item) {
+      Ok(v) => Self::Success(Success::Json(v)),
+      Err(e) => Self::Failure(Failure::Error(format!(
+        "Error serializing into json: {}",
+        e.to_string()
+      ))),
+    }
+  }
+
+  /// Creates a [MessageTransport::Failure(Failure::Error)] with the passed message.
+  pub fn error<T: AsRef<str>>(msg: T) -> Self {
+    Self::Failure(Failure::Error(msg.as_ref().to_owned()))
+  }
+
+  /// Creates a [MessageTransport::Failure(Failure::Exception)] with the passed message.
+  pub fn exception<T: AsRef<str>>(msg: T) -> Self {
+    Self::Failure(Failure::Exception(msg.as_ref().to_owned()))
+  }
+
+  /// A utility function for [MessageTransport::Signal(MessageSignal::Done)]
+  pub fn done() -> Self {
+    MessageTransport::Signal(MessageSignal::Done)
+  }
+
+  /// Try to deserialize a [MessageTransport] into the target type
+  pub fn try_into<T: DeserializeOwned>(self) -> Result<T> {
+    match self {
+      Self::Success(success) => match success {
+        Success::MessagePack(v) => messagepack::rmp_deserialize::<T>(&v)
+          .map_err(|e| Error::DeserializationError(e.to_string())),
+        Success::Serialized(v) => {
+          raw::raw_deserialize::<T>(v).map_err(|e| Error::DeserializationError(e.to_string()))
+        }
+        Success::Json(v) => {
+          json::json_deserialize::<T>(&v).map_err(|e| Error::DeserializationError(e.to_string()))
+        }
+      },
+      Self::Failure(failure) => match failure {
+        Failure::Invalid => Err(Error::Invalid),
+        Failure::Exception(v) => Err(Error::Exception(v)),
+        Failure::Error(v) => Err(Error::Error(v)),
+      },
+      MessageTransport::Signal(_) => Err(Error::Invalid),
+    }
+  }
+
+  /// Convert a [HashMap<String, MessageTransport>] into a [serde_json::value::Map]
+  #[must_use]
+  pub fn map_to_json(
+    raw_result: HashMap<String, MessageTransport>,
+  ) -> serde_json::value::Map<String, serde_json::Value> {
+    raw_result
+      .into_iter()
+      .map(|(k, payload)| {
+        (
+          k,
+          payload.try_into().unwrap_or_else(|e: Error| {
+            serde_json::json!({
+              "error": format!("Internal error: {:?}, invalid format", e.to_string())
+            })
+          }),
+        )
+      })
+      .collect()
+  }
+}
+
+impl From<Packet> for MessageTransport {
+  fn from(output: Packet) -> MessageTransport {
+    match output {
+      Packet::V0(v) => match v {
+        v0::Payload::Exception(v) => MessageTransport::Failure(Failure::Exception(v)),
+        v0::Payload::Error(v) => MessageTransport::Failure(Failure::Error(v)),
+        v0::Payload::Invalid => MessageTransport::Failure(Failure::Invalid),
+        v0::Payload::MessagePack(bytes) => MessageTransport::Success(Success::MessagePack(bytes)),
+        v0::Payload::Json(v) => MessageTransport::Success(Success::Json(v)),
+        v0::Payload::Success(v) => MessageTransport::Success(Success::Serialized(v)),
+        v0::Payload::Done => MessageTransport::Signal(MessageSignal::Done),
+        v0::Payload::OpenBracket => MessageTransport::Signal(MessageSignal::OpenBracket),
+        v0::Payload::CloseBracket => MessageTransport::Signal(MessageSignal::CloseBracket),
+      },
+      Packet::V1(v) => match v {
+        vino_packet::v1::Payload::Success(success) => match success {
+          vino_packet::v1::Success::MessagePack(bytes) => {
+            MessageTransport::Success(Success::MessagePack(bytes))
+          }
+          vino_packet::v1::Success::Success(v) => MessageTransport::Success(Success::Serialized(v)),
+          vino_packet::v1::Success::Json(v) => MessageTransport::Success(Success::Json(v)),
+        },
+        vino_packet::v1::Payload::Failure(failure) => match failure {
+          vino_packet::v1::Failure::Invalid => MessageTransport::Failure(Failure::Invalid),
+          vino_packet::v1::Failure::Exception(v) => {
+            MessageTransport::Failure(Failure::Exception(v))
+          }
+          vino_packet::v1::Failure::Error(v) => MessageTransport::Failure(Failure::Error(v)),
+        },
+        vino_packet::v1::Payload::Signal(signal) => match signal {
+          vino_packet::v1::Signal::Done => MessageTransport::Signal(MessageSignal::Done),
+          vino_packet::v1::Signal::OpenBracket => todo!(),
+          vino_packet::v1::Signal::CloseBracket => todo!(),
+        },
+      },
+    }
+  }
+}
+
+impl From<MessageTransport> for Packet {
+  fn from(output: MessageTransport) -> Packet {
+    match output {
+      MessageTransport::Success(success) => match success {
+        Success::MessagePack(v) => Packet::V1(v1::Payload::Success(v1::Success::MessagePack(v))),
+        Success::Serialized(v) => Packet::V1(v1::Payload::Success(v1::Success::Success(v))),
+        Success::Json(v) => Packet::V1(v1::Payload::Success(v1::Success::Json(v))),
+      },
+      MessageTransport::Failure(failure) => match failure {
+        Failure::Invalid => Packet::V1(v1::Payload::Failure(v1::Failure::Invalid)),
+        Failure::Exception(m) => Packet::V1(v1::Payload::Failure(v1::Failure::Exception(m))),
+        Failure::Error(m) => Packet::V1(v1::Payload::Failure(v1::Failure::Error(m))),
+      },
+      MessageTransport::Signal(signal) => match signal {
+        MessageSignal::Done => Packet::V1(v1::Payload::Signal(v1::Signal::Done)),
+        MessageSignal::OpenBracket => Packet::V1(v1::Payload::Signal(v1::Signal::OpenBracket)),
+        MessageSignal::CloseBracket => Packet::V1(v1::Payload::Signal(v1::Signal::CloseBracket)),
+      },
+    }
   }
 }
 
@@ -154,7 +382,10 @@ impl TransportMap {
       match input.split_once("=") {
         Some((name, value)) => {
           debug!("PORT:'{}', VALUE:'{}'", name, value);
-          payload.insert(name, MessageTransport::Json(value.to_owned()));
+          payload.insert(
+            name,
+            MessageTransport::Success(Success::Json(value.to_owned())),
+          );
         }
         None => {
           return Err(Error::DeserializationError(format!(
@@ -192,15 +423,21 @@ impl TransportMap {
       v
     )));
     match v {
-      MessageTransport::Invalid => e,
-      MessageTransport::Exception(_) => e,
-      MessageTransport::Error(_) => e,
-      MessageTransport::Test(_) => e,
+      MessageTransport::Success(success) => match success {
+        Success::MessagePack(bytes) => messagepack::deserialize(&bytes).map_err(de_err),
+        Success::Serialized(v) => raw::deserialize(v).map_err(de_err),
+        Success::Json(v) => json::deserialize(&v).map_err(de_err),
+      },
+      MessageTransport::Failure(_) => e,
       MessageTransport::Signal(_) => e,
-      MessageTransport::MessagePack(bytes) => messagepack::deserialize(&bytes).map_err(de_err),
-      MessageTransport::Success(v) => raw::deserialize(v).map_err(de_err),
-      MessageTransport::Json(v) => json::deserialize(&v).map_err(de_err),
     }
+  }
+
+  /// Remove a key from the held map and return the raw [MessageTransport].
+  pub fn consume_raw(&mut self, key: &str) -> Result<MessageTransport> {
+    self.0.remove(key).ok_or_else(|| {
+      Error::DeserializationError(format!("TransportMap does not have field '{}'", key))
+    })
   }
 
   /// Transpose any ports named "output" to "input". This is for a better user experience when
@@ -249,37 +486,45 @@ impl TransportMap {
     let mut map = HashMap::new();
     for (k, v) in self.0 {
       let bytes = match v {
-        MessageTransport::Invalid => Err(Error::SerializationError(
-          "Refusing to serialize an invalid payload".to_owned(),
-        )),
-        MessageTransport::Exception(e) => Err(Error::SerializationError(format!(
-          "Exceptions need to be processed by a runtime, not sent to components. Error was: {}",
-          e
-        ))),
-        MessageTransport::Error(e) => Err(Error::SerializationError(format!(
-          "Errors need to be processed by a runtime, not sent to components. Error was: {}",
-          e
-        ))),
-        MessageTransport::Test(_) => Err(Error::SerializationError(
-          "Refusing to serialize a test payload.".to_owned(),
-        )),
+        MessageTransport::Success(success) => match success {
+          Success::MessagePack(bytes) => Ok(bytes),
+          Success::Serialized(v) => {
+            let bytes = messagepack::serialize(&v).map_err(ser_err)?;
+            Ok(bytes)
+          }
+          Success::Json(v) => {
+            let value: serde_value::Value = json::deserialize(&v).map_err(de_err)?;
+            let bytes = messagepack::serialize(&value).map_err(ser_err)?;
+            Ok(bytes)
+          }
+        },
+        MessageTransport::Failure(failure) => match failure {
+          Failure::Invalid => Err(Error::SerializationError(
+            "Refusing to serialize an invalid payload".to_owned(),
+          )),
+          Failure::Exception(e) => Err(Error::SerializationError(format!(
+            "Exceptions need to be processed by a runtime, not sent to components. Error was: {}",
+            e
+          ))),
+          Failure::Error(e) => Err(Error::SerializationError(format!(
+            "Errors need to be processed by a runtime, not sent to components. Error was: {}",
+            e
+          ))),
+        },
         MessageTransport::Signal(_) => Err(Error::SerializationError(
           "Signal messages need to be processed by a runtime, not sent to components.".to_owned(),
         )),
-        MessageTransport::MessagePack(bytes) => Ok(bytes),
-        MessageTransport::Success(v) => {
-          let bytes = messagepack::serialize(&v).map_err(ser_err)?;
-          Ok(bytes)
-        }
-        MessageTransport::Json(v) => {
-          let value: serde_value::Value = json::deserialize(&v).map_err(de_err)?;
-          let bytes = messagepack::serialize(&value).map_err(ser_err)?;
-          Ok(bytes)
-        }
       }?;
       map.insert(k, bytes);
     }
     Ok(map)
+  }
+
+  /// Merge another [TransportMap] into the calling map.
+  pub fn merge(&mut self, map: TransportMap) {
+    for (k, v) in map.into_inner() {
+      self.insert(k, v);
+    }
   }
 }
 
@@ -296,7 +541,9 @@ where
       .map(|(k, v)| {
         Ok((
           k.as_ref().to_owned(),
-          MessageTransport::MessagePack(messagepack::serialize(&v).map_err(ser_err)?),
+          MessageTransport::Success(Success::MessagePack(
+            messagepack::serialize(&v).map_err(ser_err)?,
+          )),
         ))
       })
       .filter_map(Result::ok)
@@ -348,18 +595,24 @@ impl From<TransportJson> for MessageTransport {
           // back into JSON which doesn't feel good. This is only
           // used for command line testing and piping but if it ends
           // up being used for more it will need to be better handled.
-          MessageTransport::Json(v.value.to_string())
+          MessageTransport::Success(Success::Json(v.value.to_string()))
         }
       },
       JsonError::Exception => match v.error_msg {
-        Some(err) => MessageTransport::Exception(err),
-        None => MessageTransport::Exception("<No message passed with exception>".to_owned()),
+        Some(err) => MessageTransport::Failure(Failure::Exception(err)),
+        None => MessageTransport::Failure(Failure::Exception(
+          "<No message passed with exception>".to_owned(),
+        )),
       },
       JsonError::Error => match v.error_msg {
-        Some(err) => MessageTransport::Error(err),
-        None => MessageTransport::Error("<No message passed with exception>".to_owned()),
+        Some(err) => MessageTransport::Failure(Failure::Error(err)),
+        None => MessageTransport::Failure(Failure::Error(
+          "<No message passed with exception>".to_owned(),
+        )),
       },
-      JsonError::InternalError => MessageTransport::Error("Internal Error (10001)".to_owned()),
+      JsonError::InternalError => {
+        MessageTransport::Failure(Failure::Error("Internal Error (10001)".to_owned()))
+      }
     }
   }
 }
@@ -412,16 +665,6 @@ impl JsonError {
   }
 }
 
-fn unhandled_conversion(transport: &MessageTransport) -> TransportJson {
-  error!("Unhandled  JSON conversion: {:?}", transport);
-  TransportJson {
-    value: serde_json::value::Value::Null,
-    signal: None,
-    error_msg: Some(format!("Internal error converting {:?} to JSON", transport)),
-    error_kind: JsonError::InternalError,
-  }
-}
-
 fn handle_result_conversion(
   result: std::result::Result<serde_json::Value, String>,
 ) -> TransportJson {
@@ -457,14 +700,9 @@ impl Display for MessageTransport {
       f,
       "{}",
       match self {
-        MessageTransport::Invalid => "Invalid",
-        MessageTransport::Exception(_) => "Exception",
-        MessageTransport::Error(_) => "Error",
-        MessageTransport::MessagePack(_) => "MessagePack",
-        MessageTransport::Test(_) => "Test",
-        MessageTransport::Signal(_) => unreachable!(),
-        MessageTransport::Success(_) => "Success",
-        MessageTransport::Json(_) => "JSON",
+        MessageTransport::Failure(v) => v.to_string(),
+        MessageTransport::Signal(v) => v.to_string(),
+        MessageTransport::Success(v) => v.to_string(),
       }
     )
   }
@@ -482,191 +720,28 @@ impl Display for MessageSignal {
     ))
   }
 }
-
-impl MessageTransport {
-  /// Returns `true` if the Message contains success data destined for a downstream
-  /// consumer, `false` for Errors, Exceptions, and otherwise.
-  #[must_use]
-  pub fn is_ok(&self) -> bool {
-    match self {
-      MessageTransport::MessagePack(_) => true,
-      MessageTransport::Json(_) => true,
-      MessageTransport::Test(_) => true,
-      MessageTransport::Success(_) => true,
-      MessageTransport::Exception(_) => false,
-      MessageTransport::Error(_) => false,
-      MessageTransport::Invalid => false,
-      MessageTransport::Signal(_) => false,
-    }
-  }
-
-  #[must_use]
-  /// Returns true if the [MessageTransport] is holding an Error or Exception variant.
-  pub fn is_err(&self) -> bool {
-    matches!(
-      self,
-      MessageTransport::Error(_) | MessageTransport::Exception(_)
-    )
-  }
-
-  #[must_use]
-  /// Returns true if the [MessageTransport] is a [MessageTransport::Signal] variant.
-  pub fn is_signal(&self) -> bool {
-    matches!(self, Self::Signal(_))
-  }
-
-  /// Converts a [MessageTransport] into [serde_json::Value]
-  /// representation of a [TransportJson]
-  #[must_use]
-  pub fn into_json(self) -> serde_json::Value {
-    let output = match self {
-      MessageTransport::Invalid => TransportJson {
-        value: serde_json::value::Value::Null,
-        signal: None,
-        error_msg: Some("Invalid value".to_owned()),
-        error_kind: JsonError::Error,
-      },
-      MessageTransport::Exception(v) => TransportJson {
-        value: serde_json::value::Value::Null,
-        signal: None,
-        error_msg: Some(v),
-        error_kind: JsonError::Exception,
-      },
-      MessageTransport::Error(v) => TransportJson {
-        value: serde_json::value::Value::Null,
-        signal: None,
-        error_msg: Some(v),
-        error_kind: JsonError::Error,
-      },
-      MessageTransport::MessagePack(bytes) => handle_result_conversion(
-        messagepack::deserialize::<serde_json::Value>(&bytes).map_err(|e| e.to_string()),
-      ),
-      MessageTransport::Success(v) => handle_result_conversion(
-        raw::deserialize::<serde_json::Value>(v).map_err(|e| e.to_string()),
-      ),
-      MessageTransport::Json(v) => handle_result_conversion(
-        json::deserialize::<serde_json::Value>(&v).map_err(|e| e.to_string()),
-      ),
-      MessageTransport::Test(_) => unhandled_conversion(&self),
-      MessageTransport::Signal(s) => TransportJson {
-        value: serde_json::value::Value::Null,
-        signal: Some(s),
-        error_msg: None,
-        error_kind: JsonError::None,
-      },
-    };
-
-    json::to_value(&output).unwrap_or_else(|_| JSON_ERROR.clone())
-  }
-
-  /// Creates a [MessageTransport] by serializing a passed object with messagepack
-  pub fn messagepack<T: ?Sized + Serialize>(item: &T) -> Self {
-    match messagepack::serialize(item) {
-      Ok(bytes) => Self::MessagePack(bytes),
-      Err(e) => Self::Error(format!(
-        "Error serializing into messagepack: {}",
-        e.to_string()
-      )),
-    }
-  }
-
-  /// Creates a [MessageTransport] by serializing a passed object into a raw intermediary format
-  pub fn success<T: Serialize>(item: &T) -> Self {
-    match raw::serialize(item) {
-      Ok(v) => Self::Success(v),
-      Err(e) => Self::Error(format!(
-        "Error serializing into raw intermediary format: {}",
-        e.to_string()
-      )),
-    }
-  }
-
-  /// Creates a [MessageTransport] by serializing a passed object into JSON
-  pub fn json<T: Serialize>(item: &T) -> Self {
-    match json::serialize(item) {
-      Ok(v) => Self::Json(v),
-      Err(e) => Self::Error(format!("Error serializing into json: {}", e.to_string())),
-    }
-  }
-
-  /// A utility function for [MessageTransport::Signal(MessageSignal::Done)]
-  pub fn done() -> Self {
-    MessageTransport::Signal(MessageSignal::Done)
-  }
-
-  /// Try to deserialize a [MessageTransport] into the target type
-  pub fn try_into<T: DeserializeOwned>(self) -> Result<T> {
-    match self {
-      MessageTransport::Invalid => Err(Error::Invalid),
-      MessageTransport::Exception(v) => Err(Error::Exception(v)),
-      MessageTransport::Error(v) => Err(Error::Error(v)),
-      MessageTransport::MessagePack(buf) => messagepack::rmp_deserialize::<T>(&buf)
-        .map_err(|e| Error::DeserializationError(e.to_string())),
-      MessageTransport::Success(v) => {
-        raw::raw_deserialize::<T>(v).map_err(|e| Error::DeserializationError(e.to_string()))
+impl Display for Failure {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    f.write_fmt(format_args!(
+      "{}",
+      match self {
+        Failure::Invalid => "Invalid",
+        Failure::Exception(_) => "Exception",
+        Failure::Error(_) => "Error",
       }
-      MessageTransport::Json(v) => {
-        json::json_deserialize::<T>(&v).map_err(|e| Error::DeserializationError(e.to_string()))
+    ))
+  }
+}
+impl Display for Success {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    f.write_fmt(format_args!(
+      "{}",
+      match self {
+        Success::MessagePack(_) => "MessagePack",
+        Success::Serialized(_) => "Success",
+        Success::Json(_) => "JSON",
       }
-      MessageTransport::Test(_) => Err(Error::Invalid),
-      MessageTransport::Signal(_) => Err(Error::Invalid),
-    }
-  }
-
-  /// Convert a [HashMap<String, MessageTransport>] into a [serde_json::value::Map]
-  #[must_use]
-  pub fn map_to_json(
-    raw_result: HashMap<String, MessageTransport>,
-  ) -> serde_json::value::Map<String, serde_json::Value> {
-    raw_result
-      .into_iter()
-      .map(|(k, payload)| {
-        (
-          k,
-          payload.try_into().unwrap_or_else(|e: Error| {
-            serde_json::json!({
-              "error": format!("Internal error: {:?}, invalid format", e.to_string())
-            })
-          }),
-        )
-      })
-      .collect()
-  }
-}
-
-impl From<Vec<u8>> for MessageTransport {
-  fn from(v: Vec<u8>) -> Self {
-    MessageTransport::MessagePack(v)
-  }
-}
-
-impl From<&Vec<u8>> for MessageTransport {
-  fn from(v: &Vec<u8>) -> Self {
-    MessageTransport::MessagePack(v.clone())
-  }
-}
-
-impl From<&[u8]> for MessageTransport {
-  fn from(v: &[u8]) -> Self {
-    MessageTransport::MessagePack(v.to_vec())
-  }
-}
-
-impl From<Packet> for MessageTransport {
-  fn from(output: Packet) -> MessageTransport {
-    match output {
-      Packet::V0(v) => match v {
-        v0::Payload::Exception(v) => MessageTransport::Exception(v),
-        v0::Payload::Error(v) => MessageTransport::Error(v),
-        v0::Payload::Invalid => MessageTransport::Invalid,
-        v0::Payload::MessagePack(bytes) => MessageTransport::MessagePack(bytes),
-        v0::Payload::Json(v) => MessageTransport::Json(v),
-        v0::Payload::Success(v) => MessageTransport::Success(v),
-        v0::Payload::Done => MessageTransport::Signal(MessageSignal::Done),
-        v0::Payload::OpenBracket => MessageTransport::Signal(MessageSignal::OpenBracket),
-        v0::Payload::CloseBracket => MessageTransport::Signal(MessageSignal::CloseBracket),
-      },
-    }
+    ))
   }
 }
 
@@ -733,6 +808,21 @@ mod tests {
     let value = close.into_json();
     println!("Value: {}", value);
     assert_eq!(value.to_string(), r#"{"signal":"Done","value":null}"#);
+    Ok(())
+  }
+
+  #[test_env_log::test]
+  fn test_merge() -> Result<()> {
+    let mut map1 = TransportMap::new();
+    map1.insert("first", MessageTransport::success(&"first-val"));
+    let mut map2 = TransportMap::new();
+    map2.insert("second", MessageTransport::success(&"second-val"));
+    map1.merge(map2);
+    let val1: String = map1.consume("first")?;
+    assert_eq!(val1, "first-val");
+    let val2: String = map1.consume("second")?;
+    assert_eq!(val2, "second-val");
+
     Ok(())
   }
 }

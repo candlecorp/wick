@@ -28,7 +28,6 @@ pub fn map_to_json(
 ) -> impl Stream<Item = serde_json::Value> {
   stream.filter_map(move |wrapper| {
     if wrapper.payload.is_signal() && !print_signals {
-      debug!("Skipping signal : {:?}", wrapper.payload);
       None
     } else {
       Some(wrapper.into_json())
