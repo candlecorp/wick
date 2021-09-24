@@ -17,6 +17,8 @@ pub(crate) async fn job(
   }
   path.push(&input.document_id);
   fs::write(path, input.document)?;
-  output.document_id.done(&input.document_id)?;
+  output
+    .document_id
+    .done(Payload::success(&input.document_id))?;
   Ok(())
 }

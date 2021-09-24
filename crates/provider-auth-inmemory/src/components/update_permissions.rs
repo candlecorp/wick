@@ -5,6 +5,8 @@ pub(crate) async fn job(input: Inputs, output: Outputs, context: crate::Context)
   state
     .permissions
     .insert(input.user_id, input.permissions.clone());
-  output.permissions.done(&input.permissions)?;
+  output
+    .permissions
+    .done(Payload::success(&input.permissions))?;
   Ok(())
 }

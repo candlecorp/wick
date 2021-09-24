@@ -21,7 +21,6 @@ thiserror = "1.0.25"
 uuid = { version = "0.8.2", features = ["v4"] }
 
 [dev-dependencies]
-maplit = "1.0.2"
 logger = { path = "../logger" }
 test-logger = { path = "../test-logger" }
 

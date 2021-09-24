@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::ops::DerefMut;
 use std::sync::Arc;
 
 use redis::aio::Connection;
@@ -131,6 +130,7 @@ mod tests {
   use futures::prelude::*;
   use rand::Rng;
   use serde::de::DeserializeOwned;
+  use vino_transport::Failure;
 
   use super::*;
 
@@ -161,8 +161,8 @@ mod tests {
       Ok(Some(val))
     } else {
       match output.payload {
-        MessageTransport::Exception(msg) => Ok(None),
-        MessageTransport::Error(e) => Err(anyhow!("{}", e)),
+        MessageTransport::Failure(Failure::Exception(_)) => Ok(None),
+        MessageTransport::Failure(Failure::Error(msg)) => Err(anyhow!("{}", msg)),
         _ => unreachable!(),
       }
     }
@@ -233,11 +233,8 @@ mod tests {
     };
 
     if output.payload.is_ok() {
-      let deleted_key: String = output.payload.try_into()?;
-      assert_eq!(deleted_key, key);
-      Ok(true)
-    } else if matches!(output.payload, MessageTransport::Exception(_)) {
-      Ok(false)
+      let exists: bool = output.payload.try_into()?;
+      Ok(exists)
     } else {
       Err(anyhow!("Error with exists"))
     }
@@ -379,7 +376,6 @@ mod tests {
   #[test_logger::test(tokio::test)]
   async fn test_list() -> Result<()> {
     let provider = get_default_provider().await?;
-    let nonexistant_key = get_random_string();
     let key = get_random_string();
     let expected = get_random_string();
 

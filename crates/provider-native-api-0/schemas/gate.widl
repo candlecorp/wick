@@ -1,0 +1,11 @@
+namespace "gate"
+
+type Inputs {
+  condition: bool
+  value: raw
+  exception: string
+}
+
+type Outputs {
+  output: raw
+}

@@ -16,8 +16,8 @@ pub(crate) async fn job(input: Inputs, output: Outputs, context: crate::Context)
     .map_err(|e| format!("Hashing failed: {}", e.to_string()))?;
   if valid {
     state.sessions.insert(input.session.clone(), uid.clone());
-    output.user_id.done(&uid)?;
-    output.session.done(&input.session)?;
+    output.user_id.done(Payload::success(&uid))?;
+    output.session.done(Payload::success(&input.session))?;
     Ok(())
   } else {
     Err("Invalid password".into())

@@ -137,35 +137,64 @@ mod tests {
 
   use futures::prelude::*;
   use log::debug;
-  use maplit::hashmap;
   use serde::de::DeserializeOwned;
   use vino_provider::native::prelude::*;
+  use vino_transport::Failure;
 
   use super::*;
   type Result<T> = std::result::Result<T, NativeError>;
 
-  async fn invoke<T>(component: &str, payload: TransportMap) -> Result<T>
+  async fn invoke_one<T>(component: &str, payload: impl Into<TransportMap> + Send) -> Result<T>
   where
     T: DeserializeOwned,
   {
+    let transport_map: TransportMap = payload.into();
+    println!("TransportMap: {:?}", transport_map);
     let provider = Provider::default();
 
     let entity = Entity::component_direct(component);
 
-    let mut outputs = provider.invoke(entity, payload).await.unwrap();
+    let mut outputs = provider.invoke(entity, transport_map).await.unwrap();
     let output = outputs.next().await.unwrap();
-    println!("Received payload from [{}]", output.port);
+    println!(
+      "Received payload from port '{}': {:?}",
+      output.port, output.payload
+    );
     Ok(output.payload.try_into()?)
+  }
+
+  async fn invoke_failure(
+    component: &str,
+    payload: impl Into<TransportMap> + Send,
+  ) -> Result<Failure> {
+    let transport_map: TransportMap = payload.into();
+    println!("TransportMap: {:?}", transport_map);
+    let provider = Provider::default();
+
+    let entity = Entity::component_direct(component);
+
+    let mut outputs = provider.invoke(entity, transport_map).await.unwrap();
+    let output = outputs.next().await.unwrap();
+    println!(
+      "Received payload from port '{}': {:?}",
+      output.port, output.payload
+    );
+    match output.payload {
+      MessageTransport::Success(_) => Err("Got success, expected failure".into()),
+      MessageTransport::Failure(failure) => Ok(failure),
+      MessageTransport::Signal(_) => Err("Got signal, expected failure".into()),
+    }
   }
 
   #[test_logger::test(tokio::test)]
   async fn test_log() -> Result<()> {
     let input = "some_input";
-    let job_payload = TransportMap::with_map(hashmap! {
-      "input".to_owned() => MessageTransport::messagepack(input),
-    });
+    let job_payload = crate::generated::log::Inputs {
+      input: input.to_owned(),
+    };
+    println!("Inputs: {:?}", job_payload);
 
-    let payload: String = invoke("log", job_payload).await?;
+    let payload: String = invoke_one("log", job_payload).await?;
 
     println!("outputs: {:?}", payload);
     assert_eq!(payload, "some_input");
@@ -175,12 +204,41 @@ mod tests {
 
   #[test_logger::test(tokio::test)]
   async fn test_uuid() -> Result<()> {
-    let job_payload = TransportMap::new();
+    let job_payload = crate::generated::uuid::Inputs {};
 
-    let payload: String = invoke("uuid", job_payload).await?;
+    let payload: String = invoke_one("uuid", job_payload).await?;
 
     println!("outputs: {:?}", payload);
     assert_eq!(payload.len(), 36);
+
+    Ok(())
+  }
+
+  #[test_logger::test(tokio::test)]
+  async fn test_gate() -> Result<()> {
+    let user_data = "Hello world";
+    let exception = "Condition is false";
+    let inputs = crate::generated::gate::Inputs {
+      condition: true,
+      value: MessageTransport::success(&user_data).into(),
+      exception: exception.to_owned(),
+    };
+
+    let payload: String = invoke_one("gate", inputs).await?;
+
+    println!("outputs: {:?}", payload);
+    assert_eq!(payload, user_data);
+
+    let inputs = crate::generated::gate::Inputs {
+      condition: false,
+      value: MessageTransport::success(&user_data).into(),
+      exception: exception.to_owned(),
+    };
+
+    let payload = invoke_failure("gate", inputs).await?;
+
+    println!("outputs: {:?}", payload);
+    assert_eq!(payload, Failure::Exception(exception.to_owned()));
 
     Ok(())
   }

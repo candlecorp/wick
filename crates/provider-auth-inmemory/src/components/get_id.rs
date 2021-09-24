@@ -6,6 +6,6 @@ pub(crate) async fn job(input: Inputs, output: Outputs, context: crate::Context)
     .user_ids
     .get(&input.username)
     .ok_or_else(|| NativeComponentError::new(format!("User '{}' not found", input.username)))?;
-  output.user_id.done(user_id)?;
+  output.user_id.done(Payload::success(user_id))?;
   Ok(())
 }

@@ -9,6 +9,8 @@ pub(crate) async fn job(input: Inputs, output: Outputs, context: crate::Context)
     .entry(input.collection_id)
     .or_insert_with(Vec::new);
   list.push(input.document_id.clone());
-  output.document_id.done(&input.document_id)?;
+  output
+    .document_id
+    .done(Payload::success(&input.document_id))?;
   Ok(())
 }

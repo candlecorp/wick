@@ -4,7 +4,7 @@ pub(crate) async fn job(input: Inputs, output: Outputs, context: crate::Context)
   let state = context.lock().unwrap();
   if let Some(perms) = state.permissions.get(&input.user_id) {
     if perms.contains(&input.permission) {
-      output.user_id.done(&input.user_id)?;
+      output.user_id.done(Payload::success(&input.user_id))?;
       return Ok(());
     }
   }

@@ -9,7 +9,7 @@ pub(crate) async fn job(input: Inputs, output: Outputs, context: crate::Context)
     input.end.try_into().unwrap(),
   );
   let docs: Vec<String> = context.run_cmd(&mut cmd).await?;
-  output.values.done(&docs)?;
+  output.values.done(Payload::success(&docs))?;
 
   Ok(())
 }

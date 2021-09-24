@@ -4,10 +4,11 @@ pub(crate) async fn job(input: Inputs, output: Outputs, context: crate::Context)
   let state = context.lock().unwrap();
   let content_key = format!("{}:{}", input.collection_id, input.document_id);
   match state.documents.get(&content_key) {
-    Some(content) => output.document.done(content)?,
-    None => output
-      .document
-      .done_exception(format!("No content with id {} found", content_key))?,
+    Some(content) => output.document.done(Payload::success(content))?,
+    None => output.document.done(Payload::exception(format!(
+      "No content with id {} found",
+      content_key
+    )))?,
   };
   Ok(())
 }

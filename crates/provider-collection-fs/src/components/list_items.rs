@@ -19,10 +19,10 @@ pub(crate) async fn job(
   }
 
   let contents = fs::read_dir(path)?;
-  let list: Vec<_> = contents
+  let list: Vec<String> = contents
     .filter_map(Result::ok)
     .map(|dir| dir.file_name().to_string_lossy().into())
     .collect();
-  output.document_ids.done(&list)?;
+  output.document_ids.done(Payload::success(&list))?;
   Ok(())
 }

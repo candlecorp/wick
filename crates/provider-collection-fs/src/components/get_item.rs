@@ -19,6 +19,6 @@ pub(crate) async fn job(
     return Ok(());
   }
   let contents = fs::read_to_string(path)?;
-  output.document.done(&contents)?;
+  output.document.done(Payload::success(&contents))?;
   Ok(())
 }

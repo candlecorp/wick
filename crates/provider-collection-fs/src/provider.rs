@@ -60,6 +60,7 @@ mod tests {
   use anyhow::Result;
   use futures::prelude::*;
   use vino_macros::transport_map;
+  use vino_macros::vino_transport::Failure;
   use vino_provider::native::prelude::*;
 
   use super::*;
@@ -124,7 +125,10 @@ mod tests {
 
     let output = outputs.next().await.unwrap();
     println!("Output of post-rm get: {:?}", output);
-    assert!(matches!(output.payload, MessageTransport::Exception(_)));
+    assert!(matches!(
+      output.payload,
+      MessageTransport::Failure(Failure::Exception(_))
+    ));
     Ok(())
   }
 

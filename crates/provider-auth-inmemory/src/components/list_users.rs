@@ -16,6 +16,6 @@ pub(crate) async fn job(input: Inputs, output: Outputs, context: crate::Context)
     })?)
     .map(|(k, v)| (k.clone(), v.clone()))
     .collect();
-  output.users.done(&users)?;
+  output.users.done(Payload::success(&users))?;
   Ok(())
 }

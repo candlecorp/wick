@@ -25,7 +25,9 @@ impl Dispatch for Dispatcher {
           .await
       }
       "error" => error::Component::default().execute(context, data).await,
+      "gate" => gate::Component::default().execute(context, data).await,
       "log" => log::Component::default().execute(context, data).await,
+      "negate" => negate::Component::default().execute(context, data).await,
       "panic" => panic::Component::default().execute(context, data).await,
       "short-circuit" => {
         short_circuit::Component::default()
@@ -52,7 +54,9 @@ pub(crate) fn get_all_components() -> Vec<ComponentSignature> {
     generated::add::signature(),
     generated::concatenate::signature(),
     generated::error::signature(),
+    generated::gate::signature(),
     generated::log::signature(),
+    generated::negate::signature(),
     generated::panic::signature(),
     generated::short_circuit::signature(),
     generated::string_to_bytes::signature(),
@@ -116,7 +120,7 @@ pub(crate) mod add {
     })
   }
 
-  #[derive(Debug, Deserialize, Serialize, Default, Clone)]
+  #[derive(Debug, Deserialize, Serialize, Clone)]
   pub struct Inputs {
     #[serde(rename = "left")]
     pub left: u64,
@@ -128,7 +132,9 @@ pub(crate) mod add {
     fn from(inputs: Inputs) -> TransportMap {
       let mut map = TransportMap::new();
       map.insert("left".to_owned(), MessageTransport::success(&inputs.left));
+
       map.insert("right".to_owned(), MessageTransport::success(&inputs.right));
+
       map
     }
   }
@@ -165,8 +171,6 @@ pub(crate) mod add {
     }
   }
   impl PortSender for OutputPortSender {
-    type PayloadType = u64;
-
     fn get_port(&self) -> Result<&PortChannel, ProviderError> {
       if self.port.is_closed() {
         Err(ProviderError::SendChannelClosed)
@@ -246,7 +250,7 @@ pub(crate) mod concatenate {
     })
   }
 
-  #[derive(Debug, Deserialize, Serialize, Default, Clone)]
+  #[derive(Debug, Deserialize, Serialize, Clone)]
   pub struct Inputs {
     #[serde(rename = "left")]
     pub left: String,
@@ -258,7 +262,9 @@ pub(crate) mod concatenate {
     fn from(inputs: Inputs) -> TransportMap {
       let mut map = TransportMap::new();
       map.insert("left".to_owned(), MessageTransport::success(&inputs.left));
+
       map.insert("right".to_owned(), MessageTransport::success(&inputs.right));
+
       map
     }
   }
@@ -295,8 +301,6 @@ pub(crate) mod concatenate {
     }
   }
   impl PortSender for OutputPortSender {
-    type PayloadType = String;
-
     fn get_port(&self) -> Result<&PortChannel, ProviderError> {
       if self.port.is_closed() {
         Err(ProviderError::SendChannelClosed)
@@ -373,7 +377,7 @@ pub(crate) mod error {
     })
   }
 
-  #[derive(Debug, Deserialize, Serialize, Default, Clone)]
+  #[derive(Debug, Deserialize, Serialize, Clone)]
   pub struct Inputs {
     #[serde(rename = "input")]
     pub input: String,
@@ -383,6 +387,7 @@ pub(crate) mod error {
     fn from(inputs: Inputs) -> TransportMap {
       let mut map = TransportMap::new();
       map.insert("input".to_owned(), MessageTransport::success(&inputs.input));
+
       map
     }
   }
@@ -419,8 +424,149 @@ pub(crate) mod error {
     }
   }
   impl PortSender for OutputPortSender {
-    type PayloadType = String;
+    fn get_port(&self) -> Result<&PortChannel, ProviderError> {
+      if self.port.is_closed() {
+        Err(ProviderError::SendChannelClosed)
+      } else {
+        Ok(&self.port)
+      }
+    }
 
+    fn get_port_name(&self) -> String {
+      self.port.name.clone()
+    }
+  }
+
+  #[must_use]
+  pub fn get_outputs() -> (Outputs, TransportStream) {
+    let mut outputs = Outputs::default();
+    let mut ports = vec![&mut outputs.output.port];
+    let stream = PortChannel::merge_all(&mut ports);
+    (outputs, stream)
+  }
+}
+pub(crate) mod gate {
+  #![allow(unused, unreachable_pub)]
+  use std::collections::HashMap;
+
+  use async_trait::async_trait;
+  use serde::{
+    Deserialize,
+    Serialize,
+  };
+  pub(crate) use vino_provider::native::prelude::*;
+
+  pub(crate) fn signature() -> ComponentSignature {
+    ComponentSignature {
+      name: "gate".to_owned(),
+      inputs: PortSignature::from_list(inputs_list()),
+      outputs: PortSignature::from_list(outputs_list()),
+    }
+  }
+
+  #[derive(Default)]
+  pub(crate) struct Component {}
+
+  #[async_trait]
+  impl NativeComponent for Component {
+    type Context = crate::Context;
+    async fn execute(
+      &self,
+      context: Self::Context,
+      data: TransportMap,
+    ) -> Result<TransportStream, Box<NativeComponentError>> {
+      let inputs = populate_inputs(data).map_err(|e| {
+        NativeComponentError::new(format!("Input deserialization error: {}", e.to_string()))
+      })?;
+      let (outputs, stream) = get_outputs();
+      let result = tokio::spawn(crate::components::gate::job(inputs, outputs, context))
+        .await
+        .map_err(|e| {
+          Box::new(NativeComponentError::new(format!(
+            "Component panicked: {}",
+            e
+          )))
+        })?;
+      match result {
+        Ok(_) => Ok(stream),
+        Err(e) => Err(Box::new(NativeComponentError::new(e.to_string()))),
+      }
+    }
+  }
+
+  pub fn populate_inputs(mut payload: TransportMap) -> Result<Inputs, TransportError> {
+    Ok(Inputs {
+      condition: payload.consume("condition")?,
+      value: payload.consume_raw("value")?.into(),
+      exception: payload.consume("exception")?,
+    })
+  }
+
+  #[derive(Debug, Deserialize, Serialize, Clone)]
+  pub struct Inputs {
+    #[serde(rename = "condition")]
+    pub condition: bool,
+    #[serde(rename = "value")]
+    pub value: RawPacket,
+    #[serde(rename = "exception")]
+    pub exception: String,
+  }
+
+  impl From<Inputs> for TransportMap {
+    fn from(inputs: Inputs) -> TransportMap {
+      let mut map = TransportMap::new();
+      map.insert(
+        "condition".to_owned(),
+        MessageTransport::success(&inputs.condition),
+      );
+
+      map.insert("value".to_owned(), inputs.value.into());
+
+      map.insert(
+        "exception".to_owned(),
+        MessageTransport::success(&inputs.exception),
+      );
+
+      map
+    }
+  }
+
+  static INPUTS_LIST: &[(&str, &str)] = &[
+    ("condition", "bool"),
+    ("value", "raw"),
+    ("exception", "string"),
+  ];
+
+  #[must_use]
+  pub fn inputs_list() -> &'static [(&'static str, &'static str)] {
+    INPUTS_LIST
+  }
+
+  #[derive(Debug, Default)]
+  pub struct Outputs {
+    pub output: OutputPortSender,
+  }
+
+  static OUTPUTS_LIST: &[(&str, &str)] = &[("output", "raw")];
+
+  #[must_use]
+  pub fn outputs_list() -> &'static [(&'static str, &'static str)] {
+    OUTPUTS_LIST
+  }
+
+  #[derive(Debug)]
+  pub struct OutputPortSender {
+    port: PortChannel,
+  }
+
+  impl Default for OutputPortSender {
+    fn default() -> Self {
+      Self {
+        port: PortChannel::new("output"),
+      }
+    }
+  }
+  impl PortSender for OutputPortSender {
     fn get_port(&self) -> Result<&PortChannel, ProviderError> {
       if self.port.is_closed() {
         Err(ProviderError::SendChannelClosed)
@@ -497,7 +643,7 @@ pub(crate) mod log {
     })
   }
 
-  #[derive(Debug, Deserialize, Serialize, Default, Clone)]
+  #[derive(Debug, Deserialize, Serialize, Clone)]
   pub struct Inputs {
     #[serde(rename = "input")]
     pub input: String,
@@ -507,6 +653,7 @@ pub(crate) mod log {
     fn from(inputs: Inputs) -> TransportMap {
       let mut map = TransportMap::new();
       map.insert("input".to_owned(), MessageTransport::success(&inputs.input));
+
       map
     }
   }
@@ -543,8 +690,129 @@ pub(crate) mod log {
     }
   }
   impl PortSender for OutputPortSender {
-    type PayloadType = String;
+    fn get_port(&self) -> Result<&PortChannel, ProviderError> {
+      if self.port.is_closed() {
+        Err(ProviderError::SendChannelClosed)
+      } else {
+        Ok(&self.port)
+      }
+    }
 
+    fn get_port_name(&self) -> String {
+      self.port.name.clone()
+    }
+  }
+
+  #[must_use]
+  pub fn get_outputs() -> (Outputs, TransportStream) {
+    let mut outputs = Outputs::default();
+    let mut ports = vec![&mut outputs.output.port];
+    let stream = PortChannel::merge_all(&mut ports);
+    (outputs, stream)
+  }
+}
+pub(crate) mod negate {
+  #![allow(unused, unreachable_pub)]
+  use std::collections::HashMap;
+
+  use async_trait::async_trait;
+  use serde::{
+    Deserialize,
+    Serialize,
+  };
+  pub(crate) use vino_provider::native::prelude::*;
+
+  pub(crate) fn signature() -> ComponentSignature {
+    ComponentSignature {
+      name: "negate".to_owned(),
+      inputs: PortSignature::from_list(inputs_list()),
+      outputs: PortSignature::from_list(outputs_list()),
+    }
+  }
+
+  #[derive(Default)]
+  pub(crate) struct Component {}
+
+  #[async_trait]
+  impl NativeComponent for Component {
+    type Context = crate::Context;
+    async fn execute(
+      &self,
+      context: Self::Context,
+      data: TransportMap,
+    ) -> Result<TransportStream, Box<NativeComponentError>> {
+      let inputs = populate_inputs(data).map_err(|e| {
+        NativeComponentError::new(format!("Input deserialization error: {}", e.to_string()))
+      })?;
+      let (outputs, stream) = get_outputs();
+      let result = tokio::spawn(crate::components::negate::job(inputs, outputs, context))
+        .await
+        .map_err(|e| {
+          Box::new(NativeComponentError::new(format!(
+            "Component panicked: {}",
+            e
+          )))
+        })?;
+      match result {
+        Ok(_) => Ok(stream),
+        Err(e) => Err(Box::new(NativeComponentError::new(e.to_string()))),
+      }
+    }
+  }
+
+  pub fn populate_inputs(mut payload: TransportMap) -> Result<Inputs, TransportError> {
+    Ok(Inputs {
+      input: payload.consume("input")?,
+    })
+  }
+
+  #[derive(Debug, Deserialize, Serialize, Clone)]
+  pub struct Inputs {
+    #[serde(rename = "input")]
+    pub input: bool,
+  }
+
+  impl From<Inputs> for TransportMap {
+    fn from(inputs: Inputs) -> TransportMap {
+      let mut map = TransportMap::new();
+      map.insert("input".to_owned(), MessageTransport::success(&inputs.input));
+
+      map
+    }
+  }
+
+  static INPUTS_LIST: &[(&str, &str)] = &[("input", "bool")];
+
+  #[must_use]
+  pub fn inputs_list() -> &'static [(&'static str, &'static str)] {
+    INPUTS_LIST
+  }
+
+  #[derive(Debug, Default)]
+  pub struct Outputs {
+    pub output: OutputPortSender,
+  }
+
+  static OUTPUTS_LIST: &[(&str, &str)] = &[("output", "bool")];
+
+  #[must_use]
+  pub fn outputs_list() -> &'static [(&'static str, &'static str)] {
+    OUTPUTS_LIST
+  }
+
+  #[derive(Debug)]
+  pub struct OutputPortSender {
+    port: PortChannel,
+  }
+
+  impl Default for OutputPortSender {
+    fn default() -> Self {
+      Self {
+        port: PortChannel::new("output"),
+      }
+    }
+  }
+  impl PortSender for OutputPortSender {
     fn get_port(&self) -> Result<&PortChannel, ProviderError> {
       if self.port.is_closed() {
         Err(ProviderError::SendChannelClosed)
@@ -621,7 +889,7 @@ pub(crate) mod panic {
     })
   }
 
-  #[derive(Debug, Deserialize, Serialize, Default, Clone)]
+  #[derive(Debug, Deserialize, Serialize, Clone)]
   pub struct Inputs {
     #[serde(rename = "input")]
     pub input: String,
@@ -631,6 +899,7 @@ pub(crate) mod panic {
     fn from(inputs: Inputs) -> TransportMap {
       let mut map = TransportMap::new();
       map.insert("input".to_owned(), MessageTransport::success(&inputs.input));
+
       map
     }
   }
@@ -667,8 +936,6 @@ pub(crate) mod panic {
     }
   }
   impl PortSender for OutputPortSender {
-    type PayloadType = String;
-
     fn get_port(&self) -> Result<&PortChannel, ProviderError> {
       if self.port.is_closed() {
         Err(ProviderError::SendChannelClosed)
@@ -747,7 +1014,7 @@ pub(crate) mod short_circuit {
     })
   }
 
-  #[derive(Debug, Deserialize, Serialize, Default, Clone)]
+  #[derive(Debug, Deserialize, Serialize, Clone)]
   pub struct Inputs {
     #[serde(rename = "input")]
     pub input: String,
@@ -757,6 +1024,7 @@ pub(crate) mod short_circuit {
     fn from(inputs: Inputs) -> TransportMap {
       let mut map = TransportMap::new();
       map.insert("input".to_owned(), MessageTransport::success(&inputs.input));
+
       map
     }
   }
@@ -793,8 +1061,6 @@ pub(crate) mod short_circuit {
     }
   }
   impl PortSender for OutputPortSender {
-    type PayloadType = String;
-
     fn get_port(&self) -> Result<&PortChannel, ProviderError> {
       if self.port.is_closed() {
         Err(ProviderError::SendChannelClosed)
@@ -873,7 +1139,7 @@ pub(crate) mod string_to_bytes {
     })
   }
 
-  #[derive(Debug, Deserialize, Serialize, Default, Clone)]
+  #[derive(Debug, Deserialize, Serialize, Clone)]
   pub struct Inputs {
     #[serde(rename = "input")]
     pub input: String,
@@ -883,6 +1149,7 @@ pub(crate) mod string_to_bytes {
     fn from(inputs: Inputs) -> TransportMap {
       let mut map = TransportMap::new();
       map.insert("input".to_owned(), MessageTransport::success(&inputs.input));
+
       map
     }
   }
@@ -919,8 +1186,6 @@ pub(crate) mod string_to_bytes {
     }
   }
   impl PortSender for OutputPortSender {
-    type PayloadType = Vec<u8>;
-
     fn get_port(&self) -> Result<&PortChannel, ProviderError> {
       if self.port.is_closed() {
         Err(ProviderError::SendChannelClosed)
@@ -995,7 +1260,7 @@ pub(crate) mod uuid {
     Ok(Inputs {})
   }
 
-  #[derive(Debug, Deserialize, Serialize, Default, Clone)]
+  #[derive(Debug, Deserialize, Serialize, Clone)]
   pub struct Inputs {}
 
   impl From<Inputs> for TransportMap {
@@ -1037,8 +1302,6 @@ pub(crate) mod uuid {
     }
   }
   impl PortSender for OutputPortSender {
-    type PayloadType = String;
-
     fn get_port(&self) -> Result<&PortChannel, ProviderError> {
       if self.port.is_closed() {
         Err(ProviderError::SendChannelClosed)

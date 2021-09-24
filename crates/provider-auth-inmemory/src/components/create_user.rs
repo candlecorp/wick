@@ -25,6 +25,6 @@ pub(crate) async fn job(input: Inputs, output: Outputs, context: crate::Context)
     .insert(input.username.clone(), input.user_id.clone());
   state.auth.insert(input.user_id.clone(), hashed);
   drop(state);
-  output.user_id.done(&input.user_id)?;
+  output.user_id.done(Payload::success(&input.user_id))?;
   Ok(())
 }

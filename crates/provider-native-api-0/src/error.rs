@@ -8,4 +8,12 @@ pub enum NativeError {
   IOError(#[from] std::io::Error),
   #[error(transparent)]
   JoinError(#[from] tokio::task::JoinError),
+  #[error("{0}")]
+  Other(String),
+}
+
+impl From<&str> for NativeError {
+  fn from(v: &str) -> Self {
+    NativeError::Other(v.to_owned())
+  }
 }

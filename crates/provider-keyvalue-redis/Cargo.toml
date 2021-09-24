@@ -10,6 +10,7 @@ vino-provider = { path = "../../sdk/crates/vino-provider", features = [
   "native",
 ] }
 vino-provider-cli = { path = "../vino-provider-cli" }
+vino-transport = { path = "../../sdk/crates/vino-transport" }
 vino-packet = { path = "../../sdk/crates/vino-packet" }
 vino-rpc = { path = "../vino-rpc" }
 vino-macros = { path = "../../sdk/crates/vino-macros" }

@@ -366,7 +366,7 @@ mod tests {
       "User ID '{}' does not have permission '{}'",
       uid, "can't_do"
     );
-    assert_eq!(result, MessageTransport::Exception(expected_err));
+    assert_eq!(result, MessageTransport::exception(expected_err));
     Ok(())
   }
 }
