@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::convert::TryFrom;
 use std::sync::Arc;
 
 use async_trait::async_trait;
@@ -13,9 +12,13 @@ use vino_rpc::{
 };
 use vino_transport::message_transport::stream::BoxedTransportStream;
 use vino_transport::message_transport::TransportMap;
+pub use wapc::WasiParams;
 
 use crate::wapc_module::WapcModule;
-use crate::wasm_host::WasmHost;
+use crate::wasm_host::{
+  WasmHost,
+  WasmHostBuilder,
+};
 use crate::Error;
 
 #[derive(Debug, Default)]
@@ -30,10 +33,20 @@ pub struct Provider {
 }
 
 impl Provider {
-  pub fn try_from_module(module: &WapcModule, threads: usize) -> Result<Self, Error> {
+  pub fn try_load(
+    module: &WapcModule,
+    threads: usize,
+    wasi_options: Option<WasiParams>,
+  ) -> Result<Self, Error> {
     debug!("WASM:START:{} Threads", threads);
 
-    let host = Arc::new(RwLock::new(WasmHost::try_from(module)?));
+    let mut builder = WasmHostBuilder::new();
+    if let Some(opts) = wasi_options {
+      builder = builder.wasi_params(opts);
+    }
+    let host = builder.build(module)?;
+
+    let host = Arc::new(RwLock::new(host));
 
     Ok(Self { host })
   }
@@ -97,7 +110,7 @@ mod tests {
     )?)
     .await?;
 
-    let provider = Provider::try_from_module(&component, 2)?;
+    let provider = Provider::try_load(&component, 2, None)?;
     let input = "Hello world";
 
     let job_payload = TransportMap::with_map(hashmap! {

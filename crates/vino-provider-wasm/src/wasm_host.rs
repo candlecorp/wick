@@ -2,7 +2,6 @@ use std::collections::{
   HashSet,
   VecDeque,
 };
-use std::convert::TryFrom;
 use std::str::FromStr;
 use std::sync::Arc;
 use std::time::Instant;
@@ -22,7 +21,10 @@ use vino_wascap::{
   Claims,
   ComponentClaims,
 };
-use wapc::WapcHost;
+use wapc::{
+  WapcHost,
+  WasiParams,
+};
 
 use crate::wapc_module::WapcModule;
 use crate::{
@@ -31,6 +33,39 @@ use crate::{
 };
 
 type PortBuffer = VecDeque<(String, Packet)>;
+#[must_use]
+#[derive(Debug)]
+pub struct WasmHostBuilder {
+  wasi_params: Option<WasiParams>,
+}
+
+impl WasmHostBuilder {
+  pub fn new() -> Self {
+    Self { wasi_params: None }
+  }
+
+  pub fn wasi_params(mut self, params: WasiParams) -> Self {
+    self.wasi_params = Some(params);
+    self
+  }
+
+  pub fn preopened_dirs(mut self, dirs: Vec<String>) -> Self {
+    let mut params = self.wasi_params.take().unwrap_or_default();
+    params.preopened_dirs = dirs;
+    self.wasi_params.replace(params);
+    self
+  }
+
+  pub fn build(self, module: &WapcModule) -> Result<WasmHost> {
+    WasmHost::try_load(module, self.wasi_params)
+  }
+}
+
+impl Default for WasmHostBuilder {
+  fn default() -> Self {
+    Self::new()
+  }
+}
 
 #[derive(Debug)]
 pub struct WasmHost {
@@ -40,21 +75,17 @@ pub struct WasmHost {
   closed_ports: Arc<Mutex<HashSet<String>>>,
 }
 
-impl TryFrom<&WapcModule> for WasmHost {
-  type Error = Error;
-
-  fn try_from(module: &WapcModule) -> Result<Self> {
+impl WasmHost {
+  pub fn try_load(module: &WapcModule, wasi_options: Option<WasiParams>) -> Result<Self> {
     let jwt = &module.token.jwt;
 
-    // Ensure that the JWT we found on this actor is valid, not expired, can be used,
-    // has a verified signature, etc.
     vino_wascap::validate_token::<ComponentClaims>(jwt).map_err(Error::ClaimsError)?;
 
     let time = Instant::now();
 
     let engine = {
       let engine =
-        wasmtime_provider::WasmtimeEngineProvider::new(&module.bytes, None, None).unwrap();
+        wasmtime_provider::WasmtimeEngineProvider::new(&module.bytes, wasi_options, None).unwrap();
       trace!(
         "WASM:Wasmtime instance loaded in {} μs",
         time.elapsed().as_micros()
@@ -113,9 +144,7 @@ impl TryFrom<&WapcModule> for WasmHost {
       closed_ports,
     })
   }
-}
 
-impl WasmHost {
   pub fn call(&mut self, component_name: &str, payload: &[u8]) -> Result<TransportStream> {
     {
       self.buffer.lock().clear();

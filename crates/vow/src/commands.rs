@@ -6,6 +6,7 @@ use std::net::Ipv4Addr;
 use std::path::PathBuf;
 
 use structopt::StructOpt;
+use vino_provider_wasm::provider::WasiParams;
 
 #[derive(Debug, Clone, StructOpt)]
 pub(crate) enum CliCommand {
@@ -29,6 +30,22 @@ pub(crate) struct PullOptions {
   /// Registries to connect via HTTP vs HTTPS.
   #[structopt(long)]
   pub(crate) insecure: Vec<String>,
+}
+
+#[derive(Debug, Clone, StructOpt)]
+pub(crate) struct WasiOptions {
+  /// Directories to expose to the WASM module via WASI.
+  #[structopt(long = "wasi-dir")]
+  wasi_dir: Vec<String>,
+}
+
+impl From<&WasiOptions> for WasiParams {
+  fn from(opts: &WasiOptions) -> Self {
+    WasiParams {
+      preopened_dirs: opts.wasi_dir.clone(),
+      ..Default::default()
+    }
+  }
 }
 
 #[derive(Debug, Clone, StructOpt)]

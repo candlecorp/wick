@@ -13,8 +13,13 @@ use vino_provider::native::prelude::{
 use vino_provider_cli::LoggingOptions;
 use vino_provider_wasm::provider::Provider;
 use vino_rpc::RpcHandler;
-use vino_transport::MessageTransport;
+use vino_transport::{
+  Failure,
+  MessageTransport,
+  Success,
+};
 
+use super::WasiOptions;
 use crate::error::VowError;
 use crate::Result;
 
@@ -22,10 +27,13 @@ use crate::Result;
 #[structopt(rename_all = "kebab-case")]
 pub(crate) struct TestCommand {
   #[structopt(flatten)]
-  pub(crate) logging: LoggingOptions,
+  logging: LoggingOptions,
 
   #[structopt(flatten)]
-  pub(crate) pull: super::PullOptions,
+  pull: super::PullOptions,
+
+  #[structopt(flatten)]
+  wasi: WasiOptions,
 
   /// Path or URL to WebAssembly binary.
   wasm: String,
@@ -42,7 +50,7 @@ pub(crate) async fn handle_command(opts: TestCommand) -> Result<()> {
     vino_provider_wasm::helpers::load_wasm(&opts.wasm, opts.pull.latest, &opts.pull.insecure)
       .await?;
 
-  let provider = Provider::try_from_module(&component, 1)?;
+  let provider = Provider::try_load(&component, 1, Some((&opts.wasi).into()))?;
 
   let data = vino_test::read_data(opts.data_path.clone())
     .map_err(|e| VowError::NotFound(opts.data_path.clone(), e.to_string()))?;
@@ -56,7 +64,7 @@ pub(crate) async fn handle_command(opts: TestCommand) -> Result<()> {
     let mut payload = TransportMap::new();
     let entity = Entity::component_direct(test.component.clone());
     for (k, v) in &test.inputs {
-      payload.insert(k, MessageTransport::Success(v.clone()));
+      payload.insert(k, MessageTransport::Success(Success::Serialized(v.clone())));
     }
 
     let stream = provider
@@ -117,8 +125,8 @@ pub(crate) async fn handle_command(opts: TestCommand) -> Result<()> {
 
         test_block.add_test(
           move || match actual_payload {
-            MessageTransport::Exception(_) => (error_kind == "Exception"),
-            MessageTransport::Error(_) => (error_kind == "Error"),
+            MessageTransport::Failure(Failure::Exception(_)) => (error_kind == "Exception"),
+            MessageTransport::Failure(Failure::Error(_)) => (error_kind == "Error"),
             _ => false,
           },
           "Error kind matches",
@@ -135,8 +143,8 @@ pub(crate) async fn handle_command(opts: TestCommand) -> Result<()> {
 
         test_block.add_test(
           move || match actual_payload {
-            MessageTransport::Exception(msg) => (error_msg == msg),
-            MessageTransport::Error(msg) => (error_msg == msg),
+            MessageTransport::Failure(Failure::Exception(msg)) => (error_msg == msg),
+            MessageTransport::Failure(Failure::Error(msg)) => (error_msg == msg),
             _ => false,
           },
           "Error message matches",
