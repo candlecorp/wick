@@ -89,6 +89,9 @@
 /// Version 0 of the output format.
 pub mod v0;
 
+/// Version 1 of the output format.
+pub mod v1;
+
 /// The crate's error module.
 pub mod error;
 

@@ -10,7 +10,10 @@ use vino_codec::{
 };
 
 use crate::error::DeserializationError;
-pub use crate::v0;
+pub use crate::{
+  v0,
+  v1,
+};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 /// The output payload that component's push out of output ports.
@@ -18,6 +21,9 @@ pub enum Packet {
   /// Version 0 of the payload format (unstable).
   #[serde(rename = "0")]
   V0(v0::Payload),
+  /// Version 1 of the payload format (alpha).
+  #[serde(rename = "0")]
+  V1(v1::Payload),
 }
 
 impl Packet {
@@ -41,6 +47,25 @@ impl Packet {
         v0::Payload::OpenBracket => Err(DeserializationError::InternalError),
         v0::Payload::CloseBracket => Err(DeserializationError::InternalError),
       },
+      Packet::V1(v) => {
+        match v {
+          v1::Payload::Success(v) => match v {
+            v1::Success::MessagePack(buf) => messagepack::deserialize::<T>(&buf)
+              .map_err(DeserializationError::DeserializationError),
+            v1::Success::Success(val) => {
+              raw::deserialize::<T>(val).map_err(DeserializationError::DeserializationError)
+            }
+            v1::Success::Json(val) => json::deserialize::<T>(val.as_str())
+              .map_err(DeserializationError::DeserializationError),
+          },
+          v1::Payload::Failure(v) => match v {
+            v1::Failure::Invalid => Err(DeserializationError::Invalid),
+            v1::Failure::Exception(msg) => Err(DeserializationError::Exception(msg)),
+            v1::Failure::Error(msg) => Err(DeserializationError::Error(msg)),
+          },
+          v1::Payload::Signal(_) => Err(DeserializationError::InternalError),
+        }
+      }
     }
   }
 
@@ -49,6 +74,10 @@ impl Packet {
   pub fn is_done(&self) -> bool {
     match self {
       Packet::V0(v) => matches!(v, v0::Payload::Done | v0::Payload::Error(_)),
+      Packet::V1(v) => matches!(
+        v,
+        v1::Payload::Signal(v1::Signal::Done) | v1::Payload::Failure(v1::Failure::Error(_))
+      ),
     }
   }
 }
