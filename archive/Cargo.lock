@@ -510,7 +510,6 @@ version = "0.7.0"
 dependencies = [
  "lazy_static",
  "log",
- "vino-transport",
 ]
 
 [[package]]
@@ -542,7 +541,6 @@ dependencies = [
  "tokio-stream",
  "vino-codec",
  "vino-entity",
- "vino-macros",
  "vino-packet",
  "vino-transport",
  "vino-types",
@@ -553,7 +551,6 @@ name = "vino-transport"
 version = "0.7.0"
 dependencies = [
  "env_logger",
- "lazy_static",
  "log",
  "serde",
  "serde-value",
