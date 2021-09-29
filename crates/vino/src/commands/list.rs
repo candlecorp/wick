@@ -34,7 +34,7 @@ pub(crate) struct ListCommand {
   pub(crate) schematic: Option<String>,
 }
 
-pub(crate) async fn handle_command(opts: ListCommand) -> Result<String> {
+pub(crate) async fn handle_command(opts: ListCommand) -> Result<()> {
   vino_provider_cli::init_logging(&opts.logging)?;
 
   let config = match opts.manifest {
@@ -104,5 +104,5 @@ pub(crate) async fn handle_command(opts: ListCommand) -> Result<String> {
     }
   }
 
-  Ok("Done".to_owned())
+  Ok(())
 }

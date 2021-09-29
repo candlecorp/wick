@@ -1,6 +1,7 @@
 pub(crate) mod list;
 pub(crate) mod run;
 pub(crate) mod start;
+pub(crate) mod test;
 
 use logger::options::LoggingOptions;
 use structopt::clap::AppSettings;
@@ -33,6 +34,9 @@ pub(crate) enum CliCommand {
   /// Print the schematics and their accessible components for the passed manifest.
   #[structopt(name = "list")]
   List(list::ListCommand),
+  /// Execute a schematic with test data and assert its output.
+  #[structopt(name = "test")]
+  Test(test::TestCommand),
 }
 
 #[derive(Debug, Clone, StructOpt)]

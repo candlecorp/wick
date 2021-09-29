@@ -18,6 +18,8 @@ vino-host = { path = "../vino-host" }
 vino-manifest = { path = "../vino-manifest" }
 vino-codec = { path = "../../sdk/crates/vino-codec" }
 vino-types = { path = "../../sdk/crates/vino-types" }
+tap = { path = "../tap" }
+vino-test = { path = "../vino-test" }
 tokio = { version = "1.4.0", features = ["macros", "rt-multi-thread"] }
 log = "0.4.11"
 actix = "0.12.0"

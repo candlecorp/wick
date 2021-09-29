@@ -97,11 +97,12 @@ async fn main() -> Result<()> {
     CliCommand::Start(cmd) => commands::start::handle_command(cmd).await,
     CliCommand::List(cmd) => commands::list::handle_command(cmd).await,
     CliCommand::Run(cmd) => commands::run::handle_command(cmd).await,
+    CliCommand::Test(cmd) => commands::test::handle_command(cmd).await,
   };
 
   std::process::exit(match res {
-    Ok(out) => {
-      info!("{}", out);
+    Ok(_) => {
+      info!("Done");
       0
     }
     Err(e) => {

@@ -20,7 +20,7 @@ pub(crate) struct StartCommand {
   pub(crate) server_options: DefaultCliOptions,
 }
 
-pub(crate) async fn handle_command(opts: StartCommand) -> Result<String> {
+pub(crate) async fn handle_command(opts: StartCommand) -> Result<()> {
   vino_provider_cli::init_logging(&opts.server_options.logging)?;
 
   let manifest_src = vino_loader::get_bytes(
@@ -53,5 +53,5 @@ pub(crate) async fn handle_command(opts: StartCommand) -> Result<String> {
   let _ = tokio::signal::ctrl_c().await;
   info!("Ctrl-C received, shutting down");
   host.stop().await;
-  Ok("Done".to_owned())
+  Ok(())
 }

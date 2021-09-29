@@ -59,7 +59,7 @@ pub(crate) struct RunCommand {
   args: Vec<String>,
 }
 
-pub(crate) async fn handle_command(opts: RunCommand) -> Result<String> {
+pub(crate) async fn handle_command(opts: RunCommand) -> Result<()> {
   let mut logging = opts.logging;
   if !(opts.info || opts.logging.trace || opts.logging.debug) {
     logging.quiet = true;
@@ -136,7 +136,7 @@ pub(crate) async fn handle_command(opts: RunCommand) -> Result<String> {
     print_stream_json(stream, opts.raw).await?;
   }
 
-  Ok("Done".to_owned())
+  Ok(())
 }
 
 async fn print_stream_json(stream: TransportStream, raw: bool) -> Result<()> {
