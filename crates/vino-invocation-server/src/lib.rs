@@ -92,8 +92,10 @@ use tonic::transport::{
 use vino_rpc::rpc::invocation_service_client::InvocationServiceClient;
 use vino_rpc::rpc::invocation_service_server::InvocationServiceServer;
 use vino_rpc::BoxedRpcHandler;
-use vino_transport::message_transport::TransportMap;
-use vino_transport::MessageTransport;
+use vino_transport::{
+  MessageTransport,
+  TransportMap,
+};
 
 pub(crate) type Result<T> = std::result::Result<T, error::Error>;
 

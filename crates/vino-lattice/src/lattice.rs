@@ -187,10 +187,6 @@ impl Lattice {
     let nc = self.nats.clone();
 
     thread::spawn(|| {
-      // let rt = Builder::new_multi_thread()
-      //   .thread_name(format!("lattice_handler_{}", namespace))
-      //   .build()
-      //   .unwrap();
       let system = actix_rt::System::new();
 
       system.block_on(async move {
