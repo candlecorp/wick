@@ -50,7 +50,7 @@ pub(crate) async fn handle_command(opts: TestCommand) -> Result<()> {
     vino_provider_wasm::helpers::load_wasm(&opts.wasm, opts.pull.latest, &opts.pull.insecure)
       .await?;
 
-  let provider = Provider::try_load(&component, 1, Some((&opts.wasi).into()))?;
+  let provider = Provider::try_load(&component, 1, Some((&opts.wasi).into()), None)?;
 
   let data = vino_test::read_data(opts.data_path.clone())
     .map_err(|e| VowError::NotFound(opts.data_path.clone(), e.to_string()))?;

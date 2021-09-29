@@ -62,7 +62,7 @@ pub(crate) async fn handle_command(opts: RunCommand) -> Result<()> {
     vino_provider_wasm::helpers::load_wasm(&opts.wasm, opts.pull.latest, &opts.pull.insecure)
       .await?;
 
-  let provider = Provider::try_load(&component, 1, Some((&opts.wasi).into()))?;
+  let provider = Provider::try_load(&component, 1, Some((&opts.wasi).into()), None)?;
 
   let mut check_stdin = !opts.no_input && opts.data.is_empty() && opts.args.is_empty();
   if let Some(metadata) = component.token.claims.metadata {

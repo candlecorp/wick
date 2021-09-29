@@ -39,7 +39,7 @@ pub(crate) async fn handle_command(opts: ServeCommand) -> Result<()> {
   vino_provider_cli::init_cli(
     Box::new(move || {
       Box::new(
-        match Provider::try_load(&component, threads.into(), Some(wasi.clone())) {
+        match Provider::try_load(&component, threads.into(), Some(wasi.clone()), None) {
           Ok(provider) => provider,
           Err(e) => {
             error!("Error starting WebAssembly provider: {}", e);
