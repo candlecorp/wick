@@ -18,7 +18,10 @@ use crate::default::{
   parse_default,
   process_default,
 };
-use crate::parse::parse_id;
+use crate::parse::{
+  parse_id,
+  NS_LINK,
+};
 use crate::{
   Error,
   Result,
@@ -35,8 +38,8 @@ pub struct SchematicDefinition {
   pub instances: HashMap<String, ComponentDefinition>,
   /// A list of connections from and to ports on instances defined in the instance map.
   pub connections: Vec<ConnectionDefinition>,
-  /// A list of [ProviderDefinition]s with namespaces and initialization configuration.
-  pub providers: Vec<ProviderDefinition>,
+  /// A list of provider namespaces to expose to this schematic.
+  pub providers: Vec<String>,
   /// Reserved.
   pub constraints: HashMap<String, String>,
 }
@@ -72,11 +75,7 @@ impl TryFrom<crate::v0::SchematicManifest> for SchematicDefinition {
         .map(|def| def.try_into())
         .filter_map(Result::ok)
         .collect(),
-      providers: manifest
-        .providers
-        .into_iter()
-        .map(|def| def.into())
-        .collect(),
+      providers: manifest.providers.clone(),
       constraints: manifest.constraints.into_iter().collect(),
     })
   }
@@ -334,9 +333,17 @@ impl ConnectionTargetDefinition {
   }
 
   #[must_use]
-  /// Returns true if the target is a componentless data sender.
+  /// Returns true if the target is a componentless data sender or a namespace link.
   pub fn is_sender(&self) -> bool {
-    self.target.instance == crate::parse::SENDER_ID && self.target.port == crate::parse::SENDER_PORT
+    let is_sender = self.target.instance == crate::parse::SENDER_ID
+      && self.target.port == crate::parse::SENDER_PORT;
+    self.is_nslink() || is_sender
+  }
+
+  #[must_use]
+  /// Returns true if the target is an namespace link.
+  pub fn is_nslink(&self) -> bool {
+    self.target.instance == NS_LINK
   }
 
   /// Create a [ConnectionTargetDefinition] with the target set to the passed port.

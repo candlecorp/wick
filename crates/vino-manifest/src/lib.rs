@@ -151,12 +151,33 @@ impl From<v0::NetworkManifest> for NetworkManifest {
   }
 }
 
+impl NetworkManifest {
+  #[must_use]
+  /// Get a list of [SchematicManifest]s from the [NetworkManifest]
+  pub fn schematics(&self) -> Vec<SchematicManifest> {
+    match self {
+      NetworkManifest::V0(network) => network
+        .schematics
+        .iter()
+        .cloned()
+        .map(|s| s.into())
+        .collect(),
+    }
+  }
+}
+
 /// Enum for the possible versions of a Schematic Manifest.
 #[derive(Debug, Clone)]
 #[must_use]
 pub enum SchematicManifest {
   /// Version 0 Schematic Manifest.
   V0(v0::SchematicManifest),
+}
+
+impl From<v0::SchematicManifest> for SchematicManifest {
+  fn from(v: v0::SchematicManifest) -> Self {
+    SchematicManifest::V0(v)
+  }
 }
 
 /// The Loadable trait can be used for any deserializable struct that can be loaded from.

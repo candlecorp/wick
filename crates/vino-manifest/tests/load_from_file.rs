@@ -3,6 +3,7 @@ use std::path::PathBuf;
 
 use log::debug;
 use vino_manifest::error::ManifestError;
+use vino_manifest::host_definition::HostDefinition;
 use vino_manifest::parse::{
   SCHEMATIC_OUTPUT,
   SENDER_ID,
@@ -200,6 +201,19 @@ fn load_sender_yaml() -> Result<(), ManifestError> {
       data: None,
     }
   );
+
+  Ok(())
+}
+
+#[test_logger::test]
+fn load_ns_link() -> Result<(), ManifestError> {
+  let path = PathBuf::from("./tests/manifests/v0/ns.yaml");
+  let manifest = HostDefinition::load_from_file(&path)?;
+
+  let schematic = &manifest.network.schematics[0];
+  let from = &schematic.connections[0].from;
+  assert!(from.matches_instance("<ns>"));
+  assert!(from.is_sender());
 
   Ok(())
 }

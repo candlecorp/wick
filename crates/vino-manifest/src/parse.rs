@@ -6,7 +6,7 @@ use crate::{
 };
 
 lazy_static::lazy_static! {
-    pub(crate) static ref CONNECTION_TARGET_REGEX_V0: Regex = Regex::new(&format!(r"^({}|{}|{}|[a-zA-Z][a-zA-Z0-9_]*)(?:\[(\w*)\])?$", DEFAULT_ID, SCHEMATIC_INPUT, SCHEMATIC_OUTPUT)).unwrap();
+    pub(crate) static ref CONNECTION_TARGET_REGEX_V0: Regex = Regex::new(&format!(r"^({}|{}|{}|{}|[a-zA-Z][a-zA-Z0-9_]*)(?:\[(\w*)\])?$", DEFAULT_ID, SCHEMATIC_INPUT, SCHEMATIC_OUTPUT, NS_LINK)).unwrap();
 }
 
 pub(crate) static CONNECTION_SEPARATOR: &str = "=>";
@@ -17,6 +17,8 @@ const DEFAULT_ID: &str = "<>";
 pub const SCHEMATIC_INPUT: &str = "<input>";
 /// The reserved reference name for schematic output. Used in schematic manifests to denote schematic output.
 pub const SCHEMATIC_OUTPUT: &str = "<output>";
+/// The reserved reference name for a namespace link. Used in schematic manifests to pass a provider to a port by its namespace.
+pub const NS_LINK: &str = "<ns>";
 /// The reserved port name to use when sending an asynchronous error from a component.
 pub const COMPONENT_ERROR: &str = "<error>";
 /// The reserved namespace for references to internal schematics.

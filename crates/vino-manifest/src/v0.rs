@@ -172,7 +172,7 @@ pub struct SchematicManifest {
   /// A list of providers and component collections.
   #[serde(default)]
   #[serde(skip_serializing_if = "Vec::is_empty")]
-  pub providers: Vec<ProviderDefinition>,
+  pub providers: Vec<String>,
   /// A map from component reference to its target.
   #[serde(default)]
   #[serde(skip_serializing_if = "HashMap::is_empty")]

@@ -5,7 +5,7 @@ type SchematicManifest {
   name: string @required,
 
   "A list of providers and component collections."
-  providers: [ProviderDefinition],
+  providers: [string],
 
   "A map from component reference to its target."
   instances: {string: ComponentDefinition},

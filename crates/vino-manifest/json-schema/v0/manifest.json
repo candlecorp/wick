@@ -197,7 +197,7 @@
           "description": "A list of providers and component collections.",
           "type": "array",
           "items": {
-            "$ref": "#/$defs/ProviderDefinition"
+            "type": "string"
           }
         },
         "instances": {
