@@ -70,7 +70,7 @@ pub mod authenticate {
   }
 
   #[derive(Debug, Default)]
-  pub struct Outputs {
+  pub struct OutputPorts {
     pub session: SessionPortSender,
     pub user_id: UserIdPortSender,
   }
@@ -134,8 +134,8 @@ pub mod authenticate {
   }
 
   #[must_use]
-  pub fn get_outputs() -> (Outputs, TransportStream) {
-    let mut outputs = Outputs::default();
+  pub fn get_outputs() -> (OutputPorts, TransportStream) {
+    let mut outputs = OutputPorts::default();
     let mut ports = vec![&mut outputs.session.port, &mut outputs.user_id.port];
     let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)
@@ -209,7 +209,7 @@ pub mod create_user {
   }
 
   #[derive(Debug, Default)]
-  pub struct Outputs {
+  pub struct OutputPorts {
     pub user_id: UserIdPortSender,
   }
 
@@ -247,8 +247,8 @@ pub mod create_user {
   }
 
   #[must_use]
-  pub fn get_outputs() -> (Outputs, TransportStream) {
-    let mut outputs = Outputs::default();
+  pub fn get_outputs() -> (OutputPorts, TransportStream) {
+    let mut outputs = OutputPorts::default();
     let mut ports = vec![&mut outputs.user_id.port];
     let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)
@@ -302,7 +302,7 @@ pub mod get_id {
   }
 
   #[derive(Debug, Default)]
-  pub struct Outputs {
+  pub struct OutputPorts {
     pub user_id: UserIdPortSender,
   }
 
@@ -340,8 +340,8 @@ pub mod get_id {
   }
 
   #[must_use]
-  pub fn get_outputs() -> (Outputs, TransportStream) {
-    let mut outputs = Outputs::default();
+  pub fn get_outputs() -> (OutputPorts, TransportStream) {
+    let mut outputs = OutputPorts::default();
     let mut ports = vec![&mut outputs.user_id.port];
     let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)
@@ -403,7 +403,7 @@ pub mod has_permission {
   }
 
   #[derive(Debug, Default)]
-  pub struct Outputs {
+  pub struct OutputPorts {
     pub user_id: UserIdPortSender,
   }
 
@@ -441,8 +441,8 @@ pub mod has_permission {
   }
 
   #[must_use]
-  pub fn get_outputs() -> (Outputs, TransportStream) {
-    let mut outputs = Outputs::default();
+  pub fn get_outputs() -> (OutputPorts, TransportStream) {
+    let mut outputs = OutputPorts::default();
     let mut ports = vec![&mut outputs.user_id.port];
     let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)
@@ -496,7 +496,7 @@ pub mod list_permissions {
   }
 
   #[derive(Debug, Default)]
-  pub struct Outputs {
+  pub struct OutputPorts {
     pub permissions: PermissionsPortSender,
   }
 
@@ -534,8 +534,8 @@ pub mod list_permissions {
   }
 
   #[must_use]
-  pub fn get_outputs() -> (Outputs, TransportStream) {
-    let mut outputs = Outputs::default();
+  pub fn get_outputs() -> (OutputPorts, TransportStream) {
+    let mut outputs = OutputPorts::default();
     let mut ports = vec![&mut outputs.permissions.port];
     let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)
@@ -594,7 +594,7 @@ pub mod list_users {
   }
 
   #[derive(Debug, Default)]
-  pub struct Outputs {
+  pub struct OutputPorts {
     pub users: UsersPortSender,
   }
 
@@ -632,8 +632,8 @@ pub mod list_users {
   }
 
   #[must_use]
-  pub fn get_outputs() -> (Outputs, TransportStream) {
-    let mut outputs = Outputs::default();
+  pub fn get_outputs() -> (OutputPorts, TransportStream) {
+    let mut outputs = OutputPorts::default();
     let mut ports = vec![&mut outputs.users.port];
     let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)
@@ -687,7 +687,7 @@ pub mod remove_user {
   }
 
   #[derive(Debug, Default)]
-  pub struct Outputs {
+  pub struct OutputPorts {
     pub user_id: UserIdPortSender,
   }
 
@@ -725,8 +725,8 @@ pub mod remove_user {
   }
 
   #[must_use]
-  pub fn get_outputs() -> (Outputs, TransportStream) {
-    let mut outputs = Outputs::default();
+  pub fn get_outputs() -> (OutputPorts, TransportStream) {
+    let mut outputs = OutputPorts::default();
     let mut ports = vec![&mut outputs.user_id.port];
     let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)
@@ -788,7 +788,7 @@ pub mod update_permissions {
   }
 
   #[derive(Debug, Default)]
-  pub struct Outputs {
+  pub struct OutputPorts {
     pub permissions: PermissionsPortSender,
   }
 
@@ -826,8 +826,8 @@ pub mod update_permissions {
   }
 
   #[must_use]
-  pub fn get_outputs() -> (Outputs, TransportStream) {
-    let mut outputs = Outputs::default();
+  pub fn get_outputs() -> (OutputPorts, TransportStream) {
+    let mut outputs = OutputPorts::default();
     let mut ports = vec![&mut outputs.permissions.port];
     let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)
@@ -881,7 +881,7 @@ pub mod validate_session {
   }
 
   #[derive(Debug, Default)]
-  pub struct Outputs {
+  pub struct OutputPorts {
     pub user_id: UserIdPortSender,
   }
 
@@ -919,8 +919,8 @@ pub mod validate_session {
   }
 
   #[must_use]
-  pub fn get_outputs() -> (Outputs, TransportStream) {
-    let mut outputs = Outputs::default();
+  pub fn get_outputs() -> (OutputPorts, TransportStream) {
+    let mut outputs = OutputPorts::default();
     let mut ports = vec![&mut outputs.user_id.port];
     let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)

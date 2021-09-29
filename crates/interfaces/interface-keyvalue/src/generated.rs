@@ -47,7 +47,7 @@ pub mod delete {
   }
 
   #[derive(Debug, Default)]
-  pub struct Outputs {
+  pub struct OutputPorts {
     pub key: KeyPortSender,
   }
 
@@ -85,8 +85,8 @@ pub mod delete {
   }
 
   #[must_use]
-  pub fn get_outputs() -> (Outputs, TransportStream) {
-    let mut outputs = Outputs::default();
+  pub fn get_outputs() -> (OutputPorts, TransportStream) {
+    let mut outputs = OutputPorts::default();
     let mut ports = vec![&mut outputs.key.port];
     let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)
@@ -137,7 +137,7 @@ pub mod exists {
   }
 
   #[derive(Debug, Default)]
-  pub struct Outputs {
+  pub struct OutputPorts {
     pub exists: ExistsPortSender,
   }
 
@@ -175,8 +175,8 @@ pub mod exists {
   }
 
   #[must_use]
-  pub fn get_outputs() -> (Outputs, TransportStream) {
-    let mut outputs = Outputs::default();
+  pub fn get_outputs() -> (OutputPorts, TransportStream) {
+    let mut outputs = OutputPorts::default();
     let mut ports = vec![&mut outputs.exists.port];
     let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)
@@ -227,7 +227,7 @@ pub mod key_get {
   }
 
   #[derive(Debug, Default)]
-  pub struct Outputs {
+  pub struct OutputPorts {
     pub value: ValuePortSender,
   }
 
@@ -265,8 +265,8 @@ pub mod key_get {
   }
 
   #[must_use]
-  pub fn get_outputs() -> (Outputs, TransportStream) {
-    let mut outputs = Outputs::default();
+  pub fn get_outputs() -> (OutputPorts, TransportStream) {
+    let mut outputs = OutputPorts::default();
     let mut ports = vec![&mut outputs.value.port];
     let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)
@@ -322,7 +322,7 @@ pub mod key_increment {
   }
 
   #[derive(Debug, Default)]
-  pub struct Outputs {
+  pub struct OutputPorts {
     pub output: OutputPortSender,
   }
 
@@ -360,8 +360,8 @@ pub mod key_increment {
   }
 
   #[must_use]
-  pub fn get_outputs() -> (Outputs, TransportStream) {
-    let mut outputs = Outputs::default();
+  pub fn get_outputs() -> (OutputPorts, TransportStream) {
+    let mut outputs = OutputPorts::default();
     let mut ports = vec![&mut outputs.output.port];
     let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)
@@ -426,7 +426,7 @@ pub mod key_set {
   }
 
   #[derive(Debug, Default)]
-  pub struct Outputs {
+  pub struct OutputPorts {
     pub key: KeyPortSender,
   }
 
@@ -464,8 +464,8 @@ pub mod key_set {
   }
 
   #[must_use]
-  pub fn get_outputs() -> (Outputs, TransportStream) {
-    let mut outputs = Outputs::default();
+  pub fn get_outputs() -> (OutputPorts, TransportStream) {
+    let mut outputs = OutputPorts::default();
     let mut ports = vec![&mut outputs.key.port];
     let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)
@@ -521,7 +521,7 @@ pub mod list_add {
   }
 
   #[derive(Debug, Default)]
-  pub struct Outputs {
+  pub struct OutputPorts {
     pub key: KeyPortSender,
   }
 
@@ -559,8 +559,8 @@ pub mod list_add {
   }
 
   #[must_use]
-  pub fn get_outputs() -> (Outputs, TransportStream) {
-    let mut outputs = Outputs::default();
+  pub fn get_outputs() -> (OutputPorts, TransportStream) {
+    let mut outputs = OutputPorts::default();
     let mut ports = vec![&mut outputs.key.port];
     let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)
@@ -621,7 +621,7 @@ pub mod list_range {
   }
 
   #[derive(Debug, Default)]
-  pub struct Outputs {
+  pub struct OutputPorts {
     pub values: ValuesPortSender,
   }
 
@@ -659,8 +659,8 @@ pub mod list_range {
   }
 
   #[must_use]
-  pub fn get_outputs() -> (Outputs, TransportStream) {
-    let mut outputs = Outputs::default();
+  pub fn get_outputs() -> (OutputPorts, TransportStream) {
+    let mut outputs = OutputPorts::default();
     let mut ports = vec![&mut outputs.values.port];
     let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)
@@ -716,7 +716,7 @@ pub mod list_remove {
   }
 
   #[derive(Debug, Default)]
-  pub struct Outputs {
+  pub struct OutputPorts {
     pub value: ValuePortSender,
   }
 
@@ -754,8 +754,8 @@ pub mod list_remove {
   }
 
   #[must_use]
-  pub fn get_outputs() -> (Outputs, TransportStream) {
-    let mut outputs = Outputs::default();
+  pub fn get_outputs() -> (OutputPorts, TransportStream) {
+    let mut outputs = OutputPorts::default();
     let mut ports = vec![&mut outputs.value.port];
     let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)
@@ -811,7 +811,7 @@ pub mod set_add {
   }
 
   #[derive(Debug, Default)]
-  pub struct Outputs {
+  pub struct OutputPorts {
     pub key: KeyPortSender,
   }
 
@@ -849,8 +849,8 @@ pub mod set_add {
   }
 
   #[must_use]
-  pub fn get_outputs() -> (Outputs, TransportStream) {
-    let mut outputs = Outputs::default();
+  pub fn get_outputs() -> (OutputPorts, TransportStream) {
+    let mut outputs = OutputPorts::default();
     let mut ports = vec![&mut outputs.key.port];
     let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)
@@ -901,7 +901,7 @@ pub mod set_get {
   }
 
   #[derive(Debug, Default)]
-  pub struct Outputs {
+  pub struct OutputPorts {
     pub values: ValuesPortSender,
   }
 
@@ -939,8 +939,8 @@ pub mod set_get {
   }
 
   #[must_use]
-  pub fn get_outputs() -> (Outputs, TransportStream) {
-    let mut outputs = Outputs::default();
+  pub fn get_outputs() -> (OutputPorts, TransportStream) {
+    let mut outputs = OutputPorts::default();
     let mut ports = vec![&mut outputs.values.port];
     let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)
@@ -991,7 +991,7 @@ pub mod set_intersection {
   }
 
   #[derive(Debug, Default)]
-  pub struct Outputs {
+  pub struct OutputPorts {
     pub keys: KeysPortSender,
   }
 
@@ -1029,8 +1029,8 @@ pub mod set_intersection {
   }
 
   #[must_use]
-  pub fn get_outputs() -> (Outputs, TransportStream) {
-    let mut outputs = Outputs::default();
+  pub fn get_outputs() -> (OutputPorts, TransportStream) {
+    let mut outputs = OutputPorts::default();
     let mut ports = vec![&mut outputs.keys.port];
     let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)
@@ -1086,7 +1086,7 @@ pub mod set_remove {
   }
 
   #[derive(Debug, Default)]
-  pub struct Outputs {
+  pub struct OutputPorts {
     pub value: ValuePortSender,
   }
 
@@ -1124,8 +1124,8 @@ pub mod set_remove {
   }
 
   #[must_use]
-  pub fn get_outputs() -> (Outputs, TransportStream) {
-    let mut outputs = Outputs::default();
+  pub fn get_outputs() -> (OutputPorts, TransportStream) {
+    let mut outputs = OutputPorts::default();
     let mut ports = vec![&mut outputs.value.port];
     let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)
@@ -1176,7 +1176,7 @@ pub mod set_union {
   }
 
   #[derive(Debug, Default)]
-  pub struct Outputs {
+  pub struct OutputPorts {
     pub keys: KeysPortSender,
   }
 
@@ -1214,8 +1214,8 @@ pub mod set_union {
   }
 
   #[must_use]
-  pub fn get_outputs() -> (Outputs, TransportStream) {
-    let mut outputs = Outputs::default();
+  pub fn get_outputs() -> (OutputPorts, TransportStream) {
+    let mut outputs = OutputPorts::default();
     let mut ports = vec![&mut outputs.keys.port];
     let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)
