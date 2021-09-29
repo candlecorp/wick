@@ -12,11 +12,11 @@ use tokio_stream::{
   StreamExt,
 };
 
-use super::{
-  CLOSE_MESSAGE,
-  SYSTEM_CLOSE_MESSAGE,
+use super::transport_wrapper::TransportWrapper;
+use crate::{
+  MessageSignal,
+  MessageTransport,
 };
-use crate::TransportWrapper;
 
 /// A boxed [Stream] that produces [TransportWrapper]s
 pub type BoxedTransportStream = Pin<Box<dyn Stream<Item = TransportWrapper> + Send>>;
@@ -72,7 +72,7 @@ impl Stream for TransportStream {
     let pinned = Pin::new(&mut *inner);
     match pinned.poll_next(cx) {
       Poll::Ready(Some(msg)) => {
-        if SYSTEM_CLOSE_MESSAGE.eq(&msg) {
+        if msg.is_system_close() {
           Poll::Ready(None)
         } else {
           Poll::Ready(Some(msg))
@@ -87,6 +87,7 @@ impl Stream for TransportStream {
 impl TransportStream {
   /// Collect all the [TransportWrapper] items associated with the passed port.
   pub async fn collect_port<B: FromIterator<TransportWrapper>>(&mut self, port: &str) -> B {
+    let close_message = MessageTransport::Signal(MessageSignal::Done);
     if !self.collected {
       let mut buffer = HashMap::new();
       self.collected = true;
@@ -94,7 +95,7 @@ impl TransportStream {
       for message in all {
         let buff = buffer.entry(message.port.clone()).or_insert_with(Vec::new);
         // If we've collected everything, we don't care about Close messages
-        if CLOSE_MESSAGE.ne(&message.payload) {
+        if close_message.ne(&message.payload) {
           buff.push(message);
         }
       }
@@ -139,7 +140,7 @@ mod tests {
     tx.send(TransportWrapper::new("B", message.clone()))?;
     tx.send(TransportWrapper::new("A", message.clone()))?;
     tx.send(TransportWrapper::new("B", message.clone()))?;
-    tx.send(SYSTEM_CLOSE_MESSAGE.clone())?;
+    tx.send(TransportWrapper::new_system_close())?;
     let mut stream = TransportStream::new(UnboundedReceiverStream::new(rx));
 
     let a_msgs: Vec<_> = stream.collect_port("A").await;

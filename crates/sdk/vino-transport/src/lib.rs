@@ -92,17 +92,23 @@ pub mod error;
 pub mod message_transport;
 
 pub(crate) type Result<T> = std::result::Result<T, error::TransportError>;
+
 /// The crate's Error type.
 pub type Error = error::TransportError;
 
+#[cfg(feature = "stream")]
 pub use message_transport::stream::TransportStream;
+pub use message_transport::transport_json::{
+  JsonError,
+  TransportJson,
+};
+pub use message_transport::transport_map::TransportMap;
+pub use message_transport::transport_wrapper::TransportWrapper;
 pub use message_transport::{
   Failure,
   MessageSignal,
   MessageTransport,
   Success,
-  TransportMap,
-  TransportWrapper,
 };
 
 /// The name of system-originating messages on a port, schematic, or origin.
