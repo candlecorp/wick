@@ -6,4 +6,8 @@ pub enum TestError {
   ReadFailed(String),
   #[error("Could not parse contents as YAML : {0}")]
   ParseFailed(String),
+  #[error("Invocation failed: {0}")]
+  InvocationFailed(String),
+  #[error("Deserialization failed: {0}")]
+  ConversionFailed(String),
 }
