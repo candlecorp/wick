@@ -1,29 +1,59 @@
 #[path = "./runtime_utils/mod.rs"]
 mod utils;
-use tokio_stream::StreamExt;
+use std::collections::HashMap;
+
 use utils::*;
 use vino_entity::Entity;
 use vino_runtime::prelude::TransportWrapper;
+use vino_transport::MessageTransport;
 
 #[test_logger::test(actix_rt::test)]
-async fn bad_wapc_component() -> Result<()> {
-  let (network, _) = init_network_from_yaml("./manifests/v0/bad-wapc-component.yaml").await?;
 
-  let data = hashmap! {
-      "input" => "1234567890",
-  };
+async fn panics() -> Result<()> {
+  let (network, _) = init_network_from_yaml("./manifests/v0/errors/panics.yaml").await?;
 
-  let result = network
-    .request("schematic", Entity::test("bad_wapc_component"), &data)
+  let mut data = HashMap::new();
+  data.insert("input", "input");
+
+  let mut result = network
+    .request("panics", Entity::test("panics"), &data)
     .await?;
 
-  let mut messages: Vec<TransportWrapper> = result.collect().await;
-  println!("{:?}", messages);
+  println!("Result: {:?}", result);
+  let mut messages: Vec<TransportWrapper> = result.collect_port("output").await;
+  assert_eq!(result.buffered_size(), (0, 0));
   assert_eq!(messages.len(), 1);
 
-  let output: TransportWrapper = messages.pop().unwrap();
+  let msg: TransportWrapper = messages.pop().unwrap();
+  println!("Output: {:?}", msg);
+  assert_eq!(
+    msg.payload,
+    MessageTransport::error("Component error: panic")
+  );
+  Ok(())
+}
 
-  println!("output: {:?}", output);
-  assert!(output.payload.is_err());
+#[test_logger::test(actix_rt::test)]
+async fn errors() -> Result<()> {
+  let (network, _) = init_network_from_yaml("./manifests/v0/errors/errors.yaml").await?;
+
+  let mut data = HashMap::new();
+  data.insert("input", "input");
+
+  let mut result = network
+    .request("errors", Entity::test("errors"), &data)
+    .await?;
+
+  println!("Result: {:?}", result);
+  let mut messages: Vec<TransportWrapper> = result.collect_port("output").await;
+  assert_eq!(result.buffered_size(), (0, 0));
+  assert_eq!(messages.len(), 1);
+
+  let msg: TransportWrapper = messages.pop().unwrap();
+  println!("Output: {:?}", msg);
+  assert_eq!(
+    msg.payload,
+    MessageTransport::error("This component will always error")
+  );
   Ok(())
 }

@@ -1,12 +1,14 @@
 ---
 version: 0
 network:
+  providers:
+    - namespace: wapc
+      kind: WaPC
+      reference: ../integration/test-wapc-component/build/test_component_s.wasm
   schematics:
     - name: short_circuit
       providers:
-        - namespace: wapc
-          kind: WaPC
-          reference: ../integration/test-wapc-component/build/test_component_s.wasm
+        - wapc
       instances:
         validate_password:
           id: wapc::validate

@@ -6,13 +6,10 @@ network:
       kind: WaPC
       reference: ../integration/test-wapc-component/build/test_component_s.wasm
   schematics:
-    - name: test
-      providers:
-        - wapc
+    - name: missing_provider
       instances:
-        copy:
-          id: wapc::copy
+        validate:
+          id: wapc::validate
       connections:
-        - <> => copy[input]
-        - "5 => copy[times]"
-        - copy[output] => <>
+        - <> => validate[input]
+        - validate[output] => <>

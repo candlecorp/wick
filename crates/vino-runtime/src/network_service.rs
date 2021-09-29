@@ -6,7 +6,10 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use once_cell::sync::Lazy;
-use parking_lot::Mutex;
+use parking_lot::{
+  Mutex,
+  RwLock,
+};
 use vino_lattice::lattice::Lattice;
 use vino_manifest::Loadable;
 use vino_wascap::KeyPair;
@@ -27,11 +30,13 @@ pub(crate) struct NetworkService {
   lattice: Option<Arc<Lattice>>,
   allow_latest: bool,
   insecure: Vec<String>,
+  providers: HashMap<String, ProviderChannel>,
 }
 
 #[derive(Debug)]
 struct State {
   kp: KeyPair,
+  model: Arc<RwLock<NetworkModel>>,
 }
 
 impl Default for NetworkService {
@@ -46,6 +51,7 @@ impl Default for NetworkService {
       lattice: None,
       allow_latest: false,
       insecure: vec![],
+      providers: HashMap::new(),
     }
   }
 }

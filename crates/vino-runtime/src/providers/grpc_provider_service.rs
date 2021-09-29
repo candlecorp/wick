@@ -125,7 +125,6 @@ impl Handler<InitializeComponents> for GrpcProviderService {
         metadata.insert(
           item.name.clone(),
           ComponentModel {
-            namespace: namespace.clone(),
             name: item.name.clone(),
             inputs: item.inputs.into_iter().map(From::from).collect(),
             outputs: item.outputs.into_iter().map(From::from).collect(),
@@ -284,9 +283,7 @@ mod test {
         .send(Invocation {
           origin: Entity::test("grpc"),
           target: Entity::component_direct("test-component"),
-          msg: transport_map! {
-            "input"=>user_data
-          },
+          msg: vec![("input", user_data)].into(),
           id: get_uuid(),
           tx_id: get_uuid(),
         })

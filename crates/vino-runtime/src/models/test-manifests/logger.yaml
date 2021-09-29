@@ -1,4 +1,3 @@
----
 version: 0
 network:
   providers:
@@ -6,13 +5,12 @@ network:
       kind: WaPC
       reference: ../integration/test-wapc-component/build/test_component_s.wasm
   schematics:
-    - name: test
+    - name: logger
       providers:
         - wapc
       instances:
-        copy:
-          id: wapc::copy
+        logger:
+          id: vino::v0::log
       connections:
-        - <> => copy[input]
-        - "5 => copy[times]"
-        - copy[output] => <>
+        - <> => logger[input]
+        - logger[output] => <>

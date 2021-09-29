@@ -89,12 +89,24 @@ mod macros {
   }
 
   macro_rules! actix_try {
-    ($expr:expr, $errnum: literal $(,)?) => {
+    ($expr:expr $(,)?) => {
       match $expr {
         Ok(val) => val,
         Err(err) => {
-          error!("Unexpected error ({}): {}", $errnum, err);
+          error!("Unexpected error: {}", err);
           return ActorResult::reply(Err(From::from(err)));
+        }
+      }
+    };
+  }
+
+  macro_rules! actix_try_or_err {
+    ($expr:expr, $err:expr $(,)?) => {
+      match $expr {
+        Ok(val) => val,
+        Err(err) => {
+          error!("Unexpected error ({}): {}", $err, err);
+          return ActorResult::reply(Err(From::from($err)));
         }
       }
     };
@@ -149,6 +161,7 @@ pub mod prelude {
   };
 
   pub use crate::dispatch::{
+    DispatchError,
     Invocation,
     InvocationResponse,
   };
@@ -162,6 +175,7 @@ pub mod prelude {
 }
 
 pub(crate) mod dev;
+
 #[cfg(test)]
 pub(crate) mod test;
 
@@ -175,3 +189,6 @@ pub const SCHEMATIC_OUTPUT: &str = "<output>";
 
 /// The reserved namespace for references to internal schematics.
 pub const SELF_NAMESPACE: &str = "self";
+
+/// The reserved namespace for Vino's initial native API.
+pub const VINO_V0_NAMESPACE: &str = "vino::v0";

@@ -36,7 +36,7 @@ pub(crate) mod prelude {
     SchematicDefinition,
   };
   pub(crate) use vino_transport::message_transport::stream::BoxedTransportStream;
-  pub(crate) use vino_transport::message_transport::{
+  pub(crate) use vino_transport::{
     Failure,
     MessageSignal,
     MessageTransport,
@@ -51,6 +51,7 @@ pub(crate) mod prelude {
   pub(crate) use crate::dispatch::inv_error;
   pub(crate) use crate::error::*;
   pub(crate) use crate::models::component_model::*;
+  pub(crate) use crate::models::network_model::*;
   pub(crate) use crate::models::provider_model::*;
   pub(crate) use crate::models::schematic_model::*;
   pub(crate) use crate::models::*;
@@ -79,4 +80,15 @@ where
   T: FromIterator<B>,
 {
   source.iter().map(f).collect()
+}
+
+pub(crate) fn join_comma<A>(source: &[A]) -> String
+where
+  A: Sized + std::fmt::Display,
+{
+  source
+    .iter()
+    .map(|a| a.to_string())
+    .collect::<Vec<_>>()
+    .join(", ")
 }

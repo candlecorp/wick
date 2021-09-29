@@ -3,7 +3,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use vino_lattice::lattice::Lattice;
-use vino_transport::message_transport::TransportMap;
+use vino_transport::TransportMap;
 use vino_wascap::KeyPair;
 
 use crate::dev::prelude::*;
@@ -43,7 +43,8 @@ impl Network {
       allow_latest: self.allow_latest,
       timeout: self.timeout,
     };
-    map_err!(self.addr.send(init).await, InternalError::E5102)??;
+    map_err!(self.addr.send(init).await, InternalError::E5102)?
+      .map_err(|e| RuntimeError::InitializationFailed(e.to_string()))?;
     trace!("NETWORK:INIT:COMPLETE");
     Ok(())
   }

@@ -56,32 +56,6 @@ async fn echo() -> Result<()> {
 }
 
 #[test_logger::test(actix_rt::test)]
-async fn native_component() -> Result<()> {
-  let (network, _) = init_network_from_yaml("./manifests/v0/native-component.yaml").await?;
-
-  let data = hashmap! {
-      "left" => 42,
-      "right" => 302309,
-  };
-
-  let mut result = network
-    .request("native_component", Entity::test("native component"), &data)
-    .await?;
-
-  println!("Result: {:?}", result);
-  let mut messages: Vec<TransportWrapper> = result.collect_port("output").await;
-  assert_eq!(result.buffered_size(), (0, 0));
-  assert_eq!(messages.len(), 1);
-
-  let msg: TransportWrapper = messages.pop().unwrap();
-  println!("Output: {:?}", msg);
-  let output: i64 = msg.payload.try_into()?;
-
-  equals!(output, 42 + 302309 + 302309);
-  Ok(())
-}
-
-#[test_logger::test(actix_rt::test)]
 
 async fn senders() -> Result<()> {
   let (network, _) = init_network_from_yaml("./manifests/v0/senders.yaml").await?;
@@ -149,73 +123,6 @@ async fn nested_schematics() -> Result<()> {
   println!("Output: {:?}", msg);
   let output: String = msg.payload.try_into()?;
   equals!(output, user_data);
-  Ok(())
-}
-
-#[test_logger::test(actix_rt::test)]
-async fn good_wapc_component() -> Result<()> {
-  let (network, _) = init_network_from_yaml("./manifests/v0/wapc-component.yaml").await?;
-
-  let data = hashmap! {
-      "input" => "1234567890",
-  };
-
-  println!("Requesting first run");
-  let mut result = network
-    .request("wapc_component", Entity::test("wapc_component"), &data)
-    .await?;
-
-  let mut messages: Vec<TransportWrapper> = result.collect_port("output").await;
-  assert_eq!(messages.len(), 1);
-
-  let output: TransportWrapper = messages.pop().unwrap();
-  let result: String = output.payload.try_into()?;
-  println!("Output for first run: {:?}", result);
-  equals!(result, "1234567890");
-
-  let data = hashmap! {
-      "input" => "1234",
-  };
-
-  println!("Requesting second run");
-  let mut result = network
-    .request("wapc_component", Entity::test("wapc_component"), &data)
-    .await?;
-
-  let mut messages: Vec<TransportWrapper> = result.collect_port("output").await;
-  assert_eq!(messages.len(), 1);
-
-  let output: TransportWrapper = messages.pop().unwrap();
-
-  equals!(
-    output.payload,
-    MessageTransport::exception("Needs to be longer than 8 characters".to_owned())
-  );
-
-  Ok(())
-}
-
-#[test_logger::test(actix_rt::test)]
-async fn wapc_stream() -> Result<()> {
-  let (network, _) = init_network_from_yaml("./manifests/v0/wapc-stream.yaml").await?;
-
-  let data = hashmap! {
-      "input" => "Hello world",
-  };
-
-  println!("Requesting first run");
-  let mut result = network
-    .request("test", Entity::test("wapc_component"), &data)
-    .await?;
-
-  let messages: Vec<TransportWrapper> = result.collect_port("output").await;
-  // println!("{:#?}", messages);
-  assert_eq!(messages.len(), 5);
-  for msg in messages {
-    let result: String = msg.payload.try_into()?;
-    equals!(result, "Hello world");
-  }
-
   Ok(())
 }
 
@@ -305,41 +212,6 @@ async fn multiple_schematics() -> Result<()> {
   let output: String = messages.pop().unwrap().payload.try_into()?;
   println!("Output: {:?}", output);
   equals!(output, "some string");
-  Ok(())
-}
-
-#[test_logger::test(actix_rt::test)]
-async fn global_providers() -> Result<()> {
-  let (network, _) = init_network_from_yaml("./manifests/v0/global-provider-def.yaml").await?;
-
-  let data = hashmap! {
-      "input" => "some input",
-  };
-
-  let mut result = network
-    .request("first_schematic", Entity::test("global providers"), &data)
-    .await?;
-
-  let mut messages: Vec<TransportWrapper> = result.collect_port("output").await;
-  assert_eq!(messages.len(), 1);
-
-  let output: String = messages.pop().unwrap().payload.try_into()?;
-
-  equals!(output, "some input");
-
-  let data = hashmap! {
-      "input" => "other input",
-  };
-
-  let mut result = network
-    .request("second_schematic", Entity::test("global providers"), &data)
-    .await?;
-  let mut messages: Vec<TransportWrapper> = result.collect_port("output").await;
-  assert_eq!(messages.len(), 1);
-
-  let output: String = messages.pop().unwrap().payload.try_into()?;
-  println!("Output: {:?}", output);
-  equals!(output, "other input");
   Ok(())
 }
 

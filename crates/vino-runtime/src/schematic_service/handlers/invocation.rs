@@ -1,7 +1,6 @@
 use futures::Future;
 use tokio::sync::mpsc::unbounded_channel;
 use tokio_stream::wrappers::UnboundedReceiverStream;
-use vino_transport::message_transport::CLOSE_MESSAGE;
 use vino_transport::TransportMap;
 
 use crate::dev::prelude::*;
@@ -125,7 +124,7 @@ fn make_input_packets(
     messages.push(InputMessage {
       connection: conn.clone(),
       tx_id: tx_id.to_owned(),
-      payload: CLOSE_MESSAGE.clone(),
+      payload: MessageTransport::done(),
     });
   }
 

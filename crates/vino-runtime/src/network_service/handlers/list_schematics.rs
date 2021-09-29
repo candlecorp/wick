@@ -1,5 +1,4 @@
 use crate::dev::prelude::*;
-use crate::schematic_service::handlers::get_signature::GetSignature;
 
 type Result<T> = std::result::Result<T, NetworkError>;
 
@@ -8,32 +7,64 @@ type Result<T> = std::result::Result<T, NetworkError>;
 pub(crate) struct ListSchematics {}
 
 impl Handler<ListSchematics> for NetworkService {
-  type Result = ActorResult<Self, Result<Vec<SchematicSignature>>>;
+  type Result = Result<Vec<SchematicSignature>>;
 
   fn handle(&mut self, _msg: ListSchematics, _ctx: &mut Context<Self>) -> Self::Result {
-    actix_try!(self.ensure_is_started(), 5003);
-    let schematics = self.schematics.clone();
-    let requests = schematics
-      .into_values()
-      .map(|addr| addr.send(GetSignature {}));
-    let task = async move {
-      let mut results = Vec::new();
-      for msg in requests {
-        results.push(msg.await.map_err(|_| InternalError::E5004)?);
-      }
+    self.ensure_is_started()?;
+    let state = self.state.as_ref().unwrap();
+    let resolution_order = {
+      let model = state.model.read();
+      model
+        .get_resolution_order()
+        .map_err(|e| NetworkError::UnresolvableNetwork(e.to_string()))?
+    };
 
-      let mut signatures = vec![];
-      for result in results {
-        if let Err(err) = result {
-          warn!("Error requesting a schematic signature: {}", err);
-          continue;
+    trace!(
+      "NETWORK:RESOLUTION_ORDER:[{}]",
+      join_comma(
+        &resolution_order
+          .iter()
+          .map(|v| format!("[{}]", join_comma(v)))
+          .collect::<Vec<_>>()
+      )
+    );
+
+    let mut signatures = vec![];
+    for batch in resolution_order {
+      for name in batch {
+        trace!("NETWORK:SIGNATURE[{}]:REQUEST", name);
+        let schematic_model = { state.model.read().get_schematic(&name).cloned() };
+
+        match schematic_model {
+          Some(schematic_model) => {
+            let signature = {
+              schematic_model
+                .read()
+                .get_signature()
+                .cloned()
+                .ok_or_else(|| {
+                  NetworkError::UnresolvableNetwork(format!(
+                    "Schematic '{}' does not have a signature",
+                    name
+                  ))
+                })?
+            };
+            let mut scw = state.model.write();
+            scw
+              .update_self_component(name, signature.clone())
+              .map_err(|e| NetworkError::InvalidState(e.to_string()))?;
+            signatures.push(signature);
+          }
+          None => {
+            return Err(NetworkError::InvalidState(format!(
+              "Attempted to resolve schematic '{}' but '{}' is not running.",
+              name, name
+            )));
+          }
         }
-        signatures.push(result.unwrap());
       }
-      Ok(signatures)
     }
-    .into_actor(self);
 
-    ActorResult::reply_async(task)
+    Ok(signatures)
   }
 }

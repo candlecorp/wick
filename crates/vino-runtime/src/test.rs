@@ -2,7 +2,6 @@ pub(crate) mod prelude {
   pub(crate) use anyhow::Result as TestResult;
   pub(crate) use maplit::hashmap;
   pub(crate) use pretty_assertions::assert_eq;
-  pub(crate) use vino_macros::transport_map;
 
   pub(crate) use super::*;
   pub(crate) use crate::dev::prelude::*;
@@ -13,7 +12,6 @@ use std::fs;
 use vino_manifest::{
   HostManifest,
   Loadable,
-  SchematicManifest,
 };
 use vino_wascap::KeyPair;
 
@@ -35,15 +33,6 @@ pub(crate) async fn init_network_from_yaml(path: &str) -> TestResult<(Network, S
 pub(crate) fn load_network_definition(path: &str) -> TestResult<NetworkDefinition> {
   let manifest = HostManifest::from_yaml(&fs::read_to_string(path)?)?;
   let def = NetworkDefinition::from(manifest.network());
-  debug!("Manifest loaded");
-  Ok(def)
-}
-
-pub(crate) fn load_schematic_manifest(path: &str) -> TestResult<SchematicDefinition> {
-  let manifest = SchematicManifest::V0(vino_manifest::v0::SchematicManifest::from_yaml(
-    &fs::read_to_string(path)?,
-  )?);
-  let def = SchematicDefinition::try_from(manifest)?;
   debug!("Manifest loaded");
   Ok(def)
 }

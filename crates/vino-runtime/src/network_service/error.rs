@@ -16,7 +16,7 @@ pub enum NetworkError {
   #[error("Schematic Error: {0}")]
   SchematicError(String),
   #[error(transparent)]
-  ComponentError(#[from] ProviderError),
+  ProviderError(#[from] ProviderError),
   #[error(transparent)]
   InternalError(#[from] InternalError),
   #[error(transparent)]
@@ -27,6 +27,30 @@ pub enum NetworkError {
   CodecError(#[from] vino_codec::Error),
   #[error(transparent)]
   RpcHandlerError(#[from] Box<vino_rpc::Error>),
+  #[error("{0}")]
+  ModelError(String),
+  #[error("{0}")]
+  ValidationError(String),
+  #[error("{0}")]
+  UnresolvableNetwork(String),
+  #[error("Unknown provider '{0}'")]
+  UnknownProvider(String),
+  #[error("Invalid recipient '{0}'")]
+  InvalidRecipient(String),
+  #[error("Invalid state: {0}")]
+  InvalidState(String),
+}
+
+impl From<NetworkModelError> for NetworkError {
+  fn from(e: NetworkModelError) -> Self {
+    NetworkError::ModelError(e.to_string())
+  }
+}
+
+impl From<NetworkValidationError> for NetworkError {
+  fn from(e: NetworkValidationError) -> Self {
+    NetworkError::ValidationError(e.to_string())
+  }
 }
 
 impl From<SchematicError> for NetworkError {

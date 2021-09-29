@@ -70,9 +70,7 @@ mod tests {
   type Result<T> = std::result::Result<T, RuntimeError>;
 
   async fn request_log(provider: &Provider, data: &str) -> Result<String> {
-    let job_payload = transport_map! {
-      "input" => data,
-    };
+    let job_payload = vec![("input", data)].into();
 
     let mut outputs = provider
       .invoke(Entity::schematic("simple"), job_payload)

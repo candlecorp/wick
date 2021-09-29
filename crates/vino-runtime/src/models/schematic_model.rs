@@ -9,6 +9,7 @@ use vino_manifest::schematic_definition::PortReference;
 use vino_provider::native::prelude::*;
 
 use crate::dev::prelude::*;
+use crate::VINO_V0_NAMESPACE;
 
 type Result<T> = std::result::Result<T, SchematicModelError>;
 
@@ -20,9 +21,9 @@ type Namespace = String;
 pub(crate) struct SchematicModel {
   definition: SchematicDefinition,
   instances: HashMap<ComponentInstance, ComponentId>,
-  providers: HashMap<Namespace, ProviderModel>,
+  providers: HashMap<Namespace, Option<ProviderModel>>,
   upstream_links: HashMap<ConnectionTargetDefinition, ConnectionTargetDefinition>,
-  state: Option<LoadedState>,
+  signature: Option<SchematicSignature>,
   raw_ports: HashMap<String, RawPorts>,
 }
 
@@ -36,7 +37,7 @@ struct LoadedState {
 impl TryFrom<SchematicDefinition> for SchematicModel {
   type Error = SchematicModelError;
 
-  fn try_from(definition: SchematicDefinition) -> Result<Self> {
+  fn try_from(mut definition: SchematicDefinition) -> Result<Self> {
     let instances = definition
       .instances
       .iter()
@@ -50,6 +51,14 @@ impl TryFrom<SchematicDefinition> for SchematicModel {
       .map(|connection| (connection.to, connection.from))
       .collect();
 
+    if !definition.providers.contains(&SELF_NAMESPACE.to_owned()) {
+      definition.providers.push(SELF_NAMESPACE.to_owned());
+    }
+
+    if !definition.providers.contains(&VINO_V0_NAMESPACE.to_owned()) {
+      definition.providers.push(VINO_V0_NAMESPACE.to_owned());
+    }
+
     let raw_ports = get_raw_ports(&definition)?;
 
     Ok(Self {
@@ -57,7 +66,7 @@ impl TryFrom<SchematicDefinition> for SchematicModel {
       instances,
       providers: HashMap::new(),
       upstream_links,
-      state: None,
+      signature: None,
       raw_ports,
     })
   }
@@ -93,7 +102,23 @@ impl SchematicModel {
     &self.raw_ports
   }
 
-  fn populate_state(&mut self, omit_namespaces: &[String]) -> Result<()> {
+  fn populate_signature(&mut self, omit_namespaces: &[String]) -> Result<()> {
+    let provider_signatures = self.build_provider_signatures();
+    self.signature = Some(SchematicSignature {
+      name: self.get_name(),
+      providers: provider_signatures,
+      inputs: vec![],
+      outputs: vec![],
+    });
+    let input_signatures = self.infer_schematic_inputs(omit_namespaces)?;
+    let output_signatures = self.infer_schematic_outputs(omit_namespaces)?;
+    let sig = self.signature.as_mut().unwrap();
+    sig.inputs = input_signatures;
+    sig.outputs = output_signatures;
+    Ok(())
+  }
+
+  fn infer_schematic_inputs(&self, omit_namespaces: &[String]) -> Result<Vec<PortSignature>> {
     let inputs = self.get_schematic_inputs();
     let mut input_signatures = vec![];
     let should_skip_namespace = |namespace: &str| omit_namespaces.iter().any(|ns| ns == namespace);
@@ -116,7 +141,7 @@ impl SchematicModel {
       let downstream_instance = downstream.get_instance();
 
       let model = match self.get_component_model_by_instance(downstream_instance) {
-        Some(model) => model,
+        Some((_, model)) => model,
         None => {
           debug!("{} does not have valid model.", downstream_instance);
           continue;
@@ -145,8 +170,14 @@ impl SchematicModel {
         type_string: downstream_signature.type_string.clone(),
       });
     }
+    Ok(input_signatures)
+  }
+
+  fn infer_schematic_outputs(&self, omit_namespaces: &[String]) -> Result<Vec<PortSignature>> {
     let outputs = self.get_schematic_outputs();
     let mut output_signatures = vec![];
+    let should_skip_namespace = |namespace: &str| omit_namespaces.iter().any(|ns| ns == namespace);
+
     for output in outputs {
       let opt = self
         .get_upstream(output)
@@ -155,8 +186,8 @@ impl SchematicModel {
             .get_component_model_by_instance(upstream.get_instance())
             .map(|model| (upstream, model))
         })
-        .and_then(|(upstream, model)| {
-          if should_skip_namespace(&model.namespace) {
+        .and_then(|(upstream, (ns, model))| {
+          if should_skip_namespace(&ns) {
             return None;
           }
           model
@@ -178,32 +209,37 @@ impl SchematicModel {
         type_string: signature,
       });
     }
+    Ok(output_signatures)
+  }
+
+  fn build_provider_signatures(&self) -> Vec<ProviderSignature> {
     let provider_signatures = self
       .providers
       .iter()
-      .map(|(ns, provider_model)| ProviderSignature {
-        name: ns.clone(),
-        components: provider_model
-          .components
-          .values()
-          .map(|model| model.into())
-          .collect(),
+      .filter_map(|(ns, provider_model)| {
+        provider_model.as_ref().map(|model| ProviderSignature {
+          name: ns.clone(),
+          components: model
+            .components
+            .values()
+            .map(|model| model.into())
+            .collect(),
+        })
       })
       .collect();
-    self.state = Some(LoadedState {
-      provider_signatures,
-      schematic_inputs: input_signatures,
-      schematic_outputs: output_signatures,
-    });
-    Ok(())
+    provider_signatures
   }
 
+  // TODO: assess
+  #[allow(unused)]
   pub(crate) fn partial_initialization(&mut self) -> Result<()> {
-    self.populate_state(&["self".to_owned()])
+    trace!("MODEL:SC[{}]:PARTIAL_INIT", self.get_name());
+    self.populate_signature(&["self".to_owned()])
   }
 
-  pub(crate) fn final_initialization(&mut self) -> Result<()> {
-    self.populate_state(&[])
+  pub(crate) fn finalize(&mut self) -> Result<()> {
+    trace!("MODEL:SC[{}]:FINAL_INIT", self.get_name());
+    self.populate_signature(&[])
   }
 
   pub(crate) fn get_upstream(
@@ -219,50 +255,85 @@ impl SchematicModel {
 
   pub(crate) fn has_component(&self, component: &ComponentDefinition) -> bool {
     let name = &component.name;
-    let provider = self.providers.get(&component.namespace);
-    provider.map_or(false, |provider| provider.components.get(name).is_some())
+    match self.providers.get(&component.namespace) {
+      Some(Some(provider)) => provider.components.get(name).is_some(),
+      _ => false,
+    }
   }
 
-  pub(crate) fn commit_providers(&mut self, providers: Vec<ProviderModel>) {
+  #[allow(clippy::ptr_arg)]
+  pub(crate) fn is_provider_allowed(&self, namespace: &String) -> bool {
+    self.definition.providers.contains(namespace)
+  }
+
+  pub(crate) fn update_providers(&mut self, providers: HashMap<String, Option<ProviderModel>>) {
+    let mut culled_list = HashMap::new();
+    for (ns, model) in providers {
+      if self.definition.providers.contains(&ns) {
+        culled_list.insert(ns, model);
+      }
+    }
     trace!(
-      "SC[{}]PROVIDERS:[{}]",
+      "MODEL:SC[{}]:UPDATE_PROVIDERS[{}]",
       self.get_name(),
-      providers
-        .iter()
-        .map(|p| p.namespace.clone())
-        .collect::<Vec<String>>()
-        .join(", "),
+      culled_list.iter().map(|(k, _)| k).join(", ")
     );
-    self.providers = providers
-      .into_iter()
-      .map(|p| (p.namespace.clone(), p))
-      .collect();
-    // ensure state is reset;
-    self.state = None;
+    self.providers = culled_list;
   }
 
-  pub(crate) fn commit_self_provider(&mut self, provider: ProviderModel) {
-    self.providers.insert("self".to_owned(), provider);
-    // ensure state is reset;
-    self.state = None;
+  pub(crate) fn commit_providers<T: AsRef<str>>(
+    &mut self,
+    providers: Vec<(T, Option<ProviderModel>)>,
+  ) -> Result<()> {
+    let mut map = HashMap::new();
+    for (ns, model) in providers {
+      let ns = ns.as_ref().to_owned();
+      map.insert(ns, model);
+    }
+    self.update_providers(map);
+    self.partial_initialization()
   }
 
-  /// Gets a ComponentModel by component instance string.
-  pub(crate) fn get_component_model_by_instance(&self, instance: &str) -> Option<ComponentModel> {
+  #[cfg(test)]
+  pub(crate) fn allow_providers<T: AsRef<str>>(&mut self, namespaces: &[T]) {
+    for ns in namespaces {
+      self.definition.providers.push(ns.as_ref().to_owned());
+    }
+  }
+
+  pub(crate) fn commit_self_provider(&mut self, provider: ProviderModel) -> Result<()> {
+    trace!("MODEL:SC[{}]:UPDATE_SELF", self.get_name());
+    self
+      .providers
+      .insert(SELF_NAMESPACE.to_owned(), Some(provider));
+    self.partial_initialization()
+  }
+
+  /// Gets a [ComponentModel] by component instance string.
+  pub(crate) fn get_component_model_by_instance(
+    &self,
+    instance: &str,
+  ) -> Option<(String, ComponentModel)> {
     self
       .instances
       .get(instance)
       .and_then(|id| self.get_component_model(id))
   }
 
-  /// Gets a ComponentModel by component id.
-  pub(crate) fn get_component_model(&self, id: &str) -> Option<ComponentModel> {
+  /// Gets a [ComponentModel] by component id.
+  pub(crate) fn get_component_model(&self, id: &str) -> Option<(String, ComponentModel)> {
     let (ns, name) = match parse_id(id) {
       Ok(result) => result,
       Err(_) => return None,
     };
-    let provider = self.providers.get(ns);
-    provider.and_then(|provider| provider.components.get(name).cloned())
+    match self.providers.get(ns) {
+      Some(Some(provider)) => provider
+        .components
+        .get(name)
+        .cloned()
+        .map(|model| (ns.to_owned(), model)),
+      _ => None,
+    }
   }
 
   /// Gets a ComponentDefinition by component instance string.
@@ -295,6 +366,10 @@ impl SchematicModel {
       .filter(move |conn| conn.from.matches_instance(instance))
   }
 
+  pub(crate) fn get_signature(&self) -> Option<&SchematicSignature> {
+    self.signature.as_ref()
+  }
+
   pub(crate) fn get_schematic_outputs(&self) -> impl Iterator<Item = &ConnectionTargetDefinition> {
     self
       .definition
@@ -302,14 +377,6 @@ impl SchematicModel {
       .iter()
       .filter(|conn| conn.to.matches_instance(SCHEMATIC_OUTPUT))
       .map(|conn| &conn.to)
-  }
-
-  pub(crate) fn get_schematic_output_signatures(&self) -> Result<&Vec<PortSignature>> {
-    self
-      .state
-      .as_ref()
-      .ok_or(SchematicModelError::ModelNotInitialized)
-      .map(|state| &state.schematic_outputs)
   }
 
   pub(crate) fn get_schematic_inputs(&self) -> Vec<ConnectionTargetDefinition> {
@@ -334,26 +401,10 @@ impl SchematicModel {
     }
   }
 
-  pub(crate) fn get_schematic_input_signatures(&self) -> Result<&Vec<PortSignature>> {
-    self
-      .state
-      .as_ref()
-      .ok_or(SchematicModelError::ModelNotInitialized)
-      .map(|state| &state.schematic_inputs)
-  }
-
-  pub(crate) fn get_provider_signatures(&self) -> Result<&Vec<ProviderSignature>> {
-    self
-      .state
-      .as_ref()
-      .ok_or(SchematicModelError::ModelNotInitialized)
-      .map(|state| &state.provider_signatures)
-  }
-
   pub(crate) fn get_outputs(&self, instance: &str) -> Vec<ConnectionTargetDefinition> {
     match self.instances.get(instance) {
       Some(id) => match self.get_component_model(id) {
-        Some(component) => component
+        Some((_, component)) => component
           .outputs
           .iter()
           .map(|p| {
@@ -422,16 +473,6 @@ impl SchematicModel {
   }
 }
 
-impl From<&ComponentModel> for ComponentSignature {
-  fn from(v: &ComponentModel) -> Self {
-    ComponentSignature {
-      name: v.name.clone(),
-      inputs: v.inputs.clone(),
-      outputs: v.outputs.clone(),
-    }
-  }
-}
-
 #[cfg(test)]
 mod tests {
 
@@ -443,8 +484,8 @@ mod tests {
   #[test_logger::test]
   fn test_basics() -> TestResult<()> {
     let schematic_name = "logger";
-    let def = load_schematic_manifest("./src/models/test-schematics/logger.yaml")?;
-    let model = SchematicModel::try_from(def)?;
+    let def = load_network_definition("./src/models/test-manifests/logger.yaml")?;
+    let model = SchematicModel::try_from(def.schematics[0].clone())?;
     assert_eq!(model.get_name(), schematic_name);
 
     Ok(())

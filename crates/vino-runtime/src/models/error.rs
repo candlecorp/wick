@@ -15,7 +15,9 @@ pub enum ValidationErrorKind {
   ModelError(String),
   #[error("Can not find definition for instance: {0}")]
   InstanceNotFound(String),
-  #[error("Can't find a model for '{0}', is it spelled correctly?")]
+  #[error("'{0}' references provider '{1}' but '{1}' is not in the allowed providers list. Did you forget to add it?")]
+  MissingProvider(String, String),
+  #[error("Can't find details for '{0}'")]
   MissingComponentModel(String),
   #[error("Dangling reference: '{0}'")]
   DanglingReference(String),
@@ -35,6 +37,23 @@ pub enum ValidationErrorKind {
   ),
   #[error("Invalid connection: {0}")]
   InvalidConnection(ConnectionDefinition),
+  #[error(transparent)]
+  InvalidSchematic(InvalidSchematic),
+}
+
+#[derive(Error, Debug, PartialEq)]
+pub struct InvalidSchematic(ValidationError);
+
+impl InvalidSchematic {
+  pub(crate) fn new(e: ValidationError) -> Self {
+    Self(e)
+  }
+}
+
+impl Display for InvalidSchematic {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    write!(f, "{}", self.0)
+  }
 }
 
 #[derive(Error, Debug, PartialEq)]
@@ -69,6 +88,39 @@ impl From<SchematicModelError> for ValidationErrorKind {
   }
 }
 
+#[derive(Error, Debug, PartialEq)]
+#[must_use]
+pub struct NetworkValidationError {
+  name: String,
+  errors: Vec<ValidationErrorKind>,
+}
+
+impl NetworkValidationError {
+  pub fn new(name: &str, errors: Vec<ValidationErrorKind>) -> Self {
+    Self {
+      name: name.to_owned(),
+      errors,
+    }
+  }
+}
+
+impl Display for NetworkValidationError {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    f.write_fmt(format_args!(
+      "Couldn't validate network. {}",
+      join(&self.errors, "\n  ")
+    ))
+  }
+}
+
+#[derive(Error, Debug)]
+pub enum NetworkModelError {
+  #[error(transparent)]
+  SchematicModelError(#[from] SchematicModelError),
+  #[error("Provider '{0}' is not completely initialized. Provider may have failed to load or be in a partial state.")]
+  MissingProviderModel(String),
+}
+
 #[derive(Error, Debug)]
 pub enum SchematicModelError {
   #[error("Schematic model not able to finish initialization")]
@@ -79,6 +131,8 @@ pub enum SchematicModelError {
   ManifestError(#[from] vino_manifest::Error),
   #[error("The reference '{0}' has an incomplete component model. Component may have failed to load or be in a partial state.")]
   MissingComponentModel(String),
+  #[error("Provider '{0}' is not completely initialized. Provider may have failed to load or be in a partial state.")]
+  MissingProviderModel(String),
   #[error(transparent)]
   DefaultsError(#[from] serde_json::error::Error),
 }

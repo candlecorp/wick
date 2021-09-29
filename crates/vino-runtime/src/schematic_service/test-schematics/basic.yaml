@@ -1,7 +1,0 @@
-name: logger
-instances:
-  logger:
-    id: vino::v0::log
-connections:
-  - <> => logger[input]
-  - logger[output] => <>

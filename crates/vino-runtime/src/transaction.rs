@@ -1,7 +1,8 @@
 use std::collections::VecDeque;
 use std::time::Duration;
 
-use vino_transport::message_transport::TransportMap;
+use vino_provider::provider_link::ProviderLink;
+use vino_transport::TransportMap;
 
 use self::executor::SchematicOutput;
 use self::ports::PortStatuses;
@@ -108,20 +109,42 @@ impl Transaction {
   fn check_senders(&mut self) -> VecDeque<TransactionUpdate> {
     let mut messages = VecDeque::new();
 
-    for sender in &self.senders {
+    'sender: for sender in &self.senders {
       if self.ports.is_waiting(&sender.to) {
         self.ports.set_idle(&sender.to);
-        match sender.from.get_data() {
-          Some(data) => {
-            messages.push_back(TransactionUpdate::Update(InputMessage {
-              connection: sender.clone(),
-              payload: data.as_message(),
-              tx_id: self.tx_id.clone(),
-            }));
+        if sender.from.is_nslink() {
+          let def = self
+            .model
+            .read()
+            .get_component_definition(sender.to.get_instance());
+          if def.is_none() {
+            warn!(
+              "Invalid connection: {}. Downstream doesn't exist in schematic model.",
+              sender
+            );
+            continue 'sender;
           }
-          None => {
-            debug!("{}{:?}", self.log_prefix(), sender);
-            error!("Schematic '{}' has a sender defined for connection '{}' but has no data to send. This is likely a bug in the schematic.", self.schematic_name, sender);
+          let def = def.unwrap();
+          let linked_entity = Entity::Provider(sender.from.get_port_owned());
+          let origin_entity = Entity::Component(def.namespace, def.name);
+          messages.push_back(TransactionUpdate::Update(InputMessage {
+            connection: sender.clone(),
+            payload: MessageTransport::success(&ProviderLink::new(linked_entity, origin_entity)),
+            tx_id: self.tx_id.clone(),
+          }));
+        } else {
+          match sender.from.get_data() {
+            Some(data) => {
+              messages.push_back(TransactionUpdate::Update(InputMessage {
+                connection: sender.clone(),
+                payload: data.as_message(),
+                tx_id: self.tx_id.clone(),
+              }));
+            }
+            None => {
+              debug!("{}{:?}", self.log_prefix(), sender);
+              error!("Schematic '{}' has a sender defined for connection '{}' but has no data to send. This is likely a bug in the schematic.", self.schematic_name, sender);
+            }
           }
         }
       }
@@ -143,7 +166,6 @@ impl Transaction {
 
 #[cfg(test)]
 mod tests {
-  use std::collections::HashMap;
   use std::sync::Arc;
   use std::time::Duration;
 
@@ -162,12 +184,7 @@ mod tests {
   fn make_model() -> TestResult<Arc<RwLock<SchematicModel>>> {
     let schematic_name = "Test";
     let mut schematic_def = new_schematic(schematic_name);
-    schematic_def.providers.push(ProviderDefinition {
-      namespace: "test-namespace".to_owned(),
-      kind: ProviderKind::Native,
-      reference: "internal".to_owned(),
-      data: HashMap::new(),
-    });
+    schematic_def.providers.push("test-namespace".to_owned());
     schematic_def.instances.insert(
       "REF_ID_LOGGER".to_owned(),
       ComponentDefinition::new("test-namespace", "log"),

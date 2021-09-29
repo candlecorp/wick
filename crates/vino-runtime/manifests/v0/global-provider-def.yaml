@@ -6,6 +6,8 @@ network:
       reference: ../integration/test-wapc-component/build/test_component_s.wasm
   schematics:
     - name: first_schematic
+      providers:
+        - wapc
       instances:
         validate:
           id: wapc::validate
@@ -23,6 +25,8 @@ network:
             instance: <output>
             port: output
     - name: second_schematic
+      providers:
+        - wapc
       instances:
         validate:
           id: wapc::validate

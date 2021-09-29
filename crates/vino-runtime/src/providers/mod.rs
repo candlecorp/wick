@@ -3,13 +3,16 @@ pub(crate) mod grpc_provider_service;
 pub(crate) mod native_provider_service;
 pub(crate) mod network_provider;
 
+use std::str::FromStr;
 use std::sync::Arc;
 use std::time::Duration;
 
 use vino_lattice::lattice::Lattice;
+use vino_provider_wasm::error::LinkError;
 
 use self::native_provider_service::NativeProviderService;
 use crate::dev::prelude::*;
+use crate::dispatch::network_invoke_sync;
 
 type Result<T> = std::result::Result<T, ProviderError>;
 
@@ -17,11 +20,10 @@ type Result<T> = std::result::Result<T, ProviderError>;
 pub(crate) struct ProviderChannel {
   pub(crate) namespace: String,
   pub(crate) recipient: Recipient<Invocation>,
+  pub(crate) model: Option<ProviderModel>,
 }
 
-pub(crate) async fn initialize_native_provider(
-  namespace: &str,
-) -> Result<(ProviderChannel, ProviderModel)> {
+pub(crate) async fn initialize_native_provider(namespace: &str) -> Result<ProviderChannel> {
   trace!("PROV:NATIVE:NS[{}]:REGISTERING", namespace);
   let arbiter = Arbiter::new();
   let handle = arbiter.handle();
@@ -41,23 +43,18 @@ pub(crate) async fn initialize_native_provider(
     .send(native_provider_service::InitializeComponents {})
     .await??;
 
-  Ok((
-    ProviderChannel {
-      namespace: namespace.to_owned(),
-      recipient: addr.recipient(),
-    },
-    ProviderModel {
-      namespace: namespace.to_owned(),
-      components,
-    },
-  ))
+  Ok(ProviderChannel {
+    namespace: namespace.to_owned(),
+    recipient: addr.recipient(),
+    model: Some(ProviderModel { components }),
+  })
 }
 
 pub(crate) async fn initialize_grpc_provider(
   provider: ProviderDefinition,
   seed: &str,
   namespace: &str,
-) -> Result<(ProviderChannel, ProviderModel)> {
+) -> Result<ProviderChannel> {
   trace!("PROV:GRPC:NS[{}]:REGISTERING", provider.namespace);
   let arbiter = Arbiter::new();
   let handle = arbiter.handle();
@@ -74,16 +71,11 @@ pub(crate) async fn initialize_grpc_provider(
     })
     .await??;
 
-  Ok((
-    ProviderChannel {
-      namespace: namespace.to_owned(),
-      recipient: addr.recipient(),
-    },
-    ProviderModel {
-      namespace: namespace.to_owned(),
-      components,
-    },
-  ))
+  Ok(ProviderChannel {
+    namespace: namespace.to_owned(),
+    recipient: addr.recipient(),
+    model: Some(ProviderModel { components }),
+  })
 }
 
 pub(crate) async fn initialize_wasm_provider(
@@ -91,7 +83,8 @@ pub(crate) async fn initialize_wasm_provider(
   namespace: &str,
   allow_latest: bool,
   allowed_insecure: &[String],
-) -> Result<(ProviderChannel, ProviderModel)> {
+  network_id: String,
+) -> Result<ProviderChannel> {
   trace!("PROV:WASM:NS[{}]:REGISTERING", provider.namespace);
   let arbiter = Arbiter::new();
   let handle = arbiter.handle();
@@ -100,8 +93,29 @@ pub(crate) async fn initialize_wasm_provider(
       .await?;
 
   // TODO need to propagate wasi params from manifest
+  // TODO need to provide a host link callback
   let provider = Box::new(vino_provider_wasm::provider::Provider::try_load(
-    &component, 2, None,
+    &component,
+    2,
+    None,
+    Some(Box::new(move |origin_url, target_url, payload| {
+      debug!(
+        "PROV:WASM:LINK_CALL[{} => {}]:NETWORK[{}]",
+        origin_url, target_url, network_id
+      );
+      let target = Entity::from_str(target_url)?;
+      let origin = Entity::from_str(origin_url)?;
+      if let Entity::Component(origin_ns, _) = &origin {
+        if let Entity::Component(target_ns, _) = &target {
+          if target_ns == origin_ns {
+            return Err(LinkError::Circular(target_ns.clone()));
+          }
+        }
+      }
+      let result = network_invoke_sync(network_id.clone(), origin, target, payload)
+        .map_err(|e| LinkError::CallFailure(e.to_string()))?;
+      Ok(result)
+    })),
   )?);
 
   let addr = NativeProviderService::start_in_arbiter(&handle, |_| NativeProviderService::default());
@@ -116,23 +130,18 @@ pub(crate) async fn initialize_wasm_provider(
     .send(native_provider_service::InitializeComponents {})
     .await??;
 
-  Ok((
-    ProviderChannel {
-      namespace: namespace.to_owned(),
-      recipient: addr.recipient(),
-    },
-    ProviderModel {
-      namespace: namespace.to_owned(),
-      components,
-    },
-  ))
+  Ok(ProviderChannel {
+    namespace: namespace.to_owned(),
+    recipient: addr.recipient(),
+    model: Some(ProviderModel { components }),
+  })
 }
 
 pub(crate) async fn initialize_network_provider<'a>(
   provider: ProviderDefinition,
   namespace: &'a str,
   opts: NetworkOptions<'a>,
-) -> Result<(ProviderChannel, ProviderModel)> {
+) -> Result<ProviderChannel> {
   trace!("PROV:NETWORK:NS[{}]:REGISTERING", provider.namespace);
   let arbiter = Arbiter::new();
   let handle = arbiter.handle();
@@ -162,23 +171,18 @@ pub(crate) async fn initialize_network_provider<'a>(
     .send(native_provider_service::InitializeComponents {})
     .await??;
 
-  Ok((
-    ProviderChannel {
-      namespace: namespace.to_owned(),
-      recipient: addr.recipient(),
-    },
-    ProviderModel {
-      namespace: namespace.to_owned(),
-      components,
-    },
-  ))
+  Ok(ProviderChannel {
+    namespace: namespace.to_owned(),
+    recipient: addr.recipient(),
+    model: Some(ProviderModel { components }),
+  })
 }
 
 pub(crate) async fn initialize_lattice_provider(
   provider: ProviderDefinition,
   namespace: &str,
   lattice: Arc<Lattice>,
-) -> Result<(ProviderChannel, ProviderModel)> {
+) -> Result<ProviderChannel> {
   trace!("PROV:LATTICE:NS[{}]:REGISTERING", provider.namespace);
   let arbiter = Arbiter::new();
   let handle = arbiter.handle();
@@ -198,16 +202,11 @@ pub(crate) async fn initialize_lattice_provider(
     .send(native_provider_service::InitializeComponents {})
     .await??;
 
-  Ok((
-    ProviderChannel {
-      namespace: namespace.to_owned(),
-      recipient: addr.recipient(),
-    },
-    ProviderModel {
-      namespace: namespace.to_owned(),
-      components,
-    },
-  ))
+  Ok(ProviderChannel {
+    namespace: namespace.to_owned(),
+    recipient: addr.recipient(),
+    model: Some(ProviderModel { components }),
+  })
 }
 
 pub(crate) async fn start_network_provider(
@@ -230,17 +229,13 @@ pub(crate) async fn start_network_provider(
 }
 
 pub(crate) async fn create_network_provider_model(
-  namespace: &str,
   addr: Addr<NativeProviderService>,
 ) -> Result<ProviderModel> {
   let components = addr
     .send(native_provider_service::InitializeComponents {})
     .await??;
 
-  Ok(ProviderModel {
-    namespace: namespace.to_owned(),
-    components,
-  })
+  Ok(ProviderModel { components })
 }
 
 pub(crate) struct NetworkOptions<'a> {

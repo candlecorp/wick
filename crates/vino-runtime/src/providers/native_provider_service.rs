@@ -72,7 +72,6 @@ impl Handler<InitializeComponents> for NativeProviderService {
       ActorResult::reply(Err(ProviderError::Uninitialized))
     );
     let provider = clone_box(&*state.provider);
-    let namespace = self.namespace.clone();
 
     let task = async move {
       let list = provider.get_list().await?;
@@ -86,7 +85,6 @@ impl Handler<InitializeComponents> for NativeProviderService {
             metadata.insert(
               component.name.clone(),
               ComponentModel {
-                namespace: namespace.clone(),
                 name: component.name,
                 inputs: component.inputs.into_iter().map(From::from).collect(),
                 outputs: component.outputs.into_iter().map(From::from).collect(),
@@ -97,7 +95,6 @@ impl Handler<InitializeComponents> for NativeProviderService {
             metadata.insert(
               component.name.clone(),
               ComponentModel {
-                namespace: namespace.clone(),
                 name: component.name,
                 inputs: component.inputs.into_iter().map(From::from).collect(),
                 outputs: component.outputs.into_iter().map(From::from).collect(),
@@ -200,7 +197,7 @@ mod test {
 
     let user_data = "This is my payload";
 
-    let payload = transport_map! {"input" => user_data};
+    let payload = vec![("input", user_data)].into();
 
     let response = addr
       .send(Invocation {

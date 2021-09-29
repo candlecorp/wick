@@ -1,5 +1,3 @@
-use vino_transport::message_transport::TransportMap;
-
 use crate::dev::prelude::*;
 use crate::schematic_service::handlers::output_message::OutputMessage;
 use crate::schematic_service::handlers::short_circuit::ShortCircuit;
@@ -20,7 +18,7 @@ impl Handler<ComponentPayload> for SchematicService {
     let instance = msg.instance.clone();
     let tx_id = msg.tx_id;
 
-    let def = actix_try!(get_component_definition(self.get_model(), &instance), 6011);
+    let def = actix_try!(get_component_definition(self.get_model(), &instance));
 
     if msg.payload_map.has_error() {
       let err_payload = msg.payload_map.take_error().unwrap();
@@ -38,7 +36,7 @@ impl Handler<ComponentPayload> for SchematicService {
       msg.payload_map,
     );
 
-    let handler = actix_try!(self.get_provider(&msg.instance), 6010);
+    let handler = actix_try!(self.get_provider(&msg.instance));
 
     let addr = ctx.address();
     let sc_name = self.name.clone();
