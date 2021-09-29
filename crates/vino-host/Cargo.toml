@@ -37,7 +37,6 @@ http = "0.2.4"
 [dev-dependencies]
 logger = { path = "../logger" }
 test-logger = { path = "../test-logger" }
-
 tokio = { version = "1", features = [
   "net",
   "rt-multi-thread",
@@ -46,3 +45,5 @@ tokio = { version = "1", features = [
   "io-util",
   "macros",
 ] }
+anyhow = "1.0.42"
+tokio-stream = "0.1.7"

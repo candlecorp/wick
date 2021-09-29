@@ -102,19 +102,16 @@ mod tests {
 
   use std::path::PathBuf;
 
-  use vino_macros::transport_map;
   use vino_manifest::host_definition::HostDefinition;
   use vino_transport::TransportWrapper;
 
   #[actix::test]
   async fn runs_log_config() -> crate::Result<()> {
-    let host_def = HostDefinition::load_from_file(&PathBuf::from("./manifests/log.vino"))?;
-    let input = transport_map! {
-      "schem_input" => "test-input"
-    };
+    let host_def = HostDefinition::load_from_file(&PathBuf::from("./manifests/logger.yaml"))?;
+    let input = vec![("input", "test-input")].into();
 
     let mut result = super::run(host_def, input).await?;
-    let mut messages: Vec<TransportWrapper> = result.collect_port("schem_output").await;
+    let mut messages: Vec<TransportWrapper> = result.collect_port("output").await;
     let output: String = messages.remove(0).payload.try_into()?;
 
     assert_eq!(output, "test-input");

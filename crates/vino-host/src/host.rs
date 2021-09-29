@@ -1,4 +1,8 @@
-use std::convert::TryInto;
+use std::convert::{
+  TryFrom,
+  TryInto,
+};
+use std::path::PathBuf;
 use std::sync::Arc;
 
 use nkeys::KeyPair;
@@ -274,6 +278,23 @@ impl HostBuilder {
   }
 }
 
+impl TryFrom<PathBuf> for HostBuilder {
+  type Error = Error;
+
+  fn try_from(file: PathBuf) -> Result<Self> {
+    let manifest = HostDefinition::load_from_file(&file)?;
+    Ok(HostBuilder::from_definition(manifest))
+  }
+}
+
+impl TryFrom<&str> for HostBuilder {
+  type Error = Error;
+
+  fn try_from(value: &str) -> Result<Self> {
+    HostBuilder::try_from(PathBuf::from(value))
+  }
+}
+
 #[cfg(test)]
 mod test {
   use std::net::Ipv4Addr;
@@ -283,7 +304,6 @@ mod test {
   use http::Uri;
   use vino_entity::entity::Entity;
   use vino_invocation_server::make_rpc_client;
-  use vino_macros::transport_map;
   use vino_manifest::host_definition::HttpConfig;
   use vino_rpc::convert_transport_map;
   use vino_rpc::rpc::Invocation;
@@ -309,15 +329,13 @@ mod test {
   }
 
   #[test_logger::test(actix::test)]
-  async fn request_from_network() -> Result<()> {
-    let file = PathBuf::from("src/configurations/logger.yaml");
+  async fn basic_test() -> Result<()> {
+    let file = PathBuf::from("manifests/logger.yaml");
     let manifest = HostDefinition::load_from_file(&file)?;
     let mut host = HostBuilder::from_definition(manifest).build();
     host.start().await?;
     let passed_data = "logging output";
-    let data = transport_map! {
-        "input" => passed_data,
-    };
+    let data: TransportMap = vec![("input", passed_data)].into();
     let mut stream = host.request("logger", data).await?;
     let mut messages: Vec<_> = stream.collect_port("output").await;
     assert_eq!(messages.len(), 1);
@@ -332,7 +350,7 @@ mod test {
 
   #[test_logger::test(actix::test)]
   async fn request_from_rpc_server() -> Result<()> {
-    let file = PathBuf::from("src/configurations/logger.yaml");
+    let file = PathBuf::from("manifests/logger.yaml");
     let mut def = HostDefinition::load_from_file(&file)?;
     def.host.rpc = Some(HttpConfig {
       enabled: true,
@@ -346,9 +364,7 @@ mod test {
 
     let mut client = make_rpc_client(Uri::from_str("https://127.0.0.1:54321").unwrap()).await?;
     let passed_data = "logging output";
-    let data = transport_map! {
-        "input" => passed_data,
-    };
+    let data = vec![("input", passed_data)].into();
     let mut response = client
       .invoke(Invocation {
         origin: Entity::test("test").url(),

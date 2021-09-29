@@ -80,12 +80,14 @@ pub(crate) mod macros;
 
 mod error;
 mod host;
+pub mod provider;
 pub mod run;
 
 pub use host::{
   Host,
   HostBuilder,
 };
+pub use provider::Provider;
 
 pub(crate) type Result<T> = std::result::Result<T, error::HostError>;
 pub type Error = error::HostError;
