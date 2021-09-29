@@ -26,7 +26,6 @@ pub enum Entity {
   Schematic(String),
   /// A component or anything that can be invoked like a component.
   Component(String, String),
-  // Component { namespace: String, name: String },
   /// A provider (an entity that hosts a collection of components).
   Provider(String),
   /// A reference to an instance of an entity.
@@ -85,6 +84,7 @@ impl FromStr for Entity {
           Ok(Entity::system(id, msg))
         }
       }
+      "ref" => Ok(Entity::reference(id)),
       "schem" => Ok(Entity::schematic(id)),
       "prov" => {
         if let Some(mut segments) = url.path_segments() {
@@ -152,6 +152,11 @@ impl Entity {
     Self::Client(id.as_ref().to_owned())
   }
 
+  /// Constructor for Entity::Client.
+  pub fn reference<T: AsRef<str>>(id: T) -> Self {
+    Self::Reference(id.as_ref().to_owned())
+  }
+
   /// The URL of the entity.
   #[must_use]
   pub fn url(&self) -> String {
@@ -203,6 +208,9 @@ mod tests {
 
     let entity = Entity::from_str("ofp://host_id.host/")?;
     equals!(entity, Entity::host("host_id"));
+
+    let entity = Entity::from_str("ofp://host_id.ref/")?;
+    equals!(entity, Entity::reference("host_id"));
 
     let entity = Entity::from_str("ofp://client_id.client/")?;
     equals!(entity, Entity::client("client_id"));
