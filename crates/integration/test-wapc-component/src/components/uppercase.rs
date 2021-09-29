@@ -1,6 +1,6 @@
 use crate::generated::uppercase::*;
 
-pub(crate) fn job(input: Inputs, output: Outputs) -> JobResult {
+pub(crate) fn job(input: Inputs, output: OutputPorts) -> JobResult {
   output.output.done(&input.input.to_uppercase())?;
   Ok(())
 }

@@ -32,7 +32,7 @@ impl Error for LengthError {
 static MINIMUM_LENGTH: usize = 8;
 static MAXIMUM_LENGTH: usize = 512;
 
-pub(crate) fn job(input: Inputs, output: Outputs) -> JobResult {
+pub(crate) fn job(input: Inputs, output: OutputPorts) -> JobResult {
   let password = input.input;
   if password.len() < MINIMUM_LENGTH {
     output

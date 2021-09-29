@@ -1,2 +1,2 @@
 mod components;
-mod generated;
+pub mod generated;

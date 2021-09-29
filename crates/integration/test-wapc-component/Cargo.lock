@@ -328,7 +328,6 @@ version = "0.7.0"
 dependencies = [
  "lazy_static",
  "log",
- "vino-transport",
 ]
 
 [[package]]
@@ -347,15 +346,14 @@ dependencies = [
  "serde",
  "vino-codec",
  "vino-entity",
- "vino-macros",
  "vino-packet",
+ "vino-transport",
 ]
 
 [[package]]
 name = "vino-transport"
 version = "0.7.0"
 dependencies = [
- "lazy_static",
  "log",
  "serde",
  "serde-value",
