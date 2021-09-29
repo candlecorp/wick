@@ -2711,9 +2711,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.66"
+version = "1.0.68"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "336b10da19a12ad094b59d870ebde26a45402e5b470add4b5fd03c5048a32127"
+checksum = "0f690853975602e1bfe1ccbf50504d67174e3bcf340f23b5ea9992e0587a52d8"
 dependencies = [
  "itoa",
  "ryu",
@@ -2928,6 +2928,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "tap"
+version = "0.0.0"
+dependencies = [
+ "testanything",
+ "thiserror",
+]
+
+[[package]]
 name = "target-lexicon"
 version = "0.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2973,9 +2981,8 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "log",
- "maplit",
  "thiserror",
- "vino-codec",
+ "vino-interface-authentication",
  "vino-invocation-server",
  "vino-packet",
  "vino-provider",
@@ -2988,9 +2995,8 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "log",
- "maplit",
  "thiserror",
- "vino-codec",
+ "vino-interface-collection",
  "vino-invocation-server",
  "vino-packet",
  "vino-provider",
@@ -3048,6 +3054,12 @@ name = "test_bin"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1937bab04b0bd0f2c19628d3408fb6dd78faf5aa60f4bdb03212507a9b7314ba"
+
+[[package]]
+name = "testanything"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d11c9f0b80f86baebe13b3555c1dc5e1824deae0f710b4df8277b80b707a0a84"
 
 [[package]]
 name = "textwrap"
@@ -3531,6 +3543,39 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5fecdca9a5291cc2b8dcf7dc02453fee791a280f3743cb0905f8822ae463b3fe"
 
 [[package]]
+name = "vino"
+version = "0.1.0"
+dependencies = [
+ "actix",
+ "actix-rt",
+ "atty",
+ "futures",
+ "log",
+ "logger",
+ "maplit",
+ "nkeys",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "structopt",
+ "tap",
+ "test-logger",
+ "test_bin",
+ "thiserror",
+ "tokio",
+ "vino-codec",
+ "vino-host",
+ "vino-loader",
+ "vino-manifest",
+ "vino-packet",
+ "vino-provider-cli",
+ "vino-runtime",
+ "vino-test",
+ "vino-transport",
+ "vino-types",
+]
+
+[[package]]
 name = "vino-authentication-inmemory"
 version = "0.1.0"
 dependencies = [
@@ -3553,36 +3598,6 @@ dependencies = [
  "vino-provider",
  "vino-provider-cli",
  "vino-rpc",
-]
-
-[[package]]
-name = "vino-cli"
-version = "0.1.0"
-dependencies = [
- "actix",
- "actix-rt",
- "atty",
- "futures",
- "log",
- "logger",
- "maplit",
- "nkeys",
- "serde",
- "serde_json",
- "serde_yaml",
- "structopt",
- "test-logger",
- "test_bin",
- "thiserror",
- "tokio",
- "vino-codec",
- "vino-host",
- "vino-manifest",
- "vino-packet",
- "vino-provider-cli",
- "vino-runtime",
- "vino-transport",
- "vino-types",
 ]
 
 [[package]]
@@ -3669,6 +3684,7 @@ version = "0.1.0"
 dependencies = [
  "actix",
  "actix-rt",
+ "anyhow",
  "async-trait",
  "hocon",
  "http 0.2.4",
@@ -3681,6 +3697,7 @@ dependencies = [
  "test-logger",
  "thiserror",
  "tokio",
+ "tokio-stream",
  "vino-codec",
  "vino-entity",
  "vino-invocation-server",
@@ -3782,6 +3799,7 @@ dependencies = [
  "vino-provider",
  "vino-provider-cli",
  "vino-rpc",
+ "vino-transport",
 ]
 
 [[package]]
@@ -3835,7 +3853,6 @@ version = "0.7.0"
 dependencies = [
  "lazy_static",
  "log",
- "vino-transport",
 ]
 
 [[package]]
@@ -3870,7 +3887,6 @@ dependencies = [
  "futures",
  "log",
  "logger",
- "maplit",
  "serde",
  "test-logger",
  "thiserror",
@@ -3905,7 +3921,6 @@ dependencies = [
  "tokio-stream",
  "vino-codec",
  "vino-entity",
- "vino-macros 0.7.0",
  "vino-packet",
  "vino-transport",
  "vino-types",
@@ -3924,6 +3939,7 @@ dependencies = [
  "rand 0.8.4",
  "reqwest",
  "serde",
+ "serde_json",
  "structopt",
  "test-logger",
  "test-vino-provider",
@@ -3938,6 +3954,7 @@ dependencies = [
  "vino-lattice",
  "vino-packet",
  "vino-rpc",
+ "vino-transport",
 ]
 
 [[package]]
@@ -4103,14 +4120,19 @@ dependencies = [
  "serde",
  "serde-value",
  "serde_yaml",
+ "tap",
  "thiserror",
+ "tokio",
+ "tokio-stream",
+ "vino-entity",
+ "vino-rpc",
+ "vino-transport",
 ]
 
 [[package]]
 name = "vino-transport"
 version = "0.7.0"
 dependencies = [
- "lazy_static",
  "log",
  "serde",
  "serde-value",
@@ -4190,6 +4212,7 @@ dependencies = [
  "serde-value",
  "serde_json",
  "structopt",
+ "tap",
  "test-logger",
  "test-vino-provider",
  "thiserror",
