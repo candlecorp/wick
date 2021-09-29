@@ -74,10 +74,7 @@
 // Add exceptions here
 #![allow()]
 
-pub use {
-  log,
-  vino_transport,
-};
+pub use log;
 
 #[macro_export]
 /// Test a condition and if it is false, return the supplied error
@@ -307,44 +304,6 @@ macro_rules! ok_or_bail {
       }
     }
   }};
-}
-
-#[macro_export]
-/// Create a **HashMap** from a list of key-value pairs
-///
-/// ## Example
-///
-/// ```
-/// # use vino_macros::*;
-/// # fn main() {
-///
-/// let mut map = transport_map!{
-///     "input1" => "Hello world",
-///     "other_input" => &64,
-/// };
-///
-/// let first_input: String = map.consume("input1").unwrap();
-/// let second_input: i8 = map.consume("other_input").unwrap();
-/// assert_eq!(first_input, "Hello world");
-/// assert_eq!(second_input, 64);
-/// # }
-/// ```
-macro_rules! transport_map {
-    (@single $($x:tt)*) => (());
-    (@count $($rest:expr),*) => (<[()]>::len(&[$(transport_map!(@single $rest)),*]));
-
-    ($($key:expr => $value:expr,)+) => { transport_map!($($key => $value),+) };
-    ($($key:expr => $value:expr),*) => {
-        {
-            let _cap = transport_map!(@count $($key),*);
-            let mut _map = ::std::collections::HashMap::with_capacity(_cap);
-            $(
-                #[allow(clippy::str_to_string)]
-                let _ = _map.insert($key.to_string(), $crate::vino_transport::MessageTransport::success(&$value.to_owned()));
-            )*
-            $crate::vino_transport::TransportMap::with_map(_map)
-        }
-    };
 }
 
 lazy_static::lazy_static!(
