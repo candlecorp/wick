@@ -5,13 +5,12 @@ edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[features]
+default = ["vino-provider/native"]
+wasm = ["vino-provider/wasm"]
+
 [dependencies]
-vino-transport = { path = "../../../sdk/crates/vino-transport" }
-vino-rpc = { path = "../../vino-rpc" }
-vino-packet = { path = "../../../sdk/crates/vino-packet" }
-vino-provider = { path = "../../../sdk/crates/vino-provider", features = [
-  "native",
-] }
+vino-provider = { path = "../../../sdk/crates/vino-provider" }
 serde = { version = "1.0.118", features = ["derive"] }
 
 [dev-dependencies]

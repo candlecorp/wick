@@ -91,6 +91,30 @@ pub mod delete {
     let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)
   }
+
+  #[cfg(feature = "wasm")]
+  #[derive(Debug)]
+  pub struct Outputs {
+    packets: ProviderOutput,
+  }
+
+  #[cfg(feature = "wasm")]
+  impl Outputs {
+    pub fn key(&mut self) -> Result<PortOutput> {
+      let packets = self
+        .packets
+        .take("key")
+        .ok_or_else(|| ComponentError::new("No packets for port 'key' found"))?;
+      Ok(PortOutput::new("key".to_owned(), packets))
+    }
+  }
+
+  #[cfg(feature = "wasm")]
+  impl From<ProviderOutput> for Outputs {
+    fn from(packets: ProviderOutput) -> Self {
+      Self { packets }
+    }
+  }
 }
 pub mod exists {
   use serde::{
@@ -181,6 +205,30 @@ pub mod exists {
     let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)
   }
+
+  #[cfg(feature = "wasm")]
+  #[derive(Debug)]
+  pub struct Outputs {
+    packets: ProviderOutput,
+  }
+
+  #[cfg(feature = "wasm")]
+  impl Outputs {
+    pub fn exists(&mut self) -> Result<PortOutput> {
+      let packets = self
+        .packets
+        .take("exists")
+        .ok_or_else(|| ComponentError::new("No packets for port 'exists' found"))?;
+      Ok(PortOutput::new("exists".to_owned(), packets))
+    }
+  }
+
+  #[cfg(feature = "wasm")]
+  impl From<ProviderOutput> for Outputs {
+    fn from(packets: ProviderOutput) -> Self {
+      Self { packets }
+    }
+  }
 }
 pub mod key_get {
   use serde::{
@@ -270,6 +318,30 @@ pub mod key_get {
     let mut ports = vec![&mut outputs.value.port];
     let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)
+  }
+
+  #[cfg(feature = "wasm")]
+  #[derive(Debug)]
+  pub struct Outputs {
+    packets: ProviderOutput,
+  }
+
+  #[cfg(feature = "wasm")]
+  impl Outputs {
+    pub fn value(&mut self) -> Result<PortOutput> {
+      let packets = self
+        .packets
+        .take("value")
+        .ok_or_else(|| ComponentError::new("No packets for port 'value' found"))?;
+      Ok(PortOutput::new("value".to_owned(), packets))
+    }
+  }
+
+  #[cfg(feature = "wasm")]
+  impl From<ProviderOutput> for Outputs {
+    fn from(packets: ProviderOutput) -> Self {
+      Self { packets }
+    }
   }
 }
 pub mod key_increment {
@@ -365,6 +437,30 @@ pub mod key_increment {
     let mut ports = vec![&mut outputs.output.port];
     let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)
+  }
+
+  #[cfg(feature = "wasm")]
+  #[derive(Debug)]
+  pub struct Outputs {
+    packets: ProviderOutput,
+  }
+
+  #[cfg(feature = "wasm")]
+  impl Outputs {
+    pub fn output(&mut self) -> Result<PortOutput> {
+      let packets = self
+        .packets
+        .take("output")
+        .ok_or_else(|| ComponentError::new("No packets for port 'output' found"))?;
+      Ok(PortOutput::new("output".to_owned(), packets))
+    }
+  }
+
+  #[cfg(feature = "wasm")]
+  impl From<ProviderOutput> for Outputs {
+    fn from(packets: ProviderOutput) -> Self {
+      Self { packets }
+    }
   }
 }
 pub mod key_set {
@@ -470,6 +566,30 @@ pub mod key_set {
     let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)
   }
+
+  #[cfg(feature = "wasm")]
+  #[derive(Debug)]
+  pub struct Outputs {
+    packets: ProviderOutput,
+  }
+
+  #[cfg(feature = "wasm")]
+  impl Outputs {
+    pub fn key(&mut self) -> Result<PortOutput> {
+      let packets = self
+        .packets
+        .take("key")
+        .ok_or_else(|| ComponentError::new("No packets for port 'key' found"))?;
+      Ok(PortOutput::new("key".to_owned(), packets))
+    }
+  }
+
+  #[cfg(feature = "wasm")]
+  impl From<ProviderOutput> for Outputs {
+    fn from(packets: ProviderOutput) -> Self {
+      Self { packets }
+    }
+  }
 }
 pub mod list_add {
   use serde::{
@@ -564,6 +684,30 @@ pub mod list_add {
     let mut ports = vec![&mut outputs.key.port];
     let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)
+  }
+
+  #[cfg(feature = "wasm")]
+  #[derive(Debug)]
+  pub struct Outputs {
+    packets: ProviderOutput,
+  }
+
+  #[cfg(feature = "wasm")]
+  impl Outputs {
+    pub fn key(&mut self) -> Result<PortOutput> {
+      let packets = self
+        .packets
+        .take("key")
+        .ok_or_else(|| ComponentError::new("No packets for port 'key' found"))?;
+      Ok(PortOutput::new("key".to_owned(), packets))
+    }
+  }
+
+  #[cfg(feature = "wasm")]
+  impl From<ProviderOutput> for Outputs {
+    fn from(packets: ProviderOutput) -> Self {
+      Self { packets }
+    }
   }
 }
 pub mod list_range {
@@ -665,6 +809,30 @@ pub mod list_range {
     let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)
   }
+
+  #[cfg(feature = "wasm")]
+  #[derive(Debug)]
+  pub struct Outputs {
+    packets: ProviderOutput,
+  }
+
+  #[cfg(feature = "wasm")]
+  impl Outputs {
+    pub fn values(&mut self) -> Result<PortOutput> {
+      let packets = self
+        .packets
+        .take("values")
+        .ok_or_else(|| ComponentError::new("No packets for port 'values' found"))?;
+      Ok(PortOutput::new("values".to_owned(), packets))
+    }
+  }
+
+  #[cfg(feature = "wasm")]
+  impl From<ProviderOutput> for Outputs {
+    fn from(packets: ProviderOutput) -> Self {
+      Self { packets }
+    }
+  }
 }
 pub mod list_remove {
   use serde::{
@@ -759,6 +927,30 @@ pub mod list_remove {
     let mut ports = vec![&mut outputs.value.port];
     let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)
+  }
+
+  #[cfg(feature = "wasm")]
+  #[derive(Debug)]
+  pub struct Outputs {
+    packets: ProviderOutput,
+  }
+
+  #[cfg(feature = "wasm")]
+  impl Outputs {
+    pub fn value(&mut self) -> Result<PortOutput> {
+      let packets = self
+        .packets
+        .take("value")
+        .ok_or_else(|| ComponentError::new("No packets for port 'value' found"))?;
+      Ok(PortOutput::new("value".to_owned(), packets))
+    }
+  }
+
+  #[cfg(feature = "wasm")]
+  impl From<ProviderOutput> for Outputs {
+    fn from(packets: ProviderOutput) -> Self {
+      Self { packets }
+    }
   }
 }
 pub mod set_add {
@@ -855,6 +1047,30 @@ pub mod set_add {
     let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)
   }
+
+  #[cfg(feature = "wasm")]
+  #[derive(Debug)]
+  pub struct Outputs {
+    packets: ProviderOutput,
+  }
+
+  #[cfg(feature = "wasm")]
+  impl Outputs {
+    pub fn key(&mut self) -> Result<PortOutput> {
+      let packets = self
+        .packets
+        .take("key")
+        .ok_or_else(|| ComponentError::new("No packets for port 'key' found"))?;
+      Ok(PortOutput::new("key".to_owned(), packets))
+    }
+  }
+
+  #[cfg(feature = "wasm")]
+  impl From<ProviderOutput> for Outputs {
+    fn from(packets: ProviderOutput) -> Self {
+      Self { packets }
+    }
+  }
 }
 pub mod set_get {
   use serde::{
@@ -945,6 +1161,30 @@ pub mod set_get {
     let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)
   }
+
+  #[cfg(feature = "wasm")]
+  #[derive(Debug)]
+  pub struct Outputs {
+    packets: ProviderOutput,
+  }
+
+  #[cfg(feature = "wasm")]
+  impl Outputs {
+    pub fn values(&mut self) -> Result<PortOutput> {
+      let packets = self
+        .packets
+        .take("values")
+        .ok_or_else(|| ComponentError::new("No packets for port 'values' found"))?;
+      Ok(PortOutput::new("values".to_owned(), packets))
+    }
+  }
+
+  #[cfg(feature = "wasm")]
+  impl From<ProviderOutput> for Outputs {
+    fn from(packets: ProviderOutput) -> Self {
+      Self { packets }
+    }
+  }
 }
 pub mod set_intersection {
   use serde::{
@@ -1034,6 +1274,30 @@ pub mod set_intersection {
     let mut ports = vec![&mut outputs.keys.port];
     let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)
+  }
+
+  #[cfg(feature = "wasm")]
+  #[derive(Debug)]
+  pub struct Outputs {
+    packets: ProviderOutput,
+  }
+
+  #[cfg(feature = "wasm")]
+  impl Outputs {
+    pub fn keys(&mut self) -> Result<PortOutput> {
+      let packets = self
+        .packets
+        .take("keys")
+        .ok_or_else(|| ComponentError::new("No packets for port 'keys' found"))?;
+      Ok(PortOutput::new("keys".to_owned(), packets))
+    }
+  }
+
+  #[cfg(feature = "wasm")]
+  impl From<ProviderOutput> for Outputs {
+    fn from(packets: ProviderOutput) -> Self {
+      Self { packets }
+    }
   }
 }
 pub mod set_remove {
@@ -1130,6 +1394,30 @@ pub mod set_remove {
     let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)
   }
+
+  #[cfg(feature = "wasm")]
+  #[derive(Debug)]
+  pub struct Outputs {
+    packets: ProviderOutput,
+  }
+
+  #[cfg(feature = "wasm")]
+  impl Outputs {
+    pub fn value(&mut self) -> Result<PortOutput> {
+      let packets = self
+        .packets
+        .take("value")
+        .ok_or_else(|| ComponentError::new("No packets for port 'value' found"))?;
+      Ok(PortOutput::new("value".to_owned(), packets))
+    }
+  }
+
+  #[cfg(feature = "wasm")]
+  impl From<ProviderOutput> for Outputs {
+    fn from(packets: ProviderOutput) -> Self {
+      Self { packets }
+    }
+  }
 }
 pub mod set_union {
   use serde::{
@@ -1219,5 +1507,29 @@ pub mod set_union {
     let mut ports = vec![&mut outputs.keys.port];
     let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)
+  }
+
+  #[cfg(feature = "wasm")]
+  #[derive(Debug)]
+  pub struct Outputs {
+    packets: ProviderOutput,
+  }
+
+  #[cfg(feature = "wasm")]
+  impl Outputs {
+    pub fn keys(&mut self) -> Result<PortOutput> {
+      let packets = self
+        .packets
+        .take("keys")
+        .ok_or_else(|| ComponentError::new("No packets for port 'keys' found"))?;
+      Ok(PortOutput::new("keys".to_owned(), packets))
+    }
+  }
+
+  #[cfg(feature = "wasm")]
+  impl From<ProviderOutput> for Outputs {
+    fn from(packets: ProviderOutput) -> Self {
+      Self { packets }
+    }
   }
 }

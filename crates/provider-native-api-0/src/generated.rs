@@ -184,6 +184,30 @@ pub(crate) mod add {
     let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)
   }
+
+  #[cfg(feature = "wasm")]
+  #[derive(Debug)]
+  pub struct Outputs {
+    packets: ProviderOutput,
+  }
+
+  #[cfg(feature = "wasm")]
+  impl Outputs {
+    pub fn output(&mut self) -> Result<PortOutput> {
+      let packets = self
+        .packets
+        .take("output")
+        .ok_or_else(|| ComponentError::new("No packets for port 'output' found"))?;
+      Ok(PortOutput::new("output".to_owned(), packets))
+    }
+  }
+
+  #[cfg(feature = "wasm")]
+  impl From<ProviderOutput> for Outputs {
+    fn from(packets: ProviderOutput) -> Self {
+      Self { packets }
+    }
+  }
 }
 pub(crate) mod concatenate {
   #![allow(unused, unreachable_pub)]
@@ -307,6 +331,30 @@ pub(crate) mod concatenate {
     let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)
   }
+
+  #[cfg(feature = "wasm")]
+  #[derive(Debug)]
+  pub struct Outputs {
+    packets: ProviderOutput,
+  }
+
+  #[cfg(feature = "wasm")]
+  impl Outputs {
+    pub fn output(&mut self) -> Result<PortOutput> {
+      let packets = self
+        .packets
+        .take("output")
+        .ok_or_else(|| ComponentError::new("No packets for port 'output' found"))?;
+      Ok(PortOutput::new("output".to_owned(), packets))
+    }
+  }
+
+  #[cfg(feature = "wasm")]
+  impl From<ProviderOutput> for Outputs {
+    fn from(packets: ProviderOutput) -> Self {
+      Self { packets }
+    }
+  }
 }
 pub(crate) mod error {
   #![allow(unused, unreachable_pub)]
@@ -422,6 +470,30 @@ pub(crate) mod error {
     let mut ports = vec![&mut outputs.output.port];
     let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)
+  }
+
+  #[cfg(feature = "wasm")]
+  #[derive(Debug)]
+  pub struct Outputs {
+    packets: ProviderOutput,
+  }
+
+  #[cfg(feature = "wasm")]
+  impl Outputs {
+    pub fn output(&mut self) -> Result<PortOutput> {
+      let packets = self
+        .packets
+        .take("output")
+        .ok_or_else(|| ComponentError::new("No packets for port 'output' found"))?;
+      Ok(PortOutput::new("output".to_owned(), packets))
+    }
+  }
+
+  #[cfg(feature = "wasm")]
+  impl From<ProviderOutput> for Outputs {
+    fn from(packets: ProviderOutput) -> Self {
+      Self { packets }
+    }
   }
 }
 pub(crate) mod gate {
@@ -559,6 +631,30 @@ pub(crate) mod gate {
     let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)
   }
+
+  #[cfg(feature = "wasm")]
+  #[derive(Debug)]
+  pub struct Outputs {
+    packets: ProviderOutput,
+  }
+
+  #[cfg(feature = "wasm")]
+  impl Outputs {
+    pub fn output(&mut self) -> Result<PortOutput> {
+      let packets = self
+        .packets
+        .take("output")
+        .ok_or_else(|| ComponentError::new("No packets for port 'output' found"))?;
+      Ok(PortOutput::new("output".to_owned(), packets))
+    }
+  }
+
+  #[cfg(feature = "wasm")]
+  impl From<ProviderOutput> for Outputs {
+    fn from(packets: ProviderOutput) -> Self {
+      Self { packets }
+    }
+  }
 }
 pub(crate) mod log {
   #![allow(unused, unreachable_pub)]
@@ -674,6 +770,30 @@ pub(crate) mod log {
     let mut ports = vec![&mut outputs.output.port];
     let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)
+  }
+
+  #[cfg(feature = "wasm")]
+  #[derive(Debug)]
+  pub struct Outputs {
+    packets: ProviderOutput,
+  }
+
+  #[cfg(feature = "wasm")]
+  impl Outputs {
+    pub fn output(&mut self) -> Result<PortOutput> {
+      let packets = self
+        .packets
+        .take("output")
+        .ok_or_else(|| ComponentError::new("No packets for port 'output' found"))?;
+      Ok(PortOutput::new("output".to_owned(), packets))
+    }
+  }
+
+  #[cfg(feature = "wasm")]
+  impl From<ProviderOutput> for Outputs {
+    fn from(packets: ProviderOutput) -> Self {
+      Self { packets }
+    }
   }
 }
 pub(crate) mod negate {
@@ -791,6 +911,30 @@ pub(crate) mod negate {
     let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)
   }
+
+  #[cfg(feature = "wasm")]
+  #[derive(Debug)]
+  pub struct Outputs {
+    packets: ProviderOutput,
+  }
+
+  #[cfg(feature = "wasm")]
+  impl Outputs {
+    pub fn output(&mut self) -> Result<PortOutput> {
+      let packets = self
+        .packets
+        .take("output")
+        .ok_or_else(|| ComponentError::new("No packets for port 'output' found"))?;
+      Ok(PortOutput::new("output".to_owned(), packets))
+    }
+  }
+
+  #[cfg(feature = "wasm")]
+  impl From<ProviderOutput> for Outputs {
+    fn from(packets: ProviderOutput) -> Self {
+      Self { packets }
+    }
+  }
 }
 pub(crate) mod panic {
   #![allow(unused, unreachable_pub)]
@@ -906,6 +1050,30 @@ pub(crate) mod panic {
     let mut ports = vec![&mut outputs.output.port];
     let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)
+  }
+
+  #[cfg(feature = "wasm")]
+  #[derive(Debug)]
+  pub struct Outputs {
+    packets: ProviderOutput,
+  }
+
+  #[cfg(feature = "wasm")]
+  impl Outputs {
+    pub fn output(&mut self) -> Result<PortOutput> {
+      let packets = self
+        .packets
+        .take("output")
+        .ok_or_else(|| ComponentError::new("No packets for port 'output' found"))?;
+      Ok(PortOutput::new("output".to_owned(), packets))
+    }
+  }
+
+  #[cfg(feature = "wasm")]
+  impl From<ProviderOutput> for Outputs {
+    fn from(packets: ProviderOutput) -> Self {
+      Self { packets }
+    }
   }
 }
 pub(crate) mod short_circuit {
@@ -1025,6 +1193,30 @@ pub(crate) mod short_circuit {
     let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)
   }
+
+  #[cfg(feature = "wasm")]
+  #[derive(Debug)]
+  pub struct Outputs {
+    packets: ProviderOutput,
+  }
+
+  #[cfg(feature = "wasm")]
+  impl Outputs {
+    pub fn output(&mut self) -> Result<PortOutput> {
+      let packets = self
+        .packets
+        .take("output")
+        .ok_or_else(|| ComponentError::new("No packets for port 'output' found"))?;
+      Ok(PortOutput::new("output".to_owned(), packets))
+    }
+  }
+
+  #[cfg(feature = "wasm")]
+  impl From<ProviderOutput> for Outputs {
+    fn from(packets: ProviderOutput) -> Self {
+      Self { packets }
+    }
+  }
 }
 pub(crate) mod string_to_bytes {
   #![allow(unused, unreachable_pub)]
@@ -1143,6 +1335,30 @@ pub(crate) mod string_to_bytes {
     let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)
   }
+
+  #[cfg(feature = "wasm")]
+  #[derive(Debug)]
+  pub struct Outputs {
+    packets: ProviderOutput,
+  }
+
+  #[cfg(feature = "wasm")]
+  impl Outputs {
+    pub fn output(&mut self) -> Result<PortOutput> {
+      let packets = self
+        .packets
+        .take("output")
+        .ok_or_else(|| ComponentError::new("No packets for port 'output' found"))?;
+      Ok(PortOutput::new("output".to_owned(), packets))
+    }
+  }
+
+  #[cfg(feature = "wasm")]
+  impl From<ProviderOutput> for Outputs {
+    fn from(packets: ProviderOutput) -> Self {
+      Self { packets }
+    }
+  }
 }
 pub(crate) mod uuid {
   #![allow(unused, unreachable_pub)]
@@ -1251,5 +1467,29 @@ pub(crate) mod uuid {
     let mut ports = vec![&mut outputs.output.port];
     let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)
+  }
+
+  #[cfg(feature = "wasm")]
+  #[derive(Debug)]
+  pub struct Outputs {
+    packets: ProviderOutput,
+  }
+
+  #[cfg(feature = "wasm")]
+  impl Outputs {
+    pub fn output(&mut self) -> Result<PortOutput> {
+      let packets = self
+        .packets
+        .take("output")
+        .ok_or_else(|| ComponentError::new("No packets for port 'output' found"))?;
+      Ok(PortOutput::new("output".to_owned(), packets))
+    }
+  }
+
+  #[cfg(feature = "wasm")]
+  impl From<ProviderOutput> for Outputs {
+    fn from(packets: ProviderOutput) -> Self {
+      Self { packets }
+    }
   }
 }

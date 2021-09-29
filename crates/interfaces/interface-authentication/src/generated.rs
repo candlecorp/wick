@@ -140,6 +140,37 @@ pub mod authenticate {
     let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)
   }
+
+  #[cfg(feature = "wasm")]
+  #[derive(Debug)]
+  pub struct Outputs {
+    packets: ProviderOutput,
+  }
+
+  #[cfg(feature = "wasm")]
+  impl Outputs {
+    pub fn session(&mut self) -> Result<PortOutput> {
+      let packets = self
+        .packets
+        .take("session")
+        .ok_or_else(|| ComponentError::new("No packets for port 'session' found"))?;
+      Ok(PortOutput::new("session".to_owned(), packets))
+    }
+    pub fn user_id(&mut self) -> Result<PortOutput> {
+      let packets = self
+        .packets
+        .take("user_id")
+        .ok_or_else(|| ComponentError::new("No packets for port 'user_id' found"))?;
+      Ok(PortOutput::new("user_id".to_owned(), packets))
+    }
+  }
+
+  #[cfg(feature = "wasm")]
+  impl From<ProviderOutput> for Outputs {
+    fn from(packets: ProviderOutput) -> Self {
+      Self { packets }
+    }
+  }
 }
 pub mod create_user {
   use serde::{
@@ -253,6 +284,30 @@ pub mod create_user {
     let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)
   }
+
+  #[cfg(feature = "wasm")]
+  #[derive(Debug)]
+  pub struct Outputs {
+    packets: ProviderOutput,
+  }
+
+  #[cfg(feature = "wasm")]
+  impl Outputs {
+    pub fn user_id(&mut self) -> Result<PortOutput> {
+      let packets = self
+        .packets
+        .take("user_id")
+        .ok_or_else(|| ComponentError::new("No packets for port 'user_id' found"))?;
+      Ok(PortOutput::new("user_id".to_owned(), packets))
+    }
+  }
+
+  #[cfg(feature = "wasm")]
+  impl From<ProviderOutput> for Outputs {
+    fn from(packets: ProviderOutput) -> Self {
+      Self { packets }
+    }
+  }
 }
 pub mod get_id {
   use serde::{
@@ -345,6 +400,30 @@ pub mod get_id {
     let mut ports = vec![&mut outputs.user_id.port];
     let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)
+  }
+
+  #[cfg(feature = "wasm")]
+  #[derive(Debug)]
+  pub struct Outputs {
+    packets: ProviderOutput,
+  }
+
+  #[cfg(feature = "wasm")]
+  impl Outputs {
+    pub fn user_id(&mut self) -> Result<PortOutput> {
+      let packets = self
+        .packets
+        .take("user_id")
+        .ok_or_else(|| ComponentError::new("No packets for port 'user_id' found"))?;
+      Ok(PortOutput::new("user_id".to_owned(), packets))
+    }
+  }
+
+  #[cfg(feature = "wasm")]
+  impl From<ProviderOutput> for Outputs {
+    fn from(packets: ProviderOutput) -> Self {
+      Self { packets }
+    }
   }
 }
 pub mod has_permission {
@@ -447,6 +526,30 @@ pub mod has_permission {
     let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)
   }
+
+  #[cfg(feature = "wasm")]
+  #[derive(Debug)]
+  pub struct Outputs {
+    packets: ProviderOutput,
+  }
+
+  #[cfg(feature = "wasm")]
+  impl Outputs {
+    pub fn user_id(&mut self) -> Result<PortOutput> {
+      let packets = self
+        .packets
+        .take("user_id")
+        .ok_or_else(|| ComponentError::new("No packets for port 'user_id' found"))?;
+      Ok(PortOutput::new("user_id".to_owned(), packets))
+    }
+  }
+
+  #[cfg(feature = "wasm")]
+  impl From<ProviderOutput> for Outputs {
+    fn from(packets: ProviderOutput) -> Self {
+      Self { packets }
+    }
+  }
 }
 pub mod list_permissions {
   use serde::{
@@ -539,6 +642,30 @@ pub mod list_permissions {
     let mut ports = vec![&mut outputs.permissions.port];
     let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)
+  }
+
+  #[cfg(feature = "wasm")]
+  #[derive(Debug)]
+  pub struct Outputs {
+    packets: ProviderOutput,
+  }
+
+  #[cfg(feature = "wasm")]
+  impl Outputs {
+    pub fn permissions(&mut self) -> Result<PortOutput> {
+      let packets = self
+        .packets
+        .take("permissions")
+        .ok_or_else(|| ComponentError::new("No packets for port 'permissions' found"))?;
+      Ok(PortOutput::new("permissions".to_owned(), packets))
+    }
+  }
+
+  #[cfg(feature = "wasm")]
+  impl From<ProviderOutput> for Outputs {
+    fn from(packets: ProviderOutput) -> Self {
+      Self { packets }
+    }
   }
 }
 pub mod list_users {
@@ -638,6 +765,30 @@ pub mod list_users {
     let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)
   }
+
+  #[cfg(feature = "wasm")]
+  #[derive(Debug)]
+  pub struct Outputs {
+    packets: ProviderOutput,
+  }
+
+  #[cfg(feature = "wasm")]
+  impl Outputs {
+    pub fn users(&mut self) -> Result<PortOutput> {
+      let packets = self
+        .packets
+        .take("users")
+        .ok_or_else(|| ComponentError::new("No packets for port 'users' found"))?;
+      Ok(PortOutput::new("users".to_owned(), packets))
+    }
+  }
+
+  #[cfg(feature = "wasm")]
+  impl From<ProviderOutput> for Outputs {
+    fn from(packets: ProviderOutput) -> Self {
+      Self { packets }
+    }
+  }
 }
 pub mod remove_user {
   use serde::{
@@ -730,6 +881,30 @@ pub mod remove_user {
     let mut ports = vec![&mut outputs.user_id.port];
     let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)
+  }
+
+  #[cfg(feature = "wasm")]
+  #[derive(Debug)]
+  pub struct Outputs {
+    packets: ProviderOutput,
+  }
+
+  #[cfg(feature = "wasm")]
+  impl Outputs {
+    pub fn user_id(&mut self) -> Result<PortOutput> {
+      let packets = self
+        .packets
+        .take("user_id")
+        .ok_or_else(|| ComponentError::new("No packets for port 'user_id' found"))?;
+      Ok(PortOutput::new("user_id".to_owned(), packets))
+    }
+  }
+
+  #[cfg(feature = "wasm")]
+  impl From<ProviderOutput> for Outputs {
+    fn from(packets: ProviderOutput) -> Self {
+      Self { packets }
+    }
   }
 }
 pub mod update_permissions {
@@ -832,6 +1007,30 @@ pub mod update_permissions {
     let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)
   }
+
+  #[cfg(feature = "wasm")]
+  #[derive(Debug)]
+  pub struct Outputs {
+    packets: ProviderOutput,
+  }
+
+  #[cfg(feature = "wasm")]
+  impl Outputs {
+    pub fn permissions(&mut self) -> Result<PortOutput> {
+      let packets = self
+        .packets
+        .take("permissions")
+        .ok_or_else(|| ComponentError::new("No packets for port 'permissions' found"))?;
+      Ok(PortOutput::new("permissions".to_owned(), packets))
+    }
+  }
+
+  #[cfg(feature = "wasm")]
+  impl From<ProviderOutput> for Outputs {
+    fn from(packets: ProviderOutput) -> Self {
+      Self { packets }
+    }
+  }
 }
 pub mod validate_session {
   use serde::{
@@ -924,5 +1123,29 @@ pub mod validate_session {
     let mut ports = vec![&mut outputs.user_id.port];
     let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)
+  }
+
+  #[cfg(feature = "wasm")]
+  #[derive(Debug)]
+  pub struct Outputs {
+    packets: ProviderOutput,
+  }
+
+  #[cfg(feature = "wasm")]
+  impl Outputs {
+    pub fn user_id(&mut self) -> Result<PortOutput> {
+      let packets = self
+        .packets
+        .take("user_id")
+        .ok_or_else(|| ComponentError::new("No packets for port 'user_id' found"))?;
+      Ok(PortOutput::new("user_id".to_owned(), packets))
+    }
+  }
+
+  #[cfg(feature = "wasm")]
+  impl From<ProviderOutput> for Outputs {
+    fn from(packets: ProviderOutput) -> Self {
+      Self { packets }
+    }
   }
 }

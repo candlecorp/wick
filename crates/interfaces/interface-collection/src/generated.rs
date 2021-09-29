@@ -114,6 +114,30 @@ pub mod add_item {
     let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)
   }
+
+  #[cfg(feature = "wasm")]
+  #[derive(Debug)]
+  pub struct Outputs {
+    packets: ProviderOutput,
+  }
+
+  #[cfg(feature = "wasm")]
+  impl Outputs {
+    pub fn document_id(&mut self) -> Result<PortOutput> {
+      let packets = self
+        .packets
+        .take("document_id")
+        .ok_or_else(|| ComponentError::new("No packets for port 'document_id' found"))?;
+      Ok(PortOutput::new("document_id".to_owned(), packets))
+    }
+  }
+
+  #[cfg(feature = "wasm")]
+  impl From<ProviderOutput> for Outputs {
+    fn from(packets: ProviderOutput) -> Self {
+      Self { packets }
+    }
+  }
 }
 pub mod get_item {
   use serde::{
@@ -215,6 +239,30 @@ pub mod get_item {
     let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)
   }
+
+  #[cfg(feature = "wasm")]
+  #[derive(Debug)]
+  pub struct Outputs {
+    packets: ProviderOutput,
+  }
+
+  #[cfg(feature = "wasm")]
+  impl Outputs {
+    pub fn document(&mut self) -> Result<PortOutput> {
+      let packets = self
+        .packets
+        .take("document")
+        .ok_or_else(|| ComponentError::new("No packets for port 'document' found"))?;
+      Ok(PortOutput::new("document".to_owned(), packets))
+    }
+  }
+
+  #[cfg(feature = "wasm")]
+  impl From<ProviderOutput> for Outputs {
+    fn from(packets: ProviderOutput) -> Self {
+      Self { packets }
+    }
+  }
 }
 pub mod list_items {
   use serde::{
@@ -308,6 +356,30 @@ pub mod list_items {
     let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)
   }
+
+  #[cfg(feature = "wasm")]
+  #[derive(Debug)]
+  pub struct Outputs {
+    packets: ProviderOutput,
+  }
+
+  #[cfg(feature = "wasm")]
+  impl Outputs {
+    pub fn document_ids(&mut self) -> Result<PortOutput> {
+      let packets = self
+        .packets
+        .take("document_ids")
+        .ok_or_else(|| ComponentError::new("No packets for port 'document_ids' found"))?;
+      Ok(PortOutput::new("document_ids".to_owned(), packets))
+    }
+  }
+
+  #[cfg(feature = "wasm")]
+  impl From<ProviderOutput> for Outputs {
+    fn from(packets: ProviderOutput) -> Self {
+      Self { packets }
+    }
+  }
 }
 pub mod rm_item {
   use serde::{
@@ -380,5 +452,21 @@ pub mod rm_item {
     let mut ports = vec![];
     let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)
+  }
+
+  #[cfg(feature = "wasm")]
+  #[derive(Debug)]
+  pub struct Outputs {
+    packets: ProviderOutput,
+  }
+
+  #[cfg(feature = "wasm")]
+  impl Outputs {}
+
+  #[cfg(feature = "wasm")]
+  impl From<ProviderOutput> for Outputs {
+    fn from(packets: ProviderOutput) -> Self {
+      Self { packets }
+    }
   }
 }
