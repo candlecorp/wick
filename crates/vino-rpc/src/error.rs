@@ -36,7 +36,14 @@ pub enum RpcError {
 
   /// General Error.
   #[error("General error : {0}")]
-  Other(String),
+  General(String),
+}
+
+impl RpcError {
+  /// Constructor for a [Box<RpcError::General>]
+  pub fn boxed<T: std::fmt::Display>(msg: T) -> Box<Self> {
+    Box::new(RpcError::General(msg.to_string()))
+  }
 }
 
 impl From<tokio::task::JoinError> for RpcError {

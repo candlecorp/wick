@@ -13,12 +13,10 @@ use serde::{
 use vino_packet::error::DeserializationError;
 use vino_packet::v0::Payload;
 use vino_packet::Packet;
-use vino_transport::message_transport::{
-  Failure,
-  TransportMap,
-};
 use vino_transport::{
+  Failure,
   MessageTransport,
+  TransportMap,
   TransportWrapper,
 };
 use vino_types::signatures::*;
@@ -335,7 +333,7 @@ impl Output {
     let transport: TransportWrapper = self.into();
     transport
       .try_into()
-      .map_err(|e| RpcError::Other(e.to_string()))
+      .map_err(|e| RpcError::General(e.to_string()))
   }
 
   /// Convert the RPC output into a [TransportWrapper]
