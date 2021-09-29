@@ -8,9 +8,7 @@ use vino_rpc::RpcHandler;
 async fn request() -> anyhow::Result<()> {
   let provider = Provider::default();
   let input = "some_input";
-  let job_payload = transport_map! {
-    "input" => input,
-  };
+  let job_payload = vec![("input", input)].into();
 
   let mut outputs = provider
     .invoke(

@@ -1,5 +1,5 @@
 ---
-version: "0"
+version: 0
 network:
   schematics:
     - name: simple
@@ -9,33 +9,8 @@ network:
         add2:
           id: vino::v0::add
       connections:
-        - from:
-            reference: <input>
-            port: left
-          to:
-            reference: add
-            port: left
-        - from:
-            reference: <input>
-            port: right
-          to:
-            reference: add
-            port: right
-        - from:
-            reference: <input>
-            port: right
-          to:
-            reference: add2
-            port: right
-        - from:
-            reference: add
-            port: output
-          to:
-            reference: add2
-            port: left
-        - from:
-            reference: add2
-            port: output
-          to:
-            reference: <output>
-            port: output
+        - <> => add[left]
+        - <> => add[right]
+        - <> => add2[right]
+        - add[output] => add2[left]
+        - add2[output] => <>

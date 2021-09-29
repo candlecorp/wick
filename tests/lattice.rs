@@ -7,7 +7,7 @@ use log::{
 };
 use serde_json::json;
 use utils::*;
-use vino_transport::message_transport::{
+use vino_transport::{
   JsonError,
   TransportJson,
 };

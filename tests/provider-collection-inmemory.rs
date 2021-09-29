@@ -6,7 +6,7 @@ use log::{
 };
 use serde_json::json;
 use utils::*;
-use vino_transport::message_transport::{
+use vino_transport::{
   JsonError,
   TransportJson,
 };
@@ -28,14 +28,6 @@ async fn test_collection() -> utils::TestResult<()> {
     &[("TEST_PORT", &port)],
   )
   .await?;
-  // let (p_tx, p_handle, port) = start_provider("vino-collection-inmemory", &[]).await?;
-
-  // debug!("Starting host");
-  // let (h_tx, h_handle) = start_vino(
-  //   "./tests/manifests/collection-inmemory.yaml",
-  //   vec![("TEST_PORT", &port)],
-  // )
-  // .await?;
 
   let collection_id = "some_collection";
   let doc_id = "some_document";

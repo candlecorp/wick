@@ -7,12 +7,14 @@ host:
     enabled: true
 network:
   name: network-one
+  providers:
+    - kind: Lattice
+      namespace: external_network
+      reference: network-two
   schematics:
     - name: schematic-one
       providers:
-        - kind: Lattice
-          namespace: external_network
-          reference: network-two
+        - external_network
       instances:
         logger:
           id: external_network::logger

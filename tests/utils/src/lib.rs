@@ -1,7 +1,7 @@
 pub use maplit::hashmap;
 pub use pretty_assertions::assert_eq as equals;
 use tokio::time::sleep;
-use vino_transport::message_transport::TransportJson;
+use vino_transport::message_transport::transport_json::TransportJson;
 
 pub type TestResult<T> = Result<T, TestError>;
 
@@ -61,7 +61,6 @@ use std::panic;
 use std::process::Stdio;
 
 use regex::Regex;
-use serde_json::Value;
 use tokio::io::{
   AsyncBufReadExt,
   BufReader,

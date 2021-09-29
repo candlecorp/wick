@@ -1,0 +1,20 @@
+---
+version: 0
+network:
+  providers:
+    - namespace: wapc
+      kind: WaPC
+      reference: ./crates/integration/test-wapc-component/build/test_component_s.wasm
+  schematics:
+    - name: wapc_component
+      providers:
+        - wapc
+      instances:
+        validate:
+          id: wapc::validate
+        log:
+          id: vino::v0::log
+      connections:
+        - <> => log[input]
+        - log[output] => validate[input]
+        - validate[output] => <>
