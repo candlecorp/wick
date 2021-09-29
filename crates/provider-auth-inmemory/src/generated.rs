@@ -102,9 +102,7 @@ pub(crate) mod authenticate {
       context: Self::Context,
       data: TransportMap,
     ) -> Result<TransportStream, Box<NativeComponentError>> {
-      let inputs = populate_inputs(data).map_err(|e| {
-        NativeComponentError::new(format!("Input deserialization error: {}", e.to_string()))
-      })?;
+      let inputs = populate_inputs(data).map_err(|e| NativeComponentError::new(e.to_string()))?;
       let (outputs, stream) = get_outputs();
       let result = crate::components::authenticate::job(inputs, outputs, context).await;
       match result {
@@ -136,9 +134,7 @@ pub(crate) mod create_user {
       context: Self::Context,
       data: TransportMap,
     ) -> Result<TransportStream, Box<NativeComponentError>> {
-      let inputs = populate_inputs(data).map_err(|e| {
-        NativeComponentError::new(format!("Input deserialization error: {}", e.to_string()))
-      })?;
+      let inputs = populate_inputs(data).map_err(|e| NativeComponentError::new(e.to_string()))?;
       let (outputs, stream) = get_outputs();
       let result = crate::components::create_user::job(inputs, outputs, context).await;
       match result {
@@ -170,9 +166,7 @@ pub(crate) mod get_id {
       context: Self::Context,
       data: TransportMap,
     ) -> Result<TransportStream, Box<NativeComponentError>> {
-      let inputs = populate_inputs(data).map_err(|e| {
-        NativeComponentError::new(format!("Input deserialization error: {}", e.to_string()))
-      })?;
+      let inputs = populate_inputs(data).map_err(|e| NativeComponentError::new(e.to_string()))?;
       let (outputs, stream) = get_outputs();
       let result = crate::components::get_id::job(inputs, outputs, context).await;
       match result {
@@ -204,9 +198,7 @@ pub(crate) mod has_permission {
       context: Self::Context,
       data: TransportMap,
     ) -> Result<TransportStream, Box<NativeComponentError>> {
-      let inputs = populate_inputs(data).map_err(|e| {
-        NativeComponentError::new(format!("Input deserialization error: {}", e.to_string()))
-      })?;
+      let inputs = populate_inputs(data).map_err(|e| NativeComponentError::new(e.to_string()))?;
       let (outputs, stream) = get_outputs();
       let result = crate::components::has_permission::job(inputs, outputs, context).await;
       match result {
@@ -238,9 +230,7 @@ pub(crate) mod list_permissions {
       context: Self::Context,
       data: TransportMap,
     ) -> Result<TransportStream, Box<NativeComponentError>> {
-      let inputs = populate_inputs(data).map_err(|e| {
-        NativeComponentError::new(format!("Input deserialization error: {}", e.to_string()))
-      })?;
+      let inputs = populate_inputs(data).map_err(|e| NativeComponentError::new(e.to_string()))?;
       let (outputs, stream) = get_outputs();
       let result = crate::components::list_permissions::job(inputs, outputs, context).await;
       match result {
@@ -272,9 +262,7 @@ pub(crate) mod list_users {
       context: Self::Context,
       data: TransportMap,
     ) -> Result<TransportStream, Box<NativeComponentError>> {
-      let inputs = populate_inputs(data).map_err(|e| {
-        NativeComponentError::new(format!("Input deserialization error: {}", e.to_string()))
-      })?;
+      let inputs = populate_inputs(data).map_err(|e| NativeComponentError::new(e.to_string()))?;
       let (outputs, stream) = get_outputs();
       let result = crate::components::list_users::job(inputs, outputs, context).await;
       match result {
@@ -306,9 +294,7 @@ pub(crate) mod remove_user {
       context: Self::Context,
       data: TransportMap,
     ) -> Result<TransportStream, Box<NativeComponentError>> {
-      let inputs = populate_inputs(data).map_err(|e| {
-        NativeComponentError::new(format!("Input deserialization error: {}", e.to_string()))
-      })?;
+      let inputs = populate_inputs(data).map_err(|e| NativeComponentError::new(e.to_string()))?;
       let (outputs, stream) = get_outputs();
       let result = crate::components::remove_user::job(inputs, outputs, context).await;
       match result {
@@ -340,9 +326,7 @@ pub(crate) mod update_permissions {
       context: Self::Context,
       data: TransportMap,
     ) -> Result<TransportStream, Box<NativeComponentError>> {
-      let inputs = populate_inputs(data).map_err(|e| {
-        NativeComponentError::new(format!("Input deserialization error: {}", e.to_string()))
-      })?;
+      let inputs = populate_inputs(data).map_err(|e| NativeComponentError::new(e.to_string()))?;
       let (outputs, stream) = get_outputs();
       let result = crate::components::update_permissions::job(inputs, outputs, context).await;
       match result {
@@ -374,9 +358,7 @@ pub(crate) mod validate_session {
       context: Self::Context,
       data: TransportMap,
     ) -> Result<TransportStream, Box<NativeComponentError>> {
-      let inputs = populate_inputs(data).map_err(|e| {
-        NativeComponentError::new(format!("Input deserialization error: {}", e.to_string()))
-      })?;
+      let inputs = populate_inputs(data).map_err(|e| NativeComponentError::new(e.to_string()))?;
       let (outputs, stream) = get_outputs();
       let result = crate::components::validate_session::job(inputs, outputs, context).await;
       match result {

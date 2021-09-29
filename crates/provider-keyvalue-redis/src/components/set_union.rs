@@ -3,7 +3,7 @@ use vino_provider::native::prelude::*;
 
 pub(crate) async fn job(
   input: Inputs,
-  output: Outputs,
+  output: OutputPorts,
   _context: crate::Context,
 ) -> Result<(), Box<NativeComponentError>> {
   Ok(())

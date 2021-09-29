@@ -2,7 +2,7 @@ use std::convert::TryInto;
 
 use vino_interface_keyvalue::generated::list_range::*;
 
-pub(crate) async fn job(input: Inputs, output: Outputs, context: crate::Context) -> JobResult {
+pub(crate) async fn job(input: Inputs, output: OutputPorts, context: crate::Context) -> JobResult {
   let mut cmd = redis::Cmd::lrange(
     &input.key,
     input.start.try_into().unwrap(),

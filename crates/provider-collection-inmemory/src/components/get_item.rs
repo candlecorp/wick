@@ -1,6 +1,6 @@
 pub(crate) use vino_interface_collection::get_item::*;
 
-pub(crate) async fn job(input: Inputs, output: Outputs, context: crate::Context) -> JobResult {
+pub(crate) async fn job(input: Inputs, output: OutputPorts, context: crate::Context) -> JobResult {
   let state = context.lock().unwrap();
   let content_key = format!("{}:{}", input.collection_id, input.document_id);
   match state.documents.get(&content_key) {

@@ -1,7 +1,7 @@
 use bcrypt::verify;
 use vino_interface_authentication::authenticate::*;
 
-pub(crate) async fn job(input: Inputs, output: Outputs, context: crate::Context) -> JobResult {
+pub(crate) async fn job(input: Inputs, output: OutputPorts, context: crate::Context) -> JobResult {
   let mut state = context.lock().unwrap();
   let uid = state
     .user_ids

@@ -4,7 +4,7 @@ pub(crate) use vino_interface_collection::add_item::*;
 
 pub(crate) async fn job(
   input: Inputs,
-  output: Outputs,
+  output: OutputPorts,
   context: crate::Context,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
   let state = context.lock().unwrap();

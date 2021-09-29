@@ -65,7 +65,6 @@ mod tests {
   use rand::distributions::Alphanumeric;
   use rand::Rng;
   use tokio_stream::StreamExt;
-  use vino_macros::transport_map;
   use vino_provider::native::prelude::*;
 
   use super::*;
@@ -80,14 +79,14 @@ mod tests {
 
   async fn create_user(provider: &Provider, username: &str, password: &str) -> Result<String> {
     let user_id = rand_string();
-    let job_payload = transport_map! {
-      "user_id"=> user_id.as_str(),
-      "username"=> username,
-      "password"=> password,
+    let job_payload = vino_interface_authentication::generated::create_user::Inputs {
+      user_id: user_id.clone(),
+      username: username.to_owned(),
+      password: password.to_owned(),
     };
 
     let outputs = provider
-      .invoke(Entity::component_direct("create-user"), job_payload)
+      .invoke(Entity::component_direct("create-user"), job_payload.into())
       .await?;
 
     let outputs: Vec<TransportWrapper> = outputs.collect().await;
@@ -101,11 +100,12 @@ mod tests {
   }
 
   async fn remove_user(provider: &Provider, username: &str) -> Result<String> {
-    let job_payload = transport_map! {
-      "username"=> username,
+    let job_payload = vino_interface_authentication::generated::remove_user::Inputs {
+      username: username.to_owned(),
     };
+
     let mut outputs = provider
-      .invoke(Entity::component_direct("remove-user"), job_payload)
+      .invoke(Entity::component_direct("remove-user"), job_payload.into())
       .await?;
 
     let output = outputs.next().await.unwrap();
@@ -122,13 +122,11 @@ mod tests {
     offset: u32,
     limit: u32,
   ) -> Result<HashMap<String, String>> {
-    let job_payload = transport_map! {
-      "offset"=> offset,
-      "limit"=> limit,
-    };
+    let job_payload =
+      vino_interface_authentication::generated::list_users::Inputs { offset, limit };
 
     let mut outputs = provider
-      .invoke(Entity::component_direct("list-users"), job_payload)
+      .invoke(Entity::component_direct("list-users"), job_payload.into())
       .await?;
 
     let output = outputs.next().await.unwrap();
@@ -146,22 +144,18 @@ mod tests {
     password: &str,
     session: &str,
   ) -> Result<(String, String)> {
-    let job_payload = transport_map! {
-      "password"=> password,
-      "username"=> username,
-      "session"=> session,
+    let job_payload = vino_interface_authentication::generated::authenticate::Inputs {
+      username: username.to_owned(),
+      password: password.to_owned(),
+      session: session.to_owned(),
     };
+
     let outputs = provider
-      .invoke(Entity::component_direct("authenticate"), job_payload)
+      .invoke(Entity::component_direct("authenticate"), job_payload.into())
       .await?;
 
     let mut session = String::new();
     let mut user_id = String::new();
-    // let mut messages = vec![];
-    // while let Some(a) = outputs.next().await {
-    //   trace!("!!! got something: {:?}", a);
-    //   messages.push(a);
-    // }
 
     let messages: Vec<_> = outputs.collect().await;
     assert_eq!(messages.len(), 4);
@@ -190,11 +184,11 @@ mod tests {
   }
 
   async fn get_id(provider: &Provider, username: &str) -> Result<String> {
-    let job_payload = transport_map! {
-      "username"=> username,
+    let job_payload = vino_interface_authentication::generated::get_id::Inputs {
+      username: username.to_owned(),
     };
     let mut outputs = provider
-      .invoke(Entity::component_direct("get-id"), job_payload)
+      .invoke(Entity::component_direct("get-id"), job_payload.into())
       .await?;
 
     let output = outputs.next().await.unwrap();
@@ -206,11 +200,14 @@ mod tests {
   }
 
   async fn validate_session(provider: &Provider, session: &str) -> Result<String> {
-    let job_payload = transport_map! {
-      "session"=> session,
+    let job_payload = vino_interface_authentication::generated::validate_session::Inputs {
+      session: session.to_owned(),
     };
     let mut outputs = provider
-      .invoke(Entity::component_direct("validate-session"), job_payload)
+      .invoke(
+        Entity::component_direct("validate-session"),
+        job_payload.into(),
+      )
       .await?;
 
     let output = outputs.next().await.unwrap();
@@ -226,12 +223,15 @@ mod tests {
     user_id: &str,
     perms: &[&str],
   ) -> Result<Vec<String>> {
-    let job_payload = transport_map! {
-      "user_id"=> user_id,
-      "permissions"=> perms,
+    let job_payload = vino_interface_authentication::generated::update_permissions::Inputs {
+      permissions: perms.iter().map(|s| (*s).to_owned()).collect(),
+      user_id: user_id.to_owned(),
     };
     let mut outputs = provider
-      .invoke(Entity::component_direct("update-permissions"), job_payload)
+      .invoke(
+        Entity::component_direct("update-permissions"),
+        job_payload.into(),
+      )
       .await?;
 
     let output = outputs.next().await.unwrap();
@@ -247,12 +247,15 @@ mod tests {
     user_id: &str,
     perm: &str,
   ) -> Result<MessageTransport> {
-    let job_payload = transport_map! {
-      "user_id"=> user_id,
-      "permission"=> perm,
+    let job_payload = vino_interface_authentication::generated::has_permission::Inputs {
+      permission: perm.to_owned(),
+      user_id: user_id.to_owned(),
     };
     let mut outputs = provider
-      .invoke(Entity::component_direct("has-permission"), job_payload)
+      .invoke(
+        Entity::component_direct("has-permission"),
+        job_payload.into(),
+      )
       .await?;
 
     let output = outputs.next().await.unwrap();

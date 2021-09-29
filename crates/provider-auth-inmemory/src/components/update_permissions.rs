@@ -1,6 +1,6 @@
 use vino_interface_authentication::update_permissions::*;
 
-pub(crate) async fn job(input: Inputs, output: Outputs, context: crate::Context) -> JobResult {
+pub(crate) async fn job(input: Inputs, output: OutputPorts, context: crate::Context) -> JobResult {
   let mut state = context.lock().unwrap();
   state
     .permissions

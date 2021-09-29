@@ -3,7 +3,7 @@ use std::convert::TryInto;
 
 use vino_interface_authentication::list_users::*;
 
-pub(crate) async fn job(input: Inputs, output: Outputs, context: crate::Context) -> JobResult {
+pub(crate) async fn job(input: Inputs, output: OutputPorts, context: crate::Context) -> JobResult {
   let state = context.lock().unwrap();
   let users: HashMap<String, String> = state
     .user_ids

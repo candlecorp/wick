@@ -94,18 +94,11 @@ pub(crate) mod add {
       context: Self::Context,
       data: TransportMap,
     ) -> Result<TransportStream, Box<NativeComponentError>> {
-      let inputs = populate_inputs(data).map_err(|e| {
-        NativeComponentError::new(format!("Input deserialization error: {}", e.to_string()))
-      })?;
+      let inputs = populate_inputs(data).map_err(|e| NativeComponentError::new(e.to_string()))?;
       let (outputs, stream) = get_outputs();
       let result = tokio::spawn(crate::components::add::job(inputs, outputs, context))
         .await
-        .map_err(|e| {
-          Box::new(NativeComponentError::new(format!(
-            "Component panicked: {}",
-            e
-          )))
-        })?;
+        .map_err(|e| Box::new(NativeComponentError::new(format!("Component error: {}", e))))?;
       match result {
         Ok(_) => Ok(stream),
         Err(e) => Err(Box::new(NativeComponentError::new(e.to_string()))),
@@ -147,7 +140,7 @@ pub(crate) mod add {
   }
 
   #[derive(Debug, Default)]
-  pub struct Outputs {
+  pub struct OutputPorts {
     pub output: OutputPortSender,
   }
 
@@ -185,8 +178,8 @@ pub(crate) mod add {
   }
 
   #[must_use]
-  pub fn get_outputs() -> (Outputs, TransportStream) {
-    let mut outputs = Outputs::default();
+  pub fn get_outputs() -> (OutputPorts, TransportStream) {
+    let mut outputs = OutputPorts::default();
     let mut ports = vec![&mut outputs.output.port];
     let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)
@@ -222,20 +215,13 @@ pub(crate) mod concatenate {
       context: Self::Context,
       data: TransportMap,
     ) -> Result<TransportStream, Box<NativeComponentError>> {
-      let inputs = populate_inputs(data).map_err(|e| {
-        NativeComponentError::new(format!("Input deserialization error: {}", e.to_string()))
-      })?;
+      let inputs = populate_inputs(data).map_err(|e| NativeComponentError::new(e.to_string()))?;
       let (outputs, stream) = get_outputs();
       let result = tokio::spawn(crate::components::concatenate::job(
         inputs, outputs, context,
       ))
       .await
-      .map_err(|e| {
-        Box::new(NativeComponentError::new(format!(
-          "Component panicked: {}",
-          e
-        )))
-      })?;
+      .map_err(|e| Box::new(NativeComponentError::new(format!("Component error: {}", e))))?;
       match result {
         Ok(_) => Ok(stream),
         Err(e) => Err(Box::new(NativeComponentError::new(e.to_string()))),
@@ -277,7 +263,7 @@ pub(crate) mod concatenate {
   }
 
   #[derive(Debug, Default)]
-  pub struct Outputs {
+  pub struct OutputPorts {
     pub output: OutputPortSender,
   }
 
@@ -315,8 +301,8 @@ pub(crate) mod concatenate {
   }
 
   #[must_use]
-  pub fn get_outputs() -> (Outputs, TransportStream) {
-    let mut outputs = Outputs::default();
+  pub fn get_outputs() -> (OutputPorts, TransportStream) {
+    let mut outputs = OutputPorts::default();
     let mut ports = vec![&mut outputs.output.port];
     let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)
@@ -352,18 +338,11 @@ pub(crate) mod error {
       context: Self::Context,
       data: TransportMap,
     ) -> Result<TransportStream, Box<NativeComponentError>> {
-      let inputs = populate_inputs(data).map_err(|e| {
-        NativeComponentError::new(format!("Input deserialization error: {}", e.to_string()))
-      })?;
+      let inputs = populate_inputs(data).map_err(|e| NativeComponentError::new(e.to_string()))?;
       let (outputs, stream) = get_outputs();
       let result = tokio::spawn(crate::components::error::job(inputs, outputs, context))
         .await
-        .map_err(|e| {
-          Box::new(NativeComponentError::new(format!(
-            "Component panicked: {}",
-            e
-          )))
-        })?;
+        .map_err(|e| Box::new(NativeComponentError::new(format!("Component error: {}", e))))?;
       match result {
         Ok(_) => Ok(stream),
         Err(e) => Err(Box::new(NativeComponentError::new(e.to_string()))),
@@ -400,7 +379,7 @@ pub(crate) mod error {
   }
 
   #[derive(Debug, Default)]
-  pub struct Outputs {
+  pub struct OutputPorts {
     pub output: OutputPortSender,
   }
 
@@ -438,8 +417,8 @@ pub(crate) mod error {
   }
 
   #[must_use]
-  pub fn get_outputs() -> (Outputs, TransportStream) {
-    let mut outputs = Outputs::default();
+  pub fn get_outputs() -> (OutputPorts, TransportStream) {
+    let mut outputs = OutputPorts::default();
     let mut ports = vec![&mut outputs.output.port];
     let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)
@@ -475,18 +454,11 @@ pub(crate) mod gate {
       context: Self::Context,
       data: TransportMap,
     ) -> Result<TransportStream, Box<NativeComponentError>> {
-      let inputs = populate_inputs(data).map_err(|e| {
-        NativeComponentError::new(format!("Input deserialization error: {}", e.to_string()))
-      })?;
+      let inputs = populate_inputs(data).map_err(|e| NativeComponentError::new(e.to_string()))?;
       let (outputs, stream) = get_outputs();
       let result = tokio::spawn(crate::components::gate::job(inputs, outputs, context))
         .await
-        .map_err(|e| {
-          Box::new(NativeComponentError::new(format!(
-            "Component panicked: {}",
-            e
-          )))
-        })?;
+        .map_err(|e| Box::new(NativeComponentError::new(format!("Component error: {}", e))))?;
       match result {
         Ok(_) => Ok(stream),
         Err(e) => Err(Box::new(NativeComponentError::new(e.to_string()))),
@@ -543,7 +515,7 @@ pub(crate) mod gate {
   }
 
   #[derive(Debug, Default)]
-  pub struct Outputs {
+  pub struct OutputPorts {
     pub output: OutputPortSender,
   }
 
@@ -581,8 +553,8 @@ pub(crate) mod gate {
   }
 
   #[must_use]
-  pub fn get_outputs() -> (Outputs, TransportStream) {
-    let mut outputs = Outputs::default();
+  pub fn get_outputs() -> (OutputPorts, TransportStream) {
+    let mut outputs = OutputPorts::default();
     let mut ports = vec![&mut outputs.output.port];
     let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)
@@ -618,18 +590,11 @@ pub(crate) mod log {
       context: Self::Context,
       data: TransportMap,
     ) -> Result<TransportStream, Box<NativeComponentError>> {
-      let inputs = populate_inputs(data).map_err(|e| {
-        NativeComponentError::new(format!("Input deserialization error: {}", e.to_string()))
-      })?;
+      let inputs = populate_inputs(data).map_err(|e| NativeComponentError::new(e.to_string()))?;
       let (outputs, stream) = get_outputs();
       let result = tokio::spawn(crate::components::log::job(inputs, outputs, context))
         .await
-        .map_err(|e| {
-          Box::new(NativeComponentError::new(format!(
-            "Component panicked: {}",
-            e
-          )))
-        })?;
+        .map_err(|e| Box::new(NativeComponentError::new(format!("Component error: {}", e))))?;
       match result {
         Ok(_) => Ok(stream),
         Err(e) => Err(Box::new(NativeComponentError::new(e.to_string()))),
@@ -666,7 +631,7 @@ pub(crate) mod log {
   }
 
   #[derive(Debug, Default)]
-  pub struct Outputs {
+  pub struct OutputPorts {
     pub output: OutputPortSender,
   }
 
@@ -704,8 +669,8 @@ pub(crate) mod log {
   }
 
   #[must_use]
-  pub fn get_outputs() -> (Outputs, TransportStream) {
-    let mut outputs = Outputs::default();
+  pub fn get_outputs() -> (OutputPorts, TransportStream) {
+    let mut outputs = OutputPorts::default();
     let mut ports = vec![&mut outputs.output.port];
     let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)
@@ -741,18 +706,11 @@ pub(crate) mod negate {
       context: Self::Context,
       data: TransportMap,
     ) -> Result<TransportStream, Box<NativeComponentError>> {
-      let inputs = populate_inputs(data).map_err(|e| {
-        NativeComponentError::new(format!("Input deserialization error: {}", e.to_string()))
-      })?;
+      let inputs = populate_inputs(data).map_err(|e| NativeComponentError::new(e.to_string()))?;
       let (outputs, stream) = get_outputs();
       let result = tokio::spawn(crate::components::negate::job(inputs, outputs, context))
         .await
-        .map_err(|e| {
-          Box::new(NativeComponentError::new(format!(
-            "Component panicked: {}",
-            e
-          )))
-        })?;
+        .map_err(|e| Box::new(NativeComponentError::new(format!("Component error: {}", e))))?;
       match result {
         Ok(_) => Ok(stream),
         Err(e) => Err(Box::new(NativeComponentError::new(e.to_string()))),
@@ -789,7 +747,7 @@ pub(crate) mod negate {
   }
 
   #[derive(Debug, Default)]
-  pub struct Outputs {
+  pub struct OutputPorts {
     pub output: OutputPortSender,
   }
 
@@ -827,8 +785,8 @@ pub(crate) mod negate {
   }
 
   #[must_use]
-  pub fn get_outputs() -> (Outputs, TransportStream) {
-    let mut outputs = Outputs::default();
+  pub fn get_outputs() -> (OutputPorts, TransportStream) {
+    let mut outputs = OutputPorts::default();
     let mut ports = vec![&mut outputs.output.port];
     let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)
@@ -864,18 +822,11 @@ pub(crate) mod panic {
       context: Self::Context,
       data: TransportMap,
     ) -> Result<TransportStream, Box<NativeComponentError>> {
-      let inputs = populate_inputs(data).map_err(|e| {
-        NativeComponentError::new(format!("Input deserialization error: {}", e.to_string()))
-      })?;
+      let inputs = populate_inputs(data).map_err(|e| NativeComponentError::new(e.to_string()))?;
       let (outputs, stream) = get_outputs();
       let result = tokio::spawn(crate::components::panic::job(inputs, outputs, context))
         .await
-        .map_err(|e| {
-          Box::new(NativeComponentError::new(format!(
-            "Component panicked: {}",
-            e
-          )))
-        })?;
+        .map_err(|e| Box::new(NativeComponentError::new(format!("Component error: {}", e))))?;
       match result {
         Ok(_) => Ok(stream),
         Err(e) => Err(Box::new(NativeComponentError::new(e.to_string()))),
@@ -912,7 +863,7 @@ pub(crate) mod panic {
   }
 
   #[derive(Debug, Default)]
-  pub struct Outputs {
+  pub struct OutputPorts {
     pub output: OutputPortSender,
   }
 
@@ -950,8 +901,8 @@ pub(crate) mod panic {
   }
 
   #[must_use]
-  pub fn get_outputs() -> (Outputs, TransportStream) {
-    let mut outputs = Outputs::default();
+  pub fn get_outputs() -> (OutputPorts, TransportStream) {
+    let mut outputs = OutputPorts::default();
     let mut ports = vec![&mut outputs.output.port];
     let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)
@@ -987,20 +938,13 @@ pub(crate) mod short_circuit {
       context: Self::Context,
       data: TransportMap,
     ) -> Result<TransportStream, Box<NativeComponentError>> {
-      let inputs = populate_inputs(data).map_err(|e| {
-        NativeComponentError::new(format!("Input deserialization error: {}", e.to_string()))
-      })?;
+      let inputs = populate_inputs(data).map_err(|e| NativeComponentError::new(e.to_string()))?;
       let (outputs, stream) = get_outputs();
       let result = tokio::spawn(crate::components::short_circuit::job(
         inputs, outputs, context,
       ))
       .await
-      .map_err(|e| {
-        Box::new(NativeComponentError::new(format!(
-          "Component panicked: {}",
-          e
-        )))
-      })?;
+      .map_err(|e| Box::new(NativeComponentError::new(format!("Component error: {}", e))))?;
       match result {
         Ok(_) => Ok(stream),
         Err(e) => Err(Box::new(NativeComponentError::new(e.to_string()))),
@@ -1037,7 +981,7 @@ pub(crate) mod short_circuit {
   }
 
   #[derive(Debug, Default)]
-  pub struct Outputs {
+  pub struct OutputPorts {
     pub output: OutputPortSender,
   }
 
@@ -1075,8 +1019,8 @@ pub(crate) mod short_circuit {
   }
 
   #[must_use]
-  pub fn get_outputs() -> (Outputs, TransportStream) {
-    let mut outputs = Outputs::default();
+  pub fn get_outputs() -> (OutputPorts, TransportStream) {
+    let mut outputs = OutputPorts::default();
     let mut ports = vec![&mut outputs.output.port];
     let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)
@@ -1112,20 +1056,13 @@ pub(crate) mod string_to_bytes {
       context: Self::Context,
       data: TransportMap,
     ) -> Result<TransportStream, Box<NativeComponentError>> {
-      let inputs = populate_inputs(data).map_err(|e| {
-        NativeComponentError::new(format!("Input deserialization error: {}", e.to_string()))
-      })?;
+      let inputs = populate_inputs(data).map_err(|e| NativeComponentError::new(e.to_string()))?;
       let (outputs, stream) = get_outputs();
       let result = tokio::spawn(crate::components::string_to_bytes::job(
         inputs, outputs, context,
       ))
       .await
-      .map_err(|e| {
-        Box::new(NativeComponentError::new(format!(
-          "Component panicked: {}",
-          e
-        )))
-      })?;
+      .map_err(|e| Box::new(NativeComponentError::new(format!("Component error: {}", e))))?;
       match result {
         Ok(_) => Ok(stream),
         Err(e) => Err(Box::new(NativeComponentError::new(e.to_string()))),
@@ -1162,7 +1099,7 @@ pub(crate) mod string_to_bytes {
   }
 
   #[derive(Debug, Default)]
-  pub struct Outputs {
+  pub struct OutputPorts {
     pub output: OutputPortSender,
   }
 
@@ -1200,8 +1137,8 @@ pub(crate) mod string_to_bytes {
   }
 
   #[must_use]
-  pub fn get_outputs() -> (Outputs, TransportStream) {
-    let mut outputs = Outputs::default();
+  pub fn get_outputs() -> (OutputPorts, TransportStream) {
+    let mut outputs = OutputPorts::default();
     let mut ports = vec![&mut outputs.output.port];
     let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)
@@ -1237,18 +1174,11 @@ pub(crate) mod uuid {
       context: Self::Context,
       data: TransportMap,
     ) -> Result<TransportStream, Box<NativeComponentError>> {
-      let inputs = populate_inputs(data).map_err(|e| {
-        NativeComponentError::new(format!("Input deserialization error: {}", e.to_string()))
-      })?;
+      let inputs = populate_inputs(data).map_err(|e| NativeComponentError::new(e.to_string()))?;
       let (outputs, stream) = get_outputs();
       let result = tokio::spawn(crate::components::uuid::job(inputs, outputs, context))
         .await
-        .map_err(|e| {
-          Box::new(NativeComponentError::new(format!(
-            "Component panicked: {}",
-            e
-          )))
-        })?;
+        .map_err(|e| Box::new(NativeComponentError::new(format!("Component error: {}", e))))?;
       match result {
         Ok(_) => Ok(stream),
         Err(e) => Err(Box::new(NativeComponentError::new(e.to_string()))),
@@ -1278,7 +1208,7 @@ pub(crate) mod uuid {
   }
 
   #[derive(Debug, Default)]
-  pub struct Outputs {
+  pub struct OutputPorts {
     pub output: OutputPortSender,
   }
 
@@ -1316,8 +1246,8 @@ pub(crate) mod uuid {
   }
 
   #[must_use]
-  pub fn get_outputs() -> (Outputs, TransportStream) {
-    let mut outputs = Outputs::default();
+  pub fn get_outputs() -> (OutputPorts, TransportStream) {
+    let mut outputs = OutputPorts::default();
     let mut ports = vec![&mut outputs.output.port];
     let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)

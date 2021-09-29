@@ -61,7 +61,6 @@ impl RpcHandler for Provider {
 mod tests {
   use anyhow::Result;
   use futures::prelude::*;
-  use vino_macros::transport_map;
 
   use super::*;
 
@@ -71,14 +70,14 @@ mod tests {
     collection_id: &str,
     document: &str,
   ) -> Result<()> {
-    let job_payload = transport_map! {
-      "document_id"=> document_id,
-      "collection_id"=> collection_id,
-      "document"=> document,
+    let job_payload = vino_interface_collection::generated::add_item::Inputs {
+      document_id: document_id.to_owned(),
+      collection_id: collection_id.to_owned(),
+      document: document.to_owned(),
     };
 
     let mut outputs = provider
-      .invoke(Entity::component_direct("add-item"), job_payload)
+      .invoke(Entity::component_direct("add-item"), job_payload.into())
       .await?;
     let output = outputs.next().await.unwrap();
     println!("payload from [{}]: {:?}", output.port, output.payload);
@@ -90,12 +89,12 @@ mod tests {
   }
 
   async fn get_item(provider: &Provider, document_id: &str, collection_id: &str) -> Result<String> {
-    let job_payload = transport_map! {
-      "document_id"=> document_id,
-      "collection_id"=> collection_id,
+    let job_payload = vino_interface_collection::generated::get_item::Inputs {
+      document_id: document_id.to_owned(),
+      collection_id: collection_id.to_owned(),
     };
     let mut outputs = provider
-      .invoke(Entity::component_direct("get-item"), job_payload)
+      .invoke(Entity::component_direct("get-item"), job_payload.into())
       .await?;
 
     let output = outputs.next().await.unwrap();
@@ -107,11 +106,11 @@ mod tests {
   }
 
   async fn list_items(provider: &Provider, collection_id: &str) -> Result<Vec<String>> {
-    let job_payload = transport_map! {
-      "collection_id"=> collection_id,
+    let job_payload = vino_interface_collection::generated::list_items::Inputs {
+      collection_id: collection_id.to_owned(),
     };
     let mut outputs = provider
-      .invoke(Entity::component_direct("list-items"), job_payload)
+      .invoke(Entity::component_direct("list-items"), job_payload.into())
       .await?;
 
     let output = outputs.next().await.unwrap();

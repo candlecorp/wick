@@ -1,6 +1,6 @@
 use vino_interface_authentication::has_permission::*;
 
-pub(crate) async fn job(input: Inputs, output: Outputs, context: crate::Context) -> JobResult {
+pub(crate) async fn job(input: Inputs, output: OutputPorts, context: crate::Context) -> JobResult {
   let state = context.lock().unwrap();
   if let Some(perms) = state.permissions.get(&input.user_id) {
     if perms.contains(&input.permission) {

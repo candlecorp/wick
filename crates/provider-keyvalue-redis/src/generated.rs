@@ -126,9 +126,7 @@ pub(crate) mod delete {
       context: Self::Context,
       data: TransportMap,
     ) -> Result<TransportStream, Box<NativeComponentError>> {
-      let inputs = populate_inputs(data).map_err(|e| {
-        NativeComponentError::new(format!("Input deserialization error: {}", e.to_string()))
-      })?;
+      let inputs = populate_inputs(data).map_err(|e| NativeComponentError::new(e.to_string()))?;
       let (outputs, stream) = get_outputs();
       let result = crate::components::delete::job(inputs, outputs, context).await;
       match result {
@@ -160,9 +158,7 @@ pub(crate) mod exists {
       context: Self::Context,
       data: TransportMap,
     ) -> Result<TransportStream, Box<NativeComponentError>> {
-      let inputs = populate_inputs(data).map_err(|e| {
-        NativeComponentError::new(format!("Input deserialization error: {}", e.to_string()))
-      })?;
+      let inputs = populate_inputs(data).map_err(|e| NativeComponentError::new(e.to_string()))?;
       let (outputs, stream) = get_outputs();
       let result = crate::components::exists::job(inputs, outputs, context).await;
       match result {
@@ -194,9 +190,7 @@ pub(crate) mod key_get {
       context: Self::Context,
       data: TransportMap,
     ) -> Result<TransportStream, Box<NativeComponentError>> {
-      let inputs = populate_inputs(data).map_err(|e| {
-        NativeComponentError::new(format!("Input deserialization error: {}", e.to_string()))
-      })?;
+      let inputs = populate_inputs(data).map_err(|e| NativeComponentError::new(e.to_string()))?;
       let (outputs, stream) = get_outputs();
       let result = crate::components::key_get::job(inputs, outputs, context).await;
       match result {
@@ -228,9 +222,7 @@ pub(crate) mod key_increment {
       context: Self::Context,
       data: TransportMap,
     ) -> Result<TransportStream, Box<NativeComponentError>> {
-      let inputs = populate_inputs(data).map_err(|e| {
-        NativeComponentError::new(format!("Input deserialization error: {}", e.to_string()))
-      })?;
+      let inputs = populate_inputs(data).map_err(|e| NativeComponentError::new(e.to_string()))?;
       let (outputs, stream) = get_outputs();
       let result = crate::components::key_increment::job(inputs, outputs, context).await;
       match result {
@@ -262,9 +254,7 @@ pub(crate) mod key_set {
       context: Self::Context,
       data: TransportMap,
     ) -> Result<TransportStream, Box<NativeComponentError>> {
-      let inputs = populate_inputs(data).map_err(|e| {
-        NativeComponentError::new(format!("Input deserialization error: {}", e.to_string()))
-      })?;
+      let inputs = populate_inputs(data).map_err(|e| NativeComponentError::new(e.to_string()))?;
       let (outputs, stream) = get_outputs();
       let result = crate::components::key_set::job(inputs, outputs, context).await;
       match result {
@@ -296,9 +286,7 @@ pub(crate) mod list_add {
       context: Self::Context,
       data: TransportMap,
     ) -> Result<TransportStream, Box<NativeComponentError>> {
-      let inputs = populate_inputs(data).map_err(|e| {
-        NativeComponentError::new(format!("Input deserialization error: {}", e.to_string()))
-      })?;
+      let inputs = populate_inputs(data).map_err(|e| NativeComponentError::new(e.to_string()))?;
       let (outputs, stream) = get_outputs();
       let result = crate::components::list_add::job(inputs, outputs, context).await;
       match result {
@@ -330,9 +318,7 @@ pub(crate) mod list_range {
       context: Self::Context,
       data: TransportMap,
     ) -> Result<TransportStream, Box<NativeComponentError>> {
-      let inputs = populate_inputs(data).map_err(|e| {
-        NativeComponentError::new(format!("Input deserialization error: {}", e.to_string()))
-      })?;
+      let inputs = populate_inputs(data).map_err(|e| NativeComponentError::new(e.to_string()))?;
       let (outputs, stream) = get_outputs();
       let result = crate::components::list_range::job(inputs, outputs, context).await;
       match result {
@@ -364,9 +350,7 @@ pub(crate) mod list_remove {
       context: Self::Context,
       data: TransportMap,
     ) -> Result<TransportStream, Box<NativeComponentError>> {
-      let inputs = populate_inputs(data).map_err(|e| {
-        NativeComponentError::new(format!("Input deserialization error: {}", e.to_string()))
-      })?;
+      let inputs = populate_inputs(data).map_err(|e| NativeComponentError::new(e.to_string()))?;
       let (outputs, stream) = get_outputs();
       let result = crate::components::list_remove::job(inputs, outputs, context).await;
       match result {
@@ -398,9 +382,7 @@ pub(crate) mod set_add {
       context: Self::Context,
       data: TransportMap,
     ) -> Result<TransportStream, Box<NativeComponentError>> {
-      let inputs = populate_inputs(data).map_err(|e| {
-        NativeComponentError::new(format!("Input deserialization error: {}", e.to_string()))
-      })?;
+      let inputs = populate_inputs(data).map_err(|e| NativeComponentError::new(e.to_string()))?;
       let (outputs, stream) = get_outputs();
       let result = crate::components::set_add::job(inputs, outputs, context).await;
       match result {
@@ -432,9 +414,7 @@ pub(crate) mod set_get {
       context: Self::Context,
       data: TransportMap,
     ) -> Result<TransportStream, Box<NativeComponentError>> {
-      let inputs = populate_inputs(data).map_err(|e| {
-        NativeComponentError::new(format!("Input deserialization error: {}", e.to_string()))
-      })?;
+      let inputs = populate_inputs(data).map_err(|e| NativeComponentError::new(e.to_string()))?;
       let (outputs, stream) = get_outputs();
       let result = crate::components::set_get::job(inputs, outputs, context).await;
       match result {
@@ -466,9 +446,7 @@ pub(crate) mod set_intersection {
       context: Self::Context,
       data: TransportMap,
     ) -> Result<TransportStream, Box<NativeComponentError>> {
-      let inputs = populate_inputs(data).map_err(|e| {
-        NativeComponentError::new(format!("Input deserialization error: {}", e.to_string()))
-      })?;
+      let inputs = populate_inputs(data).map_err(|e| NativeComponentError::new(e.to_string()))?;
       let (outputs, stream) = get_outputs();
       let result = crate::components::set_intersection::job(inputs, outputs, context).await;
       match result {
@@ -500,9 +478,7 @@ pub(crate) mod set_remove {
       context: Self::Context,
       data: TransportMap,
     ) -> Result<TransportStream, Box<NativeComponentError>> {
-      let inputs = populate_inputs(data).map_err(|e| {
-        NativeComponentError::new(format!("Input deserialization error: {}", e.to_string()))
-      })?;
+      let inputs = populate_inputs(data).map_err(|e| NativeComponentError::new(e.to_string()))?;
       let (outputs, stream) = get_outputs();
       let result = crate::components::set_remove::job(inputs, outputs, context).await;
       match result {
@@ -534,9 +510,7 @@ pub(crate) mod set_union {
       context: Self::Context,
       data: TransportMap,
     ) -> Result<TransportStream, Box<NativeComponentError>> {
-      let inputs = populate_inputs(data).map_err(|e| {
-        NativeComponentError::new(format!("Input deserialization error: {}", e.to_string()))
-      })?;
+      let inputs = populate_inputs(data).map_err(|e| NativeComponentError::new(e.to_string()))?;
       let (outputs, stream) = get_outputs();
       let result = crate::components::set_union::job(inputs, outputs, context).await;
       match result {

@@ -72,9 +72,7 @@ pub(crate) mod add_item {
       context: Self::Context,
       data: TransportMap,
     ) -> Result<TransportStream, Box<NativeComponentError>> {
-      let inputs = populate_inputs(data).map_err(|e| {
-        NativeComponentError::new(format!("Input deserialization error: {}", e.to_string()))
-      })?;
+      let inputs = populate_inputs(data).map_err(|e| NativeComponentError::new(e.to_string()))?;
       let (outputs, stream) = get_outputs();
       let result = crate::components::add_item::job(inputs, outputs, context).await;
       match result {
@@ -106,9 +104,7 @@ pub(crate) mod get_item {
       context: Self::Context,
       data: TransportMap,
     ) -> Result<TransportStream, Box<NativeComponentError>> {
-      let inputs = populate_inputs(data).map_err(|e| {
-        NativeComponentError::new(format!("Input deserialization error: {}", e.to_string()))
-      })?;
+      let inputs = populate_inputs(data).map_err(|e| NativeComponentError::new(e.to_string()))?;
       let (outputs, stream) = get_outputs();
       let result = crate::components::get_item::job(inputs, outputs, context).await;
       match result {
@@ -140,9 +136,7 @@ pub(crate) mod list_items {
       context: Self::Context,
       data: TransportMap,
     ) -> Result<TransportStream, Box<NativeComponentError>> {
-      let inputs = populate_inputs(data).map_err(|e| {
-        NativeComponentError::new(format!("Input deserialization error: {}", e.to_string()))
-      })?;
+      let inputs = populate_inputs(data).map_err(|e| NativeComponentError::new(e.to_string()))?;
       let (outputs, stream) = get_outputs();
       let result = crate::components::list_items::job(inputs, outputs, context).await;
       match result {
@@ -174,9 +168,7 @@ pub(crate) mod rm_item {
       context: Self::Context,
       data: TransportMap,
     ) -> Result<TransportStream, Box<NativeComponentError>> {
-      let inputs = populate_inputs(data).map_err(|e| {
-        NativeComponentError::new(format!("Input deserialization error: {}", e.to_string()))
-      })?;
+      let inputs = populate_inputs(data).map_err(|e| NativeComponentError::new(e.to_string()))?;
       let (outputs, stream) = get_outputs();
       let result = crate::components::rm_item::job(inputs, outputs, context).await;
       match result {
