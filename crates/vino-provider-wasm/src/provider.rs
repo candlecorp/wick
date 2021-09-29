@@ -11,9 +11,10 @@ use vino_rpc::{
   RpcResult,
 };
 use vino_transport::message_transport::stream::BoxedTransportStream;
-use vino_transport::message_transport::TransportMap;
+use vino_transport::TransportMap;
 pub use wapc::WasiParams;
 
+use crate::error::LinkError;
 use crate::wapc_module::WapcModule;
 use crate::wasm_host::{
   WasmHost,
@@ -32,17 +33,24 @@ pub struct Provider {
   host: Arc<RwLock<WasmHost>>,
 }
 
+pub type HostLinkCallback =
+  dyn Fn(&str, &str, TransportMap) -> Result<Vec<TransportWrapper>, LinkError> + Sync + Send;
+
 impl Provider {
   pub fn try_load(
     module: &WapcModule,
     threads: usize,
     wasi_options: Option<WasiParams>,
+    callback: Option<Box<HostLinkCallback>>,
   ) -> Result<Self, Error> {
     debug!("WASM:START:{} Threads", threads);
 
     let mut builder = WasmHostBuilder::new();
     if let Some(opts) = wasi_options {
       builder = builder.wasi_params(opts);
+    }
+    if let Some(callback) = callback {
+      builder = builder.link_callback(callback);
     }
     let host = builder.build(module)?;
 
@@ -110,7 +118,12 @@ mod tests {
     )?)
     .await?;
 
-    let provider = Provider::try_load(&component, 2, None)?;
+    let provider = Provider::try_load(
+      &component,
+      2,
+      None,
+      Some(Box::new(|_origin, _component, _payload| Ok(vec![]))),
+    )?;
     let input = "Hello world";
 
     let job_payload = TransportMap::with_map(hashmap! {

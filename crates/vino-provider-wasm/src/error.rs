@@ -1,4 +1,5 @@
 use thiserror::Error;
+use vino_provider::native::prelude::EntityError;
 use vino_rpc::error::RpcError;
 
 #[derive(Error, Debug)]
@@ -50,5 +51,21 @@ impl From<WasmProviderError> for Box<RpcError> {
 impl From<vino_loader::Error> for WasmProviderError {
   fn from(e: vino_loader::Error) -> Self {
     WasmProviderError::Loading(e.to_string())
+  }
+}
+
+#[derive(Error, Debug)]
+pub enum LinkError {
+  #[error("{0}")]
+  EntityFailure(String),
+  #[error("Component '{0}' can't call a link to itself.")]
+  Circular(String),
+  #[error("{0}")]
+  CallFailure(String),
+}
+
+impl From<EntityError> for LinkError {
+  fn from(e: EntityError) -> Self {
+    LinkError::EntityFailure(e.to_string())
   }
 }
