@@ -1,0 +1,10 @@
+namespace "reverse-uppercase"
+
+type Inputs {
+  input: string
+  link: ProviderLink
+}
+
+type Outputs {
+  output: string
+}
