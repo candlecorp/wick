@@ -51,7 +51,7 @@ pub mod prelude {
     BoxedTransportStream,
     TransportStream,
   };
-  pub use vino_transport::message_transport::{
+  pub use vino_transport::{
     MessageTransport,
     TransportMap,
     TransportWrapper,

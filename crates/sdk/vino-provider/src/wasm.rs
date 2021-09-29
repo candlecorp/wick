@@ -12,6 +12,9 @@ use std::collections::HashMap;
 #[doc(hidden)]
 pub mod wapc;
 
+/// Module that encapsulates a linked provider as input.
+pub mod provider_link;
+
 use vino_codec::messagepack::{
   deserialize,
   serialize,
@@ -40,7 +43,18 @@ pub type CallResult = Result<Vec<u8>>;
 
 /// Common imports for WebAssembly providers and components.
 pub mod prelude {
+  pub use vino_transport::{
+    MessageTransport,
+    TransportMap,
+    TransportWrapper,
+  };
+
   pub use super::error::ComponentError;
+  pub use super::provider_link::{
+    PortOutput,
+    ProviderOutput,
+    WasmProviderLink,
+  };
   pub use super::{
     console_log,
     wapc,
@@ -56,6 +70,7 @@ pub mod prelude {
     deserialize,
     serialize,
   };
+  pub use crate::provider_link::ProviderLink;
 }
 
 use crate::OutputSignal;
@@ -63,7 +78,7 @@ use crate::OutputSignal;
 /// Send a [Packet] out the named port.
 pub fn port_send(port_name: &str, packet: v0::Payload) -> Result<()> {
   host_call(
-    "",
+    "0",
     port_name,
     OutputSignal::Output.as_str(),
     &serialize(&Packet::V0(packet))?,
@@ -74,7 +89,7 @@ pub fn port_send(port_name: &str, packet: v0::Payload) -> Result<()> {
 /// Send a [Packet] out the named port and immediately close it.
 pub fn port_send_close(port_name: &str, packet: v0::Payload) -> Result<()> {
   host_call(
-    "",
+    "0",
     port_name,
     OutputSignal::OutputDone.as_str(),
     &serialize(&Packet::V0(packet))?,
@@ -84,7 +99,7 @@ pub fn port_send_close(port_name: &str, packet: v0::Payload) -> Result<()> {
 
 /// Close the referenced port.
 pub fn port_close(port_name: &str) -> Result<()> {
-  host_call("", port_name, OutputSignal::Done.as_str(), &[])?;
+  host_call("0", port_name, OutputSignal::Done.as_str(), &[])?;
   Ok(())
 }
 
@@ -102,16 +117,19 @@ pub(crate) fn host_call(binding: &str, ns: &str, op: &str, msg: &[u8]) -> CallRe
       msg.len(),
     )
   };
+
   if callresult != 1 {
     // call was not successful
-    let errlen = unsafe { __host_error_len() };
-    let buf = Vec::with_capacity(errlen);
+    let len = unsafe { __host_error_len() };
+    let buf = Vec::with_capacity(len);
     let retptr = buf.as_ptr();
     let _slice = unsafe {
       __host_error(retptr);
-      std::slice::from_raw_parts(retptr, errlen)
+      std::slice::from_raw_parts(retptr, len)
     };
-    Err(Error::HostError("Component execution failed".to_owned()))
+    Err(Error::HostError(
+      String::from_utf8_lossy(_slice).to_string(),
+    ))
   } else {
     // call succeeded
     let len = unsafe { __host_response_len() };

@@ -100,6 +100,9 @@ pub mod signatures;
 /// Raw value type.
 pub mod raw;
 
+/// Module for the root [ProviderLink] struct.
+pub mod provider_link;
+
 use std::str::FromStr;
 
 pub use vino_codec as codec;
@@ -136,6 +139,40 @@ impl FromStr for OutputSignal {
       "1" => OutputSignal::Output,
       "2" => OutputSignal::OutputDone,
       "3" => OutputSignal::Done,
+      _ => return Err(()),
+    };
+    Ok(result)
+  }
+}
+
+#[allow(missing_debug_implementations, missing_copy_implementations)]
+#[must_use]
+/// The [HostCommand] enum tells the host what to do for the host call.
+pub enum HostCommand {
+  /// Port output.
+  Output,
+  /// Make a call to a linked provider.
+  LinkCall,
+}
+
+impl HostCommand {
+  #[must_use]
+  #[doc(hidden)]
+  pub fn as_str(&self) -> &'static str {
+    match self {
+      HostCommand::Output => "0",
+      HostCommand::LinkCall => "1",
+    }
+  }
+}
+
+impl FromStr for HostCommand {
+  type Err = ();
+
+  fn from_str(s: &str) -> Result<Self, Self::Err> {
+    let result = match s {
+      "0" => HostCommand::Output,
+      "1" => HostCommand::LinkCall,
       _ => return Err(()),
     };
     Ok(result)
