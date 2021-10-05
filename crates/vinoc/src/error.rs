@@ -47,8 +47,12 @@ pub enum ControlError {
   ConnectionError(String),
   #[error("Internal error: {0}")]
   InternalError(String),
-  #[error(transparent)]
-  IOError(#[from] std::io::Error),
+  #[error("Could not read or open file: {0}")]
+  ReadFailed(std::io::Error),
+  #[error("Could not read next line: {0}")]
+  ReadLineFailed(std::io::Error),
+  #[error("IO error: {0}")]
+  IOError(String),
   #[error(transparent)]
   SerdeJsonError(#[from] serde_json::Error),
   #[error("General error : {0}")]
@@ -58,6 +62,12 @@ pub enum ControlError {
 impl From<nkeys::error::Error> for ControlError {
   fn from(e: nkeys::error::Error) -> Self {
     ControlError::KeyPairError(e.to_string())
+  }
+}
+
+impl From<std::io::Error> for ControlError {
+  fn from(e: std::io::Error) -> Self {
+    ControlError::IOError(e.to_string())
   }
 }
 

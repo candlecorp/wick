@@ -10,6 +10,7 @@ use structopt::StructOpt;
 use vino_types::signatures::ProviderSignature;
 use vino_wascap::sign_buffer_with_claims;
 
+use crate::error::ControlError;
 use crate::keys::extract_keypair;
 use crate::Result;
 #[derive(Debug, Clone, StructOpt)]
@@ -59,7 +60,9 @@ pub async fn handle_command(opts: SignCommand) -> Result<()> {
   crate::utils::init_logger(&opts.logging)?;
   debug!("Signing module");
 
-  let json = std::fs::read_to_string(opts.interface)?;
+  debug!("Reading from {}", opts.interface);
+  let json = std::fs::read_to_string(opts.interface).map_err(ControlError::ReadFailed)?;
+  debug!("Read {} bytes", json.len());
 
   let interface: ProviderSignature = serde_json::from_str(&json)?;
 

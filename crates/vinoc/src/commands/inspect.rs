@@ -3,6 +3,7 @@ use std::io::Read;
 
 use structopt::StructOpt;
 
+use crate::error::ControlError;
 use crate::Result;
 #[derive(Debug, Clone, StructOpt)]
 #[structopt(rename_all = "kebab-case")]
@@ -27,9 +28,11 @@ struct GenerateCommon {
 pub async fn handle_command(opts: InspectCommand) -> Result<()> {
   crate::utils::init_logger(&opts.logging)?;
 
-  let mut file = File::open(&opts.module)?;
+  let mut file = File::open(&opts.module).map_err(ControlError::ReadFailed)?;
   let mut buf = Vec::new();
-  file.read_to_end(&mut buf)?;
+  file
+    .read_to_end(&mut buf)
+    .map_err(ControlError::ReadFailed)?;
 
   // Extract will return an error if it encounters an invalid hash in the claims
   let claims = vino_wascap::extract_claims(&buf)?;

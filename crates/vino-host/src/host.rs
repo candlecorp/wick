@@ -10,13 +10,14 @@ use vino_entity::Entity;
 use vino_lattice::lattice::Lattice;
 use vino_lattice::nats::NatsOptions;
 use vino_manifest::host_definition::HostDefinition;
-use vino_provider::native::prelude::SchematicSignature;
+use vino_provider::native::prelude::ProviderSignature;
 use vino_provider_cli::cli::{
   LatticeOptions,
   Options as HostOptions,
   ServerOptions,
   ServerState,
 };
+use vino_runtime::core_data::InitData;
 use vino_runtime::network::NetworkBuilder;
 use vino_runtime::prelude::*;
 use vino_transport::TransportMap;
@@ -78,9 +79,9 @@ impl Host {
     }
   }
 
-  pub async fn list_schematics(&self) -> Result<Vec<SchematicSignature>> {
+  pub async fn get_signature(&self) -> Result<ProviderSignature> {
     match &self.network {
-      Some(network) => Ok(network.list_schematics().await?),
+      Some(network) => Ok(network.get_signature().await?),
       None => Err(Error::NoNetwork),
     }
   }
@@ -192,7 +193,12 @@ impl Host {
     Ok(metadata)
   }
 
-  pub async fn request<T, U>(&self, schematic: T, payload: U) -> Result<TransportStream>
+  pub async fn request<T, U>(
+    &self,
+    schematic: T,
+    payload: U,
+    data: Option<InitData>,
+  ) -> Result<TransportStream>
   where
     T: AsRef<str> + Sync + Send,
     U: TryInto<TransportMap> + Send + Sync,
@@ -200,7 +206,7 @@ impl Host {
     match &self.network {
       Some(network) => Ok(
         network
-          .request(schematic, Entity::host(&self.id), payload)
+          .request_with_data(schematic, Entity::host(&self.id), payload, data)
           .await?,
       ),
       None => Err(crate::Error::InvalidHostState(
@@ -335,8 +341,8 @@ mod test {
     let mut host = HostBuilder::from_definition(manifest).build();
     host.start().await?;
     let passed_data = "logging output";
-    let data: TransportMap = vec![("input", passed_data)].into();
-    let mut stream = host.request("logger", data).await?;
+    let payload: TransportMap = vec![("input", passed_data)].into();
+    let mut stream = host.request("logger", payload, None).await?;
     let mut messages: Vec<_> = stream.collect_port("output").await;
     assert_eq!(messages.len(), 1);
     let output = messages.pop().unwrap();

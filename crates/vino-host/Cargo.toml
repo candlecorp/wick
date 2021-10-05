@@ -11,7 +11,9 @@ license = "BSD-3-Clause"
 vino-runtime = { path = "../vino-runtime" }
 vino-lattice = { path = "../vino-lattice" }
 vino-manifest = { path = "../vino-manifest" }
-vino-transport = { path = "../../sdk/crates/vino-transport" }
+vino-transport = { path = "../../sdk/crates/vino-transport", features = [
+  "all",
+] }
 vino-provider = { path = "../../sdk/crates/vino-provider", features = [
   "native",
 ] }

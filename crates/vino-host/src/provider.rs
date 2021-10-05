@@ -8,6 +8,7 @@ use vino_rpc::{
   RpcHandler,
   RpcResult,
 };
+use vino_runtime::core_data::InitData;
 use vino_transport::message_transport::stream::BoxedTransportStream;
 use vino_transport::TransportMap;
 
@@ -40,9 +41,15 @@ impl RpcHandler for Provider {
     trace!("HOST:INVOKE:[{}]", entity);
     let component = entity.name();
 
+    let init_data: InitData = payload
+      .get_config()
+      .clone()
+      .map(|c| c.into())
+      .unwrap_or_default();
+
     let outputs = self
       .host
-      .request(&component, payload)
+      .request(&component, payload, Some(init_data))
       .await
       .map_err(RpcError::boxed)?;
 
@@ -50,24 +57,9 @@ impl RpcHandler for Provider {
   }
 
   async fn get_list(&self) -> RpcResult<Vec<HostedType>> {
-    let components = self.host.list_schematics().await.map_err(RpcError::boxed)?;
+    let provider: ProviderSignature = self.host.get_signature().await.map_err(RpcError::boxed)?;
 
-    trace!(
-      "HOST:COMPONENTS:[{}]",
-      components
-        .iter()
-        .map(|c| c.name.clone())
-        .collect::<Vec<_>>()
-        .join(",")
-    );
-
-    Ok(
-      components
-        .iter()
-        .cloned()
-        .map(HostedType::Schematic)
-        .collect(),
-    )
+    Ok(vec![HostedType::Provider(provider)])
   }
 }
 

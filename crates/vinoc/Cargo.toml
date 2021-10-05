@@ -10,7 +10,9 @@ license = "BSD-3-Clause"
 [dependencies]
 vino-packet = { path = "../../sdk/crates/vino-packet" }
 vino-runtime = { path = "../vino-runtime" }
-vino-transport = { path = "../../sdk/crates/vino-transport" }
+vino-transport = { path = "../../sdk/crates/vino-transport", features = [
+  "all",
+] }
 vino-host = { path = "../vino-host" }
 vino-manifest = { path = "../vino-manifest" }
 vino-codec = { path = "../../sdk/crates/vino-codec" }
@@ -34,7 +36,7 @@ tokio = { version = "1.8.1", features = [
   "rt-multi-thread",
   "io-util",
 ] }
-tonic = { version = "0.5.0", features = ["tls"] }
+tonic = { version = "0.5", features = ["tls"] }
 atty = "0.2.14"
 
 [dev-dependencies]

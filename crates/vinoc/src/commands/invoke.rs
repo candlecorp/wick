@@ -10,6 +10,7 @@ use vino_transport::{
   TransportWrapper,
 };
 
+use crate::error::ControlError;
 use crate::rpc_client::rpc_client;
 use crate::Result;
 #[derive(Debug, Clone, StructOpt)]
@@ -39,6 +40,7 @@ pub struct InvokeCommand {
 
 pub async fn handle_command(opts: InvokeCommand) -> Result<()> {
   crate::utils::init_logger(&opts.logging)?;
+
   let mut client = rpc_client(
     opts.connection.address,
     opts.connection.port,
@@ -55,7 +57,11 @@ pub async fn handle_command(opts: InvokeCommand) -> Result<()> {
     }
     let reader = BufReader::new(io::stdin());
     let mut lines = reader.lines();
-    while let Some(line) = lines.next_line().await? {
+    while let Some(line) = lines
+      .next_line()
+      .await
+      .map_err(ControlError::ReadLineFailed)?
+    {
       let stream = client
         .invoke_from_json(opts.schematic.clone(), &line, !opts.raw)
         .await?;

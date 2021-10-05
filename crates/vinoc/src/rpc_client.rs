@@ -20,8 +20,10 @@ use vino_rpc::rpc::{
   StatsRequest,
   StatsResponse,
 };
-use vino_runtime::prelude::Invocation;
-use vino_transport::TransportMap;
+use vino_transport::{
+  Invocation,
+  TransportMap,
+};
 
 use crate::error::ControlError;
 
@@ -87,6 +89,7 @@ pub enum RpcClientError {
   #[error(transparent)]
   TransportError(#[from] vino_transport::Error),
 }
+
 impl From<vino_runtime::Error> for RpcClientError {
   fn from(e: vino_runtime::Error) -> Self {
     RpcClientError::RuntimeError(e.to_string())
@@ -144,7 +147,8 @@ impl RpcClient {
       Entity::component_direct(component),
       payload,
     )
-    .try_into()?;
+    .try_into()
+    .unwrap();
 
     let stream = self.invoke_raw(rpc_invocation).await?;
 

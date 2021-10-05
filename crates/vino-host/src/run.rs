@@ -92,7 +92,7 @@ pub async fn run(manifest: HostDefinition, data: TransportMap) -> crate::Result<
 
   info!("Manifest applied");
 
-  let raw_result = host.request(&default_schematic, data).await?;
+  let raw_result = host.request(&default_schematic, data, None).await?;
 
   Ok(raw_result)
 }
