@@ -30,30 +30,30 @@ all: build
 # src/components/my_components.rs: interface.json /src/components
 define COMPONENT_GEN
 $(COMPONENTS_DIR)/$(subst -,_,$(1)).rs: interface.json ${COMPONENTS_DIR}
-	vino-codegen rust provider-component $(1) -o $$@
-	rustfmt $$@
+	@vino-codegen rust provider-component $(1) -o $$@
+	@rustfmt $$@
 endef
 
 # Call the above rule generator for each schema file
 $(foreach name,$(COMPONENT_NAMES),$(eval $(call COMPONENT_GEN,$(name))))
 
 $(GENERATED_RS): ./interface.json
-	vino-codegen rust wellknown-integration $< -f -o $@
+	@vino-codegen rust wellknown-integration $< -f -o $@
 
 $(COMPONENTS_DIR):
-	mkdir $@
+	@mkdir $@
 
 $(COMPONENTS_RS): ./interface.json $(COMPONENTS_DIR)
-	vino-codegen rust wellknown-component-module $< -f -o $@
+	@vino-codegen rust wellknown-component-module $< -f -o $@
 
 codegen: ${GENERATED_COMPONENTS} $(GENERATED_RS) $(COMPONENTS_RS)
-	cargo fmt
+	@cargo fmt
 
 build: $(wildcard ./src/*.rs) ${GENERATED_COMPONENTS} $(GENERATED_RS) ./interface.json
 	cargo build --release
 
 clean:
-	rm -f $(CLEAN_FILES)
+	@rm -f $(CLEAN_FILES)
 
 doc:
 

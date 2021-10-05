@@ -14,30 +14,33 @@ GENERATED_RS:=./src/generated.rs
 SCHEMAS=$(wildcard ${SCHEMA_DIR}/*.widl)
 # Name of the package from Cargo.toml
 CRATE_NAME:=$(shell tomlq -f Cargo.toml package.name)
+# The interface schema
+INTERFACE:=./interface.json
+
 
 # Files to clean up on make clean
-CLEAN_FILES := $(GENERATED_RS)
+CLEAN_FILES := $(GENERATED_RS) $(INTERFACE)
 
 RUSTFMT=rustfmt --edition=2018
 
 all: codegen build
 
-./interface.json: $(SCHEMAS)
-	vino-codegen json interface "$(CRATE_NAME)" $(SCHEMA_DIR) -f -o $@
+$(INTERFACE): $(SCHEMAS)
+	@vino-codegen json interface "$(CRATE_NAME)" $(SCHEMA_DIR) -f -o $@
 
 $(GENERATED_RS): $(SCHEMAS)
-	vino-codegen rust interface $(SCHEMA_DIR) -f -o $@
+	@vino-codegen rust interface $(SCHEMA_DIR) -f -o $@
 
-codegen: $(GENERATED_RS) ./interface.json
-	cargo fmt
+codegen: $(GENERATED_RS) $(INTERFACE)
+	@cargo fmt
 
-build: $(wildcard ./src/*.rs) $(GENERATED_RS) ./interface.json
-	cargo build --release
+build: $(wildcard ./src/*.rs) $(GENERATED_RS) $(INTERFACE)
+	@cargo build --release
 
 clean:
-	rm -f $(CLEAN_FILES)
+	@rm -f $(CLEAN_FILES)
 
 doc:
 
 test: codegen
-	cargo test
+	@cargo test
