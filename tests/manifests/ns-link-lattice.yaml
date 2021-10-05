@@ -1,0 +1,24 @@
+version: 0
+host:
+  lattice:
+    enabled: true
+network:
+  providers:
+    - namespace: wapc
+      kind: WaPC
+      reference: ./crates/integration/test-wapc-component/build/test_component_s.wasm
+    - namespace: lattice_wapc
+      kind: Lattice
+      reference: lattice_wapc
+  schematics:
+    - name: ns-link
+      providers:
+        - wapc
+        - lattice_wapc
+      instances:
+        reverse_upper:
+          id: wapc::reverse-uppercase
+      connections:
+        - <> => reverse_upper[input]
+        - <link>[lattice_wapc] => reverse_upper[link]
+        - reverse_upper[output] => <>
