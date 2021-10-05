@@ -19,9 +19,9 @@ vino-entity = { path = "./sdk/crates/vino-entity" }
 vino-codec = { path = "./sdk/crates/vino-codec" }
 vino-packet = { path = "./sdk/crates/vino-packet" }
 vino-provider = { path = "./sdk/crates/vino-provider", features = ["native"] }
-vino-transport = { path = "./sdk/crates/vino-transport" }
+vino-transport = { path = "./sdk/crates/vino-transport", features = ["all"] }
 logger = { path = "./crates/logger" }
-vino-interface-collection = { path = "./crates/interfaces/interface-collection" }
+# vino-interface-collection = { path = "./crates/interfaces/interface-collection" }
 test-vino-provider = { path = "./crates/integration/test-vino-provider" }
 vino-rpc = { path = "./crates/vino-rpc" }
 vino-macros = { path = "./sdk/crates/vino-macros" }

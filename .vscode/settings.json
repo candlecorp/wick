@@ -6,5 +6,9 @@
       "tests/manifests/*.yaml",
       "crates/vino-manifest/tests/manifests/v0/*.yaml"
     ]
-  }
+  },
+  "rust-analyzer.cargo.features": [
+    "vino-native-api-0/native",
+    "vino-native-api-0/provider"
+  ]
 }

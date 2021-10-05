@@ -224,17 +224,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "bcrypt"
-version = "0.10.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f691e63585950d8c1c43644d11bab9073e40f5060dd2822734ae7c3dc69a3a80"
-dependencies = [
- "base64 0.13.0",
- "blowfish",
- "getrandom 0.2.3",
-]
-
-[[package]]
 name = "bincode"
 version = "1.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -270,17 +259,6 @@ dependencies = [
  "fastrand",
  "futures-lite",
  "once_cell",
-]
-
-[[package]]
-name = "blowfish"
-version = "0.8.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fe3ff3fc1de48c1ac2e3341c4df38b0d1bfb8fdf04632a187c8b75aaa319a7ab"
-dependencies = [
- "byteorder",
- "cipher",
- "opaque-debug",
 ]
 
 [[package]]
@@ -444,15 +422,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2eddc119501d583fd930cb92144e605f44e0252c38dd89d9247fffa1993375cb"
 dependencies = [
  "chrono",
-]
-
-[[package]]
-name = "cipher"
-version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7ee52072ec15386f770805afd189a01c8841be8696bed250fa2f13c4c0d6dfb7"
-dependencies = [
- "generic-array",
 ]
 
 [[package]]
@@ -1605,9 +1574,9 @@ checksum = "58ae91cec8978ea160429d0609ec47da5d65a858725701b77df198ecf985d6bd"
 
 [[package]]
 name = "lock_api"
-version = "0.4.4"
+version = "0.4.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0382880606dff6d15c9476c416d18690b72742aa7b605bb6dd6ec9030fbf07eb"
+checksum = "712a4d093c9976e24e7dbca41db895dabcbac38eb5f4045393d17a95bdfb1109"
 dependencies = [
  "scopeguard",
 ]
@@ -1967,9 +1936,9 @@ checksum = "427c3892f9e783d91cc128285287e70a59e206ca452770ece88a76f7a3eddd72"
 
 [[package]]
 name = "parking_lot"
-version = "0.11.1"
+version = "0.11.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6d7744ac029df22dca6284efe4e898991d28e3085c706c972bcd7da4a27a15eb"
+checksum = "7d17b78036a60663b797adeaee46f5c9dfebb86948d1255007a1d6be0271ff99"
 dependencies = [
  "instant",
  "lock_api",
@@ -1978,9 +1947,9 @@ dependencies = [
 
 [[package]]
 name = "parking_lot_core"
-version = "0.8.3"
+version = "0.8.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fa7a782938e745763fe6907fc6ba86946d72f49fe7e21de074e08128a99fb018"
+checksum = "d76e8e1493bcac0d2766c42737f34458f1c8c50c0d23bcb24ea953affb273216"
 dependencies = [
  "cfg-if",
  "instant",
@@ -2976,34 +2945,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "test-interface-authentication"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "log",
- "thiserror",
- "vino-interface-authentication",
- "vino-invocation-server",
- "vino-packet",
- "vino-provider",
- "vino-rpc",
-]
-
-[[package]]
-name = "test-interface-collection"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "log",
- "thiserror",
- "vino-interface-collection",
- "vino-invocation-server",
- "vino-packet",
- "vino-provider",
- "vino-rpc",
-]
-
-[[package]]
 name = "test-interface-keyvalue"
 version = "0.1.0"
 dependencies = [
@@ -3290,24 +3231,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "tonic-web"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8425af3a75718dc8e0d58e1916bc09cced5bd206d114ab57e66c83b0ad740d3c"
-dependencies = [
- "base64 0.13.0",
- "bytes 1.0.1",
- "futures-core",
- "http 0.2.4",
- "http-body",
- "hyper",
- "pin-project",
- "tonic",
- "tower-service",
- "tracing",
-]
-
-[[package]]
 name = "tower"
 version = "0.4.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3576,31 +3499,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "vino-authentication-inmemory"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-trait",
- "bcrypt",
- "log",
- "logger",
- "rand 0.8.4",
- "structopt",
- "test-interface-authentication",
- "test-logger",
- "thiserror",
- "tokio",
- "tokio-stream",
- "vino-codec",
- "vino-interface-authentication",
- "vino-macros 0.7.0",
- "vino-packet",
- "vino-provider",
- "vino-provider-cli",
- "vino-rpc",
-]
-
-[[package]]
 name = "vino-codec"
 version = "0.7.0"
 dependencies = [
@@ -3612,70 +3510,13 @@ dependencies = [
 ]
 
 [[package]]
-name = "vino-collection-fs"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-trait",
- "backtrace",
- "env_logger 0.9.0",
- "futures",
- "log",
- "logger",
- "serde",
- "serde_json",
- "structopt",
- "test-interface-collection",
- "test-logger",
- "test_bin",
- "thiserror",
- "tokio",
- "tokio-util",
- "tonic",
- "vino-interface-collection",
- "vino-macros 0.7.0",
- "vino-packet",
- "vino-provider",
- "vino-provider-cli",
- "vino-rpc",
-]
-
-[[package]]
-name = "vino-collection-inmemory"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-trait",
- "backtrace",
- "futures",
- "log",
- "logger",
- "serde",
- "serde_json",
- "structopt",
- "test-interface-collection",
- "test-logger",
- "test_bin",
- "thiserror",
- "tokio",
- "tokio-util",
- "tonic",
- "vino-interface-collection",
- "vino-macros 0.7.0",
- "vino-packet",
- "vino-provider",
- "vino-provider-cli",
- "vino-rpc",
-]
-
-[[package]]
 name = "vino-entity"
 version = "0.7.0"
 dependencies = [
  "serde",
  "thiserror",
  "url 2.2.2",
- "vino-macros 0.7.0",
+ "vino-macros",
 ]
 
 [[package]]
@@ -3702,7 +3543,7 @@ dependencies = [
  "vino-entity",
  "vino-invocation-server",
  "vino-lattice",
- "vino-macros 0.7.0",
+ "vino-macros",
  "vino-manifest",
  "vino-provider",
  "vino-provider-cli",
@@ -3712,24 +3553,21 @@ dependencies = [
 ]
 
 [[package]]
-name = "vino-interface-authentication"
-version = "0.1.0"
+name = "vino-http"
+version = "0.0.0"
 dependencies = [
+ "base64 0.13.0",
+ "bytes 1.0.1",
+ "futures-core",
+ "http 0.2.4",
+ "http-body",
+ "hyper",
  "log",
- "serde",
- "vino-packet",
- "vino-provider",
- "vino-rpc",
- "vino-transport",
-]
-
-[[package]]
-name = "vino-interface-collection"
-version = "0.1.0"
-dependencies = [
- "serde",
- "vino-packet",
- "vino-provider",
+ "pin-project",
+ "tokio",
+ "tonic",
+ "tower-service",
+ "vino-entity",
  "vino-rpc",
  "vino-transport",
 ]
@@ -3739,10 +3577,7 @@ name = "vino-interface-keyvalue"
 version = "0.1.0"
 dependencies = [
  "serde",
- "vino-packet",
  "vino-provider",
- "vino-rpc",
- "vino-transport",
 ]
 
 [[package]]
@@ -3765,7 +3600,7 @@ dependencies = [
  "tokio-stream",
  "tonic",
  "vino-entity",
- "vino-macros 0.7.0",
+ "vino-macros",
  "vino-rpc",
  "vino-transport",
  "vino-types",
@@ -3794,7 +3629,7 @@ dependencies = [
  "tokio-util",
  "tonic",
  "vino-interface-keyvalue",
- "vino-macros 0.7.0",
+ "vino-macros",
  "vino-packet",
  "vino-provider",
  "vino-provider-cli",
@@ -3840,15 +3675,6 @@ dependencies = [
 
 [[package]]
 name = "vino-macros"
-version = "0.1.0"
-dependencies = [
- "lazy_static",
- "log",
- "vino-transport",
-]
-
-[[package]]
-name = "vino-macros"
 version = "0.7.0"
 dependencies = [
  "lazy_static",
@@ -3875,7 +3701,7 @@ dependencies = [
  "serde_yaml",
  "test-logger",
  "thiserror",
- "vino-macros 0.7.0",
+ "vino-macros",
  "vino-transport",
 ]
 
@@ -3887,14 +3713,15 @@ dependencies = [
  "futures",
  "log",
  "logger",
+ "parking_lot",
  "serde",
  "test-logger",
  "thiserror",
  "tokio",
- "uuid",
  "vino-entity",
  "vino-packet",
  "vino-provider",
+ "vino-random",
  "vino-rpc",
  "vino-transport",
 ]
@@ -3948,8 +3775,8 @@ dependencies = [
  "tokio-stream",
  "tonic",
  "tonic-reflection",
- "tonic-web",
  "vino-codec",
+ "vino-http",
  "vino-invocation-server",
  "vino-lattice",
  "vino-packet",
@@ -3999,7 +3826,7 @@ dependencies = [
  "tokio-stream",
  "vino-codec",
  "vino-loader",
- "vino-macros 0.7.0",
+ "vino-macros",
  "vino-packet",
  "vino-provider",
  "vino-rpc",
@@ -4008,6 +3835,16 @@ dependencies = [
  "vino-wascap",
  "wapc",
  "wasmtime-provider",
+]
+
+[[package]]
+name = "vino-random"
+version = "0.0.0"
+dependencies = [
+ "parking_lot",
+ "rand 0.8.4",
+ "rand_chacha 0.3.1",
+ "uuid",
 ]
 
 [[package]]
@@ -4028,8 +3865,7 @@ dependencies = [
  "utils",
  "vino-codec",
  "vino-entity",
- "vino-interface-collection",
- "vino-macros 0.7.0",
+ "vino-macros",
  "vino-packet",
  "vino-provider",
  "vino-rpc",
@@ -4061,7 +3897,7 @@ dependencies = [
  "tonic-build",
  "vino-codec",
  "vino-entity",
- "vino-macros 0.7.0",
+ "vino-macros",
  "vino-packet",
  "vino-provider",
  "vino-transport",
@@ -4077,7 +3913,6 @@ dependencies = [
  "anyhow",
  "async-trait",
  "criterion",
- "derivative",
  "futures",
  "itertools",
  "lazy_static",
@@ -4087,6 +3922,7 @@ dependencies = [
  "once_cell",
  "parking_lot",
  "pretty_assertions",
+ "rand 0.8.4",
  "serde",
  "serde_json",
  "test-logger",
@@ -4100,7 +3936,7 @@ dependencies = [
  "vino-invocation-server",
  "vino-lattice",
  "vino-loader",
- "vino-macros 0.7.0",
+ "vino-macros",
  "vino-manifest",
  "vino-native-api-0",
  "vino-packet",
@@ -4140,7 +3976,9 @@ dependencies = [
  "thiserror",
  "tokio",
  "tokio-stream",
+ "uuid",
  "vino-codec",
+ "vino-entity",
  "vino-packet",
 ]
 
@@ -4148,7 +3986,9 @@ dependencies = [
 name = "vino-types"
 version = "0.7.0"
 dependencies = [
+ "log",
  "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -4163,7 +4003,7 @@ dependencies = [
  "ring",
  "serde",
  "thiserror",
- "vino-macros 0.7.0",
+ "vino-macros",
  "vino-types",
  "wascap",
 ]
@@ -4188,7 +4028,7 @@ dependencies = [
  "vino-codec",
  "vino-entity",
  "vino-host",
- "vino-macros 0.7.0",
+ "vino-macros",
  "vino-manifest",
  "vino-packet",
  "vino-rpc",
@@ -4605,7 +4445,6 @@ dependencies = [
  "parking_lot",
  "serde",
  "serde_json",
- "vino-macros 0.1.0",
  "wapc",
  "wasi-cap-std-sync",
  "wasi-common",
