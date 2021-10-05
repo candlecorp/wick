@@ -64,7 +64,20 @@ pub struct StatsRequest {}
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ListResponse {
   #[prost(message, repeated, tag = "1")]
-  pub components: ::prost::alloc::vec::Vec<Component>,
+  pub schemas: ::prost::alloc::vec::Vec<HostedType>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct HostedType {
+  #[prost(oneof = "hosted_type::Type", tags = "1")]
+  pub r#type: ::core::option::Option<hosted_type::Type>,
+}
+/// Nested message and enum types in `HostedType`.
+pub mod hosted_type {
+  #[derive(Clone, PartialEq, ::prost::Oneof)]
+  pub enum Type {
+    #[prost(message, tag = "1")]
+    Provider(super::Provider),
+  }
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Component {
@@ -72,22 +85,13 @@ pub struct Component {
   pub name: ::prost::alloc::string::String,
   #[prost(enumeration = "component::ComponentKind", tag = "2")]
   pub kind: i32,
-  #[prost(message, repeated, tag = "3")]
-  pub inputs: ::prost::alloc::vec::Vec<component::Port>,
-  #[prost(message, repeated, tag = "4")]
-  pub outputs: ::prost::alloc::vec::Vec<component::Port>,
-  #[prost(message, repeated, tag = "5")]
-  pub providers: ::prost::alloc::vec::Vec<Provider>,
+  #[prost(map = "string, message", tag = "3")]
+  pub inputs: ::std::collections::HashMap<::prost::alloc::string::String, TypeSignature>,
+  #[prost(map = "string, message", tag = "4")]
+  pub outputs: ::std::collections::HashMap<::prost::alloc::string::String, TypeSignature>,
 }
 /// Nested message and enum types in `Component`.
 pub mod component {
-  #[derive(Clone, PartialEq, ::prost::Message)]
-  pub struct Port {
-    #[prost(string, tag = "1")]
-    pub name: ::prost::alloc::string::String,
-    #[prost(string, tag = "2")]
-    pub r#type: ::prost::alloc::string::String,
-  }
   #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
   #[repr(i32)]
   pub enum ComponentKind {
@@ -99,8 +103,10 @@ pub mod component {
 pub struct Provider {
   #[prost(string, tag = "1")]
   pub name: ::prost::alloc::string::String,
-  #[prost(message, repeated, tag = "2")]
-  pub components: ::prost::alloc::vec::Vec<Component>,
+  #[prost(map = "string, message", tag = "6")]
+  pub types: ::std::collections::HashMap<::prost::alloc::string::String, StructSignature>,
+  #[prost(map = "string, message", tag = "2")]
+  pub components: ::std::collections::HashMap<::prost::alloc::string::String, Component>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct StatsResponse {
@@ -126,6 +132,91 @@ pub struct DurationStatistics {
   pub max: u64,
   #[prost(uint64, tag = "3")]
   pub average: u64,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct StructSignature {
+  #[prost(string, tag = "1")]
+  pub name: ::prost::alloc::string::String,
+  #[prost(map = "string, message", tag = "2")]
+  pub fields: ::std::collections::HashMap<::prost::alloc::string::String, TypeSignature>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct TypeSignature {
+  #[prost(oneof = "type_signature::Signature", tags = "1, 2, 3, 4, 5, 6")]
+  pub signature: ::core::option::Option<type_signature::Signature>,
+}
+/// Nested message and enum types in `TypeSignature`.
+pub mod type_signature {
+  #[derive(Clone, PartialEq, ::prost::Oneof)]
+  pub enum Signature {
+    #[prost(message, tag = "1")]
+    Simple(super::SimpleType),
+    #[prost(message, tag = "2")]
+    Map(::prost::alloc::boxed::Box<super::MapType>),
+    #[prost(message, tag = "3")]
+    List(::prost::alloc::boxed::Box<super::ListType>),
+    #[prost(message, tag = "4")]
+    Optional(::prost::alloc::boxed::Box<super::OptionalType>),
+    #[prost(message, tag = "5")]
+    Ref(super::RefType),
+    #[prost(message, tag = "6")]
+    Link(super::LinkType),
+  }
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct SimpleType {
+  #[prost(enumeration = "simple_type::WidlType", tag = "1")]
+  pub r#type: i32,
+}
+/// Nested message and enum types in `SimpleType`.
+pub mod simple_type {
+  #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
+  #[repr(i32)]
+  pub enum WidlType {
+    I8 = 0,
+    U8 = 1,
+    I16 = 2,
+    U16 = 3,
+    I32 = 4,
+    U32 = 5,
+    I64 = 6,
+    U64 = 7,
+    F32 = 8,
+    F64 = 9,
+    Bool = 10,
+    String = 11,
+    Datetime = 12,
+    Bytes = 13,
+    Raw = 14,
+    Value = 15,
+  }
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct RefType {
+  #[prost(string, tag = "1")]
+  pub r#ref: ::prost::alloc::string::String,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct LinkType {
+  #[prost(string, tag = "1")]
+  pub provider: ::prost::alloc::string::String,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MapType {
+  #[prost(message, optional, boxed, tag = "1")]
+  pub key_type: ::core::option::Option<::prost::alloc::boxed::Box<TypeSignature>>,
+  #[prost(message, optional, boxed, tag = "2")]
+  pub value_type: ::core::option::Option<::prost::alloc::boxed::Box<TypeSignature>>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ListType {
+  #[prost(message, optional, boxed, tag = "1")]
+  pub r#type: ::core::option::Option<::prost::alloc::boxed::Box<TypeSignature>>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct OptionalType {
+  #[prost(message, optional, boxed, tag = "1")]
+  pub r#type: ::core::option::Option<::prost::alloc::boxed::Box<TypeSignature>>,
 }
 #[doc = r" Generated client implementations."]
 pub mod invocation_service_client {

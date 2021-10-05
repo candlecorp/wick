@@ -9,7 +9,6 @@ use vino_transport::{
   TransportWrapper,
 };
 
-use crate::convert_transport_map;
 use crate::rpc::invocation_service_client::InvocationServiceClient;
 use crate::rpc::{
   Invocation,
@@ -18,6 +17,7 @@ use crate::rpc::{
   StatsRequest,
   StatsResponse,
 };
+use crate::types::conversions::convert_transport_map;
 
 /// The error type that [RpcClient] methods produce.
 #[derive(thiserror::Error, Debug)]

@@ -37,6 +37,10 @@ pub enum RpcError {
   /// General Error.
   #[error("General error : {0}")]
   General(String),
+
+  /// Invalid Type Signature.
+  #[error("Invalid signature")]
+  InvalidSignature,
 }
 
 impl RpcError {
@@ -85,5 +89,17 @@ impl From<Box<dyn std::error::Error + Send + Sync>> for RpcError {
 impl From<vino_entity::Error> for Box<RpcError> {
   fn from(e: vino_entity::Error) -> Self {
     Box::new(RpcError::EntityError(e))
+  }
+}
+
+impl From<&str> for RpcError {
+  fn from(e: &str) -> Self {
+    RpcError::General(e.to_owned())
+  }
+}
+
+impl From<String> for RpcError {
+  fn from(e: String) -> Self {
+    RpcError::General(e)
   }
 }

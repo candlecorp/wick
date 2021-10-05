@@ -50,27 +50,29 @@ message Output {
 message ListRequest {}
 message StatsRequest {}
 
-message ListResponse { repeated Component components = 1; }
+message ListResponse { repeated HostedType schemas = 1; }
+
+message HostedType {
+  oneof type {
+    Provider provider = 1;
+  }
+}
 
 message Component {
-  message Port {
-    string name = 1;
-    string type = 2;
-  }
   enum ComponentKind {
     Component = 0;
     Schematic = 1;
   }
   string name = 1;
   ComponentKind kind = 2;
-  repeated Port inputs = 3;
-  repeated Port outputs = 4;
-  repeated Provider providers = 5;
+  map<string, TypeSignature> inputs = 3;
+  map<string, TypeSignature> outputs = 4;
 }
 
 message Provider {
   string name = 1;
-  repeated Component components = 2;
+  map<string, StructSignature> types = 6;
+  map<string, Component> components = 2;
 }
 
 message StatsResponse { repeated Statistic stats = 1; }
@@ -86,4 +88,63 @@ message DurationStatistics {
   uint64 min = 1;
   uint64 max = 2;
   uint64 average = 3;
+}
+
+message StructSignature {
+  string name = 1;
+  map<string, TypeSignature> fields = 2;
+}
+
+message TypeSignature {
+  oneof signature {
+    SimpleType simple = 1;
+    MapType map = 2;
+    ListType list = 3;
+    OptionalType optional = 4;
+    RefType ref = 5;
+    LinkType link = 6;
+  }
+}
+
+message SimpleType {
+  enum WidlType {
+    I8 = 0;
+    U8 = 1;
+    I16 = 2;
+    U16 = 3;
+    I32 = 4;
+    U32 = 5;
+    I64 = 6;
+    U64 = 7;
+    F32 = 8;
+    F64 = 9;
+    BOOL = 10;
+    STRING = 11;
+    DATETIME = 12;
+    BYTES = 13;
+    RAW = 14;
+    VALUE = 15;
+  }
+  WidlType type = 1;
+}
+
+message RefType {
+  string ref = 1;
+}
+
+message LinkType {
+  string provider = 1;
+}
+
+message MapType {
+  TypeSignature keyType = 1;
+  TypeSignature valueType = 2;
+}
+
+message ListType {
+  TypeSignature type = 1;
+}
+
+message OptionalType {
+  TypeSignature type = 1;
 }

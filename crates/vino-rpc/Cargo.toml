@@ -10,14 +10,16 @@ license = "BSD-3-Clause"
 vino-packet = { path = "../../sdk/crates/vino-packet" }
 vino-codec = { path = "../../sdk/crates/vino-codec" }
 vino-entity = { path = "../../sdk/crates/vino-entity" }
-vino-transport = { path = "../../sdk/crates/vino-transport" }
+vino-transport = { path = "../../sdk/crates/vino-transport", features = [
+  "all",
+] }
 vino-types = { path = "../../sdk/crates/vino-types" }
 vino-provider = { path = "../../sdk/crates/vino-provider", features = [
   "native",
 ] }
 vino-macros = { path = "../../sdk/crates/vino-macros" }
 
-tonic = { version = "0.5.2", features = ["tls"] }
+tonic = { version = "0.5", features = ["tls"] }
 prost = "0.8.0"
 prost-types = "0.8.0"
 tokio = { version = "1.4.0", features = ["macros", "net", "rt-multi-thread"] }
@@ -35,7 +37,7 @@ parking_lot = { version = "0.11.1", features = [] }
 dyn-clone = "1.0.4"
 
 [build-dependencies]
-tonic-build = { version = "0.5.2", features = ["prost"] }
+tonic-build = { version = "0.5", features = ["prost"] }
 
 [dev-dependencies]
 logger = { path = "../logger" }
