@@ -1,9 +1,0 @@
-namespace "list-permissions"
-
-type Inputs {
-  user_id: string
-}
-
-type Outputs {
-  permissions: [string]
-}

@@ -1,9 +1,0 @@
-namespace "remove-user"
-
-type Inputs {
-  username: string
-}
-
-type Outputs {
-  user_id: string
-}

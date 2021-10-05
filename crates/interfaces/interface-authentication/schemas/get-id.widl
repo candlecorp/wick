@@ -1,9 +1,0 @@
-namespace "get-id"
-
-type Inputs {
-  username: string
-}
-
-type Outputs {
-  user_id: string
-}

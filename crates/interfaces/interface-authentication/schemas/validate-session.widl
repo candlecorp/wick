@@ -1,9 +1,0 @@
-namespace "validate-session"
-
-type Inputs {
-  session: string
-}
-
-type Outputs {
-  user_id: string
-}
