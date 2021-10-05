@@ -9,6 +9,8 @@ pub(crate) mod gate;
 pub(crate) mod log;
 pub(crate) mod negate;
 pub(crate) mod panic;
+pub(crate) mod random_bytes;
+pub(crate) mod random_string;
 pub(crate) mod short_circuit;
 pub(crate) mod string_to_bytes;
 pub(crate) mod uuid;

@@ -81,6 +81,7 @@ pub mod generated;
 
 use vino_entity::Entity;
 use vino_provider::native::prelude::*;
+use vino_random::Random;
 use vino_rpc::error::RpcError;
 use vino_rpc::{
   RpcHandler,
@@ -93,9 +94,19 @@ mod components;
 pub mod error;
 
 #[derive(Clone, Debug)]
-pub(crate) struct Context {}
+pub(crate) struct Context {
+  rng: Random,
+}
+
+impl Context {
+  pub(crate) fn new(seed: u64) -> Self {
+    let rng = Random::from_seed(seed);
+    Self { rng }
+  }
+}
 
 #[derive(Clone, Debug)]
+#[must_use]
 pub struct Provider {
   context: Context,
 }
@@ -107,11 +118,9 @@ impl From<NativeError> for Box<RpcError> {
 }
 
 impl Provider {
-  #[must_use]
-  pub fn default() -> Self {
-    Self {
-      context: Context {},
-    }
+  pub fn new(seed: u64) -> Self {
+    let context = Context::new(seed);
+    Self { context }
   }
 }
 
@@ -127,8 +136,8 @@ impl RpcHandler for Provider {
   }
 
   async fn get_list(&self) -> RpcResult<Vec<HostedType>> {
-    let components = generated::get_all_components();
-    Ok(components.into_iter().map(HostedType::Component).collect())
+    let signature = generated::get_signature();
+    Ok(vec![HostedType::Provider(signature)])
   }
 }
 
@@ -141,6 +150,8 @@ mod tests {
   use vino_provider::native::prelude::*;
   use vino_transport::Failure;
 
+  static SEED: u64 = 1000;
+
   use super::*;
   type Result<T> = std::result::Result<T, NativeError>;
 
@@ -150,7 +161,7 @@ mod tests {
   {
     let transport_map: TransportMap = payload.into();
     println!("TransportMap: {:?}", transport_map);
-    let provider = Provider::default();
+    let provider = Provider::new(SEED);
 
     let entity = Entity::component_direct(component);
 
@@ -169,7 +180,7 @@ mod tests {
   ) -> Result<Failure> {
     let transport_map: TransportMap = payload.into();
     println!("TransportMap: {:?}", transport_map);
-    let provider = Provider::default();
+    let provider = Provider::new(SEED);
 
     let entity = Entity::component_direct(component);
 
@@ -198,18 +209,6 @@ mod tests {
 
     println!("outputs: {:?}", payload);
     assert_eq!(payload, "some_input");
-
-    Ok(())
-  }
-
-  #[test_logger::test(tokio::test)]
-  async fn test_uuid() -> Result<()> {
-    let job_payload = crate::generated::uuid::Inputs {};
-
-    let payload: String = invoke_one("uuid", job_payload).await?;
-
-    println!("outputs: {:?}", payload);
-    assert_eq!(payload.len(), 36);
 
     Ok(())
   }
@@ -245,20 +244,16 @@ mod tests {
 
   #[test_logger::test(tokio::test)]
   async fn list() -> Result<()> {
-    let provider = Provider::default();
-    let components = crate::generated::get_all_components();
+    let provider = Provider::new(SEED);
+    let signature = crate::generated::get_signature();
+    let components = signature.components.inner();
 
     let response = provider.get_list().await.unwrap();
 
     debug!("list response : {:?}", response);
 
-    assert_eq!(components.len(), response.len());
-    for index in 0..components.len() {
-      assert_eq!(
-        HostedType::Component(components[index].clone()),
-        response[index]
-      );
-    }
+    assert_eq!(components.len(), 12);
+    assert_eq!(response, vec![HostedType::Provider(signature)]);
 
     Ok(())
   }
