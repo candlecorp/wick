@@ -5,6 +5,7 @@ use log::debug;
 use vino_manifest::error::ManifestError;
 use vino_manifest::host_definition::HostDefinition;
 use vino_manifest::parse::{
+  NS_LINK,
   SCHEMATIC_OUTPUT,
   SENDER_ID,
   SENDER_PORT,
@@ -212,7 +213,7 @@ fn load_ns_link() -> Result<(), ManifestError> {
 
   let schematic = &manifest.network.schematics[0];
   let from = &schematic.connections[0].from;
-  assert!(from.matches_instance("<ns>"));
+  assert!(from.matches_instance(NS_LINK));
   assert!(from.is_sender());
 
   Ok(())

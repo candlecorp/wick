@@ -20,7 +20,10 @@ use crate::default::{
 };
 use crate::parse::{
   parse_id,
+  CORE_ID,
   NS_LINK,
+  SCHEMATIC_INPUT,
+  SCHEMATIC_OUTPUT,
 };
 use crate::{
   Error,
@@ -353,10 +356,23 @@ impl ConnectionTargetDefinition {
       data: None,
     }
   }
+
   #[must_use]
   /// Convenience method to test if the target's instance matches the passed string.
   pub fn matches_instance(&self, instance: &str) -> bool {
     self.target.instance == instance
+  }
+
+  #[must_use]
+  /// Returns true if this component is a valid system component for an originating connection.
+  pub fn is_system_upstream(&self) -> bool {
+    self.target.instance == CORE_ID || self.target.instance == SCHEMATIC_INPUT || self.is_sender()
+  }
+
+  #[must_use]
+  /// Returns true if this component is a valid system component for a destination connection.
+  pub fn is_system_downstream(&self) -> bool {
+    self.target.instance == SCHEMATIC_OUTPUT
   }
 
   #[must_use]

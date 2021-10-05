@@ -12,5 +12,5 @@ network:
       instances:
         something: vino::anything
       connections:
-        - <ns>[schem] => something[link]
+        - <link>[schem] => something[link]
         - something[output] => <>

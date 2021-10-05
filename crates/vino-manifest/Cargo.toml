@@ -6,7 +6,9 @@ name = "vino-manifest"
 version = "0.1.0"
 
 [dependencies]
-vino-transport = { path = "../../sdk/crates/vino-transport" }
+vino-transport = { path = "../../sdk/crates/vino-transport", features = [
+  "all",
+] }
 enum-primitive-derive = "0.2.1"
 hocon = "0.5.2"
 lazy_static = "1.4.0"
