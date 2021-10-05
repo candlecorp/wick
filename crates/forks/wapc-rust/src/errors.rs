@@ -78,7 +78,7 @@ impl fmt::Display for Error {
       ErrorKind::HostCallFailure(ref err) => {
         write!(f, "Error occurred during host call: {}", err)
       }
-      ErrorKind::GuestCallFailure(ref reason) => write!(f, "Guest call failure: {}", reason),
+      ErrorKind::GuestCallFailure(ref reason) => write!(f, "{}", reason),
     }
   }
 }
