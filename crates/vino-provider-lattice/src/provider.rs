@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::sync::Arc;
+use std::time::Instant;
 
 use async_trait::async_trait;
 use vino_lattice::lattice::Lattice;
@@ -33,15 +34,22 @@ impl Provider {
 #[async_trait]
 impl RpcHandler for Provider {
   async fn invoke(&self, entity: Entity, payload: TransportMap) -> RpcResult<BoxedTransportStream> {
-    trace!("PROV:LATTICE:INVOKE:[{}]", entity);
-    //
+    let entity_url = entity.url();
+    trace!("PROV:LATTICE:INVOKE:[{}]", entity_url);
+
     let entity = Entity::Component(self.namespace.clone(), entity.name());
 
+    let start = Instant::now();
     let stream = self
       .lattice
       .invoke(entity, payload)
       .await
       .map_err(|e| RpcError::ProviderError(e.to_string()))?;
+    trace!(
+      "PROV:LATTICE:INVOKE:[{}]:DURATION[{} ms]",
+      entity_url,
+      start.elapsed().as_millis()
+    );
 
     Ok(Box::pin(stream))
   }
@@ -83,7 +91,7 @@ mod tests {
     let provider = Provider::new(ns.to_owned(), Arc::new(lattice)).await?;
     let user_data = "Hello world";
 
-    let job_payload = TransportMap::with_map(hashmap! {
+    let job_payload = TransportMap::from_map(hashmap! {
       "input".to_owned() => MessageTransport::messagepack(user_data),
     });
 
@@ -114,7 +122,7 @@ mod tests {
     let provider = Provider::new(ns.to_owned(), Arc::new(lattice)).await?;
     let user_data = "Hello world";
 
-    let job_payload = TransportMap::with_map(hashmap! {
+    let job_payload = TransportMap::from_map(hashmap! {
       "input".to_owned() => MessageTransport::messagepack(user_data),
     });
 
