@@ -19,7 +19,9 @@ vino-provider = { path = "../../sdk/crates/vino-provider", features = [
   "native",
 ] }
 vino-provider-wasm = { path = "../vino-provider-wasm" }
-vino-transport = { path = "../../sdk/crates/vino-transport" }
+vino-transport = { path = "../../sdk/crates/vino-transport", features = [
+  "all",
+] }
 
 structopt = "0.3.22"
 serde_json = "1.0.64"

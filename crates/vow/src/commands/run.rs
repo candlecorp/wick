@@ -7,6 +7,7 @@ use tokio_stream::StreamExt;
 use vino_provider::native::prelude::{
   BoxedTransportStream,
   Entity,
+  MapWrapper,
   TransportMap,
 };
 use vino_provider_cli::utils::parse_args;
@@ -62,15 +63,11 @@ pub(crate) async fn handle_command(opts: RunCommand) -> Result<()> {
     vino_provider_wasm::helpers::load_wasm(&opts.wasm, opts.pull.latest, &opts.pull.insecure)
       .await?;
 
-  let provider = Provider::try_load(&component, 1, Some((&opts.wasi).into()), None)?;
+  let provider = Provider::try_load(&component, 1, None, Some((&opts.wasi).into()), None)?;
 
   let mut check_stdin = !opts.no_input && opts.data.is_empty() && opts.args.is_empty();
   if let Some(metadata) = component.token.claims.metadata {
-    let target_component = metadata
-      .interface
-      .components
-      .iter()
-      .find(|signature| signature.name == opts.component_name);
+    let target_component = metadata.interface.components.get(&opts.component_name);
 
     if let Some(target_component) = target_component {
       if target_component.inputs.is_empty() {

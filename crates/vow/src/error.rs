@@ -4,8 +4,8 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum VowError {
-  #[error(transparent)]
-  ComponentError(#[from] vino_provider_wasm::Error),
+  #[error("{0}")]
+  WasmProvider(String),
   #[error("Component panicked: {0}")]
   ComponentPanic(Box<vino_rpc::Error>),
   #[error(transparent)]
@@ -18,6 +18,8 @@ pub enum VowError {
   TransportError(#[from] vino_transport::Error),
   #[error(transparent)]
   CliError(#[from] vino_provider_cli::Error),
+  #[error("{0}")]
+  TestError(String),
   #[error("Invalid claims: {0}")]
   ClaimsError(String),
   #[error("General error: {0}")]
@@ -33,5 +35,17 @@ pub enum VowError {
 impl From<serde_json::error::Error> for VowError {
   fn from(e: serde_json::error::Error) -> Self {
     VowError::JsonError(e.to_string())
+  }
+}
+
+impl From<vino_test::Error> for VowError {
+  fn from(e: vino_test::Error) -> Self {
+    VowError::TestError(e.to_string())
+  }
+}
+
+impl From<vino_provider_wasm::Error> for VowError {
+  fn from(e: vino_provider_wasm::Error) -> Self {
+    VowError::WasmProvider(e.to_string())
   }
 }
