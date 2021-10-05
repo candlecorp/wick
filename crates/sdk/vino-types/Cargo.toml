@@ -13,5 +13,10 @@ homepage = "https://docs.vino.dev"
 
 [dependencies]
 serde = { version = "1.0.118", features = ["derive"] }
+log = "0.4.14"
+serde_json = "1.0"
 
 [dev-dependencies]
+anyhow = "1.0.44"
+test-env-log = "0.2.7"
+env_logger = "0.9"

@@ -15,25 +15,30 @@ homepage = "https://docs.vino.dev"
 maintenance = { status = "actively-developed" }
 
 [features]
-default = ["stream", "async", "json", "raw"]
+default = []
+all = ["async", "json", "raw", "invocation"]
 wasm = []
-stream = ["tokio-stream"]
-async = ["tokio"]
+invocation = ["vino-entity", "uuid"]
+async = ["tokio", "tokio-stream"]
 json = ["serde_json"]
 raw = ["serde-value"]
 
 [dependencies]
 vino-packet = { path = "../vino-packet", version = "0.7.0" }
+vino-entity = { path = "../vino-entity", version = "0.7.0", optional = true }
 vino-codec = { path = "../vino-codec", version = "0.7.0" }
 serde = { version = "1.0.118", features = ["derive"] }
 thiserror = "1.0.25"
 log = "0.4.14"
 
+# invocation
+uuid = { version = "0.8", features = ["serde", "v4"], optional = true }
+
 # raw
 serde-value = { version = "0.7.0", optional = true }
 
 # json
-serde_json = { version = "1.0.64", optional = true }
+serde_json = { version = "1.0", optional = true }
 
 # stream
 tokio-stream = { version = "0.1.6", optional = true }
@@ -43,6 +48,7 @@ tokio = { version = "1.4.0", features = [], optional = true }
 
 [dev-dependencies]
 test-env-log = "0.2.7"
+anyhow = "1.0.44"
 env_logger = "0.9.0"
 log = "0.4"
 tokio = { version = "1.4.0", features = ["rt-multi-thread", "macros"] }

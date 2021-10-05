@@ -17,7 +17,7 @@ maintenance = { status = "actively-developed" }
 
 [features]
 default = []
-wasm = ["vino-transport/wasm"]
+wasm = ["vino-transport/wasm", "vino-types"]
 signatures = []
 native = [
   "thiserror",
@@ -25,7 +25,7 @@ native = [
   "tokio",
   "tokio-stream",
   "log",
-  "vino-transport",
+  "vino-transport/all",
   "vino-types",
   "dyn-clone",
 ]
