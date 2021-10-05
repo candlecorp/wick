@@ -16,7 +16,6 @@ use nats::jetstream::{
   RetentionPolicy,
   StreamConfig,
 };
-use tokio::spawn;
 use tokio::sync::mpsc::unbounded_channel;
 use tokio::task::JoinHandle;
 use tokio_stream::wrappers::UnboundedReceiverStream;
@@ -240,6 +239,11 @@ impl Lattice {
                       break;
                     }
                   }
+                  let response = LatticeRpcResponse::Close;
+                  if let Err(e) = nc.publish(reply_to.clone(), response.serialize()).await {
+                    error!("Error sending close response to lattice: {}", e);
+                    break;
+                  }
                 }
                 Err(e) => {
                   error!(
@@ -296,22 +300,31 @@ impl Lattice {
     let (tx, rx) = unbounded_channel();
     let stream = TransportStream::new(UnboundedReceiverStream::new(rx));
     debug!("LATTICE:INVOKE[{}]:REPLY_LISTENER:OPEN", entity_string);
-    spawn(async move {
+    tokio::spawn(async move {
       while let Ok(Some(lattice_msg)) = sub.next().await {
-        debug!(
+        trace!(
           "LATTICE:INVOKE[{}]:RESULT:DATA:{:?}",
-          entity_string, lattice_msg.data
+          entity_string,
+          lattice_msg.data
         );
-        let result = match deserialize::<LatticeRpcResponse>(&lattice_msg.data) {
-          Ok(LatticeRpcResponse::Output(wrapper)) => tx.send(wrapper),
-          Ok(LatticeRpcResponse::Error(e)) => {
-            tx.send(TransportWrapper::internal_error(MessageTransport::error(e)))
-          }
+        let msg = deserialize::<LatticeRpcResponse>(&lattice_msg.data);
+        debug!(
+          "LATTICE:INVOKE[{}]:RESULT:DESERIALIZED:{:?}",
+          entity_string, msg
+        );
+        let result = match msg {
+          Ok(response) => match response {
+            LatticeRpcResponse::Output(wrapper) => tx.send(wrapper),
+            LatticeRpcResponse::List(_) => unreachable!(),
+            LatticeRpcResponse::Error(e) => {
+              tx.send(TransportWrapper::internal_error(MessageTransport::error(e)))
+            }
+            LatticeRpcResponse::Close => tx.send(TransportWrapper::new_system_close()),
+          },
           Err(e) => tx.send(TransportWrapper::new(
             vino_transport::COMPONENT_ERROR,
             MessageTransport::error(e.to_string()),
           )),
-          _ => unreachable!(),
         };
         if let Err(e) = result {
           error!("Error sending RPC output to TransportStream: {}", e);
@@ -392,6 +405,9 @@ pub enum LatticeRpcResponse {
 
   #[serde(rename = "2")]
   Error(String),
+
+  #[serde(rename = "3")]
+  Close,
 }
 
 impl LatticeRpcResponse {
@@ -403,6 +419,8 @@ impl LatticeRpcResponse {
 
 #[cfg(test)]
 mod test {
+  use std::convert::TryInto;
+
   use anyhow::Result;
   use log::*;
   use test_vino_provider::Provider;
@@ -414,9 +432,12 @@ mod test {
     TransportWrapper,
   };
   use vino_types::signatures::{
+    ComponentMap,
     ComponentSignature,
     HostedType,
-    PortSignature,
+    MapWrapper,
+    ProviderSignature,
+    StructMap,
   };
 
   use super::{
@@ -508,21 +529,31 @@ mod test {
   #[test_logger::test(tokio::test)]
   async fn test_list_namespace_components() -> Result<()> {
     let (lattice, namespace) = get_lattice().await?;
-    let components = lattice.list_components(namespace).await?;
-    println!("Components on namespace: {:?}", components);
-    assert!(
-      components.contains(&HostedType::Component(ComponentSignature {
-        name: "test-component".to_owned(),
-        inputs: vec![PortSignature {
-          name: "input".to_owned(),
-          type_string: "string".to_owned()
-        }],
-        outputs: vec![PortSignature {
-          name: "output".to_owned(),
-          type_string: "string".to_owned()
-        }],
-      }))
+    let schemas = lattice.list_components(namespace).await?;
+    println!("Hosted schemas on namespace: {:?}", schemas);
+    let mut components = ComponentMap::new();
+    components.insert(
+      "error",
+      ComponentSignature {
+        name: "error".to_owned(),
+        inputs: vec![("input", "string")].try_into()?,
+        outputs: vec![("output", "string")].try_into()?,
+      },
     );
+    components.insert(
+      "test-component",
+      ComponentSignature {
+        name: "test-component".to_owned(),
+        inputs: vec![("input", "string")].try_into()?,
+        outputs: vec![("output", "string")].try_into()?,
+      },
+    );
+
+    assert!(schemas.contains(&HostedType::Provider(ProviderSignature {
+      name: "".to_owned(),
+      types: StructMap::todo(),
+      components
+    })));
     Ok(())
   }
 }
