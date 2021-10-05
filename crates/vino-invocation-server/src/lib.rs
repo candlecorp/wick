@@ -116,7 +116,7 @@ extern crate vino_macros;
 
 #[doc(hidden)]
 pub fn make_input<K: AsRef<str>, V: serde::Serialize>(entries: Vec<(K, V)>) -> TransportMap {
-  TransportMap::with_map(
+  TransportMap::from_map(
     entries
       .into_iter()
       .map(|(k, v)| Ok((k.as_ref().to_owned(), MessageTransport::success(&v))))

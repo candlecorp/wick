@@ -9,12 +9,14 @@ license = "BSD-3-Clause"
 [dependencies]
 vino-rpc = { path = "../vino-rpc" }
 vino-entity = { path = "../../sdk/crates/vino-entity" }
-vino-transport = { path = "../../sdk/crates/vino-transport" }
+vino-transport = { path = "../../sdk/crates/vino-transport", features = [
+  "all",
+] }
 vino-types = { path = "../../sdk/crates/vino-types" }
 vino-macros = { path = "../../sdk/crates/vino-macros" }
 
 
-tonic = { version = "0.5.0", features = ["tls"] }
+tonic = { version = "0.5", features = ["tls"] }
 tokio = { version = "1.4.0", features = ["macros", "net", "rt-multi-thread"] }
 futures = "0.3.15"
 tokio-stream = { version = "0.1.6", features = ["net"] }

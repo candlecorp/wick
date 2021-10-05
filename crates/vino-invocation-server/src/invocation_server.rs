@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::convert::TryFrom;
 use std::str::FromStr;
 use std::time::{
   Duration,
@@ -13,6 +14,7 @@ use tonic::{
   Response,
   Status,
 };
+use vino_rpc::error::RpcError;
 use vino_rpc::rpc::invocation_service_server::InvocationService;
 use vino_rpc::rpc::{
   ListResponse,
@@ -149,10 +151,10 @@ impl InvocationService for InvocationServer {
     let future = self.provider.get_list();
     let list = future.await.map_err(|e| Status::internal(e.to_string()))?;
     trace!("Server: list is {:?}", list);
-    let response = ListResponse {
-      components: list.into_iter().map(From::from).collect(),
-    };
 
+    let result: Result<Vec<_>, RpcError> = list.into_iter().map(TryFrom::try_from).collect();
+    let schemas = result.map_err(|e| Status::internal(e.to_string()))?;
+    let response = ListResponse { schemas };
     Ok(Response::new(response))
   }
 
