@@ -19,11 +19,41 @@ tomlq
 prettier
 widl-template
 
+# TAP
+
+curl https://gitlab.com/esr/tapview/-/raw/master/tapview -o $HOME/.local/bin/tapview && chmod a+x $HOME/.local/bin/tapview
+
 # Bugs
 
 - Component codegen for wellknown providers doesn't reference the proper module for input/outputs etc
 - interface.json's for wellknown interfaces needs to be located in a central repo
 - Type representation of components over RPC is just a string and needs to be more complex to represent valid types.
+- Schematics can link a provider that isn't exposed to them, e.g.
+
+```yaml
+version: 0
+network:
+  providers:
+    - namespace: perms
+      kind: WaPC
+      reference: ./build/vino_permissions_s.wasm
+    - namespace: permsdb
+      kind: Lattice
+      reference: authdb
+  schematics:
+    - name: update-permissions
+      providers:
+      instances:
+        update:
+          id: perms::update-permissions
+      connections:
+        - <> => update[user_id]
+        - <> => update[permissions]
+        - <link>[permsdb] => update[kv]
+        - update[result] => <>
+```
+
+-The providerlink `.call(component, args)` is prone to error. It would be greato is `args` could include the component so a failure would be less likely.
 
 ## Error codes
 

@@ -18,9 +18,9 @@ ROOT_RUST_CRATES=$(wildcard ${CRATES_DIR}/*/Cargo.toml)
 TEST_WASM_DIR=$(CRATES_DIR)/integration/test-wapc-component
 TEST_WASM=$(TEST_WASM_DIR)/build/test_component_s.wasm
 
-BINS=vino vinoc vino-collection-inmemory vow vino-authentication-inmemory vino-collection-fs vino-keyvalue-redis
+BINS=vino vinoc vino-keyvalue-redis
 
-.PHONY: all codegen install install-release  clean test update-lint build build-release wasm
+.PHONY: all codegen cleangen install install-release  clean test update-lint build build-release wasm
 
 all: build
 
@@ -32,6 +32,15 @@ endef
 
 # Call the above rule generator for each BIN file
 $(foreach bin,$(BINS),$(eval $(call BUILD_BIN,$(bin))))
+
+cleangen:
+	@for project in $(MAKEFILE_PROJECTS); do \
+		cd `dirname $$project`; \
+		echo "## Generating code for $$project"; \
+		make clean; \
+		make codegen; \
+		cd $(ROOT); \
+	done
 
 codegen:
 	@for project in $(MAKEFILE_PROJECTS); do \
@@ -99,6 +108,4 @@ build-cross-debug:
 		cp target/$$TARGET/debug/vino build/$$TARGET/; \
 		cross build -p vinoc --target $$TARGET; \
 		cp target/$$TARGET/debug/vinoc build/$$TARGET/; \
-		cross build -p vino-collection-inmemory --target $$TARGET; \
-		cp target/$$TARGET/debug/vino-collection-inmemory build/$$TARGET/provider-collection-inmemory; \
 	done
