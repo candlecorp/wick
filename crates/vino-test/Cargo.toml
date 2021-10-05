@@ -7,7 +7,9 @@ edition = "2018"
 
 [dependencies]
 tap = { path = "../tap" }
-vino-transport = { path = "../../sdk/crates/vino-transport" }
+vino-transport = { path = "../../sdk/crates/vino-transport", features = [
+  "all",
+] }
 vino-entity = { path = "../../sdk/crates/vino-entity" }
 vino-rpc = { path = "../vino-rpc" }
 serde = { version = "1.0.118", features = ["derive"] }
