@@ -7,9 +7,12 @@ type Inputs {
 
   "Value to remove."
   value: string
+
+  "The number of occurrences to remove."
+  num: u32
 }
 
 type Outputs {
-  "The element that was removed."
-  value: string
+  "The number of elements removed."
+  num: u32
 }

@@ -115,223 +115,178 @@ impl RpcHandler for Provider {
   }
 
   async fn get_list(&self) -> RpcResult<Vec<HostedType>> {
-    let components = generated::get_all_components();
-    Ok(components.into_iter().map(HostedType::Component).collect())
+    let signature = generated::get_signature();
+    Ok(vec![HostedType::Provider(signature)])
   }
 }
 
 #[cfg(test)]
 mod tests {
 
-  use anyhow::{
-    anyhow,
-    Result,
-  };
-  use futures::prelude::*;
+  use anyhow::Result;
   use rand::Rng;
-  use serde::de::DeserializeOwned;
-  use vino_transport::Failure;
+  use vino_interface_keyvalue::generated::*;
 
   use super::*;
 
-  async fn get_next<De: DeserializeOwned + std::fmt::Debug>(
-    stream: &mut BoxedTransportStream,
-  ) -> Result<De> {
-    let output = match stream.next().await {
-      Some(o) => o,
-      None => return Err(anyhow!("Nothing received from stream")),
-    };
-    debug!("payload from port: '{}': {:?}", output.port, output.payload);
-    let val: De = output.payload.try_into()?;
-    debug!("decoded payload: {:?}", val);
-    Ok(val)
-  }
-
-  async fn get_maybe_next<De: DeserializeOwned + std::fmt::Debug>(
-    stream: &mut BoxedTransportStream,
-  ) -> Result<Option<De>> {
-    let output = match stream.next().await {
-      Some(o) => o,
-      None => return Err(anyhow!("Nothing received from stream")),
-    };
-    debug!("payload from [{}]: {:?}", output.port, output.payload);
-    if output.payload.is_ok() {
-      let val: De = output.payload.try_into()?;
-      debug!("decoded payload: {:?}", val);
-      Ok(Some(val))
-    } else {
-      match output.payload {
-        MessageTransport::Failure(Failure::Exception(_)) => Ok(None),
-        MessageTransport::Failure(Failure::Error(msg)) => Err(anyhow!("{}", msg)),
-        _ => unreachable!(),
-      }
-    }
-  }
-
-  async fn key_set(provider: &Provider, key: &str, value: &str, expires: u32) -> Result<String> {
+  async fn key_set(provider: &Provider, key: &str, value: &str, expires: u32) -> Result<bool> {
     debug!("key-set:{}::{}::{}", key, value, expires);
-    let payload = vino_interface_keyvalue::key_set::Inputs {
+    let payload = key_set::Inputs {
       key: key.to_owned(),
       value: value.to_owned(),
       expires,
     };
 
-    let mut stream = provider
+    let mut outputs: key_set::Outputs = provider
       .invoke(Entity::component_direct("key-set"), payload.into())
-      .await?;
-
-    let actual: String = get_next(&mut stream).await?;
-
-    assert_eq!(key, actual);
+      .await?
+      .into();
+    let actual = outputs.result().await?.try_next_into()?;
 
     Ok(actual)
   }
 
-  async fn key_get(provider: &Provider, key: &str) -> Result<Option<String>> {
+  async fn key_get(provider: &Provider, key: &str) -> Result<String> {
     debug!("key-get:{}", key);
-    let payload = vino_interface_keyvalue::key_get::Inputs {
+    let payload = key_get::Inputs {
       key: key.to_owned(),
     };
 
-    let mut stream = provider
+    let mut outputs: key_get::Outputs = provider
       .invoke(Entity::component_direct("key-get"), payload.into())
-      .await?;
-
-    let actual: Option<String> = get_maybe_next(&mut stream).await?;
+      .await?
+      .into();
+    let actual = outputs.value().await?.try_next_into()?;
 
     Ok(actual)
   }
 
-  async fn delete(provider: &Provider, key: &str) -> Result<String> {
+  async fn delete(provider: &Provider, key: &str) -> Result<u32> {
     debug!("delete:{}", key);
-    let payload = vino_interface_keyvalue::delete::Inputs {
-      key: key.to_owned(),
+    let payload = delete::Inputs {
+      keys: vec![key.to_owned()],
     };
 
-    let mut stream = provider
+    let mut outputs: delete::Outputs = provider
       .invoke(Entity::component_direct("delete"), payload.into())
-      .await?;
-
-    let actual: String = get_next(&mut stream).await?;
-
+      .await?
+      .into();
+    let actual = outputs.num().await?.try_next_into()?;
     Ok(actual)
   }
 
   async fn exists(provider: &Provider, key: &str) -> Result<bool> {
     debug!("exists:{}", key);
-    let payload = vino_interface_keyvalue::exists::Inputs {
+    let payload = exists::Inputs {
       key: key.to_owned(),
     };
 
-    let mut stream = provider
+    let mut outputs: exists::Outputs = provider
       .invoke(Entity::component_direct("exists"), payload.into())
-      .await?;
+      .await?
+      .into();
 
-    let output = match stream.next().await {
-      Some(o) => o,
-      None => return Err(anyhow!("Nothing received from stream")),
-    };
+    let actual = outputs.exists().await?.try_next_into()?;
 
-    if output.payload.is_ok() {
-      let exists: bool = output.payload.try_into()?;
-      Ok(exists)
-    } else {
-      Err(anyhow!("Error with exists"))
-    }
+    Ok(actual)
   }
 
-  async fn list_add(provider: &Provider, key: &str, value: &str) -> Result<String> {
+  async fn list_add(provider: &Provider, key: &str, value: &str) -> Result<u32> {
     debug!("list-add:{}::{}", key, value);
-    let payload = vino_interface_keyvalue::list_add::Inputs {
+    let payload = list_add::Inputs {
       key: key.to_owned(),
-      value: value.to_owned(),
+      values: vec![value.to_owned()],
     };
 
-    let mut stream = provider
+    let mut outputs: list_add::Outputs = provider
       .invoke(Entity::component_direct("list-add"), payload.into())
-      .await?;
-
-    let actual: String = get_next(&mut stream).await?;
+      .await?
+      .into();
+    let actual = outputs.length().await?.try_next_into()?;
 
     Ok(actual)
   }
 
   async fn list_range(provider: &Provider, key: &str, start: i32, end: i32) -> Result<Vec<String>> {
     debug!("list-range:{}::{}::{}", key, start, end);
-    let payload = vino_interface_keyvalue::list_range::Inputs {
+    let payload = list_range::Inputs {
       key: key.to_owned(),
       start,
       end,
     };
 
-    let mut stream = provider
+    let mut outputs: list_range::Outputs = provider
       .invoke(Entity::component_direct("list-range"), payload.into())
-      .await?;
-
-    let actual: Vec<String> = get_next(&mut stream).await?;
+      .await?
+      .into();
+    let actual = outputs.values().await?.try_next_into()?;
 
     Ok(actual)
   }
 
-  async fn list_remove(provider: &Provider, key: &str, value: &str) -> Result<String> {
+  async fn list_remove(provider: &Provider, key: &str, value: &str) -> Result<u32> {
     debug!("list-remove:{}::{}", key, value);
-    let payload = vino_interface_keyvalue::list_remove::Inputs {
+    let payload = list_remove::Inputs {
       key: key.to_owned(),
+      num: 1,
       value: value.to_owned(),
     };
 
-    let mut stream = provider
+    let mut outputs: list_remove::Outputs = provider
       .invoke(Entity::component_direct("list-remove"), payload.into())
-      .await?;
-
-    let actual: String = get_next(&mut stream).await?;
+      .await?
+      .into();
+    let actual = outputs.num().await?.try_next_into()?;
 
     Ok(actual)
   }
 
-  async fn set_add(provider: &Provider, key: &str, value: &str) -> Result<String> {
+  async fn set_add(provider: &Provider, key: &str, value: &str) -> Result<u32> {
     debug!("set-add:{}::{}", key, value);
-    let payload = vino_interface_keyvalue::set_add::Inputs {
+    let payload = set_add::Inputs {
       key: key.to_owned(),
-      value: value.to_owned(),
+      values: vec![value.to_owned()],
     };
 
-    let mut stream = provider
+    let mut outputs: set_add::Outputs = provider
       .invoke(Entity::component_direct("set-add"), payload.into())
-      .await?;
+      .await?
+      .into();
 
-    let actual: String = get_next(&mut stream).await?;
+    let actual = outputs.length().await?.try_next_into()?;
 
     Ok(actual)
   }
 
   async fn set_get(provider: &Provider, key: &str) -> Result<Vec<String>> {
     debug!("set-get:{}", key);
-    let payload = vino_interface_keyvalue::set_get::Inputs {
+    let payload = set_get::Inputs {
       key: key.to_owned(),
     };
 
-    let mut stream = provider
+    let mut outputs: set_get::Outputs = provider
       .invoke(Entity::component_direct("set-get"), payload.into())
-      .await?;
+      .await?
+      .into();
 
-    let actual: Vec<String> = get_next(&mut stream).await?;
+    let actual = outputs.values().await?.try_next_into()?;
 
     Ok(actual)
   }
 
-  async fn set_remove(provider: &Provider, key: &str, value: &str) -> Result<String> {
+  async fn set_remove(provider: &Provider, key: &str, value: &str) -> Result<u32> {
     debug!("set-remove:{}::{}", key, value);
-    let payload = vino_interface_keyvalue::set_remove::Inputs {
+    let payload = set_remove::Inputs {
       key: key.to_owned(),
-      value: value.to_owned(),
+      values: vec![value.to_owned()],
     };
 
-    let mut stream = provider
+    let mut outputs: set_remove::Outputs = provider
       .invoke(Entity::component_direct("set-remove"), payload.into())
-      .await?;
+      .await?
+      .into();
 
-    let actual: String = get_next(&mut stream).await?;
+    let actual = outputs.num().await?.try_next_into()?;
 
     Ok(actual)
   }
@@ -361,13 +316,13 @@ mod tests {
     let expires = 10000;
 
     assert!(!exists(&provider, &key).await?);
-    let key2 = key_set(&provider, &key, &expected, expires).await?;
-    assert!(exists(&provider, &key).await?);
-    let actual = key_get(&provider, &key2).await?.unwrap();
+    let result = key_set(&provider, &key, &expected, expires).await?;
+    assert!(result);
+    let actual = key_get(&provider, &key).await?;
     assert_eq!(actual, expected);
-    let nonexistant = key_get(&provider, &nonexistant_key).await?;
-    assert_eq!(nonexistant, None);
-    delete(&provider, &key2).await?;
+    let result = key_get(&provider, &nonexistant_key).await;
+    assert!(result.is_err());
+    delete(&provider, &key).await?;
     assert!(!exists(&provider, &key).await?);
 
     Ok(())
@@ -380,9 +335,9 @@ mod tests {
     let expected = get_random_string();
 
     assert!(!exists(&provider, &key).await?);
-    let key2 = list_add(&provider, &key, &expected).await?;
+    let _num = list_add(&provider, &key, &expected).await?;
     assert!(exists(&provider, &key).await?);
-    let values = list_range(&provider, &key2, 0, 1).await?;
+    let values = list_range(&provider, &key, 0, 1).await?;
     let range = vec![expected.clone()];
     assert_eq!(values, range);
     let mut rest = vec![
@@ -395,19 +350,19 @@ mod tests {
     list_add(&provider, &key, &rest[1]).await?;
     list_add(&provider, &key, &rest[2]).await?;
     list_add(&provider, &key, &rest[3]).await?;
-    let values = list_range(&provider, &key2, 0, 0).await?;
+    let values = list_range(&provider, &key, 0, 0).await?;
     assert_eq!(values, range);
-    let values = list_range(&provider, &key2, 0, 1).await?;
+    let values = list_range(&provider, &key, 0, 1).await?;
     assert_eq!(values, vec![expected.clone(), rest[0].clone()]);
-    let values = list_range(&provider, &key2, 0, -1).await?;
+    let values = list_range(&provider, &key, 0, -1).await?;
     let mut all = range.clone();
     all.append(&mut rest);
     assert_eq!(values, all);
-    list_remove(&provider, &key2, &expected).await?;
-    let values = list_range(&provider, &key2, 0, -1).await?;
+    list_remove(&provider, &key, &expected).await?;
+    let values = list_range(&provider, &key, 0, -1).await?;
     assert_eq!(values, &all[1..]);
-    delete(&provider, &key2).await?;
-    let values = list_range(&provider, &key2, 0, -1).await?;
+    delete(&provider, &key).await?;
+    let values = list_range(&provider, &key, 0, -1).await?;
     let none: Vec<String> = vec![];
     assert_eq!(values, none);
 

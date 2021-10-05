@@ -4,11 +4,11 @@ type Inputs {
   "The set's key."
   key: string,
 
-  "The value to remove."
-  value: string
+  "The values to remove."
+  values: [string]
 }
 
 type Outputs {
-  "The value that was removed."
-  value: string
+  "The number of items removed."
+  num: u32
 }

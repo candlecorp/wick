@@ -13,5 +13,5 @@ type Inputs {
 
 type Outputs {
   "The key that was set."
-  key: string
+  result: bool
 }

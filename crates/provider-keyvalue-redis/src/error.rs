@@ -36,7 +36,6 @@ pub enum Error {
 
 pub(crate) enum Exception {
   KeyNotFound(String),
-  NothingToDelete(String, String), // Other(String),
 }
 
 impl From<Exception> for String {
@@ -49,7 +48,6 @@ impl std::fmt::Display for Exception {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     match self {
       Exception::KeyNotFound(v) => write!(f, "Key '{}' not found", v),
-      Exception::NothingToDelete(k, v) => write!(f, "Value '{}' not found in '{}'", v, k),
       // Exception::Other(v) => write!(f, "{}", v),
     }
   }

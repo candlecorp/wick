@@ -4,22 +4,71 @@
 
 pub(crate) use vino_provider::native::prelude::*;
 
-pub(crate) fn get_all_components() -> Vec<ComponentSignature> {
-  vec![
+pub(crate) fn get_signature() -> ProviderSignature {
+  use std::collections::HashMap;
+  let mut components = HashMap::new();
+  components.insert(
+    "delete".to_owned(),
     vino_interface_keyvalue::delete::signature(),
+  );
+  components.insert(
+    "exists".to_owned(),
     vino_interface_keyvalue::exists::signature(),
+  );
+  components.insert(
+    "key-get".to_owned(),
     vino_interface_keyvalue::key_get::signature(),
+  );
+  components.insert(
+    "key-increment".to_owned(),
     vino_interface_keyvalue::key_increment::signature(),
+  );
+  components.insert(
+    "key-set".to_owned(),
     vino_interface_keyvalue::key_set::signature(),
+  );
+  components.insert(
+    "list-add".to_owned(),
     vino_interface_keyvalue::list_add::signature(),
+  );
+  components.insert(
+    "list-range".to_owned(),
     vino_interface_keyvalue::list_range::signature(),
+  );
+  components.insert(
+    "list-remove".to_owned(),
     vino_interface_keyvalue::list_remove::signature(),
+  );
+  components.insert(
+    "set-add".to_owned(),
     vino_interface_keyvalue::set_add::signature(),
+  );
+  components.insert(
+    "set-contains".to_owned(),
+    vino_interface_keyvalue::set_contains::signature(),
+  );
+  components.insert(
+    "set-get".to_owned(),
     vino_interface_keyvalue::set_get::signature(),
+  );
+  components.insert(
+    "set-intersection".to_owned(),
     vino_interface_keyvalue::set_intersection::signature(),
+  );
+  components.insert(
+    "set-remove".to_owned(),
     vino_interface_keyvalue::set_remove::signature(),
+  );
+  components.insert(
+    "set-union".to_owned(),
     vino_interface_keyvalue::set_union::signature(),
-  ]
+  );
+
+  ProviderSignature {
+    name: "".to_owned(),
+    types: StructMap::todo(),
+    components: components.into(),
+  }
 }
 
 #[derive(Debug)]
@@ -75,6 +124,11 @@ impl Dispatch for Dispatcher {
       }
       "set-add" => {
         self::set_add::Component::default()
+          .execute(context, data)
+          .await
+      }
+      "set-contains" => {
+        self::set_contains::Component::default()
           .execute(context, data)
           .await
       }
@@ -385,6 +439,38 @@ pub(crate) mod set_add {
       let inputs = populate_inputs(data).map_err(|e| NativeComponentError::new(e.to_string()))?;
       let (outputs, stream) = get_outputs();
       let result = crate::components::set_add::job(inputs, outputs, context).await;
+      match result {
+        Ok(_) => Ok(stream),
+        Err(e) => Err(Box::new(NativeComponentError::new(format!(
+          "Job failed: {}",
+          e.to_string()
+        )))),
+      }
+    }
+  }
+}
+pub(crate) mod set_contains {
+  #![allow(unused)]
+  use std::collections::HashMap;
+
+  use async_trait::async_trait;
+  use vino_interface_keyvalue::set_contains::*;
+  use vino_provider::native::prelude::*;
+
+  #[derive(Default)]
+  pub(crate) struct Component {}
+
+  #[async_trait]
+  impl NativeComponent for Component {
+    type Context = crate::Context;
+    async fn execute(
+      &self,
+      context: Self::Context,
+      data: TransportMap,
+    ) -> Result<TransportStream, Box<NativeComponentError>> {
+      let inputs = populate_inputs(data).map_err(|e| NativeComponentError::new(e.to_string()))?;
+      let (outputs, stream) = get_outputs();
+      let result = crate::components::set_contains::job(inputs, outputs, context).await;
       match result {
         Ok(_) => Ok(stream),
         Err(e) => Err(Box::new(NativeComponentError::new(format!(

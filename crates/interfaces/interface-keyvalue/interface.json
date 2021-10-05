@@ -1,236 +1,251 @@
 {
   "name": "vino-interface-keyvalue",
-  "components": [
-    {
+  "types": {},
+  "components": {
+    "delete": {
       "name": "delete",
-      "inputs": [
-        {
-          "name": "key",
-          "type_string": "string"
+      "inputs": {
+        "keys": {
+          "type": "list",
+          "element": {
+            "type": "string"
+          }
         }
-      ],
-      "outputs": [
-        {
-          "name": "key",
-          "type_string": "string"
+      },
+      "outputs": {
+        "num": {
+          "type": "u32"
         }
-      ]
+      }
     },
-    {
+    "exists": {
       "name": "exists",
-      "inputs": [
-        {
-          "name": "key",
-          "type_string": "string"
+      "inputs": {
+        "key": {
+          "type": "string"
         }
-      ],
-      "outputs": [
-        {
-          "name": "exists",
-          "type_string": "bool"
+      },
+      "outputs": {
+        "exists": {
+          "type": "bool"
         }
-      ]
+      }
     },
-    {
+    "key-get": {
       "name": "key-get",
-      "inputs": [
-        {
-          "name": "key",
-          "type_string": "string"
+      "inputs": {
+        "key": {
+          "type": "string"
         }
-      ],
-      "outputs": [
-        {
-          "name": "value",
-          "type_string": "string"
+      },
+      "outputs": {
+        "value": {
+          "type": "string"
         }
-      ]
+      }
     },
-    {
+    "key-increment": {
       "name": "key-increment",
-      "inputs": [
-        {
-          "name": "key",
-          "type_string": "string"
+      "inputs": {
+        "key": {
+          "type": "string"
         },
-        {
-          "name": "value",
-          "type_string": "i32"
+        "value": {
+          "type": "i32"
         }
-      ],
-      "outputs": [
-        {
-          "name": "output",
-          "type_string": "i32"
+      },
+      "outputs": {
+        "output": {
+          "type": "i32"
         }
-      ]
+      }
     },
-    {
+    "key-set": {
       "name": "key-set",
-      "inputs": [
-        {
-          "name": "key",
-          "type_string": "string"
+      "inputs": {
+        "key": {
+          "type": "string"
         },
-        {
-          "name": "value",
-          "type_string": "string"
+        "value": {
+          "type": "string"
         },
-        {
-          "name": "expires",
-          "type_string": "u32"
+        "expires": {
+          "type": "u32"
         }
-      ],
-      "outputs": [
-        {
-          "name": "key",
-          "type_string": "string"
+      },
+      "outputs": {
+        "result": {
+          "type": "bool"
         }
-      ]
+      }
     },
-    {
+    "list-add": {
       "name": "list-add",
-      "inputs": [
-        {
-          "name": "key",
-          "type_string": "string"
+      "inputs": {
+        "key": {
+          "type": "string"
         },
-        {
-          "name": "value",
-          "type_string": "string"
+        "values": {
+          "type": "list",
+          "element": {
+            "type": "string"
+          }
         }
-      ],
-      "outputs": [
-        {
-          "name": "key",
-          "type_string": "string"
+      },
+      "outputs": {
+        "length": {
+          "type": "u32"
         }
-      ]
+      }
     },
-    {
+    "list-range": {
       "name": "list-range",
-      "inputs": [
-        {
-          "name": "key",
-          "type_string": "string"
+      "inputs": {
+        "key": {
+          "type": "string"
         },
-        {
-          "name": "start",
-          "type_string": "i32"
+        "start": {
+          "type": "i32"
         },
-        {
-          "name": "end",
-          "type_string": "i32"
+        "end": {
+          "type": "i32"
         }
-      ],
-      "outputs": [
-        {
-          "name": "values",
-          "type_string": "[string]"
+      },
+      "outputs": {
+        "values": {
+          "type": "list",
+          "element": {
+            "type": "string"
+          }
         }
-      ]
+      }
     },
-    {
+    "list-remove": {
       "name": "list-remove",
-      "inputs": [
-        {
-          "name": "key",
-          "type_string": "string"
+      "inputs": {
+        "key": {
+          "type": "string"
         },
-        {
-          "name": "value",
-          "type_string": "string"
+        "value": {
+          "type": "string"
+        },
+        "num": {
+          "type": "u32"
         }
-      ],
-      "outputs": [
-        {
-          "name": "value",
-          "type_string": "string"
+      },
+      "outputs": {
+        "num": {
+          "type": "u32"
         }
-      ]
+      }
     },
-    {
+    "set-add": {
       "name": "set-add",
-      "inputs": [
-        {
-          "name": "key",
-          "type_string": "string"
+      "inputs": {
+        "key": {
+          "type": "string"
         },
-        {
-          "name": "value",
-          "type_string": "string"
+        "values": {
+          "type": "list",
+          "element": {
+            "type": "string"
+          }
         }
-      ],
-      "outputs": [
-        {
-          "name": "key",
-          "type_string": "string"
+      },
+      "outputs": {
+        "length": {
+          "type": "u32"
         }
-      ]
+      }
     },
-    {
+    "set-contains": {
+      "name": "set-contains",
+      "inputs": {
+        "key": {
+          "type": "string"
+        },
+        "member": {
+          "type": "string"
+        }
+      },
+      "outputs": {
+        "exists": {
+          "type": "bool"
+        }
+      }
+    },
+    "set-get": {
       "name": "set-get",
-      "inputs": [
-        {
-          "name": "key",
-          "type_string": "string"
+      "inputs": {
+        "key": {
+          "type": "string"
         }
-      ],
-      "outputs": [
-        {
-          "name": "values",
-          "type_string": "[string]"
+      },
+      "outputs": {
+        "values": {
+          "type": "list",
+          "element": {
+            "type": "string"
+          }
         }
-      ]
+      }
     },
-    {
+    "set-intersection": {
       "name": "set-intersection",
-      "inputs": [
-        {
-          "name": "keys",
-          "type_string": "[string]"
+      "inputs": {
+        "keys": {
+          "type": "list",
+          "element": {
+            "type": "string"
+          }
         }
-      ],
-      "outputs": [
-        {
-          "name": "keys",
-          "type_string": "[string]"
+      },
+      "outputs": {
+        "keys": {
+          "type": "list",
+          "element": {
+            "type": "string"
+          }
         }
-      ]
+      }
     },
-    {
+    "set-remove": {
       "name": "set-remove",
-      "inputs": [
-        {
-          "name": "key",
-          "type_string": "string"
+      "inputs": {
+        "key": {
+          "type": "string"
         },
-        {
-          "name": "value",
-          "type_string": "string"
+        "values": {
+          "type": "list",
+          "element": {
+            "type": "string"
+          }
         }
-      ],
-      "outputs": [
-        {
-          "name": "value",
-          "type_string": "string"
+      },
+      "outputs": {
+        "num": {
+          "type": "u32"
         }
-      ]
+      }
     },
-    {
+    "set-union": {
       "name": "set-union",
-      "inputs": [
-        {
-          "name": "keys",
-          "type_string": "[string]"
+      "inputs": {
+        "keys": {
+          "type": "list",
+          "element": {
+            "type": "string"
+          }
         }
-      ],
-      "outputs": [
-        {
-          "name": "keys",
-          "type_string": "[string]"
+      },
+      "outputs": {
+        "keys": {
+          "type": "list",
+          "element": {
+            "type": "string"
+          }
         }
-      ]
+      }
     }
-  ]
+  }
 }

@@ -4,11 +4,11 @@ type Inputs {
   "The list's key."
   key: string,
 
-  "The value to add."
-  value: string,
+  "The values to add."
+  values: [string],
 }
 
 type Outputs {
-  "The list that was added to."
-  key: string,
+  "The new length of the list."
+  length: u32,
 }

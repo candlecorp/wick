@@ -1,11 +1,11 @@
 namespace "delete"
 
 type Inputs {
-  "The key to delete."
-  key: string
+  "The keys to delete."
+  keys: [string]
 }
 
 type Outputs {
-  "The key that was deleted."
-  key: string
+  "The number of keys deleted."
+  num: u32
 }
