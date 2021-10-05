@@ -8,6 +8,7 @@ use testanything::tap_test_builder::TapTestBuilder;
 pub struct TestRunner {
   desc: Option<String>,
   blocks: Vec<TestBlock>,
+  output: Vec<String>,
 }
 
 impl TestRunner {
@@ -15,6 +16,7 @@ impl TestRunner {
     Self {
       desc: desc.map(|v| v.as_ref().to_owned()),
       blocks: vec![],
+      output: vec![],
     }
   }
 
@@ -22,7 +24,11 @@ impl TestRunner {
     self.blocks.push(block);
   }
 
-  pub fn get_tap_lines(self) -> Vec<String> {
+  pub fn get_tap_lines(&self) -> &Vec<String> {
+    &self.output
+  }
+
+  pub fn run(&mut self) {
     let description = self
       .desc
       .as_ref()
@@ -38,43 +44,29 @@ impl TestRunner {
     let mut all_lines = vec![name, plan_line];
 
     let mut test_num = 0;
-    for block in self.blocks.into_iter() {
+    for block in self.blocks.iter_mut() {
       if let Some(desc) = block.desc.as_ref() {
         all_lines.push(format!("# {}", desc));
       }
+      let mut block_passed = true;
       for result in block.run() {
         test_num += 1;
         let tap = result.status_line(test_num);
         all_lines.push(tap);
+        block_passed = block_passed && result.passed;
         if !result.passed {
-          let mut formatted_diagnostics = result
-            .diagnostics
-            .iter()
-            .map(|comment| result.format_diagnostics(comment))
-            .collect::<Vec<String>>();
+          let mut formatted_diagnostics = format_diagnostics(&result.diagnostics);
           all_lines.append(&mut formatted_diagnostics);
         }
       }
+      if !block_passed {
+        all_lines.append(&mut format_diagnostics(&block.diagnostics));
+      }
     }
-
-    // for (i, test) in all_tests.iter().enumerate() {
-    //   let index = i as i64; // by default i is a usize.
-    //   let tap = test.status_line(index + 1); // TAP tests can't start with zero
-    //   all_lines.push(tap);
-    //   if !test.passed {
-    //     let mut formatted_diagnostics = test
-    //       .diagnostics
-    //       .iter()
-    //       .map(|comment| test.format_diagnostics(comment))
-    //       .collect::<Vec<String>>();
-    //     all_lines.append(&mut formatted_diagnostics);
-    //   }
-    // }
-
-    all_lines
+    self.output = all_lines;
   }
 
-  pub fn print(self) {
+  pub fn print(&self) {
     let lines = self.get_tap_lines();
     for line in lines {
       println!("{}", line);
@@ -82,10 +74,22 @@ impl TestRunner {
   }
 }
 
+pub fn format_diagnostic_line<T: AsRef<str>>(line: T) -> String {
+  format!("# {}", line.as_ref())
+}
+
+pub fn format_diagnostics<T>(lines: &[T]) -> Vec<String>
+where
+  T: AsRef<str>,
+{
+  lines.iter().map(format_diagnostic_line).collect()
+}
+
 #[derive(Default)]
 pub struct TestBlock {
   desc: Option<String>,
   tests: Vec<TestCase>,
+  pub diagnostics: Vec<String>,
 }
 
 impl TestBlock {
@@ -93,6 +97,7 @@ impl TestBlock {
     Self {
       desc: desc.map(|v| v.as_ref().to_owned()),
       tests: vec![],
+      diagnostics: vec![],
     }
   }
 
@@ -103,7 +108,8 @@ impl TestBlock {
     diagnostics: Option<Vec<String>>,
   ) {
     self.tests.push(TestCase {
-      test: Box::new(test),
+      test: Some(Box::new(test)),
+      result: Some(false),
       description: description.as_ref().to_owned(),
       diagnostics: diagnostics.unwrap_or_else(Vec::new),
     });
@@ -113,9 +119,9 @@ impl TestBlock {
     self.tests.len()
   }
 
-  pub fn run(self) -> Vec<TapTest> {
+  pub fn run(&mut self) -> Vec<TapTest> {
     let mut tests = vec![];
-    for test_case in self.tests.into_iter() {
+    for test_case in self.tests.iter_mut() {
       let diags: Vec<&str> = test_case.diagnostics.iter().map(|s| s.as_str()).collect();
       let tap_test = TapTestBuilder::new()
         .name(test_case.description.clone())
@@ -129,13 +135,23 @@ impl TestBlock {
 }
 
 struct TestCase {
-  test: Box<dyn FnOnce() -> bool>,
+  test: Option<Box<dyn FnOnce() -> bool>>,
+  result: Option<bool>,
   description: String,
   diagnostics: Vec<String>,
 }
 
 impl TestCase {
-  pub fn exec(self) -> bool {
-    (self.test)()
+  pub fn exec(&mut self) -> bool {
+    match self.test.take() {
+      Some(test) => {
+        let result = (test)();
+        self.result = Some(result);
+        result
+      }
+      None => self
+        .result
+        .expect("Attempted to execute a test without a test case"),
+    }
   }
 }
