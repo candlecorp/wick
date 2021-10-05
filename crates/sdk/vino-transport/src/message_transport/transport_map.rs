@@ -7,12 +7,13 @@ use serde::{
   Deserialize,
   Serialize,
 };
-use vino_codec::{
-  json,
-  messagepack,
-  raw,
-};
+#[cfg(feature = "json")]
+use vino_codec::json;
+use vino_codec::messagepack;
+#[cfg(feature = "raw")]
+use vino_codec::raw;
 
+#[cfg(feature = "json")]
 use super::transport_json::TransportJson;
 use crate::error::TransportError;
 use crate::{
@@ -26,26 +27,41 @@ pub(crate) type Result<T> = std::result::Result<T, TransportError>;
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 #[must_use]
 /// A wrapper for a map of [String]s to [MessageTransport]
-pub struct TransportMap(HashMap<String, MessageTransport>);
+pub struct TransportMap(
+  HashMap<String, MessageTransport>,
+  Option<HashMap<String, String>>,
+);
 
 impl TransportMap {
   /// Constructor for [TransportMap] with initial map
-  pub fn with_map(map: HashMap<String, MessageTransport>) -> Self {
-    Self(map)
+  pub fn from_map(map: HashMap<String, MessageTransport>) -> Self {
+    Self(map, None)
   }
 
   /// Constructor for an empty [TransportMap]
   pub fn new() -> Self {
-    Self(HashMap::new())
+    Self(HashMap::new(), None)
+  }
+
+  /// Add a configuration payload to the [TransportMap].
+  pub fn with_config(&mut self, map: HashMap<String, String>) {
+    self.1 = Some(map);
+  }
+
+  /// Add a configuration payload to the [TransportMap].
+  #[must_use]
+  pub fn get_config(&self) -> &Option<HashMap<String, String>> {
+    &self.1
   }
 
   /// Deserialize a JSON Object into a [TransportMap]
+  #[cfg(feature = "json")]
   pub fn from_json_str(json: &str) -> Result<Self> {
     if json.trim() == "" {
       Ok(TransportMap::new())
     } else {
       let json: HashMap<String, TransportJson> = json::deserialize(json).map_err(de_err)?;
-      Ok(TransportMap::with_map(
+      Ok(TransportMap::from_map(
         json
           .into_iter()
           .map(|(name, val)| (name, val.into()))
@@ -54,6 +70,7 @@ impl TransportMap {
     }
   }
 
+  #[cfg(feature = "json")]
   /// Turn a list of "field=value" strings into a [TransportMap] of [MessageTransport::Json] items.
   pub fn from_kv_json(values: &[String]) -> Result<Self> {
     let mut payload = TransportMap::new();
@@ -104,7 +121,9 @@ impl TransportMap {
     match v {
       MessageTransport::Success(success) => match success {
         Success::MessagePack(bytes) => messagepack::deserialize(&bytes).map_err(de_err),
+        #[cfg(feature = "raw")]
         Success::Serialized(v) => raw::deserialize(v).map_err(de_err),
+        #[cfg(feature = "json")]
         Success::Json(v) => json::deserialize(&v).map_err(de_err),
       },
       MessageTransport::Failure(_) => e,
@@ -167,10 +186,12 @@ impl TransportMap {
       let bytes = match v {
         MessageTransport::Success(success) => match success {
           Success::MessagePack(bytes) => Ok(bytes),
+          #[cfg(feature = "raw")]
           Success::Serialized(v) => {
             let bytes = messagepack::serialize(&v).map_err(ser_err)?;
             Ok(bytes)
           }
+          #[cfg(feature = "json")]
           Success::Json(v) => {
             let value: serde_value::Value = json::deserialize(&v).map_err(de_err)?;
             let bytes = messagepack::serialize(&value).map_err(ser_err)?;
@@ -228,7 +249,7 @@ where
       .filter_map(Result::ok)
       .collect();
 
-    let payload = TransportMap::with_map(serialized_data);
+    let payload = TransportMap::from_map(serialized_data);
     Ok(payload)
   }
 }

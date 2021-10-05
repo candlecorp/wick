@@ -96,8 +96,15 @@ pub(crate) type Result<T> = std::result::Result<T, error::TransportError>;
 /// The crate's Error type.
 pub type Error = error::TransportError;
 
-#[cfg(feature = "stream")]
+/// The module containing [Invocation] related logic.
+#[cfg(feature = "invocation")]
+pub mod invocation;
+
+#[cfg(feature = "invocation")]
+pub use invocation::Invocation;
+#[cfg(feature = "async")]
 pub use message_transport::stream::TransportStream;
+#[cfg(feature = "json")]
 pub use message_transport::transport_json::{
   JsonError,
   TransportJson,

@@ -86,7 +86,10 @@ impl Stream for TransportStream {
 
 impl TransportStream {
   /// Collect all the [TransportWrapper] items associated with the passed port.
-  pub async fn collect_port<B: FromIterator<TransportWrapper>>(&mut self, port: &str) -> B {
+  pub async fn collect_port<T: AsRef<str> + Send, B: FromIterator<TransportWrapper>>(
+    &mut self,
+    port: T,
+  ) -> B {
     let close_message = MessageTransport::Signal(MessageSignal::Done);
     if !self.collected {
       let mut buffer = HashMap::new();
@@ -104,7 +107,7 @@ impl TransportStream {
 
     self
       .buffer
-      .remove(port)
+      .remove(port.as_ref())
       .unwrap_or_else(Vec::new)
       .into_iter()
       .collect()

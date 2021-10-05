@@ -1,6 +1,6 @@
 /// Module for the [crate::MessageTransport], [crate::TransportWrapper], and the JSON
 /// representations of each.
-#[cfg(feature = "stream")]
+#[cfg(feature = "async")]
 pub mod stream;
 
 /// JSON-related module.
@@ -20,11 +20,11 @@ use serde::{
   Deserialize,
   Serialize,
 };
-use vino_codec::{
-  json,
-  messagepack,
-  raw,
-};
+#[cfg(feature = "json")]
+use vino_codec::json;
+use vino_codec::messagepack;
+#[cfg(feature = "raw")]
+use vino_codec::raw;
 use vino_packet::{
   v0,
   v1,
@@ -122,6 +122,26 @@ impl MessageTransport {
     matches!(self, Self::Signal(_))
   }
 
+  /// Converts the [MessageTransport] into a messagepack-compatible transport.
+  pub fn to_messagepack(&mut self) {
+    match &self {
+      Self::Success(Success::MessagePack(_)) => {}
+      #[cfg(feature = "raw")]
+      Self::Success(Success::Serialized(v)) => *self = Self::messagepack(&v),
+      #[cfg(feature = "json")]
+      Self::Success(Success::Json(json)) => {
+        *self = match json::deserialize::<serde_value::Value>(json) {
+          Ok(val) => Self::messagepack(&val),
+          Err(e) => Self::error(format!(
+            "Could not convert JSON payload to MessagePack: {}",
+            e
+          )),
+        }
+      }
+      _ => {}
+    };
+  }
+
   /// Creates a [MessageTransport] by serializing a passed object with messagepack
   pub fn messagepack<T: ?Sized + Serialize>(item: &T) -> Self {
     match messagepack::serialize(item) {
@@ -213,8 +233,14 @@ impl From<Packet> for MessageTransport {
         v0::Payload::Error(v) => MessageTransport::Failure(Failure::Error(v)),
         v0::Payload::Invalid => MessageTransport::Failure(Failure::Invalid),
         v0::Payload::MessagePack(bytes) => MessageTransport::Success(Success::MessagePack(bytes)),
+        #[cfg(feature = "json")]
         v0::Payload::Json(v) => MessageTransport::Success(Success::Json(v)),
+        #[cfg(not(feature = "json"))]
+        v0::Payload::Json(v) => MessageTransport::success(&v),
+        #[cfg(feature = "raw")]
         v0::Payload::Success(v) => MessageTransport::Success(Success::Serialized(v)),
+        #[cfg(not(feature = "raw"))]
+        v0::Payload::Success(v) => MessageTransport::success(&v),
         v0::Payload::Done => MessageTransport::Signal(MessageSignal::Done),
         v0::Payload::OpenBracket => MessageTransport::Signal(MessageSignal::OpenBracket),
         v0::Payload::CloseBracket => MessageTransport::Signal(MessageSignal::CloseBracket),
@@ -224,8 +250,14 @@ impl From<Packet> for MessageTransport {
           vino_packet::v1::Success::MessagePack(bytes) => {
             MessageTransport::Success(Success::MessagePack(bytes))
           }
+          #[cfg(feature = "raw")]
           vino_packet::v1::Success::Success(v) => MessageTransport::Success(Success::Serialized(v)),
+          #[cfg(not(feature = "raw"))]
+          vino_packet::v1::Success::Success(v) => MessageTransport::success(&v),
+          #[cfg(feature = "json")]
           vino_packet::v1::Success::Json(v) => MessageTransport::Success(Success::Json(v)),
+          #[cfg(not(feature = "json"))]
+          vino_packet::v1::Success::Json(v) => MessageTransport::success(&v),
         },
         vino_packet::v1::Payload::Failure(failure) => match failure {
           vino_packet::v1::Failure::Invalid => MessageTransport::Failure(Failure::Invalid),
@@ -249,7 +281,9 @@ impl From<MessageTransport> for Packet {
     match output {
       MessageTransport::Success(success) => match success {
         Success::MessagePack(v) => Packet::V1(v1::Payload::Success(v1::Success::MessagePack(v))),
+        #[cfg(feature = "raw")]
         Success::Serialized(v) => Packet::V1(v1::Payload::Success(v1::Success::Success(v))),
+        #[cfg(feature = "json")]
         Success::Json(v) => Packet::V1(v1::Payload::Success(v1::Success::Json(v))),
       },
       MessageTransport::Failure(failure) => match failure {
@@ -313,7 +347,9 @@ impl Display for Success {
       "{}",
       match self {
         Success::MessagePack(_) => "MessagePack",
+        #[cfg(feature = "raw")]
         Success::Serialized(_) => "Success",
+        #[cfg(feature = "json")]
         Success::Json(_) => "JSON",
       }
     ))

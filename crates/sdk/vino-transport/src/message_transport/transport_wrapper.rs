@@ -59,6 +59,7 @@ impl TransportWrapper {
   /// Converts the embedded [MessageTransport] into a [serde_json::Value::Object]
   /// map of port names to [TransportJson]s
   #[must_use]
+  #[cfg(feature = "json")]
   pub fn into_json(self) -> serde_json::Value {
     let payload = self.payload.into_json();
 
