@@ -44,13 +44,16 @@ ARTIFACT_DIR:=build
 BUILD_ARTIFACT:=$(ARTIFACT_DIR)/$(CRATE_FS_NAME).wasm
 # Path for the signed artifact
 SIGNED_ARTIFACT:=$(ARTIFACT_DIR)/$(CRATE_FS_NAME)_s.wasm
+# Path to the interface JSON
+INTERFACE:=./interface.json
+
 
 # Files to clean on make clean
-CLEAN_FILES := $(GENERATED_MODULE) $(BUILD_ARTIFACT) $(SIGNED_ARTIFACT) ./src/components/mod.rs
+CLEAN_FILES := $(GENERATED_MODULE) $(BUILD_ARTIFACT) $(SIGNED_ARTIFACT) ./src/components/mod.rs $(INTERFACE)
 
-$(SIGNED_ARTIFACT): $(BUILD_ARTIFACT) ./interface.json
+$(SIGNED_ARTIFACT): $(BUILD_ARTIFACT) $(INTERFACE)
 	@echo Signing $(BUILD_ARTIFACT)
-	@vinoc sign $(BUILD_ARTIFACT) interface.json --ver=$(CRATE_VERSION) --rev=0
+	@vinoc sign $(BUILD_ARTIFACT) $(INTERFACE) --ver=$(CRATE_VERSION) --rev=0
 	@echo Created $(SIGNED_ARTIFACT)
 
 # Defines rules like the following for each schema found :
@@ -91,16 +94,16 @@ $(BUILD_ARTIFACT): $(wildcard src/*.rs) ./src/lib.rs $(ARTIFACT_DIR) $(COMPONENT
 
 ##@ Targets
 
-./interface.json: $(SCHEMAS) ## Create an interface.json from the project's schemas
+$(INTERFACE): $(SCHEMAS) ## Create an interface.json from the project's schemas
 	@echo Building $@ from schemas in $(SCHEMA_DIR)
-	@vino-codegen json interface "$(CRATE_NAME)" $(SCHEMA_DIR) -o interface.json -f
+	@vino-codegen json interface "$(CRATE_NAME)" $(SCHEMA_DIR) -o $@ -f
 
 all: $(SIGNED_ARTIFACT) ## Make and sign the wasm binary
 
 clean: ## Clean the generated files
 	@rm -f $(CLEAN_FILES)
 
-codegen: ./interface.json  $(GENERATED_COMPONENTS) $(COMPONENTS_MODULE) $(GENERATED_MODULE) ./src/lib.rs ## Generate code from schemas
+codegen: $(INTERFACE)  $(GENERATED_COMPONENTS) $(COMPONENTS_MODULE) $(GENERATED_MODULE) ./src/lib.rs ## Generate code from schemas
 
 doc: ## Generate documentation
 	@echo Unimplemented

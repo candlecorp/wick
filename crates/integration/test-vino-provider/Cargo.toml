@@ -5,6 +5,13 @@ authors = ["Jarrod Overson <jsoverson@gmail.com>"]
 edition = "2018"
 license = "Apache-2.0"
 
+[features]
+default = ["native", "provider"]
+provider = []
+guest = []
+wasm = ["vino-provider/wasm"]
+native = ["vino-provider/native"]
+
 [dependencies]
 vino-provider = { path = "../../../sdk/crates/vino-provider", features = [
   "native",

@@ -4,7 +4,7 @@
 
 use vino_provider::wasm::prelude::*;
 
-type Result<T> = std::result::Result<T, Error>;
+type Result<T> = std::result::Result<T, WasmError>;
 
 #[no_mangle]
 pub(crate) extern "C" fn __guest_call(op_len: i32, req_len: i32) -> i32 {
@@ -61,7 +61,7 @@ impl Dispatch for Dispatcher {
       "reverse-uppercase" => reverse_uppercase::Component::new().execute(&payload),
       "uppercase" => uppercase::Component::new().execute(&payload),
       "validate" => validate::Component::new().execute(&payload),
-      _ => Err(Error::ComponentNotFound(
+      _ => Err(WasmError::ComponentNotFound(
         op.to_owned(),
         ALL_COMPONENTS.join(", "),
       )),
@@ -119,25 +119,25 @@ pub mod copy {
     pub times: i8,
   }
 
-  fn get_outputs() -> OutputPorts {
-    OutputPorts {
-      output: GuestPortOutput {},
-    }
+  #[derive(Debug)]
+  pub struct OutputPorts {
+    pub output: OutputSender,
   }
 
   #[derive(Debug, PartialEq, Clone)]
-  pub struct GuestPortOutput {}
+  pub struct OutputSender {}
 
-  impl PortSender for GuestPortOutput {
+  impl PortSender for OutputSender {
     type PayloadType = String;
     fn get_name(&self) -> String {
       "output".to_string()
     }
   }
 
-  #[derive(Debug)]
-  pub struct OutputPorts {
-    pub output: GuestPortOutput,
+  fn get_outputs() -> OutputPorts {
+    OutputPorts {
+      output: OutputSender {},
+    }
   }
 
   #[derive(Debug)]
@@ -206,25 +206,25 @@ pub mod error {
     pub input: String,
   }
 
-  fn get_outputs() -> OutputPorts {
-    OutputPorts {
-      output: GuestPortOutput {},
-    }
+  #[derive(Debug)]
+  pub struct OutputPorts {
+    pub output: OutputSender,
   }
 
   #[derive(Debug, PartialEq, Clone)]
-  pub struct GuestPortOutput {}
+  pub struct OutputSender {}
 
-  impl PortSender for GuestPortOutput {
+  impl PortSender for OutputSender {
     type PayloadType = String;
     fn get_name(&self) -> String {
       "output".to_string()
     }
   }
 
-  #[derive(Debug)]
-  pub struct OutputPorts {
-    pub output: GuestPortOutput,
+  fn get_outputs() -> OutputPorts {
+    OutputPorts {
+      output: OutputSender {},
+    }
   }
 
   #[derive(Debug)]
@@ -293,25 +293,25 @@ pub mod reverse {
     pub input: String,
   }
 
-  fn get_outputs() -> OutputPorts {
-    OutputPorts {
-      output: GuestPortOutput {},
-    }
+  #[derive(Debug)]
+  pub struct OutputPorts {
+    pub output: OutputSender,
   }
 
   #[derive(Debug, PartialEq, Clone)]
-  pub struct GuestPortOutput {}
+  pub struct OutputSender {}
 
-  impl PortSender for GuestPortOutput {
+  impl PortSender for OutputSender {
     type PayloadType = String;
     fn get_name(&self) -> String {
       "output".to_string()
     }
   }
 
-  #[derive(Debug)]
-  pub struct OutputPorts {
-    pub output: GuestPortOutput,
+  fn get_outputs() -> OutputPorts {
+    OutputPorts {
+      output: OutputSender {},
+    }
   }
 
   #[derive(Debug)]
@@ -384,25 +384,25 @@ pub mod reverse_uppercase {
     pub link: ProviderLink,
   }
 
-  fn get_outputs() -> OutputPorts {
-    OutputPorts {
-      output: GuestPortOutput {},
-    }
+  #[derive(Debug)]
+  pub struct OutputPorts {
+    pub output: OutputSender,
   }
 
   #[derive(Debug, PartialEq, Clone)]
-  pub struct GuestPortOutput {}
+  pub struct OutputSender {}
 
-  impl PortSender for GuestPortOutput {
+  impl PortSender for OutputSender {
     type PayloadType = String;
     fn get_name(&self) -> String {
       "output".to_string()
     }
   }
 
-  #[derive(Debug)]
-  pub struct OutputPorts {
-    pub output: GuestPortOutput,
+  fn get_outputs() -> OutputPorts {
+    OutputPorts {
+      output: OutputSender {},
+    }
   }
 
   #[derive(Debug)]
@@ -471,25 +471,25 @@ pub mod uppercase {
     pub input: String,
   }
 
-  fn get_outputs() -> OutputPorts {
-    OutputPorts {
-      output: GuestPortOutput {},
-    }
+  #[derive(Debug)]
+  pub struct OutputPorts {
+    pub output: OutputSender,
   }
 
   #[derive(Debug, PartialEq, Clone)]
-  pub struct GuestPortOutput {}
+  pub struct OutputSender {}
 
-  impl PortSender for GuestPortOutput {
+  impl PortSender for OutputSender {
     type PayloadType = String;
     fn get_name(&self) -> String {
       "output".to_string()
     }
   }
 
-  #[derive(Debug)]
-  pub struct OutputPorts {
-    pub output: GuestPortOutput,
+  fn get_outputs() -> OutputPorts {
+    OutputPorts {
+      output: OutputSender {},
+    }
   }
 
   #[derive(Debug)]
@@ -558,25 +558,25 @@ pub mod validate {
     pub input: String,
   }
 
-  fn get_outputs() -> OutputPorts {
-    OutputPorts {
-      output: GuestPortOutput {},
-    }
+  #[derive(Debug)]
+  pub struct OutputPorts {
+    pub output: OutputSender,
   }
 
   #[derive(Debug, PartialEq, Clone)]
-  pub struct GuestPortOutput {}
+  pub struct OutputSender {}
 
-  impl PortSender for GuestPortOutput {
+  impl PortSender for OutputSender {
     type PayloadType = String;
     fn get_name(&self) -> String {
       "output".to_string()
     }
   }
 
-  #[derive(Debug)]
-  pub struct OutputPorts {
-    pub output: GuestPortOutput,
+  fn get_outputs() -> OutputPorts {
+    OutputPorts {
+      output: OutputSender {},
+    }
   }
 
   #[derive(Debug)]

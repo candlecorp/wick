@@ -21,13 +21,13 @@ use vino_rpc::{
   BoxedRpcHandler,
 };
 
-async fn list_components(port: &u16) -> Result<Vec<vino_rpc::rpc::Component>> {
+async fn list_components(port: &u16) -> Result<Vec<vino_rpc::rpc::HostedType>> {
   let mut client = InvocationServiceClient::connect(format!("http://127.0.0.1:{}", port)).await?;
   let request = ListRequest {};
   let response = client.list(request).await?.into_inner();
 
   println!("Output = {:?}", response);
-  Ok(response.components)
+  Ok(response.schemas)
 }
 
 fn make_invocation(origin: &str, target: &str, payload: TransportMap) -> Result<Invocation> {

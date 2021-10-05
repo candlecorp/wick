@@ -38,8 +38,8 @@ impl RpcHandler for Provider {
   }
 
   async fn get_list(&self) -> RpcResult<Vec<HostedType>> {
-    let components = generated::get_all_components();
-    Ok(components.into_iter().map(HostedType::Component).collect())
+    let signature = generated::get_signature();
+    Ok(vec![HostedType::Provider(signature)])
   }
 }
 
@@ -56,7 +56,7 @@ mod tests {
   async fn request() -> anyhow::Result<()> {
     let provider = Provider::default();
     let input = "some_input";
-    let job_payload = TransportMap::with_map(hashmap! {
+    let job_payload = TransportMap::from_map(hashmap! {
       "input".to_string() => MessageTransport::messagepack(input),
     });
 

@@ -1,103 +1,91 @@
 {
   "name": "test-component",
-  "components": [
-    {
+  "types": {},
+  "components": {
+    "copy": {
       "name": "copy",
-      "inputs": [
-        {
-          "name": "input",
-          "type_string": "string"
+      "inputs": {
+        "input": {
+          "type": "string"
         },
-        {
-          "name": "times",
-          "type_string": "i8"
+        "times": {
+          "type": "i8"
         }
-      ],
-      "outputs": [
-        {
-          "name": "output",
-          "type_string": "string"
+      },
+      "outputs": {
+        "output": {
+          "type": "string"
         }
-      ]
+      }
     },
-    {
+    "error": {
       "name": "error",
-      "inputs": [
-        {
-          "name": "input",
-          "type_string": "string"
+      "inputs": {
+        "input": {
+          "type": "string"
         }
-      ],
-      "outputs": [
-        {
-          "name": "output",
-          "type_string": "string"
+      },
+      "outputs": {
+        "output": {
+          "type": "string"
         }
-      ]
+      }
     },
-    {
+    "reverse": {
       "name": "reverse",
-      "inputs": [
-        {
-          "name": "input",
-          "type_string": "string"
+      "inputs": {
+        "input": {
+          "type": "string"
         }
-      ],
-      "outputs": [
-        {
-          "name": "output",
-          "type_string": "string"
+      },
+      "outputs": {
+        "output": {
+          "type": "string"
         }
-      ]
+      }
     },
-    {
+    "reverse-uppercase": {
       "name": "reverse-uppercase",
-      "inputs": [
-        {
-          "name": "input",
-          "type_string": "string"
+      "inputs": {
+        "input": {
+          "type": "string"
         },
-        {
-          "name": "link",
-          "type_string": "ProviderLink"
+        "link": {
+          "type": "ref",
+          "ref": "#/types/ProviderLink"
         }
-      ],
-      "outputs": [
-        {
-          "name": "output",
-          "type_string": "string"
+      },
+      "outputs": {
+        "output": {
+          "type": "string"
         }
-      ]
+      }
     },
-    {
+    "uppercase": {
       "name": "uppercase",
-      "inputs": [
-        {
-          "name": "input",
-          "type_string": "string"
+      "inputs": {
+        "input": {
+          "type": "string"
         }
-      ],
-      "outputs": [
-        {
-          "name": "output",
-          "type_string": "string"
+      },
+      "outputs": {
+        "output": {
+          "type": "string"
         }
-      ]
+      }
     },
-    {
+    "validate": {
       "name": "validate",
-      "inputs": [
-        {
-          "name": "input",
-          "type_string": "string"
+      "inputs": {
+        "input": {
+          "type": "string"
         }
-      ],
-      "outputs": [
-        {
-          "name": "output",
-          "type_string": "string"
+      },
+      "outputs": {
+        "output": {
+          "type": "string"
         }
-      ]
+      }
     }
-  ]
+  }
 }
