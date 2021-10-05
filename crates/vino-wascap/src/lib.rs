@@ -83,7 +83,7 @@ use std::time::{
   UNIX_EPOCH,
 };
 
-pub use component::ComponentClaims;
+pub use component::ProviderClaims;
 use data_encoding::HEXUPPER;
 use parity_wasm::elements::{
   CustomSection,
@@ -116,7 +116,7 @@ pub(crate) type Result<T> = std::result::Result<T, error::ClaimsError>;
 pub use error::ClaimsError as Error;
 
 /// Extract the claims embedded in a [Token].
-pub fn extract_claims(contents: impl AsRef<[u8]>) -> Result<Option<Token<ComponentClaims>>> {
+pub fn extract_claims(contents: impl AsRef<[u8]>) -> Result<Option<Token<ProviderClaims>>> {
   let module: Module = deserialize_buffer(contents.as_ref())?;
   let sections: Vec<&CustomSection> = module
     .custom_sections()
@@ -127,7 +127,7 @@ pub fn extract_claims(contents: impl AsRef<[u8]>) -> Result<Option<Token<Compone
     Ok(None)
   } else {
     let jwt = String::from_utf8(sections[0].payload().to_vec())?;
-    let claims: Claims<ComponentClaims> = Claims::decode(&jwt)?;
+    let claims: Claims<ProviderClaims> = Claims::decode(&jwt)?;
     let hash = compute_hash_without_jwt(module)?;
 
     let valid_hash = claims
@@ -151,7 +151,7 @@ pub fn extract_claims(contents: impl AsRef<[u8]>) -> Result<Option<Token<Compone
 /// be saved to a `.wasm` file.
 pub fn embed_claims(
   orig_bytecode: &[u8],
-  claims: &Claims<ComponentClaims>,
+  claims: &Claims<ProviderClaims>,
   kp: &KeyPair,
 ) -> Result<Vec<u8>> {
   let mut module: Module = deserialize_buffer(orig_bytecode)?;
@@ -160,7 +160,7 @@ pub fn embed_claims(
 
   let digest = sha256_digest(cleanbytes.as_slice())?;
   let mut claims = (*claims).clone();
-  let meta = claims.metadata.map(|md| ComponentClaims {
+  let meta = claims.metadata.map(|md| ProviderClaims {
     module_hash: HEXUPPER.encode(digest.as_ref()),
     ..md
   });
@@ -188,14 +188,14 @@ pub fn sign_buffer_with_claims(
   version: Option<String>,
   revision: Option<u32>,
 ) -> Result<Vec<u8>> {
-  let claims = Claims::<ComponentClaims> {
+  let claims = Claims::<ProviderClaims> {
     expires: expires_in_days,
     id: nuid::next(),
     issued_at: since_the_epoch().as_secs(),
     issuer: acct_kp.public_key(),
     subject: mod_kp.public_key(),
     not_before: days_from_now_to_jwt_time(not_before_days),
-    metadata: Some(ComponentClaims {
+    metadata: Some(ProviderClaims {
       module_hash: "".to_owned(),
       tags: Some(Vec::new()),
       interface,

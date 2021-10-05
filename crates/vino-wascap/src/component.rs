@@ -7,7 +7,7 @@ use wascap::jwt::WascapEntity;
 
 /// The metadata that corresponds to an actor module.
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
-pub struct ComponentClaims {
+pub struct ProviderClaims {
   /// A hash of the module's bytes as they exist without the embedded signature. This is stored so wascap.
   /// can determine if a WebAssembly module's bytecode has been altered after it was signed.
   #[serde(rename = "hash")]
@@ -17,7 +17,7 @@ pub struct ComponentClaims {
   #[serde(rename = "tags", skip_serializing_if = "Option::is_none")]
   pub tags: Option<Vec<String>>,
 
-  /// List of input ports.
+  /// The schema for the module
   #[serde(rename = "interface")]
   pub interface: ProviderSignature,
 
@@ -30,7 +30,7 @@ pub struct ComponentClaims {
   pub ver: Option<String>,
 }
 
-impl WascapEntity for ComponentClaims {
+impl WascapEntity for ProviderClaims {
   fn name(&self) -> String {
     self.interface.name.clone()
   }
