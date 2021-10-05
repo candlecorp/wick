@@ -33,6 +33,7 @@ impl TransactionExecutor {
   pub(crate) fn new(model: SharedModel, timeout: Duration) -> Self {
     Self { model, timeout }
   }
+
   #[allow(clippy::too_many_lines)]
   pub(crate) fn new_transaction(
     &mut self,
@@ -54,6 +55,7 @@ impl TransactionExecutor {
       let log_prefix = transaction.log_prefix();
       let mut iter = 0;
       trace!("{}:START", log_prefix);
+
       'root: loop {
         let iter_prefix = format!("{}[{}]", log_prefix, iter);
         iter += 1;
@@ -87,6 +89,9 @@ impl TransactionExecutor {
         };
 
         match msg {
+          TransactionUpdate::NoOp => {
+            trace!("{}:NOOP", iter_prefix);
+          }
           TransactionUpdate::Drained => {
             trace!("{}:DRAINED", iter_prefix);
             self_msgs.push_back(TransactionUpdate::Done(tx_id.clone()));
@@ -174,7 +179,7 @@ impl TransactionExecutor {
         };
       }
       debug!("{}STOPPING", log_prefix);
-      Ok!(())
+      Ok::<_, TransactionError>(())
     });
 
     (inbound_rx, outbound_tx)

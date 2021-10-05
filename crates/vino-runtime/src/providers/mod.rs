@@ -19,16 +19,19 @@ type Result<T> = std::result::Result<T, ProviderError>;
 #[derive(Debug, Clone)]
 pub(crate) struct ProviderChannel {
   pub(crate) namespace: String,
-  pub(crate) recipient: Recipient<Invocation>,
+  pub(crate) recipient: Recipient<InvocationMessage>,
   pub(crate) model: Option<ProviderModel>,
 }
 
-pub(crate) async fn initialize_native_provider(namespace: &str) -> Result<ProviderChannel> {
+pub(crate) async fn initialize_native_provider(
+  namespace: &str,
+  seed: u64,
+) -> Result<ProviderChannel> {
   trace!("PROV:NATIVE:NS[{}]:REGISTERING", namespace);
   let arbiter = Arbiter::new();
   let handle = arbiter.handle();
 
-  let provider = Box::new(vino_native_api_0::Provider::default());
+  let provider = Box::new(vino_native_api_0::Provider::new(seed));
   let addr = native_provider_service::NativeProviderService::start_in_arbiter(&handle, |_| {
     native_provider_service::NativeProviderService::default()
   });
@@ -39,14 +42,14 @@ pub(crate) async fn initialize_native_provider(namespace: &str) -> Result<Provid
     })
     .await??;
 
-  let components = addr
+  let signature = addr
     .send(native_provider_service::InitializeComponents {})
     .await??;
 
   Ok(ProviderChannel {
     namespace: namespace.to_owned(),
     recipient: addr.recipient(),
-    model: Some(ProviderModel { components }),
+    model: Some(signature.into()),
   })
 }
 
@@ -63,7 +66,7 @@ pub(crate) async fn initialize_grpc_provider(
     grpc_provider_service::GrpcProviderService::default()
   });
 
-  let components = addr
+  let signature = addr
     .send(grpc_provider_service::Initialize {
       namespace: namespace.to_owned(),
       address: provider.reference,
@@ -74,7 +77,7 @@ pub(crate) async fn initialize_grpc_provider(
   Ok(ProviderChannel {
     namespace: namespace.to_owned(),
     recipient: addr.recipient(),
-    model: Some(ProviderModel { components }),
+    model: Some(signature.into()),
   })
 }
 
@@ -93,10 +96,10 @@ pub(crate) async fn initialize_wasm_provider(
       .await?;
 
   // TODO need to propagate wasi params from manifest
-  // TODO need to provide a host link callback
   let provider = Box::new(vino_provider_wasm::provider::Provider::try_load(
     &component,
     2,
+    None,
     None,
     Some(Box::new(move |origin_url, target_url, payload| {
       debug!(
@@ -126,14 +129,14 @@ pub(crate) async fn initialize_wasm_provider(
     })
     .await??;
 
-  let components = addr
+  let signature = addr
     .send(native_provider_service::InitializeComponents {})
     .await??;
 
   Ok(ProviderChannel {
     namespace: namespace.to_owned(),
     recipient: addr.recipient(),
-    model: Some(ProviderModel { components }),
+    model: Some(signature.into()),
   })
 }
 
@@ -148,6 +151,7 @@ pub(crate) async fn initialize_network_provider<'a>(
 
   let network_id: String = NetworkService::start_from_manifest(
     &provider.reference,
+    opts.rng_seed,
     opts.seed,
     opts.allow_latest,
     opts.insecure.to_owned(),
@@ -167,14 +171,14 @@ pub(crate) async fn initialize_network_provider<'a>(
     })
     .await??;
 
-  let components = addr
+  let signature = addr
     .send(native_provider_service::InitializeComponents {})
     .await??;
 
   Ok(ProviderChannel {
     namespace: namespace.to_owned(),
     recipient: addr.recipient(),
-    model: Some(ProviderModel { components }),
+    model: Some(signature.into()),
   })
 }
 
@@ -193,19 +197,19 @@ pub(crate) async fn initialize_lattice_provider(
   let addr = NativeProviderService::start_in_arbiter(&handle, |_| NativeProviderService::default());
   addr
     .send(native_provider_service::Initialize {
-      provider: provider.clone(),
+      provider,
       namespace: namespace.to_owned(),
     })
     .await??;
 
-  let components = addr
+  let signature = addr
     .send(native_provider_service::InitializeComponents {})
     .await??;
 
   Ok(ProviderChannel {
     namespace: namespace.to_owned(),
     recipient: addr.recipient(),
-    model: Some(ProviderModel { components }),
+    model: Some(signature.into()),
   })
 }
 
@@ -230,15 +234,16 @@ pub(crate) async fn start_network_provider(
 
 pub(crate) async fn create_network_provider_model(
   addr: Addr<NativeProviderService>,
-) -> Result<ProviderModel> {
-  let components = addr
+) -> Result<ProviderSignature> {
+  let signature = addr
     .send(native_provider_service::InitializeComponents {})
     .await??;
 
-  Ok(ProviderModel { components })
+  Ok(signature.into())
 }
 
 pub(crate) struct NetworkOptions<'a> {
+  pub(crate) rng_seed: u64,
   pub(crate) seed: &'a str,
   pub(crate) lattice: &'a Option<Arc<Lattice>>,
   pub(crate) allow_latest: bool,

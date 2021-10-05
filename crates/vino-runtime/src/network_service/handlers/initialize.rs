@@ -30,6 +30,7 @@ pub(crate) struct Initialize {
   pub(crate) allow_latest: bool,
   pub(crate) lattice: Option<Arc<Lattice>>,
   pub(crate) timeout: Duration,
+  pub(crate) rng_seed: u64,
 }
 
 impl Handler<Initialize> for NetworkService {
@@ -61,6 +62,7 @@ impl Handler<Initialize> for NetworkService {
 
     let task = initialize_providers(
       global_providers,
+      msg.rng_seed,
       nuid.clone(),
       seed.clone(),
       self.lattice.clone(),
@@ -175,7 +177,7 @@ async fn start_self_provider(addr: Addr<NativeProviderService>) -> Result<Provid
   let model = create_network_provider_model(addr.clone()).await?;
   trace!("NETWORK:PROVIDER:SELF:SUCCESS");
 
-  Ok(model)
+  Ok(model.into())
 }
 
 fn start_schematic_services(
@@ -192,8 +194,10 @@ fn start_schematic_services(
   result
 }
 
+#[allow(clippy::too_many_arguments)]
 async fn initialize_providers(
   providers: Vec<ProviderDefinition>,
+  rng_seed: u64,
   nuid: String,
   seed: String,
   lattice: Option<Arc<Lattice>>,
@@ -201,7 +205,7 @@ async fn initialize_providers(
   allowed_insecure: Vec<String>,
   timeout: Duration,
 ) -> Result<Vec<ProviderChannel>> {
-  let channel = initialize_native_provider(VINO_V0_NAMESPACE).await?;
+  let channel = initialize_native_provider(VINO_V0_NAMESPACE, rng_seed).await?;
   let mut channels = vec![channel];
 
   for provider in providers {
@@ -210,6 +214,7 @@ async fn initialize_providers(
     let result = match provider.kind {
       ProviderKind::Network => {
         let opts = NetworkOptions {
+          rng_seed,
           seed: &seed,
           allow_latest,
           insecure: &allowed_insecure,

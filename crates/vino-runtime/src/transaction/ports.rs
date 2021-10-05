@@ -210,10 +210,10 @@ impl PortStatuses {
 
     let mut map = HashMap::new();
     for port in ports {
-      let message = self.take_from_port(&port).ok_or(InternalError::E7001)?;
+      let message = self.take_from_port(&port).ok_or(InternalError::E9005)?;
       map.insert(port.get_port_owned(), message);
     }
-    Ok(TransportMap::with_map(map))
+    Ok(TransportMap::from_map(map))
   }
 
   pub(crate) fn is_target_ready(&self, port: &ConnectionTargetDefinition) -> bool {

@@ -1,24 +1,26 @@
 use futures::Future;
 use tokio::sync::mpsc::unbounded_channel;
 use tokio_stream::wrappers::UnboundedReceiverStream;
-use vino_transport::TransportMap;
+use vino_manifest::parse::CORE_ID;
 
 use crate::dev::prelude::*;
 use crate::dispatch::inv_error;
 use crate::schematic_service::input_message::InputMessage;
+use crate::CORE_PORT_SEED;
 
 type Result<T> = std::result::Result<T, SchematicError>;
 
-impl Handler<Invocation> for SchematicService {
+impl Handler<InvocationMessage> for SchematicService {
   type Result = ActorResult<Self, InvocationResponse>;
 
-  fn handle(&mut self, msg: Invocation, ctx: &mut Context<Self>) -> Self::Result {
-    let tx_id = msg.tx_id.clone();
-    let target = msg.target.clone();
+  fn handle(&mut self, msg: InvocationMessage, ctx: &mut Context<Self>) -> Self::Result {
+    let tx_id = msg.get_tx_id().to_owned();
+    let target = msg.get_target();
+
     let result = match target {
-      Entity::Schematic(name) => handle_schematic(self, ctx.address(), &name, &msg),
-      Entity::Component(_, name) => handle_schematic(self, ctx.address(), &name, &msg),
-      Entity::Reference(reference) => get_component_definition(self.get_model(), &reference)
+      Entity::Schematic(name) => handle_schematic(self, ctx.address(), name, &msg),
+      Entity::Component(_, name) => handle_schematic(self, ctx.address(), name, &msg),
+      Entity::Reference(reference) => get_component_definition(self.get_model(), reference)
         .and_then(|def| handle_schematic(self, ctx.address(), &def.id(), &msg)),
       _ => Err(SchematicError::FailedPreRequestCondition(
         "Schematic invoked with entity it doesn't handle".into(),
@@ -40,9 +42,9 @@ fn handle_schematic(
   schematic: &mut SchematicService,
   addr: Addr<SchematicService>,
   name: &str,
-  invocation: &Invocation,
+  invocation: &InvocationMessage,
 ) -> Result<impl Future<Output = Result<InvocationResponse>>> {
-  let tx_id = invocation.tx_id.clone();
+  let tx_id = invocation.get_tx_id().to_owned();
   let log_prefix = format!("SC[{}]:{}", name, tx_id);
   trace!("{}:INVOKE", log_prefix);
 
@@ -85,7 +87,7 @@ fn handle_schematic(
     Ok!(())
   });
 
-  match make_input_packets(schematic.get_model(), &tx_id, &invocation.msg) {
+  match make_input_packets(schematic.get_model(), &tx_id, invocation) {
     Ok(messages) => {
       for message in messages {
         inbound.send(TransactionUpdate::Update(message.handle_default()))?;
@@ -98,14 +100,15 @@ fn handle_schematic(
   };
   let rx = UnboundedReceiverStream::new(rx);
 
-  Ok(async move { Ok(InvocationResponse::stream(tx_id, rx)) })
+  Ok(async move { Ok(InvocationResponse::stream(tx_id.clone(), rx)) })
 }
 
 fn make_input_packets(
   model: &SharedModel,
   tx_id: &str,
-  map: &TransportMap,
+  invocation: &InvocationMessage,
 ) -> Result<Vec<InputMessage>> {
+  let map = invocation.get_payload();
   let model = model.read();
   let connections = model.get_downstream_connections(SCHEMATIC_INPUT);
   let mut messages: Vec<InputMessage> = vec![];
@@ -120,6 +123,23 @@ fn make_input_packets(
       connection: conn.clone(),
       tx_id: tx_id.to_owned(),
       payload: transport.clone(),
+    });
+    messages.push(InputMessage {
+      connection: conn.clone(),
+      tx_id: tx_id.to_owned(),
+      payload: MessageTransport::done(),
+    });
+  }
+  let connections = model.get_downstream_connections(CORE_ID);
+  for conn in connections {
+    let msg = match conn.from.get_port() {
+      CORE_PORT_SEED => MessageTransport::success(&invocation.get_init_data().seed),
+      x => MessageTransport::error(format!("{} port {} does not exist.", CORE_ID, x)),
+    };
+    messages.push(InputMessage {
+      connection: conn.clone(),
+      tx_id: tx_id.to_owned(),
+      payload: msg,
     });
     messages.push(InputMessage {
       connection: conn.clone(),

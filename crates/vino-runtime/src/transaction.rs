@@ -16,6 +16,7 @@ pub(crate) mod ports;
 
 #[derive(Debug)]
 pub enum TransactionUpdate {
+  NoOp,
   Drained,
   Error(String),
   Timeout(Duration),
@@ -37,6 +38,7 @@ impl std::fmt::Display for TransactionUpdate {
       TransactionUpdate::Result(_) => "result",
       TransactionUpdate::Done(_) => "done",
       TransactionUpdate::Update(_) => "update",
+      TransactionUpdate::NoOp => "noop",
     };
     f.write_str(name)
   }

@@ -6,7 +6,7 @@ use vino_rpc::{
 };
 
 use crate::dev::prelude::*;
-use crate::network_service::handlers::list_schematics::ListSchematics;
+use crate::network_service::handlers::list_schematics::GetSignature;
 
 #[derive(Debug, Default)]
 struct State {}
@@ -27,15 +27,10 @@ impl Provider {
 impl RpcHandler for Provider {
   async fn invoke(&self, entity: Entity, payload: TransportMap) -> RpcResult<BoxedTransportStream> {
     let addr = NetworkService::for_id(&self.network_id);
-
+    let invocation =
+      InvocationMessage::new(Entity::Schematic("<system>".to_owned()), entity, payload);
     let result: InvocationResponse = addr
-      .send(Invocation {
-        origin: Entity::Schematic("<system>".to_owned()),
-        target: entity,
-        msg: payload,
-        id: get_uuid(),
-        tx_id: get_uuid(),
-      })
+      .send(invocation)
       .await
       .map_err(|e| RpcError::ProviderError(e.to_string()))?;
     match result.ok() {
@@ -50,12 +45,11 @@ impl RpcHandler for Provider {
   async fn get_list(&self) -> RpcResult<Vec<HostedType>> {
     let addr = NetworkService::for_id(&self.network_id);
     let result = addr
-      .send(ListSchematics {})
+      .send(GetSignature {})
       .await
       .map_err(|e| RpcError::ProviderError(e.to_string()))?;
-    let schematics = result.map_err(|e| RpcError::ProviderError(e.to_string()))?;
-    let hosted_types = schematics.into_iter().map(HostedType::Schematic).collect();
-    Ok(hosted_types)
+    let signature = result.map_err(|e| RpcError::ProviderError(e.to_string()))?;
+    Ok(vec![HostedType::Provider(signature)])
   }
 }
 

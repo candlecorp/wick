@@ -5,6 +5,7 @@ use std::collections::hash_map::{
 use std::collections::HashMap;
 use std::convert::TryFrom;
 
+use vino_manifest::parse::CORE_ID;
 use vino_manifest::schematic_definition::PortReference;
 use vino_provider::native::prelude::*;
 
@@ -23,14 +24,14 @@ pub(crate) struct SchematicModel {
   instances: HashMap<ComponentInstance, ComponentId>,
   providers: HashMap<Namespace, Option<ProviderModel>>,
   upstream_links: HashMap<ConnectionTargetDefinition, ConnectionTargetDefinition>,
-  signature: Option<SchematicSignature>,
+  signature: Option<ComponentSignature>,
   raw_ports: HashMap<String, RawPorts>,
 }
 
 #[derive(Debug, Clone)]
 struct LoadedState {
-  schematic_inputs: Vec<PortSignature>,
-  schematic_outputs: Vec<PortSignature>,
+  schematic_inputs: TypeMap,
+  schematic_outputs: TypeMap,
   provider_signatures: Vec<ProviderSignature>,
 }
 
@@ -103,12 +104,11 @@ impl SchematicModel {
   }
 
   fn populate_signature(&mut self, omit_namespaces: &[String]) -> Result<()> {
-    let provider_signatures = self.build_provider_signatures();
-    self.signature = Some(SchematicSignature {
+    // let provider_signatures = self.build_provider_signatures();
+    self.signature = Some(ComponentSignature {
       name: self.get_name(),
-      providers: provider_signatures,
-      inputs: vec![],
-      outputs: vec![],
+      inputs: TypeMap::new(),
+      outputs: TypeMap::new(),
     });
     let input_signatures = self.infer_schematic_inputs(omit_namespaces)?;
     let output_signatures = self.infer_schematic_outputs(omit_namespaces)?;
@@ -118,9 +118,9 @@ impl SchematicModel {
     Ok(())
   }
 
-  fn infer_schematic_inputs(&self, omit_namespaces: &[String]) -> Result<Vec<PortSignature>> {
+  fn infer_schematic_inputs(&self, omit_namespaces: &[String]) -> Result<TypeMap> {
     let inputs = self.get_schematic_inputs();
-    let mut input_signatures = vec![];
+    let mut input_signatures = HashMap::new();
     let should_skip_namespace = |namespace: &str| omit_namespaces.iter().any(|ns| ns == namespace);
 
     for input in inputs {
@@ -149,10 +149,7 @@ impl SchematicModel {
       };
       let downstream_port = downstream.get_port();
 
-      let downstream_signature = model
-        .inputs
-        .iter()
-        .find(|port| port.name == downstream_port);
+      let downstream_signature = model.get_input(downstream_port);
 
       let downstream_signature = match downstream_signature {
         Some(d) => d,
@@ -165,17 +162,14 @@ impl SchematicModel {
         }
       };
 
-      input_signatures.push(PortSignature {
-        name: input.get_port_owned(),
-        type_string: downstream_signature.type_string.clone(),
-      });
+      input_signatures.insert(input.get_port_owned(), downstream_signature.clone());
     }
-    Ok(input_signatures)
+    Ok(input_signatures.into())
   }
 
-  fn infer_schematic_outputs(&self, omit_namespaces: &[String]) -> Result<Vec<PortSignature>> {
+  fn infer_schematic_outputs(&self, omit_namespaces: &[String]) -> Result<TypeMap> {
     let outputs = self.get_schematic_outputs();
-    let mut output_signatures = vec![];
+    let mut output_signatures = HashMap::new();
     let should_skip_namespace = |namespace: &str| omit_namespaces.iter().any(|ns| ns == namespace);
 
     for output in outputs {
@@ -190,11 +184,7 @@ impl SchematicModel {
           if should_skip_namespace(&ns) {
             return None;
           }
-          model
-            .outputs
-            .iter()
-            .find(|port| upstream.matches_port(&port.name))
-            .map(|signature| signature.type_string.clone())
+          model.get_output(upstream.get_port()).cloned()
         });
       let signature = match opt {
         Some(sig) => sig,
@@ -204,27 +194,21 @@ impl SchematicModel {
         }
       };
 
-      output_signatures.push(PortSignature {
-        name: output.get_port_owned(),
-        type_string: signature,
-      });
+      output_signatures.insert(output.get_port_owned(), signature.clone());
     }
-    Ok(output_signatures)
+    Ok(output_signatures.into())
   }
 
+  // TODO: assess
+  #[allow(unused)]
   fn build_provider_signatures(&self) -> Vec<ProviderSignature> {
     let provider_signatures = self
       .providers
       .iter()
       .filter_map(|(ns, provider_model)| {
-        provider_model.as_ref().map(|model| ProviderSignature {
-          name: ns.clone(),
-          components: model
-            .components
-            .values()
-            .map(|model| model.into())
-            .collect(),
-        })
+        provider_model
+          .as_ref()
+          .map(|model| model.get_signature(Some(ns.clone())))
       })
       .collect();
     provider_signatures
@@ -366,7 +350,7 @@ impl SchematicModel {
       .filter(move |conn| conn.from.matches_instance(instance))
   }
 
-  pub(crate) fn get_signature(&self) -> Option<&SchematicSignature> {
+  pub(crate) fn get_signature(&self) -> Option<&ComponentSignature> {
     self.signature.as_ref()
   }
 
@@ -391,7 +375,7 @@ impl SchematicModel {
   }
 
   pub(crate) fn is_generator(&self, instance: &str) -> bool {
-    if instance == SCHEMATIC_INPUT {
+    if instance == SCHEMATIC_INPUT || instance == CORE_ID {
       false
     } else {
       self
@@ -405,12 +389,12 @@ impl SchematicModel {
     match self.instances.get(instance) {
       Some(id) => match self.get_component_model(id) {
         Some((_, component)) => component
-          .outputs
+          .get_output_names()
           .iter()
           .map(|p| {
             ConnectionTargetDefinition::from_port(PortReference {
               instance: instance.to_owned(),
-              port: p.name.clone(),
+              port: p.clone(),
             })
           })
           .collect(),

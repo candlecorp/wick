@@ -1,13 +1,13 @@
 use crate::dev::prelude::*;
 
 #[derive(Message)]
-#[rtype(result = "Result<Recipient<Invocation>,NetworkError>")]
+#[rtype(result = "Result<Recipient<InvocationMessage>,NetworkError>")]
 pub(crate) struct GetRecipient {
   pub(crate) entity: Entity,
 }
 
 impl Handler<GetRecipient> for NetworkService {
-  type Result = Result<Recipient<Invocation>, NetworkError>;
+  type Result = Result<Recipient<InvocationMessage>, NetworkError>;
 
   fn handle(&mut self, msg: GetRecipient, _ctx: &mut Context<Self>) -> Self::Result {
     self.ensure_is_started()?;

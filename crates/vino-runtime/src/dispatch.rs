@@ -1,4 +1,4 @@
-use std::convert::TryFrom;
+use std::convert::TryInto;
 use std::sync::Arc;
 
 use actix::dev::MessageResponse;
@@ -7,51 +7,108 @@ use parking_lot::{
   Condvar,
   Mutex,
 };
-use serde::{
-  Deserialize,
-  Serialize,
+use vino_transport::{
+  Invocation,
+  TransportMap,
 };
-use vino_rpc::convert_transport_map;
-use vino_transport::TransportMap;
 
 use crate::dev::prelude::*;
 use crate::network_service::handlers::get_recipient::GetRecipient;
 
-/// An invocation for a component, port, or schematic.
-#[derive(Debug, Clone, Default, Serialize, Deserialize, Message)]
+#[derive(Debug, Clone, Default, Message)]
 #[rtype(result = "InvocationResponse")]
-#[must_use]
-pub struct Invocation {
-  pub origin: Entity,
-  pub target: Entity,
-  pub msg: TransportMap,
-  pub id: String,
-  pub tx_id: String,
+pub(crate) struct InvocationMessage {
+  inner: Invocation,
+  core_data: InitData,
 }
 
-impl<A, M> MessageResponse<A, M> for Invocation
-where
-  A: Actor,
-  M: Message<Result = Invocation>,
-{
-  fn handle(self, _: &mut A::Context, tx: Option<actix::dev::OneshotSender<Self>>) {
-    if let Some(tx) = tx {
-      if let Err(e) = tx.send(self) {
-        error!("Send error (call id:{} target:{:?})", &e.id, &e.target);
-      }
+impl InvocationMessage {
+  pub(crate) fn with_data(invocation: Invocation, data: InitData) -> Self {
+    Self {
+      inner: invocation,
+      core_data: data,
+    }
+  }
+
+  pub(crate) fn new(origin: Entity, target: Entity, msg: TransportMap) -> Self {
+    let tx_id = get_uuid();
+    let invocation_id = get_uuid();
+
+    Self {
+      inner: Invocation {
+        origin,
+        target,
+        msg,
+        id: invocation_id,
+        tx_id,
+      },
+      core_data: InitData::default(),
+    }
+  }
+
+  pub(crate) fn get_tx_id(&self) -> &str {
+    &self.inner.tx_id
+  }
+
+  pub(crate) fn get_target(&self) -> &Entity {
+    &self.inner.target
+  }
+
+  pub(crate) fn get_target_url(&self) -> String {
+    self.inner.target.url()
+  }
+
+  pub(crate) fn get_origin(&self) -> &Entity {
+    &self.inner.origin
+  }
+
+  pub(crate) fn get_origin_url(&self) -> String {
+    self.inner.origin.url()
+  }
+
+  pub(crate) fn get_payload(&self) -> &TransportMap {
+    &self.inner.msg
+  }
+
+  pub(crate) fn get_payload_owned(self) -> TransportMap {
+    self.inner.msg
+  }
+
+  pub(crate) fn get_init_data(&self) -> &InitData {
+    &self.core_data
+  }
+}
+
+impl From<Invocation> for InvocationMessage {
+  fn from(inv: Invocation) -> Self {
+    Self {
+      inner: inv,
+      core_data: InitData::default(),
     }
   }
 }
 
-impl TryFrom<Invocation> for vino_rpc::rpc::Invocation {
+impl TryFrom<InvocationMessage> for vino_rpc::rpc::Invocation {
   type Error = RuntimeError;
-  fn try_from(inv: Invocation) -> Result<Self, RuntimeError> {
-    Ok(vino_rpc::rpc::Invocation {
-      origin: inv.origin.url(),
-      target: inv.target.url(),
-      msg: convert_transport_map(inv.msg),
-      id: inv.id,
-    })
+  fn try_from(inv: InvocationMessage) -> Result<Self, RuntimeError> {
+    Ok(inv.inner.try_into()?)
+  }
+}
+
+impl<A, M> MessageResponse<A, M> for InvocationMessage
+where
+  A: Actor,
+  M: Message<Result = InvocationMessage>,
+{
+  fn handle(self, _: &mut A::Context, tx: Option<actix::dev::OneshotSender<Self>>) {
+    if let Some(tx) = tx {
+      if let Err(e) = tx.send(self) {
+        error!(
+          "Send error (call id:{} target:{:?})",
+          &e.inner.id, &e.inner.target
+        );
+      }
+    }
   }
 }
 
@@ -112,34 +169,6 @@ where
     }
   }
 }
-impl Invocation {
-  /// Creates an invocation with a new transaction id.
-
-  pub fn new(origin: Entity, target: Entity, msg: TransportMap) -> Invocation {
-    let tx_id = get_uuid();
-    let invocation_id = get_uuid();
-
-    Invocation {
-      origin,
-      target,
-      msg,
-      id: invocation_id,
-      tx_id,
-    }
-  }
-  /// Creates an invocation with a specific transaction id, to correlate a chain of.
-  /// invocations.
-  pub fn next(tx_id: &str, origin: Entity, target: Entity, msg: TransportMap) -> Invocation {
-    let invocation_id = get_uuid();
-    Invocation {
-      origin,
-      target,
-      msg,
-      id: invocation_id,
-      tx_id: tx_id.to_owned(),
-    }
-  }
-}
 
 #[derive(thiserror::Error, Debug)]
 pub enum DispatchError {
@@ -180,9 +209,9 @@ pub(crate) async fn network_invoke_async(
     })
     .await?
     .map_err(|e| DispatchError::EntityNotAvailable(e.to_string()))?;
-  trace!("Got recipient");
-  let response = rcpt.send(Invocation::new(origin, target, payload)).await?;
-  trace!("Got response");
+  let response = rcpt
+    .send(InvocationMessage::new(origin, target, payload))
+    .await?;
   match response {
     InvocationResponse::Stream { rx, .. } => {
       let packets: Vec<TransportWrapper> = rx.collect().await;

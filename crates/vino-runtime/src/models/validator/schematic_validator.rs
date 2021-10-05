@@ -70,11 +70,7 @@ impl<'a> SchematicValidator<'a> {
 
         let from_instance = conn.from.get_instance();
         let from = self.model.get_component_definition(from_instance);
-        if from.is_none()
-          && !conn.has_default()
-          && !conn.from.is_sender()
-          && !conn.from.matches_instance(SCHEMATIC_INPUT)
-        {
+        if from.is_none() && !conn.has_default() && !conn.from.is_system_upstream() {
           none.push(ValidationErrorKind::DanglingReference(
             from_instance.to_owned(),
           ));
@@ -82,7 +78,7 @@ impl<'a> SchematicValidator<'a> {
 
         let to_instance = conn.to.get_instance();
         let to = self.model.get_component_definition(to_instance);
-        if to.is_none() && !conn.to.matches_instance(SCHEMATIC_OUTPUT) {
+        if to.is_none() && !conn.to.is_system_downstream() {
           none.push(ValidationErrorKind::DanglingReference(
             to_instance.to_owned(),
           ));
@@ -218,36 +214,31 @@ fn is_valid_input(
   to: &ComponentModel,
 ) -> std::result::Result<(), ValidationErrorKind> {
   let to_port = &connection.to;
-  let found_to_port = to
-    .inputs
-    .iter()
-    .find(|port| to_port.matches_port(&port.name));
+  let found_to_port = to.get_input(to_port.get_port());
 
   if found_to_port.is_none() {
     Err(ValidationErrorKind::InvalidInputPort(
       to_port.clone(),
       connection.clone(),
-      to.inputs.clone(),
+      to.inputs().names(),
     ))
   } else {
     Ok(())
   }
 }
+
 fn is_valid_output(
   connection: &ConnectionDefinition,
   from: &ComponentModel,
 ) -> std::result::Result<(), ValidationErrorKind> {
   let from_port = &connection.from;
-  let found_from_port = from
-    .outputs
-    .iter()
-    .find(|port| from_port.matches_port(&port.name));
+  let found_from_port = from.get_output(from_port.get_port());
 
   if found_from_port.is_none() {
     Err(ValidationErrorKind::InvalidOutputPort(
       from_port.clone(),
       connection.clone(),
-      from.outputs.clone(),
+      from.outputs().names(),
     ))
   } else {
     Ok(())
@@ -256,10 +247,10 @@ fn is_valid_output(
 
 #[cfg(test)]
 mod tests {
+  use std::convert::TryInto;
   use std::str::FromStr;
 
   use vino_manifest::schematic_definition::SenderData;
-  use vino_provider::native::prelude::*;
   use ConnectionTargetDefinition as Target;
 
   use super::*;
@@ -281,21 +272,14 @@ mod tests {
   fn test_invalid_ports() -> TestResult<()> {
     let def = load_network_definition("./manifests/v0/invalid-bad-ports.yaml")?;
     let mut model = SchematicModel::try_from(def.schematics[0].clone())?;
-    let expected_inputs = vec![PortSignature {
-      name: "input".to_owned(),
-      type_string: "string".to_owned(),
-    }];
-    let expected_outputs = vec![PortSignature {
-      name: "output".to_owned(),
-      type_string: "bytes".to_owned(),
-    }];
+
     let provider = ProviderModel {
       components: hashmap! {
-        "log".to_owned() => ComponentModel {
+        "log".to_owned() => ComponentSignature {
           name: "log".to_owned(),
-          inputs: expected_inputs.clone(),
-          outputs: expected_outputs.clone(),
-        }
+          inputs: vec![("input", "string")].try_into()?,
+          outputs: vec![("output", "bytes")].try_into()?
+        }.into()
       },
     };
     model.allow_providers(&[VINO_V0_NAMESPACE]);
@@ -306,11 +290,15 @@ mod tests {
     let expected = ValidationError::new(
       &model.get_name(),
       vec![
-        ValidationErrorKind::InvalidInputPort(first.to.clone(), first.clone(), expected_inputs),
+        ValidationErrorKind::InvalidInputPort(
+          first.to.clone(),
+          first.clone(),
+          vec!["input".to_owned()],
+        ),
         ValidationErrorKind::InvalidOutputPort(
           second.from.clone(),
           second.clone(),
-          expected_outputs,
+          vec!["output".to_owned()],
         ),
       ],
     );
@@ -323,21 +311,14 @@ mod tests {
     // the "self" namespace can't be validated until the non-self parts of every schematic are complete;
     let def = load_network_definition("./manifests/v0/reference-self.yaml")?;
     let mut model = SchematicModel::try_from(def.schematics[0].clone())?;
-    let expected_inputs = vec![PortSignature {
-      name: "input".to_owned(),
-      type_string: "string".to_owned(),
-    }];
-    let expected_outputs = vec![PortSignature {
-      name: "output".to_owned(),
-      type_string: "bytes".to_owned(),
-    }];
+
     let provider = ProviderModel {
       components: hashmap! {
-        "log".to_owned() => ComponentModel {
+        "log".to_owned() => ComponentSignature {
           name: "log".to_owned(),
-          inputs: expected_inputs,
-          outputs: expected_outputs,
-        }
+          inputs: vec![("input", "string")].try_into()?,
+          outputs: vec![("output", "bytes")].try_into()?
+        }.into()
       },
     };
     model.commit_providers(vec![("vino", Some(provider))])?;
@@ -345,17 +326,11 @@ mod tests {
     assert_eq!(result, Ok(()));
     let provider = ProviderModel {
       components: hashmap! {
-        "child".to_owned() => ComponentModel {
+        "child".to_owned() => ComponentSignature {
           name: "child".to_owned(),
-          inputs: vec![PortSignature {
-            name: "child_input".to_owned(),
-            type_string: "string".to_owned(),
-          }],
-          outputs: vec![PortSignature {
-            name: "child_output".to_owned(),
-            type_string: "bytes".to_owned(),
-          }],
-        }
+          inputs: vec![("child_input", "string")].try_into()?,
+          outputs: vec![("child_output", "bytes")].try_into()?
+        }.into()
       },
     };
     model.commit_providers(vec![("self", Some(provider))])?;
@@ -508,11 +483,11 @@ mod tests {
     let mut model = SchematicModel::try_from(schematic_def)?;
     let provider = ProviderModel {
       components: hashmap! {
-        "log".to_owned() => ComponentModel {
+        "log".to_owned() => ComponentSignature {
           name: "log".to_owned(),
-          inputs: vec![PortSignature{name: "input".to_owned(), type_string: "string".to_owned()}],
-          outputs: vec![PortSignature{name: "output".to_owned(), type_string: "bytes".to_owned()}],
-        }
+          inputs: vec![("input", "string")].try_into()?,
+          outputs: vec![("output", "bytes")].try_into()?
+        }.into()
       },
     };
     model.commit_providers(vec![("test-namespace", Some(provider))])?;
@@ -520,38 +495,8 @@ mod tests {
     assert_eq!(result, Ok(()));
     model.partial_initialization()?;
     let sig = model.get_signature().unwrap();
-    assert_eq!(
-      sig.inputs,
-      vec![PortSignature {
-        name: "input".to_owned(),
-        type_string: "string".to_owned()
-      }]
-    );
-    assert_eq!(
-      sig.outputs,
-      vec![PortSignature {
-        name: "output".to_owned(),
-        type_string: "bytes".to_owned()
-      }]
-    );
-    assert_eq!(sig.providers.len(), 1);
-    assert_eq!(
-      sig.providers[0],
-      ProviderSignature {
-        name: "test-namespace".to_owned(),
-        components: vec![ComponentSignature {
-          name: "log".to_owned(),
-          inputs: vec![PortSignature {
-            name: "input".to_owned(),
-            type_string: "string".to_owned()
-          }],
-          outputs: vec![PortSignature {
-            name: "output".to_owned(),
-            type_string: "bytes".to_owned()
-          }]
-        }]
-      }
-    );
+    assert_eq!(sig.inputs, vec![("input", "string")].try_into()?);
+    assert_eq!(sig.outputs, vec![("output", "bytes")].try_into()?);
 
     Ok(())
   }

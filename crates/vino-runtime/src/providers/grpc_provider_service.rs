@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::convert::TryInto;
 
 use rpc::invocation_service_client::InvocationServiceClient;
@@ -24,7 +23,6 @@ pub(crate) struct GrpcProviderService {
 #[derive(Debug)]
 struct State {
   client: InvocationClient,
-  components: HashMap<String, ComponentModel>,
 }
 
 impl Actor for GrpcProviderService {
@@ -38,7 +36,7 @@ impl Actor for GrpcProviderService {
 }
 
 #[derive(Message, Debug)]
-#[rtype(result = "Result<HashMap<String, ComponentModel>>")]
+#[rtype(result = "Result<ProviderSignature>")]
 pub(crate) struct Initialize {
   pub(crate) namespace: String,
   pub(crate) address: String,
@@ -46,7 +44,7 @@ pub(crate) struct Initialize {
 }
 
 impl Handler<Initialize> for GrpcProviderService {
-  type Result = ActorResult<Self, Result<HashMap<String, ComponentModel>>>;
+  type Result = ActorResult<Self, Result<ProviderSignature>>;
 
   fn handle(&mut self, msg: Initialize, ctx: &mut Self::Context) -> Self::Result {
     trace!("{}:Init:{}", PREFIX, msg.namespace);
@@ -82,10 +80,7 @@ impl Handler<Initialize> for GrpcProviderService {
       .into_actor(self)
       .map(|result, this, _ctx| match result {
         Ok((client, metadata)) => {
-          this.state = Some(State {
-            client,
-            components: metadata.clone(),
-          });
+          this.state = Some(State { client });
           Ok(metadata)
         }
         Err(e) => log_err!(e),
@@ -96,14 +91,14 @@ impl Handler<Initialize> for GrpcProviderService {
 }
 
 #[derive(Message)]
-#[rtype(result = "Result<HashMap<String, ComponentModel>>")]
+#[rtype(result = "Result<ProviderSignature>")]
 pub(crate) struct InitializeComponents {
   namespace: String,
   client: InvocationClient,
 }
 
 impl Handler<InitializeComponents> for GrpcProviderService {
-  type Result = ActorResult<Self, Result<HashMap<String, ComponentModel>>>;
+  type Result = ActorResult<Self, Result<ProviderSignature>>;
 
   fn handle(&mut self, msg: InitializeComponents, _ctx: &mut Self::Context) -> Self::Result {
     trace!("{}:InitComponents:[NS:{}]", PREFIX, self.namespace);
@@ -117,47 +112,35 @@ impl Handler<InitializeComponents> for GrpcProviderService {
       let list = list
         .await
         .map_err(|e| ProviderError::RpcUpstreamError(e.to_string()))?;
-      let list = list.into_inner();
+      let mut list = list.into_inner();
+      let sig = list.schemas.remove(0);
 
-      let mut metadata: HashMap<String, ComponentModel> = HashMap::new();
-
-      for item in list.components {
-        metadata.insert(
-          item.name.clone(),
-          ComponentModel {
-            name: item.name.clone(),
-            inputs: item.inputs.into_iter().map(From::from).collect(),
-            outputs: item.outputs.into_iter().map(From::from).collect(),
-          },
-        );
+      match &sig.r#type {
+        Some(rpc::hosted_type::Type::Provider(sig)) => Ok(sig.clone().try_into()?),
+        None => Err(InternalError::E7004.into()),
       }
-      for (name, model) in &metadata {
-        debug!("{}:REGISTER:[NS:{}]{:?}", PREFIX, name, model);
-      }
-
-      Ok(metadata)
     };
 
     ActorResult::reply_async(task.into_actor(self))
   }
 }
 
-impl Handler<Invocation> for GrpcProviderService {
+impl Handler<InvocationMessage> for GrpcProviderService {
   type Result = ActorResult<Self, InvocationResponse>;
 
-  fn handle(&mut self, msg: Invocation, _ctx: &mut Self::Context) -> Self::Result {
+  fn handle(&mut self, msg: InvocationMessage, _ctx: &mut Self::Context) -> Self::Result {
     trace!(
       "{}:INVOKE:[{}]=>[{}]",
       PREFIX,
-      msg.origin.url(),
-      msg.target.url()
+      msg.get_origin_url(),
+      msg.get_target_url()
     );
 
     let state = self.state.as_ref().unwrap();
     let mut client = state.client.clone();
-    let tx_id = msg.tx_id.clone();
-    let tx_id2 = msg.tx_id.clone();
-    let url = msg.target.url();
+    let tx_id = msg.get_tx_id().to_owned();
+    let tx_id2 = tx_id.clone();
+    let url = msg.get_target_url();
 
     let invocation: rpc::Invocation =
       actix_ensure_ok!(msg.try_into().map_err(|_e| InvocationResponse::error(
@@ -270,7 +253,7 @@ mod test {
     let work = async move {
       sleep(Duration::from_secs(1)).await;
       let grpc_provider = GrpcProviderService::start_default();
-      grpc_provider
+      let _sig = grpc_provider
         .send(Initialize {
           namespace: "test".to_owned(),
           address: format!("https://127.0.0.1:{}", port),
@@ -278,16 +261,13 @@ mod test {
         })
         .await??;
       debug!("Initialized");
+      let invocation = InvocationMessage::new(
+        Entity::test("grpc"),
+        Entity::component_direct("test-component"),
+        vec![("input", user_data)].into(),
+      );
 
-      let response = grpc_provider
-        .send(Invocation {
-          origin: Entity::test("grpc"),
-          target: Entity::component_direct("test-component"),
-          msg: vec![("input", user_data)].into(),
-          id: get_uuid(),
-          tx_id: get_uuid(),
-        })
-        .await?;
+      let response = grpc_provider.send(invocation).await?;
       Ok!(response)
     };
     tokio::select! {

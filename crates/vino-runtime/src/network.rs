@@ -8,7 +8,7 @@ use vino_wascap::KeyPair;
 
 use crate::dev::prelude::*;
 use crate::network_service::handlers::initialize::Initialize;
-use crate::network_service::handlers::list_schematics::ListSchematics;
+use crate::network_service::handlers::list_schematics::GetSignature;
 pub use crate::providers::network_provider::Provider as NetworkProvider;
 
 type Result<T> = std::result::Result<T, RuntimeError>;
@@ -23,6 +23,7 @@ pub struct Network {
   kp: KeyPair,
   timeout: Duration,
   lattice: Option<Arc<Lattice>>,
+  rng_seed: u64,
 }
 
 impl Network {
@@ -42,6 +43,7 @@ impl Network {
       allowed_insecure: self.allowed_insecure.clone(),
       allow_latest: self.allow_latest,
       timeout: self.timeout,
+      rng_seed: self.rng_seed,
     };
     map_err!(self.addr.send(init).await, InternalError::E5102)?
       .map_err(|e| RuntimeError::InitializationFailed(e.to_string()))?;
@@ -53,7 +55,23 @@ impl Network {
     &self,
     schematic: T,
     origin: Entity,
-    data: U,
+    payload: U,
+  ) -> Result<TransportStream>
+  where
+    T: AsRef<str> + Send + Sync,
+    U: TryInto<TransportMap> + Send + Sync,
+  {
+    self
+      .request_with_data(schematic, origin, payload, None)
+      .await
+  }
+
+  pub async fn request_with_data<T, U>(
+    &self,
+    schematic: T,
+    origin: Entity,
+    payload: U,
+    data: Option<InitData>,
   ) -> Result<TransportStream>
   where
     T: AsRef<str> + Send + Sync,
@@ -61,7 +79,7 @@ impl Network {
   {
     trace!("NETWORK:REQUEST[{}]", schematic.as_ref());
     let time = std::time::Instant::now();
-    let payload = data
+    let payload = payload
       .try_into()
       .map_err(|_| RuntimeError::Serialization("Could not serialize input payload".to_owned()))?;
 
@@ -70,9 +88,10 @@ impl Network {
       Entity::Schematic(schematic.as_ref().to_owned()),
       payload,
     );
+    let msg = InvocationMessage::with_data(invocation, data.unwrap_or_default());
 
     let response = map_err!(
-      self.addr.send(invocation).timeout(self.timeout).await,
+      self.addr.send(msg).timeout(self.timeout).await,
       InternalError::E5101
     )?;
 
@@ -84,9 +103,9 @@ impl Network {
     Ok(response.ok()?)
   }
 
-  pub async fn list_schematics(&self) -> Result<Vec<SchematicSignature>> {
+  pub async fn get_signature(&self) -> Result<ProviderSignature> {
     trace!("NETWORK:LIST_SCHEMATICS");
-    let msg = ListSchematics {};
+    let msg = GetSignature {};
     let response = map_err!(
       self.addr.send(msg).timeout(self.timeout).await,
       InternalError::E5102
@@ -107,6 +126,7 @@ pub struct NetworkBuilder {
   uid: String,
   lattice: Option<Arc<Lattice>>,
   timeout: Duration,
+  rng_seed: Option<u64>,
 }
 
 impl NetworkBuilder {
@@ -122,6 +142,7 @@ impl NetworkBuilder {
       timeout: Duration::from_secs(5),
       lattice: None,
       kp,
+      rng_seed: None,
     })
   }
 
@@ -150,6 +171,13 @@ impl NetworkBuilder {
     }
   }
 
+  pub fn with_seed(self, seed: u64) -> Self {
+    Self {
+      rng_seed: Some(seed),
+      ..self
+    }
+  }
+
   /// Constructs an instance of a Vino host.
   pub fn build(self) -> Network {
     let addr = crate::network_service::NetworkService::for_id(&self.uid);
@@ -163,6 +191,7 @@ impl NetworkBuilder {
       kp: self.kp,
       timeout: self.timeout,
       lattice: self.lattice,
+      rng_seed: self.rng_seed.unwrap_or_else(new_seed),
     }
   }
 }

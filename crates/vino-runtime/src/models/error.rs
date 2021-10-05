@@ -19,7 +19,7 @@ pub enum ValidationErrorKind {
   MissingProvider(String, String),
   #[error("Can't find details for '{0}'")]
   MissingComponentModel(String),
-  #[error("Dangling reference: '{0}'")]
+  #[error("Dangling reference: '{0}'. Is there an instance by the ID '{0}'?")]
   DanglingReference(String),
   #[error("Component definition '{0}' not fully qualified")]
   NotFullyQualified(String),
@@ -27,13 +27,13 @@ pub enum ValidationErrorKind {
   InvalidOutputPort(
     ConnectionTargetDefinition,
     ConnectionDefinition,
-    Vec<PortSignature>,
+    Vec<String>,
   ),
   #[error("Invalid input port '{}' on {}. Valid input ports are [{}]", .0.get_port(), .1, join(.2, ", "))]
   InvalidInputPort(
     ConnectionTargetDefinition,
     ConnectionDefinition,
-    Vec<PortSignature>,
+    Vec<String>,
   ),
   #[error("Invalid connection: {0}")]
   InvalidConnection(ConnectionDefinition),

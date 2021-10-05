@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use tokio::sync::mpsc::unbounded_channel;
 use tokio_stream::wrappers::UnboundedReceiverStream;
 use vino_rpc::{
@@ -13,16 +11,13 @@ type Result<T> = std::result::Result<T, ProviderError>;
 
 static PREFIX: &str = "NATIVE";
 
-#[derive(Debug, Default)]
+#[derive(Default)]
 pub(crate) struct NativeProviderService {
   namespace: String,
   state: Option<State>,
 }
 
-#[derive(Derivative)]
-#[derivative(Debug)]
 struct State {
-  #[derivative(Debug = "ignore")]
   provider: BoxedRpcHandler,
 }
 
@@ -47,7 +42,7 @@ impl Handler<Initialize> for NativeProviderService {
   type Result = ActorResult<Self, Result<()>>;
 
   fn handle(&mut self, msg: Initialize, _ctx: &mut Self::Context) -> Self::Result {
-    self.namespace = msg.namespace.clone();
+    self.namespace = msg.namespace;
     trace!("{}:Init:{}", PREFIX, self.namespace);
 
     self.state = Some(State {
@@ -58,11 +53,11 @@ impl Handler<Initialize> for NativeProviderService {
 }
 
 #[derive(Message)]
-#[rtype(result = "Result<HashMap<String, ComponentModel>>")]
+#[rtype(result = "Result<ProviderSignature>")]
 pub(crate) struct InitializeComponents {}
 
 impl Handler<InitializeComponents> for NativeProviderService {
-  type Result = ActorResult<Self, Result<HashMap<String, ComponentModel>>>;
+  type Result = ActorResult<Self, Result<ProviderSignature>>;
 
   fn handle(&mut self, _msg: InitializeComponents, _ctx: &mut Self::Context) -> Self::Result {
     trace!("{}:InitComponents:[NS:{}]", PREFIX, self.namespace);
@@ -74,59 +69,35 @@ impl Handler<InitializeComponents> for NativeProviderService {
     let provider = clone_box(&*state.provider);
 
     let task = async move {
-      let list = provider.get_list().await?;
+      let mut list = provider.get_list().await?;
       drop(provider);
 
-      let mut metadata: HashMap<String, ComponentModel> = HashMap::new();
-
-      for item in list {
-        match item {
-          HostedType::Component(component) => {
-            metadata.insert(
-              component.name.clone(),
-              ComponentModel {
-                name: component.name,
-                inputs: component.inputs.into_iter().map(From::from).collect(),
-                outputs: component.outputs.into_iter().map(From::from).collect(),
-              },
-            );
-          }
-          HostedType::Schematic(component) => {
-            metadata.insert(
-              component.name.clone(),
-              ComponentModel {
-                name: component.name,
-                inputs: component.inputs.into_iter().map(From::from).collect(),
-                outputs: component.outputs.into_iter().map(From::from).collect(),
-              },
-            );
-          }
-        }
+      match list.swap_remove(0) {
+        HostedType::Provider(sig) => Ok(sig),
       }
-      Ok(metadata)
     };
 
     ActorResult::reply_async(task.into_actor(self))
   }
 }
 
-impl Handler<Invocation> for NativeProviderService {
+impl Handler<InvocationMessage> for NativeProviderService {
   type Result = ActorResult<Self, InvocationResponse>;
 
-  fn handle(&mut self, msg: Invocation, _ctx: &mut Self::Context) -> Self::Result {
+  fn handle(&mut self, msg: InvocationMessage, _ctx: &mut Self::Context) -> Self::Result {
     trace!(
       "{}:INVOKE:[{}]=>[{}]",
       PREFIX,
-      msg.origin.url(),
-      msg.target.url()
+      msg.get_origin(),
+      msg.get_target()
     );
 
     let state = self.state.as_ref().unwrap();
     let provider = clone_box(&*state.provider);
 
-    let tx_id = msg.tx_id.clone();
-    let component = msg.target;
-    let message = msg.msg;
+    let tx_id = msg.get_tx_id().to_owned();
+    let component = msg.get_target().clone();
+    let message = msg.get_payload_owned();
     let url = component.url();
 
     let request = async move {
@@ -165,7 +136,7 @@ impl Handler<Invocation> for NativeProviderService {
             port: vino_transport::COMPONENT_ERROR.to_owned(),
             payload: MessageTransport::error(e.to_string()),
           });
-          let _ = map_err!(txresult, InternalError::E8001);
+          let _ = map_err!(txresult, InternalError::E7002);
         }
       }
 
@@ -188,26 +159,24 @@ mod test {
   async fn test_provider_component() -> Result<()> {
     let provider = NativeProviderService::default();
     let addr = provider.start();
+    let seed: u64 = 100000;
     addr
       .send(Initialize {
         namespace: "native-provider".to_owned(),
-        provider: Box::new(vino_native_api_0::Provider::default()),
+        provider: Box::new(vino_native_api_0::Provider::new(seed)),
       })
       .await??;
 
     let user_data = "This is my payload";
 
     let payload = vec![("input", user_data)].into();
-
-    let response = addr
-      .send(Invocation {
-        origin: Entity::test("test"),
-        target: Entity::component_direct("log"),
-        msg: payload,
-        id: get_uuid(),
-        tx_id: get_uuid(),
-      })
-      .await?;
+    let invocation: InvocationMessage = Invocation::new(
+      Entity::test("test"),
+      Entity::component_direct("log"),
+      payload,
+    )
+    .into();
+    let response = addr.send(invocation).await?;
 
     let mut rx = response.ok()?;
     let next: TransportWrapper = rx.next().await.unwrap();

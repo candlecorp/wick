@@ -72,6 +72,7 @@ impl NetworkService {
   }
   pub(crate) async fn start_from_manifest(
     location: &str,
+    rng_seed: u64,
     seed: &str,
     allow_latest: bool,
     allowed_insecure: Vec<String>,
@@ -92,6 +93,7 @@ impl NetworkService {
       allow_latest,
       lattice,
       timeout,
+      rng_seed: rng_seed.to_owned(),
     };
     addr.send(init).await.map_err(|_| InternalError::E5001)??;
 

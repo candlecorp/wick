@@ -17,5 +17,5 @@ network:
           id: wapc::reverse-uppercase
       connections:
         - <> => reverse_upper[input]
-        - <ns>[wapc2] => reverse_upper[link]
+        - <link>[wapc2] => reverse_upper[link]
         - reverse_upper[output] => <>

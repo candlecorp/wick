@@ -29,12 +29,12 @@ impl Handler<ComponentPayload> for SchematicService {
       );
     }
 
-    let invocation = Invocation::next(
+    let invocation = InvocationMessage::from(Invocation::next(
       &tx_id,
       Entity::schematic(&self.name),
       Entity::component(def.namespace, def.name),
       msg.payload_map,
-    );
+    ));
 
     let handler = actix_try!(self.get_provider(&msg.instance));
 
@@ -42,7 +42,7 @@ impl Handler<ComponentPayload> for SchematicService {
     let sc_name = self.name.clone();
 
     let task = async move {
-      let target = invocation.target.url();
+      let target = invocation.get_target_url();
 
       let response = map_err!(handler.send(invocation).await, InternalError::E6009)?;
 

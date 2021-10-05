@@ -38,6 +38,7 @@ pub(crate) mod prelude {
   pub(crate) use vino_transport::message_transport::stream::BoxedTransportStream;
   pub(crate) use vino_transport::{
     Failure,
+    Invocation,
     MessageSignal,
     MessageTransport,
     Success,
@@ -47,8 +48,12 @@ pub(crate) mod prelude {
   pub(crate) use vino_types::signatures::*;
   pub(crate) use vino_wascap::KeyPair;
 
+  pub(crate) use crate::core_data::InitData;
   pub(crate) use crate::dev::*;
-  pub(crate) use crate::dispatch::inv_error;
+  pub(crate) use crate::dispatch::{
+    inv_error,
+    InvocationMessage,
+  };
   pub(crate) use crate::error::*;
   pub(crate) use crate::models::component_model::*;
   pub(crate) use crate::models::network_model::*;

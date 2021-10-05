@@ -25,6 +25,7 @@ pub(crate) struct SchematicService {
   providers: HashMap<String, ProviderChannel>,
   state: Option<State>,
   executor: HashMap<String, UnboundedSender<TransactionUpdate>>,
+  rng_seed: u64,
 }
 
 #[derive(Debug)]
@@ -42,6 +43,7 @@ impl Default for SchematicService {
       providers: HashMap::new(),
       state: None,
       executor: HashMap::new(),
+      rng_seed: new_seed(),
     }
   }
 }
@@ -88,7 +90,7 @@ impl SchematicService {
     &self.get_state().model
   }
 
-  fn get_provider(&self, instance: &str) -> Result<Recipient<Invocation>> {
+  fn get_provider(&self, instance: &str) -> Result<Recipient<InvocationMessage>> {
     let component = get_component_definition(self.get_model(), instance)?;
     let model = self.get_model().read();
     let err = SchematicError::InstanceNotFound(instance.to_owned());

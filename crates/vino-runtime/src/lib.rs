@@ -125,14 +125,12 @@ mod macros {
 }
 
 #[macro_use]
-extern crate derivative;
-
-#[macro_use]
 extern crate vino_macros;
 
 #[macro_use]
 extern crate log;
 
+pub mod core_data;
 mod dispatch;
 pub mod error;
 pub mod models;
@@ -162,7 +160,6 @@ pub mod prelude {
 
   pub use crate::dispatch::{
     DispatchError,
-    Invocation,
     InvocationResponse,
   };
   pub use crate::network::Network;
@@ -192,3 +189,5 @@ pub const SELF_NAMESPACE: &str = "self";
 
 /// The reserved namespace for Vino's initial native API.
 pub const VINO_V0_NAMESPACE: &str = "vino::v0";
+
+pub const CORE_PORT_SEED: &str = "seed";

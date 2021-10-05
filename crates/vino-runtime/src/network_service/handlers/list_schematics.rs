@@ -1,15 +1,17 @@
+use std::collections::HashMap;
+
 use crate::dev::prelude::*;
 
 type Result<T> = std::result::Result<T, NetworkError>;
 
 #[derive(Message)]
-#[rtype(result = "Result<Vec<SchematicSignature>>")]
-pub(crate) struct ListSchematics {}
+#[rtype(result = "Result<ProviderSignature>")]
+pub(crate) struct GetSignature {}
 
-impl Handler<ListSchematics> for NetworkService {
-  type Result = Result<Vec<SchematicSignature>>;
+impl Handler<GetSignature> for NetworkService {
+  type Result = Result<ProviderSignature>;
 
-  fn handle(&mut self, _msg: ListSchematics, _ctx: &mut Context<Self>) -> Self::Result {
+  fn handle(&mut self, _msg: GetSignature, _ctx: &mut Context<Self>) -> Self::Result {
     self.ensure_is_started()?;
     let state = self.state.as_ref().unwrap();
     let resolution_order = {
@@ -29,7 +31,7 @@ impl Handler<ListSchematics> for NetworkService {
       )
     );
 
-    let mut signatures = vec![];
+    let mut signatures = HashMap::new();
     for batch in resolution_order {
       for name in batch {
         trace!("NETWORK:SIGNATURE[{}]:REQUEST", name);
@@ -53,7 +55,7 @@ impl Handler<ListSchematics> for NetworkService {
             scw
               .update_self_component(name, signature.clone())
               .map_err(|e| NetworkError::InvalidState(e.to_string()))?;
-            signatures.push(signature);
+            signatures.insert(signature.name.clone(), signature);
           }
           None => {
             return Err(NetworkError::InvalidState(format!(
@@ -65,6 +67,12 @@ impl Handler<ListSchematics> for NetworkService {
       }
     }
 
-    Ok(signatures)
+    let provider_signature = ProviderSignature {
+      name: self.uid.clone(),
+      components: signatures.into(),
+      types: StructMap::new(),
+    };
+
+    Ok(provider_signature)
   }
 }

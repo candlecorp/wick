@@ -16,23 +16,31 @@ impl std::fmt::Display for ConversionError {
 
 #[derive(Error, Debug, Clone, Copy)]
 pub enum InternalError {
+  // Network errors
+  E5001,
+  E5002, // Keypair
+  E5101,
+  E5102,
+  E5103,
+  E5004,
+  // Schematic errors
   E6012,
   E6013,
   E6002,
   E6003,
   E6007,
   E6009,
+  // Provider errors
+  E7001,
+  E7002,
+  E7003,
+  E7004,
+  E7005,
+  // Transaction errors
   E9001,
   E9002,
   E9004,
-  E7001,
-  E5001,
-  E5002, // Keypair
-  E5101,
-  E5102,
-  E5103,
-  E8001,
-  E5004,
+  E9005,
 }
 
 impl std::fmt::Display for InternalError {

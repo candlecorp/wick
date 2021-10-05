@@ -51,6 +51,7 @@ impl<'a> NetworkValidator<'a> {
 mod tests {
 
   use std::collections::HashMap;
+  use std::convert::TryInto;
 
   use super::*;
   use crate::test::prelude::*;
@@ -61,11 +62,11 @@ mod tests {
     let mut model = NetworkModel::try_from(def)?;
     let provider = ProviderModel {
       components: hashmap! {
-        "log".to_owned() => ComponentModel {
+        "log".to_owned() => ComponentSignature {
           name: "log".to_owned(),
-          inputs: PortSignature::from_list(&[("input", "string")]),
-          outputs: PortSignature::from_list(&[("output", "string")]),
-        }
+          inputs: vec![("input", "string")].try_into()?,
+          outputs: vec![("output", "string")].try_into()?,
+        }.into()
       },
     };
     let mut providers = HashMap::new();
@@ -82,11 +83,11 @@ mod tests {
     let mut model = NetworkModel::try_from(def)?;
     let provider = ProviderModel {
       components: hashmap! {
-        "validate".to_owned() => ComponentModel {
+        "validate".to_owned() => ComponentSignature {
           name: "validate".to_owned(),
-          inputs: PortSignature::from_list(&[("input", "string")]),
-          outputs: PortSignature::from_list(&[("output", "string")]),
-        }
+          inputs: vec![("input", "string")].try_into()?,
+          outputs: vec![("output", "string")].try_into()?
+        }.into()
       },
     };
     let mut providers = HashMap::new();

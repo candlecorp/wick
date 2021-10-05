@@ -67,7 +67,7 @@ impl NetworkModel {
   pub(crate) fn update_self_component(
     &mut self,
     name: String,
-    signature: SchematicSignature,
+    signature: ComponentSignature,
   ) -> Result<()> {
     trace!("MODEL:NETWORK:SELF:UPDATE_COMPONENT[{}]", name);
     let provider = self
@@ -78,11 +78,12 @@ impl NetworkModel {
 
     model.components.insert(
       name.clone(),
-      ComponentModel {
+      ComponentSignature {
         name,
         inputs: signature.inputs,
         outputs: signature.outputs,
-      },
+      }
+      .into(),
     );
 
     for schematic in self.schematics.iter_mut() {
@@ -103,14 +104,9 @@ impl NetworkModel {
       .providers
       .iter()
       .filter_map(|(ns, provider_model)| {
-        provider_model.as_ref().map(|model| ProviderSignature {
-          name: ns.clone(),
-          components: model
-            .components
-            .values()
-            .map(|model| model.into())
-            .collect(),
-        })
+        provider_model
+          .as_ref()
+          .map(|model| model.get_signature(Some(ns.clone())))
       })
       .collect();
     for schematic in &self.schematics {
