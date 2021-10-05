@@ -46,3 +46,9 @@ impl From<ManifestError> for VinoError {
     VinoError::ManifestLoadFailure(e.to_string())
   }
 }
+
+impl From<vino_test::Error> for VinoError {
+  fn from(e: vino_test::Error) -> Self {
+    VinoError::TestError(e.to_string())
+  }
+}

@@ -8,7 +8,10 @@ use vino_provider_cli::cli::{
   DefaultCliOptions,
   LatticeCliOptions,
 };
-use vino_types::signatures::PortSignature;
+use vino_types::signatures::{
+  MapWrapper,
+  TypeMap,
+};
 
 use crate::utils::merge_config;
 use crate::Result;
@@ -29,9 +32,6 @@ pub(crate) struct ListCommand {
 
   #[structopt(long)]
   pub(crate) json: bool,
-
-  #[structopt()]
-  pub(crate) schematic: Option<String>,
 }
 
 pub(crate) async fn handle_command(opts: ListCommand) -> Result<()> {
@@ -57,50 +57,30 @@ pub(crate) async fn handle_command(opts: ListCommand) -> Result<()> {
   let mut host = host_builder.build();
   host.connect_to_lattice().await?;
   host.start_network().await?;
-  let mut list = host.list_schematics().await?;
-  if let Some(schematic) = opts.schematic {
-    let target = list.into_iter().find(|sc| sc.name == schematic);
-    list = match target {
-      Some(t) => vec![t],
-      None => vec![],
-    };
-  }
+  let signature = host.get_signature().await?;
+
   if opts.json {
-    let json = serde_json::to_string(&list)?;
+    let json = serde_json::to_string(&signature)?;
     println!("{}", json);
   } else {
-    fn print_component(
-      label: &str,
-      indent: &str,
-      inputs: &[PortSignature],
-      outputs: &[PortSignature],
-    ) {
+    fn print_component(label: &str, indent: &str, inputs: &TypeMap, outputs: &TypeMap) {
       let inputs = inputs
+        .inner()
         .iter()
-        .map(|p| format!("{}: {}", p.name, p.type_string))
+        .map(|(name, _type)| format!("{}: {:?}", name, _type))
         .collect::<Vec<_>>()
         .join(", ");
       let outputs = outputs
+        .inner()
         .iter()
-        .map(|p| format!("{}: {}", p.name, p.type_string))
+        .map(|(name, _type)| format!("{}: {:?}", name, _type))
         .collect::<Vec<_>>()
         .join(", ");
       println!("{}{}({}) -> ({})", indent, label, inputs, outputs);
     }
-    for schematic in list {
+    for (_name, schematic) in signature.components.inner().iter() {
       print!("Schematic: ");
       print_component(&schematic.name, "", &schematic.inputs, &schematic.outputs);
-      println!("Available components:");
-      for provider in schematic.providers {
-        for component in provider.components {
-          print_component(
-            &format!("{}::{}", provider.name, component.name),
-            " ",
-            &component.inputs,
-            &component.outputs,
-          );
-        }
-      }
     }
   }
 

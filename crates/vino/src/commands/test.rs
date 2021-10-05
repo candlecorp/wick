@@ -8,6 +8,7 @@ use vino_provider_cli::cli::{
   LatticeCliOptions,
 };
 use vino_provider_cli::LoggingOptions;
+use vino_test::TestSuite;
 
 use crate::utils::merge_config;
 use crate::{
@@ -48,6 +49,9 @@ pub(crate) struct TestCommand {
 
   /// The test data.
   data_path: PathBuf,
+
+  /// Filter which tests to run
+  filter: Vec<String>,
 }
 #[allow(clippy::future_not_send, clippy::too_many_lines)]
 pub(crate) async fn handle_command(opts: TestCommand) -> Result<()> {
@@ -83,11 +87,12 @@ pub(crate) async fn handle_command(opts: TestCommand) -> Result<()> {
   let provider: vino_host::Provider = host.into();
 
   let file = opts.data_path.to_string_lossy().to_string();
-  let name = format!("Vino test for : {}", file);
-  let data = vino_test::read_data(opts.data_path.clone())
-    .map_err(|e| Error::FileNotFound(file, e.to_string()))?;
+  let mut suite = TestSuite::try_from_file(opts.data_path.clone())?
+    .filter(opts.filter)
+    .name(format!("Vino test for : {}", file));
 
-  let harness = vino_test::run_test(name, data, Box::new(provider))
+  let harness = suite
+    .run(Box::new(provider))
     .await
     .map_err(|e| Error::TestError(e.to_string()))?;
 

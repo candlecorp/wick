@@ -16,6 +16,7 @@ use vino_transport::{
   TransportMap,
   TransportStream,
 };
+use vino_types::signatures::MapWrapper;
 
 use crate::utils::merge_config;
 use crate::Result;
@@ -94,10 +95,8 @@ pub(crate) async fn handle_command(opts: RunCommand) -> Result<()> {
   host.connect_to_lattice().await?;
   host.start_network().await?;
 
-  let schematics = host.list_schematics().await?;
-  let target_schematic = schematics
-    .iter()
-    .find(|signature| signature.name == default_schematic);
+  let signature = host.get_signature().await?;
+  let target_schematic = signature.get_component(&default_schematic);
 
   let mut check_stdin = !opts.no_input && opts.data.is_empty() && opts.args.is_empty();
   if let Some(target_schematic) = target_schematic {
@@ -118,7 +117,7 @@ pub(crate) async fn handle_command(opts: RunCommand) -> Result<()> {
       if !opts.raw {
         payload.transpose_output_name();
       }
-      let stream = host.request(&default_schematic, payload).await?;
+      let stream = host.request(&default_schematic, payload, None).await?;
 
       print_stream_json(stream, opts.raw).await?;
     }
@@ -132,7 +131,7 @@ pub(crate) async fn handle_command(opts: RunCommand) -> Result<()> {
     }
     data_map.merge(rest_arg_map);
 
-    let stream = host.request(&default_schematic, data_map).await?;
+    let stream = host.request(&default_schematic, data_map, None).await?;
     print_stream_json(stream, opts.raw).await?;
   }
 
