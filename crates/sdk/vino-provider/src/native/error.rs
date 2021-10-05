@@ -13,6 +13,14 @@ pub enum Error {
   #[error("Error sending output to channel")]
   SendError,
 
+  #[error("Error converting to or from packet: {0}")]
+  /// A serialization or deserialization error.
+  Codec(String),
+
+  #[error("No output available for port '{0}'")]
+  /// An attempt to take the next packet failed.
+  EndOfOutput(String),
+
   /// Tried to receive from an empty channel.
   #[error("Nothing in channel to receive")]
   ChannelEmpty,

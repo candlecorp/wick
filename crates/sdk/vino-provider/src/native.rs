@@ -4,6 +4,8 @@ use async_trait::async_trait;
 pub use error::Error;
 /// Module for native ports.
 pub mod port_sender;
+/// Module for making transport streams simpler to use.
+pub mod provider_output;
 
 /// The JobResult for native components.
 pub type JobResult = Result<(), NativeComponentError>;
@@ -66,6 +68,7 @@ pub mod prelude {
     PortChannel,
     PortSender,
   };
+  pub use super::provider_output::*;
   pub use super::{
     Dispatch,
     JobResult,

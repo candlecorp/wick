@@ -16,7 +16,7 @@ use vino_transport::{
 };
 
 use super::host_call;
-use super::prelude::ComponentError;
+use super::prelude::WasmError;
 use crate::provider_link::ProviderLink;
 
 /// Implementation of the ProviderLink for WASM modules.
@@ -28,11 +28,11 @@ pub trait WasmProviderLink {
   fn get_origin(&self) -> String;
 
   /// Make a call to the linked provider.
-  fn call<T: From<ProviderOutput>>(
+  fn call(
     &self,
     component: &str,
     payload: impl Into<TransportMap>,
-  ) -> Result<T, super::Error> {
+  ) -> Result<ProviderOutput, WasmError> {
     let payload: TransportMap = payload.into();
     let result = host_call(
       "1",
@@ -41,8 +41,7 @@ pub trait WasmProviderLink {
       &serialize(&payload)?,
     )?;
     let packets: Vec<TransportWrapper> = deserialize(&result)?;
-    let output = ProviderOutput::new(packets);
-    Ok(output.into())
+    Ok(ProviderOutput::new(packets))
   }
 }
 
@@ -58,7 +57,6 @@ impl WasmProviderLink for ProviderLink {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 /// A wrapper object for the packets returned from the provider call.
-#[must_use]
 pub struct ProviderOutput {
   packets: HashMap<String, Vec<MessageTransport>>,
 }
@@ -105,17 +103,14 @@ impl PortOutput {
   }
 
   /// Grab the next value and deserialize it in one method.
-  pub fn try_next_into<T: DeserializeOwned>(&mut self) -> Result<T, ComponentError> {
+  pub fn try_next_into<T: DeserializeOwned>(&mut self) -> Result<T, WasmError> {
     match self.iter.next() {
       Some(val) => Ok(
         val
           .try_into()
-          .map_err(|e| ComponentError::new(e.to_string()))?,
+          .map_err(|e| WasmError::Codec(e.to_string()))?,
       ),
-      None => Err(ComponentError::new(format!(
-        "No value to take from output for port '{}'",
-        self.name
-      ))),
+      None => Err(WasmError::EndOfOutput(self.name.clone())),
     }
   }
 }

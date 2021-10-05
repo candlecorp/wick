@@ -153,6 +153,8 @@ pub enum HostCommand {
   Output,
   /// Make a call to a linked provider.
   LinkCall,
+  /// Logging output.
+  Log,
 }
 
 impl HostCommand {
@@ -162,6 +164,7 @@ impl HostCommand {
     match self {
       HostCommand::Output => "0",
       HostCommand::LinkCall => "1",
+      HostCommand::Log => "2",
     }
   }
 }
@@ -173,6 +176,53 @@ impl FromStr for HostCommand {
     let result = match s {
       "0" => HostCommand::Output,
       "1" => HostCommand::LinkCall,
+      "2" => HostCommand::Log,
+      _ => return Err(()),
+    };
+    Ok(result)
+  }
+}
+
+#[allow(missing_debug_implementations, missing_copy_implementations)]
+#[must_use]
+/// The [LogLevel] enum defines log levels for WASM modules to log appropriately to hosts.
+pub enum LogLevel {
+  /// Information-related messages
+  Info,
+  /// Error output
+  Error,
+  /// Non-fatal warnings
+  Warn,
+  /// Debug messages
+  Debug,
+  /// Trace-level messages
+  Trace,
+}
+
+impl LogLevel {
+  #[must_use]
+  #[doc(hidden)]
+  pub fn as_str(&self) -> &'static str {
+    match self {
+      LogLevel::Info => todo!(),
+      LogLevel::Error => todo!(),
+      LogLevel::Warn => todo!(),
+      LogLevel::Debug => todo!(),
+      LogLevel::Trace => todo!(),
+    }
+  }
+}
+
+impl FromStr for LogLevel {
+  type Err = ();
+
+  fn from_str(s: &str) -> Result<Self, Self::Err> {
+    let result = match s {
+      "0" => LogLevel::Info,
+      "1" => LogLevel::Error,
+      "2" => LogLevel::Warn,
+      "3" => LogLevel::Debug,
+      "4" => LogLevel::Trace,
       _ => return Err(()),
     };
     Ok(result)
