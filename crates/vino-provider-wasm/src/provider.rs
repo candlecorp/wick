@@ -31,6 +31,7 @@ pub struct Context {
 #[derive(Clone, Debug)]
 pub struct Provider {
   host: Arc<RwLock<WasmHost>>,
+  config: Vec<u8>,
 }
 
 pub type HostLinkCallback =
@@ -40,6 +41,7 @@ impl Provider {
   pub fn try_load(
     module: &WapcModule,
     threads: usize,
+    config: Option<HashMap<String, String>>,
     wasi_options: Option<WasiParams>,
     callback: Option<Box<HostLinkCallback>>,
   ) -> Result<Self, Error> {
@@ -56,7 +58,10 @@ impl Provider {
 
     let host = Arc::new(RwLock::new(host));
 
-    Ok(Self { host })
+    Ok(Self {
+      host,
+      config: serialize(&config.unwrap_or_default())?,
+    })
   }
 }
 
@@ -68,6 +73,7 @@ impl RpcHandler for Provider {
     let messagepack_map = payload
       .try_into_messagepack_bytes()
       .map_err(|e| RpcError::ProviderError(e.to_string()))?;
+
     let payload =
       serialize(&messagepack_map).map_err(|e| RpcError::ProviderError(e.to_string()))?;
 
@@ -78,24 +84,20 @@ impl RpcHandler for Provider {
 
   async fn get_list(&self) -> RpcResult<Vec<HostedType>> {
     let host = self.host.read();
-    let components = host.get_components();
+    let signature = host.get_components();
 
     trace!(
       "WASM:COMPONENTS:[{}]",
-      components
-        .iter()
-        .map(|c| c.name.clone())
+      signature
+        .components
+        .inner()
+        .keys()
+        .cloned()
         .collect::<Vec<_>>()
         .join(",")
     );
 
-    Ok(
-      components
-        .iter()
-        .cloned()
-        .map(HostedType::Component)
-        .collect(),
-    )
+    Ok(vec![HostedType::Provider(signature.clone())])
   }
 }
 
@@ -122,11 +124,12 @@ mod tests {
       &component,
       2,
       None,
+      None,
       Some(Box::new(|_origin, _component, _payload| Ok(vec![]))),
     )?;
     let input = "Hello world";
 
-    let job_payload = TransportMap::with_map(hashmap! {
+    let job_payload = TransportMap::from_map(hashmap! {
       "input".to_owned() => MessageTransport::messagepack(input),
     });
 

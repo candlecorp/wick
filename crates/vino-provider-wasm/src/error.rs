@@ -4,12 +4,15 @@ use vino_rpc::error::RpcError;
 
 #[derive(Error, Debug)]
 pub enum WasmProviderError {
+  #[error("Could not extract claims signature from WASM module : {0}")]
+  ClaimsError(String),
+  #[error("Could not validate claims : {0}")]
+  ClaimsInvalid(String),
   #[error("Component error : {0}")]
   ComponentError(String),
   #[error(transparent)]
   WapcError(#[from] wapc::errors::Error),
-  #[error(transparent)]
-  WascapError(#[from] vino_wascap::Error),
+
   #[error(transparent)]
   CodecError(#[from] vino_codec::Error),
   #[error(transparent)]
@@ -20,8 +23,7 @@ pub enum WasmProviderError {
   JsonError(String),
   #[error(transparent)]
   TransportError(#[from] vino_transport::error::TransportError),
-  #[error("Claims error: {0}")]
-  ClaimsError(vino_wascap::wascap::Error),
+
   #[error("Could not extract claims from component. Is it a signed WebAssembly module?")]
   ClaimsExtraction,
   #[error("Error sending output to stream.")]

@@ -17,6 +17,7 @@ use vino_packet::v0::Payload;
 use vino_packet::Packet;
 use vino_provider::{
   HostCommand,
+  LogLevel,
   OutputSignal,
 };
 use vino_transport::{
@@ -24,10 +25,10 @@ use vino_transport::{
   TransportStream,
   TransportWrapper,
 };
-use vino_types::signatures::ComponentSignature;
+use vino_types::signatures::ProviderSignature;
 use vino_wascap::{
   Claims,
-  ComponentClaims,
+  ProviderClaims,
 };
 use wapc::{
   WapcHost,
@@ -94,11 +95,12 @@ impl Default for WasmHostBuilder {
 #[derive(Debug)]
 pub struct WasmHost {
   host: WapcHost,
-  claims: Claims<ComponentClaims>,
+  claims: Claims<ProviderClaims>,
   buffer: Arc<Mutex<PortBuffer>>,
   closed_ports: Arc<Mutex<HashSet<String>>>,
 }
 
+#[allow(clippy::too_many_lines)]
 impl WasmHost {
   pub fn try_load(
     module: &WapcModule,
@@ -107,7 +109,8 @@ impl WasmHost {
   ) -> Result<Self> {
     let jwt = &module.token.jwt;
 
-    vino_wascap::validate_token::<ComponentClaims>(jwt).map_err(Error::ClaimsError)?;
+    vino_wascap::validate_token::<ProviderClaims>(jwt)
+      .map_err(|e| Error::ClaimsInvalid(e.to_string()))?;
 
     let time = Instant::now();
 
@@ -167,14 +170,47 @@ impl WasmHost {
         Some(cb) => {
           trace!("WASM:LINK_CALL:PROVIDER[{}],COMPONENT[{}]", origin, target);
           let result = (cb)(origin, target, deserialize::<TransportMap>(payload)?);
+          trace!(
+            "WASM:LINK_CALL:PROVIDER[{}],COMPONENT[{}]:RESULT:{:?}",
+            origin,
+            target,
+            result
+          );
+
           match result {
-            Ok(packets) => Ok(serialize(&packets)?),
+            Ok(packets) => {
+              // ensure all packets are messagepack-ed
+              let packets: Vec<_> = packets
+                .into_iter()
+                .map(|mut p| {
+                  p.payload.to_messagepack();
+                  p
+                })
+                .collect();
+              Ok(serialize(&packets)?)
+            }
             Err(e) => Err(e.into()),
           }
         }
         None => Err("Host link called with no callback provided in the WaPC host.".into()),
       },
     );
+
+    let handle_log_call: Box<InvocationFn> = Box::new(move |level: &str, msg: &str, _: &[u8]| {
+      match LogLevel::from_str(level) {
+        Ok(lvl) => match lvl {
+          LogLevel::Info => info!("WASM: {}", msg),
+          LogLevel::Error => error!("WASM: {}", msg),
+          LogLevel::Warn => warn!("WASM: {}", msg),
+          LogLevel::Debug => debug!("WASM: {}", msg),
+          LogLevel::Trace => trace!("WASM: {}", msg),
+        },
+        Err(_) => {
+          return Err(format!("Invalid log level: {}", level).into());
+        }
+      };
+      Ok(vec![])
+    });
 
     let host = WapcHost::new(engine, move |_id, command, arg1, arg2, payload| {
       trace!(
@@ -188,6 +224,7 @@ impl WasmHost {
       match HostCommand::from_str(command) {
         Ok(HostCommand::Output) => handle_port_output(arg1, arg2, payload),
         Ok(HostCommand::LinkCall) => handle_link_call(arg1, arg2, payload),
+        Ok(HostCommand::Log) => handle_log_call(arg1, arg2, payload),
         Err(_) => Err(format!("Invalid command: {}", command).into()),
       }
     })?;
@@ -225,9 +262,8 @@ impl WasmHost {
     Ok(TransportStream::new(UnboundedReceiverStream::new(rx)))
   }
 
-  pub fn get_components(&self) -> &Vec<ComponentSignature> {
+  pub fn get_components(&self) -> &ProviderSignature {
     let claims = &self.claims;
-    let components = &claims.metadata.as_ref().unwrap().interface.components;
-    components
+    &claims.metadata.as_ref().unwrap().interface
   }
 }

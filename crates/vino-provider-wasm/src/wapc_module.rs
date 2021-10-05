@@ -2,7 +2,7 @@ use std::path::Path;
 
 use vino_wascap::{
   Claims,
-  ComponentClaims,
+  ProviderClaims,
   Token,
 };
 
@@ -11,7 +11,7 @@ use crate::error::WasmProviderError;
 #[derive(Derivative, Clone)]
 #[derivative(Debug)]
 pub struct WapcModule {
-  pub token: Token<ComponentClaims>,
+  pub token: Token<ProviderClaims>,
   pub bytes: Vec<u8>,
 }
 
@@ -19,7 +19,8 @@ impl WapcModule {
   /// Create an actor from the bytes of a signed WebAssembly module. Attempting to load.
   /// an unsigned module, or a module signed improperly, will result in an error.
   pub fn from_slice(buf: &[u8]) -> Result<WapcModule, WasmProviderError> {
-    let token = vino_wascap::extract_claims(&buf)?;
+    let token = vino_wascap::extract_claims(&buf)
+      .map_err(|e| WasmProviderError::ClaimsError(e.to_string()))?;
     token.map_or(Err(WasmProviderError::ClaimsExtraction), |t| {
       Ok(WapcModule {
         token: t,
@@ -55,7 +56,7 @@ impl WapcModule {
 
   // Obtain the raw set of claims for this component.
   #[must_use]
-  pub fn claims(&self) -> &Claims<ComponentClaims> {
+  pub fn claims(&self) -> &Claims<ProviderClaims> {
     &self.token.claims
   }
 }
