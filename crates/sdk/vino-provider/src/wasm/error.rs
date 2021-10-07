@@ -75,7 +75,7 @@ impl std::fmt::Display for Error {
       Error::MissingInput(v) => write!(f, "Missing input for port '{}'", v),
       Error::Component(v) => write!(f, "{}", v),
       Error::EndOfOutput(v) => write!(f, "No output available for port '{}'", v),
-      Error::ResponseMissing(v) => write!(f, "No response received: '{}'", v),
+      Error::ResponseMissing(v) => write!(f, "No response received for port '{}'", v),
     }
   }
 }

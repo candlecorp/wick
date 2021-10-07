@@ -43,8 +43,14 @@ impl TransportWrapper {
     self.port == SYSTEM_ID && self.payload == MessageTransport::done()
   }
 
+  /// Returns true if the [TransportWrapper] originated from a component-wide error.
+  #[must_use]
+  pub fn is_component_error(&self) -> bool {
+    self.port == crate::COMPONENT_ERROR
+  }
+
   /// Constructor for a [TransportWrapper] with a port of [crate::COMPONENT_ERROR] indicating an internal error occurred.
-  pub fn internal_error(payload: MessageTransport) -> Self {
+  pub fn component_error(payload: MessageTransport) -> Self {
     Self {
       port: crate::COMPONENT_ERROR.to_owned(),
       payload,

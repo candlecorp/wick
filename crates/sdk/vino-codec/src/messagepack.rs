@@ -18,7 +18,11 @@ where
   T: ?Sized + Serialize,
 {
   let mut buf = Vec::new();
-  match item.serialize(&mut Serializer::new(&mut buf).with_string_variants()) {
+  match item.serialize(
+    &mut Serializer::new(&mut buf)
+      .with_string_variants()
+      .with_struct_map(),
+  ) {
     Ok(_) => Ok(buf),
     Err(e) => Err(e),
   }

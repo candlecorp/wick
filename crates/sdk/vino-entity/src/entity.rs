@@ -3,12 +3,13 @@ use std::str::FromStr;
 
 use serde::{
   Deserialize,
+  Deserializer,
   Serialize,
 };
 
 use crate::error::EntityError as Error;
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 /// The entity being referenced across systems or services.
 #[must_use]
 pub enum Entity {
@@ -30,6 +31,25 @@ pub enum Entity {
   Provider(String),
   /// A reference to an instance of an entity.
   Reference(String),
+}
+
+impl Serialize for Entity {
+  fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+  where
+    S: serde::Serializer,
+  {
+    serializer.collect_str(&self)
+  }
+}
+
+impl<'de> Deserialize<'de> for Entity {
+  fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+  where
+    D: Deserializer<'de>,
+  {
+    let s = String::deserialize(deserializer)?;
+    FromStr::from_str(&s).map_err(serde::de::Error::custom)
+  }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]

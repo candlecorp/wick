@@ -1,15 +1,9 @@
-use serde::de::DeserializeOwned;
 use serde::{
   Deserialize,
   Serialize,
 };
-use vino_codec::{
-  json,
-  messagepack,
-  raw,
-};
+use vino_codec::messagepack;
 
-use crate::error::DeserializationError;
 pub use crate::{
   v0,
   v1,
@@ -27,48 +21,6 @@ pub enum Packet {
 }
 
 impl Packet {
-  /// Try to deserialize a [Packet] into the target type.
-  pub fn try_into<T: DeserializeOwned>(self) -> Result<T, DeserializationError> {
-    match self {
-      Packet::V0(v) => match v {
-        v0::Payload::Invalid => Err(DeserializationError::Invalid),
-        v0::Payload::Exception(v) => Err(DeserializationError::Exception(v)),
-        v0::Payload::Error(v) => Err(DeserializationError::Error(v)),
-        v0::Payload::MessagePack(buf) => {
-          messagepack::deserialize::<T>(&buf).map_err(DeserializationError::DeserializationError)
-        }
-        v0::Payload::Success(v) => {
-          raw::deserialize::<T>(v).map_err(DeserializationError::DeserializationError)
-        }
-        v0::Payload::Json(v) => {
-          json::deserialize::<T>(v.as_str()).map_err(DeserializationError::DeserializationError)
-        }
-        v0::Payload::Done => Err(DeserializationError::InternalError),
-        v0::Payload::OpenBracket => Err(DeserializationError::InternalError),
-        v0::Payload::CloseBracket => Err(DeserializationError::InternalError),
-      },
-      Packet::V1(v) => {
-        match v {
-          v1::Payload::Success(v) => match v {
-            v1::Success::MessagePack(buf) => messagepack::deserialize::<T>(&buf)
-              .map_err(DeserializationError::DeserializationError),
-            v1::Success::Success(val) => {
-              raw::deserialize::<T>(val).map_err(DeserializationError::DeserializationError)
-            }
-            v1::Success::Json(val) => json::deserialize::<T>(val.as_str())
-              .map_err(DeserializationError::DeserializationError),
-          },
-          v1::Payload::Failure(v) => match v {
-            v1::Failure::Invalid => Err(DeserializationError::Invalid),
-            v1::Failure::Exception(msg) => Err(DeserializationError::Exception(msg)),
-            v1::Failure::Error(msg) => Err(DeserializationError::Error(msg)),
-          },
-          v1::Payload::Signal(_) => Err(DeserializationError::InternalError),
-        }
-      }
-    }
-  }
-
   #[must_use]
   /// Does the [Packet] signify the originating job is completed?.
   pub fn is_done(&self) -> bool {

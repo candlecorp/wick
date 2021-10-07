@@ -19,7 +19,7 @@ use crate::{
 };
 
 /// A boxed [Stream] that produces [TransportWrapper]s
-pub type BoxedTransportStream = Pin<Box<dyn Stream<Item = TransportWrapper> + Send>>;
+pub type BoxedTransportStream = Pin<Box<dyn Stream<Item = TransportWrapper> + Send + 'static>>;
 
 /// Converts a [Stream] of [TransportWrapper]s into a stream of [serde_json::Value]s, optionally omitting signals.
 pub fn map_to_json(
@@ -40,6 +40,7 @@ pub struct TransportStream {
   rx: RefCell<Pin<Box<dyn Stream<Item = TransportWrapper> + Send>>>,
   buffer: HashMap<String, Vec<TransportWrapper>>,
   collected: bool,
+  done: RefCell<bool>,
 }
 
 impl std::fmt::Debug for TransportStream {
@@ -60,6 +61,7 @@ impl TransportStream {
       rx: RefCell::new(Box::pin(rx)),
       buffer: HashMap::new(),
       collected: false,
+      done: RefCell::new(false),
     }
   }
 }
@@ -68,6 +70,10 @@ impl Stream for TransportStream {
   type Item = TransportWrapper;
 
   fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
+    let mut done = self.done.borrow_mut();
+    if *done {
+      return Poll::Ready(None);
+    }
     let mut inner = self.rx.borrow_mut();
     let pinned = Pin::new(&mut *inner);
     match pinned.poll_next(cx) {
@@ -75,6 +81,10 @@ impl Stream for TransportStream {
         if msg.is_system_close() {
           Poll::Ready(None)
         } else {
+          if msg.is_component_error() {
+            // If it's a component-wide error then signal we're ready to finish.
+            *done = true;
+          }
           Poll::Ready(Some(msg))
         }
       }

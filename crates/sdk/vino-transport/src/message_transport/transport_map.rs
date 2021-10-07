@@ -24,7 +24,7 @@ use crate::{
 };
 pub(crate) type Result<T> = std::result::Result<T, TransportError>;
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
 #[must_use]
 /// A wrapper for a map of [String]s to [MessageTransport]
 pub struct TransportMap(
@@ -54,9 +54,9 @@ impl TransportMap {
     &self.1
   }
 
-  /// Deserialize a JSON Object into a [TransportMap]
+  /// Deserialize a CLI output JSON Object into a [TransportMap].
   #[cfg(feature = "json")]
-  pub fn from_json_str(json: &str) -> Result<Self> {
+  pub fn from_json_output(json: &str) -> Result<Self> {
     if json.trim() == "" {
       Ok(TransportMap::new())
     } else {
@@ -65,6 +65,22 @@ impl TransportMap {
         json
           .into_iter()
           .map(|(name, val)| (name, val.into()))
+          .collect(),
+      ))
+    }
+  }
+
+  /// Deserialize a JSON Object into a [TransportMap]
+  #[cfg(feature = "json")]
+  pub fn from_json_str(json: &str) -> Result<Self> {
+    if json.trim() == "" {
+      Ok(TransportMap::new())
+    } else {
+      let map = serde_json::from_str::<HashMap<String, serde_json::Value>>(json).map_err(de_err)?;
+      Ok(TransportMap::from_map(
+        map
+          .into_iter()
+          .map(|(name, val)| (name, MessageTransport::json(&val.to_string())))
           .collect(),
       ))
     }
