@@ -78,13 +78,10 @@ impl RpcClient {
     let mapped = stream.map::<TransportWrapper, _>(|o| -> TransportWrapper {
       match o {
         Ok(o) => o.into(),
-        Err(e) => TransportWrapper {
-          port: vino_transport::COMPONENT_ERROR.to_owned(),
-          payload: MessageTransport::error(format!(
-            "Error converting RPC output to MessageTransports: {}",
-            e
-          )),
-        },
+        Err(e) => TransportWrapper::component_error(MessageTransport::error(format!(
+          "Error converting RPC output to MessageTransports: {}",
+          e
+        ))),
       }
     });
     Ok(TransportStream::new(mapped))
@@ -117,7 +114,7 @@ impl RpcClient {
     data: &str,
     transpose: bool,
   ) -> Result<TransportStream, RpcClientError> {
-    let mut payload = TransportMap::from_json_str(data)?;
+    let mut payload = TransportMap::from_json_output(data)?;
     if transpose {
       payload.transpose_output_name();
     }

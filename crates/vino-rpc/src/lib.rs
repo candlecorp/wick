@@ -114,7 +114,10 @@ pub type RpcFactory = Box<dyn Fn() -> BoxedRpcHandler + Send + Sync + 'static>;
 
 /// A trait that implementers of the RPC interface should implement.
 #[async_trait]
-pub trait RpcHandler: DynClone + Sync {
+pub trait RpcHandler: DynClone + Sync
+where
+  Self: 'static,
+{
   /// Handle an incoming request for a target entity.
   async fn invoke(
     &self,

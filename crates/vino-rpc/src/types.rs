@@ -8,7 +8,6 @@ use serde::{
   Deserialize,
   Serialize,
 };
-use vino_packet::error::DeserializationError;
 use vino_packet::Packet;
 use vino_transport::{
   Failure,
@@ -82,14 +81,11 @@ impl MessageKind {
   pub fn into_packet(self) -> Packet {
     self.into()
   }
+
   /// Converts a [MessageKind] into a [MessageTransport].
   #[must_use]
   pub fn into_transport(self) -> Packet {
     self.into()
-  }
-  /// Attempt to deserialize a [MessageKind] into the destination type.
-  pub fn try_into<T: DeserializeOwned>(self) -> std::result::Result<T, DeserializationError> {
-    self.into_packet().try_into()
   }
 
   /// Utility function to determine if [MessageKind] is a Signal.
