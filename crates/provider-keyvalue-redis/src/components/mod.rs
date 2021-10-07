@@ -15,4 +15,5 @@ pub(crate) mod set_contains;
 pub(crate) mod set_get;
 pub(crate) mod set_intersection;
 pub(crate) mod set_remove;
+pub(crate) mod set_scan;
 pub(crate) mod set_union;

@@ -2021,6 +2021,214 @@ pub mod set_remove {
     }
   }
 }
+pub mod set_scan {
+  use std::collections::HashMap;
+
+  use serde::{
+    Deserialize,
+    Serialize,
+  };
+  #[cfg(feature = "native")]
+  pub use vino_provider::native::prelude::*;
+  #[cfg(feature = "wasm")]
+  pub use vino_provider::wasm::prelude::*;
+
+  #[cfg(any(feature = "native", feature = "wasm"))]
+  pub fn signature() -> ComponentSignature {
+    ComponentSignature {
+      name: "set-scan".to_owned(),
+      inputs: inputs_list().into(),
+      outputs: outputs_list().into(),
+    }
+  }
+
+  #[cfg(any(feature = "native", feature = "wasm"))]
+  pub fn populate_inputs(mut payload: TransportMap) -> Result<Inputs, TransportError> {
+    Ok(Inputs {
+      key: payload.consume("key")?,
+      cursor: payload.consume("cursor")?,
+      count: payload.consume("count")?,
+    })
+  }
+
+  #[derive(Debug, Deserialize, Serialize, Clone)]
+  pub struct Inputs {
+    #[serde(rename = "key")]
+    pub key: String,
+    #[serde(rename = "cursor")]
+    pub cursor: String,
+    #[serde(rename = "count")]
+    pub count: u32,
+  }
+
+  #[cfg(any(feature = "native", feature = "wasm"))]
+  impl From<Inputs> for TransportMap {
+    fn from(inputs: Inputs) -> TransportMap {
+      let mut map = TransportMap::new();
+      map.insert("key".to_owned(), MessageTransport::success(&inputs.key));
+
+      map.insert(
+        "cursor".to_owned(),
+        MessageTransport::success(&inputs.cursor),
+      );
+
+      map.insert("count".to_owned(), MessageTransport::success(&inputs.count));
+
+      map
+    }
+  }
+
+  #[must_use]
+  #[cfg(any(feature = "native", feature = "wasm"))]
+  pub fn inputs_list() -> HashMap<String, TypeSignature> {
+    let mut map = HashMap::new();
+    map.insert("key".to_owned(), TypeSignature::String);
+    map.insert("cursor".to_owned(), TypeSignature::String);
+    map.insert("count".to_owned(), TypeSignature::U32);
+    map
+  }
+
+  #[derive(Debug, Default)]
+  #[cfg(feature = "provider")]
+  pub struct OutputPorts {
+    pub values: ValuesPortSender,
+    pub cursor: CursorPortSender,
+  }
+
+  #[must_use]
+  #[cfg(any(feature = "native", feature = "wasm"))]
+  pub fn outputs_list() -> HashMap<String, TypeSignature> {
+    let mut map = HashMap::new();
+    map.insert(
+      "values".to_owned(),
+      TypeSignature::List {
+        element: TypeSignature::String.into(),
+      },
+    );
+    map.insert("cursor".to_owned(), TypeSignature::String);
+    map
+  }
+
+  #[derive(Debug)]
+  #[cfg(feature = "provider")]
+  pub struct ValuesPortSender {
+    port: PortChannel,
+  }
+
+  #[cfg(feature = "provider")]
+  impl Default for ValuesPortSender {
+    fn default() -> Self {
+      Self {
+        port: PortChannel::new("values"),
+      }
+    }
+  }
+
+  #[cfg(feature = "provider")]
+  impl PortSender for ValuesPortSender {
+    fn get_port(&self) -> Result<&PortChannel, ProviderError> {
+      if self.port.is_closed() {
+        Err(ProviderError::SendChannelClosed)
+      } else {
+        Ok(&self.port)
+      }
+    }
+
+    fn get_port_name(&self) -> String {
+      self.port.name.clone()
+    }
+  }
+  #[derive(Debug)]
+  #[cfg(feature = "provider")]
+  pub struct CursorPortSender {
+    port: PortChannel,
+  }
+
+  #[cfg(feature = "provider")]
+  impl Default for CursorPortSender {
+    fn default() -> Self {
+      Self {
+        port: PortChannel::new("cursor"),
+      }
+    }
+  }
+
+  #[cfg(feature = "provider")]
+  impl PortSender for CursorPortSender {
+    fn get_port(&self) -> Result<&PortChannel, ProviderError> {
+      if self.port.is_closed() {
+        Err(ProviderError::SendChannelClosed)
+      } else {
+        Ok(&self.port)
+      }
+    }
+
+    fn get_port_name(&self) -> String {
+      self.port.name.clone()
+    }
+  }
+
+  #[must_use]
+  #[cfg(feature = "provider")]
+  pub fn get_outputs() -> (OutputPorts, TransportStream) {
+    let mut outputs = OutputPorts::default();
+    let mut ports = vec![&mut outputs.values.port, &mut outputs.cursor.port];
+    let stream = PortChannel::merge_all(&mut ports);
+    (outputs, stream)
+  }
+
+  #[cfg(all(feature = "guest"))]
+  #[allow(missing_debug_implementations)]
+  pub struct Outputs {
+    packets: ProviderOutput,
+  }
+
+  #[cfg(all(feature = "native", feature = "guest"))]
+  impl Outputs {
+    pub async fn values(&mut self) -> Result<PortOutput<Vec<String>>, ProviderError> {
+      let packets = self.packets.take("values").await;
+      Ok(PortOutput::new("values".to_owned(), packets))
+    }
+    pub async fn cursor(&mut self) -> Result<PortOutput<String>, ProviderError> {
+      let packets = self.packets.take("cursor").await;
+      Ok(PortOutput::new("cursor".to_owned(), packets))
+    }
+  }
+
+  #[cfg(all(feature = "wasm", feature = "guest"))]
+  impl Outputs {
+    pub fn values(&mut self) -> Result<PortOutput, WasmError> {
+      let packets = self
+        .packets
+        .take("values")
+        .ok_or_else(|| WasmError::ResponseMissing("values".to_owned()))?;
+      Ok(PortOutput::new("values".to_owned(), packets))
+    }
+    pub fn cursor(&mut self) -> Result<PortOutput, WasmError> {
+      let packets = self
+        .packets
+        .take("cursor")
+        .ok_or_else(|| WasmError::ResponseMissing("cursor".to_owned()))?;
+      Ok(PortOutput::new("cursor".to_owned(), packets))
+    }
+  }
+
+  #[cfg(all(feature = "wasm", feature = "guest"))]
+  impl From<ProviderOutput> for Outputs {
+    fn from(packets: ProviderOutput) -> Self {
+      Self { packets }
+    }
+  }
+
+  #[cfg(all(feature = "native", feature = "guest"))]
+  impl From<BoxedTransportStream> for Outputs {
+    fn from(stream: BoxedTransportStream) -> Self {
+      Self {
+        packets: ProviderOutput::new(stream),
+      }
+    }
+  }
+}
 pub mod set_union {
   use std::collections::HashMap;
 

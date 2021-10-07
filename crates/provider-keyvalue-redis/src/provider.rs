@@ -274,6 +274,30 @@ mod tests {
     Ok(actual)
   }
 
+  async fn set_scan(
+    provider: &Provider,
+    key: &str,
+    cursor: &str,
+    count: u32,
+  ) -> Result<(String, Vec<String>)> {
+    debug!("set-scan:{}", key);
+    let payload = set_scan::Inputs {
+      key: key.to_owned(),
+      cursor: cursor.to_owned(),
+      count,
+    };
+
+    let mut outputs: set_scan::Outputs = provider
+      .invoke(Entity::component_direct("set-scan"), payload.into())
+      .await?
+      .into();
+
+    let values = outputs.values().await?.try_next_into()?;
+    let cursor = outputs.cursor().await?.try_next_into()?;
+
+    Ok((cursor, values))
+  }
+
   async fn set_remove(provider: &Provider, key: &str, value: &str) -> Result<u32> {
     debug!("set-remove:{}::{}", key, value);
     let payload = set_remove::Inputs {
@@ -389,7 +413,29 @@ mod tests {
     let none: Vec<String> = vec![];
     assert_eq!(values, none);
     assert!(!exists(&provider, &key).await?);
+    Ok(())
+  }
 
+  #[test_logger::test(tokio::test)]
+  async fn test_set_scan() -> Result<()> {
+    let provider = get_default_provider().await?;
+    let key = get_random_string();
+
+    let m1 = get_random_string();
+    let m2 = get_random_string();
+    let m3 = get_random_string();
+    let mut all = [m1.clone(), m2.clone(), m3.clone()];
+    set_add(&provider, &key, &m1).await?;
+    set_add(&provider, &key, &m2).await?;
+    set_add(&provider, &key, &m3).await?;
+    let (cursor, values) = set_scan(&provider, &key, "0", 1).await?;
+    assert!(values.len() >= 1);
+    assert!(all.contains(&values[0]));
+    let (cursor, values) = set_scan(&provider, &key, &cursor, 1).await?;
+    assert!(values.len() >= 1);
+    assert!(all.contains(&values[0]));
+
+    delete(&provider, &key).await?;
     Ok(())
   }
 }

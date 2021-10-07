@@ -60,6 +60,10 @@ pub(crate) fn get_signature() -> ProviderSignature {
     vino_interface_keyvalue::set_remove::signature(),
   );
   components.insert(
+    "set-scan".to_owned(),
+    vino_interface_keyvalue::set_scan::signature(),
+  );
+  components.insert(
     "set-union".to_owned(),
     vino_interface_keyvalue::set_union::signature(),
   );
@@ -144,6 +148,11 @@ impl Dispatch for Dispatcher {
       }
       "set-remove" => {
         self::set_remove::Component::default()
+          .execute(context, data)
+          .await
+      }
+      "set-scan" => {
+        self::set_scan::Component::default()
           .execute(context, data)
           .await
       }
@@ -567,6 +576,38 @@ pub(crate) mod set_remove {
       let inputs = populate_inputs(data).map_err(|e| NativeComponentError::new(e.to_string()))?;
       let (outputs, stream) = get_outputs();
       let result = crate::components::set_remove::job(inputs, outputs, context).await;
+      match result {
+        Ok(_) => Ok(stream),
+        Err(e) => Err(Box::new(NativeComponentError::new(format!(
+          "Job failed: {}",
+          e.to_string()
+        )))),
+      }
+    }
+  }
+}
+pub(crate) mod set_scan {
+  #![allow(unused)]
+  use std::collections::HashMap;
+
+  use async_trait::async_trait;
+  use vino_interface_keyvalue::set_scan::*;
+  use vino_provider::native::prelude::*;
+
+  #[derive(Default)]
+  pub(crate) struct Component {}
+
+  #[async_trait]
+  impl NativeComponent for Component {
+    type Context = crate::Context;
+    async fn execute(
+      &self,
+      context: Self::Context,
+      data: TransportMap,
+    ) -> Result<TransportStream, Box<NativeComponentError>> {
+      let inputs = populate_inputs(data).map_err(|e| NativeComponentError::new(e.to_string()))?;
+      let (outputs, stream) = get_outputs();
+      let result = crate::components::set_scan::job(inputs, outputs, context).await;
       match result {
         Ok(_) => Ok(stream),
         Err(e) => Err(Box::new(NativeComponentError::new(format!(

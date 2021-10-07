@@ -228,6 +228,31 @@
         }
       }
     },
+    "set-scan": {
+      "name": "set-scan",
+      "inputs": {
+        "key": {
+          "type": "string"
+        },
+        "cursor": {
+          "type": "string"
+        },
+        "count": {
+          "type": "u32"
+        }
+      },
+      "outputs": {
+        "values": {
+          "type": "list",
+          "element": {
+            "type": "string"
+          }
+        },
+        "cursor": {
+          "type": "string"
+        }
+      }
+    },
     "set-union": {
       "name": "set-union",
       "inputs": {

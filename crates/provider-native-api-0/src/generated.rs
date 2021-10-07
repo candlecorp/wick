@@ -91,18 +91,9 @@ pub(crate) fn get_signature() -> ProviderSignature {
   );
   components.insert("uuid".to_owned(), generated::uuid::signature());
 
-  let mut types = HashMap::new();
-  types.insert(
-    "TODO".to_owned(),
-    StructSignature {
-      name: "todo".to_owned(),
-      fields: HashMap::new().into(),
-    },
-  );
-
   ProviderSignature {
     name: "".to_owned(),
-    types: types.into(),
+    types: StructMap::todo(),
     components: components.into(),
   }
 }
@@ -242,10 +233,18 @@ pub(crate) mod add {
     (outputs, stream)
   }
 
-  #[cfg(all(feature = "wasm", feature = "guest"))]
-  #[derive(Debug)]
+  #[cfg(all(feature = "guest"))]
+  #[allow(missing_debug_implementations)]
   pub struct Outputs {
     packets: ProviderOutput,
+  }
+
+  #[cfg(all(feature = "native", feature = "guest"))]
+  impl Outputs {
+    pub async fn output(&mut self) -> Result<PortOutput<u64>, ProviderError> {
+      let packets = self.packets.take("output").await;
+      Ok(PortOutput::new("output".to_owned(), packets))
+    }
   }
 
   #[cfg(all(feature = "wasm", feature = "guest"))]
@@ -263,6 +262,15 @@ pub(crate) mod add {
   impl From<ProviderOutput> for Outputs {
     fn from(packets: ProviderOutput) -> Self {
       Self { packets }
+    }
+  }
+
+  #[cfg(all(feature = "native", feature = "guest"))]
+  impl From<BoxedTransportStream> for Outputs {
+    fn from(stream: BoxedTransportStream) -> Self {
+      Self {
+        packets: ProviderOutput::new(stream),
+      }
     }
   }
 }
@@ -403,10 +411,18 @@ pub(crate) mod concatenate {
     (outputs, stream)
   }
 
-  #[cfg(all(feature = "wasm", feature = "guest"))]
-  #[derive(Debug)]
+  #[cfg(all(feature = "guest"))]
+  #[allow(missing_debug_implementations)]
   pub struct Outputs {
     packets: ProviderOutput,
+  }
+
+  #[cfg(all(feature = "native", feature = "guest"))]
+  impl Outputs {
+    pub async fn output(&mut self) -> Result<PortOutput<String>, ProviderError> {
+      let packets = self.packets.take("output").await;
+      Ok(PortOutput::new("output".to_owned(), packets))
+    }
   }
 
   #[cfg(all(feature = "wasm", feature = "guest"))]
@@ -424,6 +440,15 @@ pub(crate) mod concatenate {
   impl From<ProviderOutput> for Outputs {
     fn from(packets: ProviderOutput) -> Self {
       Self { packets }
+    }
+  }
+
+  #[cfg(all(feature = "native", feature = "guest"))]
+  impl From<BoxedTransportStream> for Outputs {
+    fn from(stream: BoxedTransportStream) -> Self {
+      Self {
+        packets: ProviderOutput::new(stream),
+      }
     }
   }
 }
@@ -556,10 +581,18 @@ pub(crate) mod error {
     (outputs, stream)
   }
 
-  #[cfg(all(feature = "wasm", feature = "guest"))]
-  #[derive(Debug)]
+  #[cfg(all(feature = "guest"))]
+  #[allow(missing_debug_implementations)]
   pub struct Outputs {
     packets: ProviderOutput,
+  }
+
+  #[cfg(all(feature = "native", feature = "guest"))]
+  impl Outputs {
+    pub async fn output(&mut self) -> Result<PortOutput<String>, ProviderError> {
+      let packets = self.packets.take("output").await;
+      Ok(PortOutput::new("output".to_owned(), packets))
+    }
   }
 
   #[cfg(all(feature = "wasm", feature = "guest"))]
@@ -577,6 +610,15 @@ pub(crate) mod error {
   impl From<ProviderOutput> for Outputs {
     fn from(packets: ProviderOutput) -> Self {
       Self { packets }
+    }
+  }
+
+  #[cfg(all(feature = "native", feature = "guest"))]
+  impl From<BoxedTransportStream> for Outputs {
+    fn from(stream: BoxedTransportStream) -> Self {
+      Self {
+        packets: ProviderOutput::new(stream),
+      }
     }
   }
 }
@@ -727,10 +769,18 @@ pub(crate) mod gate {
     (outputs, stream)
   }
 
-  #[cfg(all(feature = "wasm", feature = "guest"))]
-  #[derive(Debug)]
+  #[cfg(all(feature = "guest"))]
+  #[allow(missing_debug_implementations)]
   pub struct Outputs {
     packets: ProviderOutput,
+  }
+
+  #[cfg(all(feature = "native", feature = "guest"))]
+  impl Outputs {
+    pub async fn output(&mut self) -> Result<PortOutput<RawPacket>, ProviderError> {
+      let packets = self.packets.take("output").await;
+      Ok(PortOutput::new("output".to_owned(), packets))
+    }
   }
 
   #[cfg(all(feature = "wasm", feature = "guest"))]
@@ -748,6 +798,15 @@ pub(crate) mod gate {
   impl From<ProviderOutput> for Outputs {
     fn from(packets: ProviderOutput) -> Self {
       Self { packets }
+    }
+  }
+
+  #[cfg(all(feature = "native", feature = "guest"))]
+  impl From<BoxedTransportStream> for Outputs {
+    fn from(stream: BoxedTransportStream) -> Self {
+      Self {
+        packets: ProviderOutput::new(stream),
+      }
     }
   }
 }
@@ -880,10 +939,18 @@ pub(crate) mod log {
     (outputs, stream)
   }
 
-  #[cfg(all(feature = "wasm", feature = "guest"))]
-  #[derive(Debug)]
+  #[cfg(all(feature = "guest"))]
+  #[allow(missing_debug_implementations)]
   pub struct Outputs {
     packets: ProviderOutput,
+  }
+
+  #[cfg(all(feature = "native", feature = "guest"))]
+  impl Outputs {
+    pub async fn output(&mut self) -> Result<PortOutput<String>, ProviderError> {
+      let packets = self.packets.take("output").await;
+      Ok(PortOutput::new("output".to_owned(), packets))
+    }
   }
 
   #[cfg(all(feature = "wasm", feature = "guest"))]
@@ -901,6 +968,15 @@ pub(crate) mod log {
   impl From<ProviderOutput> for Outputs {
     fn from(packets: ProviderOutput) -> Self {
       Self { packets }
+    }
+  }
+
+  #[cfg(all(feature = "native", feature = "guest"))]
+  impl From<BoxedTransportStream> for Outputs {
+    fn from(stream: BoxedTransportStream) -> Self {
+      Self {
+        packets: ProviderOutput::new(stream),
+      }
     }
   }
 }
@@ -1033,10 +1109,18 @@ pub(crate) mod negate {
     (outputs, stream)
   }
 
-  #[cfg(all(feature = "wasm", feature = "guest"))]
-  #[derive(Debug)]
+  #[cfg(all(feature = "guest"))]
+  #[allow(missing_debug_implementations)]
   pub struct Outputs {
     packets: ProviderOutput,
+  }
+
+  #[cfg(all(feature = "native", feature = "guest"))]
+  impl Outputs {
+    pub async fn output(&mut self) -> Result<PortOutput<bool>, ProviderError> {
+      let packets = self.packets.take("output").await;
+      Ok(PortOutput::new("output".to_owned(), packets))
+    }
   }
 
   #[cfg(all(feature = "wasm", feature = "guest"))]
@@ -1054,6 +1138,15 @@ pub(crate) mod negate {
   impl From<ProviderOutput> for Outputs {
     fn from(packets: ProviderOutput) -> Self {
       Self { packets }
+    }
+  }
+
+  #[cfg(all(feature = "native", feature = "guest"))]
+  impl From<BoxedTransportStream> for Outputs {
+    fn from(stream: BoxedTransportStream) -> Self {
+      Self {
+        packets: ProviderOutput::new(stream),
+      }
     }
   }
 }
@@ -1186,10 +1279,18 @@ pub(crate) mod panic {
     (outputs, stream)
   }
 
-  #[cfg(all(feature = "wasm", feature = "guest"))]
-  #[derive(Debug)]
+  #[cfg(all(feature = "guest"))]
+  #[allow(missing_debug_implementations)]
   pub struct Outputs {
     packets: ProviderOutput,
+  }
+
+  #[cfg(all(feature = "native", feature = "guest"))]
+  impl Outputs {
+    pub async fn output(&mut self) -> Result<PortOutput<String>, ProviderError> {
+      let packets = self.packets.take("output").await;
+      Ok(PortOutput::new("output".to_owned(), packets))
+    }
   }
 
   #[cfg(all(feature = "wasm", feature = "guest"))]
@@ -1207,6 +1308,15 @@ pub(crate) mod panic {
   impl From<ProviderOutput> for Outputs {
     fn from(packets: ProviderOutput) -> Self {
       Self { packets }
+    }
+  }
+
+  #[cfg(all(feature = "native", feature = "guest"))]
+  impl From<BoxedTransportStream> for Outputs {
+    fn from(stream: BoxedTransportStream) -> Self {
+      Self {
+        packets: ProviderOutput::new(stream),
+      }
     }
   }
 }
@@ -1350,10 +1460,18 @@ pub(crate) mod random_bytes {
     (outputs, stream)
   }
 
-  #[cfg(all(feature = "wasm", feature = "guest"))]
-  #[derive(Debug)]
+  #[cfg(all(feature = "guest"))]
+  #[allow(missing_debug_implementations)]
   pub struct Outputs {
     packets: ProviderOutput,
+  }
+
+  #[cfg(all(feature = "native", feature = "guest"))]
+  impl Outputs {
+    pub async fn output(&mut self) -> Result<PortOutput<Vec<u8>>, ProviderError> {
+      let packets = self.packets.take("output").await;
+      Ok(PortOutput::new("output".to_owned(), packets))
+    }
   }
 
   #[cfg(all(feature = "wasm", feature = "guest"))]
@@ -1371,6 +1489,15 @@ pub(crate) mod random_bytes {
   impl From<ProviderOutput> for Outputs {
     fn from(packets: ProviderOutput) -> Self {
       Self { packets }
+    }
+  }
+
+  #[cfg(all(feature = "native", feature = "guest"))]
+  impl From<BoxedTransportStream> for Outputs {
+    fn from(stream: BoxedTransportStream) -> Self {
+      Self {
+        packets: ProviderOutput::new(stream),
+      }
     }
   }
 }
@@ -1514,10 +1641,18 @@ pub(crate) mod random_string {
     (outputs, stream)
   }
 
-  #[cfg(all(feature = "wasm", feature = "guest"))]
-  #[derive(Debug)]
+  #[cfg(all(feature = "guest"))]
+  #[allow(missing_debug_implementations)]
   pub struct Outputs {
     packets: ProviderOutput,
+  }
+
+  #[cfg(all(feature = "native", feature = "guest"))]
+  impl Outputs {
+    pub async fn output(&mut self) -> Result<PortOutput<String>, ProviderError> {
+      let packets = self.packets.take("output").await;
+      Ok(PortOutput::new("output".to_owned(), packets))
+    }
   }
 
   #[cfg(all(feature = "wasm", feature = "guest"))]
@@ -1535,6 +1670,15 @@ pub(crate) mod random_string {
   impl From<ProviderOutput> for Outputs {
     fn from(packets: ProviderOutput) -> Self {
       Self { packets }
+    }
+  }
+
+  #[cfg(all(feature = "native", feature = "guest"))]
+  impl From<BoxedTransportStream> for Outputs {
+    fn from(stream: BoxedTransportStream) -> Self {
+      Self {
+        packets: ProviderOutput::new(stream),
+      }
     }
   }
 }
@@ -1669,10 +1813,18 @@ pub(crate) mod short_circuit {
     (outputs, stream)
   }
 
-  #[cfg(all(feature = "wasm", feature = "guest"))]
-  #[derive(Debug)]
+  #[cfg(all(feature = "guest"))]
+  #[allow(missing_debug_implementations)]
   pub struct Outputs {
     packets: ProviderOutput,
+  }
+
+  #[cfg(all(feature = "native", feature = "guest"))]
+  impl Outputs {
+    pub async fn output(&mut self) -> Result<PortOutput<String>, ProviderError> {
+      let packets = self.packets.take("output").await;
+      Ok(PortOutput::new("output".to_owned(), packets))
+    }
   }
 
   #[cfg(all(feature = "wasm", feature = "guest"))]
@@ -1690,6 +1842,15 @@ pub(crate) mod short_circuit {
   impl From<ProviderOutput> for Outputs {
     fn from(packets: ProviderOutput) -> Self {
       Self { packets }
+    }
+  }
+
+  #[cfg(all(feature = "native", feature = "guest"))]
+  impl From<BoxedTransportStream> for Outputs {
+    fn from(stream: BoxedTransportStream) -> Self {
+      Self {
+        packets: ProviderOutput::new(stream),
+      }
     }
   }
 }
@@ -1824,10 +1985,18 @@ pub(crate) mod string_to_bytes {
     (outputs, stream)
   }
 
-  #[cfg(all(feature = "wasm", feature = "guest"))]
-  #[derive(Debug)]
+  #[cfg(all(feature = "guest"))]
+  #[allow(missing_debug_implementations)]
   pub struct Outputs {
     packets: ProviderOutput,
+  }
+
+  #[cfg(all(feature = "native", feature = "guest"))]
+  impl Outputs {
+    pub async fn output(&mut self) -> Result<PortOutput<Vec<u8>>, ProviderError> {
+      let packets = self.packets.take("output").await;
+      Ok(PortOutput::new("output".to_owned(), packets))
+    }
   }
 
   #[cfg(all(feature = "wasm", feature = "guest"))]
@@ -1845,6 +2014,15 @@ pub(crate) mod string_to_bytes {
   impl From<ProviderOutput> for Outputs {
     fn from(packets: ProviderOutput) -> Self {
       Self { packets }
+    }
+  }
+
+  #[cfg(all(feature = "native", feature = "guest"))]
+  impl From<BoxedTransportStream> for Outputs {
+    fn from(stream: BoxedTransportStream) -> Self {
+      Self {
+        packets: ProviderOutput::new(stream),
+      }
     }
   }
 }
@@ -1977,10 +2155,18 @@ pub(crate) mod uuid {
     (outputs, stream)
   }
 
-  #[cfg(all(feature = "wasm", feature = "guest"))]
-  #[derive(Debug)]
+  #[cfg(all(feature = "guest"))]
+  #[allow(missing_debug_implementations)]
   pub struct Outputs {
     packets: ProviderOutput,
+  }
+
+  #[cfg(all(feature = "native", feature = "guest"))]
+  impl Outputs {
+    pub async fn output(&mut self) -> Result<PortOutput<String>, ProviderError> {
+      let packets = self.packets.take("output").await;
+      Ok(PortOutput::new("output".to_owned(), packets))
+    }
   }
 
   #[cfg(all(feature = "wasm", feature = "guest"))]
@@ -1998,6 +2184,15 @@ pub(crate) mod uuid {
   impl From<ProviderOutput> for Outputs {
     fn from(packets: ProviderOutput) -> Self {
       Self { packets }
+    }
+  }
+
+  #[cfg(all(feature = "native", feature = "guest"))]
+  impl From<BoxedTransportStream> for Outputs {
+    fn from(stream: BoxedTransportStream) -> Self {
+      Self {
+        packets: ProviderOutput::new(stream),
+      }
     }
   }
 }
