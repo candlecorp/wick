@@ -12,6 +12,7 @@ use logger::LoggingOptions;
 use nkeys::KeyPair;
 use structopt::StructOpt;
 use tokio::signal;
+use tokio::sync::mpsc::Sender;
 use tonic::transport::{
   Certificate,
   Identity,
@@ -21,7 +22,7 @@ use vino_invocation_server::InvocationServer;
 use vino_lattice::lattice::Lattice;
 use vino_lattice::nats::NatsOptions;
 use vino_rpc::rpc::invocation_service_server::InvocationServiceServer;
-use vino_rpc::RpcFactory;
+use vino_rpc::BoxedRpcHandler;
 
 use crate::Result;
 
@@ -235,28 +236,70 @@ pub struct LatticeCliOptions {
   pub nats_token: Option<String>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 #[must_use]
 /// Metadata for the running server.
 pub struct ServerState {
   /// The address of the RPC server if it is running.
-  pub rpc_addr: Option<SocketAddr>,
+  pub rpc: Option<ServerControl>,
   /// The address of the HTTP server if it is running.
-  pub http_addr: Option<SocketAddr>,
+  pub http: Option<ServerControl>,
   /// True if we're connected to the lattice, false otherwise.
   pub lattice: Option<Arc<Lattice>>,
   /// The ID of the server.
   pub id: String,
 }
 
+/// Struct that holds control methods and metadata for a running service.
+pub struct ServerControl {
+  /// The address of the RPC server.
+  pub addr: SocketAddr,
+  tx: Sender<ServerMessage>,
+}
+
+impl std::fmt::Debug for ServerControl {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    f.debug_struct("ServerControl")
+      .field("addr", &self.addr)
+      .finish()
+  }
+}
+
+impl ServerControl {
+  fn maybe_new(opt: Option<(SocketAddr, Sender<ServerMessage>)>) -> Option<Self> {
+    if let Some((addr, tx)) = opt {
+      Some(Self { addr, tx })
+    } else {
+      None
+    }
+  }
+}
+
+impl ServerState {
+  /// Stop the RPC server if it's running.
+  pub fn stop_rpc_server(&self) {
+    if let Some(ctl) = self.rpc.as_ref() {
+      let _ = ctl.tx.send(ServerMessage::Close);
+    }
+  }
+  /// Stop the HTTP server if it's running.
+  pub fn stop_http_server(&self) {
+    if let Some(ctl) = &self.http {
+      let _ = ctl.tx.send(ServerMessage::Close);
+    }
+  }
+}
+
 #[doc(hidden)]
 pub fn print_info(info: &ServerState) {
   let mut something_started = false;
-  if let Some(addr) = info.rpc_addr {
+  if let Some(addr) = &info.rpc {
+    let addr = addr.addr;
     something_started = true;
     info!("GRPC server bound to {} on port {}", addr.ip(), addr.port());
   }
-  if let Some(addr) = info.http_addr {
+  if let Some(addr) = &info.http {
+    let addr = addr.addr;
     something_started = true;
     info!("HTTP server bound to {} on port {}", addr.ip(), addr.port());
   }
@@ -278,12 +321,15 @@ pub fn init_logging(options: &LoggingOptions) -> Result<()> {
 }
 
 /// Starts an RPC and/or an HTTP server for the passed [vino_rpc::RpcHandler].
-pub async fn start_server(provider: RpcFactory, opts: Option<Options>) -> Result<ServerState> {
+pub async fn start_server(
+  provider: &'static BoxedRpcHandler,
+  opts: Option<Options>,
+) -> Result<ServerState> {
   debug!("Starting server with options: {:?}", opts);
 
   let opts = opts.unwrap_or_default();
 
-  let component_service = InvocationServer::new(provider());
+  let component_service = InvocationServer::new(provider);
 
   let svc = InvocationServiceServer::new(component_service);
 
@@ -302,7 +348,7 @@ pub async fn start_server(provider: RpcFactory, opts: Option<Options>) -> Result
     if !http_opts.enabled {
       None
     } else {
-      let addr = start_http_server(&http_opts, svc.clone()).await?;
+      let addr = start_http_server(&http_opts, provider).await?;
       Some(addr)
     }
   } else {
@@ -323,8 +369,8 @@ pub async fn start_server(provider: RpcFactory, opts: Option<Options>) -> Result
 
   Ok(ServerState {
     id: opts.id,
-    rpc_addr,
-    http_addr,
+    rpc: ServerControl::maybe_new(rpc_addr),
+    http: ServerControl::maybe_new(http_addr),
     lattice,
   })
 }
@@ -332,7 +378,7 @@ pub async fn start_server(provider: RpcFactory, opts: Option<Options>) -> Result
 async fn connect_to_lattice(
   opts: &LatticeOptions,
   id: String,
-  factory: RpcFactory,
+  factory: &'static BoxedRpcHandler,
   timeout: Duration,
 ) -> Result<Arc<Lattice>> {
   info!(
@@ -355,9 +401,8 @@ async fn connect_to_lattice(
 
 async fn start_http_server(
   options: &ServerOptions,
-  svc: InvocationServiceServer<InvocationServer>,
-) -> Result<SocketAddr> {
-  info!("Starting HTTP server");
+  provider: &'static BoxedRpcHandler,
+) -> Result<(SocketAddr, Sender<ServerMessage>)> {
   let port = options.port.unwrap_or(0);
   let address = options.address.unwrap_or(Ipv4Addr::from_str("127.0.0.1")?);
 
@@ -365,9 +410,15 @@ async fn start_http_server(
   socket.bind(SocketAddr::new(IpAddr::V4(address), port))?;
   let addr = socket.local_addr()?;
 
-  let listener = tokio_stream::wrappers::TcpListenerStream::new(socket.listen(512).unwrap());
+  trace!("HTTP: Starting server on {}", addr);
 
-  let web_service = tonic_web::config().allow_all_origins().enable(svc);
+  socket.set_reuseaddr(true).unwrap();
+  socket.set_reuseport(true).unwrap();
+  let listener = socket.listen(512).unwrap();
+
+  let stream = tokio_stream::wrappers::TcpListenerStream::new(listener);
+
+  let web_service = vino_http::config().allow_all_origins().enable(provider);
 
   if options.ca.is_some() || options.pem.is_some() || options.key.is_some() {
     info!(
@@ -375,21 +426,28 @@ async fn start_http_server(
     );
   }
 
-  info!("HTTP: Starting insecure server on {}", addr);
+  let (tx, mut rx) = tokio::sync::mpsc::channel::<ServerMessage>(1);
   let server = Server::builder()
     .accept_http1(true)
     .add_service(web_service)
-    .serve_with_incoming(listener);
+    .serve_with_incoming_shutdown(stream, async move {
+      rx.recv().await;
+      info!("Shut down HTTP server.");
+    });
 
   tokio::spawn(server);
 
-  Ok(addr)
+  Ok((addr, tx))
+}
+
+enum ServerMessage {
+  Close,
 }
 
 async fn start_rpc_server(
   options: &ServerOptions,
   svc: InvocationServiceServer<InvocationServer>,
-) -> Result<SocketAddr> {
+) -> Result<(SocketAddr, Sender<ServerMessage>)> {
   info!("Starting RPC server");
   let port = options.port.unwrap_or(0);
   let address = options.address.unwrap_or(Ipv4Addr::from_str("127.0.0.1")?);
@@ -400,7 +458,11 @@ async fn start_rpc_server(
 
   trace!("Binding RPC server to {} (Port: {})", addr, addr.port());
 
-  let listener = tokio_stream::wrappers::TcpListenerStream::new(socket.listen(512).unwrap());
+  socket.set_reuseaddr(true).unwrap();
+  socket.set_reuseport(true).unwrap();
+  let listener = socket.listen(512).unwrap();
+
+  let stream = tokio_stream::wrappers::TcpListenerStream::new(listener);
 
   let reflection = tonic_reflection::server::Builder::configure()
     .register_encoded_file_descriptor_set(FILE_DESCRIPTOR_SET)
@@ -409,11 +471,11 @@ async fn start_rpc_server(
 
   let mut builder = Server::builder();
 
+  trace!("RPC: Starting server on {}", addr);
   if let (Some(pem), Some(key)) = (&options.pem, &options.key) {
     let server_pem = tokio::fs::read(pem).await?;
     let server_key = tokio::fs::read(key).await?;
     let identity = Identity::from_pem(server_pem, server_key);
-    info!("RPC: Starting secure server on {}", addr);
     let mut tls = tonic::transport::ServerTlsConfig::new().identity(identity);
 
     if let Some(ca) = &options.ca {
@@ -424,35 +486,38 @@ async fn start_rpc_server(
     }
 
     builder = builder.tls_config(tls)?;
-  } else {
-    if let Some(ca) = &options.ca {
-      debug!("RPC: Adding CA root from {}", ca.to_string_lossy());
-      let ca_pem = tokio::fs::read(ca).await?;
-      let ca = Certificate::from_pem(ca_pem);
-      let tls = tonic::transport::ServerTlsConfig::new().client_ca_root(ca);
-      builder = builder.tls_config(tls)?;
-    }
-
-    info!("RPC: Starting insecure server on {}", addr);
+  } else if let Some(ca) = &options.ca {
+    debug!("RPC: Adding CA root from {}", ca.to_string_lossy());
+    let ca_pem = tokio::fs::read(ca).await?;
+    let ca = Certificate::from_pem(ca_pem);
+    let tls = tonic::transport::ServerTlsConfig::new().client_ca_root(ca);
+    builder = builder.tls_config(tls)?;
   }
 
   let inner = svc.clone();
   let builder = builder.add_service(reflection).add_service(inner);
 
-  let server = builder.serve_with_incoming(listener);
+  let (tx, mut rx) = tokio::sync::mpsc::channel::<ServerMessage>(1);
+  let server = builder.serve_with_incoming_shutdown(stream, async move {
+    rx.recv().await;
+    info!("Shut down RPC server.");
+  });
 
   tokio::spawn(server);
-  Ok(addr)
+  Ok((addr, tx))
 }
 
 /// Start a server with the passed [vino_rpc::RpcHandler] and keep it.
 /// running until the process receives a SIGINT (^C).
-pub async fn init_cli(provider: RpcFactory, opts: Option<Options>) -> Result<()> {
-  let info = start_server(provider, opts).await?;
-  print_info(&info);
+pub async fn init_cli(provider: &'static BoxedRpcHandler, opts: Option<Options>) -> Result<()> {
+  let state = start_server(provider, opts).await?;
+  print_info(&state);
 
   info!("Waiting for ctrl-C");
   signal::ctrl_c().await?;
+  println!(); // start on a new line.
+  state.stop_http_server();
+  state.stop_rpc_server();
 
   Ok(())
 }
@@ -463,6 +528,7 @@ mod tests {
   use std::time::Duration;
 
   use anyhow::Result;
+  use once_cell::sync::Lazy;
   use test_vino_provider::Provider;
   use tokio::time::sleep;
   use tonic::transport::Uri;
@@ -470,6 +536,8 @@ mod tests {
   use vino_rpc::rpc::ListRequest;
 
   use super::*;
+
+  static PROVIDER: Lazy<BoxedRpcHandler> = Lazy::new(|| Box::new(Provider::default()));
 
   #[test_logger::test(tokio::test)]
   async fn test_starts() -> Result<()> {
@@ -479,22 +547,23 @@ mod tests {
       ..Default::default()
     };
     options.rpc = Some(rpc_opts);
-    let config = start_server(Box::new(|| Box::new(Provider::default())), Some(options)).await?;
-    let addr = config.rpc_addr.unwrap();
+    let config = start_server(&PROVIDER, Some(options)).await?;
+    let rpc = config.rpc.unwrap();
+    debug!("Waiting for server to start");
     sleep(Duration::from_millis(100)).await;
-    let uri = Uri::from_str(&format!("https://{}:{}", addr.ip(), addr.port())).unwrap();
+    let uri = Uri::from_str(&format!("https://{}:{}", rpc.addr.ip(), rpc.addr.port())).unwrap();
     let mut client = make_rpc_client(uri).await?;
     let response = client.list(ListRequest {}).await.unwrap();
     let list = response.into_inner();
     println!("list: {:?}", list);
-    assert_eq!(list.components.len(), 2);
+    assert_eq!(list.schemas.len(), 1);
     Ok(())
   }
 
   // #[test_logger::test(tokio::test)]
   async fn _test_http() -> Result<()> {
     let config = start_server(
-      Box::new(|| Box::new(Provider::default())),
+      &PROVIDER,
       Some(Options {
         rpc: Some(ServerOptions {
           address: Some(Ipv4Addr::from_str("127.0.0.1")?),
@@ -511,8 +580,8 @@ mod tests {
     )
     .await?;
     sleep(Duration::from_millis(100)).await;
-    let addr = config.http_addr.unwrap();
-    let url = &format!("http://{}:{}", addr.ip(), addr.port());
+    let http = config.http.unwrap();
+    let url = &format!("http://{}:{}", http.addr.ip(), http.addr.port());
     println!("URL: {}", url);
     // sleep(Duration::from_millis(1000000)).await;
     let endpoint = format!("{}/vino.InvocationService.List", url);

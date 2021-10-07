@@ -6,6 +6,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 use nkeys::KeyPair;
+use once_cell::sync::OnceCell;
 use vino_entity::Entity;
 use vino_lattice::lattice::Lattice;
 use vino_lattice::nats::NatsOptions;
@@ -17,6 +18,7 @@ use vino_provider_cli::cli::{
   ServerOptions,
   ServerState,
 };
+use vino_rpc::BoxedRpcHandler;
 use vino_runtime::core_data::InitData;
 use vino_runtime::network::NetworkBuilder;
 use vino_runtime::prelude::*;
@@ -26,6 +28,8 @@ use crate::{
   Error,
   Result,
 };
+
+static PROVIDER: OnceCell<BoxedRpcHandler> = OnceCell::new();
 
 /// A Vino Host wraps a Vino runtime with server functionality like persistence,.
 #[must_use]
@@ -182,13 +186,13 @@ impl Host {
       timeout: self.manifest.host.timeout,
     };
 
-    let metadata = tokio::spawn(vino_provider_cli::start_server(
-      Box::new(move || Box::new(NetworkProvider::new(nuid.clone()))),
-      Some(options),
-    ))
-    .await
-    .map_err(|e| Error::Other(format!("Join error: {}", e)))?
-    .map_err(|e| Error::Other(format!("Socket error: {}", e)))?;
+    let provider: &'static BoxedRpcHandler =
+      PROVIDER.get_or_init(|| Box::new(NetworkProvider::new(nuid.clone())));
+
+    let metadata = tokio::spawn(vino_provider_cli::start_server(provider, Some(options)))
+      .await
+      .map_err(|e| Error::Other(format!("Join error: {}", e)))?
+      .map_err(|e| Error::Other(format!("Socket error: {}", e)))?;
 
     Ok(metadata)
   }

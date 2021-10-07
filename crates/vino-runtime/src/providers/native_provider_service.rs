@@ -107,7 +107,7 @@ impl Handler<InvocationMessage> for NativeProviderService {
       match receiver {
         Ok(mut receiver) => {
           trace!("{}[{}]:START", PREFIX, url);
-          actix::spawn(async move {
+          tokio::spawn(async move {
             loop {
               trace!("{}[{}]:WAIT", PREFIX, url);
               let output = match receiver.next().await {
@@ -115,6 +115,7 @@ impl Handler<InvocationMessage> for NativeProviderService {
                 None => break,
               };
               trace!("{}[{}]:PORT[{}]:RECV", PREFIX, url, output.port);
+
               match tx.send(TransportWrapper {
                 port: output.port.clone(),
                 payload: output.payload,
@@ -128,14 +129,14 @@ impl Handler<InvocationMessage> for NativeProviderService {
                 }
               }
             }
+            trace!("{}[{}]:FINISH", PREFIX, url);
           });
         }
         Err(e) => {
           error!("Error invoking component: {}", e.to_string());
-          let txresult = tx.send(TransportWrapper {
-            port: vino_transport::COMPONENT_ERROR.to_owned(),
-            payload: MessageTransport::error(e.to_string()),
-          });
+          let txresult = tx.send(TransportWrapper::component_error(MessageTransport::error(
+            e.to_string(),
+          )));
           let _ = map_err!(txresult, InternalError::E7002);
         }
       }

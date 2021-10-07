@@ -37,7 +37,7 @@ use crate::BoxedRpcHandler;
 pub struct InvocationServer {
   /// The provider that will handle incoming requests.
   #[derivative(Debug = "ignore")]
-  pub provider: BoxedRpcHandler,
+  pub provider: &'static BoxedRpcHandler,
 
   stats: RwLock<HashMap<String, Statistics>>,
 }
@@ -45,7 +45,7 @@ pub struct InvocationServer {
 impl InvocationServer {
   /// Constructor.
   #[must_use]
-  pub fn new(provider: BoxedRpcHandler) -> Self {
+  pub fn new(provider: &'static BoxedRpcHandler) -> Self {
     Self {
       provider,
       stats: RwLock::new(HashMap::new()),

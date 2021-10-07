@@ -40,8 +40,8 @@ pub enum HostError {
   NetworkError(#[from] vino_runtime::error::NetworkError),
   #[error(transparent)]
   RpcError(#[from] vino_rpc::Error),
-  #[error(transparent)]
-  ActixMailboxError(#[from] actix::MailboxError),
+  #[error("Async error: {0}")]
+  AsyncRT(String),
   #[error(transparent)]
   IOError(#[from] std::io::Error),
   #[error(transparent)]

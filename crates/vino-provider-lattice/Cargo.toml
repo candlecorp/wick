@@ -10,30 +10,14 @@ edition = "2018"
 [dependencies]
 vino-rpc = { path = "../vino-rpc" }
 vino-lattice = { path = "../vino-lattice" }
-# vino-packet = { path = "../../sdk/crates/vino-packet" }
-# vino-codec = { path = "../../sdk/crates/vino-codec" }
-# vino-wascap = { path = "../vino-wascap" }
 vino-provider = { path = "../../sdk/crates/vino-provider", features = [
   "native",
 ] }
-# vino-transport = { path = "../../sdk/crates/vino-transport" , features = ["all"]}
-# vino-types = { path = "../../sdk/crates/vino-types" }
-# vino-macros = { path = "../../sdk/crates/vino-macros" }
-# oci-utils = { path = "../oci-utils" }
-# structopt = "0.3.22"
-# serde_json = "1.0.64"
-# derivative = "2.2.0"
-# tokio = { version = "1.4.0", features = ["fs"] }
 parking_lot = "0.11.1"
-
-# wasmtime-provider = { path = "../forks/wasmtime-provider", optional = true }
-# wapc = { path = "../forks/wapc-rust" }
-
-# futures = "0.3.15"
-# async-stream = "0.3.2"
 log = "0.4"
 thiserror = "1.0.25"
 async-trait = "0.1.50"
+once_cell = "1.8"
 
 [dev-dependencies]
 logger = { path = "../logger" }

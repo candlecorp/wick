@@ -2,7 +2,6 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use parking_lot::RwLock;
 use vino_codec::messagepack::serialize;
 use vino_provider::native::prelude::*;
 use vino_rpc::error::RpcError;
@@ -30,7 +29,7 @@ pub struct Context {
 
 #[derive(Clone, Debug)]
 pub struct Provider {
-  host: Arc<RwLock<WasmHost>>,
+  host: Arc<WasmHost>,
   config: Vec<u8>,
 }
 
@@ -40,13 +39,10 @@ pub type HostLinkCallback =
 impl Provider {
   pub fn try_load(
     module: &WapcModule,
-    threads: usize,
     config: Option<HashMap<String, String>>,
     wasi_options: Option<WasiParams>,
     callback: Option<Box<HostLinkCallback>>,
   ) -> Result<Self, Error> {
-    debug!("WASM:START:{} Threads", threads);
-
     let mut builder = WasmHostBuilder::new();
     if let Some(opts) = wasi_options {
       builder = builder.wasi_params(opts);
@@ -56,7 +52,7 @@ impl Provider {
     }
     let host = builder.build(module)?;
 
-    let host = Arc::new(RwLock::new(host));
+    let host = Arc::new(host);
 
     Ok(Self {
       host,
@@ -77,14 +73,13 @@ impl RpcHandler for Provider {
     let payload =
       serialize(&messagepack_map).map_err(|e| RpcError::ProviderError(e.to_string()))?;
 
-    let outputs = self.host.write().call(&component, &payload)?;
+    let outputs = self.host.call(&component, &payload)?;
 
     Ok(Box::pin(outputs))
   }
 
   async fn get_list(&self) -> RpcResult<Vec<HostedType>> {
-    let host = self.host.read();
-    let signature = host.get_components();
+    let signature = self.host.get_components();
 
     trace!(
       "WASM:COMPONENTS:[{}]",
@@ -122,7 +117,6 @@ mod tests {
 
     let provider = Provider::try_load(
       &component,
-      2,
       None,
       None,
       Some(Box::new(|_origin, _component, _payload| Ok(vec![]))),

@@ -217,12 +217,12 @@ impl SchematicModel {
   // TODO: assess
   #[allow(unused)]
   pub(crate) fn partial_initialization(&mut self) -> Result<()> {
-    trace!("MODEL:SC[{}]:PARTIAL_INIT", self.get_name());
+    trace!("MODEL:SC[{}]:UPDATE", self.get_name());
     self.populate_signature(&["self".to_owned()])
   }
 
   pub(crate) fn finalize(&mut self) -> Result<()> {
-    trace!("MODEL:SC[{}]:FINAL_INIT", self.get_name());
+    trace!("MODEL:SC[{}]:FINALIZE", self.get_name());
     self.populate_signature(&[])
   }
 
@@ -286,7 +286,6 @@ impl SchematicModel {
   }
 
   pub(crate) fn commit_self_provider(&mut self, provider: ProviderModel) -> Result<()> {
-    trace!("MODEL:SC[{}]:UPDATE_SELF", self.get_name());
     self
       .providers
       .insert(SELF_NAMESPACE.to_owned(), Some(provider));
@@ -419,7 +418,7 @@ impl SchematicModel {
 
   // Find the upstream connections for a instance. Note: this relies on the connections
   // from the definition only, not the component model.
-  pub(crate) fn _get_upstream_connections_by_instance<'a>(
+  pub(crate) fn get_upstream_connections_by_instance<'a>(
     &'a self,
     instance: &'a str,
   ) -> impl Iterator<Item = &'a ConnectionDefinition> {

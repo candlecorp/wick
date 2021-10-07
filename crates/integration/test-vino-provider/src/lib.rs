@@ -1,6 +1,8 @@
+use once_cell::sync::Lazy;
 use vino_provider::native::prelude::*;
 use vino_rpc::error::RpcError;
 use vino_rpc::{
+  BoxedRpcHandler,
   RpcHandler,
   RpcResult,
 };
@@ -8,6 +10,8 @@ use vino_rpc::{
 use self::generated::Dispatcher;
 mod components;
 pub(crate) mod generated;
+
+pub static PROVIDER: Lazy<BoxedRpcHandler> = Lazy::new(|| Box::new(Provider::default()));
 
 #[derive(Clone)]
 pub(crate) struct Context {}

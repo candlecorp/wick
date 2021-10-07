@@ -24,8 +24,7 @@ vino-invocation-server = { path = "../vino-invocation-server" }
 vino-entity = { path = "../../sdk/crates/vino-entity" }
 vino-macros = { path = "../../sdk/crates/vino-macros" }
 log = "0.4"
-actix = "0.12"
-actix-rt = "2.1.0"
+
 thiserror = "1.0.25"
 nkeys = "0.1.0"
 serde = { version = "1.0.126", features = ["derive"] }
@@ -35,6 +34,7 @@ hocon = "0.5.2"
 async-trait = "0.1.50"
 tokio = { version = "1.4.0", features = ["macros", "net", "rt-multi-thread"] }
 http = "0.2.4"
+once_cell = "1.8"
 
 [dev-dependencies]
 logger = { path = "../logger" }
@@ -49,3 +49,5 @@ tokio = { version = "1", features = [
 ] }
 anyhow = "1.0.42"
 tokio-stream = "0.1.7"
+actix = "0.12"
+actix-rt = "2.1.0"

@@ -15,7 +15,7 @@ impl Handler<InvocationMessage> for NetworkService {
       _ => return ActorResult::reply(inv_error(&tx_id, "Sent invalid entity")),
     };
 
-    trace!("NETWORK:INVOKE:{}", schematic_name);
+    trace!("NETWORK[{}]:INVOKE:{}", self.uid, schematic_name);
 
     let schematic = actix_ensure_ok!(self
       .get_schematic_addr(schematic_name)

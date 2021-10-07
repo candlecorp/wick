@@ -16,7 +16,6 @@ impl<'a> SchematicValidator<'a> {
   pub(crate) fn validate_early_errors(
     model: &'a SchematicModel,
   ) -> std::result::Result<(), ValidationError> {
-    trace!("MODEL:SC[{}]:VALIDATE_EARLY_ERRORS", model.get_name());
     let validator = SchematicValidator::new(model, vec!["self".to_owned()]);
     let name = model.get_name();
     let results: Vec<ValidationErrorKind> = vec![
@@ -38,13 +37,13 @@ impl<'a> SchematicValidator<'a> {
   pub(crate) fn validate_final_errors(
     model: &'a SchematicModel,
   ) -> std::result::Result<(), ValidationError> {
-    trace!("MODEL:SC[{}]:VALIDATE_FINAL_ERRORS", model.get_name());
     let validator = SchematicValidator::new(model, vec![]);
     let name = model.get_name();
 
     let results: Vec<ValidationErrorKind> = vec![
       validator.assert_component_models(),
       validator.assert_ports_used(),
+      validator.assert_inputs_connected(),
     ]
     .into_iter()
     .filter_map(std::result::Result::err)
@@ -94,6 +93,41 @@ impl<'a> SchematicValidator<'a> {
     }
   }
 
+  fn assert_inputs_connected(&self) -> Result<()> {
+    let errors: Vec<ValidationErrorKind> = self
+      .model
+      .get_connections()
+      .iter()
+      .flat_map(|connection| {
+        let mut validations = vec![];
+        let instance = connection.to.get_instance();
+        let model_opt = self.model.get_component_model_by_instance(instance);
+        if let Some((_, model)) = model_opt {
+          let mut disconnected = vec![];
+          for input in model.inputs().names() {
+            let mut upstreams = self.model.get_upstream_connections_by_instance(instance);
+            if !upstreams.any(|def| def.to.matches_port(&input)) {
+              disconnected.push(input);
+            }
+          }
+          for missing_input in disconnected {
+            validations.push(ValidationErrorKind::MissingInputConnection(
+              instance.to_owned(),
+              missing_input,
+            ));
+          }
+        }
+        validations
+      })
+      .collect();
+
+    if errors.is_empty() {
+      Ok(())
+    } else {
+      Err(errors)
+    }
+  }
+
   fn assert_ports_used(&self) -> Result<()> {
     let errors: Vec<ValidationErrorKind> = self
       .model
@@ -101,14 +135,17 @@ impl<'a> SchematicValidator<'a> {
       .iter()
       .flat_map(|connection| {
         let mut validations = vec![];
-        if !connection.from.is_sender() && !connection.from.matches_instance(SCHEMATIC_INPUT) {
+        let is_schematic_input = connection.from.matches_instance(SCHEMATIC_INPUT);
+        let is_sender = connection.from.is_sender();
+        if !is_sender && !is_schematic_input {
           let instance = connection.from.get_instance();
           let model_opt = self.model.get_component_model_by_instance(instance);
           if let Some((_, from)) = model_opt {
             validations.push(is_valid_output(connection, &from));
           }
         }
-        if !connection.to.matches_instance(SCHEMATIC_OUTPUT) {
+        let is_schematic_output = connection.to.matches_instance(SCHEMATIC_OUTPUT);
+        if !is_schematic_output {
           let instance = connection.to.get_instance();
           let model_opt = self.model.get_component_model_by_instance(instance);
           if let Some((_, to)) = model_opt {
@@ -184,7 +221,7 @@ impl<'a> SchematicValidator<'a> {
     let upstream_ref = connection.from.get_instance();
     let upstream_connections = self
       .model
-      ._get_upstream_connections_by_instance(upstream_ref);
+      .get_upstream_connections_by_instance(upstream_ref);
     for conn in upstream_connections {
       if self._validate_port_has_upstream_input(&conn.to) {
         return true;
@@ -270,7 +307,7 @@ mod tests {
 
   #[test_logger::test]
   fn test_invalid_ports() -> TestResult<()> {
-    let def = load_network_definition("./manifests/v0/invalid-bad-ports.yaml")?;
+    let def = load_network_definition("./manifests/v0/errors/invalid-bad-ports.yaml")?;
     let mut model = SchematicModel::try_from(def.schematics[0].clone())?;
 
     let provider = ProviderModel {
@@ -300,7 +337,36 @@ mod tests {
           second.clone(),
           vec!["output".to_owned()],
         ),
+        ValidationErrorKind::MissingInputConnection("logger".to_owned(), "input".to_owned()),
       ],
+    );
+    assert_eq!(result, Err(expected));
+    Ok(())
+  }
+
+  #[test_logger::test]
+  fn test_missing_inputs() -> TestResult<()> {
+    let def = load_network_definition("./manifests/v0/errors/missing-inputs.yaml")?;
+    let mut model = SchematicModel::try_from(def.schematics[0].clone())?;
+
+    let provider = ProviderModel {
+      components: hashmap! {
+        "add".to_owned() => ComponentSignature {
+          name: "add".to_owned(),
+          inputs: vec![("left", "u32"),("right", "u32")].try_into()?,
+          outputs: vec![("output", "u32")].try_into()?
+        }.into()
+      },
+    };
+    model.allow_providers(&[VINO_V0_NAMESPACE]);
+    model.commit_providers(vec![(VINO_V0_NAMESPACE, Some(provider))])?;
+    let result = SchematicValidator::validate_final_errors(&model);
+    let expected = ValidationError::new(
+      &model.get_name(),
+      vec![ValidationErrorKind::MissingInputConnection(
+        "add".to_owned(),
+        "right".to_owned(),
+      )],
     );
     assert_eq!(result, Err(expected));
     Ok(())

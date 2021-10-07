@@ -1,0 +1,20 @@
+[package]
+name = "integration"
+version = "0.1.0"
+authors = ["Juan Alvarez <j@yabit.io>"]
+publish = false
+edition = "2018"
+
+[dependencies]
+tonic = "0.5"
+tonic-web = { path = "../vino-http" }
+prost = "0.8"
+tokio = { version = "1", features = ["macros", "rt", "net"] }
+base64 = "0.13"
+bytes = "1.0"
+tokio-stream = { version = "0.1", features = ["net"] }
+hyper = "0.14"
+http = "0.2.5"
+
+[build-dependencies]
+tonic-build = "0.5"

@@ -64,16 +64,16 @@ impl NetworkService {
     trace!("NETWORK:GET:{}", uid);
     let sys = System::current();
     let mut registry = HOST_REGISTRY.lock();
-    let addr = registry
-      .entry(uid.to_owned())
-      .or_insert_with(|| NetworkService::start_service(sys.arbiter()));
+    let addr = registry.entry(uid.to_owned()).or_insert_with(|| {
+      trace!("NETWORK:CREATE:{}", uid);
+      NetworkService::start_service(sys.arbiter())
+    });
 
     addr.clone()
   }
   pub(crate) async fn start_from_manifest(
     location: &str,
     rng_seed: u64,
-    seed: &str,
     allow_latest: bool,
     allowed_insecure: Vec<String>,
     lattice: Option<Arc<Lattice>>,
@@ -82,13 +82,13 @@ impl NetworkService {
     let bytes = vino_loader::get_bytes(location, allow_latest, &allowed_insecure).await?;
     let manifest = vino_manifest::HostManifest::load_from_bytes(&bytes)?;
     let def = NetworkDefinition::from(manifest.network());
-    let kp = KeyPair::from_seed(seed).unwrap();
+    let kp = KeyPair::new_server();
 
     let addr = NetworkService::for_id(&kp.public_key());
     let init = Initialize {
       network: def,
       network_uid: kp.public_key(),
-      seed: seed.to_owned(),
+      seed: kp.seed().unwrap(),
       allowed_insecure,
       allow_latest,
       lattice,

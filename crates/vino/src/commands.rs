@@ -1,6 +1,6 @@
 pub(crate) mod list;
 pub(crate) mod run;
-pub(crate) mod start;
+pub(crate) mod serve;
 pub(crate) mod test;
 
 use logger::options::LoggingOptions;
@@ -26,8 +26,8 @@ pub(crate) struct Cli {
 #[derive(Debug, Clone, StructOpt)]
 pub(crate) enum CliCommand {
   /// Start a persistent host from a manifest.
-  #[structopt(name = "start")]
-  Start(start::StartCommand),
+  #[structopt(name = "serve")]
+  Serve(serve::ServeCommand),
   /// Load a manifest and run the default schematic.
   #[structopt(name = "run")]
   Run(run::RunCommand),

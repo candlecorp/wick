@@ -28,7 +28,7 @@ pub(crate) async fn initialize_native_provider(
   seed: u64,
 ) -> Result<ProviderChannel> {
   trace!("PROV:NATIVE:NS[{}]:REGISTERING", namespace);
-  let arbiter = Arbiter::new();
+  let arbiter = Arbiter::with_tokio_rt(move || tokio::runtime::Runtime::new().unwrap());
   let handle = arbiter.handle();
 
   let provider = Box::new(vino_native_api_0::Provider::new(seed));
@@ -59,7 +59,7 @@ pub(crate) async fn initialize_grpc_provider(
   namespace: &str,
 ) -> Result<ProviderChannel> {
   trace!("PROV:GRPC:NS[{}]:REGISTERING", provider.namespace);
-  let arbiter = Arbiter::new();
+  let arbiter = Arbiter::with_tokio_rt(move || tokio::runtime::Runtime::new().unwrap());
   let handle = arbiter.handle();
 
   let addr = grpc_provider_service::GrpcProviderService::start_in_arbiter(&handle, |_| {
@@ -89,7 +89,8 @@ pub(crate) async fn initialize_wasm_provider(
   network_id: String,
 ) -> Result<ProviderChannel> {
   trace!("PROV:WASM:NS[{}]:REGISTERING", provider.namespace);
-  let arbiter = Arbiter::new();
+
+  let arbiter = Arbiter::with_tokio_rt(move || tokio::runtime::Runtime::new().unwrap());
   let handle = arbiter.handle();
   let component =
     vino_provider_wasm::helpers::load_wasm(&provider.reference, allow_latest, allowed_insecure)
@@ -98,8 +99,7 @@ pub(crate) async fn initialize_wasm_provider(
   // TODO need to propagate wasi params from manifest
   let provider = Box::new(vino_provider_wasm::provider::Provider::try_load(
     &component,
-    2,
-    None,
+    Some(provider.data.clone()),
     None,
     Some(Box::new(move |origin_url, target_url, payload| {
       debug!(
@@ -146,13 +146,12 @@ pub(crate) async fn initialize_network_provider<'a>(
   opts: NetworkOptions<'a>,
 ) -> Result<ProviderChannel> {
   trace!("PROV:NETWORK:NS[{}]:REGISTERING", provider.namespace);
-  let arbiter = Arbiter::new();
+  let arbiter = Arbiter::with_tokio_rt(move || tokio::runtime::Runtime::new().unwrap());
   let handle = arbiter.handle();
 
   let network_id: String = NetworkService::start_from_manifest(
     &provider.reference,
     opts.rng_seed,
-    opts.seed,
     opts.allow_latest,
     opts.insecure.to_owned(),
     opts.lattice.clone(),
@@ -188,7 +187,7 @@ pub(crate) async fn initialize_lattice_provider(
   lattice: Arc<Lattice>,
 ) -> Result<ProviderChannel> {
   trace!("PROV:LATTICE:NS[{}]:REGISTERING", provider.namespace);
-  let arbiter = Arbiter::new();
+  let arbiter = Arbiter::with_tokio_rt(move || tokio::runtime::Runtime::new().unwrap());
   let handle = arbiter.handle();
 
   let provider =
@@ -217,7 +216,7 @@ pub(crate) async fn start_network_provider(
   network_id: String,
 ) -> Result<Addr<NativeProviderService>> {
   trace!("PROV:NETWORK[{}]", network_id);
-  let arbiter = Arbiter::new();
+  let arbiter = Arbiter::with_tokio_rt(move || tokio::runtime::Runtime::new().unwrap());
   let handle = arbiter.handle();
 
   let provider = Box::new(NetworkProvider::new(network_id));
@@ -244,7 +243,6 @@ pub(crate) async fn create_network_provider_model(
 
 pub(crate) struct NetworkOptions<'a> {
   pub(crate) rng_seed: u64,
-  pub(crate) seed: &'a str,
   pub(crate) lattice: &'a Option<Arc<Lattice>>,
   pub(crate) allow_latest: bool,
   pub(crate) insecure: &'a [String],

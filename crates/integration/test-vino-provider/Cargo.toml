@@ -22,7 +22,7 @@ vino-codec = { path = "../../../sdk/crates/vino-codec" }
 vino-packet = { path = "../../../sdk/crates/vino-packet" }
 vino-types = { path = "../../../sdk/crates/vino-types" }
 serde = { version = "1.0.118", features = ["derive"] }
-lazy_static = "1.4.0"
+once_cell = "1.8"
 async-trait = "0.1.50"
 futures = "0.3.15"
 tokio = { version = "1.4.0", features = ["macros", "rt-multi-thread"] }

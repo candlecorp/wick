@@ -19,6 +19,8 @@ pub enum ValidationErrorKind {
   MissingProvider(String, String),
   #[error("Can't find details for '{0}'")]
   MissingComponentModel(String),
+  #[error("Component '{0}' is missing an input connection for port '{1}'")]
+  MissingInputConnection(String, String),
   #[error("Dangling reference: '{0}'. Is there an instance by the ID '{0}'?")]
   DanglingReference(String),
   #[error("Component definition '{0}' not fully qualified")]

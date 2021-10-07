@@ -157,9 +157,12 @@ impl PortStatuses {
     port: &ConnectionTargetDefinition,
   ) -> Option<MessageTransport> {
     let result = self.buffermap.take(port);
-    if !self.buffermap.has_data(port) {
+    debug!("taking: {:?}", result);
+    if matches!(result, Some(MessageTransport::Signal(MessageSignal::Done))) {
+      self.close(port);
+    } else if !self.buffermap.has_data(port) {
       self.set_idle(port);
-    }
+    };
     result
   }
 
@@ -191,8 +194,13 @@ impl PortStatuses {
               self.close_connection(connection)
             }
           } else {
-            // Otherwise the port sits idle until it receives something.
-            self.set_idle(from);
+            if is_schem_output {
+              // If it's the schematic output, send then signal onward for the consumer.
+              self.close_connection(connection).buffer(to, payload);
+            } else {
+              // Otherwise the port sits idle until it receives something.
+              self.set_idle(from);
+            }
             self
           }
         }

@@ -5,6 +5,8 @@ use vino_manifest::error::ManifestError;
 
 #[derive(Error, Debug)]
 pub enum VinoError {
+  #[error("{0} tests failed.")]
+  TestFailed(u32),
   #[error("invalid configuration")]
   ConfigurationError,
   #[error("{0}")]

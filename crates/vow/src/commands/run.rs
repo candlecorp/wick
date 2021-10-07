@@ -63,7 +63,7 @@ pub(crate) async fn handle_command(opts: RunCommand) -> Result<()> {
     vino_provider_wasm::helpers::load_wasm(&opts.wasm, opts.pull.latest, &opts.pull.insecure)
       .await?;
 
-  let provider = Provider::try_load(&component, 1, None, Some((&opts.wasi).into()), None)?;
+  let provider = Provider::try_load(&component, None, Some((&opts.wasi).into()), None)?;
 
   let mut check_stdin = !opts.no_input && opts.data.is_empty() && opts.args.is_empty();
   if let Some(metadata) = component.token.claims.metadata {
@@ -84,7 +84,7 @@ pub(crate) async fn handle_command(opts: RunCommand) -> Result<()> {
     let mut lines = reader.lines();
     while let Some(line) = lines.next_line().await? {
       debug!("STDIN:'{}'", line);
-      let mut payload = TransportMap::from_json_str(&line)?;
+      let mut payload = TransportMap::from_json_output(&line)?;
       payload.transpose_output_name();
       let stream = provider
         .invoke(

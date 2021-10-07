@@ -69,7 +69,6 @@ impl NetworkModel {
     name: String,
     signature: ComponentSignature,
   ) -> Result<()> {
-    trace!("MODEL:NETWORK:SELF:UPDATE_COMPONENT[{}]", name);
     let provider = self
       .providers
       .entry(name.clone())

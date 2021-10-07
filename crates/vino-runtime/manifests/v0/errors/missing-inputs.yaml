@@ -1,0 +1,11 @@
+---
+version: 0
+network:
+  schematics:
+    - name: add
+      instances:
+        add:
+          id: vino::v0::add
+      connections:
+        - <> => add[left]
+        - add[output] => <>

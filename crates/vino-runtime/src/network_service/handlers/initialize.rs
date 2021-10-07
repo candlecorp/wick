@@ -185,7 +185,8 @@ fn start_schematic_services(
 ) -> HashMap<String, Addr<SchematicService>> {
   trace!("NETWORK:SCHEMATICS:STARTING");
   let result = map(schematics, |def| {
-    let arbiter = Arbiter::new();
+    // let arbiter = Arbiter::new();
+    let arbiter = Arbiter::with_tokio_rt(|| tokio::runtime::Runtime::new().unwrap());
     let addr =
       SchematicService::start_in_arbiter(&arbiter.handle(), |_| SchematicService::default());
     (def.name.clone(), addr)
@@ -215,7 +216,6 @@ async fn initialize_providers(
       ProviderKind::Network => {
         let opts = NetworkOptions {
           rng_seed,
-          seed: &seed,
           allow_latest,
           insecure: &allowed_insecure,
           lattice: &lattice,

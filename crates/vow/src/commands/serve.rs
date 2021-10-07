@@ -1,9 +1,11 @@
+use once_cell::sync::OnceCell;
 use structopt::StructOpt;
 use vino_provider_cli::cli::DefaultCliOptions;
 use vino_provider_wasm::provider::{
   Provider,
   WasiParams,
 };
+use vino_rpc::BoxedRpcHandler;
 
 use super::WasiOptions;
 use crate::Result;
@@ -27,6 +29,8 @@ pub(crate) struct ServeCommand {
   threads: u8,
 }
 
+static PROVIDER: OnceCell<BoxedRpcHandler> = OnceCell::new();
+
 pub(crate) async fn handle_command(opts: ServeCommand) -> Result<()> {
   vino_provider_cli::init_logging(&opts.cli.logging)?;
   debug!("Loading wasm {}", opts.wasm);
@@ -34,23 +38,19 @@ pub(crate) async fn handle_command(opts: ServeCommand) -> Result<()> {
     vino_provider_wasm::helpers::load_wasm(&opts.wasm, opts.pull.latest, &opts.pull.insecure)
       .await?;
 
-  let threads = opts.threads;
   let wasi: WasiParams = (&opts.wasi).into();
-  vino_provider_cli::init_cli(
-    Box::new(move || {
-      Box::new(
-        match Provider::try_load(&component, threads.into(), None, Some(wasi.clone()), None) {
-          Ok(provider) => provider,
-          Err(e) => {
-            error!("Error starting WebAssembly provider: {}", e);
-            panic!();
-          }
-        },
-      )
-    }),
-    Some(opts.cli.into()),
-  )
-  .await?;
+  let provider: &'static BoxedRpcHandler = PROVIDER.get_or_init(|| {
+    Box::new(
+      match Provider::try_load(&component, None, Some(wasi.clone()), None) {
+        Ok(provider) => provider,
+        Err(e) => {
+          error!("Error starting WebAssembly provider: {}", e);
+          panic!();
+        }
+      },
+    )
+  });
+  vino_provider_cli::init_cli(provider, Some(opts.cli.into())).await?;
 
   Ok(())
 }

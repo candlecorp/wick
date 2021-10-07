@@ -175,17 +175,17 @@ impl Lattice {
     })
   }
 
-  pub async fn handle_namespace<F>(&self, namespace: String, handler: F) -> Result<()>
-  where
-    F: FnOnce() -> BoxedRpcHandler,
-  {
+  pub async fn handle_namespace(
+    &self,
+    namespace: String,
+    provider: &'static BoxedRpcHandler,
+  ) -> Result<()> {
     debug!("LATTICE:HANDLER[{}]:REGISTER", namespace);
     let mut consumer = self.nats.create_consumer(namespace.to_owned()).await?;
 
-    let provider = handler();
     let nc = self.nats.clone();
 
-    thread::spawn(|| {
+    thread::spawn(move || {
       let system = actix_rt::System::new();
 
       system.block_on(async move {
@@ -285,7 +285,7 @@ impl Lattice {
     };
 
     // Create unique inbox subject to listen on for the reply
-    let reply = self.nats.new_inbox().await;
+    let reply = self.nats.new_inbox();
     let sub = self.nats.subscribe(reply.clone()).await?;
 
     let topic = rpc_message_topic(&self.rpc_stream_topic, ns);
@@ -316,15 +316,14 @@ impl Lattice {
           Ok(response) => match response {
             LatticeRpcResponse::Output(wrapper) => tx.send(wrapper),
             LatticeRpcResponse::List(_) => unreachable!(),
-            LatticeRpcResponse::Error(e) => {
-              tx.send(TransportWrapper::internal_error(MessageTransport::error(e)))
-            }
+            LatticeRpcResponse::Error(e) => tx.send(TransportWrapper::component_error(
+              MessageTransport::error(e),
+            )),
             LatticeRpcResponse::Close => tx.send(TransportWrapper::new_system_close()),
           },
-          Err(e) => tx.send(TransportWrapper::new(
-            vino_transport::COMPONENT_ERROR,
-            MessageTransport::error(e.to_string()),
-          )),
+          Err(e) => tx.send(TransportWrapper::component_error(MessageTransport::error(
+            e.to_string(),
+          ))),
         };
         if let Err(e) = result {
           error!("Error sending RPC output to TransportStream: {}", e);
@@ -345,7 +344,7 @@ impl Lattice {
     debug!("LATTICE:LIST[{}]", namespace);
 
     // Create unique inbox subject to listen on for the reply
-    let reply = self.nats.new_inbox().await;
+    let reply = self.nats.new_inbox();
     let sub = self.nats.subscribe(reply.clone()).await?;
 
     let topic = rpc_message_topic(&self.rpc_stream_topic, &namespace);
@@ -384,13 +383,21 @@ fn rpc_message_topic(prefix: &str, ns: &str) -> String {
 pub enum LatticeRpcMessage {
   #[serde(rename = "0")]
   Invocation {
+    #[serde(rename = "0")]
     reply_to: String,
+    #[serde(rename = "1")]
     entity: vino_entity::Entity,
+    #[serde(rename = "2")]
     payload: TransportMap,
   },
 
   #[serde(rename = "1")]
-  List { reply_to: String, namespace: String },
+  List {
+    #[serde(rename = "0")]
+    reply_to: String,
+    #[serde(rename = "1")]
+    namespace: String,
+  },
 }
 
 impl LatticeRpcMessage {}
@@ -423,9 +430,11 @@ mod test {
 
   use anyhow::Result;
   use log::*;
+  use once_cell::sync::Lazy;
   use test_vino_provider::Provider;
   use tokio_stream::StreamExt;
   use vino_codec::messagepack::deserialize;
+  use vino_rpc::BoxedRpcHandler;
   use vino_transport::{
     MessageTransport,
     TransportMap,
@@ -446,12 +455,14 @@ mod test {
   };
   use crate::lattice::LatticeRpcResponse;
 
+  static PROVIDER: Lazy<BoxedRpcHandler> = Lazy::new(|| Box::new(Provider::default()));
+
   async fn get_lattice() -> Result<(Lattice, String)> {
     let lattice_builder = LatticeBuilder::new_from_env("test").unwrap();
     let lattice = lattice_builder.build().await.unwrap();
     let namespace = "some_namespace_id".to_owned();
     lattice
-      .handle_namespace(namespace.clone(), || Box::new(Provider::default()))
+      .handle_namespace(namespace.clone(), &PROVIDER)
       .await
       .unwrap();
 

@@ -3,8 +3,20 @@ use tokio::task::JoinError;
 
 #[derive(Error, Debug)]
 pub enum LatticeError {
-  #[error(transparent)]
-  ConnectionError(#[from] std::io::Error),
+  #[error("Connection to lattice failed: {0}")]
+  ConnectionFailed(std::io::Error),
+
+  #[error("Could not create or retrieve stream: {0}")]
+  CreateStream(std::io::Error),
+
+  #[error("Could not create or open consumer: {0}")]
+  CreateOrOpenConsumer(std::io::Error),
+
+  #[error("Could not get stream info: {0}")]
+  GetStreamInfo(std::io::Error),
+
+  #[error("Could not ACK message: {0}")]
+  AckFail(std::io::Error),
 
   #[error("Could not retrieve lattice message for {0}: {1}")]
   RetrieveError(String, String),

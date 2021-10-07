@@ -18,6 +18,7 @@ use nats::{
   Message,
   Subscription,
 };
+use once_cell::sync::Lazy;
 use parking_lot::Mutex;
 use serde::Deserialize;
 use tokio::runtime::{
@@ -40,13 +41,12 @@ pub struct NatsOptions {
   pub token: Option<String>,
   pub timeout: Duration,
 }
-
-lazy_static::lazy_static! {
-  static ref RT: Runtime = {
-    Builder::new_multi_thread().thread_name("lattice")
-    .build().unwrap()
-  };
-}
+static RT: Lazy<Runtime> = Lazy::new(|| {
+  Builder::new_multi_thread()
+    .thread_name("lattice")
+    .build()
+    .unwrap()
+});
 
 #[derive(Clone, Debug)]
 pub(crate) struct Nats {
@@ -77,7 +77,7 @@ impl Nats {
         opts
           .with_name(&nopts.client_id)
           .connect(&nopts.address)
-          .map_err(LatticeError::ConnectionError)
+          .map_err(LatticeError::ConnectionFailed)
       })
       .await??;
 
@@ -87,8 +87,11 @@ impl Nats {
   pub(crate) async fn create_stream(&self, stream_config: StreamConfig) -> Result<StreamInfo> {
     let nc = self.nc.clone();
     Ok(
-      RT.spawn_blocking(move || nc.create_stream(stream_config))
-        .await??,
+      RT.spawn_blocking(move || {
+        nc.create_stream(stream_config)
+          .map_err(LatticeError::CreateStream)
+      })
+      .await??,
     )
   }
 
@@ -106,7 +109,10 @@ impl Nats {
     let rpc_stream_topic = RPC_STREAM_NAME.to_owned();
     debug!("LATTICE:CONSUMER[{},{}]:CREATE", rpc_stream_topic, topic);
     let c = RT
-      .spawn_blocking(move || Consumer::create_or_open(nc, &rpc_stream_topic, consumer_config))
+      .spawn_blocking(move || {
+        Consumer::create_or_open(nc, &rpc_stream_topic, consumer_config)
+          .map_err(LatticeError::CreateOrOpenConsumer)
+      })
       .await??;
 
     let consumer = NatsConsumer {
@@ -127,7 +133,7 @@ impl Nats {
     .await?
   }
 
-  pub(crate) async fn new_inbox(&self) -> String {
+  pub(crate) fn new_inbox(&self) -> String {
     self.nc.new_inbox()
   }
 
@@ -171,7 +177,10 @@ impl Nats {
   pub(crate) async fn stream_info(&self, stream_name: String) -> Result<StreamInfo> {
     let nc = self.nc.clone();
     let result = RT
-      .spawn_blocking(move || nc.stream_info(stream_name))
+      .spawn_blocking(move || {
+        nc.stream_info(stream_name)
+          .map_err(LatticeError::GetStreamInfo)
+      })
       .await??;
     Ok(result)
   }
@@ -244,7 +253,10 @@ impl NatsMessage {
       self.inner.reply.clone().unwrap_or_default()
     );
     let msg = self.inner.clone();
-    Ok(RT.spawn_blocking(move || msg.ack()).await??)
+    Ok(
+      RT.spawn_blocking(move || msg.ack().map_err(LatticeError::AckFail))
+        .await??,
+    )
   }
 
   pub fn subject(&self) -> &str {

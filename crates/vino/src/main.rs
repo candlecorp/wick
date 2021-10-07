@@ -94,7 +94,7 @@ async fn main() -> Result<()> {
   let cli = Cli::from_args();
 
   let res = match cli.command {
-    CliCommand::Start(cmd) => commands::start::handle_command(cmd).await,
+    CliCommand::Serve(cmd) => commands::serve::handle_command(cmd).await,
     CliCommand::List(cmd) => commands::list::handle_command(cmd).await,
     CliCommand::Run(cmd) => commands::run::handle_command(cmd).await,
     CliCommand::Test(cmd) => commands::test::handle_command(cmd).await,

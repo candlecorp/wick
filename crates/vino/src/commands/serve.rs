@@ -9,7 +9,7 @@ use vino_provider_cli::cli::{
 use crate::utils::merge_config;
 use crate::Result;
 #[derive(Debug, Clone, StructOpt)]
-pub(crate) struct StartCommand {
+pub(crate) struct ServeCommand {
   #[structopt(flatten)]
   pub(crate) host: super::HostOptions,
 
@@ -20,7 +20,7 @@ pub(crate) struct StartCommand {
   pub(crate) server_options: DefaultCliOptions,
 }
 
-pub(crate) async fn handle_command(opts: StartCommand) -> Result<()> {
+pub(crate) async fn handle_command(opts: ServeCommand) -> Result<()> {
   vino_provider_cli::init_logging(&opts.server_options.logging)?;
 
   let manifest_src = vino_loader::get_bytes(

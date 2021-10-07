@@ -35,7 +35,7 @@ pub(crate) async fn handle_command(opts: TestCommand) -> Result<()> {
     vino_provider_wasm::helpers::load_wasm(&opts.wasm, opts.pull.latest, &opts.pull.insecure)
       .await?;
 
-  let provider = Provider::try_load(&component, 1, None, Some((&opts.wasi).into()), None)?;
+  let provider = Provider::try_load(&component, None, Some((&opts.wasi).into()), None)?;
 
   let mut suite = TestSuite::try_from_file(opts.data_path.clone())?;
 

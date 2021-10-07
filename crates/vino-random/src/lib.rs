@@ -15,7 +15,17 @@ pub struct Random {
   rng: Arc<RwLock<ChaCha12Rng>>,
 }
 
+#[must_use]
+pub(crate) fn new_seed() -> u64 {
+  let mut rng = rand::thread_rng();
+  rng.gen()
+}
+
 impl Random {
+  pub fn new() -> Self {
+    Self::from_seed(new_seed())
+  }
+
   pub fn from_seed(seed: u64) -> Self {
     let rng = ChaCha12Rng::seed_from_u64(seed);
     Self {
@@ -59,6 +69,12 @@ impl Random {
     let bytes: uuid::Bytes = raw_bytes;
     let mut builder = uuid::Builder::from_bytes(bytes);
     builder.build().to_hyphenated().to_string()
+  }
+}
+
+impl Default for Random {
+  fn default() -> Self {
+    Self::new()
   }
 }
 

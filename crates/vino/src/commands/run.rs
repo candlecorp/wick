@@ -113,7 +113,7 @@ pub(crate) async fn handle_command(opts: RunCommand) -> Result<()> {
     let mut lines = reader.lines();
     while let Some(line) = lines.next_line().await? {
       debug!("STDIN:'{}'", line);
-      let mut payload = TransportMap::from_json_str(&line)?;
+      let mut payload = TransportMap::from_json_output(&line)?;
       if !opts.raw {
         payload.transpose_output_name();
       }

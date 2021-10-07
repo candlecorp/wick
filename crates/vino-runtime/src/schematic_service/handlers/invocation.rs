@@ -52,7 +52,9 @@ fn handle_schematic(
   schematic.executor.insert(tx_id.clone(), inbound.clone());
   let (tx, rx) = unbounded_channel::<TransportWrapper>();
 
+  let inner = log_prefix.clone();
   tokio::spawn(async move {
+    mark!();
     while let Some(msg) = outbound.recv().await {
       match msg {
         TransactionUpdate::Done(tx_id) => {
@@ -64,7 +66,7 @@ fn handle_schematic(
             warn!("TX:{} {}", tx_id, SchematicError::SchematicClosedEarly);
           }
 
-          trace!("{}:DONE", log_prefix);
+          trace!("{}:DONE", inner);
           break;
         }
         TransactionUpdate::Result(a) => {
@@ -82,12 +84,13 @@ fn handle_schematic(
         }
       }
     }
+    elapsed!();
     drop(outbound);
-    trace!("{}:STOPPING", log_prefix);
+    trace!("{}:STOPPING", inner);
     Ok!(())
   });
 
-  match make_input_packets(schematic.get_model(), &tx_id, invocation) {
+  match make_input_packets(name, schematic.get_model(), &tx_id, invocation) {
     Ok(messages) => {
       for message in messages {
         inbound.send(TransactionUpdate::Update(message.handle_default()))?;
@@ -104,6 +107,7 @@ fn handle_schematic(
 }
 
 fn make_input_packets(
+  name: &str,
   model: &SharedModel,
   tx_id: &str,
   invocation: &InvocationMessage,
@@ -111,6 +115,7 @@ fn make_input_packets(
   let map = invocation.get_payload();
   let model = model.read();
   let connections = model.get_downstream_connections(SCHEMATIC_INPUT);
+
   let mut messages: Vec<InputMessage> = vec![];
   for conn in connections {
     let transport = map.get(conn.from.get_port()).ok_or_else(|| {
@@ -119,6 +124,12 @@ fn make_input_packets(
         conn.from
       ))
     })?;
+    debug!(
+      "SC[{}]:INPUT[{}]:PAYLOAD:{:?}",
+      name,
+      conn.from.get_port(),
+      transport
+    );
     messages.push(InputMessage {
       connection: conn.clone(),
       tx_id: tx_id.to_owned(),

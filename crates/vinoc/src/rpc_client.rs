@@ -161,7 +161,7 @@ impl RpcClient {
     data: &str,
     transpose: bool,
   ) -> Result<tonic::Streaming<vino_rpc::rpc::Output>, RpcClientError> {
-    let mut payload = TransportMap::from_json_str(data)?;
+    let mut payload = TransportMap::from_json_output(data)?;
     if transpose {
       payload.transpose_output_name();
     }

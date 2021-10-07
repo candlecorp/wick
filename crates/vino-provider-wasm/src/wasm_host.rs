@@ -169,11 +169,14 @@ impl WasmHost {
       move |origin: &str, target: &str, payload: &[u8]| match &callback {
         Some(cb) => {
           trace!("WASM:LINK_CALL:PROVIDER[{}],COMPONENT[{}]", origin, target);
+          let now = Instant::now();
           let result = (cb)(origin, target, deserialize::<TransportMap>(payload)?);
+          let micros = now.elapsed().as_micros();
           trace!(
-            "WASM:LINK_CALL:PROVIDER[{}],COMPONENT[{}]:RESULT:{:?}",
+            "WASM:LINK_CALL:PROVIDER[{}]:COMPONENT[{}]:RESULT[{} μs]:{:?}",
             origin,
             target,
+            micros,
             result
           );
 
@@ -241,14 +244,20 @@ impl WasmHost {
     })
   }
 
-  pub fn call(&mut self, component_name: &str, payload: &[u8]) -> Result<TransportStream> {
+  pub fn call(&self, component_name: &str, payload: &[u8]) -> Result<TransportStream> {
     {
       self.buffer.lock().clear();
       self.closed_ports.lock().clear();
     }
-    trace!("WASM:INVOKE:{}:START", component_name);
+    debug!("WASM:INVOKE[{}]:PAYLOAD{:?}", component_name, payload);
+    trace!("WASM:INVOKE[{}]:START", component_name);
+    let now = Instant::now();
     let _result = self.host.call(component_name, payload)?;
-    trace!("WASM:INVOKE:{}:FINISH", component_name);
+    trace!(
+      "WASM:INVOKE[{}]:FINISH[{} μs]",
+      component_name,
+      now.elapsed().as_micros()
+    );
     let (tx, rx) = unbounded_channel();
     let mut locked = self.buffer.lock();
     while let Some((port, payload)) = locked.pop_front() {

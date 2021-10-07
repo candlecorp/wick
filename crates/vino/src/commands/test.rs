@@ -10,11 +10,9 @@ use vino_provider_cli::cli::{
 use vino_provider_cli::LoggingOptions;
 use vino_test::TestSuite;
 
+use crate::error::VinoError;
 use crate::utils::merge_config;
-use crate::{
-  Error,
-  Result,
-};
+use crate::Result;
 
 #[derive(Debug, Clone, StructOpt)]
 #[structopt(rename_all = "kebab-case")]
@@ -94,9 +92,13 @@ pub(crate) async fn handle_command(opts: TestCommand) -> Result<()> {
   let harness = suite
     .run(Box::new(provider))
     .await
-    .map_err(|e| Error::TestError(e.to_string()))?;
+    .map_err(|e| VinoError::TestError(e.to_string()))?;
 
   harness.print();
-
-  Ok(())
+  let num_failed = harness.num_failed();
+  if num_failed > 0 {
+    Err(VinoError::TestFailed(num_failed))
+  } else {
+    Ok(())
+  }
 }

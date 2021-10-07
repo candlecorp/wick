@@ -155,17 +155,17 @@ impl Handler<InvocationMessage> for GrpcProviderService {
         .map_err(|e| ProviderError::RpcUpstreamError(e.to_string()))?
         .into_inner();
       let (tx, rx) = unbounded_channel();
-      actix::spawn(async move {
+      trace!("{}[{}]:START", PREFIX, url);
+      tokio::spawn(async move {
         loop {
           trace!("{}[{}]:WAIT", PREFIX, url);
           let next = stream.message().await;
           if let Err(e) = next {
             let msg = format!("Error during GRPC stream: {}", e);
             error!("{}", msg);
-            match tx.send(TransportWrapper {
-              port: vino_transport::COMPONENT_ERROR.to_owned(),
-              payload: MessageTransport::error(msg),
-            }) {
+            match tx.send(TransportWrapper::component_error(MessageTransport::error(
+              msg,
+            ))) {
               Ok(_) => {
                 trace!("Sent error to upstream, closing connection.");
               }
@@ -184,10 +184,9 @@ impl Handler<InvocationMessage> for GrpcProviderService {
           if payload.is_none() {
             let msg = "Received response but no payload";
             error!("{}", msg);
-            match tx.send(TransportWrapper {
-              port: vino_transport::COMPONENT_ERROR.to_owned(),
-              payload: MessageTransport::error(msg.to_owned()),
-            }) {
+            match tx.send(TransportWrapper::component_error(MessageTransport::error(
+              msg.to_owned(),
+            ))) {
               Ok(_) => {
                 trace!("Sent error to upstream");
               }
@@ -216,6 +215,7 @@ impl Handler<InvocationMessage> for GrpcProviderService {
             }
           }
         }
+        trace!("{}[{}]:FINISH", PREFIX, url);
       });
       let rx = UnboundedReceiverStream::new(rx);
       Ok::<InvocationResponse, ProviderError>(InvocationResponse::stream(tx_id, rx))
@@ -233,21 +233,24 @@ mod test {
   use std::time::Duration;
 
   use actix::clock::sleep;
+  use once_cell::sync::Lazy;
   use test_vino_provider::Provider;
   use vino_invocation_server::{
     bind_new_socket,
     make_rpc_server,
   };
+  use vino_rpc::BoxedRpcHandler;
 
   use super::*;
   use crate::test::prelude::assert_eq;
   type Result<T> = super::Result<T>;
+  static PROVIDER: Lazy<BoxedRpcHandler> = Lazy::new(|| Box::new(Provider::default()));
 
   #[test_logger::test(actix_rt::test)]
   async fn test_initialize() -> Result<()> {
     let socket = bind_new_socket()?;
     let port = socket.local_addr()?.port();
-    let init_handle = make_rpc_server(socket, Box::new(Provider::default()));
+    let init_handle = make_rpc_server(socket, &PROVIDER);
     let user_data = "test string payload";
 
     let work = async move {

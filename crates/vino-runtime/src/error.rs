@@ -16,6 +16,8 @@ impl std::fmt::Display for ConversionError {
 
 #[derive(Error, Debug, Clone, Copy)]
 pub enum InternalError {
+  // Sync error
+  E2001,
   // Network errors
   E5001,
   E5002, // Keypair
