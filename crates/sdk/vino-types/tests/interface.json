@@ -1,0 +1,56 @@
+{
+  "name": "blog",
+  "types": {
+    "Blog": {
+      "name": "Blog",
+      "fields": {
+        "blog_id": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "user_id": {
+          "type": "string"
+        },
+        "body": {
+          "type": "string"
+        },
+        "section_id": {
+          "type": "string"
+        }
+      }
+    }
+  },
+  "components": {
+    "new": {
+      "name": "new",
+      "inputs": {
+        "blog_id": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "user_id": {
+          "type": "string"
+        },
+        "body": {
+          "type": "string"
+        },
+        "section_id": {
+          "type": "string"
+        },
+        "kv": {
+          "type": "link",
+          "provider": "keyvalue"
+        }
+      },
+      "outputs": {
+        "blog_id": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}
