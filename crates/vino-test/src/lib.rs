@@ -26,6 +26,9 @@ use self::error::TestError;
 pub mod error;
 pub use error::TestError as Error;
 
+#[macro_use]
+extern crate log;
+
 pub struct TestSuite {
   tests: Vec<TestData>,
   name: String,
@@ -97,6 +100,7 @@ impl TestSuite {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(deny_unknown_fields)]
 pub struct TestData {
   pub component: String,
   #[serde(default)]
@@ -112,12 +116,14 @@ pub struct TestData {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(deny_unknown_fields)]
 pub struct OutputData {
   pub port: String,
   pub payload: SerializedTransport,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(deny_unknown_fields)]
 pub struct SerializedTransport {
   pub value: Option<serde_value::Value>,
   pub error_kind: Option<String>,
@@ -128,6 +134,7 @@ impl TestData {
   pub fn get_payload(&self) -> TransportMap {
     let mut payload = TransportMap::new();
     for (k, v) in &self.inputs {
+      debug!("Test input for port '{}': {:?}", k, v);
       payload.insert(k, MessageTransport::Success(Success::Serialized(v.clone())));
     }
 
@@ -154,12 +161,14 @@ pub async fn run_test(
 ) -> Result<TestRunner, Error> {
   let mut harness = TestRunner::new(Some(name));
 
-  for test in expected {
+  for (i, test) in expected.into_iter().enumerate() {
     let payload = test.get_payload();
     let entity = Entity::component_direct(test.component.clone());
 
     let mut test_block = TestBlock::new(Some(test.get_description()));
 
+    trace!("TEST[{}]:INVOKE[{}]", i, entity,);
+    trace!("TEST[{}]:PAYLOAD:{:?}", i, payload,);
     let result = provider
       .invoke(entity, payload)
       .await
@@ -184,8 +193,8 @@ pub async fn run_test(
     diagnostics.append(&mut output_lines);
     test_block.diagnostics = diagnostics;
 
-    for (i, expected) in test.outputs.iter().cloned().enumerate() {
-      if i >= test.actual.len() {
+    for (j, expected) in test.outputs.iter().cloned().enumerate() {
+      if j >= test.actual.len() {
         test_block.add_test(
           || false,
           "Stream length",
@@ -195,7 +204,7 @@ pub async fn run_test(
         );
         break;
       }
-      let actual = &test.actual[i];
+      let actual = &test.actual[j];
       let result = actual.port == expected.port;
       let diag = Some(vec![
         format!("Actual: {}", actual.port),
@@ -226,6 +235,8 @@ pub async fn run_test(
           format!("Expected: {:?}", expected_value),
         ]);
 
+        debug!("TEST[{}:{}]:ACTUAL:{:?}", i, j, actual_value);
+        debug!("TEST[{}:{}]:EXPECTED:{:?}", i, j, expected_value);
         test_block.add_test(
           move || match actual_value {
             Ok(val) => eq(val, expected_value),
@@ -272,6 +283,23 @@ pub async fn run_test(
         );
       }
     }
+    let num_tested = test.outputs.len();
+    let mut missed = vec![];
+    for i in num_tested..test.actual.len() {
+      if let Some(output) = test.actual.get(i) {
+        if !matches!(output.payload, MessageTransport::Signal(_)) {
+          debug!("TEST:MISSED:{:?}", output);
+          missed.push(output);
+        }
+      }
+    }
+    let num_missed = missed.len();
+    test_block.add_test(
+      move || num_missed == 0,
+      "Tested all outputs",
+      Some(missed.into_iter().map(|p| format!("{:?}", p)).collect()),
+    );
+
     harness.add_block(test_block);
   }
   harness.run();

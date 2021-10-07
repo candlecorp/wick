@@ -72,6 +72,18 @@ impl TestRunner {
       println!("{}", line);
     }
   }
+
+  pub fn num_failed(&self) -> u32 {
+    let lines = self.get_tap_lines();
+    let mut num_failed: u32 = 0;
+
+    for line in lines {
+      if line.starts_with("not ok") {
+        num_failed += 1;
+      }
+    }
+    num_failed
+  }
 }
 
 pub fn format_diagnostic_line<T: AsRef<str>>(line: T) -> String {
