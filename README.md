@@ -86,6 +86,8 @@ network:
 - figure out how to make the wellknown interface.json better (right now it's just copying the generated file)
 - add better types to interface.json/signatures
 - Make component codegen for providers using interface.json generated the proper includes.
+- Improve coersion for PortOutput/ProviderOutput. Right now you have to know too much about what you're supposed to get.
+- ignore cache for :latest OCI requests
 
 ## Good first contributions
 

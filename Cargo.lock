@@ -1713,9 +1713,7 @@ dependencies = [
 
 [[package]]
 name = "nats"
-version = "0.13.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dddb0090aca6f217f525c1e20422b20881fc40baedfcd9f211fa3b08c3a1e1bb"
+version = "0.15.2"
 dependencies = [
  "base64 0.13.0",
  "base64-url",
@@ -2978,8 +2976,8 @@ version = "0.1.0"
 dependencies = [
  "async-trait",
  "futures",
- "lazy_static",
  "log",
+ "once_cell",
  "serde",
  "tokio",
  "vino-codec",
@@ -3532,6 +3530,7 @@ dependencies = [
  "log",
  "logger",
  "nkeys",
+ "once_cell",
  "serde",
  "serde_json",
  "serde_yaml",
@@ -3564,12 +3563,17 @@ dependencies = [
  "hyper",
  "log",
  "pin-project",
+ "serde",
+ "serde_json",
+ "thiserror",
  "tokio",
+ "tokio-stream",
  "tonic",
  "tower-service",
  "vino-entity",
  "vino-rpc",
  "vino-transport",
+ "vino-types",
 ]
 
 [[package]]
@@ -3616,6 +3620,7 @@ dependencies = [
  "futures",
  "log",
  "logger",
+ "once_cell",
  "rand 0.8.4",
  "redis",
  "serde",
@@ -3644,11 +3649,11 @@ dependencies = [
  "actix-rt",
  "anyhow",
  "futures",
- "lazy_static",
  "log",
  "logger",
  "nats",
  "nkeys",
+ "once_cell",
  "parking_lot",
  "serde",
  "test-logger",
@@ -3763,6 +3768,7 @@ dependencies = [
  "log",
  "logger",
  "nkeys",
+ "once_cell",
  "rand 0.8.4",
  "reqwest",
  "serde",
@@ -3793,6 +3799,7 @@ dependencies = [
  "log",
  "logger",
  "maplit",
+ "once_cell",
  "parking_lot",
  "test-logger",
  "test-vino-provider",
@@ -3851,11 +3858,15 @@ dependencies = [
 name = "vino-root"
 version = "0.1.0"
 dependencies = [
+ "actix",
+ "actix-rt",
  "anyhow",
+ "criterion",
  "futures",
  "log",
  "logger",
  "maplit",
+ "once_cell",
  "serde_json",
  "test-env-log",
  "test-logger",
@@ -3865,9 +3876,11 @@ dependencies = [
  "utils",
  "vino-codec",
  "vino-entity",
+ "vino-host",
  "vino-macros",
  "vino-packet",
  "vino-provider",
+ "vino-random",
  "vino-rpc",
  "vino-transport",
 ]
@@ -3953,6 +3966,7 @@ dependencies = [
 name = "vino-test"
 version = "0.0.0"
 dependencies = [
+ "log",
  "serde",
  "serde-value",
  "serde_yaml",
@@ -4048,6 +4062,7 @@ dependencies = [
  "log",
  "logger",
  "maplit",
+ "once_cell",
  "serde",
  "serde-value",
  "serde_json",

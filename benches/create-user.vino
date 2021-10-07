@@ -1,0 +1,60 @@
+---
+version: 0
+host:
+  allow_latest: true
+  lattice:
+    enabled: true
+    address: nats.lan
+network:
+  providers:
+    - namespace: auth
+      kind: WaPC
+      reference: vinoreg.azurecr.io/vino/auth:latest
+      # reference: ./build/vino_auth_s.wasm
+    - namespace: authdb
+      kind: Lattice
+      reference: authdb
+  schematics:
+    - name: create-user
+      providers:
+        - auth
+      instances:
+        create_user:
+          id: auth::create-user
+        uuid:
+          id: vino::v0::uuid
+        rand:
+          id: vino::v0::random-bytes
+      connections:
+        - <core>[seed] => uuid[seed]
+        - uuid[output] => create_user[user_id]
+        - <core>[seed] => create_user[seed]
+        - <> => create_user[password]
+        - <> => create_user[username]
+        - <link>[authdb] => create_user[kv]
+        - create_user[user_id] => <>
+    - name: authenticate
+      providers:
+        - auth
+      instances:
+        authenticate:
+          id: auth::authenticate
+        uuid:
+          id: vino::v0::uuid
+      connections:
+        - <core>[seed] => uuid[seed]
+        - uuid[output] => authenticate[session_id]
+        - <> => authenticate[username]
+        - <> => authenticate[password]
+        - <link>[authdb] => authenticate[kv]
+        - authenticate[session_id] => <>
+    - name: validate-session
+      providers:
+        - auth
+      instances:
+        validate:
+          id: auth::validate-session
+      connections:
+        - <> => validate[session_id]
+        - <link>[authdb] => validate[kv]
+        - validate[user_id] => <>

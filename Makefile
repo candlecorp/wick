@@ -10,7 +10,7 @@ CRATES_DIR := ./crates
 ROOT := $(shell pwd)
 
 # Get list of projects that have makefiles
-MAKEFILE_PROJECTS=$(wildcard ${CRATES_DIR}/*/Makefile) $(wildcard ${CRATES_DIR}/integration/*/Makefile) $(wildcard ${CRATES_DIR}/interfaces/*/Makefile)
+MAKEFILE_PROJECTS=$(wildcard ${CRATES_DIR}/interfaces/*/Makefile) $(wildcard ${CRATES_DIR}/*/Makefile) $(wildcard ${CRATES_DIR}/integration/*/Makefile)
 
 # Get list of root crates in $CRATES_DIR
 ROOT_RUST_CRATES=$(wildcard ${CRATES_DIR}/*/Cargo.toml)
