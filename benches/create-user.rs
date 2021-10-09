@@ -61,7 +61,7 @@ async fn work() {
     .build();
   host.start().await.unwrap();
   let host = HOST.get_or_init(move || host);
-  let num: usize = 2;
+  let num: usize = 5;
   let mut data = Vec::with_capacity(num);
   for i in 0..num {
     data.push(get_map());

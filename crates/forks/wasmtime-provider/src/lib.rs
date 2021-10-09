@@ -121,6 +121,7 @@ impl WebAssemblyEngineProvider for WasmtimeEngineProvider {
 
   fn call(&mut self, op_length: i32, msg_length: i32) -> Result<i32, Box<dyn Error>> {
     let engine_inner = self.inner.as_ref().unwrap();
+    let now = std::time::Instant::now();
     let call = engine_inner
       .guest_call_fn
       .call(&mut self.store, &[op_length.into(), msg_length.into()]);

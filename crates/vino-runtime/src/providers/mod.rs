@@ -13,14 +13,32 @@ use vino_provider_wasm::error::LinkError;
 use self::native_provider_service::NativeProviderService;
 use crate::dev::prelude::*;
 use crate::dispatch::network_invoke_sync;
+use crate::providers::grpc_provider_service::GrpcProviderService;
+
+pub(crate) type BoxedInvocationHandler = Box<dyn InvocationHandler + Send + Sync>;
+
+#[async_trait::async_trait]
+pub(crate) trait InvocationHandler {
+  async fn get_signature(&self) -> Result<ProviderSignature>;
+  async fn invoke(&self, msg: InvocationMessage) -> Result<InvocationResponse>;
+}
 
 type Result<T> = std::result::Result<T, ProviderError>;
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub(crate) struct ProviderChannel {
   pub(crate) namespace: String,
-  pub(crate) recipient: Recipient<InvocationMessage>,
+  pub(crate) recipient: Arc<BoxedInvocationHandler>,
   pub(crate) model: Option<ProviderModel>,
+}
+
+impl std::fmt::Debug for ProviderChannel {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    f.debug_struct("ProviderChannel")
+      .field("namespace", &self.namespace)
+      .field("model", &self.model)
+      .finish()
+  }
 }
 
 pub(crate) async fn initialize_native_provider(
@@ -28,27 +46,14 @@ pub(crate) async fn initialize_native_provider(
   seed: u64,
 ) -> Result<ProviderChannel> {
   trace!("PROV:NATIVE:NS[{}]:REGISTERING", namespace);
-  let arbiter = Arbiter::with_tokio_rt(move || tokio::runtime::Runtime::new().unwrap());
-  let handle = arbiter.handle();
-
   let provider = Box::new(vino_native_api_0::Provider::new(seed));
-  let addr = native_provider_service::NativeProviderService::start_in_arbiter(&handle, |_| {
-    native_provider_service::NativeProviderService::default()
-  });
-  addr
-    .send(native_provider_service::Initialize {
-      provider: provider.clone(),
-      namespace: namespace.to_owned(),
-    })
-    .await??;
+  let service = NativeProviderService::new(namespace.to_owned(), provider);
 
-  let signature = addr
-    .send(native_provider_service::InitializeComponents {})
-    .await??;
+  let signature = service.get_signature().await?;
 
   Ok(ProviderChannel {
     namespace: namespace.to_owned(),
-    recipient: addr.recipient(),
+    recipient: Arc::new(Box::new(service)),
     model: Some(signature.into()),
   })
 }
@@ -59,24 +64,15 @@ pub(crate) async fn initialize_grpc_provider(
   namespace: &str,
 ) -> Result<ProviderChannel> {
   trace!("PROV:GRPC:NS[{}]:REGISTERING", provider.namespace);
-  let arbiter = Arbiter::with_tokio_rt(move || tokio::runtime::Runtime::new().unwrap());
-  let handle = arbiter.handle();
 
-  let addr = grpc_provider_service::GrpcProviderService::start_in_arbiter(&handle, |_| {
-    grpc_provider_service::GrpcProviderService::default()
-  });
+  let mut service = GrpcProviderService::new(namespace.to_owned(), seed.to_owned());
+  service.init(provider.reference.clone()).await?;
 
-  let signature = addr
-    .send(grpc_provider_service::Initialize {
-      namespace: namespace.to_owned(),
-      address: provider.reference,
-      signing_seed: seed.to_owned(),
-    })
-    .await??;
+  let signature = service.get_signature().await?;
 
   Ok(ProviderChannel {
     namespace: namespace.to_owned(),
-    recipient: addr.recipient(),
+    recipient: Arc::new(Box::new(service)),
     model: Some(signature.into()),
   })
 }
@@ -90,8 +86,6 @@ pub(crate) async fn initialize_wasm_provider(
 ) -> Result<ProviderChannel> {
   trace!("PROV:WASM:NS[{}]:REGISTERING", provider.namespace);
 
-  let arbiter = Arbiter::with_tokio_rt(move || tokio::runtime::Runtime::new().unwrap());
-  let handle = arbiter.handle();
   let component =
     vino_provider_wasm::helpers::load_wasm(&provider.reference, allow_latest, allowed_insecure)
       .await?;
@@ -121,21 +115,13 @@ pub(crate) async fn initialize_wasm_provider(
     })),
   )?);
 
-  let addr = NativeProviderService::start_in_arbiter(&handle, |_| NativeProviderService::default());
-  addr
-    .send(native_provider_service::Initialize {
-      provider: provider.clone(),
-      namespace: namespace.to_owned(),
-    })
-    .await??;
+  let service = NativeProviderService::new(namespace.to_owned(), provider);
 
-  let signature = addr
-    .send(native_provider_service::InitializeComponents {})
-    .await??;
+  let signature = service.get_signature().await?;
 
   Ok(ProviderChannel {
     namespace: namespace.to_owned(),
-    recipient: addr.recipient(),
+    recipient: Arc::new(Box::new(service)),
     model: Some(signature.into()),
   })
 }
@@ -146,8 +132,6 @@ pub(crate) async fn initialize_network_provider<'a>(
   opts: NetworkOptions<'a>,
 ) -> Result<ProviderChannel> {
   trace!("PROV:NETWORK:NS[{}]:REGISTERING", provider.namespace);
-  let arbiter = Arbiter::with_tokio_rt(move || tokio::runtime::Runtime::new().unwrap());
-  let handle = arbiter.handle();
 
   let network_id: String = NetworkService::start_from_manifest(
     &provider.reference,
@@ -162,21 +146,13 @@ pub(crate) async fn initialize_network_provider<'a>(
 
   let provider = Box::new(network_provider::Provider::new(network_id));
 
-  let addr = NativeProviderService::start_in_arbiter(&handle, |_| NativeProviderService::default());
-  addr
-    .send(native_provider_service::Initialize {
-      provider: provider.clone(),
-      namespace: namespace.to_owned(),
-    })
-    .await??;
+  let service = NativeProviderService::new(namespace.to_owned(), provider);
 
-  let signature = addr
-    .send(native_provider_service::InitializeComponents {})
-    .await??;
+  let signature = service.get_signature().await?;
 
   Ok(ProviderChannel {
     namespace: namespace.to_owned(),
-    recipient: addr.recipient(),
+    recipient: Arc::new(Box::new(service)),
     model: Some(signature.into()),
   })
 }
@@ -187,56 +163,37 @@ pub(crate) async fn initialize_lattice_provider(
   lattice: Arc<Lattice>,
 ) -> Result<ProviderChannel> {
   trace!("PROV:LATTICE:NS[{}]:REGISTERING", provider.namespace);
-  let arbiter = Arbiter::with_tokio_rt(move || tokio::runtime::Runtime::new().unwrap());
-  let handle = arbiter.handle();
 
   let provider =
     Box::new(vino_provider_lattice::provider::Provider::new(provider.reference, lattice).await?);
 
-  let addr = NativeProviderService::start_in_arbiter(&handle, |_| NativeProviderService::default());
-  addr
-    .send(native_provider_service::Initialize {
-      provider,
-      namespace: namespace.to_owned(),
-    })
-    .await??;
+  let service = NativeProviderService::new(namespace.to_owned(), provider);
 
-  let signature = addr
-    .send(native_provider_service::InitializeComponents {})
-    .await??;
+  let signature = service.get_signature().await?;
 
   Ok(ProviderChannel {
     namespace: namespace.to_owned(),
-    recipient: addr.recipient(),
+    recipient: Arc::new(Box::new(service)),
     model: Some(signature.into()),
   })
 }
 
 pub(crate) async fn start_network_provider(
   network_id: String,
-) -> Result<Addr<NativeProviderService>> {
+) -> Result<Arc<BoxedInvocationHandler>> {
   trace!("PROV:NETWORK[{}]", network_id);
-  let arbiter = Arbiter::with_tokio_rt(move || tokio::runtime::Runtime::new().unwrap());
-  let handle = arbiter.handle();
 
   let provider = Box::new(NetworkProvider::new(network_id));
 
-  let addr = NativeProviderService::start_in_arbiter(&handle, |_| NativeProviderService::default());
-  addr
-    .send(native_provider_service::Initialize {
-      provider: provider.clone(),
-      namespace: SELF_NAMESPACE.to_owned(),
-    })
-    .await??;
-  Ok(addr)
+  let service = NativeProviderService::new(SELF_NAMESPACE.to_owned(), provider);
+
+  Ok::<Arc<BoxedInvocationHandler>, ProviderError>(Arc::new(Box::new(service)))
 }
 
 pub(crate) async fn create_network_provider_model(
-  addr: Addr<NativeProviderService>,
+  service: Arc<BoxedInvocationHandler>,
 ) -> Result<ProviderSignature> {
-  let signature = addr
-    .send(native_provider_service::InitializeComponents {})
-    .await??;
+  let signature = service.get_signature().await?;
 
   Ok(signature.into())
 }

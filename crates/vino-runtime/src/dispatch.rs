@@ -194,6 +194,12 @@ impl From<MailboxError> for DispatchError {
   }
 }
 
+impl From<ProviderError> for DispatchError {
+  fn from(e: ProviderError) -> Self {
+    DispatchError::CallFailure(e.to_string())
+  }
+}
+
 #[allow(unused)]
 pub(crate) async fn network_invoke_async(
   network_id: String,
@@ -210,7 +216,7 @@ pub(crate) async fn network_invoke_async(
     .await?
     .map_err(|e| DispatchError::EntityNotAvailable(e.to_string()))?;
   let response = rcpt
-    .send(InvocationMessage::new(origin, target, payload))
+    .invoke(InvocationMessage::new(origin, target, payload))
     .await?;
   match response {
     InvocationResponse::Stream { rx, .. } => {

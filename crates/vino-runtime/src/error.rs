@@ -67,6 +67,8 @@ pub enum CommonError {
   Loading(String),
   #[error("Failed to read manifest: {0}")]
   Manifest(String),
+  #[error("Uninitialized")]
+  Uninitialized,
 }
 
 #[derive(Error, Debug)]

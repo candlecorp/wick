@@ -15,7 +15,6 @@ pub(crate) mod prelude {
     Handler,
     MailboxError,
     Message,
-    Recipient,
     ResponseActFuture,
     Supervised,
     System,
@@ -67,6 +66,8 @@ pub(crate) mod prelude {
     create_network_provider_model,
     initialize_native_provider,
     start_network_provider,
+    BoxedInvocationHandler,
+    InvocationHandler,
     ProviderChannel,
   };
   pub(crate) use crate::schematic_service::SchematicService;

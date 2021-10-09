@@ -90,7 +90,7 @@ impl SchematicService {
     &self.get_state().model
   }
 
-  fn get_provider(&self, instance: &str) -> Result<Recipient<InvocationMessage>> {
+  fn get_provider(&self, instance: &str) -> Result<Arc<BoxedInvocationHandler>> {
     let component = get_component_definition(self.get_model(), instance)?;
     let model = self.get_model().read();
     let err = SchematicError::InstanceNotFound(instance.to_owned());

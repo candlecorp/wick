@@ -42,6 +42,8 @@ pub enum ProviderError {
   Lattice(String),
   #[error("Error intializing subnetwork: {0}")]
   SubNetwork(String),
+  #[error("{0}")]
+  StateUninitialized(String),
 }
 
 impl From<vino_provider_lattice::error::LatticeProviderError> for ProviderError {

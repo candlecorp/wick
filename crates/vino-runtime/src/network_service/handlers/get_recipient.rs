@@ -1,13 +1,15 @@
+use std::sync::Arc;
+
 use crate::dev::prelude::*;
 
 #[derive(Message)]
-#[rtype(result = "Result<Recipient<InvocationMessage>,NetworkError>")]
+#[rtype(result = "Result<Arc<BoxedInvocationHandler>,NetworkError>")]
 pub(crate) struct GetRecipient {
   pub(crate) entity: Entity,
 }
 
 impl Handler<GetRecipient> for NetworkService {
-  type Result = Result<Recipient<InvocationMessage>, NetworkError>;
+  type Result = Result<Arc<BoxedInvocationHandler>, NetworkError>;
 
   fn handle(&mut self, msg: GetRecipient, _ctx: &mut Context<Self>) -> Self::Result {
     self.ensure_is_started()?;

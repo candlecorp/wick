@@ -30,7 +30,7 @@ derivative = "2.2.0"
 tokio = { version = "1.4.0", features = ["fs"] }
 parking_lot = "0.11.1"
 
-wasmtime-provider = { path = "../forks/wasmtime-provider", optional = true }
+wasmtime-provider = { path = "../../../wasmtime-provider", optional = true }
 wapc = { path = "../forks/wapc-rust" }
 
 futures = "0.3.15"

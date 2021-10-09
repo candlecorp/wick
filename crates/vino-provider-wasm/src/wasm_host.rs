@@ -94,7 +94,7 @@ impl Default for WasmHostBuilder {
 
 #[derive(Debug)]
 pub struct WasmHost {
-  host: WapcHost,
+  host: Mutex<WapcHost>,
   claims: Claims<ProviderClaims>,
   buffer: Arc<Mutex<PortBuffer>>,
   closed_ports: Arc<Mutex<HashSet<String>>>,
@@ -139,7 +139,7 @@ impl WasmHost {
           Ok(signal) => match signal {
             OutputSignal::Output => {
               if ports_locked.contains(port) {
-                Err("Closed".into())
+                Err(format!("Port '{}' already closed", port).into())
               } else {
                 buffer_locked.push_back((port.to_owned(), payload.into()));
                 Ok(vec![])
@@ -147,7 +147,7 @@ impl WasmHost {
             }
             OutputSignal::OutputDone => {
               if ports_locked.contains(port) {
-                Err("Closed".into())
+                Err(format!("Port '{}' already closed", port).into())
               } else {
                 buffer_locked.push_back((port.to_owned(), payload.into()));
                 buffer_locked.push_back((port.to_owned(), Packet::V0(Payload::Done)));
@@ -238,13 +238,14 @@ impl WasmHost {
 
     Ok(Self {
       claims: module.claims().clone(),
-      host,
+      host: Mutex::new(host),
       buffer,
       closed_ports,
     })
   }
 
   pub fn call(&self, component_name: &str, payload: &[u8]) -> Result<TransportStream> {
+    let host = self.host.lock();
     {
       self.buffer.lock().clear();
       self.closed_ports.lock().clear();
@@ -252,7 +253,7 @@ impl WasmHost {
     debug!("WASM:INVOKE[{}]:PAYLOAD{:?}", component_name, payload);
     trace!("WASM:INVOKE[{}]:START", component_name);
     let now = Instant::now();
-    let _result = self.host.call(component_name, payload)?;
+    let _result = host.call(component_name, payload)?;
     trace!(
       "WASM:INVOKE[{}]:FINISH[{} μs]",
       component_name,

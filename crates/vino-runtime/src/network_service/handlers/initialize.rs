@@ -9,7 +9,6 @@ use vino_lattice::lattice::Lattice;
 use crate::dev::prelude::validator::NetworkValidator;
 use crate::dev::prelude::*;
 use crate::network_service::State;
-use crate::providers::native_provider_service::NativeProviderService;
 use crate::providers::{
   initialize_grpc_provider,
   initialize_lattice_provider,
@@ -91,8 +90,8 @@ impl Handler<Initialize> for NetworkService {
           seed.clone(),
           timeout,
           providers,
-          provider_addr,
         )
+        .map(|_| Ok(provider_addr))
         .into_actor(network)
       },
     )
@@ -130,12 +129,12 @@ fn update_providers(
 
 async fn start_self_network(
   nuid: String,
-) -> Result<(Addr<NativeProviderService>, ProviderChannel)> {
+) -> Result<(Arc<BoxedInvocationHandler>, ProviderChannel)> {
   trace!("NETWORK:PROVIDER:SELF:START");
   let provider_addr = start_network_provider(nuid).await?;
   let self_channel = ProviderChannel {
     namespace: SELF_NAMESPACE.to_owned(),
-    recipient: provider_addr.clone().recipient(),
+    recipient: provider_addr.clone(),
     model: None,
   };
   trace!("NETWORK:PROVIDER:SELF:STARTED");
@@ -149,8 +148,7 @@ async fn initialize_schematics(
   seed: String,
   timeout: Duration,
   providers: HashMap<String, ProviderChannel>,
-  provider_addr: Addr<NativeProviderService>,
-) -> Result<Addr<NativeProviderService>> {
+) -> Result<()> {
   for def in schematics {
     let addr = addresses.get(&def.name).unwrap();
     let name = def.name.clone();
@@ -169,10 +167,10 @@ async fn initialize_schematics(
     trace!("NETWORK:SCHEMATIC[{}]:INITIALIZED", name);
   }
 
-  Ok(provider_addr)
+  Ok(())
 }
 
-async fn start_self_provider(addr: Addr<NativeProviderService>) -> Result<ProviderModel> {
+async fn start_self_provider(addr: Arc<BoxedInvocationHandler>) -> Result<ProviderModel> {
   trace!("NETWORK:PROVIDER:SELF:QUERY");
   let model = create_network_provider_model(addr.clone()).await?;
   trace!("NETWORK:PROVIDER:SELF:SUCCESS");
