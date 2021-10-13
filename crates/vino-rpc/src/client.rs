@@ -1,6 +1,17 @@
+use std::net::Ipv4Addr;
+use std::path::PathBuf;
+use std::str::FromStr;
+use std::time::Duration;
+
 use log::debug;
 use tokio_stream::StreamExt;
-use tonic::transport::Channel;
+use tonic::transport::{
+  Certificate,
+  Channel,
+  ClientTlsConfig,
+  Identity,
+  Uri,
+};
 use vino_entity::Entity;
 use vino_transport::{
   MessageTransport,
@@ -9,6 +20,7 @@ use vino_transport::{
   TransportWrapper,
 };
 
+use crate::error::RpcClientError;
 use crate::rpc::invocation_service_client::InvocationServiceClient;
 use crate::rpc::{
   Invocation,
@@ -19,22 +31,65 @@ use crate::rpc::{
 };
 use crate::types::conversions::convert_transport_map;
 
-/// The error type that [RpcClient] methods produce.
-#[derive(thiserror::Error, Debug)]
-pub enum RpcClientError {
-  /// An upstream error from [tonic].
-  #[error("Upstream error: {0}")]
-  RpcStatus(#[from] tonic::Status),
-  /// An error related to [vino_transport].
-  #[error(transparent)]
-  TransportError(#[from] vino_transport::Error),
-  /// Connection failed
-  #[error("Connection failed: {0}")]
-  ConnectionFailed(String),
+/// Create an RPC client form common configuration
+pub async fn make_rpc_client(
+  address: Ipv4Addr,
+  port: u16,
+  pem: Option<PathBuf>,
+  key: Option<PathBuf>,
+  ca: Option<PathBuf>,
+  domain: Option<String>,
+) -> Result<RpcClient, RpcClientError> {
+  let url = format!("https://{}:{}", address, port);
+  let uri = Uri::from_str(&url)
+    .map_err(|_| RpcClientError::Other(format!("Could not create URI from: {}", url)))?;
+
+  let mut builder = Channel::builder(uri);
+
+  if let (Some(pem), Some(key)) = (pem, key) {
+    let server_pem = tokio::fs::read(pem).await?;
+    let server_key = tokio::fs::read(key).await?;
+    let identity = Identity::from_pem(server_pem, server_key);
+
+    let mut tls = ClientTlsConfig::new().identity(identity);
+
+    if let Some(ca) = ca {
+      debug!("Using CA from {}", ca.to_string_lossy());
+      let ca_pem = tokio::fs::read(ca).await?;
+      let ca = Certificate::from_pem(ca_pem);
+      tls = tls.ca_certificate(ca);
+    }
+    if let Some(domain) = domain {
+      tls = tls.domain_name(domain);
+    }
+    builder = builder.tls_config(tls)?;
+  } else if let Some(ca) = ca {
+    debug!("Using CA from {}", ca.to_string_lossy());
+
+    let ca_pem = tokio::fs::read(ca).await?;
+    let ca = Certificate::from_pem(ca_pem);
+    let mut tls = ClientTlsConfig::new().ca_certificate(ca);
+    if let Some(domain) = domain {
+      tls = tls.domain_name(domain);
+    }
+    builder = builder.tls_config(tls)?;
+  };
+
+  let channel = builder
+    .timeout(Duration::from_secs(5))
+    .rate_limit(5, Duration::from_secs(1))
+    .concurrency_limit(256)
+    .connect()
+    .await?;
+
+  Ok(RpcClient::from_channel(InvocationServiceClient::new(
+    channel,
+  )))
 }
 
 #[derive(Debug)]
 /// [RpcClient] wraps an [InvocationServiceClient] into a more usable package.
+#[must_use]
 pub struct RpcClient {
   inner: InvocationServiceClient<Channel>,
 }
@@ -49,10 +104,19 @@ impl RpcClient {
     Ok(Self { inner: client })
   }
 
+  /// Instantiate a new [RpcClient] from an existing InvocationServiceClient.
+  pub fn from_channel(channel: InvocationServiceClient<Channel>) -> Self {
+    Self { inner: channel }
+  }
+
   /// Make a request to the stats RPC method
   pub async fn stats(&mut self, request: StatsRequest) -> Result<StatsResponse, RpcClientError> {
     debug!("Making stats request");
-    let result = self.inner.stats(request).await?;
+    let result = self
+      .inner
+      .stats(request)
+      .await
+      .map_err(RpcClientError::StatsCallFailed)?;
     debug!("Stats result: {:?}", result);
     Ok(result.into_inner())
   }
@@ -60,7 +124,11 @@ impl RpcClient {
   /// Make a request to the list RPC method
   pub async fn list(&mut self, request: ListRequest) -> Result<ListResponse, RpcClientError> {
     debug!("Making list request");
-    let result = self.inner.list(request).await?;
+    let result = self
+      .inner
+      .list(request)
+      .await
+      .map_err(RpcClientError::ListCallFailed)?;
     debug!("List result: {:?}", result);
     Ok(result.into_inner())
   }
@@ -70,8 +138,12 @@ impl RpcClient {
     &mut self,
     request: crate::rpc::Invocation,
   ) -> Result<TransportStream, RpcClientError> {
-    debug!("Making list request");
-    let result = self.inner.invoke(request).await?;
+    debug!("Making invocation: {:?}", request);
+    let result = self
+      .inner
+      .invoke(request)
+      .await
+      .map_err(RpcClientError::InvocationFailed)?;
     debug!("Invocation result: {:?}", result);
     let stream = result.into_inner();
 

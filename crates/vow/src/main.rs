@@ -77,7 +77,6 @@
 
 use structopt::clap::AppSettings;
 use structopt::StructOpt;
-use vino_provider_cli::LoggingOptions;
 
 pub(crate) mod commands;
 pub mod error;
@@ -86,22 +85,6 @@ pub(crate) type Result<T> = std::result::Result<T, error::VowError>;
 
 #[macro_use]
 extern crate log;
-
-#[derive(Debug, Clone, StructOpt)]
-#[structopt(rename_all = "kebab-case")]
-pub struct CliOptions {
-  /// Path to WebAssembly binary.
-  wasm: String,
-
-  /// The name of the component to execute.
-  component_name: String,
-
-  /// JSON data.
-  data: Option<String>,
-
-  #[structopt(flatten)]
-  pub logging: LoggingOptions,
-}
 
 #[derive(StructOpt, Debug, Clone)]
 #[structopt(

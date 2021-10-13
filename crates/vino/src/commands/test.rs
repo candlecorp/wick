@@ -1,4 +1,5 @@
 use std::path::PathBuf;
+use std::sync::Arc;
 
 use structopt::StructOpt;
 use vino_host::HostBuilder;
@@ -29,18 +30,6 @@ pub(crate) struct TestCommand {
   /// Turn on info logging.
   #[structopt(long = "info")]
   pub(crate) info: bool,
-
-  /// Don't read input from STDIN.
-  #[structopt(long = "no-input")]
-  pub(crate) no_input: bool,
-
-  /// A port=value string where value is JSON to pass as input.
-  #[structopt(long, short)]
-  data: Vec<String>,
-
-  /// Skip additional I/O processing done for CLI usage.
-  #[structopt(long, short)]
-  raw: bool,
 
   /// Manifest file or OCI url.
   manifest: String,
@@ -90,7 +79,7 @@ pub(crate) async fn handle_command(opts: TestCommand) -> Result<()> {
     .name(format!("Vino test for : {}", file));
 
   let harness = suite
-    .run(Box::new(provider))
+    .run(Arc::new(provider))
     .await
     .map_err(|e| VinoError::TestError(e.to_string()))?;
 

@@ -19,6 +19,7 @@ async fn test_vow_serve() -> utils::TestResult<()> {
     &[
       "serve",
       "./crates/integration/test-wapc-component/build/test_component_s.wasm",
+      "--trace",
       "--rpc",
     ],
     &[],

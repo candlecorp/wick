@@ -13,7 +13,6 @@ use vino_transport::{
 };
 
 use crate::dev::prelude::*;
-use crate::network_service::handlers::get_recipient::GetRecipient;
 
 #[derive(Debug, Clone, Default, Message)]
 #[rtype(result = "InvocationResponse")]
@@ -210,13 +209,11 @@ pub(crate) async fn network_invoke_async(
   let network = NetworkService::for_id(&network_id);
 
   let rcpt = network
-    .send(GetRecipient {
-      entity: target.clone(),
-    })
-    .await?
+    .get_recipient(&target)
     .map_err(|e| DispatchError::EntityNotAvailable(e.to_string()))?;
+
   let response = rcpt
-    .invoke(InvocationMessage::new(origin, target, payload))
+    .invoke(InvocationMessage::new(origin, target, payload))?
     .await?;
   match response {
     InvocationResponse::Stream { rx, .. } => {

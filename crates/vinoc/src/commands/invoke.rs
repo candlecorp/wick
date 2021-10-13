@@ -1,17 +1,18 @@
+use futures::StreamExt;
 use structopt::StructOpt;
 use tokio::io::{
   self,
   AsyncBufReadExt,
   BufReader,
 };
-use vino_rpc::rpc::Output;
+use vino_entity::Entity;
 use vino_transport::{
   TransportMap,
+  TransportStream,
   TransportWrapper,
 };
 
 use crate::error::ControlError;
-use crate::rpc_client::rpc_client;
 use crate::Result;
 #[derive(Debug, Clone, StructOpt)]
 #[structopt(rename_all = "kebab-case")]
@@ -41,7 +42,7 @@ pub struct InvokeCommand {
 pub async fn handle_command(opts: InvokeCommand) -> Result<()> {
   crate::utils::init_logger(&opts.logging)?;
 
-  let mut client = rpc_client(
+  let mut client = vino_rpc::make_rpc_client(
     opts.connection.address,
     opts.connection.port,
     opts.connection.pem,
@@ -50,6 +51,8 @@ pub async fn handle_command(opts: InvokeCommand) -> Result<()> {
     opts.connection.domain,
   )
   .await?;
+
+  let origin = Entity::client("vinoc");
 
   if opts.data.is_empty() && !opts.no_input {
     if atty::is(atty::Stream::Stdin) {
@@ -63,7 +66,7 @@ pub async fn handle_command(opts: InvokeCommand) -> Result<()> {
       .map_err(ControlError::ReadLineFailed)?
     {
       let stream = client
-        .invoke_from_json(opts.schematic.clone(), &line, !opts.raw)
+        .invoke_from_json(origin.url(), opts.schematic.clone(), &line, !opts.raw)
         .await?;
       print_stream_json(stream, opts.raw).await?;
     }
@@ -72,15 +75,17 @@ pub async fn handle_command(opts: InvokeCommand) -> Result<()> {
     if !opts.raw {
       payload.transpose_output_name();
     }
-    let stream = client.invoke(opts.schematic.clone(), payload).await?;
+    let stream = client
+      .invoke(origin.url(), opts.schematic.clone(), payload)
+      .await?;
     print_stream_json(stream, opts.raw).await?;
   }
 
   Ok(())
 }
 
-async fn print_stream_json(mut stream: tonic::Streaming<Output>, raw: bool) -> Result<()> {
-  while let Some(message) = stream.message().await? {
+async fn print_stream_json(mut stream: TransportStream, raw: bool) -> Result<()> {
+  while let Some(message) = stream.next().await {
     let wrapper: TransportWrapper = message.into();
     if wrapper.payload.is_signal() && !raw {
       debug!(

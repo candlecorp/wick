@@ -5,6 +5,8 @@ authors = ["Jarrod Overson <jsoverson@gmail.com>"]
 edition = "2018"
 license = "BSD-3-Clause"
 
+[features]
+
 [dependencies]
 vino-packet = { path = "../../sdk/crates/vino-packet" }
 vino-macros = { path = "../../sdk/crates/vino-macros" }
@@ -51,6 +53,7 @@ rand = { version = "0.8.4", default-features = false, features = [
   "std_rng",
   "alloc",
 ] }
+async-recursion = "0.3.2"
 
 [dev-dependencies]
 test-vino-provider = { path = "../integration/test-vino-provider" }

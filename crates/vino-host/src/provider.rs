@@ -56,8 +56,8 @@ impl RpcHandler for Provider {
     Ok(Box::pin(outputs))
   }
 
-  async fn get_list(&self) -> RpcResult<Vec<HostedType>> {
-    let provider: ProviderSignature = self.host.get_signature().await.map_err(RpcError::boxed)?;
+  fn get_list(&self) -> RpcResult<Vec<HostedType>> {
+    let provider: ProviderSignature = self.host.get_signature().map_err(RpcError::boxed)?;
 
     Ok(vec![HostedType::Provider(provider)])
   }

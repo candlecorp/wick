@@ -95,7 +95,7 @@ pub(crate) async fn handle_command(opts: RunCommand) -> Result<()> {
   host.connect_to_lattice().await?;
   host.start_network().await?;
 
-  let signature = host.get_signature().await?;
+  let signature = host.get_signature()?;
   let target_schematic = signature.get_component(&default_schematic);
 
   let mut check_stdin = !opts.no_input && opts.data.is_empty() && opts.args.is_empty();

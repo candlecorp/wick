@@ -175,11 +175,7 @@ impl Lattice {
     })
   }
 
-  pub async fn handle_namespace(
-    &self,
-    namespace: String,
-    provider: &'static BoxedRpcHandler,
-  ) -> Result<()> {
+  pub async fn handle_namespace(&self, namespace: String, provider: BoxedRpcHandler) -> Result<()> {
     debug!("LATTICE:HANDLER[{}]:REGISTER", namespace);
     let mut consumer = self.nats.create_consumer(namespace.to_owned()).await?;
 
@@ -205,7 +201,7 @@ impl Lattice {
           };
           match msg {
             LatticeRpcMessage::List { reply_to, .. } => {
-              let result = provider.get_list().await;
+              let result = provider.get_list();
               match result {
                 Ok(components) => {
                   let response = LatticeRpcResponse::List(components);
@@ -427,6 +423,7 @@ impl LatticeRpcResponse {
 #[cfg(test)]
 mod test {
   use std::convert::TryInto;
+  use std::sync::Arc;
 
   use anyhow::Result;
   use log::*;
@@ -455,14 +452,14 @@ mod test {
   };
   use crate::lattice::LatticeRpcResponse;
 
-  static PROVIDER: Lazy<BoxedRpcHandler> = Lazy::new(|| Box::new(Provider::default()));
+  static PROVIDER: Lazy<BoxedRpcHandler> = Lazy::new(|| Arc::new(Provider::default()));
 
   async fn get_lattice() -> Result<(Lattice, String)> {
     let lattice_builder = LatticeBuilder::new_from_env("test").unwrap();
     let lattice = lattice_builder.build().await.unwrap();
     let namespace = "some_namespace_id".to_owned();
     lattice
-      .handle_namespace(namespace.clone(), &PROVIDER)
+      .handle_namespace(namespace.clone(), PROVIDER.clone())
       .await
       .unwrap();
 

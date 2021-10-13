@@ -54,7 +54,6 @@ fn handle_schematic(
 
   let inner = log_prefix.clone();
   tokio::spawn(async move {
-    mark!();
     while let Some(msg) = outbound.recv().await {
       match msg {
         TransactionUpdate::Done(tx_id) => {
@@ -84,7 +83,6 @@ fn handle_schematic(
         }
       }
     }
-    elapsed!();
     drop(outbound);
     trace!("{}:STOPPING", inner);
     Ok!(())

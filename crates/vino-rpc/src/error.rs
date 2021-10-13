@@ -103,3 +103,51 @@ impl From<String> for RpcError {
     RpcError::General(e)
   }
 }
+
+/// The error type that [RpcClient] methods produce.
+#[derive(thiserror::Error, Debug)]
+pub enum RpcClientError {
+  /// An error originating from a List RPC call.
+  #[error("RPC List call failed: {0}")]
+  ListCallFailed(tonic::Status),
+
+  /// An error originating from an Invocation RPC call.
+  #[error("RPC Invocation failed: {0}")]
+  InvocationFailed(tonic::Status),
+
+  /// An error originating from a Stats RPC call.
+  #[error("RPC Stats call failed: {0}")]
+  StatsCallFailed(tonic::Status),
+
+  /// An error related to [vino_transport].
+  #[error(transparent)]
+  TransportError(#[from] vino_transport::Error),
+
+  /// General IO error
+  #[error("I/O error: {0}")]
+  IO(std::io::Error),
+
+  /// Error originating from Tonic GRPC server/client implementation
+  #[error("Tonic error: {0}")]
+  TonicError(tonic::transport::Error),
+
+  /// Connection failed
+  #[error("Connection failed: {0}")]
+  ConnectionFailed(String),
+
+  /// General error
+  #[error("{0}")]
+  Other(String),
+}
+
+impl From<std::io::Error> for RpcClientError {
+  fn from(e: std::io::Error) -> Self {
+    RpcClientError::IO(e)
+  }
+}
+
+impl From<tonic::transport::Error> for RpcClientError {
+  fn from(e: tonic::transport::Error) -> Self {
+    RpcClientError::TonicError(e)
+  }
+}

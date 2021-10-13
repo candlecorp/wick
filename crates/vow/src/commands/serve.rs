@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use once_cell::sync::OnceCell;
 use structopt::StructOpt;
 use vino_provider_cli::cli::DefaultCliOptions;
@@ -26,6 +28,7 @@ pub(crate) struct ServeCommand {
 
   /// The number of threads to start.
   #[structopt(long, default_value = "2")]
+  #[allow(unused)]
   threads: u8,
 }
 
@@ -39,8 +42,8 @@ pub(crate) async fn handle_command(opts: ServeCommand) -> Result<()> {
       .await?;
 
   let wasi: WasiParams = (&opts.wasi).into();
-  let provider: &'static BoxedRpcHandler = PROVIDER.get_or_init(|| {
-    Box::new(
+  let provider = PROVIDER.get_or_init(|| {
+    Arc::new(
       match Provider::try_load(&component, None, Some(wasi.clone()), None) {
         Ok(provider) => provider,
         Err(e) => {
@@ -50,7 +53,7 @@ pub(crate) async fn handle_command(opts: ServeCommand) -> Result<()> {
       },
     )
   });
-  vino_provider_cli::init_cli(provider, Some(opts.cli.into())).await?;
+  vino_provider_cli::init_cli(provider.clone(), Some(opts.cli.into())).await?;
 
   Ok(())
 }

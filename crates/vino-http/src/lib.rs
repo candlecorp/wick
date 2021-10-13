@@ -19,7 +19,7 @@ extern crate log;
 /// enable a vino provider to handle http web requests with the default configuration.
 ///
 /// Shortcut for `vino_http::config().enable(service)`
-pub fn enable(provider: &'static BoxedRpcHandler) -> ProviderService {
+pub fn enable(provider: BoxedRpcHandler) -> ProviderService {
   config().enable(provider)
 }
 

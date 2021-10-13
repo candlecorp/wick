@@ -45,7 +45,7 @@ impl Handler<ComponentPayload> for SchematicService {
       let target = invocation.get_target_url();
 
       let response = map_err!(
-        tokio::spawn(async move { handler.invoke(invocation).await }).await,
+        tokio::spawn(async move { handler.invoke(invocation)?.await }).await,
         InternalError::E6009
       )??;
 

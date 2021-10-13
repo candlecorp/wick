@@ -75,7 +75,6 @@
 pub mod commands;
 pub mod error;
 pub mod keys;
-mod rpc_client;
 pub mod utils;
 
 use error::ControlError;

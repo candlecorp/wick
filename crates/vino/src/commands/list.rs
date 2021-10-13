@@ -57,7 +57,7 @@ pub(crate) async fn handle_command(opts: ListCommand) -> Result<()> {
   let mut host = host_builder.build();
   host.connect_to_lattice().await?;
   host.start_network().await?;
-  let signature = host.get_signature().await?;
+  let signature = host.get_signature()?;
 
   if opts.json {
     let json = serde_json::to_string(&signature)?;

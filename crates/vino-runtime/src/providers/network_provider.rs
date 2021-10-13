@@ -6,7 +6,6 @@ use vino_rpc::{
 };
 
 use crate::dev::prelude::*;
-use crate::network_service::handlers::list_schematics::GetSignature;
 
 #[derive(Debug, Default)]
 struct State {}
@@ -19,6 +18,7 @@ pub struct Provider {
 impl Provider {
   #[must_use]
   pub fn new(network_id: String) -> Self {
+    trace!("NETWORK_PROVIDER[{}]:NEW", network_id);
     Self { network_id }
   }
 }
@@ -26,13 +26,19 @@ impl Provider {
 #[async_trait]
 impl RpcHandler for Provider {
   async fn invoke(&self, entity: Entity, payload: TransportMap) -> RpcResult<BoxedTransportStream> {
+    trace!("NETWORK_PROVIDER[{}]:INVOKE[{}]", self.network_id, entity);
+    trace!("1");
     let addr = NetworkService::for_id(&self.network_id);
+    trace!("2");
     let invocation =
       InvocationMessage::new(Entity::Schematic("<system>".to_owned()), entity, payload);
+    trace!("a");
     let result: InvocationResponse = addr
-      .send(invocation)
+      .invoke(invocation)
+      .map_err(|e| RpcError::ProviderError(e.to_string()))?
       .await
       .map_err(|e| RpcError::ProviderError(e.to_string()))?;
+    trace!("b");
     match result.ok() {
       Ok(stream) => Ok(Box::pin(stream)),
       Err(msg) => Err(Box::new(RpcError::ProviderError(format!(
@@ -42,13 +48,12 @@ impl RpcHandler for Provider {
     }
   }
 
-  async fn get_list(&self) -> RpcResult<Vec<HostedType>> {
+  fn get_list(&self) -> RpcResult<Vec<HostedType>> {
+    trace!("NETWORK_PROVIDER[{}]:LIST", self.network_id);
     let addr = NetworkService::for_id(&self.network_id);
-    let result = addr
-      .send(GetSignature {})
-      .await
+    let signature = addr
+      .get_signature()
       .map_err(|e| RpcError::ProviderError(e.to_string()))?;
-    let signature = result.map_err(|e| RpcError::ProviderError(e.to_string()))?;
     Ok(vec![HostedType::Provider(signature)])
   }
 }
@@ -94,7 +99,7 @@ mod tests {
   async fn test_list() -> TestResult<()> {
     let (_, network_id) = init_network_from_yaml("./manifests/v0/simple.yaml").await?;
     let provider = Provider::new(network_id);
-    let list = provider.get_list().await?;
+    let list = provider.get_list()?;
     println!("components on network : {:?}", list);
     assert_eq!(list.len(), 1);
     Ok(())

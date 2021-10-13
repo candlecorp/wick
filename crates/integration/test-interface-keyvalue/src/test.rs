@@ -39,7 +39,7 @@ fn make_invocation(origin: &str, target: &str, payload: TransportMap) -> Result<
   })
 }
 
-pub async fn test_api(provider: &'static BoxedRpcHandler) -> Result<()> {
+pub async fn test_api(provider: BoxedRpcHandler) -> Result<()> {
   let socket = bind_new_socket()?;
   let port = socket.local_addr()?.port();
   let _server = make_rpc_server(socket, provider);

@@ -42,12 +42,12 @@ const PREFIX: &str = "rpc";
 
 #[derive(Clone)]
 pub struct ProviderService {
-  provider: &'static BoxedRpcHandler,
+  provider: BoxedRpcHandler,
   cors: Arc<Cors>,
 }
 
 impl ProviderService {
-  pub fn new(provider: &'static BoxedRpcHandler, config: Config) -> Self {
+  pub fn new(provider: BoxedRpcHandler, config: Config) -> Self {
     Self {
       provider,
       cors: Arc::new(Cors::new(config)),
@@ -66,7 +66,7 @@ impl tower_service::Service<Request<hyper::Body>> for ProviderService {
 
   fn call(&mut self, mut req: Request<hyper::Body>) -> Self::Future {
     trace!("HTTP:REQUEST:{}", req.uri());
-    let provider = self.provider;
+    let provider = self.provider.clone();
     let cors = self.cors.clone();
     let fut = async move {
       let kind = RequestKind::new(&req);
@@ -126,7 +126,7 @@ impl tower_service::Service<Request<hyper::Body>> for ProviderService {
               return Ok(response(StatusCode::FORBIDDEN));
             }
           };
-          match provider.get_list().await {
+          match provider.get_list() {
             Ok(sig) => {
               trace!("HTTP:LIST:OK");
               let response = ProviderServiceResponse::from(sig);

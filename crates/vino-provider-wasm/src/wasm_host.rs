@@ -35,6 +35,7 @@ use wapc::{
   WasiParams,
 };
 
+use crate::error::WasmProviderError;
 use crate::provider::HostLinkCallback;
 use crate::wapc_module::WapcModule;
 use crate::{
@@ -92,12 +93,22 @@ impl Default for WasmHostBuilder {
   }
 }
 
-#[derive(Debug)]
+#[derive()]
 pub struct WasmHost {
   host: Mutex<WapcHost>,
   claims: Claims<ProviderClaims>,
   buffer: Arc<Mutex<PortBuffer>>,
   closed_ports: Arc<Mutex<HashSet<String>>>,
+}
+
+impl std::fmt::Debug for WasmHost {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    f.debug_struct("WasmHost")
+      .field("claims", &self.claims)
+      .field("buffer", &self.buffer)
+      .field("closed_ports", &self.closed_ports)
+      .finish()
+  }
 }
 
 #[allow(clippy::too_many_lines)]
@@ -116,7 +127,8 @@ impl WasmHost {
 
     let engine = {
       let engine =
-        wasmtime_provider::WasmtimeEngineProvider::new(&module.bytes, wasi_options, None).unwrap();
+        wasmtime_provider::WasmtimeEngineProvider::new(&module.bytes, wasi_options, None)
+          .map_err(|e| WasmProviderError::EngineFailure(e.to_string()))?;
       trace!(
         "WASM:Wasmtime instance loaded in {} μs",
         time.elapsed().as_micros()

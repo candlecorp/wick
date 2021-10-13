@@ -2,7 +2,6 @@ use structopt::StructOpt;
 use vino_rpc::rpc::StatsRequest;
 use vino_rpc::Statistics;
 
-use crate::rpc_client::rpc_client;
 use crate::Result;
 
 #[derive(Debug, Clone, StructOpt)]
@@ -17,7 +16,7 @@ pub struct StatsCommand {
 
 pub async fn handle_command(opts: StatsCommand) -> Result<()> {
   crate::utils::init_logger(&opts.logging)?;
-  let mut client = rpc_client(
+  let mut client = vino_rpc::make_rpc_client(
     opts.connection.address,
     opts.connection.port,
     opts.connection.pem,

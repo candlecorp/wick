@@ -13,16 +13,6 @@ pub struct InspectCommand {
 
   /// File to read.
   pub(crate) module: String,
-
-  #[structopt(flatten)]
-  common: GenerateCommon,
-}
-
-#[derive(Debug, Clone, StructOpt)]
-struct GenerateCommon {
-  /// Location of key files for signing. Defaults to $VINO_KEYS ($HOME/.vino/keys).
-  #[structopt(long = "directory", env = "VINO_KEYS", hide_env_values = true)]
-  directory: Option<String>,
 }
 
 pub async fn handle_command(opts: InspectCommand) -> Result<()> {

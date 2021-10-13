@@ -97,7 +97,7 @@ async fn subnetworks() -> Result<()> {
 async fn grpc() -> Result<()> {
   let socket = bind_new_socket()?;
   let port = socket.local_addr()?.port();
-  let _ = make_rpc_server(socket, &test_vino_provider::PROVIDER);
+  let _ = make_rpc_server(socket, test_vino_provider::PROVIDER.clone());
   env::set_var("TEST_PORT", port.to_string());
 
   let (network, _) = init_network_from_yaml("./manifests/v0/providers/grpc-provider.yaml").await?;

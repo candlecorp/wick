@@ -6,6 +6,8 @@ license = "BSD-3-Clause"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[features]
+
 [dependencies]
 logger = { path = "../logger" }
 vino-rpc = { path = "../vino-rpc" }
@@ -17,6 +19,7 @@ vino-transport = { path = "../../sdk/crates/vino-transport", features = [
   "all",
 ] }
 vino-http = { path = "../vino-http" }
+cfg-if = "1.0.0"
 
 tonic = { version = "0.5", features = ["tls"] }
 tonic-reflection = "0.2.0"

@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use once_cell::sync::Lazy;
 use vino_provider::native::prelude::*;
 use vino_rpc::error::RpcError;
@@ -11,7 +13,7 @@ use self::generated::Dispatcher;
 mod components;
 pub(crate) mod generated;
 
-pub static PROVIDER: Lazy<BoxedRpcHandler> = Lazy::new(|| Box::new(Provider::default()));
+pub static PROVIDER: Lazy<BoxedRpcHandler> = Lazy::new(|| Arc::new(Provider::default()));
 
 #[derive(Clone)]
 pub(crate) struct Context {}
@@ -41,7 +43,7 @@ impl RpcHandler for Provider {
     Ok(Box::pin(stream))
   }
 
-  async fn get_list(&self) -> RpcResult<Vec<HostedType>> {
+  fn get_list(&self) -> RpcResult<Vec<HostedType>> {
     let signature = generated::get_signature();
     Ok(vec![HostedType::Provider(signature)])
   }

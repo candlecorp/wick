@@ -25,7 +25,6 @@ pub(crate) struct SchematicService {
   providers: HashMap<String, ProviderChannel>,
   state: Option<State>,
   executor: HashMap<String, UnboundedSender<TransactionUpdate>>,
-  rng_seed: u64,
 }
 
 #[derive(Debug)]
@@ -43,7 +42,6 @@ impl Default for SchematicService {
       providers: HashMap::new(),
       state: None,
       executor: HashMap::new(),
-      rng_seed: new_seed(),
     }
   }
 }
@@ -110,10 +108,4 @@ impl SchematicService {
     let channel = self.providers.get(&component.namespace).ok_or(err)?;
     Ok(channel.recipient.clone())
   }
-}
-
-#[derive(Debug, Clone)]
-pub(crate) struct ProviderInitResponse {
-  pub(crate) model: ProviderModel,
-  pub(crate) channel: ProviderChannel,
 }

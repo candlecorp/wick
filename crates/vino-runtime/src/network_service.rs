@@ -3,8 +3,8 @@ pub(crate) mod handlers;
 
 use std::collections::HashMap;
 use std::sync::Arc;
-use std::time::Duration;
 
+use futures::future::BoxFuture;
 use once_cell::sync::Lazy;
 use parking_lot::{
   Mutex,
@@ -12,120 +12,299 @@ use parking_lot::{
 };
 use vino_lattice::lattice::Lattice;
 use vino_manifest::Loadable;
-use vino_wascap::KeyPair;
 
+use crate::dev::prelude::validator::NetworkValidator;
 use crate::dev::prelude::*;
-use crate::network_service::handlers::initialize::Initialize;
+use crate::network_service::handlers::initialize::{
+  initialize_providers,
+  initialize_schematics,
+  start_schematic_services,
+  start_self_network,
+  update_providers,
+  Initialize,
+  ProviderInitOptions,
+};
 
 type Result<T> = std::result::Result<T, NetworkError>;
 #[derive(Debug)]
 
 pub(crate) struct NetworkService {
-  started: bool,
+  #[allow(unused)]
   started_time: std::time::Instant,
-  state: Option<State>,
-  uid: String,
-  schematics: HashMap<String, Addr<SchematicService>>,
-  definition: NetworkDefinition,
-  lattice: Option<Arc<Lattice>>,
-  allow_latest: bool,
-  insecure: Vec<String>,
-  providers: HashMap<String, ProviderChannel>,
+  state: RwLock<Option<State>>,
+  id: String,
 }
 
 #[derive(Debug)]
 struct State {
-  kp: KeyPair,
   model: Arc<RwLock<NetworkModel>>,
+  providers: HashMap<String, ProviderChannel>,
+  schematics: HashMap<String, Addr<SchematicService>>,
+  lattice: Option<Arc<Lattice>>,
 }
 
 impl Default for NetworkService {
   fn default() -> Self {
     NetworkService {
-      started: false,
       started_time: std::time::Instant::now(),
-      uid: "".to_owned(),
-      state: None,
-      schematics: HashMap::new(),
-      definition: NetworkDefinition::default(),
-      lattice: None,
-      allow_latest: false,
-      insecure: vec![],
-      providers: HashMap::new(),
+      id: "".to_owned(),
+      state: RwLock::new(None),
     }
   }
 }
 
-type ServiceMap = HashMap<String, Addr<NetworkService>>;
+type ServiceMap = HashMap<String, Arc<NetworkService>>;
 static HOST_REGISTRY: Lazy<Mutex<ServiceMap>> = Lazy::new(|| Mutex::new(HashMap::new()));
 
 impl NetworkService {
-  pub(crate) fn for_id(uid: &str) -> Addr<Self> {
-    trace!("NETWORK:GET:{}", uid);
-    let sys = System::current();
-    let mut registry = HOST_REGISTRY.lock();
-    let addr = registry.entry(uid.to_owned()).or_insert_with(|| {
-      trace!("NETWORK:CREATE:{}", uid);
-      NetworkService::start_service(sys.arbiter())
-    });
-
-    addr.clone()
+  pub(crate) fn new<T: AsRef<str>>(id: T) -> Self {
+    NetworkService {
+      started_time: std::time::Instant::now(),
+      id: id.as_ref().to_owned(),
+      ..Default::default()
+    }
   }
-  pub(crate) async fn start_from_manifest(
+
+  pub(crate) async fn init(&self, msg: Initialize) -> Result<()> {
+    trace!("NETWORK:INIT:{}", self.id);
+
+    let global_providers = msg.network.providers.clone();
+    let timeout = msg.timeout;
+
+    let schematics = msg.network.schematics.clone();
+    let address_map = start_schematic_services(&schematics);
+
+    let model = Arc::new(RwLock::new(NetworkModel::try_from(msg.network.clone())?));
+
+    let mut state = State {
+      model: model.clone(),
+      providers: HashMap::new(),
+      schematics: address_map.clone(),
+      lattice: msg.lattice,
+    };
+
+    let inner_model = model.clone();
+
+    let provider_init = ProviderInitOptions {
+      rng_seed: msg.rng_seed,
+      network_id: self.id.clone(),
+      lattice: state.lattice.clone(),
+      allow_latest: msg.allow_latest,
+      allowed_insecure: msg.allowed_insecure,
+      timeout: msg.timeout,
+    };
+
+    let channels = initialize_providers(global_providers, provider_init).await?;
+
+    state.providers = channels
+      .into_iter()
+      .map(|prv_channel| (prv_channel.namespace.clone(), prv_channel))
+      .collect();
+
+    let self_channel = start_self_network(self.id.clone()).await?;
+
+    state
+      .providers
+      .insert(SELF_NAMESPACE.to_owned(), self_channel);
+    let providers = state.providers.clone();
+
+    self.state.write().replace(state);
+
+    initialize_schematics(inner_model, address_map, timeout, providers).await?;
+    self.finalize()?;
+    Ok(())
+  }
+
+  pub(crate) fn finalize(&self) -> Result<()> {
+    let self_model = self.get_signature()?;
+    let mut lock = self.state.write();
+    let state = lock.as_mut().unwrap();
+    let mut self_channel = state.providers.get_mut(SELF_NAMESPACE).unwrap();
+    self_channel.model = Some(self_model.into());
+
+    update_providers(&state.model, &state.providers)?;
+
+    state.model.write().finalize()?;
+    NetworkValidator::validate(&state.model.write())?;
+    Ok(())
+  }
+
+  pub(crate) fn for_id(uid: &str) -> Arc<Self> {
+    trace!("NETWORK:GET:{}", uid);
+    trace!("wtf");
+    trace!("aa");
+    let mut registry = HOST_REGISTRY.lock();
+    trace!("ab");
+    let network = registry.entry(uid.to_owned()).or_insert_with(|| {
+      trace!("NETWORK:CREATE:{}", uid);
+      Arc::new(NetworkService::new(uid))
+    });
+    trace!("ac");
+
+    network.clone()
+  }
+
+  // #[async_recursion::async_recursion]
+  pub(crate) async fn init_from_manifest(
+    &self,
     location: &str,
-    rng_seed: u64,
-    allow_latest: bool,
-    allowed_insecure: Vec<String>,
-    lattice: Option<Arc<Lattice>>,
-    timeout: Duration,
-  ) -> Result<String> {
-    let bytes = vino_loader::get_bytes(location, allow_latest, &allowed_insecure).await?;
+    opts: ProviderInitOptions,
+  ) -> Result<()> {
+    let bytes = vino_loader::get_bytes(location, opts.allow_latest, &opts.allowed_insecure).await?;
     let manifest = vino_manifest::HostManifest::load_from_bytes(&bytes)?;
     let def = NetworkDefinition::from(manifest.network());
-    let kp = KeyPair::new_server();
 
-    let addr = NetworkService::for_id(&kp.public_key());
     let init = Initialize {
       network: def,
-      network_uid: kp.public_key(),
-      seed: kp.seed().unwrap(),
-      allowed_insecure,
-      allow_latest,
-      lattice,
-      timeout,
-      rng_seed: rng_seed.to_owned(),
+      allowed_insecure: opts.allowed_insecure,
+      allow_latest: opts.allow_latest,
+      lattice: opts.lattice,
+      timeout: opts.timeout,
+      rng_seed: opts.rng_seed,
     };
-    addr.send(init).await.map_err(|_| InternalError::E5001)??;
+    self.init(init).await
+  }
 
-    Ok(kp.public_key())
+  pub(crate) fn get_recipient(&self, entity: &Entity) -> Result<Arc<BoxedInvocationHandler>> {
+    let err = Err(NetworkError::InvalidRecipient(entity.url()));
+    let not_found = NetworkError::UnknownProvider(entity.url());
+    let state_opt = self.state.read();
+    let result = match state_opt.as_ref() {
+      Some(state) => match &entity {
+        Entity::Invalid => err,
+        Entity::System(_) => err,
+        Entity::Test(_) => err,
+        Entity::Client(_) => err,
+        Entity::Host(_) => err,
+        Entity::Schematic(_) => state.providers.get(SELF_NAMESPACE).ok_or(not_found),
+        Entity::Component(ns, _) => state.providers.get(ns).ok_or(not_found),
+        Entity::Provider(name) => state.providers.get(name).ok_or(not_found),
+        Entity::Reference(_) => err,
+      },
+      None => Err(NetworkError::Uninitialized),
+    };
+
+    result.map(|channel| channel.recipient.clone())
   }
+
   pub(crate) fn get_schematic_addr(&self, id: &str) -> Result<Addr<SchematicService>> {
-    self
-      .schematics
-      .get(id)
-      .cloned()
-      .ok_or_else(|| NetworkError::SchematicNotFound(id.to_owned()))
-  }
-  pub(crate) fn ensure_is_started(&self) -> Result<()> {
-    if self.started {
-      Ok(())
-    } else {
-      Err(NetworkError::NotStarted)
+    match self.state.read().as_ref() {
+      Some(state) => state
+        .schematics
+        .get(id)
+        .cloned()
+        .ok_or_else(|| NetworkError::SchematicNotFound(id.to_owned())),
+      None => Err(NetworkError::Uninitialized),
     }
   }
 }
 
-impl Supervised for NetworkService {}
+impl InvocationHandler for NetworkService {
+  fn get_signature(&self) -> std::result::Result<ProviderSignature, ProviderError> {
+    let state_opt = self.state.read();
+    let state = match state_opt.as_ref() {
+      Some(state) => state,
+      None => return Err(ProviderError::Uninitialized(1001)),
+    };
 
-impl SystemService for NetworkService {
-  fn service_started(&mut self, ctx: &mut Context<Self>) {
-    trace!("NETWORK:Service starting");
-    ctx.set_mailbox_capacity(1000);
+    let resolution_order = {
+      let model = state.model.read();
+      model
+        .get_resolution_order()
+        .map_err(|e| NetworkError::UnresolvableNetwork(e.to_string()))?
+    };
+
+    trace!(
+      "NETWORK:RESOLUTION_ORDER:[{}]",
+      join_comma(
+        &resolution_order
+          .iter()
+          .map(|v| format!("[{}]", join_comma(v)))
+          .collect::<Vec<_>>()
+      )
+    );
+
+    let mut signatures = HashMap::new();
+    for batch in resolution_order {
+      for name in batch {
+        trace!("NETWORK:SIGNATURE[{}]:REQUEST", name);
+        let schematic_model = { state.model.read().get_schematic(&name).cloned() };
+
+        match schematic_model {
+          Some(schematic_model) => {
+            let signature = {
+              schematic_model
+                .read()
+                .get_signature()
+                .cloned()
+                .ok_or_else(|| {
+                  NetworkError::UnresolvableNetwork(format!(
+                    "Schematic '{}' does not have a signature",
+                    name
+                  ))
+                })?
+            };
+            let mut scw = state.model.write();
+            scw
+              .update_self_component(name, signature.clone())
+              .map_err(|e| NetworkError::InvalidState(e.to_string()))?;
+            signatures.insert(signature.name.clone(), signature);
+          }
+          None => {
+            return Err(
+              NetworkError::InvalidState(format!(
+                "Attempted to resolve schematic '{}' but '{}' is not running.",
+                name, name
+              ))
+              .into(),
+            );
+          }
+        }
+      }
+    }
+
+    let provider_signature = ProviderSignature {
+      name: self.id.clone(),
+      components: signatures.into(),
+      types: StructMap::new(),
+    };
+
+    Ok(provider_signature)
   }
-}
 
-impl Actor for NetworkService {
-  type Context = Context<Self>;
+  fn invoke(
+    &self,
+    msg: InvocationMessage,
+  ) -> std::result::Result<
+    BoxFuture<std::result::Result<InvocationResponse, ProviderError>>,
+    ProviderError,
+  > {
+    let tx_id = msg.get_tx_id().to_owned();
+
+    let schematic_name = match msg.get_target() {
+      Entity::Schematic(name) => name,
+      Entity::Component(_, name) => name,
+      _ => return Err(ProviderError::ComponentNotFound(msg.get_target_url())),
+    };
+
+    trace!("NETWORK[{}]:INVOKE:{}", self.id, schematic_name);
+    let schematic = self
+      .get_schematic_addr(schematic_name)
+      .map_err(|e| ProviderError::ComponentNotFound(e.to_string()))?;
+
+    Ok(
+      async move {
+        match schematic.send(msg).await {
+          Ok(response) => Ok(response),
+          Err(e) => Ok(InvocationResponse::error(
+            tx_id,
+            format!("Internal error invoking schematic: {}", e),
+          )),
+        }
+      }
+      .boxed(),
+    )
+  }
 }
 
 #[cfg(test)]

@@ -8,7 +8,6 @@ use vino_wascap::KeyPair;
 
 use crate::dev::prelude::*;
 use crate::network_service::handlers::initialize::Initialize;
-use crate::network_service::handlers::list_schematics::GetSignature;
 pub use crate::providers::network_provider::Provider as NetworkProvider;
 
 type Result<T> = std::result::Result<T, RuntimeError>;
@@ -17,9 +16,10 @@ type Result<T> = std::result::Result<T, RuntimeError>;
 pub struct Network {
   pub uid: String,
   definition: NetworkDefinition,
-  addr: Addr<NetworkService>,
+  addr: Arc<NetworkService>,
   allow_latest: bool,
   allowed_insecure: Vec<String>,
+  #[allow(unused)]
   kp: KeyPair,
   timeout: Duration,
   lattice: Option<Arc<Lattice>>,
@@ -33,11 +33,7 @@ impl Network {
 
   pub async fn init(&self) -> Result<()> {
     trace!("NETWORK:INIT");
-    let kp = KeyPair::new_service();
-    let seed = map_err!(kp.seed(), InternalError::E5103)?;
     let init = Initialize {
-      network_uid: self.uid.clone(),
-      seed,
       lattice: self.lattice.clone(),
       network: self.definition.clone(),
       allowed_insecure: self.allowed_insecure.clone(),
@@ -45,7 +41,10 @@ impl Network {
       timeout: self.timeout,
       rng_seed: self.rng_seed,
     };
-    map_err!(self.addr.send(init).await, InternalError::E5102)?
+    self
+      .addr
+      .init(init)
+      .await
       .map_err(|e| RuntimeError::InitializationFailed(e.to_string()))?;
     trace!("NETWORK:INIT:COMPLETE");
     Ok(())
@@ -90,10 +89,9 @@ impl Network {
     );
     let msg = InvocationMessage::with_data(invocation, data.unwrap_or_default());
 
-    let response = map_err!(
-      self.addr.send(msg).timeout(self.timeout).await,
-      InternalError::E5101
-    )?;
+    let response = tokio::time::timeout(self.timeout, self.addr.invoke(msg)?)
+      .await
+      .map_err(|_| NetworkError::Timeout)??;
 
     trace!(
       "NETWORK:REQUEST[{}]:COMPLETE[duration {} μs]",
@@ -103,13 +101,9 @@ impl Network {
     Ok(response.ok()?)
   }
 
-  pub async fn get_signature(&self) -> Result<ProviderSignature> {
+  pub fn get_signature(&self) -> Result<ProviderSignature> {
     trace!("NETWORK:LIST_SCHEMATICS");
-    let msg = GetSignature {};
-    let response = map_err!(
-      self.addr.send(msg).timeout(self.timeout).await,
-      InternalError::E5102
-    )?;
+    let response = self.addr.get_signature();
     trace!("NETWORK:LIST_SCHEMATICS:COMPLETE");
     Ok(response?)
   }

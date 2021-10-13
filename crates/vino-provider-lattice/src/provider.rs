@@ -3,6 +3,7 @@ use std::sync::Arc;
 use std::time::Instant;
 
 use async_trait::async_trait;
+use futures::executor::block_on;
 use vino_lattice::lattice::Lattice;
 use vino_provider::native::prelude::*;
 use vino_rpc::error::RpcError;
@@ -54,11 +55,8 @@ impl RpcHandler for Provider {
     Ok(Box::pin(stream))
   }
 
-  async fn get_list(&self) -> RpcResult<Vec<HostedType>> {
-    let components = self
-      .lattice
-      .list_components(self.namespace.clone())
-      .await
+  fn get_list(&self) -> RpcResult<Vec<HostedType>> {
+    let components = block_on(self.lattice.list_components(self.namespace.clone()))
       .map_err(|e| RpcError::ProviderError(e.to_string()))?;
 
     Ok(components)
@@ -78,7 +76,7 @@ mod tests {
 
   use super::*;
   static PROVIDER: Lazy<BoxedRpcHandler> =
-    Lazy::new(|| Box::new(test_vino_provider::Provider::default()));
+    Lazy::new(|| Arc::new(test_vino_provider::Provider::default()));
 
   #[test_logger::test(tokio::test)]
   async fn test_component() -> TestResult<()> {
@@ -86,7 +84,9 @@ mod tests {
     let lattice = lattice_builder.build().await?;
     let ns = "some_namespace";
 
-    lattice.handle_namespace(ns.to_owned(), &PROVIDER).await?;
+    lattice
+      .handle_namespace(ns.to_owned(), PROVIDER.clone())
+      .await?;
 
     let provider = Provider::new(ns.to_owned(), Arc::new(lattice)).await?;
     let user_data = "Hello world";
@@ -114,7 +114,7 @@ mod tests {
     let ns = "some_namespace";
 
     lattice
-      .handle_namespace(ns.to_owned(), &test_vino_provider::PROVIDER)
+      .handle_namespace(ns.to_owned(), test_vino_provider::PROVIDER.clone())
       .await?;
 
     let provider = Provider::new(ns.to_owned(), Arc::new(lattice)).await?;

@@ -28,6 +28,7 @@ pub enum CliError {
   JoinError(#[from] tokio::task::JoinError),
 
   #[error(transparent)]
+
   /// An error connecting or communicating over the lattice.
   Lattice(#[from] vino_lattice::Error),
 

@@ -114,7 +114,7 @@ impl RpcHandler for Provider {
     Ok(Box::pin(stream))
   }
 
-  async fn get_list(&self) -> RpcResult<Vec<HostedType>> {
+  fn get_list(&self) -> RpcResult<Vec<HostedType>> {
     let signature = generated::get_signature();
     Ok(vec![HostedType::Provider(signature)])
   }

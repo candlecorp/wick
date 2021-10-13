@@ -4,10 +4,16 @@ use crate::dev::prelude::*;
 
 #[derive(Error, Debug)]
 pub enum ProviderError {
+  #[error("Component not found: {0}")]
+  ComponentNotFound(String),
+  #[error("{0}")]
+  NetworkError(String),
+  #[error("Invalid state: {0}")]
+  InvalidState(String),
   #[error(transparent)]
   InvocationError(#[from] InvocationError),
-  #[error("Provider uninitialized")]
-  Uninitialized,
+  #[error("Provider uninitialized ({0})")]
+  Uninitialized(i32),
   #[error(transparent)]
   WasmProviderError(#[from] vino_provider_wasm::Error),
   #[error("Failed to create a raw WebAssembly host")]

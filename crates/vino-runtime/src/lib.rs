@@ -99,29 +99,6 @@ mod macros {
       }
     };
   }
-
-  macro_rules! actix_try_or_err {
-    ($expr:expr, $err:expr $(,)?) => {
-      match $expr {
-        Ok(val) => val,
-        Err(err) => {
-          error!("Unexpected error ({}): {}", $err, err);
-          return ActorResult::reply(Err(From::from($err)));
-        }
-      }
-    };
-  }
-
-  macro_rules! actix_ensure_ok {
-    ($expr:expr $(,)?) => {
-      match $expr {
-        Ok(val) => val,
-        Err(err) => {
-          return ActorResult::reply(err);
-        }
-      }
-    };
-  }
 }
 
 #[macro_use]

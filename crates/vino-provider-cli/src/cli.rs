@@ -244,6 +244,7 @@ pub struct ServerState {
   pub rpc: Option<ServerControl>,
   /// The address of the HTTP server if it is running.
   pub http: Option<ServerControl>,
+
   /// True if we're connected to the lattice, false otherwise.
   pub lattice: Option<Arc<Lattice>>,
   /// The ID of the server.
@@ -303,6 +304,7 @@ pub fn print_info(info: &ServerState) {
     something_started = true;
     info!("HTTP server bound to {} on port {}", addr.ip(), addr.port());
   }
+
   if info.lattice.is_some() {
     something_started = true;
     info!("Host connected to lattice with id '{}'", info.id);
@@ -321,15 +323,12 @@ pub fn init_logging(options: &LoggingOptions) -> Result<()> {
 }
 
 /// Starts an RPC and/or an HTTP server for the passed [vino_rpc::RpcHandler].
-pub async fn start_server(
-  provider: &'static BoxedRpcHandler,
-  opts: Option<Options>,
-) -> Result<ServerState> {
+pub async fn start_server(provider: BoxedRpcHandler, opts: Option<Options>) -> Result<ServerState> {
   debug!("Starting server with options: {:?}", opts);
 
   let opts = opts.unwrap_or_default();
 
-  let component_service = InvocationServer::new(provider);
+  let component_service = InvocationServer::new(provider.clone());
 
   let svc = InvocationServiceServer::new(component_service);
 
@@ -348,7 +347,7 @@ pub async fn start_server(
     if !http_opts.enabled {
       None
     } else {
-      let addr = start_http_server(&http_opts, provider).await?;
+      let addr = start_http_server(&http_opts, provider.clone()).await?;
       Some(addr)
     }
   } else {
@@ -371,6 +370,7 @@ pub async fn start_server(
     id: opts.id,
     rpc: ServerControl::maybe_new(rpc_addr),
     http: ServerControl::maybe_new(http_addr),
+
     lattice,
   })
 }
@@ -378,7 +378,7 @@ pub async fn start_server(
 async fn connect_to_lattice(
   opts: &LatticeOptions,
   id: String,
-  factory: &'static BoxedRpcHandler,
+  factory: BoxedRpcHandler,
   timeout: Duration,
 ) -> Result<Arc<Lattice>> {
   info!(
@@ -401,7 +401,7 @@ async fn connect_to_lattice(
 
 async fn start_http_server(
   options: &ServerOptions,
-  provider: &'static BoxedRpcHandler,
+  provider: BoxedRpcHandler,
 ) -> Result<(SocketAddr, Sender<ServerMessage>)> {
   let port = options.port.unwrap_or(0);
   let address = options.address.unwrap_or(Ipv4Addr::from_str("127.0.0.1")?);
@@ -509,7 +509,7 @@ async fn start_rpc_server(
 
 /// Start a server with the passed [vino_rpc::RpcHandler] and keep it.
 /// running until the process receives a SIGINT (^C).
-pub async fn init_cli(provider: &'static BoxedRpcHandler, opts: Option<Options>) -> Result<()> {
+pub async fn init_cli(provider: BoxedRpcHandler, opts: Option<Options>) -> Result<()> {
   let state = start_server(provider, opts).await?;
   print_info(&state);
 
@@ -525,6 +525,7 @@ pub async fn init_cli(provider: &'static BoxedRpcHandler, opts: Option<Options>)
 #[cfg(test)]
 mod tests {
   use std::str::FromStr;
+  use std::sync::Arc;
   use std::time::Duration;
 
   use anyhow::Result;
@@ -532,12 +533,12 @@ mod tests {
   use test_vino_provider::Provider;
   use tokio::time::sleep;
   use tonic::transport::Uri;
-  use vino_invocation_server::make_rpc_client;
+  use vino_invocation_server::connect_rpc_client;
   use vino_rpc::rpc::ListRequest;
 
   use super::*;
 
-  static PROVIDER: Lazy<BoxedRpcHandler> = Lazy::new(|| Box::new(Provider::default()));
+  static PROVIDER: Lazy<BoxedRpcHandler> = Lazy::new(|| Arc::new(Provider::default()));
 
   #[test_logger::test(tokio::test)]
   async fn test_starts() -> Result<()> {
@@ -547,12 +548,12 @@ mod tests {
       ..Default::default()
     };
     options.rpc = Some(rpc_opts);
-    let config = start_server(&PROVIDER, Some(options)).await?;
+    let config = start_server(PROVIDER.clone(), Some(options)).await?;
     let rpc = config.rpc.unwrap();
     debug!("Waiting for server to start");
     sleep(Duration::from_millis(100)).await;
     let uri = Uri::from_str(&format!("https://{}:{}", rpc.addr.ip(), rpc.addr.port())).unwrap();
-    let mut client = make_rpc_client(uri).await?;
+    let mut client = connect_rpc_client(uri).await?;
     let response = client.list(ListRequest {}).await.unwrap();
     let list = response.into_inner();
     println!("list: {:?}", list);
@@ -563,7 +564,7 @@ mod tests {
   // #[test_logger::test(tokio::test)]
   async fn _test_http() -> Result<()> {
     let config = start_server(
-      &PROVIDER,
+      PROVIDER.clone(),
       Some(Options {
         rpc: Some(ServerOptions {
           address: Some(Ipv4Addr::from_str("127.0.0.1")?),

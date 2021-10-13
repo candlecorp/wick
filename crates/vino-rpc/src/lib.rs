@@ -74,6 +74,8 @@
 // Add exceptions here
 #![allow(unused_qualifications)]
 
+use std::sync::Arc;
+
 use async_trait::async_trait;
 
 /// The Vino RPC Client
@@ -107,7 +109,7 @@ pub type Error = crate::error::RpcError;
 pub type RpcResult<T> = std::result::Result<T, Box<error::RpcError>>;
 
 /// The type of RpcHandler the default invocation server takes.
-pub type BoxedRpcHandler = Box<dyn RpcHandler + Send + Sync + 'static>;
+pub type BoxedRpcHandler = Arc<dyn RpcHandler + Send + Sync + 'static>;
 
 /// A function that produces a BoxedRpcHandler.
 pub type RpcFactory = Box<dyn Fn() -> BoxedRpcHandler + Send + Sync + 'static>;
@@ -126,5 +128,7 @@ where
   ) -> std::result::Result<BoxedTransportStream, Box<error::RpcError>>;
 
   /// List the entities this [RpcHandler] manages.
-  async fn get_list(&self) -> std::result::Result<Vec<HostedType>, Box<error::RpcError>>;
+  fn get_list(&self) -> std::result::Result<Vec<HostedType>, Box<error::RpcError>>;
 }
+
+pub use client::make_rpc_client;

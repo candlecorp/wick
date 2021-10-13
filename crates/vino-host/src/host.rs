@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::convert::{
   TryFrom,
   TryInto,
@@ -6,7 +7,8 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 use nkeys::KeyPair;
-use once_cell::sync::OnceCell;
+use once_cell::sync::Lazy;
+use parking_lot::Mutex;
 use vino_entity::Entity;
 use vino_lattice::lattice::Lattice;
 use vino_lattice::nats::NatsOptions;
@@ -18,7 +20,10 @@ use vino_provider_cli::cli::{
   ServerOptions,
   ServerState,
 };
-use vino_rpc::BoxedRpcHandler;
+use vino_rpc::{
+  BoxedRpcHandler,
+  RpcHandler,
+};
 use vino_runtime::core_data::InitData;
 use vino_runtime::network::NetworkBuilder;
 use vino_runtime::prelude::*;
@@ -29,7 +34,18 @@ use crate::{
   Result,
 };
 
-static PROVIDER: OnceCell<BoxedRpcHandler> = OnceCell::new();
+type ServiceMap = HashMap<String, BoxedRpcHandler>;
+static HOST_REGISTRY: Lazy<Mutex<ServiceMap>> = Lazy::new(|| Mutex::new(HashMap::new()));
+
+fn from_registry(id: &str) -> Arc<dyn RpcHandler + Send + Sync + 'static> {
+  trace!("HOST:PROV:NETWORK:GET:{}", id);
+  let mut registry = HOST_REGISTRY.lock();
+  let provider = registry.entry(id.to_owned()).or_insert_with(|| {
+    trace!("HOST:PROV:NETWORK:CREATE:{}", id);
+    Arc::new(NetworkProvider::new(id.to_owned()))
+  });
+  provider.clone()
+}
 
 /// A Vino Host wraps a Vino runtime with server functionality like persistence,.
 #[must_use]
@@ -83,9 +99,9 @@ impl Host {
     }
   }
 
-  pub async fn get_signature(&self) -> Result<ProviderSignature> {
+  pub fn get_signature(&self) -> Result<ProviderSignature> {
     match &self.network {
-      Some(network) => Ok(network.get_signature().await?),
+      Some(network) => Ok(network.get_signature()?),
       None => Err(Error::NoNetwork),
     }
   }
@@ -186,8 +202,7 @@ impl Host {
       timeout: self.manifest.host.timeout,
     };
 
-    let provider: &'static BoxedRpcHandler =
-      PROVIDER.get_or_init(|| Box::new(NetworkProvider::new(nuid.clone())));
+    let provider = from_registry(&nuid);
 
     let metadata = tokio::spawn(vino_provider_cli::start_server(provider, Some(options)))
       .await
@@ -240,9 +255,6 @@ impl Host {
 #[must_use]
 #[derive(Debug, Clone)]
 pub struct HostBuilder {
-  pk: String,
-  id: String,
-
   manifest: HostDefinition,
 }
 
@@ -255,12 +267,7 @@ impl Default for HostBuilder {
 impl HostBuilder {
   /// Creates a new host builder.
   pub fn new() -> HostBuilder {
-    let kp = KeyPair::new_server();
-    let id = kp.public_key();
-
     HostBuilder {
-      id,
-      pk: kp.public_key(),
       manifest: HostDefinition::default(),
     }
   }
@@ -313,7 +320,7 @@ mod test {
 
   use http::Uri;
   use vino_entity::entity::Entity;
-  use vino_invocation_server::make_rpc_client;
+  use vino_invocation_server::connect_rpc_client;
   use vino_manifest::host_definition::HttpConfig;
   use vino_rpc::convert_transport_map;
   use vino_rpc::rpc::Invocation;
@@ -328,6 +335,7 @@ mod test {
   fn builds_default() {
     let _h = HostBuilder::new().build();
   }
+
   #[test_logger::test(actix::test)]
   async fn should_start_and_stop() -> Result<()> {
     let mut host = HostBuilder::new().build();
@@ -339,7 +347,7 @@ mod test {
   }
 
   #[test_logger::test(actix::test)]
-  async fn basic_test() -> Result<()> {
+  async fn request_direct() -> Result<()> {
     let file = PathBuf::from("manifests/logger.yaml");
     let manifest = HostDefinition::load_from_file(&file)?;
     let mut host = HostBuilder::from_definition(manifest).build();
@@ -359,7 +367,7 @@ mod test {
   }
 
   #[test_logger::test(actix::test)]
-  async fn request_from_rpc_server() -> Result<()> {
+  async fn request_rpc_server() -> Result<()> {
     let file = PathBuf::from("manifests/logger.yaml");
     let mut def = HostDefinition::load_from_file(&file)?;
     def.host.rpc = Some(HttpConfig {
@@ -372,7 +380,7 @@ mod test {
     let mut host = HostBuilder::from_definition(def).build();
     host.start().await?;
 
-    let mut client = make_rpc_client(Uri::from_str("https://127.0.0.1:54321").unwrap()).await?;
+    let mut client = connect_rpc_client(Uri::from_str("https://127.0.0.1:54321").unwrap()).await?;
     let passed_data = "logging output";
     let data = vec![("input", passed_data)].into();
     let mut response = client
@@ -385,9 +393,10 @@ mod test {
       .await
       .unwrap()
       .into_inner();
-    let next = response.message().await.unwrap().unwrap();
-
-    debug!("output: {:?}", next);
+    let next = response.message().await;
+    println!("next: {:?}", next);
+    let next = next.unwrap().unwrap();
+    debug!("result: {:?}", next);
 
     host.stop().await;
 

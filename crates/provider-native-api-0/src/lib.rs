@@ -95,6 +95,7 @@ pub mod error;
 
 #[derive(Clone, Debug)]
 pub(crate) struct Context {
+  #[allow(unused)]
   rng: Random,
 }
 
@@ -135,7 +136,7 @@ impl RpcHandler for Provider {
     Ok(Box::pin(stream))
   }
 
-  async fn get_list(&self) -> RpcResult<Vec<HostedType>> {
+  fn get_list(&self) -> RpcResult<Vec<HostedType>> {
     let signature = generated::get_signature();
     Ok(vec![HostedType::Provider(signature)])
   }
@@ -248,7 +249,7 @@ mod tests {
     let signature = crate::generated::get_signature();
     let components = signature.components.inner();
 
-    let response = provider.get_list().await.unwrap();
+    let response = provider.get_list().unwrap();
 
     debug!("list response : {:?}", response);
 

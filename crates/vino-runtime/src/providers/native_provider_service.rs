@@ -1,3 +1,4 @@
+use futures::future::BoxFuture;
 use tokio::sync::mpsc::unbounded_channel;
 use tokio_stream::wrappers::UnboundedReceiverStream;
 use vino_rpc::{
@@ -25,15 +26,14 @@ impl NativeProviderService {
   }
 }
 
-#[async_trait::async_trait]
 impl InvocationHandler for NativeProviderService {
-  async fn get_signature(&self) -> Result<ProviderSignature> {
+  fn get_signature(&self) -> Result<ProviderSignature> {
     trace!("{}:InitComponents:[NS:{}]", PREFIX, self.namespace);
 
-    let state = some_or_bail!(&self.state, Err(ProviderError::Uninitialized));
+    let state = some_or_bail!(&self.state, Err(ProviderError::Uninitialized(1000)));
     let provider = clone_box(&*state.provider);
 
-    let mut list = provider.get_list().await?;
+    let mut list = provider.get_list()?;
     drop(provider);
 
     match list.swap_remove(0) {
@@ -41,7 +41,7 @@ impl InvocationHandler for NativeProviderService {
     }
   }
 
-  async fn invoke(&self, msg: InvocationMessage) -> Result<InvocationResponse> {
+  fn invoke(&self, msg: InvocationMessage) -> Result<BoxFuture<Result<InvocationResponse>>> {
     trace!(
       "{}:INVOKE:[{}]=>[{}]",
       PREFIX,
@@ -57,49 +57,54 @@ impl InvocationHandler for NativeProviderService {
     let message = msg.get_payload_owned();
     let url = component.url();
 
-    let receiver = provider.invoke(component, message).await;
-    drop(provider);
-    let (tx, rx) = unbounded_channel();
-    match receiver {
-      Ok(mut receiver) => {
-        trace!("{}[{}]:START", PREFIX, url);
-        tokio::spawn(async move {
-          loop {
-            trace!("{}[{}]:WAIT", PREFIX, url);
-            let output = match receiver.next().await {
-              Some(v) => v,
-              None => break,
-            };
-            trace!("{}[{}]:PORT[{}]:RECV", PREFIX, url, output.port);
+    Ok(
+      async move {
+        let receiver = provider.invoke(component, message).await;
+        drop(provider);
+        let (tx, rx) = unbounded_channel();
+        match receiver {
+          Ok(mut receiver) => {
+            trace!("{}[{}]:START", PREFIX, url);
+            tokio::spawn(async move {
+              loop {
+                trace!("{}[{}]:WAIT", PREFIX, url);
+                let output = match receiver.next().await {
+                  Some(v) => v,
+                  None => break,
+                };
+                trace!("{}[{}]:PORT[{}]:RECV", PREFIX, url, output.port);
 
-            match tx.send(TransportWrapper {
-              port: output.port.clone(),
-              payload: output.payload,
-            }) {
-              Ok(_) => {
-                trace!("{}[{}]:PORT[{}]:SENT", PREFIX, url, output.port);
+                match tx.send(TransportWrapper {
+                  port: output.port.clone(),
+                  payload: output.payload,
+                }) {
+                  Ok(_) => {
+                    trace!("{}[{}]:PORT[{}]:SENT", PREFIX, url, output.port);
+                  }
+                  Err(e) => {
+                    error!("Error sending output on channel {}", e.to_string());
+                    break;
+                  }
+                }
               }
-              Err(e) => {
-                error!("Error sending output on channel {}", e.to_string());
-                break;
-              }
-            }
+              trace!("{}[{}]:FINISH", PREFIX, url);
+            });
           }
-          trace!("{}[{}]:FINISH", PREFIX, url);
-        });
-      }
-      Err(e) => {
-        error!("Error invoking component: {}", e.to_string());
-        let txresult = tx.send(TransportWrapper::component_error(MessageTransport::error(
-          e.to_string(),
-        )));
-        let _ = map_err!(txresult, InternalError::E7002);
-      }
-    }
+          Err(e) => {
+            error!("Error invoking component: {}", e.to_string());
+            let txresult = tx.send(TransportWrapper::component_error(MessageTransport::error(
+              e.to_string(),
+            )));
+            let _ = map_err!(txresult, InternalError::E7002);
+          }
+        }
 
-    let rx = UnboundedReceiverStream::new(rx);
+        let rx = UnboundedReceiverStream::new(rx);
 
-    Ok(InvocationResponse::stream(tx_id, rx))
+        Ok(InvocationResponse::stream(tx_id, rx))
+      }
+      .boxed(),
+    )
   }
 }
 
@@ -110,6 +115,8 @@ struct State {
 #[cfg(test)]
 mod test {
 
+  use std::sync::Arc;
+
   use super::*;
   use crate::test::prelude::assert_eq;
   type Result<T> = super::Result<T>;
@@ -119,7 +126,7 @@ mod test {
     let seed: u64 = 100000;
     let provider = NativeProviderService::new(
       "native-provider".to_owned(),
-      Box::new(vino_native_api_0::Provider::new(seed)),
+      Arc::new(vino_native_api_0::Provider::new(seed)),
     );
 
     let user_data = "This is my payload";
@@ -131,7 +138,7 @@ mod test {
       payload,
     )
     .into();
-    let response = provider.invoke(invocation).await?;
+    let response = provider.invoke(invocation)?.await?;
 
     let mut rx = response.ok()?;
     let next: TransportWrapper = rx.next().await.unwrap();

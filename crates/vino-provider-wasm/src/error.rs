@@ -24,6 +24,9 @@ pub enum WasmProviderError {
   #[error(transparent)]
   TransportError(#[from] vino_transport::error::TransportError),
 
+  #[error("WebAssembly engine failed: {0}")]
+  EngineFailure(String),
+
   #[error("Could not extract claims from component. Is it a signed WebAssembly module?")]
   ClaimsExtraction,
   #[error("Error sending output to stream.")]

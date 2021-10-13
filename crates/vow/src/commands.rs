@@ -2,9 +2,6 @@ pub(crate) mod run;
 pub(crate) mod serve;
 pub(crate) mod test;
 
-use std::net::Ipv4Addr;
-use std::path::PathBuf;
-
 use structopt::StructOpt;
 use vino_provider_wasm::provider::WasiParams;
 
@@ -46,27 +43,4 @@ impl From<&WasiOptions> for WasiParams {
       ..Default::default()
     }
   }
-}
-
-#[derive(Debug, Clone, StructOpt)]
-pub(crate) struct ConnectOptions {
-  /// Port to listen on.
-  #[structopt(long)]
-  pub(crate) port: Option<u16>,
-
-  /// IP address to bind to.
-  #[structopt(short, long, default_value = "127.0.0.1")]
-  pub(crate) address: Ipv4Addr,
-
-  /// Path to pem file for TLS connections.
-  #[structopt(long)]
-  pub(crate) pem: Option<PathBuf>,
-
-  /// Path to client key for TLS connections.
-  #[structopt(long)]
-  pub(crate) key: Option<PathBuf>,
-
-  /// Path to CA pem for TLS connections.
-  #[structopt(long)]
-  pub(crate) ca: Option<PathBuf>,
 }

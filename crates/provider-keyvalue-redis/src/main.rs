@@ -75,6 +75,8 @@
 #[macro_use]
 extern crate log;
 
+use std::sync::Arc;
+
 use futures::executor::block_on;
 use once_cell::sync::OnceCell;
 use structopt::StructOpt;
@@ -98,11 +100,11 @@ async fn main() -> Result<(), vino_keyvalue_redis::error::Error> {
   let opts = Options::from_args();
   let url = opts.url;
   vino_provider_cli::init_logging(&opts.options.logging)?;
-  let provider: &'static BoxedRpcHandler = PROVIDER.get_or_init(|| {
+  let provider = PROVIDER.get_or_init(|| {
     let provider = Provider::default();
     block_on(provider.connect("default".to_owned(), url.clone())).unwrap();
-    Box::new(provider)
+    Arc::new(provider)
   });
-  vino_provider_cli::init_cli(provider, Some(opts.options.into())).await?;
+  vino_provider_cli::init_cli(provider.clone(), Some(opts.options.into())).await?;
   Ok(())
 }

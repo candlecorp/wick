@@ -30,6 +30,7 @@ pub struct Context {
 #[derive(Clone, Debug)]
 pub struct Provider {
   host: Arc<WasmHost>,
+  #[allow(unused)]
   config: Vec<u8>,
 }
 
@@ -78,7 +79,7 @@ impl RpcHandler for Provider {
     Ok(Box::pin(outputs))
   }
 
-  async fn get_list(&self) -> RpcResult<Vec<HostedType>> {
+  fn get_list(&self) -> RpcResult<Vec<HostedType>> {
     let signature = self.host.get_components();
 
     trace!(

@@ -17,10 +17,9 @@ pub(crate) mod prelude {
     Message,
     ResponseActFuture,
     Supervised,
-    System,
-    SystemService,
     WrapFuture,
   };
+  #[allow(unused)]
   pub(crate) use futures::FutureExt;
   pub(crate) use itertools::*;
   pub(crate) use tokio_stream::StreamExt;
@@ -49,10 +48,7 @@ pub(crate) mod prelude {
 
   pub(crate) use crate::core_data::InitData;
   pub(crate) use crate::dev::*;
-  pub(crate) use crate::dispatch::{
-    inv_error,
-    InvocationMessage,
-  };
+  pub(crate) use crate::dispatch::InvocationMessage;
   pub(crate) use crate::error::*;
   pub(crate) use crate::models::component_model::*;
   pub(crate) use crate::models::network_model::*;
@@ -63,7 +59,6 @@ pub(crate) mod prelude {
   pub(crate) use crate::prelude::*;
   pub(crate) use crate::providers::network_provider::Provider as NetworkProvider;
   pub(crate) use crate::providers::{
-    create_network_provider_model,
     initialize_native_provider,
     start_network_provider,
     BoxedInvocationHandler,

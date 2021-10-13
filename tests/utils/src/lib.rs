@@ -157,7 +157,7 @@ pub async fn start_provider(
 
   let (tx, mut rx) = mpsc::channel::<Signal>(1);
 
-  let re = Regex::new(r"127.0.0.1:(\d+)").unwrap();
+  let re = Regex::new(r"RPC: Starting server on 127.0.0.1:(\d+)").unwrap();
 
   let name2 = name.to_owned();
   tokio::spawn(async move {

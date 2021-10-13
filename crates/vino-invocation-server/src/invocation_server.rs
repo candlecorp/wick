@@ -37,7 +37,7 @@ use crate::BoxedRpcHandler;
 pub struct InvocationServer {
   /// The provider that will handle incoming requests.
   #[derivative(Debug = "ignore")]
-  pub provider: &'static BoxedRpcHandler,
+  pub provider: BoxedRpcHandler,
 
   stats: RwLock<HashMap<String, Statistics>>,
 }
@@ -45,7 +45,7 @@ pub struct InvocationServer {
 impl InvocationServer {
   /// Constructor.
   #[must_use]
-  pub fn new(provider: &'static BoxedRpcHandler) -> Self {
+  pub fn new(provider: BoxedRpcHandler) -> Self {
     Self {
       provider,
       stats: RwLock::new(HashMap::new()),
@@ -148,8 +148,10 @@ impl InvocationService for InvocationServer {
     _request: tonic::Request<rpc::ListRequest>,
   ) -> Result<Response<ListResponse>, Status> {
     trace!("Listing registered components from provider");
-    let future = self.provider.get_list();
-    let list = future.await.map_err(|e| Status::internal(e.to_string()))?;
+    let list = self
+      .provider
+      .get_list()
+      .map_err(|e| Status::internal(e.to_string()))?;
     trace!("Server: list is {:?}", list);
 
     let result: Result<Vec<_>, RpcError> = list.into_iter().map(TryFrom::try_from).collect();

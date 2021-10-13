@@ -1,10 +1,6 @@
 use thiserror::Error;
 use vino_codec::error::CodecError;
 
-use crate::rpc_client;
-
-// type BoxedSyncSendError = Box<dyn std::error::Error + Sync + std::marker::Send>;
-
 #[derive(Error, Debug)]
 pub enum ControlError {
   #[error("invalid configuration")]
@@ -24,7 +20,7 @@ pub enum ControlError {
   #[error(transparent)]
   LoggerError(#[from] logger::error::LoggerError),
   #[error(transparent)]
-  RpcClientError(#[from] rpc_client::RpcClientError),
+  RpcClientError(#[from] vino_rpc::error::RpcClientError),
   #[error(transparent)]
   RpcError(#[from] vino_rpc::Error),
   #[error(transparent)]

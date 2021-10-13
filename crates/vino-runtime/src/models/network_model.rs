@@ -27,6 +27,7 @@ pub(crate) struct NetworkModel {
 
 #[derive(Debug, Clone)]
 struct LoadedState {
+  #[allow(unused)]
   provider_signatures: Vec<ProviderSignature>,
 }
 

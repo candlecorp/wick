@@ -1,4 +1,5 @@
 use std::path::PathBuf;
+use std::sync::Arc;
 
 use structopt::StructOpt;
 use vino_provider_cli::LoggingOptions;
@@ -39,7 +40,7 @@ pub(crate) async fn handle_command(opts: TestCommand) -> Result<()> {
 
   let mut suite = TestSuite::try_from_file(opts.data_path.clone())?;
 
-  let runner = suite.run(Box::new(provider)).await?;
+  let runner = suite.run(Arc::new(provider)).await?;
   runner.print();
 
   Ok(())

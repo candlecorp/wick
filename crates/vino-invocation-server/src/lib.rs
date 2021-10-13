@@ -129,7 +129,7 @@ pub fn make_input<K: AsRef<str>, V: serde::Serialize>(entries: Vec<(K, V)>) -> T
 #[must_use]
 pub fn make_rpc_server(
   socket: tokio::net::TcpSocket,
-  provider: &'static BoxedRpcHandler,
+  provider: BoxedRpcHandler,
 ) -> JoinHandle<std::result::Result<(), tonic::transport::Error>> {
   let component_service = InvocationServer::new(provider);
 
@@ -145,7 +145,7 @@ pub fn make_rpc_server(
 }
 
 /// Create an RPC client.
-pub async fn make_rpc_client(uri: Uri) -> Result<InvocationServiceClient<Channel>> {
+pub async fn connect_rpc_client(uri: Uri) -> Result<InvocationServiceClient<Channel>> {
   Ok(InvocationServiceClient::connect(uri).await?)
 }
 

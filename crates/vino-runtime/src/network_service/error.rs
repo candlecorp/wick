@@ -5,6 +5,8 @@ use crate::dev::prelude::*;
 pub enum NetworkError {
   #[error("Network not started")]
   NotStarted,
+  #[error("Uninitialized")]
+  Uninitialized,
   #[error("Schematic {0} not found")]
   SchematicNotFound(String),
   #[error("Error initializing: {0}")]
@@ -39,6 +41,8 @@ pub enum NetworkError {
   InvalidRecipient(String),
   #[error("Invalid state: {0}")]
   InvalidState(String),
+  #[error("Request timeout out")]
+  Timeout,
 }
 
 impl From<NetworkModelError> for NetworkError {
@@ -56,6 +60,12 @@ impl From<NetworkValidationError> for NetworkError {
 impl From<SchematicError> for NetworkError {
   fn from(e: SchematicError) -> Self {
     NetworkError::SchematicError(e.to_string())
+  }
+}
+
+impl From<NetworkError> for ProviderError {
+  fn from(e: NetworkError) -> Self {
+    ProviderError::NetworkError(e.to_string())
   }
 }
 

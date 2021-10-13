@@ -28,13 +28,6 @@ pub(crate) struct SchematicModel {
   raw_ports: HashMap<String, RawPorts>,
 }
 
-#[derive(Debug, Clone)]
-struct LoadedState {
-  schematic_inputs: TypeMap,
-  schematic_outputs: TypeMap,
-  provider_signatures: Vec<ProviderSignature>,
-}
-
 impl TryFrom<SchematicDefinition> for SchematicModel {
   type Error = SchematicModelError;
 
@@ -243,6 +236,10 @@ impl SchematicModel {
       Some(Some(provider)) => provider.components.get(name).is_some(),
       _ => false,
     }
+  }
+
+  pub(crate) fn get_allowed_providers(&self) -> &Vec<String> {
+    &self.definition.providers
   }
 
   #[allow(clippy::ptr_arg)]
