@@ -117,8 +117,6 @@ pub enum RuntimeError {
   TransportError(#[from] vino_transport::Error),
   #[error(transparent)]
   OutputError(#[from] vino_packet::error::DeserializationError),
-  #[error("Mailbox closed")]
-  MailboxClosed,
   #[error(transparent)]
   RpcHandlerError(#[from] Box<vino_rpc::Error>),
   #[error(transparent)]
@@ -134,11 +132,5 @@ pub enum RuntimeError {
 impl From<vino_lattice::Error> for RuntimeError {
   fn from(e: vino_lattice::Error) -> Self {
     RuntimeError::Lattice(e.to_string())
-  }
-}
-
-impl From<MailboxError> for RuntimeError {
-  fn from(_: MailboxError) -> Self {
-    RuntimeError::MailboxClosed
   }
 }

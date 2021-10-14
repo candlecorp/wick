@@ -75,7 +75,7 @@
 #[macro_use]
 mod macros {
 
-  /// log_ie!(Result, u16) takes a result and an error number, maps the error to an InternalError and logs it.
+  /// map_err!(expr, err) takes a result, logs the error if it exists, then maps the error to the passed error.
   macro_rules! map_err {
     ($expr:expr, $err:expr) => {{
       let result = $expr;
@@ -86,18 +86,6 @@ mod macros {
       }
       result.map_err(|_| err)
     }};
-  }
-
-  macro_rules! actix_try {
-    ($expr:expr $(,)?) => {
-      match $expr {
-        Ok(val) => val,
-        Err(err) => {
-          error!("Unexpected error: {}", err);
-          return ActorResult::reply(Err(From::from(err)));
-        }
-      }
-    };
   }
 }
 

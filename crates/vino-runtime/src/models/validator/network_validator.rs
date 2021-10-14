@@ -70,7 +70,7 @@ mod tests {
       },
     };
     let mut providers = HashMap::new();
-    providers.insert(VINO_V0_NAMESPACE.to_owned(), Some(provider));
+    providers.insert(VINO_V0_NAMESPACE.to_owned(), provider);
     model.update_providers(providers)?;
     NetworkValidator::validate(&model)?;
 
@@ -91,7 +91,7 @@ mod tests {
       },
     };
     let mut providers = HashMap::new();
-    providers.insert("wapc".to_owned(), Some(provider));
+    providers.insert("wapc".to_owned(), provider);
     model.update_providers(providers)?;
     let result = NetworkValidator::validate(&model);
     assert!(result.is_err());

@@ -29,7 +29,7 @@ lazy_static! {
 type Data = HashMap<String, String>;
 
 fn bench_async_service(c: &mut Criterion, name: &str) {
-  let rt = actix_rt::System::new();
+  let rt = tokio::runtime::Runtime::new().unwrap();
 
   // start benchmark loops
   c.bench_function(name, move |b| {

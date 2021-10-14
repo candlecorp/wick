@@ -21,7 +21,7 @@ type Namespace = String;
 pub(crate) struct NetworkModel {
   definition: NetworkDefinition,
   schematics: Vec<Arc<RwLock<SchematicModel>>>,
-  providers: HashMap<Namespace, Option<ProviderModel>>,
+  providers: HashMap<Namespace, ProviderModel>,
   state: Option<LoadedState>,
 }
 
@@ -49,7 +49,7 @@ impl NetworkModel {
 
   pub(crate) fn update_providers(
     &mut self,
-    providers: HashMap<String, Option<ProviderModel>>,
+    providers: HashMap<String, ProviderModel>,
   ) -> Result<()> {
     trace!(
       "MODEL:NETWORK:PROVIDERS:[{}]",
@@ -70,11 +70,10 @@ impl NetworkModel {
     name: String,
     signature: ComponentSignature,
   ) -> Result<()> {
-    let provider = self
+    let model = self
       .providers
       .entry(name.clone())
-      .or_insert_with(|| Some(ProviderModel::default()));
-    let model = provider.get_or_insert(ProviderModel::default());
+      .or_insert_with(|| ProviderModel::default());
 
     model.components.insert(
       name.clone(),
@@ -103,11 +102,7 @@ impl NetworkModel {
     let provider_signatures = self
       .providers
       .iter()
-      .filter_map(|(ns, provider_model)| {
-        provider_model
-          .as_ref()
-          .map(|model| model.get_signature(Some(ns.clone())))
-      })
+      .map(|(ns, provider_model)| provider_model.get_signature(Some(ns.clone())))
       .collect();
     for schematic in &self.schematics {
       schematic.write().finalize()?;

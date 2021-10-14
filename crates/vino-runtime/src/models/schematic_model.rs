@@ -22,7 +22,7 @@ type Namespace = String;
 pub(crate) struct SchematicModel {
   definition: SchematicDefinition,
   instances: HashMap<ComponentInstance, ComponentId>,
-  providers: HashMap<Namespace, Option<ProviderModel>>,
+  providers: HashMap<Namespace, ProviderModel>,
   upstream_links: HashMap<ConnectionTargetDefinition, ConnectionTargetDefinition>,
   signature: Option<ComponentSignature>,
   raw_ports: HashMap<String, RawPorts>,
@@ -198,11 +198,7 @@ impl SchematicModel {
     let provider_signatures = self
       .providers
       .iter()
-      .filter_map(|(ns, provider_model)| {
-        provider_model
-          .as_ref()
-          .map(|model| model.get_signature(Some(ns.clone())))
-      })
+      .map(|(ns, provider_model)| provider_model.get_signature(Some(ns.clone())))
       .collect();
     provider_signatures
   }
@@ -233,7 +229,7 @@ impl SchematicModel {
   pub(crate) fn has_component(&self, component: &ComponentDefinition) -> bool {
     let name = &component.name;
     match self.providers.get(&component.namespace) {
-      Some(Some(provider)) => provider.components.get(name).is_some(),
+      Some(provider) => provider.components.get(name).is_some(),
       _ => false,
     }
   }
@@ -247,7 +243,7 @@ impl SchematicModel {
     self.definition.providers.contains(namespace)
   }
 
-  pub(crate) fn update_providers(&mut self, providers: HashMap<String, Option<ProviderModel>>) {
+  pub(crate) fn update_providers(&mut self, providers: HashMap<String, ProviderModel>) {
     let mut culled_list = HashMap::new();
     for (ns, model) in providers {
       if self.definition.providers.contains(&ns) {
@@ -262,16 +258,11 @@ impl SchematicModel {
     self.providers = culled_list;
   }
 
-  pub(crate) fn commit_providers<T: AsRef<str>>(
+  pub(crate) fn commit_providers(
     &mut self,
-    providers: Vec<(T, Option<ProviderModel>)>,
+    providers: HashMap<String, ProviderModel>,
   ) -> Result<()> {
-    let mut map = HashMap::new();
-    for (ns, model) in providers {
-      let ns = ns.as_ref().to_owned();
-      map.insert(ns, model);
-    }
-    self.update_providers(map);
+    self.update_providers(providers);
     self.partial_initialization()
   }
 
@@ -283,9 +274,7 @@ impl SchematicModel {
   }
 
   pub(crate) fn commit_self_provider(&mut self, provider: ProviderModel) -> Result<()> {
-    self
-      .providers
-      .insert(SELF_NAMESPACE.to_owned(), Some(provider));
+    self.providers.insert(SELF_NAMESPACE.to_owned(), provider);
     self.partial_initialization()
   }
 
@@ -307,7 +296,7 @@ impl SchematicModel {
       Err(_) => return None,
     };
     match self.providers.get(ns) {
-      Some(Some(provider)) => provider
+      Some(provider) => provider
         .components
         .get(name)
         .cloned()

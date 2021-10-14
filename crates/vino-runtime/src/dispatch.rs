@@ -1,7 +1,6 @@
 use std::convert::TryInto;
 use std::sync::Arc;
 
-use actix::dev::MessageResponse;
 use futures::Stream;
 use parking_lot::{
   Condvar,
@@ -14,8 +13,7 @@ use vino_transport::{
 
 use crate::dev::prelude::*;
 
-#[derive(Debug, Clone, Default, Message)]
-#[rtype(result = "InvocationResponse")]
+#[derive(Debug, Clone, Default)]
 pub(crate) struct InvocationMessage {
   inner: Invocation,
   core_data: InitData,
@@ -94,23 +92,6 @@ impl TryFrom<InvocationMessage> for vino_rpc::rpc::Invocation {
   }
 }
 
-impl<A, M> MessageResponse<A, M> for InvocationMessage
-where
-  A: Actor,
-  M: Message<Result = InvocationMessage>,
-{
-  fn handle(self, _: &mut A::Context, tx: Option<actix::dev::OneshotSender<Self>>) {
-    if let Some(tx) = tx {
-      if let Err(e) = tx.send(self) {
-        error!(
-          "Send error (call id:{} target:{:?})",
-          &e.inner.id, &e.inner.target
-        );
-      }
-    }
-  }
-}
-
 #[derive(Debug)]
 #[must_use]
 pub enum InvocationResponse {
@@ -155,20 +136,6 @@ impl InvocationResponse {
   }
 }
 
-impl<A, M> MessageResponse<A, M> for InvocationResponse
-where
-  A: Actor,
-  M: Message<Result = InvocationResponse>,
-{
-  fn handle(self, _: &mut A::Context, tx: Option<actix::dev::OneshotSender<Self>>) {
-    if let Some(tx) = tx {
-      if let Err(e) = tx.send(self) {
-        error!("InvocationResponse can't be sent for tx_id {}", e.tx_id());
-      }
-    }
-  }
-}
-
 #[derive(thiserror::Error, Debug)]
 pub enum DispatchError {
   #[error("Thread died")]
@@ -184,12 +151,6 @@ pub enum DispatchError {
 impl From<vino_entity::Error> for DispatchError {
   fn from(e: vino_entity::Error) -> Self {
     DispatchError::EntityFailure(e.to_string())
-  }
-}
-
-impl From<MailboxError> for DispatchError {
-  fn from(e: MailboxError) -> Self {
-    DispatchError::EntityNotAvailable(e.to_string())
   }
 }
 
@@ -237,7 +198,7 @@ pub(crate) fn network_invoke_sync(
   let inner = Arc::clone(&pair);
 
   let handle = std::thread::spawn(move || {
-    let system = actix_rt::System::new();
+    let system = tokio::runtime::Runtime::new().unwrap();
     let (lock, cvar) = &*inner;
     let mut started = lock.lock();
     *started = true;
@@ -267,7 +228,7 @@ mod tests {
     assert_eq,
     *,
   };
-  #[test_logger::test(actix::test)]
+  #[test_logger::test(tokio::test)]
   async fn invoke_async() -> TestResult<()> {
     let (_, nuid) = init_network_from_yaml("./manifests/v0/echo.yaml").await?;
 
@@ -284,12 +245,12 @@ mod tests {
     Ok(())
   }
 
-  #[test_logger::test(actix::test)]
+  #[test_logger::test(tokio::test)]
   async fn invoke_sync() -> TestResult<()> {
     let (tx, rx) = oneshot::channel::<String>();
     let (tx2, rx2) = oneshot::channel::<bool>();
     std::thread::spawn(|| {
-      let system = actix_rt::System::new();
+      let system = tokio::runtime::Runtime::new().unwrap();
 
       let (_, nuid) = system
         .block_on(init_network_from_yaml("./manifests/v0/echo.yaml"))

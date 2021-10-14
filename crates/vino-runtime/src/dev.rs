@@ -5,20 +5,6 @@ use futures::TryFuture;
 pub(crate) mod prelude {
   pub(crate) use std::convert::TryFrom;
 
-  pub(crate) use actix::prelude::{
-    Actor,
-    ActorFutureExt,
-    Addr,
-    Arbiter,
-    AsyncContext,
-    Context,
-    Handler,
-    MailboxError,
-    Message,
-    ResponseActFuture,
-    Supervised,
-    WrapFuture,
-  };
   #[allow(unused)]
   pub(crate) use futures::FutureExt;
   pub(crate) use itertools::*;
@@ -67,7 +53,6 @@ pub(crate) mod prelude {
   };
   pub(crate) use crate::schematic_service::SchematicService;
   pub(crate) use crate::transaction::TransactionUpdate;
-  pub(crate) use crate::utils::actix::ActorResult;
   pub(crate) use crate::utils::helpers::*;
 }
 

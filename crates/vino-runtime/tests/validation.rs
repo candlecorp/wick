@@ -3,7 +3,7 @@ mod utils;
 
 use utils::*;
 
-#[test_logger::test(actix_rt::test)]
+#[test_logger::test(tokio::test)]
 async fn missing_provider() -> Result<()> {
   let result = init_network_from_yaml("./manifests/v0/validation/missing-provider.yaml").await;
 

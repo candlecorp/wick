@@ -199,9 +199,9 @@ mod test {
 
   use std::time::Duration;
 
-  use actix::clock::sleep;
   use once_cell::sync::Lazy;
   use test_vino_provider::Provider;
+  use tokio::time::sleep;
   use vino_invocation_server::{
     bind_new_socket,
     make_rpc_server,
@@ -213,7 +213,7 @@ mod test {
   type Result<T> = super::Result<T>;
   static PROVIDER: Lazy<BoxedRpcHandler> = Lazy::new(|| Arc::new(Provider::default()));
 
-  #[test_logger::test(actix_rt::test)]
+  #[test_logger::test(tokio::test)]
   async fn test_initialize() -> Result<()> {
     let socket = bind_new_socket()?;
     let port = socket.local_addr()?.port();

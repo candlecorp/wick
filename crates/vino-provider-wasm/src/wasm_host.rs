@@ -126,9 +126,12 @@ impl WasmHost {
     let time = Instant::now();
 
     let engine = {
-      let engine =
-        wasmtime_provider::WasmtimeEngineProvider::new(&module.bytes, wasi_options, None)
-          .map_err(|e| WasmProviderError::EngineFailure(e.to_string()))?;
+      let engine = wasmtime_provider::WasmtimeEngineProvider::new_with_cache(
+        &module.bytes,
+        wasi_options,
+        None,
+      )
+      .map_err(|e| WasmProviderError::EngineFailure(e.to_string()))?;
       trace!(
         "WASM:Wasmtime instance loaded in {} μs",
         time.elapsed().as_micros()

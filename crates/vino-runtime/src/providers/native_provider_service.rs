@@ -121,7 +121,7 @@ mod test {
   use crate::test::prelude::assert_eq;
   type Result<T> = super::Result<T>;
 
-  #[test_logger::test(actix_rt::test)]
+  #[test_logger::test(tokio::test)]
   async fn test_provider_component() -> Result<()> {
     let seed: u64 = 100000;
     let provider = NativeProviderService::new(

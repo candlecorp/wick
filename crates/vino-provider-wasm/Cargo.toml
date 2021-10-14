@@ -30,7 +30,9 @@ derivative = "2.2.0"
 tokio = { version = "1.4.0", features = ["fs"] }
 parking_lot = "0.11.1"
 
-wasmtime-provider = { path = "../../../wapc/crates/wasmtime-provider", optional = true }
+wasmtime-provider = { path = "../../../wapc/crates/wasmtime-provider", optional = true, features = [
+  "cache",
+] }
 # wasmtime-provider = { version = "0.0.4", optional = true }
 wapc = { path = "../../../wapc/crates/wapc-rust" }
 # wapc = "0.10.1"

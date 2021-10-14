@@ -6,7 +6,7 @@ use vino_entity::Entity;
 use vino_runtime::prelude::TransportWrapper;
 use vino_transport::MessageTransport;
 
-#[test_logger::test(actix_rt::test)]
+#[test_logger::test(tokio::test)]
 async fn good_wapc_component() -> Result<()> {
   let (network, _) = init_network_from_yaml("./manifests/v0/wapc-component.yaml").await?;
 
@@ -49,7 +49,7 @@ async fn good_wapc_component() -> Result<()> {
   Ok(())
 }
 
-#[test_logger::test(actix_rt::test)]
+#[test_logger::test(tokio::test)]
 async fn wapc_stream() -> Result<()> {
   let (network, _) = init_network_from_yaml("./manifests/v0/wapc-stream.yaml").await?;
 
@@ -73,7 +73,7 @@ async fn wapc_stream() -> Result<()> {
   Ok(())
 }
 
-#[test_logger::test(actix_rt::test)]
+#[test_logger::test(tokio::test)]
 async fn bad_wapc_component() -> Result<()> {
   let (network, _) = init_network_from_yaml("./manifests/v0/bad-wapc-component.yaml").await?;
 
@@ -96,7 +96,7 @@ async fn bad_wapc_component() -> Result<()> {
   Ok(())
 }
 
-#[test_logger::test(actix_rt::test)]
+#[test_logger::test(tokio::test)]
 async fn wasm_link_call() -> Result<()> {
   let (network, _) = init_network_from_yaml("./manifests/v0/ns-link-wasm.yaml").await?;
 

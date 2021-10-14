@@ -7,7 +7,7 @@ use vino_transport::TransportMap;
 use vino_wascap::KeyPair;
 
 use crate::dev::prelude::*;
-use crate::network_service::handlers::initialize::Initialize;
+use crate::network_service::initialize::Initialize;
 pub use crate::providers::network_provider::Provider as NetworkProvider;
 
 type Result<T> = std::result::Result<T, RuntimeError>;

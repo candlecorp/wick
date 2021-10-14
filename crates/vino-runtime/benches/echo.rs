@@ -15,7 +15,7 @@ use vino_runtime::network::Network;
 
 lazy_static! {
   static ref NETWORK: Network = {
-    let rt = actix_rt::System::new();
+    let rt = tokio::runtime::Runtime::new().unwrap();
     let (network, _) = rt
       .block_on(init_network_from_yaml("./manifests/v0/echo.yaml"))
       .unwrap();
@@ -30,7 +30,7 @@ lazy_static! {
 type Data = HashMap<String, String>;
 
 fn bench_async_service(c: &mut Criterion, name: &str) {
-  let rt = actix_rt::System::new();
+  let rt = tokio::runtime::Runtime::new().unwrap();
 
   // start benchmark loops
   c.bench_function(name, move |b| {
@@ -47,9 +47,7 @@ fn bench_async_service(c: &mut Criterion, name: &str) {
 
 async fn run(input: (&Network, &Data, Entity)) -> Result<()> {
   let (network, data, entity) = input;
-  println!("bef");
   let _result = network.request("echo", entity, data).await?;
-  println!("aft");
   Ok(())
 }
 

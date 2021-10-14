@@ -27,18 +27,14 @@ impl Provider {
 impl RpcHandler for Provider {
   async fn invoke(&self, entity: Entity, payload: TransportMap) -> RpcResult<BoxedTransportStream> {
     trace!("NETWORK_PROVIDER[{}]:INVOKE[{}]", self.network_id, entity);
-    trace!("1");
     let addr = NetworkService::for_id(&self.network_id);
-    trace!("2");
     let invocation =
       InvocationMessage::new(Entity::Schematic("<system>".to_owned()), entity, payload);
-    trace!("a");
     let result: InvocationResponse = addr
       .invoke(invocation)
       .map_err(|e| RpcError::ProviderError(e.to_string()))?
       .await
       .map_err(|e| RpcError::ProviderError(e.to_string()))?;
-    trace!("b");
     match result.ok() {
       Ok(stream) => Ok(Box::pin(stream)),
       Err(msg) => Err(Box::new(RpcError::ProviderError(format!(
@@ -83,7 +79,7 @@ mod tests {
     Ok(output_data)
   }
 
-  #[test_logger::test(actix_rt::test)]
+  #[test_logger::test(tokio::test)]
   async fn test_request_log() -> TestResult<()> {
     let (_, network_id) = init_network_from_yaml("./manifests/v0/simple.yaml").await?;
 
@@ -95,7 +91,7 @@ mod tests {
     Ok(())
   }
 
-  #[test_logger::test(actix_rt::test)]
+  #[test_logger::test(tokio::test)]
   async fn test_list() -> TestResult<()> {
     let (_, network_id) = init_network_from_yaml("./manifests/v0/simple.yaml").await?;
     let provider = Provider::new(network_id);

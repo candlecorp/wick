@@ -12,7 +12,7 @@ use vino_provider_wasm::error::LinkError;
 use self::native_provider_service::NativeProviderService;
 use crate::dev::prelude::*;
 use crate::dispatch::network_invoke_sync;
-use crate::network_service::handlers::initialize::ProviderInitOptions;
+use crate::network_service::initialize::ProviderInitOptions;
 use crate::providers::grpc_provider_service::GrpcProviderService;
 
 pub(crate) type BoxedInvocationHandler = Box<dyn InvocationHandler + Send + Sync>;
@@ -28,39 +28,39 @@ type Result<T> = std::result::Result<T, ProviderError>;
 pub(crate) struct ProviderChannel {
   pub(crate) namespace: String,
   pub(crate) recipient: Arc<BoxedInvocationHandler>,
-  pub(crate) model: Option<ProviderModel>,
+  // pub(crate) model: Option<ProviderModel>,
 }
 
 impl std::fmt::Debug for ProviderChannel {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     f.debug_struct("ProviderChannel")
       .field("namespace", &self.namespace)
-      .field("model", &self.model)
       .finish()
   }
 }
 
-pub(crate) async fn initialize_native_provider(
-  namespace: &str,
-  seed: u64,
-) -> Result<ProviderChannel> {
+type ProviderInitResult = Result<(ProviderModel, ProviderChannel)>;
+
+pub(crate) async fn initialize_native_provider(namespace: String, seed: u64) -> ProviderInitResult {
   trace!("PROV:NATIVE:NS[{}]:REGISTERING", namespace);
   let provider = Arc::new(vino_native_api_0::Provider::new(seed));
-  let service = NativeProviderService::new(namespace.to_owned(), provider);
+  let service = NativeProviderService::new(namespace.clone(), provider);
 
   let signature = service.get_signature()?;
 
-  Ok(ProviderChannel {
-    namespace: namespace.to_owned(),
-    recipient: Arc::new(Box::new(service)),
-    model: Some(signature.into()),
-  })
+  Ok((
+    signature.into(),
+    ProviderChannel {
+      namespace,
+      recipient: Arc::new(Box::new(service)),
+    },
+  ))
 }
 
 pub(crate) async fn initialize_grpc_provider(
   provider: ProviderDefinition,
   namespace: String,
-) -> Result<ProviderChannel> {
+) -> ProviderInitResult {
   trace!("PROV:GRPC:NS[{}]:REGISTERING", provider.namespace);
 
   let mut service = GrpcProviderService::new(namespace.clone());
@@ -68,18 +68,20 @@ pub(crate) async fn initialize_grpc_provider(
 
   let signature = service.get_signature()?;
 
-  Ok(ProviderChannel {
-    namespace: namespace.clone(),
-    recipient: Arc::new(Box::new(service)),
-    model: Some(signature.into()),
-  })
+  Ok((
+    signature.into(),
+    ProviderChannel {
+      namespace: namespace.clone(),
+      recipient: Arc::new(Box::new(service)),
+    },
+  ))
 }
 
 pub(crate) async fn initialize_wasm_provider(
   provider: ProviderDefinition,
   namespace: String,
   opts: ProviderInitOptions,
-) -> Result<ProviderChannel> {
+) -> ProviderInitResult {
   trace!("PROV:WASM:NS[{}]:REGISTERING", provider.namespace);
 
   let component = vino_provider_wasm::helpers::load_wasm(
@@ -118,18 +120,20 @@ pub(crate) async fn initialize_wasm_provider(
 
   let signature = service.get_signature()?;
 
-  Ok(ProviderChannel {
-    namespace: namespace.clone(),
-    recipient: Arc::new(Box::new(service)),
-    model: Some(signature.into()),
-  })
+  Ok((
+    signature.into(),
+    ProviderChannel {
+      namespace: namespace.clone(),
+      recipient: Arc::new(Box::new(service)),
+    },
+  ))
 }
 
 pub(crate) async fn initialize_network_provider(
   provider: ProviderDefinition,
   namespace: String,
   opts: ProviderInitOptions,
-) -> Result<ProviderChannel> {
+) -> ProviderInitResult {
   trace!("PROV:NETWORK:NS[{}]:REGISTERING", provider.namespace);
   let kp = KeyPair::new_server().public_key();
 
@@ -145,18 +149,20 @@ pub(crate) async fn initialize_network_provider(
 
   let signature = service.get_signature()?;
 
-  Ok(ProviderChannel {
-    namespace: namespace.clone(),
-    recipient: Arc::new(Box::new(service)),
-    model: Some(signature.into()),
-  })
+  Ok((
+    signature.into(),
+    ProviderChannel {
+      namespace: namespace.clone(),
+      recipient: Arc::new(Box::new(service)),
+    },
+  ))
 }
 
 pub(crate) async fn initialize_lattice_provider(
   provider: ProviderDefinition,
   namespace: String,
   opts: ProviderInitOptions,
-) -> Result<ProviderChannel> {
+) -> ProviderInitResult {
   let lattice = match opts.lattice {
     Some(lattice) => lattice,
     None => {
@@ -174,11 +180,13 @@ pub(crate) async fn initialize_lattice_provider(
 
   let signature = service.get_signature()?;
 
-  Ok(ProviderChannel {
-    namespace: namespace.clone(),
-    recipient: Arc::new(Box::new(service)),
-    model: Some(signature.into()),
-  })
+  Ok((
+    signature.into(),
+    ProviderChannel {
+      namespace: namespace.clone(),
+      recipient: Arc::new(Box::new(service)),
+    },
+  ))
 }
 
 pub(crate) async fn start_network_provider(

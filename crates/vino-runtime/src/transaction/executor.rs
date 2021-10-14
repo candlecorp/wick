@@ -5,13 +5,13 @@ use std::time::{
   Instant,
 };
 
-use actix::clock::timeout;
 use parking_lot::RwLock;
 use tokio::sync::mpsc::{
   unbounded_channel,
   UnboundedReceiver,
   UnboundedSender,
 };
+use tokio::time::timeout;
 
 use super::Transaction;
 use crate::dev::prelude::*;

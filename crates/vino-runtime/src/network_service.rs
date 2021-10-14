@@ -1,5 +1,5 @@
 pub mod error;
-pub(crate) mod handlers;
+pub(crate) mod initialize;
 
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -15,7 +15,7 @@ use vino_manifest::Loadable;
 
 use crate::dev::prelude::validator::NetworkValidator;
 use crate::dev::prelude::*;
-use crate::network_service::handlers::initialize::{
+use crate::network_service::initialize::{
   initialize_providers,
   initialize_schematics,
   start_schematic_services,
@@ -38,8 +38,8 @@ pub(crate) struct NetworkService {
 #[derive(Debug)]
 struct State {
   model: Arc<RwLock<NetworkModel>>,
-  providers: HashMap<String, ProviderChannel>,
-  schematics: HashMap<String, Addr<SchematicService>>,
+  providers: HashMap<String, Arc<ProviderChannel>>,
+  schematics: HashMap<String, Arc<SchematicService>>,
   lattice: Option<Arc<Lattice>>,
 }
 
@@ -94,35 +94,40 @@ impl NetworkService {
       timeout: msg.timeout,
     };
 
-    let channels = initialize_providers(global_providers, provider_init).await?;
-
-    state.providers = channels
-      .into_iter()
-      .map(|prv_channel| (prv_channel.namespace.clone(), prv_channel))
-      .collect();
-
+    let mut provider_map = HashMap::new();
+    let mut model_map = HashMap::new();
     let self_channel = start_self_network(self.id.clone()).await?;
+    provider_map.insert(SELF_NAMESPACE.to_owned(), Arc::new(self_channel));
 
-    state
-      .providers
-      .insert(SELF_NAMESPACE.to_owned(), self_channel);
-    let providers = state.providers.clone();
+    let providers = initialize_providers(global_providers, provider_init).await?;
+
+    for (model, channel) in providers {
+      model_map.insert(channel.namespace.clone(), model);
+      provider_map.insert(channel.namespace.clone(), Arc::new(channel));
+    }
+    state.providers = provider_map.clone();
 
     self.state.write().replace(state);
 
-    initialize_schematics(inner_model, address_map, timeout, providers).await?;
-    self.finalize()?;
+    initialize_schematics(
+      &inner_model,
+      &address_map,
+      timeout,
+      &provider_map,
+      &model_map,
+    )?;
+    self.finalize(model_map)?;
     Ok(())
   }
 
-  pub(crate) fn finalize(&self) -> Result<()> {
+  pub(crate) fn finalize(&self, mut models: HashMap<String, ProviderModel>) -> Result<()> {
     let self_model = self.get_signature()?;
+
     let mut lock = self.state.write();
     let state = lock.as_mut().unwrap();
-    let mut self_channel = state.providers.get_mut(SELF_NAMESPACE).unwrap();
-    self_channel.model = Some(self_model.into());
+    models.insert(SELF_NAMESPACE.to_owned(), self_model.into());
 
-    update_providers(&state.model, &state.providers)?;
+    update_providers(&state.model, &models)?;
 
     state.model.write().finalize()?;
     NetworkValidator::validate(&state.model.write())?;
@@ -131,16 +136,11 @@ impl NetworkService {
 
   pub(crate) fn for_id(uid: &str) -> Arc<Self> {
     trace!("NETWORK:GET:{}", uid);
-    trace!("wtf");
-    trace!("aa");
     let mut registry = HOST_REGISTRY.lock();
-    trace!("ab");
     let network = registry.entry(uid.to_owned()).or_insert_with(|| {
       trace!("NETWORK:CREATE:{}", uid);
       Arc::new(NetworkService::new(uid))
     });
-    trace!("ac");
-
     network.clone()
   }
 
@@ -187,7 +187,7 @@ impl NetworkService {
     result.map(|channel| channel.recipient.clone())
   }
 
-  pub(crate) fn get_schematic_addr(&self, id: &str) -> Result<Addr<SchematicService>> {
+  pub(crate) fn get_schematic_addr(&self, id: &str) -> Result<Arc<SchematicService>> {
     match self.state.read().as_ref() {
       Some(state) => state
         .schematics
@@ -294,7 +294,7 @@ impl InvocationHandler for NetworkService {
 
     Ok(
       async move {
-        match schematic.send(msg).await {
+        match schematic.invoke(&msg)?.await {
           Ok(response) => Ok(response),
           Err(e) => Ok(InvocationResponse::error(
             tx_id,

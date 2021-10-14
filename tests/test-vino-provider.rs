@@ -30,7 +30,7 @@ async fn request() -> anyhow::Result<()> {
 async fn list() -> anyhow::Result<()> {
   let provider = Provider::default();
 
-  let response = provider.get_list().await?;
+  let response = provider.get_list()?;
   debug!("list response : {:?}", response);
 
   Ok(())

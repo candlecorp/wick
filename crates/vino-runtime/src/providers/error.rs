@@ -8,6 +8,8 @@ pub enum ProviderError {
   ComponentNotFound(String),
   #[error("{0}")]
   NetworkError(String),
+  #[error("{0}")]
+  SchematicError(String),
   #[error("Invalid state: {0}")]
   InvalidState(String),
   #[error(transparent)]
@@ -22,8 +24,6 @@ pub enum ProviderError {
   ConversionError(#[from] ConversionError),
   #[error(transparent)]
   IOError(#[from] std::io::Error),
-  #[error(transparent)]
-  ActixMailboxError(#[from] MailboxError),
   #[error(transparent)]
   RpcError(#[from] vino_rpc::Error),
   #[error(transparent)]
@@ -61,5 +61,11 @@ impl From<vino_provider_lattice::error::LatticeProviderError> for ProviderError 
 impl From<vino_lattice::Error> for ProviderError {
   fn from(e: vino_lattice::Error) -> Self {
     ProviderError::Lattice(e.to_string())
+  }
+}
+
+impl From<SchematicError> for ProviderError {
+  fn from(e: SchematicError) -> Self {
+    ProviderError::SchematicError(e.to_string())
   }
 }

@@ -320,7 +320,7 @@ mod tests {
       },
     };
     model.allow_providers(&[VINO_V0_NAMESPACE]);
-    model.commit_providers(vec![(VINO_V0_NAMESPACE, Some(provider))])?;
+    model.commit_providers(hashmap! {VINO_V0_NAMESPACE.to_owned()=>provider})?;
     let result = SchematicValidator::validate_final_errors(&model);
     let first = &model.get_connections()[0];
     let second = &model.get_connections()[1];
@@ -359,7 +359,7 @@ mod tests {
       },
     };
     model.allow_providers(&[VINO_V0_NAMESPACE]);
-    model.commit_providers(vec![(VINO_V0_NAMESPACE, Some(provider))])?;
+    model.commit_providers(hashmap! {VINO_V0_NAMESPACE.to_owned()=>provider})?;
     let result = SchematicValidator::validate_final_errors(&model);
     let expected = ValidationError::new(
       &model.get_name(),
@@ -387,7 +387,7 @@ mod tests {
         }.into()
       },
     };
-    model.commit_providers(vec![("vino", Some(provider))])?;
+    model.commit_providers(hashmap! {"vino".to_owned()=>provider})?;
     let result = SchematicValidator::validate_early_errors(&model);
     assert_eq!(result, Ok(()));
     let provider = ProviderModel {
@@ -399,7 +399,7 @@ mod tests {
         }.into()
       },
     };
-    model.commit_providers(vec![("self", Some(provider))])?;
+    model.commit_providers(hashmap! {"self".to_owned()=>provider})?;
     let result = SchematicValidator::validate_final_errors(&model);
     assert_eq!(result, Ok(()));
 
@@ -556,7 +556,7 @@ mod tests {
         }.into()
       },
     };
-    model.commit_providers(vec![("test-namespace", Some(provider))])?;
+    model.commit_providers(hashmap! {"test-namespace".to_owned()=> provider})?;
     let result = SchematicValidator::_validate(&model);
     assert_eq!(result, Ok(()));
     model.partial_initialization()?;

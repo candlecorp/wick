@@ -27,15 +27,15 @@ pub(crate) struct Initialize {
 }
 
 pub(crate) fn update_providers(
-  model: &Arc<RwLock<NetworkModel>>,
-  providers: &HashMap<String, ProviderChannel>,
+  network_model: &Arc<RwLock<NetworkModel>>,
+  models: &HashMap<String, ProviderModel>,
 ) -> Result<()> {
   let mut map = HashMap::new();
-  for (ns, channel) in providers {
+  for (ns, model) in models {
     let ns = ns.clone();
-    map.insert(ns, channel.model.clone());
+    map.insert(ns, model.clone());
   }
-  let result = model.write().update_providers(map)?;
+  let result = network_model.write().update_providers(map)?;
   Ok(result)
 }
 
@@ -44,32 +44,25 @@ pub(crate) async fn start_self_network(nuid: String) -> Result<ProviderChannel> 
   let self_channel = ProviderChannel {
     namespace: SELF_NAMESPACE.to_owned(),
     recipient: start_network_provider(nuid).await?,
-    model: None,
   };
   trace!("NETWORK:PROVIDER:SELF:STARTED");
   Ok(self_channel)
 }
 
-pub(crate) async fn initialize_schematics(
-  model: Arc<RwLock<NetworkModel>>,
-  addresses: HashMap<String, Addr<SchematicService>>,
+pub(crate) fn initialize_schematics(
+  model: &Arc<RwLock<NetworkModel>>,
+  services: &HashMap<String, Arc<SchematicService>>,
   timeout: Duration,
-  providers: HashMap<String, ProviderChannel>,
+  provider_channels: &HashMap<String, Arc<ProviderChannel>>,
+  provider_models: &HashMap<String, ProviderModel>,
 ) -> Result<()> {
   let schematics = model.read().get_schematics().clone();
 
   for model in schematics {
     let name = model.read().get_name();
     trace!("NETWORK:SCHEMATIC[{}]", name);
-    let addr = addresses.get(&name).unwrap();
-    addr
-      .send(crate::schematic_service::handlers::initialize::Initialize {
-        timeout,
-        providers: providers.clone(),
-        model,
-      })
-      .await
-      .map_err(|_| InternalError::E5001)??;
+    let schematic = services.get(&name).unwrap();
+    schematic.init(&model, provider_channels, provider_models.clone(), timeout)?;
     trace!("NETWORK:SCHEMATIC[{}]:INITIALIZED", name);
   }
 
@@ -78,14 +71,12 @@ pub(crate) async fn initialize_schematics(
 
 pub(crate) fn start_schematic_services(
   schematics: &[SchematicDefinition],
-) -> HashMap<String, Addr<SchematicService>> {
+) -> HashMap<String, Arc<SchematicService>> {
   trace!("NETWORK:SCHEMATICS:STARTING");
   let result = map(schematics, |def| {
-    // let arbiter = Arbiter::new();
-    let arbiter = Arbiter::with_tokio_rt(|| tokio::runtime::Runtime::new().unwrap());
-    let addr =
-      SchematicService::start_in_arbiter(&arbiter.handle(), |_| SchematicService::default());
-    (def.name.clone(), addr)
+    let name = def.name.clone();
+    let service = SchematicService::new(def);
+    (name, Arc::new(service))
   });
   trace!("NETWORK:SCHEMATICS:STARTED");
   result
@@ -104,9 +95,9 @@ pub(crate) struct ProviderInitOptions {
 pub(crate) fn initialize_providers(
   providers: Vec<ProviderDefinition>,
   opts: ProviderInitOptions,
-) -> BoxFuture<'static, Result<Vec<ProviderChannel>>> {
+) -> BoxFuture<'static, Result<Vec<(ProviderModel, ProviderChannel)>>> {
   Box::pin(async move {
-    let channel = initialize_native_provider(VINO_V0_NAMESPACE, opts.rng_seed).await?;
+    let channel = initialize_native_provider(VINO_V0_NAMESPACE.to_owned(), opts.rng_seed).await?;
     let mut channels = vec![channel];
 
     for provider in providers {

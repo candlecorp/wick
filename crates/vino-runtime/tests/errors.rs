@@ -7,7 +7,7 @@ use vino_entity::Entity;
 use vino_runtime::prelude::TransportWrapper;
 use vino_transport::MessageTransport;
 
-#[test_logger::test(actix_rt::test)]
+#[test_logger::test(tokio::test)]
 
 async fn panics() -> Result<()> {
   let (network, _) = init_network_from_yaml("./manifests/v0/errors/panics.yaml").await?;
@@ -33,7 +33,7 @@ async fn panics() -> Result<()> {
   Ok(())
 }
 
-#[test_logger::test(actix_rt::test)]
+#[test_logger::test(tokio::test)]
 async fn errors() -> Result<()> {
   let (network, _) = init_network_from_yaml("./manifests/v0/errors/errors.yaml").await?;
 

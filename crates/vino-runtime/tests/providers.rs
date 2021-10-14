@@ -10,7 +10,7 @@ use vino_invocation_server::{
 };
 use vino_runtime::prelude::TransportWrapper;
 
-#[test_logger::test(actix_rt::test)]
+#[test_logger::test(tokio::test)]
 async fn native_component() -> Result<()> {
   let (network, _) = init_network_from_yaml("./manifests/v0/native-component.yaml").await?;
 
@@ -36,7 +36,7 @@ async fn native_component() -> Result<()> {
   Ok(())
 }
 
-#[test_logger::test(actix_rt::test)]
+#[test_logger::test(tokio::test)]
 async fn global_providers() -> Result<()> {
   let (network, _) = init_network_from_yaml("./manifests/v0/global-provider-def.yaml").await?;
 
@@ -71,7 +71,7 @@ async fn global_providers() -> Result<()> {
   Ok(())
 }
 
-#[test_logger::test(actix_rt::test)]
+#[test_logger::test(tokio::test)]
 async fn subnetworks() -> Result<()> {
   let (network, _) = init_network_from_yaml("./manifests/v0/sub-network-parent.yaml").await?;
 
@@ -93,7 +93,7 @@ async fn subnetworks() -> Result<()> {
   Ok(())
 }
 
-#[test_logger::test(actix_rt::test)]
+#[test_logger::test(tokio::test)]
 async fn grpc() -> Result<()> {
   let socket = bind_new_socket()?;
   let port = socket.local_addr()?.port();

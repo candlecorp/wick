@@ -1,46 +1,18 @@
+use std::sync::Arc;
+
 use futures::Future;
 use tokio::sync::mpsc::unbounded_channel;
 use tokio_stream::wrappers::UnboundedReceiverStream;
 use vino_manifest::parse::CORE_ID;
 
 use crate::dev::prelude::*;
-use crate::dispatch::inv_error;
 use crate::schematic_service::input_message::InputMessage;
 use crate::CORE_PORT_SEED;
 
 type Result<T> = std::result::Result<T, SchematicError>;
 
-impl Handler<InvocationMessage> for SchematicService {
-  type Result = ActorResult<Self, InvocationResponse>;
-
-  fn handle(&mut self, msg: InvocationMessage, ctx: &mut Context<Self>) -> Self::Result {
-    let tx_id = msg.get_tx_id().to_owned();
-    let target = msg.get_target();
-
-    let result = match target {
-      Entity::Schematic(name) => handle_schematic(self, ctx.address(), name, &msg),
-      Entity::Component(_, name) => handle_schematic(self, ctx.address(), name, &msg),
-      Entity::Reference(reference) => get_component_definition(self.get_model(), reference)
-        .and_then(|def| handle_schematic(self, ctx.address(), &def.id(), &msg)),
-      _ => Err(SchematicError::FailedPreRequestCondition(
-        "Schematic invoked with entity it doesn't handle".into(),
-      )),
-    };
-
-    match result {
-      Ok(task) => {
-        ActorResult::reply_async(task.into_actor(self).map(move |result, _, _| {
-          result.map_or_else(|e| inv_error(&tx_id, &e.to_string()), |r| r)
-        }))
-      }
-      Err(e) => ActorResult::reply(inv_error(&tx_id, &e.to_string())),
-    }
-  }
-}
-
-fn handle_schematic(
-  schematic: &mut SchematicService,
-  addr: Addr<SchematicService>,
+pub(crate) fn handle_schematic(
+  schematic: &Arc<SchematicService>,
   name: &str,
   invocation: &InvocationMessage,
 ) -> Result<impl Future<Output = Result<InvocationResponse>>> {
@@ -48,11 +20,11 @@ fn handle_schematic(
   let log_prefix = format!("SC[{}]:{}", name, tx_id);
   trace!("{}:INVOKE", log_prefix);
 
-  let (mut outbound, inbound) = schematic.start(tx_id.clone());
-  schematic.executor.insert(tx_id.clone(), inbound.clone());
+  let (mut outbound, inbound) = schematic.start_tx(tx_id.clone());
   let (tx, rx) = unbounded_channel::<TransportWrapper>();
 
   let inner = log_prefix.clone();
+  let inner_schematic = schematic.clone();
   tokio::spawn(async move {
     while let Some(msg) = outbound.recv().await {
       match msg {
@@ -74,7 +46,7 @@ fn handle_schematic(
           }
         }
         TransactionUpdate::Execute(a) => {
-          if let Err(e) = addr.send(a).await {
+          if let Err(e) = inner_schematic.component_payload(a).await {
             error!("Error sending execute command {}", e);
           }
         }
@@ -88,7 +60,7 @@ fn handle_schematic(
     Ok!(())
   });
 
-  match make_input_packets(name, schematic.get_model(), &tx_id, invocation) {
+  match make_input_packets(name, &schematic.get_model(), &tx_id, invocation) {
     Ok(messages) => {
       for message in messages {
         inbound.send(TransactionUpdate::Update(message.handle_default()))?;
