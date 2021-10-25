@@ -5,23 +5,24 @@ SHELL := bash
 .SHELLFLAGS := -eu -o pipefail -c
 MAKEFLAGS += --warn-undefined-variables
 MAKEFLAGS += --no-builtin-rules
+MAKEFLAGS += --no-print-directory
 
 CRATES_DIR := ./crates
 ROOT := $(shell pwd)
 
 # Get list of projects that have makefiles
-MAKEFILE_PROJECTS=$(wildcard ${CRATES_DIR}/interfaces/*/Makefile) $(wildcard ${CRATES_DIR}/*/Makefile) $(wildcard ${CRATES_DIR}/integration/*/Makefile)
+MAKEFILES=$(wildcard ${CRATES_DIR}/interfaces/*/Makefile) $(wildcard ${CRATES_DIR}/*/Makefile) $(wildcard ${CRATES_DIR}/integration/*/Makefile)
+MAKEFILE_PROJECTS=$(foreach makefile,$(MAKEFILES),$(dir $(makefile)))
 
 # Get list of root crates in $CRATES_DIR
-ROOT_RUST_CRATES=$(wildcard ${CRATES_DIR}/*/Cargo.toml)
+ROOT_RUST_CRATES=$(foreach crate,$(wildcard ${CRATES_DIR}/*/Cargo.toml),$(dir $(crate)))
 
 TEST_WASM_DIR=$(CRATES_DIR)/integration/test-wapc-component
 TEST_WASM=$(TEST_WASM_DIR)/build/test_component_s.wasm
 
 BINS=vino vinoc vino-keyvalue-redis
 
-.PHONY: all codegen cleangen install install-release  clean test update-lint build build-release wasm
-
+.PHONY: all
 all: build
 
 # Defines rules for each of the BINS to copy them into build/local
@@ -33,71 +34,79 @@ endef
 # Call the above rule generator for each BIN file
 $(foreach bin,$(BINS),$(eval $(call BUILD_BIN,$(bin))))
 
+.PHONY: cleangen
 cleangen:
 	@for project in $(MAKEFILE_PROJECTS); do \
-		cd `dirname $$project`; \
-		echo "## Generating code for $$project"; \
-		make clean; \
-		make codegen; \
-		cd $(ROOT); \
+		echo "# Cleaning $$project"; \
+		$(MAKE) -C $$project clean; \
+		echo "# Generating code for $$project"; \
+		$(MAKE) -C $$project codegen; \
 	done
 
+.PHONY: codegen
 codegen:
 	@for project in $(MAKEFILE_PROJECTS); do \
-		cd `dirname $$project`; \
-		echo "## Generating code for $$project"; \
-		make codegen; \
-		cd $(ROOT); \
+		echo "# Generating code for $$project"; \
+		$(MAKE) -C $$project codegen; \
 	done
 
+.PHONY: readme
 readme:
 	@for project in $(ROOT_RUST_CRATES); do \
-		cd `dirname $$project`; \
-		echo "## Generating README for $$project"; \
+		cd $$project; \
+		echo "# Generating README for $$project"; \
 		cargo readme > README.md; \
 		cd $(ROOT); \
 	done
 
+.PHONY: clean
 clean:
 	@for project in $(MAKEFILE_PROJECTS); do \
-		cd `dirname $$project`; \
-		make clean; \
-		cd $(ROOT); \
+		echo "# Cleaning $$project"; \
+		$(MAKE) -C $$project clean; \
 	done
 
+.PHONY: install-release
 install-release: $(BINS)
 	cargo build --workspace --release
 	cp build/local/* ~/.cargo/bin/
 
+.PHONY: install
 install: $(BINS)
 	cargo build --workspace
 	cp build/local/* ~/.cargo/bin/
 
+.PHONY: build
 build: ./build/local codegen
 	cargo build --workspace --all
 
 $(TEST_WASM):
-	cd $(TEST_WASM_DIR) && make && cd $(ROOT)
+	cd $(TEST_WASM_DIR) && $(MAKE) && cd $(ROOT)
 
-build-release: ./build/local
+.PHONY: release
+release: ./build/local
 	cargo build --workspace --release
 
 ./build/local:
 	mkdir -p ./build/local
 
+.PHONY: wasm
 wasm: $(TEST_WASM)
 
+.PHONY: test
 test: $(TEST_WASM)
 	cargo deny check licenses --hide-inclusion-graph
 	cargo build --workspace # necessary to ensure binaries are built
 	cargo test --workspace
 
+.PHONY: update-lint
 update-lint:
 	@echo Checking git status...
 	@[[ -z `git status -s` ]]
 	@echo Good to go
 	npm run update-lint
 
+.PHONY: build-cross-debug
 build-cross-debug:
 	rm -rf ./build; \
 	mkdir ./build; \
