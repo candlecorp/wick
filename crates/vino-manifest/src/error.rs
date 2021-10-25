@@ -34,10 +34,6 @@ pub enum ManifestError {
   #[error("Failed to deserialize configuration {0}")]
   ConfigurationDeserialization(String),
 
-  /// Error deserializing HOCON manifest.
-  #[error(transparent)]
-  HoconError(#[from] hocon::Error),
-
   /// Error deserializing YAML manifest.
   #[error("Could not parse manifest as YAML: {0}")]
   YamlError(String),

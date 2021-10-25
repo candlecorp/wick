@@ -57,35 +57,6 @@ fn load_bad_manifest_yaml() -> Result<(), ManifestError> {
 }
 
 #[test_logger::test]
-fn load_shortform_hocon() -> Result<(), ManifestError> {
-  let path = PathBuf::from("./tests/manifests/v0/logger-shortform.manifest");
-  let manifest = HostManifest::load_from_file(&path)?;
-
-  let HostManifest::V0(manifest) = manifest;
-  assert_eq!(manifest.default_schematic, "logger");
-  let first_from = &manifest.network.schematics[0].connections[0].from;
-  let first_to = &manifest.network.schematics[0].connections[0].to;
-  assert_eq!(
-    first_from,
-    &v0::ConnectionTargetDefinition {
-      instance: "<input>".to_owned(),
-      port: "input".to_owned(),
-      data: None,
-    }
-  );
-  assert_eq!(
-    first_to,
-    &v0::ConnectionTargetDefinition {
-      instance: "logger".to_owned(),
-      port: "input".to_owned(),
-      data: None
-    }
-  );
-
-  Ok(())
-}
-
-#[test_logger::test]
 fn load_providers_yaml() -> Result<(), ManifestError> {
   let path = PathBuf::from("./tests/manifests/v0/providers.yaml");
   let manifest = HostManifest::load_from_file(&path)?;
@@ -127,17 +98,6 @@ fn load_shortform_yaml() -> Result<(), ManifestError> {
 }
 
 #[test_logger::test]
-fn load_manifest_hocon() -> Result<(), ManifestError> {
-  let path = PathBuf::from("./tests/manifests/v0/logger.manifest");
-  let manifest = HostManifest::load_from_file(&path)?;
-
-  let HostManifest::V0(manifest) = manifest;
-  assert_eq!(manifest.default_schematic, "logger");
-
-  Ok(())
-}
-
-#[test_logger::test]
 
 fn load_env() -> Result<(), ManifestError> {
   println!("Loading yaml");
@@ -150,30 +110,6 @@ fn load_env() -> Result<(), ManifestError> {
     manifest.network.schematics[0].name,
     "name_load_manifest_yaml_with_env"
   );
-  println!("Loading hocon");
-  let path = PathBuf::from("./tests/manifests/v0/env.manifest");
-  env::set_var("TEST_ENV_VAR", "load_manifest_hocon_env");
-
-  let manifest = HostManifest::load_from_file(&path)?;
-
-  let HostManifest::V0(manifest) = manifest;
-  assert_eq!(
-    manifest.network.schematics[0].name,
-    "name_load_manifest_hocon_env"
-  );
-
-  Ok(())
-}
-
-#[test_logger::test]
-fn load_bad_manifest_hocon() -> Result<(), ManifestError> {
-  let path = PathBuf::from("./tests/manifests/v0/bad-hocon.manifest");
-  let manifest = HostManifest::load_from_file(&path);
-  if let Err(Error::HoconError(e)) = manifest {
-    debug!("{:?}", e);
-  } else {
-    panic!("Should have failed")
-  }
 
   Ok(())
 }

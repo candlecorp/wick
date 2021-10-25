@@ -77,7 +77,6 @@
 use std::fs::read_to_string;
 use std::path::Path;
 
-use hocon::HoconLoader;
 use log::debug;
 use serde::de::DeserializeOwned;
 
@@ -181,7 +180,6 @@ impl From<v0::SchematicManifest> for SchematicManifest {
 }
 
 /// The Loadable trait can be used for any deserializable struct that can be loaded from.
-/// YAML, Hocon, or any other supported format.
 pub trait Loadable<T> {
   /// Load struct from file by trying all the supported file formats.
   fn load_from_file(path: &Path) -> Result<T> {
@@ -190,45 +188,15 @@ pub trait Loadable<T> {
     }
     debug!("Reading manifest from {}", path.to_string_lossy());
     let contents = read_to_string(path)?;
-    Self::from_hocon(&contents).or_else(|e| {
-      match &e {
-        Error::VersionError(_) => Err(e),
-        Error::HoconError(hocon::Error::Deserialization { message }) => {
-          // Hocon doesn't differentiate errors for disallowed fields and a bad parse
-          if message.contains("unknown field") {
-            debug!("Invalid field found in hocon");
-            Err(e)
-          } else {
-            Self::from_yaml(&contents)
-          }
-        }
-        _ => Self::from_yaml(&contents),
-      }
-    })
+    Self::from_yaml(&contents)
   }
   /// Load struct from bytes by attempting to parse all the supported file formats.
   fn load_from_bytes(bytes: &[u8]) -> Result<T> {
     let contents = String::from_utf8_lossy(bytes);
-    Self::from_hocon(&contents).or_else(|e| {
-      match &e {
-        Error::VersionError(_) => Err(e),
-        Error::HoconError(hocon::Error::Deserialization { message }) => {
-          // Hocon doesn't differentiate errors for disallowed fields and a bad parse
-          if message.contains("unknown field") {
-            debug!("Invalid field found in hocon");
-            Err(e)
-          } else {
-            Self::from_yaml(&contents)
-          }
-        }
-        _ => Self::from_yaml(&contents),
-      }
-    })
+    Self::from_yaml(&contents)
   }
   /// Load as YAML.
   fn from_yaml(src: &str) -> Result<T>;
-  /// Load as Hocon.
-  fn from_hocon(src: &str) -> Result<T>;
 }
 
 fn from_yaml<T>(src: &str) -> Result<T>
@@ -239,33 +207,7 @@ where
   Ok(result)
 }
 
-fn from_hocon<T>(src: &str) -> Result<T>
-where
-  T: DeserializeOwned,
-{
-  let result = hocon::de::from_str(src).map_err(crate::Error::HoconError)?;
-  Ok(result)
-}
-
 impl Loadable<HostManifest> for HostManifest {
-  fn from_hocon(src: &str) -> Result<HostManifest> {
-    debug!("Trying to parse manifest as hocon");
-    let raw = HoconLoader::new().strict().load_str(src)?.hocon()?;
-    debug!("Hocon parsed successfully");
-    let raw_version = &raw["version"];
-    let version = raw_version.as_i64().unwrap_or_else(|| -> i64 {
-      raw_version
-        .as_string()
-        .and_then(|s| s.parse::<i64>().ok())
-        .unwrap_or(-1)
-    });
-    match version {
-      0 => Ok(HostManifest::V0(from_hocon(src)?)),
-      -1 => Err(Error::NoVersion),
-      _ => Err(Error::VersionError(version.to_string())),
-    }
-  }
-
   fn from_yaml(src: &str) -> Result<HostManifest> {
     debug!("Trying to parse manifest as yaml");
     let raw: serde_yaml::Value = from_yaml(src)?;
@@ -289,18 +231,10 @@ impl Loadable<v0::NetworkManifest> for v0::NetworkManifest {
   fn from_yaml(src: &str) -> Result<v0::NetworkManifest> {
     from_yaml(src)
   }
-
-  fn from_hocon(src: &str) -> Result<v0::NetworkManifest> {
-    from_hocon(src)
-  }
 }
 
 impl Loadable<v0::SchematicManifest> for v0::SchematicManifest {
   fn from_yaml(src: &str) -> Result<v0::SchematicManifest> {
     from_yaml(src)
-  }
-
-  fn from_hocon(src: &str) -> Result<v0::SchematicManifest> {
-    from_hocon(src)
   }
 }

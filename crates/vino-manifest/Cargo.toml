@@ -10,7 +10,6 @@ vino-transport = { path = "../../sdk/crates/vino-transport", features = [
   "all",
 ] }
 enum-primitive-derive = "0.2.1"
-hocon = "0.5.2"
 lazy_static = "1.4.0"
 num-traits = "0.2.14"
 regex = "1"

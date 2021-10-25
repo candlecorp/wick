@@ -13,21 +13,21 @@ V0_SOURCES := $(V0_DEF)/manifest.widl $(V0_WIDL) $(V0_TEMPLATES)
 CLEAN_FILES:= $(V0)
 
 $(V0): $(V0_SOURCES) $(V0_TEMPLATES)
-	widl-template $< $(V0_DEF)/templates/rust/root.hbs -p $(V0_DEF)/templates/rust/partials > $@
-	rustfmt $@
+	@widl-template $< $(V0_DEF)/templates/rust/root.hbs -p $(V0_DEF)/templates/rust/partials > $@
+	@rustfmt $@
 
 $(V0_schema): $(V0_SOURCES) $(V0_TEMPLATES)
-	widl-template $(V0_DEF)/manifest.widl $(V0_DEF)/templates/$(basename $@).hbs -p $(V0_DEF)/templates/json-schema/partials > $@
-	prettier --write $@
+	@widl-template $(V0_DEF)/manifest.widl $(V0_DEF)/templates/$(basename $@).hbs -p $(V0_DEF)/templates/json-schema/partials > $@
+	@prettier --write $@
 
 clean:
-	rm -f $(V0)
+	@rm -f $(V0)
 
 codegen: $(V0) $(V0_schema)
 
 docs:
-	mkdir docs
+	@mkdir docs
 
 docs/v0.html: $(V0_SOURCES) $(V0_DOC_TEMPLATES) docs
 	# cargo doc --no-deps
-	widl-template $< $(V0_DEF)/doc-templates/rust/root.hbs -p $(V0_DEF)/doc-templates/rust/partials > $@
+	@widl-template $< $(V0_DEF)/doc-templates/rust/root.hbs -p $(V0_DEF)/doc-templates/rust/partials > $@
