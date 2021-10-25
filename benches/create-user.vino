@@ -1,6 +1,7 @@
 ---
 version: 0
 host:
+  timeout: 100
   allow_latest: true
   lattice:
     enabled: true
@@ -14,6 +15,9 @@ network:
     - namespace: authdb
       kind: Lattice
       reference: authdb
+    # - namespace: authdb
+    #   kind: GrpcUrl
+    #   reference: http://127.0.0.1:36147
   schematics:
     - name: create-user
       providers:
@@ -33,28 +37,3 @@ network:
         - <> => create_user[username]
         - <link>[authdb] => create_user[kv]
         - create_user[user_id] => <>
-    - name: authenticate
-      providers:
-        - auth
-      instances:
-        authenticate:
-          id: auth::authenticate
-        uuid:
-          id: vino::v0::uuid
-      connections:
-        - <core>[seed] => uuid[seed]
-        - uuid[output] => authenticate[session_id]
-        - <> => authenticate[username]
-        - <> => authenticate[password]
-        - <link>[authdb] => authenticate[kv]
-        - authenticate[session_id] => <>
-    - name: validate-session
-      providers:
-        - auth
-      instances:
-        validate:
-          id: auth::validate-session
-      connections:
-        - <> => validate[session_id]
-        - <link>[authdb] => validate[kv]
-        - validate[user_id] => <>

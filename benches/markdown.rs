@@ -1,12 +1,9 @@
 use std::convert::{TryFrom, TryInto};
-use std::ops::Div;
 use std::time::Instant;
 
-use futures::executor::block_on;
 use futures::future::try_join_all;
 use futures::StreamExt;
 use once_cell::sync::{Lazy, OnceCell};
-use utils::*;
 use vino_host::{Host, HostBuilder};
 use vino_random::Random;
 use vino_transport::{MessageTransport, TransportMap, TransportStream};
@@ -17,19 +14,36 @@ static HOST: OnceCell<Host> = OnceCell::new();
 fn get_map() -> TransportMap {
   let mut map = TransportMap::new();
   map.insert(
-    "username",
-    MessageTransport::success(&RNG.get_alphanumeric(15)),
-  );
-  map.insert(
-    "password",
-    MessageTransport::success(&RNG.get_alphanumeric(10)),
+    "markdown",
+    MessageTransport::success(&"# Test markdown
+
+    ## Header 1
+
+    Non debitis quia sint quod deleniti aut sit. Voluptatem quis et velit. Voluptatem harum accusantium quia. Aspernatur est ut delectus culpa quibusdam exercitationem culpa non. Ipsum aliquam ullam …
+
+    ```shell
+    $ Code stuff
+    ```
+
+    ## Header 2
+
+    > Quotes
+
+    ## Header 3
+
+    - item
+    - item
+    - item
+
+    Done
+    ".to_string()),
   );
   map
 }
 
 async fn request(input: (&Host, TransportMap)) -> TransportStream {
   let (host, data) = input;
-  let stream = host.request("create-user", data, None).await.unwrap();
+  let stream = host.request("render", data, None).await.unwrap();
   stream
 }
 
@@ -40,7 +54,7 @@ async fn work() {
   };
   logger::init(&opts);
 
-  let mut host = HostBuilder::try_from("./benches/create-user.vino")
+  let mut host = HostBuilder::try_from("./benches/manifest.vino")
     .unwrap()
     .build();
   host.start().await.unwrap();
