@@ -58,7 +58,7 @@ impl From<CodecError> for Error {
 
 impl From<&str> for Error {
   fn from(e: &str) -> Self {
-    Error::Component(e.to_string())
+    Error::Component(e.to_owned())
   }
 }
 

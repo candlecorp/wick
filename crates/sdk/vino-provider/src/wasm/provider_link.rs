@@ -57,6 +57,7 @@ impl WasmProviderLink for ProviderLink {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 /// A wrapper object for the packets returned from the provider call.
+#[must_use]
 pub struct ProviderOutput {
   packets: HashMap<String, Vec<MessageTransport>>,
 }

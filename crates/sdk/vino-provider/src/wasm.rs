@@ -81,31 +81,42 @@ pub mod prelude {
 
 use crate::OutputSignal;
 
+fn serialize_payload(id: u32, packet: Option<v0::Payload>) -> Result<Vec<u8>> {
+  let bytes = match packet {
+    Some(packet) => {
+      let bytes = serialize(&Packet::V0(packet))?;
+      let mut payload = Vec::with_capacity(bytes.len() + 4);
+      payload.extend_from_slice(&id.to_be_bytes());
+      payload.extend(bytes.into_iter());
+      payload
+    }
+    None => {
+      let mut payload = Vec::with_capacity(4);
+      payload.extend_from_slice(&id.to_be_bytes());
+      payload
+    }
+  };
+  Ok(bytes)
+}
+
 /// Send a [Packet] out the named port.
-pub fn port_send(port_name: &str, packet: v0::Payload) -> Result<()> {
-  host_call(
-    "0",
-    port_name,
-    OutputSignal::Output.as_str(),
-    &serialize(&Packet::V0(packet))?,
-  )?;
+pub fn port_send(port_name: &str, id: u32, packet: v0::Payload) -> Result<()> {
+  let bytes = serialize_payload(id, Some(packet))?;
+  host_call("0", port_name, OutputSignal::Output.as_str(), &bytes)?;
   Ok(())
 }
 
 /// Send a [Packet] out the named port and immediately close it.
-pub fn port_send_close(port_name: &str, packet: v0::Payload) -> Result<()> {
-  host_call(
-    "0",
-    port_name,
-    OutputSignal::OutputDone.as_str(),
-    &serialize(&Packet::V0(packet))?,
-  )?;
+pub fn port_send_close(port_name: &str, id: u32, packet: v0::Payload) -> Result<()> {
+  let bytes = serialize_payload(id, Some(packet))?;
+  host_call("0", port_name, OutputSignal::OutputDone.as_str(), &bytes)?;
   Ok(())
 }
 
 /// Close the referenced port.
-pub fn port_close(port_name: &str) -> Result<()> {
-  host_call("0", port_name, OutputSignal::Done.as_str(), &[])?;
+pub fn port_close(port_name: &str, id: u32) -> Result<()> {
+  let bytes = serialize_payload(id, None)?;
+  host_call("0", port_name, OutputSignal::Done.as_str(), &bytes)?;
   Ok(())
 }
 
@@ -160,18 +171,27 @@ pub fn console_log(s: &str) {
 
 /// A map of port name to payload message.
 pub struct IncomingPayload {
+  id: u32,
   encoded: HashMap<String, Vec<u8>>,
 }
 
 impl IncomingPayload {
   /// Decode MessagePack bytes into an [IncomingPayload].
   pub fn from_buffer(buffer: &[u8]) -> Result<Self> {
-    let input_encoded: HashMap<String, Vec<u8>> = deserialize(buffer)?;
+    let (id, input_encoded): (u32, HashMap<String, Vec<u8>>) = deserialize(buffer)?;
 
     Ok(Self {
+      id,
       encoded: input_encoded,
     })
   }
+
+  /// Get the transaction ID associated with this [IncomingPayload].
+  #[must_use]
+  pub fn id(&self) -> u32 {
+    self.id
+  }
+
   /// Get the contained bytes for the specified port.
   pub fn get(&self, port: &str) -> Result<&Vec<u8>> {
     self

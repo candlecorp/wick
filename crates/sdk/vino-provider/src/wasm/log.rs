@@ -38,6 +38,14 @@ macro_rules! trace {
     )
 }
 
+/// WASM analog for log::trace! macro
+#[macro_export]
+macro_rules! mark {
+    ($($arg:tt)+) => (
+      $crate::__log!("5", $($arg)+)
+    )
+}
+
 #[macro_export(local_inner_macros)]
 #[doc(hidden)]
 macro_rules! __log {

@@ -197,6 +197,8 @@ pub enum LogLevel {
   Debug,
   /// Trace-level messages
   Trace,
+  /// Performance mark messages
+  Mark,
 }
 
 impl LogLevel {
@@ -204,11 +206,12 @@ impl LogLevel {
   #[doc(hidden)]
   pub fn as_str(&self) -> &'static str {
     match self {
-      LogLevel::Info => todo!(),
-      LogLevel::Error => todo!(),
-      LogLevel::Warn => todo!(),
-      LogLevel::Debug => todo!(),
-      LogLevel::Trace => todo!(),
+      LogLevel::Info => "0",
+      LogLevel::Error => "1",
+      LogLevel::Warn => "2",
+      LogLevel::Debug => "3",
+      LogLevel::Trace => "4",
+      LogLevel::Mark => "5",
     }
   }
 }
@@ -223,6 +226,7 @@ impl FromStr for LogLevel {
       "2" => LogLevel::Warn,
       "3" => LogLevel::Debug,
       "4" => LogLevel::Trace,
+      "5" => LogLevel::Mark,
       _ => return Err(()),
     };
     Ok(result)

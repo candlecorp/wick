@@ -331,14 +331,11 @@ impl Display for MessageSignal {
 }
 impl Display for Failure {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    f.write_fmt(format_args!(
-      "{}",
-      match self {
-        Failure::Invalid => "Invalid",
-        Failure::Exception(_) => "Exception",
-        Failure::Error(_) => "Error",
-      }
-    ))
+    match self {
+      Failure::Invalid => f.write_str("Invalid"),
+      Failure::Exception(v) => f.write_fmt(format_args!("Exception: {}", v)),
+      Failure::Error(v) => f.write_fmt(format_args!("Exception: {}", v)),
+    }
   }
 }
 impl Display for Success {
@@ -358,6 +355,7 @@ impl Display for Success {
 
 #[cfg(test)]
 mod tests {
+
   use super::*;
   #[test_env_log::test]
   fn serializes_done() -> Result<()> {
@@ -365,6 +363,17 @@ mod tests {
     let value = close.into_json();
     println!("Value: {}", value);
     assert_eq!(value.to_string(), r#"{"signal":"Done","value":null}"#);
+    Ok(())
+  }
+
+  #[test_env_log::test]
+  fn messagepack_rt() -> Result<()> {
+    // let mut original = TransportMap::new();
+    let mut payload = MessageTransport::success(&false);
+    println!("payload: {:?}", payload);
+    payload.to_messagepack();
+    let result: bool = payload.try_into()?;
+    assert_eq!(result, false);
     Ok(())
   }
 }

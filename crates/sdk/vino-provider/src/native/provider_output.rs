@@ -9,13 +9,13 @@ use vino_transport::{
 
 /// A wrapper object for the packets returned from the provider call.
 #[allow(missing_debug_implementations)]
-#[must_use]
 pub struct ProviderOutput {
   packets: TransportStream,
 }
 
 impl ProviderOutput {
   /// Initialize a [ProviderOutput] with a [Vec<TransportWrapper>]
+  #[must_use]
   pub fn new(packets: BoxedTransportStream) -> Self {
     Self {
       packets: TransportStream::new(packets),
