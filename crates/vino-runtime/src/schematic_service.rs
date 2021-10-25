@@ -188,7 +188,10 @@ impl SchematicService {
     let log_prefix = format!("SC[{}]:OUTPUT:{}:", self.name, msg.port);
 
     let defs = if msg.port.matches_port(vino_transport::COMPONENT_ERROR) {
-      error!("{}Component-wide error received", log_prefix);
+      error!(
+        "{}Component-wide error received: {}",
+        log_prefix, msg.payload
+      );
       get_downstream_connections(&self.get_model(), msg.port.get_instance())
     } else {
       trace!("{}Output ready", log_prefix);

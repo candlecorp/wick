@@ -206,12 +206,12 @@ mod test {
     bind_new_socket,
     make_rpc_server,
   };
-  use vino_rpc::BoxedRpcHandler;
+  use vino_rpc::SharedRpcHandler;
 
   use super::*;
   use crate::test::prelude::assert_eq;
   type Result<T> = super::Result<T>;
-  static PROVIDER: Lazy<BoxedRpcHandler> = Lazy::new(|| Arc::new(Provider::default()));
+  static PROVIDER: Lazy<SharedRpcHandler> = Lazy::new(|| Arc::new(Provider::default()));
 
   #[test_logger::test(tokio::test)]
   async fn test_initialize() -> Result<()> {

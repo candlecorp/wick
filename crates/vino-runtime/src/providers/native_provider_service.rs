@@ -3,7 +3,7 @@ use tokio::sync::mpsc::unbounded_channel;
 use tokio_stream::wrappers::UnboundedReceiverStream;
 use vino_rpc::{
   clone_box,
-  BoxedRpcHandler,
+  SharedRpcHandler,
 };
 
 use crate::dev::prelude::*;
@@ -18,7 +18,7 @@ pub(crate) struct NativeProviderService {
 }
 
 impl NativeProviderService {
-  pub(crate) fn new(namespace: String, provider: BoxedRpcHandler) -> Self {
+  pub(crate) fn new(namespace: String, provider: SharedRpcHandler) -> Self {
     Self {
       namespace,
       state: Some(State { provider }),
@@ -109,7 +109,7 @@ impl InvocationHandler for NativeProviderService {
 }
 
 struct State {
-  provider: BoxedRpcHandler,
+  provider: SharedRpcHandler,
 }
 
 #[cfg(test)]

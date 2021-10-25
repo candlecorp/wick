@@ -55,7 +55,8 @@ impl TransactionExecutor {
       let log_prefix = transaction.log_prefix();
       let mut iter = 0;
       trace!("{}:START", log_prefix);
-
+      let start_time = Instant::now();
+      let mut last_time = Instant::now();
       'root: loop {
         let iter_prefix = format!("{}[{}]", log_prefix, iter);
         iter += 1;
@@ -87,6 +88,13 @@ impl TransactionExecutor {
             Err(_) => TransactionUpdate::Timeout(actual.elapsed()),
           }
         };
+        trace!(
+          "{}:NEXT[last +{} μs][total +{} μs]",
+          iter_prefix,
+          last_time.elapsed().as_micros(),
+          start_time.elapsed().as_micros()
+        );
+        last_time = Instant::now();
 
         match msg {
           TransactionUpdate::NoOp => {

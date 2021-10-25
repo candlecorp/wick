@@ -1,6 +1,7 @@
 #[path = "./runtime_utils/mod.rs"]
 mod utils;
 use std::env;
+use std::sync::Arc;
 
 use utils::*;
 use vino_entity::Entity;
@@ -97,7 +98,7 @@ async fn subnetworks() -> Result<()> {
 async fn grpc() -> Result<()> {
   let socket = bind_new_socket()?;
   let port = socket.local_addr()?.port();
-  let _ = make_rpc_server(socket, test_vino_provider::PROVIDER.clone());
+  let _ = make_rpc_server(socket, Arc::new(test_vino_provider::Provider::default()));
   env::set_var("TEST_PORT", port.to_string());
 
   let (network, _) = init_network_from_yaml("./manifests/v0/providers/grpc-provider.yaml").await?;
