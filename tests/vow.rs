@@ -16,6 +16,7 @@ async fn test_vow_serve() -> utils::TestResult<()> {
   debug!("Starting provider");
   let (p_tx, p_handle, port) = start_provider(
     "vow",
+    "component rpc server",
     &[
       "serve",
       "./crates/integration/test-wapc-component/build/test_component_s.wasm",

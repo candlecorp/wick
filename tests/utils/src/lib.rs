@@ -133,13 +133,14 @@ impl Signal {
 }
 
 pub async fn start_provider(
+  binary: &str,
   name: &str,
   args: &[&str],
   envs: &[(&str, &str)],
 ) -> Result<(Sender<Signal>, JoinHandle<Result<()>>, String)> {
-  println!("Starting provider bin: {}", name);
+  println!("Starting provider bin: {} ({})", binary, name);
 
-  let mut bin = tokio_test_bin::get_test_bin(name);
+  let mut bin = tokio_test_bin::get_test_bin(binary);
   let cmd = bin
     .args(args)
     .env_clear()

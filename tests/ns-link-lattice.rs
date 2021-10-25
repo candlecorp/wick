@@ -18,6 +18,7 @@ mod test {
     debug!("Starting vow");
     let (p_tx, p_handle, _) = start_provider(
       "vow",
+      "component RPC server",
       &[
         "serve",
         "./crates/integration/test-wapc-component/build/test_component_s.wasm",
@@ -34,6 +35,7 @@ mod test {
     .await?;
 
     let (h_tx, h_handle, h_port) = start_provider(
+      "vino",
       "vino",
       &[
         "serve",

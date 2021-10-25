@@ -24,6 +24,7 @@ mod test {
     let nats_arg = format!("--nats={}", nats_url);
     let (p2_tx, p2_handle, _port2) = start_provider(
       "vino",
+      "network-two",
       &[
         "serve",
         "./tests/manifests/lattice-two.yaml",
@@ -36,6 +37,7 @@ mod test {
     .await?;
     let (p_tx, p_handle, port) = start_provider(
       "vino",
+      "network-one",
       &[
         "serve",
         "./tests/manifests/lattice-one.yaml",
