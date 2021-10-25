@@ -1,15 +1,28 @@
-use std::convert::{TryFrom, TryInto};
+use std::convert::{
+  TryFrom,
+  TryInto,
+};
 use std::ops::Div;
 use std::time::Instant;
 
 use futures::executor::block_on;
 use futures::future::try_join_all;
 use futures::StreamExt;
-use once_cell::sync::{Lazy, OnceCell};
+use once_cell::sync::{
+  Lazy,
+  OnceCell,
+};
 use utils::*;
-use vino_host::{Host, HostBuilder};
+use vino_host::{
+  Host,
+  HostBuilder,
+};
 use vino_random::Random;
-use vino_transport::{MessageTransport, TransportMap, TransportStream};
+use vino_transport::{
+  MessageTransport,
+  TransportMap,
+  TransportStream,
+};
 
 static RNG: Lazy<Random> = Lazy::new(vino_random::Random::new);
 static HOST: OnceCell<Host> = OnceCell::new();
