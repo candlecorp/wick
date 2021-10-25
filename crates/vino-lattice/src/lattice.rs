@@ -1,31 +1,22 @@
+use std::collections::HashMap;
 use std::path::PathBuf;
 use std::str::FromStr;
-use std::sync::{
-  Arc,
-  RwLock,
-};
-use std::thread;
+use std::sync::Arc;
 use std::time::Duration;
 
-use log::{
-  debug,
-  error,
-  trace,
+use parking_lot::RwLock;
+use tokio::sync::mpsc::{
+  unbounded_channel,
+  UnboundedSender,
 };
-use nats::jetstream::{
-  RetentionPolicy,
-  StreamConfig,
-};
-use tokio::sync::mpsc::unbounded_channel;
+use tokio::sync::oneshot;
 use tokio::task::JoinHandle;
+use tokio::time::timeout;
 use tokio_stream::wrappers::UnboundedReceiverStream;
 use tokio_stream::StreamExt;
-use vino_codec::messagepack::{
-  deserialize,
-  serialize,
-};
+use vino_codec::messagepack::serialize;
 use vino_entity::Entity;
-use vino_rpc::BoxedRpcHandler;
+use vino_rpc::SharedRpcHandler;
 use vino_transport::{
   MessageTransport,
   TransportMap,
@@ -37,10 +28,13 @@ use vino_types::signatures::HostedType;
 use crate::error::LatticeError;
 use crate::nats::{
   Nats,
+  NatsMessage,
   NatsOptions,
 };
 
 type Result<T> = std::result::Result<T, LatticeError>;
+
+static DEFAULT_TIMEOUT_SECS: u64 = 10;
 
 /// The LatticeBuilder builds the configuration for a Lattice.
 #[derive(Debug, Clone)]
@@ -61,7 +55,7 @@ impl LatticeBuilder {
       client_id: namespace.as_ref().to_owned(),
       credential_path: None,
       token: None,
-      timeout: Duration::from_secs(5),
+      timeout: Duration::from_secs(DEFAULT_TIMEOUT_SECS),
     }
   }
 
@@ -75,7 +69,7 @@ impl LatticeBuilder {
       client_id: namespace.as_ref().to_owned(),
       credential_path: None,
       token: None,
-      timeout: Duration::from_secs(5),
+      timeout: Duration::from_secs(DEFAULT_TIMEOUT_SECS),
     })
   }
 
@@ -139,134 +133,98 @@ impl LatticeBuilder {
   }
 }
 
-// static PREFIX: &str = "ofp";
-static RPC_STREAM_TOPIC: &str = "rpc";
+#[derive(Debug)]
+struct NsHandler {
+  task: JoinHandle<()>,
+}
+impl NsHandler {
+  fn new(task: JoinHandle<()>) -> Self {
+    Self { task }
+  }
+}
+
+impl Drop for Lattice {
+  fn drop(&mut self) {
+    for (_, handler) in self.handlers.write().iter_mut() {
+      handler.task.abort();
+    }
+  }
+}
 
 #[derive(Debug, Clone)]
 #[must_use]
 pub struct Lattice {
   nats: Nats,
-  rpc_stream_topic: String,
-  handlers: Arc<RwLock<Vec<JoinHandle<()>>>>,
+  timeout: Duration,
+  handlers: Arc<RwLock<HashMap<String, NsHandler>>>,
 }
 
 impl Lattice {
   pub async fn connect(opts: NatsOptions) -> Result<Self> {
+    let timeout = opts.timeout;
     let nats = Nats::connect(opts).await?;
-
-    let rpc_stream_topic = RPC_STREAM_TOPIC.to_owned();
-
-    let subjects = vec![format!("{}.*", rpc_stream_topic)];
-    let stream_config = StreamConfig {
-      subjects: Some(subjects),
-      name: rpc_stream_topic.clone(),
-      retention: RetentionPolicy::WorkQueue,
-
-      ..Default::default()
-    };
-
-    let stream_info = nats.create_stream(stream_config).await?;
-    debug!("LATTICE:RPC_STREAM[{}]:CREATED", stream_info.config.name);
 
     Ok(Self {
       nats,
-      rpc_stream_topic,
-      handlers: Arc::new(RwLock::new(vec![])),
+      timeout,
+      handlers: Default::default(),
     })
   }
 
-  pub async fn handle_namespace(&self, namespace: String, provider: BoxedRpcHandler) -> Result<()> {
-    debug!("LATTICE:HANDLER[{}]:REGISTER", namespace);
-    let mut consumer = self.nats.create_consumer(namespace.to_owned()).await?;
+  pub async fn shutdown(&self) -> Result<()> {
+    self.nats.disconnect().await
+  }
 
-    let nc = self.nats.clone();
+  pub async fn handle_namespace(
+    &self,
+    namespace: String,
+    provider: SharedRpcHandler,
+  ) -> Result<()> {
+    trace!("LATTICE:NS_HANDLER[{}]:REGISTER", namespace);
 
-    thread::spawn(move || {
-      let system = actix_rt::System::new();
+    let sub = self
+      .nats
+      .queue_subscribe(rpc_message_topic(&namespace), rpc_message_topic(&namespace))
+      .await?;
 
-      system.block_on(async move {
-        debug!("LATTICE:HANDLER[{}]:OPEN", namespace);
-        while let Ok(nats_msg) = consumer.next().await {
-          let result: Result<LatticeRpcMessage> = nats_msg.deserialize();
-          trace!("LATTICE:HANDLER[{}]:RPC_MESSAGE:{:?}", namespace, result);
-          let msg = match result {
-            Ok(msg) => msg,
-            Err(e) => {
-              error!(
-                "Error deserializing RPC message, can not continue. Error was: {}",
-                e
-              );
-              return;
-            }
-          };
-          match msg {
-            LatticeRpcMessage::List { reply_to, .. } => {
-              let result = provider.get_list();
-              match result {
-                Ok(components) => {
-                  let response = LatticeRpcResponse::List(components);
-                  if let Err(e) = nc.publish(reply_to.clone(), response.serialize()).await {
-                    error!("Error sending response to lattice: {}", e);
-                    break;
-                  }
-                }
-                Err(e) => {
-                  error!("Provider component list resulted in error: {}", e);
-                  let response = LatticeRpcResponse::Error(e.to_string());
-                  if let Err(e) = nc.publish(reply_to, response.serialize()).await {
-                    error!("Error sending response to lattice: {}", e);
-                  }
-                }
-              };
-            }
-            LatticeRpcMessage::Invocation {
-              reply_to,
-              entity,
-              payload,
-            } => {
-              let entity_url = entity.url();
-              let result = provider.invoke(entity, payload).await;
-              match result {
-                Ok(mut stream) => {
-                  while let Some(msg) = stream.next().await {
-                    let response = LatticeRpcResponse::Output(msg);
-                    if let Err(e) = nc.publish(reply_to.clone(), response.serialize()).await {
-                      error!("Error sending response to lattice: {}", e);
-                      break;
-                    }
-                  }
-                  let response = LatticeRpcResponse::Close;
-                  if let Err(e) = nc.publish(reply_to.clone(), response.serialize()).await {
-                    error!("Error sending close response to lattice: {}", e);
-                    break;
-                  }
-                }
-                Err(e) => {
-                  error!(
-                    "Provider invocation for {} resulted in error: {}",
-                    entity_url, e
-                  );
-                  let response = LatticeRpcResponse::Error(e.to_string());
-                  if let Err(e) = nc.publish(reply_to, response.serialize()).await {
-                    error!("Error sending response to lattice: {}", e);
-                  }
-                }
-              };
+    let deadline = self.timeout;
+    let nats = self.nats.clone();
+
+    let ns_inner = namespace.clone();
+    let (ready_tx, ready_rx) = oneshot::channel::<()>();
+    let handle = tokio::spawn(async move {
+      trace!("LATTICE:NS_HANDLER[{}]:OPEN", ns_inner);
+      let _ = ready_tx.send(());
+      loop {
+        trace!("LATTICE:NS_HANDLER[{}]:WAIT", ns_inner);
+        let next = sub.next_wait().await;
+        match next {
+          Some(nats_msg) => {
+            debug!(
+              "LATTICE:NS_HANDLER[{}]:MESSAGE{:?}",
+              ns_inner,
+              nats_msg.data()
+            );
+            if let Err(e) = handle_message(&provider, nats_msg, deadline).await {
+              error!("Error processing lattice message for {}: {}", ns_inner, e);
             }
           }
-          if let Err(e) = nats_msg.ack().await {
-            error!(
-              "Error sending ACK for message {}. Error was {}",
-              nats_msg.subject(),
-              e
-            )
+          None => {
+            trace!("LATTICE:NS_HANDLER[{}]:DONE", ns_inner);
+            break;
           }
-          trace!("LATTICE:HANDLER[{}]:RPC_MESSAGE:ACKED", namespace);
         }
-        error!("LATTICE:HANDLER[{}]:CLOSE", namespace);
-      })
+        let _ = nats.flush().await;
+      }
+      trace!("LATTICE:NS_HANDLER[{}]:CLOSE", ns_inner);
     });
 
+    self
+      .handlers
+      .write()
+      .insert(namespace.to_owned(), NsHandler::new(handle));
+
+    let _ = ready_rx.await;
     Ok(())
   }
 
@@ -280,79 +238,58 @@ impl Lattice {
       }
     };
 
-    // Create unique inbox subject to listen on for the reply
-    let reply = self.nats.new_inbox();
-    let sub = self.nats.subscribe(reply.clone()).await?;
-
-    let topic = rpc_message_topic(&self.rpc_stream_topic, ns);
-    let msg = LatticeRpcMessage::Invocation {
-      reply_to: reply,
-      entity,
-      payload,
-    };
+    let topic = rpc_message_topic(ns);
+    let msg = LatticeRpcMessage::Invocation { entity, payload };
     let payload = serialize(&msg).map_err(|e| LatticeError::MessageSerialization(e.to_string()))?;
-    self.nats.publish(topic, payload).await?;
+    let sub = self.nats.request(&topic, &payload).await?;
 
     let (tx, rx) = unbounded_channel();
     let stream = TransportStream::new(UnboundedReceiverStream::new(rx));
-    debug!("LATTICE:INVOKE[{}]:REPLY_LISTENER:OPEN", entity_string);
+
     tokio::spawn(async move {
-      while let Ok(Some(lattice_msg)) = sub.next().await {
-        trace!(
-          "LATTICE:INVOKE[{}]:RESULT:DATA:{:?}",
-          entity_string,
-          lattice_msg.data
-        );
-        let msg = deserialize::<LatticeRpcResponse>(&lattice_msg.data);
-        debug!(
-          "LATTICE:INVOKE[{}]:RESULT:DESERIALIZED:{:?}",
-          entity_string, msg
-        );
-        let result = match msg {
-          Ok(response) => match response {
-            LatticeRpcResponse::Output(wrapper) => tx.send(wrapper),
-            LatticeRpcResponse::List(_) => unreachable!(),
-            LatticeRpcResponse::Error(e) => tx.send(TransportWrapper::component_error(
-              MessageTransport::error(e),
-            )),
-            LatticeRpcResponse::Close => tx.send(TransportWrapper::new_system_close()),
-          },
-          Err(e) => tx.send(TransportWrapper::component_error(MessageTransport::error(
-            e.to_string(),
-          ))),
-        };
-        if let Err(e) = result {
-          error!("Error sending RPC output to TransportStream: {}", e);
-          break;
+      trace!("LATTICE:INVOKE_HANDLER[{}]:OPEN", entity_string);
+      loop {
+        trace!("LATTICE:INVOKE_HANDLER[{}]:WAIT", entity_string);
+        match sub.next().await {
+          Ok(Some(nats_msg)) => {
+            debug!(
+              "LATTICE:INVOKE_HANDLER[{}]:RESULT:DATA:{:?}",
+              entity_string,
+              nats_msg.data()
+            );
+            if let Err(e) = handle_response(&tx, nats_msg).await {
+              error!("Error processing response: {}", e);
+            }
+          }
+          Ok(None) => {
+            trace!("LATTICE:INVOKE_HANDLER[{}]:DONE", entity_string);
+            break;
+          }
+          Err(e) => {
+            error!(
+              "Error retrieving lattice message for {}: {}",
+              entity_string, e
+            );
+            break;
+          }
         }
       }
-      debug!("LATTICE:INVOKE[{}]:REPLY_LISTENER:CLOSE", entity_string);
+      trace!("LATTICE:INVOKE_HANDLER[{}]:CLOSE", entity_string);
     });
 
     Ok(stream)
   }
 
-  pub async fn list_namespaces(&self) -> Result<Vec<String>> {
-    self.nats.list_consumers(RPC_STREAM_TOPIC.to_owned()).await
-  }
-
   pub async fn list_components(&self, namespace: String) -> Result<Vec<HostedType>> {
     debug!("LATTICE:LIST[{}]", namespace);
 
-    // Create unique inbox subject to listen on for the reply
-    let reply = self.nats.new_inbox();
-    let sub = self.nats.subscribe(reply.clone()).await?;
-
-    let topic = rpc_message_topic(&self.rpc_stream_topic, &namespace);
-    let msg = LatticeRpcMessage::List {
-      reply_to: reply,
-      namespace,
-    };
+    let topic = rpc_message_topic(&namespace);
+    let msg = LatticeRpcMessage::List { namespace };
     let payload = serialize(&msg).map_err(|e| LatticeError::MessageSerialization(e.to_string()))?;
-    self.nats.publish(topic, payload).await?;
+    let sub = self.nats.request(&topic, &payload).await?;
 
     let components = match sub.next().await? {
-      Some(lattice_msg) => match deserialize::<LatticeRpcResponse>(&lattice_msg.data) {
+      Some(lattice_msg) => match lattice_msg.deserialize::<LatticeRpcResponse>() {
         Ok(LatticeRpcResponse::List(list)) => Ok(list),
         Ok(LatticeRpcResponse::Error(e)) => Err(LatticeError::ListFail(e)),
         Err(e) => Err(LatticeError::ListFail(e.to_string())),
@@ -363,24 +300,100 @@ impl Lattice {
 
     components
   }
-
-  pub async fn get_total_pending(&self) -> Result<u64> {
-    let info = self.nats.stream_info(RPC_STREAM_TOPIC.to_owned()).await?;
-    let state = info.state;
-    Ok(state.messages)
-  }
 }
 
-fn rpc_message_topic(prefix: &str, ns: &str) -> String {
-  format!("{}.{}", prefix, ns)
+async fn handle_response(
+  tx: &UnboundedSender<TransportWrapper>,
+  lattice_msg: NatsMessage,
+) -> Result<()> {
+  let msg: Result<LatticeRpcResponse> = lattice_msg.deserialize();
+  trace!("LATTICE:MSG:RESPONSE:{:?}", msg);
+  let result = match msg {
+    Ok(response) => match response {
+      LatticeRpcResponse::Output(wrapper) => tx.send(wrapper),
+      LatticeRpcResponse::List(_) => unreachable!(),
+      LatticeRpcResponse::Error(e) => tx.send(TransportWrapper::component_error(
+        MessageTransport::error(e),
+      )),
+      LatticeRpcResponse::Close => tx.send(TransportWrapper::new_system_close()),
+    },
+    Err(e) => tx.send(TransportWrapper::component_error(MessageTransport::error(
+      e.to_string(),
+    ))),
+  };
+  result.map_err(|_| LatticeError::ResponseUpstreamClosed)
+}
+
+async fn handle_message(
+  provider: &SharedRpcHandler,
+  nats_msg: NatsMessage,
+  deadline: Duration,
+) -> Result<()> {
+  let msg: LatticeRpcMessage = nats_msg.deserialize()?;
+  trace!("LATTICE:MSG:REQUEST:{:?}", msg);
+  match msg {
+    LatticeRpcMessage::List { .. } => {
+      let result = provider.get_list();
+      match result {
+        Ok(components) => {
+          let response = LatticeRpcResponse::List(components);
+          nats_msg.respond(&response.serialize()).await?;
+        }
+        Err(e) => {
+          error!("Provider component list resulted in error: {}", e);
+          let response = LatticeRpcResponse::Error(e.to_string());
+          nats_msg.respond(&response.serialize()).await?;
+        }
+      };
+    }
+    LatticeRpcMessage::Invocation { entity, payload } => {
+      let entity_url = entity.url();
+      let result = provider.invoke(entity, payload).await;
+
+      match result {
+        Ok(mut stream) => {
+          loop {
+            let result = timeout(deadline, stream.next()).await;
+            match result {
+              Ok(Some(msg)) => {
+                let response = LatticeRpcResponse::Output(msg);
+                nats_msg.respond(&response.serialize()).await?;
+              }
+              Ok(None) => {
+                break;
+              }
+              Err(_) => {
+                error!("Timeout receiving next packet from invocation stream.");
+                break;
+              }
+            }
+          }
+
+          let response = LatticeRpcResponse::Close;
+          nats_msg.respond(&response.serialize()).await?;
+        }
+        Err(e) => {
+          error!(
+            "Provider invocation for {} resulted in error: {}",
+            entity_url, e
+          );
+          let response = LatticeRpcResponse::Error(e.to_string());
+          nats_msg.respond(&response.serialize()).await?;
+        }
+      };
+    }
+  }
+  Ok(())
+}
+
+fn rpc_message_topic(ns: &str) -> String {
+  format!("lattice.rpc.{}.{}", ns, "default")
 }
 
 #[derive(Debug, serde::Deserialize, serde::Serialize)]
 pub enum LatticeRpcMessage {
   #[serde(rename = "0")]
   Invocation {
-    #[serde(rename = "0")]
-    reply_to: String,
     #[serde(rename = "1")]
     entity: vino_entity::Entity,
     #[serde(rename = "2")]
@@ -389,8 +402,6 @@ pub enum LatticeRpcMessage {
 
   #[serde(rename = "1")]
   List {
-    #[serde(rename = "0")]
-    reply_to: String,
     #[serde(rename = "1")]
     namespace: String,
   },
@@ -427,11 +438,9 @@ mod test {
 
   use anyhow::Result;
   use log::*;
-  use once_cell::sync::Lazy;
   use test_vino_provider::Provider;
   use tokio_stream::StreamExt;
   use vino_codec::messagepack::deserialize;
-  use vino_rpc::BoxedRpcHandler;
   use vino_transport::{
     MessageTransport,
     TransportMap,
@@ -452,14 +461,12 @@ mod test {
   };
   use crate::lattice::LatticeRpcResponse;
 
-  static PROVIDER: Lazy<BoxedRpcHandler> = Lazy::new(|| Arc::new(Provider::default()));
-
   async fn get_lattice() -> Result<(Lattice, String)> {
     let lattice_builder = LatticeBuilder::new_from_env("test").unwrap();
     let lattice = lattice_builder.build().await.unwrap();
     let namespace = "some_namespace_id".to_owned();
     lattice
-      .handle_namespace(namespace.clone(), PROVIDER.clone())
+      .handle_namespace(namespace.clone(), Arc::new(Provider::default()))
       .await
       .unwrap();
 
@@ -477,12 +484,11 @@ mod test {
     debug!("{:?}", bytes);
     let actual: LatticeRpcResponse = deserialize(&bytes)?;
     assert_eq!(expected, actual);
-
     Ok(())
   }
 
   #[test_logger::test(tokio::test)]
-  async fn test_invoke() -> Result<()> {
+  async fn rpc_invoke() -> Result<()> {
     let (lattice, namespace) = get_lattice().await?;
     let component_name = "test-component";
     let user_input = String::from("Hello world");
@@ -502,19 +508,34 @@ mod test {
   }
 
   #[test_logger::test(tokio::test)]
-  async fn test_error() -> Result<()> {
+  async fn clean_shutdown() -> Result<()> {
+    let lattice_builder = LatticeBuilder::new_from_env("test").unwrap();
+    let lattice = lattice_builder.build().await.unwrap();
+    let namespace = "some_namespace_id".to_owned();
+    lattice
+      .handle_namespace(namespace.clone(), Arc::new(Provider::default()))
+      .await
+      .unwrap();
+    let _ = lattice.shutdown().await;
+
+    Ok(())
+  }
+
+  #[test_logger::test(tokio::test)]
+  async fn rpc_invoke_error() -> Result<()> {
     let (lattice, namespace) = get_lattice().await?;
     let component_name = "error";
     let user_input = String::from("Hello world");
     let entity = vino_entity::Entity::component(namespace, component_name);
     let mut payload = TransportMap::new();
     payload.insert("input", MessageTransport::success(&user_input));
-    println!("Sending payload: {:?}", payload);
+    debug!("Sending payload: {:?}", payload);
     let mut stream = lattice.invoke(entity, payload).await?;
-    println!("Sent payload, received stream");
+    debug!("Sent payload, received stream");
 
-    let msg = stream.next().await.unwrap();
-    println!("msg: {:?}", msg);
+    let msg = stream.next().await;
+    debug!("msg: {:?}", msg);
+    let msg = msg.unwrap();
     assert_eq!(
       msg.payload,
       MessageTransport::error("This always errors".to_owned())
@@ -524,18 +545,7 @@ mod test {
   }
 
   #[test_logger::test(tokio::test)]
-  async fn test_list() -> Result<()> {
-    let (lattice, namespace) = get_lattice().await?;
-    let namespaces = lattice.list_namespaces().await?;
-    println!("Lattice namespaces: {:?}", namespaces);
-
-    assert!(namespaces.contains(&namespace));
-
-    Ok(())
-  }
-
-  #[test_logger::test(tokio::test)]
-  async fn test_list_namespace_components() -> Result<()> {
+  async fn rpc_list_namespace_components() -> Result<()> {
     let (lattice, namespace) = get_lattice().await?;
     let schemas = lattice.list_components(namespace).await?;
     println!("Hosted schemas on namespace: {:?}", schemas);

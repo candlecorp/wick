@@ -1,37 +1,20 @@
 use std::path::PathBuf;
-use std::sync::Arc;
 use std::time::Duration;
 
-use log::{
-  debug,
-  trace,
-};
-use nats::jetstream::{
-  AckPolicy,
-  Consumer,
-  ConsumerConfig,
-  StreamConfig,
-  StreamInfo,
-};
-use nats::{
+use futures::future::BoxFuture;
+use futures::FutureExt;
+use nats::asynk::{
   Connection,
   Message,
   Subscription,
 };
-use once_cell::sync::Lazy;
-use parking_lot::Mutex;
 use serde::Deserialize;
-use tokio::runtime::{
-  Builder,
-  Runtime,
-};
 use tokio::time::timeout;
 use vino_codec::messagepack::deserialize;
 
 use crate::error::LatticeError;
 
 type Result<T> = std::result::Result<T, LatticeError>;
-static RPC_STREAM_NAME: &str = "rpc";
 
 #[derive(Debug, Clone)]
 pub struct NatsOptions {
@@ -41,12 +24,6 @@ pub struct NatsOptions {
   pub token: Option<String>,
   pub timeout: Duration,
 }
-static RT: Lazy<Runtime> = Lazy::new(|| {
-  Builder::new_multi_thread()
-    .thread_name("lattice")
-    .build()
-    .unwrap()
-});
 
 #[derive(Clone, Debug)]
 pub(crate) struct Nats {
@@ -57,132 +34,94 @@ pub(crate) struct Nats {
 impl Nats {
   pub(crate) async fn connect(nopts: NatsOptions) -> Result<Self> {
     let opts = if let Some(creds_path) = &nopts.creds_path {
-      nats::Options::with_credentials(creds_path)
+      nats::asynk::Options::with_credentials(creds_path)
     } else if let Some(token) = &nopts.token {
-      nats::Options::with_token(token)
+      nats::asynk::Options::with_token(token)
     } else {
-      nats::Options::new()
+      nats::asynk::Options::new()
     };
 
     let timeout = nopts.timeout;
-
-    let nc = RT
-      .spawn_blocking(move || {
-        trace!(
-          "LATTICE:CONNECT[{}]:ID[{}]:TIMEOUT[{:?}]",
-          nopts.address,
-          nopts.client_id,
-          nopts.timeout
-        );
-        opts
-          .with_name(&nopts.client_id)
-          .connect(&nopts.address)
-          .map_err(LatticeError::ConnectionFailed)
-      })
-      .await??;
+    trace!(
+      "LATTICE:CONNECT[{}]:ID[{}]:TIMEOUT[{:?}]",
+      nopts.address,
+      nopts.client_id,
+      nopts.timeout
+    );
+    let nc = opts
+      .with_name(&nopts.client_id)
+      .connect(&nopts.address)
+      .await
+      .map_err(LatticeError::ConnectionFailed)?;
 
     Ok(Self { nc, timeout })
   }
 
-  pub(crate) async fn create_stream(&self, stream_config: StreamConfig) -> Result<StreamInfo> {
-    let nc = self.nc.clone();
-    Ok(
-      RT.spawn_blocking(move || {
-        nc.create_stream(stream_config)
-          .map_err(LatticeError::CreateStream)
-      })
-      .await??,
-    )
+  pub(crate) async fn disconnect(&self) -> Result<()> {
+    self.nc.drain().await.map_err(LatticeError::ShutdownError)?;
+    self.nc.flush().await.map_err(LatticeError::ShutdownError)?;
+    Ok(())
   }
 
-  pub(crate) async fn create_consumer(&self, namespace: String) -> Result<NatsConsumer> {
-    let topic = format!("{}.{}", RPC_STREAM_NAME, namespace);
-    let consumer_config = ConsumerConfig {
-      durable_name: Some(namespace.to_owned()),
-      deliver_subject: None, //make pull based
-      ack_policy: AckPolicy::Explicit,
-      filter_subject: topic.clone(),
-      ..Default::default()
-    };
-
-    let nc = self.nc.clone();
-    let rpc_stream_topic = RPC_STREAM_NAME.to_owned();
-    debug!("LATTICE:CONSUMER[{},{}]:CREATE", rpc_stream_topic, topic);
-    let c = RT
-      .spawn_blocking(move || {
-        Consumer::create_or_open(nc, &rpc_stream_topic, consumer_config)
-          .map_err(LatticeError::CreateOrOpenConsumer)
-      })
-      .await??;
-
-    let consumer = NatsConsumer {
-      topic,
-      consumer: Arc::new(Mutex::new(c)),
-    };
-    Ok(consumer)
+  pub(crate) async fn flush(&self) -> Result<()> {
+    self.nc.flush().await.map_err(LatticeError::ShutdownError)
   }
 
+  #[allow(unused)]
   pub(crate) async fn publish(&self, topic: String, payload: Vec<u8>) -> Result<()> {
-    let nc = self.nc.clone();
-    RT.spawn_blocking(move || {
-      debug!("LATTICE:PUBLISH[{}]:LEN[{}]", topic, payload.len());
-      trace!("LATTICE:PUBLISH[{}]:DATA:{:?}", topic, payload);
-      nc.publish(&topic, payload)
-        .map_err(|e| LatticeError::PublishFail(e.to_string()))
-    })
-    .await?
+    self
+      .nc
+      .publish(&topic, payload)
+      .await
+      .map_err(|e| LatticeError::PublishFail(e.to_string()))
   }
 
+  #[allow(unused)]
   pub(crate) fn new_inbox(&self) -> String {
     self.nc.new_inbox()
   }
 
-  pub(crate) async fn subscribe(&self, topic: String) -> Result<NatsSubscription> {
-    let nc = self.nc.clone();
-    let sub = RT
-      .spawn_blocking(move || {
-        debug!("LATTICE:SUBSCRIBE[{}]", topic);
-        nc.subscribe(&topic)
-          .map_err(|e| LatticeError::PublishFail(e.to_string()))
-      })
-      .await??;
+  pub(crate) async fn request(&self, topic: &str, payload: &[u8]) -> Result<NatsSubscription> {
+    trace!("LATTICE:REQUEST[{}]:PAYLOAD{:?}", topic, payload);
+    let sub = self
+      .nc
+      .request_multi(topic, payload)
+      .await
+      .map_err(|e| LatticeError::RequestFail(e.to_string()))?;
     Ok(NatsSubscription {
       inner: sub,
       timeout: self.timeout,
     })
   }
 
-  pub(crate) async fn list_consumers(&self, stream_name: String) -> Result<Vec<String>> {
-    let nc = self.nc.clone();
-
-    let result = RT
-      .spawn_blocking(move || match nc.list_consumers(stream_name) {
-        Ok(iter) => {
-          let pages = iter.collect::<Vec<_>>();
-          let mut all = vec![];
-          for page in pages {
-            match page {
-              Ok(page) => all.push(page.name),
-              Err(e) => return Err(LatticeError::ListFail(e.to_string())),
-            }
-          }
-          Ok(all)
-        }
-        Err(e) => Err(LatticeError::ListFail(e.to_string())),
-      })
-      .await??;
-    Ok(result)
+  #[allow(unused)]
+  pub(crate) async fn subscribe(&self, topic: String) -> Result<NatsSubscription> {
+    let sub = self
+      .nc
+      .subscribe(&topic)
+      .await
+      .map_err(|e| LatticeError::PublishFail(e.to_string()))?;
+    Ok(NatsSubscription {
+      inner: sub,
+      timeout: self.timeout,
+    })
   }
 
-  pub(crate) async fn stream_info(&self, stream_name: String) -> Result<StreamInfo> {
-    let nc = self.nc.clone();
-    let result = RT
-      .spawn_blocking(move || {
-        nc.stream_info(stream_name)
-          .map_err(LatticeError::GetStreamInfo)
-      })
-      .await??;
-    Ok(result)
+  pub(crate) async fn queue_subscribe(
+    &self,
+    topic: String,
+    group: String,
+  ) -> Result<NatsSubscription> {
+    trace!("LATTICE:QSUB[{},{}]", topic, group);
+    let sub = self
+      .nc
+      .queue_subscribe(&topic, &group)
+      .await
+      .map_err(|e| LatticeError::PublishFail(e.to_string()))?;
+    Ok(NatsSubscription {
+      inner: sub,
+      timeout: self.timeout,
+    })
   }
 }
 
@@ -192,75 +131,48 @@ pub(crate) struct NatsSubscription {
 }
 
 impl NatsSubscription {
-  pub(crate) async fn next(&self) -> Result<Option<Message>> {
-    let sub = self.inner.clone();
-    let task = RT.spawn_blocking(move || {
-      trace!("LATTICE:SUB:WAIT");
-      let a = sub.next();
-      trace!("LATTICE:SUB:CONTINUE");
-      a
-    });
-    let result = timeout(self.timeout, task)
-      .await
-      .map_err(|_| LatticeError::WaitTimeout)??;
-
-    Ok(result)
+  pub(crate) fn next(&self) -> BoxFuture<Result<Option<NatsMessage>>> {
+    let fut = self.inner.next();
+    timeout(
+      self.timeout,
+      fut.map(|msg| msg.map(|msg| NatsMessage { inner: msg })),
+    )
+    .map(|r| r.map_err(LatticeError::WaitTimeout))
+    .boxed()
+  }
+  pub(crate) fn next_wait(&self) -> BoxFuture<Option<NatsMessage>> {
+    self
+      .inner
+      .next()
+      .map(|msg| msg.map(|msg| NatsMessage { inner: msg }))
+      .boxed()
   }
 }
 
-pub(crate) struct NatsConsumer {
-  topic: String,
-  consumer: Arc<Mutex<Consumer>>,
-}
-
-impl NatsConsumer {
-  pub(crate) async fn next(&mut self) -> Result<NatsMessage> {
-    let consumer = self.consumer.clone();
-    let topic = self.topic.clone();
-
-    let result = RT
-      .spawn_blocking(move || {
-        let mut lock = consumer.lock();
-        trace!("LATTICE:HANDLER[{}]:WAIT", topic);
-        let result = match lock.pull() {
-          Ok(msg) => Ok(msg.into()),
-          Err(e) => Err(LatticeError::SubscribeFail(e.to_string())),
-        };
-        trace!("LATTICE:HANDLER[{}]:CONTINUE", topic);
-        result
-      })
-      .await?;
-    result
-  }
-}
-
+#[derive(Debug)]
 pub(crate) struct NatsMessage {
-  inner: Arc<Message>,
+  inner: Message,
 }
 
 impl From<Message> for NatsMessage {
   fn from(msg: Message) -> Self {
-    Self {
-      inner: Arc::new(msg),
-    }
+    Self { inner: msg }
   }
 }
 
 impl NatsMessage {
-  pub async fn ack(&self) -> Result<()> {
+  pub async fn respond(&self, data: &[u8]) -> Result<()> {
     trace!(
-      "LATTICE:ACK[{}]",
-      self.inner.reply.clone().unwrap_or_default()
+      "LATTICE:MSG:RESPOND[{}]:PAYLOAD{:?}",
+      self.inner.reply.as_ref().unwrap_or(&"".to_owned()),
+      data
     );
     let msg = self.inner.clone();
-    Ok(
-      RT.spawn_blocking(move || msg.ack().map_err(LatticeError::AckFail))
-        .await??,
-    )
+    msg.respond(data).await.map_err(LatticeError::ResponseFail)
   }
 
-  pub fn subject(&self) -> &str {
-    &self.inner.subject
+  pub fn data(&self) -> &[u8] {
+    &self.inner.data
   }
 
   pub fn deserialize<'de, T: Deserialize<'de>>(&'de self) -> Result<T> {

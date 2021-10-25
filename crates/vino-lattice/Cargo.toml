@@ -9,7 +9,7 @@ edition = "2018"
 
 [dependencies]
 # nats = { path = "../../../nats.rs" }
-nats = { version = "0.13.0" }
+nats = { version = "0.15.2" }
 log = "0.4.14"
 vino-rpc = { path = "../vino-rpc" }
 vino-transport = { path = "../../sdk/crates/vino-transport", features = [
@@ -21,11 +21,10 @@ vino-codec = { path = "../../sdk/crates/vino-codec" }
 thiserror = "1.0.26"
 nkeys = "0.1.0"
 serde = { version = "1.0.126", features = ["derive"] }
-tokio = { version = "1.4.0", features = ["time", "rt-multi-thread"] }
+tokio = { version = "1", features = ["time", "rt-multi-thread"] }
 tokio-stream = { version = "0.1.7" }
 futures = "0.3.16"
 parking_lot = { version = "0.11.1", features = [] }
-actix-rt = "2.2.0"
 once_cell = "1.5.2"
 
 [dev-dependencies]
@@ -33,5 +32,5 @@ logger = { path = "../logger" }
 test-logger = { path = "../test-logger" }
 anyhow = "1.0.43"
 test-vino-provider = { path = "../integration/test-vino-provider" }
-tokio = { version = "1.4.0", features = ["macros", "rt-multi-thread"] }
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 tokio-stream = { version = "0.1.7" }
