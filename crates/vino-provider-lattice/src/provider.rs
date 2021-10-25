@@ -68,15 +68,16 @@ mod tests {
 
   use anyhow::Result as TestResult;
   use maplit::hashmap;
-  use once_cell::sync::Lazy;
   use tokio_stream::StreamExt;
   use vino_lattice::lattice::LatticeBuilder;
   use vino_provider::native::prelude::*;
-  use vino_rpc::BoxedRpcHandler;
+  use vino_rpc::SharedRpcHandler;
 
   use super::*;
-  static PROVIDER: Lazy<BoxedRpcHandler> =
-    Lazy::new(|| Arc::new(test_vino_provider::Provider::default()));
+
+  fn get_provider() -> SharedRpcHandler {
+    Arc::new(test_vino_provider::Provider::default())
+  }
 
   #[test_logger::test(tokio::test)]
   async fn test_component() -> TestResult<()> {
@@ -85,7 +86,7 @@ mod tests {
     let ns = "some_namespace";
 
     lattice
-      .handle_namespace(ns.to_owned(), PROVIDER.clone())
+      .handle_namespace(ns.to_owned(), get_provider())
       .await?;
 
     let provider = Provider::new(ns.to_owned(), Arc::new(lattice)).await?;
@@ -114,7 +115,7 @@ mod tests {
     let ns = "some_namespace";
 
     lattice
-      .handle_namespace(ns.to_owned(), test_vino_provider::PROVIDER.clone())
+      .handle_namespace(ns.to_owned(), get_provider())
       .await?;
 
     let provider = Provider::new(ns.to_owned(), Arc::new(lattice)).await?;

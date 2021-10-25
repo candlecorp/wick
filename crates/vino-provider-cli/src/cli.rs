@@ -22,7 +22,7 @@ use vino_invocation_server::InvocationServer;
 use vino_lattice::lattice::Lattice;
 use vino_lattice::nats::NatsOptions;
 use vino_rpc::rpc::invocation_service_server::InvocationServiceServer;
-use vino_rpc::BoxedRpcHandler;
+use vino_rpc::SharedRpcHandler;
 
 use crate::Result;
 
@@ -158,10 +158,6 @@ pub struct DefaultCliOptions {
   /// Logging options.
   #[structopt(flatten)]
   pub logging: LoggingOptions,
-
-  /// Outputs the version.
-  #[structopt(long = "version", short = "v")]
-  pub version: bool,
 
   #[structopt(flatten)]
   /// Options for connecting to a lattice.
@@ -323,7 +319,10 @@ pub fn init_logging(options: &LoggingOptions) -> Result<()> {
 }
 
 /// Starts an RPC and/or an HTTP server for the passed [vino_rpc::RpcHandler].
-pub async fn start_server(provider: BoxedRpcHandler, opts: Option<Options>) -> Result<ServerState> {
+pub async fn start_server(
+  provider: SharedRpcHandler,
+  opts: Option<Options>,
+) -> Result<ServerState> {
   debug!("Starting server with options: {:?}", opts);
 
   let opts = opts.unwrap_or_default();
@@ -378,7 +377,7 @@ pub async fn start_server(provider: BoxedRpcHandler, opts: Option<Options>) -> R
 async fn connect_to_lattice(
   opts: &LatticeOptions,
   id: String,
-  factory: BoxedRpcHandler,
+  factory: SharedRpcHandler,
   timeout: Duration,
 ) -> Result<Arc<Lattice>> {
   info!(
@@ -401,7 +400,7 @@ async fn connect_to_lattice(
 
 async fn start_http_server(
   options: &ServerOptions,
-  provider: BoxedRpcHandler,
+  provider: SharedRpcHandler,
 ) -> Result<(SocketAddr, Sender<ServerMessage>)> {
   let port = options.port.unwrap_or(0);
   let address = options.address.unwrap_or(Ipv4Addr::from_str("127.0.0.1")?);
@@ -509,7 +508,7 @@ async fn start_rpc_server(
 
 /// Start a server with the passed [vino_rpc::RpcHandler] and keep it.
 /// running until the process receives a SIGINT (^C).
-pub async fn init_cli(provider: BoxedRpcHandler, opts: Option<Options>) -> Result<()> {
+pub async fn init_cli(provider: SharedRpcHandler, opts: Option<Options>) -> Result<()> {
   let state = start_server(provider, opts).await?;
   print_info(&state);
 
@@ -538,7 +537,7 @@ mod tests {
 
   use super::*;
 
-  static PROVIDER: Lazy<BoxedRpcHandler> = Lazy::new(|| Arc::new(Provider::default()));
+  static PROVIDER: Lazy<SharedRpcHandler> = Lazy::new(|| Arc::new(Provider::default()));
 
   #[test_logger::test(tokio::test)]
   async fn test_starts() -> Result<()> {

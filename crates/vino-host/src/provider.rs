@@ -74,7 +74,7 @@ mod tests {
   use super::*;
   use crate::HostBuilder;
 
-  #[test_logger::test(actix::test)]
+  #[test_logger::test(tokio::test)]
   async fn test_component() -> TestResult<()> {
     let builder = HostBuilder::try_from("./manifests/logger.yaml")?;
     let mut host = builder.build();

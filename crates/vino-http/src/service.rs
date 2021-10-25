@@ -24,7 +24,7 @@ use tonic::body::{
   BoxBody,
 };
 use vino_entity::Entity;
-use vino_rpc::BoxedRpcHandler;
+use vino_rpc::SharedRpcHandler;
 use vino_transport::{
   TransportMap,
   TransportWrapper,
@@ -42,12 +42,12 @@ const PREFIX: &str = "rpc";
 
 #[derive(Clone)]
 pub struct ProviderService {
-  provider: BoxedRpcHandler,
+  provider: SharedRpcHandler,
   cors: Arc<Cors>,
 }
 
 impl ProviderService {
-  pub fn new(provider: BoxedRpcHandler, config: Config) -> Self {
+  pub fn new(provider: SharedRpcHandler, config: Config) -> Self {
     Self {
       provider,
       cors: Arc::new(Cors::new(config)),

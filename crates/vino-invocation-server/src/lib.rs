@@ -91,7 +91,7 @@ use tonic::transport::{
 };
 use vino_rpc::rpc::invocation_service_client::InvocationServiceClient;
 use vino_rpc::rpc::invocation_service_server::InvocationServiceServer;
-use vino_rpc::BoxedRpcHandler;
+use vino_rpc::SharedRpcHandler;
 use vino_transport::{
   MessageTransport,
   TransportMap,
@@ -129,7 +129,7 @@ pub fn make_input<K: AsRef<str>, V: serde::Serialize>(entries: Vec<(K, V)>) -> T
 #[must_use]
 pub fn make_rpc_server(
   socket: tokio::net::TcpSocket,
-  provider: BoxedRpcHandler,
+  provider: SharedRpcHandler,
 ) -> JoinHandle<std::result::Result<(), tonic::transport::Error>> {
   let component_service = InvocationServer::new(provider);
 

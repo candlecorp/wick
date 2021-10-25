@@ -17,11 +17,11 @@ A crate for getting the crate binary in an integration test.
 
 
 [dependencies]
-tokio = { version = "1.4.0", features = ["process", "io-util"] }
+tokio = { version = "1", features = ["process", "io-util"] }
 thiserror = "1.0.25"
 
 [dev-dependencies]
-tokio = { version = "1.4.0", features = [
+tokio = { version = "1", features = [
   "macros",
   "process",
   "net",

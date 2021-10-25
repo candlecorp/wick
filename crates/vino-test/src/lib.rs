@@ -12,7 +12,7 @@ use tap::{
 };
 use tokio_stream::StreamExt;
 use vino_entity::Entity;
-use vino_rpc::BoxedRpcHandler;
+use vino_rpc::SharedRpcHandler;
 use vino_transport::{
   Failure,
   MessageTransport,
@@ -92,7 +92,7 @@ impl TestSuite {
     self
   }
 
-  pub async fn run(&mut self, provider: BoxedRpcHandler) -> Result<TestRunner, TestError> {
+  pub async fn run(&mut self, provider: SharedRpcHandler) -> Result<TestRunner, TestError> {
     let name = self.name.clone();
     let tests = self.get_tests();
     run_test(name, tests, provider).await
@@ -157,7 +157,7 @@ impl TestData {
 pub async fn run_test(
   name: String,
   expected: Vec<&mut TestData>,
-  provider: BoxedRpcHandler,
+  provider: SharedRpcHandler,
 ) -> Result<TestRunner, Error> {
   let mut harness = TestRunner::new(Some(name));
 

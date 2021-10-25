@@ -21,8 +21,8 @@ use vino_provider_cli::cli::{
   ServerState,
 };
 use vino_rpc::{
-  BoxedRpcHandler,
   RpcHandler,
+  SharedRpcHandler,
 };
 use vino_runtime::core_data::InitData;
 use vino_runtime::network::NetworkBuilder;
@@ -34,7 +34,7 @@ use crate::{
   Result,
 };
 
-type ServiceMap = HashMap<String, BoxedRpcHandler>;
+type ServiceMap = HashMap<String, SharedRpcHandler>;
 static HOST_REGISTRY: Lazy<Mutex<ServiceMap>> = Lazy::new(|| Mutex::new(HashMap::new()));
 
 fn from_registry(id: &str) -> Arc<dyn RpcHandler + Send + Sync + 'static> {
@@ -336,7 +336,7 @@ mod test {
     let _h = HostBuilder::new().build();
   }
 
-  #[test_logger::test(actix::test)]
+  #[test_logger::test(tokio::test)]
   async fn should_start_and_stop() -> Result<()> {
     let mut host = HostBuilder::new().build();
     host.start().await?;
@@ -346,7 +346,7 @@ mod test {
     Ok(())
   }
 
-  #[test_logger::test(actix::test)]
+  #[test_logger::test(tokio::test)]
   async fn request_direct() -> Result<()> {
     let file = PathBuf::from("manifests/logger.yaml");
     let manifest = HostDefinition::load_from_file(&file)?;
@@ -366,7 +366,7 @@ mod test {
     Ok(())
   }
 
-  #[test_logger::test(actix::test)]
+  #[test_logger::test(tokio::test)]
   async fn request_rpc_server() -> Result<()> {
     let file = PathBuf::from("manifests/logger.yaml");
     let mut def = HostDefinition::load_from_file(&file)?;

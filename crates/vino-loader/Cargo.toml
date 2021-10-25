@@ -9,4 +9,4 @@ edition = "2018"
 log = "0.4"
 thiserror = "1.0.25"
 oci-utils = { path = "../oci-utils" }
-tokio = { version = "1.4.0", features = ["fs"] }
+tokio = { version = "1", features = ["fs"] }

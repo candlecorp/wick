@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::sync::Arc;
+use std::time::Instant;
 
 use redis::aio::Connection;
 use redis::FromRedisValue;
@@ -36,10 +37,12 @@ impl RedisConnection {
     cmd: &mut redis::Cmd,
   ) -> RedisResult<T> {
     let mut con = self.0.write().await;
+    let now = Instant::now();
     let result: Result<T> = cmd
       .query_async(&mut *con)
       .await
       .map_err(|e| Error::RedisError(e.to_string()));
+    trace!("REDIS:QUERY[{} μs]", now.elapsed().as_micros());
 
     if log_enabled!(log::Level::Trace) {
       let bytes = cmd.get_packed_command();

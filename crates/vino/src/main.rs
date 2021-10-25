@@ -89,7 +89,7 @@ use self::commands::{
   CliCommand,
 };
 
-#[actix::main]
+#[tokio::main]
 async fn main() -> Result<()> {
   let cli = Cli::from_args();
 

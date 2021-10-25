@@ -9,7 +9,7 @@ edition = "2018"
 tonic = "0.5"
 tonic-web = { path = "../vino-http" }
 prost = "0.8"
-tokio = { version = "1", features = ["macros", "rt", "net"] }
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "net"] }
 base64 = "0.13"
 bytes = "1.0"
 tokio-stream = { version = "0.1", features = ["net"] }

@@ -25,7 +25,7 @@ tonic = { version = "0.5", features = ["tls"] }
 tonic-reflection = "0.2.0"
 
 futures = "0.3.15"
-tokio = { version = "1.4.0", features = [
+tokio = { version = "1", features = [
   "macros",
   "fs",
   "net",

@@ -109,13 +109,13 @@ pub async fn fetch_oci_bytes(
   }
   let cf = cached_file(img);
   if cf.exists() {
-    debug!("WASM:AS_OCI:CACHE:{}", cf.to_string_lossy());
+    debug!("OCI:CACHE:{}", cf.to_string_lossy());
     let mut buf = vec![];
     let mut f = std::fs::File::open(cached_file(img))?;
     f.read_to_end(&mut buf)?;
     Ok(buf)
   } else {
-    debug!("WASM:AS_OCI:REMOTE:{}", img);
+    debug!("OCI:REMOTE:{}", img);
     let img = oci_distribution::Reference::from_str(img)
       .map_err(|e| OciError::OCIParseError(img.to_owned(), e.to_string()))?;
     let auth = if let Ok(u) = std::env::var(OCI_VAR_USER) {

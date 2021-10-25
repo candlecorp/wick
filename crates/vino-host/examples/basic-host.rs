@@ -3,7 +3,7 @@ use vino_host::{
   HostBuilder,
 };
 
-#[actix_rt::main]
+#[tokio::main]
 async fn main() -> Result<(), Error> {
   let mut host = HostBuilder::new().build();
   host.start().await?;

@@ -105,7 +105,7 @@ mod tests {
   use vino_manifest::host_definition::HostDefinition;
   use vino_transport::TransportWrapper;
 
-  #[actix::test]
+  #[tokio::test]
   async fn runs_log_config() -> crate::Result<()> {
     let host_def = HostDefinition::load_from_file(&PathBuf::from("./manifests/logger.yaml"))?;
     let input = vec![("input", "test-input")].into();

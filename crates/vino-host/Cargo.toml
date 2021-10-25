@@ -35,7 +35,7 @@ serde_yaml = "0.8.17"
 serde_json = "1.0.66"
 hocon = "0.5.2"
 async-trait = "0.1.50"
-tokio = { version = "1.4.0", features = ["macros", "net", "rt-multi-thread"] }
+tokio = { version = "1", features = ["macros", "net", "rt-multi-thread"] }
 http = "0.2.4"
 once_cell = "1.8"
 parking_lot = "0.11.2"
@@ -53,5 +53,3 @@ tokio = { version = "1", features = [
 ] }
 anyhow = "1.0.42"
 tokio-stream = "0.1.7"
-actix = "0.12"
-actix-rt = "2.1.0"

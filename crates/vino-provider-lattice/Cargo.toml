@@ -17,7 +17,6 @@ parking_lot = "0.11.1"
 log = "0.4"
 thiserror = "1.0.25"
 async-trait = "0.1.50"
-once_cell = "1.8"
 futures = "0.3.17"
 
 [dev-dependencies]
@@ -26,5 +25,5 @@ test-logger = { path = "../test-logger" }
 test-vino-provider = { path = "../integration/test-vino-provider" }
 maplit = "1.0.2"
 anyhow = "1.0.42"
-tokio = { version = "1.4.0", features = ["macros"] }
+tokio = { version = "1", features = ["macros"] }
 tokio-stream = "0.1.7"

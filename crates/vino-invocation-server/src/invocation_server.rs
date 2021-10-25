@@ -29,7 +29,7 @@ use vino_rpc::{
 };
 
 use crate::conversion::make_output;
-use crate::BoxedRpcHandler;
+use crate::SharedRpcHandler;
 
 /// A GRPC server for implementers of [vino_rpc::RpcHandler].
 #[derive(Derivative)]
@@ -37,7 +37,7 @@ use crate::BoxedRpcHandler;
 pub struct InvocationServer {
   /// The provider that will handle incoming requests.
   #[derivative(Debug = "ignore")]
-  pub provider: BoxedRpcHandler,
+  pub provider: SharedRpcHandler,
 
   stats: RwLock<HashMap<String, Statistics>>,
 }
@@ -45,7 +45,7 @@ pub struct InvocationServer {
 impl InvocationServer {
   /// Constructor.
   #[must_use]
-  pub fn new(provider: BoxedRpcHandler) -> Self {
+  pub fn new(provider: SharedRpcHandler) -> Self {
     Self {
       provider,
       stats: RwLock::new(HashMap::new()),

@@ -77,12 +77,9 @@ extern crate log;
 
 use std::sync::Arc;
 
-use futures::executor::block_on;
-use once_cell::sync::OnceCell;
 use structopt::StructOpt;
 use vino_keyvalue_redis::provider::Provider;
 use vino_provider_cli::cli::DefaultCliOptions;
-use vino_rpc::BoxedRpcHandler;
 
 #[derive(Debug, Clone, StructOpt)]
 pub struct Options {
@@ -93,18 +90,15 @@ pub struct Options {
   #[structopt(flatten)]
   pub options: DefaultCliOptions,
 }
-static PROVIDER: OnceCell<BoxedRpcHandler> = OnceCell::new();
 
 #[tokio::main]
 async fn main() -> Result<(), vino_keyvalue_redis::error::Error> {
   let opts = Options::from_args();
   let url = opts.url;
   vino_provider_cli::init_logging(&opts.options.logging)?;
-  let provider = PROVIDER.get_or_init(|| {
-    let provider = Provider::default();
-    block_on(provider.connect("default".to_owned(), url.clone())).unwrap();
-    Arc::new(provider)
-  });
-  vino_provider_cli::init_cli(provider.clone(), Some(opts.options.into())).await?;
+  let provider = Provider::default();
+  provider.connect("default".to_owned(), url.clone()).await?;
+
+  vino_provider_cli::init_cli(Arc::new(provider), Some(opts.options.into())).await?;
   Ok(())
 }

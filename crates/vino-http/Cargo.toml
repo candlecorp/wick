@@ -33,8 +33,4 @@ serde = { version = "1.0.118", features = ["derive"] }
 thiserror = "1.0.26"
 
 [dev-dependencies]
-tokio = { version = "1", features = ["macros", "rt"] }
-tonic = { version = "0.5", default-features = false, features = [
-  "transport",
-  "tls",
-] }
+tonic = { version = "0.5", default-features = false, features = ["tls"] }

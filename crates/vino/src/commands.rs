@@ -16,7 +16,7 @@ use structopt::StructOpt;
     AppSettings::UnifiedHelpMessage
   ]),
   name = "vino",
-  about = "Vino host"
+  about = "Vino host",
 )]
 pub(crate) struct Cli {
   #[structopt(flatten)]

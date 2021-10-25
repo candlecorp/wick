@@ -21,4 +21,4 @@ proc-macro-crate = "1.0.0"
 
 [dev-dependencies]
 logging = { version = "0.4", package = "log" }
-tokio = { version = "1.10.1", features = ["macros"] }
+tokio = { version = "1", features = ["macros"] }

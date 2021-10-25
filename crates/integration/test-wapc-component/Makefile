@@ -2,7 +2,13 @@
 
 .PHONY: all codegen build clean doc test help list
 
-ifeq ($(OS),Windows_NT)
+ifdef OS
+_OS := $(OS)
+else
+_OS := ""
+endif
+
+ifeq ($(_OS),Windows_NT)
 # Use powershell on Windows
 SHELL := powershell.exe
 # mkdir -p on windows throws an error if the directory exists, -Force suppresses it.
@@ -61,7 +67,7 @@ $(SIGNED_ARTIFACT): $(BUILD_ARTIFACT) $(INTERFACE)
 define WIDL_CODEGEN
 $(patsubst %.widl,%.rs,$(patsubst ${SCHEMA_DIR}%,${COMPONENTS_DIR}%,$(subst -,_,$(1)))): $1
 	@$$(shell $$(MKDIR) $$(dir $$@))
-	@echo Generating $@
+	@echo Generating $$@
 	@vino-codegen rust wapc-component $(notdir $(basename $(subst -,_,$(1)))) -o $$@
 	@rustfmt $$@
 endef

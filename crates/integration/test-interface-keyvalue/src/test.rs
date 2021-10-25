@@ -4,22 +4,12 @@ use anyhow::Result;
 use log::*;
 use maplit::hashmap;
 use vino_codec::messagepack::serialize;
-use vino_invocation_server::{
-  bind_new_socket,
-  make_rpc_server,
-  InvocationClient,
-};
+use vino_invocation_server::{bind_new_socket, make_rpc_server, InvocationClient};
 use vino_packet::Packet;
 use vino_provider::native::prelude::*;
 use vino_rpc::rpc::invocation_service_client::InvocationServiceClient;
-use vino_rpc::rpc::{
-  Invocation,
-  ListRequest,
-};
-use vino_rpc::{
-  convert_transport_map,
-  BoxedRpcHandler,
-};
+use vino_rpc::rpc::{Invocation, ListRequest};
+use vino_rpc::{convert_transport_map, SharedRpcHandler};
 
 async fn list_components(port: &u16) -> Result<Vec<vino_rpc::rpc::HostedType>> {
   let mut client = InvocationServiceClient::connect(format!("http://127.0.0.1:{}", port)).await?;
@@ -39,7 +29,7 @@ fn make_invocation(origin: &str, target: &str, payload: TransportMap) -> Result<
   })
 }
 
-pub async fn test_api(provider: BoxedRpcHandler) -> Result<()> {
+pub async fn test_api(provider: SharedRpcHandler) -> Result<()> {
   let socket = bind_new_socket()?;
   let port = socket.local_addr()?.port();
   let _server = make_rpc_server(socket, provider);

@@ -1,10 +1,6 @@
-use std::sync::Arc;
-
-use once_cell::sync::Lazy;
 use vino_provider::native::prelude::*;
 use vino_rpc::error::RpcError;
 use vino_rpc::{
-  BoxedRpcHandler,
   RpcHandler,
   RpcResult,
 };
@@ -13,7 +9,8 @@ use self::generated::Dispatcher;
 mod components;
 pub(crate) mod generated;
 
-pub static PROVIDER: Lazy<BoxedRpcHandler> = Lazy::new(|| Arc::new(Provider::default()));
+#[macro_use]
+extern crate log;
 
 #[derive(Clone)]
 pub(crate) struct Context {}
@@ -34,16 +31,20 @@ impl Provider {
 #[async_trait]
 impl RpcHandler for Provider {
   async fn invoke(&self, entity: Entity, payload: TransportMap) -> RpcResult<BoxedTransportStream> {
+    trace!("TEST_PROVIDER:INVOKE[{}]", entity);
     let context = self.context.clone();
     let component = entity.name();
-    let stream = Dispatcher::dispatch(&component, context, payload)
+    let result = Dispatcher::dispatch(&component, context, payload)
       .await
-      .map_err(|e| RpcError::ProviderError(e.to_string()))?;
+      .map_err(|e| RpcError::ProviderError(e.to_string()));
+    trace!("TEST_PROVIDER:INVOKE[{}]:RESULT:{:?}", entity, result);
+    let stream = result?;
 
     Ok(Box::pin(stream))
   }
 
   fn get_list(&self) -> RpcResult<Vec<HostedType>> {
+    trace!("TEST_PROVIDER:GET_LIST");
     let signature = generated::get_signature();
     Ok(vec![HostedType::Provider(signature)])
   }

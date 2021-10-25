@@ -89,8 +89,8 @@ pub mod copy {
   }
   impl WapcComponent for Component {
     fn execute(&self, payload: &IncomingPayload) -> JobResult {
+      let outputs = get_outputs(payload.id());
       let inputs = populate_inputs(payload)?;
-      let outputs = get_outputs();
       implementation::job(inputs, outputs)
     }
   }
@@ -125,18 +125,23 @@ pub mod copy {
   }
 
   #[derive(Debug, PartialEq, Clone)]
-  pub struct OutputSender {}
+  pub struct OutputSender {
+    id: u32,
+  }
 
   impl PortSender for OutputSender {
     type PayloadType = String;
     fn get_name(&self) -> String {
       "output".to_string()
     }
+    fn get_id(&self) -> u32 {
+      self.id
+    }
   }
 
-  fn get_outputs() -> OutputPorts {
+  fn get_outputs(id: u32) -> OutputPorts {
     OutputPorts {
-      output: OutputSender {},
+      output: OutputSender { id },
     }
   }
 
@@ -180,8 +185,8 @@ pub mod error {
   }
   impl WapcComponent for Component {
     fn execute(&self, payload: &IncomingPayload) -> JobResult {
+      let outputs = get_outputs(payload.id());
       let inputs = populate_inputs(payload)?;
-      let outputs = get_outputs();
       implementation::job(inputs, outputs)
     }
   }
@@ -212,18 +217,23 @@ pub mod error {
   }
 
   #[derive(Debug, PartialEq, Clone)]
-  pub struct OutputSender {}
+  pub struct OutputSender {
+    id: u32,
+  }
 
   impl PortSender for OutputSender {
     type PayloadType = String;
     fn get_name(&self) -> String {
       "output".to_string()
     }
+    fn get_id(&self) -> u32 {
+      self.id
+    }
   }
 
-  fn get_outputs() -> OutputPorts {
+  fn get_outputs(id: u32) -> OutputPorts {
     OutputPorts {
-      output: OutputSender {},
+      output: OutputSender { id },
     }
   }
 
@@ -267,8 +277,8 @@ pub mod reverse {
   }
   impl WapcComponent for Component {
     fn execute(&self, payload: &IncomingPayload) -> JobResult {
+      let outputs = get_outputs(payload.id());
       let inputs = populate_inputs(payload)?;
-      let outputs = get_outputs();
       implementation::job(inputs, outputs)
     }
   }
@@ -299,18 +309,23 @@ pub mod reverse {
   }
 
   #[derive(Debug, PartialEq, Clone)]
-  pub struct OutputSender {}
+  pub struct OutputSender {
+    id: u32,
+  }
 
   impl PortSender for OutputSender {
     type PayloadType = String;
     fn get_name(&self) -> String {
       "output".to_string()
     }
+    fn get_id(&self) -> u32 {
+      self.id
+    }
   }
 
-  fn get_outputs() -> OutputPorts {
+  fn get_outputs(id: u32) -> OutputPorts {
     OutputPorts {
-      output: OutputSender {},
+      output: OutputSender { id },
     }
   }
 
@@ -354,8 +369,8 @@ pub mod reverse_uppercase {
   }
   impl WapcComponent for Component {
     fn execute(&self, payload: &IncomingPayload) -> JobResult {
+      let outputs = get_outputs(payload.id());
       let inputs = populate_inputs(payload)?;
-      let outputs = get_outputs();
       implementation::job(inputs, outputs)
     }
   }
@@ -390,18 +405,23 @@ pub mod reverse_uppercase {
   }
 
   #[derive(Debug, PartialEq, Clone)]
-  pub struct OutputSender {}
+  pub struct OutputSender {
+    id: u32,
+  }
 
   impl PortSender for OutputSender {
     type PayloadType = String;
     fn get_name(&self) -> String {
       "output".to_string()
     }
+    fn get_id(&self) -> u32 {
+      self.id
+    }
   }
 
-  fn get_outputs() -> OutputPorts {
+  fn get_outputs(id: u32) -> OutputPorts {
     OutputPorts {
-      output: OutputSender {},
+      output: OutputSender { id },
     }
   }
 
@@ -445,8 +465,8 @@ pub mod uppercase {
   }
   impl WapcComponent for Component {
     fn execute(&self, payload: &IncomingPayload) -> JobResult {
+      let outputs = get_outputs(payload.id());
       let inputs = populate_inputs(payload)?;
-      let outputs = get_outputs();
       implementation::job(inputs, outputs)
     }
   }
@@ -477,18 +497,23 @@ pub mod uppercase {
   }
 
   #[derive(Debug, PartialEq, Clone)]
-  pub struct OutputSender {}
+  pub struct OutputSender {
+    id: u32,
+  }
 
   impl PortSender for OutputSender {
     type PayloadType = String;
     fn get_name(&self) -> String {
       "output".to_string()
     }
+    fn get_id(&self) -> u32 {
+      self.id
+    }
   }
 
-  fn get_outputs() -> OutputPorts {
+  fn get_outputs(id: u32) -> OutputPorts {
     OutputPorts {
-      output: OutputSender {},
+      output: OutputSender { id },
     }
   }
 
@@ -532,8 +557,8 @@ pub mod validate {
   }
   impl WapcComponent for Component {
     fn execute(&self, payload: &IncomingPayload) -> JobResult {
+      let outputs = get_outputs(payload.id());
       let inputs = populate_inputs(payload)?;
-      let outputs = get_outputs();
       implementation::job(inputs, outputs)
     }
   }
@@ -564,18 +589,23 @@ pub mod validate {
   }
 
   #[derive(Debug, PartialEq, Clone)]
-  pub struct OutputSender {}
+  pub struct OutputSender {
+    id: u32,
+  }
 
   impl PortSender for OutputSender {
     type PayloadType = String;
     fn get_name(&self) -> String {
       "output".to_string()
     }
+    fn get_id(&self) -> u32 {
+      self.id
+    }
   }
 
-  fn get_outputs() -> OutputPorts {
+  fn get_outputs(id: u32) -> OutputPorts {
     OutputPorts {
-      output: OutputSender {},
+      output: OutputSender { id },
     }
   }
 

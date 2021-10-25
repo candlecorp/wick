@@ -12,6 +12,6 @@ type Inputs {
 }
 
 type Outputs {
-  "The key that was set."
+  "The result of the transaction."
   result: bool
 }

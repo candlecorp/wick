@@ -70,6 +70,8 @@ pub fn try_init(opts: &LoggingOptions) -> Result<(), LoggerError> {
     "vino_types",
     "vino_root",
     "vow",
+    "test_vino_provider",
+    "vino_interface_keyvalue",
   ];
 
   let chatty_modules: [&str; 0] = [];
