@@ -6,6 +6,9 @@ license = "BSD-3-Clause"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[features]
+client = ["tokio/fs"]
+
 [dependencies]
 vino-packet = { path = "../../sdk/crates/vino-packet" }
 vino-codec = { path = "../../sdk/crates/vino-codec" }
@@ -22,7 +25,7 @@ vino-macros = { path = "../../sdk/crates/vino-macros" }
 tonic = { version = "0.5", features = ["tls"] }
 prost = "0.8.0"
 prost-types = "0.8.0"
-tokio = { version = "1.4.0", features = ["macros", "net", "rt-multi-thread"] }
+tokio = { version = "1", features = ["macros", "net", "rt-multi-thread"] }
 futures = "0.3.15"
 tokio-stream = { version = "0.1.6", features = ["net"] }
 serde = { version = "1.0.118", features = ["derive"] }

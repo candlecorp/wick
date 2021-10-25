@@ -79,6 +79,7 @@ use std::sync::Arc;
 use async_trait::async_trait;
 
 /// The Vino RPC Client
+#[cfg(feature = "client")]
 pub mod client;
 
 /// Error module.
@@ -109,10 +110,10 @@ pub type Error = crate::error::RpcError;
 pub type RpcResult<T> = std::result::Result<T, Box<error::RpcError>>;
 
 /// The type of RpcHandler the default invocation server takes.
-pub type BoxedRpcHandler = Arc<dyn RpcHandler + Send + Sync + 'static>;
+pub type SharedRpcHandler = Arc<dyn RpcHandler + Send + Sync + 'static>;
 
 /// A function that produces a BoxedRpcHandler.
-pub type RpcFactory = Box<dyn Fn() -> BoxedRpcHandler + Send + Sync + 'static>;
+pub type RpcFactory = Box<dyn Fn() -> SharedRpcHandler + Send + Sync + 'static>;
 
 /// A trait that implementers of the RPC interface should implement.
 #[async_trait]
@@ -131,4 +132,5 @@ where
   fn get_list(&self) -> std::result::Result<Vec<HostedType>, Box<error::RpcError>>;
 }
 
+#[cfg(feature = "client")]
 pub use client::make_rpc_client;
