@@ -1,7 +1,11 @@
 use std::sync::Arc;
 
 use parking_lot::RwLock;
-use rand::distributions::Alphanumeric;
+use rand::distributions::{
+  Alphanumeric,
+  Standard,
+};
+use rand::prelude::Distribution;
 use rand::{
   Rng,
   SeedableRng,
@@ -26,11 +30,27 @@ impl Random {
     Self::from_seed(new_seed())
   }
 
+  pub fn gen<T>(&self) -> T
+  where
+    Standard: Distribution<T>,
+  {
+    let mut rng = self.rng.write();
+    rng.gen()
+  }
+
   pub fn from_seed(seed: u64) -> Self {
     let rng = ChaCha12Rng::seed_from_u64(seed);
     Self {
       rng: Arc::new(RwLock::new(rng)),
     }
+  }
+
+  pub fn get_u32(&self) -> u32 {
+    self.gen()
+  }
+
+  pub fn get_i32(&self) -> i32 {
+    self.gen()
   }
 
   pub fn get_bytes(&self, length: usize) -> Vec<u8> {
