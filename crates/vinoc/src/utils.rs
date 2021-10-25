@@ -1,6 +1,7 @@
 use logger::LoggingOptions;
 
-pub fn init_logger(opts: &LoggingOptions) -> crate::Result<()> {
+#[allow(clippy::trivially_copy_pass_by_ref)]
+pub(crate) fn init_logger(opts: &LoggingOptions) -> crate::Result<()> {
   logger::init(opts);
   Ok(())
 }

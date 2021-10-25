@@ -11,13 +11,16 @@ use vino_types::signatures::ProviderSignature;
 use vino_wascap::sign_buffer_with_claims;
 
 use crate::error::ControlError;
-use crate::keys::extract_keypair;
+use crate::keys::{
+  extract_keypair,
+  GenerateCommon,
+};
 use crate::Result;
 #[derive(Debug, Clone, StructOpt)]
 #[structopt(rename_all = "kebab-case")]
-pub struct SignCommand {
+pub(crate) struct Options {
   #[structopt(flatten)]
-  pub logging: super::LoggingOptions,
+  pub(crate) logging: super::LoggingOptions,
 
   /// File to read.
   pub(crate) source: String,
@@ -41,22 +44,7 @@ pub struct SignCommand {
   rev: Option<u32>,
 }
 
-#[derive(Debug, Clone, StructOpt)]
-struct GenerateCommon {
-  /// Location of key files for signing. Defaults to $VINO_KEYS ($HOME/.vino/keys or %USERPROFILE%/.vino/keys on Windows).
-  #[structopt(long = "directory", env = "VINO_KEYS", hide_env_values = true)]
-  directory: Option<String>,
-
-  /// Set the token expiration in days. By default the token will never expire.
-  #[structopt(short = "x", long = "expires")]
-  expires_in_days: Option<u64>,
-
-  /// Period in days before token becomes valid. By default the token will be valid immediately.
-  #[structopt(short = "b", long)]
-  not_before: Option<u64>,
-}
-
-pub async fn handle_command(opts: SignCommand) -> Result<()> {
+pub(crate) async fn handle(opts: Options) -> Result<()> {
   crate::utils::init_logger(&opts.logging)?;
   debug!("Signing module");
 

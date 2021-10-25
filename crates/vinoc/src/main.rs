@@ -72,15 +72,15 @@
 // Add exceptions here
 #![allow(missing_docs, clippy::expect_used)] //todo
 
-pub mod commands;
-pub mod error;
-pub mod keys;
-pub mod utils;
+pub(crate) mod commands;
+pub(crate) mod error;
+pub(crate) mod keys;
+pub(crate) mod utils;
 
 use error::ControlError;
 
 pub(crate) type Result<T> = std::result::Result<T, ControlError>;
-pub type Error = ControlError;
+pub(crate) type Error = ControlError;
 
 #[macro_use]
 extern crate log;
@@ -96,11 +96,11 @@ async fn main() -> Result<()> {
   let cli = get_args();
 
   let res = match cli.command {
-    CliCommand::Invoke(cmd) => commands::invoke::handle_command(cmd).await,
-    CliCommand::Stats(cmd) => commands::stats::handle_command(cmd).await,
-    CliCommand::List(cmd) => commands::list::handle_command(cmd).await,
-    CliCommand::Sign(cmd) => commands::sign::handle_command(cmd).await,
-    CliCommand::Inspect(cmd) => commands::inspect::handle_command(cmd).await,
+    CliCommand::Invoke(cmd) => commands::invoke::handle(cmd).await,
+    CliCommand::Stats(cmd) => commands::stats::handle(cmd).await,
+    CliCommand::List(cmd) => commands::list::handle(cmd).await,
+    CliCommand::Sign(cmd) => commands::sign::handle(cmd).await,
+    CliCommand::Inspect(cmd) => commands::inspect::handle(cmd).await,
   };
 
   std::process::exit(match res {

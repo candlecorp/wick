@@ -7,15 +7,15 @@ use crate::error::ControlError;
 use crate::Result;
 #[derive(Debug, Clone, StructOpt)]
 #[structopt(rename_all = "kebab-case")]
-pub struct InspectCommand {
+pub(crate) struct Options {
   #[structopt(flatten)]
-  pub logging: super::LoggingOptions,
+  pub(crate) logging: super::LoggingOptions,
 
   /// File to read.
   pub(crate) module: String,
 }
 
-pub async fn handle_command(opts: InspectCommand) -> Result<()> {
+pub(crate) async fn handle(opts: Options) -> Result<()> {
   crate::utils::init_logger(&opts.logging)?;
 
   let mut file = File::open(&opts.module).map_err(ControlError::ReadFailed)?;

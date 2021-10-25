@@ -2,21 +2,11 @@ use thiserror::Error;
 use vino_codec::error::CodecError;
 
 #[derive(Error, Debug)]
-pub enum ControlError {
-  #[error("invalid configuration")]
-  ConfigurationError,
-  #[error("File not found {0}")]
-  FileNotFound(String),
-  #[error("Configuration disallows fetching artifacts with the :latest tag ({0})")]
-  LatestDisallowed(String),
-  #[error("Could not start host: {0}")]
-  HostStartFailure(String),
+pub(crate) enum ControlError {
   #[error("Keypair error: {0}")]
   KeyPairError(String),
   #[error("Keypair path or string not supplied. Ensure provided keypair is valid")]
   KeyPairNotProvided,
-  #[error("Failed to deserialize configuration {0}")]
-  ConfigurationDeserialization(String),
   #[error(transparent)]
   LoggerError(#[from] logger::error::LoggerError),
   #[error(transparent)]
@@ -35,10 +25,6 @@ pub enum ControlError {
   VinoRuntimeError(#[from] vino_runtime::Error),
   #[error(transparent)]
   TransportError(#[from] vino_transport::Error),
-  #[error("Invocation failed: {0}")]
-  InvocationError(String),
-  #[error("Error setting TLS configuration: {0}")]
-  TlsConfigError(String),
   #[error("Connection failed: {0}")]
   ConnectionError(String),
   #[error("Internal error: {0}")]
@@ -51,8 +37,6 @@ pub enum ControlError {
   IOError(String),
   #[error(transparent)]
   SerdeJsonError(#[from] serde_json::Error),
-  #[error("General error : {0}")]
-  Other(String),
 }
 
 impl From<nkeys::error::Error> for ControlError {

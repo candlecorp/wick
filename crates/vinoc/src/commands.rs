@@ -1,8 +1,8 @@
-pub mod inspect;
-pub mod invoke;
-pub mod list;
-pub mod sign;
-pub mod stats;
+pub(crate) mod inspect;
+pub(crate) mod invoke;
+pub(crate) mod list;
+pub(crate) mod sign;
+pub(crate) mod stats;
 
 use std::net::Ipv4Addr;
 use std::path::PathBuf;
@@ -12,7 +12,7 @@ use structopt::clap::AppSettings;
 use structopt::StructOpt;
 
 #[must_use]
-pub fn get_args() -> Cli {
+pub(crate) fn get_args() -> Cli {
   Cli::from_args()
 }
 
@@ -20,53 +20,57 @@ pub fn get_args() -> Cli {
 #[structopt(
      global_settings(&[AppSettings::VersionlessSubcommands]),
      name = crate::BIN_NAME, about = "Vino controller")]
-pub struct Cli {
+pub(crate) struct Cli {
   #[structopt(flatten)]
-  pub command: CliCommand,
+  pub(crate) command: CliCommand,
 }
 
 #[derive(Debug, Clone, StructOpt)]
-pub enum CliCommand {
+pub(crate) enum CliCommand {
   /// Invoke a component or schematic on a provider.
   #[structopt(name = "invoke")]
-  Invoke(invoke::InvokeCommand),
+  Invoke(invoke::Options),
+
   /// Query a provider for a list of its hosted components.
   #[structopt(name = "list")]
-  List(list::ListCommand),
+  List(list::Options),
+
   /// Query a provider for its runtime statistics.
   #[structopt(name = "stats")]
-  Stats(stats::StatsCommand),
+  Stats(stats::Options),
+
   /// Sign a WaPC component.
   #[structopt(name = "sign")]
-  Sign(sign::SignCommand),
-  /// Inspect the claims of a signed WaPC component.
+  Sign(sign::Options),
+
+  /// Inspect the claims of a signed WebAssembly module.
   #[structopt(name = "inspect")]
-  Inspect(inspect::InspectCommand),
+  Inspect(inspect::Options),
 }
 
 #[derive(Debug, Clone, StructOpt)]
-pub struct ConnectOptions {
+pub(crate) struct ConnectOptions {
   /// Port to listen on.
   #[structopt(short, long)]
-  pub port: u16,
+  pub(crate) port: u16,
 
   /// IP address to bind to.
   #[structopt(short, long, default_value = "127.0.0.1")]
-  pub address: Ipv4Addr,
+  pub(crate) address: Ipv4Addr,
 
   /// Path to pem file for TLS connections.
   #[structopt(long)]
-  pub pem: Option<PathBuf>,
+  pub(crate) pem: Option<PathBuf>,
 
   /// Path to client key for TLS connections.
   #[structopt(long)]
-  pub key: Option<PathBuf>,
+  pub(crate) key: Option<PathBuf>,
 
   /// Path to CA pem for TLS connections.
   #[structopt(long)]
-  pub ca: Option<PathBuf>,
+  pub(crate) ca: Option<PathBuf>,
 
   /// The domain to verify against the certificate.
   #[structopt(long)]
-  pub domain: Option<String>,
+  pub(crate) domain: Option<String>,
 }

@@ -14,6 +14,22 @@ use nkeys::{
   KeyPair,
   KeyPairType,
 };
+use structopt::StructOpt;
+
+#[derive(Debug, Clone, StructOpt)]
+pub(crate) struct GenerateCommon {
+  /// Location of key files for signing. Defaults to $VINO_KEYS ($HOME/.vino/keys or %USERPROFILE%/.vino/keys on Windows).
+  #[structopt(long = "directory", env = "VINO_KEYS", hide_env_values = true)]
+  pub(crate) directory: Option<String>,
+
+  /// Set the token expiration in days. By default the token will never expire.
+  #[structopt(short = "x", long = "expires")]
+  pub(crate) expires_in_days: Option<u64>,
+
+  /// Period in days before token becomes valid. By default the token will be valid immediately.
+  #[structopt(short = "b", long)]
+  pub(crate) not_before: Option<u64>,
+}
 
 /// Retrieves a keypair by name in a specified directory, or $VINO_KEYS ($HOME/.vino/keys) if directory is not specified.
 pub(crate) fn _get(

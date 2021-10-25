@@ -16,7 +16,7 @@ vino-transport = { path = "../../sdk/crates/vino-transport", features = [
 vino-host = { path = "../vino-host" }
 vino-manifest = { path = "../vino-manifest" }
 vino-codec = { path = "../../sdk/crates/vino-codec" }
-vino-rpc = { path = "../vino-rpc" }
+vino-rpc = { path = "../vino-rpc", features = ["client"] }
 vino-macros = { path = "../../sdk/crates/vino-macros" }
 vino-entity = { path = "../../sdk/crates/vino-entity" }
 vino-wascap = { path = "../vino-wascap" }
@@ -29,7 +29,7 @@ nkeys = "0.1.0"
 futures = "0.3.13"
 serde_json = "1.0.64"
 thiserror = "1.0.24"
-tokio = { version = "1.8.1", features = [
+tokio = { version = "1", features = [
   "macros",
   "signal",
   "io-std",

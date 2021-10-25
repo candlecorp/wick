@@ -16,12 +16,12 @@ use crate::error::ControlError;
 use crate::Result;
 #[derive(Debug, Clone, StructOpt)]
 #[structopt(rename_all = "kebab-case")]
-pub struct InvokeCommand {
+pub(crate) struct Options {
   #[structopt(flatten)]
-  pub logging: super::LoggingOptions,
+  pub(crate) logging: super::LoggingOptions,
 
   #[structopt(flatten)]
-  pub connection: super::ConnectOptions,
+  pub(crate) connection: super::ConnectOptions,
 
   /// Don't read input from STDIN.
   #[structopt(long = "no-input")]
@@ -32,14 +32,14 @@ pub struct InvokeCommand {
   raw: bool,
 
   /// Schematic to invoke.
-  pub schematic: String,
+  pub(crate) schematic: String,
 
   /// A port=value string where value is JSON to pass as input.
   #[structopt(long, short)]
   data: Vec<String>,
 }
 
-pub async fn handle_command(opts: InvokeCommand) -> Result<()> {
+pub(crate) async fn handle(opts: Options) -> Result<()> {
   crate::utils::init_logger(&opts.logging)?;
 
   let mut client = vino_rpc::make_rpc_client(
