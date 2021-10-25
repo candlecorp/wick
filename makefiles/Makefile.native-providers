@@ -42,27 +42,27 @@ endef
 $(foreach schema,$(SCHEMAS),$(eval $(call WIDL_CODEGEN,$(schema))))
 
 $(COMPONENTS_RS): $(SCHEMAS)
-	vino-codegen rust provider-component-module $(SCHEMA_DIR) -f -o $@
+	@vino-codegen rust provider-component-module $(SCHEMA_DIR) -f -o $@
 
 $(COMPONENTS_DIR):
-	mkdir $@
+	@mkdir $@
 
 ./interface.json: $(SCHEMAS)
-	vino-codegen json interface "$(CRATE_NAME)" $(SCHEMA_DIR) -f -o $@
+	@vino-codegen json interface "$(CRATE_NAME)" $(SCHEMA_DIR) -f -o $@
 
 $(GENERATED_RS): $(SCHEMAS)
-	vino-codegen rust provider-integration $(SCHEMA_DIR) -f -o $@
+	@vino-codegen rust provider-integration $(SCHEMA_DIR) -f -o $@
 
 codegen: $(USER_COMPONENTS)  $(GENERATED_RS) $(COMPONENTS_RS)
-	cargo fmt
+	@cargo fmt
 
 build: $(wildcard ./src/*.rs) $(GENERATED_RS) $(USER_COMPONENTS) $(COMPONENTS_RS) ./interface.json
-	cargo build --release
+	@cargo build --release
 
 clean:
-	rm -f $(CLEAN_FILES)
+	@rm -f $(CLEAN_FILES)
 
 doc:
 
 test: codegen
-	cargo test
+	@cargo test
