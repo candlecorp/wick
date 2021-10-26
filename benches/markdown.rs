@@ -21,7 +21,6 @@ use vino_transport::{
   TransportStream,
 };
 
-static RNG: Lazy<Random> = Lazy::new(vino_random::Random::new);
 static HOST: OnceCell<Host> = OnceCell::new();
 
 fn get_map() -> TransportMap {
@@ -67,7 +66,7 @@ async fn work() {
   };
   logger::init(&opts);
 
-  let mut host = HostBuilder::try_from("./benches/manifest.vino")
+  let mut host = HostBuilder::try_from("./benches/markdown.vino")
     .unwrap()
     .build();
   host.start().await.unwrap();
@@ -90,9 +89,10 @@ async fn work() {
     .await
     .unwrap();
   println!("second round ...");
-  let results = try_join_all(outputs.into_iter().map(|stream| {
+  let _results = try_join_all(outputs.into_iter().map(|stream| {
     tokio::spawn(async {
-      stream.collect::<Vec<_>>().await;
+      let packets = stream.collect::<Vec<_>>().await;
+      assert_eq!(packets.len(), 2);
     })
   }))
   .await
