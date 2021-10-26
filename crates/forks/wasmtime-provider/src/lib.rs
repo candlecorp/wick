@@ -34,7 +34,7 @@ use std::sync::{
 type HostType = Arc<Mutex<ModuleState>>;
 
 #[macro_use]
-extern crate log;
+extern crate tracing;
 
 mod callbacks;
 mod wasi;

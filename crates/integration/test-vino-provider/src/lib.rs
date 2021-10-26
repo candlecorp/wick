@@ -10,7 +10,7 @@ mod components;
 pub(crate) mod generated;
 
 #[macro_use]
-extern crate log;
+extern crate tracing;
 
 #[derive(Clone)]
 pub(crate) struct Context {}
@@ -54,7 +54,7 @@ impl RpcHandler for Provider {
 mod tests {
 
   use futures::prelude::*;
-  use log::*;
+  use tracing::*;
   use vino_provider::native::prelude::*;
 
   use super::*;

@@ -4,4 +4,4 @@ pub mod nats;
 pub use error::LatticeError as Error;
 
 #[macro_use]
-extern crate log;
+extern crate tracing;

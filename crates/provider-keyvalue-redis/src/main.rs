@@ -73,7 +73,7 @@
 #![allow(clippy::expect_used, missing_docs)]
 
 #[macro_use]
-extern crate log;
+extern crate tracing;
 
 use std::sync::Arc;
 
@@ -95,7 +95,7 @@ pub struct Options {
 async fn main() -> Result<(), vino_keyvalue_redis::error::Error> {
   let opts = Options::from_args();
   let url = opts.url;
-  vino_provider_cli::init_logging(&opts.options.logging)?;
+  let _guard = vino_provider_cli::init_logging(&opts.options.logging.name("keyvalue-redis"));
   let provider = Provider::default();
   provider.connect("default".to_owned(), url.clone()).await?;
 

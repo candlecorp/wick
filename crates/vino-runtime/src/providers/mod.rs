@@ -92,8 +92,10 @@ pub(crate) async fn initialize_wasm_provider(
   .await?;
 
   // TODO need to propagate wasi params from manifest
+  // TODO make threads elastic
   let provider = Arc::new(vino_provider_wasm::provider::Provider::try_load(
     &component,
+    5,
     Some(provider.data.clone()),
     None,
     Some(Box::new(move |origin_url, target_url, payload| {

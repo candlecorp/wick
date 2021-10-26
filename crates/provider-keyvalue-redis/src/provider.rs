@@ -44,13 +44,6 @@ impl RedisConnection {
       .map_err(|e| Error::RedisError(e.to_string()));
     trace!("REDIS:QUERY[{} μs]", now.elapsed().as_micros());
 
-    if log_enabled!(log::Level::Trace) {
-      let bytes = cmd.get_packed_command();
-      let cmdstring = String::from_utf8_lossy(&bytes);
-      trace!("REDIS:EXEC[{}]", cmdstring);
-
-      trace!("REDIS:RESULT[{:?}]", result);
-    }
     result
   }
 }

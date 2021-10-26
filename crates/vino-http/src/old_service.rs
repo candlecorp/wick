@@ -14,16 +14,16 @@ use http::{
   Version,
 };
 use hyper::Body;
-use log::{
-  debug,
-  trace,
-};
 use tonic::body::{
   empty_body,
   BoxBody,
 };
 use tonic::transport::NamedService;
 use tower_service::Service;
+use tracing::{
+  debug,
+  trace,
+};
 
 use crate::call::content_types::is_grpc_web;
 use crate::call::{

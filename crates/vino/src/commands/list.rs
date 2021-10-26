@@ -35,7 +35,7 @@ pub(crate) struct ListCommand {
 }
 
 pub(crate) async fn handle_command(opts: ListCommand) -> Result<()> {
-  vino_provider_cli::init_logging(&opts.logging)?;
+  let _guard = logger::init(&opts.logging.name("vino"));
 
   let config = match opts.manifest {
     Some(file) => HostDefinition::load_from_file(&file)?,

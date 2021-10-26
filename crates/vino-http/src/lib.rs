@@ -14,7 +14,7 @@ pub use error::HttpError as Error;
 use crate::service::ProviderService;
 
 #[macro_use]
-extern crate log;
+extern crate tracing;
 
 /// enable a vino provider to handle http web requests with the default configuration.
 ///

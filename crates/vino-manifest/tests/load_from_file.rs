@@ -1,7 +1,7 @@
 use std::env;
 use std::path::PathBuf;
 
-use log::debug;
+use tracing::debug;
 use vino_manifest::error::ManifestError;
 use vino_manifest::host_definition::HostDefinition;
 use vino_manifest::parse::{

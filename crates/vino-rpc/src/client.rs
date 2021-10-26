@@ -3,7 +3,6 @@ use std::path::PathBuf;
 use std::str::FromStr;
 use std::time::Duration;
 
-use log::debug;
 use tokio_stream::StreamExt;
 use tonic::transport::{
   Certificate,
@@ -12,6 +11,7 @@ use tonic::transport::{
   Identity,
   Uri,
 };
+use tracing::debug;
 use vino_entity::Entity;
 use vino_transport::{
   MessageTransport,

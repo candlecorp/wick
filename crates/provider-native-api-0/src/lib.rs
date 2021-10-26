@@ -146,8 +146,8 @@ impl RpcHandler for Provider {
 mod tests {
 
   use futures::prelude::*;
-  use log::debug;
   use serde::de::DeserializeOwned;
+  use tracing::debug;
   use vino_provider::native::prelude::*;
   use vino_transport::Failure;
 

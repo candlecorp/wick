@@ -3,9 +3,9 @@ use std::sync::Arc;
 use std::time::Duration;
 
 pub use anyhow::Result;
-pub use log::*;
 pub use maplit::hashmap;
 pub use pretty_assertions::assert_eq as equals;
+pub use tracing::*;
 use vino_lattice::nats::NatsOptions;
 use vino_manifest::{
   HostManifest,

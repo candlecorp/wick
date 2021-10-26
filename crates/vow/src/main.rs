@@ -84,7 +84,7 @@ pub mod error;
 pub(crate) type Result<T> = std::result::Result<T, error::VowError>;
 
 #[macro_use]
-extern crate log;
+extern crate tracing;
 
 #[derive(StructOpt, Debug, Clone)]
 #[structopt(

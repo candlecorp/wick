@@ -21,7 +21,7 @@ pub(crate) struct ServeCommand {
 }
 
 pub(crate) async fn handle_command(opts: ServeCommand) -> Result<()> {
-  vino_provider_cli::init_logging(&opts.server_options.logging)?;
+  let _guard = logger::init(&opts.server_options.logging.name("vino"));
 
   let manifest_src = vino_loader::get_bytes(
     &opts.manifest,

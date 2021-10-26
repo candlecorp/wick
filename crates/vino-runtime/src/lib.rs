@@ -81,8 +81,8 @@ mod macros {
       let result = $expr;
       let err = $err;
       if result.is_err() {
-        log::debug!("Internal error: {:?}", result);
-        log::error!("{}", err);
+        tracing::debug!("Internal error: {:?}", result);
+        tracing::error!("{}", err);
       }
       result.map_err(|_| err)
     }};
@@ -93,7 +93,7 @@ mod macros {
 extern crate vino_macros;
 
 #[macro_use]
-extern crate log;
+extern crate tracing;
 
 pub mod core_data;
 mod dispatch;

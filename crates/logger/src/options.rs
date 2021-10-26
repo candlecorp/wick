@@ -1,18 +1,15 @@
-use env_logger::WriteStyle;
 use structopt::StructOpt;
 
-use crate::error::LoggerError;
+// fn parse_write_style(spec: &str) -> Result<WriteStyle, LoggerError> {
+//   match spec {
+//     "auto" => Ok(WriteStyle::Auto),
+//     "always" => Ok(WriteStyle::Always),
+//     "never" => Ok(WriteStyle::Never),
+//     _ => Err(LoggerError::StyleParse),
+//   }
+// }
 
-fn parse_write_style(spec: &str) -> Result<WriteStyle, LoggerError> {
-  match spec {
-    "auto" => Ok(WriteStyle::Auto),
-    "always" => Ok(WriteStyle::Always),
-    "never" => Ok(WriteStyle::Never),
-    _ => Err(LoggerError::StyleParse),
-  }
-}
-
-#[derive(StructOpt, Debug, Default, Clone, Copy)]
+#[derive(StructOpt, Debug, Default, Clone)]
 /// Logging options that can be used directly or via [StructOpt].
 pub struct LoggingOptions {
   /// Disables logging.
@@ -35,12 +32,25 @@ pub struct LoggingOptions {
   #[structopt(long = "log-json")]
   pub log_json: bool,
 
-  /// Print log output as color. Options are auto | always | never.
-  #[structopt(
-        long = "color",
-        env = "LOG_COLOR",
-        parse(try_from_str = parse_write_style),
-        default_value="auto"
-    )]
-  pub color: WriteStyle,
+  /// The application doing the logging.
+  #[structopt(skip)]
+  pub app_name: String,
+  // /// Print log output as color. Options are auto | always | never.
+  // #[structopt(
+  //       long = "color",
+  //       env = "LOG_COLOR",
+  //       parse(try_from_str = parse_write_style),
+  //       default_value="auto"
+  //   )]
+  // pub color: WriteStyle,
+}
+
+impl LoggingOptions {
+  /// Set the name of the application doing the logging.
+  pub fn name(&self, name: impl AsRef<str>) -> Self {
+    Self {
+      app_name: name.as_ref().to_owned(),
+      ..self.clone()
+    }
+  }
 }

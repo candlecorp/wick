@@ -8,4 +8,4 @@ edition = "2018"
 [dependencies]
 oci-distribution = "0.7.0"
 thiserror = "1.0.26"
-log = "0.4"
+tracing = "0.1"

@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::sync::Arc;
 
 use async_trait::async_trait;
 use vino_codec::messagepack::serialize;
@@ -13,12 +14,10 @@ use vino_transport::TransportMap;
 pub use wapc::WasiParams;
 
 use crate::error::LinkError;
+use crate::host_pool::HostPool;
 // use crate::host_pool::HostPool;
 use crate::wapc_module::WapcModule;
-use crate::wasm_host::{
-  WasmHost,
-  WasmHostBuilder,
-};
+use crate::wasm_host::WasmHostBuilder;
 use crate::Error;
 
 #[derive(Debug, Default)]
@@ -29,8 +28,8 @@ pub struct Context {
 
 #[derive()]
 pub struct Provider {
-  // pool: Arc<HostPool>,
-  pool: WasmHost,
+  pool: Arc<HostPool>,
+  // pool: WasmHost,
   #[allow(unused)]
   config: Vec<u8>,
 }
@@ -49,6 +48,7 @@ pub type HostLinkCallback =
 impl Provider {
   pub fn try_load(
     module: &WapcModule,
+    max_threads: usize,
     config: Option<HashMap<String, String>>,
     wasi_options: Option<WasiParams>,
     callback: Option<Box<HostLinkCallback>>,
@@ -62,11 +62,10 @@ impl Provider {
     }
     let host = builder.build(module)?;
 
-    let host = host;
-    // let pool = HostPool::start_hosts(move || host.clone(), 1);
+    let pool = HostPool::start_hosts(move || host.clone(), max_threads);
 
     Ok(Self {
-      pool: host,
+      pool: Arc::new(pool),
       config: serialize(&config.unwrap_or_default())?,
     })
   }
@@ -80,8 +79,9 @@ impl RpcHandler for Provider {
     let messagepack_map = payload
       .try_into_messagepack_bytes()
       .map_err(|e| RpcError::ProviderError(e.to_string()))?;
+    let pool = self.pool.clone();
 
-    let outputs = self.pool.call(&component, &messagepack_map)?;
+    let outputs = pool.call(&component, &messagepack_map)?;
 
     Ok(Box::pin(outputs))
   }
@@ -100,7 +100,7 @@ impl RpcHandler for Provider {
         .join(",")
     );
 
-    Ok(vec![HostedType::Provider(signature.clone())])
+    Ok(vec![HostedType::Provider(signature)])
   }
 }
 
@@ -125,6 +125,7 @@ mod tests {
 
     let provider = Provider::try_load(
       &component,
+      2,
       None,
       None,
       Some(Box::new(|_origin, _component, _payload| Ok(vec![]))),
@@ -134,7 +135,7 @@ mod tests {
     let job_payload = TransportMap::from_map(hashmap! {
       "input".to_owned() => MessageTransport::messagepack(input),
     });
-
+    debug!("payload: {:?}", job_payload);
     let mut outputs = provider
       .invoke(Entity::component_direct("validate"), job_payload)
       .await?;

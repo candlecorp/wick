@@ -72,7 +72,10 @@
 )]
 // !!END_LINTS
 // Add exceptions here
-#![allow(clippy::trivially_copy_pass_by_ref, clippy::needless_borrow)]
+#![allow(
+  clippy::trivially_copy_pass_by_ref,
+  clippy::needless_borrow,
+)]
 
 /// Error module for Logger.
 pub mod error;
@@ -88,7 +91,9 @@ pub use options::LoggingOptions;
 pub use crate::logger::{
   init,
   init_defaults,
-  try_init,
+  init_test,
+  LoggingGuard,
 };
 
-const FILTER_ENV: &str = "VINO_LOG";
+#[macro_use]
+extern crate tracing;

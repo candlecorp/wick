@@ -8,8 +8,19 @@ license = "BSD-3-Clause"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-log = "0.4"
-env_logger = "0.9"
-serde_json = "1.0.64"
+tracing = "0.1"
+tracing-log = "0.1.2"
+tracing-subscriber = { version = "0.3.1", features = [
+  "env-filter",
+  "fmt",
+  "json",
+  "time",
+] }
+tracing-bunyan-formatter = "0.3.0"
+tracing-appender = "0.2.0"
+xdg = "2.4.0"
+time = { version = "0.3.4", features = ["formatting"] }
+symlink = "0.1.0"
+
 structopt = "0.3.21"
 thiserror = "1.0.26"

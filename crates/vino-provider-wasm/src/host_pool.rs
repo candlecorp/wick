@@ -1,62 +1,71 @@
-use std::{collections::HashMap, sync::Arc};
+use std::collections::HashMap;
+use std::sync::atomic::{
+  AtomicUsize,
+  Ordering,
+};
+use std::sync::Arc;
 
-use parking_lot::{Mutex, RwLock};
+use parking_lot::{
+  Mutex,
+  RwLock,
+};
 use vino_transport::TransportStream;
 use vino_types::signatures::ProviderSignature;
 
-use crate::{error::WasmProviderError, wasm_host::WasmHost};
+use crate::error::WasmProviderError;
+use crate::wasm_host::WasmHost;
 
 pub(crate) struct HostPool {
   factory: Arc<Mutex<dyn Fn() -> WasmHost + Send + Sync + 'static>>,
-  iter: Arc<RwLock<Box<dyn Iterator<Item = WasmHost> + Send + Sync + 'static>>>,
-  hosts: Vec<WasmHost>,
+  index: AtomicUsize,
+  hosts: RwLock<Vec<WasmHost>>,
 }
 
 impl HostPool {
-  pub(crate) fn start_hosts<F>(f: F, threads: u8) -> Self
+  pub(crate) fn start_hosts<F>(f: F, threads: usize) -> Self
   where
     F: Fn() -> WasmHost + Send + Sync + 'static,
   {
     let arcfn = Arc::new(Mutex::new(f));
 
-    let addresses: Vec<WasmHost> = vec![];
+    let hosts: RwLock<Vec<WasmHost>> = RwLock::new(vec![]);
+    let index = 0;
 
-    let mut pool = Self {
+    let pool = Self {
       factory: arcfn,
-      iter: Arc::new(RwLock::new(Box::new(addresses.clone().into_iter()))),
-      hosts: addresses,
+      index: index.into(),
+      hosts,
     };
 
     for _i in 0..threads {
-      pool.spawn_new();
+      pool.expand();
     }
 
     pool
   }
 
-  fn next_host(&self) -> WasmHost {
-    let next = { self.iter.write().next() };
-    match next {
-      Some(addr) => addr,
-      None => {
-        let mut iter = self.hosts.clone().into_iter();
-        let addr = match iter.next() {
-          Some(addr) => addr,
-          None => {
-            panic!("No addresses left for actor");
-          }
-        };
-        *self.iter.write() = Box::new(iter);
-        addr
-      }
-    }
-  }
-
-  fn spawn_new(&mut self) {
+  fn expand(&self) {
     debug!("Spawning host");
     let factory = self.factory.clone();
     let host = factory.lock()();
-    self.hosts.push(host);
+    let mut lock = self.hosts.write();
+    lock.push(host);
+  }
+
+  fn get_next_index(&self) -> usize {
+    let lock = self.hosts.read();
+    let len = lock.len();
+    self
+      .index
+      .fetch_update(Ordering::SeqCst, Ordering::SeqCst, move |old| {
+        let new = old + 1;
+        if new == len {
+          Some(0)
+        } else {
+          Some(new)
+        }
+      })
+      .unwrap()
   }
 
   pub(crate) fn call(
@@ -64,16 +73,18 @@ impl HostPool {
     component_name: &str,
     input_map: &HashMap<String, Vec<u8>>,
   ) -> Result<TransportStream, WasmProviderError> {
-    log::debug!("Invoking from pool");
-
-    let host = self.next_host();
+    debug!("Invoking from pool");
+    let index = self.get_next_index();
+    let lock = self.hosts.read();
+    let host = lock.get(index).unwrap();
     host.call(component_name, input_map)
   }
 
   pub(crate) fn get_components(&self) -> ProviderSignature {
-    log::debug!("Sending message");
-
-    let host = self.next_host();
+    debug!("Sending message");
+    let index = self.get_next_index();
+    let lock = self.hosts.read();
+    let host = lock.get(index).unwrap();
     host.get_components().clone()
   }
 }

@@ -26,7 +26,7 @@ vino-rpc = { path = "../vino-rpc" }
 vino-invocation-server = { path = "../vino-invocation-server" }
 vino-entity = { path = "../../sdk/crates/vino-entity" }
 vino-macros = { path = "../../sdk/crates/vino-macros" }
-log = "0.4"
+tracing = "0.1"
 
 thiserror = "1.0.25"
 nkeys = "0.1.0"

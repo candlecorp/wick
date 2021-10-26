@@ -77,8 +77,8 @@
 use std::fs::read_to_string;
 use std::path::Path;
 
-use log::debug;
 use serde::de::DeserializeOwned;
+use tracing::debug;
 
 /// Module for processing JSON templates used for default values.
 pub mod default;

@@ -10,7 +10,7 @@ edition = "2018"
 [dependencies]
 # nats = { path = "../../../nats.rs" }
 nats = { version = "0.15.2" }
-log = "0.4.14"
+tracing = "0.1"
 vino-rpc = { path = "../vino-rpc" }
 vino-transport = { path = "../../sdk/crates/vino-transport", features = [
   "all",

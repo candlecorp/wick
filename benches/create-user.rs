@@ -2,17 +2,14 @@ use std::convert::{
   TryFrom,
   TryInto,
 };
-use std::ops::Div;
 use std::time::Instant;
 
-use futures::executor::block_on;
 use futures::future::try_join_all;
 use futures::StreamExt;
 use once_cell::sync::{
   Lazy,
   OnceCell,
 };
-use utils::*;
 use vino_host::{
   Host,
   HostBuilder,
@@ -51,22 +48,22 @@ async fn work() {
     // trace: true,
     ..Default::default()
   };
-  logger::init(&opts);
+  let _guard = logger::init(&opts.name("create-user-benchmark"));
 
   let mut host = HostBuilder::try_from("./benches/create-user.vino")
     .unwrap()
     .build();
   host.start().await.unwrap();
   let host = HOST.get_or_init(move || host);
-  let num: usize = 1000;
+  let num: usize = 100;
   let mut data = Vec::with_capacity(num);
-  for i in 0..num {
+  for _ in 0..num {
     data.push(get_map());
   }
 
   let mut futures = vec![];
   let start = Instant::now();
-  for (i, map) in data.into_iter().enumerate() {
+  for (_, map) in data.into_iter().enumerate() {
     // print!("Running {}...", i);
     futures.push(request((host, map)));
     // println!("...done")
@@ -76,7 +73,7 @@ async fn work() {
     .await
     .unwrap();
   println!("second round ...");
-  let results = try_join_all(outputs.into_iter().map(|stream| {
+  let _results = try_join_all(outputs.into_iter().map(|stream| {
     tokio::spawn(async {
       stream.collect::<Vec<_>>().await;
     })

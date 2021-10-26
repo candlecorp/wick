@@ -13,4 +13,4 @@ categories = ["wasm", "api-bindings"]
 exclude = [".assets"]
 
 [dependencies]
-log = "0.4.11"
+tracing = "0.1"

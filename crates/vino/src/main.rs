@@ -78,7 +78,7 @@ pub use error::VinoError as Error;
 pub(crate) type Result<T> = std::result::Result<T, Error>;
 
 #[macro_use]
-extern crate log;
+extern crate tracing;
 
 mod commands;
 mod utils;

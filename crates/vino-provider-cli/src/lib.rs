@@ -89,10 +89,12 @@ pub type Error = error::CliError;
 
 pub use cli::{
   init_cli,
-  init_logging,
   start_server,
 };
-pub use logger::LoggingOptions;
+pub use logger::{
+  init as init_logging,
+  LoggingOptions,
+};
 
 #[macro_use]
-extern crate log;
+extern crate tracing;

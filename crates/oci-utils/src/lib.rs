@@ -88,7 +88,7 @@ pub mod error;
 pub use error::OciError as Error;
 
 #[macro_use]
-extern crate log;
+extern crate tracing;
 
 /// The ENV variable holding the OCI username.
 pub const OCI_VAR_USER: &str = "OCI_REGISTRY_USER";

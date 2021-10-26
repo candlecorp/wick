@@ -152,7 +152,7 @@ impl Config {
 
   /// enable a tonic service to handle grpc-web requests with this configuration values.
   pub fn enable(&self, provider: SharedRpcHandler) -> ProviderService {
-    log::trace!("enabled for path {}", ProviderService::NAME);
+    tracing::trace!("enabled for path {}", ProviderService::NAME);
     ProviderService::new(provider, self.clone())
   }
 }

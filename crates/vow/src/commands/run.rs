@@ -56,14 +56,14 @@ pub(crate) struct RunCommand {
 }
 
 pub(crate) async fn handle_command(opts: RunCommand) -> Result<()> {
-  vino_provider_cli::init_logging(&opts.logging)?;
+  let _guard = vino_provider_cli::init_logging(&opts.logging.name("vow"));
 
   debug!("Loading wasm {}", opts.wasm);
   let component =
     vino_provider_wasm::helpers::load_wasm(&opts.wasm, opts.pull.latest, &opts.pull.insecure)
       .await?;
 
-  let provider = Provider::try_load(&component, None, Some((&opts.wasi).into()), None)?;
+  let provider = Provider::try_load(&component, 1, None, Some((&opts.wasi).into()), None)?;
 
   let mut check_stdin = !opts.no_input && opts.data.is_empty() && opts.args.is_empty();
   if let Some(metadata) = component.token.claims.metadata {

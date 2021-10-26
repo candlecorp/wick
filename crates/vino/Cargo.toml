@@ -23,7 +23,7 @@ vino-types = { path = "../../sdk/crates/vino-types" }
 tap = { path = "../tap" }
 vino-test = { path = "../vino-test" }
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
-log = "0.4.11"
+tracing = "0.1"
 structopt = "0.3.21"
 nkeys = "0.1.0"
 futures = "0.3.13"

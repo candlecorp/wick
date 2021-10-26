@@ -83,9 +83,7 @@ pub(crate) type Result<T> = std::result::Result<T, ControlError>;
 pub(crate) type Error = ControlError;
 
 #[macro_use]
-extern crate log;
-
-use log::debug;
+extern crate tracing;
 
 static BIN_NAME: &str = "vinoc";
 

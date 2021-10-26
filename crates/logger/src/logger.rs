@@ -1,48 +1,56 @@
-use std::io::Write;
+use std::path::PathBuf;
 
-use env_logger::fmt::{
-  Color,
-  Formatter,
+use tracing_appender::non_blocking::{
+  NonBlocking,
+  WorkerGuard,
 };
-use env_logger::Builder;
-use log::{
-  Level,
-  LevelFilter,
-  Record,
+use tracing_bunyan_formatter::{
+  BunyanFormattingLayer,
+  JsonStorageLayer,
 };
-use serde_json::json;
+use tracing_subscriber::filter::FilterFn;
+use tracing_subscriber::fmt::time::UtcTime;
+use tracing_subscriber::prelude::*;
+use tracing_subscriber::{
+  filter,
+  Layer,
+};
 
 use crate::error::LoggerError;
-use crate::{
-  LoggingOptions,
-  FILTER_ENV,
-};
+use crate::LoggingOptions;
 
-fn set_level(builder: &mut Builder, priority_modules: &[&str], level: LevelFilter) {
-  for module in priority_modules.iter() {
-    builder.filter_module(module.as_ref(), level);
+enum Environment {
+  Prod,
+  Test,
+}
+
+/// Initialize a logger or panic on failure
+pub fn init_defaults() -> LoggingGuard {
+  match try_init(&LoggingOptions::default(), &Environment::Prod) {
+    Ok(guard) => guard,
+    Err(e) => panic!("Error initializing logger: {}", e),
   }
 }
 
 /// Initialize a logger or panic on failure
-pub fn init_defaults() {
-  if let Err(e) = try_init(&LoggingOptions::default()) {
-    panic!("Error initializing logger: {}", e);
+pub fn init(opts: &LoggingOptions) -> LoggingGuard {
+  match try_init(&opts, &Environment::Prod) {
+    Ok(guard) => guard,
+    Err(e) => panic!("Error initializing logger: {}", e),
   }
 }
 
-/// Initialize a logger or panic on failure
-pub fn init(opts: &LoggingOptions) {
-  if let Err(e) = try_init(opts) {
-    panic!("Error initializing logger: {}", e);
+/// Initialize a logger for tests
+#[must_use]
+pub fn init_test(opts: &LoggingOptions) -> Option<LoggingGuard> {
+  match try_init(&opts, &Environment::Test) {
+    Ok(guard) => Some(guard),
+    Err(_) => None,
   }
 }
 
-/// Initialize a logger
-pub fn try_init(opts: &LoggingOptions) -> Result<(), LoggerError> {
-  let mut builder = Builder::new();
-
-  let priority_modules = [
+fn priority_module(module: &str) -> bool {
+  [
     "logger",
     "oci_utils",
     "vinoc",
@@ -72,77 +80,152 @@ pub fn try_init(opts: &LoggingOptions) -> Result<(), LoggerError> {
     "vow",
     "test_vino_provider",
     "vino_interface_keyvalue",
-  ];
-
-  let chatty_modules: [&str; 0] = [];
-
-  if let Ok(ref filter) = std::env::var(FILTER_ENV) {
-    builder.parse_filters(filter);
-  } else {
-    builder.filter_level(LevelFilter::Off);
-    if opts.quiet {
-      set_level(&mut builder, &priority_modules, LevelFilter::Error);
-    } else if opts.trace {
-      set_level(&mut builder, &priority_modules, LevelFilter::Trace);
-    } else if opts.debug {
-      set_level(&mut builder, &priority_modules, LevelFilter::Debug);
-    } else {
-      set_level(&mut builder, &priority_modules, LevelFilter::Info);
-    }
-
-    for module in chatty_modules.iter() {
-      builder.filter_module(module.as_ref(), LevelFilter::Off);
-    }
-  }
-  let json = opts.log_json;
-  let verbose = opts.verbose;
-
-  builder
-    .format(move |buf, record| format(buf, record, json, verbose))
-    .try_init()?;
-  log::trace!("Logger initialized");
-  Ok(())
+  ]
+  .contains(&module)
 }
 
-fn format(buf: &mut Formatter, record: &Record, json: bool, verbose: bool) -> std::io::Result<()> {
-  let mut style = buf.style();
-  let msg = if json {
-    json!({ "timestamp": buf.timestamp().to_string(), "level": record.level().to_string(), "msg": format!("{}", record.args()) }).to_string()
-  } else {
-    let timestamp = buf.timestamp();
+#[must_use]
+fn vino_filter() -> FilterFn {
+  FilterFn::new(|e| {
+    let module = &e
+      .module_path()
+      .unwrap_or_default()
+      .split("::")
+      .next()
+      .unwrap_or_default();
+    priority_module(module)
+  })
+}
 
-    let level = match record.level() {
-      Level::Error => {
-        style.set_color(Color::Red);
-        "[E]"
-      }
-      Level::Warn => {
-        style.set_color(Color::Yellow);
-        "[W]"
-      }
-      Level::Info => "[I]",
-      Level::Debug => {
-        style.set_color(Color::Blue);
-        "[D]"
-      }
-      Level::Trace => {
-        style.set_color(Color::Magenta);
-        "[T]"
-      }
-    };
-    let msg = if verbose {
-      format!(
-        "[{}|{}]{} {}",
-        timestamp,
-        level,
-        record.module_path().unwrap_or_default(),
-        record.args()
-      )
-    } else {
-      format!("[{}]{} {}", timestamp, level, record.args())
-    };
+#[must_use]
+#[derive(Debug)]
+/// Guard that - when dropped - flushes all log messages and drop I/O handles.
+pub struct LoggingGuard {
+  logfile: Option<WorkerGuard>,
+  console: WorkerGuard,
+}
 
-    msg
+impl LoggingGuard {
+  fn new(logfile: Option<WorkerGuard>, console: WorkerGuard) -> Self {
+    Self { logfile, console }
+  }
+}
+
+fn get_stderr_writer(_opts: &LoggingOptions) -> (NonBlocking, WorkerGuard) {
+  let (stderr_writer, console_guard) = tracing_appender::non_blocking(std::io::stderr());
+
+  (stderr_writer, console_guard)
+}
+
+fn get_logfile_writer(
+  opts: &LoggingOptions,
+) -> Result<(PathBuf, NonBlocking, WorkerGuard), LoggerError> {
+  let logfile_prefix = format!("{}.{}.log", opts.app_name, std::process::id());
+  let log_dir = match xdg::BaseDirectories::with_prefix("vino") {
+    Ok(xdg) => xdg.get_state_home(),
+    Err(_) => std::env::current_dir()?,
   };
-  writeln!(buf, "{}", style.value(msg))
+
+  let (writer, guard) = tracing_appender::non_blocking(tracing_appender::rolling::daily(
+    log_dir.clone(),
+    logfile_prefix,
+  ));
+
+  Ok((log_dir, writer, guard))
+}
+
+fn get_levelfilter(opts: &LoggingOptions) -> tracing::level_filters::LevelFilter {
+  if opts.quiet {
+    filter::LevelFilter::ERROR
+  } else if opts.trace {
+    filter::LevelFilter::TRACE
+  } else if opts.debug {
+    filter::LevelFilter::DEBUG
+  } else {
+    filter::LevelFilter::INFO
+  }
+}
+
+fn try_init(opts: &LoggingOptions, environment: &Environment) -> Result<LoggingGuard, LoggerError> {
+  // LogTracer::init().unwrap();
+  let timer = UtcTime::new(
+    time::format_description::parse("[year]-[month]-[day]T[hour]:[minute]:[second]").unwrap(),
+  );
+  let (stderr_writer, console_guard) = get_stderr_writer(opts);
+
+  let app_name = opts.app_name.clone();
+
+  // Yeah this is ugly and could be improved.
+  // Start here for precedent: https://github.com/tokio-rs/tracing/issues/575
+  let (verbose_layer, normal_layer, json_layer, file_layer, logfile_guard, test_layer) =
+    match environment {
+      Environment::Prod => {
+        let (log_dir, logfile_writer, logfile_guard) = get_logfile_writer(opts)?;
+        let file_layer =
+          BunyanFormattingLayer::new(app_name, logfile_writer).with_filter(vino_filter());
+        info!("Writing logs to {}", log_dir.to_string_lossy());
+
+        if opts.verbose {
+          (
+            Some(
+              tracing_subscriber::fmt::layer()
+                .with_writer(stderr_writer)
+                .with_thread_names(true)
+                .with_target(true)
+                .with_filter(get_levelfilter(opts))
+                .with_filter(vino_filter()),
+            ),
+            None,
+            Some(JsonStorageLayer),
+            Some(file_layer),
+            Some(logfile_guard),
+            None,
+          )
+        } else {
+          (
+            None,
+            Some(
+              tracing_subscriber::fmt::layer()
+                .with_writer(stderr_writer)
+                .with_target(false)
+                .with_thread_names(false)
+                .with_timer(timer)
+                .with_filter(get_levelfilter(opts))
+                .with_filter(vino_filter()),
+            ),
+            Some(JsonStorageLayer),
+            Some(file_layer),
+            Some(logfile_guard),
+            None,
+          )
+        }
+      }
+      Environment::Test => (
+        None,
+        None,
+        None,
+        None,
+        None,
+        Some(
+          tracing_subscriber::fmt::layer()
+            .with_writer(stderr_writer)
+            .without_time()
+            .with_target(true)
+            .with_test_writer()
+            .with_filter(get_levelfilter(opts))
+            .with_filter(vino_filter()),
+        ),
+      ),
+    };
+
+  let subscriber = tracing_subscriber::registry()
+    .with(test_layer)
+    .with(verbose_layer)
+    .with(normal_layer)
+    .with(json_layer)
+    .with(file_layer);
+  tracing::subscriber::set_global_default(subscriber)?;
+
+  trace!("Logger initialized");
+  Ok(LoggingGuard::new(logfile_guard, console_guard))
 }

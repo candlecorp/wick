@@ -15,7 +15,7 @@ categories = ["wasm", "api-bindings"]
 
 [dependencies]
 wapc = { path = "../wapc-rust" }
-log = "0.4.11"
+tracing = "0.1"
 serde = { version = "1.0.114", features = ["derive"] }
 serde_json = "1.0.56"
 wasmtime = { version = "0.30.0", features = ["cache"] }

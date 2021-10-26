@@ -73,7 +73,7 @@
 #![allow(missing_docs)]
 
 #[macro_use]
-extern crate log;
+extern crate tracing;
 
 #[macro_use]
 pub(crate) mod macros;

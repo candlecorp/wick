@@ -40,7 +40,7 @@ pub(crate) struct Options {
 }
 
 pub(crate) async fn handle(opts: Options) -> Result<()> {
-  crate::utils::init_logger(&opts.logging)?;
+  let _guard = crate::utils::init_logger(&opts.logging)?;
 
   let mut client = vino_rpc::make_rpc_client(
     opts.connection.address,

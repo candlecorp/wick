@@ -78,4 +78,4 @@ pub mod provider;
 pub type Error = error::LatticeProviderError;
 
 #[macro_use]
-extern crate log;
+extern crate tracing;

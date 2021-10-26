@@ -3,62 +3,6 @@
 version = 3
 
 [[package]]
-name = "actix"
-version = "0.12.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3720d0064a0ce5c0de7bd93bdb0a6caebab2a9b5668746145d7b3b0c5da02914"
-dependencies = [
- "actix-rt",
- "actix_derive",
- "bitflags",
- "bytes 1.0.1",
- "crossbeam-channel",
- "futures-core",
- "futures-sink",
- "futures-task",
- "futures-util",
- "log",
- "once_cell",
- "parking_lot",
- "pin-project-lite",
- "smallvec",
- "tokio",
- "tokio-util",
-]
-
-[[package]]
-name = "actix-macros"
-version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c2f86cd6857c135e6e9fe57b1619a88d1f94a7df34c00e11fe13e64fd3438837"
-dependencies = [
- "quote",
- "syn",
-]
-
-[[package]]
-name = "actix-rt"
-version = "2.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bc7d7cd957c9ed92288a7c3c96af81fa5291f65247a76a34dac7b6af74e52ba0"
-dependencies = [
- "actix-macros",
- "futures-core",
- "tokio",
-]
-
-[[package]]
-name = "actix_derive"
-version = "0.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6d44b8fee1ced9671ba043476deddef739dd0959bf77030b26b738cc591737a7"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn",
-]
-
-[[package]]
 name = "addr2line"
 version = "0.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -422,7 +366,7 @@ dependencies = [
  "num-integer",
  "num-traits",
  "serde",
- "time",
+ "time 0.1.44",
  "winapi",
 ]
 
@@ -776,6 +720,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "dirs"
+version = "3.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "30baa043103c9d0c2a57cf537cc2f35623889dc0d405e6c3cccfadbc81c71309"
+dependencies = [
+ "dirs-sys",
+]
+
+[[package]]
 name = "dirs-next"
 version = "2.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -783,6 +736,17 @@ checksum = "b98cf8ebf19c3d1b223e151f99a4f9f0690dca41414773390fc824184ac833e1"
 dependencies = [
  "cfg-if",
  "dirs-sys-next",
+]
+
+[[package]]
+name = "dirs-sys"
+version = "0.3.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "03d86534ed367a67548dc68113a0f5db55432fdfbb6e6f9d77704397d95d5780"
+dependencies = [
+ "libc",
+ "redox_users",
+ "winapi",
 ]
 
 [[package]]
@@ -937,19 +901,6 @@ name = "env_logger"
 version = "0.8.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a19187fea3ac7e84da7dacf48de0c45d63c6a76f9490dae389aead16c243fce3"
-dependencies = [
- "atty",
- "humantime 2.1.0",
- "log",
- "regex",
- "termcolor",
-]
-
-[[package]]
-name = "env_logger"
-version = "0.9.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0b2cf0344971ee6c64c31be0d530793fba457d322dfec2810c453d0ef228f9c3"
 dependencies = [
  "atty",
  "humantime 2.1.0",
@@ -1195,6 +1146,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "gethostname"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e692e296bfac1d2533ef168d0b60ff5897b8b70a4009276834014dd8924cc028"
+dependencies = [
+ "libc",
+ "winapi",
+]
+
+[[package]]
 name = "getrandom"
 version = "0.1.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1415,7 +1376,7 @@ dependencies = [
  "log",
  "mime",
  "percent-encoding 1.0.1",
- "time",
+ "time 0.1.44",
  "unicase 2.6.0",
 ]
 
@@ -1606,11 +1567,16 @@ dependencies = [
 name = "logger"
 version = "0.1.0"
 dependencies = [
- "env_logger 0.9.0",
- "log",
- "serde_json",
  "structopt",
+ "symlink",
  "thiserror",
+ "time 0.3.4",
+ "tracing",
+ "tracing-appender",
+ "tracing-bunyan-formatter",
+ "tracing-log",
+ "tracing-subscriber",
+ "xdg",
 ]
 
 [[package]]
@@ -1627,6 +1593,15 @@ name = "maplit"
 version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3e2e65a1a2e43cfcb47a895c4c8b10d1f4a61097f9f254f183aee60cad9c651d"
+
+[[package]]
+name = "matchers"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8263075bb86c5a1b1427b5ae862e8889656f126e9f77c484496e8b47cf5c5558"
+dependencies = [
+ "regex-automata",
+]
 
 [[package]]
 name = "matches"
@@ -1725,9 +1700,9 @@ dependencies = [
 
 [[package]]
 name = "nats"
-version = "0.13.1"
+version = "0.15.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "33f47fab79b62a75d2bf97663f049bfd1ade8c9c5fdae1512ec65a66d0b6c282"
+checksum = "2a3097b182107db2cf690280d61f23f17ee31d49f3994ad152ee6a10261f77c3"
 dependencies = [
  "base64 0.13.0",
  "base64-url",
@@ -1860,9 +1835,9 @@ dependencies = [
 name = "oci-utils"
 version = "0.1.0"
 dependencies = [
- "log",
  "oci-distribution",
  "thiserror",
+ "tracing",
 ]
 
 [[package]]
@@ -2385,6 +2360,9 @@ name = "regex-automata"
 version = "0.1.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6c230d73fb8d8c1b9c0b3135c5142a8acee3a0558fb8db5cf1cb65f8d7862132"
+dependencies = [
+ "regex-syntax",
+]
 
 [[package]]
 name = "regex-syntax"
@@ -2763,6 +2741,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "sharded-slab"
+version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "900fba806f70c630b0a382d0d825e17a0f19fcd059a2ade1ff237bcddf446b31"
+dependencies = [
+ "lazy_static",
+]
+
+[[package]]
 name = "shellexpand"
 version = "2.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2878,6 +2865,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "symlink"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a7973cce6668464ea31f176d85b13c7ab3bba2cb3b77a2ed26abd7801688010a"
+
+[[package]]
 name = "syn"
 version = "1.0.76"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2970,9 +2963,9 @@ name = "test-interface-keyvalue"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "log",
  "maplit",
  "thiserror",
+ "tracing",
  "vino-codec",
  "vino-invocation-server",
  "vino-packet",
@@ -2999,10 +2992,10 @@ version = "0.1.0"
 dependencies = [
  "async-trait",
  "futures",
- "log",
  "once_cell",
  "serde",
  "tokio",
+ "tracing",
  "vino-codec",
  "vino-entity",
  "vino-packet",
@@ -3053,6 +3046,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "thread_local"
+version = "1.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8018d24e04c95ac8790716a5987d0fec4f8b27249ffa0f7d33f1369bdfb88cbd"
+dependencies = [
+ "once_cell",
+]
+
+[[package]]
 name = "time"
 version = "0.1.44"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3061,6 +3063,16 @@ dependencies = [
  "libc",
  "wasi 0.10.0+wasi-snapshot-preview1",
  "winapi",
+]
+
+[[package]]
+name = "time"
+version = "0.3.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "99beeb0daeac2bd1e86ac2c21caddecb244b39a093594da1a661ec2060c7aedd"
+dependencies = [
+ "itoa",
+ "libc",
 ]
 
 [[package]]
@@ -3101,7 +3113,6 @@ dependencies = [
  "mio",
  "num_cpus",
  "once_cell",
- "parking_lot",
  "pin-project-lite",
  "signal-hook-registry",
  "tokio-macros",
@@ -3297,6 +3308,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "tracing-appender"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "94571df2eae3ed4353815ea5a90974a594a1792d8782ff2cbcc9392d1101f366"
+dependencies = [
+ "crossbeam-channel",
+ "time 0.3.4",
+ "tracing-subscriber",
+]
+
+[[package]]
 name = "tracing-attributes"
 version = "0.1.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3308,10 +3330,27 @@ dependencies = [
 ]
 
 [[package]]
-name = "tracing-core"
-version = "0.1.18"
+name = "tracing-bunyan-formatter"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a9ff14f98b1a4b289c6248a023c1c2fa1491062964e9fed67ab29c4e4da4a052"
+checksum = "0814e45b1ba02f79418d90107acc44ae55dceb0623d40f4ee7d981b5e1984869"
+dependencies = [
+ "chrono",
+ "gethostname",
+ "log",
+ "serde",
+ "serde_json",
+ "tracing",
+ "tracing-core",
+ "tracing-log",
+ "tracing-subscriber",
+]
+
+[[package]]
+name = "tracing-core"
+version = "0.1.21"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1f4ed65637b8390770814083d20756f87bfa2c21bf2f110babdc5438351746e4"
 dependencies = [
  "lazy_static",
 ]
@@ -3324,6 +3363,49 @@ checksum = "97d095ae15e245a057c8e8451bab9b3ee1e1f68e9ba2b4fbc18d0ac5237835f2"
 dependencies = [
  "pin-project",
  "tracing",
+]
+
+[[package]]
+name = "tracing-log"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a6923477a48e41c1951f1999ef8bb5a3023eb723ceadafe78ffb65dc366761e3"
+dependencies = [
+ "lazy_static",
+ "log",
+ "tracing-core",
+]
+
+[[package]]
+name = "tracing-serde"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fb65ea441fbb84f9f6748fd496cf7f63ec9af5bca94dd86456978d055e8eb28b"
+dependencies = [
+ "serde",
+ "tracing-core",
+]
+
+[[package]]
+name = "tracing-subscriber"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "80a4ddde70311d8da398062ecf6fc2c309337de6b0f77d6c27aff8d53f6fca52"
+dependencies = [
+ "ansi_term 0.12.1",
+ "lazy_static",
+ "matchers",
+ "regex",
+ "serde",
+ "serde_json",
+ "sharded-slab",
+ "smallvec",
+ "thread_local",
+ "time 0.3.4",
+ "tracing",
+ "tracing-core",
+ "tracing-log",
+ "tracing-serde",
 ]
 
 [[package]]
@@ -3490,11 +3572,8 @@ checksum = "5fecdca9a5291cc2b8dcf7dc02453fee791a280f3743cb0905f8822ae463b3fe"
 name = "vino"
 version = "0.1.0"
 dependencies = [
- "actix",
- "actix-rt",
  "atty",
  "futures",
- "log",
  "logger",
  "maplit",
  "nkeys",
@@ -3507,6 +3586,7 @@ dependencies = [
  "test_bin",
  "thiserror",
  "tokio",
+ "tracing",
  "vino-codec",
  "vino-host",
  "vino-loader",
@@ -3544,13 +3624,10 @@ dependencies = [
 name = "vino-host"
 version = "0.1.0"
 dependencies = [
- "actix",
- "actix-rt",
  "anyhow",
  "async-trait",
  "hocon",
  "http 0.2.4",
- "log",
  "logger",
  "nkeys",
  "once_cell",
@@ -3562,6 +3639,7 @@ dependencies = [
  "thiserror",
  "tokio",
  "tokio-stream",
+ "tracing",
  "vino-codec",
  "vino-entity",
  "vino-invocation-server",
@@ -3585,7 +3663,6 @@ dependencies = [
  "http 0.2.4",
  "http-body",
  "hyper",
- "log",
  "pin-project",
  "serde",
  "serde_json",
@@ -3594,6 +3671,7 @@ dependencies = [
  "tokio-stream",
  "tonic",
  "tower-service",
+ "tracing",
  "vino-entity",
  "vino-rpc",
  "vino-transport",
@@ -3616,7 +3694,6 @@ dependencies = [
  "derivative",
  "dyn-clone",
  "futures",
- "log",
  "logger",
  "parking_lot",
  "rand 0.8.4",
@@ -3627,6 +3704,7 @@ dependencies = [
  "tokio",
  "tokio-stream",
  "tonic",
+ "tracing",
  "vino-entity",
  "vino-macros",
  "vino-rpc",
@@ -3642,7 +3720,6 @@ dependencies = [
  "async-trait",
  "backtrace",
  "futures",
- "log",
  "logger",
  "once_cell",
  "rand 0.8.4",
@@ -3657,6 +3734,7 @@ dependencies = [
  "tokio",
  "tokio-util",
  "tonic",
+ "tracing",
  "vino-interface-keyvalue",
  "vino-macros",
  "vino-packet",
@@ -3670,10 +3748,8 @@ dependencies = [
 name = "vino-lattice"
 version = "0.0.0"
 dependencies = [
- "actix-rt",
  "anyhow",
  "futures",
- "log",
  "logger",
  "nats",
  "nkeys",
@@ -3685,6 +3761,7 @@ dependencies = [
  "thiserror",
  "tokio",
  "tokio-stream",
+ "tracing",
  "vino-codec",
  "vino-entity",
  "vino-rpc",
@@ -3696,10 +3773,10 @@ dependencies = [
 name = "vino-loader"
 version = "0.0.0"
 dependencies = [
- "log",
  "oci-utils",
  "thiserror",
  "tokio",
+ "tracing",
 ]
 
 [[package]]
@@ -3707,7 +3784,7 @@ name = "vino-macros"
 version = "0.7.0"
 dependencies = [
  "lazy_static",
- "log",
+ "tracing",
 ]
 
 [[package]]
@@ -3716,9 +3793,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "enum-primitive-derive",
- "hocon",
  "lazy_static",
- "log",
  "logger",
  "num-traits",
  "pretty_assertions",
@@ -3730,6 +3805,7 @@ dependencies = [
  "serde_yaml",
  "test-logger",
  "thiserror",
+ "tracing",
  "vino-macros",
  "vino-transport",
 ]
@@ -3740,13 +3816,13 @@ version = "0.1.0"
 dependencies = [
  "async-trait",
  "futures",
- "log",
  "logger",
  "parking_lot",
  "serde",
  "test-logger",
  "thiserror",
  "tokio",
+ "tracing",
  "vino-entity",
  "vino-packet",
  "vino-provider",
@@ -3770,11 +3846,11 @@ version = "0.7.0"
 dependencies = [
  "async-trait",
  "dyn-clone",
- "log",
  "serde",
  "thiserror",
  "tokio",
  "tokio-stream",
+ "tracing",
  "vino-codec",
  "vino-entity",
  "vino-packet",
@@ -3790,7 +3866,6 @@ dependencies = [
  "async-stream",
  "cfg-if",
  "futures",
- "log",
  "logger",
  "nkeys",
  "once_cell",
@@ -3806,6 +3881,7 @@ dependencies = [
  "tokio-stream",
  "tonic",
  "tonic-reflection",
+ "tracing",
  "vino-codec",
  "vino-http",
  "vino-invocation-server",
@@ -3822,16 +3898,15 @@ dependencies = [
  "anyhow",
  "async-trait",
  "futures",
- "log",
  "logger",
  "maplit",
- "once_cell",
  "parking_lot",
  "test-logger",
  "test-vino-provider",
  "thiserror",
  "tokio",
  "tokio-stream",
+ "tracing",
  "vino-lattice",
  "vino-provider",
  "vino-rpc",
@@ -3846,7 +3921,6 @@ dependencies = [
  "async-trait",
  "derivative",
  "futures",
- "log",
  "logger",
  "maplit",
  "parking_lot",
@@ -3857,16 +3931,18 @@ dependencies = [
  "thiserror",
  "tokio",
  "tokio-stream",
+ "tracing",
  "vino-codec",
  "vino-loader",
  "vino-macros",
  "vino-packet",
  "vino-provider",
+ "vino-random",
  "vino-rpc",
  "vino-transport",
  "vino-types",
  "vino-wascap",
- "wapc 0.10.1",
+ "wapc",
  "wasmtime-provider",
 ]
 
@@ -3884,8 +3960,6 @@ dependencies = [
 name = "vino-root"
 version = "0.1.0"
 dependencies = [
- "actix",
- "actix-rt",
  "anyhow",
  "criterion",
  "futures",
@@ -3920,7 +3994,6 @@ dependencies = [
  "derivative",
  "dyn-clone",
  "futures",
- "log",
  "logger",
  "parking_lot",
  "prost",
@@ -3934,6 +4007,7 @@ dependencies = [
  "tokio-stream",
  "tonic",
  "tonic-build",
+ "tracing",
  "vino-codec",
  "vino-entity",
  "vino-macros",
@@ -3955,7 +4029,6 @@ dependencies = [
  "futures",
  "itertools",
  "lazy_static",
- "log",
  "logger",
  "maplit",
  "once_cell",
@@ -3969,6 +4042,7 @@ dependencies = [
  "thiserror",
  "tokio",
  "tokio-stream",
+ "tracing",
  "uuid",
  "vino-codec",
  "vino-entity",
@@ -3992,7 +4066,6 @@ dependencies = [
 name = "vino-test"
 version = "0.0.0"
 dependencies = [
- "log",
  "serde",
  "serde-value",
  "serde_yaml",
@@ -4000,6 +4073,7 @@ dependencies = [
  "thiserror",
  "tokio",
  "tokio-stream",
+ "tracing",
  "vino-entity",
  "vino-rpc",
  "vino-transport",
@@ -4009,13 +4083,13 @@ dependencies = [
 name = "vino-transport"
 version = "0.7.0"
 dependencies = [
- "log",
  "serde",
  "serde-value",
  "serde_json",
  "thiserror",
  "tokio",
  "tokio-stream",
+ "tracing",
  "uuid",
  "vino-codec",
  "vino-entity",
@@ -4026,9 +4100,9 @@ dependencies = [
 name = "vino-types"
 version = "0.7.0"
 dependencies = [
- "log",
  "serde",
  "serde_json",
+ "tracing",
 ]
 
 [[package]]
@@ -4037,12 +4111,12 @@ version = "0.1.0"
 dependencies = [
  "criterion",
  "data-encoding",
- "log",
  "nuid",
  "parity-wasm",
  "ring",
  "serde",
  "thiserror",
+ "tracing",
  "vino-macros",
  "vino-types",
  "wascap",
@@ -4054,7 +4128,6 @@ version = "0.3.2"
 dependencies = [
  "atty",
  "futures",
- "log",
  "logger",
  "maplit",
  "nkeys",
@@ -4065,6 +4138,7 @@ dependencies = [
  "thiserror",
  "tokio",
  "tonic",
+ "tracing",
  "vino-codec",
  "vino-entity",
  "vino-host",
@@ -4085,7 +4159,6 @@ dependencies = [
  "anyhow",
  "atty",
  "futures",
- "log",
  "logger",
  "maplit",
  "once_cell",
@@ -4099,6 +4172,7 @@ dependencies = [
  "thiserror",
  "tokio",
  "tokio-stream",
+ "tracing",
  "vino-codec",
  "vino-packet",
  "vino-provider",
@@ -4144,19 +4218,6 @@ version = "0.10.1"
 dependencies = [
  "log",
  "parking_lot",
-]
-
-[[package]]
-name = "wapc"
-version = "0.10.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "06640cad2b5ba016b6849b56cdab2be4bdd013722d8bdad1d75f5e582bd37cca"
-dependencies = [
- "anyhow",
- "env_logger 0.7.1",
- "log",
- "serde",
- "serde_json",
 ]
 
 [[package]]
@@ -4450,7 +4511,7 @@ dependencies = [
  "log",
  "serde",
  "serde_json",
- "wapc 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "wapc",
  "wasi-cap-std-sync",
  "wasi-common",
  "wasmtime",
@@ -4680,6 +4741,15 @@ dependencies = [
  "hyperx",
  "unicase 1.4.2",
  "url 1.7.2",
+]
+
+[[package]]
+name = "xdg"
+version = "2.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3a23fe958c70412687039c86f578938b4a0bb50ec788e96bce4d6ab00ddd5803"
+dependencies = [
+ "dirs",
 ]
 
 [[package]]

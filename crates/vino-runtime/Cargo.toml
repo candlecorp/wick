@@ -45,7 +45,7 @@ tokio = { version = "1", features = [
 ] }
 tokio-stream = { version = "0.1.6", features = [] }
 itertools = "0.10.1"
-log = "0.4.14"
+tracing = "0.1"
 dyn-clone = "1.0.4"
 uuid = { version = "0.8", features = ["serde", "v4"] }
 rand = { version = "0.8.4", default-features = false, features = [

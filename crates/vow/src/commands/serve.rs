@@ -25,13 +25,12 @@ pub(crate) struct ServeCommand {
   wasi: WasiOptions,
 
   /// The number of threads to start.
-  #[structopt(long, default_value = "2")]
-  #[allow(unused)]
-  threads: u8,
+  #[structopt(long, default_value = "5")]
+  threads: usize,
 }
 
 pub(crate) async fn handle_command(opts: ServeCommand) -> Result<()> {
-  vino_provider_cli::init_logging(&opts.cli.logging)?;
+  let _guard = vino_provider_cli::init_logging(&opts.cli.logging.name("vow"));
   debug!("Loading wasm {}", opts.wasm);
   let component =
     vino_provider_wasm::helpers::load_wasm(&opts.wasm, opts.pull.latest, &opts.pull.insecure)
@@ -39,7 +38,7 @@ pub(crate) async fn handle_command(opts: ServeCommand) -> Result<()> {
 
   let wasi: WasiParams = (&opts.wasi).into();
   let provider = Arc::new(
-    match Provider::try_load(&component, None, Some(wasi.clone()), None) {
+    match Provider::try_load(&component, opts.threads, None, Some(wasi.clone()), None) {
       Ok(provider) => provider,
       Err(e) => {
         error!("Error starting WebAssembly provider: {}", e);

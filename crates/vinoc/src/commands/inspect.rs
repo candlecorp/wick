@@ -16,7 +16,7 @@ pub(crate) struct Options {
 }
 
 pub(crate) async fn handle(opts: Options) -> Result<()> {
-  crate::utils::init_logger(&opts.logging)?;
+  let _guard = crate::utils::init_logger(&opts.logging)?;
 
   let mut file = File::open(&opts.module).map_err(ControlError::ReadFailed)?;
   let mut buf = Vec::new();

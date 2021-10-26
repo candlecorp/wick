@@ -311,13 +311,6 @@ pub fn print_info(info: &ServerState) {
   }
 }
 
-/// Initializes logging with Vino's logger.
-pub fn init_logging(options: &LoggingOptions) -> Result<()> {
-  logger::init(options);
-
-  Ok(())
-}
-
 /// Starts an RPC and/or an HTTP server for the passed [vino_rpc::RpcHandler].
 pub async fn start_server(
   provider: SharedRpcHandler,

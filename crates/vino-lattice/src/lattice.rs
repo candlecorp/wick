@@ -437,9 +437,9 @@ mod test {
   use std::sync::Arc;
 
   use anyhow::Result;
-  use log::*;
   use test_vino_provider::Provider;
   use tokio_stream::StreamExt;
+  use tracing::*;
   use vino_codec::messagepack::deserialize;
   use vino_transport::{
     MessageTransport,

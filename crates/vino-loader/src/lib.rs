@@ -4,7 +4,7 @@ pub(crate) type Result<T> = std::result::Result<T, error::LoadError>;
 pub type Error = error::LoadError;
 
 #[macro_use]
-extern crate log;
+extern crate tracing;
 
 use std::path::Path;
 

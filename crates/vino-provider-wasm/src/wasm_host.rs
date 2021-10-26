@@ -113,6 +113,17 @@ pub struct WasmHost {
   rng: vino_random::Random,
 }
 
+impl Clone for WasmHost {
+  fn clone(&self) -> Self {
+    Self {
+      host: RwLock::new(self.host.read().clone()),
+      claims: self.claims.clone(),
+      tx_map: self.tx_map.clone(),
+      rng: self.rng.clone(),
+    }
+  }
+}
+
 #[derive(Debug)]
 struct Transaction {
   buffer: PortBuffer,

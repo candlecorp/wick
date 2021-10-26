@@ -15,7 +15,7 @@ parity-wasm = "0.42.1"
 data-encoding = "2.3.2"
 ring = "0.16.20"
 nuid = "0.3.0"
-log = "0.4"
+tracing = "0.1"
 vino-macros = { path = "../../sdk/crates/vino-macros" }
 
 [dev-dependencies]

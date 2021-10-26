@@ -74,7 +74,7 @@
 
 pub mod error;
 pub mod helpers;
-// mod host_pool;
+mod host_pool;
 pub mod provider;
 pub mod wapc_module;
 pub mod wasm_host;
@@ -83,7 +83,7 @@ pub(crate) type Result<T> = std::result::Result<T, error::WasmProviderError>;
 pub type Error = error::WasmProviderError;
 
 #[macro_use]
-extern crate log;
+extern crate tracing;
 
 #[macro_use]
 extern crate derivative;

@@ -19,7 +19,7 @@ serde-with-expand-env = "1.1.0"
 serde_json = "1.0.64"
 serde_yaml = "0.8.17"
 thiserror = "1.0.25"
-log = "0.4"
+tracing = "0.1"
 vino-macros = { path = "../../sdk/crates/vino-macros" }
 
 [dev-dependencies]

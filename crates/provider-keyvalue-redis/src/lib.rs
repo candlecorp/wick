@@ -84,4 +84,4 @@ pub type Error = error::Error;
 pub static REDIS_URL_ENV: &str = "REDIS_URL";
 
 #[macro_use]
-extern crate log;
+extern crate tracing;

@@ -18,7 +18,7 @@ use http::{
   HeaderValue,
   Method,
 };
-use log::debug;
+use tracing::debug;
 
 use crate::config::Config;
 

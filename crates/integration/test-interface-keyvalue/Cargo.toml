@@ -19,7 +19,7 @@ vino-codec = { path = "../../../sdk/crates/vino-codec" }
 vino-rpc = { path = "../../vino-rpc" }
 vino-invocation-server = { path = "../../vino-invocation-server" }
 
-log = "0.4"
+tracing = "0.1"
 
 maplit = "1.0.2"
 anyhow = "1.0.42"

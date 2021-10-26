@@ -6,15 +6,11 @@ use std::time::Instant;
 
 use futures::future::try_join_all;
 use futures::StreamExt;
-use once_cell::sync::{
-  Lazy,
-  OnceCell,
-};
+use once_cell::sync::OnceCell;
 use vino_host::{
   Host,
   HostBuilder,
 };
-use vino_random::Random;
 use vino_transport::{
   MessageTransport,
   TransportMap,
@@ -64,7 +60,7 @@ async fn work() {
     // trace: true,
     ..Default::default()
   };
-  logger::init(&opts);
+  let _guard = logger::init(&opts.name("markdown-benchmark"));
 
   let mut host = HostBuilder::try_from("./benches/markdown.vino")
     .unwrap()
@@ -73,13 +69,13 @@ async fn work() {
   let host = HOST.get_or_init(move || host);
   let num: usize = 1000;
   let mut data = Vec::with_capacity(num);
-  for i in 0..num {
+  for _ in 0..num {
     data.push(get_map());
   }
 
   let mut futures = vec![];
   let start = Instant::now();
-  for (i, map) in data.into_iter().enumerate() {
+  for (_, map) in data.into_iter().enumerate() {
     // print!("Running {}...", i);
     futures.push(request((host, map)));
     // println!("...done")

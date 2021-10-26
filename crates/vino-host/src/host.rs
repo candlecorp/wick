@@ -275,7 +275,6 @@ impl HostBuilder {
   pub fn from_definition(definition: HostDefinition) -> Self {
     HostBuilder {
       manifest: definition,
-      ..Default::default()
     }
   }
 

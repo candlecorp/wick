@@ -27,7 +27,7 @@ pub mod error;
 pub use error::TestError as Error;
 
 #[macro_use]
-extern crate log;
+extern crate tracing;
 
 pub struct TestSuite {
   tests: Vec<TestData>,

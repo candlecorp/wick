@@ -62,10 +62,10 @@ pub(crate) struct RunCommand {
 
 pub(crate) async fn handle_command(opts: RunCommand) -> Result<()> {
   let mut logging = opts.logging;
-  if !(opts.info || opts.logging.trace || opts.logging.debug) {
+  if !(opts.info || logging.trace || logging.debug) {
     logging.quiet = true;
   }
-  logger::init(&logging);
+  let _guard = logger::init(&logging.name("vino"));
   debug!("rest: {:?}", opts.args);
 
   let manifest_src = vino_loader::get_bytes(

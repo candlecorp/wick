@@ -20,7 +20,7 @@ vino-random = { path = "../vino-random" }
 vino-rpc = { path = "../vino-rpc" }
 vino-packet = { path = "../../sdk/crates/vino-packet" }
 vino-entity = { path = "../../sdk/crates/vino-entity" }
-log = "0.4"
+tracing = "0.1"
 serde = { version = "1.0.118", features = ["derive"] }
 async-trait = "0.1.50"
 futures = "0.3.15"

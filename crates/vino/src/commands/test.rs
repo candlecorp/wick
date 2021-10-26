@@ -43,10 +43,10 @@ pub(crate) struct TestCommand {
 #[allow(clippy::future_not_send, clippy::too_many_lines)]
 pub(crate) async fn handle_command(opts: TestCommand) -> Result<()> {
   let mut logging = opts.logging;
-  if !(opts.info || opts.logging.trace || opts.logging.debug) {
+  if !(opts.info || logging.trace || logging.debug) {
     logging.quiet = true;
   }
-  logger::init(&logging);
+  let _guard = logger::init(&logging.name("vino"));
 
   let manifest_src = vino_loader::get_bytes(
     &opts.manifest,
