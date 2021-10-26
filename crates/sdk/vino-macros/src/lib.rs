@@ -74,7 +74,7 @@
 // Add exceptions here
 #![allow()]
 
-pub use log;
+pub use tracing;
 
 #[macro_export]
 /// Test a condition and if it is false, return the supplied error
@@ -152,7 +152,7 @@ macro_rules! log_tap {
 macro_rules! logtest {
     ($($arg:tt)+) => (
       if cfg!(test) {
-        log::debug!($($arg)+)
+        tracing::debug!($($arg)+)
       }
     )
 }

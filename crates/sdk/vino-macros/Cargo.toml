@@ -15,5 +15,5 @@ homepage = "https://docs.vino.dev"
 maintenance = { status = "actively-developed" }
 
 [dependencies]
-log = "0.4"
+tracing = "0.1"
 lazy_static = "1.4.0"

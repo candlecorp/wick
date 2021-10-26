@@ -1,4 +1,3 @@
-use log::*;
 use tokio::sync::mpsc::{
   unbounded_channel,
   UnboundedSender,
@@ -8,6 +7,7 @@ use tokio_stream::{
   StreamExt,
   StreamMap,
 };
+use tracing::*;
 use vino_packet::v1::Payload as ComponentPayload;
 use vino_packet::{
   Packet,

@@ -125,4 +125,4 @@ pub const SYSTEM_ID: &str = "<system>";
 pub const COMPONENT_ERROR: &str = "<error>";
 
 #[macro_use]
-extern crate log;
+extern crate tracing;
