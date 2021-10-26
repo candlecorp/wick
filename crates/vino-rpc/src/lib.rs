@@ -92,7 +92,6 @@ pub mod generated;
 pub mod types;
 
 pub use dyn_clone::clone_box;
-use dyn_clone::DynClone;
 /// Module with generated Tonic & Protobuf code.
 pub use generated::vino as rpc;
 pub use types::*;
@@ -117,7 +116,7 @@ pub type RpcFactory = Box<dyn Fn() -> SharedRpcHandler + Send + Sync + 'static>;
 
 /// A trait that implementers of the RPC interface should implement.
 #[async_trait]
-pub trait RpcHandler: DynClone + Sync
+pub trait RpcHandler: Sync
 where
   Self: 'static,
 {

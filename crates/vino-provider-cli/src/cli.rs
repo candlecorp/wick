@@ -528,7 +528,6 @@ mod tests {
   use std::time::Duration;
 
   use anyhow::Result;
-  use once_cell::sync::Lazy;
   use test_vino_provider::Provider;
   use tokio::time::sleep;
   use tonic::transport::Uri;
@@ -537,7 +536,9 @@ mod tests {
 
   use super::*;
 
-  static PROVIDER: Lazy<SharedRpcHandler> = Lazy::new(|| Arc::new(Provider::default()));
+  fn get_provider() -> SharedRpcHandler {
+    Arc::new(Provider::default())
+  }
 
   #[test_logger::test(tokio::test)]
   async fn test_starts() -> Result<()> {
@@ -547,7 +548,7 @@ mod tests {
       ..Default::default()
     };
     options.rpc = Some(rpc_opts);
-    let config = start_server(PROVIDER.clone(), Some(options)).await?;
+    let config = start_server(get_provider(), Some(options)).await?;
     let rpc = config.rpc.unwrap();
     debug!("Waiting for server to start");
     sleep(Duration::from_millis(100)).await;
@@ -563,7 +564,7 @@ mod tests {
   // #[test_logger::test(tokio::test)]
   async fn _test_http() -> Result<()> {
     let config = start_server(
-      PROVIDER.clone(),
+      get_provider(),
       Some(Options {
         rpc: Some(ServerOptions {
           address: Some(Ipv4Addr::from_str("127.0.0.1")?),

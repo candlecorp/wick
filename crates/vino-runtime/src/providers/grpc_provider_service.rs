@@ -199,7 +199,6 @@ mod test {
 
   use std::time::Duration;
 
-  use once_cell::sync::Lazy;
   use test_vino_provider::Provider;
   use tokio::time::sleep;
   use vino_invocation_server::{
@@ -211,13 +210,16 @@ mod test {
   use super::*;
   use crate::test::prelude::assert_eq;
   type Result<T> = super::Result<T>;
-  static PROVIDER: Lazy<SharedRpcHandler> = Lazy::new(|| Arc::new(Provider::default()));
+
+  fn get_provider() -> SharedRpcHandler {
+    Arc::new(Provider::default())
+  }
 
   #[test_logger::test(tokio::test)]
   async fn test_initialize() -> Result<()> {
     let socket = bind_new_socket()?;
     let port = socket.local_addr()?.port();
-    let init_handle = make_rpc_server(socket, PROVIDER.clone());
+    let init_handle = make_rpc_server(socket, get_provider());
     let user_data = "test string payload";
 
     let mut service = GrpcProviderService::new("test".to_owned());

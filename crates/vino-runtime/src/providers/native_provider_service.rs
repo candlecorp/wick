@@ -1,10 +1,7 @@
 use futures::future::BoxFuture;
 use tokio::sync::mpsc::unbounded_channel;
 use tokio_stream::wrappers::UnboundedReceiverStream;
-use vino_rpc::{
-  clone_box,
-  SharedRpcHandler,
-};
+use vino_rpc::SharedRpcHandler;
 
 use crate::dev::prelude::*;
 use crate::error::ProviderError;
@@ -31,7 +28,8 @@ impl InvocationHandler for NativeProviderService {
     trace!("{}:InitComponents:[NS:{}]", PREFIX, self.namespace);
 
     let state = some_or_bail!(&self.state, Err(ProviderError::Uninitialized(1000)));
-    let provider = clone_box(&*state.provider);
+    // let provider = clone_box(&*state.provider);
+    let provider = state.provider.clone();
 
     let mut list = provider.get_list()?;
     drop(provider);
@@ -50,7 +48,8 @@ impl InvocationHandler for NativeProviderService {
     );
 
     let state = self.state.as_ref().unwrap();
-    let provider = clone_box(&*state.provider);
+    // let provider = clone_box(&*state.provider);
+    let provider = state.provider.clone();
 
     let tx_id = msg.get_tx_id().to_owned();
     let component = msg.get_target().clone();

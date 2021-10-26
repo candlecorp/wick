@@ -157,7 +157,6 @@ impl PortStatuses {
     port: &ConnectionTargetDefinition,
   ) -> Option<MessageTransport> {
     let result = self.buffermap.take(port);
-    debug!("taking: {:?}", result);
     if matches!(result, Some(MessageTransport::Signal(MessageSignal::Done))) {
       self.close(port);
     } else if !self.buffermap.has_data(port) {
