@@ -10,6 +10,10 @@ pub enum WasmProviderError {
   ClaimsInvalid(String),
   #[error("Component error : {0}")]
   ComponentError(String),
+
+  #[error("WASM provider requested data for a nonexistant call.")]
+  TxNotFound,
+
   #[error(transparent)]
   WapcError(#[from] wapc::errors::Error),
 

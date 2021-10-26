@@ -1,12 +1,16 @@
 use std::collections::{
+  HashMap,
   HashSet,
   VecDeque,
 };
 use std::str::FromStr;
 use std::sync::Arc;
-use std::time::Instant;
+use std::time::{
+  Instant,
+  SystemTime,
+};
 
-use parking_lot::Mutex;
+use parking_lot::RwLock;
 use tokio::sync::mpsc::unbounded_channel;
 use tokio_stream::wrappers::UnboundedReceiverStream;
 use vino_codec::messagepack::{
@@ -34,6 +38,7 @@ use wapc::{
   WapcHost,
   WasiParams,
 };
+use wasmtime_provider::WasmtimeEngineProvider;
 
 use crate::error::WasmProviderError;
 use crate::provider::HostLinkCallback;
@@ -51,10 +56,17 @@ type InvocationFn = dyn Fn(&str, &str, &[u8]) -> std::result::Result<Vec<u8>, Bo
   + Send;
 
 #[must_use]
-#[allow(missing_debug_implementations)]
 pub struct WasmHostBuilder {
   wasi_params: Option<WasiParams>,
   callback: Option<Box<HostLinkCallback>>,
+}
+
+impl std::fmt::Debug for WasmHostBuilder {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    f.debug_struct("WasmHostBuilder")
+      .field("wasi_params", &self.wasi_params)
+      .finish()
+  }
 }
 
 impl WasmHostBuilder {
@@ -95,18 +107,32 @@ impl Default for WasmHostBuilder {
 
 #[derive()]
 pub struct WasmHost {
-  host: Mutex<WapcHost>,
+  host: RwLock<WapcHost<WasmtimeEngineProvider>>,
   claims: Claims<ProviderClaims>,
-  buffer: Arc<Mutex<PortBuffer>>,
-  closed_ports: Arc<Mutex<HashSet<String>>>,
+  tx_map: Arc<RwLock<HashMap<u32, RwLock<Transaction>>>>,
+  rng: vino_random::Random,
+}
+
+#[derive(Debug)]
+struct Transaction {
+  buffer: PortBuffer,
+  ports: HashSet<String>,
+}
+
+impl Default for Transaction {
+  fn default() -> Self {
+    Self {
+      ports: HashSet::new(),
+      buffer: VecDeque::new(),
+    }
+  }
 }
 
 impl std::fmt::Debug for WasmHost {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     f.debug_struct("WasmHost")
       .field("claims", &self.claims)
-      .field("buffer", &self.buffer)
-      .field("closed_ports", &self.closed_ports)
+      .field("tx_map", &self.tx_map)
       .finish()
   }
 }
@@ -125,6 +151,7 @@ impl WasmHost {
 
     let time = Instant::now();
 
+    #[cfg(feature = "wasmtime")]
     let engine = {
       let engine = wasmtime_provider::WasmtimeEngineProvider::new_with_cache(
         &module.bytes,
@@ -140,39 +167,50 @@ impl WasmHost {
     };
 
     let engine = Box::new(engine);
-    let buffer = Arc::new(Mutex::new(PortBuffer::new()));
-    let buffer_inner = buffer.clone();
-    let closed_ports = Arc::new(Mutex::new(HashSet::new()));
-    let ports_inner = closed_ports.clone();
+    let tx_map: Arc<RwLock<HashMap<u32, RwLock<Transaction>>>> =
+      Arc::new(RwLock::new(HashMap::new()));
+    let tx_map_inner = tx_map.clone();
 
     let handle_port_output: Box<InvocationFn> =
-      Box::new(move |port: &str, output_signal, payload: &[u8]| {
-        let mut ports_locked = ports_inner.lock();
-        let mut buffer_locked = buffer_inner.lock();
+      Box::new(move |port: &str, output_signal, bytes: &[u8]| {
+        let payload = &bytes[4..bytes.len()];
+        let mut be_bytes: [u8; 4] = [0; 4];
+        be_bytes.copy_from_slice(&bytes[0..4]);
+        let id: u32 = u32::from_be_bytes(be_bytes);
+        trace!("WASM:ID[{}]:OUTPUT[{}]:PAYLOAD{:?}", id, port, payload,);
+        let mut lock = tx_map_inner.write();
+        let mut tx = lock
+          .get_mut(&id)
+          .ok_or(format!("Invalid transaction (TX: {})", id))?
+          .write();
 
         match OutputSignal::from_str(output_signal) {
           Ok(signal) => match signal {
             OutputSignal::Output => {
-              if ports_locked.contains(port) {
-                Err(format!("Port '{}' already closed", port).into())
+              if tx.ports.contains(port) {
+                Err(format!("Port '{}' already closed for (TX: {})", port, id).into())
               } else {
-                buffer_locked.push_back((port.to_owned(), payload.into()));
+                tx.buffer.push_back((port.to_owned(), payload.into()));
                 Ok(vec![])
               }
             }
             OutputSignal::OutputDone => {
-              if ports_locked.contains(port) {
-                Err(format!("Port '{}' already closed", port).into())
+              if tx.ports.contains(port) {
+                Err(format!("Port '{}' already closed for (TX: {})", port, id).into())
               } else {
-                buffer_locked.push_back((port.to_owned(), payload.into()));
-                buffer_locked.push_back((port.to_owned(), Packet::V0(Payload::Done)));
-                ports_locked.insert(port.to_owned());
+                tx.buffer.push_back((port.to_owned(), payload.into()));
+                tx.buffer
+                  .push_back((port.to_owned(), Packet::V0(Payload::Done)));
+                trace!("WASM:ID[{}]:OUTPUT[{}]:CLOSING", id, port);
+                tx.ports.insert(port.to_owned());
                 Ok(vec![])
               }
             }
             OutputSignal::Done => {
-              buffer_locked.push_back((port.to_owned(), Packet::V0(Payload::Done)));
-              ports_locked.insert(port.to_owned());
+              tx.buffer
+                .push_back((port.to_owned(), Packet::V0(Payload::Done)));
+              trace!("WASM:ID[{}]:OUTPUT[{}]:CLOSING", id, port);
+              tx.ports.insert(port.to_owned());
               Ok(vec![])
             }
           },
@@ -205,6 +243,12 @@ impl WasmHost {
                   p
                 })
                 .collect();
+              trace!(
+                "WASM:LINK_CALL:PROVIDER[{}]:COMPONENT[{}]:PAYLOAD:{:?}",
+                origin,
+                target,
+                packets
+              );
               Ok(serialize(&packets)?)
             }
             Err(e) => Err(e.into()),
@@ -222,6 +266,12 @@ impl WasmHost {
           LogLevel::Warn => warn!("WASM: {}", msg),
           LogLevel::Debug => debug!("WASM: {}", msg),
           LogLevel::Trace => trace!("WASM: {}", msg),
+          LogLevel::Mark => {
+            let now = SystemTime::now()
+              .duration_since(SystemTime::UNIX_EPOCH)
+              .unwrap();
+            trace!("WASM:[{}]: {}", now.as_millis(), msg);
+          }
         },
         Err(_) => {
           return Err(format!("Invalid log level: {}", level).into());
@@ -232,19 +282,28 @@ impl WasmHost {
 
     let host = WapcHost::new(engine, move |_id, command, arg1, arg2, payload| {
       trace!(
-        "WASM:WAPC_CALLBACK[CMD={}][arg1={}][arg2={}][PAYLOAD={:?}]",
+        "WASM:WAPC_CALLBACK:CMD[{}]:ARG1[{}]:ARG2[{}]:PAYLOAD[{} bytes]",
         command,
         arg1,
         arg2,
-        payload
+        payload.len()
       );
 
-      match HostCommand::from_str(command) {
+      let now = Instant::now();
+      let result = match HostCommand::from_str(command) {
         Ok(HostCommand::Output) => handle_port_output(arg1, arg2, payload),
         Ok(HostCommand::LinkCall) => handle_link_call(arg1, arg2, payload),
         Ok(HostCommand::Log) => handle_log_call(arg1, arg2, payload),
         Err(_) => Err(format!("Invalid command: {}", command).into()),
-      }
+      };
+      trace!(
+        "WASM:WAPC_CALLBACK:CMD[{}]:ARG1[{}]:ARG2[{}]:TOOK[{} μs]",
+        command,
+        arg1,
+        arg2,
+        now.elapsed().as_micros()
+      );
+      result
     })?;
     debug!(
       "WASM:Wasmtime initialized in {} μs",
@@ -253,30 +312,68 @@ impl WasmHost {
 
     Ok(Self {
       claims: module.claims().clone(),
-      host: Mutex::new(host),
-      buffer,
-      closed_ports,
+      host: RwLock::new(host),
+      tx_map,
+      rng: vino_random::Random::new(),
     })
   }
 
-  pub fn call(&self, component_name: &str, payload: &[u8]) -> Result<TransportStream> {
-    let host = self.host.lock();
-    {
-      self.buffer.lock().clear();
-      self.closed_ports.lock().clear();
+  fn new_tx(&self) -> u32 {
+    let mut id = self.rng.get_u32();
+    while self.tx_map.read().contains_key(&id) {
+      id = self.rng.get_u32();
     }
-    debug!("WASM:INVOKE[{}]:PAYLOAD{:?}", component_name, payload);
-    trace!("WASM:INVOKE[{}]:START", component_name);
+    self
+      .tx_map
+      .write()
+      .insert(id, RwLock::new(Transaction::default()));
+    id
+  }
+
+  fn take_tx(&self, id: u32) -> Result<RwLock<Transaction>> {
+    self
+      .tx_map
+      .write()
+      .remove(&id)
+      .ok_or(WasmProviderError::TxNotFound)
+  }
+
+  pub fn call(
+    &self,
+    component_name: &str,
+    input_map: &HashMap<String, Vec<u8>>,
+  ) -> Result<TransportStream> {
+    let id = self.new_tx();
+
+    debug!(
+      "WASM:INVOKE[{}]:ID[{}]:PAYLOAD{:?}",
+      component_name, id, input_map
+    );
+    trace!("WASM:INVOKE[{}]:ID[{}]:START", component_name, id);
+
+    let payload = serialize(&(id, &input_map)).map_err(WasmProviderError::CodecError)?;
+
     let now = Instant::now();
-    let _result = host.call(component_name, payload)?;
+    let host = self.host.write();
+    let result = host.call(component_name, &payload);
+    drop(host);
     trace!(
-      "WASM:INVOKE[{}]:FINISH[{} μs]",
+      "WASM:INVOKE[{}]:ID[{}]:FINISH[{} μs]",
       component_name,
+      id,
       now.elapsed().as_micros()
     );
+    debug!(
+      "WASM:INVOKE[{}]:ID[{}]:RESULT:{:?}",
+      component_name, id, result
+    );
+    let transaction = self.take_tx(id)?;
+    if let Err(e) = result {
+      return Err(e.into());
+    };
     let (tx, rx) = unbounded_channel();
-    let mut locked = self.buffer.lock();
-    while let Some((port, payload)) = locked.pop_front() {
+    let mut locked = transaction.write();
+    while let Some((port, payload)) = locked.buffer.pop_front() {
       let transport = TransportWrapper {
         port,
         payload: payload.into(),

@@ -74,6 +74,7 @@
 
 pub mod error;
 pub mod helpers;
+// mod host_pool;
 pub mod provider;
 pub mod wapc_module;
 pub mod wasm_host;

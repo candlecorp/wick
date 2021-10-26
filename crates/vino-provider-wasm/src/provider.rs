@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::sync::Arc;
 
 use async_trait::async_trait;
 use vino_codec::messagepack::serialize;
@@ -14,6 +13,7 @@ use vino_transport::TransportMap;
 pub use wapc::WasiParams;
 
 use crate::error::LinkError;
+// use crate::host_pool::HostPool;
 use crate::wapc_module::WapcModule;
 use crate::wasm_host::{
   WasmHost,
@@ -27,11 +27,20 @@ pub struct Context {
   pub collections: HashMap<String, Vec<String>>,
 }
 
-#[derive(Clone, Debug)]
+#[derive()]
 pub struct Provider {
-  host: Arc<WasmHost>,
+  // pool: Arc<HostPool>,
+  pool: WasmHost,
   #[allow(unused)]
   config: Vec<u8>,
+}
+
+impl std::fmt::Debug for Provider {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    f.debug_struct("Provider")
+      .field("config", &self.config)
+      .finish()
+  }
 }
 
 pub type HostLinkCallback =
@@ -53,10 +62,11 @@ impl Provider {
     }
     let host = builder.build(module)?;
 
-    let host = Arc::new(host);
+    let host = host;
+    // let pool = HostPool::start_hosts(move || host.clone(), 1);
 
     Ok(Self {
-      host,
+      pool: host,
       config: serialize(&config.unwrap_or_default())?,
     })
   }
@@ -71,16 +81,13 @@ impl RpcHandler for Provider {
       .try_into_messagepack_bytes()
       .map_err(|e| RpcError::ProviderError(e.to_string()))?;
 
-    let payload =
-      serialize(&messagepack_map).map_err(|e| RpcError::ProviderError(e.to_string()))?;
-
-    let outputs = self.host.call(&component, &payload)?;
+    let outputs = self.pool.call(&component, &messagepack_map)?;
 
     Ok(Box::pin(outputs))
   }
 
   fn get_list(&self) -> RpcResult<Vec<HostedType>> {
-    let signature = self.host.get_components();
+    let signature = self.pool.get_components();
 
     trace!(
       "WASM:COMPONENTS:[{}]",
