@@ -38,7 +38,6 @@ use wapc::{
   WapcHost,
   WasiParams,
 };
-use wasmtime_provider::WasmtimeEngineProvider;
 
 use crate::error::WasmProviderError;
 use crate::provider::HostLinkCallback;
@@ -107,7 +106,7 @@ impl Default for WasmHostBuilder {
 
 #[derive()]
 pub struct WasmHost {
-  host: RwLock<WapcHost<WasmtimeEngineProvider>>,
+  host: RwLock<WapcHost>,
   claims: Claims<ProviderClaims>,
   tx_map: Arc<RwLock<HashMap<u32, RwLock<Transaction>>>>,
   rng: vino_random::Random,
@@ -348,8 +347,10 @@ impl WasmHost {
       .remove(&id)
       .ok_or(WasmProviderError::TxNotFound)
   }
+}
 
-  pub fn call(
+impl RpcProxy for WasmHost {
+  fn call(
     &self,
     component_name: &str,
     input_map: &HashMap<String, Vec<u8>>,
@@ -395,8 +396,18 @@ impl WasmHost {
     Ok(TransportStream::new(UnboundedReceiverStream::new(rx)))
   }
 
-  pub fn get_components(&self) -> &ProviderSignature {
+  fn get_components(&self) -> &ProviderSignature {
     let claims = &self.claims;
     &claims.metadata.as_ref().unwrap().interface
   }
+}
+
+pub(crate) trait RpcProxy {
+  fn call(
+    &self,
+    component_name: &str,
+    input_map: &HashMap<String, Vec<u8>>,
+  ) -> Result<TransportStream>;
+
+  fn get_components(&self) -> &ProviderSignature;
 }

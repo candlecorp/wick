@@ -33,7 +33,6 @@
   clippy::let_and_return,
   clippy::string_to_string,
   clippy::try_err,
-  clippy::if_then_some_else_none,
   bad_style,
   clashing_extern_declarations,
   const_err,
@@ -70,6 +69,8 @@
 )]
 // !!END_LINTS
 // Add exceptions here
+#![allow()]
+
 #![allow(missing_docs)]
 
 pub mod error;

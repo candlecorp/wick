@@ -62,7 +62,7 @@ impl Provider {
     }
     let host = builder.build(module)?;
 
-    let pool = HostPool::start_hosts(move || host.clone(), max_threads);
+    let pool = HostPool::start_hosts(move || Box::new(host.clone()), max_threads);
 
     Ok(Self {
       pool: Arc::new(pool),

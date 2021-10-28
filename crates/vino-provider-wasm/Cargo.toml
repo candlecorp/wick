@@ -34,14 +34,10 @@ parking_lot = "0.11.1"
 # Forks until https://github.com/wapc/wapc-rust/pull/24 is resolved
 # wasmtime-provider = { version = "0.0.7", optional = true, features = ["cache"] }
 # wapc = "0.10.1"
-# wasmtime-provider = { path = "../../forks/wasmtime-provider", optional = true, features = [
-#   "cache",
-# ] }
-# wapc = { path = "../../forks/wapc-rust" }
-wasmtime-provider = { path = "../../../wapc/crates/wasmtime-provider", optional = true, features = [
+wasmtime-provider = { path = "../../forks/wasmtime-provider", optional = true, features = [
   "cache",
 ] }
-wapc = { path = "../../../wapc/crates/wapc-rust" }
+wapc = { path = "../../forks/wapc-rust" }
 
 futures = "0.3.15"
 tokio-stream = "0.1.7"
