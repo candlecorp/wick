@@ -1,0 +1,17 @@
+[package]
+name = "runtime-testutils"
+version = "0.1.0"
+authors = ["Jarrod Overson <jsoverson@gmail.com>"]
+edition = "2018"
+license = "BSD-3-Clause"
+
+[features]
+test-integration = []
+
+[dependencies]
+vino-runtime = { path = "../../../vino-runtime" }
+vino-lattice = { path = "../../../vino-lattice" }
+vino-wascap = { path = "../../../vino-wascap" }
+vino-manifest = { path = "../../../vino-manifest" }
+tracing = "0.1"
+anyhow = "1.0"

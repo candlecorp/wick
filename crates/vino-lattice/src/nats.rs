@@ -28,7 +28,7 @@ pub struct NatsOptions {
 #[derive(Clone, Debug)]
 pub(crate) struct Nats {
   nc: Connection,
-  pub timeout: Duration,
+  timeout: Duration,
 }
 
 impl Nats {
@@ -161,7 +161,7 @@ impl From<Message> for NatsMessage {
 }
 
 impl NatsMessage {
-  pub async fn respond(&self, data: &[u8]) -> Result<()> {
+  pub(crate) async fn respond(&self, data: &[u8]) -> Result<()> {
     trace!(
       "LATTICE:MSG:RESPOND[{}]:PAYLOAD{:?}",
       self.inner.reply.as_ref().unwrap_or(&"".to_owned()),
@@ -171,11 +171,11 @@ impl NatsMessage {
     msg.respond(data).await.map_err(LatticeError::ResponseFail)
   }
 
-  pub fn data(&self) -> &[u8] {
+  pub(crate) fn data(&self) -> &[u8] {
     &self.inner.data
   }
 
-  pub fn deserialize<'de, T: Deserialize<'de>>(&'de self) -> Result<T> {
+  pub(crate) fn deserialize<'de, T: Deserialize<'de>>(&'de self) -> Result<T> {
     deserialize(&self.inner.data).map_err(|e| LatticeError::MessageDeserialization(e.to_string()))
   }
 }

@@ -1,7 +1,6 @@
 use futures::prelude::*;
 use log::debug;
 use test_vino_provider::Provider;
-use vino_macros::*;
 use vino_rpc::RpcHandler;
 
 #[test_logger::test(tokio::test)]

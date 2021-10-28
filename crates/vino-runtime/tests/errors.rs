@@ -1,14 +1,13 @@
-#[path = "./runtime_utils/mod.rs"]
-mod utils;
 use std::collections::HashMap;
 
-use utils::*;
+use pretty_assertions::assert_eq;
+use runtime_testutils::*;
 use vino_entity::Entity;
 use vino_runtime::prelude::TransportWrapper;
 use vino_transport::MessageTransport;
+type Result<T> = anyhow::Result<T, anyhow::Error>;
 
 #[test_logger::test(tokio::test)]
-
 async fn panics() -> Result<()> {
   let (network, _) = init_network_from_yaml("./manifests/v0/errors/panics.yaml").await?;
 

@@ -3,6 +3,7 @@
 // Do not change anything between the START_LINTS and END_LINTS line.
 // This is automatically generated. Add exceptions after this section.
 #![deny(
+  clippy::expect_used,
   clippy::explicit_deref_methods,
   clippy::option_if_let_else,
   clippy::await_holding_lock,
@@ -21,6 +22,7 @@
   clippy::needless_pass_by_value,
   clippy::option_option,
   clippy::redundant_else,
+  clippy::semicolon_if_nothing_returned,
   clippy::too_many_lines,
   clippy::trivially_copy_pass_by_ref,
   clippy::unnested_or_patterns,
@@ -31,7 +33,6 @@
   clippy::let_and_return,
   clippy::string_to_string,
   clippy::try_err,
-  clippy::if_then_some_else_none,
   bad_style,
   clashing_extern_declarations,
   const_err,

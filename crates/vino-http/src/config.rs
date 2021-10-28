@@ -34,6 +34,7 @@ const DEFAULT_EXPOSED_HEADERS: [&str; 2] = ["grpc-status", "grpc-message"];
 /// * `expose-headers`: `grpc-status,grpc-message`. Configurable but values can only be added.
 ///    `grpc-status` and `grpc-message` will always be exposed.
 #[derive(Debug, Clone)]
+#[must_use]
 pub struct Config {
   pub(crate) allowed_origins: AllowedOrigins,
   pub(crate) exposed_headers: HashSet<HeaderName>,
@@ -63,7 +64,7 @@ impl Config {
       allowed_origins: AllowedOrigins::Any,
       exposed_headers: DEFAULT_EXPOSED_HEADERS
         .iter()
-        .cloned()
+        .copied()
         .map(HeaderName::from_static)
         .collect(),
       max_age: Some(DEFAULT_MAX_AGE),

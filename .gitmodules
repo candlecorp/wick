@@ -2,3 +2,9 @@
 path = sdk
 url = git@github.com:vinodotdev/vino-sdk.git
 branch = main
+[submodule "forks/wapc-rust"]
+path = forks/wapc-rust
+url = git@github.com:jsoverson/wapc-rust.git
+[submodule "forks/wasmtime-provider"]
+path = forks/wasmtime-provider
+url = git@github.com:jsoverson/wasmtime-provider.git

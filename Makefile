@@ -99,11 +99,14 @@ test: $(TEST_WASM)
 	cargo build --workspace # necessary to ensure binaries are built
 	cargo test --workspace
 
+.PHONY: integration
+integration: $(TEST_WASM)
+	cargo deny check licenses --hide-inclusion-graph
+	cargo build --workspace # necessary to ensure binaries are built
+	cargo test --workspace --features test-integration --features vino-lattice/test-integration --features vino-provider-lattice/test-integration --features vino-runtime/test-integration --features vino-keyvalue-redis/test-integration
+
 .PHONY: update-lint
 update-lint:
-	@echo Checking git status...
-	@[[ -z `git status -s` ]]
-	@echo Good to go
 	npm run update-lint
 
 .PHONY: build-cross-debug

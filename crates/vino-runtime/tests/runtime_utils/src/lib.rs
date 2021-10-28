@@ -2,10 +2,6 @@ use std::fs;
 use std::sync::Arc;
 use std::time::Duration;
 
-pub use anyhow::Result;
-pub use maplit::hashmap;
-pub use pretty_assertions::assert_eq as equals;
-pub use tracing::*;
 use vino_lattice::nats::NatsOptions;
 use vino_manifest::{
   HostManifest,
@@ -19,15 +15,18 @@ use vino_runtime::network::{
   NetworkBuilder,
 };
 use vino_wascap::KeyPair;
+#[macro_use]
+extern crate tracing;
 
 #[allow(dead_code)]
-pub async fn init_network_from_yaml(path: &str) -> Result<(Network, String)> {
+pub async fn init_network_from_yaml(path: &str) -> anyhow::Result<(Network, String)> {
   let manifest = HostManifest::from_yaml(&fs::read_to_string(path)?)?;
   let def = NetworkDefinition::from(manifest.network());
   debug!("Manifest loaded");
   let kp = KeyPair::new_server();
 
   let mut builder = NetworkBuilder::from_definition(def, &kp.seed()?)?;
+  #[cfg(feature = "test-integration")]
   if let Ok(url) = std::env::var("NATS_URL") {
     let lattice = vino_lattice::lattice::Lattice::connect(NatsOptions {
       address: url,
@@ -38,8 +37,6 @@ pub async fn init_network_from_yaml(path: &str) -> Result<(Network, String)> {
     })
     .await?;
     builder = builder.lattice(Arc::new(lattice));
-  } else {
-    panic!("No NATS_URL set for tests");
   }
   let network = builder.build();
 
@@ -53,7 +50,7 @@ pub async fn init_network_from_yaml(path: &str) -> Result<(Network, String)> {
 }
 
 #[allow(dead_code)]
-pub fn load_network_manifest(path: &str) -> Result<NetworkDefinition> {
+pub fn load_network_manifest(path: &str) -> anyhow::Result<NetworkDefinition> {
   let manifest = NetworkManifest::V0(vino_manifest::v0::NetworkManifest::from_yaml(
     &fs::read_to_string(path)?,
   )?);

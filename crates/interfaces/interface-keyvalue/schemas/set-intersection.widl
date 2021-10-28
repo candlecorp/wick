@@ -1,9 +1,0 @@
-namespace "set-intersection"
-
-type Inputs {
-  keys: [string]
-}
-
-type Outputs {
-  keys: [string]
-}

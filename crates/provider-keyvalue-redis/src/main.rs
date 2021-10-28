@@ -33,7 +33,6 @@
   clippy::let_and_return,
   clippy::string_to_string,
   clippy::try_err,
-  clippy::if_then_some_else_none,
   bad_style,
   clashing_extern_declarations,
   const_err,
@@ -59,7 +58,7 @@
   unreachable_pub,
   unsafe_code,
   unstable_features,
-  // unused,
+  unused,
   unused_allocation,
   unused_comparisons,
   unused_import_braces,
@@ -98,6 +97,7 @@ async fn main() -> Result<(), vino_keyvalue_redis::error::Error> {
   let _guard = vino_provider_cli::init_logging(&opts.options.logging.name("keyvalue-redis"));
   let provider = Provider::default();
   provider.connect("default".to_owned(), url.clone()).await?;
+  trace!("KV:REDIS:CONNECTED");
 
   vino_provider_cli::init_cli(Arc::new(provider), Some(opts.options.into())).await?;
   Ok(())

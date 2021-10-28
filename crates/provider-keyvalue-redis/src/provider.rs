@@ -116,8 +116,8 @@ impl RpcHandler for Provider {
   }
 }
 
-#[cfg(test)]
-mod tests {
+#[cfg(all(test, feature = "test-integration"))]
+mod integration {
 
   use anyhow::Result;
   use rand::Rng;
@@ -420,14 +420,14 @@ mod tests {
     let m1 = get_random_string();
     let m2 = get_random_string();
     let m3 = get_random_string();
-    let mut all = [m1.clone(), m2.clone(), m3.clone()];
+    let all = [m1.clone(), m2.clone(), m3.clone()];
     set_add(&provider, &key, &m1).await?;
     set_add(&provider, &key, &m2).await?;
     set_add(&provider, &key, &m3).await?;
     let (cursor, values) = set_scan(&provider, &key, "0", 1).await?;
     assert!(values.len() >= 1);
     assert!(all.contains(&values[0]));
-    let (cursor, values) = set_scan(&provider, &key, &cursor, 1).await?;
+    let (_cursor, values) = set_scan(&provider, &key, &cursor, 1).await?;
     assert!(values.len() >= 1);
     assert!(all.contains(&values[0]));
 

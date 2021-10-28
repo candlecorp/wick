@@ -41,6 +41,8 @@ use crate::{
 const PREFIX: &str = "rpc";
 
 #[derive(Clone)]
+#[must_use]
+#[allow(missing_debug_implementations)]
 pub struct ProviderService {
   provider: SharedRpcHandler,
   cors: Arc<Cors>,
@@ -241,14 +243,10 @@ pub fn has_rpc_call(req: &Request<hyper::Body>) -> Option<RequestKind> {
   if let Some(command) = parts.next() {
     debug!("HTTP:COMMAND[{}]", command);
     match command {
-      "invoke" => {
-        if let Some(component) = parts.next() {
-          let entity = Entity::component_direct(component);
-          Some(RequestKind::Invocation { entity })
-        } else {
-          None
-        }
-      }
+      "invoke" => parts.next().map(|component| {
+        let entity = Entity::component_direct(component);
+        RequestKind::Invocation { entity }
+      }),
       "list" => Some(RequestKind::List),
       _ => None,
     }
@@ -267,18 +265,22 @@ impl tonic::transport::NamedService for ProviderService {
   const NAME: &'static str = PREFIX;
 }
 
+#[derive(Debug)]
+#[must_use]
 pub struct ProviderServiceResponse {
   status: ResponseStatus,
   body: Vec<u8>,
 }
 
+#[derive(Debug, Copy, Clone)]
 pub enum ResponseStatus {
   Ok,
   Error,
 }
 
 impl ResponseStatus {
-  pub fn to_http_code(&self) -> http::StatusCode {
+  #[must_use]
+  pub fn to_http_code(&self) -> StatusCode {
     match self {
       ResponseStatus::Ok => http::StatusCode::OK,
       ResponseStatus::Error => http::StatusCode::INTERNAL_SERVER_ERROR,

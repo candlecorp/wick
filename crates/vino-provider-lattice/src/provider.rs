@@ -63,7 +63,7 @@ impl RpcHandler for Provider {
   }
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "test-integration"))]
 mod tests {
 
   use anyhow::Result as TestResult;

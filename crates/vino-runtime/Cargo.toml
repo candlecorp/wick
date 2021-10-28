@@ -6,6 +6,7 @@ edition = "2018"
 license = "BSD-3-Clause"
 
 [features]
+test-integration = ["runtime-testutils/test-integration"]
 
 [dependencies]
 vino-packet = { path = "../../sdk/crates/vino-packet" }
@@ -56,7 +57,6 @@ async-recursion = "0.3.2"
 
 [dev-dependencies]
 test-vino-provider = { path = "../integration/test-vino-provider" }
-
 logger = { path = "../logger" }
 test-logger = { path = "../test-logger" }
 maplit = "1.0.2"
@@ -64,11 +64,4 @@ pretty_assertions = "0.7.2"
 criterion = { version = "0.3.5", features = ["async", "async_tokio"] }
 lazy_static = "1.4.0"
 anyhow = "1.0.42"
-
-[[bench]]
-name = "wapc"
-harness = false
-
-[[bench]]
-name = "echo"
-harness = false
+runtime-testutils = { path = "./tests/runtime_utils" }

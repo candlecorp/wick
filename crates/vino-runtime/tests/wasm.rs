@@ -1,11 +1,11 @@
-#[path = "./runtime_utils/mod.rs"]
-mod utils;
+use runtime_testutils::*;
 use tokio_stream::StreamExt;
-use utils::*;
 use vino_entity::Entity;
 use vino_runtime::prelude::TransportWrapper;
 use vino_transport::MessageTransport;
-
+type Result<T> = anyhow::Result<T, anyhow::Error>;
+use maplit::hashmap;
+use pretty_assertions::assert_eq;
 #[test_logger::test(tokio::test)]
 async fn good_wapc_component() -> Result<()> {
   let (network, _) = init_network_from_yaml("./manifests/v0/wapc-component.yaml").await?;
@@ -25,7 +25,7 @@ async fn good_wapc_component() -> Result<()> {
   let output: TransportWrapper = messages.pop().unwrap();
   let result: String = output.payload.try_into()?;
   println!("Output for first run: {:?}", result);
-  equals!(result, "1234567890");
+  assert_eq!(result, "1234567890");
 
   let data = hashmap! {
       "input" => "1234",
@@ -41,7 +41,7 @@ async fn good_wapc_component() -> Result<()> {
 
   let output: TransportWrapper = messages.pop().unwrap();
 
-  equals!(
+  assert_eq!(
     output.payload,
     MessageTransport::exception("Needs to be longer than 8 characters".to_owned())
   );
@@ -67,7 +67,7 @@ async fn wapc_stream() -> Result<()> {
   assert_eq!(messages.len(), 5);
   for msg in messages {
     let result: String = msg.payload.try_into()?;
-    equals!(result, "Hello world");
+    assert_eq!(result, "Hello world");
   }
 
   Ok(())
@@ -115,7 +115,7 @@ async fn wasm_link_call() -> Result<()> {
   let output: TransportWrapper = messages.pop().unwrap();
   let result: String = output.payload.try_into()?;
   println!("Output for first run: {:?}", result);
-  equals!(result, "DLROW OLLEH");
+  assert_eq!(result, "DLROW OLLEH");
 
   Ok(())
 }

@@ -1,10 +1,83 @@
+// !!START_LINTS
+// Vino lints
+// Do not change anything between the START_LINTS and END_LINTS line.
+// This is automatically generated. Add exceptions after this section.
+#![deny(
+  clippy::expect_used,
+  clippy::explicit_deref_methods,
+  clippy::option_if_let_else,
+  clippy::await_holding_lock,
+  clippy::cloned_instead_of_copied,
+  clippy::explicit_into_iter_loop,
+  clippy::flat_map_option,
+  clippy::fn_params_excessive_bools,
+  clippy::implicit_clone,
+  clippy::inefficient_to_string,
+  clippy::large_types_passed_by_value,
+  clippy::manual_ok_or,
+  clippy::map_flatten,
+  clippy::map_unwrap_or,
+  clippy::must_use_candidate,
+  clippy::needless_for_each,
+  clippy::needless_pass_by_value,
+  clippy::option_option,
+  clippy::redundant_else,
+  clippy::semicolon_if_nothing_returned,
+  clippy::too_many_lines,
+  clippy::trivially_copy_pass_by_ref,
+  clippy::unnested_or_patterns,
+  clippy::future_not_send,
+  clippy::useless_let_if_seq,
+  clippy::str_to_string,
+  clippy::inherent_to_string,
+  clippy::let_and_return,
+  clippy::string_to_string,
+  clippy::try_err,
+  bad_style,
+  clashing_extern_declarations,
+  const_err,
+  dead_code,
+  deprecated,
+  explicit_outlives_requirements,
+  improper_ctypes,
+  invalid_value,
+  missing_copy_implementations,
+  missing_debug_implementations,
+  mutable_transmutes,
+  no_mangle_generic_items,
+  non_shorthand_field_patterns,
+  overflowing_literals,
+  path_statements,
+  patterns_in_fns_without_body,
+  private_in_public,
+  trivial_bounds,
+  trivial_casts,
+  trivial_numeric_casts,
+  type_alias_bounds,
+  unconditional_recursion,
+  unreachable_pub,
+  unsafe_code,
+  unstable_features,
+  unused,
+  unused_allocation,
+  unused_comparisons,
+  unused_import_braces,
+  unused_parens,
+  unused_qualifications,
+  while_true,
+  missing_docs
+)]
+// !!END_LINTS
+// Add exceptions here
+#![allow(missing_docs)]
+
 pub mod error;
 
 pub use error::TestError;
 use testanything::tap_test::TapTest;
 use testanything::tap_test_builder::TapTestBuilder;
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct TestRunner {
   desc: Option<String>,
   blocks: Vec<TestBlock>,
@@ -24,6 +97,7 @@ impl TestRunner {
     self.blocks.push(block);
   }
 
+  #[must_use]
   pub fn get_tap_lines(&self) -> &Vec<String> {
     &self.output
   }
@@ -32,7 +106,7 @@ impl TestRunner {
     let description = self
       .desc
       .as_ref()
-      .map_or_else(|| "TAP Stream".to_owned(), |v| v.to_owned());
+      .map_or_else(|| "TAP Stream".to_owned(), |v| v.clone());
 
     let mut total_tests = 0;
     for block in &self.blocks {
@@ -73,6 +147,7 @@ impl TestRunner {
     }
   }
 
+  #[must_use]
   pub fn num_failed(&self) -> u32 {
     let lines = self.get_tap_lines();
     let mut num_failed: u32 = 0;
@@ -97,7 +172,7 @@ where
   lines.iter().map(format_diagnostic_line).collect()
 }
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct TestBlock {
   desc: Option<String>,
   tests: Vec<TestCase>,
@@ -115,7 +190,7 @@ impl TestBlock {
 
   pub fn add_test<T: AsRef<str>>(
     &mut self,
-    test: impl FnOnce() -> bool + 'static,
+    test: impl FnOnce() -> bool + Sync + Send + 'static,
     description: T,
     diagnostics: Option<Vec<String>>,
   ) {
@@ -127,7 +202,7 @@ impl TestBlock {
     });
   }
 
-  pub fn num_tests(&self) -> usize {
+  fn num_tests(&self) -> usize {
     self.tests.len()
   }
 
@@ -146,21 +221,33 @@ impl TestBlock {
   }
 }
 
+#[derive()]
 struct TestCase {
-  test: Option<Box<dyn FnOnce() -> bool>>,
+  test: Option<Box<dyn FnOnce() -> bool + Sync + Send>>,
   result: Option<bool>,
   description: String,
   diagnostics: Vec<String>,
 }
 
+impl std::fmt::Debug for TestCase {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    f.debug_struct("TestCase")
+      .field("result", &self.result)
+      .field("description", &self.description)
+      .field("diagnostics", &self.diagnostics)
+      .finish()
+  }
+}
+
 impl TestCase {
-  pub fn exec(&mut self) -> bool {
+  fn exec(&mut self) -> bool {
     match self.test.take() {
       Some(test) => {
         let result = (test)();
         self.result = Some(result);
         result
       }
+      #[allow(clippy::expect_used)]
       None => self
         .result
         .expect("Attempted to execute a test without a test case"),

@@ -1,18 +1,19 @@
-use std::panic;
-
-use log::{
-  debug,
-  error,
-  warn,
-};
-use serde_json::json;
-use utils::*;
-use vino_transport::{
-  JsonError,
-  TransportJson,
-};
-
+#[cfg(feature = "test-integration")]
 mod test {
+  use std::panic;
+
+  use log::{
+    debug,
+    error,
+    warn,
+  };
+  use serde_json::json;
+  use utils::*;
+  use vino_transport::{
+    JsonError,
+    TransportJson,
+  };
+
   use super::*;
   #[test_logger::test(tokio::test)]
   async fn test_lattice() -> utils::TestResult<()> {

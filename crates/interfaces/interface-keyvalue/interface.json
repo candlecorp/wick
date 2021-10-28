@@ -44,22 +44,6 @@
         }
       }
     },
-    "key-increment": {
-      "name": "key-increment",
-      "inputs": {
-        "key": {
-          "type": "string"
-        },
-        "value": {
-          "type": "i32"
-        }
-      },
-      "outputs": {
-        "output": {
-          "type": "i32"
-        }
-      }
-    },
     "key-set": {
       "name": "key-set",
       "inputs": {
@@ -190,25 +174,6 @@
         }
       }
     },
-    "set-intersection": {
-      "name": "set-intersection",
-      "inputs": {
-        "keys": {
-          "type": "list",
-          "element": {
-            "type": "string"
-          }
-        }
-      },
-      "outputs": {
-        "keys": {
-          "type": "list",
-          "element": {
-            "type": "string"
-          }
-        }
-      }
-    },
     "set-remove": {
       "name": "set-remove",
       "inputs": {
@@ -250,25 +215,6 @@
         },
         "cursor": {
           "type": "string"
-        }
-      }
-    },
-    "set-union": {
-      "name": "set-union",
-      "inputs": {
-        "keys": {
-          "type": "list",
-          "element": {
-            "type": "string"
-          }
-        }
-      },
-      "outputs": {
-        "keys": {
-          "type": "list",
-          "element": {
-            "type": "string"
-          }
         }
       }
     }

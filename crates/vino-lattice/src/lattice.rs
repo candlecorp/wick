@@ -222,7 +222,7 @@ impl Lattice {
     self
       .handlers
       .write()
-      .insert(namespace.to_owned(), NsHandler::new(handle));
+      .insert(namespace.clone(), NsHandler::new(handle));
 
     let _ = ready_rx.await;
     Ok(())
@@ -395,7 +395,7 @@ pub enum LatticeRpcMessage {
   #[serde(rename = "0")]
   Invocation {
     #[serde(rename = "1")]
-    entity: vino_entity::Entity,
+    entity: Entity,
     #[serde(rename = "2")]
     payload: TransportMap,
   },
@@ -425,6 +425,7 @@ pub enum LatticeRpcResponse {
 }
 
 impl LatticeRpcResponse {
+  #[must_use]
   pub fn serialize(&self) -> Vec<u8> {
     serialize(self)
       .unwrap_or_else(|e| serialize(&LatticeRpcResponse::Error(e.to_string())).unwrap())
@@ -433,6 +434,32 @@ impl LatticeRpcResponse {
 
 #[cfg(test)]
 mod test {
+  use anyhow::Result;
+  use tracing::*;
+  use vino_codec::messagepack::deserialize;
+  use vino_transport::{
+    MessageTransport,
+    TransportWrapper,
+  };
+
+  use crate::lattice::LatticeRpcResponse;
+  #[test_logger::test]
+  fn test_serde() -> Result<()> {
+    let data = "Yay".to_owned();
+    let expected = LatticeRpcResponse::Output(TransportWrapper {
+      port: "port-name".to_owned(),
+      payload: MessageTransport::success(&data),
+    });
+    let bytes = expected.serialize();
+    debug!("{:?}", bytes);
+    let actual: LatticeRpcResponse = deserialize(&bytes)?;
+    assert_eq!(expected, actual);
+    Ok(())
+  }
+}
+
+#[cfg(all(test, feature = "test-integration"))]
+mod test_integration {
   use std::convert::TryInto;
   use std::sync::Arc;
 
@@ -440,11 +467,9 @@ mod test {
   use test_vino_provider::Provider;
   use tokio_stream::StreamExt;
   use tracing::*;
-  use vino_codec::messagepack::deserialize;
   use vino_transport::{
     MessageTransport,
     TransportMap,
-    TransportWrapper,
   };
   use vino_types::signatures::{
     ComponentMap,
@@ -459,7 +484,6 @@ mod test {
     Lattice,
     LatticeBuilder,
   };
-  use crate::lattice::LatticeRpcResponse;
 
   async fn get_lattice() -> Result<(Lattice, String)> {
     let lattice_builder = LatticeBuilder::new_from_env("test").unwrap();
@@ -471,20 +495,6 @@ mod test {
       .unwrap();
 
     Ok((lattice, namespace))
-  }
-
-  #[test_logger::test]
-  fn test_serde() -> Result<()> {
-    let data = "Yay".to_owned();
-    let expected = LatticeRpcResponse::Output(TransportWrapper {
-      port: "port-name".to_owned(),
-      payload: MessageTransport::success(&data),
-    });
-    let bytes = expected.serialize();
-    debug!("{:?}", bytes);
-    let actual: LatticeRpcResponse = deserialize(&bytes)?;
-    assert_eq!(expected, actual);
-    Ok(())
   }
 
   #[test_logger::test(tokio::test)]

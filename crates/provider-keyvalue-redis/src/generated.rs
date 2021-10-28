@@ -20,10 +20,6 @@ pub(crate) fn get_signature() -> ProviderSignature {
     vino_interface_keyvalue::key_get::signature(),
   );
   components.insert(
-    "key-increment".to_owned(),
-    vino_interface_keyvalue::key_increment::signature(),
-  );
-  components.insert(
     "key-set".to_owned(),
     vino_interface_keyvalue::key_set::signature(),
   );
@@ -52,20 +48,12 @@ pub(crate) fn get_signature() -> ProviderSignature {
     vino_interface_keyvalue::set_get::signature(),
   );
   components.insert(
-    "set-intersection".to_owned(),
-    vino_interface_keyvalue::set_intersection::signature(),
-  );
-  components.insert(
     "set-remove".to_owned(),
     vino_interface_keyvalue::set_remove::signature(),
   );
   components.insert(
     "set-scan".to_owned(),
     vino_interface_keyvalue::set_scan::signature(),
-  );
-  components.insert(
-    "set-union".to_owned(),
-    vino_interface_keyvalue::set_union::signature(),
   );
 
   ProviderSignature {
@@ -98,11 +86,6 @@ impl Dispatch for Dispatcher {
       }
       "key-get" => {
         self::key_get::Component::default()
-          .execute(context, data)
-          .await
-      }
-      "key-increment" => {
-        self::key_increment::Component::default()
           .execute(context, data)
           .await
       }
@@ -141,11 +124,6 @@ impl Dispatch for Dispatcher {
           .execute(context, data)
           .await
       }
-      "set-intersection" => {
-        self::set_intersection::Component::default()
-          .execute(context, data)
-          .await
-      }
       "set-remove" => {
         self::set_remove::Component::default()
           .execute(context, data)
@@ -153,11 +131,6 @@ impl Dispatch for Dispatcher {
       }
       "set-scan" => {
         self::set_scan::Component::default()
-          .execute(context, data)
-          .await
-      }
-      "set-union" => {
-        self::set_union::Component::default()
           .execute(context, data)
           .await
       }
@@ -256,38 +229,6 @@ pub(crate) mod key_get {
       let inputs = populate_inputs(data).map_err(|e| NativeComponentError::new(e.to_string()))?;
       let (outputs, stream) = get_outputs();
       let result = crate::components::key_get::job(inputs, outputs, context).await;
-      match result {
-        Ok(_) => Ok(stream),
-        Err(e) => Err(Box::new(NativeComponentError::new(format!(
-          "Job failed: {}",
-          e.to_string()
-        )))),
-      }
-    }
-  }
-}
-pub(crate) mod key_increment {
-  #![allow(unused)]
-  use std::collections::HashMap;
-
-  use async_trait::async_trait;
-  use vino_interface_keyvalue::key_increment::*;
-  use vino_provider::native::prelude::*;
-
-  #[derive(Default)]
-  pub(crate) struct Component {}
-
-  #[async_trait]
-  impl NativeComponent for Component {
-    type Context = crate::Context;
-    async fn execute(
-      &self,
-      context: Self::Context,
-      data: TransportMap,
-    ) -> Result<TransportStream, Box<NativeComponentError>> {
-      let inputs = populate_inputs(data).map_err(|e| NativeComponentError::new(e.to_string()))?;
-      let (outputs, stream) = get_outputs();
-      let result = crate::components::key_increment::job(inputs, outputs, context).await;
       match result {
         Ok(_) => Ok(stream),
         Err(e) => Err(Box::new(NativeComponentError::new(format!(
@@ -522,38 +463,6 @@ pub(crate) mod set_get {
     }
   }
 }
-pub(crate) mod set_intersection {
-  #![allow(unused)]
-  use std::collections::HashMap;
-
-  use async_trait::async_trait;
-  use vino_interface_keyvalue::set_intersection::*;
-  use vino_provider::native::prelude::*;
-
-  #[derive(Default)]
-  pub(crate) struct Component {}
-
-  #[async_trait]
-  impl NativeComponent for Component {
-    type Context = crate::Context;
-    async fn execute(
-      &self,
-      context: Self::Context,
-      data: TransportMap,
-    ) -> Result<TransportStream, Box<NativeComponentError>> {
-      let inputs = populate_inputs(data).map_err(|e| NativeComponentError::new(e.to_string()))?;
-      let (outputs, stream) = get_outputs();
-      let result = crate::components::set_intersection::job(inputs, outputs, context).await;
-      match result {
-        Ok(_) => Ok(stream),
-        Err(e) => Err(Box::new(NativeComponentError::new(format!(
-          "Job failed: {}",
-          e.to_string()
-        )))),
-      }
-    }
-  }
-}
 pub(crate) mod set_remove {
   #![allow(unused)]
   use std::collections::HashMap;
@@ -608,38 +517,6 @@ pub(crate) mod set_scan {
       let inputs = populate_inputs(data).map_err(|e| NativeComponentError::new(e.to_string()))?;
       let (outputs, stream) = get_outputs();
       let result = crate::components::set_scan::job(inputs, outputs, context).await;
-      match result {
-        Ok(_) => Ok(stream),
-        Err(e) => Err(Box::new(NativeComponentError::new(format!(
-          "Job failed: {}",
-          e.to_string()
-        )))),
-      }
-    }
-  }
-}
-pub(crate) mod set_union {
-  #![allow(unused)]
-  use std::collections::HashMap;
-
-  use async_trait::async_trait;
-  use vino_interface_keyvalue::set_union::*;
-  use vino_provider::native::prelude::*;
-
-  #[derive(Default)]
-  pub(crate) struct Component {}
-
-  #[async_trait]
-  impl NativeComponent for Component {
-    type Context = crate::Context;
-    async fn execute(
-      &self,
-      context: Self::Context,
-      data: TransportMap,
-    ) -> Result<TransportStream, Box<NativeComponentError>> {
-      let inputs = populate_inputs(data).map_err(|e| NativeComponentError::new(e.to_string()))?;
-      let (outputs, stream) = get_outputs();
-      let result = crate::components::set_union::job(inputs, outputs, context).await;
       match result {
         Ok(_) => Ok(stream),
         Err(e) => Err(Box::new(NativeComponentError::new(format!(

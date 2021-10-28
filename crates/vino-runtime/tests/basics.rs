@@ -1,11 +1,13 @@
 use std::collections::HashMap;
 
-#[path = "./runtime_utils/mod.rs"]
-mod utils;
-use utils::*;
+use runtime_testutils::*;
 use vino_entity::Entity;
 use vino_runtime::prelude::TransportWrapper;
 use vino_transport::MessageTransport;
+
+type Result<T> = anyhow::Result<T, anyhow::Error>;
+use maplit::hashmap;
+use pretty_assertions::assert_eq;
 
 #[test_logger::test(tokio::test)]
 async fn simple_schematic() -> Result<()> {
@@ -28,7 +30,7 @@ async fn simple_schematic() -> Result<()> {
   println!("Output: {:?}", msg);
   let output: String = msg.payload.try_into()?;
 
-  equals!(output, "simple string");
+  assert_eq!(output, "simple string");
   Ok(())
 }
 
@@ -51,7 +53,7 @@ async fn echo() -> Result<()> {
   println!("Output: {:?}", msg);
   let output: String = msg.payload.try_into()?;
 
-  equals!(output, "test-data");
+  assert_eq!(output, "test-data");
   Ok(())
 }
 
@@ -75,7 +77,7 @@ async fn senders() -> Result<()> {
   println!("Output: {:?}", msg);
   let output: String = msg.payload.try_into()?;
 
-  equals!(output, "1234512345");
+  assert_eq!(output, "1234512345");
   Ok(())
 }
 
@@ -122,7 +124,7 @@ async fn nested_schematics() -> Result<()> {
   let msg: TransportWrapper = messages.pop().unwrap();
   println!("Output: {:?}", msg);
   let output: String = msg.payload.try_into()?;
-  equals!(output, user_data);
+  assert_eq!(output, user_data);
   Ok(())
 }
 
@@ -143,7 +145,7 @@ async fn short_circuit_to_output() -> Result<()> {
 
   let output: TransportWrapper = messages.pop().unwrap();
   println!("Output: {:?}", output);
-  equals!(
+  assert_eq!(
     output.payload,
     MessageTransport::exception("Needs to be longer than 8 characters".to_owned())
   );
@@ -171,7 +173,7 @@ async fn short_circuit_with_default() -> Result<()> {
 
   let output: String = messages.pop().unwrap().payload.try_into()?;
   println!("Output: {:?}", output);
-  equals!(
+  assert_eq!(
     output,
     format!(
       "This is my default. Error was: {}",
@@ -197,7 +199,7 @@ async fn multiple_schematics() -> Result<()> {
   assert_eq!(messages.len(), 1);
 
   let output: i64 = messages.pop().unwrap().payload.try_into()?;
-  equals!(output, 42 + 302309);
+  assert_eq!(output, 42 + 302309);
 
   let data = hashmap! {
       "input" => "some string",
@@ -211,7 +213,7 @@ async fn multiple_schematics() -> Result<()> {
 
   let output: String = messages.pop().unwrap().payload.try_into()?;
   println!("Output: {:?}", output);
-  equals!(output, "some string");
+  assert_eq!(output, "some string");
   Ok(())
 }
 
@@ -232,7 +234,7 @@ async fn subnetworks() -> Result<()> {
 
   let output: String = messages.pop().unwrap().payload.try_into()?;
 
-  equals!(output, "some input");
+  assert_eq!(output, "some input");
 
   Ok(())
 }

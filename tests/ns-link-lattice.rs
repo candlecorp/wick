@@ -1,18 +1,18 @@
-use std::panic;
-
-use log::{
-  debug,
-  error,
-};
-use serde_json::json;
-use utils::*;
-use vino_transport::{
-  JsonError,
-  TransportJson,
-};
-
+#[cfg(feature = "test-integration")]
 mod test {
-  use super::*;
+  use std::panic;
+
+  use log::{
+    debug,
+    error,
+  };
+  use serde_json::json;
+  use utils::*;
+  use vino_transport::{
+    JsonError,
+    TransportJson,
+  };
+
   #[test_logger::test(tokio::test)]
   async fn test_collection() -> utils::TestResult<()> {
     debug!("Starting vow");

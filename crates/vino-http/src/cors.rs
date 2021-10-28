@@ -115,7 +115,7 @@ impl Cors {
   }
 
   pub(crate) fn simple(&self, headers: &HeaderMap) -> Result<HeaderMap, Error> {
-    match headers.get(header::ORIGIN) {
+    match headers.get(ORIGIN) {
       Some(origin) if self.is_origin_allowed(origin) => Ok(self.common_headers(origin.clone())),
       Some(_) => Err(Error::OriginNotAllowed),
       None => Ok(HeaderMap::new()),
@@ -203,7 +203,7 @@ mod tests {
   #[should_panic]
   #[ignore]
   fn origin_is_valid_url() {
-    Config::new().allow_origins(vec!["foo"]);
+    let _ = Config::new().allow_origins(vec!["foo"]);
   }
 
   mod preflight {
@@ -258,7 +258,7 @@ mod tests {
 
       let err = cors.__check_preflight(&preflight_headers()).unwrap_err();
 
-      assert_eq!(err, Error::OriginNotAllowed)
+      assert_eq!(err, Error::OriginNotAllowed);
     }
 
     #[test]
@@ -320,7 +320,7 @@ mod tests {
         assert_eq!(
           cors.__check_preflight(&request_headers).unwrap_err(),
           Error::MethodNotAllowed,
-        )
+        );
       }
     }
 
@@ -394,7 +394,7 @@ mod tests {
 
       let err = cors.simple(&request_headers()).unwrap_err();
 
-      assert_eq!(err, Error::OriginNotAllowed)
+      assert_eq!(err, Error::OriginNotAllowed);
     }
 
     #[test]

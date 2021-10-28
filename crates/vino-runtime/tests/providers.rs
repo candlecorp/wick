@@ -1,16 +1,16 @@
-#[path = "./runtime_utils/mod.rs"]
-mod utils;
 use std::env;
 use std::sync::Arc;
 
-use utils::*;
+use runtime_testutils::*;
 use vino_entity::Entity;
 use vino_invocation_server::{
   bind_new_socket,
   make_rpc_server,
 };
 use vino_runtime::prelude::TransportWrapper;
-
+type Result<T> = anyhow::Result<T, anyhow::Error>;
+use maplit::hashmap;
+use pretty_assertions::assert_eq;
 #[test_logger::test(tokio::test)]
 async fn native_component() -> Result<()> {
   let (network, _) = init_network_from_yaml("./manifests/v0/native-component.yaml").await?;
@@ -33,7 +33,7 @@ async fn native_component() -> Result<()> {
   println!("Output: {:?}", msg);
   let output: i64 = msg.payload.try_into()?;
 
-  equals!(output, 42 + 302309 + 302309);
+  assert_eq!(output, 42 + 302309 + 302309);
   Ok(())
 }
 
@@ -54,7 +54,7 @@ async fn global_providers() -> Result<()> {
 
   let output: String = messages.pop().unwrap().payload.try_into()?;
 
-  equals!(output, "some input");
+  assert_eq!(output, "some input");
 
   let data = hashmap! {
       "input" => "other input",
@@ -68,7 +68,7 @@ async fn global_providers() -> Result<()> {
 
   let output: String = messages.pop().unwrap().payload.try_into()?;
   println!("Output: {:?}", output);
-  equals!(output, "other input");
+  assert_eq!(output, "other input");
   Ok(())
 }
 
@@ -89,7 +89,7 @@ async fn subnetworks() -> Result<()> {
 
   let output: String = messages.pop().unwrap().payload.try_into()?;
 
-  equals!(output, "some input");
+  assert_eq!(output, "some input");
 
   Ok(())
 }
@@ -115,7 +115,7 @@ async fn grpc() -> Result<()> {
 
   let output: String = messages.pop().unwrap().payload.try_into()?;
 
-  equals!(output, format!("TEST: {}", user_data));
+  assert_eq!(output, format!("TEST: {}", user_data));
 
   Ok(())
 }

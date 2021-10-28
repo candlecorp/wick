@@ -1,7 +1,5 @@
-#[path = "./runtime_utils/mod.rs"]
-mod utils;
-
-use utils::*;
+use runtime_testutils::*;
+type Result<T> = anyhow::Result<T, anyhow::Error>;
 
 #[test_logger::test(tokio::test)]
 async fn missing_provider() -> Result<()> {

@@ -2512,6 +2512,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "runtime-testutils"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "tracing",
+ "vino-lattice",
+ "vino-manifest",
+ "vino-runtime",
+ "vino-wascap",
+]
+
+[[package]]
 name = "rustc-demangle"
 version = "0.1.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3296,9 +3308,9 @@ checksum = "360dfd1d6d30e05fda32ace2c8c70e9c0a9da713275777f5a4dbb8a1893930c6"
 
 [[package]]
 name = "tracing"
-version = "0.1.26"
+version = "0.1.29"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "09adeb8c97449311ccd28a427f96fb563e7fd31aabf994189879d9da2394b89d"
+checksum = "375a639232caf30edfc78e8d89b2d4c375515393e7af7e16f01cd96917fb2105"
 dependencies = [
  "cfg-if",
  "log",
@@ -3320,9 +3332,9 @@ dependencies = [
 
 [[package]]
 name = "tracing-attributes"
-version = "0.1.15"
+version = "0.1.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c42e6fa53307c8a17e4ccd4dc81cf5ec38db9209f59b222210375b54ee40d1e2"
+checksum = "f4f480b8f81512e825f337ad51e94c1eb5d3bbdf2b363dcd01e2b19a9ffe3f8e"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -4035,6 +4047,7 @@ dependencies = [
  "parking_lot",
  "pretty_assertions",
  "rand 0.8.4",
+ "runtime-testutils",
  "serde",
  "serde_json",
  "test-logger",
@@ -4216,6 +4229,7 @@ dependencies = [
 name = "wapc"
 version = "0.10.1"
 dependencies = [
+ "dyn-clone",
  "log",
  "parking_lot",
 ]
@@ -4504,10 +4518,11 @@ dependencies = [
 
 [[package]]
 name = "wasmtime-provider"
-version = "0.0.4"
+version = "0.0.7"
 dependencies = [
  "anyhow",
  "cap-std",
+ "cfg-if",
  "log",
  "serde",
  "serde_json",
