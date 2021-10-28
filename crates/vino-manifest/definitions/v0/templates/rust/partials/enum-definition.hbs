@@ -8,7 +8,7 @@ fn {{upperCase (snakeCase ../name.value)}}_{{upperCase name.value}}() -> {{> exp
   {{/if}}
 {{/each}}
 
-#[derive(Debug, Clone, Serialize, Deserialize, Copy, Eq, PartialEq, Primitive)]
+#[derive(Debug, Clone, Serialize, Deserialize, Copy, Eq, PartialEq)]
 #[serde(deny_unknown_fields)]
 {{#if description}}
 /// {{{description.value}}}
@@ -28,5 +28,25 @@ pub enum {{name.value}} {
 impl Default for {{name.value}} {
   fn default() -> Self {
     Self::from_u16(0).unwrap()
+  }
+}
+
+impl FromPrimitive for {{name.value}} {
+  fn from_i64(n: i64) -> Option<Self> {
+    Some(match n {
+    {{#each values}}
+      {{index.value}} => Self::{{name.value}},
+    {{/each}}
+      _ => {return None;}
+    })
+  }
+
+  fn from_u64(n: u64) -> Option<Self> {
+    Some(match n {
+    {{#each values}}
+      {{index.value}} => Self::{{name.value}},
+    {{/each}}
+      _ => {return None;}
+    })
   }
 }

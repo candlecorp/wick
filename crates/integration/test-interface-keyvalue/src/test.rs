@@ -1,25 +1,11 @@
-use std::collections::HashMap;
-
 use anyhow::Result;
-use maplit::hashmap;
-use tracing::*;
-use vino_codec::messagepack::serialize;
 use vino_invocation_server::{
   bind_new_socket,
   make_rpc_server,
-  InvocationClient,
 };
-use vino_packet::Packet;
-use vino_provider::native::prelude::*;
 use vino_rpc::rpc::invocation_service_client::InvocationServiceClient;
-use vino_rpc::rpc::{
-  Invocation,
-  ListRequest,
-};
-use vino_rpc::{
-  convert_transport_map,
-  SharedRpcHandler,
-};
+use vino_rpc::rpc::ListRequest;
+use vino_rpc::SharedRpcHandler;
 
 async fn list_components(port: &u16) -> Result<Vec<vino_rpc::rpc::HostedType>> {
   let mut client = InvocationServiceClient::connect(format!("http://127.0.0.1:{}", port)).await?;
@@ -28,15 +14,6 @@ async fn list_components(port: &u16) -> Result<Vec<vino_rpc::rpc::HostedType>> {
 
   println!("Output = {:?}", response);
   Ok(response.schemas)
-}
-
-fn make_invocation(origin: &str, target: &str, payload: TransportMap) -> Result<Invocation> {
-  Ok(Invocation {
-    origin: Entity::test(origin).url(),
-    target: Entity::component_direct(target).url(),
-    msg: convert_transport_map(payload),
-    id: "".to_string(),
-  })
 }
 
 pub async fn test_api(provider: SharedRpcHandler) -> Result<()> {

@@ -35,6 +35,20 @@
   clippy::let_and_return,
   clippy::string_to_string,
   clippy::try_err,
+  clippy::unused_async,
+  clippy::missing_enforced_import_renames,
+  clippy::nonstandard_macro_braces,
+  clippy::rc_mutex,
+  clippy::unwrap_or_else_default,
+  // next version, see: https://github.com/rust-lang/rust-clippy/blob/master/CHANGELOG.md
+  // clippy::manual_split_once,
+  // clippy::derivable_impls,
+  // clippy::needless_option_as_deref,
+  // clippy::iter_not_returning_iterator,
+  // clippy::same_name_method,
+  // clippy::manual_assert,
+  // clippy::non_send_fields_in_send_ty,
+  // clippy::equatable_if_let,
   bad_style,
   clashing_extern_declarations,
   const_err,
@@ -83,18 +97,11 @@ pub mod invocation_server;
 pub use dyn_clone::clone_box;
 pub use invocation_server::InvocationServer;
 use tokio::task::JoinHandle;
-use tonic::transport::{
-  Channel,
-  Server,
-  Uri,
-};
+use tonic::transport::{Channel, Server, Uri};
 use vino_rpc::rpc::invocation_service_client::InvocationServiceClient;
 use vino_rpc::rpc::invocation_service_server::InvocationServiceServer;
 use vino_rpc::SharedRpcHandler;
-use vino_transport::{
-  MessageTransport,
-  TransportMap,
-};
+use vino_transport::{MessageTransport, TransportMap};
 
 pub(crate) type Result<T> = std::result::Result<T, error::Error>;
 
@@ -109,9 +116,6 @@ extern crate tracing;
 
 #[macro_use]
 extern crate derivative;
-
-#[macro_use]
-extern crate vino_macros;
 
 #[doc(hidden)]
 pub fn make_input<K: AsRef<str>, V: serde::Serialize>(entries: Vec<(K, V)>) -> TransportMap {

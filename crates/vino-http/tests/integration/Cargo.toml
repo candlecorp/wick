@@ -3,18 +3,18 @@ name = "integration"
 version = "0.1.0"
 authors = ["Juan Alvarez <j@yabit.io>"]
 publish = false
-edition = "2018"
+edition = "2021"
 
 [dependencies]
-tonic = "0.5"
+tonic = "0.6"
 tonic-web = { path = "../vino-http" }
-prost = "0.8"
+prost = "0.9"
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "net"] }
 base64 = "0.13"
 bytes = "1.0"
 tokio-stream = { version = "0.1", features = ["net"] }
 hyper = "0.14"
-http = "0.2.5"
+http = "0.2"
 
 [build-dependencies]
-tonic-build = "0.5"
+tonic-build = "0.6"

@@ -71,14 +71,12 @@ impl Dispatch for Dispatcher {
 }
 
 pub mod copy {
-  use serde::{
-    Deserialize,
-    Serialize,
-  };
+  use crate::components::copy as implementation;
+
+  use serde::{Deserialize, Serialize};
   pub use vino_provider::wasm::prelude::*;
 
   use super::*;
-  use crate::components::copy as implementation;
 
   pub struct Component {}
 
@@ -167,14 +165,12 @@ pub mod copy {
   }
 }
 pub mod error {
-  use serde::{
-    Deserialize,
-    Serialize,
-  };
+  use crate::components::error as implementation;
+
+  use serde::{Deserialize, Serialize};
   pub use vino_provider::wasm::prelude::*;
 
   use super::*;
-  use crate::components::error as implementation;
 
   pub struct Component {}
 
@@ -259,14 +255,12 @@ pub mod error {
   }
 }
 pub mod reverse {
-  use serde::{
-    Deserialize,
-    Serialize,
-  };
+  use crate::components::reverse as implementation;
+
+  use serde::{Deserialize, Serialize};
   pub use vino_provider::wasm::prelude::*;
 
   use super::*;
-  use crate::components::reverse as implementation;
 
   pub struct Component {}
 
@@ -351,14 +345,12 @@ pub mod reverse {
   }
 }
 pub mod reverse_uppercase {
-  use serde::{
-    Deserialize,
-    Serialize,
-  };
+  use crate::components::reverse_uppercase as implementation;
+
+  use serde::{Deserialize, Serialize};
   pub use vino_provider::wasm::prelude::*;
 
   use super::*;
-  use crate::components::reverse_uppercase as implementation;
 
   pub struct Component {}
 
@@ -447,14 +439,12 @@ pub mod reverse_uppercase {
   }
 }
 pub mod uppercase {
-  use serde::{
-    Deserialize,
-    Serialize,
-  };
+  use crate::components::uppercase as implementation;
+
+  use serde::{Deserialize, Serialize};
   pub use vino_provider::wasm::prelude::*;
 
   use super::*;
-  use crate::components::uppercase as implementation;
 
   pub struct Component {}
 
@@ -539,14 +529,12 @@ pub mod uppercase {
   }
 }
 pub mod validate {
-  use serde::{
-    Deserialize,
-    Serialize,
-  };
+  use crate::components::validate as implementation;
+
+  use serde::{Deserialize, Serialize};
   pub use vino_provider::wasm::prelude::*;
 
   use super::*;
-  use crate::components::validate as implementation;
 
   pub struct Component {}
 

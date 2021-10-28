@@ -1,7 +1,4 @@
-use std::collections::hash_map::{
-  Keys,
-  Values,
-};
+use std::collections::hash_map::{Keys, Values};
 use std::collections::HashMap;
 use std::convert::TryFrom;
 
@@ -182,7 +179,6 @@ impl SchematicModel {
       let signature = match opt {
         Some(sig) => sig,
         None => {
-          logtest!("Could not find signature for output '{}'", output);
           continue;
         }
       };
@@ -446,10 +442,7 @@ impl SchematicModel {
 mod tests {
 
   #[allow(unused_imports)]
-  use crate::test::prelude::{
-    assert_eq,
-    *,
-  };
+  use crate::test::prelude::{assert_eq, *};
   #[test_logger::test]
   fn test_basics() -> TestResult<()> {
     let schematic_name = "logger";

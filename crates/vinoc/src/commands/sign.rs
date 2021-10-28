@@ -1,8 +1,5 @@
 use std::fs::File;
-use std::io::{
-  Read,
-  Write,
-};
+use std::io::{Read, Write};
 use std::path::PathBuf;
 
 use nkeys::KeyPairType;
@@ -11,10 +8,7 @@ use vino_types::signatures::ProviderSignature;
 use vino_wascap::sign_buffer_with_claims;
 
 use crate::error::ControlError;
-use crate::keys::{
-  extract_keypair,
-  GenerateCommon,
-};
+use crate::keys::{extract_keypair, GenerateCommon};
 use crate::Result;
 #[derive(Debug, Clone, StructOpt)]
 #[structopt(rename_all = "kebab-case")]
@@ -44,6 +38,7 @@ pub(crate) struct Options {
   rev: Option<u32>,
 }
 
+#[allow(clippy::unused_async)]
 pub(crate) async fn handle(opts: Options) -> Result<()> {
   let _guard = crate::utils::init_logger(&opts.logging)?;
   debug!("Signing module");

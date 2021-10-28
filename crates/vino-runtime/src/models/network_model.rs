@@ -73,7 +73,7 @@ impl NetworkModel {
     let model = self
       .providers
       .entry(name.clone())
-      .or_insert_with(|| ProviderModel::default());
+      .or_insert_with(ProviderModel::default);
 
     model.components.insert(
       name.clone(),

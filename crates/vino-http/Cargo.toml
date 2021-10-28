@@ -1,7 +1,7 @@
 [package]
 name = "vino-http"
 version = "0.0.0"
-edition = "2018"
+edition = "2021"
 description = """
 grpc-web protocol translation for tonic services.
 """
@@ -16,7 +16,7 @@ vino-rpc = { path = "../vino-rpc" }
 vino-types = { path = "../../sdk/crates/vino-types" }
 vino-transport = { path = "../../sdk/crates/vino-transport" }
 vino-entity = { path = "../../sdk/crates/vino-entity" }
-tonic = { version = "0.5", default-features = false, features = ["transport"] }
+tonic = { version = "0.6", default-features = false, features = ["transport"] }
 http = "0.2"
 base64 = "0.13"
 futures-core = "0.3"
@@ -28,9 +28,9 @@ tracing = "0.1"
 pin-project = "1"
 tokio = { version = "1", features = ["macros", "net", "rt-multi-thread"] }
 tokio-stream = "0.1.6"
-serde_json = "1.0.68"
-serde = { version = "1.0.118", features = ["derive"] }
-thiserror = "1.0.26"
+serde_json = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+thiserror = "1.0"
 
 [dev-dependencies]
-tonic = { version = "0.5", default-features = false, features = ["tls"] }
+tonic = { version = "0.6", default-features = false, features = ["tls"] }

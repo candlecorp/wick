@@ -32,6 +32,9 @@ pub struct LoggingOptions {
   #[structopt(long = "log-json")]
   pub log_json: bool,
 
+  // /// The directory to store log files,
+  // #[structopt(long = "log-dir")]
+  // pub log_dir: String,
   /// The application doing the logging.
   #[structopt(skip)]
   pub app_name: String,

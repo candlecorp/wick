@@ -1,32 +1,17 @@
 use std::collections::HashMap;
 use std::convert::TryFrom;
 use std::str::FromStr;
-use std::time::{
-  Duration,
-  Instant,
-};
+use std::time::{Duration, Instant};
 
 use parking_lot::RwLock;
 use tokio::sync::mpsc;
 use tokio_stream::wrappers::ReceiverStream;
 use tokio_stream::StreamExt;
-use tonic::{
-  Response,
-  Status,
-};
+use tonic::{Response, Status};
 use vino_rpc::error::RpcError;
 use vino_rpc::rpc::invocation_service_server::InvocationService;
-use vino_rpc::rpc::{
-  ListResponse,
-  Output,
-  StatsResponse,
-};
-use vino_rpc::{
-  convert_messagekind_map,
-  rpc,
-  DurationStatistics,
-  Statistics,
-};
+use vino_rpc::rpc::{ListResponse, Output, StatsResponse};
+use vino_rpc::{convert_messagekind_map, rpc, DurationStatistics, Statistics};
 
 use crate::conversion::make_output;
 use crate::SharedRpcHandler;
@@ -130,7 +115,6 @@ impl InvocationService for InvocationServer {
           while let Some(next) = receiver.next().await {
             let port_name = next.port;
             let msg = next.payload;
-            logtest!("RPC:Got output on port {}", port_name);
             tx.send(make_output(&port_name, &invocation_id, msg))
               .await
               .unwrap();

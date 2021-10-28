@@ -41,7 +41,7 @@ impl std::fmt::Debug for ProviderChannel {
 
 type ProviderInitResult = Result<(ProviderModel, ProviderChannel)>;
 
-pub(crate) async fn initialize_native_provider(namespace: String, seed: u64) -> ProviderInitResult {
+pub(crate) fn initialize_native_provider(namespace: String, seed: u64) -> ProviderInitResult {
   trace!("PROV:NATIVE:NS[{}]:REGISTERING", namespace);
   let provider = Arc::new(vino_native_api_0::Provider::new(seed));
   let service = NativeProviderService::new(namespace.clone(), provider);
@@ -191,9 +191,7 @@ pub(crate) async fn initialize_lattice_provider(
   ))
 }
 
-pub(crate) async fn start_network_provider(
-  network_id: String,
-) -> Result<Arc<BoxedInvocationHandler>> {
+pub(crate) fn start_network_provider(network_id: String) -> Result<Arc<BoxedInvocationHandler>> {
   trace!("PROV:NETWORK[{}]", network_id);
 
   let provider = Arc::new(NetworkProvider::new(network_id));

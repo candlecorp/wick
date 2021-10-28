@@ -6,23 +6,15 @@ use std::sync::Arc;
 
 use futures::future::BoxFuture;
 use once_cell::sync::Lazy;
-use parking_lot::{
-  Mutex,
-  RwLock,
-};
+use parking_lot::{Mutex, RwLock};
 use vino_lattice::lattice::Lattice;
 use vino_manifest::Loadable;
 
 use crate::dev::prelude::validator::NetworkValidator;
 use crate::dev::prelude::*;
 use crate::network_service::initialize::{
-  initialize_providers,
-  initialize_schematics,
-  start_schematic_services,
-  start_self_network,
-  update_providers,
-  Initialize,
-  ProviderInitOptions,
+  initialize_providers, initialize_schematics, start_schematic_services, start_self_network,
+  update_providers, Initialize, ProviderInitOptions,
 };
 
 type Result<T> = std::result::Result<T, NetworkError>;
@@ -96,7 +88,7 @@ impl NetworkService {
 
     let mut provider_map = HashMap::new();
     let mut model_map = HashMap::new();
-    let self_channel = start_self_network(self.id.clone()).await?;
+    let self_channel = start_self_network(self.id.clone())?;
     provider_map.insert(SELF_NAMESPACE.to_owned(), Arc::new(self_channel));
 
     let providers = initialize_providers(global_providers, provider_init).await?;

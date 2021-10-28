@@ -1,12 +1,12 @@
 [package]
 name = "vino-loader"
 version = "0.0.0"
-edition = "2018"
+edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 tracing = "0.1"
-thiserror = "1.0.25"
+thiserror = "1.0"
 oci-utils = { path = "../oci-utils" }
 tokio = { version = "1", features = ["fs"] }

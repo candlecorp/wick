@@ -1,22 +1,20 @@
 [package]
 name = "vino-wascap"
 version = "0.1.0"
-edition = "2018"
+edition = "2021"
 license = "BSD-3-Clause"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-wascap = { version = "0.6.1" }
-serde = { version = "1.0.118", features = ["derive"] }
+wascap = { path = "../../forks/wascap" }
+serde = { version = "1.0", features = ["derive"] }
 vino-types = { path = "../../sdk/crates/vino-types" }
-thiserror = "1.0.25"
+thiserror = "1.0"
 parity-wasm = "0.42.1"
 data-encoding = "2.3.2"
-ring = "0.16.20"
-nuid = "0.3.0"
-tracing = "0.1"
-vino-macros = { path = "../../sdk/crates/vino-macros" }
+ring = "0.16"
+nuid = "0.3"
 
 [dev-dependencies]
 criterion = { version = "0.3", features = [] }

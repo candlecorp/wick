@@ -32,18 +32,8 @@ pub enum HostError {
   InvalidHostState(String),
   #[error("Failed to deserialize configuration {0}")]
   ConfigurationDeserialization(String),
-  #[error(transparent)]
-  YamlError(#[from] serde_yaml::Error),
-  #[error(transparent)]
-  HoconError(#[from] hocon::Error),
-  #[error(transparent)]
-  NetworkError(#[from] vino_runtime::error::NetworkError),
-  #[error(transparent)]
-  RpcError(#[from] vino_rpc::Error),
   #[error("Async error: {0}")]
   AsyncRT(String),
-  #[error(transparent)]
-  IOError(#[from] std::io::Error),
   #[error(transparent)]
   KeyPairError(#[from] nkeys::error::Error),
   #[error("General error : {0}")]

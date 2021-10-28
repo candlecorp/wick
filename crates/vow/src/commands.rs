@@ -15,7 +15,7 @@ pub(crate) enum CliCommand {
   Run(run::RunCommand),
   /// Sign a WaPC component.
   #[structopt(name = "serve")]
-  Serve(serve::ServeCommand),
+  Serve(Box<serve::ServeCommand>),
 }
 
 #[derive(Debug, Clone, StructOpt)]

@@ -26,8 +26,6 @@ use serde_with_expand_env::with_expand_envs;
 use std::{collections::HashMap, str::FromStr};
 use num_traits::FromPrimitive;
 
-use enum_primitive_derive::Primitive;
-
 {{#each definitions}}
   {{#switch kind}}
     {{#case "ImportDefinition"}}

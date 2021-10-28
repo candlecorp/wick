@@ -101,7 +101,9 @@ fn vino_filter() -> FilterFn {
 #[derive(Debug)]
 /// Guard that - when dropped - flushes all log messages and drop I/O handles.
 pub struct LoggingGuard {
+  #[allow(unused)]
   logfile: Option<WorkerGuard>,
+  #[allow(unused)]
   console: WorkerGuard,
 }
 
@@ -121,11 +123,16 @@ fn get_logfile_writer(
   opts: &LoggingOptions,
 ) -> Result<(PathBuf, NonBlocking, WorkerGuard), LoggerError> {
   let logfile_prefix = format!("{}.{}.log", opts.app_name, std::process::id());
+  #[cfg(not(target_os = "windows"))]
   let log_dir = match xdg::BaseDirectories::with_prefix("vino") {
     Ok(xdg) => xdg.get_state_home(),
     Err(_) => std::env::current_dir()?,
   };
-
+  #[cfg(target_os = "windows")]
+  let log_dir = match std::env::var("LOCALAPPDATA") {
+    Ok(localappdata) => PathBuf::from(format!("{}/vino", localappdata)),
+    Err(_) => std::env::current_dir()?,
+  };
   let (writer, guard) = tracing_appender::non_blocking(tracing_appender::rolling::daily(
     log_dir.clone(),
     logfile_prefix,

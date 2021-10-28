@@ -1,8 +1,5 @@
 use std::fs;
-use std::sync::Arc;
-use std::time::Duration;
 
-use vino_lattice::nats::NatsOptions;
 use vino_manifest::{
   HostManifest,
   Loadable,
@@ -25,9 +22,14 @@ pub async fn init_network_from_yaml(path: &str) -> anyhow::Result<(Network, Stri
   debug!("Manifest loaded");
   let kp = KeyPair::new_server();
 
+  #[allow(unused_mut)]
   let mut builder = NetworkBuilder::from_definition(def, &kp.seed()?)?;
   #[cfg(feature = "test-integration")]
   if let Ok(url) = std::env::var("NATS_URL") {
+    use std::sync::Arc;
+    use std::time::Duration;
+
+    use vino_lattice::nats::NatsOptions;
     let lattice = vino_lattice::lattice::Lattice::connect(NatsOptions {
       address: url,
       client_id: "test".to_owned(),

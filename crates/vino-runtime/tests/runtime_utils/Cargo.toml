@@ -2,7 +2,7 @@
 name = "runtime-testutils"
 version = "0.1.0"
 authors = ["Jarrod Overson <jsoverson@gmail.com>"]
-edition = "2018"
+edition = "2021"
 license = "BSD-3-Clause"
 
 [features]

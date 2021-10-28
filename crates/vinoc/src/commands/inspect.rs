@@ -15,6 +15,7 @@ pub(crate) struct Options {
   pub(crate) module: String,
 }
 
+#[allow(clippy::unused_async)]
 pub(crate) async fn handle(opts: Options) -> Result<()> {
   let _guard = crate::utils::init_logger(&opts.logging)?;
 

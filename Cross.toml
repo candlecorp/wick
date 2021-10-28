@@ -4,9 +4,6 @@ image = "vinodotdev/cross:aarch64-unknown-linux-gnu"
 [target.x86_64-unknown-linux-gnu]
 image = "vinodotdev/cross:x86_64-unknown-linux-gnu"
 
-[target.i686-unknown-linux-gnu]
-image = "vinodotdev/cross:i686-unknown-linux-gnu"
-
 [target.aarch64-apple-darwin]
 image = "vinodotdev/cross:aarch64-apple-darwin"
 
@@ -16,5 +13,3 @@ image = "vinodotdev/cross:x86_64-apple-darwin"
 [target.x86_64-pc-windows-gnu]
 image = "vinodotdev/cross:x86_64-pc-windows-gnu"
 
-[target.i686-pc-windows-gnu]
-image = "vinodotdev/cross:i686-pc-windows-gnu"

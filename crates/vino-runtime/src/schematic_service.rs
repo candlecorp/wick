@@ -157,7 +157,7 @@ impl SchematicService {
         .providers
         .get(name)
         .cloned()
-        .ok_or(SchematicError::InstanceNotFound(name.to_owned())),
+        .ok_or_else(|| SchematicError::InstanceNotFound(name.to_owned())),
       None => panic!("Internal Error: schematic uninitialized"),
     }
   }

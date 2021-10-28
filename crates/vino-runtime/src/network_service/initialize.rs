@@ -8,9 +8,7 @@ use vino_lattice::lattice::Lattice;
 
 use crate::dev::prelude::*;
 use crate::providers::{
-  initialize_grpc_provider,
-  initialize_lattice_provider,
-  initialize_network_provider,
+  initialize_grpc_provider, initialize_lattice_provider, initialize_network_provider,
   initialize_wasm_provider,
 };
 use crate::VINO_V0_NAMESPACE;
@@ -39,11 +37,11 @@ pub(crate) fn update_providers(
   Ok(result)
 }
 
-pub(crate) async fn start_self_network(nuid: String) -> Result<ProviderChannel> {
+pub(crate) fn start_self_network(nuid: String) -> Result<ProviderChannel> {
   trace!("NETWORK:PROVIDER:SELF:START");
   let self_channel = ProviderChannel {
     namespace: SELF_NAMESPACE.to_owned(),
-    recipient: start_network_provider(nuid).await?,
+    recipient: start_network_provider(nuid)?,
   };
   trace!("NETWORK:PROVIDER:SELF:STARTED");
   Ok(self_channel)
@@ -97,7 +95,7 @@ pub(crate) fn initialize_providers(
   opts: ProviderInitOptions,
 ) -> BoxFuture<'static, Result<Vec<(ProviderModel, ProviderChannel)>>> {
   Box::pin(async move {
-    let channel = initialize_native_provider(VINO_V0_NAMESPACE.to_owned(), opts.rng_seed).await?;
+    let channel = initialize_native_provider(VINO_V0_NAMESPACE.to_owned(), opts.rng_seed)?;
     let mut channels = vec![channel];
 
     for provider in providers {

@@ -53,13 +53,14 @@ SIGNED_ARTIFACT:=$(ARTIFACT_DIR)/$(CRATE_FS_NAME)_s.wasm
 # Path to the interface JSON
 INTERFACE:=./interface.json
 
+VINOC=cargo run --manifest-path ../../../Cargo.toml -p vinoc
 
 # Files to clean on make clean
 CLEAN_FILES := $(GENERATED_MODULE) $(BUILD_ARTIFACT) $(SIGNED_ARTIFACT) ./src/components/mod.rs $(INTERFACE)
 
 $(SIGNED_ARTIFACT): $(BUILD_ARTIFACT) $(INTERFACE)
 	@echo Signing $(BUILD_ARTIFACT)
-	@vinoc sign $(BUILD_ARTIFACT) $(INTERFACE) --ver=$(CRATE_VERSION) --rev=0
+	@$(VINOC) -- sign $(BUILD_ARTIFACT) $(INTERFACE) --ver=$(CRATE_VERSION) --rev=0
 	@echo Created $(SIGNED_ARTIFACT)
 
 # Defines rules like the following for each schema found :

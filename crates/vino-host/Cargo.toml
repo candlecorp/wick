@@ -2,7 +2,7 @@
 name = "vino-host"
 version = "0.1.0"
 authors = ["Jarrod Overson <jsoverson@gmail.com>"]
-edition = "2018"
+edition = "2021"
 license = "BSD-3-Clause"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -28,17 +28,15 @@ vino-entity = { path = "../../sdk/crates/vino-entity" }
 vino-macros = { path = "../../sdk/crates/vino-macros" }
 tracing = "0.1"
 
-thiserror = "1.0.25"
-nkeys = "0.1.0"
-serde = { version = "1.0.126", features = ["derive"] }
-serde_yaml = "0.8.17"
-serde_json = "1.0.66"
-hocon = "0.5.2"
+thiserror = "1.0"
+nkeys = { path = "../../forks/nkeys" }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
 async-trait = "0.1.50"
 tokio = { version = "1", features = ["macros", "net", "rt-multi-thread"] }
-http = "0.2.4"
+http = "0.2"
 once_cell = "1.8"
-parking_lot = "0.11.2"
+parking_lot = "0.11"
 
 [dev-dependencies]
 logger = { path = "../logger" }
@@ -51,5 +49,5 @@ tokio = { version = "1", features = [
   "io-util",
   "macros",
 ] }
-anyhow = "1.0.42"
+anyhow = "1.0"
 tokio-stream = "0.1.7"

@@ -27,7 +27,6 @@ curl https://gitlab.com/esr/tapview/-/raw/master/tapview -o $HOME/.local/bin/tap
 
 - Component codegen for wellknown providers doesn't reference the proper module for input/outputs etc
 - interface.json's for wellknown interfaces needs to be located in a central repo
-- Type representation of components over RPC is just a string and needs to be more complex to represent valid types.
 - Schematics can link a provider that isn't exposed to them, e.g.
 
 ```yaml
@@ -53,7 +52,7 @@ network:
         - update[result] => <>
 ```
 
--The providerlink `.call(component, args)` is prone to error. It would be greato is `args` could include the component so a failure would be less likely.
+-The providerlink `.call(component, args)` is prone to error. It would be great if `args` could include the component so a failure would be less likely.
 
 ## Error codes
 
@@ -79,12 +78,15 @@ network:
 
 - docs.vino.dev/codegen
 
+# Need a Makefile primer?
+
+- Check out isaacs's tutorial: https://gist.github.com/isaacs/62a2d1825d04437c6f08
+- Your makefiles are wrong: https://tech.davis-hansson.com/p/make/
+
 ## Todos
 
-- Codegen makefiles
 - Create a repo for encoded MessageTransports, TransportMaps, and LatticeRpcMessages to ensure cross-compatibility.
 - figure out how to make the wellknown interface.json better (right now it's just copying the generated file)
-- add better types to interface.json/signatures
 - Make component codegen for providers using interface.json generated the proper includes.
 - Improve coersion for PortOutput/ProviderOutput. Right now you have to know too much about what you're supposed to get.
 - ignore cache for :latest OCI requests

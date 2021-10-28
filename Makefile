@@ -20,7 +20,16 @@ ROOT_RUST_CRATES=$(foreach crate,$(wildcard ${CRATES_DIR}/*/Cargo.toml),$(dir $(
 TEST_WASM_DIR=$(CRATES_DIR)/integration/test-wapc-component
 TEST_WASM=$(TEST_WASM_DIR)/build/test_component_s.wasm
 
-BINS=vino vinoc vino-keyvalue-redis
+BINS=vino-keyvalue-redis #vinoc vino vow
+
+RELEASE?=false
+ARCH?=local
+
+ifneq (,$(findstring pc-windows,$(ARCH))) # If arch is *pc-windows*
+BIN_SUFFIX:=.exe
+else
+BIN_SUFFIX:=
+endif
 
 .PHONY: all
 all: build
@@ -61,6 +70,7 @@ readme:
 
 .PHONY: clean
 clean:
+	@rm -rf ./build/*
 	@for project in $(MAKEFILE_PROJECTS); do \
 		echo "# Cleaning $$project"; \
 		$(MAKE) -C $$project clean; \
@@ -83,12 +93,8 @@ build: ./build/local codegen
 $(TEST_WASM):
 	cd $(TEST_WASM_DIR) && $(MAKE) && cd $(ROOT)
 
-.PHONY: release
-release: ./build/local
-	cargo build --workspace --release
-
-./build/local:
-	mkdir -p ./build/local
+./build/$(ARCH):
+	mkdir -p $@
 
 .PHONY: wasm
 wasm: $(TEST_WASM)
@@ -108,6 +114,28 @@ integration: $(TEST_WASM)
 .PHONY: update-lint
 update-lint:
 	npm run update-lint
+
+.PHONY: bins
+bins: ./build/$(ARCH)
+	@echo "Building ARCH=$(ARCH) RELEASE:$(RELEASE)"
+	@rm -rf ./build/$(ARCH)/*
+ifeq ($(ARCH),local)
+ifeq ($(RELEASE),true)
+	cargo build --release $(foreach bin,$(BINS),-p $(bin))
+	cp $(foreach bin,$(BINS),./target/release/$(bin)$(BIN_SUFFIX)) ./build/$(ARCH)
+else
+	cargo build $(foreach bin,$(BINS),-p $(bin))
+	cp $(foreach bin,$(BINS),./target/debug/$(bin)$(BIN_SUFFIX)) ./build/$(ARCH)
+endif
+else
+ifeq ($(RELEASE),true)
+	cross build --target $(ARCH) --release $(foreach bin,$(BINS),-p $(bin))
+	cp $(foreach bin,$(BINS),./target/$(ARCH)/release/$(bin)$(BIN_SUFFIX)) ./build/$(ARCH)
+else
+	cross build --target $(ARCH) $(foreach bin,$(BINS),-p $(bin))
+	cp $(foreach bin,$(BINS),./target/$(ARCH)/debug/$(bin)$(BIN_SUFFIX)) ./build/$(ARCH)
+endif
+endif
 
 .PHONY: build-cross-debug
 build-cross-debug:

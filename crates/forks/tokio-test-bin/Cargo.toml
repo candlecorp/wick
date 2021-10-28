@@ -5,7 +5,7 @@ authors = [
   "Michael Mc Donnell <michael@mcdonnell.dk>",
   "Jarrod Overson <jsoverson@gmail.com>",
 ]
-edition = "2018"
+edition = "2021"
 license = "MIT OR Apache-2.0"
 documentation = "https://docs.rs/test_bin"
 homepage = "https://github.com/MichaelMcDonnell/test_bin"
@@ -18,7 +18,7 @@ A crate for getting the crate binary in an integration test.
 
 [dependencies]
 tokio = { version = "1", features = ["process", "io-util"] }
-thiserror = "1.0.25"
+thiserror = "1.0"
 
 [dev-dependencies]
 tokio = { version = "1", features = [
@@ -27,7 +27,7 @@ tokio = { version = "1", features = [
   "net",
   "rt-multi-thread",
 ] }
-test-env-log = "0.2.7"
+test-env-log = "0.2"
 tracing = "0.1"
 env_logger = "0.9"
 

@@ -1,7 +1,7 @@
 [package]
 name = "vino-provider-wasm"
 version = "0.1.0"
-edition = "2018"
+edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -25,31 +25,28 @@ vino-transport = { path = "../../sdk/crates/vino-transport", features = [
 ] }
 vino-types = { path = "../../sdk/crates/vino-types" }
 vino-macros = { path = "../../sdk/crates/vino-macros" }
-structopt = "0.3.22"
-serde_json = "1.0.64"
-derivative = "2.2.0"
+serde_json = "1.0"
+derivative = "2.2"
 tokio = { version = "1", features = ["fs"] }
-parking_lot = "0.11.1"
+parking_lot = "0.11"
 
 # Forks until https://github.com/wapc/wapc-rust/pull/24 is resolved
-# wasmtime-provider = { version = "0.0.7", optional = true, features = ["cache"] }
+# wasmtime-provider = { version = "0.0", optional = true, features = ["cache"] }
 # wapc = "0.10.1"
 wasmtime-provider = { path = "../../forks/wasmtime-provider", optional = true, features = [
   "cache",
 ] }
 wapc = { path = "../../forks/wapc-rust" }
 
-futures = "0.3.15"
 tokio-stream = "0.1.7"
 async-stream = "0.3.2"
 tracing = "0.1"
-thiserror = "1.0.25"
+thiserror = "1.0"
 async-trait = "0.1.50"
 
 [dev-dependencies]
 logger = { path = "../logger" }
 test-logger = { path = "../test-logger" }
-test-vino-provider = { path = "../integration/test-vino-provider" }
-
-maplit = "1.0.2"
-anyhow = "1.0.42"
+futures = "0.3"
+maplit = "1.0"
+anyhow = "1.0"

@@ -1,7 +1,6 @@
 use std::convert::TryInto;
 
 use structopt::StructOpt;
-use vino_rpc;
 use vino_rpc::rpc::ListRequest;
 use vino_types::signatures::HostedType;
 

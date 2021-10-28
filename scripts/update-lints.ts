@@ -5,7 +5,7 @@ const crateDir = path.join(__dirname, "..", "crates");
 
 const crates = fs.readdirSync(crateDir);
 
-const lintsPath = path.join(__dirname, "..", "lints.rs");
+const lintsPath = path.join(__dirname, "..", "etc", "lints.rs");
 
 const replaceRegex = /(!!START_LINTS.*!!END_LINTS)/s;
 

@@ -1,8 +1,4 @@
-use std::net::{
-  IpAddr,
-  Ipv4Addr,
-  SocketAddr,
-};
+use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::Arc;
@@ -13,11 +9,7 @@ use nkeys::KeyPair;
 use structopt::StructOpt;
 use tokio::signal;
 use tokio::sync::mpsc::Sender;
-use tonic::transport::{
-  Certificate,
-  Identity,
-  Server,
-};
+use tonic::transport::{Certificate, Identity, Server};
 use vino_invocation_server::InvocationServer;
 use vino_lattice::lattice::Lattice;
 use vino_lattice::nats::NatsOptions;
@@ -26,6 +18,7 @@ use vino_rpc::SharedRpcHandler;
 
 use crate::Result;
 
+#[cfg(feature = "reflection")]
 pub(crate) const FILE_DESCRIPTOR_SET: &[u8] =
   include_bytes!("../../vino-rpc/src/generated/descriptors.bin");
 
@@ -405,6 +398,7 @@ async fn start_http_server(
   trace!("HTTP: Starting server on {}", addr);
 
   socket.set_reuseaddr(true).unwrap();
+  #[cfg(not(target_os = "windows"))]
   socket.set_reuseport(true).unwrap();
   let listener = socket.listen(512).unwrap();
 
@@ -451,11 +445,13 @@ async fn start_rpc_server(
   trace!("Binding RPC server to {} (Port: {})", addr, addr.port());
 
   socket.set_reuseaddr(true).unwrap();
+  #[cfg(not(target_os = "windows"))]
   socket.set_reuseport(true).unwrap();
   let listener = socket.listen(512).unwrap();
 
   let stream = tokio_stream::wrappers::TcpListenerStream::new(listener);
 
+  #[cfg(feature = "reflection")]
   let reflection = tonic_reflection::server::Builder::configure()
     .register_encoded_file_descriptor_set(FILE_DESCRIPTOR_SET)
     .build()
@@ -487,7 +483,10 @@ async fn start_rpc_server(
   }
 
   let inner = svc.clone();
-  let builder = builder.add_service(reflection).add_service(inner);
+  #[cfg(feature = "reflection")]
+  let builder = builder.add_service(inner).add_service(reflection);
+  #[cfg(not(feature = "reflection"))]
+  let builder = builder.add_service(inner);
 
   let (tx, mut rx) = tokio::sync::mpsc::channel::<ServerMessage>(1);
   let server = builder.serve_with_incoming_shutdown(stream, async move {

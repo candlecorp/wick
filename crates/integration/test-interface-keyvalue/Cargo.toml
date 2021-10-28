@@ -2,7 +2,7 @@
 name = "test-interface-keyvalue"
 version = "0.1.0"
 authors = ["Jarrod Overson <jsoverson@gmail.com>"]
-edition = "2018"
+edition = "2021"
 license = "Apache-2.0"
 
 [[bin]]
@@ -10,7 +10,7 @@ name = "test-interface-collection"
 path = "src/main.rs"
 
 [dependencies]
-thiserror = "1.0.25"
+thiserror = "1.0"
 vino-provider = { path = "../../../sdk/crates/vino-provider", features = [
   "native",
 ] }
@@ -21,5 +21,5 @@ vino-invocation-server = { path = "../../vino-invocation-server" }
 
 tracing = "0.1"
 
-maplit = "1.0.2"
-anyhow = "1.0.42"
+maplit = "1.0"
+anyhow = "1.0"

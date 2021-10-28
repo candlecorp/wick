@@ -23,7 +23,7 @@ pub(crate) fn handle_schematic(
   let (mut outbound, inbound) = schematic.start_tx(tx_id.clone());
   let (tx, rx) = unbounded_channel::<TransportWrapper>();
 
-  let inner = log_prefix.clone();
+  let inner = log_prefix;
   let inner_schematic = schematic.clone();
   tokio::spawn(async move {
     while let Some(msg) = outbound.recv().await {
@@ -57,7 +57,6 @@ pub(crate) fn handle_schematic(
     }
     drop(outbound);
     trace!("{}:STOPPING", inner);
-    Ok!(())
   });
 
   match make_input_packets(name, &schematic.get_model(), &tx_id, invocation) {

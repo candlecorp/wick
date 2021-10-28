@@ -29,7 +29,7 @@ pub(crate) struct ServeCommand {
   threads: usize,
 }
 
-pub(crate) async fn handle_command(opts: ServeCommand) -> Result<()> {
+pub(crate) async fn handle_command(opts: Box<ServeCommand>) -> Result<()> {
   let _guard = vino_provider_cli::init_logging(&opts.cli.logging.name("vow"));
   debug!("Loading wasm {}", opts.wasm);
   let component =

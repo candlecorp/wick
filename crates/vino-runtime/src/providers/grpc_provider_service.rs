@@ -201,10 +201,7 @@ mod test {
 
   use test_vino_provider::Provider;
   use tokio::time::sleep;
-  use vino_invocation_server::{
-    bind_new_socket,
-    make_rpc_server,
-  };
+  use vino_invocation_server::{bind_new_socket, make_rpc_server};
   use vino_rpc::SharedRpcHandler;
 
   use super::*;
@@ -235,7 +232,7 @@ mod test {
       );
 
       let response = service.invoke(invocation)?.await?;
-      Ok!(response)
+      Ok::<_, ProviderError>(response)
     };
     tokio::select! {
         res = work => {

@@ -9,7 +9,6 @@ use vino_entity::Entity;
 use vino_transport::{
   TransportMap,
   TransportStream,
-  TransportWrapper,
 };
 
 use crate::error::ControlError;
@@ -86,14 +85,13 @@ pub(crate) async fn handle(opts: Options) -> Result<()> {
 
 async fn print_stream_json(mut stream: TransportStream, raw: bool) -> Result<()> {
   while let Some(message) = stream.next().await {
-    let wrapper: TransportWrapper = message.into();
-    if wrapper.payload.is_signal() && !raw {
+    if message.payload.is_signal() && !raw {
       debug!(
         "Skipping signal '{}' in output, pass --raw to print.",
-        wrapper.payload
+        message.payload
       );
     } else {
-      println!("{}", wrapper.into_json());
+      println!("{}", message.into_json());
     }
   }
   Ok(())

@@ -5,10 +5,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use parking_lot::RwLock;
-use tokio::sync::mpsc::{
-  unbounded_channel,
-  UnboundedSender,
-};
+use tokio::sync::mpsc::{unbounded_channel, UnboundedSender};
 use tokio::sync::oneshot;
 use tokio::task::JoinHandle;
 use tokio::time::timeout;
@@ -17,20 +14,11 @@ use tokio_stream::StreamExt;
 use vino_codec::messagepack::serialize;
 use vino_entity::Entity;
 use vino_rpc::SharedRpcHandler;
-use vino_transport::{
-  MessageTransport,
-  TransportMap,
-  TransportStream,
-  TransportWrapper,
-};
+use vino_transport::{MessageTransport, TransportMap, TransportStream, TransportWrapper};
 use vino_types::signatures::HostedType;
 
 use crate::error::LatticeError;
-use crate::nats::{
-  Nats,
-  NatsMessage,
-  NatsOptions,
-};
+use crate::nats::{Nats, NatsMessage, NatsOptions};
 
 type Result<T> = std::result::Result<T, LatticeError>;
 
@@ -257,7 +245,7 @@ impl Lattice {
               entity_string,
               nats_msg.data()
             );
-            if let Err(e) = handle_response(&tx, nats_msg).await {
+            if let Err(e) = handle_response(&tx, &nats_msg) {
               error!("Error processing response: {}", e);
             }
           }
@@ -302,9 +290,9 @@ impl Lattice {
   }
 }
 
-async fn handle_response(
+fn handle_response(
   tx: &UnboundedSender<TransportWrapper>,
-  lattice_msg: NatsMessage,
+  lattice_msg: &NatsMessage,
 ) -> Result<()> {
   let msg: Result<LatticeRpcResponse> = lattice_msg.deserialize();
   trace!("LATTICE:MSG:RESPONSE:{:?}", msg);
@@ -437,10 +425,7 @@ mod test {
   use anyhow::Result;
   use tracing::*;
   use vino_codec::messagepack::deserialize;
-  use vino_transport::{
-    MessageTransport,
-    TransportWrapper,
-  };
+  use vino_transport::{MessageTransport, TransportWrapper};
 
   use crate::lattice::LatticeRpcResponse;
   #[test_logger::test]
@@ -467,23 +452,12 @@ mod test_integration {
   use test_vino_provider::Provider;
   use tokio_stream::StreamExt;
   use tracing::*;
-  use vino_transport::{
-    MessageTransport,
-    TransportMap,
-  };
+  use vino_transport::{MessageTransport, TransportMap};
   use vino_types::signatures::{
-    ComponentMap,
-    ComponentSignature,
-    HostedType,
-    MapWrapper,
-    ProviderSignature,
-    StructMap,
+    ComponentMap, ComponentSignature, HostedType, MapWrapper, ProviderSignature, StructMap,
   };
 
-  use super::{
-    Lattice,
-    LatticeBuilder,
-  };
+  use super::{Lattice, LatticeBuilder};
 
   async fn get_lattice() -> Result<(Lattice, String)> {
     let lattice_builder = LatticeBuilder::new_from_env("test").unwrap();

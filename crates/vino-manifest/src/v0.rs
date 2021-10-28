@@ -21,16 +21,10 @@
 )]
 #![warn(clippy::cognitive_complexity)]
 
-use std::collections::HashMap;
-use std::str::FromStr;
-
-use enum_primitive_derive::Primitive;
 use num_traits::FromPrimitive;
-use serde::{
-  Deserialize,
-  Serialize,
-};
+use serde::{Deserialize, Serialize};
 use serde_with_expand_env::with_expand_envs;
+use std::{collections::HashMap, str::FromStr};
 
 #[allow(non_snake_case)]
 pub(crate) fn HOST_MANIFEST_DEFAULT_SCHEMATIC() -> String {
@@ -210,7 +204,7 @@ pub struct ProviderDefinition {
   pub data: HashMap<String, String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Copy, Eq, PartialEq, Primitive)]
+#[derive(Debug, Clone, Serialize, Deserialize, Copy, Eq, PartialEq)]
 #[serde(deny_unknown_fields)]
 /// Kind of provider.
 pub enum ProviderKind {
@@ -229,6 +223,34 @@ pub enum ProviderKind {
 impl Default for ProviderKind {
   fn default() -> Self {
     Self::from_u16(0).unwrap()
+  }
+}
+
+impl FromPrimitive for ProviderKind {
+  fn from_i64(n: i64) -> Option<Self> {
+    Some(match n {
+      0 => Self::Native,
+      1 => Self::GrpcUrl,
+      2 => Self::WaPC,
+      3 => Self::Lattice,
+      4 => Self::Network,
+      _ => {
+        return None;
+      }
+    })
+  }
+
+  fn from_u64(n: u64) -> Option<Self> {
+    Some(match n {
+      0 => Self::Native,
+      1 => Self::GrpcUrl,
+      2 => Self::WaPC,
+      3 => Self::Lattice,
+      4 => Self::Network,
+      _ => {
+        return None;
+      }
+    })
   }
 }
 

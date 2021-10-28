@@ -1,42 +1,19 @@
 use std::sync::Arc;
-use std::task::{
-  Context,
-  Poll,
-};
+use std::task::{Context, Poll};
 
-use http::header::{
-  ACCESS_CONTROL_REQUEST_HEADERS,
-  ORIGIN,
-};
-use http::{
-  HeaderMap,
-  HeaderValue,
-  Method,
-  Request,
-  Response,
-  StatusCode,
-  Uri,
-};
+use http::header::{ACCESS_CONTROL_REQUEST_HEADERS, ORIGIN};
+use http::{HeaderMap, HeaderValue, Method, Request, Response, StatusCode, Uri};
 use http_body::Body;
 use tokio_stream::StreamExt;
-use tonic::body::{
-  empty_body,
-  BoxBody,
-};
+use tonic::body::{empty_body, BoxBody};
 use vino_entity::Entity;
 use vino_rpc::SharedRpcHandler;
-use vino_transport::{
-  TransportMap,
-  TransportWrapper,
-};
+use vino_transport::{TransportMap, TransportWrapper};
 use vino_types::signatures::HostedType;
 
 use crate::cors::Cors;
 use crate::error::HttpError;
-use crate::{
-  BoxFuture,
-  Config,
-};
+use crate::{BoxFuture, Config};
 
 const PREFIX: &str = "rpc";
 
@@ -316,7 +293,7 @@ impl From<ProviderServiceResponse> for Response<BoxBody> {
   fn from(res: ProviderServiceResponse) -> Self {
     let body = hyper::Body::from(res.body)
       .map_err(|e| tonic::Status::failed_precondition(e.to_string()))
-      .boxed();
+      .boxed_unsync();
     http::Response::builder()
       .status(res.status.to_http_code())
       .body(body)

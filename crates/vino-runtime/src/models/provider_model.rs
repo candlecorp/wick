@@ -30,8 +30,6 @@ impl From<ProviderSignature> for ProviderModel {
       .into_iter()
       .map(|(k, v)| (k, v.into()))
       .collect();
-    Self {
-      components: map.into(),
-    }
+    Self { components: map }
   }
 }

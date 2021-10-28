@@ -4,31 +4,14 @@ use std::str::FromStr;
 use std::time::Duration;
 
 use tokio_stream::StreamExt;
-use tonic::transport::{
-  Certificate,
-  Channel,
-  ClientTlsConfig,
-  Identity,
-  Uri,
-};
+use tonic::transport::{Certificate, Channel, ClientTlsConfig, Identity, Uri};
 use tracing::debug;
 use vino_entity::Entity;
-use vino_transport::{
-  MessageTransport,
-  TransportMap,
-  TransportStream,
-  TransportWrapper,
-};
+use vino_transport::{MessageTransport, TransportMap, TransportStream, TransportWrapper};
 
 use crate::error::RpcClientError;
 use crate::rpc::invocation_service_client::InvocationServiceClient;
-use crate::rpc::{
-  Invocation,
-  ListRequest,
-  ListResponse,
-  StatsRequest,
-  StatsResponse,
-};
+use crate::rpc::{Invocation, ListRequest, ListResponse, StatsRequest, StatsResponse};
 use crate::types::conversions::convert_transport_map;
 
 /// Create an RPC client form common configuration

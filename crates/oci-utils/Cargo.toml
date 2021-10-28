@@ -1,11 +1,13 @@
 [package]
 name = "oci-utils"
 version = "0.1.0"
-edition = "2018"
+edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-oci-distribution = "0.7.0"
-thiserror = "1.0.26"
+oci-distribution = { path = "../../forks/oci-distribution", features = [
+  "rustls-tls",
+], default-features = false }
+thiserror = "1.0"
 tracing = "0.1"
