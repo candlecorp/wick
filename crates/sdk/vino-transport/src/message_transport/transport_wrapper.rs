@@ -7,7 +7,6 @@ use vino_packet::PacketWrapper;
 
 use crate::error::TransportError;
 use crate::{
-  MessageSignal,
   MessageTransport,
   SYSTEM_ID,
 };
@@ -25,16 +24,21 @@ pub struct TransportWrapper {
 
 impl TransportWrapper {
   /// Constructor for [TransportWrapper]s.
-  pub fn new(port: &str, payload: MessageTransport) -> Self {
+  pub fn new<T: AsRef<str>>(port: T, payload: MessageTransport) -> Self {
     Self {
-      port: port.to_owned(),
+      port: port.as_ref().to_owned(),
       payload,
     }
   }
 
   /// Constructs a [TransportWrapper] that represents a close message.
+  pub fn done<T: AsRef<str>>(port: T) -> Self {
+    Self::new(port, MessageTransport::done())
+  }
+
+  /// Constructs a [TransportWrapper] that represents a close message.
   pub fn new_system_close() -> Self {
-    Self::new(SYSTEM_ID, MessageTransport::Signal(MessageSignal::Done))
+    Self::new(SYSTEM_ID, MessageTransport::done())
   }
 
   /// Returns true if the [TransportWrapper] is a system message with the payload of [MessageSignal::Done].
