@@ -1,7 +1,7 @@
 [package]
 name = "vino-provider"
 version = "0.7.0"
-edition = "2018"
+edition = "2021"
 license = "BSD-3-Clause"
 description = "SDK for native and WASM Vino components"
 documentation = "https://docs.vino.dev"

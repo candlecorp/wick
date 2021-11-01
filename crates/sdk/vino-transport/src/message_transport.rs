@@ -16,25 +16,15 @@ pub mod transport_wrapper;
 use std::fmt::Display;
 
 use serde::de::DeserializeOwned;
-use serde::{
-  Deserialize,
-  Serialize,
-};
+use serde::{Deserialize, Serialize};
 #[cfg(feature = "json")]
 use vino_codec::json;
 use vino_codec::messagepack;
 #[cfg(feature = "raw")]
 use vino_codec::raw;
-use vino_packet::{
-  v0,
-  v1,
-  Packet,
-};
+use vino_packet::{v0, v1, Packet};
 
-use crate::{
-  Error,
-  Result,
-};
+use crate::{Error, Result};
 
 /// The [MessageTransport] is the primary way messages are sent around Vino Networks, Schematics, and is the representation that normalizes output [Packet]'s.
 #[must_use]
@@ -358,6 +348,7 @@ mod tests {
 
   use super::*;
   #[test_env_log::test]
+  #[cfg(feature = "json")]
   fn serializes_done() -> Result<()> {
     let close = MessageTransport::done();
     let value = close.into_json();

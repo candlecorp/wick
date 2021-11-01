@@ -2,7 +2,7 @@
 name = "vino-packet"
 version = "0.7.0"
 authors = ["Jarrod Overson <jsoverson@gmail.com>"]
-edition = "2018"
+edition = "2021"
 license = "BSD-3-Clause"
 repository = "https://github.com/vinodotdev/vino-sdk"
 description = "Rust library encapsulating the message packets sent across Vino components."

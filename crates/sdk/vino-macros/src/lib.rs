@@ -106,18 +106,9 @@ macro_rules! ensure {
 /// Turns an expression into an error while logging it.
 macro_rules! log_err {
   ($exp:expr) => {{
-    log::error!("{}", $exp);
+    tracing::error!("{}", $exp);
     Err($exp)
   }};
-}
-
-#[macro_export]
-/// Turn an Ok(expression) into an Ok::<_, crate::Error>(expression).
-/// Useful for quickly dismissing warnings that Rust can not infer a block's Error type.
-macro_rules! Ok {
-  ($exp:expr) => {
-    Ok::<_, crate::Error>($exp)
-  };
 }
 
 #[allow(unused_macros)]
@@ -147,21 +138,8 @@ macro_rules! log_tap {
   }};
 }
 
-#[macro_export]
-/// Debug logging that only occurs during tests
-macro_rules! logtest {
-    ($($arg:tt)+) => (
-      if cfg!(test) {
-        tracing::debug!($($arg)+)
-      }
-    )
-}
-
 use std::collections::HashMap;
-use std::sync::{
-  Arc,
-  Mutex,
-};
+use std::sync::{Arc, Mutex};
 use std::time::Instant;
 
 #[macro_export]
@@ -267,7 +245,7 @@ macro_rules! ok_or_continue {
     match $opt {
       Ok(stuff) => stuff,
       Err(e) => {
-        log::debug!("Unexpected but recoverable error: {}", e.to_string());
+        tracing::debug!("Unexpected but recoverable error: {}", e.to_string());
         continue;
       }
     }
@@ -299,7 +277,7 @@ macro_rules! ok_or_bail {
     match $result {
       Ok(stuff) => stuff,
       Err(e) => {
-        log::debug!("Unexpected but recoverable error: {}", e.to_string());
+        tracing::debug!("Unexpected but recoverable error: {}", e.to_string());
         return $ret;
       }
     }
