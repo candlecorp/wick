@@ -12,11 +12,11 @@ repository = "https://github.com/vinodotdev/vino-sdk"
 homepage = "https://docs.vino.dev"
 
 [dependencies]
-serde = { version = "1.0.118", features = ["derive"] }
+serde = { version = "1.0", features = ["derive"] }
 tracing = "0.1"
 serde_json = "1.0"
 
 [dev-dependencies]
-anyhow = "1.0.44"
-test-env-log = "0.2.7"
+anyhow = "1.0"
+test-env-log = "0.2"
 env_logger = "0.9"

@@ -16,4 +16,4 @@ maintenance = { status = "actively-developed" }
 
 [dependencies]
 tracing = "0.1"
-lazy_static = "1.4.0"
+lazy_static = "1.4"
