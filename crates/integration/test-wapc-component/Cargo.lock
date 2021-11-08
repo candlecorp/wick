@@ -342,6 +342,7 @@ dependencies = [
  "vino-packet",
  "vino-transport",
  "vino-types",
+ "vino-wapc",
 ]
 
 [[package]]
@@ -361,5 +362,8 @@ version = "0.7.0"
 dependencies = [
  "serde",
  "serde_json",
- "tracing",
 ]
+
+[[package]]
+name = "vino-wapc"
+version = "0.7.0"

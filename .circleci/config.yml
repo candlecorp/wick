@@ -148,6 +148,7 @@ jobs:
       - run:
           name: Test
           command: "make test"
+      - run: /home/circleci/.cargo/bin/sccache -s
       - save_build_cache
   build:
     parameters:
