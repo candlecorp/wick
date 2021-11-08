@@ -103,10 +103,7 @@ pub(crate) mod add {
   use std::collections::HashMap;
 
   use async_trait::async_trait;
-  use serde::{
-    Deserialize,
-    Serialize,
-  };
+  use serde::{Deserialize, Serialize};
   #[cfg(feature = "native")]
   pub use vino_provider::native::prelude::*;
   #[cfg(feature = "wasm")]
@@ -279,10 +276,7 @@ pub(crate) mod concatenate {
   use std::collections::HashMap;
 
   use async_trait::async_trait;
-  use serde::{
-    Deserialize,
-    Serialize,
-  };
+  use serde::{Deserialize, Serialize};
   #[cfg(feature = "native")]
   pub use vino_provider::native::prelude::*;
   #[cfg(feature = "wasm")]
@@ -457,10 +451,7 @@ pub(crate) mod error {
   use std::collections::HashMap;
 
   use async_trait::async_trait;
-  use serde::{
-    Deserialize,
-    Serialize,
-  };
+  use serde::{Deserialize, Serialize};
   #[cfg(feature = "native")]
   pub use vino_provider::native::prelude::*;
   #[cfg(feature = "wasm")]
@@ -627,10 +618,7 @@ pub(crate) mod gate {
   use std::collections::HashMap;
 
   use async_trait::async_trait;
-  use serde::{
-    Deserialize,
-    Serialize,
-  };
+  use serde::{Deserialize, Serialize};
   #[cfg(feature = "native")]
   pub use vino_provider::native::prelude::*;
   #[cfg(feature = "wasm")]
@@ -815,10 +803,7 @@ pub(crate) mod log {
   use std::collections::HashMap;
 
   use async_trait::async_trait;
-  use serde::{
-    Deserialize,
-    Serialize,
-  };
+  use serde::{Deserialize, Serialize};
   #[cfg(feature = "native")]
   pub use vino_provider::native::prelude::*;
   #[cfg(feature = "wasm")]
@@ -985,10 +970,7 @@ pub(crate) mod negate {
   use std::collections::HashMap;
 
   use async_trait::async_trait;
-  use serde::{
-    Deserialize,
-    Serialize,
-  };
+  use serde::{Deserialize, Serialize};
   #[cfg(feature = "native")]
   pub use vino_provider::native::prelude::*;
   #[cfg(feature = "wasm")]
@@ -1155,10 +1137,7 @@ pub(crate) mod panic {
   use std::collections::HashMap;
 
   use async_trait::async_trait;
-  use serde::{
-    Deserialize,
-    Serialize,
-  };
+  use serde::{Deserialize, Serialize};
   #[cfg(feature = "native")]
   pub use vino_provider::native::prelude::*;
   #[cfg(feature = "wasm")]
@@ -1325,10 +1304,7 @@ pub(crate) mod random_bytes {
   use std::collections::HashMap;
 
   use async_trait::async_trait;
-  use serde::{
-    Deserialize,
-    Serialize,
-  };
+  use serde::{Deserialize, Serialize};
   #[cfg(feature = "native")]
   pub use vino_provider::native::prelude::*;
   #[cfg(feature = "wasm")]
@@ -1506,10 +1482,7 @@ pub(crate) mod random_string {
   use std::collections::HashMap;
 
   use async_trait::async_trait;
-  use serde::{
-    Deserialize,
-    Serialize,
-  };
+  use serde::{Deserialize, Serialize};
   #[cfg(feature = "native")]
   pub use vino_provider::native::prelude::*;
   #[cfg(feature = "wasm")]
@@ -1687,10 +1660,7 @@ pub(crate) mod short_circuit {
   use std::collections::HashMap;
 
   use async_trait::async_trait;
-  use serde::{
-    Deserialize,
-    Serialize,
-  };
+  use serde::{Deserialize, Serialize};
   #[cfg(feature = "native")]
   pub use vino_provider::native::prelude::*;
   #[cfg(feature = "wasm")]
@@ -1859,10 +1829,7 @@ pub(crate) mod string_to_bytes {
   use std::collections::HashMap;
 
   use async_trait::async_trait;
-  use serde::{
-    Deserialize,
-    Serialize,
-  };
+  use serde::{Deserialize, Serialize};
   #[cfg(feature = "native")]
   pub use vino_provider::native::prelude::*;
   #[cfg(feature = "wasm")]
@@ -2031,10 +1998,7 @@ pub(crate) mod uuid {
   use std::collections::HashMap;
 
   use async_trait::async_trait;
-  use serde::{
-    Deserialize,
-    Serialize,
-  };
+  use serde::{Deserialize, Serialize};
   #[cfg(feature = "native")]
   pub use vino_provider::native::prelude::*;
   #[cfg(feature = "wasm")]

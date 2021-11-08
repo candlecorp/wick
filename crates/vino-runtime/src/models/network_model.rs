@@ -1,11 +1,5 @@
-use std::collections::{
-  HashMap,
-  HashSet,
-};
-use std::convert::{
-  TryFrom,
-  TryInto,
-};
+use std::collections::{HashMap, HashSet};
+use std::convert::{TryFrom, TryInto};
 use std::sync::Arc;
 
 use parking_lot::RwLock;
@@ -188,10 +182,7 @@ impl TryFrom<NetworkDefinition> for NetworkModel {
 mod tests {
 
   #[allow(unused_imports)]
-  use crate::test::prelude::{
-    assert_eq,
-    *,
-  };
+  use crate::test::prelude::{assert_eq, *};
 
   #[test_logger::test]
   fn test_basics() -> TestResult<()> {

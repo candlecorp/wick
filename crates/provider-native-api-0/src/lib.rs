@@ -91,16 +91,13 @@
   clippy::unused_async
 )]
 
-pub mod generated;
+mod generated;
 
 use vino_entity::Entity;
 use vino_provider::native::prelude::*;
 use vino_random::Random;
 use vino_rpc::error::RpcError;
-use vino_rpc::{
-  RpcHandler,
-  RpcResult,
-};
+use vino_rpc::{RpcHandler, RpcResult};
 
 use crate::error::NativeError;
 use crate::generated::Dispatcher;

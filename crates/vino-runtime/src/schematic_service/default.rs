@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 
-use vino_manifest::default::process_default;
+use vino_manifest::process_default;
 
 use crate::dev::prelude::*;
 
@@ -19,13 +19,10 @@ pub(crate) fn make_default_transport(json: &serde_json::Value, message: &str) ->
 #[cfg(test)]
 mod tests {
 
-  use vino_manifest::default::parse_default;
+  use vino_manifest::parse_default;
 
   use super::*;
-  use crate::test::prelude::{
-    assert_eq,
-    *,
-  };
+  use crate::test::prelude::{assert_eq, *};
 
   #[test_logger::test]
   fn test_to_transport() -> TestResult<()> {

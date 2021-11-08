@@ -8,10 +8,11 @@
     ]
   },
   "rust-analyzer.cargo.features": [
+    "vino-runtime/test-integration",
+    "vino-lattice/test-integration",
+    "vino-provider-lattice/test-integration",
+    "vino-keyvalue-redis/test-integration",
     "vino-native-api-0/native",
     "vino-native-api-0/provider"
-    // "vino-host/full",
-    // "vino-provider-cli/full",
-    // "vino-runtime/full"
   ]
 }

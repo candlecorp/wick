@@ -1,9 +1,6 @@
 use thiserror::Error;
 
-use crate::{
-  ConnectionDefinition,
-  ConnectionTargetDefinition,
-};
+use crate::{ConnectionDefinition, ConnectionTargetDefinition};
 
 // type BoxedSyncSendError = Box<dyn std::error::Error + Sync + std::marker::Send>;
 

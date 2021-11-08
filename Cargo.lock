@@ -61,9 +61,9 @@ dependencies = [
 
 [[package]]
 name = "anyhow"
-version = "1.0.44"
+version = "1.0.45"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "61604a8f862e1d5c3229fdd78f8b02c68dcf73a4c4b05fd636d12240aaa242c1"
+checksum = "ee10e43ae4a853c0a3591d4e2ada1719e553be18199d9da9d4a83f5927c2f5c7"
 
 [[package]]
 name = "async-channel"
@@ -3552,6 +3552,7 @@ dependencies = [
 name = "vino-keyvalue-redis"
 version = "0.0.0"
 dependencies = [
+ "anyhow",
  "async-trait",
  "futures",
  "logger",
@@ -3561,6 +3562,7 @@ dependencies = [
  "serde",
  "serde_json",
  "structopt",
+ "test-logger",
  "thiserror",
  "tokio",
  "tokio-util",
@@ -3588,6 +3590,7 @@ dependencies = [
  "parking_lot",
  "serde",
  "test-logger",
+ "test-vino-provider",
  "thiserror",
  "tokio",
  "tokio-stream",
@@ -3685,6 +3688,7 @@ dependencies = [
  "vino-packet",
  "vino-transport",
  "vino-types",
+ "vino-wapc",
 ]
 
 [[package]]
@@ -3724,9 +3728,13 @@ dependencies = [
 name = "vino-provider-lattice"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "async-trait",
  "futures",
+ "logger",
  "parking_lot",
+ "test-logger",
+ "test-vino-provider",
  "thiserror",
  "tokio",
  "tokio-stream",
@@ -3755,14 +3763,15 @@ dependencies = [
  "tokio-stream",
  "tracing",
  "vino-codec",
+ "vino-entity",
  "vino-loader",
  "vino-macros",
  "vino-packet",
- "vino-provider",
  "vino-random",
  "vino-rpc",
  "vino-transport",
  "vino-types",
+ "vino-wapc",
  "vino-wascap",
  "wapc",
  "wasmtime-provider",
@@ -3917,6 +3926,10 @@ dependencies = [
  "serde",
  "serde_json",
 ]
+
+[[package]]
+name = "vino-wapc"
+version = "0.7.0"
 
 [[package]]
 name = "vino-wascap"

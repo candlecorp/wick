@@ -4,10 +4,7 @@ use std::sync::Arc;
 use structopt::StructOpt;
 use vino_host::HostBuilder;
 use vino_manifest::host_definition::HostDefinition;
-use vino_provider_cli::cli::{
-  DefaultCliOptions,
-  LatticeCliOptions,
-};
+use vino_provider_cli::options::{DefaultCliOptions, LatticeCliOptions};
 use vino_provider_cli::LoggingOptions;
 use vino_test::TestSuite;
 

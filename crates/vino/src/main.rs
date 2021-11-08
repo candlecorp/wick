@@ -84,7 +84,6 @@
 // !!END_LINTS
 // Add exceptions here
 #![allow(missing_docs, clippy::expect_used)]
-//todo
 pub mod error;
 pub use error::VinoError as Error;
 
@@ -97,10 +96,7 @@ mod commands;
 mod utils;
 use structopt::StructOpt;
 
-use self::commands::{
-  Cli,
-  CliCommand,
-};
+use self::commands::{Cli, CliCommand};
 
 #[tokio::main]
 async fn main() -> Result<()> {

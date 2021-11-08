@@ -7,16 +7,10 @@ use redis::FromRedisValue;
 use tokio::sync::RwLock;
 use vino_provider::native::prelude::*;
 use vino_rpc::error::RpcError;
-use vino_rpc::{
-  RpcHandler,
-  RpcResult,
-};
+use vino_rpc::{RpcHandler, RpcResult};
 
 use crate::error::Error;
-use crate::generated::{
-  self,
-  Dispatcher,
-};
+use crate::generated::{self, Dispatcher};
 
 pub(crate) type Context = Arc<RedisConnection>;
 
@@ -121,7 +115,7 @@ mod integration {
 
   use anyhow::Result;
   use rand::Rng;
-  use vino_interface_keyvalue::generated::*;
+  use vino_interface_keyvalue::*;
 
   use super::*;
 
@@ -425,10 +419,10 @@ mod integration {
     set_add(&provider, &key, &m2).await?;
     set_add(&provider, &key, &m3).await?;
     let (cursor, values) = set_scan(&provider, &key, "0", 1).await?;
-    assert!(values.len() >= 1);
+    assert!(!values.is_empty());
     assert!(all.contains(&values[0]));
     let (_cursor, values) = set_scan(&provider, &key, &cursor, 1).await?;
-    assert!(values.len() >= 1);
+    assert!(!values.is_empty());
     assert!(all.contains(&values[0]));
 
     delete(&provider, &key).await?;

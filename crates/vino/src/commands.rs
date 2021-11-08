@@ -3,7 +3,7 @@ pub(crate) mod run;
 pub(crate) mod serve;
 pub(crate) mod test;
 
-use logger::options::LoggingOptions;
+use logger::LoggingOptions;
 use structopt::clap::AppSettings;
 use structopt::StructOpt;
 

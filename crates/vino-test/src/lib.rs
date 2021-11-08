@@ -89,24 +89,12 @@ use std::collections::HashMap;
 use std::fs::read_to_string;
 use std::path::PathBuf;
 
-use serde::{
-  Deserialize,
-  Serialize,
-};
-use tap::{
-  TestBlock,
-  TestRunner,
-};
+use serde::{Deserialize, Serialize};
+use tap::{TestBlock, TestRunner};
 use tokio_stream::StreamExt;
 use vino_entity::Entity;
 use vino_rpc::SharedRpcHandler;
-use vino_transport::{
-  Failure,
-  MessageTransport,
-  Success,
-  TransportMap,
-  TransportWrapper,
-};
+use vino_transport::{Failure, MessageTransport, Success, TransportMap, TransportWrapper};
 
 use self::error::TestError;
 

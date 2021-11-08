@@ -1,15 +1,11 @@
+pub(crate) mod init_data;
+
 use std::convert::TryInto;
 use std::sync::Arc;
 
 use futures::Stream;
-use parking_lot::{
-  Condvar,
-  Mutex,
-};
-use vino_transport::{
-  Invocation,
-  TransportMap,
-};
+use parking_lot::{Condvar, Mutex};
+use vino_transport::{Invocation, TransportMap};
 
 use crate::dev::prelude::*;
 
@@ -224,10 +220,7 @@ mod tests {
   use tokio::sync::oneshot;
 
   use super::*;
-  use crate::test::prelude::{
-    assert_eq,
-    *,
-  };
+  use crate::test::prelude::{assert_eq, *};
   #[test_logger::test(tokio::test)]
   async fn invoke_async() -> TestResult<()> {
     let (_, nuid) = init_network_from_yaml("./manifests/v0/echo.yaml").await?;

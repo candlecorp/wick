@@ -1,19 +1,8 @@
 use tonic::Status;
-use vino_rpc::rpc::message_kind::{
-  Data,
-  Kind,
-  OutputSignal,
-};
-use vino_rpc::rpc::{
-  MessageKind,
-  Output,
-};
-use vino_transport::message_transport::{
-  Failure,
-  MessageSignal,
-  Success,
-};
+use vino_rpc::rpc::message_kind::{Data, Kind, OutputSignal};
+use vino_rpc::rpc::{MessageKind, Output};
 use vino_transport::MessageTransport;
+use vino_transport::{Failure, MessageSignal, Success};
 
 pub(crate) fn make_output(
   port: &str,

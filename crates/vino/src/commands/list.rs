@@ -4,14 +4,8 @@ use logger::LoggingOptions;
 use structopt::StructOpt;
 use vino_host::HostBuilder;
 use vino_manifest::host_definition::HostDefinition;
-use vino_provider_cli::cli::{
-  DefaultCliOptions,
-  LatticeCliOptions,
-};
-use vino_types::signatures::{
-  MapWrapper,
-  TypeMap,
-};
+use vino_provider_cli::options::{DefaultCliOptions, LatticeCliOptions};
+use vino_types::{MapWrapper, TypeMap};
 
 use crate::utils::merge_config;
 use crate::Result;

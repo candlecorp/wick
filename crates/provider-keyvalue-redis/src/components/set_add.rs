@@ -1,4 +1,4 @@
-use vino_interface_keyvalue::generated::set_add::*;
+use vino_interface_keyvalue::set_add::*;
 
 pub(crate) async fn job(input: Inputs, output: OutputPorts, context: crate::Context) -> JobResult {
   let mut cmd = redis::Cmd::sadd(&input.key, &input.values);

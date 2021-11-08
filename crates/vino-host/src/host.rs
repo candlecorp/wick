@@ -1,8 +1,5 @@
 use std::collections::HashMap;
-use std::convert::{
-  TryFrom,
-  TryInto,
-};
+use std::convert::{TryFrom, TryInto};
 use std::path::PathBuf;
 use std::sync::Arc;
 
@@ -10,29 +7,18 @@ use nkeys::KeyPair;
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
 use vino_entity::Entity;
-use vino_lattice::lattice::Lattice;
-use vino_lattice::nats::NatsOptions;
+use vino_lattice::Lattice;
+use vino_lattice::NatsOptions;
 use vino_manifest::host_definition::HostDefinition;
 use vino_provider::native::prelude::ProviderSignature;
-use vino_provider_cli::cli::{
-  LatticeOptions,
-  Options as HostOptions,
-  ServerOptions,
-  ServerState,
-};
-use vino_rpc::{
-  RpcHandler,
-  SharedRpcHandler,
-};
-use vino_runtime::core_data::InitData;
-use vino_runtime::network::NetworkBuilder;
+use vino_provider_cli::options::{LatticeOptions, Options as HostOptions, ServerOptions};
+use vino_provider_cli::ServerState;
+use vino_rpc::{RpcHandler, SharedRpcHandler};
 use vino_runtime::prelude::*;
+use vino_runtime::NetworkBuilder;
 use vino_transport::TransportMap;
 
-use crate::{
-  Error,
-  Result,
-};
+use crate::{Error, Result};
 
 type ServiceMap = HashMap<String, SharedRpcHandler>;
 static HOST_REGISTRY: Lazy<Mutex<ServiceMap>> = Lazy::new(|| Mutex::new(HashMap::new()));
@@ -117,7 +103,6 @@ impl Host {
     self.lattice = None;
     self.network = None;
     self.server_metadata = None;
-    // TODO: Need to gracefully shutdown started servers.
   }
 
   pub fn get_network(&self) -> Result<&Network> {
@@ -318,17 +303,14 @@ mod test {
   use std::str::FromStr;
 
   use http::Uri;
-  use vino_entity::entity::Entity;
+  use vino_entity::Entity;
   use vino_invocation_server::connect_rpc_client;
   use vino_manifest::host_definition::HttpConfig;
   use vino_rpc::convert_transport_map;
   use vino_rpc::rpc::Invocation;
 
   use super::*;
-  use crate::{
-    HostBuilder,
-    Result,
-  };
+  use crate::{HostBuilder, Result};
 
   #[test]
   fn builds_default() {

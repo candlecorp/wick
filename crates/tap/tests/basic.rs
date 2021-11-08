@@ -1,7 +1,4 @@
-use tap::{
-  TestBlock,
-  TestRunner,
-};
+use tap::{TestBlock, TestRunner};
 
 #[test]
 fn basics() -> Result<(), tap::TestError> {

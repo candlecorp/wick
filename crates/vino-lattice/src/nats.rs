@@ -3,11 +3,7 @@ use std::time::Duration;
 
 use futures::future::BoxFuture;
 use futures::FutureExt;
-use nats::asynk::{
-  Connection,
-  Message,
-  Subscription,
-};
+use nats::asynk::{Connection, Message, Subscription};
 use serde::Deserialize;
 use tokio::time::timeout;
 use vino_codec::messagepack::deserialize;

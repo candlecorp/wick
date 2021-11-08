@@ -1,7 +1,7 @@
 use std::collections::VecDeque;
 use std::time::Duration;
 
-use vino_provider::provider_link::ProviderLink;
+use vino_provider::ProviderLink;
 use vino_transport::TransportMap;
 
 use self::executor::SchematicOutput;
@@ -178,10 +178,7 @@ mod tests {
   use super::*;
   use crate::schematic_service::input_message::InputMessage;
   #[allow(unused_imports)]
-  use crate::test::prelude::{
-    assert_eq,
-    *,
-  };
+  use crate::test::prelude::{assert_eq, *};
   use crate::transaction::executor::TransactionExecutor;
   fn make_model() -> TestResult<Arc<RwLock<SchematicModel>>> {
     let schematic_name = "Test";

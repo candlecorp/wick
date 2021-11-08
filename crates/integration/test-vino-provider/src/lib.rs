@@ -1,9 +1,6 @@
 use vino_provider::native::prelude::*;
 use vino_rpc::error::RpcError;
-use vino_rpc::{
-  RpcHandler,
-  RpcResult,
-};
+use vino_rpc::{RpcHandler, RpcResult};
 
 use self::generated::Dispatcher;
 mod components;

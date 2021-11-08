@@ -86,9 +86,11 @@
 #![allow(missing_docs)]
 
 pub mod error;
-pub mod lattice;
-pub mod nats;
+mod lattice;
+mod nats;
+pub use self::nats::NatsOptions;
 pub use error::LatticeError as Error;
+pub use lattice::*;
 
 #[macro_use]
 extern crate tracing;

@@ -1,7 +1,7 @@
 pub use maplit::hashmap;
 pub use pretty_assertions::assert_eq as equals;
 use tokio::time::sleep;
-use vino_transport::message_transport::transport_json::TransportJson;
+use vino_transport::TransportJson;
 
 pub type TestResult<T> = Result<T, TestError>;
 
@@ -12,13 +12,8 @@ use std::collections::HashMap;
 use std::fs;
 use std::time::Duration;
 
-use vino_manifest::{
-  Loadable,
-  NetworkDefinition,
-  NetworkManifest,
-  SchematicDefinition,
-};
-use vino_runtime::network::Network;
+use vino_manifest::{Loadable, NetworkDefinition, NetworkManifest, SchematicDefinition};
+use vino_runtime::Network;
 use vino_wascap::KeyPair;
 pub type TestError = anyhow::Error;
 pub use anyhow::*;
@@ -61,15 +56,9 @@ use std::panic;
 use std::process::Stdio;
 
 use regex::Regex;
-use tokio::io::{
-  AsyncBufReadExt,
-  BufReader,
-};
+use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::select;
-use tokio::sync::mpsc::{
-  self,
-  Sender,
-};
+use tokio::sync::mpsc::{self, Sender};
 use tokio::task::JoinHandle;
 
 pub async fn vinoc_invoke(

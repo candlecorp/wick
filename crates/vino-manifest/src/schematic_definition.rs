@@ -1,35 +1,16 @@
 use std::borrow::Cow;
 use std::collections::HashMap;
-use std::convert::{
-  TryFrom,
-  TryInto,
-};
+use std::convert::{TryFrom, TryInto};
 use std::fmt::Display;
 use std::hash::Hash;
 use std::str::FromStr;
 
-use serde::{
-  Deserialize,
-  Serialize,
-};
+use serde::{Deserialize, Serialize};
 use vino_transport::MessageTransport;
 
-use crate::default::{
-  parse_default,
-  process_default,
-};
-use crate::parse::{
-  parse_id,
-  CORE_ID,
-  NS_LINK,
-  SCHEMATIC_INPUT,
-  SCHEMATIC_OUTPUT,
-};
-use crate::{
-  Error,
-  Result,
-  SchematicManifest,
-};
+use crate::default::{parse_default, process_default};
+use crate::parse::{parse_id, CORE_ID, NS_LINK, SCHEMATIC_INPUT, SCHEMATIC_OUTPUT};
+use crate::{Error, Result, SchematicManifest};
 
 #[derive(Debug, Clone, Default)]
 /// The SchematicDefinition struct is a normalized representation of a Vino [SchematicManifest].

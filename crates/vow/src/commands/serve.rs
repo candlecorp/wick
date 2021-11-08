@@ -1,11 +1,8 @@
 use std::sync::Arc;
 
 use structopt::StructOpt;
-use vino_provider_cli::cli::DefaultCliOptions;
-use vino_provider_wasm::provider::{
-  Provider,
-  WasiParams,
-};
+use vino_provider_cli::options::DefaultCliOptions;
+use vino_provider_wasm::provider::{Provider, WasiParams};
 
 use super::WasiOptions;
 use crate::Result;

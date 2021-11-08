@@ -1,6 +1,6 @@
 use std::convert::TryInto;
 
-use vino_interface_keyvalue::generated::list_remove::*;
+use vino_interface_keyvalue::list_remove::*;
 
 pub(crate) async fn job(input: Inputs, output: OutputPorts, context: crate::Context) -> JobResult {
   let num: isize = input.num.try_into().unwrap_or(isize::MAX);

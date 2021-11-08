@@ -1,9 +1,6 @@
 use async_trait::async_trait;
 use vino_rpc::error::RpcError;
-use vino_rpc::{
-  RpcHandler,
-  RpcResult,
-};
+use vino_rpc::{RpcHandler, RpcResult};
 
 use crate::dev::prelude::*;
 
@@ -58,10 +55,7 @@ impl RpcHandler for Provider {
 mod tests {
 
   use super::*;
-  use crate::test::prelude::{
-    assert_eq,
-    *,
-  };
+  use crate::test::prelude::{assert_eq, *};
   type Result<T> = std::result::Result<T, RuntimeError>;
 
   async fn request_log(provider: &Provider, data: &str) -> Result<String> {

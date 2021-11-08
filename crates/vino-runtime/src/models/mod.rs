@@ -12,9 +12,8 @@ pub(crate) use schematic_model::SchematicModel;
 
 use crate::dev::prelude::*;
 
-pub mod error;
-
-pub use error::*;
+pub(crate) mod error;
+pub(crate) use error::*;
 
 pub(crate) type SharedModel = Arc<RwLock<SchematicModel>>;
 

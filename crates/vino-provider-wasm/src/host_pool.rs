@@ -1,16 +1,10 @@
 use std::collections::HashMap;
-use std::sync::atomic::{
-  AtomicUsize,
-  Ordering,
-};
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 
-use parking_lot::{
-  Mutex,
-  RwLock,
-};
+use parking_lot::{Mutex, RwLock};
 use vino_transport::TransportStream;
-use vino_types::signatures::ProviderSignature;
+use vino_types::ProviderSignature;
 
 use crate::error::WasmProviderError;
 use crate::wasm_host::RpcProxy;
@@ -91,19 +85,13 @@ impl HostPool {
 
 #[cfg(test)]
 mod tests {
-  use std::time::{
-    Duration,
-    Instant,
-  };
+  use std::time::{Duration, Instant};
 
   use futures::future::join_all;
   use tokio::sync::mpsc::unbounded_channel;
   use tokio_stream::wrappers::UnboundedReceiverStream;
   use tokio_stream::StreamExt;
-  use vino_transport::{
-    MessageTransport,
-    TransportWrapper,
-  };
+  use vino_transport::{MessageTransport, TransportWrapper};
 
   use super::*;
 

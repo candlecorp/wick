@@ -72,5 +72,5 @@
 // Add exceptions here
 #![allow(missing_copy_implementations)]
 
-pub mod generated;
+mod generated;
 pub use generated::*;

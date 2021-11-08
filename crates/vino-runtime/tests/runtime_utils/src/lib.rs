@@ -1,16 +1,9 @@
 use std::fs;
 
 use vino_manifest::{
-  HostManifest,
-  Loadable,
-  NetworkDefinition,
-  NetworkManifest,
-  SchematicDefinition,
+  HostManifest, Loadable, NetworkDefinition, NetworkManifest, SchematicDefinition,
 };
-use vino_runtime::network::{
-  Network,
-  NetworkBuilder,
-};
+use vino_runtime::{Network, NetworkBuilder};
 use vino_wascap::KeyPair;
 #[macro_use]
 extern crate tracing;
@@ -29,8 +22,8 @@ pub async fn init_network_from_yaml(path: &str) -> anyhow::Result<(Network, Stri
     use std::sync::Arc;
     use std::time::Duration;
 
-    use vino_lattice::nats::NatsOptions;
-    let lattice = vino_lattice::lattice::Lattice::connect(NatsOptions {
+    use vino_lattice::NatsOptions;
+    let lattice = vino_lattice::Lattice::connect(NatsOptions {
       address: url,
       client_id: "test".to_owned(),
       creds_path: None,

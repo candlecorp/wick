@@ -1,9 +1,6 @@
 use std::path::Path;
 
-use vino_loader::{
-  get_bytes,
-  get_bytes_from_oci,
-};
+use vino_loader::{get_bytes, get_bytes_from_oci};
 
 use crate::error::WasmProviderError;
 pub use crate::wapc_module::WapcModule;

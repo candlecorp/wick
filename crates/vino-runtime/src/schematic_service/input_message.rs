@@ -1,7 +1,4 @@
-use serde::{
-  Deserialize,
-  Serialize,
-};
+use serde::{Deserialize, Serialize};
 
 use crate::dev::prelude::*;
 use crate::schematic_service::default::make_default_transport;

@@ -1,229 +1,23 @@
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
-use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::Arc;
 use std::time::Duration;
 
-use logger::LoggingOptions;
-use nkeys::KeyPair;
-use structopt::StructOpt;
 use tokio::signal;
 use tokio::sync::mpsc::Sender;
 use tonic::transport::{Certificate, Identity, Server};
 use vino_invocation_server::InvocationServer;
-use vino_lattice::lattice::Lattice;
-use vino_lattice::nats::NatsOptions;
+use vino_lattice::Lattice;
+use vino_lattice::NatsOptions;
 use vino_rpc::rpc::invocation_service_server::InvocationServiceServer;
 use vino_rpc::SharedRpcHandler;
 
+use crate::options::{LatticeOptions, Options, ServerOptions};
 use crate::Result;
 
 #[cfg(feature = "reflection")]
 pub(crate) const FILE_DESCRIPTOR_SET: &[u8] =
   include_bytes!("../../vino-rpc/src/generated/descriptors.bin");
-
-#[derive(Debug, Clone)]
-/// Server configuration options.
-pub struct Options {
-  /// RPC server options.
-  pub rpc: Option<ServerOptions>,
-  /// HTTP server options.
-  pub http: Option<ServerOptions>,
-  /// Lattice options.
-  pub lattice: Option<LatticeOptions>,
-  /// The ID of the server.
-  pub id: String,
-  /// The timeout for network requests.
-  pub timeout: Duration,
-}
-
-impl Default for Options {
-  fn default() -> Self {
-    Self {
-      id: KeyPair::new_server().public_key(),
-      rpc: Default::default(),
-      http: Default::default(),
-      lattice: Default::default(),
-      timeout: Default::default(),
-    }
-  }
-}
-
-#[derive(Debug, Default, Clone)]
-/// Configuration used to connect to the lattice
-pub struct LatticeOptions {
-  /// Enable/disable the lattice connection.
-  pub enabled: bool,
-
-  /// The address of the NATS server.
-  pub address: String,
-
-  /// The path to the NATS credsfile.
-  pub creds_path: Option<PathBuf>,
-
-  /// The NATS token.
-  pub token: Option<String>,
-}
-
-#[derive(Debug, Clone, Default)]
-/// Options to use when starting an RPC or HTTP server.
-pub struct ServerOptions {
-  /// Enable/disable the server.
-  pub enabled: bool,
-
-  /// The port to bind to.
-  pub port: Option<u16>,
-
-  /// The address to bind to.
-  pub address: Option<Ipv4Addr>,
-
-  /// Path to pem file for TLS.
-  pub pem: Option<PathBuf>,
-
-  /// Path to key file for TLS.
-  pub key: Option<PathBuf>,
-
-  /// Path to CA file.
-  pub ca: Option<PathBuf>,
-}
-
-impl From<DefaultCliOptions> for Options {
-  fn from(opts: DefaultCliOptions) -> Self {
-    let rpc = Some(ServerOptions {
-      enabled: opts.rpc_enabled,
-      port: opts.rpc_port,
-      address: opts.rpc_address,
-      pem: opts.rpc_pem,
-      key: opts.rpc_key,
-      ca: opts.rpc_ca,
-    });
-
-    let http = Some(ServerOptions {
-      enabled: opts.http_enabled,
-      port: opts.http_port,
-      address: opts.http_address,
-      pem: opts.http_pem,
-      key: opts.http_key,
-      ca: opts.http_ca,
-    });
-
-    #[allow(clippy::option_if_let_else)]
-    let lattice = if let Some(url) = opts.lattice.nats_url {
-      Some(LatticeOptions {
-        enabled: opts.lattice.lattice_enabled,
-        address: url,
-        creds_path: opts.lattice.nats_credsfile,
-        token: opts.lattice.nats_token,
-      })
-    } else {
-      None
-    };
-
-    Options {
-      rpc,
-      http,
-      timeout: Duration::from_millis(opts.timeout.unwrap_or(5000)),
-      id: opts
-        .id
-        .unwrap_or_else(|| KeyPair::new_server().public_key()),
-      lattice,
-    }
-  }
-}
-
-impl From<DefaultCliOptions> for LoggingOptions {
-  fn from(opts: DefaultCliOptions) -> Self {
-    opts.logging
-  }
-}
-
-#[derive(Debug, Clone, Default, StructOpt)]
-/// Command line options for providers.
-pub struct DefaultCliOptions {
-  /// The unique ID of this client.
-  #[structopt(long = "id", env = "PROVIDER_ID")]
-  pub id: Option<String>,
-
-  /// The timeout for outbound requests in ms.
-  #[structopt(long = "timeout", env = "VINO_TIMEOUT")]
-  pub timeout: Option<u64>,
-
-  /// Logging options.
-  #[structopt(flatten)]
-  pub logging: LoggingOptions,
-
-  #[structopt(flatten)]
-  /// Options for connecting to a lattice.
-  pub lattice: LatticeCliOptions,
-
-  /// Enable the rpc server.
-  #[structopt(long = "rpc")]
-  pub rpc_enabled: bool,
-
-  /// Port to listen on for GRPC server.
-  #[structopt(long = "rpc-port", env = "VINO_RPC_PORT")]
-  pub rpc_port: Option<u16>,
-
-  /// IP address to bind to for GRPC server.
-  #[structopt(long = "rpc-address", env = "VINO_RPC_ADDRESS")]
-  pub rpc_address: Option<Ipv4Addr>,
-
-  /// Path to pem file for TLS for GRPC server.
-  #[structopt(long = "rpc-pem", env = "VINO_RPC_PEM")]
-  pub rpc_pem: Option<PathBuf>,
-
-  /// Path to key file for TLS for GRPC server.
-  #[structopt(long = "rpc-key", env = "VINO_RPC_KEY")]
-  pub rpc_key: Option<PathBuf>,
-
-  /// Path to certificate authority for GRPC server.
-  #[structopt(long = "rpc-ca", env = "VINO_RPC_CA")]
-  pub rpc_ca: Option<PathBuf>,
-
-  /// Enable the http server.
-  #[structopt(long = "http")]
-  pub http_enabled: bool,
-
-  /// Address for the optional HTTP server.
-  #[structopt(long = "http-address", env = "VINO_HTTP_ADDRESS")]
-  pub http_address: Option<Ipv4Addr>,
-
-  /// Port to use for HTTP.
-  #[structopt(long = "http-port", env = "VINO_HTTP_PORT")]
-  pub http_port: Option<u16>,
-
-  /// Path to pem file for TLS for HTTPS server.
-  #[structopt(long = "http-pem", env = "VINO_HTTP_PEM")]
-  pub http_pem: Option<PathBuf>,
-
-  /// Path to key file for TLS for HTTPS server.
-  #[structopt(long = "http-key", env = "VINO_HTTP_KEY")]
-  pub http_key: Option<PathBuf>,
-
-  /// Path to certificate authority for HTTPS server.
-  #[structopt(long = "http-ca", env = "VINO_HTTP_CA")]
-  pub http_ca: Option<PathBuf>,
-}
-
-#[derive(Debug, Clone, Default, StructOpt)]
-/// Command line options for providers.
-pub struct LatticeCliOptions {
-  /// Enable the lattice connection.
-  #[structopt(long = "lattice")]
-  pub lattice_enabled: bool,
-
-  /// The url of the NATS server (in IP:PORT format).
-  #[structopt(long = "nats", env = "NATS_URL")]
-  pub nats_url: Option<String>,
-
-  /// The path to the NATS credsfile.
-  #[structopt(long = "nats-credsfile", env = "NATS_CREDSFILE")]
-  pub nats_credsfile: Option<PathBuf>,
-
-  /// The NATS token.
-  #[structopt(long = "nats-token", env = "NATS_TOKEN", hide_env_values = true)]
-  pub nats_token: Option<String>,
-}
 
 #[derive(Debug)]
 #[must_use]
@@ -525,6 +319,7 @@ mod tests {
   use tonic::transport::Uri;
   use vino_invocation_server::connect_rpc_client;
   use vino_rpc::rpc::ListRequest;
+  use vino_rpc::{HostedType, MapWrapper};
 
   use super::*;
 
@@ -553,8 +348,8 @@ mod tests {
     Ok(())
   }
 
-  // #[test_logger::test(tokio::test)]
-  async fn _test_http() -> Result<()> {
+  #[test_logger::test(tokio::test)]
+  async fn test_http_service() -> Result<()> {
     let config = start_server(
       get_provider(),
       Some(Options {
@@ -564,6 +359,7 @@ mod tests {
           ..Default::default()
         }),
         http: Some(ServerOptions {
+          enabled: true,
           address: Some(Ipv4Addr::from_str("127.0.0.1")?),
           port: Some(8111),
           ..Default::default()
@@ -573,11 +369,12 @@ mod tests {
     )
     .await?;
     sleep(Duration::from_millis(100)).await;
+    debug!("config: {:?}", config);
     let http = config.http.unwrap();
     let url = &format!("http://{}:{}", http.addr.ip(), http.addr.port());
     println!("URL: {}", url);
-    // sleep(Duration::from_millis(1000000)).await;
-    let endpoint = format!("{}/vino.InvocationService.List", url);
+
+    let endpoint = format!("{}/rpc/list", url);
     let client = reqwest::Client::new();
     let resp = client
       .post(endpoint)
@@ -586,9 +383,17 @@ mod tests {
       .body("{}")
       .send()
       .await?;
+    let body: Vec<HostedType> = serde_json::from_slice(&resp.bytes().await?)?;
+    debug!("Response bytes: {:?}", body);
+    assert_eq!(body.len(), 1);
 
-    println!("http response: {:?}", resp);
-    // todo!();
+    #[allow(irrefutable_let_patterns)]
+    if let HostedType::Provider(sig) = &body[0] {
+      assert_eq!(sig.components.len(), 2);
+    } else {
+      panic!("Wrong type");
+    }
+
     Ok(())
   }
 }

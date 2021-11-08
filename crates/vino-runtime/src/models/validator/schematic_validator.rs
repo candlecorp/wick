@@ -291,10 +291,7 @@ mod tests {
   use ConnectionTargetDefinition as Target;
 
   use super::*;
-  use crate::test::prelude::{
-    assert_eq,
-    *,
-  };
+  use crate::test::prelude::{assert_eq, *};
   use crate::VINO_V0_NAMESPACE;
   #[test_logger::test]
   fn test_validate_early_errors() -> TestResult<()> {

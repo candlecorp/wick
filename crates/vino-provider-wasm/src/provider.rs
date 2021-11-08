@@ -3,14 +3,13 @@ use std::sync::Arc;
 
 use async_trait::async_trait;
 use vino_codec::messagepack::serialize;
-use vino_provider::native::prelude::*;
+use vino_entity::Entity;
+// use vino_provider::native::prelude::*;
 use vino_rpc::error::RpcError;
-use vino_rpc::{
-  RpcHandler,
-  RpcResult,
-};
-use vino_transport::message_transport::stream::BoxedTransportStream;
+use vino_rpc::{RpcHandler, RpcResult};
 use vino_transport::TransportMap;
+use vino_transport::{BoxedTransportStream, TransportWrapper};
+use vino_types::*;
 pub use wapc::WasiParams;
 
 use crate::error::LinkError;
@@ -112,7 +111,7 @@ mod tests {
   use anyhow::Result as TestResult;
   use maplit::hashmap;
   use tokio_stream::StreamExt;
-  use vino_provider::native::prelude::*;
+  use vino_transport::MessageTransport;
 
   use super::*;
 

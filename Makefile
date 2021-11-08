@@ -104,9 +104,10 @@ test: $(TEST_WASM)
 	cargo deny check licenses --hide-inclusion-graph
 	cargo build --workspace # necessary to ensure binaries are built
 	cargo test --workspace
+	sccache -s
 
 .PHONY: integration
-integration: $(TEST_WASM)
+test-integration: $(TEST_WASM)
 	cargo deny check licenses --hide-inclusion-graph
 	cargo build --workspace # necessary to ensure binaries are built
 	cargo test --workspace --features test-integration --features vino-lattice/test-integration --features vino-provider-lattice/test-integration --features vino-runtime/test-integration --features vino-keyvalue-redis/test-integration

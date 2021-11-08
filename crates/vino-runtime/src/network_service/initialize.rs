@@ -4,7 +4,7 @@ use std::time::Duration;
 
 use futures::future::BoxFuture;
 use parking_lot::RwLock;
-use vino_lattice::lattice::Lattice;
+use vino_lattice::Lattice;
 
 use crate::dev::prelude::*;
 use crate::providers::{

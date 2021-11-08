@@ -1,21 +1,11 @@
-use std::convert::{
-  TryFrom,
-  TryInto,
-};
+use std::convert::{TryFrom, TryInto};
 use std::time::Instant;
 
 use futures::future::try_join_all;
 use futures::StreamExt;
 use once_cell::sync::OnceCell;
-use vino_host::{
-  Host,
-  HostBuilder,
-};
-use vino_transport::{
-  MessageTransport,
-  TransportMap,
-  TransportStream,
-};
+use vino_host::{Host, HostBuilder};
+use vino_transport::{MessageTransport, TransportMap, TransportStream};
 
 static HOST: OnceCell<Host> = OnceCell::new();
 

@@ -1,10 +1,6 @@
 use std::path::Path;
 
-use vino_wascap::{
-  Claims,
-  ProviderClaims,
-  Token,
-};
+use vino_wascap::{Claims, ProviderClaims, Token};
 
 use crate::error::WasmProviderError;
 

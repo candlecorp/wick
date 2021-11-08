@@ -1,8 +1,4 @@
-use vino_transport::{
-  MessageTransport,
-  Success,
-  TransportMap,
-};
+use vino_transport::{MessageTransport, Success, TransportMap};
 
 use crate::Error;
 

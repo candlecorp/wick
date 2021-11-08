@@ -1,7 +1,4 @@
-use vino_host::{
-  Error,
-  HostBuilder,
-};
+use vino_host::{Error, HostBuilder};
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {

@@ -9,7 +9,7 @@ use tonic::body::{empty_body, BoxBody};
 use vino_entity::Entity;
 use vino_rpc::SharedRpcHandler;
 use vino_transport::{TransportMap, TransportWrapper};
-use vino_types::signatures::HostedType;
+use vino_types::HostedType;
 
 use crate::cors::Cors;
 use crate::error::HttpError;

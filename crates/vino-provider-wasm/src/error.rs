@@ -1,5 +1,4 @@
 use thiserror::Error;
-use vino_provider::native::prelude::EntityError;
 use vino_rpc::error::RpcError;
 
 #[derive(Error, Debug)]
@@ -73,8 +72,8 @@ pub enum LinkError {
   CallFailure(String),
 }
 
-impl From<EntityError> for LinkError {
-  fn from(e: EntityError) -> Self {
+impl From<vino_entity::Error> for LinkError {
+  fn from(e: vino_entity::Error) -> Self {
     LinkError::EntityFailure(e.to_string())
   }
 }

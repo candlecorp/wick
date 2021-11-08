@@ -1,51 +1,24 @@
-use std::collections::{
-  HashMap,
-  HashSet,
-  VecDeque,
-};
+use std::collections::{HashMap, HashSet, VecDeque};
 use std::str::FromStr;
 use std::sync::Arc;
-use std::time::{
-  Instant,
-  SystemTime,
-};
+use std::time::{Instant, SystemTime};
 
 use parking_lot::RwLock;
 use tokio::sync::mpsc::unbounded_channel;
 use tokio_stream::wrappers::UnboundedReceiverStream;
-use vino_codec::messagepack::{
-  deserialize,
-  serialize,
-};
+use vino_codec::messagepack::{deserialize, serialize};
 use vino_packet::v0::Payload;
 use vino_packet::Packet;
-use vino_provider::{
-  HostCommand,
-  LogLevel,
-  OutputSignal,
-};
-use vino_transport::{
-  TransportMap,
-  TransportStream,
-  TransportWrapper,
-};
-use vino_types::signatures::ProviderSignature;
-use vino_wascap::{
-  Claims,
-  ProviderClaims,
-};
-use wapc::{
-  WapcHost,
-  WasiParams,
-};
+use vino_transport::{TransportMap, TransportStream, TransportWrapper};
+use vino_types::ProviderSignature;
+use vino_wapc::{HostCommand, LogLevel, OutputSignal};
+use vino_wascap::{Claims, ProviderClaims};
+use wapc::{WapcHost, WasiParams};
 
 use crate::error::WasmProviderError;
 use crate::provider::HostLinkCallback;
 use crate::wapc_module::WapcModule;
-use crate::{
-  Error,
-  Result,
-};
+use crate::{Error, Result};
 
 type PortBuffer = VecDeque<(String, Packet)>;
 

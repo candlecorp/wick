@@ -1,9 +1,6 @@
 use std::borrow::Cow;
 use std::cell::RefCell;
-use std::collections::{
-  HashMap,
-  VecDeque,
-};
+use std::collections::{HashMap, VecDeque};
 
 use super::Result;
 use crate::dev::prelude::*;

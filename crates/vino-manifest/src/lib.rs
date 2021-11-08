@@ -94,7 +94,8 @@ use serde::de::DeserializeOwned;
 use tracing::debug;
 
 /// Module for processing JSON templates used for default values.
-pub mod default;
+mod default;
+pub use default::{parse_default, process_default, ERROR_STR};
 
 /// Module for parsing parts of a manifest.
 pub mod parse;
@@ -107,23 +108,20 @@ pub mod v0;
 
 /// A version-normalized format of the manifest for development.
 pub mod host_definition;
+pub use host_definition::HostDefinition;
 
 /// A version-normalized format of the network manifest for development.
 pub mod network_definition;
+pub use network_definition::NetworkDefinition;
 
 /// A version-normalized format of the schematic manifest for development.
 pub mod schematic_definition;
-
-pub use network_definition::NetworkDefinition;
-pub use parse::parse_id;
 pub use schematic_definition::{
-  ComponentDefinition,
-  ConnectionDefinition,
-  ConnectionTargetDefinition,
-  ProviderDefinition,
-  ProviderKind,
-  SchematicDefinition,
+  ComponentDefinition, ConnectionDefinition, ConnectionTargetDefinition, ProviderDefinition,
+  ProviderKind, SchematicDefinition,
 };
+
+pub use parse::parse_id;
 
 use crate::error::ManifestError;
 

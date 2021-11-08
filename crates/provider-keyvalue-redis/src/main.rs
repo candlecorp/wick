@@ -92,7 +92,7 @@ use std::sync::Arc;
 
 use structopt::StructOpt;
 use vino_keyvalue_redis::provider::Provider;
-use vino_provider_cli::cli::DefaultCliOptions;
+use vino_provider_cli::options::DefaultCliOptions;
 
 #[derive(Debug, Clone, StructOpt)]
 pub struct Options {

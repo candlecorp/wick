@@ -73,10 +73,7 @@
 #![allow(missing_docs, clippy::expect_used)] // todo
 
 use vino_manifest::host_definition::HostDefinition;
-use vino_transport::{
-  TransportMap,
-  TransportStream,
-};
+use vino_transport::{TransportMap, TransportStream};
 
 use crate::HostBuilder;
 

@@ -1,9 +1,6 @@
 use regex::Regex;
 
-use crate::{
-  v0,
-  Error,
-};
+use crate::{v0, Error};
 
 lazy_static::lazy_static! {
     pub(crate) static ref CONNECTION_TARGET_REGEX_V0: Regex = Regex::new(&format!(r"^({}|{}|{}|{}|{}|[a-zA-Z][a-zA-Z0-9_]*)(?:\[(\w*)\])?$", DEFAULT_ID, SCHEMATIC_INPUT, SCHEMATIC_OUTPUT, NS_LINK, CORE_ID)).unwrap();

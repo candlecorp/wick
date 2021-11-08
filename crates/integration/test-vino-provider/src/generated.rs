@@ -55,10 +55,7 @@ pub(crate) mod error {
   use std::collections::HashMap;
 
   use async_trait::async_trait;
-  use serde::{
-    Deserialize,
-    Serialize,
-  };
+  use serde::{Deserialize, Serialize};
   #[cfg(feature = "native")]
   pub use vino_provider::native::prelude::*;
   #[cfg(feature = "wasm")]
@@ -225,10 +222,7 @@ pub(crate) mod test_component {
   use std::collections::HashMap;
 
   use async_trait::async_trait;
-  use serde::{
-    Deserialize,
-    Serialize,
-  };
+  use serde::{Deserialize, Serialize};
   #[cfg(feature = "native")]
   pub use vino_provider::native::prelude::*;
   #[cfg(feature = "wasm")]

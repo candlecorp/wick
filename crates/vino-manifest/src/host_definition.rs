@@ -1,23 +1,12 @@
-use std::convert::{
-  TryFrom,
-  TryInto,
-};
+use std::convert::{TryFrom, TryInto};
 use std::net::Ipv4Addr;
-use std::path::{
-  Path,
-  PathBuf,
-};
+use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use std::time::Duration;
 
 use crate::error::ManifestError;
 use crate::v0::HOST_CONFIG_TIMEOUT;
-use crate::{
-  HostManifest,
-  Loadable,
-  NetworkDefinition,
-  Result,
-};
+use crate::{HostManifest, Loadable, NetworkDefinition, Result};
 
 #[derive(Debug, Clone, Default)]
 /// The [HostDefinition] struct is a normalized representation of a Vino [HostManifest].

@@ -85,21 +85,21 @@
 )]
 // !!END_LINTS
 // Add exceptions here
-#![allow(unused_qualifications)]
+#![allow(unused_qualifications, missing_docs)]
 
 use std::sync::Arc;
 
 use async_trait::async_trait;
 
-/// The Vino RPC Client
 #[cfg(feature = "client")]
-pub mod client;
+mod client;
+#[cfg(feature = "client")]
+pub use client::{make_rpc_client, RpcClient};
 
 /// Error module.
 pub mod error;
 
-#[doc(hidden)]
-pub mod generated;
+mod generated;
 
 /// Utility and conversion types.
 pub mod types;
@@ -109,9 +109,8 @@ pub use dyn_clone::clone_box;
 pub use generated::vino as rpc;
 pub use types::*;
 use vino_entity::Entity;
-use vino_transport::message_transport::stream::BoxedTransportStream;
+use vino_transport::BoxedTransportStream;
 use vino_transport::TransportMap;
-use vino_types::signatures::HostedType;
 
 pub(crate) type Result<T> = std::result::Result<T, error::RpcError>;
 
@@ -143,6 +142,3 @@ where
   /// List the entities this [RpcHandler] manages.
   fn get_list(&self) -> std::result::Result<Vec<HostedType>, Box<error::RpcError>>;
 }
-
-#[cfg(feature = "client")]
-pub use client::make_rpc_client;

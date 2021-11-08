@@ -88,10 +88,7 @@
 #![allow()]
 
 use std::env::temp_dir;
-use std::io::{
-  Read,
-  Write,
-};
+use std::io::{Read, Write};
 use std::path::PathBuf;
 use std::str::FromStr;
 

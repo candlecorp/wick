@@ -1,4 +1,4 @@
-use vino_interface_keyvalue::generated::exists::*;
+use vino_interface_keyvalue::exists::*;
 
 pub(crate) async fn job(input: Inputs, output: OutputPorts, context: crate::Context) -> JobResult {
   let mut cmd = redis::Cmd::exists(&input.key);

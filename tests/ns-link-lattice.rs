@@ -2,16 +2,10 @@
 mod test {
   use std::panic;
 
-  use log::{
-    debug,
-    error,
-  };
+  use log::{debug, error};
   use serde_json::json;
   use utils::*;
-  use vino_transport::{
-    JsonError,
-    TransportJson,
-  };
+  use vino_transport::{JsonError, TransportJson};
 
   #[test_logger::test(tokio::test)]
   async fn test_collection() -> utils::TestResult<()> {

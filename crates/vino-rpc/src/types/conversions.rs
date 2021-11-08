@@ -1,23 +1,14 @@
 use std::collections::HashMap;
-use std::convert::{
-  TryFrom,
-  TryInto,
-};
+use std::convert::{TryFrom, TryInto};
 use std::time::Duration;
 
 use vino_packet::v0::Payload;
 use vino_packet::Packet;
 use vino_transport::TransportMap;
-use vino_types::signatures::{
-  self as vino,
-  MapWrapper,
-};
+use vino_types::{self as vino, MapWrapper};
 
 use crate::error::RpcError;
-use crate::{
-  rpc,
-  DurationStatistics,
-};
+use crate::{rpc, DurationStatistics};
 
 type Result<T> = std::result::Result<T, RpcError>;
 
@@ -152,11 +143,7 @@ impl From<DurationStatistics> for rpc::DurationStatistics {
 #[allow(clippy::from_over_into)]
 impl Into<Packet> for rpc::MessageKind {
   fn into(self) -> Packet {
-    use rpc::message_kind::{
-      Data,
-      Kind,
-      OutputSignal,
-    };
+    use rpc::message_kind::{Data, Kind, OutputSignal};
     let kind: Kind = match Kind::from_i32(self.kind) {
       Some(v) => v,
       None => return Packet::V0(Payload::Error(format!("Invalid kind {}", self.kind))),
@@ -244,13 +231,7 @@ impl TryFrom<vino::TypeSignature> for rpc::TypeSignature {
   fn try_from(t: vino::TypeSignature) -> Result<Self> {
     use rpc::simple_type::WidlType;
     use rpc::type_signature::Signature;
-    use rpc::{
-      LinkType,
-      ListType,
-      MapType,
-      OptionalType,
-      RefType,
-    };
+    use rpc::{LinkType, ListType, MapType, OptionalType, RefType};
     let sig: Signature = match t {
       vino::TypeSignature::I8 => WidlType::I8.into(),
       vino::TypeSignature::I16 => WidlType::I16.into(),

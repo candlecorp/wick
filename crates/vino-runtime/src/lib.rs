@@ -108,45 +108,30 @@ extern crate vino_macros;
 #[macro_use]
 extern crate tracing;
 
-pub mod core_data;
 mod dispatch;
 pub mod error;
-pub mod models;
-pub mod network;
-pub mod network_service;
-pub mod providers;
+mod models;
+mod network;
+pub use network::{Network, NetworkBuilder};
+pub use providers::network_provider::Provider as NetworkProvider;
+mod network_service;
+mod providers;
 mod schematic_service;
 mod transaction;
+// TODO track down usage of these and restrict visibility
 pub mod utils;
 
 pub mod prelude {
   pub use tokio_stream::StreamExt;
-  pub use vino_codec::messagepack::{
-    deserialize as mp_deserialize,
-    serialize as mp_serialize,
-  };
+  pub use vino_codec::messagepack::{deserialize as mp_deserialize, serialize as mp_serialize};
   pub use vino_manifest::NetworkDefinition;
-  pub use vino_packet::{
-    packet,
-    Packet,
-  };
-  pub use vino_transport::{
-    MessageTransport,
-    TransportStream,
-    TransportWrapper,
-  };
+  pub use vino_packet::{packet, Packet};
+  pub use vino_transport::{MessageTransport, TransportStream, TransportWrapper};
 
-  pub use crate::dispatch::{
-    DispatchError,
-    InvocationResponse,
-  };
+  pub use crate::dispatch::{init_data::InitData, DispatchError, InvocationResponse};
   pub use crate::network::Network;
   pub use crate::providers::network_provider::Provider as NetworkProvider;
-  pub use crate::{
-    SCHEMATIC_INPUT,
-    SCHEMATIC_OUTPUT,
-    SELF_NAMESPACE,
-  };
+  pub use crate::{SCHEMATIC_INPUT, SCHEMATIC_OUTPUT, SELF_NAMESPACE};
 }
 
 pub(crate) mod dev;
@@ -155,6 +140,9 @@ pub(crate) mod dev;
 pub(crate) mod test;
 
 pub type Error = error::RuntimeError;
+pub use network_service::error::NetworkError;
+pub use providers::error::ProviderError;
+pub use schematic_service::error::SchematicError;
 
 /// The reserved reference name for schematic input. Used in schematic manifests to denote schematic input.
 pub const SCHEMATIC_INPUT: &str = "<input>";

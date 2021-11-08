@@ -83,15 +83,14 @@
 )]
 // !!END_LINTS
 // Add exceptions here
-#![allow()]
-
 #![allow(missing_docs)]
 
 pub mod error;
+// TODO ref check and make sure these are used:
 pub mod helpers;
 mod host_pool;
 pub mod provider;
-pub mod wapc_module;
+mod wapc_module;
 pub mod wasm_host;
 
 pub(crate) type Result<T> = std::result::Result<T, error::WasmProviderError>;

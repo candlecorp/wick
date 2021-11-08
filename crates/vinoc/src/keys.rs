@@ -1,19 +1,10 @@
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::Error;
-use std::path::{
-  Path,
-  PathBuf,
-};
-use std::{
-  env,
-  fs,
-};
+use std::path::{Path, PathBuf};
+use std::{env, fs};
 
-use nkeys::{
-  KeyPair,
-  KeyPairType,
-};
+use nkeys::{KeyPair, KeyPairType};
 use structopt::StructOpt;
 
 #[derive(Debug, Clone, StructOpt)]

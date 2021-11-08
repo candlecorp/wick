@@ -1,20 +1,12 @@
 use structopt::StructOpt;
-use tokio::io::{
-  self,
-  AsyncBufReadExt,
-};
+use tokio::io::{self, AsyncBufReadExt};
 use tokio_stream::StreamExt;
-use vino_provider::native::prelude::{
-  BoxedTransportStream,
-  Entity,
-  MapWrapper,
-  TransportMap,
-};
-use vino_provider_cli::utils::parse_args;
+use vino_provider::native::prelude::{BoxedTransportStream, Entity, MapWrapper, TransportMap};
+use vino_provider_cli::parse_args;
 use vino_provider_cli::LoggingOptions;
 use vino_provider_wasm::provider::Provider;
 use vino_rpc::RpcHandler;
-use vino_transport::message_transport::stream::map_to_json;
+use vino_transport::map_to_json;
 
 use super::WasiOptions;
 use crate::error::VowError;

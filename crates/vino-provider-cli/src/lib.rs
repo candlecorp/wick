@@ -88,27 +88,25 @@
 #![allow()]
 
 /// The CLI module.
-pub mod cli;
+mod cli;
+pub use cli::{init_cli, print_info, start_server, ServerControl, ServerState};
 
 /// The crate's error module.
 pub mod error;
 
+/// Common configuration and argument structures.
+pub mod options;
+
 /// Utility functions.
-pub mod utils;
+mod utils;
+pub use utils::parse_args;
 
 pub(crate) type Result<T> = std::result::Result<T, error::CliError>;
 
 /// The crate's error type;.
 pub type Error = error::CliError;
 
-pub use cli::{
-  init_cli,
-  start_server,
-};
-pub use logger::{
-  init as init_logging,
-  LoggingOptions,
-};
+pub use logger::{init as init_logging, LoggingOptions};
 
 #[macro_use]
 extern crate tracing;

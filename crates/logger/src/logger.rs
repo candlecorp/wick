@@ -1,20 +1,11 @@
 use std::path::PathBuf;
 
-use tracing_appender::non_blocking::{
-  NonBlocking,
-  WorkerGuard,
-};
-use tracing_bunyan_formatter::{
-  BunyanFormattingLayer,
-  JsonStorageLayer,
-};
+use tracing_appender::non_blocking::{NonBlocking, WorkerGuard};
+use tracing_bunyan_formatter::{BunyanFormattingLayer, JsonStorageLayer};
 use tracing_subscriber::filter::FilterFn;
 use tracing_subscriber::fmt::time::UtcTime;
 use tracing_subscriber::prelude::*;
-use tracing_subscriber::{
-  filter,
-  Layer,
-};
+use tracing_subscriber::{filter, Layer};
 
 use crate::error::LoggerError;
 use crate::LoggingOptions;

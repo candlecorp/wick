@@ -4,7 +4,6 @@ use tokio_stream::wrappers::UnboundedReceiverStream;
 use vino_rpc::SharedRpcHandler;
 
 use crate::dev::prelude::*;
-use crate::error::ProviderError;
 type Result<T> = std::result::Result<T, ProviderError>;
 
 static PREFIX: &str = "NATIVE";

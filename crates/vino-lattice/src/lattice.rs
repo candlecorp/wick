@@ -15,7 +15,7 @@ use vino_codec::messagepack::serialize;
 use vino_entity::Entity;
 use vino_rpc::SharedRpcHandler;
 use vino_transport::{MessageTransport, TransportMap, TransportStream, TransportWrapper};
-use vino_types::signatures::HostedType;
+use vino_types::HostedType;
 
 use crate::error::LatticeError;
 use crate::nats::{Nats, NatsMessage, NatsOptions};
@@ -453,7 +453,7 @@ mod test_integration {
   use tokio_stream::StreamExt;
   use tracing::*;
   use vino_transport::{MessageTransport, TransportMap};
-  use vino_types::signatures::{
+  use vino_types::{
     ComponentMap, ComponentSignature, HostedType, MapWrapper, ProviderSignature, StructMap,
   };
 

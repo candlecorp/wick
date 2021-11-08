@@ -1,16 +1,9 @@
 use std::collections::VecDeque;
 use std::sync::Arc;
-use std::time::{
-  Duration,
-  Instant,
-};
+use std::time::{Duration, Instant};
 
 use parking_lot::RwLock;
-use tokio::sync::mpsc::{
-  unbounded_channel,
-  UnboundedReceiver,
-  UnboundedSender,
-};
+use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
 use tokio::time::timeout;
 
 use super::Transaction;

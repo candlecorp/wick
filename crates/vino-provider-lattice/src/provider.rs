@@ -4,13 +4,10 @@ use std::time::Instant;
 
 use async_trait::async_trait;
 use futures::executor::block_on;
-use vino_lattice::lattice::Lattice;
+use vino_lattice::Lattice;
 use vino_provider::native::prelude::*;
 use vino_rpc::error::RpcError;
-use vino_rpc::{
-  RpcHandler,
-  RpcResult,
-};
+use vino_rpc::{RpcHandler, RpcResult};
 
 use crate::Error;
 
@@ -67,9 +64,8 @@ impl RpcHandler for Provider {
 mod tests {
 
   use anyhow::Result as TestResult;
-  use maplit::hashmap;
   use tokio_stream::StreamExt;
-  use vino_lattice::lattice::LatticeBuilder;
+  use vino_lattice::LatticeBuilder;
   use vino_provider::native::prelude::*;
   use vino_rpc::SharedRpcHandler;
 
@@ -92,9 +88,10 @@ mod tests {
     let provider = Provider::new(ns.to_owned(), Arc::new(lattice)).await?;
     let user_data = "Hello world";
 
-    let job_payload = TransportMap::from_map(hashmap! {
-      "input".to_owned() => MessageTransport::messagepack(user_data),
-    });
+    let job_payload = TransportMap::from_map(HashMap::from([(
+      "input".to_owned(),
+      MessageTransport::messagepack(user_data),
+    )]));
 
     let mut outputs = provider
       .invoke(Entity::component(ns, "test-component"), job_payload)
@@ -121,9 +118,10 @@ mod tests {
     let provider = Provider::new(ns.to_owned(), Arc::new(lattice)).await?;
     let user_data = "Hello world";
 
-    let job_payload = TransportMap::from_map(hashmap! {
-      "input".to_owned() => MessageTransport::messagepack(user_data),
-    });
+    let job_payload = TransportMap::from_map(HashMap::from([(
+      "input".to_owned(),
+      MessageTransport::messagepack(user_data),
+    )]));
 
     let mut outputs = provider
       .invoke(Entity::component(ns, "error"), job_payload)

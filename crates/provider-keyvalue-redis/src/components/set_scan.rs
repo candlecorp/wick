@@ -1,4 +1,4 @@
-use vino_interface_keyvalue::generated::set_scan::*;
+use vino_interface_keyvalue::set_scan::*;
 
 use crate::Error;
 

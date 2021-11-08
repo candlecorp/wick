@@ -1,12 +1,7 @@
 use std::time::Duration;
 
-use vino_manifest::host_definition::{
-  HostConfig,
-  HostDefinition,
-  HttpConfig,
-  LatticeConfig,
-};
-use vino_provider_cli::cli::DefaultCliOptions;
+use vino_manifest::host_definition::{HostConfig, HostDefinition, HttpConfig, LatticeConfig};
+use vino_provider_cli::options::DefaultCliOptions;
 
 use crate::commands::HostOptions;
 

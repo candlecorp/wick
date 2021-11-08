@@ -88,15 +88,9 @@
 use std::sync::Arc;
 
 use parking_lot::RwLock;
-use rand::distributions::{
-  Alphanumeric,
-  Standard,
-};
+use rand::distributions::{Alphanumeric, Standard};
 use rand::prelude::Distribution;
-use rand::{
-  Rng,
-  SeedableRng,
-};
+use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha12Rng;
 
 #[derive(Debug, Clone)]

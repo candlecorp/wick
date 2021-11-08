@@ -17,9 +17,13 @@ vino-provider = { path = "../../sdk/crates/vino-provider", features = [
 parking_lot = "0.11"
 tracing = "0.1"
 thiserror = "1.0"
-async-trait = "0.1.50"
+async-trait = "0.1"
 futures = "0.3"
 
 [dev-dependencies]
+test-vino-provider = { path = "../integration/test-vino-provider" }
+test-logger = { path = "../test-logger" }
+logger = { path = "../logger" }
 tokio = { version = "1", features = ["macros"] }
 tokio-stream = "0.1.7"
+anyhow = "1.0"

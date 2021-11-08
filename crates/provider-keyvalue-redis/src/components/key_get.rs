@@ -1,4 +1,4 @@
-use vino_interface_keyvalue::generated::key_get::*;
+use vino_interface_keyvalue::key_get::*;
 
 use crate::error::Exception;
 

@@ -5,10 +5,7 @@
 pub mod delete {
   use std::collections::HashMap;
 
-  use serde::{
-    Deserialize,
-    Serialize,
-  };
+  use serde::{Deserialize, Serialize};
   #[cfg(feature = "native")]
   pub use vino_provider::native::prelude::*;
   #[cfg(feature = "wasm")]
@@ -156,10 +153,7 @@ pub mod delete {
 pub mod exists {
   use std::collections::HashMap;
 
-  use serde::{
-    Deserialize,
-    Serialize,
-  };
+  use serde::{Deserialize, Serialize};
   #[cfg(feature = "native")]
   pub use vino_provider::native::prelude::*;
   #[cfg(feature = "wasm")]
@@ -302,10 +296,7 @@ pub mod exists {
 pub mod key_get {
   use std::collections::HashMap;
 
-  use serde::{
-    Deserialize,
-    Serialize,
-  };
+  use serde::{Deserialize, Serialize};
   #[cfg(feature = "native")]
   pub use vino_provider::native::prelude::*;
   #[cfg(feature = "wasm")]
@@ -448,10 +439,7 @@ pub mod key_get {
 pub mod key_set {
   use std::collections::HashMap;
 
-  use serde::{
-    Deserialize,
-    Serialize,
-  };
+  use serde::{Deserialize, Serialize};
   #[cfg(feature = "native")]
   pub use vino_provider::native::prelude::*;
   #[cfg(feature = "wasm")]
@@ -609,10 +597,7 @@ pub mod key_set {
 pub mod list_add {
   use std::collections::HashMap;
 
-  use serde::{
-    Deserialize,
-    Serialize,
-  };
+  use serde::{Deserialize, Serialize};
   #[cfg(feature = "native")]
   pub use vino_provider::native::prelude::*;
   #[cfg(feature = "wasm")]
@@ -769,10 +754,7 @@ pub mod list_add {
 pub mod list_range {
   use std::collections::HashMap;
 
-  use serde::{
-    Deserialize,
-    Serialize,
-  };
+  use serde::{Deserialize, Serialize};
   #[cfg(feature = "native")]
   pub use vino_provider::native::prelude::*;
   #[cfg(feature = "wasm")]
@@ -932,10 +914,7 @@ pub mod list_range {
 pub mod list_remove {
   use std::collections::HashMap;
 
-  use serde::{
-    Deserialize,
-    Serialize,
-  };
+  use serde::{Deserialize, Serialize};
   #[cfg(feature = "native")]
   pub use vino_provider::native::prelude::*;
   #[cfg(feature = "wasm")]
@@ -1090,10 +1069,7 @@ pub mod list_remove {
 pub mod set_add {
   use std::collections::HashMap;
 
-  use serde::{
-    Deserialize,
-    Serialize,
-  };
+  use serde::{Deserialize, Serialize};
   #[cfg(feature = "native")]
   pub use vino_provider::native::prelude::*;
   #[cfg(feature = "wasm")]
@@ -1250,10 +1226,7 @@ pub mod set_add {
 pub mod set_contains {
   use std::collections::HashMap;
 
-  use serde::{
-    Deserialize,
-    Serialize,
-  };
+  use serde::{Deserialize, Serialize};
   #[cfg(feature = "native")]
   pub use vino_provider::native::prelude::*;
   #[cfg(feature = "wasm")]
@@ -1405,10 +1378,7 @@ pub mod set_contains {
 pub mod set_get {
   use std::collections::HashMap;
 
-  use serde::{
-    Deserialize,
-    Serialize,
-  };
+  use serde::{Deserialize, Serialize};
   #[cfg(feature = "native")]
   pub use vino_provider::native::prelude::*;
   #[cfg(feature = "wasm")]
@@ -1556,10 +1526,7 @@ pub mod set_get {
 pub mod set_remove {
   use std::collections::HashMap;
 
-  use serde::{
-    Deserialize,
-    Serialize,
-  };
+  use serde::{Deserialize, Serialize};
   #[cfg(feature = "native")]
   pub use vino_provider::native::prelude::*;
   #[cfg(feature = "wasm")]
@@ -1716,10 +1683,7 @@ pub mod set_remove {
 pub mod set_scan {
   use std::collections::HashMap;
 
-  use serde::{
-    Deserialize,
-    Serialize,
-  };
+  use serde::{Deserialize, Serialize};
   #[cfg(feature = "native")]
   pub use vino_provider::native::prelude::*;
   #[cfg(feature = "wasm")]

@@ -1,6 +1,6 @@
 use std::convert::TryInto;
 
-use vino_interface_keyvalue::generated::list_range::*;
+use vino_interface_keyvalue::list_range::*;
 
 pub(crate) async fn job(input: Inputs, output: OutputPorts, context: crate::Context) -> JobResult {
   let mut cmd = redis::Cmd::lrange(

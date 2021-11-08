@@ -9,10 +9,7 @@ pub(crate) mod prelude {
 
 use std::fs;
 
-use vino_manifest::{
-  HostManifest,
-  Loadable,
-};
+use vino_manifest::{HostManifest, Loadable};
 use vino_wascap::KeyPair;
 
 use crate::error::CommonError;

@@ -2,17 +2,10 @@
 mod test {
   use std::panic;
 
-  use log::{
-    debug,
-    error,
-    warn,
-  };
+  use log::{debug, error, warn};
   use serde_json::json;
   use utils::*;
-  use vino_transport::{
-    JsonError,
-    TransportJson,
-  };
+  use vino_transport::{JsonError, TransportJson};
 
   use super::*;
   #[test_logger::test(tokio::test)]

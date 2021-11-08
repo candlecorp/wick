@@ -1,10 +1,7 @@
 use std::convert::TryInto;
 
 use crate::schematic_definition::SchematicDefinition;
-use crate::{
-  NetworkManifest,
-  ProviderDefinition,
-};
+use crate::{NetworkManifest, ProviderDefinition};
 
 #[derive(Debug, Clone)]
 

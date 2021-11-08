@@ -3,13 +3,8 @@ use std::path::PathBuf;
 
 use tracing::debug;
 use vino_manifest::error::ManifestError;
-use vino_manifest::host_definition::HostDefinition;
-use vino_manifest::parse::{
-  NS_LINK,
-  SCHEMATIC_OUTPUT,
-  SENDER_ID,
-  SENDER_PORT,
-};
+use vino_manifest::parse::{NS_LINK, SCHEMATIC_OUTPUT, SENDER_ID, SENDER_PORT};
+use vino_manifest::HostDefinition;
 use vino_manifest::*;
 
 #[test_logger::test]

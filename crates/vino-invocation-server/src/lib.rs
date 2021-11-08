@@ -91,11 +91,11 @@
 pub mod error;
 
 pub(crate) mod conversion;
-/// Module for the [InvocationServer] implementation.
-pub mod invocation_server;
+mod invocation_server;
+
+pub use invocation_server::InvocationServer;
 
 pub use dyn_clone::clone_box;
-pub use invocation_server::InvocationServer;
 use tokio::task::JoinHandle;
 use tonic::transport::{Channel, Server, Uri};
 use vino_rpc::rpc::invocation_service_client::InvocationServiceClient;

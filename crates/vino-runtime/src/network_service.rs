@@ -1,4 +1,4 @@
-pub mod error;
+pub(crate) mod error;
 pub(crate) mod initialize;
 
 use std::collections::HashMap;
@@ -7,7 +7,7 @@ use std::sync::Arc;
 use futures::future::BoxFuture;
 use once_cell::sync::Lazy;
 use parking_lot::{Mutex, RwLock};
-use vino_lattice::lattice::Lattice;
+use vino_lattice::Lattice;
 use vino_manifest::Loadable;
 
 use crate::dev::prelude::validator::NetworkValidator;

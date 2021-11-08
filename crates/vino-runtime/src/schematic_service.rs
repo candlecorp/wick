@@ -7,10 +7,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use parking_lot::RwLock;
-use tokio::sync::mpsc::{
-  UnboundedReceiver,
-  UnboundedSender,
-};
+use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 
 use self::handlers::component_payload::ComponentPayload;
 use self::handlers::invocation::handle_schematic;

@@ -1,10 +1,7 @@
 use structopt::StructOpt;
 use vino_host::HostBuilder;
 use vino_manifest::host_definition::HostDefinition;
-use vino_provider_cli::cli::{
-  print_info,
-  DefaultCliOptions,
-};
+use vino_provider_cli::options::DefaultCliOptions;
 
 use crate::utils::merge_config;
 use crate::Result;
@@ -43,7 +40,7 @@ pub(crate) async fn handle_command(opts: ServeCommand) -> Result<()> {
   info!("Host started");
   match host.get_server_info() {
     Some(info) => {
-      print_info(info);
+      vino_provider_cli::print_info(info);
     }
     None => {
       warn!("No server information available, did you intend to start a host without GRPC or a lattice connection?");

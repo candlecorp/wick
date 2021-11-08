@@ -1,15 +1,8 @@
 use futures::StreamExt;
 use structopt::StructOpt;
-use tokio::io::{
-  self,
-  AsyncBufReadExt,
-  BufReader,
-};
+use tokio::io::{self, AsyncBufReadExt, BufReader};
 use vino_entity::Entity;
-use vino_transport::{
-  TransportMap,
-  TransportStream,
-};
+use vino_transport::{TransportMap, TransportStream};
 
 use crate::error::ControlError;
 use crate::Result;

@@ -1,26 +1,17 @@
 /// Conversion utilities for RPC data structures.
-pub mod conversions;
+pub(crate) mod conversions;
 use std::time::Duration;
+
+pub use vino_types::*;
 
 pub use conversions::*;
 use serde::de::DeserializeOwned;
-use serde::{
-  Deserialize,
-  Serialize,
-};
+use serde::{Deserialize, Serialize};
 use vino_packet::Packet;
-use vino_transport::{
-  Failure,
-  MessageTransport,
-  TransportWrapper,
-};
+use vino_transport::{Failure, MessageTransport, TransportWrapper};
 
 use crate::error::RpcError;
-use crate::rpc::{
-  message_kind,
-  MessageKind,
-  Output,
-};
+use crate::rpc::{message_kind, MessageKind, Output};
 use crate::Result;
 
 /// Important statistics for the hosted components.
@@ -40,11 +31,7 @@ mod as_micros {
   use std::convert::TryInto;
   use std::time::Duration;
 
-  use serde::{
-    Deserialize,
-    Deserializer,
-    Serializer,
-  };
+  use serde::{Deserialize, Deserializer, Serializer};
 
   pub(crate) fn serialize<S>(duration: &Duration, serializer: S) -> Result<S::Ok, S::Error>
   where
@@ -149,54 +136,42 @@ impl From<MessageTransport> for MessageKind {
   fn from(v: MessageTransport) -> Self {
     let kind: i32 = match &v {
       MessageTransport::Success(v) => match v {
-        vino_transport::message_transport::Success::MessagePack(_) => {
-          message_kind::Kind::MessagePack
-        }
-        vino_transport::message_transport::Success::Serialized(_) => message_kind::Kind::Json,
-        vino_transport::message_transport::Success::Json(_) => message_kind::Kind::Json,
+        vino_transport::Success::MessagePack(_) => message_kind::Kind::MessagePack,
+        vino_transport::Success::Serialized(_) => message_kind::Kind::Json,
+        vino_transport::Success::Json(_) => message_kind::Kind::Json,
       },
       MessageTransport::Failure(v) => match v {
-        vino_transport::message_transport::Failure::Invalid => message_kind::Kind::Invalid,
-        vino_transport::message_transport::Failure::Exception(_) => message_kind::Kind::Exception,
-        vino_transport::message_transport::Failure::Error(_) => message_kind::Kind::Error,
+        vino_transport::Failure::Invalid => message_kind::Kind::Invalid,
+        vino_transport::Failure::Exception(_) => message_kind::Kind::Exception,
+        vino_transport::Failure::Error(_) => message_kind::Kind::Error,
       },
       MessageTransport::Signal(_) => message_kind::Kind::Signal,
     }
     .into();
     let data = match v {
       MessageTransport::Success(v) => match v {
-        vino_transport::message_transport::Success::MessagePack(v) => {
-          Some(message_kind::Data::Messagepack(v))
-        }
-        vino_transport::message_transport::Success::Serialized(val) => {
-          match vino_codec::json::serialize(&val) {
-            Ok(json) => Some(message_kind::Data::Json(json)),
-            Err(e) => Some(message_kind::Data::Message(e.to_string())),
-          }
-        }
-        vino_transport::message_transport::Success::Json(json) => {
-          Some(message_kind::Data::Json(json))
-        }
+        vino_transport::Success::MessagePack(v) => Some(message_kind::Data::Messagepack(v)),
+        vino_transport::Success::Serialized(val) => match vino_codec::json::serialize(&val) {
+          Ok(json) => Some(message_kind::Data::Json(json)),
+          Err(e) => Some(message_kind::Data::Message(e.to_string())),
+        },
+        vino_transport::Success::Json(json) => Some(message_kind::Data::Json(json)),
       },
       MessageTransport::Failure(v) => match v {
-        vino_transport::message_transport::Failure::Invalid => None,
-        vino_transport::message_transport::Failure::Exception(v) => {
-          Some(message_kind::Data::Message(v))
-        }
-        vino_transport::message_transport::Failure::Error(v) => {
-          Some(message_kind::Data::Message(v))
-        }
+        vino_transport::Failure::Invalid => None,
+        vino_transport::Failure::Exception(v) => Some(message_kind::Data::Message(v)),
+        vino_transport::Failure::Error(v) => Some(message_kind::Data::Message(v)),
       },
       MessageTransport::Signal(signal) => match signal {
-        vino_transport::message_transport::MessageSignal::Done => Some(message_kind::Data::Signal(
+        vino_transport::MessageSignal::Done => Some(message_kind::Data::Signal(
           message_kind::OutputSignal::Done.into(),
         )),
-        vino_transport::message_transport::MessageSignal::OpenBracket => Some(
-          message_kind::Data::Signal(message_kind::OutputSignal::OpenBracket.into()),
-        ),
-        vino_transport::message_transport::MessageSignal::CloseBracket => Some(
-          message_kind::Data::Signal(message_kind::OutputSignal::CloseBracket.into()),
-        ),
+        vino_transport::MessageSignal::OpenBracket => Some(message_kind::Data::Signal(
+          message_kind::OutputSignal::OpenBracket.into(),
+        )),
+        vino_transport::MessageSignal::CloseBracket => Some(message_kind::Data::Signal(
+          message_kind::OutputSignal::CloseBracket.into(),
+        )),
       },
     };
     MessageKind { kind, data }

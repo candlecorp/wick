@@ -3,10 +3,7 @@ use std::sync::Arc;
 
 use runtime_testutils::*;
 use vino_entity::Entity;
-use vino_invocation_server::{
-  bind_new_socket,
-  make_rpc_server,
-};
+use vino_invocation_server::{bind_new_socket, make_rpc_server};
 use vino_runtime::prelude::TransportWrapper;
 type Result<T> = anyhow::Result<T, anyhow::Error>;
 use maplit::hashmap;

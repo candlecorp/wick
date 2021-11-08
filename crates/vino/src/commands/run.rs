@@ -1,22 +1,13 @@
 use structopt::StructOpt;
-use tokio::io::{
-  self,
-  AsyncBufReadExt,
-};
+use tokio::io::{self, AsyncBufReadExt};
 use vino_host::HostBuilder;
 use vino_manifest::host_definition::HostDefinition;
-use vino_provider_cli::cli::{
-  DefaultCliOptions,
-  LatticeCliOptions,
-};
-use vino_provider_cli::utils::parse_args;
+use vino_provider_cli::options::{DefaultCliOptions, LatticeCliOptions};
+use vino_provider_cli::parse_args;
 use vino_runtime::prelude::StreamExt;
-use vino_transport::message_transport::stream::map_to_json;
-use vino_transport::{
-  TransportMap,
-  TransportStream,
-};
-use vino_types::signatures::MapWrapper;
+use vino_transport::map_to_json;
+use vino_transport::{TransportMap, TransportStream};
+use vino_types::MapWrapper;
 
 use crate::utils::merge_config;
 use crate::Result;

@@ -91,19 +91,14 @@
 pub mod error;
 
 /// Logger options.
-pub mod options;
-
-/// The main Logger module.
-pub mod logger;
+mod options;
 
 pub use options::LoggingOptions;
 
-pub use crate::logger::{
-  init,
-  init_defaults,
-  init_test,
-  LoggingGuard,
-};
+/// The main Logger module.
+mod logger;
+
+pub use crate::logger::{init, init_defaults, init_test, LoggingGuard};
 
 #[macro_use]
 extern crate tracing;

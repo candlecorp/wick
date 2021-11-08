@@ -71,10 +71,7 @@ pub fn process_default<'a>(
 mod tests {
   use anyhow::Result as TestResult;
   use pretty_assertions::assert_eq as equals;
-  use serde::{
-    Deserialize,
-    Serialize,
-  };
+  use serde::{Deserialize, Serialize};
   use serde_json::json;
 
   use super::*;

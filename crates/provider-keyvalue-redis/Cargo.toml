@@ -39,3 +39,5 @@ logger = { path = "../logger" }
 serde_json = "1.0"
 tonic = "0.6"
 rand = "0.8"
+anyhow = "1.0"
+test-logger = { path = "../test-logger" }
