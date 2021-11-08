@@ -1,7 +1,4 @@
-use serde::{
-  Deserialize,
-  Serialize,
-};
+use serde::{Deserialize, Serialize};
 use vino_packet::Packet;
 use vino_transport::MessageTransport;
 

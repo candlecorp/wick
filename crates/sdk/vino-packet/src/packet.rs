@@ -1,13 +1,7 @@
-use serde::{
-  Deserialize,
-  Serialize,
-};
+use serde::{Deserialize, Serialize};
 use vino_codec::messagepack;
 
-pub use crate::{
-  v0,
-  v1,
-};
+pub use crate::{v0, v1};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 /// The output payload that component's push out of output ports.

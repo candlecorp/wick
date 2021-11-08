@@ -1,18 +1,9 @@
 use std::collections::HashMap;
 use std::fmt::Display;
 
-use serde::{
-  Deserialize,
-  Serialize,
-};
+use serde::{Deserialize, Serialize};
 
-use crate::{
-  Error,
-  Failure,
-  MessageSignal,
-  MessageTransport,
-  Success,
-};
+use crate::{Error, Failure, MessageSignal, MessageTransport, Success};
 /// A simplified JSON representation of a MessageTransport
 #[derive(Debug, Clone, Eq, Serialize, Deserialize, PartialEq)]
 #[must_use]

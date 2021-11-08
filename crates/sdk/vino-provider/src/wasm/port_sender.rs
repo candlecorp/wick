@@ -1,12 +1,7 @@
 use serde::Serialize;
 use vino_packet::v0;
 
-use super::{
-  port_close,
-  port_send,
-  port_send_close,
-  Error,
-};
+use super::{port_close, port_send, port_send_close, Error};
 
 /// The WebAssembly-based PortSender trait. This trait encapsulates sending messages out of a WebAssembly component's ports.
 pub trait PortSender {

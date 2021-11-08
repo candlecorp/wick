@@ -1,13 +1,7 @@
 use anyhow::Result;
-use serde::{
-  Deserialize,
-  Serialize,
-};
+use serde::{Deserialize, Serialize};
 use tracing::debug;
-use vino_codec::messagepack::{
-  deserialize,
-  serialize,
-};
+use vino_codec::messagepack::{deserialize, serialize};
 use vino_packet::v0::Payload;
 use vino_packet::Packet;
 

@@ -1,22 +1,13 @@
-use core::task::{
-  Context,
-  Poll,
-};
+use core::task::{Context, Poll};
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::iter::FromIterator;
 use std::pin::Pin;
 
-use tokio_stream::{
-  Stream,
-  StreamExt,
-};
+use tokio_stream::{Stream, StreamExt};
 
 use super::transport_wrapper::TransportWrapper;
-use crate::{
-  MessageSignal,
-  MessageTransport,
-};
+use crate::{MessageSignal, MessageTransport};
 
 /// A boxed [Stream] that produces [TransportWrapper]s
 pub type BoxedTransportStream = Pin<Box<dyn Stream<Item = TransportWrapper> + Send + 'static>>;

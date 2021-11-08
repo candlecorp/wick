@@ -1,7 +1,4 @@
-use serde::{
-  Deserialize,
-  Serialize,
-};
+use serde::{Deserialize, Serialize};
 use serde_value::to_value;
 
 use crate::error::CodecError;

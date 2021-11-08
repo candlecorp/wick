@@ -1,15 +1,9 @@
 use serde::de::DeserializeOwned;
-use serde::{
-  Deserialize,
-  Serialize,
-};
+use serde::{Deserialize, Serialize};
 use vino_packet::PacketWrapper;
 
 use crate::error::TransportError;
-use crate::{
-  MessageTransport,
-  SYSTEM_ID,
-};
+use crate::{MessageTransport, SYSTEM_ID};
 pub(crate) type Result<T> = std::result::Result<T, TransportError>;
 
 /// A [TransportWrapper] is a wrapper around a [MessageTransport] with the port name it originated from.

@@ -1,7 +1,4 @@
-use serde::{
-  Deserialize,
-  Serialize,
-};
+use serde::{Deserialize, Serialize};
 use vino_codec::messagepack::rmp_serialize;
 use vino_codec::raw::raw_serialize;
 

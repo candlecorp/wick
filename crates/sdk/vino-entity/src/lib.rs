@@ -83,10 +83,7 @@ pub mod entity;
 /// Crate errors.
 pub mod error;
 
-pub use entity::{
-  Entity,
-  SystemEntity,
-};
+pub use entity::{Entity, SystemEntity};
 pub use error::EntityError as Error;
 
 #[macro_use]

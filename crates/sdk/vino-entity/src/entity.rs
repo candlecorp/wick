@@ -1,11 +1,7 @@
 use std::fmt::Display;
 use std::str::FromStr;
 
-use serde::{
-  Deserialize,
-  Deserializer,
-  Serialize,
-};
+use serde::{Deserialize, Deserializer, Serialize};
 
 use crate::error::EntityError as Error;
 

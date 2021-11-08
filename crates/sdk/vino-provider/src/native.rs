@@ -24,56 +24,30 @@ pub trait NativeComponent {
 }
 
 pub use vino_entity as entity;
-use vino_transport::{
-  TransportMap,
-  TransportStream,
-};
+use vino_transport::{TransportMap, TransportStream};
 
 use self::prelude::NativeComponentError;
 
 /// A list of imports that are common to native providers.
 pub mod prelude {
-  use tokio::sync::mpsc::{
-    UnboundedReceiver,
-    UnboundedSender,
-  };
+  use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
   /// Type alias for [UnboundedSender<PacketWrapper>];.
   pub type PacketSender = UnboundedSender<PacketWrapper>;
   /// Type alias for [UnboundedReceiver<PacketWrapper>];.
   pub type PacketReceiver = UnboundedReceiver<PacketWrapper>;
   pub use async_trait::async_trait;
-  pub use vino_entity::{
-    Entity,
-    Error as EntityError,
-  };
+  pub use vino_entity::{Entity, Error as EntityError};
   pub use vino_packet::v1::Payload;
   pub use vino_packet::PacketWrapper;
   pub use vino_transport::error::TransportError;
-  pub use vino_transport::message_transport::stream::{
-    BoxedTransportStream,
-    TransportStream,
-  };
-  pub use vino_transport::{
-    MessageTransport,
-    TransportMap,
-    TransportWrapper,
-  };
+  pub use vino_transport::message_transport::stream::{BoxedTransportStream, TransportStream};
+  pub use vino_transport::{MessageTransport, TransportMap, TransportWrapper};
   pub use vino_types::signatures::*;
 
-  pub use super::error::{
-    Error as ProviderError,
-    NativeComponentError,
-  };
-  pub use super::port_sender::{
-    PortChannel,
-    PortSender,
-  };
+  pub use super::error::{Error as ProviderError, NativeComponentError};
+  pub use super::port_sender::{PortChannel, PortSender};
   pub use super::provider_output::*;
-  pub use super::{
-    Dispatch,
-    JobResult,
-    NativeComponent,
-  };
+  pub use super::{Dispatch, JobResult, NativeComponent};
   pub use crate::raw::RawPacket;
 }
 

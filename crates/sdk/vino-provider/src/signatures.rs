@@ -1,9 +1,6 @@
 use std::fmt::Display;
 
-use serde::{
-  Deserialize,
-  Serialize,
-};
+use serde::{Deserialize, Serialize};
 
 /// The signature of a Vino component, including its input and output types.
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]

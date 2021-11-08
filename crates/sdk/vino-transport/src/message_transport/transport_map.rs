@@ -3,10 +3,7 @@ use std::convert::TryFrom;
 use std::fmt::Display;
 
 use serde::de::DeserializeOwned;
-use serde::{
-  Deserialize,
-  Serialize,
-};
+use serde::{Deserialize, Serialize};
 #[cfg(feature = "json")]
 use vino_codec::json;
 use vino_codec::messagepack;
@@ -16,12 +13,7 @@ use vino_codec::raw;
 #[cfg(feature = "json")]
 use super::transport_json::TransportJson;
 use crate::error::TransportError;
-use crate::{
-  Error,
-  Failure,
-  MessageTransport,
-  Success,
-};
+use crate::{Error, Failure, MessageTransport, Success};
 pub(crate) type Result<T> = std::result::Result<T, TransportError>;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]

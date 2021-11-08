@@ -18,10 +18,7 @@ pub mod provider_link;
 /// Module for log-like functionality in WASM.
 pub mod log;
 
-use vino_codec::messagepack::{
-  deserialize,
-  serialize,
-};
+use vino_codec::messagepack::{deserialize, serialize};
 
 /// Errors for WebAssembly providers.
 pub mod error;
@@ -29,10 +26,7 @@ pub mod error;
 pub mod port_sender;
 pub use error::Error;
 pub use port_sender::PortSender;
-use vino_packet::{
-  v0,
-  Packet,
-};
+use vino_packet::{v0, Packet};
 
 use crate::wasm::wapc::*;
 type Result<T> = std::result::Result<T, Error>;
@@ -47,34 +41,16 @@ pub type CallResult = Result<Vec<u8>>;
 /// Common imports for WebAssembly providers and components.
 pub mod prelude {
   pub use vino_transport::error::TransportError;
-  pub use vino_transport::{
-    MessageTransport,
-    TransportMap,
-    TransportWrapper,
-  };
+  pub use vino_transport::{MessageTransport, TransportMap, TransportWrapper};
   pub use vino_types::signatures::*;
 
   pub use super::error::ComponentError;
-  pub use super::provider_link::{
-    PortOutput,
-    ProviderOutput,
-    WasmProviderLink,
-  };
+  pub use super::provider_link::{PortOutput, ProviderOutput, WasmProviderLink};
   pub use super::{
-    console_log,
-    wapc,
-    CallResult,
-    Dispatch,
-    Error as WasmError,
-    IncomingPayload,
-    JobResult,
-    PortSender,
-    WapcComponent,
+    console_log, wapc, CallResult, Dispatch, Error as WasmError, IncomingPayload, JobResult,
+    PortSender, WapcComponent,
   };
-  pub use crate::codec::messagepack::{
-    deserialize,
-    serialize,
-  };
+  pub use crate::codec::messagepack::{deserialize, serialize};
   pub use crate::provider_link::ProviderLink;
   pub use crate::wasm::log;
 }

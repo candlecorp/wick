@@ -1,19 +1,9 @@
 use std::collections::HashMap;
 
 use serde::de::DeserializeOwned;
-use serde::{
-  Deserialize,
-  Serialize,
-};
-use vino_codec::messagepack::{
-  deserialize,
-  serialize,
-};
-use vino_transport::{
-  MessageTransport,
-  TransportMap,
-  TransportWrapper,
-};
+use serde::{Deserialize, Serialize};
+use vino_codec::messagepack::{deserialize, serialize};
+use vino_transport::{MessageTransport, TransportMap, TransportWrapper};
 
 use super::host_call;
 use super::prelude::WasmError;

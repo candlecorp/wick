@@ -1,13 +1,7 @@
 use std::io::Cursor;
 
-use rmp_serde::{
-  Deserializer,
-  Serializer,
-};
-use serde::{
-  Deserialize,
-  Serialize,
-};
+use rmp_serde::{Deserializer, Serializer};
+use serde::{Deserialize, Serialize};
 
 use crate::error::CodecError;
 use crate::Result;

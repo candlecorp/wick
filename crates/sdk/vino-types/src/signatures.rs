@@ -4,10 +4,7 @@ use std::error::Error;
 use std::iter::FromIterator;
 use std::str::FromStr;
 
-use serde::{
-  Deserialize,
-  Serialize,
-};
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
 #[serde(transparent)]

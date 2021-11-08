@@ -1,5 +1,5 @@
 tab_spaces = 2
-group_imports = "StdExternalCrate"
-imports_layout = "Vertical"
-imports_granularity = "Module"
+# group_imports = "StdExternalCrate"
+# imports_layout = "Vertical"
+# imports_granularity = "Module"
 edition = "2018"
