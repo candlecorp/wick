@@ -13,7 +13,7 @@ use std::collections::HashMap;
 pub mod wapc;
 
 /// Module that encapsulates a linked provider as input.
-pub mod provider_link;
+mod provider_link;
 
 /// Module for log-like functionality in WASM.
 pub mod log;
@@ -42,7 +42,7 @@ pub type CallResult = Result<Vec<u8>>;
 pub mod prelude {
   pub use vino_transport::error::TransportError;
   pub use vino_transport::{MessageTransport, TransportMap, TransportWrapper};
-  pub use vino_types::signatures::*;
+  pub use vino_types::*;
 
   pub use super::error::ComponentError;
   pub use super::provider_link::{PortOutput, ProviderOutput, WasmProviderLink};

@@ -78,7 +78,7 @@
 #![allow()]
 
 /// Vino entities.
-pub mod entity;
+mod entity;
 
 /// Crate errors.
 pub mod error;

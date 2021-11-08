@@ -1,17 +1,17 @@
 /// Module for the [crate::MessageTransport], [crate::TransportWrapper], and the JSON
 /// representations of each.
 #[cfg(feature = "async")]
-pub mod stream;
+pub(super) mod stream;
 
 /// JSON-related module.
 #[cfg(feature = "json")]
-pub mod transport_json;
+pub(super) mod transport_json;
 
 /// The module for the TransportMap, a Port->[MessageTransport] map that serves as input to a component invocation.
-pub mod transport_map;
+pub(super) mod transport_map;
 
 /// The module for TransportWrapper, a struct that includes the port a [MessageTransport] originated from.
-pub mod transport_wrapper;
+pub(super) mod transport_wrapper;
 
 use std::fmt::Display;
 

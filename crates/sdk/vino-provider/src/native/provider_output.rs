@@ -1,8 +1,7 @@
 use std::marker::PhantomData;
 
 use serde::de::DeserializeOwned;
-use vino_transport::message_transport::stream::BoxedTransportStream;
-use vino_transport::{MessageTransport, TransportStream};
+use vino_transport::{BoxedTransportStream, MessageTransport, TransportStream};
 
 /// A wrapper object for the packets returned from the provider call.
 #[allow(missing_debug_implementations)]

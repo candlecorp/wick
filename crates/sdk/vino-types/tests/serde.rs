@@ -1,7 +1,7 @@
 use std::fs::read_to_string;
 
 use anyhow::Result;
-use vino_types::signatures::ProviderSignature;
+use vino_types::ProviderSignature;
 
 #[test_env_log::test]
 fn test_deserialize() -> Result<()> {

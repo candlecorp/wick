@@ -89,7 +89,7 @@
 pub mod error;
 
 /// The core module that contains the [MessageTransport] and [TransportWrapper]
-pub mod message_transport;
+mod message_transport;
 
 pub(crate) type Result<T> = std::result::Result<T, error::TransportError>;
 
@@ -103,7 +103,7 @@ pub mod invocation;
 #[cfg(feature = "invocation")]
 pub use invocation::Invocation;
 #[cfg(feature = "async")]
-pub use message_transport::stream::TransportStream;
+pub use message_transport::stream::{map_to_json, BoxedTransportStream, TransportStream};
 #[cfg(feature = "json")]
 pub use message_transport::transport_json::{JsonError, TransportJson};
 pub use message_transport::transport_map::TransportMap;

@@ -101,7 +101,7 @@ pub mod signatures;
 pub mod raw;
 
 /// Module for the root [ProviderLink] struct.
-pub mod provider_link;
+mod provider_link;
 
 use std::str::FromStr;
 

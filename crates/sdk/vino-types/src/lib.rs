@@ -75,4 +75,13 @@
 #![allow()]
 
 /// Signatures of Vino types.
-pub mod signatures;
+mod signatures;
+
+pub use signatures::{
+  ComponentSignature, HostedType, ProviderSignature, StructSignature, TypeSignature,
+};
+
+/// Map-related structures holding signatures and other types.
+pub mod maps;
+
+pub use maps::{ComponentMap, MapWrapper, ProviderMap, StructMap, TypeMap};

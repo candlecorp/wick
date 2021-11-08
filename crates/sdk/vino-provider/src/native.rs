@@ -40,9 +40,10 @@ pub mod prelude {
   pub use vino_packet::v1::Payload;
   pub use vino_packet::PacketWrapper;
   pub use vino_transport::error::TransportError;
-  pub use vino_transport::message_transport::stream::{BoxedTransportStream, TransportStream};
-  pub use vino_transport::{MessageTransport, TransportMap, TransportWrapper};
-  pub use vino_types::signatures::*;
+  pub use vino_transport::{
+    BoxedTransportStream, MessageTransport, TransportMap, TransportStream, TransportWrapper,
+  };
+  pub use vino_types::*;
 
   pub use super::error::{Error as ProviderError, NativeComponentError};
   pub use super::port_sender::{PortChannel, PortSender};
