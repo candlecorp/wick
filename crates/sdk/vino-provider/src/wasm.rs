@@ -9,8 +9,7 @@
 
 use std::collections::HashMap;
 
-#[doc(hidden)]
-pub mod wapc;
+use vino_wapc::{exports::*, OutputSignal};
 
 /// Module that encapsulates a linked provider as input.
 mod provider_link;
@@ -23,12 +22,11 @@ use vino_codec::messagepack::{deserialize, serialize};
 /// Errors for WebAssembly providers.
 pub mod error;
 /// The WebAssembly implementation of a Port Sender.
-pub mod port_sender;
+mod port_sender;
 pub use error::Error;
 pub use port_sender::PortSender;
 use vino_packet::{v0, Packet};
 
-use crate::wasm::wapc::*;
 type Result<T> = std::result::Result<T, Error>;
 
 /// The return signature for WebAssembly jobs.
@@ -47,15 +45,14 @@ pub mod prelude {
   pub use super::error::ComponentError;
   pub use super::provider_link::{PortOutput, ProviderOutput, WasmProviderLink};
   pub use super::{
-    console_log, wapc, CallResult, Dispatch, Error as WasmError, IncomingPayload, JobResult,
-    PortSender, WapcComponent,
+    console_log, CallResult, Dispatch, Error as WasmError, IncomingPayload, JobResult, PortSender,
+    WapcComponent,
   };
   pub use crate::codec::messagepack::{deserialize, serialize};
   pub use crate::provider_link::ProviderLink;
   pub use crate::wasm::log;
+  pub use vino_wapc::*;
 }
-
-use crate::OutputSignal;
 
 fn serialize_payload(id: u32, packet: Option<v0::Payload>) -> Result<Vec<u8>> {
   let bytes = match packet {

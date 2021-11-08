@@ -17,7 +17,7 @@ maintenance = { status = "actively-developed" }
 
 [features]
 default = []
-wasm = ["vino-transport/wasm", "vino-types"]
+wasm = ["vino-transport/wasm", "vino-types", "vino-wapc/guest"]
 signatures = []
 native = [
   "thiserror",
@@ -29,9 +29,11 @@ native = [
   "vino-types",
   "dyn-clone",
 ]
+host = ["vino-wapc"]
 
 [dependencies]
 vino-packet = { path = "../vino-packet", version = "0.7" }
+vino-wapc = { path = "../vino-wapc", version = "0.7", optional = true }
 vino-entity = { path = "../vino-entity", version = "0.7" }
 vino-codec = { path = "../vino-codec", version = "0.7" }
 serde = { version = "1.0", features = ["derive"] }

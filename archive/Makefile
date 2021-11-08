@@ -41,8 +41,6 @@ test: ## Test all crates in the workspace
 	cargo test --workspace --all-features
 
 update-lint: ## Update clippy lint definitions in sub crates
-	@echo Checking git status...
-	@[[ -z `git status -s` ]]
 	npm run update-lint
 
 ##@ Helpers

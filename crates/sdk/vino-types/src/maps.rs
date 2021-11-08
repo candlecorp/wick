@@ -2,8 +2,9 @@ use std::{collections::HashMap, str::FromStr};
 
 use serde::{Deserialize, Serialize};
 
-use crate::signatures::{ComponentSignature, ParseError, ProviderSignature, StructSignature, TypeSignature};
-
+use crate::signatures::{
+  ComponentSignature, ParseError, ProviderSignature, StructSignature, TypeSignature,
+};
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
 #[serde(transparent)]
@@ -233,4 +234,3 @@ where
     self.get_inner().len()
   }
 }
-
