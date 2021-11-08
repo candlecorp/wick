@@ -51,6 +51,7 @@ pub mod prelude {
   pub use crate::codec::messagepack::{deserialize, serialize};
   pub use crate::provider_link::ProviderLink;
   pub use crate::wasm::log;
+  pub use vino_wapc::exports as wapc;
   pub use vino_wapc::*;
 }
 
