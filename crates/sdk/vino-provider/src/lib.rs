@@ -92,10 +92,6 @@ pub mod wasm;
 /// Traits and functions for native providers.
 pub mod native;
 
-#[cfg(feature = "signatures")]
-/// Signatures of Vino types.
-pub mod signatures;
-
 #[cfg(feature = "native")]
 /// Raw value type.
 pub mod raw;
@@ -105,3 +101,11 @@ mod provider_link;
 pub use provider_link::ProviderLink;
 
 pub use vino_codec as codec;
+
+/// Feature-dependent prelude that imports items depending on whether the 'wasm' or 'native' features are enabled.
+pub mod prelude {
+  #[cfg(feature = "native")]
+  pub use crate::native::prelude::*;
+  #[cfg(feature = "wasm")]
+  pub use crate::wasm::prelude::*;
+}

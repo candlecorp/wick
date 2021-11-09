@@ -8,7 +8,7 @@ fn test_deserialize() -> Result<()> {
   let src = read_to_string("./tests/interface.json")?;
 
   let sig: ProviderSignature = serde_json::from_str(&src)?;
-  assert_eq!(sig.name, "blog");
+  assert_eq!(sig.name, Some("blog".to_owned()));
   let as_json = serde_json::to_string(&sig)?;
   let actual_as_value: serde_json::Value = serde_json::from_str(&as_json)?;
 
@@ -24,7 +24,7 @@ fn test_deserialize2() -> Result<()> {
   let src = read_to_string("./tests/interface-test.json")?;
 
   let sig: ProviderSignature = serde_json::from_str(&src)?;
-  assert_eq!(sig.name, "test-component");
+  assert_eq!(sig.name, Some("test-component".to_owned()));
   let as_json = serde_json::to_string(&sig)?;
   let actual_as_value: serde_json::Value = serde_json::from_str(&as_json)?;
 

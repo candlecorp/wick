@@ -21,7 +21,7 @@ pub struct ComponentSignature {
 #[must_use]
 pub struct ProviderSignature {
   /// Name of the provider.
-  pub name: String,
+  pub name: Option<String>,
   /// A map of type signatures referenced elsewhere.
   pub types: StructMap,
   /// A list of [ComponentSignature]s the provider hosts.
@@ -57,7 +57,7 @@ pub enum HostedType {
 impl HostedType {
   /// Get the name of the [HostedType] regardless of kind.
   #[must_use]
-  pub fn get_name(&self) -> &str {
+  pub fn get_name(&self) -> &Option<String> {
     match self {
       HostedType::Provider(s) => &s.name,
     }
