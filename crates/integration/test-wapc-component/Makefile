@@ -27,8 +27,7 @@ MAKEFLAGS += --no-builtin-rules
 
 SCHEMA_DIR := ./schemas
 COMPONENTS_DIR := ./src/components
-GENERATED_MODULE := ./src/generated.rs
-COMPONENTS_MODULE := $(COMPONENTS_DIR)/mod.rs
+GENERATED_MODULE := ./src/components.rs
 
 # Get list of WIDL files in SCHEMA_DIR
 SCHEMAS=$(wildcard ${SCHEMA_DIR}/*.widl)
@@ -54,6 +53,7 @@ SIGNED_ARTIFACT:=$(ARTIFACT_DIR)/$(CRATE_FS_NAME)_s.wasm
 INTERFACE:=./interface.json
 
 VINOC=cargo run --manifest-path ../../../Cargo.toml -p vinoc
+CODEGEN:=vino-codegen
 
 # Files to clean on make clean
 CLEAN_FILES := $(GENERATED_MODULE) $(BUILD_ARTIFACT) $(SIGNED_ARTIFACT) ./src/components/mod.rs $(INTERFACE)
@@ -69,7 +69,7 @@ define WIDL_CODEGEN
 $(patsubst %.widl,%.rs,$(patsubst ${SCHEMA_DIR}%,${COMPONENTS_DIR}%,$(subst -,_,$(1)))): $1
 	@$$(shell $$(MKDIR) $$(dir $$@))
 	@echo Generating $$@
-	@vino-codegen rust wapc-component $(notdir $(basename $(subst -,_,$(1)))) -o $$@
+	@$(CODEGEN) rust wapc-component $(notdir $(basename $(subst -,_,$(1)))) -o $$@
 	@rustfmt $$@
 endef
 
@@ -78,7 +78,7 @@ $(foreach schema,$(SCHEMAS),$(eval $(call WIDL_CODEGEN,$(schema))))
 
 $(GENERATED_MODULE): $(SCHEMAS)
 	@echo Generating $@
-	@vino-codegen rust wapc-integration $(SCHEMA_DIR) -f -o $@
+	@$(CODEGEN) rust wapc-integration $(SCHEMA_DIR) -f -o $@
 	@rustfmt $@
 
 $(COMPONENTS_DIR):
@@ -89,11 +89,7 @@ $(ARTIFACT_DIR):
 	@echo Making directory \"$@\"
 	$(shell $(MKDIR) $@)
 
-$(COMPONENTS_MODULE): $(SCHEMAS) $(COMPONENTS_DIR)
-	@echo Building $(COMPONENTS_MODULE)
-	@vino-codegen rust wapc-component-module $(SCHEMA_DIR) -o $@ -f
-
-$(BUILD_ARTIFACT): $(wildcard src/*.rs) ./src/lib.rs $(ARTIFACT_DIR) $(COMPONENTS_MODULE) $(GENERATED_MODULE) $(GENERATED_COMPONENTS)
+$(BUILD_ARTIFACT): $(wildcard src/*.rs) ./src/lib.rs $(ARTIFACT_DIR) $(GENERATED_MODULE) $(GENERATED_COMPONENTS)
 	@echo Building artifact
 	cargo build --target wasm32-unknown-unknown --release
 	@echo Copying binary to $(BUILD_ARTIFACT)
@@ -103,14 +99,14 @@ $(BUILD_ARTIFACT): $(wildcard src/*.rs) ./src/lib.rs $(ARTIFACT_DIR) $(COMPONENT
 
 $(INTERFACE): $(SCHEMAS) ## Create an interface.json from the project's schemas
 	@echo Building $@ from schemas in $(SCHEMA_DIR)
-	@vino-codegen json interface "$(CRATE_NAME)" $(SCHEMA_DIR) -o $@ -f
+	@$(CODEGEN) json interface "$(CRATE_NAME)" $(SCHEMA_DIR) -o $@ -f
 
 all: $(SIGNED_ARTIFACT) ## Make and sign the wasm binary
 
 clean: ## Clean the generated files
 	@rm -f $(CLEAN_FILES)
 
-codegen: $(INTERFACE)  $(GENERATED_COMPONENTS) $(COMPONENTS_MODULE) $(GENERATED_MODULE) ./src/lib.rs ## Generate code from schemas
+codegen: $(INTERFACE)  $(GENERATED_COMPONENTS) $(GENERATED_MODULE) ./src/lib.rs ## Generate code from schemas
 
 doc: ## Generate documentation
 	@echo Unimplemented

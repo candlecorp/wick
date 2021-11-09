@@ -256,7 +256,7 @@ impl InvocationHandler for NetworkService {
     }
 
     let provider_signature = ProviderSignature {
-      name: self.id.clone(),
+      name: Some(self.id.clone()),
       components: signatures.into(),
       types: StructMap::new(),
     };

@@ -6,7 +6,7 @@ use logger::LoggingOptions;
 use nkeys::KeyPair;
 use structopt::StructOpt;
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 /// Server configuration options.
 pub struct Options {
   /// RPC server options.
@@ -187,6 +187,10 @@ pub struct DefaultCliOptions {
   /// Path to certificate authority for HTTPS server.
   #[structopt(long = "http-ca", env = "VINO_HTTP_CA")]
   pub http_ca: Option<PathBuf>,
+
+  /// Enable RPC over STDIO
+  #[structopt(long, env = "VINO_STDIO")]
+  pub stdio: bool,
 }
 
 #[derive(Debug, Clone, Default, StructOpt)]

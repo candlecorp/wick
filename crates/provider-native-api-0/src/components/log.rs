@@ -1,4 +1,4 @@
-use crate::generated::log::*;
+pub use crate::components::generated::log::*;
 
 pub(crate) async fn job(input: Inputs, output: OutputPorts, _context: crate::Context) -> JobResult {
   println!("Logger: {}", input.input);

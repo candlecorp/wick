@@ -2,7 +2,7 @@ use std::convert::TryInto;
 
 use vino_random::Random;
 
-use crate::generated::random_bytes::*;
+pub use crate::components::generated::random_bytes::*;
 
 pub(crate) async fn job(input: Inputs, output: OutputPorts, _context: crate::Context) -> JobResult {
   let num: usize = input

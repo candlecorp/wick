@@ -2,7 +2,7 @@ use std::error::Error;
 use std::fmt::Display;
 use std::usize;
 
-use crate::generated::validate::*;
+pub use crate::components::generated::validate::*;
 
 #[derive(Debug)]
 enum LengthError {

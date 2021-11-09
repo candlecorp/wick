@@ -1,6 +1,4 @@
-use vino_provider::native::prelude::*;
-
-use crate::generated::error::*;
+pub(crate) use crate::components::generated::error::*;
 
 pub(crate) async fn job(
   _input: Inputs,

@@ -20,7 +20,7 @@ vino-transport = { path = "../../sdk/crates/vino-transport", features = [
   "all",
 ] }
 vino-http = { path = "../vino-http" }
-cfg-if = "1.0.0"
+cfg-if = "1.0"
 
 tonic = { version = "0.6", features = ["tls"] }
 tonic-reflection = { version = "0.3", default-features = false, optional = true }

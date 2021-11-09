@@ -8,7 +8,7 @@ MAKEFLAGS += --warn-undefined-variables
 MAKEFLAGS += --no-builtin-rules
 
 SCHEMA_DIR := ./schemas
-GENERATED_RS:=./src/generated.rs
+GENERATED_RS:=./src/components.rs
 
 # Get list of WIDL files in SCHEMA_DIR
 SCHEMAS=$(wildcard ${SCHEMA_DIR}/*.widl)

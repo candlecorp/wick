@@ -1,4 +1,4 @@
-use crate::generated::error::*;
+pub use crate::components::generated::error::*;
 
 pub(crate) async fn job(
   _input: Inputs,

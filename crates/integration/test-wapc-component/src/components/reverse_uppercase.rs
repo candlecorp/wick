@@ -1,8 +1,5 @@
-use crate::generated::reverse_uppercase::*;
-use crate::generated::{
-  reverse,
-  uppercase,
-};
+pub use crate::components::generated::reverse_uppercase::*;
+pub use crate::components::generated::{reverse, uppercase};
 
 pub(crate) fn job(input: Inputs, output: OutputPorts) -> JobResult {
   let reverse_inputs = reverse::Inputs { input: input.input };

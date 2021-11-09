@@ -29,6 +29,7 @@ executors:
       RUSTC_WRAPPER: /home/circleci/.cargo/bin/sccache
       RUSTC_TOOLCHAIN: 1.56.0
       SCCACHE_AZURE_CONNECTION_STRING: $SCCACHE_AZURE_CONNECTION_STRING
+      SCCACHE_AZURE_BLOB_CONTAINER: sccache
   test-executor:
     docker:
       - image: vinodotdev/build-base:latest
@@ -36,8 +37,9 @@ executors:
     resource_class: large
     environment:
       CARGO_BUILD_JOBS: 4
-      RUSTC_WRAPPER: /home/vino/.cargo/bin/sccache
+      RUSTC_WRAPPER: sccache
       SCCACHE_AZURE_CONNECTION_STRING: $SCCACHE_AZURE_CONNECTION_STRING
+      SCCACHE_AZURE_BLOB_CONTAINER: sccache
 
 commands:
   install_deps:
@@ -47,12 +49,12 @@ commands:
       - run:
           name: Install cross
           command: |
-            if [[ ! $(command -v cross) ]]; then
-              curl -OL https://github.com/rust-embedded/cross/releases/download/v0.2.1/cross-v0.2.1-x86_64-unknown-linux-gnu.tar.gz
+            # if [[ ! $(command -v cross) ]]; then
+              curl -OL https://github.com/vinodotdev/cross/releases/download/v0.2.1-darwin/cross-v0.2.1-x86_64-unknown-linux-gnu.tar.gz
               tar -zxvf cross-v0.2.1-x86_64-unknown-linux-gnu.tar.gz cross
               chmod +x cross
               mv cross $HOME/.cargo/bin/
-            fi
+            # fi
             cross --version
       - save_cache:
           key: cross-{{ arch }}
@@ -94,6 +96,7 @@ commands:
             rustup --version
             cargo --version
             rustc --version
+            rustup show home
       - save_cache:
           key: rust-{{ arch }}
           paths:
@@ -148,7 +151,7 @@ jobs:
       - run:
           name: Test
           command: "make test"
-      - run: /home/circleci/.cargo/bin/sccache -s
+      - run: sccache -s
       - save_build_cache
   build:
     parameters:
@@ -217,15 +220,10 @@ jobs:
 
 workflows:
   version: 2
-  test:
-    jobs:
-      - test:
-          context: build
-          filters:
-            branches:
-              only: main
-            tags:
-              ignore: *BUILD_TAG
+  # test:
+  #   jobs:
+  #     - test:
+  #         context: build
   continuous:
     jobs:
       - test:

@@ -9,8 +9,7 @@ MAKEFLAGS += --no-builtin-rules
 
 SCHEMA_DIR := ./schemas
 COMPONENTS_DIR := ./src/components
-GENERATED_RS:=./src/generated.rs
-COMPONENTS_RS:=$(COMPONENTS_DIR)/mod.rs
+GENERATED_RS:=./src/components.rs
 
 # Get list of WIDL files in SCHEMA_DIR
 SCHEMAS=$(wildcard ${SCHEMA_DIR}/*.widl)
@@ -23,7 +22,7 @@ USER_COMPONENTS := $(patsubst %.widl,%.rs,$(patsubst ${SCHEMA_DIR}%,${COMPONENTS
 GENERATED_HEADER := /* This is generated, do not edit by hand */
 
 # Files to clean up on make clean
-CLEAN_FILES :=  $(COMPONENTS_RS) $(GENERATED_RS)
+CLEAN_FILES :=  $(GENERATED_RS)
 
 RUSTFMT=rustfmt --edition=2018
 
@@ -41,9 +40,6 @@ endef
 # Call the above rule generator for each schema file
 $(foreach schema,$(SCHEMAS),$(eval $(call WIDL_CODEGEN,$(schema))))
 
-$(COMPONENTS_RS): $(SCHEMAS)
-	@vino-codegen rust provider-component-module $(SCHEMA_DIR) -f -o $@
-
 $(COMPONENTS_DIR):
 	@mkdir $@
 
@@ -53,10 +49,10 @@ $(COMPONENTS_DIR):
 $(GENERATED_RS): $(SCHEMAS)
 	@vino-codegen rust provider-integration $(SCHEMA_DIR) -f -o $@
 
-codegen: $(USER_COMPONENTS)  $(GENERATED_RS) $(COMPONENTS_RS)
+codegen: $(USER_COMPONENTS)  $(GENERATED_RS)
 	@cargo fmt
 
-build: $(wildcard ./src/*.rs) $(GENERATED_RS) $(USER_COMPONENTS) $(COMPONENTS_RS) ./interface.json
+build: $(wildcard ./src/*.rs) $(GENERATED_RS) $(USER_COMPONENTS) ./interface.json
 	@cargo build --release
 
 clean:

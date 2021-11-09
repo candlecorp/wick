@@ -54,7 +54,7 @@ message ListResponse { repeated HostedType schemas = 1; }
 
 message HostedType {
   oneof type {
-    Provider provider = 1;
+    ProviderSignature provider = 1;
   }
 }
 
@@ -69,7 +69,7 @@ message Component {
   map<string, TypeSignature> outputs = 4;
 }
 
-message Provider {
+message ProviderSignature {
   string name = 1;
   map<string, StructSignature> types = 6;
   map<string, Component> components = 2;

@@ -87,7 +87,6 @@
 
 pub mod components;
 pub mod error;
-pub(crate) mod generated;
 pub mod provider;
 
 pub(crate) use provider::Context;

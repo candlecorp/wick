@@ -72,5 +72,5 @@
 // Add exceptions here
 #![allow(missing_copy_implementations)]
 
-mod generated;
-pub use generated::*;
+mod components;
+pub use components::*;

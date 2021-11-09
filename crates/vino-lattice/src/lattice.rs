@@ -552,7 +552,7 @@ mod test_integration {
     );
 
     assert!(schemas.contains(&HostedType::Provider(ProviderSignature {
-      name: "".to_owned(),
+      name: None,
       types: StructMap::todo(),
       components
     })));

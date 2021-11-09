@@ -111,22 +111,22 @@ pub async fn start_server(
 
   let svc = InvocationServiceServer::new(component_service);
 
-  let rpc_addr = if let Some(rpc_options) = opts.rpc {
+  let rpc_addr = if let Some(rpc_options) = &opts.rpc {
     if !rpc_options.enabled {
       None
     } else {
-      let addr = start_rpc_server(&rpc_options, svc.clone()).await?;
+      let addr = start_rpc_server(rpc_options, svc.clone()).await?;
       Some(addr)
     }
   } else {
     None
   };
 
-  let http_addr = if let Some(http_opts) = opts.http {
+  let http_addr = if let Some(http_opts) = &opts.http {
     if !http_opts.enabled {
       None
     } else {
-      let addr = start_http_server(&http_opts, provider.clone()).await?;
+      let addr = start_http_server(http_opts, provider.clone()).await?;
       Some(addr)
     }
   } else {
@@ -149,7 +149,6 @@ pub async fn start_server(
     id: opts.id,
     rpc: ServerControl::maybe_new(rpc_addr),
     http: ServerControl::maybe_new(http_addr),
-
     lattice,
   })
 }

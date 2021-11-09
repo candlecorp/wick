@@ -12,7 +12,7 @@ use crate::{rpc, DurationStatistics};
 
 type Result<T> = std::result::Result<T, RpcError>;
 
-impl TryFrom<vino::HostedType> for rpc::Provider {
+impl TryFrom<vino::HostedType> for rpc::ProviderSignature {
   type Error = RpcError;
 
   fn try_from(v: vino::HostedType) -> Result<Self> {
@@ -51,12 +51,12 @@ impl TryFrom<rpc::HostedType> for vino::HostedType {
   }
 }
 
-impl TryFrom<rpc::Provider> for vino::ProviderSignature {
+impl TryFrom<rpc::ProviderSignature> for vino::ProviderSignature {
   type Error = RpcError;
 
-  fn try_from(v: rpc::Provider) -> Result<Self> {
+  fn try_from(v: rpc::ProviderSignature) -> Result<Self> {
     Ok(Self {
-      name: v.name,
+      name: Some(v.name),
       components: to_componentmap(v.components)?,
       types: to_structmap(v.types)?,
     })
@@ -86,12 +86,12 @@ impl TryFrom<vino::ComponentSignature> for rpc::Component {
   }
 }
 
-impl TryFrom<vino::ProviderSignature> for rpc::Provider {
+impl TryFrom<vino::ProviderSignature> for rpc::ProviderSignature {
   type Error = RpcError;
 
   fn try_from(v: vino::ProviderSignature) -> Result<Self> {
     Ok(Self {
-      name: v.name,
+      name: v.name.unwrap_or_default(),
       components: from_componentmap(v.components)?,
       types: from_structmap(v.types)?,
     })

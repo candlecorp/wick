@@ -104,7 +104,6 @@ test: $(TEST_WASM)
 	cargo deny check licenses --hide-inclusion-graph
 	cargo build --workspace # necessary to ensure binaries are built
 	cargo test --workspace
-	sccache -s
 
 .PHONY: integration
 test-integration: $(TEST_WASM)
@@ -115,6 +114,14 @@ test-integration: $(TEST_WASM)
 .PHONY: update-lint
 update-lint:
 	npm run update-lint
+
+.PHONY: build-tag
+build-tag:
+ifeq ($(shell git status -s),)
+	git tag build-$$(date "+%Y-%m-%d")
+else
+	@echo "Check in changes before making a build tag."
+endif
 
 .PHONY: bins
 bins: ./build/$(ARCH)
@@ -130,10 +137,10 @@ else
 endif
 else
 ifeq ($(RELEASE),true)
-	cross build --target $(ARCH) --release $(foreach bin,$(BINS),-p $(bin))
+	cross build -vv --target $(ARCH) --release $(foreach bin,$(BINS),-p $(bin))
 	cp $(foreach bin,$(BINS),./target/$(ARCH)/release/$(bin)$(BIN_SUFFIX)) ./build/$(ARCH)
 else
-	cross build --target $(ARCH) $(foreach bin,$(BINS),-p $(bin))
+	cross build -vv --target $(ARCH) $(foreach bin,$(BINS),-p $(bin))
 	cp $(foreach bin,$(BINS),./target/$(ARCH)/debug/$(bin)$(BIN_SUFFIX)) ./build/$(ARCH)
 endif
 endif

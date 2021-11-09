@@ -3,13 +3,10 @@
 ***********************************************/
 
 pub mod delete {
+
   use std::collections::HashMap;
 
-  use serde::{Deserialize, Serialize};
-  #[cfg(feature = "native")]
-  pub use vino_provider::native::prelude::*;
-  #[cfg(feature = "wasm")]
-  pub use vino_provider::wasm::prelude::*;
+  pub use vino_provider::prelude::*;
 
   #[cfg(any(feature = "native", feature = "wasm"))]
   pub fn signature() -> ComponentSignature {
@@ -27,7 +24,7 @@ pub mod delete {
     })
   }
 
-  #[derive(Debug, Deserialize, Serialize, Clone)]
+  #[derive(Debug, serde::Deserialize, serde::Serialize, Clone)]
   pub struct Inputs {
     #[serde(rename = "keys")]
     pub keys: Vec<String>,
@@ -50,12 +47,11 @@ pub mod delete {
     map.insert(
       "keys".to_owned(),
       TypeSignature::List {
-        element: TypeSignature::String.into(),
+        element: Box::new(TypeSignature::String),
       },
     );
     map
   }
-
   #[derive(Debug, Default)]
   #[cfg(feature = "provider")]
   pub struct OutputPorts {
@@ -124,15 +120,7 @@ pub mod delete {
   }
 
   #[cfg(all(feature = "wasm", feature = "guest"))]
-  impl Outputs {
-    pub fn num(&mut self) -> Result<PortOutput, WasmError> {
-      let packets = self
-        .packets
-        .take("num")
-        .ok_or_else(|| WasmError::ResponseMissing("num".to_owned()))?;
-      Ok(PortOutput::new("num".to_owned(), packets))
-    }
-  }
+  impl Outputs {}
 
   #[cfg(all(feature = "wasm", feature = "guest"))]
   impl From<ProviderOutput> for Outputs {
@@ -151,13 +139,10 @@ pub mod delete {
   }
 }
 pub mod exists {
+
   use std::collections::HashMap;
 
-  use serde::{Deserialize, Serialize};
-  #[cfg(feature = "native")]
-  pub use vino_provider::native::prelude::*;
-  #[cfg(feature = "wasm")]
-  pub use vino_provider::wasm::prelude::*;
+  pub use vino_provider::prelude::*;
 
   #[cfg(any(feature = "native", feature = "wasm"))]
   pub fn signature() -> ComponentSignature {
@@ -175,7 +160,7 @@ pub mod exists {
     })
   }
 
-  #[derive(Debug, Deserialize, Serialize, Clone)]
+  #[derive(Debug, serde::Deserialize, serde::Serialize, Clone)]
   pub struct Inputs {
     #[serde(rename = "key")]
     pub key: String,
@@ -198,7 +183,6 @@ pub mod exists {
     map.insert("key".to_owned(), TypeSignature::String);
     map
   }
-
   #[derive(Debug, Default)]
   #[cfg(feature = "provider")]
   pub struct OutputPorts {
@@ -267,15 +251,7 @@ pub mod exists {
   }
 
   #[cfg(all(feature = "wasm", feature = "guest"))]
-  impl Outputs {
-    pub fn exists(&mut self) -> Result<PortOutput, WasmError> {
-      let packets = self
-        .packets
-        .take("exists")
-        .ok_or_else(|| WasmError::ResponseMissing("exists".to_owned()))?;
-      Ok(PortOutput::new("exists".to_owned(), packets))
-    }
-  }
+  impl Outputs {}
 
   #[cfg(all(feature = "wasm", feature = "guest"))]
   impl From<ProviderOutput> for Outputs {
@@ -294,13 +270,10 @@ pub mod exists {
   }
 }
 pub mod key_get {
+
   use std::collections::HashMap;
 
-  use serde::{Deserialize, Serialize};
-  #[cfg(feature = "native")]
-  pub use vino_provider::native::prelude::*;
-  #[cfg(feature = "wasm")]
-  pub use vino_provider::wasm::prelude::*;
+  pub use vino_provider::prelude::*;
 
   #[cfg(any(feature = "native", feature = "wasm"))]
   pub fn signature() -> ComponentSignature {
@@ -318,7 +291,7 @@ pub mod key_get {
     })
   }
 
-  #[derive(Debug, Deserialize, Serialize, Clone)]
+  #[derive(Debug, serde::Deserialize, serde::Serialize, Clone)]
   pub struct Inputs {
     #[serde(rename = "key")]
     pub key: String,
@@ -341,7 +314,6 @@ pub mod key_get {
     map.insert("key".to_owned(), TypeSignature::String);
     map
   }
-
   #[derive(Debug, Default)]
   #[cfg(feature = "provider")]
   pub struct OutputPorts {
@@ -410,15 +382,7 @@ pub mod key_get {
   }
 
   #[cfg(all(feature = "wasm", feature = "guest"))]
-  impl Outputs {
-    pub fn value(&mut self) -> Result<PortOutput, WasmError> {
-      let packets = self
-        .packets
-        .take("value")
-        .ok_or_else(|| WasmError::ResponseMissing("value".to_owned()))?;
-      Ok(PortOutput::new("value".to_owned(), packets))
-    }
-  }
+  impl Outputs {}
 
   #[cfg(all(feature = "wasm", feature = "guest"))]
   impl From<ProviderOutput> for Outputs {
@@ -437,13 +401,10 @@ pub mod key_get {
   }
 }
 pub mod key_set {
+
   use std::collections::HashMap;
 
-  use serde::{Deserialize, Serialize};
-  #[cfg(feature = "native")]
-  pub use vino_provider::native::prelude::*;
-  #[cfg(feature = "wasm")]
-  pub use vino_provider::wasm::prelude::*;
+  pub use vino_provider::prelude::*;
 
   #[cfg(any(feature = "native", feature = "wasm"))]
   pub fn signature() -> ComponentSignature {
@@ -463,7 +424,7 @@ pub mod key_set {
     })
   }
 
-  #[derive(Debug, Deserialize, Serialize, Clone)]
+  #[derive(Debug, serde::Deserialize, serde::Serialize, Clone)]
   pub struct Inputs {
     #[serde(rename = "key")]
     pub key: String,
@@ -499,7 +460,6 @@ pub mod key_set {
     map.insert("expires".to_owned(), TypeSignature::U32);
     map
   }
-
   #[derive(Debug, Default)]
   #[cfg(feature = "provider")]
   pub struct OutputPorts {
@@ -568,15 +528,7 @@ pub mod key_set {
   }
 
   #[cfg(all(feature = "wasm", feature = "guest"))]
-  impl Outputs {
-    pub fn result(&mut self) -> Result<PortOutput, WasmError> {
-      let packets = self
-        .packets
-        .take("result")
-        .ok_or_else(|| WasmError::ResponseMissing("result".to_owned()))?;
-      Ok(PortOutput::new("result".to_owned(), packets))
-    }
-  }
+  impl Outputs {}
 
   #[cfg(all(feature = "wasm", feature = "guest"))]
   impl From<ProviderOutput> for Outputs {
@@ -595,13 +547,10 @@ pub mod key_set {
   }
 }
 pub mod list_add {
+
   use std::collections::HashMap;
 
-  use serde::{Deserialize, Serialize};
-  #[cfg(feature = "native")]
-  pub use vino_provider::native::prelude::*;
-  #[cfg(feature = "wasm")]
-  pub use vino_provider::wasm::prelude::*;
+  pub use vino_provider::prelude::*;
 
   #[cfg(any(feature = "native", feature = "wasm"))]
   pub fn signature() -> ComponentSignature {
@@ -620,7 +569,7 @@ pub mod list_add {
     })
   }
 
-  #[derive(Debug, Deserialize, Serialize, Clone)]
+  #[derive(Debug, serde::Deserialize, serde::Serialize, Clone)]
   pub struct Inputs {
     #[serde(rename = "key")]
     pub key: String,
@@ -651,12 +600,11 @@ pub mod list_add {
     map.insert(
       "values".to_owned(),
       TypeSignature::List {
-        element: TypeSignature::String.into(),
+        element: Box::new(TypeSignature::String),
       },
     );
     map
   }
-
   #[derive(Debug, Default)]
   #[cfg(feature = "provider")]
   pub struct OutputPorts {
@@ -725,15 +673,7 @@ pub mod list_add {
   }
 
   #[cfg(all(feature = "wasm", feature = "guest"))]
-  impl Outputs {
-    pub fn length(&mut self) -> Result<PortOutput, WasmError> {
-      let packets = self
-        .packets
-        .take("length")
-        .ok_or_else(|| WasmError::ResponseMissing("length".to_owned()))?;
-      Ok(PortOutput::new("length".to_owned(), packets))
-    }
-  }
+  impl Outputs {}
 
   #[cfg(all(feature = "wasm", feature = "guest"))]
   impl From<ProviderOutput> for Outputs {
@@ -752,13 +692,10 @@ pub mod list_add {
   }
 }
 pub mod list_range {
+
   use std::collections::HashMap;
 
-  use serde::{Deserialize, Serialize};
-  #[cfg(feature = "native")]
-  pub use vino_provider::native::prelude::*;
-  #[cfg(feature = "wasm")]
-  pub use vino_provider::wasm::prelude::*;
+  pub use vino_provider::prelude::*;
 
   #[cfg(any(feature = "native", feature = "wasm"))]
   pub fn signature() -> ComponentSignature {
@@ -778,7 +715,7 @@ pub mod list_range {
     })
   }
 
-  #[derive(Debug, Deserialize, Serialize, Clone)]
+  #[derive(Debug, serde::Deserialize, serde::Serialize, Clone)]
   pub struct Inputs {
     #[serde(rename = "key")]
     pub key: String,
@@ -811,7 +748,6 @@ pub mod list_range {
     map.insert("end".to_owned(), TypeSignature::I32);
     map
   }
-
   #[derive(Debug, Default)]
   #[cfg(feature = "provider")]
   pub struct OutputPorts {
@@ -825,7 +761,7 @@ pub mod list_range {
     map.insert(
       "values".to_owned(),
       TypeSignature::List {
-        element: TypeSignature::String.into(),
+        element: Box::new(TypeSignature::String),
       },
     );
     map
@@ -885,15 +821,7 @@ pub mod list_range {
   }
 
   #[cfg(all(feature = "wasm", feature = "guest"))]
-  impl Outputs {
-    pub fn values(&mut self) -> Result<PortOutput, WasmError> {
-      let packets = self
-        .packets
-        .take("values")
-        .ok_or_else(|| WasmError::ResponseMissing("values".to_owned()))?;
-      Ok(PortOutput::new("values".to_owned(), packets))
-    }
-  }
+  impl Outputs {}
 
   #[cfg(all(feature = "wasm", feature = "guest"))]
   impl From<ProviderOutput> for Outputs {
@@ -912,13 +840,10 @@ pub mod list_range {
   }
 }
 pub mod list_remove {
+
   use std::collections::HashMap;
 
-  use serde::{Deserialize, Serialize};
-  #[cfg(feature = "native")]
-  pub use vino_provider::native::prelude::*;
-  #[cfg(feature = "wasm")]
-  pub use vino_provider::wasm::prelude::*;
+  pub use vino_provider::prelude::*;
 
   #[cfg(any(feature = "native", feature = "wasm"))]
   pub fn signature() -> ComponentSignature {
@@ -938,7 +863,7 @@ pub mod list_remove {
     })
   }
 
-  #[derive(Debug, Deserialize, Serialize, Clone)]
+  #[derive(Debug, serde::Deserialize, serde::Serialize, Clone)]
   pub struct Inputs {
     #[serde(rename = "key")]
     pub key: String,
@@ -971,7 +896,6 @@ pub mod list_remove {
     map.insert("num".to_owned(), TypeSignature::U32);
     map
   }
-
   #[derive(Debug, Default)]
   #[cfg(feature = "provider")]
   pub struct OutputPorts {
@@ -1040,15 +964,7 @@ pub mod list_remove {
   }
 
   #[cfg(all(feature = "wasm", feature = "guest"))]
-  impl Outputs {
-    pub fn num(&mut self) -> Result<PortOutput, WasmError> {
-      let packets = self
-        .packets
-        .take("num")
-        .ok_or_else(|| WasmError::ResponseMissing("num".to_owned()))?;
-      Ok(PortOutput::new("num".to_owned(), packets))
-    }
-  }
+  impl Outputs {}
 
   #[cfg(all(feature = "wasm", feature = "guest"))]
   impl From<ProviderOutput> for Outputs {
@@ -1067,13 +983,10 @@ pub mod list_remove {
   }
 }
 pub mod set_add {
+
   use std::collections::HashMap;
 
-  use serde::{Deserialize, Serialize};
-  #[cfg(feature = "native")]
-  pub use vino_provider::native::prelude::*;
-  #[cfg(feature = "wasm")]
-  pub use vino_provider::wasm::prelude::*;
+  pub use vino_provider::prelude::*;
 
   #[cfg(any(feature = "native", feature = "wasm"))]
   pub fn signature() -> ComponentSignature {
@@ -1092,7 +1005,7 @@ pub mod set_add {
     })
   }
 
-  #[derive(Debug, Deserialize, Serialize, Clone)]
+  #[derive(Debug, serde::Deserialize, serde::Serialize, Clone)]
   pub struct Inputs {
     #[serde(rename = "key")]
     pub key: String,
@@ -1123,12 +1036,11 @@ pub mod set_add {
     map.insert(
       "values".to_owned(),
       TypeSignature::List {
-        element: TypeSignature::String.into(),
+        element: Box::new(TypeSignature::String),
       },
     );
     map
   }
-
   #[derive(Debug, Default)]
   #[cfg(feature = "provider")]
   pub struct OutputPorts {
@@ -1197,15 +1109,7 @@ pub mod set_add {
   }
 
   #[cfg(all(feature = "wasm", feature = "guest"))]
-  impl Outputs {
-    pub fn length(&mut self) -> Result<PortOutput, WasmError> {
-      let packets = self
-        .packets
-        .take("length")
-        .ok_or_else(|| WasmError::ResponseMissing("length".to_owned()))?;
-      Ok(PortOutput::new("length".to_owned(), packets))
-    }
-  }
+  impl Outputs {}
 
   #[cfg(all(feature = "wasm", feature = "guest"))]
   impl From<ProviderOutput> for Outputs {
@@ -1224,13 +1128,10 @@ pub mod set_add {
   }
 }
 pub mod set_contains {
+
   use std::collections::HashMap;
 
-  use serde::{Deserialize, Serialize};
-  #[cfg(feature = "native")]
-  pub use vino_provider::native::prelude::*;
-  #[cfg(feature = "wasm")]
-  pub use vino_provider::wasm::prelude::*;
+  pub use vino_provider::prelude::*;
 
   #[cfg(any(feature = "native", feature = "wasm"))]
   pub fn signature() -> ComponentSignature {
@@ -1249,7 +1150,7 @@ pub mod set_contains {
     })
   }
 
-  #[derive(Debug, Deserialize, Serialize, Clone)]
+  #[derive(Debug, serde::Deserialize, serde::Serialize, Clone)]
   pub struct Inputs {
     #[serde(rename = "key")]
     pub key: String,
@@ -1280,7 +1181,6 @@ pub mod set_contains {
     map.insert("member".to_owned(), TypeSignature::String);
     map
   }
-
   #[derive(Debug, Default)]
   #[cfg(feature = "provider")]
   pub struct OutputPorts {
@@ -1349,15 +1249,7 @@ pub mod set_contains {
   }
 
   #[cfg(all(feature = "wasm", feature = "guest"))]
-  impl Outputs {
-    pub fn exists(&mut self) -> Result<PortOutput, WasmError> {
-      let packets = self
-        .packets
-        .take("exists")
-        .ok_or_else(|| WasmError::ResponseMissing("exists".to_owned()))?;
-      Ok(PortOutput::new("exists".to_owned(), packets))
-    }
-  }
+  impl Outputs {}
 
   #[cfg(all(feature = "wasm", feature = "guest"))]
   impl From<ProviderOutput> for Outputs {
@@ -1376,13 +1268,10 @@ pub mod set_contains {
   }
 }
 pub mod set_get {
+
   use std::collections::HashMap;
 
-  use serde::{Deserialize, Serialize};
-  #[cfg(feature = "native")]
-  pub use vino_provider::native::prelude::*;
-  #[cfg(feature = "wasm")]
-  pub use vino_provider::wasm::prelude::*;
+  pub use vino_provider::prelude::*;
 
   #[cfg(any(feature = "native", feature = "wasm"))]
   pub fn signature() -> ComponentSignature {
@@ -1400,7 +1289,7 @@ pub mod set_get {
     })
   }
 
-  #[derive(Debug, Deserialize, Serialize, Clone)]
+  #[derive(Debug, serde::Deserialize, serde::Serialize, Clone)]
   pub struct Inputs {
     #[serde(rename = "key")]
     pub key: String,
@@ -1423,7 +1312,6 @@ pub mod set_get {
     map.insert("key".to_owned(), TypeSignature::String);
     map
   }
-
   #[derive(Debug, Default)]
   #[cfg(feature = "provider")]
   pub struct OutputPorts {
@@ -1437,7 +1325,7 @@ pub mod set_get {
     map.insert(
       "values".to_owned(),
       TypeSignature::List {
-        element: TypeSignature::String.into(),
+        element: Box::new(TypeSignature::String),
       },
     );
     map
@@ -1497,15 +1385,7 @@ pub mod set_get {
   }
 
   #[cfg(all(feature = "wasm", feature = "guest"))]
-  impl Outputs {
-    pub fn values(&mut self) -> Result<PortOutput, WasmError> {
-      let packets = self
-        .packets
-        .take("values")
-        .ok_or_else(|| WasmError::ResponseMissing("values".to_owned()))?;
-      Ok(PortOutput::new("values".to_owned(), packets))
-    }
-  }
+  impl Outputs {}
 
   #[cfg(all(feature = "wasm", feature = "guest"))]
   impl From<ProviderOutput> for Outputs {
@@ -1524,13 +1404,10 @@ pub mod set_get {
   }
 }
 pub mod set_remove {
+
   use std::collections::HashMap;
 
-  use serde::{Deserialize, Serialize};
-  #[cfg(feature = "native")]
-  pub use vino_provider::native::prelude::*;
-  #[cfg(feature = "wasm")]
-  pub use vino_provider::wasm::prelude::*;
+  pub use vino_provider::prelude::*;
 
   #[cfg(any(feature = "native", feature = "wasm"))]
   pub fn signature() -> ComponentSignature {
@@ -1549,7 +1426,7 @@ pub mod set_remove {
     })
   }
 
-  #[derive(Debug, Deserialize, Serialize, Clone)]
+  #[derive(Debug, serde::Deserialize, serde::Serialize, Clone)]
   pub struct Inputs {
     #[serde(rename = "key")]
     pub key: String,
@@ -1580,12 +1457,11 @@ pub mod set_remove {
     map.insert(
       "values".to_owned(),
       TypeSignature::List {
-        element: TypeSignature::String.into(),
+        element: Box::new(TypeSignature::String),
       },
     );
     map
   }
-
   #[derive(Debug, Default)]
   #[cfg(feature = "provider")]
   pub struct OutputPorts {
@@ -1654,15 +1530,7 @@ pub mod set_remove {
   }
 
   #[cfg(all(feature = "wasm", feature = "guest"))]
-  impl Outputs {
-    pub fn num(&mut self) -> Result<PortOutput, WasmError> {
-      let packets = self
-        .packets
-        .take("num")
-        .ok_or_else(|| WasmError::ResponseMissing("num".to_owned()))?;
-      Ok(PortOutput::new("num".to_owned(), packets))
-    }
-  }
+  impl Outputs {}
 
   #[cfg(all(feature = "wasm", feature = "guest"))]
   impl From<ProviderOutput> for Outputs {
@@ -1681,13 +1549,10 @@ pub mod set_remove {
   }
 }
 pub mod set_scan {
+
   use std::collections::HashMap;
 
-  use serde::{Deserialize, Serialize};
-  #[cfg(feature = "native")]
-  pub use vino_provider::native::prelude::*;
-  #[cfg(feature = "wasm")]
-  pub use vino_provider::wasm::prelude::*;
+  pub use vino_provider::prelude::*;
 
   #[cfg(any(feature = "native", feature = "wasm"))]
   pub fn signature() -> ComponentSignature {
@@ -1707,7 +1572,7 @@ pub mod set_scan {
     })
   }
 
-  #[derive(Debug, Deserialize, Serialize, Clone)]
+  #[derive(Debug, serde::Deserialize, serde::Serialize, Clone)]
   pub struct Inputs {
     #[serde(rename = "key")]
     pub key: String,
@@ -1743,7 +1608,6 @@ pub mod set_scan {
     map.insert("count".to_owned(), TypeSignature::U32);
     map
   }
-
   #[derive(Debug, Default)]
   #[cfg(feature = "provider")]
   pub struct OutputPorts {
@@ -1758,7 +1622,7 @@ pub mod set_scan {
     map.insert(
       "values".to_owned(),
       TypeSignature::List {
-        element: TypeSignature::String.into(),
+        element: Box::new(TypeSignature::String),
       },
     );
     map.insert("cursor".to_owned(), TypeSignature::String);
@@ -1852,22 +1716,7 @@ pub mod set_scan {
   }
 
   #[cfg(all(feature = "wasm", feature = "guest"))]
-  impl Outputs {
-    pub fn values(&mut self) -> Result<PortOutput, WasmError> {
-      let packets = self
-        .packets
-        .take("values")
-        .ok_or_else(|| WasmError::ResponseMissing("values".to_owned()))?;
-      Ok(PortOutput::new("values".to_owned(), packets))
-    }
-    pub fn cursor(&mut self) -> Result<PortOutput, WasmError> {
-      let packets = self
-        .packets
-        .take("cursor")
-        .ok_or_else(|| WasmError::ResponseMissing("cursor".to_owned()))?;
-      Ok(PortOutput::new("cursor".to_owned(), packets))
-    }
-  }
+  impl Outputs {}
 
   #[cfg(all(feature = "wasm", feature = "guest"))]
   impl From<ProviderOutput> for Outputs {

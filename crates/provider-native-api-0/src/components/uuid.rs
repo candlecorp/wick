@@ -1,6 +1,6 @@
 use vino_random::Random;
 
-use crate::generated::uuid::*;
+pub use crate::components::generated::uuid::*;
 
 pub(crate) async fn job(input: Inputs, output: OutputPorts, _context: crate::Context) -> JobResult {
   let rng = Random::from_seed(input.seed);

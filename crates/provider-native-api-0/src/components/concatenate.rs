@@ -1,4 +1,4 @@
-use crate::generated::concatenate::*;
+pub use crate::components::generated::concatenate::*;
 
 pub(crate) async fn job(input: Inputs, output: OutputPorts, _context: crate::Context) -> JobResult {
   output

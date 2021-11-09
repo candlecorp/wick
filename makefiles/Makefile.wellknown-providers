@@ -9,14 +9,13 @@ MAKEFLAGS += --no-builtin-rules
 
 SCHEMA_DIR := ./schemas
 COMPONENTS_DIR := ./src/components
-GENERATED_RS:=./src/generated.rs
-COMPONENTS_RS:=$(COMPONENTS_DIR)/mod.rs
+GENERATED_RS:=./src/components.rs
 
 # Name of the package from Cargo.toml
 CRATE_NAME:=$(shell tomlq -f Cargo.toml package.name)
 
 # Files to clean up on make clean
-CLEAN_FILES := $(GENERATED_RS) $(COMPONENTS_RS)
+CLEAN_FILES := $(GENERATED_RS)
 
 # Get component names from the interface definition JSON
 COMPONENT_NAMES := $(shell cat interface.json 2>/dev/null | jq -r '.components[].name')
@@ -38,15 +37,12 @@ endef
 $(foreach name,$(COMPONENT_NAMES),$(eval $(call COMPONENT_GEN,$(name))))
 
 $(GENERATED_RS): ./interface.json
-	@vino-codegen rust wellknown-integration $< -f -o $@
+	@vino-codegen rust wellknown-implementer $< -f -o $@
 
 $(COMPONENTS_DIR):
 	@mkdir $@
 
-$(COMPONENTS_RS): ./interface.json $(COMPONENTS_DIR)
-	@vino-codegen rust wellknown-component-module $< -f -o $@
-
-codegen: ${GENERATED_COMPONENTS} $(GENERATED_RS) $(COMPONENTS_RS)
+codegen: ${GENERATED_COMPONENTS} $(GENERATED_RS)
 	@cargo fmt
 
 build: $(wildcard ./src/*.rs) ${GENERATED_COMPONENTS} $(GENERATED_RS) ./interface.json

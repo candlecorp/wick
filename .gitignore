@@ -4,3 +4,4 @@ node_modules
 build
 .DS_Store
 archive
+crates/vino-rpc/src/generated/vino.rs

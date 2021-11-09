@@ -16,7 +16,7 @@ impl WithSignature<ProviderSignature> for ProviderModel {
       .collect();
     ProviderSignature {
       types: HashMap::new().into(),
-      name: name.unwrap_or_default(),
+      name,
       components: map.into(),
     }
   }

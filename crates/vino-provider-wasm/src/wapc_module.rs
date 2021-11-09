@@ -46,7 +46,7 @@ impl WapcModule {
 
   /// The actor's human-friendly display name.
   #[must_use]
-  pub fn name(&self) -> &String {
+  pub fn name(&self) -> &Option<String> {
     &self.token.claims.metadata.as_ref().unwrap().interface.name
   }
 

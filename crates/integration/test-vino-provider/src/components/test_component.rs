@@ -1,4 +1,4 @@
-pub(crate) use crate::generated::test_component::*;
+pub(crate) use crate::components::generated::test_component::*;
 
 pub(crate) async fn job(
   input: Inputs,

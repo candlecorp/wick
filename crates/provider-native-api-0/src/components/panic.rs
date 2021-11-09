@@ -1,6 +1,4 @@
-use vino_provider::native::prelude::*;
-
-use crate::generated::panic::*;
+pub use crate::components::generated::panic::*;
 
 pub(crate) async fn job(
   _input: Inputs,

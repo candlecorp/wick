@@ -9,8 +9,8 @@ use vino_provider::native::prelude::*;
 use vino_rpc::error::RpcError;
 use vino_rpc::{RpcHandler, RpcResult};
 
+use crate::components::Dispatcher;
 use crate::error::Error;
-use crate::generated::{self, Dispatcher};
 
 pub(crate) type Context = Arc<RedisConnection>;
 
@@ -105,7 +105,7 @@ impl RpcHandler for Provider {
   }
 
   fn get_list(&self) -> RpcResult<Vec<HostedType>> {
-    let signature = generated::get_signature();
+    let signature = crate::components::get_signature();
     Ok(vec![HostedType::Provider(signature)])
   }
 }

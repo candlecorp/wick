@@ -51,8 +51,7 @@
           "type": "string"
         },
         "link": {
-          "type": "ref",
-          "ref": "#/types/ProviderLink"
+          "type": "link"
         }
       },
       "outputs": {

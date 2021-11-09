@@ -2,15 +2,14 @@ use vino_provider::native::prelude::*;
 use vino_rpc::error::RpcError;
 use vino_rpc::{RpcHandler, RpcResult};
 
-use self::generated::Dispatcher;
-mod components;
-pub(crate) mod generated;
+use self::components::Dispatcher;
+pub mod components;
 
 #[macro_use]
 extern crate tracing;
 
 #[derive(Clone)]
-pub(crate) struct Context {}
+pub struct Context {}
 
 #[derive(Clone)]
 pub struct Provider {
@@ -42,7 +41,7 @@ impl RpcHandler for Provider {
 
   fn get_list(&self) -> RpcResult<Vec<HostedType>> {
     trace!("TEST_PROVIDER:GET_LIST");
-    let signature = generated::get_signature();
+    let signature = components::get_signature();
     Ok(vec![HostedType::Provider(signature)])
   }
 }
