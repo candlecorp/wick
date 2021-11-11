@@ -147,7 +147,7 @@ pub struct ProviderDefinition {
   /// The reference/location of the provider.
   pub reference: String,
   /// Data or configuration to pass to the provider initialization.
-  pub data: HashMap<String, String>,
+  pub data: serde_json::Value,
 }
 
 impl From<crate::v0::ProviderDefinition> for ProviderDefinition {

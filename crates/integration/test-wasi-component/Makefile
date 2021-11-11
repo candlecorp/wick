@@ -49,7 +49,7 @@ INTERFACE:=./interface.json
 # All *.rs files in src/
 RUST_SOURCES:=$(wildcard src/*.rs) $(wildcard src/*/*.rs)
 
-TARGET=wasm32-unknown-unknown
+TARGET=wasm32-wasi
 
 VINOC=cargo run --manifest-path ../../../Cargo.toml -p vinoc --
 CODEGEN:=vino-codegen

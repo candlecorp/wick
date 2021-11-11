@@ -158,6 +158,26 @@ pub struct NetworkManifest {
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
+/// A provider definition.
+pub struct ProviderDefinition {
+  /// The namespace to reference the provider&#x27;s components on.
+  #[serde(default)]
+  #[serde(deserialize_with = "with_expand_envs")]
+  pub namespace: String,
+  /// The kind/type of the provider.
+  #[serde(default)]
+  pub kind: ProviderKind,
+  /// The reference/location of the provider.
+  #[serde(default)]
+  #[serde(deserialize_with = "with_expand_envs")]
+  pub reference: String,
+  /// Data or configuration to pass to the provider initialization.
+  #[serde(default)]
+  pub data: serde_json::Value,
+}
+
+#[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
 /// A definition for an individual Vino schematic.
 pub struct SchematicManifest {
   /// Schematic name.
@@ -181,27 +201,6 @@ pub struct SchematicManifest {
   #[serde(default)]
   #[serde(skip_serializing_if = "HashMap::is_empty")]
   pub constraints: HashMap<String, String>,
-}
-
-#[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(deny_unknown_fields)]
-/// A provider definition.
-pub struct ProviderDefinition {
-  /// The namespace to reference the provider&#x27;s components on.
-  #[serde(default)]
-  #[serde(deserialize_with = "with_expand_envs")]
-  pub namespace: String,
-  /// The kind/type of the provider.
-  #[serde(default)]
-  pub kind: ProviderKind,
-  /// The reference/location of the provider.
-  #[serde(default)]
-  #[serde(deserialize_with = "with_expand_envs")]
-  pub reference: String,
-  /// Data or configuration to pass to the provider initialization.
-  #[serde(default)]
-  #[serde(skip_serializing_if = "HashMap::is_empty")]
-  pub data: HashMap<String, String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Copy, Eq, PartialEq)]

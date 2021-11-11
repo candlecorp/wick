@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::fmt::Debug;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 
@@ -13,6 +14,14 @@ pub(crate) struct HostPool {
   factory: Arc<Mutex<dyn Fn() -> Box<dyn RpcProxy + Send + Sync> + Send + Sync + 'static>>,
   index: AtomicUsize,
   hosts: RwLock<Vec<Box<dyn RpcProxy + Send + Sync>>>,
+}
+
+impl Debug for HostPool {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    f.debug_struct("HostPool")
+      .field("max", &self.hosts.read().len())
+      .finish()
+  }
 }
 
 impl HostPool {
@@ -39,7 +48,6 @@ impl HostPool {
   }
 
   fn expand(&self) {
-    debug!("Spawning host");
     let factory = self.factory.clone();
     let host = factory.lock()();
     let mut lock = self.hosts.write();

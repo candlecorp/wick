@@ -1,28 +1,28 @@
 pub(crate) mod default;
 pub(crate) mod error;
-pub(crate) mod handlers;
+pub(crate) mod input_message;
+pub(crate) mod output_message;
 
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
 
+use futures::Future;
 use parking_lot::RwLock;
-use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
-
-use self::handlers::component_payload::ComponentPayload;
-use self::handlers::invocation::handle_schematic;
-pub(crate) mod input_message;
+use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
+use tokio_stream::wrappers::UnboundedReceiverStream;
+use vino_manifest::parse::CORE_ID;
 
 use error::SchematicError;
 
 use crate::dev::prelude::validator::SchematicValidator;
 use crate::dev::prelude::*;
 use crate::dispatch::inv_error;
-use crate::schematic_service::handlers::output_message::OutputMessage;
-use crate::schematic_service::handlers::short_circuit::ShortCircuit;
 use crate::schematic_service::input_message::InputMessage;
+use crate::schematic_service::output_message::OutputMessage;
 use crate::transaction::executor::TransactionExecutor;
-use crate::VINO_V0_NAMESPACE;
+use crate::transaction::ComponentPayload;
+use crate::{CORE_PORT_SEED, VINO_V0_NAMESPACE};
 
 type Result<T> = std::result::Result<T, SchematicError>;
 
@@ -219,11 +219,13 @@ impl SchematicService {
     Ok(())
   }
 
-  pub(crate) async fn short_circuit(&self, msg: ShortCircuit) -> Result<()> {
-    trace!("SC[{}]:{}:BYPASS", self.name, msg.instance);
-    let instance = msg.instance;
-    let tx_id = msg.tx_id;
-    let payload = msg.payload;
+  pub(crate) async fn short_circuit(
+    &self,
+    tx_id: String,
+    instance: String,
+    payload: MessageTransport,
+  ) -> Result<()> {
+    trace!("SC[{}]:{}:BYPASS", self.name, instance);
 
     let outputs = get_outputs(&self.get_model(), &instance);
 
@@ -267,9 +269,9 @@ impl SchematicService {
     let def = get_component_definition(&self.get_model(), &instance)?;
 
     if msg.payload_map.has_error() {
+      trace!("SC[{}]:INSTANCE[{}]:BYPASSING", self.name, msg.instance);
       let err_payload = msg.payload_map.take_error().unwrap();
-      let msg = ShortCircuit::new(tx_id, instance, err_payload);
-      return self.short_circuit(msg).await;
+      return self.short_circuit(tx_id, instance, err_payload).await;
     }
 
     let invocation = InvocationMessage::from(Invocation::next(
@@ -320,8 +322,9 @@ impl SchematicService {
       }
       InvocationResponse::Error { tx_id, msg } => {
         warn!("Tx '{}' short-circuiting '{}': {}", tx_id, instance, msg);
-        let msg = ShortCircuit::new(tx_id, instance, MessageTransport::error(msg));
-        self.short_circuit(msg).await
+        self
+          .short_circuit(tx_id, instance, MessageTransport::error(msg))
+          .await
       }
     }
   }
@@ -357,4 +360,124 @@ impl SchematicService {
       .boxed(),
     )
   }
+}
+
+pub(crate) fn handle_schematic(
+  schematic: &Arc<SchematicService>,
+  name: &str,
+  invocation: &InvocationMessage,
+) -> Result<impl Future<Output = Result<InvocationResponse>>> {
+  let tx_id = invocation.get_tx_id().to_owned();
+  let log_prefix = format!("SC[{}]:{}", name, tx_id);
+  trace!("{}:INVOKE", log_prefix);
+
+  let (mut outbound, inbound) = schematic.start_tx(tx_id.clone());
+  let (tx, rx) = unbounded_channel::<TransportWrapper>();
+
+  let inner = log_prefix;
+  let inner_schematic = schematic.clone();
+  tokio::spawn(async move {
+    while let Some(msg) = outbound.recv().await {
+      match msg {
+        TransactionUpdate::Done(tx_id) => {
+          let output_msg = TransportWrapper {
+            payload: MessageTransport::done(),
+            port: "<system>".to_owned(),
+          };
+          if tx.send(output_msg).is_err() {
+            warn!("TX:{} {}", tx_id, SchematicError::SchematicClosedEarly);
+          }
+
+          trace!("{}:DONE", inner);
+          break;
+        }
+        TransactionUpdate::Result(a) => {
+          if let Err(e) = tx.send(a.payload) {
+            error!("Error sending result {}", e);
+          }
+        }
+        TransactionUpdate::Execute(a) => {
+          if let Err(e) = inner_schematic.component_payload(a).await {
+            error!("Error sending execute command {}", e);
+          }
+        }
+        rest => {
+          warn!("Unhandled state: {:?}", rest);
+        }
+      }
+    }
+    drop(outbound);
+    trace!("{}:STOPPING", inner);
+  });
+
+  match make_input_packets(name, &schematic.get_model(), &tx_id, invocation) {
+    Ok(messages) => {
+      for message in messages {
+        inbound.send(TransactionUpdate::Update(message.handle_default()))?;
+      }
+    }
+    Err(e) => {
+      inbound.send(TransactionUpdate::Error(e.to_string()))?;
+      return Err(e);
+    }
+  };
+  let rx = UnboundedReceiverStream::new(rx);
+
+  Ok(async move { Ok(InvocationResponse::stream(tx_id.clone(), rx)) })
+}
+
+fn make_input_packets(
+  name: &str,
+  model: &SharedModel,
+  tx_id: &str,
+  invocation: &InvocationMessage,
+) -> Result<Vec<InputMessage>> {
+  let map = invocation.get_payload();
+  let model = model.read();
+  let connections = model.get_downstream_connections(SCHEMATIC_INPUT);
+
+  let mut messages: Vec<InputMessage> = vec![];
+  for conn in connections {
+    let transport = map.get(conn.from.get_port()).ok_or_else(|| {
+      SchematicError::FailedPreRequestCondition(format!(
+        "Port {} not found in transport payload",
+        conn.from
+      ))
+    })?;
+    debug!(
+      "SC[{}]:INPUT[{}]:PAYLOAD:{:?}",
+      name,
+      conn.from.get_port(),
+      transport
+    );
+    messages.push(InputMessage {
+      connection: conn.clone(),
+      tx_id: tx_id.to_owned(),
+      payload: transport.clone(),
+    });
+    messages.push(InputMessage {
+      connection: conn.clone(),
+      tx_id: tx_id.to_owned(),
+      payload: MessageTransport::done(),
+    });
+  }
+  let connections = model.get_downstream_connections(CORE_ID);
+  for conn in connections {
+    let msg = match conn.from.get_port() {
+      CORE_PORT_SEED => MessageTransport::success(&invocation.get_init_data().seed),
+      x => MessageTransport::error(format!("{} port {} does not exist.", CORE_ID, x)),
+    };
+    messages.push(InputMessage {
+      connection: conn.clone(),
+      tx_id: tx_id.to_owned(),
+      payload: msg,
+    });
+    messages.push(InputMessage {
+      connection: conn.clone(),
+      tx_id: tx_id.to_owned(),
+      payload: MessageTransport::done(),
+    });
+  }
+
+  Ok(messages)
 }

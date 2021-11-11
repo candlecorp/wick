@@ -2,6 +2,7 @@
 {{#switch kind ~}}
   {{#case "Named"}}
     {{#switch name.value}}
+      {{#case "struct"}}serde_json::Value{{/case}}
       {{#case "string"}}String{{/case}}
       {{#default}}{{name.value}}{{/default}}
     {{/switch}}

@@ -2,7 +2,6 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use vino_codec::messagepack::serialize;
 use vino_entity::Entity;
 // use vino_provider::native::prelude::*;
 use vino_rpc::error::RpcError;
@@ -16,6 +15,7 @@ use crate::error::LinkError;
 use crate::host_pool::HostPool;
 // use crate::host_pool::HostPool;
 use crate::wapc_module::WapcModule;
+use crate::wasi::config_to_wasi;
 use crate::wasm_host::WasmHostBuilder;
 use crate::Error;
 
@@ -25,20 +25,9 @@ pub struct Context {
   pub collections: HashMap<String, Vec<String>>,
 }
 
-#[derive()]
+#[derive(Debug)]
 pub struct Provider {
   pool: Arc<HostPool>,
-  // pool: WasmHost,
-  #[allow(unused)]
-  config: Vec<u8>,
-}
-
-impl std::fmt::Debug for Provider {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    f.debug_struct("Provider")
-      .field("config", &self.config)
-      .finish()
-  }
 }
 
 pub type HostLinkCallback =
@@ -48,14 +37,32 @@ impl Provider {
   pub fn try_load(
     module: &WapcModule,
     max_threads: usize,
-    config: Option<HashMap<String, String>>,
-    wasi_options: Option<WasiParams>,
+    config: Option<serde_json::Value>,
+    wasi_params: Option<WasiParams>,
     callback: Option<Box<HostLinkCallback>>,
   ) -> Result<Self, Error> {
     let mut builder = WasmHostBuilder::new();
-    if let Some(opts) = wasi_options {
+
+    // TODO: progagate a name for better messages.
+    let name = "unnamed";
+
+    // If we're passed a "wasi" field in the config map...
+    if let Some(config) = config {
+      let wasi_cfg = config.get("wasi");
+      if wasi_cfg.is_some() {
+        // extract and merge the wasi config with the passed wasi params.
+        let wasi = config_to_wasi(wasi_cfg.cloned(), wasi_params)?;
+        debug!("WASM[{}]:WASI[enabled]:CFG[{:?}]", name, wasi);
+        builder = builder.wasi_params(wasi);
+      }
+    } else if let Some(opts) = wasi_params {
+      // if we were passed wasi params, use those.
+      debug!("WASM[{}]:WASI[enabled]:CFG[{:?}]", name, opts);
       builder = builder.wasi_params(opts);
+    } else {
+      debug!("WASM[{}]:WASI[disabled]", name);
     }
+
     if let Some(callback) = callback {
       builder = builder.link_callback(callback);
     }
@@ -65,7 +72,6 @@ impl Provider {
 
     Ok(Self {
       pool: Arc::new(pool),
-      config: serialize(&config.unwrap_or_default())?,
     })
   }
 }

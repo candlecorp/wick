@@ -1,0 +1,19 @@
+{
+  "name": "test-wasi-component",
+  "types": {},
+  "components": {
+    "fs-read": {
+      "name": "fs-read",
+      "inputs": {
+        "filename": {
+          "type": "string"
+        }
+      },
+      "outputs": {
+        "contents": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

@@ -17,20 +17,6 @@ type SchematicManifest {
   constraints: {string: string},
 }
 
-"A provider definition."
-type ProviderDefinition {
-  "The namespace to reference the provider's components on."
-  namespace: string,
-
-  "The kind/type of the provider."
-  kind: ProviderKind,
-
-  "The reference/location of the provider."
-  reference: string,
-
-  "Data or configuration to pass to the provider initialization."
-  data: {string: string},
-}
 
 "Kind of provider."
 enum ProviderKind {

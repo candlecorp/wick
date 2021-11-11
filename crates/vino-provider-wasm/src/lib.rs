@@ -91,6 +91,7 @@ pub mod helpers;
 mod host_pool;
 pub mod provider;
 mod wapc_module;
+pub mod wasi;
 pub mod wasm_host;
 
 pub(crate) type Result<T> = std::result::Result<T, error::WasmProviderError>;

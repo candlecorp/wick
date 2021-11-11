@@ -20,7 +20,10 @@ ROOT_RUST_CRATES=$(foreach crate,$(wildcard ${CRATES_DIR}/*/Cargo.toml),$(dir $(
 TEST_WASM_DIR=$(CRATES_DIR)/integration/test-wapc-component
 TEST_WASM=$(TEST_WASM_DIR)/build/test_component_s.wasm
 
-BINS=vinoc vino vow #vino-keyvalue-redis
+TEST_WASI_DIR=$(CRATES_DIR)/integration/test-wasi-component
+TEST_WASI=$(TEST_WASM_DIR)/build/test_wasi_component_s.wasm
+
+BINS=vinoc vino vow vino-keyvalue-redis
 
 RELEASE?=false
 ARCH?=local
@@ -91,16 +94,19 @@ build: ./build/local codegen
 	cargo build --workspace --all
 
 $(TEST_WASM):
-	cd $(TEST_WASM_DIR) && $(MAKE) && cd $(ROOT)
+	$(MAKE) -C $(TEST_WASM_DIR)
+
+$(TEST_WASI):
+	$(MAKE) -C $(TEST_WASI_DIR)
 
 ./build/$(ARCH):
 	mkdir -p $@
 
 .PHONY: wasm
-wasm: $(TEST_WASM)
+wasm: $(TEST_WASM) $(TEST_WASI)
 
 .PHONY: test
-test: $(TEST_WASM)
+test: wasm
 	cargo deny check licenses --hide-inclusion-graph
 	cargo build --workspace # necessary to ensure binaries are built
 	cargo test --workspace

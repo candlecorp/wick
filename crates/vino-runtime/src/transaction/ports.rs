@@ -172,7 +172,7 @@ impl PortStatuses {
     match &payload {
       MessageTransport::Success(_) => self.buffer(to, payload),
       MessageTransport::Failure(failure) => match failure {
-        Failure::Invalid => self.close_connection(connection),
+        Failure::Invalid => self.close_connection(connection).buffer(to, payload),
         Failure::Exception(_) => self.buffer(to, payload),
         Failure::Error(_) => self.close_connection(connection).buffer(to, payload),
       },

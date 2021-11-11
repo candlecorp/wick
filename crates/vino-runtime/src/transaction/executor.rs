@@ -8,7 +8,7 @@ use tokio::time::timeout;
 
 use super::Transaction;
 use crate::dev::prelude::*;
-use crate::schematic_service::handlers::component_payload::ComponentPayload;
+use crate::transaction::ComponentPayload;
 
 #[derive(Clone, Debug)]
 pub struct SchematicOutput {
@@ -156,8 +156,8 @@ impl TransactionExecutor {
             break;
           }
           TransactionUpdate::Update(input) => {
-            trace!("{}:UPDATE:{}", iter_prefix, input.connection,);
-            trace!("{}:MSG[{}]", iter_prefix, input.payload,);
+            trace!("{}:UPDATE:{}", iter_prefix, input.connection);
+            trace!("{}:MSG[{}]", iter_prefix, input.payload);
             transaction.ports.receive(&input.connection, input.payload);
             let target = &input.connection.to;
             let port = target.get_port();

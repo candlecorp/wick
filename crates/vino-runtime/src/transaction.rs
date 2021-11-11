@@ -7,12 +7,18 @@ use vino_transport::TransportMap;
 use self::executor::SchematicOutput;
 use self::ports::PortStatuses;
 use crate::dev::prelude::*;
-use crate::schematic_service::handlers::component_payload::ComponentPayload;
 use crate::schematic_service::input_message::InputMessage;
 type Result<T> = std::result::Result<T, TransactionError>;
 
 pub(crate) mod executor;
 pub(crate) mod ports;
+
+#[derive(Clone, Debug)]
+pub struct ComponentPayload {
+  pub tx_id: String,
+  pub instance: String,
+  pub payload_map: TransportMap,
+}
 
 #[derive(Debug)]
 pub enum TransactionUpdate {
@@ -180,24 +186,29 @@ mod tests {
   #[allow(unused_imports)]
   use crate::test::prelude::{assert_eq, *};
   use crate::transaction::executor::TransactionExecutor;
+
+  static REF_ID: &str = "REF_ID_LOGGER";
+
   fn make_model() -> TestResult<Arc<RwLock<SchematicModel>>> {
     let schematic_name = "Test";
     let mut schematic_def = new_schematic(schematic_name);
     schematic_def.providers.push("test-namespace".to_owned());
     schematic_def.instances.insert(
-      "REF_ID_LOGGER".to_owned(),
+      REF_ID.to_owned(),
       ComponentDefinition::new("test-namespace", "log"),
     );
     schematic_def
       .connections
-      .push(ConnectionDefinition::from_v0_str(
-        "<>=>REF_ID_LOGGER[input]",
-      )?);
+      .push(ConnectionDefinition::from_v0_str(&format!(
+        "<>=>{}[input]",
+        REF_ID
+      ))?);
     schematic_def
       .connections
-      .push(ConnectionDefinition::from_v0_str(
-        "REF_ID_LOGGER[output]=><>",
-      )?);
+      .push(ConnectionDefinition::from_v0_str(&format!(
+        "{}[output]=><>",
+        REF_ID
+      ))?);
     Ok(Arc::new(RwLock::new(SchematicModel::try_from(
       schematic_def,
     )?)))
@@ -209,8 +220,8 @@ mod tests {
     let model = make_model()?;
 
     let mut transaction = Transaction::new(tx_id, model);
-    let from = ConnectionTargetDefinition::new("<input>", "input");
-    let to = ConnectionTargetDefinition::new("REF_ID_LOGGER", "input");
+    let from = ConnectionTargetDefinition::new(SCHEMATIC_INPUT, "input");
+    let to = ConnectionTargetDefinition::new(REF_ID, "input");
 
     println!("pushing to port");
     let connection = ConnectionDefinition::new(from, to.clone());
@@ -255,28 +266,28 @@ mod tests {
 
     // First message sends from the schematic input to the component
     tx.send(TransactionUpdate::Update(InputMessage {
-      connection: conn(SCHEMATIC_INPUT, "input", "REF_ID_LOGGER", "input"),
+      connection: conn(SCHEMATIC_INPUT, "input", REF_ID, "input"),
       payload: MessageTransport::success(&"input payload"),
       tx_id: tx_id.clone(),
     }))?;
 
     // Second closes the schematic input
     tx.send(TransactionUpdate::Update(InputMessage {
-      connection: conn(SCHEMATIC_INPUT, "input", "REF_ID_LOGGER", "input"),
+      connection: conn(SCHEMATIC_INPUT, "input", REF_ID, "input"),
       payload: MessageTransport::Signal(MessageSignal::Done),
       tx_id: tx_id.clone(),
     }))?;
 
     // Third simulates output from the component
     tx.send(TransactionUpdate::Update(InputMessage {
-      connection: conn("REF_ID_LOGGER", "output", SCHEMATIC_OUTPUT, "output"),
+      connection: conn(REF_ID, "output", SCHEMATIC_OUTPUT, "output"),
       payload: MessageTransport::success(&"output payload"),
       tx_id: tx_id.clone(),
     }))?;
 
     // Second closes the schematic input
     tx.send(TransactionUpdate::Update(InputMessage {
-      connection: conn("REF_ID_LOGGER", "output", SCHEMATIC_OUTPUT, "output"),
+      connection: conn(REF_ID, "output", SCHEMATIC_OUTPUT, "output"),
       payload: MessageTransport::Signal(MessageSignal::Done),
       tx_id: tx_id.clone(),
     }))?;
@@ -307,4 +318,56 @@ mod tests {
 
     Ok(())
   }
+
+  // TODO: Bad test: either delete or figure out what it really needs
+  // to test
+  //
+  // #[test_logger::test(tokio::test)]
+  // async fn test_invalid_message() -> TestResult<()> {
+  //   let model = make_model()?;
+
+  //   let mut map = TransactionExecutor::new(model, Duration::from_millis(100));
+  //   let tx_id = get_uuid();
+  //   let (mut ready_rx, tx) = map.new_transaction(tx_id.clone());
+
+  //   // First message sends from the schematic input to the component
+  //   tx.send(TransactionUpdate::Update(InputMessage {
+  //     connection: conn(SCHEMATIC_INPUT, "input", REF_ID, "input"),
+  //     payload: MessageTransport::Failure(Failure::Invalid),
+  //     tx_id: tx_id.clone(),
+  //   }))?;
+
+  //   // Second closes the schematic input
+  //   tx.send(TransactionUpdate::Update(InputMessage {
+  //     connection: conn(SCHEMATIC_INPUT, "input", REF_ID, "input"),
+  //     payload: MessageTransport::Signal(MessageSignal::Done),
+  //     tx_id: tx_id.clone(),
+  //   }))?;
+
+  //   // Transaction should close automatically after this because the schematic
+  //   // is complete
+
+  //   let handle = tokio::spawn(async move {
+  //     let mut msgs = vec![];
+  //     while let Some(payloadmsg) = ready_rx.recv().await {
+  //       println!("Got message : {:?}", payloadmsg);
+  //       msgs.push(payloadmsg);
+  //     }
+  //     msgs
+  //   });
+  //   let msgs = handle.await?;
+  //   println!("Transaction Updates {:#?}", msgs);
+
+  //   // 1 execute the component
+  //   assert!(matches!(msgs[0], TransactionUpdate::Execute(_)));
+  //   // 2 get result for schematic
+  //   assert!(matches!(msgs[1], TransactionUpdate::Result(_)));
+  //   // 3 get done signal for schematic port
+  //   assert!(matches!(msgs[2], TransactionUpdate::Result(_)));
+  //   // 4 get done update for schematic transaction
+  //   assert!(matches!(msgs[3], TransactionUpdate::Done(_)));
+  //   assert_eq!(msgs.len(), 4);
+
+  //   Ok(())
+  // }
 }

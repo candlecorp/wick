@@ -13,3 +13,20 @@ type NetworkManifest {
   "A list of providers and component collections."
   providers: [ProviderDefinition],
 }
+
+
+"A provider definition."
+type ProviderDefinition {
+  "The namespace to reference the provider's components on."
+  namespace: string,
+
+  "The kind/type of the provider."
+  kind: ProviderKind,
+
+  "The reference/location of the provider."
+  reference: string,
+
+  "Data or configuration to pass to the provider initialization."
+  data: struct,
+}
+

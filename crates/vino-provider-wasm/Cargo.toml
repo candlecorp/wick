@@ -24,11 +24,13 @@ vino-transport = { path = "../../sdk/crates/vino-transport", features = [
 ] }
 vino-types = { path = "../../sdk/crates/vino-types" }
 vino-macros = { path = "../../sdk/crates/vino-macros" }
-serde_json = "1.0"
 derivative = "2.2"
 tokio = { version = "1", features = ["fs"] }
 parking_lot = "0.11"
 
+shellexpand = "2.1"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
 # Forks until https://github.com/wapc/wapc-rust/pull/24 is resolved
 # wasmtime-provider = { version = "0.0", optional = true, features = ["cache"] }
 # wapc = "0.10.1"

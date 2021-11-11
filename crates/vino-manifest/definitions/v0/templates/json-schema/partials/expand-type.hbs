@@ -20,6 +20,7 @@
   {{/case}}
   {{#case "Named"~}}
     {{#switch name.value~}}
+      {{#case "struct"}}"type":"object"{{/case}}
       {{#case "string"}}"type":"string"{{/case}}
       {{#case "i8"}}"type":"number"{{/case}}
       {{#case "u8"}}"type":"number"{{/case}}

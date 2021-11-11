@@ -24,6 +24,7 @@
         },
         "default_schematic": {
           "description": "The default schematic to execute if none is provided.",
+
           "type": "string"
         }
       },
@@ -54,6 +55,7 @@
         "id": {
           "description": "The ID for this host, used to identify the host over the lattice.",
           "required": false,
+
           "type": "string"
         },
         "expose": {
@@ -103,21 +105,25 @@
         "address": {
           "description": "The address to bind to.",
           "required": false,
+
           "type": "string"
         },
         "pem": {
           "description": "Path to pem file for TLS.",
           "required": false,
+
           "type": "string"
         },
         "key": {
           "description": "Path to key file for TLS.",
           "required": false,
+
           "type": "string"
         },
         "ca": {
           "description": "Path to CA file.",
           "required": false,
+
           "type": "string"
         }
       },
@@ -135,16 +141,19 @@
         },
         "address": {
           "description": "The address of the NATS server.",
+
           "type": "string"
         },
         "creds_path": {
           "description": "The path to the NATS credsfile.",
           "required": false,
+
           "type": "string"
         },
         "token": {
           "description": "The NATS token.",
           "required": false,
+
           "type": "string"
         }
       },
@@ -158,13 +167,16 @@
         "name": {
           "description": "The unique identifier for this Network.",
           "required": false,
+
           "type": "string"
         },
         "labels": {
           "description": "The labels that apply to this network.",
           "type": "object",
           "patternProperties": {
-            "[a-zA-Z0-9][a-zA-Z0-9_]*": { "type": "string" }
+            "[a-zA-Z0-9][a-zA-Z0-9_]*": {
+              "type": "string"
+            }
           }
         },
         "schematics": {
@@ -185,12 +197,40 @@
       "required": []
     },
 
+    "ProviderDefinition": {
+      "$anchor": "#ProviderDefinition",
+      "additionalProperties": false,
+      "properties": {
+        "namespace": {
+          "description": "The namespace to reference the provider&#x27;s components on.",
+
+          "type": "string"
+        },
+        "kind": {
+          "description": "The kind/type of the provider.",
+
+          "$ref": "#/$defs/ProviderKind"
+        },
+        "reference": {
+          "description": "The reference/location of the provider.",
+
+          "type": "string"
+        },
+        "data": {
+          "description": "Data or configuration to pass to the provider initialization.",
+          "type": "object"
+        }
+      },
+      "required": []
+    },
+
     "SchematicManifest": {
       "$anchor": "#SchematicManifest",
       "additionalProperties": false,
       "properties": {
         "name": {
           "description": "Schematic name.",
+
           "type": "string"
         },
         "providers": {
@@ -220,39 +260,13 @@
           "description": "A map of constraints and values that limit where this schematic can run.",
           "type": "object",
           "patternProperties": {
-            "[a-zA-Z0-9][a-zA-Z0-9_]*": { "type": "string" }
+            "[a-zA-Z0-9][a-zA-Z0-9_]*": {
+              "type": "string"
+            }
           }
         }
       },
       "required": ["name"]
-    },
-
-    "ProviderDefinition": {
-      "$anchor": "#ProviderDefinition",
-      "additionalProperties": false,
-      "properties": {
-        "namespace": {
-          "description": "The namespace to reference the provider&#x27;s components on.",
-          "type": "string"
-        },
-        "kind": {
-          "description": "The kind/type of the provider.",
-
-          "$ref": "#/$defs/ProviderKind"
-        },
-        "reference": {
-          "description": "The reference/location of the provider.",
-          "type": "string"
-        },
-        "data": {
-          "description": "Data or configuration to pass to the provider initialization.",
-          "type": "object",
-          "patternProperties": {
-            "[a-zA-Z0-9][a-zA-Z0-9_]*": { "type": "string" }
-          }
-        }
-      },
-      "required": []
     },
 
     "ProviderKind": {
@@ -265,6 +279,7 @@
       "properties": {
         "id": {
           "description": "The ID of the component (i.e. the alias, key, or namespace).",
+
           "type": "string"
         },
         "config": {
@@ -272,7 +287,9 @@
           "required": false,
           "type": "object",
           "patternProperties": {
-            "[a-zA-Z0-9][a-zA-Z0-9_]*": { "type": "string" }
+            "[a-zA-Z0-9][a-zA-Z0-9_]*": {
+              "type": "string"
+            }
           }
         }
       },
@@ -296,6 +313,7 @@
         "default": {
           "description": "The default value to provide in the event of an upstream Error or Exception.",
           "required": false,
+
           "type": "string"
         }
       },
@@ -308,15 +326,18 @@
       "properties": {
         "instance": {
           "description": "The instance name of the referenced component.",
+
           "type": "string"
         },
         "port": {
           "description": "The component&#x27;s port.",
+
           "type": "string"
         },
         "data": {
           "description": "Data to send automatically. Parsed as JSON. (only used for &lt;sender&gt; instances).",
           "required": false,
+
           "type": "string"
         }
       },
