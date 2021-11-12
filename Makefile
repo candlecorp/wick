@@ -20,7 +20,7 @@ ROOT_RUST_CRATES=$(foreach crate,$(wildcard ${CRATES_DIR}/*/Cargo.toml),$(dir $(
 TEST_WASM_DIR=$(CRATES_DIR)/integration/test-wapc-component
 TEST_WASM=$(TEST_WASM_DIR)/build/test_component_s.wasm
 
-BINS=vino-keyvalue-redis #vinoc vino vow
+BINS=vinoc vino vow #vino-keyvalue-redis
 
 RELEASE?=false
 ARCH?=local
@@ -118,7 +118,8 @@ update-lint:
 .PHONY: build-tag
 build-tag:
 ifeq ($(shell git status -s),)
-	git tag build-$$(date "+%Y-%m-%d")
+	@echo Tagging build-$$(date "+%Y-%m-%d")
+	@git tag build-$$(date "+%Y-%m-%d") -f
 else
 	@echo "Check in changes before making a build tag."
 endif
