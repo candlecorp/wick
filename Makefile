@@ -138,10 +138,14 @@ else
 endif
 else
 ifeq ($(RELEASE),true)
-	cross build -vv --target $(ARCH) --release $(foreach bin,$(BINS),-p $(bin))
+ifeq ($(ARCH),x86_64-pc-windows-gnu)
+	CARGO_PROFILE_RELEASE_LTO=false cross build --target $(ARCH) --release $(foreach bin,$(BINS),-p $(bin))
+else
+	cross build --target $(ARCH) --release $(foreach bin,$(BINS),-p $(bin))
+endif
 	cp $(foreach bin,$(BINS),./target/$(ARCH)/release/$(bin)$(BIN_SUFFIX)) ./build/$(ARCH)
 else
-	cross build -vv --target $(ARCH) $(foreach bin,$(BINS),-p $(bin))
+	cross build --target $(ARCH) $(foreach bin,$(BINS),-p $(bin))
 	cp $(foreach bin,$(BINS),./target/$(ARCH)/debug/$(bin)$(BIN_SUFFIX)) ./build/$(ARCH)
 endif
 endif

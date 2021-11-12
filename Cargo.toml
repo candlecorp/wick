@@ -9,13 +9,11 @@ documentation = "https://vino.dev"
 readme = "README.md"
 
 [profile.release]
-debug = 1
-incremental = true
-lto = "off"
 opt-level = 3
+debug = 0
+incremental = true
 
 [features]
-
 test-integration = []
 
 [dependencies]
