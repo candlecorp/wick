@@ -1,6 +1,6 @@
 [package]
 name = "vino-provider"
-version = "0.7.0"
+version = "0.8.0"
 edition = "2021"
 license = "BSD-3-Clause"
 description = "SDK for native and WASM Vino components"
@@ -32,16 +32,16 @@ native = [
 host = ["vino-wapc"]
 
 [dependencies]
-vino-packet = { path = "../vino-packet", version = "0.7.0" }
-vino-wapc = { path = "../vino-wapc", version = "0.7.0", optional = true }
-vino-entity = { path = "../vino-entity", version = "0.7.0" }
-vino-codec = { path = "../vino-codec", version = "0.7.0" }
+vino-packet = { path = "../vino-packet", version = "0.8.0" }
+vino-wapc = { path = "../vino-wapc", version = "0.8.0", optional = true }
+vino-entity = { path = "../vino-entity", version = "0.8.0" }
+vino-codec = { path = "../vino-codec", version = "0.8.0" }
 serde = { version = "1.0", features = ["derive"] }
 
-vino-transport = { path = "../vino-transport", version = "0.7.0", optional = true }
+vino-transport = { path = "../vino-transport", version = "0.8.0", optional = true }
 
 # For native providers
-vino-types = { path = "../vino-types", version = "0.7.0", optional = true }
+vino-types = { path = "../vino-types", version = "0.8.0", optional = true }
 async-trait = { version = "0.1", optional = true }
 thiserror = { version = "1.0", optional = true }
 tokio = { version = "1", features = [], optional = true }

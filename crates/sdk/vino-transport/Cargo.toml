@@ -1,6 +1,6 @@
 [package]
 name = "vino-transport"
-version = "0.7.0"
+version = "0.8.0"
 edition = "2021"
 license = "BSD-3-Clause"
 description = "Transport layer for Vino packets"
@@ -24,9 +24,9 @@ json = ["serde_json"]
 raw = ["serde-value"]
 
 [dependencies]
-vino-packet = { path = "../vino-packet", version = "0.7.0" }
-vino-entity = { path = "../vino-entity", version = "0.7.0", optional = true }
-vino-codec = { path = "../vino-codec", version = "0.7.0" }
+vino-packet = { path = "../vino-packet", version = "0.8.0" }
+vino-entity = { path = "../vino-entity", version = "0.8.0", optional = true }
+vino-codec = { path = "../vino-codec", version = "0.8.0" }
 serde = { version = "1.0", features = ["derive"] }
 thiserror = "1.0"
 tracing = "0.1"
