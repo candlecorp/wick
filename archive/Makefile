@@ -19,36 +19,40 @@ CLEAN_FILES := $(READMES)
 
 ##@ Main targets
 
-.PHONY: all clean test update-lint build readmes
-
+.PHONY: all
 all: build  ## Alias for make build
 
 ${CRATES_DIR}/%/README.md:
 	@echo "## Generating README for $(dir $@)"; \
 	cd $(dir $@) && cargo readme > README.md
 
+.PHONY: readmes
 readmes: $(READMES) ## Generate the README.md files from rustdoc
 
+.PHONY: clean
 clean: ## Remove generated files (run cargo clean to clean rust's cache)
 	@rm -f $(CLEAN_FILES)
 
+.PHONY: build
 build: ## Build everything in the workspace
 	cargo build --workspace
 
+.PHONY: test
 test: ## Test all crates in the workspace
 	cargo deny check licenses --hide-inclusion-graph
 	cargo doc --no-deps --workspace --all-features
 	cargo test --workspace --all-features
 
+.PHONY: update-lint
 update-lint: ## Update clippy lint definitions in sub crates
 	npm run update-lint
 
 ##@ Helpers
 
-.PHONY: help
-
+.PHONY: list
 list: ## Display supported images
 	@ls Dockerfile.* | sed -nE 's/Dockerfile\.(.*)/\1/p' | sort
 
+.PHONY: help
 help:  ## Display this help
 	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n"} /^[a-zA-Z0-9_\-.*]+:.*?##/ { printf "  \033[36m%-32s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
