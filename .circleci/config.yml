@@ -182,6 +182,7 @@ jobs:
         environment:
           AZURE_STORAGE_ACCOUNT: $AZURE_STORAGE_ACCOUNT
     steps:
+      - checkout
       - restore_cache:
           keys:
             - artifacts-x86_64-unknown-linux-gnu-{{ .Environment.CIRCLE_SHA1 }}
@@ -206,7 +207,9 @@ jobs:
             make-tarball vino ./build/aarch64-unknown-linux-gnu linux.aarch64 build/artifacts
             make-tarball vino ./build/x86_64-apple-darwin darwin.x86_64 build/artifacts
             make-tarball vino ./build/aarch64-apple-darwin darwin.aarch64 build/artifacts
-            make-zip ./build/x86_64-pc-windows-gnu win64 build/artifacts
+            make-zip ./build/x86_64-pc-windows-gnu vino.win64 build/artifacts
+            cp /home/vino/project/crates/vino-rpc/proto/vino.proto build/artifacts/vino.proto
+            echo << pipeline.git.tag >> > build/artifacts/RELEASE
             echo << pipeline.git.tag >> > build/RELEASE
       - run:
           name: Upload to Azure

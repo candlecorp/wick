@@ -532,7 +532,7 @@ mod test_integration {
   async fn rpc_list_namespace_components() -> Result<()> {
     let (lattice, namespace) = get_lattice().await?;
     let schemas = lattice.list_components(namespace).await?;
-    println!("Hosted schemas on namespace: {:?}", schemas);
+    debug!("Hosted schemas on namespace: {:#?}", schemas);
     let mut components = ComponentMap::new();
     components.insert(
       "error",
@@ -553,7 +553,7 @@ mod test_integration {
 
     assert!(schemas.contains(&HostedType::Provider(ProviderSignature {
       name: None,
-      types: StructMap::todo(),
+      types: StructMap::new(),
       components
     })));
     Ok(())

@@ -7,25 +7,29 @@ license = "BSD-3-Clause"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
+default = ['cli']
 reflection = ["tonic-reflection"]
+cli = ['http', 'grpc', 'lattice']
+http = ['vino-rpc', 'tonic/tls', 'vino-http', 'async-stream']
+grpc = ['vino-rpc', 'tonic/tls', 'vino-invocation-server', 'async-stream']
+lattice = ['vino-rpc', 'vino-lattice', 'async-stream']
 
 [dependencies]
 logger = { path = "../logger" }
-vino-rpc = { path = "../vino-rpc" }
-vino-lattice = { path = "../vino-lattice" }
 vino-packet = { path = "../../sdk/crates/vino-packet" }
 vino-codec = { path = "../../sdk/crates/vino-codec" }
-vino-invocation-server = { path = "../vino-invocation-server" }
 vino-transport = { path = "../../sdk/crates/vino-transport", features = [
   "all",
 ] }
-vino-http = { path = "../vino-http" }
+vino-rpc = { path = "../vino-rpc", optional = true }
+vino-invocation-server = { path = "../vino-invocation-server", optional = true }
+vino-lattice = { path = "../vino-lattice", optional = true }
+vino-http = { path = "../vino-http", optional = true }
 cfg-if = "1.0"
 
-tonic = { version = "0.6", features = ["tls"] }
+tonic = { version = "0.6", optional = true }
 tonic-reflection = { version = "0.3", default-features = false, optional = true }
 
-futures = "0.3"
 tokio = { version = "1", features = [
   "macros",
   "fs",
@@ -34,7 +38,7 @@ tokio = { version = "1", features = [
   "rt-multi-thread",
 ] }
 tokio-stream = "0.1.6"
-async-stream = "0.3.2"
+async-stream = { version = "0.3.2", optional = true }
 
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"

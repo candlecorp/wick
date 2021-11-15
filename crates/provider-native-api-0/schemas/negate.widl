@@ -1,9 +1,0 @@
-namespace "negate"
-
-type Inputs {
-  input: bool
-}
-
-type Outputs {
-  output: bool
-}

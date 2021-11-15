@@ -71,30 +71,7 @@ pub(crate) fn get_signature() -> ProviderSignature {
 
   ProviderSignature {
     name: Some("vino-interface-keyvalue".to_owned()),
-    types: std::collections::HashMap::from([
-      (
-        "name".to_owned(),
-        StructSignature {
-          name: "".to_owned(),
-          fields: std::collections::HashMap::from([]).into(),
-        },
-      ),
-      (
-        "types".to_owned(),
-        StructSignature {
-          name: "".to_owned(),
-          fields: std::collections::HashMap::from([]).into(),
-        },
-      ),
-      (
-        "components".to_owned(),
-        StructSignature {
-          name: "".to_owned(),
-          fields: std::collections::HashMap::from([]).into(),
-        },
-      ),
-    ])
-    .into(),
+    types: std::collections::HashMap::from([]).into(),
     components: components.into(),
   }
 }

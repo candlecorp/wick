@@ -1,103 +1,122 @@
 {
-  "name": "vino-native-components-v0",
-  "components": [
-    {
+  "name": "vino-native-api-0",
+  "types": {},
+  "components": {
+    "add": {
       "name": "add",
-      "inputs": [
-        {
-          "name": "left",
-          "type_string": "u64"
+      "inputs": {
+        "left": {
+          "type": "u64"
         },
-        {
-          "name": "right",
-          "type_string": "u64"
+        "right": {
+          "type": "u64"
         }
-      ],
-      "outputs": [
-        {
-          "name": "output",
-          "type_string": "u64"
+      },
+      "outputs": {
+        "output": {
+          "type": "u64"
         }
-      ]
+      }
     },
-    {
-      "name": "bcrypt",
-      "inputs": [
-        {
-          "name": "input",
-          "type_string": "string"
+    "concatenate": {
+      "name": "concatenate",
+      "inputs": {
+        "left": {
+          "type": "string"
         },
-        {
-          "name": "cost",
-          "type_string": "u32"
+        "right": {
+          "type": "string"
         }
-      ],
-      "outputs": [
-        {
-          "name": "output",
-          "type_string": "string"
+      },
+      "outputs": {
+        "output": {
+          "type": "string"
         }
-      ]
+      }
     },
-    {
+    "error": {
       "name": "error",
-      "inputs": [
-        {
-          "name": "input",
-          "type_string": "string"
+      "inputs": {
+        "input": {
+          "type": "string"
         }
-      ],
-      "outputs": [
-        {
-          "name": "output",
-          "type_string": "string"
+      },
+      "outputs": {
+        "output": {
+          "type": "string"
         }
-      ]
+      }
     },
-    {
+    "log": {
       "name": "log",
-      "inputs": [
-        {
-          "name": "input",
-          "type_string": "string"
+      "inputs": {
+        "input": {
+          "type": "string"
         }
-      ],
-      "outputs": [
-        {
-          "name": "output",
-          "type_string": "string"
+      },
+      "outputs": {
+        "output": {
+          "type": "string"
         }
-      ]
+      }
     },
-    {
-      "name": "short-circuit",
-      "inputs": [
-        {
-          "name": "input",
-          "type_string": "string"
+    "panic": {
+      "name": "panic",
+      "inputs": {
+        "input": {
+          "type": "string"
         }
-      ],
-      "outputs": [
-        {
-          "name": "output",
-          "type_string": "string"
+      },
+      "outputs": {
+        "output": {
+          "type": "string"
         }
-      ]
+      }
     },
-    {
-      "name": "string-to-bytes",
-      "inputs": [
-        {
-          "name": "input",
-          "type_string": "string"
+    "random-bytes": {
+      "name": "random-bytes",
+      "inputs": {
+        "seed": {
+          "type": "u64"
+        },
+        "length": {
+          "type": "u32"
         }
-      ],
-      "outputs": [
-        {
-          "name": "output",
-          "type_string": "bytes"
+      },
+      "outputs": {
+        "output": {
+          "type": "bytes"
         }
-      ]
+      }
+    },
+    "random-string": {
+      "name": "random-string",
+      "inputs": {
+        "seed": {
+          "type": "u64"
+        },
+        "length": {
+          "type": "u32"
+        }
+      },
+      "outputs": {
+        "output": {
+          "type": "string"
+        }
+      }
+    },
+    "uuid": {
+      "name": "uuid",
+      "inputs": {
+        "seed": {
+          "type": "u64"
+        }
+      },
+      "outputs": {
+        "output": {
+          "type": "string"
+        }
+      }
     }
-  ]
+  }
 }

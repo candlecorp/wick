@@ -33,6 +33,8 @@ pub(crate) enum ControlError {
   ReadFailed(std::io::Error),
   #[error("Could not read next line: {0}")]
   ReadLineFailed(std::io::Error),
+  #[error("{0}")]
+  CliError(String),
   #[error("IO error: {0}")]
   IOError(String),
   #[error(transparent)]
@@ -48,6 +50,11 @@ impl From<nkeys::error::Error> for ControlError {
 impl From<std::io::Error> for ControlError {
   fn from(e: std::io::Error) -> Self {
     ControlError::IOError(e.to_string())
+  }
+}
+impl From<vino_provider_cli::Error> for ControlError {
+  fn from(e: vino_provider_cli::Error) -> Self {
+    ControlError::CliError(e.to_string())
   }
 }
 

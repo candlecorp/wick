@@ -4,6 +4,7 @@ use thiserror::Error;
 /// The error returned by the provider CLI.
 pub enum CliError {
   #[error(transparent)]
+  #[cfg(any(feature = "grpc", feature = "http", feature = "lattice"))]
   /// An upstream error from [vino_rpc].
   VinoError(#[from] vino_rpc::Error),
 
@@ -20,6 +21,7 @@ pub enum CliError {
   IOError(#[from] std::io::Error),
 
   #[error(transparent)]
+  #[cfg(feature = "grpc")]
   /// An upstream error from [tonic].
   TransportError(#[from] tonic::transport::Error),
 
@@ -28,7 +30,7 @@ pub enum CliError {
   JoinError(#[from] tokio::task::JoinError),
 
   #[error(transparent)]
-
+  #[cfg(feature = "lattice")]
   /// An error connecting or communicating over the lattice.
   Lattice(#[from] vino_lattice::Error),
 

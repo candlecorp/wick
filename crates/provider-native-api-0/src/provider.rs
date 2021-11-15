@@ -89,7 +89,7 @@ mod tests {
     Ok(output.payload.try_into()?)
   }
 
-  async fn invoke_failure(
+  async fn _invoke_failure(
     component: &str,
     payload: impl Into<TransportMap> + Send,
   ) -> Result<Failure> {
@@ -129,35 +129,6 @@ mod tests {
   }
 
   #[test_logger::test(tokio::test)]
-  async fn test_gate() -> Result<()> {
-    let user_data = "Hello world";
-    let exception = "Condition is false";
-    let inputs = crate::components::gate::Inputs {
-      condition: true,
-      value: MessageTransport::success(&user_data).into(),
-      exception: exception.to_owned(),
-    };
-
-    let payload: String = invoke_one("gate", inputs).await?;
-
-    println!("outputs: {:?}", payload);
-    assert_eq!(payload, user_data);
-
-    let inputs = crate::components::gate::Inputs {
-      condition: false,
-      value: MessageTransport::success(&user_data).into(),
-      exception: exception.to_owned(),
-    };
-
-    let payload = invoke_failure("gate", inputs).await?;
-
-    println!("outputs: {:?}", payload);
-    assert_eq!(payload, Failure::Exception(exception.to_owned()));
-
-    Ok(())
-  }
-
-  #[test_logger::test(tokio::test)]
   async fn list() -> Result<()> {
     let provider = Provider::new(SEED);
     let signature = crate::components::get_signature();
@@ -167,7 +138,7 @@ mod tests {
 
     debug!("list response : {:?}", response);
 
-    assert_eq!(components.len(), 12);
+    assert_eq!(components.len(), 8);
     assert_eq!(response, vec![HostedType::Provider(signature)]);
 
     Ok(())

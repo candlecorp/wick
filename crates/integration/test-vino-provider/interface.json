@@ -1,35 +1,32 @@
 {
   "name": "test-vino-provider",
-  "components": [
-    {
+  "types": {},
+  "components": {
+    "error": {
       "name": "error",
-      "inputs": [
-        {
-          "name": "input",
-          "type_string": "string"
+      "inputs": {
+        "input": {
+          "type": "string"
         }
-      ],
-      "outputs": [
-        {
-          "name": "output",
-          "type_string": "string"
+      },
+      "outputs": {
+        "output": {
+          "type": "string"
         }
-      ]
+      }
     },
-    {
+    "test-component": {
       "name": "test-component",
-      "inputs": [
-        {
-          "name": "input",
-          "type_string": "string"
+      "inputs": {
+        "input": {
+          "type": "string"
         }
-      ],
-      "outputs": [
-        {
-          "name": "output",
-          "type_string": "string"
+      },
+      "outputs": {
+        "output": {
+          "type": "string"
         }
-      ]
+      }
     }
-  ]
+  }
 }

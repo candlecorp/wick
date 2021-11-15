@@ -3,7 +3,7 @@
   <a name="HostManifest">HostManifest</a>
 </h2>
 
-<span class="description type-description">The Host Manifest defines the starting state of a Vino host</span>
+<span class="description type-description">A manifest defines the starting state of a Vino host and network.</span>
 <div class=fields>
 <div class=field>
 
@@ -11,7 +11,7 @@
   <a name="version">version</a>
 </h3>
 
-<span class="description field-description">The manifest version</span>
+<span class="description field-description">The manifest version.</span>
 
 
 <ul class="field-notes">
@@ -22,10 +22,24 @@
 </div><div class=field>
 
 <h3 class=field-name>
+  <a name="host">host</a>
+</h3>
+
+<span class="description field-description">Additional host configuration.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#HostConfig">HostConfig</a></span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
   <a name="network">network</a>
 </h3>
 
-<span class="description field-description">The configuration for a Vino network</span>
+<span class="description field-description">The configuration for a Vino network.</span>
 
 
 <ul class="field-notes">
@@ -39,7 +53,7 @@
   <a name="default_schematic">default_schematic</a>
 </h3>
 
-<span class="description field-description">The default schematic to execute if none is provided</span>
+<span class="description field-description">The default schematic to execute if none is provided.</span>
 
 
 <ul class="field-notes">
@@ -49,18 +63,305 @@
 </ul>
 </div></div></div><div class=definition>
 <h2 class="definition-name type-name">
+  <a name="HostConfig">HostConfig</a>
+</h2>
+
+<span class="description type-description">Host configuration options.</span>
+<div class=fields>
+<div class=field>
+
+<h3 class=field-name>
+  <a name="allow_latest">allow_latest</a>
+</h3>
+
+<span class="description field-description">Whether or not to allow the :latest tag on remote artifacts.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>bool</span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="insecure_registries">insecure_registries</a>
+</h3>
+
+<span class="description field-description">A list of registries to connect to insecurely (over HTTP vs HTTPS).</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string[]</span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="timeout">timeout</a>
+</h3>
+
+<span class="description field-description">The timeout for network requests (in ms).</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>u64</span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="id">id</a>
+</h3>
+
+<span class="description field-description">The ID for this host, used to identify the host over the lattice.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string<span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="expose">expose</a>
+</h3>
+
+<span class="description field-description">The schematics to expose via RPC or the lattice, if any.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string[]</span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="lattice">lattice</a>
+</h3>
+
+<span class="description field-description">The lattice configuration.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#LatticeConfig">LatticeConfig</a><span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="rpc">rpc</a>
+</h3>
+
+<span class="description field-description">Configuration for the GRPC server.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#HttpConfig">HttpConfig</a><span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="http">http</a>
+</h3>
+
+<span class="description field-description">Configuration for the HTTP 1 server (development only).</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#HttpConfig">HttpConfig</a><span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
+</div></div></div><div class=definition>
+<h2 class="definition-name type-name">
+  <a name="HttpConfig">HttpConfig</a>
+</h2>
+
+<span class="description type-description">Configuration for HTTP/S servers.</span>
+<div class=fields>
+<div class=field>
+
+<h3 class=field-name>
+  <a name="enabled">enabled</a>
+</h3>
+
+<span class="description field-description">Enable/disable the server.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>bool</span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="port">port</a>
+</h3>
+
+<span class="description field-description">The port to bind to.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>u16<span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="address">address</a>
+</h3>
+
+<span class="description field-description">The address to bind to.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string<span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="pem">pem</a>
+</h3>
+
+<span class="description field-description">Path to pem file for TLS.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string<span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="key">key</a>
+</h3>
+
+<span class="description field-description">Path to key file for TLS.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string<span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="ca">ca</a>
+</h3>
+
+<span class="description field-description">Path to CA file.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string<span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
+</div></div></div><div class=definition>
+<h2 class="definition-name type-name">
+  <a name="LatticeConfig">LatticeConfig</a>
+</h2>
+
+<span class="description type-description">Configuration used to connect to the lattice.</span>
+<div class=fields>
+<div class=field>
+
+<h3 class=field-name>
+  <a name="enabled">enabled</a>
+</h3>
+
+<span class="description field-description">Enable/disable the lattice connection.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>bool</span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="address">address</a>
+</h3>
+
+<span class="description field-description">The address of the NATS server.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string</span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="creds_path">creds_path</a>
+</h3>
+
+<span class="description field-description">The path to the NATS credsfile.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string<span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="token">token</a>
+</h3>
+
+<span class="description field-description">The NATS token.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string<span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
+</div></div></div><div class=definition>
+<h2 class="definition-name type-name">
   <a name="NetworkManifest">NetworkManifest</a>
 </h2>
 
-<span class="description type-description">A Vino network definition</span>
+<span class="description type-description">A Vino network definition.</span>
 <div class=fields>
 <div class=field>
+
+<h3 class=field-name>
+  <a name="name">name</a>
+</h3>
+
+<span class="description field-description">The unique identifier for this Network.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string<span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
+</div><div class=field>
 
 <h3 class=field-name>
   <a name="labels">labels</a>
 </h3>
 
-<span class="description field-description">The labels that apply to this host</span>
+<span class="description field-description">The labels that apply to this network.</span>
 
 
 <ul class="field-notes">
@@ -74,7 +375,7 @@
   <a name="schematics">schematics</a>
 </h3>
 
-<span class="description field-description">The links between capabilities and components</span>
+<span class="description field-description">The links between capabilities and components.</span>
 
 
 <ul class="field-notes">
@@ -88,7 +389,7 @@
   <a name="providers">providers</a>
 </h3>
 
-<span class="description field-description">A list of providers and component collections</span>
+<span class="description field-description">A list of providers and component collections.</span>
 
 
 <ul class="field-notes">
@@ -127,7 +428,7 @@
 
 
 <ul class="field-notes">
-<li><span class="type field-note">Type: <span class=field-type><a href="#ProviderDefinition">ProviderDefinition</a>[]</span></span></li>
+<li><span class="type field-note">Type: <span class=field-type>string[]</span></span></li>
 
 
 </ul>
@@ -241,7 +542,7 @@
   <a name="ProviderKind">ProviderKind</a>
 </h2>
 
-<span class="description enum-description">Kind of provider,.</span>
+<span class="description enum-description">Kind of provider.</span>
 <div class=fields>
 <div class=field>
 
@@ -284,6 +585,36 @@
 
 <ul class="field-notes">
 <li><span class="enum-index field-note">Index: <span class=field-type>2</span></span></li>
+
+
+</ul>
+
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="Lattice">Lattice</a>
+</h3>
+
+<span class=field-description>A provider accessible via a connected lattice.</span>
+
+
+<ul class="field-notes">
+<li><span class="enum-index field-note">Index: <span class=field-type>3</span></span></li>
+
+
+</ul>
+
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="Network">Network</a>
+</h3>
+
+<span class=field-description>A local or remote Network definition.</span>
+
+
+<ul class="field-notes">
+<li><span class="enum-index field-note">Index: <span class=field-type>4</span></span></li>
 
 
 </ul>
@@ -341,7 +672,7 @@
 
 
 <ul class="field-notes">
-<li><span class="type field-note">Type: <span class=field-type><a href="#ConnectionTargetDefinition">ConnectionTargetDefinition</a><span class=optional>(Optional)</span></span></span></li>
+<li><span class="type field-note">Type: <span class=field-type><a href="#ConnectionTargetDefinition">ConnectionTargetDefinition</a></span></span></li>
 
 
 </ul>
@@ -355,7 +686,7 @@
 
 
 <ul class="field-notes">
-<li><span class="type field-note">Type: <span class=field-type><a href="#ConnectionTargetDefinition">ConnectionTargetDefinition</a><span class=optional>(Optional)</span></span></span></li>
+<li><span class="type field-note">Type: <span class=field-type><a href="#ConnectionTargetDefinition">ConnectionTargetDefinition</a></span></span></li>
 
 
 </ul>
@@ -406,6 +737,20 @@
 <ul class="field-notes">
 <li><span class="type field-note">Type: <span class=field-type>string</span></span></li>
 <li><span class="annotation field-note">Required</span></li>
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="data">data</a>
+</h3>
+
+<span class="description field-description">Data to send automatically. Parsed as JSON. (only used for <sender> instances).</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string<span class=optional>(Optional)</span></span></span></li>
+
 
 </ul>
 </div></div></div></div>

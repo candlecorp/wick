@@ -88,7 +88,9 @@
 #![allow()]
 
 /// The CLI module.
+#[cfg(any(feature = "grpc", feature = "http", feature = "lattice"))]
 mod cli;
+#[cfg(any(feature = "grpc", feature = "http", feature = "lattice"))]
 pub use cli::{init_cli, print_info, start_server, ServerControl, ServerState};
 
 /// The crate's error module.
@@ -100,8 +102,6 @@ pub mod options;
 /// Utility functions.
 mod utils;
 pub use utils::parse_args;
-
-pub(crate) type Result<T> = std::result::Result<T, error::CliError>;
 
 /// The crate's error type;.
 pub type Error = error::CliError;

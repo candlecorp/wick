@@ -10,6 +10,7 @@ license = "BSD-3-Clause"
 [dependencies]
 vino-packet = { path = "../../sdk/crates/vino-packet" }
 vino-runtime = { path = "../vino-runtime" }
+vino-provider-cli = { path = "../vino-provider-cli", default-features = false }
 vino-transport = { path = "../../sdk/crates/vino-transport", features = [
   "all",
 ] }

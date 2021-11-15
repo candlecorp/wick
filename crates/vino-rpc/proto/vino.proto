@@ -2,7 +2,6 @@ syntax = "proto3";
 
 package vino;
 
-// Interface exported by the server.
 service InvocationService {
   rpc Invoke(Invocation) returns (stream Output);
   rpc List(ListRequest) returns (ListResponse);
@@ -19,11 +18,13 @@ message MessageKind {
     Signal = 5;
     JSON = 6;
   }
+
   enum OutputSignal {
     Done = 0;
     OpenBracket = 1;
     CloseBracket = 2;
   }
+
   Kind kind = 1;
 
   oneof data {
@@ -48,8 +49,6 @@ message Output {
 }
 
 message ListRequest {}
-message StatsRequest {}
-
 message ListResponse { repeated HostedType schemas = 1; }
 
 message HostedType {
@@ -75,6 +74,7 @@ message ProviderSignature {
   map<string, Component> components = 2;
 }
 
+message StatsRequest {}
 message StatsResponse { repeated Statistic stats = 1; }
 
 message Statistic {

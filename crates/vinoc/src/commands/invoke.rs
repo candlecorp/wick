@@ -2,6 +2,7 @@ use futures::StreamExt;
 use structopt::StructOpt;
 use tokio::io::{self, AsyncBufReadExt, BufReader};
 use vino_entity::Entity;
+use vino_provider_cli::parse_args;
 use vino_transport::{TransportMap, TransportStream};
 
 use crate::error::ControlError;
@@ -19,16 +20,20 @@ pub(crate) struct Options {
   #[structopt(long = "no-input")]
   pub(crate) no_input: bool,
 
+  /// A port=value string where value is JSON to pass as input.
+  #[structopt(long, short)]
+  data: Vec<String>,
+
   /// Skip additional I/O processing done for CLI usage.
   #[structopt(long, short)]
   raw: bool,
 
-  /// Schematic to invoke.
-  pub(crate) schematic: String,
+  /// Component to invoke.
+  pub(crate) component: String,
 
-  /// A port=value string where value is JSON to pass as input.
-  #[structopt(long, short)]
-  data: Vec<String>,
+  /// Arguments to pass as inputs to a schematic.
+  #[structopt(set = structopt::clap::ArgSettings::Last)]
+  args: Vec<String>,
 }
 
 pub(crate) async fn handle(opts: Options) -> Result<()> {
@@ -46,7 +51,9 @@ pub(crate) async fn handle(opts: Options) -> Result<()> {
 
   let origin = Entity::client("vinoc");
 
-  if opts.data.is_empty() && !opts.no_input {
+  let check_stdin = !opts.no_input && opts.data.is_empty() && opts.args.is_empty();
+
+  if check_stdin {
     if atty::is(atty::Stream::Stdin) {
       eprintln!("No input passed, reading from <STDIN>. Pass --no-input to disable.");
     }
@@ -58,17 +65,21 @@ pub(crate) async fn handle(opts: Options) -> Result<()> {
       .map_err(ControlError::ReadLineFailed)?
     {
       let stream = client
-        .invoke_from_json(origin.url(), opts.schematic.clone(), &line, !opts.raw)
+        .invoke_from_json(origin.url(), opts.component.clone(), &line, !opts.raw)
         .await?;
       print_stream_json(stream, opts.raw).await?;
     }
   } else {
-    let mut payload = TransportMap::from_kv_json(&opts.data)?;
+    let mut data_map = TransportMap::from_kv_json(&opts.data)?;
+
+    let mut rest_arg_map = parse_args(&opts.args)?;
     if !opts.raw {
-      payload.transpose_output_name();
+      data_map.transpose_output_name();
+      rest_arg_map.transpose_output_name();
     }
+    data_map.merge(rest_arg_map);
     let stream = client
-      .invoke(origin.url(), opts.schematic.clone(), payload)
+      .invoke(origin.url(), opts.component.clone(), data_map)
       .await?;
     print_stream_json(stream, opts.raw).await?;
   }

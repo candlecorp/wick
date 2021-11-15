@@ -1,4 +1,3 @@
-.PHONY: all codegen build clean doc test
 
 # Enforce bash as the shell for consistency
 SHELL := bash
@@ -23,6 +22,7 @@ CLEAN_FILES := $(GENERATED_RS) $(INTERFACE)
 
 RUSTFMT=rustfmt --edition=2018
 
+.PHONY: all
 all: codegen build
 
 $(INTERFACE): $(SCHEMAS)
@@ -31,16 +31,18 @@ $(INTERFACE): $(SCHEMAS)
 $(GENERATED_RS): $(SCHEMAS)
 	@vino-codegen rust interface $(SCHEMA_DIR) -f -o $@
 
+.PHONY: codegen
 codegen: $(GENERATED_RS) $(INTERFACE)
 	@cargo fmt
 
+.PHONY: build
 build: $(wildcard ./src/*.rs) $(GENERATED_RS) $(INTERFACE)
 	@cargo build --release
 
+.PHONY: clean
 clean:
 	@rm -f $(CLEAN_FILES)
 
-doc:
-
+.PHONY: test
 test: codegen
 	@cargo test
