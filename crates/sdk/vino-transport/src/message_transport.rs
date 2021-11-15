@@ -26,60 +26,60 @@ use vino_packet::{v0, v1, Packet};
 
 use crate::{Error, Result};
 
-/// The [MessageTransport] is the primary way messages are sent around Vino Networks, Schematics, and is the representation that normalizes output [Packet]'s.
+/// The [MessageTransport] is the primary way messages are sent around Vino Networks and Schematics. It is the internal representation for normalized output [Packet]'s.
 #[must_use]
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum MessageTransport {
-  /// TODO
+  /// A successful message.
   #[serde(rename = "0")]
   Success(Success),
 
-  /// TODO
+  /// A message stemming from an error somewhere.
   #[serde(rename = "1")]
   Failure(Failure),
 
   #[serde(rename = "3")]
-  /// An internal signal
+  /// An internal signal.
   Signal(MessageSignal),
 }
 
-/// TODO
+/// A success message.
 #[must_use]
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum Success {
   #[serde(rename = "0")]
-  /// A message carrying a MessagePack encoded list of bytes.
+  /// A message carrying a payload encoded with MessagePack.
   MessagePack(Vec<u8>),
 
   #[serde(rename = "1")]
   #[cfg(feature = "raw")]
-  /// A success value in an intermediary format
+  /// A successful payload in a generic intermediary format.
   Serialized(serde_value::Value),
 
   #[serde(rename = "2")]
   #[cfg(feature = "json")]
-  /// A JSON String
+  /// A JSON String.
   Json(String),
 }
 
-/// TODO
+/// A Failure message.
 #[must_use]
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum Failure {
   #[serde(rename = "0")]
-  /// An invalid message.
+  /// Invalid payload. Used when a default message is unavoidable.
   Invalid,
 
   #[serde(rename = "1")]
-  /// A message carrying an exception.
+  /// A message carrying an exception (an error that short-circuited a port's downstream).
   Exception(String),
 
   #[serde(rename = "2")]
-  /// A message carrying an error.
+  /// A message carrying an error (an error that short circuited all downstreams from a component).
   Error(String),
 }
 
-/// Signals that need to be handled before propagating to a downstream consumer.
+/// Internal signals that need to be handled before propagating to a downstream consumer.
 #[derive(Debug, Clone, Copy, Eq, Serialize, Deserialize, PartialEq)]
 pub enum MessageSignal {
   /// Indicates the job that opened this port is finished with it.

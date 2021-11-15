@@ -83,18 +83,6 @@ impl StructMap {
     Self(HashMap::new())
   }
 
-  #[doc(hidden)]
-  pub fn todo() -> Self {
-    let mut map = HashMap::new();
-    map.insert(
-      "TODO".to_owned(),
-      StructSignature {
-        name: "todo".to_owned(),
-        fields: HashMap::new().into(),
-      },
-    );
-    Self(map)
-  }
 }
 
 impl MapWrapper<StructSignature> for StructMap {

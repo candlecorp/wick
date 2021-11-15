@@ -8,11 +8,11 @@ use crate::Packet;
 #[must_use]
 /// A component's output data.
 pub enum Payload {
-  /// TODO
+  /// A successful message.
   #[serde(rename = "0")]
   Success(Success),
 
-  /// TODO
+  /// A message stemming from an error somewhere.
   #[serde(rename = "1")]
   Failure(Failure),
 
@@ -22,53 +22,53 @@ pub enum Payload {
 }
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 
-/// TODO
+/// A success message.
 #[must_use]
 pub enum Success {
-  /// TODO
+  /// A message carrying a payload encoded with MessagePack.
   #[serde(rename = "0")]
   MessagePack(Vec<u8>),
 
-  /// TODO
+  /// A successful payload in a generic intermediary format.
   #[serde(rename = "1")]
   Success(serde_value::Value),
 
-  /// TODO
+  /// A payload represented as a raw JSON String.
   #[serde(rename = "2")]
   Json(String),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-/// TODO
+/// A Failure message.
 #[must_use]
 pub enum Failure {
-  /// Invalid payload. Used when a default is needed.
+  /// Invalid payload. Used when a default message is unavoidable.
   #[serde(rename = "0")]
   Invalid,
 
-  /// An exception. Used by application authors to indicate a use case exception or user error.
+  /// A message carrying an exception (an error that short-circuited a port's downstream).
   #[serde(rename = "1")]
   Exception(String),
 
-  /// An error. Used by library authors to indicate a problem.
+  /// A message carrying an error (an error that short circuited all downstreams from a component).
   #[serde(rename = "2")]
   Error(String),
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
-/// TODO
+/// Internal signals that need to be handled before propagating to a downstream consumer.
 #[must_use]
 pub enum Signal {
-  /// A message that signifies the port is done.
+  /// Indicates the job that opened this port is finished with it.
   #[serde(rename = "0")]
   Done,
 
-  /// A message that signals the start of bracketed data (think of it like an opening bracket '[').
+  /// Indicates that a message is coming down in chunks and this is the start.
   #[doc(hidden)]
   #[serde(rename = "1")]
   OpenBracket,
 
-  /// A message that signals the end of bracketed data (think of it like an closing bracket ']').
+  /// Indicates a chunked message has been completed.
   #[serde(rename = "2")]
   #[doc(hidden)]
   CloseBracket,
@@ -91,17 +91,17 @@ impl Payload {
     }
   }
 
-  /// TODO
+  /// Creates a [Payload::Signal(Signal::Done)]
   pub fn done() -> Self {
     Self::Signal(Signal::Done)
   }
 
-  /// TODO
+  /// Creates a [Payload::Failure(Failure::Exception)]
   pub fn exception<T: AsRef<str>>(msg: T) -> Self {
     Self::Failure(Failure::Exception(msg.as_ref().to_owned()))
   }
 
-  /// TODO
+  /// Creates a [Payload::Failure(Failure::Error)]
   pub fn error<T: AsRef<str>>(msg: T) -> Self {
     Self::Failure(Failure::Error(msg.as_ref().to_owned()))
   }
