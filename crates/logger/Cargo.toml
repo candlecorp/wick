@@ -20,6 +20,7 @@ tracing-bunyan-formatter = "0.3.0"
 tracing-appender = "0.2.0"
 xdg = "2.4"
 time = { version = "0.3", features = ["formatting"] }
+ansi_term = "0.12"
 
 structopt = "0.3"
 thiserror = "1.0"

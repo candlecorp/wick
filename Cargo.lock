@@ -1446,6 +1446,7 @@ dependencies = [
 name = "logger"
 version = "0.1.0"
 dependencies = [
+ "ansi_term 0.12.1",
  "structopt",
  "thiserror",
  "time 0.3.4",

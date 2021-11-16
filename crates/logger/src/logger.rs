@@ -145,7 +145,11 @@ fn get_levelfilter(opts: &LoggingOptions) -> tracing::level_filters::LevelFilter
 }
 
 fn try_init(opts: &LoggingOptions, environment: &Environment) -> Result<LoggingGuard, LoggerError> {
-  // LogTracer::init().unwrap();
+  #[cfg(windows)]
+  let with_color = ansi_term::enable_ansi_support().is_ok();
+  #[cfg(not(windows))]
+  let with_color = true;
+
   let timer = UtcTime::new(
     time::format_description::parse("[year]-[month]-[day]T[hour]:[minute]:[second]").unwrap(),
   );
@@ -153,8 +157,8 @@ fn try_init(opts: &LoggingOptions, environment: &Environment) -> Result<LoggingG
 
   let app_name = opts.app_name.clone();
 
-  // Yeah this is ugly and could be improved.
-  // Start here for precedent: https://github.com/tokio-rs/tracing/issues/575
+  // This is ugly and I wish it was improved.
+  // Start here to understand why it's laid out like this: https://github.com/tokio-rs/tracing/issues/575
   let (verbose_layer, normal_layer, json_layer, file_layer, logfile_guard, test_layer) =
     match environment {
       Environment::Prod => {
@@ -169,6 +173,7 @@ fn try_init(opts: &LoggingOptions, environment: &Environment) -> Result<LoggingG
               tracing_subscriber::fmt::layer()
                 .with_writer(stderr_writer)
                 .with_thread_names(true)
+                .with_ansi(with_color)
                 .with_target(true)
                 .with_filter(get_levelfilter(opts))
                 .with_filter(vino_filter()),
@@ -185,6 +190,7 @@ fn try_init(opts: &LoggingOptions, environment: &Environment) -> Result<LoggingG
             Some(
               tracing_subscriber::fmt::layer()
                 .with_writer(stderr_writer)
+                .with_ansi(with_color)
                 .with_target(false)
                 .with_thread_names(false)
                 .with_timer(timer)
@@ -207,6 +213,7 @@ fn try_init(opts: &LoggingOptions, environment: &Environment) -> Result<LoggingG
         Some(
           tracing_subscriber::fmt::layer()
             .with_writer(stderr_writer)
+            .with_ansi(with_color)
             .without_time()
             .with_target(true)
             .with_test_writer()

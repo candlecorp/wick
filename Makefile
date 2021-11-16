@@ -126,7 +126,7 @@ endif
 
 .PHONY: bins
 bins: ./build/$(ARCH)
-	@echo "Building ARCH=$(ARCH) RELEASE:$(RELEASE)"
+	@echo "Building ARCH=$(ARCH) RELEASE=$(RELEASE)"
 	@rm -rf ./build/$(ARCH)/*
 ifeq ($(ARCH),local)
 ifeq ($(RELEASE),true)
