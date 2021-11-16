@@ -103,7 +103,12 @@ extern crate tracing;
 
 #[derive(StructOpt, Debug, Clone)]
 #[structopt(
-     global_settings(&[AppSettings::VersionlessSubcommands]),
+     global_settings(&[
+      AppSettings::VersionlessSubcommands,
+      AppSettings::ColoredHelp,
+      AppSettings::DeriveDisplayOrder,
+      AppSettings::UnifiedHelpMessage
+     ]),
      name = BIN_NAME, about = "Vino WebAssembly Wrapper")]
 pub(crate) struct Cli {
   #[structopt(flatten)]

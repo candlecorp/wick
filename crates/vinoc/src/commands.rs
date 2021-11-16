@@ -18,7 +18,12 @@ pub(crate) fn get_args() -> Cli {
 
 #[derive(StructOpt, Debug, Clone)]
 #[structopt(
-     global_settings(&[AppSettings::VersionlessSubcommands]),
+     global_settings(&[
+      AppSettings::VersionlessSubcommands,
+      AppSettings::ColoredHelp,
+      AppSettings::DeriveDisplayOrder,
+      AppSettings::UnifiedHelpMessage
+     ]),
      name = crate::BIN_NAME, about = "Vino controller")]
 pub(crate) struct Cli {
   #[structopt(flatten)]

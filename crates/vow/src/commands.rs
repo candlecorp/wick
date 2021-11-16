@@ -7,15 +7,15 @@ use vino_provider_wasm::provider::WasiParams;
 
 #[derive(Debug, Clone, StructOpt)]
 pub(crate) enum CliCommand {
-  /// Run a test file with the given component.
-  #[structopt(name = "test")]
-  Test(test::TestCommand),
-  /// Query a provider for a list of its hosted components.
+  /// Execute a component in the target WASM module.
   #[structopt(name = "run")]
   Run(run::RunCommand),
-  /// Sign a WaPC component.
+  /// Start a persistent RPC, HTTP, or Lattice host for the target WASM module.
   #[structopt(name = "serve")]
   Serve(Box<serve::ServeCommand>),
+  /// Run a test file against the passed WASM module.
+  #[structopt(name = "test")]
+  Test(test::TestCommand),
 }
 
 #[derive(Debug, Clone, StructOpt)]
