@@ -54,26 +54,6 @@ network:
 
 -The providerlink `.call(component, args)` is prone to error. It would be great if `args` could include the component so a failure would be less likely.
 
-## Error codes
-
-### 1XXX
-
-### 2XXX
-
-### 3XXX
-
-### 4XXX
-
-### 5XXX Network Error
-
-### 6XXX Schematic Error
-
-### 7XXX Transaction Error
-
-### 8XXX Provider Error
-
-### 9XXX
-
 # Doc links
 
 - docs.vino.dev/codegen
