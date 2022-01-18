@@ -1,0 +1,27 @@
+---
+version: 0
+network:
+  providers:
+    - namespace: wapc
+      kind: WaPC
+      reference: ../../integration/test-wapc-component/build/test_component_s.wasm
+  schematics:
+    - name: schematic
+      providers:
+        - wapc
+      instances:
+        error:
+          id: wapc::error
+      connections:
+        - from:
+            instance: <input>
+            port: input
+          to:
+            instance: error
+            port: input
+        - from:
+            instance: error
+            port: output
+          to:
+            instance: <output>
+            port: output

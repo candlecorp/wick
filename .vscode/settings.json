@@ -1,10 +1,10 @@
 {
   "git.ignoreLimitWarning": true,
   "yaml.schemas": {
-    "crates/vino-manifest/json-schema/v0/manifest.json": [
-      "crates/vino-runtime/manifests/v0/**/*.yaml",
+    "crates/vino/vino-manifest/json-schema/v0/manifest.json": [
+      "crates/vino/vino-runtime/manifests/v0/**/*.yaml",
       "tests/manifests/*.yaml",
-      "crates/vino-manifest/tests/manifests/v0/*.yaml"
+      "crates/vino/vino-manifest/tests/manifests/v0/*.yaml"
     ]
   },
   "rust-analyzer.cargo.features": [
@@ -12,7 +12,7 @@
     "vino-lattice/test-integration",
     "vino-provider-lattice/test-integration",
     "vino-keyvalue-redis/test-integration",
-    "vino-native-api-0/native",
-    "vino-native-api-0/provider"
+    "vino-native-api-0/provider",
+    "vino-native-api-0/native"
   ]
 }

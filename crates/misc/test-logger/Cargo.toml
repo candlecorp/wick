@@ -1,0 +1,23 @@
+[package]
+name = "test-logger"
+version = "0.0.0"
+edition = "2021"
+authors = [
+  "Daniel Mueller <deso@posteo.net>",
+  "Jarrod Overson <jsoverson@gmail.com>",
+]
+include = ["src/lib.rs", "LICENSE-*", "README.md"]
+
+
+[lib]
+proc-macro = true
+
+[dependencies]
+proc-macro2 = "1.0"
+quote = { version = "1.0" }
+syn = { version = "1.0", features = ["full"] }
+proc-macro-crate = "1.0.0"
+
+[dev-dependencies]
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+logger = { path = "../../vino/logger" }

@@ -11,7 +11,7 @@ CRATES_DIR := ./crates
 ROOT := $(shell pwd)
 
 # Get list of projects that have makefiles
-MAKEFILES=$(wildcard ${CRATES_DIR}/interfaces/*/Makefile) $(wildcard ${CRATES_DIR}/*/Makefile) $(wildcard ${CRATES_DIR}/integration/*/Makefile)
+MAKEFILES=$(wildcard ${CRATES_DIR}/*/*/Makefile)
 MAKEFILE_PROJECTS=$(foreach makefile,$(MAKEFILES),$(dir $(makefile)))
 
 # Get list of root crates in $CRATES_DIR
@@ -21,7 +21,7 @@ TEST_WASM_DIR=$(CRATES_DIR)/integration/test-wapc-component
 TEST_WASM=$(TEST_WASM_DIR)/build/test_component_s.wasm
 
 TEST_WASI_DIR=$(CRATES_DIR)/integration/test-wasi-component
-TEST_WASI=$(TEST_WASM_DIR)/build/test_wasi_component_s.wasm
+TEST_WASI=$(TEST_WASI_DIR)/build/test_wasi_component_s.wasm
 
 BINS=vinoc vino vow vino-keyvalue-redis
 

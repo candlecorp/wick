@@ -1,0 +1,21 @@
+---
+version: 0
+network:
+  providers:
+    - namespace: wapc
+      kind: WaPC
+      reference: ../../integration/test-wapc-component/build/test_component_s.wasm
+  schematics:
+    - name: short_circuit
+      providers:
+        - wapc
+      instances:
+        validate_password:
+          id: wapc::validate
+        cat:
+          id: vino::v0::concatenate
+      connections:
+        - <> => validate_password[input]
+        - validate_password[output] => cat[left]
+        - '"suffix should not be added" => cat[right]'
+        - cat[output] => <>

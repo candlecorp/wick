@@ -6,14 +6,16 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-default = []
+default = ["native", "provider"]
 provider = []
 guest = []
 wasm = ["vino-provider/wasm"]
 native = ["vino-provider/native"]
 
 [dependencies]
-vino-provider = { path = "../../../sdk/crates/vino-provider" }
+vino-provider = { path = "../../../sdk/crates/vino-provider", features = [
+  "native",
+] }
 serde = { version = "1.0", features = ["derive"] }
 
 [dev-dependencies]

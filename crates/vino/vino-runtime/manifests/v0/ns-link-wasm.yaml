@@ -1,0 +1,21 @@
+version: 0
+network:
+  providers:
+    - namespace: wapc
+      kind: WaPC
+      reference: ../../integration/test-wapc-component/build/test_component_s.wasm
+    - namespace: wapc2
+      kind: WaPC
+      reference: ../../integration/test-wapc-component/build/test_component_s.wasm
+  schematics:
+    - name: ns-link
+      providers:
+        - wapc
+        - wapc2
+      instances:
+        reverse_upper:
+          id: wapc::reverse-uppercase
+      connections:
+        - <> => reverse_upper[input]
+        - <link>[wapc2] => reverse_upper[link]
+        - reverse_upper[output] => <>

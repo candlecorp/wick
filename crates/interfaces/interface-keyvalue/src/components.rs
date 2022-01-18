@@ -4,9 +4,10 @@
 
 pub mod delete {
 
-  use std::collections::HashMap;
-
-  pub use vino_provider::prelude::*;
+  #[cfg(any(feature = "native"))]
+  pub use vino_provider::native::prelude::*;
+  #[cfg(any(feature = "wasm"))]
+  pub use vino_provider::wasm::prelude::*;
 
   #[cfg(any(feature = "native", feature = "wasm"))]
   pub fn signature() -> ComponentSignature {
@@ -42,8 +43,8 @@ pub mod delete {
 
   #[must_use]
   #[cfg(any(feature = "native", feature = "wasm"))]
-  pub fn inputs_list() -> HashMap<String, TypeSignature> {
-    let mut map = HashMap::new();
+  pub fn inputs_list() -> std::collections::HashMap<String, TypeSignature> {
+    let mut map = std::collections::HashMap::new();
     map.insert(
       "keys".to_owned(),
       TypeSignature::List {
@@ -60,8 +61,8 @@ pub mod delete {
 
   #[must_use]
   #[cfg(any(feature = "native", feature = "wasm"))]
-  pub fn outputs_list() -> HashMap<String, TypeSignature> {
-    let mut map = HashMap::new();
+  pub fn outputs_list() -> std::collections::HashMap<String, TypeSignature> {
+    let mut map = std::collections::HashMap::new();
     map.insert("num".to_owned(), TypeSignature::U32);
     map
   }
@@ -140,9 +141,10 @@ pub mod delete {
 }
 pub mod exists {
 
-  use std::collections::HashMap;
-
-  pub use vino_provider::prelude::*;
+  #[cfg(any(feature = "native"))]
+  pub use vino_provider::native::prelude::*;
+  #[cfg(any(feature = "wasm"))]
+  pub use vino_provider::wasm::prelude::*;
 
   #[cfg(any(feature = "native", feature = "wasm"))]
   pub fn signature() -> ComponentSignature {
@@ -178,8 +180,8 @@ pub mod exists {
 
   #[must_use]
   #[cfg(any(feature = "native", feature = "wasm"))]
-  pub fn inputs_list() -> HashMap<String, TypeSignature> {
-    let mut map = HashMap::new();
+  pub fn inputs_list() -> std::collections::HashMap<String, TypeSignature> {
+    let mut map = std::collections::HashMap::new();
     map.insert("key".to_owned(), TypeSignature::String);
     map
   }
@@ -191,8 +193,8 @@ pub mod exists {
 
   #[must_use]
   #[cfg(any(feature = "native", feature = "wasm"))]
-  pub fn outputs_list() -> HashMap<String, TypeSignature> {
-    let mut map = HashMap::new();
+  pub fn outputs_list() -> std::collections::HashMap<String, TypeSignature> {
+    let mut map = std::collections::HashMap::new();
     map.insert("exists".to_owned(), TypeSignature::Bool);
     map
   }
@@ -271,9 +273,10 @@ pub mod exists {
 }
 pub mod key_get {
 
-  use std::collections::HashMap;
-
-  pub use vino_provider::prelude::*;
+  #[cfg(any(feature = "native"))]
+  pub use vino_provider::native::prelude::*;
+  #[cfg(any(feature = "wasm"))]
+  pub use vino_provider::wasm::prelude::*;
 
   #[cfg(any(feature = "native", feature = "wasm"))]
   pub fn signature() -> ComponentSignature {
@@ -309,8 +312,8 @@ pub mod key_get {
 
   #[must_use]
   #[cfg(any(feature = "native", feature = "wasm"))]
-  pub fn inputs_list() -> HashMap<String, TypeSignature> {
-    let mut map = HashMap::new();
+  pub fn inputs_list() -> std::collections::HashMap<String, TypeSignature> {
+    let mut map = std::collections::HashMap::new();
     map.insert("key".to_owned(), TypeSignature::String);
     map
   }
@@ -322,8 +325,8 @@ pub mod key_get {
 
   #[must_use]
   #[cfg(any(feature = "native", feature = "wasm"))]
-  pub fn outputs_list() -> HashMap<String, TypeSignature> {
-    let mut map = HashMap::new();
+  pub fn outputs_list() -> std::collections::HashMap<String, TypeSignature> {
+    let mut map = std::collections::HashMap::new();
     map.insert("value".to_owned(), TypeSignature::String);
     map
   }
@@ -402,9 +405,10 @@ pub mod key_get {
 }
 pub mod key_set {
 
-  use std::collections::HashMap;
-
-  pub use vino_provider::prelude::*;
+  #[cfg(any(feature = "native"))]
+  pub use vino_provider::native::prelude::*;
+  #[cfg(any(feature = "wasm"))]
+  pub use vino_provider::wasm::prelude::*;
 
   #[cfg(any(feature = "native", feature = "wasm"))]
   pub fn signature() -> ComponentSignature {
@@ -453,8 +457,8 @@ pub mod key_set {
 
   #[must_use]
   #[cfg(any(feature = "native", feature = "wasm"))]
-  pub fn inputs_list() -> HashMap<String, TypeSignature> {
-    let mut map = HashMap::new();
+  pub fn inputs_list() -> std::collections::HashMap<String, TypeSignature> {
+    let mut map = std::collections::HashMap::new();
     map.insert("key".to_owned(), TypeSignature::String);
     map.insert("value".to_owned(), TypeSignature::String);
     map.insert("expires".to_owned(), TypeSignature::U32);
@@ -468,8 +472,8 @@ pub mod key_set {
 
   #[must_use]
   #[cfg(any(feature = "native", feature = "wasm"))]
-  pub fn outputs_list() -> HashMap<String, TypeSignature> {
-    let mut map = HashMap::new();
+  pub fn outputs_list() -> std::collections::HashMap<String, TypeSignature> {
+    let mut map = std::collections::HashMap::new();
     map.insert("result".to_owned(), TypeSignature::Bool);
     map
   }
@@ -548,9 +552,10 @@ pub mod key_set {
 }
 pub mod list_add {
 
-  use std::collections::HashMap;
-
-  pub use vino_provider::prelude::*;
+  #[cfg(any(feature = "native"))]
+  pub use vino_provider::native::prelude::*;
+  #[cfg(any(feature = "wasm"))]
+  pub use vino_provider::wasm::prelude::*;
 
   #[cfg(any(feature = "native", feature = "wasm"))]
   pub fn signature() -> ComponentSignature {
@@ -594,8 +599,8 @@ pub mod list_add {
 
   #[must_use]
   #[cfg(any(feature = "native", feature = "wasm"))]
-  pub fn inputs_list() -> HashMap<String, TypeSignature> {
-    let mut map = HashMap::new();
+  pub fn inputs_list() -> std::collections::HashMap<String, TypeSignature> {
+    let mut map = std::collections::HashMap::new();
     map.insert("key".to_owned(), TypeSignature::String);
     map.insert(
       "values".to_owned(),
@@ -613,8 +618,8 @@ pub mod list_add {
 
   #[must_use]
   #[cfg(any(feature = "native", feature = "wasm"))]
-  pub fn outputs_list() -> HashMap<String, TypeSignature> {
-    let mut map = HashMap::new();
+  pub fn outputs_list() -> std::collections::HashMap<String, TypeSignature> {
+    let mut map = std::collections::HashMap::new();
     map.insert("length".to_owned(), TypeSignature::U32);
     map
   }
@@ -693,9 +698,10 @@ pub mod list_add {
 }
 pub mod list_range {
 
-  use std::collections::HashMap;
-
-  pub use vino_provider::prelude::*;
+  #[cfg(any(feature = "native"))]
+  pub use vino_provider::native::prelude::*;
+  #[cfg(any(feature = "wasm"))]
+  pub use vino_provider::wasm::prelude::*;
 
   #[cfg(any(feature = "native", feature = "wasm"))]
   pub fn signature() -> ComponentSignature {
@@ -741,8 +747,8 @@ pub mod list_range {
 
   #[must_use]
   #[cfg(any(feature = "native", feature = "wasm"))]
-  pub fn inputs_list() -> HashMap<String, TypeSignature> {
-    let mut map = HashMap::new();
+  pub fn inputs_list() -> std::collections::HashMap<String, TypeSignature> {
+    let mut map = std::collections::HashMap::new();
     map.insert("key".to_owned(), TypeSignature::String);
     map.insert("start".to_owned(), TypeSignature::I32);
     map.insert("end".to_owned(), TypeSignature::I32);
@@ -756,8 +762,8 @@ pub mod list_range {
 
   #[must_use]
   #[cfg(any(feature = "native", feature = "wasm"))]
-  pub fn outputs_list() -> HashMap<String, TypeSignature> {
-    let mut map = HashMap::new();
+  pub fn outputs_list() -> std::collections::HashMap<String, TypeSignature> {
+    let mut map = std::collections::HashMap::new();
     map.insert(
       "values".to_owned(),
       TypeSignature::List {
@@ -841,9 +847,10 @@ pub mod list_range {
 }
 pub mod list_remove {
 
-  use std::collections::HashMap;
-
-  pub use vino_provider::prelude::*;
+  #[cfg(any(feature = "native"))]
+  pub use vino_provider::native::prelude::*;
+  #[cfg(any(feature = "wasm"))]
+  pub use vino_provider::wasm::prelude::*;
 
   #[cfg(any(feature = "native", feature = "wasm"))]
   pub fn signature() -> ComponentSignature {
@@ -889,8 +896,8 @@ pub mod list_remove {
 
   #[must_use]
   #[cfg(any(feature = "native", feature = "wasm"))]
-  pub fn inputs_list() -> HashMap<String, TypeSignature> {
-    let mut map = HashMap::new();
+  pub fn inputs_list() -> std::collections::HashMap<String, TypeSignature> {
+    let mut map = std::collections::HashMap::new();
     map.insert("key".to_owned(), TypeSignature::String);
     map.insert("value".to_owned(), TypeSignature::String);
     map.insert("num".to_owned(), TypeSignature::U32);
@@ -904,8 +911,8 @@ pub mod list_remove {
 
   #[must_use]
   #[cfg(any(feature = "native", feature = "wasm"))]
-  pub fn outputs_list() -> HashMap<String, TypeSignature> {
-    let mut map = HashMap::new();
+  pub fn outputs_list() -> std::collections::HashMap<String, TypeSignature> {
+    let mut map = std::collections::HashMap::new();
     map.insert("num".to_owned(), TypeSignature::U32);
     map
   }
@@ -984,9 +991,10 @@ pub mod list_remove {
 }
 pub mod set_add {
 
-  use std::collections::HashMap;
-
-  pub use vino_provider::prelude::*;
+  #[cfg(any(feature = "native"))]
+  pub use vino_provider::native::prelude::*;
+  #[cfg(any(feature = "wasm"))]
+  pub use vino_provider::wasm::prelude::*;
 
   #[cfg(any(feature = "native", feature = "wasm"))]
   pub fn signature() -> ComponentSignature {
@@ -1030,8 +1038,8 @@ pub mod set_add {
 
   #[must_use]
   #[cfg(any(feature = "native", feature = "wasm"))]
-  pub fn inputs_list() -> HashMap<String, TypeSignature> {
-    let mut map = HashMap::new();
+  pub fn inputs_list() -> std::collections::HashMap<String, TypeSignature> {
+    let mut map = std::collections::HashMap::new();
     map.insert("key".to_owned(), TypeSignature::String);
     map.insert(
       "values".to_owned(),
@@ -1049,8 +1057,8 @@ pub mod set_add {
 
   #[must_use]
   #[cfg(any(feature = "native", feature = "wasm"))]
-  pub fn outputs_list() -> HashMap<String, TypeSignature> {
-    let mut map = HashMap::new();
+  pub fn outputs_list() -> std::collections::HashMap<String, TypeSignature> {
+    let mut map = std::collections::HashMap::new();
     map.insert("length".to_owned(), TypeSignature::U32);
     map
   }
@@ -1129,9 +1137,10 @@ pub mod set_add {
 }
 pub mod set_contains {
 
-  use std::collections::HashMap;
-
-  pub use vino_provider::prelude::*;
+  #[cfg(any(feature = "native"))]
+  pub use vino_provider::native::prelude::*;
+  #[cfg(any(feature = "wasm"))]
+  pub use vino_provider::wasm::prelude::*;
 
   #[cfg(any(feature = "native", feature = "wasm"))]
   pub fn signature() -> ComponentSignature {
@@ -1175,8 +1184,8 @@ pub mod set_contains {
 
   #[must_use]
   #[cfg(any(feature = "native", feature = "wasm"))]
-  pub fn inputs_list() -> HashMap<String, TypeSignature> {
-    let mut map = HashMap::new();
+  pub fn inputs_list() -> std::collections::HashMap<String, TypeSignature> {
+    let mut map = std::collections::HashMap::new();
     map.insert("key".to_owned(), TypeSignature::String);
     map.insert("member".to_owned(), TypeSignature::String);
     map
@@ -1189,8 +1198,8 @@ pub mod set_contains {
 
   #[must_use]
   #[cfg(any(feature = "native", feature = "wasm"))]
-  pub fn outputs_list() -> HashMap<String, TypeSignature> {
-    let mut map = HashMap::new();
+  pub fn outputs_list() -> std::collections::HashMap<String, TypeSignature> {
+    let mut map = std::collections::HashMap::new();
     map.insert("exists".to_owned(), TypeSignature::Bool);
     map
   }
@@ -1269,9 +1278,10 @@ pub mod set_contains {
 }
 pub mod set_get {
 
-  use std::collections::HashMap;
-
-  pub use vino_provider::prelude::*;
+  #[cfg(any(feature = "native"))]
+  pub use vino_provider::native::prelude::*;
+  #[cfg(any(feature = "wasm"))]
+  pub use vino_provider::wasm::prelude::*;
 
   #[cfg(any(feature = "native", feature = "wasm"))]
   pub fn signature() -> ComponentSignature {
@@ -1307,8 +1317,8 @@ pub mod set_get {
 
   #[must_use]
   #[cfg(any(feature = "native", feature = "wasm"))]
-  pub fn inputs_list() -> HashMap<String, TypeSignature> {
-    let mut map = HashMap::new();
+  pub fn inputs_list() -> std::collections::HashMap<String, TypeSignature> {
+    let mut map = std::collections::HashMap::new();
     map.insert("key".to_owned(), TypeSignature::String);
     map
   }
@@ -1320,8 +1330,8 @@ pub mod set_get {
 
   #[must_use]
   #[cfg(any(feature = "native", feature = "wasm"))]
-  pub fn outputs_list() -> HashMap<String, TypeSignature> {
-    let mut map = HashMap::new();
+  pub fn outputs_list() -> std::collections::HashMap<String, TypeSignature> {
+    let mut map = std::collections::HashMap::new();
     map.insert(
       "values".to_owned(),
       TypeSignature::List {
@@ -1405,9 +1415,10 @@ pub mod set_get {
 }
 pub mod set_remove {
 
-  use std::collections::HashMap;
-
-  pub use vino_provider::prelude::*;
+  #[cfg(any(feature = "native"))]
+  pub use vino_provider::native::prelude::*;
+  #[cfg(any(feature = "wasm"))]
+  pub use vino_provider::wasm::prelude::*;
 
   #[cfg(any(feature = "native", feature = "wasm"))]
   pub fn signature() -> ComponentSignature {
@@ -1451,8 +1462,8 @@ pub mod set_remove {
 
   #[must_use]
   #[cfg(any(feature = "native", feature = "wasm"))]
-  pub fn inputs_list() -> HashMap<String, TypeSignature> {
-    let mut map = HashMap::new();
+  pub fn inputs_list() -> std::collections::HashMap<String, TypeSignature> {
+    let mut map = std::collections::HashMap::new();
     map.insert("key".to_owned(), TypeSignature::String);
     map.insert(
       "values".to_owned(),
@@ -1470,8 +1481,8 @@ pub mod set_remove {
 
   #[must_use]
   #[cfg(any(feature = "native", feature = "wasm"))]
-  pub fn outputs_list() -> HashMap<String, TypeSignature> {
-    let mut map = HashMap::new();
+  pub fn outputs_list() -> std::collections::HashMap<String, TypeSignature> {
+    let mut map = std::collections::HashMap::new();
     map.insert("num".to_owned(), TypeSignature::U32);
     map
   }
@@ -1550,9 +1561,10 @@ pub mod set_remove {
 }
 pub mod set_scan {
 
-  use std::collections::HashMap;
-
-  pub use vino_provider::prelude::*;
+  #[cfg(any(feature = "native"))]
+  pub use vino_provider::native::prelude::*;
+  #[cfg(any(feature = "wasm"))]
+  pub use vino_provider::wasm::prelude::*;
 
   #[cfg(any(feature = "native", feature = "wasm"))]
   pub fn signature() -> ComponentSignature {
@@ -1601,8 +1613,8 @@ pub mod set_scan {
 
   #[must_use]
   #[cfg(any(feature = "native", feature = "wasm"))]
-  pub fn inputs_list() -> HashMap<String, TypeSignature> {
-    let mut map = HashMap::new();
+  pub fn inputs_list() -> std::collections::HashMap<String, TypeSignature> {
+    let mut map = std::collections::HashMap::new();
     map.insert("key".to_owned(), TypeSignature::String);
     map.insert("cursor".to_owned(), TypeSignature::String);
     map.insert("count".to_owned(), TypeSignature::U32);
@@ -1617,8 +1629,8 @@ pub mod set_scan {
 
   #[must_use]
   #[cfg(any(feature = "native", feature = "wasm"))]
-  pub fn outputs_list() -> HashMap<String, TypeSignature> {
-    let mut map = HashMap::new();
+  pub fn outputs_list() -> std::collections::HashMap<String, TypeSignature> {
+    let mut map = std::collections::HashMap::new();
     map.insert(
       "values".to_owned(),
       TypeSignature::List {

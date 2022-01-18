@@ -16,7 +16,7 @@ use vino_manifest::{Loadable, NetworkDefinition, NetworkManifest, SchematicDefin
 use vino_runtime::Network;
 use vino_wascap::KeyPair;
 pub type TestError = anyhow::Error;
-pub use anyhow::*;
+pub use anyhow::{anyhow, Result};
 
 pub async fn init_network_from_yaml(path: &str) -> TestResult<(Network, String)> {
   let manifest = NetworkManifest::V0(vino_manifest::v0::NetworkManifest::from_yaml(

@@ -19,12 +19,12 @@ impl Dispatch for Dispatcher {
   ) -> Result<TransportStream, Box<NativeComponentError>> {
     let result = match op {
       "error" => {
-        generated::error::Component::default()
+        self::generated::error::Component::default()
           .execute(context, data)
           .await
       }
       "test-component" => {
-        generated::test_component::Component::default()
+        self::generated::test_component::Component::default()
           .execute(context, data)
           .await
       }
@@ -59,9 +59,6 @@ pub mod types {
 
 pub mod generated {
   pub mod error {
-    #![allow(unused, unreachable_pub)]
-    use std::collections::HashMap;
-
     use async_trait::async_trait;
 
     pub use vino_provider::prelude::*;
@@ -74,7 +71,7 @@ pub mod generated {
       }
     }
 
-    #[derive(Default)]
+    #[derive(Default, Copy, Clone, Debug)]
     pub struct Component {}
 
     #[async_trait]
@@ -122,8 +119,8 @@ pub mod generated {
 
     #[must_use]
     #[cfg(any(feature = "native", feature = "wasm"))]
-    pub fn inputs_list() -> HashMap<String, TypeSignature> {
-      let mut map = HashMap::new();
+    pub fn inputs_list() -> std::collections::HashMap<String, TypeSignature> {
+      let mut map = std::collections::HashMap::new();
       map.insert("input".to_owned(), TypeSignature::String);
       map
     }
@@ -135,8 +132,8 @@ pub mod generated {
 
     #[must_use]
     #[cfg(any(feature = "native", feature = "wasm"))]
-    pub fn outputs_list() -> HashMap<String, TypeSignature> {
-      let mut map = HashMap::new();
+    pub fn outputs_list() -> std::collections::HashMap<String, TypeSignature> {
+      let mut map = std::collections::HashMap::new();
       map.insert("output".to_owned(), TypeSignature::String);
       map
     }
@@ -214,9 +211,6 @@ pub mod generated {
     }
   }
   pub mod test_component {
-    #![allow(unused, unreachable_pub)]
-    use std::collections::HashMap;
-
     use async_trait::async_trait;
 
     pub use vino_provider::prelude::*;
@@ -229,7 +223,7 @@ pub mod generated {
       }
     }
 
-    #[derive(Default)]
+    #[derive(Default, Copy, Clone, Debug)]
     pub struct Component {}
 
     #[async_trait]
@@ -279,8 +273,8 @@ pub mod generated {
 
     #[must_use]
     #[cfg(any(feature = "native", feature = "wasm"))]
-    pub fn inputs_list() -> HashMap<String, TypeSignature> {
-      let mut map = HashMap::new();
+    pub fn inputs_list() -> std::collections::HashMap<String, TypeSignature> {
+      let mut map = std::collections::HashMap::new();
       map.insert("input".to_owned(), TypeSignature::String);
       map
     }
@@ -292,8 +286,8 @@ pub mod generated {
 
     #[must_use]
     #[cfg(any(feature = "native", feature = "wasm"))]
-    pub fn outputs_list() -> HashMap<String, TypeSignature> {
-      let mut map = HashMap::new();
+    pub fn outputs_list() -> std::collections::HashMap<String, TypeSignature> {
+      let mut map = std::collections::HashMap::new();
       map.insert("output".to_owned(), TypeSignature::String);
       map
     }

@@ -1,0 +1,180 @@
+{
+  "name": "vino-native-api-0",
+  "types": {},
+  "components": {
+    "add": {
+      "name": "add",
+      "inputs": {
+        "left": {
+          "type": "u64"
+        },
+        "right": {
+          "type": "u64"
+        }
+      },
+      "outputs": {
+        "output": {
+          "type": "u64"
+        }
+      }
+    },
+    "concatenate": {
+      "name": "concatenate",
+      "inputs": {
+        "left": {
+          "type": "string"
+        },
+        "right": {
+          "type": "string"
+        }
+      },
+      "outputs": {
+        "output": {
+          "type": "string"
+        }
+      }
+    },
+    "error": {
+      "name": "error",
+      "inputs": {
+        "input": {
+          "type": "string"
+        }
+      },
+      "outputs": {
+        "output": {
+          "type": "string"
+        }
+      }
+    },
+    "gate": {
+      "name": "gate",
+      "inputs": {
+        "condition": {
+          "type": "bool"
+        },
+        "value": {
+          "type": "raw"
+        },
+        "exception": {
+          "type": "string"
+        }
+      },
+      "outputs": {
+        "output": {
+          "type": "raw"
+        }
+      }
+    },
+    "log": {
+      "name": "log",
+      "inputs": {
+        "input": {
+          "type": "string"
+        }
+      },
+      "outputs": {
+        "output": {
+          "type": "string"
+        }
+      }
+    },
+    "negate": {
+      "name": "negate",
+      "inputs": {
+        "input": {
+          "type": "bool"
+        }
+      },
+      "outputs": {
+        "output": {
+          "type": "bool"
+        }
+      }
+    },
+    "panic": {
+      "name": "panic",
+      "inputs": {
+        "input": {
+          "type": "string"
+        }
+      },
+      "outputs": {
+        "output": {
+          "type": "string"
+        }
+      }
+    },
+    "random-bytes": {
+      "name": "random-bytes",
+      "inputs": {
+        "seed": {
+          "type": "u64"
+        },
+        "length": {
+          "type": "u32"
+        }
+      },
+      "outputs": {
+        "output": {
+          "type": "bytes"
+        }
+      }
+    },
+    "random-string": {
+      "name": "random-string",
+      "inputs": {
+        "seed": {
+          "type": "u64"
+        },
+        "length": {
+          "type": "u32"
+        }
+      },
+      "outputs": {
+        "output": {
+          "type": "string"
+        }
+      }
+    },
+    "short-circuit": {
+      "name": "short-circuit",
+      "inputs": {
+        "input": {
+          "type": "string"
+        }
+      },
+      "outputs": {
+        "output": {
+          "type": "string"
+        }
+      }
+    },
+    "string-to-bytes": {
+      "name": "string-to-bytes",
+      "inputs": {
+        "input": {
+          "type": "string"
+        }
+      },
+      "outputs": {
+        "output": {
+          "type": "bytes"
+        }
+      }
+    },
+    "uuid": {
+      "name": "uuid",
+      "inputs": {
+        "seed": {
+          "type": "u64"
+        }
+      },
+      "outputs": {
+        "output": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

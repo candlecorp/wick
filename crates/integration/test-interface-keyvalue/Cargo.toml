@@ -16,8 +16,8 @@ vino-provider = { path = "../../../sdk/crates/vino-provider", features = [
 ] }
 vino-packet = { path = "../../../sdk/crates/vino-packet" }
 vino-codec = { path = "../../../sdk/crates/vino-codec" }
-vino-rpc = { path = "../../vino-rpc" }
-vino-invocation-server = { path = "../../vino-invocation-server" }
+vino-rpc = { path = "../../vino/vino-rpc" }
+vino-invocation-server = { path = "../../vino/vino-invocation-server" }
 
 tracing = "0.1"
 

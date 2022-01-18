@@ -20,9 +20,6 @@ INTERFACE:=./interface.json
 # Files to clean up on make clean
 CLEAN_FILES := $(GENERATED_RS) $(INTERFACE)
 
-RUSTFMT=rustfmt --edition=2018
-
-.PHONY: all
 all: codegen build
 
 $(INTERFACE): $(SCHEMAS)
