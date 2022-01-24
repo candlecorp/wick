@@ -88,7 +88,6 @@
 pub mod error;
 // TODO ref check and make sure these are used:
 pub mod helpers;
-mod host_pool;
 pub mod provider;
 mod wapc_module;
 pub mod wasi;

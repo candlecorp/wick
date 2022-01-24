@@ -3,7 +3,6 @@ use std::sync::Arc;
 
 use async_trait::async_trait;
 use vino_entity::Entity;
-// use vino_provider::native::prelude::*;
 use vino_rpc::error::RpcError;
 use vino_rpc::{RpcHandler, RpcResult};
 use vino_transport::TransportMap;
@@ -12,11 +11,9 @@ use vino_types::*;
 pub use wapc::WasiParams;
 
 use crate::error::LinkError;
-use crate::host_pool::HostPool;
-// use crate::host_pool::HostPool;
 use crate::wapc_module::WapcModule;
 use crate::wasi::config_to_wasi;
-use crate::wasm_host::WasmHostBuilder;
+use crate::wasm_host::{WasmHost, WasmHostBuilder};
 use crate::Error;
 
 #[derive(Debug, Default)]
@@ -27,7 +24,7 @@ pub struct Context {
 
 #[derive(Debug)]
 pub struct Provider {
-  pool: Arc<HostPool>,
+  pool: Arc<WasmHost>,
 }
 
 pub type HostLinkCallback =
@@ -62,16 +59,15 @@ impl Provider {
     } else {
       debug!("WASM[{}]:WASI[disabled]", name);
     }
+    builder = builder.max_threads(max_threads);
 
     if let Some(callback) = callback {
       builder = builder.link_callback(callback);
     }
     let host = builder.build(module)?;
 
-    let pool = HostPool::start_hosts(move || Box::new(host.clone()), max_threads);
-
     Ok(Self {
-      pool: Arc::new(pool),
+      pool: Arc::new(host),
     })
   }
 }
@@ -86,7 +82,7 @@ impl RpcHandler for Provider {
       .map_err(|e| RpcError::ProviderError(e.to_string()))?;
     let pool = self.pool.clone();
 
-    let outputs = pool.call(&component, &messagepack_map)?;
+    let outputs = pool.call(&component, &messagepack_map).await?;
 
     Ok(Box::pin(outputs))
   }
@@ -105,7 +101,7 @@ impl RpcHandler for Provider {
         .join(",")
     );
 
-    Ok(vec![HostedType::Provider(signature)])
+    Ok(vec![HostedType::Provider(signature.clone())])
   }
 }
 

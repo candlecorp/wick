@@ -32,13 +32,12 @@ shellexpand = "2.1"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 
-# Forks until https://github.com/wapc/wapc-rust/pull/24 is resolved
-# wasmtime-provider = { version = "0.0", optional = true, features = ["cache"] }
-# wapc = "0.10.1"
-wasmtime-provider = { path = "../../../forks/wasmtime-provider", optional = true, features = [
+wasmtime-provider = { version = "1.0.0-alpha.0", optional = true, features = [
   "cache",
 ] }
-wapc = { path = "../../../forks/wapc-rust" }
+wapc = "1.0.0-alpha.1"
+wapc-pool = "1.0.0-alpha.0"
+
 
 tokio-stream = "0.1.7"
 async-stream = "0.3.2"
