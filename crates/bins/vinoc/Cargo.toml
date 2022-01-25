@@ -11,6 +11,7 @@ license = "BSD-3-Clause"
 vino-runtime = { path = "../../vino/vino-runtime" }
 vino-packet = { path = "../../../sdk/crates/vino-packet" }
 vino-host = { path = "../../vino/vino-host" }
+vino-provider-cli = { path = "../../vino/vino-provider-cli" }
 vino-manifest = { path = "../../vino/vino-manifest" }
 vino-rpc = { path = "../../vino/vino-rpc", features = ["client"] }
 vino-wascap = { path = "../../vino/vino-wascap" }

@@ -47,25 +47,6 @@
         }
       }
     },
-    "gate": {
-      "name": "gate",
-      "inputs": {
-        "condition": {
-          "type": "bool"
-        },
-        "value": {
-          "type": "raw"
-        },
-        "exception": {
-          "type": "string"
-        }
-      },
-      "outputs": {
-        "output": {
-          "type": "raw"
-        }
-      }
-    },
     "log": {
       "name": "log",
       "inputs": {
@@ -76,19 +57,6 @@
       "outputs": {
         "output": {
           "type": "string"
-        }
-      }
-    },
-    "negate": {
-      "name": "negate",
-      "inputs": {
-        "input": {
-          "type": "bool"
-        }
-      },
-      "outputs": {
-        "output": {
-          "type": "bool"
         }
       }
     },
@@ -134,32 +102,6 @@
       "outputs": {
         "output": {
           "type": "string"
-        }
-      }
-    },
-    "short-circuit": {
-      "name": "short-circuit",
-      "inputs": {
-        "input": {
-          "type": "string"
-        }
-      },
-      "outputs": {
-        "output": {
-          "type": "string"
-        }
-      }
-    },
-    "string-to-bytes": {
-      "name": "string-to-bytes",
-      "inputs": {
-        "input": {
-          "type": "string"
-        }
-      },
-      "outputs": {
-        "output": {
-          "type": "bytes"
         }
       }
     },

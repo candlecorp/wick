@@ -16,15 +16,18 @@ lattice = ['vino-rpc', 'vino-lattice', 'async-stream']
 
 [dependencies]
 logger = { path = "../logger" }
-vino-packet = { path = "../../sdk/crates/vino-packet" }
-vino-codec = { path = "../../sdk/crates/vino-codec" }
-vino-transport = { path = "../../sdk/crates/vino-transport", features = [
-  "all",
-] }
+
 vino-rpc = { path = "../vino-rpc", optional = true }
 vino-invocation-server = { path = "../vino-invocation-server", optional = true }
 vino-lattice = { path = "../vino-lattice", optional = true }
 vino-http = { path = "../vino-http", optional = true }
+
+vino-packet = { path = "../../../sdk/crates/vino-packet" }
+vino-codec = { path = "../../../sdk/crates/vino-codec" }
+vino-transport = { path = "../../../sdk/crates/vino-transport", features = [
+  "all",
+] }
+
 cfg-if = "1.0"
 
 tonic = { version = "0.6", optional = true }
