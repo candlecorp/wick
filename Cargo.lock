@@ -3744,7 +3744,7 @@ dependencies = [
 
 [[package]]
 name = "vino-codec"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "rmp-serde",
  "serde",
@@ -3755,7 +3755,7 @@ dependencies = [
 
 [[package]]
 name = "vino-entity"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "serde",
  "thiserror",
@@ -3915,7 +3915,7 @@ dependencies = [
 
 [[package]]
 name = "vino-macros"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "lazy_static",
  "tracing",
@@ -3966,7 +3966,7 @@ dependencies = [
 
 [[package]]
 name = "vino-packet"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "serde",
  "serde-value",
@@ -3975,7 +3975,7 @@ dependencies = [
 
 [[package]]
 name = "vino-provider"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "async-trait",
  "dyn-clone",
@@ -4207,7 +4207,7 @@ dependencies = [
 
 [[package]]
 name = "vino-transport"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "serde",
  "serde-value",
@@ -4224,7 +4224,7 @@ dependencies = [
 
 [[package]]
 name = "vino-types"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "serde",
  "serde_json",
@@ -4232,7 +4232,7 @@ dependencies = [
 
 [[package]]
 name = "vino-wapc"
-version = "0.7.0"
+version = "0.8.0"
 
 [[package]]
 name = "vino-wascap"

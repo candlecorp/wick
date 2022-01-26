@@ -25,8 +25,8 @@ all: codegen build
 $(INTERFACE): $(SCHEMAS)
 	@vino-codegen json interface "$(CRATE_NAME)" $(SCHEMA_DIR) -f -o $@
 
-$(GENERATED_RS): $(SCHEMAS)
-	@vino-codegen rust interface $(SCHEMA_DIR) -f -o $@
+$(GENERATED_RS): $(INTERFACE)
+	@vino-codegen rust interface $(INTERFACE) -f -o $@
 
 .PHONY: codegen
 codegen: $(GENERATED_RS) $(INTERFACE)
