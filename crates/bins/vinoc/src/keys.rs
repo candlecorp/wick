@@ -23,10 +23,7 @@ pub(crate) struct GenerateCommon {
 }
 
 /// Retrieves a keypair by name in a specified directory, or $VINO_KEYS ($HOME/.vino/keys) if directory is not specified.
-pub(crate) fn _get(
-  keyname: &str,
-  directory: Option<String>,
-) -> Result<(), Box<dyn ::std::error::Error>> {
+pub(crate) fn _get(keyname: &str, directory: Option<String>) -> Result<(), Box<dyn ::std::error::Error>> {
   let dir = determine_directory(directory)?;
   let mut f = File::open(format!("{}/{}", dir, keyname))
     .map_err(|e| format!("{}.\nPlease ensure {}/{} exists.", e, dir, keyname))?;
@@ -50,8 +47,7 @@ pub(crate) fn _list(directory: Option<String>) -> Result<(), Box<dyn ::std::erro
   let dir = determine_directory(directory)?;
 
   let mut keys = vec![];
-  let paths = fs::read_dir(dir.clone())
-    .map_err(|e| format!("Error: {}, please ensure directory {} exists", e, dir))?;
+  let paths = fs::read_dir(dir.clone()).map_err(|e| format!("Error: {}, please ensure directory {} exists", e, dir))?;
 
   for path in paths {
     let f = String::from(path.unwrap().file_name().to_str().unwrap());
@@ -98,19 +94,9 @@ pub(crate) fn extract_keypair(
     // Account key should be re-used, and will attempt to generate based on the terminal USER
     let module_name = match keygen_type {
       KeyPairType::Account => std::env::var("USER").unwrap_or_else(|_| "user".to_owned()),
-      _ => PathBuf::from(module)
-        .file_stem()
-        .unwrap()
-        .to_str()
-        .unwrap()
-        .to_owned(),
+      _ => PathBuf::from(module).file_stem().unwrap().to_str().unwrap().to_owned(),
     };
-    let path = format!(
-      "{}/{}_{}.nk",
-      dir,
-      module_name,
-      keypair_type_to_string(&keygen_type)
-    );
+    let path = format!("{}/{}_{}.nk", dir, module_name, keypair_type_to_string(&keygen_type));
     match File::open(path.clone()) {
       // Default key found
       Ok(mut f) => {

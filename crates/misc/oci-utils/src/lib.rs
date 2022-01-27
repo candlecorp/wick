@@ -40,15 +40,14 @@
   clippy::nonstandard_macro_braces,
   clippy::rc_mutex,
   clippy::unwrap_or_else_default,
-  // next version, see: https://github.com/rust-lang/rust-clippy/blob/master/CHANGELOG.md
-  // clippy::manual_split_once,
-  // clippy::derivable_impls,
-  // clippy::needless_option_as_deref,
-  // clippy::iter_not_returning_iterator,
-  // clippy::same_name_method,
-  // clippy::manual_assert,
-  // clippy::non_send_fields_in_send_ty,
-  // clippy::equatable_if_let,
+  clippy::manual_split_once,
+  clippy::derivable_impls,
+  clippy::needless_option_as_deref,
+  clippy::iter_not_returning_iterator,
+  clippy::same_name_method,
+  clippy::manual_assert,
+  clippy::non_send_fields_in_send_ty,
+  clippy::equatable_if_let,
   bad_style,
   clashing_extern_declarations,
   const_err,
@@ -83,6 +82,7 @@
   while_true,
   missing_docs
 )]
+#![allow(unused_attributes)]
 // !!END_LINTS
 // Add exceptions here
 #![allow()]
@@ -109,11 +109,7 @@ const WASM_MEDIA_TYPE: &str = "application/vnd.module.wasm.content.layer.v1+wasm
 const OCI_MEDIA_TYPE: &str = "application/vnd.oci.image.layer.v1.tar";
 
 /// Retrieve a payload from an OCI url.
-pub async fn fetch_oci_bytes(
-  img: &str,
-  allow_latest: bool,
-  allowed_insecure: &[String],
-) -> Result<Vec<u8>, OciError> {
+pub async fn fetch_oci_bytes(img: &str, allow_latest: bool, allowed_insecure: &[String]) -> Result<Vec<u8>, OciError> {
   if !allow_latest && img.ends_with(":latest") {
     return Err(OciError::LatestDisallowed(img.to_owned()));
   }
@@ -126,8 +122,8 @@ pub async fn fetch_oci_bytes(
     Ok(buf)
   } else {
     debug!("OCI:REMOTE:{}", img);
-    let img = oci_distribution::Reference::from_str(img)
-      .map_err(|e| OciError::OCIParseError(img.to_owned(), e.to_string()))?;
+    let img =
+      oci_distribution::Reference::from_str(img).map_err(|e| OciError::OCIParseError(img.to_owned(), e.to_string()))?;
     let auth = if let Ok(u) = std::env::var(OCI_VAR_USER) {
       if let Ok(p) = std::env::var(OCI_VAR_PASSWORD) {
         oci_distribution::secrets::RegistryAuth::Basic(u, p)
@@ -151,11 +147,7 @@ pub async fn fetch_oci_bytes(
     match imgdata {
       Ok(imgdata) => {
         let mut f = std::fs::File::create(cf)?;
-        let content = imgdata
-          .layers
-          .into_iter()
-          .flat_map(|l| l.data)
-          .collect::<Vec<_>>();
+        let content = imgdata.layers.into_iter().flat_map(|l| l.data).collect::<Vec<_>>();
         f.write_all(&content)?;
         f.flush()?;
         Ok(content)

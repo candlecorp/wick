@@ -7,9 +7,7 @@ use proc_macro::TokenStream;
 use proc_macro2::{Ident, Span, TokenStream as Tokens};
 use proc_macro_crate::{crate_name, FoundCrate};
 use quote::quote;
-use syn::{
-  parse_macro_input, parse_quote, AttributeArgs, ItemFn, Meta, NestedMeta, Path, ReturnType,
-};
+use syn::{parse_macro_input, parse_quote, AttributeArgs, ItemFn, Meta, NestedMeta, Path, ReturnType};
 
 /// A procedural macro for the `test` attribute.
 ///

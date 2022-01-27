@@ -29,11 +29,6 @@ pub struct ProviderClaims {
 
 impl WascapEntity for ProviderClaims {
   fn name(&self) -> String {
-    self
-      .interface
-      .name
-      .as_ref()
-      .unwrap_or(&"Anonymous".to_owned())
-      .clone()
+    self.interface.name.as_ref().unwrap_or(&"Anonymous".to_owned()).clone()
   }
 }

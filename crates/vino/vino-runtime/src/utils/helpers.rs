@@ -28,8 +28,6 @@ pub(crate) trait OptionalState {
   }
 
   fn get_state_mut(&mut self) -> Result<&mut Self::State, CommonError> {
-    self
-      .get_mut_state_option()
-      .ok_or(CommonError::Uninitialized)
+    self.get_mut_state_option().ok_or(CommonError::Uninitialized)
   }
 }

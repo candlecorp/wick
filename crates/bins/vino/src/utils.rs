@@ -12,18 +12,11 @@ pub(crate) fn merge_config(
   local_cli_opts: HostOptions,
   server_cli_opts: Option<DefaultCliOptions>,
 ) -> HostDefinition {
-  debug!(
-    "local_cli_opts.allow_latest {:?}",
-    local_cli_opts.allow_latest
-  );
+  debug!("local_cli_opts.allow_latest {:?}", local_cli_opts.allow_latest);
   debug!("def.host.allow_latest {:?}", def.host.allow_latest);
   let mut host_config = HostConfig {
     allow_latest: local_cli_opts.allow_latest || def.host.allow_latest,
-    insecure_registries: vec![
-      def.host.insecure_registries,
-      local_cli_opts.insecure_registries,
-    ]
-    .concat(),
+    insecure_registries: vec![def.host.insecure_registries, local_cli_opts.insecure_registries].concat(),
     timeout: def.host.timeout,
     id: def.host.id,
     ..Default::default()
@@ -31,11 +24,7 @@ pub(crate) fn merge_config(
 
   if let Some(cli_opts) = server_cli_opts {
     if let Some(to) = cli_opts.timeout {
-      log_override(
-        "timeout",
-        &mut host_config.timeout,
-        Duration::from_millis(to),
-      );
+      log_override("timeout", &mut host_config.timeout, Duration::from_millis(to));
     }
     if let Some(to) = cli_opts.id {
       log_override("id", &mut host_config.id, Some(to));
@@ -43,11 +32,7 @@ pub(crate) fn merge_config(
     #[allow(clippy::option_if_let_else)]
     let rpc_opts = if let Some(mut manifest_opts) = def.host.rpc {
       if !manifest_opts.enabled {
-        log_override(
-          "rpc.enabled",
-          &mut manifest_opts.enabled,
-          cli_opts.rpc_enabled,
-        );
+        log_override("rpc.enabled", &mut manifest_opts.enabled, cli_opts.rpc_enabled);
       }
       if let Some(to) = cli_opts.rpc_address {
         log_override("rpc.address", &mut manifest_opts.address, Some(to));
@@ -80,11 +65,7 @@ pub(crate) fn merge_config(
     #[allow(clippy::option_if_let_else)]
     let http_opts = if let Some(mut manifest_opts) = def.host.http {
       if !manifest_opts.enabled {
-        log_override(
-          "http.enabled",
-          &mut manifest_opts.enabled,
-          cli_opts.http_enabled,
-        );
+        log_override("http.enabled", &mut manifest_opts.enabled, cli_opts.http_enabled);
       }
       if let Some(to) = cli_opts.http_address {
         log_override("http.address", &mut manifest_opts.address, Some(to));
@@ -126,11 +107,7 @@ pub(crate) fn merge_config(
         log_override("lattice.address", &mut manifest_opts.address, to);
       }
       if let Some(to) = cli_opts.lattice.nats_credsfile {
-        log_override(
-          "lattice.creds_path",
-          &mut manifest_opts.creds_path,
-          Some(to),
-        );
+        log_override("lattice.creds_path", &mut manifest_opts.creds_path, Some(to));
       }
       if let Some(to) = cli_opts.lattice.nats_token {
         debug!("Overriding manifest value for 'host.lattice.token'");

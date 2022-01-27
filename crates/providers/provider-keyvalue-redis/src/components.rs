@@ -100,26 +100,11 @@ impl Dispatch for Dispatcher {
 pub fn get_signature() -> ProviderSignature {
   let mut components = std::collections::HashMap::new();
 
-  components.insert(
-    "delete".to_owned(),
-    vino_interface_keyvalue::delete::signature(),
-  );
-  components.insert(
-    "exists".to_owned(),
-    vino_interface_keyvalue::exists::signature(),
-  );
-  components.insert(
-    "key-get".to_owned(),
-    vino_interface_keyvalue::key_get::signature(),
-  );
-  components.insert(
-    "key-set".to_owned(),
-    vino_interface_keyvalue::key_set::signature(),
-  );
-  components.insert(
-    "list-add".to_owned(),
-    vino_interface_keyvalue::list_add::signature(),
-  );
+  components.insert("delete".to_owned(), vino_interface_keyvalue::delete::signature());
+  components.insert("exists".to_owned(), vino_interface_keyvalue::exists::signature());
+  components.insert("key-get".to_owned(), vino_interface_keyvalue::key_get::signature());
+  components.insert("key-set".to_owned(), vino_interface_keyvalue::key_set::signature());
+  components.insert("list-add".to_owned(), vino_interface_keyvalue::list_add::signature());
   components.insert(
     "list-range".to_owned(),
     vino_interface_keyvalue::list_range::signature(),
@@ -128,26 +113,17 @@ pub fn get_signature() -> ProviderSignature {
     "list-remove".to_owned(),
     vino_interface_keyvalue::list_remove::signature(),
   );
-  components.insert(
-    "set-add".to_owned(),
-    vino_interface_keyvalue::set_add::signature(),
-  );
+  components.insert("set-add".to_owned(), vino_interface_keyvalue::set_add::signature());
   components.insert(
     "set-contains".to_owned(),
     vino_interface_keyvalue::set_contains::signature(),
   );
-  components.insert(
-    "set-get".to_owned(),
-    vino_interface_keyvalue::set_get::signature(),
-  );
+  components.insert("set-get".to_owned(), vino_interface_keyvalue::set_get::signature());
   components.insert(
     "set-remove".to_owned(),
     vino_interface_keyvalue::set_remove::signature(),
   );
-  components.insert(
-    "set-scan".to_owned(),
-    vino_interface_keyvalue::set_scan::signature(),
-  );
+  components.insert("set-scan".to_owned(), vino_interface_keyvalue::set_scan::signature());
 
   ProviderSignature {
     name: Some("vino-interface-keyvalue".to_owned()),
@@ -417,11 +393,9 @@ pub mod generated {
       ) -> Result<TransportStream, Box<NativeComponentError>> {
         let inputs = populate_inputs(data).map_err(|e| NativeComponentError::new(e.to_string()))?;
         let (outputs, stream) = get_outputs();
-        let result = tokio::spawn(crate::components::list_remove::job(
-          inputs, outputs, context,
-        ))
-        .await
-        .map_err(|e| Box::new(NativeComponentError::new(format!("Component error: {}", e))))?;
+        let result = tokio::spawn(crate::components::list_remove::job(inputs, outputs, context))
+          .await
+          .map_err(|e| Box::new(NativeComponentError::new(format!("Component error: {}", e))))?;
         match result {
           Ok(_) => Ok(stream),
           Err(e) => Err(Box::new(NativeComponentError::new(e.to_string()))),
@@ -495,11 +469,9 @@ pub mod generated {
       ) -> Result<TransportStream, Box<NativeComponentError>> {
         let inputs = populate_inputs(data).map_err(|e| NativeComponentError::new(e.to_string()))?;
         let (outputs, stream) = get_outputs();
-        let result = tokio::spawn(crate::components::set_contains::job(
-          inputs, outputs, context,
-        ))
-        .await
-        .map_err(|e| Box::new(NativeComponentError::new(format!("Component error: {}", e))))?;
+        let result = tokio::spawn(crate::components::set_contains::job(inputs, outputs, context))
+          .await
+          .map_err(|e| Box::new(NativeComponentError::new(format!("Component error: {}", e))))?;
         match result {
           Ok(_) => Ok(stream),
           Err(e) => Err(Box::new(NativeComponentError::new(e.to_string()))),

@@ -102,9 +102,7 @@ impl Output {
   /// Attempt to deserialize the payload into the destination type
   pub fn try_into<T: DeserializeOwned>(self) -> Result<T> {
     let transport: TransportWrapper = self.into();
-    transport
-      .try_into()
-      .map_err(|e| RpcError::General(e.to_string()))
+    transport.try_into().map_err(|e| RpcError::General(e.to_string()))
   }
 
   /// Convert the RPC output into a [TransportWrapper]
@@ -163,9 +161,9 @@ impl From<MessageTransport> for MessageKind {
         vino_transport::Failure::Error(v) => Some(message_kind::Data::Message(v)),
       },
       MessageTransport::Signal(signal) => match signal {
-        vino_transport::MessageSignal::Done => Some(message_kind::Data::Signal(
-          message_kind::OutputSignal::Done.into(),
-        )),
+        vino_transport::MessageSignal::Done => {
+          Some(message_kind::Data::Signal(message_kind::OutputSignal::Done.into()))
+        }
         vino_transport::MessageSignal::OpenBracket => Some(message_kind::Data::Signal(
           message_kind::OutputSignal::OpenBracket.into(),
         )),

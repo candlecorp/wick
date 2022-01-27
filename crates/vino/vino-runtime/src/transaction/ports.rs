@@ -41,23 +41,13 @@ impl PortStatuses {
     format!("TX:{}({}):", self.tx_id, self.schematic_name)
   }
 
-  pub(crate) fn update_port_status(
-    &self,
-    port: &ConnectionTargetDefinition,
-    new_status: PortStatus,
-  ) -> &Self {
+  pub(crate) fn update_port_status(&self, port: &ConnectionTargetDefinition, new_status: PortStatus) -> &Self {
     let prefix = self.log_prefix();
     let mut inner = self.inner.borrow_mut();
     let status = inner.get_mut(port).unwrap();
     // if the statuses are different and we aren't already closed
     if status != &new_status && status != &PortStatus::Closed {
-      trace!(
-        "{}PORT_STATUS:[{}]:CHANGE:{}=>{}",
-        prefix,
-        port,
-        status,
-        new_status
-      );
+      trace!("{}PORT_STATUS:[{}]:CHANGE:{}=>{}", prefix, port, status, new_status);
       *status = new_status;
     }
     self
@@ -88,11 +78,7 @@ impl PortStatuses {
     }
   }
 
-  pub(crate) fn check_port_status(
-    &self,
-    port: &ConnectionTargetDefinition,
-    test: &PortStatus,
-  ) -> bool {
+  pub(crate) fn check_port_status(&self, port: &ConnectionTargetDefinition, test: &PortStatus) -> bool {
     self.inner.borrow().get(port).map_or(false, |s| s == test)
   }
 
@@ -105,10 +91,7 @@ impl PortStatuses {
   }
 
   pub(crate) fn is_generator(&self, instance: &str) -> bool {
-    self
-      .raw_ports
-      .get(instance)
-      .map_or(false, |rp| rp.inputs.is_empty())
+    self.raw_ports.get(instance).map_or(false, |rp| rp.inputs.is_empty())
   }
 
   pub(crate) fn close(&mut self, port: &ConnectionTargetDefinition) -> &mut Self {
@@ -133,11 +116,7 @@ impl PortStatuses {
       .map_or(vec![], |rp| rp.inputs.iter().cloned().collect())
   }
 
-  pub(crate) fn buffer(
-    &mut self,
-    target: Cow<ConnectionTargetDefinition>,
-    payload: MessageTransport,
-  ) -> &mut Self {
+  pub(crate) fn buffer(&mut self, target: Cow<ConnectionTargetDefinition>, payload: MessageTransport) -> &mut Self {
     let ports = self.get_incoming_ports(target.get_instance());
     self.update_port_status(target.as_ref(), PortStatus::HasData);
     for p in ports.iter() {
@@ -149,10 +128,7 @@ impl PortStatuses {
     self
   }
 
-  pub(crate) fn take_from_port(
-    &mut self,
-    port: &ConnectionTargetDefinition,
-  ) -> Option<MessageTransport> {
+  pub(crate) fn take_from_port(&mut self, port: &ConnectionTargetDefinition) -> Option<MessageTransport> {
     let result = self.buffermap.take(port);
     if matches!(result, Some(MessageTransport::Signal(MessageSignal::Done))) {
       self.close(port);
@@ -162,11 +138,7 @@ impl PortStatuses {
     result
   }
 
-  pub(crate) fn receive(
-    &mut self,
-    connection: &ConnectionDefinition,
-    payload: MessageTransport,
-  ) -> &Self {
+  pub(crate) fn receive(&mut self, connection: &ConnectionDefinition, payload: MessageTransport) -> &Self {
     let from = &connection.from;
     let to = Cow::Borrowed(&connection.to);
     match &payload {
@@ -206,10 +178,7 @@ impl PortStatuses {
     }
   }
 
-  pub(crate) fn take_inputs(
-    &mut self,
-    target: &ConnectionTargetDefinition,
-  ) -> Result<TransportMap> {
+  pub(crate) fn take_inputs(&mut self, target: &ConnectionTargetDefinition) -> Result<TransportMap> {
     let ports = self.get_incoming_ports(target.get_instance());
 
     let mut map = HashMap::new();
@@ -231,9 +200,7 @@ impl PortStatuses {
     if ports.is_empty() {
       false
     } else {
-      all(ports, |port| {
-        !self.check_port_status(&port, &PortStatus::Closed)
-      })
+      all(ports, |port| !self.check_port_status(&port, &PortStatus::Closed))
     }
   }
 
@@ -285,10 +252,7 @@ impl BufferMap {
     let queue = if self.map.contains_key(port.as_ref()) {
       self.map.get_mut(port.as_ref()).unwrap()
     } else {
-      self
-        .map
-        .entry(port.into_owned())
-        .or_insert_with(PortBuffer::default)
+      self.map.entry(port.into_owned()).or_insert_with(PortBuffer::default)
     };
     queue.push_back(payload);
   }

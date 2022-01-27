@@ -110,9 +110,7 @@ fn get_stderr_writer(_opts: &LoggingOptions) -> (NonBlocking, WorkerGuard) {
   (stderr_writer, console_guard)
 }
 
-fn get_logfile_writer(
-  opts: &LoggingOptions,
-) -> Result<(PathBuf, NonBlocking, WorkerGuard), LoggerError> {
+fn get_logfile_writer(opts: &LoggingOptions) -> Result<(PathBuf, NonBlocking, WorkerGuard), LoggerError> {
   let logfile_prefix = format!("{}.{}.log", opts.app_name, std::process::id());
   #[cfg(not(target_os = "windows"))]
   let log_dir = match xdg::BaseDirectories::with_prefix("vino") {
@@ -124,10 +122,8 @@ fn get_logfile_writer(
     Ok(localappdata) => PathBuf::from(format!("{}/vino", localappdata)),
     Err(_) => std::env::current_dir()?,
   };
-  let (writer, guard) = tracing_appender::non_blocking(tracing_appender::rolling::daily(
-    log_dir.clone(),
-    logfile_prefix,
-  ));
+  let (writer, guard) =
+    tracing_appender::non_blocking(tracing_appender::rolling::daily(log_dir.clone(), logfile_prefix));
 
   Ok((log_dir, writer, guard))
 }
@@ -150,78 +146,74 @@ fn try_init(opts: &LoggingOptions, environment: &Environment) -> Result<LoggingG
   #[cfg(not(windows))]
   let with_color = true;
 
-  let timer = UtcTime::new(
-    time::format_description::parse("[year]-[month]-[day]T[hour]:[minute]:[second]").unwrap(),
-  );
+  let timer = UtcTime::new(time::format_description::parse("[year]-[month]-[day]T[hour]:[minute]:[second]").unwrap());
   let (stderr_writer, console_guard) = get_stderr_writer(opts);
 
   let app_name = opts.app_name.clone();
 
   // This is ugly and I wish it was improved.
   // Start here to understand why it's laid out like this: https://github.com/tokio-rs/tracing/issues/575
-  let (verbose_layer, normal_layer, json_layer, file_layer, logfile_guard, test_layer) =
-    match environment {
-      Environment::Prod => {
-        let (log_dir, logfile_writer, logfile_guard) = get_logfile_writer(opts)?;
-        let file_layer =
-          BunyanFormattingLayer::new(app_name, logfile_writer).with_filter(vino_filter());
-        info!("Writing logs to {}", log_dir.to_string_lossy());
+  let (verbose_layer, normal_layer, json_layer, file_layer, logfile_guard, test_layer) = match environment {
+    Environment::Prod => {
+      let (log_dir, logfile_writer, logfile_guard) = get_logfile_writer(opts)?;
+      let file_layer = BunyanFormattingLayer::new(app_name, logfile_writer).with_filter(vino_filter());
+      info!("Writing logs to {}", log_dir.to_string_lossy());
 
-        if opts.verbose {
-          (
-            Some(
-              tracing_subscriber::fmt::layer()
-                .with_writer(stderr_writer)
-                .with_thread_names(true)
-                .with_ansi(with_color)
-                .with_target(true)
-                .with_filter(get_levelfilter(opts))
-                .with_filter(vino_filter()),
-            ),
-            None,
-            Some(JsonStorageLayer),
-            Some(file_layer),
-            Some(logfile_guard),
-            None,
-          )
-        } else {
-          (
-            None,
-            Some(
-              tracing_subscriber::fmt::layer()
-                .with_writer(stderr_writer)
-                .with_ansi(with_color)
-                .with_target(false)
-                .with_thread_names(false)
-                .with_timer(timer)
-                .with_filter(get_levelfilter(opts))
-                .with_filter(vino_filter()),
-            ),
-            Some(JsonStorageLayer),
-            Some(file_layer),
-            Some(logfile_guard),
-            None,
-          )
-        }
+      if opts.verbose {
+        (
+          Some(
+            tracing_subscriber::fmt::layer()
+              .with_writer(stderr_writer)
+              .with_thread_names(true)
+              .with_ansi(with_color)
+              .with_target(true)
+              .with_filter(get_levelfilter(opts))
+              .with_filter(vino_filter()),
+          ),
+          None,
+          Some(JsonStorageLayer),
+          Some(file_layer),
+          Some(logfile_guard),
+          None,
+        )
+      } else {
+        (
+          None,
+          Some(
+            tracing_subscriber::fmt::layer()
+              .with_writer(stderr_writer)
+              .with_ansi(with_color)
+              .with_target(false)
+              .with_thread_names(false)
+              .with_timer(timer)
+              .with_filter(get_levelfilter(opts))
+              .with_filter(vino_filter()),
+          ),
+          Some(JsonStorageLayer),
+          Some(file_layer),
+          Some(logfile_guard),
+          None,
+        )
       }
-      Environment::Test => (
-        None,
-        None,
-        None,
-        None,
-        None,
-        Some(
-          tracing_subscriber::fmt::layer()
-            .with_writer(stderr_writer)
-            .with_ansi(with_color)
-            .without_time()
-            .with_target(true)
-            .with_test_writer()
-            .with_filter(get_levelfilter(opts))
-            .with_filter(vino_filter()),
-        ),
+    }
+    Environment::Test => (
+      None,
+      None,
+      None,
+      None,
+      None,
+      Some(
+        tracing_subscriber::fmt::layer()
+          .with_writer(stderr_writer)
+          .with_ansi(with_color)
+          .without_time()
+          .with_target(true)
+          .with_test_writer()
+          .with_filter(get_levelfilter(opts))
+          .with_filter(vino_filter()),
       ),
-    };
+    ),
+  };
 
   let subscriber = tracing_subscriber::registry()
     .with(test_layer)

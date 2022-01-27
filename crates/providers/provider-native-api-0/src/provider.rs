@@ -82,17 +82,11 @@ mod tests {
 
     let mut outputs = provider.invoke(entity, transport_map).await.unwrap();
     let output = outputs.next().await.unwrap();
-    println!(
-      "Received payload from port '{}': {:?}",
-      output.port, output.payload
-    );
+    println!("Received payload from port '{}': {:?}", output.port, output.payload);
     Ok(output.payload.try_into()?)
   }
 
-  async fn _invoke_failure(
-    component: &str,
-    payload: impl Into<TransportMap> + Send,
-  ) -> Result<Failure> {
+  async fn _invoke_failure(component: &str, payload: impl Into<TransportMap> + Send) -> Result<Failure> {
     let transport_map: TransportMap = payload.into();
     println!("TransportMap: {:?}", transport_map);
     let provider = Provider::new(SEED);
@@ -101,10 +95,7 @@ mod tests {
 
     let mut outputs = provider.invoke(entity, transport_map).await.unwrap();
     let output = outputs.next().await.unwrap();
-    println!(
-      "Received payload from port '{}': {:?}",
-      output.port, output.payload
-    );
+    println!("Received payload from port '{}': {:?}", output.port, output.payload);
     match output.payload {
       MessageTransport::Success(_) => Err("Got success, expected failure".into()),
       MessageTransport::Failure(failure) => Ok(failure),

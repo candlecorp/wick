@@ -26,9 +26,7 @@ impl Provider {}
 
 impl From<Host> for Provider {
   fn from(host: Host) -> Self {
-    Self {
-      host: Arc::new(host),
-    }
+    Self { host: Arc::new(host) }
   }
 }
 
@@ -38,11 +36,7 @@ impl RpcHandler for Provider {
     trace!("HOST:INVOKE:[{}]", entity);
     let component = entity.name();
 
-    let init_data: InitData = payload
-      .get_config()
-      .clone()
-      .map(|c| c.into())
-      .unwrap_or_default();
+    let init_data: InitData = payload.get_config().clone().map(|c| c.into()).unwrap_or_default();
 
     let outputs = self
       .host
@@ -81,9 +75,7 @@ mod tests {
 
     let job_payload = TransportMap::from(vec![("input", input)]);
 
-    let mut outputs = provider
-      .invoke(Entity::component_direct("logger"), job_payload)
-      .await?;
+    let mut outputs = provider.invoke(Entity::component_direct("logger"), job_payload).await?;
     let output = outputs.next().await.unwrap();
     println!("payload from [{}]: {:?}", output.port, output.payload);
     let output: String = output.payload.try_into()?;

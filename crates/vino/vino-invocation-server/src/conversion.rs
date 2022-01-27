@@ -4,11 +4,7 @@ use vino_rpc::rpc::{MessageKind, Output};
 use vino_transport::MessageTransport;
 use vino_transport::{Failure, MessageSignal, Success};
 
-pub(crate) fn make_output(
-  port: &str,
-  inv_id: &str,
-  payload: MessageTransport,
-) -> Result<Output, Status> {
+pub(crate) fn make_output(port: &str, inv_id: &str, payload: MessageTransport) -> Result<Output, Status> {
   match payload {
     MessageTransport::Success(v) => match v {
       Success::MessagePack(bytes) => Ok(Output {

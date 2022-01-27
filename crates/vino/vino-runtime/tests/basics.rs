@@ -64,9 +64,7 @@ async fn senders() -> Result<()> {
 
   let data: HashMap<String, String> = HashMap::new();
 
-  let mut result = network
-    .request("senders", Entity::test("senders"), &data)
-    .await?;
+  let mut result = network.request("senders", Entity::test("senders"), &data).await?;
 
   println!("Result: {:?}", result);
   let mut messages: Vec<TransportWrapper> = result.collect_port("output").await;
@@ -161,11 +159,7 @@ async fn short_circuit_with_default() -> Result<()> {
   };
 
   let mut result = network
-    .request(
-      "short_circuit",
-      Entity::test("short circuit default"),
-      &data,
-    )
+    .request("short_circuit", Entity::test("short circuit default"), &data)
     .await?;
 
   let mut messages: Vec<TransportWrapper> = result.collect_port("output").await;
@@ -225,9 +219,7 @@ async fn subnetworks() -> Result<()> {
       "input" => "some input",
   };
 
-  let mut result = network
-    .request("parent", Entity::test("subnetworks"), &data)
-    .await?;
+  let mut result = network.request("parent", Entity::test("subnetworks"), &data).await?;
 
   let mut messages: Vec<TransportWrapper> = result.collect_port("output").await;
   assert_eq!(messages.len(), 1);

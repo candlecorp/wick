@@ -48,14 +48,7 @@ pub(crate) extern "C" fn __guest_call(op_len: i32, req_len: i32) -> i32 {
   }
 }
 
-static ALL_COMPONENTS: &[&str] = &[
-  "copy",
-  "error",
-  "reverse",
-  "reverse-uppercase",
-  "uppercase",
-  "validate",
-];
+static ALL_COMPONENTS: &[&str] = &["copy", "error", "reverse", "reverse-uppercase", "uppercase", "validate"];
 
 pub struct Dispatcher {}
 impl Dispatch for Dispatcher {
@@ -68,10 +61,7 @@ impl Dispatch for Dispatcher {
       "reverse-uppercase" => reverse_uppercase::Component::default().execute(&payload),
       "uppercase" => uppercase::Component::default().execute(&payload),
       "validate" => validate::Component::default().execute(&payload),
-      _ => Err(WasmError::ComponentNotFound(
-        op.to_owned(),
-        ALL_COMPONENTS.join(", "),
-      )),
+      _ => Err(WasmError::ComponentNotFound(op.to_owned(), ALL_COMPONENTS.join(", "))),
     }?;
     Ok(serialize(&result)?)
   }

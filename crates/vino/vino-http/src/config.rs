@@ -116,12 +116,10 @@ impl Config {
     I: IntoIterator,
     HeaderName: TryFrom<I::Item>,
   {
-    let iter = headers
-      .into_iter()
-      .map(|header| match TryFrom::try_from(header) {
-        Ok(header) => header,
-        Err(_) => panic!("invalid header"),
-      });
+    let iter = headers.into_iter().map(|header| match TryFrom::try_from(header) {
+      Ok(header) => header,
+      Err(_) => panic!("invalid header"),
+    });
 
     self.exposed_headers.extend(iter);
     self

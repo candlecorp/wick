@@ -82,10 +82,7 @@ impl InvocationServer {
 impl InvocationService for InvocationServer {
   type InvokeStream = ReceiverStream<Result<Output, Status>>;
 
-  async fn invoke(
-    &self,
-    request: tonic::Request<rpc::Invocation>,
-  ) -> Result<Response<Self::InvokeStream>, Status> {
+  async fn invoke(&self, request: tonic::Request<rpc::Invocation>) -> Result<Response<Self::InvokeStream>, Status> {
     let start = Instant::now();
 
     let (tx, rx) = mpsc::channel(4);
@@ -97,9 +94,7 @@ impl InvocationService for InvocationServer {
     let invocation_id = invocation.id.clone();
     let entity = vino_entity::Entity::from_str(&invocation.target);
     if let Err(e) = entity {
-      tx.send(Err(Status::failed_precondition(e.to_string())))
-        .await
-        .unwrap();
+      tx.send(Err(Status::failed_precondition(e.to_string()))).await.unwrap();
     } else {
       let entity = entity.unwrap();
       let entity_name = entity.name();
@@ -115,9 +110,7 @@ impl InvocationService for InvocationServer {
           while let Some(next) = receiver.next().await {
             let port_name = next.port;
             let msg = next.payload;
-            tx.send(make_output(&port_name, &invocation_id, msg))
-              .await
-              .unwrap();
+            tx.send(make_output(&port_name, &invocation_id, msg)).await.unwrap();
           }
         });
         self.record_execution(entity_name, JobResult::Success, start.elapsed());
@@ -127,15 +120,9 @@ impl InvocationService for InvocationServer {
     Ok(Response::new(ReceiverStream::new(rx)))
   }
 
-  async fn list(
-    &self,
-    _request: tonic::Request<rpc::ListRequest>,
-  ) -> Result<Response<ListResponse>, Status> {
+  async fn list(&self, _request: tonic::Request<rpc::ListRequest>) -> Result<Response<ListResponse>, Status> {
     trace!("Listing registered components from provider");
-    let list = self
-      .provider
-      .get_list()
-      .map_err(|e| Status::internal(e.to_string()))?;
+    let list = self.provider.get_list().map_err(|e| Status::internal(e.to_string()))?;
     trace!("Server: list is {:?}", list);
 
     let result: Result<Vec<_>, RpcError> = list.into_iter().map(TryFrom::try_from).collect();
@@ -144,18 +131,9 @@ impl InvocationService for InvocationServer {
     Ok(Response::new(response))
   }
 
-  async fn stats(
-    &self,
-    _request: tonic::Request<rpc::StatsRequest>,
-  ) -> Result<Response<StatsResponse>, Status> {
+  async fn stats(&self, _request: tonic::Request<rpc::StatsRequest>) -> Result<Response<StatsResponse>, Status> {
     Ok(Response::new(StatsResponse {
-      stats: self
-        .stats
-        .read()
-        .values()
-        .cloned()
-        .map(From::from)
-        .collect(),
+      stats: self.stats.read().values().cloned().map(From::from).collect(),
     }))
   }
 }

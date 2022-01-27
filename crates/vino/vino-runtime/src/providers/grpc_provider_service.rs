@@ -41,10 +41,7 @@ impl OptionalState for GrpcProviderService {
 
 impl GrpcProviderService {
   pub(crate) fn new(namespace: String) -> Self {
-    Self {
-      namespace,
-      state: None,
-    }
+    Self { namespace, state: None }
   }
 
   pub(crate) async fn init(&mut self, address: String) -> Result<()> {
@@ -132,9 +129,7 @@ impl InvocationHandler for GrpcProviderService {
             if let Err(e) = next {
               let msg = format!("Error during GRPC stream: {}", e);
               error!("{}", msg);
-              match tx.send(TransportWrapper::component_error(MessageTransport::error(
-                msg,
-              ))) {
+              match tx.send(TransportWrapper::component_error(MessageTransport::error(msg))) {
                 Ok(_) => {
                   trace!("Sent error to upstream, closing connection.");
                 }
@@ -160,10 +155,7 @@ impl InvocationHandler for GrpcProviderService {
                   trace!("Sent error to upstream");
                 }
                 Err(e) => {
-                  error!(
-                    "Error sending output on channel {}. Closing connection.",
-                    e.to_string()
-                  );
+                  error!("Error sending output on channel {}. Closing connection.", e.to_string());
                   break;
                 }
               }

@@ -59,11 +59,7 @@ pub(crate) async fn handle(opts: Options) -> Result<()> {
     }
     let reader = BufReader::new(io::stdin());
     let mut lines = reader.lines();
-    while let Some(line) = lines
-      .next_line()
-      .await
-      .map_err(ControlError::ReadLineFailed)?
-    {
+    while let Some(line) = lines.next_line().await.map_err(ControlError::ReadLineFailed)? {
       let stream = client
         .invoke_from_json(origin.url(), opts.component.clone(), &line, !opts.raw)
         .await?;
@@ -78,9 +74,7 @@ pub(crate) async fn handle(opts: Options) -> Result<()> {
       rest_arg_map.transpose_output_name();
     }
     data_map.merge(rest_arg_map);
-    let stream = client
-      .invoke(origin.url(), opts.component.clone(), data_map)
-      .await?;
+    let stream = client.invoke(origin.url(), opts.component.clone(), data_map).await?;
     print_stream_json(stream, opts.raw).await?;
   }
 
@@ -90,10 +84,7 @@ pub(crate) async fn handle(opts: Options) -> Result<()> {
 async fn print_stream_json(mut stream: TransportStream, raw: bool) -> Result<()> {
   while let Some(message) = stream.next().await {
     if message.payload.is_signal() && !raw {
-      debug!(
-        "Skipping signal '{}' in output, pass --raw to print.",
-        message.payload
-      );
+      debug!("Skipping signal '{}' in output, pass --raw to print.", message.payload);
     } else {
       println!("{}", message.into_json());
     }

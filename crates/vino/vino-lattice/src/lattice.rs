@@ -49,8 +49,7 @@ impl LatticeBuilder {
 
   /// Creates a new [LatticeBuilder] using the environment variable NATS_URL for the address.
   pub fn new_from_env<T: AsRef<str>>(namespace: T) -> Result<Self> {
-    let address =
-      std::env::var("NATS_URL").map_err(|_| LatticeError::NatsEnvVar("NATS_URL".to_owned()))?;
+    let address = std::env::var("NATS_URL").map_err(|_| LatticeError::NatsEnvVar("NATS_URL".to_owned()))?;
 
     Ok(Self {
       address,
@@ -89,8 +88,7 @@ impl LatticeBuilder {
   pub fn credential_path(self, credential_path: impl AsRef<str>) -> Result<Self> {
     Ok(Self {
       credential_path: Some(
-        PathBuf::from_str(credential_path.as_ref())
-          .map_err(|e| LatticeError::BadPath(e.to_string()))?,
+        PathBuf::from_str(credential_path.as_ref()).map_err(|e| LatticeError::BadPath(e.to_string()))?,
       ),
       ..self
     })
@@ -163,11 +161,7 @@ impl Lattice {
     self.nats.disconnect().await
   }
 
-  pub async fn handle_namespace(
-    &self,
-    namespace: String,
-    provider: SharedRpcHandler,
-  ) -> Result<()> {
+  pub async fn handle_namespace(&self, namespace: String, provider: SharedRpcHandler) -> Result<()> {
     trace!("LATTICE:NS_HANDLER[{}]:REGISTER", namespace);
 
     let sub = self
@@ -188,11 +182,7 @@ impl Lattice {
         let next = sub.next_wait().await;
         match next {
           Some(nats_msg) => {
-            debug!(
-              "LATTICE:NS_HANDLER[{}]:MESSAGE{:?}",
-              ns_inner,
-              nats_msg.data()
-            );
+            debug!("LATTICE:NS_HANDLER[{}]:MESSAGE{:?}", ns_inner, nats_msg.data());
             if let Err(e) = handle_message(&provider, nats_msg, deadline).await {
               error!("Error processing lattice message for {}: {}", ns_inner, e);
             }
@@ -207,10 +197,7 @@ impl Lattice {
       trace!("LATTICE:NS_HANDLER[{}]:CLOSE", ns_inner);
     });
 
-    self
-      .handlers
-      .write()
-      .insert(namespace.clone(), NsHandler::new(handle));
+    self.handlers.write().insert(namespace.clone(), NsHandler::new(handle));
 
     let _ = ready_rx.await;
     Ok(())
@@ -254,10 +241,7 @@ impl Lattice {
             break;
           }
           Err(e) => {
-            error!(
-              "Error retrieving lattice message for {}: {}",
-              entity_string, e
-            );
+            error!("Error retrieving lattice message for {}: {}", entity_string, e);
             break;
           }
         }
@@ -290,19 +274,14 @@ impl Lattice {
   }
 }
 
-fn handle_response(
-  tx: &UnboundedSender<TransportWrapper>,
-  lattice_msg: &NatsMessage,
-) -> Result<()> {
+fn handle_response(tx: &UnboundedSender<TransportWrapper>, lattice_msg: &NatsMessage) -> Result<()> {
   let msg: Result<LatticeRpcResponse> = lattice_msg.deserialize();
   trace!("LATTICE:MSG:RESPONSE:{:?}", msg);
   let result = match msg {
     Ok(response) => match response {
       LatticeRpcResponse::Output(wrapper) => tx.send(wrapper),
       LatticeRpcResponse::List(_) => unreachable!(),
-      LatticeRpcResponse::Error(e) => tx.send(TransportWrapper::component_error(
-        MessageTransport::error(e),
-      )),
+      LatticeRpcResponse::Error(e) => tx.send(TransportWrapper::component_error(MessageTransport::error(e))),
       LatticeRpcResponse::Close => tx.send(TransportWrapper::new_system_close()),
     },
     Err(e) => tx.send(TransportWrapper::component_error(MessageTransport::error(
@@ -312,11 +291,7 @@ fn handle_response(
   result.map_err(|_| LatticeError::ResponseUpstreamClosed)
 }
 
-async fn handle_message(
-  provider: &SharedRpcHandler,
-  nats_msg: NatsMessage,
-  deadline: Duration,
-) -> Result<()> {
+async fn handle_message(provider: &SharedRpcHandler, nats_msg: NatsMessage, deadline: Duration) -> Result<()> {
   let msg: LatticeRpcMessage = nats_msg.deserialize()?;
   trace!("LATTICE:MSG:REQUEST:{:?}", msg);
   match msg {
@@ -325,12 +300,12 @@ async fn handle_message(
       match result {
         Ok(components) => {
           let response = LatticeRpcResponse::List(components);
-          nats_msg.respond(&response.serialize()).await?;
+          nats_msg.respond(&response).await?;
         }
         Err(e) => {
           error!("Provider component list resulted in error: {}", e);
           let response = LatticeRpcResponse::Error(e.to_string());
-          nats_msg.respond(&response.serialize()).await?;
+          nats_msg.respond(&response).await?;
         }
       };
     }
@@ -345,7 +320,7 @@ async fn handle_message(
             match result {
               Ok(Some(msg)) => {
                 let response = LatticeRpcResponse::Output(msg);
-                nats_msg.respond(&response.serialize()).await?;
+                nats_msg.respond(&response).await?;
               }
               Ok(None) => {
                 break;
@@ -358,15 +333,12 @@ async fn handle_message(
           }
 
           let response = LatticeRpcResponse::Close;
-          nats_msg.respond(&response.serialize()).await?;
+          nats_msg.respond(&response).await?;
         }
         Err(e) => {
-          error!(
-            "Provider invocation for {} resulted in error: {}",
-            entity_url, e
-          );
+          error!("Provider invocation for {} resulted in error: {}", entity_url, e);
           let response = LatticeRpcResponse::Error(e.to_string());
-          nats_msg.respond(&response.serialize()).await?;
+          nats_msg.respond(&response).await?;
         }
       };
     }
@@ -412,19 +384,11 @@ pub enum LatticeRpcResponse {
   Close,
 }
 
-impl LatticeRpcResponse {
-  #[must_use]
-  pub fn serialize(&self) -> Vec<u8> {
-    serialize(self)
-      .unwrap_or_else(|e| serialize(&LatticeRpcResponse::Error(e.to_string())).unwrap())
-  }
-}
-
 #[cfg(test)]
 mod test {
   use anyhow::Result;
   use tracing::*;
-  use vino_codec::messagepack::deserialize;
+  use vino_codec::messagepack::{deserialize, serialize};
   use vino_transport::{MessageTransport, TransportWrapper};
 
   use crate::lattice::LatticeRpcResponse;
@@ -435,7 +399,7 @@ mod test {
       port: "port-name".to_owned(),
       payload: MessageTransport::success(&data),
     });
-    let bytes = expected.serialize();
+    let bytes = serialize(&expected).unwrap();
     debug!("{:?}", bytes);
     let actual: LatticeRpcResponse = deserialize(&bytes)?;
     assert_eq!(expected, actual);
@@ -453,9 +417,7 @@ mod test_integration {
   use tokio_stream::StreamExt;
   use tracing::*;
   use vino_transport::{MessageTransport, TransportMap};
-  use vino_types::{
-    ComponentMap, ComponentSignature, HostedType, MapWrapper, ProviderSignature, StructMap,
-  };
+  use vino_types::{ComponentMap, ComponentSignature, HostedType, MapWrapper, ProviderSignature, StructMap};
 
   use super::{Lattice, LatticeBuilder};
 
@@ -520,10 +482,7 @@ mod test_integration {
     let msg = stream.next().await;
     debug!("msg: {:?}", msg);
     let msg = msg.unwrap();
-    assert_eq!(
-      msg.payload,
-      MessageTransport::error("This always errors".to_owned())
-    );
+    assert_eq!(msg.payload, MessageTransport::error("This always errors".to_owned()));
 
     Ok(())
   }

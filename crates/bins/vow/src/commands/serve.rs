@@ -29,9 +29,7 @@ pub(crate) struct ServeCommand {
 pub(crate) async fn handle_command(opts: Box<ServeCommand>) -> Result<()> {
   let _guard = vino_provider_cli::init_logging(&opts.cli.logging.name("vow"));
   debug!("Loading wasm {}", opts.wasm);
-  let component =
-    vino_provider_wasm::helpers::load_wasm(&opts.wasm, opts.pull.latest, &opts.pull.insecure)
-      .await?;
+  let component = vino_provider_wasm::helpers::load_wasm(&opts.wasm, opts.pull.latest, &opts.pull.insecure).await?;
 
   let wasi: WasiParams = (&opts.wasi).into();
   let provider = Arc::new(

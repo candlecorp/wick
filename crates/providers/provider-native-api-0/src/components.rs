@@ -24,11 +24,7 @@ impl Dispatch for Dispatcher {
     data: TransportMap,
   ) -> Result<TransportStream, Box<NativeComponentError>> {
     let result = match op {
-      "add" => {
-        self::generated::add::Component::default()
-          .execute(context, data)
-          .await
-      }
+      "add" => self::generated::add::Component::default().execute(context, data).await,
       "concatenate" => {
         self::generated::concatenate::Component::default()
           .execute(context, data)
@@ -39,11 +35,7 @@ impl Dispatch for Dispatcher {
           .execute(context, data)
           .await
       }
-      "log" => {
-        self::generated::log::Component::default()
-          .execute(context, data)
-          .await
-      }
+      "log" => self::generated::log::Component::default().execute(context, data).await,
       "panic" => {
         self::generated::panic::Component::default()
           .execute(context, data)
@@ -59,11 +51,7 @@ impl Dispatch for Dispatcher {
           .execute(context, data)
           .await
       }
-      "uuid" => {
-        self::generated::uuid::Component::default()
-          .execute(context, data)
-          .await
-      }
+      "uuid" => self::generated::uuid::Component::default().execute(context, data).await,
       _ => Err(Box::new(NativeComponentError::new(format!(
         "Component not found on this provider: {}",
         op
@@ -77,21 +65,12 @@ pub fn get_signature() -> ProviderSignature {
   let mut components = std::collections::HashMap::new();
 
   components.insert("add".to_owned(), generated::add::signature());
-  components.insert(
-    "concatenate".to_owned(),
-    generated::concatenate::signature(),
-  );
+  components.insert("concatenate".to_owned(), generated::concatenate::signature());
   components.insert("error".to_owned(), generated::error::signature());
   components.insert("log".to_owned(), generated::log::signature());
   components.insert("panic".to_owned(), generated::panic::signature());
-  components.insert(
-    "random-bytes".to_owned(),
-    generated::random_bytes::signature(),
-  );
-  components.insert(
-    "random-string".to_owned(),
-    generated::random_string::signature(),
-  );
+  components.insert("random-bytes".to_owned(), generated::random_bytes::signature());
+  components.insert("random-string".to_owned(), generated::random_string::signature());
   components.insert("uuid".to_owned(), generated::uuid::signature());
 
   ProviderSignature {
@@ -290,11 +269,9 @@ pub mod generated {
       ) -> Result<TransportStream, Box<NativeComponentError>> {
         let inputs = populate_inputs(data).map_err(|e| NativeComponentError::new(e.to_string()))?;
         let (outputs, stream) = get_outputs();
-        let result = tokio::spawn(crate::components::concatenate::job(
-          inputs, outputs, context,
-        ))
-        .await
-        .map_err(|e| Box::new(NativeComponentError::new(format!("Component error: {}", e))))?;
+        let result = tokio::spawn(crate::components::concatenate::job(inputs, outputs, context))
+          .await
+          .map_err(|e| Box::new(NativeComponentError::new(format!("Component error: {}", e))))?;
         match result {
           Ok(_) => Ok(stream),
           Err(e) => Err(Box::new(NativeComponentError::new(e.to_string()))),
@@ -906,11 +883,9 @@ pub mod generated {
       ) -> Result<TransportStream, Box<NativeComponentError>> {
         let inputs = populate_inputs(data).map_err(|e| NativeComponentError::new(e.to_string()))?;
         let (outputs, stream) = get_outputs();
-        let result = tokio::spawn(crate::components::random_bytes::job(
-          inputs, outputs, context,
-        ))
-        .await
-        .map_err(|e| Box::new(NativeComponentError::new(format!("Component error: {}", e))))?;
+        let result = tokio::spawn(crate::components::random_bytes::job(inputs, outputs, context))
+          .await
+          .map_err(|e| Box::new(NativeComponentError::new(format!("Component error: {}", e))))?;
         match result {
           Ok(_) => Ok(stream),
           Err(e) => Err(Box::new(NativeComponentError::new(e.to_string()))),
@@ -940,10 +915,7 @@ pub mod generated {
         let mut map = TransportMap::new();
         map.insert("seed".to_owned(), MessageTransport::success(&inputs.seed));
 
-        map.insert(
-          "length".to_owned(),
-          MessageTransport::success(&inputs.length),
-        );
+        map.insert("length".to_owned(), MessageTransport::success(&inputs.length));
 
         map
       }
@@ -1069,11 +1041,9 @@ pub mod generated {
       ) -> Result<TransportStream, Box<NativeComponentError>> {
         let inputs = populate_inputs(data).map_err(|e| NativeComponentError::new(e.to_string()))?;
         let (outputs, stream) = get_outputs();
-        let result = tokio::spawn(crate::components::random_string::job(
-          inputs, outputs, context,
-        ))
-        .await
-        .map_err(|e| Box::new(NativeComponentError::new(format!("Component error: {}", e))))?;
+        let result = tokio::spawn(crate::components::random_string::job(inputs, outputs, context))
+          .await
+          .map_err(|e| Box::new(NativeComponentError::new(format!("Component error: {}", e))))?;
         match result {
           Ok(_) => Ok(stream),
           Err(e) => Err(Box::new(NativeComponentError::new(e.to_string()))),
@@ -1103,10 +1073,7 @@ pub mod generated {
         let mut map = TransportMap::new();
         map.insert("seed".to_owned(), MessageTransport::success(&inputs.seed));
 
-        map.insert(
-          "length".to_owned(),
-          MessageTransport::success(&inputs.length),
-        );
+        map.insert("length".to_owned(), MessageTransport::success(&inputs.length));
 
         map
       }

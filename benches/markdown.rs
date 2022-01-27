@@ -52,9 +52,7 @@ async fn work() {
   };
   let _guard = logger::init(&opts.name("markdown-benchmark"));
 
-  let mut host = HostBuilder::try_from("./benches/markdown.vino")
-    .unwrap()
-    .build();
+  let mut host = HostBuilder::try_from("./benches/markdown.vino").unwrap().build();
   host.start().await.unwrap();
   let host = HOST.get_or_init(move || host);
   let num: usize = 1000;
@@ -71,9 +69,7 @@ async fn work() {
     // println!("...done")
   }
   println!("first round ...");
-  let outputs = try_join_all(futures.into_iter().map(tokio::spawn))
-    .await
-    .unwrap();
+  let outputs = try_join_all(futures.into_iter().map(tokio::spawn)).await.unwrap();
   println!("second round ...");
   let _results = try_join_all(outputs.into_iter().map(|stream| {
     tokio::spawn(async {
@@ -86,12 +82,7 @@ async fn work() {
   println!("done ...");
   let ms = start.elapsed().as_millis();
   let smaller: u128 = num.try_into().unwrap();
-  println!(
-    "Took {} ms for {} runs (avg: {}/run)",
-    ms,
-    num,
-    ms / smaller
-  );
+  println!("Took {} ms for {} runs (avg: {}/run)", ms, num, ms / smaller);
 }
 
 fn main() {

@@ -51,10 +51,7 @@ impl Dispatch for Dispatcher {
     let payload = IncomingPayload::from_buffer(payload)?;
     let result = match op {
       "fs-read" => fs_read::Component::default().execute(&payload),
-      _ => Err(WasmError::ComponentNotFound(
-        op.to_owned(),
-        ALL_COMPONENTS.join(", "),
-      )),
+      _ => Err(WasmError::ComponentNotFound(op.to_owned(), ALL_COMPONENTS.join(", "))),
     }?;
     Ok(serialize(&result)?)
   }
@@ -93,10 +90,7 @@ pub mod generated {
     impl From<Inputs> for TransportMap {
       fn from(inputs: Inputs) -> TransportMap {
         let mut map = TransportMap::new();
-        map.insert(
-          "filename".to_owned(),
-          MessageTransport::success(&inputs.filename),
-        );
+        map.insert("filename".to_owned(), MessageTransport::success(&inputs.filename));
         map
       }
     }

@@ -121,10 +121,7 @@ impl Transaction {
       if self.ports.is_waiting(&sender.to) {
         self.ports.set_idle(&sender.to);
         if sender.from.is_nslink() {
-          let def = self
-            .model
-            .read()
-            .get_component_definition(sender.to.get_instance());
+          let def = self.model.read().get_component_definition(sender.to.get_instance());
           if def.is_none() {
             warn!(
               "Invalid connection: {}. Downstream doesn't exist in schematic model.",
@@ -193,25 +190,16 @@ mod tests {
     let schematic_name = "Test";
     let mut schematic_def = new_schematic(schematic_name);
     schematic_def.providers.push("test-namespace".to_owned());
-    schematic_def.instances.insert(
-      REF_ID.to_owned(),
-      ComponentDefinition::new("test-namespace", "log"),
-    );
+    schematic_def
+      .instances
+      .insert(REF_ID.to_owned(), ComponentDefinition::new("test-namespace", "log"));
     schematic_def
       .connections
-      .push(ConnectionDefinition::from_v0_str(&format!(
-        "<>=>{}[input]",
-        REF_ID
-      ))?);
+      .push(ConnectionDefinition::from_v0_str(&format!("<>=>{}[input]", REF_ID))?);
     schematic_def
       .connections
-      .push(ConnectionDefinition::from_v0_str(&format!(
-        "{}[output]=><>",
-        REF_ID
-      ))?);
-    Ok(Arc::new(RwLock::new(SchematicModel::try_from(
-      schematic_def,
-    )?)))
+      .push(ConnectionDefinition::from_v0_str(&format!("{}[output]=><>", REF_ID))?);
+    Ok(Arc::new(RwLock::new(SchematicModel::try_from(schematic_def)?)))
   }
 
   #[test_logger::test]
@@ -231,19 +219,12 @@ mod tests {
     assert!(transaction.ports.is_port_ready(&to));
     println!("taking from port");
     let output = transaction.ports.take_from_port(&to);
-    assert_eq!(
-      output,
-      Some(MessageTransport::Success(Success::MessagePack(vec![])))
-    );
-    transaction.ports.receive(
-      &connection,
-      Packet::V0(Payload::Exception("!!".into())).into(),
-    );
+    assert_eq!(output, Some(MessageTransport::Success(Success::MessagePack(vec![]))));
+    transaction
+      .ports
+      .receive(&connection, Packet::V0(Payload::Exception("!!".into())).into());
     let output = transaction.ports.take_from_port(&to);
-    assert!(matches!(
-      output,
-      Some(MessageTransport::Failure(Failure::Exception(_)))
-    ));
+    assert!(matches!(output, Some(MessageTransport::Failure(Failure::Exception(_)))));
 
     Ok(())
   }

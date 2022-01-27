@@ -51,9 +51,7 @@ pub(crate) async fn handle_command(opts: RunCommand) -> Result<()> {
   let _guard = vino_provider_cli::init_logging(&opts.logging.name("vow"));
 
   debug!("Loading wasm {}", opts.wasm);
-  let component =
-    vino_provider_wasm::helpers::load_wasm(&opts.wasm, opts.pull.latest, &opts.pull.insecure)
-      .await?;
+  let component = vino_provider_wasm::helpers::load_wasm(&opts.wasm, opts.pull.latest, &opts.pull.insecure).await?;
 
   let provider = Provider::try_load(&component, 1, None, Some((&opts.wasi).into()), None)?;
 
@@ -79,10 +77,7 @@ pub(crate) async fn handle_command(opts: RunCommand) -> Result<()> {
       let mut payload = TransportMap::from_json_output(&line)?;
       payload.transpose_output_name();
       let stream = provider
-        .invoke(
-          Entity::component_direct(opts.component_name.clone()),
-          payload,
-        )
+        .invoke(Entity::component_direct(opts.component_name.clone()), payload)
         .await
         .map_err(VowError::ComponentPanic)?;
       print_stream_json(stream, opts.raw).await?;
@@ -98,10 +93,7 @@ pub(crate) async fn handle_command(opts: RunCommand) -> Result<()> {
     data_map.merge(rest_arg_map);
 
     let stream = provider
-      .invoke(
-        Entity::component_direct(opts.component_name.clone()),
-        data_map,
-      )
+      .invoke(Entity::component_direct(opts.component_name.clone()), data_map)
       .await
       .map_err(VowError::ComponentPanic)?;
     print_stream_json(stream, opts.raw).await?;

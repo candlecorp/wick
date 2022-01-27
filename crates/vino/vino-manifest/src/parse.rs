@@ -60,10 +60,7 @@ pub(crate) fn parse_connection_target_v0(s: &str) -> Result<v0::ConnectionTarget
   })
 }
 
-fn parse_from_or_sender(
-  from: &str,
-  default_port: Option<&str>,
-) -> Result<v0::ConnectionTargetDefinition> {
+fn parse_from_or_sender(from: &str, default_port: Option<&str>) -> Result<v0::ConnectionTargetDefinition> {
   match parse_target_v0(from) {
     Ok((from_ref, from_port)) => Ok(v0::ConnectionTargetDefinition {
       port: from_port

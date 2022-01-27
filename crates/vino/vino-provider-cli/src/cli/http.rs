@@ -34,9 +34,7 @@ pub(super) async fn start_http_server(
   let web_service = vino_http::config().allow_all_origins().enable(provider);
 
   if options.ca.is_some() || options.pem.is_some() || options.key.is_some() {
-    info!(
-      "HTTPS server is temporarily disabled and serving requests over HTTP1 is for testing only."
-    );
+    info!("HTTPS server is temporarily disabled and serving requests over HTTP1 is for testing only.");
   }
 
   let (tx, mut rx) = tokio::sync::mpsc::channel::<ServerMessage>(1);

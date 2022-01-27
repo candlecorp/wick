@@ -26,10 +26,7 @@ impl From<Error> for NativeComponentError {
 }
 
 impl RedisConnection {
-  pub async fn run_cmd<T: FromRedisValue + std::fmt::Debug>(
-    &self,
-    cmd: &mut redis::Cmd,
-  ) -> RedisResult<T> {
+  pub async fn run_cmd<T: FromRedisValue + std::fmt::Debug>(&self, cmd: &mut redis::Cmd) -> RedisResult<T> {
     let mut con = self.0.write().await;
     let now = Instant::now();
     let result: Result<T> = cmd
@@ -58,17 +55,11 @@ pub struct Provider {
 }
 
 impl Provider {
-  pub fn default() -> Self {
-    Self {
-      context: Arc::new(RwLock::new(State::default())),
-    }
-  }
   pub fn new() -> Self {
     Self::default()
   }
   pub async fn connect(&self, namespace: String, url: String) -> Result<()> {
-    let client = redis::Client::open(url.clone())
-      .map_err(|e| Error::Init(format!("connection to {}: {}", url, e)))?;
+    let client = redis::Client::open(url.clone()).map_err(|e| Error::Init(format!("connection to {}: {}", url, e)))?;
 
     let connection = client
       .get_async_connection()
@@ -78,10 +69,7 @@ impl Provider {
     let context = self.context.write().await;
 
     let mut update_map = context.connections.write().await;
-    update_map.insert(
-      namespace,
-      Arc::new(RedisConnection(RwLock::new(connection))),
-    );
+    update_map.insert(namespace, Arc::new(RedisConnection(RwLock::new(connection))));
     Ok(())
   }
 }
@@ -138,9 +126,7 @@ mod integration {
 
   async fn key_get(provider: &Provider, key: &str) -> Result<String> {
     debug!("key-get:{}", key);
-    let payload = key_get::Inputs {
-      key: key.to_owned(),
-    };
+    let payload = key_get::Inputs { key: key.to_owned() };
 
     let mut outputs: key_get::Outputs = provider
       .invoke(Entity::component_direct("key-get"), payload.into())
@@ -167,9 +153,7 @@ mod integration {
 
   async fn exists(provider: &Provider, key: &str) -> Result<bool> {
     debug!("exists:{}", key);
-    let payload = exists::Inputs {
-      key: key.to_owned(),
-    };
+    let payload = exists::Inputs { key: key.to_owned() };
 
     let mut outputs: exists::Outputs = provider
       .invoke(Entity::component_direct("exists"), payload.into())
@@ -250,9 +234,7 @@ mod integration {
 
   async fn set_get(provider: &Provider, key: &str) -> Result<Vec<String>> {
     debug!("set-get:{}", key);
-    let payload = set_get::Inputs {
-      key: key.to_owned(),
-    };
+    let payload = set_get::Inputs { key: key.to_owned() };
 
     let mut outputs: set_get::Outputs = provider
       .invoke(Entity::component_direct("set-get"), payload.into())
@@ -264,12 +246,7 @@ mod integration {
     Ok(actual)
   }
 
-  async fn set_scan(
-    provider: &Provider,
-    key: &str,
-    cursor: &str,
-    count: u32,
-  ) -> Result<(String, Vec<String>)> {
+  async fn set_scan(provider: &Provider, key: &str, cursor: &str, count: u32) -> Result<(String, Vec<String>)> {
     debug!("set-scan:{}", key);
     let payload = set_scan::Inputs {
       key: key.to_owned(),
@@ -307,8 +284,7 @@ mod integration {
 
   async fn get_default_provider() -> Result<Provider> {
     let provider = Provider::default();
-    let url = std::env::var(crate::REDIS_URL_ENV.to_owned())
-      .unwrap_or_else(|_| "redis://0.0.0.0:6379".to_owned());
+    let url = std::env::var(crate::REDIS_URL_ENV.to_owned()).unwrap_or_else(|_| "redis://0.0.0.0:6379".to_owned());
     provider.connect("default".to_owned(), url).await?;
     Ok(provider)
   }

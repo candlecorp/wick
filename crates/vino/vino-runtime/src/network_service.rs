@@ -13,8 +13,8 @@ use vino_manifest::Loadable;
 use crate::dev::prelude::validator::NetworkValidator;
 use crate::dev::prelude::*;
 use crate::network_service::initialize::{
-  initialize_providers, initialize_schematics, start_schematic_services, start_self_network,
-  update_providers, Initialize, ProviderInitOptions,
+  initialize_providers, initialize_schematics, start_schematic_services, start_self_network, update_providers,
+  Initialize, ProviderInitOptions,
 };
 
 type Result<T> = std::result::Result<T, NetworkError>;
@@ -101,13 +101,7 @@ impl NetworkService {
 
     self.state.write().replace(state);
 
-    initialize_schematics(
-      &inner_model,
-      &address_map,
-      timeout,
-      &provider_map,
-      &model_map,
-    )?;
+    initialize_schematics(&inner_model, &address_map, timeout, &provider_map, &model_map)?;
     self.finalize(model_map)?;
     Ok(())
   }
@@ -137,11 +131,7 @@ impl NetworkService {
   }
 
   // #[async_recursion::async_recursion]
-  pub(crate) async fn init_from_manifest(
-    &self,
-    location: &str,
-    opts: ProviderInitOptions,
-  ) -> Result<()> {
+  pub(crate) async fn init_from_manifest(&self, location: &str, opts: ProviderInitOptions) -> Result<()> {
     let bytes = vino_loader::get_bytes(location, opts.allow_latest, &opts.allowed_insecure).await?;
     let manifest = vino_manifest::HostManifest::load_from_bytes(&bytes)?;
     let def = NetworkDefinition::from(manifest.network());
@@ -225,16 +215,9 @@ impl InvocationHandler for NetworkService {
         match schematic_model {
           Some(schematic_model) => {
             let signature = {
-              schematic_model
-                .read()
-                .get_signature()
-                .cloned()
-                .ok_or_else(|| {
-                  NetworkError::UnresolvableNetwork(format!(
-                    "Schematic '{}' does not have a signature",
-                    name
-                  ))
-                })?
+              schematic_model.read().get_signature().cloned().ok_or_else(|| {
+                NetworkError::UnresolvableNetwork(format!("Schematic '{}' does not have a signature", name))
+              })?
             };
             let mut scw = state.model.write();
             scw
@@ -267,10 +250,7 @@ impl InvocationHandler for NetworkService {
   fn invoke(
     &self,
     msg: InvocationMessage,
-  ) -> std::result::Result<
-    BoxFuture<std::result::Result<InvocationResponse, ProviderError>>,
-    ProviderError,
-  > {
+  ) -> std::result::Result<BoxFuture<std::result::Result<InvocationResponse, ProviderError>>, ProviderError> {
     let tx_id = msg.get_tx_id().to_owned();
 
     let schematic_name = match msg.get_target() {

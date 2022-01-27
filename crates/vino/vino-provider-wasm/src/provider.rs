@@ -27,8 +27,7 @@ pub struct Provider {
   pool: Arc<WasmHost>,
 }
 
-pub type HostLinkCallback =
-  dyn Fn(&str, &str, TransportMap) -> Result<Vec<TransportWrapper>, LinkError> + Sync + Send;
+pub type HostLinkCallback = dyn Fn(&str, &str, TransportMap) -> Result<Vec<TransportWrapper>, LinkError> + Sync + Send;
 
 impl Provider {
   pub fn try_load(
@@ -66,9 +65,7 @@ impl Provider {
     }
     let host = builder.build(module)?;
 
-    Ok(Self {
-      pool: Arc::new(host),
-    })
+    Ok(Self { pool: Arc::new(host) })
   }
 }
 

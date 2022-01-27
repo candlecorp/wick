@@ -35,16 +35,10 @@ impl NetworkModel {
   }
 
   pub(crate) fn get_schematic(&self, name: &str) -> Option<&Arc<RwLock<SchematicModel>>> {
-    self
-      .schematics
-      .iter()
-      .find(|sc| sc.read().get_name() == name)
+    self.schematics.iter().find(|sc| sc.read().get_name() == name)
   }
 
-  pub(crate) fn update_providers(
-    &mut self,
-    providers: HashMap<String, ProviderModel>,
-  ) -> Result<()> {
+  pub(crate) fn update_providers(&mut self, providers: HashMap<String, ProviderModel>) -> Result<()> {
     trace!(
       "MODEL:NETWORK:PROVIDERS:[{}]",
       providers.iter().map(|(ns, _)| ns).join(", "),
@@ -59,11 +53,7 @@ impl NetworkModel {
     Ok(())
   }
 
-  pub(crate) fn update_self_component(
-    &mut self,
-    name: String,
-    signature: ComponentSignature,
-  ) -> Result<()> {
+  pub(crate) fn update_self_component(&mut self, name: String, signature: ComponentSignature) -> Result<()> {
     let model = self
       .providers
       .entry(name.clone())
@@ -101,9 +91,7 @@ impl NetworkModel {
     for schematic in &self.schematics {
       schematic.write().finalize()?;
     }
-    self.state = Some(LoadedState {
-      provider_signatures,
-    });
+    self.state = Some(LoadedState { provider_signatures });
     Ok(())
   }
 

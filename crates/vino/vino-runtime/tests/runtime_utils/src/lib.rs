@@ -1,8 +1,6 @@
 use std::fs;
 
-use vino_manifest::{
-  HostManifest, Loadable, NetworkDefinition, NetworkManifest, SchematicDefinition,
-};
+use vino_manifest::{HostManifest, Loadable, NetworkDefinition, NetworkManifest, SchematicDefinition};
 use vino_runtime::{Network, NetworkBuilder};
 use vino_wascap::KeyPair;
 #[macro_use]
@@ -46,9 +44,9 @@ pub async fn init_network_from_yaml(path: &str) -> anyhow::Result<(Network, Stri
 
 #[allow(dead_code)]
 pub fn load_network_manifest(path: &str) -> anyhow::Result<NetworkDefinition> {
-  let manifest = NetworkManifest::V0(vino_manifest::v0::NetworkManifest::from_yaml(
-    &fs::read_to_string(path)?,
-  )?);
+  let manifest = NetworkManifest::V0(vino_manifest::v0::NetworkManifest::from_yaml(&fs::read_to_string(
+    path,
+  )?)?);
   let def = NetworkDefinition::from(manifest);
   debug!("Manifest loaded");
   Ok(def)

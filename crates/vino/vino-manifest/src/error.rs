@@ -57,11 +57,7 @@ pub enum ManifestError {
 
   /// Error deserializing default value.
   #[error("Error deserializing default value for connection: {0}=>{1} - Error was: '{2}'")]
-  DefaultsError(
-    ConnectionTargetDefinition,
-    ConnectionTargetDefinition,
-    String,
-  ),
+  DefaultsError(ConnectionTargetDefinition, ConnectionTargetDefinition, String),
 
   /// Error parsing or serializing Sender data.
   #[error("Error parsing or serializing Sender data: {0}")]

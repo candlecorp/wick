@@ -40,15 +40,14 @@
   clippy::nonstandard_macro_braces,
   clippy::rc_mutex,
   clippy::unwrap_or_else_default,
-  // next version, see: https://github.com/rust-lang/rust-clippy/blob/master/CHANGELOG.md
-  // clippy::manual_split_once,
-  // clippy::derivable_impls,
-  // clippy::needless_option_as_deref,
-  // clippy::iter_not_returning_iterator,
-  // clippy::same_name_method,
-  // clippy::manual_assert,
-  // clippy::non_send_fields_in_send_ty,
-  // clippy::equatable_if_let,
+  clippy::manual_split_once,
+  clippy::derivable_impls,
+  clippy::needless_option_as_deref,
+  clippy::iter_not_returning_iterator,
+  clippy::same_name_method,
+  clippy::manual_assert,
+  clippy::non_send_fields_in_send_ty,
+  clippy::equatable_if_let,
   bad_style,
   clashing_extern_declarations,
   const_err,
@@ -83,6 +82,7 @@
   while_true,
   missing_docs
 )]
+#![allow(unused_attributes)]
 // !!END_LINTS
 // Add exceptions here
 #![allow()]
@@ -117,8 +117,8 @@ pub use network_definition::NetworkDefinition;
 /// A version-normalized format of the schematic manifest for development.
 pub mod schematic_definition;
 pub use schematic_definition::{
-  ComponentDefinition, ConnectionDefinition, ConnectionTargetDefinition, ProviderDefinition,
-  ProviderKind, SchematicDefinition,
+  ComponentDefinition, ConnectionDefinition, ConnectionTargetDefinition, ProviderDefinition, ProviderKind,
+  SchematicDefinition,
 };
 
 pub use parse::parse_id;
@@ -166,12 +166,7 @@ impl NetworkManifest {
   /// Get a list of [SchematicManifest]s from the [NetworkManifest]
   pub fn schematics(&self) -> Vec<SchematicManifest> {
     match self {
-      NetworkManifest::V0(network) => network
-        .schematics
-        .iter()
-        .cloned()
-        .map(|s| s.into())
-        .collect(),
+      NetworkManifest::V0(network) => network.schematics.iter().cloned().map(|s| s.into()).collect(),
     }
   }
 }
@@ -224,12 +219,9 @@ impl Loadable<HostManifest> for HostManifest {
     let raw: serde_yaml::Value = from_yaml(src)?;
     debug!("Yaml parsed successfully");
     let raw_version = raw.get("version").ok_or(Error::NoVersion)?;
-    let version = raw_version.as_i64().unwrap_or_else(|| -> i64 {
-      raw_version
-        .as_str()
-        .and_then(|s| s.parse::<i64>().ok())
-        .unwrap_or(-1)
-    });
+    let version = raw_version
+      .as_i64()
+      .unwrap_or_else(|| -> i64 { raw_version.as_str().and_then(|s| s.parse::<i64>().ok()).unwrap_or(-1) });
     match version {
       0 => Ok(HostManifest::V0(from_yaml(src)?)),
       -1 => Err(Error::NoVersion),

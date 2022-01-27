@@ -14,5 +14,15 @@
     "vino-keyvalue-redis/test-integration",
     "vino-native-api-0/provider",
     "vino-native-api-0/native"
+  ],
+  "rust-analyzer.rustfmt.overrideCommand": [
+    "rustup",
+    "run",
+    "nightly",
+    "--",
+    "rustfmt",
+    "--edition",
+    "2021",
+    "--"
   ]
 }

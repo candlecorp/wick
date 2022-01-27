@@ -446,10 +446,7 @@ pub mod key_set {
 
       map.insert("value".to_owned(), MessageTransport::success(&inputs.value));
 
-      map.insert(
-        "expires".to_owned(),
-        MessageTransport::success(&inputs.expires),
-      );
+      map.insert("expires".to_owned(), MessageTransport::success(&inputs.expires));
 
       map
     }
@@ -588,10 +585,7 @@ pub mod list_add {
       let mut map = TransportMap::new();
       map.insert("key".to_owned(), MessageTransport::success(&inputs.key));
 
-      map.insert(
-        "values".to_owned(),
-        MessageTransport::success(&inputs.values),
-      );
+      map.insert("values".to_owned(), MessageTransport::success(&inputs.values));
 
       map
     }
@@ -1027,10 +1021,7 @@ pub mod set_add {
       let mut map = TransportMap::new();
       map.insert("key".to_owned(), MessageTransport::success(&inputs.key));
 
-      map.insert(
-        "values".to_owned(),
-        MessageTransport::success(&inputs.values),
-      );
+      map.insert("values".to_owned(), MessageTransport::success(&inputs.values));
 
       map
     }
@@ -1173,10 +1164,7 @@ pub mod set_contains {
       let mut map = TransportMap::new();
       map.insert("key".to_owned(), MessageTransport::success(&inputs.key));
 
-      map.insert(
-        "member".to_owned(),
-        MessageTransport::success(&inputs.member),
-      );
+      map.insert("member".to_owned(), MessageTransport::success(&inputs.member));
 
       map
     }
@@ -1451,10 +1439,7 @@ pub mod set_remove {
       let mut map = TransportMap::new();
       map.insert("key".to_owned(), MessageTransport::success(&inputs.key));
 
-      map.insert(
-        "values".to_owned(),
-        MessageTransport::success(&inputs.values),
-      );
+      map.insert("values".to_owned(), MessageTransport::success(&inputs.values));
 
       map
     }
@@ -1600,10 +1585,7 @@ pub mod set_scan {
       let mut map = TransportMap::new();
       map.insert("key".to_owned(), MessageTransport::success(&inputs.key));
 
-      map.insert(
-        "cursor".to_owned(),
-        MessageTransport::success(&inputs.cursor),
-      );
+      map.insert("cursor".to_owned(), MessageTransport::success(&inputs.cursor));
 
       map.insert("count".to_owned(), MessageTransport::success(&inputs.count));
 

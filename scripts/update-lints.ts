@@ -20,23 +20,28 @@ const replacementCandidates = ["lib.rs", "main.rs"];
 
 crates
   .filter((crate) => !crate.startsWith("test"))
-  .forEach((crate) => {
-    replacementCandidates.forEach((file) => {
-      const relativePath = path.join(crate, "src", file);
-      const candidatePath = path.join(crateDir, relativePath);
-      if (!fs.existsSync(candidatePath)) {
-        // console.log(`No file found at ${candidatePath}...`);
-      } else {
-        let rustSrc = fs.readFileSync(candidatePath, "utf-8");
-        let newSrc = rustSrc;
-        if (rustSrc.match(replaceRegex)) {
-          console.log(`UPDATING: ${relativePath}`);
-          newSrc = rustSrc.replace(replaceRegex, denyOnlyLints);
-        } else {
-          console.log(`ADDING: ${relativePath}`);
-          newSrc = [completeLints, rustSrc].join("\n");
-        }
-        fs.writeFileSync(candidatePath, newSrc);
-      }
-    });
+  .forEach((intermediateDir) => {
+    const subCrateDir = path.join(crateDir, intermediateDir);
+    fs.readdirSync(subCrateDir)
+      .filter((crate) => !crate.startsWith("test"))
+      .forEach((crate) => {
+        replacementCandidates.forEach((file) => {
+          const relativePath = path.join(crate, "src", file);
+          const candidatePath = path.join(subCrateDir, relativePath);
+          if (!fs.existsSync(candidatePath)) {
+            // console.log(`No file found at ${candidatePath}...`);
+          } else {
+            let rustSrc = fs.readFileSync(candidatePath, "utf-8");
+            let newSrc = rustSrc;
+            if (rustSrc.match(replaceRegex)) {
+              console.log(`UPDATING: ${relativePath}`);
+              newSrc = rustSrc.replace(replaceRegex, denyOnlyLints);
+            } else {
+              console.log(`ADDING: ${relativePath}`);
+              newSrc = [completeLints, rustSrc].join("\n");
+            }
+            fs.writeFileSync(candidatePath, newSrc);
+          }
+        });
+      });
   });

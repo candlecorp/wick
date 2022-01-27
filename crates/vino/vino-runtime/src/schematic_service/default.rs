@@ -8,10 +8,9 @@ pub(crate) fn make_default_transport(json: &serde_json::Value, message: &str) ->
   process_default(Cow::Borrowed(json), message).map_or(
     MessageTransport::error("Error processing default value"),
     |result| {
-      mp_serialize(&result).map_or(
-        MessageTransport::error("Error serializing default value"),
-        |bytes| MessageTransport::Success(Success::MessagePack(bytes)),
-      )
+      mp_serialize(&result).map_or(MessageTransport::error("Error serializing default value"), |bytes| {
+        MessageTransport::Success(Success::MessagePack(bytes))
+      })
     },
   )
 }

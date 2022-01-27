@@ -18,9 +18,7 @@ pub struct Provider {
 
 impl Provider {
   pub fn default() -> Self {
-    Self {
-      context: Context {},
-    }
+    Self { context: Context {} }
   }
 }
 

@@ -49,19 +49,12 @@ impl Network {
     Ok(())
   }
 
-  pub async fn request<T, U>(
-    &self,
-    schematic: T,
-    origin: Entity,
-    payload: U,
-  ) -> Result<TransportStream>
+  pub async fn request<T, U>(&self, schematic: T, origin: Entity, payload: U) -> Result<TransportStream>
   where
     T: AsRef<str> + Send + Sync,
     U: TryInto<TransportMap> + Send + Sync,
   {
-    self
-      .request_with_data(schematic, origin, payload, None)
-      .await
+    self.request_with_data(schematic, origin, payload, None).await
   }
 
   pub async fn request_with_data<T, U>(
@@ -81,11 +74,7 @@ impl Network {
       .try_into()
       .map_err(|_| RuntimeError::Serialization("Could not serialize input payload".to_owned()))?;
 
-    let invocation = Invocation::new(
-      origin,
-      Entity::Schematic(schematic.as_ref().to_owned()),
-      payload,
-    );
+    let invocation = Invocation::new(origin, Entity::Schematic(schematic.as_ref().to_owned()), payload);
     let msg = InvocationMessage::with_data(invocation, data.unwrap_or_default());
 
     let response = tokio::time::timeout(self.timeout, self.addr.invoke(msg)?)
@@ -144,10 +133,7 @@ impl NetworkBuilder {
   }
 
   pub fn allow_latest(self, allow_latest: bool) -> Self {
-    Self {
-      allow_latest,
-      ..self
-    }
+    Self { allow_latest, ..self }
   }
 
   pub fn allow_insecure(self, allowed_insecure: Vec<String>) -> Self {

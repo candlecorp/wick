@@ -2,11 +2,10 @@ use std::sync::Arc;
 
 #[allow(unused)]
 pub(crate) use http::header::{
-  ACCESS_CONTROL_ALLOW_CREDENTIALS as ALLOW_CREDENTIALS,
-  ACCESS_CONTROL_ALLOW_HEADERS as ALLOW_HEADERS, ACCESS_CONTROL_ALLOW_METHODS as ALLOW_METHODS,
-  ACCESS_CONTROL_ALLOW_ORIGIN as ALLOW_ORIGIN, ACCESS_CONTROL_EXPOSE_HEADERS as EXPOSE_HEADERS,
-  ACCESS_CONTROL_MAX_AGE as MAX_AGE, ACCESS_CONTROL_REQUEST_HEADERS as REQUEST_HEADERS,
-  ACCESS_CONTROL_REQUEST_METHOD as REQUEST_METHOD, ORIGIN,
+  ACCESS_CONTROL_ALLOW_CREDENTIALS as ALLOW_CREDENTIALS, ACCESS_CONTROL_ALLOW_HEADERS as ALLOW_HEADERS,
+  ACCESS_CONTROL_ALLOW_METHODS as ALLOW_METHODS, ACCESS_CONTROL_ALLOW_ORIGIN as ALLOW_ORIGIN,
+  ACCESS_CONTROL_EXPOSE_HEADERS as EXPOSE_HEADERS, ACCESS_CONTROL_MAX_AGE as MAX_AGE,
+  ACCESS_CONTROL_REQUEST_HEADERS as REQUEST_HEADERS, ACCESS_CONTROL_REQUEST_METHOD as REQUEST_METHOD, ORIGIN,
 };
 use http::{header, HeaderMap, HeaderValue, Method};
 use tracing::debug;
@@ -265,10 +264,7 @@ mod tests {
       let cors = Cors::new(Config::new().expose_headers(vec!["x-request-id"]));
       let headers = cors.__check_preflight(&preflight_headers()).unwrap();
 
-      assert_value_eq!(
-        &headers[EXPOSE_HEADERS],
-        "x-request-id,grpc-message,grpc-status"
-      );
+      assert_value_eq!(&headers[EXPOSE_HEADERS], "x-request-id,grpc-message,grpc-status");
     }
 
     #[test]
@@ -398,16 +394,11 @@ mod tests {
 
     #[test]
     fn expose_headers_are_merged() {
-      let cors: Cors = Config::new()
-        .expose_headers(vec!["x-hello", "custom-1"])
-        .into();
+      let cors: Cors = Config::new().expose_headers(vec!["x-hello", "custom-1"]).into();
 
       let headers = cors.simple(&request_headers()).unwrap();
 
-      assert_value_eq!(
-        &headers[EXPOSE_HEADERS],
-        "grpc-message,grpc-status,x-hello,custom-1"
-      );
+      assert_value_eq!(&headers[EXPOSE_HEADERS], "grpc-message,grpc-status,x-hello,custom-1");
     }
   }
 }

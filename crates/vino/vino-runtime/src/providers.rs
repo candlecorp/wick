@@ -57,10 +57,7 @@ pub(crate) fn initialize_native_provider(namespace: String, seed: u64) -> Provid
   ))
 }
 
-pub(crate) async fn initialize_grpc_provider(
-  provider: ProviderDefinition,
-  namespace: String,
-) -> ProviderInitResult {
+pub(crate) async fn initialize_grpc_provider(provider: ProviderDefinition, namespace: String) -> ProviderInitResult {
   trace!("PROV:GRPC:NS[{}]:REGISTERING", provider.namespace);
 
   let mut service = GrpcProviderService::new(namespace.clone());
@@ -84,12 +81,8 @@ pub(crate) async fn initialize_wasm_provider(
 ) -> ProviderInitResult {
   trace!("PROV:WASM:NS[{}]:REGISTERING", provider.namespace);
 
-  let component = vino_provider_wasm::helpers::load_wasm(
-    &provider.reference,
-    opts.allow_latest,
-    &opts.allowed_insecure,
-  )
-  .await?;
+  let component =
+    vino_provider_wasm::helpers::load_wasm(&provider.reference, opts.allow_latest, &opts.allowed_insecure).await?;
 
   // TODO make threads elastic
   let provider = Arc::new(vino_provider_wasm::provider::Provider::try_load(
@@ -174,8 +167,7 @@ pub(crate) async fn initialize_lattice_provider(
   };
   trace!("PROV:LATTICE:NS[{}]:REGISTERING", provider.namespace);
 
-  let provider =
-    Arc::new(vino_provider_lattice::provider::Provider::new(provider.reference, lattice).await?);
+  let provider = Arc::new(vino_provider_lattice::provider::Provider::new(provider.reference, lattice).await?);
 
   let service = NativeProviderService::new(namespace.clone(), provider);
 

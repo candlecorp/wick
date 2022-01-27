@@ -6,9 +6,10 @@ use futures::FutureExt;
 use nats::asynk::{Connection, Message, Subscription};
 use serde::Deserialize;
 use tokio::time::timeout;
-use vino_codec::messagepack::deserialize;
+use vino_codec::messagepack::{deserialize, serialize};
 
 use crate::error::LatticeError;
+use crate::LatticeRpcResponse;
 
 type Result<T> = std::result::Result<T, LatticeError>;
 
@@ -103,11 +104,7 @@ impl Nats {
     })
   }
 
-  pub(crate) async fn queue_subscribe(
-    &self,
-    topic: String,
-    group: String,
-  ) -> Result<NatsSubscription> {
+  pub(crate) async fn queue_subscribe(&self, topic: String, group: String) -> Result<NatsSubscription> {
     trace!("LATTICE:QSUB[{},{}]", topic, group);
     let sub = self
       .nc
@@ -129,12 +126,9 @@ pub(crate) struct NatsSubscription {
 impl NatsSubscription {
   pub(crate) fn next(&self) -> BoxFuture<Result<Option<NatsMessage>>> {
     let fut = self.inner.next();
-    timeout(
-      self.timeout,
-      fut.map(|msg| msg.map(|msg| NatsMessage { inner: msg })),
-    )
-    .map(|r| r.map_err(LatticeError::WaitTimeout))
-    .boxed()
+    timeout(self.timeout, fut.map(|msg| msg.map(|msg| NatsMessage { inner: msg })))
+      .map(|r| r.map_err(LatticeError::WaitTimeout))
+      .boxed()
   }
   pub(crate) fn next_wait(&self) -> BoxFuture<Option<NatsMessage>> {
     self
@@ -157,7 +151,8 @@ impl From<Message> for NatsMessage {
 }
 
 impl NatsMessage {
-  pub(crate) async fn respond(&self, data: &[u8]) -> Result<()> {
+  pub(crate) async fn respond(&self, response: &LatticeRpcResponse) -> Result<()> {
+    let data = serialize(response).unwrap_or_else(|e| serialize(&LatticeRpcResponse::Error(e.to_string())).unwrap());
     trace!(
       "LATTICE:MSG:RESPOND[{}]:PAYLOAD{:?}",
       self.inner.reply.as_ref().unwrap_or(&"".to_owned()),

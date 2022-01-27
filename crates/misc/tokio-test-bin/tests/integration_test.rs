@@ -1,9 +1,6 @@
 use std::process::Stdio;
 
-use tokio::io::{
-  AsyncBufReadExt,
-  BufReader,
-};
+use tokio::io::{AsyncBufReadExt, BufReader};
 
 #[test_env_log::test(tokio::test)]
 

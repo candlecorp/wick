@@ -3,7 +3,7 @@ use std::convert::TryInto;
 use crate::schematic_definition::SchematicDefinition;
 use crate::{NetworkManifest, ProviderDefinition};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Default, Clone)]
 
 /// The NetworkDefinition struct is a normalized representation of a Vino [NetworkManifest].
 /// It handles the job of translating manifest versions into a consistent data structure.
@@ -42,16 +42,6 @@ impl From<NetworkManifest> for NetworkDefinition {
   fn from(manifest: NetworkManifest) -> Self {
     match manifest {
       NetworkManifest::V0(manifest) => manifest.into(),
-    }
-  }
-}
-
-impl Default for NetworkDefinition {
-  fn default() -> Self {
-    Self {
-      name: None,
-      schematics: vec![],
-      providers: vec![],
     }
   }
 }

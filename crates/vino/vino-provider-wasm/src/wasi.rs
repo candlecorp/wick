@@ -102,16 +102,14 @@ pub fn config_to_wasi(
       wasi.preopened_dirs.push(shellexpand::env(&dir)?.into());
     }
     for map in wasi_cfg.map_dirs {
-      wasi.map_dirs.push((
-        shellexpand::env(&map.0)?.into(),
-        shellexpand::env(&map.1)?.into(),
-      ));
+      wasi
+        .map_dirs
+        .push((shellexpand::env(&map.0)?.into(), shellexpand::env(&map.1)?.into()));
     }
     for env in wasi_cfg.env_vars {
-      wasi.env_vars.push((
-        shellexpand::env(&env.0)?.into(),
-        shellexpand::env(&env.1)?.into(),
-      ));
+      wasi
+        .env_vars
+        .push((shellexpand::env(&env.0)?.into(), shellexpand::env(&env.1)?.into()));
     }
     for argv in wasi_cfg.argv {
       wasi.argv.push(shellexpand::env(&argv)?.into());

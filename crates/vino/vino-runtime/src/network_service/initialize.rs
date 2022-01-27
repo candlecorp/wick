@@ -8,8 +8,7 @@ use vino_lattice::Lattice;
 
 use crate::dev::prelude::*;
 use crate::providers::{
-  initialize_grpc_provider, initialize_lattice_provider, initialize_network_provider,
-  initialize_wasm_provider,
+  initialize_grpc_provider, initialize_lattice_provider, initialize_network_provider, initialize_wasm_provider,
 };
 use crate::VINO_V0_NAMESPACE;
 type Result<T> = std::result::Result<T, NetworkError>;
@@ -67,9 +66,7 @@ pub(crate) fn initialize_schematics(
   Ok(())
 }
 
-pub(crate) fn start_schematic_services(
-  schematics: &[SchematicDefinition],
-) -> HashMap<String, Arc<SchematicService>> {
+pub(crate) fn start_schematic_services(schematics: &[SchematicDefinition]) -> HashMap<String, Arc<SchematicService>> {
   trace!("NETWORK:SCHEMATICS:STARTING");
   let result = map(schematics, |def| {
     let name = def.name.clone();
@@ -102,15 +99,11 @@ pub(crate) fn initialize_providers(
       let namespace = provider.namespace.clone();
 
       let result = match provider.kind {
-        ProviderKind::Network => {
-          initialize_network_provider(provider, namespace, opts.clone()).await
-        }
+        ProviderKind::Network => initialize_network_provider(provider, namespace, opts.clone()).await,
         ProviderKind::Native => unreachable!(), // Should not be handled via this route
         ProviderKind::GrpcUrl => initialize_grpc_provider(provider, namespace).await,
         ProviderKind::Wapc => initialize_wasm_provider(provider, namespace, opts.clone()).await,
-        ProviderKind::Lattice => {
-          initialize_lattice_provider(provider, namespace, opts.clone()).await
-        }
+        ProviderKind::Lattice => initialize_lattice_provider(provider, namespace, opts.clone()).await,
       };
       let channel = result?;
       channels.push(channel);

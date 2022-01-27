@@ -25,8 +25,7 @@ impl RpcHandler for Provider {
   async fn invoke(&self, entity: Entity, payload: TransportMap) -> RpcResult<BoxedTransportStream> {
     trace!("NETWORK_PROVIDER[{}]:INVOKE[{}]", self.network_id, entity);
     let addr = NetworkService::for_id(&self.network_id);
-    let invocation =
-      InvocationMessage::new(Entity::Schematic("<system>".to_owned()), entity, payload);
+    let invocation = InvocationMessage::new(Entity::Schematic("<system>".to_owned()), entity, payload);
     let result: InvocationResponse = addr
       .invoke(invocation)
       .map_err(|e| RpcError::ProviderError(e.to_string()))?
@@ -34,10 +33,7 @@ impl RpcHandler for Provider {
       .map_err(|e| RpcError::ProviderError(e.to_string()))?;
     match result.ok() {
       Ok(stream) => Ok(Box::pin(stream)),
-      Err(msg) => Err(Box::new(RpcError::ProviderError(format!(
-        "Invocation failed: {}",
-        msg
-      )))),
+      Err(msg) => Err(Box::new(RpcError::ProviderError(format!("Invocation failed: {}", msg)))),
     }
   }
 
@@ -61,9 +57,7 @@ mod tests {
   async fn request_log(provider: &Provider, data: &str) -> Result<String> {
     let job_payload = vec![("input", data)].into();
 
-    let mut outputs = provider
-      .invoke(Entity::schematic("simple"), job_payload)
-      .await?;
+    let mut outputs = provider.invoke(Entity::schematic("simple"), job_payload).await?;
     let output = outputs.next().await.unwrap();
     println!("payload from [{}]: {:?}", output.port, output.payload);
     let output_data: String = output.payload.try_into()?;

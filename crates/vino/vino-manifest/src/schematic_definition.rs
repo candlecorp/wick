@@ -220,10 +220,7 @@ impl ConnectionDefinition {
 
   /// Render default JSON template with the passed message.
   pub fn process_default(&self, err: &str) -> Result<Cow<serde_json::Value>> {
-    let json = self
-      .default
-      .as_ref()
-      .ok_or_else(|| Error::NoDefault(self.clone()))?;
+    let json = self.default.as_ref().ok_or_else(|| Error::NoDefault(self.clone()))?;
     process_default(Cow::Borrowed(json), err)
       .map_err(|e| Error::DefaultsError(self.from.clone(), self.to.clone(), e.to_string()))
   }
@@ -244,8 +241,7 @@ pub struct SenderData {
 impl SenderData {
   /// Serialize a passed value into [SenderData].
   pub fn from_value<T: Serialize>(value: &T) -> Result<SenderData> {
-    let value: serde_json::Value =
-      serde_json::to_value(value).map_err(|e| Error::InvalidSenderData(e.to_string()))?;
+    let value: serde_json::Value = serde_json::to_value(value).map_err(|e| Error::InvalidSenderData(e.to_string()))?;
     Ok(SenderData { inner: value })
   }
 
@@ -259,8 +255,7 @@ impl FromStr for SenderData {
   type Err = Error;
 
   fn from_str(s: &str) -> Result<Self> {
-    let value: serde_json::Value =
-      serde_json::from_str(s).map_err(|e| Error::InvalidSenderData(e.to_string()))?;
+    let value: serde_json::Value = serde_json::from_str(s).map_err(|e| Error::InvalidSenderData(e.to_string()))?;
     Ok(SenderData { inner: value })
   }
 }
@@ -319,8 +314,7 @@ impl ConnectionTargetDefinition {
   #[must_use]
   /// Returns true if the target is a componentless data sender or a namespace link.
   pub fn is_sender(&self) -> bool {
-    let is_sender = self.target.instance == crate::parse::SENDER_ID
-      && self.target.port == crate::parse::SENDER_PORT;
+    let is_sender = self.target.instance == crate::parse::SENDER_ID && self.target.port == crate::parse::SENDER_PORT;
     self.is_nslink() || is_sender
   }
 
@@ -400,10 +394,9 @@ impl TryFrom<crate::v0::ConnectionDefinition> for ConnectionDefinition {
     let from: ConnectionTargetDefinition = def.from.try_into()?;
     let to: ConnectionTargetDefinition = def.to.try_into()?;
     let default = match &def.default {
-      Some(json_str) => Some(
-        parse_default(json_str)
-          .map_err(|e| Error::DefaultsError(from.clone(), to.clone(), e.to_string()))?,
-      ),
+      Some(json_str) => {
+        Some(parse_default(json_str).map_err(|e| Error::DefaultsError(from.clone(), to.clone(), e.to_string()))?)
+      }
       None => None,
     };
     Ok(ConnectionDefinition { from, to, default })

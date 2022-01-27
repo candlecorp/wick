@@ -38,15 +38,14 @@
   clippy::nonstandard_macro_braces,
   clippy::rc_mutex,
   clippy::unwrap_or_else_default,
-  // next version, see: https://github.com/rust-lang/rust-clippy/blob/master/CHANGELOG.md
-  // clippy::manual_split_once,
-  // clippy::derivable_impls,
-  // clippy::needless_option_as_deref,
-  // clippy::iter_not_returning_iterator,
-  // clippy::same_name_method,
-  // clippy::manual_assert,
-  // clippy::non_send_fields_in_send_ty,
-  // clippy::equatable_if_let,
+  clippy::manual_split_once,
+  clippy::derivable_impls,
+  clippy::needless_option_as_deref,
+  clippy::iter_not_returning_iterator,
+  clippy::same_name_method,
+  clippy::manual_assert,
+  clippy::non_send_fields_in_send_ty,
+  clippy::equatable_if_let,
   bad_style,
   clashing_extern_declarations,
   const_err,
@@ -81,6 +80,7 @@
   while_true,
   missing_docs
 )]
+#![allow(unused_attributes)]
 // !!END_LINTS
 // Add exceptions here
 #![allow(

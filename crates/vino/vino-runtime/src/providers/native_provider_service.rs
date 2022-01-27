@@ -39,12 +39,7 @@ impl InvocationHandler for NativeProviderService {
   }
 
   fn invoke(&self, msg: InvocationMessage) -> Result<BoxFuture<Result<InvocationResponse>>> {
-    trace!(
-      "{}:INVOKE:[{}]=>[{}]",
-      PREFIX,
-      msg.get_origin(),
-      msg.get_target()
-    );
+    trace!("{}:INVOKE:[{}]=>[{}]", PREFIX, msg.get_origin(), msg.get_target());
 
     let state = self.state.as_ref().unwrap();
     // let provider = clone_box(&*state.provider);
@@ -130,12 +125,8 @@ mod test {
     let user_data = "This is my payload";
 
     let payload = vec![("input", user_data)].into();
-    let invocation: InvocationMessage = Invocation::new(
-      Entity::test("test"),
-      Entity::component_direct("log"),
-      payload,
-    )
-    .into();
+    let invocation: InvocationMessage =
+      Invocation::new(Entity::test("test"), Entity::component_direct("log"), payload).into();
     let response = provider.invoke(invocation)?.await?;
 
     let mut rx = response.ok()?;

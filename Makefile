@@ -73,11 +73,13 @@ readme:
 
 .PHONY: clean
 clean:
+	@rm -rf $(TEST_WASI) $(TEST_WASM)
 	@rm -rf ./build/*
 	@for project in $(MAKEFILE_PROJECTS); do \
 		echo "# Cleaning $$project"; \
 		$(MAKE) -C $$project clean; \
 	done
+	cargo clean
 
 .PHONY: install-release
 install-release: $(BINS)
@@ -106,7 +108,7 @@ $(TEST_WASI):
 wasm: $(TEST_WASM) $(TEST_WASI)
 
 .PHONY: test
-test: wasm
+test: codegen wasm
 	cargo deny check licenses --hide-inclusion-graph
 	cargo build --workspace # necessary to ensure binaries are built
 	cargo test --workspace

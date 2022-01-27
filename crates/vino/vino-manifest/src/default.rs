@@ -192,10 +192,7 @@ mod tests {
 
     let real = process_json(json_str, err, true)?;
 
-    equals!(
-      real,
-      serde_json::to_value(vec!["this".to_owned(), "that".to_owned()])?
-    );
+    equals!(real, serde_json::to_value(vec!["this".to_owned(), "that".to_owned()])?);
 
     Ok(())
   }
@@ -210,10 +207,7 @@ mod tests {
 
     let real = process_json(json_str, err, false)?;
 
-    equals!(
-      real,
-      serde_json::to_value(vec!["this".to_owned(), err.to_owned()])?
-    );
+    equals!(real, serde_json::to_value(vec!["this".to_owned(), err.to_owned()])?);
 
     Ok(())
   }

@@ -148,9 +148,7 @@ impl tower_service::Service<Request<hyper::Body>> for ProviderService {
 }
 
 fn no_content(headers: HeaderMap) -> Response<BoxBody> {
-  let res = Response::builder()
-    .status(StatusCode::NO_CONTENT)
-    .body(empty_body());
+  let res = Response::builder().status(StatusCode::NO_CONTENT).body(empty_body());
   let mut res = res.unwrap();
 
   res.headers_mut().extend(headers);
@@ -181,11 +179,9 @@ impl<'a> RequestKind<'a> {
     let method = req.method();
     let headers = req.headers();
 
-    if let (&Method::OPTIONS, Some(origin), Some(value)) = (
-      method,
-      headers.get(ORIGIN),
-      headers.get(ACCESS_CONTROL_REQUEST_HEADERS),
-    ) {
+    if let (&Method::OPTIONS, Some(origin), Some(value)) =
+      (method, headers.get(ORIGIN), headers.get(ACCESS_CONTROL_REQUEST_HEADERS))
+    {
       return RequestKind::Preflight {
         origin,
         request_headers: value,
@@ -217,7 +213,7 @@ pub fn has_rpc_call(req: &Request<hyper::Body>) -> Option<RequestKind> {
     return None;
   }
 
-  if let Some(command) = parts.next() {
+  parts.next().and_then(|command| {
     debug!("HTTP:COMMAND[{}]", command);
     match command {
       "invoke" => parts.next().map(|component| {
@@ -227,9 +223,7 @@ pub fn has_rpc_call(req: &Request<hyper::Body>) -> Option<RequestKind> {
       "list" => Some(RequestKind::List),
       _ => None,
     }
-  } else {
-    None
-  }
+  })
 }
 
 fn _content_type(headers: &HeaderMap) -> Option<&str> {

@@ -24,8 +24,7 @@ pub async fn make_rpc_client(
   domain: Option<String>,
 ) -> Result<RpcClient, RpcClientError> {
   let url = format!("https://{}:{}", address, port);
-  let uri = Uri::from_str(&url)
-    .map_err(|_| RpcClientError::Other(format!("Could not create URI from: {}", url)))?;
+  let uri = Uri::from_str(&url).map_err(|_| RpcClientError::Other(format!("Could not create URI from: {}", url)))?;
 
   let mut builder = Channel::builder(uri);
 
@@ -65,9 +64,7 @@ pub async fn make_rpc_client(
     .connect()
     .await?;
 
-  Ok(RpcClient::from_channel(InvocationServiceClient::new(
-    channel,
-  )))
+  Ok(RpcClient::from_channel(InvocationServiceClient::new(channel)))
 }
 
 #[derive(Debug)]
@@ -107,20 +104,13 @@ impl RpcClient {
   /// Make a request to the list RPC method
   pub async fn list(&mut self, request: ListRequest) -> Result<ListResponse, RpcClientError> {
     debug!("Making list request");
-    let result = self
-      .inner
-      .list(request)
-      .await
-      .map_err(RpcClientError::ListCallFailed)?;
+    let result = self.inner.list(request).await.map_err(RpcClientError::ListCallFailed)?;
     debug!("List result: {:?}", result);
     Ok(result.into_inner())
   }
 
   /// Send an invoke RPC command with a raw RPC [Invocation] object.
-  pub async fn invoke_raw(
-    &mut self,
-    request: crate::rpc::Invocation,
-  ) -> Result<TransportStream, RpcClientError> {
+  pub async fn invoke_raw(&mut self, request: crate::rpc::Invocation) -> Result<TransportStream, RpcClientError> {
     debug!("Making invocation: {:?}", request);
     let result = self
       .inner

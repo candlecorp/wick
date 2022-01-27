@@ -40,15 +40,14 @@
   clippy::nonstandard_macro_braces,
   clippy::rc_mutex,
   clippy::unwrap_or_else_default,
-  // next version, see: https://github.com/rust-lang/rust-clippy/blob/master/CHANGELOG.md
-  // clippy::manual_split_once,
-  // clippy::derivable_impls,
-  // clippy::needless_option_as_deref,
-  // clippy::iter_not_returning_iterator,
-  // clippy::same_name_method,
-  // clippy::manual_assert,
-  // clippy::non_send_fields_in_send_ty,
-  // clippy::equatable_if_let,
+  clippy::manual_split_once,
+  clippy::derivable_impls,
+  clippy::needless_option_as_deref,
+  clippy::iter_not_returning_iterator,
+  clippy::same_name_method,
+  clippy::manual_assert,
+  clippy::non_send_fields_in_send_ty,
+  clippy::equatable_if_let,
   bad_style,
   clashing_extern_declarations,
   const_err,
@@ -83,6 +82,7 @@
   while_true,
   missing_docs
 )]
+#![allow(unused_attributes)]
 // !!END_LINTS
 // Add exceptions here
 #![allow()]
@@ -112,10 +112,7 @@ pub use error::ClaimsError as Error;
 /// Extract the claims embedded in a [Token].
 pub fn extract_claims(contents: impl AsRef<[u8]>) -> Result<Option<Token<ProviderClaims>>> {
   let module: Module = deserialize_buffer(contents.as_ref())?;
-  let sections: Vec<&CustomSection> = module
-    .custom_sections()
-    .filter(|sect| sect.name() == "jwt")
-    .collect();
+  let sections: Vec<&CustomSection> = module.custom_sections().filter(|sect| sect.name() == "jwt").collect();
 
   if sections.is_empty() {
     Ok(None)
@@ -124,10 +121,7 @@ pub fn extract_claims(contents: impl AsRef<[u8]>) -> Result<Option<Token<Provide
     let claims: Claims<ProviderClaims> = Claims::decode(&jwt)?;
     let hash = compute_hash_without_jwt(module)?;
 
-    let valid_hash = claims
-      .metadata
-      .as_ref()
-      .map_or(false, |meta| meta.module_hash == hash);
+    let valid_hash = claims.metadata.as_ref().map_or(false, |meta| meta.module_hash == hash);
 
     if valid_hash {
       Ok(Some(Token { jwt, claims }))
@@ -143,11 +137,7 @@ pub fn extract_claims(contents: impl AsRef<[u8]>) -> Result<Option<Token<Provide
 /// specification, arbitary sets of bytes can be stored in a WebAssembly module without impacting.
 /// parsers or interpreters. Returns a vector of bytes representing the new WebAssembly module which can.
 /// be saved to a `.wasm` file.
-pub fn embed_claims(
-  orig_bytecode: &[u8],
-  claims: &Claims<ProviderClaims>,
-  kp: &KeyPair,
-) -> Result<Vec<u8>> {
+pub fn embed_claims(orig_bytecode: &[u8], claims: &Claims<ProviderClaims>, kp: &KeyPair) -> Result<Vec<u8>> {
   let mut module: Module = deserialize_buffer(orig_bytecode)?;
   module.clear_custom_section("jwt");
   let cleanbytes = serialize(module)?;

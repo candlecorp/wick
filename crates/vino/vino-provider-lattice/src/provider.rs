@@ -81,9 +81,7 @@ mod tests {
     let lattice = lattice_builder.build().await?;
     let ns = "some_namespace";
 
-    lattice
-      .handle_namespace(ns.to_owned(), get_provider())
-      .await?;
+    lattice.handle_namespace(ns.to_owned(), get_provider()).await?;
 
     let provider = Provider::new(ns.to_owned(), Arc::new(lattice)).await?;
     let user_data = "Hello world";
@@ -111,9 +109,7 @@ mod tests {
     let lattice = lattice_builder.build().await?;
     let ns = "some_namespace";
 
-    lattice
-      .handle_namespace(ns.to_owned(), get_provider())
-      .await?;
+    lattice.handle_namespace(ns.to_owned(), get_provider()).await?;
 
     let provider = Provider::new(ns.to_owned(), Arc::new(lattice)).await?;
     let user_data = "Hello world";
@@ -123,15 +119,10 @@ mod tests {
       MessageTransport::messagepack(user_data),
     )]));
 
-    let mut outputs = provider
-      .invoke(Entity::component(ns, "error"), job_payload)
-      .await?;
+    let mut outputs = provider.invoke(Entity::component(ns, "error"), job_payload).await?;
     let output = outputs.next().await.unwrap();
     println!("payload from [{}]: {:?}", output.port, output.payload);
-    assert_eq!(
-      output.payload,
-      MessageTransport::error("This always errors".to_owned())
-    );
+    assert_eq!(output.payload, MessageTransport::error("This always errors".to_owned()));
     Ok(())
   }
 }

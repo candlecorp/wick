@@ -21,9 +21,7 @@ pub(crate) async fn handle(opts: Options) -> Result<()> {
 
   let mut file = File::open(&opts.module).map_err(ControlError::ReadFailed)?;
   let mut buf = Vec::new();
-  file
-    .read_to_end(&mut buf)
-    .map_err(ControlError::ReadFailed)?;
+  file.read_to_end(&mut buf).map_err(ControlError::ReadFailed)?;
 
   // Extract will return an error if it encounters an invalid hash in the claims
   let claims = vino_wascap::extract_claims(&buf)?;

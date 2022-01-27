@@ -59,11 +59,7 @@ async fn good_wasi_component() -> Result<()> {
   let tempfile = tempdir.join("test_file.txt");
 
   let now = SystemTime::now();
-  let time = now
-    .duration_since(UNIX_EPOCH)
-    .unwrap()
-    .as_millis()
-    .to_string();
+  let time = now.duration_since(UNIX_EPOCH).unwrap().as_millis().to_string();
   debug!("Writing '{}' to test file {:?}", time, tempfile);
   std::fs::write(&tempfile, &time).unwrap();
   std::env::set_var("TEST_TEMPDIR", tempdir);
@@ -99,9 +95,7 @@ async fn wapc_stream() -> Result<()> {
   };
 
   println!("Requesting first run");
-  let mut result = network
-    .request("test", Entity::test("wapc_component"), &data)
-    .await?;
+  let mut result = network.request("test", Entity::test("wapc_component"), &data).await?;
 
   let messages: Vec<TransportWrapper> = result.collect_port("output").await;
   // println!("{:#?}", messages);
@@ -146,9 +140,7 @@ async fn wasm_link_call() -> Result<()> {
   };
 
   println!("Requesting first run");
-  let mut result = network
-    .request("ns-link", Entity::test("ns-link"), &data)
-    .await?;
+  let mut result = network.request("ns-link", Entity::test("ns-link"), &data).await?;
 
   let mut messages: Vec<TransportWrapper> = result.collect_port("output").await;
   assert_eq!(messages.len(), 1);

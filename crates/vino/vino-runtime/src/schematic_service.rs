@@ -112,10 +112,7 @@ impl SchematicService {
   pub(crate) fn start_tx(
     &self,
     tx_id: String,
-  ) -> (
-    UnboundedReceiver<TransactionUpdate>,
-    UnboundedSender<TransactionUpdate>,
-  ) {
+  ) -> (UnboundedReceiver<TransactionUpdate>, UnboundedSender<TransactionUpdate>) {
     let mut lock = self.state.write();
     match lock.as_mut() {
       Some(state) => {
@@ -165,18 +162,10 @@ impl SchematicService {
     let model = model.read();
     let err = SchematicError::InstanceNotFound(instance.to_owned());
     if !model.has_component(&component) {
-      warn!(
-        "SC[{}]: {} does not have a valid model.",
-        self.name, instance
-      );
+      warn!("SC[{}]: {} does not have a valid model.", self.name, instance);
       return Err(err);
     }
-    trace!(
-      "SC[{}]:INSTANCE[{}]->[{}]",
-      self.name,
-      instance,
-      component.id()
-    );
+    trace!("SC[{}]:INSTANCE[{}]->[{}]", self.name, instance, component.id());
     let channel = self.get_provider_channel(&component.namespace)?;
     Ok(channel.recipient.clone())
   }
@@ -185,10 +174,7 @@ impl SchematicService {
     let log_prefix = format!("SC[{}]:OUTPUT:{}:", self.name, msg.port);
 
     let defs = if msg.port.matches_port(vino_transport::COMPONENT_ERROR) {
-      error!(
-        "{}Component-wide error received: {}",
-        log_prefix, msg.payload
-      );
+      error!("{}Component-wide error received: {}", log_prefix, msg.payload);
       get_downstream_connections(&self.get_model(), msg.port.get_instance())
     } else {
       trace!("{}Output ready", log_prefix);
@@ -219,12 +205,7 @@ impl SchematicService {
     Ok(())
   }
 
-  pub(crate) async fn short_circuit(
-    &self,
-    tx_id: String,
-    instance: String,
-    payload: MessageTransport,
-  ) -> Result<()> {
+  pub(crate) async fn short_circuit(&self, tx_id: String, instance: String, payload: MessageTransport) -> Result<()> {
     trace!("SC[{}]:{}:BYPASS", self.name, instance);
 
     let outputs = get_outputs(&self.get_model(), &instance);
@@ -243,18 +224,10 @@ impl SchematicService {
 
     for connection in downstreams {
       self
-        .output_message(OutputMessage::new(
-          &tx_id,
-          connection.from.clone(),
-          payload.clone(),
-        ))
+        .output_message(OutputMessage::new(&tx_id, connection.from.clone(), payload.clone()))
         .await?;
       self
-        .output_message(OutputMessage::new(
-          &tx_id,
-          connection.from,
-          MessageTransport::done(),
-        ))
+        .output_message(OutputMessage::new(&tx_id, connection.from, MessageTransport::done()))
         .await?;
     }
 
@@ -322,9 +295,7 @@ impl SchematicService {
       }
       InvocationResponse::Error { tx_id, msg } => {
         warn!("Tx '{}' short-circuiting '{}': {}", tx_id, instance, msg);
-        self
-          .short_circuit(tx_id, instance, MessageTransport::error(msg))
-          .await
+        self.short_circuit(tx_id, instance, MessageTransport::error(msg)).await
       }
     }
   }
@@ -339,8 +310,9 @@ impl SchematicService {
     let result = match target {
       Entity::Schematic(name) => handle_schematic(self, name, msg),
       Entity::Component(_, name) => handle_schematic(self, name, msg),
-      Entity::Reference(reference) => get_component_definition(&self.get_model(), reference)
-        .and_then(|def| handle_schematic(self, &def.id(), msg)),
+      Entity::Reference(reference) => {
+        get_component_definition(&self.get_model(), reference).and_then(|def| handle_schematic(self, &def.id(), msg))
+      }
       _ => Err(SchematicError::FailedPreRequestCondition(
         "Schematic invoked with entity it doesn't handle".into(),
       )),
@@ -349,11 +321,7 @@ impl SchematicService {
     Ok(
       async move {
         match result {
-          Ok(task) => Ok(
-            task
-              .await
-              .map_or_else(|e| inv_error(&tx_id, &e.to_string()), |r| r),
-          ),
+          Ok(task) => Ok(task.await.map_or_else(|e| inv_error(&tx_id, &e.to_string()), |r| r)),
           Err(e) => Ok(inv_error(&tx_id, &e.to_string())),
         }
       }
@@ -439,17 +407,9 @@ fn make_input_packets(
   let mut messages: Vec<InputMessage> = vec![];
   for conn in connections {
     let transport = map.get(conn.from.get_port()).ok_or_else(|| {
-      SchematicError::FailedPreRequestCondition(format!(
-        "Port {} not found in transport payload",
-        conn.from
-      ))
+      SchematicError::FailedPreRequestCondition(format!("Port {} not found in transport payload", conn.from))
     })?;
-    debug!(
-      "SC[{}]:INPUT[{}]:PAYLOAD:{:?}",
-      name,
-      conn.from.get_port(),
-      transport
-    );
+    debug!("SC[{}]:INPUT[{}]:PAYLOAD:{:?}", name, conn.from.get_port(), transport);
     messages.push(InputMessage {
       connection: conn.clone(),
       tx_id: tx_id.to_owned(),

@@ -8,14 +8,9 @@ pub(crate) struct SchematicValidator<'a> {
 
 impl<'a> SchematicValidator<'a> {
   pub(crate) fn new(model: &'a SchematicModel, omit_namespaces: Vec<String>) -> Self {
-    SchematicValidator {
-      model,
-      omit_namespaces,
-    }
+    SchematicValidator { model, omit_namespaces }
   }
-  pub(crate) fn validate_early_errors(
-    model: &'a SchematicModel,
-  ) -> std::result::Result<(), ValidationError> {
+  pub(crate) fn validate_early_errors(model: &'a SchematicModel) -> std::result::Result<(), ValidationError> {
     let validator = SchematicValidator::new(model, vec!["self".to_owned()]);
     let name = model.get_name();
     let results: Vec<ValidationErrorKind> = vec![
@@ -34,9 +29,7 @@ impl<'a> SchematicValidator<'a> {
     }
   }
 
-  pub(crate) fn validate_final_errors(
-    model: &'a SchematicModel,
-  ) -> std::result::Result<(), ValidationError> {
+  pub(crate) fn validate_final_errors(model: &'a SchematicModel) -> std::result::Result<(), ValidationError> {
     let validator = SchematicValidator::new(model, vec![]);
     let name = model.get_name();
 
@@ -70,17 +63,13 @@ impl<'a> SchematicValidator<'a> {
         let from_instance = conn.from.get_instance();
         let from = self.model.get_component_definition(from_instance);
         if from.is_none() && !conn.has_default() && !conn.from.is_system_upstream() {
-          none.push(ValidationErrorKind::DanglingReference(
-            from_instance.to_owned(),
-          ));
+          none.push(ValidationErrorKind::DanglingReference(from_instance.to_owned()));
         }
 
         let to_instance = conn.to.get_instance();
         let to = self.model.get_component_definition(to_instance);
         if to.is_none() && !conn.to.is_system_downstream() {
-          none.push(ValidationErrorKind::DanglingReference(
-            to_instance.to_owned(),
-          ));
+          none.push(ValidationErrorKind::DanglingReference(to_instance.to_owned()));
         }
 
         none
@@ -165,10 +154,7 @@ impl<'a> SchematicValidator<'a> {
   }
 
   fn should_omit_def(&self, def: &ComponentDefinition) -> bool {
-    self
-      .omit_namespaces
-      .iter()
-      .any(|name| name == &def.namespace)
+    self.omit_namespaces.iter().any(|name| name == &def.namespace)
   }
 
   fn assert_component_models(&self) -> Result<()> {
@@ -176,24 +162,19 @@ impl<'a> SchematicValidator<'a> {
       .model
       .get_instances()
       .filter_map(|r| {
-        self.model.get_component_definition(r).map_or(
-          Some(ValidationErrorKind::InstanceNotFound(r.clone())),
-          |def| {
+        self
+          .model
+          .get_component_definition(r)
+          .map_or(Some(ValidationErrorKind::InstanceNotFound(r.clone())), |def| {
             let is_allowed_provider = self.model.is_provider_allowed(&def.namespace);
             if !is_allowed_provider {
-              Some(ValidationErrorKind::MissingProvider(
-                def.id(),
-                def.namespace,
-              ))
+              Some(ValidationErrorKind::MissingProvider(def.id(), def.namespace))
             } else {
               let has_model = self.model.get_component_model(&def.id()).is_some();
               let is_err = !has_model && !self.should_omit_def(&def);
-              is_err.then(|| {
-                ValidationErrorKind::MissingComponentModel(format!("{} ({})", r.clone(), def.id()))
-              })
+              is_err.then(|| ValidationErrorKind::MissingComponentModel(format!("{} ({})", r.clone(), def.id())))
             }
-          },
-        )
+          })
       })
       .collect();
 
@@ -219,9 +200,7 @@ impl<'a> SchematicValidator<'a> {
     let connection = some_or_bail!(self.model.get_upstream_connection(port), false);
 
     let upstream_ref = connection.from.get_instance();
-    let upstream_connections = self
-      .model
-      .get_upstream_connections_by_instance(upstream_ref);
+    let upstream_connections = self.model.get_upstream_connections_by_instance(upstream_ref);
     for conn in upstream_connections {
       if self._validate_port_has_upstream_input(&conn.to) {
         return true;
@@ -324,16 +303,8 @@ mod tests {
     let expected = ValidationError::new(
       &model.get_name(),
       vec![
-        ValidationErrorKind::InvalidInputPort(
-          first.to.clone(),
-          first.clone(),
-          vec!["input".to_owned()],
-        ),
-        ValidationErrorKind::InvalidOutputPort(
-          second.from.clone(),
-          second.clone(),
-          vec!["output".to_owned()],
-        ),
+        ValidationErrorKind::InvalidInputPort(first.to.clone(), first.clone(), vec!["input".to_owned()]),
+        ValidationErrorKind::InvalidOutputPort(second.from.clone(), second.clone(), vec!["output".to_owned()]),
         ValidationErrorKind::MissingInputConnection("logger".to_owned(), "input".to_owned()),
       ],
     );
@@ -408,10 +379,9 @@ mod tests {
     let schematic_name = "Test";
     let mut schematic_def = new_schematic(schematic_name);
     schematic_def.providers.push("test-namespace".to_owned());
-    schematic_def.instances.insert(
-      "logger".to_owned(),
-      ComponentDefinition::new("test-namespace", "log"),
-    );
+    schematic_def
+      .instances
+      .insert("logger".to_owned(), ComponentDefinition::new("test-namespace", "log"));
     schematic_def.connections.push(ConnectionDefinition {
       from: Target::new(SCHEMATIC_INPUT, "input"),
       to: Target::new("logger", "input"),
@@ -450,9 +420,7 @@ mod tests {
       result,
       Err(ValidationError::new(
         schematic_name,
-        vec![ValidationErrorKind::DanglingReference(
-          "dangling1".to_owned()
-        ),]
+        vec![ValidationErrorKind::DanglingReference("dangling1".to_owned()),]
       ))
     );
 
@@ -482,10 +450,9 @@ mod tests {
   fn test_missing_models() -> TestResult<()> {
     let schematic_name = "Test";
     let mut schematic_def = new_schematic(schematic_name);
-    schematic_def.instances.insert(
-      "logger".to_owned(),
-      ComponentDefinition::new("test-namespace", "log"),
-    );
+    schematic_def
+      .instances
+      .insert("logger".to_owned(), ComponentDefinition::new("test-namespace", "log"));
     let mut model = SchematicModel::try_from(schematic_def)?;
     model.allow_providers(&["test-namespace"]);
     let result = SchematicValidator::validate_final_errors(&model);
@@ -506,10 +473,9 @@ mod tests {
   fn test_missing_providers() -> TestResult<()> {
     let schematic_name = "Test";
     let mut schematic_def = new_schematic(schematic_name);
-    schematic_def.instances.insert(
-      "logger".to_owned(),
-      ComponentDefinition::new("test-namespace", "log"),
-    );
+    schematic_def
+      .instances
+      .insert("logger".to_owned(), ComponentDefinition::new("test-namespace", "log"));
     let model = SchematicModel::try_from(schematic_def)?;
     let result = SchematicValidator::validate_final_errors(&model);
     assert_eq!(
@@ -531,10 +497,9 @@ mod tests {
     let schematic_name = "Test";
     let mut schematic_def = new_schematic(schematic_name);
     schematic_def.providers.push("test-namespace".to_owned());
-    schematic_def.instances.insert(
-      "logger".to_owned(),
-      ComponentDefinition::new("test-namespace", "log"),
-    );
+    schematic_def
+      .instances
+      .insert("logger".to_owned(), ComponentDefinition::new("test-namespace", "log"));
     schematic_def.connections.push(ConnectionDefinition::new(
       Target::new(SCHEMATIC_INPUT, "input"),
       Target::new("logger", "input"),

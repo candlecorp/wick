@@ -79,4 +79,3 @@ pub(super) async fn start_rpc_server(
   tokio::spawn(server);
   Ok((addr, tx))
 }
-

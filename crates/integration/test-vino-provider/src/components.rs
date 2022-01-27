@@ -41,10 +41,7 @@ pub fn get_signature() -> ProviderSignature {
   let mut components = std::collections::HashMap::new();
 
   components.insert("error".to_owned(), generated::error::signature());
-  components.insert(
-    "test-component".to_owned(),
-    generated::test_component::signature(),
-  );
+  components.insert("test-component".to_owned(), generated::test_component::signature());
 
   ProviderSignature {
     name: Some("test-vino-provider".to_owned()),
@@ -236,11 +233,9 @@ pub mod generated {
       ) -> Result<TransportStream, Box<NativeComponentError>> {
         let inputs = populate_inputs(data).map_err(|e| NativeComponentError::new(e.to_string()))?;
         let (outputs, stream) = get_outputs();
-        let result = tokio::spawn(crate::components::test_component::job(
-          inputs, outputs, context,
-        ))
-        .await
-        .map_err(|e| Box::new(NativeComponentError::new(format!("Component error: {}", e))))?;
+        let result = tokio::spawn(crate::components::test_component::job(inputs, outputs, context))
+          .await
+          .map_err(|e| Box::new(NativeComponentError::new(format!("Component error: {}", e))))?;
         match result {
           Ok(_) => Ok(stream),
           Err(e) => Err(Box::new(NativeComponentError::new(e.to_string()))),

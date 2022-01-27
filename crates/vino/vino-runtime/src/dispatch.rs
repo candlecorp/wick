@@ -102,10 +102,7 @@ pub(crate) fn inv_error(tx_id: &str, msg: &str) -> InvocationResponse {
 impl InvocationResponse {
   /// Creates a successful invocation response stream. Response include the receiving end.
   /// of an unbounded channel to listen for future output.
-  pub fn stream(
-    tx_id: String,
-    rx: impl Stream<Item = TransportWrapper> + Send + 'static,
-  ) -> InvocationResponse {
+  pub fn stream(tx_id: String, rx: impl Stream<Item = TransportWrapper> + Send + 'static) -> InvocationResponse {
     InvocationResponse::Stream {
       tx_id,
       rx: TransportStream::new(rx),
@@ -169,9 +166,7 @@ pub(crate) async fn network_invoke_async(
     .get_recipient(&target)
     .map_err(|e| DispatchError::EntityNotAvailable(e.to_string()))?;
 
-  let response = rcpt
-    .invoke(InvocationMessage::new(origin, target, payload))?
-    .await?;
+  let response = rcpt.invoke(InvocationMessage::new(origin, target, payload))?.await?;
   match response {
     InvocationResponse::Stream { rx, .. } => {
       let packets: Vec<TransportWrapper> = rx.collect().await;

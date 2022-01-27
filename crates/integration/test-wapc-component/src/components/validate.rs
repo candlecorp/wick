@@ -35,15 +35,11 @@ static MAXIMUM_LENGTH: usize = 512;
 pub(crate) fn job(input: Inputs, output: OutputPorts) -> JobResult {
   let password = input.input;
   if password.len() < MINIMUM_LENGTH {
-    output
-      .output
-      .done_exception(LengthError::TooShort.to_string())?;
+    output.output.done_exception(LengthError::TooShort.to_string())?;
     return Ok(());
   }
   if password.len() > MAXIMUM_LENGTH {
-    output
-      .output
-      .done_exception(LengthError::TooLong.to_string())?;
+    output.output.done_exception(LengthError::TooLong.to_string())?;
     return Ok(());
   }
   output.output.done(&password)?;

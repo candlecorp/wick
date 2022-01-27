@@ -19,9 +19,9 @@ pub type TestError = anyhow::Error;
 pub use anyhow::{anyhow, Result};
 
 pub async fn init_network_from_yaml(path: &str) -> TestResult<(Network, String)> {
-  let manifest = NetworkManifest::V0(vino_manifest::v0::NetworkManifest::from_yaml(
-    &fs::read_to_string(path)?,
-  )?);
+  let manifest = NetworkManifest::V0(vino_manifest::v0::NetworkManifest::from_yaml(&fs::read_to_string(
+    path,
+  )?)?);
   let def = NetworkDefinition::from(manifest);
   println!("Manifest loaded");
   let kp = KeyPair::new_server();
@@ -37,9 +37,9 @@ pub async fn init_network_from_yaml(path: &str) -> TestResult<(Network, String)>
 }
 
 pub fn load_network_manifest(path: &str) -> TestResult<NetworkDefinition> {
-  let manifest = NetworkManifest::V0(vino_manifest::v0::NetworkManifest::from_yaml(
-    &fs::read_to_string(path)?,
-  )?);
+  let manifest = NetworkManifest::V0(vino_manifest::v0::NetworkManifest::from_yaml(&fs::read_to_string(
+    path,
+  )?)?);
   let def = NetworkDefinition::from(manifest);
   println!("Manifest loaded");
   Ok(def)
@@ -75,31 +75,19 @@ pub async fn vinoc_invoke(
   let mut bin = tokio_test_bin::get_test_bin("vinoc");
   let proc = bin
     .env_clear()
-    .args([
-      "invoke",
-      name,
-      "--port",
-      port.to_string().as_str(),
-      "--trace",
-    ])
+    .args(["invoke", name, "--port", port.to_string().as_str(), "--trace"])
     .args(inputs)
     .stderr(Stdio::inherit());
   println!("Command is {:?}", proc);
   let vinoc_output = proc.output().await?;
 
-  println!(
-    "vinoc STDERR is \n {}",
-    String::from_utf8_lossy(&vinoc_output.stderr)
-  );
+  println!("vinoc STDERR is \n {}", String::from_utf8_lossy(&vinoc_output.stderr));
 
   let string = String::from_utf8_lossy(&vinoc_output.stdout);
   println!("Result from vinoc is {:?}", string);
   let output: Vec<_> = string.trim().split('\n').collect();
   println!("Num lines:{:?}", output.len());
-  let json: Vec<HashMap<String, TransportJson>> = output
-    .iter()
-    .map(|l| serde_json::from_str(l).unwrap())
-    .collect();
+  let json: Vec<HashMap<String, TransportJson>> = output.iter().map(|l| serde_json::from_str(l).unwrap()).collect();
 
   println!("JSON Results: {:?}", json);
 

@@ -22,8 +22,7 @@ use vino_lattice::Lattice;
 pub struct Lattice(); // Dummy struct if "lattice" feature is not enabled
 
 #[cfg(feature = "reflection")]
-pub(crate) const FILE_DESCRIPTOR_SET: &[u8] =
-  include_bytes!("../../vino-rpc/src/generated/descriptors.bin");
+pub(crate) const FILE_DESCRIPTOR_SET: &[u8] = include_bytes!("../../vino-rpc/src/generated/descriptors.bin");
 
 #[derive(Debug)]
 #[must_use]
@@ -49,9 +48,7 @@ pub struct ServerControl {
 
 impl std::fmt::Debug for ServerControl {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    f.debug_struct("ServerControl")
-      .field("addr", &self.addr)
-      .finish()
+    f.debug_struct("ServerControl").field("addr", &self.addr).finish()
   }
 }
 
@@ -105,10 +102,7 @@ pub fn print_info(info: &ServerState) {
 }
 
 /// Starts an RPC and/or an HTTP server for the passed [vino_rpc::RpcHandler].
-pub async fn start_server(
-  provider: SharedRpcHandler,
-  opts: Option<Options>,
-) -> Result<ServerState> {
+pub async fn start_server(provider: SharedRpcHandler, opts: Option<Options>) -> Result<ServerState> {
   debug!("Starting server with options: {:?}", opts);
 
   let opts = opts.unwrap_or_default();

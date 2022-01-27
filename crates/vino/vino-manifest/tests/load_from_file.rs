@@ -101,10 +101,7 @@ fn load_env() -> Result<(), ManifestError> {
   let manifest = HostManifest::load_from_file(&path)?;
 
   let HostManifest::V0(manifest) = manifest;
-  assert_eq!(
-    manifest.network.schematics[0].name,
-    "name_load_manifest_yaml_with_env"
-  );
+  assert_eq!(manifest.network.schematics[0].name, "name_load_manifest_yaml_with_env");
 
   Ok(())
 }

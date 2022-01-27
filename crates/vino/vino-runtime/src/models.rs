@@ -28,15 +28,8 @@ pub(crate) fn get_port_connections(
   model.read().get_port_connections(port).cloned().collect()
 }
 
-pub(crate) fn get_downstream_connections(
-  model: &SharedModel,
-  instance: &str,
-) -> Vec<ConnectionDefinition> {
-  model
-    .read()
-    .get_downstream_connections(instance)
-    .cloned()
-    .collect()
+pub(crate) fn get_downstream_connections(model: &SharedModel, instance: &str) -> Vec<ConnectionDefinition> {
+  model.read().get_downstream_connections(instance).cloned().collect()
 }
 
 pub(crate) fn get_component_definition(

@@ -77,9 +77,7 @@ async fn subnetworks() -> Result<()> {
       "input" => "some input",
   };
 
-  let mut result = network
-    .request("parent", Entity::test("subnetworks"), &data)
-    .await?;
+  let mut result = network.request("parent", Entity::test("subnetworks"), &data).await?;
 
   let mut messages: Vec<TransportWrapper> = result.collect_port("output").await;
   assert_eq!(messages.len(), 1);

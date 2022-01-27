@@ -38,15 +38,14 @@
   clippy::nonstandard_macro_braces,
   clippy::rc_mutex,
   clippy::unwrap_or_else_default,
-  // next version, see: https://github.com/rust-lang/rust-clippy/blob/master/CHANGELOG.md
-  // clippy::manual_split_once,
-  // clippy::derivable_impls,
-  // clippy::needless_option_as_deref,
-  // clippy::iter_not_returning_iterator,
-  // clippy::same_name_method,
-  // clippy::manual_assert,
-  // clippy::non_send_fields_in_send_ty,
-  // clippy::equatable_if_let,
+  clippy::manual_split_once,
+  clippy::derivable_impls,
+  clippy::needless_option_as_deref,
+  clippy::iter_not_returning_iterator,
+  clippy::same_name_method,
+  clippy::manual_assert,
+  clippy::non_send_fields_in_send_ty,
+  clippy::equatable_if_let,
   bad_style,
   clashing_extern_declarations,
   const_err,
@@ -81,6 +80,7 @@
   while_true,
   missing_docs
 )]
+#![allow(unused_attributes)]
 // !!END_LINTS
 // Add exceptions here
 #![allow(missing_docs)]
@@ -129,8 +129,7 @@ impl TestSuite {
 
   pub fn try_from_file(file: PathBuf) -> Result<Self, TestError> {
     let contents = read_to_string(file).map_err(|e| TestError::ReadFailed(e.to_string()))?;
-    let data: Vec<TestData> =
-      serde_yaml::from_str(&contents).map_err(|e| TestError::ParseFailed(e.to_string()))?;
+    let data: Vec<TestData> = serde_yaml::from_str(&contents).map_err(|e| TestError::ParseFailed(e.to_string()))?;
 
     Ok(TestSuite::from_tests(data))
   }
@@ -148,11 +147,7 @@ impl TestSuite {
       self
         .tests
         .iter_mut()
-        .filter(|test| {
-          filters
-            .iter()
-            .any(|filter| test.get_description().contains(filter))
-        })
+        .filter(|test| filters.iter().any(|filter| test.get_description().contains(filter)))
         .collect()
     } else {
       self.tests.iter_mut().collect()
@@ -223,11 +218,7 @@ impl TestData {
 
   #[must_use]
   pub fn get_description(&self) -> String {
-    let separator = if self.description.is_empty() {
-      ""
-    } else {
-      " : "
-    };
+    let separator = if self.description.is_empty() { "" } else { " : " };
     format!("{}{}{}", self.component, separator, self.description)
   }
 }
@@ -254,11 +245,7 @@ pub async fn run_test(
       .map_err(|e| Error::InvocationFailed(e.to_string()));
 
     if let Err(e) = result {
-      test_block.add_test(
-        || false,
-        "Invocation",
-        Some(vec![format!("Invocation failed: {}", e)]),
-      );
+      test_block.add_test(|| false, "Invocation", Some(vec![format!("Invocation failed: {}", e)]));
       harness.add_block(test_block);
       continue;
     }
@@ -277,9 +264,7 @@ pub async fn run_test(
         test_block.add_test(
           || false,
           "Stream length",
-          Some(vec![
-            "Test data included more output than component produced".to_owned(),
-          ]),
+          Some(vec!["Test data included more output than component produced".to_owned()]),
         );
         break;
       }
@@ -289,11 +274,7 @@ pub async fn run_test(
         format!("Actual: {}", actual.port),
         format!("Expected: {}", expected.port),
       ]);
-      test_block.add_test(
-        move || result,
-        format!("Output port name == '{}'", expected.port),
-        diag,
-      );
+      test_block.add_test(move || result, format!("Output port name == '{}'", expected.port), diag);
 
       if let Some(value) = &expected.payload.value {
         let actual_payload = actual.payload.clone();

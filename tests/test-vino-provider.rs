@@ -10,10 +10,7 @@ async fn request() -> anyhow::Result<()> {
   let job_payload = vec![("input", input)].into();
 
   let mut outputs = provider
-    .invoke(
-      vino_entity::Entity::component_direct("test-component"),
-      job_payload,
-    )
+    .invoke(vino_entity::Entity::component_direct("test-component"), job_payload)
     .await?;
   let output = outputs.next().await.unwrap();
   println!("Received payload from [{}]", output.port);

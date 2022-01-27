@@ -175,15 +175,9 @@ impl Into<Packet> for rpc::MessageKind {
           Some(OutputSignal::Done) => Packet::V0(Payload::Done),
           Some(OutputSignal::OpenBracket) => Packet::V0(Payload::OpenBracket),
           Some(OutputSignal::CloseBracket) => Packet::V0(Payload::CloseBracket),
-          _ => Packet::V0(Payload::Error(format!(
-            "Invalid Signal received: {:?}",
-            self.data
-          ))),
+          _ => Packet::V0(Payload::Error(format!("Invalid Signal received: {:?}", self.data))),
         },
-        _ => Packet::V0(Payload::Error(format!(
-          "Invalid Signal received: {:?}",
-          self.data
-        ))),
+        _ => Packet::V0(Payload::Error(format!("Invalid Signal received: {:?}", self.data))),
       },
       Kind::Json => match self.data {
         Some(Data::Json(v)) => Packet::V0(Payload::Json(v)),
@@ -264,9 +258,7 @@ impl TryFrom<vino::TypeSignature> for rpc::TypeSignature {
         provider: provider.unwrap_or_default(),
       }),
     };
-    Ok(Self {
-      signature: Some(sig),
-    })
+    Ok(Self { signature: Some(sig) })
   }
 }
 

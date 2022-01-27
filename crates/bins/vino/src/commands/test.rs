@@ -45,13 +45,9 @@ pub(crate) async fn handle_command(opts: TestCommand) -> Result<()> {
   }
   let _guard = logger::init(&logging.name("vino"));
 
-  let manifest_src = vino_loader::get_bytes(
-    &opts.manifest,
-    opts.host.allow_latest,
-    &opts.host.insecure_registries,
-  )
-  .await
-  .map_err(|e| crate::error::VinoError::ManifestLoadFail(e.to_string()))?;
+  let manifest_src = vino_loader::get_bytes(&opts.manifest, opts.host.allow_latest, &opts.host.insecure_registries)
+    .await
+    .map_err(|e| crate::error::VinoError::ManifestLoadFail(e.to_string()))?;
 
   let manifest = HostDefinition::load_from_bytes(&manifest_src)?;
 

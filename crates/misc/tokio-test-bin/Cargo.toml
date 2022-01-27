@@ -33,4 +33,4 @@ env_logger = "0.9"
 
 [[bin]]
 name = "test_bin"
-path = "src/main.rs"
+path = "src/test_bin.rs"

@@ -107,9 +107,7 @@ impl From<DefaultCliOptions> for Options {
       rpc,
       http,
       timeout: Duration::from_millis(opts.timeout.unwrap_or(5000)),
-      id: opts
-        .id
-        .unwrap_or_else(|| KeyPair::new_server().public_key()),
+      id: opts.id.unwrap_or_else(|| KeyPair::new_server().public_key()),
       lattice,
     }
   }

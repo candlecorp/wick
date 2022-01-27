@@ -32,9 +32,7 @@ pub(crate) async fn handle_command(opts: TestCommand) -> Result<()> {
   let _guard = vino_provider_cli::init_logging(&opts.logging.name("vow"));
 
   debug!("Loading wasm {}", opts.wasm);
-  let component =
-    vino_provider_wasm::helpers::load_wasm(&opts.wasm, opts.pull.latest, &opts.pull.insecure)
-      .await?;
+  let component = vino_provider_wasm::helpers::load_wasm(&opts.wasm, opts.pull.latest, &opts.pull.insecure).await?;
 
   let provider = Provider::try_load(&component, 1, None, Some((&opts.wasi).into()), None)?;
 

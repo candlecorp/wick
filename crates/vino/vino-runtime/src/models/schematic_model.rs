@@ -144,10 +144,7 @@ impl SchematicModel {
       let downstream_signature = match downstream_signature {
         Some(d) => d,
         None => {
-          debug!(
-            "Model {:?} does not have expected port {}",
-            model, downstream_port
-          );
+          debug!("Model {:?} does not have expected port {}", model, downstream_port);
           continue;
         }
       };
@@ -211,10 +208,7 @@ impl SchematicModel {
     self.populate_signature(&[])
   }
 
-  pub(crate) fn get_upstream(
-    &self,
-    port: &ConnectionTargetDefinition,
-  ) -> Option<&ConnectionTargetDefinition> {
+  pub(crate) fn get_upstream(&self, port: &ConnectionTargetDefinition) -> Option<&ConnectionTargetDefinition> {
     self.upstream_links.get(port)
   }
 
@@ -254,10 +248,7 @@ impl SchematicModel {
     self.providers = culled_list;
   }
 
-  pub(crate) fn commit_providers(
-    &mut self,
-    providers: HashMap<String, ProviderModel>,
-  ) -> Result<()> {
+  pub(crate) fn commit_providers(&mut self, providers: HashMap<String, ProviderModel>) -> Result<()> {
     self.update_providers(providers);
     self.partial_initialization()
   }
@@ -275,14 +266,8 @@ impl SchematicModel {
   }
 
   /// Gets a [ComponentModel] by component instance string.
-  pub(crate) fn get_component_model_by_instance(
-    &self,
-    instance: &str,
-  ) -> Option<(String, ComponentModel)> {
-    self
-      .instances
-      .get(instance)
-      .and_then(|id| self.get_component_model(id))
+  pub(crate) fn get_component_model_by_instance(&self, instance: &str) -> Option<(String, ComponentModel)> {
+    self.instances.get(instance).and_then(|id| self.get_component_model(id))
   }
 
   /// Gets a [ComponentModel] by component id.
@@ -306,10 +291,7 @@ impl SchematicModel {
     self.definition.get_component(instance)
   }
 
-  pub(crate) fn get_downstreams(
-    &self,
-    port: &ConnectionTargetDefinition,
-  ) -> Vec<ConnectionTargetDefinition> {
+  pub(crate) fn get_downstreams(&self, port: &ConnectionTargetDefinition) -> Vec<ConnectionTargetDefinition> {
     self
       .definition
       .connections

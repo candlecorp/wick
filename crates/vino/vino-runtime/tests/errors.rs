@@ -14,9 +14,7 @@ async fn panics() -> Result<()> {
   let mut data = HashMap::new();
   data.insert("input", "input");
 
-  let mut result = network
-    .request("panics", Entity::test("panics"), &data)
-    .await?;
+  let mut result = network.request("panics", Entity::test("panics"), &data).await?;
 
   println!("Result: {:?}", result);
   let mut messages: Vec<TransportWrapper> = result.collect_port("output").await;
@@ -25,10 +23,7 @@ async fn panics() -> Result<()> {
 
   let msg: TransportWrapper = messages.pop().unwrap();
   println!("Output: {:?}", msg);
-  assert_eq!(
-    msg.payload,
-    MessageTransport::error("Component error: panic")
-  );
+  assert_eq!(msg.payload, MessageTransport::error("Component error: panic"));
   Ok(())
 }
 
@@ -39,9 +34,7 @@ async fn errors() -> Result<()> {
   let mut data = HashMap::new();
   data.insert("input", "input");
 
-  let mut result = network
-    .request("errors", Entity::test("errors"), &data)
-    .await?;
+  let mut result = network.request("errors", Entity::test("errors"), &data).await?;
 
   println!("Result: {:?}", result);
   let mut messages: Vec<TransportWrapper> = result.collect_port("output").await;
@@ -50,9 +43,6 @@ async fn errors() -> Result<()> {
 
   let msg: TransportWrapper = messages.pop().unwrap();
   println!("Output: {:?}", msg);
-  assert_eq!(
-    msg.payload,
-    MessageTransport::error("This component will always error")
-  );
+  assert_eq!(msg.payload, MessageTransport::error("This component will always error"));
   Ok(())
 }

@@ -11,8 +11,8 @@ pub(crate) mod prelude {
   pub(crate) use tokio_stream::StreamExt;
   pub(crate) use vino_entity::Entity;
   pub(crate) use vino_manifest::{
-    parse_id, ComponentDefinition, ConnectionDefinition, ConnectionTargetDefinition,
-    ProviderDefinition, ProviderKind, SchematicDefinition,
+    parse_id, ComponentDefinition, ConnectionDefinition, ConnectionTargetDefinition, ProviderDefinition, ProviderKind,
+    SchematicDefinition,
   };
   pub(crate) use vino_transport::BoxedTransportStream;
   pub(crate) use vino_transport::{
@@ -34,8 +34,7 @@ pub(crate) mod prelude {
   pub(crate) use crate::prelude::*;
   pub(crate) use crate::providers::network_provider::Provider as NetworkProvider;
   pub(crate) use crate::providers::{
-    initialize_native_provider, start_network_provider, BoxedInvocationHandler, InvocationHandler,
-    ProviderChannel,
+    initialize_native_provider, start_network_provider, BoxedInvocationHandler, InvocationHandler, ProviderChannel,
   };
   pub(crate) use crate::schematic_service::SchematicService;
   pub(crate) use crate::transaction::TransactionUpdate;
@@ -58,9 +57,5 @@ pub(crate) fn join_comma<A>(source: &[A]) -> String
 where
   A: Sized + std::fmt::Display,
 {
-  source
-    .iter()
-    .map(|a| a.to_string())
-    .collect::<Vec<_>>()
-    .join(", ")
+  source.iter().map(|a| a.to_string()).collect::<Vec<_>>().join(", ")
 }

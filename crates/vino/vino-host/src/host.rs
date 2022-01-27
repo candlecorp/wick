@@ -124,14 +124,12 @@ impl Host {
     );
     let seed = self.kp.seed()?;
 
-    let mut network_builder =
-      NetworkBuilder::from_definition(self.manifest.network.clone(), &seed)?;
+    let mut network_builder = NetworkBuilder::from_definition(self.manifest.network.clone(), &seed)?;
     if let Some(lattice) = &self.lattice {
       network_builder = network_builder.lattice(lattice.clone());
     }
     network_builder = network_builder.allow_latest(self.manifest.host.allow_latest);
-    network_builder =
-      network_builder.allow_insecure(self.manifest.host.insecure_registries.clone());
+    network_builder = network_builder.allow_insecure(self.manifest.host.insecure_registries.clone());
     if let Some(lattice) = &self.lattice {
       network_builder = network_builder.lattice(lattice.clone());
     }
@@ -178,12 +176,7 @@ impl Host {
         }),
         None => None,
       },
-      id: self
-        .manifest
-        .host
-        .id
-        .clone()
-        .unwrap_or_else(|| self.get_host_id()),
+      id: self.manifest.host.id.clone().unwrap_or_else(|| self.get_host_id()),
       timeout: self.manifest.host.timeout,
     };
 
@@ -197,12 +190,7 @@ impl Host {
     Ok(metadata)
   }
 
-  pub async fn request<T, U>(
-    &self,
-    schematic: T,
-    payload: U,
-    data: Option<InitData>,
-  ) -> Result<TransportStream>
+  pub async fn request<T, U>(&self, schematic: T, payload: U, data: Option<InitData>) -> Result<TransportStream>
   where
     T: AsRef<str> + Sync + Send,
     U: TryInto<TransportMap> + Send + Sync,
@@ -213,9 +201,7 @@ impl Host {
           .request_with_data(schematic, Entity::host(&self.id), payload, data)
           .await?,
       ),
-      None => Err(crate::Error::InvalidHostState(
-        "No network available".into(),
-      )),
+      None => Err(crate::Error::InvalidHostState("No network available".into())),
     }
   }
 
@@ -258,9 +244,7 @@ impl HostBuilder {
   }
 
   pub fn from_definition(definition: HostDefinition) -> Self {
-    HostBuilder {
-      manifest: definition,
-    }
+    HostBuilder { manifest: definition }
   }
 
   /// Constructs an instance of a Vino host.

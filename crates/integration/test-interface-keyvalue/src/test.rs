@@ -1,8 +1,5 @@
 use anyhow::Result;
-use vino_invocation_server::{
-  bind_new_socket,
-  make_rpc_server,
-};
+use vino_invocation_server::{bind_new_socket, make_rpc_server};
 use vino_rpc::rpc::invocation_service_client::InvocationServiceClient;
 use vino_rpc::rpc::ListRequest;
 use vino_rpc::SharedRpcHandler;

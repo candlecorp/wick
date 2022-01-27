@@ -12,10 +12,7 @@ impl<'a> NetworkValidator<'a> {
 
   pub(crate) fn validate(model: &'a NetworkModel) -> Result<(), NetworkValidationError> {
     let validator = NetworkValidator::new(model);
-    let name = model
-      .get_name()
-      .cloned()
-      .unwrap_or_else(|| "Network".to_owned());
+    let name = model.get_name().cloned().unwrap_or_else(|| "Network".to_owned());
 
     let results: Vec<ValidationErrorKind> = vec![validator.validate_schematics()]
       .into_iter()
@@ -34,9 +31,7 @@ impl<'a> NetworkValidator<'a> {
     let mut errors = vec![];
     for schematic in self.model.get_schematics() {
       if let Err(e) = SchematicValidator::validate_final_errors(&schematic.read()) {
-        errors.push(ValidationErrorKind::InvalidSchematic(
-          InvalidSchematic::new(e),
-        ));
+        errors.push(ValidationErrorKind::InvalidSchematic(InvalidSchematic::new(e)));
       };
     }
     if errors.is_empty() {

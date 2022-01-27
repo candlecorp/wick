@@ -324,9 +324,7 @@ impl FromStr for ConnectionTargetDefinition {
   }
 }
 
-fn map_component_def<'de, D>(
-  deserializer: D,
-) -> Result<HashMap<String, ComponentDefinition>, D::Error>
+fn map_component_def<'de, D>(deserializer: D) -> Result<HashMap<String, ComponentDefinition>, D::Error>
 where
   D: serde::Deserializer<'de>,
 {
@@ -345,11 +343,12 @@ where
 
       while let Some((key, value)) = access.next_entry::<String, serde_value::Value>()? {
         let result = match value {
-          serde_value::Value::String(s) => ComponentDefinition::from_str(&s)
-            .map_err(|e| serde::de::Error::custom(e.to_string()))?,
-          serde_value::Value::Map(map) => ComponentDefinition::deserialize(
-            serde_value::ValueDeserializer::new(serde_value::Value::Map(map)),
-          )?,
+          serde_value::Value::String(s) => {
+            ComponentDefinition::from_str(&s).map_err(|e| serde::de::Error::custom(e.to_string()))?
+          }
+          serde_value::Value::Map(map) => {
+            ComponentDefinition::deserialize(serde_value::ValueDeserializer::new(serde_value::Value::Map(map)))?
+          }
           _ => {
             return Err(serde::de::Error::invalid_type(
               serde::de::Unexpected::Other("other"),
@@ -379,18 +378,16 @@ where
       write!(f, "a list of connections")
     }
 
-    fn visit_seq<A: serde::de::SeqAccess<'de>>(
-      self,
-      mut seq: A,
-    ) -> Result<Vec<ConnectionDefinition>, A::Error> {
+    fn visit_seq<A: serde::de::SeqAccess<'de>>(self, mut seq: A) -> Result<Vec<ConnectionDefinition>, A::Error> {
       let mut v = vec![];
       while let Some(thing) = seq.next_element::<serde_value::Value>()? {
         let result = match thing {
-          serde_value::Value::String(s) => ConnectionDefinition::from_str(&s)
-            .map_err(|e| serde::de::Error::custom(e.to_string()))?,
-          serde_value::Value::Map(map) => ConnectionDefinition::deserialize(
-            serde_value::ValueDeserializer::new(serde_value::Value::Map(map)),
-          )?,
+          serde_value::Value::String(s) => {
+            ConnectionDefinition::from_str(&s).map_err(|e| serde::de::Error::custom(e.to_string()))?
+          }
+          serde_value::Value::Map(map) => {
+            ConnectionDefinition::deserialize(serde_value::ValueDeserializer::new(serde_value::Value::Map(map)))?
+          }
           _ => {
             return Err(serde::de::Error::invalid_type(
               serde::de::Unexpected::Other("other"),
@@ -407,9 +404,7 @@ where
   deserializer.deserialize_seq(ConnectionDefVisitor)
 }
 
-fn connection_target_shortform<'de, D>(
-  deserializer: D,
-) -> Result<ConnectionTargetDefinition, D::Error>
+fn connection_target_shortform<'de, D>(deserializer: D) -> Result<ConnectionTargetDefinition, D::Error>
 where
   D: serde::Deserializer<'de>,
 {
