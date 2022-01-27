@@ -1,16 +1,5 @@
-//! Vino Transport contains the structures and methods for communicating
-//! across entity boundaries. It handles abstracting payload versions and
-//! implementations so they can be used easily.
-//!
-//! The [MessageTransport] struct normalizes [vino_packet::Packet]s for
-//! the Vino tools.
-//!
-//! The [TransportWrapper] wraps a [MessageTransport] along with the port name
-//! it originated from.
-//!
-//! A [TransportStream] is a stream of [TransportWrapper]s.
-//!
-
+#![doc(html_logo_url = "https://avatars.githubusercontent.com/u/71604398?s=200&v=4")]
+#![doc = include_str!("../README.md")]
 // !!START_LINTS
 // Vino lints
 // Do not change anything between the START_LINTS and END_LINTS line.
@@ -81,6 +70,7 @@
   while_true,
   missing_docs
 )]
+#![allow(unused_attributes)]
 // !!END_LINTS
 // Add exceptions here
 #![allow()]

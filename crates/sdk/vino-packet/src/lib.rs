@@ -1,17 +1,5 @@
-//! The Vino packet crate contains the consistent message structure for arbitrary output
-//! from Vino components and providers.
-//!
-//! Components output versioned payloads (e.g. a [v0::Payload]) which then get
-//! wrapped into a [Packet] to normalize differences across versions.
-//!
-//! [Packet]s are designed for backwards compatibility but that compatibility layer is
-//! strictly between the component and [Packet], not for consumers of the [Packet].
-//! [Packet]s are not meant to be long lived and you should have a compatibility layer
-//! between [Packet]s and your system if you depend on this crate. For example, Vino
-//! uses [vino-transport](https://crates.io/crates/vino-transport) to keep
-//! a dependent platform insulated from [Packet] changes.
-//!
-
+#![doc(html_logo_url = "https://avatars.githubusercontent.com/u/71604398?s=200&v=4")]
+#![doc = include_str!("../README.md")]
 // !!START_LINTS
 // Vino lints
 // Do not change anything between the START_LINTS and END_LINTS line.
@@ -82,6 +70,7 @@
   while_true,
   missing_docs
 )]
+#![allow(unused_attributes)]
 // !!END_LINTS
 // Add exceptions here
 #![allow()]

@@ -1,4 +1,5 @@
-//! Macros used by the Vino project
+#![doc(html_logo_url = "https://avatars.githubusercontent.com/u/71604398?s=200&v=4")]
+#![doc = include_str!("../README.md")]
 
 // !!START_LINTS
 // Vino lints
@@ -70,6 +71,7 @@
   while_true,
   missing_docs
 )]
+#![allow(unused_attributes)]
 // !!END_LINTS
 // Add exceptions here
 #![allow()]
@@ -126,13 +128,7 @@ macro_rules! log_tap {
   ($expr:expr $(,)?) => {{
     let _e = $expr;
     let indent = "]]]]";
-    println!(
-      "{}\n{} {}\n{}",
-      indent,
-      indent,
-      format!("{:?}", $expr),
-      indent
-    );
+    println!("{}\n{} {}\n{}", indent, indent, format!("{:?}", $expr), indent);
 
     _e
   }};
@@ -313,12 +309,7 @@ macro_rules! elapsed {
       let elapsed = time
         .map(|t| t.elapsed().as_micros().to_string())
         .unwrap_or("no start time marked...".to_owned());
-      println!(
-        "BENCH::{}:{}: +{}μs",
-        $crate::function_path!(),
-        line!(),
-        elapsed
-      );
+      println!("BENCH::{}:{}: +{}μs", $crate::function_path!(), line!(), elapsed);
       Ok(())
     });
   }};

@@ -1,4 +1,5 @@
-//! The Vino types crate contains types and signatures used by Vino tools.
+#![doc(html_logo_url = "https://avatars.githubusercontent.com/u/71604398?s=200&v=4")]
+#![doc = include_str!("../README.md")]
 
 // !!START_LINTS
 // Vino lints
@@ -70,6 +71,7 @@
   while_true,
   missing_docs
 )]
+#![allow(unused_attributes)]
 // !!END_LINTS
 // Add exceptions here
 #![allow()]
@@ -77,9 +79,7 @@
 /// Signatures of Vino types.
 mod signatures;
 
-pub use signatures::{
-  ComponentSignature, HostedType, ProviderSignature, StructSignature, TypeSignature,
-};
+pub use signatures::{ComponentSignature, HostedType, ProviderSignature, StructSignature, TypeSignature};
 
 /// Map-related structures holding signatures and other types.
 pub mod maps;

@@ -3,5 +3,3 @@
 # vino-macros
 
 Macros used by the Vino project
-
-License: BSD-3-Clause

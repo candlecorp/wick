@@ -4,5 +4,15 @@
     "vino-transport/all",
     "vino-provider/native",
     "vino-provider/wasm"
+  ],
+  "rust-analyzer.rustfmt.overrideCommand": [
+    "rustup",
+    "run",
+    "nightly",
+    "--",
+    "rustfmt",
+    "--edition",
+    "2021",
+    "--"
   ]
 }

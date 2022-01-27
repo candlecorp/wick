@@ -1,15 +1,13 @@
 ![Maintenance](https://img.shields.io/badge/maintenance-activly--developed-brightgreen.svg)
 
-# vino-codec
-
 The Vino Codec crate contains the serialization and deserialization functions
 and structures for communicating in and out of Vino Components.
 
-#### JSON
+### JSON
 
-Serializes to a [serde_json::Value] which can be printed as a JSON string.
+Serializes to a `serde_json::Value` which can be printed as a JSON string.
 
-##### `json::serialize`
+#### `json::serialize`
 
 ```rust
 use vino_codec::{json, Error};
@@ -33,7 +31,7 @@ pub fn main() -> Result<(), Error> {
 }
 ```
 
-##### `json::deserialize`
+#### `json::deserialize`
 
 ```rust
 use vino_codec::{json, Error};
@@ -56,11 +54,11 @@ pub fn main() -> Result<(), Error> {
 
 ```
 
-#### MessagePack
+### MessagePack
 
 Serializes to a MessagePack [Vec<u8>].
 
-##### `messagepack::serialize`
+#### `messagepack::serialize`
 
 ```rust
 use vino_codec::{messagepack, Error};
@@ -84,7 +82,7 @@ pub fn main() -> Result<(), Error> {
 }
 ```
 
-##### `messagepack::deserialize`
+#### `messagepack::deserialize`
 
 ```rust
 use vino_codec::{messagepack, Error};
@@ -106,7 +104,7 @@ pub fn main() -> Result<(), Error> {
 }
 ```
 
-#### Raw
+### Raw
 
 The [raw] module uses [serde_value] as an intermediary format to pass around.
 
@@ -130,6 +128,3 @@ pub fn main() -> Result<(), Error> {
   Ok(())
 }
 ```
-
-
-License: BSD-3-Clause

@@ -1,8 +1,5 @@
-//! The Vino entity contains the [Entity] structure and methods to translate
-//! entities to and from URLs.
-//!
-//! Vino entities are any origin or target that can exist in a Vino network.
-
+#![doc(html_logo_url = "https://avatars.githubusercontent.com/u/71604398?s=200&v=4")]
+#![doc = include_str!("../README.md")]
 // !!START_LINTS
 // Vino lints
 // Do not change anything between the START_LINTS and END_LINTS line.
@@ -73,6 +70,7 @@
   while_true,
   missing_docs
 )]
+#![allow(unused_attributes)]
 // !!END_LINTS
 // Add exceptions here
 #![allow()]
