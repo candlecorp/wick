@@ -2,48 +2,9 @@ use std::collections::HashMap;
 
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
-use vino_codec::messagepack::{deserialize, serialize};
-use vino_transport::{MessageTransport, TransportMap, TransportWrapper};
+use vino_transport::{MessageTransport, TransportWrapper};
 
-use super::host_call;
-use super::prelude::WasmError;
-use crate::provider_link::ProviderLink;
-
-/// Implementation of the ProviderLink for WASM modules.
-pub trait WasmProviderLink {
-  /// Get the link string for the call.
-  fn get_link(&self, component: &str) -> String;
-
-  /// Get the originating component entity URL.
-  fn get_origin(&self) -> String;
-
-  /// Make a call to the linked provider.
-  fn call(
-    &self,
-    component: &str,
-    payload: impl Into<TransportMap>,
-  ) -> Result<ProviderOutput, WasmError> {
-    let payload: TransportMap = payload.into();
-    let result = host_call(
-      "1",
-      &self.get_origin(),
-      &self.get_link(component),
-      &serialize(&payload)?,
-    )?;
-    let packets: Vec<TransportWrapper> = deserialize(&result)?;
-    Ok(ProviderOutput::new(packets))
-  }
-}
-
-impl WasmProviderLink for ProviderLink {
-  fn get_link(&self, component: &str) -> String {
-    self.get_component_url(component)
-  }
-
-  fn get_origin(&self) -> String {
-    self.get_origin_url()
-  }
-}
+use super::Error;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 /// A wrapper object for the packets returned from the provider call.
@@ -78,9 +39,7 @@ pub struct PortOutput {
 
 impl std::fmt::Debug for PortOutput {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    f.debug_struct("PortOutput")
-      .field("iter", &self.name)
-      .finish()
+    f.debug_struct("PortOutput").field("iter", &self.name).finish()
   }
 }
 
@@ -94,14 +53,10 @@ impl PortOutput {
   }
 
   /// Grab the next value and deserialize it in one method.
-  pub fn try_next_into<T: DeserializeOwned>(&mut self) -> Result<T, WasmError> {
+  pub fn try_next_into<T: DeserializeOwned>(&mut self) -> Result<T, Error> {
     match self.iter.next() {
-      Some(val) => Ok(
-        val
-          .try_into()
-          .map_err(|e| WasmError::Codec(e.to_string()))?,
-      ),
-      None => Err(WasmError::EndOfOutput(self.name.clone())),
+      Some(val) => Ok(val.try_into().map_err(|e| Error::Codec(e.to_string()))?),
+      None => Err(Error::EndOfOutput(self.name.clone())),
     }
   }
 }

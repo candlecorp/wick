@@ -1,18 +1,15 @@
 //! Vino's WebAssembly provider implementations. This module
 //!  is only active with the feature `wasm` enabled.
 //!
-#![allow(
-  unsafe_code,
-  missing_debug_implementations,
-  missing_copy_implementations
-)]
+#![allow(unsafe_code, missing_debug_implementations, missing_copy_implementations)]
 
 use std::collections::HashMap;
 
-use vino_wapc::{exports::*, OutputSignal};
+use vino_wapc::exports::*;
+use vino_wapc::OutputSignal;
 
-/// Module that encapsulates a linked provider as input.
-mod provider_link;
+/// Module that encapsulates the wasm version of a provider output stream.
+mod provider_output;
 
 /// Module for log-like functionality in WASM.
 pub mod log;
@@ -41,18 +38,23 @@ pub mod prelude {
   pub use vino_transport::error::TransportError;
   pub use vino_transport::{MessageTransport, TransportMap, TransportWrapper};
   pub use vino_types::*;
+  pub use vino_wapc::{exports as wapc, *};
 
   pub use super::error::ComponentError;
-  pub use super::provider_link::{PortOutput, ProviderOutput, WasmProviderLink};
+  pub use super::provider_output::{PortOutput, ProviderOutput};
   pub use super::{
-    console_log, CallResult, Dispatch, Error as WasmError, IncomingPayload, JobResult, PortSender,
+    console_log,
+    CallResult,
+    Dispatch,
+    Error as WasmError,
+    IncomingPayload,
+    JobResult,
+    PortSender,
     WapcComponent,
   };
   pub use crate::codec::messagepack::{deserialize, serialize};
   pub use crate::provider_link::ProviderLink;
   pub use crate::wasm::log;
-  pub use vino_wapc::exports as wapc;
-  pub use vino_wapc::*;
 }
 
 fn serialize_payload(id: u32, packet: Option<v0::Payload>) -> Result<Vec<u8>> {
@@ -118,9 +120,7 @@ pub fn host_call(binding: &str, ns: &str, op: &str, msg: &[u8]) -> CallResult {
       __host_error(retptr);
       std::slice::from_raw_parts(retptr, len)
     };
-    Err(Error::HostError(
-      String::from_utf8_lossy(_slice).to_string(),
-    ))
+    Err(Error::HostError(String::from_utf8_lossy(_slice).to_string()))
   } else {
     // call succeeded
     let len = unsafe { __host_response_len() };
