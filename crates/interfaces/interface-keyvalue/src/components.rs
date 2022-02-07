@@ -121,12 +121,27 @@ pub mod delete {
   }
 
   #[cfg(all(feature = "wasm", feature = "guest"))]
-  impl Outputs {}
+  impl Outputs {
+    pub fn num(&mut self) -> Result<PortOutput, WasmError> {
+      let packets = self
+        .packets
+        .take("num")
+        .ok_or_else(|| WasmError::ResponseMissing("num".to_owned()))?;
+      Ok(PortOutput::new("num".to_owned(), packets))
+    }
+  }
 
   #[cfg(all(feature = "wasm", feature = "guest"))]
   impl From<ProviderOutput> for Outputs {
     fn from(packets: ProviderOutput) -> Self {
       Self { packets }
+    }
+  }
+
+  #[cfg(all(feature = "native", feature = "guest"))]
+  impl From<ProviderOutput> for Outputs {
+    fn from(output: ProviderOutput) -> Self {
+      Self { packets: output }
     }
   }
 
@@ -253,12 +268,27 @@ pub mod exists {
   }
 
   #[cfg(all(feature = "wasm", feature = "guest"))]
-  impl Outputs {}
+  impl Outputs {
+    pub fn exists(&mut self) -> Result<PortOutput, WasmError> {
+      let packets = self
+        .packets
+        .take("exists")
+        .ok_or_else(|| WasmError::ResponseMissing("exists".to_owned()))?;
+      Ok(PortOutput::new("exists".to_owned(), packets))
+    }
+  }
 
   #[cfg(all(feature = "wasm", feature = "guest"))]
   impl From<ProviderOutput> for Outputs {
     fn from(packets: ProviderOutput) -> Self {
       Self { packets }
+    }
+  }
+
+  #[cfg(all(feature = "native", feature = "guest"))]
+  impl From<ProviderOutput> for Outputs {
+    fn from(output: ProviderOutput) -> Self {
+      Self { packets: output }
     }
   }
 
@@ -385,12 +415,27 @@ pub mod key_get {
   }
 
   #[cfg(all(feature = "wasm", feature = "guest"))]
-  impl Outputs {}
+  impl Outputs {
+    pub fn value(&mut self) -> Result<PortOutput, WasmError> {
+      let packets = self
+        .packets
+        .take("value")
+        .ok_or_else(|| WasmError::ResponseMissing("value".to_owned()))?;
+      Ok(PortOutput::new("value".to_owned(), packets))
+    }
+  }
 
   #[cfg(all(feature = "wasm", feature = "guest"))]
   impl From<ProviderOutput> for Outputs {
     fn from(packets: ProviderOutput) -> Self {
       Self { packets }
+    }
+  }
+
+  #[cfg(all(feature = "native", feature = "guest"))]
+  impl From<ProviderOutput> for Outputs {
+    fn from(output: ProviderOutput) -> Self {
+      Self { packets: output }
     }
   }
 
@@ -529,12 +574,27 @@ pub mod key_set {
   }
 
   #[cfg(all(feature = "wasm", feature = "guest"))]
-  impl Outputs {}
+  impl Outputs {
+    pub fn result(&mut self) -> Result<PortOutput, WasmError> {
+      let packets = self
+        .packets
+        .take("result")
+        .ok_or_else(|| WasmError::ResponseMissing("result".to_owned()))?;
+      Ok(PortOutput::new("result".to_owned(), packets))
+    }
+  }
 
   #[cfg(all(feature = "wasm", feature = "guest"))]
   impl From<ProviderOutput> for Outputs {
     fn from(packets: ProviderOutput) -> Self {
       Self { packets }
+    }
+  }
+
+  #[cfg(all(feature = "native", feature = "guest"))]
+  impl From<ProviderOutput> for Outputs {
+    fn from(output: ProviderOutput) -> Self {
+      Self { packets: output }
     }
   }
 
@@ -672,12 +732,27 @@ pub mod list_add {
   }
 
   #[cfg(all(feature = "wasm", feature = "guest"))]
-  impl Outputs {}
+  impl Outputs {
+    pub fn length(&mut self) -> Result<PortOutput, WasmError> {
+      let packets = self
+        .packets
+        .take("length")
+        .ok_or_else(|| WasmError::ResponseMissing("length".to_owned()))?;
+      Ok(PortOutput::new("length".to_owned(), packets))
+    }
+  }
 
   #[cfg(all(feature = "wasm", feature = "guest"))]
   impl From<ProviderOutput> for Outputs {
     fn from(packets: ProviderOutput) -> Self {
       Self { packets }
+    }
+  }
+
+  #[cfg(all(feature = "native", feature = "guest"))]
+  impl From<ProviderOutput> for Outputs {
+    fn from(output: ProviderOutput) -> Self {
+      Self { packets: output }
     }
   }
 
@@ -821,12 +896,27 @@ pub mod list_range {
   }
 
   #[cfg(all(feature = "wasm", feature = "guest"))]
-  impl Outputs {}
+  impl Outputs {
+    pub fn values(&mut self) -> Result<PortOutput, WasmError> {
+      let packets = self
+        .packets
+        .take("values")
+        .ok_or_else(|| WasmError::ResponseMissing("values".to_owned()))?;
+      Ok(PortOutput::new("values".to_owned(), packets))
+    }
+  }
 
   #[cfg(all(feature = "wasm", feature = "guest"))]
   impl From<ProviderOutput> for Outputs {
     fn from(packets: ProviderOutput) -> Self {
       Self { packets }
+    }
+  }
+
+  #[cfg(all(feature = "native", feature = "guest"))]
+  impl From<ProviderOutput> for Outputs {
+    fn from(output: ProviderOutput) -> Self {
+      Self { packets: output }
     }
   }
 
@@ -965,12 +1055,27 @@ pub mod list_remove {
   }
 
   #[cfg(all(feature = "wasm", feature = "guest"))]
-  impl Outputs {}
+  impl Outputs {
+    pub fn num(&mut self) -> Result<PortOutput, WasmError> {
+      let packets = self
+        .packets
+        .take("num")
+        .ok_or_else(|| WasmError::ResponseMissing("num".to_owned()))?;
+      Ok(PortOutput::new("num".to_owned(), packets))
+    }
+  }
 
   #[cfg(all(feature = "wasm", feature = "guest"))]
   impl From<ProviderOutput> for Outputs {
     fn from(packets: ProviderOutput) -> Self {
       Self { packets }
+    }
+  }
+
+  #[cfg(all(feature = "native", feature = "guest"))]
+  impl From<ProviderOutput> for Outputs {
+    fn from(output: ProviderOutput) -> Self {
+      Self { packets: output }
     }
   }
 
@@ -1108,12 +1213,27 @@ pub mod set_add {
   }
 
   #[cfg(all(feature = "wasm", feature = "guest"))]
-  impl Outputs {}
+  impl Outputs {
+    pub fn length(&mut self) -> Result<PortOutput, WasmError> {
+      let packets = self
+        .packets
+        .take("length")
+        .ok_or_else(|| WasmError::ResponseMissing("length".to_owned()))?;
+      Ok(PortOutput::new("length".to_owned(), packets))
+    }
+  }
 
   #[cfg(all(feature = "wasm", feature = "guest"))]
   impl From<ProviderOutput> for Outputs {
     fn from(packets: ProviderOutput) -> Self {
       Self { packets }
+    }
+  }
+
+  #[cfg(all(feature = "native", feature = "guest"))]
+  impl From<ProviderOutput> for Outputs {
+    fn from(output: ProviderOutput) -> Self {
+      Self { packets: output }
     }
   }
 
@@ -1246,12 +1366,27 @@ pub mod set_contains {
   }
 
   #[cfg(all(feature = "wasm", feature = "guest"))]
-  impl Outputs {}
+  impl Outputs {
+    pub fn exists(&mut self) -> Result<PortOutput, WasmError> {
+      let packets = self
+        .packets
+        .take("exists")
+        .ok_or_else(|| WasmError::ResponseMissing("exists".to_owned()))?;
+      Ok(PortOutput::new("exists".to_owned(), packets))
+    }
+  }
 
   #[cfg(all(feature = "wasm", feature = "guest"))]
   impl From<ProviderOutput> for Outputs {
     fn from(packets: ProviderOutput) -> Self {
       Self { packets }
+    }
+  }
+
+  #[cfg(all(feature = "native", feature = "guest"))]
+  impl From<ProviderOutput> for Outputs {
+    fn from(output: ProviderOutput) -> Self {
+      Self { packets: output }
     }
   }
 
@@ -1383,12 +1518,27 @@ pub mod set_get {
   }
 
   #[cfg(all(feature = "wasm", feature = "guest"))]
-  impl Outputs {}
+  impl Outputs {
+    pub fn values(&mut self) -> Result<PortOutput, WasmError> {
+      let packets = self
+        .packets
+        .take("values")
+        .ok_or_else(|| WasmError::ResponseMissing("values".to_owned()))?;
+      Ok(PortOutput::new("values".to_owned(), packets))
+    }
+  }
 
   #[cfg(all(feature = "wasm", feature = "guest"))]
   impl From<ProviderOutput> for Outputs {
     fn from(packets: ProviderOutput) -> Self {
       Self { packets }
+    }
+  }
+
+  #[cfg(all(feature = "native", feature = "guest"))]
+  impl From<ProviderOutput> for Outputs {
+    fn from(output: ProviderOutput) -> Self {
+      Self { packets: output }
     }
   }
 
@@ -1526,12 +1676,27 @@ pub mod set_remove {
   }
 
   #[cfg(all(feature = "wasm", feature = "guest"))]
-  impl Outputs {}
+  impl Outputs {
+    pub fn num(&mut self) -> Result<PortOutput, WasmError> {
+      let packets = self
+        .packets
+        .take("num")
+        .ok_or_else(|| WasmError::ResponseMissing("num".to_owned()))?;
+      Ok(PortOutput::new("num".to_owned(), packets))
+    }
+  }
 
   #[cfg(all(feature = "wasm", feature = "guest"))]
   impl From<ProviderOutput> for Outputs {
     fn from(packets: ProviderOutput) -> Self {
       Self { packets }
+    }
+  }
+
+  #[cfg(all(feature = "native", feature = "guest"))]
+  impl From<ProviderOutput> for Outputs {
+    fn from(output: ProviderOutput) -> Self {
+      Self { packets: output }
     }
   }
 
@@ -1710,12 +1875,34 @@ pub mod set_scan {
   }
 
   #[cfg(all(feature = "wasm", feature = "guest"))]
-  impl Outputs {}
+  impl Outputs {
+    pub fn values(&mut self) -> Result<PortOutput, WasmError> {
+      let packets = self
+        .packets
+        .take("values")
+        .ok_or_else(|| WasmError::ResponseMissing("values".to_owned()))?;
+      Ok(PortOutput::new("values".to_owned(), packets))
+    }
+    pub fn cursor(&mut self) -> Result<PortOutput, WasmError> {
+      let packets = self
+        .packets
+        .take("cursor")
+        .ok_or_else(|| WasmError::ResponseMissing("cursor".to_owned()))?;
+      Ok(PortOutput::new("cursor".to_owned(), packets))
+    }
+  }
 
   #[cfg(all(feature = "wasm", feature = "guest"))]
   impl From<ProviderOutput> for Outputs {
     fn from(packets: ProviderOutput) -> Self {
       Self { packets }
+    }
+  }
+
+  #[cfg(all(feature = "native", feature = "guest"))]
+  impl From<ProviderOutput> for Outputs {
+    fn from(output: ProviderOutput) -> Self {
+      Self { packets: output }
     }
   }
 

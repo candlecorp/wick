@@ -13,9 +13,7 @@ wasm = ["vino-provider/wasm"]
 native = ["vino-provider/native"]
 
 [dependencies]
-vino-provider = { path = "../../../sdk/crates/vino-provider", features = [
-  "native",
-] }
+vino-provider = { path = "../../../sdk/crates/vino-provider", default-features = false }
 serde = { version = "1.0", features = ["derive"] }
 
 [dev-dependencies]

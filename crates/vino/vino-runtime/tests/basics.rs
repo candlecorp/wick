@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use runtime_testutils::*;
+use tokio_stream::StreamExt;
 use vino_entity::Entity;
 use vino_runtime::prelude::TransportWrapper;
 use vino_transport::MessageTransport;
@@ -219,12 +220,15 @@ async fn subnetworks() -> Result<()> {
       "input" => "some input",
   };
 
-  let mut result = network.request("parent", Entity::test("subnetworks"), &data).await?;
+  let result = network.request("parent", Entity::test("subnetworks"), &data).await?;
 
-  let mut messages: Vec<TransportWrapper> = result.collect_port("output").await;
-  assert_eq!(messages.len(), 1);
+  let messages: Vec<_> = result.collect().await;
 
-  let output: String = messages.pop().unwrap().payload.try_into()?;
+  println!("{:?}", messages);
+
+  assert_eq!(messages.len(), 2);
+
+  let output: String = messages[0].payload.clone().try_into()?;
 
   assert_eq!(output, "some input");
 

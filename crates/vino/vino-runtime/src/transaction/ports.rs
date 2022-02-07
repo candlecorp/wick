@@ -83,15 +83,9 @@ impl PortStatuses {
   }
 
   pub(crate) fn is_closed(&self, port: &ConnectionTargetDefinition) -> bool {
-    self
-      .inner
-      .borrow()
-      .get(port)
-      .map_or(true, |status| status == &PortStatus::Closed)
-  }
-
-  pub(crate) fn is_generator(&self, instance: &str) -> bool {
-    self.raw_ports.get(instance).map_or(false, |rp| rp.inputs.is_empty())
+    let a = self.inner.borrow();
+    let status = a.get(port);
+    status.map_or(true, |status| status == &PortStatus::Closed)
   }
 
   pub(crate) fn close(&mut self, port: &ConnectionTargetDefinition) -> &mut Self {

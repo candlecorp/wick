@@ -55,12 +55,12 @@ pub(crate) enum CliCommand {
 
 #[derive(Debug, Clone, StructOpt)]
 pub(crate) struct ConnectOptions {
-  /// Port to listen on.
-  #[structopt(short, long)]
+  /// RPC port.
+  #[structopt(short, long, env = "VINO_RPC_PORT")]
   pub(crate) port: u16,
 
-  /// IP address to bind to.
-  #[structopt(short, long, default_value = "127.0.0.1")]
+  /// RPC address.
+  #[structopt(short, long, default_value = "127.0.0.1", env = "VINO_RPC_ADDRESS")]
   pub(crate) address: Ipv4Addr,
 
   /// Path to pem file for TLS connections.

@@ -85,26 +85,6 @@ impl Transaction {
     format!("TX:{}({}):", self.tx_id, self.schematic_name)
   }
 
-  pub(crate) fn has_active_upstream(&self, port: &ConnectionTargetDefinition) -> bool {
-    let model = self.model.read();
-    let upstream = some_or_bail!(model.get_upstream(port), false);
-    let has_data = self.ports.has_data(port);
-    let is_closed = self.ports.is_closed(upstream);
-    let is_sender = upstream.is_sender();
-    let is_generator = self.ports.is_generator(upstream.get_instance());
-    let active = has_data || (!is_closed && !is_sender && !is_generator);
-    trace!(
-      "TX:PORT:[{}]:HAS_DATA[{}]:IS_OPEN[{}]:IS_SENDER[{}]:IS_GENERATOR[{}]:IS_ACTIVE[{}]",
-      upstream,
-      has_data,
-      !is_closed,
-      is_sender,
-      is_generator,
-      active
-    );
-    active
-  }
-
   fn is_done(&self) -> bool {
     for port in &self.output_ports {
       if !self.ports.is_closed(port) {

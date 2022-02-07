@@ -234,8 +234,9 @@ pub async fn run_test(
   for (i, test) in expected.into_iter().enumerate() {
     let payload = test.get_payload();
     let entity = Entity::component_direct(test.component.clone());
-
-    let mut test_block = TestBlock::new(Some(test.get_description()));
+    let test_name = test.get_description();
+    let mut test_block = TestBlock::new(Some(test_name.clone()));
+    let prefix = |msg: &str| format!("{}:{}", test_name, msg);
 
     trace!("TEST[{}]:INVOKE[{}]", i, entity,);
     trace!("TEST[{}]:PAYLOAD:{:?}", i, payload,);
@@ -245,7 +246,11 @@ pub async fn run_test(
       .map_err(|e| Error::InvocationFailed(e.to_string()));
 
     if let Err(e) = result {
-      test_block.add_test(|| false, "Invocation", Some(vec![format!("Invocation failed: {}", e)]));
+      test_block.add_test(
+        || false,
+        prefix("invocation"),
+        Some(vec![format!("Invocation failed: {}", e)]),
+      );
       harness.add_block(test_block);
       continue;
     }
@@ -263,7 +268,7 @@ pub async fn run_test(
       if j >= test.actual.len() {
         test_block.add_test(
           || false,
-          "Stream length",
+          prefix("stream_length"),
           Some(vec!["Test data included more output than component produced".to_owned()]),
         );
         break;
@@ -274,7 +279,7 @@ pub async fn run_test(
         format!("Actual: {}", actual.port),
         format!("Expected: {}", expected.port),
       ]);
-      test_block.add_test(move || result, format!("Output port name == '{}'", expected.port), diag);
+      test_block.add_test(move || result, prefix(&format!("output[{}]", expected.port)), diag);
 
       if let Some(value) = &expected.payload.value {
         let actual_payload = actual.payload.clone();
@@ -302,7 +307,7 @@ pub async fn run_test(
             Ok(val) => eq(val, expected_value),
             Err(_e) => false,
           },
-          "Payload value",
+          prefix("payload"),
           diagnostic,
         );
       }
@@ -320,7 +325,7 @@ pub async fn run_test(
             MessageTransport::Failure(Failure::Error(_)) => (error_kind == "Error"),
             _ => false,
           },
-          "Error kind",
+          prefix("error_kind"),
           diag,
         );
       }
@@ -338,7 +343,7 @@ pub async fn run_test(
             MessageTransport::Failure(Failure::Error(msg)) => (error_msg == msg),
             _ => false,
           },
-          "Error message",
+          prefix("error_message"),
           diag,
         );
       }
@@ -356,7 +361,7 @@ pub async fn run_test(
     let num_missed = missed.len();
     test_block.add_test(
       move || num_missed == 0,
-      "Tested all outputs",
+      prefix("total_outputs"),
       Some(missed.into_iter().map(|p| format!("{:?}", p)).collect()),
     );
 

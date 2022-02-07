@@ -118,13 +118,7 @@ impl TransactionExecutor {
           }
           TransactionUpdate::Result(output) => {
             trace!("{}:RESULT:PORT[{}]", iter_prefix, output.payload.port,);
-            let port = output.payload.port.clone();
             let _ = map_err!(inbound_tx.send(TransactionUpdate::Result(output)), InternalError::E9002);
-            let target = ConnectionTargetDefinition::new(SCHEMATIC_OUTPUT, &port);
-            if !transaction.has_active_upstream(&target) {
-              trace!("{}:CLOSING:{}", iter_prefix, target);
-              transaction.ports.close(&target);
-            }
 
             if !transaction.is_done() {
               trace!("{}:WAIT", iter_prefix);

@@ -80,7 +80,7 @@
   while_true,
   missing_docs
 )]
-#![allow(unused_attributes)]
+#![allow(unused)]
 // !!END_LINTS
 // Add exceptions here
 #![allow(missing_copy_implementations, missing_docs)]

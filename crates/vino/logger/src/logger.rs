@@ -10,6 +10,7 @@ use tracing_subscriber::{filter, Layer};
 use crate::error::LoggerError;
 use crate::LoggingOptions;
 
+#[derive(Debug)]
 enum Environment {
   Prod,
   Test,
@@ -151,14 +152,13 @@ fn try_init(opts: &LoggingOptions, environment: &Environment) -> Result<LoggingG
 
   let app_name = opts.app_name.clone();
 
-  // This is ugly and I wish it was improved.
-  // Start here to understand why it's laid out like this: https://github.com/tokio-rs/tracing/issues/575
+  let (log_dir, logfile_writer, logfile_guard) = get_logfile_writer(opts)?;
+  let file_layer = BunyanFormattingLayer::new(app_name, logfile_writer).with_filter(vino_filter());
+
+  // This is ugly. If you can improve it, go for it, but
+  // start here to understand why it's laid out like this: https://github.com/tokio-rs/tracing/issues/575
   let (verbose_layer, normal_layer, json_layer, file_layer, logfile_guard, test_layer) = match environment {
     Environment::Prod => {
-      let (log_dir, logfile_writer, logfile_guard) = get_logfile_writer(opts)?;
-      let file_layer = BunyanFormattingLayer::new(app_name, logfile_writer).with_filter(vino_filter());
-      info!("Writing logs to {}", log_dir.to_string_lossy());
-
       if opts.verbose {
         (
           Some(
@@ -224,5 +224,6 @@ fn try_init(opts: &LoggingOptions, environment: &Environment) -> Result<LoggingG
   tracing::subscriber::set_global_default(subscriber)?;
 
   trace!("Logger initialized");
+  info!("Writing logs to {}", log_dir.to_string_lossy());
   Ok(LoggingGuard::new(logfile_guard, console_guard))
 }
