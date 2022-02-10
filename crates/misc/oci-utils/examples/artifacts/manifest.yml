@@ -1,0 +1,13 @@
+---
+registry: 127.0.0.1
+repo: example/project
+artifacts:
+  - path: ./linux-amd64.txt
+    os: linux
+    arch: amd64
+  - path: ./linux-arm64.txt
+    os: linux
+    arch: arm64
+  - path: ./darwin-amd64.txt
+    os: darwin
+    arch: amd64

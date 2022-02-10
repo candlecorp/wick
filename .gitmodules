@@ -17,3 +17,6 @@ url = git@github.com:vinodotdev/www-authenticate.git
 [submodule "forks/wascap"]
 	path = forks/wascap
 	url = https://github.com/vinodotdev/wascap.git
+[submodule "forks/oci-distribution"]
+	path = forks/oci-distribution
+	url = git@github.com:vinodotdev/oci-distribution.git
