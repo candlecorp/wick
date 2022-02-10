@@ -4,6 +4,7 @@ use std::time::Duration;
 
 use logger::LoggingOptions;
 use nkeys::KeyPair;
+use serde::{Deserialize, Serialize};
 use structopt::StructOpt;
 
 #[derive(Debug)]
@@ -119,11 +120,11 @@ impl From<DefaultCliOptions> for LoggingOptions {
   }
 }
 
-#[derive(Debug, Clone, Default, StructOpt)]
+#[derive(Debug, Clone, Default, StructOpt, Serialize, Deserialize)]
 /// Command line options for providers.
 pub struct DefaultCliOptions {
   /// The unique ID of this client.
-  #[structopt(long = "id", env = "PROVIDER_ID")]
+  #[structopt(long = "id", env = "VINO_PROVIDER_ID")]
   pub id: Option<String>,
 
   /// The timeout for outbound requests in ms.
@@ -139,7 +140,7 @@ pub struct DefaultCliOptions {
   pub lattice: LatticeCliOptions,
 
   /// Enable the rpc server.
-  #[structopt(long = "rpc")]
+  #[structopt(long = "rpc", env = "VINO_RPC")]
   pub rpc_enabled: bool,
 
   /// Port to listen on for GRPC server.
@@ -163,7 +164,7 @@ pub struct DefaultCliOptions {
   pub rpc_ca: Option<PathBuf>,
 
   /// Enable the http server.
-  #[structopt(long = "http")]
+  #[structopt(long = "http", env = "VINO_HTTP")]
   pub http_enabled: bool,
 
   /// Address for the optional HTTP server.
@@ -185,13 +186,9 @@ pub struct DefaultCliOptions {
   /// Path to certificate authority for HTTPS server.
   #[structopt(long = "http-ca", env = "VINO_HTTP_CA")]
   pub http_ca: Option<PathBuf>,
-
-  /// Enable RPC over STDIO
-  #[structopt(long, env = "VINO_STDIO")]
-  pub stdio: bool,
 }
 
-#[derive(Debug, Clone, Default, StructOpt)]
+#[derive(Debug, Clone, Default, StructOpt, Serialize, Deserialize)]
 /// Command line options for providers.
 pub struct LatticeCliOptions {
   /// Enable the lattice connection.

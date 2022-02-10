@@ -21,6 +21,7 @@ tracing-appender = "0.2.0"
 xdg = "2.4"
 time = { version = "0.3", features = ["formatting"] }
 ansi_term = "0.12"
+serde = { version = "1", features = ["derive"] }
 
 structopt = "0.3"
 thiserror = "1.0"

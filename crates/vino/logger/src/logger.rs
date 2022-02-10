@@ -113,16 +113,23 @@ fn get_stderr_writer(_opts: &LoggingOptions) -> (NonBlocking, WorkerGuard) {
 
 fn get_logfile_writer(opts: &LoggingOptions) -> Result<(PathBuf, NonBlocking, WorkerGuard), LoggerError> {
   let logfile_prefix = format!("{}.{}.log", opts.app_name, std::process::id());
-  #[cfg(not(target_os = "windows"))]
-  let log_dir = match xdg::BaseDirectories::with_prefix("vino") {
-    Ok(xdg) => xdg.get_state_home(),
-    Err(_) => std::env::current_dir()?,
+
+  let log_dir = match &opts.log_dir {
+    Some(dir) => dir.clone(),
+    None => {
+      #[cfg(not(target_os = "windows"))]
+      match xdg::BaseDirectories::with_prefix("vino") {
+        Ok(xdg) => xdg.get_state_home(),
+        Err(_) => std::env::current_dir()?,
+      }
+      #[cfg(target_os = "windows")]
+      match std::env::var("LOCALAPPDATA") {
+        Ok(localappdata) => PathBuf::from(format!("{}/vino", localappdata)),
+        Err(_) => std::env::current_dir()?,
+      }
+    }
   };
-  #[cfg(target_os = "windows")]
-  let log_dir = match std::env::var("LOCALAPPDATA") {
-    Ok(localappdata) => PathBuf::from(format!("{}/vino", localappdata)),
-    Err(_) => std::env::current_dir()?,
-  };
+
   let (writer, guard) =
     tracing_appender::non_blocking(tracing_appender::rolling::daily(log_dir.clone(), logfile_prefix));
 
