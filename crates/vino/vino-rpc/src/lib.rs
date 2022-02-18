@@ -109,8 +109,7 @@ pub use dyn_clone::clone_box;
 pub use generated::vino as rpc;
 pub use types::*;
 use vino_entity::Entity;
-use vino_transport::BoxedTransportStream;
-use vino_transport::TransportMap;
+use vino_transport::{BoxedTransportStream, TransportMap};
 
 pub(crate) type Result<T> = std::result::Result<T, error::RpcError>;
 

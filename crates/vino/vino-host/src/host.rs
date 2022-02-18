@@ -7,8 +7,7 @@ use nkeys::KeyPair;
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
 use vino_entity::Entity;
-use vino_lattice::Lattice;
-use vino_lattice::NatsOptions;
+use vino_lattice::{Lattice, NatsOptions};
 use vino_manifest::host_definition::HostDefinition;
 use vino_provider::native::prelude::ProviderSignature;
 use vino_provider_cli::options::{LatticeOptions, Options as HostOptions, ServerOptions};
@@ -190,9 +189,8 @@ impl Host {
     Ok(metadata)
   }
 
-  pub async fn request<T, U>(&self, schematic: T, payload: U, data: Option<InitData>) -> Result<TransportStream>
+  pub async fn request<U>(&self, schematic: &str, payload: U, data: Option<InitData>) -> Result<TransportStream>
   where
-    T: AsRef<str> + Sync + Send,
     U: TryInto<TransportMap> + Send + Sync,
   {
     match &self.network {

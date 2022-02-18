@@ -13,8 +13,13 @@ use vino_manifest::Loadable;
 use crate::dev::prelude::validator::NetworkValidator;
 use crate::dev::prelude::*;
 use crate::network_service::initialize::{
-  initialize_providers, initialize_schematics, start_schematic_services, start_self_network, update_providers,
-  Initialize, ProviderInitOptions,
+  initialize_providers,
+  initialize_schematics,
+  start_schematic_services,
+  start_self_network,
+  update_providers,
+  Initialize,
+  ProviderInitOptions,
 };
 
 type Result<T> = std::result::Result<T, NetworkError>;
@@ -130,7 +135,6 @@ impl NetworkService {
     network.clone()
   }
 
-  // #[async_recursion::async_recursion]
   pub(crate) async fn init_from_manifest(&self, location: &str, opts: ProviderInitOptions) -> Result<()> {
     let bytes = vino_loader::get_bytes(location, opts.allow_latest, &opts.allowed_insecure).await?;
     let manifest = vino_manifest::HostManifest::load_from_bytes(&bytes)?;

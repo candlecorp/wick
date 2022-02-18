@@ -1,19 +1,19 @@
-use structopt::StructOpt;
+use clap::Args;
 use vino_host::HostBuilder;
 use vino_manifest::host_definition::HostDefinition;
 use vino_provider_cli::options::DefaultCliOptions;
 
 use crate::utils::merge_config;
 use crate::Result;
-#[derive(Debug, Clone, StructOpt)]
+#[derive(Debug, Clone, Args)]
 pub(crate) struct ServeCommand {
-  #[structopt(flatten)]
+  #[clap(flatten)]
   pub(crate) host: super::HostOptions,
 
   /// Manifest file path or OCI url.
   pub(crate) manifest: String,
 
-  #[structopt(flatten)]
+  #[clap(flatten)]
   pub(crate) server_options: DefaultCliOptions,
 }
 

@@ -1,9 +1,8 @@
-use structopt::StructOpt;
+use clap::Args;
 use tokio::io::{self, AsyncBufReadExt};
 use tokio_stream::StreamExt;
 use vino_provider::native::prelude::{BoxedTransportStream, Entity, MapWrapper, TransportMap};
-use vino_provider_cli::parse_args;
-use vino_provider_cli::LoggingOptions;
+use vino_provider_cli::{parse_args, LoggingOptions};
 use vino_provider_wasm::provider::Provider;
 use vino_rpc::RpcHandler;
 use vino_transport::map_to_json;
@@ -12,28 +11,28 @@ use super::WasiOptions;
 use crate::error::VowError;
 use crate::Result;
 
-#[derive(Debug, Clone, StructOpt)]
-#[structopt(rename_all = "kebab-case")]
+#[derive(Debug, Clone, Args)]
+#[clap(rename_all = "kebab-case")]
 pub(crate) struct RunCommand {
-  #[structopt(flatten)]
+  #[clap(flatten)]
   logging: LoggingOptions,
 
-  #[structopt(flatten)]
+  #[clap(flatten)]
   pull: super::PullOptions,
 
   /// Don't read input from STDIN.
-  #[structopt(long = "no-input")]
+  #[clap(long = "no-input")]
   no_input: bool,
 
   /// Skip additional I/O processing done for CLI usage.
-  #[structopt(long, short)]
+  #[clap(long, short)]
   raw: bool,
 
   /// A port=value string where value is JSON to pass as input.
-  #[structopt(long, short)]
+  #[clap(long, short)]
   data: Vec<String>,
 
-  #[structopt(flatten)]
+  #[clap(flatten)]
   wasi: WasiOptions,
 
   /// Path or URL to WebAssembly binary.
@@ -43,7 +42,7 @@ pub(crate) struct RunCommand {
   component_name: String,
 
   /// Arguments to pass as inputs to a schematic.
-  #[structopt(set = structopt::clap::ArgSettings::Last)]
+  #[clap(last(true))]
   args: Vec<String>,
 }
 

@@ -94,13 +94,13 @@ extern crate tracing;
 
 mod commands;
 mod utils;
-use structopt::StructOpt;
+use clap::Parser;
 
 use self::commands::{Cli, CliCommand};
 
 #[tokio::main]
 async fn main() -> Result<()> {
-  let cli = Cli::from_args();
+  let cli = Cli::parse();
 
   let res = match cli.command {
     CliCommand::Serve(cmd) => commands::serve::handle_command(cmd).await,

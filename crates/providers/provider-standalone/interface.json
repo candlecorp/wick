@@ -1,0 +1,22 @@
+{
+  "name": "vino-standalone",
+  "types": {},
+  "components": {
+    "add": {
+      "name": "add",
+      "inputs": {
+        "left": {
+          "type": "u64"
+        },
+        "right": {
+          "type": "u64"
+        }
+      },
+      "outputs": {
+        "output": {
+          "type": "u64"
+        }
+      }
+    }
+  }
+}

@@ -55,12 +55,12 @@ impl Dispatch for Dispatcher {
   fn dispatch(op: &str, payload: &[u8]) -> CallResult {
     let payload = IncomingPayload::from_buffer(payload)?;
     let result = match op {
-      "copy" => copy::Component::default().execute(&payload),
-      "error" => error::Component::default().execute(&payload),
-      "reverse" => reverse::Component::default().execute(&payload),
-      "reverse-uppercase" => reverse_uppercase::Component::default().execute(&payload),
-      "uppercase" => uppercase::Component::default().execute(&payload),
-      "validate" => validate::Component::default().execute(&payload),
+      "copy" => crate::components::generated::copy::Component::default().execute(&payload),
+      "error" => crate::components::generated::error::Component::default().execute(&payload),
+      "reverse" => crate::components::generated::reverse::Component::default().execute(&payload),
+      "reverse-uppercase" => crate::components::generated::reverse_uppercase::Component::default().execute(&payload),
+      "uppercase" => crate::components::generated::uppercase::Component::default().execute(&payload),
+      "validate" => crate::components::generated::validate::Component::default().execute(&payload),
       _ => Err(WasmError::ComponentNotFound(op.to_owned(), ALL_COMPONENTS.join(", "))),
     }?;
     Ok(serialize(&result)?)

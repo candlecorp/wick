@@ -6,7 +6,6 @@ edition = "2021"
 license = "BSD-3-Clause"
 
 [features]
-test-integration = []
 
 [dependencies]
 vino-runtime = { path = "../../../vino-runtime" }

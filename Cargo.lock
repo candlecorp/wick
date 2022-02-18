@@ -59,6 +59,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "async-recursion"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2cda8f4bcc10624c4e85bc66b3f452cca98cfa5ca002dc83a16aad2367641bea"
+dependencies = [
+ "proc-macro2 1.0.36",
+ "quote 1.0.14",
+ "syn 1.0.85",
+]
+
+[[package]]
 name = "async-stream"
 version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -351,10 +362,27 @@ dependencies = [
  "ansi_term",
  "atty",
  "bitflags",
- "strsim",
- "textwrap",
+ "strsim 0.8.0",
+ "textwrap 0.11.0",
  "unicode-width",
  "vec_map",
+]
+
+[[package]]
+name = "clap"
+version = "3.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e5f1fea81f183005ced9e59cdb01737ef2423956dac5a6d731b06b2ecfaa3467"
+dependencies = [
+ "atty",
+ "bitflags",
+ "clap_derive",
+ "indexmap",
+ "lazy_static",
+ "os_str_bytes",
+ "strsim 0.10.0",
+ "termcolor",
+ "textwrap 0.14.2",
 ]
 
 [[package]]
@@ -367,6 +395,19 @@ dependencies = [
  "failure",
  "log",
  "structopt 0.2.18",
+]
+
+[[package]]
+name = "clap_derive"
+version = "3.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5fd1122e63869df2cb309f449da1ad54a7c6dfeb7c7e6ccd8e0825d9eb93bb72"
+dependencies = [
+ "heck 0.4.0",
+ "proc-macro-error",
+ "proc-macro2 1.0.36",
+ "quote 1.0.14",
+ "syn 1.0.85",
 ]
 
 [[package]]
@@ -538,7 +579,7 @@ checksum = "1604dafd25fba2fe2d5895a9da139f8dc9b319a5fe5354ca137cbbce4e178d10"
 dependencies = [
  "atty",
  "cast",
- "clap",
+ "clap 2.34.0",
  "criterion-plot",
  "csv",
  "futures",
@@ -954,6 +995,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "filetime"
+version = "0.2.15"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "975ccf83d8d9d0d84682850a38c8169027be83368805971cc4f238c2b245bc98"
+dependencies = [
+ "cfg-if",
+ "libc",
+ "redox_syscall",
+ "winapi",
+]
+
+[[package]]
 name = "fixedbitset"
 version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -987,7 +1040,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5fc25a87fa4fd2094bffb06925852034d90a17f0d1e05197d4956d3555752191"
 dependencies = [
  "matches",
- "percent-encoding",
+ "percent-encoding 2.1.0",
 ]
 
 [[package]]
@@ -1112,7 +1165,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fd48d33ec7f05fbfa152300fdad764757cbded343c1aa1cff2fbaf4134851803"
 dependencies = [
  "typenum",
- "version_check",
+ "version_check 0.9.4",
 ]
 
 [[package]]
@@ -1220,6 +1273,12 @@ checksum = "6d621efb26863f0e9924c6ac577e8275e5e6b77455db64ffa6c65c904e9e132c"
 dependencies = [
  "unicode-segmentation",
 ]
+
+[[package]]
+name = "heck"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2540771e65fc8cb83cd6e8a237f70c319bd5c29f78ed1084ba5d50eeac86f7f9"
 
 [[package]]
 name = "hermit-abi"
@@ -1363,8 +1422,19 @@ dependencies = [
  "httpdate",
  "language-tags",
  "mime",
- "percent-encoding",
- "unicase",
+ "percent-encoding 2.1.0",
+ "unicase 2.6.0",
+]
+
+[[package]]
+name = "idna"
+version = "0.1.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "38f09e0f0b1fb55fdee1f17470ad800da77af5186a1a76c026b679358b7e844e"
+dependencies = [
+ "matches",
+ "unicode-bidi",
+ "unicode-normalization",
 ]
 
 [[package]]
@@ -1566,7 +1636,8 @@ name = "logger"
 version = "0.1.0"
 dependencies = [
  "ansi_term",
- "structopt 0.3.26",
+ "clap 3.1.0",
+ "serde",
  "thiserror",
  "time 0.3.5",
  "tracing",
@@ -1819,7 +1890,7 @@ dependencies = [
 
 [[package]]
 name = "oci-distribution"
-version = "0.7.0"
+version = "0.8.1"
 dependencies = [
  "anyhow",
  "futures-util",
@@ -1835,16 +1906,9 @@ dependencies = [
  "sha2",
  "tokio",
  "tracing",
+ "unicase 1.4.2",
+ "url 1.7.2",
  "www-authenticate",
-]
-
-[[package]]
-name = "oci-utils"
-version = "0.1.0"
-dependencies = [
- "oci-distribution",
- "thiserror",
- "tracing",
 ]
 
 [[package]]
@@ -1908,6 +1972,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "os_str_bytes"
+version = "6.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8e22443d1643a904602595ba1cd8f7d896afe56d26712531c5ff73a15b2fbf64"
+dependencies = [
+ "memchr",
+]
+
+[[package]]
 name = "output_vt100"
 version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1967,6 +2040,12 @@ checksum = "84e93a3b1cc0510b03020f33f21e62acdde3dcaef432edc95bea377fbd4c2cd4"
 dependencies = [
  "base64ct",
 ]
+
+[[package]]
+name = "percent-encoding"
+version = "1.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "31010dd2e1ac33d5b46a5b413495239882813e0369f8ed8a5e266f173602f831"
 
 [[package]]
 name = "percent-encoding"
@@ -2100,7 +2179,7 @@ dependencies = [
  "proc-macro2 1.0.36",
  "quote 1.0.14",
  "syn 1.0.85",
- "version_check",
+ "version_check 0.9.4",
 ]
 
 [[package]]
@@ -2111,7 +2190,7 @@ checksum = "a1be40180e52ecc98ad80b184934baf3d0d29f979574e439af5a55274b35f869"
 dependencies = [
  "proc-macro2 1.0.36",
  "quote 1.0.14",
- "version_check",
+ "version_check 0.9.4",
 ]
 
 [[package]]
@@ -2149,7 +2228,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "62941722fb675d463659e49c4f3fe1fe792ff24fe5bbaa9c08cd3b98a1c354f5"
 dependencies = [
  "bytes",
- "heck",
+ "heck 0.3.3",
  "itertools",
  "lazy_static",
  "log",
@@ -2354,12 +2433,12 @@ dependencies = [
  "dtoa",
  "futures-util",
  "itoa 0.4.8",
- "percent-encoding",
+ "percent-encoding 2.1.0",
  "pin-project-lite",
  "sha1",
  "tokio",
  "tokio-util",
- "url",
+ "url 2.2.2",
 ]
 
 [[package]]
@@ -2462,7 +2541,7 @@ dependencies = [
  "log",
  "mime",
  "native-tls",
- "percent-encoding",
+ "percent-encoding 2.1.0",
  "pin-project-lite",
  "rustls 0.20.2",
  "rustls-pemfile",
@@ -2473,7 +2552,7 @@ dependencies = [
  "tokio-native-tls",
  "tokio-rustls 0.23.2",
  "tokio-util",
- "url",
+ "url 2.2.2",
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "web-sys",
@@ -2784,9 +2863,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.75"
+version = "1.0.78"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c059c05b48c5c0067d4b4b2b4f0732dd65feb52daf7e0ea09cd87e7dadc1af79"
+checksum = "d23c1ba4cf0efd44be32017709280b32d1cea5c3f1275c3b6d9e8bc54f758085"
 dependencies = [
  "itoa 1.0.1",
  "ryu",
@@ -2952,12 +3031,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8ea5119cdb4c55b55d432abb513a0429384878c15dde60cc77b1c99de1a95a6a"
 
 [[package]]
+name = "strsim"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "73473c0e59e6d5812c5dfe2a064a6444949f089e20eec9a2e5506596494e4623"
+
+[[package]]
 name = "structopt"
 version = "0.2.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "16c2cdbf9cc375f15d1b4141bc48aeef444806655cd0e904207edc8d68d86ed7"
 dependencies = [
- "clap",
+ "clap 2.34.0",
  "structopt-derive 0.2.18",
 ]
 
@@ -2967,7 +3052,7 @@ version = "0.3.26"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0c6b5c64445ba8094a6ab0c3cd2ad323e07171012d9c98b0b15651daf1787a10"
 dependencies = [
- "clap",
+ "clap 2.34.0",
  "lazy_static",
  "structopt-derive 0.4.18",
 ]
@@ -2978,7 +3063,7 @@ version = "0.2.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "53010261a84b37689f9ed7d395165029f9cc7abb9f56bbfe86bee2597ed25107"
 dependencies = [
- "heck",
+ "heck 0.3.3",
  "proc-macro2 0.4.30",
  "quote 0.6.13",
  "syn 0.15.44",
@@ -2990,7 +3075,7 @@ version = "0.4.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dcb5ae327f9cc13b68763b5749770cb9e048a99bd9dfdfa58d0cf05d5f64afe0"
 dependencies = [
- "heck",
+ "heck 0.3.3",
  "proc-macro-error",
  "proc-macro2 1.0.36",
  "quote 1.0.14",
@@ -3068,6 +3153,17 @@ version = "0.0.0"
 dependencies = [
  "testanything",
  "thiserror",
+]
+
+[[package]]
+name = "tar"
+version = "0.4.38"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4b55807c0344e1e6c04d7c965f5289c39a8d94ae23ed5c0b57aabac549f871c6"
+dependencies = [
+ "filetime",
+ "libc",
+ "xattr",
 ]
 
 [[package]]
@@ -3154,11 +3250,11 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-trait",
+ "clap 3.1.0",
  "futures",
  "logger",
  "once_cell",
  "serde",
- "structopt 0.3.26",
  "test-logger",
  "tokio",
  "tracing",
@@ -3190,6 +3286,12 @@ checksum = "d326610f408c7a4eb6f51c37c330e496b08506c9457c9d34287ecc38809fb060"
 dependencies = [
  "unicode-width",
 ]
+
+[[package]]
+name = "textwrap"
+version = "0.14.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0066c8d12af8b5acd21e00547c3797fde4e8677254a7ee429176ccebbe93dd80"
 
 [[package]]
 name = "thiserror"
@@ -3399,7 +3501,7 @@ dependencies = [
  "http-body",
  "hyper",
  "hyper-timeout",
- "percent-encoding",
+ "percent-encoding 2.1.0",
  "pin-project",
  "prost",
  "prost-derive",
@@ -3602,11 +3704,20 @@ checksum = "dcf81ac59edc17cc8697ff311e8f5ef2d99fcbd9817b34cec66f90b6c3dfd987"
 
 [[package]]
 name = "unicase"
+version = "1.4.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7f4765f83163b74f957c797ad9253caf97f103fb064d3999aea9568d09fc8a33"
+dependencies = [
+ "version_check 0.1.5",
+]
+
+[[package]]
+name = "unicase"
 version = "2.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "50f37be617794602aabbeee0be4f259dc1778fabe05e2d67ee8f79326d5cb4f6"
 dependencies = [
- "version_check",
+ "version_check 0.9.4",
 ]
 
 [[package]]
@@ -3656,14 +3767,25 @@ checksum = "a156c684c91ea7d62626509bce3cb4e1d9ed5c4d978f7b4352658f96a4c26b4a"
 
 [[package]]
 name = "url"
+version = "1.7.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dd4e7c0d531266369519a4aa4f399d748bd37043b00bde1e4ff1f60a120b355a"
+dependencies = [
+ "idna 0.1.5",
+ "matches",
+ "percent-encoding 1.0.1",
+]
+
+[[package]]
+name = "url"
 version = "2.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a507c383b2d33b5fc35d1861e77e6b383d158b2da5e14fe51b83dfedf6fd578c"
 dependencies = [
  "form_urlencoded",
- "idna",
+ "idna 0.2.3",
  "matches",
- "percent-encoding",
+ "percent-encoding 2.1.0",
 ]
 
 [[package]]
@@ -3710,6 +3832,12 @@ checksum = "f1bddf1187be692e79c5ffeab891132dfb0f236ed36a43c7ed39f1165ee20191"
 
 [[package]]
 name = "version_check"
+version = "0.1.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "914b1a6776c4c929a602fafd8bc742e06365d4bcbe48c30f9cca5824f70dc9dd"
+
+[[package]]
+name = "version_check"
 version = "0.9.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "49874b5167b65d7193b8aba1567f5c7d93d001cafc34600cee003eda787e483f"
@@ -3719,12 +3847,12 @@ name = "vino"
 version = "0.1.0"
 dependencies = [
  "atty",
+ "clap 3.1.0",
  "futures",
  "logger",
  "nkeys 0.1.0",
  "serde",
  "serde_json",
- "structopt 0.3.26",
  "tap",
  "test_bin",
  "thiserror",
@@ -3759,7 +3887,7 @@ version = "0.8.0"
 dependencies = [
  "serde",
  "thiserror",
- "url",
+ "url 2.2.2",
  "vino-macros",
 ]
 
@@ -3855,6 +3983,7 @@ version = "0.0.0"
 dependencies = [
  "anyhow",
  "async-trait",
+ "clap 3.1.0",
  "futures",
  "logger",
  "once_cell",
@@ -3862,7 +3991,6 @@ dependencies = [
  "redis",
  "serde",
  "serde_json",
- "structopt 0.3.26",
  "test-logger",
  "thiserror",
  "tokio",
@@ -3907,10 +4035,10 @@ dependencies = [
 name = "vino-loader"
 version = "0.0.0"
 dependencies = [
- "oci-utils",
  "thiserror",
  "tokio",
  "tracing",
+ "vino-oci",
 ]
 
 [[package]]
@@ -3965,12 +4093,56 @@ dependencies = [
 ]
 
 [[package]]
+name = "vino-oci"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-recursion",
+ "clap 3.1.0",
+ "env_logger 0.9.0",
+ "logger",
+ "oci-distribution",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "tar",
+ "test-logger",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "vino-par",
+ "vino-types",
+ "vino-wascap",
+]
+
+[[package]]
 name = "vino-packet"
 version = "0.8.0"
 dependencies = [
  "serde",
  "serde-value",
  "vino-codec",
+]
+
+[[package]]
+name = "vino-par"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-recursion",
+ "clap 3.1.0",
+ "env_logger 0.9.0",
+ "logger",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "tar",
+ "test-logger",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "vino-types",
+ "vino-wascap",
 ]
 
 [[package]]
@@ -3999,6 +4171,7 @@ dependencies = [
  "anyhow",
  "async-stream",
  "cfg-if",
+ "clap 3.1.0",
  "logger",
  "nkeys 0.1.0",
  "once_cell",
@@ -4006,7 +4179,6 @@ dependencies = [
  "reqwest",
  "serde",
  "serde_json",
- "structopt 0.3.26",
  "test-logger",
  "test-vino-provider",
  "thiserror",
@@ -4022,6 +4194,32 @@ dependencies = [
  "vino-packet",
  "vino-rpc",
  "vino-transport",
+]
+
+[[package]]
+name = "vino-provider-grpc"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "futures",
+ "http",
+ "logger",
+ "parking_lot",
+ "rand 0.8.4",
+ "serde",
+ "serde_json",
+ "tar",
+ "test-logger",
+ "test-vino-provider",
+ "thiserror",
+ "tokio",
+ "tokio-stream",
+ "tracing",
+ "vino-invocation-server",
+ "vino-provider",
+ "vino-provider-cli",
+ "vino-rpc",
 ]
 
 [[package]]
@@ -4042,6 +4240,34 @@ dependencies = [
  "vino-lattice",
  "vino-provider",
  "vino-rpc",
+]
+
+[[package]]
+name = "vino-provider-par"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "futures",
+ "logger",
+ "parking_lot",
+ "rand 0.8.4",
+ "serde",
+ "serde_json",
+ "tar",
+ "test-logger",
+ "test-vino-provider",
+ "thiserror",
+ "tokio",
+ "tokio-stream",
+ "tracing",
+ "vino-loader",
+ "vino-par",
+ "vino-provider",
+ "vino-provider-cli",
+ "vino-rpc",
+ "vino-wascap",
+ "workspace-root",
 ]
 
 [[package]]
@@ -4180,12 +4406,38 @@ dependencies = [
  "vino-native-api-0",
  "vino-packet",
  "vino-provider",
+ "vino-provider-grpc",
  "vino-provider-lattice",
+ "vino-provider-par",
  "vino-provider-wasm",
  "vino-rpc",
  "vino-transport",
  "vino-types",
  "vino-wascap",
+]
+
+[[package]]
+name = "vino-standalone"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "clap 3.1.0",
+ "futures",
+ "logger",
+ "parking_lot",
+ "serde",
+ "serde_json",
+ "test-logger",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "vino-entity",
+ "vino-packet",
+ "vino-provider",
+ "vino-provider-cli",
+ "vino-random",
+ "vino-rpc",
+ "vino-transport",
 ]
 
 [[package]]
@@ -4240,11 +4492,13 @@ version = "0.1.0"
 dependencies = [
  "criterion",
  "data-encoding",
+ "logger",
  "nuid",
  "parity-wasm",
  "ring",
  "serde",
  "thiserror",
+ "tracing",
  "vino-types",
  "wascap",
 ]
@@ -4253,12 +4507,14 @@ dependencies = [
 name = "vinoc"
 version = "0.3.2"
 dependencies = [
+ "async-recursion",
  "atty",
+ "clap 3.1.0",
  "futures",
  "logger",
  "nkeys 0.1.0",
+ "oci-distribution",
  "serde_json",
- "structopt 0.3.26",
  "thiserror",
  "tokio",
  "tonic",
@@ -4268,6 +4524,7 @@ dependencies = [
  "vino-host",
  "vino-macros",
  "vino-manifest",
+ "vino-oci",
  "vino-packet",
  "vino-provider-cli",
  "vino-rpc",
@@ -4283,13 +4540,13 @@ version = "0.2.8"
 dependencies = [
  "anyhow",
  "atty",
+ "clap 3.1.0",
  "futures",
  "logger",
  "once_cell",
  "serde",
  "serde-value",
  "serde_json",
- "structopt 0.3.26",
  "tap",
  "thiserror",
  "tokio",
@@ -4798,7 +5055,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c87f4a07fca63f501eda1bb964ed1350195e02e340bc54ee53ee0d3fdef1f1bf"
 dependencies = [
  "anyhow",
- "heck",
+ "heck 0.3.3",
  "proc-macro2 1.0.36",
  "quote 1.0.14",
  "shellexpand",
@@ -4882,12 +5139,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "workspace-root"
+version = "0.0.1"
+
+[[package]]
 name = "www-authenticate"
-version = "0.3.0"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "02fd1970505d8d9842104b229ba0c6b6331c0897677d0fc0517ea657e77428d0"
 dependencies = [
  "hyperx",
- "unicase",
- "url",
+ "unicase 1.4.2",
+ "url 1.7.2",
+]
+
+[[package]]
+name = "xattr"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "244c3741f4240ef46274860397c7c74e50eb23624996930e484c16679633a54c"
+dependencies = [
+ "libc",
 ]
 
 [[package]]

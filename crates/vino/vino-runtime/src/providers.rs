@@ -1,5 +1,4 @@
 pub(crate) mod error;
-pub(crate) mod grpc_provider_service;
 pub(crate) mod native_provider_service;
 pub(crate) mod network_provider;
 
@@ -13,7 +12,6 @@ use self::native_provider_service::NativeProviderService;
 use crate::dev::prelude::*;
 use crate::dispatch::network_invoke_sync;
 use crate::network_service::initialize::ProviderInitOptions;
-use crate::providers::grpc_provider_service::GrpcProviderService;
 
 pub(crate) type BoxedInvocationHandler = Box<dyn InvocationHandler + Send + Sync>;
 
@@ -57,11 +55,38 @@ pub(crate) fn initialize_native_provider(namespace: String, seed: u64) -> Provid
   ))
 }
 
+pub(crate) async fn initialize_par_provider(
+  provider: ProviderDefinition,
+  namespace: String,
+  opts: ProviderInitOptions,
+) -> ProviderInitResult {
+  trace!("PROV:PAR:NS[{}]:REGISTERING", provider.namespace);
+
+  let bytes = vino_loader::get_bytes(&provider.reference, opts.allow_latest, &opts.allowed_insecure).await?;
+
+  let service =
+    vino_provider_par::provider::Provider::from_tarbytes(namespace.clone(), provider.reference.clone(), &*bytes)
+      .await?;
+
+  let service = NativeProviderService::new(namespace.clone(), Arc::new(service));
+
+  let signature = service.get_signature()?;
+
+  Ok((
+    signature.into(),
+    ProviderChannel {
+      namespace: namespace.clone(),
+      recipient: Arc::new(Box::new(service)),
+    },
+  ))
+}
+
 pub(crate) async fn initialize_grpc_provider(provider: ProviderDefinition, namespace: String) -> ProviderInitResult {
   trace!("PROV:GRPC:NS[{}]:REGISTERING", provider.namespace);
 
-  let mut service = GrpcProviderService::new(namespace.clone());
-  service.init(provider.reference.clone()).await?;
+  let service = vino_provider_grpc::provider::Provider::new(namespace.clone(), provider.reference.clone()).await?;
+
+  let service = NativeProviderService::new(namespace.clone(), Arc::new(service));
 
   let signature = service.get_signature()?;
 
@@ -84,7 +109,7 @@ pub(crate) async fn initialize_wasm_provider(
   let component =
     vino_provider_wasm::helpers::load_wasm(&provider.reference, opts.allow_latest, &opts.allowed_insecure).await?;
 
-  // TODO make threads elastic
+  // TODO take max threads from configuration
   let provider = Arc::new(vino_provider_wasm::provider::Provider::try_load(
     &component,
     5,

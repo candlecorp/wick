@@ -1,14 +1,14 @@
 use std::fs::File;
 use std::io::Read;
 
-use structopt::StructOpt;
+use clap::Args;
 
 use crate::error::ControlError;
 use crate::Result;
-#[derive(Debug, Clone, StructOpt)]
-#[structopt(rename_all = "kebab-case")]
+#[derive(Debug, Clone, Args)]
+#[clap(rename_all = "kebab-case")]
 pub(crate) struct Options {
-  #[structopt(flatten)]
+  #[clap(flatten)]
   pub(crate) logging: super::LoggingOptions,
 
   /// File to read.

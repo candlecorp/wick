@@ -1,24 +1,23 @@
-use structopt::StructOpt;
+use clap::Args;
 use vino_rpc::rpc::StatsRequest;
 use vino_rpc::Statistics;
 
 use crate::Result;
 
-#[derive(Debug, Clone, StructOpt)]
-#[structopt(rename_all = "kebab-case")]
+#[derive(Debug, Clone, Args)]
+#[clap(rename_all = "kebab-case")]
 pub(crate) struct Options {
-  #[structopt(flatten)]
+  #[clap(flatten)]
   pub(crate) logging: super::LoggingOptions,
 
-  #[structopt(flatten)]
+  #[clap(flatten)]
   pub(crate) connection: super::ConnectOptions,
 }
 
 pub(crate) async fn handle(opts: Options) -> Result<()> {
   let _guard = crate::utils::init_logger(&opts.logging)?;
   let mut client = vino_rpc::make_rpc_client(
-    opts.connection.address,
-    opts.connection.port,
+    format!("http://{}:{}", opts.connection.address, opts.connection.port),
     opts.connection.pem,
     opts.connection.key,
     opts.connection.ca,

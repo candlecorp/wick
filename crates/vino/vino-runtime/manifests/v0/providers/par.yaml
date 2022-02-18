@@ -1,0 +1,20 @@
+---
+version: 0
+host:
+  allow_latest: true
+network:
+  providers:
+    - namespace: test-namespace
+      kind: Par
+      reference: vinoreg.azurecr.io/provider/standalone-test:latest
+  schematics:
+    - name: par
+      providers:
+        - test-namespace
+      instances:
+        add:
+          id: test-namespace::add
+      connections:
+        - <> => add[left]
+        - <> => add[right]
+        - add[output] => <>

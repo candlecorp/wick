@@ -17,6 +17,10 @@ pub enum ProviderError {
   #[error("Provider uninitialized ({0})")]
   Uninitialized(i32),
   #[error(transparent)]
+  ParProviderError(#[from] vino_provider_par::Error),
+  #[error(transparent)]
+  GrpcProviderError(#[from] vino_provider_grpc::Error),
+  #[error(transparent)]
   WasmProviderError(#[from] vino_provider_wasm::Error),
   #[error("Failed to create a raw WebAssembly host")]
   WapcError,
@@ -24,6 +28,8 @@ pub enum ProviderError {
   ConversionError(#[from] ConversionError),
   #[error(transparent)]
   IOError(#[from] std::io::Error),
+  #[error(transparent)]
+  LoadFailed(#[from] vino_loader::Error),
   #[error(transparent)]
   RpcError(#[from] vino_rpc::Error),
   #[error(transparent)]

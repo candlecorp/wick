@@ -4,21 +4,21 @@ use std::io::Error;
 use std::path::{Path, PathBuf};
 use std::{env, fs};
 
+use clap::Args;
 use nkeys::{KeyPair, KeyPairType};
-use structopt::StructOpt;
 
-#[derive(Debug, Clone, StructOpt)]
+#[derive(Debug, Clone, Args)]
 pub(crate) struct GenerateCommon {
   /// Location of key files for signing. Defaults to $VINO_KEYS ($HOME/.vino/keys or %USERPROFILE%/.vino/keys on Windows).
-  #[structopt(long = "directory", env = "VINO_KEYS", hide_env_values = true)]
+  #[clap(long = "directory", env = "VINO_KEYS", hide_env_values = true)]
   pub(crate) directory: Option<String>,
 
   /// Set the token expiration in days. By default the token will never expire.
-  #[structopt(short = "x", long = "expires")]
+  #[clap(short = 'x', long = "expires")]
   pub(crate) expires_in_days: Option<u64>,
 
   /// Period in days before token becomes valid. By default the token will be valid immediately.
-  #[structopt(short = "b", long)]
+  #[clap(short = 'b', long)]
   pub(crate) not_before: Option<u64>,
 }
 

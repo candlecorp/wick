@@ -176,6 +176,60 @@ pub struct ProviderDefinition {
   pub data: serde_json::Value,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, Copy, Eq, PartialEq)]
+#[serde(deny_unknown_fields)]
+/// Kind of provider.
+pub enum ProviderKind {
+  /// Native providers included at compile-time in a Vino host.
+  Native = 0,
+  /// The URL for a separately managed GRPC endpoint.
+  GrpcUrl = 1,
+  /// A WaPC WebAssembly provider.
+  WaPC = 2,
+  /// A provider accessible via a connected lattice.
+  Lattice = 3,
+  /// A local or remote Network definition.
+  Network = 4,
+  /// A GRPC provider binary.
+  Par = 5,
+}
+
+impl Default for ProviderKind {
+  fn default() -> Self {
+    Self::from_u16(0).unwrap()
+  }
+}
+
+impl FromPrimitive for ProviderKind {
+  fn from_i64(n: i64) -> Option<Self> {
+    Some(match n {
+      0 => Self::Native,
+      1 => Self::GrpcUrl,
+      2 => Self::WaPC,
+      3 => Self::Lattice,
+      4 => Self::Network,
+      5 => Self::Par,
+      _ => {
+        return None;
+      }
+    })
+  }
+
+  fn from_u64(n: u64) -> Option<Self> {
+    Some(match n {
+      0 => Self::Native,
+      1 => Self::GrpcUrl,
+      2 => Self::WaPC,
+      3 => Self::Lattice,
+      4 => Self::Network,
+      5 => Self::Par,
+      _ => {
+        return None;
+      }
+    })
+  }
+}
+
 #[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 /// A definition for an individual Vino schematic.
@@ -201,56 +255,6 @@ pub struct SchematicManifest {
   #[serde(default)]
   #[serde(skip_serializing_if = "HashMap::is_empty")]
   pub constraints: HashMap<String, String>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, Copy, Eq, PartialEq)]
-#[serde(deny_unknown_fields)]
-/// Kind of provider.
-pub enum ProviderKind {
-  /// Native providers included at compile-time in a Vino host.
-  Native = 0,
-  /// The URL for a separately managed GRPC endpoint.
-  GrpcUrl = 1,
-  /// A WaPC WebAssembly provider.
-  WaPC = 2,
-  /// A provider accessible via a connected lattice.
-  Lattice = 3,
-  /// A local or remote Network definition.
-  Network = 4,
-}
-
-impl Default for ProviderKind {
-  fn default() -> Self {
-    Self::from_u16(0).unwrap()
-  }
-}
-
-impl FromPrimitive for ProviderKind {
-  fn from_i64(n: i64) -> Option<Self> {
-    Some(match n {
-      0 => Self::Native,
-      1 => Self::GrpcUrl,
-      2 => Self::WaPC,
-      3 => Self::Lattice,
-      4 => Self::Network,
-      _ => {
-        return None;
-      }
-    })
-  }
-
-  fn from_u64(n: u64) -> Option<Self> {
-    Some(match n {
-      0 => Self::Native,
-      1 => Self::GrpcUrl,
-      2 => Self::WaPC,
-      3 => Self::Lattice,
-      4 => Self::Network,
-      _ => {
-        return None;
-      }
-    })
-  }
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq, Eq)]

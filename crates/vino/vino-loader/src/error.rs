@@ -7,7 +7,7 @@ pub enum LoadError {
   #[error(transparent)]
   IoError(#[from] std::io::Error),
   #[error(transparent)]
-  OciError(#[from] oci_utils::Error),
+  OciError(#[from] vino_oci::Error),
   #[error("JSON Serialization/Deserialization error : {0}")]
   JsonError(String),
   #[error("Could not extract claims from component. Is it a signed WebAssembly module?")]

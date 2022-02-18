@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use structopt::StructOpt;
+use clap::Args;
 use vino_host::HostBuilder;
 use vino_manifest::host_definition::HostDefinition;
 use vino_provider_cli::options::{DefaultCliOptions, LatticeCliOptions};
@@ -12,20 +12,20 @@ use crate::error::VinoError;
 use crate::utils::merge_config;
 use crate::Result;
 
-#[derive(Debug, Clone, StructOpt)]
-#[structopt(rename_all = "kebab-case")]
+#[derive(Debug, Clone, Args)]
+#[clap(rename_all = "kebab-case")]
 pub(crate) struct TestCommand {
-  #[structopt(flatten)]
+  #[clap(flatten)]
   pub(crate) logging: LoggingOptions,
 
-  #[structopt(flatten)]
+  #[clap(flatten)]
   pub(crate) lattice: LatticeCliOptions,
 
-  #[structopt(flatten)]
+  #[clap(flatten)]
   pub(crate) host: super::HostOptions,
 
   /// Turn on info logging.
-  #[structopt(long = "info")]
+  #[clap(long = "info")]
   pub(crate) info: bool,
 
   /// Manifest file or OCI url.

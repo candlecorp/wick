@@ -109,6 +109,19 @@ pub mod error;
 pub(crate) type Result<T> = std::result::Result<T, error::ClaimsError>;
 pub use error::ClaimsError as Error;
 
+/// A common struct to group related options together.
+#[derive(Debug, Default, Clone)]
+pub struct ClaimsOptions {
+  /// The revision of the claims target.
+  pub revision: Option<u32>,
+  /// The version of the claims target.
+  pub version: Option<String>,
+  /// When the target expires.
+  pub expires_in_days: Option<u64>,
+  /// When the target becomes valid.
+  pub not_before_days: Option<u64>,
+}
+
 /// Extract the claims embedded in a [Token].
 pub fn extract_claims(contents: impl AsRef<[u8]>) -> Result<Option<Token<ProviderClaims>>> {
   let module: Module = deserialize_buffer(contents.as_ref())?;
@@ -117,47 +130,94 @@ pub fn extract_claims(contents: impl AsRef<[u8]>) -> Result<Option<Token<Provide
   if sections.is_empty() {
     Ok(None)
   } else {
-    let jwt = String::from_utf8(sections[0].payload().to_vec())?;
-    let claims: Claims<ProviderClaims> = Claims::decode(&jwt)?;
+    let token = decode_token(sections[0].payload().to_vec())?;
     let hash = compute_hash_without_jwt(module)?;
-
-    let valid_hash = claims.metadata.as_ref().map_or(false, |meta| meta.module_hash == hash);
-
-    if valid_hash {
-      Ok(Some(Token { jwt, claims }))
-    } else {
-      Err(error::ClaimsError::InvalidModuleHash)
-    }
+    assert_valid_jwt(&token, &hash)?;
+    Ok(Some(token))
   }
+}
+
+/// Validate a JWT's hash matches the passed hash.
+pub fn assert_valid_jwt(token: &Token<ProviderClaims>, hash: &str) -> Result<()> {
+  let valid_hash = token
+    .claims
+    .metadata
+    .as_ref()
+    .map_or(false, |meta| meta.module_hash == hash);
+
+  if valid_hash {
+    Ok(())
+  } else {
+    Err(error::ClaimsError::InvalidModuleHash)
+  }
+}
+
+/// Decode a JWT and its claims.
+pub fn decode_token(jwt_bytes: Vec<u8>) -> Result<Token<ProviderClaims>> {
+  let jwt = String::from_utf8(jwt_bytes)?;
+  tracing::trace!("OCI:JWT:{}", jwt);
+  let claims: Claims<ProviderClaims> = Claims::decode(&jwt)?;
+  Ok(Token { jwt, claims })
 }
 
 /// This function will embed a set of claims inside the bytecode of a WebAssembly module. The claims.
 /// are converted into a JWT and signed using the provided `KeyPair`.
-/// According to the WebAssembly [custom section](https://webassembly.github.io/spec/core/appendix/custom.html).
-/// specification, arbitary sets of bytes can be stored in a WebAssembly module without impacting.
-/// parsers or interpreters. Returns a vector of bytes representing the new WebAssembly module which can.
-/// be saved to a `.wasm` file.
 pub fn embed_claims(orig_bytecode: &[u8], claims: &Claims<ProviderClaims>, kp: &KeyPair) -> Result<Vec<u8>> {
   let mut module: Module = deserialize_buffer(orig_bytecode)?;
   module.clear_custom_section("jwt");
   let cleanbytes = serialize(module)?;
+  let jwt = make_jwt(&*cleanbytes, claims, kp)?;
 
-  let digest = sha256_digest(cleanbytes.as_slice())?;
-  let mut claims = (*claims).clone();
-  let meta = claims.metadata.map(|md| ProviderClaims {
-    module_hash: HEXUPPER.encode(digest.as_ref()),
-    ..md
-  });
-  claims.metadata = meta;
-
-  let encoded = claims.encode(kp)?;
-  let encvec = encoded.as_bytes().to_vec();
   let mut m: Module = deserialize_buffer(orig_bytecode)?;
-  m.set_custom_section("jwt", encvec);
+  m.set_custom_section("jwt", jwt);
   let mut buf = Vec::new();
   m.serialize(&mut buf)?;
 
   Ok(buf)
+}
+
+/// Create a JWT claims with a hash of the buffer embedded.
+pub fn make_jwt<R: Read>(buffer: R, claims: &Claims<ProviderClaims>, kp: &KeyPair) -> Result<Vec<u8>> {
+  let module_hash = hash_bytes(buffer)?;
+  let mut claims = (*claims).clone();
+  let meta = claims.metadata.map(|md| ProviderClaims { module_hash, ..md });
+  claims.metadata = meta;
+
+  let encoded = claims.encode(kp)?;
+  let encvec = encoded.as_bytes().to_vec();
+
+  Ok(encvec)
+}
+
+/// Create a string safe hash from a list of bytes.
+pub fn hash_bytes<R: Read>(buffer: R) -> Result<String> {
+  let digest = sha256_digest(buffer)?;
+  Ok(HEXUPPER.encode(digest.as_ref()))
+}
+
+/// Build provider claims from passed values
+#[must_use]
+pub fn build_provider_claims(
+  interface: ProviderSignature,
+  subject_kp: &KeyPair,
+  issuer_kp: &KeyPair,
+  options: ClaimsOptions,
+) -> Claims<ProviderClaims> {
+  Claims::<ProviderClaims> {
+    expires: options.expires_in_days,
+    id: nuid::next(),
+    issued_at: since_the_epoch().as_secs(),
+    issuer: issuer_kp.public_key(),
+    subject: subject_kp.public_key(),
+    not_before: days_from_now_to_jwt_time(options.not_before_days),
+    metadata: Some(ProviderClaims {
+      module_hash: "".to_owned(),
+      tags: Some(Vec::new()),
+      interface,
+      rev: options.revision,
+      ver: options.version,
+    }),
+  }
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -167,26 +227,9 @@ pub fn sign_buffer_with_claims(
   interface: ProviderSignature,
   mod_kp: &KeyPair,
   acct_kp: &KeyPair,
-  expires_in_days: Option<u64>,
-  not_before_days: Option<u64>,
-  version: Option<String>,
-  revision: Option<u32>,
+  options: ClaimsOptions,
 ) -> Result<Vec<u8>> {
-  let claims = Claims::<ProviderClaims> {
-    expires: expires_in_days,
-    id: nuid::next(),
-    issued_at: since_the_epoch().as_secs(),
-    issuer: acct_kp.public_key(),
-    subject: mod_kp.public_key(),
-    not_before: days_from_now_to_jwt_time(not_before_days),
-    metadata: Some(ProviderClaims {
-      module_hash: "".to_owned(),
-      tags: Some(Vec::new()),
-      interface,
-      rev: revision,
-      ver: version,
-    }),
-  };
+  let claims = build_provider_claims(interface, mod_kp, acct_kp, options);
 
   embed_claims(buf.as_ref(), &claims, acct_kp)
 }
@@ -215,7 +258,7 @@ fn compute_hash_without_jwt(module: Module) -> Result<String> {
   let mut refmod = module;
   refmod.clear_custom_section("jwt");
   let modbytes = serialize(refmod)?;
+  let hash = hash_bytes(&*modbytes)?;
 
-  let digest = sha256_digest(modbytes.as_slice())?;
-  Ok(HEXUPPER.encode(digest.as_ref()))
+  Ok(hash)
 }

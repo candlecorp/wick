@@ -1,0 +1,6 @@
+---
+interface: ./interface.json
+artifacts:
+  - path: ../../../build/x86_64-unknown-linux-gnu/vino-keyvalue-redis
+    os: linux
+    arch: amd64

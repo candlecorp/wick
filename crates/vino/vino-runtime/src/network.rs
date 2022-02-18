@@ -15,7 +15,7 @@ type Result<T> = std::result::Result<T, RuntimeError>;
 pub struct Network {
   pub uid: String,
   definition: NetworkDefinition,
-  addr: Arc<NetworkService>,
+  inner: Arc<NetworkService>,
   allow_latest: bool,
   allowed_insecure: Vec<String>,
   #[allow(unused)]
@@ -41,7 +41,7 @@ impl Network {
       rng_seed: self.rng_seed,
     };
     self
-      .addr
+      .inner
       .init(init)
       .await
       .map_err(|e| RuntimeError::InitializationFailed(e.to_string()))?;
@@ -49,41 +49,39 @@ impl Network {
     Ok(())
   }
 
-  pub async fn request<T, U>(&self, schematic: T, origin: Entity, payload: U) -> Result<TransportStream>
+  pub async fn request<U>(&self, schematic: &str, origin: Entity, payload: U) -> Result<TransportStream>
   where
-    T: AsRef<str> + Send + Sync,
     U: TryInto<TransportMap> + Send + Sync,
   {
     self.request_with_data(schematic, origin, payload, None).await
   }
 
-  pub async fn request_with_data<T, U>(
+  pub async fn request_with_data<U>(
     &self,
-    schematic: T,
+    schematic: &str,
     origin: Entity,
     payload: U,
     data: Option<InitData>,
   ) -> Result<TransportStream>
   where
-    T: AsRef<str> + Send + Sync,
     U: TryInto<TransportMap> + Send + Sync,
   {
-    trace!("NETWORK:REQUEST[{}]", schematic.as_ref());
+    trace!("NETWORK:REQUEST[{}]", schematic);
     let time = std::time::Instant::now();
     let payload = payload
       .try_into()
       .map_err(|_| RuntimeError::Serialization("Could not serialize input payload".to_owned()))?;
 
-    let invocation = Invocation::new(origin, Entity::Schematic(schematic.as_ref().to_owned()), payload);
+    let invocation = Invocation::new(origin, Entity::schematic(schematic), payload);
     let msg = InvocationMessage::with_data(invocation, data.unwrap_or_default());
 
-    let response = tokio::time::timeout(self.timeout, self.addr.invoke(msg)?)
+    let response = tokio::time::timeout(self.timeout, self.inner.invoke(msg)?)
       .await
       .map_err(|_| NetworkError::Timeout)??;
 
     trace!(
       "NETWORK:REQUEST[{}]:COMPLETE[duration {} μs]",
-      schematic.as_ref(),
+      schematic,
       time.elapsed().as_micros()
     );
     Ok(response.ok()?)
@@ -91,13 +89,13 @@ impl Network {
 
   pub fn get_signature(&self) -> Result<ProviderSignature> {
     trace!("NETWORK:LIST_SCHEMATICS");
-    let response = self.addr.get_signature();
+    let response = self.inner.get_signature();
     trace!("NETWORK:LIST_SCHEMATICS:COMPLETE");
     Ok(response?)
   }
 }
 
-/// The HostBuilder builds the configuration for a Vino Host.
+/// The [NetworkBuilder] builds the configuration for a Vino Network.
 #[derive(Debug)]
 #[must_use]
 pub struct NetworkBuilder {
@@ -112,7 +110,7 @@ pub struct NetworkBuilder {
 }
 
 impl NetworkBuilder {
-  /// Creates a new host builder.
+  /// Creates a new network builder from a [NetworkDefinition]
   pub fn from_definition(definition: NetworkDefinition, seed: &str) -> Result<Self> {
     let kp = keypair_from_seed(seed)?;
     let nuid = kp.public_key();
@@ -162,7 +160,7 @@ impl NetworkBuilder {
     let addr = crate::network_service::NetworkService::for_id(&self.uid);
 
     Network {
-      addr,
+      inner: addr,
       definition: self.definition,
       uid: self.uid,
       allow_latest: self.allow_latest,

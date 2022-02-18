@@ -224,6 +224,10 @@
       "required": []
     },
 
+    "ProviderKind": {
+      "enum": ["Native", "GrpcUrl", "WaPC", "Lattice", "Network", "Par"]
+    },
+
     "SchematicManifest": {
       "$anchor": "#SchematicManifest",
       "additionalProperties": false,
@@ -267,10 +271,6 @@
         }
       },
       "required": ["name"]
-    },
-
-    "ProviderKind": {
-      "enum": ["Native", "GrpcUrl", "WaPC", "Lattice", "Network"]
     },
 
     "ComponentDefinition": {

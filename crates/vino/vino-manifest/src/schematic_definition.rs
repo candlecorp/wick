@@ -174,12 +174,15 @@ pub enum ProviderKind {
   Lattice = 3,
   /// A local or remote Network definition.
   Network = 4,
+  /// A GRPC provider binary.
+  Par = 5,
 }
 
 impl From<crate::v0::ProviderKind> for ProviderKind {
   fn from(def: crate::v0::ProviderKind) -> Self {
     match def {
       crate::v0::ProviderKind::Native => ProviderKind::Native,
+      crate::v0::ProviderKind::Par => ProviderKind::Par,
       crate::v0::ProviderKind::GrpcUrl => ProviderKind::GrpcUrl,
       crate::v0::ProviderKind::WaPC => ProviderKind::Wapc,
       crate::v0::ProviderKind::Lattice => ProviderKind::Lattice,

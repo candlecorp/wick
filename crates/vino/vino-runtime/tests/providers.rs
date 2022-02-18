@@ -114,3 +114,24 @@ async fn grpc() -> Result<()> {
 
   Ok(())
 }
+
+#[test_logger::test(tokio::test)]
+async fn par() -> Result<()> {
+  let (network, _) = init_network_from_yaml("./manifests/v0/providers/par.yaml").await?;
+
+  let data = hashmap! {
+      "left" => 32,
+      "right" => 43,
+  };
+
+  let mut result = network.request("par", Entity::test("par"), &data).await?;
+
+  let mut messages: Vec<TransportWrapper> = result.collect_port("output").await;
+  assert_eq!(messages.len(), 1);
+
+  let output: u32 = messages.pop().unwrap().payload.try_into()?;
+
+  assert_eq!(output, 75);
+
+  Ok(())
+}

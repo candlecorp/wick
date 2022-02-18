@@ -23,7 +23,7 @@ TEST_WASM=$(TEST_WASM_DIR)/build/test_component_s.wasm
 TEST_WASI_DIR=$(CRATES_DIR)/integration/test-wasi-component
 TEST_WASI=$(TEST_WASI_DIR)/build/test_wasi_component_s.wasm
 
-BINS=vinoc vino vow vino-keyvalue-redis
+VINO_BINS?=vinoc vino vow
 
 RELEASE?=false
 ARCH?=local
@@ -37,14 +37,14 @@ endif
 .PHONY: all
 all: build
 
-# Defines rules for each of the BINS to copy them into build/local
+# Defines rules for each of the VINO_BINS to copy them into build/local
 define BUILD_BIN
 $(1): build
 	cp target/debug/$$@ build/local
 endef
 
 # Call the above rule generator for each BIN file
-$(foreach bin,$(BINS),$(eval $(call BUILD_BIN,$(bin))))
+$(foreach bin,$(VINO_BINS),$(eval $(call BUILD_BIN,$(bin))))
 
 .PHONY: cleangen
 cleangen:
@@ -82,12 +82,12 @@ clean:
 	cargo clean
 
 .PHONY: install-release
-install-release: $(BINS)
+install-release: $(VINO_BINS)
 	cargo build --workspace --release
 	cp build/local/* ~/.cargo/bin/
 
 .PHONY: install
-install: $(BINS)
+install: $(VINO_BINS)
 	cargo build --workspace
 	cp build/local/* ~/.cargo/bin/
 
@@ -113,12 +113,6 @@ test: codegen wasm
 	cargo build --workspace # necessary to ensure binaries are built
 	cargo test --workspace
 
-.PHONY: integration
-test-integration: $(TEST_WASM)
-	cargo deny check licenses --hide-inclusion-graph
-	cargo build --workspace # necessary to ensure binaries are built
-	cargo test --workspace --features test-integration --features vino-lattice/test-integration --features vino-provider-lattice/test-integration --features vino-runtime/test-integration --features vino-keyvalue-redis/test-integration
-
 .PHONY: update-lint
 update-lint:
 	npm run update-lint
@@ -132,29 +126,36 @@ else
 	@echo "Check in changes before making a build tag."
 endif
 
+.PHONY: provider-archive
+provider-bin: crates/vino/vino-provider-par/test/vino-standalone
+
+crates/vino/vino-provider-par/test/vino-standalone: $(wildcard crates/providers/provider-standalone/src/*.rs)
+	cargo build -p vino-standalone --release
+	cp target/release/vino-standalone crates/vino/vino-provider-par/test/vino-standalone
+
 .PHONY: bins
 bins: ./build/$(ARCH)
 	@echo "Building ARCH=$(ARCH) RELEASE=$(RELEASE)"
 	@rm -rf ./build/$(ARCH)/*
 ifeq ($(ARCH),local)
 ifeq ($(RELEASE),true)
-	cargo build --release $(foreach bin,$(BINS),-p $(bin))
-	cp $(foreach bin,$(BINS),./target/release/$(bin)$(BIN_SUFFIX)) ./build/$(ARCH)
+	cargo build --release $(foreach bin,$(VINO_BINS),-p $(bin))
+	cp $(foreach bin,$(VINO_BINS),./target/release/$(bin)$(BIN_SUFFIX)) ./build/$(ARCH)
 else
-	cargo build $(foreach bin,$(BINS),-p $(bin))
-	cp $(foreach bin,$(BINS),./target/debug/$(bin)$(BIN_SUFFIX)) ./build/$(ARCH)
+	cargo build $(foreach bin,$(VINO_BINS),-p $(bin))
+	cp $(foreach bin,$(VINO_BINS),./target/debug/$(bin)$(BIN_SUFFIX)) ./build/$(ARCH)
 endif
 else
 ifeq ($(RELEASE),true)
 ifeq ($(ARCH),x86_64-pc-windows-gnu)
-	CARGO_PROFILE_RELEASE_LTO=false cross build --target $(ARCH) --release $(foreach bin,$(BINS),-p $(bin))
+	CARGO_PROFILE_RELEASE_LTO=false cross build --target $(ARCH) --release $(foreach bin,$(VINO_BINS),-p $(bin))
 else
-	cross build --target $(ARCH) --release $(foreach bin,$(BINS),-p $(bin))
+	cross build --target $(ARCH) --release $(foreach bin,$(VINO_BINS),-p $(bin))
 endif
-	cp $(foreach bin,$(BINS),./target/$(ARCH)/release/$(bin)$(BIN_SUFFIX)) ./build/$(ARCH)
+	cp $(foreach bin,$(VINO_BINS),./target/$(ARCH)/release/$(bin)$(BIN_SUFFIX)) ./build/$(ARCH)
 else
-	cross build --target $(ARCH) $(foreach bin,$(BINS),-p $(bin))
-	cp $(foreach bin,$(BINS),./target/$(ARCH)/debug/$(bin)$(BIN_SUFFIX)) ./build/$(ARCH)
+	cross build --target $(ARCH) $(foreach bin,$(VINO_BINS),-p $(bin))
+	cp $(foreach bin,$(VINO_BINS),./target/$(ARCH)/debug/$(bin)$(BIN_SUFFIX)) ./build/$(ARCH)
 endif
 endif
 
@@ -170,3 +171,8 @@ build-cross-debug:
 		cross build -p vinoc --target $$TARGET; \
 		cp target/$$TARGET/debug/vinoc build/$$TARGET/; \
 	done
+
+.PHONY: deps
+deps:
+	npm install -g widl-template prettier
+	cargo install cargo-deny tomlq

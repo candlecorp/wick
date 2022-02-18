@@ -23,5 +23,5 @@ time = { version = "0.3", features = ["formatting"] }
 ansi_term = "0.12"
 serde = { version = "1", features = ["derive"] }
 
-structopt = "0.3"
+clap = { version = "3.0", features = ["derive", "env"] }
 thiserror = "1.0"

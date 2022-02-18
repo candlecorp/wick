@@ -90,23 +90,23 @@ extern crate tracing;
 
 use std::sync::Arc;
 
-use structopt::StructOpt;
+use clap::Parser;
 use vino_keyvalue_redis::provider::Provider;
 use vino_provider_cli::options::DefaultCliOptions;
 
-#[derive(Debug, Clone, StructOpt)]
+#[derive(Debug, Clone, Parser)]
 pub struct Options {
   /// IP address to bind to.
-  #[structopt(short = "u", long = "redis-url", env = vino_keyvalue_redis::REDIS_URL_ENV)]
+  #[clap(short = 'u', long = "redis-url", env = vino_keyvalue_redis::REDIS_URL_ENV)]
   pub url: String,
 
-  #[structopt(flatten)]
+  #[clap(flatten)]
   pub options: DefaultCliOptions,
 }
 
 #[tokio::main]
 async fn main() -> Result<(), vino_keyvalue_redis::error::Error> {
-  let opts = Options::from_args();
+  let opts = Options::parse();
   let url = opts.url;
   let _guard = vino_provider_cli::init_logging(&opts.options.logging.name("keyvalue-redis"));
   let provider = Provider::default();
@@ -115,4 +115,13 @@ async fn main() -> Result<(), vino_keyvalue_redis::error::Error> {
 
   vino_provider_cli::init_cli(Arc::new(provider), Some(opts.options.into())).await?;
   Ok(())
+}
+
+#[cfg(test)]
+mod test {
+  #[test]
+  fn verify_options() {
+    use clap::IntoApp;
+    super::Options::command().debug_assert();
+  }
 }

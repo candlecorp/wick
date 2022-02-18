@@ -14,7 +14,6 @@ debug = 0
 incremental = true
 
 [features]
-test-integration = []
 
 [dependencies]
 

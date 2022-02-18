@@ -1,46 +1,37 @@
 use std::path::PathBuf;
 
+use clap::Args;
 use serde::{Deserialize, Serialize};
-use structopt::StructOpt;
 
-// fn parse_write_style(spec: &str) -> Result<WriteStyle, LoggerError> {
-//   match spec {
-//     "auto" => Ok(WriteStyle::Auto),
-//     "always" => Ok(WriteStyle::Always),
-//     "never" => Ok(WriteStyle::Never),
-//     _ => Err(LoggerError::StyleParse),
-//   }
-// }
-
-#[derive(StructOpt, Debug, Default, Clone, Serialize, Deserialize)]
-/// Logging options that can be used directly or via [StructOpt].
+#[derive(Args, Debug, Default, Clone, Serialize, Deserialize)]
+/// Logging options that can be used directly or via [Args].
 pub struct LoggingOptions {
   /// Disables logging.
-  #[structopt(long = "quiet", short = "q", env = "VINO_LOG_QUIET")]
+  #[clap(long = "quiet", short = 'q')]
   pub quiet: bool,
 
   /// Turns on verbose logging.
-  #[structopt(long = "verbose", short = "V", env = "VINO_LOG_VERBOSE")]
+  #[clap(long = "verbose", short = 'V')]
   pub verbose: bool,
 
   /// Turns on debug logging.
-  #[structopt(long = "debug", env = "VINO_LOG_DEBUG")]
+  #[clap(long = "debug")]
   pub debug: bool,
 
   /// Turns on trace logging.
-  #[structopt(long = "trace", env = "VINO_LOG_TRACE")]
+  #[clap(long = "trace")]
   pub trace: bool,
 
   /// Log as JSON.
-  #[structopt(long = "log-json", env = "VINO_LOG_JSON")]
+  #[clap(long = "log-json")]
   pub log_json: bool,
 
   /// The directory to store log files,
-  #[structopt(long = "log-dir", env = "VINO_LOG_DIR")]
+  #[clap(long = "log-dir", env = "VINO_LOG_DIR")]
   pub log_dir: Option<PathBuf>,
 
   /// The application doing the logging.
-  #[structopt(skip)]
+  #[clap(skip)]
   pub app_name: String,
 }
 

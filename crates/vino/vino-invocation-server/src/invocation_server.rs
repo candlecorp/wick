@@ -45,8 +45,9 @@ enum JobResult {
 }
 
 impl InvocationServer {
-  fn record_execution(&self, job: String, status: JobResult, time: Duration) {
+  fn record_execution<T: AsRef<str>>(&self, job: T, status: JobResult, time: Duration) {
     let mut stats = self.stats.write();
+    let job = job.as_ref().to_owned();
     let stat = stats.entry(job.clone()).or_insert_with(|| Statistics {
       name: job,
       runs: 0,
@@ -97,7 +98,7 @@ impl InvocationService for InvocationServer {
       tx.send(Err(Status::failed_precondition(e.to_string()))).await.unwrap();
     } else {
       let entity = entity.unwrap();
-      let entity_name = entity.name();
+      let entity_name = entity.name().to_owned();
       let payload = convert_messagekind_map(&invocation.msg);
       let result = self.provider.invoke(entity, payload).await;
       if let Err(e) = result {

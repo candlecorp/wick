@@ -39,6 +39,9 @@ pub(crate) enum ControlError {
   IOError(String),
   #[error(transparent)]
   SerdeJsonError(#[from] serde_json::Error),
+
+  #[error(transparent)]
+  OCIError(#[from] vino_oci::Error),
 }
 
 impl From<nkeys::error::Error> for ControlError {
@@ -52,6 +55,7 @@ impl From<std::io::Error> for ControlError {
     ControlError::IOError(e.to_string())
   }
 }
+
 impl From<vino_provider_cli::Error> for ControlError {
   fn from(e: vino_provider_cli::Error) -> Self {
     ControlError::CliError(e.to_string())

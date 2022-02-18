@@ -55,7 +55,7 @@ impl InvocationMessage {
     &self.inner.origin
   }
 
-  pub(crate) fn get_origin_url(&self) -> String {
+  pub(crate) fn _get_origin_url(&self) -> String {
     self.inner.origin.url()
   }
 

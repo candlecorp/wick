@@ -18,20 +18,6 @@ type SchematicManifest {
 }
 
 
-"Kind of provider."
-enum ProviderKind {
-  "Native providers included at compile-time in a Vino host."
-  Native = 0,
-  "The URL for a separately managed GRPC endpoint."
-  GrpcUrl = 1,
-  "A WaPC WebAssembly provider."
-  WaPC = 2,
-  "A provider accessible via a connected lattice."
-  Lattice = 3,
-  "A local or remote Network definition."
-  Network = 4,
-}
-
 "A single component definition."
 type ComponentDefinition {
   "The ID of the component (i.e. the alias, key, or namespace)."

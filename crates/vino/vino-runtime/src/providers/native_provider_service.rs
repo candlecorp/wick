@@ -10,15 +10,12 @@ static PREFIX: &str = "NATIVE";
 
 pub(crate) struct NativeProviderService {
   namespace: String,
-  state: Option<State>,
+  provider: SharedRpcHandler,
 }
 
 impl NativeProviderService {
   pub(crate) fn new(namespace: String, provider: SharedRpcHandler) -> Self {
-    Self {
-      namespace,
-      state: Some(State { provider }),
-    }
+    Self { namespace, provider }
   }
 }
 
@@ -26,9 +23,7 @@ impl InvocationHandler for NativeProviderService {
   fn get_signature(&self) -> Result<ProviderSignature> {
     trace!("{}:InitComponents:[NS:{}]", PREFIX, self.namespace);
 
-    let state = some_or_bail!(&self.state, Err(ProviderError::Uninitialized(1000)));
-    // let provider = clone_box(&*state.provider);
-    let provider = state.provider.clone();
+    let provider = self.provider.clone();
 
     let mut list = provider.get_list()?;
     drop(provider);
@@ -41,9 +36,7 @@ impl InvocationHandler for NativeProviderService {
   fn invoke(&self, msg: InvocationMessage) -> Result<BoxFuture<Result<InvocationResponse>>> {
     trace!("{}:INVOKE:[{}]=>[{}]", PREFIX, msg.get_origin(), msg.get_target());
 
-    let state = self.state.as_ref().unwrap();
-    // let provider = clone_box(&*state.provider);
-    let provider = state.provider.clone();
+    let provider = self.provider.clone();
 
     let tx_id = msg.get_tx_id().to_owned();
     let component = msg.get_target().clone();
@@ -59,25 +52,15 @@ impl InvocationHandler for NativeProviderService {
           Ok(mut receiver) => {
             trace!("{}[{}]:START", PREFIX, url);
             tokio::spawn(async move {
-              loop {
-                trace!("{}[{}]:WAIT", PREFIX, url);
-                let output = match receiver.next().await {
-                  Some(v) => v,
-                  None => break,
-                };
+              while let Some(output) = receiver.next().await {
                 trace!("{}[{}]:PORT[{}]:RECV", PREFIX, url, output.port);
 
-                match tx.send(TransportWrapper {
-                  port: output.port.clone(),
+                if let Err(e) = tx.send(TransportWrapper {
+                  port: output.port,
                   payload: output.payload,
                 }) {
-                  Ok(_) => {
-                    trace!("{}[{}]:PORT[{}]:SENT", PREFIX, url, output.port);
-                  }
-                  Err(e) => {
-                    error!("Error sending output on channel {}", e.to_string());
-                    break;
-                  }
+                  error!("Error sending output on channel {}", e.to_string());
+                  break;
                 }
               }
               trace!("{}[{}]:FINISH", PREFIX, url);
@@ -99,10 +82,6 @@ impl InvocationHandler for NativeProviderService {
       .boxed(),
     )
   }
-}
-
-struct State {
-  provider: SharedRpcHandler,
 }
 
 #[cfg(test)]

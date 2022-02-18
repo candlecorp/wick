@@ -1,38 +1,38 @@
 pub(crate) mod run;
 pub(crate) mod serve;
-pub(crate) mod test;
+pub(crate) mod test_cmd;
 
-use structopt::StructOpt;
+use clap::{Args, Subcommand};
 use vino_provider_wasm::provider::WasiParams;
 
-#[derive(Debug, Clone, StructOpt)]
+#[derive(Debug, Clone, Subcommand)]
 pub(crate) enum CliCommand {
   /// Execute a component in the target WASM module.
-  #[structopt(name = "run")]
+  #[clap(name = "run")]
   Run(run::RunCommand),
   /// Start a persistent RPC, HTTP, or Lattice host for the target WASM module.
-  #[structopt(name = "serve")]
+  #[clap(name = "serve")]
   Serve(Box<serve::ServeCommand>),
   /// Run a test file against the passed WASM module.
-  #[structopt(name = "test")]
-  Test(test::TestCommand),
+  #[clap(name = "test")]
+  Test(test_cmd::TestCommand),
 }
 
-#[derive(Debug, Clone, StructOpt)]
+#[derive(Debug, Clone, Args)]
 pub(crate) struct PullOptions {
   /// Allow ':latest' tag if pulling from an OCI registry.
-  #[structopt(long)]
+  #[clap(long = "latest")]
   pub(crate) latest: bool,
 
   /// Registries to connect via HTTP vs HTTPS.
-  #[structopt(long)]
+  #[clap(long = "insecure")]
   pub(crate) insecure: Vec<String>,
 }
 
-#[derive(Debug, Clone, StructOpt)]
+#[derive(Debug, Clone, Args)]
 pub(crate) struct WasiOptions {
   /// Directories to expose to the WASM module via WASI.
-  #[structopt(long = "wasi-dir")]
+  #[clap(long = "wasi-dir")]
   wasi_dir: Vec<String>,
 }
 

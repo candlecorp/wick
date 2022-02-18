@@ -8,7 +8,11 @@ use vino_lattice::Lattice;
 
 use crate::dev::prelude::*;
 use crate::providers::{
-  initialize_grpc_provider, initialize_lattice_provider, initialize_network_provider, initialize_wasm_provider,
+  initialize_grpc_provider,
+  initialize_lattice_provider,
+  initialize_network_provider,
+  initialize_par_provider,
+  initialize_wasm_provider,
 };
 use crate::VINO_V0_NAMESPACE;
 type Result<T> = std::result::Result<T, NetworkError>;
@@ -86,7 +90,6 @@ pub(crate) struct ProviderInitOptions {
   pub(crate) timeout: Duration,
 }
 
-#[allow(clippy::too_many_arguments)]
 pub(crate) fn initialize_providers(
   providers: Vec<ProviderDefinition>,
   opts: ProviderInitOptions,
@@ -101,6 +104,7 @@ pub(crate) fn initialize_providers(
       let result = match provider.kind {
         ProviderKind::Network => initialize_network_provider(provider, namespace, opts.clone()).await,
         ProviderKind::Native => unreachable!(), // Should not be handled via this route
+        ProviderKind::Par => initialize_par_provider(provider, namespace, opts.clone()).await,
         ProviderKind::GrpcUrl => initialize_grpc_provider(provider, namespace).await,
         ProviderKind::Wapc => initialize_wasm_provider(provider, namespace, opts.clone()).await,
         ProviderKind::Lattice => initialize_lattice_provider(provider, namespace, opts.clone()).await,

@@ -1,26 +1,21 @@
-use std::convert::TryInto;
-
-use structopt::StructOpt;
-use vino_rpc::rpc::ListRequest;
-use vino_types::HostedType;
+use clap::Args;
 
 use crate::Result;
 
-#[derive(Debug, Clone, StructOpt)]
-#[structopt(rename_all = "kebab-case")]
+#[derive(Debug, Clone, Args)]
+#[clap(rename_all = "kebab-case")]
 pub(crate) struct Options {
-  #[structopt(flatten)]
+  #[clap(flatten)]
   pub(crate) logging: super::LoggingOptions,
 
-  #[structopt(flatten)]
+  #[clap(flatten)]
   pub(crate) connection: super::ConnectOptions,
 }
 
 pub(crate) async fn handle(opts: Options) -> Result<()> {
   let _guard = crate::utils::init_logger(&opts.logging)?;
   let mut client = vino_rpc::make_rpc_client(
-    opts.connection.address,
-    opts.connection.port,
+    format!("http://{}:{}", opts.connection.address, opts.connection.port),
     opts.connection.pem,
     opts.connection.key,
     opts.connection.ca,
@@ -28,15 +23,9 @@ pub(crate) async fn handle(opts: Options) -> Result<()> {
   )
   .await?;
 
-  let list = client.list(ListRequest {}).await?;
+  let list = client.list().await?;
 
-  let mut converted: Vec<HostedType> = Vec::new();
-
-  for item in list.schemas {
-    converted.push(item.try_into()?);
-  }
-
-  println!("{}", serde_json::to_string(&converted)?);
+  println!("{}", serde_json::to_string(&list)?);
 
   Ok(())
 }

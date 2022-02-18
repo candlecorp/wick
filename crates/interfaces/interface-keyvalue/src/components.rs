@@ -92,8 +92,8 @@ pub mod delete {
       }
     }
 
-    fn get_port_name(&self) -> String {
-      self.port.name.clone()
+    fn get_port_name(&self) -> &str {
+      &self.port.name
     }
   }
 
@@ -239,8 +239,8 @@ pub mod exists {
       }
     }
 
-    fn get_port_name(&self) -> String {
-      self.port.name.clone()
+    fn get_port_name(&self) -> &str {
+      &self.port.name
     }
   }
 
@@ -386,8 +386,8 @@ pub mod key_get {
       }
     }
 
-    fn get_port_name(&self) -> String {
-      self.port.name.clone()
+    fn get_port_name(&self) -> &str {
+      &self.port.name
     }
   }
 
@@ -545,8 +545,8 @@ pub mod key_set {
       }
     }
 
-    fn get_port_name(&self) -> String {
-      self.port.name.clone()
+    fn get_port_name(&self) -> &str {
+      &self.port.name
     }
   }
 
@@ -703,8 +703,8 @@ pub mod list_add {
       }
     }
 
-    fn get_port_name(&self) -> String {
-      self.port.name.clone()
+    fn get_port_name(&self) -> &str {
+      &self.port.name
     }
   }
 
@@ -867,8 +867,8 @@ pub mod list_range {
       }
     }
 
-    fn get_port_name(&self) -> String {
-      self.port.name.clone()
+    fn get_port_name(&self) -> &str {
+      &self.port.name
     }
   }
 
@@ -1026,8 +1026,8 @@ pub mod list_remove {
       }
     }
 
-    fn get_port_name(&self) -> String {
-      self.port.name.clone()
+    fn get_port_name(&self) -> &str {
+      &self.port.name
     }
   }
 
@@ -1184,8 +1184,8 @@ pub mod set_add {
       }
     }
 
-    fn get_port_name(&self) -> String {
-      self.port.name.clone()
+    fn get_port_name(&self) -> &str {
+      &self.port.name
     }
   }
 
@@ -1337,8 +1337,8 @@ pub mod set_contains {
       }
     }
 
-    fn get_port_name(&self) -> String {
-      self.port.name.clone()
+    fn get_port_name(&self) -> &str {
+      &self.port.name
     }
   }
 
@@ -1489,8 +1489,8 @@ pub mod set_get {
       }
     }
 
-    fn get_port_name(&self) -> String {
-      self.port.name.clone()
+    fn get_port_name(&self) -> &str {
+      &self.port.name
     }
   }
 
@@ -1647,8 +1647,8 @@ pub mod set_remove {
       }
     }
 
-    fn get_port_name(&self) -> String {
-      self.port.name.clone()
+    fn get_port_name(&self) -> &str {
+      &self.port.name
     }
   }
 
@@ -1813,8 +1813,8 @@ pub mod set_scan {
       }
     }
 
-    fn get_port_name(&self) -> String {
-      self.port.name.clone()
+    fn get_port_name(&self) -> &str {
+      &self.port.name
     }
   }
   #[derive(Debug)]
@@ -1842,8 +1842,8 @@ pub mod set_scan {
       }
     }
 
-    fn get_port_name(&self) -> String {
-      self.port.name.clone()
+    fn get_port_name(&self) -> &str {
+      &self.port.name
     }
   }
 

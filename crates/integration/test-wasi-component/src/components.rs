@@ -50,7 +50,7 @@ impl Dispatch for Dispatcher {
   fn dispatch(op: &str, payload: &[u8]) -> CallResult {
     let payload = IncomingPayload::from_buffer(payload)?;
     let result = match op {
-      "fs-read" => fs_read::Component::default().execute(&payload),
+      "fs-read" => crate::components::generated::fs_read::Component::default().execute(&payload),
       _ => Err(WasmError::ComponentNotFound(op.to_owned(), ALL_COMPONENTS.join(", "))),
     }?;
     Ok(serialize(&result)?)

@@ -2,13 +2,12 @@
 pub(crate) mod conversions;
 use std::time::Duration;
 
-pub use vino_types::*;
-
 pub use conversions::*;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use vino_packet::Packet;
 use vino_transport::{Failure, MessageTransport, TransportWrapper};
+pub use vino_types::*;
 
 use crate::error::RpcError;
 use crate::rpc::{message_kind, MessageKind, Output};

@@ -6,7 +6,6 @@ edition = "2021"
 license = "BSD-3-Clause"
 
 [features]
-test-integration = ["runtime-testutils/test-integration"]
 
 [dependencies]
 vino-packet = { path = "../../../sdk/crates/vino-packet" }
@@ -18,6 +17,8 @@ vino-provider = { path = "../../../sdk/crates/vino-provider", features = [
 ] }
 vino-provider-wasm = { path = "../vino-provider-wasm" }
 vino-provider-lattice = { path = "../vino-provider-lattice" }
+vino-provider-par = { path = "../vino-provider-par" }
+vino-provider-grpc = { path = "../vino-provider-grpc" }
 vino-lattice = { path = "../vino-lattice" }
 vino-native-api-0 = { path = "../../providers/provider-native-api-0" }
 vino-transport = { path = "../../../sdk/crates/vino-transport", features = [

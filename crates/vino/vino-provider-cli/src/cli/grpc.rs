@@ -1,16 +1,13 @@
-use std::{
-  net::{IpAddr, Ipv4Addr, SocketAddr},
-  str::FromStr,
-};
+use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+use std::str::FromStr;
 
 use tokio::sync::mpsc::Sender;
 use tonic::transport::{Certificate, Identity, Server};
 use vino_invocation_server::InvocationServer;
 use vino_rpc::rpc::invocation_service_server::InvocationServiceServer;
 
-use crate::options::ServerOptions;
-
 use super::{Result, ServerMessage};
+use crate::options::ServerOptions;
 
 pub(super) async fn start_rpc_server(
   options: &ServerOptions,

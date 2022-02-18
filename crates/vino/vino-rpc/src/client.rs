@@ -1,6 +1,4 @@
-use std::net::Ipv4Addr;
 use std::path::PathBuf;
-use std::str::FromStr;
 use std::time::Duration;
 
 use tokio_stream::StreamExt;
@@ -8,23 +6,24 @@ use tonic::transport::{Certificate, Channel, ClientTlsConfig, Identity, Uri};
 use tracing::debug;
 use vino_entity::Entity;
 use vino_transport::{MessageTransport, TransportMap, TransportStream, TransportWrapper};
+use vino_types::HostedType;
 
 use crate::error::RpcClientError;
 use crate::rpc::invocation_service_client::InvocationServiceClient;
-use crate::rpc::{Invocation, ListRequest, ListResponse, StatsRequest, StatsResponse};
+use crate::rpc::{Invocation, ListRequest, StatsRequest, StatsResponse};
 use crate::types::conversions::convert_transport_map;
 
 /// Create an RPC client form common configuration
-pub async fn make_rpc_client(
-  address: Ipv4Addr,
-  port: u16,
+pub async fn make_rpc_client<T: TryInto<Uri> + Send>(
+  address: T,
   pem: Option<PathBuf>,
   key: Option<PathBuf>,
   ca: Option<PathBuf>,
   domain: Option<String>,
 ) -> Result<RpcClient, RpcClientError> {
-  let url = format!("https://{}:{}", address, port);
-  let uri = Uri::from_str(&url).map_err(|_| RpcClientError::Other(format!("Could not create URI from: {}", url)))?;
+  let uri: Uri = address
+    .try_into()
+    .map_err(|_| RpcClientError::Other("Could not parse URI".to_owned()))?;
 
   let mut builder = Channel::builder(uri);
 
@@ -67,7 +66,7 @@ pub async fn make_rpc_client(
   Ok(RpcClient::from_channel(InvocationServiceClient::new(channel)))
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 /// [RpcClient] wraps an [InvocationServiceClient] into a more usable package.
 #[must_use]
 pub struct RpcClient {
@@ -102,11 +101,17 @@ impl RpcClient {
   }
 
   /// Make a request to the list RPC method
-  pub async fn list(&mut self, request: ListRequest) -> Result<ListResponse, RpcClientError> {
+  pub async fn list(&mut self) -> Result<Vec<HostedType>, RpcClientError> {
+    let request = ListRequest {};
     debug!("Making list request");
     let result = self.inner.list(request).await.map_err(RpcClientError::ListCallFailed)?;
     debug!("List result: {:?}", result);
-    Ok(result.into_inner())
+    let response = result.into_inner();
+    let signatures: Result<Vec<HostedType>, _> = response.schemas.into_iter().map(|e| e.try_into()).collect();
+    Ok(
+      signatures
+        .map_err(|_| RpcClientError::ResponseInvalid("Could not convert RPC ListResponse to HostedType".to_owned()))?,
+    )
   }
 
   /// Send an invoke RPC command with a raw RPC [Invocation] object.

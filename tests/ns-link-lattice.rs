@@ -1,4 +1,4 @@
-#[cfg(feature = "test-integration")]
+#[cfg(test)]
 mod test {
   use std::panic;
 

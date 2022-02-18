@@ -1,5 +1,5 @@
+use clap::Args;
 use futures::StreamExt;
-use structopt::StructOpt;
 use tokio::io::{self, AsyncBufReadExt, BufReader};
 use vino_entity::Entity;
 use vino_provider_cli::parse_args;
@@ -7,32 +7,32 @@ use vino_transport::{TransportMap, TransportStream};
 
 use crate::error::ControlError;
 use crate::Result;
-#[derive(Debug, Clone, StructOpt)]
-#[structopt(rename_all = "kebab-case")]
+#[derive(Debug, Clone, Args)]
+#[clap(rename_all = "kebab-case")]
 pub(crate) struct Options {
-  #[structopt(flatten)]
+  #[clap(flatten)]
   pub(crate) logging: super::LoggingOptions,
 
-  #[structopt(flatten)]
+  #[clap(flatten)]
   pub(crate) connection: super::ConnectOptions,
 
   /// Don't read input from STDIN.
-  #[structopt(long = "no-input")]
+  #[clap(long = "no-input")]
   pub(crate) no_input: bool,
 
   /// A port=value string where value is JSON to pass as input.
-  #[structopt(long, short)]
+  #[clap(long, short)]
   data: Vec<String>,
 
   /// Skip additional I/O processing done for CLI usage.
-  #[structopt(long, short)]
+  #[clap(long, short)]
   raw: bool,
 
   /// Component to invoke.
   pub(crate) component: String,
 
   /// Arguments to pass as inputs to a schematic.
-  #[structopt(set = structopt::clap::ArgSettings::Last)]
+  #[clap(last(true))]
   args: Vec<String>,
 }
 
@@ -40,8 +40,7 @@ pub(crate) async fn handle(opts: Options) -> Result<()> {
   let _guard = crate::utils::init_logger(&opts.logging)?;
 
   let mut client = vino_rpc::make_rpc_client(
-    opts.connection.address,
-    opts.connection.port,
+    format!("http://{}:{}", opts.connection.address, opts.connection.port),
     opts.connection.pem,
     opts.connection.key,
     opts.connection.ca,

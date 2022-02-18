@@ -1,28 +1,28 @@
 use std::sync::Arc;
 
-use structopt::StructOpt;
+use clap::Args;
 use vino_provider_cli::options::DefaultCliOptions;
 use vino_provider_wasm::provider::{Provider, WasiParams};
 
 use super::WasiOptions;
 use crate::Result;
-#[derive(Debug, Clone, StructOpt)]
-#[structopt(rename_all = "kebab-case")]
+#[derive(Debug, Clone, Args)]
+#[clap(rename_all = "kebab-case")]
 pub(crate) struct ServeCommand {
-  #[structopt(flatten)]
+  #[clap(flatten)]
   cli: DefaultCliOptions,
 
-  #[structopt(flatten)]
+  #[clap(flatten)]
   pull: super::PullOptions,
 
   /// Path or URL to WebAssembly binary.
   wasm: String,
 
-  #[structopt(flatten)]
+  #[clap(flatten)]
   wasi: WasiOptions,
 
   /// The number of threads to start.
-  #[structopt(long, default_value = "5")]
+  #[clap(long, default_value = "5")]
   threads: usize,
 }
 

@@ -90,8 +90,7 @@
   clippy::semicolon_if_nothing_returned // because of tokio::main
 )]
 
-use structopt::clap::AppSettings;
-use structopt::StructOpt;
+use clap::{AppSettings, Parser};
 
 pub(crate) mod commands;
 pub mod error;
@@ -101,17 +100,14 @@ pub(crate) type Result<T> = std::result::Result<T, error::VowError>;
 #[macro_use]
 extern crate tracing;
 
-#[derive(StructOpt, Debug, Clone)]
-#[structopt(
-     global_settings(&[
-      AppSettings::VersionlessSubcommands,
-      AppSettings::ColoredHelp,
-      AppSettings::DeriveDisplayOrder,
-      AppSettings::UnifiedHelpMessage
-     ]),
+#[derive(Parser, Debug, Clone)]
+#[clap(
+     global_setting(
+      AppSettings::DeriveDisplayOrder
+     ),
      name = BIN_NAME, about = "Vino WebAssembly Wrapper")]
 pub(crate) struct Cli {
-  #[structopt(flatten)]
+  #[clap(subcommand)]
   pub(crate) command: commands::CliCommand,
 }
 
@@ -119,7 +115,7 @@ static BIN_NAME: &str = "vow";
 
 #[tokio::main]
 async fn main() {
-  let opts = Cli::from_args();
+  let opts = Cli::parse();
 
   let res = run(opts).await;
 
@@ -138,8 +134,17 @@ async fn main() {
 
 async fn run(opts: Cli) -> Result<()> {
   match opts.command {
-    commands::CliCommand::Test(cmd) => commands::test::handle_command(cmd).await,
+    commands::CliCommand::Test(cmd) => commands::test_cmd::handle_command(cmd).await,
     commands::CliCommand::Run(cmd) => commands::run::handle_command(cmd).await,
     commands::CliCommand::Serve(cmd) => commands::serve::handle_command(cmd).await,
+  }
+}
+
+#[cfg(test)]
+mod test {
+  #[test]
+  fn verify_options() {
+    use clap::IntoApp;
+    super::Cli::command().debug_assert();
   }
 }

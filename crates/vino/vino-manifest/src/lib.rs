@@ -116,12 +116,15 @@ pub use network_definition::NetworkDefinition;
 
 /// A version-normalized format of the schematic manifest for development.
 pub mod schematic_definition;
+pub use parse::parse_id;
 pub use schematic_definition::{
-  ComponentDefinition, ConnectionDefinition, ConnectionTargetDefinition, ProviderDefinition, ProviderKind,
+  ComponentDefinition,
+  ConnectionDefinition,
+  ConnectionTargetDefinition,
+  ProviderDefinition,
+  ProviderKind,
   SchematicDefinition,
 };
-
-pub use parse::parse_id;
 
 use crate::error::ManifestError;
 
@@ -143,6 +146,22 @@ impl HostManifest {
   pub fn network(self) -> NetworkManifest {
     match self {
       HostManifest::V0(manifest) => manifest.network.into(),
+    }
+  }
+
+  /// Determine if the configuration allows for fetching artifacts with the :latest tag.
+  #[must_use]
+  pub fn allow_latest(&self) -> bool {
+    match self {
+      HostManifest::V0(manifest) => manifest.host.allow_latest,
+    }
+  }
+
+  /// Return the list of insecure registries defined in the manifest
+  #[must_use]
+  pub fn insecure_registries(&self) -> &Vec<String> {
+    match self {
+      HostManifest::V0(manifest) => &manifest.host.insecure_registries,
     }
   }
 }

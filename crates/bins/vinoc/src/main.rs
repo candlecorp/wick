@@ -88,8 +88,10 @@
 pub(crate) mod commands;
 pub(crate) mod error;
 pub(crate) mod keys;
+pub(crate) mod oci;
 pub(crate) mod utils;
 
+use clap::StructOpt;
 use error::ControlError;
 
 pub(crate) type Result<T> = std::result::Result<T, ControlError>;
@@ -104,12 +106,14 @@ use self::commands::*;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-  let cli = get_args();
+  let cli = Cli::parse();
 
   let res = match cli.command {
     CliCommand::Invoke(cmd) => commands::invoke::handle(cmd).await,
     CliCommand::Stats(cmd) => commands::stats::handle(cmd).await,
     CliCommand::List(cmd) => commands::list::handle(cmd).await,
+    CliCommand::Pull(cmd) => commands::pull::handle(cmd).await,
+    CliCommand::Push(cmd) => commands::push::handle(cmd).await,
     CliCommand::Sign(cmd) => commands::sign::handle(cmd).await,
     CliCommand::Inspect(cmd) => commands::inspect::handle(cmd).await,
   };

@@ -407,7 +407,7 @@ mod test {
   }
 }
 
-#[cfg(all(test, feature = "test-integration"))]
+#[cfg(test)]
 mod test_integration {
   use std::convert::TryInto;
   use std::sync::Arc;

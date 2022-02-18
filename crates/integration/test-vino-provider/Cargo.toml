@@ -32,6 +32,6 @@ tracing = "0.1"
 test-logger = { path = "../../misc/test-logger" }
 tokio = { version = "1", features = ["macros"] }
 logger = { path = "../../vino/logger" }
-structopt = "0.3"
+clap = { version = "3.0", features = ["derive", "env"] }
 tracing = "0.1"
 anyhow = "1.0"

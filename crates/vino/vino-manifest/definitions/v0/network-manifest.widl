@@ -14,7 +14,6 @@ type NetworkManifest {
   providers: [ProviderDefinition],
 }
 
-
 "A provider definition."
 type ProviderDefinition {
   "The namespace to reference the provider's components on."
@@ -30,3 +29,18 @@ type ProviderDefinition {
   data: struct,
 }
 
+"Kind of provider."
+enum ProviderKind {
+  "Native providers included at compile-time in a Vino host."
+  Native = 0,
+  "The URL for a separately managed GRPC endpoint."
+  GrpcUrl = 1,
+  "A WaPC WebAssembly provider."
+  WaPC = 2,
+  "A provider accessible via a connected lattice."
+  Lattice = 3,
+  "A local or remote Network definition."
+  Network = 4,
+  "A GRPC provider binary."
+  Par = 5,
+}

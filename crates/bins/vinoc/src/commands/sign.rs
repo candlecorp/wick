@@ -2,18 +2,18 @@ use std::fs::File;
 use std::io::{Read, Write};
 use std::path::PathBuf;
 
+use clap::Args;
 use nkeys::KeyPairType;
-use structopt::StructOpt;
 use vino_types::ProviderSignature;
-use vino_wascap::sign_buffer_with_claims;
+use vino_wascap::{sign_buffer_with_claims, ClaimsOptions};
 
 use crate::error::ControlError;
 use crate::keys::{extract_keypair, GenerateCommon};
 use crate::Result;
-#[derive(Debug, Clone, StructOpt)]
-#[structopt(rename_all = "kebab-case")]
+#[derive(Debug, Clone, Args)]
+#[clap(rename_all = "kebab-case")]
 pub(crate) struct Options {
-  #[structopt(flatten)]
+  #[clap(flatten)]
   pub(crate) logging: super::LoggingOptions,
 
   /// File to read.
@@ -23,18 +23,18 @@ pub(crate) struct Options {
   pub(crate) interface: String,
 
   /// Destination for signed module. By default the the destination is the same as the input with a "_s" suffix.
-  #[structopt(short = "d", long = "destination")]
+  #[clap(short = 'd', long = "destination")]
   destination: Option<String>,
 
-  #[structopt(flatten)]
+  #[clap(flatten)]
   common: GenerateCommon,
 
   /// Version to embed in the signed claims.
-  #[structopt(long)]
+  #[clap(long)]
   ver: Option<String>,
 
   /// Revision number to embed in the signed claims.
-  #[structopt(long)]
+  #[clap(long)]
   rev: Option<u32>,
 }
 
@@ -71,10 +71,12 @@ pub(crate) async fn handle(opts: Options) -> Result<()> {
     interface,
     &subject,
     &issuer,
-    opts.common.expires_in_days,
-    opts.common.not_before,
-    opts.ver,
-    opts.rev,
+    ClaimsOptions {
+      revision: opts.rev,
+      version: opts.ver,
+      expires_in_days: opts.common.expires_in_days,
+      not_before_days: opts.common.not_before,
+    },
   )?;
 
   let destination = match opts.destination.clone() {

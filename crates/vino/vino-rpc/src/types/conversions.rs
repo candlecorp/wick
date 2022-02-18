@@ -17,8 +17,6 @@ impl TryFrom<vino::HostedType> for rpc::ProviderSignature {
 
   fn try_from(v: vino::HostedType) -> Result<Self> {
     Ok(match v {
-      // HostedType::Component(v) => v.try_into()?,
-      // HostedType::Schematic(v) => v.try_into()?,
       vino::HostedType::Provider(v) => v.try_into()?,
     })
   }

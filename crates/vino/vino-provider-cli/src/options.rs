@@ -2,10 +2,10 @@ use std::net::Ipv4Addr;
 use std::path::PathBuf;
 use std::time::Duration;
 
+use clap::Args;
 use logger::LoggingOptions;
 use nkeys::KeyPair;
 use serde::{Deserialize, Serialize};
-use structopt::StructOpt;
 
 #[derive(Debug)]
 /// Server configuration options.
@@ -120,90 +120,121 @@ impl From<DefaultCliOptions> for LoggingOptions {
   }
 }
 
-#[derive(Debug, Clone, Default, StructOpt, Serialize, Deserialize)]
+/// Names of the environment variables used for fallback values.
+pub mod env {
+  macro_rules! env_var {
+    (  $x:ident  ) => {
+      /// Environment variable fallback for CLI options
+      pub const $x: &str = stringify!($x);
+    };
+  }
+
+  env_var!(VINO_PROVIDER_ID);
+  env_var!(VINO_TIMEOUT);
+
+  env_var!(VINO_RPC_ENABLED);
+  env_var!(VINO_RPC_PORT);
+  env_var!(VINO_RPC_ADDRESS);
+  env_var!(VINO_RPC_KEY);
+  env_var!(VINO_RPC_PEM);
+  env_var!(VINO_RPC_CA);
+
+  env_var!(VINO_HTTP_ENABLED);
+  env_var!(VINO_HTTP_PORT);
+  env_var!(VINO_HTTP_ADDRESS);
+  env_var!(VINO_HTTP_KEY);
+  env_var!(VINO_HTTP_PEM);
+  env_var!(VINO_HTTP_CA);
+
+  env_var!(NATS_URL);
+  env_var!(NATS_CREDSFILE);
+  env_var!(NATS_TOKEN);
+}
+
+#[derive(Debug, Clone, Default, Args, Serialize, Deserialize)]
 /// Command line options for providers.
 pub struct DefaultCliOptions {
   /// The unique ID of this client.
-  #[structopt(long = "id", env = "VINO_PROVIDER_ID")]
+  #[clap(long = "id", env = env::VINO_PROVIDER_ID)]
   pub id: Option<String>,
 
   /// The timeout for outbound requests in ms.
-  #[structopt(long = "timeout", env = "VINO_TIMEOUT")]
+  #[clap(long = "timeout", env = env::VINO_TIMEOUT)]
   pub timeout: Option<u64>,
 
   /// Logging options.
-  #[structopt(flatten)]
+  #[clap(flatten)]
   pub logging: LoggingOptions,
 
-  #[structopt(flatten)]
+  #[clap(flatten)]
   /// Options for connecting to a lattice.
   pub lattice: LatticeCliOptions,
 
   /// Enable the rpc server.
-  #[structopt(long = "rpc", env = "VINO_RPC")]
+  #[clap(long = "rpc",  env = env::VINO_RPC_ENABLED)]
   pub rpc_enabled: bool,
 
   /// Port to listen on for GRPC server.
-  #[structopt(long = "rpc-port", env = "VINO_RPC_PORT")]
+  #[clap(long = "rpc-port", env = env::VINO_RPC_PORT)]
   pub rpc_port: Option<u16>,
 
   /// IP address to bind to for GRPC server.
-  #[structopt(long = "rpc-address", env = "VINO_RPC_ADDRESS")]
+  #[clap(long = "rpc-address", env = env::VINO_RPC_ADDRESS)]
   pub rpc_address: Option<Ipv4Addr>,
 
   /// Path to pem file for TLS for GRPC server.
-  #[structopt(long = "rpc-pem", env = "VINO_RPC_PEM")]
+  #[clap(long = "rpc-pem", env = env::VINO_RPC_PEM)]
   pub rpc_pem: Option<PathBuf>,
 
   /// Path to key file for TLS for GRPC server.
-  #[structopt(long = "rpc-key", env = "VINO_RPC_KEY")]
+  #[clap(long = "rpc-key", env = env::VINO_RPC_KEY)]
   pub rpc_key: Option<PathBuf>,
 
   /// Path to certificate authority for GRPC server.
-  #[structopt(long = "rpc-ca", env = "VINO_RPC_CA")]
+  #[clap(long = "rpc-ca", env = env::VINO_RPC_CA)]
   pub rpc_ca: Option<PathBuf>,
 
   /// Enable the http server.
-  #[structopt(long = "http", env = "VINO_HTTP")]
+  #[clap(long = "http", env = env::VINO_HTTP_ENABLED)]
   pub http_enabled: bool,
 
   /// Address for the optional HTTP server.
-  #[structopt(long = "http-address", env = "VINO_HTTP_ADDRESS")]
+  #[clap(long = "http-address", env = env::VINO_HTTP_ADDRESS)]
   pub http_address: Option<Ipv4Addr>,
 
   /// Port to use for HTTP.
-  #[structopt(long = "http-port", env = "VINO_HTTP_PORT")]
+  #[clap(long = "http-port", env = env::VINO_HTTP_PORT)]
   pub http_port: Option<u16>,
 
   /// Path to pem file for TLS for HTTPS server.
-  #[structopt(long = "http-pem", env = "VINO_HTTP_PEM")]
+  #[clap(long = "http-pem", env = env::VINO_HTTP_PEM)]
   pub http_pem: Option<PathBuf>,
 
   /// Path to key file for TLS for HTTPS server.
-  #[structopt(long = "http-key", env = "VINO_HTTP_KEY")]
+  #[clap(long = "http-key", env = env::VINO_HTTP_KEY)]
   pub http_key: Option<PathBuf>,
 
   /// Path to certificate authority for HTTPS server.
-  #[structopt(long = "http-ca", env = "VINO_HTTP_CA")]
+  #[clap(long = "http-ca", env = env::VINO_HTTP_CA)]
   pub http_ca: Option<PathBuf>,
 }
 
-#[derive(Debug, Clone, Default, StructOpt, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Args, Serialize, Deserialize)]
 /// Command line options for providers.
 pub struct LatticeCliOptions {
   /// Enable the lattice connection.
-  #[structopt(long = "lattice")]
+  #[clap(long = "lattice")]
   pub lattice_enabled: bool,
 
   /// The url of the NATS server (in IP:PORT format).
-  #[structopt(long = "nats", env = "NATS_URL")]
+  #[clap(long = "nats", env = env::NATS_URL)]
   pub nats_url: Option<String>,
 
   /// The path to the NATS credsfile.
-  #[structopt(long = "nats-credsfile", env = "NATS_CREDSFILE")]
+  #[clap(long = "nats-credsfile", env = env::NATS_CREDSFILE)]
   pub nats_credsfile: Option<PathBuf>,
 
   /// The NATS token.
-  #[structopt(long = "nats-token", env = "NATS_TOKEN", hide_env_values = true)]
+  #[clap(long = "nats-token", env = env::NATS_TOKEN, hide_env_values = true)]
   pub nats_token: Option<String>,
 }

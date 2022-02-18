@@ -93,14 +93,15 @@ pub type Error = error::LoadError;
 #[macro_use]
 extern crate tracing;
 
-use std::path::Path;
+use std::io::{Read, Write};
+use std::path::{Path, PathBuf};
 
 pub async fn get_bytes_from_file(path: &Path) -> Result<Vec<u8>> {
   Ok(tokio::fs::read(path).await?)
 }
 
 pub async fn get_bytes_from_oci(path: &str, allow_latest: bool, allowed_insecure: &[String]) -> Result<Vec<u8>> {
-  Ok(oci_utils::fetch_oci_bytes(path, allow_latest, allowed_insecure).await?)
+  Ok(vino_oci::fetch_oci_bytes(path, allow_latest, allowed_insecure).await?)
 }
 
 pub async fn get_bytes(location: &str, allow_latest: bool, allowed_insecure: &[String]) -> Result<Vec<u8>> {
@@ -109,7 +110,36 @@ pub async fn get_bytes(location: &str, allow_latest: bool, allowed_insecure: &[S
     debug!("LOAD:AS_FILE:{}", location);
     Ok(get_bytes_from_file(path).await?)
   } else {
-    debug!("LOAD:AS_OCI:{}", location);
-    Ok(get_bytes_from_oci(location, allow_latest, allowed_insecure).await?)
+    let cache_path = cache_location("ocicache", location);
+    if cache_path.exists() {
+      debug!("LOAD:FROM_CACHE:{}", cache_path.to_string_lossy());
+      let mut buf = vec![];
+      let mut f = std::fs::File::open(cache_path)?;
+      f.read_to_end(&mut buf)?;
+      Ok(buf)
+    } else {
+      debug!("LOAD:AS_OCI:{}", location);
+      let bytes = get_bytes_from_oci(location, allow_latest, allowed_insecure).await?;
+      let mut f = std::fs::File::create(cache_path)?;
+      f.write_all(&bytes)?;
+      f.flush()?;
+      Ok(bytes)
+    }
   }
+}
+
+pub const CACHE_ROOT: &str = "vino";
+pub const CACHE_EXT: &str = "cache";
+
+#[must_use]
+pub fn cache_location(bucket: &str, reference: &str) -> PathBuf {
+  let path = std::env::temp_dir();
+  let path = path.join(CACHE_ROOT);
+  let path = path.join(bucket);
+  let _ = ::std::fs::create_dir_all(&path);
+  let reference = reference.replace(":", "_").replace("/", "_").replace(".", "_");
+  let mut path = path.join(reference);
+  path.set_extension(CACHE_EXT);
+
+  path
 }

@@ -35,7 +35,7 @@ impl RpcHandler for Provider {
     let entity_url = entity.url();
     trace!("PROV:LATTICE:INVOKE:[{}]", entity_url);
 
-    let entity = Entity::Component(self.namespace.clone(), entity.name());
+    let entity = Entity::component(&self.namespace, entity.name());
 
     let start = Instant::now();
     let stream = self
@@ -60,7 +60,7 @@ impl RpcHandler for Provider {
   }
 }
 
-#[cfg(all(test, feature = "test-integration"))]
+#[cfg(test)]
 mod tests {
 
   use anyhow::Result as TestResult;

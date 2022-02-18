@@ -3,49 +3,48 @@ pub(crate) mod run;
 pub(crate) mod serve;
 pub(crate) mod test;
 
+use clap::{AppSettings, Args, Parser, Subcommand};
 use logger::LoggingOptions;
-use structopt::clap::AppSettings;
-use structopt::StructOpt;
 
-#[derive(StructOpt, Debug, Clone)]
-#[structopt(global_settings(
-  &[
-    AppSettings::VersionlessSubcommands,
-    AppSettings::ColoredHelp,
-    AppSettings::DeriveDisplayOrder,
-    AppSettings::UnifiedHelpMessage
-  ]),
-  name = "vino",
-  about = "Vino host",
-)]
+#[derive(Parser, Debug, Clone)]
+#[clap(global_setting(AppSettings::DeriveDisplayOrder), name = "vino", about = "Vino host")]
 pub(crate) struct Cli {
-  #[structopt(flatten)]
+  #[clap(subcommand)]
   pub(crate) command: CliCommand,
 }
 
-#[derive(Debug, Clone, StructOpt)]
+#[derive(Debug, Clone, Subcommand)]
 pub(crate) enum CliCommand {
   /// Start a persistent host from a manifest.
-  #[structopt(name = "serve")]
+  #[clap(name = "serve")]
   Serve(serve::ServeCommand),
   /// Load a manifest and run the default schematic.
-  #[structopt(name = "run")]
+  #[clap(name = "run")]
   Run(run::RunCommand),
   /// Print the schematics and their accessible components for the passed manifest.
-  #[structopt(name = "list")]
+  #[clap(name = "list")]
   List(list::ListCommand),
   /// Execute a schematic with test data and assert its output.
-  #[structopt(name = "test")]
+  #[clap(name = "test")]
   Test(test::TestCommand),
 }
 
-#[derive(Debug, Clone, StructOpt)]
+#[derive(Debug, Clone, Args)]
 pub(crate) struct HostOptions {
   /// Allows the use of "latest" artifact tag.
-  #[structopt(long = "allow-latest")]
+  #[clap(long = "allow-latest")]
   pub(crate) allow_latest: bool,
 
   /// Allows the use of HTTP registry connections to these registries.
-  #[structopt(long = "insecure")]
+  #[clap(long = "insecure")]
   pub(crate) insecure_registries: Vec<String>,
+}
+
+#[cfg(test)]
+mod tests {
+  #[test]
+  fn verify_options() {
+    use clap::IntoApp;
+    super::Cli::command().debug_assert();
+  }
 }

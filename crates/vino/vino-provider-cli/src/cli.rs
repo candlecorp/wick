@@ -207,9 +207,8 @@ mod tests {
   use vino_rpc::rpc::ListRequest;
   use vino_rpc::{HostedType, MapWrapper};
 
-  use crate::options::ServerOptions;
-
   use super::*;
+  use crate::options::ServerOptions;
 
   fn get_provider() -> SharedRpcHandler {
     Arc::new(Provider::default())

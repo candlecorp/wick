@@ -1,43 +1,42 @@
-use structopt::StructOpt;
+use clap::Args;
 use tokio::io::{self, AsyncBufReadExt};
 use vino_host::HostBuilder;
 use vino_manifest::host_definition::HostDefinition;
 use vino_provider_cli::options::{DefaultCliOptions, LatticeCliOptions};
 use vino_provider_cli::parse_args;
 use vino_runtime::prelude::StreamExt;
-use vino_transport::map_to_json;
-use vino_transport::{TransportMap, TransportStream};
+use vino_transport::{map_to_json, TransportMap, TransportStream};
 use vino_types::MapWrapper;
 
 use crate::utils::merge_config;
 use crate::Result;
 
-#[derive(Debug, Clone, StructOpt)]
-#[structopt(rename_all = "kebab-case")]
+#[derive(Debug, Clone, Args)]
+#[clap(rename_all = "kebab-case")]
 pub(crate) struct RunCommand {
-  #[structopt(flatten)]
+  #[clap(flatten)]
   pub(crate) logging: super::LoggingOptions,
 
-  #[structopt(flatten)]
+  #[clap(flatten)]
   pub(crate) lattice: LatticeCliOptions,
 
-  #[structopt(flatten)]
+  #[clap(flatten)]
   pub(crate) host: super::HostOptions,
 
   /// Turn on info logging.
-  #[structopt(long = "info")]
+  #[clap(long = "info")]
   pub(crate) info: bool,
 
   /// Don't read input from STDIN.
-  #[structopt(long = "no-input")]
+  #[clap(long = "no-input")]
   pub(crate) no_input: bool,
 
   /// A port=value string where value is JSON to pass as input.
-  #[structopt(long, short)]
+  #[clap(long, short)]
   data: Vec<String>,
 
   /// Skip additional I/O processing done for CLI usage.
-  #[structopt(long, short)]
+  #[clap(long, short)]
   raw: bool,
 
   /// Manifest file or OCI url.
@@ -47,7 +46,7 @@ pub(crate) struct RunCommand {
   default_schematic: Option<String>,
 
   /// Arguments to pass as inputs to a schematic.
-  #[structopt(set = structopt::clap::ArgSettings::Last)]
+  #[clap(last(true))]
   args: Vec<String>,
 }
 

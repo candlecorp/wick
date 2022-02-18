@@ -44,7 +44,7 @@ pub fn init_test(opts: &LoggingOptions) -> Option<LoggingGuard> {
 fn priority_module(module: &str) -> bool {
   [
     "logger",
-    "oci_utils",
+    "vino_oci",
     "vinoc",
     "vino",
     "vino_cli",
@@ -85,7 +85,7 @@ fn vino_filter() -> FilterFn {
       .split("::")
       .next()
       .unwrap_or_default();
-    priority_module(module)
+    priority_module(module) || module.starts_with("vino")
   })
 }
 

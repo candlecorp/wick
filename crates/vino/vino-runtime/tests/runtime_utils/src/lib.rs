@@ -9,13 +9,14 @@ extern crate tracing;
 #[allow(dead_code)]
 pub async fn init_network_from_yaml(path: &str) -> anyhow::Result<(Network, String)> {
   let manifest = HostManifest::from_yaml(&fs::read_to_string(path)?)?;
+  let allow_latest = manifest.allow_latest();
+  let insecure_registries = manifest.insecure_registries().clone();
   let def = NetworkDefinition::from(manifest.network());
   debug!("Manifest loaded");
   let kp = KeyPair::new_server();
 
   #[allow(unused_mut)]
   let mut builder = NetworkBuilder::from_definition(def, &kp.seed()?)?;
-  #[cfg(feature = "test-integration")]
   if let Ok(url) = std::env::var("NATS_URL") {
     use std::sync::Arc;
     use std::time::Duration;
@@ -31,6 +32,7 @@ pub async fn init_network_from_yaml(path: &str) -> anyhow::Result<(Network, Stri
     .await?;
     builder = builder.lattice(Arc::new(lattice));
   }
+  let builder = builder.allow_latest(allow_latest).allow_insecure(insecure_registries);
   let network = builder.build();
 
   debug!("Initializing network");

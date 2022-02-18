@@ -119,6 +119,10 @@ pub enum RpcClientError {
   #[error("RPC Stats call failed: {0}")]
   StatsCallFailed(tonic::Status),
 
+  /// Invalid response from RPC call.
+  #[error("RPC response invalid: {0}")]
+  ResponseInvalid(String),
+
   /// An error related to [vino_transport].
   #[error(transparent)]
   TransportError(#[from] vino_transport::Error),

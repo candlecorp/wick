@@ -1,0 +1,6 @@
+---
+interface: ./interface.json
+artifacts:
+  - path: ../../../build/x86_64-unknown-linux-gnu/vino-standalone
+    os: linux
+    arch: amd64

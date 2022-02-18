@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
+use clap::Args;
 use logger::LoggingOptions;
-use structopt::StructOpt;
 use vino_host::HostBuilder;
 use vino_manifest::host_definition::HostDefinition;
 use vino_provider_cli::options::{DefaultCliOptions, LatticeCliOptions};
@@ -9,22 +9,22 @@ use vino_types::{MapWrapper, TypeMap};
 
 use crate::utils::merge_config;
 use crate::Result;
-#[derive(Debug, Clone, StructOpt)]
+#[derive(Debug, Clone, Args)]
 pub(crate) struct ListCommand {
-  #[structopt(flatten)]
+  #[clap(flatten)]
   pub(crate) host: super::HostOptions,
 
   /// Specifies a manifest file to apply to the host once started.
-  #[structopt(parse(from_os_str))]
+  #[clap(parse(from_os_str))]
   pub(crate) manifest: Option<PathBuf>,
 
-  #[structopt(flatten)]
+  #[clap(flatten)]
   pub(crate) logging: LoggingOptions,
 
-  #[structopt(flatten)]
+  #[clap(flatten)]
   pub(crate) lattice: LatticeCliOptions,
 
-  #[structopt(long)]
+  #[clap(long)]
   pub(crate) json: bool,
 }
 
