@@ -20,4 +20,3 @@ thiserror = "1.0"
 url = "2.2"
 
 [dev-dependencies]
-pretty_assertions = "1.0"

@@ -16,7 +16,7 @@ pub trait PortSender {
   fn get_port(&self) -> std::result::Result<&PortChannel, Error>;
 
   /// Get the port's name.
-  fn get_port_name(&self) -> String;
+  fn get_port_name(&self) -> &str;
 
   /// Send a message.
   fn send(&self, data: impl Into<ComponentPayload>) -> Result {
@@ -33,7 +33,7 @@ pub trait PortSender {
   fn push(&self, output: Packet) -> Result {
     self.get_port()?.send(PacketWrapper {
       payload: output,
-      port: self.get_port_name(),
+      port: self.get_port_name().to_owned(),
     })?;
     Ok(())
   }
@@ -42,7 +42,7 @@ pub trait PortSender {
   fn send_message(&self, packet: Packet) -> Result {
     self.get_port()?.send(PacketWrapper {
       payload: packet,
-      port: self.get_port_name(),
+      port: self.get_port_name().to_owned(),
     })?;
     Ok(())
   }
@@ -57,7 +57,7 @@ pub trait PortSender {
   fn send_exception(&self, payload: String) -> Result {
     self.get_port()?.send(PacketWrapper {
       payload: ComponentPayload::exception(payload).into(),
-      port: self.get_port_name(),
+      port: self.get_port_name().to_owned(),
     })?;
     Ok(())
   }
@@ -155,8 +155,8 @@ mod tests {
       Ok(&self.port)
     }
 
-    fn get_port_name(&self) -> String {
-      self.port.name.clone()
+    fn get_port_name(&self) -> &str {
+      &self.port.name
     }
   }
 
@@ -169,7 +169,7 @@ mod tests {
     }
 
     fn get_port_name(&self) -> String {
-      self.port.name.clone()
+      &self.port.name
     }
   }
 

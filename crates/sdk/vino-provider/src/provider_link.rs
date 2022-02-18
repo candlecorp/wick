@@ -22,7 +22,7 @@ impl ProviderLink {
   #[must_use]
   /// Get the URL for the called component
   pub fn get_component_url(&self, component: &str) -> String {
-    Entity::Component(self.linked_entity.name(), component.to_owned()).url()
+    Entity::component(self.linked_entity.name(), component).url()
   }
 
   #[must_use]

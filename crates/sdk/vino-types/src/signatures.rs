@@ -47,7 +47,7 @@ pub struct StructSignature {
 }
 
 /// An enum representing the types of components that can be hosted.
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 #[must_use]
 pub enum HostedType {
   /// A provider.

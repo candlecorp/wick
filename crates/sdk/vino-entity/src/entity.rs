@@ -115,10 +115,7 @@ impl FromStr for Entity {
       }
       "client" => Ok(Entity::client(id)),
       "host" => Ok(Entity::host(id)),
-      _ => Err(Error::ParseError(format!(
-        "Invalid authority kind: {}",
-        kind
-      ))),
+      _ => Err(Error::ParseError(format!("Invalid authority kind: {}", kind))),
     }
   }
 }
@@ -191,51 +188,50 @@ impl Entity {
 
   /// The name of the entity.
   #[must_use]
-  pub fn name(&self) -> String {
+  pub fn name(&self) -> &str {
     match self {
-      Entity::Test(_) => "test".to_owned(),
-      Entity::Schematic(name) => name.clone(),
-      Entity::Component(_, id) => id.clone(),
-      Entity::Provider(name) => name.clone(),
-      Entity::Client(id) => id.clone(),
-      Entity::Host(id) => id.clone(),
-      Entity::System(e) => e.name.clone(),
-      Entity::Invalid => "<invalid>".to_owned(),
-      Entity::Reference(id) => id.clone(),
+      Entity::Test(_) => "test",
+      Entity::Schematic(name) => name,
+      Entity::Component(_, id) => id,
+      Entity::Provider(name) => name,
+      Entity::Client(id) => id,
+      Entity::Host(id) => id,
+      Entity::System(e) => &e.name,
+      Entity::Invalid => "<invalid>",
+      Entity::Reference(id) => id,
     }
   }
 }
 
 #[cfg(test)]
 mod tests {
-  use pretty_assertions::assert_eq as equals;
 
   use super::*;
   #[test]
   fn test() -> Result<(), Error> {
     let entity = Entity::from_str("ofp://namespace.prov/comp_name")?;
-    equals!(entity, Entity::component("namespace", "comp_name"));
+    assert_eq!(entity, Entity::component("namespace", "comp_name"));
 
     let entity = Entity::from_str("ofp://schem_id.schem/")?;
-    equals!(entity, Entity::schematic("schem_id"));
+    assert_eq!(entity, Entity::schematic("schem_id"));
 
     let entity = Entity::from_str("ofp://prov_ns.prov/")?;
-    equals!(entity, Entity::provider("prov_ns"));
+    assert_eq!(entity, Entity::provider("prov_ns"));
 
     let entity = Entity::from_str("ofp://host_id.host/")?;
-    equals!(entity, Entity::host("host_id"));
+    assert_eq!(entity, Entity::host("host_id"));
 
     let entity = Entity::from_str("ofp://host_id.ref/")?;
-    equals!(entity, Entity::reference("host_id"));
+    assert_eq!(entity, Entity::reference("host_id"));
 
     let entity = Entity::from_str("ofp://client_id.client/")?;
-    equals!(entity, Entity::client("client_id"));
+    assert_eq!(entity, Entity::client("client_id"));
 
     let entity = Entity::from_str("ofp://test.sys/?msg=Hello")?;
-    equals!(entity, Entity::test("Hello"));
+    assert_eq!(entity, Entity::test("Hello"));
 
     let entity = Entity::from_str("ofp://other.sys/?msg=Else")?;
-    equals!(
+    assert_eq!(
       entity,
       Entity::System(SystemEntity {
         name: "other".into(),
