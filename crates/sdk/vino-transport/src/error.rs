@@ -29,4 +29,9 @@ pub enum TransportError {
   /// General errors.
   #[error("General error : {0}")]
   Other(String),
+
+  /// Error resulting from a [vino_entity::Entity], usually related to parsing an Entity url.
+  #[error(transparent)]
+  #[cfg(feature = "invocation")]
+  Entity(#[from] vino_entity::Error),
 }

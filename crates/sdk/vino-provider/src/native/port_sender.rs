@@ -168,7 +168,7 @@ mod tests {
       Ok(&self.port)
     }
 
-    fn get_port_name(&self) -> String {
+    fn get_port_name(&self) -> &str {
       &self.port.name
     }
   }
