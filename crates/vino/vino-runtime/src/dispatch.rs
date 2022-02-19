@@ -23,20 +23,15 @@ impl InvocationMessage {
     }
   }
 
-  pub(crate) fn new(origin: Entity, target: Entity, msg: TransportMap) -> Self {
-    let tx_id = get_uuid();
-    let invocation_id = get_uuid();
-
+  pub(crate) fn new(invocation: Invocation) -> Self {
     Self {
-      inner: Invocation {
-        origin,
-        target,
-        msg,
-        id: invocation_id,
-        tx_id,
-      },
+      inner: invocation,
       core_data: InitData::default(),
     }
+  }
+
+  pub(crate) fn into_inner(self) -> Invocation {
+    self.inner
   }
 
   pub(crate) fn get_tx_id(&self) -> &str {
@@ -55,16 +50,8 @@ impl InvocationMessage {
     &self.inner.origin
   }
 
-  pub(crate) fn _get_origin_url(&self) -> String {
-    self.inner.origin.url()
-  }
-
   pub(crate) fn get_payload(&self) -> &TransportMap {
-    &self.inner.msg
-  }
-
-  pub(crate) fn get_payload_owned(self) -> TransportMap {
-    self.inner.msg
+    &self.inner.payload
   }
 
   pub(crate) fn get_init_data(&self) -> &InitData {
@@ -156,17 +143,15 @@ impl From<ProviderError> for DispatchError {
 #[allow(unused)]
 pub(crate) async fn network_invoke_async(
   network_id: String,
-  origin: Entity,
-  target: Entity,
-  payload: TransportMap,
+  invocation: Invocation,
 ) -> Result<Vec<TransportWrapper>, DispatchError> {
   let network = NetworkService::for_id(&network_id);
 
   let rcpt = network
-    .get_recipient(&target)
+    .get_recipient(&invocation.target)
     .map_err(|e| DispatchError::EntityNotAvailable(e.to_string()))?;
 
-  let response = rcpt.invoke(InvocationMessage::new(origin, target, payload))?.await?;
+  let response = rcpt.invoke(InvocationMessage::new(invocation))?.await?;
   match response {
     InvocationResponse::Stream { rx, .. } => {
       let packets: Vec<TransportWrapper> = rx.collect().await;
@@ -181,9 +166,7 @@ pub(crate) async fn network_invoke_async(
 #[allow(unused)]
 pub(crate) fn network_invoke_sync(
   network_id: String,
-  origin: Entity,
-  target: Entity,
-  payload: TransportMap,
+  invocation: Invocation,
 ) -> Result<Vec<TransportWrapper>, DispatchError> {
   let pair = Arc::new((Mutex::new(false), Condvar::new()));
   let inner = Arc::clone(&pair);
@@ -193,7 +176,7 @@ pub(crate) fn network_invoke_sync(
     let (lock, cvar) = &*inner;
     let mut started = lock.lock();
     *started = true;
-    let re = system.block_on(network_invoke_async(network_id, origin, target, payload));
+    let re = system.block_on(network_invoke_async(network_id, invocation));
     cvar.notify_one();
     re
   });
@@ -220,11 +203,11 @@ mod tests {
   async fn invoke_async() -> TestResult<()> {
     let (_, nuid) = init_network_from_yaml("./manifests/v0/echo.yaml").await?;
 
-    let origin = Entity::test("test_invoke");
     let target = Entity::component("self", "echo");
     let map = TransportMap::from(vec![("input", "hello")]);
+    let invocation = Invocation::new_test(file!(), target, map);
 
-    let packets = network_invoke_async(nuid, origin, target, map).await?;
+    let packets = network_invoke_async(nuid, invocation).await?;
     debug!("{:?}", packets);
     assert_eq!(packets.len(), 2);
     let rv: String = packets[0].payload.clone().try_into()?;
@@ -248,11 +231,11 @@ mod tests {
     });
     let nuid = rx.await?;
 
-    let origin = Entity::test("test_invoke");
     let target = Entity::component("self", "echo");
     let map = TransportMap::from(vec![("input", "hello")]);
+    let invocation = Invocation::new_test(file!(), target, map);
 
-    let packets = network_invoke_sync(nuid, origin, target, map)?;
+    let packets = network_invoke_sync(nuid, invocation)?;
     let _ = tx2.send(true);
 
     debug!("{:?}", packets);

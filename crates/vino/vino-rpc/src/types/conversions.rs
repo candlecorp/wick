@@ -1,7 +1,9 @@
 use std::collections::HashMap;
 use std::convert::{TryFrom, TryInto};
+use std::str::FromStr;
 use std::time::Duration;
 
+use vino_entity::Entity;
 use vino_packet::v0::Payload;
 use vino_packet::Packet;
 use vino_transport::TransportMap;
@@ -188,10 +190,10 @@ impl Into<Packet> for rpc::MessageKind {
 }
 
 /// Converts a HashMap of [MessageKind] to a [TransportMap].
-pub fn convert_messagekind_map(rpc_map: &HashMap<String, rpc::MessageKind>) -> TransportMap {
+pub fn convert_messagekind_map(rpc_map: HashMap<String, rpc::MessageKind>) -> TransportMap {
   let mut transport_map = TransportMap::new();
   for (k, v) in rpc_map {
-    transport_map.insert(k, v.clone().into());
+    transport_map.insert(k, v.into());
   }
   transport_map
 }
@@ -212,8 +214,22 @@ impl TryFrom<vino_transport::Invocation> for rpc::Invocation {
     Ok(Self {
       origin: inv.origin.url(),
       target: inv.target.url(),
-      msg: convert_transport_map(inv.msg),
+      payload: convert_transport_map(inv.payload),
       id: inv.id,
+      tx_id: inv.tx_id,
+    })
+  }
+}
+
+impl TryFrom<rpc::Invocation> for vino_transport::Invocation {
+  type Error = RpcError;
+  fn try_from(inv: rpc::Invocation) -> Result<Self> {
+    Ok(Self {
+      origin: Entity::from_str(&inv.origin)?,
+      target: Entity::from_str(&inv.target)?,
+      payload: convert_messagekind_map(inv.payload),
+      id: inv.id,
+      tx_id: inv.tx_id,
     })
   }
 }

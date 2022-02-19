@@ -38,8 +38,9 @@ message MessageKind {
 message Invocation {
   string origin = 1;
   string target = 2;
-  map<string, MessageKind> msg = 3;
+  map<string, MessageKind> payload = 3;
   string id = 4;
+  string tx_id = 5;
 }
 
 message Output {

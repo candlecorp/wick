@@ -28,18 +28,19 @@ impl TransactionExecutor {
   }
 
   #[allow(clippy::too_many_lines)]
-  pub(crate) fn new_transaction(
+  pub(crate) fn new_transaction<T: AsRef<str>>(
     &mut self,
-    tx_id: String,
+    tx_id: T,
   ) -> (UnboundedReceiver<TransactionUpdate>, UnboundedSender<TransactionUpdate>) {
-    let mut transaction = Transaction::new(tx_id.clone(), self.model.clone());
+    let mut transaction = Transaction::new(&tx_id, self.model.clone());
 
     let (inbound_tx, inbound_rx) = unbounded_channel::<TransactionUpdate>();
     let (outbound_tx, mut outbound_rx) = unbounded_channel::<TransactionUpdate>();
 
     let expire = self.timeout;
 
-    // let self_tx = outbound_tx.clone();
+    let tx_id = tx_id.as_ref().to_owned();
+
     tokio::spawn(async move {
       let mut self_msgs = VecDeque::new();
       let log_prefix = transaction.log_prefix();

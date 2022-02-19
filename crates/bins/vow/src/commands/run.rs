@@ -5,7 +5,7 @@ use vino_provider::native::prelude::{BoxedTransportStream, Entity, MapWrapper, T
 use vino_provider_cli::{parse_args, LoggingOptions};
 use vino_provider_wasm::provider::Provider;
 use vino_rpc::RpcHandler;
-use vino_transport::map_to_json;
+use vino_transport::{map_to_json, Invocation};
 
 use super::WasiOptions;
 use crate::error::VowError;
@@ -75,10 +75,14 @@ pub(crate) async fn handle_command(opts: RunCommand) -> Result<()> {
       debug!("STDIN:'{}'", line);
       let mut payload = TransportMap::from_json_output(&line)?;
       payload.transpose_output_name();
-      let stream = provider
-        .invoke(Entity::component_direct(opts.component_name.clone()), payload)
-        .await
-        .map_err(VowError::ComponentPanic)?;
+
+      let invocation = Invocation::new(
+        Entity::client("vow"),
+        Entity::component_direct(&opts.component_name),
+        payload,
+      );
+
+      let stream = provider.invoke(invocation).await.map_err(VowError::ComponentPanic)?;
       print_stream_json(stream, opts.raw).await?;
     }
   } else {
@@ -91,10 +95,13 @@ pub(crate) async fn handle_command(opts: RunCommand) -> Result<()> {
     }
     data_map.merge(rest_arg_map);
 
-    let stream = provider
-      .invoke(Entity::component_direct(opts.component_name.clone()), data_map)
-      .await
-      .map_err(VowError::ComponentPanic)?;
+    let invocation = Invocation::new(
+      Entity::client("vow"),
+      Entity::component_direct(&opts.component_name),
+      data_map,
+    );
+
+    let stream = provider.invoke(invocation).await.map_err(VowError::ComponentPanic)?;
     print_stream_json(stream, opts.raw).await?;
   }
 

@@ -6,9 +6,14 @@ pub enum Error {
   /// Error during the parsing of an IP address and port.
   #[error(transparent)]
   AddrParseError(#[from] std::net::AddrParseError),
+
   /// Upstream error from Tonic.
   #[error(transparent)]
-  TransportError(#[from] tonic::transport::Error),
+  TranportFailure(#[from] tonic::transport::Error),
+
+  /// Upstream error from [vino_rpc].
+  #[error(transparent)]
+  RpcError(#[from] vino_rpc::Error),
 
   /// Internal Error.
   #[error("Internal Error: {0}")]

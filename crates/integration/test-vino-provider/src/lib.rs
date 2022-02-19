@@ -1,6 +1,7 @@
 use vino_provider::native::prelude::*;
 use vino_rpc::error::RpcError;
 use vino_rpc::{RpcHandler, RpcResult};
+use vino_transport::Invocation;
 
 use self::components::Dispatcher;
 pub mod components;
@@ -24,14 +25,15 @@ impl Provider {
 
 #[async_trait]
 impl RpcHandler for Provider {
-  async fn invoke(&self, entity: Entity, payload: TransportMap) -> RpcResult<BoxedTransportStream> {
-    trace!("TEST_PROVIDER:INVOKE[{}]", entity);
+  async fn invoke(&self, invocation: Invocation) -> RpcResult<BoxedTransportStream> {
+    let target = invocation.target_url();
+    trace!("TEST_PROVIDER:INVOKE[{}]", target);
     let context = self.context.clone();
-    let component = entity.name();
-    let result = Dispatcher::dispatch(&component, context, payload)
+    let component = invocation.target.name();
+    let result = Dispatcher::dispatch(component, context, invocation.payload)
       .await
       .map_err(|e| RpcError::ProviderError(e.to_string()));
-    trace!("TEST_PROVIDER:INVOKE[{}]:RESULT:{:?}", entity, result);
+    trace!("TEST_PROVIDER:INVOKE[{}]:RESULT:{:?}", target, result);
     let stream = result?;
 
     Ok(Box::pin(stream))
@@ -54,9 +56,8 @@ mod tests {
   use vino_provider::native::prelude::*;
   use vino_types::TypeSignature;
 
-  use crate::components::test_component;
-
   use super::*;
+  use crate::components::test_component;
 
   #[test_logger::test(tokio::test)]
   async fn request() -> anyhow::Result<()> {
@@ -67,8 +68,9 @@ mod tests {
     };
 
     let entity = Entity::component_direct("test-component");
+    let invocation = Invocation::new_test(file!(), entity, job_payload.into());
 
-    let mut outputs = provider.invoke(entity, job_payload.into()).await?;
+    let mut outputs = provider.invoke(invocation).await?;
     let output = outputs.next().await.unwrap();
     println!("Received payload from [{}]", output.port);
     let payload: String = output.payload.try_into().unwrap();
@@ -84,8 +86,6 @@ mod tests {
     let provider = Provider::default();
 
     let response = provider.get_list()?;
-
-    let foo = vino_codec::messagepack::serialize(&(2, ""));
 
     debug!("list response : {:?}", response);
 

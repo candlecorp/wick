@@ -44,9 +44,11 @@ pub struct Invocation {
     #[prost(string, tag="2")]
     pub target: ::prost::alloc::string::String,
     #[prost(map="string, message", tag="3")]
-    pub msg: ::std::collections::HashMap<::prost::alloc::string::String, MessageKind>,
+    pub payload: ::std::collections::HashMap<::prost::alloc::string::String, MessageKind>,
     #[prost(string, tag="4")]
     pub id: ::prost::alloc::string::String,
+    #[prost(string, tag="5")]
+    pub tx_id: ::prost::alloc::string::String,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Output {

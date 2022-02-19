@@ -8,10 +8,13 @@ async fn request() -> anyhow::Result<()> {
   let provider = Provider::default();
   let input = "some_input";
   let job_payload = vec![("input", input)].into();
+  let invocation = vino_transport::Invocation::new_test(
+    file!(),
+    vino_entity::Entity::component_direct("test-component"),
+    job_payload,
+  );
 
-  let mut outputs = provider
-    .invoke(vino_entity::Entity::component_direct("test-component"), job_payload)
-    .await?;
+  let mut outputs = provider.invoke(invocation).await?;
   let output = outputs.next().await.unwrap();
   println!("Received payload from [{}]", output.port);
   let payload: String = output.payload.try_into()?;

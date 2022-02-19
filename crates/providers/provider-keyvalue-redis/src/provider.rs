@@ -8,6 +8,7 @@ use tokio::sync::RwLock;
 use vino_provider::native::prelude::*;
 use vino_rpc::error::RpcError;
 use vino_rpc::{RpcHandler, RpcResult};
+use vino_transport::Invocation;
 
 use crate::components::Dispatcher;
 use crate::error::Error;
@@ -76,16 +77,15 @@ impl Provider {
 
 #[async_trait]
 impl RpcHandler for Provider {
-  async fn invoke(&self, entity: Entity, payload: TransportMap) -> RpcResult<BoxedTransportStream> {
+  async fn invoke(&self, invocation: Invocation) -> RpcResult<BoxedTransportStream> {
     let context = self.context.read().await;
     let connections = context.connections.read().await;
     let namespace = "default".to_owned();
     let connection = connections
       .get(&namespace)
       .ok_or_else(|| RpcError::ProviderError(Error::ConnectionNotFound(namespace).to_string()))?;
-    debug!("Dispatching to {}", entity.url());
-    let component = entity.name();
-    let stream = Dispatcher::dispatch(&component, connection.clone(), payload)
+    let component = invocation.target.name();
+    let stream = Dispatcher::dispatch(component, connection.clone(), invocation.payload)
       .await
       .map_err(|e| RpcError::ProviderError(e.to_string()))?;
 
@@ -115,10 +115,9 @@ mod integration {
       expires,
     };
 
-    let mut outputs: key_set::Outputs = provider
-      .invoke(Entity::component_direct("key-set"), payload.into())
-      .await?
-      .into();
+    let invocation = Invocation::new_test(file!(), Entity::component_direct("key-set"), payload.into());
+
+    let mut outputs: key_set::Outputs = provider.invoke(invocation).await?.into();
     let actual = outputs.result().await?.try_next_into()?;
 
     Ok(actual)
@@ -127,11 +126,9 @@ mod integration {
   async fn key_get(provider: &Provider, key: &str) -> Result<String> {
     debug!("key-get:{}", key);
     let payload = key_get::Inputs { key: key.to_owned() };
+    let invocation = Invocation::new_test(file!(), Entity::component_direct("key-get"), payload.into());
 
-    let mut outputs: key_get::Outputs = provider
-      .invoke(Entity::component_direct("key-get"), payload.into())
-      .await?
-      .into();
+    let mut outputs: key_get::Outputs = provider.invoke(invocation).await?.into();
     let actual = outputs.value().await?.try_next_into()?;
 
     Ok(actual)
@@ -142,11 +139,9 @@ mod integration {
     let payload = delete::Inputs {
       keys: vec![key.to_owned()],
     };
+    let invocation = Invocation::new_test(file!(), Entity::component_direct("delete"), payload.into());
 
-    let mut outputs: delete::Outputs = provider
-      .invoke(Entity::component_direct("delete"), payload.into())
-      .await?
-      .into();
+    let mut outputs: delete::Outputs = provider.invoke(invocation).await?.into();
     let actual = outputs.num().await?.try_next_into()?;
     Ok(actual)
   }
@@ -154,11 +149,9 @@ mod integration {
   async fn exists(provider: &Provider, key: &str) -> Result<bool> {
     debug!("exists:{}", key);
     let payload = exists::Inputs { key: key.to_owned() };
+    let invocation = Invocation::new_test(file!(), Entity::component_direct("exists"), payload.into());
 
-    let mut outputs: exists::Outputs = provider
-      .invoke(Entity::component_direct("exists"), payload.into())
-      .await?
-      .into();
+    let mut outputs: exists::Outputs = provider.invoke(invocation).await?.into();
 
     let actual = outputs.exists().await?.try_next_into()?;
 
@@ -171,11 +164,9 @@ mod integration {
       key: key.to_owned(),
       values: vec![value.to_owned()],
     };
+    let invocation = Invocation::new_test(file!(), Entity::component_direct("list-add"), payload.into());
 
-    let mut outputs: list_add::Outputs = provider
-      .invoke(Entity::component_direct("list-add"), payload.into())
-      .await?
-      .into();
+    let mut outputs: list_add::Outputs = provider.invoke(invocation).await?.into();
     let actual = outputs.length().await?.try_next_into()?;
 
     Ok(actual)
@@ -188,11 +179,9 @@ mod integration {
       start,
       end,
     };
+    let invocation = Invocation::new_test(file!(), Entity::component_direct("list-range"), payload.into());
 
-    let mut outputs: list_range::Outputs = provider
-      .invoke(Entity::component_direct("list-range"), payload.into())
-      .await?
-      .into();
+    let mut outputs: list_range::Outputs = provider.invoke(invocation).await?.into();
     let actual = outputs.values().await?.try_next_into()?;
 
     Ok(actual)
@@ -205,11 +194,9 @@ mod integration {
       num: 1,
       value: value.to_owned(),
     };
+    let invocation = Invocation::new_test(file!(), Entity::component_direct("list-remove"), payload.into());
 
-    let mut outputs: list_remove::Outputs = provider
-      .invoke(Entity::component_direct("list-remove"), payload.into())
-      .await?
-      .into();
+    let mut outputs: list_remove::Outputs = provider.invoke(invocation).await?.into();
     let actual = outputs.num().await?.try_next_into()?;
 
     Ok(actual)
@@ -221,11 +208,9 @@ mod integration {
       key: key.to_owned(),
       values: vec![value.to_owned()],
     };
+    let invocation = Invocation::new_test(file!(), Entity::component_direct("set-add"), payload.into());
 
-    let mut outputs: set_add::Outputs = provider
-      .invoke(Entity::component_direct("set-add"), payload.into())
-      .await?
-      .into();
+    let mut outputs: set_add::Outputs = provider.invoke(invocation).await?.into();
 
     let actual = outputs.length().await?.try_next_into()?;
 
@@ -235,11 +220,9 @@ mod integration {
   async fn set_get(provider: &Provider, key: &str) -> Result<Vec<String>> {
     debug!("set-get:{}", key);
     let payload = set_get::Inputs { key: key.to_owned() };
+    let invocation = Invocation::new_test(file!(), Entity::component_direct("set-get"), payload.into());
 
-    let mut outputs: set_get::Outputs = provider
-      .invoke(Entity::component_direct("set-get"), payload.into())
-      .await?
-      .into();
+    let mut outputs: set_get::Outputs = provider.invoke(invocation).await?.into();
 
     let actual = outputs.values().await?.try_next_into()?;
 
@@ -253,11 +236,9 @@ mod integration {
       cursor: cursor.to_owned(),
       count,
     };
+    let invocation = Invocation::new_test(file!(), Entity::component_direct("set-scan"), payload.into());
 
-    let mut outputs: set_scan::Outputs = provider
-      .invoke(Entity::component_direct("set-scan"), payload.into())
-      .await?
-      .into();
+    let mut outputs: set_scan::Outputs = provider.invoke(invocation).await?.into();
 
     let values = outputs.values().await?.try_next_into()?;
     let cursor = outputs.cursor().await?.try_next_into()?;
@@ -271,11 +252,9 @@ mod integration {
       key: key.to_owned(),
       values: vec![value.to_owned()],
     };
+    let invocation = Invocation::new_test(file!(), Entity::component_direct("set-remove"), payload.into());
 
-    let mut outputs: set_remove::Outputs = provider
-      .invoke(Entity::component_direct("set-remove"), payload.into())
-      .await?
-      .into();
+    let mut outputs: set_remove::Outputs = provider.invoke(invocation).await?.into();
 
     let actual = outputs.num().await?.try_next_into()?;
 

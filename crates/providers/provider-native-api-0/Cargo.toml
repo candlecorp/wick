@@ -18,6 +18,7 @@ vino-rpc = { path = "../../vino/vino-rpc" }
 vino-provider = { path = "../../../sdk/crates/vino-provider", features = [
   "native",
 ] }
+vino-transport = { path = "../../../sdk/crates/vino-transport" }
 vino-packet = { path = "../../../sdk/crates/vino-packet" }
 vino-entity = { path = "../../../sdk/crates/vino-entity" }
 tracing = "0.1"

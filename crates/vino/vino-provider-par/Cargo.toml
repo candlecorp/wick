@@ -11,6 +11,7 @@ edition = "2021"
 vino-par = { path = "../vino-par" }
 vino-loader = { path = "../vino-loader" }
 vino-rpc = { path = "../vino-rpc", features = ["client"] }
+vino-transport = { path = "../../../sdk/crates/vino-transport" }
 vino-provider = { path = "../../../sdk/crates/vino-provider", features = [
   "native",
 ] }

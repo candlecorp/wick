@@ -10,6 +10,7 @@ edition = "2021"
 [dependencies]
 vino-rpc = { path = "../vino-rpc" }
 vino-lattice = { path = "../vino-lattice" }
+vino-transport = { path = "../../../sdk/crates/vino-transport" }
 vino-provider = { path = "../../../sdk/crates/vino-provider", features = [
   "native",
 ] }

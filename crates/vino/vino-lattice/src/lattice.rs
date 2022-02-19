@@ -12,9 +12,8 @@ use tokio::time::timeout;
 use tokio_stream::wrappers::UnboundedReceiverStream;
 use tokio_stream::StreamExt;
 use vino_codec::messagepack::serialize;
-use vino_entity::Entity;
 use vino_rpc::SharedRpcHandler;
-use vino_transport::{MessageTransport, TransportMap, TransportStream, TransportWrapper};
+use vino_transport::{Invocation, MessageTransport, TransportStream, TransportWrapper};
 use vino_types::HostedType;
 
 use crate::error::LatticeError;
@@ -203,18 +202,13 @@ impl Lattice {
     Ok(())
   }
 
-  pub async fn invoke(&self, entity: Entity, payload: TransportMap) -> Result<TransportStream> {
-    let entity_string = entity.to_string();
-    debug!("LATTICE:INVOKE[{}]:PAYLOAD[{:?}]", entity_string, payload);
-    let ns = match &entity {
-      Entity::Component(ns, _) => ns,
-      _ => {
-        return Err(LatticeError::InvalidEntity);
-      }
-    };
+  pub async fn invoke(&self, lattice_id: &str, invocation: Invocation) -> Result<TransportStream> {
+    let target_url = invocation.target_url();
 
-    let topic = rpc_message_topic(ns);
-    let msg = LatticeRpcMessage::Invocation { entity, payload };
+    debug!("LATTICE:INVOKE[{}]:PAYLOAD[{:?}]", target_url, invocation.payload);
+
+    let topic = rpc_message_topic(lattice_id);
+    let msg = LatticeRpcMessage::Invocation(invocation);
     let payload = serialize(&msg).map_err(|e| LatticeError::MessageSerialization(e.to_string()))?;
     let sub = self.nats.request(&topic, &payload).await?;
 
@@ -222,14 +216,14 @@ impl Lattice {
     let stream = TransportStream::new(UnboundedReceiverStream::new(rx));
 
     tokio::spawn(async move {
-      trace!("LATTICE:INVOKE_HANDLER[{}]:OPEN", entity_string);
+      trace!("LATTICE:INVOKE_HANDLER[{}]:OPEN", target_url);
       loop {
-        trace!("LATTICE:INVOKE_HANDLER[{}]:WAIT", entity_string);
+        trace!("LATTICE:INVOKE_HANDLER[{}]:WAIT", target_url);
         match sub.next().await {
           Ok(Some(nats_msg)) => {
             debug!(
               "LATTICE:INVOKE_HANDLER[{}]:RESULT:DATA:{:?}",
-              entity_string,
+              target_url,
               nats_msg.data()
             );
             if let Err(e) = handle_response(&tx, &nats_msg) {
@@ -237,16 +231,16 @@ impl Lattice {
             }
           }
           Ok(None) => {
-            trace!("LATTICE:INVOKE_HANDLER[{}]:DONE", entity_string);
+            trace!("LATTICE:INVOKE_HANDLER[{}]:DONE", target_url);
             break;
           }
           Err(e) => {
-            error!("Error retrieving lattice message for {}: {}", entity_string, e);
+            error!("Error retrieving lattice message for {}: {}", target_url, e);
             break;
           }
         }
       }
-      trace!("LATTICE:INVOKE_HANDLER[{}]:CLOSE", entity_string);
+      trace!("LATTICE:INVOKE_HANDLER[{}]:CLOSE", target_url);
     });
 
     Ok(stream)
@@ -309,9 +303,9 @@ async fn handle_message(provider: &SharedRpcHandler, nats_msg: NatsMessage, dead
         }
       };
     }
-    LatticeRpcMessage::Invocation { entity, payload } => {
-      let entity_url = entity.url();
-      let result = provider.invoke(entity, payload).await;
+    LatticeRpcMessage::Invocation(invocation) => {
+      let target_url = invocation.target_url();
+      let result = provider.invoke(invocation).await;
 
       match result {
         Ok(mut stream) => {
@@ -336,7 +330,7 @@ async fn handle_message(provider: &SharedRpcHandler, nats_msg: NatsMessage, dead
           nats_msg.respond(&response).await?;
         }
         Err(e) => {
-          error!("Provider invocation for {} resulted in error: {}", entity_url, e);
+          error!("Provider invocation for {} resulted in error: {}", target_url, e);
           let response = LatticeRpcResponse::Error(e.to_string());
           nats_msg.respond(&response).await?;
         }
@@ -353,12 +347,7 @@ fn rpc_message_topic(ns: &str) -> String {
 #[derive(Debug, serde::Deserialize, serde::Serialize)]
 pub enum LatticeRpcMessage {
   #[serde(rename = "0")]
-  Invocation {
-    #[serde(rename = "1")]
-    entity: Entity,
-    #[serde(rename = "2")]
-    payload: TransportMap,
-  },
+  Invocation(Invocation),
 
   #[serde(rename = "1")]
   List {
@@ -416,7 +405,7 @@ mod test_integration {
   use test_vino_provider::Provider;
   use tokio_stream::StreamExt;
   use tracing::*;
-  use vino_transport::{MessageTransport, TransportMap};
+  use vino_transport::{Invocation, MessageTransport, TransportMap};
   use vino_types::{ComponentMap, ComponentSignature, HostedType, MapWrapper, ProviderSignature, StructMap};
 
   use super::{Lattice, LatticeBuilder};
@@ -435,14 +424,15 @@ mod test_integration {
 
   #[test_logger::test(tokio::test)]
   async fn rpc_invoke() -> Result<()> {
-    let (lattice, namespace) = get_lattice().await?;
+    let (lattice, lattice_id) = get_lattice().await?;
     let component_name = "test-component";
     let user_input = String::from("Hello world");
-    let entity = vino_entity::Entity::component(namespace, component_name);
+    let entity = vino_entity::Entity::component("arbitrary_ns", component_name);
     let mut payload = TransportMap::new();
     payload.insert("input", MessageTransport::success(&user_input));
     println!("Sending payload: {:?}", payload);
-    let mut stream = lattice.invoke(entity, payload).await?;
+    let invocation = Invocation::new_test(file!(), entity, payload);
+    let mut stream = lattice.invoke(&lattice_id, invocation).await?;
     println!("Sent payload, received stream");
 
     let msg = stream.next().await.unwrap();
@@ -469,14 +459,15 @@ mod test_integration {
 
   #[test_logger::test(tokio::test)]
   async fn rpc_invoke_error() -> Result<()> {
-    let (lattice, namespace) = get_lattice().await?;
+    let (lattice, lattice_id) = get_lattice().await?;
     let component_name = "error";
     let user_input = String::from("Hello world");
-    let entity = vino_entity::Entity::component(namespace, component_name);
+    let entity = vino_entity::Entity::component("arbitrary_ns", component_name);
     let mut payload = TransportMap::new();
     payload.insert("input", MessageTransport::success(&user_input));
     debug!("Sending payload: {:?}", payload);
-    let mut stream = lattice.invoke(entity, payload).await?;
+    let invocation = Invocation::new_test(file!(), entity, payload);
+    let mut stream = lattice.invoke(&lattice_id, invocation).await?;
     debug!("Sent payload, received stream");
 
     let msg = stream.next().await;

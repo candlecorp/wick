@@ -40,12 +40,12 @@ impl InvocationHandler for NativeProviderService {
 
     let tx_id = msg.get_tx_id().to_owned();
     let component = msg.get_target().clone();
-    let message = msg.get_payload_owned();
+    let invocation = msg.into_inner();
     let url = component.url();
 
     Ok(
       async move {
-        let receiver = provider.invoke(component, message).await;
+        let receiver = provider.invoke(invocation).await;
         drop(provider);
         let (tx, rx) = unbounded_channel();
         match receiver {

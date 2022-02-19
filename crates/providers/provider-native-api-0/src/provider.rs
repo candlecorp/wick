@@ -1,8 +1,8 @@
-use vino_entity::Entity;
 use vino_provider::native::prelude::*;
 use vino_random::Random;
 use vino_rpc::error::RpcError;
 use vino_rpc::{RpcHandler, RpcResult};
+use vino_transport::Invocation;
 
 use crate::components::Dispatcher;
 use crate::error::NativeError;
@@ -41,10 +41,10 @@ impl Provider {
 
 #[async_trait]
 impl RpcHandler for Provider {
-  async fn invoke(&self, entity: Entity, payload: TransportMap) -> RpcResult<BoxedTransportStream> {
+  async fn invoke(&self, invocation: Invocation) -> RpcResult<BoxedTransportStream> {
     let context = self.context.clone();
-    let component = entity.name();
-    let result = Dispatcher::dispatch(&component, context, payload).await;
+    let component = invocation.target.name();
+    let result = Dispatcher::dispatch(component, context, invocation.payload).await;
     let stream = result.map_err(|e| RpcError::ProviderError(e.to_string()))?;
 
     Ok(Box::pin(stream))
@@ -63,7 +63,6 @@ mod tests {
   use serde::de::DeserializeOwned;
   use tracing::debug;
   use vino_provider::native::prelude::*;
-  use vino_transport::Failure;
 
   static SEED: u64 = 1000;
 
@@ -79,28 +78,12 @@ mod tests {
     let provider = Provider::new(SEED);
 
     let entity = Entity::component_direct(component);
+    let invocation = Invocation::new_test(file!(), entity, transport_map);
 
-    let mut outputs = provider.invoke(entity, transport_map).await.unwrap();
+    let mut outputs = provider.invoke(invocation).await.unwrap();
     let output = outputs.next().await.unwrap();
     println!("Received payload from port '{}': {:?}", output.port, output.payload);
     Ok(output.payload.try_into()?)
-  }
-
-  async fn _invoke_failure(component: &str, payload: impl Into<TransportMap> + Send) -> Result<Failure> {
-    let transport_map: TransportMap = payload.into();
-    println!("TransportMap: {:?}", transport_map);
-    let provider = Provider::new(SEED);
-
-    let entity = Entity::component_direct(component);
-
-    let mut outputs = provider.invoke(entity, transport_map).await.unwrap();
-    let output = outputs.next().await.unwrap();
-    println!("Received payload from port '{}': {:?}", output.port, output.payload);
-    match output.payload {
-      MessageTransport::Success(_) => Err("Got success, expected failure".into()),
-      MessageTransport::Failure(failure) => Ok(failure),
-      MessageTransport::Signal(_) => Err("Got signal, expected failure".into()),
-    }
   }
 
   #[test_logger::test(tokio::test)]

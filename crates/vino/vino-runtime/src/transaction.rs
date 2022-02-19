@@ -62,8 +62,8 @@ struct Transaction {
 }
 
 impl Transaction {
-  fn new(tx_id: String, model: SharedModel) -> Self {
-    let ports = PortStatuses::new(tx_id.clone(), &model);
+  fn new<T: AsRef<str>>(tx_id: T, model: SharedModel) -> Self {
+    let ports = PortStatuses::new(&tx_id, &model);
     let readable = model.read();
     let senders: Vec<_> = readable.get_senders().cloned().collect();
     let generators: Vec<_> = readable.get_generators().cloned().collect();
@@ -71,7 +71,7 @@ impl Transaction {
     let output_ports = readable.get_schematic_outputs().cloned().collect();
     drop(readable);
     Self {
-      tx_id,
+      tx_id: tx_id.as_ref().to_owned(),
       model,
       ports,
       output_ports,
@@ -184,7 +184,7 @@ mod tests {
 
   #[test_logger::test]
   fn test_transaction() -> TestResult<()> {
-    let tx_id = get_uuid();
+    let tx_id = "some tx";
     let model = make_model()?;
 
     let mut transaction = Transaction::new(tx_id, model);
@@ -222,8 +222,8 @@ mod tests {
     let model = make_model()?;
 
     let mut map = TransactionExecutor::new(model, Duration::from_millis(100));
-    let tx_id = get_uuid();
-    let (mut ready_rx, tx) = map.new_transaction(tx_id.clone());
+    let tx_id = "some tx".to_owned();
+    let (mut ready_rx, tx) = map.new_transaction(&tx_id);
 
     // First message sends from the schematic input to the component
     tx.send(TransactionUpdate::Update(InputMessage {

@@ -18,6 +18,7 @@ vino-provider = { path = "../../../sdk/crates/vino-provider", features = [
 ] }
 vino-rpc = { path = "../../vino/vino-rpc" }
 vino-entity = { path = "../../../sdk/crates/vino-entity" }
+vino-transport = { path = "../../../sdk/crates/vino-transport" }
 vino-codec = { path = "../../../sdk/crates/vino-codec" }
 vino-packet = { path = "../../../sdk/crates/vino-packet" }
 vino-types = { path = "../../../sdk/crates/vino-types" }

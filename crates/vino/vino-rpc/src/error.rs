@@ -123,9 +123,13 @@ pub enum RpcClientError {
   #[error("RPC response invalid: {0}")]
   ResponseInvalid(String),
 
+  /// Error converting to or from RPC data types.
+  #[error(transparent)]
+  ConversionFailed(RpcError),
+
   /// An error related to [vino_transport].
   #[error(transparent)]
-  TransportError(#[from] vino_transport::Error),
+  Transport(#[from] vino_transport::Error),
 
   /// General IO error
   #[error("I/O error: {0}")]

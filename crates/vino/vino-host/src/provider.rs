@@ -6,8 +6,7 @@ use vino_provider::native::prelude::*;
 use vino_rpc::error::RpcError;
 use vino_rpc::{RpcHandler, RpcResult};
 use vino_runtime::prelude::InitData;
-use vino_transport::BoxedTransportStream;
-use vino_transport::TransportMap;
+use vino_transport::{BoxedTransportStream, Invocation};
 
 use crate::Host;
 
@@ -32,15 +31,19 @@ impl From<Host> for Provider {
 
 #[async_trait]
 impl RpcHandler for Provider {
-  async fn invoke(&self, entity: Entity, payload: TransportMap) -> RpcResult<BoxedTransportStream> {
-    trace!("HOST:INVOKE:[{}]", entity);
-    let component = entity.name();
+  async fn invoke(&self, invocation: Invocation) -> RpcResult<BoxedTransportStream> {
+    trace!("HOST:INVOKE:[{}]", invocation.target_url());
 
-    let init_data: InitData = payload.get_config().clone().map(|c| c.into()).unwrap_or_default();
+    let init_data: InitData = invocation
+      .payload
+      .get_config()
+      .clone()
+      .map(|c| c.into())
+      .unwrap_or_default();
 
     let outputs = self
       .host
-      .request(&component, payload, Some(init_data))
+      .request(invocation.target.name(), invocation.payload, Some(init_data))
       .await
       .map_err(RpcError::boxed)?;
 
@@ -75,7 +78,8 @@ mod tests {
 
     let job_payload = TransportMap::from(vec![("input", input)]);
 
-    let mut outputs = provider.invoke(Entity::component_direct("logger"), job_payload).await?;
+    let invocation = Invocation::new_test(file!(), Entity::component_direct("logger"), job_payload);
+    let mut outputs = provider.invoke(invocation).await?;
     let output = outputs.next().await.unwrap();
     println!("payload from [{}]: {:?}", output.port, output.payload);
     let output: String = output.payload.try_into()?;

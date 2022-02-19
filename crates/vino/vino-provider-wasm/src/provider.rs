@@ -2,11 +2,9 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use vino_entity::Entity;
 use vino_rpc::error::RpcError;
 use vino_rpc::{RpcHandler, RpcResult};
-use vino_transport::TransportMap;
-use vino_transport::{BoxedTransportStream, TransportWrapper};
+use vino_transport::{BoxedTransportStream, Invocation, TransportMap, TransportWrapper};
 use vino_types::*;
 pub use wapc::WasiParams;
 
@@ -71,15 +69,16 @@ impl Provider {
 
 #[async_trait]
 impl RpcHandler for Provider {
-  async fn invoke(&self, entity: Entity, payload: TransportMap) -> RpcResult<BoxedTransportStream> {
-    trace!("WASM:INVOKE:[{}]", entity);
-    let component = entity.name();
-    let messagepack_map = payload
+  async fn invoke(&self, invocation: Invocation) -> RpcResult<BoxedTransportStream> {
+    trace!("WASM:INVOKE:[{}]", invocation.target_url());
+    let component = invocation.target.name();
+    let messagepack_map = invocation
+      .payload
       .try_into_messagepack_bytes()
       .map_err(|e| RpcError::ProviderError(e.to_string()))?;
     let pool = self.pool.clone();
 
-    let outputs = pool.call(&component, &messagepack_map).await?;
+    let outputs = pool.call(component, &messagepack_map).await?;
 
     Ok(Box::pin(outputs))
   }
@@ -110,6 +109,7 @@ mod tests {
   use anyhow::Result as TestResult;
   use maplit::hashmap;
   use tokio_stream::StreamExt;
+  use vino_entity::Entity;
   use vino_transport::MessageTransport;
 
   use super::*;
@@ -134,9 +134,9 @@ mod tests {
       "input".to_owned() => MessageTransport::messagepack(input),
     });
     debug!("payload: {:?}", job_payload);
-    let mut outputs = provider
-      .invoke(Entity::component_direct("validate"), job_payload)
-      .await?;
+    let entity = Entity::component_direct("validate");
+    let invocation = Invocation::new_test(file!(), entity, job_payload);
+    let mut outputs = provider.invoke(invocation).await?;
     let output = outputs.next().await.unwrap();
     println!("payload from [{}]: {:?}", output.port, output.payload);
     let output: String = output.payload.try_into()?;

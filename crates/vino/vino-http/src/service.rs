@@ -8,7 +8,7 @@ use tokio_stream::StreamExt;
 use tonic::body::{empty_body, BoxBody};
 use vino_entity::Entity;
 use vino_rpc::SharedRpcHandler;
-use vino_transport::{TransportMap, TransportWrapper};
+use vino_transport::{Invocation, TransportMap, TransportWrapper};
 use vino_types::HostedType;
 
 use crate::cors::Cors;
@@ -51,7 +51,7 @@ impl tower_service::Service<Request<hyper::Body>> for ProviderService {
       let kind = RequestKind::new(&req);
       trace!("HTTP:REQUEST:KIND:{:?}", kind);
       match kind {
-        RequestKind::Invocation { entity } => {
+        RequestKind::Invocation { target } => {
           let headers = match cors.simple(req.headers()) {
             Ok(headers) => headers,
             Err(e) => {
@@ -79,7 +79,8 @@ impl tower_service::Service<Request<hyper::Body>> for ProviderService {
               }
             }
           };
-          match provider.invoke(entity, payload).await {
+          let invocation = Invocation::new(Entity::system("http", ""), target, payload);
+          match provider.invoke(invocation).await {
             Ok(stream) => {
               trace!("HTTP:INVOKE:OK");
 
@@ -164,7 +165,7 @@ fn response(status: StatusCode) -> Response<BoxBody> {
 #[derive(Debug, PartialEq)]
 pub enum RequestKind<'a> {
   Invocation {
-    entity: Entity,
+    target: Entity,
   },
   List,
   Preflight {
@@ -218,7 +219,7 @@ pub fn has_rpc_call(req: &Request<hyper::Body>) -> Option<RequestKind> {
     match command {
       "invoke" => parts.next().map(|component| {
         let entity = Entity::component_direct(component);
-        RequestKind::Invocation { entity }
+        RequestKind::Invocation { target: entity }
       }),
       "list" => Some(RequestKind::List),
       _ => None,

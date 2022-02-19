@@ -15,7 +15,7 @@ pub(crate) struct PortStatuses {
 }
 
 impl PortStatuses {
-  pub(crate) fn new(tx_id: String, model: &SharedModel) -> Self {
+  pub(crate) fn new<T: AsRef<str>>(tx_id: T, model: &SharedModel) -> Self {
     let raw_ports = get_incoming_ports(model);
     let readable = model.read();
     let port_statuses = readable
@@ -34,7 +34,7 @@ impl PortStatuses {
       inner: RefCell::new(port_statuses),
       raw_ports,
       schematic_name,
-      tx_id,
+      tx_id: tx_id.as_ref().to_owned(),
     }
   }
   fn log_prefix(&self) -> String {

@@ -8,6 +8,7 @@ use vino_lattice::Lattice;
 use vino_provider::native::prelude::*;
 use vino_rpc::error::RpcError;
 use vino_rpc::{RpcHandler, RpcResult};
+use vino_transport::Invocation;
 
 use crate::Error;
 
@@ -19,33 +20,31 @@ pub struct Context {
 
 #[derive(Clone, Debug)]
 pub struct Provider {
-  namespace: String,
+  lattice_id: String,
   lattice: Arc<Lattice>,
 }
 
 impl Provider {
-  pub async fn new(namespace: String, lattice: Arc<Lattice>) -> Result<Self, Error> {
-    Ok(Self { namespace, lattice })
+  pub async fn new(lattice_id: String, lattice: Arc<Lattice>) -> Result<Self, Error> {
+    Ok(Self { lattice_id, lattice })
   }
 }
 
 #[async_trait]
 impl RpcHandler for Provider {
-  async fn invoke(&self, entity: Entity, payload: TransportMap) -> RpcResult<BoxedTransportStream> {
-    let entity_url = entity.url();
-    trace!("PROV:LATTICE:INVOKE:[{}]", entity_url);
-
-    let entity = Entity::component(&self.namespace, entity.name());
+  async fn invoke(&self, invocation: Invocation) -> RpcResult<BoxedTransportStream> {
+    let target_url = invocation.target_url();
+    trace!("PROV:LATTICE:INVOKE:[{}]", target_url);
 
     let start = Instant::now();
     let stream = self
       .lattice
-      .invoke(entity, payload)
+      .invoke(&self.lattice_id, invocation)
       .await
       .map_err(|e| RpcError::ProviderError(e.to_string()))?;
     trace!(
       "PROV:LATTICE:INVOKE:[{}]:DURATION[{} ms]",
-      entity_url,
+      target_url,
       start.elapsed().as_millis()
     );
 
@@ -53,7 +52,7 @@ impl RpcHandler for Provider {
   }
 
   fn get_list(&self) -> RpcResult<Vec<HostedType>> {
-    let components = block_on(self.lattice.list_components(self.namespace.clone()))
+    let components = block_on(self.lattice.list_components(self.lattice_id.clone()))
       .map_err(|e| RpcError::ProviderError(e.to_string()))?;
 
     Ok(components)
@@ -90,10 +89,9 @@ mod tests {
       "input".to_owned(),
       MessageTransport::messagepack(user_data),
     )]));
+    let invocation = Invocation::new_test(file!(), Entity::component(ns, "test-component"), job_payload);
 
-    let mut outputs = provider
-      .invoke(Entity::component(ns, "test-component"), job_payload)
-      .await?;
+    let mut outputs = provider.invoke(invocation).await?;
     let output = outputs.next().await.unwrap();
     println!("payload from [{}]: {:?}", output.port, output.payload);
     let output: String = output.payload.try_into()?;
@@ -118,8 +116,9 @@ mod tests {
       "input".to_owned(),
       MessageTransport::messagepack(user_data),
     )]));
+    let invocation = Invocation::new_test(file!(), Entity::component(ns, "error"), job_payload);
 
-    let mut outputs = provider.invoke(Entity::component(ns, "error"), job_payload).await?;
+    let mut outputs = provider.invoke(invocation).await?;
     let output = outputs.next().await.unwrap();
     println!("payload from [{}]: {:?}", output.port, output.payload);
     assert_eq!(output.payload, MessageTransport::error("This always errors".to_owned()));

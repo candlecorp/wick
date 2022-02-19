@@ -5,47 +5,43 @@ use http::Uri;
 use vino_provider::native::prelude::*;
 use vino_rpc::error::RpcError;
 use vino_rpc::{RpcClient, RpcHandler, RpcResult};
+use vino_transport::Invocation;
 
 use crate::error::GrpcError;
 
 #[derive(Debug)]
 pub struct Provider {
-  namespace: String,
   client: RpcClient,
   schemas: Vec<HostedType>,
 }
 
 impl Provider {
-  pub async fn new<T: TryInto<Uri> + Send>(namespace: String, address: T) -> Result<Self, GrpcError> {
+  pub async fn new<T: TryInto<Uri> + Send>(address: T) -> Result<Self, GrpcError> {
     let mut client = vino_rpc::make_rpc_client(address, None, None, None, None).await?;
     let schemas = client.list().await?;
 
-    Ok(Self {
-      namespace,
-      client,
-      schemas,
-    })
+    Ok(Self { client, schemas })
   }
 }
 
 #[async_trait]
 impl RpcHandler for Provider {
-  async fn invoke(&self, entity: Entity, payload: TransportMap) -> RpcResult<BoxedTransportStream> {
-    let entity_url = entity.url();
-    trace!("PROV:PAR:INVOKE:[{}]", entity_url);
+  async fn invoke(&self, invocation: Invocation) -> RpcResult<BoxedTransportStream> {
+    let target_url = invocation.target_url();
+    trace!("PROV:PAR:INVOKE:[{}]", target_url);
 
     let start = Instant::now();
 
     let stream = self
       .client
       .clone()
-      .invoke(self.namespace.clone(), entity.name(), payload)
+      .invoke(invocation)
       .await
       .map_err(|e| RpcError::ComponentError(e.to_string()))?;
 
     trace!(
       "PROV:PAR:INVOKE:[{}]:DURATION[{} ms]",
-      entity_url,
+      target_url,
       start.elapsed().as_millis()
     );
     Ok(Box::pin(stream))
@@ -81,12 +77,14 @@ mod test {
     let user_data = "test string payload";
 
     let addr = format!("https://127.0.0.1:{}", port);
-    let service = Provider::new("test".to_owned(), addr).await?;
-
-    let work = service.invoke(
+    let service = Provider::new(addr).await?;
+    let invocation = Invocation::new_test(
+      file!(),
       Entity::component_direct("test-component"),
       vec![("input", user_data)].into(),
     );
+
+    let work = service.invoke(invocation);
 
     tokio::select! {
         res = work => {

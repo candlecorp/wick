@@ -94,7 +94,7 @@ use tap::{TestBlock, TestRunner};
 use tokio_stream::StreamExt;
 use vino_entity::Entity;
 use vino_rpc::SharedRpcHandler;
-use vino_transport::{Failure, MessageTransport, Success, TransportMap, TransportWrapper};
+use vino_transport::{Failure, Invocation, MessageTransport, Success, TransportMap, TransportWrapper};
 
 use self::error::TestError;
 
@@ -240,8 +240,9 @@ pub async fn run_test(
 
     trace!("TEST[{}]:INVOKE[{}]", i, entity,);
     trace!("TEST[{}]:PAYLOAD:{:?}", i, payload,);
+    let invocation = Invocation::new_test(&test_name, entity, payload);
     let result = provider
-      .invoke(entity, payload)
+      .invoke(invocation)
       .await
       .map_err(|e| Error::InvocationFailed(e.to_string()));
 

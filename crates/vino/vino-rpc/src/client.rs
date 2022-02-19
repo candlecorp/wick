@@ -4,14 +4,12 @@ use std::time::Duration;
 use tokio_stream::StreamExt;
 use tonic::transport::{Certificate, Channel, ClientTlsConfig, Identity, Uri};
 use tracing::debug;
-use vino_entity::Entity;
 use vino_transport::{MessageTransport, TransportMap, TransportStream, TransportWrapper};
 use vino_types::HostedType;
 
 use crate::error::RpcClientError;
 use crate::rpc::invocation_service_client::InvocationServiceClient;
-use crate::rpc::{Invocation, ListRequest, StatsRequest, StatsResponse};
-use crate::types::conversions::convert_transport_map;
+use crate::rpc::{ListRequest, StatsRequest, StatsResponse};
 
 /// Create an RPC client form common configuration
 pub async fn make_rpc_client<T: TryInto<Uri> + Send>(
@@ -137,23 +135,13 @@ impl RpcClient {
     Ok(TransportStream::new(mapped))
   }
 
-  /// Send an invoke RPC command
-  pub async fn invoke(
-    &mut self,
-    origin: String,
-    component: String,
-    payload: TransportMap,
-  ) -> Result<TransportStream, RpcClientError> {
-    let rpc_invocation = Invocation {
-      origin,
-      target: Entity::component_direct(component).url(),
-      msg: convert_transport_map(payload),
-      id: "None".to_owned(),
-    };
-
-    let stream = self.invoke_raw(rpc_invocation).await?;
-
-    Ok(stream)
+  /// Send an invoke RPC command with an [Invocation] object.
+  pub async fn invoke(&mut self, invocation: vino_transport::Invocation) -> Result<TransportStream, RpcClientError> {
+    Ok(
+      self
+        .invoke_raw(invocation.try_into().map_err(RpcClientError::ConversionFailed)?)
+        .await?,
+    )
   }
 
   /// Make an invocation with data passed as a JSON string.
@@ -168,7 +156,8 @@ impl RpcClient {
     if transpose {
       payload.transpose_output_name();
     }
+    let invocation: vino_transport::Invocation = (origin, component, payload).try_into()?;
 
-    self.invoke(origin, component, payload).await
+    self.invoke(invocation).await
   }
 }

@@ -64,9 +64,7 @@ pub(crate) async fn initialize_par_provider(
 
   let bytes = vino_loader::get_bytes(&provider.reference, opts.allow_latest, &opts.allowed_insecure).await?;
 
-  let service =
-    vino_provider_par::provider::Provider::from_tarbytes(namespace.clone(), provider.reference.clone(), &*bytes)
-      .await?;
+  let service = vino_provider_par::provider::Provider::from_tarbytes(provider.reference.clone(), &*bytes).await?;
 
   let service = NativeProviderService::new(namespace.clone(), Arc::new(service));
 
@@ -84,7 +82,7 @@ pub(crate) async fn initialize_par_provider(
 pub(crate) async fn initialize_grpc_provider(provider: ProviderDefinition, namespace: String) -> ProviderInitResult {
   trace!("PROV:GRPC:NS[{}]:REGISTERING", provider.namespace);
 
-  let service = vino_provider_grpc::provider::Provider::new(namespace.clone(), provider.reference.clone()).await?;
+  let service = vino_provider_grpc::provider::Provider::new(provider.reference.clone()).await?;
 
   let service = NativeProviderService::new(namespace.clone(), Arc::new(service));
 
@@ -129,8 +127,9 @@ pub(crate) async fn initialize_wasm_provider(
           }
         }
       }
-      let result = network_invoke_sync(opts.network_id.clone(), origin, target, payload)
-        .map_err(|e| LinkError::CallFailure(e.to_string()))?;
+      let invocation = Invocation::new(origin, target, payload);
+      let result =
+        network_invoke_sync(opts.network_id.clone(), invocation).map_err(|e| LinkError::CallFailure(e.to_string()))?;
       Ok(result)
     })),
   )?);
@@ -190,7 +189,11 @@ pub(crate) async fn initialize_lattice_provider(
       ))
     }
   };
-  trace!("PROV:LATTICE:NS[{}]:REGISTERING", provider.namespace);
+  trace!(
+    "PROV:LATTICE:[{}=>{}]:REGISTERING",
+    provider.namespace,
+    provider.reference
+  );
 
   let provider = Arc::new(vino_provider_lattice::provider::Provider::new(provider.reference, lattice).await?);
 

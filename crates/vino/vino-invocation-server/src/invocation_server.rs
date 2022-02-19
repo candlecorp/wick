@@ -11,7 +11,7 @@ use tonic::{Response, Status};
 use vino_rpc::error::RpcError;
 use vino_rpc::rpc::invocation_service_server::InvocationService;
 use vino_rpc::rpc::{ListResponse, Output, StatsResponse};
-use vino_rpc::{convert_messagekind_map, rpc, DurationStatistics, Statistics};
+use vino_rpc::{rpc, DurationStatistics, Statistics};
 
 use crate::conversion::make_output;
 use crate::SharedRpcHandler;
@@ -87,20 +87,23 @@ impl InvocationService for InvocationServer {
     let start = Instant::now();
 
     let (tx, rx) = mpsc::channel(4);
-    let invocation = request.get_ref();
+    let invocation = request.into_inner();
     debug!(
       "RPC:Invocation for target {}, message: {:?}",
-      invocation.target, invocation.msg
+      invocation.target, invocation.payload
     );
     let invocation_id = invocation.id.clone();
     let entity = vino_entity::Entity::from_str(&invocation.target);
     if let Err(e) = entity {
       tx.send(Err(Status::failed_precondition(e.to_string()))).await.unwrap();
     } else {
+      let invocation: vino_transport::Invocation = invocation.try_into().map_err(|_| {
+        Status::failed_precondition("Could not convert invocation payload into internal data structure.")
+      })?;
       let entity = entity.unwrap();
       let entity_name = entity.name().to_owned();
-      let payload = convert_messagekind_map(&invocation.msg);
-      let result = self.provider.invoke(entity, payload).await;
+
+      let result = self.provider.invoke(invocation).await;
       if let Err(e) = result {
         let message = e.to_string();
         tx.send(Err(Status::internal(message))).await.unwrap();

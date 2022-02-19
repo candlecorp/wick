@@ -1,7 +1,7 @@
-use vino_entity::Entity;
 use vino_provider::native::prelude::*;
 use vino_rpc::error::RpcError;
 use vino_rpc::{RpcHandler, RpcResult};
+use vino_transport::Invocation;
 
 use crate::components::Dispatcher;
 use crate::error::NativeError;
@@ -25,10 +25,9 @@ impl Provider {}
 
 #[async_trait]
 impl RpcHandler for Provider {
-  async fn invoke(&self, entity: Entity, payload: TransportMap) -> RpcResult<BoxedTransportStream> {
+  async fn invoke(&self, invocation: Invocation) -> RpcResult<BoxedTransportStream> {
     let context = self.context.clone();
-    let component = entity.name();
-    let result = Dispatcher::dispatch(&component, context, payload).await;
+    let result = Dispatcher::dispatch(invocation.target.name(), context, invocation.payload).await;
     let stream = result.map_err(|e| RpcError::ProviderError(e.to_string()))?;
 
     Ok(Box::pin(stream))

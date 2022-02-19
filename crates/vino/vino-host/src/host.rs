@@ -288,7 +288,6 @@ mod test {
   use vino_entity::Entity;
   use vino_invocation_server::connect_rpc_client;
   use vino_manifest::host_definition::HttpConfig;
-  use vino_rpc::convert_transport_map;
   use vino_rpc::rpc::Invocation;
 
   use super::*;
@@ -346,16 +345,11 @@ mod test {
     let mut client = connect_rpc_client(Uri::from_str("https://127.0.0.1:54321").unwrap()).await?;
     let passed_data = "logging output";
     let data = vec![("input", passed_data)].into();
-    let mut response = client
-      .invoke(Invocation {
-        origin: Entity::test("test").url(),
-        target: Entity::schematic("logger").url(),
-        msg: convert_transport_map(data),
-        id: "some inv".to_owned(),
-      })
-      .await
-      .unwrap()
-      .into_inner();
+    let invocation: Invocation =
+      vino_transport::Invocation::new(Entity::test("test"), Entity::schematic("logger"), data)
+        .try_into()
+        .unwrap();
+    let mut response = client.invoke(invocation).await.unwrap().into_inner();
     let next = response.message().await;
     println!("next: {:?}", next);
     let next = next.unwrap().unwrap();

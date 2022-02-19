@@ -14,6 +14,7 @@ use vino_provider::native::prelude::*;
 use vino_provider_cli::options::env;
 use vino_rpc::error::RpcError;
 use vino_rpc::{RpcClient, RpcHandler, RpcResult};
+use vino_transport::Invocation;
 
 use crate::Error;
 
@@ -25,7 +26,6 @@ pub struct Context {
 
 #[derive(Debug)]
 pub struct Provider {
-  namespace: String,
   client: RpcClient,
   interface: ProviderSignature,
   #[allow(unused)]
@@ -33,10 +33,9 @@ pub struct Provider {
 }
 
 impl Provider {
-  pub async fn from_tarbytes<T, NAME, REF>(namespace: NAME, reference: REF, bytes: T) -> Result<Self, Error>
+  pub async fn from_tarbytes<T, REF>(reference: REF, bytes: T) -> Result<Self, Error>
   where
     T: Read + Send,
-    NAME: AsRef<str> + Send,
     REF: AsRef<str> + Send,
   {
     let cachedir = cache_location("par", reference.as_ref());
@@ -46,7 +45,6 @@ impl Provider {
     let interface = get_interface(&interface_path).await?;
     let (cmd, connection) = start_bin(&binpath).await?;
     Ok(Self {
-      namespace: namespace.as_ref().to_owned(),
       child: cmd,
       interface,
       client: connection,
@@ -60,22 +58,22 @@ impl Provider {
 
 #[async_trait]
 impl RpcHandler for Provider {
-  async fn invoke(&self, entity: Entity, payload: TransportMap) -> RpcResult<BoxedTransportStream> {
-    let entity_url = entity.url();
-    trace!("PROV:PAR:INVOKE:[{}]", entity_url);
+  async fn invoke(&self, invocation: Invocation) -> RpcResult<BoxedTransportStream> {
+    let target_url = invocation.target_url();
+    trace!("PROV:PAR:INVOKE:[{}]", target_url);
 
     let start = Instant::now();
 
     let stream = self
       .client
       .clone()
-      .invoke(self.namespace.clone(), entity.name(), payload)
+      .invoke(invocation)
       .await
       .map_err(|e| RpcError::ComponentError(e.to_string()))?;
 
     trace!(
       "PROV:PAR:INVOKE:[{}]:DURATION[{} ms]",
-      entity_url,
+      target_url,
       start.elapsed().as_millis()
     );
     Ok(Box::pin(stream))
@@ -174,9 +172,10 @@ mod tests {
       &issuer_kp,
     )?;
 
-    let provider = Provider::from_tarbytes("test", "vino-test-par", &*archive_bytes).await?;
+    let provider = Provider::from_tarbytes("vino-test-par", &*archive_bytes).await?;
     let inputs: HashMap<&str, i32> = HashMap::from([("left", 2), ("right", 5)]);
-    let stream = provider.invoke(Entity::component_direct("add"), inputs.into()).await?;
+    let invocation = Invocation::new_test(file!(), Entity::component_direct("add"), inputs.into());
+    let stream = provider.invoke(invocation).await?;
 
     let packets: Vec<_> = stream.collect().await;
     println!("packets: {:?}", packets);
