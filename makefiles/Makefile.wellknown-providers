@@ -44,11 +44,14 @@ $(foreach name,$(COMPONENT_NAMES),$(eval $(call COMPONENT_GEN,$(name))))
 $(COMPONENTS_DIR):
 	@mkdir $@
 
+$(COMPONENTS_DIR)/__multi__.rs: $(INTERFACE)
+	vino-codegen rust component $(INTERFACE) __multi__ --type $(PROVIDER_TYPE) -o $(COMPONENTS_DIR)/__multi__.rs
+
 $(GENERATED_RS): $(INTERFACE)
 	vino-codegen rust integration $< --type $(PROVIDER_TYPE) -f -o $@
 
 .PHONY: codegen
-codegen: ${GENERATED_COMPONENTS} $(GENERATED_RS)
+codegen: ${GENERATED_COMPONENTS} $(COMPONENTS_DIR)/__multi__.rs $(GENERATED_RS)
 	@cargo fmt
 
 .PHONY: build

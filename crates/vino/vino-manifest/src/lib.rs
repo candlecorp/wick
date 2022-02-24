@@ -241,11 +241,13 @@ impl Loadable<HostManifest> for HostManifest {
     let version = raw_version
       .as_i64()
       .unwrap_or_else(|| -> i64 { raw_version.as_str().and_then(|s| s.parse::<i64>().ok()).unwrap_or(-1) });
-    match version {
+    let manifest = match version {
       0 => Ok(HostManifest::V0(from_yaml(src)?)),
       -1 => Err(Error::NoVersion),
       _ => Err(Error::VersionError(version.to_string())),
-    }
+    };
+    debug!("Manifest: {:?}", manifest);
+    manifest
   }
 }
 

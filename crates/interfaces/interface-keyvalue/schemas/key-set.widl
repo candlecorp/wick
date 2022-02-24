@@ -7,7 +7,7 @@ type Inputs {
   "The value to set."
   value: string,
 
-  "The expiration for the key."
+  "The expiration in seconds for the key."
   expires: u32,
 }
 

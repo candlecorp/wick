@@ -4,6 +4,7 @@
 
 pub use vino_provider::prelude::*;
 
+pub mod __multi__;
 pub mod delete;
 pub mod exists;
 pub mod key_get;
@@ -16,7 +17,6 @@ pub mod set_contains;
 pub mod set_get;
 pub mod set_remove;
 pub mod set_scan;
-
 #[derive(Debug)]
 pub(crate) struct Dispatcher {}
 #[async_trait]
@@ -85,6 +85,11 @@ impl Dispatch for Dispatcher {
       }
       "set-scan" => {
         self::generated::set_scan::Component::default()
+          .execute(context, data)
+          .await
+      }
+      "__multi__" => {
+        self::generated::__multi__::Component::default()
           .execute(context, data)
           .await
       }
@@ -591,6 +596,40 @@ pub mod generated {
           Err(e) => Err(Box::new(NativeComponentError::new(e.to_string()))),
         }
       }
+    }
+  }
+  pub mod __multi__ {
+    #![allow(unused)]
+    use async_trait::async_trait;
+    use vino_interface_keyvalue::__multi__::*;
+
+    pub use vino_provider::prelude::*;
+
+    #[derive(Default, Copy, Clone, Debug)]
+    pub struct Component {}
+
+    #[async_trait]
+    impl NativeComponent for Component {
+      type Context = crate::Context;
+      async fn execute(
+        &self,
+        context: Self::Context,
+        data: TransportMap,
+      ) -> Result<TransportStream, Box<NativeComponentError>> {
+        let inputs = populate_inputs(data).map_err(|e| NativeComponentError::new(e.to_string()))?;
+        let (outputs, stream) = get_outputs();
+        let result = tokio::spawn(crate::components::__multi__::job(inputs, outputs, context))
+          .await
+          .map_err(|e| Box::new(NativeComponentError::new(format!("Component error: {}", e))))?;
+        match result {
+          Ok(_) => Ok(stream),
+          Err(e) => Err(Box::new(NativeComponentError::new(e.to_string()))),
+        }
+      }
+    }
+
+    pub fn populate_inputs(mut payload: TransportMap) -> Result<Vec<ComponentInputs>, TransportError> {
+      payload.consume::<Vec<ComponentInputs>>("inputs")
     }
   }
 }

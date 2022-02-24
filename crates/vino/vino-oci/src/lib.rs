@@ -103,10 +103,11 @@ use oci_distribution::{Client, Reference};
 #[macro_use]
 extern crate tracing;
 
+// TODO: take auth as arg instead of env.
 /// The ENV variable holding the OCI username.
-pub const OCI_VAR_USER: &str = "OCI_REGISTRY_USER";
+pub const OCI_VAR_USER: &str = "OCI_USERNAME";
 /// The ENV variable holding the OCI password.
-pub const OCI_VAR_PASSWORD: &str = "OCI_REGISTRY_PASSWORD";
+pub const OCI_VAR_PASSWORD: &str = "OCI_PASSWORD";
 
 const WASM_MEDIA_TYPE: &str = oci_distribution::manifest::WASM_LAYER_MEDIA_TYPE;
 const LAYER_MEDIA_TYPE: &str = oci_distribution::manifest::IMAGE_LAYER_MEDIA_TYPE;

@@ -64,7 +64,12 @@ pub(crate) async fn initialize_par_provider(
 
   let bytes = vino_loader::get_bytes(&provider.reference, opts.allow_latest, &opts.allowed_insecure).await?;
 
-  let service = vino_provider_par::provider::Provider::from_tarbytes(provider.reference.clone(), &*bytes).await?;
+  let service = vino_provider_par::provider::Provider::from_tarbytes(
+    provider.reference.clone(),
+    &*bytes,
+    Some(provider.data.clone()),
+  )
+  .await?;
 
   let service = NativeProviderService::new(namespace.clone(), Arc::new(service));
 

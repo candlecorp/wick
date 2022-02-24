@@ -33,7 +33,11 @@ pub struct Provider {
 }
 
 impl Provider {
-  pub async fn from_tarbytes<T, REF>(reference: REF, bytes: T) -> Result<Self, Error>
+  pub async fn from_tarbytes<T, REF>(
+    reference: REF,
+    bytes: T,
+    manifest_config: Option<serde_json::Value>,
+  ) -> Result<Self, Error>
   where
     T: Read + Send,
     REF: AsRef<str> + Send,
@@ -43,7 +47,8 @@ impl Provider {
     let interface_path = cachedir.join("interface.json");
     let binpath = cachedir.join("main.bin");
     let interface = get_interface(&interface_path).await?;
-    let (cmd, connection) = start_bin(&binpath).await?;
+    let options = config_to_par_options(manifest_config, None)?;
+    let (cmd, connection) = start_bin(&binpath, Some(options.env.clone())).await?;
     Ok(Self {
       child: cmd,
       interface,
@@ -54,6 +59,33 @@ impl Provider {
   pub fn get_interface(&self) -> &ProviderSignature {
     &self.interface
   }
+}
+
+#[derive(Default, Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct ParOptions {
+  env: HashMap<String, String>,
+}
+
+/// Extract [WasiParams] from a JSON-like struct. This function only emits warnings on invalid values.
+pub fn config_to_par_options(
+  manifest_config: Option<serde_json::Value>,
+  par_options: Option<ParOptions>,
+) -> Result<ParOptions, crate::error::ParError> {
+  let mut par_options = par_options.unwrap_or_default();
+  trace!("PAR:OPTIONS: Passed config is {:?}", manifest_config);
+  trace!("PAR:OPTIONS: Passed par options are {:?}", par_options);
+  if let Some(v) = manifest_config {
+    let manifest_config = serde_json::from_value::<ParOptions>(v)?;
+    trace!("WASM:WASI: Config is {:?}", manifest_config);
+    for env in manifest_config.env {
+      par_options
+        .env
+        .insert(shellexpand::env(&env.0)?.into(), shellexpand::env(&env.1)?.into());
+    }
+  } else {
+    debug!("PAR:OPTIONS: No config present, using default Par options.");
+  }
+  Ok(par_options)
 }
 
 #[async_trait]
@@ -89,19 +121,20 @@ async fn get_interface(path: &Path) -> Result<ProviderSignature, Error> {
   serde_json::from_str(&json).map_err(|e| Error::JsonError(e.to_string()))
 }
 
-async fn start_bin(path: &Path) -> Result<(process::Child, RpcClient), Error> {
+async fn start_bin(path: &Path, envs: Option<HashMap<String, String>>) -> Result<(process::Child, RpcClient), Error> {
   let local_addr = Ipv4Addr::from_str("127.0.0.1").unwrap();
+  let envs = envs.unwrap_or_default();
 
   let mut iterations = 0;
   let (child, connection) = loop {
     let port: u16 = thread_rng().gen_range(40000..45000);
+    let mut envs = envs.clone();
+    envs.insert(env::VINO_RPC_PORT.to_owned(), port.to_string());
+    envs.insert(env::VINO_RPC_ENABLED.to_owned(), "true".to_owned());
     let mut child = tokio::process::Command::new(path)
       .kill_on_drop(true)
       .env_clear()
-      .envs([
-        (env::VINO_RPC_PORT, port.to_string()),
-        (env::VINO_RPC_ENABLED, "true".to_owned()),
-      ])
+      .envs(envs)
       .stdin(Stdio::null())
       .stdout(Stdio::inherit())
       .stderr(Stdio::inherit())
@@ -172,7 +205,7 @@ mod tests {
       &issuer_kp,
     )?;
 
-    let provider = Provider::from_tarbytes("vino-test-par", &*archive_bytes).await?;
+    let provider = Provider::from_tarbytes("vino-test-par", &*archive_bytes, None).await?;
     let inputs: HashMap<&str, i32> = HashMap::from([("left", 2), ("right", 5)]);
     let invocation = Invocation::new_test(file!(), Entity::component_direct("add"), inputs.into());
     let stream = provider.invoke(invocation).await?;

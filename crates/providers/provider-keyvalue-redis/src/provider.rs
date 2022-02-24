@@ -3,7 +3,7 @@ use std::sync::Arc;
 use std::time::Instant;
 
 use redis::aio::Connection;
-use redis::FromRedisValue;
+use redis::{FromRedisValue, Pipeline};
 use tokio::sync::RwLock;
 use vino_provider::native::prelude::*;
 use vino_rpc::error::RpcError;
@@ -35,6 +35,19 @@ impl RedisConnection {
       .await
       .map_err(|e| Error::RedisError(e.to_string()));
     trace!("REDIS:QUERY[{} μs]", now.elapsed().as_micros());
+
+    result
+  }
+
+  pub async fn run_pipeline<T: FromRedisValue + std::fmt::Debug>(&self, pipeline: &mut Pipeline) -> RedisResult<T> {
+    let mut con = self.0.write().await;
+    let now = Instant::now();
+    let result = pipeline
+      .query_async(&mut *con)
+      .await
+      .map_err(|e| Error::RedisError(e.to_string()));
+
+    trace!("REDIS:PIPELINE[{} μs]", now.elapsed().as_micros());
 
     result
   }
@@ -103,6 +116,7 @@ mod integration {
 
   use anyhow::Result;
   use rand::Rng;
+  use vino_interface_keyvalue::__multi__::ComponentInputs;
   use vino_interface_keyvalue::*;
 
   use super::*;
@@ -381,6 +395,43 @@ mod integration {
     assert!(all.contains(&values[0]));
 
     delete(&provider, &key).await?;
+    Ok(())
+  }
+
+  #[test_logger::test(tokio::test)]
+  async fn test_multi() -> Result<()> {
+    let provider = get_default_provider().await?;
+    let key = get_random_string();
+    let list_key = get_random_string();
+
+    let uuid = "MY_UUID".to_owned();
+
+    let key_set_payload = ComponentInputs::KeySet(key_set::Inputs {
+      key: key.clone(),
+      value: uuid.clone(),
+      expires: 0,
+    });
+    let list_add_payload = ComponentInputs::ListAdd(list_add::Inputs {
+      key: list_key.clone(),
+      values: vec![uuid.clone()],
+    });
+    let payloads = vec![key_set_payload, list_add_payload];
+    let inputs = __multi__::Inputs { inputs: payloads };
+
+    let invocation = Invocation::new_test(file!(), Entity::component_direct("__multi__"), inputs.into());
+
+    let mut outputs: __multi__::Outputs = provider.invoke(invocation).await?.into();
+
+    let result: bool = outputs.result().await?.try_next_into()?;
+    assert!(result);
+
+    let value = key_get(&provider, &key).await?;
+    assert_eq!(value, uuid);
+    let values = list_range(&provider, &list_key, 0, -1).await?;
+    assert_eq!(values, vec![uuid]);
+
+    delete(&provider, &key).await?;
+    delete(&provider, &list_key).await?;
     Ok(())
   }
 }

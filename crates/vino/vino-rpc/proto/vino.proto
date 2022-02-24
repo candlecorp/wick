@@ -104,6 +104,7 @@ message TypeSignature {
     OptionalType optional = 4;
     RefType ref = 5;
     LinkType link = 6;
+    InternalType internal = 7;
   }
 }
 
@@ -127,6 +128,10 @@ message SimpleType {
     VALUE = 15;
   }
   WidlType type = 1;
+}
+
+enum InternalType {
+  ComponentInput = 0;
 }
 
 message RefType {

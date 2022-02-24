@@ -10,6 +10,7 @@ use vino_transport::TransportMap;
 use vino_types::{self as vino, MapWrapper};
 
 use crate::error::RpcError;
+use crate::rpc::InternalType;
 use crate::{rpc, DurationStatistics};
 
 type Result<T> = std::result::Result<T, RpcError>;
@@ -257,6 +258,7 @@ impl TryFrom<vino::TypeSignature> for rpc::TypeSignature {
       vino::TypeSignature::Bytes => WidlType::Bytes.into(),
       vino::TypeSignature::Raw => WidlType::Raw.into(),
       vino::TypeSignature::Value => WidlType::Value.into(),
+      vino::TypeSignature::ComponentInput => WidlType::Value.into(),
       vino::TypeSignature::Ref { reference } => Signature::Ref(RefType { r#ref: reference }),
       vino::TypeSignature::List { element } => Signature::List(Box::new(ListType {
         r#type: Some(element.try_into()?),
@@ -338,6 +340,15 @@ impl TryFrom<rpc::TypeSignature> for vino::TypeSignature {
         Signature::Link(link) => DestType::Link {
           provider: (!link.provider.is_empty()).then(|| link.provider),
         },
+        Signature::Internal(t) => {
+          let t = InternalType::from_i32(t);
+          match t {
+            Some(t) => match t {
+              InternalType::ComponentInput => DestType::ComponentInput,
+            },
+            None => todo!(),
+          }
+        }
       },
       None => return err,
     };

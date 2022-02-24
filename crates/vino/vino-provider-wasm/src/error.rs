@@ -34,7 +34,7 @@ pub enum WasmProviderError {
   ClaimsExtraction,
   #[error("Error sending output to stream.")]
   SendError,
-  #[error("Internal Error : {0}")]
+  #[error("{0}")]
   Other(String),
   #[error("Internal Error : {0}")]
   InternalError(u32),

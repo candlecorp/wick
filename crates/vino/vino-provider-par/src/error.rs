@@ -1,3 +1,5 @@
+use std::env::VarError;
+
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -26,4 +28,13 @@ pub enum ParError {
   /// Provider Archive Error
   #[error(transparent)]
   Par(#[from] vino_par::Error),
+
+  #[error(transparent)]
+  EnvLookupFailed(#[from] shellexpand::LookupError<VarError>),
+}
+
+impl From<serde_json::error::Error> for ParError {
+  fn from(e: serde_json::error::Error) -> Self {
+    ParError::JsonError(e.to_string())
+  }
 }

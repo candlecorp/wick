@@ -1,11 +1,11 @@
 use std::env;
 use std::path::PathBuf;
 
+use serde_json::json;
 use tracing::debug;
 use vino_manifest::error::ManifestError;
 use vino_manifest::parse::{NS_LINK, SCHEMATIC_OUTPUT, SENDER_ID, SENDER_PORT};
-use vino_manifest::HostDefinition;
-use vino_manifest::*;
+use vino_manifest::{HostDefinition, *};
 
 #[test_logger::test]
 fn load_manifest_yaml() -> Result<(), ManifestError> {
@@ -58,7 +58,11 @@ fn load_providers_yaml() -> Result<(), ManifestError> {
 
   let HostManifest::V0(manifest) = manifest;
   assert_eq!(manifest.network.name, Some("providers".to_owned()));
-  assert_eq!(manifest.network.providers.len(), 5);
+  assert_eq!(manifest.network.providers.len(), 6);
+  assert_eq!(
+    manifest.network.providers[5].data,
+    json!({"obj":{"data_prop":"data_value"}})
+  );
 
   Ok(())
 }
