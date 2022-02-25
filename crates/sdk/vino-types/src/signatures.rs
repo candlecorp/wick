@@ -102,6 +102,8 @@ pub enum TypeSignature {
   Raw,
   /// Any valid value.
   Value,
+  /// A full set of component inputs.
+  ComponentInput,
   /// A reference to another type.
   Ref {
     #[serde(rename = "ref")]
@@ -162,6 +164,7 @@ impl FromStr for TypeSignature {
       "value" => Self::Value,
       "string" => Self::String,
       "datetime" => Self::Datetime,
+      "__input__" => Self::ComponentInput,
       _ => return Err(ParseError(s.to_owned())),
     };
     Ok(t)
