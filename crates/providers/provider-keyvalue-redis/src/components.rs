@@ -4,6 +4,7 @@
 
 pub use vino_provider::prelude::*;
 
+pub mod __multi__;
 pub mod delete; // delete
 pub mod exists; // exists
 pub mod key_get; // key-get
@@ -16,8 +17,6 @@ pub mod set_contains; // set-contains
 pub mod set_get; // set-get
 pub mod set_remove; // set-remove
 pub mod set_scan; // set-scan
-
-pub mod __multi__;
 
 #[derive(Debug)]
 pub(crate) struct Dispatcher {}
@@ -146,10 +145,6 @@ pub mod types {
 pub mod generated {
 
   // start namespace
-  // Leaf namespace
-
-  // Sub-components
-
   // Component name : delete
   pub mod delete {
     #![allow(unused)]

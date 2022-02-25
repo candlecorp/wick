@@ -4,9 +4,8 @@
 
 pub use vino_provider::prelude::*;
 
-pub mod fs_read; // fs-read
-
 pub mod __multi__;
+pub mod fs_read; // fs-read
 
 type Result<T> = std::result::Result<T, WasmError>;
 
@@ -67,10 +66,6 @@ pub mod generated {
   use super::*;
 
   // start namespace
-  // Leaf namespace
-
-  // Sub-components
-
   pub mod fs_read {
     use crate::components::fs_read as implementation;
 

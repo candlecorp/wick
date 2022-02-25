@@ -124,16 +124,9 @@ pub mod types {
 pub mod generated {
 
   // start namespace core
-  // Branch namespace
   pub mod core {
 
-    // Sub-components
-
     // start namespace
-    // Leaf namespace
-
-    // Sub-components
-
     // Component name : core::error
     pub mod error {
       use async_trait::async_trait;
@@ -639,18 +632,10 @@ pub mod generated {
       }
     }
   } // end namespace core
-
-  // start namespace math
-  // Branch namespace
+    // start namespace math
   pub mod math {
 
-    // Sub-components
-
     // start namespace
-    // Leaf namespace
-
-    // Sub-components
-
     // Component name : math::add
     pub mod add {
       use async_trait::async_trait;
@@ -1000,18 +985,10 @@ pub mod generated {
       }
     }
   } // end namespace math
-
-  // start namespace rand
-  // Branch namespace
+    // start namespace rand
   pub mod rand {
 
-    // Sub-components
-
     // start namespace
-    // Leaf namespace
-
-    // Sub-components
-
     // Component name : rand::bytes
     pub mod bytes {
       use async_trait::async_trait;
@@ -1529,18 +1506,10 @@ pub mod generated {
       }
     }
   } // end namespace rand
-
-  // start namespace string
-  // Branch namespace
+    // start namespace string
   pub mod string {
 
-    // Sub-components
-
     // start namespace
-    // Leaf namespace
-
-    // Sub-components
-
     // Component name : string::concat
     pub mod concat {
       use async_trait::async_trait;

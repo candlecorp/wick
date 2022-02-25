@@ -4,10 +4,9 @@
 
 pub use vino_provider::prelude::*;
 
+pub mod __multi__;
 pub mod error; // error
 pub mod test_component; // test-component
-
-pub mod __multi__;
 
 #[derive(Debug)]
 pub(crate) struct Dispatcher {}
@@ -64,10 +63,6 @@ pub mod types {
 pub mod generated {
 
   // start namespace
-  // Leaf namespace
-
-  // Sub-components
-
   // Component name : error
   pub mod error {
     use async_trait::async_trait;

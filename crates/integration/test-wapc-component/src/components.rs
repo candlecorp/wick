@@ -4,14 +4,13 @@
 
 pub use vino_provider::prelude::*;
 
+pub mod __multi__;
 pub mod copy; // copy
 pub mod error; // error
 pub mod reverse; // reverse
 pub mod reverse_uppercase; // reverse-uppercase
 pub mod uppercase; // uppercase
 pub mod validate; // validate
-
-pub mod __multi__;
 
 type Result<T> = std::result::Result<T, WasmError>;
 
@@ -77,10 +76,6 @@ pub mod generated {
   use super::*;
 
   // start namespace
-  // Leaf namespace
-
-  // Sub-components
-
   pub mod copy {
     use crate::components::copy as implementation;
 

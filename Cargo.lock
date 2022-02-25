@@ -3263,6 +3263,7 @@ dependencies = [
  "vino-packet",
  "vino-provider",
  "vino-rpc",
+ "vino-transport",
  "vino-types",
 ]
 
@@ -3815,7 +3816,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bc5cf98d8186244414c848017f0e2676b3fcb46807f6668a97dfe67359a3c4b7"
 dependencies = [
  "getrandom 0.2.4",
- "serde",
 ]
 
 [[package]]
@@ -4072,27 +4072,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "vino-native-api-0"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "futures",
- "logger",
- "parking_lot",
- "serde",
- "test-logger",
- "thiserror",
- "tokio",
- "tracing",
- "vino-entity",
- "vino-packet",
- "vino-provider",
- "vino-random",
- "vino-rpc",
- "vino-transport",
-]
-
-[[package]]
 name = "vino-oci"
 version = "0.1.0"
 dependencies = [
@@ -4220,6 +4199,7 @@ dependencies = [
  "vino-provider",
  "vino-provider-cli",
  "vino-rpc",
+ "vino-transport",
 ]
 
 [[package]]
@@ -4240,6 +4220,7 @@ dependencies = [
  "vino-lattice",
  "vino-provider",
  "vino-rpc",
+ "vino-transport",
 ]
 
 [[package]]
@@ -4254,6 +4235,7 @@ dependencies = [
  "rand 0.8.4",
  "serde",
  "serde_json",
+ "shellexpand",
  "tar",
  "test-logger",
  "test-vino-provider",
@@ -4266,6 +4248,7 @@ dependencies = [
  "vino-provider",
  "vino-provider-cli",
  "vino-rpc",
+ "vino-transport",
  "vino-wascap",
  "workspace-root",
 ]
@@ -4395,7 +4378,6 @@ dependencies = [
  "tokio",
  "tokio-stream",
  "tracing",
- "uuid",
  "vino-codec",
  "vino-entity",
  "vino-invocation-server",
@@ -4403,7 +4385,6 @@ dependencies = [
  "vino-loader",
  "vino-macros",
  "vino-manifest",
- "vino-native-api-0",
  "vino-packet",
  "vino-provider",
  "vino-provider-grpc",
@@ -4411,6 +4392,7 @@ dependencies = [
  "vino-provider-par",
  "vino-provider-wasm",
  "vino-rpc",
+ "vino-stdlib",
  "vino-transport",
  "vino-types",
  "vino-wascap",
@@ -4435,6 +4417,27 @@ dependencies = [
  "vino-packet",
  "vino-provider",
  "vino-provider-cli",
+ "vino-random",
+ "vino-rpc",
+ "vino-transport",
+]
+
+[[package]]
+name = "vino-stdlib"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "futures",
+ "logger",
+ "parking_lot",
+ "serde",
+ "test-logger",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "vino-entity",
+ "vino-packet",
+ "vino-provider",
  "vino-random",
  "vino-rpc",
  "vino-transport",
@@ -4526,6 +4529,7 @@ dependencies = [
  "vino-manifest",
  "vino-oci",
  "vino-packet",
+ "vino-par",
  "vino-provider-cli",
  "vino-rpc",
  "vino-runtime",
