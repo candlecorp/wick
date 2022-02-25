@@ -11,7 +11,7 @@ network:
     - name: child
       instances:
         log:
-          id: vino::v0::log
+          id: vino::core::log
       connections:
         - <>[child_input] => log[input]
         - log[output] => <>[child_output]

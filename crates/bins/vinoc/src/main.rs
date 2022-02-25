@@ -112,6 +112,7 @@ async fn main() -> Result<()> {
     CliCommand::Invoke(cmd) => commands::invoke::handle(cmd).await,
     CliCommand::Stats(cmd) => commands::stats::handle(cmd).await,
     CliCommand::List(cmd) => commands::list::handle(cmd).await,
+    CliCommand::Pack(cmd) => commands::pack::handle(cmd).await,
     CliCommand::Pull(cmd) => commands::pull::handle(cmd).await,
     CliCommand::Push(cmd) => commands::push::handle(cmd).await,
     CliCommand::Sign(cmd) => commands::sign::handle(cmd).await,

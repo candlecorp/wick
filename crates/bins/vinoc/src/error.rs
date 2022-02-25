@@ -39,6 +39,8 @@ pub(crate) enum ControlError {
   IOError(String),
   #[error(transparent)]
   SerdeJsonError(#[from] serde_json::Error),
+  #[error(transparent)]
+  PackFailed(#[from] vino_par::Error),
 
   #[error(transparent)]
   OCIError(#[from] vino_oci::Error),

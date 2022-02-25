@@ -34,7 +34,7 @@ pub fn parse_id(id: &str) -> Result<(&str, &str)> {
   if !id.contains("::") {
     Err(Error::ComponentIdError(id.to_owned()))
   } else {
-    id.rsplit_once("::")
+    id.split_once("::")
       .ok_or_else(|| Error::ComponentIdError(id.to_owned()))
   }
 }

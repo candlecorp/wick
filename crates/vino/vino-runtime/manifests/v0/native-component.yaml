@@ -5,9 +5,9 @@ network:
     - name: native_component
       instances:
         add:
-          id: vino::v0::add
+          id: vino::math::add
         add2:
-          id: vino::v0::add
+          id: vino::math::add
       connections:
         - from:
             instance: <input>

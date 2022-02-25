@@ -20,7 +20,7 @@ vino-provider-lattice = { path = "../vino-provider-lattice" }
 vino-provider-par = { path = "../vino-provider-par" }
 vino-provider-grpc = { path = "../vino-provider-grpc" }
 vino-lattice = { path = "../vino-lattice" }
-vino-native-api-0 = { path = "../../providers/provider-native-api-0" }
+vino-stdlib = { path = "../../providers/vino-stdlib" }
 vino-transport = { path = "../../../sdk/crates/vino-transport", features = [
   "all",
 ] }

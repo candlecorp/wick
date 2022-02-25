@@ -6,7 +6,7 @@ network:
     - name: logger
       instances:
         logger:
-          id: vino::v0::log
+          id: vino::core::log
       connections:
         - from:
             instance: <input>

@@ -5,7 +5,7 @@ network:
     - name: errors
       instances:
         error:
-          id: vino::v0::error
+          id: vino::core::error
       connections:
         - <> => error[input]
         - error[output] => <>

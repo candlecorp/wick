@@ -288,7 +288,7 @@ mod tests {
 
     let provider = ProviderModel {
       components: hashmap! {
-        "log".to_owned() => ComponentSignature {
+        "core::log".to_owned() => ComponentSignature {
           name: "log".to_owned(),
           inputs: vec![("input", "string")].try_into()?,
           outputs: vec![("output", "bytes")].try_into()?
@@ -319,7 +319,7 @@ mod tests {
 
     let provider = ProviderModel {
       components: hashmap! {
-        "add".to_owned() => ComponentSignature {
+        "math::add".to_owned() => ComponentSignature {
           name: "add".to_owned(),
           inputs: vec![("left", "u32"),("right", "u32")].try_into()?,
           outputs: vec![("output", "u32")].try_into()?

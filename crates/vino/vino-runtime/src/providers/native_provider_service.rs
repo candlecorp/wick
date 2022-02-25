@@ -96,16 +96,13 @@ mod test {
   #[test_logger::test(tokio::test)]
   async fn test_provider_component() -> Result<()> {
     let seed: u64 = 100000;
-    let provider = NativeProviderService::new(
-      "native-provider".to_owned(),
-      Arc::new(vino_native_api_0::Provider::new(seed)),
-    );
+    let provider = NativeProviderService::new("native-provider".to_owned(), Arc::new(vino_stdlib::Provider::new(seed)));
 
     let user_data = "This is my payload";
 
     let payload = vec![("input", user_data)].into();
     let invocation: InvocationMessage =
-      Invocation::new(Entity::test("test"), Entity::component_direct("log"), payload).into();
+      Invocation::new(Entity::test("test"), Entity::component_direct("core::log"), payload).into();
     let response = provider.invoke(invocation)?.await?;
 
     let mut rx = response.ok()?;

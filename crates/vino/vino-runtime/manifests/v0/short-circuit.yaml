@@ -13,7 +13,7 @@ network:
         validate_password:
           id: wapc::validate
         cat:
-          id: vino::v0::concatenate
+          id: vino::string::concat
       connections:
         - <> => validate_password[input]
         - validate_password[output] => cat[left]

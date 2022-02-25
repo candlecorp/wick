@@ -1,0 +1,138 @@
+{
+  "name": "vino-stdlib",
+  "types": {},
+  "components": {
+    "core::error": {
+      "name": "core::error",
+      "inputs": {
+        "input": {
+          "type": "string"
+        }
+      },
+      "outputs": {
+        "output": {
+          "type": "string"
+        }
+      }
+    },
+    "core::log": {
+      "name": "core::log",
+      "inputs": {
+        "input": {
+          "type": "string"
+        }
+      },
+      "outputs": {
+        "output": {
+          "type": "string"
+        }
+      }
+    },
+    "core::panic": {
+      "name": "core::panic",
+      "inputs": {
+        "input": {
+          "type": "string"
+        }
+      },
+      "outputs": {
+        "output": {
+          "type": "string"
+        }
+      }
+    },
+    "math::add": {
+      "name": "math::add",
+      "inputs": {
+        "left": {
+          "type": "u64"
+        },
+        "right": {
+          "type": "u64"
+        }
+      },
+      "outputs": {
+        "output": {
+          "type": "u64"
+        }
+      }
+    },
+    "math::subtract": {
+      "name": "math::subtract",
+      "inputs": {
+        "left": {
+          "type": "u64"
+        },
+        "right": {
+          "type": "u64"
+        }
+      },
+      "outputs": {
+        "output": {
+          "type": "u64"
+        }
+      }
+    },
+    "rand::bytes": {
+      "name": "rand::bytes",
+      "inputs": {
+        "seed": {
+          "type": "u64"
+        },
+        "length": {
+          "type": "u32"
+        }
+      },
+      "outputs": {
+        "output": {
+          "type": "bytes"
+        }
+      }
+    },
+    "rand::string": {
+      "name": "rand::string",
+      "inputs": {
+        "seed": {
+          "type": "u64"
+        },
+        "length": {
+          "type": "u32"
+        }
+      },
+      "outputs": {
+        "output": {
+          "type": "string"
+        }
+      }
+    },
+    "rand::uuid": {
+      "name": "rand::uuid",
+      "inputs": {
+        "seed": {
+          "type": "u64"
+        }
+      },
+      "outputs": {
+        "output": {
+          "type": "string"
+        }
+      }
+    },
+    "string::concat": {
+      "name": "string::concat",
+      "inputs": {
+        "left": {
+          "type": "string"
+        },
+        "right": {
+          "type": "string"
+        }
+      },
+      "outputs": {
+        "output": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

@@ -5,7 +5,7 @@ network:
     - name: panics
       instances:
         panic:
-          id: vino::v0::panic
+          id: vino::core::panic
       connections:
         - <> => panic[input]
         - panic[output] => <>

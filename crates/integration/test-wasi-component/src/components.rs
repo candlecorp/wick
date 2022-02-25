@@ -4,7 +4,9 @@
 
 pub use vino_provider::prelude::*;
 
-pub mod fs_read;
+pub mod fs_read; // fs-read
+
+pub mod __multi__;
 
 type Result<T> = std::result::Result<T, WasmError>;
 
@@ -63,6 +65,12 @@ pub mod types {
 
 pub mod generated {
   use super::*;
+
+  // start namespace
+  // Leaf namespace
+
+  // Sub-components
+
   pub mod fs_read {
     use crate::components::fs_read as implementation;
 
@@ -139,6 +147,90 @@ pub mod generated {
           .take("contents")
           .ok_or_else(|| ComponentError::new("No packets for port 'contents' found"))?;
         Ok(PortOutput::new("contents".to_owned(), packets))
+      }
+    }
+
+    impl From<ProviderOutput> for Outputs {
+      fn from(packets: ProviderOutput) -> Self {
+        Self { packets }
+      }
+    }
+  }
+
+  pub mod __multi__ {
+    use super::Result;
+    use crate::components::__multi__ as implementation;
+
+    #[cfg(any(feature = "native"))]
+    pub use vino_provider::native::prelude::*;
+    #[cfg(any(feature = "wasm"))]
+    pub use vino_provider::wasm::prelude::*;
+
+    pub use vino_provider::prelude::*;
+    #[derive(Default)]
+    pub struct Component {}
+
+    impl WapcComponent for Component {
+      fn execute(&self, payload: &IncomingPayload) -> JobResult {
+        let outputs = get_outputs(payload.id());
+        let inputs = populate_inputs(payload)?;
+        implementation::job(inputs, outputs)
+      }
+    }
+
+    fn populate_inputs(payload: &IncomingPayload) -> Result<Vec<ComponentInputs>> {
+      Ok(deserialize(payload.get("inputs")?)?)
+    }
+
+    #[derive(Debug, serde::Deserialize, serde::Serialize, Clone)]
+    pub enum ComponentInputs {
+      FsRead(super::fs_read::Inputs),
+    }
+
+    #[cfg(all(feature = "guest"))]
+    #[allow(missing_debug_implementations)]
+    pub enum ComponentOutputs {
+      FsRead(super::fs_read::Outputs),
+    }
+
+    #[derive(Debug)]
+    pub struct OutputPorts {
+      pub result: ResultSender,
+    }
+
+    #[derive(Debug, PartialEq, Clone)]
+    pub struct ResultSender {
+      id: u32,
+    }
+
+    impl PortSender for ResultSender {
+      type PayloadType = bool;
+      fn get_name(&self) -> String {
+        "result".to_string()
+      }
+      fn get_id(&self) -> u32 {
+        self.id
+      }
+    }
+
+    fn get_outputs(id: u32) -> OutputPorts {
+      OutputPorts {
+        result: ResultSender { id },
+      }
+    }
+
+    #[derive(Debug)]
+    pub struct Outputs {
+      packets: ProviderOutput,
+    }
+
+    impl Outputs {
+      pub fn result(&mut self) -> Result<PortOutput> {
+        let packets = self
+          .packets
+          .take("result")
+          .ok_or_else(|| ComponentError::new("No packets for port 'result' found"))?;
+        Ok(PortOutput::new("result".to_owned(), packets))
       }
     }
 

@@ -4,7 +4,7 @@ network:
     - name: first_schematic
       instances:
         add:
-          id: vino::v0::add
+          id: vino::math::add
       connections:
         - from:
             instance: <input>
@@ -27,7 +27,7 @@ network:
     - name: second_schematic
       instances:
         log:
-          id: vino::v0::log
+          id: vino::core::log
       connections:
         - from:
             instance: <input>

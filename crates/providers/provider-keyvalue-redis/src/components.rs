@@ -4,19 +4,21 @@
 
 pub use vino_provider::prelude::*;
 
+pub mod delete; // delete
+pub mod exists; // exists
+pub mod key_get; // key-get
+pub mod key_set; // key-set
+pub mod list_add; // list-add
+pub mod list_range; // list-range
+pub mod list_remove; // list-remove
+pub mod set_add; // set-add
+pub mod set_contains; // set-contains
+pub mod set_get; // set-get
+pub mod set_remove; // set-remove
+pub mod set_scan; // set-scan
+
 pub mod __multi__;
-pub mod delete;
-pub mod exists;
-pub mod key_get;
-pub mod key_set;
-pub mod list_add;
-pub mod list_range;
-pub mod list_remove;
-pub mod set_add;
-pub mod set_contains;
-pub mod set_get;
-pub mod set_remove;
-pub mod set_scan;
+
 #[derive(Debug)]
 pub(crate) struct Dispatcher {}
 #[async_trait]
@@ -142,6 +144,13 @@ pub mod types {
 }
 
 pub mod generated {
+
+  // start namespace
+  // Leaf namespace
+
+  // Sub-components
+
+  // Component name : delete
   pub mod delete {
     #![allow(unused)]
     use async_trait::async_trait;
@@ -180,6 +189,7 @@ pub mod generated {
       }
     }
   }
+  // Component name : exists
   pub mod exists {
     #![allow(unused)]
     use async_trait::async_trait;
@@ -218,6 +228,7 @@ pub mod generated {
       }
     }
   }
+  // Component name : key-get
   pub mod key_get {
     #![allow(unused)]
     use async_trait::async_trait;
@@ -256,6 +267,7 @@ pub mod generated {
       }
     }
   }
+  // Component name : key-set
   pub mod key_set {
     #![allow(unused)]
     use async_trait::async_trait;
@@ -294,6 +306,7 @@ pub mod generated {
       }
     }
   }
+  // Component name : list-add
   pub mod list_add {
     #![allow(unused)]
     use async_trait::async_trait;
@@ -332,6 +345,7 @@ pub mod generated {
       }
     }
   }
+  // Component name : list-range
   pub mod list_range {
     #![allow(unused)]
     use async_trait::async_trait;
@@ -370,6 +384,7 @@ pub mod generated {
       }
     }
   }
+  // Component name : list-remove
   pub mod list_remove {
     #![allow(unused)]
     use async_trait::async_trait;
@@ -408,6 +423,7 @@ pub mod generated {
       }
     }
   }
+  // Component name : set-add
   pub mod set_add {
     #![allow(unused)]
     use async_trait::async_trait;
@@ -446,6 +462,7 @@ pub mod generated {
       }
     }
   }
+  // Component name : set-contains
   pub mod set_contains {
     #![allow(unused)]
     use async_trait::async_trait;
@@ -484,6 +501,7 @@ pub mod generated {
       }
     }
   }
+  // Component name : set-get
   pub mod set_get {
     #![allow(unused)]
     use async_trait::async_trait;
@@ -522,6 +540,7 @@ pub mod generated {
       }
     }
   }
+  // Component name : set-remove
   pub mod set_remove {
     #![allow(unused)]
     use async_trait::async_trait;
@@ -560,6 +579,7 @@ pub mod generated {
       }
     }
   }
+  // Component name : set-scan
   pub mod set_scan {
     #![allow(unused)]
     use async_trait::async_trait;
@@ -598,6 +618,7 @@ pub mod generated {
       }
     }
   }
+
   pub mod __multi__ {
     #![allow(unused)]
     use async_trait::async_trait;

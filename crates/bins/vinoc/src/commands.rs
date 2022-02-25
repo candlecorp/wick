@@ -1,6 +1,7 @@
 pub(crate) mod inspect;
 pub(crate) mod invoke;
 pub(crate) mod list;
+pub(crate) mod pack;
 pub(crate) mod pull;
 pub(crate) mod push;
 pub(crate) mod sign;
@@ -50,6 +51,10 @@ pub(crate) enum CliCommand {
   /// Pull an artifact or architecture specific bundle item from an OCI registry .
   #[clap(name = "push")]
   Pull(pull::Options),
+
+  /// Create a signed archive bundle.
+  #[clap(name = "pack")]
+  Pack(pack::Options),
 }
 
 #[derive(Debug, Clone, Args)]

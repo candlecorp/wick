@@ -128,7 +128,8 @@ pub mod prelude {
   pub use vino_packet::{packet, Packet};
   pub use vino_transport::{MessageTransport, TransportStream, TransportWrapper};
 
-  pub use crate::dispatch::{init_data::InitData, DispatchError, InvocationResponse};
+  pub use crate::dispatch::init_data::InitData;
+  pub use crate::dispatch::{DispatchError, InvocationResponse};
   pub use crate::network::Network;
   pub use crate::providers::network_provider::Provider as NetworkProvider;
   pub use crate::{SCHEMATIC_INPUT, SCHEMATIC_OUTPUT, SELF_NAMESPACE};
@@ -154,6 +155,6 @@ pub const SCHEMATIC_OUTPUT: &str = "<output>";
 pub const SELF_NAMESPACE: &str = "self";
 
 /// The reserved namespace for Vino's initial native API.
-pub const VINO_V0_NAMESPACE: &str = "vino::v0";
+pub const VINO_V0_NAMESPACE: &str = "vino";
 
 pub const CORE_PORT_SEED: &str = "seed";

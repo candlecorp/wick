@@ -57,7 +57,7 @@ mod tests {
     let mut model = NetworkModel::try_from(def)?;
     let provider = ProviderModel {
       components: hashmap! {
-        "log".to_owned() => ComponentSignature {
+        "core::log".to_owned() => ComponentSignature {
           name: "log".to_owned(),
           inputs: vec![("input", "string")].try_into()?,
           outputs: vec![("output", "string")].try_into()?,

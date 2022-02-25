@@ -501,8 +501,8 @@ mod tests {
     assert_eq!(name, "component_name");
     let id = "namespace::subns::component_name";
     let (ns, name) = parse_id(id)?;
-    assert_eq!(ns, "namespace::subns");
-    assert_eq!(name, "component_name");
+    assert_eq!(ns, "namespace");
+    assert_eq!(name, "subns::component_name");
     Ok(())
   }
 }

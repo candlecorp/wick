@@ -41,7 +41,7 @@ type ProviderInitResult = Result<(ProviderModel, ProviderChannel)>;
 
 pub(crate) fn initialize_native_provider(namespace: String, seed: u64) -> ProviderInitResult {
   trace!("PROV:NATIVE:NS[{}]:REGISTERING", namespace);
-  let provider = Arc::new(vino_native_api_0::Provider::new(seed));
+  let provider = Arc::new(vino_stdlib::Provider::new(seed));
   let service = NativeProviderService::new(namespace.clone(), provider);
 
   let signature = service.get_signature()?;

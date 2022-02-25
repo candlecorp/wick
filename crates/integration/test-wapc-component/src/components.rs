@@ -4,12 +4,14 @@
 
 pub use vino_provider::prelude::*;
 
-pub mod copy;
-pub mod error;
-pub mod reverse;
-pub mod reverse_uppercase;
-pub mod uppercase;
-pub mod validate;
+pub mod copy; // copy
+pub mod error; // error
+pub mod reverse; // reverse
+pub mod reverse_uppercase; // reverse-uppercase
+pub mod uppercase; // uppercase
+pub mod validate; // validate
+
+pub mod __multi__;
 
 type Result<T> = std::result::Result<T, WasmError>;
 
@@ -73,6 +75,12 @@ pub mod types {
 
 pub mod generated {
   use super::*;
+
+  // start namespace
+  // Leaf namespace
+
+  // Sub-components
+
   pub mod copy {
     use crate::components::copy as implementation;
 
@@ -582,6 +590,100 @@ pub mod generated {
           .take("output")
           .ok_or_else(|| ComponentError::new("No packets for port 'output' found"))?;
         Ok(PortOutput::new("output".to_owned(), packets))
+      }
+    }
+
+    impl From<ProviderOutput> for Outputs {
+      fn from(packets: ProviderOutput) -> Self {
+        Self { packets }
+      }
+    }
+  }
+
+  pub mod __multi__ {
+    use super::Result;
+    use crate::components::__multi__ as implementation;
+
+    #[cfg(any(feature = "native"))]
+    pub use vino_provider::native::prelude::*;
+    #[cfg(any(feature = "wasm"))]
+    pub use vino_provider::wasm::prelude::*;
+
+    pub use vino_provider::prelude::*;
+    #[derive(Default)]
+    pub struct Component {}
+
+    impl WapcComponent for Component {
+      fn execute(&self, payload: &IncomingPayload) -> JobResult {
+        let outputs = get_outputs(payload.id());
+        let inputs = populate_inputs(payload)?;
+        implementation::job(inputs, outputs)
+      }
+    }
+
+    fn populate_inputs(payload: &IncomingPayload) -> Result<Vec<ComponentInputs>> {
+      Ok(deserialize(payload.get("inputs")?)?)
+    }
+
+    #[derive(Debug, serde::Deserialize, serde::Serialize, Clone)]
+    pub enum ComponentInputs {
+      Copy(super::copy::Inputs),
+      Error(super::error::Inputs),
+      Reverse(super::reverse::Inputs),
+      ReverseUppercase(super::reverse_uppercase::Inputs),
+      Uppercase(super::uppercase::Inputs),
+      Validate(super::validate::Inputs),
+    }
+
+    #[cfg(all(feature = "guest"))]
+    #[allow(missing_debug_implementations)]
+    pub enum ComponentOutputs {
+      Copy(super::copy::Outputs),
+      Error(super::error::Outputs),
+      Reverse(super::reverse::Outputs),
+      ReverseUppercase(super::reverse_uppercase::Outputs),
+      Uppercase(super::uppercase::Outputs),
+      Validate(super::validate::Outputs),
+    }
+
+    #[derive(Debug)]
+    pub struct OutputPorts {
+      pub result: ResultSender,
+    }
+
+    #[derive(Debug, PartialEq, Clone)]
+    pub struct ResultSender {
+      id: u32,
+    }
+
+    impl PortSender for ResultSender {
+      type PayloadType = bool;
+      fn get_name(&self) -> String {
+        "result".to_string()
+      }
+      fn get_id(&self) -> u32 {
+        self.id
+      }
+    }
+
+    fn get_outputs(id: u32) -> OutputPorts {
+      OutputPorts {
+        result: ResultSender { id },
+      }
+    }
+
+    #[derive(Debug)]
+    pub struct Outputs {
+      packets: ProviderOutput,
+    }
+
+    impl Outputs {
+      pub fn result(&mut self) -> Result<PortOutput> {
+        let packets = self
+          .packets
+          .take("result")
+          .ok_or_else(|| ComponentError::new("No packets for port 'result' found"))?;
+        Ok(PortOutput::new("result".to_owned(), packets))
       }
     }
 

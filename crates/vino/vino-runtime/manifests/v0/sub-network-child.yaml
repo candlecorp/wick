@@ -5,7 +5,7 @@ network:
     - name: child_schematic
       instances:
         log:
-          id: vino::v0::log
+          id: vino::core::log
       connections:
         - <>[input] => log[input]
         - log[output] => <>[output]

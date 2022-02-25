@@ -4,7 +4,7 @@ network:
     - name: nested_parent
       instances:
         log1:
-          id: vino::v0::log
+          id: vino::core::log
         child_ref:
           id: self::child
       connections:
@@ -14,7 +14,7 @@ network:
     - name: child
       instances:
         log2:
-          id: vino::v0::log
+          id: vino::core::log
       connections:
         - <>[child_input] => log2[input]
         - log2[output] => <>[child_output]

@@ -5,7 +5,7 @@ network:
     - name: simple
       instances:
         REF_ID_LOGGER:
-          id: vino::v0::log
+          id: vino::core::log
       connections:
         - from:
             instance: <input>

@@ -4,7 +4,7 @@ network:
   schematics:
     - name: uuid
       instances:
-        uuid: vino::v0::uuid
+        uuid: vino::rand::uuid
       connections:
         - <core>[seed] => uuid[seed]
         - uuid[output] => <>

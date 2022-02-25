@@ -75,15 +75,19 @@ pub fn config_to_par_options(
   trace!("PAR:OPTIONS: Passed config is {:?}", manifest_config);
   trace!("PAR:OPTIONS: Passed par options are {:?}", par_options);
   if let Some(v) = manifest_config {
-    let manifest_config = serde_json::from_value::<ParOptions>(v)?;
-    trace!("WASM:WASI: Config is {:?}", manifest_config);
-    for env in manifest_config.env {
-      par_options
-        .env
-        .insert(shellexpand::env(&env.0)?.into(), shellexpand::env(&env.1)?.into());
+    if v.is_object() {
+      let manifest_config = serde_json::from_value::<ParOptions>(v)?;
+      trace!("WASM:WASI: Config is {:?}", manifest_config);
+      for env in manifest_config.env {
+        par_options
+          .env
+          .insert(shellexpand::env(&env.0)?.into(), shellexpand::env(&env.1)?.into());
+      }
+    } else {
+      debug!("PAR:OPTIONS: Invalid config ({:?}). Using default Par options.", v);
     }
   } else {
-    debug!("PAR:OPTIONS: No config present, using default Par options.");
+    debug!("PAR:OPTIONS: No manifest config passed. Using default Par options.");
   }
   Ok(par_options)
 }

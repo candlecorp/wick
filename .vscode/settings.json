@@ -8,8 +8,8 @@
     ]
   },
   "rust-analyzer.cargo.features": [
-    "vino-native-api-0/provider",
-    "vino-native-api-0/native"
+    "vino-stdlib/provider",
+    "vino-stdlib/native"
   ],
   "rust-analyzer.rustfmt.overrideCommand": [
     "rustup",

@@ -26,9 +26,9 @@ network:
         create_user:
           id: auth::create-user
         uuid:
-          id: vino::v0::uuid
+          id: vino::rand::uuid
         rand:
-          id: vino::v0::random-bytes
+          id: vino::rand::bytes
       connections:
         - <core>[seed] => uuid[seed]
         - uuid[output] => create_user[user_id]

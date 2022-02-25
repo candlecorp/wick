@@ -6,7 +6,7 @@ network:
   providers:
     - namespace: test-namespace
       kind: Par
-      reference: vinoreg.azurecr.io/provider/standalone-test:latest
+      reference: ./tests/bundle.tar
   schematics:
     - name: par
       providers:
