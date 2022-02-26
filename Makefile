@@ -34,8 +34,10 @@ else
 BIN_SUFFIX:=
 endif
 
+##@ Helpers
+
 .PHONY: all
-all: build
+all: build  ## Build everything in this project
 
 # Defines rules for each of the VINO_BINS to copy them into build/local
 define BUILD_BIN
@@ -47,7 +49,7 @@ endef
 $(foreach bin,$(VINO_BINS),$(eval $(call BUILD_BIN,$(bin))))
 
 .PHONY: cleangen
-cleangen:
+cleangen:  ## Run `make clean && make codegen` in child projects
 	@for project in $(MAKEFILE_PROJECTS); do \
 		echo "# Cleaning $$project"; \
 		$(MAKE) -C $$project clean; \
@@ -56,23 +58,14 @@ cleangen:
 	done
 
 .PHONY: codegen
-codegen:
+codegen: ## Run `make codegen` in child projects
 	@for project in $(MAKEFILE_PROJECTS); do \
 		echo "# Generating code for $$project"; \
 		$(MAKE) -C $$project codegen; \
 	done
 
-.PHONY: readme
-readme:
-	@for project in $(ROOT_RUST_CRATES); do \
-		cd $$project; \
-		echo "# Generating README for $$project"; \
-		cargo readme > README.md; \
-		cd $(ROOT); \
-	done
-
 .PHONY: clean
-clean:
+clean:  ## Remove generated artifacts and files
 	@rm -rf $(TEST_WASI) $(TEST_WASM)
 	@rm -rf ./build/*
 	@for project in $(MAKEFILE_PROJECTS); do \
@@ -82,17 +75,17 @@ clean:
 	cargo clean
 
 .PHONY: install-release
-install-release: $(VINO_BINS)
+install-release: $(VINO_BINS)  ## Build optimized vino binaries and install them to your local cargo bin
 	cargo build --workspace --release
 	cp build/local/* ~/.cargo/bin/
 
 .PHONY: install
-install: $(VINO_BINS)
+install: $(VINO_BINS)  ## Build vino binaries and install them to your local cargo bin
 	cargo build --workspace
 	cp build/local/* ~/.cargo/bin/
 
 .PHONY: build
-build: ./build/local codegen
+build: ./build/local codegen   ## Build the entire vino project
 	cargo build --workspace --all
 
 $(TEST_WASM):
@@ -105,20 +98,20 @@ $(TEST_WASI):
 	mkdir -p $@
 
 .PHONY: wasm
-wasm: $(TEST_WASM) $(TEST_WASI)
+wasm: $(TEST_WASM) $(TEST_WASI)   ## Build the test wasm artifacts
 
 .PHONY: test
-test: codegen wasm
+test: codegen wasm  ## Run tests for the entire workspace
 	cargo deny check licenses --hide-inclusion-graph
 	cargo build --workspace # necessary to ensure binaries are built
 	cargo test --workspace
 
 .PHONY: update-lint
-update-lint:
+update-lint:   ## Update the lint configuration for rust projects
 	npm run update-lint
 
 .PHONY: build-tag
-build-tag:
+build-tag:   ## Tag a build for release
 ifeq ($(shell git status -s),)
 	@echo Tagging build-$$(date "+%Y-%m-%d")
 	@git tag build-$$(date "+%Y-%m-%d") -f
@@ -126,15 +119,8 @@ else
 	@echo "Check in changes before making a build tag."
 endif
 
-.PHONY: provider-archive
-provider-bin: crates/vino/vino-provider-par/test/vino-standalone
-
-crates/vino/vino-provider-par/test/vino-standalone: $(wildcard crates/providers/provider-standalone/src/*.rs)
-	cargo build -p vino-standalone --release
-	cp target/release/vino-standalone crates/vino/vino-provider-par/test/vino-standalone
-
 .PHONY: bins
-bins: ./build/$(ARCH)
+bins: ./build/$(ARCH)  ## Build vino bins (supports ARCH & RELEASE env variables)
 	@echo "Building ARCH=$(ARCH) RELEASE=$(RELEASE)"
 	@rm -rf ./build/$(ARCH)/*
 ifeq ($(ARCH),local)
@@ -159,20 +145,17 @@ else
 endif
 endif
 
-.PHONY: build-cross-debug
-build-cross-debug:
-	rm -rf ./build; \
-	mkdir ./build; \
-	for file in $(DOCKERFILES); do \
-		TARGET="$$(basename $$(dirname $$file))"; \
-		mkdir ./build/$$TARGET; \
-		cross build -p vino-cli --target $$TARGET; \
-		cp target/$$TARGET/debug/vino build/$$TARGET/; \
-		cross build -p vinoc --target $$TARGET; \
-		cp target/$$TARGET/debug/vinoc build/$$TARGET/; \
-	done
-
 .PHONY: deps
-deps:
-	npm install -g widl-template prettier
+deps:   ## Install dependencies
+	npm install -g widl-template prettier "https://github.com/vinodotdev/codegen#dev"
 	cargo install cargo-deny tomlq
+
+##@ Helpers
+
+.PHONY: list
+list: ## Display supported images
+	@ls Dockerfile.* | sed -nE 's/Dockerfile\.(.*)/\1/p' | sort
+
+.PHONY: help
+help:  ## Display this help
+	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n"} /^[a-zA-Z0-9_\-.*]+:.*?##/ { printf "  \033[36m%-32s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)

@@ -1,75 +1,115 @@
 # Vino monorepo
 
-## Dependencies
+## Prerequisites
 
-### Root project
+Vino depends on (at least) the tools below to build properly.
 
-make
-rust/cargo
-node
-cargo-deny
+### System dependencies
 
-### WASM
+These tools are necessary to build the majority of Vino projects, but you need to install them yourself.
 
-vino-codegen
-tomlq
+- rust/cargo
+- node
+- make
+- docker & docker-compose (to run integration tests)
 
-### Manifest codegen
+### Necessary tools
 
-prettier
-widl-template
+The rest of the dependencies should be installable via:
 
-# TAP
-
-curl https://gitlab.com/esr/tapview/-/raw/master/tapview -o $HOME/.local/bin/tapview && chmod a+x $HOME/.local/bin/tapview
-
-# Bugs
-
-- Component codegen for wellknown providers doesn't reference the proper module for input/outputs etc
-- interface.json's for wellknown interfaces needs to be located in a central repo
-- Schematics can link a provider that isn't exposed to them, e.g.
-
-```yaml
-version: 0
-network:
-  providers:
-    - namespace: perms
-      kind: WaPC
-      reference: ./build/vino_permissions_s.wasm
-    - namespace: permsdb
-      kind: Lattice
-      reference: authdb
-  schematics:
-    - name: update-permissions
-      providers:
-      instances:
-        update:
-          id: perms::update-permissions
-      connections:
-        - <> => update[user_id]
-        - <> => update[permissions]
-        - <link>[permsdb] => update[kv]
-        - update[result] => <>
+```
+make deps
 ```
 
--The providerlink `.call(component, args)` is prone to error. It would be great if `args` could include the component so a failure would be less likely.
+If you find something that should be added, please submit a PR.
 
-# Doc links
+#### widl-template
+
+Used to generated JSON schemas, documentation, and code for host manifests.
+
+- `npm install -g widl-template`
+
+#### vino-codegen
+
+Used to generate provider scaffolding and new component templates
+
+- `npm install -g @vinodotdev/codegen`
+
+Or from the `dev` branch
+
+- `npm install -g "https://github.com/vinodotdev/codegen#dev"`
+
+#### tomlq
+
+Used in WASM code generation and Makefiles.
+
+- `cargo install tomlq`
+
+#### `cargo-deny`
+
+Used to assert dependency licenses
+
+- `cargo install cargo-deny`
+
+#### prettier
+
+Used to format JSON
+
+- `npm install -g prettier`
+
+## Using make
+
+Vino uses `Makefile`s extensively, make sure you explore them to understand what you can run as tasks.
+
+Many makefiles have a `help` task to give you a rundown of the important tasks.
+
+```console
+make help
+```
+
+## Building vino
+
+Build vino with `make` alone.
+
+```console
+make
+```
+
+## Install vino binaries from source
+
+```console
+make install
+```
+
+Alternately, to install optimized release builds:
+
+```console
+make install-release
+```
+
+## Running tests
+
+To run the full suite of tests, you'll need a local NATS server, redis instance, and OCI registry. You can run these with the `docker-compose.yml` file in the `/scripts/` directory.
+
+```console
+$ cd scripts && docker-compose up
+```
+
+Run tests via `make`
+
+```console
+make test
+```
+
+## Doc links
 
 - docs.vino.dev/codegen
+- docs.vino.dev
 
-# Need a Makefile primer?
+## Need a Makefile primer?
 
 - Check out isaacs's tutorial: https://gist.github.com/isaacs/62a2d1825d04437c6f08
 - Your makefiles are wrong: https://tech.davis-hansson.com/p/make/
-
-## Todos
-
-- Create a repo for encoded MessageTransports, TransportMaps, and LatticeRpcMessages to ensure cross-compatibility.
-- figure out how to make the wellknown interface.json better (right now it's just copying the generated file)
-- Make component codegen for providers using interface.json generated the proper includes.
-- Improve coersion for PortOutput/ProviderOutput. Right now you have to know too much about what you're supposed to get.
-- ignore cache for :latest OCI requests
 
 ## Good first contributions
 
@@ -77,32 +117,11 @@ This is a list of nice-to-haves that would also make good contributions for peop
 
 ### Improving logging & the logger
 
-Logging is a mix of valuable and debug output that would be better if there was a more clear reason for logs of each type.
+Logging is an unstructured mix of debug and informational output. It would be better to have a structured logging solution.
 
 ### Opportunities for code generation
 
 Vino uses code generation extensively and making it better or adding more opportunities to use generated code is usually welcome. Open an issue first to discuss it to be sure that someone isn't already working on it.
-
-### Cleanup & consistency
-
-Anytime you see inconsistencies, feel comfortable taking the recommended action or opening an issue to confirm cleanup is OK.
-
-- Unused error variants : Remove
-- Unused dependencies : Remove
-- Manifests should use short form syntax when possible.
-- Inconsistent naming :
-  - "reference" when used for components should be "instance"
-  - pluralization
-- Inconsistent coding style/idioms across similar modules:
-  - Code can be normalized and common code can be extracted, but open an issue to discuss it before jumping in.
-
-### Documentation
-
-Documentation is always helpful.
-
-### Examples
-
-What's your "Hello world"? How do you connect things during experimentation? Those could be great examples!
 
 ### Rustdoc examples
 
