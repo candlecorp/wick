@@ -2,21 +2,15 @@
 path = sdk
 url = git@github.com:vinodotdev/vino-sdk.git
 branch = main
-[submodule "forks/wapc-rust"]
-path = forks/wapc-rust
-url = git@github.com:jsoverson/wapc-rust.git
-[submodule "forks/wasmtime-provider"]
-path = forks/wasmtime-provider
-url = git@github.com:jsoverson/wasmtime-provider.git
 [submodule "forks/www-authenticate"]
 path = forks/www-authenticate
 url = git@github.com:vinodotdev/www-authenticate.git
 [submodule "forks/nkeys"]
-	path = forks/nkeys
-	url = https://github.com/vinodotdev/nkeys.git
+path = forks/nkeys
+url = https://github.com/vinodotdev/nkeys.git
 [submodule "forks/wascap"]
-	path = forks/wascap
-	url = https://github.com/vinodotdev/wascap.git
+path = forks/wascap
+url = https://github.com/vinodotdev/wascap.git
 [submodule "forks/oci-distribution"]
 	path = forks/oci-distribution
 	url = git@github.com:vinodotdev/oci-distribution.git
