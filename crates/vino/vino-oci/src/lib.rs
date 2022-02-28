@@ -95,7 +95,7 @@ pub mod error;
 pub use error::OciError as Error;
 mod architecture_map;
 pub use architecture_map::{generate_archmap, MultiArchManifest, MultiArchManifestEntry};
-use oci_distribution::client::{ImageData, ImageLayer};
+use oci_distribution::client::{ImageData, ImageLayer, PushResponse};
 use oci_distribution::manifest::{self, ImageIndexEntry, OciImageIndex, OciImageManifest, OciManifest, Platform};
 use oci_distribution::secrets::RegistryAuth;
 use oci_distribution::{Client, Reference};
@@ -279,6 +279,28 @@ pub async fn push_arch(
     OciManifest::Image(v) => Ok((v, digest)),
     OciManifest::ImageIndex(_) => unreachable!(),
   }
+}
+
+/// TODO
+pub async fn push(
+  client: &mut Client,
+  auth: &RegistryAuth,
+  reference: &Reference,
+  image_data: ImageData,
+) -> Result<PushResponse, OciError> {
+  Ok(
+    client
+      .push(
+        reference,
+        &image_data,
+        b"{}",
+        manifest::IMAGE_CONFIG_MEDIA_TYPE,
+        auth,
+        None,
+      )
+      .await
+      .map_err(|e| OciError::OciPushFailure(reference.clone(), e.into()))?,
+  )
 }
 
 /// Parse a `&str` as a Reference.

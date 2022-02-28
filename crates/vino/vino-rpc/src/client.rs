@@ -4,7 +4,8 @@ use std::time::Duration;
 use tokio_stream::StreamExt;
 use tonic::transport::{Certificate, Channel, ClientTlsConfig, Identity, Uri};
 use tracing::debug;
-use vino_transport::{MessageTransport, TransportMap, TransportStream, TransportWrapper};
+use vino_entity::Entity;
+use vino_transport::{Invocation, MessageTransport, TransportMap, TransportStream, TransportWrapper};
 use vino_types::HostedType;
 
 use crate::error::RpcClientError;
@@ -147,8 +148,8 @@ impl RpcClient {
   /// Make an invocation with data passed as a JSON string.
   pub async fn invoke_from_json(
     &mut self,
-    origin: String,
-    component: String,
+    origin: Entity,
+    component: Entity,
     data: &str,
     transpose: bool,
   ) -> Result<TransportStream, RpcClientError> {
@@ -156,7 +157,7 @@ impl RpcClient {
     if transpose {
       payload.transpose_output_name();
     }
-    let invocation: vino_transport::Invocation = (origin, component, payload).try_into()?;
+    let invocation = Invocation::new(origin, component, payload);
 
     self.invoke(invocation).await
   }

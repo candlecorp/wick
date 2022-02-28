@@ -44,6 +44,9 @@ pub(crate) enum ControlError {
 
   #[error(transparent)]
   OCIError(#[from] vino_oci::Error),
+
+  #[error("Unknown file type: {0}")]
+  UnknownFileType(String),
 }
 
 impl From<nkeys::error::Error> for ControlError {

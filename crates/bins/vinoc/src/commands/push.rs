@@ -2,9 +2,12 @@ use std::path::PathBuf;
 
 use clap::Args;
 use nkeys::KeyPairType;
+use oci_distribution::client::{ImageData, ImageLayer};
+use oci_distribution::manifest;
 use oci_distribution::secrets::RegistryAuth;
 use vino_wascap::ClaimsOptions;
 
+use crate::error::ControlError;
 use crate::keys::{extract_keypair, GenerateCommon};
 use crate::Result;
 #[derive(Debug, Clone, Args)]
@@ -56,7 +59,7 @@ pub(crate) async fn handle(opts: Options) -> Result<()> {
     }
   };
   if opts.bundle {
-    info!("Push multi-architecture bundle...");
+    info!("Pushing multi-architecture bundle...");
 
     let subject_kp = extract_keypair(
       Some(opts.source.to_string_lossy().to_string()),
@@ -86,6 +89,30 @@ pub(crate) async fn handle(opts: Options) -> Result<()> {
     let reference = vino_oci::parse_reference(&opts.reference)?;
 
     vino_oci::push_multi_arch(&mut client, &auth, &reference, archmap).await?;
+  } else {
+    info!("Pushing artifact...");
+    let image_ref = vino_oci::parse_reference(&opts.reference)?;
+    let image_bytes = tokio::fs::read(&opts.source).await?;
+    let extension = opts.source.extension().unwrap_or_default().to_str().unwrap_or_default();
+    let media_type = match extension {
+      "wasm" => manifest::WASM_LAYER_MEDIA_TYPE.to_owned(),
+      "tar" => manifest::IMAGE_LAYER_MEDIA_TYPE.to_owned(),
+      unknown => return Err(ControlError::UnknownFileType(unknown.to_owned())),
+    };
+
+    let image_data = ImageData {
+      layers: vec![ImageLayer {
+        data: image_bytes,
+        media_type,
+      }],
+      digest: None,
+    };
+
+    let response = vino_oci::push(&mut client, &auth, &image_ref, image_data).await?;
+
+    println!("Image URL: {}", response.image_url);
+    println!("Manifest URL: {}", response.manifest_url);
+    println!("Config URL: {}", response.config_url);
   }
 
   Ok(())
