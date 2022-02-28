@@ -6,3 +6,4 @@ build
 archive
 crates/vino-rpc/src/generated/vino.rs
 crates/*/**/Cargo.lock
+bundle.tar

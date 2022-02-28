@@ -23,6 +23,8 @@ TEST_WASM=$(TEST_WASM_DIR)/build/test_component_s.wasm
 TEST_WASI_DIR=$(CRATES_DIR)/integration/test-wasi-component
 TEST_WASI=$(TEST_WASI_DIR)/build/test_wasi_component_s.wasm
 
+TEST_PAR=crates/vino/vino-runtime/tests/bundle.tar
+
 VINO_BINS?=vinoc vino vow
 
 RELEASE?=false
@@ -96,6 +98,10 @@ $(TEST_WASM):
 $(TEST_WASI):
 	$(MAKE) -C $(TEST_WASI_DIR)
 
+$(TEST_PAR):
+	cargo build -p vino-standalone --release
+	cargo run -p vinoc -- pack target/release/vino-standalone ./crates/providers/provider-standalone/interface.json -o $@
+
 ./build/$(ARCH):
 	mkdir -p $@
 
@@ -103,13 +109,13 @@ $(TEST_WASI):
 wasm: $(TEST_WASM) $(TEST_WASI)   ## Build the test wasm artifacts
 
 .PHONY: test
-test: codegen wasm  ## Run tests for the entire workspace
+test: codegen wasm $(TEST_PAR) ## Run tests for the entire workspace
 	cargo deny check licenses --hide-inclusion-graph
 	cargo build --workspace # necessary to ensure binaries are built
 	cargo test --workspace --exclude oci-distribution -- --skip integration_test
 
 .PHONY: test-integration
-test-integration: codegen wasm  ## Run all tests for the workspace, including tests that rely on external services
+test-integration: codegen wasm $(TEST_PAR) ## Run all tests for the workspace, including tests that rely on external services
 	cargo deny check licenses --hide-inclusion-graph
 	cargo build --workspace # necessary to ensure binaries are built
 	NATS_URL=$(NATS_URL) cargo test --workspace --exclude oci-distribution
