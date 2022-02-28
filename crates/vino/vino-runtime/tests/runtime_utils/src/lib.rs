@@ -15,23 +15,8 @@ pub async fn init_network_from_yaml(path: &str) -> anyhow::Result<(Network, Stri
   debug!("Manifest loaded");
   let kp = KeyPair::new_server();
 
-  #[allow(unused_mut)]
-  let mut builder = NetworkBuilder::from_definition(def, &kp.seed()?)?;
-  if let Ok(url) = std::env::var("NATS_URL") {
-    use std::sync::Arc;
-    use std::time::Duration;
+  let builder = NetworkBuilder::from_definition(def, &kp.seed()?)?;
 
-    use vino_lattice::NatsOptions;
-    let lattice = vino_lattice::Lattice::connect(NatsOptions {
-      address: url,
-      client_id: "test".to_owned(),
-      creds_path: None,
-      token: None,
-      timeout: Duration::from_secs(5),
-    })
-    .await?;
-    builder = builder.lattice(Arc::new(lattice));
-  }
   let builder = builder.allow_latest(allow_latest).allow_insecure(insecure_registries);
   let network = builder.build();
 

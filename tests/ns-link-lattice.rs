@@ -8,7 +8,7 @@ mod test {
   use vino_transport::{JsonError, TransportJson};
 
   #[test_logger::test(tokio::test)]
-  async fn test_collection() -> utils::TestResult<()> {
+  async fn integration_test_collection() -> utils::TestResult<()> {
     debug!("Starting vow");
     let (p_tx, p_handle, _) = start_provider(
       "vow",

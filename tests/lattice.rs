@@ -9,7 +9,7 @@ mod test {
 
   use super::*;
   #[test_logger::test(tokio::test)]
-  async fn test_lattice() -> utils::TestResult<()> {
+  async fn integration_test_lattice() -> utils::TestResult<()> {
     debug!("Starting host 1");
     let nats_url = std::env::var("NATS_URL").unwrap_or_else(|_| {
       warn!("'NATS_URL' not present, defaulting to nats.vinodev.com");

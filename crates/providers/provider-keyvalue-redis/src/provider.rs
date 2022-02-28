@@ -291,7 +291,7 @@ mod integration {
   }
 
   #[test_logger::test(tokio::test)]
-  async fn test_key_set_get_contains_delete() -> Result<()> {
+  async fn integration_test_key_set_get_contains_delete() -> Result<()> {
     let provider = get_default_provider().await?;
     let nonexistant_key = get_random_string();
     let key = get_random_string();
@@ -312,7 +312,7 @@ mod integration {
   }
 
   #[test_logger::test(tokio::test)]
-  async fn test_list() -> Result<()> {
+  async fn integration_test_list() -> Result<()> {
     let provider = get_default_provider().await?;
     let key = get_random_string();
     let expected = get_random_string();
@@ -353,7 +353,7 @@ mod integration {
   }
 
   #[test_logger::test(tokio::test)]
-  async fn test_set_add_get_remove() -> Result<()> {
+  async fn integration_test_set_add_get_remove() -> Result<()> {
     let provider = get_default_provider().await?;
     let key = get_random_string();
     let expected = get_random_string();
@@ -376,7 +376,7 @@ mod integration {
   }
 
   #[test_logger::test(tokio::test)]
-  async fn test_set_scan() -> Result<()> {
+  async fn integration_test_set_scan() -> Result<()> {
     let provider = get_default_provider().await?;
     let key = get_random_string();
 
@@ -399,7 +399,7 @@ mod integration {
   }
 
   #[test_logger::test(tokio::test)]
-  async fn test_multi() -> Result<()> {
+  async fn integration_test_multi() -> Result<()> {
     let provider = get_default_provider().await?;
     let key = get_random_string();
     let list_key = get_random_string();

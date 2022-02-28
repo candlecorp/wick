@@ -5,7 +5,7 @@ host:
   allow_latest: true
   lattice:
     enabled: true
-    address: nats.lan
+    address: 127.0.0.1
 network:
   providers:
     - namespace: auth

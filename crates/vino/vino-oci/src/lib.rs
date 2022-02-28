@@ -351,7 +351,7 @@ mod tests {
   const REGISTRY: &str = "127.0.0.1:5000";
 
   #[test_logger::test(tokio::test)]
-  async fn test_push_multi_arch() -> Result<()> {
+  async fn integration_test_push_multi_arch() -> Result<()> {
     let protocol = ClientProtocol::Http;
     let config = ClientConfig {
       protocol,

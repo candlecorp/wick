@@ -423,7 +423,7 @@ mod test_integration {
   }
 
   #[test_logger::test(tokio::test)]
-  async fn rpc_invoke() -> Result<()> {
+  async fn integration_test_rpc_invoke() -> Result<()> {
     let (lattice, lattice_id) = get_lattice().await?;
     let component_name = "test-component";
     let user_input = String::from("Hello world");
@@ -444,7 +444,7 @@ mod test_integration {
   }
 
   #[test_logger::test(tokio::test)]
-  async fn clean_shutdown() -> Result<()> {
+  async fn integration_test_clean_shutdown() -> Result<()> {
     let lattice_builder = LatticeBuilder::new_from_env("test").unwrap();
     let lattice = lattice_builder.build().await.unwrap();
     let namespace = "some_namespace_id".to_owned();
@@ -458,7 +458,7 @@ mod test_integration {
   }
 
   #[test_logger::test(tokio::test)]
-  async fn rpc_invoke_error() -> Result<()> {
+  async fn integration_test_rpc_invoke_error() -> Result<()> {
     let (lattice, lattice_id) = get_lattice().await?;
     let component_name = "error";
     let user_input = String::from("Hello world");
@@ -479,7 +479,7 @@ mod test_integration {
   }
 
   #[test_logger::test(tokio::test)]
-  async fn rpc_list_namespace_components() -> Result<()> {
+  async fn integration_test_rpc_list_namespace_components() -> Result<()> {
     let (lattice, namespace) = get_lattice().await?;
     let schemas = lattice.list_components(namespace).await?;
     debug!("Hosted schemas on namespace: {:#?}", schemas);

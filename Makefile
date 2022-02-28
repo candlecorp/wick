@@ -28,6 +28,8 @@ VINO_BINS?=vinoc vino vow
 RELEASE?=false
 ARCH?=local
 
+NATS_URL?=127.0.0.1
+
 ifneq (,$(findstring pc-windows,$(ARCH))) # If arch is *pc-windows*
 BIN_SUFFIX:=.exe
 else
@@ -104,7 +106,13 @@ wasm: $(TEST_WASM) $(TEST_WASI)   ## Build the test wasm artifacts
 test: codegen wasm  ## Run tests for the entire workspace
 	cargo deny check licenses --hide-inclusion-graph
 	cargo build --workspace # necessary to ensure binaries are built
-	cargo test --workspace
+	cargo test --workspace --exclude oci-distribution -- --skip integration_test
+
+.PHONY: test-integration
+test-integration: codegen wasm  ## Run all tests for the workspace, including tests that rely on external services
+	cargo deny check licenses --hide-inclusion-graph
+	cargo build --workspace # necessary to ensure binaries are built
+	NATS_URL=$(NATS_URL) cargo test --workspace --exclude oci-distribution
 
 .PHONY: update-lint
 update-lint:   ## Update the lint configuration for rust projects

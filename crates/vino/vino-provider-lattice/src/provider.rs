@@ -75,7 +75,7 @@ mod tests {
   }
 
   #[test_logger::test(tokio::test)]
-  async fn test_component() -> TestResult<()> {
+  async fn integration_test_component() -> TestResult<()> {
     let lattice_builder = LatticeBuilder::new_from_env("test")?;
     let lattice = lattice_builder.build().await?;
     let ns = "some_namespace";
@@ -102,7 +102,7 @@ mod tests {
   }
 
   #[test_logger::test(tokio::test)]
-  async fn test_error() -> TestResult<()> {
+  async fn integration_test_error() -> TestResult<()> {
     let lattice_builder = LatticeBuilder::new_from_env("test")?;
     let lattice = lattice_builder.build().await?;
     let ns = "some_namespace";
