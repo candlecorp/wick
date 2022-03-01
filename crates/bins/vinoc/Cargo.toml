@@ -1,6 +1,6 @@
 [package]
 name = "vinoc"
-version = "0.3.2"
+version = "0.5.0"
 edition = "2021"
 default-run = "vinoc"
 license = "BSD-3-Clause"
