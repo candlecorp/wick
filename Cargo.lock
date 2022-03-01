@@ -4444,6 +4444,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "vino-stdlib-http"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "futures",
+ "logger",
+ "parking_lot",
+ "serde",
+ "test-logger",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "vino-entity",
+ "vino-packet",
+ "vino-provider",
+ "vino-random",
+ "vino-rpc",
+ "vino-transport",
+]
+
+[[package]]
 name = "vino-test"
 version = "0.0.0"
 dependencies = [
