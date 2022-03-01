@@ -191,7 +191,6 @@ mod tests {
       .join("crates")
       .join("vino")
       .join("vino-provider-par")
-      .join("test")
       .join("vino-standalone");
     debug!(
       "Creating provider archive with binary from: {}",

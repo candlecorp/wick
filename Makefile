@@ -24,6 +24,7 @@ TEST_WASI_DIR=$(CRATES_DIR)/integration/test-wasi-component
 TEST_WASI=$(TEST_WASI_DIR)/build/test_wasi_component_s.wasm
 
 TEST_PAR=crates/vino/vino-runtime/tests/bundle.tar
+TEST_PAR_BIN=crates/vino/vino-provider-par/vino-standalone
 
 VINO_BINS?=vinoc vino vow
 
@@ -98,9 +99,12 @@ $(TEST_WASM):
 $(TEST_WASI):
 	$(MAKE) -C $(TEST_WASI_DIR)
 
-$(TEST_PAR):
+$(TEST_PAR_BIN):
 	cargo build -p vino-standalone --release
-	cargo run -p vinoc -- pack target/release/vino-standalone ./crates/providers/provider-standalone/interface.json -o $@
+	cp target/release/vino-standalone $@
+
+$(TEST_PAR): $(TEST_PAR_BIN)
+	cargo run -p vinoc -- pack $< ./crates/providers/provider-standalone/interface.json -o $@
 
 ./build/$(ARCH):
 	mkdir -p $@
