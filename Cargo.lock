@@ -3844,7 +3844,7 @@ checksum = "49874b5167b65d7193b8aba1567f5c7d93d001cafc34600cee003eda787e483f"
 
 [[package]]
 name = "vino"
-version = "0.1.0"
+version = "0.3.1"
 dependencies = [
  "atty",
  "clap 3.1.0",
@@ -3872,7 +3872,7 @@ dependencies = [
 
 [[package]]
 name = "vino-codec"
-version = "0.8.0"
+version = "0.9.0"
 dependencies = [
  "rmp-serde",
  "serde",
@@ -3883,7 +3883,7 @@ dependencies = [
 
 [[package]]
 name = "vino-entity"
-version = "0.8.0"
+version = "0.9.0"
 dependencies = [
  "serde",
  "thiserror",
@@ -4043,7 +4043,7 @@ dependencies = [
 
 [[package]]
 name = "vino-macros"
-version = "0.8.0"
+version = "0.9.0"
 dependencies = [
  "lazy_static",
  "tracing",
@@ -4096,7 +4096,7 @@ dependencies = [
 
 [[package]]
 name = "vino-packet"
-version = "0.8.0"
+version = "0.9.0"
 dependencies = [
  "serde",
  "serde-value",
@@ -4126,7 +4126,7 @@ dependencies = [
 
 [[package]]
 name = "vino-provider"
-version = "0.8.0"
+version = "0.9.0"
 dependencies = [
  "async-trait",
  "dyn-clone",
@@ -4444,27 +4444,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "vino-stdlib-http"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "futures",
- "logger",
- "parking_lot",
- "serde",
- "test-logger",
- "thiserror",
- "tokio",
- "tracing",
- "vino-entity",
- "vino-packet",
- "vino-provider",
- "vino-random",
- "vino-rpc",
- "vino-transport",
-]
-
-[[package]]
 name = "vino-test"
 version = "0.0.0"
 dependencies = [
@@ -4483,7 +4462,7 @@ dependencies = [
 
 [[package]]
 name = "vino-transport"
-version = "0.8.0"
+version = "0.9.0"
 dependencies = [
  "serde",
  "serde-value",
@@ -4500,7 +4479,7 @@ dependencies = [
 
 [[package]]
 name = "vino-types"
-version = "0.8.0"
+version = "0.9.0"
 dependencies = [
  "serde",
  "serde_json",
@@ -4508,7 +4487,7 @@ dependencies = [
 
 [[package]]
 name = "vino-wapc"
-version = "0.8.0"
+version = "0.9.0"
 
 [[package]]
 name = "vino-wascap"
@@ -4529,7 +4508,7 @@ dependencies = [
 
 [[package]]
 name = "vinoc"
-version = "0.3.2"
+version = "0.5.0"
 dependencies = [
  "async-recursion",
  "atty",
@@ -4561,7 +4540,7 @@ dependencies = [
 
 [[package]]
 name = "vow"
-version = "0.2.8"
+version = "0.4.0"
 dependencies = [
  "anyhow",
  "atty",
