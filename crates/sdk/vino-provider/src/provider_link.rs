@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use vino_entity::Entity;
+#[cfg(any(feature = "wasm", feature = "native"))]
 use vino_transport::TransportMap;
 
 /// An implementation that encapsulates a provider link that components can use to call out to a Vino network.
