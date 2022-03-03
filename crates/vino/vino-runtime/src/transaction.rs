@@ -1,7 +1,5 @@
-use std::collections::VecDeque;
 use std::time::Duration;
 
-use vino_provider::ProviderLink;
 use vino_transport::TransportMap;
 
 use self::executor::SchematicOutput;
@@ -53,31 +51,24 @@ impl std::fmt::Display for TransactionUpdate {
 #[derive(Debug)]
 struct Transaction {
   tx_id: String,
-  model: SharedModel,
   ports: PortStatuses,
   output_ports: Vec<ConnectionTargetDefinition>,
   schematic_name: String,
-  senders: Vec<ConnectionDefinition>,
-  generators: Vec<ConnectionDefinition>,
 }
 
 impl Transaction {
-  fn new<T: AsRef<str>>(tx_id: T, model: SharedModel) -> Self {
-    let ports = PortStatuses::new(&tx_id, &model);
+  fn new<T: AsRef<str>>(tx_id: T, model: &SharedModel) -> Self {
+    let ports = PortStatuses::new(&tx_id, model);
     let readable = model.read();
-    let senders: Vec<_> = readable.get_senders().cloned().collect();
-    let generators: Vec<_> = readable.get_generators().cloned().collect();
+
     let schematic_name = readable.get_name();
     let output_ports = readable.get_schematic_outputs().cloned().collect();
     drop(readable);
     Self {
       tx_id: tx_id.as_ref().to_owned(),
-      model,
       ports,
       output_ports,
       schematic_name,
-      senders,
-      generators,
     }
   }
 
@@ -92,60 +83,6 @@ impl Transaction {
       }
     }
     true
-  }
-
-  fn check_senders(&mut self) -> VecDeque<TransactionUpdate> {
-    let mut messages = VecDeque::new();
-
-    'sender: for sender in &self.senders {
-      if self.ports.is_waiting(&sender.to) {
-        self.ports.set_idle(&sender.to);
-        if sender.from.is_nslink() {
-          let def = self.model.read().get_component_definition(sender.to.get_instance());
-          if def.is_none() {
-            warn!(
-              "Invalid connection: {}. Downstream doesn't exist in schematic model.",
-              sender
-            );
-            continue 'sender;
-          }
-          let def = def.unwrap();
-          let linked_entity = Entity::Provider(sender.from.get_port_owned());
-          let origin_entity = Entity::Component(def.namespace, def.name);
-          messages.push_back(TransactionUpdate::Update(InputMessage {
-            connection: sender.clone(),
-            payload: MessageTransport::success(&ProviderLink::new(linked_entity, origin_entity)),
-            tx_id: self.tx_id.clone(),
-          }));
-        } else {
-          match sender.from.get_data() {
-            Some(data) => {
-              messages.push_back(TransactionUpdate::Update(InputMessage {
-                connection: sender.clone(),
-                payload: data.as_message(),
-                tx_id: self.tx_id.clone(),
-              }));
-            }
-            None => {
-              debug!("{}{:?}", self.log_prefix(), sender);
-              error!("Schematic '{}' has a sender defined for connection '{}' but has no data to send. This is likely a bug in the schematic.", self.schematic_name, sender);
-            }
-          }
-        }
-      }
-    }
-
-    for generator in &self.generators {
-      if self.ports.is_waiting(&generator.to) {
-        self.ports.set_idle(&generator.to);
-        messages.push_back(TransactionUpdate::Execute(ComponentPayload {
-          tx_id: self.tx_id.clone(),
-          instance: generator.from.get_instance_owned(),
-          payload_map: TransportMap::new(),
-        }));
-      }
-    }
-    messages
   }
 }
 
@@ -187,7 +124,7 @@ mod tests {
     let tx_id = "some tx";
     let model = make_model()?;
 
-    let mut transaction = Transaction::new(tx_id, model);
+    let mut transaction = Transaction::new(tx_id, &model);
     let from = ConnectionTargetDefinition::new(SCHEMATIC_INPUT, "input");
     let to = ConnectionTargetDefinition::new(REF_ID, "input");
 
