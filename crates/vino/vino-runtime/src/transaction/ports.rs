@@ -66,10 +66,6 @@ impl PortStatuses {
     self.check_port_status(port, &PortStatus::HasData)
   }
 
-  pub(crate) fn is_waiting(&self, port: &ConnectionTargetDefinition) -> bool {
-    self.check_port_status(port, &PortStatus::Waiting)
-  }
-
   pub(crate) fn set_idle(&self, port: &ConnectionTargetDefinition) {
     if self.check_port_status(port, &PortStatus::Closing) {
       self.update_port_status(port, PortStatus::Closed);

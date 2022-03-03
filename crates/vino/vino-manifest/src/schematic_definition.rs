@@ -247,10 +247,11 @@ impl SenderData {
     let value: serde_json::Value = serde_json::to_value(value).map_err(|e| Error::InvalidSenderData(e.to_string()))?;
     Ok(SenderData { inner: value })
   }
+}
 
-  /// Create a message out of [SenderData].
-  pub fn as_message(&self) -> MessageTransport {
-    MessageTransport::success(&self.inner)
+impl From<SenderData> for MessageTransport {
+  fn from(v: SenderData) -> Self {
+    MessageTransport::success(&v.inner)
   }
 }
 
