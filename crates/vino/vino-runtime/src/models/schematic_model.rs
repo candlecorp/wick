@@ -2,7 +2,6 @@ use std::collections::hash_map::{Keys, Values};
 use std::collections::HashMap;
 use std::convert::TryFrom;
 
-use vino_manifest::parse::CORE_ID;
 use vino_manifest::schematic_definition::PortReference;
 use vino_provider::native::prelude::*;
 
@@ -337,17 +336,6 @@ impl SchematicModel {
       .collect()
   }
 
-  pub(crate) fn is_generator(&self, instance: &str) -> bool {
-    if instance == SCHEMATIC_INPUT || instance == CORE_ID {
-      false
-    } else {
-      self
-        .get_raw_ports()
-        .get(instance)
-        .map_or(false, |rp| rp.inputs.is_empty())
-    }
-  }
-
   pub(crate) fn get_outputs(&self, instance: &str) -> Vec<ConnectionTargetDefinition> {
     match self.instances.get(instance) {
       Some(id) => match self.get_component_model(id) {
@@ -410,13 +398,6 @@ impl SchematicModel {
       .connections
       .iter()
       .filter(move |connection| connection.from.is_sender())
-  }
-  pub(crate) fn get_generators(&self) -> impl Iterator<Item = &ConnectionDefinition> {
-    self
-      .definition
-      .connections
-      .iter()
-      .filter(move |connection| self.is_generator(connection.from.get_instance()))
   }
 }
 

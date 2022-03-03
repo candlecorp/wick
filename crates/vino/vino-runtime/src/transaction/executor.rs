@@ -32,7 +32,7 @@ impl TransactionExecutor {
     &mut self,
     tx_id: T,
   ) -> (UnboundedReceiver<TransactionUpdate>, UnboundedSender<TransactionUpdate>) {
-    let mut transaction = Transaction::new(&tx_id, self.model.clone());
+    let mut transaction = Transaction::new(&tx_id, &self.model);
 
     let (inbound_tx, inbound_rx) = unbounded_channel::<TransactionUpdate>();
     let (outbound_tx, mut outbound_rx) = unbounded_channel::<TransactionUpdate>();
@@ -51,13 +51,6 @@ impl TransactionExecutor {
       'root: loop {
         let iter_prefix = format!("{}[{}]", log_prefix, iter);
         iter += 1;
-
-        let mut sender_messages = transaction.check_senders();
-        if !sender_messages.is_empty() {
-          trace!("{}:{} generated messages", iter_prefix, sender_messages.len());
-        }
-
-        self_msgs.append(&mut sender_messages);
 
         trace!(
           "{}:NEXTWAIT:(queue:{},timeout:{:?})",
