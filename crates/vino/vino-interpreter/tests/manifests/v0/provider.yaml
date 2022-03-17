@@ -1,0 +1,11 @@
+---
+version: 0
+network:
+  schematics:
+    - name: main
+      instances:
+        INSTANCE:
+          id: test::instance
+      connections:
+        - <> => INSTANCE[input]
+        - INSTANCE[output] => <>
