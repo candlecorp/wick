@@ -1,0 +1,15 @@
+---
+version: 0
+network:
+  schematics:
+    - name: spread-io
+      instances:
+        COMP1:
+          id: vino::core::log
+        COMP2:
+          id: vino::core::log
+      connections:
+        - <> => COMP1[input]
+        - <> => COMP2[input]
+        - COMP1[output] => <>
+        - COMP2[output] => <>
