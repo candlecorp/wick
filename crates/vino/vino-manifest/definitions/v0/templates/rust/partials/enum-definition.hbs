@@ -8,7 +8,7 @@ fn {{upperCase (snakeCase ../name.value)}}_{{upperCase name.value}}() -> {{> exp
   {{/if}}
 {{/each}}
 
-#[derive(Debug, Clone, Serialize, Deserialize, Copy, Eq, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, Copy, PartialEq)]
 #[serde(deny_unknown_fields)]
 {{#if description}}
 /// {{{description.value}}}

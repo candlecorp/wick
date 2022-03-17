@@ -1,0 +1,20 @@
+---
+version: 0
+network:
+  schematics:
+    - name: test
+      instances:
+        ALWAYS_ERRORS:
+          id: test::exception
+        REVERSE:
+          id: test::reverse
+      connections:
+        - <> => ALWAYS_ERRORS[input]
+        - from:
+            instance: ALWAYS_ERRORS
+            port: output
+          to:
+            instance: REVERSE
+            port: input
+          default: '"Default value"'
+        - REVERSE[output] => <>

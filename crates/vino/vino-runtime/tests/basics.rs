@@ -29,7 +29,7 @@ async fn simple_schematic() -> Result<()> {
 
   let msg: TransportWrapper = messages.pop().unwrap();
   println!("Output: {:?}", msg);
-  let output: String = msg.payload.try_into()?;
+  let output: String = msg.payload.deserialize()?;
 
   assert_eq!(output, "simple string");
   Ok(())
@@ -52,7 +52,7 @@ async fn echo() -> Result<()> {
 
   let msg: TransportWrapper = messages.pop().unwrap();
   println!("Output: {:?}", msg);
-  let output: String = msg.payload.try_into()?;
+  let output: String = msg.payload.deserialize()?;
 
   assert_eq!(output, "test-data");
   Ok(())
@@ -74,7 +74,7 @@ async fn senders() -> Result<()> {
 
   let msg: TransportWrapper = messages.pop().unwrap();
   println!("Output: {:?}", msg);
-  let output: String = msg.payload.try_into()?;
+  let output: String = msg.payload.deserialize()?;
 
   assert_eq!(output, "1234512345");
   Ok(())
@@ -95,7 +95,7 @@ async fn no_inputs() -> Result<()> {
 
   let msg: TransportWrapper = messages.pop().unwrap();
   println!("Output: {:?}", msg);
-  let output: String = msg.payload.try_into()?;
+  let output: String = msg.payload.deserialize()?;
 
   println!("uuid: {:?}", output);
   assert_eq!(output.len(), 36);
@@ -122,7 +122,7 @@ async fn nested_schematics() -> Result<()> {
 
   let msg: TransportWrapper = messages.pop().unwrap();
   println!("Output: {:?}", msg);
-  let output: String = msg.payload.try_into()?;
+  let output: String = msg.payload.deserialize()?;
   assert_eq!(output, user_data);
   Ok(())
 }
@@ -166,7 +166,7 @@ async fn short_circuit_with_default() -> Result<()> {
   let mut messages: Vec<TransportWrapper> = result.collect_port("output").await;
   assert_eq!(messages.len(), 1);
 
-  let output: String = messages.pop().unwrap().payload.try_into()?;
+  let output: String = messages.pop().unwrap().payload.deserialize()?;
   println!("Output: {:?}", output);
   assert_eq!(
     output,
@@ -193,7 +193,7 @@ async fn multiple_schematics() -> Result<()> {
   let mut messages: Vec<TransportWrapper> = result.collect_port("output").await;
   assert_eq!(messages.len(), 1);
 
-  let output: i64 = messages.pop().unwrap().payload.try_into()?;
+  let output: i64 = messages.pop().unwrap().payload.deserialize()?;
   assert_eq!(output, 42 + 302309);
 
   let data = hashmap! {
@@ -206,7 +206,7 @@ async fn multiple_schematics() -> Result<()> {
   let mut messages: Vec<TransportWrapper> = result.collect_port("output").await;
   assert_eq!(messages.len(), 1);
 
-  let output: String = messages.pop().unwrap().payload.try_into()?;
+  let output: String = messages.pop().unwrap().payload.deserialize()?;
   println!("Output: {:?}", output);
   assert_eq!(output, "some string");
   Ok(())
@@ -228,7 +228,7 @@ async fn subnetworks() -> Result<()> {
 
   assert_eq!(messages.len(), 2);
 
-  let output: String = messages[0].payload.clone().try_into()?;
+  let output: String = messages[0].payload.clone().deserialize()?;
 
   assert_eq!(output, "some input");
 

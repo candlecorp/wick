@@ -107,7 +107,7 @@ mod test {
 
     let mut rx = response.ok()?;
     let next: TransportWrapper = rx.next().await.unwrap();
-    let payload: String = next.payload.try_into()?;
+    let payload: String = next.payload.deserialize()?;
     assert_eq!(user_data, payload);
 
     Ok(())

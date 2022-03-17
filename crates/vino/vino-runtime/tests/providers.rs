@@ -10,7 +10,7 @@ use maplit::hashmap;
 use pretty_assertions::assert_eq;
 #[test_logger::test(tokio::test)]
 async fn native_component() -> Result<()> {
-  let (network, _) = init_network_from_yaml("./manifests/v0/native-component.yaml").await?;
+  let (network, _) = init_network_from_yaml("./manifests/v0/providers/native-component.yaml").await?;
 
   let data = hashmap! {
       "left" => 42,
@@ -28,7 +28,7 @@ async fn native_component() -> Result<()> {
 
   let msg: TransportWrapper = messages.pop().unwrap();
   println!("Output: {:?}", msg);
-  let output: i64 = msg.payload.try_into()?;
+  let output: i64 = msg.payload.deserialize()?;
 
   assert_eq!(output, 42 + 302309 + 302309);
   Ok(())
@@ -49,7 +49,7 @@ async fn global_providers() -> Result<()> {
   let mut messages: Vec<TransportWrapper> = result.collect_port("output").await;
   assert_eq!(messages.len(), 1);
 
-  let output: String = messages.pop().unwrap().payload.try_into()?;
+  let output: String = messages.pop().unwrap().payload.deserialize()?;
 
   assert_eq!(output, "some input");
 
@@ -63,7 +63,7 @@ async fn global_providers() -> Result<()> {
   let mut messages: Vec<TransportWrapper> = result.collect_port("output").await;
   assert_eq!(messages.len(), 1);
 
-  let output: String = messages.pop().unwrap().payload.try_into()?;
+  let output: String = messages.pop().unwrap().payload.deserialize()?;
   println!("Output: {:?}", output);
   assert_eq!(output, "other input");
   Ok(())
@@ -82,7 +82,7 @@ async fn subnetworks() -> Result<()> {
   let mut messages: Vec<TransportWrapper> = result.collect_port("output").await;
   assert_eq!(messages.len(), 1);
 
-  let output: String = messages.pop().unwrap().payload.try_into()?;
+  let output: String = messages.pop().unwrap().payload.deserialize()?;
 
   assert_eq!(output, "some input");
 
@@ -108,7 +108,7 @@ async fn grpc() -> Result<()> {
   let mut messages: Vec<TransportWrapper> = result.collect_port("output").await;
   assert_eq!(messages.len(), 1);
 
-  let output: String = messages.pop().unwrap().payload.try_into()?;
+  let output: String = messages.pop().unwrap().payload.deserialize()?;
 
   assert_eq!(output, format!("TEST: {}", user_data));
 
@@ -129,7 +129,7 @@ async fn par() -> Result<()> {
   let mut messages: Vec<TransportWrapper> = result.collect_port("output").await;
   assert_eq!(messages.len(), 1);
 
-  let output: u32 = messages.pop().unwrap().payload.try_into()?;
+  let output: u32 = messages.pop().unwrap().payload.deserialize()?;
 
   assert_eq!(output, 75);
 

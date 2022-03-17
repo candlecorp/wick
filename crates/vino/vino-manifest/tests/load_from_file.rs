@@ -1,7 +1,8 @@
 use std::env;
 use std::path::PathBuf;
+use std::str::FromStr;
 
-use serde_json::json;
+use serde_json::{json, Value};
 use tracing::debug;
 use vino_manifest::error::ManifestError;
 use vino_manifest::parse::{NS_LINK, SCHEMATIC_OUTPUT, SENDER_ID, SENDER_PORT};
@@ -10,10 +11,13 @@ use vino_manifest::{HostDefinition, *};
 #[test_logger::test]
 fn load_manifest_yaml() -> Result<(), ManifestError> {
   let path = PathBuf::from("./tests/manifests/v0/logger.yaml");
-  let manifest = HostManifest::load_from_file(&path)?;
+  let manifest = HostDefinition::load_from_file(&path)?;
 
-  let HostManifest::V0(manifest) = manifest;
   assert_eq!(manifest.default_schematic, "logger");
+  assert_eq!(
+    manifest.network().schematic("logger").map(|s| s.instances().len()),
+    Some(2)
+  );
 
   Ok(())
 }
@@ -123,7 +127,7 @@ fn load_sender_yaml() -> Result<(), ManifestError> {
     &v0::ConnectionTargetDefinition {
       instance: SENDER_ID.to_owned(),
       port: SENDER_PORT.to_owned(),
-      data: Some(r#""1234512345""#.to_owned()),
+      data: Some(Value::from_str(r#""1234512345""#).unwrap()),
     }
   );
   assert_eq!(

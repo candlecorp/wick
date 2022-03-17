@@ -1,0 +1,7 @@
+version: 0
+network:
+  schematics:
+    - name: test
+      connections:
+        - <>[input] => <>[output1]
+        - <>[input] => <>[output2]

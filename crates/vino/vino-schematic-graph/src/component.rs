@@ -3,12 +3,14 @@ use std::collections::HashMap;
 use crate::error::Error;
 use crate::port::{PortDirection, PortReference};
 use crate::schematic::{ComponentIndex, ConnectionIndex, PortIndex};
+use crate::util::AsStr;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[must_use]
 pub enum ComponentKind {
   Input,
   Output,
+  Inherent(ExternalReference),
   External(ExternalReference),
 }
 
@@ -19,7 +21,7 @@ pub struct ExternalReference {
 }
 
 impl ExternalReference {
-  pub fn new<T: AsRef<str>, U: AsRef<str>>(namespace: T, name: U) -> Self {
+  pub fn new<T: AsStr, U: AsStr>(namespace: T, name: U) -> Self {
     Self {
       name: name.as_ref().to_owned(),
       namespace: namespace.as_ref().to_owned(),
@@ -51,28 +53,40 @@ impl std::fmt::Display for ComponentKind {
       match self {
         ComponentKind::Input => "Input".to_owned(),
         ComponentKind::Output => "Output".to_owned(),
+        ComponentKind::Inherent(v) => format!("Inherent({})", v),
         ComponentKind::External(v) => format!("External({})", v),
       }
     )
   }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone)]
 #[must_use]
-pub struct Component {
+pub struct Component<DATA> {
   pub name: String,
   kind: ComponentKind,
   index: ComponentIndex,
+  data: Option<DATA>,
   inputs: PortList,
   outputs: PortList,
 }
 
-impl Component {
-  pub(crate) fn new<T: AsRef<str>>(name: T, index: ComponentIndex, kind: ComponentKind) -> Self {
+impl<DATA> PartialEq for Component<DATA> {
+  fn eq(&self, other: &Self) -> bool {
+    self.index == other.index
+  }
+}
+
+impl<DATA> Component<DATA>
+where
+  DATA: Clone,
+{
+  pub(crate) fn new<T: AsStr>(name: T, index: ComponentIndex, kind: ComponentKind, data: Option<DATA>) -> Self {
     Self {
       name: name.as_ref().to_owned(),
       kind,
       index,
+      data,
       inputs: PortList::new(PortDirection::In),
       outputs: PortList::new(PortDirection::Out),
     }
@@ -90,6 +104,16 @@ impl Component {
   #[must_use]
   pub fn name(&self) -> &str {
     &self.name
+  }
+
+  #[must_use]
+  pub fn data(&self) -> &Option<DATA> {
+    &self.data
+  }
+
+  #[must_use]
+  pub fn has_data(&self) -> bool {
+    self.data.is_some()
   }
 
   pub fn inputs(&self) -> &[ComponentPort] {
@@ -111,18 +135,26 @@ impl Component {
     self.inputs.get(index)
   }
 
-  pub fn add_input<T: AsRef<str>>(&mut self, port: T) -> PortReference {
-    match self.kind {
+  pub fn add_input<T: AsStr>(&mut self, port: T) -> PortReference {
+    let port_ref = match self.kind {
       ComponentKind::Output => {
         self.outputs.add(&port, self.index);
         self.inputs.add(&port, self.index)
       }
-      ComponentKind::Input => {
+      ComponentKind::Input | ComponentKind::Inherent(_) => {
         // Input/Output components have the same ports in & out.
         panic!("You can not manually add inputs to {} components", self.kind);
       }
-      ComponentKind::External(_) => self.inputs.add(port, self.index),
-    }
+      ComponentKind::External(_) => self.inputs.add(&port, self.index),
+    };
+    trace!(
+      index = self.index,
+      port = port.as_ref(),
+      component = self.name(),
+      r#ref = ?port_ref,
+      "added input port"
+    );
+    port_ref
   }
 
   pub(crate) fn connect_input(&mut self, port: PortIndex, connection: ConnectionIndex) -> Result<(), Error> {
@@ -156,18 +188,27 @@ impl Component {
     self.outputs.get(index)
   }
 
-  pub fn add_output<T: AsRef<str>>(&mut self, port: T) -> PortReference {
-    match self.kind {
-      ComponentKind::Input => {
+  pub fn add_output<T: AsStr>(&mut self, port: T) -> PortReference {
+    let port_ref = match self.kind {
+      ComponentKind::Input | ComponentKind::Inherent(_) => {
         self.inputs.add(&port, self.index);
-        self.outputs.add(port, self.index)
+        self.outputs.add(&port, self.index)
       }
       ComponentKind::Output => {
         // Input/Output components have the same ports in & out.
         panic!("You can not manually add outputs to {} components", self.kind);
       }
-      ComponentKind::External(_) => self.outputs.add(port, self.index),
-    }
+      ComponentKind::External(_) => self.outputs.add(&port, self.index),
+    };
+    trace!(
+      index = self.index,
+      port = port.as_ref(),
+      component = self.name(),
+      r#ref = ?port_ref,
+      "added output port"
+    );
+
+    port_ref
   }
 
   pub(crate) fn connect_output(&mut self, port: PortIndex, connection: ConnectionIndex) -> Result<(), Error> {
@@ -210,17 +251,13 @@ impl PortList {
     &self.list
   }
 
-  fn add<T: AsRef<str>>(&mut self, port_name: T, component_index: ComponentIndex) -> PortReference {
+  fn add<T: AsStr>(&mut self, port_name: T, component_index: ComponentIndex) -> PortReference {
     let name = port_name.as_ref();
     let existing_index = self.map.get(name);
     match existing_index {
-      Some(index) => {
-        trace!("COMPONENT:PORT:GET[name={},index={}]", name, index);
-        self.list[*index].port
-      }
+      Some(index) => self.list[*index].port,
       None => {
         let index = self.list.len();
-        trace!("COMPONENT:PORT:ADD[name={},index={}]", name, index);
         let port_ref = PortReference::new(component_index, index, self.direction);
         self.map.insert(name.to_owned(), index);
         let port = ComponentPort::new(name, port_ref);
@@ -247,7 +284,7 @@ impl PortList {
   }
 }
 
-impl std::fmt::Display for Component {
+impl<DATA> std::fmt::Display for Component<DATA> {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     write!(f, "{}", self.name)
   }
@@ -262,7 +299,7 @@ pub struct ComponentPort {
 }
 
 impl ComponentPort {
-  pub(crate) fn new<T: AsRef<str>>(name: T, port: PortReference) -> Self {
+  pub(crate) fn new<T: AsStr>(name: T, port: PortReference) -> Self {
     Self {
       name: name.as_ref().to_owned(),
       port,
@@ -281,8 +318,12 @@ impl ComponentPort {
   }
 
   #[must_use]
-  pub fn detach(&self) -> PortReference {
+  pub fn detached(&self) -> PortReference {
     self.port
+  }
+
+  pub fn direction(&self) -> &PortDirection {
+    self.port.direction()
   }
 }
 

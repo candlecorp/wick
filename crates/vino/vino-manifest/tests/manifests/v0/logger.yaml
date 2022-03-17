@@ -7,6 +7,11 @@ network:
       instances:
         logger:
           id: vino::log
+        SENDER:
+          id: core::sender
+          data:
+            output: "123456789"
+            type: string
       connections:
         - from:
             instance: vino::schematic_input

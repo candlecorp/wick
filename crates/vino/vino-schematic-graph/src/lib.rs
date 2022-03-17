@@ -107,5 +107,7 @@ pub use schematic::{
   SCHEMATIC_OUTPUT,
 };
 
+pub(crate) mod util;
+
 #[macro_use]
 extern crate tracing;

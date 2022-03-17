@@ -1,18 +1,17 @@
 use std::sync::Arc;
 
 use uuid::Uuid;
-use vino_schematic_graph::Schematic;
-use vino_transport::{TransportMap, TransportStream};
+use vino_transport::{Invocation, TransportStream};
 
 use self::error::ExecutionError;
 use self::transaction::Transaction;
 use super::channel::InterpreterDispatchChannel;
-use crate::interpreter::channel::InterpreterEvent;
+use crate::graph::types::*;
+use crate::interpreter::channel::Event;
+use crate::{Provider, Providers};
 
-mod buffer;
-mod component;
 pub(crate) mod error;
-mod port;
+mod output_channel;
 pub(crate) mod transaction;
 
 type Result<T> = std::result::Result<T, ExecutionError>;
@@ -41,15 +40,23 @@ impl SchematicExecutor {
   }
 
   #[instrument(skip_all, name = "subroutine")]
-  pub async fn start(&self, inputs: Option<TransportMap>) -> Result<TransportStream> {
+  pub async fn invoke(
+    &self,
+    invocation: Invocation,
+    providers: Arc<Providers>,
+    self_provider: Arc<dyn Provider + Send + Sync>,
+  ) -> Result<TransportStream> {
     trace!("running subroutine '{}'", self.name());
-    let payload = inputs.unwrap_or_default();
-    let mut transaction = Transaction::new(self.tx_id, self.schematic.clone(), payload, self.channel.clone());
-    let stream = transaction.get_stream().unwrap();
-    self
-      .channel
-      .dispatch(InterpreterEvent::TransactionStart(Box::new(transaction)))
-      .await?;
+    let mut transaction = Transaction::new(
+      self.tx_id,
+      self.schematic.clone(),
+      invocation,
+      self.channel.clone(),
+      &providers,
+      &self_provider,
+    );
+    let stream = transaction.take_stream().unwrap();
+    self.channel.dispatch(Event::tx_start(Box::new(transaction))).await?;
     Ok(stream)
   }
 }

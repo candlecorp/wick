@@ -21,17 +21,20 @@
 )]
 #![warn(clippy::cognitive_complexity)]
 
+use std::collections::HashMap;
+use std::str::FromStr;
+
 use num_traits::FromPrimitive;
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use serde_with_expand_env::with_expand_envs;
-use std::{collections::HashMap, str::FromStr};
 
 #[allow(non_snake_case)]
 pub(crate) fn HOST_MANIFEST_DEFAULT_SCHEMATIC() -> String {
   "main".to_owned()
 }
 
-#[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
 /// A manifest defines the starting state of a Vino host and network.
 pub struct HostManifest {
@@ -56,7 +59,7 @@ pub(crate) fn HOST_CONFIG_TIMEOUT() -> u64 {
   5000
 }
 
-#[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
 /// Host configuration options.
 pub struct HostConfig {
@@ -90,7 +93,7 @@ pub struct HostConfig {
   pub http: Option<HttpConfig>,
 }
 
-#[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
 /// Configuration for HTTP/S servers.
 pub struct HttpConfig {
@@ -115,7 +118,7 @@ pub struct HttpConfig {
   pub ca: Option<String>,
 }
 
-#[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
 /// Configuration used to connect to the lattice.
 pub struct LatticeConfig {
@@ -135,7 +138,7 @@ pub struct LatticeConfig {
   pub token: Option<String>,
 }
 
-#[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
 /// A Vino network definition.
 pub struct NetworkManifest {
@@ -156,7 +159,7 @@ pub struct NetworkManifest {
   pub providers: Vec<ProviderDefinition>,
 }
 
-#[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
 /// A provider definition.
 pub struct ProviderDefinition {
@@ -173,10 +176,10 @@ pub struct ProviderDefinition {
   pub reference: String,
   /// Data or configuration to pass to the provider initialization.
   #[serde(default)]
-  pub data: serde_json::Value,
+  pub data: Value,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Copy, Eq, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, Copy, PartialEq)]
 #[serde(deny_unknown_fields)]
 /// Kind of provider.
 pub enum ProviderKind {
@@ -230,7 +233,7 @@ impl FromPrimitive for ProviderKind {
   }
 }
 
-#[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
 /// A definition for an individual Vino schematic.
 pub struct SchematicManifest {
@@ -257,7 +260,7 @@ pub struct SchematicManifest {
   pub constraints: HashMap<String, String>,
 }
 
-#[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
 /// A single component definition.
 pub struct ComponentDefinition {
@@ -266,10 +269,10 @@ pub struct ComponentDefinition {
   pub id: String,
   /// Data to associate with the reference.
   #[serde(default)]
-  pub config: Option<HashMap<String, String>>,
+  pub data: Option<Value>,
 }
 
-#[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
 /// A connection between components. This can be specified in short-form syntax (where applicable). See <a href='https://docs.vino.dev/docs/configuration/short-form-syntax/'>docs.vino.dev</a> for more information.
 pub struct ConnectionDefinition {
@@ -286,7 +289,7 @@ pub struct ConnectionDefinition {
   pub default: Option<String>,
 }
 
-#[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
 /// A connection target e.g. a port on a reference. This can be specified in short-form syntax (where applicable).  See <a href='https://docs.vino.dev/docs/configuration/short-form-syntax/'>docs.vino.dev</a> for more information.
 pub struct ConnectionTargetDefinition {
@@ -296,9 +299,9 @@ pub struct ConnectionTargetDefinition {
   /// The component&#x27;s port.
   #[serde(deserialize_with = "with_expand_envs")]
   pub port: String,
-  /// Data to send automatically. Parsed as JSON. (only used for &lt;sender&gt; instances).
+  /// Data to associate with a connection.
   #[serde(default)]
-  pub data: Option<String>,
+  pub data: Option<Value>,
 }
 
 impl FromStr for ComponentDefinition {
@@ -307,7 +310,7 @@ impl FromStr for ComponentDefinition {
   fn from_str(s: &str) -> Result<Self, Self::Err> {
     Ok(Self {
       id: s.to_owned(),
-      config: None,
+      data: None,
     })
   }
 }

@@ -3,75 +3,103 @@ use std::time::Duration;
 use once_cell::sync::Lazy;
 use uuid::Uuid;
 use vino_schematic_graph::{ComponentIndex, PortReference};
-use vino_transport::TransportWrapper;
+use vino_transport::MessageTransport;
 
 pub(crate) use self::error::Error;
 use super::executor::error::ExecutionError;
 use crate::interpreter::executor::transaction::Transaction;
 
-pub(crate) type EventPayload = InterpreterEvent;
+pub(crate) type EventPayload = Event;
 
 static CHANNEL_SIZE: usize = 50;
-static TIMEOUT: Lazy<Duration> = Lazy::new(|| Duration::from_secs(5));
+static TIMEOUT: Lazy<Duration> = Lazy::new(|| Duration::from_millis(200));
+
+pub(crate) struct Event {
+  pub(crate) tx_id: Uuid,
+  pub(crate) kind: EventKind,
+}
+
+impl Event {
+  pub(crate) fn new(tx_id: Uuid, kind: EventKind) -> Self {
+    Self { tx_id, kind }
+  }
+  pub(crate) fn name(&self) -> &str {
+    self.kind.name()
+  }
+
+  pub(crate) fn close() -> Self {
+    Event::new(Uuid::new_v4(), EventKind::Close)
+  }
+
+  pub(crate) fn call_complete(tx_id: Uuid, component_index: ComponentIndex) -> Self {
+    Event::new(tx_id, EventKind::CallComplete(CallComplete::new(component_index)))
+  }
+
+  pub(crate) fn port_status_change(tx_id: Uuid, port_ref: PortReference) -> Self {
+    Event::new(tx_id, EventKind::PortStatusChange(port_ref))
+  }
+
+  pub(crate) fn call_err(tx_id: Uuid, component_index: ComponentIndex, err: MessageTransport) -> Self {
+    Event::new(
+      tx_id,
+      EventKind::CallComplete(CallComplete {
+        index: component_index,
+        err: Some(err),
+      }),
+    )
+  }
+
+  pub(crate) fn port_data(tx_id: Uuid, port: PortReference) -> Self {
+    Event::new(tx_id, EventKind::PortData(port))
+  }
+
+  pub(crate) fn tx_done(tx_id: Uuid) -> Self {
+    Event::new(tx_id, EventKind::TransactionDone)
+  }
+
+  pub(crate) fn tx_start(tx: Box<Transaction>) -> Self {
+    Event::new(tx.id(), EventKind::TransactionStart(tx))
+  }
+}
 
 #[derive(Debug)]
-pub(crate) struct Responder {}
-
-impl Responder {}
-
-#[derive(Debug)]
-pub(crate) enum InterpreterEvent {
+pub(crate) enum EventKind {
   #[allow(unused)]
   Ping(usize),
   TransactionStart(Box<Transaction>),
-  TransactionDone(Uuid),
-  ComponentReady(ComponentReady),
-  PortData(PortData),
-  TransactionOutput(PortData),
+  TransactionDone,
+  PortData(PortReference),
+  PortStatusChange(PortReference),
+  CallComplete(CallComplete),
   Close,
 }
 
-impl InterpreterEvent {
+impl EventKind {
   pub(crate) fn name(&self) -> &str {
     match self {
-      InterpreterEvent::Ping(_) => "ping",
-      InterpreterEvent::TransactionStart(_) => "tx_start",
-      InterpreterEvent::TransactionDone(_) => "tx_done",
-      InterpreterEvent::ComponentReady(_) => "component_ready",
-      InterpreterEvent::PortData(_) => "port_data",
-      InterpreterEvent::TransactionOutput(_) => "tx_output",
-      InterpreterEvent::Close => "close",
+      EventKind::Ping(_) => "ping",
+      EventKind::TransactionStart(_) => "tx_start",
+      EventKind::TransactionDone => "tx_done",
+      EventKind::PortStatusChange(_) => "port_status_change",
+      EventKind::PortData(_) => "port_data",
+      EventKind::CallComplete(_) => "call_complete",
+      EventKind::Close => "close",
     }
   }
 }
 
 #[derive(Debug, Clone)]
-pub(crate) struct ComponentReady {
-  pub(crate) tx_id: Uuid,
+pub(crate) struct CallComplete {
   pub(crate) index: ComponentIndex,
+  pub(crate) err: Option<MessageTransport>,
 }
 
-impl ComponentReady {
-  pub(crate) fn new(tx_id: Uuid, index: ComponentIndex) -> Self {
-    Self { tx_id, index }
-  }
-}
-
-#[derive(Debug, Clone)]
-pub(crate) struct PortData {
-  pub(crate) port: PortReference,
-  pub(crate) tx_id: Uuid,
-  pub(crate) transport: TransportWrapper,
-}
-
-impl PortData {
-  pub(crate) fn new(tx_id: Uuid, port: PortReference, transport: TransportWrapper) -> Self {
-    Self { port, tx_id, transport }
-  }
-  pub(crate) fn move_port<T: AsRef<str>>(mut self, port: PortReference, name: T) -> Self {
-    self.transport.port = name.as_ref().to_owned();
-    self.port = port;
-    self
+impl CallComplete {
+  fn new(component_index: ComponentIndex) -> Self {
+    Self {
+      index: component_index,
+      err: None,
+    }
   }
 }
 
@@ -103,10 +131,8 @@ impl InterpreterChannel {
   }
 
   #[instrument(skip(self))]
-  pub(crate) async fn accept(&mut self) -> Result<Option<EventPayload>, ExecutionError> {
-    tokio::time::timeout(*TIMEOUT, self.receiver.recv())
-      .await
-      .map_err(|_| ExecutionError::ChannelError(Error::ReceiveTimeout))
+  pub(crate) async fn accept(&mut self) -> Option<EventPayload> {
+    self.receiver.recv().await
   }
 }
 
@@ -126,9 +152,8 @@ impl InterpreterDispatchChannel {
     Self { sender }
   }
 
-  #[instrument(name = "channel_dispatch", skip_all, fields(event = event.name()))]
-  pub(crate) async fn dispatch(&self, event: InterpreterEvent) -> Result<(), ExecutionError> {
-    trace!("sending to interpreter");
+  pub(crate) async fn dispatch(&self, event: Event) -> Result<(), ExecutionError> {
+    trace!(event = event.name(), "dispatching event");
     self
       .sender
       .send_timeout(event, *TIMEOUT)
@@ -175,13 +200,13 @@ mod test {
     let join_handle = tokio::task::spawn(async move {
       println!("Handling requests");
       let mut num_handled = 0;
-      while let Ok(Some(event)) = channel.accept().await {
+      while let Some(event) = channel.accept().await {
         num_handled += 1;
-        match event {
-          InterpreterEvent::Ping(num) => {
+        match event.kind {
+          EventKind::Ping(num) => {
             trace!("ping:{}", num);
           }
-          InterpreterEvent::Close => {
+          EventKind::Close => {
             break;
           }
           _ => panic!(),
@@ -194,18 +219,24 @@ mod test {
     tokio::spawn(async move {
       let num = 1;
       println!("Child 1 PING({})", num);
-      child1.dispatch(InterpreterEvent::Ping(num)).await.unwrap();
+      child1
+        .dispatch(Event::new(Uuid::new_v4(), EventKind::Ping(num)))
+        .await
+        .unwrap();
     })
     .await?;
 
     tokio::spawn(async move {
       let num = 2;
       println!("Child 2 PING({})", num);
-      child2.dispatch(InterpreterEvent::Ping(num)).await.unwrap();
+      child2
+        .dispatch(Event::new(Uuid::new_v4(), EventKind::Ping(num)))
+        .await
+        .unwrap();
     })
     .await?;
 
-    let result = child3.dispatch(InterpreterEvent::Close).await;
+    let result = child3.dispatch(Event::close()).await;
     println!("{:?}", result);
     let num_handled = join_handle.await?;
 

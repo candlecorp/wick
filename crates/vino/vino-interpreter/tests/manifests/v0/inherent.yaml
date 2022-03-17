@@ -1,0 +1,6 @@
+version: 0
+network:
+  schematics:
+    - name: test
+      connections:
+        - <core>[seed] => <>[parent_seed]

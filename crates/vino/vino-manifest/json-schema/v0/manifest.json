@@ -282,15 +282,10 @@
 
           "type": "string"
         },
-        "config": {
+        "data": {
           "description": "Data to associate with the reference.",
           "required": false,
-          "type": "object",
-          "patternProperties": {
-            "[a-zA-Z0-9][a-zA-Z0-9_]*": {
-              "type": "string"
-            }
-          }
+          "type": "object"
         }
       },
       "required": ["id"]
@@ -335,10 +330,9 @@
           "type": "string"
         },
         "data": {
-          "description": "Data to send automatically. Parsed as JSON. (only used for &lt;sender&gt; instances).",
+          "description": "Data to associate with a connection.",
           "required": false,
-
-          "type": "string"
+          "type": "object"
         }
       },
       "required": ["instance", "port"]

@@ -1,0 +1,16 @@
+version: 0
+network:
+  schematics:
+    - name: test
+      instances:
+        CHILD:
+          id: self::child
+      connections:
+        - <core>[seed] => CHILD[child_inner_input]
+        - <core>[seed] => <>[parent_seed]
+        - CHILD[child_inner_output] => <>[child_output]
+        - CHILD[child_inner_seed] => <>[child_seed]
+    - name: child
+      connections:
+        - <>[child_inner_input] => <>[child_inner_output]
+        - <core>[seed] => <>[child_inner_seed]

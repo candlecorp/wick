@@ -32,7 +32,7 @@ mod tests {
     let json = parse_default(json_str)?;
 
     let err = "This is my error message";
-    let message: String = make_default_transport(&json, err).try_into()?;
+    let message: String = make_default_transport(&json, err).deserialize()?;
 
     assert_eq!(message, format!("Error: {}", err));
 

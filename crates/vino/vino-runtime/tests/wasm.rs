@@ -27,7 +27,7 @@ async fn good_wapc_component() -> Result<()> {
   assert_eq!(messages.len(), 1);
 
   let output: TransportWrapper = messages.pop().unwrap();
-  let result: String = output.payload.try_into()?;
+  let result: String = output.payload.deserialize()?;
   println!("Output for first run: {:?}", result);
   assert_eq!(result, "1234567890");
 
@@ -79,7 +79,7 @@ async fn good_wasi_component() -> Result<()> {
   assert_eq!(messages.len(), 1);
 
   let output: TransportWrapper = messages.pop().unwrap();
-  let result: String = output.payload.try_into()?;
+  let result: String = output.payload.deserialize()?;
   println!("Output for first run: {:?}", result);
   assert_eq!(result, time);
 
@@ -101,7 +101,7 @@ async fn wapc_stream() -> Result<()> {
   // println!("{:#?}", messages);
   assert_eq!(messages.len(), 5);
   for msg in messages {
-    let result: String = msg.payload.try_into()?;
+    let result: String = msg.payload.deserialize()?;
     assert_eq!(result, "Hello world");
   }
 
@@ -146,7 +146,7 @@ async fn wasm_link_call() -> Result<()> {
   assert_eq!(messages.len(), 1);
 
   let output: TransportWrapper = messages.pop().unwrap();
-  let result: String = output.payload.try_into()?;
+  let result: String = output.payload.deserialize()?;
   println!("Output for first run: {:?}", result);
   assert_eq!(result, "DLROW OLLEH");
 

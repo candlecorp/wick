@@ -1,6 +1,7 @@
 use std::fmt::Display;
 
 use crate::schematic::PortIndex;
+use crate::util::AsStr;
 use crate::ComponentIndex;
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
@@ -10,7 +11,7 @@ pub struct PortDefinition {
 }
 
 impl PortDefinition {
-  pub fn new<T: AsRef<str>>(name: T, index: PortIndex) -> Self {
+  pub fn new<T: AsStr>(name: T, index: PortIndex) -> Self {
     Self {
       name: name.as_ref().to_owned(),
       index,
@@ -65,8 +66,8 @@ impl AsRef<PortReference> for PortReference {
 impl Display for PortReference {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     match self.direction {
-      PortDirection::In => write!(f, "[>{}]{}", self.port_index, self.component_index),
-      PortDirection::Out => write!(f, "{}[{}>]", self.component_index, self.port_index),
+      PortDirection::In => write!(f, "{}.IN.{}", self.component_index, self.port_index),
+      PortDirection::Out => write!(f, "{}.OUT.{}", self.component_index, self.port_index),
     }
   }
 }

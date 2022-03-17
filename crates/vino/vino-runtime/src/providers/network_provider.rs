@@ -63,7 +63,7 @@ mod tests {
     let mut outputs = provider.invoke(invocation).await?;
     let output = outputs.next().await.unwrap();
     println!("payload from [{}]: {:?}", output.port, output.payload);
-    let output_data: String = output.payload.try_into()?;
+    let output_data: String = output.payload.deserialize()?;
 
     println!("doc_id: {:?}", output_data);
     assert_eq!(output_data, data);

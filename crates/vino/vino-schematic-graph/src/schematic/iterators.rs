@@ -5,31 +5,32 @@ mod port;
 pub use component::*;
 pub use connection::*;
 pub use port::*;
-use tracing::instrument;
 
-use crate::component::{ComponentKind, ComponentPort};
+use crate::component::ComponentPort;
 use crate::port::PortDirection;
 use crate::{Connection, ConnectionIndex, PortReference, Schematic};
 
 #[derive(Debug, Clone)]
-pub enum SchematicHop<'graph> {
-  SchematicInput(ComponentHop<'graph>),
-  SchematicOutput(ComponentHop<'graph>),
-  Component(ComponentHop<'graph>),
-  Port(Port<'graph>),
-  Ports(Ports<'graph>),
-  Connections(Connections<'graph>),
-  Connection(ConnectionRef<'graph>),
+pub enum SchematicHop<'graph, DATA>
+where
+  DATA: Clone,
+{
+  Component(ComponentHop<'graph, DATA>),
+  Port(Port<'graph, DATA>),
+  Ports(Ports<'graph, DATA>),
+  Connections(Connections<'graph, DATA>),
+  Connection(ConnectionRef<'graph, DATA>),
 }
 
-impl<'graph> std::fmt::Display for SchematicHop<'graph> {
+impl<'graph, DATA> std::fmt::Display for SchematicHop<'graph, DATA>
+where
+  DATA: Clone,
+{
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     write!(
       f,
       "{}",
       match self {
-        SchematicHop::SchematicInput(v) => format!("SchematicInput:{}", v.name()),
-        SchematicHop::SchematicOutput(v) => format!("SchematicOutput:{}", v.name()),
         SchematicHop::Component(v) => format!("Component:{}", v.name()),
         SchematicHop::Port(v) => format!("Port:{}", v),
         SchematicHop::Ports(v) => format!("Ports:{}", v),
@@ -40,13 +41,12 @@ impl<'graph> std::fmt::Display for SchematicHop<'graph> {
   }
 }
 
-impl<'graph> From<ComponentHop<'graph>> for SchematicHop<'graph> {
-  fn from(component: ComponentHop<'graph>) -> Self {
-    match component.kind() {
-      ComponentKind::Input => Self::SchematicInput(component),
-      ComponentKind::Output => Self::SchematicOutput(component),
-      ComponentKind::External(_) => Self::Component(component),
-    }
+impl<'graph, DATA> From<ComponentHop<'graph, DATA>> for SchematicHop<'graph, DATA>
+where
+  DATA: Clone,
+{
+  fn from(component: ComponentHop<'graph, DATA>) -> Self {
+    Self::Component(component)
   }
 }
 
@@ -59,15 +59,21 @@ pub enum WalkDirection {
 
 #[derive(Debug)]
 #[must_use]
-pub struct SchematicWalker<'graph> {
-  schematic: &'graph Schematic,
-  last_hop: Option<SchematicHop<'graph>>,
-  hop_queue: Vec<SchematicHop<'graph>>,
+pub struct SchematicWalker<'graph, DATA>
+where
+  DATA: Clone,
+{
+  schematic: &'graph Schematic<DATA>,
+  last_hop: Option<SchematicHop<'graph, DATA>>,
+  hop_queue: Vec<SchematicHop<'graph, DATA>>,
   direction: WalkDirection,
 }
 
-impl<'graph> SchematicWalker<'graph> {
-  pub fn new(schematic: &'graph Schematic) -> Self {
+impl<'graph, DATA> SchematicWalker<'graph, DATA>
+where
+  DATA: Clone,
+{
+  pub fn new_from_input(schematic: &'graph Schematic<DATA>) -> Self {
     let inputs = ComponentHop::new(schematic, schematic.input).into_inputs();
     let hop_queue = vec![SchematicHop::Ports(inputs)];
     Self {
@@ -78,7 +84,17 @@ impl<'graph> SchematicWalker<'graph> {
     }
   }
 
-  pub fn from_port(schematic: &'graph Schematic, port: PortReference, direction: WalkDirection) -> Self {
+  pub fn new_from_output(schematic: &'graph Schematic<DATA>) -> Self {
+    let hop_queue = vec![SchematicHop::Component(ComponentHop::new(schematic, schematic.output))];
+    Self {
+      schematic,
+      last_hop: None,
+      hop_queue,
+      direction: WalkDirection::Up,
+    }
+  }
+
+  pub fn from_port(schematic: &'graph Schematic<DATA>, port: PortReference, direction: WalkDirection) -> Self {
     let port = Port::new(schematic, port);
     let hop_queue = vec![SchematicHop::Port(port)];
     Self {
@@ -90,10 +106,13 @@ impl<'graph> SchematicWalker<'graph> {
   }
 }
 
-impl<'graph> Iterator for SchematicWalker<'graph> {
-  type Item = SchematicHop<'graph>;
+impl<'graph, DATA> Iterator for SchematicWalker<'graph, DATA>
+where
+  DATA: Clone,
+{
+  type Item = SchematicHop<'graph, DATA>;
 
-  fn next(&mut self) -> Option<SchematicHop<'graph>> {
+  fn next(&mut self) -> Option<SchematicHop<'graph, DATA>> {
     let last_hop = self.last_hop.take();
     let (mut next_hop, branch) = walk(self.schematic, last_hop, self.direction);
 
@@ -109,15 +128,17 @@ impl<'graph> Iterator for SchematicWalker<'graph> {
 }
 
 #[allow(clippy::too_many_lines)]
-#[instrument(skip(schematic))]
-fn walk<'graph>(
-  schematic: &'graph Schematic,
-  hop: Option<SchematicHop<'graph>>,
+fn walk<'graph, DATA>(
+  schematic: &'graph Schematic<DATA>,
+  hop: Option<SchematicHop<'graph, DATA>>,
   direction: WalkDirection,
-) -> (Option<SchematicHop<'graph>>, Option<SchematicHop<'graph>>) {
+) -> (Option<SchematicHop<'graph, DATA>>, Option<SchematicHop<'graph, DATA>>)
+where
+  DATA: Clone,
+{
   match hop {
     Some(hop) => match hop {
-      SchematicHop::SchematicOutput(v) | SchematicHop::SchematicInput(v) | SchematicHop::Component(v) => {
+      SchematicHop::Component(v) => {
         let ports = match direction {
           WalkDirection::Up => v.into_inputs(),
           WalkDirection::Down => v.into_outputs(),
@@ -155,6 +176,7 @@ fn walk<'graph>(
               .and_then(|component| component.input_connections(v.port.port_index))
               .map(|indices| Connections::new(schematic, indices.clone()))
               .unwrap();
+
             if connections.is_empty() {
               (None, None)
             } else {
@@ -206,7 +228,7 @@ fn walk<'graph>(
         }
       }
       SchematicHop::Connection(v) => {
-        let connection = schematic.connections[v.index];
+        let connection = &schematic.connections[v.index];
         match direction {
           WalkDirection::Up => {
             let port = Port::new(schematic, connection.from);
@@ -233,21 +255,36 @@ fn walk<'graph>(
   }
 }
 
-fn get_ports_component<'graph, 'b>(schematic: &'graph Schematic, port: &'b PortReference) -> &'graph ComponentPort {
+fn get_ports_component<'graph, 'b, DATA>(
+  schematic: &'graph Schematic<DATA>,
+  port: &'b PortReference,
+) -> &'graph ComponentPort
+where
+  DATA: Clone,
+{
   match port.direction {
     PortDirection::In => &schematic.components[port.component_index].inputs()[port.port_index],
     PortDirection::Out => &schematic.components[port.component_index].outputs()[port.port_index],
   }
 }
 
-fn get_port_name<'graph, 'b>(schematic: &'graph Schematic, port: &'b PortReference) -> &'graph str {
+fn get_port_name<'graph, 'b, DATA>(schematic: &'graph Schematic<DATA>, port: &'b PortReference) -> &'graph str
+where
+  DATA: Clone,
+{
   match port.direction {
     PortDirection::In => schematic.components[port.component_index].inputs()[port.port_index].name(),
     PortDirection::Out => schematic.components[port.component_index].outputs()[port.port_index].name(),
   }
 }
 
-fn get_port_connections<'graph, 'b>(schematic: &'graph Schematic, port: &'b PortReference) -> Connections<'graph> {
+fn get_port_connections<'graph, 'b, DATA>(
+  schematic: &'graph Schematic<DATA>,
+  port: &'b PortReference,
+) -> Connections<'graph, DATA>
+where
+  DATA: Clone,
+{
   let direction = port.direction;
   schematic
     .get(port.component_index)
@@ -259,6 +296,6 @@ fn get_port_connections<'graph, 'b>(schematic: &'graph Schematic, port: &'b Port
     .unwrap()
 }
 
-fn get_connection(schematic: &Schematic, index: ConnectionIndex) -> &Connection {
+fn get_connection<DATA>(schematic: &Schematic<DATA>, index: ConnectionIndex) -> &Connection<DATA> {
   &schematic.connections[index]
 }

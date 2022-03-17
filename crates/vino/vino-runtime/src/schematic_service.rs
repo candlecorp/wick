@@ -13,7 +13,6 @@ use parking_lot::RwLock;
 use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
 use tokio_stream::wrappers::UnboundedReceiverStream;
 use vino_manifest::parse::CORE_ID;
-use vino_provider::ProviderLink;
 
 use crate::dev::prelude::validator::SchematicValidator;
 use crate::dev::prelude::*;
@@ -194,7 +193,7 @@ impl SchematicService {
       let send_result = self.update_tx(&tx_id, msg);
 
       if let Err(e) = send_result {
-        debug!("{}ERROR:{}", log_prefix, e);
+        debug!("{}ERROR:{:?}", log_prefix, e);
         warn!(
           "Error sending message in transaction {}. This is likely a bug in the upstream (i.e. {})",
           tx_id, upstream_port
@@ -421,7 +420,6 @@ fn make_input_packets(
       payload: MessageTransport::done(),
     });
   }
-
   let connections = model.get_downstream_connections(CORE_ID);
   for conn in connections {
     let msg = match conn.from.get_port() {
@@ -438,51 +436,6 @@ fn make_input_packets(
       tx_id: tx_id.to_owned(),
       payload: MessageTransport::done(),
     });
-  }
-
-  let connections = model.get_senders();
-  for conn in connections {
-    if conn.from.is_nslink() {
-      let def = model.get_component_definition(conn.to.get_instance());
-      if def.is_none() {
-        warn!(
-          "Invalid connection: {}. Downstream doesn't exist in schematic model.",
-          conn
-        );
-        continue;
-      }
-      let def = def.unwrap();
-      let linked_entity = Entity::Provider(conn.from.get_port_owned());
-      let origin_entity = Entity::Component(def.namespace, def.name);
-      messages.push(InputMessage {
-        connection: conn.clone(),
-        payload: MessageTransport::success(&ProviderLink::new(linked_entity, origin_entity)),
-        tx_id: tx_id.to_owned(),
-      });
-      messages.push(InputMessage {
-        connection: conn.clone(),
-        tx_id: tx_id.to_owned(),
-        payload: MessageTransport::done(),
-      });
-    } else {
-      match conn.from.get_data() {
-        Some(data) => {
-          messages.push(InputMessage {
-            connection: conn.clone(),
-            payload: data.clone().into(),
-            tx_id: tx_id.to_owned(),
-          });
-          messages.push(InputMessage {
-            connection: conn.clone(),
-            tx_id: tx_id.to_owned(),
-            payload: MessageTransport::done(),
-          });
-        }
-        None => {
-          error!("Schematic '{}' has a sender defined for connection '{}' but has no data to send. This is likely a bug in the schematic.", name, conn);
-        }
-      }
-    }
   }
 
   Ok(messages)

@@ -4,7 +4,6 @@ pub(crate) mod provider_model;
 pub(crate) mod schematic_model;
 pub(crate) mod validator;
 
-use std::collections::HashMap;
 use std::sync::Arc;
 
 use parking_lot::RwLock;
@@ -40,8 +39,4 @@ pub(crate) fn get_component_definition(
     .read()
     .get_component_definition(instance)
     .ok_or_else(|| SchematicError::InstanceNotFound(instance.to_owned()))
-}
-
-pub(crate) fn get_incoming_ports(model: &SharedModel) -> HashMap<String, RawPorts> {
-  model.read().get_raw_ports().clone()
 }

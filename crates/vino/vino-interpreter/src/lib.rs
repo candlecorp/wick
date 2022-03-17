@@ -85,7 +85,8 @@
 // Add exceptions here
 #![allow(missing_docs)]
 
-// pub mod error;
+mod default;
+pub mod graph;
 mod interpreter;
 
 pub use interpreter::channel::error::{Error as ChannelError, RequestError};
@@ -95,7 +96,8 @@ pub use interpreter::event_loop::EventLoopError;
 pub use interpreter::executor::error::ExecutionError;
 pub use interpreter::executor::transaction::TransactionStatistics;
 pub use interpreter::executor::SchematicExecutor;
-pub use interpreter::provider::{Provider, ProviderNamespace, Providers};
+pub use interpreter::provider::internal_provider::oneshot::OneShotComponent;
+pub use interpreter::provider::{Component, Provider, ProviderNamespace, Providers};
 pub use interpreter::Interpreter;
 
 pub use crate::interpreter::program::validator::error::ValidationError;
