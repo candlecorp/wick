@@ -274,7 +274,7 @@ mod tests {
   use crate::VINO_V0_NAMESPACE;
   #[test_logger::test]
   fn test_validate_early_errors() -> TestResult<()> {
-    let def = load_network_definition("./manifests/v0/native-component.yaml")?;
+    let def = load_network_definition("./manifests/v0/providers/native-component.yaml")?;
     let model = SchematicModel::try_from(def.schematics[0].clone())?;
 
     SchematicValidator::validate_early_errors(&model)?;

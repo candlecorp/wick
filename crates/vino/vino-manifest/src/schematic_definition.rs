@@ -6,6 +6,7 @@ use std::hash::Hash;
 use std::str::FromStr;
 
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use vino_transport::MessageTransport;
 
 use crate::default::{parse_default, process_default};
@@ -15,6 +16,7 @@ use crate::{Error, Result, SchematicManifest};
 #[derive(Debug, Clone, Default)]
 /// The SchematicDefinition struct is a normalized representation of a Vino [SchematicManifest].
 /// It handles the job of translating manifest versions into a consistent data structure.
+#[must_use]
 pub struct SchematicDefinition {
   /// The name of the schematic.
   pub name: String,
@@ -39,33 +41,36 @@ impl SchematicDefinition {
   pub fn get_component(&self, instance: &str) -> Option<ComponentDefinition> {
     self.instances.get(instance).cloned()
   }
+
+  /// Get a reference to the [ComponentDefinition] map.
+  #[must_use]
+  pub fn instances(&self) -> &HashMap<String, ComponentDefinition> {
+    &self.instances
+  }
 }
 
-impl TryFrom<crate::v0::SchematicManifest> for SchematicDefinition {
+impl TryFrom<&crate::v0::SchematicManifest> for SchematicDefinition {
   type Error = Error;
 
-  fn try_from(manifest: crate::v0::SchematicManifest) -> Result<Self> {
+  fn try_from(manifest: &crate::v0::SchematicManifest) -> Result<Self> {
+    let instances: Result<HashMap<String, ComponentDefinition>> = manifest
+      .instances
+      .iter()
+      .map(|(key, val)| Ok((key.clone(), val.try_into()?)))
+      .collect();
+    let connections: Result<Vec<ConnectionDefinition>> =
+      manifest.connections.iter().map(|def| def.try_into()).collect();
     Ok(Self {
       name: manifest.name.clone(),
-      instances: manifest
-        .instances
-        .into_iter()
-        .map(|(key, val)| Ok((key, val.try_into()?)))
-        .filter_map(Result::ok)
-        .collect(),
-      connections: manifest
-        .connections
-        .into_iter()
-        .map(|def| def.try_into())
-        .filter_map(Result::ok)
-        .collect(),
+      instances: instances?,
+      connections: connections?,
       providers: manifest.providers.clone(),
-      constraints: manifest.constraints.into_iter().collect(),
+      constraints: manifest.constraints.clone().into_iter().collect(),
     })
   }
 }
 
-impl TryFrom<SchematicManifest> for SchematicDefinition {
+impl TryFrom<SchematicManifest<'_>> for SchematicDefinition {
   type Error = Error;
 
   fn try_from(manifest: SchematicManifest) -> Result<Self> {
@@ -76,7 +81,7 @@ impl TryFrom<SchematicManifest> for SchematicDefinition {
   }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 /// A definition of a component used to reference a component registered under a provider.
 /// Note: [ComponentDefinition] include embed the concept of a namespace so two identical.
 /// components registered on different namespaces will not be equal.
@@ -85,18 +90,18 @@ pub struct ComponentDefinition {
   pub name: String,
   /// The namespace the component was registered under.
   pub namespace: String,
-  /// Reserved.
-  pub config: Option<String>,
+  /// Data associated with the component instance.
+  pub data: Option<Value>,
 }
 
 impl ComponentDefinition {
   /// Quick way to create a [ComponentDefinition] from code. Used mostly in testing.
   #[must_use]
-  pub fn new(namespace: &str, name: &str) -> Self {
+  pub fn new(namespace: &str, name: &str, data: Option<Value>) -> Self {
     Self {
       name: name.to_owned(),
       namespace: namespace.to_owned(),
-      config: None,
+      data,
     }
   }
 
@@ -120,7 +125,7 @@ impl TryFrom<crate::v0::ComponentDefinition> for ComponentDefinition {
     Ok(ComponentDefinition {
       namespace: ns.to_owned(),
       name: name.to_owned(),
-      config: None,
+      data: def.data,
     })
   }
 }
@@ -132,13 +137,14 @@ impl TryFrom<&crate::v0::ComponentDefinition> for ComponentDefinition {
     Ok(ComponentDefinition {
       namespace: ns.to_owned(),
       name: name.to_owned(),
-      config: None,
+      data: def.data.clone(),
     })
   }
 }
 
 #[derive(Debug, Clone)]
 /// A definition of a Vino Provider with its namespace, how to retrieve or access it and its configuration.
+#[must_use]
 pub struct ProviderDefinition {
   /// The namespace to reference the provider's components on.
   pub namespace: String,
@@ -147,16 +153,16 @@ pub struct ProviderDefinition {
   /// The reference/location of the provider.
   pub reference: String,
   /// Data or configuration to pass to the provider initialization.
-  pub data: serde_json::Value,
+  pub data: Value,
 }
 
-impl From<crate::v0::ProviderDefinition> for ProviderDefinition {
-  fn from(def: crate::v0::ProviderDefinition) -> Self {
+impl From<&crate::v0::ProviderDefinition> for ProviderDefinition {
+  fn from(def: &crate::v0::ProviderDefinition) -> Self {
     ProviderDefinition {
-      namespace: def.namespace,
+      namespace: def.namespace.clone(),
       kind: def.kind.into(),
-      reference: def.reference,
-      data: def.data,
+      reference: def.reference.clone(),
+      data: def.data.clone(),
     }
   }
 }
@@ -191,7 +197,7 @@ impl From<crate::v0::ProviderKind> for ProviderKind {
   }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 /// A [ConnectionDefinition] defines the link between an upstream and downstream port as well as.
 /// the default value to use in the case of an exception.
 #[must_use]
@@ -201,8 +207,23 @@ pub struct ConnectionDefinition {
   /// The downstream [ConnectionTargetDefinition] (port).
   pub to: ConnectionTargetDefinition,
   /// The default data to use in the case of an Error, represented as a JSON string.
-  pub default: Option<serde_json::Value>,
+  pub default: Option<Value>,
 }
+
+impl Hash for ConnectionDefinition {
+  fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+    self.from.hash(state);
+    self.to.hash(state);
+  }
+}
+
+impl PartialEq for ConnectionDefinition {
+  fn eq(&self, other: &Self) -> bool {
+    self.from == other.from && self.to == other.to
+  }
+}
+
+impl Eq for ConnectionDefinition {}
 
 impl ConnectionDefinition {
   /// Constructor for a [ConnectionDefinition]. This is mostly used in tests,.
@@ -222,7 +243,7 @@ impl ConnectionDefinition {
   }
 
   /// Render default JSON template with the passed message.
-  pub fn process_default(&self, err: &str) -> Result<Cow<serde_json::Value>> {
+  pub fn process_default(&self, err: &str) -> Result<Cow<Value>> {
     let json = self.default.as_ref().ok_or_else(|| Error::NoDefault(self.clone()))?;
     process_default(Cow::Borrowed(json), err)
       .map_err(|e| Error::DefaultsError(self.from.clone(), self.to.clone(), e.to_string()))
@@ -231,23 +252,17 @@ impl ConnectionDefinition {
   /// Generate a [ConnectionDefinition] from short form syntax. See [docs.vino.dev](https://docs.vino.dev/docs/configuration/short-form-syntax/) for more info.
   pub fn from_v0_str(s: &str) -> Result<Self> {
     let parsed = crate::parse::parse_connection_v0(s)?;
-    parsed.try_into()
+    (&parsed).try_into()
   }
 }
 
 /// Configuration specific to a [ConnectionTargetDefinition].
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SenderData {
-  inner: serde_json::Value,
+  inner: Value,
 }
 
-impl SenderData {
-  /// Serialize a passed value into [SenderData].
-  pub fn from_value<T: Serialize>(value: &T) -> Result<SenderData> {
-    let value: serde_json::Value = serde_json::to_value(value).map_err(|e| Error::InvalidSenderData(e.to_string()))?;
-    Ok(SenderData { inner: value })
-  }
-}
+impl SenderData {}
 
 impl From<SenderData> for MessageTransport {
   fn from(v: SenderData) -> Self {
@@ -259,7 +274,7 @@ impl FromStr for SenderData {
   type Err = Error;
 
   fn from_str(s: &str) -> Result<Self> {
-    let value: serde_json::Value = serde_json::from_str(s).map_err(|e| Error::InvalidSenderData(e.to_string()))?;
+    let value: Value = serde_json::from_str(s).map_err(|e| Error::InvalidSenderData(e.to_string()))?;
     Ok(SenderData { inner: value })
   }
 }
@@ -391,12 +406,12 @@ impl ConnectionTargetDefinition {
   }
 }
 
-impl TryFrom<crate::v0::ConnectionDefinition> for ConnectionDefinition {
+impl TryFrom<&crate::v0::ConnectionDefinition> for ConnectionDefinition {
   type Error = Error;
 
-  fn try_from(def: crate::v0::ConnectionDefinition) -> Result<Self> {
-    let from: ConnectionTargetDefinition = def.from.try_into()?;
-    let to: ConnectionTargetDefinition = def.to.try_into()?;
+  fn try_from(def: &crate::v0::ConnectionDefinition) -> Result<Self> {
+    let from: ConnectionTargetDefinition = def.from.clone().try_into()?;
+    let to: ConnectionTargetDefinition = def.to.clone().try_into()?;
     let default = match &def.default {
       Some(json_str) => {
         Some(parse_default(json_str).map_err(|e| Error::DefaultsError(from.clone(), to.clone(), e.to_string()))?)
@@ -467,11 +482,11 @@ impl Display for PortReference {
   }
 }
 
-impl From<crate::v0::ConnectionTargetDefinition> for PortReference {
-  fn from(def: crate::v0::ConnectionTargetDefinition) -> Self {
+impl From<&crate::v0::ConnectionTargetDefinition> for PortReference {
+  fn from(def: &crate::v0::ConnectionTargetDefinition) -> Self {
     PortReference {
-      instance: def.instance,
-      port: def.port,
+      instance: def.instance.clone(),
+      port: def.port.clone(),
     }
   }
 }
@@ -480,12 +495,12 @@ impl TryFrom<crate::v0::ConnectionTargetDefinition> for ConnectionTargetDefiniti
   type Error = Error;
 
   fn try_from(def: crate::v0::ConnectionTargetDefinition) -> Result<Self> {
-    let data = match &def.data {
-      Some(json) => Some(SenderData::from_str(json)?),
-      None => None,
-    };
+    let data = def.data.map(|json| SenderData { inner: json });
     Ok(ConnectionTargetDefinition {
-      target: def.into(),
+      target: PortReference {
+        instance: def.instance,
+        port: def.port,
+      },
       data,
     })
   }

@@ -209,8 +209,8 @@ mod tests {
 
     let packets = network_invoke_async(nuid, invocation).await?;
     debug!("{:?}", packets);
-    assert_eq!(packets.len(), 2);
-    let rv: String = packets[0].payload.clone().try_into()?;
+    assert_eq!(packets.len(), 1);
+    let rv: String = packets[0].payload.clone().deserialize()?;
     assert_eq!(rv, "hello");
 
     Ok(())
@@ -239,8 +239,8 @@ mod tests {
     let _ = tx2.send(true);
 
     debug!("{:?}", packets);
-    assert_eq!(packets.len(), 2);
-    let rv: String = packets[0].payload.clone().try_into()?;
+    assert_eq!(packets.len(), 1);
+    let rv: String = packets[0].payload.clone().deserialize()?;
     assert_eq!(rv, "hello");
 
     Ok(())

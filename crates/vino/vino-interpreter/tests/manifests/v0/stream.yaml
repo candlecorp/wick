@@ -1,0 +1,15 @@
+version: 0
+network:
+  schematics:
+    - name: test
+      instances:
+        SENDER:
+          id: core::sender
+          data:
+            output: 5
+        COPY:
+          id: test::copy
+      connections:
+        - <> => COPY[input]
+        - SENDER[output] => COPY[times]
+        - COPY[output] => <>

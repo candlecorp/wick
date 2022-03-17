@@ -1,12 +1,16 @@
 use crate::{Component, ComponentKind, PortDirection, Schematic};
 
-pub(crate) fn render(schematic: &Schematic) -> String {
+pub(crate) fn render<DATA>(schematic: &Schematic<DATA>) -> String
+where
+  DATA: Clone,
+{
   let mut lines = vec![format!("digraph \"{}\" {{", schematic.name())];
   for component in schematic.components() {
     lines.push(format!("subgraph \"cluster_{}\" {{", component.name()));
     lines.push(format!("label=\"{}\"", component.name()));
     let shape = match component.kind() {
       ComponentKind::Input => "house",
+      ComponentKind::Inherent(_) => "diamond",
       ComponentKind::Output => "invhouse",
       ComponentKind::External(_) => "rectangle",
     };
@@ -22,7 +26,10 @@ pub(crate) fn render(schematic: &Schematic) -> String {
   lines.join("\n")
 }
 
-fn render_connections(schematic: &Schematic) -> Vec<String> {
+fn render_connections<DATA>(schematic: &Schematic<DATA>) -> Vec<String>
+where
+  DATA: Clone,
+{
   let mut lines = vec![];
   for conn in schematic.connections() {
     let from_component = &schematic.components()[conn.from().component_index()];
@@ -40,7 +47,10 @@ fn render_connections(schematic: &Schematic) -> Vec<String> {
   lines
 }
 
-fn render_ports(component: &Component, dir: PortDirection) -> Vec<String> {
+fn render_ports<DATA>(component: &Component<DATA>, dir: PortDirection) -> Vec<String>
+where
+  DATA: Clone,
+{
   let (label, shape, ports) = match dir {
     PortDirection::In => ("IN", "triangle", component.inputs()),
     PortDirection::Out => ("OUT", "invtriangle", component.outputs()),

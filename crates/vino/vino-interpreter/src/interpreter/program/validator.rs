@@ -11,21 +11,22 @@ type Result = std::result::Result<(), Vec<ValidationError>>;
 pub(crate) struct Validator {}
 
 impl Validator {
+  #[instrument(skip(self, program), name = "validate:external")]
   fn validate_external_components(&self, program: &Program) -> Result {
     let mut errors = Vec::new();
-    let state = program.state();
+    let state = &program.state();
 
-    let components = &state.components;
+    let providers = &state.providers;
     for schematic in state.network.schematics() {
       for component in schematic.components() {
         if let ComponentKind::External(reference) = component.kind() {
-          let provider = components.get(reference.namespace());
+          let provider = providers.get(reference.namespace());
           if provider.is_none() {
             errors.push(ValidationError::MissingProvider(reference.namespace().to_owned()));
             continue;
           }
           let provider = provider.unwrap();
-          let component_def = provider.get(reference.name());
+          let component_def = provider.components.get(reference.name());
           if component_def.is_none() {
             errors.push(ValidationError::MissingComponent {
               name: reference.name().to_owned(),

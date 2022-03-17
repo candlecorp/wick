@@ -142,10 +142,10 @@ pub enum HostManifest {
 }
 
 impl HostManifest {
-  /// Extract the [NetworkManifest] from the [HostManifest].
-  pub fn network(self) -> NetworkManifest {
+  /// Return the contained [NetworkManifest].
+  pub fn network(&self) -> NetworkManifest {
     match self {
-      HostManifest::V0(manifest) => manifest.network.into(),
+      HostManifest::V0(manifest) => NetworkManifest::V0(&manifest.network),
     }
   }
 
@@ -169,23 +169,35 @@ impl HostManifest {
 /// Enum for the possible versions of a Network Manifest.
 #[derive(Debug, Clone)]
 #[must_use]
-pub enum NetworkManifest {
+pub enum NetworkManifest<'manifest> {
   /// Version 0 Network Manifest.
-  V0(v0::NetworkManifest),
+  V0(&'manifest v0::NetworkManifest),
 }
 
-impl From<v0::NetworkManifest> for NetworkManifest {
-  fn from(v: v0::NetworkManifest) -> Self {
+impl<'manifest> From<&'manifest v0::NetworkManifest> for NetworkManifest<'manifest> {
+  fn from(v: &'manifest v0::NetworkManifest) -> Self {
     NetworkManifest::V0(v)
   }
 }
 
-impl NetworkManifest {
+impl<'manifest> NetworkManifest<'manifest> {
   #[must_use]
   /// Get a list of [SchematicManifest]s from the [NetworkManifest]
   pub fn schematics(&self) -> Vec<SchematicManifest> {
     match self {
-      NetworkManifest::V0(network) => network.schematics.iter().cloned().map(|s| s.into()).collect(),
+      NetworkManifest::V0(network) => network.schematics.iter().map(SchematicManifest::V0).collect(),
+    }
+  }
+
+  /// Get a schematic by name
+  #[must_use]
+  pub fn schematic(&self, name: &str) -> Option<SchematicManifest> {
+    match self {
+      NetworkManifest::V0(network) => network
+        .schematics
+        .iter()
+        .find(|s| s.name == name)
+        .map(SchematicManifest::V0),
     }
   }
 }
@@ -193,13 +205,23 @@ impl NetworkManifest {
 /// Enum for the possible versions of a Schematic Manifest.
 #[derive(Debug, Clone)]
 #[must_use]
-pub enum SchematicManifest {
+pub enum SchematicManifest<'manifest> {
   /// Version 0 Schematic Manifest.
-  V0(v0::SchematicManifest),
+  V0(&'manifest v0::SchematicManifest),
 }
 
-impl From<v0::SchematicManifest> for SchematicManifest {
-  fn from(v: v0::SchematicManifest) -> Self {
+impl<'manifest> SchematicManifest<'manifest> {
+  /// Get the schematic name
+  #[must_use]
+  pub fn name(&self) -> &str {
+    match self {
+      SchematicManifest::V0(m) => &m.name,
+    }
+  }
+}
+
+impl<'manifest> From<&'manifest v0::SchematicManifest> for SchematicManifest<'manifest> {
+  fn from(v: &'manifest v0::SchematicManifest) -> Self {
     SchematicManifest::V0(v)
   }
 }

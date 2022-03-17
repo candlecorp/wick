@@ -8,6 +8,7 @@ use tokio::time::timeout;
 
 use super::Transaction;
 use crate::dev::prelude::*;
+use crate::transaction::connections::ConnectionEvent;
 use crate::transaction::ComponentPayload;
 
 #[derive(Clone, Debug)]
@@ -32,7 +33,7 @@ impl TransactionExecutor {
     &mut self,
     tx_id: T,
   ) -> (UnboundedReceiver<TransactionUpdate>, UnboundedSender<TransactionUpdate>) {
-    let mut transaction = Transaction::new(&tx_id, &self.model);
+    let mut transaction = Transaction::new(&tx_id, self.model.clone());
 
     let (inbound_tx, inbound_rx) = unbounded_channel::<TransactionUpdate>();
     let (outbound_tx, mut outbound_rx) = unbounded_channel::<TransactionUpdate>();
@@ -40,6 +41,10 @@ impl TransactionExecutor {
     let expire = self.timeout;
 
     let tx_id = tx_id.as_ref().to_owned();
+
+    // for sender in &transaction.senders {
+    //   transaction.ports.transition_state(&sender.from, &PortStatus::Generator);
+    // }
 
     tokio::spawn(async move {
       let mut self_msgs = VecDeque::new();
@@ -51,6 +56,13 @@ impl TransactionExecutor {
       'root: loop {
         let iter_prefix = format!("{}[{}]", log_prefix, iter);
         iter += 1;
+
+        let mut sender_messages = transaction.check_senders();
+        if !sender_messages.is_empty() {
+          trace!("{}:{} generated messages", iter_prefix, sender_messages.len());
+        }
+
+        self_msgs.append(&mut sender_messages);
 
         trace!(
           "{}:NEXTWAIT:(queue:{},timeout:{:?})",
@@ -102,11 +114,11 @@ impl TransactionExecutor {
             );
           }
           TransactionUpdate::Transition(target) => {
-            trace!("{}:TRANSITION:TO[{}]", iter_prefix, target.get_instance());
-            let map = transaction.ports.take_inputs(&target)?;
+            trace!("{}:TRANSITION:TO[{}]", iter_prefix, target.to.get_instance());
+            let map = transaction.connections.take_inputs(&target)?;
             self_msgs.push_back(TransactionUpdate::Execute(ComponentPayload {
               tx_id: tx_id.clone(),
-              instance: target.get_instance_owned(),
+              instance: target.to.get_instance_owned(),
               payload_map: map,
             }));
           }
@@ -133,12 +145,14 @@ impl TransactionExecutor {
           TransactionUpdate::Update(input) => {
             trace!("{}:UPDATE:{}", iter_prefix, input.connection);
             trace!("{}:MSG[{}]", iter_prefix, input.payload);
-            transaction.ports.receive(&input.connection, input.payload);
+            transaction
+              .connections
+              .dispatch(ConnectionEvent::Data(&input.connection, input.payload));
             let target = &input.connection.to;
             let port = target.get_port();
 
             if target.matches_instance(SCHEMATIC_OUTPUT) {
-              if let Some(payload) = transaction.ports.take_from_port(target) {
+              if let Some(payload) = transaction.connections.take(&input.connection) {
                 self_msgs.push_back(TransactionUpdate::Result(SchematicOutput {
                   tx_id: tx_id.clone(),
                   payload: TransportWrapper {
@@ -146,10 +160,12 @@ impl TransactionExecutor {
                     payload,
                   },
                 }));
+              } else {
+                self_msgs.push_back(TransactionUpdate::Done(tx_id.clone()));
               }
-            } else if transaction.ports.is_target_ready(target) {
+            } else if transaction.connections.is_target_ready(&input.connection) {
               trace!("{}:TARGET_READY:[{}]", iter_prefix, target.get_instance());
-              self_msgs.push_back(TransactionUpdate::Transition(target.clone()));
+              self_msgs.push_back(TransactionUpdate::Transition(input.connection.clone()));
             }
           }
         };

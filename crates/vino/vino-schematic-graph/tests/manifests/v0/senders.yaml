@@ -1,0 +1,12 @@
+version: 0
+network:
+  schematics:
+    - name: test
+      instances:
+        SENDER:
+          id: core::sender
+          data:
+            output: "123456789"
+            type: string
+      connections:
+        - SENDER[output] => <>

@@ -6,26 +6,32 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-
 thiserror = "1.0"
 tracing = "0.1"
 tracing-futures = "0.2"
 vino-schematic-graph = { path = "../vino-schematic-graph" }
+vino-manifest = { path = "../vino-manifest" }
+vino-provider = { path = "../../../sdk/crates/vino-provider", features = [
+  "native",
+] }
 vino-types = { path = "../../../sdk/crates/vino-types" }
+vino-entity = { path = "../../../sdk/crates/vino-entity" }
 vino-packet = { path = "../../../sdk/crates/vino-packet" }
 vino-transport = { path = "../../../sdk/crates/vino-transport" }
 performance-mark = { path = "../../misc/performance-mark" }
-rxrust = "0.15.0"
-tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
+vino-codec = { path = "../../../sdk/crates/vino-codec" }
+tokio = { version = "1", features = ["rt-multi-thread", "sync", "macros"] }
 tokio-stream = "0.1"
 futures = "0.3"
 uuid = { version = "0.8", features = ["v4"] }
 parking_lot = "0.12"
-crossbeam = "0.8"
 once_cell = "1.10"
+serde_json = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+rand = "0.8"
+async-recursion = "1.0"
 
 [dev-dependencies]
-vino-manifest = { path = "../vino-manifest" }
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 logger = { path = "../logger" }
 test-logger = { path = "../../misc/test-logger" }

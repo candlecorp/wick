@@ -5,21 +5,24 @@ use crate::{ComponentIndex, PortReference};
 
 #[derive(Debug, Clone)]
 #[must_use]
-pub struct Port<'graph> {
-  schematic: &'graph Schematic,
+pub struct Port<'graph, DATA> {
+  schematic: &'graph Schematic<DATA>,
   pub(super) port: PortReference,
 }
 
-impl<'graph> Port<'graph> {
-  pub(crate) fn new(schematic: &'graph Schematic, port: PortReference) -> Self {
+impl<'graph, DATA> Port<'graph, DATA>
+where
+  DATA: Clone,
+{
+  pub fn new(schematic: &'graph Schematic<DATA>, port: PortReference) -> Self {
     Self { schematic, port }
   }
 
-  pub fn component(&self) -> ComponentHop {
+  pub fn component(&self) -> ComponentHop<DATA> {
     ComponentHop::new(self.schematic, self.port.component_index)
   }
 
-  pub fn connections(&self) -> Connections {
+  pub fn connections(&self) -> Connections<DATA> {
     get_port_connections(self.schematic, &self.port)
   }
 
@@ -37,13 +40,16 @@ impl<'graph> Port<'graph> {
   }
 }
 
-impl<'graph> AsRef<PortReference> for Port<'graph> {
+impl<'graph, DATA> AsRef<PortReference> for Port<'graph, DATA> {
   fn as_ref(&self) -> &PortReference {
     &self.port
   }
 }
 
-impl<'graph> std::fmt::Display for Port<'graph> {
+impl<'graph, DATA> std::fmt::Display for Port<'graph, DATA>
+where
+  DATA: Clone,
+{
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     write!(f, "{}", display(self.schematic, &self.port))
   }
@@ -51,16 +57,20 @@ impl<'graph> std::fmt::Display for Port<'graph> {
 
 #[derive(Debug, Clone)]
 #[must_use]
-pub struct Ports<'graph> {
+pub struct Ports<'graph, DATA> {
   pub(super) direction: Option<PortDirection>,
   pub(super) ports: Vec<PortReference>,
   pub(super) cur_index: usize,
   pub(super) component_index: ComponentIndex,
-  schematic: &'graph Schematic,
+  schematic: &'graph Schematic<DATA>,
 }
 
-impl<'graph> Ports<'graph> {
-  pub(crate) fn new(schematic: &'graph Schematic, component_index: ComponentIndex, ports: Vec<PortReference>) -> Self {
+impl<'graph, DATA> Ports<'graph, DATA> {
+  pub(crate) fn new(
+    schematic: &'graph Schematic<DATA>,
+    component_index: ComponentIndex,
+    ports: Vec<PortReference>,
+  ) -> Self {
     Self {
       direction: ports.get(0).map(|p| *p.direction()),
       ports,
@@ -81,10 +91,13 @@ impl<'graph> Ports<'graph> {
   }
 }
 
-impl<'graph> Iterator for Ports<'graph> {
-  type Item = Port<'graph>;
+impl<'graph, DATA> Iterator for Ports<'graph, DATA>
+where
+  DATA: Clone,
+{
+  type Item = Port<'graph, DATA>;
 
-  fn next(&mut self) -> Option<Port<'graph>> {
+  fn next(&mut self) -> Option<Port<'graph, DATA>> {
     let result = self
       .ports
       .get(self.cur_index)
@@ -94,7 +107,10 @@ impl<'graph> Iterator for Ports<'graph> {
   }
 }
 
-fn display(schematic: &Schematic, port: &PortReference) -> String {
+fn display<DATA>(schematic: &Schematic<DATA>, port: &PortReference) -> String
+where
+  DATA: Clone,
+{
   let component = &schematic.components[port.component_index];
   let (port, dir) = match port.direction {
     PortDirection::In => (&component.inputs()[port.port_index], "IN"),
@@ -103,7 +119,10 @@ fn display(schematic: &Schematic, port: &PortReference) -> String {
   format!("{}.{}.{}", component, dir, port)
 }
 
-impl<'graph> std::fmt::Display for Ports<'graph> {
+impl<'graph, DATA> std::fmt::Display for Ports<'graph, DATA>
+where
+  DATA: Clone,
+{
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     for (index, port) in self.ports.iter().enumerate() {
       let comma = if index < (self.ports.len() - 1) { ", " } else { "" };

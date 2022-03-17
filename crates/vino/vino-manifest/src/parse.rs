@@ -21,7 +21,7 @@ pub const COMPONENT_ERROR: &str = "<error>";
 /// The reserved namespace for references to internal schematics.
 pub const SELF_NAMESPACE: &str = "self";
 /// The reserved name for components that send static data.
-pub static SENDER_ID: &str = "<sender>";
+pub static SENDER_ID: &str = "core::sender";
 /// The reserved name for data that Vino injects itself.
 pub static CORE_ID: &str = "<core>";
 /// The name of SENDER's output port.
@@ -80,7 +80,7 @@ fn parse_from_or_sender(from: &str, default_port: Option<&str>) -> Result<v0::Co
       Ok(_) => Ok(v0::ConnectionTargetDefinition {
         instance: SENDER_ID.to_owned(),
         port: SENDER_PORT.to_owned(),
-        data: Some(from.trim().to_owned()),
+        data: Some(serde_json::from_str(from.trim()).map_err(|e| Error::InvalidSenderData(e.to_string()))?),
       }),
       Err(_e) => Err(Error::ConnectionTargetSyntax(from.to_owned())),
     },
@@ -118,8 +118,11 @@ pub(crate) fn parse_connection_v0(s: &str) -> Result<v0::ConnectionDefinition> {
 
 #[cfg(test)]
 mod tests {
+  use std::str::FromStr;
+
   use anyhow::Result;
   use pretty_assertions::assert_eq;
+  use serde_json::Value;
 
   use super::*;
   #[test_logger::test]
@@ -175,13 +178,14 @@ mod tests {
   #[test_logger::test]
   fn test_bare_num_default() -> Result<()> {
     let parsed = parse_connection_v0("5 => ref2[out]")?;
+    let num = 5;
     assert_eq!(
       parsed,
       v0::ConnectionDefinition {
         from: v0::ConnectionTargetDefinition {
           instance: SENDER_ID.to_owned(),
           port: SENDER_PORT.to_owned(),
-          data: Some("5".to_owned()),
+          data: Some(num.into()),
         },
         to: v0::ConnectionTargetDefinition {
           instance: "ref2".to_owned(),
@@ -291,7 +295,7 @@ mod tests {
         from: v0::ConnectionTargetDefinition {
           instance: SENDER_ID.to_owned(),
           port: SENDER_PORT.to_owned(),
-          data: Some(r#""default""#.to_owned()),
+          data: Some(Value::from_str(r#""default""#)?),
         },
         to: v0::ConnectionTargetDefinition {
           instance: "ref1".to_owned(),
@@ -313,7 +317,7 @@ mod tests {
         from: v0::ConnectionTargetDefinition {
           instance: SENDER_ID.to_owned(),
           port: SENDER_PORT.to_owned(),
-          data: Some(r#""1234512345""#.to_owned()),
+          data: Some(Value::from_str(r#""1234512345""#)?),
         },
         to: v0::ConnectionTargetDefinition {
           instance: SCHEMATIC_OUTPUT.to_owned(),

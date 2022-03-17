@@ -2,6 +2,7 @@ use std::collections::HashSet;
 use std::path::Path;
 
 use anyhow::Result;
+use serde_json::Value;
 // use pretty_assertions::assert_eq;
 use vino_manifest::Loadable;
 use vino_schematic_graph::iterators::SchematicHop;
@@ -24,7 +25,7 @@ fn make_hash(list: &[&str]) -> HashSet<String> {
 }
 
 impl Counter {
-  fn walk(schematic: &Schematic) -> Self {
+  fn walk_down(schematic: &Schematic<Value>) -> Self {
     let mut counter = Counter::default();
     let walker = schematic.walker();
     for hop in walker {
@@ -33,16 +34,17 @@ impl Counter {
     }
     counter
   }
-  fn count(&mut self, hop: &SchematicHop) {
+  fn walk_up(schematic: &Schematic<Value>) -> Self {
+    let mut counter = Counter::default();
+    let walker = schematic.walk_from_output();
+    for hop in walker {
+      println!("{}", hop);
+      counter.count(&hop);
+    }
+    counter
+  }
+  fn count(&mut self, hop: &SchematicHop<Value>) {
     match hop {
-      SchematicHop::SchematicInput(v) => {
-        // self.component_visits += 1;
-        self.components.insert(v.name().to_owned());
-      }
-      SchematicHop::SchematicOutput(v) => {
-        // self.component_visits += 1;
-        self.components.insert(v.name().to_owned());
-      }
       SchematicHop::Component(v) => {
         self.component_visits += 1;
         self.components.insert(v.name().to_owned());
@@ -71,34 +73,37 @@ fn load<T: AsRef<Path>>(path: T) -> Result<vino_manifest::HostManifest> {
   Ok(vino_manifest::HostManifest::load_from_file(path.as_ref())?)
 }
 
-fn from_manifest(network_manifest: &vino_manifest::NetworkDefinition) -> Result<Network> {
-  let mut network = Network::new(network_manifest.name.clone().unwrap_or_default());
+fn from_manifest(network_def: &vino_manifest::NetworkDefinition) -> Result<Network<Value>> {
+  let mut network = Network::new(network_def.name.clone().unwrap_or_default());
 
-  for m in &network_manifest.schematics {
-    let mut schematic = Schematic::new(m.name.clone());
+  for schem_def in &network_def.schematics {
+    let mut schematic = Schematic::new(schem_def.name.clone());
 
-    for (name, def) in m.instances.iter() {
-      schematic.add_or_get_instance(name, ExternalReference::new(&def.namespace, &def.name));
+    for (name, def) in schem_def.instances.iter() {
+      schematic.add_external(
+        name,
+        ExternalReference::new(&def.namespace, &def.name),
+        def.data.clone(),
+      );
     }
 
-    for connection in &m.connections {
+    for connection in &schem_def.connections {
       println!("{}", connection);
       let from = &connection.from;
       let to = &connection.to;
-      let from_port = if let Some(component) = schematic.find_mut(from.get_instance()) {
-        println!("{:?}", component);
-        component.add_output(from.get_port())
-      } else {
-        panic!();
-      };
       let to_port = if let Some(component) = schematic.find_mut(to.get_instance()) {
         println!("{:?}", component);
         component.add_input(to.get_port())
       } else {
         panic!();
       };
-
-      schematic.connect(from_port, to_port)?;
+      if let Some(component) = schematic.find_mut(from.get_instance()) {
+        println!("{:?}", component);
+        let from_port = component.add_output(from.get_port());
+        schematic.connect(from_port, to_port, connection.default.clone())?;
+      } else {
+        // panic!();
+      }
     }
     network.add_schematic(schematic);
   }
@@ -112,7 +117,6 @@ async fn test_walking() -> Result<()> {
   let schematic = network.schematic("echo").unwrap();
 
   assert_eq!(schematic.name(), "echo");
-  assert_eq!(schematic.components().len(), 2);
   let input_node = schematic.input();
 
   let schematic_output = schematic.output();
@@ -138,18 +142,19 @@ async fn test_iterator() -> Result<()> {
   let manifest = load("./tests/manifests/v0/single-instance.yaml")?;
   let network = from_manifest(&manifest.network().try_into()?)?;
   let schematic = network.schematic("single-instance").unwrap();
+  println!("components:{:#?}", schematic.components());
 
   assert_eq!(schematic.components().len(), 3);
 
-  let counter = Counter::walk(schematic);
+  let counter = Counter::walk_down(schematic);
 
   let expected = Counter {
-    component_visits: 1,
-    input_visits: 3,
+    component_visits: 3,
+    input_visits: 2,
     output_visits: 3,
     num_connections: 2,
-    port_visits: 6,
-    inputs: make_hash(&["<input>.IN.input", "REF_ID_LOGGER.IN.input", "<output>.IN.output"]),
+    port_visits: 5,
+    inputs: make_hash(&["REF_ID_LOGGER.IN.input", "<output>.IN.output"]),
     outputs: make_hash(&["<input>.OUT.input", "REF_ID_LOGGER.OUT.output", "<output>.OUT.output"]),
     components: make_hash(&["<input>", "REF_ID_LOGGER", "<output>"]),
   };
@@ -165,20 +170,15 @@ async fn test_spread_io() -> Result<()> {
   let network = from_manifest(&manifest.network().try_into()?)?;
   let schematic = network.schematic("spread-io").unwrap();
 
-  let counter = Counter::walk(schematic);
+  let counter = Counter::walk_down(schematic);
 
   let expected = Counter {
-    component_visits: 2,
-    input_visits: 5,
+    component_visits: 5,
+    input_visits: 4,
     output_visits: 5,
     num_connections: 4,
-    port_visits: 10,
-    inputs: make_hash(&[
-      "<input>.IN.input",
-      "COMP1.IN.input",
-      "COMP2.IN.input",
-      "<output>.IN.output",
-    ]),
+    port_visits: 9,
+    inputs: make_hash(&["COMP1.IN.input", "COMP2.IN.input", "<output>.IN.output"]),
     outputs: make_hash(&[
       "<input>.OUT.input",
       "COMP1.OUT.output",
@@ -186,6 +186,30 @@ async fn test_spread_io() -> Result<()> {
       "<output>.OUT.output",
     ]),
     components: make_hash(&["<input>", "COMP1", "COMP2", "<output>"]),
+  };
+
+  assert_eq!(counter, expected);
+
+  Ok(())
+}
+
+#[test_logger::test(tokio::test)]
+async fn test_senders() -> Result<()> {
+  let manifest = load("./tests/manifests/v0/senders.yaml")?;
+  let network = from_manifest(&manifest.network().try_into()?)?;
+  let schematic = network.schematic("test").unwrap();
+
+  let counter = Counter::walk_up(schematic);
+
+  let expected = Counter {
+    component_visits: 2,
+    input_visits: 1,
+    output_visits: 1,
+    num_connections: 1,
+    port_visits: 2,
+    inputs: make_hash(&["<output>.IN.output"]),
+    outputs: make_hash(&["SENDER.OUT.output"]),
+    components: make_hash(&["SENDER", "<output>"]),
   };
 
   assert_eq!(counter, expected);

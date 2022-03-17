@@ -8,7 +8,7 @@ pub(crate) fn {{upperCase (snakeCase ../name.value)}}_{{upperCase name.value}}()
   {{/if}}
 {{/each}}
 
-#[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
 {{#if description}}
 /// {{{description.value}}}

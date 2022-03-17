@@ -25,6 +25,7 @@ use serde::{Deserialize, Serialize};
 use serde_with_expand_env::with_expand_envs;
 use std::{collections::HashMap, str::FromStr};
 use num_traits::FromPrimitive;
+use serde_json::Value;
 
 {{#each definitions}}
   {{#switch kind}}
@@ -44,7 +45,7 @@ impl FromStr for ComponentDefinition {
   fn from_str(s: &str) -> Result<Self, Self::Err> {
     Ok(Self {
       id: s.to_owned(),
-      config: None,
+      data: None,
     })
   }
 }

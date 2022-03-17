@@ -24,7 +24,7 @@ type ComponentDefinition {
   id: string @required,
 
   "Data to associate with the reference."
-  config: {string:string}?,
+  data: struct?,
 }
 
 "A connection between components. This can be specified in short-form syntax (where applicable). See <a href='https://docs.vino.dev/docs/configuration/short-form-syntax/'>docs.vino.dev</a> for more information."
@@ -45,6 +45,6 @@ type ConnectionTargetDefinition {
   instance: string @required,
   "The component's port."
   port: string @required,
-  "Data to send automatically. Parsed as JSON. (only used for <sender> instances)."
-  data: string?,
+  "Data to associate with a connection."
+  data: struct?,
 }

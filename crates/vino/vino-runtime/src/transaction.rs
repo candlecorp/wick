@@ -1,13 +1,16 @@
+use std::collections::VecDeque;
 use std::time::Duration;
 
+use vino_provider::ProviderLink;
 use vino_transport::TransportMap;
 
+use self::connections::ActiveConnections;
 use self::executor::SchematicOutput;
-use self::ports::PortStatuses;
 use crate::dev::prelude::*;
 use crate::schematic_service::input_message::InputMessage;
 type Result<T> = std::result::Result<T, TransactionError>;
 
+pub(crate) mod connections;
 pub(crate) mod executor;
 pub(crate) mod ports;
 
@@ -24,7 +27,7 @@ pub enum TransactionUpdate {
   Drained,
   Error(String),
   Timeout(Duration),
-  Transition(ConnectionTargetDefinition),
+  Transition(ConnectionDefinition),
   Execute(ComponentPayload),
   Result(SchematicOutput),
   Done(String),
@@ -51,24 +54,28 @@ impl std::fmt::Display for TransactionUpdate {
 #[derive(Debug)]
 struct Transaction {
   tx_id: String,
-  ports: PortStatuses,
-  output_ports: Vec<ConnectionTargetDefinition>,
+  model: SharedModel,
+  connections: ActiveConnections,
   schematic_name: String,
+  senders: Vec<ConnectionDefinition>,
+  generators: Vec<ConnectionDefinition>,
 }
 
 impl Transaction {
-  fn new<T: AsRef<str>>(tx_id: T, model: &SharedModel) -> Self {
-    let ports = PortStatuses::new(&tx_id, model);
+  fn new<T: AsRef<str>>(tx_id: T, model: SharedModel) -> Self {
+    let connections = ActiveConnections::new(&tx_id, &model);
     let readable = model.read();
-
+    let senders: Vec<_> = readable.get_senders().cloned().collect();
+    let generators: Vec<_> = readable.get_generators().cloned().collect();
     let schematic_name = readable.get_name();
-    let output_ports = readable.get_schematic_outputs().cloned().collect();
     drop(readable);
     Self {
       tx_id: tx_id.as_ref().to_owned(),
-      ports,
-      output_ports,
+      model,
+      connections,
       schematic_name,
+      senders,
+      generators,
     }
   }
 
@@ -77,12 +84,59 @@ impl Transaction {
   }
 
   fn is_done(&self) -> bool {
-    for port in &self.output_ports {
-      if !self.ports.is_closed(port) {
-        return false;
+    self.connections.is_done()
+  }
+
+  fn check_senders(&self) -> VecDeque<TransactionUpdate> {
+    let mut messages = VecDeque::new();
+
+    'sender: for sender in &self.senders {
+      if self.connections.is_waiting(sender) {
+        if sender.from.is_nslink() {
+          let def = self.model.read().get_component_definition(sender.to.get_instance());
+          if def.is_none() {
+            warn!(
+              "Invalid connection: {}. Downstream doesn't exist in schematic model.",
+              sender
+            );
+            continue 'sender;
+          }
+          let def = def.unwrap();
+          let linked_entity = Entity::Provider(sender.from.get_port_owned());
+          let origin_entity = Entity::Component(def.namespace, def.name);
+          messages.push_back(TransactionUpdate::Update(InputMessage {
+            connection: sender.clone(),
+            payload: MessageTransport::success(&ProviderLink::new(linked_entity, origin_entity)),
+            tx_id: self.tx_id.clone(),
+          }));
+        } else {
+          match sender.from.get_data() {
+            Some(data) => {
+              messages.push_back(TransactionUpdate::Update(InputMessage {
+                connection: sender.clone(),
+                payload: data.clone().into(),
+                tx_id: self.tx_id.clone(),
+              }));
+            }
+            None => {
+              debug!("{}{:?}", self.log_prefix(), sender);
+              error!("Schematic '{}' has a sender defined for connection '{}' but has no data to send. This is likely a bug in the schematic.", self.schematic_name, sender);
+            }
+          }
+        }
       }
     }
-    true
+
+    for generator in &self.generators {
+      if self.connections.is_waiting(generator) {
+        messages.push_back(TransactionUpdate::Execute(ComponentPayload {
+          tx_id: self.tx_id.clone(),
+          instance: generator.from.get_instance_owned(),
+          payload_map: TransportMap::new(),
+        }));
+      }
+    }
+    messages
   }
 }
 
@@ -99,6 +153,7 @@ mod tests {
   use crate::schematic_service::input_message::InputMessage;
   #[allow(unused_imports)]
   use crate::test::prelude::{assert_eq, *};
+  use crate::transaction::connections::ConnectionEvent;
   use crate::transaction::executor::TransactionExecutor;
 
   static REF_ID: &str = "REF_ID_LOGGER";
@@ -124,23 +179,27 @@ mod tests {
     let tx_id = "some tx";
     let model = make_model()?;
 
-    let mut transaction = Transaction::new(tx_id, &model);
-    let from = ConnectionTargetDefinition::new(SCHEMATIC_INPUT, "input");
-    let to = ConnectionTargetDefinition::new(REF_ID, "input");
+    let transaction = Transaction::new(tx_id, model);
+    let connection = conn(SCHEMATIC_INPUT, "input", REF_ID, "input");
 
-    println!("pushing to port");
-    let connection = ConnectionDefinition::new(from, to.clone());
-    transaction
-      .ports
-      .receive(&connection, Packet::V0(Payload::MessagePack(vec![])).into());
-    assert!(transaction.ports.is_port_ready(&to));
-    println!("taking from port");
-    let output = transaction.ports.take_from_port(&to);
+    transaction.connections.dispatch(ConnectionEvent::Data(
+      &connection,
+      Packet::V0(Payload::MessagePack(vec![])).into(),
+    ));
+
+    assert!(transaction.connections.is_target_ready(&connection));
+
+    let output = transaction.connections.take(&connection);
+
     assert_eq!(output, Some(MessageTransport::Success(Success::MessagePack(vec![]))));
-    transaction
-      .ports
-      .receive(&connection, Packet::V0(Payload::Exception("!!".into())).into());
-    let output = transaction.ports.take_from_port(&to);
+
+    transaction.connections.dispatch(ConnectionEvent::Data(
+      &connection,
+      Packet::V0(Payload::Exception("!!".into())).into(),
+    ));
+
+    let output = transaction.connections.take(&connection);
+
     assert!(matches!(output, Some(MessageTransport::Failure(Failure::Exception(_)))));
 
     Ok(())
@@ -183,7 +242,7 @@ mod tests {
       tx_id: tx_id.clone(),
     }))?;
 
-    // Second closes the schematic input
+    // Fourth simulates closing the output
     tx.send(TransactionUpdate::Update(InputMessage {
       connection: conn(REF_ID, "output", SCHEMATIC_OUTPUT, "output"),
       payload: MessageTransport::Signal(MessageSignal::Done),

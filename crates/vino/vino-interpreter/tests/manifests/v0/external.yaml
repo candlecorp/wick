@@ -2,10 +2,10 @@
 version: 0
 network:
   schematics:
-    - name: main
+    - name: test
       instances:
         INSTANCE:
-          id: test::instance
+          id: test::echo
       connections:
         - <> => INSTANCE[input]
         - INSTANCE[output] => <>

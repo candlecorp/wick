@@ -1,13 +1,19 @@
 use std::collections::HashMap;
 use std::fmt::Debug;
+use std::sync::Arc;
 
-pub(super) mod internal;
+pub(super) mod core_provider;
+pub(crate) mod internal_provider;
+pub(super) mod provider_provider;
+pub(super) mod schematic_provider;
 
 use futures::future::BoxFuture;
-use vino_transport::{TransportMap, TransportStream};
-use vino_types::ComponentMap;
+use serde_json::Value;
+use vino_transport::{Invocation, TransportMap, TransportStream};
+use vino_types::{ProviderMap, ProviderSignature};
 
-use self::internal::{InternalProvider, INTERNAL_PROVIDER};
+use self::internal_provider::{InternalProvider, INTERNAL_PROVIDER_NS};
+use crate::interpreter::provider::core_provider::{CoreProvider, CORE_PROVIDER_NS};
 use crate::BoxError;
 
 #[derive()]
@@ -25,7 +31,7 @@ impl Default for Providers {
 impl Debug for Providers {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     f.debug_struct("Providers")
-      .field("providers", &self.component_hashmap())
+      .field("providers", &self.provider_signatures())
       .finish()
   }
 }
@@ -36,9 +42,15 @@ impl Providers {
     let mut providers = Self {
       providers: providers.into_iter().map(|p| (p.namespace.clone(), p)).collect(),
     };
+
     providers.add(ProviderNamespace {
-      namespace: INTERNAL_PROVIDER.to_owned(),
-      provider: Box::new(InternalProvider::default()),
+      namespace: INTERNAL_PROVIDER_NS.to_owned(),
+      provider: Arc::new(Box::new(InternalProvider::default())),
+    });
+
+    providers.add(ProviderNamespace {
+      namespace: CORE_PROVIDER_NS.to_owned(),
+      provider: Arc::new(Box::new(CoreProvider::default())),
     });
     providers
   }
@@ -48,13 +60,13 @@ impl Providers {
     &self.providers
   }
 
-  #[must_use]
-  pub fn component_hashmap(&self) -> HashMap<String, ComponentMap> {
+  pub fn provider_signatures(&self) -> ProviderMap {
     self
       .providers
       .iter()
       .map(|(name, p)| (name.clone(), p.provider.list().clone()))
-      .collect()
+      .collect::<HashMap<String, ProviderSignature>>()
+      .into()
   }
 
   #[must_use]
@@ -71,18 +83,18 @@ impl Providers {
   }
 }
 
-#[derive()]
+#[derive(Clone)]
 #[must_use]
 pub struct ProviderNamespace {
   pub(crate) namespace: String,
-  pub(crate) provider: Box<dyn Provider + Send + Sync>,
+  pub(crate) provider: Arc<Box<dyn Provider + Send + Sync>>,
 }
 
 impl ProviderNamespace {
   pub fn new<T: AsRef<str>>(namespace: T, provider: Box<dyn Provider + Send + Sync>) -> Self {
     Self {
       namespace: namespace.as_ref().to_owned(),
-      provider,
+      provider: Arc::new(provider),
     }
   }
 }
@@ -97,6 +109,10 @@ impl Debug for ProviderNamespace {
 }
 
 pub trait Provider {
-  fn handle(&self, operation: &str, payload: TransportMap) -> BoxFuture<Result<TransportStream, BoxError>>;
-  fn list(&self) -> &ComponentMap;
+  fn handle(&self, invocation: Invocation, data: Option<Value>) -> BoxFuture<Result<TransportStream, BoxError>>;
+  fn list(&self) -> &ProviderSignature;
+}
+
+pub trait Component {
+  fn handle(&self, payload: TransportMap, data: Option<Value>) -> BoxFuture<Result<TransportStream, BoxError>>;
 }

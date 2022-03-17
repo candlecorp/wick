@@ -1,5 +1,7 @@
 #[derive(thiserror::Error, Debug, Clone, PartialEq, Eq)]
 pub enum ValidationError {
+  #[error("Network contains circular references: {:?}", .0)]
+  NetworkUnresolvable(Vec<String>),
   #[error("Missing provider namespace '{0}'")]
   MissingProvider(String),
   #[error("Missing component '{name}' on namespace '{namespace}'")]

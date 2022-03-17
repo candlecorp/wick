@@ -1,4 +1,4 @@
-use vino_schematic_graph::{ComponentIndex, PortReference};
+use vino_entity::Entity;
 
 use super::executor::error::ExecutionError;
 use super::program::validator::error::ValidationError;
@@ -6,36 +6,37 @@ use super::program::validator::error::ValidationError;
 #[derive(thiserror::Error, Debug, PartialEq)]
 pub enum Error {
   #[error(transparent)]
-  InvalidState(#[from] StateError),
-  #[error(transparent)]
   ExecutionError(#[from] ExecutionError),
   #[error("Validation errors: {:?}", .0)]
   ValidationError(Vec<ValidationError>),
-
+  #[error("Early error: {:?}", .0)]
+  EarlyError(ValidationError),
+  #[error("Invalid target: {0}")]
+  TargetNotFound(Entity),
   #[error("Shutdown failed: {0}")]
   ShutdownFailed(String),
-}
-
-pub(crate) fn missing_port<T: AsRef<PortReference>>(port: T) -> ExecutionError {
-  ExecutionError::InvalidState(StateError::MissingPort(*port.as_ref()))
 }
 
 #[derive(thiserror::Error, Debug, Clone, PartialEq, Eq)]
 pub enum StateError {
   #[error("Payload for port '{0}' missing from input stream")]
   PayloadMissing(String),
-  #[error("Attempted to access nonexistant port {:?}", 0)]
-  MissingPort(PortReference),
-  #[error("Attempted to access nonexistant component at index {0}")]
-  MissingComponent(ComponentIndex),
+  #[error("Could not find port named '{0}'")]
+  MissingPortName(String),
   #[error("Attempted to access nonexistant provider '{0}'")]
   MissingProvider(String),
-  #[error("{0}")]
-  Other(String),
+  #[error("Tried to decrement pending counter for non-existant or zero ID.")]
+  TooManyComplete,
 }
 
 impl From<Vec<ValidationError>> for Error {
   fn from(v: Vec<ValidationError>) -> Self {
     Error::ValidationError(v)
+  }
+}
+
+impl From<ValidationError> for Error {
+  fn from(v: ValidationError) -> Self {
+    Error::ValidationError(vec![v])
   }
 }

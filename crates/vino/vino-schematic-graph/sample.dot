@@ -27,20 +27,6 @@ subgraph "<output>.OUT" {
 }
 
 }
-subgraph "cluster_COMP1" {
-label="COMP1"
-"COMP1"[shape="rectangle"]
-"COMP1.IN.input" -> "COMP1"
-subgraph "COMP1.IN" {
-"COMP1.IN.input"[label="input", shape="triangle"]
-}
-
-"COMP1" -> "COMP1.OUT.output"
-subgraph "COMP1.OUT" {
-"COMP1.OUT.output"[label="output", shape="invtriangle"]
-}
-
-}
 subgraph "cluster_COMP2" {
 label="COMP2"
 "COMP2"[shape="rectangle"]
@@ -52,6 +38,20 @@ subgraph "COMP2.IN" {
 "COMP2" -> "COMP2.OUT.output"
 subgraph "COMP2.OUT" {
 "COMP2.OUT.output"[label="output", shape="invtriangle"]
+}
+
+}
+subgraph "cluster_COMP1" {
+label="COMP1"
+"COMP1"[shape="rectangle"]
+"COMP1.IN.input" -> "COMP1"
+subgraph "COMP1.IN" {
+"COMP1.IN.input"[label="input", shape="triangle"]
+}
+
+"COMP1" -> "COMP1.OUT.output"
+subgraph "COMP1.OUT" {
+"COMP1.OUT.output"[label="output", shape="invtriangle"]
 }
 
 }

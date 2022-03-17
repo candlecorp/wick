@@ -41,7 +41,7 @@ impl TryFrom<HostManifest> for HostDefinition {
         Self {
           host: host_config,
           default_schematic: manifest.default_schematic.clone(),
-          network: manifest.network.into(),
+          network: (&manifest.network).try_into()?,
         }
       }
     };
@@ -60,6 +60,11 @@ impl HostDefinition {
   pub fn load_from_bytes(src: &[u8]) -> Result<HostDefinition> {
     let manifest = crate::HostManifest::load_from_bytes(src)?;
     HostDefinition::try_from(manifest)
+  }
+
+  /// Get the inner [NetworkDefinition].
+  pub fn network(&self) -> &NetworkDefinition {
+    &self.network
   }
 }
 
