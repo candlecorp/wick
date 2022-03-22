@@ -27,6 +27,6 @@ serde-value = "0.7.0"
 
 [dev-dependencies]
 env_logger = "0.9"
-test-env-log = "0.2.7"
+test-log = "0.2.8"
 anyhow = "1.0"
 tracing = "0.1"
