@@ -347,7 +347,7 @@ impl Display for Success {
 mod tests {
 
   use super::*;
-  #[test_env_log::test]
+  #[test_log::test]
   #[cfg(feature = "json")]
   fn serializes_done() -> Result<()> {
     let close = MessageTransport::done();
@@ -357,7 +357,7 @@ mod tests {
     Ok(())
   }
 
-  #[test_env_log::test]
+  #[test_log::test]
   fn messagepack_rt() -> Result<()> {
     // let mut original = TransportMap::new();
     let mut payload = MessageTransport::success(&false);

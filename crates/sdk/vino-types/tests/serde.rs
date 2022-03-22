@@ -3,7 +3,7 @@ use std::fs::read_to_string;
 use anyhow::Result;
 use vino_types::ProviderSignature;
 
-#[test_env_log::test]
+#[test_log::test]
 fn test_deserialize() -> Result<()> {
   let src = read_to_string("./tests/interface.json")?;
 
@@ -19,7 +19,7 @@ fn test_deserialize() -> Result<()> {
   Ok(())
 }
 
-#[test_env_log::test]
+#[test_log::test]
 fn test_deserialize2() -> Result<()> {
   let src = read_to_string("./tests/interface-test.json")?;
 

@@ -135,7 +135,7 @@ mod tests {
 
   use super::*;
   use crate::MessageTransport;
-  #[test_env_log::test(tokio::test)]
+  #[test_log::test(tokio::test)]
   async fn test() -> Result<(), SendError<TransportWrapper>> {
     let (tx, rx) = unbounded_channel();
     let message = MessageTransport::success(&String::from("Test"));

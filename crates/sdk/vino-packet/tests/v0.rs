@@ -37,7 +37,7 @@ static ERROR_BYTES: [u8; 25] = [
   115, 115, 97, 103, 101,
 ];
 
-#[test_env_log::test]
+#[test_log::test]
 fn serializable() -> Result<()> {
   let user_data = "Hello world";
   let user_bytes = serialize(&user_data)?;
@@ -52,7 +52,7 @@ fn serializable() -> Result<()> {
   Ok(())
 }
 
-#[test_env_log::test]
+#[test_log::test]
 fn exception() -> Result<()> {
   let user_data = "Test exception message";
   let output = Packet::V0(Payload::Exception(user_data.to_string()));
@@ -67,7 +67,7 @@ fn exception() -> Result<()> {
   Ok(())
 }
 
-#[test_env_log::test]
+#[test_log::test]
 fn error() -> Result<()> {
   let user_data = "Test error message";
   let output = Packet::V0(Payload::Error(user_data.to_string()));
@@ -79,7 +79,7 @@ fn error() -> Result<()> {
   Ok(())
 }
 
-#[test_env_log::test]
+#[test_log::test]
 fn invalid() -> Result<()> {
   let output = Packet::V0(Payload::Invalid);
   let bytes = serialize(&output)?;
@@ -90,7 +90,7 @@ fn invalid() -> Result<()> {
   Ok(())
 }
 
-#[test_env_log::test]
+#[test_log::test]
 fn basic_msgpack() -> Result<()> {
   let user_data = "Test error message";
   let user_bytes = serialize(&user_data)?;
@@ -106,7 +106,7 @@ fn basic_msgpack() -> Result<()> {
   Ok(())
 }
 
-#[test_env_log::test]
+#[test_log::test]
 fn msgpack_struct() -> Result<()> {
   let user_data = StructOne {
     one: 1,
@@ -129,7 +129,7 @@ fn msgpack_struct() -> Result<()> {
   Ok(())
 }
 
-#[test_env_log::test]
+#[test_log::test]
 fn deserialize_unknown() -> Result<()> {
   let user_data = StructOne {
     one: 1,

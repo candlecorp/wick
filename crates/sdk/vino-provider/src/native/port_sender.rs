@@ -173,7 +173,7 @@ mod tests {
     }
   }
 
-  #[test_env_log::test(tokio::test)]
+  #[test_log::test(tokio::test)]
   async fn test_merge() -> Result {
     // This sets up the ports, sends data on them, then
     // drops the ports, thus closing them.
@@ -218,7 +218,7 @@ mod tests {
     Ok(())
   }
 
-  #[test_env_log::test(tokio::test)]
+  #[test_log::test(tokio::test)]
   async fn test_send() -> Result {
     let mut port1 = StringSender {
       port: PortChannel::new("test1"),
@@ -235,7 +235,7 @@ mod tests {
     Ok(())
   }
 
-  #[test_env_log::test(tokio::test)]
+  #[test_log::test(tokio::test)]
   async fn test_done() -> Result {
     let mut port1 = StringSender {
       port: PortChannel::new("test1"),
@@ -253,7 +253,7 @@ mod tests {
     Ok(())
   }
 
-  #[test_env_log::test(tokio::test)]
+  #[test_log::test(tokio::test)]
   async fn test_exception() -> Result {
     let mut port1 = StringSender {
       port: PortChannel::new("test1"),
@@ -269,7 +269,7 @@ mod tests {
     Ok(())
   }
 
-  #[test_env_log::test(tokio::test)]
+  #[test_log::test(tokio::test)]
   async fn test_done_exception() -> Result {
     let mut port1 = StringSender {
       port: PortChannel::new("test1"),

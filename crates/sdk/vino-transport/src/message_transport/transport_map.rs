@@ -295,7 +295,7 @@ mod tests {
   use super::*;
   use crate::MessageTransport;
 
-  #[test_env_log::test]
+  #[test_log::test]
   fn test_merge() -> Result<()> {
     let mut map1 = TransportMap::new();
     map1.insert("first", MessageTransport::success(&"first-val"));
