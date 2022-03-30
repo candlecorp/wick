@@ -4,7 +4,7 @@ use runtime_testutils::*;
 use tokio_stream::StreamExt;
 use vino_entity::Entity;
 use vino_runtime::prelude::TransportWrapper;
-use vino_transport::MessageTransport;
+use vino_transport::{Invocation, MessageTransport};
 
 type Result<T> = anyhow::Result<T, anyhow::Error>;
 use maplit::hashmap;
@@ -19,7 +19,12 @@ async fn simple_schematic() -> Result<()> {
   };
 
   let mut result = network
-    .request("simple", Entity::test("simple schematic"), &data)
+    .invoke(Invocation::new(
+      Entity::test("simple schematic"),
+      Entity::schematic("simple"),
+      data.try_into()?,
+      None,
+    ))
     .await?;
 
   println!("Result: {:?}", result);
@@ -43,7 +48,14 @@ async fn echo() -> Result<()> {
       "input" => "test-data",
   };
 
-  let mut result = network.request("echo", Entity::test("echo"), &data).await?;
+  let mut result = network
+    .invoke(Invocation::new(
+      Entity::test("echo"),
+      Entity::schematic("echo"),
+      data.try_into()?,
+      None,
+    ))
+    .await?;
 
   println!("Result: {:?}", result);
   let mut messages: Vec<TransportWrapper> = result.collect_port("output").await;
@@ -65,7 +77,14 @@ async fn senders() -> Result<()> {
 
   let data: HashMap<String, String> = HashMap::new();
 
-  let mut result = network.request("senders", Entity::test("senders"), &data).await?;
+  let mut result = network
+    .invoke(Invocation::new(
+      Entity::test("senders"),
+      Entity::schematic("senders"),
+      data.try_into()?,
+      None,
+    ))
+    .await?;
 
   println!("Result: {:?}", result);
   let mut messages: Vec<TransportWrapper> = result.collect_port("output").await;
@@ -87,7 +106,14 @@ async fn no_inputs() -> Result<()> {
 
   let data: HashMap<String, String> = HashMap::new();
 
-  let mut result = network.request("uuid", Entity::test("test"), &data).await?;
+  let mut result = network
+    .invoke(Invocation::new(
+      Entity::test("test"),
+      Entity::schematic("uuid"),
+      data.try_into()?,
+      None,
+    ))
+    .await?;
 
   let mut messages: Vec<TransportWrapper> = result.collect_port("output").await;
   assert_eq!(result.buffered_size(), (0, 0));
@@ -113,7 +139,12 @@ async fn nested_schematics() -> Result<()> {
   };
 
   let mut result = network
-    .request("nested_parent", Entity::test("nested_schematics"), &data)
+    .invoke(Invocation::new(
+      Entity::test("nested_schematics"),
+      Entity::schematic("nested_parent"),
+      data.try_into()?,
+      None,
+    ))
     .await?;
   println!("Result: {:?}", result);
   let mut messages: Vec<TransportWrapper> = result.collect_port("parent_output").await;
@@ -136,7 +167,12 @@ async fn short_circuit_to_output() -> Result<()> {
   };
 
   let mut result = network
-    .request("short_circuit", Entity::test("short circuit"), &data)
+    .invoke(Invocation::new(
+      Entity::test("short circuit"),
+      Entity::schematic("short_circuit"),
+      data.try_into()?,
+      None,
+    ))
     .await?;
 
   let mut messages: Vec<TransportWrapper> = result.collect_port("output").await;
@@ -146,7 +182,7 @@ async fn short_circuit_to_output() -> Result<()> {
   println!("Output: {:?}", output);
   assert_eq!(
     output.payload,
-    MessageTransport::exception("Needs to be longer than 8 characters".to_owned())
+    MessageTransport::exception("Needs to be longer than 8 characters")
   );
   Ok(())
 }
@@ -160,7 +196,12 @@ async fn short_circuit_with_default() -> Result<()> {
   };
 
   let mut result = network
-    .request("short_circuit", Entity::test("short circuit default"), &data)
+    .invoke(Invocation::new(
+      Entity::test("short circuit default"),
+      Entity::schematic("short_circuit"),
+      data.try_into()?,
+      None,
+    ))
     .await?;
 
   let mut messages: Vec<TransportWrapper> = result.collect_port("output").await;
@@ -188,7 +229,12 @@ async fn multiple_schematics() -> Result<()> {
   };
 
   let mut result = network
-    .request("first_schematic", Entity::test("multi schematics"), &data)
+    .invoke(Invocation::new(
+      Entity::test("multi schematics"),
+      Entity::schematic("first_schematic"),
+      data.try_into()?,
+      None,
+    ))
     .await?;
   let mut messages: Vec<TransportWrapper> = result.collect_port("output").await;
   assert_eq!(messages.len(), 1);
@@ -201,7 +247,12 @@ async fn multiple_schematics() -> Result<()> {
   };
 
   let mut result = network
-    .request("second_schematic", Entity::test("multi schematics"), &data)
+    .invoke(Invocation::new(
+      Entity::test("multi schematics"),
+      Entity::schematic("second_schematic"),
+      data.try_into()?,
+      None,
+    ))
     .await?;
   let mut messages: Vec<TransportWrapper> = result.collect_port("output").await;
   assert_eq!(messages.len(), 1);
@@ -220,7 +271,14 @@ async fn subnetworks() -> Result<()> {
       "input" => "some input",
   };
 
-  let result = network.request("parent", Entity::test("subnetworks"), &data).await?;
+  let result = network
+    .invoke(Invocation::new(
+      Entity::test("subnetworks"),
+      Entity::schematic("parent"),
+      data.try_into()?,
+      None,
+    ))
+    .await?;
 
   let messages: Vec<_> = result.collect().await;
 

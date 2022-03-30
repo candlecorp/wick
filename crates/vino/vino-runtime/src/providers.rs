@@ -1,66 +1,37 @@
 pub(crate) mod error;
 pub(crate) mod native_provider_service;
 pub(crate) mod network_provider;
+pub(crate) mod runtime_core;
 
 use std::str::FromStr;
 use std::sync::Arc;
 
 use futures::future::BoxFuture;
+use vino_interpreter::ProviderNamespace;
 use vino_provider_wasm::error::LinkError;
 
 use self::native_provider_service::NativeProviderService;
 use crate::dev::prelude::*;
 use crate::dispatch::network_invoke_sync;
-use crate::network_service::initialize::ProviderInitOptions;
-
-pub(crate) type BoxedInvocationHandler = Box<dyn InvocationHandler + Send + Sync>;
+use crate::network_service::ProviderInitOptions;
+use crate::providers::runtime_core::{RuntimeCoreProvider, RUNTIME_NAMESPACE};
 
 pub(crate) trait InvocationHandler {
   fn get_signature(&self) -> Result<ProviderSignature>;
-  fn invoke(&self, msg: InvocationMessage) -> Result<BoxFuture<Result<InvocationResponse>>>;
+  fn invoke(&self, msg: Invocation) -> Result<BoxFuture<Result<InvocationResponse>>>;
 }
 
 type Result<T> = std::result::Result<T, ProviderError>;
 
-#[derive(Clone)]
-pub(crate) struct ProviderChannel {
-  pub(crate) namespace: String,
-  pub(crate) recipient: Arc<BoxedInvocationHandler>,
-  // pub(crate) model: Option<ProviderModel>,
-}
+type ProviderInitResult = Result<ProviderNamespace>;
 
-impl std::fmt::Debug for ProviderChannel {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    f.debug_struct("ProviderChannel")
-      .field("namespace", &self.namespace)
-      .finish()
-  }
-}
-
-type ProviderInitResult = Result<(ProviderModel, ProviderChannel)>;
-
-pub(crate) fn initialize_native_provider(namespace: String, seed: u64) -> ProviderInitResult {
-  trace!("PROV:NATIVE:NS[{}]:REGISTERING", namespace);
-  let provider = Arc::new(vino_stdlib::Provider::new(seed));
-  let service = NativeProviderService::new(namespace.clone(), provider);
-
-  let signature = service.get_signature()?;
-
-  Ok((
-    signature.into(),
-    ProviderChannel {
-      namespace,
-      recipient: Arc::new(Box::new(service)),
-    },
-  ))
-}
-
+#[instrument(skip(provider, opts))]
 pub(crate) async fn initialize_par_provider(
-  provider: ProviderDefinition,
+  provider: &ProviderDefinition,
   namespace: String,
   opts: ProviderInitOptions,
 ) -> ProviderInitResult {
-  trace!("PROV:PAR:NS[{}]:REGISTERING", provider.namespace);
+  trace!(?provider, ?opts, "registering");
 
   let bytes = vino_loader::get_bytes(&provider.reference, opts.allow_latest, &opts.allowed_insecure).await?;
 
@@ -71,43 +42,29 @@ pub(crate) async fn initialize_par_provider(
   )
   .await?;
 
-  let service = NativeProviderService::new(namespace.clone(), Arc::new(service));
+  let service = NativeProviderService::new(Arc::new(service));
 
-  let signature = service.get_signature()?;
-
-  Ok((
-    signature.into(),
-    ProviderChannel {
-      namespace: namespace.clone(),
-      recipient: Arc::new(Box::new(service)),
-    },
-  ))
+  Ok(ProviderNamespace::new(namespace, Box::new(service)))
 }
 
-pub(crate) async fn initialize_grpc_provider(provider: ProviderDefinition, namespace: String) -> ProviderInitResult {
-  trace!("PROV:GRPC:NS[{}]:REGISTERING", provider.namespace);
+#[instrument(skip(provider))]
+pub(crate) async fn initialize_grpc_provider(provider: &ProviderDefinition, namespace: String) -> ProviderInitResult {
+  trace!(?provider, "registering");
 
   let service = vino_provider_grpc::provider::Provider::new(provider.reference.clone()).await?;
 
-  let service = NativeProviderService::new(namespace.clone(), Arc::new(service));
+  let service = NativeProviderService::new(Arc::new(service));
 
-  let signature = service.get_signature()?;
-
-  Ok((
-    signature.into(),
-    ProviderChannel {
-      namespace: namespace.clone(),
-      recipient: Arc::new(Box::new(service)),
-    },
-  ))
+  Ok(ProviderNamespace::new(namespace, Box::new(service)))
 }
 
+#[instrument(skip(provider, opts))]
 pub(crate) async fn initialize_wasm_provider(
-  provider: ProviderDefinition,
+  provider: &ProviderDefinition,
   namespace: String,
   opts: ProviderInitOptions,
 ) -> ProviderInitResult {
-  trace!("PROV:WASM:NS[{}]:REGISTERING", provider.namespace);
+  trace!(?provider, ?opts, "registering");
 
   let component =
     vino_provider_wasm::helpers::load_wasm(&provider.reference, opts.allow_latest, &opts.allowed_insecure).await?;
@@ -120,9 +77,12 @@ pub(crate) async fn initialize_wasm_provider(
     None,
     Some(Box::new(move |origin_url, target_url, payload| {
       debug!(
-        "PROV:WASM:LINK_CALL[{} => {}]:NETWORK[{}]",
-        origin_url, target_url, opts.network_id
+        origin = origin_url,
+        target = target_url,
+        network_id = opts.network_id.as_str(),
+        "link_call"
       );
+
       let target = Entity::from_str(target_url)?;
       let origin = Entity::from_str(origin_url)?;
       if let Entity::Component(origin_ns, _) = &origin {
@@ -132,60 +92,45 @@ pub(crate) async fn initialize_wasm_provider(
           }
         }
       }
-      let invocation = Invocation::new(origin, target, payload);
+      let invocation = Invocation::new(origin, target, payload, None);
       let result =
         network_invoke_sync(opts.network_id.clone(), invocation).map_err(|e| LinkError::CallFailure(e.to_string()))?;
       Ok(result)
     })),
   )?);
 
-  let service = NativeProviderService::new(namespace.clone(), provider);
+  let service = NativeProviderService::new(provider);
 
-  let signature = service.get_signature()?;
-
-  Ok((
-    signature.into(),
-    ProviderChannel {
-      namespace: namespace.clone(),
-      recipient: Arc::new(Box::new(service)),
-    },
-  ))
+  Ok(ProviderNamespace::new(namespace, Box::new(service)))
 }
 
+#[instrument(skip(provider, opts))]
 pub(crate) async fn initialize_network_provider(
-  provider: ProviderDefinition,
+  provider: &ProviderDefinition,
   namespace: String,
   opts: ProviderInitOptions,
 ) -> ProviderInitResult {
-  trace!("PROV:NETWORK:NS[{}]:REGISTERING", provider.namespace);
+  trace!(?provider, ?opts, "registering");
   let kp = KeyPair::new_server().public_key();
 
-  let network = NetworkService::for_id(&kp);
-  network
-    .init_from_manifest(&provider.reference, opts)
+  let _network = NetworkService::new_from_manifest(kp.clone(), &provider.reference, opts)
     .await
     .map_err(|e| ProviderError::SubNetwork(e.to_string()))?;
 
   let provider = Arc::new(network_provider::Provider::new(kp));
 
-  let service = NativeProviderService::new(namespace.clone(), provider);
+  let service = NativeProviderService::new(provider);
 
-  let signature = service.get_signature()?;
-
-  Ok((
-    signature.into(),
-    ProviderChannel {
-      namespace: namespace.clone(),
-      recipient: Arc::new(Box::new(service)),
-    },
-  ))
+  Ok(ProviderNamespace::new(namespace, Box::new(service)))
 }
 
+#[instrument(skip(provider, opts))]
 pub(crate) async fn initialize_lattice_provider(
-  provider: ProviderDefinition,
+  provider: &ProviderDefinition,
   namespace: String,
   opts: ProviderInitOptions,
 ) -> ProviderInitResult {
+  trace!(?provider, ?opts, "registering");
   let lattice = match opts.lattice {
     Some(lattice) => lattice,
     None => {
@@ -194,33 +139,27 @@ pub(crate) async fn initialize_lattice_provider(
       ))
     }
   };
-  trace!(
-    "PROV:LATTICE:[{}=>{}]:REGISTERING",
-    provider.namespace,
-    provider.reference
-  );
 
-  let provider = Arc::new(vino_provider_lattice::provider::Provider::new(provider.reference, lattice).await?);
+  let provider = Arc::new(vino_provider_lattice::provider::Provider::new(provider.reference.clone(), lattice).await?);
 
-  let service = NativeProviderService::new(namespace.clone(), provider);
+  let service = NativeProviderService::new(provider);
 
-  let signature = service.get_signature()?;
-
-  Ok((
-    signature.into(),
-    ProviderChannel {
-      namespace: namespace.clone(),
-      recipient: Arc::new(Box::new(service)),
-    },
-  ))
+  Ok(ProviderNamespace::new(namespace, Box::new(service)))
 }
 
-pub(crate) fn start_network_provider(network_id: String) -> Result<Arc<BoxedInvocationHandler>> {
-  trace!("PROV:NETWORK[{}]", network_id);
+#[instrument(skip(seed))]
+pub(crate) fn initialize_native_provider(namespace: String, seed: u64) -> ProviderInitResult {
+  trace!("registering");
+  let provider = Arc::new(vino_stdlib::Provider::new(seed));
+  let service = NativeProviderService::new(provider);
 
-  let provider = Arc::new(NetworkProvider::new(network_id));
+  Ok(ProviderNamespace::new(namespace, Box::new(service)))
+}
 
-  let service = NativeProviderService::new(SELF_NAMESPACE.to_owned(), provider);
+#[instrument(fields(namespace=RUNTIME_NAMESPACE))]
+pub(crate) fn initialize_runtime_core() -> ProviderInitResult {
+  trace!("registering");
+  let service = RuntimeCoreProvider::new();
 
-  Ok::<Arc<BoxedInvocationHandler>, ProviderError>(Arc::new(Box::new(service)))
+  Ok(ProviderNamespace::new(RUNTIME_NAMESPACE, Box::new(service)))
 }

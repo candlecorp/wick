@@ -86,38 +86,15 @@
 #![allow(missing_docs)] // TODO
 
 #[macro_use]
-mod macros {
-
-  /// map_err!(expr, err) takes a result, logs the error if it exists, then maps the error to the passed error.
-  macro_rules! map_err {
-    ($expr:expr, $err:expr) => {{
-      let result = $expr;
-      let err = $err;
-      if result.is_err() {
-        tracing::debug!("Internal error: {:?}", result);
-        tracing::error!("{}", err);
-      }
-      result.map_err(|_| err)
-    }};
-  }
-}
-
-#[macro_use]
-extern crate vino_macros;
-
-#[macro_use]
 extern crate tracing;
 
 mod dispatch;
 pub mod error;
-mod models;
 mod network;
 pub use network::{Network, NetworkBuilder};
 pub use providers::network_provider::Provider as NetworkProvider;
 mod network_service;
 mod providers;
-mod schematic_service;
-mod transaction;
 // TODO track down usage of these and restrict visibility
 pub mod utils;
 
@@ -128,7 +105,6 @@ pub mod prelude {
   pub use vino_packet::{packet, Packet};
   pub use vino_transport::{MessageTransport, TransportStream, TransportWrapper};
 
-  pub use crate::dispatch::init_data::InitData;
   pub use crate::dispatch::{DispatchError, InvocationResponse};
   pub use crate::network::Network;
   pub use crate::providers::network_provider::Provider as NetworkProvider;
@@ -143,7 +119,6 @@ pub(crate) mod test;
 pub type Error = error::RuntimeError;
 pub use network_service::error::NetworkError;
 pub use providers::error::ProviderError;
-pub use schematic_service::error::SchematicError;
 
 /// The reserved reference name for schematic input. Used in schematic manifests to denote schematic input.
 pub const SCHEMATIC_INPUT: &str = "<input>";

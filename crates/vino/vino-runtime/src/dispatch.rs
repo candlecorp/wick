@@ -1,89 +1,16 @@
-pub(crate) mod init_data;
-
-use std::convert::TryInto;
 use std::sync::Arc;
 
 use futures::Stream;
 use parking_lot::{Condvar, Mutex};
-use vino_transport::{Invocation, TransportMap};
+use vino_transport::Invocation;
 
 use crate::dev::prelude::*;
-
-#[derive(Debug, Clone, Default)]
-pub(crate) struct InvocationMessage {
-  inner: Invocation,
-  core_data: InitData,
-}
-
-impl InvocationMessage {
-  pub(crate) fn with_data(invocation: Invocation, data: InitData) -> Self {
-    Self {
-      inner: invocation,
-      core_data: data,
-    }
-  }
-
-  pub(crate) fn new(invocation: Invocation) -> Self {
-    Self {
-      inner: invocation,
-      core_data: InitData::default(),
-    }
-  }
-
-  pub(crate) fn into_inner(self) -> Invocation {
-    self.inner
-  }
-
-  pub(crate) fn get_tx_id(&self) -> &str {
-    &self.inner.tx_id
-  }
-
-  pub(crate) fn get_target(&self) -> &Entity {
-    &self.inner.target
-  }
-
-  pub(crate) fn get_target_url(&self) -> String {
-    self.inner.target.url()
-  }
-
-  pub(crate) fn get_origin(&self) -> &Entity {
-    &self.inner.origin
-  }
-
-  pub(crate) fn get_payload(&self) -> &TransportMap {
-    &self.inner.payload
-  }
-
-  pub(crate) fn get_init_data(&self) -> &InitData {
-    &self.core_data
-  }
-}
-
-impl From<Invocation> for InvocationMessage {
-  fn from(inv: Invocation) -> Self {
-    Self {
-      inner: inv,
-      core_data: InitData::default(),
-    }
-  }
-}
-
-impl TryFrom<InvocationMessage> for vino_rpc::rpc::Invocation {
-  type Error = RuntimeError;
-  fn try_from(inv: InvocationMessage) -> Result<Self, RuntimeError> {
-    Ok(inv.inner.try_into()?)
-  }
-}
 
 #[derive(Debug)]
 #[must_use]
 pub enum InvocationResponse {
   Stream { tx_id: String, rx: TransportStream },
   Error { tx_id: String, msg: String },
-}
-
-pub(crate) fn inv_error(tx_id: &str, msg: &str) -> InvocationResponse {
-  InvocationResponse::error(tx_id.to_owned(), msg.to_owned())
 }
 
 impl InvocationResponse {
@@ -120,11 +47,11 @@ impl InvocationResponse {
 pub enum DispatchError {
   #[error("Thread died")]
   JoinFailed,
-  #[error("{0}")]
+  #[error("Thread died {0}")]
   EntityFailure(String),
-  #[error("{0}")]
+  #[error("Entity not available {0}")]
   EntityNotAvailable(String),
-  #[error("{0}")]
+  #[error("Call failure {0}")]
   CallFailure(String),
 }
 
@@ -145,19 +72,16 @@ pub(crate) async fn network_invoke_async(
   network_id: String,
   invocation: Invocation,
 ) -> Result<Vec<TransportWrapper>, DispatchError> {
-  let network = NetworkService::for_id(&network_id);
+  let network =
+    NetworkService::for_id(&network_id).ok_or_else(|| DispatchError::EntityNotAvailable(network_id.clone()))?;
 
-  let rcpt = network
-    .get_recipient(&invocation.target)
-    .map_err(|e| DispatchError::EntityNotAvailable(e.to_string()))?;
-
-  let response = rcpt.invoke(InvocationMessage::new(invocation))?.await?;
+  let response = network.invoke(invocation)?.await?;
   match response {
     InvocationResponse::Stream { rx, .. } => {
-      let packets: Vec<TransportWrapper> = rx.collect().await;
-      trace!("PROV:WASM:LINK_CALL:RESPONSE[{} packets]", packets.len());
-      debug!("PROV:WASM:LINK_CALL:RESPONSE:{:?}", packets);
-      Ok(packets)
+      let messages: Vec<TransportWrapper> = rx.collect().await;
+      trace!(num_messages = messages.len(), "link_call response");
+      debug!(?messages, "link call response");
+      Ok(messages)
     }
     InvocationResponse::Error { msg, .. } => Err(DispatchError::CallFailure(msg)),
   }
@@ -196,6 +120,7 @@ pub(crate) fn network_invoke_sync(
 mod tests {
 
   use tokio::sync::oneshot;
+  use vino_transport::TransportMap;
 
   use super::*;
   use crate::test::prelude::{assert_eq, *};
@@ -205,11 +130,11 @@ mod tests {
 
     let target = Entity::component("self", "echo");
     let map = TransportMap::from(vec![("input", "hello")]);
-    let invocation = Invocation::new_test(file!(), target, map);
+    let invocation = Invocation::new_test(file!(), target, map, None);
 
     let packets = network_invoke_async(nuid, invocation).await?;
     debug!("{:?}", packets);
-    assert_eq!(packets.len(), 1);
+    assert_eq!(packets.len(), 2);
     let rv: String = packets[0].payload.clone().deserialize()?;
     assert_eq!(rv, "hello");
 
@@ -233,13 +158,13 @@ mod tests {
 
     let target = Entity::component("self", "echo");
     let map = TransportMap::from(vec![("input", "hello")]);
-    let invocation = Invocation::new_test(file!(), target, map);
+    let invocation = Invocation::new_test(file!(), target, map, None);
 
     let packets = network_invoke_sync(nuid, invocation)?;
     let _ = tx2.send(true);
 
     debug!("{:?}", packets);
-    assert_eq!(packets.len(), 1);
+    assert_eq!(packets.len(), 2);
     let rv: String = packets[0].payload.clone().deserialize()?;
     assert_eq!(rv, "hello");
 

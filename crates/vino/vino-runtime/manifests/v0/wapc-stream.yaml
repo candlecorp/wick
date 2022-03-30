@@ -12,7 +12,11 @@ network:
       instances:
         copy:
           id: wapc::copy
+        SENDER:
+          id: core::sender
+          data:
+            output: 5
       connections:
         - <> => copy[input]
-        - "5 => copy[times]"
+        - SENDER[output] => copy[times]
         - copy[output] => <>

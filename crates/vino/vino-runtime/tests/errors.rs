@@ -4,7 +4,7 @@ use pretty_assertions::assert_eq;
 use runtime_testutils::*;
 use vino_entity::Entity;
 use vino_runtime::prelude::TransportWrapper;
-use vino_transport::MessageTransport;
+use vino_transport::{Invocation, MessageTransport};
 type Result<T> = anyhow::Result<T, anyhow::Error>;
 
 #[test_logger::test(tokio::test)]
@@ -14,7 +14,14 @@ async fn panics() -> Result<()> {
   let mut data = HashMap::new();
   data.insert("input", "input");
 
-  let mut result = network.request("panics", Entity::test("panics"), &data).await?;
+  let mut result = network
+    .invoke(Invocation::new(
+      Entity::test("panics"),
+      Entity::schematic("panics"),
+      data.try_into()?,
+      None,
+    ))
+    .await?;
 
   println!("Result: {:?}", result);
   let mut messages: Vec<TransportWrapper> = result.collect_port("output").await;
@@ -34,7 +41,14 @@ async fn errors() -> Result<()> {
   let mut data = HashMap::new();
   data.insert("input", "input");
 
-  let mut result = network.request("errors", Entity::test("errors"), &data).await?;
+  let mut result = network
+    .invoke(Invocation::new(
+      Entity::test("errors"),
+      Entity::schematic("errors"),
+      data.try_into()?,
+      None,
+    ))
+    .await?;
 
   println!("Result: {:?}", result);
   let mut messages: Vec<TransportWrapper> = result.collect_port("output").await;

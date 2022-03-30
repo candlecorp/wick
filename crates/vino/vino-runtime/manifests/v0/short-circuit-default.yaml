@@ -12,8 +12,6 @@ network:
       instances:
         validate_password:
           id: wapc::validate
-        log:
-          id: vino::core::log
         log2:
           id: vino::core::log
       connections:

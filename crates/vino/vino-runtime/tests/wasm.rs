@@ -5,7 +5,7 @@ use tokio_stream::StreamExt;
 use tracing::debug;
 use vino_entity::Entity;
 use vino_runtime::prelude::TransportWrapper;
-use vino_transport::MessageTransport;
+use vino_transport::{Invocation, MessageSignal, MessageTransport};
 type Result<T> = anyhow::Result<T, anyhow::Error>;
 use maplit::hashmap;
 use pretty_assertions::assert_eq;
@@ -20,7 +20,12 @@ async fn good_wapc_component() -> Result<()> {
 
   println!("Requesting first run");
   let mut result = network
-    .request("wapc_component", Entity::test("wapc_component"), &data)
+    .invoke(Invocation::new(
+      Entity::test("wapc_component"),
+      Entity::schematic("wapc_component"),
+      data.try_into()?,
+      None,
+    ))
     .await?;
 
   let mut messages: Vec<TransportWrapper> = result.collect_port("output").await;
@@ -37,7 +42,12 @@ async fn good_wapc_component() -> Result<()> {
 
   println!("Requesting second run");
   let mut result = network
-    .request("wapc_component", Entity::test("wapc_component"), &data)
+    .invoke(Invocation::new(
+      Entity::test("wapc_component"),
+      Entity::schematic("wapc_component"),
+      data.try_into()?,
+      None,
+    ))
     .await?;
 
   let mut messages: Vec<TransportWrapper> = result.collect_port("output").await;
@@ -47,7 +57,7 @@ async fn good_wapc_component() -> Result<()> {
 
   assert_eq!(
     output.payload,
-    MessageTransport::exception("Needs to be longer than 8 characters".to_owned())
+    MessageTransport::exception("Needs to be longer than 8 characters")
   );
 
   Ok(())
@@ -72,7 +82,12 @@ async fn good_wasi_component() -> Result<()> {
 
   println!("Requesting first run");
   let mut result = network
-    .request("wasi_component", Entity::test("wapc_component"), &data)
+    .invoke(Invocation::new(
+      Entity::test("wapc_component"),
+      Entity::schematic("wasi_component"),
+      data.try_into()?,
+      None,
+    ))
     .await?;
 
   let mut messages: Vec<TransportWrapper> = result.collect_port("contents").await;
@@ -95,7 +110,14 @@ async fn wapc_stream() -> Result<()> {
   };
 
   println!("Requesting first run");
-  let mut result = network.request("test", Entity::test("wapc_component"), &data).await?;
+  let mut result = network
+    .invoke(Invocation::new(
+      Entity::test("wapc_component"),
+      Entity::schematic("test"),
+      data.try_into()?,
+      None,
+    ))
+    .await?;
 
   let messages: Vec<TransportWrapper> = result.collect_port("output").await;
   // println!("{:#?}", messages);
@@ -117,13 +139,20 @@ async fn bad_wapc_component() -> Result<()> {
   };
 
   let result = network
-    .request("schematic", Entity::test("bad_wapc_component"), &data)
+    .invoke(Invocation::new(
+      Entity::test("bad_wapc_component"),
+      Entity::schematic("schematic"),
+      data.try_into()?,
+      None,
+    ))
     .await?;
 
   let mut messages: Vec<TransportWrapper> = result.collect().await;
-  println!("{:?}", messages);
-  assert_eq!(messages.len(), 1);
+  println!("{:#?}", messages);
+  assert_eq!(messages.len(), 2);
 
+  let output = messages.pop().unwrap();
+  assert!(matches!(output.payload, MessageTransport::Signal(MessageSignal::Done)));
   let output: TransportWrapper = messages.pop().unwrap();
 
   println!("output: {:?}", output);
@@ -140,12 +169,20 @@ async fn wasm_link_call() -> Result<()> {
   };
 
   println!("Requesting first run");
-  let mut result = network.request("ns-link", Entity::test("ns-link"), &data).await?;
+  let mut result = network
+    .invoke(Invocation::new(
+      Entity::test("ns-link"),
+      Entity::schematic("ns-link"),
+      data.try_into()?,
+      None,
+    ))
+    .await?;
 
   let mut messages: Vec<TransportWrapper> = result.collect_port("output").await;
+  println!("{:#?}", messages);
   assert_eq!(messages.len(), 1);
 
-  let output: TransportWrapper = messages.pop().unwrap();
+  let output = messages.pop().unwrap();
   let result: String = output.payload.deserialize()?;
   println!("Output for first run: {:?}", result);
   assert_eq!(result, "DLROW OLLEH");

@@ -8,6 +8,9 @@ license = "BSD-3-Clause"
 [features]
 
 [dependencies]
+vino-schematic-graph = { path = "../vino-schematic-graph" }
+
+vino-interpreter = { path = "../vino-interpreter" }
 vino-packet = { path = "../../../sdk/crates/vino-packet" }
 vino-macros = { path = "../../../sdk/crates/vino-macros" }
 vino-manifest = { path = "../vino-manifest" }
@@ -29,7 +32,6 @@ vino-wascap = { path = "../vino-wascap" }
 vino-rpc = { path = "../vino-rpc" }
 vino-entity = { path = "../../../sdk/crates/vino-entity" }
 vino-types = { path = "../../../sdk/crates/vino-types" }
-vino-invocation-server = { path = "../vino-invocation-server" }
 
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
@@ -55,6 +57,7 @@ rand = { version = "0.8", default-features = false, features = [
 ] }
 
 [dev-dependencies]
+vino-invocation-server = { path = "../vino-invocation-server" }
 test-vino-provider = { path = "../../integration/test-vino-provider" }
 logger = { path = "../logger" }
 test-logger = { path = "../../misc/test-logger" }
