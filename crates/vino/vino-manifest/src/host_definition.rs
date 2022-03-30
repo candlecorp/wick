@@ -51,7 +51,7 @@ impl TryFrom<HostManifest> for HostDefinition {
 
 impl HostDefinition {
   /// Utility function to automate loading a manifest from a file.
-  pub fn load_from_file(path: &Path) -> Result<HostDefinition> {
+  pub fn load_from_file(path: impl AsRef<Path>) -> Result<HostDefinition> {
     let manifest = crate::HostManifest::load_from_file(path)?;
     HostDefinition::try_from(manifest)
   }

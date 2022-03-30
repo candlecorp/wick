@@ -78,8 +78,9 @@ pub(crate) async fn handle_command(opts: RunCommand) -> Result<()> {
 
       let invocation = Invocation::new(
         Entity::client("vow"),
-        Entity::component_direct(&opts.component_name),
+        Entity::local_component(&opts.component_name),
         payload,
+        None,
       );
 
       let stream = provider.invoke(invocation).await.map_err(VowError::ComponentPanic)?;
@@ -97,8 +98,9 @@ pub(crate) async fn handle_command(opts: RunCommand) -> Result<()> {
 
     let invocation = Invocation::new(
       Entity::client("vow"),
-      Entity::component_direct(&opts.component_name),
+      Entity::local_component(&opts.component_name),
       data_map,
+      None,
     );
 
     let stream = provider.invoke(invocation).await.map_err(VowError::ComponentPanic)?;

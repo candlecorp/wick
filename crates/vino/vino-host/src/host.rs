@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::convert::{TryFrom, TryInto};
+use std::convert::TryFrom;
 use std::path::PathBuf;
 use std::sync::Arc;
 
@@ -15,7 +15,7 @@ use vino_provider_cli::ServerState;
 use vino_rpc::{RpcHandler, SharedRpcHandler};
 use vino_runtime::prelude::*;
 use vino_runtime::NetworkBuilder;
-use vino_transport::TransportMap;
+use vino_transport::{InherentData, Invocation, TransportMap};
 
 use crate::{Error, Result};
 
@@ -23,12 +23,10 @@ type ServiceMap = HashMap<String, SharedRpcHandler>;
 static HOST_REGISTRY: Lazy<Mutex<ServiceMap>> = Lazy::new(|| Mutex::new(HashMap::new()));
 
 fn from_registry(id: &str) -> Arc<dyn RpcHandler + Send + Sync + 'static> {
-  trace!("HOST:PROV:NETWORK:GET:{}", id);
   let mut registry = HOST_REGISTRY.lock();
-  let provider = registry.entry(id.to_owned()).or_insert_with(|| {
-    trace!("HOST:PROV:NETWORK:CREATE:{}", id);
-    Arc::new(NetworkProvider::new(id.to_owned()))
-  });
+  let provider = registry
+    .entry(id.to_owned())
+    .or_insert_with(|| Arc::new(NetworkProvider::new(id.to_owned())));
   provider.clone()
 }
 
@@ -48,7 +46,7 @@ impl Host {
   /// Starts the host. This call is non-blocking, so it is up to the consumer
   /// to wait with a method like `host.wait_for_sigint()`.
   pub async fn start(&mut self) -> Result<()> {
-    debug!("Host starting");
+    debug!("host starting");
 
     self.lattice = self.get_lattice().await?;
     self.start_network().await?;
@@ -66,7 +64,7 @@ impl Host {
   async fn get_lattice(&self) -> Result<Option<Arc<Lattice>>> {
     if let Some(config) = &self.manifest.host.lattice {
       if config.enabled {
-        debug!("Connecting to lattice at {}", config.address);
+        debug!("connecting to lattice at {}", config.address);
         let lattice = Lattice::connect(NatsOptions {
           address: config.address.clone(),
           client_id: self.get_host_id(),
@@ -98,7 +96,7 @@ impl Host {
 
   /// Stops a running host.
   pub async fn stop(&mut self) {
-    debug!("Host stopping");
+    debug!("host stopping");
     self.lattice = None;
     self.network = None;
     self.server_metadata = None;
@@ -123,7 +121,7 @@ impl Host {
     );
     let seed = self.kp.seed()?;
 
-    let mut network_builder = NetworkBuilder::from_definition(self.manifest.network.clone(), &seed)?;
+    let mut network_builder = NetworkBuilder::from_definition(self.manifest.clone(), &seed)?;
     if let Some(lattice) = &self.lattice {
       network_builder = network_builder.lattice(lattice.clone());
     }
@@ -133,8 +131,8 @@ impl Host {
       network_builder = network_builder.lattice(lattice.clone());
     }
 
-    let network = network_builder.build();
-    network.init().await?;
+    let network = network_builder.build().await?;
+
     self.network = Some(network);
     Ok(())
   }
@@ -189,16 +187,24 @@ impl Host {
     Ok(metadata)
   }
 
-  pub async fn request<U>(&self, schematic: &str, payload: U, data: Option<InitData>) -> Result<TransportStream>
-  where
-    U: TryInto<TransportMap> + Send + Sync,
-  {
+  pub async fn request(
+    &self,
+    schematic: &str,
+    payload: TransportMap,
+    data: Option<InherentData>,
+  ) -> Result<TransportStream> {
     match &self.network {
-      Some(network) => Ok(
-        network
-          .request_with_data(schematic, Entity::host(&self.id), payload, data)
-          .await?,
-      ),
+      Some(network) => {
+        let invocation = Invocation::new(Entity::host(&self.id), Entity::schematic(schematic), payload, data);
+        Ok(network.invoke(invocation).await?)
+      }
+      None => Err(crate::Error::InvalidHostState("No network available".into())),
+    }
+  }
+
+  pub async fn invoke(&self, invocation: Invocation) -> Result<TransportStream> {
+    match &self.network {
+      Some(network) => Ok(network.invoke(invocation).await?),
       None => Err(crate::Error::InvalidHostState("No network available".into())),
     }
   }
@@ -320,7 +326,7 @@ mod test {
     let mut messages: Vec<_> = stream.collect_port("output").await;
     assert_eq!(messages.len(), 1);
     let output = messages.pop().unwrap();
-    let result: String = output.payload.try_into()?;
+    let result: String = output.payload.deserialize()?;
     assert_eq!(result, passed_data);
     host.stop().await;
 
@@ -346,14 +352,14 @@ mod test {
     let passed_data = "logging output";
     let data = vec![("input", passed_data)].into();
     let invocation: Invocation =
-      vino_transport::Invocation::new(Entity::test("test"), Entity::schematic("logger"), data)
+      vino_transport::Invocation::new(Entity::test("test"), Entity::schematic("logger"), data, None)
         .try_into()
         .unwrap();
     let mut response = client.invoke(invocation).await.unwrap().into_inner();
     let next = response.message().await;
     println!("next: {:?}", next);
     let next = next.unwrap().unwrap();
-    debug!("result: {:?}", next);
+    debug!(?next);
 
     host.stop().await;
 

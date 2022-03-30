@@ -77,13 +77,13 @@ mod tests {
     println!("TransportMap: {:?}", transport_map);
     let provider = Provider::new(SEED);
 
-    let entity = Entity::component_direct(component);
-    let invocation = Invocation::new_test(file!(), entity, transport_map);
+    let entity = Entity::local_component(component);
+    let invocation = Invocation::new_test(file!(), entity, transport_map, None);
 
     let mut outputs = provider.invoke(invocation).await.unwrap();
     let output = outputs.next().await.unwrap();
     println!("Received payload from port '{}': {:?}", output.port, output.payload);
-    Ok(output.payload.try_into()?)
+    Ok(output.payload.deserialize()?)
   }
 
   #[test_logger::test(tokio::test)]

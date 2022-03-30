@@ -7,7 +7,6 @@ mod test {
   use utils::*;
   use vino_transport::{JsonError, TransportJson};
 
-  use super::*;
   #[test_logger::test(tokio::test)]
   async fn integration_test_lattice() -> utils::TestResult<()> {
     debug!("Starting host 1");

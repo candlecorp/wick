@@ -49,6 +49,15 @@ pub struct Invocation {
     pub id: ::prost::alloc::string::String,
     #[prost(string, tag="5")]
     pub tx_id: ::prost::alloc::string::String,
+    #[prost(message, optional, tag="6")]
+    pub inherent: ::core::option::Option<InherentData>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct InherentData {
+    #[prost(uint64, tag="1")]
+    pub seed: u64,
+    #[prost(uint64, tag="2")]
+    pub timestamp: u64,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Output {

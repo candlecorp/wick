@@ -81,25 +81,22 @@ fn expand_logging_init() -> Tokens {
 
   match found_crate {
     FoundCrate::Itself => quote! {
-      {
-        let _ = crate::init_test(&crate::LoggingOptions {
-          trace: true,
-          app_name: "test".to_owned(),
-          ..Default::default()
-        });
-      }
+      let __guard = crate::init_test(&crate::LoggingOptions {
+        trace: true,
+        app_name: "test".to_owned(),
+        ..Default::default()
+      });
     },
     FoundCrate::Name(name) => {
       let ident = Ident::new(&name, Span::call_site());
 
       quote! {
-        {
-          let _ = #ident::init_test(&#ident::LoggingOptions {
+        let __guard =
+          #ident::init_test(&#ident::LoggingOptions {
             trace: true,
             app_name: "test".to_owned(),
             ..Default::default()
           });
-        }
       }
     }
   }

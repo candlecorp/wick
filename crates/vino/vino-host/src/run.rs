@@ -83,11 +83,11 @@ pub async fn run(manifest: HostDefinition, data: TransportMap) -> crate::Result<
 
   let mut host = host_builder.build();
 
-  debug!("Starting host");
+  debug!("starting host");
 
   host.start().await?;
 
-  info!("Manifest applied");
+  info!("manifest applied");
 
   let raw_result = host.request(&default_schematic, data, None).await?;
 
@@ -109,7 +109,7 @@ mod tests {
 
     let mut result = super::run(host_def, input).await?;
     let mut messages: Vec<TransportWrapper> = result.collect_port("output").await;
-    let output: String = messages.remove(0).payload.try_into()?;
+    let output: String = messages.remove(0).payload.deserialize()?;
 
     assert_eq!(output, "test-input");
     Ok(())

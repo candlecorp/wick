@@ -44,18 +44,27 @@ pub async fn generate_archmap(
       format!("Could not find parent directory for {}", manifest.to_string_lossy()),
     )
   })?;
-  debug!("OCI:READ:[file={}]", manifest.to_string_lossy());
+  debug!(
+    path = manifest.to_string_lossy().to_string().as_str(),
+    "archmap manifest"
+  );
   let bytes = tokio::fs::read(manifest).await?;
   let pushmanifest: MultiArchManifest = serde_yaml::from_slice(&bytes)?;
   let interface_path = basedir.join(pushmanifest.interface);
-  debug!("OCI:READ:[file={}]", interface_path.to_string_lossy());
+  debug!(
+    path = interface_path.to_string_lossy().to_string().as_str(),
+    "archmap interface"
+  );
   let interface_bytes = tokio::fs::read(interface_path).await?;
   let signature: ProviderSignature = serde_json::from_slice(&interface_bytes)?;
 
   let mut archmap = ArchitectureMap::default();
   for entry in pushmanifest.artifacts {
     let binary_path = basedir.join(entry.path);
-    debug!("OCI:READ:[file={}]", binary_path.to_string_lossy());
+    debug!(
+      path = binary_path.to_string_lossy().to_string().as_str(),
+      "archmap binary"
+    );
     let bin_bytes = std::fs::File::open(binary_path)?;
 
     let archive_bytes = make_archive(&bin_bytes, &signature, options.clone(), subject_kp, issuer_kp)?;

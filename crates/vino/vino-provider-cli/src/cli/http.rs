@@ -1,15 +1,12 @@
-use std::{
-  net::{IpAddr, Ipv4Addr, SocketAddr},
-  str::FromStr,
-};
+use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+use std::str::FromStr;
 
 use tokio::sync::mpsc::Sender;
 use tonic::transport::Server;
 use vino_rpc::SharedRpcHandler;
 
-use crate::options::ServerOptions;
-
 use super::{Result, ServerMessage};
+use crate::options::ServerOptions;
 
 pub(super) async fn start_http_server(
   options: &ServerOptions,
@@ -22,7 +19,7 @@ pub(super) async fn start_http_server(
   socket.bind(SocketAddr::new(IpAddr::V4(address), port))?;
   let addr = socket.local_addr()?;
 
-  trace!("HTTP: Starting server on {}", addr);
+  trace!(addr = addr.to_string().as_str(), "starting server");
 
   socket.set_reuseaddr(true).unwrap();
   #[cfg(not(target_os = "windows"))]

@@ -157,7 +157,7 @@ impl RpcClient {
     if transpose {
       payload.transpose_output_name();
     }
-    let invocation = Invocation::new(origin, component, payload);
+    let invocation = Invocation::new(origin, component, payload, None);
 
     self.invoke(invocation).await
   }

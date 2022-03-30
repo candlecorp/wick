@@ -21,5 +21,4 @@ vino-invocation-server = { path = "../../vino/vino-invocation-server" }
 
 tracing = "0.1"
 
-maplit = "1.0"
 anyhow = "1.0"

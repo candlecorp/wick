@@ -42,38 +42,7 @@ pub fn init_test(opts: &LoggingOptions) -> Option<LoggingGuard> {
 }
 
 fn priority_module(module: &str) -> bool {
-  [
-    "logger",
-    "vino_oci",
-    "vinoc",
-    "vino",
-    "vino_cli",
-    "vino_host",
-    "vino_invocation_server",
-    "vino_lattice",
-    "vino_loader",
-    "vino_macros",
-    "vino_manifest",
-    "vino_provider_cli",
-    "vino_provider_wasm",
-    "vino_rpc",
-    "vino_runtime",
-    "vino_wascap",
-    "vino_codec",
-    "vino_entity",
-    "vino_http",
-    "vino_macros",
-    "vino_packet",
-    "vino_provider",
-    "vino_transport",
-    "vino_test",
-    "vino_types",
-    "vino_root",
-    "vow",
-    "test_vino_provider",
-    "vino_interface_keyvalue",
-  ]
-  .contains(&module)
+  ["logger", "vow", "test_vino_provider"].contains(&module)
 }
 
 #[must_use]
@@ -206,15 +175,15 @@ fn try_init(opts: &LoggingOptions, environment: &Environment) -> Result<LoggingG
     Environment::Test => (
       None,
       None,
-      None,
-      None,
-      None,
+      Some(JsonStorageLayer),
+      Some(file_layer),
+      Some(logfile_guard),
       Some(
         tracing_subscriber::fmt::layer()
           .with_writer(stderr_writer)
           .with_ansi(with_color)
           .without_time()
-          .with_target(true)
+          .with_target(false)
           .with_test_writer()
           .with_filter(get_levelfilter(opts))
           .with_filter(vino_filter()),

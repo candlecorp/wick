@@ -101,7 +101,7 @@ impl Output {
   /// Attempt to deserialize the payload into the destination type
   pub fn try_into<T: DeserializeOwned>(self) -> Result<T> {
     let transport: TransportWrapper = self.into();
-    transport.try_into().map_err(|e| RpcError::General(e.to_string()))
+    transport.deserialize().map_err(|e| RpcError::General(e.to_string()))
   }
 
   /// Convert the RPC output into a [TransportWrapper]

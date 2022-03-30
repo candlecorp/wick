@@ -72,22 +72,22 @@ pub fn config_to_par_options(
   par_options: Option<ParOptions>,
 ) -> Result<ParOptions, crate::error::ParError> {
   let mut par_options = par_options.unwrap_or_default();
-  trace!("PAR:OPTIONS: Passed config is {:?}", manifest_config);
-  trace!("PAR:OPTIONS: Passed par options are {:?}", par_options);
+  trace!(config=?manifest_config, "passed par config" );
+  trace!(config=?par_options, "passed par options");
   if let Some(v) = manifest_config {
     if v.is_object() {
       let manifest_config = serde_json::from_value::<ParOptions>(v)?;
-      trace!("WASM:WASI: Config is {:?}", manifest_config);
+      trace!(config=?manifest_config, "config is");
       for env in manifest_config.env {
         par_options
           .env
           .insert(shellexpand::env(&env.0)?.into(), shellexpand::env(&env.1)?.into());
       }
     } else {
-      debug!("PAR:OPTIONS: Invalid config ({:?}). Using default Par options.", v);
+      debug!("Invalid PAR options. Using default PPARar options.");
     }
   } else {
-    debug!("PAR:OPTIONS: No manifest config passed. Using default Par options.");
+    debug!("No PAR manifest config passed. Using default PAR options.");
   }
   Ok(par_options)
 }
@@ -96,7 +96,7 @@ pub fn config_to_par_options(
 impl RpcHandler for Provider {
   async fn invoke(&self, invocation: Invocation) -> RpcResult<BoxedTransportStream> {
     let target_url = invocation.target_url();
-    trace!("PROV:PAR:INVOKE:[{}]", target_url);
+    trace!(target = target_url.as_str(), "par invoke");
 
     let start = Instant::now();
 
@@ -108,9 +108,9 @@ impl RpcHandler for Provider {
       .map_err(|e| RpcError::ComponentError(e.to_string()))?;
 
     trace!(
-      "PROV:PAR:INVOKE:[{}]:DURATION[{} ms]",
-      target_url,
-      start.elapsed().as_millis()
+      target = target_url.as_str(),
+      duration = ?start.elapsed().as_millis(),
+      "par invoke complete",
     );
     Ok(Box::pin(stream))
   }
@@ -147,13 +147,13 @@ async fn start_bin(path: &Path, envs: Option<HashMap<String, String>>) -> Result
     tokio::time::sleep(Duration::from_millis(200)).await;
     let uri = format!("http://{}:{}", local_addr, port);
     if let Ok(connection) = vino_rpc::make_rpc_client(uri, None, None, None, None).await {
-      trace!("PROV:PAR:CONNECTED");
+      trace!("par connected");
       break Ok((child, connection));
     } else if child.try_wait().is_ok() {
-      trace!("PROV:PAR:PROCESS_EXITED");
+      trace!("par exited");
       // try again with a different port
     } else {
-      trace!("PROV:PAR:WAIT");
+      trace!("par wait");
       // still running, wait a little longer
       tokio::time::sleep(Duration::from_millis(1000)).await;
     };
@@ -167,7 +167,7 @@ async fn start_bin(path: &Path, envs: Option<HashMap<String, String>>) -> Result
 }
 
 fn unpack<T: Read + Send>(archive: T, dest: &Path) -> Result<(), Error> {
-  trace!("PROV:PAR:UNPACK[dir={}]", dest.to_string_lossy());
+  trace!(path = dest.to_string_lossy().to_string().as_str(), "par unpack");
   let mut archive = tar::Archive::new(archive);
   archive.unpack(dest)?;
   vino_par::validate_provider_dir(dest)?;
@@ -210,7 +210,7 @@ mod tests {
 
     let provider = Provider::from_tarbytes("vino-test-par", &*archive_bytes, None).await?;
     let inputs: HashMap<&str, i32> = HashMap::from([("left", 2), ("right", 5)]);
-    let invocation = Invocation::new_test(file!(), Entity::component_direct("add"), inputs.into());
+    let invocation = Invocation::new_test(file!(), Entity::local_component("add"), inputs.into(), None);
     let stream = provider.invoke(invocation).await?;
 
     let packets: Vec<_> = stream.collect().await;

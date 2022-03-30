@@ -15,7 +15,6 @@ parity-wasm = "0.42.1"
 data-encoding = "2.3.2"
 ring = "0.16"
 nuid = "0.3"
-logger = { path = "../logger" }
 tracing = "0.1"
 
 [dev-dependencies]

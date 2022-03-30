@@ -93,7 +93,7 @@ pub mod generated {
     impl From<Inputs> for TransportMap {
       fn from(inputs: Inputs) -> TransportMap {
         let mut map = TransportMap::new();
-        map.insert("filename".to_owned(), MessageTransport::success(&inputs.filename));
+        map.insert("filename", MessageTransport::success(&inputs.filename));
         map
       }
     }

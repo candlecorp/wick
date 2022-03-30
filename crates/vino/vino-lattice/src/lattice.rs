@@ -161,7 +161,7 @@ impl Lattice {
   }
 
   pub async fn handle_namespace(&self, namespace: String, provider: SharedRpcHandler) -> Result<()> {
-    trace!("LATTICE:NS_HANDLER[{}]:REGISTER", namespace);
+    trace!(namespace = namespace.as_str(), "register");
 
     let sub = self
       .nats
@@ -174,26 +174,34 @@ impl Lattice {
     let ns_inner = namespace.clone();
     let (ready_tx, ready_rx) = oneshot::channel::<()>();
     let handle = tokio::spawn(async move {
-      trace!("LATTICE:NS_HANDLER[{}]:OPEN", ns_inner);
+      trace!(namespace = ns_inner.as_str(), "handler open");
       let _ = ready_tx.send(());
       loop {
-        trace!("LATTICE:NS_HANDLER[{}]:WAIT", ns_inner);
+        trace!(namespace = ns_inner.as_str(), "handler wait");
         let next = sub.next_wait().await;
         match next {
           Some(nats_msg) => {
-            debug!("LATTICE:NS_HANDLER[{}]:MESSAGE{:?}", ns_inner, nats_msg.data());
+            debug!(
+              namespace = ns_inner.as_str(),
+              message = ?nats_msg.data(),
+              "received message"
+            );
             if let Err(e) = handle_message(&provider, nats_msg, deadline).await {
-              error!("Error processing lattice message for {}: {}", ns_inner, e);
+              error!(
+                namespace = ns_inner.as_str(),
+                error = e.to_string().as_str(),
+                "Error processing lattice message",
+              );
             }
           }
           None => {
-            trace!("LATTICE:NS_HANDLER[{}]:DONE", ns_inner);
+            trace!(namespace = ns_inner.as_str(), "handler done");
             break;
           }
         }
         let _ = nats.flush().await;
       }
-      trace!("LATTICE:NS_HANDLER[{}]:CLOSE", ns_inner);
+      trace!(namespace = ns_inner.as_str(), "handler close");
     });
 
     self.handlers.write().insert(namespace.clone(), NsHandler::new(handle));
@@ -205,7 +213,7 @@ impl Lattice {
   pub async fn invoke(&self, lattice_id: &str, invocation: Invocation) -> Result<TransportStream> {
     let target_url = invocation.target_url();
 
-    debug!("LATTICE:INVOKE[{}]:PAYLOAD[{:?}]", target_url, invocation.payload);
+    debug!(target=target_url.as_str(),payload=?invocation.payload,"invoke");
 
     let topic = rpc_message_topic(lattice_id);
     let msg = LatticeRpcMessage::Invocation(invocation);
@@ -216,22 +224,18 @@ impl Lattice {
     let stream = TransportStream::new(UnboundedReceiverStream::new(rx));
 
     tokio::spawn(async move {
-      trace!("LATTICE:INVOKE_HANDLER[{}]:OPEN", target_url);
+      trace!(target = target_url.as_str(), "invoke task open");
       loop {
-        trace!("LATTICE:INVOKE_HANDLER[{}]:WAIT", target_url);
+        trace!(target = target_url.as_str(), "invoke task wait");
         match sub.next().await {
           Ok(Some(nats_msg)) => {
-            debug!(
-              "LATTICE:INVOKE_HANDLER[{}]:RESULT:DATA:{:?}",
-              target_url,
-              nats_msg.data()
-            );
+            debug!(target = target_url.as_str(), message=?nats_msg.data(), "invoke task received message");
             if let Err(e) = handle_response(&tx, &nats_msg) {
               error!("Error processing response: {}", e);
             }
           }
           Ok(None) => {
-            trace!("LATTICE:INVOKE_HANDLER[{}]:DONE", target_url);
+            trace!(target = target_url.as_str(), "invoke task done");
             break;
           }
           Err(e) => {
@@ -240,14 +244,14 @@ impl Lattice {
           }
         }
       }
-      trace!("LATTICE:INVOKE_HANDLER[{}]:CLOSE", target_url);
+      trace!(target = target_url.as_str(), "invoke task close");
     });
 
     Ok(stream)
   }
 
   pub async fn list_components(&self, namespace: String) -> Result<Vec<HostedType>> {
-    debug!("LATTICE:LIST[{}]", namespace);
+    debug!(namespace = namespace.as_str(), "get signature");
 
     let topic = rpc_message_topic(&namespace);
     let msg = LatticeRpcMessage::List { namespace };
@@ -270,7 +274,7 @@ impl Lattice {
 
 fn handle_response(tx: &UnboundedSender<TransportWrapper>, lattice_msg: &NatsMessage) -> Result<()> {
   let msg: Result<LatticeRpcResponse> = lattice_msg.deserialize();
-  trace!("LATTICE:MSG:RESPONSE:{:?}", msg);
+  trace!(message=?msg,"lattice response");
   let result = match msg {
     Ok(response) => match response {
       LatticeRpcResponse::Output(wrapper) => tx.send(wrapper),
@@ -287,7 +291,7 @@ fn handle_response(tx: &UnboundedSender<TransportWrapper>, lattice_msg: &NatsMes
 
 async fn handle_message(provider: &SharedRpcHandler, nats_msg: NatsMessage, deadline: Duration) -> Result<()> {
   let msg: LatticeRpcMessage = nats_msg.deserialize()?;
-  trace!("LATTICE:MSG:REQUEST:{:?}", msg);
+  trace!(message=?msg,"lattice request");
   match msg {
     LatticeRpcMessage::List { .. } => {
       let result = provider.get_list();
@@ -405,8 +409,9 @@ mod test_integration {
   use test_vino_provider::Provider;
   use tokio_stream::StreamExt;
   use tracing::*;
+  use vino_rpc::MapWrapper;
   use vino_transport::{Invocation, MessageTransport, TransportMap};
-  use vino_types::{ComponentMap, ComponentSignature, HostedType, MapWrapper, ProviderSignature, StructMap};
+  use vino_types::{ComponentMap, ComponentSignature, HostedType, ProviderSignature, StructMap};
 
   use super::{Lattice, LatticeBuilder};
 
@@ -431,13 +436,13 @@ mod test_integration {
     let mut payload = TransportMap::new();
     payload.insert("input", MessageTransport::success(&user_input));
     println!("Sending payload: {:?}", payload);
-    let invocation = Invocation::new_test(file!(), entity, payload);
+    let invocation = Invocation::new_test(file!(), entity, payload, None);
     let mut stream = lattice.invoke(&lattice_id, invocation).await?;
     println!("Sent payload, received stream");
 
     let msg = stream.next().await.unwrap();
     debug!("msg: {:?}", msg);
-    let result: String = msg.try_into()?;
+    let result: String = msg.deserialize()?;
     assert_eq!(result, format!("TEST: {}", user_input));
 
     Ok(())
@@ -466,14 +471,14 @@ mod test_integration {
     let mut payload = TransportMap::new();
     payload.insert("input", MessageTransport::success(&user_input));
     debug!("Sending payload: {:?}", payload);
-    let invocation = Invocation::new_test(file!(), entity, payload);
+    let invocation = Invocation::new_test(file!(), entity, payload, None);
     let mut stream = lattice.invoke(&lattice_id, invocation).await?;
     debug!("Sent payload, received stream");
 
     let msg = stream.next().await;
     debug!("msg: {:?}", msg);
     let msg = msg.unwrap();
-    assert_eq!(msg.payload, MessageTransport::error("This always errors".to_owned()));
+    assert_eq!(msg.payload, MessageTransport::error("This always errors"));
 
     Ok(())
   }
@@ -483,7 +488,7 @@ mod test_integration {
     let (lattice, namespace) = get_lattice().await?;
     let schemas = lattice.list_components(namespace).await?;
     debug!("Hosted schemas on namespace: {:#?}", schemas);
-    let mut components = ComponentMap::new();
+    let mut components = ComponentMap::default();
     components.insert(
       "error",
       ComponentSignature {

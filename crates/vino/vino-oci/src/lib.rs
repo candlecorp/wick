@@ -117,8 +117,8 @@ pub async fn fetch_oci_bytes(img: &str, allow_latest: bool, allowed_insecure: &[
   if !allow_latest && img.ends_with(":latest") {
     return Err(OciError::LatestDisallowed(img.to_owned()));
   }
+  debug!(image = img, "oci remote");
 
-  debug!("OCI:REMOTE:{}", img);
   let img = parse_reference(img)?;
 
   let auth = if let Ok(u) = std::env::var(OCI_VAR_USER) {
@@ -194,7 +194,7 @@ pub async fn push_multi_arch(
       annotations: None,
     });
   }
-  debug!("OCI:MANIFEST_LIST:{}", root_manifest);
+  debug!(manifest = root_manifest.to_string().as_str(), "oci manifest list");
 
   let reference = parse_reference(&format!("{}/{}", reference.registry(), reference.repository()))?;
 
@@ -243,9 +243,21 @@ pub async fn push_arch(
     .await
     .map_err(|e| OciError::OciPushFailure(image_ref.clone(), e.into()))?;
   let short_ref = format!("{}/{}", image_ref.registry(), image_ref.repository());
-  debug!("OCI:PUSH:[{}][IMAGE_URL={}]", short_ref, response.image_url);
-  debug!("OCI:PUSH:[{}][MANIFEST_URL={}]", short_ref, response.manifest_url);
-  debug!("OCI:PUSH:[{}][IMAGE_URL={}]", short_ref, response.config_url);
+  debug!(
+    reference = short_ref.as_str(),
+    url = response.image_url.as_str(),
+    "push: oci image url"
+  );
+  debug!(
+    reference = short_ref.as_str(),
+    url = response.manifest_url.as_str(),
+    "push: oci manifest url"
+  );
+  debug!(
+    reference = short_ref.as_str(),
+    url = response.config_url.as_str(),
+    "push: oci config url"
+  );
 
   let (manifest, digest) = client
     .pull_manifest(&image_ref, auth)
@@ -271,9 +283,21 @@ pub async fn push_arch(
     .map_err(|e| OciError::OciPushFailure(reference.clone(), e.into()))?;
 
   let short_ref = format!("{}/{}", reference.registry(), reference.repository());
-  debug!("OCI:PUSH:[{}][IMAGE_URL={}]", short_ref, response.image_url);
-  debug!("OCI:PUSH:[{}][MANIFEST_URL={}]", short_ref, response.manifest_url);
-  debug!("OCI:PUSH:[{}][IMAGE_URL={}]", short_ref, response.config_url);
+  debug!(
+    reference = short_ref.as_str(),
+    url = response.image_url.as_str(),
+    "push: oci image url"
+  );
+  debug!(
+    reference = short_ref.as_str(),
+    url = response.manifest_url.as_str(),
+    "push: oci manifest url"
+  );
+  debug!(
+    reference = short_ref.as_str(),
+    url = response.config_url.as_str(),
+    "push: oci config url"
+  );
 
   match manifest {
     OciManifest::Image(v) => Ok((v, digest)),

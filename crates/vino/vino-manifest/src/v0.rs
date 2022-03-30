@@ -21,13 +21,11 @@
 )]
 #![warn(clippy::cognitive_complexity)]
 
-use std::collections::HashMap;
-use std::str::FromStr;
-
 use num_traits::FromPrimitive;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use serde_with_expand_env::with_expand_envs;
+use std::{collections::HashMap, str::FromStr};
 
 #[allow(non_snake_case)]
 pub(crate) fn HOST_MANIFEST_DEFAULT_SCHEMATIC() -> String {

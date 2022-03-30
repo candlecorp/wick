@@ -104,8 +104,8 @@ pub mod generated {
     impl From<Inputs> for TransportMap {
       fn from(inputs: Inputs) -> TransportMap {
         let mut map = TransportMap::new();
-        map.insert("input".to_owned(), MessageTransport::success(&inputs.input));
-        map.insert("times".to_owned(), MessageTransport::success(&inputs.times));
+        map.insert("input", MessageTransport::success(&inputs.input));
+        map.insert("times", MessageTransport::success(&inputs.times));
         map
       }
     }
@@ -192,7 +192,7 @@ pub mod generated {
     impl From<Inputs> for TransportMap {
       fn from(inputs: Inputs) -> TransportMap {
         let mut map = TransportMap::new();
-        map.insert("input".to_owned(), MessageTransport::success(&inputs.input));
+        map.insert("input", MessageTransport::success(&inputs.input));
         map
       }
     }
@@ -277,7 +277,7 @@ pub mod generated {
     impl From<Inputs> for TransportMap {
       fn from(inputs: Inputs) -> TransportMap {
         let mut map = TransportMap::new();
-        map.insert("input".to_owned(), MessageTransport::success(&inputs.input));
+        map.insert("input", MessageTransport::success(&inputs.input));
         map
       }
     }
@@ -363,8 +363,8 @@ pub mod generated {
     impl From<Inputs> for TransportMap {
       fn from(inputs: Inputs) -> TransportMap {
         let mut map = TransportMap::new();
-        map.insert("input".to_owned(), MessageTransport::success(&inputs.input));
-        map.insert("link".to_owned(), MessageTransport::success(&inputs.link));
+        map.insert("input", MessageTransport::success(&inputs.input));
+        map.insert("link", MessageTransport::success(&inputs.link));
         map
       }
     }
@@ -451,7 +451,7 @@ pub mod generated {
     impl From<Inputs> for TransportMap {
       fn from(inputs: Inputs) -> TransportMap {
         let mut map = TransportMap::new();
-        map.insert("input".to_owned(), MessageTransport::success(&inputs.input));
+        map.insert("input", MessageTransport::success(&inputs.input));
         map
       }
     }
@@ -536,7 +536,7 @@ pub mod generated {
     impl From<Inputs> for TransportMap {
       fn from(inputs: Inputs) -> TransportMap {
         let mut map = TransportMap::new();
-        map.insert("input".to_owned(), MessageTransport::success(&inputs.input));
+        map.insert("input", MessageTransport::success(&inputs.input));
         map
       }
     }

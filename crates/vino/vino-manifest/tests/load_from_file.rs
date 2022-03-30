@@ -150,7 +150,6 @@ fn load_ns_link() -> Result<(), ManifestError> {
   let schematic = &manifest.network.schematics[0];
   let from = &schematic.connections[0].from;
   assert!(from.matches_instance(NS_LINK));
-  assert!(from.is_sender());
 
   Ok(())
 }

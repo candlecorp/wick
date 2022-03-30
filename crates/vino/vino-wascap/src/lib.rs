@@ -155,7 +155,7 @@ pub fn assert_valid_jwt(token: &Token<ProviderClaims>, hash: &str) -> Result<()>
 /// Decode a JWT and its claims.
 pub fn decode_token(jwt_bytes: Vec<u8>) -> Result<Token<ProviderClaims>> {
   let jwt = String::from_utf8(jwt_bytes)?;
-  tracing::trace!("OCI:JWT:{}", jwt);
+  tracing::trace!(jtw = jwt.as_str(), "jwt");
   let claims: Claims<ProviderClaims> = Claims::decode(&jwt)?;
   Ok(Token { jwt, claims })
 }

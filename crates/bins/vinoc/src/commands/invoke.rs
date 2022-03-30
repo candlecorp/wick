@@ -49,7 +49,7 @@ pub(crate) async fn handle(opts: Options) -> Result<()> {
   .await?;
 
   let origin = Entity::client("vinoc");
-  let target = Entity::component_direct(&opts.component);
+  let target = Entity::local_component(&opts.component);
 
   let check_stdin = !opts.no_input && opts.data.is_empty() && opts.args.is_empty();
 
@@ -74,7 +74,7 @@ pub(crate) async fn handle(opts: Options) -> Result<()> {
       rest_arg_map.transpose_output_name();
     }
     data_map.merge(rest_arg_map);
-    let invocation = Invocation::new(origin, target, data_map);
+    let invocation = Invocation::new(origin, target, data_map, None);
     let stream = client.invoke(invocation).await?;
     print_stream_json(stream, opts.raw).await?;
   }
