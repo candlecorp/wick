@@ -106,30 +106,18 @@ impl Dispatch for Dispatcher {
 pub fn get_signature() -> ProviderSignature {
   let mut components = std::collections::HashMap::new();
 
-  components.insert("delete".to_owned(), vino_interface_keyvalue::delete::signature());
-  components.insert("exists".to_owned(), vino_interface_keyvalue::exists::signature());
-  components.insert("key-get".to_owned(), vino_interface_keyvalue::key_get::signature());
-  components.insert("key-set".to_owned(), vino_interface_keyvalue::key_set::signature());
-  components.insert("list-add".to_owned(), vino_interface_keyvalue::list_add::signature());
-  components.insert(
-    "list-range".to_owned(),
-    vino_interface_keyvalue::list_range::signature(),
-  );
-  components.insert(
-    "list-remove".to_owned(),
-    vino_interface_keyvalue::list_remove::signature(),
-  );
-  components.insert("set-add".to_owned(), vino_interface_keyvalue::set_add::signature());
-  components.insert(
-    "set-contains".to_owned(),
-    vino_interface_keyvalue::set_contains::signature(),
-  );
-  components.insert("set-get".to_owned(), vino_interface_keyvalue::set_get::signature());
-  components.insert(
-    "set-remove".to_owned(),
-    vino_interface_keyvalue::set_remove::signature(),
-  );
-  components.insert("set-scan".to_owned(), vino_interface_keyvalue::set_scan::signature());
+  components.insert("delete", vino_interface_keyvalue::delete::signature());
+  components.insert("exists", vino_interface_keyvalue::exists::signature());
+  components.insert("key-get", vino_interface_keyvalue::key_get::signature());
+  components.insert("key-set", vino_interface_keyvalue::key_set::signature());
+  components.insert("list-add", vino_interface_keyvalue::list_add::signature());
+  components.insert("list-range", vino_interface_keyvalue::list_range::signature());
+  components.insert("list-remove", vino_interface_keyvalue::list_remove::signature());
+  components.insert("set-add", vino_interface_keyvalue::set_add::signature());
+  components.insert("set-contains", vino_interface_keyvalue::set_contains::signature());
+  components.insert("set-get", vino_interface_keyvalue::set_get::signature());
+  components.insert("set-remove", vino_interface_keyvalue::set_remove::signature());
+  components.insert("set-scan", vino_interface_keyvalue::set_scan::signature());
 
   ProviderSignature {
     name: Some("vino-interface-keyvalue".to_owned()),

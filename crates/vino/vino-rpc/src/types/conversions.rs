@@ -218,6 +218,10 @@ impl TryFrom<vino_transport::Invocation> for rpc::Invocation {
       payload: convert_transport_map(inv.payload),
       id: inv.id,
       tx_id: inv.tx_id,
+      inherent: inv.inherent.map(|d| rpc::InherentData {
+        seed: d.seed,
+        timestamp: d.timestamp,
+      }),
     })
   }
 }
@@ -231,6 +235,10 @@ impl TryFrom<rpc::Invocation> for vino_transport::Invocation {
       payload: convert_messagekind_map(inv.payload),
       id: inv.id,
       tx_id: inv.tx_id,
+      inherent: inv.inherent.map(|d| vino_transport::InherentData {
+        seed: d.seed,
+        timestamp: d.timestamp,
+      }),
     })
   }
 }
@@ -258,7 +266,9 @@ impl TryFrom<vino::TypeSignature> for rpc::TypeSignature {
       vino::TypeSignature::Bytes => WidlType::Bytes.into(),
       vino::TypeSignature::Raw => WidlType::Raw.into(),
       vino::TypeSignature::Value => WidlType::Value.into(),
-      vino::TypeSignature::ComponentInput => WidlType::Value.into(),
+      vino::TypeSignature::Internal(t) => match t {
+        vino::InternalType::ComponentInput => Signature::Internal(InternalType::ComponentInput.into()),
+      },
       vino::TypeSignature::Ref { reference } => Signature::Ref(RefType { r#ref: reference }),
       vino::TypeSignature::List { element } => Signature::List(Box::new(ListType {
         r#type: Some(element.try_into()?),
@@ -344,7 +354,7 @@ impl TryFrom<rpc::TypeSignature> for vino::TypeSignature {
           let t = InternalType::from_i32(t);
           match t {
             Some(t) => match t {
-              InternalType::ComponentInput => DestType::ComponentInput,
+              InternalType::ComponentInput => DestType::Internal(vino_types::InternalType::ComponentInput),
             },
             None => todo!(),
           }

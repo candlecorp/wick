@@ -229,7 +229,8 @@ impl<'manifest> From<&'manifest v0::SchematicManifest> for SchematicManifest<'ma
 /// The Loadable trait can be used for any deserializable struct that can be loaded from.
 pub trait Loadable<T> {
   /// Load struct from file by trying all the supported file formats.
-  fn load_from_file(path: &Path) -> Result<T> {
+  fn load_from_file(path: impl AsRef<Path>) -> Result<T> {
+    let path = path.as_ref();
     if !path.exists() {
       return Err(Error::FileNotFound(path.to_string_lossy().into()));
     }

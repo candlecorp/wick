@@ -13,7 +13,6 @@ wasm = ["vino-provider/wasm"]
 native = ["vino-provider/native"]
 
 [dependencies]
-vino-random = { path = "../../vino/vino-random" }
 vino-rpc = { path = "../../vino/vino-rpc" }
 vino-provider-cli = { path = "../../vino/vino-provider-cli" }
 vino-provider = { path = "../../../sdk/crates/vino-provider", features = [

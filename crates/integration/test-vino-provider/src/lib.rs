@@ -67,13 +67,13 @@ mod tests {
       input: input.to_owned(),
     };
 
-    let entity = Entity::component_direct("test-component");
-    let invocation = Invocation::new_test(file!(), entity, job_payload.into());
+    let entity = Entity::local_component("test-component");
+    let invocation = Invocation::new_test(file!(), entity, job_payload.into(), None);
 
     let mut outputs = provider.invoke(invocation).await?;
     let output = outputs.next().await.unwrap();
     println!("Received payload from [{}]", output.port);
-    let payload: String = output.payload.try_into().unwrap();
+    let payload: String = output.payload.deserialize().unwrap();
 
     println!("outputs: {:?}", payload);
     assert_eq!(payload, "TEST: some_input");

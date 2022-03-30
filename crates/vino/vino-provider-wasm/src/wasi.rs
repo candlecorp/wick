@@ -1,7 +1,5 @@
-use serde::{
-  de::{IgnoredAny, SeqAccess, Visitor},
-  Deserializer,
-};
+use serde::de::{IgnoredAny, SeqAccess, Visitor};
+use serde::Deserializer;
 use wapc::WasiParams;
 
 pub const WASI_CONFIG_PREOPENED_DIRS: &str = "preopened_dirs";
@@ -93,11 +91,11 @@ pub fn config_to_wasi(
   wasi: Option<WasiParams>,
 ) -> Result<WasiParams, self::error::WasiConfigError> {
   let mut wasi = wasi.unwrap_or_default();
-  trace!("WASM:WASI: Passed config is {:?}", cfg);
-  trace!("WASM:WASI: Passed wasi params are {:?}", wasi);
+  trace!(config=?cfg, "passed WASI config" );
+  trace!(config=?wasi, "passed WASI options");
   if let Some(v) = cfg {
     let wasi_cfg = serde_json::from_value::<WasiParamsSerde>(v)?;
-    trace!("WASM:WASI: Config is {:?}", wasi_cfg);
+    trace!(config=?wasi_cfg, "config is");
     for dir in wasi_cfg.preopened_dirs {
       wasi.preopened_dirs.push(shellexpand::env(&dir)?.into());
     }

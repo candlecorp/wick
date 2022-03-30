@@ -142,7 +142,7 @@ impl WasmHost {
     let engine = {
       let engine = wasmtime_provider::WasmtimeEngineProvider::new_with_cache(&module.bytes, wasi_options, None)
         .map_err(|e| WasmProviderError::EngineFailure(e.to_string()))?;
-      trace!("WASM:Wasmtime instance loaded in {} μs", time.elapsed().as_micros());
+      trace!(duration_nanos = ?time.elapsed().as_micros(), "wasmtime instance loaded");
       engine
     };
 
@@ -158,13 +158,7 @@ impl WasmHost {
         let handle_log_call = create_log_handler();
 
         let host_callback: Box<wapc::HostCallback> = Box::new(move |_id, command, arg1, arg2, payload| {
-          trace!(
-            "WASM:WAPC_CALLBACK:CMD[{}]:ARG1[{}]:ARG2[{}]:PAYLOAD[{} bytes]",
-            command,
-            arg1,
-            arg2,
-            payload.len()
-          );
+          trace!(command, arg1, arg2, len = payload.len(), "wapc callback");
 
           let now = Instant::now();
           let result = match HostCommand::from_str(command) {
@@ -174,11 +168,8 @@ impl WasmHost {
             Err(_) => Err(format!("Invalid command: {}", command).into()),
           };
           trace!(
-            "WASM:WAPC_CALLBACK:CMD[{}]:ARG1[{}]:ARG2[{}]:TOOK[{} μs]",
-            command,
-            arg1,
-            arg2,
-            now.elapsed().as_micros()
+            command, arg1, arg2, duration_nanos = ?now.elapsed().as_micros(),
+            "wapc callback done",
           );
           result
         });
@@ -189,7 +180,7 @@ impl WasmHost {
       .max_threads(max_threads)
       .build();
 
-    debug!("WASM:Wasmtime initialized in {} μs", time.elapsed().as_micros());
+    debug!(duration_nanos = ?time.elapsed().as_micros(), "wasmtime initialize");
 
     Ok(Self {
       claims: module.claims().clone(),
@@ -215,20 +206,19 @@ impl WasmHost {
   pub async fn call(&self, component_name: &str, input_map: &HashMap<String, Vec<u8>>) -> Result<TransportStream> {
     let id = self.new_tx();
 
-    debug!("WASM:INVOKE[{}]:ID[{}]:PAYLOAD{:?}", component_name, id, input_map);
-    trace!("WASM:INVOKE[{}]:ID[{}]:START", component_name, id);
+    debug!(component = component_name, id, payload = ?input_map, "wasm invoke");
 
     let payload = serialize(&(id, &input_map)).map_err(WasmProviderError::CodecError)?;
 
     let now = Instant::now();
     let result = self.host.call(component_name, payload).await;
     trace!(
-      "WASM:INVOKE[{}]:ID[{}]:FINISH[{} μs]",
-      component_name,
+      component = component_name,
       id,
-      now.elapsed().as_micros()
+      duration_nanos = ?now.elapsed().as_micros(),
+      "wasm call finished"
     );
-    debug!("WASM:INVOKE[{}]:ID[{}]:RESULT:{:?}", component_name, id, result);
+    trace!(component = component_name, id, ?result, "wasm call result");
     let transaction = self.take_tx(id)?;
     if let Err(e) = result {
       return Err(e.into());
@@ -251,16 +241,6 @@ impl WasmHost {
     &claims.metadata.as_ref().unwrap().interface
   }
 }
-
-// pub(crate) trait RpcProxy {
-//   fn call(
-//     &self,
-//     component_name: &str,
-//     input_map: &HashMap<String, Vec<u8>>,
-//   ) -> Result<TransportStream>;
-
-//   fn get_components(&self) -> &ProviderSignature;
-// }
 
 fn create_log_handler() -> Box<InvocationFn> {
   Box::new(move |level: &str, msg: &str, _: &[u8]| {
@@ -288,17 +268,11 @@ fn create_link_handler(callback: Arc<Option<Box<HostLinkCallback>>>) -> Box<Invo
   Box::new(
     move |origin: &str, target: &str, payload: &[u8]| match callback.as_ref() {
       Some(cb) => {
-        trace!("WASM:LINK_CALL:PROVIDER[{}],COMPONENT[{}]", origin, target);
+        trace!(origin, target, "wasm link call");
         let now = Instant::now();
         let result = (cb)(origin, target, deserialize::<TransportMap>(payload)?);
         let micros = now.elapsed().as_micros();
-        trace!(
-          "WASM:LINK_CALL:PROVIDER[{}]:COMPONENT[{}]:RESULT[{} μs]:{:?}",
-          origin,
-          target,
-          micros,
-          result
-        );
+        trace!(origin, target, duration_nanos = ?micros, ?result, "wasm link call result");
 
         match result {
           Ok(packets) => {
@@ -310,12 +284,7 @@ fn create_link_handler(callback: Arc<Option<Box<HostLinkCallback>>>) -> Box<Invo
                 p
               })
               .collect();
-            trace!(
-              "WASM:LINK_CALL:PROVIDER[{}]:COMPONENT[{}]:PAYLOAD:{:?}",
-              origin,
-              target,
-              packets
-            );
+            trace!(origin, target, ?payload, "wasm link call payload");
             Ok(serialize(&packets)?)
           }
           Err(e) => Err(e.into()),
@@ -332,7 +301,7 @@ fn create_output_handler(tx_map: Arc<RwLock<HashMap<u32, RwLock<Transaction>>>>)
     let mut be_bytes: [u8; 4] = [0; 4];
     be_bytes.copy_from_slice(&bytes[0..4]);
     let id: u32 = u32::from_be_bytes(be_bytes);
-    trace!("WASM:ID[{}]:OUTPUT[{}]:PAYLOAD{:?}", id, port, payload,);
+    trace!(id, port, ?payload, "output payload");
     let mut lock = tx_map.write();
     let mut tx = lock
       .get_mut(&id)
@@ -355,14 +324,14 @@ fn create_output_handler(tx_map: Arc<RwLock<HashMap<u32, RwLock<Transaction>>>>)
           } else {
             tx.buffer.push_back((port.to_owned(), payload.into()));
             tx.buffer.push_back((port.to_owned(), Packet::V0(Payload::Done)));
-            trace!("WASM:ID[{}]:OUTPUT[{}]:CLOSING", id, port);
+            trace!(id, port, "port closing");
             tx.ports.insert(port.to_owned());
             Ok(vec![])
           }
         }
         OutputSignal::Done => {
           tx.buffer.push_back((port.to_owned(), Packet::V0(Payload::Done)));
-          trace!("WASM:ID[{}]:OUTPUT[{}]:CLOSING", id, port);
+          trace!(id, port, "port closing");
           tx.ports.insert(port.to_owned());
           Ok(vec![])
         }

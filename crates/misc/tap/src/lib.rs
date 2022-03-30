@@ -212,7 +212,7 @@ impl TestBlock {
       test: Some(Box::new(test)),
       result: Some(false),
       description: description.as_ref().to_owned(),
-      diagnostics: diagnostics.unwrap_or_else(Vec::new),
+      diagnostics: diagnostics.unwrap_or_default(),
     });
   }
 

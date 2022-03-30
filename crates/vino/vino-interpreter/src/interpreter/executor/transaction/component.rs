@@ -136,7 +136,7 @@ impl InstanceHandler {
 
   pub(crate) fn validate_payload(&self, payload: &TransportMap) -> Result<()> {
     for input in self.inputs.iter() {
-      if !payload.has(input.name()) {
+      if !payload.contains(input.name()) {
         return Err(ExecutionError::MissingInput(input.name().to_owned()));
       }
     }

@@ -5,56 +5,14 @@ use vino_transport::TransportJson;
 
 pub type TestResult<T> = Result<T, TestError>;
 
-#[macro_use]
-extern crate log;
-
 use std::collections::HashMap;
-use std::fs;
 use std::time::Duration;
 
-use vino_manifest::{Loadable, NetworkDefinition, NetworkManifest, SchematicDefinition};
-use vino_runtime::Network;
-use vino_wascap::KeyPair;
 pub type TestError = anyhow::Error;
-pub use anyhow::{anyhow, Result};
-
-pub async fn init_network_from_yaml(path: &str) -> TestResult<(Network, String)> {
-  let manifest = NetworkManifest::V0(vino_manifest::v0::NetworkManifest::from_yaml(&fs::read_to_string(
-    path,
-  )?)?);
-  let def = NetworkDefinition::from(manifest);
-  println!("Manifest loaded");
-  let kp = KeyPair::new_server();
-
-  let network = Network::new(def, &kp.seed()?)?;
-  println!("Initializing network");
-  let init = network.init().await;
-  info!("Init status : {:?}", init);
-  init?;
-
-  let network_id = network.uid.clone();
-  Ok((network, network_id))
-}
-
-pub fn load_network_manifest(path: &str) -> TestResult<NetworkDefinition> {
-  let manifest = NetworkManifest::V0(vino_manifest::v0::NetworkManifest::from_yaml(&fs::read_to_string(
-    path,
-  )?)?);
-  let def = NetworkDefinition::from(manifest);
-  println!("Manifest loaded");
-  Ok(def)
-}
-
-pub fn new_schematic(name: &str) -> SchematicDefinition {
-  SchematicDefinition {
-    name: name.to_owned(),
-    ..SchematicDefinition::default()
-  }
-}
-
 use std::panic;
 use std::process::Stdio;
 
+pub use anyhow::{anyhow, Result};
 use regex::Regex;
 use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::select;

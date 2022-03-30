@@ -18,7 +18,9 @@ network:
       instances:
         reverse_upper:
           id: wapc::reverse-uppercase
+        WAPC_LINK:
+          id: providers::lattice_wapc
       connections:
         - <> => reverse_upper[input]
-        - <link>[lattice_wapc] => reverse_upper[link]
+        - WAPC_LINK[ref] => reverse_upper[link]
         - reverse_upper[output] => <>

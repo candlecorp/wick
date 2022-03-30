@@ -46,8 +46,8 @@ impl Dispatch for Dispatcher {
 pub fn get_signature() -> ProviderSignature {
   let mut components = std::collections::HashMap::new();
 
-  components.insert("error".to_owned(), generated::error::signature());
-  components.insert("test-component".to_owned(), generated::test_component::signature());
+  components.insert("error", generated::error::signature());
+  components.insert("test-component", generated::test_component::signature());
 
   ProviderSignature {
     name: Some("test-vino-provider".to_owned()),
@@ -117,7 +117,7 @@ pub mod generated {
     impl From<Inputs> for TransportMap {
       fn from(inputs: Inputs) -> TransportMap {
         let mut map = TransportMap::new();
-        map.insert("input".to_owned(), MessageTransport::success(&inputs.input));
+        map.insert("input", MessageTransport::success(&inputs.input));
 
         map
       }
@@ -285,7 +285,7 @@ pub mod generated {
     impl From<Inputs> for TransportMap {
       fn from(inputs: Inputs) -> TransportMap {
         let mut map = TransportMap::new();
-        map.insert("input".to_owned(), MessageTransport::success(&inputs.input));
+        map.insert("input", MessageTransport::success(&inputs.input));
 
         map
       }

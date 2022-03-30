@@ -100,15 +100,15 @@ impl Dispatch for Dispatcher {
 pub fn get_signature() -> ProviderSignature {
   let mut components = std::collections::HashMap::new();
 
-  components.insert("core::error".to_owned(), generated::core::error::signature());
-  components.insert("core::log".to_owned(), generated::core::log::signature());
-  components.insert("core::panic".to_owned(), generated::core::panic::signature());
-  components.insert("math::add".to_owned(), generated::math::add::signature());
-  components.insert("math::subtract".to_owned(), generated::math::subtract::signature());
-  components.insert("rand::bytes".to_owned(), generated::rand::bytes::signature());
-  components.insert("rand::string".to_owned(), generated::rand::string::signature());
-  components.insert("rand::uuid".to_owned(), generated::rand::uuid::signature());
-  components.insert("string::concat".to_owned(), generated::string::concat::signature());
+  components.insert("core::error", generated::core::error::signature());
+  components.insert("core::log", generated::core::log::signature());
+  components.insert("core::panic", generated::core::panic::signature());
+  components.insert("math::add", generated::math::add::signature());
+  components.insert("math::subtract", generated::math::subtract::signature());
+  components.insert("rand::bytes", generated::rand::bytes::signature());
+  components.insert("rand::string", generated::rand::string::signature());
+  components.insert("rand::uuid", generated::rand::uuid::signature());
+  components.insert("string::concat", generated::string::concat::signature());
 
   ProviderSignature {
     name: Some("vino-stdlib".to_owned()),
@@ -181,7 +181,7 @@ pub mod generated {
       impl From<Inputs> for TransportMap {
         fn from(inputs: Inputs) -> TransportMap {
           let mut map = TransportMap::new();
-          map.insert("input".to_owned(), MessageTransport::success(&inputs.input));
+          map.insert("input", MessageTransport::success(&inputs.input));
 
           map
         }
@@ -349,7 +349,7 @@ pub mod generated {
       impl From<Inputs> for TransportMap {
         fn from(inputs: Inputs) -> TransportMap {
           let mut map = TransportMap::new();
-          map.insert("input".to_owned(), MessageTransport::success(&inputs.input));
+          map.insert("input", MessageTransport::success(&inputs.input));
 
           map
         }
@@ -517,7 +517,7 @@ pub mod generated {
       impl From<Inputs> for TransportMap {
         fn from(inputs: Inputs) -> TransportMap {
           let mut map = TransportMap::new();
-          map.insert("input".to_owned(), MessageTransport::success(&inputs.input));
+          map.insert("input", MessageTransport::success(&inputs.input));
 
           map
         }
@@ -693,9 +693,9 @@ pub mod generated {
       impl From<Inputs> for TransportMap {
         fn from(inputs: Inputs) -> TransportMap {
           let mut map = TransportMap::new();
-          map.insert("left".to_owned(), MessageTransport::success(&inputs.left));
+          map.insert("left", MessageTransport::success(&inputs.left));
 
-          map.insert("right".to_owned(), MessageTransport::success(&inputs.right));
+          map.insert("right", MessageTransport::success(&inputs.right));
 
           map
         }
@@ -867,9 +867,9 @@ pub mod generated {
       impl From<Inputs> for TransportMap {
         fn from(inputs: Inputs) -> TransportMap {
           let mut map = TransportMap::new();
-          map.insert("left".to_owned(), MessageTransport::success(&inputs.left));
+          map.insert("left", MessageTransport::success(&inputs.left));
 
-          map.insert("right".to_owned(), MessageTransport::success(&inputs.right));
+          map.insert("right", MessageTransport::success(&inputs.right));
 
           map
         }
@@ -1046,9 +1046,9 @@ pub mod generated {
       impl From<Inputs> for TransportMap {
         fn from(inputs: Inputs) -> TransportMap {
           let mut map = TransportMap::new();
-          map.insert("seed".to_owned(), MessageTransport::success(&inputs.seed));
+          map.insert("seed", MessageTransport::success(&inputs.seed));
 
-          map.insert("length".to_owned(), MessageTransport::success(&inputs.length));
+          map.insert("length", MessageTransport::success(&inputs.length));
 
           map
         }
@@ -1220,9 +1220,9 @@ pub mod generated {
       impl From<Inputs> for TransportMap {
         fn from(inputs: Inputs) -> TransportMap {
           let mut map = TransportMap::new();
-          map.insert("seed".to_owned(), MessageTransport::success(&inputs.seed));
+          map.insert("seed", MessageTransport::success(&inputs.seed));
 
-          map.insert("length".to_owned(), MessageTransport::success(&inputs.length));
+          map.insert("length", MessageTransport::success(&inputs.length));
 
           map
         }
@@ -1391,7 +1391,7 @@ pub mod generated {
       impl From<Inputs> for TransportMap {
         fn from(inputs: Inputs) -> TransportMap {
           let mut map = TransportMap::new();
-          map.insert("seed".to_owned(), MessageTransport::success(&inputs.seed));
+          map.insert("seed", MessageTransport::success(&inputs.seed));
 
           map
         }
@@ -1567,9 +1567,9 @@ pub mod generated {
       impl From<Inputs> for TransportMap {
         fn from(inputs: Inputs) -> TransportMap {
           let mut map = TransportMap::new();
-          map.insert("left".to_owned(), MessageTransport::success(&inputs.left));
+          map.insert("left", MessageTransport::success(&inputs.left));
 
-          map.insert("right".to_owned(), MessageTransport::success(&inputs.right));
+          map.insert("right", MessageTransport::success(&inputs.right));
 
           map
         }

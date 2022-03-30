@@ -14,13 +14,25 @@ pub(crate) async fn job(inputs: Vec<ComponentInputs>, output: OutputPorts, conte
         if v.expires == 0 {
           transaction.cmd("SET").arg(v.key).arg(v.value)
         } else {
-          transaction.cmd("SETEX").arg(v.key).arg(v.value).arg(v.expires)
+          transaction.cmd("SETEX").arg(v.key).arg(v.expires).arg(v.value)
         }
       }
-      ComponentInputs::ListAdd(v) => transaction.cmd("RPUSH").arg(v.key).arg(v.values),
+      ComponentInputs::ListAdd(v) => {
+        transaction = transaction.cmd("RPUSH").arg(v.key);
+        for value in v.values {
+          transaction = transaction.arg(value);
+        }
+        transaction
+      }
       ComponentInputs::ListRange(v) => transaction.cmd("LRANGE").arg(v.key).arg(v.start).arg(v.end),
       ComponentInputs::ListRemove(v) => transaction.cmd("LREM").arg(v.key).arg(v.num).arg(v.value),
-      ComponentInputs::SetAdd(v) => transaction.cmd("RPUSH").arg(v.key),
+      ComponentInputs::SetAdd(v) => {
+        transaction = transaction.cmd("SADD").arg(v.key);
+        for value in v.values {
+          transaction = transaction.arg(value);
+        }
+        transaction
+      }
       ComponentInputs::SetContains(v) => transaction.cmd("SISMEMBER").arg(v.key).arg(v.member),
       ComponentInputs::SetGet(v) => transaction.cmd("SMEMBERS").arg(v.key),
       ComponentInputs::SetRemove(v) => transaction.cmd("SREM").arg(v.key).arg(v.values),

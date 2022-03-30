@@ -107,18 +107,22 @@ pub async fn get_bytes_from_oci(path: &str, allow_latest: bool, allowed_insecure
 pub async fn get_bytes(location: &str, allow_latest: bool, allowed_insecure: &[String]) -> Result<Vec<u8>> {
   let path = Path::new(&location);
   if path.exists() {
-    debug!("LOAD:AS_FILE:{}", location);
+    debug!(location, "load as file");
     Ok(get_bytes_from_file(path).await?)
   } else {
     let cache_path = cache_location("ocicache", location);
     if cache_path.exists() {
-      debug!("LOAD:FROM_CACHE:{}", cache_path.to_string_lossy());
+      debug!(
+        path = cache_path.to_string_lossy().to_string().as_str(),
+        "load from cache"
+      );
+
       let mut buf = vec![];
       let mut f = std::fs::File::open(cache_path)?;
       f.read_to_end(&mut buf)?;
       Ok(buf)
     } else {
-      debug!("LOAD:AS_OCI:{}", location);
+      debug!(location, "load as OCI");
       let bytes = get_bytes_from_oci(location, allow_latest, allowed_insecure).await?;
       let mut f = std::fs::File::create(cache_path)?;
       f.write_all(&bytes)?;
@@ -137,7 +141,7 @@ pub fn cache_location(bucket: &str, reference: &str) -> PathBuf {
   let path = path.join(CACHE_ROOT);
   let path = path.join(bucket);
   let _ = ::std::fs::create_dir_all(&path);
-  let reference = reference.replace(":", "_").replace("/", "_").replace(".", "_");
+  let reference = reference.replace(':', "_").replace('/', "_").replace('.', "_");
   let mut path = path.join(reference);
   path.set_extension(CACHE_EXT);
 

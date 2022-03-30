@@ -37,8 +37,7 @@ impl Provider {
   ) -> Result<Self, Error> {
     let mut builder = WasmHostBuilder::new();
 
-    // TODO: progagate a name for better messages.
-    let name = "unnamed";
+    let name = module.name().clone().unwrap_or_else(|| module.id().clone());
 
     // If we're passed a "wasi" field in the config map...
     if let Some(config) = config {
@@ -46,15 +45,16 @@ impl Provider {
       if wasi_cfg.is_some() {
         // extract and merge the wasi config with the passed wasi params.
         let wasi = config_to_wasi(wasi_cfg.cloned(), wasi_params)?;
-        debug!("WASM[{}]:WASI[enabled]:CFG[{:?}]", name, wasi);
+        debug!(id=name.as_str(), config=?wasi, "wasi enabled");
         builder = builder.wasi_params(wasi);
       }
     } else if let Some(opts) = wasi_params {
       // if we were passed wasi params, use those.
-      debug!("WASM[{}]:WASI[enabled]:CFG[{:?}]", name, opts);
+      debug!(id=name.as_str(), config=?opts, "wasi enabled");
+
       builder = builder.wasi_params(opts);
     } else {
-      debug!("WASM[{}]:WASI[disabled]", name);
+      debug!(id = name.as_str(), "wasi disabled");
     }
     builder = builder.max_threads(max_threads);
 
@@ -70,7 +70,7 @@ impl Provider {
 #[async_trait]
 impl RpcHandler for Provider {
   async fn invoke(&self, invocation: Invocation) -> RpcResult<BoxedTransportStream> {
-    trace!("WASM:INVOKE:[{}]", invocation.target_url());
+    trace!(target = invocation.target.url().as_str(), "wasm invoke");
     let component = invocation.target.name();
     let messagepack_map = invocation
       .payload
@@ -134,12 +134,12 @@ mod tests {
       "input".to_owned() => MessageTransport::messagepack(input),
     });
     debug!("payload: {:?}", job_payload);
-    let entity = Entity::component_direct("validate");
-    let invocation = Invocation::new_test(file!(), entity, job_payload);
+    let entity = Entity::local_component("validate");
+    let invocation = Invocation::new_test(file!(), entity, job_payload, None);
     let mut outputs = provider.invoke(invocation).await?;
     let output = outputs.next().await.unwrap();
     println!("payload from [{}]: {:?}", output.port, output.payload);
-    let output: String = output.payload.try_into()?;
+    let output: String = output.payload.deserialize()?;
 
     println!("output: {:?}", output);
     assert_eq!(output, input);

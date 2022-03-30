@@ -64,22 +64,8 @@ impl Nats {
     self.nc.flush().await.map_err(LatticeError::ShutdownError)
   }
 
-  #[allow(unused)]
-  pub(crate) async fn publish(&self, topic: String, payload: Vec<u8>) -> Result<()> {
-    self
-      .nc
-      .publish(&topic, payload)
-      .await
-      .map_err(|e| LatticeError::PublishFail(e.to_string()))
-  }
-
-  #[allow(unused)]
-  pub(crate) fn new_inbox(&self) -> String {
-    self.nc.new_inbox()
-  }
-
   pub(crate) async fn request(&self, topic: &str, payload: &[u8]) -> Result<NatsSubscription> {
-    trace!("LATTICE:REQUEST[{}]:PAYLOAD{:?}", topic, payload);
+    trace!(topic, ?payload, "lattice request");
     let sub = self
       .nc
       .request_multi(topic, payload)
@@ -105,7 +91,7 @@ impl Nats {
   }
 
   pub(crate) async fn queue_subscribe(&self, topic: String, group: String) -> Result<NatsSubscription> {
-    trace!("LATTICE:QSUB[{},{}]", topic, group);
+    trace!(topic = topic.as_str(), group = group.as_str(), "lattice subscribe");
     let sub = self
       .nc
       .queue_subscribe(&topic, &group)
@@ -154,9 +140,9 @@ impl NatsMessage {
   pub(crate) async fn respond(&self, response: &LatticeRpcResponse) -> Result<()> {
     let data = serialize(response).unwrap_or_else(|e| serialize(&LatticeRpcResponse::Error(e.to_string())).unwrap());
     trace!(
-      "LATTICE:MSG:RESPOND[{}]:PAYLOAD{:?}",
-      self.inner.reply.as_ref().unwrap_or(&"".to_owned()),
-      data
+      target = self.inner.reply.as_ref().unwrap_or(&"".to_owned()).as_str(),
+      ?data,
+      "lattice respond"
     );
     let msg = self.inner.clone();
     msg.respond(data).await.map_err(LatticeError::ResponseFail)

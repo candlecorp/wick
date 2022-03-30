@@ -10,7 +10,7 @@ use serde_json::Value;
 use vino_transport::MessageTransport;
 
 use crate::default::{parse_default, process_default};
-use crate::parse::{parse_id, CORE_ID, NS_LINK, SCHEMATIC_INPUT, SCHEMATIC_OUTPUT};
+use crate::parse::parse_id;
 use crate::{Error, Result, SchematicManifest};
 
 #[derive(Debug, Clone, Default)]
@@ -330,19 +330,6 @@ impl ConnectionTargetDefinition {
     self.data.as_ref()
   }
 
-  #[must_use]
-  /// Returns true if the target is a componentless data sender or a namespace link.
-  pub fn is_sender(&self) -> bool {
-    let is_sender = self.target.instance == crate::parse::SENDER_ID && self.target.port == crate::parse::SENDER_PORT;
-    self.is_nslink() || is_sender
-  }
-
-  #[must_use]
-  /// Returns true if the target is an namespace link.
-  pub fn is_nslink(&self) -> bool {
-    self.target.instance == NS_LINK
-  }
-
   /// Create a [ConnectionTargetDefinition] with the target set to the passed port.
   pub fn from_port(port: PortReference) -> Self {
     Self {
@@ -355,18 +342,6 @@ impl ConnectionTargetDefinition {
   /// Convenience method to test if the target's instance matches the passed string.
   pub fn matches_instance(&self, instance: &str) -> bool {
     self.target.instance == instance
-  }
-
-  #[must_use]
-  /// Returns true if this component is a valid system component for an originating connection.
-  pub fn is_system_upstream(&self) -> bool {
-    self.target.instance == CORE_ID || self.target.instance == SCHEMATIC_INPUT || self.is_sender()
-  }
-
-  #[must_use]
-  /// Returns true if this component is a valid system component for a destination connection.
-  pub fn is_system_downstream(&self) -> bool {
-    self.target.instance == SCHEMATIC_OUTPUT
   }
 
   #[must_use]

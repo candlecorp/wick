@@ -66,6 +66,7 @@ fn determine_directory(directory: Option<String>) -> Result<String, Error> {
   #[cfg(target_os = "windows")]
   let env_home = "USERPROFILE";
 
+  #[allow(clippy::option_if_let_else)]
   if let Some(d) = directory {
     Ok(d)
   } else if let Ok(home) = env::var(env_home) {

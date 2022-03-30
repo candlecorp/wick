@@ -224,6 +224,7 @@ impl TestData {
 }
 
 #[allow(clippy::too_many_lines)]
+#[instrument(skip_all, name = "test_run")]
 pub async fn run_test(
   name: String,
   expected: Vec<&mut TestData>,
@@ -233,14 +234,14 @@ pub async fn run_test(
 
   for (i, test) in expected.into_iter().enumerate() {
     let payload = test.get_payload();
-    let entity = Entity::component_direct(test.component.clone());
+    let entity = Entity::local_component(test.component.clone());
     let test_name = test.get_description();
     let mut test_block = TestBlock::new(Some(test_name.clone()));
     let prefix = |msg: &str| format!("{}:{}", test_name, msg);
 
-    trace!("TEST[{}]:INVOKE[{}]", i, entity,);
-    trace!("TEST[{}]:PAYLOAD:{:?}", i, payload,);
-    let invocation = Invocation::new_test(&test_name, entity, payload);
+    trace!(i, ?entity, "invoke");
+    trace!(i, ?payload, "payload");
+    let invocation = Invocation::new_test(&test_name, entity, payload, None);
     let result = provider
       .invoke(invocation)
       .await
@@ -286,7 +287,7 @@ pub async fn run_test(
         let actual_payload = actual.payload.clone();
 
         let actual_value: Result<serde_value::Value, Error> = actual_payload
-          .try_into()
+          .deserialize()
           .map_err(|e| Error::ConversionFailed(e.to_string()));
         let expected_value = value.clone();
 
@@ -301,8 +302,8 @@ pub async fn run_test(
           format!("Expected: {:?}", expected_value),
         ]);
 
-        debug!("TEST[{}:{}]:ACTUAL:{:?}", i, j, actual_value);
-        debug!("TEST[{}:{}]:EXPECTED:{:?}", i, j, expected_value);
+        info!(i,j,actual=?actual_value, "actual");
+        info!(i,j,expected=?expected_value, "expected");
         test_block.add_test(
           move || match actual_value {
             Ok(val) => eq(val, expected_value),
@@ -354,7 +355,7 @@ pub async fn run_test(
     for i in num_tested..test.actual.len() {
       if let Some(output) = test.actual.get(i) {
         if !matches!(output.payload, MessageTransport::Signal(_)) {
-          debug!("TEST:MISSED:{:?}", output);
+          debug!(?output, "test missed");
           missed.push(output);
         }
       }

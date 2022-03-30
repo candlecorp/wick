@@ -28,7 +28,7 @@ impl Provider {
 impl RpcHandler for Provider {
   async fn invoke(&self, invocation: Invocation) -> RpcResult<BoxedTransportStream> {
     let target_url = invocation.target_url();
-    trace!("PROV:PAR:INVOKE:[{}]", target_url);
+    trace!(target = target_url.as_str(), "grpc invoke");
 
     let start = Instant::now();
 
@@ -40,9 +40,9 @@ impl RpcHandler for Provider {
       .map_err(|e| RpcError::ComponentError(e.to_string()))?;
 
     trace!(
-      "PROV:PAR:INVOKE:[{}]:DURATION[{} ms]",
-      target_url,
-      start.elapsed().as_millis()
+      target = target_url.as_str(),
+      duration = ?start.elapsed().as_millis(),
+      "grpc invoke complete",
     );
     Ok(Box::pin(stream))
   }
@@ -80,8 +80,9 @@ mod test {
     let service = Provider::new(addr).await?;
     let invocation = Invocation::new_test(
       file!(),
-      Entity::component_direct("test-component"),
+      Entity::local_component("test-component"),
       vec![("input", user_data)].into(),
+      None,
     );
 
     let work = service.invoke(invocation);
@@ -92,7 +93,7 @@ mod test {
             match res {
               Ok(mut response)=>{
                 let next: TransportWrapper = response.next().await.unwrap();
-                let payload: String = next.payload.try_into()?;
+                let payload: String = next.payload.deserialize()?;
                 assert_eq!(payload, format!("TEST: {}", user_data));
               },
               Err(e)=>{

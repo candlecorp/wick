@@ -17,10 +17,10 @@ pub fn make_archive<T: Read>(
 ) -> Result<Vec<u8>, ParError> {
   let signature_json = serde_json::to_string(&signature)?;
   let signature_bytes = signature_json.as_bytes();
-  debug!("OCI:BUNDLE:SIGNATURE[{} bytes]", signature_bytes.len());
+  debug!(len = signature_bytes.len(), "bundle signature length");
 
   let mut sig_header = Header::new_gnu();
-  sig_header.set_path("interface.json".to_owned())?;
+  sig_header.set_path("interface.json")?;
   sig_header.set_size(signature_bytes.len().try_into().unwrap());
   sig_header.set_cksum();
   let archive_bytes = Vec::new();
@@ -29,20 +29,21 @@ pub fn make_archive<T: Read>(
   archive.append(&sig_header, signature_bytes)?;
 
   let claims = vino_wascap::build_provider_claims(signature.clone(), subject_kp, issuer_kp, claims_options);
-  trace!("OCI:ARCHIVE:CLAIMS:{:?}", claims);
+  debug!(?claims, "oci archive claims");
   let mut bin_bytes = Vec::new();
   binary.read_to_end(&mut bin_bytes)?;
   let combined_bytes = bin_bytes.chain(&*signature_bytes);
   let jwt_bytes = vino_wascap::make_jwt(combined_bytes, &claims, issuer_kp)?;
   let mut jwt_header = Header::new_gnu();
-  jwt_header.set_path("archive.jwt".to_owned())?;
+  jwt_header.set_path("archive.jwt")?;
   jwt_header.set_size(jwt_bytes.len().try_into().unwrap());
   jwt_header.set_cksum();
-  debug!("OCI:BUNDLE:JWT[{} bytes]", jwt_bytes.len());
+  debug!(len = jwt_bytes.len(), "jwt length");
+  debug!(len = jwt_bytes.len(), "bundle jwt length",);
   archive.append(&jwt_header, &*jwt_bytes)?;
 
   let mut bin_header = Header::new_gnu();
-  bin_header.set_path("main.bin".to_owned())?;
+  bin_header.set_path("main.bin")?;
   bin_header.set_mode(0o555);
   bin_header.set_size(bin_bytes.len() as _);
   bin_header.set_cksum();
@@ -62,13 +63,11 @@ pub const INTERFACE_PATH: &str = "interface.json";
 
 /// Validates an archive's contents by decoding the contained JWT and validating its hash against the binary and interface.
 pub fn validate_provider<B: Read, I: Read>(binary: B, interface: I, jwt: Vec<u8>) -> Result<(), ParError> {
-  debug!("OCI:VALIDATE_ARCHIVE");
-
   let combined = binary.chain(interface);
 
   let token = vino_wascap::decode_token(jwt)?;
   let hash = vino_wascap::hash_bytes(combined)?;
-  trace!("OCI:ARCHIVE:[Hash={}][Token={:?}]", hash, token);
+  trace!(hash = hash.as_str(), ?token, "oci archive");
 
   vino_wascap::assert_valid_jwt(&token, &hash)?;
   Ok(())

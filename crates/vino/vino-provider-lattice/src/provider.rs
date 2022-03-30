@@ -34,7 +34,7 @@ impl Provider {
 impl RpcHandler for Provider {
   async fn invoke(&self, invocation: Invocation) -> RpcResult<BoxedTransportStream> {
     let target_url = invocation.target_url();
-    trace!("PROV:LATTICE:INVOKE:[{}]", target_url);
+    trace!(target = target_url.as_str(), "lattice invoke");
 
     let start = Instant::now();
     let stream = self
@@ -43,9 +43,9 @@ impl RpcHandler for Provider {
       .await
       .map_err(|e| RpcError::ProviderError(e.to_string()))?;
     trace!(
-      "PROV:LATTICE:INVOKE:[{}]:DURATION[{} ms]",
-      target_url,
-      start.elapsed().as_millis()
+      target = target_url.as_str(),
+      duration = ?start.elapsed().as_millis(),
+      "lattice invoke complete",
     );
 
     Ok(Box::pin(stream))
@@ -89,12 +89,12 @@ mod tests {
       "input".to_owned(),
       MessageTransport::messagepack(user_data),
     )]));
-    let invocation = Invocation::new_test(file!(), Entity::component(ns, "test-component"), job_payload);
+    let invocation = Invocation::new_test(file!(), Entity::component(ns, "test-component"), job_payload, None);
 
     let mut outputs = provider.invoke(invocation).await?;
     let output = outputs.next().await.unwrap();
     println!("payload from [{}]: {:?}", output.port, output.payload);
-    let output: String = output.payload.try_into()?;
+    let output: String = output.payload.deserialize()?;
 
     println!("output: {:?}", output);
     assert_eq!(output, format!("TEST: {}", user_data));
@@ -116,12 +116,12 @@ mod tests {
       "input".to_owned(),
       MessageTransport::messagepack(user_data),
     )]));
-    let invocation = Invocation::new_test(file!(), Entity::component(ns, "error"), job_payload);
+    let invocation = Invocation::new_test(file!(), Entity::component(ns, "error"), job_payload, None);
 
     let mut outputs = provider.invoke(invocation).await?;
     let output = outputs.next().await.unwrap();
     println!("payload from [{}]: {:?}", output.port, output.payload);
-    assert_eq!(output.payload, MessageTransport::error("This always errors".to_owned()));
+    assert_eq!(output.payload, MessageTransport::error("This always errors"));
     Ok(())
   }
 }

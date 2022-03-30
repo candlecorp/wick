@@ -79,7 +79,7 @@ impl tower_service::Service<Request<hyper::Body>> for ProviderService {
               }
             }
           };
-          let invocation = Invocation::new(Entity::system("http", ""), target, payload);
+          let invocation = Invocation::new(Entity::system("http", ""), target, payload, None);
           match provider.invoke(invocation).await {
             Ok(stream) => {
               trace!("HTTP:INVOKE:OK");
@@ -218,7 +218,7 @@ pub fn has_rpc_call(req: &Request<hyper::Body>) -> Option<RequestKind> {
     debug!("HTTP:COMMAND[{}]", command);
     match command {
       "invoke" => parts.next().map(|component| {
-        let entity = Entity::component_direct(component);
+        let entity = Entity::local_component(component);
         RequestKind::Invocation { target: entity }
       }),
       "list" => Some(RequestKind::List),

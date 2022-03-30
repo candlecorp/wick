@@ -57,7 +57,7 @@ pub mod __multi__ {
   impl From<Inputs> for TransportMap {
     fn from(inputs: Inputs) -> TransportMap {
       let mut map = TransportMap::new();
-      map.insert("inputs".to_owned(), MessageTransport::success(&inputs.inputs));
+      map.insert("inputs", MessageTransport::success(&inputs.inputs));
 
       map
     }
@@ -70,7 +70,7 @@ pub mod __multi__ {
     map.insert(
       "inputs".to_owned(),
       TypeSignature::List {
-        element: Box::new(TypeSignature::ComponentInput),
+        element: Box::new(TypeSignature::Internal(InternalType::ComponentInput)),
       },
     );
     map
@@ -210,7 +210,7 @@ pub mod delete {
   impl From<Inputs> for TransportMap {
     fn from(inputs: Inputs) -> TransportMap {
       let mut map = TransportMap::new();
-      map.insert("keys".to_owned(), MessageTransport::success(&inputs.keys));
+      map.insert("keys", MessageTransport::success(&inputs.keys));
 
       map
     }
@@ -362,7 +362,7 @@ pub mod exists {
   impl From<Inputs> for TransportMap {
     fn from(inputs: Inputs) -> TransportMap {
       let mut map = TransportMap::new();
-      map.insert("key".to_owned(), MessageTransport::success(&inputs.key));
+      map.insert("key", MessageTransport::success(&inputs.key));
 
       map
     }
@@ -509,7 +509,7 @@ pub mod key_get {
   impl From<Inputs> for TransportMap {
     fn from(inputs: Inputs) -> TransportMap {
       let mut map = TransportMap::new();
-      map.insert("key".to_owned(), MessageTransport::success(&inputs.key));
+      map.insert("key", MessageTransport::success(&inputs.key));
 
       map
     }
@@ -662,11 +662,11 @@ pub mod key_set {
   impl From<Inputs> for TransportMap {
     fn from(inputs: Inputs) -> TransportMap {
       let mut map = TransportMap::new();
-      map.insert("key".to_owned(), MessageTransport::success(&inputs.key));
+      map.insert("key", MessageTransport::success(&inputs.key));
 
-      map.insert("value".to_owned(), MessageTransport::success(&inputs.value));
+      map.insert("value", MessageTransport::success(&inputs.value));
 
-      map.insert("expires".to_owned(), MessageTransport::success(&inputs.expires));
+      map.insert("expires", MessageTransport::success(&inputs.expires));
 
       map
     }
@@ -818,9 +818,9 @@ pub mod list_add {
   impl From<Inputs> for TransportMap {
     fn from(inputs: Inputs) -> TransportMap {
       let mut map = TransportMap::new();
-      map.insert("key".to_owned(), MessageTransport::success(&inputs.key));
+      map.insert("key", MessageTransport::success(&inputs.key));
 
-      map.insert("values".to_owned(), MessageTransport::success(&inputs.values));
+      map.insert("values", MessageTransport::success(&inputs.values));
 
       map
     }
@@ -979,11 +979,11 @@ pub mod list_range {
   impl From<Inputs> for TransportMap {
     fn from(inputs: Inputs) -> TransportMap {
       let mut map = TransportMap::new();
-      map.insert("key".to_owned(), MessageTransport::success(&inputs.key));
+      map.insert("key", MessageTransport::success(&inputs.key));
 
-      map.insert("start".to_owned(), MessageTransport::success(&inputs.start));
+      map.insert("start", MessageTransport::success(&inputs.start));
 
-      map.insert("end".to_owned(), MessageTransport::success(&inputs.end));
+      map.insert("end", MessageTransport::success(&inputs.end));
 
       map
     }
@@ -1143,11 +1143,11 @@ pub mod list_remove {
   impl From<Inputs> for TransportMap {
     fn from(inputs: Inputs) -> TransportMap {
       let mut map = TransportMap::new();
-      map.insert("key".to_owned(), MessageTransport::success(&inputs.key));
+      map.insert("key", MessageTransport::success(&inputs.key));
 
-      map.insert("value".to_owned(), MessageTransport::success(&inputs.value));
+      map.insert("value", MessageTransport::success(&inputs.value));
 
-      map.insert("num".to_owned(), MessageTransport::success(&inputs.num));
+      map.insert("num", MessageTransport::success(&inputs.num));
 
       map
     }
@@ -1299,9 +1299,9 @@ pub mod set_add {
   impl From<Inputs> for TransportMap {
     fn from(inputs: Inputs) -> TransportMap {
       let mut map = TransportMap::new();
-      map.insert("key".to_owned(), MessageTransport::success(&inputs.key));
+      map.insert("key", MessageTransport::success(&inputs.key));
 
-      map.insert("values".to_owned(), MessageTransport::success(&inputs.values));
+      map.insert("values", MessageTransport::success(&inputs.values));
 
       map
     }
@@ -1457,9 +1457,9 @@ pub mod set_contains {
   impl From<Inputs> for TransportMap {
     fn from(inputs: Inputs) -> TransportMap {
       let mut map = TransportMap::new();
-      map.insert("key".to_owned(), MessageTransport::success(&inputs.key));
+      map.insert("key", MessageTransport::success(&inputs.key));
 
-      map.insert("member".to_owned(), MessageTransport::success(&inputs.member));
+      map.insert("member", MessageTransport::success(&inputs.member));
 
       map
     }
@@ -1607,7 +1607,7 @@ pub mod set_get {
   impl From<Inputs> for TransportMap {
     fn from(inputs: Inputs) -> TransportMap {
       let mut map = TransportMap::new();
-      map.insert("key".to_owned(), MessageTransport::success(&inputs.key));
+      map.insert("key", MessageTransport::success(&inputs.key));
 
       map
     }
@@ -1762,9 +1762,9 @@ pub mod set_remove {
   impl From<Inputs> for TransportMap {
     fn from(inputs: Inputs) -> TransportMap {
       let mut map = TransportMap::new();
-      map.insert("key".to_owned(), MessageTransport::success(&inputs.key));
+      map.insert("key", MessageTransport::success(&inputs.key));
 
-      map.insert("values".to_owned(), MessageTransport::success(&inputs.values));
+      map.insert("values", MessageTransport::success(&inputs.values));
 
       map
     }
@@ -1923,11 +1923,11 @@ pub mod set_scan {
   impl From<Inputs> for TransportMap {
     fn from(inputs: Inputs) -> TransportMap {
       let mut map = TransportMap::new();
-      map.insert("key".to_owned(), MessageTransport::success(&inputs.key));
+      map.insert("key", MessageTransport::success(&inputs.key));
 
-      map.insert("cursor".to_owned(), MessageTransport::success(&inputs.cursor));
+      map.insert("cursor", MessageTransport::success(&inputs.cursor));
 
-      map.insert("count".to_owned(), MessageTransport::success(&inputs.count));
+      map.insert("count", MessageTransport::success(&inputs.count));
 
       map
     }
