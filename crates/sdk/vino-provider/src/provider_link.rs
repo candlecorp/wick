@@ -60,3 +60,9 @@ impl ProviderLink {
     unimplemented!("Link calls from native providers is not implemented yet")
   }
 }
+
+impl std::fmt::Display for ProviderLink {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    write!(f, "{}=>{}", self.origin_entity, self.linked_entity)
+  }
+}

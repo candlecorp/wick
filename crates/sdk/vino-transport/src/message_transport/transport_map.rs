@@ -13,16 +13,13 @@ use vino_codec::raw;
 #[cfg(feature = "json")]
 use super::transport_json::TransportJson;
 use crate::error::TransportError;
-use crate::{Error, Failure, MessageTransport, Success};
+use crate::{Error, Failure, MessageTransport, Success, TransportWrapper};
 pub(crate) type Result<T> = std::result::Result<T, TransportError>;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
 #[must_use]
 /// A wrapper for a map of [String]s to [MessageTransport]
-pub struct TransportMap(
-  HashMap<String, MessageTransport>,
-  Option<HashMap<String, String>>,
-);
+pub struct TransportMap(HashMap<String, MessageTransport>, Option<HashMap<String, String>>);
 
 impl TransportMap {
   /// Constructor for [TransportMap] with initial map
@@ -54,10 +51,7 @@ impl TransportMap {
     } else {
       let json: HashMap<String, TransportJson> = json::deserialize(json).map_err(de_err)?;
       Ok(TransportMap::from_map(
-        json
-          .into_iter()
-          .map(|(name, val)| (name, val.into()))
-          .collect(),
+        json.into_iter().map(|(name, val)| (name, val.into())).collect(),
       ))
     }
   }
@@ -83,13 +77,10 @@ impl TransportMap {
   pub fn from_kv_json(values: &[String]) -> Result<Self> {
     let mut payload = TransportMap::new();
     for input in values {
-      match input.split_once("=") {
+      match input.split_once('=') {
         Some((name, value)) => {
           debug!("PORT:'{}', VALUE:'{}'", name, value);
-          payload.insert(
-            name,
-            MessageTransport::Success(Success::Json(value.to_owned())),
-          );
+          payload.insert(name, MessageTransport::Success(Success::Json(value.to_owned())));
         }
         None => {
           return Err(Error::DeserializationError(format!(
@@ -103,12 +94,25 @@ impl TransportMap {
   }
 
   /// Insert a [MessageTransport] by port name
-  pub fn insert<T: AsRef<str>>(
-    &mut self,
-    port: T,
-    msg: MessageTransport,
-  ) -> Option<MessageTransport> {
+  pub fn insert<T: AsRef<str>>(&mut self, port: T, msg: MessageTransport) -> Option<MessageTransport> {
     self.0.insert(port.as_ref().to_owned(), msg)
+  }
+
+  /// Check if the [TransportMap] has a [MessageTransport] by the specified name.
+  pub fn contains<T: AsRef<str>>(&self, port: T) -> bool {
+    self.0.contains_key(port.as_ref())
+  }
+
+  /// Returns the number of messages in the [TransportMap].
+  #[must_use]
+  pub fn len(&self) -> usize {
+    self.0.len()
+  }
+
+  /// Returns true if the [TransportMap] has no contained messages.
+  #[must_use]
+  pub fn is_empty(&self) -> bool {
+    self.0.is_empty()
   }
 
   /// Get a reference to the [MessageTransport] behind the passed port
@@ -119,9 +123,10 @@ impl TransportMap {
 
   /// Remove a key from the held map and attempt to deserialize it into the destination type
   pub fn consume<T: DeserializeOwned>(&mut self, key: &str) -> Result<T> {
-    let v = self.0.remove(key).ok_or_else(|| {
-      Error::DeserializationError(format!("TransportMap does not have field '{}'", key))
-    })?;
+    let v = self
+      .0
+      .remove(key)
+      .ok_or_else(|| Error::DeserializationError(format!("TransportMap does not have field '{}'", key)))?;
     let e = Err(Error::DeserializationError(format!(
       "Payload could not be converted to destination type. Payload was: {:?}",
       v
@@ -141,9 +146,10 @@ impl TransportMap {
 
   /// Remove a key from the held map and return the raw [MessageTransport].
   pub fn consume_raw(&mut self, key: &str) -> Result<MessageTransport> {
-    self.0.remove(key).ok_or_else(|| {
-      Error::DeserializationError(format!("TransportMap does not have field '{}'", key))
-    })
+    self
+      .0
+      .remove(key)
+      .ok_or_else(|| Error::DeserializationError(format!("TransportMap does not have field '{}'", key)))
   }
 
   /// Transpose any ports named "output" to "input". This is for a better user experience when
@@ -234,6 +240,46 @@ impl TransportMap {
       self.insert(k, v);
     }
   }
+
+  /// Return an iterator over the port name and its [MessageTransport]
+  pub fn iter(&self) -> impl Iterator<Item = (&String, &MessageTransport)> {
+    self.0.iter()
+  }
+}
+
+pub struct IntoIter {
+  iter: Box<dyn Iterator<Item = TransportWrapper> + Send>,
+}
+
+impl IntoIter {
+  pub fn new(map: TransportMap) -> Self {
+    let iter = map.into_inner().into_iter().map(TransportWrapper::from);
+    Self { iter: Box::new(iter) }
+  }
+}
+
+impl Iterator for IntoIter {
+  type Item = TransportWrapper;
+
+  fn next(&mut self) -> Option<Self::Item> {
+    self.iter.next()
+  }
+}
+
+impl std::fmt::Debug for IntoIter {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    f.debug_struct("IntoIter<T>").finish()
+  }
+}
+
+impl IntoIterator for TransportMap {
+  type Item = TransportWrapper;
+
+  type IntoIter = IntoIter;
+
+  fn into_iter(self) -> Self::IntoIter {
+    IntoIter::new(self)
+  }
 }
 
 impl<K, V> TryFrom<&HashMap<K, V>> for TransportMap
@@ -249,9 +295,7 @@ where
       .map(|(k, v)| {
         Ok((
           k.as_ref().to_owned(),
-          MessageTransport::Success(Success::MessagePack(
-            messagepack::serialize(&v).map_err(ser_err)?,
-          )),
+          MessageTransport::Success(Success::MessagePack(messagepack::serialize(&v).map_err(ser_err)?)),
         ))
       })
       .filter_map(Result::ok)
@@ -266,7 +310,7 @@ impl<K: AsRef<str>, V: Serialize> From<Vec<(K, V)>> for TransportMap {
   fn from(list: Vec<(K, V)>) -> Self {
     let mut map = TransportMap::new();
     for (k, v) in list {
-      map.insert(k.as_ref().to_owned(), MessageTransport::success(&v));
+      map.insert(k.as_ref(), MessageTransport::success(&v));
     }
     map
   }
@@ -276,9 +320,29 @@ impl<K: AsRef<str>, V: Serialize> From<HashMap<K, V>> for TransportMap {
   fn from(hashmap: HashMap<K, V>) -> Self {
     let mut map = TransportMap::new();
     for (k, v) in hashmap {
-      map.insert(k.as_ref().to_owned(), MessageTransport::success(&v));
+      map.insert(k.as_ref(), MessageTransport::success(&v));
     }
     map
+  }
+}
+
+impl From<Vec<TransportWrapper>> for TransportMap {
+  fn from(list: Vec<TransportWrapper>) -> Self {
+    let mut map = TransportMap::default();
+    for item in list {
+      map.insert(item.port, item.payload);
+    }
+    map
+  }
+}
+
+impl<V, const N: usize> From<[(&str, V); N]> for TransportMap
+where
+  V: Serialize + Sized,
+{
+  fn from(list: [(&str, V); N]) -> Self {
+    let map: HashMap<String, V> = list.into_iter().map(|(key, val)| ((*key).to_owned(), val)).collect();
+    map.into()
   }
 }
 

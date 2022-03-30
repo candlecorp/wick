@@ -1,16 +1,17 @@
 use core::task::{Context, Poll};
-use std::cell::RefCell;
 use std::collections::HashMap;
 use std::iter::FromIterator;
 use std::pin::Pin;
+use std::sync::atomic::AtomicBool;
 
+use parking_lot::Mutex;
 use tokio_stream::{Stream, StreamExt};
 
 use super::transport_wrapper::TransportWrapper;
 use crate::{MessageSignal, MessageTransport};
 
 /// A boxed [Stream] that produces [TransportWrapper]s
-pub type BoxedTransportStream = Pin<Box<dyn Stream<Item = TransportWrapper> + Send + 'static>>;
+pub type BoxedTransportStream = Pin<Box<dyn Stream<Item = TransportWrapper> + Send + Sync + 'static>>;
 
 /// Converts a [Stream] of [TransportWrapper]s into a stream of [serde_json::Value]s, optionally omitting signals.
 pub fn map_to_json(
@@ -28,10 +29,10 @@ pub fn map_to_json(
 
 /// A [TransportStream] is a stream of [crate::TransportWrapper]s.
 pub struct TransportStream {
-  rx: RefCell<Pin<Box<dyn Stream<Item = TransportWrapper> + Send>>>,
+  rx: Mutex<Pin<Box<dyn Stream<Item = TransportWrapper> + Send>>>,
   buffer: HashMap<String, Vec<TransportWrapper>>,
   collected: bool,
-  done: RefCell<bool>,
+  done: AtomicBool,
 }
 
 impl std::fmt::Debug for TransportStream {
@@ -49,10 +50,10 @@ impl TransportStream {
   #[must_use]
   pub fn new(rx: impl Stream<Item = TransportWrapper> + Send + 'static) -> Self {
     Self {
-      rx: RefCell::new(Box::pin(rx)),
+      rx: Mutex::new(Box::pin(rx)),
       buffer: HashMap::new(),
       collected: false,
-      done: RefCell::new(false),
+      done: AtomicBool::new(false),
     }
   }
 }
@@ -61,20 +62,22 @@ impl Stream for TransportStream {
   type Item = TransportWrapper;
 
   fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
-    let mut done = self.done.borrow_mut();
-    if *done {
+    let done = self.done.load(std::sync::atomic::Ordering::SeqCst);
+    if done {
       return Poll::Ready(None);
     }
-    let mut inner = self.rx.borrow_mut();
+    let mut inner = self.rx.lock();
     let pinned = Pin::new(&mut *inner);
-    match pinned.poll_next(cx) {
+    let poll = pinned.poll_next(cx);
+    drop(inner);
+    match poll {
       Poll::Ready(Some(msg)) => {
         if msg.is_system_close() {
           Poll::Ready(None)
         } else {
           if msg.is_component_error() {
             // If it's a component-wide error then signal we're ready to finish.
-            *done = true;
+            self.done.store(true, std::sync::atomic::Ordering::SeqCst);
           }
           Poll::Ready(Some(msg))
         }
@@ -87,7 +90,7 @@ impl Stream for TransportStream {
 
 impl TransportStream {
   /// Collect all the [TransportWrapper] items associated with the passed port.
-  pub async fn collect_port<T: AsRef<str> + Send, B: FromIterator<TransportWrapper>>(
+  pub async fn collect_port<T: AsRef<str> + Send, B: FromIterator<TransportWrapper> + Send + Sync>(
     &mut self,
     port: T,
   ) -> B {
@@ -109,7 +112,7 @@ impl TransportStream {
     self
       .buffer
       .remove(port.as_ref())
-      .unwrap_or_else(Vec::new)
+      .unwrap_or_default()
       .into_iter()
       .collect()
   }
@@ -133,8 +136,16 @@ mod tests {
   use tokio::sync::mpsc::unbounded_channel;
   use tokio_stream::wrappers::UnboundedReceiverStream;
 
+  fn is_sync_send<T: Sync + Send>() {}
+
   use super::*;
   use crate::MessageTransport;
+
+  #[test]
+  fn test_sync_send() {
+    is_sync_send::<TransportStream>();
+  }
+
   #[test_env_log::test(tokio::test)]
   async fn test() -> Result<(), SendError<TransportWrapper>> {
     let (tx, rx) = unbounded_channel();

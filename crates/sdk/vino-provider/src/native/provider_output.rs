@@ -35,9 +35,7 @@ pub struct PortOutput<T: DeserializeOwned> {
 
 impl<T: DeserializeOwned> std::fmt::Debug for PortOutput<T> {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    f.debug_struct("PortOutput")
-      .field("iter", &self.name)
-      .finish()
+    f.debug_struct("PortOutput").field("iter", &self.name).finish()
   }
 }
 
@@ -54,11 +52,7 @@ impl<T: DeserializeOwned> PortOutput<T> {
   /// Grab the next value and deserialize it in one method.
   pub fn try_next_into(&mut self) -> Result<T, super::Error> {
     match self.iter.next() {
-      Some(val) => Ok(
-        val
-          .try_into()
-          .map_err(|e| super::Error::Codec(e.to_string()))?,
-      ),
+      Some(val) => Ok(val.deserialize().map_err(|e| super::Error::Codec(e.to_string()))?),
       None => Err(super::Error::EndOfOutput(self.name.clone())),
     }
   }

@@ -1,6 +1,5 @@
 #![doc(html_logo_url = "https://avatars.githubusercontent.com/u/71604398?s=200&v=4")]
 #![doc = include_str!("../README.md")]
-
 // !!START_LINTS
 // Vino lints
 // Do not change anything between the START_LINTS and END_LINTS line.
@@ -79,7 +78,7 @@
 /// Signatures of Vino types.
 mod signatures;
 
-pub use signatures::{ComponentSignature, HostedType, ProviderSignature, StructSignature, TypeSignature};
+pub use signatures::{ComponentSignature, HostedType, InternalType, ProviderSignature, StructSignature, TypeSignature};
 
 /// Map-related structures holding signatures and other types.
 pub mod maps;

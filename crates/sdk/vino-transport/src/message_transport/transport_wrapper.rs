@@ -56,8 +56,8 @@ impl TransportWrapper {
   }
 
   /// Attempt to deserialize the contained [MessageTransport] into the destination value.
-  pub fn try_into<T: DeserializeOwned>(self) -> Result<T> {
-    self.payload.try_into()
+  pub fn deserialize<T: DeserializeOwned>(self) -> Result<T> {
+    self.payload.deserialize()
   }
 
   /// Converts the embedded [MessageTransport] into a [serde_json::Value::Object]
@@ -79,6 +79,15 @@ impl From<PacketWrapper> for TransportWrapper {
     Self {
       port: p.port,
       payload: p.payload.into(),
+    }
+  }
+}
+
+impl From<(String, MessageTransport)> for TransportWrapper {
+  fn from(entry: (String, MessageTransport)) -> Self {
+    Self {
+      payload: entry.1,
+      port: entry.0,
     }
   }
 }

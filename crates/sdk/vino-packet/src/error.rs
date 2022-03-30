@@ -20,7 +20,7 @@ impl std::fmt::Display for DeserializationError {
       DeserializationError::Exception(v) => write!(f, "Exception: {}", v),
       DeserializationError::Error(v) => write!(f, "Error: {}", v),
       DeserializationError::DeserializationError(e) => {
-        write!(f, "Deserialization Error: {}", e.to_string())
+        write!(f, "Deserialization Error: {}", e)
       }
       DeserializationError::InternalError => write!(f, "Internal Deserialization Error"),
     }

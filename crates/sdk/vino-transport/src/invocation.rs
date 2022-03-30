@@ -1,5 +1,3 @@
-use std::str::FromStr;
-
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use vino_entity::Entity;
@@ -20,11 +18,13 @@ pub struct Invocation {
   pub id: String,
   /// The transaction id, to map together a string of invocations.
   pub tx_id: String,
+  /// Inherent data associated with the transaction.
+  pub inherent: Option<InherentData>,
 }
 
 impl Invocation {
   /// Creates an invocation with a new transaction id.
-  pub fn new(origin: Entity, target: Entity, payload: TransportMap) -> Invocation {
+  pub fn new(origin: Entity, target: Entity, payload: TransportMap, inherent: Option<InherentData>) -> Invocation {
     let tx_id = get_uuid();
     let invocation_id = get_uuid();
 
@@ -34,12 +34,19 @@ impl Invocation {
       payload,
       id: invocation_id,
       tx_id,
+      inherent,
     }
   }
 
   /// Creates an invocation with a specific transaction id, to correlate a chain of.
   /// invocations.
-  pub fn next(tx_id: &str, origin: Entity, target: Entity, payload: TransportMap) -> Invocation {
+  pub fn next(
+    tx_id: &str,
+    origin: Entity,
+    target: Entity,
+    payload: TransportMap,
+    inherent: Option<InherentData>,
+  ) -> Invocation {
     let invocation_id = get_uuid();
 
     Invocation {
@@ -48,11 +55,12 @@ impl Invocation {
       payload,
       id: invocation_id,
       tx_id: tx_id.to_owned(),
+      inherent,
     }
   }
 
   /// Creates an invocation with a Test origin.
-  pub fn new_test(msg: &str, target: Entity, payload: TransportMap) -> Invocation {
+  pub fn new_test(msg: &str, target: Entity, payload: TransportMap, inherent: Option<InherentData>) -> Invocation {
     let tx_id = get_uuid();
     let invocation_id = get_uuid();
 
@@ -62,6 +70,7 @@ impl Invocation {
       payload,
       id: invocation_id,
       tx_id,
+      inherent,
     }
   }
 
@@ -78,20 +87,13 @@ impl Invocation {
   }
 }
 
-impl TryFrom<(String, String, TransportMap)> for Invocation {
-  type Error = crate::Error;
-
-  fn try_from(v: (String, String, TransportMap)) -> Result<Self, Self::Error> {
-    Ok(Self::new(Entity::from_str(&v.0)?, Entity::from_str(&v.1)?, v.2))
-  }
-}
-
-impl TryFrom<(&str, &str, TransportMap)> for Invocation {
-  type Error = crate::Error;
-
-  fn try_from(v: (&str, &str, TransportMap)) -> Result<Self, Self::Error> {
-    Ok(Self::new(Entity::from_str(v.0)?, Entity::from_str(v.1)?, v.2))
-  }
+#[derive(Debug, Serialize, Deserialize, Clone, Copy)]
+/// Data inherent to an invocation. Meant to be supplied by a runtime, not a user.
+pub struct InherentData {
+  /// The seed to associate with an invocation.
+  pub seed: u64,
+  /// The timestamp to associate with an invocation.
+  pub timestamp: u64,
 }
 
 pub(crate) fn get_uuid() -> String {
