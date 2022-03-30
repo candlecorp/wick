@@ -1,4 +1,5 @@
 use async_trait::async_trait;
+use tracing::Instrument;
 use vino_rpc::error::RpcError;
 use vino_rpc::{RpcHandler, RpcResult};
 
@@ -15,22 +16,30 @@ pub struct Provider {
 impl Provider {
   #[must_use]
   pub fn new(network_id: String) -> Self {
-    trace!("NETWORK_PROVIDER[{}]:NEW", network_id);
     Self { network_id }
   }
 }
 
 #[async_trait]
 impl RpcHandler for Provider {
-  async fn invoke(&self, invocation: Invocation) -> RpcResult<BoxedTransportStream> {
+  async fn invoke(&self, mut invocation: Invocation) -> RpcResult<BoxedTransportStream> {
     let target_url = invocation.target_url();
-    trace!("NETWORK_PROVIDER[{}]:INVOKE[{}]", self.network_id, target_url);
-    let addr = NetworkService::for_id(&self.network_id);
 
-    let invocation = InvocationMessage::new(invocation);
-    let result: InvocationResponse = addr
+    let span = debug_span!(
+      "invoke",
+      network_id = self.network_id.as_str(),
+      target = invocation.target.url().as_str()
+    );
+
+    let network = NetworkService::for_id(&self.network_id)
+      .ok_or_else(|| Box::new(RpcError::ProviderError(format!("Network '{}' not found", target_url))))?;
+
+    invocation.target = Entity::local_component(invocation.target.name());
+
+    let result: InvocationResponse = network
       .invoke(invocation)
       .map_err(|e| RpcError::ProviderError(e.to_string()))?
+      .instrument(span)
       .await
       .map_err(|e| RpcError::ProviderError(e.to_string()))?;
     match result.ok() {
@@ -40,8 +49,12 @@ impl RpcHandler for Provider {
   }
 
   fn get_list(&self) -> RpcResult<Vec<HostedType>> {
-    trace!("NETWORK_PROVIDER[{}]:LIST", self.network_id);
-    let addr = NetworkService::for_id(&self.network_id);
+    let addr = NetworkService::for_id(&self.network_id).ok_or_else(|| {
+      Box::new(RpcError::ProviderError(format!(
+        "Network '{}' not found",
+        self.network_id
+      )))
+    })?;
     let signature = addr
       .get_signature()
       .map_err(|e| RpcError::ProviderError(e.to_string()))?;
@@ -54,12 +67,12 @@ mod tests {
 
   use super::*;
   use crate::test::prelude::{assert_eq, *};
-  type Result<T> = std::result::Result<T, RuntimeError>;
+  type Result<T> = anyhow::Result<T>;
 
   async fn request_log(provider: &Provider, data: &str) -> Result<String> {
     let job_payload = vec![("input", data)].into();
 
-    let invocation = Invocation::new_test(file!(), Entity::schematic("simple"), job_payload);
+    let invocation = Invocation::new_test(file!(), Entity::local_component("simple"), job_payload, None);
     let mut outputs = provider.invoke(invocation).await?;
     let output = outputs.next().await.unwrap();
     println!("payload from [{}]: {:?}", output.port, output.payload);

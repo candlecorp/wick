@@ -8,6 +8,7 @@ use vino_runtime::prelude::TransportWrapper;
 type Result<T> = anyhow::Result<T, anyhow::Error>;
 use maplit::hashmap;
 use pretty_assertions::assert_eq;
+use vino_transport::Invocation;
 #[test_logger::test(tokio::test)]
 async fn native_component() -> Result<()> {
   let (network, _) = init_network_from_yaml("./manifests/v0/providers/native-component.yaml").await?;
@@ -18,7 +19,12 @@ async fn native_component() -> Result<()> {
   };
 
   let mut result = network
-    .request("native_component", Entity::test("native component"), &data)
+    .invoke(Invocation::new(
+      Entity::test("native component"),
+      Entity::schematic("native_component"),
+      data.try_into()?,
+      None,
+    ))
     .await?;
 
   println!("Result: {:?}", result);
@@ -43,7 +49,12 @@ async fn global_providers() -> Result<()> {
   };
 
   let mut result = network
-    .request("first_schematic", Entity::test("global providers"), &data)
+    .invoke(Invocation::new(
+      Entity::test("global providers"),
+      Entity::schematic("first_schematic"),
+      data.try_into()?,
+      None,
+    ))
     .await?;
 
   let mut messages: Vec<TransportWrapper> = result.collect_port("output").await;
@@ -58,7 +69,12 @@ async fn global_providers() -> Result<()> {
   };
 
   let mut result = network
-    .request("second_schematic", Entity::test("global providers"), &data)
+    .invoke(Invocation::new(
+      Entity::test("global providers"),
+      Entity::schematic("second_schematic"),
+      data.try_into()?,
+      None,
+    ))
     .await?;
   let mut messages: Vec<TransportWrapper> = result.collect_port("output").await;
   assert_eq!(messages.len(), 1);
@@ -77,7 +93,14 @@ async fn subnetworks() -> Result<()> {
       "input" => "some input",
   };
 
-  let mut result = network.request("parent", Entity::test("subnetworks"), &data).await?;
+  let mut result = network
+    .invoke(Invocation::new(
+      Entity::test("subnetworks"),
+      Entity::schematic("parent"),
+      data.try_into()?,
+      None,
+    ))
+    .await?;
 
   let mut messages: Vec<TransportWrapper> = result.collect_port("output").await;
   assert_eq!(messages.len(), 1);
@@ -103,7 +126,14 @@ async fn grpc() -> Result<()> {
       "input" => user_data,
   };
 
-  let mut result = network.request("grpc", Entity::test("grpc"), &data).await?;
+  let mut result = network
+    .invoke(Invocation::new(
+      Entity::test("grpc"),
+      Entity::schematic("grpc"),
+      data.try_into()?,
+      None,
+    ))
+    .await?;
 
   let mut messages: Vec<TransportWrapper> = result.collect_port("output").await;
   assert_eq!(messages.len(), 1);
@@ -124,7 +154,14 @@ async fn par() -> Result<()> {
       "right" => 43,
   };
 
-  let mut result = network.request("par", Entity::test("par"), &data).await?;
+  let mut result = network
+    .invoke(Invocation::new(
+      Entity::test("par"),
+      Entity::schematic("par"),
+      data.try_into()?,
+      None,
+    ))
+    .await?;
 
   let mut messages: Vec<TransportWrapper> = result.collect_port("output").await;
   assert_eq!(messages.len(), 1);

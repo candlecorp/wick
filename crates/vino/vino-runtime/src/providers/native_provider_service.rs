@@ -1,28 +1,66 @@
 use futures::future::BoxFuture;
 use tokio::sync::mpsc::unbounded_channel;
 use tokio_stream::wrappers::UnboundedReceiverStream;
+use tracing::Instrument;
+use vino_interpreter::Provider;
 use vino_rpc::SharedRpcHandler;
 
 use crate::dev::prelude::*;
 type Result<T> = std::result::Result<T, ProviderError>;
 
-static PREFIX: &str = "NATIVE";
-
 pub(crate) struct NativeProviderService {
-  namespace: String,
+  signature: ProviderSignature,
   provider: SharedRpcHandler,
 }
 
 impl NativeProviderService {
-  pub(crate) fn new(namespace: String, provider: SharedRpcHandler) -> Self {
-    Self { namespace, provider }
+  pub(crate) fn new(provider: SharedRpcHandler) -> Self {
+    let HostedType::Provider(signature) = &provider.get_list().unwrap()[0];
+
+    Self {
+      provider,
+      signature: signature.clone(),
+    }
+  }
+}
+
+impl Provider for NativeProviderService {
+  fn handle(
+    &self,
+    invocation: Invocation,
+    _data: Option<serde_json::Value>,
+  ) -> BoxFuture<std::result::Result<TransportStream, vino_interpreter::BoxError>> {
+    let provider = self.provider.clone();
+
+    async move {
+      let mut receiver = provider.invoke(invocation).await?;
+      let (tx, rx) = unbounded_channel();
+
+      tokio::spawn(async move {
+        while let Some(output) = receiver.next().await {
+          if let Err(e) = tx.send(TransportWrapper {
+            port: output.port,
+            payload: output.payload,
+          }) {
+            error!("Error sending output on channel {}", e);
+            break;
+          }
+        }
+      });
+
+      let rx = UnboundedReceiverStream::new(rx);
+
+      Ok(TransportStream::new(rx))
+    }
+    .boxed()
+  }
+  fn list(&self) -> &ProviderSignature {
+    &self.signature
   }
 }
 
 impl InvocationHandler for NativeProviderService {
   fn get_signature(&self) -> Result<ProviderSignature> {
-    trace!("{}:InitComponents:[NS:{}]", PREFIX, self.namespace);
-
     let provider = self.provider.clone();
 
     let mut list = provider.get_list()?;
@@ -33,51 +71,17 @@ impl InvocationHandler for NativeProviderService {
     }
   }
 
-  fn invoke(&self, msg: InvocationMessage) -> Result<BoxFuture<Result<InvocationResponse>>> {
-    trace!("{}:INVOKE:[{}]=>[{}]", PREFIX, msg.get_origin(), msg.get_target());
-
-    let provider = self.provider.clone();
-
-    let tx_id = msg.get_tx_id().to_owned();
-    let component = msg.get_target().clone();
-    let invocation = msg.into_inner();
-    let url = component.url();
+  fn invoke(&self, invocation: Invocation) -> Result<BoxFuture<Result<InvocationResponse>>> {
+    let tx_id = invocation.tx_id.clone();
+    let span = debug_span!("invoke", target = invocation.target.url().as_str());
+    let fut = self.handle(invocation, None);
 
     Ok(
       async move {
-        let receiver = provider.invoke(invocation).await;
-        drop(provider);
-        let (tx, rx) = unbounded_channel();
-        match receiver {
-          Ok(mut receiver) => {
-            trace!("{}[{}]:START", PREFIX, url);
-            tokio::spawn(async move {
-              while let Some(output) = receiver.next().await {
-                trace!("{}[{}]:PORT[{}]:RECV", PREFIX, url, output.port);
-
-                if let Err(e) = tx.send(TransportWrapper {
-                  port: output.port,
-                  payload: output.payload,
-                }) {
-                  error!("Error sending output on channel {}", e.to_string());
-                  break;
-                }
-              }
-              trace!("{}[{}]:FINISH", PREFIX, url);
-            });
-          }
-          Err(e) => {
-            error!("Error invoking component: {}", e.to_string());
-            let txresult = tx.send(TransportWrapper::component_error(MessageTransport::error(
-              e.to_string(),
-            )));
-            let _ = map_err!(txresult, InternalError::E7002);
-          }
-        }
-
-        let rx = UnboundedReceiverStream::new(rx);
-
-        Ok(InvocationResponse::stream(tx_id, rx))
+        Ok(crate::dispatch::InvocationResponse::Stream {
+          tx_id,
+          rx: fut.instrument(span).await?,
+        })
       }
       .boxed(),
     )
@@ -96,13 +100,17 @@ mod test {
   #[test_logger::test(tokio::test)]
   async fn test_provider_component() -> Result<()> {
     let seed: u64 = 100000;
-    let provider = NativeProviderService::new("native-provider".to_owned(), Arc::new(vino_stdlib::Provider::new(seed)));
+    let provider = NativeProviderService::new(Arc::new(vino_stdlib::Provider::new(seed)));
 
     let user_data = "This is my payload";
 
     let payload = vec![("input", user_data)].into();
-    let invocation: InvocationMessage =
-      Invocation::new(Entity::test("test"), Entity::component_direct("core::log"), payload).into();
+    let invocation = Invocation::new(
+      Entity::test("test"),
+      Entity::local_component("core::log"),
+      payload,
+      None,
+    );
     let response = provider.invoke(invocation)?.await?;
 
     let mut rx = response.ok()?;

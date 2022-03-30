@@ -1,24 +1,31 @@
-use std::convert::TryInto;
 use std::sync::Arc;
 use std::time::Duration;
 
 use vino_lattice::Lattice;
-use vino_transport::TransportMap;
+use vino_manifest::HostDefinition;
 use vino_wascap::KeyPair;
 
 use crate::dev::prelude::*;
-use crate::network_service::initialize::Initialize;
+use crate::network_service::Initialize;
 
 type Result<T> = std::result::Result<T, RuntimeError>;
 #[derive(Debug)]
 #[must_use]
 pub struct Network {
   pub uid: String,
-  definition: NetworkDefinition,
   inner: Arc<NetworkService>,
+  #[allow(unused)]
+  kp: KeyPair,
+  timeout: Duration,
+}
+
+#[derive(Debug)]
+#[must_use]
+pub struct NetworkInit {
+  uid: String,
+  definition: HostDefinition,
   allow_latest: bool,
   allowed_insecure: Vec<String>,
-  #[allow(unused)]
   kp: KeyPair,
   timeout: Duration,
   lattice: Option<Arc<Lattice>>,
@@ -26,72 +33,50 @@ pub struct Network {
 }
 
 impl Network {
-  pub fn new(definition: NetworkDefinition, seed: &str) -> Result<Self> {
-    Ok(NetworkBuilder::from_definition(definition, seed)?.build())
+  pub async fn new_default(definition: HostDefinition, seed: &str) -> Result<Self> {
+    Ok(NetworkBuilder::from_definition(definition, seed)?.build().await?)
   }
 
-  pub async fn init(&self) -> Result<()> {
-    trace!("NETWORK:INIT");
+  #[instrument(name = "network", skip_all)]
+  pub async fn new(config: NetworkInit) -> Result<Self> {
+    trace!(?config, "init");
     let init = Initialize {
-      lattice: self.lattice.clone(),
-      network: self.definition.clone(),
-      allowed_insecure: self.allowed_insecure.clone(),
-      allow_latest: self.allow_latest,
-      timeout: self.timeout,
-      rng_seed: self.rng_seed,
+      id: config.uid.clone(),
+      lattice: config.lattice.clone(),
+      network: config.definition.clone(),
+      allowed_insecure: config.allowed_insecure.clone(),
+      allow_latest: config.allow_latest,
+      timeout: config.timeout,
+      rng_seed: config.rng_seed,
     };
-    self
-      .inner
-      .init(init)
+    let service = NetworkService::new(init)
       .await
       .map_err(|e| RuntimeError::InitializationFailed(e.to_string()))?;
-    trace!("NETWORK:INIT:COMPLETE");
-    Ok(())
+    Ok(Self {
+      uid: config.uid,
+      inner: service,
+      kp: config.kp,
+      timeout: config.timeout,
+    })
   }
 
-  pub async fn request<U>(&self, schematic: &str, origin: Entity, payload: U) -> Result<TransportStream>
-  where
-    U: TryInto<TransportMap> + Send + Sync,
-  {
-    self.request_with_data(schematic, origin, payload, None).await
-  }
-
-  pub async fn request_with_data<U>(
-    &self,
-    schematic: &str,
-    origin: Entity,
-    payload: U,
-    data: Option<InitData>,
-  ) -> Result<TransportStream>
-  where
-    U: TryInto<TransportMap> + Send + Sync,
-  {
-    trace!("NETWORK:REQUEST[{}]", schematic);
+  #[instrument(skip_all, fields(target=?invocation.target))]
+  pub async fn invoke(&self, invocation: Invocation) -> Result<TransportStream> {
     let time = std::time::Instant::now();
-    let payload = payload
-      .try_into()
-      .map_err(|_| RuntimeError::Serialization("Could not serialize input payload".to_owned()))?;
+    trace!(start_time=?time,"invocation start");
 
-    let invocation = Invocation::new(origin, Entity::schematic(schematic), payload);
-    let msg = InvocationMessage::with_data(invocation, data.unwrap_or_default());
-
-    let response = tokio::time::timeout(self.timeout, self.inner.invoke(msg)?)
+    let response = tokio::time::timeout(self.timeout, self.inner.invoke(invocation)?)
       .await
       .map_err(|_| NetworkError::Timeout)??;
+    trace!(duration=?time.elapsed().as_micros(),"invocation complete");
 
-    trace!(
-      "NETWORK:REQUEST[{}]:COMPLETE[duration {} μs]",
-      schematic,
-      time.elapsed().as_micros()
-    );
     Ok(response.ok()?)
   }
 
   pub fn get_signature(&self) -> Result<ProviderSignature> {
-    trace!("NETWORK:LIST_SCHEMATICS");
-    let response = self.inner.get_signature();
-    trace!("NETWORK:LIST_SCHEMATICS:COMPLETE");
-    Ok(response?)
+    let signature = self.inner.get_signature()?;
+    trace!(?signature, "network signature");
+    Ok(signature)
   }
 }
 
@@ -101,7 +86,7 @@ impl Network {
 pub struct NetworkBuilder {
   allow_latest: bool,
   allowed_insecure: Vec<String>,
-  definition: NetworkDefinition,
+  definition: HostDefinition,
   kp: KeyPair,
   uid: String,
   lattice: Option<Arc<Lattice>>,
@@ -111,13 +96,13 @@ pub struct NetworkBuilder {
 
 impl NetworkBuilder {
   /// Creates a new network builder from a [NetworkDefinition]
-  pub fn from_definition(definition: NetworkDefinition, seed: &str) -> Result<Self> {
+  pub fn from_definition(definition: HostDefinition, seed: &str) -> Result<Self> {
     let kp = keypair_from_seed(seed)?;
     let nuid = kp.public_key();
     Ok(Self {
+      allow_latest: definition.host.allow_latest,
+      allowed_insecure: definition.host.insecure_registries.clone(),
       definition,
-      allow_latest: false,
-      allowed_insecure: vec![],
       uid: nuid,
       timeout: Duration::from_secs(5),
       lattice: None,
@@ -156,11 +141,8 @@ impl NetworkBuilder {
   }
 
   /// Constructs an instance of a Vino host.
-  pub fn build(self) -> Network {
-    let addr = crate::network_service::NetworkService::for_id(&self.uid);
-
-    Network {
-      inner: addr,
+  pub async fn build(self) -> Result<Network> {
+    Network::new(NetworkInit {
       definition: self.definition,
       uid: self.uid,
       allow_latest: self.allow_latest,
@@ -169,6 +151,7 @@ impl NetworkBuilder {
       timeout: self.timeout,
       lattice: self.lattice,
       rng_seed: self.rng_seed.unwrap_or_else(new_seed),
-    }
+    })
+    .await
   }
 }
