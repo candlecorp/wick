@@ -9,9 +9,40 @@ pub mod types {
 
 use types::*;
 use vino_manifest::parse::CORE_ID;
-use vino_schematic_graph::ExternalReference;
+use vino_schematic_graph::{ComponentReference, SCHEMATIC_OUTPUT};
 
-static INTERPRETER_NAMESPACE: &str = "__interpreter";
+use crate::constants::{INTERNAL_ID_INHERENT, NS_CORE, NS_INTERNAL, NS_PROVIDERS};
+
+#[derive(Debug)]
+#[must_use]
+pub(crate) struct Reference(ComponentReference);
+
+impl From<&ComponentReference> for Reference {
+  fn from(v: &ComponentReference) -> Self {
+    Self(v.clone())
+  }
+}
+
+impl Reference {
+  pub(crate) fn name(&self) -> &str {
+    self.0.name()
+  }
+  pub(crate) fn namespace(&self) -> &str {
+    self.0.namespace()
+  }
+
+  pub(crate) fn is_core_component(&self, name: &str) -> bool {
+    self.0.namespace() == NS_CORE && self.0.name() == name
+  }
+
+  pub(crate) fn is_schematic_output(&self) -> bool {
+    self.0.namespace() == NS_INTERNAL && self.0.name() == SCHEMATIC_OUTPUT
+  }
+
+  pub(crate) fn is_static(&self) -> bool {
+    self.0.namespace() == NS_PROVIDERS
+  }
+}
 
 #[instrument(name = "schematic_graph", skip_all)]
 pub fn from_def(network_def: &vino_manifest::NetworkDefinition) -> Result<Network, vino_schematic_graph::error::Error> {
@@ -20,13 +51,17 @@ pub fn from_def(network_def: &vino_manifest::NetworkDefinition) -> Result<Networ
   for schem_def in &network_def.schematics {
     let mut schematic = Schematic::new(schem_def.name.clone());
 
-    let index = schematic.add_inherent(CORE_ID, ExternalReference::new(INTERPRETER_NAMESPACE, "inherent"), None);
-    trace!(index, "added inherent component");
+    let index = schematic.add_inherent(
+      CORE_ID,
+      ComponentReference::new(NS_INTERNAL, INTERNAL_ID_INHERENT),
+      None,
+    );
+    trace!(index, name = INTERNAL_ID_INHERENT, "added inherent component");
 
     for (name, def) in schem_def.instances.iter() {
       schematic.add_external(
         name,
-        ExternalReference::new(&def.namespace, &def.name),
+        ComponentReference::new(&def.namespace, &def.name),
         def.data.clone(),
       );
     }

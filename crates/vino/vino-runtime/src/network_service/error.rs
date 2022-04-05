@@ -5,8 +5,8 @@ use crate::dev::prelude::*;
 pub enum NetworkError {
   #[error(transparent)]
   SchematicGraph(#[from] vino_schematic_graph::error::Error),
-  #[error(transparent)]
-  Interpreter(#[from] vino_interpreter::InterpreterError),
+  #[error("Could not start interpreter from '{0}': {1}")]
+  InterpreterInit(String, vino_interpreter::InterpreterError),
   #[error(transparent)]
   Loading(#[from] vino_loader::Error),
   #[error(transparent)]

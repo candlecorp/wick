@@ -128,16 +128,14 @@ pub(crate) fn merge_config(
   }
 
   HostDefinition {
+    source: def.source,
     network: def.network,
     host: host_config,
     default_schematic: def.default_schematic,
   }
 }
 
-fn log_override<T: std::fmt::Debug>(field: &str, orig: &mut T, new: T) {
-  debug!(
-    "Overriding manifest value of {:?} with {:?} for 'host.{}'",
-    orig, new, field
-  );
-  *orig = new;
+fn log_override<T: std::fmt::Debug>(field: &str, from: &mut T, to: T) {
+  debug!(%field, ?from, ?to, "overriding manifest value");
+  *from = to;
 }

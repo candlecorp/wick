@@ -28,7 +28,7 @@ impl Provider {
 impl RpcHandler for Provider {
   async fn invoke(&self, invocation: Invocation) -> RpcResult<BoxedTransportStream> {
     let target_url = invocation.target_url();
-    trace!(target = target_url.as_str(), "grpc invoke");
+    trace!(target = %target_url, "grpc invoke");
 
     let start = Instant::now();
 
@@ -40,8 +40,8 @@ impl RpcHandler for Provider {
       .map_err(|e| RpcError::ComponentError(e.to_string()))?;
 
     trace!(
-      target = target_url.as_str(),
-      duration = ?start.elapsed().as_millis(),
+      target = %target_url,
+      duration_ms = %start.elapsed().as_millis(),
       "grpc invoke complete",
     );
     Ok(Box::pin(stream))

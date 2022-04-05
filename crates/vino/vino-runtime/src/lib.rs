@@ -93,9 +93,9 @@ pub mod error;
 mod network;
 pub use network::{Network, NetworkBuilder};
 pub use providers::network_provider::Provider as NetworkProvider;
+mod json_writer;
 mod network_service;
 mod providers;
-// TODO track down usage of these and restrict visibility
 pub mod utils;
 
 pub mod prelude {

@@ -1,55 +1,66 @@
-mod state;
+pub(crate) mod state;
 
+use std::time::Duration;
+
+use parking_lot::Mutex;
 use tokio::task::JoinHandle;
 use tracing::Level;
 use tracing_futures::Instrument;
 
-use super::channel::InterpreterChannel;
+use super::channel::{Event, EventKind, InterpreterChannel};
 use super::error::Error;
-use crate::interpreter::channel::{Event, EventKind};
+use super::InterpreterOptions;
 use crate::interpreter::event_loop::state::State;
 use crate::interpreter::executor::error::ExecutionError;
 use crate::InterpreterDispatchChannel;
 
 #[derive(Debug)]
-pub(super) struct EventLoop {
+pub struct EventLoop {
   channel: Option<InterpreterChannel>,
   dispatcher: InterpreterDispatchChannel,
-  task: Option<JoinHandle<()>>,
+  task: Mutex<Option<JoinHandle<Result<(), ExecutionError>>>>,
 }
+
 impl EventLoop {
+  pub const WAKE_TIMEOUT: Duration = Duration::from_millis(500);
+  pub const HUNG_TX_TIMEOUT: Duration = Duration::from_millis(1000);
+
   pub(super) fn new(channel: InterpreterChannel) -> Self {
     let dispatcher = channel.dispatcher();
     Self {
       channel: Some(channel),
       dispatcher,
-      task: None,
+      task: Mutex::new(None),
     }
   }
 
-  #[instrument(skip(self), name = "event_loop")]
-  pub(super) async fn start(&mut self) {
-    trace!("starting");
+  pub(super) async fn start(&mut self, options: InterpreterOptions, observer: Option<Box<dyn Observer + Send + Sync>>) {
+    trace!("starting event loop");
     let channel = self.channel.take().unwrap();
 
-    let handle = tokio::spawn(async move {
-      event_loop(channel).await;
-    });
-
-    self.task = Some(handle);
+    let handle = tokio::spawn(async move { event_loop(channel, options, observer).await });
+    let mut lock = self.task.lock();
+    lock.replace(handle);
   }
 
-  #[instrument(skip(self), name = "event_loop")]
-  pub(super) async fn shutdown(mut self) -> Result<(), Error> {
-    let task = self.task.take();
+  fn steal_task(&self) -> Option<JoinHandle<Result<(), ExecutionError>>> {
+    let mut lock = self.task.lock();
+    lock.take()
+  }
+
+  pub(super) async fn shutdown(&self) -> Result<(), Error> {
+    trace!("shutting down event loop");
+    let task = self.steal_task();
     match task {
       Some(task) => {
-        let _ = self.dispatcher.dispatch(Event::close()).await?;
-        trace!("aborting task");
-        let _ = tokio::time::timeout(std::time::Duration::from_secs(2), task)
-          .await
-          .map_err(|e| Error::ShutdownFailed(e.to_string()))?;
-        debug!("shutdown complete");
+        let _ = self.dispatcher.dispatch(Event::close(None)).await;
+        trace!("yielding to loop");
+        let timeout = std::time::Duration::from_secs(2);
+        let result = tokio::time::timeout(timeout, task).await;
+        result
+          .map_err(|e| Error::Shutdown(e.to_string()))?
+          .map_err(|e| Error::Shutdown(e.to_string()))??;
+        debug!("event loop closed");
       }
       None => {
         warn!("shutdown called but no task running");
@@ -61,71 +72,51 @@ impl EventLoop {
 }
 
 impl Drop for EventLoop {
-  #[instrument(skip(self), name = "event_loop:drop")]
   fn drop(&mut self) {
     trace!("dropping event loop");
-    if let Some(task) = &self.task {
+    let lock = self.task.lock();
+    if let Some(task) = &*lock {
       task.abort();
     }
   }
 }
 
-#[instrument(skip(channel), name = "event_loop")]
-async fn event_loop(mut channel: InterpreterChannel) {
-  trace!("started");
+pub trait Observer {
+  fn on_event(&self, index: usize, event: &Event);
+  fn on_after_event(&self, index: usize, state: &State);
+  fn on_close(&self);
+}
+
+#[instrument(skip_all, name = "event_loop")]
+async fn event_loop(
+  mut channel: InterpreterChannel,
+  options: InterpreterOptions,
+  observer: Option<Box<dyn Observer + Send + Sync>>,
+) -> Result<(), ExecutionError> {
+  trace!(?options, "started");
   let mut state = State::new();
 
-  #[cfg(test)]
-  let mut events = Vec::new();
   let mut num: usize = 0;
 
-  loop {
-    match channel.accept().await {
-      Some(event) => {
+  let result = loop {
+    let task = tokio::time::timeout(EventLoop::WAKE_TIMEOUT, channel.accept());
+    match task.await {
+      Ok(Some(event)) => {
         let tx_id = event.tx_id;
-        #[cfg(test)]
-        let mut debug_entry = {
-          let entry = match &event.kind {
-            EventKind::Ping(_) => serde_json::Value::Null,
-            EventKind::TransactionStart(tx) => {
-              serde_json::json!({"type":event.name(), "index": num, "tx_id": tx.id().to_string(), "name" : tx.schematic_name()})
-            }
-            EventKind::TransactionDone => {
-              serde_json::json!({"type":event.name(), "index": num, "tx_id": tx_id.to_string()})
-            }
-            EventKind::CallComplete(data) => {
-              serde_json::json!({"type":event.name(), "index": num, "tx_id": tx_id.to_string(), "index":data.index})
-            }
-            EventKind::PortData(port) => {
-              serde_json::json!({
-                "type":event.name(),
-                "tx_id": tx_id.to_string(),
-                "dir":port.direction().to_string(),
-                "port_index":port.port_index(),
-                "component_index":port.component_index()
-              })
-            }
-            EventKind::PortStatusChange(port) => {
-              serde_json::json!({
-                "type":event.name(),
-                "tx_id": tx_id.to_string(),
-                "dir":port.direction().to_string(),
-                "port_index":port.port_index(),
-                "component_index":port.component_index()
-              })
-            }
-            EventKind::Close => {
-              serde_json::json!({"type":event.name()})
-            }
-          };
-          let mut map = serde_json::Map::new();
-          map.insert("event".to_owned(), entry);
-          map
-        };
 
-        let span = span!(Level::TRACE, "event", event = event.name(), i = num, ?tx_id);
+        if let Some(observer) = &observer {
+          observer.on_event(num, &event);
+        }
+
+        let span = span!(Level::TRACE, "event", event = event.name(), i = num, %tx_id);
 
         let result = match event.kind {
+          EventKind::Invocation(index, invocation) => {
+            state
+              .handle_invocation(tx_id, index, *invocation)
+              .instrument(span)
+              .await
+          }
           EventKind::CallComplete(data) => state.handle_call_complete(tx_id, data).instrument(span).await,
           EventKind::PortData(data) => state.handle_port_data(tx_id, data).instrument(span).await,
           EventKind::PortStatusChange(port) => state.handle_port_status_change(tx_id, port).instrument(span).await,
@@ -137,39 +128,57 @@ async fn event_loop(mut channel: InterpreterChannel) {
             trace!(ping);
             Ok(())
           }
-          EventKind::Close => {
-            debug!("stopping");
-            break;
-          }
+          EventKind::Close(error) => match error {
+            Some(error) => {
+              error!(%error,"stopped with error");
+              break Err(error);
+            }
+            None => {
+              debug!("stopping");
+              break Ok(());
+            }
+          },
         };
 
         if let Err(e) = result {
-          warn!(response_error = ?e);
+          if options.error_on_missing && matches!(e, ExecutionError::MissingTx(_)) {
+            error!(response_error = %e, "closing interpreter");
+            let _ = channel.dispatcher().dispatch(Event::close(Some(e))).await;
+          } else {
+            warn!(response_error = %e);
+          }
         }
 
-        #[cfg(test)]
-        {
-          debug_entry.insert(
-            "schematics".to_owned(),
-            serde_json::Value::Array(state.debug_print_transactions()),
-          );
-          events.push(serde_json::Value::Object(debug_entry));
+        if let Err(e) = state.check_done(&tx_id).await {
+          warn!(response_error = %e);
+        }
+
+        if let Some(observer) = &observer {
+          observer.on_after_event(num, &state);
         }
         num += 1;
       }
-      None => {
+      Ok(None) => {
         trace!("done");
-        break;
+        break Ok(());
+      }
+      Err(_) => {
+        if let Err(error) = state
+          .check_hung(options.error_on_hung)
+          .instrument(trace_span!("check_hung"))
+          .await
+        {
+          error!(%error,"Error checking hung transactions");
+          let _ = channel.dispatcher().dispatch(Event::close(Some(error))).await;
+        };
       }
     }
-  }
+  };
   trace!("stopped");
-  #[cfg(test)]
-  {
-    let json = serde_json::Value::Array(events);
-    let js = format!("{}", json);
-    std::fs::write("event_loop.json", js).unwrap();
+  if let Some(observer) = &observer {
+    observer.on_close();
   }
+  result
 }
 
 #[derive(thiserror::Error, Debug)]

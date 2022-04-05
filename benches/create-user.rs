@@ -13,8 +13,8 @@ static HOST: OnceCell<Host> = OnceCell::new();
 
 fn get_map() -> TransportMap {
   let mut map = TransportMap::new();
-  map.insert("username", MessageTransport::success(&RNG.get_alphanumeric(15)));
-  map.insert("password", MessageTransport::success(&RNG.get_alphanumeric(10)));
+  map.insert("username", MessageTransport::success(&RNG.alphanumeric(15)));
+  map.insert("password", MessageTransport::success(&RNG.alphanumeric(10)));
   map
 }
 
@@ -32,7 +32,7 @@ async fn work() {
   let _guard = logger::init(&opts.name("create-user-benchmark"));
 
   let mut host = HostBuilder::try_from("./benches/create-user.vino").unwrap().build();
-  host.start().await.unwrap();
+  host.start(None).await.unwrap();
   let host = HOST.get_or_init(move || host);
   let num: usize = 100;
   let mut data = Vec::with_capacity(num);

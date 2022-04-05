@@ -6,6 +6,11 @@ pub enum RpcError {
   /// Error during the parsing of an IP address and port.
   #[error(transparent)]
   AddrParseError(#[from] std::net::AddrParseError),
+
+  /// Error parsing a UUID.
+  #[error(transparent)]
+  UuidParseError(#[from] uuid::Error),
+
   /// Upstream error from Tonic.
   #[error(transparent)]
   TransportError(#[from] tonic::transport::Error),

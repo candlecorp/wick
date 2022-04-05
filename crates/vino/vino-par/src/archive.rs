@@ -67,7 +67,7 @@ pub fn validate_provider<B: Read, I: Read>(binary: B, interface: I, jwt: Vec<u8>
 
   let token = vino_wascap::decode_token(jwt)?;
   let hash = vino_wascap::hash_bytes(combined)?;
-  trace!(hash = hash.as_str(), ?token, "oci archive");
+  trace!(hash = %hash, ?token, "oci archive");
 
   vino_wascap::assert_valid_jwt(&token, &hash)?;
   Ok(())

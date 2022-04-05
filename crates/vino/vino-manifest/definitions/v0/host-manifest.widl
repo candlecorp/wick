@@ -12,7 +12,7 @@ type HostManifest {
   network: NetworkManifest,
 
   "The default schematic to execute if none is provided."
-  default_schematic: string = "main",
+  default_schematic: string?,
 }
 
 "Host configuration options."

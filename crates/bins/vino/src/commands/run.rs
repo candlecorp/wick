@@ -1,11 +1,13 @@
+use std::time::SystemTime;
+
 use clap::Args;
 use tokio::io::{self, AsyncBufReadExt};
 use vino_host::HostBuilder;
 use vino_manifest::host_definition::HostDefinition;
 use vino_provider_cli::options::{DefaultCliOptions, LatticeCliOptions};
 use vino_provider_cli::parse_args;
-use vino_runtime::prelude::StreamExt;
-use vino_transport::{map_to_json, TransportMap, TransportStream};
+use vino_random::Seed;
+use vino_transport::{InherentData, TransportMap};
 use vino_types::MapWrapper;
 
 use crate::utils::merge_config;
@@ -27,23 +29,42 @@ pub(crate) struct RunCommand {
   #[clap(long = "info")]
   pub(crate) info: bool,
 
-  /// Don't read input from STDIN.
-  #[clap(long = "no-input")]
-  pub(crate) no_input: bool,
-
-  /// A port=value string where value is JSON to pass as input.
-  #[clap(long, short)]
-  data: Vec<String>,
-
-  /// Skip additional I/O processing done for CLI usage.
-  #[clap(long, short)]
-  raw: bool,
-
   /// Manifest file or OCI url.
   manifest: String,
 
-  /// Default schematic to run.
-  default_schematic: Option<String>,
+  // *****************************************************************
+  // Everything below is copied from common-cli-options::RunOptions
+  // Flatten doesn't work with positional args...
+  //
+  // TODO: Eliminate the need for copy/pasting
+  // *****************************************************************
+  /// Name of the component to execute.
+  #[clap(default_value = "default")]
+  component: String,
+
+  /// Don't read input from STDIN.
+  #[clap(long = "no-input")]
+  no_input: bool,
+
+  /// Skip additional I/O processing done for CLI usage.
+  #[clap(long = "raw", short = 'r')]
+  raw: bool,
+
+  /// Filter the outputs by port name.
+  #[clap(long = "filter")]
+  filter: Vec<String>,
+
+  /// A port=value string where value is JSON to pass as input.
+  #[clap(long = "data", short = 'd')]
+  data: Vec<String>,
+
+  /// Print values only and exit with an error code and string on any errors.
+  #[clap(long = "values", short = 'o')]
+  short: bool,
+
+  /// Pass a seed along with the invocation.
+  #[clap(long = "seed", short = 's', env = "VINO_SEED")]
+  seed: Option<u64>,
 
   /// Arguments to pass as inputs to a schematic.
   #[clap(last(true))]
@@ -56,13 +77,14 @@ pub(crate) async fn handle_command(opts: RunCommand) -> Result<()> {
     logging.quiet = true;
   }
   let _guard = logger::init(&logging.name("vino"));
-  debug!("rest: {:?}", opts.args);
+
+  debug!(args = ?opts.args, "rest args");
 
   let manifest_src = vino_loader::get_bytes(&opts.manifest, opts.host.allow_latest, &opts.host.insecure_registries)
     .await
     .map_err(|e| crate::error::VinoError::ManifestLoadFail(e.to_string()))?;
 
-  let manifest = HostDefinition::load_from_bytes(&manifest_src)?;
+  let manifest = HostDefinition::load_from_bytes(Some(opts.manifest), &manifest_src)?;
 
   let server_options = DefaultCliOptions {
     lattice: opts.lattice,
@@ -70,16 +92,17 @@ pub(crate) async fn handle_command(opts: RunCommand) -> Result<()> {
   };
 
   let mut config = merge_config(manifest, opts.host, Some(server_options));
-  if opts.default_schematic.is_some() {
-    config.default_schematic = opts.default_schematic.unwrap();
+  if config.default_schematic.is_none() {
+    config.default_schematic = Some(opts.component);
   }
-  let default_schematic = config.default_schematic.clone();
+
+  let default_schematic = config.default_schematic.clone().unwrap();
 
   let host_builder = HostBuilder::from_definition(config);
 
   let mut host = host_builder.build();
   host.connect_to_lattice().await?;
-  host.start_network().await?;
+  host.start_network(opts.seed.map(Seed::unsafe_new)).await?;
 
   let signature = host.get_signature()?;
   let target_schematic = signature.get_component(&default_schematic);
@@ -91,21 +114,35 @@ pub(crate) async fn handle_command(opts: RunCommand) -> Result<()> {
     }
   }
 
+  let inherent_data = opts.seed.map(|seed| {
+    InherentData::new(
+      seed,
+      SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .unwrap()
+        .as_millis()
+        .try_into()
+        .unwrap(),
+    )
+  });
+
   if check_stdin {
     if atty::is(atty::Stream::Stdin) {
       eprintln!("No input passed, reading from <STDIN>. Pass --no-input to disable.");
     }
     let reader = io::BufReader::new(io::stdin());
     let mut lines = reader.lines();
+
     while let Some(line) = lines.next_line().await? {
       debug!("STDIN:'{}'", line);
       let mut payload = TransportMap::from_json_output(&line)?;
       if !opts.raw {
         payload.transpose_output_name();
       }
-      let stream = host.request(&default_schematic, payload, None).await?;
 
-      print_stream_json(stream, opts.raw).await?;
+      let stream = host.request(&default_schematic, payload, inherent_data).await?;
+
+      cli_common::functions::print_stream_json(Box::pin(stream), &opts.filter, opts.short, opts.raw).await?;
     }
   } else {
     let mut data_map = TransportMap::from_kv_json(&opts.data)?;
@@ -117,17 +154,10 @@ pub(crate) async fn handle_command(opts: RunCommand) -> Result<()> {
     }
     data_map.merge(rest_arg_map);
 
-    let stream = host.request(&default_schematic, data_map, None).await?;
-    print_stream_json(stream, opts.raw).await?;
+    let stream = host.request(&default_schematic, data_map, inherent_data).await?;
+    cli_common::functions::print_stream_json(Box::pin(stream), &opts.filter, opts.short, opts.raw).await?;
   }
+  host.stop().await;
 
-  Ok(())
-}
-
-async fn print_stream_json(stream: TransportStream, raw: bool) -> Result<()> {
-  let mut json_stream = map_to_json(stream, raw);
-  while let Some(message) = json_stream.next().await {
-    println!("{}", message);
-  }
   Ok(())
 }

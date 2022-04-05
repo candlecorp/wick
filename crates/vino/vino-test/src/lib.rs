@@ -239,7 +239,7 @@ pub async fn run_test(
     let mut test_block = TestBlock::new(Some(test_name.clone()));
     let prefix = |msg: &str| format!("{}:{}", test_name, msg);
 
-    trace!(i, ?entity, "invoke");
+    trace!(i, %entity, "invoke");
     trace!(i, ?payload, "payload");
     let invocation = Invocation::new_test(&test_name, entity, payload, None);
     let result = provider

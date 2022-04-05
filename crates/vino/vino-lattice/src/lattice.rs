@@ -12,6 +12,7 @@ use tokio::time::timeout;
 use tokio_stream::wrappers::UnboundedReceiverStream;
 use tokio_stream::StreamExt;
 use vino_codec::messagepack::serialize;
+use vino_entity::Entity;
 use vino_rpc::SharedRpcHandler;
 use vino_transport::{Invocation, MessageTransport, TransportStream, TransportWrapper};
 use vino_types::HostedType;
@@ -161,7 +162,7 @@ impl Lattice {
   }
 
   pub async fn handle_namespace(&self, namespace: String, provider: SharedRpcHandler) -> Result<()> {
-    trace!(namespace = namespace.as_str(), "register");
+    trace!(%namespace, "register");
 
     let sub = self
       .nats
@@ -174,34 +175,29 @@ impl Lattice {
     let ns_inner = namespace.clone();
     let (ready_tx, ready_rx) = oneshot::channel::<()>();
     let handle = tokio::spawn(async move {
-      trace!(namespace = ns_inner.as_str(), "handler open");
+      let span = trace_span!("lattice ns handler", namespace=%ns_inner);
+      let _guard = span.enter();
+
+      trace!("open");
       let _ = ready_tx.send(());
       loop {
-        trace!(namespace = ns_inner.as_str(), "handler wait");
+        trace!("handler wait");
         let next = sub.next_wait().await;
         match next {
           Some(nats_msg) => {
-            debug!(
-              namespace = ns_inner.as_str(),
-              message = ?nats_msg.data(),
-              "received message"
-            );
-            if let Err(e) = handle_message(&provider, nats_msg, deadline).await {
-              error!(
-                namespace = ns_inner.as_str(),
-                error = e.to_string().as_str(),
-                "Error processing lattice message",
-              );
+            debug!(message = ?nats_msg.data(),"received message");
+            if let Err(error) = handle_message(&provider, nats_msg, deadline).await {
+              error!(%error,"Error processing lattice message",);
             }
           }
           None => {
-            trace!(namespace = ns_inner.as_str(), "handler done");
+            trace!("handler done");
             break;
           }
         }
         let _ = nats.flush().await;
       }
-      trace!(namespace = ns_inner.as_str(), "handler close");
+      trace!("handler close");
     });
 
     self.handlers.write().insert(namespace.clone(), NsHandler::new(handle));
@@ -210,12 +206,19 @@ impl Lattice {
     Ok(())
   }
 
-  pub async fn invoke(&self, lattice_id: &str, invocation: Invocation) -> Result<TransportStream> {
+  pub async fn invoke(&self, lattice_id: &str, mut invocation: Invocation) -> Result<TransportStream> {
     let target_url = invocation.target_url();
 
-    debug!(target=target_url.as_str(),payload=?invocation.payload,"invoke");
+    debug!(target=%target_url,payload=?invocation.payload,"invoke");
 
     let topic = rpc_message_topic(lattice_id);
+    debug!(
+      from = invocation.target.namespace(),
+      to = lattice_id,
+      "resolved namespace"
+    );
+    invocation.target = Entity::component(lattice_id, invocation.target.name());
+
     let msg = LatticeRpcMessage::Invocation(invocation);
     let payload = serialize(&msg).map_err(|e| LatticeError::MessageSerialization(e.to_string()))?;
     let sub = self.nats.request(&topic, &payload).await?;
@@ -224,18 +227,20 @@ impl Lattice {
     let stream = TransportStream::new(UnboundedReceiverStream::new(rx));
 
     tokio::spawn(async move {
-      trace!(target = target_url.as_str(), "invoke task open");
+      let span = trace_span!("invocation task",target = %target_url);
+      let _guard = span.enter();
+      trace!("task open");
       loop {
-        trace!(target = target_url.as_str(), "invoke task wait");
+        trace!("task wait");
         match sub.next().await {
           Ok(Some(nats_msg)) => {
-            debug!(target = target_url.as_str(), message=?nats_msg.data(), "invoke task received message");
+            debug!(message=?nats_msg.data(), "received message");
             if let Err(e) = handle_response(&tx, &nats_msg) {
               error!("Error processing response: {}", e);
             }
           }
           Ok(None) => {
-            trace!(target = target_url.as_str(), "invoke task done");
+            trace!("task done");
             break;
           }
           Err(e) => {
@@ -244,14 +249,14 @@ impl Lattice {
           }
         }
       }
-      trace!(target = target_url.as_str(), "invoke task close");
+      trace!("task close");
     });
 
     Ok(stream)
   }
 
   pub async fn list_components(&self, namespace: String) -> Result<Vec<HostedType>> {
-    debug!(namespace = namespace.as_str(), "get signature");
+    debug!(%namespace, "get signature");
 
     let topic = rpc_message_topic(&namespace);
     let msg = LatticeRpcMessage::List { namespace };

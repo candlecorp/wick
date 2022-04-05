@@ -1,20 +1,24 @@
 use vino_entity::Entity;
 
 use super::executor::error::ExecutionError;
-use super::program::validator::error::ValidationError;
+use super::program::validator::error::{SchematicInvalid, ValidationError};
 
 #[derive(thiserror::Error, Debug, PartialEq)]
 pub enum Error {
   #[error(transparent)]
   ExecutionError(#[from] ExecutionError),
-  #[error("Validation errors: {:?}", .0)]
-  ValidationError(Vec<ValidationError>),
+  #[error("{}", .0.iter().map(|e|e.to_string()).collect::<Vec<_>>().join(", "))]
+  ValidationError(Vec<SchematicInvalid>),
   #[error("Early error: {:?}", .0)]
   EarlyError(ValidationError),
-  #[error("Invalid target: {0}")]
-  TargetNotFound(Entity),
+  #[error("Could not find schematic '{}' ({0}). Known schematics are: {}",.0.name(), .1.join(", "))]
+  SchematicNotFound(Entity, Vec<String>),
+  #[error("Could not find target '{}' ({0}). Namespaces handled by this resource are: {}", .0.name(), .1.join(", "))]
+  TargetNotFound(Entity, Vec<String>),
+  #[error("Error shutting down provider: {0}")]
+  ProviderShutdown(String),
   #[error("Shutdown failed: {0}")]
-  ShutdownFailed(String),
+  Shutdown(String),
 }
 
 #[derive(thiserror::Error, Debug, Clone, PartialEq, Eq)]
@@ -25,18 +29,12 @@ pub enum StateError {
   MissingPortName(String),
   #[error("Attempted to access nonexistant provider '{0}'")]
   MissingProvider(String),
-  #[error("Tried to decrement pending counter for non-existant or zero ID.")]
+  #[error("Tried to decrement pending counter for non-existent or zero ID.")]
   TooManyComplete,
 }
 
-impl From<Vec<ValidationError>> for Error {
-  fn from(v: Vec<ValidationError>) -> Self {
+impl From<Vec<SchematicInvalid>> for Error {
+  fn from(v: Vec<SchematicInvalid>) -> Self {
     Error::ValidationError(v)
-  }
-}
-
-impl From<ValidationError> for Error {
-  fn from(v: ValidationError) -> Self {
-    Error::ValidationError(vec![v])
   }
 }

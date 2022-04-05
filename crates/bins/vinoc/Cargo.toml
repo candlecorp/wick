@@ -8,6 +8,7 @@ license = "BSD-3-Clause"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+cli-common = { path = "../cli-common" }
 vino-par = { path = "../../vino/vino-par" }
 vino-runtime = { path = "../../vino/vino-runtime" }
 vino-packet = { path = "../../../sdk/crates/vino-packet" }
@@ -29,7 +30,6 @@ async-recursion = "1.0"
 nkeys = { path = "../../../forks/nkeys" }
 tracing = "0.1"
 clap = { version = "3.0", features = ["derive", "env"] }
-futures = "0.3"
 serde_json = "1.0"
 thiserror = "1.0"
 tokio = { version = "1", features = [
@@ -45,6 +45,9 @@ oci-distribution = { path = "../../../forks/oci-distribution", features = [
   "rustls-tls",
 ], default-features = false }
 vino-oci = { path = "../../vino/vino-oci" }
+
+[dev-dependencies]
+trycmd = "0.13"
 
 [[bin]]
 name = "vinoc"

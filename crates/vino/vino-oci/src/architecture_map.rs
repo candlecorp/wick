@@ -45,14 +45,14 @@ pub async fn generate_archmap(
     )
   })?;
   debug!(
-    path = manifest.to_string_lossy().to_string().as_str(),
+    path = %manifest.to_string_lossy(),
     "archmap manifest"
   );
   let bytes = tokio::fs::read(manifest).await?;
   let pushmanifest: MultiArchManifest = serde_yaml::from_slice(&bytes)?;
   let interface_path = basedir.join(pushmanifest.interface);
   debug!(
-    path = interface_path.to_string_lossy().to_string().as_str(),
+    path = %interface_path.to_string_lossy(),
     "archmap interface"
   );
   let interface_bytes = tokio::fs::read(interface_path).await?;
@@ -62,7 +62,7 @@ pub async fn generate_archmap(
   for entry in pushmanifest.artifacts {
     let binary_path = basedir.join(entry.path);
     debug!(
-      path = binary_path.to_string_lossy().to_string().as_str(),
+      path = %binary_path.to_string_lossy(),
       "archmap binary"
     );
     let bin_bytes = std::fs::File::open(binary_path)?;

@@ -19,7 +19,7 @@ pub(super) async fn start_http_server(
   socket.bind(SocketAddr::new(IpAddr::V4(address), port))?;
   let addr = socket.local_addr()?;
 
-  trace!(addr = addr.to_string().as_str(), "starting server");
+  trace!(%addr, "starting server");
 
   socket.set_reuseaddr(true).unwrap();
   #[cfg(not(target_os = "windows"))]

@@ -14,6 +14,19 @@ pub(crate) enum BufferAction {
   Buffered,
 }
 
+impl std::fmt::Display for BufferAction {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    write!(
+      f,
+      "{}",
+      match self {
+        BufferAction::Consumed => "consumed",
+        BufferAction::Buffered => "buffered",
+      }
+    )
+  }
+}
+
 #[derive()]
 #[must_use]
 pub(crate) struct PortHandler {
@@ -57,7 +70,7 @@ impl PortHandler {
       status
     };
     if *lock != real_status {
-      trace!(old_status=?lock, new_status=?real_status, port=?self.port, name =self.name(), "setting port status");
+      trace!(old_status=%lock, new_status=%real_status, port=%self.port, name =self.name(), "setting port status");
       assert!(
         !(*lock == PortStatus::DoneClosed && status != PortStatus::DoneClosed),
         "trying to set new status on closed port"
@@ -84,22 +97,21 @@ impl PortHandler {
     let action = if value.payload == MessageTransport::Signal(MessageSignal::Done) {
       if self.port.direction() == &PortDirection::Out {
         self.buffer.push(value);
-        Ok(BufferAction::Buffered)
+        BufferAction::Buffered
       } else {
-        Ok(BufferAction::Consumed)
+        BufferAction::Consumed
       }
     } else {
       self.buffer.push(value);
-      Ok(BufferAction::Buffered)
+      BufferAction::Buffered
     };
-    trace!(?action, "incoming message");
-    action
+    trace!(%action, "incoming message");
+    Ok(action)
   }
 
-  #[instrument(skip_all, name = "take")]
   pub(super) fn take(&self) -> Option<TransportWrapper> {
     let result = self.buffer.take();
-    debug!(port=?self.port,payload=?result);
+    debug!(port=%self.port,payload=?result, "taking message from buffer");
 
     let status = self.status.lock();
     if self.is_empty() && *status == PortStatus::DoneClosing {
@@ -117,8 +129,7 @@ impl PortHandler {
     self.buffer.len()
   }
 
-  #[cfg(test)]
-  pub(crate) fn clone_packets(&self) -> Vec<TransportWrapper> {
-    self.buffer.clone_inner()
+  pub(crate) fn clone_buffer(&self) -> Vec<TransportWrapper> {
+    self.buffer.clone_buffer()
   }
 }

@@ -1,0 +1,10 @@
+version: 0
+network:
+  schematics:
+    - name: test
+      instances:
+        INSTANCE:
+          id: test::never_done
+      connections:
+        - <> => INSTANCE[input]
+        - INSTANCE[output] => <>

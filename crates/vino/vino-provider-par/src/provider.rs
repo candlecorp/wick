@@ -9,6 +9,7 @@ use std::time::{Duration, Instant};
 use async_trait::async_trait;
 use rand::{thread_rng, Rng};
 use tokio::process;
+use tokio::sync::Mutex;
 use vino_loader::cache_location;
 use vino_provider::native::prelude::*;
 use vino_provider_cli::options::env;
@@ -28,8 +29,7 @@ pub struct Context {
 pub struct Provider {
   client: RpcClient,
   interface: ProviderSignature,
-  #[allow(unused)]
-  child: process::Child,
+  child: Mutex<process::Child>,
 }
 
 impl Provider {
@@ -50,7 +50,7 @@ impl Provider {
     let options = config_to_par_options(manifest_config, None)?;
     let (cmd, connection) = start_bin(&binpath, Some(options.env.clone())).await?;
     Ok(Self {
-      child: cmd,
+      child: Mutex::new(cmd),
       interface,
       client: connection,
     })
@@ -96,7 +96,7 @@ pub fn config_to_par_options(
 impl RpcHandler for Provider {
   async fn invoke(&self, invocation: Invocation) -> RpcResult<BoxedTransportStream> {
     let target_url = invocation.target_url();
-    trace!(target = target_url.as_str(), "par invoke");
+    trace!(target = %target_url, "par invoke");
 
     let start = Instant::now();
 
@@ -108,8 +108,8 @@ impl RpcHandler for Provider {
       .map_err(|e| RpcError::ComponentError(e.to_string()))?;
 
     trace!(
-      target = target_url.as_str(),
-      duration = ?start.elapsed().as_millis(),
+      target = %target_url,
+      duration_ms = %start.elapsed().as_millis(),
       "par invoke complete",
     );
     Ok(Box::pin(stream))
@@ -117,6 +117,14 @@ impl RpcHandler for Provider {
 
   fn get_list(&self) -> RpcResult<Vec<HostedType>> {
     Ok(vec![HostedType::Provider(self.interface.clone())])
+  }
+
+  async fn shutdown(&self) -> RpcResult<()> {
+    let mut child = self.child.lock().await;
+    if let Err(error) = child.kill().await {
+      warn!(%error,"error shutting down par binary");
+    };
+    Ok(())
   }
 }
 
@@ -167,7 +175,7 @@ async fn start_bin(path: &Path, envs: Option<HashMap<String, String>>) -> Result
 }
 
 fn unpack<T: Read + Send>(archive: T, dest: &Path) -> Result<(), Error> {
-  trace!(path = dest.to_string_lossy().to_string().as_str(), "par unpack");
+  trace!(path = %dest.to_string_lossy(), "par unpack");
   let mut archive = tar::Archive::new(archive);
   archive.unpack(dest)?;
   vino_par::validate_provider_dir(dest)?;

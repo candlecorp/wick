@@ -189,3 +189,32 @@ async fn wasm_link_call() -> Result<()> {
 
   Ok(())
 }
+
+#[test_logger::test(tokio::test)]
+async fn subnetwork_link_call() -> Result<()> {
+  let (network, _) = init_network_from_yaml("./manifests/v0/subnetwork-ns-link.yaml").await?;
+
+  let data = hashmap! {
+      "input" => "hello world",
+  };
+
+  let mut result = network
+    .invoke(Invocation::new(
+      Entity::test("ns-link"),
+      Entity::schematic("test"),
+      data.try_into()?,
+      None,
+    ))
+    .await?;
+
+  let mut messages: Vec<TransportWrapper> = result.collect_port("output").await;
+  println!("{:#?}", messages);
+  assert_eq!(messages.len(), 1);
+
+  let output = messages.pop().unwrap();
+  let result: String = output.payload.deserialize()?;
+  println!("Output for first run: {:?}", result);
+  assert_eq!(result, "DLROW OLLEH");
+
+  Ok(())
+}

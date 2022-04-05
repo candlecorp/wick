@@ -27,11 +27,6 @@ use serde_json::Value;
 use serde_with_expand_env::with_expand_envs;
 use std::{collections::HashMap, str::FromStr};
 
-#[allow(non_snake_case)]
-pub(crate) fn HOST_MANIFEST_DEFAULT_SCHEMATIC() -> String {
-  "main".to_owned()
-}
-
 #[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
 /// A manifest defines the starting state of a Vino host and network.
@@ -47,9 +42,8 @@ pub struct HostManifest {
   #[serde(default)]
   pub network: NetworkManifest,
   /// The default schematic to execute if none is provided.
-  #[serde(default = "HOST_MANIFEST_DEFAULT_SCHEMATIC")]
-  #[serde(deserialize_with = "with_expand_envs")]
-  pub default_schematic: String,
+  #[serde(default)]
+  pub default_schematic: Option<String>,
 }
 
 #[allow(non_snake_case)]

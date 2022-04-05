@@ -2,7 +2,7 @@ use futures::future::BoxFuture;
 use tokio::sync::mpsc::unbounded_channel;
 use tokio_stream::wrappers::UnboundedReceiverStream;
 use tracing::Instrument;
-use vino_interpreter::Provider;
+use vino_interpreter::{BoxError, Provider};
 use vino_rpc::SharedRpcHandler;
 
 use crate::dev::prelude::*;
@@ -29,7 +29,7 @@ impl Provider for NativeProviderService {
     &self,
     invocation: Invocation,
     _data: Option<serde_json::Value>,
-  ) -> BoxFuture<std::result::Result<TransportStream, vino_interpreter::BoxError>> {
+  ) -> BoxFuture<std::result::Result<TransportStream, BoxError>> {
     let provider = self.provider.clone();
 
     async move {
@@ -54,8 +54,17 @@ impl Provider for NativeProviderService {
     }
     .boxed()
   }
+
   fn list(&self) -> &ProviderSignature {
     &self.signature
+  }
+
+  fn shutdown(&self) -> BoxFuture<std::result::Result<(), BoxError>> {
+    let provider = self.provider.clone();
+    Box::pin(async move {
+      provider.shutdown().await?;
+      Ok(())
+    })
   }
 }
 
@@ -72,8 +81,8 @@ impl InvocationHandler for NativeProviderService {
   }
 
   fn invoke(&self, invocation: Invocation) -> Result<BoxFuture<Result<InvocationResponse>>> {
-    let tx_id = invocation.tx_id.clone();
-    let span = debug_span!("invoke", target = invocation.target.url().as_str());
+    let tx_id = invocation.tx_id;
+    let span = debug_span!("invoke", target =  %invocation.target);
     let fut = self.handle(invocation, None);
 
     Ok(
@@ -93,6 +102,8 @@ mod test {
 
   use std::sync::Arc;
 
+  use vino_random::Seed;
+
   use super::*;
   use crate::test::prelude::assert_eq;
   type Result<T> = super::Result<T>;
@@ -100,7 +111,7 @@ mod test {
   #[test_logger::test(tokio::test)]
   async fn test_provider_component() -> Result<()> {
     let seed: u64 = 100000;
-    let provider = NativeProviderService::new(Arc::new(vino_stdlib::Provider::new(seed)));
+    let provider = NativeProviderService::new(Arc::new(vino_stdlib::Provider::new(Seed::unsafe_new(seed))));
 
     let user_data = "This is my payload";
 

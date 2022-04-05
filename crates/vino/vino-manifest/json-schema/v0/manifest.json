@@ -24,6 +24,7 @@
         },
         "default_schematic": {
           "description": "The default schematic to execute if none is provided.",
+          "required": false,
 
           "type": "string"
         }

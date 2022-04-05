@@ -1,9 +1,10 @@
+use std::time::SystemTime;
+
 use clap::Args;
-use futures::StreamExt;
 use tokio::io::{self, AsyncBufReadExt, BufReader};
 use vino_entity::Entity;
 use vino_provider_cli::parse_args;
-use vino_transport::{Invocation, TransportMap, TransportStream};
+use vino_transport::{InherentData, Invocation, TransportMap};
 
 use crate::error::ControlError;
 use crate::Result;
@@ -16,20 +17,39 @@ pub(crate) struct Options {
   #[clap(flatten)]
   pub(crate) connection: super::ConnectOptions,
 
+  // *****************************************************************
+  // Everything below is copied from common-cli-options::RunOptions
+  // Flatten doesn't work with positional args...
+  //
+  // TODO: Eliminate the need for copy/pasting
+  // *****************************************************************
+  /// Name of the component to execute.
+  #[clap(default_value = "default")]
+  component: String,
+
   /// Don't read input from STDIN.
   #[clap(long = "no-input")]
-  pub(crate) no_input: bool,
-
-  /// A port=value string where value is JSON to pass as input.
-  #[clap(long, short)]
-  data: Vec<String>,
+  no_input: bool,
 
   /// Skip additional I/O processing done for CLI usage.
-  #[clap(long, short)]
+  #[clap(long = "raw", short = 'r')]
   raw: bool,
 
-  /// Component to invoke.
-  pub(crate) component: String,
+  /// Filter the outputs by port name.
+  #[clap(long = "filter")]
+  filter: Vec<String>,
+
+  /// A port=value string where value is JSON to pass as input.
+  #[clap(long = "data", short = 'd')]
+  data: Vec<String>,
+
+  /// Print values only and exit with an error code and string on any errors.
+  #[clap(long = "values", short = 'o')]
+  short: bool,
+
+  /// Pass a seed along with the invocation.
+  #[clap(long = "seed", short = 's', env = "VINO_SEED")]
+  seed: Option<u64>,
 
   /// Arguments to pass as inputs to a schematic.
   #[clap(last(true))]
@@ -51,6 +71,18 @@ pub(crate) async fn handle(opts: Options) -> Result<()> {
   let origin = Entity::client("vinoc");
   let target = Entity::local_component(&opts.component);
 
+  let inherent_data = opts.seed.map(|seed| {
+    InherentData::new(
+      seed,
+      SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .unwrap()
+        .as_millis()
+        .try_into()
+        .unwrap(),
+    )
+  });
+
   let check_stdin = !opts.no_input && opts.data.is_empty() && opts.args.is_empty();
 
   if check_stdin {
@@ -61,9 +93,9 @@ pub(crate) async fn handle(opts: Options) -> Result<()> {
     let mut lines = reader.lines();
     while let Some(line) = lines.next_line().await.map_err(ControlError::ReadLineFailed)? {
       let stream = client
-        .invoke_from_json(origin.clone(), target.clone(), &line, !opts.raw)
+        .invoke_from_json(origin.clone(), target.clone(), &line, !opts.raw, inherent_data)
         .await?;
-      print_stream_json(stream, opts.raw).await?;
+      cli_common::functions::print_stream_json(Box::pin(stream), &opts.filter, opts.short, opts.raw).await?;
     }
   } else {
     let mut data_map = TransportMap::from_kv_json(&opts.data)?;
@@ -74,21 +106,12 @@ pub(crate) async fn handle(opts: Options) -> Result<()> {
       rest_arg_map.transpose_output_name();
     }
     data_map.merge(rest_arg_map);
-    let invocation = Invocation::new(origin, target, data_map, None);
+    let invocation = Invocation::new(origin, target, data_map, inherent_data);
+    trace!("issuing invocation");
     let stream = client.invoke(invocation).await?;
-    print_stream_json(stream, opts.raw).await?;
+    trace!("server responsed");
+    cli_common::functions::print_stream_json(Box::pin(stream), &opts.filter, opts.short, opts.raw).await?;
   }
 
-  Ok(())
-}
-
-async fn print_stream_json(mut stream: TransportStream, raw: bool) -> Result<()> {
-  while let Some(message) = stream.next().await {
-    if message.payload.is_signal() && !raw {
-      debug!("Skipping signal '{}' in output, pass --raw to print.", message.payload);
-    } else {
-      println!("{}", message.into_json());
-    }
-  }
   Ok(())
 }

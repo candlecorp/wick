@@ -113,7 +113,7 @@ pub async fn get_bytes(location: &str, allow_latest: bool, allowed_insecure: &[S
     let cache_path = cache_location("ocicache", location);
     if cache_path.exists() {
       debug!(
-        path = cache_path.to_string_lossy().to_string().as_str(),
+        path = %cache_path.to_string_lossy(),
         "load from cache"
       );
 

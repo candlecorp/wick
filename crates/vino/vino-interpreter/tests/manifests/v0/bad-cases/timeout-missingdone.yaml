@@ -1,0 +1,13 @@
+version: 0
+network:
+  schematics:
+    - name: test
+      instances:
+        COMPONENT:
+          id: test::timeout-nodone
+        ECHO:
+          id: test::echo
+      connections:
+        - <> => COMPONENT[input]
+        - COMPONENT[output] => ECHO[input]
+        - ECHO[output] => <>

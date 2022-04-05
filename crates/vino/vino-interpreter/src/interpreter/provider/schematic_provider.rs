@@ -4,13 +4,13 @@ use futures::future::BoxFuture;
 use parking_lot::Mutex;
 use serde_json::Value;
 use tracing_futures::Instrument;
+use vino_random::{Random, Seed};
 use vino_transport::{Invocation, TransportStream};
 use vino_types::{MapWrapper, ProviderSignature};
 
+use crate::constants::*;
 use crate::interpreter::program::ProgramState;
-use crate::{BoxError, InterpreterDispatchChannel, Provider, Providers, SchematicExecutor};
-
-pub(crate) const SELF_NAMESPACE: &str = "self";
+use crate::{BoxError, HandlerMap, InterpreterDispatchChannel, Provider, SchematicExecutor};
 
 #[derive(thiserror::Error, Debug, Clone, PartialEq, Eq)]
 pub(crate) enum Error {
@@ -22,15 +22,17 @@ pub(crate) enum Error {
 pub(crate) struct SchematicProvider {
   signature: ProviderSignature,
   schematics: Arc<Vec<SchematicExecutor>>,
-  providers: Arc<Providers>,
+  providers: Arc<HandlerMap>,
   self_provider: Mutex<Option<Arc<Self>>>,
+  rng: Random,
 }
 
 impl SchematicProvider {
   pub(crate) fn new(
-    providers: Arc<Providers>,
+    providers: Arc<HandlerMap>,
     state: &ProgramState,
     dispatcher: &InterpreterDispatchChannel,
+    seed: Seed,
   ) -> Arc<Self> {
     let schematics: Arc<Vec<SchematicExecutor>> = Arc::new(
       state
@@ -40,23 +42,33 @@ impl SchematicProvider {
         .map(|s| SchematicExecutor::new(s.clone(), dispatcher.clone()))
         .collect(),
     );
-    let signature = state.providers.get(SELF_NAMESPACE).unwrap().clone();
-    let this = Arc::new(Self {
+    let signature = state.providers.get(NS_SELF).unwrap().clone();
+    let provider = Arc::new(Self {
       signature,
       schematics,
       self_provider: Mutex::new(None),
       providers,
+      rng: Random::from_seed(seed),
     });
-    let mut lock = this.self_provider.lock();
-    lock.replace(this.clone());
+    provider.update_self_provider();
+    provider
+  }
+
+  fn update_self_provider(self: &Arc<Self>) {
+    let mut lock = self.self_provider.lock();
+    lock.replace(self.clone());
     drop(lock);
-    this
+  }
+
+  fn clone_self_provider(&self) -> Arc<Self> {
+    let lock = self.self_provider.lock();
+    lock.clone().unwrap()
   }
 }
 
 impl Provider for SchematicProvider {
   fn handle(&self, invocation: Invocation, _config: Option<Value>) -> BoxFuture<Result<TransportStream, BoxError>> {
-    trace!(target = ?invocation.target, namespace = SELF_NAMESPACE);
+    trace!(target = %invocation.target, id=%invocation.id,namespace = NS_SELF);
 
     let operation = invocation.target.name().to_owned();
     let fut = self
@@ -64,14 +76,17 @@ impl Provider for SchematicProvider {
       .iter()
       .find(|s| s.name() == operation)
       .map(|s| {
-        let lock = self.self_provider.lock();
-        let self_provider = lock.clone().unwrap();
-        s.invoke(invocation, self.providers.clone(), self_provider)
+        s.invoke(
+          invocation,
+          self.rng.seed(),
+          self.providers.clone(),
+          self.clone_self_provider(),
+        )
       })
       .ok_or_else(|| Error::SchematicNotFound(operation.clone()));
 
     Box::pin(async move {
-      let span = trace_span!("self", name = operation.as_str());
+      let span = trace_span!("ns_self", name = %operation);
       match fut {
         Ok(fut) => fut.instrument(span).await.map_err(|e| e.into()),
         Err(e) => Err(e.into()),

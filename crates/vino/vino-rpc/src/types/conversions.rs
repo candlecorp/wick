@@ -216,8 +216,8 @@ impl TryFrom<vino_transport::Invocation> for rpc::Invocation {
       origin: inv.origin.url(),
       target: inv.target.url(),
       payload: convert_transport_map(inv.payload),
-      id: inv.id,
-      tx_id: inv.tx_id,
+      id: inv.id.to_hyphenated().to_string(),
+      tx_id: inv.tx_id.to_hyphenated().to_string(),
       inherent: inv.inherent.map(|d| rpc::InherentData {
         seed: d.seed,
         timestamp: d.timestamp,
@@ -233,8 +233,8 @@ impl TryFrom<rpc::Invocation> for vino_transport::Invocation {
       origin: Entity::from_str(&inv.origin)?,
       target: Entity::from_str(&inv.target)?,
       payload: convert_messagekind_map(inv.payload),
-      id: inv.id,
-      tx_id: inv.tx_id,
+      id: uuid::Uuid::from_str(&inv.id)?,
+      tx_id: uuid::Uuid::from_str(&inv.tx_id)?,
       inherent: inv.inherent.map(|d| vino_transport::InherentData {
         seed: d.seed,
         timestamp: d.timestamp,

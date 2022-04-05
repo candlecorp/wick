@@ -1,11 +1,12 @@
+use std::time::SystemTime;
+
 use clap::Args;
 use tokio::io::{self, AsyncBufReadExt};
-use tokio_stream::StreamExt;
-use vino_provider::native::prelude::{BoxedTransportStream, Entity, MapWrapper, TransportMap};
+use vino_provider::native::prelude::{Entity, MapWrapper, TransportMap};
 use vino_provider_cli::{parse_args, LoggingOptions};
 use vino_provider_wasm::provider::Provider;
 use vino_rpc::RpcHandler;
-use vino_transport::{map_to_json, Invocation};
+use vino_transport::{InherentData, Invocation};
 
 use super::WasiOptions;
 use crate::error::VowError;
@@ -14,32 +15,51 @@ use crate::Result;
 #[derive(Debug, Clone, Args)]
 #[clap(rename_all = "kebab-case")]
 pub(crate) struct RunCommand {
+  /// Path or URL to WebAssembly binary.
+  wasm: String,
+
   #[clap(flatten)]
   logging: LoggingOptions,
 
   #[clap(flatten)]
   pull: super::PullOptions,
 
+  #[clap(flatten)]
+  wasi: WasiOptions,
+
+  // *****************************************************************
+  // Everything below is copied from common-cli-options::RunOptions
+  // Flatten doesn't work with positional args...
+  //
+  // TODO: Eliminate the need for copy/pasting
+  // *****************************************************************
+  /// Name of the component to execute.
+  #[clap(default_value = "default")]
+  component: String,
+
   /// Don't read input from STDIN.
   #[clap(long = "no-input")]
   no_input: bool,
 
   /// Skip additional I/O processing done for CLI usage.
-  #[clap(long, short)]
+  #[clap(long = "raw", short = 'r')]
   raw: bool,
 
+  /// Filter the outputs by port name.
+  #[clap(long = "filter")]
+  filter: Vec<String>,
+
   /// A port=value string where value is JSON to pass as input.
-  #[clap(long, short)]
+  #[clap(long = "data", short = 'd')]
   data: Vec<String>,
 
-  #[clap(flatten)]
-  wasi: WasiOptions,
+  /// Print values only and exit with an error code and string on any errors.
+  #[clap(long = "values", short = 'o')]
+  short: bool,
 
-  /// Path or URL to WebAssembly binary.
-  wasm: String,
-
-  /// Name of the component to execute.
-  component_name: String,
+  /// Pass a seed along with the invocation.
+  #[clap(long = "seed", short = 's', env = "VINO_SEED")]
+  seed: Option<u64>,
 
   /// Arguments to pass as inputs to a schematic.
   #[clap(last(true))]
@@ -56,7 +76,7 @@ pub(crate) async fn handle_command(opts: RunCommand) -> Result<()> {
 
   let mut check_stdin = !opts.no_input && opts.data.is_empty() && opts.args.is_empty();
   if let Some(metadata) = component.token.claims.metadata {
-    let target_component = metadata.interface.components.get(&opts.component_name);
+    let target_component = metadata.interface.components.get(&opts.component);
 
     if let Some(target_component) = target_component {
       if target_component.inputs.is_empty() {
@@ -64,7 +84,17 @@ pub(crate) async fn handle_command(opts: RunCommand) -> Result<()> {
       }
     }
   }
-
+  let inherent_data = opts.seed.map(|seed| {
+    InherentData::new(
+      seed,
+      SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .unwrap()
+        .as_millis()
+        .try_into()
+        .unwrap(),
+    )
+  });
   if check_stdin {
     if atty::is(atty::Stream::Stdin) {
       eprintln!("No input passed, reading from <STDIN>. Pass --no-input to disable.");
@@ -78,13 +108,13 @@ pub(crate) async fn handle_command(opts: RunCommand) -> Result<()> {
 
       let invocation = Invocation::new(
         Entity::client("vow"),
-        Entity::local_component(&opts.component_name),
+        Entity::local_component(&opts.component),
         payload,
         None,
       );
 
       let stream = provider.invoke(invocation).await.map_err(VowError::ComponentPanic)?;
-      print_stream_json(stream, opts.raw).await?;
+      cli_common::functions::print_stream_json(stream, &opts.filter, opts.short, opts.raw).await?;
     }
   } else {
     let mut data_map = TransportMap::from_kv_json(&opts.data)?;
@@ -98,22 +128,14 @@ pub(crate) async fn handle_command(opts: RunCommand) -> Result<()> {
 
     let invocation = Invocation::new(
       Entity::client("vow"),
-      Entity::local_component(&opts.component_name),
+      Entity::local_component(&opts.component),
       data_map,
-      None,
+      inherent_data,
     );
 
     let stream = provider.invoke(invocation).await.map_err(VowError::ComponentPanic)?;
-    print_stream_json(stream, opts.raw).await?;
+    cli_common::functions::print_stream_json(stream, &opts.filter, opts.short, opts.raw).await?;
   }
 
-  Ok(())
-}
-
-async fn print_stream_json(stream: BoxedTransportStream, raw: bool) -> Result<()> {
-  let mut json_stream = map_to_json(stream, raw);
-  while let Some(message) = json_stream.next().await {
-    println!("{}", message);
-  }
   Ok(())
 }

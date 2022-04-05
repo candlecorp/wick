@@ -1,6 +1,7 @@
 use vino_interface_keyvalue::exists::*;
 
 pub(crate) async fn job(input: Inputs, output: OutputPorts, context: crate::Context) -> JobResult {
+  trace!(?input, "exists");
   let mut cmd = redis::Cmd::exists(&input.key);
   let value: u32 = context.run_cmd(&mut cmd).await?;
   if value == 0 {

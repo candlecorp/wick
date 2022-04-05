@@ -14,3 +14,4 @@ vino-wascap = { path = "../../../vino-wascap" }
 vino-manifest = { path = "../../../vino-manifest" }
 tracing = "0.1"
 anyhow = "1.0"
+uuid = "0.8"

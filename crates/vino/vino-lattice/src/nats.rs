@@ -91,7 +91,7 @@ impl Nats {
   }
 
   pub(crate) async fn queue_subscribe(&self, topic: String, group: String) -> Result<NatsSubscription> {
-    trace!(topic = topic.as_str(), group = group.as_str(), "lattice subscribe");
+    trace!(%topic, %group, "lattice subscribe");
     let sub = self
       .nc
       .queue_subscribe(&topic, &group)
@@ -140,7 +140,7 @@ impl NatsMessage {
   pub(crate) async fn respond(&self, response: &LatticeRpcResponse) -> Result<()> {
     let data = serialize(response).unwrap_or_else(|e| serialize(&LatticeRpcResponse::Error(e.to_string())).unwrap());
     trace!(
-      target = self.inner.reply.as_ref().unwrap_or(&"".to_owned()).as_str(),
+      target = %self.inner.reply.as_ref().unwrap_or(&"".to_owned()),
       ?data,
       "lattice respond"
     );

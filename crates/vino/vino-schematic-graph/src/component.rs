@@ -179,7 +179,7 @@ where
       index = self.index,
       port = port.as_ref(),
       component = self.id(),
-      r#ref = ?port_ref,
+      r#ref = %port_ref,
       "added input port"
     );
     port_ref
@@ -232,7 +232,7 @@ where
       index = self.index,
       port = port.as_ref(),
       component = self.id(),
-      r#ref = ?port_ref,
+      r#ref = %port_ref,
       "added output port"
     );
 

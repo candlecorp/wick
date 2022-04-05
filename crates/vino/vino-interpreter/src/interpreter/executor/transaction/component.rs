@@ -1,22 +1,22 @@
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::Arc;
+use std::time::Duration;
 
 use tokio_stream::StreamExt;
+use tracing_futures::Instrument;
 use uuid::Uuid;
 use vino_entity::Entity;
-use vino_schematic_graph::{ComponentIndex, ComponentKind, ExternalReference, PortDirection, PortReference};
-use vino_transport::{Invocation, MessageSignal, MessageTransport, TransportMap, TransportWrapper};
+use vino_schematic_graph::{ComponentIndex, PortDirection, PortReference};
+use vino_transport::{Invocation, MessageSignal, MessageTransport, TransportMap, TransportStream, TransportWrapper};
 
 use self::port::port_handler::{BufferAction, PortHandler};
 use self::port::{InputPorts, OutputPorts, PortStatus};
+use crate::constants::*;
 use crate::graph::types::*;
+use crate::graph::Reference;
 use crate::interpreter::channel::Event;
 use crate::interpreter::error::StateError;
-use crate::interpreter::provider::core_provider::CORE_PROVIDER_NS;
-use crate::interpreter::provider::internal_provider::INTERNAL_PROVIDER_NS;
-use crate::interpreter::provider::provider_provider::PROVIDERPROVIDER_NAMESPACE;
-use crate::interpreter::provider::schematic_provider::SELF_NAMESPACE;
-use crate::{ExecutionError, InterpreterDispatchChannel, Provider, Providers};
+use crate::{ExecutionError, HandlerMap, InterpreterDispatchChannel, Provider};
 type Result<T> = std::result::Result<T, ExecutionError>;
 
 pub(crate) mod port;
@@ -31,7 +31,7 @@ pub(crate) struct InstanceHandler {
   outputs: OutputPorts,
   schematic: Arc<Schematic>,
   pending: AtomicU32,
-  providers: Arc<Providers>,
+  providers: Arc<HandlerMap>,
   self_provider: Arc<dyn Provider + Send + Sync>,
 }
 
@@ -47,43 +47,16 @@ impl std::fmt::Debug for InstanceHandler {
   }
 }
 
-#[derive(Debug)]
-#[must_use]
-struct Reference {
-  name: String,
-  namespace: String,
-}
-
-impl From<&ExternalReference> for Reference {
-  fn from(v: &ExternalReference) -> Self {
-    Self {
-      name: v.name().to_owned(),
-      namespace: v.namespace().to_owned(),
-    }
-  }
-}
-
 impl InstanceHandler {
   pub(super) fn new(
     schematic: Arc<Schematic>,
     component: &Component,
-    providers: Arc<Providers>,
+    providers: Arc<HandlerMap>,
     self_provider: Arc<dyn Provider + Send + Sync>,
   ) -> Self {
     let inputs = component.inputs().to_vec();
     let outputs = component.outputs().to_vec();
-    let reference = match component.kind() {
-      ComponentKind::Input => Reference {
-        name: component.name().to_owned(),
-        namespace: INTERNAL_PROVIDER_NS.to_owned(),
-      },
-      ComponentKind::Output => Reference {
-        name: component.name().to_owned(),
-        namespace: INTERNAL_PROVIDER_NS.to_owned(),
-      },
-      ComponentKind::External(comp) => comp.into(),
-      ComponentKind::Inherent(comp) => comp.into(),
-    };
+    let reference = component.kind().cref().into();
 
     Self {
       schematic,
@@ -91,7 +64,7 @@ impl InstanceHandler {
       outputs: OutputPorts::new(outputs),
       reference,
       index: component.index(),
-      identifier: component.name().to_owned(),
+      identifier: component.id().to_owned(),
       providers,
       pending: AtomicU32::new(0),
       self_provider,
@@ -99,11 +72,11 @@ impl InstanceHandler {
   }
 
   pub(crate) fn entity(&self) -> Entity {
-    Entity::component(&self.reference.namespace, &self.reference.name)
+    Entity::component(self.reference.namespace(), &self.reference.name())
   }
 
   pub(crate) fn namespace(&self) -> &str {
-    &self.reference.namespace
+    self.reference.namespace()
   }
 
   pub(crate) fn index(&self) -> ComponentIndex {
@@ -115,11 +88,24 @@ impl InstanceHandler {
   }
 
   pub(crate) fn is_core_component(&self, name: &str) -> bool {
-    self.reference.namespace == CORE_PROVIDER_NS && self.reference.name == name
+    self.reference.is_core_component(name)
   }
 
-  pub(crate) fn is_generator(&self) -> bool {
-    self.reference.namespace == PROVIDERPROVIDER_NAMESPACE
+  pub(crate) fn is_schematic_output(&self) -> bool {
+    self.reference.is_schematic_output()
+  }
+
+  pub(crate) fn is_static(&self) -> bool {
+    self.reference.is_static()
+  }
+
+  pub(crate) fn done(&self) -> bool {
+    for port in self.inputs.iter() {
+      if port.status() != PortStatus::DoneClosed {
+        return false;
+      }
+    }
+    true
   }
 
   pub(super) fn take_payload(&self) -> Result<Option<TransportMap>> {
@@ -155,20 +141,18 @@ impl InstanceHandler {
     let component_port = &component.inputs()[port.port_index()];
 
     let upstream_ports = component_port.connections().iter().map(|connection| {
-      trace!(?connection);
       let connection = &self.schematic.connections()[*connection];
       let upstream_instance = &instances[connection.from().component_index()];
       upstream_instance.outputs.get_handler(connection.from())
     });
-    trace!(?upstream_ports);
 
-    let statuses = check_statuses(upstream_ports);
+    let breakdown = check_statuses(upstream_ports);
 
     let num_buffered = self.buffered_packets(port);
-    trace!(?statuses, is_pending = self.is_pending());
-    let new_status = if statuses.has_open || statuses.has_done_open {
+    trace!(count = self.num_pending(), "pending executions");
+    let new_status = if breakdown.has_open || breakdown.has_done_open {
       PortStatus::DoneOpen
-    } else if statuses.has_any_generator {
+    } else if breakdown.has_any_generator && !self.is_schematic_output() {
       PortStatus::DoneYield
     } else if num_buffered > 0 {
       PortStatus::DoneClosing
@@ -184,14 +168,13 @@ impl InstanceHandler {
     }
   }
 
-  #[instrument(skip_all, name = "buffer_in")]
   pub(crate) fn buffer_in(
     &self,
     port: &PortReference,
     value: TransportWrapper,
     instances: &[Arc<InstanceHandler>],
   ) -> Result<BufferAction> {
-    trace!(?port, ?value, "buffering input message");
+    trace!(%port, ?value, "buffering input message");
 
     if value.payload == MessageTransport::Signal(MessageSignal::Done) {
       self.update_input_status(port, instances);
@@ -201,16 +184,15 @@ impl InstanceHandler {
     }
   }
 
-  #[instrument(skip_all, name = "buffer_out")]
   pub(crate) fn buffer_out(&self, port: &PortReference, value: TransportWrapper) -> Result<BufferAction> {
-    trace!(?port, ?value, "buffering output message");
+    trace!(%port, ?value, "buffering output message");
     if value.payload == MessageTransport::Signal(MessageSignal::Done) {
-      let status = check_statuses(self.inputs.iter());
+      let breakdown = check_statuses(self.inputs.iter());
 
-      trace!(?status, is_pending = self.is_pending());
-      let new_status = if self.is_generator() || status.has_all_generators {
+      trace!(count = self.num_pending(), "pending executions");
+      let new_status = if self.is_static() || breakdown.has_all_generators && !self.is_schematic_output() {
         PortStatus::DoneYield
-      } else if status.has_any_open() || self.is_pending() {
+      } else if breakdown.has_any_open() || self.is_pending() {
         PortStatus::DoneOpen
       } else if self.buffered_packets(port) > 0 {
         PortStatus::DoneClosing
@@ -288,16 +270,13 @@ impl InstanceHandler {
     num > 0
   }
 
-  #[instrument(skip_all, name = "call_complete")]
-  pub(crate) fn handle_call_complete(&self) -> Result<Vec<PortReference>> {
+  pub(crate) fn handle_call_complete(&self, status: CompletionStatus) -> Result<Vec<PortReference>> {
     self.decrement_pending()?;
-    Ok(self.update_output_statuses())
+    Ok(self.update_output_statuses(status))
   }
 
-  #[instrument(skip_all, name = "update_output_ports")]
-  pub(super) fn update_output_statuses(&self) -> Vec<PortReference> {
-    let input_status = check_statuses(self.inputs.handlers());
-    debug!(?input_status);
+  pub(super) fn update_output_statuses(&self, _status: CompletionStatus) -> Vec<PortReference> {
+    let breakdown = check_statuses(self.inputs.handlers());
     let mut changed_statuses = Vec::new();
     for port in self.outputs.iter() {
       let current_status = port.status();
@@ -307,10 +286,10 @@ impl InstanceHandler {
           // otherwise close it.
           // Note: A port can still be "Open" after a call if the component panics.
           // Treat it the same way as DoneOpen
-          if input_status.has_any_open()
+          if breakdown.has_any_open()
             || self.is_pending()
-            || input_status.has_pending_packets
-            || input_status.has_all_generators
+            || breakdown.has_pending_packets
+            || breakdown.has_all_generators
           {
             PortStatus::DoneOpen
           } else {
@@ -319,7 +298,7 @@ impl InstanceHandler {
         }
         orig => orig,
       };
-      trace!(?current_status, ?new_status);
+
       if new_status != current_status {
         changed_statuses.push(port.port_ref());
         port.set_status(new_status);
@@ -329,14 +308,24 @@ impl InstanceHandler {
     changed_statuses
   }
 
-  #[instrument(skip(self, invocation), name = "component_call")]
-  pub(crate) async fn handle_component_call(
+  pub(crate) async fn dispatch_invocation(
+    self: Arc<Self>,
+    _tx_id: Uuid,
+    invocation: Invocation,
+    channel: InterpreterDispatchChannel,
+  ) -> Result<()> {
+    channel.dispatch(Event::invocation(self.index(), invocation)).await?;
+    Ok(())
+  }
+
+  pub(crate) async fn invoke(
     self: Arc<Self>,
     tx_id: Uuid,
     invocation: Invocation,
     channel: InterpreterDispatchChannel,
   ) -> Result<()> {
-    debug!(?invocation);
+    debug!(?invocation, "invoking");
+    let invocation_id = invocation.id;
 
     let identifier = self.id().to_owned();
     let entity = self.entity();
@@ -348,7 +337,7 @@ impl InstanceHandler {
 
     self.increment_pending();
 
-    let fut = if namespace == SELF_NAMESPACE {
+    let fut = if namespace == NS_SELF {
       let clone = self.self_provider.clone();
       tokio::spawn(async move {
         clone
@@ -373,77 +362,100 @@ impl InstanceHandler {
 
     let outer_result = fut.await.map_err(|e| ExecutionError::ProviderError(e.to_string()));
 
-    let mut stream = match outer_result {
+    let stream = match outer_result {
       Ok(Ok(result)) => result,
-      Ok(Err(err)) | Err(err) => {
-        warn!(error = ?err, "component error");
+      Ok(Err(error)) | Err(error) => {
+        warn!(%error, "component error");
         channel
           .dispatch(Event::call_err(
             tx_id,
             self.index(),
-            MessageTransport::error(err.to_string()),
+            MessageTransport::error(error.to_string()),
           ))
           .await?;
         return Ok(());
       }
     };
 
-    let index = self.index();
     tokio::spawn(async move {
       let span = trace_span!(
-        "output_task",
-        component = format!("{} ({})", identifier.as_str(), entity,).as_str()
+        "output_task", %invocation_id, component = %format!("{} ({})", identifier, entity)
       );
-      let _guard = span.enter();
-      trace!("starting output task");
-      while let Some(wrapper) = stream.next().await {
-        let port = match self.find_output(&wrapper.port) {
-          Ok(port) => port,
-          Err(e) => {
-            error!(error = e.to_string().as_str());
-            continue;
-          }
-        };
-
-        trace!("received packet for {}", wrapper.port);
-        let action = self.buffer_out(&port, wrapper).unwrap();
-        if action == BufferAction::Buffered {
-          if let Err(e) = channel.dispatch(Event::port_data(tx_id, port)).await {
-            error!("could not send packet: {}", e);
-          };
-        }
-      }
-      let ports = self.handle_call_complete();
-      if let Err(e) = ports {
-        error!("error handling call complete: {}", e);
-        return;
-      }
-      let ports = ports.unwrap();
-      trace!(?ports, "ports to update");
-      if let Err(e) = channel.dispatch(Event::call_complete(tx_id, index)).await {
-        error!("could not send event: {}", e);
-      };
-      for port in ports {
-        if let Err(e) = channel.dispatch(Event::port_status_change(tx_id, port)).await {
-          error!("could not send port status change event: {}", e);
-        };
+      if let Err(error) = output_handler(tx_id, &self, stream, channel).instrument(span).await {
+        error!(%error, "error in output handler");
       }
     });
     Ok(())
   }
 
-  #[cfg(test)]
-  pub(crate) fn clone_packets(&self, port: &PortReference) -> Vec<TransportWrapper> {
+  pub(crate) fn clone_buffer(&self, port: &PortReference) -> Vec<TransportWrapper> {
     match port.direction() {
-      PortDirection::In => self.inputs.get_handler(port).clone_packets(),
-      PortDirection::Out => self.outputs.get_handler(port).clone_packets(),
+      PortDirection::In => self.inputs.get_handler(port).clone_buffer(),
+      PortDirection::Out => self.outputs.get_handler(port).clone_buffer(),
     }
   }
 
-  #[cfg(test)]
   pub(crate) fn num_pending(&self) -> u32 {
     self.pending.load(Ordering::Relaxed)
   }
+}
+
+async fn output_handler(
+  tx_id: Uuid,
+  instance: &InstanceHandler,
+  mut stream: TransportStream,
+  channel: InterpreterDispatchChannel,
+) -> Result<()> {
+  trace!("starting output task");
+
+  // TODO: make this timeout configurable from instance configuration.
+  let timeout = Duration::from_millis(1000);
+
+  let reason = loop {
+    let response = tokio::time::timeout(timeout, stream.next());
+    match response.await {
+      Ok(Some(message)) => {
+        if message.is_component_error() {
+          warn!(message=?message,"component-wide error");
+          let error = message.error().unwrap();
+          channel
+            .dispatch(Event::call_err(tx_id, instance.index(), MessageTransport::error(error)))
+            .await?;
+          break CompletionStatus::Error;
+        }
+        let port = instance.find_output(&message.port)?;
+
+        trace!(port=%message.port,"received packet");
+        let action = instance.buffer_out(&port, message).unwrap();
+        if action == BufferAction::Buffered {
+          channel.dispatch(Event::port_data(tx_id, port)).await?;
+        }
+      }
+      Err(error) => {
+        error!(%error,"timeout");
+        break CompletionStatus::Timeout;
+      }
+      Ok(None) => {
+        trace!("stream complete");
+        break CompletionStatus::Finished;
+      }
+    }
+  };
+  let ports = instance.handle_call_complete(reason)?;
+  trace!(?ports, "ports to update");
+  for port in ports {
+    channel.dispatch(Event::port_status_change(tx_id, port)).await?;
+  }
+  channel.dispatch(Event::call_complete(tx_id, instance.index())).await?;
+  Ok(())
+}
+
+#[derive(Clone, Copy)]
+pub(crate) enum CompletionStatus {
+  Finished,
+  Timeout,
+  Error,
+  Deferred,
 }
 
 #[derive(Default, Debug)]
@@ -465,26 +477,43 @@ impl StatusBreakdown {
 
 pub(super) fn check_statuses<'a>(ports: impl Iterator<Item = &'a PortHandler>) -> StatusBreakdown {
   let mut breakdown = StatusBreakdown::default();
-  let mut num_generators = 0;
   let mut total_ports = 0;
+
+  let mut ports_open = Vec::new();
+  let mut ports_doneopen = Vec::new();
+  let mut ports_doneyield = Vec::new();
+  let mut ports_doneclosing = Vec::new();
+  let mut ports_doneclosed = Vec::new();
+
   for port in ports {
     total_ports += 1;
-    info!(?port);
     let upstream_status = port.status();
-    if !port.is_empty() {
+    trace!(port = port.name(), status = %upstream_status, "port status");
+    // if port is not empty (and is not a generator)
+    if !port.is_empty() && !matches!(upstream_status, PortStatus::DoneYield) {
       breakdown.has_pending_packets = true;
     }
     match upstream_status {
-      PortStatus::Open => breakdown.has_open = true,
-      PortStatus::DoneOpen => breakdown.has_done_open = true,
-      PortStatus::DoneYield => {
-        breakdown.has_any_generator = true;
-        num_generators += 1;
-      }
-      PortStatus::DoneClosing => breakdown.has_done_closing = true,
-      PortStatus::DoneClosed => breakdown.has_done_closed = true,
+      PortStatus::Open => ports_open.push(port.name()),
+      PortStatus::DoneOpen => ports_doneopen.push(port.name()),
+      PortStatus::DoneYield => ports_doneyield.push(port.name()),
+      PortStatus::DoneClosing => ports_doneclosing.push(port.name()),
+      PortStatus::DoneClosed => ports_doneclosed.push(port.name()),
     }
   }
-  breakdown.has_all_generators = num_generators == total_ports;
+  breakdown.has_all_generators = ports_doneyield.len() == total_ports;
+  trace!(
+    open = %ports_open.join(", "),
+    done_open = %ports_doneopen.join(", "),
+    done_yield = %ports_doneyield.join(", "),
+    done_closing = %ports_doneclosing.join(", "),
+    done_closed = %ports_doneclosed.join(", "),
+    all_generators = breakdown.has_all_generators,
+    "port statuses");
+  breakdown.has_open = !ports_open.is_empty();
+  breakdown.has_done_open = !ports_doneopen.is_empty();
+  breakdown.has_any_generator = !ports_doneyield.is_empty();
+  breakdown.has_done_closing = !ports_doneclosing.is_empty();
+  breakdown.has_done_closed = !ports_doneclosed.is_empty();
   breakdown
 }

@@ -24,7 +24,7 @@ pub(crate) async fn handle_command(opts: ServeCommand) -> Result<()> {
     .await
     .map_err(|e| crate::error::VinoError::ManifestLoadFail(e.to_string()))?;
 
-  let manifest = HostDefinition::load_from_bytes(&manifest_src)?;
+  let manifest = HostDefinition::load_from_bytes(Some(opts.manifest), &manifest_src)?;
 
   let config = merge_config(manifest, opts.host, Some(opts.server_options));
 
@@ -32,7 +32,7 @@ pub(crate) async fn handle_command(opts: ServeCommand) -> Result<()> {
 
   let mut host = host_builder.build();
 
-  host.start().await?;
+  host.start(Some(0)).await?;
   info!("Host started");
   match host.get_server_info() {
     Some(info) => {

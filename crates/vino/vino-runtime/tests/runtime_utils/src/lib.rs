@@ -91,7 +91,7 @@ use vino_wascap::KeyPair;
 #[macro_use]
 extern crate tracing;
 
-pub async fn init_network_from_yaml(path: &str) -> anyhow::Result<(Network, String)> {
+pub async fn init_network_from_yaml(path: &str) -> anyhow::Result<(Network, uuid::Uuid)> {
   let host_def = HostDefinition::load_from_file(path)?;
   debug!("Manifest loaded");
   let kp = KeyPair::new_server();
@@ -100,6 +100,6 @@ pub async fn init_network_from_yaml(path: &str) -> anyhow::Result<(Network, Stri
 
   let network = builder.build().await?;
 
-  let nuid = network.uid.clone();
+  let nuid = network.uid;
   Ok((network, nuid))
 }

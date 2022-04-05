@@ -6,6 +6,7 @@ use vino_par::make_archive;
 use vino_rpc::ProviderSignature;
 use vino_wascap::ClaimsOptions;
 
+use crate::io::{async_read, async_read_to_string, async_write};
 use crate::keys::{extract_keypair, GenerateCommon};
 use crate::Result;
 #[derive(Debug, Clone, Args)]
@@ -46,16 +47,18 @@ pub(crate) async fn handle(opts: Options) -> Result<()> {
     Some(opts.binpath.to_string_lossy().to_string()),
     opts.common.directory.clone(),
     KeyPairType::Module,
-  )?;
+  )
+  .await?;
 
   let issuer_kp = extract_keypair(
     Some(opts.binpath.to_string_lossy().to_string()),
     opts.common.directory.clone(),
     KeyPairType::Account,
-  )?;
+  )
+  .await?;
 
-  let binbytes = tokio::fs::read(&opts.binpath).await?;
-  let signature_json = tokio::fs::read_to_string(&opts.interface_path).await?;
+  let binbytes = async_read(&opts.binpath).await?;
+  let signature_json = async_read_to_string(&opts.interface_path).await?;
   let signature: ProviderSignature = serde_json::from_str(&signature_json)?;
   let options = ClaimsOptions {
     revision: opts.rev,
@@ -66,7 +69,7 @@ pub(crate) async fn handle(opts: Options) -> Result<()> {
 
   let bytes = make_archive(&*binbytes, &signature, options, &subject_kp, &issuer_kp)?;
 
-  tokio::fs::write(&opts.output, &bytes).await?;
+  async_write(&opts.output, &bytes).await?;
 
   Ok(())
 }

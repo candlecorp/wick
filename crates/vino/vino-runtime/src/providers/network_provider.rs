@@ -1,5 +1,6 @@
 use async_trait::async_trait;
 use tracing::Instrument;
+use uuid::Uuid;
 use vino_rpc::error::RpcError;
 use vino_rpc::{RpcHandler, RpcResult};
 
@@ -8,33 +9,33 @@ use crate::dev::prelude::*;
 #[derive(Debug, Default)]
 struct State {}
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Copy, Debug)]
 pub struct Provider {
-  network_id: String,
+  network_id: Uuid,
 }
 
 impl Provider {
   #[must_use]
-  pub fn new(network_id: String) -> Self {
+  pub fn new(network_id: Uuid) -> Self {
     Self { network_id }
   }
 }
 
 #[async_trait]
 impl RpcHandler for Provider {
-  async fn invoke(&self, mut invocation: Invocation) -> RpcResult<BoxedTransportStream> {
+  async fn invoke(&self, invocation: Invocation) -> RpcResult<BoxedTransportStream> {
     let target_url = invocation.target_url();
 
     let span = debug_span!(
       "invoke",
-      network_id = self.network_id.as_str(),
-      target = invocation.target.url().as_str()
+      network_id = %self.network_id,
+      target =  %invocation.target
     );
 
     let network = NetworkService::for_id(&self.network_id)
       .ok_or_else(|| Box::new(RpcError::ProviderError(format!("Network '{}' not found", target_url))))?;
 
-    invocation.target = Entity::local_component(invocation.target.name());
+    trace!(target = %target_url, "invoking");
 
     let result: InvocationResponse = network
       .invoke(invocation)
@@ -42,6 +43,7 @@ impl RpcHandler for Provider {
       .instrument(span)
       .await
       .map_err(|e| RpcError::ProviderError(e.to_string()))?;
+
     match result.ok() {
       Ok(stream) => Ok(Box::pin(stream)),
       Err(msg) => Err(Box::new(RpcError::ProviderError(format!("Invocation failed: {}", msg)))),

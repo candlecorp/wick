@@ -4,7 +4,6 @@ use std::time::Duration;
 
 use clap::Args;
 use logger::LoggingOptions;
-use nkeys::KeyPair;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug)]
@@ -25,7 +24,7 @@ pub struct Options {
 impl Default for Options {
   fn default() -> Self {
     Self {
-      id: KeyPair::new_server().public_key(),
+      id: uuid::Uuid::new_v4().to_hyphenated().to_string(),
       rpc: Default::default(),
       http: Default::default(),
       lattice: Default::default(),
@@ -104,11 +103,15 @@ impl From<DefaultCliOptions> for Options {
       None
     };
 
+    let id = opts
+      .id
+      .unwrap_or_else(|| uuid::Uuid::new_v4().to_hyphenated().to_string());
+
     Options {
       rpc,
       http,
       timeout: Duration::from_millis(opts.timeout.unwrap_or(5000)),
-      id: opts.id.unwrap_or_else(|| KeyPair::new_server().public_key()),
+      id,
       lattice,
     }
   }

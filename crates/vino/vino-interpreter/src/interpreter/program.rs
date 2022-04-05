@@ -4,8 +4,8 @@ use vino_schematic_graph::iterators::{SchematicHop, WalkDirection};
 use vino_schematic_graph::{ComponentKind, PortDirection};
 use vino_types::{ComponentSignature, MapWrapper, ProviderMap, ProviderSignature, TypeSignature};
 
+use crate::constants::*;
 use crate::graph::types::*;
-use crate::interpreter::provider::schematic_provider::SELF_NAMESPACE;
 
 pub(crate) mod validator;
 use super::error::Error;
@@ -56,7 +56,7 @@ fn get_resolution_order(network: &Network) -> Result<Vec<Vec<&Schematic>>, Valid
       for component in schematic.components() {
         match component.kind() {
           ComponentKind::External(ext) => {
-            let references_self = ext.namespace() == SELF_NAMESPACE;
+            let references_self = ext.namespace() == NS_SELF;
             let reference_will_have_resolved = will_resolve.contains(ext.name());
 
             if references_self && !reference_will_have_resolved {
@@ -97,14 +97,14 @@ fn get_resolution_order(network: &Network) -> Result<Vec<Vec<&Schematic>>, Valid
 }
 
 fn generate_self_signature(network: &Network, providers: &mut ProviderMap) -> Result<(), ValidationError> {
-  let map = ProviderSignature::new(SELF_NAMESPACE);
-  providers.insert(SELF_NAMESPACE, map);
+  let map = ProviderSignature::new(NS_SELF);
+  providers.insert(NS_SELF, map);
   let resolution_order = get_resolution_order(network)?;
 
   for batch in resolution_order {
     for schematic in batch {
       let signature = get_schematic_signature(schematic, providers)?;
-      let map = providers.get_inner_mut().get_mut(SELF_NAMESPACE).unwrap();
+      let map = providers.get_inner_mut().get_mut(NS_SELF).unwrap();
       map.components.insert(schematic.name(), signature);
     }
   }
@@ -166,12 +166,12 @@ fn get_signature(
 ) -> Result<Option<TypeSignature>, ValidationError> {
   let name = p.name();
   match p.component().kind() {
-    ComponentKind::Input => match kind {
+    ComponentKind::Input(_) => match kind {
       PortDirection::In => Ok(None),
       PortDirection::Out => Ok(Some(TypeSignature::Raw)),
     },
 
-    ComponentKind::Output => match kind {
+    ComponentKind::Output(_) => match kind {
       PortDirection::Out => Ok(None),
       PortDirection::In => Ok(Some(TypeSignature::Raw)),
     },
@@ -192,7 +192,7 @@ fn get_signature(
         PortDirection::Out => component.outputs.get(name),
       };
 
-      Ok(Some(sig.cloned().ok_or(ValidationError::MissingPort {
+      Ok(Some(sig.cloned().ok_or(ValidationError::MissingConnection {
         component: ext.name().to_owned(),
         namespace: ext.namespace().to_owned(),
         port: name.to_owned(),

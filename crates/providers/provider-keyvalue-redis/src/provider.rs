@@ -5,6 +5,7 @@ use std::time::Instant;
 use redis::aio::Connection;
 use redis::{FromRedisValue, Pipeline};
 use tokio::sync::RwLock;
+use tracing_futures::Instrument;
 use vino_provider::native::prelude::*;
 use vino_rpc::error::RpcError;
 use vino_rpc::{RpcHandler, RpcResult};
@@ -32,9 +33,10 @@ impl RedisConnection {
     let now = Instant::now();
     let result: Result<T> = cmd
       .query_async(&mut *con)
+      .instrument(trace_span!("redis query exec"))
       .await
       .map_err(|e| Error::RedisError(e.to_string()));
-    trace!("REDIS:QUERY[{} μs]", now.elapsed().as_micros());
+    trace!(duration_ns = %now.elapsed().as_micros(), "redis query exec complete",);
 
     result
   }
@@ -42,12 +44,14 @@ impl RedisConnection {
   pub async fn run_pipeline<T: FromRedisValue + std::fmt::Debug>(&self, pipeline: &mut Pipeline) -> RedisResult<T> {
     let mut con = self.0.write().await;
     let now = Instant::now();
+
     let result = pipeline
       .query_async(&mut *con)
+      .instrument(trace_span!("redis pipeline exec"))
       .await
       .map_err(|e| Error::RedisError(e.to_string()));
 
-    trace!("REDIS:PIPELINE[{} μs]", now.elapsed().as_micros());
+    trace!(duration_ns = %now.elapsed().as_micros(), "redis pipeline exec complete",);
 
     result
   }

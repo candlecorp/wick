@@ -6,6 +6,7 @@ use vino_host::HostBuilder;
 use vino_manifest::host_definition::HostDefinition;
 use vino_provider_cli::options::{DefaultCliOptions, LatticeCliOptions};
 use vino_provider_cli::LoggingOptions;
+use vino_random::Seed;
 use vino_test::TestSuite;
 
 use crate::error::VinoError;
@@ -28,6 +29,10 @@ pub(crate) struct TestCommand {
   #[clap(long = "info")]
   pub(crate) info: bool,
 
+  /// Pass a seed along with the invocation.
+  #[clap(long = "seed", short = 's', env = "VINO_SEED")]
+  seed: Option<u64>,
+
   /// Manifest file or OCI url.
   manifest: String,
 
@@ -49,7 +54,7 @@ pub(crate) async fn handle_command(opts: TestCommand) -> Result<()> {
     .await
     .map_err(|e| crate::error::VinoError::ManifestLoadFail(e.to_string()))?;
 
-  let manifest = HostDefinition::load_from_bytes(&manifest_src)?;
+  let manifest = HostDefinition::load_from_bytes(Some(opts.manifest), &manifest_src)?;
 
   let server_options = DefaultCliOptions {
     lattice: opts.lattice,
@@ -62,7 +67,7 @@ pub(crate) async fn handle_command(opts: TestCommand) -> Result<()> {
 
   let mut host = host_builder.build();
   host.connect_to_lattice().await?;
-  host.start_network().await?;
+  host.start_network(opts.seed.map(Seed::unsafe_new)).await?;
 
   let provider: vino_host::Provider = host.into();
 

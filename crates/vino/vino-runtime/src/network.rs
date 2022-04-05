@@ -1,8 +1,10 @@
 use std::sync::Arc;
 use std::time::Duration;
 
+use uuid::Uuid;
 use vino_lattice::Lattice;
 use vino_manifest::HostDefinition;
+use vino_random::{Random, Seed};
 use vino_wascap::KeyPair;
 
 use crate::dev::prelude::*;
@@ -12,7 +14,7 @@ type Result<T> = std::result::Result<T, RuntimeError>;
 #[derive(Debug)]
 #[must_use]
 pub struct Network {
-  pub uid: String,
+  pub uid: Uuid,
   inner: Arc<NetworkService>,
   #[allow(unused)]
   kp: KeyPair,
@@ -22,14 +24,14 @@ pub struct Network {
 #[derive(Debug)]
 #[must_use]
 pub struct NetworkInit {
-  uid: String,
   definition: HostDefinition,
   allow_latest: bool,
   allowed_insecure: Vec<String>,
   kp: KeyPair,
   timeout: Duration,
   lattice: Option<Arc<Lattice>>,
-  rng_seed: u64,
+  namespace: Option<String>,
+  rng_seed: Seed,
 }
 
 impl Network {
@@ -40,37 +42,47 @@ impl Network {
   #[instrument(name = "network", skip_all)]
   pub async fn new(config: NetworkInit) -> Result<Self> {
     trace!(?config, "init");
+    let rng = Random::from_seed(config.rng_seed);
+
     let init = Initialize {
-      id: config.uid.clone(),
+      id: rng.uuid(),
       lattice: config.lattice.clone(),
-      network: config.definition.clone(),
+      manifest: config.definition.clone(),
       allowed_insecure: config.allowed_insecure.clone(),
       allow_latest: config.allow_latest,
       timeout: config.timeout,
-      rng_seed: config.rng_seed,
+      namespace: config.namespace,
+      rng_seed: rng.seed(),
+      event_log: None,
     };
     let service = NetworkService::new(init)
       .await
       .map_err(|e| RuntimeError::InitializationFailed(e.to_string()))?;
     Ok(Self {
-      uid: config.uid,
+      uid: service.id,
       inner: service,
       kp: config.kp,
       timeout: config.timeout,
     })
   }
 
-  #[instrument(skip_all, fields(target=?invocation.target))]
   pub async fn invoke(&self, invocation: Invocation) -> Result<TransportStream> {
-    let time = std::time::Instant::now();
-    trace!(start_time=?time,"invocation start");
+    let time = std::time::SystemTime::now();
+    trace!(start_time=%time.duration_since(std::time::UNIX_EPOCH).unwrap().as_millis() ,"invocation start");
 
     let response = tokio::time::timeout(self.timeout, self.inner.invoke(invocation)?)
       .await
       .map_err(|_| NetworkError::Timeout)??;
-    trace!(duration=?time.elapsed().as_micros(),"invocation complete");
+    trace!(duration_ms=%time.elapsed().unwrap().as_millis(),"invocation complete");
 
     Ok(response.ok()?)
+  }
+
+  pub async fn shutdown(&self) -> Result<()> {
+    trace!("network shutting down");
+    self.inner.shutdown().await?;
+
+    Ok(())
   }
 
   pub fn get_signature(&self) -> Result<ProviderSignature> {
@@ -88,24 +100,23 @@ pub struct NetworkBuilder {
   allowed_insecure: Vec<String>,
   definition: HostDefinition,
   kp: KeyPair,
-  uid: String,
   lattice: Option<Arc<Lattice>>,
   timeout: Duration,
-  rng_seed: Option<u64>,
+  rng_seed: Option<Seed>,
+  namespace: Option<String>,
 }
 
 impl NetworkBuilder {
   /// Creates a new network builder from a [NetworkDefinition]
   pub fn from_definition(definition: HostDefinition, seed: &str) -> Result<Self> {
     let kp = keypair_from_seed(seed)?;
-    let nuid = kp.public_key();
     Ok(Self {
       allow_latest: definition.host.allow_latest,
       allowed_insecure: definition.host.insecure_registries.clone(),
       definition,
-      uid: nuid,
       timeout: Duration::from_secs(5),
       lattice: None,
+      namespace: None,
       kp,
       rng_seed: None,
     })
@@ -133,9 +144,16 @@ impl NetworkBuilder {
     }
   }
 
-  pub fn with_seed(self, seed: u64) -> Self {
+  pub fn with_seed(self, seed: Seed) -> Self {
     Self {
       rng_seed: Some(seed),
+      ..self
+    }
+  }
+
+  pub fn namespace<T: AsRef<str>>(self, namespace: T) -> Self {
+    Self {
+      namespace: Some(namespace.as_ref().to_owned()),
       ..self
     }
   }
@@ -144,11 +162,11 @@ impl NetworkBuilder {
   pub async fn build(self) -> Result<Network> {
     Network::new(NetworkInit {
       definition: self.definition,
-      uid: self.uid,
       allow_latest: self.allow_latest,
       allowed_insecure: self.allowed_insecure,
       kp: self.kp,
       timeout: self.timeout,
+      namespace: self.namespace,
       lattice: self.lattice,
       rng_seed: self.rng_seed.unwrap_or_else(new_seed),
     })

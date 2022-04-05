@@ -5,7 +5,7 @@ use tokio_stream::StreamExt;
 use tonic::transport::{Certificate, Channel, ClientTlsConfig, Identity, Uri};
 use tracing::debug;
 use vino_entity::Entity;
-use vino_transport::{Invocation, MessageTransport, TransportMap, TransportStream, TransportWrapper};
+use vino_transport::{InherentData, Invocation, MessageTransport, TransportMap, TransportStream, TransportWrapper};
 use vino_types::HostedType;
 
 use crate::error::RpcClientError;
@@ -152,12 +152,13 @@ impl RpcClient {
     component: Entity,
     data: &str,
     transpose: bool,
+    inherent_data: Option<InherentData>,
   ) -> Result<TransportStream, RpcClientError> {
     let mut payload = TransportMap::from_json_output(data)?;
     if transpose {
       payload.transpose_output_name();
     }
-    let invocation = Invocation::new(origin, component, payload, None);
+    let invocation = Invocation::new(origin, component, payload, inherent_data);
 
     self.invoke(invocation).await
   }

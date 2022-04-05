@@ -5,7 +5,11 @@ pub(crate) async fn job(inputs: Vec<ComponentInputs>, output: OutputPorts, conte
   let mut transaction = pipe.atomic();
   trace!("REDIS:PIPELINE:{:?}", inputs);
 
+  let span = trace_span!("redis pipeline");
+  let _guard = span.enter();
+
   for input in inputs {
+    trace!(?input, "multi-input");
     transaction = match input {
       ComponentInputs::Delete(v) => transaction.cmd("DEL").arg(v.keys),
       ComponentInputs::Exists(v) => transaction.cmd("EXISTS").arg(v.key),
@@ -53,7 +57,7 @@ pub(crate) async fn job(inputs: Vec<ComponentInputs>, output: OutputPorts, conte
     }
   }
   let result = context.run_pipeline(transaction).await?;
-  println!("PIPELINE_RESULT:{:?}", result);
+  trace!(?result, "pipeline result");
   output.result.done(Payload::success(&true))?;
 
   Ok(())
