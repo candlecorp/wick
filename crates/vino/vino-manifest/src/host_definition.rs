@@ -12,11 +12,14 @@ use crate::{HostManifest, Loadable, NetworkDefinition, Result};
 /// The [HostDefinition] struct is a normalized representation of a Vino [HostManifest].
 /// It handles the job of translating manifest versions into a consistent data structure.
 pub struct HostDefinition {
+  /// The location where the HostDefinition was loaded from, if known.
+  pub source: Option<String>,
+
   /// The [NetworkDefinition] from the manifest.
   pub network: NetworkDefinition,
 
   /// The default schematic to execute via `vino run`.
-  pub default_schematic: String,
+  pub default_schematic: Option<String>,
 
   /// Configuration options.
   pub host: HostConfig,
@@ -39,6 +42,7 @@ impl TryFrom<HostManifest> for HostDefinition {
         }
         // End hack.
         Self {
+          source: None,
           host: host_config,
           default_schematic: manifest.default_schematic.clone(),
           network: (&manifest.network).try_into()?,
@@ -52,14 +56,19 @@ impl TryFrom<HostManifest> for HostDefinition {
 impl HostDefinition {
   /// Utility function to automate loading a manifest from a file.
   pub fn load_from_file(path: impl AsRef<Path>) -> Result<HostDefinition> {
-    let manifest = crate::HostManifest::load_from_file(path)?;
-    HostDefinition::try_from(manifest)
+    let manifest = crate::HostManifest::load_from_file(path.as_ref())?;
+
+    let mut def = HostDefinition::try_from(manifest)?;
+    def.source = Some(path.as_ref().to_string_lossy().to_string());
+    Ok(def)
   }
 
   /// Utility function to automate loading a manifest from a byte array.
-  pub fn load_from_bytes(src: &[u8]) -> Result<HostDefinition> {
+  pub fn load_from_bytes(source: Option<String>, src: &[u8]) -> Result<HostDefinition> {
     let manifest = crate::HostManifest::load_from_bytes(src)?;
-    HostDefinition::try_from(manifest)
+    let mut def = HostDefinition::try_from(manifest)?;
+    def.source = source;
+    Ok(def)
   }
 
   /// Get the inner [NetworkDefinition].

@@ -8,8 +8,8 @@ pub(crate) async fn job(input: Inputs, output: OutputPorts, _context: crate::Con
   let num: usize = input.length.try_into().map_err::<NativeComponentError, _>(|_| {
     format!("Invalid number ({}) passed to random-bytes", input.length).into()
   })?;
-  let rng = Random::from_seed(input.seed);
-  let bytes = rng.get_bytes(num);
+  let rng = Random::from_seed(vino_random::Seed::unsafe_new(input.seed));
+  let bytes = rng.bytes(num);
   output.output.done(Payload::success(&bytes))?;
   Ok(())
 }

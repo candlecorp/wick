@@ -1,6 +1,7 @@
 use vino_interface_keyvalue::key_set::*;
 
 pub(crate) async fn job(input: Inputs, output: OutputPorts, context: crate::Context) -> JobResult {
+  trace!(?input, "key-set");
   if input.expires != 0 {
     let mut cmd = redis::Cmd::set_ex(&input.key, &input.value, input.expires as _);
     let _value: String = context.run_cmd(&mut cmd).await?;

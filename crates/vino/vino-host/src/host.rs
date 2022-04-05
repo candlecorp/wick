@@ -6,12 +6,14 @@ use std::sync::Arc;
 use nkeys::KeyPair;
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
+use uuid::Uuid;
 use vino_entity::Entity;
 use vino_lattice::{Lattice, NatsOptions};
 use vino_manifest::host_definition::HostDefinition;
 use vino_provider::native::prelude::ProviderSignature;
 use vino_provider_cli::options::{LatticeOptions, Options as HostOptions, ServerOptions};
 use vino_provider_cli::ServerState;
+use vino_random::Seed;
 use vino_rpc::{RpcHandler, SharedRpcHandler};
 use vino_runtime::prelude::*;
 use vino_runtime::NetworkBuilder;
@@ -19,14 +21,12 @@ use vino_transport::{InherentData, Invocation, TransportMap};
 
 use crate::{Error, Result};
 
-type ServiceMap = HashMap<String, SharedRpcHandler>;
+type ServiceMap = HashMap<Uuid, SharedRpcHandler>;
 static HOST_REGISTRY: Lazy<Mutex<ServiceMap>> = Lazy::new(|| Mutex::new(HashMap::new()));
 
-fn from_registry(id: &str) -> Arc<dyn RpcHandler + Send + Sync + 'static> {
+fn from_registry(id: Uuid) -> Arc<dyn RpcHandler + Send + Sync + 'static> {
   let mut registry = HOST_REGISTRY.lock();
-  let provider = registry
-    .entry(id.to_owned())
-    .or_insert_with(|| Arc::new(NetworkProvider::new(id.to_owned())));
+  let provider = registry.entry(id).or_insert_with(|| Arc::new(NetworkProvider::new(id)));
   provider.clone()
 }
 
@@ -45,11 +45,11 @@ pub struct Host {
 impl Host {
   /// Starts the host. This call is non-blocking, so it is up to the consumer
   /// to wait with a method like `host.wait_for_sigint()`.
-  pub async fn start(&mut self) -> Result<()> {
+  pub async fn start(&mut self, seed: Option<u64>) -> Result<()> {
     debug!("host starting");
 
     self.lattice = self.get_lattice().await?;
-    self.start_network().await?;
+    self.start_network(seed.map(Seed::unsafe_new)).await?;
     let state = self.start_servers().await?;
     self.server_metadata = Some(state);
 
@@ -64,10 +64,10 @@ impl Host {
   async fn get_lattice(&self) -> Result<Option<Arc<Lattice>>> {
     if let Some(config) = &self.manifest.host.lattice {
       if config.enabled {
-        debug!("connecting to lattice at {}", config.address);
+        debug!(address=%config.address,"connecting to lattice");
         let lattice = Lattice::connect(NatsOptions {
           address: config.address.clone(),
-          client_id: self.get_host_id(),
+          client_id: self.get_host_id().to_owned(),
           creds_path: config.creds_path.clone(),
           token: config.token.clone(),
           timeout: self.manifest.host.timeout,
@@ -95,36 +95,39 @@ impl Host {
   }
 
   /// Stops a running host.
-  pub async fn stop(&mut self) {
+  pub async fn stop(self) {
     debug!("host stopping");
-    self.lattice = None;
-    self.network = None;
-    self.server_metadata = None;
+    if let Some(network) = self.network {
+      let _ = network.shutdown().await;
+    }
+    if let Some(lattice) = self.lattice {
+      let _ = lattice.shutdown().await;
+    }
   }
 
   pub fn get_network(&self) -> Result<&Network> {
     self.network.as_ref().ok_or(Error::NoNetwork)
   }
 
-  pub fn get_network_uid(&self) -> Result<String> {
-    self
-      .network
-      .as_ref()
-      .ok_or(Error::NoNetwork)
-      .map(|network| network.uid.clone())
+  pub fn get_network_uid(&self) -> Result<Uuid> {
+    self.network.as_ref().ok_or(Error::NoNetwork).map(|network| network.uid)
   }
 
-  pub async fn start_network(&mut self) -> Result<()> {
+  pub async fn start_network(&mut self, seed: Option<Seed>) -> Result<()> {
     ensure!(
       self.network.is_none(),
       crate::Error::InvalidHostState("Host already has a network running".into())
     );
-    let seed = self.kp.seed()?;
+    let kp_seed = self.kp.seed()?;
 
-    let mut network_builder = NetworkBuilder::from_definition(self.manifest.clone(), &seed)?;
+    let mut network_builder = NetworkBuilder::from_definition(self.manifest.clone(), &kp_seed)?;
     if let Some(lattice) = &self.lattice {
       network_builder = network_builder.lattice(lattice.clone());
     }
+    if let Some(seed) = seed {
+      network_builder = network_builder.with_seed(seed);
+    }
+    network_builder = network_builder.namespace(self.get_host_id());
     network_builder = network_builder.allow_latest(self.manifest.host.allow_latest);
     network_builder = network_builder.allow_insecure(self.manifest.host.insecure_registries.clone());
     if let Some(lattice) = &self.lattice {
@@ -173,11 +176,11 @@ impl Host {
         }),
         None => None,
       },
-      id: self.manifest.host.id.clone().unwrap_or_else(|| self.get_host_id()),
+      id: self.get_host_id().to_owned(),
       timeout: self.manifest.host.timeout,
     };
 
-    let provider = from_registry(&nuid);
+    let provider = from_registry(nuid);
 
     let metadata = tokio::spawn(vino_provider_cli::start_server(provider, Some(options)))
       .await
@@ -216,8 +219,8 @@ impl Host {
   }
 
   #[must_use]
-  pub fn get_host_id(&self) -> String {
-    self.id.clone()
+  pub fn get_host_id(&self) -> &str {
+    self.manifest.host.id.as_ref().unwrap_or(&self.id)
   }
 
   #[must_use]
@@ -307,10 +310,10 @@ mod test {
   #[test_logger::test(tokio::test)]
   async fn should_start_and_stop() -> Result<()> {
     let mut host = HostBuilder::new().build();
-    host.start().await?;
+    host.start(Some(0)).await?;
+    assert!(host.is_started());
     host.stop().await;
 
-    assert!(!host.is_started());
     Ok(())
   }
 
@@ -319,7 +322,7 @@ mod test {
     let file = PathBuf::from("manifests/logger.yaml");
     let manifest = HostDefinition::load_from_file(&file)?;
     let mut host = HostBuilder::from_definition(manifest).build();
-    host.start().await?;
+    host.start(Some(0)).await?;
     let passed_data = "logging output";
     let payload: TransportMap = vec![("input", passed_data)].into();
     let mut stream = host.request("logger", payload, None).await?;
@@ -330,7 +333,6 @@ mod test {
     assert_eq!(result, passed_data);
     host.stop().await;
 
-    assert!(!host.is_started());
     Ok(())
   }
 
@@ -346,7 +348,7 @@ mod test {
     });
 
     let mut host = HostBuilder::from_definition(def).build();
-    host.start().await?;
+    host.start(Some(0)).await?;
 
     let mut client = connect_rpc_client(Uri::from_str("https://127.0.0.1:54321").unwrap()).await?;
     let passed_data = "logging output";
@@ -363,7 +365,6 @@ mod test {
 
     host.stop().await;
 
-    assert!(!host.is_started());
     Ok(())
   }
 }

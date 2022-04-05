@@ -58,7 +58,7 @@ mod tests {
   async fn test_component() -> TestResult<()> {
     let builder = HostBuilder::try_from("./manifests/logger.yaml")?;
     let mut host = builder.build();
-    host.start().await?;
+    host.start(Some(0)).await?;
     let provider: Provider = host.into();
     let input = "Hello world";
 

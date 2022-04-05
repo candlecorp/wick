@@ -106,14 +106,14 @@ where
   }
 
   pub fn add_input<T: AsStr>(&mut self, port: T) -> PortReference {
-    trace!(?port, "add schematic input");
+    trace!(port=%port.as_ref(), "add schematic input");
     let input = self.get_mut(self.input).unwrap();
     input.add_input(&port);
     input.add_output(port)
   }
 
   pub fn add_output<T: AsStr>(&mut self, port: T) -> PortReference {
-    trace!(?port, "add schematic output");
+    trace!(port=%port.as_ref(), "add schematic output");
     let output = self.get_mut(self.output).unwrap();
     output.add_output(&port);
     output.add_input(port)
@@ -223,12 +223,12 @@ where
 
     match existing_index {
       Some(index) => {
-        trace!(name = name.as_str(), index, ?kind, "retrieving existing component");
+        trace!(%name, index, %kind, "retrieving existing component");
         *index
       }
       None => {
         let index = self.components.len();
-        trace!(name = name.as_str(), index, ?kind, "added component");
+        trace!(%name, index, %kind, "added component");
         let component = Component::new(&name, index, kind, data);
         self.components.push(component);
         self.component_map.insert(name, index);
@@ -238,7 +238,7 @@ where
   }
 
   pub fn connect(&mut self, from: PortReference, to: PortReference, data: Option<DATA>) -> Result<(), Error> {
-    trace!(?from, ?to, "connecting");
+    trace!(%from, %to, "connecting");
     let connection_index = self.connections.len();
     let downstream_component = &mut self.components[to.component_index];
     downstream_component.connect_input(to.port_index, connection_index)?;

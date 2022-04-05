@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use futures::Stream;
 use parking_lot::{Condvar, Mutex};
+use uuid::Uuid;
 use vino_transport::Invocation;
 
 use crate::dev::prelude::*;
@@ -9,14 +10,14 @@ use crate::dev::prelude::*;
 #[derive(Debug)]
 #[must_use]
 pub enum InvocationResponse {
-  Stream { tx_id: String, rx: TransportStream },
-  Error { tx_id: String, msg: String },
+  Stream { tx_id: Uuid, rx: TransportStream },
+  Error { tx_id: Uuid, msg: String },
 }
 
 impl InvocationResponse {
   /// Creates a successful invocation response stream. Response include the receiving end.
   /// of an unbounded channel to listen for future output.
-  pub fn stream(tx_id: String, rx: impl Stream<Item = TransportWrapper> + Send + 'static) -> InvocationResponse {
+  pub fn stream(tx_id: Uuid, rx: impl Stream<Item = TransportWrapper> + Send + 'static) -> InvocationResponse {
     InvocationResponse::Stream {
       tx_id,
       rx: TransportStream::new(rx),
@@ -24,11 +25,11 @@ impl InvocationResponse {
   }
 
   /// Creates an error response.
-  pub fn error(tx_id: String, msg: String) -> InvocationResponse {
+  pub fn error(tx_id: Uuid, msg: String) -> InvocationResponse {
     InvocationResponse::Error { tx_id, msg }
   }
 
-  pub fn tx_id(&self) -> &str {
+  pub fn tx_id(&self) -> &Uuid {
     match self {
       InvocationResponse::Stream { tx_id, .. } => tx_id,
       InvocationResponse::Error { tx_id, .. } => tx_id,
@@ -50,7 +51,7 @@ pub enum DispatchError {
   #[error("Thread died {0}")]
   EntityFailure(String),
   #[error("Entity not available {0}")]
-  EntityNotAvailable(String),
+  EntityNotAvailable(Uuid),
   #[error("Call failure {0}")]
   CallFailure(String),
 }
@@ -67,13 +68,11 @@ impl From<ProviderError> for DispatchError {
   }
 }
 
-#[allow(unused)]
 pub(crate) async fn network_invoke_async(
-  network_id: String,
+  network_id: Uuid,
   invocation: Invocation,
 ) -> Result<Vec<TransportWrapper>, DispatchError> {
-  let network =
-    NetworkService::for_id(&network_id).ok_or_else(|| DispatchError::EntityNotAvailable(network_id.clone()))?;
+  let network = NetworkService::for_id(&network_id).ok_or(DispatchError::EntityNotAvailable(network_id))?;
 
   let response = network.invoke(invocation)?.await?;
   match response {
@@ -89,7 +88,7 @@ pub(crate) async fn network_invoke_async(
 
 #[allow(unused)]
 pub(crate) fn network_invoke_sync(
-  network_id: String,
+  network_id: Uuid,
   invocation: Invocation,
 ) -> Result<Vec<TransportWrapper>, DispatchError> {
   let pair = Arc::new((Mutex::new(false), Condvar::new()));
@@ -143,7 +142,7 @@ mod tests {
 
   #[test_logger::test(tokio::test)]
   async fn invoke_sync() -> TestResult<()> {
-    let (tx, rx) = oneshot::channel::<String>();
+    let (tx, rx) = oneshot::channel::<Uuid>();
     let (tx2, rx2) = oneshot::channel::<bool>();
     std::thread::spawn(|| {
       let system = tokio::runtime::Runtime::new().unwrap();

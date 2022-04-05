@@ -12,23 +12,24 @@ use serde_json::Value;
 use vino_transport::{Invocation, TransportMap, TransportStream};
 use vino_types::{ProviderMap, ProviderSignature};
 
-use self::internal_provider::{InternalProvider, INTERNAL_PROVIDER_NS};
-use crate::interpreter::provider::core_provider::{CoreProvider, CORE_PROVIDER_NS};
+use crate::constants::*;
+use crate::interpreter::provider::core_provider::CoreProvider;
+use crate::interpreter::provider::internal_provider::InternalProvider;
 use crate::BoxError;
 
 #[derive()]
 #[must_use]
-pub struct Providers {
+pub struct HandlerMap {
   providers: HashMap<String, ProviderNamespace>,
 }
 
-impl Default for Providers {
+impl Default for HandlerMap {
   fn default() -> Self {
     Self::new(Vec::new())
   }
 }
 
-impl Debug for Providers {
+impl Debug for HandlerMap {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     f.debug_struct("Providers")
       .field("providers", &self.provider_signatures())
@@ -36,23 +37,26 @@ impl Debug for Providers {
   }
 }
 
-impl Providers {
+impl HandlerMap {
   pub fn new(providers: Vec<ProviderNamespace>) -> Self {
     trace_span!("providers", provider_len = providers.len());
-    let mut providers = Self {
-      providers: providers.into_iter().map(|p| (p.namespace.clone(), p)).collect(),
+    let mut map = Self {
+      providers: Default::default(),
     };
+    for provider in providers {
+      map.add(provider);
+    }
 
-    providers.add(ProviderNamespace {
-      namespace: INTERNAL_PROVIDER_NS.to_owned(),
+    map.add(ProviderNamespace {
+      namespace: NS_INTERNAL.to_owned(),
       provider: Arc::new(Box::new(InternalProvider::default())),
     });
 
-    providers.add(ProviderNamespace {
-      namespace: CORE_PROVIDER_NS.to_owned(),
+    map.add(ProviderNamespace {
+      namespace: NS_CORE.to_owned(),
       provider: Arc::new(Box::new(CoreProvider::default())),
     });
-    providers
+    map
   }
 
   #[must_use]
@@ -70,15 +74,13 @@ impl Providers {
   }
 
   #[must_use]
-  #[instrument(name="provider", skip_all, fields(namespace = namespace))]
   pub fn get(&self, namespace: &str) -> Option<&ProviderNamespace> {
-    trace!("retrieving provider");
+    trace!(namespace, "retrieving provider");
     self.providers.get(namespace)
   }
 
-  #[instrument(name="provider", skip_all, fields(namespace = provider.namespace.as_str()))]
   pub fn add(&mut self, provider: ProviderNamespace) {
-    trace!("adding provider");
+    trace!(namespace = %provider.namespace, "adding provider");
     self.providers.insert(provider.namespace.clone(), provider);
   }
 }
@@ -111,6 +113,10 @@ impl Debug for ProviderNamespace {
 pub trait Provider {
   fn handle(&self, invocation: Invocation, data: Option<Value>) -> BoxFuture<Result<TransportStream, BoxError>>;
   fn list(&self) -> &ProviderSignature;
+  fn shutdown(&self) -> BoxFuture<Result<(), BoxError>> {
+    // Override if you need a more explicit shutdown.
+    Box::pin(async move { Ok(()) })
+  }
 }
 
 pub trait Component {

@@ -13,7 +13,7 @@ fn load_manifest_yaml() -> Result<(), ManifestError> {
   let path = PathBuf::from("./tests/manifests/v0/logger.yaml");
   let manifest = HostDefinition::load_from_file(&path)?;
 
-  assert_eq!(manifest.default_schematic, "logger");
+  assert_eq!(manifest.default_schematic, Some("logger".to_owned()));
   assert_eq!(
     manifest.network().schematic("logger").map(|s| s.instances().len()),
     Some(2)
@@ -77,7 +77,7 @@ fn load_shortform_yaml() -> Result<(), ManifestError> {
   let manifest = HostManifest::load_from_file(&path)?;
 
   let HostManifest::V0(manifest) = manifest;
-  assert_eq!(manifest.default_schematic, "logger");
+  assert_eq!(manifest.default_schematic, Some("logger".to_owned()));
   let first_from = &manifest.network.schematics[0].connections[0].from;
   let first_to = &manifest.network.schematics[0].connections[0].to;
   assert_eq!(

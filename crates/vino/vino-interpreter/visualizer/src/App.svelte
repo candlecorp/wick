@@ -7,6 +7,7 @@
   import PortData from "./events/PortData.svelte";
   import TransactionStart from "./events/TransactionStart.svelte";
   import PortStatusChange from "./events/PortStatusChange.svelte";
+  import Invocation from "./events/Invocation.svelte";
   import TransactionDone from "./events/TransactionDone.svelte";
   import State from "./State.svelte";
 
@@ -18,6 +19,7 @@
     call_complete: CallComplete,
     tx_done: TransactionDone,
     port_status_change: PortStatusChange,
+    invocation: Invocation,
   };
 
   async function fetchLog(evt) {
@@ -30,11 +32,13 @@
     const log = document.getElementById("event_log").value;
     let response = await fetch(log);
     let json = await response.json();
+    console.log(json);
     events = json;
   }
 
   function next() {
     index = Math.min(events.length - 1, index + 1);
+
     location.hash = index;
   }
 
@@ -88,7 +92,7 @@
     </div>
     <div class="state">
       <State
-        schematics={events[index].schematics}
+        schematics={events[index].state || []}
         highlight={events[index].event}
       />
     </div>

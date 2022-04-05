@@ -111,7 +111,7 @@ async fn main() -> Result<(), vino_keyvalue_redis::error::Error> {
   let _guard = vino_provider_cli::init_logging(&opts.options.logging.name("keyvalue-redis"));
   let provider = Provider::default();
   provider.connect("default".to_owned(), url.clone()).await?;
-  trace!("KV:REDIS:CONNECTED");
+  trace!("redis provider connected");
 
   vino_provider_cli::init_cli(Arc::new(provider), Some(opts.options.into())).await?;
   Ok(())

@@ -11,6 +11,7 @@ tracing = "0.1"
 tracing-futures = "0.2"
 vino-schematic-graph = { path = "../vino-schematic-graph" }
 vino-manifest = { path = "../vino-manifest" }
+vino-random = { path = "../vino-random" }
 vino-provider = { path = "../../../sdk/crates/vino-provider", features = [
   "native",
 ] }
@@ -30,6 +31,7 @@ serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 rand = "0.8"
 async-recursion = "1.0"
+
 
 [dev-dependencies]
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }

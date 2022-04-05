@@ -57,13 +57,15 @@ pub(crate) async fn handle(opts: Options) -> Result<()> {
     Some(opts.source.clone()),
     opts.common.directory.clone(),
     KeyPairType::Account,
-  )?;
+  )
+  .await?;
 
   let subject = extract_keypair(
     Some(opts.source.clone()),
     opts.common.directory.clone(),
     KeyPairType::Module,
-  )?;
+  )
+  .await?;
 
   debug!("Signing module with interface : {:?}", interface);
   let signed = sign_buffer_with_claims(

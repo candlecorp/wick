@@ -8,6 +8,7 @@ use oci_distribution::secrets::RegistryAuth;
 use vino_wascap::ClaimsOptions;
 
 use crate::error::ControlError;
+use crate::io::async_read;
 use crate::keys::{extract_keypair, GenerateCommon};
 use crate::Result;
 #[derive(Debug, Clone, Args)]
@@ -65,13 +66,15 @@ pub(crate) async fn handle(opts: Options) -> Result<()> {
       Some(opts.source.to_string_lossy().to_string()),
       opts.common.directory.clone(),
       KeyPairType::Module,
-    )?;
+    )
+    .await?;
 
     let issuer_kp = extract_keypair(
       Some(opts.source.to_string_lossy().to_string()),
       opts.common.directory.clone(),
       KeyPairType::Account,
-    )?;
+    )
+    .await?;
 
     let archmap = vino_oci::generate_archmap(
       &opts.source,
@@ -92,7 +95,7 @@ pub(crate) async fn handle(opts: Options) -> Result<()> {
   } else {
     info!("Pushing artifact...");
     let image_ref = vino_oci::parse_reference(&opts.reference)?;
-    let image_bytes = tokio::fs::read(&opts.source).await?;
+    let image_bytes = async_read(&opts.source).await?;
     let extension = opts.source.extension().unwrap_or_default().to_str().unwrap_or_default();
     let media_type = match extension {
       "wasm" => manifest::WASM_LAYER_MEDIA_TYPE.to_owned(),

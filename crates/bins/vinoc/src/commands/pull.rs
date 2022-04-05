@@ -1,11 +1,12 @@
 use std::path::PathBuf;
 use std::str::FromStr;
 
+use clap::Args;
 use oci_distribution::secrets::RegistryAuth;
 use oci_distribution::{manifest, Client, Reference};
 use vino_oci::error::OciError;
-use clap::Args;
 
+use crate::io::async_write;
 use crate::Result;
 #[derive(Debug, Clone, Args)]
 #[clap(rename_all = "kebab-case")]
@@ -86,10 +87,10 @@ async fn pull(reference: &Reference, opts: &Options, client: &mut Client, auth: 
         let path = opts.output.clone();
         if let Some(Some(annotations)) = manifest.layers.get(i).map(|l| &l.annotations) {
           if let Some(name) = annotations.get("org.opencontainers.image.title") {
-            std::fs::write(path.join(name), layer.data)?;
+            async_write(path.join(name), layer.data).await?;
           }
         } else {
-          std::fs::write(path.join(format!("layer-{}.out", i)), layer.data)?;
+          async_write(path.join(format!("layer-{}.out", i)), layer.data).await?;
         }
       }
       oci_distribution::manifest::OciManifest::ImageIndex(manifest) => {

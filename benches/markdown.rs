@@ -53,7 +53,7 @@ async fn work() {
   let _guard = logger::init(&opts.name("markdown-benchmark"));
 
   let mut host = HostBuilder::try_from("./benches/markdown.vino").unwrap().build();
-  host.start().await.unwrap();
+  host.start(None).await.unwrap();
   let host = HOST.get_or_init(move || host);
   let num: usize = 1000;
   let mut data = Vec::with_capacity(num);

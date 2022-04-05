@@ -30,6 +30,9 @@ pub enum VowError {
   InternalError(u32),
   #[error("Component '{0}' not found. Valid components are: {}", .1.join(", "))]
   ComponentNotFound(String, Vec<String>),
+
+  #[error("{0}")]
+  GeneralError(String),
 }
 
 impl From<serde_json::error::Error> for VowError {
@@ -47,5 +50,11 @@ impl From<vino_test::Error> for VowError {
 impl From<vino_provider_wasm::Error> for VowError {
   fn from(e: vino_provider_wasm::Error) -> Self {
     VowError::WasmProvider(e.to_string())
+  }
+}
+
+impl From<String> for VowError {
+  fn from(e: String) -> Self {
+    Self::GeneralError(e)
   }
 }

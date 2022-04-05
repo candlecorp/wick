@@ -24,7 +24,7 @@ pub(crate) struct ListCommand {
   #[clap(flatten)]
   pub(crate) lattice: LatticeCliOptions,
 
-  #[clap(long)]
+  #[clap(long = "json")]
   pub(crate) json: bool,
 }
 
@@ -50,7 +50,7 @@ pub(crate) async fn handle_command(opts: ListCommand) -> Result<()> {
 
   let mut host = host_builder.build();
   host.connect_to_lattice().await?;
-  host.start_network().await?;
+  host.start_network(None).await?;
   let signature = host.get_signature()?;
 
   if opts.json {

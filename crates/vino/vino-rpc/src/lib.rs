@@ -135,4 +135,9 @@ where
 
   /// List the entities this [RpcHandler] manages.
   fn get_list(&self) -> std::result::Result<Vec<HostedType>, Box<error::RpcError>>;
+
+  /// Handle an incoming request for a target entity.
+  async fn shutdown(&self) -> std::result::Result<(), Box<error::RpcError>> {
+    Ok(())
+  }
 }

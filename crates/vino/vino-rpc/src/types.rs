@@ -95,7 +95,7 @@ impl Output {
   #[must_use]
   pub fn into_json(self) -> serde_json::Value {
     let transport: TransportWrapper = self.into();
-    transport.into_json()
+    transport.as_json()
   }
 
   /// Attempt to deserialize the payload into the destination type

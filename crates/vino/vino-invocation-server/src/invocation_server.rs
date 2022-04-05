@@ -106,6 +106,7 @@ impl InvocationService for InvocationServer {
       let result = self.provider.invoke(invocation).await;
       if let Err(e) = result {
         let message = e.to_string();
+        error!("Invocation failed: {}", message);
         tx.send(Err(Status::internal(message))).await.unwrap();
         self.record_execution(entity_name, JobResult::Error, start.elapsed());
       } else {

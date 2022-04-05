@@ -124,6 +124,10 @@ test-integration: codegen wasm $(TEST_PAR) ## Run all tests for the workspace, i
 	cargo build --workspace # necessary to ensure binaries are built
 	NATS_URL=$(NATS_URL) cargo test --workspace --exclude oci-distribution
 
+.PHONY: test-bins
+test-bins: codegen wasm $(TEST_PAR) ## Run tests for the main binaries
+	cargo test -p vino -p vinoc -p vow
+
 .PHONY: update-lint
 update-lint:   ## Update the lint configuration for rust projects
 	npm run update-lint

@@ -271,7 +271,7 @@ impl ProviderServiceResponse {
 
 impl From<Vec<TransportWrapper>> for ProviderServiceResponse {
   fn from(res: Vec<TransportWrapper>) -> Self {
-    let simplified: Vec<_> = res.into_iter().map(|p| p.into_json()).collect();
+    let simplified: Vec<_> = res.into_iter().map(|p| p.as_json()).collect();
     let json = serde_json::to_string(&simplified).unwrap_or_default();
     ProviderServiceResponse::new(json.as_bytes().to_vec())
   }

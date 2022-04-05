@@ -1,4 +1,4 @@
-use rand::Rng;
+use vino_random::{Random, Seed};
 
 use crate::dev::prelude::*;
 
@@ -7,7 +7,6 @@ pub(crate) fn keypair_from_seed(seed: &str) -> Result<KeyPair, crate::Error> {
 }
 
 #[must_use]
-pub(crate) fn new_seed() -> u64 {
-  let mut rng = rand::thread_rng();
-  rng.gen()
+pub(crate) fn new_seed() -> Seed {
+  Random::new().seed()
 }

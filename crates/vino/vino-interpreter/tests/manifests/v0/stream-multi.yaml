@@ -1,0 +1,11 @@
+version: 0
+network:
+  schematics:
+    - name: test
+      instances:
+        STREAM:
+          id: test::splitter
+      connections:
+        - <> => STREAM[input]
+        - STREAM[rest] => <>
+        - STREAM[vowels] => <>

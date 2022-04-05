@@ -60,7 +60,6 @@ impl PortList {
   }
 
   pub(super) fn take(&self, port: &PortReference) -> Option<TransportWrapper> {
-    trace!(?port, "taking message from port buffer");
     self.inner[port.port_index()].take()
   }
 

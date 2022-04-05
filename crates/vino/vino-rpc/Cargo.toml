@@ -35,6 +35,8 @@ tracing = "0.1"
 thiserror = "1.0"
 async-trait = "0.1.50"
 dyn-clone = "1.0.4"
+uuid = "0.8"
+
 
 [build-dependencies]
 tonic-build = { version = "0.6", default-features = false, features = [

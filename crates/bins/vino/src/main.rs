@@ -122,3 +122,17 @@ async fn main() -> Result<()> {
     }
   });
 }
+
+#[cfg(test)]
+mod test {
+  #[test]
+  fn verify_options() {
+    use clap::IntoApp;
+    super::Cli::command().debug_assert();
+  }
+
+  #[test]
+  fn cli_tests() {
+    trycmd::TestCases::new().case("tests/cmd/*.trycmd");
+  }
+}

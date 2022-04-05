@@ -51,6 +51,7 @@ tracing = "0.1"
 thiserror = "1.0"
 clap = { version = "3.0", features = ["derive", "env"] }
 nkeys = { path = "../../../forks/nkeys" }
+uuid = "0.8"
 
 [dev-dependencies]
 logger = { path = "../logger" }

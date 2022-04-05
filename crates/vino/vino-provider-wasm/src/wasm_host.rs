@@ -142,7 +142,7 @@ impl WasmHost {
     let engine = {
       let engine = wasmtime_provider::WasmtimeEngineProvider::new_with_cache(&module.bytes, wasi_options, None)
         .map_err(|e| WasmProviderError::EngineFailure(e.to_string()))?;
-      trace!(duration_nanos = ?time.elapsed().as_micros(), "wasmtime instance loaded");
+      trace!(durasion_us = %time.elapsed().as_micros(), "wasmtime instance loaded");
       engine
     };
 
@@ -168,7 +168,7 @@ impl WasmHost {
             Err(_) => Err(format!("Invalid command: {}", command).into()),
           };
           trace!(
-            command, arg1, arg2, duration_nanos = ?now.elapsed().as_micros(),
+            command, arg1, arg2, durasion_us = %now.elapsed().as_micros(),
             "wapc callback done",
           );
           result
@@ -180,7 +180,7 @@ impl WasmHost {
       .max_threads(max_threads)
       .build();
 
-    debug!(duration_nanos = ?time.elapsed().as_micros(), "wasmtime initialize");
+    debug!(durasion_us = ?time.elapsed().as_micros(), "wasmtime initialize");
 
     Ok(Self {
       claims: module.claims().clone(),
@@ -191,9 +191,9 @@ impl WasmHost {
   }
 
   fn new_tx(&self) -> u32 {
-    let mut id = self.rng.get_u32();
+    let mut id = self.rng.u32();
     while self.tx_map.read().contains_key(&id) {
-      id = self.rng.get_u32();
+      id = self.rng.u32();
     }
     self.tx_map.write().insert(id, RwLock::new(Transaction::default()));
     id
@@ -215,7 +215,7 @@ impl WasmHost {
     trace!(
       component = component_name,
       id,
-      duration_nanos = ?now.elapsed().as_micros(),
+      durasion_us = ?now.elapsed().as_micros(),
       "wasm call finished"
     );
     trace!(component = component_name, id, ?result, "wasm call result");
@@ -272,7 +272,7 @@ fn create_link_handler(callback: Arc<Option<Box<HostLinkCallback>>>) -> Box<Invo
         let now = Instant::now();
         let result = (cb)(origin, target, deserialize::<TransportMap>(payload)?);
         let micros = now.elapsed().as_micros();
-        trace!(origin, target, duration_nanos = ?micros, ?result, "wasm link call result");
+        trace!(origin, target, durasion_us = %micros, ?result, "wasm link call result");
 
         match result {
           Ok(packets) => {

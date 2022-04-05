@@ -1,0 +1,16 @@
+version: 0
+network:
+  providers:
+    - namespace: child
+      kind: Network
+      reference: ./manifests/v0/subnetwork-ns-link-child.yaml
+  schematics:
+    - name: test
+      providers:
+        - child
+      instances:
+        child:
+          id: child::test-child
+      connections:
+        - <> => child[input]
+        - child[output] => <>

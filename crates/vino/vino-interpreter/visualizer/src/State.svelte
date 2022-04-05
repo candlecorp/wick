@@ -8,8 +8,9 @@
         s.component_index == highlight.component_index) ||
       (highlight.type === "port_status_change" &&
         s.component_index == highlight.component_index) ||
-      (highlight.type === "call_complete" &&
-        highlight.index == s.component_index)
+      ((highlight.type === "call_complete" ||
+        highlight.type === "invocation") &&
+        highlight.component_index == s.component_index)
     );
   }
   function hightlightPort(s) {
@@ -39,15 +40,35 @@
 
   function decodeMessage(payload) {
     console.log(payload);
+    let decode = window.MessagePack
+      ? window.MessagePack.decode
+      : (bytes) => `[${bytes}]`;
     return payload[0]
       ? `Success(${
           payload[0][0]
-            ? MessagePack.decode(payload[0][0])
-            : payload[0][2] || payload[0][1]
+            ? decode(payload[0][0])
+            : payload[0][2] || `${JSON.stringify(payload[0][1])}`
         })`
       : payload[3]
       ? `Signal::${payload[3]}`
       : `Failure("${payload[1][1] || payload[1][2]}")`;
+  }
+
+  function byComponent(a, b) {
+    return a.component_index < b.component_index
+      ? -1
+      : a.component_index > b.component_index
+      ? 1
+      : 0;
+  }
+  function byPort(a, b) {
+    return a.component_index < b.component_index
+      ? -1
+      : a.component_index > b.component_index
+      ? 1
+      : a.direction == "In"
+      ? -1
+      : 0;
   }
 </script>
 
@@ -59,7 +80,7 @@
       <ul>
         {#each schematic.state
           .filter((s) => s.type === "component")
-          .sort( (a, b) => (a.component_index < b.component_index ? -1 : a.component_index > b.component_index ? 1 : 0) ) as s}
+          .sort(byComponent) as s}
           <li class="component {hightlightComponent(s) ? 'highlight' : ''}">
             {s.component_index}
             {s.name}
@@ -73,7 +94,7 @@
       <ul>
         {#each schematic.state
           .filter((s) => s.type === "port")
-          .sort( (a, b) => (a.component_index < b.component_index ? -1 : a.component_index > b.component_index ? 1 : 0) ) as s}
+          .sort(byPort) as s}
           <li
             class="port port-status status-{s.status} {hightlightPort(s)
               ? 'highlight'

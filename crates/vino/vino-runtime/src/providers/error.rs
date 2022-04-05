@@ -12,8 +12,8 @@ pub enum ProviderError {
 
   #[error("{0}")]
   Lattice(String),
-  #[error("Error intializing subnetwork: {0}")]
-  SubNetwork(String),
+  #[error("Error initializing subnetwork '{0}' : {1}")]
+  SubNetwork(String, String),
 
   #[error(transparent)]
   ParProviderError(#[from] vino_provider_par::Error),

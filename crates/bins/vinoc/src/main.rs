@@ -87,6 +87,7 @@
 
 pub(crate) mod commands;
 pub(crate) mod error;
+pub(crate) mod io;
 pub(crate) mod keys;
 pub(crate) mod oci;
 pub(crate) mod utils;
@@ -128,4 +129,18 @@ async fn main() -> Result<()> {
       1
     }
   });
+}
+
+#[cfg(test)]
+mod test {
+  #[test]
+  fn verify_options() {
+    use clap::IntoApp;
+    super::Cli::command().debug_assert();
+  }
+
+  #[test]
+  fn cli_tests() {
+    trycmd::TestCases::new().case("tests/cmd/*.trycmd");
+  }
 }

@@ -4,9 +4,8 @@ use vino_provider::ProviderLink;
 use vino_transport::{Invocation, MessageTransport, TransportStream, TransportWrapper};
 use vino_types::{ComponentSignature, MapWrapper, ProviderSignature};
 
-use crate::{BoxError, Provider, Providers};
-
-pub(crate) const PROVIDERPROVIDER_NAMESPACE: &str = "providers";
+use crate::constants::*;
+use crate::{BoxError, HandlerMap, Provider};
 
 #[derive(thiserror::Error, Debug, Clone, PartialEq, Eq)]
 pub(crate) enum Error {
@@ -20,7 +19,7 @@ pub(crate) struct ProviderProvider {
 }
 
 impl ProviderProvider {
-  pub(crate) fn new(list: &Providers) -> Self {
+  pub(crate) fn new(list: &HandlerMap) -> Self {
     let mut signature = ProviderSignature::new("providers");
     for ns in list.providers().keys() {
       let mut comp_sig = ComponentSignature::new(ns.clone());
@@ -38,7 +37,7 @@ impl ProviderProvider {
 
 impl Provider for ProviderProvider {
   fn handle(&self, invocation: Invocation, _config: Option<Value>) -> BoxFuture<Result<TransportStream, BoxError>> {
-    trace!(target = ?invocation.target, namespace = PROVIDERPROVIDER_NAMESPACE);
+    trace!(target = %invocation.target, id=%invocation.id,namespace = NS_PROVIDERS);
     let name = invocation.target.name().to_owned();
     let contains_provider = self.signature.components.contains_key(&name);
 

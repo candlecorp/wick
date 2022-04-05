@@ -4,11 +4,8 @@ use vino_schematic_graph::{SCHEMATIC_INPUT, SCHEMATIC_OUTPUT};
 use vino_transport::{Invocation, TransportStream};
 use vino_types::ProviderSignature;
 
+use crate::constants::*;
 use crate::{BoxError, Component, Provider};
-
-pub(crate) const INTERNAL_PROVIDER_NS: &str = "__interpreter";
-
-pub(crate) const INHERENT: &str = "inherent";
 
 pub(crate) mod oneshot;
 
@@ -21,10 +18,10 @@ impl Default for InternalProvider {
   fn default() -> Self {
     Self {
       signature: serde_json::from_value(serde_json::json!({
-        "name": "__internal",
+        "name": NS_INTERNAL,
         "components": {
-          "inherent" : {
-            "name":"inherent",
+          INTERNAL_ID_INHERENT : {
+            "name":INTERNAL_ID_INHERENT,
             "inputs": {
               "seed": {
                 "type":"u64",
@@ -52,10 +49,10 @@ impl Default for InternalProvider {
 
 impl Provider for InternalProvider {
   fn handle(&self, invocation: Invocation, data: Option<Value>) -> BoxFuture<Result<TransportStream, BoxError>> {
-    trace!(target = ?invocation.target, namespace = INTERNAL_PROVIDER_NS);
+    trace!(target = %invocation.target, id=%invocation.id,namespace = NS_INTERNAL);
     let op = invocation.target.name().to_owned();
 
-    let is_oneshot = op == SCHEMATIC_INPUT || op == INHERENT;
+    let is_oneshot = op == SCHEMATIC_INPUT || op == INTERNAL_ID_INHERENT;
     let task = async move {
       let result = if op == SCHEMATIC_OUTPUT {
         panic!("Output component should not be executed");

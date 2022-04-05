@@ -12,7 +12,7 @@ use vino_wascap::KeyPair;
 use crate::test::prelude::*;
 use crate::NetworkBuilder;
 
-pub(crate) async fn init_network_from_yaml(path: &str) -> TestResult<(Network, String)> {
+pub(crate) async fn init_network_from_yaml(path: &str) -> TestResult<(Network, uuid::Uuid)> {
   let def = HostDefinition::load_from_file(path)?;
   let kp = KeyPair::new_server();
 
@@ -20,7 +20,7 @@ pub(crate) async fn init_network_from_yaml(path: &str) -> TestResult<(Network, S
     .build()
     .await?;
 
-  let network_id = network.uid.clone();
-  trace!(network_id = network_id.as_str(), "network uid");
+  let network_id = network.uid;
+  trace!(network_id = %network_id, "network uid");
   Ok((network, network_id))
 }

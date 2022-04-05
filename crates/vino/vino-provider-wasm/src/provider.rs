@@ -45,16 +45,16 @@ impl Provider {
       if wasi_cfg.is_some() {
         // extract and merge the wasi config with the passed wasi params.
         let wasi = config_to_wasi(wasi_cfg.cloned(), wasi_params)?;
-        debug!(id=name.as_str(), config=?wasi, "wasi enabled");
+        debug!(id=%name, config=?wasi, "wasi enabled");
         builder = builder.wasi_params(wasi);
       }
     } else if let Some(opts) = wasi_params {
       // if we were passed wasi params, use those.
-      debug!(id=name.as_str(), config=?opts, "wasi enabled");
+      debug!(id=%name, config=?opts, "wasi enabled");
 
       builder = builder.wasi_params(opts);
     } else {
-      debug!(id = name.as_str(), "wasi disabled");
+      debug!(id = %name, "wasi disabled");
     }
     builder = builder.max_threads(max_threads);
 
@@ -70,7 +70,7 @@ impl Provider {
 #[async_trait]
 impl RpcHandler for Provider {
   async fn invoke(&self, invocation: Invocation) -> RpcResult<BoxedTransportStream> {
-    trace!(target = invocation.target.url().as_str(), "wasm invoke");
+    trace!(target = %invocation.target, "wasm invoke");
     let component = invocation.target.name();
     let messagepack_map = invocation
       .payload

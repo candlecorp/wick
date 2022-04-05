@@ -42,7 +42,7 @@ pub fn init_test(opts: &LoggingOptions) -> Option<LoggingGuard> {
 }
 
 fn priority_module(module: &str) -> bool {
-  ["logger", "vow", "test_vino_provider"].contains(&module)
+  ["logger", "vow", "cli_common", "test_vino_provider"].contains(&module)
 }
 
 #[must_use]
@@ -83,7 +83,7 @@ fn get_stderr_writer(_opts: &LoggingOptions) -> (NonBlocking, WorkerGuard) {
 fn get_logfile_writer(opts: &LoggingOptions) -> Result<(PathBuf, NonBlocking, WorkerGuard), LoggerError> {
   let logfile_prefix = format!("{}.{}.log", opts.app_name, std::process::id());
 
-  let log_dir = match &opts.log_dir {
+  let mut log_dir = match &opts.log_dir {
     Some(dir) => dir.clone(),
     None => {
       #[cfg(not(target_os = "windows"))]
@@ -98,6 +98,7 @@ fn get_logfile_writer(opts: &LoggingOptions) -> Result<(PathBuf, NonBlocking, Wo
       }
     }
   };
+  log_dir.push("logs");
 
   let (writer, guard) =
     tracing_appender::non_blocking(tracing_appender::rolling::daily(log_dir.clone(), logfile_prefix));
@@ -200,6 +201,6 @@ fn try_init(opts: &LoggingOptions, environment: &Environment) -> Result<LoggingG
   tracing::subscriber::set_global_default(subscriber)?;
 
   trace!("Logger initialized");
-  info!("Writing logs to {}", log_dir.to_string_lossy());
+  debug!("Writing logs to {}", log_dir.to_string_lossy());
   Ok(LoggingGuard::new(logfile_guard, console_guard))
 }

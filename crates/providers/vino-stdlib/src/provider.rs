@@ -1,5 +1,5 @@
 use vino_provider::native::prelude::*;
-use vino_random::Random;
+use vino_random::{Random, Seed};
 use vino_rpc::error::RpcError;
 use vino_rpc::{RpcHandler, RpcResult};
 use vino_transport::Invocation;
@@ -7,14 +7,21 @@ use vino_transport::Invocation;
 use crate::components::Dispatcher;
 use crate::error::NativeError;
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct Context {
-  #[allow(unused)]
   rng: Random,
 }
 
+impl Clone for Context {
+  fn clone(&self) -> Self {
+    Self {
+      rng: Random::from_seed(self.rng.seed()),
+    }
+  }
+}
+
 impl Context {
-  pub(crate) fn new(seed: u64) -> Self {
+  pub(crate) fn new(seed: Seed) -> Self {
     let rng = Random::from_seed(seed);
     Self { rng }
   }
@@ -33,7 +40,7 @@ impl From<NativeError> for Box<RpcError> {
 }
 
 impl Provider {
-  pub fn new(seed: u64) -> Self {
+  pub fn new(seed: Seed) -> Self {
     let context = Context::new(seed);
     Self { context }
   }
@@ -75,7 +82,7 @@ mod tests {
   {
     let transport_map: TransportMap = payload.into();
     println!("TransportMap: {:?}", transport_map);
-    let provider = Provider::new(SEED);
+    let provider = Provider::new(Seed::unsafe_new(SEED));
 
     let entity = Entity::local_component(component);
     let invocation = Invocation::new_test(file!(), entity, transport_map, None);
@@ -104,7 +111,7 @@ mod tests {
 
   #[test_logger::test(tokio::test)]
   async fn list() -> Result<()> {
-    let provider = Provider::new(SEED);
+    let provider = Provider::new(Seed::unsafe_new(SEED));
     let signature = crate::components::get_signature();
     let components = signature.components.inner();
 

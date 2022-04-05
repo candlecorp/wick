@@ -47,8 +47,7 @@ impl PortBuffer {
     lock.pop_front()
   }
 
-  #[cfg(test)]
-  pub(super) fn clone_inner(&self) -> Vec<TransportWrapper> {
+  pub(super) fn clone_buffer(&self) -> Vec<TransportWrapper> {
     let lock = self.buffer.lock();
     lock.iter().cloned().collect()
   }

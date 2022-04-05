@@ -3,6 +3,7 @@ use vino_interface_keyvalue::key_get::*;
 use crate::error::Exception;
 
 pub(crate) async fn job(input: Inputs, output: OutputPorts, context: crate::Context) -> JobResult {
+  trace!(?input, "key-get");
   let mut cmd = redis::Cmd::get(&input.key);
   let value: Option<String> = context.run_cmd(&mut cmd).await?;
   match value {

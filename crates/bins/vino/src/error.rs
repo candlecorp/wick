@@ -41,6 +41,8 @@ pub enum VinoError {
   Other(String),
   #[error("Manifest failed to load : {0}")]
   ManifestLoadFailure(String),
+  #[error("{0}")]
+  GeneralError(String),
 }
 
 impl From<ManifestError> for VinoError {
@@ -52,5 +54,11 @@ impl From<ManifestError> for VinoError {
 impl From<vino_test::Error> for VinoError {
   fn from(e: vino_test::Error) -> Self {
     VinoError::TestError(e.to_string())
+  }
+}
+
+impl From<String> for VinoError {
+  fn from(e: String) -> Self {
+    Self::GeneralError(e)
   }
 }

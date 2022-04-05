@@ -347,6 +347,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "cli-common"
+version = "0.4.0"
+dependencies = [
+ "anyhow",
+ "clap 3.1.0",
+ "serde_json",
+ "tokio-stream",
+ "tracing",
+ "vino-transport",
+]
+
+[[package]]
 name = "combine"
 version = "4.6.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -361,6 +373,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "concolor"
+version = "0.0.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "015267563b1df20adccdd00cb05257b1dfbea70a04928e9cf88ffb850c1a40af"
+dependencies = [
+ "atty",
+ "bitflags",
+ "concolor-query",
+]
+
+[[package]]
+name = "concolor-query"
+version = "0.0.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d6417fe6fc03a8b533fd2177742eeb39a90c7233eedec7bac96d4d6b69a09449"
+
+[[package]]
 name = "concurrent-queue"
 version = "1.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -372,6 +401,15 @@ name = "const-oid"
 version = "0.6.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9d6f2aa4d0537bcc1c74df8755072bd31c1ef1a3a1b85a68e8404a8c353b7b8b"
+
+[[package]]
+name = "content_inspector"
+version = "0.2.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b7bda66e858c683005a53a9a60c69a4aca7eeaa45d124526e389f7aec8e62f38"
+dependencies = [
+ "memchr",
+]
 
 [[package]]
 name = "core-foundation"
@@ -681,6 +719,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "56899898ce76aaf4a0f24d914c97ea6ed976d42fec6ad33fcbb0a1103e07b2b0"
 
 [[package]]
+name = "dunce"
+version = "1.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "453440c271cf5577fd2a40e4942540cb7d0d2f85e27c8d07dd0023c925a67541"
+
+[[package]]
 name = "dyn-clone"
 version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -975,6 +1019,12 @@ checksum = "78cc372d058dcf6d5ecd98510e7fbc9e5aec4d21de70f65fea8fecebcd881bd4"
 dependencies = ["fallible-iterator", "indexmap", "stable_deref_trait"]
 
 [[package]]
+name = "glob"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9b919933a397b79c37e33b77bb2aa3dc8eb6e165ad809e58ff75bc7db2e34574"
+
+[[package]]
 name = "globset"
 version = "0.4.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1084,6 +1134,16 @@ name = "humantime"
 version = "2.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9a3a5bfb195931eeb336b2a7b4d761daec841b97f947d34394601737a7bba5e4"
+
+[[package]]
+name = "humantime-serde"
+version = "1.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "57a3db5ea5923d99402c94e9feb261dc5ee9b4efa158b0315f788cf549cc200c"
+dependencies = [
+ "humantime 2.1.0",
+ "serde",
+]
 
 [[package]]
 name = "hyper"
@@ -1270,6 +1330,15 @@ dependencies = [
   "serde",
   "serde_json",
   "sha2",
+]
+
+[[package]]
+name = "kstring"
+version = "1.0.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8b310ccceade8121d7d77fee406160e457c2f4e7c7982d589da3499bc7ea4526"
+dependencies = [
+ "serde",
 ]
 
 [[package]]
@@ -1510,6 +1579,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "normalize-line-endings"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "61807f77802ff30975e01f4f071c8ba10c022052f98b3294119f3e615d13e5be"
+
+[[package]]
 name = "ntapi"
 version = "0.3.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1625,6 +1700,16 @@ version = "2.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7940cf2ca942593318d07fcf2596cdca60a85c9e7fab408a5e21a4f9dcd40d87"
 dependencies = ["num-traits"]
+
+[[package]]
+name = "os_pipe"
+version = "1.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2c92f2b54f081d635c77e7120862d48db8e91f7f21cef23ab1b4fe9971c59f55"
+dependencies = [
+ "libc",
+ "winapi",
+]
 
 [[package]]
 name = "os_str_bytes"
@@ -2180,12 +2265,13 @@ dependencies = [
 name = "runtime-testutils"
 version = "0.1.0"
 dependencies = [
-  "anyhow",
-  "tracing",
-  "vino-lattice",
-  "vino-manifest",
-  "vino-runtime",
-  "vino-wascap",
+ "anyhow",
+ "tracing",
+ "uuid",
+ "vino-lattice",
+ "vino-manifest",
+ "vino-runtime",
+ "vino-wascap",
 ]
 
 [[package]]
@@ -2446,6 +2532,12 @@ checksum = "83bdb7831b2d85ddf4a7b148aa19d0587eddbe8671a436b7bd1182eaad0f2829"
 dependencies = ["dirs-next"]
 
 [[package]]
+name = "shlex"
+version = "1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "43b2853a4d09f215c24cc5489c992ce46052d359b5109343cbafbf26bc62f8a3"
+
+[[package]]
 name = "signal-hook-registry"
 version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2473,6 +2565,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f054c6c1a6e95179d6f23ed974060dcefb2d9388bb7256900badad682c499de4"
 
 [[package]]
+name = "similar"
+version = "2.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2e24979f63a11545f5f2c60141afe249d4f19f84581ea2138065e400941d83d3"
+
+[[package]]
 name = "slab"
 version = "0.4.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2483,6 +2581,32 @@ name = "smallvec"
 version = "1.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f2dd574626839106c320a323308629dcb1acfc96e32a8cba364ddc61ac23ee83"
+
+[[package]]
+name = "snapbox"
+version = "0.2.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c1f212b806d6f56d19838e36a0aaa7e79a0bc9ca177e873fb87651ad92f983e2"
+dependencies = [
+ "concolor",
+ "content_inspector",
+ "dunce",
+ "filetime",
+ "normalize-line-endings",
+ "os_pipe",
+ "similar",
+ "snapbox-macros",
+ "tempfile",
+ "wait-timeout",
+ "walkdir",
+ "yansi",
+]
+
+[[package]]
+name = "snapbox-macros"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c01dea7e04cbb27ef4c86e9922184608185f7cd95c1763bc30d727cda4a5e930"
 
 [[package]]
 name = "socket2"
@@ -2891,6 +3015,19 @@ checksum = "a31142970826733df8241ef35dc040ef98c679ab14d7c3e54d827099b3acecaa"
 dependencies = ["serde"]
 
 [[package]]
+name = "toml_edit"
+version = "0.13.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "744e9ed5b352340aa47ce033716991b5589e23781acb97cad37d4ea70560f55b"
+dependencies = [
+ "combine",
+ "indexmap",
+ "itertools",
+ "kstring",
+ "serde",
+]
+
+[[package]]
 name = "tonic"
 version = "0.6.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3083,6 +3220,22 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "59547bce71d9c38b83d9c0e92b6066c4253371f15005def0c30d9657f50c7642"
 
 [[package]]
+name = "trycmd"
+version = "0.13.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2c21f68a540a24b162ca101e3f7f4ce3c8458f594f28080018f29da23ad8567b"
+dependencies = [
+ "glob",
+ "humantime 2.1.0",
+ "humantime-serde",
+ "rayon",
+ "serde",
+ "shlex",
+ "snapbox",
+ "toml_edit",
+]
+
+[[package]]
 name = "typenum"
 version = "1.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3189,7 +3342,14 @@ name = "uuid"
 version = "0.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bc5cf98d8186244414c848017f0e2676b3fcb46807f6668a97dfe67359a3c4b7"
+<<<<<<< HEAD
 dependencies = ["getrandom 0.2.4"]
+=======
+dependencies = [
+ "getrandom 0.2.4",
+ "serde",
+]
+>>>>>>> ddead36 (- improved determinism of transactions)
 
 [[package]]
 name = "vcpkg"
@@ -3219,6 +3379,7 @@ checksum = "49874b5167b65d7193b8aba1567f5c7d93d001cafc34600cee003eda787e483f"
 name = "vino"
 version = "0.3.1"
 dependencies = [
+<<<<<<< HEAD
   "atty",
   "clap 3.1.0",
   "futures",
@@ -3241,6 +3402,32 @@ dependencies = [
   "vino-test",
   "vino-transport",
   "vino-types",
+=======
+ "atty",
+ "clap 3.1.0",
+ "cli-common",
+ "logger",
+ "nkeys 0.1.0",
+ "serde",
+ "serde_json",
+ "tap",
+ "test_bin",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "trycmd",
+ "vino-codec",
+ "vino-host",
+ "vino-loader",
+ "vino-manifest",
+ "vino-packet",
+ "vino-provider-cli",
+ "vino-random",
+ "vino-runtime",
+ "vino-test",
+ "vino-transport",
+ "vino-types",
+>>>>>>> ddead36 (- improved determinism of transactions)
 ]
 
 [[package]]
@@ -3257,6 +3444,7 @@ dependencies = ["serde", "thiserror", "url 2.2.2", "vino-macros"]
 name = "vino-host"
 version = "0.1.0"
 dependencies = [
+<<<<<<< HEAD
   "anyhow",
   "async-trait",
   "http",
@@ -3282,6 +3470,35 @@ dependencies = [
   "vino-rpc",
   "vino-runtime",
   "vino-transport",
+=======
+ "anyhow",
+ "async-trait",
+ "http",
+ "logger",
+ "nkeys 0.1.0",
+ "once_cell",
+ "parking_lot 0.11.2",
+ "serde",
+ "serde_json",
+ "test-logger",
+ "thiserror",
+ "tokio",
+ "tokio-stream",
+ "tracing",
+ "uuid",
+ "vino-codec",
+ "vino-entity",
+ "vino-invocation-server",
+ "vino-lattice",
+ "vino-macros",
+ "vino-manifest",
+ "vino-provider",
+ "vino-provider-cli",
+ "vino-random",
+ "vino-rpc",
+ "vino-runtime",
+ "vino-transport",
+>>>>>>> ddead36 (- improved determinism of transactions)
 ]
 
 [[package]]
@@ -3318,6 +3535,7 @@ dependencies = ["serde", "vino-provider"]
 name = "vino-interpreter"
 version = "0.0.0"
 dependencies = [
+<<<<<<< HEAD
   "anyhow",
   "async-recursion",
   "futures",
@@ -3343,6 +3561,34 @@ dependencies = [
   "vino-schematic-graph",
   "vino-transport",
   "vino-types",
+=======
+ "anyhow",
+ "async-recursion",
+ "futures",
+ "logger",
+ "once_cell",
+ "parking_lot 0.12.0",
+ "performance-mark",
+ "rand 0.8.4",
+ "serde",
+ "serde_json",
+ "test-logger",
+ "thiserror",
+ "tokio",
+ "tokio-stream",
+ "tracing",
+ "tracing-futures",
+ "uuid",
+ "vino-codec",
+ "vino-entity",
+ "vino-manifest",
+ "vino-packet",
+ "vino-provider",
+ "vino-random",
+ "vino-schematic-graph",
+ "vino-transport",
+ "vino-types",
+>>>>>>> ddead36 (- improved determinism of transactions)
 ]
 
 [[package]]
@@ -3371,6 +3617,7 @@ dependencies = [
 name = "vino-keyvalue-redis"
 version = "0.0.0"
 dependencies = [
+<<<<<<< HEAD
   "anyhow",
   "async-trait",
   "clap 3.1.0",
@@ -3394,6 +3641,32 @@ dependencies = [
   "vino-provider-cli",
   "vino-rpc",
   "vino-transport",
+=======
+ "anyhow",
+ "async-trait",
+ "clap 3.1.0",
+ "futures",
+ "logger",
+ "once_cell",
+ "rand 0.8.4",
+ "redis",
+ "serde",
+ "serde_json",
+ "test-logger",
+ "thiserror",
+ "tokio",
+ "tokio-util",
+ "tonic",
+ "tracing",
+ "tracing-futures",
+ "vino-interface-keyvalue",
+ "vino-macros",
+ "vino-packet",
+ "vino-provider",
+ "vino-provider-cli",
+ "vino-rpc",
+ "vino-transport",
+>>>>>>> ddead36 (- improved determinism of transactions)
 ]
 
 [[package]]
@@ -3524,6 +3797,7 @@ dependencies = [
 name = "vino-provider-cli"
 version = "0.1.0"
 dependencies = [
+<<<<<<< HEAD
   "anyhow",
   "async-stream",
   "cfg-if",
@@ -3550,6 +3824,35 @@ dependencies = [
   "vino-packet",
   "vino-rpc",
   "vino-transport",
+=======
+ "anyhow",
+ "async-stream",
+ "cfg-if",
+ "clap 3.1.0",
+ "logger",
+ "nkeys 0.1.0",
+ "once_cell",
+ "rand 0.8.4",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "test-logger",
+ "test-vino-provider",
+ "thiserror",
+ "tokio",
+ "tokio-stream",
+ "tonic",
+ "tonic-reflection",
+ "tracing",
+ "uuid",
+ "vino-codec",
+ "vino-http",
+ "vino-invocation-server",
+ "vino-lattice",
+ "vino-packet",
+ "vino-rpc",
+ "vino-transport",
+>>>>>>> ddead36 (- improved determinism of transactions)
 ]
 
 [[package]]
@@ -3698,6 +4001,7 @@ dependencies = [
 name = "vino-rpc"
 version = "0.1.0"
 dependencies = [
+<<<<<<< HEAD
   "async-stream",
   "async-trait",
   "dyn-clone",
@@ -3719,12 +4023,37 @@ dependencies = [
   "vino-provider",
   "vino-transport",
   "vino-types",
+=======
+ "async-stream",
+ "async-trait",
+ "dyn-clone",
+ "prost",
+ "prost-types",
+ "rand 0.8.4",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "tokio",
+ "tokio-stream",
+ "tonic",
+ "tonic-build",
+ "tracing",
+ "uuid",
+ "vino-codec",
+ "vino-entity",
+ "vino-macros",
+ "vino-packet",
+ "vino-provider",
+ "vino-transport",
+ "vino-types",
+>>>>>>> ddead36 (- improved determinism of transactions)
 ]
 
 [[package]]
 name = "vino-runtime"
 version = "0.1.0"
 dependencies = [
+<<<<<<< HEAD
   "anyhow",
   "async-trait",
   "dyn-clone",
@@ -3766,6 +4095,51 @@ dependencies = [
   "vino-transport",
   "vino-types",
   "vino-wascap",
+=======
+ "anyhow",
+ "async-trait",
+ "dyn-clone",
+ "futures",
+ "itertools",
+ "lazy_static",
+ "logger",
+ "maplit",
+ "once_cell",
+ "parking_lot 0.11.2",
+ "pretty_assertions",
+ "rand 0.8.4",
+ "runtime-testutils",
+ "serde",
+ "serde_json",
+ "test-logger",
+ "test-vino-provider",
+ "thiserror",
+ "tokio",
+ "tokio-stream",
+ "tracing",
+ "uuid",
+ "vino-codec",
+ "vino-entity",
+ "vino-interpreter",
+ "vino-invocation-server",
+ "vino-lattice",
+ "vino-loader",
+ "vino-macros",
+ "vino-manifest",
+ "vino-packet",
+ "vino-provider",
+ "vino-provider-grpc",
+ "vino-provider-lattice",
+ "vino-provider-par",
+ "vino-provider-wasm",
+ "vino-random",
+ "vino-rpc",
+ "vino-schematic-graph",
+ "vino-stdlib",
+ "vino-transport",
+ "vino-types",
+ "vino-wascap",
+>>>>>>> ddead36 (- improved determinism of transactions)
 ]
 
 [[package]]
@@ -3891,6 +4265,7 @@ dependencies = [
 name = "vinoc"
 version = "0.5.0"
 dependencies = [
+<<<<<<< HEAD
   "async-recursion",
   "atty",
   "clap 3.1.0",
@@ -3917,12 +4292,42 @@ dependencies = [
   "vino-transport",
   "vino-types",
   "vino-wascap",
+=======
+ "async-recursion",
+ "atty",
+ "clap 3.1.0",
+ "cli-common",
+ "logger",
+ "nkeys 0.1.0",
+ "oci-distribution",
+ "serde_json",
+ "thiserror",
+ "tokio",
+ "tonic",
+ "tracing",
+ "trycmd",
+ "vino-codec",
+ "vino-entity",
+ "vino-host",
+ "vino-macros",
+ "vino-manifest",
+ "vino-oci",
+ "vino-packet",
+ "vino-par",
+ "vino-provider-cli",
+ "vino-rpc",
+ "vino-runtime",
+ "vino-transport",
+ "vino-types",
+ "vino-wascap",
+>>>>>>> ddead36 (- improved determinism of transactions)
 ]
 
 [[package]]
 name = "vow"
 version = "0.4.0"
 dependencies = [
+<<<<<<< HEAD
   "anyhow",
   "atty",
   "clap 3.1.0",
@@ -3946,6 +4351,40 @@ dependencies = [
   "vino-test",
   "vino-transport",
   "vino-wascap",
+=======
+ "anyhow",
+ "atty",
+ "clap 3.1.0",
+ "cli-common",
+ "logger",
+ "once_cell",
+ "serde",
+ "serde-value",
+ "serde_json",
+ "tap",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "trycmd",
+ "vino-codec",
+ "vino-packet",
+ "vino-provider",
+ "vino-provider-cli",
+ "vino-provider-wasm",
+ "vino-rpc",
+ "vino-test",
+ "vino-transport",
+ "vino-wascap",
+>>>>>>> ddead36 (- improved determinism of transactions)
+]
+
+[[package]]
+name = "wait-timeout"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9f200f5b12eb75f8c1ed65abd4b2db8a6e1b138a20de009dacee265a2498f3f6"
+dependencies = [
+ "libc",
 ]
 
 [[package]]
@@ -4520,6 +4959,12 @@ version = "0.4.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "56c1936c4cc7a1c9ab21a1ebb602eb942ba868cbd44a99cb7cdc5892335e1c85"
 dependencies = ["linked-hash-map"]
+
+[[package]]
+name = "yansi"
+version = "0.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "09041cd90cf85f7f8b2df60c646f853b7f535ce68f85244eb6731cf89fa498ec"
 
 [[package]]
 name = "zeroize"

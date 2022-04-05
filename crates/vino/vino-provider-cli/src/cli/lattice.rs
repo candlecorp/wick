@@ -1,4 +1,5 @@
-use std::{sync::Arc, time::Duration};
+use std::sync::Arc;
+use std::time::Duration;
 
 use vino_lattice::{Lattice, NatsOptions};
 use vino_rpc::SharedRpcHandler;

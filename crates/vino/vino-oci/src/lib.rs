@@ -85,7 +85,7 @@
 #![allow(unused_attributes)]
 // !!END_LINTS
 // Add exceptions here
-#![allow()]
+#![allow(missing_docs)]
 
 use std::str::FromStr;
 
@@ -159,7 +159,6 @@ async fn pull(client: &mut Client, img: &Reference, auth: &RegistryAuth) -> Resu
     .map_err(|e| OciError::OciFetchFailure(img.to_string(), e.to_string()))
 }
 
-/// TODO
 pub async fn push_multi_arch(
   client: &mut Client,
   auth: &RegistryAuth,
@@ -194,7 +193,7 @@ pub async fn push_multi_arch(
       annotations: None,
     });
   }
-  debug!(manifest = root_manifest.to_string().as_str(), "oci manifest list");
+  debug!(manifest = %root_manifest, "oci manifest list");
 
   let reference = parse_reference(&format!("{}/{}", reference.registry(), reference.repository()))?;
 
@@ -205,7 +204,6 @@ pub async fn push_multi_arch(
   Ok(result)
 }
 
-/// TODO
 pub async fn push_arch(
   client: &mut Client,
   auth: &RegistryAuth,
@@ -244,18 +242,18 @@ pub async fn push_arch(
     .map_err(|e| OciError::OciPushFailure(image_ref.clone(), e.into()))?;
   let short_ref = format!("{}/{}", image_ref.registry(), image_ref.repository());
   debug!(
-    reference = short_ref.as_str(),
-    url = response.image_url.as_str(),
+    reference = %short_ref,
+    url = %response.image_url,
     "push: oci image url"
   );
   debug!(
-    reference = short_ref.as_str(),
-    url = response.manifest_url.as_str(),
+    reference = %short_ref,
+    url = %response.manifest_url,
     "push: oci manifest url"
   );
   debug!(
-    reference = short_ref.as_str(),
-    url = response.config_url.as_str(),
+    reference = %short_ref,
+    url = %response.config_url,
     "push: oci config url"
   );
 
@@ -284,18 +282,18 @@ pub async fn push_arch(
 
   let short_ref = format!("{}/{}", reference.registry(), reference.repository());
   debug!(
-    reference = short_ref.as_str(),
-    url = response.image_url.as_str(),
+    reference = %short_ref,
+    url = %response.image_url,
     "push: oci image url"
   );
   debug!(
-    reference = short_ref.as_str(),
-    url = response.manifest_url.as_str(),
+    reference = %short_ref,
+    url = %response.manifest_url,
     "push: oci manifest url"
   );
   debug!(
-    reference = short_ref.as_str(),
-    url = response.config_url.as_str(),
+    reference = %short_ref,
+    url = %response.config_url,
     "push: oci config url"
   );
 
@@ -305,7 +303,6 @@ pub async fn push_arch(
   }
 }
 
-/// TODO
 pub async fn push(
   client: &mut Client,
   auth: &RegistryAuth,

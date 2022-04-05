@@ -12,6 +12,8 @@ pub enum ExecutionError {
   MissingInput(String),
   #[error("Channel send failure")]
   ChannelSend,
+  #[error("Transaction '{0}' hung and error_on_hung set")]
+  HungTransaction(Uuid),
   #[error("Transaction '{0}' missing")]
   MissingTx(Uuid),
   #[error("Sender configuration did not include valid data")]

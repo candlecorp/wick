@@ -34,7 +34,7 @@ impl Provider {
 impl RpcHandler for Provider {
   async fn invoke(&self, invocation: Invocation) -> RpcResult<BoxedTransportStream> {
     let target_url = invocation.target_url();
-    trace!(target = target_url.as_str(), "lattice invoke");
+    trace!(target = %target_url, "lattice invoke");
 
     let start = Instant::now();
     let stream = self
@@ -42,10 +42,11 @@ impl RpcHandler for Provider {
       .invoke(&self.lattice_id, invocation)
       .await
       .map_err(|e| RpcError::ProviderError(e.to_string()))?;
+
     trace!(
-      target = target_url.as_str(),
-      duration = ?start.elapsed().as_millis(),
-      "lattice invoke complete",
+      target = %target_url,
+      duration_ms = %start.elapsed().as_millis(),
+      "response stream received",
     );
 
     Ok(Box::pin(stream))

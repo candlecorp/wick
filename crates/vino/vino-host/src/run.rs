@@ -70,22 +70,25 @@
 )]
 // !!END_LINTS
 // Add exceptions here
-#![allow(missing_docs, clippy::expect_used)] // todo
+#![allow(missing_docs, clippy::expect_used)] // TODO docs
 
 use vino_manifest::host_definition::HostDefinition;
 use vino_transport::{TransportMap, TransportStream};
 
 use crate::HostBuilder;
 
-pub async fn run(manifest: HostDefinition, data: TransportMap) -> crate::Result<TransportStream> {
-  let default_schematic = manifest.default_schematic.clone();
+pub async fn run(manifest: HostDefinition, data: TransportMap, seed: Option<u64>) -> crate::Result<TransportStream> {
+  let default_schematic = manifest
+    .default_schematic
+    .clone()
+    .unwrap_or_else(|| "default".to_owned());
   let host_builder = HostBuilder::from_definition(manifest);
 
   let mut host = host_builder.build();
 
   debug!("starting host");
 
-  host.start().await?;
+  host.start(seed).await?;
 
   info!("manifest applied");
 
@@ -107,7 +110,7 @@ mod tests {
     let host_def = HostDefinition::load_from_file(&PathBuf::from("./manifests/logger.yaml"))?;
     let input = vec![("input", "test-input")].into();
 
-    let mut result = super::run(host_def, input).await?;
+    let mut result = super::run(host_def, input, Some(0)).await?;
     let mut messages: Vec<TransportWrapper> = result.collect_port("output").await;
     let output: String = messages.remove(0).payload.deserialize()?;
 
