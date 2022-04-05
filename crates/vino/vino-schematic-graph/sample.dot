@@ -27,6 +27,22 @@ subgraph "<output>.OUT" {
 }
 
 }
+subgraph "cluster_ZIP" {
+label="ZIP"
+"ZIP"[shape="rectangle"]
+"ZIP.IN.left" -> "ZIP"
+"ZIP.IN.right" -> "ZIP"
+subgraph "ZIP.IN" {
+"ZIP.IN.left"[label="left", shape="triangle"]
+"ZIP.IN.right"[label="right", shape="triangle"]
+}
+
+"ZIP" -> "ZIP.OUT.output"
+subgraph "ZIP.OUT" {
+"ZIP.OUT.output"[label="output", shape="invtriangle"]
+}
+
+}
 subgraph "cluster_COMP2" {
 label="COMP2"
 "COMP2"[shape="rectangle"]
@@ -57,6 +73,7 @@ subgraph "COMP1.OUT" {
 }
 "<input>.OUT.input" -> "COMP1.IN.input"
 "<input>.OUT.input" -> "COMP2.IN.input"
-"COMP1.OUT.output" -> "<output>.IN.output"
-"COMP2.OUT.output" -> "<output>.IN.output"
+"COMP1.OUT.output" -> "ZIP.IN.left"
+"COMP2.OUT.output" -> "ZIP.IN.right"
+"ZIP.OUT.output" -> "<output>.IN.output"
 }

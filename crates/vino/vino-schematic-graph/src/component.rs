@@ -8,19 +8,43 @@ use crate::util::AsStr;
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[must_use]
 pub enum ComponentKind {
-  Input,
-  Output,
-  Inherent(ExternalReference),
-  External(ExternalReference),
+  Input(ComponentReference),
+  Output(ComponentReference),
+  Inherent(ComponentReference),
+  External(ComponentReference),
+}
+
+impl ComponentKind {
+  pub fn input() -> Self {
+    ComponentKind::Input(ComponentReference {
+      name: crate::SCHEMATIC_INPUT.to_owned(),
+      namespace: crate::NS_SCHEMATIC.to_owned(),
+    })
+  }
+  pub fn output() -> Self {
+    ComponentKind::Output(ComponentReference {
+      name: crate::SCHEMATIC_OUTPUT.to_owned(),
+      namespace: crate::NS_SCHEMATIC.to_owned(),
+    })
+  }
+  pub fn cref(&self) -> &ComponentReference {
+    match self {
+      ComponentKind::Input(c) => c,
+      ComponentKind::Output(c) => c,
+      ComponentKind::Inherent(c) => c,
+      ComponentKind::External(c) => c,
+    }
+  }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ExternalReference {
+#[must_use]
+pub struct ComponentReference {
   name: String,
   namespace: String,
 }
 
-impl ExternalReference {
+impl ComponentReference {
   pub fn new<T: AsStr, U: AsStr>(namespace: T, name: U) -> Self {
     Self {
       name: name.as_ref().to_owned(),
@@ -39,7 +63,7 @@ impl ExternalReference {
   }
 }
 
-impl std::fmt::Display for ExternalReference {
+impl std::fmt::Display for ComponentReference {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     write!(f, "{}::{}", self.namespace, self.name)
   }
@@ -51,8 +75,8 @@ impl std::fmt::Display for ComponentKind {
       f,
       "{}",
       match self {
-        ComponentKind::Input => "Input".to_owned(),
-        ComponentKind::Output => "Output".to_owned(),
+        ComponentKind::Input(v) => format!("Input({})", v),
+        ComponentKind::Output(v) => format!("Output({})", v),
         ComponentKind::Inherent(v) => format!("Inherent({})", v),
         ComponentKind::External(v) => format!("External({})", v),
       }
@@ -96,13 +120,17 @@ where
     &self.kind
   }
 
+  pub fn cref(&self) -> &ComponentReference {
+    self.kind.cref()
+  }
+
   #[must_use]
   pub fn index(&self) -> ComponentIndex {
     self.index
   }
 
   #[must_use]
-  pub fn name(&self) -> &str {
+  pub fn id(&self) -> &str {
     &self.name
   }
 
@@ -137,11 +165,11 @@ where
 
   pub fn add_input<T: AsStr>(&mut self, port: T) -> PortReference {
     let port_ref = match self.kind {
-      ComponentKind::Output => {
+      ComponentKind::Output(_) => {
         self.outputs.add(&port, self.index);
         self.inputs.add(&port, self.index)
       }
-      ComponentKind::Input | ComponentKind::Inherent(_) => {
+      ComponentKind::Input(_) | ComponentKind::Inherent(_) => {
         // Input/Output components have the same ports in & out.
         panic!("You can not manually add inputs to {} components", self.kind);
       }
@@ -150,7 +178,7 @@ where
     trace!(
       index = self.index,
       port = port.as_ref(),
-      component = self.name(),
+      component = self.id(),
       r#ref = ?port_ref,
       "added input port"
     );
@@ -190,11 +218,11 @@ where
 
   pub fn add_output<T: AsStr>(&mut self, port: T) -> PortReference {
     let port_ref = match self.kind {
-      ComponentKind::Input | ComponentKind::Inherent(_) => {
+      ComponentKind::Input(_) | ComponentKind::Inherent(_) => {
         self.inputs.add(&port, self.index);
         self.outputs.add(&port, self.index)
       }
-      ComponentKind::Output => {
+      ComponentKind::Output(_) => {
         // Input/Output components have the same ports in & out.
         panic!("You can not manually add outputs to {} components", self.kind);
       }
@@ -203,7 +231,7 @@ where
     trace!(
       index = self.index,
       port = port.as_ref(),
-      component = self.name(),
+      component = self.id(),
       r#ref = ?port_ref,
       "added output port"
     );
@@ -268,11 +296,13 @@ impl PortList {
   }
 
   fn add_connection(&mut self, port: PortIndex, connection: ConnectionIndex) -> Result<(), Error> {
-    self
-      .list
-      .get_mut(port)
-      .map(|component| component.connections.push(connection))
-      .ok_or(Error::InvalidPortIndex(port))
+    let component_port = self.list.get_mut(port).ok_or(Error::InvalidPortIndex(port))?;
+
+    if component_port.direction() == &PortDirection::In && !component_port.connections.is_empty() {
+      return Err(Error::MultipleInputConnections(component_port.to_string()));
+    }
+    component_port.connections.push(connection);
+    Ok(())
   }
 
   fn port_connections(&self, port: PortIndex) -> Option<&Vec<ConnectionIndex>> {

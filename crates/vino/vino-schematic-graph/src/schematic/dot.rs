@@ -6,15 +6,15 @@ where
 {
   let mut lines = vec![format!("digraph \"{}\" {{", schematic.name())];
   for component in schematic.components() {
-    lines.push(format!("subgraph \"cluster_{}\" {{", component.name()));
-    lines.push(format!("label=\"{}\"", component.name()));
+    lines.push(format!("subgraph \"cluster_{}\" {{", component.id()));
+    lines.push(format!("label=\"{}\"", component.id()));
     let shape = match component.kind() {
-      ComponentKind::Input => "house",
+      ComponentKind::Input(_) => "house",
       ComponentKind::Inherent(_) => "diamond",
-      ComponentKind::Output => "invhouse",
+      ComponentKind::Output(_) => "invhouse",
       ComponentKind::External(_) => "rectangle",
     };
-    lines.push(format!("\"{}\"[shape=\"{}\"]", component.name(), shape));
+    lines.push(format!("\"{}\"[shape=\"{}\"]", component.id(), shape));
     lines.append(&mut render_ports(component, PortDirection::In));
     lines.append(&mut render_ports(component, PortDirection::Out));
     lines.push("}".to_owned());
@@ -38,9 +38,9 @@ where
     let to_port = &to_component.inputs()[conn.to().port_index()];
     lines.push(format!(
       "\"{}.OUT.{}\" -> \"{}.IN.{}\"",
-      from_component.name(),
+      from_component.id(),
       from_port.name(),
-      to_component.name(),
+      to_component.id(),
       to_port.name(),
     ));
   }
@@ -60,23 +60,23 @@ where
     match dir {
       PortDirection::In => lines.push(format!(
         "\"{}.IN.{}\" -> \"{}\"",
-        component.name(),
+        component.id(),
         port.name(),
-        component.name(),
+        component.id(),
       )),
       PortDirection::Out => lines.push(format!(
         "\"{}\" -> \"{}.OUT.{}\"",
-        component.name(),
-        component.name(),
+        component.id(),
+        component.id(),
         port.name(),
       )),
     };
   }
-  lines.push(format!("subgraph \"{}.{}\" {{", component.name(), label));
+  lines.push(format!("subgraph \"{}.{}\" {{", component.id(), label));
   for port in ports {
     lines.push(format!(
       "\"{}.{}.{}\"[label=\"{}\", shape=\"{}\"]",
-      component.name(),
+      component.id(),
       label,
       port.name(),
       port.name(),
