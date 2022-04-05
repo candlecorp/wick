@@ -351,7 +351,7 @@ mod tests {
   #[cfg(feature = "json")]
   fn serializes_done() -> Result<()> {
     let close = MessageTransport::done();
-    let value = close.into_json();
+    let value = close.as_json();
     println!("Value: {}", value);
     assert_eq!(value.to_string(), r#"{"signal":"Done","value":null}"#);
     Ok(())

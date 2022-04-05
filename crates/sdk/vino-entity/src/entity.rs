@@ -210,6 +210,22 @@ impl Entity {
       Entity::Reference(id) => id,
     }
   }
+
+  /// The namespace for the entity.
+  #[must_use]
+  pub fn namespace(&self) -> &str {
+    match self {
+      Entity::Test(_) => "test",
+      Entity::Schematic(name) => name,
+      Entity::Component(ns, _) => ns,
+      Entity::Provider(name) => name,
+      Entity::Client(id) => id,
+      Entity::Host(id) => id,
+      Entity::System(e) => &e.name,
+      Entity::Invalid => "<invalid>",
+      Entity::Reference(id) => id,
+    }
+  }
 }
 
 #[cfg(test)]

@@ -15,9 +15,9 @@ pub struct Invocation {
   /// The payload.
   pub payload: TransportMap,
   /// The invocation id.
-  pub id: String,
+  pub id: Uuid,
   /// The transaction id, to map together a string of invocations.
-  pub tx_id: String,
+  pub tx_id: Uuid,
   /// Inherent data associated with the transaction.
   pub inherent: Option<InherentData>,
 }
@@ -41,7 +41,7 @@ impl Invocation {
   /// Creates an invocation with a specific transaction id, to correlate a chain of.
   /// invocations.
   pub fn next(
-    tx_id: &str,
+    tx_id: Uuid,
     origin: Entity,
     target: Entity,
     payload: TransportMap,
@@ -54,7 +54,7 @@ impl Invocation {
       target,
       payload,
       id: invocation_id,
-      tx_id: tx_id.to_owned(),
+      tx_id,
       inherent,
     }
   }
@@ -72,6 +72,16 @@ impl Invocation {
       tx_id,
       inherent,
     }
+  }
+
+  /// Get the seed associated with an invocation if it exists.
+  pub fn seed(&self) -> Option<u64> {
+    self.inherent.map(|i| i.seed)
+  }
+
+  /// Get the timestamp associated with an invocation if it exists.
+  pub fn timestamp(&self) -> Option<u64> {
+    self.inherent.map(|i| i.timestamp)
   }
 
   /// Utility function to get the target [Entity] URL.
@@ -96,8 +106,15 @@ pub struct InherentData {
   pub timestamp: u64,
 }
 
-pub(crate) fn get_uuid() -> String {
-  format!("{}", Uuid::new_v4())
+impl InherentData {
+  /// Constructor for [InherentData]
+  pub fn new(seed: u64, timestamp: u64) -> Self {
+    Self { seed, timestamp }
+  }
+}
+
+pub(crate) fn get_uuid() -> Uuid {
+  Uuid::new_v4()
 }
 
 #[cfg(test)]

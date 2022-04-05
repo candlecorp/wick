@@ -126,20 +126,20 @@ impl MessageTransport {
   /// Converts a [MessageTransport] into [serde_json::Value]
   /// representation of a [TransportJson]
   #[must_use]
-  pub fn into_json(self) -> serde_json::Value {
+  pub fn as_json(&self) -> serde_json::Value {
     let output = match self {
       MessageTransport::Success(success) => match success {
         Success::MessagePack(bytes) => handle_result_conversion(
           vino_codec::messagepack::deserialize::<serde_json::Value>(&bytes).map_err(|e| e.to_string()),
         ),
-        Success::Serialized(v) => {
-          handle_result_conversion(vino_codec::raw::deserialize::<serde_json::Value>(v).map_err(|e| e.to_string()))
-        }
+        Success::Serialized(v) => handle_result_conversion(
+          vino_codec::raw::deserialize::<serde_json::Value>(v.clone()).map_err(|e| e.to_string()),
+        ),
         Success::Json(v) => {
           handle_result_conversion(vino_codec::json::deserialize::<serde_json::Value>(&v).map_err(|e| e.to_string()))
         }
       },
-      MessageTransport::Failure(failure) => match failure {
+      MessageTransport::Failure(failure) => match &failure {
         Failure::Invalid => TransportJson {
           value: serde_json::value::Value::Null,
           signal: None,
@@ -149,19 +149,19 @@ impl MessageTransport {
         Failure::Exception(v) => TransportJson {
           value: serde_json::value::Value::Null,
           signal: None,
-          error_msg: Some(v),
+          error_msg: Some(v.clone()),
           error_kind: JsonError::Exception,
         },
         Failure::Error(v) => TransportJson {
           value: serde_json::value::Value::Null,
           signal: None,
-          error_msg: Some(v),
+          error_msg: Some(v.clone()),
           error_kind: JsonError::Error,
         },
       },
       MessageTransport::Signal(s) => TransportJson {
         value: serde_json::value::Value::Null,
-        signal: Some(s),
+        signal: Some(s.clone()),
         error_msg: None,
         error_kind: JsonError::None,
       },

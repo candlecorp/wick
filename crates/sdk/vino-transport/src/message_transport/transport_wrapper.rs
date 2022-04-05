@@ -47,6 +47,15 @@ impl TransportWrapper {
     self.port == crate::COMPONENT_ERROR
   }
 
+  /// Returns Some(&str) if the [TransportWrapper] contains an error, None otherwise.
+  #[must_use]
+  pub fn error(&self) -> Option<&str> {
+    match &self.payload {
+      MessageTransport::Failure(f) => Some(f.message()),
+      _ => None,
+    }
+  }
+
   /// Constructor for a [TransportWrapper] with a port of [crate::COMPONENT_ERROR] indicating an internal error occurred.
   pub fn component_error(payload: MessageTransport) -> Self {
     Self {
@@ -64,13 +73,19 @@ impl TransportWrapper {
   /// map of port names to [TransportJson]s
   #[must_use]
   #[cfg(feature = "json")]
-  pub fn into_json(self) -> serde_json::Value {
-    let payload = self.payload.into_json();
+  pub fn as_json(&self) -> serde_json::Value {
+    let payload = self.payload.as_json();
 
     let mut map = serde_json::Map::new();
-    map.insert(self.port, payload);
+    map.insert(self.port.clone(), payload);
 
     serde_json::value::Value::Object(map)
+  }
+}
+
+impl std::fmt::Display for TransportWrapper {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    write!(f, "{}", self.as_json())
   }
 }
 

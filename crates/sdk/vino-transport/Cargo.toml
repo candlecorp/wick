@@ -32,7 +32,7 @@ thiserror = "1.0"
 tracing = "0.1"
 
 # invocation
-uuid = { version = "0.8", features = ["v4"], optional = true }
+uuid = { version = "0.8", features = ["v4", "serde"], optional = true }
 
 # raw
 serde-value = { version = "0.7", optional = true }

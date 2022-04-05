@@ -13,20 +13,6 @@ use crate::{MessageSignal, MessageTransport};
 /// A boxed [Stream] that produces [TransportWrapper]s
 pub type BoxedTransportStream = Pin<Box<dyn Stream<Item = TransportWrapper> + Send + Sync + 'static>>;
 
-/// Converts a [Stream] of [TransportWrapper]s into a stream of [serde_json::Value]s, optionally omitting signals.
-pub fn map_to_json(
-  stream: impl Stream<Item = TransportWrapper>,
-  print_signals: bool,
-) -> impl Stream<Item = serde_json::Value> {
-  stream.filter_map(move |wrapper| {
-    if wrapper.payload.is_signal() && !print_signals {
-      None
-    } else {
-      Some(wrapper.into_json())
-    }
-  })
-}
-
 /// A [TransportStream] is a stream of [crate::TransportWrapper]s.
 pub struct TransportStream {
   rx: Mutex<Pin<Box<dyn Stream<Item = TransportWrapper> + Send>>>,

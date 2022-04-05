@@ -93,7 +93,7 @@ pub mod invocation;
 #[cfg(feature = "invocation")]
 pub use invocation::{InherentData, Invocation};
 #[cfg(feature = "async")]
-pub use message_transport::stream::{map_to_json, BoxedTransportStream, TransportStream};
+pub use message_transport::stream::{BoxedTransportStream, TransportStream};
 #[cfg(feature = "json")]
 pub use message_transport::transport_json::{JsonError, TransportJson};
 pub use message_transport::transport_map::TransportMap;
