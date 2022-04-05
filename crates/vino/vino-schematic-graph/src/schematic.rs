@@ -9,7 +9,7 @@ use crate::connection::Connection;
 use crate::error::Error;
 use crate::port::PortReference;
 use crate::util::AsStr;
-use crate::{ExternalReference, PortDirection};
+use crate::{ComponentReference, PortDirection};
 
 pub type ConnectionIndex = usize;
 pub type ComponentIndex = usize;
@@ -17,6 +17,8 @@ pub type PortIndex = usize;
 
 pub static SCHEMATIC_INPUT: &str = "<input>";
 pub static SCHEMATIC_OUTPUT: &str = "<output>";
+
+pub static NS_SCHEMATIC: &str = "__schematic__";
 
 #[derive(Debug, Clone)]
 pub struct Schematic<DATA> {
@@ -41,8 +43,8 @@ where
 {
   pub fn new<T: AsStr>(name: T) -> Self {
     let components = vec![
-      Component::new(SCHEMATIC_INPUT, 0, ComponentKind::Input, None),
-      Component::new(SCHEMATIC_OUTPUT, 1, ComponentKind::Output, None),
+      Component::new(SCHEMATIC_INPUT, 0, ComponentKind::input(), None),
+      Component::new(SCHEMATIC_OUTPUT, 1, ComponentKind::output(), None),
     ];
     let component_indices = HashMap::from([(SCHEMATIC_INPUT.to_owned(), 0), (SCHEMATIC_OUTPUT.to_owned(), 1)]);
 
@@ -201,7 +203,7 @@ where
   pub fn add_external<T: AsStr>(
     &mut self,
     name: T,
-    reference: ExternalReference,
+    reference: ComponentReference,
     data: Option<DATA>,
   ) -> ComponentIndex {
     self.add_component(name.as_ref().to_owned(), ComponentKind::External(reference), data)
@@ -210,7 +212,7 @@ where
   pub fn add_inherent<T: AsStr>(
     &mut self,
     name: T,
-    reference: ExternalReference,
+    reference: ComponentReference,
     data: Option<DATA>,
   ) -> ComponentIndex {
     self.add_component(name.as_ref().to_owned(), ComponentKind::Inherent(reference), data)
@@ -238,10 +240,10 @@ where
   pub fn connect(&mut self, from: PortReference, to: PortReference, data: Option<DATA>) -> Result<(), Error> {
     trace!(?from, ?to, "connecting");
     let connection_index = self.connections.len();
-    let upstream_component = &mut self.components[from.component_index];
-    upstream_component.connect_output(from.port_index, connection_index)?;
     let downstream_component = &mut self.components[to.component_index];
     downstream_component.connect_input(to.port_index, connection_index)?;
+    let upstream_component = &mut self.components[from.component_index];
+    upstream_component.connect_output(from.port_index, connection_index)?;
     let connection = Connection::new(from, to, connection_index, data);
     self.connections.push(connection);
     Ok(())

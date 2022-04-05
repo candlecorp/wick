@@ -51,7 +51,7 @@ where
 
   #[must_use]
   pub fn name(&self) -> &str {
-    self.schematic.components[self.index].name()
+    self.schematic.components[self.index].id()
   }
 
   #[must_use]

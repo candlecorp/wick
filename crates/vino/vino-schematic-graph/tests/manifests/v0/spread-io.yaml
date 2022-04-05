@@ -8,8 +8,11 @@ network:
           id: vino::core::log
         COMP2:
           id: vino::core::log
+        ZIP:
+          id: vino::core::zip
       connections:
         - <> => COMP1[input]
         - <> => COMP2[input]
-        - COMP1[output] => <>
-        - COMP2[output] => <>
+        - COMP1[output] => ZIP[left]
+        - COMP2[output] => ZIP[right]
+        - ZIP[output] => <>

@@ -1,0 +1,12 @@
+---
+version: 0
+network:
+  schematics:
+    - name: test
+      instances:
+        COMP1:
+          id: vino::core::log
+      connections:
+        - <>[one] => COMP1[input]
+        - <>[two] => COMP1[input]
+        - COMP1[output] => <>

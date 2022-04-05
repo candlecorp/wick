@@ -93,7 +93,7 @@ mod network;
 mod port;
 mod schematic;
 
-pub use component::{Component, ComponentKind, ComponentPort, ExternalReference};
+pub use component::{Component, ComponentKind, ComponentPort, ComponentReference};
 pub use connection::Connection;
 pub use network::Network;
 pub use port::{PortDefinition, PortDirection, PortReference};
@@ -103,6 +103,7 @@ pub use schematic::{
   ConnectionIndex,
   PortIndex,
   Schematic,
+  NS_SCHEMATIC,
   SCHEMATIC_INPUT,
   SCHEMATIC_OUTPUT,
 };
