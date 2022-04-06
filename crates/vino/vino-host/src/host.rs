@@ -250,6 +250,13 @@ impl HostBuilder {
     }
   }
 
+  pub async fn from_manifest_url(location: &str, allow_latest: bool, insecure_registries: &[String]) -> Result<Self> {
+    let manifest_src = vino_loader::get_bytes(location, allow_latest, insecure_registries).await?;
+
+    let manifest = HostDefinition::load_from_bytes(Some(location.to_owned()), &manifest_src)?;
+    Ok(Self::from_definition(manifest))
+  }
+
   pub fn from_definition(definition: HostDefinition) -> Self {
     HostBuilder { manifest: definition }
   }

@@ -19,6 +19,8 @@ pub enum HostError {
   #[error("Could not start host: {0}")]
   HostStartFailure(String),
   #[error(transparent)]
+  LoadFailed(#[from] vino_loader::Error),
+  #[error(transparent)]
   RuntimeError(#[from] Box<vino_runtime::Error>),
   #[error(transparent)]
   CodecError(#[from] vino_codec::Error),
