@@ -79,6 +79,18 @@ pub enum Failure {
   Error(String),
 }
 
+impl Failure {
+  /// Return the inner message of a [Failure] payload.
+  #[must_use]
+  pub fn message(&self) -> &str {
+    match self {
+      Failure::Invalid => "Invalid payload",
+      Failure::Exception(e) => e.as_str(),
+      Failure::Error(e) => e.as_str(),
+    }
+  }
+}
+
 /// Internal signals that need to be handled before propagating to a downstream consumer.
 #[derive(Debug, Clone, Copy, Eq, Serialize, Deserialize, PartialEq)]
 pub enum MessageSignal {
@@ -122,10 +134,7 @@ impl MessageTransport {
       Self::Success(Success::Json(json)) => {
         *self = match json::deserialize::<serde_value::Value>(json) {
           Ok(val) => Self::messagepack(&val),
-          Err(e) => Self::error(format!(
-            "Could not convert JSON payload to MessagePack: {}",
-            e
-          )),
+          Err(e) => Self::error(format!("Could not convert JSON payload to MessagePack: {}", e)),
         }
       }
       _ => {}
@@ -136,10 +145,7 @@ impl MessageTransport {
   pub fn messagepack<T: ?Sized + Serialize>(item: &T) -> Self {
     match messagepack::serialize(item) {
       Ok(bytes) => Self::Success(Success::MessagePack(bytes)),
-      Err(e) => Self::Failure(Failure::Error(format!(
-        "Error serializing into messagepack: {}",
-        e.to_string()
-      ))),
+      Err(e) => Self::Failure(Failure::Error(format!("Error serializing into messagepack: {}", e))),
     }
   }
 
@@ -150,7 +156,7 @@ impl MessageTransport {
       Ok(v) => Self::Success(Success::Serialized(v)),
       Err(e) => Self::Failure(Failure::Error(format!(
         "Error serializing into raw intermediary format: {}",
-        e.to_string()
+        e
       ))),
     }
     #[cfg(not(feature = "raw"))]
@@ -158,7 +164,7 @@ impl MessageTransport {
       Ok(v) => Self::Success(Success::MessagePack(v)),
       Err(e) => Self::Failure(Failure::Error(format!(
         "Error serializing into messagepack format: {}",
-        e.to_string()
+        e
       ))),
     }
   }
@@ -168,10 +174,7 @@ impl MessageTransport {
   pub fn json<T: Serialize>(item: &T) -> Self {
     match json::serialize(item) {
       Ok(v) => Self::Success(Success::Json(v)),
-      Err(e) => Self::Failure(Failure::Error(format!(
-        "Error serializing into json: {}",
-        e.to_string()
-      ))),
+      Err(e) => Self::Failure(Failure::Error(format!("Error serializing into json: {}", e))),
     }
   }
 
@@ -191,27 +194,28 @@ impl MessageTransport {
   }
 
   /// Try to deserialize a [MessageTransport] into the target type
-  pub fn try_into<T: DeserializeOwned>(self) -> Result<T> {
-    match self {
-      Self::Success(success) => match success {
-        Success::MessagePack(v) => messagepack::rmp_deserialize::<T>(&v)
-          .map_err(|e| Error::DeserializationError(e.to_string())),
-        #[cfg(feature = "raw")]
-        Success::Serialized(v) => {
-          raw::raw_deserialize::<T>(v).map_err(|e| Error::DeserializationError(e.to_string()))
-        }
-        #[cfg(feature = "json")]
-        Success::Json(v) => {
-          json::json_deserialize::<T>(&v).map_err(|e| Error::DeserializationError(e.to_string()))
-        }
-      },
-      Self::Failure(failure) => match failure {
-        Failure::Invalid => Err(Error::Invalid),
-        Failure::Exception(v) => Err(Error::Exception(v)),
-        Failure::Error(v) => Err(Error::Error(v)),
-      },
-      MessageTransport::Signal(_) => Err(Error::Invalid),
-    }
+  pub fn deserialize<T: DeserializeOwned>(self) -> Result<T> {
+    try_from(self)
+  }
+}
+
+fn try_from<T: DeserializeOwned>(value: MessageTransport) -> Result<T> {
+  match value {
+    MessageTransport::Success(success) => match success {
+      Success::MessagePack(v) => {
+        messagepack::rmp_deserialize(&v).map_err(|e| Error::DeserializationError(e.to_string()))
+      }
+      #[cfg(feature = "raw")]
+      Success::Serialized(v) => raw::raw_deserialize(v).map_err(|e| Error::DeserializationError(e.to_string())),
+      #[cfg(feature = "json")]
+      Success::Json(v) => json::json_deserialize(&v).map_err(|e| Error::DeserializationError(e.to_string())),
+    },
+    MessageTransport::Failure(failure) => match failure {
+      Failure::Invalid => Err(Error::Invalid),
+      Failure::Exception(v) => Err(Error::Exception(v)),
+      Failure::Error(v) => Err(Error::Error(v)),
+    },
+    MessageTransport::Signal(_) => Err(Error::Invalid),
   }
 }
 
@@ -237,9 +241,7 @@ impl From<Packet> for MessageTransport {
       },
       Packet::V1(v) => match v {
         vino_packet::v1::Payload::Success(success) => match success {
-          vino_packet::v1::Success::MessagePack(bytes) => {
-            MessageTransport::Success(Success::MessagePack(bytes))
-          }
+          vino_packet::v1::Success::MessagePack(bytes) => MessageTransport::Success(Success::MessagePack(bytes)),
           #[cfg(feature = "raw")]
           vino_packet::v1::Success::Success(v) => MessageTransport::Success(Success::Serialized(v)),
           #[cfg(not(feature = "raw"))]
@@ -251,9 +253,7 @@ impl From<Packet> for MessageTransport {
         },
         vino_packet::v1::Payload::Failure(failure) => match failure {
           vino_packet::v1::Failure::Invalid => MessageTransport::Failure(Failure::Invalid),
-          vino_packet::v1::Failure::Exception(v) => {
-            MessageTransport::Failure(Failure::Exception(v))
-          }
+          vino_packet::v1::Failure::Exception(v) => MessageTransport::Failure(Failure::Exception(v)),
           vino_packet::v1::Failure::Error(v) => MessageTransport::Failure(Failure::Error(v)),
         },
         vino_packet::v1::Payload::Signal(signal) => match signal {
@@ -293,7 +293,7 @@ impl From<MessageTransport> for Packet {
 impl Display for MessageTransport {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     if let MessageTransport::Signal(signal) = self {
-      return write!(f, "Signal({})", signal.to_string());
+      return write!(f, "Signal({})", signal);
     }
     write!(
       f,
@@ -351,7 +351,7 @@ mod tests {
   #[cfg(feature = "json")]
   fn serializes_done() -> Result<()> {
     let close = MessageTransport::done();
-    let value = close.into_json();
+    let value = close.as_json();
     println!("Value: {}", value);
     assert_eq!(value.to_string(), r#"{"signal":"Done","value":null}"#);
     Ok(())
@@ -363,8 +363,8 @@ mod tests {
     let mut payload = MessageTransport::success(&false);
     println!("payload: {:?}", payload);
     payload.to_messagepack();
-    let result: bool = payload.try_into()?;
-    assert_eq!(result, false);
+    let result: bool = payload.deserialize()?;
+    assert!(!result);
     Ok(())
   }
 }

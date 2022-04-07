@@ -198,20 +198,20 @@ mod tests {
     let mut messages: Vec<TransportWrapper> = aggregated.collect_port("test1").await;
     assert_eq!(messages.len(), 2);
     assert_eq!(aggregated.buffered_size(), (1, 2));
-    let payload: String = messages.remove(0).try_into().unwrap();
+    let payload: String = messages.remove(0).deserialize().unwrap();
     println!("Payload a1: {}", payload);
     assert_eq!(payload, "First");
-    let payload: String = messages.remove(0).try_into().unwrap();
+    let payload: String = messages.remove(0).deserialize().unwrap();
     println!("Payload a2: {}", payload);
     assert_eq!(payload, "Second");
 
     let mut messages: Vec<TransportWrapper> = aggregated.collect_port("test2").await;
     assert_eq!(messages.len(), 2);
     assert_eq!(aggregated.buffered_size(), (0, 0));
-    let payload: i64 = messages.remove(0).try_into().unwrap();
+    let payload: i64 = messages.remove(0).deserialize().unwrap();
     println!("Payload b1: {}", payload);
     assert_eq!(payload, 1);
-    let payload: i64 = messages.remove(0).try_into().unwrap();
+    let payload: i64 = messages.remove(0).deserialize().unwrap();
     println!("Payload b2: {}", payload);
     assert_eq!(payload, 2);
 
@@ -228,7 +228,7 @@ mod tests {
     port1.send(Payload::success(&"first"))?;
 
     let message: TransportWrapper = rx.next().await.unwrap().into();
-    let payload: String = message.payload.try_into().unwrap();
+    let payload: String = message.payload.deserialize().unwrap();
 
     assert_eq!(payload, "first");
 
@@ -245,7 +245,7 @@ mod tests {
     port1.done(Payload::success(&"done"))?;
 
     let message: TransportWrapper = rx.next().await.unwrap().into();
-    let payload: String = message.payload.try_into().unwrap();
+    let payload: String = message.payload.deserialize().unwrap();
 
     assert_eq!(payload, "done");
     let message = rx.next().await.unwrap();

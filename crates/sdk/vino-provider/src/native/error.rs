@@ -69,7 +69,7 @@ impl NativeComponentError {
 
 impl From<&'static str> for NativeComponentError {
   fn from(e: &'static str) -> Self {
-    NativeComponentError::new(e.to_owned())
+    NativeComponentError::new(e)
   }
 }
 

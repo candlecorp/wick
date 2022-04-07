@@ -1,6 +1,5 @@
 {
   "name": "test-component",
-  "types": {},
   "components": {
     "copy": {
       "name": "copy",

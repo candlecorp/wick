@@ -1,10 +1,9 @@
-use std::{collections::HashMap, str::FromStr};
+use std::collections::HashMap;
+use std::str::FromStr;
 
 use serde::{Deserialize, Serialize};
 
-use crate::signatures::{
-  ComponentSignature, ParseError, ProviderSignature, StructSignature, TypeSignature,
-};
+use crate::signatures::{ComponentSignature, ParseError, ProviderSignature, StructSignature, TypeSignature};
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
 #[serde(transparent)]
@@ -31,10 +30,6 @@ impl MapWrapper<TypeSignature> for TypeMap {
   fn get_inner_mut(&mut self) -> &mut HashMap<String, TypeSignature> {
     &mut self.0
   }
-
-  fn new() -> Self {
-    Self(HashMap::new())
-  }
 }
 
 impl From<HashMap<String, TypeSignature>> for TypeMap {
@@ -49,7 +44,7 @@ impl TryFrom<Vec<(&str, &str)>> for TypeMap {
   fn try_from(list: Vec<(&str, &str)>) -> Result<Self, ParseError> {
     let mut map = TypeMap::new();
     for (k, v) in list {
-      map.insert(k.to_owned(), TypeSignature::from_str(v)?);
+      map.insert(k, TypeSignature::from_str(v)?);
     }
     Ok(map)
   }
@@ -82,7 +77,6 @@ impl StructMap {
   pub fn new() -> Self {
     Self(HashMap::new())
   }
-
 }
 
 impl MapWrapper<StructSignature> for StructMap {
@@ -96,10 +90,6 @@ impl MapWrapper<StructSignature> for StructMap {
 
   fn get_inner_mut(&mut self) -> &mut HashMap<String, StructSignature> {
     &mut self.0
-  }
-
-  fn new() -> Self {
-    Self(HashMap::new())
   }
 }
 
@@ -127,10 +117,6 @@ impl MapWrapper<ProviderSignature> for ProviderMap {
   fn get_inner_mut(&mut self) -> &mut HashMap<String, ProviderSignature> {
     &mut self.0
   }
-
-  fn new() -> Self {
-    Self(HashMap::new())
-  }
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
@@ -151,10 +137,6 @@ impl MapWrapper<ComponentSignature> for ComponentMap {
   fn get_inner_mut(&mut self) -> &mut HashMap<String, ComponentSignature> {
     &mut self.0
   }
-
-  fn new() -> Self {
-    Self(HashMap::new())
-  }
 }
 
 impl From<HashMap<String, ComponentSignature>> for ComponentMap {
@@ -163,13 +145,17 @@ impl From<HashMap<String, ComponentSignature>> for ComponentMap {
   }
 }
 
+impl From<HashMap<&str, ComponentSignature>> for ComponentMap {
+  fn from(map: HashMap<&str, ComponentSignature>) -> Self {
+    Self(map.into_iter().map(|(k, v)| (k.to_owned(), v)).collect())
+  }
+}
+
 /// Utility functions for HashMap wrappers.
 pub trait MapWrapper<T>
 where
   Self: Sized,
 {
-  /// Constructor for the map.
-  fn new() -> Self;
   /// Get the inner HashMap.
   fn get_inner_owned(self) -> HashMap<String, T>;
 
@@ -200,7 +186,7 @@ where
   /// Return a reference to the inner HashMap.
   #[must_use]
   fn inner(&self) -> &HashMap<String, T> {
-    &self.get_inner()
+    self.get_inner()
   }
 
   #[must_use]
@@ -209,11 +195,15 @@ where
     self.get_inner().get(field.as_ref())
   }
 
+  #[must_use]
+  /// Get the value for the requested field.
+  fn contains_key<K: AsRef<str>>(&self, field: K) -> bool {
+    self.get_inner().contains_key(field.as_ref())
+  }
+
   /// Insert a [T] into the inner map.
   fn insert<K: AsRef<str>>(&mut self, field: K, value: T) {
-    self
-      .get_inner_mut()
-      .insert(field.as_ref().to_owned(), value);
+    self.get_inner_mut().insert(field.as_ref().to_owned(), value);
   }
 
   #[must_use]

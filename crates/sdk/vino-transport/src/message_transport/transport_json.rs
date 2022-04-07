@@ -42,19 +42,13 @@ impl From<TransportJson> for MessageTransport {
       },
       JsonError::Exception => match v.error_msg {
         Some(err) => MessageTransport::Failure(Failure::Exception(err)),
-        None => MessageTransport::Failure(Failure::Exception(
-          "<No message passed with exception>".to_owned(),
-        )),
+        None => MessageTransport::Failure(Failure::Exception("<No message passed with exception>".to_owned())),
       },
       JsonError::Error => match v.error_msg {
         Some(err) => MessageTransport::Failure(Failure::Error(err)),
-        None => MessageTransport::Failure(Failure::Error(
-          "<No message passed with exception>".to_owned(),
-        )),
+        None => MessageTransport::Failure(Failure::Error("<No message passed with exception>".to_owned())),
       },
-      JsonError::InternalError => {
-        MessageTransport::Failure(Failure::Error("Internal Error (10001)".to_owned()))
-      }
+      JsonError::InternalError => MessageTransport::Failure(Failure::Error("Internal Error (10001)".to_owned())),
     }
   }
 }
@@ -116,10 +110,7 @@ fn handle_result_conversion(result: Result<serde_json::Value, String>) -> Transp
       error_kind: JsonError::None,
     },
     Err(e) => {
-      let msg = format!(
-        "Error deserializing messagepack payload to JSON value: {:?}",
-        e
-      );
+      let msg = format!("Error deserializing messagepack payload to JSON value: {:?}", e);
       error!("{}", msg);
       TransportJson {
         value: serde_json::value::Value::Null,
@@ -135,21 +126,20 @@ impl MessageTransport {
   /// Converts a [MessageTransport] into [serde_json::Value]
   /// representation of a [TransportJson]
   #[must_use]
-  pub fn into_json(self) -> serde_json::Value {
+  pub fn as_json(&self) -> serde_json::Value {
     let output = match self {
       MessageTransport::Success(success) => match success {
         Success::MessagePack(bytes) => handle_result_conversion(
-          vino_codec::messagepack::deserialize::<serde_json::Value>(&bytes)
-            .map_err(|e| e.to_string()),
+          vino_codec::messagepack::deserialize::<serde_json::Value>(&bytes).map_err(|e| e.to_string()),
         ),
         Success::Serialized(v) => handle_result_conversion(
-          vino_codec::raw::deserialize::<serde_json::Value>(v).map_err(|e| e.to_string()),
+          vino_codec::raw::deserialize::<serde_json::Value>(v.clone()).map_err(|e| e.to_string()),
         ),
-        Success::Json(v) => handle_result_conversion(
-          vino_codec::json::deserialize::<serde_json::Value>(&v).map_err(|e| e.to_string()),
-        ),
+        Success::Json(v) => {
+          handle_result_conversion(vino_codec::json::deserialize::<serde_json::Value>(&v).map_err(|e| e.to_string()))
+        }
       },
-      MessageTransport::Failure(failure) => match failure {
+      MessageTransport::Failure(failure) => match &failure {
         Failure::Invalid => TransportJson {
           value: serde_json::value::Value::Null,
           signal: None,
@@ -159,19 +149,19 @@ impl MessageTransport {
         Failure::Exception(v) => TransportJson {
           value: serde_json::value::Value::Null,
           signal: None,
-          error_msg: Some(v),
+          error_msg: Some(v.clone()),
           error_kind: JsonError::Exception,
         },
         Failure::Error(v) => TransportJson {
           value: serde_json::value::Value::Null,
           signal: None,
-          error_msg: Some(v),
+          error_msg: Some(v.clone()),
           error_kind: JsonError::Error,
         },
       },
       MessageTransport::Signal(s) => TransportJson {
         value: serde_json::value::Value::Null,
-        signal: Some(s),
+        signal: Some(s.clone()),
         error_msg: None,
         error_kind: JsonError::None,
       },
@@ -198,10 +188,8 @@ impl MessageTransport {
       .map(|(k, payload)| {
         (
           k,
-          payload.try_into().unwrap_or_else(|e: Error| {
-            serde_json::json!({
-              "error": format!("Internal error: {:?}, invalid format", e.to_string())
-            })
+          payload.deserialize().unwrap_or_else(|e: Error| {
+            serde_json::json!({ "error": format!("Internal error: {:?}, invalid format", e.to_string()) })
           }),
         )
       })

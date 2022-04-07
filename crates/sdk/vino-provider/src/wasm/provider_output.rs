@@ -55,7 +55,7 @@ impl PortOutput {
   /// Grab the next value and deserialize it in one method.
   pub fn try_next_into<T: DeserializeOwned>(&mut self) -> Result<T, Error> {
     match self.iter.next() {
-      Some(val) => Ok(val.try_into().map_err(|e| Error::Codec(e.to_string()))?),
+      Some(val) => Ok(val.deserialize().map_err(|e| Error::Codec(e.to_string()))?),
       None => Err(Error::EndOfOutput(self.name.clone())),
     }
   }

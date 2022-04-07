@@ -85,7 +85,7 @@ impl FromStr for Entity {
       .host_str()
       .ok_or_else(|| Error::ParseError("No authority supplied".to_owned()))?;
     let (id, kind) = host
-      .split_once(".")
+      .split_once('.')
       .ok_or_else(|| Error::ParseError(format!("Invalid authority format '{}', no dot.", host)))?;
     match kind {
       "sys" => {
@@ -120,16 +120,25 @@ impl FromStr for Entity {
   }
 }
 impl Entity {
-  /// Constructor for [Entity::Component].
+  /// Namespace for components local to a provider.
+  pub const LOCAL: &'static str = "__local__";
 
+  /// Constructor for [Entity::Component].
   pub fn component<T: AsRef<str>, U: AsRef<str>>(ns: T, name: U) -> Self {
     Self::Component(ns.as_ref().to_owned(), name.as_ref().to_owned())
   }
 
+  /// Constructor for [Entity::Component] on the local namespace, used when
+  /// the namespace is irrelevant. Caution: this is not portable.
+  pub fn local_component<T: AsRef<str>>(name: T) -> Self {
+    Self::Component(Self::LOCAL.to_owned(), name.as_ref().to_owned())
+  }
+
   /// Constructor for [Entity::Component] without a namespace, used when
   /// the namespace is irrelevant. Caution: this is not portable.
+  #[deprecated(note = "please use `local_component()` instead")]
   pub fn component_direct<T: AsRef<str>>(name: T) -> Self {
-    Self::Component("__direct".to_owned(), name.as_ref().to_owned())
+    Self::Component(Self::LOCAL.to_owned(), name.as_ref().to_owned())
   }
 
   /// Constructor for Entity::System.
@@ -193,6 +202,22 @@ impl Entity {
       Entity::Test(_) => "test",
       Entity::Schematic(name) => name,
       Entity::Component(_, id) => id,
+      Entity::Provider(name) => name,
+      Entity::Client(id) => id,
+      Entity::Host(id) => id,
+      Entity::System(e) => &e.name,
+      Entity::Invalid => "<invalid>",
+      Entity::Reference(id) => id,
+    }
+  }
+
+  /// The namespace for the entity.
+  #[must_use]
+  pub fn namespace(&self) -> &str {
+    match self {
+      Entity::Test(_) => "test",
+      Entity::Schematic(name) => name,
+      Entity::Component(ns, _) => ns,
       Entity::Provider(name) => name,
       Entity::Client(id) => id,
       Entity::Host(id) => id,

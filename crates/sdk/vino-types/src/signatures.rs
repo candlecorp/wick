@@ -16,6 +16,16 @@ pub struct ComponentSignature {
   pub outputs: TypeMap,
 }
 
+impl ComponentSignature {
+  /// Create a new [ComponentSignature] with the passed name.
+  pub fn new<T: AsRef<str>>(name: T) -> Self {
+    Self {
+      name: name.as_ref().to_owned(),
+      ..Default::default()
+    }
+  }
+}
+
 /// Signature for Providers.
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
 #[must_use]
@@ -23,12 +33,21 @@ pub struct ProviderSignature {
   /// Name of the provider.
   pub name: Option<String>,
   /// A map of type signatures referenced elsewhere.
+  #[serde(default, skip_serializing_if = "StructMap::is_empty")]
   pub types: StructMap,
   /// A list of [ComponentSignature]s the provider hosts.
   pub components: ComponentMap,
 }
 
 impl ProviderSignature {
+  /// Create a new [ProviderSignature] with the passed name.
+  pub fn new<T: AsRef<str>>(name: T) -> Self {
+    Self {
+      name: Some(name.as_ref().to_owned()),
+      ..Default::default()
+    }
+  }
+
   #[must_use]
   /// Get the [ProviderSignature] for the requested field.
   pub fn get_component<T: AsRef<str>>(&self, field: T) -> Option<&ComponentSignature> {
@@ -102,8 +121,8 @@ pub enum TypeSignature {
   Raw,
   /// Any valid value.
   Value,
-  /// A full set of component inputs.
-  ComponentInput,
+  /// An internal type.
+  Internal(InternalType),
   /// A reference to another type.
   Ref {
     #[serde(rename = "ref")]
@@ -164,7 +183,27 @@ impl FromStr for TypeSignature {
       "value" => Self::Value,
       "string" => Self::String,
       "datetime" => Self::Datetime,
-      "__input__" => Self::ComponentInput,
+      _ => return Err(ParseError(s.to_owned())),
+    };
+    Ok(t)
+  }
+}
+
+/// Internal types for use within the Vino runtime
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Copy)]
+#[serde(tag = "id")]
+pub enum InternalType {
+  /// Represents a complete set of component inputs
+  #[serde(rename = "__input__")]
+  ComponentInput,
+}
+
+impl FromStr for InternalType {
+  type Err = ParseError;
+
+  fn from_str(s: &str) -> Result<Self, Self::Err> {
+    let t = match s {
+      "component_input" => Self::ComponentInput,
       _ => return Err(ParseError(s.to_owned())),
     };
     Ok(t)
