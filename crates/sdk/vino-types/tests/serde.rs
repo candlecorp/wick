@@ -36,7 +36,7 @@ fn test_deserialize2() -> Result<()> {
   Ok(())
 }
 
-#[test_env_log::test]
+#[test_log::test]
 fn test_serde_all() -> Result<()> {
   let types: Vec<TypeSignature> = vec![
     TypeSignature::Bool,

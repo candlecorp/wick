@@ -75,11 +75,13 @@ impl Invocation {
   }
 
   /// Get the seed associated with an invocation if it exists.
+  #[must_use]
   pub fn seed(&self) -> Option<u64> {
     self.inherent.map(|i| i.seed)
   }
 
   /// Get the timestamp associated with an invocation if it exists.
+  #[must_use]
   pub fn timestamp(&self) -> Option<u64> {
     self.inherent.map(|i| i.timestamp)
   }
@@ -99,6 +101,7 @@ impl Invocation {
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy)]
 /// Data inherent to an invocation. Meant to be supplied by a runtime, not a user.
+#[must_use]
 pub struct InherentData {
   /// The seed to associate with an invocation.
   pub seed: u64,

@@ -83,6 +83,7 @@ impl TransportWrapper {
   }
 }
 
+#[cfg(feature = "json")]
 impl std::fmt::Display for TransportWrapper {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     write!(f, "{}", self.as_json())
