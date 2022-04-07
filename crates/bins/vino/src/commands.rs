@@ -7,7 +7,12 @@ use clap::{AppSettings, Args, Parser, Subcommand};
 use logger::LoggingOptions;
 
 #[derive(Parser, Debug, Clone)]
-#[clap(global_setting(AppSettings::DeriveDisplayOrder), name = "vino", about = "Vino host")]
+#[clap(
+  global_setting(AppSettings::DeriveDisplayOrder),
+  name = crate::BIN_NAME,
+  about = "Vino host",
+  version = option_env!("VINO_VERSION").unwrap_or("0.0.0")
+)]
 pub(crate) struct Cli {
   #[clap(subcommand)]
   pub(crate) command: CliCommand,

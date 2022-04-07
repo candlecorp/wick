@@ -15,8 +15,11 @@ use logger::LoggingOptions;
 
 #[derive(Parser, Debug, Clone)]
 #[clap(
-     global_setting(AppSettings::DeriveDisplayOrder),
-     name = crate::BIN_NAME, about = "Vino controller")]
+      global_setting(AppSettings::DeriveDisplayOrder),
+      name = crate::BIN_NAME,
+      about = "Vino controller",
+      version = option_env!("VINOC_VERSION").unwrap_or("0.0.0")
+    )]
 pub(crate) struct Cli {
   #[clap(subcommand)]
   pub(crate) command: CliCommand,
