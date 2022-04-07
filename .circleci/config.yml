@@ -7,11 +7,6 @@ data:
     docker: &AUTH
       username: $DOCKERHUB_USER
       password: $DOCKERHUB_PASSWORD
-  build-filter: &BUILD_FILTER
-    branches:
-      ignore: /.*/
-    tags:
-      only: &BUILD_TAG /build-\d\d\d\d-\d\d-\d\d/
   architectures: &ARCHITECTURES
     - x86_64-unknown-linux-gnu
     - aarch64-unknown-linux-gnu
@@ -168,7 +163,9 @@ jobs:
       - restore_build_cache
       - run:
           name: Build
-          command: "ARCH=<<parameters.arch>> RELEASE=<<parameters.release>> make bins"
+          command: |
+            VERSION="nightly-$(date +%F)"
+            VINO_VERSION=VERSION VOW_VERSION=VERSION VINOC_VERSION=VERSION ARCH=<<parameters.arch>> RELEASE=<<parameters.release>>  make bins
       - save_cache:
           key: artifacts-<<parameters.arch>>-{{ .Environment.CIRCLE_SHA1 }}
           paths:
@@ -209,29 +206,38 @@ jobs:
             make-tarball vino ./build/aarch64-apple-darwin darwin.aarch64 build/artifacts
             make-zip ./build/x86_64-pc-windows-gnu vino.win64 build/artifacts
             cp /home/vino/project/crates/vino/vino-rpc/proto/vino.proto build/artifacts/vino.proto
-            echo << pipeline.git.tag >> > build/artifacts/RELEASE
-            echo << pipeline.git.tag >> > build/RELEASE
+            BUILDTAG="nightly-$(date +%F)"
+            echo $BUILDTAG > build/artifacts/RELEASE
+            echo << pipeline.git.revision	>> > build/artifacts/RELEASE
+            cp build/artifacts/RELEASE build/RELEASE
       - run:
           name: Upload to Azure
           no_output_timeout: 2m
           command: |
             cd /home/circleci/project
-            azcopy copy "build/artifacts/*" "https://vinoreleases.blob.core.windows.net/releases/<< pipeline.git.tag >>/${SharedAccessSignature}" --overwrite=true --from-to=LocalBlob --blob-type Detect --follow-symlinks --put-md5 --follow-symlinks --blob-tags="release=<< pipeline.git.tag >>" --metadata "release=<< pipeline.git.tag >>" --recursive --log-level=INFO
-            azcopy copy build/RELEASE "https://vinoreleases.blob.core.windows.net/releases/RELEASE/<< pipeline.git.tag >>${SharedAccessSignature}" --overwrite=true --from-to=LocalBlob --blob-type Detect --follow-symlinks --put-md5 --follow-symlinks --blob-tags="release=<< pipeline.git.tag >>" --metadata "release=<< pipeline.git.tag >>" --log-level=INFO
+            BUILDTAG="nightly-$(date +%F)"
+            azcopy copy "build/artifacts/*" "https://vinoreleases.blob.core.windows.net/releases/${BUILDTAG}/${SharedAccessSignature}" --overwrite=true --from-to=LocalBlob --blob-type Detect --follow-symlinks --put-md5 --follow-symlinks --blob-tags="release=${BUILDTAG}" --metadata "release=${BUILDTAG}" --recursive --log-level=INFO
+            azcopy copy build/RELEASE "https://vinoreleases.blob.core.windows.net/releases/RELEASE/${BUILDTAG}${SharedAccessSignature}" --overwrite=true --from-to=LocalBlob --blob-type Detect --follow-symlinks --put-md5 --follow-symlinks --blob-tags="release=${BUILDTAG}" --metadata "release=${BUILDTAG}" --log-level=INFO
       - store_artifacts:
           path: ./build/
 
 workflows:
   version: 2
-  # test:
-  #   jobs:
-  #     - test:
-  #         context: build
-  continuous:
+  test:
     jobs:
       - test:
           context: build
-          filters: *BUILD_FILTER
+  nightly:
+    triggers:
+      - schedule:
+          cron: "0 0 * * *"
+          filters:
+            branches:
+              only:
+                - main
+    jobs:
+      - test:
+          context: build
       - build:
           context: build
           matrix:
@@ -239,8 +245,6 @@ workflows:
               arch: *ARCHITECTURES
             alias: release
           requires: [test]
-          filters: *BUILD_FILTER
       - deploy:
           context: build
           requires: [release]
-          filters: *BUILD_FILTER

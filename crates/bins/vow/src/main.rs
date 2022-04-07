@@ -100,18 +100,19 @@ pub(crate) type Result<T> = std::result::Result<T, error::VowError>;
 #[macro_use]
 extern crate tracing;
 
+static BIN_NAME: &str = "vow";
+
 #[derive(Parser, Debug, Clone)]
 #[clap(
-     global_setting(
-      AppSettings::DeriveDisplayOrder
-     ),
-     name = BIN_NAME, about = "Vino WebAssembly Wrapper")]
+      global_setting(AppSettings::DeriveDisplayOrder),
+      name = BIN_NAME,
+      about = "Vino WebAssembly Wrapper",
+      version = option_env!("VOW_VERSION").unwrap_or("0.0.0")
+    )]
 pub(crate) struct Cli {
   #[clap(subcommand)]
   pub(crate) command: commands::CliCommand,
 }
-
-static BIN_NAME: &str = "vow";
 
 #[tokio::main]
 async fn main() {

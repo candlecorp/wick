@@ -98,6 +98,8 @@ use clap::Parser;
 
 use self::commands::{Cli, CliCommand};
 
+static BIN_NAME: &str = "vino";
+
 #[tokio::main]
 async fn main() -> Result<()> {
   let cli = Cli::parse();
