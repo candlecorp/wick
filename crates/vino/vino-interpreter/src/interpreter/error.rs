@@ -25,7 +25,9 @@ pub enum Error {
 pub enum StateError {
   #[error("Payload for port '{0}' missing from input stream")]
   PayloadMissing(String),
-  #[error("Could not find port named '{0}'")]
+  #[error(
+    "Could not find port named '{0}'. This can result from providing more input than a schematic has ports for."
+  )]
   MissingPortName(String),
   #[error("Attempted to access nonexistant provider '{0}'")]
   MissingProvider(String),

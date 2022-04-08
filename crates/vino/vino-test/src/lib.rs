@@ -88,13 +88,14 @@
 use std::collections::HashMap;
 use std::fs::read_to_string;
 use std::path::PathBuf;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use serde::{Deserialize, Serialize};
 use tap::{TestBlock, TestRunner};
 use tokio_stream::StreamExt;
 use vino_entity::Entity;
 use vino_rpc::SharedRpcHandler;
-use vino_transport::{Failure, Invocation, MessageTransport, Success, TransportMap, TransportWrapper};
+use vino_transport::{Failure, InherentData, Invocation, MessageTransport, Success, TransportMap, TransportWrapper};
 
 use self::error::TestError;
 
@@ -178,7 +179,7 @@ pub struct TestData {
   #[serde(default)]
   pub description: String,
   #[serde(default)]
-  pub init_data: HashMap<String, String>,
+  pub seed: Option<u64>,
   #[serde(default)]
   pub inputs: HashMap<String, serde_value::Value>,
   #[serde(default)]
@@ -203,17 +204,29 @@ pub struct SerializedTransport {
 }
 
 impl TestData {
-  pub fn get_payload(&self) -> TransportMap {
+  pub fn get_payload(&self) -> (TransportMap, Option<InherentData>) {
     let mut payload = TransportMap::new();
     for (k, v) in &self.inputs {
       debug!("Test input for port '{}': {:?}", k, v);
       payload.insert(k, MessageTransport::Success(Success::Serialized(v.clone())));
     }
 
-    if !self.init_data.is_empty() {
-      payload.with_config(self.init_data.clone());
+    if let Some(seed) = self.seed {
+      (
+        payload,
+        Some(InherentData::new(
+          seed,
+          SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_millis()
+            .try_into()
+            .unwrap(),
+        )),
+      )
+    } else {
+      (payload, None)
     }
-    payload
   }
 
   #[must_use]
@@ -233,7 +246,7 @@ pub async fn run_test(
   let mut harness = TestRunner::new(Some(name));
 
   for (i, test) in expected.into_iter().enumerate() {
-    let payload = test.get_payload();
+    let (payload, inherent) = test.get_payload();
     let entity = Entity::local_component(test.component.clone());
     let test_name = test.get_description();
     let mut test_block = TestBlock::new(Some(test_name.clone()));
@@ -241,7 +254,7 @@ pub async fn run_test(
 
     trace!(i, %entity, "invoke");
     trace!(i, ?payload, "payload");
-    let invocation = Invocation::new_test(&test_name, entity, payload, None);
+    let invocation = Invocation::new_test(&test_name, entity, payload, inherent);
     let result = provider
       .invoke(invocation)
       .await
@@ -259,7 +272,10 @@ pub async fn run_test(
 
     let stream = result.unwrap();
 
-    let outputs: Vec<_> = stream.collect().await;
+    let outputs: Vec<_> = stream
+      .filter(|msg| !matches!(msg.payload, MessageTransport::Signal(_)))
+      .collect()
+      .await;
     test.actual = outputs;
     let mut diagnostics = vec!["Output: ".to_owned()];
     let mut output_lines: Vec<_> = test.actual.iter().map(|o| format!("{:?}", o)).collect();
@@ -268,11 +284,14 @@ pub async fn run_test(
 
     for (j, expected) in test.outputs.iter().cloned().enumerate() {
       if j >= test.actual.len() {
-        test_block.add_test(
-          || false,
-          prefix("stream_length"),
-          Some(vec!["Test data included more output than component produced".to_owned()]),
-        );
+        let diag = Some(vec![
+          format!("Trying to test output {:?}", expected),
+          format!(
+            "But component did not produce any more output. Component produced {} total packets.",
+            test.actual.len()
+          ),
+        ]);
+        test_block.add_test(|| false, prefix("stream_length"), diag);
         break;
       }
       let actual = &test.actual[j];
