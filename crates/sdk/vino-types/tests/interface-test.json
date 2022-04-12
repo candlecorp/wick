@@ -85,6 +85,19 @@
           "type": "string"
         }
       }
+    },
+    "map": {
+      "name": "map",
+      "inputs": {
+        "input": {
+          "type": "struct"
+        }
+      },
+      "outputs": {
+        "output": {
+          "type": "struct"
+        }
+      }
     }
   }
 }
