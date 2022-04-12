@@ -59,9 +59,7 @@ message ListRequest {}
 message ListResponse { repeated HostedType schemas = 1; }
 
 message HostedType {
-  oneof type {
-    ProviderSignature provider = 1;
-  }
+  oneof type { ProviderSignature provider = 1; }
 }
 
 message Component {
@@ -89,7 +87,7 @@ message Statistic {
   uint32 runs = 2;
   uint32 errors = 3;
   DurationStatistics execution_statistics = 4;
- }
+}
 
 message DurationStatistics {
   uint64 min = 1;
@@ -111,6 +109,7 @@ message TypeSignature {
     RefType ref = 5;
     LinkType link = 6;
     InternalType internal = 7;
+    StructType struct = 8;
   }
 }
 
@@ -136,27 +135,19 @@ message SimpleType {
   WidlType type = 1;
 }
 
-enum InternalType {
-  ComponentInput = 0;
-}
+enum InternalType { ComponentInput = 0; }
 
-message RefType {
-  string ref = 1;
-}
+message RefType { string ref = 1; }
 
-message LinkType {
-  string provider = 1;
-}
+message StructType {}
+
+message LinkType { string provider = 1; }
 
 message MapType {
   TypeSignature keyType = 1;
   TypeSignature valueType = 2;
 }
 
-message ListType {
-  TypeSignature type = 1;
-}
+message ListType { TypeSignature type = 1; }
 
-message OptionalType {
-  TypeSignature type = 1;
-}
+message OptionalType { TypeSignature type = 1; }
