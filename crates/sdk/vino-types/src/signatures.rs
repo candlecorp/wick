@@ -146,11 +146,13 @@ pub enum TypeSignature {
     /// The type of the map's values.
     value: Box<TypeSignature>,
   },
-  /// A type representing a ProviderLink
+  /// A type representing a ProviderLink.
   Link {
-    /// The provider ID
+    /// The provider ID.
     provider: Option<String>,
   },
+  /// A JSON-like key/value map.
+  Struct,
 }
 #[derive(Debug)]
 /// Error returned when attempting to convert an invalid string into a [TypeSignature].
