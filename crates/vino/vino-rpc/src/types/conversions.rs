@@ -10,7 +10,7 @@ use vino_transport::TransportMap;
 use vino_types::{self as vino, MapWrapper};
 
 use crate::error::RpcError;
-use crate::rpc::InternalType;
+use crate::rpc::{InternalType, StructType};
 use crate::{rpc, DurationStatistics};
 
 type Result<T> = std::result::Result<T, RpcError>;
@@ -283,6 +283,7 @@ impl TryFrom<vino::TypeSignature> for rpc::TypeSignature {
       vino::TypeSignature::Link { provider } => Signature::Link(LinkType {
         provider: provider.unwrap_or_default(),
       }),
+      vino::TypeSignature::Struct => Signature::Struct(StructType {}),
     };
     Ok(Self { signature: Some(sig) })
   }
@@ -359,6 +360,7 @@ impl TryFrom<rpc::TypeSignature> for vino::TypeSignature {
             None => todo!(),
           }
         }
+        Signature::Struct(_) => DestType::Struct,
       },
       None => return err,
     };

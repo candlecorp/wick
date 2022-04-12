@@ -155,7 +155,7 @@ pub struct StructSignature {
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TypeSignature {
-    #[prost(oneof="type_signature::Signature", tags="1, 2, 3, 4, 5, 6, 7")]
+    #[prost(oneof="type_signature::Signature", tags="1, 2, 3, 4, 5, 6, 7, 8")]
     pub signature: ::core::option::Option<type_signature::Signature>,
 }
 /// Nested message and enum types in `TypeSignature`.
@@ -176,6 +176,8 @@ pub mod type_signature {
         Link(super::LinkType),
         #[prost(enumeration="super::InternalType", tag="7")]
         Internal(i32),
+        #[prost(message, tag="8")]
+        Struct(super::StructType),
     }
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -210,6 +212,9 @@ pub mod simple_type {
 pub struct RefType {
     #[prost(string, tag="1")]
     pub r#ref: ::prost::alloc::string::String,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct StructType {
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct LinkType {
