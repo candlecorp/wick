@@ -264,7 +264,6 @@ impl TryFrom<vino::TypeSignature> for rpc::TypeSignature {
       vino::TypeSignature::String => WidlType::String.into(),
       vino::TypeSignature::Datetime => WidlType::Datetime.into(),
       vino::TypeSignature::Bytes => WidlType::Bytes.into(),
-      vino::TypeSignature::Raw => WidlType::Raw.into(),
       vino::TypeSignature::Value => WidlType::Value.into(),
       vino::TypeSignature::Internal(t) => match t {
         vino::InternalType::ComponentInput => Signature::Internal(InternalType::ComponentInput.into()),
@@ -280,9 +279,7 @@ impl TryFrom<vino::TypeSignature> for rpc::TypeSignature {
         key_type: Some(key.try_into()?),
         value_type: Some(value.try_into()?),
       })),
-      vino::TypeSignature::Link { provider } => Signature::Link(LinkType {
-        provider: provider.unwrap_or_default(),
-      }),
+      vino::TypeSignature::Link { schemas } => Signature::Link(LinkType { schemas }),
       vino::TypeSignature::Struct => Signature::Struct(StructType {}),
     };
     Ok(Self { signature: Some(sig) })
@@ -304,20 +301,22 @@ impl TryFrom<rpc::TypeSignature> for vino::TypeSignature {
           match t {
             Some(t) => match t {
               WidlType::I8 => DestType::I8,
-              WidlType::U8 => DestType::U8,
               WidlType::I16 => DestType::I16,
-              WidlType::U16 => DestType::U16,
               WidlType::I32 => DestType::I32,
-              WidlType::U32 => DestType::U32,
               WidlType::I64 => DestType::I64,
+
+              WidlType::U8 => DestType::U8,
+              WidlType::U16 => DestType::U16,
+              WidlType::U32 => DestType::U32,
               WidlType::U64 => DestType::U64,
+
               WidlType::F32 => DestType::F32,
               WidlType::F64 => DestType::F64,
+
               WidlType::Bool => DestType::Bool,
               WidlType::String => DestType::String,
               WidlType::Datetime => DestType::Datetime,
               WidlType::Bytes => DestType::Bytes,
-              WidlType::Raw => DestType::Raw,
               WidlType::Value => DestType::Value,
             },
             None => return err,
@@ -348,9 +347,7 @@ impl TryFrom<rpc::TypeSignature> for vino::TypeSignature {
         Signature::Ref(reference) => DestType::Ref {
           reference: reference.r#ref,
         },
-        Signature::Link(link) => DestType::Link {
-          provider: (!link.provider.is_empty()).then(|| link.provider),
-        },
+        Signature::Link(link) => DestType::Link { schemas: link.schemas },
         Signature::Internal(t) => {
           let t = InternalType::from_i32(t);
           match t {

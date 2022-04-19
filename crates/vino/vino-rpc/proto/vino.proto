@@ -129,7 +129,6 @@ message SimpleType {
     STRING = 11;
     DATETIME = 12;
     BYTES = 13;
-    RAW = 14;
     VALUE = 15;
   }
   WidlType type = 1;
@@ -141,7 +140,7 @@ message RefType { string ref = 1; }
 
 message StructType {}
 
-message LinkType { string provider = 1; }
+message LinkType { repeated string schemas = 1; }
 
 message MapType {
   TypeSignature keyType = 1;

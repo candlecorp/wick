@@ -204,7 +204,6 @@ pub mod simple_type {
         String = 11,
         Datetime = 12,
         Bytes = 13,
-        Raw = 14,
         Value = 15,
     }
 }
@@ -218,8 +217,8 @@ pub struct StructType {
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct LinkType {
-    #[prost(string, tag="1")]
-    pub provider: ::prost::alloc::string::String,
+    #[prost(string, repeated, tag="1")]
+    pub schemas: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MapType {
