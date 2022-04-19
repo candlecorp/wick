@@ -23,7 +23,7 @@ use crate::graph::types::*;
 use crate::interpreter::channel::InterpreterChannel;
 use crate::interpreter::provider::provider_provider::ProviderProvider;
 use crate::interpreter::provider::schematic_provider::SchematicProvider;
-use crate::{ExecutionError, InterpreterDispatchChannel, Observer, Provider, ProviderNamespace};
+use crate::{ExecutionError, InterpreterDispatchChannel, NamespaceHandler, Observer, Provider};
 
 #[must_use]
 #[derive()]
@@ -60,16 +60,17 @@ impl Interpreter {
   ) -> Result<Self, Error> {
     debug!("init");
     let rng = seed.map_or_else(Random::new, Random::from_seed);
-    let mut providers = providers.unwrap_or_default();
+    let mut handlers = providers.unwrap_or_default();
+    handlers.add_core(&network);
 
     // Add the provider:: provider
-    let provider_provider = ProviderProvider::new(&providers);
-    providers.add(ProviderNamespace {
+    let provider_provider = ProviderProvider::new(&handlers);
+    handlers.add(NamespaceHandler {
       namespace: NS_PROVIDERS.to_owned(),
       provider: Arc::new(Box::new(provider_provider)),
     });
 
-    let signatures = providers.provider_signatures();
+    let signatures = handlers.provider_signatures();
 
     let program = Program::new(network, signatures)?;
 
@@ -79,7 +80,7 @@ impl Interpreter {
     let dispatcher = channel.dispatcher();
 
     // Make the self:: provider
-    let providers = Arc::new(providers);
+    let providers = Arc::new(handlers);
     let self_provider = SchematicProvider::new(providers.clone(), program.state(), &dispatcher, rng.seed());
     let self_signature = self_provider.list().clone();
 

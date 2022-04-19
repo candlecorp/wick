@@ -4185,6 +4185,7 @@ dependencies = [
  "performance-mark",
  "rand 0.8.5",
  "serde",
+ "serde-value",
  "serde_json",
  "test-logger",
  "thiserror",

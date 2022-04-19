@@ -16,8 +16,12 @@ pub enum ExecutionError {
   HungTransaction(Uuid),
   #[error("Transaction '{0}' missing")]
   MissingTx(Uuid),
-  #[error("Sender configuration did not include valid data")]
-  InvalidSenderData,
   #[error("{0}")]
   ProviderError(String),
+
+  #[error("Sender configuration did not include valid data")]
+  InvalidSenderData,
+
+  #[error("Configuration for dynamic merge component invalid")]
+  InvalidMergeConfig,
 }

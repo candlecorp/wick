@@ -8,7 +8,7 @@ use test::{JsonWriter, TestProvider};
 use tokio_stream::StreamExt;
 use vino_entity::Entity;
 use vino_interpreter::graph::from_def;
-use vino_interpreter::{BoxError, HandlerMap, Interpreter, Provider, ProviderNamespace};
+use vino_interpreter::{BoxError, HandlerMap, Interpreter, NamespaceHandler, Provider};
 use vino_manifest::Loadable;
 use vino_random::Seed;
 use vino_transport::{Invocation, MessageTransport, TransportMap, TransportStream};
@@ -32,7 +32,7 @@ fn load<T: AsRef<Path>>(path: T) -> Result<vino_manifest::HostManifest> {
 async fn test_invoke_provider() -> Result<()> {
   let manifest = load("./tests/manifests/v0/external.yaml")?;
   let network = from_def(&manifest.network().try_into()?)?;
-  let providers = HandlerMap::new(vec![ProviderNamespace::new("test", Box::new(TestProvider::new()))]);
+  let providers = HandlerMap::new(vec![NamespaceHandler::new("test", Box::new(TestProvider::new()))]);
 
   let inputs = TransportMap::from([("input", "Hello world".to_owned())]);
 

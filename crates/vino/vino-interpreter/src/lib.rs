@@ -100,7 +100,7 @@ pub use interpreter::executor::transaction::statistics::TransactionStatistics;
 pub use interpreter::executor::transaction::Transaction;
 pub use interpreter::executor::SchematicExecutor;
 pub use interpreter::provider::internal_provider::oneshot::OneShotComponent;
-pub use interpreter::provider::{Component, HandlerMap, Provider, ProviderNamespace};
+pub use interpreter::provider::{Component, HandlerMap, NamespaceHandler, Provider};
 pub use interpreter::{Interpreter, InterpreterOptions};
 
 pub use crate::interpreter::program::validator::error::{SchematicInvalid, ValidationError};

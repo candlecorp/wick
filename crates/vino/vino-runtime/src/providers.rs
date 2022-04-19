@@ -6,7 +6,7 @@ use std::str::FromStr;
 use std::sync::Arc;
 
 use futures::future::BoxFuture;
-use vino_interpreter::ProviderNamespace;
+use vino_interpreter::NamespaceHandler;
 use vino_provider_wasm::error::LinkError;
 use vino_random::{Random, Seed};
 
@@ -22,7 +22,7 @@ pub(crate) trait InvocationHandler {
 
 type Result<T> = std::result::Result<T, ProviderError>;
 
-type ProviderInitResult = Result<ProviderNamespace>;
+type ProviderInitResult = Result<NamespaceHandler>;
 
 #[instrument(skip(provider, opts))]
 pub(crate) async fn initialize_par_provider(
@@ -43,7 +43,7 @@ pub(crate) async fn initialize_par_provider(
 
   let service = NativeProviderService::new(Arc::new(service));
 
-  Ok(ProviderNamespace::new(namespace, Box::new(service)))
+  Ok(NamespaceHandler::new(namespace, Box::new(service)))
 }
 
 #[instrument(skip(provider))]
@@ -54,7 +54,7 @@ pub(crate) async fn initialize_grpc_provider(provider: &ProviderDefinition, name
 
   let service = NativeProviderService::new(Arc::new(service));
 
-  Ok(ProviderNamespace::new(namespace, Box::new(service)))
+  Ok(NamespaceHandler::new(namespace, Box::new(service)))
 }
 
 #[instrument(skip(provider, opts))]
@@ -100,7 +100,7 @@ pub(crate) async fn initialize_wasm_provider(
 
   let service = NativeProviderService::new(provider);
 
-  Ok(ProviderNamespace::new(namespace, Box::new(service)))
+  Ok(NamespaceHandler::new(namespace, Box::new(service)))
 }
 
 #[instrument(skip(provider, opts))]
@@ -123,7 +123,7 @@ pub(crate) async fn initialize_network_provider(
 
   let service = NativeProviderService::new(provider);
 
-  Ok(ProviderNamespace::new(namespace, Box::new(service)))
+  Ok(NamespaceHandler::new(namespace, Box::new(service)))
 }
 
 #[instrument(skip(provider, opts))]
@@ -146,7 +146,7 @@ pub(crate) async fn initialize_lattice_provider(
 
   let service = NativeProviderService::new(provider);
 
-  Ok(ProviderNamespace::new(namespace, Box::new(service)))
+  Ok(NamespaceHandler::new(namespace, Box::new(service)))
 }
 
 #[instrument(skip(seed))]
@@ -155,5 +155,5 @@ pub(crate) fn initialize_native_provider(namespace: String, seed: Seed) -> Provi
   let provider = Arc::new(vino_stdlib::Provider::new(seed));
   let service = NativeProviderService::new(provider);
 
-  Ok(ProviderNamespace::new(namespace, Box::new(service)))
+  Ok(NamespaceHandler::new(namespace, Box::new(service)))
 }

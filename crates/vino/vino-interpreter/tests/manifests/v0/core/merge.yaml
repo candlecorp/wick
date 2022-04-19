@@ -1,0 +1,23 @@
+# yaml-language-server: $schema=https://vino.dev/schemas/manifest/v0.json
+version: 0
+network:
+  schematics:
+    - name: test
+      instances:
+        AGGR:
+          id: core::merge
+          data:
+            inputs:
+              one:
+                type: string
+              two:
+                type: i32
+              three:
+                type: list
+                element:
+                  type: string
+      connections:
+        - <>[schem_one] => AGGR[one]
+        - <>[schem_two] => AGGR[two]
+        - <>[schem_three] => AGGR[three]
+        - AGGR[output] => <>[schem_out]

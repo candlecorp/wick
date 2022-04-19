@@ -9,6 +9,7 @@ use crate::graph::types::*;
 
 pub(crate) mod validator;
 use super::error::Error;
+use super::provider::get_id;
 use crate::ValidationError;
 
 #[must_use]
@@ -122,7 +123,7 @@ fn get_schematic_signature(
       let signature = match hop {
         SchematicHop::Port(p) => {
           if p.direction() == PortDirection::In {
-            let signature = get_signature(&p, PortDirection::In, providers)?;
+            let signature = get_signature(schematic.name(), &p, PortDirection::In, providers)?;
             match signature {
               Some(sig) => sig,
               None => continue,
@@ -142,7 +143,7 @@ fn get_schematic_signature(
       let signature = match hop {
         SchematicHop::Port(p) => {
           if p.direction() == PortDirection::Out {
-            let signature = get_signature(&p, PortDirection::Out, providers)?;
+            let signature = get_signature(schematic.name(), &p, PortDirection::Out, providers)?;
             match signature {
               Some(sig) => sig,
               None => continue,
@@ -160,6 +161,7 @@ fn get_schematic_signature(
 }
 
 fn get_signature(
+  schematic: &str,
   p: &Port,
   kind: PortDirection,
   providers: &ProviderMap,
@@ -168,23 +170,28 @@ fn get_signature(
   match p.component().kind() {
     ComponentKind::Input(_) => match kind {
       PortDirection::In => Ok(None),
-      PortDirection::Out => Ok(Some(TypeSignature::Raw)),
+      PortDirection::Out => Ok(Some(TypeSignature::Value)),
     },
 
     ComponentKind::Output(_) => match kind {
       PortDirection::Out => Ok(None),
-      PortDirection::In => Ok(Some(TypeSignature::Raw)),
+      PortDirection::In => Ok(Some(TypeSignature::Value)),
     },
     ComponentKind::External(ext) | ComponentKind::Inherent(ext) => {
       let ext_provider = providers
         .get(ext.namespace())
         .ok_or_else(|| ValidationError::MissingProvider(ext.namespace().to_owned()))?;
+
+      let component = p.component();
+
+      let id = get_id(ext.namespace(), ext.name(), schematic, component.name());
+
       let component = ext_provider
         .components
-        .get(ext.name())
+        .get(&id)
         .ok_or(ValidationError::MissingComponent {
-          name: ext.name().to_owned(),
           namespace: ext.namespace().to_owned(),
+          name: id.clone(),
         })?;
 
       let sig = match kind {

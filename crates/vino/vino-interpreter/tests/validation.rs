@@ -11,8 +11,8 @@ use vino_interpreter::{
   HandlerMap,
   Interpreter,
   InterpreterError,
+  NamespaceHandler,
   Provider,
-  ProviderNamespace,
   SchematicInvalid,
   ValidationError,
 };
@@ -54,13 +54,13 @@ async fn test_missing_component() -> Result<()> {
   let network = from_def(&manifest.network().try_into()?)?;
 
   let sig = ProviderSignature::default();
-  let providers = HandlerMap::new(vec![ProviderNamespace::new("test", Box::new(SignatureProvider(sig)))]);
+  let providers = HandlerMap::new(vec![NamespaceHandler::new("test", Box::new(SignatureProvider(sig)))]);
 
   let result: std::result::Result<Interpreter, _> =
     Interpreter::new(Some(Seed::unsafe_new(1)), network, None, Some(providers));
   let validation_errors = ValidationError::MissingComponent {
-    name: "echo".to_owned(),
     namespace: "test".to_owned(),
+    name: "echo".to_owned(),
   };
   if let Err(e) = result {
     assert_eq!(e, InterpreterError::EarlyError(validation_errors));
@@ -85,7 +85,7 @@ async fn test_invalid_port() -> Result<()> {
     }
   }))
   .unwrap();
-  let providers = HandlerMap::new(vec![ProviderNamespace::new("test", Box::new(SignatureProvider(sig)))]);
+  let providers = HandlerMap::new(vec![NamespaceHandler::new("test", Box::new(SignatureProvider(sig)))]);
 
   let result: std::result::Result<Interpreter, _> =
     Interpreter::new(Some(Seed::unsafe_new(1)), network, None, Some(providers));
@@ -126,7 +126,7 @@ async fn test_missing_port() -> Result<()> {
     }
   }))
   .unwrap();
-  let providers = HandlerMap::new(vec![ProviderNamespace::new("test", Box::new(SignatureProvider(sig)))]);
+  let providers = HandlerMap::new(vec![NamespaceHandler::new("test", Box::new(SignatureProvider(sig)))]);
 
   let result: std::result::Result<Interpreter, _> =
     Interpreter::new(Some(Seed::unsafe_new(1)), network, None, Some(providers));

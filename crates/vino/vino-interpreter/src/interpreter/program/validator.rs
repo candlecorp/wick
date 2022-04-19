@@ -5,6 +5,7 @@ use self::error::{SchematicInvalid, ValidationError};
 use super::Program;
 use crate::constants::CORE_ID_SENDER;
 use crate::graph::Reference;
+use crate::interpreter::provider::get_id;
 
 pub(crate) mod error;
 
@@ -30,11 +31,20 @@ impl Validator {
             continue;
           }
           let provider = provider.unwrap();
-          let component_def = provider.components.get(reference.name());
+
+          let id = get_id(
+            reference.namespace(),
+            reference.name(),
+            schematic.name(),
+            component.id(),
+          );
+
+          let component_def = provider.components.get(&id);
+
           if component_def.is_none() {
             validation_errors.push(ValidationError::MissingComponent {
-              name: reference.name().to_owned(),
               namespace: reference.namespace().to_owned(),
+              name: id.clone(),
             });
             continue;
           }

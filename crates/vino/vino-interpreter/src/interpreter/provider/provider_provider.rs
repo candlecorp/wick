@@ -23,12 +23,9 @@ impl ProviderProvider {
     let mut signature = ProviderSignature::new("providers");
     for ns in list.providers().keys() {
       let mut comp_sig = ComponentSignature::new(ns.clone());
-      comp_sig.outputs.insert(
-        "ref",
-        vino_types::TypeSignature::Link {
-          provider: Some(ns.clone()),
-        },
-      );
+      comp_sig
+        .outputs
+        .insert("ref", vino_types::TypeSignature::Link { schemas: vec![] });
       signature.components.insert(ns.clone(), comp_sig);
     }
     Self { signature }

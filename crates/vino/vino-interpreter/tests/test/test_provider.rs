@@ -123,6 +123,15 @@ impl TestProvider {
             "outputs": {
               "output": {"type":"string"},
             }
+          },
+          "render": {
+            "name": "render",
+            "inputs": {
+              "input": {"type":"string"},
+            },
+            "outputs": {
+              "output": {"type":"string"},
+            }
           }
         }
     }))

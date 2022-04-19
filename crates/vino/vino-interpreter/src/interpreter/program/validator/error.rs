@@ -2,24 +2,30 @@
 pub enum ValidationError {
   #[error("Unused sender: {0}")]
   UnusedSender(String),
+
   #[error("Network contains circular references: {:?}", .0)]
   NetworkUnresolvable(Vec<String>),
+
   #[error("Missing provider namespace '{0}'")]
   MissingProvider(String),
+
   #[error("Missing component '{name}' on namespace '{namespace}'")]
   MissingComponent { namespace: String, name: String },
+
   #[error("Invalid port '{port}' on component '{namespace}::{component}'")]
   InvalidPort {
     port: String,
     namespace: String,
     component: String,
   },
+
   #[error("Input port '{port}' on component '{namespace}::{component}' not connected to anything")]
   MissingConnection {
     port: String,
     namespace: String,
     component: String,
   },
+
   #[error("Unused output port '{port}' on component '{namespace}::{component}'")]
   UnusedOutput {
     port: String,

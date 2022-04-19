@@ -9,7 +9,7 @@ use futures::future::BoxFuture;
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
 use uuid::Uuid;
-use vino_interpreter::{HandlerMap, ProviderNamespace};
+use vino_interpreter::{HandlerMap, NamespaceHandler};
 use vino_lattice::Lattice;
 use vino_manifest::HostDefinition;
 use vino_random::{Random, Seed};
@@ -179,7 +179,7 @@ pub(crate) struct ProviderInitOptions {
 pub(crate) async fn initialize_provider(
   provider: &ProviderDefinition,
   opts: ProviderInitOptions,
-) -> Result<ProviderNamespace> {
+) -> Result<NamespaceHandler> {
   let namespace = provider.namespace.clone();
 
   let result = match provider.kind {

@@ -8,7 +8,7 @@ use test::{JsonWriter, TestProvider};
 use tokio_stream::StreamExt;
 use vino_entity::Entity;
 use vino_interpreter::graph::from_def;
-use vino_interpreter::{HandlerMap, Interpreter, InterpreterOptions, ProviderNamespace};
+use vino_interpreter::{HandlerMap, Interpreter, InterpreterOptions, NamespaceHandler};
 use vino_manifest::Loadable;
 use vino_random::Seed;
 use vino_transport::{Invocation, MessageTransport, TransportMap};
@@ -26,7 +26,7 @@ const OPTIONS: Option<InterpreterOptions> = Some(InterpreterOptions {
 async fn test_panic() -> Result<()> {
   let manifest = load("./tests/manifests/v0/bad-cases/panic.yaml")?;
   let network = from_def(&manifest.network().try_into()?)?;
-  let providers = HandlerMap::new(vec![ProviderNamespace::new("test", Box::new(TestProvider::new()))]);
+  let providers = HandlerMap::new(vec![NamespaceHandler::new("test", Box::new(TestProvider::new()))]);
   let inputs = TransportMap::from([("input", "Hello world".to_owned())]);
 
   let invocation = Invocation::new_test("panic", Entity::schematic("test"), inputs, None);
@@ -50,7 +50,7 @@ async fn test_panic() -> Result<()> {
 async fn test_timeout_done_noclose() -> Result<()> {
   let manifest = load("./tests/manifests/v0/bad-cases/timeout-done-noclose.yaml")?;
   let network = from_def(&manifest.network().try_into()?)?;
-  let providers = HandlerMap::new(vec![ProviderNamespace::new("test", Box::new(TestProvider::new()))]);
+  let providers = HandlerMap::new(vec![NamespaceHandler::new("test", Box::new(TestProvider::new()))]);
 
   let inputs = TransportMap::from([("input", "hello world".to_owned())]);
   let invocation = Invocation::new_test("timeout", Entity::schematic("test"), inputs, None);
@@ -86,7 +86,7 @@ async fn test_timeout_done_noclose() -> Result<()> {
 async fn test_timeout_missingdone() -> Result<()> {
   let manifest = load("./tests/manifests/v0/bad-cases/timeout-missingdone.yaml")?;
   let network = from_def(&manifest.network().try_into()?)?;
-  let providers = HandlerMap::new(vec![ProviderNamespace::new("test", Box::new(TestProvider::new()))]);
+  let providers = HandlerMap::new(vec![NamespaceHandler::new("test", Box::new(TestProvider::new()))]);
 
   let inputs = TransportMap::from([("input", "hello world".to_owned())]);
   let invocation = Invocation::new_test("timeout-nodone", Entity::schematic("test"), inputs, None);
