@@ -1,0 +1,32 @@
+[package]
+name = "wasmflow-boundary"
+version = "0.9.0"
+edition = "2021"
+license = "BSD-3-Clause"
+description = "SDK for native and WASM Vino components"
+documentation = "https://docs.vino.dev"
+keywords = ["wasm", "vino", "actor", "flow"]
+categories = ["wasm"]
+exclude = ["tests/*", ".github/*", ".gitignore"]
+authors = ["Jarrod Overson <jsoverson@gmail.com>"]
+repository = "https://github.com/vinodotdev/vino-sdk"
+homepage = "https://docs.vino.dev"
+
+[badges]
+maintenance = { status = "actively-developed" }
+
+[features]
+v1 = []
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+wasmflow-codec = { path = "../wasmflow-codec", version = "0.9.0" }
+
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+wasmflow-invocation = { path = "../wasmflow-invocation", version = "0.9.0" }
+wasmflow-packet = { path = "../wasmflow-packet", version = "0.9.0" }
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+
+[dev-dependencies]

@@ -1,6 +1,6 @@
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
-use vino_packet::PacketWrapper;
+use wasmflow_packet::PacketWrapper;
 
 use crate::error::TransportError;
 use crate::{MessageTransport, SYSTEM_ID};
@@ -35,7 +35,7 @@ impl TransportWrapper {
     Self::new(SYSTEM_ID, MessageTransport::done())
   }
 
-  /// Returns true if the [TransportWrapper] is a system message with the payload of [MessageSignal::Done].
+  /// Returns true if the [TransportWrapper] is a system message with the payload of [crate::MessageSignal::Done].
   #[must_use]
   pub fn is_system_close(&self) -> bool {
     self.port == SYSTEM_ID && self.payload == MessageTransport::done()
@@ -45,6 +45,12 @@ impl TransportWrapper {
   #[must_use]
   pub fn is_component_error(&self) -> bool {
     self.port == crate::COMPONENT_ERROR
+  }
+
+  /// Returns true if the [TransportWrapper] is a State signal from a component.
+  #[must_use]
+  pub fn is_component_state(&self) -> bool {
+    self.port == wasmflow_packet::PacketWrapper::STATUS
   }
 
   /// Returns Some(&str) if the [TransportWrapper] contains an error, None otherwise.
@@ -70,9 +76,7 @@ impl TransportWrapper {
   }
 
   /// Converts the embedded [MessageTransport] into a [serde_json::Value::Object]
-  /// map of port names to [TransportJson]s
   #[must_use]
-  #[cfg(feature = "json")]
   pub fn as_json(&self) -> serde_json::Value {
     let payload = self.payload.as_json();
 
@@ -83,7 +87,6 @@ impl TransportWrapper {
   }
 }
 
-#[cfg(feature = "json")]
 impl std::fmt::Display for TransportWrapper {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     write!(f, "{}", self.as_json())
@@ -92,6 +95,15 @@ impl std::fmt::Display for TransportWrapper {
 
 impl From<PacketWrapper> for TransportWrapper {
   fn from(p: PacketWrapper) -> Self {
+    Self {
+      port: p.port,
+      payload: p.payload.into(),
+    }
+  }
+}
+
+impl From<TransportWrapper> for PacketWrapper {
+  fn from(p: TransportWrapper) -> Self {
     Self {
       port: p.port,
       payload: p.payload.into(),

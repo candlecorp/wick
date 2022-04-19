@@ -1,19 +1,12 @@
 use std::collections::HashMap;
-use std::convert::TryFrom;
 use std::fmt::Display;
 
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
-#[cfg(feature = "json")]
-use vino_codec::json;
-use vino_codec::messagepack;
-#[cfg(feature = "raw")]
-use vino_codec::raw;
+use wasmflow_codec::{json, messagepack, raw};
 
-#[cfg(feature = "json")]
-use super::transport_json::TransportJson;
 use crate::error::TransportError;
-use crate::{Error, Failure, MessageTransport, Success, TransportWrapper};
+use crate::{Error, MessageTransport, Serialized, TransportWrapper};
 pub(crate) type Result<T> = std::result::Result<T, TransportError>;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
@@ -22,65 +15,51 @@ pub(crate) type Result<T> = std::result::Result<T, TransportError>;
 pub struct TransportMap(HashMap<String, MessageTransport>, Option<HashMap<String, String>>);
 
 impl TransportMap {
-  /// Constructor for [TransportMap] with initial map
-  pub fn from_map(map: HashMap<String, MessageTransport>) -> Self {
-    Self(map, None)
-  }
-
-  /// Constructor for an empty [TransportMap]
-  pub fn new() -> Self {
-    Self(HashMap::new(), None)
-  }
-
-  /// Add a configuration payload to the [TransportMap].
-  pub fn with_config(&mut self, map: HashMap<String, String>) {
-    self.1 = Some(map);
-  }
+  wasmflow_macros::kv_impl! {MessageTransport, pub}
 
   /// Add a configuration payload to the [TransportMap].
   #[must_use]
-  pub fn get_config(&self) -> &Option<HashMap<String, String>> {
-    &self.1
+  pub fn into_v1_map(self) -> wasmflow_packet::v1::PacketMap {
+    let mut map = wasmflow_packet::v1::PacketMap::default();
+    for (k, v) in self.0 {
+      map.insert(k, v.into());
+    }
+    map
   }
 
   /// Deserialize a CLI output JSON Object into a [TransportMap].
-  #[cfg(feature = "json")]
   pub fn from_json_output(json: &str) -> Result<Self> {
     if json.trim() == "" {
-      Ok(TransportMap::new())
+      Ok(TransportMap::default())
     } else {
-      let json: HashMap<String, TransportJson> = json::deserialize(json).map_err(de_err)?;
-      Ok(TransportMap::from_map(
-        json.into_iter().map(|(name, val)| (name, val.into())).collect(),
-      ))
+      let json: HashMap<String, super::transport_json::TransportJson> = json::deserialize(json)?;
+      Ok(json.into_iter().map(|(name, val)| (name, val.into())).collect())
     }
   }
 
   /// Deserialize a JSON Object into a [TransportMap]
-  #[cfg(feature = "json")]
   pub fn from_json_str(json: &str) -> Result<Self> {
     if json.trim() == "" {
-      Ok(TransportMap::new())
+      Ok(TransportMap::default())
     } else {
-      let map = serde_json::from_str::<HashMap<String, serde_json::Value>>(json).map_err(de_err)?;
-      Ok(TransportMap::from_map(
+      let map = serde_json::from_str::<HashMap<String, serde_json::Value>>(json)?;
+      Ok(
         map
           .into_iter()
           .map(|(name, val)| (name, MessageTransport::json(&val.to_string())))
           .collect(),
-      ))
+      )
     }
   }
 
-  #[cfg(feature = "json")]
-  /// Turn a list of "field=value" strings into a [TransportMap] of [MessageTransport::Json] items.
+  /// Turn a list of "field=value" strings into a [TransportMap] of [Serialized::Json] items.
   pub fn from_kv_json(values: &[String]) -> Result<Self> {
-    let mut payload = TransportMap::new();
+    let mut payload = TransportMap::default();
     for input in values {
       match input.split_once('=') {
         Some((name, value)) => {
           debug!("PORT:'{}', VALUE:'{}'", name, value);
-          payload.insert(name, MessageTransport::Success(Success::Json(value.to_owned())));
+          payload.insert(name, MessageTransport::Success(Serialized::Json(value.to_owned())));
         }
         None => {
           return Err(Error::DeserializationError(format!(
@@ -91,34 +70,6 @@ impl TransportMap {
       }
     }
     Ok(payload)
-  }
-
-  /// Insert a [MessageTransport] by port name
-  pub fn insert<T: AsRef<str>>(&mut self, port: T, msg: MessageTransport) -> Option<MessageTransport> {
-    self.0.insert(port.as_ref().to_owned(), msg)
-  }
-
-  /// Check if the [TransportMap] has a [MessageTransport] by the specified name.
-  pub fn contains<T: AsRef<str>>(&self, port: T) -> bool {
-    self.0.contains_key(port.as_ref())
-  }
-
-  /// Returns the number of messages in the [TransportMap].
-  #[must_use]
-  pub fn len(&self) -> usize {
-    self.0.len()
-  }
-
-  /// Returns true if the [TransportMap] has no contained messages.
-  #[must_use]
-  pub fn is_empty(&self) -> bool {
-    self.0.is_empty()
-  }
-
-  /// Get a reference to the [MessageTransport] behind the passed port
-  #[must_use]
-  pub fn get(&self, port: &str) -> Option<&MessageTransport> {
-    self.0.get(port)
   }
 
   /// Remove a key from the held map and attempt to deserialize it into the destination type
@@ -133,23 +84,13 @@ impl TransportMap {
     )));
     match v {
       MessageTransport::Success(success) => match success {
-        Success::MessagePack(bytes) => messagepack::deserialize(&bytes).map_err(de_err),
-        #[cfg(feature = "raw")]
-        Success::Serialized(v) => raw::deserialize(v).map_err(de_err),
-        #[cfg(feature = "json")]
-        Success::Json(v) => json::deserialize(&v).map_err(de_err),
+        Serialized::MessagePack(bytes) => messagepack::deserialize(&bytes).map_err(de_err),
+        Serialized::Struct(v) => raw::deserialize(v).map_err(de_err),
+        Serialized::Json(v) => json::deserialize(&v).map_err(de_err),
       },
       MessageTransport::Failure(_) => e,
       MessageTransport::Signal(_) => e,
     }
-  }
-
-  /// Remove a key from the held map and return the raw [MessageTransport].
-  pub fn consume_raw(&mut self, key: &str) -> Result<MessageTransport> {
-    self
-      .0
-      .remove(key)
-      .ok_or_else(|| Error::DeserializationError(format!("TransportMap does not have field '{}'", key)))
   }
 
   /// Transpose any ports named "output" to "input". This is for a better user experience when
@@ -186,64 +127,11 @@ impl TransportMap {
     None
   }
 
-  /// Returns the inner [HashMap]
-  #[must_use]
-  pub fn into_inner(self) -> HashMap<String, MessageTransport> {
-    self.0
-  }
-
-  /// Attempts to normalize the [TransportMap] into messagepacked bytes
-  /// by serializing success formats or throwing an error.
-  pub fn try_into_messagepack_bytes(self) -> Result<HashMap<String, Vec<u8>>> {
-    let mut map = HashMap::new();
-    for (k, v) in self.0 {
-      let bytes = match v {
-        MessageTransport::Success(success) => match success {
-          Success::MessagePack(bytes) => Ok(bytes),
-          #[cfg(feature = "raw")]
-          Success::Serialized(v) => {
-            let bytes = messagepack::serialize(&v).map_err(ser_err)?;
-            Ok(bytes)
-          }
-          #[cfg(feature = "json")]
-          Success::Json(v) => {
-            let value: serde_value::Value = json::deserialize(&v).map_err(de_err)?;
-            let bytes = messagepack::serialize(&value).map_err(ser_err)?;
-            Ok(bytes)
-          }
-        },
-        MessageTransport::Failure(failure) => match failure {
-          Failure::Invalid => Err(Error::SerializationError(
-            "Refusing to serialize an invalid payload".to_owned(),
-          )),
-          Failure::Exception(e) => Err(Error::SerializationError(format!(
-            "Exceptions need to be processed by a runtime, not sent to components. Error was: {}",
-            e
-          ))),
-          Failure::Error(e) => Err(Error::SerializationError(format!(
-            "Errors need to be processed by a runtime, not sent to components. Error was: {}",
-            e
-          ))),
-        },
-        MessageTransport::Signal(_) => Err(Error::SerializationError(
-          "Signal messages need to be processed by a runtime, not sent to components.".to_owned(),
-        )),
-      }?;
-      map.insert(k, bytes);
-    }
-    Ok(map)
-  }
-
   /// Merge another [TransportMap] into the calling map.
   pub fn merge(&mut self, map: TransportMap) {
     for (k, v) in map.into_inner() {
       self.insert(k, v);
     }
-  }
-
-  /// Return an iterator over the port name and its [MessageTransport]
-  pub fn iter(&self) -> impl Iterator<Item = (&String, &MessageTransport)> {
-    self.0.iter()
   }
 }
 
@@ -282,33 +170,19 @@ impl IntoIterator for TransportMap {
   }
 }
 
-impl<K, V> TryFrom<&HashMap<K, V>> for TransportMap
-where
-  K: AsRef<str> + Send + Sync,
-  V: Serialize + Sync,
-{
-  type Error = TransportError;
-
-  fn try_from(v: &HashMap<K, V>) -> Result<Self> {
-    let serialized_data: HashMap<String, MessageTransport> = v
-      .iter()
-      .map(|(k, v)| {
-        Ok((
-          k.as_ref().to_owned(),
-          MessageTransport::Success(Success::MessagePack(messagepack::serialize(&v).map_err(ser_err)?)),
-        ))
-      })
-      .filter_map(Result::ok)
-      .collect();
-
-    let payload = TransportMap::from_map(serialized_data);
-    Ok(payload)
+impl From<wasmflow_packet::PacketMap> for TransportMap {
+  fn from(map: wasmflow_packet::PacketMap) -> Self {
+    let mut tmap = TransportMap::default();
+    for (k, v) in map {
+      tmap.insert(k, v.into());
+    }
+    tmap
   }
 }
 
 impl<K: AsRef<str>, V: Serialize> From<Vec<(K, V)>> for TransportMap {
   fn from(list: Vec<(K, V)>) -> Self {
-    let mut map = TransportMap::new();
+    let mut map = TransportMap::default();
     for (k, v) in list {
       map.insert(k.as_ref(), MessageTransport::success(&v));
     }
@@ -318,9 +192,19 @@ impl<K: AsRef<str>, V: Serialize> From<Vec<(K, V)>> for TransportMap {
 
 impl<K: AsRef<str>, V: Serialize> From<HashMap<K, V>> for TransportMap {
   fn from(hashmap: HashMap<K, V>) -> Self {
-    let mut map = TransportMap::new();
+    let mut map = TransportMap::default();
     for (k, v) in hashmap {
       map.insert(k.as_ref(), MessageTransport::success(&v));
+    }
+    map
+  }
+}
+
+impl FromIterator<(String, MessageTransport)> for TransportMap {
+  fn from_iter<T: IntoIterator<Item = (String, MessageTransport)>>(iter: T) -> Self {
+    let mut map = TransportMap::default();
+    for (k, v) in iter {
+      map.insert(k, v);
     }
     map
   }
@@ -346,10 +230,6 @@ where
   }
 }
 
-fn ser_err<T: Display>(e: T) -> Error {
-  Error::SerializationError(e.to_string())
-}
-
 fn de_err<T: Display>(e: T) -> Error {
   Error::DeserializationError(e.to_string())
 }
@@ -361,9 +241,9 @@ mod tests {
 
   #[test_log::test]
   fn test_merge() -> Result<()> {
-    let mut map1 = TransportMap::new();
+    let mut map1 = TransportMap::default();
     map1.insert("first", MessageTransport::success(&"first-val"));
-    let mut map2 = TransportMap::new();
+    let mut map2 = TransportMap::default();
     map2.insert("second", MessageTransport::success(&"second-val"));
     map1.merge(map2);
     let val1: String = map1.consume("first")?;

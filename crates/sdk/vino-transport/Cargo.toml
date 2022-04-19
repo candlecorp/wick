@@ -16,29 +16,25 @@ maintenance = { status = "actively-developed" }
 
 [features]
 default = []
-all = ["async", "json", "raw", "invocation"]
+all = ["async"]
 wasm = []
-invocation = ["vino-entity", "uuid"]
 async = ["tokio", "tokio-stream", "parking_lot"]
-json = ["serde_json"]
-raw = ["serde-value"]
 
 [dependencies]
-vino-packet = { path = "../vino-packet", version = "0.9.0" }
-vino-entity = { path = "../vino-entity", version = "0.9.0", optional = true }
-vino-codec = { path = "../vino-codec", version = "0.9.0" }
+wasmflow-packet = { path = "../wasmflow-packet", version = "0.9.0", features = [
+  "v0",
+] }
+wasmflow-codec = { path = "../wasmflow-codec", version = "0.9.0" }
+wasmflow-macros = { path = "../wasmflow-macros", version = "0.9.0" }
 serde = { version = "1.0", features = ["derive"] }
 thiserror = "1.0"
 tracing = "0.1"
 
-# invocation
-uuid = { version = "0.8", features = ["v4", "serde"], optional = true }
-
 # raw
-serde-value = { version = "0.7", optional = true }
+serde-value = { version = "0.7" }
 
 # json
-serde_json = { version = "1.0", optional = true }
+serde_json = { version = "1.0" }
 
 # async
 tokio = { version = "1", features = [], optional = true }

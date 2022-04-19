@@ -1,0 +1,31 @@
+[package]
+name = "wasmflow-streams"
+version = "0.9.0"
+authors = ["Jarrod Overson <jsoverson@gmail.com>"]
+edition = "2021"
+license = "BSD-3-Clause"
+repository = "https://github.com/vinodotdev/vino-sdk"
+description = "Rust library encapsulating the message packets sent across Vino components."
+documentation = "https://docs.vino.dev"
+keywords = ["vino", "actor", "flow"]
+categories = []
+exclude = ["tests/*", ".github/*", ".gitignore"]
+homepage = "https://docs.vino.dev"
+
+
+[features]
+default = []
+v0 = []
+v1 = []
+
+[dependencies]
+wasmflow-packet = { path = "../wasmflow-packet", version = "0.9.0" }
+vino-transport = { path = "../vino-transport", version = "0.9.0" }
+futures = "0.3.21"
+pin-project-lite = "0.2.9"
+
+[dev-dependencies]
+env_logger = "0.9"
+test-log = "0.2.8"
+anyhow = "1.0"
+tracing = "0.1"

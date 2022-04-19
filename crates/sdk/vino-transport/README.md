@@ -6,7 +6,7 @@ Vino Transport contains the structures and methods for communicating
 across entity boundaries. It handles abstracting payload versions and
 implementations so they can be used easily.
 
-The `MessageTransport` struct normalizes `vino_packet::Packet`s for
+The `MessageTransport` struct normalizes `wasmflow_packet::Packet`s for
 the Vino tools.
 
 The `TransportWrapper` wraps a `MessageTransport` along with the port name
