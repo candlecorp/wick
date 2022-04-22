@@ -67,7 +67,7 @@ mod tests {
       input: input.to_owned(),
     };
 
-    let entity = Entity::local_component("test-component");
+    let entity = Entity::local("test-component");
     let invocation = Invocation::new_test(file!(), entity, job_payload.into(), None);
 
     let mut outputs = provider.invoke(invocation).await?;

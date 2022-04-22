@@ -21,11 +21,13 @@
 )]
 #![warn(clippy::cognitive_complexity)]
 
+use std::collections::HashMap;
+use std::str::FromStr;
+
 use num_traits::FromPrimitive;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use serde_with_expand_env::with_expand_envs;
-use std::{collections::HashMap, str::FromStr};
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
@@ -141,6 +143,9 @@ pub struct NetworkManifest {
   #[serde(default)]
   #[serde(skip_serializing_if = "HashMap::is_empty")]
   pub labels: HashMap<String, String>,
+  /// The provider to use as the entrypoint when running as a standalone process.
+  #[serde(default)]
+  pub entry: Option<EntrypointDefinition>,
   /// The links between capabilities and components.
   #[serde(default)]
   #[serde(skip_serializing_if = "Vec::is_empty")]
@@ -149,6 +154,20 @@ pub struct NetworkManifest {
   #[serde(default)]
   #[serde(skip_serializing_if = "Vec::is_empty")]
   pub providers: Vec<ProviderDefinition>,
+}
+
+#[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+/// A provider definition for the main entrypoint.
+pub struct EntrypointDefinition {
+  /// The reference/location of the provider.
+  #[serde(default)]
+  #[serde(deserialize_with = "with_expand_envs")]
+  pub reference: String,
+  /// Data or configuration to pass to the provider initialization.
+  #[serde(default)]
+  #[serde(deserialize_with = "crate::helpers::deserialize_json_env")]
+  pub data: Value,
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
@@ -168,6 +187,7 @@ pub struct ProviderDefinition {
   pub reference: String,
   /// Data or configuration to pass to the provider initialization.
   #[serde(default)]
+  #[serde(deserialize_with = "crate::helpers::deserialize_json_env")]
   pub data: Value,
 }
 

@@ -4,7 +4,6 @@ mod test;
 
 use anyhow::Result;
 use test::{JsonWriter, TestProvider};
-use tokio_stream::StreamExt;
 use vino_entity::Entity;
 use vino_interpreter::graph::from_def;
 use vino_interpreter::{HandlerMap, Interpreter, InterpreterOptions, NamespaceHandler};
@@ -30,15 +29,14 @@ async fn test_echo() -> Result<()> {
 
   let inputs = TransportMap::from([("input", "Hello world".to_owned())]);
 
-  let invocation = Invocation::new_test("echo", Entity::schematic("echo"), inputs, None);
+  let invocation = Invocation::new_test("echo", Entity::local("echo"), inputs, None);
   let mut interpreter = Interpreter::new(Some(Seed::unsafe_new(1)), network, None, None)?;
   interpreter.start(OPTIONS, Some(Box::new(JsonWriter::default()))).await;
-  let stream = interpreter.invoke(invocation).await?;
+  let mut stream = interpreter.invoke(invocation).await?;
 
-  let mut outputs: Vec<_> = stream.collect().await;
+  let mut outputs: Vec<_> = stream.drain().await;
   println!("{:#?}", outputs);
-  let wrapper = outputs.pop().unwrap();
-  assert_eq!(wrapper.payload, MessageTransport::done());
+
   let wrapper = outputs.pop().unwrap();
   let result: String = wrapper.deserialize()?;
 
@@ -56,15 +54,14 @@ async fn test_external_provider() -> Result<()> {
 
   let inputs = TransportMap::from([("input", "Hello world".to_owned())]);
 
-  let invocation = Invocation::new_test("external_provider", Entity::schematic("test"), inputs, None);
+  let invocation = Invocation::new_test("external_provider", Entity::local("test"), inputs, None);
   let mut interpreter = Interpreter::new(Some(Seed::unsafe_new(1)), network, None, Some(providers))?;
   interpreter.start(OPTIONS, Some(Box::new(JsonWriter::default()))).await;
-  let stream = interpreter.invoke(invocation).await?;
+  let mut stream = interpreter.invoke(invocation).await?;
 
-  let mut outputs: Vec<_> = stream.collect().await;
+  let mut outputs: Vec<_> = stream.drain().await;
   println!("{:#?}", outputs);
-  let wrapper = outputs.pop().unwrap();
-  assert_eq!(wrapper.payload, MessageTransport::done());
+
   let wrapper = outputs.pop().unwrap();
   let result: String = wrapper.deserialize()?;
 
@@ -82,16 +79,15 @@ async fn test_self() -> Result<()> {
 
   let inputs = TransportMap::from([("parent_input", "Hello world".to_owned())]);
 
-  let invocation = Invocation::new_test("self", Entity::schematic("test"), inputs, None);
+  let invocation = Invocation::new_test("self", Entity::local("test"), inputs, None);
   let mut interpreter = Interpreter::new(Some(Seed::unsafe_new(1)), network, None, Some(providers))?;
   interpreter.start(OPTIONS, Some(Box::new(JsonWriter::default()))).await;
-  let stream = interpreter.invoke(invocation).await?;
+  let mut stream = interpreter.invoke(invocation).await?;
 
-  let mut outputs: Vec<_> = stream.collect().await;
+  let mut outputs: Vec<_> = stream.drain().await;
   println!("{:#?}", outputs);
-  assert!(outputs.len() >= 1);
-  let wrapper = outputs.pop().unwrap();
-  assert_eq!(wrapper.payload, MessageTransport::done());
+  assert_eq!(outputs.len(), 1);
+
   let wrapper = outputs.pop().unwrap();
   let result: String = wrapper.deserialize()?;
 
@@ -108,15 +104,14 @@ async fn test_exception_default() -> Result<()> {
   let providers = HandlerMap::new(vec![NamespaceHandler::new("test", Box::new(TestProvider::new()))]);
   let inputs = TransportMap::from([("input", "Hello world".to_owned())]);
 
-  let invocation = Invocation::new_test("exception-default", Entity::schematic("test"), inputs, None);
+  let invocation = Invocation::new_test("exception-default", Entity::local("test"), inputs, None);
   let mut interpreter = Interpreter::new(Some(Seed::unsafe_new(1)), network, None, Some(providers))?;
   interpreter.start(OPTIONS, Some(Box::new(JsonWriter::default()))).await;
-  let stream = interpreter.invoke(invocation).await?;
+  let mut stream = interpreter.invoke(invocation).await?;
 
-  let mut outputs: Vec<_> = stream.collect().await;
+  let mut outputs: Vec<_> = stream.drain().await;
   println!("{:#?}", outputs);
-  let wrapper = outputs.pop().unwrap();
-  assert_eq!(wrapper.payload, MessageTransport::done());
+
   let wrapper = outputs.pop().unwrap();
   let result: String = wrapper.deserialize()?;
 
@@ -134,15 +129,14 @@ async fn test_exception_nodefault() -> Result<()> {
   let providers = HandlerMap::new(vec![NamespaceHandler::new("test", Box::new(TestProvider::new()))]);
   let inputs = TransportMap::from([("input", "Hello world".to_owned())]);
 
-  let invocation = Invocation::new_test("exception-nodefault", Entity::schematic("test"), inputs, None);
+  let invocation = Invocation::new_test("exception-nodefault", Entity::local("test"), inputs, None);
   let mut interpreter = Interpreter::new(Some(Seed::unsafe_new(1)), network, None, Some(providers))?;
   interpreter.start(OPTIONS, Some(Box::new(JsonWriter::default()))).await;
-  let stream = interpreter.invoke(invocation).await?;
+  let mut stream = interpreter.invoke(invocation).await?;
 
-  let mut outputs: Vec<_> = stream.collect().await;
+  let mut outputs: Vec<_> = stream.drain().await;
   println!("{:#?}", outputs);
-  let wrapper = outputs.pop().unwrap();
-  assert_eq!(wrapper.payload, MessageTransport::done());
+
   let wrapper = outputs.pop().unwrap();
   assert!(matches!(wrapper.payload, MessageTransport::Failure(_)));
 
@@ -158,15 +152,14 @@ async fn test_inherent() -> Result<()> {
   let providers = HandlerMap::new(vec![NamespaceHandler::new("test", Box::new(TestProvider::new()))]);
   let inputs = TransportMap::default();
 
-  let invocation = Invocation::new_test("inherent", Entity::schematic("test"), inputs, None);
+  let invocation = Invocation::new_test("inherent", Entity::local("test"), inputs, None);
   let mut interpreter = Interpreter::new(Some(Seed::unsafe_new(1)), network, None, Some(providers))?;
   interpreter.start(OPTIONS, Some(Box::new(JsonWriter::default()))).await;
-  let stream = interpreter.invoke(invocation).await?;
+  let mut stream = interpreter.invoke(invocation).await?;
 
-  let mut outputs: Vec<_> = stream.collect().await;
+  let mut outputs: Vec<_> = stream.drain().await;
   println!("{:#?}", outputs);
-  let wrapper = outputs.pop().unwrap();
-  assert_eq!(wrapper.payload, MessageTransport::done());
+
   let wrapper = outputs.pop().unwrap();
   assert!(matches!(wrapper.payload, MessageTransport::Success(_)));
 
@@ -182,24 +175,21 @@ async fn test_inherent_nested() -> Result<()> {
   let providers = HandlerMap::new(vec![NamespaceHandler::new("test", Box::new(TestProvider::new()))]);
   let inputs = TransportMap::default();
 
-  let invocation = Invocation::new_test("inherent_nested", Entity::schematic("test"), inputs, None);
+  let invocation = Invocation::new_test("inherent_nested", Entity::local("test"), inputs, None);
   let mut interpreter = Interpreter::new(Some(Seed::unsafe_new(1)), network, None, Some(providers))?;
   interpreter.start(OPTIONS, Some(Box::new(JsonWriter::default()))).await;
-  let stream = interpreter.invoke(invocation).await?;
+  let mut stream = interpreter.invoke(invocation).await?;
 
-  let mut outputs: Vec<_> = stream.collect().await;
+  let mut outputs: Vec<_> = stream.drain().await;
   interpreter.shutdown().await?;
   println!("{:#?}", outputs);
-  let wrapper = outputs.pop().unwrap();
-  assert_eq!(wrapper.payload, MessageTransport::done());
-  let wrapper = outputs.pop().unwrap();
-  assert!(matches!(wrapper.payload, MessageTransport::Success(_)));
-  let wrapper = outputs.pop().unwrap();
-  assert_eq!(wrapper.payload, MessageTransport::done());
+
   let wrapper = outputs.pop().unwrap();
   assert!(matches!(wrapper.payload, MessageTransport::Success(_)));
+
   let wrapper = outputs.pop().unwrap();
-  assert_eq!(wrapper.payload, MessageTransport::done());
+  assert!(matches!(wrapper.payload, MessageTransport::Success(_)));
+
   let wrapper = outputs.pop().unwrap();
   assert!(matches!(wrapper.payload, MessageTransport::Success(_)));
 
@@ -213,16 +203,15 @@ async fn test_inherent_disconnected() -> Result<()> {
   let providers = HandlerMap::new(vec![NamespaceHandler::new("test", Box::new(TestProvider::new()))]);
   let inputs = TransportMap::from([("input", "Hello world".to_owned())]);
 
-  let invocation = Invocation::new_test("inherent_disconnected", Entity::schematic("test"), inputs, None);
+  let invocation = Invocation::new_test("inherent_disconnected", Entity::local("test"), inputs, None);
   let mut interpreter = Interpreter::new(Some(Seed::unsafe_new(1)), network, None, Some(providers))?;
   interpreter.start(OPTIONS, Some(Box::new(JsonWriter::default()))).await;
-  let stream = interpreter.invoke(invocation).await?;
+  let mut stream = interpreter.invoke(invocation).await?;
 
-  let mut outputs: Vec<_> = stream.collect().await;
+  let mut outputs: Vec<_> = stream.drain().await;
   println!("{:#?}", outputs);
-  assert!(outputs.len() >= 1);
-  let wrapper = outputs.pop().unwrap();
-  assert_eq!(wrapper.payload, MessageTransport::done());
+  assert_eq!(outputs.len(), 1);
+
   let wrapper = outputs.pop().unwrap();
   assert!(matches!(wrapper.payload, MessageTransport::Success(_)));
 
@@ -239,16 +228,15 @@ async fn test_stream() -> Result<()> {
   let input_str = "Hello world".to_owned();
   let inputs = TransportMap::from([("input", input_str.clone())]);
 
-  let invocation = Invocation::new_test("stream", Entity::schematic("test"), inputs, None);
+  let invocation = Invocation::new_test("stream", Entity::local("test"), inputs, None);
   let mut interpreter = Interpreter::new(Some(Seed::unsafe_new(1)), network, None, Some(providers))?;
   interpreter.start(OPTIONS, Some(Box::new(JsonWriter::default()))).await;
-  let stream = interpreter.invoke(invocation).await?;
+  let mut stream = interpreter.invoke(invocation).await?;
 
-  let mut outputs: Vec<_> = stream.collect().await;
+  let outputs: Vec<_> = stream.drain().await;
   println!("{:#?}", outputs);
-  assert!(outputs.len() >= 5);
-  let wrapper = outputs.pop().unwrap();
-  assert_eq!(wrapper.payload, MessageTransport::done());
+  assert_eq!(outputs.len(), 5);
+
   for wrapper in outputs {
     let output: String = wrapper.payload.deserialize()?;
     assert_eq!(output, input_str);
@@ -265,20 +253,18 @@ async fn test_spread() -> Result<()> {
   let providers = HandlerMap::new(vec![NamespaceHandler::new("test", Box::new(TestProvider::new()))]);
 
   let inputs = TransportMap::from([("input", "Hello world".to_owned())]);
-  let invocation = Invocation::new_test("spread", Entity::schematic("test"), inputs, None);
+  let invocation = Invocation::new_test("spread", Entity::local("test"), inputs, None);
   let mut interpreter = Interpreter::new(Some(Seed::unsafe_new(1)), network, None, Some(providers))?;
   interpreter.start(OPTIONS, Some(Box::new(JsonWriter::default()))).await;
-  let stream = interpreter.invoke(invocation).await?;
+  let mut stream = interpreter.invoke(invocation).await?;
 
-  let mut outputs: Vec<_> = stream.collect().await;
+  let mut outputs: Vec<_> = stream.drain().await;
   println!("{:#?}", outputs);
-  assert!(outputs.len() >= 3);
-  let wrapper = outputs.pop().unwrap();
-  assert_eq!(wrapper.payload, MessageTransport::done());
+  assert_eq!(outputs.len(), 2);
+
   let wrapper = outputs.pop().unwrap();
   assert!(matches!(wrapper.payload, MessageTransport::Success(_)));
-  let wrapper = outputs.pop().unwrap();
-  assert_eq!(wrapper.payload, MessageTransport::done());
+
   let wrapper = outputs.pop().unwrap();
   assert!(matches!(wrapper.payload, MessageTransport::Success(_)));
 
@@ -294,17 +280,16 @@ async fn test_generator() -> Result<()> {
   let providers = HandlerMap::new(vec![NamespaceHandler::new("test", Box::new(TestProvider::new()))]);
 
   let inputs = TransportMap::default();
-  let invocation = Invocation::new_test("generator", Entity::schematic("test"), inputs, None);
+  let invocation = Invocation::new_test("generator", Entity::local("test"), inputs, None);
   let mut interpreter = Interpreter::new(Some(Seed::unsafe_new(1)), network, None, Some(providers))?;
   interpreter.start(OPTIONS, Some(Box::new(JsonWriter::default()))).await;
-  let stream = interpreter.invoke(invocation).await?;
+  let mut stream = interpreter.invoke(invocation).await?;
 
-  let mut outputs: Vec<_> = stream.collect().await;
+  let mut outputs: Vec<_> = stream.drain().await;
   interpreter.shutdown().await?;
   println!("{:#?}", outputs);
-  assert!(outputs.len() >= 1);
-  let wrapper = outputs.pop().unwrap();
-  assert_eq!(wrapper.payload, MessageTransport::done());
+  assert_eq!(outputs.len(), 1);
+
   let wrapper = outputs.pop().unwrap();
   assert!(matches!(wrapper.payload, MessageTransport::Success(_)));
 
@@ -318,17 +303,16 @@ async fn test_generator_sibling() -> Result<()> {
   let providers = HandlerMap::new(vec![NamespaceHandler::new("test", Box::new(TestProvider::new()))]);
 
   let inputs = TransportMap::from([("input", "my-input".to_owned())]);
-  let invocation = Invocation::new_test("generator-sibling", Entity::schematic("test"), inputs, None);
+  let invocation = Invocation::new_test("generator-sibling", Entity::local("test"), inputs, None);
   let mut interpreter = Interpreter::new(Some(Seed::unsafe_new(1)), network, None, Some(providers))?;
   interpreter.start(OPTIONS, Some(Box::new(JsonWriter::default()))).await;
-  let stream = interpreter.invoke(invocation).await?;
+  let mut stream = interpreter.invoke(invocation).await?;
 
-  let mut outputs: Vec<_> = stream.collect().await;
+  let mut outputs: Vec<_> = stream.drain().await;
   interpreter.shutdown().await?;
   println!("{:#?}", outputs);
-  assert!(outputs.len() >= 1);
-  let wrapper = outputs.pop().unwrap();
-  assert_eq!(wrapper.payload, MessageTransport::done());
+  assert_eq!(outputs.len(), 1);
+
   let wrapper = outputs.pop().unwrap();
   assert!(matches!(wrapper.payload, MessageTransport::Success(_)));
 
@@ -347,17 +331,16 @@ async fn test_generator_multi_sibling() -> Result<()> {
     ("three", "three".to_owned()),
     ("four", "four".to_owned()),
   ]);
-  let invocation = Invocation::new_test("generator-sibling", Entity::schematic("test"), inputs, None);
+  let invocation = Invocation::new_test("generator-sibling", Entity::local("test"), inputs, None);
   let mut interpreter = Interpreter::new(Some(Seed::unsafe_new(1)), network, None, Some(providers))?;
   interpreter.start(OPTIONS, Some(Box::new(JsonWriter::default()))).await;
-  let stream = interpreter.invoke(invocation).await?;
+  let mut stream = interpreter.invoke(invocation).await?;
 
-  let mut outputs: Vec<_> = stream.collect().await;
+  let mut outputs: Vec<_> = stream.drain().await;
   interpreter.shutdown().await?;
   println!("{:#?}", outputs);
-  assert!(outputs.len() >= 1);
-  let wrapper = outputs.pop().unwrap();
-  assert_eq!(wrapper.payload, MessageTransport::done());
+  assert_eq!(outputs.len(), 1);
+
   let wrapper = outputs.pop().unwrap();
   assert!(matches!(wrapper.payload, MessageTransport::Success(_)));
 
@@ -371,17 +354,16 @@ async fn test_stream_provider_ref() -> Result<()> {
   let providers = HandlerMap::new(vec![NamespaceHandler::new("test", Box::new(TestProvider::new()))]);
 
   let inputs = TransportMap::from([("input", "my-input".to_owned())]);
-  let invocation = Invocation::new_test("stream_provider_ref", Entity::schematic("test"), inputs, None);
+  let invocation = Invocation::new_test("stream_provider_ref", Entity::local("test"), inputs, None);
   let mut interpreter = Interpreter::new(Some(Seed::unsafe_new(1)), network, None, Some(providers))?;
   interpreter.start(OPTIONS, Some(Box::new(JsonWriter::default()))).await;
-  let stream = interpreter.invoke(invocation).await?;
+  let mut stream = interpreter.invoke(invocation).await?;
 
-  let mut outputs: Vec<_> = stream.collect().await;
+  let outputs: Vec<_> = stream.drain().await;
   interpreter.shutdown().await?;
   println!("{:#?}", outputs);
-  assert!(outputs.len() >= 5);
-  let wrapper = outputs.pop().unwrap();
-  assert_eq!(wrapper.payload, MessageTransport::done());
+  assert_eq!(outputs.len(), 5);
+
   for wrapper in outputs {
     assert!(matches!(wrapper.payload, MessageTransport::Success(_)));
   }
@@ -396,29 +378,23 @@ async fn test_stream_multi() -> Result<()> {
   let providers = HandlerMap::new(vec![NamespaceHandler::new("test", Box::new(TestProvider::new()))]);
 
   let inputs = TransportMap::from([("input", "hello world".to_owned())]);
-  let invocation = Invocation::new_test("stream_multi", Entity::schematic("test"), inputs, None);
+  let invocation = Invocation::new_test("stream_multi", Entity::local("test"), inputs, None);
   let mut interpreter = Interpreter::new(Some(Seed::unsafe_new(1)), network, None, Some(providers))?;
   interpreter.start(OPTIONS, Some(Box::new(JsonWriter::default()))).await;
-  let stream = interpreter.invoke(invocation).await?;
+  let mut stream = interpreter.invoke(invocation).await?;
 
-  let outputs: Vec<_> = stream.collect().await;
+  let outputs: Vec<_> = stream.drain().await;
   interpreter.shutdown().await?;
   println!("{:#?}", outputs);
-  assert!(outputs.len() >= 12);
+  assert_eq!(outputs.len(), 11);
 
   let (mut vowels, mut rest): (Vec<_>, Vec<_>) = outputs.into_iter().partition(|wrapper| wrapper.port == "vowels");
-
-  let wrapper = vowels.pop().unwrap();
-  assert_eq!(wrapper.payload, MessageTransport::done());
 
   let mut expected_vowels: Vec<_> = "eoo".chars().collect();
   while let Some(ch) = expected_vowels.pop() {
     let wrapper = vowels.pop().unwrap();
     assert_eq!(wrapper.payload, MessageTransport::success(&ch));
   }
-
-  let wrapper = rest.pop().unwrap();
-  assert_eq!(wrapper.payload, MessageTransport::done());
 
   let mut expected_other: Vec<_> = "hll wrld".chars().collect();
   while let Some(ch) = expected_other.pop() {

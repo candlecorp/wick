@@ -118,7 +118,7 @@ mod test {
     let payload = vec![("input", user_data)].into();
     let invocation = Invocation::new(
       Entity::test("test"),
-      Entity::local_component("core::log"),
+      Entity::local("core::log"),
       payload,
       None,
     );

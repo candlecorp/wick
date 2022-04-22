@@ -16,7 +16,7 @@ vino-provider = { path = "../../../sdk/crates/vino-provider", features = [
   "native",
 ] }
 vino-provider-cli = { path = "../vino-provider-cli", default-features = false }
-parking_lot = "0.11"
+parking_lot = "0.12"
 tracing = "0.1"
 thiserror = "1.0"
 async-trait = "0.1"

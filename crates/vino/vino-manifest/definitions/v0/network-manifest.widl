@@ -7,11 +7,23 @@ type NetworkManifest {
   "The labels that apply to this network."
   labels: {string: string},
 
+  "The provider to use as the entrypoint when running as a standalone process."
+  entry: EntrypointDefinition?,
+
   "The links between capabilities and components."
   schematics: [SchematicManifest],
 
   "A list of providers and component collections."
   providers: [ProviderDefinition],
+}
+
+"A provider definition for the main entrypoint."
+type EntrypointDefinition {
+  "The reference/location of the provider."
+  reference: string,
+
+  "Data or configuration to pass to the provider initialization."
+  data: struct,
 }
 
 "A provider definition."

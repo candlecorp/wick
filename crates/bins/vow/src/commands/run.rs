@@ -27,16 +27,15 @@ pub(crate) struct RunCommand {
   #[clap(flatten)]
   wasi: WasiOptions,
 
+  /// Name of the component to execute.
+  component: String,
+
   // *****************************************************************
   // Everything below is copied from common-cli-options::RunOptions
   // Flatten doesn't work with positional args...
   //
   // TODO: Eliminate the need for copy/pasting
   // *****************************************************************
-  /// Name of the component to execute.
-  #[clap(default_value = "default")]
-  component: String,
-
   /// Don't read input from STDIN.
   #[clap(long = "no-input")]
   no_input: bool,
@@ -106,12 +105,7 @@ pub(crate) async fn handle_command(opts: RunCommand) -> Result<()> {
       let mut payload = TransportMap::from_json_output(&line)?;
       payload.transpose_output_name();
 
-      let invocation = Invocation::new(
-        Entity::client("vow"),
-        Entity::local_component(&opts.component),
-        payload,
-        None,
-      );
+      let invocation = Invocation::new(Entity::client("vow"), Entity::local(&opts.component), payload, None);
 
       let stream = provider.invoke(invocation).await.map_err(VowError::ComponentPanic)?;
       cli_common::functions::print_stream_json(stream, &opts.filter, opts.short, opts.raw).await?;
@@ -128,7 +122,7 @@ pub(crate) async fn handle_command(opts: RunCommand) -> Result<()> {
 
     let invocation = Invocation::new(
       Entity::client("vow"),
-      Entity::local_component(&opts.component),
+      Entity::local(&opts.component),
       data_map,
       inherent_data,
     );

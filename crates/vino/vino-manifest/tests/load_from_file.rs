@@ -13,7 +13,6 @@ fn load_manifest_yaml() -> Result<(), ManifestError> {
   let path = PathBuf::from("./tests/manifests/v0/logger.yaml");
   let manifest = HostDefinition::load_from_file(&path)?;
 
-  assert_eq!(manifest.default_schematic, Some("logger".to_owned()));
   assert_eq!(
     manifest.network().schematic("logger").map(|s| s.instances().len()),
     Some(2)
@@ -103,13 +102,27 @@ fn load_shortform_yaml() -> Result<(), ManifestError> {
 #[test_logger::test]
 
 fn load_env() -> Result<(), ManifestError> {
-  println!("Loading yaml");
   let path = PathBuf::from("./tests/manifests/v0/env.yaml");
   env::set_var("TEST_ENV_VAR", "load_manifest_yaml_with_env");
   let manifest = HostManifest::load_from_file(&path)?;
 
   let HostManifest::V0(manifest) = manifest;
   assert_eq!(manifest.network.schematics[0].name, "name_load_manifest_yaml_with_env");
+
+  Ok(())
+}
+
+#[test_logger::test]
+fn load_json_env() -> Result<(), ManifestError> {
+  let path = PathBuf::from("./tests/manifests/v0/json-env.yaml");
+  env::set_var("TEST_ENV_VAR_JSON", "load_json_env");
+  let manifest = HostManifest::load_from_file(&path)?;
+
+  let HostManifest::V0(manifest) = manifest;
+  assert_eq!(
+    manifest.network.entry.unwrap().data,
+    json!({"json_key": "load_json_env"})
+  );
 
   Ok(())
 }

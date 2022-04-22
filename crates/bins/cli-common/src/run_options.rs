@@ -9,10 +9,6 @@ pub struct RunOptions {
   //
   // TODO: Eliminate the need for copy/pasting
   // *****************************************************************
-  /// Name of the component to execute.
-  #[clap(default_value = "default")]
-  component: String,
-
   /// Don't read input from STDIN.
   #[clap(long = "no-input")]
   no_input: bool,

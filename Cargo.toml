@@ -61,14 +61,10 @@ members = [
 exclude = [
   "crates/integration/test-wapc-component",
   "crates/integration/test-wasi-component",
+  "crates/integration/test-main-component",
+  "crates/integration/test-main-network-component",
   "sdk/",
-  # "crates/forks/",
-  # "crates/integration/",
-  # "crates/interfaces/",
-  # "crates/misc/",
-  # "crates/providers/",
-  # "crates/bins/",
-  # "crates/vino/",
+  "forks/wapc-rs/",
 ]
 
 [[bench]]

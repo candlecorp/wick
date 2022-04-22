@@ -372,6 +372,20 @@
 </div><div class=field>
 
 <h3 class=field-name>
+  <a name="entry">entry</a>
+</h3>
+
+<span class="description field-description">The provider to use as the entrypoint when running as a standalone process.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#EntrypointDefinition">EntrypointDefinition</a><span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
   <a name="schematics">schematics</a>
 </h3>
 
@@ -394,6 +408,41 @@
 
 <ul class="field-notes">
 <li><span class="type field-note">Type: <span class=field-type><a href="#ProviderDefinition">ProviderDefinition</a>[]</span></span></li>
+
+
+</ul>
+</div></div></div><div class=definition>
+<h2 class="definition-name type-name">
+  <a name="EntrypointDefinition">EntrypointDefinition</a>
+</h2>
+
+<span class="description type-description">A provider definition for the main entrypoint.</span>
+<div class=fields>
+<div class=field>
+
+<h3 class=field-name>
+  <a name="reference">reference</a>
+</h3>
+
+<span class="description field-description">The reference/location of the provider.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string</span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="data">data</a>
+</h3>
+
+<span class="description field-description">Data or configuration to pass to the provider initialization.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#struct">struct</a></span></span></li>
 
 
 </ul>

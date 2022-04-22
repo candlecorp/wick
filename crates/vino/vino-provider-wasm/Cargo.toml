@@ -19,6 +19,9 @@ vino-packet = { path = "../../../sdk/crates/vino-packet" }
 vino-entity = { path = "../../../sdk/crates/vino-entity" }
 vino-codec = { path = "../../../sdk/crates/vino-codec" }
 vino-wapc = { path = "../../../sdk/crates/vino-wapc", features = [] }
+vino-provider = { path = "../../../sdk/crates/vino-provider", features = [
+  "native",
+] }
 vino-transport = { path = "../../../sdk/crates/vino-transport", features = [
   "all",
 ] }
@@ -26,17 +29,19 @@ vino-types = { path = "../../../sdk/crates/vino-types" }
 vino-macros = { path = "../../../sdk/crates/vino-macros" }
 derivative = "2.2"
 tokio = { version = "1", features = ["fs"] }
-parking_lot = "0.11"
+parking_lot = "0.12"
 
-shellexpand = "2.1"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 
-wasmtime-provider = { version = "1.0.0-alpha.0", optional = true, features = [
-  "cache",
-] }
-wapc = "1.0.0-alpha.1"
-wapc-pool = "1.0.0-alpha.0"
+wasmtime-provider = { version = "1.0", optional = true, features = ["cache"] }
+wapc = "1.0"
+wapc-pool = "1.0"
+# wasmtime-provider = { path = "../../../forks/wapc-rs/crates/wasmtime-provider", optional = true, features = [
+#   "cache",
+# ] }
+# wapc = { path = "../../../forks/wapc-rs/crates/wapc" }
+# wapc-pool = { path = "../../../forks/wapc-rs/crates/wapc-pool" }
 
 
 tokio-stream = "0.1.7"

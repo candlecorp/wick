@@ -21,14 +21,14 @@ async fn native_component() -> Result<()> {
   let mut result = network
     .invoke(Invocation::new(
       Entity::test("native component"),
-      Entity::schematic("native_component"),
+      Entity::local("native_component"),
       data.try_into()?,
       None,
     ))
     .await?;
 
   println!("Result: {:?}", result);
-  let mut messages: Vec<TransportWrapper> = result.collect_port("output").await;
+  let mut messages: Vec<TransportWrapper> = result.drain_port("output").await;
   assert_eq!(result.buffered_size(), (0, 0));
   assert_eq!(messages.len(), 1);
 
@@ -51,13 +51,13 @@ async fn global_providers() -> Result<()> {
   let mut result = network
     .invoke(Invocation::new(
       Entity::test("global providers"),
-      Entity::schematic("first_schematic"),
+      Entity::local("first_schematic"),
       data.try_into()?,
       None,
     ))
     .await?;
 
-  let mut messages: Vec<TransportWrapper> = result.collect_port("output").await;
+  let mut messages: Vec<TransportWrapper> = result.drain_port("output").await;
   assert_eq!(messages.len(), 1);
 
   let output: String = messages.pop().unwrap().payload.deserialize()?;
@@ -71,12 +71,12 @@ async fn global_providers() -> Result<()> {
   let mut result = network
     .invoke(Invocation::new(
       Entity::test("global providers"),
-      Entity::schematic("second_schematic"),
+      Entity::local("second_schematic"),
       data.try_into()?,
       None,
     ))
     .await?;
-  let mut messages: Vec<TransportWrapper> = result.collect_port("output").await;
+  let mut messages: Vec<TransportWrapper> = result.drain_port("output").await;
   assert_eq!(messages.len(), 1);
 
   let output: String = messages.pop().unwrap().payload.deserialize()?;
@@ -96,13 +96,13 @@ async fn subnetworks() -> Result<()> {
   let mut result = network
     .invoke(Invocation::new(
       Entity::test("subnetworks"),
-      Entity::schematic("parent"),
+      Entity::local("parent"),
       data.try_into()?,
       None,
     ))
     .await?;
 
-  let mut messages: Vec<TransportWrapper> = result.collect_port("output").await;
+  let mut messages: Vec<TransportWrapper> = result.drain_port("output").await;
   assert_eq!(messages.len(), 1);
 
   let output: String = messages.pop().unwrap().payload.deserialize()?;
@@ -129,13 +129,13 @@ async fn grpc() -> Result<()> {
   let mut result = network
     .invoke(Invocation::new(
       Entity::test("grpc"),
-      Entity::schematic("grpc"),
+      Entity::local("grpc"),
       data.try_into()?,
       None,
     ))
     .await?;
 
-  let mut messages: Vec<TransportWrapper> = result.collect_port("output").await;
+  let mut messages: Vec<TransportWrapper> = result.drain_port("output").await;
   assert_eq!(messages.len(), 1);
 
   let output: String = messages.pop().unwrap().payload.deserialize()?;
@@ -157,13 +157,13 @@ async fn par() -> Result<()> {
   let mut result = network
     .invoke(Invocation::new(
       Entity::test("par"),
-      Entity::schematic("par"),
+      Entity::local("par"),
       data.try_into()?,
       None,
     ))
     .await?;
 
-  let mut messages: Vec<TransportWrapper> = result.collect_port("output").await;
+  let mut messages: Vec<TransportWrapper> = result.drain_port("output").await;
   assert_eq!(messages.len(), 1);
 
   let output: u32 = messages.pop().unwrap().payload.deserialize()?;

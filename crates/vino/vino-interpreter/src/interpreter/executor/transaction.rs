@@ -397,7 +397,7 @@ impl Transaction {
 
     let invocation = Invocation::next(
       self.id(),
-      Entity::schematic(self.schematic_name()),
+      Entity::local(self.schematic_name()),
       instance.entity(),
       payload,
       self.invocation.inherent,

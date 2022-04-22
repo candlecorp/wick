@@ -13,7 +13,6 @@ CLEAN_FILES:= $(V0) $(V0_schema) $(V0_docs)
 
 $(V0): $(V0_SOURCES) $(V0_TEMPLATES)
 	@widl-template $< $(V0_DEF)/templates/rust/root.hbs -p $(V0_DEF)/templates/rust/partials > $@
-	@rustfmt $@
 
 $(V0_schema): $(V0_SOURCES) $(V0_TEMPLATES)
 	@widl-template $(V0_DEF)/manifest.widl $(V0_DEF)/templates/$(basename $@).hbs -p $(V0_DEF)/templates/json-schema/partials > $@
@@ -25,6 +24,7 @@ clean:
 
 .PHONY: codegen
 codegen: $(V0) $(V0_schema) $(V0_docs)
+	@cargo +nightly fmt
 
 docs:
 	@mkdir docs

@@ -1,0 +1,7 @@
+---
+version: 0
+network:
+  entry:
+    reference: any
+    data:
+      json_key: $TEST_ENV_VAR_JSON

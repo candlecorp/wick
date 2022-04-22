@@ -198,9 +198,16 @@ impl Host {
   ) -> Result<TransportStream> {
     match &self.network {
       Some(network) => {
-        let invocation = Invocation::new(Entity::host(&self.id), Entity::schematic(schematic), payload, data);
+        let invocation = Invocation::new(Entity::host(&self.id), Entity::local(schematic), payload, data);
         Ok(network.invoke(invocation).await?)
       }
+      None => Err(crate::Error::InvalidHostState("No network available".into())),
+    }
+  }
+
+  pub async fn exec_main(&self, argv: Vec<String>) -> Result<u32> {
+    match &self.network {
+      Some(network) => Ok(network.exec_main(argv).await),
       None => Err(crate::Error::InvalidHostState("No network available".into())),
     }
   }
@@ -333,7 +340,7 @@ mod test {
     let passed_data = "logging output";
     let payload: TransportMap = vec![("input", passed_data)].into();
     let mut stream = host.request("logger", payload, None).await?;
-    let mut messages: Vec<_> = stream.collect_port("output").await;
+    let mut messages: Vec<_> = stream.drain_port("output").await;
     assert_eq!(messages.len(), 1);
     let output = messages.pop().unwrap();
     let result: String = output.payload.deserialize()?;
@@ -361,7 +368,7 @@ mod test {
     let passed_data = "logging output";
     let data = vec![("input", passed_data)].into();
     let invocation: Invocation =
-      vino_transport::Invocation::new(Entity::test("test"), Entity::schematic("logger"), data, None)
+      vino_transport::Invocation::new(Entity::test("test"), Entity::local("logger"), data, None)
         .try_into()
         .unwrap();
     let mut response = client.invoke(invocation).await.unwrap().into_inner();

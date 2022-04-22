@@ -74,7 +74,7 @@ mod tests {
   async fn request_log(provider: &Provider, data: &str) -> Result<String> {
     let job_payload = vec![("input", data)].into();
 
-    let invocation = Invocation::new_test(file!(), Entity::local_component("simple"), job_payload, None);
+    let invocation = Invocation::new_test(file!(), Entity::local("simple"), job_payload, None);
     let mut outputs = provider.invoke(invocation).await?;
     let output = outputs.next().await.unwrap();
     println!("payload from [{}]: {:?}", output.port, output.payload);

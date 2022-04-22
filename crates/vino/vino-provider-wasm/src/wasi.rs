@@ -8,13 +8,9 @@ pub const WASI_CONFIG_ARGV: &str = "argv";
 pub const WASI_CONFIG_ENV: &str = "env";
 
 pub mod error {
-  use std::env::VarError;
 
   #[derive(thiserror::Error, Debug)]
   pub enum WasiConfigError {
-    #[error("WasiParams could not be created from configuration: {0}")]
-    EnvLookupFailed(shellexpand::LookupError<VarError>),
-
     #[error("WasiParams could not be created from configuration: {0}")]
     ConversionFailed(serde_json::Error),
   }
@@ -22,11 +18,6 @@ pub mod error {
   impl From<serde_json::Error> for WasiConfigError {
     fn from(e: serde_json::Error) -> Self {
       WasiConfigError::ConversionFailed(e)
-    }
-  }
-  impl From<shellexpand::LookupError<VarError>> for WasiConfigError {
-    fn from(e: shellexpand::LookupError<VarError>) -> Self {
-      WasiConfigError::EnvLookupFailed(e)
     }
   }
 }
@@ -97,20 +88,16 @@ pub fn config_to_wasi(
     let wasi_cfg = serde_json::from_value::<WasiParamsSerde>(v)?;
     trace!(config=?wasi_cfg, "config is");
     for dir in wasi_cfg.preopened_dirs {
-      wasi.preopened_dirs.push(shellexpand::env(&dir)?.into());
+      wasi.preopened_dirs.push(dir);
     }
     for map in wasi_cfg.map_dirs {
-      wasi
-        .map_dirs
-        .push((shellexpand::env(&map.0)?.into(), shellexpand::env(&map.1)?.into()));
+      wasi.map_dirs.push((map.0, map.1));
     }
     for env in wasi_cfg.env_vars {
-      wasi
-        .env_vars
-        .push((shellexpand::env(&env.0)?.into(), shellexpand::env(&env.1)?.into()));
+      wasi.env_vars.push((env.0, env.1));
     }
     for argv in wasi_cfg.argv {
-      wasi.argv.push(shellexpand::env(&argv)?.into());
+      wasi.argv.push(argv);
     }
   } else {
     debug!("WASM: No config present, using default WASI configuration.");

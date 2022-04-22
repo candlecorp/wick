@@ -77,11 +77,12 @@ use vino_transport::{TransportMap, TransportStream};
 
 use crate::HostBuilder;
 
-pub async fn run(manifest: HostDefinition, data: TransportMap, seed: Option<u64>) -> crate::Result<TransportStream> {
-  let default_schematic = manifest
-    .default_schematic
-    .clone()
-    .unwrap_or_else(|| "default".to_owned());
+pub async fn run(
+  manifest: HostDefinition,
+  schematic: &str,
+  data: TransportMap,
+  seed: Option<u64>,
+) -> crate::Result<TransportStream> {
   let host_builder = HostBuilder::from_definition(manifest);
 
   let mut host = host_builder.build();
@@ -92,7 +93,7 @@ pub async fn run(manifest: HostDefinition, data: TransportMap, seed: Option<u64>
 
   info!("manifest applied");
 
-  let raw_result = host.request(&default_schematic, data, None).await?;
+  let raw_result = host.request(schematic, data, None).await?;
 
   Ok(raw_result)
 }
@@ -110,8 +111,8 @@ mod tests {
     let host_def = HostDefinition::load_from_file(&PathBuf::from("./manifests/logger.yaml"))?;
     let input = vec![("input", "test-input")].into();
 
-    let mut result = super::run(host_def, input, Some(0)).await?;
-    let mut messages: Vec<TransportWrapper> = result.collect_port("output").await;
+    let mut result = super::run(host_def, "logger", input, Some(0)).await?;
+    let mut messages: Vec<TransportWrapper> = result.drain_port("output").await;
     let output: String = messages.remove(0).payload.deserialize()?;
 
     assert_eq!(output, "test-input");

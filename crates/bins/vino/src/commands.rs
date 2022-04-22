@@ -1,3 +1,4 @@
+pub(crate) mod invoke;
 pub(crate) mod list;
 pub(crate) mod run;
 pub(crate) mod serve;
@@ -23,9 +24,12 @@ pub(crate) enum CliCommand {
   /// Start a persistent host from a manifest.
   #[clap(name = "serve")]
   Serve(serve::ServeCommand),
-  /// Load a manifest and run the default schematic.
+  /// Load a manifest and execute an entrypoint provider.
   #[clap(name = "run")]
   Run(run::RunCommand),
+  /// Load a manifest and run the default schematic.
+  #[clap(name = "invoke")]
+  Invoke(invoke::InvokeCommand),
   /// Print the schematics and their accessible components for the passed manifest.
   #[clap(name = "list")]
   List(list::ListCommand),

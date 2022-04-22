@@ -108,6 +108,7 @@ async fn main() -> Result<()> {
     CliCommand::Serve(cmd) => commands::serve::handle_command(cmd).await,
     CliCommand::List(cmd) => commands::list::handle_command(cmd).await,
     CliCommand::Run(cmd) => commands::run::handle_command(cmd).await,
+    CliCommand::Invoke(cmd) => commands::invoke::handle_command(cmd).await,
     CliCommand::Test(cmd) => commands::test::handle_command(cmd).await,
   };
 

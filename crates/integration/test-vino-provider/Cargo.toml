@@ -6,11 +6,11 @@ edition = "2021"
 license = "Apache-2.0"
 
 [features]
-default = ["native", "provider"]
+default = ["provider", "native", "guest"]
+wasm = ["vino-provider/wasm"]
+native = ["vino-provider/default"]
 provider = []
 guest = []
-wasm = ["vino-provider/wasm"]
-native = ["vino-provider/native"]
 
 [dependencies]
 vino-provider = { path = "../../../sdk/crates/vino-provider", features = [

@@ -139,7 +139,6 @@ impl Interpreter {
       hosted
     };
     let stream = match &invocation.target {
-      Entity::Schematic(_) => self.invoke_schematic(invocation).await?,
       Entity::Component(ns, _) => {
         if ns == NS_SELF || ns == Entity::LOCAL || Some(ns) == self.namespace.as_ref() {
           self.invoke_schematic(invocation).await?

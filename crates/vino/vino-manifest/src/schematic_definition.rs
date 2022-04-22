@@ -142,61 +142,6 @@ impl TryFrom<&crate::v0::ComponentDefinition> for ComponentDefinition {
   }
 }
 
-#[derive(Debug, Clone)]
-/// A definition of a Vino Provider with its namespace, how to retrieve or access it and its configuration.
-#[must_use]
-pub struct ProviderDefinition {
-  /// The namespace to reference the provider's components on.
-  pub namespace: String,
-  /// The kind/type of the provider.
-  pub kind: ProviderKind,
-  /// The reference/location of the provider.
-  pub reference: String,
-  /// Data or configuration to pass to the provider initialization.
-  pub data: Value,
-}
-
-impl From<&crate::v0::ProviderDefinition> for ProviderDefinition {
-  fn from(def: &crate::v0::ProviderDefinition) -> Self {
-    ProviderDefinition {
-      namespace: def.namespace.clone(),
-      kind: def.kind.into(),
-      reference: def.reference.clone(),
-      data: def.data.clone(),
-    }
-  }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-/// The kind of provider.
-pub enum ProviderKind {
-  /// Native providers included at compile-time in a Vino host.
-  Native = 0,
-  /// The URL for a separately managed GRPC endpoint.
-  GrpcUrl = 1,
-  /// A WaPC WebAssembly provider.
-  Wapc = 2,
-  /// A provider accessible via a connected lattice.
-  Lattice = 3,
-  /// A local or remote Network definition.
-  Network = 4,
-  /// A GRPC provider binary.
-  Par = 5,
-}
-
-impl From<crate::v0::ProviderKind> for ProviderKind {
-  fn from(def: crate::v0::ProviderKind) -> Self {
-    match def {
-      crate::v0::ProviderKind::Native => ProviderKind::Native,
-      crate::v0::ProviderKind::Par => ProviderKind::Par,
-      crate::v0::ProviderKind::GrpcUrl => ProviderKind::GrpcUrl,
-      crate::v0::ProviderKind::WaPC => ProviderKind::Wapc,
-      crate::v0::ProviderKind::Lattice => ProviderKind::Lattice,
-      crate::v0::ProviderKind::Network => ProviderKind::Network,
-    }
-  }
-}
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 /// A [ConnectionDefinition] defines the link between an upstream and downstream port as well as.
 /// the default value to use in the case of an exception.

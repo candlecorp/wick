@@ -1,0 +1,38 @@
+{
+  "name": "test-main-network-component",
+  "types": {},
+  "components": {
+    "byte-count": {
+      "name": "byte-count",
+      "inputs": {
+        "input": {
+          "type": "string"
+        }
+      },
+      "outputs": {
+        "output": {
+          "type": "u64"
+        }
+      }
+    },
+    "main": {
+      "name": "main",
+      "inputs": {
+        "argv": {
+          "type": "list",
+          "element": {
+            "type": "string"
+          }
+        },
+        "network": {
+          "type": "link"
+        }
+      },
+      "outputs": {
+        "code": {
+          "type": "u32"
+        }
+      }
+    }
+  }
+}

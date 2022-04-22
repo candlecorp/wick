@@ -10,7 +10,7 @@ async fn request() -> anyhow::Result<()> {
   let job_payload = vec![("input", input)].into();
   let invocation = vino_transport::Invocation::new_test(
     file!(),
-    vino_entity::Entity::local_component("test-component"),
+    vino_entity::Entity::local("test-component"),
     job_payload,
     None,
   );

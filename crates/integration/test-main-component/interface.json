@@ -1,0 +1,22 @@
+{
+  "name": "test-main-component",
+  "types": {},
+  "components": {
+    "main": {
+      "name": "main",
+      "inputs": {
+        "argv": {
+          "type": "list",
+          "element": {
+            "type": "string"
+          }
+        }
+      },
+      "outputs": {
+        "code": {
+          "type": "u32"
+        }
+      }
+    }
+  }
+}

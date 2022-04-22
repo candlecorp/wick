@@ -78,6 +78,16 @@ impl Network {
     Ok(response.ok()?)
   }
 
+  pub async fn exec_main(&self, argv: Vec<String>) -> u32 {
+    let time = std::time::SystemTime::now();
+    trace!("executing main");
+
+    let code = self.inner.exec_main(argv).await;
+    trace!(duration_ms=%time.elapsed().unwrap().as_millis(),"main complete");
+
+    code
+  }
+
   pub async fn shutdown(&self) -> Result<()> {
     trace!("network shutting down");
     self.inner.shutdown().await?;

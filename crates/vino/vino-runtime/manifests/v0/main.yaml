@@ -1,0 +1,14 @@
+version: 0
+network:
+  entry:
+    reference: &comp ../../integration/test-main-component/build/test_main_component_s.wasm
+    data:
+      wasi:
+        preopened_dirs:
+          - "$TEST_TEMPDIR"
+        map_dirs:
+          - ["/", "$TEST_TEMPDIR"]
+  providers:
+    - namespace: main
+      kind: WaPC
+      reference: *comp

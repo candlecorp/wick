@@ -40,10 +40,17 @@ pub mod __multi__ {
   #[cfg(any(feature = "wasm"))]
   pub use vino_provider::wasm::prelude::*;
 
-  #[cfg(any(feature = "native", feature = "wasm"))]
+  #[cfg(all(feature = "native", not(feature = "wasm")))]
   pub fn populate_inputs(mut payload: TransportMap) -> Result<Inputs, TransportError> {
     Ok(Inputs {
       inputs: payload.consume("inputs")?,
+    })
+  }
+
+  #[cfg(all(feature = "wasm", not(feature = "native")))]
+  fn populate_inputs(payload: &IncomingPayload) -> Result<Inputs, WasmError> {
+    Ok(Inputs {
+      inputs: deserialize(payload.get("inputs")?)?,
     })
   }
 
@@ -53,18 +60,17 @@ pub mod __multi__ {
     pub inputs: Vec<ComponentInputs>,
   }
 
-  #[cfg(any(feature = "native", feature = "wasm"))]
+  #[cfg(all(feature = "guest", any(feature = "native", feature = "wasm")))]
   impl From<Inputs> for TransportMap {
     fn from(inputs: Inputs) -> TransportMap {
       let mut map = TransportMap::new();
       map.insert("inputs", MessageTransport::success(&inputs.inputs));
-
       map
     }
   }
 
   #[must_use]
-  #[cfg(any(feature = "native", feature = "wasm"))]
+  #[cfg(all(feature = "provider", feature = "native"))]
   pub fn inputs_list() -> std::collections::HashMap<String, TypeSignature> {
     let mut map = std::collections::HashMap::new();
     map.insert(
@@ -75,27 +81,34 @@ pub mod __multi__ {
     );
     map
   }
-  #[derive(Debug, Default)]
-  #[cfg(feature = "provider")]
-  pub struct OutputPorts {
-    pub result: ResultPortSender,
-  }
-
+  // A list of ports and their type signatures.
   #[must_use]
-  #[cfg(any(feature = "native", feature = "wasm"))]
+  #[cfg(all(feature = "provider", any(feature = "native", feature = "wasm")))]
   pub fn outputs_list() -> std::collections::HashMap<String, TypeSignature> {
     let mut map = std::collections::HashMap::new();
     map.insert("result".to_owned(), TypeSignature::Bool);
     map
   }
 
+  // A list of output ports and their associated stream sender implementations.
+  #[derive(Debug)]
+  #[cfg_attr(all(feature = "provider", feature = "native"), derive(Default))]
+  #[cfg(feature = "provider")]
+  pub struct OutputPorts {
+    pub result: ResultPortSender,
+  }
+
+  // Definition and implementation of each port's sender.
   #[derive(Debug)]
   #[cfg(feature = "provider")]
   pub struct ResultPortSender {
+    #[cfg(feature = "native")]
     port: PortChannel,
+    #[cfg(feature = "wasm")]
+    id: u32,
   }
 
-  #[cfg(feature = "provider")]
+  #[cfg(all(feature = "provider", feature = "native"))]
   impl Default for ResultPortSender {
     fn default() -> Self {
       Self {
@@ -104,7 +117,8 @@ pub mod __multi__ {
     }
   }
 
-  #[cfg(feature = "provider")]
+  // Native sender implementation
+  #[cfg(all(feature = "provider", feature = "native"))]
   impl PortSender for ResultPortSender {
     fn get_port(&self) -> Result<&PortChannel, ProviderError> {
       if self.port.is_closed() {
@@ -119,13 +133,32 @@ pub mod __multi__ {
     }
   }
 
+  // WASM sender implementation
+  #[cfg(all(feature = "provider", feature = "wasm"))]
+  impl PortSender for ResultPortSender {
+    type PayloadType = bool;
+    fn get_name(&self) -> String {
+      "result".to_string()
+    }
+    fn get_id(&self) -> u32 {
+      self.id
+    }
+  }
+
   #[must_use]
-  #[cfg(feature = "provider")]
+  #[cfg(all(feature = "provider", feature = "native"))]
   pub fn get_outputs() -> (OutputPorts, TransportStream) {
     let mut outputs = OutputPorts::default();
     let mut ports = vec![&mut outputs.result.port];
     let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)
+  }
+
+  #[cfg(all(feature = "provider", feature = "wasm"))]
+  fn get_outputs(id: u32) -> OutputPorts {
+    OutputPorts {
+      result: ResultPortSender { id },
+    }
   }
 
   #[cfg(all(feature = "guest"))]
@@ -137,18 +170,15 @@ pub mod __multi__ {
   #[cfg(all(feature = "native", feature = "guest"))]
   impl Outputs {
     pub async fn result(&mut self) -> Result<PortOutput<bool>, ProviderError> {
-      let packets = self.packets.take("result").await;
+      let packets = self.packets.drain_port("result").await;
       Ok(PortOutput::new("result".to_owned(), packets))
     }
   }
 
   #[cfg(all(feature = "wasm", feature = "guest"))]
   impl Outputs {
-    pub fn result(&mut self) -> Result<PortOutput, WasmError> {
-      let packets = self
-        .packets
-        .take("result")
-        .ok_or_else(|| WasmError::ResponseMissing("result".to_owned()))?;
+    pub fn result(&mut self) -> Result<PortOutput, ComponentError> {
+      let packets = self.packets.drain_port("result")?;
       Ok(PortOutput::new("result".to_owned(), packets))
     }
   }
@@ -193,10 +223,17 @@ pub mod delete {
     }
   }
 
-  #[cfg(any(feature = "native", feature = "wasm"))]
+  #[cfg(all(feature = "native", not(feature = "wasm")))]
   pub fn populate_inputs(mut payload: TransportMap) -> Result<Inputs, TransportError> {
     Ok(Inputs {
       keys: payload.consume("keys")?,
+    })
+  }
+
+  #[cfg(all(feature = "wasm", not(feature = "native")))]
+  fn populate_inputs(payload: &IncomingPayload) -> Result<Inputs, WasmError> {
+    Ok(Inputs {
+      keys: deserialize(payload.get("keys")?)?,
     })
   }
 
@@ -206,18 +243,17 @@ pub mod delete {
     pub keys: Vec<String>,
   }
 
-  #[cfg(any(feature = "native", feature = "wasm"))]
+  #[cfg(all(feature = "guest", any(feature = "native", feature = "wasm")))]
   impl From<Inputs> for TransportMap {
     fn from(inputs: Inputs) -> TransportMap {
       let mut map = TransportMap::new();
       map.insert("keys", MessageTransport::success(&inputs.keys));
-
       map
     }
   }
 
   #[must_use]
-  #[cfg(any(feature = "native", feature = "wasm"))]
+  #[cfg(all(feature = "provider", feature = "native"))]
   pub fn inputs_list() -> std::collections::HashMap<String, TypeSignature> {
     let mut map = std::collections::HashMap::new();
     map.insert(
@@ -228,27 +264,34 @@ pub mod delete {
     );
     map
   }
-  #[derive(Debug, Default)]
-  #[cfg(feature = "provider")]
-  pub struct OutputPorts {
-    pub num: NumPortSender,
-  }
-
+  // A list of ports and their type signatures.
   #[must_use]
-  #[cfg(any(feature = "native", feature = "wasm"))]
+  #[cfg(all(feature = "provider", any(feature = "native", feature = "wasm")))]
   pub fn outputs_list() -> std::collections::HashMap<String, TypeSignature> {
     let mut map = std::collections::HashMap::new();
     map.insert("num".to_owned(), TypeSignature::U32);
     map
   }
 
+  // A list of output ports and their associated stream sender implementations.
+  #[derive(Debug)]
+  #[cfg_attr(all(feature = "provider", feature = "native"), derive(Default))]
+  #[cfg(feature = "provider")]
+  pub struct OutputPorts {
+    pub num: NumPortSender,
+  }
+
+  // Definition and implementation of each port's sender.
   #[derive(Debug)]
   #[cfg(feature = "provider")]
   pub struct NumPortSender {
+    #[cfg(feature = "native")]
     port: PortChannel,
+    #[cfg(feature = "wasm")]
+    id: u32,
   }
 
-  #[cfg(feature = "provider")]
+  #[cfg(all(feature = "provider", feature = "native"))]
   impl Default for NumPortSender {
     fn default() -> Self {
       Self {
@@ -257,7 +300,8 @@ pub mod delete {
     }
   }
 
-  #[cfg(feature = "provider")]
+  // Native sender implementation
+  #[cfg(all(feature = "provider", feature = "native"))]
   impl PortSender for NumPortSender {
     fn get_port(&self) -> Result<&PortChannel, ProviderError> {
       if self.port.is_closed() {
@@ -272,13 +316,32 @@ pub mod delete {
     }
   }
 
+  // WASM sender implementation
+  #[cfg(all(feature = "provider", feature = "wasm"))]
+  impl PortSender for NumPortSender {
+    type PayloadType = u32;
+    fn get_name(&self) -> String {
+      "num".to_string()
+    }
+    fn get_id(&self) -> u32 {
+      self.id
+    }
+  }
+
   #[must_use]
-  #[cfg(feature = "provider")]
+  #[cfg(all(feature = "provider", feature = "native"))]
   pub fn get_outputs() -> (OutputPorts, TransportStream) {
     let mut outputs = OutputPorts::default();
     let mut ports = vec![&mut outputs.num.port];
     let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)
+  }
+
+  #[cfg(all(feature = "provider", feature = "wasm"))]
+  fn get_outputs(id: u32) -> OutputPorts {
+    OutputPorts {
+      num: NumPortSender { id },
+    }
   }
 
   #[cfg(all(feature = "guest"))]
@@ -290,18 +353,15 @@ pub mod delete {
   #[cfg(all(feature = "native", feature = "guest"))]
   impl Outputs {
     pub async fn num(&mut self) -> Result<PortOutput<u32>, ProviderError> {
-      let packets = self.packets.take("num").await;
+      let packets = self.packets.drain_port("num").await;
       Ok(PortOutput::new("num".to_owned(), packets))
     }
   }
 
   #[cfg(all(feature = "wasm", feature = "guest"))]
   impl Outputs {
-    pub fn num(&mut self) -> Result<PortOutput, WasmError> {
-      let packets = self
-        .packets
-        .take("num")
-        .ok_or_else(|| WasmError::ResponseMissing("num".to_owned()))?;
+    pub fn num(&mut self) -> Result<PortOutput, ComponentError> {
+      let packets = self.packets.drain_port("num")?;
       Ok(PortOutput::new("num".to_owned(), packets))
     }
   }
@@ -345,10 +405,17 @@ pub mod exists {
     }
   }
 
-  #[cfg(any(feature = "native", feature = "wasm"))]
+  #[cfg(all(feature = "native", not(feature = "wasm")))]
   pub fn populate_inputs(mut payload: TransportMap) -> Result<Inputs, TransportError> {
     Ok(Inputs {
       key: payload.consume("key")?,
+    })
+  }
+
+  #[cfg(all(feature = "wasm", not(feature = "native")))]
+  fn populate_inputs(payload: &IncomingPayload) -> Result<Inputs, WasmError> {
+    Ok(Inputs {
+      key: deserialize(payload.get("key")?)?,
     })
   }
 
@@ -358,44 +425,50 @@ pub mod exists {
     pub key: String,
   }
 
-  #[cfg(any(feature = "native", feature = "wasm"))]
+  #[cfg(all(feature = "guest", any(feature = "native", feature = "wasm")))]
   impl From<Inputs> for TransportMap {
     fn from(inputs: Inputs) -> TransportMap {
       let mut map = TransportMap::new();
       map.insert("key", MessageTransport::success(&inputs.key));
-
       map
     }
   }
 
   #[must_use]
-  #[cfg(any(feature = "native", feature = "wasm"))]
+  #[cfg(all(feature = "provider", feature = "native"))]
   pub fn inputs_list() -> std::collections::HashMap<String, TypeSignature> {
     let mut map = std::collections::HashMap::new();
     map.insert("key".to_owned(), TypeSignature::String);
     map
   }
-  #[derive(Debug, Default)]
-  #[cfg(feature = "provider")]
-  pub struct OutputPorts {
-    pub exists: ExistsPortSender,
-  }
-
+  // A list of ports and their type signatures.
   #[must_use]
-  #[cfg(any(feature = "native", feature = "wasm"))]
+  #[cfg(all(feature = "provider", any(feature = "native", feature = "wasm")))]
   pub fn outputs_list() -> std::collections::HashMap<String, TypeSignature> {
     let mut map = std::collections::HashMap::new();
     map.insert("exists".to_owned(), TypeSignature::Bool);
     map
   }
 
+  // A list of output ports and their associated stream sender implementations.
+  #[derive(Debug)]
+  #[cfg_attr(all(feature = "provider", feature = "native"), derive(Default))]
+  #[cfg(feature = "provider")]
+  pub struct OutputPorts {
+    pub exists: ExistsPortSender,
+  }
+
+  // Definition and implementation of each port's sender.
   #[derive(Debug)]
   #[cfg(feature = "provider")]
   pub struct ExistsPortSender {
+    #[cfg(feature = "native")]
     port: PortChannel,
+    #[cfg(feature = "wasm")]
+    id: u32,
   }
 
-  #[cfg(feature = "provider")]
+  #[cfg(all(feature = "provider", feature = "native"))]
   impl Default for ExistsPortSender {
     fn default() -> Self {
       Self {
@@ -404,7 +477,8 @@ pub mod exists {
     }
   }
 
-  #[cfg(feature = "provider")]
+  // Native sender implementation
+  #[cfg(all(feature = "provider", feature = "native"))]
   impl PortSender for ExistsPortSender {
     fn get_port(&self) -> Result<&PortChannel, ProviderError> {
       if self.port.is_closed() {
@@ -419,13 +493,32 @@ pub mod exists {
     }
   }
 
+  // WASM sender implementation
+  #[cfg(all(feature = "provider", feature = "wasm"))]
+  impl PortSender for ExistsPortSender {
+    type PayloadType = bool;
+    fn get_name(&self) -> String {
+      "exists".to_string()
+    }
+    fn get_id(&self) -> u32 {
+      self.id
+    }
+  }
+
   #[must_use]
-  #[cfg(feature = "provider")]
+  #[cfg(all(feature = "provider", feature = "native"))]
   pub fn get_outputs() -> (OutputPorts, TransportStream) {
     let mut outputs = OutputPorts::default();
     let mut ports = vec![&mut outputs.exists.port];
     let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)
+  }
+
+  #[cfg(all(feature = "provider", feature = "wasm"))]
+  fn get_outputs(id: u32) -> OutputPorts {
+    OutputPorts {
+      exists: ExistsPortSender { id },
+    }
   }
 
   #[cfg(all(feature = "guest"))]
@@ -437,18 +530,15 @@ pub mod exists {
   #[cfg(all(feature = "native", feature = "guest"))]
   impl Outputs {
     pub async fn exists(&mut self) -> Result<PortOutput<bool>, ProviderError> {
-      let packets = self.packets.take("exists").await;
+      let packets = self.packets.drain_port("exists").await;
       Ok(PortOutput::new("exists".to_owned(), packets))
     }
   }
 
   #[cfg(all(feature = "wasm", feature = "guest"))]
   impl Outputs {
-    pub fn exists(&mut self) -> Result<PortOutput, WasmError> {
-      let packets = self
-        .packets
-        .take("exists")
-        .ok_or_else(|| WasmError::ResponseMissing("exists".to_owned()))?;
+    pub fn exists(&mut self) -> Result<PortOutput, ComponentError> {
+      let packets = self.packets.drain_port("exists")?;
       Ok(PortOutput::new("exists".to_owned(), packets))
     }
   }
@@ -492,10 +582,17 @@ pub mod key_get {
     }
   }
 
-  #[cfg(any(feature = "native", feature = "wasm"))]
+  #[cfg(all(feature = "native", not(feature = "wasm")))]
   pub fn populate_inputs(mut payload: TransportMap) -> Result<Inputs, TransportError> {
     Ok(Inputs {
       key: payload.consume("key")?,
+    })
+  }
+
+  #[cfg(all(feature = "wasm", not(feature = "native")))]
+  fn populate_inputs(payload: &IncomingPayload) -> Result<Inputs, WasmError> {
+    Ok(Inputs {
+      key: deserialize(payload.get("key")?)?,
     })
   }
 
@@ -505,44 +602,50 @@ pub mod key_get {
     pub key: String,
   }
 
-  #[cfg(any(feature = "native", feature = "wasm"))]
+  #[cfg(all(feature = "guest", any(feature = "native", feature = "wasm")))]
   impl From<Inputs> for TransportMap {
     fn from(inputs: Inputs) -> TransportMap {
       let mut map = TransportMap::new();
       map.insert("key", MessageTransport::success(&inputs.key));
-
       map
     }
   }
 
   #[must_use]
-  #[cfg(any(feature = "native", feature = "wasm"))]
+  #[cfg(all(feature = "provider", feature = "native"))]
   pub fn inputs_list() -> std::collections::HashMap<String, TypeSignature> {
     let mut map = std::collections::HashMap::new();
     map.insert("key".to_owned(), TypeSignature::String);
     map
   }
-  #[derive(Debug, Default)]
-  #[cfg(feature = "provider")]
-  pub struct OutputPorts {
-    pub value: ValuePortSender,
-  }
-
+  // A list of ports and their type signatures.
   #[must_use]
-  #[cfg(any(feature = "native", feature = "wasm"))]
+  #[cfg(all(feature = "provider", any(feature = "native", feature = "wasm")))]
   pub fn outputs_list() -> std::collections::HashMap<String, TypeSignature> {
     let mut map = std::collections::HashMap::new();
     map.insert("value".to_owned(), TypeSignature::String);
     map
   }
 
+  // A list of output ports and their associated stream sender implementations.
+  #[derive(Debug)]
+  #[cfg_attr(all(feature = "provider", feature = "native"), derive(Default))]
+  #[cfg(feature = "provider")]
+  pub struct OutputPorts {
+    pub value: ValuePortSender,
+  }
+
+  // Definition and implementation of each port's sender.
   #[derive(Debug)]
   #[cfg(feature = "provider")]
   pub struct ValuePortSender {
+    #[cfg(feature = "native")]
     port: PortChannel,
+    #[cfg(feature = "wasm")]
+    id: u32,
   }
 
-  #[cfg(feature = "provider")]
+  #[cfg(all(feature = "provider", feature = "native"))]
   impl Default for ValuePortSender {
     fn default() -> Self {
       Self {
@@ -551,7 +654,8 @@ pub mod key_get {
     }
   }
 
-  #[cfg(feature = "provider")]
+  // Native sender implementation
+  #[cfg(all(feature = "provider", feature = "native"))]
   impl PortSender for ValuePortSender {
     fn get_port(&self) -> Result<&PortChannel, ProviderError> {
       if self.port.is_closed() {
@@ -566,13 +670,32 @@ pub mod key_get {
     }
   }
 
+  // WASM sender implementation
+  #[cfg(all(feature = "provider", feature = "wasm"))]
+  impl PortSender for ValuePortSender {
+    type PayloadType = String;
+    fn get_name(&self) -> String {
+      "value".to_string()
+    }
+    fn get_id(&self) -> u32 {
+      self.id
+    }
+  }
+
   #[must_use]
-  #[cfg(feature = "provider")]
+  #[cfg(all(feature = "provider", feature = "native"))]
   pub fn get_outputs() -> (OutputPorts, TransportStream) {
     let mut outputs = OutputPorts::default();
     let mut ports = vec![&mut outputs.value.port];
     let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)
+  }
+
+  #[cfg(all(feature = "provider", feature = "wasm"))]
+  fn get_outputs(id: u32) -> OutputPorts {
+    OutputPorts {
+      value: ValuePortSender { id },
+    }
   }
 
   #[cfg(all(feature = "guest"))]
@@ -584,18 +707,15 @@ pub mod key_get {
   #[cfg(all(feature = "native", feature = "guest"))]
   impl Outputs {
     pub async fn value(&mut self) -> Result<PortOutput<String>, ProviderError> {
-      let packets = self.packets.take("value").await;
+      let packets = self.packets.drain_port("value").await;
       Ok(PortOutput::new("value".to_owned(), packets))
     }
   }
 
   #[cfg(all(feature = "wasm", feature = "guest"))]
   impl Outputs {
-    pub fn value(&mut self) -> Result<PortOutput, WasmError> {
-      let packets = self
-        .packets
-        .take("value")
-        .ok_or_else(|| WasmError::ResponseMissing("value".to_owned()))?;
+    pub fn value(&mut self) -> Result<PortOutput, ComponentError> {
+      let packets = self.packets.drain_port("value")?;
       Ok(PortOutput::new("value".to_owned(), packets))
     }
   }
@@ -639,12 +759,21 @@ pub mod key_set {
     }
   }
 
-  #[cfg(any(feature = "native", feature = "wasm"))]
+  #[cfg(all(feature = "native", not(feature = "wasm")))]
   pub fn populate_inputs(mut payload: TransportMap) -> Result<Inputs, TransportError> {
     Ok(Inputs {
       key: payload.consume("key")?,
       value: payload.consume("value")?,
       expires: payload.consume("expires")?,
+    })
+  }
+
+  #[cfg(all(feature = "wasm", not(feature = "native")))]
+  fn populate_inputs(payload: &IncomingPayload) -> Result<Inputs, WasmError> {
+    Ok(Inputs {
+      key: deserialize(payload.get("key")?)?,
+      value: deserialize(payload.get("value")?)?,
+      expires: deserialize(payload.get("expires")?)?,
     })
   }
 
@@ -658,22 +787,19 @@ pub mod key_set {
     pub expires: u32,
   }
 
-  #[cfg(any(feature = "native", feature = "wasm"))]
+  #[cfg(all(feature = "guest", any(feature = "native", feature = "wasm")))]
   impl From<Inputs> for TransportMap {
     fn from(inputs: Inputs) -> TransportMap {
       let mut map = TransportMap::new();
       map.insert("key", MessageTransport::success(&inputs.key));
-
       map.insert("value", MessageTransport::success(&inputs.value));
-
       map.insert("expires", MessageTransport::success(&inputs.expires));
-
       map
     }
   }
 
   #[must_use]
-  #[cfg(any(feature = "native", feature = "wasm"))]
+  #[cfg(all(feature = "provider", feature = "native"))]
   pub fn inputs_list() -> std::collections::HashMap<String, TypeSignature> {
     let mut map = std::collections::HashMap::new();
     map.insert("key".to_owned(), TypeSignature::String);
@@ -681,27 +807,34 @@ pub mod key_set {
     map.insert("expires".to_owned(), TypeSignature::U32);
     map
   }
-  #[derive(Debug, Default)]
-  #[cfg(feature = "provider")]
-  pub struct OutputPorts {
-    pub result: ResultPortSender,
-  }
-
+  // A list of ports and their type signatures.
   #[must_use]
-  #[cfg(any(feature = "native", feature = "wasm"))]
+  #[cfg(all(feature = "provider", any(feature = "native", feature = "wasm")))]
   pub fn outputs_list() -> std::collections::HashMap<String, TypeSignature> {
     let mut map = std::collections::HashMap::new();
     map.insert("result".to_owned(), TypeSignature::Bool);
     map
   }
 
+  // A list of output ports and their associated stream sender implementations.
+  #[derive(Debug)]
+  #[cfg_attr(all(feature = "provider", feature = "native"), derive(Default))]
+  #[cfg(feature = "provider")]
+  pub struct OutputPorts {
+    pub result: ResultPortSender,
+  }
+
+  // Definition and implementation of each port's sender.
   #[derive(Debug)]
   #[cfg(feature = "provider")]
   pub struct ResultPortSender {
+    #[cfg(feature = "native")]
     port: PortChannel,
+    #[cfg(feature = "wasm")]
+    id: u32,
   }
 
-  #[cfg(feature = "provider")]
+  #[cfg(all(feature = "provider", feature = "native"))]
   impl Default for ResultPortSender {
     fn default() -> Self {
       Self {
@@ -710,7 +843,8 @@ pub mod key_set {
     }
   }
 
-  #[cfg(feature = "provider")]
+  // Native sender implementation
+  #[cfg(all(feature = "provider", feature = "native"))]
   impl PortSender for ResultPortSender {
     fn get_port(&self) -> Result<&PortChannel, ProviderError> {
       if self.port.is_closed() {
@@ -725,13 +859,32 @@ pub mod key_set {
     }
   }
 
+  // WASM sender implementation
+  #[cfg(all(feature = "provider", feature = "wasm"))]
+  impl PortSender for ResultPortSender {
+    type PayloadType = bool;
+    fn get_name(&self) -> String {
+      "result".to_string()
+    }
+    fn get_id(&self) -> u32 {
+      self.id
+    }
+  }
+
   #[must_use]
-  #[cfg(feature = "provider")]
+  #[cfg(all(feature = "provider", feature = "native"))]
   pub fn get_outputs() -> (OutputPorts, TransportStream) {
     let mut outputs = OutputPorts::default();
     let mut ports = vec![&mut outputs.result.port];
     let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)
+  }
+
+  #[cfg(all(feature = "provider", feature = "wasm"))]
+  fn get_outputs(id: u32) -> OutputPorts {
+    OutputPorts {
+      result: ResultPortSender { id },
+    }
   }
 
   #[cfg(all(feature = "guest"))]
@@ -743,18 +896,15 @@ pub mod key_set {
   #[cfg(all(feature = "native", feature = "guest"))]
   impl Outputs {
     pub async fn result(&mut self) -> Result<PortOutput<bool>, ProviderError> {
-      let packets = self.packets.take("result").await;
+      let packets = self.packets.drain_port("result").await;
       Ok(PortOutput::new("result".to_owned(), packets))
     }
   }
 
   #[cfg(all(feature = "wasm", feature = "guest"))]
   impl Outputs {
-    pub fn result(&mut self) -> Result<PortOutput, WasmError> {
-      let packets = self
-        .packets
-        .take("result")
-        .ok_or_else(|| WasmError::ResponseMissing("result".to_owned()))?;
+    pub fn result(&mut self) -> Result<PortOutput, ComponentError> {
+      let packets = self.packets.drain_port("result")?;
       Ok(PortOutput::new("result".to_owned(), packets))
     }
   }
@@ -798,11 +948,19 @@ pub mod list_add {
     }
   }
 
-  #[cfg(any(feature = "native", feature = "wasm"))]
+  #[cfg(all(feature = "native", not(feature = "wasm")))]
   pub fn populate_inputs(mut payload: TransportMap) -> Result<Inputs, TransportError> {
     Ok(Inputs {
       key: payload.consume("key")?,
       values: payload.consume("values")?,
+    })
+  }
+
+  #[cfg(all(feature = "wasm", not(feature = "native")))]
+  fn populate_inputs(payload: &IncomingPayload) -> Result<Inputs, WasmError> {
+    Ok(Inputs {
+      key: deserialize(payload.get("key")?)?,
+      values: deserialize(payload.get("values")?)?,
     })
   }
 
@@ -814,20 +972,18 @@ pub mod list_add {
     pub values: Vec<String>,
   }
 
-  #[cfg(any(feature = "native", feature = "wasm"))]
+  #[cfg(all(feature = "guest", any(feature = "native", feature = "wasm")))]
   impl From<Inputs> for TransportMap {
     fn from(inputs: Inputs) -> TransportMap {
       let mut map = TransportMap::new();
       map.insert("key", MessageTransport::success(&inputs.key));
-
       map.insert("values", MessageTransport::success(&inputs.values));
-
       map
     }
   }
 
   #[must_use]
-  #[cfg(any(feature = "native", feature = "wasm"))]
+  #[cfg(all(feature = "provider", feature = "native"))]
   pub fn inputs_list() -> std::collections::HashMap<String, TypeSignature> {
     let mut map = std::collections::HashMap::new();
     map.insert("key".to_owned(), TypeSignature::String);
@@ -839,27 +995,34 @@ pub mod list_add {
     );
     map
   }
-  #[derive(Debug, Default)]
-  #[cfg(feature = "provider")]
-  pub struct OutputPorts {
-    pub length: LengthPortSender,
-  }
-
+  // A list of ports and their type signatures.
   #[must_use]
-  #[cfg(any(feature = "native", feature = "wasm"))]
+  #[cfg(all(feature = "provider", any(feature = "native", feature = "wasm")))]
   pub fn outputs_list() -> std::collections::HashMap<String, TypeSignature> {
     let mut map = std::collections::HashMap::new();
     map.insert("length".to_owned(), TypeSignature::U32);
     map
   }
 
+  // A list of output ports and their associated stream sender implementations.
+  #[derive(Debug)]
+  #[cfg_attr(all(feature = "provider", feature = "native"), derive(Default))]
+  #[cfg(feature = "provider")]
+  pub struct OutputPorts {
+    pub length: LengthPortSender,
+  }
+
+  // Definition and implementation of each port's sender.
   #[derive(Debug)]
   #[cfg(feature = "provider")]
   pub struct LengthPortSender {
+    #[cfg(feature = "native")]
     port: PortChannel,
+    #[cfg(feature = "wasm")]
+    id: u32,
   }
 
-  #[cfg(feature = "provider")]
+  #[cfg(all(feature = "provider", feature = "native"))]
   impl Default for LengthPortSender {
     fn default() -> Self {
       Self {
@@ -868,7 +1031,8 @@ pub mod list_add {
     }
   }
 
-  #[cfg(feature = "provider")]
+  // Native sender implementation
+  #[cfg(all(feature = "provider", feature = "native"))]
   impl PortSender for LengthPortSender {
     fn get_port(&self) -> Result<&PortChannel, ProviderError> {
       if self.port.is_closed() {
@@ -883,13 +1047,32 @@ pub mod list_add {
     }
   }
 
+  // WASM sender implementation
+  #[cfg(all(feature = "provider", feature = "wasm"))]
+  impl PortSender for LengthPortSender {
+    type PayloadType = u32;
+    fn get_name(&self) -> String {
+      "length".to_string()
+    }
+    fn get_id(&self) -> u32 {
+      self.id
+    }
+  }
+
   #[must_use]
-  #[cfg(feature = "provider")]
+  #[cfg(all(feature = "provider", feature = "native"))]
   pub fn get_outputs() -> (OutputPorts, TransportStream) {
     let mut outputs = OutputPorts::default();
     let mut ports = vec![&mut outputs.length.port];
     let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)
+  }
+
+  #[cfg(all(feature = "provider", feature = "wasm"))]
+  fn get_outputs(id: u32) -> OutputPorts {
+    OutputPorts {
+      length: LengthPortSender { id },
+    }
   }
 
   #[cfg(all(feature = "guest"))]
@@ -901,18 +1084,15 @@ pub mod list_add {
   #[cfg(all(feature = "native", feature = "guest"))]
   impl Outputs {
     pub async fn length(&mut self) -> Result<PortOutput<u32>, ProviderError> {
-      let packets = self.packets.take("length").await;
+      let packets = self.packets.drain_port("length").await;
       Ok(PortOutput::new("length".to_owned(), packets))
     }
   }
 
   #[cfg(all(feature = "wasm", feature = "guest"))]
   impl Outputs {
-    pub fn length(&mut self) -> Result<PortOutput, WasmError> {
-      let packets = self
-        .packets
-        .take("length")
-        .ok_or_else(|| WasmError::ResponseMissing("length".to_owned()))?;
+    pub fn length(&mut self) -> Result<PortOutput, ComponentError> {
+      let packets = self.packets.drain_port("length")?;
       Ok(PortOutput::new("length".to_owned(), packets))
     }
   }
@@ -956,12 +1136,21 @@ pub mod list_range {
     }
   }
 
-  #[cfg(any(feature = "native", feature = "wasm"))]
+  #[cfg(all(feature = "native", not(feature = "wasm")))]
   pub fn populate_inputs(mut payload: TransportMap) -> Result<Inputs, TransportError> {
     Ok(Inputs {
       key: payload.consume("key")?,
       start: payload.consume("start")?,
       end: payload.consume("end")?,
+    })
+  }
+
+  #[cfg(all(feature = "wasm", not(feature = "native")))]
+  fn populate_inputs(payload: &IncomingPayload) -> Result<Inputs, WasmError> {
+    Ok(Inputs {
+      key: deserialize(payload.get("key")?)?,
+      start: deserialize(payload.get("start")?)?,
+      end: deserialize(payload.get("end")?)?,
     })
   }
 
@@ -975,22 +1164,19 @@ pub mod list_range {
     pub end: i32,
   }
 
-  #[cfg(any(feature = "native", feature = "wasm"))]
+  #[cfg(all(feature = "guest", any(feature = "native", feature = "wasm")))]
   impl From<Inputs> for TransportMap {
     fn from(inputs: Inputs) -> TransportMap {
       let mut map = TransportMap::new();
       map.insert("key", MessageTransport::success(&inputs.key));
-
       map.insert("start", MessageTransport::success(&inputs.start));
-
       map.insert("end", MessageTransport::success(&inputs.end));
-
       map
     }
   }
 
   #[must_use]
-  #[cfg(any(feature = "native", feature = "wasm"))]
+  #[cfg(all(feature = "provider", feature = "native"))]
   pub fn inputs_list() -> std::collections::HashMap<String, TypeSignature> {
     let mut map = std::collections::HashMap::new();
     map.insert("key".to_owned(), TypeSignature::String);
@@ -998,14 +1184,9 @@ pub mod list_range {
     map.insert("end".to_owned(), TypeSignature::I32);
     map
   }
-  #[derive(Debug, Default)]
-  #[cfg(feature = "provider")]
-  pub struct OutputPorts {
-    pub values: ValuesPortSender,
-  }
-
+  // A list of ports and their type signatures.
   #[must_use]
-  #[cfg(any(feature = "native", feature = "wasm"))]
+  #[cfg(all(feature = "provider", any(feature = "native", feature = "wasm")))]
   pub fn outputs_list() -> std::collections::HashMap<String, TypeSignature> {
     let mut map = std::collections::HashMap::new();
     map.insert(
@@ -1017,13 +1198,25 @@ pub mod list_range {
     map
   }
 
+  // A list of output ports and their associated stream sender implementations.
+  #[derive(Debug)]
+  #[cfg_attr(all(feature = "provider", feature = "native"), derive(Default))]
+  #[cfg(feature = "provider")]
+  pub struct OutputPorts {
+    pub values: ValuesPortSender,
+  }
+
+  // Definition and implementation of each port's sender.
   #[derive(Debug)]
   #[cfg(feature = "provider")]
   pub struct ValuesPortSender {
+    #[cfg(feature = "native")]
     port: PortChannel,
+    #[cfg(feature = "wasm")]
+    id: u32,
   }
 
-  #[cfg(feature = "provider")]
+  #[cfg(all(feature = "provider", feature = "native"))]
   impl Default for ValuesPortSender {
     fn default() -> Self {
       Self {
@@ -1032,7 +1225,8 @@ pub mod list_range {
     }
   }
 
-  #[cfg(feature = "provider")]
+  // Native sender implementation
+  #[cfg(all(feature = "provider", feature = "native"))]
   impl PortSender for ValuesPortSender {
     fn get_port(&self) -> Result<&PortChannel, ProviderError> {
       if self.port.is_closed() {
@@ -1047,13 +1241,32 @@ pub mod list_range {
     }
   }
 
+  // WASM sender implementation
+  #[cfg(all(feature = "provider", feature = "wasm"))]
+  impl PortSender for ValuesPortSender {
+    type PayloadType = Vec<String>;
+    fn get_name(&self) -> String {
+      "values".to_string()
+    }
+    fn get_id(&self) -> u32 {
+      self.id
+    }
+  }
+
   #[must_use]
-  #[cfg(feature = "provider")]
+  #[cfg(all(feature = "provider", feature = "native"))]
   pub fn get_outputs() -> (OutputPorts, TransportStream) {
     let mut outputs = OutputPorts::default();
     let mut ports = vec![&mut outputs.values.port];
     let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)
+  }
+
+  #[cfg(all(feature = "provider", feature = "wasm"))]
+  fn get_outputs(id: u32) -> OutputPorts {
+    OutputPorts {
+      values: ValuesPortSender { id },
+    }
   }
 
   #[cfg(all(feature = "guest"))]
@@ -1065,18 +1278,15 @@ pub mod list_range {
   #[cfg(all(feature = "native", feature = "guest"))]
   impl Outputs {
     pub async fn values(&mut self) -> Result<PortOutput<Vec<String>>, ProviderError> {
-      let packets = self.packets.take("values").await;
+      let packets = self.packets.drain_port("values").await;
       Ok(PortOutput::new("values".to_owned(), packets))
     }
   }
 
   #[cfg(all(feature = "wasm", feature = "guest"))]
   impl Outputs {
-    pub fn values(&mut self) -> Result<PortOutput, WasmError> {
-      let packets = self
-        .packets
-        .take("values")
-        .ok_or_else(|| WasmError::ResponseMissing("values".to_owned()))?;
+    pub fn values(&mut self) -> Result<PortOutput, ComponentError> {
+      let packets = self.packets.drain_port("values")?;
       Ok(PortOutput::new("values".to_owned(), packets))
     }
   }
@@ -1120,12 +1330,21 @@ pub mod list_remove {
     }
   }
 
-  #[cfg(any(feature = "native", feature = "wasm"))]
+  #[cfg(all(feature = "native", not(feature = "wasm")))]
   pub fn populate_inputs(mut payload: TransportMap) -> Result<Inputs, TransportError> {
     Ok(Inputs {
       key: payload.consume("key")?,
       value: payload.consume("value")?,
       num: payload.consume("num")?,
+    })
+  }
+
+  #[cfg(all(feature = "wasm", not(feature = "native")))]
+  fn populate_inputs(payload: &IncomingPayload) -> Result<Inputs, WasmError> {
+    Ok(Inputs {
+      key: deserialize(payload.get("key")?)?,
+      value: deserialize(payload.get("value")?)?,
+      num: deserialize(payload.get("num")?)?,
     })
   }
 
@@ -1139,22 +1358,19 @@ pub mod list_remove {
     pub num: u32,
   }
 
-  #[cfg(any(feature = "native", feature = "wasm"))]
+  #[cfg(all(feature = "guest", any(feature = "native", feature = "wasm")))]
   impl From<Inputs> for TransportMap {
     fn from(inputs: Inputs) -> TransportMap {
       let mut map = TransportMap::new();
       map.insert("key", MessageTransport::success(&inputs.key));
-
       map.insert("value", MessageTransport::success(&inputs.value));
-
       map.insert("num", MessageTransport::success(&inputs.num));
-
       map
     }
   }
 
   #[must_use]
-  #[cfg(any(feature = "native", feature = "wasm"))]
+  #[cfg(all(feature = "provider", feature = "native"))]
   pub fn inputs_list() -> std::collections::HashMap<String, TypeSignature> {
     let mut map = std::collections::HashMap::new();
     map.insert("key".to_owned(), TypeSignature::String);
@@ -1162,27 +1378,34 @@ pub mod list_remove {
     map.insert("num".to_owned(), TypeSignature::U32);
     map
   }
-  #[derive(Debug, Default)]
-  #[cfg(feature = "provider")]
-  pub struct OutputPorts {
-    pub num: NumPortSender,
-  }
-
+  // A list of ports and their type signatures.
   #[must_use]
-  #[cfg(any(feature = "native", feature = "wasm"))]
+  #[cfg(all(feature = "provider", any(feature = "native", feature = "wasm")))]
   pub fn outputs_list() -> std::collections::HashMap<String, TypeSignature> {
     let mut map = std::collections::HashMap::new();
     map.insert("num".to_owned(), TypeSignature::U32);
     map
   }
 
+  // A list of output ports and their associated stream sender implementations.
+  #[derive(Debug)]
+  #[cfg_attr(all(feature = "provider", feature = "native"), derive(Default))]
+  #[cfg(feature = "provider")]
+  pub struct OutputPorts {
+    pub num: NumPortSender,
+  }
+
+  // Definition and implementation of each port's sender.
   #[derive(Debug)]
   #[cfg(feature = "provider")]
   pub struct NumPortSender {
+    #[cfg(feature = "native")]
     port: PortChannel,
+    #[cfg(feature = "wasm")]
+    id: u32,
   }
 
-  #[cfg(feature = "provider")]
+  #[cfg(all(feature = "provider", feature = "native"))]
   impl Default for NumPortSender {
     fn default() -> Self {
       Self {
@@ -1191,7 +1414,8 @@ pub mod list_remove {
     }
   }
 
-  #[cfg(feature = "provider")]
+  // Native sender implementation
+  #[cfg(all(feature = "provider", feature = "native"))]
   impl PortSender for NumPortSender {
     fn get_port(&self) -> Result<&PortChannel, ProviderError> {
       if self.port.is_closed() {
@@ -1206,13 +1430,32 @@ pub mod list_remove {
     }
   }
 
+  // WASM sender implementation
+  #[cfg(all(feature = "provider", feature = "wasm"))]
+  impl PortSender for NumPortSender {
+    type PayloadType = u32;
+    fn get_name(&self) -> String {
+      "num".to_string()
+    }
+    fn get_id(&self) -> u32 {
+      self.id
+    }
+  }
+
   #[must_use]
-  #[cfg(feature = "provider")]
+  #[cfg(all(feature = "provider", feature = "native"))]
   pub fn get_outputs() -> (OutputPorts, TransportStream) {
     let mut outputs = OutputPorts::default();
     let mut ports = vec![&mut outputs.num.port];
     let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)
+  }
+
+  #[cfg(all(feature = "provider", feature = "wasm"))]
+  fn get_outputs(id: u32) -> OutputPorts {
+    OutputPorts {
+      num: NumPortSender { id },
+    }
   }
 
   #[cfg(all(feature = "guest"))]
@@ -1224,18 +1467,15 @@ pub mod list_remove {
   #[cfg(all(feature = "native", feature = "guest"))]
   impl Outputs {
     pub async fn num(&mut self) -> Result<PortOutput<u32>, ProviderError> {
-      let packets = self.packets.take("num").await;
+      let packets = self.packets.drain_port("num").await;
       Ok(PortOutput::new("num".to_owned(), packets))
     }
   }
 
   #[cfg(all(feature = "wasm", feature = "guest"))]
   impl Outputs {
-    pub fn num(&mut self) -> Result<PortOutput, WasmError> {
-      let packets = self
-        .packets
-        .take("num")
-        .ok_or_else(|| WasmError::ResponseMissing("num".to_owned()))?;
+    pub fn num(&mut self) -> Result<PortOutput, ComponentError> {
+      let packets = self.packets.drain_port("num")?;
       Ok(PortOutput::new("num".to_owned(), packets))
     }
   }
@@ -1279,11 +1519,19 @@ pub mod set_add {
     }
   }
 
-  #[cfg(any(feature = "native", feature = "wasm"))]
+  #[cfg(all(feature = "native", not(feature = "wasm")))]
   pub fn populate_inputs(mut payload: TransportMap) -> Result<Inputs, TransportError> {
     Ok(Inputs {
       key: payload.consume("key")?,
       values: payload.consume("values")?,
+    })
+  }
+
+  #[cfg(all(feature = "wasm", not(feature = "native")))]
+  fn populate_inputs(payload: &IncomingPayload) -> Result<Inputs, WasmError> {
+    Ok(Inputs {
+      key: deserialize(payload.get("key")?)?,
+      values: deserialize(payload.get("values")?)?,
     })
   }
 
@@ -1295,20 +1543,18 @@ pub mod set_add {
     pub values: Vec<String>,
   }
 
-  #[cfg(any(feature = "native", feature = "wasm"))]
+  #[cfg(all(feature = "guest", any(feature = "native", feature = "wasm")))]
   impl From<Inputs> for TransportMap {
     fn from(inputs: Inputs) -> TransportMap {
       let mut map = TransportMap::new();
       map.insert("key", MessageTransport::success(&inputs.key));
-
       map.insert("values", MessageTransport::success(&inputs.values));
-
       map
     }
   }
 
   #[must_use]
-  #[cfg(any(feature = "native", feature = "wasm"))]
+  #[cfg(all(feature = "provider", feature = "native"))]
   pub fn inputs_list() -> std::collections::HashMap<String, TypeSignature> {
     let mut map = std::collections::HashMap::new();
     map.insert("key".to_owned(), TypeSignature::String);
@@ -1320,27 +1566,34 @@ pub mod set_add {
     );
     map
   }
-  #[derive(Debug, Default)]
-  #[cfg(feature = "provider")]
-  pub struct OutputPorts {
-    pub length: LengthPortSender,
-  }
-
+  // A list of ports and their type signatures.
   #[must_use]
-  #[cfg(any(feature = "native", feature = "wasm"))]
+  #[cfg(all(feature = "provider", any(feature = "native", feature = "wasm")))]
   pub fn outputs_list() -> std::collections::HashMap<String, TypeSignature> {
     let mut map = std::collections::HashMap::new();
     map.insert("length".to_owned(), TypeSignature::U32);
     map
   }
 
+  // A list of output ports and their associated stream sender implementations.
+  #[derive(Debug)]
+  #[cfg_attr(all(feature = "provider", feature = "native"), derive(Default))]
+  #[cfg(feature = "provider")]
+  pub struct OutputPorts {
+    pub length: LengthPortSender,
+  }
+
+  // Definition and implementation of each port's sender.
   #[derive(Debug)]
   #[cfg(feature = "provider")]
   pub struct LengthPortSender {
+    #[cfg(feature = "native")]
     port: PortChannel,
+    #[cfg(feature = "wasm")]
+    id: u32,
   }
 
-  #[cfg(feature = "provider")]
+  #[cfg(all(feature = "provider", feature = "native"))]
   impl Default for LengthPortSender {
     fn default() -> Self {
       Self {
@@ -1349,7 +1602,8 @@ pub mod set_add {
     }
   }
 
-  #[cfg(feature = "provider")]
+  // Native sender implementation
+  #[cfg(all(feature = "provider", feature = "native"))]
   impl PortSender for LengthPortSender {
     fn get_port(&self) -> Result<&PortChannel, ProviderError> {
       if self.port.is_closed() {
@@ -1364,13 +1618,32 @@ pub mod set_add {
     }
   }
 
+  // WASM sender implementation
+  #[cfg(all(feature = "provider", feature = "wasm"))]
+  impl PortSender for LengthPortSender {
+    type PayloadType = u32;
+    fn get_name(&self) -> String {
+      "length".to_string()
+    }
+    fn get_id(&self) -> u32 {
+      self.id
+    }
+  }
+
   #[must_use]
-  #[cfg(feature = "provider")]
+  #[cfg(all(feature = "provider", feature = "native"))]
   pub fn get_outputs() -> (OutputPorts, TransportStream) {
     let mut outputs = OutputPorts::default();
     let mut ports = vec![&mut outputs.length.port];
     let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)
+  }
+
+  #[cfg(all(feature = "provider", feature = "wasm"))]
+  fn get_outputs(id: u32) -> OutputPorts {
+    OutputPorts {
+      length: LengthPortSender { id },
+    }
   }
 
   #[cfg(all(feature = "guest"))]
@@ -1382,18 +1655,15 @@ pub mod set_add {
   #[cfg(all(feature = "native", feature = "guest"))]
   impl Outputs {
     pub async fn length(&mut self) -> Result<PortOutput<u32>, ProviderError> {
-      let packets = self.packets.take("length").await;
+      let packets = self.packets.drain_port("length").await;
       Ok(PortOutput::new("length".to_owned(), packets))
     }
   }
 
   #[cfg(all(feature = "wasm", feature = "guest"))]
   impl Outputs {
-    pub fn length(&mut self) -> Result<PortOutput, WasmError> {
-      let packets = self
-        .packets
-        .take("length")
-        .ok_or_else(|| WasmError::ResponseMissing("length".to_owned()))?;
+    pub fn length(&mut self) -> Result<PortOutput, ComponentError> {
+      let packets = self.packets.drain_port("length")?;
       Ok(PortOutput::new("length".to_owned(), packets))
     }
   }
@@ -1437,11 +1707,19 @@ pub mod set_contains {
     }
   }
 
-  #[cfg(any(feature = "native", feature = "wasm"))]
+  #[cfg(all(feature = "native", not(feature = "wasm")))]
   pub fn populate_inputs(mut payload: TransportMap) -> Result<Inputs, TransportError> {
     Ok(Inputs {
       key: payload.consume("key")?,
       member: payload.consume("member")?,
+    })
+  }
+
+  #[cfg(all(feature = "wasm", not(feature = "native")))]
+  fn populate_inputs(payload: &IncomingPayload) -> Result<Inputs, WasmError> {
+    Ok(Inputs {
+      key: deserialize(payload.get("key")?)?,
+      member: deserialize(payload.get("member")?)?,
     })
   }
 
@@ -1453,47 +1731,52 @@ pub mod set_contains {
     pub member: String,
   }
 
-  #[cfg(any(feature = "native", feature = "wasm"))]
+  #[cfg(all(feature = "guest", any(feature = "native", feature = "wasm")))]
   impl From<Inputs> for TransportMap {
     fn from(inputs: Inputs) -> TransportMap {
       let mut map = TransportMap::new();
       map.insert("key", MessageTransport::success(&inputs.key));
-
       map.insert("member", MessageTransport::success(&inputs.member));
-
       map
     }
   }
 
   #[must_use]
-  #[cfg(any(feature = "native", feature = "wasm"))]
+  #[cfg(all(feature = "provider", feature = "native"))]
   pub fn inputs_list() -> std::collections::HashMap<String, TypeSignature> {
     let mut map = std::collections::HashMap::new();
     map.insert("key".to_owned(), TypeSignature::String);
     map.insert("member".to_owned(), TypeSignature::String);
     map
   }
-  #[derive(Debug, Default)]
-  #[cfg(feature = "provider")]
-  pub struct OutputPorts {
-    pub exists: ExistsPortSender,
-  }
-
+  // A list of ports and their type signatures.
   #[must_use]
-  #[cfg(any(feature = "native", feature = "wasm"))]
+  #[cfg(all(feature = "provider", any(feature = "native", feature = "wasm")))]
   pub fn outputs_list() -> std::collections::HashMap<String, TypeSignature> {
     let mut map = std::collections::HashMap::new();
     map.insert("exists".to_owned(), TypeSignature::Bool);
     map
   }
 
+  // A list of output ports and their associated stream sender implementations.
+  #[derive(Debug)]
+  #[cfg_attr(all(feature = "provider", feature = "native"), derive(Default))]
+  #[cfg(feature = "provider")]
+  pub struct OutputPorts {
+    pub exists: ExistsPortSender,
+  }
+
+  // Definition and implementation of each port's sender.
   #[derive(Debug)]
   #[cfg(feature = "provider")]
   pub struct ExistsPortSender {
+    #[cfg(feature = "native")]
     port: PortChannel,
+    #[cfg(feature = "wasm")]
+    id: u32,
   }
 
-  #[cfg(feature = "provider")]
+  #[cfg(all(feature = "provider", feature = "native"))]
   impl Default for ExistsPortSender {
     fn default() -> Self {
       Self {
@@ -1502,7 +1785,8 @@ pub mod set_contains {
     }
   }
 
-  #[cfg(feature = "provider")]
+  // Native sender implementation
+  #[cfg(all(feature = "provider", feature = "native"))]
   impl PortSender for ExistsPortSender {
     fn get_port(&self) -> Result<&PortChannel, ProviderError> {
       if self.port.is_closed() {
@@ -1517,13 +1801,32 @@ pub mod set_contains {
     }
   }
 
+  // WASM sender implementation
+  #[cfg(all(feature = "provider", feature = "wasm"))]
+  impl PortSender for ExistsPortSender {
+    type PayloadType = bool;
+    fn get_name(&self) -> String {
+      "exists".to_string()
+    }
+    fn get_id(&self) -> u32 {
+      self.id
+    }
+  }
+
   #[must_use]
-  #[cfg(feature = "provider")]
+  #[cfg(all(feature = "provider", feature = "native"))]
   pub fn get_outputs() -> (OutputPorts, TransportStream) {
     let mut outputs = OutputPorts::default();
     let mut ports = vec![&mut outputs.exists.port];
     let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)
+  }
+
+  #[cfg(all(feature = "provider", feature = "wasm"))]
+  fn get_outputs(id: u32) -> OutputPorts {
+    OutputPorts {
+      exists: ExistsPortSender { id },
+    }
   }
 
   #[cfg(all(feature = "guest"))]
@@ -1535,18 +1838,15 @@ pub mod set_contains {
   #[cfg(all(feature = "native", feature = "guest"))]
   impl Outputs {
     pub async fn exists(&mut self) -> Result<PortOutput<bool>, ProviderError> {
-      let packets = self.packets.take("exists").await;
+      let packets = self.packets.drain_port("exists").await;
       Ok(PortOutput::new("exists".to_owned(), packets))
     }
   }
 
   #[cfg(all(feature = "wasm", feature = "guest"))]
   impl Outputs {
-    pub fn exists(&mut self) -> Result<PortOutput, WasmError> {
-      let packets = self
-        .packets
-        .take("exists")
-        .ok_or_else(|| WasmError::ResponseMissing("exists".to_owned()))?;
+    pub fn exists(&mut self) -> Result<PortOutput, ComponentError> {
+      let packets = self.packets.drain_port("exists")?;
       Ok(PortOutput::new("exists".to_owned(), packets))
     }
   }
@@ -1590,10 +1890,17 @@ pub mod set_get {
     }
   }
 
-  #[cfg(any(feature = "native", feature = "wasm"))]
+  #[cfg(all(feature = "native", not(feature = "wasm")))]
   pub fn populate_inputs(mut payload: TransportMap) -> Result<Inputs, TransportError> {
     Ok(Inputs {
       key: payload.consume("key")?,
+    })
+  }
+
+  #[cfg(all(feature = "wasm", not(feature = "native")))]
+  fn populate_inputs(payload: &IncomingPayload) -> Result<Inputs, WasmError> {
+    Ok(Inputs {
+      key: deserialize(payload.get("key")?)?,
     })
   }
 
@@ -1603,31 +1910,25 @@ pub mod set_get {
     pub key: String,
   }
 
-  #[cfg(any(feature = "native", feature = "wasm"))]
+  #[cfg(all(feature = "guest", any(feature = "native", feature = "wasm")))]
   impl From<Inputs> for TransportMap {
     fn from(inputs: Inputs) -> TransportMap {
       let mut map = TransportMap::new();
       map.insert("key", MessageTransport::success(&inputs.key));
-
       map
     }
   }
 
   #[must_use]
-  #[cfg(any(feature = "native", feature = "wasm"))]
+  #[cfg(all(feature = "provider", feature = "native"))]
   pub fn inputs_list() -> std::collections::HashMap<String, TypeSignature> {
     let mut map = std::collections::HashMap::new();
     map.insert("key".to_owned(), TypeSignature::String);
     map
   }
-  #[derive(Debug, Default)]
-  #[cfg(feature = "provider")]
-  pub struct OutputPorts {
-    pub values: ValuesPortSender,
-  }
-
+  // A list of ports and their type signatures.
   #[must_use]
-  #[cfg(any(feature = "native", feature = "wasm"))]
+  #[cfg(all(feature = "provider", any(feature = "native", feature = "wasm")))]
   pub fn outputs_list() -> std::collections::HashMap<String, TypeSignature> {
     let mut map = std::collections::HashMap::new();
     map.insert(
@@ -1639,13 +1940,25 @@ pub mod set_get {
     map
   }
 
+  // A list of output ports and their associated stream sender implementations.
+  #[derive(Debug)]
+  #[cfg_attr(all(feature = "provider", feature = "native"), derive(Default))]
+  #[cfg(feature = "provider")]
+  pub struct OutputPorts {
+    pub values: ValuesPortSender,
+  }
+
+  // Definition and implementation of each port's sender.
   #[derive(Debug)]
   #[cfg(feature = "provider")]
   pub struct ValuesPortSender {
+    #[cfg(feature = "native")]
     port: PortChannel,
+    #[cfg(feature = "wasm")]
+    id: u32,
   }
 
-  #[cfg(feature = "provider")]
+  #[cfg(all(feature = "provider", feature = "native"))]
   impl Default for ValuesPortSender {
     fn default() -> Self {
       Self {
@@ -1654,7 +1967,8 @@ pub mod set_get {
     }
   }
 
-  #[cfg(feature = "provider")]
+  // Native sender implementation
+  #[cfg(all(feature = "provider", feature = "native"))]
   impl PortSender for ValuesPortSender {
     fn get_port(&self) -> Result<&PortChannel, ProviderError> {
       if self.port.is_closed() {
@@ -1669,13 +1983,32 @@ pub mod set_get {
     }
   }
 
+  // WASM sender implementation
+  #[cfg(all(feature = "provider", feature = "wasm"))]
+  impl PortSender for ValuesPortSender {
+    type PayloadType = Vec<String>;
+    fn get_name(&self) -> String {
+      "values".to_string()
+    }
+    fn get_id(&self) -> u32 {
+      self.id
+    }
+  }
+
   #[must_use]
-  #[cfg(feature = "provider")]
+  #[cfg(all(feature = "provider", feature = "native"))]
   pub fn get_outputs() -> (OutputPorts, TransportStream) {
     let mut outputs = OutputPorts::default();
     let mut ports = vec![&mut outputs.values.port];
     let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)
+  }
+
+  #[cfg(all(feature = "provider", feature = "wasm"))]
+  fn get_outputs(id: u32) -> OutputPorts {
+    OutputPorts {
+      values: ValuesPortSender { id },
+    }
   }
 
   #[cfg(all(feature = "guest"))]
@@ -1687,18 +2020,15 @@ pub mod set_get {
   #[cfg(all(feature = "native", feature = "guest"))]
   impl Outputs {
     pub async fn values(&mut self) -> Result<PortOutput<Vec<String>>, ProviderError> {
-      let packets = self.packets.take("values").await;
+      let packets = self.packets.drain_port("values").await;
       Ok(PortOutput::new("values".to_owned(), packets))
     }
   }
 
   #[cfg(all(feature = "wasm", feature = "guest"))]
   impl Outputs {
-    pub fn values(&mut self) -> Result<PortOutput, WasmError> {
-      let packets = self
-        .packets
-        .take("values")
-        .ok_or_else(|| WasmError::ResponseMissing("values".to_owned()))?;
+    pub fn values(&mut self) -> Result<PortOutput, ComponentError> {
+      let packets = self.packets.drain_port("values")?;
       Ok(PortOutput::new("values".to_owned(), packets))
     }
   }
@@ -1742,11 +2072,19 @@ pub mod set_remove {
     }
   }
 
-  #[cfg(any(feature = "native", feature = "wasm"))]
+  #[cfg(all(feature = "native", not(feature = "wasm")))]
   pub fn populate_inputs(mut payload: TransportMap) -> Result<Inputs, TransportError> {
     Ok(Inputs {
       key: payload.consume("key")?,
       values: payload.consume("values")?,
+    })
+  }
+
+  #[cfg(all(feature = "wasm", not(feature = "native")))]
+  fn populate_inputs(payload: &IncomingPayload) -> Result<Inputs, WasmError> {
+    Ok(Inputs {
+      key: deserialize(payload.get("key")?)?,
+      values: deserialize(payload.get("values")?)?,
     })
   }
 
@@ -1758,20 +2096,18 @@ pub mod set_remove {
     pub values: Vec<String>,
   }
 
-  #[cfg(any(feature = "native", feature = "wasm"))]
+  #[cfg(all(feature = "guest", any(feature = "native", feature = "wasm")))]
   impl From<Inputs> for TransportMap {
     fn from(inputs: Inputs) -> TransportMap {
       let mut map = TransportMap::new();
       map.insert("key", MessageTransport::success(&inputs.key));
-
       map.insert("values", MessageTransport::success(&inputs.values));
-
       map
     }
   }
 
   #[must_use]
-  #[cfg(any(feature = "native", feature = "wasm"))]
+  #[cfg(all(feature = "provider", feature = "native"))]
   pub fn inputs_list() -> std::collections::HashMap<String, TypeSignature> {
     let mut map = std::collections::HashMap::new();
     map.insert("key".to_owned(), TypeSignature::String);
@@ -1783,27 +2119,34 @@ pub mod set_remove {
     );
     map
   }
-  #[derive(Debug, Default)]
-  #[cfg(feature = "provider")]
-  pub struct OutputPorts {
-    pub num: NumPortSender,
-  }
-
+  // A list of ports and their type signatures.
   #[must_use]
-  #[cfg(any(feature = "native", feature = "wasm"))]
+  #[cfg(all(feature = "provider", any(feature = "native", feature = "wasm")))]
   pub fn outputs_list() -> std::collections::HashMap<String, TypeSignature> {
     let mut map = std::collections::HashMap::new();
     map.insert("num".to_owned(), TypeSignature::U32);
     map
   }
 
+  // A list of output ports and their associated stream sender implementations.
+  #[derive(Debug)]
+  #[cfg_attr(all(feature = "provider", feature = "native"), derive(Default))]
+  #[cfg(feature = "provider")]
+  pub struct OutputPorts {
+    pub num: NumPortSender,
+  }
+
+  // Definition and implementation of each port's sender.
   #[derive(Debug)]
   #[cfg(feature = "provider")]
   pub struct NumPortSender {
+    #[cfg(feature = "native")]
     port: PortChannel,
+    #[cfg(feature = "wasm")]
+    id: u32,
   }
 
-  #[cfg(feature = "provider")]
+  #[cfg(all(feature = "provider", feature = "native"))]
   impl Default for NumPortSender {
     fn default() -> Self {
       Self {
@@ -1812,7 +2155,8 @@ pub mod set_remove {
     }
   }
 
-  #[cfg(feature = "provider")]
+  // Native sender implementation
+  #[cfg(all(feature = "provider", feature = "native"))]
   impl PortSender for NumPortSender {
     fn get_port(&self) -> Result<&PortChannel, ProviderError> {
       if self.port.is_closed() {
@@ -1827,13 +2171,32 @@ pub mod set_remove {
     }
   }
 
+  // WASM sender implementation
+  #[cfg(all(feature = "provider", feature = "wasm"))]
+  impl PortSender for NumPortSender {
+    type PayloadType = u32;
+    fn get_name(&self) -> String {
+      "num".to_string()
+    }
+    fn get_id(&self) -> u32 {
+      self.id
+    }
+  }
+
   #[must_use]
-  #[cfg(feature = "provider")]
+  #[cfg(all(feature = "provider", feature = "native"))]
   pub fn get_outputs() -> (OutputPorts, TransportStream) {
     let mut outputs = OutputPorts::default();
     let mut ports = vec![&mut outputs.num.port];
     let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)
+  }
+
+  #[cfg(all(feature = "provider", feature = "wasm"))]
+  fn get_outputs(id: u32) -> OutputPorts {
+    OutputPorts {
+      num: NumPortSender { id },
+    }
   }
 
   #[cfg(all(feature = "guest"))]
@@ -1845,18 +2208,15 @@ pub mod set_remove {
   #[cfg(all(feature = "native", feature = "guest"))]
   impl Outputs {
     pub async fn num(&mut self) -> Result<PortOutput<u32>, ProviderError> {
-      let packets = self.packets.take("num").await;
+      let packets = self.packets.drain_port("num").await;
       Ok(PortOutput::new("num".to_owned(), packets))
     }
   }
 
   #[cfg(all(feature = "wasm", feature = "guest"))]
   impl Outputs {
-    pub fn num(&mut self) -> Result<PortOutput, WasmError> {
-      let packets = self
-        .packets
-        .take("num")
-        .ok_or_else(|| WasmError::ResponseMissing("num".to_owned()))?;
+    pub fn num(&mut self) -> Result<PortOutput, ComponentError> {
+      let packets = self.packets.drain_port("num")?;
       Ok(PortOutput::new("num".to_owned(), packets))
     }
   }
@@ -1900,12 +2260,21 @@ pub mod set_scan {
     }
   }
 
-  #[cfg(any(feature = "native", feature = "wasm"))]
+  #[cfg(all(feature = "native", not(feature = "wasm")))]
   pub fn populate_inputs(mut payload: TransportMap) -> Result<Inputs, TransportError> {
     Ok(Inputs {
       key: payload.consume("key")?,
       cursor: payload.consume("cursor")?,
       count: payload.consume("count")?,
+    })
+  }
+
+  #[cfg(all(feature = "wasm", not(feature = "native")))]
+  fn populate_inputs(payload: &IncomingPayload) -> Result<Inputs, WasmError> {
+    Ok(Inputs {
+      key: deserialize(payload.get("key")?)?,
+      cursor: deserialize(payload.get("cursor")?)?,
+      count: deserialize(payload.get("count")?)?,
     })
   }
 
@@ -1919,22 +2288,19 @@ pub mod set_scan {
     pub count: u32,
   }
 
-  #[cfg(any(feature = "native", feature = "wasm"))]
+  #[cfg(all(feature = "guest", any(feature = "native", feature = "wasm")))]
   impl From<Inputs> for TransportMap {
     fn from(inputs: Inputs) -> TransportMap {
       let mut map = TransportMap::new();
       map.insert("key", MessageTransport::success(&inputs.key));
-
       map.insert("cursor", MessageTransport::success(&inputs.cursor));
-
       map.insert("count", MessageTransport::success(&inputs.count));
-
       map
     }
   }
 
   #[must_use]
-  #[cfg(any(feature = "native", feature = "wasm"))]
+  #[cfg(all(feature = "provider", feature = "native"))]
   pub fn inputs_list() -> std::collections::HashMap<String, TypeSignature> {
     let mut map = std::collections::HashMap::new();
     map.insert("key".to_owned(), TypeSignature::String);
@@ -1942,15 +2308,9 @@ pub mod set_scan {
     map.insert("count".to_owned(), TypeSignature::U32);
     map
   }
-  #[derive(Debug, Default)]
-  #[cfg(feature = "provider")]
-  pub struct OutputPorts {
-    pub values: ValuesPortSender,
-    pub cursor: CursorPortSender,
-  }
-
+  // A list of ports and their type signatures.
   #[must_use]
-  #[cfg(any(feature = "native", feature = "wasm"))]
+  #[cfg(all(feature = "provider", any(feature = "native", feature = "wasm")))]
   pub fn outputs_list() -> std::collections::HashMap<String, TypeSignature> {
     let mut map = std::collections::HashMap::new();
     map.insert(
@@ -1963,13 +2323,26 @@ pub mod set_scan {
     map
   }
 
+  // A list of output ports and their associated stream sender implementations.
+  #[derive(Debug)]
+  #[cfg_attr(all(feature = "provider", feature = "native"), derive(Default))]
+  #[cfg(feature = "provider")]
+  pub struct OutputPorts {
+    pub values: ValuesPortSender,
+    pub cursor: CursorPortSender,
+  }
+
+  // Definition and implementation of each port's sender.
   #[derive(Debug)]
   #[cfg(feature = "provider")]
   pub struct ValuesPortSender {
+    #[cfg(feature = "native")]
     port: PortChannel,
+    #[cfg(feature = "wasm")]
+    id: u32,
   }
 
-  #[cfg(feature = "provider")]
+  #[cfg(all(feature = "provider", feature = "native"))]
   impl Default for ValuesPortSender {
     fn default() -> Self {
       Self {
@@ -1978,7 +2351,8 @@ pub mod set_scan {
     }
   }
 
-  #[cfg(feature = "provider")]
+  // Native sender implementation
+  #[cfg(all(feature = "provider", feature = "native"))]
   impl PortSender for ValuesPortSender {
     fn get_port(&self) -> Result<&PortChannel, ProviderError> {
       if self.port.is_closed() {
@@ -1992,13 +2366,28 @@ pub mod set_scan {
       &self.port.name
     }
   }
+
+  // WASM sender implementation
+  #[cfg(all(feature = "provider", feature = "wasm"))]
+  impl PortSender for ValuesPortSender {
+    type PayloadType = Vec<String>;
+    fn get_name(&self) -> String {
+      "values".to_string()
+    }
+    fn get_id(&self) -> u32 {
+      self.id
+    }
+  }
   #[derive(Debug)]
   #[cfg(feature = "provider")]
   pub struct CursorPortSender {
+    #[cfg(feature = "native")]
     port: PortChannel,
+    #[cfg(feature = "wasm")]
+    id: u32,
   }
 
-  #[cfg(feature = "provider")]
+  #[cfg(all(feature = "provider", feature = "native"))]
   impl Default for CursorPortSender {
     fn default() -> Self {
       Self {
@@ -2007,7 +2396,8 @@ pub mod set_scan {
     }
   }
 
-  #[cfg(feature = "provider")]
+  // Native sender implementation
+  #[cfg(all(feature = "provider", feature = "native"))]
   impl PortSender for CursorPortSender {
     fn get_port(&self) -> Result<&PortChannel, ProviderError> {
       if self.port.is_closed() {
@@ -2022,13 +2412,33 @@ pub mod set_scan {
     }
   }
 
+  // WASM sender implementation
+  #[cfg(all(feature = "provider", feature = "wasm"))]
+  impl PortSender for CursorPortSender {
+    type PayloadType = String;
+    fn get_name(&self) -> String {
+      "cursor".to_string()
+    }
+    fn get_id(&self) -> u32 {
+      self.id
+    }
+  }
+
   #[must_use]
-  #[cfg(feature = "provider")]
+  #[cfg(all(feature = "provider", feature = "native"))]
   pub fn get_outputs() -> (OutputPorts, TransportStream) {
     let mut outputs = OutputPorts::default();
     let mut ports = vec![&mut outputs.values.port, &mut outputs.cursor.port];
     let stream = PortChannel::merge_all(&mut ports);
     (outputs, stream)
+  }
+
+  #[cfg(all(feature = "provider", feature = "wasm"))]
+  fn get_outputs(id: u32) -> OutputPorts {
+    OutputPorts {
+      values: ValuesPortSender { id },
+      cursor: CursorPortSender { id },
+    }
   }
 
   #[cfg(all(feature = "guest"))]
@@ -2040,29 +2450,23 @@ pub mod set_scan {
   #[cfg(all(feature = "native", feature = "guest"))]
   impl Outputs {
     pub async fn values(&mut self) -> Result<PortOutput<Vec<String>>, ProviderError> {
-      let packets = self.packets.take("values").await;
+      let packets = self.packets.drain_port("values").await;
       Ok(PortOutput::new("values".to_owned(), packets))
     }
     pub async fn cursor(&mut self) -> Result<PortOutput<String>, ProviderError> {
-      let packets = self.packets.take("cursor").await;
+      let packets = self.packets.drain_port("cursor").await;
       Ok(PortOutput::new("cursor".to_owned(), packets))
     }
   }
 
   #[cfg(all(feature = "wasm", feature = "guest"))]
   impl Outputs {
-    pub fn values(&mut self) -> Result<PortOutput, WasmError> {
-      let packets = self
-        .packets
-        .take("values")
-        .ok_or_else(|| WasmError::ResponseMissing("values".to_owned()))?;
+    pub fn values(&mut self) -> Result<PortOutput, ComponentError> {
+      let packets = self.packets.drain_port("values")?;
       Ok(PortOutput::new("values".to_owned(), packets))
     }
-    pub fn cursor(&mut self) -> Result<PortOutput, WasmError> {
-      let packets = self
-        .packets
-        .take("cursor")
-        .ok_or_else(|| WasmError::ResponseMissing("cursor".to_owned()))?;
+    pub fn cursor(&mut self) -> Result<PortOutput, ComponentError> {
+      let packets = self.packets.drain_port("cursor")?;
       Ok(PortOutput::new("cursor".to_owned(), packets))
     }
   }

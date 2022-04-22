@@ -61,7 +61,7 @@ pub(crate) async fn handle_command(opts: TestCommand) -> Result<()> {
     ..Default::default()
   };
 
-  let config = merge_config(manifest, opts.host, Some(server_options));
+  let config = merge_config(manifest, &opts.host, Some(server_options));
 
   let host_builder = HostBuilder::from_definition(config);
 

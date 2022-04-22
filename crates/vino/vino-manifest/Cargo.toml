@@ -21,6 +21,7 @@ serde_yaml = "0.8"
 thiserror = "1.0"
 tracing = "0.1"
 vino-macros = { path = "../../../sdk/crates/vino-macros" }
+shellexpand = "2.1"
 
 [dev-dependencies]
 anyhow = "1.0"

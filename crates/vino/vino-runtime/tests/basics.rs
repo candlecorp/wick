@@ -21,14 +21,14 @@ async fn simple_schematic() -> Result<()> {
   let mut result = network
     .invoke(Invocation::new(
       Entity::test("simple schematic"),
-      Entity::schematic("simple"),
+      Entity::local("simple"),
       data.try_into()?,
       None,
     ))
     .await?;
 
   println!("Result: {:?}", result);
-  let mut messages: Vec<TransportWrapper> = result.collect_port("output").await;
+  let mut messages: Vec<TransportWrapper> = result.drain_port("output").await;
   assert_eq!(result.buffered_size(), (0, 0));
   assert_eq!(messages.len(), 1);
 
@@ -51,14 +51,14 @@ async fn echo() -> Result<()> {
   let mut result = network
     .invoke(Invocation::new(
       Entity::test("echo"),
-      Entity::schematic("echo"),
+      Entity::local("echo"),
       data.try_into()?,
       None,
     ))
     .await?;
 
   println!("Result: {:?}", result);
-  let mut messages: Vec<TransportWrapper> = result.collect_port("output").await;
+  let mut messages: Vec<TransportWrapper> = result.drain_port("output").await;
   assert_eq!(result.buffered_size(), (0, 0));
   assert_eq!(messages.len(), 1);
 
@@ -80,14 +80,14 @@ async fn senders() -> Result<()> {
   let mut result = network
     .invoke(Invocation::new(
       Entity::test("senders"),
-      Entity::schematic("senders"),
+      Entity::local("senders"),
       data.try_into()?,
       None,
     ))
     .await?;
 
   println!("Result: {:?}", result);
-  let mut messages: Vec<TransportWrapper> = result.collect_port("output").await;
+  let mut messages: Vec<TransportWrapper> = result.drain_port("output").await;
   assert_eq!(result.buffered_size(), (0, 0));
   assert_eq!(messages.len(), 1);
 
@@ -109,13 +109,13 @@ async fn no_inputs() -> Result<()> {
   let mut result = network
     .invoke(Invocation::new(
       Entity::test("test"),
-      Entity::schematic("uuid"),
+      Entity::local("uuid"),
       data.try_into()?,
       None,
     ))
     .await?;
 
-  let mut messages: Vec<TransportWrapper> = result.collect_port("output").await;
+  let mut messages: Vec<TransportWrapper> = result.drain_port("output").await;
   assert_eq!(result.buffered_size(), (0, 0));
   assert_eq!(messages.len(), 1);
 
@@ -141,13 +141,13 @@ async fn nested_schematics() -> Result<()> {
   let mut result = network
     .invoke(Invocation::new(
       Entity::test("nested_schematics"),
-      Entity::schematic("nested_parent"),
+      Entity::local("nested_parent"),
       data.try_into()?,
       None,
     ))
     .await?;
   println!("Result: {:?}", result);
-  let mut messages: Vec<TransportWrapper> = result.collect_port("parent_output").await;
+  let mut messages: Vec<TransportWrapper> = result.drain_port("parent_output").await;
   assert_eq!(result.buffered_size(), (0, 0));
   assert_eq!(messages.len(), 1);
 
@@ -169,13 +169,13 @@ async fn short_circuit_to_output() -> Result<()> {
   let mut result = network
     .invoke(Invocation::new(
       Entity::test("short circuit"),
-      Entity::schematic("short_circuit"),
+      Entity::local("short_circuit"),
       data.try_into()?,
       None,
     ))
     .await?;
 
-  let mut messages: Vec<TransportWrapper> = result.collect_port("output").await;
+  let mut messages: Vec<TransportWrapper> = result.drain_port("output").await;
   assert_eq!(messages.len(), 1);
 
   let output: TransportWrapper = messages.pop().unwrap();
@@ -198,13 +198,13 @@ async fn short_circuit_with_default() -> Result<()> {
   let mut result = network
     .invoke(Invocation::new(
       Entity::test("short circuit default"),
-      Entity::schematic("short_circuit"),
+      Entity::local("short_circuit"),
       data.try_into()?,
       None,
     ))
     .await?;
 
-  let mut messages: Vec<TransportWrapper> = result.collect_port("output").await;
+  let mut messages: Vec<TransportWrapper> = result.drain_port("output").await;
   assert_eq!(messages.len(), 1);
 
   let output: String = messages.pop().unwrap().payload.deserialize()?;
@@ -231,12 +231,12 @@ async fn multiple_schematics() -> Result<()> {
   let mut result = network
     .invoke(Invocation::new(
       Entity::test("multi schematics"),
-      Entity::schematic("first_schematic"),
+      Entity::local("first_schematic"),
       data.try_into()?,
       None,
     ))
     .await?;
-  let mut messages: Vec<TransportWrapper> = result.collect_port("output").await;
+  let mut messages: Vec<TransportWrapper> = result.drain_port("output").await;
   assert_eq!(messages.len(), 1);
 
   let output: i64 = messages.pop().unwrap().payload.deserialize()?;
@@ -249,12 +249,12 @@ async fn multiple_schematics() -> Result<()> {
   let mut result = network
     .invoke(Invocation::new(
       Entity::test("multi schematics"),
-      Entity::schematic("second_schematic"),
+      Entity::local("second_schematic"),
       data.try_into()?,
       None,
     ))
     .await?;
-  let mut messages: Vec<TransportWrapper> = result.collect_port("output").await;
+  let mut messages: Vec<TransportWrapper> = result.drain_port("output").await;
   assert_eq!(messages.len(), 1);
 
   let output: String = messages.pop().unwrap().payload.deserialize()?;
@@ -274,7 +274,7 @@ async fn subnetworks() -> Result<()> {
   let result = network
     .invoke(Invocation::new(
       Entity::test("subnetworks"),
-      Entity::schematic("parent"),
+      Entity::local("parent"),
       data.try_into()?,
       None,
     ))

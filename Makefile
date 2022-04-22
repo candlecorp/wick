@@ -23,6 +23,12 @@ TEST_WASM=$(TEST_WASM_DIR)/build/test_component_s.wasm
 TEST_WASI_DIR=$(CRATES_DIR)/integration/test-wasi-component
 TEST_WASI=$(TEST_WASI_DIR)/build/test_wasi_component_s.wasm
 
+TEST_MAIN_COMP_DIR=$(CRATES_DIR)/integration/test-main-component
+TEST_MAIN_COMP=$(TEST_WASI_DIR)/build/test_main_component_s.wasm
+
+TEST_MAIN_NETWORK_COMP_DIR=$(CRATES_DIR)/integration/test-main-network-component
+TEST_MAIN_NETWORK_COMP=$(TEST_WASI_DIR)/build/test_main_network_component_s.wasm
+
 TEST_PAR=crates/vino/vino-runtime/tests/bundle.tar
 TEST_PAR_BIN=crates/vino/vino-provider-par/vino-standalone
 
@@ -99,6 +105,12 @@ $(TEST_WASM):
 $(TEST_WASI):
 	$(MAKE) -C $(TEST_WASI_DIR)
 
+$(TEST_MAIN_COMP):
+	$(MAKE) -C $(TEST_MAIN_COMP_DIR)
+
+$(TEST_MAIN_NETWORK_COMP):
+	$(MAKE) -C $(TEST_MAIN_NETWORK_COMP_DIR)
+
 $(TEST_PAR_BIN):
 	cargo build -p vino-standalone --release
 	cp target/release/vino-standalone $@
@@ -110,7 +122,7 @@ $(TEST_PAR): $(TEST_PAR_BIN)
 	mkdir -p $@
 
 .PHONY: wasm
-wasm: $(TEST_WASM) $(TEST_WASI)   ## Build the test wasm artifacts
+wasm: $(TEST_WASM) $(TEST_WASI) $(TEST_MAIN_COMP) $(TEST_MAIN_NETWORK_COMP)   ## Build the test wasm artifacts
 
 .PHONY: test
 test: codegen wasm $(TEST_PAR) ## Run tests for the entire workspace

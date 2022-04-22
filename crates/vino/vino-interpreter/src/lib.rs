@@ -85,7 +85,7 @@
 // Add exceptions here
 #![allow(missing_docs)]
 
-pub(crate) mod constants;
+pub mod constants;
 mod default;
 pub mod graph;
 mod interpreter;

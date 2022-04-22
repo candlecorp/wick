@@ -247,7 +247,7 @@ pub async fn run_test(
 
   for (i, test) in expected.into_iter().enumerate() {
     let (payload, inherent) = test.get_payload();
-    let entity = Entity::local_component(test.component.clone());
+    let entity = Entity::local(test.component.clone());
     let test_name = test.get_description();
     let mut test_block = TestBlock::new(Some(test_name.clone()));
     let prefix = |msg: &str| format!("{}:{}", test_name, msg);

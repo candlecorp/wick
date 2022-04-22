@@ -18,7 +18,7 @@ pub struct HostDefinition {
   /// The [NetworkDefinition] from the manifest.
   pub network: NetworkDefinition,
 
-  /// The default schematic to execute via `vino run`.
+  /// The default schematic to execute if none provided.
   pub default_schematic: Option<String>,
 
   /// Configuration options.

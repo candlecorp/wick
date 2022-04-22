@@ -2,9 +2,12 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use async_trait::async_trait;
+use tokio_stream::StreamExt;
+use vino_entity::Entity;
+use vino_provider::ProviderLink;
 use vino_rpc::error::RpcError;
 use vino_rpc::{RpcHandler, RpcResult};
-use vino_transport::{BoxedTransportStream, Invocation, TransportMap, TransportWrapper};
+use vino_transport::{BoxedTransportStream, Invocation, MessageTransport, TransportMap, TransportWrapper};
 use vino_types::*;
 pub use wapc::WasiParams;
 
@@ -64,6 +67,41 @@ impl Provider {
     let host = builder.build(module)?;
 
     Ok(Self { pool: Arc::new(host) })
+  }
+
+  pub async fn exec_main(&self, origin: Entity, argv: Vec<String>) -> u32 {
+    let mut transport_map = TransportMap::default();
+    transport_map.insert("argv", MessageTransport::success(&argv));
+    let target = Entity::component(origin.namespace(), "main");
+    let link = ProviderLink::new(origin.clone(), target.clone());
+
+    transport_map.insert("network", MessageTransport::success(&link));
+    let invocation = Invocation::new(origin, target, transport_map, None);
+    let result = self.invoke(invocation).await;
+    if let Err(e) = result {
+      error!("main() died with fatal error: {}", e);
+      return 6;
+    }
+    let output = result.unwrap();
+    let packets: Vec<_> = output.collect().await;
+    for packet in packets {
+      if packet.port == "code" {
+        return if let MessageTransport::Failure(err) = packet.payload {
+          error!("main() component returned error: {}", err.message());
+          1
+        } else {
+          match packet.payload.deserialize::<u32>() {
+            Ok(code) => code,
+            Err(e) => {
+              error!("Could not get code from main() component: {}", e);
+              2
+            }
+          }
+        };
+      }
+    }
+    error!("No exit code received");
+    3
   }
 }
 
@@ -134,7 +172,7 @@ mod tests {
       "input".to_owned() => MessageTransport::messagepack(input),
     });
     debug!("payload: {:?}", job_payload);
-    let entity = Entity::local_component("validate");
+    let entity = Entity::local("validate");
     let invocation = Invocation::new_test(file!(), entity, job_payload, None);
     let mut outputs = provider.invoke(invocation).await?;
     let output = outputs.next().await.unwrap();

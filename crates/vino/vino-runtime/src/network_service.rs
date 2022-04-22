@@ -22,6 +22,7 @@ use crate::providers::{
   initialize_native_provider,
   initialize_network_provider,
   initialize_par_provider,
+  initialize_wasm_entrypoint,
   initialize_wasm_provider,
 };
 use crate::VINO_V0_NAMESPACE;
@@ -46,6 +47,7 @@ pub(crate) struct NetworkService {
   started_time: std::time::Instant,
   pub(crate) id: Uuid,
   interpreter: Arc<vino_interpreter::Interpreter>,
+  entrypoint: Option<vino_provider_wasm::provider::Provider>,
 }
 
 type ServiceMap = HashMap<Uuid, Arc<NetworkService>>;
@@ -74,18 +76,30 @@ impl NetworkService {
       providers.add(p);
     }
 
-    let mut interpreter =
-      vino_interpreter::Interpreter::new(Some(rng.seed()), graph, msg.namespace, Some(providers))
-        .map_err(|e| NetworkError::InterpreterInit(msg.manifest.source.unwrap_or_else(|| "unknown".to_owned()), e))?;
+    let source = msg.manifest.source.clone();
+    let mut interpreter = vino_interpreter::Interpreter::new(
+      Some(rng.seed()),
+      graph,
+      Some(msg.namespace.unwrap_or_else(|| msg.id.to_string())),
+      Some(providers),
+    )
+    .map_err(|e| NetworkError::InterpreterInit(source.unwrap_or_else(|| "unknown".to_owned()), e))?;
 
     match msg.event_log {
       Some(path) => interpreter.start(None, Some(Box::new(JsonWriter::new(path)))).await,
       None => interpreter.start(None, None).await,
     }
 
+    let entrypoint = if let Some(entry) = &msg.manifest.network().entry {
+      Some(initialize_wasm_entrypoint(entry, msg.id, msg.allow_latest, &msg.allowed_insecure).await?)
+    } else {
+      None
+    };
+
     let network = Arc::new(NetworkService {
       started_time: std::time::Instant::now(),
       id: msg.id,
+      entrypoint,
       interpreter: Arc::new(interpreter),
     });
 
@@ -93,6 +107,15 @@ impl NetworkService {
     registry.insert(msg.id, network.clone());
 
     Ok(network)
+  }
+
+  pub(crate) async fn exec_main(&self, argv: Vec<String>) -> u32 {
+    if let Some(entrypoint) = &self.entrypoint {
+      entrypoint.exec_main(Entity::Provider(self.id.to_string()), argv).await
+    } else {
+      error!("no entrypoint defined for network {}", self.id);
+      99
+    }
   }
 
   pub(crate) fn new_from_manifest(

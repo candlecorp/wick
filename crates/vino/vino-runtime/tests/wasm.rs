@@ -22,13 +22,13 @@ async fn good_wapc_component() -> Result<()> {
   let mut result = network
     .invoke(Invocation::new(
       Entity::test("wapc_component"),
-      Entity::schematic("wapc_component"),
+      Entity::local("wapc_component"),
       data.try_into()?,
       None,
     ))
     .await?;
 
-  let mut messages: Vec<TransportWrapper> = result.collect_port("output").await;
+  let mut messages: Vec<TransportWrapper> = result.drain_port("output").await;
   assert_eq!(messages.len(), 1);
 
   let output: TransportWrapper = messages.pop().unwrap();
@@ -44,13 +44,13 @@ async fn good_wapc_component() -> Result<()> {
   let mut result = network
     .invoke(Invocation::new(
       Entity::test("wapc_component"),
-      Entity::schematic("wapc_component"),
+      Entity::local("wapc_component"),
       data.try_into()?,
       None,
     ))
     .await?;
 
-  let mut messages: Vec<TransportWrapper> = result.collect_port("output").await;
+  let mut messages: Vec<TransportWrapper> = result.drain_port("output").await;
   assert_eq!(messages.len(), 1);
 
   let output: TransportWrapper = messages.pop().unwrap();
@@ -67,7 +67,6 @@ async fn good_wapc_component() -> Result<()> {
 async fn good_wasi_component() -> Result<()> {
   let tempdir = std::env::temp_dir();
   let tempfile = tempdir.join("test_file.txt");
-
   let now = SystemTime::now();
   let time = now.duration_since(UNIX_EPOCH).unwrap().as_millis().to_string();
   debug!("Writing '{}' to test file {:?}", time, tempfile);
@@ -84,13 +83,13 @@ async fn good_wasi_component() -> Result<()> {
   let mut result = network
     .invoke(Invocation::new(
       Entity::test("wapc_component"),
-      Entity::schematic("wasi_component"),
+      Entity::local("wasi_component"),
       data.try_into()?,
       None,
     ))
     .await?;
 
-  let mut messages: Vec<TransportWrapper> = result.collect_port("contents").await;
+  let mut messages: Vec<TransportWrapper> = result.drain_port("contents").await;
   assert_eq!(messages.len(), 1);
 
   let output: TransportWrapper = messages.pop().unwrap();
@@ -113,13 +112,13 @@ async fn wapc_stream() -> Result<()> {
   let mut result = network
     .invoke(Invocation::new(
       Entity::test("wapc_component"),
-      Entity::schematic("test"),
+      Entity::local("test"),
       data.try_into()?,
       None,
     ))
     .await?;
 
-  let messages: Vec<TransportWrapper> = result.collect_port("output").await;
+  let messages: Vec<TransportWrapper> = result.drain_port("output").await;
   // println!("{:#?}", messages);
   assert_eq!(messages.len(), 5);
   for msg in messages {
@@ -138,21 +137,19 @@ async fn bad_wapc_component() -> Result<()> {
       "input" => "1234567890",
   };
 
-  let result = network
+  let mut result = network
     .invoke(Invocation::new(
       Entity::test("bad_wapc_component"),
-      Entity::schematic("schematic"),
+      Entity::local("schematic"),
       data.try_into()?,
       None,
     ))
     .await?;
 
-  let mut messages: Vec<TransportWrapper> = result.collect().await;
+  let mut messages: Vec<TransportWrapper> = result.drain().await;
   println!("{:#?}", messages);
-  assert_eq!(messages.len(), 2);
+  assert_eq!(messages.len(), 1);
 
-  let output = messages.pop().unwrap();
-  assert!(matches!(output.payload, MessageTransport::Signal(MessageSignal::Done)));
   let output: TransportWrapper = messages.pop().unwrap();
 
   println!("output: {:?}", output);
@@ -172,13 +169,13 @@ async fn wasm_link_call() -> Result<()> {
   let mut result = network
     .invoke(Invocation::new(
       Entity::test("ns-link"),
-      Entity::schematic("ns-link"),
+      Entity::local("ns-link"),
       data.try_into()?,
       None,
     ))
     .await?;
 
-  let mut messages: Vec<TransportWrapper> = result.collect_port("output").await;
+  let mut messages: Vec<TransportWrapper> = result.drain_port("output").await;
   println!("{:#?}", messages);
   assert_eq!(messages.len(), 1);
 
@@ -201,13 +198,13 @@ async fn subnetwork_link_call() -> Result<()> {
   let mut result = network
     .invoke(Invocation::new(
       Entity::test("ns-link"),
-      Entity::schematic("test"),
+      Entity::local("test"),
       data.try_into()?,
       None,
     ))
     .await?;
 
-  let mut messages: Vec<TransportWrapper> = result.collect_port("output").await;
+  let mut messages: Vec<TransportWrapper> = result.drain_port("output").await;
   println!("{:#?}", messages);
   assert_eq!(messages.len(), 1);
 

@@ -80,7 +80,7 @@ mod test {
     let service = Provider::new(addr).await?;
     let invocation = Invocation::new_test(
       file!(),
-      Entity::local_component("test-component"),
+      Entity::local("test-component"),
       vec![("input", user_data)].into(),
       None,
     );

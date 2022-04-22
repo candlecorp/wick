@@ -218,7 +218,7 @@ pub fn has_rpc_call(req: &Request<hyper::Body>) -> Option<RequestKind> {
     debug!("HTTP:COMMAND[{}]", command);
     match command {
       "invoke" => parts.next().map(|component| {
-        let entity = Entity::local_component(component);
+        let entity = Entity::local(component);
         RequestKind::Invocation { target: entity }
       }),
       "list" => Some(RequestKind::List),

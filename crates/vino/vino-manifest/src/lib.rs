@@ -93,6 +93,8 @@ use std::path::Path;
 use serde::de::DeserializeOwned;
 use tracing::debug;
 
+mod helpers;
+
 /// Module for processing JSON templates used for default values.
 mod default;
 pub use default::{parse_default, process_default, ERROR_STR};
@@ -112,7 +114,7 @@ pub use host_definition::HostDefinition;
 
 /// A version-normalized format of the network manifest for development.
 pub mod network_definition;
-pub use network_definition::NetworkDefinition;
+pub use network_definition::{NetworkDefinition, ProviderDefinition, ProviderKind};
 
 /// A version-normalized format of the schematic manifest for development.
 pub mod schematic_definition;
@@ -121,8 +123,6 @@ pub use schematic_definition::{
   ComponentDefinition,
   ConnectionDefinition,
   ConnectionTargetDefinition,
-  ProviderDefinition,
-  ProviderKind,
   SchematicDefinition,
 };
 

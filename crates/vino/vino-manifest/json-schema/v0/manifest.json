@@ -180,6 +180,12 @@
             }
           }
         },
+        "entry": {
+          "description": "The provider to use as the entrypoint when running as a standalone process.",
+          "required": false,
+
+          "$ref": "#/$defs/EntrypointDefinition"
+        },
         "schematics": {
           "description": "The links between capabilities and components.",
           "type": "array",
@@ -193,6 +199,23 @@
           "items": {
             "$ref": "#/$defs/ProviderDefinition"
           }
+        }
+      },
+      "required": []
+    },
+
+    "EntrypointDefinition": {
+      "$anchor": "#EntrypointDefinition",
+      "additionalProperties": false,
+      "properties": {
+        "reference": {
+          "description": "The reference/location of the provider.",
+
+          "type": "string"
+        },
+        "data": {
+          "description": "Data or configuration to pass to the provider initialization.",
+          "type": "object"
         }
       },
       "required": []

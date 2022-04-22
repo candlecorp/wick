@@ -64,7 +64,7 @@ mod tests {
 
     let job_payload = TransportMap::from(vec![("input", input)]);
 
-    let invocation = Invocation::new_test(file!(), Entity::local_component("logger"), job_payload, None);
+    let invocation = Invocation::new_test(file!(), Entity::local("logger"), job_payload, None);
     let mut outputs = provider.invoke(invocation).await?;
     let output = outputs.next().await.unwrap();
     println!("payload from [{}]: {:?}", output.port, output.payload);

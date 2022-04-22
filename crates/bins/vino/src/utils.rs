@@ -9,14 +9,14 @@ use crate::commands::HostOptions;
 #[must_use]
 pub(crate) fn merge_config(
   def: HostDefinition,
-  local_cli_opts: HostOptions,
+  local_cli_opts: &HostOptions,
   server_cli_opts: Option<DefaultCliOptions>,
 ) -> HostDefinition {
   debug!("local_cli_opts.allow_latest {:?}", local_cli_opts.allow_latest);
   debug!("def.host.allow_latest {:?}", def.host.allow_latest);
   let mut host_config = HostConfig {
     allow_latest: local_cli_opts.allow_latest || def.host.allow_latest,
-    insecure_registries: vec![def.host.insecure_registries, local_cli_opts.insecure_registries].concat(),
+    insecure_registries: vec![def.host.insecure_registries, local_cli_opts.insecure_registries.clone()].concat(),
     timeout: def.host.timeout,
     id: def.host.id,
     ..Default::default()

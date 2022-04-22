@@ -2,7 +2,10 @@
 ***** This file is generated, do not edit *****
 ***********************************************/
 
-pub use vino_provider::prelude::*;
+#[cfg(all(feature = "native", not(feature = "wasm")))]
+pub use vino_provider::native::prelude::*;
+#[cfg(all(feature = "wasm", not(feature = "native")))]
+pub use vino_provider::wasm::prelude::*;
 
 pub mod __multi__;
 pub mod delete; // delete
@@ -138,8 +141,10 @@ pub mod generated {
     #![allow(unused)]
     use async_trait::async_trait;
     use vino_interface_keyvalue::delete::*;
-
-    pub use vino_provider::prelude::*;
+    #[cfg(all(feature = "native", not(feature = "wasm")))]
+    pub use vino_provider::native::prelude::*;
+    #[cfg(all(feature = "wasm", not(feature = "native")))]
+    pub use vino_provider::wasm::prelude::*;
 
     pub fn signature() -> ComponentSignature {
       ComponentSignature {
@@ -177,8 +182,10 @@ pub mod generated {
     #![allow(unused)]
     use async_trait::async_trait;
     use vino_interface_keyvalue::exists::*;
-
-    pub use vino_provider::prelude::*;
+    #[cfg(all(feature = "native", not(feature = "wasm")))]
+    pub use vino_provider::native::prelude::*;
+    #[cfg(all(feature = "wasm", not(feature = "native")))]
+    pub use vino_provider::wasm::prelude::*;
 
     pub fn signature() -> ComponentSignature {
       ComponentSignature {
@@ -216,8 +223,10 @@ pub mod generated {
     #![allow(unused)]
     use async_trait::async_trait;
     use vino_interface_keyvalue::key_get::*;
-
-    pub use vino_provider::prelude::*;
+    #[cfg(all(feature = "native", not(feature = "wasm")))]
+    pub use vino_provider::native::prelude::*;
+    #[cfg(all(feature = "wasm", not(feature = "native")))]
+    pub use vino_provider::wasm::prelude::*;
 
     pub fn signature() -> ComponentSignature {
       ComponentSignature {
@@ -255,8 +264,10 @@ pub mod generated {
     #![allow(unused)]
     use async_trait::async_trait;
     use vino_interface_keyvalue::key_set::*;
-
-    pub use vino_provider::prelude::*;
+    #[cfg(all(feature = "native", not(feature = "wasm")))]
+    pub use vino_provider::native::prelude::*;
+    #[cfg(all(feature = "wasm", not(feature = "native")))]
+    pub use vino_provider::wasm::prelude::*;
 
     pub fn signature() -> ComponentSignature {
       ComponentSignature {
@@ -294,8 +305,10 @@ pub mod generated {
     #![allow(unused)]
     use async_trait::async_trait;
     use vino_interface_keyvalue::list_add::*;
-
-    pub use vino_provider::prelude::*;
+    #[cfg(all(feature = "native", not(feature = "wasm")))]
+    pub use vino_provider::native::prelude::*;
+    #[cfg(all(feature = "wasm", not(feature = "native")))]
+    pub use vino_provider::wasm::prelude::*;
 
     pub fn signature() -> ComponentSignature {
       ComponentSignature {
@@ -333,8 +346,10 @@ pub mod generated {
     #![allow(unused)]
     use async_trait::async_trait;
     use vino_interface_keyvalue::list_range::*;
-
-    pub use vino_provider::prelude::*;
+    #[cfg(all(feature = "native", not(feature = "wasm")))]
+    pub use vino_provider::native::prelude::*;
+    #[cfg(all(feature = "wasm", not(feature = "native")))]
+    pub use vino_provider::wasm::prelude::*;
 
     pub fn signature() -> ComponentSignature {
       ComponentSignature {
@@ -372,8 +387,10 @@ pub mod generated {
     #![allow(unused)]
     use async_trait::async_trait;
     use vino_interface_keyvalue::list_remove::*;
-
-    pub use vino_provider::prelude::*;
+    #[cfg(all(feature = "native", not(feature = "wasm")))]
+    pub use vino_provider::native::prelude::*;
+    #[cfg(all(feature = "wasm", not(feature = "native")))]
+    pub use vino_provider::wasm::prelude::*;
 
     pub fn signature() -> ComponentSignature {
       ComponentSignature {
@@ -411,8 +428,10 @@ pub mod generated {
     #![allow(unused)]
     use async_trait::async_trait;
     use vino_interface_keyvalue::set_add::*;
-
-    pub use vino_provider::prelude::*;
+    #[cfg(all(feature = "native", not(feature = "wasm")))]
+    pub use vino_provider::native::prelude::*;
+    #[cfg(all(feature = "wasm", not(feature = "native")))]
+    pub use vino_provider::wasm::prelude::*;
 
     pub fn signature() -> ComponentSignature {
       ComponentSignature {
@@ -450,8 +469,10 @@ pub mod generated {
     #![allow(unused)]
     use async_trait::async_trait;
     use vino_interface_keyvalue::set_contains::*;
-
-    pub use vino_provider::prelude::*;
+    #[cfg(all(feature = "native", not(feature = "wasm")))]
+    pub use vino_provider::native::prelude::*;
+    #[cfg(all(feature = "wasm", not(feature = "native")))]
+    pub use vino_provider::wasm::prelude::*;
 
     pub fn signature() -> ComponentSignature {
       ComponentSignature {
@@ -489,8 +510,10 @@ pub mod generated {
     #![allow(unused)]
     use async_trait::async_trait;
     use vino_interface_keyvalue::set_get::*;
-
-    pub use vino_provider::prelude::*;
+    #[cfg(all(feature = "native", not(feature = "wasm")))]
+    pub use vino_provider::native::prelude::*;
+    #[cfg(all(feature = "wasm", not(feature = "native")))]
+    pub use vino_provider::wasm::prelude::*;
 
     pub fn signature() -> ComponentSignature {
       ComponentSignature {
@@ -528,8 +551,10 @@ pub mod generated {
     #![allow(unused)]
     use async_trait::async_trait;
     use vino_interface_keyvalue::set_remove::*;
-
-    pub use vino_provider::prelude::*;
+    #[cfg(all(feature = "native", not(feature = "wasm")))]
+    pub use vino_provider::native::prelude::*;
+    #[cfg(all(feature = "wasm", not(feature = "native")))]
+    pub use vino_provider::wasm::prelude::*;
 
     pub fn signature() -> ComponentSignature {
       ComponentSignature {
@@ -567,8 +592,10 @@ pub mod generated {
     #![allow(unused)]
     use async_trait::async_trait;
     use vino_interface_keyvalue::set_scan::*;
-
-    pub use vino_provider::prelude::*;
+    #[cfg(all(feature = "native", not(feature = "wasm")))]
+    pub use vino_provider::native::prelude::*;
+    #[cfg(all(feature = "wasm", not(feature = "native")))]
+    pub use vino_provider::wasm::prelude::*;
 
     pub fn signature() -> ComponentSignature {
       ComponentSignature {
@@ -606,8 +633,10 @@ pub mod generated {
     #![allow(unused)]
     use async_trait::async_trait;
     use vino_interface_keyvalue::__multi__::*;
-
-    pub use vino_provider::prelude::*;
+    #[cfg(all(feature = "native", not(feature = "wasm")))]
+    pub use vino_provider::native::prelude::*;
+    #[cfg(all(feature = "wasm", not(feature = "native")))]
+    pub use vino_provider::wasm::prelude::*;
 
     #[derive(Default, Copy, Clone, Debug)]
     pub struct Component {}

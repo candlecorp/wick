@@ -41,7 +41,7 @@ pub(crate) async fn handle_command(opts: ListCommand) -> Result<()> {
     ..Default::default()
   };
 
-  let mut config = merge_config(config, opts.host, Some(server_options));
+  let mut config = merge_config(config, &opts.host, Some(server_options));
   // Disable everything but the lattice
   config.host.rpc = None;
   config.host.http = None;

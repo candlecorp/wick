@@ -218,7 +218,7 @@ mod tests {
 
     let provider = Provider::from_tarbytes("vino-test-par", &*archive_bytes, None).await?;
     let inputs: HashMap<&str, i32> = HashMap::from([("left", 2), ("right", 5)]);
-    let invocation = Invocation::new_test(file!(), Entity::local_component("add"), inputs.into(), None);
+    let invocation = Invocation::new_test(file!(), Entity::local("add"), inputs.into(), None);
     let stream = provider.invoke(invocation).await?;
 
     let packets: Vec<_> = stream.collect().await;

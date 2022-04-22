@@ -85,10 +85,11 @@
 // Add exceptions here
 #![allow(missing_docs)]
 
+pub mod callbacks;
 pub mod error;
-// TODO ref check and make sure these are used:
-pub mod helpers;
+pub mod helpers; // TODO ref check and make sure these are used:
 pub mod provider;
+pub mod transaction;
 mod wapc_module;
 pub mod wasi;
 pub mod wasm_host;

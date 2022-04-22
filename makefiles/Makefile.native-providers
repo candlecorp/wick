@@ -43,7 +43,7 @@ $(GENERATED_RS): $(INTERFACE)
 
 .PHONY: codegen
 codegen: components $(GENERATED_RS)
-	@cargo fmt
+	@cargo +nightly fmt
 
 .PHONY: build
 build: codegen $(wildcard ./src/*.rs)

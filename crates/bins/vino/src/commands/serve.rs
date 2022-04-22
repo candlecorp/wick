@@ -26,7 +26,7 @@ pub(crate) async fn handle_command(opts: ServeCommand) -> Result<()> {
 
   let manifest = HostDefinition::load_from_bytes(Some(opts.manifest), &manifest_src)?;
 
-  let config = merge_config(manifest, opts.host, Some(opts.server_options));
+  let config = merge_config(manifest, &opts.host, Some(opts.server_options));
 
   let host_builder = HostBuilder::from_definition(config);
 

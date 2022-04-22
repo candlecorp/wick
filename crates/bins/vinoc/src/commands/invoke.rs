@@ -17,16 +17,15 @@ pub(crate) struct Options {
   #[clap(flatten)]
   pub(crate) connection: super::ConnectOptions,
 
+  /// Name of the component to execute.
+  component: String,
+
   // *****************************************************************
   // Everything below is copied from common-cli-options::RunOptions
   // Flatten doesn't work with positional args...
   //
   // TODO: Eliminate the need for copy/pasting
   // *****************************************************************
-  /// Name of the component to execute.
-  #[clap(default_value = "default")]
-  component: String,
-
   /// Don't read input from STDIN.
   #[clap(long = "no-input")]
   no_input: bool,
@@ -69,7 +68,7 @@ pub(crate) async fn handle(opts: Options) -> Result<()> {
   .await?;
 
   let origin = Entity::client("vinoc");
-  let target = Entity::local_component(&opts.component);
+  let target = Entity::local(&opts.component);
 
   let inherent_data = opts.seed.map(|seed| {
     InherentData::new(

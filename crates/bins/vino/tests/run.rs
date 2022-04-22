@@ -3,7 +3,7 @@ async fn vino_run() {
   let output = test_bin::get_test_bin("vino")
     .env_clear()
     .args(&[
-      "run",
+      "invoke",
       "./manifests/log.vino",
       "--data=schem_input=\"testing123\"",
       "--trace",

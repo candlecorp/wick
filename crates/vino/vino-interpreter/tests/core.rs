@@ -4,7 +4,6 @@ mod test;
 
 use anyhow::Result;
 use test::{JsonWriter, TestProvider};
-use tokio_stream::StreamExt;
 use vino_entity::Entity;
 use vino_interpreter::graph::from_def;
 use vino_interpreter::{HandlerMap, Interpreter, InterpreterOptions, NamespaceHandler};
@@ -30,15 +29,13 @@ async fn test_senders() -> Result<()> {
   let providers = HandlerMap::new(vec![NamespaceHandler::new("test", Box::new(TestProvider::new()))]);
   let inputs = TransportMap::default();
 
-  let invocation = Invocation::new_test("senders", Entity::schematic("test"), inputs, None);
+  let invocation = Invocation::new_test("senders", Entity::local("test"), inputs, None);
   let mut interpreter = Interpreter::new(Some(Seed::unsafe_new(1)), network, None, Some(providers))?;
   interpreter.start(OPTIONS, Some(Box::new(JsonWriter::default()))).await;
-  let stream = interpreter.invoke(invocation).await?;
+  let mut stream = interpreter.invoke(invocation).await?;
 
-  let mut outputs: Vec<_> = stream.collect().await;
+  let mut outputs: Vec<_> = stream.drain().await;
   println!("{:#?}", outputs);
-  let wrapper = outputs.pop().unwrap();
-  assert_eq!(wrapper.payload, MessageTransport::done());
   let wrapper = outputs.pop().unwrap();
   let result: String = wrapper.deserialize()?;
 
@@ -61,15 +58,14 @@ async fn test_merge() -> Result<()> {
     MessageTransport::success(&["alpha".to_owned(), "beta".to_owned()]),
   );
 
-  let invocation = Invocation::new_test("merge", Entity::schematic("test"), inputs, None);
+  let invocation = Invocation::new_test("merge", Entity::local("test"), inputs, None);
   let mut interpreter = Interpreter::new(Some(Seed::unsafe_new(1)), network, None, Some(providers))?;
   interpreter.start(OPTIONS, Some(Box::new(JsonWriter::default()))).await;
-  let stream = interpreter.invoke(invocation).await?;
+  let mut stream = interpreter.invoke(invocation).await?;
 
-  let mut outputs: Vec<_> = stream.collect().await;
+  let mut outputs: Vec<_> = stream.drain().await;
   println!("{:#?}", outputs);
-  let wrapper = outputs.pop().unwrap();
-  assert_eq!(wrapper.payload, MessageTransport::done());
+
   let wrapper = outputs.pop().unwrap();
 
   #[derive(serde::Deserialize, PartialEq, Debug)]

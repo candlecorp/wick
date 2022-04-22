@@ -10,9 +10,11 @@ license = "Apache-2.0"
 crate-type = ["cdylib"]
 
 [features]
-default = ["wasm"]
+default = ["provider", "wasm"]
 wasm = ["vino-provider/wasm"]
 native = ["vino-provider/default"]
+provider = []
+guest = []
 
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }

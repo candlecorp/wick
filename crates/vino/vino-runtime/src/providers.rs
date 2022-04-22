@@ -6,8 +6,11 @@ use std::str::FromStr;
 use std::sync::Arc;
 
 use futures::future::BoxFuture;
+use uuid::Uuid;
 use vino_interpreter::NamespaceHandler;
+use vino_manifest::network_definition::EntrypointDefinition;
 use vino_provider_wasm::error::LinkError;
+use vino_provider_wasm::provider::HostLinkCallback;
 use vino_random::{Random, Seed};
 
 use self::native_provider_service::NativeProviderService;
@@ -74,33 +77,59 @@ pub(crate) async fn initialize_wasm_provider(
     5,
     Some(provider.data.clone()),
     None,
-    Some(Box::new(move |origin_url, target_url, payload| {
-      debug!(
-        origin = origin_url,
-        target = target_url,
-        network_id = %opts.network_id,
-        "link_call"
-      );
-
-      let target = Entity::from_str(target_url)?;
-      let origin = Entity::from_str(origin_url)?;
-      if let Entity::Component(origin_ns, _) = &origin {
-        if let Entity::Component(target_ns, _) = &target {
-          if target_ns == origin_ns {
-            return Err(LinkError::Circular(target_ns.clone()));
-          }
-        }
-      }
-      let invocation = Invocation::new(origin, target, payload, None);
-      let result =
-        network_invoke_sync(opts.network_id, invocation).map_err(|e| LinkError::CallFailure(e.to_string()))?;
-      Ok(result)
-    })),
+    Some(make_link_callback(opts.network_id)),
   )?);
 
   let service = NativeProviderService::new(provider);
 
   Ok(NamespaceHandler::new(namespace, Box::new(service)))
+}
+
+#[instrument(skip_all)]
+pub(crate) async fn initialize_wasm_entrypoint(
+  entrypoint: &EntrypointDefinition,
+  network_id: Uuid,
+  allow_latest: bool,
+  allowed_insecure: &[String],
+) -> Result<vino_provider_wasm::provider::Provider> {
+  trace!(%network_id, "registering entrypoint");
+
+  let component = vino_provider_wasm::helpers::load_wasm(&entrypoint.reference, allow_latest, allowed_insecure).await?;
+
+  // TODO take max threads from configuration
+  let provider = vino_provider_wasm::provider::Provider::try_load(
+    &component,
+    1,
+    Some(entrypoint.data.clone()),
+    None,
+    Some(make_link_callback(network_id)),
+  )?;
+
+  Ok(provider)
+}
+
+fn make_link_callback(network_id: Uuid) -> Box<HostLinkCallback> {
+  Box::new(move |origin_url, target_url, payload| {
+    debug!(
+      origin = origin_url,
+      target = target_url,
+      network_id = %network_id,
+      "link_call"
+    );
+
+    let target = Entity::from_str(target_url)?;
+    let origin = Entity::from_str(origin_url)?;
+    if let Entity::Component(origin_ns, _) = &origin {
+      if let Entity::Component(target_ns, _) = &target {
+        if target_ns == origin_ns {
+          return Err(LinkError::Circular(target_ns.clone()));
+        }
+      }
+    }
+    let invocation = Invocation::new(origin, target, payload, None);
+    let result = network_invoke_sync(network_id, invocation).map_err(|e| LinkError::CallFailure(e.to_string()))?;
+    Ok(result)
+  })
 }
 
 #[instrument(skip(provider, opts))]

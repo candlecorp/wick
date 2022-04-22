@@ -84,7 +84,7 @@ mod tests {
     println!("TransportMap: {:?}", transport_map);
     let provider = Provider::new(Seed::unsafe_new(SEED));
 
-    let entity = Entity::local_component(component);
+    let entity = Entity::local(component);
     let invocation = Invocation::new_test(file!(), entity, transport_map, None);
 
     let mut outputs = provider.invoke(invocation).await.unwrap();

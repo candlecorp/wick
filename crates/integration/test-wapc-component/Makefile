@@ -65,7 +65,6 @@ $(SIGNED_ARTIFACT): $(BUILD_ARTIFACT) $(INTERFACE)
 $(GENERATED_MODULE): $(INTERFACE)
 	@echo Generating $@
 	@$(CODEGEN) rust integration $(INTERFACE) --type wasm -f -o $@
-	@rustfmt $@
 
 $(COMPONENTS_DIR):
 	@echo Making directory \"$@\"
@@ -100,6 +99,7 @@ clean: ## Clean the generated files
 
 .PHONY: codegen
 codegen: $(INTERFACE) components $(GENERATED_MODULE) ./src/lib.rs ## Generate code from schemas
+	@cargo +nightly fmt
 
 .PHONY: doc
 doc: ## Generate documentation

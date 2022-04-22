@@ -1,0 +1,7 @@
+[build]
+
+[profile.release]
+# Optimize for small code size
+opt-level = "z"
+lto = true
+panic = "abort"

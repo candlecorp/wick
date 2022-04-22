@@ -17,14 +17,14 @@ async fn panics() -> Result<()> {
   let mut result = network
     .invoke(Invocation::new(
       Entity::test("panics"),
-      Entity::schematic("panics"),
+      Entity::local("panics"),
       data.try_into()?,
       None,
     ))
     .await?;
 
   println!("Result: {:?}", result);
-  let mut messages: Vec<TransportWrapper> = result.collect_port("output").await;
+  let mut messages: Vec<TransportWrapper> = result.drain_port("output").await;
   assert_eq!(result.buffered_size(), (0, 0));
   assert_eq!(messages.len(), 1);
 
@@ -44,14 +44,14 @@ async fn errors() -> Result<()> {
   let mut result = network
     .invoke(Invocation::new(
       Entity::test("errors"),
-      Entity::schematic("errors"),
+      Entity::local("errors"),
       data.try_into()?,
       None,
     ))
     .await?;
 
   println!("Result: {:?}", result);
-  let mut messages: Vec<TransportWrapper> = result.collect_port("output").await;
+  let mut messages: Vec<TransportWrapper> = result.drain_port("output").await;
   assert_eq!(result.buffered_size(), (0, 0));
   assert_eq!(messages.len(), 1);
 
