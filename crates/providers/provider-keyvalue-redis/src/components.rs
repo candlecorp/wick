@@ -8,8 +8,10 @@ pub use vino_provider::native::prelude::*;
 pub use vino_provider::wasm::prelude::*;
 
 pub mod __multi__;
+pub mod decr; // decr
 pub mod delete; // delete
 pub mod exists; // exists
+pub mod incr; // incr
 pub mod key_get; // key-get
 pub mod key_set; // key-set
 pub mod list_add; // list-add
@@ -32,6 +34,7 @@ impl Dispatch for Dispatcher {
     data: TransportMap,
   ) -> Result<TransportStream, Box<NativeComponentError>> {
     let result = match op {
+      "decr" => self::generated::decr::Component::default().execute(context, data).await,
       "delete" => {
         self::generated::delete::Component::default()
           .execute(context, data)
@@ -42,6 +45,7 @@ impl Dispatch for Dispatcher {
           .execute(context, data)
           .await
       }
+      "incr" => self::generated::incr::Component::default().execute(context, data).await,
       "key-get" => {
         self::generated::key_get::Component::default()
           .execute(context, data)
@@ -109,8 +113,10 @@ impl Dispatch for Dispatcher {
 pub fn get_signature() -> ProviderSignature {
   let mut components = std::collections::HashMap::new();
 
+  components.insert("decr", vino_interface_keyvalue::decr::signature());
   components.insert("delete", vino_interface_keyvalue::delete::signature());
   components.insert("exists", vino_interface_keyvalue::exists::signature());
+  components.insert("incr", vino_interface_keyvalue::incr::signature());
   components.insert("key-get", vino_interface_keyvalue::key_get::signature());
   components.insert("key-set", vino_interface_keyvalue::key_set::signature());
   components.insert("list-add", vino_interface_keyvalue::list_add::signature());
@@ -136,6 +142,48 @@ pub mod types {
 pub mod generated {
 
   // start namespace
+  // Component name : decr
+  pub mod decr {
+    #![allow(unused)]
+    use async_trait::async_trait;
+    use vino_interface_keyvalue::decr::*;
+    #[cfg(all(feature = "native", not(feature = "wasm")))]
+    pub use vino_provider::native::prelude::*;
+    #[cfg(all(feature = "wasm", not(feature = "native")))]
+    pub use vino_provider::wasm::prelude::*;
+
+    #[cfg(feature = "provider")]
+    pub fn signature() -> ComponentSignature {
+      ComponentSignature {
+        name: "decr".to_owned(),
+        inputs: inputs_list().into(),
+        outputs: outputs_list().into(),
+      }
+    }
+
+    #[derive(Default, Copy, Clone, Debug)]
+    pub struct Component {}
+
+    #[async_trait]
+    impl NativeComponent for Component {
+      type Context = crate::Context;
+      async fn execute(
+        &self,
+        context: Self::Context,
+        data: TransportMap,
+      ) -> Result<TransportStream, Box<NativeComponentError>> {
+        let inputs = populate_inputs(data).map_err(|e| NativeComponentError::new(e.to_string()))?;
+        let (outputs, stream) = get_outputs();
+        let result = tokio::spawn(crate::components::decr::job(inputs, outputs, context))
+          .await
+          .map_err(|e| Box::new(NativeComponentError::new(format!("Component error: {}", e))))?;
+        match result {
+          Ok(_) => Ok(stream),
+          Err(e) => Err(Box::new(NativeComponentError::new(e.to_string()))),
+        }
+      }
+    }
+  }
   // Component name : delete
   pub mod delete {
     #![allow(unused)]
@@ -146,6 +194,7 @@ pub mod generated {
     #[cfg(all(feature = "wasm", not(feature = "native")))]
     pub use vino_provider::wasm::prelude::*;
 
+    #[cfg(feature = "provider")]
     pub fn signature() -> ComponentSignature {
       ComponentSignature {
         name: "delete".to_owned(),
@@ -187,6 +236,7 @@ pub mod generated {
     #[cfg(all(feature = "wasm", not(feature = "native")))]
     pub use vino_provider::wasm::prelude::*;
 
+    #[cfg(feature = "provider")]
     pub fn signature() -> ComponentSignature {
       ComponentSignature {
         name: "exists".to_owned(),
@@ -218,6 +268,48 @@ pub mod generated {
       }
     }
   }
+  // Component name : incr
+  pub mod incr {
+    #![allow(unused)]
+    use async_trait::async_trait;
+    use vino_interface_keyvalue::incr::*;
+    #[cfg(all(feature = "native", not(feature = "wasm")))]
+    pub use vino_provider::native::prelude::*;
+    #[cfg(all(feature = "wasm", not(feature = "native")))]
+    pub use vino_provider::wasm::prelude::*;
+
+    #[cfg(feature = "provider")]
+    pub fn signature() -> ComponentSignature {
+      ComponentSignature {
+        name: "incr".to_owned(),
+        inputs: inputs_list().into(),
+        outputs: outputs_list().into(),
+      }
+    }
+
+    #[derive(Default, Copy, Clone, Debug)]
+    pub struct Component {}
+
+    #[async_trait]
+    impl NativeComponent for Component {
+      type Context = crate::Context;
+      async fn execute(
+        &self,
+        context: Self::Context,
+        data: TransportMap,
+      ) -> Result<TransportStream, Box<NativeComponentError>> {
+        let inputs = populate_inputs(data).map_err(|e| NativeComponentError::new(e.to_string()))?;
+        let (outputs, stream) = get_outputs();
+        let result = tokio::spawn(crate::components::incr::job(inputs, outputs, context))
+          .await
+          .map_err(|e| Box::new(NativeComponentError::new(format!("Component error: {}", e))))?;
+        match result {
+          Ok(_) => Ok(stream),
+          Err(e) => Err(Box::new(NativeComponentError::new(e.to_string()))),
+        }
+      }
+    }
+  }
   // Component name : key-get
   pub mod key_get {
     #![allow(unused)]
@@ -228,6 +320,7 @@ pub mod generated {
     #[cfg(all(feature = "wasm", not(feature = "native")))]
     pub use vino_provider::wasm::prelude::*;
 
+    #[cfg(feature = "provider")]
     pub fn signature() -> ComponentSignature {
       ComponentSignature {
         name: "key-get".to_owned(),
@@ -269,6 +362,7 @@ pub mod generated {
     #[cfg(all(feature = "wasm", not(feature = "native")))]
     pub use vino_provider::wasm::prelude::*;
 
+    #[cfg(feature = "provider")]
     pub fn signature() -> ComponentSignature {
       ComponentSignature {
         name: "key-set".to_owned(),
@@ -310,6 +404,7 @@ pub mod generated {
     #[cfg(all(feature = "wasm", not(feature = "native")))]
     pub use vino_provider::wasm::prelude::*;
 
+    #[cfg(feature = "provider")]
     pub fn signature() -> ComponentSignature {
       ComponentSignature {
         name: "list-add".to_owned(),
@@ -351,6 +446,7 @@ pub mod generated {
     #[cfg(all(feature = "wasm", not(feature = "native")))]
     pub use vino_provider::wasm::prelude::*;
 
+    #[cfg(feature = "provider")]
     pub fn signature() -> ComponentSignature {
       ComponentSignature {
         name: "list-range".to_owned(),
@@ -392,6 +488,7 @@ pub mod generated {
     #[cfg(all(feature = "wasm", not(feature = "native")))]
     pub use vino_provider::wasm::prelude::*;
 
+    #[cfg(feature = "provider")]
     pub fn signature() -> ComponentSignature {
       ComponentSignature {
         name: "list-remove".to_owned(),
@@ -433,6 +530,7 @@ pub mod generated {
     #[cfg(all(feature = "wasm", not(feature = "native")))]
     pub use vino_provider::wasm::prelude::*;
 
+    #[cfg(feature = "provider")]
     pub fn signature() -> ComponentSignature {
       ComponentSignature {
         name: "set-add".to_owned(),
@@ -474,6 +572,7 @@ pub mod generated {
     #[cfg(all(feature = "wasm", not(feature = "native")))]
     pub use vino_provider::wasm::prelude::*;
 
+    #[cfg(feature = "provider")]
     pub fn signature() -> ComponentSignature {
       ComponentSignature {
         name: "set-contains".to_owned(),
@@ -515,6 +614,7 @@ pub mod generated {
     #[cfg(all(feature = "wasm", not(feature = "native")))]
     pub use vino_provider::wasm::prelude::*;
 
+    #[cfg(feature = "provider")]
     pub fn signature() -> ComponentSignature {
       ComponentSignature {
         name: "set-get".to_owned(),
@@ -556,6 +656,7 @@ pub mod generated {
     #[cfg(all(feature = "wasm", not(feature = "native")))]
     pub use vino_provider::wasm::prelude::*;
 
+    #[cfg(feature = "provider")]
     pub fn signature() -> ComponentSignature {
       ComponentSignature {
         name: "set-remove".to_owned(),
@@ -597,6 +698,7 @@ pub mod generated {
     #[cfg(all(feature = "wasm", not(feature = "native")))]
     pub use vino_provider::wasm::prelude::*;
 
+    #[cfg(feature = "provider")]
     pub fn signature() -> ComponentSignature {
       ComponentSignature {
         name: "set-scan".to_owned(),

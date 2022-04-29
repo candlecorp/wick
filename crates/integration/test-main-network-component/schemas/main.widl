@@ -6,5 +6,5 @@ type Inputs {
 }
 
 type Outputs {
-  code:u32
+  code: u32
 }

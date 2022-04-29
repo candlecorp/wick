@@ -66,14 +66,7 @@ async fn exec_main(opts: &RunCommand, config: HostDefinition) -> Result<u32> {
   host.connect_to_lattice().await?;
   host.start_network(opts.seed.map(Seed::unsafe_new)).await?;
 
-  let argv = opts
-    .args
-    .iter()
-    .skip_while(|arg| *arg != "--")
-    .cloned()
-    .collect::<Vec<_>>();
-
-  let code = host.exec_main(argv).await?;
+  let code = host.exec_main(opts.args.clone()).await?;
 
   host.stop().await;
 

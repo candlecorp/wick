@@ -5,8 +5,10 @@
 pub mod __multi__ {
   #[derive(Debug, serde::Deserialize, serde::Serialize, Clone)]
   pub enum ComponentInputs {
+    Decr(super::decr::Inputs),
     Delete(super::delete::Inputs),
     Exists(super::exists::Inputs),
+    Incr(super::incr::Inputs),
     KeyGet(super::key_get::Inputs),
     KeySet(super::key_set::Inputs),
     ListAdd(super::list_add::Inputs),
@@ -22,8 +24,10 @@ pub mod __multi__ {
   #[cfg(all(feature = "guest"))]
   #[allow(missing_debug_implementations)]
   pub enum ComponentOutputs {
+    Decr(super::decr::Outputs),
     Delete(super::delete::Outputs),
     Exists(super::exists::Outputs),
+    Incr(super::incr::Outputs),
     KeyGet(super::key_get::Outputs),
     KeySet(super::key_set::Outputs),
     ListAdd(super::list_add::Outputs),
@@ -207,6 +211,189 @@ pub mod __multi__ {
   }
 }
 
+pub mod decr {
+
+  #[cfg(any(feature = "native"))]
+  pub use vino_provider::native::prelude::*;
+  #[cfg(any(feature = "wasm"))]
+  pub use vino_provider::wasm::prelude::*;
+
+  #[cfg(feature = "provider")]
+  pub fn signature() -> ComponentSignature {
+    ComponentSignature {
+      name: "decr".to_owned(),
+      inputs: inputs_list().into(),
+      outputs: outputs_list().into(),
+    }
+  }
+
+  #[cfg(all(feature = "native", not(feature = "wasm")))]
+  pub fn populate_inputs(mut payload: TransportMap) -> Result<Inputs, TransportError> {
+    Ok(Inputs {
+      key: payload.consume("key")?,
+      amount: payload.consume("amount")?,
+    })
+  }
+
+  #[cfg(all(feature = "wasm", not(feature = "native")))]
+  fn populate_inputs(payload: &IncomingPayload) -> Result<Inputs, WasmError> {
+    Ok(Inputs {
+      key: deserialize(payload.get("key")?)?,
+      amount: deserialize(payload.get("amount")?)?,
+    })
+  }
+
+  #[derive(Debug, serde::Deserialize, serde::Serialize, Clone)]
+  pub struct Inputs {
+    #[serde(rename = "key")]
+    pub key: String,
+    #[serde(rename = "amount")]
+    pub amount: i64,
+  }
+
+  #[cfg(all(feature = "guest", any(feature = "native", feature = "wasm")))]
+  impl From<Inputs> for TransportMap {
+    fn from(inputs: Inputs) -> TransportMap {
+      let mut map = TransportMap::new();
+      map.insert("key", MessageTransport::success(&inputs.key));
+      map.insert("amount", MessageTransport::success(&inputs.amount));
+      map
+    }
+  }
+
+  #[must_use]
+  #[cfg(all(feature = "provider", feature = "native"))]
+  pub fn inputs_list() -> std::collections::HashMap<String, TypeSignature> {
+    let mut map = std::collections::HashMap::new();
+    map.insert("key".to_owned(), TypeSignature::String);
+    map.insert("amount".to_owned(), TypeSignature::I64);
+    map
+  }
+  // A list of ports and their type signatures.
+  #[must_use]
+  #[cfg(all(feature = "provider", any(feature = "native", feature = "wasm")))]
+  pub fn outputs_list() -> std::collections::HashMap<String, TypeSignature> {
+    let mut map = std::collections::HashMap::new();
+    map.insert("output".to_owned(), TypeSignature::I64);
+    map
+  }
+
+  // A list of output ports and their associated stream sender implementations.
+  #[derive(Debug)]
+  #[cfg_attr(all(feature = "provider", feature = "native"), derive(Default))]
+  #[cfg(feature = "provider")]
+  pub struct OutputPorts {
+    pub output: OutputPortSender,
+  }
+
+  // Definition and implementation of each port's sender.
+  #[derive(Debug)]
+  #[cfg(feature = "provider")]
+  pub struct OutputPortSender {
+    #[cfg(feature = "native")]
+    port: PortChannel,
+    #[cfg(feature = "wasm")]
+    id: u32,
+  }
+
+  #[cfg(all(feature = "provider", feature = "native"))]
+  impl Default for OutputPortSender {
+    fn default() -> Self {
+      Self {
+        port: PortChannel::new("output"),
+      }
+    }
+  }
+
+  // Native sender implementation
+  #[cfg(all(feature = "provider", feature = "native"))]
+  impl PortSender for OutputPortSender {
+    fn get_port(&self) -> Result<&PortChannel, ProviderError> {
+      if self.port.is_closed() {
+        Err(ProviderError::SendChannelClosed)
+      } else {
+        Ok(&self.port)
+      }
+    }
+
+    fn get_port_name(&self) -> &str {
+      &self.port.name
+    }
+  }
+
+  // WASM sender implementation
+  #[cfg(all(feature = "provider", feature = "wasm"))]
+  impl PortSender for OutputPortSender {
+    type PayloadType = i64;
+    fn get_name(&self) -> String {
+      "output".to_string()
+    }
+    fn get_id(&self) -> u32 {
+      self.id
+    }
+  }
+
+  #[must_use]
+  #[cfg(all(feature = "provider", feature = "native"))]
+  pub fn get_outputs() -> (OutputPorts, TransportStream) {
+    let mut outputs = OutputPorts::default();
+    let mut ports = vec![&mut outputs.output.port];
+    let stream = PortChannel::merge_all(&mut ports);
+    (outputs, stream)
+  }
+
+  #[cfg(all(feature = "provider", feature = "wasm"))]
+  fn get_outputs(id: u32) -> OutputPorts {
+    OutputPorts {
+      output: OutputPortSender { id },
+    }
+  }
+
+  #[cfg(all(feature = "guest"))]
+  #[allow(missing_debug_implementations)]
+  pub struct Outputs {
+    packets: ProviderOutput,
+  }
+
+  #[cfg(all(feature = "native", feature = "guest"))]
+  impl Outputs {
+    pub async fn output(&mut self) -> Result<PortOutput<i64>, ProviderError> {
+      let packets = self.packets.drain_port("output").await;
+      Ok(PortOutput::new("output".to_owned(), packets))
+    }
+  }
+
+  #[cfg(all(feature = "wasm", feature = "guest"))]
+  impl Outputs {
+    pub fn output(&mut self) -> Result<PortOutput, ComponentError> {
+      let packets = self.packets.drain_port("output")?;
+      Ok(PortOutput::new("output".to_owned(), packets))
+    }
+  }
+
+  #[cfg(all(feature = "wasm", feature = "guest"))]
+  impl From<ProviderOutput> for Outputs {
+    fn from(packets: ProviderOutput) -> Self {
+      Self { packets }
+    }
+  }
+
+  #[cfg(all(feature = "native", feature = "guest"))]
+  impl From<ProviderOutput> for Outputs {
+    fn from(output: ProviderOutput) -> Self {
+      Self { packets: output }
+    }
+  }
+
+  #[cfg(all(feature = "native", feature = "guest"))]
+  impl From<BoxedTransportStream> for Outputs {
+    fn from(stream: BoxedTransportStream) -> Self {
+      Self {
+        packets: ProviderOutput::new(stream),
+      }
+    }
+  }
+}
 pub mod delete {
 
   #[cfg(any(feature = "native"))]
@@ -214,7 +401,7 @@ pub mod delete {
   #[cfg(any(feature = "wasm"))]
   pub use vino_provider::wasm::prelude::*;
 
-  #[cfg(any(feature = "native", feature = "wasm"))]
+  #[cfg(feature = "provider")]
   pub fn signature() -> ComponentSignature {
     ComponentSignature {
       name: "delete".to_owned(),
@@ -396,7 +583,7 @@ pub mod exists {
   #[cfg(any(feature = "wasm"))]
   pub use vino_provider::wasm::prelude::*;
 
-  #[cfg(any(feature = "native", feature = "wasm"))]
+  #[cfg(feature = "provider")]
   pub fn signature() -> ComponentSignature {
     ComponentSignature {
       name: "exists".to_owned(),
@@ -566,6 +753,189 @@ pub mod exists {
     }
   }
 }
+pub mod incr {
+
+  #[cfg(any(feature = "native"))]
+  pub use vino_provider::native::prelude::*;
+  #[cfg(any(feature = "wasm"))]
+  pub use vino_provider::wasm::prelude::*;
+
+  #[cfg(feature = "provider")]
+  pub fn signature() -> ComponentSignature {
+    ComponentSignature {
+      name: "incr".to_owned(),
+      inputs: inputs_list().into(),
+      outputs: outputs_list().into(),
+    }
+  }
+
+  #[cfg(all(feature = "native", not(feature = "wasm")))]
+  pub fn populate_inputs(mut payload: TransportMap) -> Result<Inputs, TransportError> {
+    Ok(Inputs {
+      key: payload.consume("key")?,
+      amount: payload.consume("amount")?,
+    })
+  }
+
+  #[cfg(all(feature = "wasm", not(feature = "native")))]
+  fn populate_inputs(payload: &IncomingPayload) -> Result<Inputs, WasmError> {
+    Ok(Inputs {
+      key: deserialize(payload.get("key")?)?,
+      amount: deserialize(payload.get("amount")?)?,
+    })
+  }
+
+  #[derive(Debug, serde::Deserialize, serde::Serialize, Clone)]
+  pub struct Inputs {
+    #[serde(rename = "key")]
+    pub key: String,
+    #[serde(rename = "amount")]
+    pub amount: i64,
+  }
+
+  #[cfg(all(feature = "guest", any(feature = "native", feature = "wasm")))]
+  impl From<Inputs> for TransportMap {
+    fn from(inputs: Inputs) -> TransportMap {
+      let mut map = TransportMap::new();
+      map.insert("key", MessageTransport::success(&inputs.key));
+      map.insert("amount", MessageTransport::success(&inputs.amount));
+      map
+    }
+  }
+
+  #[must_use]
+  #[cfg(all(feature = "provider", feature = "native"))]
+  pub fn inputs_list() -> std::collections::HashMap<String, TypeSignature> {
+    let mut map = std::collections::HashMap::new();
+    map.insert("key".to_owned(), TypeSignature::String);
+    map.insert("amount".to_owned(), TypeSignature::I64);
+    map
+  }
+  // A list of ports and their type signatures.
+  #[must_use]
+  #[cfg(all(feature = "provider", any(feature = "native", feature = "wasm")))]
+  pub fn outputs_list() -> std::collections::HashMap<String, TypeSignature> {
+    let mut map = std::collections::HashMap::new();
+    map.insert("output".to_owned(), TypeSignature::I64);
+    map
+  }
+
+  // A list of output ports and their associated stream sender implementations.
+  #[derive(Debug)]
+  #[cfg_attr(all(feature = "provider", feature = "native"), derive(Default))]
+  #[cfg(feature = "provider")]
+  pub struct OutputPorts {
+    pub output: OutputPortSender,
+  }
+
+  // Definition and implementation of each port's sender.
+  #[derive(Debug)]
+  #[cfg(feature = "provider")]
+  pub struct OutputPortSender {
+    #[cfg(feature = "native")]
+    port: PortChannel,
+    #[cfg(feature = "wasm")]
+    id: u32,
+  }
+
+  #[cfg(all(feature = "provider", feature = "native"))]
+  impl Default for OutputPortSender {
+    fn default() -> Self {
+      Self {
+        port: PortChannel::new("output"),
+      }
+    }
+  }
+
+  // Native sender implementation
+  #[cfg(all(feature = "provider", feature = "native"))]
+  impl PortSender for OutputPortSender {
+    fn get_port(&self) -> Result<&PortChannel, ProviderError> {
+      if self.port.is_closed() {
+        Err(ProviderError::SendChannelClosed)
+      } else {
+        Ok(&self.port)
+      }
+    }
+
+    fn get_port_name(&self) -> &str {
+      &self.port.name
+    }
+  }
+
+  // WASM sender implementation
+  #[cfg(all(feature = "provider", feature = "wasm"))]
+  impl PortSender for OutputPortSender {
+    type PayloadType = i64;
+    fn get_name(&self) -> String {
+      "output".to_string()
+    }
+    fn get_id(&self) -> u32 {
+      self.id
+    }
+  }
+
+  #[must_use]
+  #[cfg(all(feature = "provider", feature = "native"))]
+  pub fn get_outputs() -> (OutputPorts, TransportStream) {
+    let mut outputs = OutputPorts::default();
+    let mut ports = vec![&mut outputs.output.port];
+    let stream = PortChannel::merge_all(&mut ports);
+    (outputs, stream)
+  }
+
+  #[cfg(all(feature = "provider", feature = "wasm"))]
+  fn get_outputs(id: u32) -> OutputPorts {
+    OutputPorts {
+      output: OutputPortSender { id },
+    }
+  }
+
+  #[cfg(all(feature = "guest"))]
+  #[allow(missing_debug_implementations)]
+  pub struct Outputs {
+    packets: ProviderOutput,
+  }
+
+  #[cfg(all(feature = "native", feature = "guest"))]
+  impl Outputs {
+    pub async fn output(&mut self) -> Result<PortOutput<i64>, ProviderError> {
+      let packets = self.packets.drain_port("output").await;
+      Ok(PortOutput::new("output".to_owned(), packets))
+    }
+  }
+
+  #[cfg(all(feature = "wasm", feature = "guest"))]
+  impl Outputs {
+    pub fn output(&mut self) -> Result<PortOutput, ComponentError> {
+      let packets = self.packets.drain_port("output")?;
+      Ok(PortOutput::new("output".to_owned(), packets))
+    }
+  }
+
+  #[cfg(all(feature = "wasm", feature = "guest"))]
+  impl From<ProviderOutput> for Outputs {
+    fn from(packets: ProviderOutput) -> Self {
+      Self { packets }
+    }
+  }
+
+  #[cfg(all(feature = "native", feature = "guest"))]
+  impl From<ProviderOutput> for Outputs {
+    fn from(output: ProviderOutput) -> Self {
+      Self { packets: output }
+    }
+  }
+
+  #[cfg(all(feature = "native", feature = "guest"))]
+  impl From<BoxedTransportStream> for Outputs {
+    fn from(stream: BoxedTransportStream) -> Self {
+      Self {
+        packets: ProviderOutput::new(stream),
+      }
+    }
+  }
+}
 pub mod key_get {
 
   #[cfg(any(feature = "native"))]
@@ -573,7 +943,7 @@ pub mod key_get {
   #[cfg(any(feature = "wasm"))]
   pub use vino_provider::wasm::prelude::*;
 
-  #[cfg(any(feature = "native", feature = "wasm"))]
+  #[cfg(feature = "provider")]
   pub fn signature() -> ComponentSignature {
     ComponentSignature {
       name: "key-get".to_owned(),
@@ -750,7 +1120,7 @@ pub mod key_set {
   #[cfg(any(feature = "wasm"))]
   pub use vino_provider::wasm::prelude::*;
 
-  #[cfg(any(feature = "native", feature = "wasm"))]
+  #[cfg(feature = "provider")]
   pub fn signature() -> ComponentSignature {
     ComponentSignature {
       name: "key-set".to_owned(),
@@ -939,7 +1309,7 @@ pub mod list_add {
   #[cfg(any(feature = "wasm"))]
   pub use vino_provider::wasm::prelude::*;
 
-  #[cfg(any(feature = "native", feature = "wasm"))]
+  #[cfg(feature = "provider")]
   pub fn signature() -> ComponentSignature {
     ComponentSignature {
       name: "list-add".to_owned(),
@@ -1127,7 +1497,7 @@ pub mod list_range {
   #[cfg(any(feature = "wasm"))]
   pub use vino_provider::wasm::prelude::*;
 
-  #[cfg(any(feature = "native", feature = "wasm"))]
+  #[cfg(feature = "provider")]
   pub fn signature() -> ComponentSignature {
     ComponentSignature {
       name: "list-range".to_owned(),
@@ -1321,7 +1691,7 @@ pub mod list_remove {
   #[cfg(any(feature = "wasm"))]
   pub use vino_provider::wasm::prelude::*;
 
-  #[cfg(any(feature = "native", feature = "wasm"))]
+  #[cfg(feature = "provider")]
   pub fn signature() -> ComponentSignature {
     ComponentSignature {
       name: "list-remove".to_owned(),
@@ -1510,7 +1880,7 @@ pub mod set_add {
   #[cfg(any(feature = "wasm"))]
   pub use vino_provider::wasm::prelude::*;
 
-  #[cfg(any(feature = "native", feature = "wasm"))]
+  #[cfg(feature = "provider")]
   pub fn signature() -> ComponentSignature {
     ComponentSignature {
       name: "set-add".to_owned(),
@@ -1698,7 +2068,7 @@ pub mod set_contains {
   #[cfg(any(feature = "wasm"))]
   pub use vino_provider::wasm::prelude::*;
 
-  #[cfg(any(feature = "native", feature = "wasm"))]
+  #[cfg(feature = "provider")]
   pub fn signature() -> ComponentSignature {
     ComponentSignature {
       name: "set-contains".to_owned(),
@@ -1881,7 +2251,7 @@ pub mod set_get {
   #[cfg(any(feature = "wasm"))]
   pub use vino_provider::wasm::prelude::*;
 
-  #[cfg(any(feature = "native", feature = "wasm"))]
+  #[cfg(feature = "provider")]
   pub fn signature() -> ComponentSignature {
     ComponentSignature {
       name: "set-get".to_owned(),
@@ -2063,7 +2433,7 @@ pub mod set_remove {
   #[cfg(any(feature = "wasm"))]
   pub use vino_provider::wasm::prelude::*;
 
-  #[cfg(any(feature = "native", feature = "wasm"))]
+  #[cfg(feature = "provider")]
   pub fn signature() -> ComponentSignature {
     ComponentSignature {
       name: "set-remove".to_owned(),
@@ -2251,7 +2621,7 @@ pub mod set_scan {
   #[cfg(any(feature = "wasm"))]
   pub use vino_provider::wasm::prelude::*;
 
-  #[cfg(any(feature = "native", feature = "wasm"))]
+  #[cfg(feature = "provider")]
   pub fn signature() -> ComponentSignature {
     ComponentSignature {
       name: "set-scan".to_owned(),

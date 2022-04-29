@@ -138,6 +138,7 @@ pub mod generated {
       #[cfg(all(feature = "wasm", not(feature = "native")))]
       pub use vino_provider::wasm::prelude::*;
 
+      #[cfg(feature = "provider")]
       pub fn signature() -> ComponentSignature {
         ComponentSignature {
           name: "core::error".to_owned(),
@@ -338,6 +339,7 @@ pub mod generated {
       #[cfg(all(feature = "wasm", not(feature = "native")))]
       pub use vino_provider::wasm::prelude::*;
 
+      #[cfg(feature = "provider")]
       pub fn signature() -> ComponentSignature {
         ComponentSignature {
           name: "core::log".to_owned(),
@@ -538,6 +540,7 @@ pub mod generated {
       #[cfg(all(feature = "wasm", not(feature = "native")))]
       pub use vino_provider::wasm::prelude::*;
 
+      #[cfg(feature = "provider")]
       pub fn signature() -> ComponentSignature {
         ComponentSignature {
           name: "core::panic".to_owned(),
@@ -743,6 +746,7 @@ pub mod generated {
       #[cfg(all(feature = "wasm", not(feature = "native")))]
       pub use vino_provider::wasm::prelude::*;
 
+      #[cfg(feature = "provider")]
       pub fn signature() -> ComponentSignature {
         ComponentSignature {
           name: "math::add".to_owned(),
@@ -949,6 +953,7 @@ pub mod generated {
       #[cfg(all(feature = "wasm", not(feature = "native")))]
       pub use vino_provider::wasm::prelude::*;
 
+      #[cfg(feature = "provider")]
       pub fn signature() -> ComponentSignature {
         ComponentSignature {
           name: "math::subtract".to_owned(),
@@ -1160,6 +1165,7 @@ pub mod generated {
       #[cfg(all(feature = "wasm", not(feature = "native")))]
       pub use vino_provider::wasm::prelude::*;
 
+      #[cfg(feature = "provider")]
       pub fn signature() -> ComponentSignature {
         ComponentSignature {
           name: "rand::bytes".to_owned(),
@@ -1366,6 +1372,7 @@ pub mod generated {
       #[cfg(all(feature = "wasm", not(feature = "native")))]
       pub use vino_provider::wasm::prelude::*;
 
+      #[cfg(feature = "provider")]
       pub fn signature() -> ComponentSignature {
         ComponentSignature {
           name: "rand::string".to_owned(),
@@ -1572,6 +1579,7 @@ pub mod generated {
       #[cfg(all(feature = "wasm", not(feature = "native")))]
       pub use vino_provider::wasm::prelude::*;
 
+      #[cfg(feature = "provider")]
       pub fn signature() -> ComponentSignature {
         ComponentSignature {
           name: "rand::uuid".to_owned(),
@@ -1777,6 +1785,7 @@ pub mod generated {
       #[cfg(all(feature = "wasm", not(feature = "native")))]
       pub use vino_provider::wasm::prelude::*;
 
+      #[cfg(feature = "provider")]
       pub fn signature() -> ComponentSignature {
         ComponentSignature {
           name: "string::concat".to_owned(),

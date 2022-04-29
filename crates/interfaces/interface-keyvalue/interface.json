@@ -2,6 +2,22 @@
   "name": "vino-interface-keyvalue",
   "types": {},
   "components": {
+    "decr": {
+      "name": "decr",
+      "inputs": {
+        "key": {
+          "type": "string"
+        },
+        "amount": {
+          "type": "i64"
+        }
+      },
+      "outputs": {
+        "output": {
+          "type": "i64"
+        }
+      }
+    },
     "delete": {
       "name": "delete",
       "inputs": {
@@ -28,6 +44,22 @@
       "outputs": {
         "exists": {
           "type": "bool"
+        }
+      }
+    },
+    "incr": {
+      "name": "incr",
+      "inputs": {
+        "key": {
+          "type": "string"
+        },
+        "amount": {
+          "type": "i64"
+        }
+      },
+      "outputs": {
+        "output": {
+          "type": "i64"
         }
       }
     },

@@ -3,10 +3,13 @@ use crate::components::*;
 
 pub(crate) fn job(mut input: Inputs, output: OutputPorts) -> JobResult {
   let first_arg = input.argv.pop();
+
   if let Some(filename) = first_arg {
     println!("filename is {}", filename);
+
     let contents = std::fs::read_to_string(&filename)
       .map_err(|e| ComponentError::new(format!("Could not read file {}: {}", filename, e)))?;
+
     println!("filename contents is {}", contents);
 
     let mut payload = TransportMap::default();
@@ -22,6 +25,7 @@ pub(crate) fn job(mut input: Inputs, output: OutputPorts) -> JobResult {
     let result: u32 = result.deserialize()?;
 
     println!("number of bytes: {}", result);
+
     output.code.done(&0)?;
   } else {
     output

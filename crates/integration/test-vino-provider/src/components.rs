@@ -74,6 +74,7 @@ pub mod generated {
     #[cfg(all(feature = "wasm", not(feature = "native")))]
     pub use vino_provider::wasm::prelude::*;
 
+    #[cfg(feature = "provider")]
     pub fn signature() -> ComponentSignature {
       ComponentSignature {
         name: "error".to_owned(),
@@ -274,6 +275,7 @@ pub mod generated {
     #[cfg(all(feature = "wasm", not(feature = "native")))]
     pub use vino_provider::wasm::prelude::*;
 
+    #[cfg(feature = "provider")]
     pub fn signature() -> ComponentSignature {
       ComponentSignature {
         name: "test-component".to_owned(),

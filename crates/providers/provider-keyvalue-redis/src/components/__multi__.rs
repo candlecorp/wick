@@ -13,6 +13,20 @@ pub(crate) async fn job(inputs: Vec<ComponentInputs>, output: OutputPorts, conte
     transaction = match input {
       ComponentInputs::Delete(v) => transaction.cmd("DEL").arg(v.keys),
       ComponentInputs::Exists(v) => transaction.cmd("EXISTS").arg(v.key),
+      ComponentInputs::Incr(v) => {
+        if v.amount == 1 {
+          transaction.cmd("INCR").arg(v.key)
+        } else {
+          transaction.cmd("INCRBY").arg(v.key).arg(v.amount)
+        }
+      }
+      ComponentInputs::Decr(v) => {
+        if v.amount == 1 {
+          transaction.cmd("DECR").arg(v.key)
+        } else {
+          transaction.cmd("DECRBY").arg(v.key).arg(v.amount)
+        }
+      }
       ComponentInputs::KeyGet(v) => transaction.cmd("GET").arg(v.key),
       ComponentInputs::KeySet(v) => {
         if v.expires == 0 {
