@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use vino_schematic_graph::iterators::{SchematicHop, WalkDirection};
 use vino_schematic_graph::{ComponentKind, PortDirection};
-use vino_types::{ComponentSignature, MapWrapper, ProviderMap, ProviderSignature, TypeSignature};
+use wasmflow_interface::{ComponentSignature, ProviderMap, ProviderSignature, TypeSignature};
 
 use crate::constants::*;
 use crate::graph::types::*;
@@ -105,7 +105,7 @@ fn generate_self_signature(network: &Network, providers: &mut ProviderMap) -> Re
   for batch in resolution_order {
     for schematic in batch {
       let signature = get_schematic_signature(schematic, providers)?;
-      let map = providers.get_inner_mut().get_mut(NS_SELF).unwrap();
+      let map = providers.get_mut(NS_SELF).unwrap();
       map.components.insert(schematic.name(), signature);
     }
   }

@@ -9,8 +9,7 @@ license = "BSD-3-Clause"
 [features]
 default = ['cli']
 reflection = ["tonic-reflection"]
-cli = ['http', 'grpc', 'lattice']
-http = ['vino-rpc', 'tonic/tls', 'vino-http', 'async-stream']
+cli = ['grpc', 'lattice']
 grpc = ['vino-rpc', 'tonic/tls', 'vino-invocation-server', 'async-stream']
 lattice = ['vino-rpc', 'vino-lattice', 'async-stream']
 
@@ -20,18 +19,17 @@ logger = { path = "../logger" }
 vino-rpc = { path = "../vino-rpc", optional = true }
 vino-invocation-server = { path = "../vino-invocation-server", optional = true }
 vino-lattice = { path = "../vino-lattice", optional = true }
-vino-http = { path = "../vino-http", optional = true }
 
-vino-packet = { path = "../../../sdk/crates/vino-packet" }
-vino-codec = { path = "../../../sdk/crates/vino-codec" }
+wasmflow-packet = { path = "../../../sdk/crates/wasmflow-packet" }
+wasmflow-codec = { path = "../../../sdk/crates/wasmflow-codec" }
 vino-transport = { path = "../../../sdk/crates/vino-transport", features = [
   "all",
 ] }
 
 cfg-if = "1.0"
 
-tonic = { version = "0.6", optional = true }
-tonic-reflection = { version = "0.3", default-features = false, optional = true }
+tonic = { version = "0.7", optional = true }
+tonic-reflection = { version = "0.4", default-features = false, optional = true }
 
 tokio = { version = "1", features = [
   "macros",
@@ -46,12 +44,10 @@ async-stream = { version = "0.3.2", optional = true }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 
-rand = "0.8"
 tracing = "0.1"
 thiserror = "1.0"
 clap = { version = "3.0", features = ["derive", "env"] }
-nkeys = { path = "../../../forks/nkeys" }
-uuid = "0.8"
+uuid = { version = "1.1", features = ["v4"] }
 
 [dev-dependencies]
 logger = { path = "../logger" }

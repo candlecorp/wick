@@ -1,5 +1,8 @@
 {
   "name": "vino-stdlib",
+  "version": "0.1.0",
+  "format": 1,
+  "wellknown": [],
   "types": {},
   "components": {
     "core::error": {
@@ -134,5 +137,6 @@
         }
       }
     }
-  }
+  },
+  "config": {}
 }

@@ -18,15 +18,16 @@ incremental = true
 [dependencies]
 
 [dev-dependencies]
-vino-entity = { path = "./sdk/crates/vino-entity" }
-vino-codec = { path = "./sdk/crates/vino-codec" }
-vino-packet = { path = "./sdk/crates/vino-packet" }
-vino-provider = { path = "./sdk/crates/vino-provider", features = ["native"] }
+wasmflow-invocation = { path = "./sdk/crates/wasmflow-invocation" }
+wasmflow-entity = { path = "./sdk/crates/wasmflow-entity" }
+wasmflow-codec = { path = "./sdk/crates/wasmflow-codec" }
+wasmflow-packet = { path = "./sdk/crates/wasmflow-packet" }
+wasmflow-output = { path = "./sdk/crates/wasmflow-output", features = [] }
 vino-transport = { path = "./sdk/crates/vino-transport", features = ["all"] }
 logger = { path = "./crates/vino/logger" }
 test-vino-provider = { path = "./crates/integration/test-vino-provider" }
 vino-rpc = { path = "./crates/vino/vino-rpc" }
-vino-macros = { path = "./sdk/crates/vino-macros" }
+wasmflow-macros = { path = "./sdk/crates/wasmflow-macros" }
 utils = { path = "./tests/utils" }
 maplit = "1.0"
 tokio = { version = "1.4", features = [

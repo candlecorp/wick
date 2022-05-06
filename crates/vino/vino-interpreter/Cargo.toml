@@ -6,17 +6,17 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+wasmflow-interface = { path = "../../../sdk/crates/wasmflow-interface" }
+wasmflow-invocation = { path = "../../../sdk/crates/wasmflow-invocation" }
+wasmflow-collection-link = { path = "../../../sdk/crates/wasmflow-collection-link" }
 vino-schematic-graph = { path = "../vino-schematic-graph" }
 vino-manifest = { path = "../vino-manifest" }
 vino-random = { path = "../vino-random" }
-vino-provider = { path = "../../../sdk/crates/vino-provider", features = [
-  "native",
-] }
-vino-types = { path = "../../../sdk/crates/vino-types" }
-vino-entity = { path = "../../../sdk/crates/vino-entity" }
-vino-packet = { path = "../../../sdk/crates/vino-packet" }
+wasmflow-output = { path = "../../../sdk/crates/wasmflow-output", features = [] }
+wasmflow-entity = { path = "../../../sdk/crates/wasmflow-entity" }
+wasmflow-packet = { path = "../../../sdk/crates/wasmflow-packet" }
 vino-transport = { path = "../../../sdk/crates/vino-transport" }
-vino-codec = { path = "../../../sdk/crates/vino-codec" }
+wasmflow-codec = { path = "../../../sdk/crates/wasmflow-codec" }
 
 thiserror = "1.0"
 tracing = "0.1"
@@ -25,11 +25,10 @@ performance-mark = { path = "../../misc/performance-mark" }
 tokio = { version = "1", features = ["rt-multi-thread", "sync", "macros"] }
 tokio-stream = "0.1"
 futures = "0.3"
-uuid = { version = "0.8", features = ["v4"] }
+uuid = { version = "1.1", features = ["v4"] }
 parking_lot = "0.12"
-once_cell = "1.10"
 serde_json = "1.0"
-serde-value = "0.7.0"
+serde-value = "0.7"
 serde = { version = "1.0", features = ["derive"] }
 rand = "0.8"
 async-recursion = "1.0"

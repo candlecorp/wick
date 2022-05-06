@@ -5,10 +5,10 @@ use std::time::Instant;
 use async_trait::async_trait;
 use futures::executor::block_on;
 use vino_lattice::Lattice;
-use vino_provider::native::prelude::*;
 use vino_rpc::error::RpcError;
 use vino_rpc::{RpcHandler, RpcResult};
-use vino_transport::Invocation;
+use vino_transport::TransportStream;
+use wasmflow_invocation::Invocation;
 
 use crate::Error;
 
@@ -32,7 +32,7 @@ impl Provider {
 
 #[async_trait]
 impl RpcHandler for Provider {
-  async fn invoke(&self, invocation: Invocation) -> RpcResult<BoxedTransportStream> {
+  async fn invoke(&self, invocation: Invocation) -> RpcResult<TransportStream> {
     let target_url = invocation.target_url();
     trace!(target = %target_url, "lattice invoke");
 
@@ -49,10 +49,10 @@ impl RpcHandler for Provider {
       "response stream received",
     );
 
-    Ok(Box::pin(stream))
+    Ok(stream)
   }
 
-  fn get_list(&self) -> RpcResult<Vec<HostedType>> {
+  fn get_list(&self) -> RpcResult<Vec<wasmflow_interface::HostedType>> {
     let components = block_on(self.lattice.list_components(self.lattice_id.clone()))
       .map_err(|e| RpcError::ProviderError(e.to_string()))?;
 
@@ -64,10 +64,11 @@ impl RpcHandler for Provider {
 mod tests {
 
   use anyhow::Result as TestResult;
-  use tokio_stream::StreamExt;
   use vino_lattice::LatticeBuilder;
-  use vino_provider::native::prelude::*;
   use vino_rpc::SharedRpcHandler;
+  use vino_transport::MessageTransport;
+  use wasmflow_entity::Entity;
+  use wasmflow_packet::PacketMap;
 
   use super::*;
 
@@ -86,14 +87,12 @@ mod tests {
     let provider = Provider::new(ns.to_owned(), Arc::new(lattice)).await?;
     let user_data = "Hello world";
 
-    let job_payload = TransportMap::from_map(HashMap::from([(
-      "input".to_owned(),
-      MessageTransport::messagepack(user_data),
-    )]));
+    let job_payload = PacketMap::from([("input", user_data)]);
     let invocation = Invocation::new_test(file!(), Entity::component(ns, "test-component"), job_payload, None);
 
-    let mut outputs = provider.invoke(invocation).await?;
-    let output = outputs.next().await.unwrap();
+    let mut stream = provider.invoke(invocation).await?;
+    let output = stream.drain_port("output").await?[0].clone();
+
     println!("payload from [{}]: {:?}", output.port, output.payload);
     let output: String = output.payload.deserialize()?;
 
@@ -113,14 +112,13 @@ mod tests {
     let provider = Provider::new(ns.to_owned(), Arc::new(lattice)).await?;
     let user_data = "Hello world";
 
-    let job_payload = TransportMap::from_map(HashMap::from([(
-      "input".to_owned(),
-      MessageTransport::messagepack(user_data),
-    )]));
+    let job_payload = PacketMap::from([("input", user_data)]);
+
     let invocation = Invocation::new_test(file!(), Entity::component(ns, "error"), job_payload, None);
 
-    let mut outputs = provider.invoke(invocation).await?;
-    let output = outputs.next().await.unwrap();
+    let mut stream = provider.invoke(invocation).await?;
+    let outputs = stream.drain().await;
+    let output = outputs[0].clone();
     println!("payload from [{}]: {:?}", output.port, output.payload);
     assert_eq!(output.payload, MessageTransport::error("This always errors"));
     Ok(())

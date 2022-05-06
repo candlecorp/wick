@@ -10,7 +10,7 @@ use vino_transport::{MessageTransport, TransportMap, TransportStream};
 static HOST: OnceCell<Host> = OnceCell::new();
 
 fn get_map() -> TransportMap {
-  let mut map = TransportMap::new();
+  let mut map = TransportMap::default();
   map.insert(
     "markdown",
     MessageTransport::success(&"# Test markdown

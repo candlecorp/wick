@@ -62,39 +62,6 @@ pub(crate) fn merge_config(
     };
     host_config.rpc = Some(rpc_opts);
 
-    #[allow(clippy::option_if_let_else)]
-    let http_opts = if let Some(mut manifest_opts) = def.host.http {
-      if !manifest_opts.enabled {
-        log_override("http.enabled", &mut manifest_opts.enabled, cli_opts.http_enabled);
-      }
-      if let Some(to) = cli_opts.http_address {
-        log_override("http.address", &mut manifest_opts.address, Some(to));
-      }
-      if let Some(to) = cli_opts.http_port {
-        log_override("http.port", &mut manifest_opts.port, Some(to));
-      }
-      if let Some(to) = cli_opts.http_pem {
-        log_override("http.pem", &mut manifest_opts.pem, Some(to));
-      }
-      if let Some(to) = cli_opts.http_ca {
-        log_override("http.ca", &mut manifest_opts.ca, Some(to));
-      }
-      if let Some(to) = cli_opts.http_key {
-        log_override("http.key", &mut manifest_opts.key, Some(to));
-      }
-      manifest_opts
-    } else {
-      HttpConfig {
-        enabled: cli_opts.http_enabled,
-        port: cli_opts.http_port,
-        address: cli_opts.http_address,
-        pem: cli_opts.http_pem,
-        key: cli_opts.http_key,
-        ca: cli_opts.http_ca,
-      }
-    };
-    host_config.http = Some(http_opts);
-
     let lattice_opts = if let Some(mut manifest_opts) = def.host.lattice {
       if !manifest_opts.enabled {
         log_override(

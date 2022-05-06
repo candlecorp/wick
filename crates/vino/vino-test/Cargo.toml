@@ -7,10 +7,12 @@ edition = "2021"
 
 [dependencies]
 tap = { path = "../../misc/tap" }
+wasmflow-invocation = { path = "../../../sdk/crates/wasmflow-invocation" }
+wasmflow-packet = { path = "../../../sdk/crates/wasmflow-packet", features = [] }
 vino-transport = { path = "../../../sdk/crates/vino-transport", features = [
   "all",
 ] }
-vino-entity = { path = "../../../sdk/crates/vino-entity" }
+wasmflow-entity = { path = "../../../sdk/crates/wasmflow-entity" }
 vino-rpc = { path = "../vino-rpc" }
 serde = { version = "1.0", features = ["derive"] }
 serde-value = "0.7.0"

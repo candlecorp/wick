@@ -98,9 +98,6 @@ pub struct HostConfig {
 
   /// Configuration for the GRPC server.
   pub rpc: Option<HttpConfig>,
-
-  /// Configuration for the development HTTP 1 server.
-  pub http: Option<HttpConfig>,
 }
 
 #[derive(Debug, Default, Clone)]
@@ -151,7 +148,6 @@ impl TryFrom<crate::v0::HostConfig> for HostConfig {
       id: def.id,
       lattice: def.lattice.and_then(|v| v.try_into().ok()),
       rpc: def.rpc.and_then(|v| v.try_into().ok()),
-      http: def.http.and_then(|v| v.try_into().ok()),
     })
   }
 }

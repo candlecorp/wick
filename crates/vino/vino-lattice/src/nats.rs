@@ -6,7 +6,7 @@ use futures::FutureExt;
 use nats::asynk::{Connection, Message, Subscription};
 use serde::Deserialize;
 use tokio::time::timeout;
-use vino_codec::messagepack::{deserialize, serialize};
+use wasmflow_codec::messagepack::{deserialize, serialize};
 
 use crate::error::LatticeError;
 use crate::LatticeRpcResponse;

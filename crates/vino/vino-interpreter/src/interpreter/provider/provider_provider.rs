@@ -1,9 +1,10 @@
 use futures::future::BoxFuture;
 use serde_json::Value;
-use vino_entity::Entity;
-use vino_provider::ProviderLink;
-use vino_transport::{Invocation, MessageTransport, TransportStream, TransportWrapper};
-use vino_types::{ComponentSignature, MapWrapper, ProviderSignature};
+use vino_transport::{MessageTransport, TransportStream, TransportWrapper};
+use wasmflow_collection_link::ProviderLink;
+use wasmflow_entity::Entity;
+use wasmflow_interface::{ComponentSignature, ProviderSignature};
+use wasmflow_invocation::Invocation;
 
 use crate::constants::*;
 use crate::{BoxError, HandlerMap, Provider};
@@ -26,7 +27,7 @@ impl ProviderProvider {
       let mut comp_sig = ComponentSignature::new(ns.clone());
       comp_sig
         .outputs
-        .insert("ref", vino_types::TypeSignature::Link { schemas: vec![] });
+        .insert("ref", wasmflow_interface::TypeSignature::Link { schemas: vec![] });
       signature.components.insert(ns.clone(), comp_sig);
     }
     Self { signature }
@@ -40,7 +41,7 @@ impl Provider for ProviderProvider {
     // This handler handles the NS_PROVIDER namespace and outputs the entity
     // to link to.
     let name = invocation.target.name().to_owned();
-    let entity = Entity::provider(&name);
+    let entity = Entity::collection(&name);
 
     let contains_provider = self.signature.components.contains_key(&name);
     let all_providers: Vec<_> = self.signature.components.inner().keys().cloned().collect();

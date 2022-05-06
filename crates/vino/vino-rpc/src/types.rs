@@ -5,12 +5,12 @@ use std::time::Duration;
 pub use conversions::*;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
-use vino_packet::Packet;
+use wasmflow_packet::Packet;
 use vino_transport::{Failure, MessageTransport, TransportWrapper};
-pub use vino_types::*;
+pub use wasmflow_interface::*;
 
 use crate::error::RpcError;
-use crate::rpc::{message_kind, MessageKind, Output};
+use crate::rpc::{self, packet as rpc_packet, Output, Packet as RpcPacket};
 use crate::Result;
 
 /// Important statistics for the hosted components.
@@ -61,34 +61,39 @@ pub struct DurationStatistics {
   pub average: Duration,
 }
 
-impl MessageKind {
-  /// Converts a [MessageKind] into a [Packet].
+impl RpcPacket {
+  /// Converts a [RpcPacket] into a [Packet].
   #[must_use]
   pub fn into_packet(self) -> Packet {
     self.into()
   }
 
-  /// Converts a [MessageKind] into a [MessageTransport].
+  /// Converts a [RpcPacket] into a [MessageTransport].
   #[must_use]
   pub fn into_transport(self) -> Packet {
     self.into()
   }
 
-  /// Utility function to determine if [MessageKind] is a Signal.
+  /// Utility function to determine if [RpcPacket] is a Signal.
   #[must_use]
   pub fn is_signal(&self) -> bool {
-    let kind: Option<message_kind::Kind> = message_kind::Kind::from_i32(self.kind);
-    matches!(kind, Some(message_kind::Kind::Signal))
+    assert!(self.data.is_some(), "Invalid RPC message contains no data");
+    let data = self.data.as_ref().unwrap();
+    matches!(data, rpc_packet::Data::Signal(_))
   }
 }
 
 impl Output {
-  /// Utility function to determine if [MessageKind] is a Signal.
+  /// Utility function to determine if [RpcPacket] is a Signal.
   #[must_use]
   pub fn is_signal(&self) -> bool {
-    let num = self.payload.as_ref().map_or(-1, |p| p.kind);
-    let kind: Option<message_kind::Kind> = message_kind::Kind::from_i32(num);
-    matches!(kind, Some(message_kind::Kind::Signal))
+    assert!(
+      self.payload.is_some(),
+      "Invalid packet in Output stream, contains no data"
+    );
+    let packet = self.payload.as_ref().unwrap();
+
+    matches!(packet.data, Some(rpc_packet::Data::Signal(_)))
   }
 
   /// Convert the Output to JSON object value. This will not fail. If there is an error, the return value will be a serialized wrapper for a [MessageTransport::Error].
@@ -122,55 +127,73 @@ impl From<Output> for TransportWrapper {
   }
 }
 
-impl From<MessageKind> for MessageTransport {
-  fn from(v: MessageKind) -> Self {
+impl From<RpcPacket> for MessageTransport {
+  fn from(v: RpcPacket) -> Self {
     let packet: Packet = v.into();
     packet.into()
   }
 }
 
-impl From<MessageTransport> for MessageKind {
+impl From<MessageTransport> for RpcPacket {
   fn from(v: MessageTransport) -> Self {
-    let kind: i32 = match &v {
+    let data: rpc_packet::Data = match v {
       MessageTransport::Success(v) => match v {
-        vino_transport::Success::MessagePack(_) => message_kind::Kind::MessagePack,
-        vino_transport::Success::Serialized(_) => message_kind::Kind::Json,
-        vino_transport::Success::Json(_) => message_kind::Kind::Json,
-      },
-      MessageTransport::Failure(v) => match v {
-        vino_transport::Failure::Invalid => message_kind::Kind::Invalid,
-        vino_transport::Failure::Exception(_) => message_kind::Kind::Exception,
-        vino_transport::Failure::Error(_) => message_kind::Kind::Error,
-      },
-      MessageTransport::Signal(_) => message_kind::Kind::Signal,
-    }
-    .into();
-    let data = match v {
-      MessageTransport::Success(v) => match v {
-        vino_transport::Success::MessagePack(v) => Some(message_kind::Data::Messagepack(v)),
-        vino_transport::Success::Serialized(val) => match vino_codec::json::serialize(&val) {
-          Ok(json) => Some(message_kind::Data::Json(json)),
-          Err(e) => Some(message_kind::Data::Message(e.to_string())),
+        vino_transport::Serialized::MessagePack(v) => rpc_packet::Data::Success(rpc::Serialized {
+          payload: Some(rpc::PayloadData {
+            data: Some(rpc::payload_data::Data::Messagepack(v)),
+          }),
+        }),
+        vino_transport::Serialized::Struct(v) => match wasmflow_codec::json::serialize(&v) {
+          Ok(json) => rpc_packet::Data::Success(rpc::Serialized {
+            payload: Some(rpc::PayloadData {
+              data: Some(rpc::payload_data::Data::Json(json)),
+            }),
+          }),
+          Err(e) => rpc_packet::Data::Failure(rpc::Failure {
+            r#type: rpc::failure::FailureKind::Error.into(),
+            payload: e.to_string(),
+          }),
         },
-        vino_transport::Success::Json(json) => Some(message_kind::Data::Json(json)),
+        vino_transport::Serialized::Json(v) => rpc_packet::Data::Success(rpc::Serialized {
+          payload: Some(rpc::PayloadData {
+            data: Some(rpc::payload_data::Data::Json(v)),
+          }),
+        }),
       },
       MessageTransport::Failure(v) => match v {
-        vino_transport::Failure::Invalid => None,
-        vino_transport::Failure::Exception(v) => Some(message_kind::Data::Message(v)),
-        vino_transport::Failure::Error(v) => Some(message_kind::Data::Message(v)),
+        vino_transport::Failure::Invalid => panic!("Invalid packet sent over GRPC"),
+        vino_transport::Failure::Exception(v) => rpc_packet::Data::Failure(rpc::Failure {
+          r#type: rpc::failure::FailureKind::Exception.into(),
+          payload: v,
+        }),
+        vino_transport::Failure::Error(v) => rpc_packet::Data::Failure(rpc::Failure {
+          r#type: rpc::failure::FailureKind::Error.into(),
+          payload: v,
+        }),
       },
       MessageTransport::Signal(signal) => match signal {
-        vino_transport::MessageSignal::Done => {
-          Some(message_kind::Data::Signal(message_kind::OutputSignal::Done.into()))
-        }
-        vino_transport::MessageSignal::OpenBracket => Some(message_kind::Data::Signal(
-          message_kind::OutputSignal::OpenBracket.into(),
-        )),
-        vino_transport::MessageSignal::CloseBracket => Some(message_kind::Data::Signal(
-          message_kind::OutputSignal::CloseBracket.into(),
-        )),
+        vino_transport::MessageSignal::Done => rpc_packet::Data::Signal(rpc::Signal {
+          r#type: rpc::signal::OutputSignal::Done.into(),
+          payload: None,
+        }),
+        vino_transport::MessageSignal::OpenBracket => rpc_packet::Data::Signal(rpc::Signal {
+          r#type: rpc::signal::OutputSignal::OpenBracket.into(),
+          payload: None,
+        }),
+        vino_transport::MessageSignal::CloseBracket => rpc_packet::Data::Signal(rpc::Signal {
+          r#type: rpc::signal::OutputSignal::CloseBracket.into(),
+          payload: None,
+        }),
+        vino_transport::MessageSignal::Status(v) => rpc_packet::Data::Signal(rpc::Signal {
+          r#type: rpc::signal::OutputSignal::State.into(),
+          payload: Some(rpc::PayloadData {
+            data: Some(rpc::payload_data::Data::Messagepack(
+              wasmflow_codec::messagepack::serialize(&v).unwrap(),
+            )),
+          }),
+        }),
       },
     };
-    MessageKind { kind, data }
+    RpcPacket { data: Some(data) }
   }
 }

@@ -11,9 +11,8 @@ edition = "2021"
 vino-rpc = { path = "../vino-rpc" }
 vino-lattice = { path = "../vino-lattice" }
 vino-transport = { path = "../../../sdk/crates/vino-transport" }
-vino-provider = { path = "../../../sdk/crates/vino-provider", features = [
-  "native",
-] }
+wasmflow-interface = { path = "../../../sdk/crates/wasmflow-interface" }
+wasmflow-invocation = { path = "../../../sdk/crates/wasmflow-invocation" }
 parking_lot = "0.12"
 tracing = "0.1"
 thiserror = "1.0"
@@ -27,3 +26,5 @@ logger = { path = "../logger" }
 tokio = { version = "1", features = ["macros"] }
 tokio-stream = "0.1.7"
 anyhow = "1.0"
+wasmflow-packet = { path = "../../../sdk/crates/wasmflow-packet" }
+wasmflow-entity = { path = "../../../sdk/crates/wasmflow-entity" }

@@ -2,7 +2,8 @@ use std::collections::HashMap;
 
 use uuid::Uuid;
 use vino_schematic_graph::{ComponentIndex, PortDirection, PortReference};
-use vino_transport::{Invocation, MessageTransport, TransportWrapper};
+use vino_transport::{MessageTransport, TransportWrapper};
+use wasmflow_invocation::Invocation;
 
 use super::EventLoop;
 use crate::default::make_default_transport;

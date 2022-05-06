@@ -1,0 +1,6 @@
+WELLKNOWN = --wellknown
+
+SOURCE_FILES += $(INTERFACE)
+
+$(INTERFACE):
+	echo "This is where retrieving the schema's interface.json would go"

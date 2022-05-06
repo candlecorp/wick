@@ -3,7 +3,7 @@ use std::sync::Arc;
 use futures::Stream;
 use parking_lot::{Condvar, Mutex};
 use uuid::Uuid;
-use vino_transport::Invocation;
+use wasmflow_invocation::Invocation;
 
 use crate::dev::prelude::*;
 
@@ -56,8 +56,8 @@ pub enum DispatchError {
   CallFailure(String),
 }
 
-impl From<vino_entity::Error> for DispatchError {
-  fn from(e: vino_entity::Error) -> Self {
+impl From<wasmflow_entity::Error> for DispatchError {
+  fn from(e: wasmflow_entity::Error) -> Self {
     DispatchError::EntityFailure(e.to_string())
   }
 }
@@ -119,7 +119,7 @@ pub(crate) fn network_invoke_sync(
 mod tests {
 
   use tokio::sync::oneshot;
-  use vino_transport::TransportMap;
+  use wasmflow_packet::PacketMap;
 
   use super::*;
   use crate::test::prelude::{assert_eq, *};
@@ -128,7 +128,7 @@ mod tests {
     let (_, nuid) = init_network_from_yaml("./manifests/v0/echo.yaml").await?;
 
     let target = Entity::component("self", "echo");
-    let map = TransportMap::from(vec![("input", "hello")]);
+    let map = PacketMap::from(vec![("input", "hello")]);
     let invocation = Invocation::new_test(file!(), target, map, None);
 
     let packets = network_invoke_async(nuid, invocation).await?;
@@ -156,7 +156,7 @@ mod tests {
     let nuid = rx.await?;
 
     let target = Entity::component("self", "echo");
-    let map = TransportMap::from(vec![("input", "hello")]);
+    let map = PacketMap::from(vec![("input", "hello")]);
     let invocation = Invocation::new_test(file!(), target, map, None);
 
     let packets = network_invoke_sync(nuid, invocation)?;

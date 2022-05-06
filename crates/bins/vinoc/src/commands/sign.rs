@@ -4,7 +4,7 @@ use std::path::PathBuf;
 
 use clap::Args;
 use nkeys::KeyPairType;
-use vino_types::ProviderSignature;
+use wasmflow_interface::ProviderSignature;
 use vino_wascap::{sign_buffer_with_claims, ClaimsOptions};
 
 use crate::error::ControlError;

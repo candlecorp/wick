@@ -5,20 +5,22 @@ use anyhow::Result;
 use futures::future::BoxFuture;
 use serde_json::Value;
 use test::{JsonWriter, TestProvider};
-use vino_entity::Entity;
 use vino_interpreter::graph::from_def;
 use vino_interpreter::{BoxError, HandlerMap, Interpreter, NamespaceHandler, Provider};
 use vino_manifest::Loadable;
 use vino_random::Seed;
-use vino_transport::{Invocation, TransportMap, TransportStream};
-use vino_types::ProviderSignature;
+use vino_transport::TransportStream;
+use wasmflow_entity::Entity;
+use wasmflow_interface::ProviderSignature;
+use wasmflow_invocation::Invocation;
+use wasmflow_packet::PacketMap;
 struct SignatureProvider(ProviderSignature);
 impl Provider for SignatureProvider {
   fn handle(&self, _payload: Invocation, _config: Option<Value>) -> BoxFuture<Result<TransportStream, BoxError>> {
     todo!()
   }
 
-  fn list(&self) -> &vino_types::ProviderSignature {
+  fn list(&self) -> &wasmflow_interface::ProviderSignature {
     &self.0
   }
 }
@@ -33,7 +35,7 @@ async fn test_invoke_provider() -> Result<()> {
   let network = from_def(&manifest.network().try_into()?)?;
   let providers = HandlerMap::new(vec![NamespaceHandler::new("test", Box::new(TestProvider::new()))]);
 
-  let inputs = TransportMap::from([("input", "Hello world".to_owned())]);
+  let inputs = PacketMap::from([("input", "Hello world".to_owned())]);
 
   let entity = Entity::component("test", "echo");
 

@@ -2,10 +2,11 @@ use std::time::Instant;
 
 use async_trait::async_trait;
 use http::Uri;
-use vino_provider::native::prelude::*;
 use vino_rpc::error::RpcError;
 use vino_rpc::{RpcClient, RpcHandler, RpcResult};
-use vino_transport::Invocation;
+use vino_transport::TransportStream;
+use wasmflow_interface::HostedType;
+use wasmflow_invocation::Invocation;
 
 use crate::error::GrpcError;
 
@@ -26,7 +27,7 @@ impl Provider {
 
 #[async_trait]
 impl RpcHandler for Provider {
-  async fn invoke(&self, invocation: Invocation) -> RpcResult<BoxedTransportStream> {
+  async fn invoke(&self, invocation: Invocation) -> RpcResult<TransportStream> {
     let target_url = invocation.target_url();
     trace!(target = %target_url, "grpc invoke");
 
@@ -44,7 +45,7 @@ impl RpcHandler for Provider {
       duration_ms = %start.elapsed().as_millis(),
       "grpc invoke complete",
     );
-    Ok(Box::pin(stream))
+    Ok(stream)
   }
 
   fn get_list(&self) -> RpcResult<Vec<HostedType>> {
@@ -59,9 +60,10 @@ mod test {
 
   use anyhow::Result;
   use test_vino_provider::Provider as TestProvider;
-  use tokio_stream::StreamExt;
   use vino_invocation_server::{bind_new_socket, make_rpc_server};
   use vino_rpc::SharedRpcHandler;
+  use wasmflow_entity::Entity;
+  use wasmflow_packet::PacketMap;
 
   use super::*;
 
@@ -75,15 +77,11 @@ mod test {
     let port = socket.local_addr()?.port();
     let init_handle = make_rpc_server(socket, get_provider());
     let user_data = "test string payload";
+    let payload = PacketMap::from([("input", user_data)]);
 
-    let addr = format!("https://127.0.0.1:{}", port);
+    let addr = format!("http://127.0.0.1:{}", port);
     let service = Provider::new(addr).await?;
-    let invocation = Invocation::new_test(
-      file!(),
-      Entity::local("test-component"),
-      vec![("input", user_data)].into(),
-      None,
-    );
+    let invocation = Invocation::new_test(file!(), Entity::local("test-component"), payload, None);
 
     let work = service.invoke(invocation);
 
@@ -92,7 +90,8 @@ mod test {
             debug!("Work complete");
             match res {
               Ok(mut response)=>{
-                let next: TransportWrapper = response.next().await.unwrap();
+                let packets:Vec<_> = response.drain_port("output").await?;
+                let next = packets[0].clone();
                 let payload: String = next.payload.deserialize()?;
                 assert_eq!(payload, format!("TEST: {}", user_data));
               },

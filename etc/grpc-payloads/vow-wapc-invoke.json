@@ -1,7 +1,0 @@
-{
-  "origin": "ofp://NC6INPB6YIFA53UHP26M7ECHSKTVXTHHEWHFX6ILDZYTGY7NF3PQOGJF.client/",
-  "target": "ofp://validate.component/",
-  "msg": { "input": { "kind": 4, "messagepack": "q0hlbGxvIHdvcmxk" } },
-  "id": "4b1d9164-0181-4d00-940f-c23d16a0b707",
-  "network_id": "NC6INPB6YIFA53UHP26M7ECHSKTVXTHHEWHFX6ILDZYTGY7NF3PQOGJF"
-}

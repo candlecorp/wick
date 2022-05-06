@@ -2,8 +2,8 @@ use std::path::{Path, PathBuf};
 
 use serde::{Deserialize, Serialize};
 use vino_par::make_archive;
-use vino_types::ProviderSignature;
 use vino_wascap::{ClaimsOptions, KeyPair};
+use wasmflow_interface::ProviderSignature;
 
 use crate::error::OciError;
 use crate::ArchitectureMap;

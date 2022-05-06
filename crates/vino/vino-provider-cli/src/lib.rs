@@ -88,9 +88,9 @@
 #![allow()]
 
 /// The CLI module.
-#[cfg(any(feature = "grpc", feature = "http", feature = "lattice"))]
+#[cfg(any(feature = "grpc", feature = "lattice"))]
 mod cli;
-#[cfg(any(feature = "grpc", feature = "http", feature = "lattice"))]
+#[cfg(any(feature = "grpc", feature = "lattice"))]
 pub use cli::{init_cli, print_info, start_server, ServerControl, ServerState};
 
 /// The crate's error module.

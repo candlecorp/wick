@@ -3,13 +3,16 @@ use std::sync::Arc;
 
 use async_trait::async_trait;
 use tokio_stream::StreamExt;
-use vino_entity::Entity;
-use vino_provider::ProviderLink;
 use vino_rpc::error::RpcError;
 use vino_rpc::{RpcHandler, RpcResult};
-use vino_transport::{BoxedTransportStream, Invocation, MessageTransport, TransportMap, TransportWrapper};
-use vino_types::*;
+use vino_transport::{MessageTransport, Serialized, TransportMap, TransportStream};
 pub use wapc::WasiParams;
+use wasmflow_codec::{json, messagepack};
+use wasmflow_collection_link::ProviderLink;
+use wasmflow_entity::Entity;
+use wasmflow_invocation::Invocation;
+use wasmflow_packet::{PacketMap, PacketWrapper};
+use wasmflow_sdk::types::HostedType;
 
 use crate::error::LinkError;
 use crate::wapc_module::WapcModule;
@@ -28,7 +31,7 @@ pub struct Provider {
   pool: Arc<WasmHost>,
 }
 
-pub type HostLinkCallback = dyn Fn(&str, &str, TransportMap) -> Result<Vec<TransportWrapper>, LinkError> + Sync + Send;
+pub type HostLinkCallback = dyn Fn(&str, &str, PacketMap) -> Result<Vec<PacketWrapper>, LinkError> + Sync + Send;
 
 impl Provider {
   pub fn try_load(
@@ -107,18 +110,19 @@ impl Provider {
 
 #[async_trait]
 impl RpcHandler for Provider {
-  async fn invoke(&self, invocation: Invocation) -> RpcResult<BoxedTransportStream> {
+  async fn invoke(&self, invocation: Invocation) -> RpcResult<TransportStream> {
     trace!(target = %invocation.target, "wasm invoke");
     let component = invocation.target.name();
-    let messagepack_map = invocation
-      .payload
-      .try_into_messagepack_bytes()
-      .map_err(|e| RpcError::ProviderError(e.to_string()))?;
+    let messagepack_map =
+      try_into_messagepack_bytes(invocation.payload).map_err(|e| RpcError::ProviderError(e.to_string()))?;
     let pool = self.pool.clone();
 
-    let outputs = pool.call(component, &messagepack_map).await?;
+    let config = invocation.config.map(|v| v.into_messagepack());
+    let state = invocation.state.map(|v| v.into_messagepack());
 
-    Ok(Box::pin(outputs))
+    let outputs = pool.call(component, &messagepack_map, config, state).await?;
+
+    Ok(outputs)
   }
 
   fn get_list(&self) -> RpcResult<Vec<HostedType>> {
@@ -139,16 +143,38 @@ impl RpcHandler for Provider {
   }
 }
 
+fn try_into_messagepack_bytes(payload: TransportMap) -> Result<HashMap<String, Vec<u8>>, Error> {
+  let mut map = HashMap::new();
+  for (k, v) in payload.into_inner() {
+    let bytes = match v {
+      MessageTransport::Success(success) => match success {
+        Serialized::MessagePack(bytes) => bytes,
+        Serialized::Struct(v) => messagepack::serialize(&v)?,
+        Serialized::Json(v) => {
+          let value: serde_value::Value = json::deserialize(&v)?;
+          messagepack::serialize(&value)?
+        }
+      },
+      MessageTransport::Failure(_) => {
+        unreachable!("Failure packets must be handled by the interpreter, not passed to a component")
+      }
+      MessageTransport::Signal(_) => {
+        unreachable!("Signal packets must be handled by the interpreter, not passed to a component")
+      }
+    };
+    map.insert(k, bytes);
+  }
+  Ok(map)
+}
+
 #[cfg(test)]
 mod tests {
   use std::path::PathBuf;
   use std::str::FromStr;
 
   use anyhow::Result as TestResult;
-  use maplit::hashmap;
-  use tokio_stream::StreamExt;
-  use vino_entity::Entity;
-  use vino_transport::MessageTransport;
+  use wasmflow_entity::Entity;
+  use wasmflow_packet::PacketMap;
 
   use super::*;
 
@@ -168,14 +194,16 @@ mod tests {
     )?;
     let input = "Hello world";
 
-    let job_payload = TransportMap::from_map(hashmap! {
-      "input".to_owned() => MessageTransport::messagepack(input),
-    });
+    let job_payload = PacketMap::from([("input", input)]);
     debug!("payload: {:?}", job_payload);
     let entity = Entity::local("validate");
     let invocation = Invocation::new_test(file!(), entity, job_payload, None);
     let mut outputs = provider.invoke(invocation).await?;
-    let output = outputs.next().await.unwrap();
+    debug!("Invocation complete");
+    let packets: Vec<_> = outputs.drain_port("output").await?;
+    debug!("Output packets: {:?}", packets);
+    let output = packets[0].clone();
+
     println!("payload from [{}]: {:?}", output.port, output.payload);
     let output: String = output.payload.deserialize()?;
 

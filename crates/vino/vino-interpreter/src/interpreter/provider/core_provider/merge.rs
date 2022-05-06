@@ -2,7 +2,6 @@ use std::collections::HashMap;
 
 use serde_json::Value;
 use vino_transport::{MessageTransport, TransportStream, TransportWrapper};
-use vino_types::MapWrapper;
 
 use crate::{Component, ExecutionError};
 
@@ -11,7 +10,7 @@ pub(crate) struct MergeComponent {}
 
 #[derive(serde::Deserialize)]
 pub(crate) struct MergeConfig {
-  inputs: vino_types::TypeMap,
+  inputs: wasmflow_interface::FieldMap,
 }
 
 impl Component for MergeComponent {

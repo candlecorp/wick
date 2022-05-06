@@ -1,14 +1,6 @@
-
-# Enforce bash as the shell for consistency
-SHELL := bash
-# Use bash strict mode
-.SHELLFLAGS := -eu -o pipefail -c
-MAKEFLAGS += --warn-undefined-variables
-MAKEFLAGS += --no-builtin-rules
-MAKEFLAGS += --no-print-directory
+include ./Makefiles/common/Makefile.prelude
 
 CRATES_DIR := ./crates
-ROOT := $(shell pwd)
 
 # Get list of projects that have makefiles
 MAKEFILES=$(wildcard ${CRATES_DIR}/*/*/Makefile)
@@ -116,7 +108,7 @@ $(TEST_PAR_BIN):
 	cp target/release/vino-standalone $@
 
 $(TEST_PAR): $(TEST_PAR_BIN)
-	cargo run -p vinoc -- pack $< ./crates/providers/provider-standalone/interface.json -o $@
+	cargo run -p vinoc -- pack $< ./crates/integration/test-provider/interface.json -o $@
 
 ./build/$(ARCH):
 	mkdir -p $@
@@ -185,10 +177,6 @@ deps:   ## Install dependencies
 	cargo install cargo-deny tomlq
 
 ##@ Helpers
-
-.PHONY: list
-list: ## Display supported images
-	@ls Dockerfile.* | sed -nE 's/Dockerfile\.(.*)/\1/p' | sort
 
 .PHONY: help
 help:  ## Display this help

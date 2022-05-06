@@ -8,17 +8,20 @@ license = "BSD-3-Clause"
 [features]
 
 [dependencies]
-vino-schematic-graph = { path = "../vino-schematic-graph" }
+wasmflow-interface = { path = "../../../sdk/crates/wasmflow-interface" }
+wasmflow-streams = { path = "../../../sdk/crates/wasmflow-streams" }
+wasmflow-invocation = { path = "../../../sdk/crates/wasmflow-invocation" }
+wasmflow-packet = { path = "../../../sdk/crates/wasmflow-packet" }
+wasmflow-macros = { path = "../../../sdk/crates/wasmflow-macros" }
+wasmflow-output = { path = "../../../sdk/crates/wasmflow-output", features = [] }
+wasmflow-codec = { path = "../../../sdk/crates/wasmflow-codec" }
+wasmflow-entity = { path = "../../../sdk/crates/wasmflow-entity" }
 
+vino-schematic-graph = { path = "../vino-schematic-graph" }
 vino-interpreter = { path = "../vino-interpreter" }
 vino-random = { path = "../vino-random" }
-vino-packet = { path = "../../../sdk/crates/vino-packet" }
-vino-macros = { path = "../../../sdk/crates/vino-macros" }
 vino-manifest = { path = "../vino-manifest" }
 vino-loader = { path = "../vino-loader" }
-vino-provider = { path = "../../../sdk/crates/vino-provider", features = [
-  "native",
-] }
 vino-provider-wasm = { path = "../vino-provider-wasm" }
 vino-provider-lattice = { path = "../vino-provider-lattice" }
 vino-provider-par = { path = "../vino-provider-par" }
@@ -28,11 +31,8 @@ vino-stdlib = { path = "../../providers/vino-stdlib" }
 vino-transport = { path = "../../../sdk/crates/vino-transport", features = [
   "all",
 ] }
-vino-codec = { path = "../../../sdk/crates/vino-codec" }
 vino-wascap = { path = "../vino-wascap" }
 vino-rpc = { path = "../vino-rpc" }
-vino-entity = { path = "../../../sdk/crates/vino-entity" }
-vino-types = { path = "../../../sdk/crates/vino-types" }
 
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
@@ -49,14 +49,14 @@ tokio = { version = "1", features = [
   "rt-multi-thread",
 ] }
 tokio-stream = { version = "0.1", features = [] }
-itertools = "0.10"
+# itertools = "0.10"
 tracing = "0.1"
-dyn-clone = "1.0.4"
-rand = { version = "0.8", default-features = false, features = [
-  "std_rng",
-  "alloc",
-] }
-uuid = "0.8"
+# dyn-clone = "1.0.4"
+# rand = { version = "0.8", default-features = false, features = [
+#   "std_rng",
+#   "alloc",
+# ] }
+uuid = "1.1"
 
 [dev-dependencies]
 vino-invocation-server = { path = "../vino-invocation-server" }

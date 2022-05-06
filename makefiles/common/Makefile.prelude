@@ -1,0 +1,27 @@
+COMMON_PATH := $(abspath $(lastword $(MAKEFILE_LIST)))
+COMMON_DIR := $(dir $(COMMON_PATH))..
+
+.DEFAULT_GOAL:=all
+
+ifdef OS
+_OS := $(OS)
+else
+_OS := ""
+endif
+
+ifeq ($(_OS),Windows_NT)
+# Use powershell on Windows
+SHELL := powershell.exe
+# mkdir -p on windows throws an error if the directory exists, -Force suppresses it.
+MKDIR := mkdir -Force -p
+.SHELLFLAGS := -NoProfile -Command
+else
+# Enforce bash as the shell for consistency
+SHELL := bash
+MKDIR := mkdir -p
+# Use bash strict mode
+.SHELLFLAGS := -eu -o pipefail -c
+endif
+
+MAKEFLAGS += --warn-undefined-variables
+MAKEFLAGS += --no-builtin-rules

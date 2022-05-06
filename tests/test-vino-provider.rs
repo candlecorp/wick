@@ -1,22 +1,23 @@
-use futures::prelude::*;
 use log::debug;
 use test_vino_provider::Provider;
 use vino_rpc::RpcHandler;
+use wasmflow_packet::PacketMap;
 
 #[test_logger::test(tokio::test)]
 async fn request() -> anyhow::Result<()> {
   let provider = Provider::default();
   let input = "some_input";
-  let job_payload = vec![("input", input)].into();
-  let invocation = vino_transport::Invocation::new_test(
+  let job_payload: PacketMap = vec![("input", input)].into();
+  let invocation = wasmflow_invocation::Invocation::new_test(
     file!(),
-    vino_entity::Entity::local("test-component"),
+    wasmflow_entity::Entity::local("test-component"),
     job_payload,
     None,
   );
 
   let mut outputs = provider.invoke(invocation).await?;
-  let output = outputs.next().await.unwrap();
+  let packets: Vec<_> = outputs.drain_port("output").await?;
+  let output = packets[0].clone();
   println!("Received payload from [{}]", output.port);
   let payload: String = output.payload.deserialize()?;
 

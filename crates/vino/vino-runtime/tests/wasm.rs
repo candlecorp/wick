@@ -1,11 +1,11 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use runtime_testutils::*;
-use tokio_stream::StreamExt;
 use tracing::debug;
-use vino_entity::Entity;
 use vino_runtime::prelude::TransportWrapper;
-use vino_transport::{Invocation, MessageSignal, MessageTransport};
+use vino_transport::MessageTransport;
+use wasmflow_entity::Entity;
+use wasmflow_invocation::Invocation;
 type Result<T> = anyhow::Result<T, anyhow::Error>;
 use maplit::hashmap;
 use pretty_assertions::assert_eq;
@@ -28,7 +28,7 @@ async fn good_wapc_component() -> Result<()> {
     ))
     .await?;
 
-  let mut messages: Vec<TransportWrapper> = result.drain_port("output").await;
+  let mut messages: Vec<TransportWrapper> = result.drain_port("output").await?;
   assert_eq!(messages.len(), 1);
 
   let output: TransportWrapper = messages.pop().unwrap();
@@ -50,7 +50,7 @@ async fn good_wapc_component() -> Result<()> {
     ))
     .await?;
 
-  let mut messages: Vec<TransportWrapper> = result.drain_port("output").await;
+  let mut messages: Vec<TransportWrapper> = result.drain_port("output").await?;
   assert_eq!(messages.len(), 1);
 
   let output: TransportWrapper = messages.pop().unwrap();
@@ -89,7 +89,7 @@ async fn good_wasi_component() -> Result<()> {
     ))
     .await?;
 
-  let mut messages: Vec<TransportWrapper> = result.drain_port("contents").await;
+  let mut messages: Vec<TransportWrapper> = result.drain_port("contents").await?;
   assert_eq!(messages.len(), 1);
 
   let output: TransportWrapper = messages.pop().unwrap();
@@ -118,7 +118,7 @@ async fn wapc_stream() -> Result<()> {
     ))
     .await?;
 
-  let messages: Vec<TransportWrapper> = result.drain_port("output").await;
+  let messages: Vec<TransportWrapper> = result.drain_port("output").await?;
   // println!("{:#?}", messages);
   assert_eq!(messages.len(), 5);
   for msg in messages {
@@ -175,7 +175,7 @@ async fn wasm_link_call() -> Result<()> {
     ))
     .await?;
 
-  let mut messages: Vec<TransportWrapper> = result.drain_port("output").await;
+  let mut messages = result.drain_port("output").await?;
   println!("{:#?}", messages);
   assert_eq!(messages.len(), 1);
 
@@ -204,7 +204,7 @@ async fn subnetwork_link_call() -> Result<()> {
     ))
     .await?;
 
-  let mut messages: Vec<TransportWrapper> = result.drain_port("output").await;
+  let mut messages = result.drain_port("output").await?;
   println!("{:#?}", messages);
   assert_eq!(messages.len(), 1);
 

@@ -7,17 +7,18 @@ use nkeys::KeyPair;
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
 use uuid::Uuid;
-use vino_entity::Entity;
 use vino_lattice::{Lattice, NatsOptions};
 use vino_manifest::host_definition::HostDefinition;
-use vino_provider::native::prelude::ProviderSignature;
 use vino_provider_cli::options::{LatticeOptions, Options as HostOptions, ServerOptions};
 use vino_provider_cli::ServerState;
 use vino_random::Seed;
 use vino_rpc::{RpcHandler, SharedRpcHandler};
 use vino_runtime::prelude::*;
 use vino_runtime::NetworkBuilder;
-use vino_transport::{InherentData, Invocation, TransportMap};
+use vino_transport::TransportMap;
+use wasmflow_entity::Entity;
+use wasmflow_interface::ProviderSignature;
+use wasmflow_invocation::{InherentData, Invocation};
 
 use crate::{Error, Result};
 
@@ -146,17 +147,6 @@ impl Host {
     #[allow(clippy::manual_map)]
     let options = HostOptions {
       rpc: match &self.manifest.host.rpc {
-        Some(config) => Some(ServerOptions {
-          port: config.port,
-          address: config.address,
-          pem: config.pem.clone(),
-          key: config.key.clone(),
-          ca: config.ca.clone(),
-          enabled: config.enabled,
-        }),
-        None => None,
-      },
-      http: match &self.manifest.host.http {
         Some(config) => Some(ServerOptions {
           port: config.port,
           address: config.address,
@@ -308,10 +298,10 @@ mod test {
   use std::str::FromStr;
 
   use http::Uri;
-  use vino_entity::Entity;
   use vino_invocation_server::connect_rpc_client;
   use vino_manifest::host_definition::HttpConfig;
   use vino_rpc::rpc::Invocation;
+  use wasmflow_entity::Entity;
 
   use super::*;
   use crate::{HostBuilder, Result};
@@ -340,7 +330,7 @@ mod test {
     let passed_data = "logging output";
     let payload: TransportMap = vec![("input", passed_data)].into();
     let mut stream = host.request("logger", payload, None).await?;
-    let mut messages: Vec<_> = stream.drain_port("output").await;
+    let mut messages: Vec<_> = stream.drain_port("output").await?;
     assert_eq!(messages.len(), 1);
     let output = messages.pop().unwrap();
     let result: String = output.payload.deserialize()?;
@@ -364,13 +354,12 @@ mod test {
     let mut host = HostBuilder::from_definition(def).build();
     host.start(Some(0)).await?;
 
-    let mut client = connect_rpc_client(Uri::from_str("https://127.0.0.1:54321").unwrap()).await?;
+    let mut client = connect_rpc_client(Uri::from_str("http://127.0.0.1:54321").unwrap()).await?;
     let passed_data = "logging output";
     let data = vec![("input", passed_data)].into();
-    let invocation: Invocation =
-      vino_transport::Invocation::new(Entity::test("test"), Entity::local("logger"), data, None)
-        .try_into()
-        .unwrap();
+    let invocation: Invocation = super::Invocation::new(Entity::test("test"), Entity::local("logger"), data, None)
+      .try_into()
+      .unwrap();
     let mut response = client.invoke(invocation).await.unwrap().into_inner();
     let next = response.message().await;
     println!("next: {:?}", next);

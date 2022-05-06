@@ -1,9 +1,18 @@
 pub(crate) use crate::components::generated::error::*;
 
-pub(crate) async fn job(
-  _input: Inputs,
-  _output: OutputPorts,
-  _context: crate::Context,
-) -> Result<(), Box<NativeComponentError>> {
-  Err(Box::new(NativeComponentError::new("This always errors")))
+pub(crate) type State = ();
+
+#[async_trait::async_trait]
+impl wasmflow_sdk::sdk::stateful::BatchedComponent for Component {
+  type Context = crate::Context;
+  type State = State;
+  async fn job(
+    _input: Self::Inputs,
+    _output: Self::Outputs,
+    _context: Self::Context,
+    _state: Option<Self::State>,
+    _config: Option<Self::Config>,
+  ) -> Result<Option<Self::State>, Box<dyn std::error::Error + Send + Sync>> {
+    Err("This always errors".into())
+  }
 }

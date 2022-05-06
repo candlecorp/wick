@@ -1,0 +1,14 @@
+
+include $(COMMON_DIR)/common/Makefile.common
+include $(COMMON_DIR)/common/Makefile.common-wellknown-false
+include $(COMMON_DIR)/common/Makefile.common-interface
+include $(COMMON_DIR)/common/Makefile.common-post
+include $(COMMON_DIR)/common/Makefile.postlude
+
+.PHONY: build
+build: $(SOURCE_FILES)
+	@cargo build
+
+.PHONY: test
+test: codegen
+	@cargo test

@@ -11,11 +11,8 @@ path = "src/main.rs"
 
 [dependencies]
 thiserror = "1.0"
-vino-provider = { path = "../../../sdk/crates/vino-provider", features = [
-  "native",
-] }
-vino-packet = { path = "../../../sdk/crates/vino-packet" }
-vino-codec = { path = "../../../sdk/crates/vino-codec" }
+wasmflow-packet = { path = "../../../sdk/crates/wasmflow-packet" }
+wasmflow-codec = { path = "../../../sdk/crates/wasmflow-codec" }
 vino-rpc = { path = "../../vino/vino-rpc" }
 vino-invocation-server = { path = "../../vino/vino-invocation-server" }
 

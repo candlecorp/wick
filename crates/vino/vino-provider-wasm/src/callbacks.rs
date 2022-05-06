@@ -4,11 +4,10 @@ use std::sync::Arc;
 use std::time::{Instant, SystemTime};
 
 use parking_lot::RwLock;
-use vino_codec::messagepack::{deserialize, serialize};
-use vino_packet::v0::Payload;
-use vino_packet::Packet;
-use vino_transport::TransportMap;
-use vino_wapc::{LogLevel, OutputSignal};
+use wasmflow_codec::messagepack::{deserialize, serialize};
+use wasmflow_packet::v0::Payload;
+use wasmflow_packet::Packet;
+use wasmflow_component::{LogLevel, OutputSignal};
 
 use crate::provider::HostLinkCallback;
 use crate::transaction::Transaction;
@@ -16,8 +15,8 @@ use crate::transaction::Transaction;
 type InvocationFn =
   dyn Fn(&str, &str, &[u8]) -> Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>> + 'static + Sync + Send;
 
-pub(crate) fn create_log_handler() -> Box<InvocationFn> {
-  Box::new(move |level: &str, msg: &str, _: &[u8]| {
+pub(crate) fn create_log_handler() -> Arc<InvocationFn> {
+  Arc::new(move |level: &str, msg: &str, _: &[u8]| {
     match LogLevel::from_str(level) {
       Ok(lvl) => match lvl {
         LogLevel::Info => info!("WASM: {}", msg),
@@ -38,13 +37,13 @@ pub(crate) fn create_log_handler() -> Box<InvocationFn> {
   })
 }
 
-pub(crate) fn create_link_handler(callback: Arc<Option<Box<HostLinkCallback>>>) -> Box<InvocationFn> {
-  Box::new(
+pub(crate) fn create_link_handler(callback: Arc<Option<Box<HostLinkCallback>>>) -> Arc<InvocationFn> {
+  Arc::new(
     move |origin: &str, target: &str, payload: &[u8]| match callback.as_ref() {
       Some(cb) => {
         trace!(origin, target, "wasm link call");
         let now = Instant::now();
-        let result = (cb)(origin, target, deserialize::<TransportMap>(payload)?);
+        let result = (cb)(origin, target, deserialize::<wasmflow_packet::PacketMap>(payload)?);
         let micros = now.elapsed().as_micros();
         trace!(origin, target, durasion_us = %micros, ?result, "wasm link call result");
 
@@ -69,8 +68,8 @@ pub(crate) fn create_link_handler(callback: Arc<Option<Box<HostLinkCallback>>>) 
   )
 }
 
-pub(crate) fn create_output_handler(tx_map: Arc<RwLock<HashMap<u32, RwLock<Transaction>>>>) -> Box<InvocationFn> {
-  Box::new(move |port: &str, output_signal, bytes: &[u8]| {
+pub(crate) fn create_output_handler(tx_map: Arc<RwLock<HashMap<u32, RwLock<Transaction>>>>) -> Arc<InvocationFn> {
+  Arc::new(move |port: &str, output_signal, bytes: &[u8]| {
     let payload = &bytes[4..bytes.len()];
     let mut be_bytes: [u8; 4] = [0; 4];
     be_bytes.copy_from_slice(&bytes[0..4]);
@@ -83,33 +82,23 @@ pub(crate) fn create_output_handler(tx_map: Arc<RwLock<HashMap<u32, RwLock<Trans
       .write();
 
     match OutputSignal::from_str(output_signal) {
-      Ok(signal) => match signal {
-        OutputSignal::Output => {
+      Ok(signal) => {
+        if matches!(signal, OutputSignal::Output | OutputSignal::OutputDone) {
           if tx.ports.contains(port) {
-            Err(format!("Port '{}' already closed for (TX: {})", port, id).into())
-          } else {
-            tx.buffer.push_back((port.to_owned(), payload.into()));
-            Ok(vec![])
+            return Err(format!("Port '{}' already closed for (TX: {})", port, id).into());
           }
+          let packet = Packet::from_messagepack(payload);
+          trace!(id, port, ?packet, "deserialized packet");
+          tx.buffer.push_back((port.to_owned(), packet));
         }
-        OutputSignal::OutputDone => {
-          if tx.ports.contains(port) {
-            Err(format!("Port '{}' already closed for (TX: {})", port, id).into())
-          } else {
-            tx.buffer.push_back((port.to_owned(), payload.into()));
-            tx.buffer.push_back((port.to_owned(), Packet::V0(Payload::Done)));
-            trace!(id, port, "port closing");
-            tx.ports.insert(port.to_owned());
-            Ok(vec![])
-          }
-        }
-        OutputSignal::Done => {
+
+        if matches!(signal, OutputSignal::OutputDone | OutputSignal::Done) {
           tx.buffer.push_back((port.to_owned(), Packet::V0(Payload::Done)));
           trace!(id, port, "port closing");
           tx.ports.insert(port.to_owned());
-          Ok(vec![])
         }
-      },
+        Ok(vec![])
+      }
       Err(_) => Err("Invalid signal".into()),
     }
   })

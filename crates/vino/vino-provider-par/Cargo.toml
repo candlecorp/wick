@@ -12,9 +12,8 @@ vino-par = { path = "../vino-par" }
 vino-loader = { path = "../vino-loader" }
 vino-rpc = { path = "../vino-rpc", features = ["client"] }
 vino-transport = { path = "../../../sdk/crates/vino-transport" }
-vino-provider = { path = "../../../sdk/crates/vino-provider", features = [
-  "native",
-] }
+wasmflow-interface = { path = "../../../sdk/crates/wasmflow-interface" }
+wasmflow-invocation = { path = "../../../sdk/crates/wasmflow-invocation" }
 vino-provider-cli = { path = "../vino-provider-cli", default-features = false }
 parking_lot = "0.12"
 tracing = "0.1"
@@ -36,3 +35,5 @@ tokio-stream = "0.1.7"
 anyhow = "1.0"
 vino-wascap = { path = "../vino-wascap" }
 workspace-root = { path = "../../misc/workspace-root" }
+wasmflow-packet = { path = "../../../sdk/crates/wasmflow-packet" }
+wasmflow-entity = { path = "../../../sdk/crates/wasmflow-entity" }

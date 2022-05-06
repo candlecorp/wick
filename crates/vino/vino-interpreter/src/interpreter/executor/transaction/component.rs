@@ -5,9 +5,10 @@ use std::time::Duration;
 use tokio_stream::StreamExt;
 use tracing_futures::Instrument;
 use uuid::Uuid;
-use vino_entity::Entity;
 use vino_schematic_graph::{ComponentIndex, PortDirection, PortReference};
-use vino_transport::{Invocation, MessageSignal, MessageTransport, TransportMap, TransportStream, TransportWrapper};
+use vino_transport::{MessageSignal, MessageTransport, TransportMap, TransportStream, TransportWrapper};
+use wasmflow_entity::Entity;
+use wasmflow_invocation::Invocation;
 
 use self::port::port_handler::{BufferAction, PortHandler};
 use self::port::{InputPorts, OutputPorts, PortStatus};
@@ -122,7 +123,7 @@ impl InstanceHandler {
 
   pub(crate) fn validate_payload(&self, payload: &TransportMap) -> Result<()> {
     for input in self.inputs.iter() {
-      if !payload.contains(input.name()) {
+      if !payload.contains_key(input.name()) {
         return Err(ExecutionError::MissingInput(input.name().to_owned()));
       }
     }
@@ -422,6 +423,10 @@ async fn output_handler(
             .dispatch(Event::call_err(tx_id, instance.index(), MessageTransport::error(error)))
             .await?;
           break CompletionStatus::Error;
+        }
+        if message.is_component_state() {
+          // TODO
+          continue;
         }
         let port = instance.find_output(&message.port)?;
 

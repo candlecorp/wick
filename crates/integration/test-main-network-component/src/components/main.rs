@@ -1,37 +1,49 @@
+use wasmflow_sdk::packet::PacketMap;
+
 pub use crate::components::generated::main::*;
 use crate::components::*;
 
-pub(crate) fn job(mut input: Inputs, output: OutputPorts) -> JobResult {
-  let first_arg = input.argv.pop();
+pub(crate) type State = ();
 
-  if let Some(filename) = first_arg {
-    println!("filename is {}", filename);
+#[async_trait::async_trait]
+impl wasmflow_sdk::sdk::ephemeral::BatchedComponent for Component {
+  type State = State;
+  async fn job(
+    mut input: Self::Inputs,
+    output: Self::Outputs,
+    state: Option<Self::State>,
+    _config: Option<Self::Config>,
+  ) -> Result<Option<Self::State>, Box<dyn std::error::Error + Send + Sync>> {
+    let first_arg = input.argv.pop();
 
-    let contents = std::fs::read_to_string(&filename)
-      .map_err(|e| ComponentError::new(format!("Could not read file {}: {}", filename, e)))?;
+    if let Some(filename) = first_arg {
+      println!("filename is {}", filename);
 
-    println!("filename contents is {}", contents);
+      let contents =
+        std::fs::read_to_string(&filename).map_err(|e| format!("Could not read file {}: {}", filename, e))?;
 
-    let mut payload = TransportMap::default();
-    payload.insert("input", MessageTransport::success(&contents));
+      println!("filename contents is {}", contents);
 
-    let result = input
-      .network
-      .call("inner-schematic", payload)?
-      .drain_port("output")?
-      .pop()
-      .unwrap();
+      let mut payload = PacketMap::default();
+      payload.insert("input", &contents);
 
-    let result: u32 = result.deserialize()?;
+      let result = input.network.call("inner-schematic", payload).await;
+      println!("result ok? {}", result.is_ok());
+      let mut packets = result?.drain_port("output").await?;
+      println!("packets: {:?}", packets);
+      let packet = packets.pop().unwrap();
 
-    println!("number of bytes: {}", result);
+      let result: u32 = packet.deserialize()?;
 
-    output.code.done(&0)?;
-  } else {
-    output
-      .code
-      .done_exception("No argument passed as first argument".to_owned())?;
+      println!("number of bytes: {}", result);
+
+      output.code.done(0)?;
+    } else {
+      output
+        .code
+        .done_exception("No argument passed as first argument".to_owned())?;
+    }
+
+    Ok(state)
   }
-
-  Ok(())
 }

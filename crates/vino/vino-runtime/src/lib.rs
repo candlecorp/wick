@@ -100,9 +100,9 @@ pub mod utils;
 
 pub mod prelude {
   pub use tokio_stream::StreamExt;
-  pub use vino_codec::messagepack::{deserialize as mp_deserialize, serialize as mp_serialize};
+  pub use wasmflow_codec::messagepack::{deserialize as mp_deserialize, serialize as mp_serialize};
   pub use vino_manifest::NetworkDefinition;
-  pub use vino_packet::{packet, Packet};
+  pub use wasmflow_packet::{packet, Packet};
   pub use vino_transport::{MessageTransport, TransportStream, TransportWrapper};
 
   pub use crate::dispatch::{DispatchError, InvocationResponse};

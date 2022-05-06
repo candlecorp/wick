@@ -108,7 +108,7 @@ pub use dyn_clone::clone_box;
 /// Module with generated Tonic & Protobuf code.
 pub use generated::vino as rpc;
 pub use types::*;
-use vino_transport::{BoxedTransportStream, Invocation};
+use vino_transport::TransportStream;
 
 pub(crate) type Result<T> = std::result::Result<T, error::RpcError>;
 
@@ -131,7 +131,10 @@ where
   Self: 'static,
 {
   /// Handle an incoming request for a target entity.
-  async fn invoke(&self, invocation: Invocation) -> std::result::Result<BoxedTransportStream, Box<error::RpcError>>;
+  async fn invoke(
+    &self,
+    invocation: wasmflow_invocation::Invocation,
+  ) -> std::result::Result<TransportStream, Box<error::RpcError>>;
 
   /// List the entities this [RpcHandler] manages.
   fn get_list(&self) -> std::result::Result<Vec<HostedType>, Box<error::RpcError>>;

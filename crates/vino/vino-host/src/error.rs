@@ -23,7 +23,7 @@ pub enum HostError {
   #[error(transparent)]
   RuntimeError(#[from] Box<vino_runtime::Error>),
   #[error(transparent)]
-  CodecError(#[from] vino_codec::Error),
+  CodecError(#[from] wasmflow_codec::Error),
   #[error(transparent)]
   RpcServerError(#[from] vino_invocation_server::Error),
   #[error(transparent)]

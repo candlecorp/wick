@@ -1,7 +1,8 @@
 use std::sync::Arc;
 
 use vino_random::Seed;
-use vino_transport::{Invocation, TransportStream};
+use vino_transport::TransportStream;
+use wasmflow_invocation::Invocation;
 
 use self::error::ExecutionError;
 use self::transaction::Transaction;

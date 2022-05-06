@@ -8,10 +8,11 @@ pub(crate) mod provider;
 use std::sync::Arc;
 
 use tracing_futures::Instrument;
-use vino_entity::Entity;
 use vino_random::{Random, Seed};
-use vino_transport::{Invocation, TransportStream};
-use vino_types::ProviderSignature;
+use vino_transport::TransportStream;
+use wasmflow_entity::Entity;
+use wasmflow_interface::ProviderSignature;
+use wasmflow_invocation::Invocation;
 
 use self::error::Error;
 use self::event_loop::EventLoop;

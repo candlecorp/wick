@@ -19,9 +19,9 @@ pub enum Error {
   #[error("Internal Error: {0}")]
   InternalError(String),
 
-  /// Upstream Error from [vino_entity].
+  /// Upstream Error from [wasmflow_entity].
   #[error(transparent)]
-  EntityError(#[from] vino_entity::Error),
+  EntityError(#[from] wasmflow_entity::Error),
 
   /// Error used by providers.
   #[error("{0}")]
@@ -58,8 +58,8 @@ impl From<Box<dyn std::error::Error + Send + Sync>> for Error {
   }
 }
 
-impl From<vino_entity::Error> for Box<Error> {
-  fn from(e: vino_entity::Error) -> Self {
+impl From<wasmflow_entity::Error> for Box<Error> {
+  fn from(e: wasmflow_entity::Error) -> Self {
     Box::new(Error::EntityError(e))
   }
 }

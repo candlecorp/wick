@@ -2,7 +2,7 @@ use std::path::PathBuf;
 use std::str::FromStr;
 
 use clap::Parser;
-use oci_distribution::client::{ImageData, ImageLayer};
+use oci_distribution::client::{Config, ImageLayer};
 use oci_distribution::manifest::OciImageManifest;
 use oci_distribution::secrets::RegistryAuth;
 use oci_distribution::Reference;
@@ -63,26 +63,28 @@ async fn main() -> anyhow::Result<()> {
     None => b"{}".to_vec(),
   };
 
-  let imagedata = ImageData {
-    layers: vec![ImageLayer {
-      data: bytes,
-      media_type: opts.media_type,
-    }],
-    digest: None,
-  };
+  let config = Config::new(
+    configdata,
+    oci_distribution::manifest::IMAGE_CONFIG_MEDIA_TYPE.to_owned(),
+    None,
+  );
+
+  let imagedata = vec![ImageLayer {
+    data: bytes,
+    media_type: opts.media_type,
+    annotations: None,
+  }];
 
   let digest = c
     .push(
       &Reference::from_str(&opts.reference)?,
       &imagedata,
-      &configdata,
-      oci_distribution::manifest::IMAGE_CONFIG_MEDIA_TYPE,
+      config,
       &auth,
       manifest,
     )
     .await?;
 
-  println!("Image url: {}", digest.image_url);
   println!("Manifest url: {}", digest.manifest_url);
   println!("Config url: {:?}", digest.config_url);
 

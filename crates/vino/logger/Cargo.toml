@@ -9,15 +9,15 @@ license = "BSD-3-Clause"
 
 [dependencies]
 tracing = "0.1"
-tracing-log = "0.1.2"
+tracing-log = "0.1"
 tracing-subscriber = { version = "0.3", features = [
   "env-filter",
   "fmt",
   "json",
   "time",
 ] }
-tracing-bunyan-formatter = "0.3.0"
-tracing-appender = "0.2.0"
+tracing-bunyan-formatter = "0.3"
+tracing-appender = "0.2"
 xdg = "2.4"
 time = { version = "0.3", features = ["formatting"] }
 ansi_term = "0.12"

@@ -126,9 +126,9 @@ fn make_link_callback(network_id: Uuid) -> Box<HostLinkCallback> {
         }
       }
     }
-    let invocation = Invocation::new(origin, target, payload, None);
+    let invocation = Invocation::new(origin, target, payload.into(), None);
     let result = network_invoke_sync(network_id, invocation).map_err(|e| LinkError::CallFailure(e.to_string()))?;
-    Ok(result)
+    Ok(result.into_iter().map(|v| v.into()).collect())
   })
 }
 

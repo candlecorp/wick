@@ -1,5 +1,5 @@
 use thiserror::Error;
-use vino_codec::error::CodecError;
+use wasmflow_codec::error::CodecError;
 
 use crate::io::IoError;
 

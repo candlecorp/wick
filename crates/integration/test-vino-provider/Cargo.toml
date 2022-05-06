@@ -6,24 +6,16 @@ edition = "2021"
 license = "Apache-2.0"
 
 [features]
-default = ["provider", "native", "guest"]
-wasm = ["vino-provider/wasm"]
-native = ["vino-provider/default"]
+default = ["provider", "guest"]
 provider = []
 guest = []
 
 [dependencies]
-vino-provider = { path = "../../../sdk/crates/vino-provider", features = [
-  "native",
-] }
+wasmflow-sdk = { path = "../../../sdk/crates/wasmflow-sdk", features = ["v1"] }
 vino-rpc = { path = "../../vino/vino-rpc" }
-vino-entity = { path = "../../../sdk/crates/vino-entity" }
+wasmflow-entity = { path = "../../../sdk/crates/wasmflow-entity" }
 vino-transport = { path = "../../../sdk/crates/vino-transport" }
-vino-codec = { path = "../../../sdk/crates/vino-codec" }
-vino-packet = { path = "../../../sdk/crates/vino-packet" }
-vino-types = { path = "../../../sdk/crates/vino-types" }
 serde = { version = "1.0", features = ["derive"] }
-once_cell = "1.8"
 async-trait = "0.1.50"
 tokio = { version = "1", features = ["rt-multi-thread"] }
 tracing = "0.1"
@@ -36,3 +28,4 @@ logger = { path = "../../vino/logger" }
 clap = { version = "3.0", features = ["derive", "env"] }
 tracing = "0.1"
 anyhow = "1.0"
+pretty_assertions = "1.2"

@@ -94,8 +94,6 @@ pub(crate) mod conversion;
 mod invocation_server;
 
 pub use invocation_server::InvocationServer;
-
-pub use dyn_clone::clone_box;
 use tokio::task::JoinHandle;
 use tonic::transport::{Channel, Server, Uri};
 use vino_rpc::rpc::invocation_service_client::InvocationServiceClient;
@@ -119,13 +117,11 @@ extern crate derivative;
 
 #[doc(hidden)]
 pub fn make_input<K: AsRef<str>, V: serde::Serialize>(entries: Vec<(K, V)>) -> TransportMap {
-  TransportMap::from_map(
-    entries
-      .into_iter()
-      .map(|(k, v)| Ok((k.as_ref().to_owned(), MessageTransport::success(&v))))
-      .filter_map(Result::ok)
-      .collect(),
-  )
+  entries
+    .into_iter()
+    .map(|(k, v)| Ok((k.as_ref().to_owned(), MessageTransport::success(&v))))
+    .filter_map(Result::ok)
+    .collect()
 }
 
 /// Build and spawn an RPC server for the passed provider.

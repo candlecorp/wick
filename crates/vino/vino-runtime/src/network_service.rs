@@ -111,7 +111,9 @@ impl NetworkService {
 
   pub(crate) async fn exec_main(&self, argv: Vec<String>) -> u32 {
     if let Some(entrypoint) = &self.entrypoint {
-      entrypoint.exec_main(Entity::Provider(self.id.to_string()), argv).await
+      entrypoint
+        .exec_main(Entity::Collection(self.id.to_string()), argv)
+        .await
     } else {
       error!("no entrypoint defined for network {}", self.id);
       99
@@ -158,7 +160,7 @@ impl NetworkService {
 impl InvocationHandler for NetworkService {
   fn get_signature(&self) -> std::result::Result<ProviderSignature, ProviderError> {
     let mut signature = self.interpreter.get_export_signature().clone();
-    signature.name = Some(self.id.to_hyphenated().to_string());
+    signature.name = Some(self.id.as_hyphenated().to_string());
 
     Ok(signature)
   }

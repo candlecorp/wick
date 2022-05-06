@@ -10,16 +10,17 @@ license = "Apache-2.0"
 crate-type = ["cdylib"]
 
 [features]
-default = ["provider", "guest", "wasm"]
-wasm = ["vino-provider/wasm"]
-native = ["vino-provider/default"]
+default = ["provider", "guest"]
 provider = []
 guest = []
 
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }
-vino-provider = { path = "../../../sdk/crates/vino-provider", features = [
-  "wasm",
-] }
+async-trait = "0.1"
+wasmflow-sdk = { path = "../../../sdk/crates/wasmflow-sdk", features = ["v1"] }
 
 [dev-dependencies]
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+anyhow = "1.0"
+env_logger = "0.9"
+test-log = "0.2"

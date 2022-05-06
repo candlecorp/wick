@@ -9,8 +9,8 @@ pub(super) mod schematic_provider;
 
 use futures::future::BoxFuture;
 use serde_json::Value;
-use vino_transport::{Invocation, TransportMap, TransportStream};
-use vino_types::{ProviderMap, ProviderSignature};
+use vino_transport::{TransportMap, TransportStream};
+use wasmflow_interface::{ProviderMap, ProviderSignature};
 
 use crate::constants::*;
 use crate::graph::types::Network;
@@ -127,7 +127,11 @@ impl Debug for NamespaceHandler {
 }
 
 pub trait Provider {
-  fn handle(&self, invocation: Invocation, data: Option<Value>) -> BoxFuture<Result<TransportStream, BoxError>>;
+  fn handle(
+    &self,
+    invocation: wasmflow_invocation::Invocation,
+    data: Option<Value>,
+  ) -> BoxFuture<Result<TransportStream, BoxError>>;
   fn list(&self) -> &ProviderSignature;
   fn shutdown(&self) -> BoxFuture<Result<(), BoxError>> {
     // Override if you need a more explicit shutdown.

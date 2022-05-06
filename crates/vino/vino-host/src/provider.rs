@@ -2,10 +2,11 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use vino_provider::native::prelude::*;
 use vino_rpc::error::RpcError;
 use vino_rpc::{RpcHandler, RpcResult};
-use vino_transport::{BoxedTransportStream, Invocation};
+use vino_transport::TransportStream;
+use wasmflow_interface::*;
+use wasmflow_invocation::Invocation;
 
 use crate::Host;
 
@@ -30,10 +31,10 @@ impl From<Host> for Provider {
 
 #[async_trait]
 impl RpcHandler for Provider {
-  async fn invoke(&self, invocation: Invocation) -> RpcResult<BoxedTransportStream> {
+  async fn invoke(&self, invocation: Invocation) -> RpcResult<TransportStream> {
     let outputs = self.host.invoke(invocation).await.map_err(RpcError::boxed)?;
 
-    Ok(Box::pin(outputs))
+    Ok(outputs)
   }
 
   fn get_list(&self) -> RpcResult<Vec<HostedType>> {
@@ -49,7 +50,8 @@ mod tests {
 
   use anyhow::Result as TestResult;
   use tokio_stream::StreamExt;
-  use vino_provider::native::prelude::*;
+  use wasmflow_entity::Entity;
+  use vino_runtime::prelude::packet::PacketMap;
 
   use super::*;
   use crate::HostBuilder;
@@ -62,7 +64,7 @@ mod tests {
     let provider: Provider = host.into();
     let input = "Hello world";
 
-    let job_payload = TransportMap::from(vec![("input", input)]);
+    let job_payload = PacketMap::from(vec![("input", input)]);
 
     let invocation = Invocation::new_test(file!(), Entity::local("logger"), job_payload, None);
     let mut outputs = provider.invoke(invocation).await?;

@@ -2,9 +2,10 @@ use std::collections::HashMap;
 
 use pretty_assertions::assert_eq;
 use runtime_testutils::*;
-use vino_entity::Entity;
 use vino_runtime::prelude::TransportWrapper;
-use vino_transport::{Invocation, MessageTransport};
+use vino_transport::MessageTransport;
+use wasmflow_entity::Entity;
+use wasmflow_invocation::Invocation;
 type Result<T> = anyhow::Result<T, anyhow::Error>;
 
 #[test_logger::test(tokio::test)]
@@ -24,13 +25,13 @@ async fn panics() -> Result<()> {
     .await?;
 
   println!("Result: {:?}", result);
-  let mut messages: Vec<TransportWrapper> = result.drain_port("output").await;
+  let mut messages: Vec<TransportWrapper> = result.drain_port("output").await?;
   assert_eq!(result.buffered_size(), (0, 0));
   assert_eq!(messages.len(), 1);
 
   let msg: TransportWrapper = messages.pop().unwrap();
   println!("Output: {:?}", msg);
-  assert_eq!(msg.payload, MessageTransport::error("Component error: panic"));
+  assert_eq!(msg.payload, MessageTransport::error("panic"));
   Ok(())
 }
 
@@ -51,7 +52,7 @@ async fn errors() -> Result<()> {
     .await?;
 
   println!("Result: {:?}", result);
-  let mut messages: Vec<TransportWrapper> = result.drain_port("output").await;
+  let mut messages: Vec<TransportWrapper> = result.drain_port("output").await?;
   assert_eq!(result.buffered_size(), (0, 0));
   assert_eq!(messages.len(), 1);
 

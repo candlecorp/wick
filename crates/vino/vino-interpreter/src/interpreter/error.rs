@@ -1,4 +1,4 @@
-use vino_entity::Entity;
+use wasmflow_entity::Entity;
 
 use super::executor::error::ExecutionError;
 use super::program::validator::error::{SchematicInvalid, ValidationError};

@@ -1,6 +1,7 @@
 use uuid::Uuid;
 use vino_schematic_graph::{ComponentIndex, PortReference};
-use vino_transport::{Invocation, MessageTransport};
+use vino_transport::MessageTransport;
+use wasmflow_invocation::Invocation;
 
 pub(crate) use self::error::Error;
 use super::executor::error::ExecutionError;

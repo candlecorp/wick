@@ -2,11 +2,12 @@ use std::time::SystemTime;
 
 use clap::Args;
 use tokio::io::{self, AsyncBufReadExt};
-use vino_provider::native::prelude::{Entity, MapWrapper, TransportMap};
+use wasmflow_entity::Entity;
 use vino_provider_cli::{parse_args, LoggingOptions};
 use vino_provider_wasm::provider::Provider;
 use vino_rpc::RpcHandler;
-use vino_transport::{InherentData, Invocation};
+use vino_transport::TransportMap;
+use wasmflow_invocation::{InherentData, Invocation};
 
 use super::WasiOptions;
 use crate::error::VowError;

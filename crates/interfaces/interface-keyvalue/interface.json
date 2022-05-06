@@ -1,5 +1,8 @@
 {
   "name": "vino-interface-keyvalue",
+  "version": "0.1.0",
+  "format": 1,
+  "wellknown": [],
   "types": {},
   "components": {
     "decr": {
@@ -250,5 +253,6 @@
         }
       }
     }
-  }
+  },
+  "config": {}
 }

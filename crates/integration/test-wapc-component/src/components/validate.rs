@@ -32,17 +32,28 @@ impl Error for LengthError {
 static MINIMUM_LENGTH: usize = 8;
 static MAXIMUM_LENGTH: usize = 512;
 
-pub(crate) fn job(input: Inputs, output: OutputPorts) -> JobResult {
-  let password = input.input;
-  if password.len() < MINIMUM_LENGTH {
-    output.output.done_exception(LengthError::TooShort.to_string())?;
-    return Ok(());
-  }
-  if password.len() > MAXIMUM_LENGTH {
-    output.output.done_exception(LengthError::TooLong.to_string())?;
-    return Ok(());
-  }
-  output.output.done(&password)?;
+pub(crate) type State = ();
 
-  Ok(())
+#[async_trait::async_trait]
+impl wasmflow_sdk::sdk::ephemeral::BatchedComponent for Component {
+  type State = State;
+  async fn job(
+    input: Self::Inputs,
+    output: Self::Outputs,
+    state: Option<Self::State>,
+    _config: Option<Self::Config>,
+  ) -> Result<Option<Self::State>, Box<dyn std::error::Error + Send + Sync>> {
+    let password = input.input;
+    if password.len() < MINIMUM_LENGTH {
+      output.output.done_exception(LengthError::TooShort.to_string())?;
+      return Ok(state);
+    }
+    if password.len() > MAXIMUM_LENGTH {
+      output.output.done_exception(LengthError::TooLong.to_string())?;
+      return Ok(state);
+    }
+    output.output.done(password)?;
+
+    Ok(state)
+  }
 }

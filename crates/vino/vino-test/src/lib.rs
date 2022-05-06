@@ -93,9 +93,11 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use serde::{Deserialize, Serialize};
 use tap::{TestBlock, TestRunner};
 use tokio_stream::StreamExt;
-use vino_entity::Entity;
+use wasmflow_entity::Entity;
+use wasmflow_packet::PacketMap;
 use vino_rpc::SharedRpcHandler;
-use vino_transport::{Failure, InherentData, Invocation, MessageTransport, Success, TransportMap, TransportWrapper};
+use vino_transport::{Failure, MessageTransport, Serialized, TransportWrapper};
+use wasmflow_invocation::{InherentData, Invocation};
 
 use self::error::TestError;
 
@@ -204,11 +206,11 @@ pub struct SerializedTransport {
 }
 
 impl TestData {
-  pub fn get_payload(&self) -> (TransportMap, Option<InherentData>) {
-    let mut payload = TransportMap::new();
+  pub fn get_payload(&self) -> (PacketMap, Option<InherentData>) {
+    let mut payload = PacketMap::default();
     for (k, v) in &self.inputs {
       debug!("Test input for port '{}': {:?}", k, v);
-      payload.insert(k, MessageTransport::Success(Success::Serialized(v.clone())));
+      payload.insert(k, MessageTransport::Success(Serialized::Struct(v.clone())));
     }
 
     if let Some(seed) = self.seed {
@@ -273,7 +275,8 @@ pub async fn run_test(
     let stream = result.unwrap();
 
     let outputs: Vec<_> = stream
-      .filter(|msg| !matches!(msg.payload, MessageTransport::Signal(_)))
+      .filter(|msg| !msg.payload.is_signal())
+      .map(TransportWrapper::from)
       .collect()
       .await;
     test.actual = outputs;

@@ -4,12 +4,13 @@ mod test;
 
 use anyhow::Result;
 use test::{JsonWriter, TestProvider};
-use vino_entity::Entity;
 use vino_interpreter::graph::from_def;
 use vino_interpreter::{HandlerMap, Interpreter, InterpreterOptions, NamespaceHandler};
 use vino_manifest::Loadable;
 use vino_random::Seed;
-use vino_transport::{Invocation, MessageTransport, TransportMap};
+use wasmflow_entity::Entity;
+use wasmflow_invocation::Invocation;
+use wasmflow_packet::PacketMap;
 
 fn load<T: AsRef<Path>>(path: T) -> Result<vino_manifest::HostManifest> {
   Ok(vino_manifest::HostManifest::load_from_file(path.as_ref())?)
@@ -27,7 +28,7 @@ async fn test_senders() -> Result<()> {
   let manifest = load("./tests/manifests/v0/core/senders.yaml")?;
   let network = from_def(&manifest.network().try_into()?)?;
   let providers = HandlerMap::new(vec![NamespaceHandler::new("test", Box::new(TestProvider::new()))]);
-  let inputs = TransportMap::default();
+  let inputs = PacketMap::default();
 
   let invocation = Invocation::new_test("senders", Entity::local("test"), inputs, None);
   let mut interpreter = Interpreter::new(Some(Seed::unsafe_new(1)), network, None, Some(providers))?;
@@ -50,13 +51,10 @@ async fn test_merge() -> Result<()> {
   let manifest = load("./tests/manifests/v0/core/merge.yaml")?;
   let network = from_def(&manifest.network().try_into()?)?;
   let providers = HandlerMap::new(vec![NamespaceHandler::new("test", Box::new(TestProvider::new()))]);
-  let mut inputs = TransportMap::default();
-  inputs.insert("schem_one", MessageTransport::success(&"first value".to_owned()));
-  inputs.insert("schem_two", MessageTransport::success(&2 as _));
-  inputs.insert(
-    "schem_three",
-    MessageTransport::success(&["alpha".to_owned(), "beta".to_owned()]),
-  );
+  let mut inputs = PacketMap::default();
+  inputs.insert("schem_one", "first value");
+  inputs.insert("schem_two", &2u8);
+  inputs.insert("schem_three", &["alpha".to_owned(), "beta".to_owned()]);
 
   let invocation = Invocation::new_test("merge", Entity::local("test"), inputs, None);
   let mut interpreter = Interpreter::new(Some(Seed::unsafe_new(1)), network, None, Some(providers))?;

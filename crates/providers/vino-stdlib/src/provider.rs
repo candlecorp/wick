@@ -1,10 +1,11 @@
-use vino_provider::native::prelude::*;
 use vino_random::{Random, Seed};
 use vino_rpc::error::RpcError;
 use vino_rpc::{RpcHandler, RpcResult};
-use vino_transport::Invocation;
+use vino_transport::TransportStream;
+use wasmflow_sdk::sdk::stateful::NativeDispatcher;
+use wasmflow_sdk::sdk::Invocation;
+use wasmflow_sdk::types::HostedType;
 
-use crate::components::Dispatcher;
 use crate::error::NativeError;
 
 #[derive(Debug)]
@@ -46,15 +47,15 @@ impl Provider {
   }
 }
 
-#[async_trait]
+#[async_trait::async_trait]
 impl RpcHandler for Provider {
-  async fn invoke(&self, invocation: Invocation) -> RpcResult<BoxedTransportStream> {
+  async fn invoke(&self, invocation: Invocation) -> RpcResult<TransportStream> {
     let context = self.context.clone();
-    let component = invocation.target.name();
-    let result = Dispatcher::dispatch(component, context, invocation.payload).await;
+    let dispatcher = crate::components::ComponentDispatcher::default();
+    let result = dispatcher.dispatch(invocation, context).await;
     let stream = result.map_err(|e| RpcError::ProviderError(e.to_string()))?;
 
-    Ok(Box::pin(stream))
+    Ok(TransportStream::from_packetstream(stream))
   }
 
   fn get_list(&self) -> RpcResult<Vec<HostedType>> {
@@ -66,21 +67,21 @@ impl RpcHandler for Provider {
 #[cfg(test)]
 mod tests {
 
-  use futures::prelude::*;
   use serde::de::DeserializeOwned;
   use tracing::debug;
-  use vino_provider::native::prelude::*;
+  use wasmflow_entity::Entity;
+  use wasmflow_packet::PacketMap;
 
   static SEED: u64 = 1000;
 
   use super::*;
   type Result<T> = std::result::Result<T, NativeError>;
 
-  async fn invoke_one<T>(component: &str, payload: impl Into<TransportMap> + Send) -> Result<T>
+  async fn invoke_one<T>(component: &str, payload: PacketMap, port: &str) -> Result<T>
   where
     T: DeserializeOwned,
   {
-    let transport_map: TransportMap = payload.into();
+    let transport_map = payload;
     println!("TransportMap: {:?}", transport_map);
     let provider = Provider::new(Seed::unsafe_new(SEED));
 
@@ -88,7 +89,8 @@ mod tests {
     let invocation = Invocation::new_test(file!(), entity, transport_map, None);
 
     let mut outputs = provider.invoke(invocation).await.unwrap();
-    let output = outputs.next().await.unwrap();
+    let packets = outputs.drain_port(port).await?;
+    let output = packets[0].clone();
     println!("Received payload from port '{}': {:?}", output.port, output.payload);
     Ok(output.payload.deserialize()?)
   }
@@ -101,7 +103,7 @@ mod tests {
     };
     println!("Inputs: {:?}", job_payload);
 
-    let payload: String = invoke_one("core::log", job_payload).await?;
+    let payload: String = invoke_one("core::log", job_payload.into(), "output").await?;
 
     println!("outputs: {:?}", payload);
     assert_eq!(payload, "some_input");

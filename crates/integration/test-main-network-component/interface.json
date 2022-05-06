@@ -1,5 +1,8 @@
 {
   "name": "test-main-network-component",
+  "version": "0.0.1",
+  "format": 1,
+  "wellknown": [],
   "types": {},
   "components": {
     "byte-count": {
@@ -34,5 +37,6 @@
         }
       }
     }
-  }
+  },
+  "config": {}
 }

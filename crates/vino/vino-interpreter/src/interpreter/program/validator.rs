@@ -1,5 +1,4 @@
 use vino_schematic_graph::ComponentKind;
-use vino_types::MapWrapper;
 
 use self::error::{SchematicInvalid, ValidationError};
 use super::Program;

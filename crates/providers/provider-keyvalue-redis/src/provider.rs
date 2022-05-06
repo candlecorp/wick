@@ -6,26 +6,27 @@ use redis::aio::Connection;
 use redis::{FromRedisValue, Pipeline};
 use tokio::sync::RwLock;
 use tracing_futures::Instrument;
-use vino_provider::native::prelude::*;
 use vino_rpc::error::RpcError;
 use vino_rpc::{RpcHandler, RpcResult};
-use vino_transport::Invocation;
+use vino_transport::TransportStream;
+use wasmflow_sdk::sdk::stateful::NativeDispatcher;
+use wasmflow_sdk::sdk::Invocation;
+use wasmflow_sdk::types::HostedType;
 
-use crate::components::Dispatcher;
+use crate::components::ComponentDispatcher;
 use crate::error::Error;
 
 pub(crate) type Context = Arc<RedisConnection>;
 
-#[allow(missing_debug_implementations)]
 pub struct RedisConnection(RwLock<Connection>);
 
-pub type RedisResult<T> = std::result::Result<T, Error>;
-
-impl From<Error> for NativeComponentError {
-  fn from(e: Error) -> Self {
-    NativeComponentError::new(e.to_string())
+impl std::fmt::Debug for RedisConnection {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    f.debug_tuple("RedisConnection()").finish()
   }
 }
+
+pub type RedisResult<T> = std::result::Result<T, Error>;
 
 impl RedisConnection {
   pub async fn run_cmd<T: FromRedisValue + std::fmt::Debug>(&self, cmd: &mut redis::Cmd) -> RedisResult<T> {
@@ -92,21 +93,22 @@ impl Provider {
   }
 }
 
-#[async_trait]
+#[async_trait::async_trait]
 impl RpcHandler for Provider {
-  async fn invoke(&self, invocation: Invocation) -> RpcResult<BoxedTransportStream> {
+  async fn invoke(&self, invocation: Invocation) -> RpcResult<TransportStream> {
     let context = self.context.read().await;
     let connections = context.connections.read().await;
     let namespace = "default".to_owned();
     let connection = connections
       .get(&namespace)
       .ok_or_else(|| RpcError::ProviderError(Error::ConnectionNotFound(namespace).to_string()))?;
-    let component = invocation.target.name();
-    let stream = Dispatcher::dispatch(component, connection.clone(), invocation.payload)
+    let dispatcher = ComponentDispatcher::default();
+    let stream = dispatcher
+      .dispatch(invocation, connection.clone())
       .await
       .map_err(|e| RpcError::ProviderError(e.to_string()))?;
 
-    Ok(Box::pin(stream))
+    Ok(TransportStream::from_packetstream(stream))
   }
 
   fn get_list(&self) -> RpcResult<Vec<HostedType>> {
@@ -120,10 +122,11 @@ mod integration {
 
   use anyhow::Result;
   use rand::Rng;
-  use vino_interface_keyvalue::__multi__::ComponentInputs;
   use vino_interface_keyvalue::*;
+  use wasmflow_entity::Entity;
 
   use super::*;
+  use crate::components::generated::__batch__::{self, ComponentInputs};
 
   async fn key_set(provider: &Provider, key: &str, value: &str, expires: u32) -> Result<bool> {
     debug!("key-set:{}::{}::{}", key, value, expires);
@@ -133,10 +136,10 @@ mod integration {
       expires,
     };
 
-    let invocation = Invocation::new_test(file!(), Entity::local("key-set"), payload.into(), None);
+    let invocation = Invocation::new_test(file!(), Entity::local("key-set"), payload, None);
 
     let mut outputs: key_set::Outputs = provider.invoke(invocation).await?.into();
-    let actual = outputs.result().await?.try_next_into()?;
+    let actual = outputs.result().await?.deserialize_next()?;
 
     Ok(actual)
   }
@@ -144,10 +147,10 @@ mod integration {
   async fn key_get(provider: &Provider, key: &str) -> Result<String> {
     debug!("key-get:{}", key);
     let payload = key_get::Inputs { key: key.to_owned() };
-    let invocation = Invocation::new_test(file!(), Entity::local("key-get"), payload.into(), None);
+    let invocation = Invocation::new_test(file!(), Entity::local("key-get"), payload, None);
 
     let mut outputs: key_get::Outputs = provider.invoke(invocation).await?.into();
-    let actual = outputs.value().await?.try_next_into()?;
+    let actual = outputs.value().await?.deserialize_next()?;
 
     Ok(actual)
   }
@@ -157,21 +160,21 @@ mod integration {
     let payload = delete::Inputs {
       keys: vec![key.to_owned()],
     };
-    let invocation = Invocation::new_test(file!(), Entity::local("delete"), payload.into(), None);
+    let invocation = Invocation::new_test(file!(), Entity::local("delete"), payload, None);
 
     let mut outputs: delete::Outputs = provider.invoke(invocation).await?.into();
-    let actual = outputs.num().await?.try_next_into()?;
+    let actual = outputs.num().await?.deserialize_next()?;
     Ok(actual)
   }
 
   async fn exists(provider: &Provider, key: &str) -> Result<bool> {
     debug!("exists:{}", key);
     let payload = exists::Inputs { key: key.to_owned() };
-    let invocation = Invocation::new_test(file!(), Entity::local("exists"), payload.into(), None);
+    let invocation = Invocation::new_test(file!(), Entity::local("exists"), payload, None);
 
     let mut outputs: exists::Outputs = provider.invoke(invocation).await?.into();
 
-    let actual = outputs.exists().await?.try_next_into()?;
+    let actual = outputs.exists().await?.deserialize_next()?;
 
     Ok(actual)
   }
@@ -182,10 +185,10 @@ mod integration {
       key: key.to_owned(),
       values: vec![value.to_owned()],
     };
-    let invocation = Invocation::new_test(file!(), Entity::local("list-add"), payload.into(), None);
+    let invocation = Invocation::new_test(file!(), Entity::local("list-add"), payload, None);
 
     let mut outputs: list_add::Outputs = provider.invoke(invocation).await?.into();
-    let actual = outputs.length().await?.try_next_into()?;
+    let actual = outputs.length().await?.deserialize_next()?;
 
     Ok(actual)
   }
@@ -197,10 +200,10 @@ mod integration {
       start,
       end,
     };
-    let invocation = Invocation::new_test(file!(), Entity::local("list-range"), payload.into(), None);
+    let invocation = Invocation::new_test(file!(), Entity::local("list-range"), payload, None);
 
     let mut outputs: list_range::Outputs = provider.invoke(invocation).await?.into();
-    let actual = outputs.values().await?.try_next_into()?;
+    let actual = outputs.values().await?.deserialize_next()?;
 
     Ok(actual)
   }
@@ -212,10 +215,10 @@ mod integration {
       num: 1,
       value: value.to_owned(),
     };
-    let invocation = Invocation::new_test(file!(), Entity::local("list-remove"), payload.into(), None);
+    let invocation = Invocation::new_test(file!(), Entity::local("list-remove"), payload, None);
 
     let mut outputs: list_remove::Outputs = provider.invoke(invocation).await?.into();
-    let actual = outputs.num().await?.try_next_into()?;
+    let actual = outputs.num().await?.deserialize_next()?;
 
     Ok(actual)
   }
@@ -226,11 +229,11 @@ mod integration {
       key: key.to_owned(),
       values: vec![value.to_owned()],
     };
-    let invocation = Invocation::new_test(file!(), Entity::local("set-add"), payload.into(), None);
+    let invocation = Invocation::new_test(file!(), Entity::local("set-add"), payload, None);
 
     let mut outputs: set_add::Outputs = provider.invoke(invocation).await?.into();
 
-    let actual = outputs.length().await?.try_next_into()?;
+    let actual = outputs.length().await?.deserialize_next()?;
 
     Ok(actual)
   }
@@ -238,11 +241,11 @@ mod integration {
   async fn set_get(provider: &Provider, key: &str) -> Result<Vec<String>> {
     debug!("set-get:{}", key);
     let payload = set_get::Inputs { key: key.to_owned() };
-    let invocation = Invocation::new_test(file!(), Entity::local("set-get"), payload.into(), None);
+    let invocation = Invocation::new_test(file!(), Entity::local("set-get"), payload, None);
 
     let mut outputs: set_get::Outputs = provider.invoke(invocation).await?.into();
 
-    let actual = outputs.values().await?.try_next_into()?;
+    let actual = outputs.values().await?.deserialize_next()?;
 
     Ok(actual)
   }
@@ -254,12 +257,12 @@ mod integration {
       cursor: cursor.to_owned(),
       count,
     };
-    let invocation = Invocation::new_test(file!(), Entity::local("set-scan"), payload.into(), None);
+    let invocation = Invocation::new_test(file!(), Entity::local("set-scan"), payload, None);
 
     let mut outputs: set_scan::Outputs = provider.invoke(invocation).await?.into();
 
-    let values = outputs.values().await?.try_next_into()?;
-    let cursor = outputs.cursor().await?.try_next_into()?;
+    let values = outputs.values().await?.deserialize_next()?;
+    let cursor = outputs.cursor().await?.deserialize_next()?;
 
     Ok((cursor, values))
   }
@@ -270,11 +273,11 @@ mod integration {
       key: key.to_owned(),
       values: vec![value.to_owned()],
     };
-    let invocation = Invocation::new_test(file!(), Entity::local("set-remove"), payload.into(), None);
+    let invocation = Invocation::new_test(file!(), Entity::local("set-remove"), payload, None);
 
     let mut outputs: set_remove::Outputs = provider.invoke(invocation).await?.into();
 
-    let actual = outputs.num().await?.try_next_into()?;
+    let actual = outputs.num().await?.deserialize_next()?;
 
     Ok(actual)
   }
@@ -392,9 +395,11 @@ mod integration {
     set_add(&provider, &key, &m2).await?;
     set_add(&provider, &key, &m3).await?;
     let (cursor, values) = set_scan(&provider, &key, "0", 1).await?;
+    println!("first values: {:?}", values);
     assert!(!values.is_empty());
     assert!(all.contains(&values[0]));
     let (_cursor, values) = set_scan(&provider, &key, &cursor, 1).await?;
+    println!("next values: {:?}", values);
     assert!(!values.is_empty());
     assert!(all.contains(&values[0]));
 
@@ -420,13 +425,13 @@ mod integration {
       values: vec![uuid.clone()],
     });
     let payloads = vec![key_set_payload, list_add_payload];
-    let inputs = __multi__::Inputs { inputs: payloads };
+    let inputs = __batch__::Inputs { inputs: payloads };
 
-    let invocation = Invocation::new_test(file!(), Entity::local("__multi__"), inputs.into(), None);
+    let invocation = Invocation::new_test(file!(), Entity::local("__batch__"), inputs, None);
 
-    let mut outputs: __multi__::Outputs = provider.invoke(invocation).await?.into();
+    let mut outputs: __batch__::Outputs = provider.invoke(invocation).await?.into();
 
-    let result: bool = outputs.result().await?.try_next_into()?;
+    let result: bool = outputs.result().await?.deserialize_next()?;
     assert!(result);
 
     let value = key_get(&provider, &key).await?;

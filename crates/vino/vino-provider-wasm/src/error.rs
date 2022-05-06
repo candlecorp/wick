@@ -17,7 +17,7 @@ pub enum WasmProviderError {
   WapcError(#[from] wapc::errors::Error),
 
   #[error(transparent)]
-  CodecError(#[from] vino_codec::Error),
+  CodecError(#[from] wasmflow_codec::Error),
   #[error(transparent)]
   IoError(#[from] std::io::Error),
   #[error("Could not load reference: {0}")]
@@ -75,8 +75,8 @@ pub enum LinkError {
   CallFailure(String),
 }
 
-impl From<vino_entity::Error> for LinkError {
-  fn from(e: vino_entity::Error) -> Self {
+impl From<wasmflow_entity::Error> for LinkError {
+  fn from(e: wasmflow_entity::Error) -> Self {
     LinkError::EntityFailure(e.to_string())
   }
 }

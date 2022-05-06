@@ -10,21 +10,19 @@ license = "BSD-3-Clause"
 client = ["tokio/fs"]
 
 [dependencies]
-vino-packet = { path = "../../../sdk/crates/vino-packet" }
-vino-codec = { path = "../../../sdk/crates/vino-codec" }
-vino-entity = { path = "../../../sdk/crates/vino-entity" }
+wasmflow-interface = { path = "../../../sdk/crates/wasmflow-interface" }
+wasmflow-invocation = { path = "../../../sdk/crates/wasmflow-invocation" }
+wasmflow-packet = { path = "../../../sdk/crates/wasmflow-packet" }
+wasmflow-codec = { path = "../../../sdk/crates/wasmflow-codec" }
+wasmflow-entity = { path = "../../../sdk/crates/wasmflow-entity" }
 vino-transport = { path = "../../../sdk/crates/vino-transport", features = [
   "all",
 ] }
-vino-types = { path = "../../../sdk/crates/vino-types" }
-vino-provider = { path = "../../../sdk/crates/vino-provider", features = [
-  "native",
-] }
-vino-macros = { path = "../../../sdk/crates/vino-macros" }
+wasmflow-macros = { path = "../../../sdk/crates/wasmflow-macros" }
 
-tonic = { version = "0.6", features = ["tls"] }
-prost = "0.9"
-prost-types = "0.9"
+tonic = { version = "0.7", features = ["tls"] }
+prost = "0.10"
+prost-types = "0.10"
 tokio = { version = "1", features = ["macros", "net", "rt-multi-thread"] }
 tokio-stream = { version = "0.1", features = ["net"] }
 serde = { version = "1.0", features = ["derive"] }
@@ -35,11 +33,11 @@ tracing = "0.1"
 thiserror = "1.0"
 async-trait = "0.1.50"
 dyn-clone = "1.0.4"
-uuid = "0.8"
+uuid = "1.1"
 
 
 [build-dependencies]
-tonic-build = { version = "0.6", default-features = false, features = [
+tonic-build = { version = "0.7", default-features = false, features = [
   "prost",
   "transport",
 ] }

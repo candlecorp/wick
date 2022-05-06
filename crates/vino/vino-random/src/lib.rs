@@ -198,8 +198,8 @@ impl Random {
     let mut rng = self.rng.write();
     rng.fill(&mut raw_bytes);
     let bytes: uuid::Bytes = raw_bytes;
-    let mut builder = uuid::Builder::from_bytes(bytes);
-    builder.build()
+    let builder = uuid::Builder::from_bytes(bytes);
+    builder.into_uuid()
   }
 
   pub fn range(&self, min: u32, max: u32) -> u32 {

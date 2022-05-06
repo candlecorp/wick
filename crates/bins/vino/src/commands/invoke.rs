@@ -7,8 +7,7 @@ use vino_manifest::host_definition::HostDefinition;
 use vino_provider_cli::options::{DefaultCliOptions, LatticeCliOptions};
 use vino_provider_cli::parse_args;
 use vino_random::Seed;
-use vino_transport::{InherentData, TransportMap};
-use vino_types::MapWrapper;
+use vino_transport::TransportMap;
 
 use crate::utils::merge_config;
 use crate::Result;
@@ -115,7 +114,7 @@ pub(crate) async fn handle_command(opts: InvokeCommand) -> Result<()> {
   }
 
   let inherent_data = opts.seed.map(|seed| {
-    InherentData::new(
+    wasmflow_invocation::InherentData::new(
       seed,
       SystemTime::now()
         .duration_since(SystemTime::UNIX_EPOCH)
@@ -142,7 +141,7 @@ pub(crate) async fn handle_command(opts: InvokeCommand) -> Result<()> {
 
       let stream = host.request(&default_schematic, payload, inherent_data).await?;
 
-      cli_common::functions::print_stream_json(Box::pin(stream), &opts.filter, opts.short, opts.raw).await?;
+      cli_common::functions::print_stream_json(stream, &opts.filter, opts.short, opts.raw).await?;
     }
   } else {
     let mut data_map = TransportMap::from_kv_json(&opts.data)?;
@@ -155,7 +154,7 @@ pub(crate) async fn handle_command(opts: InvokeCommand) -> Result<()> {
     data_map.merge(rest_arg_map);
 
     let stream = host.request(&default_schematic, data_map, inherent_data).await?;
-    cli_common::functions::print_stream_json(Box::pin(stream), &opts.filter, opts.short, opts.raw).await?;
+    cli_common::functions::print_stream_json(stream, &opts.filter, opts.short, opts.raw).await?;
   }
   host.stop().await;
 

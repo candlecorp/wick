@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use clap::Args;
 use nkeys::KeyPairType;
-use oci_distribution::client::{ImageData, ImageLayer};
+use oci_distribution::client::ImageLayer;
 use oci_distribution::manifest;
 use oci_distribution::secrets::RegistryAuth;
 use vino_wascap::ClaimsOptions;
@@ -103,17 +103,14 @@ pub(crate) async fn handle(opts: Options) -> Result<()> {
       unknown => return Err(ControlError::UnknownFileType(unknown.to_owned())),
     };
 
-    let image_data = ImageData {
-      layers: vec![ImageLayer {
-        data: image_bytes,
-        media_type,
-      }],
-      digest: None,
-    };
+    let layers = vec![ImageLayer {
+      data: image_bytes,
+      media_type,
+      annotations: None,
+    }];
 
-    let response = vino_oci::push(&mut client, &auth, &image_ref, image_data).await?;
+    let response = vino_oci::push(&mut client, &auth, &image_ref, &layers).await?;
 
-    println!("Image URL: {}", response.image_url);
     println!("Manifest URL: {}", response.manifest_url);
     println!("Config URL: {}", response.config_url);
   }

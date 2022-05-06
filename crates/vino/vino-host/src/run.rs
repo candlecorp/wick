@@ -112,7 +112,7 @@ mod tests {
     let input = vec![("input", "test-input")].into();
 
     let mut result = super::run(host_def, "logger", input, Some(0)).await?;
-    let mut messages: Vec<TransportWrapper> = result.drain_port("output").await;
+    let mut messages: Vec<TransportWrapper> = result.drain_port("output").await?;
     let output: String = messages.remove(0).payload.deserialize()?;
 
     assert_eq!(output, "test-input");

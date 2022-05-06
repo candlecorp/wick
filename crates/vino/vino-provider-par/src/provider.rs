@@ -11,11 +11,12 @@ use rand::{thread_rng, Rng};
 use tokio::process;
 use tokio::sync::Mutex;
 use vino_loader::cache_location;
-use vino_provider::native::prelude::*;
 use vino_provider_cli::options::env;
 use vino_rpc::error::RpcError;
 use vino_rpc::{RpcClient, RpcHandler, RpcResult};
-use vino_transport::Invocation;
+use vino_transport::TransportStream;
+use wasmflow_interface::{HostedType, ProviderSignature};
+use wasmflow_invocation::Invocation;
 
 use crate::Error;
 
@@ -94,7 +95,7 @@ pub fn config_to_par_options(
 
 #[async_trait]
 impl RpcHandler for Provider {
-  async fn invoke(&self, invocation: Invocation) -> RpcResult<BoxedTransportStream> {
+  async fn invoke(&self, invocation: Invocation) -> RpcResult<TransportStream> {
     let target_url = invocation.target_url();
     trace!(target = %target_url, "par invoke");
 
@@ -112,7 +113,7 @@ impl RpcHandler for Provider {
       duration_ms = %start.elapsed().as_millis(),
       "par invoke complete",
     );
-    Ok(Box::pin(stream))
+    Ok(stream)
   }
 
   fn get_list(&self) -> RpcResult<Vec<HostedType>> {
@@ -188,12 +189,17 @@ mod tests {
 
   use anyhow::Result;
   use tokio_stream::StreamExt;
+  use wasmflow_entity::Entity;
+  use wasmflow_packet::PacketMap;
   use vino_par::make_archive;
   use vino_wascap::KeyPair;
 
   use super::*;
 
   #[test_logger::test(tokio::test)]
+  // TODO: This relies on a precompiled binary and needs to be fixed.
+  // That binary needs to be created automatically and not be part of source control.
+  #[ignore]
   async fn test_local_tar() -> Result<()> {
     let provider_bin = workspace_root::workspace_root()?
       .join("crates")
@@ -217,8 +223,8 @@ mod tests {
     )?;
 
     let provider = Provider::from_tarbytes("vino-test-par", &*archive_bytes, None).await?;
-    let inputs: HashMap<&str, i32> = HashMap::from([("left", 2), ("right", 5)]);
-    let invocation = Invocation::new_test(file!(), Entity::local("add"), inputs.into(), None);
+    let job_payload = PacketMap::from([("left", 2), ("right", 5)]);
+    let invocation = Invocation::new_test(file!(), Entity::local("add"), job_payload, None);
     let stream = provider.invoke(invocation).await?;
 
     let packets: Vec<_> = stream.collect().await;

@@ -1,9 +1,9 @@
 use tokio_stream::{Stream, StreamExt};
 use tracing::trace;
-use vino_transport::{BoxedTransportStream, MessageTransport, TransportStream, TransportWrapper};
+use vino_transport::{MessageTransport, TransportStream, TransportWrapper};
 
 pub async fn print_stream_json(
-  mut stream: BoxedTransportStream,
+  mut stream: TransportStream,
   filter: &[String],
   terse: bool,
   raw: bool,
@@ -13,7 +13,7 @@ pub async fn print_stream_json(
   }
   while let Some(wrapper) = stream.next().await {
     trace!(message=%wrapper, "output message");
-    if wrapper.payload.is_signal() && !raw {
+    if (wrapper.payload.is_signal() || wrapper.is_component_state()) && !raw {
       continue;
     }
     if !filter.is_empty() && !filter.iter().any(|name| name == &wrapper.port) {

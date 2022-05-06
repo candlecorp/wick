@@ -34,7 +34,7 @@ pub enum OciError {
 
   /// Upstream errors from oci-distribution
   #[error(transparent)]
-  OciDistribution(#[from] anyhow::Error),
+  OciDistribution(#[from] oci_distribution::errors::OciDistributionError),
 
   /// JSON Parse Error
   #[error(transparent)]

@@ -4,9 +4,10 @@ use std::time::Duration;
 use tokio_stream::StreamExt;
 use tonic::transport::{Certificate, Channel, ClientTlsConfig, Identity, Uri};
 use tracing::debug;
-use vino_entity::Entity;
-use vino_transport::{InherentData, Invocation, MessageTransport, TransportMap, TransportStream, TransportWrapper};
-use vino_types::HostedType;
+use vino_transport::{MessageTransport, TransportMap, TransportStream, TransportWrapper};
+use wasmflow_entity::Entity;
+use wasmflow_interface::HostedType;
+use wasmflow_invocation::{InherentData, Invocation};
 
 use crate::error::RpcClientError;
 use crate::rpc::invocation_service_client::InvocationServiceClient;
@@ -137,7 +138,7 @@ impl RpcClient {
   }
 
   /// Send an invoke RPC command with an [Invocation] object.
-  pub async fn invoke(&mut self, invocation: vino_transport::Invocation) -> Result<TransportStream, RpcClientError> {
+  pub async fn invoke(&mut self, invocation: Invocation) -> Result<TransportStream, RpcClientError> {
     Ok(
       self
         .invoke_raw(invocation.try_into().map_err(RpcClientError::ConversionFailed)?)

@@ -116,16 +116,11 @@ mod test {
     let user_data = "This is my payload";
 
     let payload = vec![("input", user_data)].into();
-    let invocation = Invocation::new(
-      Entity::test("test"),
-      Entity::local("core::log"),
-      payload,
-      None,
-    );
+    let invocation = Invocation::new(Entity::test("test"), Entity::local("core::log"), payload, None);
     let response = provider.invoke(invocation)?.await?;
 
     let mut rx = response.ok()?;
-    let next: TransportWrapper = rx.next().await.unwrap();
+    let next = rx.drain_port("output").await?[0].clone();
     let payload: String = next.payload.deserialize()?;
     assert_eq!(user_data, payload);
 

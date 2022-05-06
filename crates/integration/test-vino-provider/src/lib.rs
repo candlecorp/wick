@@ -1,15 +1,18 @@
-use vino_provider::native::prelude::*;
+use async_trait::async_trait;
 use vino_rpc::error::RpcError;
 use vino_rpc::{RpcHandler, RpcResult};
-use vino_transport::Invocation;
+use vino_transport::TransportStream;
+use wasmflow_sdk::sdk::stateful::NativeDispatcher;
+use wasmflow_sdk::sdk::Invocation;
+use wasmflow_sdk::types::HostedType;
 
-use self::components::Dispatcher;
+use self::components::ComponentDispatcher;
 pub mod components;
 
 #[macro_use]
 extern crate tracing;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Context {}
 
 #[derive(Clone)]
@@ -25,18 +28,19 @@ impl Provider {
 
 #[async_trait]
 impl RpcHandler for Provider {
-  async fn invoke(&self, invocation: Invocation) -> RpcResult<BoxedTransportStream> {
+  async fn invoke(&self, invocation: Invocation) -> RpcResult<TransportStream> {
     let target = invocation.target_url();
     trace!("TEST_PROVIDER:INVOKE[{}]", target);
     let context = self.context.clone();
-    let component = invocation.target.name();
-    let result = Dispatcher::dispatch(component, context, invocation.payload)
+    let dispatcher = ComponentDispatcher::default();
+    let result = dispatcher
+      .dispatch(invocation, context)
       .await
       .map_err(|e| RpcError::ProviderError(e.to_string()));
-    trace!("TEST_PROVIDER:INVOKE[{}]:RESULT:{:?}", target, result);
+    trace!("TEST_PROVIDER:INVOKE[{}]:RESULT", target);
     let stream = result?;
 
-    Ok(Box::pin(stream))
+    Ok(TransportStream::from_packetstream(stream))
   }
 
   fn get_list(&self) -> RpcResult<Vec<HostedType>> {
@@ -48,13 +52,13 @@ impl RpcHandler for Provider {
 
 #[cfg(test)]
 mod tests {
-
   use std::collections::HashMap;
 
   use futures::prelude::*;
+  use pretty_assertions::assert_eq;
   use tracing::*;
-  use vino_provider::native::prelude::*;
-  use vino_types::TypeSignature;
+  use wasmflow_entity::Entity;
+  use wasmflow_sdk::types::*;
 
   use super::*;
   use crate::components::test_component;
@@ -68,10 +72,12 @@ mod tests {
     };
 
     let entity = Entity::local("test-component");
-    let invocation = Invocation::new_test(file!(), entity, job_payload.into(), None);
+    let invocation = Invocation::new_test(file!(), entity, job_payload, None);
 
     let mut outputs = provider.invoke(invocation).await?;
-    let output = outputs.next().await.unwrap();
+    let packets: Vec<_> = outputs.drain_port("output").await?;
+    let output = packets[0].clone();
+
     println!("Received payload from [{}]", output.port);
     let payload: String = output.payload.deserialize().unwrap();
 
@@ -91,6 +97,9 @@ mod tests {
 
     assert_eq!(response.len(), 1);
     let expected = ProviderSignature {
+      format: 1,
+      version: "0.1.0".to_owned(),
+      wellknown: vec![],
       name: Some("test-vino-provider".to_owned()),
       components: HashMap::from([
         (
@@ -111,7 +120,8 @@ mod tests {
         ),
       ])
       .into(),
-      types: StructMap::new(),
+      types: TypeMap::new(),
+      config: TypeMap::new(),
     };
     assert_eq!(response[0], HostedType::Provider(expected));
     Ok(())

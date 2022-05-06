@@ -6,13 +6,13 @@ use std::time::Instant;
 use parking_lot::RwLock;
 use tokio::sync::mpsc::unbounded_channel;
 use tokio_stream::wrappers::UnboundedReceiverStream;
-use vino_codec::messagepack::serialize;
 use vino_transport::{TransportStream, TransportWrapper};
-use vino_types::ProviderSignature;
-use vino_wapc::HostCommand;
 use vino_wascap::{Claims, ProviderClaims};
-use wapc::{WapcHost, WasiParams};
+use wapc::{WapcHostBuilder, WasiParams};
 use wapc_pool::{HostPool, HostPoolBuilder};
+use wasmflow_codec::messagepack::serialize;
+use wasmflow_component::HostCommand;
+use wasmflow_interface::ProviderSignature;
 
 use crate::callbacks::{create_link_handler, create_log_handler, create_output_handler};
 use crate::error::WasmProviderError;
@@ -129,7 +129,7 @@ impl WasmHost {
     let engine = {
       let engine = wasmtime_provider::WasmtimeEngineProvider::new_with_cache(&module.bytes, wasi_options, None)
         .map_err(|e| WasmProviderError::EngineFailure(e.to_string()))?;
-      trace!(durasion_us = %time.elapsed().as_micros(), "wasmtime instance loaded");
+      trace!(duration_μs = %time.elapsed().as_micros(), "wasmtime instance loaded");
       engine
     };
 
@@ -144,30 +144,59 @@ impl WasmHost {
         let handle_link_call = create_link_handler(link_callback.clone());
         let handle_log_call = create_log_handler();
 
-        let host_callback: Box<wapc::HostCallback> = Box::new(move |_id, command, arg1, arg2, payload| {
-          trace!(command, arg1, arg2, len = payload.len(), "wapc callback");
+        let async_callback: Box<wapc::AsyncHostCallback> = Box::new(move |_id, command, arg1, arg2, payload| {
+          trace!("wapc callback");
+          let handle_link_call = handle_link_call.clone();
+          Box::pin(async move {
+            trace!(%command, %arg1, %arg2, len = payload.len(), "wapc callback");
+
+            let now = Instant::now();
+            let result = match HostCommand::from_str(&command) {
+              Ok(HostCommand::Output) => panic!("output is a synchronous function"),
+              Ok(HostCommand::LinkCall) => handle_link_call(&arg1, &arg2, &payload),
+              Ok(HostCommand::Log) => panic!("logging is synchronous"),
+              Err(_) => Err(format!("Invalid command: {}", command).into()),
+            };
+            trace!(
+              %command, %arg1, %arg2, duration_μs = %now.elapsed().as_micros(),
+              "wapc callback done",
+            );
+            result
+          })
+        });
+
+        let sync_callback: Box<wapc::HostCallback> = Box::new(move |_id, command, arg1, arg2, payload| {
+          trace!("wapc callback");
+          let handle_port_output = handle_port_output.clone();
+          let handle_log_call = handle_log_call.clone();
+
+          trace!(%command, %arg1, %arg2, len = payload.len(), "wapc callback");
 
           let now = Instant::now();
-          let result = match HostCommand::from_str(command) {
-            Ok(HostCommand::Output) => handle_port_output(arg1, arg2, payload),
-            Ok(HostCommand::LinkCall) => handle_link_call(arg1, arg2, payload),
-            Ok(HostCommand::Log) => handle_log_call(arg1, arg2, payload),
+          let result = match HostCommand::from_str(&command) {
+            Ok(HostCommand::Output) => handle_port_output(&arg1, &arg2, &payload),
+            Ok(HostCommand::LinkCall) => panic!("external calls are asynchronous"),
+            Ok(HostCommand::Log) => handle_log_call(&arg1, &arg2, &payload),
             Err(_) => Err(format!("Invalid command: {}", command).into()),
           };
           trace!(
-            command, arg1, arg2, durasion_us = %now.elapsed().as_micros(),
+            %command, %arg1, %arg2, duration_μs = %now.elapsed().as_micros(),
             "wapc callback done",
           );
           result
         });
 
-        WapcHost::new(engine.clone(), Some(host_callback)).unwrap()
+        WapcHostBuilder::new()
+          .callback(Arc::new(sync_callback))
+          .async_callback(Arc::new(async_callback))
+          .build(engine.clone())
+          .unwrap()
       })
       .min_threads(min_threads)
       .max_threads(max_threads)
       .build();
 
-    debug!(durasion_us = ?time.elapsed().as_micros(), "wasmtime initialize");
+    debug!(duration_μs = ?time.elapsed().as_micros(), "wasmtime initialize");
 
     Ok(Self {
       claims: module.claims().clone(),
@@ -190,19 +219,25 @@ impl WasmHost {
     self.tx_map.write().remove(&id).ok_or(WasmProviderError::TxNotFound)
   }
 
-  pub async fn call(&self, component_name: &str, input_map: &HashMap<String, Vec<u8>>) -> Result<TransportStream> {
+  pub async fn call(
+    &self,
+    component_name: &str,
+    input_map: &HashMap<String, Vec<u8>>,
+    config: Option<Vec<u8>>,
+    state: Option<Vec<u8>>,
+  ) -> Result<TransportStream> {
     let id = self.new_tx();
 
     debug!(component = component_name, id, payload = ?input_map, "wasm invoke");
 
-    let payload = serialize(&(id, &input_map)).map_err(WasmProviderError::CodecError)?;
+    let payload = serialize(&(id, &input_map, config, state))?;
 
     let now = Instant::now();
     let result = self.host.call(component_name, payload).await;
     trace!(
       component = component_name,
       id,
-      durasion_us = ?now.elapsed().as_micros(),
+      duration_μs = ?now.elapsed().as_micros(),
       "wasm call finished"
     );
     trace!(component = component_name, id, ?result, "wasm call result");
@@ -219,7 +254,6 @@ impl WasmHost {
       };
       tx.send(transport).map_err(|_| Error::SendError)?;
     }
-
     Ok(TransportStream::new(UnboundedReceiverStream::new(rx)))
   }
 

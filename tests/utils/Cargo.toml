@@ -12,13 +12,13 @@ vino-transport = { path = "../../sdk/crates/vino-transport", features = [
   "all",
 ] }
 vino-manifest = { path = "../../crates/vino/vino-manifest" }
-vino-codec = { path = "../../sdk/crates/vino-codec" }
+wasmflow-codec = { path = "../../sdk/crates/wasmflow-codec" }
 vino-wascap = { path = "../../crates/vino/vino-wascap" }
 anyhow = "1.0"
 maplit = "1.0"
 pretty_assertions = "1"
 log = "0.4"
-nkeys = { path = "../../forks/nkeys" }
+nkeys = "0.2"
 tokio = { version = "1.4", features = [
   "macros",
   "process",

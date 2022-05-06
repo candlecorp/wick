@@ -2,8 +2,8 @@ use std::io::Read;
 use std::path::Path;
 
 use tar::Header;
-use vino_types::ProviderSignature;
 use vino_wascap::{ClaimsOptions, KeyPair};
+use wasmflow_interface::ProviderSignature;
 
 use crate::error::ParError;
 

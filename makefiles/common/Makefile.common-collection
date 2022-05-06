@@ -1,0 +1,14 @@
+SOURCE_FILES += $(GENERATED_MODULE) $(wildcard $(COMPONENTS_DIR)/*)
+
+$(GENERATED_MODULE): $(INTERFACE)
+	@echo Generating $@
+	@$(CODEGEN) rust integration $< --type $(STATEFUL) $(WELLKNOWN) -f -o $@
+
+.PHONY: components
+components: $(COMPONENTS_DIR) $(INTERFACE)
+	vino-codegen rust component $(INTERFACE) --all $(STATEFUL) $(WELLKNOWN) -o $<
+	vino-codegen rust component $(INTERFACE) __batch__  $(STATEFUL) $(WELLKNOWN) -o $(COMPONENTS_DIR)/__batch__.rs
+
+CODEGEN_FILES += $(GENERATED_MODULE) components
+CLEAN_FILES += $(GENERATED_MODULE)
+

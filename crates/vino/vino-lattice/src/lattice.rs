@@ -11,11 +11,12 @@ use tokio::task::JoinHandle;
 use tokio::time::timeout;
 use tokio_stream::wrappers::UnboundedReceiverStream;
 use tokio_stream::StreamExt;
-use vino_codec::messagepack::serialize;
-use vino_entity::Entity;
 use vino_rpc::SharedRpcHandler;
-use vino_transport::{Invocation, MessageTransport, TransportStream, TransportWrapper};
-use vino_types::HostedType;
+use vino_transport::{MessageTransport, TransportStream, TransportWrapper};
+use wasmflow_codec::messagepack::serialize;
+use wasmflow_entity::Entity;
+use wasmflow_interface::HostedType;
+use wasmflow_invocation::Invocation;
 
 use crate::error::LatticeError;
 use crate::nats::{Nats, NatsMessage, NatsOptions};
@@ -385,9 +386,10 @@ pub enum LatticeRpcResponse {
 #[cfg(test)]
 mod test {
   use anyhow::Result;
+  use pretty_assertions::assert_eq;
   use tracing::*;
-  use vino_codec::messagepack::{deserialize, serialize};
   use vino_transport::{MessageTransport, TransportWrapper};
+  use wasmflow_codec::messagepack::{deserialize, serialize};
 
   use crate::lattice::LatticeRpcResponse;
   #[test_logger::test]
@@ -411,12 +413,14 @@ mod test_integration {
   use std::sync::Arc;
 
   use anyhow::Result;
+  use pretty_assertions::assert_eq;
   use test_vino_provider::Provider;
   use tokio_stream::StreamExt;
   use tracing::*;
-  use vino_rpc::MapWrapper;
-  use vino_transport::{Invocation, MessageTransport, TransportMap};
-  use vino_types::{ComponentMap, ComponentSignature, HostedType, ProviderSignature, StructMap};
+  use vino_transport::MessageTransport;
+  use wasmflow_interface::{ComponentMap, ComponentSignature, HostedType, ProviderSignature};
+  use wasmflow_invocation::Invocation;
+  use wasmflow_packet::PacketMap;
 
   use super::{Lattice, LatticeBuilder};
 
@@ -437,15 +441,16 @@ mod test_integration {
     let (lattice, lattice_id) = get_lattice().await?;
     let component_name = "test-component";
     let user_input = String::from("Hello world");
-    let entity = vino_entity::Entity::component("arbitrary_ns", component_name);
-    let mut payload = TransportMap::new();
-    payload.insert("input", MessageTransport::success(&user_input));
+    let entity = wasmflow_entity::Entity::component("arbitrary_ns", component_name);
+    let mut payload = PacketMap::default();
+    payload.insert("input", &user_input);
     println!("Sending payload: {:?}", payload);
     let invocation = Invocation::new_test(file!(), entity, payload, None);
     let mut stream = lattice.invoke(&lattice_id, invocation).await?;
     println!("Sent payload, received stream");
+    let output = stream.drain_port("output").await?;
 
-    let msg = stream.next().await.unwrap();
+    let msg = output[0].clone();
     debug!("msg: {:?}", msg);
     let result: String = msg.deserialize()?;
     assert_eq!(result, format!("TEST: {}", user_input));
@@ -472,9 +477,9 @@ mod test_integration {
     let (lattice, lattice_id) = get_lattice().await?;
     let component_name = "error";
     let user_input = String::from("Hello world");
-    let entity = vino_entity::Entity::component("arbitrary_ns", component_name);
-    let mut payload = TransportMap::new();
-    payload.insert("input", MessageTransport::success(&user_input));
+    let entity = wasmflow_entity::Entity::component("arbitrary_ns", component_name);
+    let mut payload = PacketMap::default();
+    payload.insert("input", &user_input);
     debug!("Sending payload: {:?}", payload);
     let invocation = Invocation::new_test(file!(), entity, payload, None);
     let mut stream = lattice.invoke(&lattice_id, invocation).await?;
@@ -511,11 +516,17 @@ mod test_integration {
       },
     );
 
-    assert!(schemas.contains(&HostedType::Provider(ProviderSignature {
+    let expected = HostedType::Provider(ProviderSignature {
       name: Some("test-vino-provider".to_owned()),
-      types: StructMap::new(),
-      components
-    })));
+      format: 1,
+      version: "0.1.0".to_owned(),
+      components,
+      ..Default::default()
+    });
+
+    println!("Returned schemas: {:?}", schemas);
+
+    assert_eq!(schemas[0], expected);
     Ok(())
   }
 }

@@ -42,7 +42,15 @@ pub fn init_test(opts: &LoggingOptions) -> Option<LoggingGuard> {
 }
 
 fn priority_module(module: &str) -> bool {
-  ["logger", "vow", "cli_common", "test_vino_provider"].contains(&module)
+  [
+    "logger",
+    "vow",
+    "cli_common",
+    "wapc",
+    "test_vino_provider",
+    "wasmtime_provider",
+  ]
+  .contains(&module)
 }
 
 #[must_use]

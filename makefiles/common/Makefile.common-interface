@@ -1,0 +1,11 @@
+CODEGEN_FILES += $(GENERATED_MODULE)
+SOURCE_FILES += $(GENERATED_MODULE) $(wildcard $(COMPONENTS_DIR)/*))
+
+$(GENERATED_MODULE): $(INTERFACE)
+	@echo Generating $@
+	@vino-codegen rust interface $(INTERFACE) -f -o $@
+
+.phony: check
+check:
+	cargo check
+	cargo check --target=wasm32-wasi

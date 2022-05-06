@@ -15,33 +15,35 @@ vino-rpc = { path = "../vino-rpc" }
 vino-random = { path = "../vino-random" }
 vino-wascap = { path = "../vino-wascap" }
 vino-loader = { path = "../vino-loader" }
-vino-packet = { path = "../../../sdk/crates/vino-packet" }
-vino-entity = { path = "../../../sdk/crates/vino-entity" }
-vino-codec = { path = "../../../sdk/crates/vino-codec" }
-vino-wapc = { path = "../../../sdk/crates/vino-wapc", features = [] }
-vino-provider = { path = "../../../sdk/crates/vino-provider", features = [
-  "native",
-] }
+wasmflow-packet = { path = "../../../sdk/crates/wasmflow-packet" }
+wasmflow-entity = { path = "../../../sdk/crates/wasmflow-entity" }
+wasmflow-codec = { path = "../../../sdk/crates/wasmflow-codec" }
+wasmflow-output = { path = "../../../sdk/crates/wasmflow-output", features = [] }
 vino-transport = { path = "../../../sdk/crates/vino-transport", features = [
   "all",
 ] }
-vino-types = { path = "../../../sdk/crates/vino-types" }
-vino-macros = { path = "../../../sdk/crates/vino-macros" }
+wasmflow-sdk = { path = "../../../sdk/crates/wasmflow-sdk", features = ["v1"] }
+wasmflow-interface = { path = "../../../sdk/crates/wasmflow-interface" }
+wasmflow-component = { path = "../../../sdk/crates/wasmflow-component" }
+wasmflow-invocation = { path = "../../../sdk/crates/wasmflow-invocation" }
+wasmflow-collection-link = { path = "../../../sdk/crates/wasmflow-collection-link" }
+wasmflow-macros = { path = "../../../sdk/crates/wasmflow-macros" }
 derivative = "2.2"
 tokio = { version = "1", features = ["fs"] }
 parking_lot = "0.12"
 
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+serde-value = "0.7"
 
-wasmtime-provider = { version = "1.0", optional = true, features = ["cache"] }
-wapc = "1.0"
-wapc-pool = "1.0"
-# wasmtime-provider = { path = "../../../forks/wapc-rs/crates/wasmtime-provider", optional = true, features = [
-#   "cache",
-# ] }
-# wapc = { path = "../../../forks/wapc-rs/crates/wapc" }
-# wapc-pool = { path = "../../../forks/wapc-rs/crates/wapc-pool" }
+# wasmtime-provider = { version = "1.0", optional = true, features = ["cache"] }
+# wapc = "1.0"
+# wapc-pool = "1.0"
+wasmtime-provider = { git = "https://github.com/vinodotdev/wapc-rs", branch = "master", optional = true, features = [
+  "cache",
+] }
+wapc = { git = "https://github.com/vinodotdev/wapc-rs", branch = "master" }
+wapc-pool = { git = "https://github.com/vinodotdev/wapc-rs", branch = "master" }
 
 
 tokio-stream = "0.1.7"
@@ -54,5 +56,4 @@ async-trait = "0.1.50"
 logger = { path = "../logger" }
 test-logger = { path = "../../misc/test-logger" }
 futures = "0.3"
-maplit = "1.0"
 anyhow = "1.0"

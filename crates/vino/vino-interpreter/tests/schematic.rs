@@ -4,12 +4,14 @@ mod test;
 
 use anyhow::Result;
 use test::{JsonWriter, TestProvider};
-use vino_entity::Entity;
 use vino_interpreter::graph::from_def;
 use vino_interpreter::{HandlerMap, Interpreter, InterpreterOptions, NamespaceHandler};
 use vino_manifest::Loadable;
 use vino_random::Seed;
-use vino_transport::{Invocation, MessageTransport, TransportMap};
+use vino_transport::MessageTransport;
+use wasmflow_entity::Entity;
+use wasmflow_invocation::Invocation;
+use wasmflow_packet::PacketMap;
 
 fn load<T: AsRef<Path>>(path: T) -> Result<vino_manifest::HostManifest> {
   Ok(vino_manifest::HostManifest::load_from_file(path.as_ref())?)
@@ -27,7 +29,7 @@ async fn test_echo() -> Result<()> {
   let manifest = load("./tests/manifests/v0/echo.yaml")?;
   let network = from_def(&manifest.network().try_into()?)?;
 
-  let inputs = TransportMap::from([("input", "Hello world".to_owned())]);
+  let inputs = PacketMap::from([("input", "Hello world".to_owned())]);
 
   let invocation = Invocation::new_test("echo", Entity::local("echo"), inputs, None);
   let mut interpreter = Interpreter::new(Some(Seed::unsafe_new(1)), network, None, None)?;
@@ -52,7 +54,7 @@ async fn test_external_provider() -> Result<()> {
   let network = from_def(&manifest.network().try_into()?)?;
   let providers = HandlerMap::new(vec![NamespaceHandler::new("test", Box::new(TestProvider::new()))]);
 
-  let inputs = TransportMap::from([("input", "Hello world".to_owned())]);
+  let inputs = PacketMap::from([("input", "Hello world".to_owned())]);
 
   let invocation = Invocation::new_test("external_provider", Entity::local("test"), inputs, None);
   let mut interpreter = Interpreter::new(Some(Seed::unsafe_new(1)), network, None, Some(providers))?;
@@ -77,7 +79,7 @@ async fn test_self() -> Result<()> {
   let network = from_def(&manifest.network().try_into()?)?;
   let providers = HandlerMap::new(vec![NamespaceHandler::new("test", Box::new(TestProvider::new()))]);
 
-  let inputs = TransportMap::from([("parent_input", "Hello world".to_owned())]);
+  let inputs = PacketMap::from([("parent_input", "Hello world".to_owned())]);
 
   let invocation = Invocation::new_test("self", Entity::local("test"), inputs, None);
   let mut interpreter = Interpreter::new(Some(Seed::unsafe_new(1)), network, None, Some(providers))?;
@@ -102,7 +104,7 @@ async fn test_exception_default() -> Result<()> {
   let manifest = load("./tests/manifests/v0/exception-default.yaml")?;
   let network = from_def(&manifest.network().try_into()?)?;
   let providers = HandlerMap::new(vec![NamespaceHandler::new("test", Box::new(TestProvider::new()))]);
-  let inputs = TransportMap::from([("input", "Hello world".to_owned())]);
+  let inputs = PacketMap::from([("input", "Hello world".to_owned())]);
 
   let invocation = Invocation::new_test("exception-default", Entity::local("test"), inputs, None);
   let mut interpreter = Interpreter::new(Some(Seed::unsafe_new(1)), network, None, Some(providers))?;
@@ -127,7 +129,7 @@ async fn test_exception_nodefault() -> Result<()> {
   let manifest = load("./tests/manifests/v0/exception-nodefault.yaml")?;
   let network = from_def(&manifest.network().try_into()?)?;
   let providers = HandlerMap::new(vec![NamespaceHandler::new("test", Box::new(TestProvider::new()))]);
-  let inputs = TransportMap::from([("input", "Hello world".to_owned())]);
+  let inputs = PacketMap::from([("input", "Hello world".to_owned())]);
 
   let invocation = Invocation::new_test("exception-nodefault", Entity::local("test"), inputs, None);
   let mut interpreter = Interpreter::new(Some(Seed::unsafe_new(1)), network, None, Some(providers))?;
@@ -150,7 +152,7 @@ async fn test_inherent() -> Result<()> {
   let manifest = load("./tests/manifests/v0/inherent.yaml")?;
   let network = from_def(&manifest.network().try_into()?)?;
   let providers = HandlerMap::new(vec![NamespaceHandler::new("test", Box::new(TestProvider::new()))]);
-  let inputs = TransportMap::default();
+  let inputs = PacketMap::default();
 
   let invocation = Invocation::new_test("inherent", Entity::local("test"), inputs, None);
   let mut interpreter = Interpreter::new(Some(Seed::unsafe_new(1)), network, None, Some(providers))?;
@@ -173,7 +175,7 @@ async fn test_inherent_nested() -> Result<()> {
   let manifest = load("./tests/manifests/v0/inherent-nested.yaml")?;
   let network = from_def(&manifest.network().try_into()?)?;
   let providers = HandlerMap::new(vec![NamespaceHandler::new("test", Box::new(TestProvider::new()))]);
-  let inputs = TransportMap::default();
+  let inputs = PacketMap::default();
 
   let invocation = Invocation::new_test("inherent_nested", Entity::local("test"), inputs, None);
   let mut interpreter = Interpreter::new(Some(Seed::unsafe_new(1)), network, None, Some(providers))?;
@@ -201,7 +203,7 @@ async fn test_inherent_disconnected() -> Result<()> {
   let manifest = load("./tests/manifests/v0/inherent-disconnected.yaml")?;
   let network = from_def(&manifest.network().try_into()?)?;
   let providers = HandlerMap::new(vec![NamespaceHandler::new("test", Box::new(TestProvider::new()))]);
-  let inputs = TransportMap::from([("input", "Hello world".to_owned())]);
+  let inputs = PacketMap::from([("input", "Hello world".to_owned())]);
 
   let invocation = Invocation::new_test("inherent_disconnected", Entity::local("test"), inputs, None);
   let mut interpreter = Interpreter::new(Some(Seed::unsafe_new(1)), network, None, Some(providers))?;
@@ -226,7 +228,7 @@ async fn test_stream() -> Result<()> {
   let network = from_def(&manifest.network().try_into()?)?;
   let providers = HandlerMap::new(vec![NamespaceHandler::new("test", Box::new(TestProvider::new()))]);
   let input_str = "Hello world".to_owned();
-  let inputs = TransportMap::from([("input", input_str.clone())]);
+  let inputs = PacketMap::from([("input", input_str.clone())]);
 
   let invocation = Invocation::new_test("stream", Entity::local("test"), inputs, None);
   let mut interpreter = Interpreter::new(Some(Seed::unsafe_new(1)), network, None, Some(providers))?;
@@ -252,7 +254,7 @@ async fn test_spread() -> Result<()> {
   let network = from_def(&manifest.network().try_into()?)?;
   let providers = HandlerMap::new(vec![NamespaceHandler::new("test", Box::new(TestProvider::new()))]);
 
-  let inputs = TransportMap::from([("input", "Hello world".to_owned())]);
+  let inputs = PacketMap::from([("input", "Hello world".to_owned())]);
   let invocation = Invocation::new_test("spread", Entity::local("test"), inputs, None);
   let mut interpreter = Interpreter::new(Some(Seed::unsafe_new(1)), network, None, Some(providers))?;
   interpreter.start(OPTIONS, Some(Box::new(JsonWriter::default()))).await;
@@ -279,7 +281,7 @@ async fn test_generator() -> Result<()> {
   let network = from_def(&manifest.network().try_into()?)?;
   let providers = HandlerMap::new(vec![NamespaceHandler::new("test", Box::new(TestProvider::new()))]);
 
-  let inputs = TransportMap::default();
+  let inputs = PacketMap::default();
   let invocation = Invocation::new_test("generator", Entity::local("test"), inputs, None);
   let mut interpreter = Interpreter::new(Some(Seed::unsafe_new(1)), network, None, Some(providers))?;
   interpreter.start(OPTIONS, Some(Box::new(JsonWriter::default()))).await;
@@ -302,7 +304,7 @@ async fn test_generator_sibling() -> Result<()> {
   let network = from_def(&manifest.network().try_into()?)?;
   let providers = HandlerMap::new(vec![NamespaceHandler::new("test", Box::new(TestProvider::new()))]);
 
-  let inputs = TransportMap::from([("input", "my-input".to_owned())]);
+  let inputs = PacketMap::from([("input", "my-input".to_owned())]);
   let invocation = Invocation::new_test("generator-sibling", Entity::local("test"), inputs, None);
   let mut interpreter = Interpreter::new(Some(Seed::unsafe_new(1)), network, None, Some(providers))?;
   interpreter.start(OPTIONS, Some(Box::new(JsonWriter::default()))).await;
@@ -325,7 +327,7 @@ async fn test_generator_multi_sibling() -> Result<()> {
   let network = from_def(&manifest.network().try_into()?)?;
   let providers = HandlerMap::new(vec![NamespaceHandler::new("test", Box::new(TestProvider::new()))]);
 
-  let inputs = TransportMap::from([
+  let inputs = PacketMap::from([
     ("one", "one".to_owned()),
     ("two", "two".to_owned()),
     ("three", "three".to_owned()),
@@ -353,7 +355,7 @@ async fn test_stream_provider_ref() -> Result<()> {
   let network = from_def(&manifest.network().try_into()?)?;
   let providers = HandlerMap::new(vec![NamespaceHandler::new("test", Box::new(TestProvider::new()))]);
 
-  let inputs = TransportMap::from([("input", "my-input".to_owned())]);
+  let inputs = PacketMap::from([("input", "my-input".to_owned())]);
   let invocation = Invocation::new_test("stream_provider_ref", Entity::local("test"), inputs, None);
   let mut interpreter = Interpreter::new(Some(Seed::unsafe_new(1)), network, None, Some(providers))?;
   interpreter.start(OPTIONS, Some(Box::new(JsonWriter::default()))).await;
@@ -377,7 +379,7 @@ async fn test_stream_multi() -> Result<()> {
   let network = from_def(&manifest.network().try_into()?)?;
   let providers = HandlerMap::new(vec![NamespaceHandler::new("test", Box::new(TestProvider::new()))]);
 
-  let inputs = TransportMap::from([("input", "hello world".to_owned())]);
+  let inputs = PacketMap::from([("input", "hello world".to_owned())]);
   let invocation = Invocation::new_test("stream_multi", Entity::local("test"), inputs, None);
   let mut interpreter = Interpreter::new(Some(Seed::unsafe_new(1)), network, None, Some(providers))?;
   interpreter.start(OPTIONS, Some(Box::new(JsonWriter::default()))).await;

@@ -98,11 +98,11 @@ use data_encoding::HEXUPPER;
 use parity_wasm::elements::{CustomSection, Module, Serialize};
 use parity_wasm::{deserialize_buffer, serialize};
 use ring::digest::{Context, Digest, SHA256};
-use vino_types::ProviderSignature;
 pub use wascap;
 pub use wascap::jwt::Token;
 pub use wascap::prelude::{validate_token, Claims, Invocation, KeyPair};
 use wascap::wasm::days_from_now_to_jwt_time;
+use wasmflow_interface::ProviderSignature;
 
 /// The crate's error module.
 pub mod error;

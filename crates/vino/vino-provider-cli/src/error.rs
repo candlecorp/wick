@@ -4,7 +4,7 @@ use thiserror::Error;
 /// The error returned by the provider CLI.
 pub enum CliError {
   #[error(transparent)]
-  #[cfg(any(feature = "grpc", feature = "http", feature = "lattice"))]
+  #[cfg(any(feature = "grpc", feature = "lattice"))]
   /// An upstream error from [vino_rpc].
   VinoError(#[from] vino_rpc::Error),
 

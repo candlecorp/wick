@@ -1,11 +1,24 @@
 /**********************************************
 ***** This file is generated, do not edit *****
 ***********************************************/
+#![allow(
+  unused_qualifications,
+  unused_imports,
+  missing_copy_implementations,
+  unused_qualifications
+)]
 
-#[cfg(all(feature = "native", not(feature = "wasm")))]
-pub use vino_provider::native::prelude::*;
-#[cfg(all(feature = "wasm", not(feature = "native")))]
-pub use vino_provider::wasm::prelude::*;
+use wasmflow_sdk::sdk::stateful::BatchedJobExecutor;
+
+#[cfg(all(target_arch = "wasm32"))]
+type CallResult = wasmflow_sdk::sdk::BoxedFuture<Result<Vec<u8>, wasmflow_sdk::sdk::BoxedError>>;
+
+#[cfg(all(target_arch = "wasm32"))]
+#[allow(unsafe_code)]
+#[no_mangle]
+pub(crate) extern "C" fn wapc_init() {
+  wasmflow_sdk::sdk::wasm::runtime::register_dispatcher(Box::new(ComponentDispatcher::default()));
+}
 
 pub mod core {
 
@@ -28,159 +41,271 @@ pub mod string {
 
   pub mod concat; // string::concat
 }
-pub mod __multi__;
+pub mod __batch__;
 
-#[derive(Debug)]
-pub(crate) struct Dispatcher {}
-#[async_trait]
-impl Dispatch for Dispatcher {
+#[allow(unused)]
+static ALL_COMPONENTS: &[&str] = &[
+  "core::error",
+  "core::log",
+  "core::panic",
+  "math::add",
+  "math::subtract",
+  "rand::bytes",
+  "rand::string",
+  "rand::uuid",
+  "string::concat",
+];
+
+#[derive(Default, Copy, Clone)]
+#[allow(missing_debug_implementations)]
+pub struct ComponentDispatcher {}
+
+#[cfg(target_arch = "wasm32")]
+#[allow(clippy::too_many_lines)]
+impl wasmflow_sdk::sdk::stateful::WasmDispatcher for ComponentDispatcher {
   type Context = crate::Context;
-  async fn dispatch(
-    op: &str,
-    context: Self::Context,
-    data: TransportMap,
-  ) -> Result<TransportStream, Box<NativeComponentError>> {
-    let result = match op {
-      "core::error" => {
-        self::generated::core::error::Component::default()
-          .execute(context, data)
-          .await
+  fn dispatch(&self, op: &'static str, payload: &'static [u8], context: Self::Context) -> CallResult {
+    Box::pin(async move {
+      let (mut stream, id) = match op {
+        "core::error" => {
+          crate::components::generated::core::error::Component::default()
+            .execute(wasmflow_sdk::sdk::payload::from_buffer(payload)?, context)
+            .await
+        }
+        "core::log" => {
+          crate::components::generated::core::log::Component::default()
+            .execute(wasmflow_sdk::sdk::payload::from_buffer(payload)?, context)
+            .await
+        }
+        "core::panic" => {
+          crate::components::generated::core::panic::Component::default()
+            .execute(wasmflow_sdk::sdk::payload::from_buffer(payload)?, context)
+            .await
+        }
+        "math::add" => {
+          crate::components::generated::math::add::Component::default()
+            .execute(wasmflow_sdk::sdk::payload::from_buffer(payload)?, context)
+            .await
+        }
+        "math::subtract" => {
+          crate::components::generated::math::subtract::Component::default()
+            .execute(wasmflow_sdk::sdk::payload::from_buffer(payload)?, context)
+            .await
+        }
+        "rand::bytes" => {
+          crate::components::generated::rand::bytes::Component::default()
+            .execute(wasmflow_sdk::sdk::payload::from_buffer(payload)?, context)
+            .await
+        }
+        "rand::string" => {
+          crate::components::generated::rand::string::Component::default()
+            .execute(wasmflow_sdk::sdk::payload::from_buffer(payload)?, context)
+            .await
+        }
+        "rand::uuid" => {
+          crate::components::generated::rand::uuid::Component::default()
+            .execute(wasmflow_sdk::sdk::payload::from_buffer(payload)?, context)
+            .await
+        }
+        "string::concat" => {
+          crate::components::generated::string::concat::Component::default()
+            .execute(wasmflow_sdk::sdk::payload::from_buffer(payload)?, context)
+            .await
+        }
+        _ => Err(wasmflow_sdk::error::Error::ComponentNotFound(op.to_owned(), ALL_COMPONENTS.join(", ")).into()),
+      }?;
+      while let Some(next) = wasmflow_sdk::sdk::StreamExt::next(&mut stream).await {
+        wasmflow_sdk::sdk::wasm::port_send(&next.port, id, next.payload)?;
       }
-      "core::log" => {
-        self::generated::core::log::Component::default()
-          .execute(context, data)
-          .await
-      }
-      "core::panic" => {
-        self::generated::core::panic::Component::default()
-          .execute(context, data)
-          .await
-      }
-      "math::add" => {
-        self::generated::math::add::Component::default()
-          .execute(context, data)
-          .await
-      }
-      "math::subtract" => {
-        self::generated::math::subtract::Component::default()
-          .execute(context, data)
-          .await
-      }
-      "rand::bytes" => {
-        self::generated::rand::bytes::Component::default()
-          .execute(context, data)
-          .await
-      }
-      "rand::string" => {
-        self::generated::rand::string::Component::default()
-          .execute(context, data)
-          .await
-      }
-      "rand::uuid" => {
-        self::generated::rand::uuid::Component::default()
-          .execute(context, data)
-          .await
-      }
-      "string::concat" => {
-        self::generated::string::concat::Component::default()
-          .execute(context, data)
-          .await
-      }
-      "__multi__" => {
-        self::generated::__multi__::Component::default()
-          .execute(context, data)
-          .await
-      }
-      _ => Err(Box::new(NativeComponentError::new(format!(
-        "Component not found on this provider: {}",
-        op
-      )))),
-    }?;
-    Ok(result)
+
+      Ok(Vec::new())
+    })
   }
 }
 
-pub fn get_signature() -> ProviderSignature {
-  let mut components = std::collections::HashMap::new();
+#[cfg(not(target_arch = "wasm32"))]
+#[allow(clippy::too_many_lines)]
+impl wasmflow_sdk::sdk::stateful::NativeDispatcher for ComponentDispatcher {
+  type Context = crate::Context;
+  fn dispatch(
+    &self,
+    invocation: wasmflow_sdk::sdk::Invocation,
+    context: Self::Context,
+  ) -> wasmflow_sdk::sdk::BoxedFuture<Result<wasmflow_sdk::types::PacketStream, wasmflow_sdk::sdk::BoxedError>> {
+    Box::pin(async move {
+      let (stream, _id) = match invocation.target.name() {
+        "core::error" => {
+          crate::components::generated::core::error::Component::default()
+            .execute(wasmflow_sdk::sdk::payload::from_invocation(invocation)?, context)
+            .await
+        }
+        "core::log" => {
+          crate::components::generated::core::log::Component::default()
+            .execute(wasmflow_sdk::sdk::payload::from_invocation(invocation)?, context)
+            .await
+        }
+        "core::panic" => {
+          crate::components::generated::core::panic::Component::default()
+            .execute(wasmflow_sdk::sdk::payload::from_invocation(invocation)?, context)
+            .await
+        }
+        "math::add" => {
+          crate::components::generated::math::add::Component::default()
+            .execute(wasmflow_sdk::sdk::payload::from_invocation(invocation)?, context)
+            .await
+        }
+        "math::subtract" => {
+          crate::components::generated::math::subtract::Component::default()
+            .execute(wasmflow_sdk::sdk::payload::from_invocation(invocation)?, context)
+            .await
+        }
+        "rand::bytes" => {
+          crate::components::generated::rand::bytes::Component::default()
+            .execute(wasmflow_sdk::sdk::payload::from_invocation(invocation)?, context)
+            .await
+        }
+        "rand::string" => {
+          crate::components::generated::rand::string::Component::default()
+            .execute(wasmflow_sdk::sdk::payload::from_invocation(invocation)?, context)
+            .await
+        }
+        "rand::uuid" => {
+          crate::components::generated::rand::uuid::Component::default()
+            .execute(wasmflow_sdk::sdk::payload::from_invocation(invocation)?, context)
+            .await
+        }
+        "string::concat" => {
+          crate::components::generated::string::concat::Component::default()
+            .execute(wasmflow_sdk::sdk::payload::from_invocation(invocation)?, context)
+            .await
+        }
+        "__batch__" => {
+          crate::components::generated::__batch__::Component::default()
+            .execute(wasmflow_sdk::sdk::payload::from_invocation(invocation)?, context)
+            .await
+        }
+        op => Err(format!("Component not found on this provider: {}", op).into()),
+      }?;
+      Ok(stream)
+    })
+  }
+}
 
-  components.insert("core::error", generated::core::error::signature());
-  components.insert("core::log", generated::core::log::signature());
-  components.insert("core::panic", generated::core::panic::signature());
-  components.insert("math::add", generated::math::add::signature());
-  components.insert("math::subtract", generated::math::subtract::signature());
-  components.insert("rand::bytes", generated::rand::bytes::signature());
-  components.insert("rand::string", generated::rand::string::signature());
-  components.insert("rand::uuid", generated::rand::uuid::signature());
-  components.insert("string::concat", generated::string::concat::signature());
+#[cfg(not(target_arch = "wasm32"))]
+pub fn get_signature() -> wasmflow_sdk::types::ProviderSignature {
+  let mut components: std::collections::HashMap<String, wasmflow_sdk::types::ComponentSignature> =
+    std::collections::HashMap::new();
 
-  ProviderSignature {
+  components.insert("core::error".to_owned(), generated::core::error::signature());
+  components.insert("core::log".to_owned(), generated::core::log::signature());
+  components.insert("core::panic".to_owned(), generated::core::panic::signature());
+  components.insert("math::add".to_owned(), generated::math::add::signature());
+  components.insert("math::subtract".to_owned(), generated::math::subtract::signature());
+  components.insert("rand::bytes".to_owned(), generated::rand::bytes::signature());
+  components.insert("rand::string".to_owned(), generated::rand::string::signature());
+  components.insert("rand::uuid".to_owned(), generated::rand::uuid::signature());
+  components.insert("string::concat".to_owned(), generated::string::concat::signature());
+
+  wasmflow_sdk::types::ProviderSignature {
     name: Some("vino-stdlib".to_owned()),
+    format: 1,
+    version: "0.1.0".to_owned(),
     types: std::collections::HashMap::from([]).into(),
     components: components.into(),
+    wellknown: Vec::new(),
+    config: wasmflow_sdk::types::TypeMap::new(),
   }
 }
 
 pub mod types {
   // no additional types
 }
-
 pub mod generated {
 
   // start namespace core
   pub mod core {
 
-    // start namespace
-    // Component name : core::error
+    // start component core::error
     pub mod error {
-      use async_trait::async_trait;
-      #[cfg(all(feature = "native", not(feature = "wasm")))]
-      pub use vino_provider::native::prelude::*;
-      #[cfg(all(feature = "wasm", not(feature = "native")))]
-      pub use vino_provider::wasm::prelude::*;
+      // The user-facing implementation for State and job impl.
+      pub use wasmflow_sdk::console_log;
+      pub use wasmflow_sdk::packet::v1::Packet;
+      pub use wasmflow_sdk::sdk::{ProviderOutput, Writable};
 
-      #[cfg(feature = "provider")]
-      pub fn signature() -> ComponentSignature {
-        ComponentSignature {
+      // The generated definition of inputs, outputs, config, et al.
+      use super::error as definition;
+      // The generated integration code between the definition and the implementation.
+      use super::error as integration;
+      use crate::components::core::error as implementation;
+
+      #[derive(Default, Clone, Copy)]
+      #[allow(missing_debug_implementations)]
+      pub struct Component {}
+
+      impl wasmflow_sdk::sdk::Component for Component {
+        type Inputs = definition::Inputs;
+        type Outputs = definition::OutputPorts;
+        type Config = integration::Config;
+      }
+
+      impl wasmflow_sdk::sdk::stateful::BatchedJobExecutor for Component {
+        #[cfg(not(target_arch = "wasm32"))]
+        type Payload = wasmflow_sdk::packet::v1::PacketMap;
+        #[cfg(target_arch = "wasm32")]
+        type Payload = wasmflow_sdk::sdk::wasm::EncodedMap;
+        type State = implementation::State;
+        type Config = Config;
+        type Return = (wasmflow_sdk::types::PacketStream, u32);
+        type Context = crate::Context;
+
+        fn execute(
+          &self,
+          payload: wasmflow_sdk::sdk::IncomingPayload<Self::Payload, Self::Config, Self::State>,
+          context: Self::Context,
+        ) -> wasmflow_sdk::sdk::BoxedFuture<Result<Self::Return, wasmflow_sdk::sdk::BoxedError>> {
+          Box::pin(async move {
+            use wasmflow_sdk::sdk::stateful::BatchedComponent;
+            let id = payload.id();
+            let (outputs, mut stream) = definition::get_outputs(id);
+            let (payload, config, state) = payload.into_parts();
+            let inputs = definition::convert_inputs(payload)?;
+
+            let new_state = Component::job(inputs, outputs, context, state, config).await?;
+            stream.push(wasmflow_sdk::packet::PacketWrapper::state(
+              Packet::success(&new_state).into(),
+            ));
+            Ok((stream, id))
+          })
+        }
+      }
+
+      #[cfg(all(feature = "provider", not(target_arch = "wasm32")))]
+      pub fn signature() -> wasmflow_sdk::types::ComponentSignature {
+        wasmflow_sdk::types::ComponentSignature {
           name: "core::error".to_owned(),
           inputs: inputs_list().into(),
           outputs: outputs_list().into(),
         }
       }
 
-      #[derive(Default, Copy, Clone, Debug)]
-      pub struct Component {}
-
-      #[async_trait]
-      impl NativeComponent for Component {
-        type Context = crate::Context;
-        async fn execute(
-          &self,
-          context: Self::Context,
-          data: TransportMap,
-        ) -> Result<TransportStream, Box<NativeComponentError>> {
-          let inputs = populate_inputs(data).map_err(|e| NativeComponentError::new(e.to_string()))?;
-          let (outputs, stream) = get_outputs();
-          let result = tokio::spawn(crate::components::core::error::job(inputs, outputs, context))
-            .await
-            .map_err(|e| Box::new(NativeComponentError::new(format!("Component error: {}", e))))?;
-          match result {
-            Ok(_) => Ok(stream),
-            Err(e) => Err(Box::new(NativeComponentError::new(e.to_string()))),
-          }
-        }
-      }
-
-      #[cfg(all(feature = "native", not(feature = "wasm")))]
-      pub fn populate_inputs(mut payload: TransportMap) -> Result<Inputs, TransportError> {
-        Ok(Inputs {
-          input: payload.consume("input")?,
+      #[cfg(not(target_arch = "wasm32"))]
+      pub fn convert_inputs(
+        mut payload: wasmflow_sdk::packet::v1::PacketMap,
+      ) -> Result<definition::Inputs, Box<dyn std::error::Error + Send + Sync>> {
+        Ok(definition::Inputs {
+          input: payload
+            .remove("input")
+            .ok_or_else(|| wasmflow_sdk::error::Error::MissingInput("input".to_owned()))?
+            .deserialize()?,
         })
       }
 
-      #[cfg(all(feature = "wasm", not(feature = "native")))]
-      fn populate_inputs(payload: &IncomingPayload) -> Result<Inputs, WasmError> {
-        Ok(Inputs {
-          input: deserialize(payload.get("input")?)?,
+      #[cfg(target_arch = "wasm32")]
+      pub fn convert_inputs(
+        payload: wasmflow_sdk::sdk::wasm::EncodedMap,
+      ) -> Result<definition::Inputs, Box<dyn std::error::Error + Send + Sync>> {
+        Ok(definition::Inputs {
+          input: wasmflow_sdk::codec::messagepack::deserialize(payload.get("input")?)?,
         })
       }
 
@@ -190,64 +315,74 @@ pub mod generated {
         pub input: String,
       }
 
-      #[cfg(all(feature = "guest", any(feature = "native", feature = "wasm")))]
-      impl From<Inputs> for TransportMap {
-        fn from(inputs: Inputs) -> TransportMap {
-          let mut map = TransportMap::new();
-          map.insert("input", MessageTransport::success(&inputs.input));
-          map
+      impl From<Inputs> for wasmflow_sdk::packet::PacketMap {
+        fn from(inputs: Inputs) -> wasmflow_sdk::packet::PacketMap {
+          let mut map = std::collections::HashMap::default();
+          map.insert(
+            "input".to_owned(),
+            wasmflow_sdk::packet::v1::Packet::success(&inputs.input).into(),
+          );
+          wasmflow_sdk::packet::PacketMap::new(map)
         }
       }
 
       #[must_use]
-      #[cfg(all(feature = "provider", feature = "native"))]
-      pub fn inputs_list() -> std::collections::HashMap<String, TypeSignature> {
+      #[cfg(all(feature = "provider", not(target_arch = "wasm32")))]
+      pub fn inputs_list() -> std::collections::HashMap<String, wasmflow_sdk::types::TypeSignature> {
         let mut map = std::collections::HashMap::new();
-        map.insert("input".to_owned(), TypeSignature::String);
+        map.insert("input".to_owned(), wasmflow_sdk::types::TypeSignature::String);
         map
       }
+
       // A list of ports and their type signatures.
       #[must_use]
-      #[cfg(all(feature = "provider", any(feature = "native", feature = "wasm")))]
-      pub fn outputs_list() -> std::collections::HashMap<String, TypeSignature> {
+      #[cfg(all(feature = "provider"))]
+      pub fn outputs_list() -> std::collections::HashMap<String, wasmflow_sdk::types::TypeSignature> {
         let mut map = std::collections::HashMap::new();
-        map.insert("output".to_owned(), TypeSignature::String);
+        map.insert("output".to_owned(), wasmflow_sdk::types::TypeSignature::String);
         map
       }
 
       // A list of output ports and their associated stream sender implementations.
       #[derive(Debug)]
-      #[cfg_attr(all(feature = "provider", feature = "native"), derive(Default))]
       #[cfg(feature = "provider")]
       pub struct OutputPorts {
         pub output: OutputPortSender,
+      }
+
+      impl OutputPorts {
+        fn new(id: u32) -> Self {
+          Self {
+            output: OutputPortSender::new(id),
+          }
+        }
       }
 
       // Definition and implementation of each port's sender.
       #[derive(Debug)]
       #[cfg(feature = "provider")]
       pub struct OutputPortSender {
-        #[cfg(feature = "native")]
-        port: PortChannel,
-        #[cfg(feature = "wasm")]
+        port: wasmflow_sdk::sdk::PortChannel,
         id: u32,
       }
 
-      #[cfg(all(feature = "provider", feature = "native"))]
-      impl Default for OutputPortSender {
-        fn default() -> Self {
+      #[cfg(all(feature = "provider"))]
+      impl OutputPortSender {
+        fn new(id: u32) -> Self {
           Self {
-            port: PortChannel::new("output"),
+            id,
+            port: wasmflow_sdk::sdk::PortChannel::new("output"),
           }
         }
       }
 
-      // Native sender implementation
-      #[cfg(all(feature = "provider", feature = "native"))]
-      impl PortSender for OutputPortSender {
-        fn get_port(&self) -> Result<&PortChannel, ProviderError> {
+      #[cfg(all(feature = "provider"))]
+      impl wasmflow_sdk::sdk::Writable for OutputPortSender {
+        type PayloadType = String;
+
+        fn get_port(&self) -> Result<&wasmflow_sdk::sdk::PortChannel, wasmflow_sdk::sdk::BoxedError> {
           if self.port.is_closed() {
-            Err(ProviderError::SendChannelClosed)
+            Err(Box::new(wasmflow_sdk::error::Error::SendError("@key".to_owned())))
           } else {
             Ok(&self.port)
           }
@@ -256,132 +391,140 @@ pub mod generated {
         fn get_port_name(&self) -> &str {
           &self.port.name
         }
-      }
 
-      // WASM sender implementation
-      #[cfg(all(feature = "provider", feature = "wasm"))]
-      impl PortSender for OutputPortSender {
-        type PayloadType = String;
-        fn get_name(&self) -> String {
-          "output".to_string()
-        }
         fn get_id(&self) -> u32 {
           self.id
         }
       }
 
-      #[must_use]
-      #[cfg(all(feature = "provider", feature = "native"))]
-      pub fn get_outputs() -> (OutputPorts, TransportStream) {
-        let mut outputs = OutputPorts::default();
+      #[cfg(all(feature = "provider"))]
+      pub fn get_outputs(id: u32) -> (OutputPorts, wasmflow_sdk::types::PacketStream) {
+        let mut outputs = OutputPorts::new(id);
         let mut ports = vec![&mut outputs.output.port];
-        let stream = PortChannel::merge_all(&mut ports);
+        let stream = wasmflow_sdk::sdk::PortChannel::merge_all(&mut ports);
         (outputs, stream)
       }
 
-      #[cfg(all(feature = "provider", feature = "wasm"))]
-      fn get_outputs(id: u32) -> OutputPorts {
-        OutputPorts {
-          output: OutputPortSender { id },
-        }
-      }
-
-      #[cfg(all(feature = "guest"))]
       #[allow(missing_debug_implementations)]
       pub struct Outputs {
         packets: ProviderOutput,
       }
 
-      #[cfg(all(feature = "native", feature = "guest"))]
       impl Outputs {
-        pub async fn output(&mut self) -> Result<PortOutput<String>, ProviderError> {
-          let packets = self.packets.drain_port("output").await;
-          Ok(PortOutput::new("output".to_owned(), packets))
+        pub async fn output(&mut self) -> Result<wasmflow_sdk::sdk::PortOutput<String>, wasmflow_sdk::error::Error> {
+          let packets = self.packets.drain_port("output").await?;
+          Ok(wasmflow_sdk::sdk::PortOutput::new("output".to_owned(), packets))
         }
       }
 
-      #[cfg(all(feature = "wasm", feature = "guest"))]
-      impl Outputs {
-        pub fn output(&mut self) -> Result<PortOutput, ComponentError> {
-          let packets = self.packets.drain_port("output")?;
-          Ok(PortOutput::new("output".to_owned(), packets))
-        }
-      }
-
-      #[cfg(all(feature = "wasm", feature = "guest"))]
       impl From<ProviderOutput> for Outputs {
         fn from(packets: ProviderOutput) -> Self {
           Self { packets }
         }
       }
 
-      #[cfg(all(feature = "native", feature = "guest"))]
-      impl From<ProviderOutput> for Outputs {
-        fn from(output: ProviderOutput) -> Self {
-          Self { packets: output }
-        }
-      }
-
-      #[cfg(all(feature = "native", feature = "guest"))]
-      impl From<BoxedTransportStream> for Outputs {
-        fn from(stream: BoxedTransportStream) -> Self {
+      impl From<wasmflow_sdk::types::PacketStream> for Outputs {
+        fn from(stream: wasmflow_sdk::types::PacketStream) -> Self {
           Self {
             packets: ProviderOutput::new(stream),
           }
         }
       }
-    }
-    // Component name : core::log
-    pub mod log {
-      use async_trait::async_trait;
-      #[cfg(all(feature = "native", not(feature = "wasm")))]
-      pub use vino_provider::native::prelude::*;
-      #[cfg(all(feature = "wasm", not(feature = "native")))]
-      pub use vino_provider::wasm::prelude::*;
 
-      #[cfg(feature = "provider")]
-      pub fn signature() -> ComponentSignature {
-        ComponentSignature {
+      #[cfg(not(target_arch = "wasm32"))]
+      impl From<wasmflow_sdk::types::TransportStream> for Outputs {
+        fn from(stream: wasmflow_sdk::types::TransportStream) -> Self {
+          Self {
+            packets: ProviderOutput::new_from_ts(stream),
+          }
+        }
+      }
+
+      #[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, Clone)]
+      pub struct Config {}
+    }
+    // end component core::error
+    // start component core::log
+    pub mod log {
+      // The user-facing implementation for State and job impl.
+      pub use wasmflow_sdk::console_log;
+      pub use wasmflow_sdk::packet::v1::Packet;
+      pub use wasmflow_sdk::sdk::{ProviderOutput, Writable};
+
+      // The generated definition of inputs, outputs, config, et al.
+      use super::log as definition;
+      // The generated integration code between the definition and the implementation.
+      use super::log as integration;
+      use crate::components::core::log as implementation;
+
+      #[derive(Default, Clone, Copy)]
+      #[allow(missing_debug_implementations)]
+      pub struct Component {}
+
+      impl wasmflow_sdk::sdk::Component for Component {
+        type Inputs = definition::Inputs;
+        type Outputs = definition::OutputPorts;
+        type Config = integration::Config;
+      }
+
+      impl wasmflow_sdk::sdk::stateful::BatchedJobExecutor for Component {
+        #[cfg(not(target_arch = "wasm32"))]
+        type Payload = wasmflow_sdk::packet::v1::PacketMap;
+        #[cfg(target_arch = "wasm32")]
+        type Payload = wasmflow_sdk::sdk::wasm::EncodedMap;
+        type State = implementation::State;
+        type Config = Config;
+        type Return = (wasmflow_sdk::types::PacketStream, u32);
+        type Context = crate::Context;
+
+        fn execute(
+          &self,
+          payload: wasmflow_sdk::sdk::IncomingPayload<Self::Payload, Self::Config, Self::State>,
+          context: Self::Context,
+        ) -> wasmflow_sdk::sdk::BoxedFuture<Result<Self::Return, wasmflow_sdk::sdk::BoxedError>> {
+          Box::pin(async move {
+            use wasmflow_sdk::sdk::stateful::BatchedComponent;
+            let id = payload.id();
+            let (outputs, mut stream) = definition::get_outputs(id);
+            let (payload, config, state) = payload.into_parts();
+            let inputs = definition::convert_inputs(payload)?;
+
+            let new_state = Component::job(inputs, outputs, context, state, config).await?;
+            stream.push(wasmflow_sdk::packet::PacketWrapper::state(
+              Packet::success(&new_state).into(),
+            ));
+            Ok((stream, id))
+          })
+        }
+      }
+
+      #[cfg(all(feature = "provider", not(target_arch = "wasm32")))]
+      pub fn signature() -> wasmflow_sdk::types::ComponentSignature {
+        wasmflow_sdk::types::ComponentSignature {
           name: "core::log".to_owned(),
           inputs: inputs_list().into(),
           outputs: outputs_list().into(),
         }
       }
 
-      #[derive(Default, Copy, Clone, Debug)]
-      pub struct Component {}
-
-      #[async_trait]
-      impl NativeComponent for Component {
-        type Context = crate::Context;
-        async fn execute(
-          &self,
-          context: Self::Context,
-          data: TransportMap,
-        ) -> Result<TransportStream, Box<NativeComponentError>> {
-          let inputs = populate_inputs(data).map_err(|e| NativeComponentError::new(e.to_string()))?;
-          let (outputs, stream) = get_outputs();
-          let result = tokio::spawn(crate::components::core::log::job(inputs, outputs, context))
-            .await
-            .map_err(|e| Box::new(NativeComponentError::new(format!("Component error: {}", e))))?;
-          match result {
-            Ok(_) => Ok(stream),
-            Err(e) => Err(Box::new(NativeComponentError::new(e.to_string()))),
-          }
-        }
-      }
-
-      #[cfg(all(feature = "native", not(feature = "wasm")))]
-      pub fn populate_inputs(mut payload: TransportMap) -> Result<Inputs, TransportError> {
-        Ok(Inputs {
-          input: payload.consume("input")?,
+      #[cfg(not(target_arch = "wasm32"))]
+      pub fn convert_inputs(
+        mut payload: wasmflow_sdk::packet::v1::PacketMap,
+      ) -> Result<definition::Inputs, Box<dyn std::error::Error + Send + Sync>> {
+        Ok(definition::Inputs {
+          input: payload
+            .remove("input")
+            .ok_or_else(|| wasmflow_sdk::error::Error::MissingInput("input".to_owned()))?
+            .deserialize()?,
         })
       }
 
-      #[cfg(all(feature = "wasm", not(feature = "native")))]
-      fn populate_inputs(payload: &IncomingPayload) -> Result<Inputs, WasmError> {
-        Ok(Inputs {
-          input: deserialize(payload.get("input")?)?,
+      #[cfg(target_arch = "wasm32")]
+      pub fn convert_inputs(
+        payload: wasmflow_sdk::sdk::wasm::EncodedMap,
+      ) -> Result<definition::Inputs, Box<dyn std::error::Error + Send + Sync>> {
+        Ok(definition::Inputs {
+          input: wasmflow_sdk::codec::messagepack::deserialize(payload.get("input")?)?,
         })
       }
 
@@ -391,64 +534,74 @@ pub mod generated {
         pub input: String,
       }
 
-      #[cfg(all(feature = "guest", any(feature = "native", feature = "wasm")))]
-      impl From<Inputs> for TransportMap {
-        fn from(inputs: Inputs) -> TransportMap {
-          let mut map = TransportMap::new();
-          map.insert("input", MessageTransport::success(&inputs.input));
-          map
+      impl From<Inputs> for wasmflow_sdk::packet::PacketMap {
+        fn from(inputs: Inputs) -> wasmflow_sdk::packet::PacketMap {
+          let mut map = std::collections::HashMap::default();
+          map.insert(
+            "input".to_owned(),
+            wasmflow_sdk::packet::v1::Packet::success(&inputs.input).into(),
+          );
+          wasmflow_sdk::packet::PacketMap::new(map)
         }
       }
 
       #[must_use]
-      #[cfg(all(feature = "provider", feature = "native"))]
-      pub fn inputs_list() -> std::collections::HashMap<String, TypeSignature> {
+      #[cfg(all(feature = "provider", not(target_arch = "wasm32")))]
+      pub fn inputs_list() -> std::collections::HashMap<String, wasmflow_sdk::types::TypeSignature> {
         let mut map = std::collections::HashMap::new();
-        map.insert("input".to_owned(), TypeSignature::String);
+        map.insert("input".to_owned(), wasmflow_sdk::types::TypeSignature::String);
         map
       }
+
       // A list of ports and their type signatures.
       #[must_use]
-      #[cfg(all(feature = "provider", any(feature = "native", feature = "wasm")))]
-      pub fn outputs_list() -> std::collections::HashMap<String, TypeSignature> {
+      #[cfg(all(feature = "provider"))]
+      pub fn outputs_list() -> std::collections::HashMap<String, wasmflow_sdk::types::TypeSignature> {
         let mut map = std::collections::HashMap::new();
-        map.insert("output".to_owned(), TypeSignature::String);
+        map.insert("output".to_owned(), wasmflow_sdk::types::TypeSignature::String);
         map
       }
 
       // A list of output ports and their associated stream sender implementations.
       #[derive(Debug)]
-      #[cfg_attr(all(feature = "provider", feature = "native"), derive(Default))]
       #[cfg(feature = "provider")]
       pub struct OutputPorts {
         pub output: OutputPortSender,
+      }
+
+      impl OutputPorts {
+        fn new(id: u32) -> Self {
+          Self {
+            output: OutputPortSender::new(id),
+          }
+        }
       }
 
       // Definition and implementation of each port's sender.
       #[derive(Debug)]
       #[cfg(feature = "provider")]
       pub struct OutputPortSender {
-        #[cfg(feature = "native")]
-        port: PortChannel,
-        #[cfg(feature = "wasm")]
+        port: wasmflow_sdk::sdk::PortChannel,
         id: u32,
       }
 
-      #[cfg(all(feature = "provider", feature = "native"))]
-      impl Default for OutputPortSender {
-        fn default() -> Self {
+      #[cfg(all(feature = "provider"))]
+      impl OutputPortSender {
+        fn new(id: u32) -> Self {
           Self {
-            port: PortChannel::new("output"),
+            id,
+            port: wasmflow_sdk::sdk::PortChannel::new("output"),
           }
         }
       }
 
-      // Native sender implementation
-      #[cfg(all(feature = "provider", feature = "native"))]
-      impl PortSender for OutputPortSender {
-        fn get_port(&self) -> Result<&PortChannel, ProviderError> {
+      #[cfg(all(feature = "provider"))]
+      impl wasmflow_sdk::sdk::Writable for OutputPortSender {
+        type PayloadType = String;
+
+        fn get_port(&self) -> Result<&wasmflow_sdk::sdk::PortChannel, wasmflow_sdk::sdk::BoxedError> {
           if self.port.is_closed() {
-            Err(ProviderError::SendChannelClosed)
+            Err(Box::new(wasmflow_sdk::error::Error::SendError("@key".to_owned())))
           } else {
             Ok(&self.port)
           }
@@ -457,132 +610,140 @@ pub mod generated {
         fn get_port_name(&self) -> &str {
           &self.port.name
         }
-      }
 
-      // WASM sender implementation
-      #[cfg(all(feature = "provider", feature = "wasm"))]
-      impl PortSender for OutputPortSender {
-        type PayloadType = String;
-        fn get_name(&self) -> String {
-          "output".to_string()
-        }
         fn get_id(&self) -> u32 {
           self.id
         }
       }
 
-      #[must_use]
-      #[cfg(all(feature = "provider", feature = "native"))]
-      pub fn get_outputs() -> (OutputPorts, TransportStream) {
-        let mut outputs = OutputPorts::default();
+      #[cfg(all(feature = "provider"))]
+      pub fn get_outputs(id: u32) -> (OutputPorts, wasmflow_sdk::types::PacketStream) {
+        let mut outputs = OutputPorts::new(id);
         let mut ports = vec![&mut outputs.output.port];
-        let stream = PortChannel::merge_all(&mut ports);
+        let stream = wasmflow_sdk::sdk::PortChannel::merge_all(&mut ports);
         (outputs, stream)
       }
 
-      #[cfg(all(feature = "provider", feature = "wasm"))]
-      fn get_outputs(id: u32) -> OutputPorts {
-        OutputPorts {
-          output: OutputPortSender { id },
-        }
-      }
-
-      #[cfg(all(feature = "guest"))]
       #[allow(missing_debug_implementations)]
       pub struct Outputs {
         packets: ProviderOutput,
       }
 
-      #[cfg(all(feature = "native", feature = "guest"))]
       impl Outputs {
-        pub async fn output(&mut self) -> Result<PortOutput<String>, ProviderError> {
-          let packets = self.packets.drain_port("output").await;
-          Ok(PortOutput::new("output".to_owned(), packets))
+        pub async fn output(&mut self) -> Result<wasmflow_sdk::sdk::PortOutput<String>, wasmflow_sdk::error::Error> {
+          let packets = self.packets.drain_port("output").await?;
+          Ok(wasmflow_sdk::sdk::PortOutput::new("output".to_owned(), packets))
         }
       }
 
-      #[cfg(all(feature = "wasm", feature = "guest"))]
-      impl Outputs {
-        pub fn output(&mut self) -> Result<PortOutput, ComponentError> {
-          let packets = self.packets.drain_port("output")?;
-          Ok(PortOutput::new("output".to_owned(), packets))
-        }
-      }
-
-      #[cfg(all(feature = "wasm", feature = "guest"))]
       impl From<ProviderOutput> for Outputs {
         fn from(packets: ProviderOutput) -> Self {
           Self { packets }
         }
       }
 
-      #[cfg(all(feature = "native", feature = "guest"))]
-      impl From<ProviderOutput> for Outputs {
-        fn from(output: ProviderOutput) -> Self {
-          Self { packets: output }
-        }
-      }
-
-      #[cfg(all(feature = "native", feature = "guest"))]
-      impl From<BoxedTransportStream> for Outputs {
-        fn from(stream: BoxedTransportStream) -> Self {
+      impl From<wasmflow_sdk::types::PacketStream> for Outputs {
+        fn from(stream: wasmflow_sdk::types::PacketStream) -> Self {
           Self {
             packets: ProviderOutput::new(stream),
           }
         }
       }
-    }
-    // Component name : core::panic
-    pub mod panic {
-      use async_trait::async_trait;
-      #[cfg(all(feature = "native", not(feature = "wasm")))]
-      pub use vino_provider::native::prelude::*;
-      #[cfg(all(feature = "wasm", not(feature = "native")))]
-      pub use vino_provider::wasm::prelude::*;
 
-      #[cfg(feature = "provider")]
-      pub fn signature() -> ComponentSignature {
-        ComponentSignature {
+      #[cfg(not(target_arch = "wasm32"))]
+      impl From<wasmflow_sdk::types::TransportStream> for Outputs {
+        fn from(stream: wasmflow_sdk::types::TransportStream) -> Self {
+          Self {
+            packets: ProviderOutput::new_from_ts(stream),
+          }
+        }
+      }
+
+      #[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, Clone)]
+      pub struct Config {}
+    }
+    // end component core::log
+    // start component core::panic
+    pub mod panic {
+      // The user-facing implementation for State and job impl.
+      pub use wasmflow_sdk::console_log;
+      pub use wasmflow_sdk::packet::v1::Packet;
+      pub use wasmflow_sdk::sdk::{ProviderOutput, Writable};
+
+      // The generated definition of inputs, outputs, config, et al.
+      use super::panic as definition;
+      // The generated integration code between the definition and the implementation.
+      use super::panic as integration;
+      use crate::components::core::panic as implementation;
+
+      #[derive(Default, Clone, Copy)]
+      #[allow(missing_debug_implementations)]
+      pub struct Component {}
+
+      impl wasmflow_sdk::sdk::Component for Component {
+        type Inputs = definition::Inputs;
+        type Outputs = definition::OutputPorts;
+        type Config = integration::Config;
+      }
+
+      impl wasmflow_sdk::sdk::stateful::BatchedJobExecutor for Component {
+        #[cfg(not(target_arch = "wasm32"))]
+        type Payload = wasmflow_sdk::packet::v1::PacketMap;
+        #[cfg(target_arch = "wasm32")]
+        type Payload = wasmflow_sdk::sdk::wasm::EncodedMap;
+        type State = implementation::State;
+        type Config = Config;
+        type Return = (wasmflow_sdk::types::PacketStream, u32);
+        type Context = crate::Context;
+
+        fn execute(
+          &self,
+          payload: wasmflow_sdk::sdk::IncomingPayload<Self::Payload, Self::Config, Self::State>,
+          context: Self::Context,
+        ) -> wasmflow_sdk::sdk::BoxedFuture<Result<Self::Return, wasmflow_sdk::sdk::BoxedError>> {
+          Box::pin(async move {
+            use wasmflow_sdk::sdk::stateful::BatchedComponent;
+            let id = payload.id();
+            let (outputs, mut stream) = definition::get_outputs(id);
+            let (payload, config, state) = payload.into_parts();
+            let inputs = definition::convert_inputs(payload)?;
+
+            let new_state = Component::job(inputs, outputs, context, state, config).await?;
+            stream.push(wasmflow_sdk::packet::PacketWrapper::state(
+              Packet::success(&new_state).into(),
+            ));
+            Ok((stream, id))
+          })
+        }
+      }
+
+      #[cfg(all(feature = "provider", not(target_arch = "wasm32")))]
+      pub fn signature() -> wasmflow_sdk::types::ComponentSignature {
+        wasmflow_sdk::types::ComponentSignature {
           name: "core::panic".to_owned(),
           inputs: inputs_list().into(),
           outputs: outputs_list().into(),
         }
       }
 
-      #[derive(Default, Copy, Clone, Debug)]
-      pub struct Component {}
-
-      #[async_trait]
-      impl NativeComponent for Component {
-        type Context = crate::Context;
-        async fn execute(
-          &self,
-          context: Self::Context,
-          data: TransportMap,
-        ) -> Result<TransportStream, Box<NativeComponentError>> {
-          let inputs = populate_inputs(data).map_err(|e| NativeComponentError::new(e.to_string()))?;
-          let (outputs, stream) = get_outputs();
-          let result = tokio::spawn(crate::components::core::panic::job(inputs, outputs, context))
-            .await
-            .map_err(|e| Box::new(NativeComponentError::new(format!("Component error: {}", e))))?;
-          match result {
-            Ok(_) => Ok(stream),
-            Err(e) => Err(Box::new(NativeComponentError::new(e.to_string()))),
-          }
-        }
-      }
-
-      #[cfg(all(feature = "native", not(feature = "wasm")))]
-      pub fn populate_inputs(mut payload: TransportMap) -> Result<Inputs, TransportError> {
-        Ok(Inputs {
-          input: payload.consume("input")?,
+      #[cfg(not(target_arch = "wasm32"))]
+      pub fn convert_inputs(
+        mut payload: wasmflow_sdk::packet::v1::PacketMap,
+      ) -> Result<definition::Inputs, Box<dyn std::error::Error + Send + Sync>> {
+        Ok(definition::Inputs {
+          input: payload
+            .remove("input")
+            .ok_or_else(|| wasmflow_sdk::error::Error::MissingInput("input".to_owned()))?
+            .deserialize()?,
         })
       }
 
-      #[cfg(all(feature = "wasm", not(feature = "native")))]
-      fn populate_inputs(payload: &IncomingPayload) -> Result<Inputs, WasmError> {
-        Ok(Inputs {
-          input: deserialize(payload.get("input")?)?,
+      #[cfg(target_arch = "wasm32")]
+      pub fn convert_inputs(
+        payload: wasmflow_sdk::sdk::wasm::EncodedMap,
+      ) -> Result<definition::Inputs, Box<dyn std::error::Error + Send + Sync>> {
+        Ok(definition::Inputs {
+          input: wasmflow_sdk::codec::messagepack::deserialize(payload.get("input")?)?,
         })
       }
 
@@ -592,64 +753,74 @@ pub mod generated {
         pub input: String,
       }
 
-      #[cfg(all(feature = "guest", any(feature = "native", feature = "wasm")))]
-      impl From<Inputs> for TransportMap {
-        fn from(inputs: Inputs) -> TransportMap {
-          let mut map = TransportMap::new();
-          map.insert("input", MessageTransport::success(&inputs.input));
-          map
+      impl From<Inputs> for wasmflow_sdk::packet::PacketMap {
+        fn from(inputs: Inputs) -> wasmflow_sdk::packet::PacketMap {
+          let mut map = std::collections::HashMap::default();
+          map.insert(
+            "input".to_owned(),
+            wasmflow_sdk::packet::v1::Packet::success(&inputs.input).into(),
+          );
+          wasmflow_sdk::packet::PacketMap::new(map)
         }
       }
 
       #[must_use]
-      #[cfg(all(feature = "provider", feature = "native"))]
-      pub fn inputs_list() -> std::collections::HashMap<String, TypeSignature> {
+      #[cfg(all(feature = "provider", not(target_arch = "wasm32")))]
+      pub fn inputs_list() -> std::collections::HashMap<String, wasmflow_sdk::types::TypeSignature> {
         let mut map = std::collections::HashMap::new();
-        map.insert("input".to_owned(), TypeSignature::String);
+        map.insert("input".to_owned(), wasmflow_sdk::types::TypeSignature::String);
         map
       }
+
       // A list of ports and their type signatures.
       #[must_use]
-      #[cfg(all(feature = "provider", any(feature = "native", feature = "wasm")))]
-      pub fn outputs_list() -> std::collections::HashMap<String, TypeSignature> {
+      #[cfg(all(feature = "provider"))]
+      pub fn outputs_list() -> std::collections::HashMap<String, wasmflow_sdk::types::TypeSignature> {
         let mut map = std::collections::HashMap::new();
-        map.insert("output".to_owned(), TypeSignature::String);
+        map.insert("output".to_owned(), wasmflow_sdk::types::TypeSignature::String);
         map
       }
 
       // A list of output ports and their associated stream sender implementations.
       #[derive(Debug)]
-      #[cfg_attr(all(feature = "provider", feature = "native"), derive(Default))]
       #[cfg(feature = "provider")]
       pub struct OutputPorts {
         pub output: OutputPortSender,
+      }
+
+      impl OutputPorts {
+        fn new(id: u32) -> Self {
+          Self {
+            output: OutputPortSender::new(id),
+          }
+        }
       }
 
       // Definition and implementation of each port's sender.
       #[derive(Debug)]
       #[cfg(feature = "provider")]
       pub struct OutputPortSender {
-        #[cfg(feature = "native")]
-        port: PortChannel,
-        #[cfg(feature = "wasm")]
+        port: wasmflow_sdk::sdk::PortChannel,
         id: u32,
       }
 
-      #[cfg(all(feature = "provider", feature = "native"))]
-      impl Default for OutputPortSender {
-        fn default() -> Self {
+      #[cfg(all(feature = "provider"))]
+      impl OutputPortSender {
+        fn new(id: u32) -> Self {
           Self {
-            port: PortChannel::new("output"),
+            id,
+            port: wasmflow_sdk::sdk::PortChannel::new("output"),
           }
         }
       }
 
-      // Native sender implementation
-      #[cfg(all(feature = "provider", feature = "native"))]
-      impl PortSender for OutputPortSender {
-        fn get_port(&self) -> Result<&PortChannel, ProviderError> {
+      #[cfg(all(feature = "provider"))]
+      impl wasmflow_sdk::sdk::Writable for OutputPortSender {
+        type PayloadType = String;
+
+        fn get_port(&self) -> Result<&wasmflow_sdk::sdk::PortChannel, wasmflow_sdk::sdk::BoxedError> {
           if self.port.is_closed() {
-            Err(ProviderError::SendChannelClosed)
+            Err(Box::new(wasmflow_sdk::error::Error::SendError("@key".to_owned())))
           } else {
             Ok(&self.port)
           }
@@ -658,139 +829,151 @@ pub mod generated {
         fn get_port_name(&self) -> &str {
           &self.port.name
         }
-      }
 
-      // WASM sender implementation
-      #[cfg(all(feature = "provider", feature = "wasm"))]
-      impl PortSender for OutputPortSender {
-        type PayloadType = String;
-        fn get_name(&self) -> String {
-          "output".to_string()
-        }
         fn get_id(&self) -> u32 {
           self.id
         }
       }
 
-      #[must_use]
-      #[cfg(all(feature = "provider", feature = "native"))]
-      pub fn get_outputs() -> (OutputPorts, TransportStream) {
-        let mut outputs = OutputPorts::default();
+      #[cfg(all(feature = "provider"))]
+      pub fn get_outputs(id: u32) -> (OutputPorts, wasmflow_sdk::types::PacketStream) {
+        let mut outputs = OutputPorts::new(id);
         let mut ports = vec![&mut outputs.output.port];
-        let stream = PortChannel::merge_all(&mut ports);
+        let stream = wasmflow_sdk::sdk::PortChannel::merge_all(&mut ports);
         (outputs, stream)
       }
 
-      #[cfg(all(feature = "provider", feature = "wasm"))]
-      fn get_outputs(id: u32) -> OutputPorts {
-        OutputPorts {
-          output: OutputPortSender { id },
-        }
-      }
-
-      #[cfg(all(feature = "guest"))]
       #[allow(missing_debug_implementations)]
       pub struct Outputs {
         packets: ProviderOutput,
       }
 
-      #[cfg(all(feature = "native", feature = "guest"))]
       impl Outputs {
-        pub async fn output(&mut self) -> Result<PortOutput<String>, ProviderError> {
-          let packets = self.packets.drain_port("output").await;
-          Ok(PortOutput::new("output".to_owned(), packets))
+        pub async fn output(&mut self) -> Result<wasmflow_sdk::sdk::PortOutput<String>, wasmflow_sdk::error::Error> {
+          let packets = self.packets.drain_port("output").await?;
+          Ok(wasmflow_sdk::sdk::PortOutput::new("output".to_owned(), packets))
         }
       }
 
-      #[cfg(all(feature = "wasm", feature = "guest"))]
-      impl Outputs {
-        pub fn output(&mut self) -> Result<PortOutput, ComponentError> {
-          let packets = self.packets.drain_port("output")?;
-          Ok(PortOutput::new("output".to_owned(), packets))
-        }
-      }
-
-      #[cfg(all(feature = "wasm", feature = "guest"))]
       impl From<ProviderOutput> for Outputs {
         fn from(packets: ProviderOutput) -> Self {
           Self { packets }
         }
       }
 
-      #[cfg(all(feature = "native", feature = "guest"))]
-      impl From<ProviderOutput> for Outputs {
-        fn from(output: ProviderOutput) -> Self {
-          Self { packets: output }
-        }
-      }
-
-      #[cfg(all(feature = "native", feature = "guest"))]
-      impl From<BoxedTransportStream> for Outputs {
-        fn from(stream: BoxedTransportStream) -> Self {
+      impl From<wasmflow_sdk::types::PacketStream> for Outputs {
+        fn from(stream: wasmflow_sdk::types::PacketStream) -> Self {
           Self {
             packets: ProviderOutput::new(stream),
           }
         }
       }
+
+      #[cfg(not(target_arch = "wasm32"))]
+      impl From<wasmflow_sdk::types::TransportStream> for Outputs {
+        fn from(stream: wasmflow_sdk::types::TransportStream) -> Self {
+          Self {
+            packets: ProviderOutput::new_from_ts(stream),
+          }
+        }
+      }
+
+      #[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, Clone)]
+      pub struct Config {}
     }
-  } // end namespace core
-    // start namespace math
+    // end component core::panic
+  }
+  // end namespace core
+
+  // start namespace math
   pub mod math {
 
-    // start namespace
-    // Component name : math::add
+    // start component math::add
     pub mod add {
-      use async_trait::async_trait;
-      #[cfg(all(feature = "native", not(feature = "wasm")))]
-      pub use vino_provider::native::prelude::*;
-      #[cfg(all(feature = "wasm", not(feature = "native")))]
-      pub use vino_provider::wasm::prelude::*;
+      // The user-facing implementation for State and job impl.
+      pub use wasmflow_sdk::console_log;
+      pub use wasmflow_sdk::packet::v1::Packet;
+      pub use wasmflow_sdk::sdk::{ProviderOutput, Writable};
 
-      #[cfg(feature = "provider")]
-      pub fn signature() -> ComponentSignature {
-        ComponentSignature {
+      // The generated definition of inputs, outputs, config, et al.
+      use super::add as definition;
+      // The generated integration code between the definition and the implementation.
+      use super::add as integration;
+      use crate::components::math::add as implementation;
+
+      #[derive(Default, Clone, Copy)]
+      #[allow(missing_debug_implementations)]
+      pub struct Component {}
+
+      impl wasmflow_sdk::sdk::Component for Component {
+        type Inputs = definition::Inputs;
+        type Outputs = definition::OutputPorts;
+        type Config = integration::Config;
+      }
+
+      impl wasmflow_sdk::sdk::stateful::BatchedJobExecutor for Component {
+        #[cfg(not(target_arch = "wasm32"))]
+        type Payload = wasmflow_sdk::packet::v1::PacketMap;
+        #[cfg(target_arch = "wasm32")]
+        type Payload = wasmflow_sdk::sdk::wasm::EncodedMap;
+        type State = implementation::State;
+        type Config = Config;
+        type Return = (wasmflow_sdk::types::PacketStream, u32);
+        type Context = crate::Context;
+
+        fn execute(
+          &self,
+          payload: wasmflow_sdk::sdk::IncomingPayload<Self::Payload, Self::Config, Self::State>,
+          context: Self::Context,
+        ) -> wasmflow_sdk::sdk::BoxedFuture<Result<Self::Return, wasmflow_sdk::sdk::BoxedError>> {
+          Box::pin(async move {
+            use wasmflow_sdk::sdk::stateful::BatchedComponent;
+            let id = payload.id();
+            let (outputs, mut stream) = definition::get_outputs(id);
+            let (payload, config, state) = payload.into_parts();
+            let inputs = definition::convert_inputs(payload)?;
+
+            let new_state = Component::job(inputs, outputs, context, state, config).await?;
+            stream.push(wasmflow_sdk::packet::PacketWrapper::state(
+              Packet::success(&new_state).into(),
+            ));
+            Ok((stream, id))
+          })
+        }
+      }
+
+      #[cfg(all(feature = "provider", not(target_arch = "wasm32")))]
+      pub fn signature() -> wasmflow_sdk::types::ComponentSignature {
+        wasmflow_sdk::types::ComponentSignature {
           name: "math::add".to_owned(),
           inputs: inputs_list().into(),
           outputs: outputs_list().into(),
         }
       }
 
-      #[derive(Default, Copy, Clone, Debug)]
-      pub struct Component {}
-
-      #[async_trait]
-      impl NativeComponent for Component {
-        type Context = crate::Context;
-        async fn execute(
-          &self,
-          context: Self::Context,
-          data: TransportMap,
-        ) -> Result<TransportStream, Box<NativeComponentError>> {
-          let inputs = populate_inputs(data).map_err(|e| NativeComponentError::new(e.to_string()))?;
-          let (outputs, stream) = get_outputs();
-          let result = tokio::spawn(crate::components::math::add::job(inputs, outputs, context))
-            .await
-            .map_err(|e| Box::new(NativeComponentError::new(format!("Component error: {}", e))))?;
-          match result {
-            Ok(_) => Ok(stream),
-            Err(e) => Err(Box::new(NativeComponentError::new(e.to_string()))),
-          }
-        }
-      }
-
-      #[cfg(all(feature = "native", not(feature = "wasm")))]
-      pub fn populate_inputs(mut payload: TransportMap) -> Result<Inputs, TransportError> {
-        Ok(Inputs {
-          left: payload.consume("left")?,
-          right: payload.consume("right")?,
+      #[cfg(not(target_arch = "wasm32"))]
+      pub fn convert_inputs(
+        mut payload: wasmflow_sdk::packet::v1::PacketMap,
+      ) -> Result<definition::Inputs, Box<dyn std::error::Error + Send + Sync>> {
+        Ok(definition::Inputs {
+          left: payload
+            .remove("left")
+            .ok_or_else(|| wasmflow_sdk::error::Error::MissingInput("left".to_owned()))?
+            .deserialize()?,
+          right: payload
+            .remove("right")
+            .ok_or_else(|| wasmflow_sdk::error::Error::MissingInput("right".to_owned()))?
+            .deserialize()?,
         })
       }
 
-      #[cfg(all(feature = "wasm", not(feature = "native")))]
-      fn populate_inputs(payload: &IncomingPayload) -> Result<Inputs, WasmError> {
-        Ok(Inputs {
-          left: deserialize(payload.get("left")?)?,
-          right: deserialize(payload.get("right")?)?,
+      #[cfg(target_arch = "wasm32")]
+      pub fn convert_inputs(
+        payload: wasmflow_sdk::sdk::wasm::EncodedMap,
+      ) -> Result<definition::Inputs, Box<dyn std::error::Error + Send + Sync>> {
+        Ok(definition::Inputs {
+          left: wasmflow_sdk::codec::messagepack::deserialize(payload.get("left")?)?,
+          right: wasmflow_sdk::codec::messagepack::deserialize(payload.get("right")?)?,
         })
       }
 
@@ -802,66 +985,79 @@ pub mod generated {
         pub right: u64,
       }
 
-      #[cfg(all(feature = "guest", any(feature = "native", feature = "wasm")))]
-      impl From<Inputs> for TransportMap {
-        fn from(inputs: Inputs) -> TransportMap {
-          let mut map = TransportMap::new();
-          map.insert("left", MessageTransport::success(&inputs.left));
-          map.insert("right", MessageTransport::success(&inputs.right));
-          map
+      impl From<Inputs> for wasmflow_sdk::packet::PacketMap {
+        fn from(inputs: Inputs) -> wasmflow_sdk::packet::PacketMap {
+          let mut map = std::collections::HashMap::default();
+          map.insert(
+            "left".to_owned(),
+            wasmflow_sdk::packet::v1::Packet::success(&inputs.left).into(),
+          );
+          map.insert(
+            "right".to_owned(),
+            wasmflow_sdk::packet::v1::Packet::success(&inputs.right).into(),
+          );
+          wasmflow_sdk::packet::PacketMap::new(map)
         }
       }
 
       #[must_use]
-      #[cfg(all(feature = "provider", feature = "native"))]
-      pub fn inputs_list() -> std::collections::HashMap<String, TypeSignature> {
+      #[cfg(all(feature = "provider", not(target_arch = "wasm32")))]
+      pub fn inputs_list() -> std::collections::HashMap<String, wasmflow_sdk::types::TypeSignature> {
         let mut map = std::collections::HashMap::new();
-        map.insert("left".to_owned(), TypeSignature::U64);
-        map.insert("right".to_owned(), TypeSignature::U64);
+        map.insert("left".to_owned(), wasmflow_sdk::types::TypeSignature::U64);
+        map.insert("right".to_owned(), wasmflow_sdk::types::TypeSignature::U64);
         map
       }
+
       // A list of ports and their type signatures.
       #[must_use]
-      #[cfg(all(feature = "provider", any(feature = "native", feature = "wasm")))]
-      pub fn outputs_list() -> std::collections::HashMap<String, TypeSignature> {
+      #[cfg(all(feature = "provider"))]
+      pub fn outputs_list() -> std::collections::HashMap<String, wasmflow_sdk::types::TypeSignature> {
         let mut map = std::collections::HashMap::new();
-        map.insert("output".to_owned(), TypeSignature::U64);
+        map.insert("output".to_owned(), wasmflow_sdk::types::TypeSignature::U64);
         map
       }
 
       // A list of output ports and their associated stream sender implementations.
       #[derive(Debug)]
-      #[cfg_attr(all(feature = "provider", feature = "native"), derive(Default))]
       #[cfg(feature = "provider")]
       pub struct OutputPorts {
         pub output: OutputPortSender,
+      }
+
+      impl OutputPorts {
+        fn new(id: u32) -> Self {
+          Self {
+            output: OutputPortSender::new(id),
+          }
+        }
       }
 
       // Definition and implementation of each port's sender.
       #[derive(Debug)]
       #[cfg(feature = "provider")]
       pub struct OutputPortSender {
-        #[cfg(feature = "native")]
-        port: PortChannel,
-        #[cfg(feature = "wasm")]
+        port: wasmflow_sdk::sdk::PortChannel,
         id: u32,
       }
 
-      #[cfg(all(feature = "provider", feature = "native"))]
-      impl Default for OutputPortSender {
-        fn default() -> Self {
+      #[cfg(all(feature = "provider"))]
+      impl OutputPortSender {
+        fn new(id: u32) -> Self {
           Self {
-            port: PortChannel::new("output"),
+            id,
+            port: wasmflow_sdk::sdk::PortChannel::new("output"),
           }
         }
       }
 
-      // Native sender implementation
-      #[cfg(all(feature = "provider", feature = "native"))]
-      impl PortSender for OutputPortSender {
-        fn get_port(&self) -> Result<&PortChannel, ProviderError> {
+      #[cfg(all(feature = "provider"))]
+      impl wasmflow_sdk::sdk::Writable for OutputPortSender {
+        type PayloadType = u64;
+
+        fn get_port(&self) -> Result<&wasmflow_sdk::sdk::PortChannel, wasmflow_sdk::sdk::BoxedError> {
           if self.port.is_closed() {
-            Err(ProviderError::SendChannelClosed)
+            Err(Box::new(wasmflow_sdk::error::Error::SendError("@key".to_owned())))
           } else {
             Ok(&self.port)
           }
@@ -870,134 +1066,145 @@ pub mod generated {
         fn get_port_name(&self) -> &str {
           &self.port.name
         }
-      }
 
-      // WASM sender implementation
-      #[cfg(all(feature = "provider", feature = "wasm"))]
-      impl PortSender for OutputPortSender {
-        type PayloadType = u64;
-        fn get_name(&self) -> String {
-          "output".to_string()
-        }
         fn get_id(&self) -> u32 {
           self.id
         }
       }
 
-      #[must_use]
-      #[cfg(all(feature = "provider", feature = "native"))]
-      pub fn get_outputs() -> (OutputPorts, TransportStream) {
-        let mut outputs = OutputPorts::default();
+      #[cfg(all(feature = "provider"))]
+      pub fn get_outputs(id: u32) -> (OutputPorts, wasmflow_sdk::types::PacketStream) {
+        let mut outputs = OutputPorts::new(id);
         let mut ports = vec![&mut outputs.output.port];
-        let stream = PortChannel::merge_all(&mut ports);
+        let stream = wasmflow_sdk::sdk::PortChannel::merge_all(&mut ports);
         (outputs, stream)
       }
 
-      #[cfg(all(feature = "provider", feature = "wasm"))]
-      fn get_outputs(id: u32) -> OutputPorts {
-        OutputPorts {
-          output: OutputPortSender { id },
-        }
-      }
-
-      #[cfg(all(feature = "guest"))]
       #[allow(missing_debug_implementations)]
       pub struct Outputs {
         packets: ProviderOutput,
       }
 
-      #[cfg(all(feature = "native", feature = "guest"))]
       impl Outputs {
-        pub async fn output(&mut self) -> Result<PortOutput<u64>, ProviderError> {
-          let packets = self.packets.drain_port("output").await;
-          Ok(PortOutput::new("output".to_owned(), packets))
+        pub async fn output(&mut self) -> Result<wasmflow_sdk::sdk::PortOutput<u64>, wasmflow_sdk::error::Error> {
+          let packets = self.packets.drain_port("output").await?;
+          Ok(wasmflow_sdk::sdk::PortOutput::new("output".to_owned(), packets))
         }
       }
 
-      #[cfg(all(feature = "wasm", feature = "guest"))]
-      impl Outputs {
-        pub fn output(&mut self) -> Result<PortOutput, ComponentError> {
-          let packets = self.packets.drain_port("output")?;
-          Ok(PortOutput::new("output".to_owned(), packets))
-        }
-      }
-
-      #[cfg(all(feature = "wasm", feature = "guest"))]
       impl From<ProviderOutput> for Outputs {
         fn from(packets: ProviderOutput) -> Self {
           Self { packets }
         }
       }
 
-      #[cfg(all(feature = "native", feature = "guest"))]
-      impl From<ProviderOutput> for Outputs {
-        fn from(output: ProviderOutput) -> Self {
-          Self { packets: output }
-        }
-      }
-
-      #[cfg(all(feature = "native", feature = "guest"))]
-      impl From<BoxedTransportStream> for Outputs {
-        fn from(stream: BoxedTransportStream) -> Self {
+      impl From<wasmflow_sdk::types::PacketStream> for Outputs {
+        fn from(stream: wasmflow_sdk::types::PacketStream) -> Self {
           Self {
             packets: ProviderOutput::new(stream),
           }
         }
       }
-    }
-    // Component name : math::subtract
-    pub mod subtract {
-      use async_trait::async_trait;
-      #[cfg(all(feature = "native", not(feature = "wasm")))]
-      pub use vino_provider::native::prelude::*;
-      #[cfg(all(feature = "wasm", not(feature = "native")))]
-      pub use vino_provider::wasm::prelude::*;
 
-      #[cfg(feature = "provider")]
-      pub fn signature() -> ComponentSignature {
-        ComponentSignature {
+      #[cfg(not(target_arch = "wasm32"))]
+      impl From<wasmflow_sdk::types::TransportStream> for Outputs {
+        fn from(stream: wasmflow_sdk::types::TransportStream) -> Self {
+          Self {
+            packets: ProviderOutput::new_from_ts(stream),
+          }
+        }
+      }
+
+      #[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, Clone)]
+      pub struct Config {}
+    }
+    // end component math::add
+    // start component math::subtract
+    pub mod subtract {
+      // The user-facing implementation for State and job impl.
+      pub use wasmflow_sdk::console_log;
+      pub use wasmflow_sdk::packet::v1::Packet;
+      pub use wasmflow_sdk::sdk::{ProviderOutput, Writable};
+
+      // The generated definition of inputs, outputs, config, et al.
+      use super::subtract as definition;
+      // The generated integration code between the definition and the implementation.
+      use super::subtract as integration;
+      use crate::components::math::subtract as implementation;
+
+      #[derive(Default, Clone, Copy)]
+      #[allow(missing_debug_implementations)]
+      pub struct Component {}
+
+      impl wasmflow_sdk::sdk::Component for Component {
+        type Inputs = definition::Inputs;
+        type Outputs = definition::OutputPorts;
+        type Config = integration::Config;
+      }
+
+      impl wasmflow_sdk::sdk::stateful::BatchedJobExecutor for Component {
+        #[cfg(not(target_arch = "wasm32"))]
+        type Payload = wasmflow_sdk::packet::v1::PacketMap;
+        #[cfg(target_arch = "wasm32")]
+        type Payload = wasmflow_sdk::sdk::wasm::EncodedMap;
+        type State = implementation::State;
+        type Config = Config;
+        type Return = (wasmflow_sdk::types::PacketStream, u32);
+        type Context = crate::Context;
+
+        fn execute(
+          &self,
+          payload: wasmflow_sdk::sdk::IncomingPayload<Self::Payload, Self::Config, Self::State>,
+          context: Self::Context,
+        ) -> wasmflow_sdk::sdk::BoxedFuture<Result<Self::Return, wasmflow_sdk::sdk::BoxedError>> {
+          Box::pin(async move {
+            use wasmflow_sdk::sdk::stateful::BatchedComponent;
+            let id = payload.id();
+            let (outputs, mut stream) = definition::get_outputs(id);
+            let (payload, config, state) = payload.into_parts();
+            let inputs = definition::convert_inputs(payload)?;
+
+            let new_state = Component::job(inputs, outputs, context, state, config).await?;
+            stream.push(wasmflow_sdk::packet::PacketWrapper::state(
+              Packet::success(&new_state).into(),
+            ));
+            Ok((stream, id))
+          })
+        }
+      }
+
+      #[cfg(all(feature = "provider", not(target_arch = "wasm32")))]
+      pub fn signature() -> wasmflow_sdk::types::ComponentSignature {
+        wasmflow_sdk::types::ComponentSignature {
           name: "math::subtract".to_owned(),
           inputs: inputs_list().into(),
           outputs: outputs_list().into(),
         }
       }
 
-      #[derive(Default, Copy, Clone, Debug)]
-      pub struct Component {}
-
-      #[async_trait]
-      impl NativeComponent for Component {
-        type Context = crate::Context;
-        async fn execute(
-          &self,
-          context: Self::Context,
-          data: TransportMap,
-        ) -> Result<TransportStream, Box<NativeComponentError>> {
-          let inputs = populate_inputs(data).map_err(|e| NativeComponentError::new(e.to_string()))?;
-          let (outputs, stream) = get_outputs();
-          let result = tokio::spawn(crate::components::math::subtract::job(inputs, outputs, context))
-            .await
-            .map_err(|e| Box::new(NativeComponentError::new(format!("Component error: {}", e))))?;
-          match result {
-            Ok(_) => Ok(stream),
-            Err(e) => Err(Box::new(NativeComponentError::new(e.to_string()))),
-          }
-        }
-      }
-
-      #[cfg(all(feature = "native", not(feature = "wasm")))]
-      pub fn populate_inputs(mut payload: TransportMap) -> Result<Inputs, TransportError> {
-        Ok(Inputs {
-          left: payload.consume("left")?,
-          right: payload.consume("right")?,
+      #[cfg(not(target_arch = "wasm32"))]
+      pub fn convert_inputs(
+        mut payload: wasmflow_sdk::packet::v1::PacketMap,
+      ) -> Result<definition::Inputs, Box<dyn std::error::Error + Send + Sync>> {
+        Ok(definition::Inputs {
+          left: payload
+            .remove("left")
+            .ok_or_else(|| wasmflow_sdk::error::Error::MissingInput("left".to_owned()))?
+            .deserialize()?,
+          right: payload
+            .remove("right")
+            .ok_or_else(|| wasmflow_sdk::error::Error::MissingInput("right".to_owned()))?
+            .deserialize()?,
         })
       }
 
-      #[cfg(all(feature = "wasm", not(feature = "native")))]
-      fn populate_inputs(payload: &IncomingPayload) -> Result<Inputs, WasmError> {
-        Ok(Inputs {
-          left: deserialize(payload.get("left")?)?,
-          right: deserialize(payload.get("right")?)?,
+      #[cfg(target_arch = "wasm32")]
+      pub fn convert_inputs(
+        payload: wasmflow_sdk::sdk::wasm::EncodedMap,
+      ) -> Result<definition::Inputs, Box<dyn std::error::Error + Send + Sync>> {
+        Ok(definition::Inputs {
+          left: wasmflow_sdk::codec::messagepack::deserialize(payload.get("left")?)?,
+          right: wasmflow_sdk::codec::messagepack::deserialize(payload.get("right")?)?,
         })
       }
 
@@ -1009,66 +1216,79 @@ pub mod generated {
         pub right: u64,
       }
 
-      #[cfg(all(feature = "guest", any(feature = "native", feature = "wasm")))]
-      impl From<Inputs> for TransportMap {
-        fn from(inputs: Inputs) -> TransportMap {
-          let mut map = TransportMap::new();
-          map.insert("left", MessageTransport::success(&inputs.left));
-          map.insert("right", MessageTransport::success(&inputs.right));
-          map
+      impl From<Inputs> for wasmflow_sdk::packet::PacketMap {
+        fn from(inputs: Inputs) -> wasmflow_sdk::packet::PacketMap {
+          let mut map = std::collections::HashMap::default();
+          map.insert(
+            "left".to_owned(),
+            wasmflow_sdk::packet::v1::Packet::success(&inputs.left).into(),
+          );
+          map.insert(
+            "right".to_owned(),
+            wasmflow_sdk::packet::v1::Packet::success(&inputs.right).into(),
+          );
+          wasmflow_sdk::packet::PacketMap::new(map)
         }
       }
 
       #[must_use]
-      #[cfg(all(feature = "provider", feature = "native"))]
-      pub fn inputs_list() -> std::collections::HashMap<String, TypeSignature> {
+      #[cfg(all(feature = "provider", not(target_arch = "wasm32")))]
+      pub fn inputs_list() -> std::collections::HashMap<String, wasmflow_sdk::types::TypeSignature> {
         let mut map = std::collections::HashMap::new();
-        map.insert("left".to_owned(), TypeSignature::U64);
-        map.insert("right".to_owned(), TypeSignature::U64);
+        map.insert("left".to_owned(), wasmflow_sdk::types::TypeSignature::U64);
+        map.insert("right".to_owned(), wasmflow_sdk::types::TypeSignature::U64);
         map
       }
+
       // A list of ports and their type signatures.
       #[must_use]
-      #[cfg(all(feature = "provider", any(feature = "native", feature = "wasm")))]
-      pub fn outputs_list() -> std::collections::HashMap<String, TypeSignature> {
+      #[cfg(all(feature = "provider"))]
+      pub fn outputs_list() -> std::collections::HashMap<String, wasmflow_sdk::types::TypeSignature> {
         let mut map = std::collections::HashMap::new();
-        map.insert("output".to_owned(), TypeSignature::U64);
+        map.insert("output".to_owned(), wasmflow_sdk::types::TypeSignature::U64);
         map
       }
 
       // A list of output ports and their associated stream sender implementations.
       #[derive(Debug)]
-      #[cfg_attr(all(feature = "provider", feature = "native"), derive(Default))]
       #[cfg(feature = "provider")]
       pub struct OutputPorts {
         pub output: OutputPortSender,
+      }
+
+      impl OutputPorts {
+        fn new(id: u32) -> Self {
+          Self {
+            output: OutputPortSender::new(id),
+          }
+        }
       }
 
       // Definition and implementation of each port's sender.
       #[derive(Debug)]
       #[cfg(feature = "provider")]
       pub struct OutputPortSender {
-        #[cfg(feature = "native")]
-        port: PortChannel,
-        #[cfg(feature = "wasm")]
+        port: wasmflow_sdk::sdk::PortChannel,
         id: u32,
       }
 
-      #[cfg(all(feature = "provider", feature = "native"))]
-      impl Default for OutputPortSender {
-        fn default() -> Self {
+      #[cfg(all(feature = "provider"))]
+      impl OutputPortSender {
+        fn new(id: u32) -> Self {
           Self {
-            port: PortChannel::new("output"),
+            id,
+            port: wasmflow_sdk::sdk::PortChannel::new("output"),
           }
         }
       }
 
-      // Native sender implementation
-      #[cfg(all(feature = "provider", feature = "native"))]
-      impl PortSender for OutputPortSender {
-        fn get_port(&self) -> Result<&PortChannel, ProviderError> {
+      #[cfg(all(feature = "provider"))]
+      impl wasmflow_sdk::sdk::Writable for OutputPortSender {
+        type PayloadType = u64;
+
+        fn get_port(&self) -> Result<&wasmflow_sdk::sdk::PortChannel, wasmflow_sdk::sdk::BoxedError> {
           if self.port.is_closed() {
-            Err(ProviderError::SendChannelClosed)
+            Err(Box::new(wasmflow_sdk::error::Error::SendError("@key".to_owned())))
           } else {
             Ok(&self.port)
           }
@@ -1077,139 +1297,151 @@ pub mod generated {
         fn get_port_name(&self) -> &str {
           &self.port.name
         }
-      }
 
-      // WASM sender implementation
-      #[cfg(all(feature = "provider", feature = "wasm"))]
-      impl PortSender for OutputPortSender {
-        type PayloadType = u64;
-        fn get_name(&self) -> String {
-          "output".to_string()
-        }
         fn get_id(&self) -> u32 {
           self.id
         }
       }
 
-      #[must_use]
-      #[cfg(all(feature = "provider", feature = "native"))]
-      pub fn get_outputs() -> (OutputPorts, TransportStream) {
-        let mut outputs = OutputPorts::default();
+      #[cfg(all(feature = "provider"))]
+      pub fn get_outputs(id: u32) -> (OutputPorts, wasmflow_sdk::types::PacketStream) {
+        let mut outputs = OutputPorts::new(id);
         let mut ports = vec![&mut outputs.output.port];
-        let stream = PortChannel::merge_all(&mut ports);
+        let stream = wasmflow_sdk::sdk::PortChannel::merge_all(&mut ports);
         (outputs, stream)
       }
 
-      #[cfg(all(feature = "provider", feature = "wasm"))]
-      fn get_outputs(id: u32) -> OutputPorts {
-        OutputPorts {
-          output: OutputPortSender { id },
-        }
-      }
-
-      #[cfg(all(feature = "guest"))]
       #[allow(missing_debug_implementations)]
       pub struct Outputs {
         packets: ProviderOutput,
       }
 
-      #[cfg(all(feature = "native", feature = "guest"))]
       impl Outputs {
-        pub async fn output(&mut self) -> Result<PortOutput<u64>, ProviderError> {
-          let packets = self.packets.drain_port("output").await;
-          Ok(PortOutput::new("output".to_owned(), packets))
+        pub async fn output(&mut self) -> Result<wasmflow_sdk::sdk::PortOutput<u64>, wasmflow_sdk::error::Error> {
+          let packets = self.packets.drain_port("output").await?;
+          Ok(wasmflow_sdk::sdk::PortOutput::new("output".to_owned(), packets))
         }
       }
 
-      #[cfg(all(feature = "wasm", feature = "guest"))]
-      impl Outputs {
-        pub fn output(&mut self) -> Result<PortOutput, ComponentError> {
-          let packets = self.packets.drain_port("output")?;
-          Ok(PortOutput::new("output".to_owned(), packets))
-        }
-      }
-
-      #[cfg(all(feature = "wasm", feature = "guest"))]
       impl From<ProviderOutput> for Outputs {
         fn from(packets: ProviderOutput) -> Self {
           Self { packets }
         }
       }
 
-      #[cfg(all(feature = "native", feature = "guest"))]
-      impl From<ProviderOutput> for Outputs {
-        fn from(output: ProviderOutput) -> Self {
-          Self { packets: output }
-        }
-      }
-
-      #[cfg(all(feature = "native", feature = "guest"))]
-      impl From<BoxedTransportStream> for Outputs {
-        fn from(stream: BoxedTransportStream) -> Self {
+      impl From<wasmflow_sdk::types::PacketStream> for Outputs {
+        fn from(stream: wasmflow_sdk::types::PacketStream) -> Self {
           Self {
             packets: ProviderOutput::new(stream),
           }
         }
       }
+
+      #[cfg(not(target_arch = "wasm32"))]
+      impl From<wasmflow_sdk::types::TransportStream> for Outputs {
+        fn from(stream: wasmflow_sdk::types::TransportStream) -> Self {
+          Self {
+            packets: ProviderOutput::new_from_ts(stream),
+          }
+        }
+      }
+
+      #[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, Clone)]
+      pub struct Config {}
     }
-  } // end namespace math
-    // start namespace rand
+    // end component math::subtract
+  }
+  // end namespace math
+
+  // start namespace rand
   pub mod rand {
 
-    // start namespace
-    // Component name : rand::bytes
+    // start component rand::bytes
     pub mod bytes {
-      use async_trait::async_trait;
-      #[cfg(all(feature = "native", not(feature = "wasm")))]
-      pub use vino_provider::native::prelude::*;
-      #[cfg(all(feature = "wasm", not(feature = "native")))]
-      pub use vino_provider::wasm::prelude::*;
+      // The user-facing implementation for State and job impl.
+      pub use wasmflow_sdk::console_log;
+      pub use wasmflow_sdk::packet::v1::Packet;
+      pub use wasmflow_sdk::sdk::{ProviderOutput, Writable};
 
-      #[cfg(feature = "provider")]
-      pub fn signature() -> ComponentSignature {
-        ComponentSignature {
+      // The generated definition of inputs, outputs, config, et al.
+      use super::bytes as definition;
+      // The generated integration code between the definition and the implementation.
+      use super::bytes as integration;
+      use crate::components::rand::bytes as implementation;
+
+      #[derive(Default, Clone, Copy)]
+      #[allow(missing_debug_implementations)]
+      pub struct Component {}
+
+      impl wasmflow_sdk::sdk::Component for Component {
+        type Inputs = definition::Inputs;
+        type Outputs = definition::OutputPorts;
+        type Config = integration::Config;
+      }
+
+      impl wasmflow_sdk::sdk::stateful::BatchedJobExecutor for Component {
+        #[cfg(not(target_arch = "wasm32"))]
+        type Payload = wasmflow_sdk::packet::v1::PacketMap;
+        #[cfg(target_arch = "wasm32")]
+        type Payload = wasmflow_sdk::sdk::wasm::EncodedMap;
+        type State = implementation::State;
+        type Config = Config;
+        type Return = (wasmflow_sdk::types::PacketStream, u32);
+        type Context = crate::Context;
+
+        fn execute(
+          &self,
+          payload: wasmflow_sdk::sdk::IncomingPayload<Self::Payload, Self::Config, Self::State>,
+          context: Self::Context,
+        ) -> wasmflow_sdk::sdk::BoxedFuture<Result<Self::Return, wasmflow_sdk::sdk::BoxedError>> {
+          Box::pin(async move {
+            use wasmflow_sdk::sdk::stateful::BatchedComponent;
+            let id = payload.id();
+            let (outputs, mut stream) = definition::get_outputs(id);
+            let (payload, config, state) = payload.into_parts();
+            let inputs = definition::convert_inputs(payload)?;
+
+            let new_state = Component::job(inputs, outputs, context, state, config).await?;
+            stream.push(wasmflow_sdk::packet::PacketWrapper::state(
+              Packet::success(&new_state).into(),
+            ));
+            Ok((stream, id))
+          })
+        }
+      }
+
+      #[cfg(all(feature = "provider", not(target_arch = "wasm32")))]
+      pub fn signature() -> wasmflow_sdk::types::ComponentSignature {
+        wasmflow_sdk::types::ComponentSignature {
           name: "rand::bytes".to_owned(),
           inputs: inputs_list().into(),
           outputs: outputs_list().into(),
         }
       }
 
-      #[derive(Default, Copy, Clone, Debug)]
-      pub struct Component {}
-
-      #[async_trait]
-      impl NativeComponent for Component {
-        type Context = crate::Context;
-        async fn execute(
-          &self,
-          context: Self::Context,
-          data: TransportMap,
-        ) -> Result<TransportStream, Box<NativeComponentError>> {
-          let inputs = populate_inputs(data).map_err(|e| NativeComponentError::new(e.to_string()))?;
-          let (outputs, stream) = get_outputs();
-          let result = tokio::spawn(crate::components::rand::bytes::job(inputs, outputs, context))
-            .await
-            .map_err(|e| Box::new(NativeComponentError::new(format!("Component error: {}", e))))?;
-          match result {
-            Ok(_) => Ok(stream),
-            Err(e) => Err(Box::new(NativeComponentError::new(e.to_string()))),
-          }
-        }
-      }
-
-      #[cfg(all(feature = "native", not(feature = "wasm")))]
-      pub fn populate_inputs(mut payload: TransportMap) -> Result<Inputs, TransportError> {
-        Ok(Inputs {
-          seed: payload.consume("seed")?,
-          length: payload.consume("length")?,
+      #[cfg(not(target_arch = "wasm32"))]
+      pub fn convert_inputs(
+        mut payload: wasmflow_sdk::packet::v1::PacketMap,
+      ) -> Result<definition::Inputs, Box<dyn std::error::Error + Send + Sync>> {
+        Ok(definition::Inputs {
+          seed: payload
+            .remove("seed")
+            .ok_or_else(|| wasmflow_sdk::error::Error::MissingInput("seed".to_owned()))?
+            .deserialize()?,
+          length: payload
+            .remove("length")
+            .ok_or_else(|| wasmflow_sdk::error::Error::MissingInput("length".to_owned()))?
+            .deserialize()?,
         })
       }
 
-      #[cfg(all(feature = "wasm", not(feature = "native")))]
-      fn populate_inputs(payload: &IncomingPayload) -> Result<Inputs, WasmError> {
-        Ok(Inputs {
-          seed: deserialize(payload.get("seed")?)?,
-          length: deserialize(payload.get("length")?)?,
+      #[cfg(target_arch = "wasm32")]
+      pub fn convert_inputs(
+        payload: wasmflow_sdk::sdk::wasm::EncodedMap,
+      ) -> Result<definition::Inputs, Box<dyn std::error::Error + Send + Sync>> {
+        Ok(definition::Inputs {
+          seed: wasmflow_sdk::codec::messagepack::deserialize(payload.get("seed")?)?,
+          length: wasmflow_sdk::codec::messagepack::deserialize(payload.get("length")?)?,
         })
       }
 
@@ -1221,66 +1453,79 @@ pub mod generated {
         pub length: u32,
       }
 
-      #[cfg(all(feature = "guest", any(feature = "native", feature = "wasm")))]
-      impl From<Inputs> for TransportMap {
-        fn from(inputs: Inputs) -> TransportMap {
-          let mut map = TransportMap::new();
-          map.insert("seed", MessageTransport::success(&inputs.seed));
-          map.insert("length", MessageTransport::success(&inputs.length));
-          map
+      impl From<Inputs> for wasmflow_sdk::packet::PacketMap {
+        fn from(inputs: Inputs) -> wasmflow_sdk::packet::PacketMap {
+          let mut map = std::collections::HashMap::default();
+          map.insert(
+            "seed".to_owned(),
+            wasmflow_sdk::packet::v1::Packet::success(&inputs.seed).into(),
+          );
+          map.insert(
+            "length".to_owned(),
+            wasmflow_sdk::packet::v1::Packet::success(&inputs.length).into(),
+          );
+          wasmflow_sdk::packet::PacketMap::new(map)
         }
       }
 
       #[must_use]
-      #[cfg(all(feature = "provider", feature = "native"))]
-      pub fn inputs_list() -> std::collections::HashMap<String, TypeSignature> {
+      #[cfg(all(feature = "provider", not(target_arch = "wasm32")))]
+      pub fn inputs_list() -> std::collections::HashMap<String, wasmflow_sdk::types::TypeSignature> {
         let mut map = std::collections::HashMap::new();
-        map.insert("seed".to_owned(), TypeSignature::U64);
-        map.insert("length".to_owned(), TypeSignature::U32);
+        map.insert("seed".to_owned(), wasmflow_sdk::types::TypeSignature::U64);
+        map.insert("length".to_owned(), wasmflow_sdk::types::TypeSignature::U32);
         map
       }
+
       // A list of ports and their type signatures.
       #[must_use]
-      #[cfg(all(feature = "provider", any(feature = "native", feature = "wasm")))]
-      pub fn outputs_list() -> std::collections::HashMap<String, TypeSignature> {
+      #[cfg(all(feature = "provider"))]
+      pub fn outputs_list() -> std::collections::HashMap<String, wasmflow_sdk::types::TypeSignature> {
         let mut map = std::collections::HashMap::new();
-        map.insert("output".to_owned(), TypeSignature::Bytes);
+        map.insert("output".to_owned(), wasmflow_sdk::types::TypeSignature::Bytes);
         map
       }
 
       // A list of output ports and their associated stream sender implementations.
       #[derive(Debug)]
-      #[cfg_attr(all(feature = "provider", feature = "native"), derive(Default))]
       #[cfg(feature = "provider")]
       pub struct OutputPorts {
         pub output: OutputPortSender,
+      }
+
+      impl OutputPorts {
+        fn new(id: u32) -> Self {
+          Self {
+            output: OutputPortSender::new(id),
+          }
+        }
       }
 
       // Definition and implementation of each port's sender.
       #[derive(Debug)]
       #[cfg(feature = "provider")]
       pub struct OutputPortSender {
-        #[cfg(feature = "native")]
-        port: PortChannel,
-        #[cfg(feature = "wasm")]
+        port: wasmflow_sdk::sdk::PortChannel,
         id: u32,
       }
 
-      #[cfg(all(feature = "provider", feature = "native"))]
-      impl Default for OutputPortSender {
-        fn default() -> Self {
+      #[cfg(all(feature = "provider"))]
+      impl OutputPortSender {
+        fn new(id: u32) -> Self {
           Self {
-            port: PortChannel::new("output"),
+            id,
+            port: wasmflow_sdk::sdk::PortChannel::new("output"),
           }
         }
       }
 
-      // Native sender implementation
-      #[cfg(all(feature = "provider", feature = "native"))]
-      impl PortSender for OutputPortSender {
-        fn get_port(&self) -> Result<&PortChannel, ProviderError> {
+      #[cfg(all(feature = "provider"))]
+      impl wasmflow_sdk::sdk::Writable for OutputPortSender {
+        type PayloadType = Vec<u8>;
+
+        fn get_port(&self) -> Result<&wasmflow_sdk::sdk::PortChannel, wasmflow_sdk::sdk::BoxedError> {
           if self.port.is_closed() {
-            Err(ProviderError::SendChannelClosed)
+            Err(Box::new(wasmflow_sdk::error::Error::SendError("@key".to_owned())))
           } else {
             Ok(&self.port)
           }
@@ -1289,134 +1534,145 @@ pub mod generated {
         fn get_port_name(&self) -> &str {
           &self.port.name
         }
-      }
 
-      // WASM sender implementation
-      #[cfg(all(feature = "provider", feature = "wasm"))]
-      impl PortSender for OutputPortSender {
-        type PayloadType = Vec<u8>;
-        fn get_name(&self) -> String {
-          "output".to_string()
-        }
         fn get_id(&self) -> u32 {
           self.id
         }
       }
 
-      #[must_use]
-      #[cfg(all(feature = "provider", feature = "native"))]
-      pub fn get_outputs() -> (OutputPorts, TransportStream) {
-        let mut outputs = OutputPorts::default();
+      #[cfg(all(feature = "provider"))]
+      pub fn get_outputs(id: u32) -> (OutputPorts, wasmflow_sdk::types::PacketStream) {
+        let mut outputs = OutputPorts::new(id);
         let mut ports = vec![&mut outputs.output.port];
-        let stream = PortChannel::merge_all(&mut ports);
+        let stream = wasmflow_sdk::sdk::PortChannel::merge_all(&mut ports);
         (outputs, stream)
       }
 
-      #[cfg(all(feature = "provider", feature = "wasm"))]
-      fn get_outputs(id: u32) -> OutputPorts {
-        OutputPorts {
-          output: OutputPortSender { id },
-        }
-      }
-
-      #[cfg(all(feature = "guest"))]
       #[allow(missing_debug_implementations)]
       pub struct Outputs {
         packets: ProviderOutput,
       }
 
-      #[cfg(all(feature = "native", feature = "guest"))]
       impl Outputs {
-        pub async fn output(&mut self) -> Result<PortOutput<Vec<u8>>, ProviderError> {
-          let packets = self.packets.drain_port("output").await;
-          Ok(PortOutput::new("output".to_owned(), packets))
+        pub async fn output(&mut self) -> Result<wasmflow_sdk::sdk::PortOutput<Vec<u8>>, wasmflow_sdk::error::Error> {
+          let packets = self.packets.drain_port("output").await?;
+          Ok(wasmflow_sdk::sdk::PortOutput::new("output".to_owned(), packets))
         }
       }
 
-      #[cfg(all(feature = "wasm", feature = "guest"))]
-      impl Outputs {
-        pub fn output(&mut self) -> Result<PortOutput, ComponentError> {
-          let packets = self.packets.drain_port("output")?;
-          Ok(PortOutput::new("output".to_owned(), packets))
-        }
-      }
-
-      #[cfg(all(feature = "wasm", feature = "guest"))]
       impl From<ProviderOutput> for Outputs {
         fn from(packets: ProviderOutput) -> Self {
           Self { packets }
         }
       }
 
-      #[cfg(all(feature = "native", feature = "guest"))]
-      impl From<ProviderOutput> for Outputs {
-        fn from(output: ProviderOutput) -> Self {
-          Self { packets: output }
-        }
-      }
-
-      #[cfg(all(feature = "native", feature = "guest"))]
-      impl From<BoxedTransportStream> for Outputs {
-        fn from(stream: BoxedTransportStream) -> Self {
+      impl From<wasmflow_sdk::types::PacketStream> for Outputs {
+        fn from(stream: wasmflow_sdk::types::PacketStream) -> Self {
           Self {
             packets: ProviderOutput::new(stream),
           }
         }
       }
-    }
-    // Component name : rand::string
-    pub mod string {
-      use async_trait::async_trait;
-      #[cfg(all(feature = "native", not(feature = "wasm")))]
-      pub use vino_provider::native::prelude::*;
-      #[cfg(all(feature = "wasm", not(feature = "native")))]
-      pub use vino_provider::wasm::prelude::*;
 
-      #[cfg(feature = "provider")]
-      pub fn signature() -> ComponentSignature {
-        ComponentSignature {
+      #[cfg(not(target_arch = "wasm32"))]
+      impl From<wasmflow_sdk::types::TransportStream> for Outputs {
+        fn from(stream: wasmflow_sdk::types::TransportStream) -> Self {
+          Self {
+            packets: ProviderOutput::new_from_ts(stream),
+          }
+        }
+      }
+
+      #[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, Clone)]
+      pub struct Config {}
+    }
+    // end component rand::bytes
+    // start component rand::string
+    pub mod string {
+      // The user-facing implementation for State and job impl.
+      pub use wasmflow_sdk::console_log;
+      pub use wasmflow_sdk::packet::v1::Packet;
+      pub use wasmflow_sdk::sdk::{ProviderOutput, Writable};
+
+      // The generated definition of inputs, outputs, config, et al.
+      use super::string as definition;
+      // The generated integration code between the definition and the implementation.
+      use super::string as integration;
+      use crate::components::rand::string as implementation;
+
+      #[derive(Default, Clone, Copy)]
+      #[allow(missing_debug_implementations)]
+      pub struct Component {}
+
+      impl wasmflow_sdk::sdk::Component for Component {
+        type Inputs = definition::Inputs;
+        type Outputs = definition::OutputPorts;
+        type Config = integration::Config;
+      }
+
+      impl wasmflow_sdk::sdk::stateful::BatchedJobExecutor for Component {
+        #[cfg(not(target_arch = "wasm32"))]
+        type Payload = wasmflow_sdk::packet::v1::PacketMap;
+        #[cfg(target_arch = "wasm32")]
+        type Payload = wasmflow_sdk::sdk::wasm::EncodedMap;
+        type State = implementation::State;
+        type Config = Config;
+        type Return = (wasmflow_sdk::types::PacketStream, u32);
+        type Context = crate::Context;
+
+        fn execute(
+          &self,
+          payload: wasmflow_sdk::sdk::IncomingPayload<Self::Payload, Self::Config, Self::State>,
+          context: Self::Context,
+        ) -> wasmflow_sdk::sdk::BoxedFuture<Result<Self::Return, wasmflow_sdk::sdk::BoxedError>> {
+          Box::pin(async move {
+            use wasmflow_sdk::sdk::stateful::BatchedComponent;
+            let id = payload.id();
+            let (outputs, mut stream) = definition::get_outputs(id);
+            let (payload, config, state) = payload.into_parts();
+            let inputs = definition::convert_inputs(payload)?;
+
+            let new_state = Component::job(inputs, outputs, context, state, config).await?;
+            stream.push(wasmflow_sdk::packet::PacketWrapper::state(
+              Packet::success(&new_state).into(),
+            ));
+            Ok((stream, id))
+          })
+        }
+      }
+
+      #[cfg(all(feature = "provider", not(target_arch = "wasm32")))]
+      pub fn signature() -> wasmflow_sdk::types::ComponentSignature {
+        wasmflow_sdk::types::ComponentSignature {
           name: "rand::string".to_owned(),
           inputs: inputs_list().into(),
           outputs: outputs_list().into(),
         }
       }
 
-      #[derive(Default, Copy, Clone, Debug)]
-      pub struct Component {}
-
-      #[async_trait]
-      impl NativeComponent for Component {
-        type Context = crate::Context;
-        async fn execute(
-          &self,
-          context: Self::Context,
-          data: TransportMap,
-        ) -> Result<TransportStream, Box<NativeComponentError>> {
-          let inputs = populate_inputs(data).map_err(|e| NativeComponentError::new(e.to_string()))?;
-          let (outputs, stream) = get_outputs();
-          let result = tokio::spawn(crate::components::rand::string::job(inputs, outputs, context))
-            .await
-            .map_err(|e| Box::new(NativeComponentError::new(format!("Component error: {}", e))))?;
-          match result {
-            Ok(_) => Ok(stream),
-            Err(e) => Err(Box::new(NativeComponentError::new(e.to_string()))),
-          }
-        }
-      }
-
-      #[cfg(all(feature = "native", not(feature = "wasm")))]
-      pub fn populate_inputs(mut payload: TransportMap) -> Result<Inputs, TransportError> {
-        Ok(Inputs {
-          seed: payload.consume("seed")?,
-          length: payload.consume("length")?,
+      #[cfg(not(target_arch = "wasm32"))]
+      pub fn convert_inputs(
+        mut payload: wasmflow_sdk::packet::v1::PacketMap,
+      ) -> Result<definition::Inputs, Box<dyn std::error::Error + Send + Sync>> {
+        Ok(definition::Inputs {
+          seed: payload
+            .remove("seed")
+            .ok_or_else(|| wasmflow_sdk::error::Error::MissingInput("seed".to_owned()))?
+            .deserialize()?,
+          length: payload
+            .remove("length")
+            .ok_or_else(|| wasmflow_sdk::error::Error::MissingInput("length".to_owned()))?
+            .deserialize()?,
         })
       }
 
-      #[cfg(all(feature = "wasm", not(feature = "native")))]
-      fn populate_inputs(payload: &IncomingPayload) -> Result<Inputs, WasmError> {
-        Ok(Inputs {
-          seed: deserialize(payload.get("seed")?)?,
-          length: deserialize(payload.get("length")?)?,
+      #[cfg(target_arch = "wasm32")]
+      pub fn convert_inputs(
+        payload: wasmflow_sdk::sdk::wasm::EncodedMap,
+      ) -> Result<definition::Inputs, Box<dyn std::error::Error + Send + Sync>> {
+        Ok(definition::Inputs {
+          seed: wasmflow_sdk::codec::messagepack::deserialize(payload.get("seed")?)?,
+          length: wasmflow_sdk::codec::messagepack::deserialize(payload.get("length")?)?,
         })
       }
 
@@ -1428,66 +1684,79 @@ pub mod generated {
         pub length: u32,
       }
 
-      #[cfg(all(feature = "guest", any(feature = "native", feature = "wasm")))]
-      impl From<Inputs> for TransportMap {
-        fn from(inputs: Inputs) -> TransportMap {
-          let mut map = TransportMap::new();
-          map.insert("seed", MessageTransport::success(&inputs.seed));
-          map.insert("length", MessageTransport::success(&inputs.length));
-          map
+      impl From<Inputs> for wasmflow_sdk::packet::PacketMap {
+        fn from(inputs: Inputs) -> wasmflow_sdk::packet::PacketMap {
+          let mut map = std::collections::HashMap::default();
+          map.insert(
+            "seed".to_owned(),
+            wasmflow_sdk::packet::v1::Packet::success(&inputs.seed).into(),
+          );
+          map.insert(
+            "length".to_owned(),
+            wasmflow_sdk::packet::v1::Packet::success(&inputs.length).into(),
+          );
+          wasmflow_sdk::packet::PacketMap::new(map)
         }
       }
 
       #[must_use]
-      #[cfg(all(feature = "provider", feature = "native"))]
-      pub fn inputs_list() -> std::collections::HashMap<String, TypeSignature> {
+      #[cfg(all(feature = "provider", not(target_arch = "wasm32")))]
+      pub fn inputs_list() -> std::collections::HashMap<String, wasmflow_sdk::types::TypeSignature> {
         let mut map = std::collections::HashMap::new();
-        map.insert("seed".to_owned(), TypeSignature::U64);
-        map.insert("length".to_owned(), TypeSignature::U32);
+        map.insert("seed".to_owned(), wasmflow_sdk::types::TypeSignature::U64);
+        map.insert("length".to_owned(), wasmflow_sdk::types::TypeSignature::U32);
         map
       }
+
       // A list of ports and their type signatures.
       #[must_use]
-      #[cfg(all(feature = "provider", any(feature = "native", feature = "wasm")))]
-      pub fn outputs_list() -> std::collections::HashMap<String, TypeSignature> {
+      #[cfg(all(feature = "provider"))]
+      pub fn outputs_list() -> std::collections::HashMap<String, wasmflow_sdk::types::TypeSignature> {
         let mut map = std::collections::HashMap::new();
-        map.insert("output".to_owned(), TypeSignature::String);
+        map.insert("output".to_owned(), wasmflow_sdk::types::TypeSignature::String);
         map
       }
 
       // A list of output ports and their associated stream sender implementations.
       #[derive(Debug)]
-      #[cfg_attr(all(feature = "provider", feature = "native"), derive(Default))]
       #[cfg(feature = "provider")]
       pub struct OutputPorts {
         pub output: OutputPortSender,
+      }
+
+      impl OutputPorts {
+        fn new(id: u32) -> Self {
+          Self {
+            output: OutputPortSender::new(id),
+          }
+        }
       }
 
       // Definition and implementation of each port's sender.
       #[derive(Debug)]
       #[cfg(feature = "provider")]
       pub struct OutputPortSender {
-        #[cfg(feature = "native")]
-        port: PortChannel,
-        #[cfg(feature = "wasm")]
+        port: wasmflow_sdk::sdk::PortChannel,
         id: u32,
       }
 
-      #[cfg(all(feature = "provider", feature = "native"))]
-      impl Default for OutputPortSender {
-        fn default() -> Self {
+      #[cfg(all(feature = "provider"))]
+      impl OutputPortSender {
+        fn new(id: u32) -> Self {
           Self {
-            port: PortChannel::new("output"),
+            id,
+            port: wasmflow_sdk::sdk::PortChannel::new("output"),
           }
         }
       }
 
-      // Native sender implementation
-      #[cfg(all(feature = "provider", feature = "native"))]
-      impl PortSender for OutputPortSender {
-        fn get_port(&self) -> Result<&PortChannel, ProviderError> {
+      #[cfg(all(feature = "provider"))]
+      impl wasmflow_sdk::sdk::Writable for OutputPortSender {
+        type PayloadType = String;
+
+        fn get_port(&self) -> Result<&wasmflow_sdk::sdk::PortChannel, wasmflow_sdk::sdk::BoxedError> {
           if self.port.is_closed() {
-            Err(ProviderError::SendChannelClosed)
+            Err(Box::new(wasmflow_sdk::error::Error::SendError("@key".to_owned())))
           } else {
             Ok(&self.port)
           }
@@ -1496,132 +1765,140 @@ pub mod generated {
         fn get_port_name(&self) -> &str {
           &self.port.name
         }
-      }
 
-      // WASM sender implementation
-      #[cfg(all(feature = "provider", feature = "wasm"))]
-      impl PortSender for OutputPortSender {
-        type PayloadType = String;
-        fn get_name(&self) -> String {
-          "output".to_string()
-        }
         fn get_id(&self) -> u32 {
           self.id
         }
       }
 
-      #[must_use]
-      #[cfg(all(feature = "provider", feature = "native"))]
-      pub fn get_outputs() -> (OutputPorts, TransportStream) {
-        let mut outputs = OutputPorts::default();
+      #[cfg(all(feature = "provider"))]
+      pub fn get_outputs(id: u32) -> (OutputPorts, wasmflow_sdk::types::PacketStream) {
+        let mut outputs = OutputPorts::new(id);
         let mut ports = vec![&mut outputs.output.port];
-        let stream = PortChannel::merge_all(&mut ports);
+        let stream = wasmflow_sdk::sdk::PortChannel::merge_all(&mut ports);
         (outputs, stream)
       }
 
-      #[cfg(all(feature = "provider", feature = "wasm"))]
-      fn get_outputs(id: u32) -> OutputPorts {
-        OutputPorts {
-          output: OutputPortSender { id },
-        }
-      }
-
-      #[cfg(all(feature = "guest"))]
       #[allow(missing_debug_implementations)]
       pub struct Outputs {
         packets: ProviderOutput,
       }
 
-      #[cfg(all(feature = "native", feature = "guest"))]
       impl Outputs {
-        pub async fn output(&mut self) -> Result<PortOutput<String>, ProviderError> {
-          let packets = self.packets.drain_port("output").await;
-          Ok(PortOutput::new("output".to_owned(), packets))
+        pub async fn output(&mut self) -> Result<wasmflow_sdk::sdk::PortOutput<String>, wasmflow_sdk::error::Error> {
+          let packets = self.packets.drain_port("output").await?;
+          Ok(wasmflow_sdk::sdk::PortOutput::new("output".to_owned(), packets))
         }
       }
 
-      #[cfg(all(feature = "wasm", feature = "guest"))]
-      impl Outputs {
-        pub fn output(&mut self) -> Result<PortOutput, ComponentError> {
-          let packets = self.packets.drain_port("output")?;
-          Ok(PortOutput::new("output".to_owned(), packets))
-        }
-      }
-
-      #[cfg(all(feature = "wasm", feature = "guest"))]
       impl From<ProviderOutput> for Outputs {
         fn from(packets: ProviderOutput) -> Self {
           Self { packets }
         }
       }
 
-      #[cfg(all(feature = "native", feature = "guest"))]
-      impl From<ProviderOutput> for Outputs {
-        fn from(output: ProviderOutput) -> Self {
-          Self { packets: output }
-        }
-      }
-
-      #[cfg(all(feature = "native", feature = "guest"))]
-      impl From<BoxedTransportStream> for Outputs {
-        fn from(stream: BoxedTransportStream) -> Self {
+      impl From<wasmflow_sdk::types::PacketStream> for Outputs {
+        fn from(stream: wasmflow_sdk::types::PacketStream) -> Self {
           Self {
             packets: ProviderOutput::new(stream),
           }
         }
       }
-    }
-    // Component name : rand::uuid
-    pub mod uuid {
-      use async_trait::async_trait;
-      #[cfg(all(feature = "native", not(feature = "wasm")))]
-      pub use vino_provider::native::prelude::*;
-      #[cfg(all(feature = "wasm", not(feature = "native")))]
-      pub use vino_provider::wasm::prelude::*;
 
-      #[cfg(feature = "provider")]
-      pub fn signature() -> ComponentSignature {
-        ComponentSignature {
+      #[cfg(not(target_arch = "wasm32"))]
+      impl From<wasmflow_sdk::types::TransportStream> for Outputs {
+        fn from(stream: wasmflow_sdk::types::TransportStream) -> Self {
+          Self {
+            packets: ProviderOutput::new_from_ts(stream),
+          }
+        }
+      }
+
+      #[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, Clone)]
+      pub struct Config {}
+    }
+    // end component rand::string
+    // start component rand::uuid
+    pub mod uuid {
+      // The user-facing implementation for State and job impl.
+      pub use wasmflow_sdk::console_log;
+      pub use wasmflow_sdk::packet::v1::Packet;
+      pub use wasmflow_sdk::sdk::{ProviderOutput, Writable};
+
+      // The generated definition of inputs, outputs, config, et al.
+      use super::uuid as definition;
+      // The generated integration code between the definition and the implementation.
+      use super::uuid as integration;
+      use crate::components::rand::uuid as implementation;
+
+      #[derive(Default, Clone, Copy)]
+      #[allow(missing_debug_implementations)]
+      pub struct Component {}
+
+      impl wasmflow_sdk::sdk::Component for Component {
+        type Inputs = definition::Inputs;
+        type Outputs = definition::OutputPorts;
+        type Config = integration::Config;
+      }
+
+      impl wasmflow_sdk::sdk::stateful::BatchedJobExecutor for Component {
+        #[cfg(not(target_arch = "wasm32"))]
+        type Payload = wasmflow_sdk::packet::v1::PacketMap;
+        #[cfg(target_arch = "wasm32")]
+        type Payload = wasmflow_sdk::sdk::wasm::EncodedMap;
+        type State = implementation::State;
+        type Config = Config;
+        type Return = (wasmflow_sdk::types::PacketStream, u32);
+        type Context = crate::Context;
+
+        fn execute(
+          &self,
+          payload: wasmflow_sdk::sdk::IncomingPayload<Self::Payload, Self::Config, Self::State>,
+          context: Self::Context,
+        ) -> wasmflow_sdk::sdk::BoxedFuture<Result<Self::Return, wasmflow_sdk::sdk::BoxedError>> {
+          Box::pin(async move {
+            use wasmflow_sdk::sdk::stateful::BatchedComponent;
+            let id = payload.id();
+            let (outputs, mut stream) = definition::get_outputs(id);
+            let (payload, config, state) = payload.into_parts();
+            let inputs = definition::convert_inputs(payload)?;
+
+            let new_state = Component::job(inputs, outputs, context, state, config).await?;
+            stream.push(wasmflow_sdk::packet::PacketWrapper::state(
+              Packet::success(&new_state).into(),
+            ));
+            Ok((stream, id))
+          })
+        }
+      }
+
+      #[cfg(all(feature = "provider", not(target_arch = "wasm32")))]
+      pub fn signature() -> wasmflow_sdk::types::ComponentSignature {
+        wasmflow_sdk::types::ComponentSignature {
           name: "rand::uuid".to_owned(),
           inputs: inputs_list().into(),
           outputs: outputs_list().into(),
         }
       }
 
-      #[derive(Default, Copy, Clone, Debug)]
-      pub struct Component {}
-
-      #[async_trait]
-      impl NativeComponent for Component {
-        type Context = crate::Context;
-        async fn execute(
-          &self,
-          context: Self::Context,
-          data: TransportMap,
-        ) -> Result<TransportStream, Box<NativeComponentError>> {
-          let inputs = populate_inputs(data).map_err(|e| NativeComponentError::new(e.to_string()))?;
-          let (outputs, stream) = get_outputs();
-          let result = tokio::spawn(crate::components::rand::uuid::job(inputs, outputs, context))
-            .await
-            .map_err(|e| Box::new(NativeComponentError::new(format!("Component error: {}", e))))?;
-          match result {
-            Ok(_) => Ok(stream),
-            Err(e) => Err(Box::new(NativeComponentError::new(e.to_string()))),
-          }
-        }
-      }
-
-      #[cfg(all(feature = "native", not(feature = "wasm")))]
-      pub fn populate_inputs(mut payload: TransportMap) -> Result<Inputs, TransportError> {
-        Ok(Inputs {
-          seed: payload.consume("seed")?,
+      #[cfg(not(target_arch = "wasm32"))]
+      pub fn convert_inputs(
+        mut payload: wasmflow_sdk::packet::v1::PacketMap,
+      ) -> Result<definition::Inputs, Box<dyn std::error::Error + Send + Sync>> {
+        Ok(definition::Inputs {
+          seed: payload
+            .remove("seed")
+            .ok_or_else(|| wasmflow_sdk::error::Error::MissingInput("seed".to_owned()))?
+            .deserialize()?,
         })
       }
 
-      #[cfg(all(feature = "wasm", not(feature = "native")))]
-      fn populate_inputs(payload: &IncomingPayload) -> Result<Inputs, WasmError> {
-        Ok(Inputs {
-          seed: deserialize(payload.get("seed")?)?,
+      #[cfg(target_arch = "wasm32")]
+      pub fn convert_inputs(
+        payload: wasmflow_sdk::sdk::wasm::EncodedMap,
+      ) -> Result<definition::Inputs, Box<dyn std::error::Error + Send + Sync>> {
+        Ok(definition::Inputs {
+          seed: wasmflow_sdk::codec::messagepack::deserialize(payload.get("seed")?)?,
         })
       }
 
@@ -1631,64 +1908,74 @@ pub mod generated {
         pub seed: u64,
       }
 
-      #[cfg(all(feature = "guest", any(feature = "native", feature = "wasm")))]
-      impl From<Inputs> for TransportMap {
-        fn from(inputs: Inputs) -> TransportMap {
-          let mut map = TransportMap::new();
-          map.insert("seed", MessageTransport::success(&inputs.seed));
-          map
+      impl From<Inputs> for wasmflow_sdk::packet::PacketMap {
+        fn from(inputs: Inputs) -> wasmflow_sdk::packet::PacketMap {
+          let mut map = std::collections::HashMap::default();
+          map.insert(
+            "seed".to_owned(),
+            wasmflow_sdk::packet::v1::Packet::success(&inputs.seed).into(),
+          );
+          wasmflow_sdk::packet::PacketMap::new(map)
         }
       }
 
       #[must_use]
-      #[cfg(all(feature = "provider", feature = "native"))]
-      pub fn inputs_list() -> std::collections::HashMap<String, TypeSignature> {
+      #[cfg(all(feature = "provider", not(target_arch = "wasm32")))]
+      pub fn inputs_list() -> std::collections::HashMap<String, wasmflow_sdk::types::TypeSignature> {
         let mut map = std::collections::HashMap::new();
-        map.insert("seed".to_owned(), TypeSignature::U64);
+        map.insert("seed".to_owned(), wasmflow_sdk::types::TypeSignature::U64);
         map
       }
+
       // A list of ports and their type signatures.
       #[must_use]
-      #[cfg(all(feature = "provider", any(feature = "native", feature = "wasm")))]
-      pub fn outputs_list() -> std::collections::HashMap<String, TypeSignature> {
+      #[cfg(all(feature = "provider"))]
+      pub fn outputs_list() -> std::collections::HashMap<String, wasmflow_sdk::types::TypeSignature> {
         let mut map = std::collections::HashMap::new();
-        map.insert("output".to_owned(), TypeSignature::String);
+        map.insert("output".to_owned(), wasmflow_sdk::types::TypeSignature::String);
         map
       }
 
       // A list of output ports and their associated stream sender implementations.
       #[derive(Debug)]
-      #[cfg_attr(all(feature = "provider", feature = "native"), derive(Default))]
       #[cfg(feature = "provider")]
       pub struct OutputPorts {
         pub output: OutputPortSender,
+      }
+
+      impl OutputPorts {
+        fn new(id: u32) -> Self {
+          Self {
+            output: OutputPortSender::new(id),
+          }
+        }
       }
 
       // Definition and implementation of each port's sender.
       #[derive(Debug)]
       #[cfg(feature = "provider")]
       pub struct OutputPortSender {
-        #[cfg(feature = "native")]
-        port: PortChannel,
-        #[cfg(feature = "wasm")]
+        port: wasmflow_sdk::sdk::PortChannel,
         id: u32,
       }
 
-      #[cfg(all(feature = "provider", feature = "native"))]
-      impl Default for OutputPortSender {
-        fn default() -> Self {
+      #[cfg(all(feature = "provider"))]
+      impl OutputPortSender {
+        fn new(id: u32) -> Self {
           Self {
-            port: PortChannel::new("output"),
+            id,
+            port: wasmflow_sdk::sdk::PortChannel::new("output"),
           }
         }
       }
 
-      // Native sender implementation
-      #[cfg(all(feature = "provider", feature = "native"))]
-      impl PortSender for OutputPortSender {
-        fn get_port(&self) -> Result<&PortChannel, ProviderError> {
+      #[cfg(all(feature = "provider"))]
+      impl wasmflow_sdk::sdk::Writable for OutputPortSender {
+        type PayloadType = String;
+
+        fn get_port(&self) -> Result<&wasmflow_sdk::sdk::PortChannel, wasmflow_sdk::sdk::BoxedError> {
           if self.port.is_closed() {
-            Err(ProviderError::SendChannelClosed)
+            Err(Box::new(wasmflow_sdk::error::Error::SendError("@key".to_owned())))
           } else {
             Ok(&self.port)
           }
@@ -1697,139 +1984,151 @@ pub mod generated {
         fn get_port_name(&self) -> &str {
           &self.port.name
         }
-      }
 
-      // WASM sender implementation
-      #[cfg(all(feature = "provider", feature = "wasm"))]
-      impl PortSender for OutputPortSender {
-        type PayloadType = String;
-        fn get_name(&self) -> String {
-          "output".to_string()
-        }
         fn get_id(&self) -> u32 {
           self.id
         }
       }
 
-      #[must_use]
-      #[cfg(all(feature = "provider", feature = "native"))]
-      pub fn get_outputs() -> (OutputPorts, TransportStream) {
-        let mut outputs = OutputPorts::default();
+      #[cfg(all(feature = "provider"))]
+      pub fn get_outputs(id: u32) -> (OutputPorts, wasmflow_sdk::types::PacketStream) {
+        let mut outputs = OutputPorts::new(id);
         let mut ports = vec![&mut outputs.output.port];
-        let stream = PortChannel::merge_all(&mut ports);
+        let stream = wasmflow_sdk::sdk::PortChannel::merge_all(&mut ports);
         (outputs, stream)
       }
 
-      #[cfg(all(feature = "provider", feature = "wasm"))]
-      fn get_outputs(id: u32) -> OutputPorts {
-        OutputPorts {
-          output: OutputPortSender { id },
-        }
-      }
-
-      #[cfg(all(feature = "guest"))]
       #[allow(missing_debug_implementations)]
       pub struct Outputs {
         packets: ProviderOutput,
       }
 
-      #[cfg(all(feature = "native", feature = "guest"))]
       impl Outputs {
-        pub async fn output(&mut self) -> Result<PortOutput<String>, ProviderError> {
-          let packets = self.packets.drain_port("output").await;
-          Ok(PortOutput::new("output".to_owned(), packets))
+        pub async fn output(&mut self) -> Result<wasmflow_sdk::sdk::PortOutput<String>, wasmflow_sdk::error::Error> {
+          let packets = self.packets.drain_port("output").await?;
+          Ok(wasmflow_sdk::sdk::PortOutput::new("output".to_owned(), packets))
         }
       }
 
-      #[cfg(all(feature = "wasm", feature = "guest"))]
-      impl Outputs {
-        pub fn output(&mut self) -> Result<PortOutput, ComponentError> {
-          let packets = self.packets.drain_port("output")?;
-          Ok(PortOutput::new("output".to_owned(), packets))
-        }
-      }
-
-      #[cfg(all(feature = "wasm", feature = "guest"))]
       impl From<ProviderOutput> for Outputs {
         fn from(packets: ProviderOutput) -> Self {
           Self { packets }
         }
       }
 
-      #[cfg(all(feature = "native", feature = "guest"))]
-      impl From<ProviderOutput> for Outputs {
-        fn from(output: ProviderOutput) -> Self {
-          Self { packets: output }
-        }
-      }
-
-      #[cfg(all(feature = "native", feature = "guest"))]
-      impl From<BoxedTransportStream> for Outputs {
-        fn from(stream: BoxedTransportStream) -> Self {
+      impl From<wasmflow_sdk::types::PacketStream> for Outputs {
+        fn from(stream: wasmflow_sdk::types::PacketStream) -> Self {
           Self {
             packets: ProviderOutput::new(stream),
           }
         }
       }
+
+      #[cfg(not(target_arch = "wasm32"))]
+      impl From<wasmflow_sdk::types::TransportStream> for Outputs {
+        fn from(stream: wasmflow_sdk::types::TransportStream) -> Self {
+          Self {
+            packets: ProviderOutput::new_from_ts(stream),
+          }
+        }
+      }
+
+      #[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, Clone)]
+      pub struct Config {}
     }
-  } // end namespace rand
-    // start namespace string
+    // end component rand::uuid
+  }
+  // end namespace rand
+
+  // start namespace string
   pub mod string {
 
-    // start namespace
-    // Component name : string::concat
+    // start component string::concat
     pub mod concat {
-      use async_trait::async_trait;
-      #[cfg(all(feature = "native", not(feature = "wasm")))]
-      pub use vino_provider::native::prelude::*;
-      #[cfg(all(feature = "wasm", not(feature = "native")))]
-      pub use vino_provider::wasm::prelude::*;
+      // The user-facing implementation for State and job impl.
+      pub use wasmflow_sdk::console_log;
+      pub use wasmflow_sdk::packet::v1::Packet;
+      pub use wasmflow_sdk::sdk::{ProviderOutput, Writable};
 
-      #[cfg(feature = "provider")]
-      pub fn signature() -> ComponentSignature {
-        ComponentSignature {
+      // The generated definition of inputs, outputs, config, et al.
+      use super::concat as definition;
+      // The generated integration code between the definition and the implementation.
+      use super::concat as integration;
+      use crate::components::string::concat as implementation;
+
+      #[derive(Default, Clone, Copy)]
+      #[allow(missing_debug_implementations)]
+      pub struct Component {}
+
+      impl wasmflow_sdk::sdk::Component for Component {
+        type Inputs = definition::Inputs;
+        type Outputs = definition::OutputPorts;
+        type Config = integration::Config;
+      }
+
+      impl wasmflow_sdk::sdk::stateful::BatchedJobExecutor for Component {
+        #[cfg(not(target_arch = "wasm32"))]
+        type Payload = wasmflow_sdk::packet::v1::PacketMap;
+        #[cfg(target_arch = "wasm32")]
+        type Payload = wasmflow_sdk::sdk::wasm::EncodedMap;
+        type State = implementation::State;
+        type Config = Config;
+        type Return = (wasmflow_sdk::types::PacketStream, u32);
+        type Context = crate::Context;
+
+        fn execute(
+          &self,
+          payload: wasmflow_sdk::sdk::IncomingPayload<Self::Payload, Self::Config, Self::State>,
+          context: Self::Context,
+        ) -> wasmflow_sdk::sdk::BoxedFuture<Result<Self::Return, wasmflow_sdk::sdk::BoxedError>> {
+          Box::pin(async move {
+            use wasmflow_sdk::sdk::stateful::BatchedComponent;
+            let id = payload.id();
+            let (outputs, mut stream) = definition::get_outputs(id);
+            let (payload, config, state) = payload.into_parts();
+            let inputs = definition::convert_inputs(payload)?;
+
+            let new_state = Component::job(inputs, outputs, context, state, config).await?;
+            stream.push(wasmflow_sdk::packet::PacketWrapper::state(
+              Packet::success(&new_state).into(),
+            ));
+            Ok((stream, id))
+          })
+        }
+      }
+
+      #[cfg(all(feature = "provider", not(target_arch = "wasm32")))]
+      pub fn signature() -> wasmflow_sdk::types::ComponentSignature {
+        wasmflow_sdk::types::ComponentSignature {
           name: "string::concat".to_owned(),
           inputs: inputs_list().into(),
           outputs: outputs_list().into(),
         }
       }
 
-      #[derive(Default, Copy, Clone, Debug)]
-      pub struct Component {}
-
-      #[async_trait]
-      impl NativeComponent for Component {
-        type Context = crate::Context;
-        async fn execute(
-          &self,
-          context: Self::Context,
-          data: TransportMap,
-        ) -> Result<TransportStream, Box<NativeComponentError>> {
-          let inputs = populate_inputs(data).map_err(|e| NativeComponentError::new(e.to_string()))?;
-          let (outputs, stream) = get_outputs();
-          let result = tokio::spawn(crate::components::string::concat::job(inputs, outputs, context))
-            .await
-            .map_err(|e| Box::new(NativeComponentError::new(format!("Component error: {}", e))))?;
-          match result {
-            Ok(_) => Ok(stream),
-            Err(e) => Err(Box::new(NativeComponentError::new(e.to_string()))),
-          }
-        }
-      }
-
-      #[cfg(all(feature = "native", not(feature = "wasm")))]
-      pub fn populate_inputs(mut payload: TransportMap) -> Result<Inputs, TransportError> {
-        Ok(Inputs {
-          left: payload.consume("left")?,
-          right: payload.consume("right")?,
+      #[cfg(not(target_arch = "wasm32"))]
+      pub fn convert_inputs(
+        mut payload: wasmflow_sdk::packet::v1::PacketMap,
+      ) -> Result<definition::Inputs, Box<dyn std::error::Error + Send + Sync>> {
+        Ok(definition::Inputs {
+          left: payload
+            .remove("left")
+            .ok_or_else(|| wasmflow_sdk::error::Error::MissingInput("left".to_owned()))?
+            .deserialize()?,
+          right: payload
+            .remove("right")
+            .ok_or_else(|| wasmflow_sdk::error::Error::MissingInput("right".to_owned()))?
+            .deserialize()?,
         })
       }
 
-      #[cfg(all(feature = "wasm", not(feature = "native")))]
-      fn populate_inputs(payload: &IncomingPayload) -> Result<Inputs, WasmError> {
-        Ok(Inputs {
-          left: deserialize(payload.get("left")?)?,
-          right: deserialize(payload.get("right")?)?,
+      #[cfg(target_arch = "wasm32")]
+      pub fn convert_inputs(
+        payload: wasmflow_sdk::sdk::wasm::EncodedMap,
+      ) -> Result<definition::Inputs, Box<dyn std::error::Error + Send + Sync>> {
+        Ok(definition::Inputs {
+          left: wasmflow_sdk::codec::messagepack::deserialize(payload.get("left")?)?,
+          right: wasmflow_sdk::codec::messagepack::deserialize(payload.get("right")?)?,
         })
       }
 
@@ -1841,66 +2140,79 @@ pub mod generated {
         pub right: String,
       }
 
-      #[cfg(all(feature = "guest", any(feature = "native", feature = "wasm")))]
-      impl From<Inputs> for TransportMap {
-        fn from(inputs: Inputs) -> TransportMap {
-          let mut map = TransportMap::new();
-          map.insert("left", MessageTransport::success(&inputs.left));
-          map.insert("right", MessageTransport::success(&inputs.right));
-          map
+      impl From<Inputs> for wasmflow_sdk::packet::PacketMap {
+        fn from(inputs: Inputs) -> wasmflow_sdk::packet::PacketMap {
+          let mut map = std::collections::HashMap::default();
+          map.insert(
+            "left".to_owned(),
+            wasmflow_sdk::packet::v1::Packet::success(&inputs.left).into(),
+          );
+          map.insert(
+            "right".to_owned(),
+            wasmflow_sdk::packet::v1::Packet::success(&inputs.right).into(),
+          );
+          wasmflow_sdk::packet::PacketMap::new(map)
         }
       }
 
       #[must_use]
-      #[cfg(all(feature = "provider", feature = "native"))]
-      pub fn inputs_list() -> std::collections::HashMap<String, TypeSignature> {
+      #[cfg(all(feature = "provider", not(target_arch = "wasm32")))]
+      pub fn inputs_list() -> std::collections::HashMap<String, wasmflow_sdk::types::TypeSignature> {
         let mut map = std::collections::HashMap::new();
-        map.insert("left".to_owned(), TypeSignature::String);
-        map.insert("right".to_owned(), TypeSignature::String);
+        map.insert("left".to_owned(), wasmflow_sdk::types::TypeSignature::String);
+        map.insert("right".to_owned(), wasmflow_sdk::types::TypeSignature::String);
         map
       }
+
       // A list of ports and their type signatures.
       #[must_use]
-      #[cfg(all(feature = "provider", any(feature = "native", feature = "wasm")))]
-      pub fn outputs_list() -> std::collections::HashMap<String, TypeSignature> {
+      #[cfg(all(feature = "provider"))]
+      pub fn outputs_list() -> std::collections::HashMap<String, wasmflow_sdk::types::TypeSignature> {
         let mut map = std::collections::HashMap::new();
-        map.insert("output".to_owned(), TypeSignature::String);
+        map.insert("output".to_owned(), wasmflow_sdk::types::TypeSignature::String);
         map
       }
 
       // A list of output ports and their associated stream sender implementations.
       #[derive(Debug)]
-      #[cfg_attr(all(feature = "provider", feature = "native"), derive(Default))]
       #[cfg(feature = "provider")]
       pub struct OutputPorts {
         pub output: OutputPortSender,
+      }
+
+      impl OutputPorts {
+        fn new(id: u32) -> Self {
+          Self {
+            output: OutputPortSender::new(id),
+          }
+        }
       }
 
       // Definition and implementation of each port's sender.
       #[derive(Debug)]
       #[cfg(feature = "provider")]
       pub struct OutputPortSender {
-        #[cfg(feature = "native")]
-        port: PortChannel,
-        #[cfg(feature = "wasm")]
+        port: wasmflow_sdk::sdk::PortChannel,
         id: u32,
       }
 
-      #[cfg(all(feature = "provider", feature = "native"))]
-      impl Default for OutputPortSender {
-        fn default() -> Self {
+      #[cfg(all(feature = "provider"))]
+      impl OutputPortSender {
+        fn new(id: u32) -> Self {
           Self {
-            port: PortChannel::new("output"),
+            id,
+            port: wasmflow_sdk::sdk::PortChannel::new("output"),
           }
         }
       }
 
-      // Native sender implementation
-      #[cfg(all(feature = "provider", feature = "native"))]
-      impl PortSender for OutputPortSender {
-        fn get_port(&self) -> Result<&PortChannel, ProviderError> {
+      #[cfg(all(feature = "provider"))]
+      impl wasmflow_sdk::sdk::Writable for OutputPortSender {
+        type PayloadType = String;
+
+        fn get_port(&self) -> Result<&wasmflow_sdk::sdk::PortChannel, wasmflow_sdk::sdk::BoxedError> {
           if self.port.is_closed() {
-            Err(ProviderError::SendChannelClosed)
+            Err(Box::new(wasmflow_sdk::error::Error::SendError("@key".to_owned())))
           } else {
             Ok(&self.port)
           }
@@ -1909,84 +2221,100 @@ pub mod generated {
         fn get_port_name(&self) -> &str {
           &self.port.name
         }
-      }
 
-      // WASM sender implementation
-      #[cfg(all(feature = "provider", feature = "wasm"))]
-      impl PortSender for OutputPortSender {
-        type PayloadType = String;
-        fn get_name(&self) -> String {
-          "output".to_string()
-        }
         fn get_id(&self) -> u32 {
           self.id
         }
       }
 
-      #[must_use]
-      #[cfg(all(feature = "provider", feature = "native"))]
-      pub fn get_outputs() -> (OutputPorts, TransportStream) {
-        let mut outputs = OutputPorts::default();
+      #[cfg(all(feature = "provider"))]
+      pub fn get_outputs(id: u32) -> (OutputPorts, wasmflow_sdk::types::PacketStream) {
+        let mut outputs = OutputPorts::new(id);
         let mut ports = vec![&mut outputs.output.port];
-        let stream = PortChannel::merge_all(&mut ports);
+        let stream = wasmflow_sdk::sdk::PortChannel::merge_all(&mut ports);
         (outputs, stream)
       }
 
-      #[cfg(all(feature = "provider", feature = "wasm"))]
-      fn get_outputs(id: u32) -> OutputPorts {
-        OutputPorts {
-          output: OutputPortSender { id },
-        }
-      }
-
-      #[cfg(all(feature = "guest"))]
       #[allow(missing_debug_implementations)]
       pub struct Outputs {
         packets: ProviderOutput,
       }
 
-      #[cfg(all(feature = "native", feature = "guest"))]
       impl Outputs {
-        pub async fn output(&mut self) -> Result<PortOutput<String>, ProviderError> {
-          let packets = self.packets.drain_port("output").await;
-          Ok(PortOutput::new("output".to_owned(), packets))
+        pub async fn output(&mut self) -> Result<wasmflow_sdk::sdk::PortOutput<String>, wasmflow_sdk::error::Error> {
+          let packets = self.packets.drain_port("output").await?;
+          Ok(wasmflow_sdk::sdk::PortOutput::new("output".to_owned(), packets))
         }
       }
 
-      #[cfg(all(feature = "wasm", feature = "guest"))]
-      impl Outputs {
-        pub fn output(&mut self) -> Result<PortOutput, ComponentError> {
-          let packets = self.packets.drain_port("output")?;
-          Ok(PortOutput::new("output".to_owned(), packets))
-        }
-      }
-
-      #[cfg(all(feature = "wasm", feature = "guest"))]
       impl From<ProviderOutput> for Outputs {
         fn from(packets: ProviderOutput) -> Self {
           Self { packets }
         }
       }
 
-      #[cfg(all(feature = "native", feature = "guest"))]
-      impl From<ProviderOutput> for Outputs {
-        fn from(output: ProviderOutput) -> Self {
-          Self { packets: output }
-        }
-      }
-
-      #[cfg(all(feature = "native", feature = "guest"))]
-      impl From<BoxedTransportStream> for Outputs {
-        fn from(stream: BoxedTransportStream) -> Self {
+      impl From<wasmflow_sdk::types::PacketStream> for Outputs {
+        fn from(stream: wasmflow_sdk::types::PacketStream) -> Self {
           Self {
             packets: ProviderOutput::new(stream),
           }
         }
       }
-    }
-  } // end namespace string
 
-  pub mod __multi__ {
+      #[cfg(not(target_arch = "wasm32"))]
+      impl From<wasmflow_sdk::types::TransportStream> for Outputs {
+        fn from(stream: wasmflow_sdk::types::TransportStream) -> Self {
+          Self {
+            packets: ProviderOutput::new_from_ts(stream),
+          }
+        }
+      }
+
+      #[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, Clone)]
+      pub struct Config {}
+    }
+    // end component string::concat
+  }
+  // end namespace string
+
+  pub mod __batch__ {
+    pub use wasmflow_sdk::console_log;
+    pub use wasmflow_sdk::packet::v1::Packet;
+    pub use wasmflow_sdk::sdk::{ProviderOutput, Writable};
+
+    use super::{__batch__ as integration, __batch__ as definition};
+    use crate::components::__batch__ as implementation;
+
+    impl wasmflow_sdk::sdk::stateful::BatchedJobExecutor for Component {
+      #[cfg(not(target_arch = "wasm32"))]
+      type Payload = wasmflow_sdk::packet::v1::PacketMap;
+      #[cfg(target_arch = "wasm32")]
+      type Payload = wasmflow_sdk::sdk::wasm::EncodedMap;
+      type State = implementation::State;
+      type Config = Config;
+      type Return = (wasmflow_sdk::types::PacketStream, u32);
+      type Context = crate::Context;
+
+      fn execute(
+        &self,
+        payload: wasmflow_sdk::sdk::IncomingPayload<Self::Payload, Self::Config, Self::State>,
+        context: Self::Context,
+      ) -> wasmflow_sdk::sdk::BoxedFuture<Result<Self::Return, wasmflow_sdk::sdk::BoxedError>> {
+        Box::pin(async move {
+          use wasmflow_sdk::sdk::stateful::BatchedComponent;
+          let id = payload.id();
+          let (outputs, mut stream) = definition::get_outputs(id);
+          let (payload, config, state) = payload.into_parts();
+          let inputs = definition::convert_inputs(payload)?;
+
+          let new_state = Component::job(inputs, outputs, context, state, config).await?;
+          stream.push(wasmflow_sdk::packet::PacketWrapper::state(
+            Packet::success(&new_state).into(),
+          ));
+          Ok((stream, id))
+        })
+      }
+    }
 
     #[derive(Debug, serde::Deserialize, serde::Serialize, Clone)]
     pub enum ComponentInputs {
@@ -2014,53 +2342,78 @@ pub mod generated {
       RandUuid(super::rand::uuid::Outputs),
       StringConcat(super::string::concat::Outputs),
     }
-    #[cfg(any(feature = "native"))]
-    pub use vino_provider::native::prelude::*;
-    #[cfg(any(feature = "wasm"))]
-    pub use vino_provider::wasm::prelude::*;
 
+    #[derive(Debug, serde::Deserialize)]
+    pub enum Config {
+      CoreError(super::core::error::Config),
+      CoreLog(super::core::log::Config),
+      CorePanic(super::core::panic::Config),
+      MathAdd(super::math::add::Config),
+      MathSubtract(super::math::subtract::Config),
+      RandBytes(super::rand::bytes::Config),
+      RandString(super::rand::string::Config),
+      RandUuid(super::rand::uuid::Config),
+      StringConcat(super::string::concat::Config),
+    }
+
+    #[derive(Default, Clone, Copy)]
+    #[allow(missing_debug_implementations)]
+    pub struct Component {}
+
+    impl wasmflow_sdk::sdk::Component for Component {
+      type Inputs = definition::Inputs;
+      type Outputs = definition::OutputPorts;
+      type Config = integration::Config;
+    }
     // A list of ports and their type signatures.
     #[must_use]
-    #[cfg(all(feature = "provider", any(feature = "native", feature = "wasm")))]
-    pub fn outputs_list() -> std::collections::HashMap<String, TypeSignature> {
+    #[cfg(all(feature = "provider"))]
+    pub fn outputs_list() -> std::collections::HashMap<String, wasmflow_sdk::types::TypeSignature> {
       let mut map = std::collections::HashMap::new();
-      map.insert("result".to_owned(), TypeSignature::Bool);
+      map.insert("result".to_owned(), wasmflow_sdk::types::TypeSignature::Bool);
       map
     }
 
     // A list of output ports and their associated stream sender implementations.
     #[derive(Debug)]
-    #[cfg_attr(all(feature = "provider", feature = "native"), derive(Default))]
     #[cfg(feature = "provider")]
     pub struct OutputPorts {
       pub result: ResultPortSender,
+    }
+
+    impl OutputPorts {
+      fn new(id: u32) -> Self {
+        Self {
+          result: ResultPortSender::new(id),
+        }
+      }
     }
 
     // Definition and implementation of each port's sender.
     #[derive(Debug)]
     #[cfg(feature = "provider")]
     pub struct ResultPortSender {
-      #[cfg(feature = "native")]
-      port: PortChannel,
-      #[cfg(feature = "wasm")]
+      port: wasmflow_sdk::sdk::PortChannel,
       id: u32,
     }
 
-    #[cfg(all(feature = "provider", feature = "native"))]
-    impl Default for ResultPortSender {
-      fn default() -> Self {
+    #[cfg(all(feature = "provider"))]
+    impl ResultPortSender {
+      fn new(id: u32) -> Self {
         Self {
-          port: PortChannel::new("result"),
+          id,
+          port: wasmflow_sdk::sdk::PortChannel::new("result"),
         }
       }
     }
 
-    // Native sender implementation
-    #[cfg(all(feature = "provider", feature = "native"))]
-    impl PortSender for ResultPortSender {
-      fn get_port(&self) -> Result<&PortChannel, ProviderError> {
+    #[cfg(all(feature = "provider"))]
+    impl wasmflow_sdk::sdk::Writable for ResultPortSender {
+      type PayloadType = bool;
+
+      fn get_port(&self) -> Result<&wasmflow_sdk::sdk::PortChannel, wasmflow_sdk::sdk::BoxedError> {
         if self.port.is_closed() {
-          Err(ProviderError::SendChannelClosed)
+          Err(Box::new(wasmflow_sdk::error::Error::SendError("@key".to_owned())))
         } else {
           Ok(&self.port)
         }
@@ -2069,111 +2422,106 @@ pub mod generated {
       fn get_port_name(&self) -> &str {
         &self.port.name
       }
-    }
 
-    // WASM sender implementation
-    #[cfg(all(feature = "provider", feature = "wasm"))]
-    impl PortSender for ResultPortSender {
-      type PayloadType = bool;
-      fn get_name(&self) -> String {
-        "result".to_string()
-      }
       fn get_id(&self) -> u32 {
         self.id
       }
     }
 
-    #[must_use]
-    #[cfg(all(feature = "provider", feature = "native"))]
-    pub fn get_outputs() -> (OutputPorts, TransportStream) {
-      let mut outputs = OutputPorts::default();
+    #[cfg(all(feature = "provider"))]
+    pub fn get_outputs(id: u32) -> (OutputPorts, wasmflow_sdk::types::PacketStream) {
+      let mut outputs = OutputPorts::new(id);
       let mut ports = vec![&mut outputs.result.port];
-      let stream = PortChannel::merge_all(&mut ports);
+      let stream = wasmflow_sdk::sdk::PortChannel::merge_all(&mut ports);
       (outputs, stream)
     }
 
-    #[cfg(all(feature = "provider", feature = "wasm"))]
-    fn get_outputs(id: u32) -> OutputPorts {
-      OutputPorts {
-        result: ResultPortSender { id },
-      }
-    }
-
-    #[cfg(all(feature = "guest"))]
     #[allow(missing_debug_implementations)]
     pub struct Outputs {
       packets: ProviderOutput,
     }
 
-    #[cfg(all(feature = "native", feature = "guest"))]
     impl Outputs {
-      pub async fn result(&mut self) -> Result<PortOutput<bool>, ProviderError> {
-        let packets = self.packets.drain_port("result").await;
-        Ok(PortOutput::new("result".to_owned(), packets))
+      pub async fn result(&mut self) -> Result<wasmflow_sdk::sdk::PortOutput<bool>, wasmflow_sdk::error::Error> {
+        let packets = self.packets.drain_port("result").await?;
+        Ok(wasmflow_sdk::sdk::PortOutput::new("result".to_owned(), packets))
       }
     }
 
-    #[cfg(all(feature = "wasm", feature = "guest"))]
-    impl Outputs {
-      pub fn result(&mut self) -> Result<PortOutput, ComponentError> {
-        let packets = self.packets.drain_port("result")?;
-        Ok(PortOutput::new("result".to_owned(), packets))
-      }
-    }
-
-    #[cfg(all(feature = "wasm", feature = "guest"))]
     impl From<ProviderOutput> for Outputs {
       fn from(packets: ProviderOutput) -> Self {
         Self { packets }
       }
     }
 
-    #[cfg(all(feature = "native", feature = "guest"))]
-    impl From<ProviderOutput> for Outputs {
-      fn from(output: ProviderOutput) -> Self {
-        Self { packets: output }
-      }
-    }
-
-    #[cfg(all(feature = "native", feature = "guest"))]
-    impl From<BoxedTransportStream> for Outputs {
-      fn from(stream: BoxedTransportStream) -> Self {
+    impl From<wasmflow_sdk::types::PacketStream> for Outputs {
+      fn from(stream: wasmflow_sdk::types::PacketStream) -> Self {
         Self {
           packets: ProviderOutput::new(stream),
         }
       }
     }
-    use async_trait::async_trait;
-    #[cfg(all(feature = "native", not(feature = "wasm")))]
-    pub use vino_provider::native::prelude::*;
-    #[cfg(all(feature = "wasm", not(feature = "native")))]
-    pub use vino_provider::wasm::prelude::*;
 
-    #[derive(Default, Copy, Clone, Debug)]
-    pub struct Component {}
-
-    #[async_trait]
-    impl NativeComponent for Component {
-      type Context = crate::Context;
-      async fn execute(
-        &self,
-        context: Self::Context,
-        data: TransportMap,
-      ) -> Result<TransportStream, Box<NativeComponentError>> {
-        let inputs = populate_inputs(data).map_err(|e| NativeComponentError::new(e.to_string()))?;
-        let (outputs, stream) = get_outputs();
-        let result = tokio::spawn(crate::components::__multi__::job(inputs, outputs, context))
-          .await
-          .map_err(|e| Box::new(NativeComponentError::new(format!("Component error: {}", e))))?;
-        match result {
-          Ok(_) => Ok(stream),
-          Err(e) => Err(Box::new(NativeComponentError::new(e.to_string()))),
+    #[cfg(not(target_arch = "wasm32"))]
+    impl From<wasmflow_sdk::types::TransportStream> for Outputs {
+      fn from(stream: wasmflow_sdk::types::TransportStream) -> Self {
+        Self {
+          packets: ProviderOutput::new_from_ts(stream),
         }
       }
     }
 
-    pub fn populate_inputs(mut payload: TransportMap) -> Result<Vec<ComponentInputs>, TransportError> {
-      payload.consume::<Vec<ComponentInputs>>("inputs")
+    #[cfg(not(target_arch = "wasm32"))]
+    pub fn convert_inputs(
+      mut payload: wasmflow_sdk::packet::v1::PacketMap,
+    ) -> Result<definition::Inputs, Box<dyn std::error::Error + Send + Sync>> {
+      Ok(definition::Inputs {
+        inputs: payload
+          .remove("inputs")
+          .ok_or_else(|| wasmflow_sdk::error::Error::MissingInput("inputs".to_owned()))?
+          .deserialize()?,
+      })
+    }
+
+    #[cfg(target_arch = "wasm32")]
+    pub fn convert_inputs(
+      payload: wasmflow_sdk::sdk::wasm::EncodedMap,
+    ) -> Result<definition::Inputs, Box<dyn std::error::Error + Send + Sync>> {
+      Ok(definition::Inputs {
+        inputs: wasmflow_sdk::codec::messagepack::deserialize(payload.get("inputs")?)?,
+      })
+    }
+
+    #[derive(Debug, serde::Deserialize, serde::Serialize, Clone)]
+    pub struct Inputs {
+      #[serde(rename = "inputs")]
+      pub inputs: Vec<ComponentInputs>,
+    }
+
+    impl From<Inputs> for wasmflow_sdk::packet::PacketMap {
+      fn from(inputs: Inputs) -> wasmflow_sdk::packet::PacketMap {
+        let mut map = std::collections::HashMap::default();
+        map.insert(
+          "inputs".to_owned(),
+          wasmflow_sdk::packet::v1::Packet::success(&inputs.inputs).into(),
+        );
+        wasmflow_sdk::packet::PacketMap::new(map)
+      }
+    }
+
+    #[must_use]
+    #[cfg(all(feature = "provider", not(target_arch = "wasm32")))]
+    pub fn inputs_list() -> std::collections::HashMap<String, wasmflow_sdk::types::TypeSignature> {
+      let mut map = std::collections::HashMap::new();
+      map.insert(
+        "inputs".to_owned(),
+        wasmflow_sdk::types::TypeSignature::List {
+          element: Box::new(wasmflow_sdk::types::TypeSignature::Internal(
+            wasmflow_sdk::types::InternalType::ComponentInput,
+          )),
+        },
+      );
+      map
     }
   }
 }

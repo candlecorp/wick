@@ -5,7 +5,7 @@ use logger::LoggingOptions;
 use vino_host::HostBuilder;
 use vino_manifest::host_definition::HostDefinition;
 use vino_provider_cli::options::{DefaultCliOptions, LatticeCliOptions};
-use vino_types::{MapWrapper, TypeMap};
+use wasmflow_interface::FieldMap;
 
 use crate::utils::merge_config;
 use crate::Result;
@@ -44,7 +44,6 @@ pub(crate) async fn handle_command(opts: ListCommand) -> Result<()> {
   let mut config = merge_config(config, &opts.host, Some(server_options));
   // Disable everything but the lattice
   config.host.rpc = None;
-  config.host.http = None;
 
   let host_builder = HostBuilder::from_definition(config);
 
@@ -57,7 +56,7 @@ pub(crate) async fn handle_command(opts: ListCommand) -> Result<()> {
     let json = serde_json::to_string(&signature)?;
     println!("{}", json);
   } else {
-    fn print_component(label: &str, indent: &str, inputs: &TypeMap, outputs: &TypeMap) {
+    fn print_component(label: &str, indent: &str, inputs: &FieldMap, outputs: &FieldMap) {
       let inputs = inputs
         .inner()
         .iter()

@@ -85,5 +85,5 @@
 // Add exceptions here
 #![allow(missing_copy_implementations, missing_docs)]
 
-mod components;
+pub mod components;
 pub use components::*;

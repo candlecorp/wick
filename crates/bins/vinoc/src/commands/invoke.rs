@@ -2,9 +2,10 @@ use std::time::SystemTime;
 
 use clap::Args;
 use tokio::io::{self, AsyncBufReadExt, BufReader};
-use vino_entity::Entity;
+use wasmflow_entity::Entity;
 use vino_provider_cli::parse_args;
-use vino_transport::{InherentData, Invocation, TransportMap};
+use vino_transport::TransportMap;
+use wasmflow_invocation::{InherentData, Invocation};
 
 use crate::error::ControlError;
 use crate::Result;
@@ -94,7 +95,7 @@ pub(crate) async fn handle(opts: Options) -> Result<()> {
       let stream = client
         .invoke_from_json(origin.clone(), target.clone(), &line, !opts.raw, inherent_data)
         .await?;
-      cli_common::functions::print_stream_json(Box::pin(stream), &opts.filter, opts.short, opts.raw).await?;
+      cli_common::functions::print_stream_json(stream, &opts.filter, opts.short, opts.raw).await?;
     }
   } else {
     let mut data_map = TransportMap::from_kv_json(&opts.data)?;
@@ -109,7 +110,7 @@ pub(crate) async fn handle(opts: Options) -> Result<()> {
     trace!("issuing invocation");
     let stream = client.invoke(invocation).await?;
     trace!("server responsed");
-    cli_common::functions::print_stream_json(Box::pin(stream), &opts.filter, opts.short, opts.raw).await?;
+    cli_common::functions::print_stream_json(stream, &opts.filter, opts.short, opts.raw).await?;
   }
 
   Ok(())

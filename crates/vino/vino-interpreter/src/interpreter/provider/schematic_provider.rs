@@ -5,8 +5,9 @@ use parking_lot::Mutex;
 use serde_json::Value;
 use tracing_futures::Instrument;
 use vino_random::{Random, Seed};
-use vino_transport::{Invocation, TransportStream};
-use vino_types::{MapWrapper, ProviderSignature};
+use vino_transport::TransportStream;
+use wasmflow_interface::ProviderSignature;
+use wasmflow_invocation::Invocation;
 
 use crate::constants::*;
 use crate::interpreter::program::ProgramState;

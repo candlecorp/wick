@@ -9,7 +9,7 @@ pub enum VowError {
   #[error("Component panicked: {0}")]
   ComponentPanic(Box<vino_rpc::Error>),
   #[error(transparent)]
-  CodecError(#[from] vino_codec::Error),
+  CodecError(#[from] wasmflow_codec::Error),
   #[error(transparent)]
   IoError(#[from] std::io::Error),
   #[error("JSON Serialization/Deserialization error : {0}")]

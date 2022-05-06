@@ -23,7 +23,7 @@ impl Provider {
 
 #[async_trait]
 impl RpcHandler for Provider {
-  async fn invoke(&self, invocation: Invocation) -> RpcResult<BoxedTransportStream> {
+  async fn invoke(&self, invocation: Invocation) -> RpcResult<TransportStream> {
     let target_url = invocation.target_url();
 
     let span = debug_span!(
@@ -45,7 +45,7 @@ impl RpcHandler for Provider {
       .map_err(|e| RpcError::ProviderError(e.to_string()))?;
 
     match result.ok() {
-      Ok(stream) => Ok(Box::pin(stream)),
+      Ok(stream) => Ok(stream),
       Err(msg) => Err(Box::new(RpcError::ProviderError(format!("Invocation failed: {}", msg)))),
     }
   }
@@ -67,16 +67,18 @@ impl RpcHandler for Provider {
 #[cfg(test)]
 mod tests {
 
+  use wasmflow_packet::PacketMap;
+
   use super::*;
   use crate::test::prelude::{assert_eq, *};
   type Result<T> = anyhow::Result<T>;
 
   async fn request_log(provider: &Provider, data: &str) -> Result<String> {
-    let job_payload = vec![("input", data)].into();
+    let job_payload = PacketMap::from([("input", data)]);
 
     let invocation = Invocation::new_test(file!(), Entity::local("simple"), job_payload, None);
     let mut outputs = provider.invoke(invocation).await?;
-    let output = outputs.next().await.unwrap();
+    let output = outputs.drain_port("output").await?[0].clone();
     println!("payload from [{}]: {:?}", output.port, output.payload);
     let output_data: String = output.payload.deserialize()?;
 

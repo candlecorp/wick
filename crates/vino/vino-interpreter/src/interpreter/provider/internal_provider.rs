@@ -1,8 +1,9 @@
 use futures::future::BoxFuture;
 use serde_json::Value;
 use vino_schematic_graph::{SCHEMATIC_INPUT, SCHEMATIC_OUTPUT};
-use vino_transport::{Invocation, TransportStream};
-use vino_types::ProviderSignature;
+use vino_transport::TransportStream;
+use wasmflow_interface::ProviderSignature;
+use wasmflow_invocation::Invocation;
 
 use crate::constants::*;
 use crate::{BoxError, Component, Provider};
@@ -19,6 +20,8 @@ impl Default for InternalProvider {
     Self {
       signature: serde_json::from_value(serde_json::json!({
         "name": NS_INTERNAL,
+        "format": 1,
+        "version": "0.0.0",
         "components": {
           INTERNAL_ID_INHERENT : {
             "name":INTERNAL_ID_INHERENT,

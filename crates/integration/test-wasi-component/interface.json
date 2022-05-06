@@ -1,5 +1,8 @@
 {
   "name": "test-wasi-component",
+  "version": "0.0.1",
+  "format": 1,
+  "wellknown": [],
   "types": {},
   "components": {
     "fs-read": {
@@ -15,5 +18,6 @@
         }
       }
     }
-  }
+  },
+  "config": {}
 }

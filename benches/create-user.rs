@@ -12,7 +12,7 @@ static RNG: Lazy<Random> = Lazy::new(vino_random::Random::new);
 static HOST: OnceCell<Host> = OnceCell::new();
 
 fn get_map() -> TransportMap {
-  let mut map = TransportMap::new();
+  let mut map = TransportMap::default();
   map.insert("username", MessageTransport::success(&RNG.alphanumeric(15)));
   map.insert("password", MessageTransport::success(&RNG.alphanumeric(10)));
   map

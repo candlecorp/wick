@@ -3,19 +3,12 @@ use std::time::{Instant, SystemTime};
 
 use parking_lot::Mutex;
 use uuid::Uuid;
-use vino_entity::Entity;
 use vino_random::{Random, Seed};
 use vino_schematic_graph::iterators::{SchematicHop, WalkDirection};
 use vino_schematic_graph::{ComponentIndex, PortDirection, PortReference};
-use vino_transport::{
-  Failure,
-  InherentData,
-  Invocation,
-  MessageTransport,
-  TransportMap,
-  TransportStream,
-  TransportWrapper,
-};
+use vino_transport::{Failure, MessageTransport, TransportMap, TransportStream, TransportWrapper};
+use wasmflow_entity::Entity;
+use wasmflow_invocation::{InherentData, Invocation};
 
 use self::component::port::port_handler::BufferAction;
 use self::component::{CompletionStatus, InstanceHandler};
@@ -183,7 +176,7 @@ impl Transaction {
   async fn prime_input_ports(&self, index: ComponentIndex, payload: &TransportMap) -> Result<()> {
     let input = self.instance(index);
     input.validate_payload(payload)?;
-    for (name, payload) in payload.iter() {
+    for (name, payload) in payload.inner() {
       let port = input.find_input(name)?;
       trace!("priming input port '{}'", name);
       self

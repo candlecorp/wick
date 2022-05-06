@@ -1,0 +1,19 @@
+WELLKNOWN=
+
+SCHEMA_DIR := ./schemas
+
+SCHEMAS=$(wildcard ${SCHEMA_DIR}/*.widl)
+
+CLEAN_FILES += $(INTERFACE)
+
+CODEGEN_FILES += $(INTERFACE)
+
+SOURCE_FILES += $(SCHEMAS) $(INTERFACE)
+
+$(INTERFACE): $(SCHEMAS) ## Create an interface.json from the project's schemas
+	@echo Building $@ from schemas in $(SCHEMA_DIR)
+	@$(CODEGEN) json interface "$(CRATE_NAME)" $(SCHEMA_DIR) -o $@ -f
+
+.PHONY: list
+list: ## Print schemas
+	@echo $(SCHEMAS)

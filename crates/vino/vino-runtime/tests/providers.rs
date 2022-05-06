@@ -2,13 +2,13 @@ use std::env;
 use std::sync::Arc;
 
 use runtime_testutils::*;
-use vino_entity::Entity;
 use vino_invocation_server::{bind_new_socket, make_rpc_server};
 use vino_runtime::prelude::TransportWrapper;
+use wasmflow_entity::Entity;
 type Result<T> = anyhow::Result<T, anyhow::Error>;
 use maplit::hashmap;
 use pretty_assertions::assert_eq;
-use vino_transport::Invocation;
+use wasmflow_invocation::Invocation;
 #[test_logger::test(tokio::test)]
 async fn native_component() -> Result<()> {
   let (network, _) = init_network_from_yaml("./manifests/v0/providers/native-component.yaml").await?;
@@ -28,7 +28,7 @@ async fn native_component() -> Result<()> {
     .await?;
 
   println!("Result: {:?}", result);
-  let mut messages: Vec<TransportWrapper> = result.drain_port("output").await;
+  let mut messages: Vec<TransportWrapper> = result.drain_port("output").await?;
   assert_eq!(result.buffered_size(), (0, 0));
   assert_eq!(messages.len(), 1);
 
@@ -57,7 +57,7 @@ async fn global_providers() -> Result<()> {
     ))
     .await?;
 
-  let mut messages: Vec<TransportWrapper> = result.drain_port("output").await;
+  let mut messages: Vec<TransportWrapper> = result.drain_port("output").await?;
   assert_eq!(messages.len(), 1);
 
   let output: String = messages.pop().unwrap().payload.deserialize()?;
@@ -76,7 +76,7 @@ async fn global_providers() -> Result<()> {
       None,
     ))
     .await?;
-  let mut messages: Vec<TransportWrapper> = result.drain_port("output").await;
+  let mut messages: Vec<TransportWrapper> = result.drain_port("output").await?;
   assert_eq!(messages.len(), 1);
 
   let output: String = messages.pop().unwrap().payload.deserialize()?;
@@ -102,7 +102,7 @@ async fn subnetworks() -> Result<()> {
     ))
     .await?;
 
-  let mut messages: Vec<TransportWrapper> = result.drain_port("output").await;
+  let mut messages: Vec<TransportWrapper> = result.drain_port("output").await?;
   assert_eq!(messages.len(), 1);
 
   let output: String = messages.pop().unwrap().payload.deserialize()?;
@@ -135,7 +135,7 @@ async fn grpc() -> Result<()> {
     ))
     .await?;
 
-  let mut messages: Vec<TransportWrapper> = result.drain_port("output").await;
+  let mut messages: Vec<TransportWrapper> = result.drain_port("output").await?;
   assert_eq!(messages.len(), 1);
 
   let output: String = messages.pop().unwrap().payload.deserialize()?;
@@ -146,6 +146,7 @@ async fn grpc() -> Result<()> {
 }
 
 #[test_logger::test(tokio::test)]
+#[ignore] // Need to automate the creation of par bundles
 async fn par() -> Result<()> {
   let (network, _) = init_network_from_yaml("./manifests/v0/providers/par.yaml").await?;
 
@@ -163,7 +164,7 @@ async fn par() -> Result<()> {
     ))
     .await?;
 
-  let mut messages: Vec<TransportWrapper> = result.drain_port("output").await;
+  let mut messages: Vec<TransportWrapper> = result.drain_port("output").await?;
   assert_eq!(messages.len(), 1);
 
   let output: u32 = messages.pop().unwrap().payload.deserialize()?;

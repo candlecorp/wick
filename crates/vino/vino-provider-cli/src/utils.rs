@@ -1,10 +1,10 @@
-use vino_transport::{MessageTransport, Success, TransportMap};
+use vino_transport::{MessageTransport, Serialized, TransportMap};
 
 use crate::Error;
 
 /// Parse CLI arguments into a [TransportMap]
 pub fn parse_args(args: &[String]) -> Result<TransportMap, Error> {
-  let mut map = TransportMap::new();
+  let mut map = TransportMap::default();
   let mut iter = args.iter();
   while let Some(next) = iter.next() {
     if !next.starts_with("--") {
@@ -23,13 +23,13 @@ pub fn parse_args(args: &[String]) -> Result<TransportMap, Error> {
       }
     };
     let payload = if is_valid(value) {
-      MessageTransport::Success(Success::Json(value.to_owned()))
+      MessageTransport::Success(Serialized::Json(value.to_owned()))
     } else {
       debug!(
         "Input '{}' for argument '{}' is not valid JSON. Wrapping it with quotes to make it a valid string value.",
         value, name
       );
-      MessageTransport::Success(Success::Json(format!("\"{}\"", value)))
+      MessageTransport::Success(Serialized::Json(format!("\"{}\"", value)))
     };
     map.insert(name, payload);
   }

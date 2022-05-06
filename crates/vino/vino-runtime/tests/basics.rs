@@ -2,9 +2,10 @@ use std::collections::HashMap;
 
 use runtime_testutils::*;
 use tokio_stream::StreamExt;
-use vino_entity::Entity;
 use vino_runtime::prelude::TransportWrapper;
-use vino_transport::{Invocation, MessageTransport};
+use vino_transport::MessageTransport;
+use wasmflow_entity::Entity;
+use wasmflow_invocation::Invocation;
 
 type Result<T> = anyhow::Result<T, anyhow::Error>;
 use maplit::hashmap;
@@ -28,7 +29,7 @@ async fn simple_schematic() -> Result<()> {
     .await?;
 
   println!("Result: {:?}", result);
-  let mut messages: Vec<TransportWrapper> = result.drain_port("output").await;
+  let mut messages: Vec<TransportWrapper> = result.drain_port("output").await?;
   assert_eq!(result.buffered_size(), (0, 0));
   assert_eq!(messages.len(), 1);
 
@@ -58,7 +59,7 @@ async fn echo() -> Result<()> {
     .await?;
 
   println!("Result: {:?}", result);
-  let mut messages: Vec<TransportWrapper> = result.drain_port("output").await;
+  let mut messages: Vec<TransportWrapper> = result.drain_port("output").await?;
   assert_eq!(result.buffered_size(), (0, 0));
   assert_eq!(messages.len(), 1);
 
@@ -87,7 +88,7 @@ async fn senders() -> Result<()> {
     .await?;
 
   println!("Result: {:?}", result);
-  let mut messages: Vec<TransportWrapper> = result.drain_port("output").await;
+  let mut messages: Vec<TransportWrapper> = result.drain_port("output").await?;
   assert_eq!(result.buffered_size(), (0, 0));
   assert_eq!(messages.len(), 1);
 
@@ -115,7 +116,7 @@ async fn no_inputs() -> Result<()> {
     ))
     .await?;
 
-  let mut messages: Vec<TransportWrapper> = result.drain_port("output").await;
+  let mut messages: Vec<TransportWrapper> = result.drain_port("output").await?;
   assert_eq!(result.buffered_size(), (0, 0));
   assert_eq!(messages.len(), 1);
 
@@ -147,7 +148,7 @@ async fn nested_schematics() -> Result<()> {
     ))
     .await?;
   println!("Result: {:?}", result);
-  let mut messages: Vec<TransportWrapper> = result.drain_port("parent_output").await;
+  let mut messages: Vec<TransportWrapper> = result.drain_port("parent_output").await?;
   assert_eq!(result.buffered_size(), (0, 0));
   assert_eq!(messages.len(), 1);
 
@@ -175,7 +176,7 @@ async fn short_circuit_to_output() -> Result<()> {
     ))
     .await?;
 
-  let mut messages: Vec<TransportWrapper> = result.drain_port("output").await;
+  let mut messages: Vec<TransportWrapper> = result.drain_port("output").await?;
   assert_eq!(messages.len(), 1);
 
   let output: TransportWrapper = messages.pop().unwrap();
@@ -204,7 +205,7 @@ async fn short_circuit_with_default() -> Result<()> {
     ))
     .await?;
 
-  let mut messages: Vec<TransportWrapper> = result.drain_port("output").await;
+  let mut messages: Vec<TransportWrapper> = result.drain_port("output").await?;
   assert_eq!(messages.len(), 1);
 
   let output: String = messages.pop().unwrap().payload.deserialize()?;
@@ -236,7 +237,7 @@ async fn multiple_schematics() -> Result<()> {
       None,
     ))
     .await?;
-  let mut messages: Vec<TransportWrapper> = result.drain_port("output").await;
+  let mut messages: Vec<TransportWrapper> = result.drain_port("output").await?;
   assert_eq!(messages.len(), 1);
 
   let output: i64 = messages.pop().unwrap().payload.deserialize()?;
@@ -254,7 +255,7 @@ async fn multiple_schematics() -> Result<()> {
       None,
     ))
     .await?;
-  let mut messages: Vec<TransportWrapper> = result.drain_port("output").await;
+  let mut messages: Vec<TransportWrapper> = result.drain_port("output").await?;
   assert_eq!(messages.len(), 1);
 
   let output: String = messages.pop().unwrap().payload.deserialize()?;

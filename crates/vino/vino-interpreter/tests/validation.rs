@@ -18,8 +18,9 @@ use vino_interpreter::{
 };
 use vino_manifest::Loadable;
 use vino_random::Seed;
-use vino_transport::{Invocation, TransportStream};
-use vino_types::ProviderSignature;
+use vino_transport::TransportStream;
+use wasmflow_interface::ProviderSignature;
+use wasmflow_invocation::Invocation;
 
 fn load<T: AsRef<Path>>(path: T) -> Result<vino_manifest::HostManifest> {
   Ok(vino_manifest::HostManifest::load_from_file(path.as_ref())?)
@@ -30,7 +31,7 @@ impl Provider for SignatureProvider {
     todo!()
   }
 
-  fn list(&self) -> &vino_types::ProviderSignature {
+  fn list(&self) -> &wasmflow_interface::ProviderSignature {
     &self.0
   }
 }
@@ -76,6 +77,8 @@ async fn test_invalid_port() -> Result<()> {
 
   let sig = serde_json::from_value(json!({
     "name":"instance" ,
+    "format":1,
+    "version":"",
     "components" : {
       "echo":{
         "name": "echo",
@@ -111,6 +114,8 @@ async fn test_missing_port() -> Result<()> {
 
   let sig = serde_json::from_value(json!({
     "name":"test",
+    "format":1,
+    "version":"",
     "components" : {
       "echo": {
         "name": "echo",

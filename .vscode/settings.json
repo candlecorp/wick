@@ -8,8 +8,8 @@
     ]
   },
   "rust-analyzer.cargo.features": [
-    "vino-stdlib/provider",
-    "vino-stdlib/native"
+    "wasmflow-component/guest",
+    "vino-stdlib/provider"
   ],
   "rust-analyzer.rustfmt.overrideCommand": [
     "rustup",

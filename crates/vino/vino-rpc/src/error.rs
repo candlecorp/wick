@@ -19,9 +19,9 @@ pub enum RpcError {
   #[error("Internal Error: {0}")]
   InternalError(String),
 
-  /// Upstream Error from [vino_entity].
+  /// Upstream Error from [wasmflow_entity].
   #[error(transparent)]
-  EntityError(#[from] vino_entity::Error),
+  EntityError(#[from] wasmflow_entity::Error),
 
   /// Invalid [crate::rpc::component::ComponentKind].
   #[error("Invalid component kind {0}")]
@@ -42,6 +42,22 @@ pub enum RpcError {
   /// General Error.
   #[error("General error : {0}")]
   General(String),
+
+  /// Deserialization Failed.
+  #[error("Deserialization Failed : {0}")]
+  Deserialization(String),
+
+  /// Error caused by an internal inconsistency.
+  #[error("Internal Error : {0}")]
+  Internal(&'static str),
+
+  /// Configuration for invocation was empty.
+  #[error("Configuration for invocation was empty.")]
+  ConfigEmpty,
+
+  /// Configuration for invocation was empty.
+  #[error("State for invocation was missing.")]
+  StateMissing,
 
   /// Invalid Type Signature.
   #[error("Invalid signature")]
@@ -67,32 +83,14 @@ impl From<std::io::Error> for RpcError {
   }
 }
 
-impl From<vino_provider::native::Error> for Box<RpcError> {
-  fn from(e: vino_provider::native::Error) -> Self {
-    Box::new(RpcError::ProviderError(e.to_string()))
-  }
-}
-
-impl From<Box<vino_provider::native::Error>> for Box<RpcError> {
-  fn from(e: Box<vino_provider::native::Error>) -> Self {
-    Box::new(RpcError::ProviderError(e.to_string()))
-  }
-}
-
-impl From<Box<vino_provider::native::error::NativeComponentError>> for Box<RpcError> {
-  fn from(e: Box<vino_provider::native::error::NativeComponentError>) -> Self {
-    Box::new(RpcError::ProviderError(e.to_string()))
-  }
-}
-
 impl From<Box<dyn std::error::Error + Send + Sync>> for RpcError {
   fn from(e: Box<dyn std::error::Error + Send + Sync>) -> Self {
     RpcError::ProviderError(e.to_string())
   }
 }
 
-impl From<vino_entity::Error> for Box<RpcError> {
-  fn from(e: vino_entity::Error) -> Self {
+impl From<wasmflow_entity::Error> for Box<RpcError> {
+  fn from(e: wasmflow_entity::Error) -> Self {
     Box::new(RpcError::EntityError(e))
   }
 }

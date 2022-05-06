@@ -1,6 +1,24 @@
 {
   "name": "test-component",
-  "types": {},
+  "version": "0.0.1",
+  "format": 1,
+  "wellknown": [],
+  "types": {
+    "Unit": {
+      "type": "enum",
+      "name": "Unit",
+      "values": [
+        {
+          "name": "millis",
+          "index": 0
+        },
+        {
+          "name": "micros",
+          "index": 1
+        }
+      ]
+    }
+  },
   "components": {
     "copy": {
       "name": "copy",
@@ -60,6 +78,25 @@
         }
       }
     },
+    "scratch": {
+      "name": "scratch",
+      "inputs": {
+        "name": {
+          "type": "string"
+        },
+        "age": {
+          "type": "i64"
+        }
+      },
+      "outputs": {
+        "message": {
+          "type": "string"
+        },
+        "age": {
+          "type": "i64"
+        }
+      }
+    },
     "uppercase": {
       "name": "uppercase",
       "inputs": {
@@ -83,6 +120,18 @@
       "outputs": {
         "output": {
           "type": "string"
+        }
+      }
+    }
+  },
+  "config": {
+    "scratch": {
+      "type": "struct",
+      "name": "Config",
+      "fields": {
+        "unit": {
+          "type": "ref",
+          "ref": "#/types/Unit"
         }
       }
     }

@@ -11,8 +11,6 @@ use serde::{Deserialize, Serialize};
 pub struct Options {
   /// RPC server options.
   pub rpc: Option<ServerOptions>,
-  /// HTTP server options.
-  pub http: Option<ServerOptions>,
   /// Lattice options.
   pub lattice: Option<LatticeOptions>,
   /// The ID of the server.
@@ -24,9 +22,8 @@ pub struct Options {
 impl Default for Options {
   fn default() -> Self {
     Self {
-      id: uuid::Uuid::new_v4().to_hyphenated().to_string(),
+      id: uuid::Uuid::new_v4().as_hyphenated().to_string(),
       rpc: Default::default(),
-      http: Default::default(),
       lattice: Default::default(),
       timeout: Default::default(),
     }
@@ -82,15 +79,6 @@ impl From<DefaultCliOptions> for Options {
       ca: opts.rpc_ca,
     });
 
-    let http = Some(ServerOptions {
-      enabled: opts.http_enabled,
-      port: opts.http_port,
-      address: opts.http_address,
-      pem: opts.http_pem,
-      key: opts.http_key,
-      ca: opts.http_ca,
-    });
-
     #[allow(clippy::option_if_let_else)]
     let lattice = if let Some(url) = opts.lattice.nats_url {
       Some(LatticeOptions {
@@ -105,11 +93,10 @@ impl From<DefaultCliOptions> for Options {
 
     let id = opts
       .id
-      .unwrap_or_else(|| uuid::Uuid::new_v4().to_hyphenated().to_string());
+      .unwrap_or_else(|| uuid::Uuid::new_v4().as_hyphenated().to_string());
 
     Options {
       rpc,
-      http,
       timeout: Duration::from_millis(opts.timeout.unwrap_or(5000)),
       id,
       lattice,
@@ -142,12 +129,13 @@ pub mod env {
   env_var!(VINO_RPC_PEM);
   env_var!(VINO_RPC_CA);
 
-  env_var!(VINO_HTTP_ENABLED);
-  env_var!(VINO_HTTP_PORT);
-  env_var!(VINO_HTTP_ADDRESS);
-  env_var!(VINO_HTTP_KEY);
-  env_var!(VINO_HTTP_PEM);
-  env_var!(VINO_HTTP_CA);
+  // Unused for now.
+  // env_var!(VINO_HTTP_ENABLED);
+  // env_var!(VINO_HTTP_PORT);
+  // env_var!(VINO_HTTP_ADDRESS);
+  // env_var!(VINO_HTTP_KEY);
+  // env_var!(VINO_HTTP_PEM);
+  // env_var!(VINO_HTTP_CA);
 
   env_var!(NATS_URL);
   env_var!(NATS_CREDSFILE);
@@ -196,30 +184,6 @@ pub struct DefaultCliOptions {
   /// Path to certificate authority for GRPC server.
   #[clap(long = "rpc-ca", env = env::VINO_RPC_CA)]
   pub rpc_ca: Option<PathBuf>,
-
-  /// Enable the http server.
-  #[clap(long = "http", env = env::VINO_HTTP_ENABLED)]
-  pub http_enabled: bool,
-
-  /// Address for the optional HTTP server.
-  #[clap(long = "http-address", env = env::VINO_HTTP_ADDRESS)]
-  pub http_address: Option<Ipv4Addr>,
-
-  /// Port to use for HTTP.
-  #[clap(long = "http-port", env = env::VINO_HTTP_PORT)]
-  pub http_port: Option<u16>,
-
-  /// Path to pem file for TLS for HTTPS server.
-  #[clap(long = "http-pem", env = env::VINO_HTTP_PEM)]
-  pub http_pem: Option<PathBuf>,
-
-  /// Path to key file for TLS for HTTPS server.
-  #[clap(long = "http-key", env = env::VINO_HTTP_KEY)]
-  pub http_key: Option<PathBuf>,
-
-  /// Path to certificate authority for HTTPS server.
-  #[clap(long = "http-ca", env = env::VINO_HTTP_CA)]
-  pub http_ca: Option<PathBuf>,
 }
 
 #[derive(Debug, Clone, Default, Args, Serialize, Deserialize)]

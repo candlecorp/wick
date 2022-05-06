@@ -8,40 +8,54 @@ service InvocationService {
   rpc Stats(StatsRequest) returns (StatsResponse);
 }
 
-message MessageKind {
-  enum Kind {
-    Invalid = 0;
-    Error = 1;
-    Exception = 2;
-    Test = 3;
-    MessagePack = 4;
-    Signal = 5;
-    JSON = 6;
+message Packet {
+  oneof data {
+    Serialized success = 1;
+    Failure failure = 2;
+    Signal signal = 3;
   }
+}
 
+message Serialized {
+  PayloadData payload = 1;
+}
+
+message Failure {
+  enum FailureKind {
+    Error = 0;
+    Exception = 1;
+  }
+  string payload = 1;
+  FailureKind type = 2;
+}
+
+message Signal {
   enum OutputSignal {
     Done = 0;
     OpenBracket = 1;
     CloseBracket = 2;
+    State = 3;
   }
+  PayloadData payload = 1;
+  OutputSignal type = 2;
+}
 
-  Kind kind = 1;
-
+message PayloadData {
   oneof data {
-    bytes messagepack = 2;
-    string message = 3;
-    OutputSignal signal = 4;
-    string json = 5;
+    bytes messagepack = 1;
+    string json = 3;
   }
 }
 
 message Invocation {
   string origin = 1;
   string target = 2;
-  map<string, MessageKind> payload = 3;
+  map<string, Packet> payload = 3;
   string id = 4;
   string tx_id = 5;
   InherentData inherent = 6;
+  Serialized config = 7;
+  Serialized state = 8;
 }
 
 message InherentData {
@@ -52,7 +66,7 @@ message InherentData {
 message Output {
   string port = 1;
   string invocation_id = 2;
-  MessageKind payload = 3;
+  Packet payload = 3;
 }
 
 message ListRequest {}
@@ -75,8 +89,25 @@ message Component {
 
 message ProviderSignature {
   string name = 1;
-  map<string, StructSignature> types = 6;
-  map<string, Component> components = 2;
+  string version = 2;
+  uint32 format = 6;
+  map<string, Component> components = 3;
+  map<string, TypeDefinition> types = 4;
+  map<string, TypeDefinition> config = 5;
+  repeated WellKnownSchema wellknown = 7;
+}
+
+message TypeDefinition {
+  oneof type {
+    StructSignature struct = 1;
+    EnumSignature enum = 2;
+  }
+}
+
+message WellKnownSchema {
+  repeated string capabilities = 1;
+  string url = 2;
+  ProviderSignature schema = 3;
 }
 
 message StatsRequest {}
@@ -98,6 +129,16 @@ message DurationStatistics {
 message StructSignature {
   string name = 1;
   map<string, TypeSignature> fields = 2;
+}
+
+message EnumSignature {
+  string name = 1;
+  repeated EnumVariant values = 2;
+}
+
+message EnumVariant {
+  string name = 1;
+  uint32 index = 2;
 }
 
 message TypeSignature {

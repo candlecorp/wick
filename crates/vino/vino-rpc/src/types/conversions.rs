@@ -3,11 +3,10 @@ use std::convert::{TryFrom, TryInto};
 use std::str::FromStr;
 use std::time::Duration;
 
-use vino_entity::Entity;
-use vino_packet::v0::Payload;
-use vino_packet::Packet;
-use vino_transport::TransportMap;
-use vino_types::{self as vino, MapWrapper};
+use vino_transport::{Serialized, TransportMap};
+use wasmflow_entity::Entity;
+use wasmflow_interface::{self as vino};
+use wasmflow_packet::Packet;
 
 use crate::error::RpcError;
 use crate::rpc::{InternalType, StructType};
@@ -58,8 +57,22 @@ impl TryFrom<rpc::ProviderSignature> for vino::ProviderSignature {
   fn try_from(v: rpc::ProviderSignature) -> Result<Self> {
     Ok(Self {
       name: Some(v.name),
+      version: v.version,
+      format: v.format,
+      wellknown: v
+        .wellknown
+        .into_iter()
+        .map(|v| {
+          Ok(wasmflow_interface::WellKnownSchema {
+            capabilities: v.capabilities,
+            url: v.url,
+            schema: v.schema.unwrap().try_into()?,
+          })
+        })
+        .collect::<Result<Vec<_>>>()?,
       components: to_componentmap(v.components)?,
-      types: to_structmap(v.types)?,
+      types: to_typemap(v.types)?,
+      config: to_typemap(v.config)?,
     })
   }
 }
@@ -69,8 +82,8 @@ impl TryFrom<rpc::Component> for vino::ComponentSignature {
   fn try_from(v: rpc::Component) -> Result<Self> {
     Ok(Self {
       name: v.name,
-      inputs: to_typemap(v.inputs)?,
-      outputs: to_typemap(v.outputs)?,
+      inputs: to_fieldmap(v.inputs)?,
+      outputs: to_fieldmap(v.outputs)?,
     })
   }
 }
@@ -81,8 +94,8 @@ impl TryFrom<vino::ComponentSignature> for rpc::Component {
     Ok(Self {
       name: v.name,
       kind: rpc::component::ComponentKind::Component.into(),
-      inputs: from_typemap(v.inputs)?,
-      outputs: from_typemap(v.outputs)?,
+      inputs: from_fieldmap(v.inputs)?,
+      outputs: from_fieldmap(v.outputs)?,
     })
   }
 }
@@ -93,8 +106,22 @@ impl TryFrom<vino::ProviderSignature> for rpc::ProviderSignature {
   fn try_from(v: vino::ProviderSignature) -> Result<Self> {
     Ok(Self {
       name: v.name.unwrap_or_default(),
+      version: v.version,
+      format: v.format,
+      wellknown: v
+        .wellknown
+        .into_iter()
+        .map(|v| {
+          Ok(rpc::WellKnownSchema {
+            capabilities: v.capabilities,
+            url: v.url,
+            schema: Some(v.schema.try_into()?),
+          })
+        })
+        .collect::<Result<Vec<_>>>()?,
       components: from_componentmap(v.components)?,
-      types: from_structmap(v.types)?,
+      types: from_typemap(v.types)?,
+      config: from_typemap(v.config)?,
     })
   }
 }
@@ -142,57 +169,67 @@ impl From<DurationStatistics> for rpc::DurationStatistics {
 }
 
 #[allow(clippy::from_over_into)]
-impl Into<Packet> for rpc::MessageKind {
+impl Into<Packet> for rpc::Packet {
   fn into(self) -> Packet {
-    use rpc::message_kind::{Data, Kind, OutputSignal};
-    let kind: Kind = match Kind::from_i32(self.kind) {
-      Some(v) => v,
-      None => return Packet::V0(Payload::Error(format!("Invalid kind {}", self.kind))),
-    };
+    use rpc::packet::Data;
+    use wasmflow_packet::v1;
 
-    match kind {
-      Kind::Invalid => Packet::V0(Payload::Invalid),
-      Kind::Error => match self.data {
-        Some(Data::Message(v)) => Packet::V0(Payload::Error(v)),
-        _ => Packet::V0(Payload::Error(
-          "Invalid Error output received: No message passed.".to_owned(),
-        )),
-      },
-      Kind::Exception => match self.data {
-        Some(Data::Message(v)) => Packet::V0(Payload::Error(v)),
-        _ => Packet::V0(Payload::Error(
-          "Invalid Error output received: No message passed.".to_owned(),
-        )),
-      },
-      Kind::Test => Packet::V0(Payload::Invalid),
-      Kind::MessagePack => match self.data {
-        Some(Data::Messagepack(v)) => Packet::V0(Payload::MessagePack(v)),
-        _ => Packet::V0(Payload::Error(
-          "Invalid MessagePack output received: No data passed as 'bytes'.".to_owned(),
-        )),
-      },
-      Kind::Signal => match self.data {
-        Some(Data::Signal(v)) => match OutputSignal::from_i32(v) {
-          Some(OutputSignal::Done) => Packet::V0(Payload::Done),
-          Some(OutputSignal::OpenBracket) => Packet::V0(Payload::OpenBracket),
-          Some(OutputSignal::CloseBracket) => Packet::V0(Payload::CloseBracket),
-          _ => Packet::V0(Payload::Error(format!("Invalid Signal received: {:?}", self.data))),
-        },
-        _ => Packet::V0(Payload::Error(format!("Invalid Signal received: {:?}", self.data))),
-      },
-      Kind::Json => match self.data {
-        Some(Data::Json(v)) => Packet::V0(Payload::Json(v)),
-        _ => Packet::V0(Payload::Error(
-          "Invalid JSON output received: No data passed as 'json'.".to_owned(),
-        )),
-      },
+    if self.data.is_none() {
+      return v1::Packet::error("Invalid RPC packet. Received message but no data.").into();
     }
+    let data = self.data.unwrap();
+
+    let packet = match data {
+      Data::Success(v) => {
+        let payload = v.payload.and_then(|v| v.data);
+        match payload {
+          Some(rpc::payload_data::Data::Messagepack(v)) => v1::Packet::Success(v1::Serialized::MessagePack(v)),
+          Some(rpc::payload_data::Data::Json(v)) => v1::Packet::Success(v1::Serialized::Json(v)),
+          None => v1::Packet::error("Invalid RPC packet. Received Success packet but no payload."),
+        }
+      }
+      Data::Failure(v) => {
+        let kind = rpc::failure::FailureKind::from_i32(v.r#type);
+        match kind {
+          Some(rpc::failure::FailureKind::Error) => v1::Packet::error(v.payload),
+          Some(rpc::failure::FailureKind::Exception) => v1::Packet::exception(v.payload),
+          None => v1::Packet::error(format!(
+            "Invalid RPC packet. Received Failure packet with invalid kind '{}'.",
+            v.r#type
+          )),
+        }
+      }
+      Data::Signal(v) => {
+        let kind = rpc::signal::OutputSignal::from_i32(v.r#type);
+
+        match kind {
+          None => v1::Packet::error(format!(
+            "Invalid RPC packet. Received Signal packet with invalid kind '{}'.",
+            v.r#type
+          )),
+          Some(kind) => match kind {
+            rpc::signal::OutputSignal::Done => v1::Packet::Signal(v1::Signal::Done),
+            rpc::signal::OutputSignal::OpenBracket => v1::Packet::Signal(v1::Signal::OpenBracket),
+            rpc::signal::OutputSignal::CloseBracket => v1::Packet::Signal(v1::Signal::CloseBracket),
+            rpc::signal::OutputSignal::State => {
+              let payload = v.payload.and_then(|v| v.data);
+              match payload {
+                Some(rpc::payload_data::Data::Messagepack(v)) => v1::Packet::Success(v1::Serialized::MessagePack(v)),
+                Some(rpc::payload_data::Data::Json(v)) => v1::Packet::Success(v1::Serialized::Json(v)),
+                None => v1::Packet::error("Invalid RPC packet. Received Signal packet but no payload."),
+              }
+            }
+          },
+        }
+      }
+    };
+    packet.into()
   }
 }
 
 /// Converts a HashMap of [MessageKind] to a [TransportMap].
-pub fn convert_messagekind_map(rpc_map: HashMap<String, rpc::MessageKind>) -> TransportMap {
-  let mut transport_map = TransportMap::new();
+pub fn convert_messagekind_map(rpc_map: HashMap<String, rpc::Packet>) -> TransportMap {
+  let mut transport_map = TransportMap::default();
   for (k, v) in rpc_map {
     transport_map.insert(k, v.into());
   }
@@ -201,44 +238,105 @@ pub fn convert_messagekind_map(rpc_map: HashMap<String, rpc::MessageKind>) -> Tr
 
 /// Converts a [TransportMap] to a HashMap of [MessageKind].
 #[must_use]
-pub fn convert_transport_map(transport_map: TransportMap) -> HashMap<String, rpc::MessageKind> {
-  let mut rpc_map: HashMap<String, rpc::MessageKind> = HashMap::new();
+pub fn convert_transport_map(transport_map: TransportMap) -> HashMap<String, rpc::Packet> {
+  let mut rpc_map: HashMap<String, rpc::Packet> = HashMap::new();
   for (k, v) in transport_map.into_inner() {
     rpc_map.insert(k, v.clone().into());
   }
   rpc_map
 }
 
-impl TryFrom<vino_transport::Invocation> for rpc::Invocation {
+impl TryFrom<wasmflow_invocation::Invocation> for rpc::Invocation {
   type Error = RpcError;
-  fn try_from(inv: vino_transport::Invocation) -> Result<Self> {
+  fn try_from(inv: wasmflow_invocation::Invocation) -> Result<Self> {
     Ok(Self {
       origin: inv.origin.url(),
       target: inv.target.url(),
       payload: convert_transport_map(inv.payload),
-      id: inv.id.to_hyphenated().to_string(),
-      tx_id: inv.tx_id.to_hyphenated().to_string(),
+      id: inv.id.as_hyphenated().to_string(),
+      tx_id: inv.tx_id.as_hyphenated().to_string(),
       inherent: inv.inherent.map(|d| rpc::InherentData {
         seed: d.seed,
         timestamp: d.timestamp,
       }),
+      config: normalize_serialization_out(inv.config)?,
+      state: normalize_serialization_out(inv.state)?,
     })
   }
 }
 
-impl TryFrom<rpc::Invocation> for vino_transport::Invocation {
+impl TryFrom<vino_transport::Serialized> for rpc::Serialized {
+  type Error = RpcError;
+  fn try_from(v: vino_transport::Serialized) -> Result<Self> {
+    let result = match v {
+      Serialized::MessagePack(v) => rpc::Serialized {
+        payload: Some(rpc::PayloadData {
+          data: Some(rpc::payload_data::Data::Messagepack(v)),
+        }),
+      },
+      Serialized::Struct(v) => rpc::Serialized {
+        payload: Some(rpc::PayloadData {
+          data: Some(rpc::payload_data::Data::Messagepack(
+            wasmflow_codec::messagepack::serialize(&v).unwrap(),
+          )),
+        }),
+      },
+      Serialized::Json(v) => rpc::Serialized {
+        payload: Some(rpc::PayloadData {
+          data: Some(rpc::payload_data::Data::Json(v)),
+        }),
+      },
+    };
+    Ok(result)
+  }
+}
+
+impl TryFrom<rpc::Serialized> for vino_transport::Serialized {
+  type Error = RpcError;
+  fn try_from(v: rpc::Serialized) -> Result<Self> {
+    let data = v.payload.and_then(|v| v.data);
+
+    match data {
+      Some(rpc::payload_data::Data::Messagepack(v)) => Ok(Serialized::MessagePack(v)),
+      Some(rpc::payload_data::Data::Json(v)) => Ok(Serialized::Json(v)),
+      None => Err(RpcError::Internal(
+        "Invalid RPC message, serialized data did not contain a payload",
+      )),
+    }
+  }
+}
+
+fn normalize_serialization_in(packet: Option<rpc::Serialized>) -> Result<Option<vino_transport::Serialized>> {
+  match packet {
+    Some(packet) => Ok(Some(packet.try_into()?)),
+    None => Ok(None),
+  }
+}
+
+fn normalize_serialization_out(packet: Option<vino_transport::Serialized>) -> Result<Option<rpc::Serialized>> {
+  match packet {
+    Some(packet) => Ok(Some(packet.try_into()?)),
+    None => Ok(None),
+  }
+}
+
+impl TryFrom<rpc::Invocation> for wasmflow_invocation::Invocation {
   type Error = RpcError;
   fn try_from(inv: rpc::Invocation) -> Result<Self> {
+    let config = normalize_serialization_in(inv.config)?;
+    let state = normalize_serialization_in(inv.state)?;
     Ok(Self {
       origin: Entity::from_str(&inv.origin)?,
       target: Entity::from_str(&inv.target)?,
       payload: convert_messagekind_map(inv.payload),
       id: uuid::Uuid::from_str(&inv.id)?,
       tx_id: uuid::Uuid::from_str(&inv.tx_id)?,
-      inherent: inv.inherent.map(|d| vino_transport::InherentData {
+      inherent: inv.inherent.map(|d| wasmflow_invocation::InherentData {
         seed: d.seed,
         timestamp: d.timestamp,
       }),
+      config,
+      state,
     })
   }
 }
@@ -352,7 +450,7 @@ impl TryFrom<rpc::TypeSignature> for vino::TypeSignature {
           let t = InternalType::from_i32(t);
           match t {
             Some(t) => match t {
-              InternalType::ComponentInput => DestType::Internal(vino_types::InternalType::ComponentInput),
+              InternalType::ComponentInput => DestType::Internal(wasmflow_interface::InternalType::ComponentInput),
             },
             None => todo!(),
           }
@@ -404,7 +502,7 @@ impl From<rpc::simple_type::WidlType> for rpc::type_signature::Signature {
   }
 }
 
-fn to_typemap(map: HashMap<String, rpc::TypeSignature>) -> Result<vino::TypeMap> {
+fn to_fieldmap(map: HashMap<String, rpc::TypeSignature>) -> Result<vino::FieldMap> {
   let mut tmap = HashMap::new();
   for (k, v) in map {
     tmap.insert(k, v.try_into()?);
@@ -412,7 +510,7 @@ fn to_typemap(map: HashMap<String, rpc::TypeSignature>) -> Result<vino::TypeMap>
   Ok(tmap.into())
 }
 
-fn from_typemap(map: vino::TypeMap) -> Result<HashMap<String, rpc::TypeSignature>> {
+fn from_fieldmap(map: vino::FieldMap) -> Result<HashMap<String, rpc::TypeSignature>> {
   let mut tmap = HashMap::new();
   for (k, v) in map.into_inner() {
     tmap.insert(k, v.try_into()?);
@@ -425,12 +523,55 @@ impl TryFrom<rpc::StructSignature> for vino::StructSignature {
   fn try_from(v: rpc::StructSignature) -> Result<Self> {
     Ok(Self {
       name: v.name,
-      fields: to_typemap(v.fields)?,
+      fields: to_fieldmap(v.fields)?,
     })
   }
 }
 
-fn to_structmap(map: HashMap<String, rpc::StructSignature>) -> Result<vino::StructMap> {
+impl TryFrom<rpc::TypeDefinition> for vino::TypeDefinition {
+  type Error = RpcError;
+  fn try_from(v: rpc::TypeDefinition) -> Result<Self> {
+    let typ = v.r#type.ok_or(RpcError::Internal("No type passed"))?;
+    let result = match typ {
+      rpc::type_definition::Type::Struct(v) => vino::TypeDefinition::Struct(v.try_into()?),
+      rpc::type_definition::Type::Enum(v) => vino::TypeDefinition::Enum(v.try_into()?),
+    };
+    Ok(result)
+  }
+}
+
+impl TryFrom<vino::TypeDefinition> for rpc::TypeDefinition {
+  type Error = RpcError;
+  fn try_from(v: vino::TypeDefinition) -> Result<Self> {
+    let result = match v {
+      vino::TypeDefinition::Struct(v) => rpc::TypeDefinition {
+        r#type: Some(rpc::type_definition::Type::Struct(v.try_into()?)),
+      },
+      vino::TypeDefinition::Enum(v) => rpc::TypeDefinition {
+        r#type: Some(rpc::type_definition::Type::Enum(v.try_into()?)),
+      },
+    };
+    Ok(result)
+  }
+}
+
+impl TryFrom<rpc::EnumSignature> for vino::EnumSignature {
+  type Error = RpcError;
+  fn try_from(v: rpc::EnumSignature) -> Result<Self> {
+    Ok(vino::EnumSignature::new(
+      v.name,
+      v.values.into_iter().map(|v| v.try_into()).collect::<Result<Vec<_>>>()?,
+    ))
+  }
+}
+
+impl TryFrom<rpc::EnumVariant> for vino::EnumVariant {
+  type Error = RpcError;
+  fn try_from(v: rpc::EnumVariant) -> Result<Self> {
+    Ok(vino::EnumVariant::new(v.name, v.index))
+  }
+}
+fn to_typemap(map: HashMap<String, rpc::TypeDefinition>) -> Result<vino::TypeMap> {
   let mut tmap = HashMap::new();
   for (k, v) in map {
     tmap.insert(k, v.try_into()?);
@@ -443,12 +584,32 @@ impl TryFrom<vino::StructSignature> for rpc::StructSignature {
   fn try_from(v: vino::StructSignature) -> Result<Self> {
     Ok(Self {
       name: v.name,
-      fields: from_typemap(v.fields)?,
+      fields: from_fieldmap(v.fields)?,
     })
   }
 }
 
-fn from_structmap(map: vino::StructMap) -> Result<HashMap<String, rpc::StructSignature>> {
+impl TryFrom<vino::EnumSignature> for rpc::EnumSignature {
+  type Error = RpcError;
+  fn try_from(v: vino::EnumSignature) -> Result<Self> {
+    Ok(Self {
+      name: v.name,
+      values: v.values.into_iter().map(|v| v.try_into()).collect::<Result<Vec<_>>>()?,
+    })
+  }
+}
+
+impl TryFrom<vino::EnumVariant> for rpc::EnumVariant {
+  type Error = RpcError;
+  fn try_from(v: vino::EnumVariant) -> Result<Self> {
+    Ok(Self {
+      name: v.name,
+      index: v.index,
+    })
+  }
+}
+
+fn from_typemap(map: vino::TypeMap) -> Result<HashMap<String, rpc::TypeDefinition>> {
   let mut tmap = HashMap::new();
   for (k, v) in map.into_inner() {
     tmap.insert(k, v.try_into()?);

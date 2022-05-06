@@ -4,7 +4,7 @@ network:
   providers:
     - namespace: test-namespace
       kind: GrpcUrl
-      reference: https://127.0.0.1:$TEST_PORT
+      reference: http://127.0.0.1:$TEST_PORT
   schematics:
     - name: grpc
       providers:

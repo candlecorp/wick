@@ -34,10 +34,7 @@ pub enum Error {
   IoError(#[from] std::io::Error),
 
   #[error(transparent)]
-  ProviderSdkError(#[from] vino_provider::native::Error),
-
-  #[error(transparent)]
-  ComponentError(#[from] vino_packet::error::DeserializationError),
+  ComponentError(#[from] wasmflow_packet::error::Error),
 
   #[error(transparent)]
   UpstreamError(#[from] BoxedError),

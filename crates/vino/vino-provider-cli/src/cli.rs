@@ -1,7 +1,5 @@
 #[cfg(feature = "grpc")]
 mod grpc;
-#[cfg(feature = "http")]
-mod http;
 #[cfg(feature = "lattice")]
 mod lattice;
 
@@ -30,8 +28,6 @@ pub(crate) const FILE_DESCRIPTOR_SET: &[u8] = include_bytes!("../../vino-rpc/src
 pub struct ServerState {
   /// The address of the RPC server if it is running.
   pub rpc: Option<ServerControl>,
-  /// The address of the HTTP server if it is running.
-  pub http: Option<ServerControl>,
 
   /// True if we're connected to the lattice, false otherwise.
   pub lattice: Option<Arc<Lattice>>,
@@ -69,12 +65,6 @@ impl ServerState {
       let _ = ctl.tx.send(ServerMessage::Close);
     }
   }
-  /// Stop the HTTP server if it's running.
-  pub fn stop_http_server(&self) {
-    if let Some(ctl) = &self.http {
-      let _ = ctl.tx.send(ServerMessage::Close);
-    }
-  }
 }
 
 #[doc(hidden)]
@@ -84,11 +74,6 @@ pub fn print_info(info: &ServerState) {
     let addr = addr.addr;
     something_started = true;
     info!("GRPC server bound to {} on port {}", addr.ip(), addr.port());
-  }
-  if let Some(addr) = &info.http {
-    let addr = addr.addr;
-    something_started = true;
-    info!("HTTP server bound to {} on port {}", addr.ip(), addr.port());
   }
 
   if info.lattice.is_some() {
@@ -101,7 +86,7 @@ pub fn print_info(info: &ServerState) {
   }
 }
 
-/// Starts an RPC and/or an HTTP server for the passed [vino_rpc::RpcHandler].
+/// Starts an RPC server for the passed [vino_rpc::RpcHandler].
 pub async fn start_server(provider: SharedRpcHandler, opts: Option<Options>) -> Result<ServerState> {
   debug!("Starting server with options: {:?}", opts);
 
@@ -130,23 +115,6 @@ pub async fn start_server(provider: SharedRpcHandler, opts: Option<Options>) -> 
   };
 
   cfg_if::cfg_if! {
-    if #[cfg(feature="http")] {
-      let http_addr = if let Some(http_opts) = &opts.http {
-        if !http_opts.enabled {
-          None
-        } else {
-          let addr = http::start_http_server(http_opts, provider.clone()).await?;
-          Some(addr)
-        }
-      } else {
-       None
-      };
-    } else {
-      let http_addr = None;
-    }
-  };
-
-  cfg_if::cfg_if! {
     if #[cfg(feature="lattice")] {
       let lattice = match &opts.lattice {
         Some(lattice) => {
@@ -168,7 +136,6 @@ pub async fn start_server(provider: SharedRpcHandler, opts: Option<Options>) -> 
   Ok(ServerState {
     id: opts.id,
     rpc: ServerControl::maybe_new(rpc_addr),
-    http: ServerControl::maybe_new(http_addr),
     lattice,
   })
 }
@@ -186,7 +153,6 @@ pub async fn init_cli(provider: SharedRpcHandler, opts: Option<Options>) -> Resu
   info!("Waiting for ctrl-C");
   signal::ctrl_c().await?;
   println!(); // start on a new line.
-  state.stop_http_server();
   state.stop_rpc_server();
 
   Ok(())
@@ -194,7 +160,6 @@ pub async fn init_cli(provider: SharedRpcHandler, opts: Option<Options>) -> Resu
 
 #[cfg(test)]
 mod tests {
-  use std::net::Ipv4Addr;
   use std::str::FromStr;
   use std::sync::Arc;
   use std::time::Duration;
@@ -205,7 +170,6 @@ mod tests {
   use tonic::transport::Uri;
   use vino_invocation_server::connect_rpc_client;
   use vino_rpc::rpc::ListRequest;
-  use vino_rpc::{HostedType, MapWrapper};
 
   use super::*;
   use crate::options::ServerOptions;
@@ -226,62 +190,12 @@ mod tests {
     let rpc = config.rpc.unwrap();
     debug!("Waiting for server to start");
     sleep(Duration::from_millis(100)).await;
-    let uri = Uri::from_str(&format!("https://{}:{}", rpc.addr.ip(), rpc.addr.port())).unwrap();
+    let uri = Uri::from_str(&format!("http://{}:{}", rpc.addr.ip(), rpc.addr.port())).unwrap();
     let mut client = connect_rpc_client(uri).await?;
     let response = client.list(ListRequest {}).await.unwrap();
     let list = response.into_inner();
     println!("list: {:?}", list);
     assert_eq!(list.schemas.len(), 1);
-    Ok(())
-  }
-
-  #[cfg(feature = "http")]
-  #[test_logger::test(tokio::test)]
-  async fn test_http_service() -> Result<()> {
-    let config = start_server(
-      get_provider(),
-      Some(Options {
-        rpc: Some(ServerOptions {
-          address: Some(Ipv4Addr::from_str("127.0.0.1")?),
-          port: Some(8112),
-          ..Default::default()
-        }),
-        http: Some(ServerOptions {
-          enabled: true,
-          address: Some(Ipv4Addr::from_str("127.0.0.1")?),
-          port: Some(8111),
-          ..Default::default()
-        }),
-        ..Default::default()
-      }),
-    )
-    .await?;
-    sleep(Duration::from_millis(100)).await;
-    debug!("config: {:?}", config);
-    let http = config.http.unwrap();
-    let url = &format!("http://{}:{}", http.addr.ip(), http.addr.port());
-    println!("URL: {}", url);
-
-    let endpoint = format!("{}/rpc/list", url);
-    let client = reqwest::Client::new();
-    let resp = client
-      .post(endpoint)
-      .header("accept", "application/json")
-      .header("Content-Type", "application/json")
-      .body("{}")
-      .send()
-      .await?;
-    let body: Vec<HostedType> = serde_json::from_slice(&resp.bytes().await?)?;
-    debug!("Response bytes: {:?}", body);
-    assert_eq!(body.len(), 1);
-
-    #[allow(irrefutable_let_patterns)]
-    if let HostedType::Provider(sig) = &body[0] {
-      assert_eq!(sig.components.len(), 2);
-    } else {
-      panic!("Wrong type");
-    }
-
     Ok(())
   }
 }

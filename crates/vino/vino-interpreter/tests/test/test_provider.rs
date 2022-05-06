@@ -7,16 +7,18 @@ use serde_json::{json, Value};
 use tokio::task::JoinHandle;
 use tracing::trace;
 use vino_interpreter::{BoxError, Provider};
-use vino_provider::ProviderLink;
 use vino_random::{Random, Seed};
-use vino_transport::{Failure, Invocation, MessageTransport, TransportStream, TransportWrapper};
-use vino_types::ProviderSignature;
+use vino_transport::{Failure, MessageTransport, TransportStream, TransportWrapper};
+use wasmflow_collection_link::ProviderLink;
+use wasmflow_interface::ProviderSignature;
 
 pub struct TestProvider(ProviderSignature);
 impl TestProvider {
   pub fn new() -> Self {
     let sig = serde_json::from_value(json!({
       "name":"test-provider",
+      "format":1,
+      "version": "",
         "components" : {
           "echo": {
             "name": "echo",
@@ -173,12 +175,16 @@ fn defer(futs: Vec<JoinHandle<()>>) {
 }
 
 impl Provider for TestProvider {
-  fn handle(&self, mut invocation: Invocation, _config: Option<Value>) -> BoxFuture<Result<TransportStream, BoxError>> {
+  fn handle(
+    &self,
+    mut invocation: wasmflow_invocation::Invocation,
+    _config: Option<Value>,
+  ) -> BoxFuture<Result<TransportStream, BoxError>> {
     let operation = invocation.target.name();
     println!("got op {} in echo test provider", operation);
     let stream = match operation {
       "echo" => {
-        let input = invocation.payload.consume_raw("input").unwrap();
+        let input = invocation.payload.remove("input").unwrap();
 
         let (send, stream) = stream(1);
 
@@ -368,7 +374,7 @@ impl Provider for TestProvider {
         Ok(stream)
       }
       "exception" => {
-        let input = invocation.payload.consume_raw("input").unwrap();
+        let input = invocation.payload.remove("input").unwrap();
         println!("test::exception got {}", input);
 
         let (send, stream) = stream(1);
@@ -384,7 +390,7 @@ impl Provider for TestProvider {
         Ok(stream)
       }
       "panic" => {
-        let input = invocation.payload.consume_raw("input").unwrap();
+        let input = invocation.payload.remove("input").unwrap();
         println!("test::panic got {}", input);
         panic!();
       }
@@ -393,7 +399,7 @@ impl Provider for TestProvider {
     Box::pin(async move { stream })
   }
 
-  fn list(&self) -> &vino_types::ProviderSignature {
+  fn list(&self) -> &wasmflow_interface::ProviderSignature {
     &self.0
   }
 }

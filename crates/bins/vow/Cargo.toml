@@ -14,14 +14,13 @@ vino-rpc = { path = "../../vino/vino-rpc" }
 vino-wascap = { path = "../../vino/vino-wascap" }
 vino-provider-cli = { path = "../../vino/vino-provider-cli" }
 vino-provider-wasm = { path = "../../vino/vino-provider-wasm" }
-vino-packet = { path = "../../../sdk/crates/vino-packet" }
-vino-codec = { path = "../../../sdk/crates/vino-codec" }
-vino-provider = { path = "../../../sdk/crates/vino-provider", features = [
-  "native",
-] }
+wasmflow-packet = { path = "../../../sdk/crates/wasmflow-packet" }
+wasmflow-codec = { path = "../../../sdk/crates/wasmflow-codec" }
 vino-transport = { path = "../../../sdk/crates/vino-transport", features = [
   "all",
 ] }
+wasmflow-invocation = { path = "../../../sdk/crates/wasmflow-invocation" }
+wasmflow-entity = { path = "../../../sdk/crates/wasmflow-entity" }
 
 clap = { version = "3.0", features = ["derive", "env"] }
 serde_json = "1.0"

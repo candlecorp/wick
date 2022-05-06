@@ -5,12 +5,14 @@ mod test;
 
 use anyhow::Result;
 use test::{JsonWriter, TestProvider};
-use vino_entity::Entity;
 use vino_interpreter::graph::from_def;
 use vino_interpreter::{HandlerMap, Interpreter, InterpreterOptions, NamespaceHandler};
 use vino_manifest::Loadable;
 use vino_random::Seed;
-use vino_transport::{Invocation, MessageTransport, TransportMap};
+use vino_transport::MessageTransport;
+use wasmflow_entity::Entity;
+use wasmflow_invocation::Invocation;
+use wasmflow_packet::PacketMap;
 
 fn load<T: AsRef<Path>>(path: T) -> Result<vino_manifest::HostManifest> {
   Ok(vino_manifest::HostManifest::load_from_file(path.as_ref())?)
@@ -26,7 +28,7 @@ async fn test_panic() -> Result<()> {
   let manifest = load("./tests/manifests/v0/bad-cases/panic.yaml")?;
   let network = from_def(&manifest.network().try_into()?)?;
   let providers = HandlerMap::new(vec![NamespaceHandler::new("test", Box::new(TestProvider::new()))]);
-  let inputs = TransportMap::from([("input", "Hello world".to_owned())]);
+  let inputs = PacketMap::from([("input", "Hello world".to_owned())]);
 
   let invocation = Invocation::new_test("panic", Entity::local("test"), inputs, None);
   let mut interpreter = Interpreter::new(Some(Seed::unsafe_new(1)), network, None, Some(providers))?;
@@ -49,7 +51,7 @@ async fn test_timeout_done_noclose() -> Result<()> {
   let network = from_def(&manifest.network().try_into()?)?;
   let providers = HandlerMap::new(vec![NamespaceHandler::new("test", Box::new(TestProvider::new()))]);
 
-  let inputs = TransportMap::from([("input", "hello world".to_owned())]);
+  let inputs = PacketMap::from([("input", "hello world".to_owned())]);
   let invocation = Invocation::new_test("timeout", Entity::local("test"), inputs, None);
   let mut interpreter = Interpreter::new(Some(Seed::unsafe_new(1)), network, None, Some(providers))?;
   interpreter.start(OPTIONS, Some(Box::new(JsonWriter::default()))).await;
@@ -78,7 +80,7 @@ async fn test_timeout_missingdone() -> Result<()> {
   let network = from_def(&manifest.network().try_into()?)?;
   let providers = HandlerMap::new(vec![NamespaceHandler::new("test", Box::new(TestProvider::new()))]);
 
-  let inputs = TransportMap::from([("input", "hello world".to_owned())]);
+  let inputs = PacketMap::from([("input", "hello world".to_owned())]);
   let invocation = Invocation::new_test("timeout-nodone", Entity::local("test"), inputs, None);
   let mut interpreter = Interpreter::new(Some(Seed::unsafe_new(1)), network, None, Some(providers))?;
   interpreter.start(OPTIONS, Some(Box::new(JsonWriter::default()))).await;

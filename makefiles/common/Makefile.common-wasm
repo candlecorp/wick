@@ -1,0 +1,31 @@
+# Directory to store the build artifacts
+ARTIFACT_DIR:=build/
+# Path to copy the build artifact to
+BUILD_ARTIFACT:=$(ARTIFACT_DIR)/$(CRATE_FS_NAME).wasm
+# Path for the signed artifact
+SIGNED_ARTIFACT:=$(ARTIFACT_DIR)/$(CRATE_FS_NAME)_s.wasm
+
+TARGET?=wasm32-unknown-unknown
+
+CLEAN_FILES += $(BUILD_ARTIFACT) $(SIGNED_ARTIFACT)
+
+VINOC=cargo run --manifest-path $(VINO)/Cargo.toml -p vinoc --
+
+$(ARTIFACT_DIR):
+	@echo Making directory \"$@\"
+	$(shell $(MKDIR) $@)
+
+$(BUILD_ARTIFACT): $(ARTIFACT_DIR) $(INTERFACE) src/components $(GENERATED_MODULE) $(RUST_SOURCES)
+	@echo Building artifact
+	cargo build --target $(TARGET) --release
+	@echo Copying binary to $(BUILD_ARTIFACT)
+	@cp $(WORKSPACE_ROOT)/target/$(TARGET)/release/$(CRATE_FS_NAME).wasm build/
+
+$(SIGNED_ARTIFACT): $(BUILD_ARTIFACT)
+	@echo Signing $(BUILD_ARTIFACT)
+	@$(VINOC) sign $(BUILD_ARTIFACT) $(INTERFACE) --ver=$(CRATE_VERSION) --rev=0
+	@echo Created $(SIGNED_ARTIFACT)
+
+.phony: check
+check:
+	cargo check --target=wasm32-wasi
