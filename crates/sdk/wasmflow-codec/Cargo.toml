@@ -1,0 +1,25 @@
+[package]
+name = "wasmflow-codec"
+version = "0.9.0"
+edition = "2021"
+license = "BSD-3-Clause"
+description = "JSON, Messagepack, & Raw serde value encoding/decoding library"
+documentation = "https://docs.vino.dev"
+keywords = ["serde", "vino", "codec", "json", "messagepack"]
+categories = ["wasm"]
+exclude = ["tests/*", ".github/*", ".gitignore"]
+repository = "https://github.com/vinodotdev/vino-sdk"
+homepage = "https://docs.vino.dev"
+
+[badges]
+maintenance = { status = "actively-developed" }
+
+[features]
+
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+rmp-serde = { version = "1.1.0" }
+serde_json = { version = "1.0" }
+thiserror = "1.0"
+serde-value = "0.7.0"

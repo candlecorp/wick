@@ -1,0 +1,1 @@
+{"name":"test-sig","format":0,"version":"","types":{"Unit":{"type":"enum","name":"Unit","values":[{"name":"millis","index":0},{"name":"micros","index":1}]}},"components":{"my_component":{"name":"my_component","inputs":{"input1":{"type":"string"},"input2":{"type":"u64"}},"outputs":{"output1":{"type":"string"},"output2":{"type":"u64"}}}}}
