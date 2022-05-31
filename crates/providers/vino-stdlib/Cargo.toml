@@ -13,10 +13,10 @@ guest = []
 [dependencies]
 vino-rpc = { path = "../../vino/vino-rpc" }
 vino-random = { path = "../../vino/vino-random" }
-wasmflow-sdk = { path = "../../../sdk/crates/wasmflow-sdk", features = ["v1"] }
-vino-transport = { path = "../../../sdk/crates/vino-transport" }
-wasmflow-packet = { path = "../../../sdk/crates/wasmflow-packet" }
-wasmflow-entity = { path = "../../../sdk/crates/wasmflow-entity" }
+wasmflow-sdk = { path = "../../sdk/wasmflow-sdk", features = ["v1"] }
+vino-transport = { path = "../../sdk/vino-transport" }
+wasmflow-packet = { path = "../../sdk/wasmflow-packet" }
+wasmflow-entity = { path = "../../sdk/wasmflow-entity" }
 tracing = "0.1"
 serde = { version = "1.0", features = ["derive"] }
 async-trait = "0.1"
@@ -30,6 +30,4 @@ vino-stdlib = { path = ".", features = ["guest"] }
 logger = { path = "../../vino/logger" }
 test-logger = { path = "../../misc/test-logger" }
 futures = "0.3"
-vino-transport = { path = "../../../sdk/crates/vino-transport", features = [
-  "all",
-] }
+vino-transport = { path = "../../sdk/vino-transport", features = ["all"] }

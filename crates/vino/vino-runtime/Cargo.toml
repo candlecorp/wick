@@ -8,14 +8,14 @@ license = "BSD-3-Clause"
 [features]
 
 [dependencies]
-wasmflow-interface = { path = "../../../sdk/crates/wasmflow-interface" }
-wasmflow-streams = { path = "../../../sdk/crates/wasmflow-streams" }
-wasmflow-invocation = { path = "../../../sdk/crates/wasmflow-invocation" }
-wasmflow-packet = { path = "../../../sdk/crates/wasmflow-packet" }
-wasmflow-macros = { path = "../../../sdk/crates/wasmflow-macros" }
-wasmflow-output = { path = "../../../sdk/crates/wasmflow-output", features = [] }
-wasmflow-codec = { path = "../../../sdk/crates/wasmflow-codec" }
-wasmflow-entity = { path = "../../../sdk/crates/wasmflow-entity" }
+wasmflow-interface = { path = "../../sdk/wasmflow-interface" }
+wasmflow-streams = { path = "../../sdk/wasmflow-streams" }
+wasmflow-invocation = { path = "../../sdk/wasmflow-invocation" }
+wasmflow-packet = { path = "../../sdk/wasmflow-packet" }
+wasmflow-macros = { path = "../../sdk/wasmflow-macros" }
+wasmflow-output = { path = "../../sdk/wasmflow-output", features = [] }
+wasmflow-codec = { path = "../../sdk/wasmflow-codec" }
+wasmflow-entity = { path = "../../sdk/wasmflow-entity" }
 
 vino-schematic-graph = { path = "../vino-schematic-graph" }
 vino-interpreter = { path = "../vino-interpreter" }
@@ -28,9 +28,7 @@ vino-provider-par = { path = "../vino-provider-par" }
 vino-provider-grpc = { path = "../vino-provider-grpc" }
 vino-lattice = { path = "../vino-lattice" }
 vino-stdlib = { path = "../../providers/vino-stdlib" }
-vino-transport = { path = "../../../sdk/crates/vino-transport", features = [
-  "all",
-] }
+vino-transport = { path = "../../sdk/vino-transport", features = ["all"] }
 vino-wascap = { path = "../vino-wascap" }
 vino-rpc = { path = "../vino-rpc" }
 

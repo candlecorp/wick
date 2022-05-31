@@ -17,7 +17,7 @@ guest = []
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }
 async-trait = "0.1"
-wasmflow-sdk = { path = "../../../sdk/crates/wasmflow-sdk", features = ["v1"] }
+wasmflow-sdk = { path = "../../sdk/wasmflow-sdk", features = ["v1"] }
 
 [dev-dependencies]
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }

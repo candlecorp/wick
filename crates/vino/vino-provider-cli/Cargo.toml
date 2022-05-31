@@ -20,11 +20,9 @@ vino-rpc = { path = "../vino-rpc", optional = true }
 vino-invocation-server = { path = "../vino-invocation-server", optional = true }
 vino-lattice = { path = "../vino-lattice", optional = true }
 
-wasmflow-packet = { path = "../../../sdk/crates/wasmflow-packet" }
-wasmflow-codec = { path = "../../../sdk/crates/wasmflow-codec" }
-vino-transport = { path = "../../../sdk/crates/vino-transport", features = [
-  "all",
-] }
+wasmflow-packet = { path = "../../sdk/wasmflow-packet" }
+wasmflow-codec = { path = "../../sdk/wasmflow-codec" }
+vino-transport = { path = "../../sdk/vino-transport", features = ["all"] }
 
 cfg-if = "1.0"
 

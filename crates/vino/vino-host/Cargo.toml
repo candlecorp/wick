@@ -11,23 +11,21 @@ license = "BSD-3-Clause"
 
 
 [dependencies]
-wasmflow-interface = { path = "../../../sdk/crates/wasmflow-interface", features = [] }
-wasmflow-invocation = { path = "../../../sdk/crates/wasmflow-invocation" }
+wasmflow-interface = { path = "../../sdk/wasmflow-interface", features = [] }
+wasmflow-invocation = { path = "../../sdk/wasmflow-invocation" }
 vino-random = { path = "../vino-random" }
 vino-runtime = { path = "../vino-runtime" }
 vino-lattice = { path = "../vino-lattice" }
 vino-manifest = { path = "../vino-manifest" }
-vino-transport = { path = "../../../sdk/crates/vino-transport", features = [
-  "all",
-] }
-wasmflow-output = { path = "../../../sdk/crates/wasmflow-output", features = [] }
+vino-transport = { path = "../../sdk/vino-transport", features = ["all"] }
+wasmflow-output = { path = "../../sdk/wasmflow-output", features = [] }
 vino-loader = { path = "../vino-loader" }
 vino-provider-cli = { path = "../vino-provider-cli" }
-wasmflow-codec = { path = "../../../sdk/crates/wasmflow-codec" }
+wasmflow-codec = { path = "../../sdk/wasmflow-codec" }
 vino-rpc = { path = "../vino-rpc" }
 vino-invocation-server = { path = "../vino-invocation-server" }
-wasmflow-entity = { path = "../../../sdk/crates/wasmflow-entity" }
-wasmflow-macros = { path = "../../../sdk/crates/wasmflow-macros" }
+wasmflow-entity = { path = "../../sdk/wasmflow-entity" }
+wasmflow-macros = { path = "../../sdk/wasmflow-macros" }
 tracing = "0.1"
 
 thiserror = "1.0"

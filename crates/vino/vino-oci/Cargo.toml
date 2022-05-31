@@ -21,7 +21,7 @@ serde = { version = "1", features = ["derive"] }
 tar = "0.4.38"
 tokio = { version = "1", features = ["fs"] }
 
-wasmflow-interface = { path = "../../../sdk/crates/wasmflow-interface" }
+wasmflow-interface = { path = "../../sdk/wasmflow-interface" }
 vino-wascap = { path = "../vino-wascap" }
 
 [dev-dependencies]

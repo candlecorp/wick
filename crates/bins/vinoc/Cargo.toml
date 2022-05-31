@@ -8,24 +8,22 @@ license = "BSD-3-Clause"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-wasmflow-invocation = { path = "../../../sdk/crates/wasmflow-invocation" }
-wasmflow-interface = { path = "../../../sdk/crates/wasmflow-interface" }
+wasmflow-invocation = { path = "../../sdk/wasmflow-invocation" }
+wasmflow-interface = { path = "../../sdk/wasmflow-interface" }
 cli-common = { path = "../cli-common" }
 vino-par = { path = "../../vino/vino-par" }
 vino-runtime = { path = "../../vino/vino-runtime" }
-wasmflow-packet = { path = "../../../sdk/crates/wasmflow-packet" }
+wasmflow-packet = { path = "../../sdk/wasmflow-packet" }
 vino-host = { path = "../../vino/vino-host" }
 vino-provider-cli = { path = "../../vino/vino-provider-cli" }
 vino-manifest = { path = "../../vino/vino-manifest" }
 vino-rpc = { path = "../../vino/vino-rpc", features = ["client"] }
 vino-wascap = { path = "../../vino/vino-wascap" }
 logger = { path = "../../vino/logger" }
-wasmflow-codec = { path = "../../../sdk/crates/wasmflow-codec" }
-wasmflow-macros = { path = "../../../sdk/crates/wasmflow-macros" }
-wasmflow-entity = { path = "../../../sdk/crates/wasmflow-entity" }
-vino-transport = { path = "../../../sdk/crates/vino-transport", features = [
-  "all",
-] }
+wasmflow-codec = { path = "../../sdk/wasmflow-codec" }
+wasmflow-macros = { path = "../../sdk/wasmflow-macros" }
+wasmflow-entity = { path = "../../sdk/wasmflow-entity" }
+vino-transport = { path = "../../sdk/vino-transport", features = ["all"] }
 
 async-recursion = "1.0"
 nkeys = "0.2"

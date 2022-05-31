@@ -11,10 +11,10 @@ provider = []
 guest = []
 
 [dependencies]
-wasmflow-sdk = { path = "../../../sdk/crates/wasmflow-sdk", features = ["v1"] }
+wasmflow-sdk = { path = "../../sdk/wasmflow-sdk", features = ["v1"] }
 vino-rpc = { path = "../../vino/vino-rpc" }
-wasmflow-entity = { path = "../../../sdk/crates/wasmflow-entity" }
-vino-transport = { path = "../../../sdk/crates/vino-transport" }
+wasmflow-entity = { path = "../../sdk/wasmflow-entity" }
+vino-transport = { path = "../../sdk/vino-transport" }
 serde = { version = "1.0", features = ["derive"] }
 async-trait = "0.1.50"
 tokio = { version = "1", features = ["rt-multi-thread"] }

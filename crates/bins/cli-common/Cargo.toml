@@ -11,9 +11,7 @@ license = "BSD-3-Clause"
 
 [dependencies]
 clap = { version = "3.0", features = ["derive", "env"] }
-vino-transport = { path = "../../../sdk/crates/vino-transport", features = [
-  "all",
-] }
+vino-transport = { path = "../../sdk/vino-transport", features = ["all"] }
 tokio-stream = "0.1.8"
 serde_json = { version = "1.0" }
 tracing = "0.1"

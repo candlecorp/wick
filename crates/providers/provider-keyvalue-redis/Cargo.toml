@@ -8,15 +8,13 @@ default = ["provider"]
 provider = []
 
 [dependencies]
-wasmflow-sdk = { path = "../../../sdk/crates/wasmflow-sdk", features = ["v1"] }
-wasmflow-entity = { path = "../../../sdk/crates/wasmflow-entity", features = [] }
+wasmflow-sdk = { path = "../../sdk/wasmflow-sdk", features = ["v1"] }
+wasmflow-entity = { path = "../../sdk/wasmflow-entity", features = [] }
 vino-provider-cli = { path = "../../vino/vino-provider-cli" }
-vino-transport = { path = "../../../sdk/crates/vino-transport", features = [
-  "all",
-] }
-wasmflow-packet = { path = "../../../sdk/crates/wasmflow-packet" }
+vino-transport = { path = "../../sdk/vino-transport", features = ["all"] }
+wasmflow-packet = { path = "../../sdk/wasmflow-packet" }
 vino-rpc = { path = "../../vino/vino-rpc" }
-wasmflow-macros = { path = "../../../sdk/crates/wasmflow-macros" }
+wasmflow-macros = { path = "../../sdk/wasmflow-macros" }
 vino-interface-keyvalue = { path = "../../interfaces/interface-keyvalue", features = [
   "provider",
   "guest",

@@ -8,17 +8,15 @@ edition = "2021"
 [features]
 
 [dependencies]
-wasmflow-interface = { path = "../../../sdk/crates/wasmflow-interface" }
-wasmflow-invocation = { path = "../../../sdk/crates/wasmflow-invocation" }
+wasmflow-interface = { path = "../../sdk/wasmflow-interface" }
+wasmflow-invocation = { path = "../../sdk/wasmflow-invocation" }
 nats = { version = "0.15" }
 tracing = "0.1"
 vino-rpc = { path = "../vino-rpc" }
-vino-transport = { path = "../../../sdk/crates/vino-transport", features = [
-  "all",
-] }
-wasmflow-packet = { path = "../../../sdk/crates/wasmflow-packet", features = [] }
-wasmflow-entity = { path = "../../../sdk/crates/wasmflow-entity" }
-wasmflow-codec = { path = "../../../sdk/crates/wasmflow-codec" }
+vino-transport = { path = "../../sdk/vino-transport", features = ["all"] }
+wasmflow-packet = { path = "../../sdk/wasmflow-packet", features = [] }
+wasmflow-entity = { path = "../../sdk/wasmflow-entity" }
+wasmflow-codec = { path = "../../sdk/wasmflow-codec" }
 thiserror = "1.0"
 nkeys = "0.2"
 serde = { version = "1.0", features = ["derive"] }

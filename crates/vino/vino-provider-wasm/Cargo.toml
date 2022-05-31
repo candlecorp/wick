@@ -15,19 +15,17 @@ vino-rpc = { path = "../vino-rpc" }
 vino-random = { path = "../vino-random" }
 vino-wascap = { path = "../vino-wascap" }
 vino-loader = { path = "../vino-loader" }
-wasmflow-packet = { path = "../../../sdk/crates/wasmflow-packet" }
-wasmflow-entity = { path = "../../../sdk/crates/wasmflow-entity" }
-wasmflow-codec = { path = "../../../sdk/crates/wasmflow-codec" }
-wasmflow-output = { path = "../../../sdk/crates/wasmflow-output", features = [] }
-vino-transport = { path = "../../../sdk/crates/vino-transport", features = [
-  "all",
-] }
-wasmflow-sdk = { path = "../../../sdk/crates/wasmflow-sdk", features = ["v1"] }
-wasmflow-interface = { path = "../../../sdk/crates/wasmflow-interface" }
-wasmflow-component = { path = "../../../sdk/crates/wasmflow-component" }
-wasmflow-invocation = { path = "../../../sdk/crates/wasmflow-invocation" }
-wasmflow-collection-link = { path = "../../../sdk/crates/wasmflow-collection-link" }
-wasmflow-macros = { path = "../../../sdk/crates/wasmflow-macros" }
+wasmflow-packet = { path = "../../sdk/wasmflow-packet" }
+wasmflow-entity = { path = "../../sdk/wasmflow-entity" }
+wasmflow-codec = { path = "../../sdk/wasmflow-codec" }
+wasmflow-output = { path = "../../sdk/wasmflow-output", features = [] }
+vino-transport = { path = "../../sdk/vino-transport", features = ["all"] }
+wasmflow-sdk = { path = "../../sdk/wasmflow-sdk", features = ["v1"] }
+wasmflow-interface = { path = "../../sdk/wasmflow-interface" }
+wasmflow-component = { path = "../../sdk/wasmflow-component" }
+wasmflow-invocation = { path = "../../sdk/wasmflow-invocation" }
+wasmflow-collection-link = { path = "../../sdk/wasmflow-collection-link" }
+wasmflow-macros = { path = "../../sdk/wasmflow-macros" }
 derivative = "2.2"
 tokio = { version = "1", features = ["fs"] }
 parking_lot = "0.12"

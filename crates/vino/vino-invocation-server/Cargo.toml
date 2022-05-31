@@ -8,12 +8,10 @@ license = "BSD-3-Clause"
 
 [dependencies]
 vino-rpc = { path = "../vino-rpc" }
-wasmflow-entity = { path = "../../../sdk/crates/wasmflow-entity" }
-vino-transport = { path = "../../../sdk/crates/vino-transport", features = [
-  "all",
-] }
-wasmflow-interface = { path = "../../../sdk/crates/wasmflow-interface" }
-wasmflow-invocation = { path = "../../../sdk/crates/wasmflow-invocation" }
+wasmflow-entity = { path = "../../sdk/wasmflow-entity" }
+vino-transport = { path = "../../sdk/vino-transport", features = ["all"] }
+wasmflow-interface = { path = "../../sdk/wasmflow-interface" }
+wasmflow-invocation = { path = "../../sdk/wasmflow-invocation" }
 
 
 tonic = { version = "0.7", features = ["tls"] }

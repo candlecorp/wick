@@ -11,7 +11,7 @@ provider = []
 guest = []
 
 [dependencies]
-wasmflow-sdk = { path = "../../../sdk/crates/wasmflow-sdk", features = ["v1"] }
+wasmflow-sdk = { path = "../../sdk/wasmflow-sdk", features = ["v1"] }
 serde = { version = "1.0", features = ["derive"] }
 
 [dev-dependencies]
