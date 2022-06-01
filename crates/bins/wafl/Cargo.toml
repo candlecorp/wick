@@ -1,0 +1,55 @@
+[package]
+name = "wafl"
+version = "0.5.0"
+edition = "2021"
+default-run = "wafl"
+license = "BSD-3-Clause"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+wasmflow-invocation = { path = "../../sdk/wasmflow-invocation" }
+wasmflow-interface = { path = "../../sdk/wasmflow-interface" }
+cli-common = { path = "../cli-common" }
+vino-par = { path = "../../vino/vino-par" }
+vino-runtime = { path = "../../vino/vino-runtime" }
+wasmflow-packet = { path = "../../sdk/wasmflow-packet" }
+vino-host = { path = "../../vino/vino-host" }
+vino-provider-cli = { path = "../../vino/vino-provider-cli" }
+vino-manifest = { path = "../../vino/vino-manifest" }
+vino-rpc = { path = "../../vino/vino-rpc", features = ["client"] }
+vino-wascap = { path = "../../vino/vino-wascap" }
+logger = { path = "../../vino/logger" }
+wasmflow-codec = { path = "../../sdk/wasmflow-codec" }
+wasmflow-macros = { path = "../../sdk/wasmflow-macros" }
+wasmflow-entity = { path = "../../sdk/wasmflow-entity" }
+vino-transport = { path = "../../sdk/vino-transport", features = ["all"] }
+cargo-generate = "0.14"
+
+async-recursion = "1.0"
+nkeys = "0.2"
+tracing = "0.1"
+clap = { version = "3.0", features = ["derive", "env"] }
+serde_json = "1.0"
+thiserror = "1.0"
+tokio = { version = "1", features = [
+  "macros",
+  "signal",
+  "io-std",
+  "rt-multi-thread",
+  "io-util",
+] }
+tonic = { version = "0.7", features = ["tls"] }
+atty = "0.2"
+oci-distribution = { version = "0.9", features = [
+  "rustls-tls",
+], default-features = false }
+vino-oci = { path = "../../vino/vino-oci" }
+anyhow = "1.0"
+
+[dev-dependencies]
+trycmd = "0.13"
+
+[[bin]]
+name = "wafl"
+path = "src/main.rs"

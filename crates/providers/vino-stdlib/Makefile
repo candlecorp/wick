@@ -1,2 +1,2 @@
-include ../../../Makefiles/common/Makefile.prelude
+include ../../../makefiles/common/Makefile.prelude
 include $(COMMON_DIR)/Makefile.stateful-native

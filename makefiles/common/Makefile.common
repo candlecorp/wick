@@ -11,7 +11,7 @@ CRATE_FS_NAME:=$(subst -,_,$(CRATE_NAME))
 # Version from Cargo.toml
 CRATE_VERSION:=$(shell tomlq -f Cargo.toml package.version)
 # Get the root directory
-WORKSPACE_ROOT:=$(shell cargo metadata --format-version 1 --offline | jq -r '.workspace_root')
+WORKSPACE_ROOT:=$(shell cargo metadata --format-version 1  | jq -r '.workspace_root')
 
 # Path to the interface JSON
 INTERFACE:=./interface.json

@@ -47,6 +47,7 @@ fn priority_module(module: &str) -> bool {
     "vow",
     "cli_common",
     "wapc",
+    "wafl",
     "test_vino_provider",
     "wasmtime_provider",
   ]
@@ -62,7 +63,7 @@ fn vino_filter() -> FilterFn {
       .split("::")
       .next()
       .unwrap_or_default();
-    priority_module(module) || module.starts_with("vino")
+    priority_module(module) || module.starts_with("vino") || module.starts_with("wasmflow")
   })
 }
 
