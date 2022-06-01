@@ -9,7 +9,7 @@ use vino_transport::{JsonError, TransportJson};
 async fn test_vow_serve() -> utils::TestResult<()> {
   debug!("Starting provider");
   let (p_tx, p_handle, port) = start_provider(
-    "vow",
+    "wasmflow",
     "component rpc server",
     &[
       "serve",
@@ -23,7 +23,7 @@ async fn test_vow_serve() -> utils::TestResult<()> {
   let input_data = "test input";
 
   let args = vec![format!("input=\"{}\"", input_data)];
-  let actual = vinoc_invoke(&port, "validate", args).await?;
+  let actual = wafl_invoke(&port, "validate", args).await?;
 
   let expected = hashmap! { "output".to_owned() => TransportJson {
       signal: None,

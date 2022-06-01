@@ -1,13 +1,9 @@
+use anyhow::Result;
 use tokio_stream::{Stream, StreamExt};
 use tracing::trace;
 use vino_transport::{MessageTransport, TransportStream, TransportWrapper};
 
-pub async fn print_stream_json(
-  mut stream: TransportStream,
-  filter: &[String],
-  terse: bool,
-  raw: bool,
-) -> Result<(), String> {
+pub async fn print_stream_json(mut stream: TransportStream, filter: &[String], terse: bool, raw: bool) -> Result<()> {
   if !filter.is_empty() {
     trace!("filtering only {:?}", filter);
   }
@@ -22,7 +18,7 @@ pub async fn print_stream_json(
     }
     if terse {
       if let MessageTransport::Failure(err) = &wrapper.payload {
-        return Err(err.message().to_owned());
+        return Err(anyhow::Error::msg(err.message().to_owned()));
       }
       let mut json = wrapper.payload.as_json();
 

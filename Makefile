@@ -1,4 +1,4 @@
-include ./Makefiles/common/Makefile.prelude
+include ./makefiles/common/Makefile.prelude
 
 CRATES_DIR := ./crates
 
@@ -24,7 +24,7 @@ TEST_MAIN_NETWORK_COMP=$(TEST_WASI_DIR)/build/test_main_network_component_s.wasm
 TEST_PAR=crates/vino/vino-runtime/tests/bundle.tar
 TEST_PAR_BIN=crates/vino/vino-provider-par/vino-standalone
 
-VINO_BINS?=vinoc vino vow
+CORE_BINS?=wafl wasmflow
 
 RELEASE?=false
 ARCH?=local
@@ -42,14 +42,14 @@ endif
 .PHONY: all
 all: build  ## Build everything in this project
 
-# Defines rules for each of the VINO_BINS to copy them into build/local
+# Defines rules for each of the CORE_BINS to copy them into build/local
 define BUILD_BIN
 $(1): build
 	cp target/debug/$$@ build/local
 endef
 
 # Call the above rule generator for each BIN file
-$(foreach bin,$(VINO_BINS),$(eval $(call BUILD_BIN,$(bin))))
+$(foreach bin,$(CORE_BINS),$(eval $(call BUILD_BIN,$(bin))))
 
 .PHONY: cleangen
 cleangen:  ## Run `make clean && make codegen` in child projects
@@ -78,17 +78,17 @@ clean:  ## Remove generated artifacts and files
 	cargo clean
 
 .PHONY: install-release
-install-release: $(VINO_BINS)  ## Build optimized vino binaries and install them to your local cargo bin
+install-release: $(CORE_BINS)  ## Build optimized binaries and install them to your local cargo bin
 	cargo build --workspace --release
 	cp build/local/* ~/.cargo/bin/
 
 .PHONY: install
-install: $(VINO_BINS)  ## Build vino binaries and install them to your local cargo bin
+install: $(CORE_BINS)  ## Build binaries and install them to your local cargo bin
 	cargo build --workspace
 	cp build/local/* ~/.cargo/bin/
 
 .PHONY: build
-build: ./build/local codegen   ## Build the entire vino project
+build: ./build/local codegen   ## Build the entire project
 	cargo build --workspace --all
 
 $(TEST_WASM):
@@ -108,7 +108,7 @@ $(TEST_PAR_BIN):
 	cp target/release/vino-standalone $@
 
 $(TEST_PAR): $(TEST_PAR_BIN)
-	cargo run -p vinoc -- pack $< ./crates/integration/test-provider/interface.json -o $@
+	cargo run -p wafl -- bundle pack $< ./crates/integration/test-provider/interface.json -o $@
 
 ./build/$(ARCH):
 	mkdir -p $@
@@ -130,7 +130,7 @@ test-integration: codegen wasm $(TEST_PAR) ## Run all tests for the workspace, i
 
 .PHONY: test-bins
 test-bins: codegen wasm $(TEST_PAR) ## Run tests for the main binaries
-	cargo test -p vino -p vinoc -p vow
+	cargo test -p wafl -p wasmflow
 
 .PHONY: update-lint
 update-lint:   ## Update the lint configuration for rust projects
@@ -146,28 +146,28 @@ else
 endif
 
 .PHONY: bins
-bins: ./build/$(ARCH)  ## Build vino bins (supports ARCH & RELEASE env variables)
+bins: ./build/$(ARCH)  ## Build binaries (supports ARCH & RELEASE env variables)
 	@echo "Building ARCH=$(ARCH) RELEASE=$(RELEASE)"
 	@rm -rf ./build/$(ARCH)/*
 ifeq ($(ARCH),local)
 ifeq ($(RELEASE),true)
-	cargo build --release $(foreach bin,$(VINO_BINS),-p $(bin))
-	cp $(foreach bin,$(VINO_BINS),./target/release/$(bin)$(BIN_SUFFIX)) ./build/$(ARCH)
+	cargo build --release $(foreach bin,$(CORE_BINS),-p $(bin))
+	cp $(foreach bin,$(CORE_BINS),./target/release/$(bin)$(BIN_SUFFIX)) ./build/$(ARCH)
 else
-	cargo build $(foreach bin,$(VINO_BINS),-p $(bin))
-	cp $(foreach bin,$(VINO_BINS),./target/debug/$(bin)$(BIN_SUFFIX)) ./build/$(ARCH)
+	cargo build $(foreach bin,$(CORE_BINS),-p $(bin))
+	cp $(foreach bin,$(CORE_BINS),./target/debug/$(bin)$(BIN_SUFFIX)) ./build/$(ARCH)
 endif
 else
 ifeq ($(RELEASE),true)
 ifeq ($(ARCH),x86_64-pc-windows-gnu)
-	CARGO_PROFILE_RELEASE_LTO=false cross build --target $(ARCH) --release $(foreach bin,$(VINO_BINS),-p $(bin))
+	CARGO_PROFILE_RELEASE_LTO=false cross build --target $(ARCH) --release $(foreach bin,$(CORE_BINS),-p $(bin))
 else
-	cross build --target $(ARCH) --release $(foreach bin,$(VINO_BINS),-p $(bin))
+	cross build --target $(ARCH) --release $(foreach bin,$(CORE_BINS),-p $(bin))
 endif
-	cp $(foreach bin,$(VINO_BINS),./target/$(ARCH)/release/$(bin)$(BIN_SUFFIX)) ./build/$(ARCH)
+	cp $(foreach bin,$(CORE_BINS),./target/$(ARCH)/release/$(bin)$(BIN_SUFFIX)) ./build/$(ARCH)
 else
-	cross build --target $(ARCH) $(foreach bin,$(VINO_BINS),-p $(bin))
-	cp $(foreach bin,$(VINO_BINS),./target/$(ARCH)/debug/$(bin)$(BIN_SUFFIX)) ./build/$(ARCH)
+	cross build --target $(ARCH) $(foreach bin,$(CORE_BINS),-p $(bin))
+	cp $(foreach bin,$(CORE_BINS),./target/$(ARCH)/debug/$(bin)$(BIN_SUFFIX)) ./build/$(ARCH)
 endif
 endif
 

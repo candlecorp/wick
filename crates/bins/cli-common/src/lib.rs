@@ -92,5 +92,3 @@
 )]
 
 pub mod functions;
-mod run_options;
-pub use run_options::RunOptions;

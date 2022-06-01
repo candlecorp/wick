@@ -165,7 +165,7 @@ jobs:
           name: Build
           command: |
             VERSION="nightly-$(date +%F)"
-            VINO_VERSION=VERSION VOW_VERSION=VERSION VINOC_VERSION=VERSION ARCH=<<parameters.arch>> RELEASE=<<parameters.release>>  make bins
+            WASMFLOW_VERSION=VERSION WAFL_VERSION=VERSION ARCH=<<parameters.arch>> RELEASE=<<parameters.release>>  make bins
       - save_cache:
           key: artifacts-<<parameters.arch>>-{{ .Environment.CIRCLE_SHA1 }}
           paths:
@@ -200,12 +200,12 @@ jobs:
           command: |
             cd /home/circleci/project
             mkdir -p ./build/artifacts
-            make-tarball vino ./build/x86_64-unknown-linux-gnu linux.x86_64 build/artifacts
-            make-tarball vino ./build/aarch64-unknown-linux-gnu linux.aarch64 build/artifacts
-            make-tarball vino ./build/x86_64-apple-darwin darwin.x86_64 build/artifacts
-            make-tarball vino ./build/aarch64-apple-darwin darwin.aarch64 build/artifacts
-            make-zip ./build/x86_64-pc-windows-gnu vino.win64 build/artifacts
-            cp /home/vino/project/crates/vino/vino-rpc/proto/vino.proto build/artifacts/vino.proto
+            make-tarball wasmflow ./build/x86_64-unknown-linux-gnu linux.x86_64 build/artifacts
+            make-tarball wasmflow ./build/aarch64-unknown-linux-gnu linux.aarch64 build/artifacts
+            make-tarball wasmflow ./build/x86_64-apple-darwin darwin.x86_64 build/artifacts
+            make-tarball wasmflow ./build/aarch64-apple-darwin darwin.aarch64 build/artifacts
+            make-zip ./build/x86_64-pc-windows-gnu wasmflow.win64 build/artifacts
+            cp /home/vino/project/crates/vino/vino-rpc/proto/vino.proto build/artifacts/wasmflow.proto
             BUILDTAG="nightly-$(date +%F)"
             echo $BUILDTAG > build/artifacts/RELEASE
             echo << pipeline.git.revision	>> > build/artifacts/RELEASE

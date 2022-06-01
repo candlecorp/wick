@@ -9,7 +9,7 @@ TARGET?=wasm32-unknown-unknown
 
 CLEAN_FILES += $(BUILD_ARTIFACT) $(SIGNED_ARTIFACT)
 
-VINOC=cargo run --manifest-path $(VINO)/Cargo.toml -p vinoc --
+WAFL=cargo run --manifest-path $(VINO)/Cargo.toml -p wafl --
 
 $(ARTIFACT_DIR):
 	@echo Making directory \"$@\"
@@ -23,7 +23,7 @@ $(BUILD_ARTIFACT): $(ARTIFACT_DIR) $(INTERFACE) src/components $(GENERATED_MODUL
 
 $(SIGNED_ARTIFACT): $(BUILD_ARTIFACT)
 	@echo Signing $(BUILD_ARTIFACT)
-	@$(VINOC) sign $(BUILD_ARTIFACT) $(INTERFACE) --ver=$(CRATE_VERSION) --rev=0
+	@$(WAFL) wasm sign $(BUILD_ARTIFACT) $(INTERFACE) --ver=$(CRATE_VERSION) --rev=0
 	@echo Created $(SIGNED_ARTIFACT)
 
 .phony: check

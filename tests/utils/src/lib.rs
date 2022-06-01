@@ -19,30 +19,30 @@ use tokio::select;
 use tokio::sync::mpsc::{self, Sender};
 use tokio::task::JoinHandle;
 
-pub async fn vinoc_invoke(
+pub async fn wafl_invoke(
   port: &str,
   name: &str,
   data: Vec<String>,
 ) -> Result<Vec<HashMap<String, TransportJson>>, TestError> {
-  println!("Executing vinoc for schematic {}", name);
+  println!("Executing wafl for schematic {}", name);
   let inputs = data
     .into_iter()
     .flat_map(|kv| vec!["--data".to_owned(), kv])
     .collect::<Vec<String>>();
   println!("Inputs: {:?}", inputs);
-  let mut bin = tokio_test_bin::get_test_bin("vinoc");
+  let mut bin = tokio_test_bin::get_test_bin("wafl");
   let proc = bin
     .env_clear()
-    .args(["invoke", name, "--port", port.to_string().as_str(), "--trace"])
+    .args(["rpc", "invoke", name, "--port", port.to_string().as_str(), "--trace"])
     .args(inputs)
     .stderr(Stdio::inherit());
   println!("Command is {:?}", proc);
-  let vinoc_output = proc.output().await?;
+  let wafl_output = proc.output().await?;
 
-  println!("vinoc STDERR is \n {}", String::from_utf8_lossy(&vinoc_output.stderr));
+  println!("wafl STDERR is \n {}", String::from_utf8_lossy(&wafl_output.stderr));
 
-  let string = String::from_utf8_lossy(&vinoc_output.stdout);
-  println!("Result from vinoc is {:?}", string);
+  let string = String::from_utf8_lossy(&wafl_output.stdout);
+  println!("Result from wafl is {:?}", string);
   let output: Vec<_> = string.trim().split('\n').collect();
   println!("Num lines:{:?}", output.len());
   let json: Vec<HashMap<String, TransportJson>> = output.iter().map(|l| serde_json::from_str(l).unwrap()).collect();
