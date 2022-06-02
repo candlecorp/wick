@@ -1,0 +1,11 @@
+---
+version: 0
+network:
+  schematics:
+    - name: panics
+      instances:
+        panic:
+          id: wafl::core::panic
+      connections:
+        - <> => panic[input]
+        - panic[output] => <>

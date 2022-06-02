@@ -1,0 +1,21 @@
+[package]
+name = "wasmflow-wascap"
+version = "0.1.0"
+edition = "2021"
+license = "BSD-3-Clause"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+wascap = "0.8"
+serde = { version = "1.0", features = ["derive"] }
+wasmflow-interface = { path = "../../sdk/wasmflow-interface" }
+thiserror = "1.0"
+parity-wasm = "0.45"
+data-encoding = "2.3.2"
+ring = "0.16"
+nuid = "0.3"
+tracing = "0.1"
+
+[dev-dependencies]
+criterion = { version = "0.3", features = [] }

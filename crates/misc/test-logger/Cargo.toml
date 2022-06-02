@@ -20,4 +20,4 @@ proc-macro-crate = "1.1"
 
 [dev-dependencies]
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
-logger = { path = "../../vino/logger" }
+logger = { path = "../../wasmflow/logger" }

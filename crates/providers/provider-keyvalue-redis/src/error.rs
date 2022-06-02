@@ -25,10 +25,10 @@ pub enum Error {
   ShuttingDown,
 
   #[error(transparent)]
-  RpcError(#[from] vino_rpc::Error),
+  RpcError(#[from] wasmflow_rpc::Error),
 
   #[error(transparent)]
-  CliError(#[from] vino_provider_cli::Error),
+  CliError(#[from] wasmflow_collection_cli::Error),
 
   #[error(transparent)]
   IoError(#[from] std::io::Error),

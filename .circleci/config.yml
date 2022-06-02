@@ -45,7 +45,7 @@ commands:
           name: Install cross
           command: |
             # if [[ ! $(command -v cross) ]]; then
-              curl -OL https://github.com/vinodotdev/cross/releases/download/v0.2.1-darwin/cross-v0.2.1-x86_64-unknown-linux-gnu.tar.gz
+              curl -OL https://github.com/wasmflow/cross/releases/download/v0.2.1-darwin/cross-v0.2.1-x86_64-unknown-linux-gnu.tar.gz
               tar -zxvf cross-v0.2.1-x86_64-unknown-linux-gnu.tar.gz cross
               chmod +x cross
               mv cross $HOME/.cargo/bin/
@@ -205,7 +205,7 @@ jobs:
             make-tarball wasmflow ./build/x86_64-apple-darwin darwin.x86_64 build/artifacts
             make-tarball wasmflow ./build/aarch64-apple-darwin darwin.aarch64 build/artifacts
             make-zip ./build/x86_64-pc-windows-gnu wasmflow.win64 build/artifacts
-            cp /home/vino/project/crates/vino/vino-rpc/proto/vino.proto build/artifacts/wasmflow.proto
+            cp /home/vino/project/crates/wasmflow/vino-rpc/proto/vino.proto build/artifacts/wasmflow.proto
             BUILDTAG="nightly-$(date +%F)"
             echo $BUILDTAG > build/artifacts/RELEASE
             echo << pipeline.git.revision	>> > build/artifacts/RELEASE

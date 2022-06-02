@@ -3,9 +3,9 @@ use std::path::PathBuf;
 use anyhow::Result;
 use clap::Args;
 use nkeys::KeyPairType;
-use vino_par::make_archive;
-use vino_rpc::ProviderSignature;
-use vino_wascap::ClaimsOptions;
+use wasmflow_par::make_archive;
+use wasmflow_rpc::ProviderSignature;
+use wasmflow_wascap::ClaimsOptions;
 
 use crate::io::{async_read, async_read_to_string, async_write};
 use crate::keys::{extract_keypair, GenerateCommon};

@@ -1,5 +1,5 @@
 use clap::Args;
-use vino_provider_wasm::provider::WasiParams;
+use wasmflow_collection_wasm::provider::WasiParams;
 
 pub(crate) fn is_wasm(bytes: &[u8]) -> bool {
   let is_wasm = bytes.starts_with(&[0x00, 0x61, 0x73, 0x6d]);

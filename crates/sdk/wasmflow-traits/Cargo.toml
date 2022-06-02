@@ -4,13 +4,13 @@ version = "0.9.0"
 authors = ["Jarrod Overson <jsoverson@gmail.com>"]
 edition = "2021"
 license = "BSD-3-Clause"
-repository = "https://github.com/vinodotdev/vino-sdk"
-description = "Rust library encapsulating the message packets sent across Vino components."
-documentation = "https://docs.vino.dev"
-keywords = ["vino", "actor", "flow"]
+repository = "https://github.com/wasmflow/wasmflow-sdk"
+description = "Rust library encapsulating the message packets sent across Wasmflow components."
+documentation = "https://wasmflow.com"
+keywords = ["wasmflow", "actor", "flow"]
 categories = []
 exclude = ["tests/*", ".github/*", ".gitignore"]
-homepage = "https://docs.vino.dev"
+homepage = "https://wasmflow.com"
 
 
 [features]
@@ -28,6 +28,6 @@ tracing = "0.1"
 test-log = "0.2"
 env_logger = "0.9"
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
-vino-transport = { path = "../vino-transport", version = "0.9.0", features = [
+wasmflow-transport = { path = "../wasmflow-transport", version = "0.9.0", features = [
   "async",
 ] }

@@ -141,7 +141,7 @@ impl PortChannel {
 #[cfg(test)]
 mod tests {
 
-  use vino_transport::{TransportStream, TransportWrapper};
+  use wasmflow_transport::{TransportStream, TransportWrapper};
   use wasmflow_packet::v1::Packet;
 
   use super::*;

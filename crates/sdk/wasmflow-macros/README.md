@@ -2,4 +2,4 @@
 
 # wasmflow-macros
 
-Macros used by the Vino project
+Macros used by the Wasmflow project

@@ -4,7 +4,7 @@ network:
   providers:
     - namespace: wapc
       kind: WaPC
-      reference: ./crates/integration/test-wapc-component/build/test_component_s.wasm
+      reference: ./crates/integration/test-wasm-component/build/test_component_s.wasm
   schematics:
     - name: wapc_component
       providers:
@@ -13,7 +13,7 @@ network:
         validate:
           id: wapc::validate
         log:
-          id: vino::core::log
+          id: wafl::core::log
       connections:
         - <> => log[input]
         - log[output] => validate[input]

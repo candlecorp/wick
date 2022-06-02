@@ -5,14 +5,14 @@ mod test {
   use log::{debug, error, warn};
   use serde_json::json;
   use utils::*;
-  use vino_transport::{JsonError, TransportJson};
+  use wasmflow_transport::{JsonError, TransportJson};
 
   #[test_logger::test(tokio::test)]
   async fn integration_test_lattice() -> utils::TestResult<()> {
     debug!("Starting host 1");
     let nats_url = std::env::var("NATS_URL").unwrap_or_else(|_| {
-      warn!("'NATS_URL' not present, defaulting to nats.vinodev.com");
-      "nats.vinodev.com".to_owned()
+      warn!("'NATS_URL' not present, defaulting to nats.localhost");
+      "nats.localhost".to_owned()
     });
     let nats_arg = format!("--nats={}", nats_url);
     let (p2_tx, p2_handle, _port2) = start_provider(

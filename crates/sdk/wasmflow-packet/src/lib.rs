@@ -1,7 +1,7 @@
 #![doc(html_logo_url = "https://avatars.githubusercontent.com/u/71604398?s=200&v=4")]
 #![doc = include_str!("../README.md")]
 // !!START_LINTS
-// Vino lints
+// Wasmflow lints
 // Do not change anything between the START_LINTS and END_LINTS line.
 // This is automatically generated. Add exceptions after this section.
 #![deny(
@@ -85,6 +85,6 @@ pub mod v1;
 /// The crate's error module.
 pub mod error;
 
-/// Module for [Packet], the versioned Vino message structure.
+/// Module for [Packet], the versioned Wasmflow message structure.
 pub mod packet;
 pub use packet::*;

@@ -520,7 +520,7 @@ dependencies = [
  "serde_json",
  "tokio-stream",
  "tracing",
- "vino-transport",
+ "wasmflow-transport",
 ]
 
 [[package]]
@@ -3245,10 +3245,10 @@ dependencies = [
  "anyhow",
  "tracing",
  "uuid",
- "vino-lattice",
- "vino-manifest",
- "vino-runtime",
- "vino-wascap",
+ "wasmflow-lattice",
+ "wasmflow-manifest",
+ "wasmflow-runtime",
+ "wasmflow-wascap",
 ]
 
 [[package]]
@@ -3444,6 +3444,16 @@ checksum = "0160a13a177a45bfb43ce71c01580998474f556ad854dcbca936dd2841a5c556"
 dependencies = [
  "core-foundation-sys",
  "libc",
+]
+
+[[package]]
+name = "seeded-random"
+version = "0.0.0"
+dependencies = [
+ "parking_lot 0.12.0",
+ "rand 0.8.5",
+ "rand_chacha 0.3.1",
+ "uuid",
 ]
 
 [[package]]
@@ -3929,10 +3939,10 @@ dependencies = [
  "anyhow",
  "thiserror",
  "tracing",
- "vino-invocation-server",
- "vino-rpc",
  "wasmflow-codec",
+ "wasmflow-invocation-server",
  "wasmflow-packet",
+ "wasmflow-rpc",
 ]
 
 [[package]]
@@ -3959,7 +3969,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "test-vino-provider"
+name = "test-native-provider"
 version = "0.1.0"
 dependencies = [
  "anyhow",
@@ -3972,10 +3982,10 @@ dependencies = [
  "test-logger",
  "tokio",
  "tracing",
- "vino-rpc",
- "vino-transport",
  "wasmflow-entity",
+ "wasmflow-rpc",
  "wasmflow-sdk",
+ "wasmflow-transport",
 ]
 
 [[package]]
@@ -4582,11 +4592,11 @@ dependencies = [
  "serde_json",
  "tokio",
  "tokio-test-bin",
- "vino-manifest",
- "vino-runtime",
- "vino-transport",
- "vino-wascap",
  "wasmflow-codec",
+ "wasmflow-manifest",
+ "wasmflow-runtime",
+ "wasmflow-transport",
+ "wasmflow-wascap",
 ]
 
 [[package]]
@@ -4630,599 +4640,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "49874b5167b65d7193b8aba1567f5c7d93d001cafc34600cee003eda787e483f"
 
 [[package]]
-name = "vino-host"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-trait",
- "http",
- "logger",
- "nkeys 0.2.0",
- "once_cell",
- "parking_lot 0.12.0",
- "serde",
- "serde_json",
- "test-logger",
- "thiserror",
- "tokio",
- "tokio-stream",
- "tracing",
- "uuid",
- "vino-invocation-server",
- "vino-lattice",
- "vino-loader",
- "vino-manifest",
- "vino-provider-cli",
- "vino-random",
- "vino-rpc",
- "vino-runtime",
- "vino-transport",
- "wasmflow-codec",
- "wasmflow-entity",
- "wasmflow-interface",
- "wasmflow-invocation",
- "wasmflow-macros",
- "wasmflow-output",
-]
-
-[[package]]
-name = "vino-interface-keyvalue"
-version = "0.1.0"
-dependencies = [
- "serde",
- "wasmflow-sdk",
-]
-
-[[package]]
-name = "vino-interpreter"
-version = "0.0.0"
-dependencies = [
- "anyhow",
- "async-recursion",
- "futures",
- "logger",
- "parking_lot 0.12.0",
- "performance-mark",
- "rand 0.8.5",
- "serde",
- "serde-value",
- "serde_json",
- "test-logger",
- "thiserror",
- "tokio",
- "tokio-stream",
- "tracing",
- "tracing-futures",
- "uuid",
- "vino-manifest",
- "vino-random",
- "vino-schematic-graph",
- "vino-transport",
- "wasmflow-codec",
- "wasmflow-collection-link",
- "wasmflow-entity",
- "wasmflow-interface",
- "wasmflow-invocation",
- "wasmflow-output",
- "wasmflow-packet",
-]
-
-[[package]]
-name = "vino-invocation-server"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "derivative",
- "parking_lot 0.12.0",
- "rand 0.8.5",
- "serde",
- "serde_json",
- "thiserror",
- "tokio",
- "tokio-stream",
- "tonic",
- "tracing",
- "vino-rpc",
- "vino-transport",
- "wasmflow-entity",
- "wasmflow-interface",
- "wasmflow-invocation",
-]
-
-[[package]]
-name = "vino-keyvalue-redis"
-version = "0.0.0"
-dependencies = [
- "anyhow",
- "async-trait",
- "clap 3.1.8",
- "futures",
- "logger",
- "once_cell",
- "rand 0.8.5",
- "redis",
- "serde",
- "serde_json",
- "test-logger",
- "thiserror",
- "tokio",
- "tokio-util 0.7.1",
- "tonic",
- "tracing",
- "tracing-futures",
- "vino-interface-keyvalue",
- "vino-provider-cli",
- "vino-rpc",
- "vino-transport",
- "wasmflow-entity",
- "wasmflow-macros",
- "wasmflow-packet",
- "wasmflow-sdk",
-]
-
-[[package]]
-name = "vino-lattice"
-version = "0.0.0"
-dependencies = [
- "anyhow",
- "futures",
- "logger",
- "nats",
- "nkeys 0.2.0",
- "once_cell",
- "parking_lot 0.12.0",
- "pretty_assertions",
- "serde",
- "test-logger",
- "test-vino-provider",
- "thiserror",
- "tokio",
- "tokio-stream",
- "tracing",
- "vino-rpc",
- "vino-transport",
- "wasmflow-codec",
- "wasmflow-entity",
- "wasmflow-interface",
- "wasmflow-invocation",
- "wasmflow-packet",
-]
-
-[[package]]
-name = "vino-loader"
-version = "0.0.0"
-dependencies = [
- "thiserror",
- "tokio",
- "tracing",
- "vino-oci",
-]
-
-[[package]]
-name = "vino-manifest"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "lazy_static",
- "logger",
- "num-traits",
- "pretty_assertions",
- "regex",
- "serde",
- "serde-value",
- "serde-with-expand-env",
- "serde_json",
- "serde_yaml",
- "shellexpand",
- "test-logger",
- "thiserror",
- "tracing",
- "vino-transport",
- "wasmflow-macros",
-]
-
-[[package]]
-name = "vino-oci"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-recursion",
- "clap 3.1.8",
- "env_logger 0.9.0",
- "logger",
- "oci-distribution",
- "serde",
- "serde_json",
- "serde_yaml",
- "tar",
- "test-logger",
- "thiserror",
- "tokio",
- "tracing",
- "vino-par",
- "vino-wascap",
- "wasmflow-interface",
-]
-
-[[package]]
-name = "vino-par"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-recursion",
- "clap 3.1.8",
- "env_logger 0.9.0",
- "logger",
- "serde",
- "serde_json",
- "serde_yaml",
- "tar",
- "test-logger",
- "thiserror",
- "tracing",
- "vino-wascap",
- "wasmflow-interface",
-]
-
-[[package]]
-name = "vino-provider-cli"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-stream",
- "cfg-if",
- "clap 3.1.8",
- "logger",
- "once_cell",
- "reqwest",
- "serde",
- "serde_json",
- "test-logger",
- "test-vino-provider",
- "thiserror",
- "tokio",
- "tokio-stream",
- "tonic",
- "tonic-reflection",
- "tracing",
- "uuid",
- "vino-invocation-server",
- "vino-lattice",
- "vino-rpc",
- "vino-transport",
- "wasmflow-codec",
- "wasmflow-packet",
-]
-
-[[package]]
-name = "vino-provider-grpc"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-trait",
- "http",
- "logger",
- "parking_lot 0.12.0",
- "rand 0.8.5",
- "serde",
- "serde_json",
- "test-logger",
- "test-vino-provider",
- "thiserror",
- "tokio",
- "tokio-stream",
- "tracing",
- "vino-invocation-server",
- "vino-rpc",
- "vino-transport",
- "wasmflow-entity",
- "wasmflow-interface",
- "wasmflow-invocation",
- "wasmflow-packet",
-]
-
-[[package]]
-name = "vino-provider-lattice"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-trait",
- "futures",
- "logger",
- "parking_lot 0.12.0",
- "test-logger",
- "test-vino-provider",
- "thiserror",
- "tokio",
- "tokio-stream",
- "tracing",
- "vino-lattice",
- "vino-rpc",
- "vino-transport",
- "wasmflow-entity",
- "wasmflow-interface",
- "wasmflow-invocation",
- "wasmflow-packet",
-]
-
-[[package]]
-name = "vino-provider-par"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-trait",
- "logger",
- "parking_lot 0.12.0",
- "rand 0.8.5",
- "serde",
- "serde_json",
- "shellexpand",
- "tar",
- "test-logger",
- "test-vino-provider",
- "thiserror",
- "tokio",
- "tokio-stream",
- "tracing",
- "vino-loader",
- "vino-par",
- "vino-provider-cli",
- "vino-rpc",
- "vino-transport",
- "vino-wascap",
- "wasmflow-entity",
- "wasmflow-interface",
- "wasmflow-invocation",
- "wasmflow-packet",
- "workspace-root",
-]
-
-[[package]]
-name = "vino-provider-wasm"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-stream",
- "async-trait",
- "derivative",
- "futures",
- "logger",
- "parking_lot 0.12.0",
- "serde",
- "serde-value",
- "serde_json",
- "test-logger",
- "thiserror",
- "tokio",
- "tokio-stream",
- "tracing",
- "vino-loader",
- "vino-random",
- "vino-rpc",
- "vino-transport",
- "vino-wascap",
- "wapc",
- "wapc-pool",
- "wasmflow-codec",
- "wasmflow-collection-link",
- "wasmflow-component",
- "wasmflow-entity",
- "wasmflow-interface",
- "wasmflow-invocation",
- "wasmflow-macros",
- "wasmflow-output",
- "wasmflow-packet",
- "wasmflow-sdk",
- "wasmtime-provider",
-]
-
-[[package]]
-name = "vino-random"
-version = "0.0.0"
-dependencies = [
- "parking_lot 0.12.0",
- "rand 0.8.5",
- "rand_chacha 0.3.1",
- "uuid",
-]
-
-[[package]]
-name = "vino-root"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "criterion",
- "futures",
- "log",
- "logger",
- "maplit",
- "once_cell",
- "serde_json",
- "test-logger",
- "test-vino-provider",
- "tokio",
- "utils",
- "vino-host",
- "vino-random",
- "vino-rpc",
- "vino-transport",
- "wasmflow-codec",
- "wasmflow-entity",
- "wasmflow-invocation",
- "wasmflow-macros",
- "wasmflow-output",
- "wasmflow-packet",
-]
-
-[[package]]
-name = "vino-rpc"
-version = "0.1.0"
-dependencies = [
- "async-stream",
- "async-trait",
- "dyn-clone",
- "prost",
- "prost-types",
- "rand 0.8.5",
- "serde",
- "serde_json",
- "thiserror",
- "tokio",
- "tokio-stream",
- "tonic",
- "tonic-build",
- "tracing",
- "uuid",
- "vino-transport",
- "wasmflow-codec",
- "wasmflow-entity",
- "wasmflow-interface",
- "wasmflow-invocation",
- "wasmflow-macros",
- "wasmflow-packet",
-]
-
-[[package]]
-name = "vino-runtime"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-trait",
- "futures",
- "lazy_static",
- "logger",
- "maplit",
- "once_cell",
- "parking_lot 0.12.0",
- "pretty_assertions",
- "runtime-testutils",
- "serde",
- "serde_json",
- "test-logger",
- "test-vino-provider",
- "thiserror",
- "tokio",
- "tokio-stream",
- "tracing",
- "uuid",
- "vino-interpreter",
- "vino-invocation-server",
- "vino-lattice",
- "vino-loader",
- "vino-manifest",
- "vino-provider-grpc",
- "vino-provider-lattice",
- "vino-provider-par",
- "vino-provider-wasm",
- "vino-random",
- "vino-rpc",
- "vino-schematic-graph",
- "vino-stdlib",
- "vino-transport",
- "vino-wascap",
- "wasmflow-codec",
- "wasmflow-entity",
- "wasmflow-interface",
- "wasmflow-invocation",
- "wasmflow-macros",
- "wasmflow-output",
- "wasmflow-packet",
- "wasmflow-streams",
-]
-
-[[package]]
-name = "vino-schematic-graph"
-version = "0.0.0"
-dependencies = [
- "anyhow",
- "logger",
- "pretty_assertions",
- "serde_json",
- "test-logger",
- "thiserror",
- "tokio",
- "tracing",
- "vino-manifest",
-]
-
-[[package]]
-name = "vino-stdlib"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "futures",
- "logger",
- "parking_lot 0.12.0",
- "serde",
- "test-logger",
- "thiserror",
- "tokio",
- "tracing",
- "vino-random",
- "vino-rpc",
- "vino-stdlib",
- "vino-transport",
- "wasmflow-entity",
- "wasmflow-packet",
- "wasmflow-sdk",
-]
-
-[[package]]
-name = "vino-test"
-version = "0.0.0"
-dependencies = [
- "serde",
- "serde-value",
- "serde_yaml",
- "tap",
- "thiserror",
- "tokio",
- "tokio-stream",
- "tracing",
- "vino-rpc",
- "vino-transport",
- "wasmflow-entity",
- "wasmflow-invocation",
- "wasmflow-packet",
-]
-
-[[package]]
-name = "vino-transport"
-version = "0.9.0"
-dependencies = [
- "anyhow",
- "env_logger 0.9.0",
- "parking_lot 0.12.0",
- "serde",
- "serde-value",
- "serde_json",
- "test-log",
- "thiserror",
- "tokio",
- "tokio-stream",
- "tracing",
- "wasmflow-codec",
- "wasmflow-macros",
- "wasmflow-packet",
-]
-
-[[package]]
-name = "vino-wascap"
-version = "0.1.0"
-dependencies = [
- "criterion",
- "data-encoding",
- "nuid",
- "parity-wasm 0.45.0",
- "ring",
- "serde",
- "thiserror",
- "tracing",
- "wascap",
- "wasmflow-interface",
-]
-
-[[package]]
 name = "wafl"
 version = "0.5.0"
 dependencies = [
@@ -5241,21 +4658,29 @@ dependencies = [
  "tonic",
  "tracing",
  "trycmd",
- "vino-host",
- "vino-manifest",
- "vino-oci",
- "vino-par",
- "vino-provider-cli",
- "vino-rpc",
- "vino-runtime",
- "vino-transport",
- "vino-wascap",
  "wasmflow-codec",
+ "wasmflow-collection-cli",
  "wasmflow-entity",
+ "wasmflow-host",
  "wasmflow-interface",
  "wasmflow-invocation",
  "wasmflow-macros",
+ "wasmflow-manifest",
+ "wasmflow-oci",
  "wasmflow-packet",
+ "wasmflow-par",
+ "wasmflow-rpc",
+ "wasmflow-runtime",
+ "wasmflow-transport",
+ "wasmflow-wascap",
+]
+
+[[package]]
+name = "wafl-interface-keyvalue"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "wasmflow-sdk",
 ]
 
 [[package]]
@@ -5477,6 +4902,7 @@ dependencies = [
  "cli-common",
  "logger",
  "nkeys 0.2.0",
+ "seeded-random",
  "serde",
  "serde_json",
  "tap",
@@ -5484,21 +4910,20 @@ dependencies = [
  "tokio",
  "tracing",
  "trycmd",
- "vino-host",
- "vino-loader",
- "vino-manifest",
- "vino-provider-cli",
- "vino-provider-wasm",
- "vino-random",
- "vino-rpc",
- "vino-runtime",
- "vino-test",
- "vino-transport",
  "wasmflow-codec",
+ "wasmflow-collection-cli",
+ "wasmflow-collection-wasm",
  "wasmflow-entity",
+ "wasmflow-host",
  "wasmflow-interface",
  "wasmflow-invocation",
+ "wasmflow-loader",
+ "wasmflow-manifest",
  "wasmflow-packet",
+ "wasmflow-rpc",
+ "wasmflow-runtime",
+ "wasmflow-test",
+ "wasmflow-transport",
 ]
 
 [[package]]
@@ -5523,6 +4948,63 @@ dependencies = [
 ]
 
 [[package]]
+name = "wasmflow-collection-cli"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-stream",
+ "cfg-if",
+ "clap 3.1.8",
+ "logger",
+ "once_cell",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "test-logger",
+ "test-native-provider",
+ "thiserror",
+ "tokio",
+ "tokio-stream",
+ "tonic",
+ "tonic-reflection",
+ "tracing",
+ "uuid",
+ "wasmflow-codec",
+ "wasmflow-invocation-server",
+ "wasmflow-lattice",
+ "wasmflow-packet",
+ "wasmflow-rpc",
+ "wasmflow-transport",
+]
+
+[[package]]
+name = "wasmflow-collection-grpc"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "http",
+ "logger",
+ "parking_lot 0.12.0",
+ "rand 0.8.5",
+ "serde",
+ "serde_json",
+ "test-logger",
+ "test-native-provider",
+ "thiserror",
+ "tokio",
+ "tokio-stream",
+ "tracing",
+ "wasmflow-entity",
+ "wasmflow-interface",
+ "wasmflow-invocation",
+ "wasmflow-invocation-server",
+ "wasmflow-packet",
+ "wasmflow-rpc",
+ "wasmflow-transport",
+]
+
+[[package]]
 name = "wasmflow-collection-link"
 version = "0.9.0"
 dependencies = [
@@ -5540,18 +5022,113 @@ dependencies = [
 ]
 
 [[package]]
+name = "wasmflow-collection-nats"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "futures",
+ "logger",
+ "parking_lot 0.12.0",
+ "test-logger",
+ "test-native-provider",
+ "thiserror",
+ "tokio",
+ "tokio-stream",
+ "tracing",
+ "wasmflow-entity",
+ "wasmflow-interface",
+ "wasmflow-invocation",
+ "wasmflow-lattice",
+ "wasmflow-packet",
+ "wasmflow-rpc",
+ "wasmflow-transport",
+]
+
+[[package]]
+name = "wasmflow-collection-par"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "logger",
+ "parking_lot 0.12.0",
+ "rand 0.8.5",
+ "serde",
+ "serde_json",
+ "shellexpand",
+ "tar",
+ "test-logger",
+ "test-native-provider",
+ "thiserror",
+ "tokio",
+ "tokio-stream",
+ "tracing",
+ "wasmflow-collection-cli",
+ "wasmflow-entity",
+ "wasmflow-interface",
+ "wasmflow-invocation",
+ "wasmflow-loader",
+ "wasmflow-packet",
+ "wasmflow-par",
+ "wasmflow-rpc",
+ "wasmflow-transport",
+ "wasmflow-wascap",
+ "workspace-root",
+]
+
+[[package]]
+name = "wasmflow-collection-wasm"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-stream",
+ "async-trait",
+ "derivative",
+ "futures",
+ "logger",
+ "parking_lot 0.12.0",
+ "seeded-random",
+ "serde",
+ "serde-value",
+ "serde_json",
+ "test-logger",
+ "thiserror",
+ "tokio",
+ "tokio-stream",
+ "tracing",
+ "wapc",
+ "wapc-pool",
+ "wasmflow-codec",
+ "wasmflow-collection-link",
+ "wasmflow-component",
+ "wasmflow-entity",
+ "wasmflow-interface",
+ "wasmflow-invocation",
+ "wasmflow-loader",
+ "wasmflow-macros",
+ "wasmflow-output",
+ "wasmflow-packet",
+ "wasmflow-rpc",
+ "wasmflow-sdk",
+ "wasmflow-transport",
+ "wasmflow-wascap",
+ "wasmtime-provider",
+]
+
+[[package]]
 name = "wasmflow-component"
 version = "0.9.0"
 dependencies = [
  "cfg-if",
  "serde",
  "tokio",
- "vino-transport",
  "wasmflow-boundary",
  "wasmflow-codec",
  "wasmflow-invocation",
  "wasmflow-packet",
  "wasmflow-streams",
+ "wasmflow-transport",
  "yielding-async-executor",
 ]
 
@@ -5563,6 +5140,42 @@ dependencies = [
  "thiserror",
  "url 2.2.2",
  "wasmflow-macros",
+]
+
+[[package]]
+name = "wasmflow-host"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "http",
+ "logger",
+ "nkeys 0.2.0",
+ "once_cell",
+ "parking_lot 0.12.0",
+ "seeded-random",
+ "serde",
+ "serde_json",
+ "test-logger",
+ "thiserror",
+ "tokio",
+ "tokio-stream",
+ "tracing",
+ "uuid",
+ "wasmflow-codec",
+ "wasmflow-collection-cli",
+ "wasmflow-entity",
+ "wasmflow-interface",
+ "wasmflow-invocation",
+ "wasmflow-invocation-server",
+ "wasmflow-lattice",
+ "wasmflow-loader",
+ "wasmflow-macros",
+ "wasmflow-manifest",
+ "wasmflow-output",
+ "wasmflow-rpc",
+ "wasmflow-runtime",
+ "wasmflow-transport",
 ]
 
 [[package]]
@@ -5579,15 +5192,140 @@ dependencies = [
 ]
 
 [[package]]
+name = "wasmflow-interpreter"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "async-recursion",
+ "futures",
+ "logger",
+ "parking_lot 0.12.0",
+ "performance-mark",
+ "rand 0.8.5",
+ "seeded-random",
+ "serde",
+ "serde-value",
+ "serde_json",
+ "test-logger",
+ "thiserror",
+ "tokio",
+ "tokio-stream",
+ "tracing",
+ "tracing-futures",
+ "uuid",
+ "wasmflow-codec",
+ "wasmflow-collection-link",
+ "wasmflow-entity",
+ "wasmflow-interface",
+ "wasmflow-invocation",
+ "wasmflow-manifest",
+ "wasmflow-output",
+ "wasmflow-packet",
+ "wasmflow-schematic-graph",
+ "wasmflow-transport",
+]
+
+[[package]]
 name = "wasmflow-invocation"
 version = "0.9.0"
 dependencies = [
  "serde",
  "thiserror",
  "uuid",
- "vino-transport",
  "wasmflow-entity",
  "wasmflow-packet",
+ "wasmflow-transport",
+]
+
+[[package]]
+name = "wasmflow-invocation-server"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "derivative",
+ "parking_lot 0.12.0",
+ "rand 0.8.5",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "tokio",
+ "tokio-stream",
+ "tonic",
+ "tracing",
+ "wasmflow-entity",
+ "wasmflow-interface",
+ "wasmflow-invocation",
+ "wasmflow-rpc",
+ "wasmflow-transport",
+]
+
+[[package]]
+name = "wasmflow-keyvalue-redis"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "clap 3.1.8",
+ "futures",
+ "logger",
+ "once_cell",
+ "rand 0.8.5",
+ "redis",
+ "serde",
+ "serde_json",
+ "test-logger",
+ "thiserror",
+ "tokio",
+ "tokio-util 0.7.1",
+ "tonic",
+ "tracing",
+ "tracing-futures",
+ "wafl-interface-keyvalue",
+ "wasmflow-collection-cli",
+ "wasmflow-entity",
+ "wasmflow-macros",
+ "wasmflow-packet",
+ "wasmflow-rpc",
+ "wasmflow-sdk",
+ "wasmflow-transport",
+]
+
+[[package]]
+name = "wasmflow-lattice"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "futures",
+ "logger",
+ "nats",
+ "nkeys 0.2.0",
+ "once_cell",
+ "parking_lot 0.12.0",
+ "pretty_assertions",
+ "serde",
+ "test-logger",
+ "test-native-provider",
+ "thiserror",
+ "tokio",
+ "tokio-stream",
+ "tracing",
+ "wasmflow-codec",
+ "wasmflow-entity",
+ "wasmflow-interface",
+ "wasmflow-invocation",
+ "wasmflow-packet",
+ "wasmflow-rpc",
+ "wasmflow-transport",
+]
+
+[[package]]
+name = "wasmflow-loader"
+version = "0.0.0"
+dependencies = [
+ "thiserror",
+ "tokio",
+ "tracing",
+ "wasmflow-oci",
 ]
 
 [[package]]
@@ -5598,14 +5336,60 @@ dependencies = [
 ]
 
 [[package]]
+name = "wasmflow-manifest"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "lazy_static",
+ "logger",
+ "num-traits",
+ "pretty_assertions",
+ "regex",
+ "serde",
+ "serde-value",
+ "serde-with-expand-env",
+ "serde_json",
+ "serde_yaml",
+ "shellexpand",
+ "test-logger",
+ "thiserror",
+ "tracing",
+ "wasmflow-macros",
+ "wasmflow-transport",
+]
+
+[[package]]
+name = "wasmflow-oci"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-recursion",
+ "clap 3.1.8",
+ "env_logger 0.9.0",
+ "logger",
+ "oci-distribution",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "tar",
+ "test-logger",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "wasmflow-interface",
+ "wasmflow-par",
+ "wasmflow-wascap",
+]
+
+[[package]]
 name = "wasmflow-output"
 version = "0.9.0"
 dependencies = [
  "serde",
  "tokio-stream",
- "vino-transport",
  "wasmflow-packet",
  "wasmflow-streams",
+ "wasmflow-transport",
 ]
 
 [[package]]
@@ -5622,11 +5406,149 @@ dependencies = [
 ]
 
 [[package]]
+name = "wasmflow-par"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-recursion",
+ "clap 3.1.8",
+ "env_logger 0.9.0",
+ "logger",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "tar",
+ "test-logger",
+ "thiserror",
+ "tracing",
+ "wasmflow-interface",
+ "wasmflow-wascap",
+]
+
+[[package]]
+name = "wasmflow-root"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "criterion",
+ "futures",
+ "log",
+ "logger",
+ "maplit",
+ "once_cell",
+ "seeded-random",
+ "serde_json",
+ "test-logger",
+ "test-native-provider",
+ "tokio",
+ "utils",
+ "wasmflow-codec",
+ "wasmflow-entity",
+ "wasmflow-host",
+ "wasmflow-invocation",
+ "wasmflow-macros",
+ "wasmflow-output",
+ "wasmflow-packet",
+ "wasmflow-rpc",
+ "wasmflow-transport",
+]
+
+[[package]]
+name = "wasmflow-rpc"
+version = "0.1.0"
+dependencies = [
+ "async-stream",
+ "async-trait",
+ "dyn-clone",
+ "prost",
+ "prost-types",
+ "rand 0.8.5",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "tokio",
+ "tokio-stream",
+ "tonic",
+ "tonic-build",
+ "tracing",
+ "uuid",
+ "wasmflow-codec",
+ "wasmflow-entity",
+ "wasmflow-interface",
+ "wasmflow-invocation",
+ "wasmflow-macros",
+ "wasmflow-packet",
+ "wasmflow-transport",
+]
+
+[[package]]
+name = "wasmflow-runtime"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "futures",
+ "lazy_static",
+ "logger",
+ "maplit",
+ "once_cell",
+ "parking_lot 0.12.0",
+ "pretty_assertions",
+ "runtime-testutils",
+ "seeded-random",
+ "serde",
+ "serde_json",
+ "test-logger",
+ "test-native-provider",
+ "thiserror",
+ "tokio",
+ "tokio-stream",
+ "tracing",
+ "uuid",
+ "wasmflow-codec",
+ "wasmflow-collection-grpc",
+ "wasmflow-collection-nats",
+ "wasmflow-collection-par",
+ "wasmflow-collection-wasm",
+ "wasmflow-entity",
+ "wasmflow-interface",
+ "wasmflow-interpreter",
+ "wasmflow-invocation",
+ "wasmflow-invocation-server",
+ "wasmflow-lattice",
+ "wasmflow-loader",
+ "wasmflow-macros",
+ "wasmflow-manifest",
+ "wasmflow-output",
+ "wasmflow-packet",
+ "wasmflow-rpc",
+ "wasmflow-schematic-graph",
+ "wasmflow-stdlib",
+ "wasmflow-streams",
+ "wasmflow-transport",
+ "wasmflow-wascap",
+]
+
+[[package]]
+name = "wasmflow-schematic-graph"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "logger",
+ "pretty_assertions",
+ "serde_json",
+ "test-logger",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "wasmflow-manifest",
+]
+
+[[package]]
 name = "wasmflow-sdk"
 version = "0.9.0"
 dependencies = [
  "futures",
- "vino-transport",
  "wasmflow-boundary",
  "wasmflow-codec",
  "wasmflow-collection-link",
@@ -5638,6 +5560,29 @@ dependencies = [
  "wasmflow-packet",
  "wasmflow-streams",
  "wasmflow-traits",
+ "wasmflow-transport",
+]
+
+[[package]]
+name = "wasmflow-stdlib"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "futures",
+ "logger",
+ "parking_lot 0.12.0",
+ "seeded-random",
+ "serde",
+ "test-logger",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "wasmflow-entity",
+ "wasmflow-packet",
+ "wasmflow-rpc",
+ "wasmflow-sdk",
+ "wasmflow-stdlib",
+ "wasmflow-transport",
 ]
 
 [[package]]
@@ -5650,8 +5595,27 @@ dependencies = [
  "pin-project-lite",
  "test-log",
  "tracing",
- "vino-transport",
  "wasmflow-packet",
+ "wasmflow-transport",
+]
+
+[[package]]
+name = "wasmflow-test"
+version = "0.0.0"
+dependencies = [
+ "serde",
+ "serde-value",
+ "serde_yaml",
+ "tap",
+ "thiserror",
+ "tokio",
+ "tokio-stream",
+ "tracing",
+ "wasmflow-entity",
+ "wasmflow-invocation",
+ "wasmflow-packet",
+ "wasmflow-rpc",
+ "wasmflow-transport",
 ]
 
 [[package]]
@@ -5665,9 +5629,45 @@ dependencies = [
  "tokio",
  "tokio-stream",
  "tracing",
- "vino-transport",
  "wasmflow-packet",
  "wasmflow-streams",
+ "wasmflow-transport",
+]
+
+[[package]]
+name = "wasmflow-transport"
+version = "0.9.0"
+dependencies = [
+ "anyhow",
+ "env_logger 0.9.0",
+ "parking_lot 0.12.0",
+ "serde",
+ "serde-value",
+ "serde_json",
+ "test-log",
+ "thiserror",
+ "tokio",
+ "tokio-stream",
+ "tracing",
+ "wasmflow-codec",
+ "wasmflow-macros",
+ "wasmflow-packet",
+]
+
+[[package]]
+name = "wasmflow-wascap"
+version = "0.1.0"
+dependencies = [
+ "criterion",
+ "data-encoding",
+ "nuid",
+ "parity-wasm 0.45.0",
+ "ring",
+ "serde",
+ "thiserror",
+ "tracing",
+ "wascap",
+ "wasmflow-interface",
 ]
 
 [[package]]

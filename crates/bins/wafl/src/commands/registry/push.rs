@@ -6,7 +6,7 @@ use nkeys::KeyPairType;
 use oci_distribution::client::ImageLayer;
 use oci_distribution::manifest;
 use oci_distribution::secrets::RegistryAuth;
-use vino_wascap::ClaimsOptions;
+use wasmflow_wascap::ClaimsOptions;
 
 use crate::io::async_read;
 use crate::keys::{extract_keypair, GenerateCommon};
@@ -75,7 +75,7 @@ pub(crate) async fn handle(opts: Options) -> Result<()> {
     )
     .await?;
 
-    let archmap = vino_oci::generate_archmap(
+    let archmap = wasmflow_oci::generate_archmap(
       &opts.source,
       ClaimsOptions {
         revision: opts.rev,
@@ -88,12 +88,12 @@ pub(crate) async fn handle(opts: Options) -> Result<()> {
     )
     .await?;
 
-    let reference = vino_oci::parse_reference(&opts.reference)?;
+    let reference = wasmflow_oci::parse_reference(&opts.reference)?;
 
-    vino_oci::push_multi_arch(&mut client, &auth, &reference, archmap).await?;
+    wasmflow_oci::push_multi_arch(&mut client, &auth, &reference, archmap).await?;
   } else {
     info!("Pushing artifact...");
-    let image_ref = vino_oci::parse_reference(&opts.reference)?;
+    let image_ref = wasmflow_oci::parse_reference(&opts.reference)?;
     let image_bytes = async_read(&opts.source).await?;
     let extension = opts.source.extension().unwrap_or_default().to_str().unwrap_or_default();
     let media_type = match extension {
@@ -108,7 +108,7 @@ pub(crate) async fn handle(opts: Options) -> Result<()> {
       annotations: None,
     }];
 
-    let response = vino_oci::push(&mut client, &auth, &image_ref, &layers).await?;
+    let response = wasmflow_oci::push(&mut client, &auth, &image_ref, &layers).await?;
 
     println!("Manifest URL: {}", response.manifest_url);
     println!("Config URL: {}", response.config_url);

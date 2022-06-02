@@ -1,8 +1,8 @@
 use anyhow::Result;
-use vino_host::HostBuilder;
-use vino_manifest::host_definition::HostDefinition;
-use vino_provider_cli::options::DefaultCliOptions;
-use vino_random::Seed;
+use seeded_random::Seed;
+use wasmflow_collection_cli::options::DefaultCliOptions;
+use wasmflow_host::HostBuilder;
+use wasmflow_manifest::host_definition::HostDefinition;
 
 use crate::utils::merge_config;
 

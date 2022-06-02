@@ -1,0 +1,27 @@
+---
+version: 0
+default_schematic: "logger"
+network:
+  schematics:
+    - name: logger
+      instances:
+        logger:
+          id: wafl::log
+        SENDER:
+          id: core::sender
+          data:
+            output: "123456789"
+            type: string
+      connections:
+        - from:
+            instance: wafl::schematic_input
+            port: input
+          to:
+            instance: logger
+            port: input
+        - from:
+            instance: logger
+            port: output
+          to:
+            instance: wafl::schematic_output
+            port: output

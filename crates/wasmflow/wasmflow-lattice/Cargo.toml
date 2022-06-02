@@ -1,0 +1,38 @@
+[package]
+name = "wasmflow-lattice"
+version = "0.0.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[features]
+
+[dependencies]
+wasmflow-interface = { path = "../../sdk/wasmflow-interface" }
+wasmflow-invocation = { path = "../../sdk/wasmflow-invocation" }
+nats = { version = "0.15" }
+tracing = "0.1"
+wasmflow-rpc = { path = "../wasmflow-rpc" }
+wasmflow-transport = { path = "../../sdk/wasmflow-transport", features = [
+  "all",
+] }
+wasmflow-packet = { path = "../../sdk/wasmflow-packet", features = [] }
+wasmflow-entity = { path = "../../sdk/wasmflow-entity" }
+wasmflow-codec = { path = "../../sdk/wasmflow-codec" }
+thiserror = "1.0"
+nkeys = "0.2"
+serde = { version = "1.0", features = ["derive"] }
+tokio = { version = "1", features = ["time", "rt-multi-thread"] }
+tokio-stream = { version = "0.1" }
+futures = "0.3"
+parking_lot = "0.12"
+once_cell = "1.5"
+
+[dev-dependencies]
+test-native-provider = { path = "../../integration/test-native-provider" }
+logger = { path = "../logger" }
+test-logger = { path = "../../misc/test-logger" }
+anyhow = "1.0"
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+tokio-stream = { version = "0.1" }
+pretty_assertions = "1.2"

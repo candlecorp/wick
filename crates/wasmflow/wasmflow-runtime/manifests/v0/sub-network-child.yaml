@@ -1,0 +1,20 @@
+---
+version: 0
+network:
+  providers:
+    - namespace: wapc
+      kind: WaPC
+      reference: ../../integration/test-wasm-component/build/test_component_s.wasm
+  schematics:
+    - name: child_schematic
+      providers:
+        - wapc
+      instances:
+        validate:
+          id: wapc::validate
+        log:
+          id: wafl::core::log
+      connections:
+        - <>[input] => log[input]
+        - log[output] => validate[input]
+        - validate[output] => <>

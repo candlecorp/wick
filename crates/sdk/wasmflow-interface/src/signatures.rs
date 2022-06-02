@@ -4,7 +4,7 @@ use std::str::FromStr;
 use serde::{Deserialize, Serialize};
 
 use crate::maps::{ComponentMap, FieldMap, TypeMap};
-/// The signature of a Vino component, including its input and output types.
+/// The signature of a Wasmflow component, including its input and output types.
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
 #[must_use]
 pub struct ComponentSignature {
@@ -277,7 +277,7 @@ impl FromStr for TypeSignature {
   }
 }
 
-/// Internal types for use within the Vino runtime
+/// Internal types for use within the Wasmflow runtime
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Copy)]
 #[serde(tag = "id")]
 pub enum InternalType {

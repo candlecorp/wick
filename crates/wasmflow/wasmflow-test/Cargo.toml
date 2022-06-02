@@ -1,0 +1,23 @@
+[package]
+name = "wasmflow-test"
+version = "0.0.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+tap = { path = "../../misc/tap" }
+wasmflow-invocation = { path = "../../sdk/wasmflow-invocation" }
+wasmflow-packet = { path = "../../sdk/wasmflow-packet", features = [] }
+wasmflow-transport = { path = "../../sdk/wasmflow-transport", features = [
+  "all",
+] }
+wasmflow-entity = { path = "../../sdk/wasmflow-entity" }
+wasmflow-rpc = { path = "../wasmflow-rpc" }
+serde = { version = "1.0", features = ["derive"] }
+serde-value = "0.7.0"
+serde_yaml = "0.8"
+thiserror = "1.0"
+tokio = { version = "1", features = ["io-std", "macros", "rt-multi-thread"] }
+tokio-stream = "0.1.7"
+tracing = "0.1"

@@ -1,7 +1,7 @@
 ![Maintenance](https://img.shields.io/badge/maintenance-activly--developed-brightgreen.svg)
 
-The Vino Codec crate contains the serialization and deserialization functions
-and structures for communicating in and out of Vino Components.
+The Wasmflow Codec crate contains the serialization and deserialization functions
+and structures for communicating in and out of Wasmflow Components.
 
 ### JSON
 

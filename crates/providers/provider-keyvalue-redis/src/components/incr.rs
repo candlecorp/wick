@@ -1,4 +1,4 @@
-pub use vino_interface_keyvalue::incr::*;
+pub use wafl_interface_keyvalue::incr::*;
 
 use crate::components::generated::incr::*;
 

@@ -6,12 +6,12 @@ use redis::aio::Connection;
 use redis::{FromRedisValue, Pipeline};
 use tokio::sync::RwLock;
 use tracing_futures::Instrument;
-use vino_rpc::error::RpcError;
-use vino_rpc::{RpcHandler, RpcResult};
-use vino_transport::TransportStream;
+use wasmflow_rpc::error::RpcError;
+use wasmflow_rpc::{RpcHandler, RpcResult};
 use wasmflow_sdk::sdk::stateful::NativeDispatcher;
 use wasmflow_sdk::sdk::Invocation;
 use wasmflow_sdk::types::HostedType;
+use wasmflow_transport::TransportStream;
 
 use crate::components::ComponentDispatcher;
 use crate::error::Error;
@@ -122,7 +122,7 @@ mod integration {
 
   use anyhow::Result;
   use rand::Rng;
-  use vino_interface_keyvalue::*;
+  use wafl_interface_keyvalue::*;
   use wasmflow_entity::Entity;
 
   use super::*;

@@ -1,0 +1,366 @@
+{
+  "title": "JSON schema for Wasmflow host manifests",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "$defs": {
+    "HostManifest": {
+      "$anchor": "#HostManifest",
+      "additionalProperties": false,
+      "properties": {
+        "version": {
+          "description": "The manifest version.",
+
+          "type": "number"
+        },
+        "host": {
+          "description": "Additional host configuration.",
+
+          "$ref": "#/$defs/HostConfig"
+        },
+        "network": {
+          "description": "The configuration for a Wasmflow network.",
+
+          "$ref": "#/$defs/NetworkManifest"
+        },
+        "default_schematic": {
+          "description": "The default schematic to execute if none is provided.",
+          "required": false,
+
+          "type": "string"
+        }
+      },
+      "required": ["version"]
+    },
+
+    "HostConfig": {
+      "$anchor": "#HostConfig",
+      "additionalProperties": false,
+      "properties": {
+        "allow_latest": {
+          "description": "Whether or not to allow the :latest tag on remote artifacts.",
+
+          "type": "boolean"
+        },
+        "insecure_registries": {
+          "description": "A list of registries to connect to insecurely (over HTTP vs HTTPS).",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "timeout": {
+          "description": "The timeout for network requests (in ms).",
+
+          "type": "number"
+        },
+        "id": {
+          "description": "The ID for this host, used to identify the host over the lattice.",
+          "required": false,
+
+          "type": "string"
+        },
+        "expose": {
+          "description": "The schematics to expose via RPC or the lattice, if any.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "lattice": {
+          "description": "The lattice configuration.",
+          "required": false,
+
+          "$ref": "#/$defs/LatticeConfig"
+        },
+        "rpc": {
+          "description": "Configuration for the GRPC server.",
+          "required": false,
+
+          "$ref": "#/$defs/HttpConfig"
+        },
+        "http": {
+          "description": "Configuration for the HTTP 1 server (development only).",
+          "required": false,
+
+          "$ref": "#/$defs/HttpConfig"
+        }
+      },
+      "required": []
+    },
+
+    "HttpConfig": {
+      "$anchor": "#HttpConfig",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "description": "Enable/disable the server.",
+
+          "type": "boolean"
+        },
+        "port": {
+          "description": "The port to bind to.",
+          "required": false,
+
+          "type": "number"
+        },
+        "address": {
+          "description": "The address to bind to.",
+          "required": false,
+
+          "type": "string"
+        },
+        "pem": {
+          "description": "Path to pem file for TLS.",
+          "required": false,
+
+          "type": "string"
+        },
+        "key": {
+          "description": "Path to key file for TLS.",
+          "required": false,
+
+          "type": "string"
+        },
+        "ca": {
+          "description": "Path to CA file.",
+          "required": false,
+
+          "type": "string"
+        }
+      },
+      "required": []
+    },
+
+    "LatticeConfig": {
+      "$anchor": "#LatticeConfig",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "description": "Enable/disable the lattice connection.",
+
+          "type": "boolean"
+        },
+        "address": {
+          "description": "The address of the NATS server.",
+
+          "type": "string"
+        },
+        "creds_path": {
+          "description": "The path to the NATS credsfile.",
+          "required": false,
+
+          "type": "string"
+        },
+        "token": {
+          "description": "The NATS token.",
+          "required": false,
+
+          "type": "string"
+        }
+      },
+      "required": []
+    },
+
+    "NetworkManifest": {
+      "$anchor": "#NetworkManifest",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "description": "The unique identifier for this Network.",
+          "required": false,
+
+          "type": "string"
+        },
+        "labels": {
+          "description": "The labels that apply to this network.",
+          "type": "object",
+          "patternProperties": {
+            "[a-zA-Z0-9][a-zA-Z0-9_]*": {
+              "type": "string"
+            }
+          }
+        },
+        "entry": {
+          "description": "The provider to use as the entrypoint when running as a standalone process.",
+          "required": false,
+
+          "$ref": "#/$defs/EntrypointDefinition"
+        },
+        "schematics": {
+          "description": "The links between capabilities and components.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SchematicManifest"
+          }
+        },
+        "providers": {
+          "description": "A list of providers and component collections.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ProviderDefinition"
+          }
+        }
+      },
+      "required": []
+    },
+
+    "EntrypointDefinition": {
+      "$anchor": "#EntrypointDefinition",
+      "additionalProperties": false,
+      "properties": {
+        "reference": {
+          "description": "The reference/location of the provider.",
+
+          "type": "string"
+        },
+        "data": {
+          "description": "Data or configuration to pass to the provider initialization.",
+          "type": "object"
+        }
+      },
+      "required": []
+    },
+
+    "ProviderDefinition": {
+      "$anchor": "#ProviderDefinition",
+      "additionalProperties": false,
+      "properties": {
+        "namespace": {
+          "description": "The namespace to reference the provider&#x27;s components on.",
+
+          "type": "string"
+        },
+        "kind": {
+          "description": "The kind/type of the provider.",
+
+          "$ref": "#/$defs/ProviderKind"
+        },
+        "reference": {
+          "description": "The reference/location of the provider.",
+
+          "type": "string"
+        },
+        "data": {
+          "description": "Data or configuration to pass to the provider initialization.",
+          "type": "object"
+        }
+      },
+      "required": []
+    },
+
+    "ProviderKind": {
+      "enum": ["Native", "GrpcUrl", "WaPC", "Lattice", "Network", "Par"]
+    },
+
+    "SchematicManifest": {
+      "$anchor": "#SchematicManifest",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "description": "Schematic name.",
+
+          "type": "string"
+        },
+        "providers": {
+          "description": "A list of providers and component collections.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "instances": {
+          "description": "A map from component reference to its target.",
+          "type": "object",
+          "patternProperties": {
+            "[a-zA-Z0-9][a-zA-Z0-9_]*": {
+              "$ref": "#/$defs/ComponentDefinition"
+            }
+          }
+        },
+        "connections": {
+          "description": "A list of connections from component to component.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ConnectionDefinition"
+          }
+        },
+        "constraints": {
+          "description": "A map of constraints and values that limit where this schematic can run.",
+          "type": "object",
+          "patternProperties": {
+            "[a-zA-Z0-9][a-zA-Z0-9_]*": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "required": ["name"]
+    },
+
+    "ComponentDefinition": {
+      "$anchor": "#ComponentDefinition",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "description": "The ID of the component (i.e. the alias, key, or namespace).",
+
+          "type": "string"
+        },
+        "data": {
+          "description": "Data to associate with the reference.",
+          "required": false,
+          "type": "object"
+        }
+      },
+      "required": ["id"]
+    },
+
+    "ConnectionDefinition": {
+      "$anchor": "#ConnectionDefinition",
+      "additionalProperties": false,
+      "properties": {
+        "from": {
+          "description": "The originating component from upstream.",
+
+          "$ref": "#/$defs/ConnectionTargetDefinition"
+        },
+        "to": {
+          "description": "The destination component (downstream).",
+
+          "$ref": "#/$defs/ConnectionTargetDefinition"
+        },
+        "default": {
+          "description": "The default value to provide in the event of an upstream Error or Exception.",
+          "required": false,
+
+          "type": "string"
+        }
+      },
+      "required": []
+    },
+
+    "ConnectionTargetDefinition": {
+      "$anchor": "#ConnectionTargetDefinition",
+      "additionalProperties": false,
+      "properties": {
+        "instance": {
+          "description": "The instance name of the referenced component.",
+
+          "type": "string"
+        },
+        "port": {
+          "description": "The component&#x27;s port.",
+
+          "type": "string"
+        },
+        "data": {
+          "description": "Data to associate with a connection.",
+          "required": false,
+          "type": "object"
+        }
+      },
+      "required": ["instance", "port"]
+    }
+  },
+  "oneOf": [{ "$ref": "#/$defs/HostManifest" }]
+}

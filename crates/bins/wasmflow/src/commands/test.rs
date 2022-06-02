@@ -2,8 +2,8 @@ use std::path::PathBuf;
 
 use anyhow::{Context, Result};
 use clap::Args;
-use vino_provider_cli::options::LatticeCliOptions;
-use vino_provider_cli::LoggingOptions;
+use wasmflow_collection_cli::options::LatticeCliOptions;
+use wasmflow_collection_cli::LoggingOptions;
 
 mod manifest;
 mod wasm;
@@ -28,7 +28,7 @@ pub(crate) struct TestCommand {
   pub(crate) info: bool,
 
   /// Pass a seed along with the invocation.
-  #[clap(long = "seed", short = 's', env = "VINO_SEED")]
+  #[clap(long = "seed", short = 's', env = "WAFL_SEED")]
   seed: Option<u64>,
 
   /// The path or OCI URL to a wafl manifest or wasm file.
@@ -42,9 +42,9 @@ pub(crate) struct TestCommand {
 }
 #[allow(clippy::future_not_send, clippy::too_many_lines)]
 pub(crate) async fn handle_command(opts: TestCommand) -> Result<()> {
-  let _guard = logger::init(&opts.logging.name("vino"));
+  let _guard = logger::init(&opts.logging.name(crate::BIN_NAME));
 
-  let bytes = vino_loader::get_bytes(&opts.location, opts.fetch.allow_latest, &opts.fetch.insecure_registries)
+  let bytes = wasmflow_loader::get_bytes(&opts.location, opts.fetch.allow_latest, &opts.fetch.insecure_registries)
     .await
     .context("Could not load from location")?;
 

@@ -1,0 +1,20 @@
+version: 0
+network:
+  schematics:
+    - name: nested_parent
+      instances:
+        log1:
+          id: wafl::core::log
+        child_ref:
+          id: self::child
+      connections:
+        - <>[parent_input] => log1[input]
+        - log1[output] => child_ref[child_input]
+        - child_ref[child_output] => <>[parent_output]
+    - name: child
+      instances:
+        log2:
+          id: wafl::core::log
+      connections:
+        - <>[child_input] => log2[input]
+        - log2[output] => <>[child_output]

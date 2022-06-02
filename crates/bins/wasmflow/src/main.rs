@@ -1,7 +1,7 @@
 #![doc(html_logo_url = "https://avatars.githubusercontent.com/u/71604398?s=200&v=4")]
 #![doc = include_str!("../README.md")]
 // !!START_LINTS
-// Vino lints
+// Wasmflow lints
 // Do not change anything between the START_LINTS and END_LINTS line.
 // This is automatically generated. Add exceptions after this section.
 #![deny(
@@ -98,7 +98,8 @@ use clap::Parser;
 
 use self::commands::{Cli, CliCommand};
 
-static BIN_NAME: &str = "vino";
+static BIN_NAME: &str = "wasmflow";
+static BIN_DESC: &str = "wasmflow runtime executable";
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -119,7 +120,7 @@ async fn main() -> Result<()> {
     }
     Err(e) => {
       error!("Error: {}", e);
-      eprintln!("\nVino exited with error: {}", e);
+      eprintln!("\n{} exited with error: {}", BIN_NAME, e);
       eprintln!("Run with --info, --debug, or --trace for more information.");
       1
     }

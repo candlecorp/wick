@@ -6,7 +6,7 @@ network:
   providers:
     - namespace: wapc
       kind: WaPC
-      reference: ./crates/integration/test-wapc-component/build/test_component_s.wasm
+      reference: ./crates/integration/test-wasm-component/build/test_component_s.wasm
     - namespace: lattice_wapc
       kind: Lattice
       reference: lattice_wapc

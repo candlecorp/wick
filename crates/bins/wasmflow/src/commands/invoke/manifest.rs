@@ -1,13 +1,13 @@
 use std::time::SystemTime;
 
 use anyhow::Result;
+use seeded_random::Seed;
 use tokio::io::{self, AsyncBufReadExt};
-use vino_host::HostBuilder;
-use vino_manifest::host_definition::HostDefinition;
-use vino_provider_cli::options::DefaultCliOptions;
-use vino_provider_cli::parse_args;
-use vino_random::Seed;
-use vino_transport::TransportMap;
+use wasmflow_collection_cli::options::DefaultCliOptions;
+use wasmflow_collection_cli::parse_args;
+use wasmflow_host::HostBuilder;
+use wasmflow_manifest::host_definition::HostDefinition;
+use wasmflow_transport::TransportMap;
 
 use crate::utils::merge_config;
 

@@ -1,4 +1,4 @@
-use vino_transport::error::TransportError;
+use wasmflow_transport::error::TransportError;
 use wasmflow_codec::error::CodecError;
 
 /// Errors originating from WASM components.

@@ -4,11 +4,11 @@ use std::time::Instant;
 use futures::future::try_join_all;
 use futures::StreamExt;
 use once_cell::sync::{Lazy, OnceCell};
-use vino_host::{Host, HostBuilder};
-use vino_random::Random;
-use vino_transport::{MessageTransport, TransportMap, TransportStream};
+use wasmflow_host::{Host, HostBuilder};
+use seeded_random::Random;
+use wasmflow_transport::{MessageTransport, TransportMap, TransportStream};
 
-static RNG: Lazy<Random> = Lazy::new(vino_random::Random::new);
+static RNG: Lazy<Random> = Lazy::new(seeded_random::Random::new);
 static HOST: OnceCell<Host> = OnceCell::new();
 
 fn get_map() -> TransportMap {
@@ -31,7 +31,7 @@ async fn work() {
   };
   let _guard = logger::init(&opts.name("create-user-benchmark"));
 
-  let mut host = HostBuilder::try_from("./benches/create-user.vino").unwrap().build();
+  let mut host = HostBuilder::try_from("./benches/create-user.wafl").unwrap().build();
   host.start(None).await.unwrap();
   let host = HOST.get_or_init(move || host);
   let num: usize = 100;

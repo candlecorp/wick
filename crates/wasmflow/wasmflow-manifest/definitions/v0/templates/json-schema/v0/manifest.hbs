@@ -1,0 +1,21 @@
+{
+  "title": "JSON schema for Wasmflow host manifests",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "$defs": {
+{{~#each definitions~}}
+  {{~#switch kind~}}
+    {{~#case "ImportDefinition"}}
+      {{~#import from.value}}{{~> module ~}}{{~/import~}}
+    {{~/case~}}
+    {{~#default~}}
+    // UNHANDLED
+      {{panic .}}
+    {{~/default~}}
+  {{~/switch~}}
+{{~/each~}}
+  },
+  "oneOf" : [
+    {"$ref" : "#/$defs/HostManifest"}
+  ]
+}

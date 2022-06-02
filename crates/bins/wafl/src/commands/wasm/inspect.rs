@@ -23,7 +23,7 @@ pub(crate) async fn handle(opts: Options) -> Result<()> {
   file.read_to_end(&mut buf)?;
 
   // Extract will return an error if it encounters an invalid hash in the claims
-  let claims = vino_wascap::extract_claims(&buf)?;
+  let claims = wasmflow_wascap::extract_claims(&buf)?;
   match claims {
     Some(claims) => println!("{}", serde_json::to_string(&claims)?),
     None => error!("Error extracting claims"),

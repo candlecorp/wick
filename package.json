@@ -1,7 +1,7 @@
 {
-  "name": "vino",
+  "name": "unnamed",
   "version": "0.0.0",
-  "description": "Vino internal scripts",
+  "description": "Wasmflow internal scripts",
   "directories": {
     "example": "examples",
     "test": "tests"

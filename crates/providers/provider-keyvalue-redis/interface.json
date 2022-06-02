@@ -1,13 +1,13 @@
 {
-  "name": "vino-keyvalue-redis",
+  "name": "wasmflow-keyvalue-redis",
   "version": 1,
   "format": 1,
   "wellknown": [
     {
       "capabililities": ["keyvalue"],
-      "url": "../../interfaces/interface-keyvalue/interface.json",
+      "url": "../../interfaces/wafl-interface-keyvalue/interface.json",
       "schema": {
-        "name": "vino-interface-keyvalue",
+        "name": "wafl-interface-keyvalue",
         "version": "1.0.0",
         "format": 1,
         "wellknown": [],

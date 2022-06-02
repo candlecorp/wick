@@ -1,9 +1,9 @@
 use std::sync::Arc;
 
 use anyhow::Result;
-use vino_provider_wasm::helpers::WapcModule;
-use vino_provider_wasm::provider::Provider;
-use vino_test::TestSuite;
+use wasmflow_collection_wasm::helpers::WapcModule;
+use wasmflow_collection_wasm::provider::Provider;
+use wasmflow_test::TestSuite;
 
 #[allow(clippy::future_not_send, clippy::too_many_lines)]
 pub(crate) async fn handle_command(opts: super::TestCommand, bytes: Vec<u8>) -> Result<()> {

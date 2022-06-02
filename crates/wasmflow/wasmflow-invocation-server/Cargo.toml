@@ -1,0 +1,31 @@
+[package]
+name = "wasmflow-invocation-server"
+version = "0.1.0"
+edition = "2021"
+license = "BSD-3-Clause"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+wasmflow-rpc = { path = "../wasmflow-rpc" }
+wasmflow-entity = { path = "../../sdk/wasmflow-entity" }
+wasmflow-transport = { path = "../../sdk/wasmflow-transport", features = [
+  "all",
+] }
+wasmflow-interface = { path = "../../sdk/wasmflow-interface" }
+wasmflow-invocation = { path = "../../sdk/wasmflow-invocation" }
+
+
+tonic = { version = "0.7", features = ["tls"] }
+tokio = { version = "1", features = ["macros", "net", "rt-multi-thread"] }
+tokio-stream = { version = "0.1", features = ["net"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+rand = "0.8"
+tracing = "0.1"
+thiserror = "1.0"
+async-trait = "0.1"
+derivative = "2.2"
+parking_lot = "0.12"
+
+[dev-dependencies]

@@ -5,7 +5,7 @@ use anyhow::Result;
 use clap::Args;
 use oci_distribution::secrets::RegistryAuth;
 use oci_distribution::{manifest, Client, Reference};
-use vino_oci::error::OciError;
+use wasmflow_oci::error::OciError;
 
 use crate::io::async_write;
 #[derive(Debug, Clone, Args)]

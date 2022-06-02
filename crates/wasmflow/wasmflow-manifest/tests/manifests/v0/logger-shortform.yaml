@@ -1,0 +1,11 @@
+---
+version: 0
+default_schematic: "logger"
+network:
+  schematics:
+    - name: logger
+      instances:
+        logger: wafl::log
+      connections:
+        - <> => logger[input]
+        - logger[output] => <>

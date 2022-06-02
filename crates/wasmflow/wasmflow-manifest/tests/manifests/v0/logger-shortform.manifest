@@ -1,0 +1,19 @@
+default_schematic: "logger"
+
+version: "0"
+
+network {
+    schematics: [{
+        name: "logger",
+        instances {
+          logger: "wafl::log"
+        },
+        connections: [
+            "<> => logger[input]",
+            "logger[output] => <>"
+          ],
+      }],
+  }
+
+
+

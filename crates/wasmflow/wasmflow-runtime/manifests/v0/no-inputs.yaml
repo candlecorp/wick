@@ -1,0 +1,10 @@
+---
+version: 0
+network:
+  schematics:
+    - name: uuid
+      instances:
+        uuid: wafl::rand::uuid
+      connections:
+        - <core>[seed] => uuid[seed]
+        - uuid[output] => <>

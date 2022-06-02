@@ -13,8 +13,8 @@ path = "src/main.rs"
 thiserror = "1.0"
 wasmflow-packet = { path = "../../sdk/wasmflow-packet" }
 wasmflow-codec = { path = "../../sdk/wasmflow-codec" }
-vino-rpc = { path = "../../vino/vino-rpc" }
-vino-invocation-server = { path = "../../vino/vino-invocation-server" }
+wasmflow-rpc = { path = "../../wasmflow/wasmflow-rpc" }
+wasmflow-invocation-server = { path = "../../wasmflow/wasmflow-invocation-server" }
 
 tracing = "0.1"
 

@@ -1,0 +1,16 @@
+---
+version: 0
+network:
+  schematics:
+    - name: native_component
+      instances:
+        add:
+          id: wafl::math::add
+        add2:
+          id: wafl::math::add
+      connections:
+        - <> => add[left]
+        - <> => add[right]
+        - <> => add2[right]
+        - add[output] => add2[left]
+        - add2[output] => <>

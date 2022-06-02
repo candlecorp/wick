@@ -4,8 +4,8 @@ use std::time::Instant;
 use futures::future::try_join_all;
 use futures::StreamExt;
 use once_cell::sync::OnceCell;
-use vino_host::{Host, HostBuilder};
-use vino_transport::{MessageTransport, TransportMap, TransportStream};
+use wasmflow_host::{Host, HostBuilder};
+use wasmflow_transport::{MessageTransport, TransportMap, TransportStream};
 
 static HOST: OnceCell<Host> = OnceCell::new();
 
@@ -52,7 +52,7 @@ async fn work() {
   };
   let _guard = logger::init(&opts.name("markdown-benchmark"));
 
-  let mut host = HostBuilder::try_from("./benches/markdown.vino").unwrap().build();
+  let mut host = HostBuilder::try_from("./benches/markdown.wafl").unwrap().build();
   host.start(None).await.unwrap();
   let host = HOST.get_or_init(move || host);
   let num: usize = 1000;

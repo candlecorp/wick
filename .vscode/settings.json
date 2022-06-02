@@ -1,15 +1,15 @@
 {
   "git.ignoreLimitWarning": true,
   "yaml.schemas": {
-    "crates/vino/vino-manifest/json-schema/v0/manifest.json": [
-      "crates/vino/vino-runtime/manifests/v0/**/*.yaml",
+    "crates/wasmflow/wasmflow-manifest/json-schema/v0/manifest.json": [
+      "crates/wasmflow/wasmflow-runtime/manifests/v0/**/*.yaml",
       "tests/manifests/*.yaml",
-      "crates/vino/vino-manifest/tests/manifests/v0/*.yaml"
+      "crates/wasmflow/wasmflow-manifest/tests/manifests/v0/*.yaml"
     ]
   },
   "rust-analyzer.cargo.features": [
     "wasmflow-component/guest",
-    "vino-stdlib/provider"
+    "wasmflow-stdlib/provider"
   ],
   "rust-analyzer.rustfmt.overrideCommand": [
     "rustup",

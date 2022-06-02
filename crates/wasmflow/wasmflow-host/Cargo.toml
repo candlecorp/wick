@@ -1,0 +1,56 @@
+[package]
+name = "wasmflow-host"
+version = "0.1.0"
+authors = ["Jarrod Overson <jsoverson@gmail.com>"]
+edition = "2021"
+license = "BSD-3-Clause"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[features]
+
+
+[dependencies]
+wasmflow-interface = { path = "../../sdk/wasmflow-interface", features = [] }
+wasmflow-invocation = { path = "../../sdk/wasmflow-invocation" }
+seeded-random = { path = "../../misc/seeded-random" }
+wasmflow-runtime = { path = "../wasmflow-runtime" }
+wasmflow-lattice = { path = "../wasmflow-lattice" }
+wasmflow-manifest = { path = "../wasmflow-manifest" }
+wasmflow-transport = { path = "../../sdk/wasmflow-transport", features = [
+  "all",
+] }
+wasmflow-output = { path = "../../sdk/wasmflow-output", features = [] }
+wasmflow-loader = { path = "../wasmflow-loader" }
+wasmflow-collection-cli = { path = "../wasmflow-collection-cli" }
+wasmflow-codec = { path = "../../sdk/wasmflow-codec" }
+wasmflow-rpc = { path = "../wasmflow-rpc" }
+wasmflow-invocation-server = { path = "../wasmflow-invocation-server" }
+wasmflow-entity = { path = "../../sdk/wasmflow-entity" }
+wasmflow-macros = { path = "../../sdk/wasmflow-macros" }
+tracing = "0.1"
+
+thiserror = "1.0"
+nkeys = "0.2"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+async-trait = "0.1"
+tokio = { version = "1", features = ["macros", "net", "rt-multi-thread"] }
+http = "0.2"
+once_cell = "1.8"
+parking_lot = "0.12"
+uuid = "1.1"
+
+[dev-dependencies]
+logger = { path = "../logger" }
+test-logger = { path = "../../misc/test-logger" }
+tokio = { version = "1", features = [
+  "net",
+  "rt-multi-thread",
+  "time",
+  "io-std",
+  "io-util",
+  "macros",
+] }
+anyhow = "1.0"
+tokio-stream = "0.1.7"

@@ -10,7 +10,7 @@ network:
     - name: logger
       instances:
         log:
-          id: vino::core::log
+          id: wafl::core::log
       connections:
         - <>[child_input] => log[input]
         - log[output] => <>[child_output]

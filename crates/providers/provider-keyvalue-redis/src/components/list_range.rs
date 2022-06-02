@@ -1,6 +1,6 @@
 use std::convert::TryInto;
 
-use vino_interface_keyvalue::list_range::*;
+use wafl_interface_keyvalue::list_range::*;
 
 use crate::components::generated::list_range::*;
 

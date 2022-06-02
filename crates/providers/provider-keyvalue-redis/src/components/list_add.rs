@@ -1,4 +1,4 @@
-use vino_interface_keyvalue::list_add::*;
+use wafl_interface_keyvalue::list_add::*;
 
 use crate::components::generated::list_add::*;
 

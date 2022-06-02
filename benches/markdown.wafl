@@ -1,0 +1,18 @@
+---
+version: 0
+host:
+  allow_latest: true
+network:
+  providers:
+    - namespace: markdown
+      kind: WaPC
+      reference: REGISTRY_TODO.azurecr.io/vino/markdown:latest
+  schematics:
+    - name: render
+      providers:
+        - markdown
+      instances:
+        render: markdown::render
+      connections:
+        - <> => render[markdown]
+        - render[html] => <>
