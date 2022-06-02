@@ -1,4 +1,4 @@
-use vino_interface_keyvalue::key_set::*;
+use wafl_interface_keyvalue::key_set::*;
 
 use crate::components::generated::key_set::*;
 

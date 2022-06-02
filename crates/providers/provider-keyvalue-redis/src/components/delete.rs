@@ -1,4 +1,4 @@
-use vino_interface_keyvalue::delete::*;
+use wafl_interface_keyvalue::delete::*;
 
 use crate::components::generated::delete::*;
 

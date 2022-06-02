@@ -1,0 +1,22 @@
+---
+version: 0
+network:
+  providers:
+    - namespace: wapc
+      kind: WaPC
+      reference: ../../integration/test-wasm-component/build/test_component_s.wasm
+  schematics:
+    - name: test
+      providers:
+        - wapc
+      instances:
+        copy:
+          id: wapc::copy
+        SENDER:
+          id: core::sender
+          data:
+            output: 5
+      connections:
+        - <> => copy[input]
+        - SENDER[output] => copy[times]
+        - copy[output] => <>

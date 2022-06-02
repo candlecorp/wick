@@ -2,13 +2,13 @@ use std::time::SystemTime;
 
 use anyhow::{Context, Result};
 use tokio::io::{self, AsyncBufReadExt};
-use vino_provider_cli::parse_args;
-use vino_provider_wasm::helpers::WapcModule;
-use vino_provider_wasm::provider::Provider;
-use vino_rpc::RpcHandler;
-use vino_transport::TransportMap;
+use wasmflow_collection_cli::parse_args;
+use wasmflow_collection_wasm::helpers::WapcModule;
+use wasmflow_collection_wasm::provider::Provider;
 use wasmflow_entity::Entity;
 use wasmflow_invocation::{InherentData, Invocation};
+use wasmflow_rpc::RpcHandler;
+use wasmflow_transport::TransportMap;
 
 pub(crate) async fn handle_command(opts: super::InvokeCommand, bytes: Vec<u8>) -> Result<()> {
   let component = WapcModule::from_slice(&bytes)?;

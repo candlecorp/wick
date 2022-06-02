@@ -1,5 +1,5 @@
 [package]
-name = "vino-keyvalue-redis"
+name = "wasmflow-keyvalue-redis"
 version = "0.0.0"
 edition = "2021"
 
@@ -10,12 +10,14 @@ provider = []
 [dependencies]
 wasmflow-sdk = { path = "../../sdk/wasmflow-sdk", features = ["v1"] }
 wasmflow-entity = { path = "../../sdk/wasmflow-entity", features = [] }
-vino-provider-cli = { path = "../../vino/vino-provider-cli" }
-vino-transport = { path = "../../sdk/vino-transport", features = ["all"] }
+wasmflow-collection-cli = { path = "../../wasmflow/wasmflow-collection-cli" }
+wasmflow-transport = { path = "../../sdk/wasmflow-transport", features = [
+  "all",
+] }
 wasmflow-packet = { path = "../../sdk/wasmflow-packet" }
-vino-rpc = { path = "../../vino/vino-rpc" }
+wasmflow-rpc = { path = "../../wasmflow/wasmflow-rpc" }
 wasmflow-macros = { path = "../../sdk/wasmflow-macros" }
-vino-interface-keyvalue = { path = "../../interfaces/interface-keyvalue", features = [
+wafl-interface-keyvalue = { path = "../../interfaces/wafl-interface-keyvalue", features = [
   "provider",
   "guest",
 ] }
@@ -32,7 +34,7 @@ tracing = "0.1"
 tracing-futures = "0.2"
 
 [dev-dependencies]
-logger = { path = "../../vino/logger" }
+logger = { path = "../../wasmflow/logger" }
 serde_json = "1.0"
 tonic = "0.7"
 rand = "0.8"

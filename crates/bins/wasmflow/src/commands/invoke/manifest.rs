@@ -1,13 +1,13 @@
 use std::time::SystemTime;
 
 use anyhow::Result;
+use seeded_random::Seed;
 use tokio::io::{self, AsyncBufReadExt};
-use vino_host::HostBuilder;
-use vino_manifest::host_definition::HostDefinition;
-use vino_provider_cli::options::DefaultCliOptions;
-use vino_provider_cli::parse_args;
-use vino_random::Seed;
-use vino_transport::TransportMap;
+use wasmflow_collection_cli::options::DefaultCliOptions;
+use wasmflow_collection_cli::parse_args;
+use wasmflow_host::HostBuilder;
+use wasmflow_manifest::host_definition::HostDefinition;
+use wasmflow_transport::TransportMap;
 
 use crate::utils::merge_config;
 
@@ -17,7 +17,7 @@ pub(crate) async fn handle_command(opts: super::InvokeCommand, bytes: Vec<u8>) -
   let manifest = HostDefinition::load_from_bytes(Some(opts.location), &bytes)?;
 
   let server_options = DefaultCliOptions {
-    lattice: opts.lattice,
+    mesh: opts.mesh,
     ..Default::default()
   };
 
@@ -31,7 +31,7 @@ pub(crate) async fn handle_command(opts: super::InvokeCommand, bytes: Vec<u8>) -
   let host_builder = HostBuilder::from_definition(config);
 
   let mut host = host_builder.build();
-  host.connect_to_lattice().await?;
+  host.connect_to_mesh().await?;
   host.start_network(opts.seed.map(Seed::unsafe_new)).await?;
 
   let signature = host.get_signature()?;

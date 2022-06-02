@@ -1,10 +1,10 @@
 #[tokio::test]
-async fn vino_run() {
+async fn wasmflow_run() {
   let output = test_bin::get_test_bin("wasmflow")
     .env_clear()
     .args(&[
       "invoke",
-      "./manifests/log.vino",
+      "./manifests/log.wafl",
       "--data=schem_input=\"testing123\"",
       "--trace",
     ])

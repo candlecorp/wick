@@ -1,0 +1,17 @@
+[package]
+name = "runtime-testutils"
+version = "0.1.0"
+authors = ["Jarrod Overson <jsoverson@gmail.com>"]
+edition = "2021"
+license = "BSD-3-Clause"
+
+[features]
+
+[dependencies]
+wasmflow-runtime = { path = "../../../wasmflow-runtime" }
+wasmflow-mesh = { path = "../../../wasmflow-mesh" }
+wasmflow-wascap = { path = "../../../wasmflow-wascap" }
+wasmflow-manifest = { path = "../../../wasmflow-manifest" }
+tracing = "0.1"
+anyhow = "1.0"
+uuid = "1.1"

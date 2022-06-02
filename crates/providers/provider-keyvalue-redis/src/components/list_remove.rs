@@ -1,6 +1,6 @@
 use std::convert::TryInto;
 
-use vino_interface_keyvalue::list_remove::*;
+use wafl_interface_keyvalue::list_remove::*;
 
 use crate::components::generated::list_remove::*;
 pub use crate::components::generated::list_remove::*;

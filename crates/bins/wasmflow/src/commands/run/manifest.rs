@@ -1,8 +1,8 @@
 use anyhow::Result;
-use vino_host::HostBuilder;
-use vino_manifest::host_definition::HostDefinition;
-use vino_provider_cli::options::DefaultCliOptions;
-use vino_random::Seed;
+use seeded_random::Seed;
+use wasmflow_collection_cli::options::DefaultCliOptions;
+use wasmflow_host::HostBuilder;
+use wasmflow_manifest::host_definition::HostDefinition;
 
 use crate::utils::merge_config;
 
@@ -11,7 +11,7 @@ pub(crate) async fn handle_command(opts: super::RunCommand, bytes: Vec<u8>) -> R
   let manifest = HostDefinition::load_from_bytes(Some(opts.location.clone()), &bytes)?;
 
   let server_options = DefaultCliOptions {
-    lattice: opts.lattice.clone(),
+    mesh: opts.mesh.clone(),
     ..Default::default()
   };
 
@@ -29,7 +29,7 @@ async fn exec_main(opts: &super::RunCommand, config: HostDefinition) -> Result<u
   let host_builder = HostBuilder::from_definition(config);
 
   let mut host = host_builder.build();
-  host.connect_to_lattice().await?;
+  host.connect_to_mesh().await?;
   host.start_network(opts.seed.map(Seed::unsafe_new)).await?;
 
   let code = host.exec_main(opts.args.clone()).await?;

@@ -160,7 +160,7 @@ pub mod provider {
 }
 
 pub mod types {
-  pub use vino_transport::TransportStream;
+  pub use wasmflow_transport::TransportStream;
   pub use wasmflow_interface::*;
   pub use wasmflow_streams::PacketStream;
 }

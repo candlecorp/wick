@@ -1,0 +1,23 @@
+version: 0
+host:
+  timeout: 5000
+  rpc:
+    enabled: true
+  mesh:
+    enabled: true
+network:
+  name: network-one
+  providers:
+    - kind: Mesh
+      namespace: external_network
+      reference: network-two
+  schematics:
+    - name: schematic-one
+      providers:
+        - external_network
+      instances:
+        logger:
+          id: external_network::logger
+      connections:
+        - <>[parent_input] => logger[child_input]
+        - logger[child_output] => <>[parent_output]

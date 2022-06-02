@@ -1,0 +1,16 @@
+version: 0
+host:
+  rpc:
+    enabled: true
+  mesh:
+    enabled: true
+network:
+  name: network-two
+  schematics:
+    - name: logger
+      instances:
+        log:
+          id: wafl::core::log
+      connections:
+        - <>[child_input] => log[input]
+        - log[output] => <>[child_output]

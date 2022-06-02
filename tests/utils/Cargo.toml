@@ -7,13 +7,13 @@ license = "Apache-2.0"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-vino-runtime = { path = "../../crates/vino/vino-runtime" }
-vino-transport = { path = "../../crates/sdk/vino-transport", features = [
+wasmflow-runtime = { path = "../../crates/wasmflow/wasmflow-runtime" }
+wasmflow-transport = { path = "../../crates/sdk/wasmflow-transport", features = [
   "all",
 ] }
-vino-manifest = { path = "../../crates/vino/vino-manifest" }
+wasmflow-manifest = { path = "../../crates/wasmflow/wasmflow-manifest" }
 wasmflow-codec = { path = "../../crates/sdk/wasmflow-codec" }
-vino-wascap = { path = "../../crates/vino/vino-wascap" }
+wasmflow-wascap = { path = "../../crates/wasmflow/wasmflow-wascap" }
 anyhow = "1.0"
 maplit = "1.0"
 pretty_assertions = "1"

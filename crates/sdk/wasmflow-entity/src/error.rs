@@ -2,7 +2,7 @@ use thiserror::Error;
 
 #[derive(Error, Debug, Clone)]
 
-/// The error type for Vino Entities.
+/// The error type for Wasmflow Entities.
 pub enum ParseError {
   /// Encountered an invalid scheme when parsing an entity URL.
   #[error("Invalid scheme {0}")]

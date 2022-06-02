@@ -1,4 +1,4 @@
-use vino_interface_keyvalue::key_get::*;
+use wafl_interface_keyvalue::key_get::*;
 
 use crate::components::generated::key_get::*;
 use crate::error::Exception;

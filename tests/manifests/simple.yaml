@@ -5,9 +5,9 @@ network:
     - name: simple
       instances:
         add:
-          id: vino::math::add
+          id: wafl::math::add
         add2:
-          id: vino::math::add
+          id: wafl::math::add
       connections:
         - <> => add[left]
         - <> => add[right]

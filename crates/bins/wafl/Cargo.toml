@@ -11,19 +11,21 @@ license = "BSD-3-Clause"
 wasmflow-invocation = { path = "../../sdk/wasmflow-invocation" }
 wasmflow-interface = { path = "../../sdk/wasmflow-interface" }
 cli-common = { path = "../cli-common" }
-vino-par = { path = "../../vino/vino-par" }
-vino-runtime = { path = "../../vino/vino-runtime" }
+wasmflow-par = { path = "../../wasmflow/wasmflow-par" }
+wasmflow-runtime = { path = "../../wasmflow/wasmflow-runtime" }
 wasmflow-packet = { path = "../../sdk/wasmflow-packet" }
-vino-host = { path = "../../vino/vino-host" }
-vino-provider-cli = { path = "../../vino/vino-provider-cli" }
-vino-manifest = { path = "../../vino/vino-manifest" }
-vino-rpc = { path = "../../vino/vino-rpc", features = ["client"] }
-vino-wascap = { path = "../../vino/vino-wascap" }
-logger = { path = "../../vino/logger" }
+wasmflow-host = { path = "../../wasmflow/wasmflow-host" }
+wasmflow-collection-cli = { path = "../../wasmflow/wasmflow-collection-cli" }
+wasmflow-manifest = { path = "../../wasmflow/wasmflow-manifest" }
+wasmflow-rpc = { path = "../../wasmflow/wasmflow-rpc", features = ["client"] }
+wasmflow-wascap = { path = "../../wasmflow/wasmflow-wascap" }
+logger = { path = "../../wasmflow/logger" }
 wasmflow-codec = { path = "../../sdk/wasmflow-codec" }
 wasmflow-macros = { path = "../../sdk/wasmflow-macros" }
 wasmflow-entity = { path = "../../sdk/wasmflow-entity" }
-vino-transport = { path = "../../sdk/vino-transport", features = ["all"] }
+wasmflow-transport = { path = "../../sdk/wasmflow-transport", features = [
+  "all",
+] }
 cargo-generate = "0.14"
 
 async-recursion = "1.0"
@@ -44,7 +46,7 @@ atty = "0.2"
 oci-distribution = { version = "0.9", features = [
   "rustls-tls",
 ], default-features = false }
-vino-oci = { path = "../../vino/vino-oci" }
+wasmflow-oci = { path = "../../wasmflow/wasmflow-oci" }
 anyhow = "1.0"
 
 [dev-dependencies]

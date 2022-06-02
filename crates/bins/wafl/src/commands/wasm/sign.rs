@@ -5,7 +5,7 @@ use std::path::PathBuf;
 use anyhow::Result;
 use clap::Args;
 use nkeys::KeyPairType;
-use vino_wascap::{sign_buffer_with_claims, ClaimsOptions};
+use wasmflow_wascap::{sign_buffer_with_claims, ClaimsOptions};
 use wasmflow_interface::ProviderSignature;
 
 use crate::keys::{extract_keypair, GenerateCommon};

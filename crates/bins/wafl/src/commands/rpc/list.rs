@@ -13,7 +13,7 @@ pub(crate) struct Options {
 
 pub(crate) async fn handle(opts: Options) -> Result<()> {
   let _guard = crate::utils::init_logger(&opts.logging)?;
-  let mut client = vino_rpc::make_rpc_client(
+  let mut client = wasmflow_rpc::make_rpc_client(
     format!("http://{}:{}", opts.connection.address, opts.connection.port),
     opts.connection.pem,
     opts.connection.key,

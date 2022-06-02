@@ -3,13 +3,13 @@ name = "wasmflow-sdk"
 version = "0.9.0"
 edition = "2021"
 license = "BSD-3-Clause"
-description = "WaPC-related functions for Vino"
-documentation = "https://docs.vino.dev"
-keywords = ["wapc", "vino"]
+description = "WaPC-related functions for Wasmflow"
+documentation = "https://wasmflow.com"
+keywords = ["wapc", "wasmflow"]
 categories = ["wasm"]
 exclude = ["tests/*", ".github/*", ".gitignore"]
-repository = "https://github.com/vinodotdev/vino-sdk"
-homepage = "https://docs.vino.dev"
+repository = "https://github.com/wasmflow/wasmflow-sdk"
+homepage = "https://wasmflow.com"
 
 [badges]
 maintenance = { status = "actively-developed" }
@@ -33,7 +33,7 @@ wasmflow-component = { path = "../wasmflow-component", version = "0.9.0", featur
 wasmflow-codec = { path = "../wasmflow-codec", version = "0.9.0", features = [] }
 wasmflow-output = { path = "../wasmflow-output", version = "0.9.0" }
 wasmflow-interface = { path = "../wasmflow-interface", version = "0.9.0" }
-vino-transport = { path = "../vino-transport", version = "0.9.0", features = [] }
+wasmflow-transport = { path = "../wasmflow-transport", version = "0.9.0", features = [] }
 wasmflow-boundary = { path = "../wasmflow-boundary", version = "0.9.0" }
 wasmflow-traits = { path = "../wasmflow-traits", version = "0.9.0" }
 futures = "0.3.21"

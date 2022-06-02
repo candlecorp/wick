@@ -244,48 +244,48 @@ pub fn get_signature() -> wasmflow_sdk::types::ProviderSignature {
   let mut components: std::collections::HashMap<String, wasmflow_sdk::types::ComponentSignature> =
     std::collections::HashMap::new();
 
-  components.insert("decr".to_owned(), vino_interface_keyvalue::decr::signature());
+  components.insert("decr".to_owned(), wafl_interface_keyvalue::decr::signature());
 
-  components.insert("delete".to_owned(), vino_interface_keyvalue::delete::signature());
+  components.insert("delete".to_owned(), wafl_interface_keyvalue::delete::signature());
 
-  components.insert("exists".to_owned(), vino_interface_keyvalue::exists::signature());
+  components.insert("exists".to_owned(), wafl_interface_keyvalue::exists::signature());
 
-  components.insert("incr".to_owned(), vino_interface_keyvalue::incr::signature());
+  components.insert("incr".to_owned(), wafl_interface_keyvalue::incr::signature());
 
-  components.insert("key-get".to_owned(), vino_interface_keyvalue::key_get::signature());
+  components.insert("key-get".to_owned(), wafl_interface_keyvalue::key_get::signature());
 
-  components.insert("key-set".to_owned(), vino_interface_keyvalue::key_set::signature());
+  components.insert("key-set".to_owned(), wafl_interface_keyvalue::key_set::signature());
 
-  components.insert("list-add".to_owned(), vino_interface_keyvalue::list_add::signature());
+  components.insert("list-add".to_owned(), wafl_interface_keyvalue::list_add::signature());
 
   components.insert(
     "list-range".to_owned(),
-    vino_interface_keyvalue::list_range::signature(),
+    wafl_interface_keyvalue::list_range::signature(),
   );
 
   components.insert(
     "list-remove".to_owned(),
-    vino_interface_keyvalue::list_remove::signature(),
+    wafl_interface_keyvalue::list_remove::signature(),
   );
 
-  components.insert("set-add".to_owned(), vino_interface_keyvalue::set_add::signature());
+  components.insert("set-add".to_owned(), wafl_interface_keyvalue::set_add::signature());
 
   components.insert(
     "set-contains".to_owned(),
-    vino_interface_keyvalue::set_contains::signature(),
+    wafl_interface_keyvalue::set_contains::signature(),
   );
 
-  components.insert("set-get".to_owned(), vino_interface_keyvalue::set_get::signature());
+  components.insert("set-get".to_owned(), wafl_interface_keyvalue::set_get::signature());
 
   components.insert(
     "set-remove".to_owned(),
-    vino_interface_keyvalue::set_remove::signature(),
+    wafl_interface_keyvalue::set_remove::signature(),
   );
 
-  components.insert("set-scan".to_owned(), vino_interface_keyvalue::set_scan::signature());
+  components.insert("set-scan".to_owned(), wafl_interface_keyvalue::set_scan::signature());
 
   wasmflow_sdk::types::ProviderSignature {
-    name: Some("vino-keyvalue-redis".to_owned()),
+    name: Some("wasmflow-keyvalue-redis".to_owned()),
     format: 1,
     version: "1".to_owned(),
     types: std::collections::HashMap::from([]).into(),
@@ -341,57 +341,57 @@ pub mod generated {
 
     #[derive(Debug, serde::Deserialize, serde::Serialize, Clone)]
     pub enum ComponentInputs {
-      Decr(vino_interface_keyvalue::decr::Inputs),
-      Delete(vino_interface_keyvalue::delete::Inputs),
-      Exists(vino_interface_keyvalue::exists::Inputs),
-      Incr(vino_interface_keyvalue::incr::Inputs),
-      KeyGet(vino_interface_keyvalue::key_get::Inputs),
-      KeySet(vino_interface_keyvalue::key_set::Inputs),
-      ListAdd(vino_interface_keyvalue::list_add::Inputs),
-      ListRange(vino_interface_keyvalue::list_range::Inputs),
-      ListRemove(vino_interface_keyvalue::list_remove::Inputs),
-      SetAdd(vino_interface_keyvalue::set_add::Inputs),
-      SetContains(vino_interface_keyvalue::set_contains::Inputs),
-      SetGet(vino_interface_keyvalue::set_get::Inputs),
-      SetRemove(vino_interface_keyvalue::set_remove::Inputs),
-      SetScan(vino_interface_keyvalue::set_scan::Inputs),
+      Decr(wafl_interface_keyvalue::decr::Inputs),
+      Delete(wafl_interface_keyvalue::delete::Inputs),
+      Exists(wafl_interface_keyvalue::exists::Inputs),
+      Incr(wafl_interface_keyvalue::incr::Inputs),
+      KeyGet(wafl_interface_keyvalue::key_get::Inputs),
+      KeySet(wafl_interface_keyvalue::key_set::Inputs),
+      ListAdd(wafl_interface_keyvalue::list_add::Inputs),
+      ListRange(wafl_interface_keyvalue::list_range::Inputs),
+      ListRemove(wafl_interface_keyvalue::list_remove::Inputs),
+      SetAdd(wafl_interface_keyvalue::set_add::Inputs),
+      SetContains(wafl_interface_keyvalue::set_contains::Inputs),
+      SetGet(wafl_interface_keyvalue::set_get::Inputs),
+      SetRemove(wafl_interface_keyvalue::set_remove::Inputs),
+      SetScan(wafl_interface_keyvalue::set_scan::Inputs),
     }
 
     #[cfg(all(feature = "guest"))]
     #[allow(missing_debug_implementations)]
     pub enum ComponentOutputs {
-      Decr(vino_interface_keyvalue::decr::Outputs),
-      Delete(vino_interface_keyvalue::delete::Outputs),
-      Exists(vino_interface_keyvalue::exists::Outputs),
-      Incr(vino_interface_keyvalue::incr::Outputs),
-      KeyGet(vino_interface_keyvalue::key_get::Outputs),
-      KeySet(vino_interface_keyvalue::key_set::Outputs),
-      ListAdd(vino_interface_keyvalue::list_add::Outputs),
-      ListRange(vino_interface_keyvalue::list_range::Outputs),
-      ListRemove(vino_interface_keyvalue::list_remove::Outputs),
-      SetAdd(vino_interface_keyvalue::set_add::Outputs),
-      SetContains(vino_interface_keyvalue::set_contains::Outputs),
-      SetGet(vino_interface_keyvalue::set_get::Outputs),
-      SetRemove(vino_interface_keyvalue::set_remove::Outputs),
-      SetScan(vino_interface_keyvalue::set_scan::Outputs),
+      Decr(wafl_interface_keyvalue::decr::Outputs),
+      Delete(wafl_interface_keyvalue::delete::Outputs),
+      Exists(wafl_interface_keyvalue::exists::Outputs),
+      Incr(wafl_interface_keyvalue::incr::Outputs),
+      KeyGet(wafl_interface_keyvalue::key_get::Outputs),
+      KeySet(wafl_interface_keyvalue::key_set::Outputs),
+      ListAdd(wafl_interface_keyvalue::list_add::Outputs),
+      ListRange(wafl_interface_keyvalue::list_range::Outputs),
+      ListRemove(wafl_interface_keyvalue::list_remove::Outputs),
+      SetAdd(wafl_interface_keyvalue::set_add::Outputs),
+      SetContains(wafl_interface_keyvalue::set_contains::Outputs),
+      SetGet(wafl_interface_keyvalue::set_get::Outputs),
+      SetRemove(wafl_interface_keyvalue::set_remove::Outputs),
+      SetScan(wafl_interface_keyvalue::set_scan::Outputs),
     }
 
     #[derive(Debug, serde::Deserialize)]
     pub enum Config {
-      Decr(vino_interface_keyvalue::decr::Config),
-      Delete(vino_interface_keyvalue::delete::Config),
-      Exists(vino_interface_keyvalue::exists::Config),
-      Incr(vino_interface_keyvalue::incr::Config),
-      KeyGet(vino_interface_keyvalue::key_get::Config),
-      KeySet(vino_interface_keyvalue::key_set::Config),
-      ListAdd(vino_interface_keyvalue::list_add::Config),
-      ListRange(vino_interface_keyvalue::list_range::Config),
-      ListRemove(vino_interface_keyvalue::list_remove::Config),
-      SetAdd(vino_interface_keyvalue::set_add::Config),
-      SetContains(vino_interface_keyvalue::set_contains::Config),
-      SetGet(vino_interface_keyvalue::set_get::Config),
-      SetRemove(vino_interface_keyvalue::set_remove::Config),
-      SetScan(vino_interface_keyvalue::set_scan::Config),
+      Decr(wafl_interface_keyvalue::decr::Config),
+      Delete(wafl_interface_keyvalue::delete::Config),
+      Exists(wafl_interface_keyvalue::exists::Config),
+      Incr(wafl_interface_keyvalue::incr::Config),
+      KeyGet(wafl_interface_keyvalue::key_get::Config),
+      KeySet(wafl_interface_keyvalue::key_set::Config),
+      ListAdd(wafl_interface_keyvalue::list_add::Config),
+      ListRange(wafl_interface_keyvalue::list_range::Config),
+      ListRemove(wafl_interface_keyvalue::list_remove::Config),
+      SetAdd(wafl_interface_keyvalue::set_add::Config),
+      SetContains(wafl_interface_keyvalue::set_contains::Config),
+      SetGet(wafl_interface_keyvalue::set_get::Config),
+      SetRemove(wafl_interface_keyvalue::set_remove::Config),
+      SetScan(wafl_interface_keyvalue::set_scan::Config),
     }
 
     #[derive(Default, Clone, Copy)]
@@ -569,7 +569,7 @@ pub mod generated {
   pub mod decr {
     // The user-facing implementation for State and job impl.
     // The generated definition of inputs, outputs, config, et al.
-    use vino_interface_keyvalue::decr as definition;
+    use wafl_interface_keyvalue::decr as definition;
     pub use wasmflow_sdk::console_log;
     pub use wasmflow_sdk::packet::v1::Packet;
     pub use wasmflow_sdk::sdk::{ProviderOutput, Writable};
@@ -627,7 +627,7 @@ pub mod generated {
   pub mod delete {
     // The user-facing implementation for State and job impl.
     // The generated definition of inputs, outputs, config, et al.
-    use vino_interface_keyvalue::delete as definition;
+    use wafl_interface_keyvalue::delete as definition;
     pub use wasmflow_sdk::console_log;
     pub use wasmflow_sdk::packet::v1::Packet;
     pub use wasmflow_sdk::sdk::{ProviderOutput, Writable};
@@ -685,7 +685,7 @@ pub mod generated {
   pub mod exists {
     // The user-facing implementation for State and job impl.
     // The generated definition of inputs, outputs, config, et al.
-    use vino_interface_keyvalue::exists as definition;
+    use wafl_interface_keyvalue::exists as definition;
     pub use wasmflow_sdk::console_log;
     pub use wasmflow_sdk::packet::v1::Packet;
     pub use wasmflow_sdk::sdk::{ProviderOutput, Writable};
@@ -743,7 +743,7 @@ pub mod generated {
   pub mod incr {
     // The user-facing implementation for State and job impl.
     // The generated definition of inputs, outputs, config, et al.
-    use vino_interface_keyvalue::incr as definition;
+    use wafl_interface_keyvalue::incr as definition;
     pub use wasmflow_sdk::console_log;
     pub use wasmflow_sdk::packet::v1::Packet;
     pub use wasmflow_sdk::sdk::{ProviderOutput, Writable};
@@ -801,7 +801,7 @@ pub mod generated {
   pub mod key_get {
     // The user-facing implementation for State and job impl.
     // The generated definition of inputs, outputs, config, et al.
-    use vino_interface_keyvalue::key_get as definition;
+    use wafl_interface_keyvalue::key_get as definition;
     pub use wasmflow_sdk::console_log;
     pub use wasmflow_sdk::packet::v1::Packet;
     pub use wasmflow_sdk::sdk::{ProviderOutput, Writable};
@@ -859,7 +859,7 @@ pub mod generated {
   pub mod key_set {
     // The user-facing implementation for State and job impl.
     // The generated definition of inputs, outputs, config, et al.
-    use vino_interface_keyvalue::key_set as definition;
+    use wafl_interface_keyvalue::key_set as definition;
     pub use wasmflow_sdk::console_log;
     pub use wasmflow_sdk::packet::v1::Packet;
     pub use wasmflow_sdk::sdk::{ProviderOutput, Writable};
@@ -917,7 +917,7 @@ pub mod generated {
   pub mod list_add {
     // The user-facing implementation for State and job impl.
     // The generated definition of inputs, outputs, config, et al.
-    use vino_interface_keyvalue::list_add as definition;
+    use wafl_interface_keyvalue::list_add as definition;
     pub use wasmflow_sdk::console_log;
     pub use wasmflow_sdk::packet::v1::Packet;
     pub use wasmflow_sdk::sdk::{ProviderOutput, Writable};
@@ -975,7 +975,7 @@ pub mod generated {
   pub mod list_range {
     // The user-facing implementation for State and job impl.
     // The generated definition of inputs, outputs, config, et al.
-    use vino_interface_keyvalue::list_range as definition;
+    use wafl_interface_keyvalue::list_range as definition;
     pub use wasmflow_sdk::console_log;
     pub use wasmflow_sdk::packet::v1::Packet;
     pub use wasmflow_sdk::sdk::{ProviderOutput, Writable};
@@ -1033,7 +1033,7 @@ pub mod generated {
   pub mod list_remove {
     // The user-facing implementation for State and job impl.
     // The generated definition of inputs, outputs, config, et al.
-    use vino_interface_keyvalue::list_remove as definition;
+    use wafl_interface_keyvalue::list_remove as definition;
     pub use wasmflow_sdk::console_log;
     pub use wasmflow_sdk::packet::v1::Packet;
     pub use wasmflow_sdk::sdk::{ProviderOutput, Writable};
@@ -1091,7 +1091,7 @@ pub mod generated {
   pub mod set_add {
     // The user-facing implementation for State and job impl.
     // The generated definition of inputs, outputs, config, et al.
-    use vino_interface_keyvalue::set_add as definition;
+    use wafl_interface_keyvalue::set_add as definition;
     pub use wasmflow_sdk::console_log;
     pub use wasmflow_sdk::packet::v1::Packet;
     pub use wasmflow_sdk::sdk::{ProviderOutput, Writable};
@@ -1149,7 +1149,7 @@ pub mod generated {
   pub mod set_contains {
     // The user-facing implementation for State and job impl.
     // The generated definition of inputs, outputs, config, et al.
-    use vino_interface_keyvalue::set_contains as definition;
+    use wafl_interface_keyvalue::set_contains as definition;
     pub use wasmflow_sdk::console_log;
     pub use wasmflow_sdk::packet::v1::Packet;
     pub use wasmflow_sdk::sdk::{ProviderOutput, Writable};
@@ -1207,7 +1207,7 @@ pub mod generated {
   pub mod set_get {
     // The user-facing implementation for State and job impl.
     // The generated definition of inputs, outputs, config, et al.
-    use vino_interface_keyvalue::set_get as definition;
+    use wafl_interface_keyvalue::set_get as definition;
     pub use wasmflow_sdk::console_log;
     pub use wasmflow_sdk::packet::v1::Packet;
     pub use wasmflow_sdk::sdk::{ProviderOutput, Writable};
@@ -1265,7 +1265,7 @@ pub mod generated {
   pub mod set_remove {
     // The user-facing implementation for State and job impl.
     // The generated definition of inputs, outputs, config, et al.
-    use vino_interface_keyvalue::set_remove as definition;
+    use wafl_interface_keyvalue::set_remove as definition;
     pub use wasmflow_sdk::console_log;
     pub use wasmflow_sdk::packet::v1::Packet;
     pub use wasmflow_sdk::sdk::{ProviderOutput, Writable};
@@ -1323,7 +1323,7 @@ pub mod generated {
   pub mod set_scan {
     // The user-facing implementation for State and job impl.
     // The generated definition of inputs, outputs, config, et al.
-    use vino_interface_keyvalue::set_scan as definition;
+    use wafl_interface_keyvalue::set_scan as definition;
     pub use wasmflow_sdk::console_log;
     pub use wasmflow_sdk::packet::v1::Packet;
     pub use wasmflow_sdk::sdk::{ProviderOutput, Writable};

@@ -11,8 +11,8 @@ use logger::LoggingOptions;
 #[clap(
   global_setting(AppSettings::DeriveDisplayOrder),
   name = crate::BIN_NAME,
-  about = "Vino host",
-  version = option_env!("VINO_VERSION").unwrap_or("0.0.0")
+  about = crate::BIN_DESC,
+  version = option_env!("WASMFLOW_VERSION").unwrap_or("0.0.0")
 )]
 pub(crate) struct Cli {
   #[clap(subcommand)]

@@ -5,14 +5,14 @@ mod test {
   use log::{debug, error, warn};
   use serde_json::json;
   use utils::*;
-  use vino_transport::{JsonError, TransportJson};
+  use wasmflow_transport::{JsonError, TransportJson};
 
   #[test_logger::test(tokio::test)]
-  async fn integration_test_lattice() -> utils::TestResult<()> {
+  async fn integration_test_mesh() -> utils::TestResult<()> {
     debug!("Starting host 1");
     let nats_url = std::env::var("NATS_URL").unwrap_or_else(|_| {
-      warn!("'NATS_URL' not present, defaulting to nats.vinodev.com");
-      "nats.vinodev.com".to_owned()
+      warn!("'NATS_URL' not present, defaulting to 127.0.0.1");
+      "127.0.0.1".to_owned()
     });
     let nats_arg = format!("--nats={}", nats_url);
     let (p2_tx, p2_handle, _port2) = start_provider(
@@ -20,7 +20,7 @@ mod test {
       "network-two",
       &[
         "serve",
-        "./tests/manifests/lattice-two.yaml",
+        "./tests/manifests/mesh-two.yaml",
         "--id=network-two",
         "--trace",
         &nats_arg,
@@ -33,7 +33,7 @@ mod test {
       "network-one",
       &[
         "serve",
-        "./tests/manifests/lattice-one.yaml",
+        "./tests/manifests/mesh-one.yaml",
         &nats_arg,
         "--id=network-one",
         "--trace",

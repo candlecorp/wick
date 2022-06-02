@@ -3,7 +3,7 @@ use std::panic;
 use log::{debug, error};
 use serde_json::json;
 use utils::*;
-use vino_transport::{JsonError, TransportJson};
+use wasmflow_transport::{JsonError, TransportJson};
 
 #[test_logger::test(tokio::test)]
 async fn test_vow_serve() -> utils::TestResult<()> {
@@ -13,7 +13,7 @@ async fn test_vow_serve() -> utils::TestResult<()> {
     "component rpc server",
     &[
       "serve",
-      "./crates/integration/test-wapc-component/build/test_component_s.wasm",
+      "./crates/integration/test-wasm-component/build/test_component_s.wasm",
       "--trace",
       "--rpc",
     ],

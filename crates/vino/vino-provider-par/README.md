@@ -1,1 +1,0 @@
-# vino-provider-wasm

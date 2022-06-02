@@ -5,7 +5,7 @@ mod test {
   use log::{debug, error};
   use serde_json::json;
   use utils::*;
-  use vino_transport::{JsonError, TransportJson};
+  use wasmflow_transport::{JsonError, TransportJson};
 
   #[test_logger::test(tokio::test)]
   async fn integration_test_collection() -> utils::TestResult<()> {
@@ -15,14 +15,14 @@ mod test {
       "component RPC server",
       &[
         "serve",
-        "./crates/integration/test-wapc-component/build/test_component_s.wasm",
-        "--lattice",
+        "./crates/integration/test-wasm-component/build/test_component_s.wasm",
+        "--mesh",
         "--trace",
         "--rpc",
         "--nats",
-        "nats.vinodev.com",
+        "127.0.0.1",
         "--id",
-        "lattice_wapc",
+        "mesh_wapc",
       ],
       &[],
     )
@@ -33,11 +33,11 @@ mod test {
       "wasmflow",
       &[
         "serve",
-        "./tests/manifests/ns-link-lattice.yaml",
+        "./tests/manifests/ns-link-mesh.yaml",
         "--rpc",
         "--trace",
         "--nats",
-        "nats.vinodev.com",
+        "127.0.0.1",
       ],
       &[],
     )

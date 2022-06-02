@@ -1,6 +1,6 @@
 use anyhow::Result;
-use vino_host::HostBuilder;
-use vino_manifest::host_definition::HostDefinition;
+use wasmflow_host::HostBuilder;
+use wasmflow_manifest::host_definition::HostDefinition;
 
 use crate::utils::merge_config;
 
@@ -17,10 +17,10 @@ pub(crate) async fn handle_command(opts: super::ServeCommand, bytes: Vec<u8>) ->
   info!("Host started");
   match host.get_server_info() {
     Some(info) => {
-      vino_provider_cli::print_info(info);
+      wasmflow_collection_cli::print_info(info);
     }
     None => {
-      warn!("No server information available, did you intend to start a host without GRPC or a lattice connection?");
+      warn!("No server information available, did you intend to start a host without GRPC or a mesh connection?");
     }
   };
   info!("Waiting for Ctrl-C");

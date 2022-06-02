@@ -1,0 +1,18 @@
+---
+version: 0
+network:
+  schematics:
+    - name: spread-io
+      instances:
+        COMP1:
+          id: wafl::core::log
+        COMP2:
+          id: wafl::core::log
+        ZIP:
+          id: wafl::core::zip
+      connections:
+        - <> => COMP1[input]
+        - <> => COMP2[input]
+        - COMP1[output] => ZIP[left]
+        - COMP2[output] => ZIP[right]
+        - ZIP[output] => <>

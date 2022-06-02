@@ -1,8 +1,8 @@
 use anyhow::Result;
-use vino_host::HostBuilder;
-use vino_manifest::host_definition::HostDefinition;
-use vino_provider_cli::options::DefaultCliOptions;
+use wasmflow_collection_cli::options::DefaultCliOptions;
+use wasmflow_host::HostBuilder;
 use wasmflow_interface::FieldMap;
+use wasmflow_manifest::host_definition::HostDefinition;
 
 use crate::utils::merge_config;
 
@@ -10,18 +10,18 @@ pub(crate) async fn handle_command(opts: super::ListCommand, bytes: Vec<u8>) -> 
   let config = HostDefinition::load_from_bytes(Some(opts.location), &bytes)?;
 
   let server_options = DefaultCliOptions {
-    lattice: opts.lattice,
+    mesh: opts.mesh,
     ..Default::default()
   };
 
   let mut config = merge_config(config, &opts.fetch, Some(server_options));
-  // Disable everything but the lattice
+  // Disable everything but the mesh
   config.host.rpc = None;
 
   let host_builder = HostBuilder::from_definition(config);
 
   let mut host = host_builder.build();
-  host.connect_to_lattice().await?;
+  host.connect_to_mesh().await?;
   host.start_network(None).await?;
   let signature = host.get_signature()?;
 

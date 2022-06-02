@@ -1,0 +1,50 @@
+
+"A definition for an individual Wasmflow schematic."
+type SchematicManifest {
+  "Schematic name."
+  name: string @required,
+
+  "A list of providers and component collections."
+  providers: [string],
+
+  "A map from component reference to its target."
+  instances: {string: ComponentDefinition},
+
+  "A list of connections from component to component."
+  connections: [ConnectionDefinition],
+
+  "A map of constraints and values that limit where this schematic can run."
+  constraints: {string: string},
+}
+
+
+"A single component definition."
+type ComponentDefinition {
+  "The ID of the component (i.e. the alias, key, or namespace)."
+  id: string @required,
+
+  "Data to associate with the reference."
+  data: struct?,
+}
+
+"A connection between components. This can be specified in short-form syntax (where applicable). See <a href='https://wasmflow.com/docs/configuration/short-form-syntax/'>wasmflow.com</a> for more information."
+type ConnectionDefinition {
+  "The originating component from upstream."
+  from: ConnectionTargetDefinition,
+
+  "The destination component (downstream)."
+  to: ConnectionTargetDefinition,
+
+  "The default value to provide in the event of an upstream Error or Exception."
+  default: string?
+}
+
+"A connection target e.g. a port on a reference. This can be specified in short-form syntax (where applicable).  See <a href='https://wasmflow.com/docs/configuration/short-form-syntax/'>wasmflow.com</a> for more information."
+type ConnectionTargetDefinition {
+  "The instance name of the referenced component."
+  instance: string @required,
+  "The component's port."
+  port: string @required,
+  "Data to associate with a connection."
+  data: struct?,
+}

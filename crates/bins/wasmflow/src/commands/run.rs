@@ -1,6 +1,6 @@
 use anyhow::{Context, Result};
 use clap::Args;
-use vino_provider_cli::options::LatticeCliOptions;
+use wasmflow_collection_cli::options::MeshCliOptions;
 mod manifest;
 mod wasm;
 
@@ -11,7 +11,7 @@ pub(crate) struct RunCommand {
   pub(crate) logging: super::LoggingOptions,
 
   #[clap(flatten)]
-  pub(crate) lattice: LatticeCliOptions,
+  pub(crate) mesh: MeshCliOptions,
 
   #[clap(flatten)]
   pub(crate) fetch: super::FetchOptions,
@@ -20,7 +20,7 @@ pub(crate) struct RunCommand {
   location: String,
 
   /// Pass a seed along with the invocation.
-  #[clap(long = "seed", short = 's', env = "VINO_SEED")]
+  #[clap(long = "seed", short = 's', env = "WAFL_SEED")]
   seed: Option<u64>,
 
   /// Arguments to pass as inputs to a schematic.
@@ -29,11 +29,11 @@ pub(crate) struct RunCommand {
 }
 
 pub(crate) async fn handle_command(opts: RunCommand) -> Result<()> {
-  let _guard = logger::init(&opts.logging.name("vino"));
+  let _guard = logger::init(&opts.logging.name(crate::BIN_NAME));
 
   debug!(args = ?opts.args, "rest args");
 
-  let bytes = vino_loader::get_bytes(&opts.location, opts.fetch.allow_latest, &opts.fetch.insecure_registries)
+  let bytes = wasmflow_loader::get_bytes(&opts.location, opts.fetch.allow_latest, &opts.fetch.insecure_registries)
     .await
     .context("Could not load from location")?;
 

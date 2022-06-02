@@ -9,13 +9,10 @@ TARGET?=wasm32-unknown-unknown
 
 CLEAN_FILES += $(BUILD_ARTIFACT) $(SIGNED_ARTIFACT)
 
-WAFL=cargo run --manifest-path $(VINO)/Cargo.toml -p wafl --
+WAFL=cargo run --manifest-path $(COMMON_DIR)/../Cargo.toml -p wafl --
 
-$(ARTIFACT_DIR):
-	@echo Making directory \"$@\"
-	$(shell $(MKDIR) $@)
-
-$(BUILD_ARTIFACT): $(ARTIFACT_DIR) $(INTERFACE) src/components $(GENERATED_MODULE) $(RUST_SOURCES)
+$(BUILD_ARTIFACT): $(INTERFACE) src/components $(GENERATED_MODULE) $(RUST_SOURCES)
+	$(shell $(MKDIR) $(ARTIFACT_DIR))
 	@echo Building artifact
 	cargo build --target $(TARGET) --release
 	@echo Copying binary to $(BUILD_ARTIFACT)

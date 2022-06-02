@@ -1,4 +1,4 @@
-use vino_interface_keyvalue::set_scan::*;
+use wafl_interface_keyvalue::set_scan::*;
 
 use crate::components::generated::set_scan::*;
 use crate::Error;

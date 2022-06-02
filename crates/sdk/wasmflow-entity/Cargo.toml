@@ -3,12 +3,12 @@ name = "wasmflow-entity"
 version = "0.9.0"
 edition = "2021"
 license = "BSD-3-Clause"
-description = "Entities found in a Vino network"
-documentation = "https://docs.vino.dev"
-keywords = ["vino", "flow"]
+description = "Entities found in a Wasmflow network"
+documentation = "https://wasmflow.com"
+keywords = ["wasmflow", "flow"]
 exclude = ["tests/*", ".github/*", ".gitignore"]
-repository = "https://github.com/vinodotdev/vino-sdk"
-homepage = "https://docs.vino.dev"
+repository = "https://github.com/wasmflow/wasmflow-sdk"
+homepage = "https://wasmflow.com"
 
 [badges]
 maintenance = { status = "actively-developed" }

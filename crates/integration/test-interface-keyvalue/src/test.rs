@@ -1,10 +1,10 @@
 use anyhow::Result;
-use vino_invocation_server::{bind_new_socket, make_rpc_server};
-use vino_rpc::rpc::invocation_service_client::InvocationServiceClient;
-use vino_rpc::rpc::ListRequest;
-use vino_rpc::SharedRpcHandler;
+use wasmflow_invocation_server::{bind_new_socket, make_rpc_server};
+use wasmflow_rpc::rpc::invocation_service_client::InvocationServiceClient;
+use wasmflow_rpc::rpc::ListRequest;
+use wasmflow_rpc::SharedRpcHandler;
 
-async fn list_components(port: &u16) -> Result<Vec<vino_rpc::rpc::HostedType>> {
+async fn list_components(port: &u16) -> Result<Vec<wasmflow_rpc::rpc::HostedType>> {
   let mut client = InvocationServiceClient::connect(format!("http://127.0.0.1:{}", port)).await?;
   let request = ListRequest {};
   let response = client.list(request).await?.into_inner();

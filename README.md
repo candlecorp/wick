@@ -1,12 +1,12 @@
-# Vino monorepo
+# Wasmflow monorepo
 
 ## Prerequisites
 
-Vino depends on (at least) the tools below to build properly.
+Wasmflow depends on (at least) the tools below to build properly.
 
 ### System dependencies
 
-These tools are necessary to build the majority of Vino projects, but you need to install them yourself.
+These tools are necessary to build the majority of Wasmflow projects, but you need to install them yourself.
 
 - rust/cargo
 - node
@@ -29,15 +29,15 @@ Used to generated JSON schemas, documentation, and code for host manifests.
 
 - `npm install -g widl-template`
 
-#### vino-codegen
+#### wasmflow-codegen
 
 Used to generate provider scaffolding and new component templates
 
-- `npm install -g @vinodotdev/codegen`
+- `npm install -g @wasmflow/codegen`
 
 Or from the `dev` branch
 
-- `npm install -g "https://github.com/vinodotdev/codegen#dev"`
+- `npm install -g "https://github.com/wasmflow/codegen#dev"`
 
 #### tomlq
 
@@ -59,7 +59,7 @@ Used to format JSON
 
 ## Using make
 
-Vino uses `Makefile`s extensively, make sure you explore them to understand what you can run as tasks.
+Wasmflow uses `Makefile`s extensively, make sure you explore them to understand what you can run as tasks.
 
 Many makefiles have a `help` task to give you a rundown of the important tasks.
 
@@ -67,15 +67,15 @@ Many makefiles have a `help` task to give you a rundown of the important tasks.
 make help
 ```
 
-## Building vino
+## Building Wasmflow
 
-Build vino with `make` alone.
+Build Wasmflow with `make` alone.
 
 ```console
 make
 ```
 
-## Install vino binaries from source
+## Install Wasmflow binaries from source
 
 ```console
 make install
@@ -103,8 +103,8 @@ make test
 
 ## Doc links
 
-- docs.vino.dev/codegen
-- docs.vino.dev
+- wasmflow.com/codegen
+- wasmflow.com
 
 ## Need a Makefile primer?
 
@@ -113,7 +113,7 @@ make test
 
 ## Good first contributions
 
-This is a list of nice-to-haves that would also make good contributions for people looking to get involved with Vino.
+This is a list of nice-to-haves that would also make good contributions for people looking to get involved with Wasmflow.
 
 ### Improving logging & the logger
 
@@ -121,7 +121,7 @@ Logging is an unstructured mix of debug and informational output. It would be be
 
 ### Opportunities for code generation
 
-Vino uses code generation extensively and making it better or adding more opportunities to use generated code is usually welcome. Open an issue first to discuss it to be sure that someone isn't already working on it.
+Wasmflow uses code generation extensively and making it better or adding more opportunities to use generated code is usually welcome. Open an issue first to discuss it to be sure that someone isn't already working on it.
 
 ### Rustdoc examples
 
@@ -129,4 +129,4 @@ Rustdoc examples are always helpful. Examples should be written in a way that th
 
 ### FAQ Documentation
 
-As you go work with Vino, what issues pop up that you solve yourself? Those issues could make good FAQ items.
+As you go work with Wasmflow, what issues pop up that you solve yourself? Those issues could make good FAQ items.

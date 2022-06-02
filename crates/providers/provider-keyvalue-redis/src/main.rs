@@ -1,5 +1,5 @@
 // !!START_LINTS
-// Vino lints
+// Wasmflow lints
 // Do not change anything between the START_LINTS and END_LINTS line.
 // This is automatically generated. Add exceptions after this section.
 #![deny(
@@ -91,13 +91,13 @@ extern crate tracing;
 use std::sync::Arc;
 
 use clap::Parser;
-use vino_keyvalue_redis::provider::Provider;
-use vino_provider_cli::options::DefaultCliOptions;
+use wasmflow_collection_cli::options::DefaultCliOptions;
+use wasmflow_keyvalue_redis::provider::Provider;
 
 #[derive(Debug, Clone, Parser)]
 pub struct Options {
   /// IP address to bind to.
-  #[clap(short = 'u', long = "redis-url", env = vino_keyvalue_redis::REDIS_URL_ENV)]
+  #[clap(short = 'u', long = "redis-url", env = wasmflow_keyvalue_redis::REDIS_URL_ENV)]
   pub url: String,
 
   #[clap(flatten)]
@@ -105,15 +105,15 @@ pub struct Options {
 }
 
 #[tokio::main]
-async fn main() -> Result<(), vino_keyvalue_redis::error::Error> {
+async fn main() -> Result<(), wasmflow_keyvalue_redis::error::Error> {
   let opts = Options::parse();
   let url = opts.url;
-  let _guard = vino_provider_cli::init_logging(&opts.options.logging.name("keyvalue-redis"));
+  let _guard = wasmflow_collection_cli::init_logging(&opts.options.logging.name("keyvalue-redis"));
   let provider = Provider::default();
   provider.connect("default".to_owned(), url.clone()).await?;
   trace!("redis provider connected");
 
-  vino_provider_cli::init_cli(Arc::new(provider), Some(opts.options.into())).await?;
+  wasmflow_collection_cli::init_cli(Arc::new(provider), Some(opts.options.into())).await?;
   Ok(())
 }
 

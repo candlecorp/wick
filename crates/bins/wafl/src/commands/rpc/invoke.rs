@@ -3,10 +3,10 @@ use std::time::SystemTime;
 use anyhow::Result;
 use clap::Args;
 use tokio::io::{self, AsyncBufReadExt, BufReader};
-use vino_provider_cli::parse_args;
-use vino_transport::TransportMap;
+use wasmflow_collection_cli::parse_args;
 use wasmflow_entity::Entity;
 use wasmflow_invocation::{InherentData, Invocation};
+use wasmflow_transport::TransportMap;
 
 #[derive(Debug, Clone, Args)]
 #[clap(rename_all = "kebab-case")]
@@ -41,7 +41,7 @@ pub(crate) struct Options {
   short: bool,
 
   /// Pass a seed along with the invocation.
-  #[clap(long = "seed", short = 's', env = "VINO_SEED")]
+  #[clap(long = "seed", short = 's', env = "WAFL_SEED")]
   seed: Option<u64>,
 
   /// Arguments to pass as inputs to a schematic.
@@ -52,7 +52,7 @@ pub(crate) struct Options {
 pub(crate) async fn handle(opts: Options) -> Result<()> {
   let _guard = crate::utils::init_logger(&opts.logging)?;
 
-  let mut client = vino_rpc::make_rpc_client(
+  let mut client = wasmflow_rpc::make_rpc_client(
     format!("http://{}:{}", opts.connection.address, opts.connection.port),
     opts.connection.pem,
     opts.connection.key,

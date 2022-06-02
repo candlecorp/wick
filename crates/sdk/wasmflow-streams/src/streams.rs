@@ -3,7 +3,7 @@ use std::pin::Pin;
 
 use futures::{Stream, StreamExt};
 use pin_project_lite::pin_project;
-use vino_transport::TransportWrapper;
+use wasmflow_transport::TransportWrapper;
 use wasmflow_packet::{Packet, PacketWrapper};
 
 pin_project! {

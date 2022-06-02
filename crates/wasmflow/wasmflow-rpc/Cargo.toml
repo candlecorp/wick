@@ -1,0 +1,45 @@
+[package]
+name = "wasmflow-rpc"
+version = "0.1.0"
+edition = "2021"
+license = "BSD-3-Clause"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[features]
+client = ["tokio/fs"]
+
+[dependencies]
+wasmflow-interface = { path = "../../sdk/wasmflow-interface" }
+wasmflow-invocation = { path = "../../sdk/wasmflow-invocation" }
+wasmflow-packet = { path = "../../sdk/wasmflow-packet" }
+wasmflow-codec = { path = "../../sdk/wasmflow-codec" }
+wasmflow-entity = { path = "../../sdk/wasmflow-entity" }
+wasmflow-transport = { path = "../../sdk/wasmflow-transport", features = [
+  "all",
+] }
+wasmflow-macros = { path = "../../sdk/wasmflow-macros" }
+
+tonic = { version = "0.7", features = ["tls"] }
+prost = "0.10"
+prost-types = "0.10"
+tokio = { version = "1", features = ["macros", "net", "rt-multi-thread"] }
+tokio-stream = { version = "0.1", features = ["net"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+async-stream = "0.3.2"
+rand = "0.8"
+tracing = "0.1"
+thiserror = "1.0"
+async-trait = "0.1.50"
+dyn-clone = "1.0.4"
+uuid = "1.1"
+
+
+[build-dependencies]
+tonic-build = { version = "0.7", default-features = false, features = [
+  "prost",
+  "transport",
+] }
+
+[dev-dependencies]

@@ -27,7 +27,7 @@ type ProviderSignature {
   config: {string: TypeSignature},
 }
 
-"The signature of a Vino component, including its input and output types."
+"The signature of a Wasmflow component, including its input and output types."
 type ComponentSignature {
   "The name of the component."
   name: string,
@@ -120,7 +120,7 @@ enum TypeSignature {
   Struct = 21,
 }
 
-"Internal types for use within the Vino runtime"
+"Internal types for use within the Wasmflow runtime"
 enum InternalType {
   "Represents a complete set of component inputs"
   ComponentInput = 0,

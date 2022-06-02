@@ -1,0 +1,70 @@
+[package]
+name = "wasmflow-runtime"
+version = "0.1.0"
+authors = ["Jarrod Overson <jsoverson@gmail.com>"]
+edition = "2021"
+license = "BSD-3-Clause"
+
+[features]
+
+[dependencies]
+wasmflow-interface = { path = "../../sdk/wasmflow-interface" }
+wasmflow-streams = { path = "../../sdk/wasmflow-streams" }
+wasmflow-invocation = { path = "../../sdk/wasmflow-invocation" }
+wasmflow-packet = { path = "../../sdk/wasmflow-packet" }
+wasmflow-macros = { path = "../../sdk/wasmflow-macros" }
+wasmflow-output = { path = "../../sdk/wasmflow-output", features = [] }
+wasmflow-codec = { path = "../../sdk/wasmflow-codec" }
+wasmflow-entity = { path = "../../sdk/wasmflow-entity" }
+
+wasmflow-schematic-graph = { path = "../wasmflow-schematic-graph" }
+wasmflow-interpreter = { path = "../wasmflow-interpreter" }
+seeded-random = { path = "../../misc/seeded-random" }
+wasmflow-manifest = { path = "../wasmflow-manifest" }
+wasmflow-loader = { path = "../wasmflow-loader" }
+wasmflow-collection-wasm = { path = "../wasmflow-collection-wasm" }
+wasmflow-collection-nats = { path = "../wasmflow-collection-nats" }
+wasmflow-collection-par = { path = "../wasmflow-collection-par" }
+wasmflow-collection-grpc = { path = "../wasmflow-collection-grpc" }
+wasmflow-mesh = { path = "../wasmflow-mesh" }
+wasmflow-stdlib = { path = "../../providers/wasmflow-stdlib" }
+wasmflow-transport = { path = "../../sdk/wasmflow-transport", features = [
+  "all",
+] }
+wasmflow-wascap = { path = "../wasmflow-wascap" }
+wasmflow-rpc = { path = "../wasmflow-rpc" }
+
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+futures = "0.3"
+async-trait = "0.1.50"
+once_cell = "1.8"
+parking_lot = { version = "0.12", features = [] }
+thiserror = "1.0"
+tokio = { version = "1", features = [
+  "macros",
+  "time",
+  "sync",
+  "rt-multi-thread",
+] }
+tokio-stream = { version = "0.1", features = [] }
+# itertools = "0.10"
+tracing = "0.1"
+# dyn-clone = "1.0.4"
+# rand = { version = "0.8", default-features = false, features = [
+#   "std_rng",
+#   "alloc",
+# ] }
+uuid = "1.1"
+
+[dev-dependencies]
+wasmflow-invocation-server = { path = "../wasmflow-invocation-server" }
+test-native-provider = { path = "../../integration/test-native-provider" }
+logger = { path = "../logger" }
+test-logger = { path = "../../misc/test-logger" }
+maplit = "1.0"
+pretty_assertions = "1"
+lazy_static = "1.4"
+anyhow = "1.0"
+runtime-testutils = { path = "./tests/runtime_utils" }

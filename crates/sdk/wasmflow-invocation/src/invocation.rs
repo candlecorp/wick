@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use wasmflow_entity::Entity;
 use wasmflow_packet::PacketMap;
-use vino_transport::TransportMap;
+use wasmflow_transport::TransportMap;
 
 use crate::error::Error;
 
@@ -24,9 +24,9 @@ pub struct Invocation {
   /// Inherent data associated with the transaction.
   pub inherent: Option<InherentData>,
   /// Configuration associated with the invocation.
-  pub config: Option<vino_transport::Serialized>,
+  pub config: Option<wasmflow_transport::Serialized>,
   /// Previous state of the component.
-  pub state: Option<vino_transport::Serialized>,
+  pub state: Option<wasmflow_transport::Serialized>,
 }
 
 impl Invocation {

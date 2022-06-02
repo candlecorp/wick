@@ -1,7 +1,7 @@
 use std::time::Duration;
 
-use vino_manifest::host_definition::{HostConfig, HostDefinition, HttpConfig, LatticeConfig};
-use vino_provider_cli::options::DefaultCliOptions;
+use wasmflow_collection_cli::options::DefaultCliOptions;
+use wasmflow_manifest::host_definition::{HostConfig, HostDefinition, HttpConfig, MeshConfig};
 
 use crate::commands::FetchOptions;
 
@@ -62,36 +62,32 @@ pub(crate) fn merge_config(
     };
     host_config.rpc = Some(rpc_opts);
 
-    let lattice_opts = if let Some(mut manifest_opts) = def.host.lattice {
+    let mesh_opts = if let Some(mut manifest_opts) = def.host.mesh {
       if !manifest_opts.enabled {
-        log_override(
-          "lattice.enabled",
-          &mut manifest_opts.enabled,
-          cli_opts.lattice.lattice_enabled,
-        );
+        log_override("mesh.enabled", &mut manifest_opts.enabled, cli_opts.mesh.mesh_enabled);
       }
-      if let Some(to) = cli_opts.lattice.nats_url {
-        log_override("lattice.address", &mut manifest_opts.address, to);
+      if let Some(to) = cli_opts.mesh.nats_url {
+        log_override("mesh.address", &mut manifest_opts.address, to);
       }
-      if let Some(to) = cli_opts.lattice.nats_credsfile {
-        log_override("lattice.creds_path", &mut manifest_opts.creds_path, Some(to));
+      if let Some(to) = cli_opts.mesh.nats_credsfile {
+        log_override("mesh.creds_path", &mut manifest_opts.creds_path, Some(to));
       }
-      if let Some(to) = cli_opts.lattice.nats_token {
-        debug!("Overriding manifest value for 'host.lattice.token'");
+      if let Some(to) = cli_opts.mesh.nats_token {
+        debug!("Overriding manifest value for 'host.mesh.token'");
         manifest_opts.token = Some(to);
       }
       Some(manifest_opts)
-    } else if let Some(url) = cli_opts.lattice.nats_url {
-      Some(LatticeConfig {
-        enabled: cli_opts.lattice.lattice_enabled,
+    } else if let Some(url) = cli_opts.mesh.nats_url {
+      Some(MeshConfig {
+        enabled: cli_opts.mesh.mesh_enabled,
         address: url,
-        creds_path: cli_opts.lattice.nats_credsfile,
-        token: cli_opts.lattice.nats_token,
+        creds_path: cli_opts.mesh.nats_credsfile,
+        token: cli_opts.mesh.nats_token,
       })
     } else {
       None
     };
-    host_config.lattice = lattice_opts;
+    host_config.mesh = mesh_opts;
   }
 
   HostDefinition {

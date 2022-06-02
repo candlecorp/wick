@@ -1,5 +1,5 @@
 // !!START_LINTS
-// Vino lints
+// Wasmflow lints
 // Do not change anything between the START_LINTS and END_LINTS line.
 // This is automatically generated. Add exceptions after this section.
 #![deny(

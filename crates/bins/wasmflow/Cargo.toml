@@ -13,18 +13,20 @@ wasmflow-packet = { path = "../../sdk/wasmflow-packet" }
 wasmflow-codec = { path = "../../sdk/wasmflow-codec" }
 wasmflow-entity = { path = "../../sdk/wasmflow-entity" }
 wasmflow-interface = { path = "../../sdk/wasmflow-interface" }
-vino-rpc = { path = "../../vino/vino-rpc" }
-vino-random = { path = "../../vino/vino-random" }
-vino-loader = { path = "../../vino/vino-loader" }
-vino-provider-wasm = { path = "../../vino/vino-provider-wasm" }
-vino-provider-cli = { path = "../../vino/vino-provider-cli" }
-vino-runtime = { path = "../../vino/vino-runtime" }
-vino-transport = { path = "../../sdk/vino-transport", features = ["all"] }
-vino-host = { path = "../../vino/vino-host" }
-vino-manifest = { path = "../../vino/vino-manifest" }
-vino-test = { path = "../../vino/vino-test" }
+wasmflow-rpc = { path = "../../wasmflow/wasmflow-rpc" }
+seeded-random = { path = "../../misc/seeded-random" }
+wasmflow-loader = { path = "../../wasmflow/wasmflow-loader" }
+wasmflow-collection-wasm = { path = "../../wasmflow/wasmflow-collection-wasm" }
+wasmflow-collection-cli = { path = "../../wasmflow/wasmflow-collection-cli" }
+wasmflow-runtime = { path = "../../wasmflow/wasmflow-runtime" }
+wasmflow-transport = { path = "../../sdk/wasmflow-transport", features = [
+  "all",
+] }
+wasmflow-host = { path = "../../wasmflow/wasmflow-host" }
+wasmflow-manifest = { path = "../../wasmflow/wasmflow-manifest" }
+wasmflow-test = { path = "../../wasmflow/wasmflow-test" }
 cli-common = { path = "../cli-common" }
-logger = { path = "../../vino/logger" }
+logger = { path = "../../wasmflow/logger" }
 tap = { path = "../../misc/tap" }
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 tracing = "0.1"

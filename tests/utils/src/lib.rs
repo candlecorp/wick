@@ -1,7 +1,7 @@
 pub use maplit::hashmap;
 pub use pretty_assertions::assert_eq as equals;
 use tokio::time::sleep;
-use vino_transport::TransportJson;
+use wasmflow_transport::TransportJson;
 
 pub type TestResult<T> = Result<T, TestError>;
 

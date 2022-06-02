@@ -1,0 +1,821 @@
+<div class=manifest><div class=definition></div><div class=definition>
+<h2 class="definition-name type-name">
+  <a name="HostManifest">HostManifest</a>
+</h2>
+
+<span class="description type-description">A manifest defines the starting state of a Wasmflow host and network.</span>
+<div class=fields>
+<div class=field>
+
+<h3 class=field-name>
+  <a name="version">version</a>
+</h3>
+
+<span class="description field-description">The manifest version.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>u8</span></span></li>
+<li><span class="annotation field-note">Required</span></li>
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="host">host</a>
+</h3>
+
+<span class="description field-description">Additional host configuration.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#HostConfig">HostConfig</a></span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="network">network</a>
+</h3>
+
+<span class="description field-description">The configuration for a Wasmflow network.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#NetworkManifest">NetworkManifest</a></span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="default_schematic">default_schematic</a>
+</h3>
+
+<span class="description field-description">The default schematic to execute if none is provided.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string<span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
+</div></div></div><div class=definition>
+<h2 class="definition-name type-name">
+  <a name="HostConfig">HostConfig</a>
+</h2>
+
+<span class="description type-description">Host configuration options.</span>
+<div class=fields>
+<div class=field>
+
+<h3 class=field-name>
+  <a name="allow_latest">allow_latest</a>
+</h3>
+
+<span class="description field-description">Whether or not to allow the :latest tag on remote artifacts.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>bool</span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="insecure_registries">insecure_registries</a>
+</h3>
+
+<span class="description field-description">A list of registries to connect to insecurely (over HTTP vs HTTPS).</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string[]</span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="timeout">timeout</a>
+</h3>
+
+<span class="description field-description">The timeout for network requests (in ms).</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>u64</span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="id">id</a>
+</h3>
+
+<span class="description field-description">The ID for this host, used to identify the host over the mesh.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string<span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="expose">expose</a>
+</h3>
+
+<span class="description field-description">The schematics to expose via RPC or the mesh, if any.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string[]</span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="mesh">mesh</a>
+</h3>
+
+<span class="description field-description">The mesh configuration.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#MeshConfig">MeshConfig</a><span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="rpc">rpc</a>
+</h3>
+
+<span class="description field-description">Configuration for the GRPC server.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#HttpConfig">HttpConfig</a><span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="http">http</a>
+</h3>
+
+<span class="description field-description">Configuration for the HTTP 1 server (development only).</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#HttpConfig">HttpConfig</a><span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
+</div></div></div><div class=definition>
+<h2 class="definition-name type-name">
+  <a name="HttpConfig">HttpConfig</a>
+</h2>
+
+<span class="description type-description">Configuration for HTTP/S servers.</span>
+<div class=fields>
+<div class=field>
+
+<h3 class=field-name>
+  <a name="enabled">enabled</a>
+</h3>
+
+<span class="description field-description">Enable/disable the server.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>bool</span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="port">port</a>
+</h3>
+
+<span class="description field-description">The port to bind to.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>u16<span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="address">address</a>
+</h3>
+
+<span class="description field-description">The address to bind to.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string<span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="pem">pem</a>
+</h3>
+
+<span class="description field-description">Path to pem file for TLS.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string<span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="key">key</a>
+</h3>
+
+<span class="description field-description">Path to key file for TLS.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string<span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="ca">ca</a>
+</h3>
+
+<span class="description field-description">Path to CA file.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string<span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
+</div></div></div><div class=definition>
+<h2 class="definition-name type-name">
+  <a name="MeshConfig">MeshConfig</a>
+</h2>
+
+<span class="description type-description">Configuration used to connect to the mesh.</span>
+<div class=fields>
+<div class=field>
+
+<h3 class=field-name>
+  <a name="enabled">enabled</a>
+</h3>
+
+<span class="description field-description">Enable/disable the mesh connection.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>bool</span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="address">address</a>
+</h3>
+
+<span class="description field-description">The address of the NATS server.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string</span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="creds_path">creds_path</a>
+</h3>
+
+<span class="description field-description">The path to the NATS credsfile.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string<span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="token">token</a>
+</h3>
+
+<span class="description field-description">The NATS token.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string<span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
+</div></div></div><div class=definition>
+<h2 class="definition-name type-name">
+  <a name="NetworkManifest">NetworkManifest</a>
+</h2>
+
+<span class="description type-description">A Wasmflow network definition.</span>
+<div class=fields>
+<div class=field>
+
+<h3 class=field-name>
+  <a name="name">name</a>
+</h3>
+
+<span class="description field-description">The unique identifier for this Network.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string<span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="labels">labels</a>
+</h3>
+
+<span class="description field-description">The labels that apply to this network.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>Map<string,string></span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="entry">entry</a>
+</h3>
+
+<span class="description field-description">The provider to use as the entrypoint when running as a standalone process.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#EntrypointDefinition">EntrypointDefinition</a><span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="schematics">schematics</a>
+</h3>
+
+<span class="description field-description">The links between capabilities and components.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#SchematicManifest">SchematicManifest</a>[]</span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="providers">providers</a>
+</h3>
+
+<span class="description field-description">A list of providers and component collections.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#ProviderDefinition">ProviderDefinition</a>[]</span></span></li>
+
+
+</ul>
+</div></div></div><div class=definition>
+<h2 class="definition-name type-name">
+  <a name="EntrypointDefinition">EntrypointDefinition</a>
+</h2>
+
+<span class="description type-description">A provider definition for the main entrypoint.</span>
+<div class=fields>
+<div class=field>
+
+<h3 class=field-name>
+  <a name="reference">reference</a>
+</h3>
+
+<span class="description field-description">The reference/location of the provider.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string</span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="data">data</a>
+</h3>
+
+<span class="description field-description">Data or configuration to pass to the provider initialization.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#struct">struct</a></span></span></li>
+
+
+</ul>
+</div></div></div><div class=definition>
+<h2 class="definition-name type-name">
+  <a name="ProviderDefinition">ProviderDefinition</a>
+</h2>
+
+<span class="description type-description">A provider definition.</span>
+<div class=fields>
+<div class=field>
+
+<h3 class=field-name>
+  <a name="namespace">namespace</a>
+</h3>
+
+<span class="description field-description">The namespace to reference the provider's components on.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string</span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="kind">kind</a>
+</h3>
+
+<span class="description field-description">The kind/type of the provider.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#ProviderKind">ProviderKind</a></span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="reference">reference</a>
+</h3>
+
+<span class="description field-description">The reference/location of the provider.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string</span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="data">data</a>
+</h3>
+
+<span class="description field-description">Data or configuration to pass to the provider initialization.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#struct">struct</a></span></span></li>
+
+
+</ul>
+</div></div></div><div class=definition>
+<h2 class="definition-name type-name">
+  <a name="ProviderKind">ProviderKind</a>
+</h2>
+
+<span class="description enum-description">Kind of provider.</span>
+<div class=fields>
+<div class=field>
+
+<h3 class=field-name>
+  <a name="Native">Native</a>
+</h3>
+
+<span class=field-description>Native providers included at compile-time in a Wasmflow host.</span>
+
+
+<ul class="field-notes">
+<li><span class="enum-index field-note">Index: <span class=field-type>0</span></span></li>
+
+
+</ul>
+
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="GrpcUrl">GrpcUrl</a>
+</h3>
+
+<span class=field-description>The URL for a separately managed GRPC endpoint.</span>
+
+
+<ul class="field-notes">
+<li><span class="enum-index field-note">Index: <span class=field-type>1</span></span></li>
+
+
+</ul>
+
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="WaPC">WaPC</a>
+</h3>
+
+<span class=field-description>A WaPC WebAssembly provider.</span>
+
+
+<ul class="field-notes">
+<li><span class="enum-index field-note">Index: <span class=field-type>2</span></span></li>
+
+
+</ul>
+
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="Mesh">Mesh</a>
+</h3>
+
+<span class=field-description>A provider accessible via a connected mesh.</span>
+
+
+<ul class="field-notes">
+<li><span class="enum-index field-note">Index: <span class=field-type>3</span></span></li>
+
+
+</ul>
+
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="Network">Network</a>
+</h3>
+
+<span class=field-description>A local or remote Network definition.</span>
+
+
+<ul class="field-notes">
+<li><span class="enum-index field-note">Index: <span class=field-type>4</span></span></li>
+
+
+</ul>
+
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="Par">Par</a>
+</h3>
+
+<span class=field-description>A GRPC provider binary.</span>
+
+
+<ul class="field-notes">
+<li><span class="enum-index field-note">Index: <span class=field-type>5</span></span></li>
+
+
+</ul>
+
+</div></div>
+</div><div class=definition>
+<h2 class="definition-name type-name">
+  <a name="SchematicManifest">SchematicManifest</a>
+</h2>
+
+<span class="description type-description">A definition for an individual Wasmflow schematic.</span>
+<div class=fields>
+<div class=field>
+
+<h3 class=field-name>
+  <a name="name">name</a>
+</h3>
+
+<span class="description field-description">Schematic name.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string</span></span></li>
+<li><span class="annotation field-note">Required</span></li>
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="providers">providers</a>
+</h3>
+
+<span class="description field-description">A list of providers and component collections.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string[]</span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="instances">instances</a>
+</h3>
+
+<span class="description field-description">A map from component reference to its target.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>Map<string,<a href="#ComponentDefinition">ComponentDefinition</a>></span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="connections">connections</a>
+</h3>
+
+<span class="description field-description">A list of connections from component to component.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#ConnectionDefinition">ConnectionDefinition</a>[]</span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="constraints">constraints</a>
+</h3>
+
+<span class="description field-description">A map of constraints and values that limit where this schematic can run.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>Map<string,string></span></span></li>
+
+
+</ul>
+</div></div></div><div class=definition>
+<h2 class="definition-name type-name">
+  <a name="ComponentDefinition">ComponentDefinition</a>
+</h2>
+
+<span class="description type-description">A single component definition.</span>
+<div class=fields>
+<div class=field>
+
+<h3 class=field-name>
+  <a name="id">id</a>
+</h3>
+
+<span class="description field-description">The ID of the component (i.e. the alias, key, or namespace).</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string</span></span></li>
+<li><span class="annotation field-note">Required</span></li>
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="data">data</a>
+</h3>
+
+<span class="description field-description">Data to associate with the reference.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#struct">struct</a><span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
+</div></div></div><div class=definition>
+<h2 class="definition-name type-name">
+  <a name="ConnectionDefinition">ConnectionDefinition</a>
+</h2>
+
+<span class="description type-description">A connection between components. This can be specified in short-form syntax (where applicable). See <a href='https://wasmflow.com/docs/configuration/short-form-syntax/'>wasmflow.com</a> for more information.</span>
+<div class=fields>
+<div class=field>
+
+<h3 class=field-name>
+  <a name="from">from</a>
+</h3>
+
+<span class="description field-description">The originating component from upstream.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#ConnectionTargetDefinition">ConnectionTargetDefinition</a></span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="to">to</a>
+</h3>
+
+<span class="description field-description">The destination component (downstream).</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#ConnectionTargetDefinition">ConnectionTargetDefinition</a></span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="default">default</a>
+</h3>
+
+<span class="description field-description">The default value to provide in the event of an upstream Error or Exception.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string<span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
+</div></div></div><div class=definition>
+<h2 class="definition-name type-name">
+  <a name="ConnectionTargetDefinition">ConnectionTargetDefinition</a>
+</h2>
+
+<span class="description type-description">A connection target e.g. a port on a reference. This can be specified in short-form syntax (where applicable).  See <a href='https://wasmflow.com/docs/configuration/short-form-syntax/'>wasmflow.com</a> for more information.</span>
+<div class=fields>
+<div class=field>
+
+<h3 class=field-name>
+  <a name="instance">instance</a>
+</h3>
+
+<span class="description field-description">The instance name of the referenced component.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string</span></span></li>
+<li><span class="annotation field-note">Required</span></li>
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="port">port</a>
+</h3>
+
+<span class="description field-description">The component's port.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string</span></span></li>
+<li><span class="annotation field-note">Required</span></li>
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="data">data</a>
+</h3>
+
+<span class="description field-description">Data to associate with a connection.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#struct">struct</a><span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
+</div></div></div></div>
+

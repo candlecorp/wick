@@ -6,8 +6,8 @@ $(GENERATED_MODULE): $(INTERFACE)
 
 .PHONY: components
 components: $(COMPONENTS_DIR) $(INTERFACE)
-	vino-codegen rust component $(INTERFACE) --all $(STATEFUL) $(WELLKNOWN) -o $<
-	vino-codegen rust component $(INTERFACE) __batch__  $(STATEFUL) $(WELLKNOWN) -o $(COMPONENTS_DIR)/__batch__.rs
+	$(CODEGEN) rust component $(INTERFACE) --all $(STATEFUL) $(WELLKNOWN) -o $<
+	$(CODEGEN) rust component $(INTERFACE) __batch__  $(STATEFUL) $(WELLKNOWN) -o $(COMPONENTS_DIR)/__batch__.rs
 
 CODEGEN_FILES += $(GENERATED_MODULE) components
 CLEAN_FILES += $(GENERATED_MODULE)

@@ -25,11 +25,11 @@ pub(crate) enum SubCommands {
 #[derive(Debug, Clone, Args)]
 pub(crate) struct ConnectOptions {
   /// RPC port.
-  #[clap(short, long, env = vino_provider_cli::options::env::VINO_RPC_PORT)]
+  #[clap(short, long, env = wasmflow_collection_cli::options::env::WAFL_RPC_PORT)]
   pub(crate) port: u16,
 
   /// RPC address.
-  #[clap(short, long, default_value = "127.0.0.1", env = vino_provider_cli::options::env::VINO_RPC_ADDRESS)]
+  #[clap(short, long, default_value = "127.0.0.1", env = wasmflow_collection_cli::options::env::WAFL_RPC_ADDRESS)]
   pub(crate) address: Ipv4Addr,
 
   /// Path to pem file for TLS connections.

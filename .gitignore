@@ -4,7 +4,6 @@ node_modules
 build
 .DS_Store
 archive
-crates/vino-rpc/src/generated/vino.rs
+crates/wasmflow-rpc/src/generated/wasmflow.rs
 crates/*/**/Cargo.lock
 bundle.tar
-crates/vino/vino-provider-par/vino-standalone

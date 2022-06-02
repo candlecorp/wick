@@ -1,6 +1,6 @@
 use anyhow::{Context, Result};
 use clap::Args;
-use vino_provider_cli::options::DefaultCliOptions;
+use wasmflow_collection_cli::options::DefaultCliOptions;
 mod manifest;
 mod wasm;
 
@@ -20,9 +20,9 @@ pub(crate) struct ServeCommand {
 }
 
 pub(crate) async fn handle_command(opts: ServeCommand) -> Result<()> {
-  let _guard = logger::init(&opts.cli.logging.name("vino"));
+  let _guard = logger::init(&opts.cli.logging.name(crate::BIN_NAME));
 
-  let bytes = vino_loader::get_bytes(&opts.location, opts.fetch.allow_latest, &opts.fetch.insecure_registries)
+  let bytes = wasmflow_loader::get_bytes(&opts.location, opts.fetch.allow_latest, &opts.fetch.insecure_registries)
     .await
     .context("Could not load from location")?;
 
