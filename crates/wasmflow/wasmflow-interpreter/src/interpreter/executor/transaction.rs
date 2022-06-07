@@ -2,13 +2,13 @@ use std::sync::Arc;
 use std::time::{Instant, SystemTime};
 
 use parking_lot::Mutex;
-use uuid::Uuid;
 use seeded_random::{Random, Seed};
+use uuid::Uuid;
+use wasmflow_entity::Entity;
+use wasmflow_invocation::{InherentData, Invocation};
 use wasmflow_schematic_graph::iterators::{SchematicHop, WalkDirection};
 use wasmflow_schematic_graph::{ComponentIndex, PortDirection, PortReference};
 use wasmflow_transport::{Failure, MessageTransport, TransportMap, TransportStream, TransportWrapper};
-use wasmflow_entity::Entity;
-use wasmflow_invocation::{InherentData, Invocation};
 
 use self::component::port::port_handler::BufferAction;
 use self::component::{CompletionStatus, InstanceHandler};
@@ -20,7 +20,7 @@ use crate::interpreter::channel::Event;
 use crate::interpreter::error::StateError;
 use crate::interpreter::executor::transaction::component::check_statuses;
 use crate::interpreter::executor::transaction::component::port::PortStatus;
-use crate::{HandlerMap, InterpreterDispatchChannel, Provider};
+use crate::{Collection, HandlerMap, InterpreterDispatchChannel};
 
 pub(crate) mod component;
 
@@ -55,8 +55,8 @@ impl Transaction {
     schematic: Arc<Schematic>,
     mut invocation: Invocation,
     channel: InterpreterDispatchChannel,
-    providers: &Arc<HandlerMap>,
-    self_provider: &Arc<dyn Provider + Send + Sync>,
+    collections: &Arc<HandlerMap>,
+    self_collection: &Arc<dyn Collection + Send + Sync>,
     seed: Seed,
   ) -> Self {
     let instances: Vec<_> = schematic
@@ -66,8 +66,8 @@ impl Transaction {
         Arc::new(InstanceHandler::new(
           schematic.clone(),
           component,
-          providers.clone(),
-          self_provider.clone(),
+          collections.clone(),
+          self_collection.clone(),
         ))
       })
       .collect();

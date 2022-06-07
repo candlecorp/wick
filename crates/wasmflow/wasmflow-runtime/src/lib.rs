@@ -91,11 +91,11 @@ extern crate tracing;
 mod dispatch;
 pub mod error;
 mod network;
+pub use collections::network_collection::Collection as NetworkCollection;
 pub use network::{Network, NetworkBuilder};
-pub use providers::network_provider::Provider as NetworkProvider;
+mod collections;
 mod json_writer;
 mod network_service;
-mod providers;
 pub mod utils;
 
 pub mod prelude {
@@ -105,9 +105,9 @@ pub mod prelude {
   pub use wasmflow_packet::{packet, Packet};
   pub use wasmflow_transport::{MessageTransport, TransportStream, TransportWrapper};
 
+  pub use crate::collections::network_collection::Collection as NetworkCollection;
   pub use crate::dispatch::{DispatchError, InvocationResponse};
   pub use crate::network::Network;
-  pub use crate::providers::network_provider::Provider as NetworkProvider;
   pub use crate::{SCHEMATIC_INPUT, SCHEMATIC_OUTPUT, SELF_NAMESPACE};
 }
 
@@ -117,8 +117,8 @@ pub(crate) mod dev;
 pub(crate) mod test;
 
 pub type Error = error::RuntimeError;
+pub use collections::error::CollectionError;
 pub use network_service::error::NetworkError;
-pub use providers::error::ProviderError;
 
 /// The reserved reference name for schematic input. Used in schematic manifests to denote schematic input.
 pub const SCHEMATIC_INPUT: &str = "<input>";

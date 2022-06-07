@@ -1,0 +1,42 @@
+[package]
+name = "wasmflow-keyvalue-redis"
+version = "0.0.0"
+edition = "2021"
+
+[features]
+default = ["host"]
+host = []
+
+[dependencies]
+wasmflow-sdk = { path = "../../sdk/wasmflow-sdk", features = ["v1"] }
+wasmflow-entity = { path = "../../sdk/wasmflow-entity", features = [] }
+wasmflow-collection-cli = { path = "../../wasmflow/wasmflow-collection-cli" }
+wasmflow-transport = { path = "../../sdk/wasmflow-transport", features = [
+  "all",
+] }
+wasmflow-packet = { path = "../../sdk/wasmflow-packet" }
+wasmflow-rpc = { path = "../../wasmflow/wasmflow-rpc" }
+wasmflow-macros = { path = "../../sdk/wasmflow-macros" }
+wasmflow-interface-keyvalue = { path = "../../interfaces/wasmflow-interface-keyvalue", features = [
+  "host",
+  "guest",
+] }
+redis = { version = "0.21", features = ["tokio-comp"] }
+thiserror = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+async-trait = "0.1"
+futures = "0.3"
+tokio = { version = "1", features = ["macros", "sync", "rt-multi-thread"] }
+once_cell = "1.8"
+tokio-util = { version = "0.7", features = ["codec"] }
+clap = { version = "3.0", features = ["derive", "env"] }
+tracing = "0.1"
+tracing-futures = "0.2"
+
+[dev-dependencies]
+logger = { path = "../../wasmflow/logger" }
+serde_json = "1.0"
+tonic = "0.7"
+rand = "0.8"
+anyhow = "1.0"
+test-logger = { path = "../../misc/test-logger" }

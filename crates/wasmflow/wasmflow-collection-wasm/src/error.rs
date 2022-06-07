@@ -2,7 +2,7 @@ use thiserror::Error;
 use wasmflow_rpc::error::RpcError;
 
 #[derive(Error, Debug)]
-pub enum WasmProviderError {
+pub enum WasmCollectionError {
   #[error("Could not extract claims signature from WASM module : {0}")]
   ClaimsError(String),
   #[error("Could not validate claims : {0}")]
@@ -10,7 +10,7 @@ pub enum WasmProviderError {
   #[error("Component error : {0}")]
   ComponentError(String),
 
-  #[error("WASM provider requested data for a nonexistant call.")]
+  #[error("WASM collection requested data for a nonexistent call.")]
   TxNotFound,
 
   #[error(transparent)]
@@ -47,21 +47,21 @@ pub enum WasmProviderError {
   Wasi(#[from] crate::wasi::error::WasiConfigError),
 }
 
-impl From<serde_json::error::Error> for WasmProviderError {
+impl From<serde_json::error::Error> for WasmCollectionError {
   fn from(e: serde_json::error::Error) -> Self {
-    WasmProviderError::JsonError(e.to_string())
+    WasmCollectionError::JsonError(e.to_string())
   }
 }
 
-impl From<WasmProviderError> for Box<RpcError> {
-  fn from(e: WasmProviderError) -> Self {
-    Box::new(RpcError::ProviderError(e.to_string()))
+impl From<WasmCollectionError> for Box<RpcError> {
+  fn from(e: WasmCollectionError) -> Self {
+    Box::new(RpcError::CollectionError(e.to_string()))
   }
 }
 
-impl From<wasmflow_loader::Error> for WasmProviderError {
+impl From<wasmflow_loader::Error> for WasmCollectionError {
   fn from(e: wasmflow_loader::Error) -> Self {
-    WasmProviderError::Loading(e.to_string())
+    WasmCollectionError::Loading(e.to_string())
   }
 }
 

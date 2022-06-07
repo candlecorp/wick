@@ -7,7 +7,7 @@ network:
         INSTANCE:
           id: test::echo
         TEST_REF:
-          id: providers::test
+          id: collections::test
       connections:
         - TEST_REF[ref] => INSTANCE[input]
         - INSTANCE[output] => <>

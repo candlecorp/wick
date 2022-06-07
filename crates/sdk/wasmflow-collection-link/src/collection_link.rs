@@ -4,15 +4,15 @@ use wasmflow_packet::PacketMap;
 
 type BoxedFuture<T> = std::pin::Pin<Box<dyn std::future::Future<Output = T> + Send + 'static>>;
 
-use wasmflow_output::ProviderOutput;
+use wasmflow_output::ComponentOutput;
 
-/// An implementation that encapsulates a provider link that components can use to call out to a Wasmflow network.
+/// An implementation that encapsulates a collection link that components use to call out to components on other Wasmflow collections.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[must_use]
-pub struct ProviderLink(Entity, Entity);
+pub struct CollectionLink(Entity, Entity);
 
-impl ProviderLink {
-  /// Constructor for a [ProviderLink]
+impl CollectionLink {
+  /// Constructor for a [CollectionLink]
   pub fn new(from: Entity, to: Entity) -> Self {
     Self(from, to)
   }
@@ -23,12 +23,12 @@ impl ProviderLink {
     self.0.url()
   }
 
-  /// Make a call to the linked provider.
+  /// Make a call to the linked collection.
   pub fn call(
     &self,
     component: &str,
     payload: impl Into<PacketMap>,
-  ) -> BoxedFuture<Result<ProviderOutput, crate::error::Error>> {
+  ) -> BoxedFuture<Result<ComponentOutput, crate::error::Error>> {
     let payload = payload.into();
     let origin = self.get_origin_url();
     let target = Entity::component(self.1.namespace(), component).url();
@@ -40,14 +40,14 @@ impl ProviderLink {
   }
 }
 
-impl std::fmt::Display for ProviderLink {
+impl std::fmt::Display for CollectionLink {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     write!(f, "{}=>{}", self.0, self.1)
   }
 }
 
 #[cfg(target_arch = "wasm32")]
-async fn link_call(origin: &str, target: &str, payload: &PacketMap) -> Result<ProviderOutput, crate::error::Error> {
+async fn link_call(origin: &str, target: &str, payload: &PacketMap) -> Result<ComponentOutput, crate::error::Error> {
   let bytes = wasmflow_codec::messagepack::serialize(payload)?;
   println!("bytes for host call {:?}", bytes);
   let result = wasmflow_component::guest::wasm::runtime::async_host_call("1", &origin, &target, &bytes)
@@ -55,10 +55,10 @@ async fn link_call(origin: &str, target: &str, payload: &PacketMap) -> Result<Pr
     .map_err(crate::error::Error::Protocol)?;
   println!("post host call {:?}", result);
   let packets: Vec<wasmflow_packet::PacketWrapper> = wasmflow_codec::messagepack::deserialize(&result)?;
-  Ok(wasmflow_output::ProviderOutput::new(tokio_stream::iter(packets)))
+  Ok(wasmflow_output::ComponentOutput::new(tokio_stream::iter(packets)))
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-async fn link_call(_origin: &str, _target: &str, _payload: &PacketMap) -> Result<ProviderOutput, crate::error::Error> {
-  unimplemented!("Link calls from native providers is not implemented yet")
+async fn link_call(_origin: &str, _target: &str, _payload: &PacketMap) -> Result<ComponentOutput, crate::error::Error> {
+  unimplemented!("Link calls from native collections is not implemented yet")
 }

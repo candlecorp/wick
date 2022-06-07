@@ -1,15 +1,15 @@
 use std::collections::HashSet;
 
+use wasmflow_interface::{CollectionMap, CollectionSignature, ComponentSignature, TypeSignature};
 use wasmflow_schematic_graph::iterators::{SchematicHop, WalkDirection};
 use wasmflow_schematic_graph::{ComponentKind, PortDirection};
-use wasmflow_interface::{ComponentSignature, ProviderMap, ProviderSignature, TypeSignature};
 
 use crate::constants::*;
 use crate::graph::types::*;
 
 pub(crate) mod validator;
+use super::collections::get_id;
 use super::error::Error;
-use super::provider::get_id;
 use crate::ValidationError;
 
 #[must_use]
@@ -19,11 +19,11 @@ pub(crate) struct Program {
 }
 
 impl Program {
-  pub(crate) fn new(network: Network, mut providers: ProviderMap) -> Result<Self, Error> {
-    generate_self_signature(&network, &mut providers).map_err(Error::EarlyError)?;
+  pub(crate) fn new(network: Network, mut collections: CollectionMap) -> Result<Self, Error> {
+    generate_self_signature(&network, &mut collections).map_err(Error::EarlyError)?;
 
     let program = Self {
-      state: ProgramState::new(network, providers),
+      state: ProgramState::new(network, collections),
     };
     Ok(program)
   }
@@ -97,15 +97,15 @@ fn get_resolution_order(network: &Network) -> Result<Vec<Vec<&Schematic>>, Valid
   }
 }
 
-fn generate_self_signature(network: &Network, providers: &mut ProviderMap) -> Result<(), ValidationError> {
-  let map = ProviderSignature::new(NS_SELF);
-  providers.insert(NS_SELF, map);
+fn generate_self_signature(network: &Network, collections: &mut CollectionMap) -> Result<(), ValidationError> {
+  let map = CollectionSignature::new(NS_SELF);
+  collections.insert(NS_SELF, map);
   let resolution_order = get_resolution_order(network)?;
 
   for batch in resolution_order {
     for schematic in batch {
-      let signature = get_schematic_signature(schematic, providers)?;
-      let map = providers.get_mut(NS_SELF).unwrap();
+      let signature = get_schematic_signature(schematic, collections)?;
+      let map = collections.get_mut(NS_SELF).unwrap();
       map.components.insert(schematic.name(), signature);
     }
   }
@@ -114,7 +114,7 @@ fn generate_self_signature(network: &Network, providers: &mut ProviderMap) -> Re
 
 fn get_schematic_signature(
   schematic: &Schematic,
-  providers: &ProviderMap,
+  collections: &CollectionMap,
 ) -> Result<ComponentSignature, ValidationError> {
   let mut schematic_signature = ComponentSignature::new(schematic.name());
 
@@ -123,7 +123,7 @@ fn get_schematic_signature(
       let signature = match hop {
         SchematicHop::Port(p) => {
           if p.direction() == PortDirection::In {
-            let signature = get_signature(schematic.name(), &p, PortDirection::In, providers)?;
+            let signature = get_signature(schematic.name(), &p, PortDirection::In, collections)?;
             match signature {
               Some(sig) => sig,
               None => continue,
@@ -143,7 +143,7 @@ fn get_schematic_signature(
       let signature = match hop {
         SchematicHop::Port(p) => {
           if p.direction() == PortDirection::Out {
-            let signature = get_signature(schematic.name(), &p, PortDirection::Out, providers)?;
+            let signature = get_signature(schematic.name(), &p, PortDirection::Out, collections)?;
             match signature {
               Some(sig) => sig,
               None => continue,
@@ -164,7 +164,7 @@ fn get_signature(
   schematic: &str,
   p: &Port,
   kind: PortDirection,
-  providers: &ProviderMap,
+  collections: &CollectionMap,
 ) -> Result<Option<TypeSignature>, ValidationError> {
   let name = p.name();
   match p.component().kind() {
@@ -178,15 +178,15 @@ fn get_signature(
       PortDirection::In => Ok(Some(TypeSignature::Value)),
     },
     ComponentKind::External(ext) | ComponentKind::Inherent(ext) => {
-      let ext_provider = providers
+      let ext_collection = collections
         .get(ext.namespace())
-        .ok_or_else(|| ValidationError::MissingProvider(ext.namespace().to_owned()))?;
+        .ok_or_else(|| ValidationError::MissingCollection(ext.namespace().to_owned()))?;
 
       let component = p.component();
 
       let id = get_id(ext.namespace(), ext.name(), schematic, component.name());
 
-      let component = ext_provider
+      let component = ext_collection
         .components
         .get(&id)
         .ok_or(ValidationError::MissingComponent {
@@ -212,11 +212,11 @@ fn get_signature(
 #[derive(Debug)]
 pub(crate) struct ProgramState {
   pub(crate) network: Network,
-  pub(crate) providers: ProviderMap,
+  pub(crate) collections: CollectionMap,
 }
 
 impl ProgramState {
-  pub(crate) fn new(network: Network, providers: ProviderMap) -> Self {
-    Self { network, providers }
+  pub(crate) fn new(network: Network, collections: CollectionMap) -> Self {
+    Self { network, collections }
   }
 }

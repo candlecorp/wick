@@ -9,7 +9,7 @@
   },
   "rust-analyzer.cargo.features": [
     "wasmflow-component/guest",
-    "wasmflow-stdlib/provider"
+    "wasmflow-stdlib/host"
   ],
   "rust-analyzer.rustfmt.overrideCommand": [
     "rustup",

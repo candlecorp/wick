@@ -11,7 +11,7 @@ use types::*;
 use wasmflow_manifest::parse::CORE_ID;
 use wasmflow_schematic_graph::{ComponentReference, SCHEMATIC_OUTPUT};
 
-use crate::constants::{INTERNAL_ID_INHERENT, NS_CORE, NS_INTERNAL, NS_PROVIDERS};
+use crate::constants::{INTERNAL_ID_INHERENT, NS_COLLECTIONS, NS_CORE, NS_INTERNAL};
 
 #[derive(Debug)]
 #[must_use]
@@ -40,12 +40,14 @@ impl Reference {
   }
 
   pub(crate) fn is_static(&self) -> bool {
-    self.0.namespace() == NS_PROVIDERS
+    self.0.namespace() == NS_COLLECTIONS
   }
 }
 
 #[instrument(name = "schematic_graph", skip_all)]
-pub fn from_def(network_def: &wasmflow_manifest::NetworkDefinition) -> Result<Network, wasmflow_schematic_graph::error::Error> {
+pub fn from_def(
+  network_def: &wasmflow_manifest::NetworkDefinition,
+) -> Result<Network, wasmflow_schematic_graph::error::Error> {
   let mut network = Network::new(network_def.name.clone().unwrap_or_default());
 
   for schem_def in &network_def.schematics {

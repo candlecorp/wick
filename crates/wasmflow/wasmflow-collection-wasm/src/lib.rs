@@ -86,16 +86,16 @@
 #![allow(missing_docs)]
 
 pub mod callbacks;
+pub mod collection;
 pub mod error;
 pub mod helpers; // TODO ref check and make sure these are used:
-pub mod provider;
 pub mod transaction;
 mod wapc_module;
 pub mod wasi;
 pub mod wasm_host;
 
-pub(crate) type Result<T> = std::result::Result<T, error::WasmProviderError>;
-pub type Error = error::WasmProviderError;
+pub(crate) type Result<T> = std::result::Result<T, error::WasmCollectionError>;
+pub type Error = error::WasmCollectionError;
 
 #[macro_use]
 extern crate tracing;

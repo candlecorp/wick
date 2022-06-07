@@ -122,7 +122,7 @@ pub mod hosted_type {
     #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum Type {
         #[prost(message, tag="1")]
-        Provider(super::ProviderSignature),
+        Collection(super::CollectionSignature),
     }
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -146,7 +146,7 @@ pub mod component {
     }
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct ProviderSignature {
+pub struct CollectionSignature {
     #[prost(string, tag="1")]
     pub name: ::prost::alloc::string::String,
     #[prost(string, tag="2")]
@@ -184,7 +184,7 @@ pub struct WellKnownSchema {
     #[prost(string, tag="2")]
     pub url: ::prost::alloc::string::String,
     #[prost(message, optional, tag="3")]
-    pub schema: ::core::option::Option<ProviderSignature>,
+    pub schema: ::core::option::Option<CollectionSignature>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct StatsRequest {

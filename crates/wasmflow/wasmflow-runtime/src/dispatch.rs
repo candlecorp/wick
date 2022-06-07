@@ -62,8 +62,8 @@ impl From<wasmflow_entity::Error> for DispatchError {
   }
 }
 
-impl From<ProviderError> for DispatchError {
-  fn from(e: ProviderError) -> Self {
+impl From<CollectionError> for DispatchError {
+  fn from(e: CollectionError) -> Self {
     DispatchError::CallFailure(e.to_string())
   }
 }

@@ -15,7 +15,7 @@ mod test {
       "127.0.0.1".to_owned()
     });
     let nats_arg = format!("--nats={}", nats_url);
-    let (p2_tx, p2_handle, _port2) = start_provider(
+    let (p2_tx, p2_handle, _port2) = start_collection(
       "wasmflow",
       "network-two",
       &[
@@ -28,7 +28,7 @@ mod test {
       &[],
     )
     .await?;
-    let (p_tx, p_handle, port) = start_provider(
+    let (p_tx, p_handle, port) = start_collection(
       "wasmflow",
       "network-one",
       &[
@@ -60,10 +60,10 @@ mod test {
 
     p_tx.send(Signal::Kill).await?;
     p_handle.await??;
-    println!("Provider 1 shut down");
+    println!("Collection 1 shut down");
     p2_tx.send(Signal::Kill).await?;
     p2_handle.await??;
-    println!("Provider 1 shut down");
+    println!("Collection 1 shut down");
 
     match result {
       Ok(_) => Ok(()),

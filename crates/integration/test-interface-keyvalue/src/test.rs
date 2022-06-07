@@ -13,10 +13,10 @@ async fn list_components(port: &u16) -> Result<Vec<wasmflow_rpc::rpc::HostedType
   Ok(response.schemas)
 }
 
-pub async fn test_api(provider: SharedRpcHandler) -> Result<()> {
+pub async fn test_api(collection: SharedRpcHandler) -> Result<()> {
   let socket = bind_new_socket()?;
   let port = socket.local_addr()?.port();
-  let _server = make_rpc_server(socket, provider);
+  let _server = make_rpc_server(socket, collection);
 
   let components = list_components(&port).await?;
   println!("Reported components: {:#?}", components);

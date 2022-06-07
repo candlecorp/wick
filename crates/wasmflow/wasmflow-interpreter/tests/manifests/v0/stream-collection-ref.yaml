@@ -1,0 +1,25 @@
+---
+version: 0
+network:
+  schematics:
+    - name: test
+      instances:
+        CONCAT:
+          id: test::concat
+        TEST_REF:
+          id: collections::test
+        REF_TO_STRING:
+          id: test::ref_to_string
+        SENDER:
+          id: core::sender
+          data:
+            output: 5
+        COPY:
+          id: test::copy
+      connections:
+        - <> => COPY[input]
+        - SENDER[output] => COPY[times]
+        - COPY[output] => CONCAT[left]
+        - TEST_REF[ref] => REF_TO_STRING[link]
+        - REF_TO_STRING[output] => CONCAT[right]
+        - CONCAT[output] => <>

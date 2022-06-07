@@ -78,5 +78,5 @@
 /// Error module.
 pub mod error;
 
-mod provider_output;
-pub use provider_output::{PortOutput, ProviderOutput};
+mod component_output;
+pub use component_output::{ComponentOutput, PortOutput};

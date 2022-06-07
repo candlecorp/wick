@@ -3969,7 +3969,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "test-native-provider"
+name = "test-native-collection"
 version = "0.1.0"
 dependencies = [
  "anyhow",
@@ -4676,14 +4676,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "wafl-interface-keyvalue"
-version = "0.1.0"
-dependencies = [
- "serde",
- "wasmflow-sdk",
-]
-
-[[package]]
 name = "wait-timeout"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4961,7 +4953,7 @@ dependencies = [
  "serde",
  "serde_json",
  "test-logger",
- "test-native-provider",
+ "test-native-collection",
  "thiserror",
  "tokio",
  "tokio-stream",
@@ -4990,7 +4982,7 @@ dependencies = [
  "serde",
  "serde_json",
  "test-logger",
- "test-native-provider",
+ "test-native-collection",
  "thiserror",
  "tokio",
  "tokio-stream",
@@ -5031,7 +5023,7 @@ dependencies = [
  "logger",
  "parking_lot 0.12.0",
  "test-logger",
- "test-native-provider",
+ "test-native-collection",
  "thiserror",
  "tokio",
  "tokio-stream",
@@ -5059,7 +5051,7 @@ dependencies = [
  "shellexpand",
  "tar",
  "test-logger",
- "test-native-provider",
+ "test-native-collection",
  "thiserror",
  "tokio",
  "tokio-stream",
@@ -5192,6 +5184,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "wasmflow-interface-keyvalue"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "wasmflow-sdk",
+]
+
+[[package]]
 name = "wasmflow-interpreter"
 version = "0.0.0"
 dependencies = [
@@ -5280,9 +5280,9 @@ dependencies = [
  "tonic",
  "tracing",
  "tracing-futures",
- "wafl-interface-keyvalue",
  "wasmflow-collection-cli",
  "wasmflow-entity",
+ "wasmflow-interface-keyvalue",
  "wasmflow-macros",
  "wasmflow-packet",
  "wasmflow-rpc",
@@ -5344,7 +5344,7 @@ dependencies = [
  "pretty_assertions",
  "serde",
  "test-logger",
- "test-native-provider",
+ "test-native-collection",
  "thiserror",
  "tokio",
  "tokio-stream",
@@ -5439,7 +5439,7 @@ dependencies = [
  "seeded-random",
  "serde_json",
  "test-logger",
- "test-native-provider",
+ "test-native-collection",
  "tokio",
  "utils",
  "wasmflow-codec",
@@ -5499,7 +5499,7 @@ dependencies = [
  "serde",
  "serde_json",
  "test-logger",
- "test-native-provider",
+ "test-native-collection",
  "thiserror",
  "tokio",
  "tokio-stream",

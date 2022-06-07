@@ -85,10 +85,10 @@
 // Add exceptions here
 #![allow(missing_docs)]
 
+pub mod collection;
 pub mod error;
-pub mod provider;
 
-pub type Error = error::MeshProviderError;
+pub type Error = error::MeshError;
 
 #[macro_use]
 extern crate tracing;

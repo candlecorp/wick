@@ -1,13 +1,13 @@
 ---
 version: 0
 network:
-  providers:
+  collections:
     - kind: Network
       reference: nothing
       namespace: schem
   schematics:
     - name: logger
-      providers:
+      collections:
         - schem
       instances:
         something: wafl::anything

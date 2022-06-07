@@ -19,19 +19,19 @@ pub enum ParError {
   #[error(transparent)]
   WasCap(#[from] wasmflow_wascap::Error),
 
-  /// Provider archive invalid
-  #[error("Provider archive invalid")]
+  /// Collection archive invalid
+  #[error("Collection archive invalid")]
   ArchiveInvalid(String),
 
-  /// Provider archive is missing the JWT
-  #[error("Provider archive is missing the JWT")]
+  /// Collection archive is missing the JWT
+  #[error("Collection archive is missing the JWT")]
   MissingJwt,
 
-  /// Provider archive is missing the interface schema
-  #[error("Provider archive is missing the interface schema")]
+  /// Collection archive is missing the interface schema
+  #[error("Collection archive is missing the interface schema")]
   MissingInterface,
 
-  /// Provider archive is missing the binary
-  #[error("Provider archive is missing the binary")]
+  /// Collection archive is missing the binary
+  #[error("Collection archive is missing the binary")]
   MissingBinary,
 }

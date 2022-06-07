@@ -27,7 +27,7 @@ wasmflow-collection-nats = { path = "../wasmflow-collection-nats" }
 wasmflow-collection-par = { path = "../wasmflow-collection-par" }
 wasmflow-collection-grpc = { path = "../wasmflow-collection-grpc" }
 wasmflow-mesh = { path = "../wasmflow-mesh" }
-wasmflow-stdlib = { path = "../../providers/wasmflow-stdlib" }
+wasmflow-stdlib = { path = "../../collections/wasmflow-stdlib" }
 wasmflow-transport = { path = "../../sdk/wasmflow-transport", features = [
   "all",
 ] }
@@ -60,7 +60,7 @@ uuid = "1.1"
 
 [dev-dependencies]
 wasmflow-invocation-server = { path = "../wasmflow-invocation-server" }
-test-native-provider = { path = "../../integration/test-native-provider" }
+test-native-collection = { path = "../../integration/test-native-collection" }
 logger = { path = "../logger" }
 test-logger = { path = "../../misc/test-logger" }
 maplit = "1.0"

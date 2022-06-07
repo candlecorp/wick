@@ -7,8 +7,8 @@ use wasmflow_transport::{JsonError, TransportJson};
 
 #[test_logger::test(tokio::test)]
 async fn test_vow_serve() -> utils::TestResult<()> {
-  debug!("Starting provider");
-  let (p_tx, p_handle, port) = start_provider(
+  debug!("Starting collection");
+  let (p_tx, p_handle, port) = start_collection(
     "wasmflow",
     "component rpc server",
     &[
@@ -39,7 +39,7 @@ async fn test_vow_serve() -> utils::TestResult<()> {
 
   p_tx.send(Signal::Kill).await?;
   p_handle.await??;
-  println!("Provider shut down");
+  println!("Collection shut down");
 
   match result {
     Ok(_) => Ok(()),

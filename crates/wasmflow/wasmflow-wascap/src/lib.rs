@@ -93,7 +93,7 @@ mod component;
 use std::io::Read;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-pub use component::ProviderClaims;
+pub use component::CollectionClaims;
 use data_encoding::HEXUPPER;
 use parity_wasm::elements::{CustomSection, Module, Serialize};
 use parity_wasm::{deserialize_buffer, serialize};
@@ -102,7 +102,7 @@ pub use wascap;
 pub use wascap::jwt::Token;
 pub use wascap::prelude::{validate_token, Claims, Invocation, KeyPair};
 use wascap::wasm::days_from_now_to_jwt_time;
-use wasmflow_interface::ProviderSignature;
+use wasmflow_interface::CollectionSignature;
 
 /// The crate's error module.
 pub mod error;
@@ -123,7 +123,7 @@ pub struct ClaimsOptions {
 }
 
 /// Extract the claims embedded in a [Token].
-pub fn extract_claims(contents: impl AsRef<[u8]>) -> Result<Option<Token<ProviderClaims>>> {
+pub fn extract_claims(contents: impl AsRef<[u8]>) -> Result<Option<Token<CollectionClaims>>> {
   let module: Module = deserialize_buffer(contents.as_ref())?;
   let sections: Vec<&CustomSection> = module.custom_sections().filter(|sect| sect.name() == "jwt").collect();
 
@@ -138,7 +138,7 @@ pub fn extract_claims(contents: impl AsRef<[u8]>) -> Result<Option<Token<Provide
 }
 
 /// Validate a JWT's hash matches the passed hash.
-pub fn assert_valid_jwt(token: &Token<ProviderClaims>, hash: &str) -> Result<()> {
+pub fn assert_valid_jwt(token: &Token<CollectionClaims>, hash: &str) -> Result<()> {
   let valid_hash = token
     .claims
     .metadata
@@ -153,16 +153,16 @@ pub fn assert_valid_jwt(token: &Token<ProviderClaims>, hash: &str) -> Result<()>
 }
 
 /// Decode a JWT and its claims.
-pub fn decode_token(jwt_bytes: Vec<u8>) -> Result<Token<ProviderClaims>> {
+pub fn decode_token(jwt_bytes: Vec<u8>) -> Result<Token<CollectionClaims>> {
   let jwt = String::from_utf8(jwt_bytes)?;
   tracing::trace!(%jwt, "jwt");
-  let claims: Claims<ProviderClaims> = Claims::decode(&jwt)?;
+  let claims: Claims<CollectionClaims> = Claims::decode(&jwt)?;
   Ok(Token { jwt, claims })
 }
 
 /// This function will embed a set of claims inside the bytecode of a WebAssembly module. The claims.
 /// are converted into a JWT and signed using the provided `KeyPair`.
-pub fn embed_claims(orig_bytecode: &[u8], claims: &Claims<ProviderClaims>, kp: &KeyPair) -> Result<Vec<u8>> {
+pub fn embed_claims(orig_bytecode: &[u8], claims: &Claims<CollectionClaims>, kp: &KeyPair) -> Result<Vec<u8>> {
   let mut module: Module = deserialize_buffer(orig_bytecode)?;
   module.clear_custom_section("jwt");
   let cleanbytes = serialize(module)?;
@@ -177,10 +177,10 @@ pub fn embed_claims(orig_bytecode: &[u8], claims: &Claims<ProviderClaims>, kp: &
 }
 
 /// Create a JWT claims with a hash of the buffer embedded.
-pub fn make_jwt<R: Read>(buffer: R, claims: &Claims<ProviderClaims>, kp: &KeyPair) -> Result<Vec<u8>> {
+pub fn make_jwt<R: Read>(buffer: R, claims: &Claims<CollectionClaims>, kp: &KeyPair) -> Result<Vec<u8>> {
   let module_hash = hash_bytes(buffer)?;
   let mut claims = (*claims).clone();
-  let meta = claims.metadata.map(|md| ProviderClaims { module_hash, ..md });
+  let meta = claims.metadata.map(|md| CollectionClaims { module_hash, ..md });
   claims.metadata = meta;
 
   let encoded = claims.encode(kp)?;
@@ -195,22 +195,22 @@ pub fn hash_bytes<R: Read>(buffer: R) -> Result<String> {
   Ok(HEXUPPER.encode(digest.as_ref()))
 }
 
-/// Build provider claims from passed values
+/// Build collection claims from passed values
 #[must_use]
-pub fn build_provider_claims(
-  interface: ProviderSignature,
+pub fn build_collection_claims(
+  interface: CollectionSignature,
   subject_kp: &KeyPair,
   issuer_kp: &KeyPair,
   options: ClaimsOptions,
-) -> Claims<ProviderClaims> {
-  Claims::<ProviderClaims> {
+) -> Claims<CollectionClaims> {
+  Claims::<CollectionClaims> {
     expires: options.expires_in_days,
     id: nuid::next(),
     issued_at: since_the_epoch().as_secs(),
     issuer: issuer_kp.public_key(),
     subject: subject_kp.public_key(),
     not_before: days_from_now_to_jwt_time(options.not_before_days),
-    metadata: Some(ProviderClaims {
+    metadata: Some(CollectionClaims {
       module_hash: "".to_owned(),
       tags: Some(Vec::new()),
       interface,
@@ -224,12 +224,12 @@ pub fn build_provider_claims(
 /// Sign WebAssembly bytes with the passed claims.
 pub fn sign_buffer_with_claims(
   buf: impl AsRef<[u8]>,
-  interface: ProviderSignature,
+  interface: CollectionSignature,
   mod_kp: &KeyPair,
   acct_kp: &KeyPair,
   options: ClaimsOptions,
 ) -> Result<Vec<u8>> {
-  let claims = build_provider_claims(interface, mod_kp, acct_kp, options);
+  let claims = build_collection_claims(interface, mod_kp, acct_kp, options);
 
   embed_claims(buf.as_ref(), &claims, acct_kp)
 }

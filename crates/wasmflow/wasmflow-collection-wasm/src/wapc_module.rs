@@ -1,22 +1,22 @@
 use std::path::Path;
 
-use wasmflow_wascap::{Claims, ProviderClaims, Token};
+use wasmflow_wascap::{Claims, CollectionClaims, Token};
 
-use crate::error::WasmProviderError;
+use crate::error::WasmCollectionError;
 
 #[derive(Derivative, Clone)]
 #[derivative(Debug)]
 pub struct WapcModule {
-  pub token: Token<ProviderClaims>,
+  pub token: Token<CollectionClaims>,
   pub bytes: Vec<u8>,
 }
 
 impl WapcModule {
   /// Create an actor from the bytes of a signed WebAssembly module. Attempting to load.
   /// an unsigned module, or a module signed improperly, will result in an error.
-  pub fn from_slice(buf: &[u8]) -> Result<WapcModule, WasmProviderError> {
-    let token = wasmflow_wascap::extract_claims(&buf).map_err(|e| WasmProviderError::ClaimsError(e.to_string()))?;
-    token.map_or(Err(WasmProviderError::ClaimsExtraction), |t| {
+  pub fn from_slice(buf: &[u8]) -> Result<WapcModule, WasmCollectionError> {
+    let token = wasmflow_wascap::extract_claims(&buf).map_err(|e| WasmCollectionError::ClaimsError(e.to_string()))?;
+    token.map_or(Err(WasmCollectionError::ClaimsExtraction), |t| {
       Ok(WapcModule {
         token: t,
         bytes: buf.to_vec(),
@@ -25,7 +25,7 @@ impl WapcModule {
   }
 
   /// Create an actor from a signed WebAssembly (`.wasm`) file.
-  pub async fn from_file(path: &Path) -> Result<WapcModule, WasmProviderError> {
+  pub async fn from_file(path: &Path) -> Result<WapcModule, WasmCollectionError> {
     let file = tokio::fs::read(path).await?;
 
     WapcModule::from_slice(&file)
@@ -51,7 +51,7 @@ impl WapcModule {
 
   // Obtain the raw set of claims for this component.
   #[must_use]
-  pub fn claims(&self) -> &Claims<ProviderClaims> {
+  pub fn claims(&self) -> &Claims<CollectionClaims> {
     &self.token.claims
   }
 }

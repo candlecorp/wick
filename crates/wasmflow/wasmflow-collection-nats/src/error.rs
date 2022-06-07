@@ -1,7 +1,7 @@
 use thiserror::Error;
 
 #[derive(Error, Debug)]
-pub enum MeshProviderError {
+pub enum MeshError {
   #[error("Component error : {0}")]
   ComponentError(String),
   #[error(transparent)]
@@ -23,9 +23,3 @@ pub enum MeshProviderError {
   #[error("Component '{0}' not found. Valid components are: {}", .1.join(", "))]
   ComponentNotFound(String, Vec<String>),
 }
-
-// impl From<serde_json::error::Error> for MeshProviderError {
-//   fn from(e: serde_json::error::Error) -> Self {
-//     MeshProviderError::JsonError(e.to_string())
-//   }
-// }

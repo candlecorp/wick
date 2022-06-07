@@ -119,7 +119,7 @@ pub mod env {
     };
   }
 
-  env_var!(WAFL_PROVIDER_ID);
+  env_var!(WAFL_COLLECTION_ID);
   env_var!(WAFL_TIMEOUT);
 
   env_var!(WAFL_RPC_ENABLED);
@@ -143,10 +143,10 @@ pub mod env {
 }
 
 #[derive(Debug, Clone, Default, Args, Serialize, Deserialize)]
-/// Command line options for providers.
+/// Command line options for s.
 pub struct DefaultCliOptions {
   /// The unique ID of this client.
-  #[clap(long = "id", env = env::WAFL_PROVIDER_ID)]
+  #[clap(long = "id", env = env::WAFL_COLLECTION_ID)]
   pub id: Option<String>,
 
   /// The timeout for outbound requests in ms.
@@ -187,7 +187,7 @@ pub struct DefaultCliOptions {
 }
 
 #[derive(Debug, Clone, Default, Args, Serialize, Deserialize)]
-/// Command line options for providers.
+/// Command line options for mesh connections.
 pub struct MeshCliOptions {
   /// Enable the mesh connection.
   #[clap(long = "mesh")]

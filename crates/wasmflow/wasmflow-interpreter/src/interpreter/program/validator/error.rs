@@ -6,8 +6,8 @@ pub enum ValidationError {
   #[error("Network contains circular references: {:?}", .0)]
   NetworkUnresolvable(Vec<String>),
 
-  #[error("Missing provider namespace '{0}'")]
-  MissingProvider(String),
+  #[error("Missing collection namespace '{0}'")]
+  MissingCollection(String),
 
   #[error("Missing component '{name}' on namespace '{namespace}'")]
   MissingComponent { namespace: String, name: String },

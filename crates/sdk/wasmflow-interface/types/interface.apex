@@ -2,16 +2,16 @@ namespace "wasmflow::interface"
 
 "An enum representing the types of components that can be hosted."
 enum HostedType {
-  "A provider."
-  Provider = 0,
+  "A collection."
+  Collection = 0,
 }
 
 alias FieldMap = {string: TypeSignature}
 
-union Help = ProviderSignature | ComponentSignature
+union Help = CollectionSignature | ComponentSignature
 
-type ProviderSignature {
-  "Name of the provider."
+type CollectionSignature {
+  "Name of the collection."
   name: string?,
   "Schema format version."
   format: u32,
@@ -21,7 +21,7 @@ type ProviderSignature {
   wellknown: [WellKnownSchema],
   "A map of type signatures referenced elsewhere."
   types: {string: TypeSignature},
-  "A list of ComponentSignatures the provider hosts."
+  "A list of ComponentSignatures the collection hosts."
   components: {string: ComponentSignature},
   "The component's configuration for this implementation."
   config: {string: TypeSignature},
@@ -45,7 +45,7 @@ type WellKnownSchema {
   "The location where you can find and validate the schema."
   url: string,
   "The schema itself."
-  schema: ProviderSignature,
+  schema: CollectionSignature,
 }
 
 "Signatures of enum type definitions."
@@ -114,7 +114,7 @@ enum TypeSignature {
   Optional = 18,
   "A HashMap-like type."
   Map = 19,
-  "A type representing a ProviderLink."
+  "A type representing a CollectionLink."
   Link = 20,
   "A JSON-like key/value map."
   Struct = 21,

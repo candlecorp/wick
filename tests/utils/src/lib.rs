@@ -67,13 +67,13 @@ impl Signal {
   }
 }
 
-pub async fn start_provider(
+pub async fn start_collection(
   binary: &str,
   name: &str,
   args: &[&str],
   envs: &[(&str, &str)],
 ) -> Result<(Sender<Signal>, JoinHandle<Result<()>>, String)> {
-  println!("Starting provider bin: {} ({})", binary, name);
+  println!("Starting collection bin: {} ({})", binary, name);
 
   let mut bin = tokio_test_bin::get_test_bin(binary);
   let cmd = bin
@@ -83,10 +83,10 @@ pub async fn start_provider(
     .stdout(Stdio::piped())
     .stderr(Stdio::piped());
   println!("Command is {:?} (ENVS: {:?})", cmd, envs);
-  let mut provider = cmd.spawn()?;
+  let mut collection = cmd.spawn()?;
 
-  let stderr = provider.stderr.take().unwrap();
-  let stdout = provider.stdout.take().unwrap();
+  let stderr = collection.stderr.take().unwrap();
+  let stdout = collection.stdout.take().unwrap();
 
   let mut err_reader = BufReader::new(stderr).lines();
   let mut out_reader = BufReader::new(stdout).lines();
@@ -124,13 +124,13 @@ pub async fn start_provider(
   let name2 = name.to_owned();
   let handle = tokio::spawn(async move {
     select! {
-      status = provider.wait() => {
+      status = collection.wait() => {
         println!("{} status was: {:?}", name2, status);
         Err(anyhow!("{} stopped early", name2))
       },
       _signal = rx.recv() => {
         println!("{} received signal", name2);
-        provider.kill().await?;
+        collection.kill().await?;
         Ok(())
       }
     }

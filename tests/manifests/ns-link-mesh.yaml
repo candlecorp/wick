@@ -3,7 +3,7 @@ host:
   mesh:
     enabled: true
 network:
-  providers:
+  collections:
     - namespace: wapc
       kind: WaPC
       reference: ./crates/integration/test-wasm-component/build/test_component_s.wasm
@@ -12,14 +12,14 @@ network:
       reference: mesh_wapc
   schematics:
     - name: ns-link
-      providers:
+      collections:
         - wapc
         - mesh_wapc
       instances:
         reverse_upper:
           id: wapc::reverse-uppercase
         WAPC_LINK:
-          id: providers::mesh_wapc
+          id: collections::mesh_wapc
       connections:
         - <> => reverse_upper[input]
         - WAPC_LINK[ref] => reverse_upper[link]

@@ -55,15 +55,15 @@ fn load_bad_manifest_yaml() -> Result<(), ManifestError> {
 }
 
 #[test_logger::test]
-fn load_providers_yaml() -> Result<(), ManifestError> {
-  let path = PathBuf::from("./tests/manifests/v0/providers.yaml");
+fn load_collections_yaml() -> Result<(), ManifestError> {
+  let path = PathBuf::from("./tests/manifests/v0/collections.yaml");
   let manifest = HostManifest::load_from_file(&path)?;
 
   let HostManifest::V0(manifest) = manifest;
-  assert_eq!(manifest.network.name, Some("providers".to_owned()));
-  assert_eq!(manifest.network.providers.len(), 6);
+  assert_eq!(manifest.network.name, Some("collections".to_owned()));
+  assert_eq!(manifest.network.collections.len(), 6);
   assert_eq!(
-    manifest.network.providers[5].data,
+    manifest.network.collections[5].data,
     json!({"obj":{"data_prop":"data_value"}})
   );
 
@@ -120,7 +120,7 @@ fn load_json_env() -> Result<(), ManifestError> {
 
   let HostManifest::V0(manifest) = manifest;
   assert_eq!(
-    manifest.network.entry.unwrap().data,
+    manifest.network.triggers.unwrap().data,
     json!({"json_key": "load_json_env"})
   );
 

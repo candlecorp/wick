@@ -10,7 +10,7 @@ mod test {
   #[test_logger::test(tokio::test)]
   async fn integration_test_collection() -> utils::TestResult<()> {
     debug!("Starting vow");
-    let (p_tx, p_handle, _) = start_provider(
+    let (p_tx, p_handle, _) = start_collection(
       "wasmflow",
       "component RPC server",
       &[
@@ -28,7 +28,7 @@ mod test {
     )
     .await?;
 
-    let (h_tx, h_handle, h_port) = start_provider(
+    let (h_tx, h_handle, h_port) = start_collection(
       "wasmflow",
       "wasmflow",
       &[
@@ -68,7 +68,7 @@ mod test {
 
     p_tx.send(Signal::Kill).await?;
     p_handle.await??;
-    println!("Provider shut down");
+    println!("Collection shut down");
 
     match result {
       Ok(_) => Ok(()),

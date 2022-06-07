@@ -5,11 +5,11 @@ use std::time::{Instant, SystemTime};
 
 use parking_lot::RwLock;
 use wasmflow_codec::messagepack::{deserialize, serialize};
+use wasmflow_component::{LogLevel, OutputSignal};
 use wasmflow_packet::v0::Payload;
 use wasmflow_packet::Packet;
-use wasmflow_component::{LogLevel, OutputSignal};
 
-use crate::provider::HostLinkCallback;
+use crate::collection::HostLinkCallback;
 use crate::transaction::Transaction;
 
 type InvocationFn =

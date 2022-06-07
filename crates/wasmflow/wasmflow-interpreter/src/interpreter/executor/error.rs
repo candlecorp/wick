@@ -2,7 +2,7 @@ use uuid::Uuid;
 
 use crate::interpreter::error::StateError;
 
-#[derive(thiserror::Error, Debug, PartialEq)]
+#[derive(thiserror::Error, Debug)]
 pub enum ExecutionError {
   #[error("Error in internal channel: {0}")]
   ChannelError(crate::interpreter::channel::error::Error),
@@ -17,7 +17,7 @@ pub enum ExecutionError {
   #[error("Transaction '{0}' missing")]
   MissingTx(Uuid),
   #[error("{0}")]
-  ProviderError(String),
+  CollectionError(Box<dyn std::error::Error + Send + Sync>),
 
   #[error("Sender configuration did not include valid data")]
   InvalidSenderData,

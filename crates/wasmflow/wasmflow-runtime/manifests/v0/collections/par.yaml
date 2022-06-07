@@ -1,0 +1,20 @@
+---
+version: 0
+host:
+  allow_latest: true
+network:
+  collections:
+    - namespace: test-namespace
+      kind: Par
+      reference: ./tests/bundle.tar
+  schematics:
+    - name: par
+      collections:
+        - test-namespace
+      instances:
+        add:
+          id: test-namespace::add
+      connections:
+        - <> => add[left]
+        - <> => add[right]
+        - add[output] => <>

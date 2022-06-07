@@ -1,13 +1,13 @@
 ---
 version: 0
 network:
-  providers:
+  collections:
     - namespace: subnet
       kind: Network
       reference: ./manifests/v0/sub-network-child.yaml
   schematics:
     - name: parent
-      providers:
+      collections:
         - subnet
       instances:
         child:

@@ -1,9 +1,9 @@
 use std::path::{Path, PathBuf};
 
 use serde::{Deserialize, Serialize};
+use wasmflow_interface::CollectionSignature;
 use wasmflow_par::make_archive;
 use wasmflow_wascap::{ClaimsOptions, KeyPair};
-use wasmflow_interface::ProviderSignature;
 
 use crate::error::OciError;
 use crate::ArchitectureMap;
@@ -56,7 +56,7 @@ pub async fn generate_archmap(
     "archmap interface"
   );
   let interface_bytes = tokio::fs::read(interface_path).await?;
-  let signature: ProviderSignature = serde_json::from_slice(&interface_bytes)?;
+  let signature: CollectionSignature = serde_json::from_slice(&interface_bytes)?;
 
   let mut archmap = ArchitectureMap::default();
   for entry in pushmanifest.artifacts {

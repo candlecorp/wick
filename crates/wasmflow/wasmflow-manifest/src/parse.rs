@@ -14,7 +14,7 @@ const DEFAULT_ID: &str = "<>";
 pub const SCHEMATIC_INPUT: &str = "<input>";
 /// The reserved reference name for schematic output. Used in schematic manifests to denote schematic output.
 pub const SCHEMATIC_OUTPUT: &str = "<output>";
-/// The reserved reference name for a namespace link. Used in schematic manifests to pass a provider to a port by its namespace.
+/// The reserved reference name for a namespace link. Used in schematic manifests to pass a collection to a port by its namespace.
 pub const NS_LINK: &str = "<link>";
 /// The reserved port name to use when sending an asynchronous error from a component.
 pub const COMPONENT_ERROR: &str = "<error>";

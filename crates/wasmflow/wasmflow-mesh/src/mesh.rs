@@ -162,7 +162,7 @@ impl Mesh {
     self.nats.disconnect().await
   }
 
-  pub async fn handle_namespace(&self, namespace: String, provider: SharedRpcHandler) -> Result<()> {
+  pub async fn handle_namespace(&self, namespace: String, collection: SharedRpcHandler) -> Result<()> {
     trace!(%namespace, "register");
 
     let sub = self
@@ -187,7 +187,7 @@ impl Mesh {
         match next {
           Some(nats_msg) => {
             debug!(message = ?nats_msg.data(),"received message");
-            if let Err(error) = handle_message(&provider, nats_msg, deadline).await {
+            if let Err(error) = handle_message(&collection, nats_msg, deadline).await {
               error!(%error,"Error processing mesh message",);
             }
           }
@@ -291,19 +291,19 @@ fn handle_response(tx: &UnboundedSender<TransportWrapper>, mesh_msg: &NatsMessag
   result.map_err(|_| MeshError::ResponseUpstreamClosed)
 }
 
-async fn handle_message(provider: &SharedRpcHandler, nats_msg: NatsMessage, deadline: Duration) -> Result<()> {
+async fn handle_message(collection: &SharedRpcHandler, nats_msg: NatsMessage, deadline: Duration) -> Result<()> {
   let msg: MeshRpcMessage = nats_msg.deserialize()?;
   trace!(message=?msg,"mesh request");
   match msg {
     MeshRpcMessage::List { .. } => {
-      let result = provider.get_list();
+      let result = collection.get_list();
       match result {
         Ok(components) => {
           let response = MeshRpcResponse::List(components);
           nats_msg.respond(&response).await?;
         }
         Err(e) => {
-          error!("Provider component list resulted in error: {}", e);
+          error!("Collection component list resulted in error: {}", e);
           let response = MeshRpcResponse::Error(e.to_string());
           nats_msg.respond(&response).await?;
         }
@@ -311,7 +311,7 @@ async fn handle_message(provider: &SharedRpcHandler, nats_msg: NatsMessage, dead
     }
     MeshRpcMessage::Invocation(invocation) => {
       let target_url = invocation.target_url();
-      let result = provider.invoke(invocation).await;
+      let result = collection.invoke(invocation).await;
 
       match result {
         Ok(mut stream) => {
@@ -336,7 +336,7 @@ async fn handle_message(provider: &SharedRpcHandler, nats_msg: NatsMessage, dead
           nats_msg.respond(&response).await?;
         }
         Err(e) => {
-          error!("Provider invocation for {} resulted in error: {}", target_url, e);
+          error!("Collection invocation for {} resulted in error: {}", target_url, e);
           let response = MeshRpcResponse::Error(e.to_string());
           nats_msg.respond(&response).await?;
         }
@@ -410,9 +410,9 @@ mod test_integration {
 
   use anyhow::Result;
   use pretty_assertions::assert_eq;
-  use test_native_provider::Provider;
+  use test_native_collection::Collection;
   use tracing::*;
-  use wasmflow_interface::{ComponentMap, ComponentSignature, HostedType, ProviderSignature};
+  use wasmflow_interface::{CollectionSignature, ComponentMap, ComponentSignature, HostedType};
   use wasmflow_invocation::Invocation;
   use wasmflow_packet::PacketMap;
   use wasmflow_transport::MessageTransport;
@@ -424,7 +424,7 @@ mod test_integration {
     let mesh = mesh_builder.build().await.unwrap();
     let namespace = "some_namespace_id".to_owned();
     mesh
-      .handle_namespace(namespace.clone(), Arc::new(Provider::default()))
+      .handle_namespace(namespace.clone(), Arc::new(Collection::default()))
       .await
       .unwrap();
 
@@ -459,7 +459,7 @@ mod test_integration {
     let mesh = mesh_builder.build().await.unwrap();
     let namespace = "some_namespace_id".to_owned();
     mesh
-      .handle_namespace(namespace.clone(), Arc::new(Provider::default()))
+      .handle_namespace(namespace.clone(), Arc::new(Collection::default()))
       .await
       .unwrap();
     let _ = mesh.shutdown().await;
@@ -511,8 +511,8 @@ mod test_integration {
       },
     );
 
-    let expected = HostedType::Provider(ProviderSignature {
-      name: Some("test-native-provider".to_owned()),
+    let expected = HostedType::Collection(CollectionSignature {
+      name: Some("test-native-collection".to_owned()),
       format: 1,
       version: "0.1.0".to_owned(),
       components,

@@ -1,0 +1,17 @@
+---
+version: 0
+network:
+  collections:
+    - namespace: test-namespace
+      kind: GrpcUrl
+      reference: http://127.0.0.1:$TEST_PORT
+  schematics:
+    - name: grpc
+      collections:
+        - test-namespace
+      instances:
+        external:
+          id: test-namespace::test-component
+      connections:
+        - <> => external[input]
+        - external[output] => <>

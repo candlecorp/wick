@@ -95,7 +95,7 @@ impl Network {
     Ok(())
   }
 
-  pub fn get_signature(&self) -> Result<ProviderSignature> {
+  pub fn get_signature(&self) -> Result<CollectionSignature> {
     let signature = self.inner.get_signature()?;
     trace!(?signature, "network signature");
     Ok(signature)

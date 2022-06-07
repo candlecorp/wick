@@ -79,12 +79,12 @@
 mod signatures;
 
 pub use signatures::{
+  CollectionSignature,
   ComponentSignature,
   EnumSignature,
   EnumVariant,
   HostedType,
   InternalType,
-  ProviderSignature,
   StructSignature,
   TypeDefinition,
   TypeSignature,
@@ -94,4 +94,4 @@ pub use signatures::{
 /// Map-related structures holding signatures and other types.
 pub mod maps;
 
-pub use maps::{ComponentMap, FieldMap, ProviderMap, TypeMap};
+pub use maps::{CollectionMap, ComponentMap, FieldMap, TypeMap};

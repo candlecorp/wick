@@ -24,7 +24,7 @@ pub(crate) enum CliCommand {
   /// Start a persistent host from a manifest.
   #[clap(name = "serve")]
   Serve(serve::ServeCommand),
-  /// Load a manifest and execute an entrypoint provider.
+  /// Load a manifest and execute an entrypoint component.
   #[clap(name = "run")]
   Run(run::RunCommand),
   /// Load a manifest and run the default schematic.

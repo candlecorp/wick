@@ -7,7 +7,7 @@ host:
     enabled: true
     address: 127.0.0.1
 network:
-  providers:
+  collections:
     - namespace: auth
       kind: WaPC
       reference: REGISTRY_TODO.azurecr.io/vino/auth:latest
@@ -20,7 +20,7 @@ network:
     #   reference: http://127.0.0.1:36147
   schematics:
     - name: create-user
-      providers:
+      collections:
         - auth
       instances:
         create_user:

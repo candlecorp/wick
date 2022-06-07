@@ -14,17 +14,17 @@ use wasmflow_interpreter::{HandlerMap, NamespaceHandler};
 use wasmflow_manifest::HostDefinition;
 use wasmflow_mesh::Mesh;
 
+use crate::collections::{
+  initialize_grpc_collection,
+  initialize_mesh_collection,
+  initialize_native_collection,
+  initialize_network_collection,
+  initialize_par_collection,
+  initialize_wasm_collection,
+  initialize_wasm_entrypoint,
+};
 use crate::dev::prelude::*;
 use crate::json_writer::JsonWriter;
-use crate::providers::{
-  initialize_grpc_provider,
-  initialize_mesh_provider,
-  initialize_native_provider,
-  initialize_network_provider,
-  initialize_par_provider,
-  initialize_wasm_entrypoint,
-  initialize_wasm_provider,
-};
 use crate::WAFL_V0_NAMESPACE;
 
 type Result<T> = std::result::Result<T, NetworkError>;
@@ -47,7 +47,7 @@ pub(crate) struct NetworkService {
   started_time: std::time::Instant,
   pub(crate) id: Uuid,
   interpreter: Arc<wasmflow_interpreter::Interpreter>,
-  entrypoint: Option<wasmflow_collection_wasm::provider::Provider>,
+  entrypoint: Option<wasmflow_collection_wasm::collection::Collection>,
 }
 
 type ServiceMap = HashMap<Uuid, Arc<NetworkService>>;
@@ -56,15 +56,15 @@ static HOST_REGISTRY: Lazy<Mutex<ServiceMap>> = Lazy::new(|| Mutex::new(HashMap:
 impl NetworkService {
   pub(crate) async fn new(msg: Initialize) -> Result<Arc<Self>> {
     let graph = wasmflow_interpreter::graph::from_def(msg.manifest.network())?;
-    let mut providers = HandlerMap::default();
+    let mut collections = HandlerMap::default();
     let rng = Random::from_seed(msg.rng_seed);
 
-    let stdlib = initialize_native_provider(WAFL_V0_NAMESPACE.to_owned(), rng.seed())?;
+    let stdlib = initialize_native_collection(WAFL_V0_NAMESPACE.to_owned(), rng.seed())?;
 
-    providers.add(stdlib);
+    collections.add(stdlib);
 
-    for provider in &msg.manifest.network().providers {
-      let provider_init = ProviderInitOptions {
+    for collection in &msg.manifest.network().collections {
+      let collection_init = CollectionInitOptions {
         rng_seed: rng.seed(),
         network_id: msg.id,
         mesh: msg.mesh.clone(),
@@ -72,8 +72,8 @@ impl NetworkService {
         allowed_insecure: msg.allowed_insecure.clone(),
         timeout: msg.timeout,
       };
-      let p = initialize_provider(provider, provider_init).await?;
-      providers.add(p);
+      let p = initialize_collection(collection, collection_init).await?;
+      collections.add(p);
     }
 
     let source = msg.manifest.source.clone();
@@ -81,7 +81,7 @@ impl NetworkService {
       Some(rng.seed()),
       graph,
       Some(msg.namespace.unwrap_or_else(|| msg.id.to_string())),
-      Some(providers),
+      Some(collections),
     )
     .map_err(|e| NetworkError::InterpreterInit(source.unwrap_or_else(|| "unknown".to_owned()), e))?;
 
@@ -90,7 +90,7 @@ impl NetworkService {
       None => interpreter.start(None, None).await,
     }
 
-    let entrypoint = if let Some(entry) = &msg.manifest.network().entry {
+    let entrypoint = if let Some(entry) = &msg.manifest.network().triggers {
       Some(initialize_wasm_entrypoint(entry, msg.id, msg.allow_latest, &msg.allowed_insecure).await?)
     } else {
       None
@@ -124,7 +124,7 @@ impl NetworkService {
     uid: Uuid,
     location: &str,
     namespace: Option<String>,
-    opts: ProviderInitOptions,
+    opts: CollectionInitOptions,
   ) -> BoxFuture<Result<Arc<NetworkService>>> {
     Box::pin(async move {
       let bytes = wasmflow_loader::get_bytes(location, opts.allow_latest, &opts.allowed_insecure).await?;
@@ -158,7 +158,7 @@ impl NetworkService {
 }
 
 impl InvocationHandler for NetworkService {
-  fn get_signature(&self) -> std::result::Result<ProviderSignature, ProviderError> {
+  fn get_signature(&self) -> std::result::Result<CollectionSignature, CollectionError> {
     let mut signature = self.interpreter.get_export_signature().clone();
     signature.name = Some(self.id.as_hyphenated().to_string());
 
@@ -168,7 +168,7 @@ impl InvocationHandler for NetworkService {
   fn invoke(
     &self,
     msg: Invocation,
-  ) -> std::result::Result<BoxFuture<std::result::Result<InvocationResponse, ProviderError>>, ProviderError> {
+  ) -> std::result::Result<BoxFuture<std::result::Result<InvocationResponse, CollectionError>>, CollectionError> {
     let tx_id = msg.tx_id;
 
     let fut = self.interpreter.invoke(msg);
@@ -192,7 +192,7 @@ impl InvocationHandler for NetworkService {
 }
 
 #[derive(Debug)]
-pub(crate) struct ProviderInitOptions {
+pub(crate) struct CollectionInitOptions {
   pub(crate) rng_seed: Seed,
   pub(crate) network_id: Uuid,
   pub(crate) mesh: Option<Arc<Mesh>>,
@@ -201,19 +201,19 @@ pub(crate) struct ProviderInitOptions {
   pub(crate) timeout: Duration,
 }
 
-pub(crate) async fn initialize_provider(
-  provider: &ProviderDefinition,
-  opts: ProviderInitOptions,
+pub(crate) async fn initialize_collection(
+  collection: &CollectionDefinition,
+  opts: CollectionInitOptions,
 ) -> Result<NamespaceHandler> {
-  let namespace = provider.namespace.clone();
+  let namespace = collection.namespace.clone();
 
-  let result = match provider.kind {
-    ProviderKind::Network => initialize_network_provider(provider, namespace, opts).await,
-    ProviderKind::Native => unreachable!(), // Should not be handled via this route
-    ProviderKind::Par => initialize_par_provider(provider, namespace, opts).await,
-    ProviderKind::GrpcUrl => initialize_grpc_provider(provider, namespace).await,
-    ProviderKind::Wapc => initialize_wasm_provider(provider, namespace, opts).await,
-    ProviderKind::Mesh => initialize_mesh_provider(provider, namespace, opts).await,
+  let result = match collection.kind {
+    CollectionKind::Network => initialize_network_collection(collection, namespace, opts).await,
+    CollectionKind::Native => unreachable!(), // Should not be handled via this route
+    CollectionKind::Par => initialize_par_collection(collection, namespace, opts).await,
+    CollectionKind::GrpcUrl => initialize_grpc_collection(collection, namespace).await,
+    CollectionKind::Wapc => initialize_wasm_collection(collection, namespace, opts).await,
+    CollectionKind::Mesh => initialize_mesh_collection(collection, namespace, opts).await,
   };
   Ok(result?)
 }

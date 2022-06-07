@@ -1,7 +1,7 @@
 use thiserror::Error;
 
+pub use crate::collections::error::CollectionError;
 pub use crate::network_service::error::NetworkError;
-pub use crate::providers::error::ProviderError;
 
 #[derive(Error, Debug, Clone, Copy)]
 pub struct ConversionError(pub &'static str);
@@ -29,7 +29,7 @@ pub enum RuntimeError {
   InvocationError(#[from] InvocationError),
 
   #[error(transparent)]
-  ComponentError(#[from] ProviderError),
+  ComponentError(#[from] CollectionError),
   #[error(transparent)]
   NetworkError(#[from] NetworkError),
 

@@ -1,30 +1,30 @@
 pub(crate) mod channel;
+pub(crate) mod collections;
 pub(crate) mod error;
 pub(crate) mod event_loop;
 pub(crate) mod executor;
 pub(crate) mod program;
-pub(crate) mod provider;
 
 use std::sync::Arc;
 
-use tracing_futures::Instrument;
 use seeded_random::{Random, Seed};
-use wasmflow_transport::TransportStream;
+use tracing_futures::Instrument;
 use wasmflow_entity::Entity;
-use wasmflow_interface::ProviderSignature;
+use wasmflow_interface::CollectionSignature;
 use wasmflow_invocation::Invocation;
+use wasmflow_transport::TransportStream;
 
+use self::collections::HandlerMap;
 use self::error::Error;
 use self::event_loop::EventLoop;
 use self::executor::SchematicExecutor;
 use self::program::Program;
-use self::provider::HandlerMap;
 use crate::constants::*;
 use crate::graph::types::*;
 use crate::interpreter::channel::InterpreterChannel;
-use crate::interpreter::provider::provider_provider::ProviderProvider;
-use crate::interpreter::provider::schematic_provider::SchematicProvider;
-use crate::{ExecutionError, InterpreterDispatchChannel, NamespaceHandler, Observer, Provider};
+use crate::interpreter::collections::collection_collection::CollectionCollection;
+use crate::interpreter::collections::schematic_collection::SchematicCollection;
+use crate::{Collection, ExecutionError, InterpreterDispatchChannel, NamespaceHandler, Observer};
 
 #[must_use]
 #[derive()]
@@ -32,9 +32,9 @@ pub struct Interpreter {
   rng: Random,
   program: Program,
   event_loop: EventLoop,
-  signature: ProviderSignature,
-  providers: Arc<HandlerMap>,
-  self_provider: Arc<SchematicProvider>,
+  signature: CollectionSignature,
+  collections: Arc<HandlerMap>,
+  self_collection: Arc<SchematicCollection>,
   dispatcher: InterpreterDispatchChannel,
   namespace: Option<String>,
 }
@@ -45,7 +45,7 @@ impl std::fmt::Debug for Interpreter {
       .field("program", &self.program)
       .field("event_loop", &self.event_loop)
       .field("signature", &self.signature)
-      .field("providers", &self.providers)
+      .field("collections", &self.collections)
       .field("dispatcher", &self.dispatcher)
       .finish()
   }
@@ -57,21 +57,21 @@ impl Interpreter {
     seed: Option<Seed>,
     network: Network,
     namespace: Option<String>,
-    providers: Option<HandlerMap>,
+    collections: Option<HandlerMap>,
   ) -> Result<Self, Error> {
     debug!("init");
     let rng = seed.map_or_else(Random::new, Random::from_seed);
-    let mut handlers = providers.unwrap_or_default();
+    let mut handlers = collections.unwrap_or_default();
     handlers.add_core(&network);
 
-    // Add the provider:: provider
-    let provider_provider = ProviderProvider::new(&handlers);
+    // Add the collection:: collection
+    let collection_collection = CollectionCollection::new(&handlers);
     handlers.add(NamespaceHandler {
-      namespace: NS_PROVIDERS.to_owned(),
-      provider: Arc::new(Box::new(provider_provider)),
+      namespace: NS_COLLECTIONS.to_owned(),
+      collection: Arc::new(Box::new(collection_collection)),
     });
 
-    let signatures = handlers.provider_signatures();
+    let signatures = handlers.collection_signatures();
 
     let program = Program::new(network, signatures)?;
 
@@ -80,10 +80,10 @@ impl Interpreter {
     let channel = InterpreterChannel::new();
     let dispatcher = channel.dispatcher();
 
-    // Make the self:: provider
-    let providers = Arc::new(handlers);
-    let self_provider = SchematicProvider::new(providers.clone(), program.state(), &dispatcher, rng.seed());
-    let self_signature = self_provider.list().clone();
+    // Make the self:: collection
+    let collections = Arc::new(handlers);
+    let self_collection = SchematicCollection::new(collections.clone(), program.state(), &dispatcher, rng.seed());
+    let self_signature = self_collection.list().clone();
 
     debug!(?self_signature, "signature");
 
@@ -94,8 +94,8 @@ impl Interpreter {
       program,
       dispatcher,
       signature: self_signature,
-      providers,
-      self_provider,
+      collections,
+      self_collection,
       event_loop,
       namespace,
     };
@@ -124,8 +124,8 @@ impl Interpreter {
         .invoke(
           invocation,
           self.rng.seed(),
-          self.providers.clone(),
-          self.self_provider.clone(),
+          self.collections.clone(),
+          self.self_collection.clone(),
         )
         .await?,
     )
@@ -133,7 +133,7 @@ impl Interpreter {
 
   pub async fn invoke(&self, invocation: Invocation) -> Result<TransportStream, Error> {
     let known_targets = || {
-      let mut hosted: Vec<_> = self.providers.providers().keys().cloned().collect();
+      let mut hosted: Vec<_> = self.collections.collections().keys().cloned().collect();
       if let Some(ns) = &self.namespace {
         hosted.push(ns.clone());
       }
@@ -146,14 +146,14 @@ impl Interpreter {
         } else {
           trace!(?invocation);
           self
-            .providers
+            .collections
             .get(ns)
             .ok_or_else(|| Error::TargetNotFound(invocation.target.clone(), known_targets()))?
-            .provider
+            .collection
             .handle(invocation, None)
-            .instrument(trace_span!("provider invocation"))
+            .instrument(trace_span!("collection invocation"))
             .await
-            .map_err(|e| ExecutionError::ProviderError(e.to_string()))?
+            .map_err(ExecutionError::CollectionError)?
         }
       }
       _ => return Err(Error::TargetNotFound(invocation.target, known_targets())),
@@ -162,7 +162,7 @@ impl Interpreter {
     Ok(stream)
   }
 
-  pub fn get_export_signature(&self) -> &ProviderSignature {
+  pub fn get_export_signature(&self) -> &CollectionSignature {
     &self.signature
   }
 
@@ -180,13 +180,13 @@ impl Interpreter {
     if let Err(error) = &shutdown {
       error!(%error,"error shutting down event loop");
     };
-    for (ns, provider) in self.providers.providers() {
-      debug!(namespace = %ns, "shutting down provider");
-      if let Err(error) = provider
-        .provider
+    for (ns, collection) in self.collections.collections() {
+      debug!(namespace = %ns, "shutting down collection");
+      if let Err(error) = collection
+        .collection
         .shutdown()
         .await
-        .map_err(|e| Error::ProviderShutdown(e.to_string()))
+        .map_err(|e| Error::CollectionShutdown(e.to_string()))
       {
         warn!(%error,"error during shutdown");
       };

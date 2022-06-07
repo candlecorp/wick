@@ -9,15 +9,15 @@ pub(crate) mod stats;
 
 #[derive(Subcommand, Debug, Clone)]
 pub(crate) enum SubCommands {
-  /// Invoke a component or schematic on a provider.
+  /// Invoke a component in a collection.
   #[clap(name = "invoke")]
   Invoke(invoke::Options),
 
-  /// Query a provider for a list of its hosted components.
+  /// Query a collection for a list of its components.
   #[clap(name = "list")]
   List(list::Options),
 
-  /// Query a provider for its runtime statistics.
+  /// Query a collection for its runtime statistics.
   #[clap(name = "stats")]
   Stats(stats::Options),
 }

@@ -1,5 +1,5 @@
 mod observer;
-mod test_provider;
+mod test_collection;
 
 pub use observer::JsonWriter;
-pub use test_provider::TestProvider;
+pub use test_collection::TestCollection;

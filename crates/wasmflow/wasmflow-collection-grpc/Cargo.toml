@@ -25,7 +25,7 @@ http = "0.2"
 
 [dev-dependencies]
 wasmflow-invocation-server = { path = "../../wasmflow/wasmflow-invocation-server" }
-test-native-provider = { path = "../../integration/test-native-provider" }
+test-native-collection = { path = "../../integration/test-native-collection" }
 test-logger = { path = "../../misc/test-logger" }
 logger = { path = "../logger" }
 tokio = { version = "1", features = ["macros"] }

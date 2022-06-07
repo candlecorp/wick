@@ -1,15 +1,15 @@
 use std::sync::Arc;
 
 use seeded_random::Seed;
-use wasmflow_transport::TransportStream;
 use wasmflow_invocation::Invocation;
+use wasmflow_transport::TransportStream;
 
 use self::error::ExecutionError;
 use self::transaction::Transaction;
 use super::channel::InterpreterDispatchChannel;
 use crate::graph::types::*;
 use crate::interpreter::channel::Event;
-use crate::{HandlerMap, Provider};
+use crate::{Collection, HandlerMap};
 
 pub(crate) mod error;
 mod output_channel;
@@ -41,8 +41,8 @@ impl SchematicExecutor {
     &self,
     invocation: Invocation,
     seed: Seed,
-    providers: Arc<HandlerMap>,
-    self_provider: Arc<dyn Provider + Send + Sync>,
+    collections: Arc<HandlerMap>,
+    self_collection: Arc<dyn Collection + Send + Sync>,
   ) -> Result<TransportStream> {
     debug!(schematic = self.name(), %seed,);
 
@@ -52,8 +52,8 @@ impl SchematicExecutor {
       self.schematic.clone(),
       invocation,
       self.channel.clone(),
-      &providers,
-      &self_provider,
+      &collections,
+      &self_collection,
       seed,
     );
     trace!(tx_id = %transaction.id(), "invoking schematic");
