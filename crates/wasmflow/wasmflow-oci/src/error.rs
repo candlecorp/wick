@@ -48,7 +48,7 @@ pub enum OciError {
   #[error(transparent)]
   WasCap(#[from] wasmflow_wascap::Error),
 
-  /// Provider Archive Error
+  /// Collection Archive Error
   #[error(transparent)]
   Par(#[from] wasmflow_par::Error),
 }

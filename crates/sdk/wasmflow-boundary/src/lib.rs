@@ -76,12 +76,12 @@
 #![allow()]
 
 #[cfg(target_arch = "wasm32")]
-/// Traits and functions for wasm providers.
+/// Traits and functions for wasm collections.
 pub mod wasm;
 
 mod incoming;
 pub use incoming::IncomingPayload;
 
 #[cfg(not(target_arch = "wasm32"))]
-/// Traits and functions for native providers.
+/// Traits and functions for native collections.
 pub mod native;

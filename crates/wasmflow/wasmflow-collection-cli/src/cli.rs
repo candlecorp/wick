@@ -87,14 +87,14 @@ pub fn print_info(info: &ServerState) {
 }
 
 /// Starts an RPC server for the passed [wasmflow_rpc::RpcHandler].
-pub async fn start_server(provider: SharedRpcHandler, opts: Option<Options>) -> Result<ServerState> {
+pub async fn start_server(collection: SharedRpcHandler, opts: Option<Options>) -> Result<ServerState> {
   debug!("Starting server with options: {:?}", opts);
 
   let opts = opts.unwrap_or_default();
 
   cfg_if::cfg_if! {
     if #[cfg(feature="grpc")] {
-      let component_service = wasmflow_invocation_server::InvocationServer::new(provider.clone());
+      let component_service = wasmflow_invocation_server::InvocationServer::new(collection.clone());
 
       use wasmflow_rpc::rpc::invocation_service_server::InvocationServiceServer;
       let svc = InvocationServiceServer::new(component_service);
@@ -120,7 +120,7 @@ pub async fn start_server(provider: SharedRpcHandler, opts: Option<Options>) -> 
         Some(mesh) => {
           if mesh.enabled {
             let mesh =
-              mesh::connect_to_mesh(mesh, opts.id.clone(), provider, opts.timeout).await?;
+              mesh::connect_to_mesh(mesh, opts.id.clone(), collection, opts.timeout).await?;
             Some(mesh)
           } else {
             None
@@ -146,8 +146,8 @@ enum ServerMessage {
 
 /// Start a server with the passed [wasmflow_rpc::RpcHandler] and keep it.
 /// running until the process receives a SIGINT (^C).
-pub async fn init_cli(provider: SharedRpcHandler, opts: Option<Options>) -> Result<()> {
-  let state = start_server(provider, opts).await?;
+pub async fn init_cli(collection: SharedRpcHandler, opts: Option<Options>) -> Result<()> {
+  let state = start_server(collection, opts).await?;
   print_info(&state);
 
   info!("Waiting for ctrl-C");
@@ -165,7 +165,7 @@ mod tests {
   use std::time::Duration;
 
   use anyhow::Result;
-  use test_native_provider::Provider;
+  use test_native_collection::Collection;
   use tokio::time::sleep;
   use tonic::transport::Uri;
   use wasmflow_invocation_server::connect_rpc_client;
@@ -174,8 +174,8 @@ mod tests {
   use super::*;
   use crate::options::ServerOptions;
 
-  fn get_provider() -> SharedRpcHandler {
-    Arc::new(Provider::default())
+  fn get_collection() -> SharedRpcHandler {
+    Arc::new(Collection::default())
   }
 
   #[test_logger::test(tokio::test)]
@@ -186,7 +186,7 @@ mod tests {
       ..Default::default()
     };
     options.rpc = Some(rpc_opts);
-    let config = start_server(get_provider(), Some(options)).await?;
+    let config = start_server(get_collection(), Some(options)).await?;
     let rpc = config.rpc.unwrap();
     debug!("Waiting for server to start");
     sleep(Duration::from_millis(100)).await;

@@ -17,7 +17,7 @@ network:
         TOSTRING:
           id: test::ref_to_string
         TEST_REF:
-          id: providers::test
+          id: collections::test
       connections:
         - TEST_REF[ref] => TOSTRING[link]
         - TOSTRING[output] => CONCAT[five]

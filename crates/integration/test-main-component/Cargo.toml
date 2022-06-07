@@ -10,8 +10,8 @@ license = "Apache-2.0"
 crate-type = ["cdylib"]
 
 [features]
-default = ["provider"]
-provider = []
+default = ["host"]
+host = []
 guest = []
 
 [dependencies]

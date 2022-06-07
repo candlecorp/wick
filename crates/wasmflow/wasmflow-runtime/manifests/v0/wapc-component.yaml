@@ -1,13 +1,13 @@
 ---
 version: 0
 network:
-  providers:
+  collections:
     - namespace: wapc
       kind: WaPC
       reference: ../../integration/test-wasm-component/build/test_component_s.wasm
   schematics:
     - name: wapc_component
-      providers:
+      collections:
         - wapc
       instances:
         validate:

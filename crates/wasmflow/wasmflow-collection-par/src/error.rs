@@ -25,7 +25,7 @@ pub enum ParError {
   #[error("Component '{0}' not found. Valid components are: {}", .1.join(", "))]
   ComponentNotFound(String, Vec<String>),
 
-  /// Provider Archive Error
+  /// Collection Archive Error
   #[error(transparent)]
   Par(#[from] wasmflow_par::Error),
 

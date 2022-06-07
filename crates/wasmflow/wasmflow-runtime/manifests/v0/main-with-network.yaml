@@ -1,6 +1,6 @@
 version: 0
 network:
-  entry:
+  triggers:
     reference: &comp ../../integration/test-main-network-component/build/test_main_network_component_s.wasm
     data:
       wasi:
@@ -8,7 +8,7 @@ network:
           - "$TEST_TEMPDIR"
         map_dirs:
           - ["/", "$TEST_TEMPDIR"]
-  providers:
+  collections:
     - namespace: main
       kind: WaPC
       reference: *comp

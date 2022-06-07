@@ -1,7 +1,7 @@
 ---
 version: 0
 network:
-  entry:
+  triggers:
     reference: any
     data:
       json_key: $TEST_ENV_VAR_JSON

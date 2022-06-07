@@ -6,7 +6,7 @@ use anyhow::Result;
 use clap::Args;
 use nkeys::KeyPairType;
 use wasmflow_wascap::{sign_buffer_with_claims, ClaimsOptions};
-use wasmflow_interface::ProviderSignature;
+use wasmflow_interface::CollectionSignature;
 
 use crate::keys::{extract_keypair, GenerateCommon};
 #[derive(Debug, Clone, Args)]
@@ -46,7 +46,7 @@ pub(crate) async fn handle(opts: Options) -> Result<()> {
   let json = std::fs::read_to_string(opts.interface)?;
   debug!("Read {} bytes", json.len());
 
-  let interface: ProviderSignature = serde_json::from_str(&json)?;
+  let interface: CollectionSignature = serde_json::from_str(&json)?;
 
   let mut sfile = File::open(&opts.source).unwrap();
   let mut buf = Vec::new();

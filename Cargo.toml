@@ -27,7 +27,7 @@ wasmflow-transport = { path = "./crates/sdk/wasmflow-transport", features = [
   "all",
 ] }
 logger = { path = "./crates/wasmflow/logger" }
-test-native-provider = { path = "./crates/integration/test-native-provider" }
+test-native-collection = { path = "./crates/integration/test-native-collection" }
 wasmflow-rpc = { path = "./crates/wasmflow/wasmflow-rpc" }
 wasmflow-macros = { path = "./crates/sdk/wasmflow-macros" }
 utils = { path = "./tests/utils" }
@@ -56,7 +56,7 @@ members = [
   "crates/interfaces/*",
   "crates/integration/*",
   "crates/misc/*",
-  "crates/providers/*",
+  "crates/collections/*",
   "crates/bins/*",
   "crates/wasmflow/*",
 ]

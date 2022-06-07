@@ -2,15 +2,15 @@ use std::io::Read;
 use std::path::Path;
 
 use tar::Header;
-use wasmflow_interface::ProviderSignature;
+use wasmflow_interface::CollectionSignature;
 use wasmflow_wascap::{ClaimsOptions, KeyPair};
 
 use crate::error::ParError;
 
-/// Make a provider archive for the passed binary and signature
+/// Make a collection archive for the passed binary and signature
 pub fn make_archive<T: Read>(
   mut binary: T,
-  signature: &ProviderSignature,
+  signature: &CollectionSignature,
   claims_options: ClaimsOptions,
   subject_kp: &KeyPair,
   issuer_kp: &KeyPair,
@@ -28,7 +28,7 @@ pub fn make_archive<T: Read>(
 
   archive.append(&sig_header, signature_bytes)?;
 
-  let claims = wasmflow_wascap::build_provider_claims(signature.clone(), subject_kp, issuer_kp, claims_options);
+  let claims = wasmflow_wascap::build_collection_claims(signature.clone(), subject_kp, issuer_kp, claims_options);
   debug!(?claims, "oci archive claims");
   let mut bin_bytes = Vec::new();
   binary.read_to_end(&mut bin_bytes)?;
@@ -62,7 +62,7 @@ pub const BIN_PATH: &str = "main.bin";
 pub const INTERFACE_PATH: &str = "interface.json";
 
 /// Validates an archive's contents by decoding the contained JWT and validating its hash against the binary and interface.
-pub fn validate_provider<B: Read, I: Read>(binary: B, interface: I, jwt: Vec<u8>) -> Result<(), ParError> {
+pub fn validate_collection<B: Read, I: Read>(binary: B, interface: I, jwt: Vec<u8>) -> Result<(), ParError> {
   let combined = binary.chain(interface);
 
   let token = wasmflow_wascap::decode_token(jwt)?;
@@ -74,11 +74,11 @@ pub fn validate_provider<B: Read, I: Read>(binary: B, interface: I, jwt: Vec<u8>
 }
 
 /// Validates an archive's contents by decoding the contained JWT and validating its hash against the binary and interface.
-pub fn validate_provider_dir(dir: &Path) -> Result<(), ParError> {
+pub fn validate_collection_dir(dir: &Path) -> Result<(), ParError> {
   let jwt = std::fs::read(dir.join(JWT_PATH)).map_err(|_| ParError::MissingJwt)?;
   let interface = std::fs::File::open(dir.join(INTERFACE_PATH)).map_err(|_| ParError::MissingJwt)?;
   let bin = std::fs::File::open(dir.join(BIN_PATH)).map_err(|_| ParError::MissingJwt)?;
-  validate_provider(bin, interface, jwt)
+  validate_collection(bin, interface, jwt)
 }
 
 #[cfg(test)]
@@ -91,7 +91,7 @@ mod tests {
 
   #[test_logger::test]
   fn test_archive_validation() -> Result<()> {
-    let signature = ProviderSignature::default();
+    let signature = CollectionSignature::default();
     let bin_bytes = b"0123456".to_vec();
     let claims = ClaimsOptions::default();
     let subject_kp = KeyPair::new_module();
@@ -101,7 +101,7 @@ mod tests {
     let tmpdir = std::env::temp_dir().join("wafltest");
     archive.unpack(&tmpdir)?;
 
-    validate_provider_dir(&tmpdir)?;
+    validate_collection_dir(&tmpdir)?;
 
     Ok(())
   }

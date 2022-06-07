@@ -15,11 +15,11 @@ pub mod sdk {
 
   pub use futures::{Stream, StreamExt};
   pub use wasmflow_boundary::IncomingPayload;
-  pub use wasmflow_collection_link::ProviderLink;
+  pub use wasmflow_collection_link::CollectionLink;
   pub use wasmflow_entity::{Entity, SystemEntity};
   #[cfg(not(target_arch = "wasm32"))]
   pub use wasmflow_invocation::Invocation;
-  pub use wasmflow_output::{PortOutput, ProviderOutput};
+  pub use wasmflow_output::{ComponentOutput, PortOutput};
   pub use wasmflow_traits::{Component, IntoInputs, PortChannel, Writable};
 
   pub mod payload {
@@ -155,14 +155,10 @@ pub mod codec {
   pub use wasmflow_codec::{json, messagepack};
 }
 
-pub mod provider {
-  pub mod error {}
-}
-
 pub mod types {
-  pub use wasmflow_transport::TransportStream;
   pub use wasmflow_interface::*;
   pub use wasmflow_streams::PacketStream;
+  pub use wasmflow_transport::TransportStream;
 }
 
 #[macro_use]

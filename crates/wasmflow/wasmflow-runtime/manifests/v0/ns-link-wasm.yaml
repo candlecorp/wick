@@ -1,6 +1,6 @@
 version: 0
 network:
-  providers:
+  collections:
     - namespace: wapc
       kind: WaPC
       reference: ../../integration/test-wasm-component/build/test_component_s.wasm
@@ -9,15 +9,15 @@ network:
       reference: ../../integration/test-wasm-component/build/test_component_s.wasm
   schematics:
     - name: ns-link
-      providers:
+      collections:
         - wapc
         - wapc2
       instances:
         reverse_upper:
           id: wapc::reverse-uppercase
         TEST_REF:
-          id: providers::wapc2
+          id: collections::wapc2
       connections:
-        - <> => reverse_upper[input]
+        - <input>[input] => reverse_upper[input]
         - TEST_REF[ref] => reverse_upper[link]
         - reverse_upper[output] => <>

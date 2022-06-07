@@ -78,6 +78,6 @@
 /// Error module.
 pub mod error;
 
-/// Module for the root [ProviderLink] struct.
+/// Module for the root [CollectionLink] struct.
 mod collection_link;
-pub use collection_link::ProviderLink;
+pub use collection_link::CollectionLink;

@@ -11,7 +11,7 @@ use uuid::Uuid;
 use wasmflow_collection_cli::options::{MeshOptions, Options as HostOptions, ServerOptions};
 use wasmflow_collection_cli::ServerState;
 use wasmflow_entity::Entity;
-use wasmflow_interface::ProviderSignature;
+use wasmflow_interface::CollectionSignature;
 use wasmflow_invocation::{InherentData, Invocation};
 use wasmflow_manifest::host_definition::HostDefinition;
 use wasmflow_mesh::{Mesh, NatsOptions};
@@ -27,8 +27,10 @@ static HOST_REGISTRY: Lazy<Mutex<ServiceMap>> = Lazy::new(|| Mutex::new(HashMap:
 
 fn from_registry(id: Uuid) -> Arc<dyn RpcHandler + Send + Sync + 'static> {
   let mut registry = HOST_REGISTRY.lock();
-  let provider = registry.entry(id).or_insert_with(|| Arc::new(NetworkProvider::new(id)));
-  provider.clone()
+  let collection = registry
+    .entry(id)
+    .or_insert_with(|| Arc::new(NetworkCollection::new(id)));
+  collection.clone()
 }
 
 /// A Wasmflow Host wraps a Wasmflow runtime with server functionality like persistence,.
@@ -83,7 +85,7 @@ impl Host {
     }
   }
 
-  pub fn get_signature(&self) -> Result<ProviderSignature> {
+  pub fn get_signature(&self) -> Result<CollectionSignature> {
     match &self.network {
       Some(network) => Ok(network.get_signature()?),
       None => Err(Error::NoNetwork),
@@ -170,9 +172,9 @@ impl Host {
       timeout: self.manifest.host.timeout,
     };
 
-    let provider = from_registry(nuid);
+    let collection = from_registry(nuid);
 
-    let metadata = tokio::spawn(wasmflow_collection_cli::start_server(provider, Some(options)))
+    let metadata = tokio::spawn(wasmflow_collection_cli::start_server(collection, Some(options)))
       .await
       .map_err(|e| Error::Other(format!("Join error: {}", e)))?
       .map_err(|e| Error::Other(format!("Socket error: {}", e)))?;

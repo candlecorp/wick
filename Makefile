@@ -108,7 +108,7 @@ $(TEST_PAR_BIN):
 	# cp target/release/wasmflow-standalone $@
 
 $(TEST_PAR): $(TEST_PAR_BIN)
-	# cargo run -p wafl -- bundle pack $< ./crates/integration/test-provider/interface.json -o $@
+	# cargo run -p wafl -- bundle pack $< ./crates/integration/test-native-collection/interface.json -o $@
 
 ./build/$(ARCH):
 	mkdir -p $@

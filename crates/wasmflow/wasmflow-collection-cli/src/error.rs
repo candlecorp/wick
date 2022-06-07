@@ -1,7 +1,7 @@
 use thiserror::Error;
 
 #[derive(Error, Debug)]
-/// The error returned by the provider CLI.
+/// The error returned by the collection CLI.
 pub enum CliError {
   #[error(transparent)]
   #[cfg(any(feature = "grpc", feature = "mesh"))]

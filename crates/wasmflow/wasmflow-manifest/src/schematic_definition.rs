@@ -24,8 +24,8 @@ pub struct SchematicDefinition {
   pub instances: HashMap<String, ComponentDefinition>,
   /// A list of connections from and to ports on instances defined in the instance map.
   pub connections: Vec<ConnectionDefinition>,
-  /// A list of provider namespaces to expose to this schematic.
-  pub providers: Vec<String>,
+  /// A list of collection namespaces to expose to this schematic.
+  pub collections: Vec<String>,
   /// Reserved.
   pub constraints: HashMap<String, String>,
 }
@@ -64,7 +64,7 @@ impl TryFrom<&crate::v0::SchematicManifest> for SchematicDefinition {
       name: manifest.name.clone(),
       instances: instances?,
       connections: connections?,
-      providers: manifest.providers.clone(),
+      collections: manifest.collections.clone(),
       constraints: manifest.constraints.clone().into_iter().collect(),
     })
   }
@@ -82,7 +82,7 @@ impl TryFrom<SchematicManifest<'_>> for SchematicDefinition {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-/// A definition of a component used to reference a component registered under a provider.
+/// A definition of a component used to reference a component registered under a collection.
 /// Note: [ComponentDefinition] include embed the concept of a namespace so two identical.
 /// components registered on different namespaces will not be equal.
 pub struct ComponentDefinition {

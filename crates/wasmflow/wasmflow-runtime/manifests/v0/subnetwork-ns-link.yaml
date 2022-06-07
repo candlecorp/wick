@@ -1,12 +1,12 @@
 version: 0
 network:
-  providers:
+  collections:
     - namespace: child
       kind: Network
       reference: ./manifests/v0/subnetwork-ns-link-child.yaml
   schematics:
     - name: test
-      providers:
+      collections:
         - child
       instances:
         child:

@@ -92,6 +92,8 @@ mod interpreter;
 
 pub use interpreter::channel::error::{Error as ChannelError, RequestError};
 pub use interpreter::channel::{error, Event, EventKind, InterpreterDispatchChannel};
+pub use interpreter::collections::internal_collection::oneshot::OneShotComponent;
+pub use interpreter::collections::{Collection, Component, HandlerMap, NamespaceHandler};
 pub use interpreter::error::Error as InterpreterError;
 pub use interpreter::event_loop::state::{State, TransactionMap};
 pub use interpreter::event_loop::{EventLoop, EventLoopError, Observer};
@@ -99,8 +101,6 @@ pub use interpreter::executor::error::ExecutionError;
 pub use interpreter::executor::transaction::statistics::TransactionStatistics;
 pub use interpreter::executor::transaction::Transaction;
 pub use interpreter::executor::SchematicExecutor;
-pub use interpreter::provider::internal_provider::oneshot::OneShotComponent;
-pub use interpreter::provider::{Component, HandlerMap, NamespaceHandler, Provider};
 pub use interpreter::{Interpreter, InterpreterOptions};
 
 pub use crate::interpreter::program::validator::error::{SchematicInvalid, ValidationError};

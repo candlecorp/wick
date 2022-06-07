@@ -143,28 +143,28 @@ pub struct NetworkManifest {
   #[serde(default)]
   #[serde(skip_serializing_if = "HashMap::is_empty")]
   pub labels: HashMap<String, String>,
-  /// The provider to use as the entrypoint when running as a standalone process.
+  /// The collection to use as the entrypoint when running as a standalone process.
   #[serde(default)]
-  pub entry: Option<EntrypointDefinition>,
+  pub triggers: Option<EntrypointDefinition>,
   /// The links between capabilities and components.
   #[serde(default)]
   #[serde(skip_serializing_if = "Vec::is_empty")]
   pub schematics: Vec<SchematicManifest>,
-  /// A list of providers and component collections.
+  /// A list of component collections.
   #[serde(default)]
   #[serde(skip_serializing_if = "Vec::is_empty")]
-  pub providers: Vec<ProviderDefinition>,
+  pub collections: Vec<CollectionDefinition>,
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
-/// A provider definition for the main entrypoint.
+/// A collection definition for the main entrypoint.
 pub struct EntrypointDefinition {
-  /// The reference/location of the provider.
+  /// The reference/location of the collection.
   #[serde(default)]
   #[serde(deserialize_with = "with_expand_envs")]
   pub reference: String,
-  /// Data or configuration to pass to the provider initialization.
+  /// Data or configuration used to initialize the collection.
   #[serde(default)]
   #[serde(deserialize_with = "crate::helpers::deserialize_json_env")]
   pub data: Value,
@@ -172,20 +172,20 @@ pub struct EntrypointDefinition {
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
-/// A provider definition.
-pub struct ProviderDefinition {
-  /// The namespace to reference the provider&#x27;s components on.
+/// A collection definition.
+pub struct CollectionDefinition {
+  /// The local namespace for the collection.
   #[serde(default)]
   #[serde(deserialize_with = "with_expand_envs")]
   pub namespace: String,
-  /// The kind/type of the provider.
+  /// The kind/type of the collection.
   #[serde(default)]
-  pub kind: ProviderKind,
-  /// The reference/location of the provider.
+  pub kind: CollectionKind,
+  /// The reference/location of the collection.
   #[serde(default)]
   #[serde(deserialize_with = "with_expand_envs")]
   pub reference: String,
-  /// Data or configuration to pass to the provider initialization.
+  /// Data or configuration used to initialize the collection.
   #[serde(default)]
   #[serde(deserialize_with = "crate::helpers::deserialize_json_env")]
   pub data: Value,
@@ -193,29 +193,29 @@ pub struct ProviderDefinition {
 
 #[derive(Debug, Clone, Serialize, Deserialize, Copy, PartialEq)]
 #[serde(deny_unknown_fields)]
-/// Kind of provider.
-pub enum ProviderKind {
-  /// Native providers included at compile-time in a Wasmflow host.
+/// Kind of collection.
+pub enum CollectionKind {
+  /// Native collections included at compile-time in a Wasmflow host.
   Native = 0,
   /// The URL for a separately managed GRPC endpoint.
   GrpcUrl = 1,
-  /// A WaPC WebAssembly provider.
+  /// A WaPC WebAssembly collection.
   WaPC = 2,
-  /// A provider accessible via a connected mesh.
+  /// A collection accessible via a connected mesh.
   Mesh = 3,
   /// A local or remote Network definition.
   Network = 4,
-  /// A GRPC provider binary.
+  /// A GRPC collection binary.
   Par = 5,
 }
 
-impl Default for ProviderKind {
+impl Default for CollectionKind {
   fn default() -> Self {
     Self::from_u16(0).unwrap()
   }
 }
 
-impl FromPrimitive for ProviderKind {
+impl FromPrimitive for CollectionKind {
   fn from_i64(n: i64) -> Option<Self> {
     Some(match n {
       0 => Self::Native,
@@ -252,10 +252,10 @@ pub struct SchematicManifest {
   /// Schematic name.
   #[serde(deserialize_with = "with_expand_envs")]
   pub name: String,
-  /// A list of providers and component collections.
+  /// A list of collections the schematic uses.
   #[serde(default)]
   #[serde(skip_serializing_if = "Vec::is_empty")]
-  pub providers: Vec<String>,
+  pub collections: Vec<String>,
   /// A map from component reference to its target.
   #[serde(default)]
   #[serde(skip_serializing_if = "HashMap::is_empty")]

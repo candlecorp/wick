@@ -167,10 +167,10 @@ impl TestSuite {
     self
   }
 
-  pub async fn run(&mut self, provider: SharedRpcHandler) -> Result<TestRunner, TestError> {
+  pub async fn run(&mut self, collection: SharedRpcHandler) -> Result<TestRunner, TestError> {
     let name = self.name.clone();
     let tests = self.get_tests();
-    run_test(name, tests, provider).await
+    run_test(name, tests, collection).await
   }
 }
 
@@ -243,7 +243,7 @@ impl TestData {
 pub async fn run_test(
   name: String,
   expected: Vec<&mut TestData>,
-  provider: SharedRpcHandler,
+  collection: SharedRpcHandler,
 ) -> Result<TestRunner, Error> {
   let mut harness = TestRunner::new(Some(name));
 
@@ -257,7 +257,7 @@ pub async fn run_test(
     trace!(i, %entity, "invoke");
     trace!(i, ?payload, "payload");
     let invocation = Invocation::new_test(&test_name, entity, payload, inherent);
-    let result = provider
+    let result = collection
       .invoke(invocation)
       .await
       .map_err(|e| Error::InvocationFailed(e.to_string()));

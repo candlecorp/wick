@@ -1,7 +1,7 @@
 ---
 version: 0
 network:
-  providers:
+  collections:
     - namespace: wasi
       kind: WaPC
       reference: ../../integration/test-wasi-component/build/test_wasi_component_s.wasm
@@ -13,7 +13,7 @@ network:
             - ["/", "$TEST_TEMPDIR"]
   schematics:
     - name: wasi_component
-      providers:
+      collections:
         - wasi
       instances:
         read:

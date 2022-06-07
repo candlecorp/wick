@@ -85,8 +85,8 @@
 // Add exceptions here
 #![allow(missing_docs)]
 
+pub mod collection;
 pub mod error;
-pub mod provider;
 
 pub type Error = error::GrpcError;
 

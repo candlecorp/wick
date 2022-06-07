@@ -27,7 +27,7 @@ serde_json = { version = "1" }
 shellexpand = "2.1"
 
 [dev-dependencies]
-test-native-provider = { path = "../../integration/test-native-provider" }
+test-native-collection = { path = "../../integration/test-native-collection" }
 test-logger = { path = "../../misc/test-logger" }
 logger = { path = "../logger" }
 tokio = { version = "1", features = ["macros"] }

@@ -1,13 +1,13 @@
 ---
 version: 0
 network:
-  providers:
+  collections:
     - namespace: collection
       kind: GrpcUrl
       reference: https://127.0.0.1:$TEST_PORT
   schematics:
     - name: add
-      providers:
+      collections:
         - collection
       instances:
         add:
@@ -18,7 +18,7 @@ network:
         - <input>[document] => add[document]
         - add[document_id] => <output>[document_id]
     - name: get
-      providers:
+      collections:
         - collection
       instances:
         get:
@@ -28,7 +28,7 @@ network:
         - <input>[collection_id] => get[collection_id]
         - get[document] => <output>[document]
     - name: list
-      providers:
+      collections:
         - collection
       instances:
         list:

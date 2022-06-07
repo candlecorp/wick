@@ -29,11 +29,11 @@ impl ComponentSignature {
   }
 }
 
-/// Signature for Providers.
+/// Signature for Collections.
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
 #[must_use]
-pub struct ProviderSignature {
-  /// Name of the provider.
+pub struct CollectionSignature {
+  /// Name of the collection.
   pub name: Option<String>,
   /// Schema format version.
   pub format: u32,
@@ -45,15 +45,15 @@ pub struct ProviderSignature {
   /// A map of type signatures referenced elsewhere.
   #[serde(default, skip_serializing_if = "TypeMap::is_empty")]
   pub types: TypeMap,
-  /// A list of [ComponentSignature]s the provider hosts.
+  /// A list of [ComponentSignature]s in this collection.
   pub components: ComponentMap,
   /// The component's configuration for this implementation.
   #[serde(default, skip_serializing_if = "TypeMap::is_empty")]
   pub config: TypeMap,
 }
 
-impl ProviderSignature {
-  /// Create a new [ProviderSignature] with the passed name.
+impl CollectionSignature {
+  /// Create a new [CollectionSignature] with the passed name.
   pub fn new<T: AsRef<str>>(name: T) -> Self {
     Self {
       name: Some(name.as_ref().to_owned()),
@@ -62,7 +62,7 @@ impl ProviderSignature {
   }
 
   #[must_use]
-  /// Get the [ProviderSignature] for the requested field.
+  /// Get the [CollectionSignature] for the requested component.
   pub fn get_component<T: AsRef<str>>(&self, field: T) -> Option<&ComponentSignature> {
     self.components.get(field.as_ref())
   }
@@ -76,7 +76,7 @@ pub struct WellKnownSchema {
   /// The location where you can find and validate the schema.
   pub url: String,
   /// The schema itself.
-  pub schema: ProviderSignature,
+  pub schema: CollectionSignature,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -157,8 +157,8 @@ impl StructSignature {
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 #[must_use]
 pub enum HostedType {
-  /// A provider.
-  Provider(ProviderSignature),
+  /// A collection.
+  Collection(CollectionSignature),
 }
 
 impl HostedType {
@@ -166,7 +166,7 @@ impl HostedType {
   #[must_use]
   pub fn get_name(&self) -> &Option<String> {
     match self {
-      HostedType::Provider(s) => &s.name,
+      HostedType::Collection(s) => &s.name,
     }
   }
 }
@@ -232,9 +232,9 @@ pub enum TypeSignature {
     /// The type of the map's values.
     value: Box<TypeSignature>,
   },
-  /// A type representing a ProviderLink.
+  /// A type representing a link to another collection.
   Link {
-    /// The schemas that must be provided with the linked provider.
+    /// The schemas that must be provided with the linked collection.
     #[serde(default)]
     schemas: Vec<String>,
   },

@@ -114,7 +114,7 @@ pub use host_definition::HostDefinition;
 
 /// A version-normalized format of the network manifest for development.
 pub mod network_definition;
-pub use network_definition::{NetworkDefinition, ProviderDefinition, ProviderKind};
+pub use network_definition::{CollectionDefinition, CollectionKind, NetworkDefinition};
 
 /// A version-normalized format of the schematic manifest for development.
 pub mod schematic_definition;

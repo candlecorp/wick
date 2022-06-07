@@ -53,7 +53,7 @@
         },
         "link": {
           "type": "ref",
-          "ref": "#/types/ProviderLink"
+          "ref": "#/types/CollectionLink"
         }
       },
       "outputs": {

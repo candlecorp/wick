@@ -1,7 +1,7 @@
 # wasmflow-packet
 
 The Wasmflow packet crate contains the consistent message structure for arbitrary output
-from Wasmflow components and providers.
+from Wasmflow components and collections.
 
 Components output versioned payloads (e.g. a `v0::Payload`) which then get
 wrapped into a `Packet` to normalize differences across versions.

@@ -145,7 +145,7 @@ impl wasmflow_sdk::sdk::ephemeral::NativeDispatcher for ComponentDispatcher {
             .execute(wasmflow_sdk::sdk::payload::from_invocation(invocation)?)
             .await
         }
-        op => Err(format!("Component not found on this provider: {}", op).into()),
+        op => Err(format!("Component not found on this collection: {}", op).into()),
       }?;
       Ok(stream)
     })
@@ -153,7 +153,7 @@ impl wasmflow_sdk::sdk::ephemeral::NativeDispatcher for ComponentDispatcher {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-pub fn get_signature() -> wasmflow_sdk::types::ProviderSignature {
+pub fn get_signature() -> wasmflow_sdk::types::CollectionSignature {
   let mut components: std::collections::HashMap<String, wasmflow_sdk::types::ComponentSignature> =
     std::collections::HashMap::new();
 
@@ -168,7 +168,7 @@ pub fn get_signature() -> wasmflow_sdk::types::ProviderSignature {
   components.insert("uppercase".to_owned(), generated::uppercase::signature());
   components.insert("validate".to_owned(), generated::validate::signature());
 
-  wasmflow_sdk::types::ProviderSignature {
+  wasmflow_sdk::types::CollectionSignature {
     name: Some("test-component".to_owned()),
     format: 1,
     version: "0.0.1".to_owned(),
@@ -204,7 +204,7 @@ pub mod generated {
     // The user-facing implementation for State and job impl.
     pub use wasmflow_sdk::console_log;
     pub use wasmflow_sdk::packet::v1::Packet;
-    pub use wasmflow_sdk::sdk::{ProviderOutput, Writable};
+    pub use wasmflow_sdk::sdk::{ComponentOutput, Writable};
 
     // The generated definition of inputs, outputs, config, et al.
     use super::copy as definition;
@@ -251,7 +251,7 @@ pub mod generated {
       }
     }
 
-    #[cfg(all(feature = "provider", not(target_arch = "wasm32")))]
+    #[cfg(all(feature = "host", not(target_arch = "wasm32")))]
     pub fn signature() -> wasmflow_sdk::types::ComponentSignature {
       wasmflow_sdk::types::ComponentSignature {
         name: "copy".to_owned(),
@@ -310,7 +310,7 @@ pub mod generated {
     }
 
     #[must_use]
-    #[cfg(all(feature = "provider", not(target_arch = "wasm32")))]
+    #[cfg(all(feature = "host", not(target_arch = "wasm32")))]
     pub fn inputs_list() -> std::collections::HashMap<String, wasmflow_sdk::types::TypeSignature> {
       let mut map = std::collections::HashMap::new();
       map.insert("input".to_owned(), wasmflow_sdk::types::TypeSignature::String);
@@ -320,7 +320,7 @@ pub mod generated {
 
     // A list of ports and their type signatures.
     #[must_use]
-    #[cfg(all(feature = "provider"))]
+    #[cfg(feature = "host")]
     pub fn outputs_list() -> std::collections::HashMap<String, wasmflow_sdk::types::TypeSignature> {
       let mut map = std::collections::HashMap::new();
       map.insert("output".to_owned(), wasmflow_sdk::types::TypeSignature::String);
@@ -329,7 +329,7 @@ pub mod generated {
 
     // A list of output ports and their associated stream sender implementations.
     #[derive(Debug)]
-    #[cfg(feature = "provider")]
+    #[cfg(feature = "host")]
     pub struct OutputPorts {
       pub output: OutputPortSender,
     }
@@ -344,13 +344,13 @@ pub mod generated {
 
     // Definition and implementation of each port's sender.
     #[derive(Debug)]
-    #[cfg(feature = "provider")]
+    #[cfg(feature = "host")]
     pub struct OutputPortSender {
       port: wasmflow_sdk::sdk::PortChannel,
       id: u32,
     }
 
-    #[cfg(all(feature = "provider"))]
+    #[cfg(feature = "host")]
     impl OutputPortSender {
       fn new(id: u32) -> Self {
         Self {
@@ -360,7 +360,7 @@ pub mod generated {
       }
     }
 
-    #[cfg(all(feature = "provider"))]
+    #[cfg(all(feature = "host"))]
     impl wasmflow_sdk::sdk::Writable for OutputPortSender {
       type PayloadType = String;
 
@@ -381,7 +381,7 @@ pub mod generated {
       }
     }
 
-    #[cfg(all(feature = "provider"))]
+    #[cfg(all(feature = "host"))]
     pub fn get_outputs(id: u32) -> (OutputPorts, wasmflow_sdk::types::PacketStream) {
       let mut outputs = OutputPorts::new(id);
       let mut ports = vec![&mut outputs.output.port];
@@ -391,7 +391,7 @@ pub mod generated {
 
     #[allow(missing_debug_implementations)]
     pub struct Outputs {
-      packets: ProviderOutput,
+      packets: ComponentOutput,
     }
 
     impl Outputs {
@@ -401,8 +401,8 @@ pub mod generated {
       }
     }
 
-    impl From<ProviderOutput> for Outputs {
-      fn from(packets: ProviderOutput) -> Self {
+    impl From<ComponentOutput> for Outputs {
+      fn from(packets: ComponentOutput) -> Self {
         Self { packets }
       }
     }
@@ -410,7 +410,7 @@ pub mod generated {
     impl From<wasmflow_sdk::types::PacketStream> for Outputs {
       fn from(stream: wasmflow_sdk::types::PacketStream) -> Self {
         Self {
-          packets: ProviderOutput::new(stream),
+          packets: ComponentOutput::new(stream),
         }
       }
     }
@@ -419,7 +419,7 @@ pub mod generated {
     impl From<wasmflow_sdk::types::TransportStream> for Outputs {
       fn from(stream: wasmflow_sdk::types::TransportStream) -> Self {
         Self {
-          packets: ProviderOutput::new_from_ts(stream),
+          packets: ComponentOutput::new_from_ts(stream),
         }
       }
     }
@@ -433,7 +433,7 @@ pub mod generated {
     // The user-facing implementation for State and job impl.
     pub use wasmflow_sdk::console_log;
     pub use wasmflow_sdk::packet::v1::Packet;
-    pub use wasmflow_sdk::sdk::{ProviderOutput, Writable};
+    pub use wasmflow_sdk::sdk::{ComponentOutput, Writable};
 
     // The generated definition of inputs, outputs, config, et al.
     use super::error as definition;
@@ -480,7 +480,7 @@ pub mod generated {
       }
     }
 
-    #[cfg(all(feature = "provider", not(target_arch = "wasm32")))]
+    #[cfg(all(feature = "host", not(target_arch = "wasm32")))]
     pub fn signature() -> wasmflow_sdk::types::ComponentSignature {
       wasmflow_sdk::types::ComponentSignature {
         name: "error".to_owned(),
@@ -528,7 +528,7 @@ pub mod generated {
     }
 
     #[must_use]
-    #[cfg(all(feature = "provider", not(target_arch = "wasm32")))]
+    #[cfg(all(feature = "host", not(target_arch = "wasm32")))]
     pub fn inputs_list() -> std::collections::HashMap<String, wasmflow_sdk::types::TypeSignature> {
       let mut map = std::collections::HashMap::new();
       map.insert("input".to_owned(), wasmflow_sdk::types::TypeSignature::String);
@@ -537,7 +537,7 @@ pub mod generated {
 
     // A list of ports and their type signatures.
     #[must_use]
-    #[cfg(all(feature = "provider"))]
+    #[cfg(feature = "host")]
     pub fn outputs_list() -> std::collections::HashMap<String, wasmflow_sdk::types::TypeSignature> {
       let mut map = std::collections::HashMap::new();
       map.insert("output".to_owned(), wasmflow_sdk::types::TypeSignature::String);
@@ -546,7 +546,7 @@ pub mod generated {
 
     // A list of output ports and their associated stream sender implementations.
     #[derive(Debug)]
-    #[cfg(feature = "provider")]
+    #[cfg(feature = "host")]
     pub struct OutputPorts {
       pub output: OutputPortSender,
     }
@@ -561,13 +561,13 @@ pub mod generated {
 
     // Definition and implementation of each port's sender.
     #[derive(Debug)]
-    #[cfg(feature = "provider")]
+    #[cfg(feature = "host")]
     pub struct OutputPortSender {
       port: wasmflow_sdk::sdk::PortChannel,
       id: u32,
     }
 
-    #[cfg(all(feature = "provider"))]
+    #[cfg(feature = "host")]
     impl OutputPortSender {
       fn new(id: u32) -> Self {
         Self {
@@ -577,7 +577,7 @@ pub mod generated {
       }
     }
 
-    #[cfg(all(feature = "provider"))]
+    #[cfg(all(feature = "host"))]
     impl wasmflow_sdk::sdk::Writable for OutputPortSender {
       type PayloadType = String;
 
@@ -598,7 +598,7 @@ pub mod generated {
       }
     }
 
-    #[cfg(all(feature = "provider"))]
+    #[cfg(all(feature = "host"))]
     pub fn get_outputs(id: u32) -> (OutputPorts, wasmflow_sdk::types::PacketStream) {
       let mut outputs = OutputPorts::new(id);
       let mut ports = vec![&mut outputs.output.port];
@@ -608,7 +608,7 @@ pub mod generated {
 
     #[allow(missing_debug_implementations)]
     pub struct Outputs {
-      packets: ProviderOutput,
+      packets: ComponentOutput,
     }
 
     impl Outputs {
@@ -618,8 +618,8 @@ pub mod generated {
       }
     }
 
-    impl From<ProviderOutput> for Outputs {
-      fn from(packets: ProviderOutput) -> Self {
+    impl From<ComponentOutput> for Outputs {
+      fn from(packets: ComponentOutput) -> Self {
         Self { packets }
       }
     }
@@ -627,7 +627,7 @@ pub mod generated {
     impl From<wasmflow_sdk::types::PacketStream> for Outputs {
       fn from(stream: wasmflow_sdk::types::PacketStream) -> Self {
         Self {
-          packets: ProviderOutput::new(stream),
+          packets: ComponentOutput::new(stream),
         }
       }
     }
@@ -636,7 +636,7 @@ pub mod generated {
     impl From<wasmflow_sdk::types::TransportStream> for Outputs {
       fn from(stream: wasmflow_sdk::types::TransportStream) -> Self {
         Self {
-          packets: ProviderOutput::new_from_ts(stream),
+          packets: ComponentOutput::new_from_ts(stream),
         }
       }
     }
@@ -650,7 +650,7 @@ pub mod generated {
     // The user-facing implementation for State and job impl.
     pub use wasmflow_sdk::console_log;
     pub use wasmflow_sdk::packet::v1::Packet;
-    pub use wasmflow_sdk::sdk::{ProviderOutput, Writable};
+    pub use wasmflow_sdk::sdk::{ComponentOutput, Writable};
 
     // The generated definition of inputs, outputs, config, et al.
     use super::reverse as definition;
@@ -697,7 +697,7 @@ pub mod generated {
       }
     }
 
-    #[cfg(all(feature = "provider", not(target_arch = "wasm32")))]
+    #[cfg(all(feature = "host", not(target_arch = "wasm32")))]
     pub fn signature() -> wasmflow_sdk::types::ComponentSignature {
       wasmflow_sdk::types::ComponentSignature {
         name: "reverse".to_owned(),
@@ -745,7 +745,7 @@ pub mod generated {
     }
 
     #[must_use]
-    #[cfg(all(feature = "provider", not(target_arch = "wasm32")))]
+    #[cfg(all(feature = "host", not(target_arch = "wasm32")))]
     pub fn inputs_list() -> std::collections::HashMap<String, wasmflow_sdk::types::TypeSignature> {
       let mut map = std::collections::HashMap::new();
       map.insert("input".to_owned(), wasmflow_sdk::types::TypeSignature::String);
@@ -754,7 +754,7 @@ pub mod generated {
 
     // A list of ports and their type signatures.
     #[must_use]
-    #[cfg(all(feature = "provider"))]
+    #[cfg(feature = "host")]
     pub fn outputs_list() -> std::collections::HashMap<String, wasmflow_sdk::types::TypeSignature> {
       let mut map = std::collections::HashMap::new();
       map.insert("output".to_owned(), wasmflow_sdk::types::TypeSignature::String);
@@ -763,7 +763,7 @@ pub mod generated {
 
     // A list of output ports and their associated stream sender implementations.
     #[derive(Debug)]
-    #[cfg(feature = "provider")]
+    #[cfg(feature = "host")]
     pub struct OutputPorts {
       pub output: OutputPortSender,
     }
@@ -778,13 +778,13 @@ pub mod generated {
 
     // Definition and implementation of each port's sender.
     #[derive(Debug)]
-    #[cfg(feature = "provider")]
+    #[cfg(feature = "host")]
     pub struct OutputPortSender {
       port: wasmflow_sdk::sdk::PortChannel,
       id: u32,
     }
 
-    #[cfg(all(feature = "provider"))]
+    #[cfg(feature = "host")]
     impl OutputPortSender {
       fn new(id: u32) -> Self {
         Self {
@@ -794,7 +794,7 @@ pub mod generated {
       }
     }
 
-    #[cfg(all(feature = "provider"))]
+    #[cfg(all(feature = "host"))]
     impl wasmflow_sdk::sdk::Writable for OutputPortSender {
       type PayloadType = String;
 
@@ -815,7 +815,7 @@ pub mod generated {
       }
     }
 
-    #[cfg(all(feature = "provider"))]
+    #[cfg(all(feature = "host"))]
     pub fn get_outputs(id: u32) -> (OutputPorts, wasmflow_sdk::types::PacketStream) {
       let mut outputs = OutputPorts::new(id);
       let mut ports = vec![&mut outputs.output.port];
@@ -825,7 +825,7 @@ pub mod generated {
 
     #[allow(missing_debug_implementations)]
     pub struct Outputs {
-      packets: ProviderOutput,
+      packets: ComponentOutput,
     }
 
     impl Outputs {
@@ -835,8 +835,8 @@ pub mod generated {
       }
     }
 
-    impl From<ProviderOutput> for Outputs {
-      fn from(packets: ProviderOutput) -> Self {
+    impl From<ComponentOutput> for Outputs {
+      fn from(packets: ComponentOutput) -> Self {
         Self { packets }
       }
     }
@@ -844,7 +844,7 @@ pub mod generated {
     impl From<wasmflow_sdk::types::PacketStream> for Outputs {
       fn from(stream: wasmflow_sdk::types::PacketStream) -> Self {
         Self {
-          packets: ProviderOutput::new(stream),
+          packets: ComponentOutput::new(stream),
         }
       }
     }
@@ -853,7 +853,7 @@ pub mod generated {
     impl From<wasmflow_sdk::types::TransportStream> for Outputs {
       fn from(stream: wasmflow_sdk::types::TransportStream) -> Self {
         Self {
-          packets: ProviderOutput::new_from_ts(stream),
+          packets: ComponentOutput::new_from_ts(stream),
         }
       }
     }
@@ -867,7 +867,7 @@ pub mod generated {
     // The user-facing implementation for State and job impl.
     pub use wasmflow_sdk::console_log;
     pub use wasmflow_sdk::packet::v1::Packet;
-    pub use wasmflow_sdk::sdk::{ProviderOutput, Writable};
+    pub use wasmflow_sdk::sdk::{ComponentOutput, Writable};
 
     // The generated definition of inputs, outputs, config, et al.
     use super::reverse_uppercase as definition;
@@ -914,7 +914,7 @@ pub mod generated {
       }
     }
 
-    #[cfg(all(feature = "provider", not(target_arch = "wasm32")))]
+    #[cfg(all(feature = "host", not(target_arch = "wasm32")))]
     pub fn signature() -> wasmflow_sdk::types::ComponentSignature {
       wasmflow_sdk::types::ComponentSignature {
         name: "reverse-uppercase".to_owned(),
@@ -954,7 +954,7 @@ pub mod generated {
       #[serde(rename = "input")]
       pub input: String,
       #[serde(rename = "link")]
-      pub link: wasmflow_sdk::sdk::ProviderLink,
+      pub link: wasmflow_sdk::sdk::CollectionLink,
     }
 
     impl From<Inputs> for wasmflow_sdk::packet::PacketMap {
@@ -973,7 +973,7 @@ pub mod generated {
     }
 
     #[must_use]
-    #[cfg(all(feature = "provider", not(target_arch = "wasm32")))]
+    #[cfg(all(feature = "host", not(target_arch = "wasm32")))]
     pub fn inputs_list() -> std::collections::HashMap<String, wasmflow_sdk::types::TypeSignature> {
       let mut map = std::collections::HashMap::new();
       map.insert("input".to_owned(), wasmflow_sdk::types::TypeSignature::String);
@@ -986,7 +986,7 @@ pub mod generated {
 
     // A list of ports and their type signatures.
     #[must_use]
-    #[cfg(all(feature = "provider"))]
+    #[cfg(feature = "host")]
     pub fn outputs_list() -> std::collections::HashMap<String, wasmflow_sdk::types::TypeSignature> {
       let mut map = std::collections::HashMap::new();
       map.insert("output".to_owned(), wasmflow_sdk::types::TypeSignature::String);
@@ -995,7 +995,7 @@ pub mod generated {
 
     // A list of output ports and their associated stream sender implementations.
     #[derive(Debug)]
-    #[cfg(feature = "provider")]
+    #[cfg(feature = "host")]
     pub struct OutputPorts {
       pub output: OutputPortSender,
     }
@@ -1010,13 +1010,13 @@ pub mod generated {
 
     // Definition and implementation of each port's sender.
     #[derive(Debug)]
-    #[cfg(feature = "provider")]
+    #[cfg(feature = "host")]
     pub struct OutputPortSender {
       port: wasmflow_sdk::sdk::PortChannel,
       id: u32,
     }
 
-    #[cfg(all(feature = "provider"))]
+    #[cfg(feature = "host")]
     impl OutputPortSender {
       fn new(id: u32) -> Self {
         Self {
@@ -1026,7 +1026,7 @@ pub mod generated {
       }
     }
 
-    #[cfg(all(feature = "provider"))]
+    #[cfg(all(feature = "host"))]
     impl wasmflow_sdk::sdk::Writable for OutputPortSender {
       type PayloadType = String;
 
@@ -1047,7 +1047,7 @@ pub mod generated {
       }
     }
 
-    #[cfg(all(feature = "provider"))]
+    #[cfg(all(feature = "host"))]
     pub fn get_outputs(id: u32) -> (OutputPorts, wasmflow_sdk::types::PacketStream) {
       let mut outputs = OutputPorts::new(id);
       let mut ports = vec![&mut outputs.output.port];
@@ -1057,7 +1057,7 @@ pub mod generated {
 
     #[allow(missing_debug_implementations)]
     pub struct Outputs {
-      packets: ProviderOutput,
+      packets: ComponentOutput,
     }
 
     impl Outputs {
@@ -1067,8 +1067,8 @@ pub mod generated {
       }
     }
 
-    impl From<ProviderOutput> for Outputs {
-      fn from(packets: ProviderOutput) -> Self {
+    impl From<ComponentOutput> for Outputs {
+      fn from(packets: ComponentOutput) -> Self {
         Self { packets }
       }
     }
@@ -1076,7 +1076,7 @@ pub mod generated {
     impl From<wasmflow_sdk::types::PacketStream> for Outputs {
       fn from(stream: wasmflow_sdk::types::PacketStream) -> Self {
         Self {
-          packets: ProviderOutput::new(stream),
+          packets: ComponentOutput::new(stream),
         }
       }
     }
@@ -1085,7 +1085,7 @@ pub mod generated {
     impl From<wasmflow_sdk::types::TransportStream> for Outputs {
       fn from(stream: wasmflow_sdk::types::TransportStream) -> Self {
         Self {
-          packets: ProviderOutput::new_from_ts(stream),
+          packets: ComponentOutput::new_from_ts(stream),
         }
       }
     }
@@ -1099,7 +1099,7 @@ pub mod generated {
     // The user-facing implementation for State and job impl.
     pub use wasmflow_sdk::console_log;
     pub use wasmflow_sdk::packet::v1::Packet;
-    pub use wasmflow_sdk::sdk::{ProviderOutput, Writable};
+    pub use wasmflow_sdk::sdk::{ComponentOutput, Writable};
 
     // The generated definition of inputs, outputs, config, et al.
     use super::scratch as definition;
@@ -1146,7 +1146,7 @@ pub mod generated {
       }
     }
 
-    #[cfg(all(feature = "provider", not(target_arch = "wasm32")))]
+    #[cfg(all(feature = "host", not(target_arch = "wasm32")))]
     pub fn signature() -> wasmflow_sdk::types::ComponentSignature {
       wasmflow_sdk::types::ComponentSignature {
         name: "scratch".to_owned(),
@@ -1205,7 +1205,7 @@ pub mod generated {
     }
 
     #[must_use]
-    #[cfg(all(feature = "provider", not(target_arch = "wasm32")))]
+    #[cfg(all(feature = "host", not(target_arch = "wasm32")))]
     pub fn inputs_list() -> std::collections::HashMap<String, wasmflow_sdk::types::TypeSignature> {
       let mut map = std::collections::HashMap::new();
       map.insert("name".to_owned(), wasmflow_sdk::types::TypeSignature::String);
@@ -1215,7 +1215,7 @@ pub mod generated {
 
     // A list of ports and their type signatures.
     #[must_use]
-    #[cfg(all(feature = "provider"))]
+    #[cfg(feature = "host")]
     pub fn outputs_list() -> std::collections::HashMap<String, wasmflow_sdk::types::TypeSignature> {
       let mut map = std::collections::HashMap::new();
       map.insert("message".to_owned(), wasmflow_sdk::types::TypeSignature::String);
@@ -1225,7 +1225,7 @@ pub mod generated {
 
     // A list of output ports and their associated stream sender implementations.
     #[derive(Debug)]
-    #[cfg(feature = "provider")]
+    #[cfg(feature = "host")]
     pub struct OutputPorts {
       pub message: MessagePortSender,
       pub age: AgePortSender,
@@ -1242,13 +1242,13 @@ pub mod generated {
 
     // Definition and implementation of each port's sender.
     #[derive(Debug)]
-    #[cfg(feature = "provider")]
+    #[cfg(feature = "host")]
     pub struct MessagePortSender {
       port: wasmflow_sdk::sdk::PortChannel,
       id: u32,
     }
 
-    #[cfg(all(feature = "provider"))]
+    #[cfg(feature = "host")]
     impl MessagePortSender {
       fn new(id: u32) -> Self {
         Self {
@@ -1258,7 +1258,7 @@ pub mod generated {
       }
     }
 
-    #[cfg(all(feature = "provider"))]
+    #[cfg(all(feature = "host"))]
     impl wasmflow_sdk::sdk::Writable for MessagePortSender {
       type PayloadType = String;
 
@@ -1280,13 +1280,13 @@ pub mod generated {
     }
 
     #[derive(Debug)]
-    #[cfg(feature = "provider")]
+    #[cfg(feature = "host")]
     pub struct AgePortSender {
       port: wasmflow_sdk::sdk::PortChannel,
       id: u32,
     }
 
-    #[cfg(all(feature = "provider"))]
+    #[cfg(feature = "host")]
     impl AgePortSender {
       fn new(id: u32) -> Self {
         Self {
@@ -1296,7 +1296,7 @@ pub mod generated {
       }
     }
 
-    #[cfg(all(feature = "provider"))]
+    #[cfg(all(feature = "host"))]
     impl wasmflow_sdk::sdk::Writable for AgePortSender {
       type PayloadType = i64;
 
@@ -1317,7 +1317,7 @@ pub mod generated {
       }
     }
 
-    #[cfg(all(feature = "provider"))]
+    #[cfg(all(feature = "host"))]
     pub fn get_outputs(id: u32) -> (OutputPorts, wasmflow_sdk::types::PacketStream) {
       let mut outputs = OutputPorts::new(id);
       let mut ports = vec![&mut outputs.message.port, &mut outputs.age.port];
@@ -1327,7 +1327,7 @@ pub mod generated {
 
     #[allow(missing_debug_implementations)]
     pub struct Outputs {
-      packets: ProviderOutput,
+      packets: ComponentOutput,
     }
 
     impl Outputs {
@@ -1341,8 +1341,8 @@ pub mod generated {
       }
     }
 
-    impl From<ProviderOutput> for Outputs {
-      fn from(packets: ProviderOutput) -> Self {
+    impl From<ComponentOutput> for Outputs {
+      fn from(packets: ComponentOutput) -> Self {
         Self { packets }
       }
     }
@@ -1350,7 +1350,7 @@ pub mod generated {
     impl From<wasmflow_sdk::types::PacketStream> for Outputs {
       fn from(stream: wasmflow_sdk::types::PacketStream) -> Self {
         Self {
-          packets: ProviderOutput::new(stream),
+          packets: ComponentOutput::new(stream),
         }
       }
     }
@@ -1359,7 +1359,7 @@ pub mod generated {
     impl From<wasmflow_sdk::types::TransportStream> for Outputs {
       fn from(stream: wasmflow_sdk::types::TransportStream) -> Self {
         Self {
-          packets: ProviderOutput::new_from_ts(stream),
+          packets: ComponentOutput::new_from_ts(stream),
         }
       }
     }
@@ -1376,7 +1376,7 @@ pub mod generated {
     // The user-facing implementation for State and job impl.
     pub use wasmflow_sdk::console_log;
     pub use wasmflow_sdk::packet::v1::Packet;
-    pub use wasmflow_sdk::sdk::{ProviderOutput, Writable};
+    pub use wasmflow_sdk::sdk::{ComponentOutput, Writable};
 
     // The generated definition of inputs, outputs, config, et al.
     use super::uppercase as definition;
@@ -1423,7 +1423,7 @@ pub mod generated {
       }
     }
 
-    #[cfg(all(feature = "provider", not(target_arch = "wasm32")))]
+    #[cfg(all(feature = "host", not(target_arch = "wasm32")))]
     pub fn signature() -> wasmflow_sdk::types::ComponentSignature {
       wasmflow_sdk::types::ComponentSignature {
         name: "uppercase".to_owned(),
@@ -1471,7 +1471,7 @@ pub mod generated {
     }
 
     #[must_use]
-    #[cfg(all(feature = "provider", not(target_arch = "wasm32")))]
+    #[cfg(all(feature = "host", not(target_arch = "wasm32")))]
     pub fn inputs_list() -> std::collections::HashMap<String, wasmflow_sdk::types::TypeSignature> {
       let mut map = std::collections::HashMap::new();
       map.insert("input".to_owned(), wasmflow_sdk::types::TypeSignature::String);
@@ -1480,7 +1480,7 @@ pub mod generated {
 
     // A list of ports and their type signatures.
     #[must_use]
-    #[cfg(all(feature = "provider"))]
+    #[cfg(feature = "host")]
     pub fn outputs_list() -> std::collections::HashMap<String, wasmflow_sdk::types::TypeSignature> {
       let mut map = std::collections::HashMap::new();
       map.insert("output".to_owned(), wasmflow_sdk::types::TypeSignature::String);
@@ -1489,7 +1489,7 @@ pub mod generated {
 
     // A list of output ports and their associated stream sender implementations.
     #[derive(Debug)]
-    #[cfg(feature = "provider")]
+    #[cfg(feature = "host")]
     pub struct OutputPorts {
       pub output: OutputPortSender,
     }
@@ -1504,13 +1504,13 @@ pub mod generated {
 
     // Definition and implementation of each port's sender.
     #[derive(Debug)]
-    #[cfg(feature = "provider")]
+    #[cfg(feature = "host")]
     pub struct OutputPortSender {
       port: wasmflow_sdk::sdk::PortChannel,
       id: u32,
     }
 
-    #[cfg(all(feature = "provider"))]
+    #[cfg(feature = "host")]
     impl OutputPortSender {
       fn new(id: u32) -> Self {
         Self {
@@ -1520,7 +1520,7 @@ pub mod generated {
       }
     }
 
-    #[cfg(all(feature = "provider"))]
+    #[cfg(all(feature = "host"))]
     impl wasmflow_sdk::sdk::Writable for OutputPortSender {
       type PayloadType = String;
 
@@ -1541,7 +1541,7 @@ pub mod generated {
       }
     }
 
-    #[cfg(all(feature = "provider"))]
+    #[cfg(all(feature = "host"))]
     pub fn get_outputs(id: u32) -> (OutputPorts, wasmflow_sdk::types::PacketStream) {
       let mut outputs = OutputPorts::new(id);
       let mut ports = vec![&mut outputs.output.port];
@@ -1551,7 +1551,7 @@ pub mod generated {
 
     #[allow(missing_debug_implementations)]
     pub struct Outputs {
-      packets: ProviderOutput,
+      packets: ComponentOutput,
     }
 
     impl Outputs {
@@ -1561,8 +1561,8 @@ pub mod generated {
       }
     }
 
-    impl From<ProviderOutput> for Outputs {
-      fn from(packets: ProviderOutput) -> Self {
+    impl From<ComponentOutput> for Outputs {
+      fn from(packets: ComponentOutput) -> Self {
         Self { packets }
       }
     }
@@ -1570,7 +1570,7 @@ pub mod generated {
     impl From<wasmflow_sdk::types::PacketStream> for Outputs {
       fn from(stream: wasmflow_sdk::types::PacketStream) -> Self {
         Self {
-          packets: ProviderOutput::new(stream),
+          packets: ComponentOutput::new(stream),
         }
       }
     }
@@ -1579,7 +1579,7 @@ pub mod generated {
     impl From<wasmflow_sdk::types::TransportStream> for Outputs {
       fn from(stream: wasmflow_sdk::types::TransportStream) -> Self {
         Self {
-          packets: ProviderOutput::new_from_ts(stream),
+          packets: ComponentOutput::new_from_ts(stream),
         }
       }
     }
@@ -1593,7 +1593,7 @@ pub mod generated {
     // The user-facing implementation for State and job impl.
     pub use wasmflow_sdk::console_log;
     pub use wasmflow_sdk::packet::v1::Packet;
-    pub use wasmflow_sdk::sdk::{ProviderOutput, Writable};
+    pub use wasmflow_sdk::sdk::{ComponentOutput, Writable};
 
     // The generated definition of inputs, outputs, config, et al.
     use super::validate as definition;
@@ -1640,7 +1640,7 @@ pub mod generated {
       }
     }
 
-    #[cfg(all(feature = "provider", not(target_arch = "wasm32")))]
+    #[cfg(all(feature = "host", not(target_arch = "wasm32")))]
     pub fn signature() -> wasmflow_sdk::types::ComponentSignature {
       wasmflow_sdk::types::ComponentSignature {
         name: "validate".to_owned(),
@@ -1688,7 +1688,7 @@ pub mod generated {
     }
 
     #[must_use]
-    #[cfg(all(feature = "provider", not(target_arch = "wasm32")))]
+    #[cfg(all(feature = "host", not(target_arch = "wasm32")))]
     pub fn inputs_list() -> std::collections::HashMap<String, wasmflow_sdk::types::TypeSignature> {
       let mut map = std::collections::HashMap::new();
       map.insert("input".to_owned(), wasmflow_sdk::types::TypeSignature::String);
@@ -1697,7 +1697,7 @@ pub mod generated {
 
     // A list of ports and their type signatures.
     #[must_use]
-    #[cfg(all(feature = "provider"))]
+    #[cfg(feature = "host")]
     pub fn outputs_list() -> std::collections::HashMap<String, wasmflow_sdk::types::TypeSignature> {
       let mut map = std::collections::HashMap::new();
       map.insert("output".to_owned(), wasmflow_sdk::types::TypeSignature::String);
@@ -1706,7 +1706,7 @@ pub mod generated {
 
     // A list of output ports and their associated stream sender implementations.
     #[derive(Debug)]
-    #[cfg(feature = "provider")]
+    #[cfg(feature = "host")]
     pub struct OutputPorts {
       pub output: OutputPortSender,
     }
@@ -1721,13 +1721,13 @@ pub mod generated {
 
     // Definition and implementation of each port's sender.
     #[derive(Debug)]
-    #[cfg(feature = "provider")]
+    #[cfg(feature = "host")]
     pub struct OutputPortSender {
       port: wasmflow_sdk::sdk::PortChannel,
       id: u32,
     }
 
-    #[cfg(all(feature = "provider"))]
+    #[cfg(feature = "host")]
     impl OutputPortSender {
       fn new(id: u32) -> Self {
         Self {
@@ -1737,7 +1737,7 @@ pub mod generated {
       }
     }
 
-    #[cfg(all(feature = "provider"))]
+    #[cfg(all(feature = "host"))]
     impl wasmflow_sdk::sdk::Writable for OutputPortSender {
       type PayloadType = String;
 
@@ -1758,7 +1758,7 @@ pub mod generated {
       }
     }
 
-    #[cfg(all(feature = "provider"))]
+    #[cfg(all(feature = "host"))]
     pub fn get_outputs(id: u32) -> (OutputPorts, wasmflow_sdk::types::PacketStream) {
       let mut outputs = OutputPorts::new(id);
       let mut ports = vec![&mut outputs.output.port];
@@ -1768,7 +1768,7 @@ pub mod generated {
 
     #[allow(missing_debug_implementations)]
     pub struct Outputs {
-      packets: ProviderOutput,
+      packets: ComponentOutput,
     }
 
     impl Outputs {
@@ -1778,8 +1778,8 @@ pub mod generated {
       }
     }
 
-    impl From<ProviderOutput> for Outputs {
-      fn from(packets: ProviderOutput) -> Self {
+    impl From<ComponentOutput> for Outputs {
+      fn from(packets: ComponentOutput) -> Self {
         Self { packets }
       }
     }
@@ -1787,7 +1787,7 @@ pub mod generated {
     impl From<wasmflow_sdk::types::PacketStream> for Outputs {
       fn from(stream: wasmflow_sdk::types::PacketStream) -> Self {
         Self {
-          packets: ProviderOutput::new(stream),
+          packets: ComponentOutput::new(stream),
         }
       }
     }
@@ -1796,7 +1796,7 @@ pub mod generated {
     impl From<wasmflow_sdk::types::TransportStream> for Outputs {
       fn from(stream: wasmflow_sdk::types::TransportStream) -> Self {
         Self {
-          packets: ProviderOutput::new_from_ts(stream),
+          packets: ComponentOutput::new_from_ts(stream),
         }
       }
     }
@@ -1809,7 +1809,7 @@ pub mod generated {
   pub mod __batch__ {
     pub use wasmflow_sdk::console_log;
     pub use wasmflow_sdk::packet::v1::Packet;
-    pub use wasmflow_sdk::sdk::{ProviderOutput, Writable};
+    pub use wasmflow_sdk::sdk::{ComponentOutput, Writable};
 
     use super::{__batch__ as integration, __batch__ as definition};
     use crate::components::__batch__ as implementation;
@@ -1888,7 +1888,7 @@ pub mod generated {
     }
     // A list of ports and their type signatures.
     #[must_use]
-    #[cfg(all(feature = "provider"))]
+    #[cfg(feature = "host")]
     pub fn outputs_list() -> std::collections::HashMap<String, wasmflow_sdk::types::TypeSignature> {
       let mut map = std::collections::HashMap::new();
       map.insert("result".to_owned(), wasmflow_sdk::types::TypeSignature::Bool);
@@ -1897,7 +1897,7 @@ pub mod generated {
 
     // A list of output ports and their associated stream sender implementations.
     #[derive(Debug)]
-    #[cfg(feature = "provider")]
+    #[cfg(feature = "host")]
     pub struct OutputPorts {
       pub result: ResultPortSender,
     }
@@ -1912,13 +1912,13 @@ pub mod generated {
 
     // Definition and implementation of each port's sender.
     #[derive(Debug)]
-    #[cfg(feature = "provider")]
+    #[cfg(feature = "host")]
     pub struct ResultPortSender {
       port: wasmflow_sdk::sdk::PortChannel,
       id: u32,
     }
 
-    #[cfg(all(feature = "provider"))]
+    #[cfg(feature = "host")]
     impl ResultPortSender {
       fn new(id: u32) -> Self {
         Self {
@@ -1928,7 +1928,7 @@ pub mod generated {
       }
     }
 
-    #[cfg(all(feature = "provider"))]
+    #[cfg(all(feature = "host"))]
     impl wasmflow_sdk::sdk::Writable for ResultPortSender {
       type PayloadType = bool;
 
@@ -1949,7 +1949,7 @@ pub mod generated {
       }
     }
 
-    #[cfg(all(feature = "provider"))]
+    #[cfg(all(feature = "host"))]
     pub fn get_outputs(id: u32) -> (OutputPorts, wasmflow_sdk::types::PacketStream) {
       let mut outputs = OutputPorts::new(id);
       let mut ports = vec![&mut outputs.result.port];
@@ -1959,7 +1959,7 @@ pub mod generated {
 
     #[allow(missing_debug_implementations)]
     pub struct Outputs {
-      packets: ProviderOutput,
+      packets: ComponentOutput,
     }
 
     impl Outputs {
@@ -1969,8 +1969,8 @@ pub mod generated {
       }
     }
 
-    impl From<ProviderOutput> for Outputs {
-      fn from(packets: ProviderOutput) -> Self {
+    impl From<ComponentOutput> for Outputs {
+      fn from(packets: ComponentOutput) -> Self {
         Self { packets }
       }
     }
@@ -1978,7 +1978,7 @@ pub mod generated {
     impl From<wasmflow_sdk::types::PacketStream> for Outputs {
       fn from(stream: wasmflow_sdk::types::PacketStream) -> Self {
         Self {
-          packets: ProviderOutput::new(stream),
+          packets: ComponentOutput::new(stream),
         }
       }
     }
@@ -1987,7 +1987,7 @@ pub mod generated {
     impl From<wasmflow_sdk::types::TransportStream> for Outputs {
       fn from(stream: wasmflow_sdk::types::TransportStream) -> Self {
         Self {
-          packets: ProviderOutput::new_from_ts(stream),
+          packets: ComponentOutput::new_from_ts(stream),
         }
       }
     }
@@ -2031,7 +2031,7 @@ pub mod generated {
     }
 
     #[must_use]
-    #[cfg(all(feature = "provider", not(target_arch = "wasm32")))]
+    #[cfg(all(feature = "host", not(target_arch = "wasm32")))]
     pub fn inputs_list() -> std::collections::HashMap<String, wasmflow_sdk::types::TypeSignature> {
       let mut map = std::collections::HashMap::new();
       map.insert(

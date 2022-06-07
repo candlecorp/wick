@@ -1,0 +1,15 @@
+---
+version: 0
+network:
+  collections:
+    - namespace: wapc
+      kind: WaPC
+      reference: nothing.wasm
+  schematics:
+    - name: missing_collection
+      instances:
+        validate:
+          id: wapc::validate
+      connections:
+        - <> => validate[input]
+        - validate[output] => <>

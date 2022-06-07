@@ -6,17 +6,17 @@ use std::time::Instant;
 use parking_lot::RwLock;
 use tokio::sync::mpsc::unbounded_channel;
 use tokio_stream::wrappers::UnboundedReceiverStream;
-use wasmflow_transport::{TransportStream, TransportWrapper};
-use wasmflow_wascap::{Claims, ProviderClaims};
 use wapc::{WapcHostBuilder, WasiParams};
 use wapc_pool::{HostPool, HostPoolBuilder};
 use wasmflow_codec::messagepack::serialize;
 use wasmflow_component::HostCommand;
-use wasmflow_interface::ProviderSignature;
+use wasmflow_interface::CollectionSignature;
+use wasmflow_transport::{TransportStream, TransportWrapper};
+use wasmflow_wascap::{Claims, CollectionClaims};
 
 use crate::callbacks::{create_link_handler, create_log_handler, create_output_handler};
-use crate::error::WasmProviderError;
-use crate::provider::HostLinkCallback;
+use crate::collection::HostLinkCallback;
+use crate::error::WasmCollectionError;
 use crate::transaction::Transaction;
 use crate::wapc_module::WapcModule;
 use crate::{Error, Result};
@@ -94,7 +94,7 @@ impl Default for WasmHostBuilder {
 #[derive()]
 pub struct WasmHost {
   host: HostPool,
-  claims: Claims<ProviderClaims>,
+  claims: Claims<CollectionClaims>,
   tx_map: Arc<RwLock<HashMap<u32, RwLock<Transaction>>>>,
   rng: seeded_random::Random,
 }
@@ -118,7 +118,7 @@ impl WasmHost {
   ) -> Result<Self> {
     let jwt = &module.token.jwt;
 
-    wasmflow_wascap::validate_token::<ProviderClaims>(jwt).map_err(|e| Error::ClaimsInvalid(e.to_string()))?;
+    wasmflow_wascap::validate_token::<CollectionClaims>(jwt).map_err(|e| Error::ClaimsInvalid(e.to_string()))?;
 
     let time = Instant::now();
 
@@ -128,7 +128,7 @@ impl WasmHost {
     #[cfg(feature = "wasmtime")]
     let engine = {
       let engine = wasmtime_provider::WasmtimeEngineProvider::new_with_cache(&module.bytes, wasi_options, None)
-        .map_err(|e| WasmProviderError::EngineFailure(e.to_string()))?;
+        .map_err(|e| WasmCollectionError::EngineFailure(e.to_string()))?;
       trace!(duration_μs = %time.elapsed().as_micros(), "wasmtime instance loaded");
       engine
     };
@@ -216,7 +216,7 @@ impl WasmHost {
   }
 
   fn take_tx(&self, id: u32) -> Result<RwLock<Transaction>> {
-    self.tx_map.write().remove(&id).ok_or(WasmProviderError::TxNotFound)
+    self.tx_map.write().remove(&id).ok_or(WasmCollectionError::TxNotFound)
   }
 
   pub async fn call(
@@ -257,7 +257,7 @@ impl WasmHost {
     Ok(TransportStream::new(UnboundedReceiverStream::new(rx)))
   }
 
-  pub fn get_components(&self) -> &ProviderSignature {
+  pub fn get_components(&self) -> &CollectionSignature {
     let claims = &self.claims;
     &claims.metadata.as_ref().unwrap().interface
   }

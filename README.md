@@ -31,7 +31,7 @@ Used to generated JSON schemas, documentation, and code for host manifests.
 
 #### wasmflow-codegen
 
-Used to generate provider scaffolding and new component templates
+Used to generate collection scaffolding and new component templates
 
 - `npm install -g @wasmflow/codegen`
 

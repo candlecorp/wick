@@ -3,8 +3,8 @@ use std::time::SystemTime;
 use anyhow::{Context, Result};
 use tokio::io::{self, AsyncBufReadExt};
 use wasmflow_collection_cli::parse_args;
+use wasmflow_collection_wasm::collection::Collection;
 use wasmflow_collection_wasm::helpers::WapcModule;
-use wasmflow_collection_wasm::provider::Provider;
 use wasmflow_entity::Entity;
 use wasmflow_invocation::{InherentData, Invocation};
 use wasmflow_rpc::RpcHandler;
@@ -13,7 +13,7 @@ use wasmflow_transport::TransportMap;
 pub(crate) async fn handle_command(opts: super::InvokeCommand, bytes: Vec<u8>) -> Result<()> {
   let component = WapcModule::from_slice(&bytes)?;
 
-  let provider = Provider::try_load(&component, 1, None, Some((&opts.wasi).into()), None)?;
+  let collection = Collection::try_load(&component, 1, None, Some((&opts.wasi).into()), None)?;
 
   let mut check_stdin = !opts.no_input && opts.data.is_empty() && opts.args.is_empty();
   if let Some(metadata) = component.token.claims.metadata {
@@ -49,7 +49,7 @@ pub(crate) async fn handle_command(opts: super::InvokeCommand, bytes: Vec<u8>) -
 
       let invocation = Invocation::new(Entity::client("vow"), Entity::local(&opts.component), payload, None);
 
-      let stream = provider.invoke(invocation).await.context("Component panicked")?;
+      let stream = collection.invoke(invocation).await.context("Component panicked")?;
       cli_common::functions::print_stream_json(stream, &opts.filter, opts.short, opts.raw).await?;
     }
   } else {
@@ -69,7 +69,7 @@ pub(crate) async fn handle_command(opts: super::InvokeCommand, bytes: Vec<u8>) -
       inherent_data,
     );
 
-    let stream = provider.invoke(invocation).await.context("Component panicked")?;
+    let stream = collection.invoke(invocation).await.context("Component panicked")?;
     cli_common::functions::print_stream_json(stream, &opts.filter, opts.short, opts.raw).await?;
   }
 

@@ -7,13 +7,13 @@ host:
     enabled: true
 network:
   name: network-one
-  providers:
+  collections:
     - kind: Mesh
       namespace: external_network
       reference: network-two
   schematics:
     - name: schematic-one
-      providers:
+      collections:
         - external_network
       instances:
         logger:

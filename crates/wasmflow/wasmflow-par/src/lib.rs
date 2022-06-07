@@ -91,7 +91,7 @@
 pub mod error;
 pub use error::ParError as Error;
 mod archive;
-pub use archive::{make_archive, validate_provider, validate_provider_dir, BIN_PATH, INTERFACE_PATH, JWT_PATH};
+pub use archive::{make_archive, validate_collection, validate_collection_dir, BIN_PATH, INTERFACE_PATH, JWT_PATH};
 
 #[macro_use]
 extern crate tracing;

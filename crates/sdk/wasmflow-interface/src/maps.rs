@@ -3,7 +3,7 @@ use std::str::FromStr;
 
 use serde::{Deserialize, Serialize};
 
-use crate::signatures::{ComponentSignature, ParseError, ProviderSignature, TypeSignature};
+use crate::signatures::{CollectionSignature, ComponentSignature, ParseError, TypeSignature};
 use crate::TypeDefinition;
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
@@ -74,17 +74,17 @@ impl TypeMap {
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
 #[serde(transparent)]
 #[must_use]
-/// A HashMap of provider names to their signature.
-pub struct ProviderMap(pub HashMap<String, ProviderSignature>);
+/// A HashMap from collection names to their signatures.
+pub struct CollectionMap(pub HashMap<String, CollectionSignature>);
 
-impl From<HashMap<String, ProviderSignature>> for ProviderMap {
-  fn from(map: HashMap<String, ProviderSignature>) -> Self {
+impl From<HashMap<String, CollectionSignature>> for CollectionMap {
+  fn from(map: HashMap<String, CollectionSignature>) -> Self {
     Self(map)
   }
 }
 
-impl ProviderMap {
-  wasmflow_macros::kv_impl! {ProviderSignature, pub}
+impl CollectionMap {
+  wasmflow_macros::kv_impl! {CollectionSignature, pub}
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]

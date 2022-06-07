@@ -14,11 +14,11 @@ pub struct NetworkDefinition {
   /// The name of the Network if provided.
   pub name: Option<String>,
   /// An optional entrypoint for the network.
-  pub entry: Option<EntrypointDefinition>,
+  pub triggers: Option<EntrypointDefinition>,
   /// A list of SchematicDefinitions.
   pub schematics: Vec<SchematicDefinition>,
-  /// A list of ProviderDefinitions.
-  pub providers: Vec<ProviderDefinition>,
+  /// A list of CollectionDefinitions.
+  pub collections: Vec<CollectionDefinition>,
 }
 
 impl NetworkDefinition {
@@ -33,12 +33,12 @@ impl TryFrom<&crate::v0::NetworkManifest> for NetworkDefinition {
   type Error = Error;
   fn try_from(def: &crate::v0::NetworkManifest) -> Result<Self, Error> {
     let schematics: Result<Vec<SchematicDefinition>, Error> = def.schematics.iter().map(|val| val.try_into()).collect();
-    let providers = def.providers.iter().map(|val| val.into()).collect();
+    let collections = def.collections.iter().map(|val| val.into()).collect();
     Ok(Self {
       name: def.name.clone(),
       schematics: schematics?,
-      entry: def.entry.clone().map(EntrypointDefinition::from),
-      providers,
+      triggers: def.triggers.clone().map(EntrypointDefinition::from),
+      collections,
     })
   }
 }
@@ -53,12 +53,12 @@ impl TryFrom<NetworkManifest<'_>> for NetworkDefinition {
 }
 
 #[derive(Debug, Clone)]
-/// A definition of a Wasmflow Provider with its namespace, how to retrieve or access it and its configuration.
+/// A definition of a Wasmflow Collection with its namespace, how to retrieve or access it and its configuration.
 #[must_use]
 pub struct EntrypointDefinition {
-  /// The reference/location of the provider.
+  /// The reference/location of the collection.
   pub reference: String,
-  /// Data or configuration to pass to the provider initialization.
+  /// Data or configuration to pass to the collection initialization.
   pub data: Value,
 }
 
@@ -72,22 +72,22 @@ impl From<crate::v0::EntrypointDefinition> for EntrypointDefinition {
 }
 
 #[derive(Debug, Clone)]
-/// A definition of a Wasmflow Provider with its namespace, how to retrieve or access it and its configuration.
+/// A definition of a Wasmflow Collection with its namespace, how to retrieve or access it and its configuration.
 #[must_use]
-pub struct ProviderDefinition {
-  /// The namespace to reference the provider's components on.
+pub struct CollectionDefinition {
+  /// The namespace to reference the collection's components on.
   pub namespace: String,
-  /// The kind/type of the provider.
-  pub kind: ProviderKind,
-  /// The reference/location of the provider.
+  /// The kind/type of the collection.
+  pub kind: CollectionKind,
+  /// The reference/location of the collection.
   pub reference: String,
-  /// Data or configuration to pass to the provider initialization.
+  /// Data or configuration to pass to the collection initialization.
   pub data: Value,
 }
 
-impl From<&crate::v0::ProviderDefinition> for ProviderDefinition {
-  fn from(def: &crate::v0::ProviderDefinition) -> Self {
-    ProviderDefinition {
+impl From<&crate::v0::CollectionDefinition> for CollectionDefinition {
+  fn from(def: &crate::v0::CollectionDefinition) -> Self {
+    CollectionDefinition {
       namespace: def.namespace.clone(),
       kind: def.kind.into(),
       reference: def.reference.clone(),
@@ -97,31 +97,31 @@ impl From<&crate::v0::ProviderDefinition> for ProviderDefinition {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-/// The kind of provider.
-pub enum ProviderKind {
-  /// Native providers included at compile-time in a Wasmflow host.
+/// The kind of collection.
+pub enum CollectionKind {
+  /// Native collections included at compile-time in a Wasmflow host.
   Native = 0,
   /// The URL for a separately managed GRPC endpoint.
   GrpcUrl = 1,
-  /// A WaPC WebAssembly provider.
+  /// A WaPC WebAssembly collection.
   Wapc = 2,
-  /// A provider accessible via a connected mesh.
+  /// A collection accessible via a connected mesh.
   Mesh = 3,
   /// A local or remote Network definition.
   Network = 4,
-  /// A GRPC provider binary.
+  /// A GRPC collection binary.
   Par = 5,
 }
 
-impl From<crate::v0::ProviderKind> for ProviderKind {
-  fn from(def: crate::v0::ProviderKind) -> Self {
+impl From<crate::v0::CollectionKind> for CollectionKind {
+  fn from(def: crate::v0::CollectionKind) -> Self {
     match def {
-      crate::v0::ProviderKind::Native => ProviderKind::Native,
-      crate::v0::ProviderKind::Par => ProviderKind::Par,
-      crate::v0::ProviderKind::GrpcUrl => ProviderKind::GrpcUrl,
-      crate::v0::ProviderKind::WaPC => ProviderKind::Wapc,
-      crate::v0::ProviderKind::Mesh => ProviderKind::Mesh,
-      crate::v0::ProviderKind::Network => ProviderKind::Network,
+      crate::v0::CollectionKind::Native => CollectionKind::Native,
+      crate::v0::CollectionKind::Par => CollectionKind::Par,
+      crate::v0::CollectionKind::GrpcUrl => CollectionKind::GrpcUrl,
+      crate::v0::CollectionKind::WaPC => CollectionKind::Wapc,
+      crate::v0::CollectionKind::Mesh => CollectionKind::Mesh,
+      crate::v0::CollectionKind::Network => CollectionKind::Network,
     }
   }
 }

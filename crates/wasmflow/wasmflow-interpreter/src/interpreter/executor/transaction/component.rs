@@ -5,10 +5,10 @@ use std::time::Duration;
 use tokio_stream::StreamExt;
 use tracing_futures::Instrument;
 use uuid::Uuid;
-use wasmflow_schematic_graph::{ComponentIndex, PortDirection, PortReference};
-use wasmflow_transport::{MessageSignal, MessageTransport, TransportMap, TransportStream, TransportWrapper};
 use wasmflow_entity::Entity;
 use wasmflow_invocation::Invocation;
+use wasmflow_schematic_graph::{ComponentIndex, PortDirection, PortReference};
+use wasmflow_transport::{MessageSignal, MessageTransport, TransportMap, TransportStream, TransportWrapper};
 
 use self::port::port_handler::{BufferAction, PortHandler};
 use self::port::{InputPorts, OutputPorts, PortStatus};
@@ -17,7 +17,7 @@ use crate::graph::types::*;
 use crate::graph::Reference;
 use crate::interpreter::channel::Event;
 use crate::interpreter::error::StateError;
-use crate::{ExecutionError, HandlerMap, InterpreterDispatchChannel, Provider};
+use crate::{Collection, ExecutionError, HandlerMap, InterpreterDispatchChannel};
 type Result<T> = std::result::Result<T, ExecutionError>;
 
 pub(crate) mod port;
@@ -32,8 +32,8 @@ pub(crate) struct InstanceHandler {
   outputs: OutputPorts,
   schematic: Arc<Schematic>,
   pending: AtomicU32,
-  providers: Arc<HandlerMap>,
-  self_provider: Arc<dyn Provider + Send + Sync>,
+  collections: Arc<HandlerMap>,
+  self_collection: Arc<dyn Collection + Send + Sync>,
 }
 
 impl std::fmt::Debug for InstanceHandler {
@@ -52,8 +52,8 @@ impl InstanceHandler {
   pub(super) fn new(
     schematic: Arc<Schematic>,
     component: &Component,
-    providers: Arc<HandlerMap>,
-    self_provider: Arc<dyn Provider + Send + Sync>,
+    collections: Arc<HandlerMap>,
+    self_collection: Arc<dyn Collection + Send + Sync>,
   ) -> Self {
     let inputs = component.inputs().to_vec();
     let outputs = component.outputs().to_vec();
@@ -66,9 +66,9 @@ impl InstanceHandler {
       reference,
       index: component.index(),
       identifier: component.id().to_owned(),
-      providers,
+      collections,
       pending: AtomicU32::new(0),
-      self_provider,
+      self_collection,
     }
   }
 
@@ -339,29 +339,29 @@ impl InstanceHandler {
     self.increment_pending();
 
     let fut = if namespace == NS_SELF {
-      let clone = self.self_provider.clone();
+      let clone = self.self_collection.clone();
       tokio::spawn(async move {
         clone
           .handle(invocation, associated_data)
           .await
-          .map_err(|e| ExecutionError::ProviderError(e.to_string()))
+          .map_err(ExecutionError::CollectionError)
       })
     } else {
       let clone = self
-        .providers
+        .collections
         .get(&namespace)
-        .ok_or_else(|| ExecutionError::InvalidState(StateError::MissingProvider(self.namespace().to_owned())))?
-        .provider
+        .ok_or_else(|| ExecutionError::InvalidState(StateError::MissingCollection(self.namespace().to_owned())))?
+        .collection
         .clone();
       tokio::spawn(async move {
         clone
           .handle(invocation, associated_data)
           .await
-          .map_err(|e| ExecutionError::ProviderError(e.to_string()))
+          .map_err(ExecutionError::CollectionError)
       })
     };
 
-    let outer_result = fut.await.map_err(|e| ExecutionError::ProviderError(e.to_string()));
+    let outer_result = fut.await.map_err(|e| ExecutionError::CollectionError(Box::new(e)));
 
     let stream = match outer_result {
       Ok(Ok(result)) => result,

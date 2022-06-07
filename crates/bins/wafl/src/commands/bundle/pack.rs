@@ -4,7 +4,7 @@ use anyhow::Result;
 use clap::Args;
 use nkeys::KeyPairType;
 use wasmflow_par::make_archive;
-use wasmflow_rpc::ProviderSignature;
+use wasmflow_rpc::CollectionSignature;
 use wasmflow_wascap::ClaimsOptions;
 
 use crate::io::{async_read, async_read_to_string, async_write};
@@ -59,7 +59,7 @@ pub(crate) async fn handle(opts: Options) -> Result<()> {
 
   let binbytes = async_read(&opts.binpath).await?;
   let signature_json = async_read_to_string(&opts.interface_path).await?;
-  let signature: ProviderSignature = serde_json::from_str(&signature_json)?;
+  let signature: CollectionSignature = serde_json::from_str(&signature_json)?;
   let options = ClaimsOptions {
     revision: opts.rev,
     version: opts.ver,

@@ -3,13 +3,13 @@ use std::path::Path;
 mod test;
 
 use anyhow::Result;
-use test::{JsonWriter, TestProvider};
+use seeded_random::Seed;
+use test::{JsonWriter, TestCollection};
+use wasmflow_entity::Entity;
 use wasmflow_interpreter::graph::from_def;
 use wasmflow_interpreter::{HandlerMap, Interpreter, InterpreterOptions, NamespaceHandler};
-use wasmflow_manifest::Loadable;
-use seeded_random::Seed;
-use wasmflow_entity::Entity;
 use wasmflow_invocation::Invocation;
+use wasmflow_manifest::Loadable;
 use wasmflow_packet::PacketMap;
 
 fn load<T: AsRef<Path>>(path: T) -> Result<wasmflow_manifest::HostManifest> {
@@ -27,11 +27,11 @@ const OPTIONS: Option<InterpreterOptions> = Some(InterpreterOptions {
 async fn test_senders() -> Result<()> {
   let manifest = load("./tests/manifests/v0/core/senders.yaml")?;
   let network = from_def(&manifest.network().try_into()?)?;
-  let providers = HandlerMap::new(vec![NamespaceHandler::new("test", Box::new(TestProvider::new()))]);
+  let collections = HandlerMap::new(vec![NamespaceHandler::new("test", Box::new(TestCollection::new()))]);
   let inputs = PacketMap::default();
 
   let invocation = Invocation::new_test("senders", Entity::local("test"), inputs, None);
-  let mut interpreter = Interpreter::new(Some(Seed::unsafe_new(1)), network, None, Some(providers))?;
+  let mut interpreter = Interpreter::new(Some(Seed::unsafe_new(1)), network, None, Some(collections))?;
   interpreter.start(OPTIONS, Some(Box::new(JsonWriter::default()))).await;
   let mut stream = interpreter.invoke(invocation).await?;
 
@@ -50,14 +50,14 @@ async fn test_senders() -> Result<()> {
 async fn test_merge() -> Result<()> {
   let manifest = load("./tests/manifests/v0/core/merge.yaml")?;
   let network = from_def(&manifest.network().try_into()?)?;
-  let providers = HandlerMap::new(vec![NamespaceHandler::new("test", Box::new(TestProvider::new()))]);
+  let collections = HandlerMap::new(vec![NamespaceHandler::new("test", Box::new(TestCollection::new()))]);
   let mut inputs = PacketMap::default();
   inputs.insert("schem_one", "first value");
   inputs.insert("schem_two", &2u8);
   inputs.insert("schem_three", &["alpha".to_owned(), "beta".to_owned()]);
 
   let invocation = Invocation::new_test("merge", Entity::local("test"), inputs, None);
-  let mut interpreter = Interpreter::new(Some(Seed::unsafe_new(1)), network, None, Some(providers))?;
+  let mut interpreter = Interpreter::new(Some(Seed::unsafe_new(1)), network, None, Some(collections))?;
   interpreter.start(OPTIONS, Some(Box::new(JsonWriter::default()))).await;
   let mut stream = interpreter.invoke(invocation).await?;
 

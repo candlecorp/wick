@@ -4,7 +4,7 @@ use self::error::{SchematicInvalid, ValidationError};
 use super::Program;
 use crate::constants::CORE_ID_SENDER;
 use crate::graph::Reference;
-use crate::interpreter::provider::get_id;
+use crate::interpreter::collections::get_id;
 
 pub(crate) mod error;
 
@@ -18,18 +18,18 @@ impl Validator {
     let mut errors = Vec::new();
     let state = &program.state();
 
-    let providers = &state.providers;
+    let collections = &state.collections;
     for schematic in state.network.schematics() {
       for component in schematic.components() {
         let mut validation_errors = Vec::new();
 
         if let ComponentKind::External(reference) = component.kind() {
-          let provider = providers.get(reference.namespace());
-          if provider.is_none() {
-            validation_errors.push(ValidationError::MissingProvider(reference.namespace().to_owned()));
+          let collection = collections.get(reference.namespace());
+          if collection.is_none() {
+            validation_errors.push(ValidationError::MissingCollection(reference.namespace().to_owned()));
             continue;
           }
-          let provider = provider.unwrap();
+          let collection = collection.unwrap();
 
           let id = get_id(
             reference.namespace(),
@@ -38,7 +38,7 @@ impl Validator {
             component.id(),
           );
 
-          let component_def = provider.components.get(&id);
+          let component_def = collection.components.get(&id);
 
           if component_def.is_none() {
             validation_errors.push(ValidationError::MissingComponent {

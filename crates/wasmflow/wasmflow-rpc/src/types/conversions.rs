@@ -14,12 +14,12 @@ use crate::{rpc, DurationStatistics};
 
 type Result<T> = std::result::Result<T, RpcError>;
 
-impl TryFrom<wasmflow::HostedType> for rpc::ProviderSignature {
+impl TryFrom<wasmflow::HostedType> for rpc::CollectionSignature {
   type Error = RpcError;
 
   fn try_from(v: wasmflow::HostedType) -> Result<Self> {
     Ok(match v {
-      wasmflow::HostedType::Provider(v) => v.try_into()?,
+      wasmflow::HostedType::Collection(v) => v.try_into()?,
     })
   }
 }
@@ -30,8 +30,8 @@ impl TryFrom<wasmflow::HostedType> for rpc::HostedType {
   fn try_from(value: wasmflow::HostedType) -> Result<Self> {
     use rpc::hosted_type::Type;
     Ok(match value {
-      wasmflow::HostedType::Provider(p) => Self {
-        r#type: Some(Type::Provider(p.try_into()?)),
+      wasmflow::HostedType::Collection(p) => Self {
+        r#type: Some(Type::Collection(p.try_into()?)),
       },
     })
   }
@@ -44,17 +44,17 @@ impl TryFrom<rpc::HostedType> for wasmflow::HostedType {
     use rpc::hosted_type::Type;
     match value.r#type {
       Some(v) => match v {
-        Type::Provider(sig) => Ok(wasmflow::HostedType::Provider(sig.try_into()?)),
+        Type::Collection(sig) => Ok(wasmflow::HostedType::Collection(sig.try_into()?)),
       },
       None => Err(RpcError::InvalidSignature),
     }
   }
 }
 
-impl TryFrom<rpc::ProviderSignature> for wasmflow::ProviderSignature {
+impl TryFrom<rpc::CollectionSignature> for wasmflow::CollectionSignature {
   type Error = RpcError;
 
-  fn try_from(v: rpc::ProviderSignature) -> Result<Self> {
+  fn try_from(v: rpc::CollectionSignature) -> Result<Self> {
     Ok(Self {
       name: Some(v.name),
       version: v.version,
@@ -100,10 +100,10 @@ impl TryFrom<wasmflow::ComponentSignature> for rpc::Component {
   }
 }
 
-impl TryFrom<wasmflow::ProviderSignature> for rpc::ProviderSignature {
+impl TryFrom<wasmflow::CollectionSignature> for rpc::CollectionSignature {
   type Error = RpcError;
 
-  fn try_from(v: wasmflow::ProviderSignature) -> Result<Self> {
+  fn try_from(v: wasmflow::CollectionSignature) -> Result<Self> {
     Ok(Self {
       name: v.name.unwrap_or_default(),
       version: v.version,

@@ -20,9 +20,9 @@ use crate::SharedRpcHandler;
 #[derive(Derivative)]
 #[derivative(Debug)]
 pub struct InvocationServer {
-  /// The provider that will handle incoming requests.
+  /// The collection that will handle incoming requests.
   #[derivative(Debug = "ignore")]
-  pub provider: SharedRpcHandler,
+  pub collection: SharedRpcHandler,
 
   stats: RwLock<HashMap<String, Statistics>>,
 }
@@ -30,9 +30,9 @@ pub struct InvocationServer {
 impl InvocationServer {
   /// Constructor.
   #[must_use]
-  pub fn new(provider: SharedRpcHandler) -> Self {
+  pub fn new(collection: SharedRpcHandler) -> Self {
     Self {
-      provider,
+      collection,
       stats: RwLock::new(HashMap::new()),
     }
   }
@@ -103,7 +103,7 @@ impl InvocationService for InvocationServer {
       let entity = entity.unwrap();
       let entity_name = entity.name().to_owned();
 
-      let result = self.provider.invoke(invocation).await;
+      let result = self.collection.invoke(invocation).await;
       if let Err(e) = result {
         let message = e.to_string();
         error!("Invocation failed: {}", message);
@@ -126,8 +126,11 @@ impl InvocationService for InvocationServer {
   }
 
   async fn list(&self, _request: tonic::Request<rpc::ListRequest>) -> Result<Response<ListResponse>, Status> {
-    trace!("Listing registered components from provider");
-    let list = self.provider.get_list().map_err(|e| Status::internal(e.to_string()))?;
+    trace!("Listing registered components from collection");
+    let list = self
+      .collection
+      .get_list()
+      .map_err(|e| Status::internal(e.to_string()))?;
     trace!("Server: list is {:?}", list);
 
     let result: Result<Vec<_>, RpcError> = list.into_iter().map(TryFrom::try_from).collect();

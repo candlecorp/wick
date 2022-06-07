@@ -14,7 +14,7 @@ pub enum NetworkError {
 
   // OLD
   #[error(transparent)]
-  ProviderError(#[from] ProviderError),
+  CollectionError(#[from] CollectionError),
 
   #[error(transparent)]
   RpcHandlerError(#[from] Box<wasmflow_rpc::Error>),
@@ -23,8 +23,8 @@ pub enum NetworkError {
   Timeout,
 }
 
-impl From<NetworkError> for ProviderError {
+impl From<NetworkError> for CollectionError {
   fn from(e: NetworkError) -> Self {
-    ProviderError::NetworkError(e.to_string())
+    CollectionError::NetworkError(e.to_string())
   }
 }

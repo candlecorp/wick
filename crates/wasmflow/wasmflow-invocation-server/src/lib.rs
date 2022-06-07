@@ -124,13 +124,13 @@ pub fn make_input<K: AsRef<str>, V: serde::Serialize>(entries: Vec<(K, V)>) -> T
     .collect()
 }
 
-/// Build and spawn an RPC server for the passed provider.
+/// Build and spawn an RPC server for the passed collection.
 #[must_use]
 pub fn make_rpc_server(
   socket: tokio::net::TcpSocket,
-  provider: SharedRpcHandler,
+  collection: SharedRpcHandler,
 ) -> JoinHandle<std::result::Result<(), tonic::transport::Error>> {
-  let component_service = InvocationServer::new(provider);
+  let component_service = InvocationServer::new(collection);
 
   let svc = InvocationServiceServer::new(component_service);
 

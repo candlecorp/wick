@@ -4,8 +4,8 @@ type SchematicManifest {
   "Schematic name."
   name: string @required,
 
-  "A list of providers and component collections."
-  providers: [string],
+  "A list of collections the schematic uses."
+  collections: [string],
 
   "A map from component reference to its target."
   instances: {string: ComponentDefinition},

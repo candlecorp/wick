@@ -73,7 +73,7 @@ message ListRequest {}
 message ListResponse { repeated HostedType schemas = 1; }
 
 message HostedType {
-  oneof type { ProviderSignature provider = 1; }
+  oneof type { CollectionSignature collection = 1; }
 }
 
 message Component {
@@ -87,7 +87,7 @@ message Component {
   map<string, TypeSignature> outputs = 4;
 }
 
-message ProviderSignature {
+message CollectionSignature {
   string name = 1;
   string version = 2;
   uint32 format = 6;
@@ -107,7 +107,7 @@ message TypeDefinition {
 message WellKnownSchema {
   repeated string capabilities = 1;
   string url = 2;
-  ProviderSignature schema = 3;
+  CollectionSignature schema = 3;
 }
 
 message StatsRequest {}

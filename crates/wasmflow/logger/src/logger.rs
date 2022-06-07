@@ -48,7 +48,7 @@ fn priority_module(module: &str) -> bool {
     "cli_common",
     "wapc",
     "wafl",
-    "test_native_provider",
+    "test_native_collection",
     "wasmtime_provider",
   ]
   .contains(&module)

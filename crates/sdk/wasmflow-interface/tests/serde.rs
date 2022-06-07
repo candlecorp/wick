@@ -7,7 +7,7 @@ use wasmflow_interface::{
   EnumSignature,
   EnumVariant,
   InternalType,
-  ProviderSignature,
+  CollectionSignature,
   TypeDefinition,
   TypeSignature,
 };
@@ -16,7 +16,7 @@ use wasmflow_interface::{
 fn test_deserialize() -> Result<()> {
   let src = read_to_string("./tests/interface.json")?;
 
-  let sig: ProviderSignature = serde_json::from_str(&src)?;
+  let sig: CollectionSignature = serde_json::from_str(&src)?;
   assert_eq!(sig.name, Some("blog".to_owned()));
   let as_json = serde_json::to_string(&sig)?;
   let actual_as_value: serde_json::Value = serde_json::from_str(&as_json)?;
@@ -32,7 +32,7 @@ fn test_deserialize() -> Result<()> {
 fn test_deserialize2() -> Result<()> {
   let src = read_to_string("./tests/interface-test.json")?;
 
-  let sig: ProviderSignature = serde_json::from_str(&src)?;
+  let sig: CollectionSignature = serde_json::from_str(&src)?;
   assert_eq!(sig.name, Some("test-component".to_owned()));
   let as_json = serde_json::to_string(&sig)?;
   let actual_as_value: serde_json::Value = serde_json::from_str(&as_json)?;
@@ -89,7 +89,7 @@ fn test_serde_all() -> Result<()> {
 
 #[test_log::test]
 fn test_serde_rt() -> Result<()> {
-  let mut sig = ProviderSignature::new("test-sig");
+  let mut sig = CollectionSignature::new("test-sig");
   sig.types.insert(
     "Unit",
     TypeDefinition::Enum(EnumSignature::new(
@@ -107,7 +107,7 @@ fn test_serde_rt() -> Result<()> {
 
   let json = serde_json::to_string(&sig)?;
   eprintln!("{}", json);
-  let actual: ProviderSignature = serde_json::from_str(&json)?;
+  let actual: CollectionSignature = serde_json::from_str(&json)?;
   assert_eq!(sig, actual);
 
   Ok(())

@@ -372,10 +372,10 @@
 </div><div class=field>
 
 <h3 class=field-name>
-  <a name="entry">entry</a>
+  <a name="triggers">triggers</a>
 </h3>
 
-<span class="description field-description">The provider to use as the entrypoint when running as a standalone process.</span>
+<span class="description field-description">The collection to use as the entrypoint when running as a standalone process.</span>
 
 
 <ul class="field-notes">
@@ -400,14 +400,14 @@
 </div><div class=field>
 
 <h3 class=field-name>
-  <a name="providers">providers</a>
+  <a name="collections">collections</a>
 </h3>
 
-<span class="description field-description">A list of providers and component collections.</span>
+<span class="description field-description">A list of component collections.</span>
 
 
 <ul class="field-notes">
-<li><span class="type field-note">Type: <span class=field-type><a href="#ProviderDefinition">ProviderDefinition</a>[]</span></span></li>
+<li><span class="type field-note">Type: <span class=field-type><a href="#CollectionDefinition">CollectionDefinition</a>[]</span></span></li>
 
 
 </ul>
@@ -416,7 +416,7 @@
   <a name="EntrypointDefinition">EntrypointDefinition</a>
 </h2>
 
-<span class="description type-description">A provider definition for the main entrypoint.</span>
+<span class="description type-description">A collection definition for the main entrypoint.</span>
 <div class=fields>
 <div class=field>
 
@@ -424,7 +424,7 @@
   <a name="reference">reference</a>
 </h3>
 
-<span class="description field-description">The reference/location of the provider.</span>
+<span class="description field-description">The reference/location of the collection.</span>
 
 
 <ul class="field-notes">
@@ -438,7 +438,7 @@
   <a name="data">data</a>
 </h3>
 
-<span class="description field-description">Data or configuration to pass to the provider initialization.</span>
+<span class="description field-description">Data or configuration used to initialize the collection.</span>
 
 
 <ul class="field-notes">
@@ -448,10 +448,10 @@
 </ul>
 </div></div></div><div class=definition>
 <h2 class="definition-name type-name">
-  <a name="ProviderDefinition">ProviderDefinition</a>
+  <a name="CollectionDefinition">CollectionDefinition</a>
 </h2>
 
-<span class="description type-description">A provider definition.</span>
+<span class="description type-description">A collection definition.</span>
 <div class=fields>
 <div class=field>
 
@@ -459,7 +459,7 @@
   <a name="namespace">namespace</a>
 </h3>
 
-<span class="description field-description">The namespace to reference the provider's components on.</span>
+<span class="description field-description">The local namespace for the collection.</span>
 
 
 <ul class="field-notes">
@@ -473,11 +473,11 @@
   <a name="kind">kind</a>
 </h3>
 
-<span class="description field-description">The kind/type of the provider.</span>
+<span class="description field-description">The kind/type of the collection.</span>
 
 
 <ul class="field-notes">
-<li><span class="type field-note">Type: <span class=field-type><a href="#ProviderKind">ProviderKind</a></span></span></li>
+<li><span class="type field-note">Type: <span class=field-type><a href="#CollectionKind">CollectionKind</a></span></span></li>
 
 
 </ul>
@@ -487,7 +487,7 @@
   <a name="reference">reference</a>
 </h3>
 
-<span class="description field-description">The reference/location of the provider.</span>
+<span class="description field-description">The reference/location of the collection.</span>
 
 
 <ul class="field-notes">
@@ -501,7 +501,7 @@
   <a name="data">data</a>
 </h3>
 
-<span class="description field-description">Data or configuration to pass to the provider initialization.</span>
+<span class="description field-description">Data or configuration used to initialize the collection.</span>
 
 
 <ul class="field-notes">
@@ -511,10 +511,10 @@
 </ul>
 </div></div></div><div class=definition>
 <h2 class="definition-name type-name">
-  <a name="ProviderKind">ProviderKind</a>
+  <a name="CollectionKind">CollectionKind</a>
 </h2>
 
-<span class="description enum-description">Kind of provider.</span>
+<span class="description enum-description">Kind of collection.</span>
 <div class=fields>
 <div class=field>
 
@@ -522,7 +522,7 @@
   <a name="Native">Native</a>
 </h3>
 
-<span class=field-description>Native providers included at compile-time in a Wasmflow host.</span>
+<span class=field-description>Native collections included at compile-time in a Wasmflow host.</span>
 
 
 <ul class="field-notes">
@@ -552,7 +552,7 @@
   <a name="WaPC">WaPC</a>
 </h3>
 
-<span class=field-description>A WaPC WebAssembly provider.</span>
+<span class=field-description>A WaPC WebAssembly collection.</span>
 
 
 <ul class="field-notes">
@@ -567,7 +567,7 @@
   <a name="Mesh">Mesh</a>
 </h3>
 
-<span class=field-description>A provider accessible via a connected mesh.</span>
+<span class=field-description>A collection accessible via a connected mesh.</span>
 
 
 <ul class="field-notes">
@@ -597,7 +597,7 @@
   <a name="Par">Par</a>
 </h3>
 
-<span class=field-description>A GRPC provider binary.</span>
+<span class=field-description>A GRPC collection binary.</span>
 
 
 <ul class="field-notes">
@@ -631,10 +631,10 @@
 </div><div class=field>
 
 <h3 class=field-name>
-  <a name="providers">providers</a>
+  <a name="collections">collections</a>
 </h3>
 
-<span class="description field-description">A list of providers and component collections.</span>
+<span class="description field-description">A list of collections the schematic uses.</span>
 
 
 <ul class="field-notes">

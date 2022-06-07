@@ -180,8 +180,8 @@
             }
           }
         },
-        "entry": {
-          "description": "The provider to use as the entrypoint when running as a standalone process.",
+        "triggers": {
+          "description": "The collection to use as the entrypoint when running as a standalone process.",
           "required": false,
 
           "$ref": "#/$defs/EntrypointDefinition"
@@ -193,11 +193,11 @@
             "$ref": "#/$defs/SchematicManifest"
           }
         },
-        "providers": {
-          "description": "A list of providers and component collections.",
+        "collections": {
+          "description": "A list of component collections.",
           "type": "array",
           "items": {
-            "$ref": "#/$defs/ProviderDefinition"
+            "$ref": "#/$defs/CollectionDefinition"
           }
         }
       },
@@ -209,46 +209,46 @@
       "additionalProperties": false,
       "properties": {
         "reference": {
-          "description": "The reference/location of the provider.",
+          "description": "The reference/location of the collection.",
 
           "type": "string"
         },
         "data": {
-          "description": "Data or configuration to pass to the provider initialization.",
+          "description": "Data or configuration used to initialize the collection.",
           "type": "object"
         }
       },
       "required": []
     },
 
-    "ProviderDefinition": {
-      "$anchor": "#ProviderDefinition",
+    "CollectionDefinition": {
+      "$anchor": "#CollectionDefinition",
       "additionalProperties": false,
       "properties": {
         "namespace": {
-          "description": "The namespace to reference the provider&#x27;s components on.",
+          "description": "The local namespace for the collection.",
 
           "type": "string"
         },
         "kind": {
-          "description": "The kind/type of the provider.",
+          "description": "The kind/type of the collection.",
 
-          "$ref": "#/$defs/ProviderKind"
+          "$ref": "#/$defs/CollectionKind"
         },
         "reference": {
-          "description": "The reference/location of the provider.",
+          "description": "The reference/location of the collection.",
 
           "type": "string"
         },
         "data": {
-          "description": "Data or configuration to pass to the provider initialization.",
+          "description": "Data or configuration used to initialize the collection.",
           "type": "object"
         }
       },
       "required": []
     },
 
-    "ProviderKind": {
+    "CollectionKind": {
       "enum": ["Native", "GrpcUrl", "WaPC", "Mesh", "Network", "Par"]
     },
 
@@ -261,8 +261,8 @@
 
           "type": "string"
         },
-        "providers": {
-          "description": "A list of providers and component collections.",
+        "collections": {
+          "description": "A list of collections the schematic uses.",
           "type": "array",
           "items": {
             "type": "string"
