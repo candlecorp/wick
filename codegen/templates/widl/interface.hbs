@@ -1,0 +1,13 @@
+
+
+{{~#each files}}
+import { {{#import (replace . ".widl" "")}}Inputs as {{pascalCase namespace.name.value}}Inputs, Outputs as {{pascalCase namespace.name.value}}Outputs } {{/import}} from "{{replace . ".widl" ""}}"
+{{/each}}
+
+interface {
+  {{#each files}}
+  {{#import (replace . ".widl" "")}}
+  {{snakeCase namespace.name.value }}(inputs: {{pascalCase namespace.name.value}}Inputs, outputs: {{pascalCase namespace.name.value}}Outputs) @rename("{{namespace.name.value}}")
+  {{/import}}
+  {{/each}}
+}

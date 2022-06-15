@@ -4,6 +4,6 @@ pub(crate) mod new;
 
 #[derive(Subcommand, Debug, Clone)]
 pub(crate) enum SubCommands {
-  #[clap(name = "project")]
+  #[clap(name = "new")]
   New(new::Options),
 }

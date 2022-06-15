@@ -1,5 +1,5 @@
 COMMON_PATH := $(abspath $(lastword $(MAKEFILE_LIST)))
-COMMON_DIR := $(dir $(COMMON_PATH))..
+MAKEFILE_DIR := $(dir $(COMMON_PATH))..
 
 .DEFAULT_GOAL:=all
 
@@ -25,3 +25,4 @@ endif
 
 MAKEFLAGS += --warn-undefined-variables
 MAKEFLAGS += --no-builtin-rules
+

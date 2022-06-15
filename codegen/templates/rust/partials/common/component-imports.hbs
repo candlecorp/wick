@@ -1,0 +1,13 @@
+
+
+{{#eachNamespace components=components namespace=namespace}}
+  {{#if namespace}}
+  pub mod {{moduleLeafName namespace}}  {
+    {{> component-imports components=components namespace=namespace}}
+  }
+  {{else}}
+  {{#each components}}
+    pub mod {{moduleLeafName name}}; // {{name}}
+  {{/each}}
+  {{/if}}
+{{/eachNamespace}}

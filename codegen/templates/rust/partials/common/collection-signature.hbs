@@ -1,0 +1,44 @@
+wasmflow_sdk::types::CollectionSignature {
+  name: {{#if name}}Some("{{name}}".to_owned()){{else}}None{{/if}},
+  format: 1,
+  version: "{{version}}".to_owned(),
+  types: std::collections::HashMap::from([
+  {{#each types}}
+    {{#switch type}}
+      {{#case "struct"}}
+      (
+        "{{@key}}".to_owned(),
+        wasmflow_sdk::types::TypeDefinition::Struct(wasmflow_sdk::types::StructSignature{
+          name:"{{name}}".to_owned(),
+          fields: std::collections::HashMap::from([
+          {{#each fields}}
+            ("{{@key}}".to_owned(),{{> type-signature type}}),
+          {{/each}}
+          ]).into()
+        })
+      ),
+      {{/case}}
+      {{#case "enum"}}
+      (
+        "{{@key}}".to_owned(),
+        wasmflow_sdk::types::TypeDefinition::Enum(wasmflow_sdk::types::EnumSignature{
+          name:"{{name}}".to_owned(),
+          values: vec![
+          {{#each values}}
+            wasmflow_sdk::types::EnumVariant::new("{{index}}",{{index}}),
+          {{/each}}
+          ]
+        })
+      ),
+      {{/case}}
+      {{#default}}
+        {{log .}}
+        {{panic "unhandled type"}}
+      {{/default}}
+    {{/switch}}
+  {{/each}}
+  ]).into(),
+  components: components.into(),
+  wellknown: Vec::new(),
+  config: wasmflow_sdk::types::TypeMap::new()
+}

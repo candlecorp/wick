@@ -19,7 +19,7 @@ INTERFACE:=./interface.json
 # All *.rs files in src/
 RUST_SOURCES:=$(wildcard ./src/*.rs) $(wildcard ./src/*/*.rs)
 
-CODEGEN:=vino-codegen
+CODEGEN:=ts-node $(MAKEFILE_DIR)/../codegen/src/cli.ts
 
 CLEAN_FILES := $(GENERATED_MODULE)
 CODEGEN_FILES := $(GENERATED_MODULE)

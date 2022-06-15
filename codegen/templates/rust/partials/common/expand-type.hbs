@@ -1,0 +1,30 @@
+
+{{#switch type ~}}
+  {{#case "ref"}}crate::components::{{refToModulePath ref}}{{/case}}
+  {{#case "string"}}String{{/case}}
+  {{#case "bytes"}}Vec<u8>{{/case}}
+  {{#case "raw"}}RawPacket{{/case}}
+  {{#case "struct"}}serde_json::Value{{/case}}
+  {{#case "link"}}wasmflow_sdk::sdk::CollectionLink{{/case}}
+  {{#case "internal"}}
+    {{#switch id}}
+      {{#case "__input__"}}
+        ComponentInputs
+      {{/case}}
+      {{#default}}
+        {{log .}}
+        {{panic "Unknown internal type..."}}
+      {{/default}}
+    {{/switch}}
+  {{/case}}
+  {{#case "map"}}
+    std::collections::HashMap<{{> expand-type key}}, {{> expand-type value}}>
+  {{/case}}
+  {{#case "list"}}
+    Vec<{{> expand-type element}}>
+  {{/case}}
+  {{#case "optional"}}
+    Option<{{>expand-type type}}>
+  {{/case}}
+  {{#default}}{{type}}{{/default}}
+{{~/switch}}

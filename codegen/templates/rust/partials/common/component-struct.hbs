@@ -1,0 +1,9 @@
+#[derive(Default, Clone, Copy)]
+#[allow(missing_debug_implementations)]
+pub struct Component {}
+
+impl wasmflow_sdk::sdk::Component for Component {
+  type Inputs = definition::Inputs;
+  type Outputs = definition::OutputPorts;
+  type Config = integration::Config;
+}

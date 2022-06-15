@@ -1,0 +1,56 @@
+{{#switch type}}
+  {{#case "i8"}}wasmflow_sdk::types::TypeSignature::I8{{/case}}
+  {{#case "u8"}}wasmflow_sdk::types::TypeSignature::U8{{/case}}
+  {{#case "i16"}}wasmflow_sdk::types::TypeSignature::I16{{/case}}
+  {{#case "u16"}}wasmflow_sdk::types::TypeSignature::U16{{/case}}
+  {{#case "i32"}}wasmflow_sdk::types::TypeSignature::I32{{/case}}
+  {{#case "u32"}}wasmflow_sdk::types::TypeSignature::U32{{/case}}
+  {{#case "i64"}}wasmflow_sdk::types::TypeSignature::I64{{/case}}
+  {{#case "u64"}}wasmflow_sdk::types::TypeSignature::U64{{/case}}
+  {{#case "f32"}}wasmflow_sdk::types::TypeSignature::F32{{/case}}
+  {{#case "f64"}}wasmflow_sdk::types::TypeSignature::F64{{/case}}
+  {{#case "bool"}}wasmflow_sdk::types::TypeSignature::Bool{{/case}}
+  {{#case "string"}}wasmflow_sdk::types::TypeSignature::String{{/case}}
+  {{#case "datetime"}}wasmflow_sdk::types::TypeSignature::Datetime{{/case}}
+  {{#case "bytes"}}wasmflow_sdk::types::TypeSignature::Bytes{{/case}}
+  {{#case "raw"}}wasmflow_sdk::types::TypeSignature::Raw{{/case}}
+  {{#case "value"}}wasmflow_sdk::types::TypeSignature::Value{{/case}}
+
+  {{#case "internal"}}
+    wasmflow_sdk::types::TypeSignature::Internal(
+    {{#switch id }}
+      {{#case "__input__"}}wasmflow_sdk::types::InternalType::ComponentInput{{/case}}
+      {{#default}}
+        {{log .}}
+        {{panic "Unknown internal type..."}}
+      {{/default}}
+    {{/switch}}
+    )
+  {{/case}}
+
+  {{#case "link"}}wasmflow_sdk::types::TypeSignature::Link{schemas:vec![{{#each schemas}}"{{ . }}".to_owned(){{/each}}]}{{/case}}
+
+  {{#case "map"}}
+  wasmflow_sdk::types::TypeSignature::Map{
+    key:Box::new({{> type-signature key}}),
+    value:Box::new({{> type-signature value }})
+  }
+  {{/case}}
+
+  {{#case "list"}}
+  wasmflow_sdk::types::TypeSignature::List{
+    element:Box::new({{> type-signature element}}),
+  }
+  {{/case}}
+
+  {{#case "optional"}}
+  wasmflow_sdk::types::TypeSignature::Optional{
+    option:Box::new({{> type-signature type}}),
+  }
+  {{/case}}
+
+  {{#default}}
+    {{log .}}
+    {{panic "Unknown type..."}}
+  {{/default}}
+{{/switch}}

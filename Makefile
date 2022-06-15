@@ -51,8 +51,11 @@ endef
 # Call the above rule generator for each BIN file
 $(foreach bin,$(CORE_BINS),$(eval $(call BUILD_BIN,$(bin))))
 
+codegen/node_modules:
+	cd codegen && npm install
+
 .PHONY: cleangen
-cleangen:  ## Run `make clean && make codegen` in child projects
+cleangen: codegen/node_modules  ## Run `make clean && make codegen` in child projects
 	@for project in $(MAKEFILE_PROJECTS); do \
 		echo "# Cleaning $$project"; \
 		$(MAKE) -C $$project clean; \
@@ -61,7 +64,7 @@ cleangen:  ## Run `make clean && make codegen` in child projects
 	done
 
 .PHONY: codegen
-codegen: ## Run `make codegen` in child projects
+codegen: codegen/node_modules ## Run `make codegen` in child projects
 	@for project in $(MAKEFILE_PROJECTS); do \
 		echo "# Generating code for $$project"; \
 		$(MAKE) -C $$project codegen; \
@@ -173,7 +176,7 @@ endif
 
 .PHONY: deps
 deps:   ## Install dependencies
-	npm install -g widl-template prettier "https://github.com/wasmflow/codegen#dev"
+	npm install -g widl-template prettier
 	cargo install cargo-deny tomlq
 
 ##@ Helpers

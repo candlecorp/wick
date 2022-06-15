@@ -1,10 +1,10 @@
-include $(COMMON_DIR)/common/Makefile.common
-include $(COMMON_DIR)/common/Makefile.common-wellknown-true
-include $(COMMON_DIR)/common/Makefile.common-native
-include $(COMMON_DIR)/common/Makefile.common-stateful
-include $(COMMON_DIR)/common/Makefile.common-collection
-include $(COMMON_DIR)/common/Makefile.common-post
-include $(COMMON_DIR)/common/Makefile.postlude
+include $(MAKEFILE_DIR)/common/Makefile.common
+include $(MAKEFILE_DIR)/common/Makefile.common-wellknown-true
+include $(MAKEFILE_DIR)/common/Makefile.common-native
+include $(MAKEFILE_DIR)/common/Makefile.common-stateful
+include $(MAKEFILE_DIR)/common/Makefile.common-collection
+include $(MAKEFILE_DIR)/common/Makefile.common-post
+include $(MAKEFILE_DIR)/common/Makefile.postlude
 
 .PHONY: build
 build: $(SOURCE_FILES)

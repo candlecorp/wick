@@ -1,0 +1,9 @@
+
+#[cfg(all(feature = "host", not(target_arch = "wasm32")))]
+  pub fn signature() -> wasmflow_sdk::types::ComponentSignature {
+    wasmflow_sdk::types::ComponentSignature {
+      name: "{{.}}".to_owned(),
+      inputs : inputs_list().into(),
+      outputs : outputs_list().into(),
+    }
+  }

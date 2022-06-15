@@ -1,9 +1,11 @@
 **/target
 DEV.env
 node_modules
-build
+/build
+/crates/integration/*/build
 .DS_Store
 archive
 crates/wasmflow-rpc/src/generated/wasmflow.rs
 crates/*/**/Cargo.lock
 bundle.tar
+/codegen/dist
