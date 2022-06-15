@@ -14,6 +14,10 @@ pub struct LoggingOptions {
   #[clap(long = "verbose", short = 'V')]
   pub verbose: bool,
 
+  /// Greatly increases logging.
+  #[clap(long = "silly", short = 'S')]
+  pub silly: bool,
+
   /// Turns on debug logging.
   #[clap(long = "debug")]
   pub debug: bool,

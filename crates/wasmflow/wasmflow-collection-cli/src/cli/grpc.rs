@@ -13,7 +13,7 @@ pub(super) async fn start_rpc_server(
   options: &ServerOptions,
   svc: InvocationServiceServer<InvocationServer>,
 ) -> Result<(SocketAddr, Sender<ServerMessage>)> {
-  info!("Starting RPC server");
+  debug!("Initializing RPC server");
   let port = options.port.unwrap_or(0);
   let address = options.address.unwrap_or(Ipv4Addr::from_str("127.0.0.1")?);
 
@@ -21,7 +21,11 @@ pub(super) async fn start_rpc_server(
   socket.bind(SocketAddr::new(IpAddr::V4(address), port))?;
   let addr = socket.local_addr()?;
 
-  trace!("Binding RPC server to {} (Port: {})", addr, addr.port());
+  trace!(
+    address = %addr,
+    port = addr.port(),
+    "RPC server address"
+  );
 
   socket.set_reuseaddr(true).unwrap();
   #[cfg(not(target_os = "windows"))]
@@ -38,7 +42,6 @@ pub(super) async fn start_rpc_server(
 
   let mut builder = Server::builder();
 
-  trace!("RPC: Starting server on {}", addr);
   if let (Some(pem), Some(key)) = (&options.pem, &options.key) {
     let server_pem = tokio::fs::read(pem).await?;
     let server_key = tokio::fs::read(key).await?;
@@ -46,7 +49,7 @@ pub(super) async fn start_rpc_server(
     let mut tls = tonic::transport::ServerTlsConfig::new().identity(identity);
 
     if let Some(ca) = &options.ca {
-      debug!("RPC: Adding CA root from {}", ca.to_string_lossy());
+      debug!(ca = %ca.to_string_lossy(),"RPC: Adding CA root");
       let ca_pem = tokio::fs::read(ca).await?;
       let ca = Certificate::from_pem(ca_pem);
       tls = tls.client_ca_root(ca);
@@ -54,7 +57,7 @@ pub(super) async fn start_rpc_server(
 
     builder = builder.tls_config(tls)?;
   } else if let Some(ca) = &options.ca {
-    debug!("RPC: Adding CA root from {}", ca.to_string_lossy());
+    debug!(ca = %ca.to_string_lossy(),"RPC: Adding CA root");
     let ca_pem = tokio::fs::read(ca).await?;
     let ca = Certificate::from_pem(ca_pem);
     let tls = tonic::transport::ServerTlsConfig::new().client_ca_root(ca);
@@ -70,9 +73,15 @@ pub(super) async fn start_rpc_server(
   let (tx, mut rx) = tokio::sync::mpsc::channel::<ServerMessage>(1);
   let server = builder.serve_with_incoming_shutdown(stream, async move {
     rx.recv().await;
-    info!("Shut down RPC server.");
+    info!("Received RPC shutdown message.");
   });
 
-  tokio::spawn(server);
+  tokio::spawn(async move {
+    info!("Starting RPC server");
+    if let Err(e) = server.await {
+      error!("Error running RPC server: {}", e);
+    };
+    info!("RPC server shut down");
+  });
   Ok((addr, tx))
 }

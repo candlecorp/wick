@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::convert::TryFrom;
+use std::net::SocketAddr;
 use std::path::PathBuf;
 use std::sync::Arc;
 
@@ -57,6 +58,15 @@ impl Host {
     self.server_metadata = Some(state);
 
     Ok(())
+  }
+
+  /// Get the address the host's RPC server is bound to.
+  #[must_use]
+  pub fn rpc_address(&self) -> Option<SocketAddr> {
+    self
+      .server_metadata
+      .as_ref()
+      .and_then(|state| state.rpc.as_ref().map(|rpc| rpc.addr))
   }
 
   pub async fn connect_to_mesh(&mut self) -> Result<()> {
@@ -316,7 +326,7 @@ mod test {
   #[test_logger::test(tokio::test)]
   async fn should_start_and_stop() -> Result<()> {
     let mut host = HostBuilder::new().build();
-    host.start(Some(0)).await?;
+    host.start(None).await?;
     assert!(host.is_started());
     host.stop().await;
 
@@ -328,7 +338,7 @@ mod test {
     let file = PathBuf::from("manifests/logger.yaml");
     let manifest = HostDefinition::load_from_file(&file)?;
     let mut host = HostBuilder::from_definition(manifest).build();
-    host.start(Some(0)).await?;
+    host.start(None).await?;
     let passed_data = "logging output";
     let payload: TransportMap = vec![("input", passed_data)].into();
     let mut stream = host.request("logger", payload, None).await?;
@@ -348,15 +358,17 @@ mod test {
     let mut def = HostDefinition::load_from_file(&file)?;
     def.host.rpc = Some(HttpConfig {
       enabled: true,
-      port: Some(54321),
+      port: None,
       address: Some(Ipv4Addr::from_str("127.0.0.1").unwrap()),
       ..Default::default()
     });
 
     let mut host = HostBuilder::from_definition(def).build();
-    host.start(Some(0)).await?;
+    host.start(None).await?;
+    let address = host.rpc_address().unwrap();
+    println!("rpc server bound to : {}", address);
 
-    let mut client = connect_rpc_client(Uri::from_str("http://127.0.0.1:54321").unwrap()).await?;
+    let mut client = connect_rpc_client(Uri::from_str(&format!("http://{}", address)).unwrap()).await?;
     let passed_data = "logging output";
     let data = vec![("input", passed_data)].into();
     let invocation: Invocation = super::Invocation::new(Entity::test("test"), Entity::local("logger"), data, None)

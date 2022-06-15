@@ -36,7 +36,7 @@ pub struct NetworkInit {
 
 impl Network {
   pub async fn new_default(definition: HostDefinition, seed: &str) -> Result<Self> {
-    Ok(NetworkBuilder::from_definition(definition, seed)?.build().await?)
+    NetworkBuilder::from_definition(definition, seed)?.build().await
   }
 
   #[instrument(name = "network", skip_all)]

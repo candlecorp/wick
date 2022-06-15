@@ -41,30 +41,47 @@ pub fn init_test(opts: &LoggingOptions) -> Option<LoggingGuard> {
   }
 }
 
-fn priority_module(module: &str) -> bool {
+fn hushed_modules(module: &str) -> bool {
+  ["h2", "tokio_util", "tower", "tonic", "hyper"].contains(&module)
+}
+
+fn silly_modules(module: &str) -> bool {
   [
-    "logger",
-    "vow",
-    "cli_common",
-    "wapc",
-    "wafl",
-    "test_native_collection",
+    "wasmflow_interpreter",
     "wasmtime_provider",
+    "wapc",
+    "wasmflow_wascap",
+    "wasmflow_schematic_graph",
+    "wasmflow_manifest",
   ]
   .contains(&module)
 }
 
 #[must_use]
-fn wasmflow_filter() -> FilterFn {
-  FilterFn::new(|e| {
-    let module = &e
-      .module_path()
-      .unwrap_or_default()
-      .split("::")
-      .next()
-      .unwrap_or_default();
-    priority_module(module) || module.starts_with("wafl") || module.starts_with("wasmflow")
-  })
+fn wasmflow_filter(opts: &LoggingOptions) -> FilterFn {
+  // This is split up into an if/else because FilterFn needs an fn type.
+  // If the closure captures opts.silly then it won't be coercable to an fn.
+  if opts.silly {
+    FilterFn::new(move |e| {
+      let module = &e
+        .module_path()
+        .unwrap_or_default()
+        .split("::")
+        .next()
+        .unwrap_or_default();
+      !hushed_modules(module)
+    })
+  } else {
+    FilterFn::new(move |e| {
+      let module = &e
+        .module_path()
+        .unwrap_or_default()
+        .split("::")
+        .next()
+        .unwrap_or_default();
+      !hushed_modules(module) && !silly_modules(module)
+    })
+  }
 }
 
 #[must_use]
@@ -96,13 +113,13 @@ fn get_logfile_writer(opts: &LoggingOptions) -> Result<(PathBuf, NonBlocking, Wo
     Some(dir) => dir.clone(),
     None => {
       #[cfg(not(target_os = "windows"))]
-      match xdg::BaseDirectories::with_prefix("wafl") {
+      match xdg::BaseDirectories::with_prefix("wasmflow") {
         Ok(xdg) => xdg.get_state_home(),
         Err(_) => std::env::current_dir()?,
       }
       #[cfg(target_os = "windows")]
       match std::env::var("LOCALAPPDATA") {
-        Ok(localappdata) => PathBuf::from(format!("{}/wafl", localappdata)),
+        Ok(localappdata) => PathBuf::from(format!("{}/wasmflow", localappdata)),
         Err(_) => std::env::current_dir()?,
       }
     }
@@ -139,7 +156,7 @@ fn try_init(opts: &LoggingOptions, environment: &Environment) -> Result<LoggingG
   let app_name = opts.app_name.clone();
 
   let (log_dir, logfile_writer, logfile_guard) = get_logfile_writer(opts)?;
-  let file_layer = BunyanFormattingLayer::new(app_name, logfile_writer).with_filter(wasmflow_filter());
+  let file_layer = BunyanFormattingLayer::new(app_name, logfile_writer).with_filter(wasmflow_filter(opts));
 
   // This is ugly. If you can improve it, go for it, but
   // start here to understand why it's laid out like this: https://github.com/tokio-rs/tracing/issues/575
@@ -154,7 +171,7 @@ fn try_init(opts: &LoggingOptions, environment: &Environment) -> Result<LoggingG
               .with_ansi(with_color)
               .with_target(true)
               .with_filter(get_levelfilter(opts))
-              .with_filter(wasmflow_filter()),
+              .with_filter(wasmflow_filter(opts)),
           ),
           None,
           Some(JsonStorageLayer),
@@ -173,7 +190,7 @@ fn try_init(opts: &LoggingOptions, environment: &Environment) -> Result<LoggingG
               .with_thread_names(false)
               .with_timer(timer)
               .with_filter(get_levelfilter(opts))
-              .with_filter(wasmflow_filter()),
+              .with_filter(wasmflow_filter(opts)),
           ),
           Some(JsonStorageLayer),
           Some(file_layer),
@@ -193,10 +210,10 @@ fn try_init(opts: &LoggingOptions, environment: &Environment) -> Result<LoggingG
           .with_writer(stderr_writer)
           .with_ansi(with_color)
           .without_time()
-          .with_target(false)
+          .with_target(true)
           .with_test_writer()
           .with_filter(get_levelfilter(opts))
-          .with_filter(wasmflow_filter()),
+          .with_filter(wasmflow_filter(opts)),
       ),
     ),
   };

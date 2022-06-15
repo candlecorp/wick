@@ -88,8 +88,12 @@ impl Interpreter {
     debug!(?self_signature, "signature");
 
     let event_loop = EventLoop::new(channel);
+    debug!(
+      schematics = ?program.schematics().iter().map(|s| s.name()).collect::<Vec<_>>(),
+      "schematics handled by this interpreter"
+    );
 
-    let interpreter = Self {
+    Ok(Self {
       rng,
       program,
       dispatcher,
@@ -98,9 +102,7 @@ impl Interpreter {
       self_collection,
       event_loop,
       namespace,
-    };
-
-    Ok(interpreter)
+    })
   }
 
   async fn invoke_schematic(&self, invocation: Invocation) -> Result<TransportStream, Error> {
