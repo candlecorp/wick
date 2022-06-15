@@ -1,0 +1,47 @@
+
+
+#[cfg(not(target_arch = "wasm32"))]
+pub fn convert_inputs(mut payload:wasmflow_sdk::packet::v1::PacketMap) -> Result<definition::Inputs,Box<dyn std::error::Error + Send + Sync>> {
+  Ok(definition::Inputs {
+    {{#each . }}
+      {{snakeCase @key}}: payload.remove("{{@key}}").ok_or_else(||wasmflow_sdk::error::Error::MissingInput("{{@key}}".to_owned()))?.deserialize()?,
+    {{/each}}
+  })
+}
+
+#[cfg(target_arch = "wasm32")]
+pub fn convert_inputs(payload:wasmflow_sdk::sdk::wasm::EncodedMap) -> Result<definition::Inputs,Box<dyn std::error::Error + Send + Sync>> {
+  Ok(definition::Inputs {
+    {{#each . }}
+    {{snakeCase @key}}: wasmflow_sdk::codec::messagepack::deserialize(payload.get("{{@key}}")?)?,
+    {{/each}}
+  })
+}
+
+#[derive(Debug, serde::Deserialize, serde::Serialize, Clone)]
+pub struct Inputs {
+{{#each . }}
+  #[serde(rename = "{{@key}}")]
+  pub {{snakeCase @key}}: {{> expand-type .}},
+{{/each}}
+}
+
+impl From<Inputs> for wasmflow_sdk::packet::PacketMap {
+  fn from(inputs: Inputs) -> wasmflow_sdk::packet::PacketMap {
+    let mut map = std::collections::HashMap::default();
+    {{#each . }}
+      map.insert("{{snakeCase @key}}".to_owned(), wasmflow_sdk::packet::v1::Packet::success(&inputs.{{snakeCase @key}}).into());
+    {{/each}}
+    wasmflow_sdk::packet::PacketMap::new(map)
+  }
+}
+
+#[must_use]
+#[cfg(all(feature="host", not(target_arch = "wasm32")))]
+pub fn inputs_list() -> std::collections::HashMap<String, wasmflow_sdk::types::TypeSignature> {
+  let mut map = std::collections::HashMap::new();
+  {{#each .}}
+    map.insert("{{@key}}".to_owned(),{{> type-signature .}});
+  {{/each}}
+  map
+}

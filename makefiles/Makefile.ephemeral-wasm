@@ -1,10 +1,10 @@
-include $(COMMON_DIR)/common/Makefile.common
-include $(COMMON_DIR)/common/Makefile.common-wellknown-false
-include $(COMMON_DIR)/common/Makefile.common-wasm
-include $(COMMON_DIR)/common/Makefile.common-ephemeral
-include $(COMMON_DIR)/common/Makefile.common-collection
-include $(COMMON_DIR)/common/Makefile.common-post
-include $(COMMON_DIR)/common/Makefile.postlude
+include $(MAKEFILE_DIR)/common/Makefile.common
+include $(MAKEFILE_DIR)/common/Makefile.common-wellknown-false
+include $(MAKEFILE_DIR)/common/Makefile.common-wasm
+include $(MAKEFILE_DIR)/common/Makefile.common-ephemeral
+include $(MAKEFILE_DIR)/common/Makefile.common-collection
+include $(MAKEFILE_DIR)/common/Makefile.common-post
+include $(MAKEFILE_DIR)/common/Makefile.postlude
 
 ##@ Targets
 

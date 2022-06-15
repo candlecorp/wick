@@ -1,0 +1,135 @@
+{{> header }}
+
+{{#if stateful}}
+use wasmflow_sdk::sdk::stateful::BatchedJobExecutor;
+{{else}}
+use wasmflow_sdk::sdk::ephemeral::BatchedJobExecutor;
+{{/if}}
+
+#[cfg(all(target_arch = "wasm32"))]
+type CallResult = wasmflow_sdk::sdk::BoxedFuture<Result<Vec<u8>, wasmflow_sdk::sdk::BoxedError>>;
+
+#[cfg(all(target_arch = "wasm32"))]
+#[allow(unsafe_code)]
+#[no_mangle]
+pub(crate) extern "C" fn wapc_init() {
+  wasmflow_sdk::sdk::wasm::runtime::register_dispatcher(Box::new(ComponentDispatcher::default()));
+}
+
+{{> component-imports components=interface.components namespace="" }}
+{{#each interface.wellknown}}
+{{> component-imports components=schema.components namespace="" }}
+{{/each}}
+pub mod __batch__;
+
+#[allow(unused)]
+static  ALL_COMPONENTS: &[&str] = &[
+{{#each interface.components}}"{{name}}",{{/each}}
+{{#each interface.wellknown}}
+  {{#each schema.components}}"{{name}}",{{/each}}
+{{/each}}
+];
+
+#[derive(Default, Copy, Clone)]
+#[allow(missing_debug_implementations)]
+pub struct ComponentDispatcher {}
+
+#[cfg(target_arch = "wasm32")]
+#[allow(clippy::too_many_lines)]
+{{#if stateful}}
+impl wasmflow_sdk::sdk::stateful::WasmDispatcher for ComponentDispatcher {
+    type Context = crate::Context;
+{{else}}
+impl wasmflow_sdk::sdk::ephemeral::WasmDispatcher for ComponentDispatcher {
+{{/if}}
+  fn dispatch(
+    &self,
+    op: &'static str,
+    payload: &'static [u8],
+    {{#if stateful}}
+    context: Self::Context,
+    {{/if}}
+    ) -> CallResult {
+    Box::pin(async move {
+      let (mut stream, id) = match op {
+        {{#each interface.components}}
+          "{{name}}" => crate::components::generated::{{moduleName name}}::Component::default().execute(wasmflow_sdk::sdk::payload::from_buffer(payload)?, {{#if @root.stateful}}context,{{/if}}).await,
+        {{/each}}
+        {{#each interface.wellknown}}
+          {{#each schema.components}}
+            "{{name}}" => crate::components::generated::{{moduleName name}}::Component::default().execute(wasmflow_sdk::sdk::payload::from_buffer(payload)?, {{#if @root.stateful}}context,{{/if}}).await,
+          {{/each}}
+        {{/each}}
+        _ => Err(wasmflow_sdk::error::Error::ComponentNotFound(
+                    op.to_owned(),
+                    ALL_COMPONENTS.join(", "),
+                ).into()),
+      }?;
+      while let Some(next) = wasmflow_sdk::sdk::StreamExt::next(&mut stream).await {
+        wasmflow_sdk::sdk::wasm::port_send(&next.port, id, next.payload)?;
+      }
+
+      Ok(Vec::new())
+    })
+  }
+}
+
+
+#[cfg(not(target_arch = "wasm32"))]
+#[allow(clippy::too_many_lines)]
+{{#if stateful}}
+impl wasmflow_sdk::sdk::stateful::NativeDispatcher for ComponentDispatcher {
+    type Context = crate::Context;
+{{else}}
+impl wasmflow_sdk::sdk::ephemeral::NativeDispatcher for ComponentDispatcher {
+{{/if}}
+    fn dispatch(
+        &self,
+        invocation: wasmflow_sdk::sdk::Invocation,
+        {{#if stateful}}
+        context: Self::Context,
+        {{/if}}
+    ) -> wasmflow_sdk::sdk::BoxedFuture<
+        Result<
+            wasmflow_sdk::types::PacketStream,
+            wasmflow_sdk::sdk::BoxedError,
+        >,
+    > {
+        Box::pin(async move {
+      let (stream, _id) = match invocation.target.name() {
+        {{#each interface.components}}
+          "{{ name }}" => crate::components::generated::{{moduleName name}}::Component::default().execute(wasmflow_sdk::sdk::payload::from_invocation(invocation)?, {{#if @root.stateful}}context,{{/if}}).await,
+        {{/each}}
+        {{#each interface.wellknown}}
+          {{#each schema.components}}
+            "{{name}}" => crate::components::generated::{{moduleName name}}::Component::default().execute(wasmflow_sdk::sdk::payload::from_invocation(invocation)?, {{#if @root.stateful}}context,{{/if}}).await,
+          {{/each}}
+        {{/each}}
+        "__batch__" => {
+          crate::components::generated::__batch__::Component::default()
+            .execute(wasmflow_sdk::sdk::payload::from_invocation(invocation)?, {{#if stateful}}context,{{/if}})
+            .await
+        }
+        op => Err(format!(
+          "Component not found on this collection: {}",
+          op
+        ).into()),
+      }?;
+      Ok(stream)
+    })
+  }
+}
+
+{{> signature-fn interface }}
+
+{{> types interface }}
+
+pub mod generated {
+
+  {{> modules components=interface.components namespace="" implementation=true}}
+  {{#each interface.wellknown}}
+    // wellknown interface: {{ url }}
+    {{> modules components=schema.components namespace="" isWellKnown=true implementation=true}}
+  {{/each}}
+
+}

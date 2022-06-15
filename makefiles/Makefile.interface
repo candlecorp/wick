@@ -1,9 +1,9 @@
 
-include $(COMMON_DIR)/common/Makefile.common
-include $(COMMON_DIR)/common/Makefile.common-wellknown-false
-include $(COMMON_DIR)/common/Makefile.common-interface
-include $(COMMON_DIR)/common/Makefile.common-post
-include $(COMMON_DIR)/common/Makefile.postlude
+include $(MAKEFILE_DIR)/common/Makefile.common
+include $(MAKEFILE_DIR)/common/Makefile.common-wellknown-false
+include $(MAKEFILE_DIR)/common/Makefile.common-interface
+include $(MAKEFILE_DIR)/common/Makefile.common-post
+include $(MAKEFILE_DIR)/common/Makefile.postlude
 
 .PHONY: build
 build: $(SOURCE_FILES)

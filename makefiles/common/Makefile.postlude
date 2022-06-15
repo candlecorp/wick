@@ -18,4 +18,4 @@ debug:
 	@echo -e "$(COLOR_RED)----$(COLOR_OFF)"
 	@echo -e "$(COLOR_GREEN)Makefile list:$(COLOR_OFF)"
 	@echo $(MAKEFILE_LIST)
-	@echo -e "$(COLOR_GREEN)Common makefile directory:$(COLOR_OFF) $(COMMON_DIR)"
+	@echo -e "$(COLOR_GREEN)Common makefile directory:$(COLOR_OFF) $(MAKEFILE_DIR)"

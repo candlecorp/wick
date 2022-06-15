@@ -6,10 +6,10 @@ pub(crate) struct Options {
   #[clap(flatten)]
   pub(crate) logging: logger::LoggingOptions,
 
-  /// Name of the component to execute.
-  project: String,
+  /// The git URL of the boilerplate project to clone.
+  url: String,
 
-  /// Name of the component to execute.
+  /// The name of the project.
   name: String,
 }
 
@@ -17,7 +17,7 @@ pub(crate) struct Options {
 pub(crate) async fn handle(opts: Options) -> Result<()> {
   let _guard = crate::utils::init_logger(&opts.logging)?;
 
-  crate::git_template::pull_into_dir(opts.project, opts.name)?;
+  crate::git_template::pull_into_dir(opts.url, opts.name)?;
 
   Ok(())
 }

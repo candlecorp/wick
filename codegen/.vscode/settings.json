@@ -1,0 +1,8 @@
+{
+  "mochaExplorer.files": "test/**/*.test.ts",
+  "mochaExplorer.require": "ts-node/register",
+  "mochaExplorer.debuggerConfig": "Debug Mocha Tests",
+  "debug.javascript.usePreview": false,
+  "eslint.validate": ["javascript", "javascriptreact", "typescript", "typescriptreact"],
+  "editor.formatOnSave": true
+}

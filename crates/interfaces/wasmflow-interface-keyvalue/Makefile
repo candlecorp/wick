@@ -1,2 +1,2 @@
 include ../../../makefiles/common/Makefile.prelude
-include $(COMMON_DIR)/Makefile.interface
+include $(MAKEFILE_DIR)/Makefile.interface

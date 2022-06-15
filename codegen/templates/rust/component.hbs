@@ -1,0 +1,23 @@
+
+{{#if batch}}
+pub use crate::components::generated::__batch__::*;
+{{else}}
+pub use crate::components::generated::{{moduleName name}}::*;
+{{/if}}
+
+pub(crate) type State = ();
+
+#[async_trait::async_trait]
+impl wasmflow_sdk::sdk::{{#if stateful}}stateful{{else}}ephemeral{{/if}}::BatchedComponent for Component {
+    {{#if stateful}}context: crate::Context,{{/if~}}
+    type State = State;
+    async fn job(
+        inputs: Self::Inputs,
+        outputs: Self::Outputs,
+        {{#if stateful}}context: Self::Context,{{/if}}
+        state: Option<Self::State>,
+        config: Option<Self::Config>,
+    ) -> Result<Option<Self::State>, Box<dyn std::error::Error + Send + Sync>> {
+      Ok(state)
+    }
+}

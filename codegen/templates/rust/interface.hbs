@@ -1,0 +1,12 @@
+{{> header }}
+
+pub use generated::*;
+
+mod generated {
+  {{> modules components=interface.components namespace="" implementation=false}}
+  {{#each interface.wellknown}}
+    // wellknown interface: {{ url }}
+    {{> modules components=schema.components namespace="" isWellKnown=true implementation=false}}
+  {{/each}}
+}
+
