@@ -44,7 +44,7 @@ impl Reference {
   }
 }
 
-#[instrument(name = "schematic_graph", skip_all)]
+#[instrument(name = "schematic_graph", skip_all, level = "trace")]
 pub fn from_def(
   network_def: &wasmflow_manifest::NetworkDefinition,
 ) -> Result<Network, wasmflow_schematic_graph::error::Error> {
@@ -58,6 +58,7 @@ pub fn from_def(
       ComponentReference::new(NS_INTERNAL, INTERNAL_ID_INHERENT),
       None,
     );
+
     trace!(index, name = INTERNAL_ID_INHERENT, "added inherent component");
 
     for (name, def) in schem_def.instances.iter() {

@@ -11,7 +11,7 @@ pub enum Error {
   ValidationError(Vec<SchematicInvalid>),
   #[error("Early error: {:?}", .0)]
   EarlyError(ValidationError),
-  #[error("Could not find schematic '{}' ({0}). Known schematics are: {}",.0.name(), .1.join(", "))]
+  #[error("Could not find flow '{}' ({0}). Known flows are: {}",.0.name(), .1.join(", "))]
   SchematicNotFound(Entity, Vec<String>),
   #[error("Could not find target '{}' ({0}). Namespaces handled by this resource are: {}", .0.name(), .1.join(", "))]
   TargetNotFound(Entity, Vec<String>),
