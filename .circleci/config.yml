@@ -29,7 +29,7 @@ executors:
     docker:
       - image: candlecorp/build-base:latest
         auth: *AUTH
-    resource_class: large
+    resource_class: xlarge
     environment:
       CARGO_BUILD_JOBS: 4
       RUSTC_WRAPPER: sccache
