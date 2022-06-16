@@ -1,6 +1,6 @@
 version: 2.1
 orbs:
-  slack: circleci/slack@4.4.4
+  slack: circleci/slack@4.10.1
 
 data:
   credentials:
@@ -84,7 +84,7 @@ commands:
             if [[ ! $(command -v rustup) ]]; then
               curl "https://sh.rustup.rs" -o "/tmp/rust-init.sh"
               chmod +x "/tmp/rust-init.sh"
-              /tmp/rust-init.sh -y --default-toolchain nightly --no-modify-path --profile minimal -c rustfmt -c clippy
+              /tmp/rust-init.sh -y --default-toolchain stable --no-modify-path --profile minimal -c rustfmt -c clippy
               source $HOME/.cargo/env
               echo 'source $HOME/.cargo/env' >> $HOME/.bashrc
             fi
