@@ -7,9 +7,6 @@ edition = "2021"
 
 [dependencies]
 wasmflow-par = { path = "../wasmflow-par" }
-# oci-distribution = { path = "../../../forks/oci-distribution", features = [
-#   "rustls-tls",
-# ], default-features = false }
 oci-distribution = { version = "0.9", features = [
   "rustls-tls",
 ], default-features = false }

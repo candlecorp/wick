@@ -54,7 +54,6 @@ impl RpcHandler for Collection {
 mod tests {
   use std::collections::HashMap;
 
-  use futures::prelude::*;
   use pretty_assertions::assert_eq;
   use tracing::*;
   use wasmflow_entity::Entity;
