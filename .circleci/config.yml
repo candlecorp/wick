@@ -27,7 +27,7 @@ executors:
       SCCACHE_AZURE_BLOB_CONTAINER: sccache
   test-executor:
     docker:
-      - image: vinodotdev/build-base:latest
+      - image: candlecorp/build-base:latest
         auth: *AUTH
     resource_class: large
     environment:
@@ -129,12 +129,12 @@ commands:
 jobs:
   scratch:
     docker:
-      - image: vinodotdev/build-base:latest
+      - image: candlecorp/build-base:latest
         auth: *AUTH
     resource_class: small
     steps:
       - slack/notify:
-          channel: vino-ci
+          channel: wasmflow-ci
           custom: Build ready
           event: pass
   test:
@@ -174,7 +174,7 @@ jobs:
   deploy:
     parameters:
     docker:
-      - image: vinodotdev/ci-env-dev
+      - image: candlecorp/ci-env-dev
         auth: *AUTH
         environment:
           AZURE_STORAGE_ACCOUNT: $AZURE_STORAGE_ACCOUNT
@@ -205,19 +205,19 @@ jobs:
             make-tarball wasmflow ./build/x86_64-apple-darwin darwin.x86_64 build/artifacts
             make-tarball wasmflow ./build/aarch64-apple-darwin darwin.aarch64 build/artifacts
             make-zip ./build/x86_64-pc-windows-gnu wasmflow.win64 build/artifacts
-            cp /home/vino/project/crates/wasmflow/vino-rpc/proto/vino.proto build/artifacts/wasmflow.proto
+            cp /home/candle/project/crates/wasmflow/wasmflow-rpc/proto/wasmflow.proto build/artifacts/wasmflow.proto
             BUILDTAG="nightly-$(date +%F)"
             echo $BUILDTAG > build/artifacts/RELEASE
             echo << pipeline.git.revision	>> > build/artifacts/RELEASE
             cp build/artifacts/RELEASE build/RELEASE
       - run:
-          name: Upload to Azure
+          name: Publish artifacts
           no_output_timeout: 2m
           command: |
             cd /home/circleci/project
             BUILDTAG="nightly-$(date +%F)"
-            azcopy copy "build/artifacts/*" "https://vinoreleases.blob.core.windows.net/releases/${BUILDTAG}/${SharedAccessSignature}" --overwrite=true --from-to=LocalBlob --blob-type Detect --follow-symlinks --put-md5 --follow-symlinks --blob-tags="release=${BUILDTAG}" --metadata "release=${BUILDTAG}" --recursive --log-level=INFO
-            azcopy copy build/RELEASE "https://vinoreleases.blob.core.windows.net/releases/RELEASE/${BUILDTAG}${SharedAccessSignature}" --overwrite=true --from-to=LocalBlob --blob-type Detect --follow-symlinks --put-md5 --follow-symlinks --blob-tags="release=${BUILDTAG}" --metadata "release=${BUILDTAG}" --log-level=INFO
+            echo $BUILDTAG
+            echo WIP
       - store_artifacts:
           path: ./build/
 
