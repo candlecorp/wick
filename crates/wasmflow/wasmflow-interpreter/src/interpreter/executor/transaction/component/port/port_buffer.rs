@@ -2,7 +2,7 @@ use std::collections::VecDeque;
 use std::fmt::Debug;
 
 use parking_lot::Mutex;
-use wasmflow_transport::TransportWrapper;
+use wasmflow_sdk::v1::transport::TransportWrapper;
 
 type PacketType = TransportWrapper;
 

@@ -7,7 +7,7 @@ use std::str::FromStr;
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use wasmflow_transport::MessageTransport;
+use wasmflow_sdk::v1::transport::MessageTransport;
 
 use crate::default::{parse_default, process_default};
 use crate::parse::parse_id;

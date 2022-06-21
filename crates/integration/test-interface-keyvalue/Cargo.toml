@@ -11,8 +11,7 @@ path = "src/main.rs"
 
 [dependencies]
 thiserror = "1.0"
-wasmflow-packet = { path = "../../sdk/wasmflow-packet" }
-wasmflow-codec = { path = "../../sdk/wasmflow-codec" }
+wasmflow-sdk = { path = "../../wasmflow/wasmflow-sdk", features = ["v1"] }
 wasmflow-rpc = { path = "../../wasmflow/wasmflow-rpc" }
 wasmflow-invocation-server = { path = "../../wasmflow/wasmflow-invocation-server" }
 

@@ -11,10 +11,8 @@ host = []
 guest = []
 
 [dependencies]
-wasmflow-sdk = { path = "../../sdk/wasmflow-sdk", features = ["v1"] }
+wasmflow-sdk = { path = "../../wasmflow/wasmflow-sdk", features = ["v1"] }
 wasmflow-rpc = { path = "../../wasmflow/wasmflow-rpc" }
-wasmflow-entity = { path = "../../sdk/wasmflow-entity" }
-wasmflow-transport = { path = "../../sdk/wasmflow-transport" }
 serde = { version = "1.0", features = ["derive"] }
 async-trait = "0.1.50"
 tokio = { version = "1", features = ["rt-multi-thread"] }

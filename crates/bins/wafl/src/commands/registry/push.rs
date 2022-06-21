@@ -17,19 +17,21 @@ pub(crate) struct Options {
   pub(crate) logging: logger::LoggingOptions,
 
   /// OCI reference to push to.
+  #[clap(action)]
   pub(crate) reference: String,
 
   /// OCI artifact to push.
+  #[clap(action)]
   pub(crate) source: PathBuf,
 
   /// Use --bundle to indicate this is a multi-architecture bundle manifest.
-  #[clap(short = 'B', long = "bundle")]
+  #[clap(short = 'B', long = "bundle", action)]
   pub(crate) bundle: bool,
 
-  #[clap(short, long = "rev")]
+  #[clap(short, long = "rev", action)]
   pub(crate) rev: Option<u32>,
 
-  #[clap(short, long = "ver")]
+  #[clap(short, long = "ver", action)]
   pub(crate) ver: Option<String>,
 
   #[clap(flatten)]

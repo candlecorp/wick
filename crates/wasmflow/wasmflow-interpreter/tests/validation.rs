@@ -6,7 +6,6 @@ use anyhow::Result;
 use futures::future::BoxFuture;
 use seeded_random::Seed;
 use serde_json::{json, Value};
-use wasmflow_interface::CollectionSignature;
 use wasmflow_interpreter::graph::from_def;
 use wasmflow_interpreter::{
   BoxError,
@@ -18,10 +17,10 @@ use wasmflow_interpreter::{
   SchematicInvalid,
   ValidationError,
 };
-use wasmflow_invocation::Invocation;
 use wasmflow_manifest::Loadable;
-use wasmflow_transport::TransportStream;
-
+use wasmflow_sdk::v1::transport::TransportStream;
+use wasmflow_sdk::v1::types::CollectionSignature;
+use wasmflow_sdk::v1::Invocation;
 fn load<T: AsRef<Path>>(path: T) -> Result<wasmflow_manifest::HostManifest> {
   Ok(wasmflow_manifest::HostManifest::load_from_file(path.as_ref())?)
 }
@@ -31,7 +30,7 @@ impl Collection for SignatureTestCollection {
     todo!()
   }
 
-  fn list(&self) -> &wasmflow_interface::CollectionSignature {
+  fn list(&self) -> &CollectionSignature {
     &self.0
   }
 }

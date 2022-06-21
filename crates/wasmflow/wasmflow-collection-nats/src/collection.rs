@@ -4,11 +4,11 @@ use std::time::Instant;
 
 use async_trait::async_trait;
 use futures::executor::block_on;
-use wasmflow_invocation::Invocation;
 use wasmflow_mesh::Mesh;
 use wasmflow_rpc::error::RpcError;
 use wasmflow_rpc::{RpcHandler, RpcResult};
-use wasmflow_transport::TransportStream;
+use wasmflow_sdk::v1::transport::TransportStream;
+use wasmflow_sdk::v1::Invocation;
 
 use crate::Error;
 
@@ -52,7 +52,7 @@ impl RpcHandler for Collection {
     Ok(stream)
   }
 
-  fn get_list(&self) -> RpcResult<Vec<wasmflow_interface::HostedType>> {
+  fn get_list(&self) -> RpcResult<Vec<wasmflow_sdk::v1::types::HostedType>> {
     let components = block_on(self.mesh.list_components(self.mesh_id.clone()))
       .map_err(|e| RpcError::CollectionError(e.to_string()))?;
 
@@ -64,11 +64,11 @@ impl RpcHandler for Collection {
 mod tests {
 
   use anyhow::Result as TestResult;
-  use wasmflow_entity::Entity;
   use wasmflow_mesh::MeshBuilder;
-  use wasmflow_packet::PacketMap;
   use wasmflow_rpc::SharedRpcHandler;
-  use wasmflow_transport::MessageTransport;
+  use wasmflow_sdk::v1::packet::PacketMap;
+  use wasmflow_sdk::v1::transport::MessageTransport;
+  use wasmflow_sdk::v1::Entity;
 
   use super::*;
 

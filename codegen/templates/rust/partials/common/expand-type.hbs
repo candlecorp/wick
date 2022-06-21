@@ -5,7 +5,7 @@
   {{#case "bytes"}}Vec<u8>{{/case}}
   {{#case "raw"}}RawPacket{{/case}}
   {{#case "struct"}}serde_json::Value{{/case}}
-  {{#case "link"}}wasmflow_sdk::sdk::CollectionLink{{/case}}
+  {{#case "link"}}wasmflow_sdk::v1::CollectionLink{{/case}}
   {{#case "internal"}}
     {{#switch id}}
       {{#case "__input__"}}

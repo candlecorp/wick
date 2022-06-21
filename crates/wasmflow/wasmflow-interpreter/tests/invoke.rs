@@ -6,14 +6,13 @@ use futures::future::BoxFuture;
 use seeded_random::Seed;
 use serde_json::Value;
 use test::{JsonWriter, TestCollection};
-use wasmflow_entity::Entity;
-use wasmflow_interface::CollectionSignature;
 use wasmflow_interpreter::graph::from_def;
 use wasmflow_interpreter::{BoxError, Collection, HandlerMap, Interpreter, NamespaceHandler};
-use wasmflow_invocation::Invocation;
 use wasmflow_manifest::Loadable;
-use wasmflow_packet::PacketMap;
-use wasmflow_transport::TransportStream;
+use wasmflow_sdk::v1::packet::PacketMap;
+use wasmflow_sdk::v1::transport::TransportStream;
+use wasmflow_sdk::v1::types::CollectionSignature;
+use wasmflow_sdk::v1::{Entity, Invocation};
 
 struct SignatureTestCollection(CollectionSignature);
 
@@ -22,7 +21,7 @@ impl Collection for SignatureTestCollection {
     todo!()
   }
 
-  fn list(&self) -> &wasmflow_interface::CollectionSignature {
+  fn list(&self) -> &CollectionSignature {
     &self.0
   }
 }

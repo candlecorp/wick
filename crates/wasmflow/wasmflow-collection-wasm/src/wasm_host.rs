@@ -8,10 +8,10 @@ use tokio::sync::mpsc::unbounded_channel;
 use tokio_stream::wrappers::UnboundedReceiverStream;
 use wapc::{WapcHostBuilder, WasiParams};
 use wapc_pool::{HostPool, HostPoolBuilder};
-use wasmflow_codec::messagepack::serialize;
-use wasmflow_component::HostCommand;
-use wasmflow_interface::CollectionSignature;
-use wasmflow_transport::{TransportStream, TransportWrapper};
+use wasmflow_sdk::v1::codec::messagepack::serialize;
+use wasmflow_sdk::v1::runtime::HostCommand;
+use wasmflow_sdk::v1::transport::{TransportStream, TransportWrapper};
+use wasmflow_sdk::v1::types::CollectionSignature;
 use wasmflow_wascap::{Claims, CollectionClaims};
 
 use crate::callbacks::{create_link_handler, create_log_handler, create_output_handler};
@@ -230,7 +230,7 @@ impl WasmHost {
 
     debug!(component = component_name, id, payload = ?input_map, "wasm invoke");
 
-    let payload = serialize(&(id, &input_map, config, state))?;
+    let payload = serialize(&(id, &input_map, config, state)).map_err(|e| Error::SdkError(e.into()))?;
 
     let now = Instant::now();
     let result = self.host.call(component_name, payload).await;

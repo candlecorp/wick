@@ -16,19 +16,21 @@ pub(crate) struct Options {
   pub(crate) logging: logger::LoggingOptions,
 
   /// Location of the binary to pack.
+  #[clap(action)]
   pub(crate) binpath: PathBuf,
 
   /// Location of the interface JSON.
+  #[clap(action)]
   pub(crate) interface_path: PathBuf,
 
   /// The destination file path.
-  #[clap(short = 'o', long = "output", default_value = "./bundle.tar")]
+  #[clap(short = 'o', long = "output", default_value = "./bundle.tar", action)]
   pub(crate) output: PathBuf,
 
-  #[clap(short, long = "rev")]
+  #[clap(short, long = "rev", action)]
   pub(crate) rev: Option<u32>,
 
-  #[clap(short, long = "ver")]
+  #[clap(short, long = "ver", action)]
   pub(crate) ver: Option<String>,
 
   #[clap(flatten)]

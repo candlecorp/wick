@@ -93,11 +93,11 @@ impl InvocationService for InvocationServer {
       invocation.target, invocation.payload
     );
     let invocation_id = invocation.id.clone();
-    let entity = wasmflow_entity::Entity::from_str(&invocation.target);
+    let entity = wasmflow_sdk::v1::Entity::from_str(&invocation.target);
     if let Err(e) = entity {
       tx.send(Err(Status::failed_precondition(e.to_string()))).await.unwrap();
     } else {
-      let invocation: wasmflow_invocation::Invocation = invocation.try_into().map_err(|_| {
+      let invocation: wasmflow_sdk::v1::Invocation = invocation.try_into().map_err(|_| {
         Status::failed_precondition("Could not convert invocation payload into internal data structure.")
       })?;
       let entity = entity.unwrap();

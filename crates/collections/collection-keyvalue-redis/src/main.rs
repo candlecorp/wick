@@ -97,7 +97,7 @@ use wasmflow_keyvalue_redis::collection::Collection;
 #[derive(Debug, Clone, Parser)]
 pub struct Options {
   /// IP address to bind to.
-  #[clap(short = 'u', long = "redis-url", env = wasmflow_keyvalue_redis::REDIS_URL_ENV)]
+  #[clap(short = 'u', long = "redis-url", env = wasmflow_keyvalue_redis::REDIS_URL_ENV, action)]
   pub url: String,
 
   #[clap(flatten)]

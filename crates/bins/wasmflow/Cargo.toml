@@ -8,20 +8,13 @@ license = "BSD-3-Clause"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-wasmflow-invocation = { path = "../../sdk/wasmflow-invocation" }
-wasmflow-packet = { path = "../../sdk/wasmflow-packet" }
-wasmflow-codec = { path = "../../sdk/wasmflow-codec" }
-wasmflow-entity = { path = "../../sdk/wasmflow-entity" }
-wasmflow-interface = { path = "../../sdk/wasmflow-interface" }
+wasmflow-sdk = { path = "../../wasmflow/wasmflow-sdk", features = ["v1"] }
 wasmflow-rpc = { path = "../../wasmflow/wasmflow-rpc" }
 seeded-random = { path = "../../misc/seeded-random" }
 wasmflow-loader = { path = "../../wasmflow/wasmflow-loader" }
 wasmflow-collection-wasm = { path = "../../wasmflow/wasmflow-collection-wasm" }
 wasmflow-collection-cli = { path = "../../wasmflow/wasmflow-collection-cli" }
 wasmflow-runtime = { path = "../../wasmflow/wasmflow-runtime" }
-wasmflow-transport = { path = "../../sdk/wasmflow-transport", features = [
-  "all",
-] }
 wasmflow-host = { path = "../../wasmflow/wasmflow-host" }
 wasmflow-manifest = { path = "../../wasmflow/wasmflow-manifest" }
 wasmflow-test = { path = "../../wasmflow/wasmflow-test" }

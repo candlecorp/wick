@@ -16,6 +16,7 @@ pub(crate) struct ServeCommand {
   wasi: crate::wasm::WasiOptions,
 
   /// The path or OCI URL to a wafl manifest or wasm file.
+  #[clap(action)]
   pub(crate) location: String,
 }
 

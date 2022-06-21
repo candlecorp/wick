@@ -1,4 +1,4 @@
-use wasmflow_entity::Entity;
+use wasmflow_sdk::v1::Entity;
 
 use super::executor::error::ExecutionError;
 use super::program::validator::error::{SchematicInvalid, ValidationError};

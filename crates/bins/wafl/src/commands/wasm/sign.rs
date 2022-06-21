@@ -5,8 +5,8 @@ use std::path::PathBuf;
 use anyhow::Result;
 use clap::Args;
 use nkeys::KeyPairType;
+use wasmflow_sdk::v1::types::CollectionSignature;
 use wasmflow_wascap::{sign_buffer_with_claims, ClaimsOptions};
-use wasmflow_interface::CollectionSignature;
 
 use crate::keys::{extract_keypair, GenerateCommon};
 #[derive(Debug, Clone, Args)]
@@ -16,24 +16,26 @@ pub(crate) struct Options {
   pub(crate) logging: logger::LoggingOptions,
 
   /// File to read.
+  #[clap(action)]
   pub(crate) source: String,
 
   /// File path to the JSON representation of the actor interface.
+  #[clap(action)]
   pub(crate) interface: String,
 
   /// Destination for signed module. By default the the destination is the same as the input with a "_s" suffix.
-  #[clap(short = 'd', long = "destination")]
+  #[clap(short = 'd', long = "destination", action)]
   destination: Option<String>,
 
   #[clap(flatten)]
   common: GenerateCommon,
 
   /// Version to embed in the signed claims.
-  #[clap(long)]
+  #[clap(long, action)]
   ver: Option<String>,
 
   /// Revision number to embed in the signed claims.
-  #[clap(long)]
+  #[clap(long, action)]
   rev: Option<u32>,
 }
 

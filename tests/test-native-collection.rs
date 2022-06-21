@@ -1,16 +1,16 @@
 use log::debug;
 use test_native_collection::Collection;
-use wasmflow_packet::PacketMap;
 use wasmflow_rpc::RpcHandler;
+use wasmflow_sdk::v1::packet::PacketMap;
 
 #[test_logger::test(tokio::test)]
 async fn request() -> anyhow::Result<()> {
   let collection = Collection::default();
   let input = "some_input";
   let job_payload: PacketMap = vec![("input", input)].into();
-  let invocation = wasmflow_invocation::Invocation::new_test(
+  let invocation = wasmflow_sdk::v1::Invocation::new_test(
     file!(),
-    wasmflow_entity::Entity::local("test-component"),
+    wasmflow_sdk::v1::Entity::local("test-component"),
     job_payload,
     None,
   );

@@ -5,10 +5,9 @@ use tokio::io::{self, AsyncBufReadExt};
 use wasmflow_collection_cli::parse_args;
 use wasmflow_collection_wasm::collection::Collection;
 use wasmflow_collection_wasm::helpers::WapcModule;
-use wasmflow_entity::Entity;
-use wasmflow_invocation::{InherentData, Invocation};
 use wasmflow_rpc::RpcHandler;
-use wasmflow_transport::TransportMap;
+use wasmflow_sdk::v1::transport::TransportMap;
+use wasmflow_sdk::v1::{Entity, InherentData, Invocation};
 
 pub(crate) async fn handle_command(opts: super::InvokeCommand, bytes: Vec<u8>) -> Result<()> {
   let component = WapcModule::from_slice(&bytes)?;
@@ -69,7 +68,7 @@ pub(crate) async fn handle_command(opts: super::InvokeCommand, bytes: Vec<u8>) -
       inherent_data,
     );
 
-    let stream = collection.invoke(invocation).await.context("Component panicked")?;
+    let stream = collection.invoke(invocation).await?;
     cli_common::functions::print_stream_json(stream, &opts.filter, opts.short, opts.raw).await?;
   }
 

@@ -11,23 +11,15 @@ license = "BSD-3-Clause"
 
 
 [dependencies]
-wasmflow-interface = { path = "../../sdk/wasmflow-interface", features = [] }
-wasmflow-invocation = { path = "../../sdk/wasmflow-invocation" }
+wasmflow-sdk = { path = "../wasmflow-sdk", features = ["v1"] }
 seeded-random = { path = "../../misc/seeded-random" }
 wasmflow-runtime = { path = "../wasmflow-runtime" }
 wasmflow-mesh = { path = "../wasmflow-mesh" }
 wasmflow-manifest = { path = "../wasmflow-manifest" }
-wasmflow-transport = { path = "../../sdk/wasmflow-transport", features = [
-  "all",
-] }
-wasmflow-output = { path = "../../sdk/wasmflow-output", features = [] }
 wasmflow-loader = { path = "../wasmflow-loader" }
 wasmflow-collection-cli = { path = "../wasmflow-collection-cli" }
-wasmflow-codec = { path = "../../sdk/wasmflow-codec" }
 wasmflow-rpc = { path = "../wasmflow-rpc" }
 wasmflow-invocation-server = { path = "../wasmflow-invocation-server" }
-wasmflow-entity = { path = "../../sdk/wasmflow-entity" }
-wasmflow-macros = { path = "../../sdk/wasmflow-macros" }
 tracing = "0.1"
 
 thiserror = "1.0"

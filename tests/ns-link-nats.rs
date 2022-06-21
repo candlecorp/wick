@@ -5,7 +5,7 @@ mod test {
   use log::{debug, error};
   use serde_json::json;
   use utils::*;
-  use wasmflow_transport::{JsonError, TransportJson};
+  use wasmflow_sdk::v1::transport::{JsonError, TransportJson};
 
   #[test_logger::test(tokio::test)]
   async fn integration_test_collection() -> utils::TestResult<()> {

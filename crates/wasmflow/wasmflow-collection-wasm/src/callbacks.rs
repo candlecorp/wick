@@ -4,10 +4,9 @@ use std::sync::Arc;
 use std::time::{Instant, SystemTime};
 
 use parking_lot::RwLock;
-use wasmflow_codec::messagepack::{deserialize, serialize};
-use wasmflow_component::{LogLevel, OutputSignal};
-use wasmflow_packet::v0::Payload;
-use wasmflow_packet::Packet;
+use wasmflow_sdk::v1::codec::messagepack::{deserialize, serialize};
+use wasmflow_sdk::v1::packet::Packet;
+use wasmflow_sdk::v1::runtime::{LogLevel, OutputSignal};
 
 use crate::collection::HostLinkCallback;
 use crate::transaction::Transaction;
@@ -43,7 +42,11 @@ pub(crate) fn create_link_handler(callback: Arc<Option<Box<HostLinkCallback>>>) 
       Some(cb) => {
         trace!(origin, target, "wasm link call");
         let now = Instant::now();
-        let result = (cb)(origin, target, deserialize::<wasmflow_packet::PacketMap>(payload)?);
+        let result = (cb)(
+          origin,
+          target,
+          deserialize::<wasmflow_sdk::v1::packet::PacketMap>(payload)?,
+        );
         let micros = now.elapsed().as_micros();
         trace!(origin, target, durasion_us = %micros, ?result, "wasm link call result");
 
@@ -93,7 +96,7 @@ pub(crate) fn create_output_handler(tx_map: Arc<RwLock<HashMap<u32, RwLock<Trans
         }
 
         if matches!(signal, OutputSignal::OutputDone | OutputSignal::Done) {
-          tx.buffer.push_back((port.to_owned(), Packet::V0(Payload::Done)));
+          tx.buffer.push_back((port.to_owned(), Packet::done()));
           trace!(id, port, "port closing");
           tx.ports.insert(port.to_owned());
         }

@@ -2,11 +2,11 @@ use std::time::Instant;
 
 use async_trait::async_trait;
 use http::Uri;
-use wasmflow_interface::HostedType;
-use wasmflow_invocation::Invocation;
 use wasmflow_rpc::error::RpcError;
 use wasmflow_rpc::{RpcClient, RpcHandler, RpcResult};
-use wasmflow_transport::TransportStream;
+use wasmflow_sdk::v1::transport::TransportStream;
+use wasmflow_sdk::v1::types::HostedType;
+use wasmflow_sdk::v1::Invocation;
 
 use crate::error::GrpcError;
 
@@ -60,10 +60,10 @@ mod test {
 
   use anyhow::Result;
   use test_native_collection::Collection as TestCollection;
-  use wasmflow_entity::Entity;
   use wasmflow_invocation_server::{bind_new_socket, make_rpc_server};
-  use wasmflow_packet::PacketMap;
   use wasmflow_rpc::SharedRpcHandler;
+  use wasmflow_sdk::v1::packet::PacketMap;
+  use wasmflow_sdk::v1::Entity;
 
   use super::*;
 

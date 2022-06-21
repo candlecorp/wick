@@ -70,7 +70,7 @@ impl RpcHandler for Collection {
 #[cfg(test)]
 mod tests {
 
-  use wasmflow_packet::PacketMap;
+  use wasmflow_sdk::v1::packet::PacketMap;
 
   use super::*;
   use crate::test::prelude::{assert_eq, *};

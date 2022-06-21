@@ -94,12 +94,13 @@ pub(crate) mod conversion;
 mod invocation_server;
 
 pub use invocation_server::InvocationServer;
+use sdk::transport::{MessageTransport, TransportMap};
 use tokio::task::JoinHandle;
 use tonic::transport::{Channel, Server, Uri};
 use wasmflow_rpc::rpc::invocation_service_client::InvocationServiceClient;
 use wasmflow_rpc::rpc::invocation_service_server::InvocationServiceServer;
 use wasmflow_rpc::SharedRpcHandler;
-use wasmflow_transport::{MessageTransport, TransportMap};
+use wasmflow_sdk::v1 as sdk;
 
 pub(crate) type Result<T> = std::result::Result<T, error::Error>;
 

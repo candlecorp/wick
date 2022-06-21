@@ -1,4 +1,4 @@
-use wasmflow_transport::{MessageTransport, Serialized, TransportMap};
+use wasmflow_sdk::v1::transport::{MessageTransport, Serialized, TransportMap};
 
 use crate::Error;
 

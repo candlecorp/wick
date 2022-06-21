@@ -4,15 +4,30 @@ import path from 'path';
 import fs from 'fs';
 import os from 'os';
 
-import { handler } from '../src/languages/json/json';
-import { CollectionSignature } from '../src/types';
+import { handler } from '../src/languages/json/json.js';
+import { CollectionSignature } from '../src/types.js';
+// shimming __dirname & __filename
+import url from 'url';
+
+const __filename = url.fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+// end
 
 describe('json command', function () {
-  it('should generate default interface schema json', () => {
+  it('should generate default interface schema json', async () => {
     const root = path.join(__dirname, 'fixtures');
     const bignum = process.hrtime.bigint().toString();
     const filepath = path.join(os.tmpdir(), `${bignum}.json`);
-    handler({ force: false, name: 'test-name', root, schema_dir: root, silent: false, output: filepath });
+    await handler({
+      $0: '',
+      _: [],
+      force: false,
+      name: 'test-name',
+      root,
+      schema_dir: root,
+      silent: false,
+      output: filepath,
+    });
     const contents = fs.readFileSync(filepath, 'utf-8');
     const json = JSON.parse(contents);
 
@@ -20,6 +35,8 @@ describe('json command', function () {
       name: 'test-name',
       version: '',
       format: 1,
+      config: {},
+      wellknown: [],
       types: {
         HttpRequest: {
           type: 'struct',
@@ -27,7 +44,7 @@ describe('json command', function () {
           fields: {
             url: { type: 'string' },
             method: { type: 'string' },
-            link: { type: 'link', collection: 'http' },
+            link: { type: 'link', capability: 'http' },
           },
         },
         HttpResponse: {

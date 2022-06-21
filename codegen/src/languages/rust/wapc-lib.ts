@@ -1,5 +1,5 @@
-import yargs from 'yargs';
-import { registerHelpers } from 'widl-template';
+import yargs, { ArgumentsCamelCase } from 'yargs';
+import { registerHelpers } from 'apex-template';
 import {
   CODEGEN_TYPE,
   getTemplate,
@@ -8,12 +8,12 @@ import {
   registerTypePartials,
   CommonOutputOptions,
   outputOpts,
-  CommonWidlOptions,
+  CommonParserOptions,
   registerLanguageHelpers,
-} from '../../common';
+} from '../../common.js';
 
-const LANG = LANGUAGE.Rust;
-const TYPE = CODEGEN_TYPE.WapcLib;
+export const LANG = LANGUAGE.Rust;
+export const TYPE = CODEGEN_TYPE.WapcLib;
 
 export const command = `${TYPE}`;
 export const desc = 'Generate the boilerplate lib.rs for WaPC components';
@@ -22,10 +22,10 @@ export const builder = (yargs: yargs.Argv): yargs.Argv => {
   return yargs.options(outputOpts({})).example(`${LANG} ${TYPE}`, 'Prints boilerplate lib.rs to STDOUT');
 };
 
-interface Arguments extends CommonWidlOptions, CommonOutputOptions {}
+interface Arguments extends CommonParserOptions, CommonOutputOptions {}
 
-export function handler(args: Arguments): void {
-  registerTypePartials(LANG, TYPE);
+export async function handler(args: ArgumentsCamelCase<Arguments>): Promise<void> {
+  await registerTypePartials(LANG, TYPE);
   registerLanguageHelpers(LANG);
 
   const options = {
@@ -33,8 +33,8 @@ export function handler(args: Arguments): void {
   };
   registerHelpers(options);
 
-  const template = getTemplate(LANG, TYPE);
+  const template = await getTemplate(LANG, TYPE);
   const generated = template({});
 
-  commitOutput(generated, args.output, { force: args.force, silent: args.silent });
+  await commitOutput(generated, args.output, { force: args.force, silent: args.silent });
 }

@@ -1,4 +1,4 @@
-import yargs from 'yargs';
+import yargs, { ArgumentsCamelCase } from 'yargs';
 import fs from 'fs-extra';
 import toml from 'toml';
 import {
@@ -7,45 +7,48 @@ import {
   registerTypePartials,
   JSON_TYPE,
   outputOpts,
-  widlOpts,
+  parserOpts,
   CommonOutputOptions,
-  CommonWidlOptions,
-} from '../../common';
+  CommonParserOptions,
+  debug,
+  readFile,
+} from '../../common.js';
 
-import { registerHelpers } from 'widl-template';
+import { registerHelpers } from 'apex-template';
 
-import { processDir } from '../../process-widl-dir';
+import { processDir } from '../../process-apex-dir.js';
 import path from 'path';
 
-const LANG = LANGUAGE.JSON;
-const TYPE = JSON_TYPE.Interface;
+export const LANG = LANGUAGE.JSON;
+export const TYPE = JSON_TYPE.Interface;
 
 export const command = `${TYPE} <name> <schema_dir> [options]`;
 
-export const desc = 'Generate JSON representation of a WIDL file';
+export const desc = 'Generate JSON representation of a Apex file';
 export const builder = (yargs: yargs.Argv): yargs.Argv => {
   return yargs
     .positional('name', {
       demandOption: true,
       type: 'string',
-      description: 'Path to directory containing WIDL schema files',
+      description: 'Path to directory containing Apex schema files',
     })
     .positional('schema_dir', {
       demandOption: true,
       type: 'string',
-      description: 'Path to directory containing WIDL schema files',
+      description: 'Path to directory containing Apex schema files',
     })
-    .options(outputOpts(widlOpts({})))
+    .options(outputOpts(parserOpts({})))
     .example(`${TYPE} schemas/`, 'Prints JSON-ified schema to STDOUT');
 };
 
-export interface Arguments extends CommonOutputOptions, CommonWidlOptions {
+export interface Arguments extends CommonOutputOptions, CommonParserOptions {
   name: string;
   schema_dir: string;
 }
 
-export async function handler(args: Arguments): Promise<void> {
-  registerTypePartials(LANG, TYPE);
+export async function handler(args: ArgumentsCamelCase<Arguments>): Promise<void> {
+  await registerTypePartials(LANG, TYPE);
+
   const options = {
     root: args.root,
   };
@@ -53,19 +56,20 @@ export async function handler(args: Arguments): Promise<void> {
 
   const version = (await cargoVersion(process.cwd())) || '';
 
-  const collectionSignature = processDir(args.name, args.schema_dir);
+  const collectionSignature = await processDir(args.name, args.schema_dir);
+
   collectionSignature.version = version;
 
   const generated = JSON.stringify(collectionSignature, null, 2);
 
-  commitOutput(generated, args.output, { force: args.force, silent: args.silent });
+  await commitOutput(generated, args.output, { force: args.force, silent: args.silent });
 }
 
 async function cargoVersion(dir: string): Promise<string | undefined> {
   const cargoPath = path.join(dir, 'Cargo.toml');
-  const stat = await fs.stat(cargoPath);
-  if (stat.isFile()) {
-    const tomlSource = await fs.readFile(cargoPath, 'utf-8');
+  const exists = await fs.pathExists(cargoPath);
+  if (exists) {
+    const tomlSource = await readFile(cargoPath);
     const cargo = toml.parse(tomlSource);
     return cargo?.package?.version;
   } else {

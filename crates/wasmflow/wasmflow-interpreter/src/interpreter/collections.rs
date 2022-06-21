@@ -9,8 +9,8 @@ pub(super) mod schematic_collection;
 
 use futures::future::BoxFuture;
 use serde_json::Value;
-use wasmflow_interface::{CollectionMap, CollectionSignature};
-use wasmflow_transport::{TransportMap, TransportStream};
+use wasmflow_sdk::v1::transport::{TransportMap, TransportStream};
+use wasmflow_sdk::v1::types::{CollectionMap, CollectionSignature};
 
 use self::core_collection::CoreCollection;
 use self::internal_collection::InternalCollection;
@@ -121,7 +121,7 @@ impl Debug for NamespaceHandler {
 pub trait Collection {
   fn handle(
     &self,
-    invocation: wasmflow_invocation::Invocation,
+    invocation: wasmflow_sdk::v1::Invocation,
     data: Option<Value>,
   ) -> BoxFuture<Result<TransportStream, BoxError>>;
   fn list(&self) -> &CollectionSignature;

@@ -1,5 +1,5 @@
 use serde_json::Value;
-use wasmflow_transport::{MessageTransport, TransportStream, TransportWrapper};
+use wasmflow_sdk::v1::transport::{MessageTransport, TransportStream, TransportWrapper};
 
 use crate::{Component, ExecutionError};
 
@@ -14,7 +14,7 @@ pub(crate) struct SenderData {
 impl Component for SenderComponent {
   fn handle(
     &self,
-    _payload: wasmflow_transport::TransportMap,
+    _payload: wasmflow_sdk::v1::transport::TransportMap,
     data: Option<Value>,
   ) -> futures::future::BoxFuture<Result<TransportStream, crate::BoxError>> {
     let task = async move {

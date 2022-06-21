@@ -15,19 +15,8 @@ wasmflow-rpc = { path = "../wasmflow-rpc" }
 seeded-random = { path = "../../misc/seeded-random" }
 wasmflow-wascap = { path = "../wasmflow-wascap" }
 wasmflow-loader = { path = "../wasmflow-loader" }
-wasmflow-packet = { path = "../../sdk/wasmflow-packet" }
-wasmflow-entity = { path = "../../sdk/wasmflow-entity" }
-wasmflow-codec = { path = "../../sdk/wasmflow-codec" }
-wasmflow-output = { path = "../../sdk/wasmflow-output", features = [] }
-wasmflow-transport = { path = "../../sdk/wasmflow-transport", features = [
-  "all",
-] }
-wasmflow-sdk = { path = "../../sdk/wasmflow-sdk", features = ["v1"] }
-wasmflow-interface = { path = "../../sdk/wasmflow-interface" }
-wasmflow-component = { path = "../../sdk/wasmflow-component" }
-wasmflow-invocation = { path = "../../sdk/wasmflow-invocation" }
-wasmflow-collection-link = { path = "../../sdk/wasmflow-collection-link" }
-wasmflow-macros = { path = "../../sdk/wasmflow-macros" }
+wasmflow-sdk = { path = "../wasmflow-sdk", features = ["v1"] }
+
 derivative = "2.2"
 tokio = { version = "1", features = ["fs"] }
 parking_lot = "0.12"

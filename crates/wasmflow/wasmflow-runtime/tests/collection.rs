@@ -2,13 +2,13 @@ use std::env;
 use std::sync::Arc;
 
 use runtime_testutils::*;
-use wasmflow_entity::Entity;
 use wasmflow_invocation_server::{bind_new_socket, make_rpc_server};
 use wasmflow_runtime::prelude::TransportWrapper;
+use wasmflow_sdk::v1::Entity;
 type Result<T> = anyhow::Result<T, anyhow::Error>;
 use maplit::hashmap;
 use pretty_assertions::assert_eq;
-use wasmflow_invocation::Invocation;
+use wasmflow_sdk::v1::Invocation;
 #[test_logger::test(tokio::test)]
 async fn native_component() -> Result<()> {
   let (network, _) = init_network_from_yaml("./manifests/v0/collections/native-component.yaml").await?;

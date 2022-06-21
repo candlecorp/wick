@@ -1,5 +1,5 @@
 use wasmflow_schematic_graph::PortReference;
-use wasmflow_transport::{TransportMap, TransportWrapper};
+use wasmflow_sdk::v1::transport::{TransportMap, TransportWrapper};
 
 mod port_buffer;
 pub(crate) mod port_handler;

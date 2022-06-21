@@ -1,8 +1,15 @@
 use futures::future::BoxFuture;
 use serde_json::Value;
-use wasmflow_interface::{CollectionSignature, ComponentSignature};
-use wasmflow_invocation::Invocation;
-use wasmflow_transport::TransportStream;
+use wasmflow_sdk::v1::transport::TransportStream;
+use wasmflow_sdk::v1::types::{
+  CollectionSignature,
+  ComponentSignature,
+  FieldMap,
+  StructSignature,
+  TypeDefinition,
+  TypeSignature,
+};
+use wasmflow_sdk::v1::Invocation;
 
 use crate::constants::*;
 use crate::graph::types::Network;
@@ -21,7 +28,7 @@ impl CoreCollection {
   pub(crate) fn new(graph: &Network) -> Self {
     let mut signature: CollectionSignature = serde_json::from_value(serde_json::json!({
       "name":NS_CORE,
-      "format": 1,
+      "format": 1u8,
       "version": "0.0.0",
       "components" : {
         CORE_ID_SENDER:{
@@ -56,19 +63,16 @@ impl CoreCollection {
           }
           let id = dyn_component_id(CORE_ID_MERGE, schematic.name(), component.id());
           let mut component_signature = result.unwrap();
-          let output_type = wasmflow_interface::FieldMap::new();
-          let mut output_signature = wasmflow_interface::StructSignature::new(&id, output_type);
+          let output_type = FieldMap::new();
+          let mut output_signature = StructSignature::new(&id, output_type);
           for (name, type_sig) in component_signature.inputs.inner() {
             output_signature.fields.insert(name, type_sig.clone());
           }
-          signature
-            .types
-            .insert(&id, wasmflow_interface::TypeDefinition::Struct(output_signature));
+          signature.types.insert(&id, TypeDefinition::Struct(output_signature));
 
-          component_signature.outputs.insert(
-            "output",
-            wasmflow_interface::TypeSignature::Ref { reference: id.clone() },
-          );
+          component_signature
+            .outputs
+            .insert("output", TypeSignature::Ref { reference: id.clone() });
           debug!(%id,"adding dynamic component");
           signature.components.insert(id, component_signature);
         }

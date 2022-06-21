@@ -24,12 +24,8 @@ logger = { path = "../logger" }
 wasmflow-rpc = { path = "../wasmflow-rpc", optional = true }
 wasmflow-invocation-server = { path = "../wasmflow-invocation-server", optional = true }
 wasmflow-mesh = { path = "../wasmflow-mesh", optional = true }
+wasmflow-sdk = { path = "../wasmflow-sdk", features = ["v1"] }
 
-wasmflow-packet = { path = "../../sdk/wasmflow-packet" }
-wasmflow-codec = { path = "../../sdk/wasmflow-codec" }
-wasmflow-transport = { path = "../../sdk/wasmflow-transport", features = [
-  "all",
-] }
 
 cfg-if = "1.0"
 

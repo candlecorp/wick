@@ -2,8 +2,8 @@ use std::collections::HashMap;
 
 use uuid::Uuid;
 use wasmflow_schematic_graph::{ComponentIndex, PortDirection, PortReference};
-use wasmflow_transport::{MessageTransport, TransportWrapper};
-use wasmflow_invocation::Invocation;
+use wasmflow_sdk::v1::transport::{MessageTransport, TransportWrapper};
+use wasmflow_sdk::v1::Invocation;
 
 use super::EventLoop;
 use crate::default::make_default_transport;

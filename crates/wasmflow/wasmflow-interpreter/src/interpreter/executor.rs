@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
 use seeded_random::Seed;
-use wasmflow_invocation::Invocation;
-use wasmflow_transport::TransportStream;
+use wasmflow_sdk::v1::transport::TransportStream;
+use wasmflow_sdk::v1::Invocation;
 
 use self::error::ExecutionError;
 use self::transaction::Transaction;

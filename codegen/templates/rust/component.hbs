@@ -8,7 +8,7 @@ pub use crate::components::generated::{{moduleName name}}::*;
 pub(crate) type State = ();
 
 #[async_trait::async_trait]
-impl wasmflow_sdk::sdk::{{#if stateful}}stateful{{else}}ephemeral{{/if}}::BatchedComponent for Component {
+impl wasmflow_sdk::v1::{{#if stateful}}stateful{{else}}ephemeral{{/if}}::BatchedComponent for Component {
     {{#if stateful}}context: crate::Context,{{/if~}}
     type State = State;
     async fn job(

@@ -1,0 +1,54 @@
+[package]
+name = "wasmflow-sdk"
+version = "0.9.0"
+edition = "2021"
+license = "BSD-3-Clause"
+description = "WaPC-related functions for Wasmflow"
+documentation = "https://wasmflow.com"
+keywords = ["wapc", "wasmflow"]
+categories = ["wasm"]
+exclude = ["tests/*", ".github/*", ".gitignore"]
+repository = "https://github.com/wasmflow/wasmflow-sdk"
+homepage = "https://wasmflow.com"
+
+[badges]
+maintenance = { status = "actively-developed" }
+
+[features]
+default = []
+v1 = [
+  "wasmflow-boundary",
+  "wasmflow-streams",
+  "wasmflow-entity",
+  "wasmflow-packet",
+  "wasmflow-component",
+  "wasmflow-codec",
+  "wasmflow-interface",
+  "wasmflow-transport",
+  "wasmflow-boundary",
+  "wasmflow-output",
+  "wasmflow-traits",
+  "wasmflow-collection-link",
+  "wasmflow-boundary/v1",
+]
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+wasmflow-invocation = { path = "./crates/wasmflow-invocation", version = "0.9.0" }
+
+[dependencies]
+wasmflow-streams = { path = "./crates/wasmflow-streams", version = "0.9.0", optional = true }
+wasmflow-entity = { path = "./crates/wasmflow-entity", version = "0.9.0", optional = true }
+wasmflow-packet = { path = "./crates/wasmflow-packet", version = "0.9.0", optional = true }
+wasmflow-component = { path = "./crates/wasmflow-component", version = "0.9.0", features = [
+  "guest",
+], optional = true }
+wasmflow-codec = { path = "./crates/wasmflow-codec", version = "0.9.0", features = [], optional = true }
+wasmflow-output = { path = "./crates/wasmflow-output", version = "0.9.0", optional = true }
+wasmflow-interface = { path = "./crates/wasmflow-interface", version = "0.9.0", optional = true }
+wasmflow-transport = { path = "./crates/wasmflow-transport", version = "0.9.0", optional = true }
+wasmflow-boundary = { path = "./crates/wasmflow-boundary", version = "0.9.0", optional = true }
+wasmflow-traits = { path = "./crates/wasmflow-traits", version = "0.9.0", optional = true }
+wasmflow-collection-link = { path = "./crates/wasmflow-collection-link", version = "0.9.0", optional = true }
+futures = "0.3.21"

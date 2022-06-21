@@ -4,10 +4,9 @@ use std::time::Duration;
 use tokio_stream::StreamExt;
 use tonic::transport::{Certificate, Channel, ClientTlsConfig, Identity, Uri};
 use tracing::debug;
-use wasmflow_transport::{MessageTransport, TransportMap, TransportStream, TransportWrapper};
-use wasmflow_entity::Entity;
-use wasmflow_interface::HostedType;
-use wasmflow_invocation::{InherentData, Invocation};
+use wasmflow_sdk::v1::transport::{MessageTransport, TransportMap, TransportStream, TransportWrapper};
+use wasmflow_sdk::v1::types::HostedType;
+use wasmflow_sdk::v1::{Entity, InherentData, Invocation};
 
 use crate::error::RpcClientError;
 use crate::rpc::invocation_service_client::InvocationServiceClient;
@@ -155,7 +154,7 @@ impl RpcClient {
     transpose: bool,
     inherent_data: Option<InherentData>,
   ) -> Result<TransportStream, RpcClientError> {
-    let mut payload = TransportMap::from_json_output(data)?;
+    let mut payload = TransportMap::from_json_output(data).map_err(|e| RpcClientError::Sdk(e.into()))?;
     if transpose {
       payload.transpose_output_name();
     }

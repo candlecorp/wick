@@ -3,7 +3,7 @@ use std::panic;
 use log::{debug, error};
 use serde_json::json;
 use utils::*;
-use wasmflow_transport::{JsonError, TransportJson};
+use wasmflow_sdk::v1::transport::{JsonError, TransportJson};
 
 #[test_logger::test(tokio::test)]
 async fn test_vow_serve() -> utils::TestResult<()> {

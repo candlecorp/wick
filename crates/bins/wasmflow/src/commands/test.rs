@@ -24,20 +24,23 @@ pub(crate) struct TestCommand {
   wasi: crate::wasm::WasiOptions,
 
   /// Turn on info logging.
-  #[clap(long = "info")]
+  #[clap(long = "info", action)]
   pub(crate) info: bool,
 
   /// Pass a seed along with the invocation.
-  #[clap(long = "seed", short = 's', env = "WAFL_SEED")]
+  #[clap(long = "seed", short = 's', env = "WAFL_SEED", action)]
   seed: Option<u64>,
 
   /// The path or OCI URL to a wafl manifest or wasm file.
+  #[clap(action)]
   pub(crate) location: String,
 
   /// The test data.
+  #[clap(action)]
   data_path: PathBuf,
 
   /// Filter which tests to run
+  #[clap(action)]
   filter: Vec<String>,
 }
 #[allow(clippy::future_not_send, clippy::too_many_lines)]

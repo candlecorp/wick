@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 
-use wasmflow_transport::TransportWrapper;
+use wasmflow_sdk::v1::transport::TransportWrapper;
 
 use super::error::ExecutionError;
 

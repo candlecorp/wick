@@ -1,25 +1,25 @@
-import yargs from 'yargs';
-import { registerHelpers } from 'widl-template';
+import yargs, { ArgumentsCamelCase } from 'yargs';
+import { registerHelpers } from 'apex-template';
 import {
   CODEGEN_TYPE,
   getTemplate,
   commitOutput,
   LANGUAGE,
   registerTypePartials,
-  widlOpts,
-  CommonWidlOptions,
+  parserOpts,
+  CommonParserOptions,
   CommonOutputOptions,
   outputOpts,
   readInterface,
   registerLanguageHelpers,
-} from '../../common';
-import { BATCH_SIGNATURE } from '../../batch_component';
+} from '../../common.js';
+import { BATCH_SIGNATURE } from '../../batch_component.js';
 
-const LANG = LANGUAGE.Rust;
-const TYPE = CODEGEN_TYPE.Interface;
+export const LANG = LANGUAGE.Rust;
+export const TYPE = CODEGEN_TYPE.Interface;
 
 export const command = `${TYPE} <interface> [options]`;
-export const desc = 'Generate the Vino integration code for all component schemas';
+export const desc = 'Generate the Wasmflow code from the passed interface JSON';
 
 export const builder = (yargs: yargs.Argv): yargs.Argv => {
   return yargs
@@ -28,16 +28,16 @@ export const builder = (yargs: yargs.Argv): yargs.Argv => {
       type: 'string',
       description: 'Path to interface JSON',
     })
-    .options(outputOpts(widlOpts({})))
+    .options(outputOpts(parserOpts({})))
     .example(`rust ${TYPE} interface.json`, 'Prints generated code to STDOUT');
 };
 
-interface Arguments extends CommonWidlOptions, CommonOutputOptions {
+interface Arguments extends CommonParserOptions, CommonOutputOptions {
   interface: string;
 }
 
-export function handler(args: Arguments): void {
-  registerTypePartials(LANG, TYPE);
+export async function handler(args: ArgumentsCamelCase<Arguments>): Promise<void> {
+  await registerTypePartials(LANG, TYPE);
   registerLanguageHelpers(LANG);
 
   const options = {
@@ -45,13 +45,13 @@ export function handler(args: Arguments): void {
   };
   registerHelpers(options);
 
-  const template = getTemplate(LANG, TYPE);
-  const [iface, ijson] = readInterface(args.interface);
+  const template = await getTemplate(LANG, TYPE);
+  const [iface, ijson] = await readInterface(args.interface);
 
   const generated = template({
     interface: iface,
     batch: BATCH_SIGNATURE,
   });
 
-  commitOutput(generated, args.output, { force: args.force, silent: args.silent });
+  await commitOutput(generated, args.output, { force: args.force, silent: args.silent });
 }

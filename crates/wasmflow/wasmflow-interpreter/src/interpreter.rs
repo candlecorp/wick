@@ -9,10 +9,9 @@ use std::sync::Arc;
 
 use seeded_random::{Random, Seed};
 use tracing_futures::Instrument;
-use wasmflow_entity::Entity;
-use wasmflow_interface::CollectionSignature;
-use wasmflow_invocation::Invocation;
-use wasmflow_transport::TransportStream;
+use wasmflow_sdk::v1::transport::TransportStream;
+use wasmflow_sdk::v1::types::CollectionSignature;
+use wasmflow_sdk::v1::{Entity, Invocation};
 
 use self::collections::HandlerMap;
 use self::error::Error;

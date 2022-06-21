@@ -16,5 +16,5 @@ type HttpResponse {
 type HttpRequest {
   url: string
   method: string
-  link: link @provider("http")
+  link: link @capability("http")
 }

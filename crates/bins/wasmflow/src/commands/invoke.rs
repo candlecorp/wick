@@ -21,10 +21,11 @@ pub(crate) struct InvokeCommand {
   pub(crate) fetch: super::FetchOptions,
 
   /// Turn on info logging.
-  #[clap(long = "info")]
+  #[clap(long = "info", action)]
   pub(crate) info: bool,
 
   /// Path or OCI url to manifest or wasm file.
+  #[clap(action)]
   location: String,
 
   // *****************************************************************
@@ -34,35 +35,35 @@ pub(crate) struct InvokeCommand {
   // TODO: Eliminate the need for copy/pasting
   // *****************************************************************
   /// Name of the component to execute.
-  #[clap(default_value = "default")]
+  #[clap(default_value = "default", action)]
   component: String,
 
   /// Don't read input from STDIN.
-  #[clap(long = "no-input")]
+  #[clap(long = "no-input", action)]
   no_input: bool,
 
   /// Skip additional I/O processing done for CLI usage.
-  #[clap(long = "raw", short = 'r')]
+  #[clap(long = "raw", short = 'r', action)]
   raw: bool,
 
   /// Filter the outputs by port name.
-  #[clap(long = "filter")]
+  #[clap(long = "filter", action)]
   filter: Vec<String>,
 
   /// A port=value string where value is JSON to pass as input.
-  #[clap(long = "data", short = 'd')]
+  #[clap(long = "data", short = 'd', action)]
   data: Vec<String>,
 
   /// Print values only and exit with an error code and string on any errors.
-  #[clap(long = "values", short = 'o')]
+  #[clap(long = "values", short = 'o', action)]
   short: bool,
 
   /// Pass a seed along with the invocation.
-  #[clap(long = "seed", short = 's', env = "WAFL_SEED")]
+  #[clap(long = "seed", short = 's', env = "WAFL_SEED", action)]
   seed: Option<u64>,
 
   /// Arguments to pass as inputs to a schematic.
-  #[clap(last(true))]
+  #[clap(last(true), action)]
   args: Vec<String>,
 }
 

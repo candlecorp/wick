@@ -11,6 +11,7 @@ pub(crate) struct Options {
   pub(crate) logging: logger::LoggingOptions,
 
   /// File to read.
+  #[clap(action)]
   pub(crate) module: String,
 }
 

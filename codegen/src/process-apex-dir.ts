@@ -1,38 +1,23 @@
-import { readFile } from './common';
+import { readFile, readFileSync } from './common.js';
 import path from 'path';
-import fs from 'fs';
-import { parse } from '@wapc/widl';
-import {
-  AbstractNode,
-  Annotation,
-  Definition,
-  Document,
-  EnumDefinition,
-  Kind,
-  ListType,
-  MapType,
-  Named,
-  NamespaceDefinition,
-  Optional,
-  Type,
-  TypeDefinition,
-} from '@wapc/widl/ast';
+import fs from 'fs-extra';
+import { parse, ast } from '@apexlang/core';
+import { debug } from './common.js';
 
 import {
   ComponentSignature,
   EnumSignature,
   EnumVariant,
-  isWidlType,
+  isApexType,
   CollectionSignature,
   RootType,
   StructSignature,
   FieldMap,
   TypeSignature,
-} from './types';
-import { string } from 'yargs';
+} from './types.js';
 
-export function processDir(name: string, dir: string): CollectionSignature {
-  const { components, types, configs } = processSchemaDir(dir);
+export async function processDir(name: string, dir: string): Promise<CollectionSignature> {
+  const { components, types, configs } = await processSchemaDir(dir);
 
   const collectionSignature: CollectionSignature = {
     name,
@@ -46,24 +31,25 @@ export function processDir(name: string, dir: string): CollectionSignature {
   return collectionSignature;
 }
 
-function processSchemaDir(
+async function processSchemaDir(
   dir: string,
   prefixes: string[] = [],
-): { types: RootType[]; components: ComponentSignature[]; configs: Record<string, StructSignature> } {
+): Promise<{ types: RootType[]; components: ComponentSignature[]; configs: Record<string, StructSignature> }> {
+  debug(`processing schema directory '${dir}'`);
   const rv = {
     types: [] as RootType[],
     components: [] as ComponentSignature[],
     configs: {} as Record<string, StructSignature>,
   };
-  const entries = fs.readdirSync(dir);
+  const entries = await fs.readdir(dir);
 
-  const widlFiles = entries.filter(file => file.endsWith('.widl'));
+  const apexFiles = entries.filter(file => file.endsWith('.apex'));
   // Todo fetch and validate remote schema JSON somehow
   // const remoteIncludes = entries.filter(file => file.match('include.json'));
   const directories = entries.filter(file => fs.statSync(path.join(dir, file)).isDirectory());
 
   for (const subdir of directories) {
-    const result = processSchemaDir(path.join(dir, subdir), prefixes.concat([subdir]));
+    const result = await processSchemaDir(path.join(dir, subdir), prefixes.concat([subdir]));
     rv.types.push(...result.types);
     result.components.forEach(comp => (comp.name = prefixes.concat([comp.name]).join('::')));
     rv.components.push(...result.components);
@@ -75,13 +61,13 @@ function processSchemaDir(
   const resolver = (location: string) => {
     const pathParts = location.split('/');
     const importPath = path.join(dir, ...pathParts);
-    const src = readFile(importPath);
+    const src = readFileSync(importPath);
     return src;
   };
 
-  for (const file of widlFiles) {
-    const widlSrc = readFile(path.join(dir, file));
-    const tree = parse(widlSrc, resolver);
+  for (const file of apexFiles) {
+    const apexSrc = await readFile(path.join(dir, file));
+    const tree = parse(apexSrc, resolver);
     const [component, additionalTypes, config] = interpret(tree);
     types.push(...additionalTypes);
     components.push(component);
@@ -95,26 +81,26 @@ function processSchemaDir(
   return rv;
 }
 
-function getAnnotation(name: string, annotations: Annotation[]): Annotation | undefined {
+function getAnnotation(name: string, annotations: ast.Annotation[]): ast.Annotation | undefined {
   const result = annotations.filter(a => a.name.value == name)[0];
   return result;
 }
 
-function reduceType(type: Type, annotations: Annotation[] = []): TypeSignature {
+function reduceType(type: ast.Type, annotations: ast.Annotation[] = []): TypeSignature {
   switch (type.getKind()) {
-    case Kind.Named: {
-      const t = type as Named;
+    case ast.Kind.Named: {
+      const t = type as ast.Named;
       const name = t.name;
-      if (isWidlType(name.value)) {
+      if (isApexType(name.value)) {
         return { type: name.value };
       } else {
-        const link = getAnnotation('collection', annotations);
+        const link = getAnnotation('capability', annotations);
         if (name.value === 'link') {
           if (link) {
             const collection = link.arguments[0];
             return {
               type: 'link',
-              collection: collection.value.getValue(),
+              capability: collection.value.getValue(),
             };
           } else {
             return {
@@ -122,30 +108,30 @@ function reduceType(type: Type, annotations: Annotation[] = []): TypeSignature {
             };
           }
         } else if (name.value === 'struct') {
-          // TODO: convert this to core WIDL type once widl can represent it (see also: https://github.com/wapc/cli/issues/8)
+          // TODO: convert this to core Apex type once apex can represent it (see also: https://github.com/wapc/cli/issues/8)
           return { type: 'struct' };
         } else {
           return { type: 'ref', ref: `#/types/${name.value}` };
         }
       }
     }
-    case Kind.MapType: {
-      const t = type as MapType;
+    case ast.Kind.MapType: {
+      const t = type as ast.MapType;
       return {
         type: 'map',
         key: reduceType(t.keyType, annotations),
         value: reduceType(t.valueType, annotations),
       };
     }
-    case Kind.ListType: {
-      const t = type as ListType;
+    case ast.Kind.ListType: {
+      const t = type as ast.ListType;
       return {
         type: 'list',
         element: reduceType(t.type, annotations),
       };
     }
-    case Kind.Optional: {
-      const t = type as Optional;
+    case ast.Kind.Optional: {
+      const t = type as ast.Optional;
       return {
         type: 'optional',
         option: reduceType(t.type, annotations),
@@ -155,12 +141,12 @@ function reduceType(type: Type, annotations: Annotation[] = []): TypeSignature {
   throw new Error(`Unhandled type: ${type.getKind()}`);
 }
 
-function interpret(doc: Document): [ComponentSignature, RootType[], StructSignature?] {
+function interpret(doc: ast.Document): [ComponentSignature, RootType[], StructSignature?] {
   const types = doc.definitions.filter(isType);
   const input_def = findByName(types, /inputs/i);
   const output_def = findByName(types, /outputs/i);
   const config_def = findByName(types, /config/i);
-  const namespace = doc.definitions.find(def => def.isKind(Kind.NamespaceDefinition));
+  const namespace = doc.definitions.find(def => def.isKind(ast.Kind.NamespaceDefinition));
   if (!namespace) throw new Error('Component schemas must define a namespace to use as the component name');
   if (!input_def) throw new Error('Component schemas must include a type definition named "Inputs"');
   if (!output_def) throw new Error('Component schemas must include a type definition named "Outputs"');
@@ -180,7 +166,7 @@ function interpret(doc: Document): [ComponentSignature, RootType[], StructSignat
   const config = config_def ? reduceTypeDefinition(config_def) : undefined;
 
   const component: ComponentSignature = {
-    name: (namespace as NamespaceDefinition).name.value,
+    name: (namespace as ast.NamespaceDefinition).name.value,
     inputs,
     outputs,
   };
@@ -190,10 +176,10 @@ function interpret(doc: Document): [ComponentSignature, RootType[], StructSignat
     .filter(t => !t.name.value.match(/inputs/i) && !t.name.value.match(/outputs/i) && !t.name.value.match(/config/i))
     .map(t => {
       switch (t.kind) {
-        case TypeDefinition.name:
-          return reduceTypeDefinition(t as TypeDefinition);
-        case EnumDefinition.name:
-          return reduceEnumDefinition(t as EnumDefinition);
+        case ast.TypeDefinition.name:
+          return reduceTypeDefinition(t as ast.TypeDefinition);
+        case ast.EnumDefinition.name:
+          return reduceEnumDefinition(t as ast.EnumDefinition);
         default:
           throw new Error(`Type ${t.kind} not yet handled`);
       }
@@ -201,15 +187,15 @@ function interpret(doc: Document): [ComponentSignature, RootType[], StructSignat
   return [component, typeSignatures, config];
 }
 
-function isType(def: Definition): def is TypeDefinition {
-  return def.isKind(Kind.TypeDefinition);
+function isType(def: ast.Definition): def is ast.TypeDefinition {
+  return def.isKind(ast.Kind.TypeDefinition);
 }
 
-function isSupportedType(def: Definition): def is TypeDefinition | EnumDefinition {
-  return def.isKind(Kind.TypeDefinition) || def.isKind(Kind.EnumDefinition);
+function isSupportedType(def: ast.Definition): def is ast.TypeDefinition | ast.EnumDefinition {
+  return def.isKind(ast.Kind.TypeDefinition) || def.isKind(ast.Kind.EnumDefinition);
 }
 
-interface HasName extends AbstractNode {
+interface HasName extends ast.AbstractNode {
   name: { value: string };
 }
 
@@ -217,7 +203,7 @@ function findByName<T extends HasName>(defs: T[], name: string | RegExp): T | un
   return defs.find(def => def.name.value.match(name));
 }
 
-function reduceTypeDefinition(def: TypeDefinition): StructSignature {
+function reduceTypeDefinition(def: ast.TypeDefinition): StructSignature {
   const fields: Record<string, TypeSignature> = {};
   for (const field of def.fields) {
     fields[field.name.value] = reduceType(field.type, field.annotations);
@@ -230,7 +216,7 @@ function reduceTypeDefinition(def: TypeDefinition): StructSignature {
   };
 }
 
-function reduceEnumDefinition(def: EnumDefinition): EnumSignature {
+function reduceEnumDefinition(def: ast.EnumDefinition): EnumSignature {
   const values: EnumVariant[] = [];
   for (const field of def.values) {
     values.push({ name: field.name.value, index: field.index.value });

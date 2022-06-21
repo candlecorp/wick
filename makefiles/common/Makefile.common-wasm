@@ -1,18 +1,16 @@
 # Directory to store the build artifacts
 ARTIFACT_DIR:=build/
 # Path to copy the build artifact to
-BUILD_ARTIFACT:=$(ARTIFACT_DIR)/$(CRATE_FS_NAME).wasm
+BUILD_ARTIFACT:=$(ARTIFACT_DIR)$(CRATE_FS_NAME).wasm
 # Path for the signed artifact
-SIGNED_ARTIFACT:=$(ARTIFACT_DIR)/$(CRATE_FS_NAME)_s.wasm
+SIGNED_ARTIFACT:=$(ARTIFACT_DIR)$(CRATE_FS_NAME)_s.wasm
 
 TARGET?=wasm32-unknown-unknown
 
 CLEAN_FILES += $(BUILD_ARTIFACT) $(SIGNED_ARTIFACT)
 
-WAFL=cargo run --manifest-path $(MAKEFILE_DIR)/../Cargo.toml -p wafl --
-
-$(BUILD_ARTIFACT): $(INTERFACE) src/components $(GENERATED_MODULE) $(RUST_SOURCES)
-	$(shell $(MKDIR) $(ARTIFACT_DIR))
+$(BUILD_ARTIFACT): $(INTERFACE) $(GENERATED_MODULE) $(RUST_SOURCES)
+	@$(MKDIR) $(ARTIFACT_DIR)
 	@echo Building artifact
 	cargo build --target $(TARGET) --release
 	@echo Copying binary to $(BUILD_ARTIFACT)

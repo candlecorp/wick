@@ -25,26 +25,26 @@ pub(crate) enum SubCommands {
 #[derive(Debug, Clone, Args)]
 pub(crate) struct ConnectOptions {
   /// RPC port.
-  #[clap(short, long, env = wasmflow_collection_cli::options::env::WAFL_RPC_PORT)]
+  #[clap(short, long, env = wasmflow_collection_cli::options::env::WAFL_RPC_PORT,action)]
   pub(crate) port: u16,
 
   /// RPC address.
-  #[clap(short, long, default_value = "127.0.0.1", env = wasmflow_collection_cli::options::env::WAFL_RPC_ADDRESS)]
+  #[clap(short, long, default_value = "127.0.0.1", env = wasmflow_collection_cli::options::env::WAFL_RPC_ADDRESS,action)]
   pub(crate) address: Ipv4Addr,
 
   /// Path to pem file for TLS connections.
-  #[clap(long)]
+  #[clap(long, action)]
   pub(crate) pem: Option<PathBuf>,
 
   /// Path to client key for TLS connections.
-  #[clap(long)]
+  #[clap(long, action)]
   pub(crate) key: Option<PathBuf>,
 
   /// Path to CA pem for TLS connections.
-  #[clap(long)]
+  #[clap(long, action)]
   pub(crate) ca: Option<PathBuf>,
 
   /// The domain to verify against the certificate.
-  #[clap(long)]
+  #[clap(long, action)]
   pub(crate) domain: Option<String>,
 }

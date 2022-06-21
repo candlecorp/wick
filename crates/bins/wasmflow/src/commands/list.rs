@@ -11,6 +11,7 @@ pub(crate) struct ListCommand {
   pub(crate) fetch: super::FetchOptions,
 
   /// The path or OCI URL to a wafl manifest or wasm file.
+  #[clap(action)]
   pub(crate) location: String,
 
   #[clap(flatten)]
@@ -19,7 +20,7 @@ pub(crate) struct ListCommand {
   #[clap(flatten)]
   pub(crate) mesh: MeshCliOptions,
 
-  #[clap(long = "json")]
+  #[clap(long = "json", action)]
   pub(crate) json: bool,
 }
 

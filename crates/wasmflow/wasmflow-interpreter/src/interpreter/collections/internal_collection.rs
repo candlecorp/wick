@@ -1,9 +1,9 @@
 use futures::future::BoxFuture;
 use serde_json::Value;
-use wasmflow_interface::CollectionSignature;
-use wasmflow_invocation::Invocation;
 use wasmflow_schematic_graph::{SCHEMATIC_INPUT, SCHEMATIC_OUTPUT};
-use wasmflow_transport::TransportStream;
+use wasmflow_sdk::v1::transport::TransportStream;
+use wasmflow_sdk::v1::types::CollectionSignature;
+use wasmflow_sdk::v1::Invocation;
 
 use crate::constants::*;
 use crate::{BoxError, Collection, Component};

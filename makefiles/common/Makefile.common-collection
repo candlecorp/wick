@@ -1,14 +1,22 @@
-SOURCE_FILES += $(GENERATED_MODULE) $(wildcard $(COMPONENTS_DIR)/*)
+COMPONENTS:=$(shell jq -r '.components | keys[]' $(INTERFACE) 2> /dev/null)
+COMPONENT_FILES:=$(subst -,_,$(COMPONENTS))
+COMPONENT_FILES:=$(subst ::,/,$(COMPONENTS))
+COMPONENT_FILES:=$(COMPONENT_FILES:%=$(COMPONENTS_DIR)/%.rs)
+
+SOURCE_FILES += $(GENERATED_MODULE) $(COMPONENT_FILES)
 
 $(GENERATED_MODULE): $(INTERFACE)
 	@echo Generating $@
-	@$(CODEGEN) rust integration $< --type $(STATEFUL) $(WELLKNOWN) -f -o $@
+	$(CODEGEN) rust integration $< $(STATEFUL) $(WELLKNOWN) -f -o $@
 
 .PHONY: components
-components: $(COMPONENTS_DIR) $(INTERFACE)
-	$(CODEGEN) rust component $(INTERFACE) --all $(STATEFUL) $(WELLKNOWN) -o $<
-	$(CODEGEN) rust component $(INTERFACE) __batch__  $(STATEFUL) $(WELLKNOWN) -o $(COMPONENTS_DIR)/__batch__.rs
+components: $(INTERFACE)
+	$(MKDIR) $(COMPONENTS_DIR)
+	$(CODEGEN) rust component $(INTERFACE) --all $(STATEFUL) $(WELLKNOWN) -o $(COMPONENTS_DIR)
 
-CODEGEN_FILES += $(GENERATED_MODULE) components
+$(COMPONENT_FILES):
+	$(MAKE) components
+
+CODEGEN_FILES += $(GENERATED_MODULE) $(COMPONENT_FILES)
+RUST_SOURCES += $(COMPONENT_FILES)
 CLEAN_FILES += $(GENERATED_MODULE)
-

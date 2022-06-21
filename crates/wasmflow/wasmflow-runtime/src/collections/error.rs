@@ -20,8 +20,7 @@ pub enum CollectionError {
 
   #[error(transparent)]
   InvocationError(#[from] InvocationError),
-  #[error(transparent)]
-  TransportError(#[from] wasmflow_transport::error::TransportError),
+
   #[error(transparent)]
   LoadFailed(#[from] wasmflow_loader::Error),
   #[error(transparent)]

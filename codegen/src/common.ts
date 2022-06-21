@@ -1,17 +1,18 @@
-import fs from 'fs';
+import fs from 'fs-extra';
 import path from 'path';
 import findroot from 'find-root';
 import DEBUG from 'debug';
-import { handlebars } from 'widl-template';
-import { AbstractNode, Kind, ListType, MapType, Named, Optional } from '@wapc/widl/ast';
-import yargs, { string } from 'yargs';
-import { ComponentSignature, CollectionSignature } from './types';
+import { handlebars } from 'apex-template';
+import { ast } from '@apexlang/core';
+import yargs from 'yargs';
+import { ComponentSignature, CollectionSignature } from './types.js';
 import { snakeCase } from 'change-case-all';
-export const debug = DEBUG('vino-codegen');
+export const debug = DEBUG('wasmflow-codegen');
+import url from 'url';
+const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 
 export enum LANGUAGE {
   Rust = 'rust',
-  WIDL = 'widl',
   JSON = 'json',
 }
 
@@ -22,24 +23,26 @@ export enum CODEGEN_TYPE {
   WapcLib = 'wapc-lib',
 }
 
-export enum WIDL_TYPE {
-  Interface = 'interface',
-  Schema = 'schema',
-}
-
 export enum JSON_TYPE {
   Interface = 'interface',
 }
 
 export const LANGUAGE_OFFERS = {
   [LANGUAGE.Rust]: CODEGEN_TYPE,
-  [LANGUAGE.WIDL]: WIDL_TYPE,
   [LANGUAGE.JSON]: JSON_TYPE,
 };
 
 export const DEFAULT_CODEGEN_TYPE = CODEGEN_TYPE.Integration;
 
-export function readFile(path: string): string {
+export function readFile(path: string): Promise<string> {
+  try {
+    return fs.readFile(path, 'utf-8');
+  } catch (e: unknown) {
+    throw new Error(`Could not read file at ${path}: ${e}`);
+  }
+}
+
+export function readFileSync(path: string): string {
   try {
     return fs.readFileSync(path, 'utf-8');
   } catch (e: unknown) {
@@ -70,11 +73,11 @@ export function normalizeFilename(filename: string): NormalizedFilename {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function getTemplate(language: LANGUAGE, type: CODEGEN_TYPE | WIDL_TYPE | JSON_TYPE): (data: any) => string {
+export async function getTemplate(language: LANGUAGE, type: CODEGEN_TYPE | JSON_TYPE): Promise<(data: any) => string> {
   const templatePath = path.join(findroot(__dirname), 'templates', language, `${type}.hbs`);
   debug('Reading template %o->%o located at %o', language, type, templatePath);
   debug('Compiling template from %o', templatePath);
-  const template = handlebars.compile(readFile(templatePath));
+  const template = handlebars.compile(await readFile(templatePath));
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return (data: any) => {
     try {
@@ -87,28 +90,34 @@ export function getTemplate(language: LANGUAGE, type: CODEGEN_TYPE | WIDL_TYPE |
   };
 }
 
-export function registerPartial(language: LANGUAGE, partial: string): void {
+export async function registerPartial(language: LANGUAGE, partial: string): Promise<void> {
   const partialPath = path.join(findroot(__dirname), 'templates', language, 'partials', `${partial}.hbs`);
   debug('registering partial template %o->%o located at %o', language, partial, partialPath);
-  const partialSource = readFile(partialPath);
+  const partialSource = await readFile(partialPath);
   handlebars.registerPartial(partial, partialSource);
 }
 
-export function registerTypePartials(language: LANGUAGE, type: CODEGEN_TYPE | WIDL_TYPE | JSON_TYPE): void {
-  registerCommonPartials(language);
+export async function registerTypePartials(language: LANGUAGE, type: CODEGEN_TYPE | JSON_TYPE): Promise<void> {
+  debug('Registering partials for %o %o ', language, type);
+  await registerCommonPartials(language);
   const relativeDir = path.join(language, 'partials', type);
-  const dir = path.join(findroot(__dirname), 'templates', relativeDir);
+  const rootDir = findroot(__dirname);
+
+  const dir = path.join(rootDir, 'templates', relativeDir);
   debug(`Looking for partials in %o`, dir);
-  if (!fs.existsSync(dir)) return;
-  const files = fs.readdirSync(dir);
+  if (!(await fs.pathExists(dir))) {
+    debug(`Directory %o not found, skipping.`, dir);
+    return;
+  }
+  const files = await fs.readdir(dir);
   for (const file of files) {
     const name = file.replace(path.extname(`${file}.hbs`), '');
     const partialPath = path.join(dir, file);
     debug(`Loading partial %o`, partialPath);
-    const exists = fs.existsSync(partialPath);
+    const exists = await fs.pathExists(partialPath);
     if (exists) {
       debug(`Registering partial for %o:%o`, language, type);
-      const partialSource = readFile(partialPath);
+      const partialSource = await readFile(partialPath);
       handlebars.registerPartial(name, partialSource);
     }
   }
@@ -240,38 +249,42 @@ export function registerLanguageHelpers(lang: LANGUAGE): void {
   }
 }
 
-export function registerCommonPartials(language: LANGUAGE): void {
+export async function registerCommonPartials(language: LANGUAGE): Promise<void> {
   const relativeDir = path.join(language, 'partials', 'common');
   const dir = path.join(findroot(__dirname), 'templates', relativeDir);
   debug(`Looking for partials in %o`, dir);
-  if (!fs.existsSync(dir)) return;
-  const files = fs.readdirSync(dir);
+  if (!(await fs.pathExists(dir))) {
+    debug(`Partial directory %o not found`, dir);
+    return;
+  }
+  const files = await fs.readdir(dir);
+  debug('Loading partials: %o', files);
   for (const file of files) {
     const name = file.replace(path.extname(`${file}.hbs`), '');
     const partialPath = path.join(dir, file);
     debug(`Loading partial %o`, partialPath);
-    const exists = fs.existsSync(partialPath);
+    const exists = await fs.pathExists(partialPath);
     if (exists) {
       debug(`Registering common partial for %o: %o`, language, name);
-      const partialSource = readFile(partialPath);
+      const partialSource = await readFile(partialPath);
       handlebars.registerPartial(name, partialSource);
     }
   }
 }
 
 // This should be a separate module but won't until it does a complete codegen
-export function codegen(node: AbstractNode): string {
+export function codegen(node: ast.AbstractNode): string {
   switch (node.kind) {
-    case Kind.Named:
-      return (<Named>node).name.value;
-    case Kind.Optional:
-      return `${codegen((<Optional>node).type as unknown as AbstractNode)}?`;
-    case Kind.MapType:
-      return `{${codegen((<MapType>node).keyType as unknown as AbstractNode)}:${codegen(
-        (<MapType>node).valueType as unknown as AbstractNode,
+    case ast.Kind.Named:
+      return (<ast.Named>node).name.value;
+    case ast.Kind.Optional:
+      return `${codegen((<ast.Optional>node).type as unknown as ast.AbstractNode)}?`;
+    case ast.Kind.MapType:
+      return `{${codegen((<ast.MapType>node).keyType as unknown as ast.AbstractNode)}:${codegen(
+        (<ast.MapType>node).valueType as unknown as ast.AbstractNode,
       )}`;
-    case Kind.ListType:
-      return `[${codegen((<ListType>node).type as unknown as AbstractNode)}]`;
+    case ast.Kind.ListType:
+      return `[${codegen((<ast.ListType>node).type as unknown as ast.AbstractNode)}]`;
     default:
       // console.log(node);
       throw new Error(`Unhandled node ${node.kind}`);
@@ -284,7 +297,7 @@ export interface CommonOutputOptions {
   output?: string;
 }
 
-export interface CommonWidlOptions {
+export interface CommonParserOptions {
   root: string;
 }
 
@@ -312,7 +325,7 @@ export function outputOpts(obj: { [key: string]: yargs.Options }): typeof obj {
   return Object.assign({}, obj, commonOptions);
 }
 
-export function widlOpts(obj: { [key: string]: yargs.Options }): typeof obj {
+export function parserOpts(obj: { [key: string]: yargs.Options }): typeof obj {
   if (typeof obj != 'object' || obj === null) throw new Error(`Invalid argument: ${obj}`);
   const commonOptions = {
     r: {
@@ -330,45 +343,50 @@ interface CommitOptions {
 }
 
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-export function commitOutput(src: string, filePath?: string, options: CommitOptions = {}): void {
+export async function commitOutput(src: string, filePath?: string, options: CommitOptions = {}): Promise<void> {
   if (filePath) {
     const basedir = path.dirname(filePath);
-    if (!fs.existsSync(basedir)) {
+
+    if (!(await fs.pathExists(basedir))) {
       debug('Directory "%o" does not exist, creating it.', basedir);
-      fs.mkdirSync(basedir);
+      await fs.mkdirp(basedir);
     }
-    if (fs.existsSync(filePath)) {
-      if (options.force) {
-        debug(`%o exists, overwriting anyway because of --force`, filePath);
+
+    const fileExists = await fs.pathExists(filePath);
+
+    if (options.force) {
+      debug(`%o exists, overwriting anyway because of --force`, filePath);
+    } else if (fileExists) {
+      debug(`File %o exists, checking contents to see if it's a stub file.`, filePath);
+      const contents = await readFile(filePath);
+      if (contents.startsWith('/* stub */')) {
+        debug(`%o exists but is a stub file, overwriting`, filePath);
       } else {
-        const contents = fs.readFileSync(filePath, 'utf-8');
-        if (contents.startsWith('/* stub */')) {
-          debug(`%o exists but is a stub file, overwriting`, filePath);
-        } else {
-          debug(`Refusing to overwrite %o`, filePath);
-          if (options.silent) return;
-          else {
-            debug(`%o exists, to overwrite pass --force to the codegen or delete the file`, filePath);
-            return;
-          }
+        debug(`Refusing to overwrite %o`, filePath);
+        if (options.silent) return;
+        else {
+          debug(`%o exists, to overwrite pass --force to the codegen or delete the file`, filePath);
+          return;
         }
       }
     }
-    debug(`Write to %o`, filePath);
+
+    debug(`Writing to %o`, filePath);
     try {
-      fs.writeFileSync(filePath, src);
+      await fs.writeFile(filePath, src);
     } catch (e) {
       console.error(`Error writing output to ${filePath}: `, e);
       throw e;
     }
   } else {
+    debug(`No path given, emitting to STDOUT`);
     console.log(src);
   }
 }
 
-export function readInterface(interfacePath: string): [CollectionSignature, string] {
+export async function readInterface(interfacePath: string): Promise<[CollectionSignature, string]> {
   debug('Reading interface JSON at %o', interfacePath);
-  const ifaceJson = fs.readFileSync(interfacePath, 'utf-8');
+  const ifaceJson = await readFile(interfacePath);
   const iface = JSON.parse(ifaceJson) as CollectionSignature;
   return [iface, ifaceJson];
 }

@@ -5,9 +5,9 @@ use parking_lot::Mutex;
 use seeded_random::{Random, Seed};
 use serde_json::Value;
 use tracing_futures::Instrument;
-use wasmflow_interface::CollectionSignature;
-use wasmflow_invocation::Invocation;
-use wasmflow_transport::TransportStream;
+use wasmflow_sdk::v1::transport::TransportStream;
+use wasmflow_sdk::v1::types::CollectionSignature;
+use wasmflow_sdk::v1::Invocation;
 
 use crate::constants::*;
 use crate::interpreter::program::ProgramState;

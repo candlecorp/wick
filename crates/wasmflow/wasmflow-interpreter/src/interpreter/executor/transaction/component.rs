@@ -5,10 +5,9 @@ use std::time::Duration;
 use tokio_stream::StreamExt;
 use tracing_futures::Instrument;
 use uuid::Uuid;
-use wasmflow_entity::Entity;
-use wasmflow_invocation::Invocation;
 use wasmflow_schematic_graph::{ComponentIndex, PortDirection, PortReference};
-use wasmflow_transport::{MessageSignal, MessageTransport, TransportMap, TransportStream, TransportWrapper};
+use wasmflow_sdk::v1::transport::{MessageSignal, MessageTransport, TransportMap, TransportStream, TransportWrapper};
+use wasmflow_sdk::v1::{Entity, Invocation};
 
 use self::port::port_handler::{BufferAction, PortHandler};
 use self::port::{InputPorts, OutputPorts, PortStatus};

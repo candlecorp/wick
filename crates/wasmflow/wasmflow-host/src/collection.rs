@@ -2,11 +2,11 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use wasmflow_interface::*;
-use wasmflow_invocation::Invocation;
 use wasmflow_rpc::error::RpcError;
 use wasmflow_rpc::{RpcHandler, RpcResult};
-use wasmflow_transport::TransportStream;
+use wasmflow_sdk::v1::transport::TransportStream;
+use wasmflow_sdk::v1::types::*;
+use wasmflow_sdk::v1::Invocation;
 
 use crate::Host;
 
@@ -50,8 +50,8 @@ mod tests {
 
   use anyhow::Result as TestResult;
   use tokio_stream::StreamExt;
-  use wasmflow_entity::Entity;
-  use wasmflow_runtime::prelude::packet::PacketMap;
+  use wasmflow_sdk::v1::packet::PacketMap;
+  use wasmflow_sdk::v1::Entity;
 
   use super::*;
   use crate::HostBuilder;

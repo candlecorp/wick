@@ -1,4 +1,4 @@
-export type WIDL_TYPE =
+export type APEX_TYPE =
   | 'i8'
   | 'u8'
   | 'i16'
@@ -16,7 +16,7 @@ export type WIDL_TYPE =
   | 'raw'
   | 'value';
 
-export const WIDL_TYPE_LIST = [
+export const APEX_TYPE_LIST = [
   'i8',
   'u8',
   'i16',
@@ -81,7 +81,7 @@ export interface StructSignature {
 }
 
 export interface SimpleType {
-  type: WIDL_TYPE;
+  type: APEX_TYPE;
 }
 
 export interface StructType {
@@ -111,9 +111,9 @@ export interface OptionalType {
 
 export interface LinkType {
   type: 'link';
-  collection?: string;
+  capability?: string;
 }
 
-export function isWidlType(type: string): type is WIDL_TYPE {
-  return WIDL_TYPE_LIST.includes(type);
+export function isApexType(type: string): type is APEX_TYPE {
+  return APEX_TYPE_LIST.includes(type);
 }

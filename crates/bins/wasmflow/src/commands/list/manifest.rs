@@ -1,7 +1,7 @@
 use anyhow::Result;
 use wasmflow_collection_cli::options::DefaultCliOptions;
 use wasmflow_host::HostBuilder;
-use wasmflow_interface::FieldMap;
+use wasmflow_sdk::v1::types::FieldMap;
 use wasmflow_manifest::host_definition::HostDefinition;
 
 use crate::utils::merge_config;

@@ -19,9 +19,9 @@ pub enum RpcError {
   #[error("Internal Error: {0}")]
   InternalError(String),
 
-  /// Upstream Error from [wasmflow_entity].
+  /// Upstream Error from [wasmflow_sdk].
   #[error(transparent)]
-  EntityError(#[from] wasmflow_entity::Error),
+  SdkError(#[from] wasmflow_sdk::v1::error::Error),
 
   /// Invalid [crate::rpc::component::ComponentKind].
   #[error("Invalid component kind {0}")]
@@ -89,9 +89,9 @@ impl From<Box<dyn std::error::Error + Send + Sync>> for RpcError {
   }
 }
 
-impl From<wasmflow_entity::Error> for Box<RpcError> {
-  fn from(e: wasmflow_entity::Error) -> Self {
-    Box::new(RpcError::EntityError(e))
+impl From<wasmflow_sdk::v1::error::Error> for Box<RpcError> {
+  fn from(e: wasmflow_sdk::v1::error::Error) -> Self {
+    Box::new(RpcError::SdkError(e))
   }
 }
 
@@ -130,9 +130,9 @@ pub enum RpcClientError {
   #[error(transparent)]
   ConversionFailed(RpcError),
 
-  /// An error related to [wasmflow_transport].
+  /// An error related to [wasmflow_sdk].
   #[error(transparent)]
-  Transport(#[from] wasmflow_transport::Error),
+  Sdk(#[from] wasmflow_sdk::v1::error::Error),
 
   /// General IO error
   #[error("I/O error: {0}")]
