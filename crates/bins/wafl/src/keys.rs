@@ -12,15 +12,15 @@ use crate::io::{async_mkdirp, async_read_to_string, async_write};
 #[derive(Debug, Clone, Args)]
 pub(crate) struct GenerateCommon {
   /// Location of key files for signing. Defaults to $WAFL_KEYS ($HOME/.wafl/keys or %USERPROFILE%/.wafl/keys on Windows).
-  #[clap(long = "directory", env = "WAFL_KEYS", hide_env_values = true)]
+  #[clap(long = "directory", env = "WAFL_KEYS", hide_env_values = true, action)]
   pub(crate) directory: Option<String>,
 
   /// Set the token expiration in days. By default the token will never expire.
-  #[clap(short = 'x', long = "expires")]
+  #[clap(short = 'x', long = "expires", action)]
   pub(crate) expires_in_days: Option<u64>,
 
   /// Period in days before token becomes valid. By default the token will be valid immediately.
-  #[clap(short = 'b', long)]
+  #[clap(short = 'b', long, action)]
   pub(crate) not_before: Option<u64>,
 }
 

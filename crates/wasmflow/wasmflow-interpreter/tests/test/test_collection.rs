@@ -7,10 +7,10 @@ use seeded_random::{Random, Seed};
 use serde_json::{json, Value};
 use tokio::task::JoinHandle;
 use tracing::trace;
-use wasmflow_collection_link::CollectionLink;
-use wasmflow_interface::CollectionSignature;
 use wasmflow_interpreter::{BoxError, Collection};
-use wasmflow_transport::{Failure, MessageTransport, TransportStream, TransportWrapper};
+use wasmflow_sdk::v1::transport::{Failure, MessageTransport, TransportStream, TransportWrapper};
+use wasmflow_sdk::v1::types::CollectionSignature;
+use wasmflow_sdk::v1::{CollectionLink, Invocation};
 
 pub struct TestCollection(CollectionSignature);
 impl TestCollection {
@@ -175,11 +175,7 @@ fn defer(futs: Vec<JoinHandle<()>>) {
 }
 
 impl Collection for TestCollection {
-  fn handle(
-    &self,
-    mut invocation: wasmflow_invocation::Invocation,
-    _config: Option<Value>,
-  ) -> BoxFuture<Result<TransportStream, BoxError>> {
+  fn handle(&self, mut invocation: Invocation, _config: Option<Value>) -> BoxFuture<Result<TransportStream, BoxError>> {
     let operation = invocation.target.name();
     println!("got op {} in echo test collection", operation);
     let stream = match operation {
@@ -399,7 +395,7 @@ impl Collection for TestCollection {
     Box::pin(async move { stream })
   }
 
-  fn list(&self) -> &wasmflow_interface::CollectionSignature {
+  fn list(&self) -> &CollectionSignature {
     &self.0
   }
 }

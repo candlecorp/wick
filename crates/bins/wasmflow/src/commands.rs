@@ -41,11 +41,11 @@ pub(crate) enum CliCommand {
 #[derive(Debug, Clone, Args)]
 pub(crate) struct FetchOptions {
   /// Allows the use of "latest" artifact tag.
-  #[clap(long = "allow-latest")]
+  #[clap(long = "latest", action)]
   pub(crate) allow_latest: bool,
 
   /// Allows the use of HTTP registry connections to these registries.
-  #[clap(long = "insecure")]
+  #[clap(long = "insecure", action)]
   pub(crate) insecure_registries: Vec<String>,
 }
 

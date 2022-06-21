@@ -1,5 +1,5 @@
-import yargs from 'yargs';
-import { registerHelpers } from 'widl-template';
+import yargs, { ArgumentsCamelCase } from 'yargs';
+import { registerHelpers } from 'apex-template';
 import {
   CODEGEN_TYPE,
   getTemplate,
@@ -10,14 +10,13 @@ import {
   outputOpts,
   registerLanguageHelpers,
   readInterface,
-} from '../../common';
+} from '../../common.js';
 import path from 'path';
-import { debug } from '../../common';
-import { BATCH_COMPONENT_NAME } from '../../batch_component';
-import { CollectionSignature } from '../../types';
+import { BATCH_COMPONENT_NAME } from '../../batch_component.js';
+import { CollectionSignature } from '../../types.js';
 
-const LANG = LANGUAGE.Rust;
-const TYPE = CODEGEN_TYPE.Component;
+export const LANG = LANGUAGE.Rust;
+export const TYPE = CODEGEN_TYPE.Component;
 
 export const command = `${TYPE} <interface> [component_name] [options]`;
 
@@ -28,7 +27,7 @@ export const builder = (yargs: yargs.Argv): yargs.Argv => {
     .positional('interface', {
       demandOption: true,
       type: 'string',
-      description: "The path to the component's WIDL schema",
+      description: "The path to the component's Apex schema",
     })
     .positional('component_name', {
       demandOption: false,
@@ -52,17 +51,17 @@ interface Arguments extends CommonOutputOptions {
   all: boolean;
 }
 
-export function handler(args: Arguments): void {
-  registerTypePartials(LANG, TYPE);
+export async function handler(args: ArgumentsCamelCase<Arguments>): Promise<void> {
+  await registerTypePartials(LANG, TYPE);
   registerLanguageHelpers(LANG);
 
   registerHelpers();
 
-  const template = getTemplate(LANG, TYPE);
-  const [iface, ijson] = readInterface(args.interface);
+  const template = await getTemplate(LANG, TYPE);
+  const [iface, ijson] = await readInterface(args.interface);
   const component_name = args.component_name;
 
-  function writeComponent(
+  async function writeComponent(
     iface: CollectionSignature,
     component: string,
     fileName?: string,
@@ -77,7 +76,7 @@ export function handler(args: Arguments): void {
       batch,
     });
 
-    commitOutput(generated, fileName, {
+    await commitOutput(generated, fileName, {
       force: args.force,
       silent: args.silent,
     });
@@ -93,27 +92,33 @@ export function handler(args: Arguments): void {
     }
     for (const component in iface.components) {
       const fileName = component.replace(/[::]+/g, '/').replace(/[-]+/g, '_');
-      writeComponent(iface, component, path.join(args.output || '.', `${fileName}.rs`));
+      await writeComponent(iface, component, path.join(args.output || '.', `${fileName}.rs`));
     }
     if (iface.wellknown) {
       for (const wellknown of iface.wellknown) {
         for (const component in wellknown.schema.components) {
           const fileName = component.replace(/[::]+/g, '/').replace(/[-]+/g, '_');
-          writeComponent(wellknown.schema, component, path.join(args.output || '.', `${fileName}.rs`), false, true);
+          await writeComponent(
+            wellknown.schema,
+            component,
+            path.join(args.output || '.', `${fileName}.rs`),
+            false,
+            true,
+          );
         }
       }
     }
     const fileName = path.join(args.output || '.', `${BATCH_COMPONENT_NAME}.rs`);
-    writeComponent(iface, BATCH_COMPONENT_NAME, fileName, true);
+    await writeComponent(iface, BATCH_COMPONENT_NAME, fileName, true);
   } else if (component_name) {
     if (component_name == BATCH_COMPONENT_NAME) {
-      writeComponent(iface, BATCH_COMPONENT_NAME, args.output, true);
+      await writeComponent(iface, BATCH_COMPONENT_NAME, args.output, true);
     } else {
       const component = iface.components[component_name];
       if (!component) {
         throw new Error(`Component name ${component_name} not found in interface`);
       }
-      writeComponent(iface, component_name, args.output);
+      await writeComponent(iface, component_name, args.output);
     }
   }
 }

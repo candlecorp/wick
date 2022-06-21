@@ -1,6 +1,6 @@
 use futures::future::BoxFuture;
 use serde_json::Value;
-use wasmflow_transport::{TransportMap, TransportStream, TransportWrapper};
+use wasmflow_sdk::v1::transport::{TransportMap, TransportStream, TransportWrapper};
 
 use crate::{BoxError, Component};
 

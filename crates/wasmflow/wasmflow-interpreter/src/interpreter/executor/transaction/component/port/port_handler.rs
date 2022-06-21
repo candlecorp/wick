@@ -1,6 +1,6 @@
 use parking_lot::Mutex;
 use wasmflow_schematic_graph::{PortDirection, PortReference};
-use wasmflow_transport::{MessageSignal, MessageTransport, TransportWrapper};
+use wasmflow_sdk::v1::transport::{MessageSignal, MessageTransport, TransportWrapper};
 
 use super::port_buffer::PortBuffer;
 use super::PortStatus;

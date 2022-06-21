@@ -102,11 +102,11 @@ mod test {
 
   use std::sync::Arc;
 
+  use anyhow::Result;
   use seeded_random::Seed;
 
   use super::*;
   use crate::test::prelude::assert_eq;
-  type Result<T> = super::Result<T>;
 
   #[test_logger::test(tokio::test)]
   async fn test_collection_component() -> Result<()> {

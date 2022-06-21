@@ -1,7 +1,7 @@
 use std::path::{Path, PathBuf};
 
 use serde::{Deserialize, Serialize};
-use wasmflow_interface::CollectionSignature;
+use wasmflow_sdk::v1::types::CollectionSignature;
 use wasmflow_par::make_archive;
 use wasmflow_wascap::{ClaimsOptions, KeyPair};
 

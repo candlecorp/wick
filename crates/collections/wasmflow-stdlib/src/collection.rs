@@ -1,10 +1,10 @@
 use seeded_random::{Random, Seed};
 use wasmflow_rpc::error::RpcError;
 use wasmflow_rpc::{RpcHandler, RpcResult};
-use wasmflow_sdk::sdk::stateful::NativeDispatcher;
-use wasmflow_sdk::sdk::Invocation;
-use wasmflow_sdk::types::HostedType;
-use wasmflow_transport::TransportStream;
+use wasmflow_sdk::v1::stateful::NativeDispatcher;
+use wasmflow_sdk::v1::transport::TransportStream;
+use wasmflow_sdk::v1::types::HostedType;
+use wasmflow_sdk::v1::Invocation;
 
 use crate::error::NativeError;
 
@@ -69,13 +69,14 @@ mod tests {
 
   use serde::de::DeserializeOwned;
   use tracing::debug;
-  use wasmflow_entity::Entity;
-  use wasmflow_packet::PacketMap;
+  use wasmflow_sdk::v1::packet::PacketMap;
+  use wasmflow_sdk::v1::Entity;
 
   static SEED: u64 = 1000;
 
+  use anyhow::Result;
+
   use super::*;
-  type Result<T> = std::result::Result<T, NativeError>;
 
   async fn invoke_one<T>(component: &str, payload: PacketMap, port: &str) -> Result<T>
   where

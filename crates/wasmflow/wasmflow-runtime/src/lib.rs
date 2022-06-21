@@ -100,10 +100,10 @@ pub mod utils;
 
 pub mod prelude {
   pub use tokio_stream::StreamExt;
-  pub use wasmflow_codec::messagepack::{deserialize as mp_deserialize, serialize as mp_serialize};
   pub use wasmflow_manifest::NetworkDefinition;
-  pub use wasmflow_packet::{packet, Packet};
-  pub use wasmflow_transport::{MessageTransport, TransportStream, TransportWrapper};
+  pub use wasmflow_sdk::v1::codec::messagepack::{deserialize as mp_deserialize, serialize as mp_serialize};
+  pub use wasmflow_sdk::v1::packet::v1::Packet;
+  pub use wasmflow_sdk::v1::transport::{MessageTransport, TransportStream, TransportWrapper};
 
   pub use crate::collections::network_collection::Collection as NetworkCollection;
   pub use crate::dispatch::{DispatchError, InvocationResponse};

@@ -10,6 +10,6 @@ pub(crate) enum SubCommands {
   Push(push::Options),
 
   /// Pull an artifact or architecture specific bundle item from an OCI registry .
-  #[clap(name = "push")]
+  #[clap(name = "pull")]
   Pull(pull::Options),
 }

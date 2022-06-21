@@ -2,7 +2,7 @@
 #[allow(missing_debug_implementations)]
 pub struct Component {}
 
-impl wasmflow_sdk::sdk::Component for Component {
+impl wasmflow_sdk::v1::Component for Component {
   type Inputs = definition::Inputs;
   type Outputs = definition::OutputPorts;
   type Config = integration::Config;

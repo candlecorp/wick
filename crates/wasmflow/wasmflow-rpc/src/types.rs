@@ -5,9 +5,10 @@ use std::time::Duration;
 pub use conversions::*;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
-use wasmflow_packet::Packet;
-use wasmflow_transport::{Failure, MessageTransport, TransportWrapper};
-pub use wasmflow_interface::*;
+use wasmflow_sdk::v1::codec::{json, messagepack};
+use wasmflow_sdk::v1::packet::Packet;
+use wasmflow_sdk::v1::transport::{Failure, MessageSignal, MessageTransport, Serialized, TransportWrapper};
+pub use wasmflow_sdk::v1::types::*;
 
 use crate::error::RpcError;
 use crate::rpc::{self, packet as rpc_packet, Output, Packet as RpcPacket};
@@ -138,12 +139,12 @@ impl From<MessageTransport> for RpcPacket {
   fn from(v: MessageTransport) -> Self {
     let data: rpc_packet::Data = match v {
       MessageTransport::Success(v) => match v {
-        wasmflow_transport::Serialized::MessagePack(v) => rpc_packet::Data::Success(rpc::Serialized {
+        Serialized::MessagePack(v) => rpc_packet::Data::Success(rpc::Serialized {
           payload: Some(rpc::PayloadData {
             data: Some(rpc::payload_data::Data::Messagepack(v)),
           }),
         }),
-        wasmflow_transport::Serialized::Struct(v) => match wasmflow_codec::json::serialize(&v) {
+        Serialized::Struct(v) => match json::serialize(&v) {
           Ok(json) => rpc_packet::Data::Success(rpc::Serialized {
             payload: Some(rpc::PayloadData {
               data: Some(rpc::payload_data::Data::Json(json)),
@@ -154,41 +155,41 @@ impl From<MessageTransport> for RpcPacket {
             payload: e.to_string(),
           }),
         },
-        wasmflow_transport::Serialized::Json(v) => rpc_packet::Data::Success(rpc::Serialized {
+        Serialized::Json(v) => rpc_packet::Data::Success(rpc::Serialized {
           payload: Some(rpc::PayloadData {
             data: Some(rpc::payload_data::Data::Json(v)),
           }),
         }),
       },
       MessageTransport::Failure(v) => match v {
-        wasmflow_transport::Failure::Invalid => panic!("Invalid packet sent over GRPC"),
-        wasmflow_transport::Failure::Exception(v) => rpc_packet::Data::Failure(rpc::Failure {
+        Failure::Invalid => panic!("Invalid packet sent over GRPC"),
+        Failure::Exception(v) => rpc_packet::Data::Failure(rpc::Failure {
           r#type: rpc::failure::FailureKind::Exception.into(),
           payload: v,
         }),
-        wasmflow_transport::Failure::Error(v) => rpc_packet::Data::Failure(rpc::Failure {
+        Failure::Error(v) => rpc_packet::Data::Failure(rpc::Failure {
           r#type: rpc::failure::FailureKind::Error.into(),
           payload: v,
         }),
       },
       MessageTransport::Signal(signal) => match signal {
-        wasmflow_transport::MessageSignal::Done => rpc_packet::Data::Signal(rpc::Signal {
+        MessageSignal::Done => rpc_packet::Data::Signal(rpc::Signal {
           r#type: rpc::signal::OutputSignal::Done.into(),
           payload: None,
         }),
-        wasmflow_transport::MessageSignal::OpenBracket => rpc_packet::Data::Signal(rpc::Signal {
+        MessageSignal::OpenBracket => rpc_packet::Data::Signal(rpc::Signal {
           r#type: rpc::signal::OutputSignal::OpenBracket.into(),
           payload: None,
         }),
-        wasmflow_transport::MessageSignal::CloseBracket => rpc_packet::Data::Signal(rpc::Signal {
+        MessageSignal::CloseBracket => rpc_packet::Data::Signal(rpc::Signal {
           r#type: rpc::signal::OutputSignal::CloseBracket.into(),
           payload: None,
         }),
-        wasmflow_transport::MessageSignal::Status(v) => rpc_packet::Data::Signal(rpc::Signal {
+        MessageSignal::Status(v) => rpc_packet::Data::Signal(rpc::Signal {
           r#type: rpc::signal::OutputSignal::State.into(),
           payload: Some(rpc::PayloadData {
             data: Some(rpc::payload_data::Data::Messagepack(
-              wasmflow_codec::messagepack::serialize(&v).unwrap(),
+              messagepack::serialize(&v).unwrap(),
             )),
           }),
         }),

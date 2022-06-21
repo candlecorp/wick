@@ -7,7 +7,7 @@ use wasmflow_collection_cli::options::DefaultCliOptions;
 use wasmflow_collection_cli::parse_args;
 use wasmflow_host::HostBuilder;
 use wasmflow_manifest::host_definition::HostDefinition;
-use wasmflow_transport::TransportMap;
+use wasmflow_sdk::v1::transport::TransportMap;
 
 use crate::utils::merge_config;
 
@@ -45,7 +45,7 @@ pub(crate) async fn handle_command(opts: super::InvokeCommand, bytes: Vec<u8>) -
   }
 
   let inherent_data = opts.seed.map(|seed| {
-    wasmflow_invocation::InherentData::new(
+    wasmflow_sdk::v1::InherentData::new(
       seed,
       SystemTime::now()
         .duration_since(SystemTime::UNIX_EPOCH)

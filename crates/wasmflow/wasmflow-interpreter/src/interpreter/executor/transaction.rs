@@ -4,11 +4,10 @@ use std::time::{Instant, SystemTime};
 use parking_lot::Mutex;
 use seeded_random::{Random, Seed};
 use uuid::Uuid;
-use wasmflow_entity::Entity;
-use wasmflow_invocation::{InherentData, Invocation};
 use wasmflow_schematic_graph::iterators::{SchematicHop, WalkDirection};
 use wasmflow_schematic_graph::{ComponentIndex, PortDirection, PortReference};
-use wasmflow_transport::{Failure, MessageTransport, TransportMap, TransportStream, TransportWrapper};
+use wasmflow_sdk::v1::transport::{Failure, MessageTransport, TransportMap, TransportStream, TransportWrapper};
+use wasmflow_sdk::v1::{Entity, InherentData, Invocation};
 
 use self::component::port::port_handler::BufferAction;
 use self::component::{CompletionStatus, InstanceHandler};

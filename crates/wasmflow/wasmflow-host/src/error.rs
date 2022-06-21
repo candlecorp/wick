@@ -22,12 +22,10 @@ pub enum HostError {
   LoadFailed(#[from] wasmflow_loader::Error),
   #[error(transparent)]
   RuntimeError(#[from] Box<wasmflow_runtime::Error>),
-  #[error(transparent)]
-  CodecError(#[from] wasmflow_codec::Error),
+
   #[error(transparent)]
   RpcServerError(#[from] wasmflow_invocation_server::Error),
-  #[error(transparent)]
-  TransportError(#[from] wasmflow_transport::Error),
+
   #[error(transparent)]
   ManifestError(#[from] wasmflow_manifest::Error),
   #[error("Invalid host state for operation: {0}")]

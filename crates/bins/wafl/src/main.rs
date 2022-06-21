@@ -99,6 +99,8 @@ use clap::StructOpt;
 
 #[macro_use]
 extern crate tracing;
+#[macro_use]
+extern crate anyhow;
 
 static BIN_NAME: &str = "wafl";
 static BIN_DESC: &str = "Wasmflow utility binary";

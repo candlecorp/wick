@@ -26,25 +26,24 @@ pub(crate) enum CliCommand {
   Project(project::SubCommands),
 
   /// Commands to manage components.
-  #[clap(subcommand)]
+  #[clap(subcommand, name = "component")]
   Component(component::SubCommands),
 
   /// Commands for WebAssembly component.
-  #[clap(subcommand)]
+  #[clap(subcommand, name = "wasm")]
   Wasm(wasm::SubCommands),
 
   /// Commands for multi-architecture bundles.
-  #[clap(subcommand)]
+  #[clap(subcommand, name = "bundle")]
   Bundle(bundle::SubCommands),
 
   /// Commands to interact with registries.
-  #[clap(subcommand)]
+  #[clap(subcommand, name = "registry")]
   Registry(registry::SubCommands),
 
   /// Commands to interact with running Wasmflow instances.
-  #[clap(subcommand)]
+  #[clap(subcommand, name = "rpc")]
   Rpc(rpc::SubCommands),
-  // OLD
 }
 
 #[cfg(test)]

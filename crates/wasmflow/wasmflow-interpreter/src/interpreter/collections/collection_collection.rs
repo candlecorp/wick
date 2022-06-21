@@ -1,10 +1,8 @@
 use futures::future::BoxFuture;
 use serde_json::Value;
-use wasmflow_collection_link::CollectionLink;
-use wasmflow_entity::Entity;
-use wasmflow_interface::{CollectionSignature, ComponentSignature};
-use wasmflow_invocation::Invocation;
-use wasmflow_transport::{MessageTransport, TransportStream, TransportWrapper};
+use wasmflow_sdk::v1::transport::{MessageTransport, TransportStream, TransportWrapper};
+use wasmflow_sdk::v1::types::{CollectionSignature, ComponentSignature};
+use wasmflow_sdk::v1::{CollectionLink, Entity, Invocation};
 
 use crate::constants::*;
 use crate::{BoxError, Collection, HandlerMap};
@@ -27,7 +25,7 @@ impl CollectionCollection {
       let mut comp_sig = ComponentSignature::new(ns.clone());
       comp_sig
         .outputs
-        .insert("ref", wasmflow_interface::TypeSignature::Link { schemas: vec![] });
+        .insert("ref", wasmflow_sdk::v1::types::TypeSignature::Link { schemas: vec![] });
       signature.components.insert(ns.clone(), comp_sig);
     }
     Self { signature }

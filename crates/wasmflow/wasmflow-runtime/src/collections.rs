@@ -122,8 +122,8 @@ fn make_link_callback(network_id: Uuid) -> Box<HostLinkCallback> {
       "link_call"
     );
 
-    let target = Entity::from_str(target_url)?;
-    let origin = Entity::from_str(origin_url)?;
+    let target = Entity::from_str(target_url).map_err(|e| LinkError::EntityFailure(e.to_string()))?;
+    let origin = Entity::from_str(origin_url).map_err(|e| LinkError::EntityFailure(e.to_string()))?;
     if let Entity::Component(origin_ns, _) = &origin {
       if let Entity::Component(target_ns, _) = &target {
         if target_ns == origin_ns {

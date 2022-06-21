@@ -1,10 +1,10 @@
 use async_trait::async_trait;
 use wasmflow_rpc::error::RpcError;
 use wasmflow_rpc::{RpcHandler, RpcResult};
-use wasmflow_sdk::sdk::stateful::NativeDispatcher;
-use wasmflow_sdk::sdk::Invocation;
-use wasmflow_sdk::types::HostedType;
-use wasmflow_transport::TransportStream;
+use wasmflow_sdk::v1::stateful::NativeDispatcher;
+use wasmflow_sdk::v1::transport::TransportStream;
+use wasmflow_sdk::v1::types::HostedType;
+use wasmflow_sdk::v1::Invocation;
 
 use self::components::ComponentDispatcher;
 pub mod components;
@@ -56,8 +56,8 @@ mod tests {
 
   use pretty_assertions::assert_eq;
   use tracing::*;
-  use wasmflow_entity::Entity;
-  use wasmflow_sdk::types::*;
+  use wasmflow_sdk::v1::types::*;
+  use wasmflow_sdk::v1::Entity;
 
   use super::*;
   use crate::components::test_component;

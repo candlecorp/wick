@@ -76,6 +76,4 @@
 #![allow(missing_docs)]
 
 #[cfg(feature = "v1")]
-mod v1;
-#[cfg(feature = "v1")]
-pub use v1::*;
+pub mod v1;

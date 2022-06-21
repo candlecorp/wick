@@ -264,14 +264,14 @@ pub mod type_signature {
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SimpleType {
-    #[prost(enumeration="simple_type::WidlType", tag="1")]
+    #[prost(enumeration="simple_type::ApexType", tag="1")]
     pub r#type: i32,
 }
 /// Nested message and enum types in `SimpleType`.
 pub mod simple_type {
     #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
     #[repr(i32)]
-    pub enum WidlType {
+    pub enum ApexType {
         I8 = 0,
         U8 = 1,
         I16 = 2,

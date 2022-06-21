@@ -1,8 +1,8 @@
 use std::collections::HashSet;
 
-use wasmflow_interface::{CollectionMap, CollectionSignature, ComponentSignature, TypeSignature};
 use wasmflow_schematic_graph::iterators::{SchematicHop, WalkDirection};
 use wasmflow_schematic_graph::{ComponentKind, PortDirection};
+use wasmflow_sdk::v1::types::{CollectionMap, CollectionSignature, ComponentSignature, TypeSignature};
 
 use crate::constants::*;
 use crate::graph::types::*;

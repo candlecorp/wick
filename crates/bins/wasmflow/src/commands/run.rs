@@ -17,14 +17,15 @@ pub(crate) struct RunCommand {
   pub(crate) fetch: super::FetchOptions,
 
   /// The path or OCI URL to a wafl manifest or wasm file.
+  #[clap(action)]
   location: String,
 
   /// Pass a seed along with the invocation.
-  #[clap(long = "seed", short = 's', env = "WAFL_SEED")]
+  #[clap(long = "seed", short = 's', env = "WAFL_SEED", action)]
   seed: Option<u64>,
 
   /// Arguments to pass as inputs to a schematic.
-  #[clap(last(true))]
+  #[clap(last(true), action)]
   args: Vec<String>,
 }
 

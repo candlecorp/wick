@@ -176,7 +176,7 @@ endif
 
 .PHONY: deps
 deps:   ## Install dependencies
-	npm install -g widl-template prettier
+	npm install -g apex-template prettier ts-node
 	cargo install cargo-deny tomlq
 
 ##@ Helpers

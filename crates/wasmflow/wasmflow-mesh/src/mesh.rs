@@ -5,18 +5,18 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use parking_lot::RwLock;
+use sdk::codec::messagepack::serialize;
+use sdk::transport::{MessageTransport, TransportStream, TransportWrapper};
+use sdk::types::HostedType;
+use sdk::{Entity, Invocation};
 use tokio::sync::mpsc::{unbounded_channel, UnboundedSender};
 use tokio::sync::oneshot;
 use tokio::task::JoinHandle;
 use tokio::time::timeout;
 use tokio_stream::wrappers::UnboundedReceiverStream;
 use tokio_stream::StreamExt;
-use wasmflow_codec::messagepack::serialize;
-use wasmflow_entity::Entity;
-use wasmflow_interface::HostedType;
-use wasmflow_invocation::Invocation;
 use wasmflow_rpc::SharedRpcHandler;
-use wasmflow_transport::{MessageTransport, TransportStream, TransportWrapper};
+use wasmflow_sdk::v1 as sdk;
 
 use crate::error::MeshError;
 use crate::nats::{Nats, NatsMessage, NatsOptions};
@@ -384,8 +384,8 @@ mod test {
   use anyhow::Result;
   use pretty_assertions::assert_eq;
   use tracing::*;
-  use wasmflow_codec::messagepack::{deserialize, serialize};
-  use wasmflow_transport::{MessageTransport, TransportWrapper};
+  use wasmflow_sdk::v1::codec::messagepack::{deserialize, serialize};
+  use wasmflow_sdk::v1::transport::{MessageTransport, TransportWrapper};
 
   use crate::mesh::MeshRpcResponse;
   #[test_logger::test]
@@ -412,10 +412,10 @@ mod test_integration {
   use pretty_assertions::assert_eq;
   use test_native_collection::Collection;
   use tracing::*;
-  use wasmflow_interface::{CollectionSignature, ComponentMap, ComponentSignature, HostedType};
-  use wasmflow_invocation::Invocation;
-  use wasmflow_packet::PacketMap;
-  use wasmflow_transport::MessageTransport;
+  use wasmflow_sdk::v1::packet::PacketMap;
+  use wasmflow_sdk::v1::transport::MessageTransport;
+  use wasmflow_sdk::v1::types::{CollectionSignature, ComponentMap, ComponentSignature, HostedType};
+  use wasmflow_sdk::v1::Invocation;
 
   use super::{Mesh, MeshBuilder};
 
@@ -436,7 +436,7 @@ mod test_integration {
     let (mesh, mesh_id) = get_mesh().await?;
     let component_name = "test-component";
     let user_input = String::from("Hello world");
-    let entity = wasmflow_entity::Entity::component("arbitrary_ns", component_name);
+    let entity = wasmflow_sdk::v1::Entity::component("arbitrary_ns", component_name);
     let mut payload = PacketMap::default();
     payload.insert("input", &user_input);
     println!("Sending payload: {:?}", payload);
@@ -472,7 +472,7 @@ mod test_integration {
     let (mesh, mesh_id) = get_mesh().await?;
     let component_name = "error";
     let user_input = String::from("Hello world");
-    let entity = wasmflow_entity::Entity::component("arbitrary_ns", component_name);
+    let entity = wasmflow_sdk::v1::Entity::component("arbitrary_ns", component_name);
     let mut payload = PacketMap::default();
     payload.insert("input", &user_input);
     debug!("Sending payload: {:?}", payload);

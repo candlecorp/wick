@@ -1,10 +1,11 @@
 {
-  "name": "@vinodotdev/codegen",
-  "description": "Code generator for Vino components",
+  "name": "@candlecorp/codegen",
+  "description": "Code generator for Wasmflow components",
   "author": "jsoverson@gmail.com",
-  "version": "5.0.1",
+  "version": "6.0.0",
   "main": "dist/src/index.js",
   "types": "dist/src/index.d.ts",
+  "type": "module",
   "scripts": {
     "build": "tsc --declaration",
     "compile": "npm run clean && npm run build",
@@ -18,10 +19,11 @@
     "test": "npm run lint && npm run test:unit"
   },
   "bin": {
-    "vino-codegen": "./dist/src/cli.js"
+    "wasmflow-codegen": "./dist/src/cli.js"
   },
   "mocha": {
-    "extends": "etc/.mocharc.json"
+    "extends": "etc/.mocharc.json",
+    "loader": "ts-node/esm"
   },
   "prettier": "./etc/.prettierrc.json",
   "eslintConfig": {
@@ -31,33 +33,35 @@
   "license": "ISC",
   "devDependencies": {
     "@types/chai": "^4.2.18",
+    "@types/chai-as-promised": "^7.1.5",
     "@types/chai-spies": "^1.0.3",
     "@types/debug": "^4.1.5",
     "@types/find-root": "^1.1.2",
     "@types/fs-extra": "^9.0.13",
-    "@types/mocha": "^9.1.0",
+    "@types/mocha": "^9.1.1",
     "@types/node": "^15.3.1",
     "@types/yargs": "^17.0.0",
-    "@typescript-eslint/eslint-plugin": "^4.24.0",
-    "@typescript-eslint/parser": "^4.24.0",
+    "@typescript-eslint/eslint-plugin": "^5.29.0",
+    "@typescript-eslint/parser": "^5.29.0",
     "chai": "^4.3.4",
+    "chai-as-promised": "^7.1.1",
     "chai-spies": "^1.0.0",
     "eslint": "^7.26.0",
-    "mocha": "^9.2.0",
+    "mocha": "^10.0.0",
     "prettier": "^2.3.0",
     "rimraf": "^3.0.2",
-    "ts-node": "^9.1.1",
-    "typescript": "^4.2.4"
+    "ts-node": "^10.8.1",
+    "typescript": "^4.7.4"
   },
   "dependencies": {
-    "@wapc/widl": "0.0.9",
+    "@apexlang/core": "^0.0.19",
+    "apex-template": "^1.1.0",
     "change-case-all": "^1.0.14",
     "debug": "^4.3.1",
     "find-root": "^1.1.0",
     "fs-extra": "^10.1.0",
     "toml": "^3.0.0",
     "tslib": "^2.3.1",
-    "widl-template": "^0.6.3",
     "yargs": "^17.0.1"
   }
 }

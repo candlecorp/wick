@@ -8,10 +8,10 @@ use tokio::sync::RwLock;
 use tracing_futures::Instrument;
 use wasmflow_rpc::error::RpcError;
 use wasmflow_rpc::{RpcHandler, RpcResult};
-use wasmflow_sdk::sdk::stateful::NativeDispatcher;
-use wasmflow_sdk::sdk::Invocation;
-use wasmflow_sdk::types::HostedType;
-use wasmflow_transport::TransportStream;
+use wasmflow_sdk::v1::stateful::NativeDispatcher;
+use wasmflow_sdk::v1::transport::TransportStream;
+use wasmflow_sdk::v1::types::HostedType;
+use wasmflow_sdk::v1::Invocation;
 
 use crate::components::ComponentDispatcher;
 use crate::error::Error;
@@ -122,8 +122,8 @@ mod integration {
 
   use anyhow::Result;
   use rand::Rng;
-  use wasmflow_entity::Entity;
   use wasmflow_interface_keyvalue::*;
+  use wasmflow_sdk::v1::Entity;
 
   use super::*;
   use crate::components::generated::__batch__::{self, ComponentInputs};

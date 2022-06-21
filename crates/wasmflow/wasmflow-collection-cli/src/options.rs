@@ -146,11 +146,11 @@ pub mod env {
 /// Command line options for s.
 pub struct DefaultCliOptions {
   /// The unique ID of this client.
-  #[clap(long = "id", env = env::WAFL_COLLECTION_ID)]
+  #[clap(long = "id", env = env::WAFL_COLLECTION_ID, action)]
   pub id: Option<String>,
 
   /// The timeout for outbound requests in ms.
-  #[clap(long = "timeout", env = env::WAFL_TIMEOUT)]
+  #[clap(long = "timeout", env = env::WAFL_TIMEOUT, action)]
   pub timeout: Option<u64>,
 
   /// Logging options.
@@ -162,27 +162,27 @@ pub struct DefaultCliOptions {
   pub mesh: MeshCliOptions,
 
   /// Enable the rpc server.
-  #[clap(long = "rpc",  env = env::WAFL_RPC_ENABLED)]
+  #[clap(long = "rpc",  env = env::WAFL_RPC_ENABLED, action)]
   pub rpc_enabled: bool,
 
   /// Port to listen on for GRPC server.
-  #[clap(long = "rpc-port", env = env::WAFL_RPC_PORT)]
+  #[clap(long = "rpc-port", env = env::WAFL_RPC_PORT, action)]
   pub rpc_port: Option<u16>,
 
   /// IP address to bind to for GRPC server.
-  #[clap(long = "rpc-address", env = env::WAFL_RPC_ADDRESS)]
+  #[clap(long = "rpc-address", env = env::WAFL_RPC_ADDRESS, action)]
   pub rpc_address: Option<Ipv4Addr>,
 
   /// Path to pem file for TLS for GRPC server.
-  #[clap(long = "rpc-pem", env = env::WAFL_RPC_PEM)]
+  #[clap(long = "rpc-pem", env = env::WAFL_RPC_PEM, action)]
   pub rpc_pem: Option<PathBuf>,
 
   /// Path to key file for TLS for GRPC server.
-  #[clap(long = "rpc-key", env = env::WAFL_RPC_KEY)]
+  #[clap(long = "rpc-key", env = env::WAFL_RPC_KEY, action)]
   pub rpc_key: Option<PathBuf>,
 
   /// Path to certificate authority for GRPC server.
-  #[clap(long = "rpc-ca", env = env::WAFL_RPC_CA)]
+  #[clap(long = "rpc-ca", env = env::WAFL_RPC_CA, action)]
   pub rpc_ca: Option<PathBuf>,
 }
 
@@ -190,18 +190,18 @@ pub struct DefaultCliOptions {
 /// Command line options for mesh connections.
 pub struct MeshCliOptions {
   /// Enable the mesh connection.
-  #[clap(long = "mesh")]
+  #[clap(long = "mesh", action)]
   pub mesh_enabled: bool,
 
   /// The url of the NATS server (in IP:PORT format).
-  #[clap(long = "nats", env = env::NATS_URL)]
+  #[clap(long = "nats", env = env::NATS_URL, action)]
   pub nats_url: Option<String>,
 
   /// The path to the NATS credsfile.
-  #[clap(long = "nats-credsfile", env = env::NATS_CREDSFILE)]
+  #[clap(long = "nats-credsfile", env = env::NATS_CREDSFILE, action)]
   pub nats_credsfile: Option<PathBuf>,
 
   /// The NATS token.
-  #[clap(long = "nats-token", env = env::NATS_TOKEN, hide_env_values = true)]
+  #[clap(long = "nats-token", env = env::NATS_TOKEN, hide_env_values = true, action)]
   pub nats_token: Option<String>,
 }

@@ -8,14 +8,8 @@ license = "BSD-3-Clause"
 [features]
 
 [dependencies]
-wasmflow-interface = { path = "../../sdk/wasmflow-interface" }
-wasmflow-streams = { path = "../../sdk/wasmflow-streams" }
-wasmflow-invocation = { path = "../../sdk/wasmflow-invocation" }
-wasmflow-packet = { path = "../../sdk/wasmflow-packet" }
-wasmflow-macros = { path = "../../sdk/wasmflow-macros" }
-wasmflow-output = { path = "../../sdk/wasmflow-output", features = [] }
-wasmflow-codec = { path = "../../sdk/wasmflow-codec" }
-wasmflow-entity = { path = "../../sdk/wasmflow-entity" }
+wasmflow-sdk = { path = "../wasmflow-sdk", features = ["v1"] }
+
 
 wasmflow-schematic-graph = { path = "../wasmflow-schematic-graph" }
 wasmflow-interpreter = { path = "../wasmflow-interpreter" }
@@ -28,9 +22,7 @@ wasmflow-collection-par = { path = "../wasmflow-collection-par" }
 wasmflow-collection-grpc = { path = "../wasmflow-collection-grpc" }
 wasmflow-mesh = { path = "../wasmflow-mesh" }
 wasmflow-stdlib = { path = "../../collections/wasmflow-stdlib" }
-wasmflow-transport = { path = "../../sdk/wasmflow-transport", features = [
-  "all",
-] }
+
 wasmflow-wascap = { path = "../wasmflow-wascap" }
 wasmflow-rpc = { path = "../wasmflow-rpc" }
 

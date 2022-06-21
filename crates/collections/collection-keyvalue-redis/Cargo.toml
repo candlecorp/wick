@@ -8,15 +8,10 @@ default = ["host"]
 host = []
 
 [dependencies]
-wasmflow-sdk = { path = "../../sdk/wasmflow-sdk", features = ["v1"] }
-wasmflow-entity = { path = "../../sdk/wasmflow-entity", features = [] }
+wasmflow-sdk = { path = "../../wasmflow/wasmflow-sdk", features = ["v1"] }
+
 wasmflow-collection-cli = { path = "../../wasmflow/wasmflow-collection-cli" }
-wasmflow-transport = { path = "../../sdk/wasmflow-transport", features = [
-  "all",
-] }
-wasmflow-packet = { path = "../../sdk/wasmflow-packet" }
 wasmflow-rpc = { path = "../../wasmflow/wasmflow-rpc" }
-wasmflow-macros = { path = "../../sdk/wasmflow-macros" }
 wasmflow-interface-keyvalue = { path = "../../interfaces/wasmflow-interface-keyvalue", features = [
   "host",
   "guest",

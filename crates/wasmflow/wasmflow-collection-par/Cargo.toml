@@ -11,9 +11,7 @@ edition = "2021"
 wasmflow-par = { path = "../wasmflow-par" }
 wasmflow-loader = { path = "../wasmflow-loader" }
 wasmflow-rpc = { path = "../wasmflow-rpc", features = ["client"] }
-wasmflow-transport = { path = "../../sdk/wasmflow-transport" }
-wasmflow-interface = { path = "../../sdk/wasmflow-interface" }
-wasmflow-invocation = { path = "../../sdk/wasmflow-invocation" }
+wasmflow-sdk = { path = "../wasmflow-sdk", features = ["v1"] }
 wasmflow-collection-cli = { path = "../wasmflow-collection-cli", default-features = false }
 parking_lot = "0.12"
 tracing = "0.1"
@@ -35,5 +33,3 @@ tokio-stream = "0.1.7"
 anyhow = "1.0"
 wasmflow-wascap = { path = "../wasmflow-wascap" }
 workspace-root = { path = "../../misc/workspace-root" }
-wasmflow-packet = { path = "../../sdk/wasmflow-packet" }
-wasmflow-entity = { path = "../../sdk/wasmflow-entity" }

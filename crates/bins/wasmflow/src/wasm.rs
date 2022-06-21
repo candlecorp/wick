@@ -10,7 +10,7 @@ pub(crate) fn is_wasm(bytes: &[u8]) -> bool {
 #[derive(Debug, Clone, Args)]
 pub(crate) struct WasiOptions {
   /// Directories to expose to the WASM module via WASI. Ignored if loading a manifest.
-  #[clap(long = "wasi-dir")]
+  #[clap(long = "wasi-dir", action)]
   wasi_dir: Vec<String>,
 }
 

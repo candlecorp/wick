@@ -8,25 +8,20 @@ license = "BSD-3-Clause"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-wasmflow-invocation = { path = "../../sdk/wasmflow-invocation" }
-wasmflow-interface = { path = "../../sdk/wasmflow-interface" }
+wasmflow-sdk = { path = "../../wasmflow/wasmflow-sdk", features = ["v1"] }
 cli-common = { path = "../cli-common" }
 wasmflow-par = { path = "../../wasmflow/wasmflow-par" }
 wasmflow-runtime = { path = "../../wasmflow/wasmflow-runtime" }
-wasmflow-packet = { path = "../../sdk/wasmflow-packet" }
 wasmflow-host = { path = "../../wasmflow/wasmflow-host" }
 wasmflow-collection-cli = { path = "../../wasmflow/wasmflow-collection-cli" }
 wasmflow-manifest = { path = "../../wasmflow/wasmflow-manifest" }
 wasmflow-rpc = { path = "../../wasmflow/wasmflow-rpc", features = ["client"] }
 wasmflow-wascap = { path = "../../wasmflow/wasmflow-wascap" }
 logger = { path = "../../wasmflow/logger" }
-wasmflow-codec = { path = "../../sdk/wasmflow-codec" }
-wasmflow-macros = { path = "../../sdk/wasmflow-macros" }
-wasmflow-entity = { path = "../../sdk/wasmflow-entity" }
-wasmflow-transport = { path = "../../sdk/wasmflow-transport", features = [
-  "all",
-] }
-cargo-generate = "0.14"
+git2 = { version = "0.14", features = [
+  "ssh",
+  "https",
+], default-features = false }
 
 async-recursion = "1.0"
 nkeys = "0.2"

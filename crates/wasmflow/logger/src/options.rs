@@ -7,31 +7,31 @@ use serde::{Deserialize, Serialize};
 /// Logging options that can be used directly or via [Args].
 pub struct LoggingOptions {
   /// Disables logging.
-  #[clap(long = "quiet", short = 'q')]
+  #[clap(long = "quiet", short = 'q', action)]
   pub quiet: bool,
 
   /// Turns on verbose logging.
-  #[clap(long = "verbose", short = 'V')]
+  #[clap(long = "verbose", short = 'V', action)]
   pub verbose: bool,
 
   /// Greatly increases logging.
-  #[clap(long = "silly", short = 'S')]
+  #[clap(long = "silly", short = 'S', action)]
   pub silly: bool,
 
   /// Turns on debug logging.
-  #[clap(long = "debug")]
+  #[clap(long = "debug", action)]
   pub debug: bool,
 
   /// Turns on trace logging.
-  #[clap(long = "trace")]
+  #[clap(long = "trace", action)]
   pub trace: bool,
 
   /// Log as JSON.
-  #[clap(long = "log-json")]
+  #[clap(long = "log-json", action)]
   pub log_json: bool,
 
   /// The directory to store log files,
-  #[clap(long = "log-dir", env = "WAFL_LOG_DIR")]
+  #[clap(long = "log-dir", env = "WAFL_LOG_DIR", action)]
   pub log_dir: Option<PathBuf>,
 
   /// The application doing the logging.

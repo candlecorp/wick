@@ -8,17 +8,10 @@ edition = "2021"
 [features]
 
 [dependencies]
-wasmflow-interface = { path = "../../sdk/wasmflow-interface" }
-wasmflow-invocation = { path = "../../sdk/wasmflow-invocation" }
+wasmflow-sdk = { path = "../wasmflow-sdk", features = ["v1"] }
 nats = { version = "0.15" }
 tracing = "0.1"
 wasmflow-rpc = { path = "../wasmflow-rpc" }
-wasmflow-transport = { path = "../../sdk/wasmflow-transport", features = [
-  "all",
-] }
-wasmflow-packet = { path = "../../sdk/wasmflow-packet", features = [] }
-wasmflow-entity = { path = "../../sdk/wasmflow-entity" }
-wasmflow-codec = { path = "../../sdk/wasmflow-codec" }
 thiserror = "1.0"
 nkeys = "0.2"
 serde = { version = "1.0", features = ["derive"] }

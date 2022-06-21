@@ -6,13 +6,12 @@ mod test;
 use anyhow::Result;
 use seeded_random::Seed;
 use test::{JsonWriter, TestCollection};
-use wasmflow_entity::Entity;
 use wasmflow_interpreter::graph::from_def;
 use wasmflow_interpreter::{HandlerMap, Interpreter, InterpreterOptions, NamespaceHandler};
-use wasmflow_invocation::Invocation;
 use wasmflow_manifest::Loadable;
-use wasmflow_packet::PacketMap;
-use wasmflow_transport::MessageTransport;
+use wasmflow_sdk::v1::packet::PacketMap;
+use wasmflow_sdk::v1::transport::MessageTransport;
+use wasmflow_sdk::v1::{Entity, Invocation};
 
 fn load<T: AsRef<Path>>(path: T) -> Result<wasmflow_manifest::HostManifest> {
   Ok(wasmflow_manifest::HostManifest::load_from_file(path.as_ref())?)

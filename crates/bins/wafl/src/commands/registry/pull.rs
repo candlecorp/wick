@@ -15,21 +15,22 @@ pub(crate) struct Options {
   pub(crate) logging: logger::LoggingOptions,
 
   /// OCI reference to pull.
+  #[clap(action)]
   pub(crate) reference: String,
 
   /// Directory to store the pulled artifacts.
-  #[clap(short, long = "output", default_value = ".")]
+  #[clap(short, long = "output", default_value = ".", action)]
   pub(crate) output: PathBuf,
 
   #[clap(flatten)]
   pub(crate) oci_opts: crate::oci::Options,
 
   /// The architecture to pull for multi-architecture artifacts.
-  #[clap(long, env = "OCI_ARCH")]
+  #[clap(long, env = "OCI_ARCH", action)]
   pub(crate) arch: Option<String>,
 
   /// The os to pull for multi-architecture artifacts.
-  #[clap(long, env = "OCI_ARCH")]
+  #[clap(long, env = "OCI_ARCH", action)]
   pub(crate) os: Option<String>,
 }
 

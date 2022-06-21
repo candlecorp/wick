@@ -1,7 +1,7 @@
 use anyhow::Result;
 use tokio_stream::{Stream, StreamExt};
 use tracing::trace;
-use wasmflow_transport::{MessageTransport, TransportStream, TransportWrapper};
+use wasmflow_sdk::v1::transport::{MessageTransport, TransportStream, TransportWrapper};
 
 pub async fn print_stream_json(mut stream: TransportStream, filter: &[String], terse: bool, raw: bool) -> Result<()> {
   if !filter.is_empty() {

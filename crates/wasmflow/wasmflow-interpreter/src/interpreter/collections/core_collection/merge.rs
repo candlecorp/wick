@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use serde_json::Value;
-use wasmflow_transport::{MessageTransport, TransportStream, TransportWrapper};
+use wasmflow_sdk::v1::transport::{MessageTransport, TransportStream, TransportWrapper};
 
 use crate::{Component, ExecutionError};
 
@@ -10,13 +10,13 @@ pub(crate) struct MergeComponent {}
 
 #[derive(serde::Deserialize)]
 pub(crate) struct MergeConfig {
-  inputs: wasmflow_interface::FieldMap,
+  inputs: wasmflow_sdk::v1::types::FieldMap,
 }
 
 impl Component for MergeComponent {
   fn handle(
     &self,
-    mut payload: wasmflow_transport::TransportMap,
+    mut payload: wasmflow_sdk::v1::transport::TransportMap,
     data: Option<Value>,
   ) -> futures::future::BoxFuture<Result<TransportStream, crate::BoxError>> {
     let task = async move {

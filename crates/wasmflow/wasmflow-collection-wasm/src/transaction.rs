@@ -1,6 +1,6 @@
 use std::collections::{HashSet, VecDeque};
 
-use wasmflow_packet::Packet;
+use wasmflow_sdk::v1::packet::Packet;
 type PortBuffer = VecDeque<(String, Packet)>;
 
 #[derive(Debug, Default)]

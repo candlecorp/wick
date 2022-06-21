@@ -11,15 +11,14 @@ use seeded_random::Seed;
 use uuid::Uuid;
 use wasmflow_collection_cli::options::{MeshOptions, Options as HostOptions, ServerOptions};
 use wasmflow_collection_cli::ServerState;
-use wasmflow_entity::Entity;
-use wasmflow_interface::CollectionSignature;
-use wasmflow_invocation::{InherentData, Invocation};
 use wasmflow_manifest::host_definition::HostDefinition;
 use wasmflow_mesh::{Mesh, NatsOptions};
 use wasmflow_rpc::{RpcHandler, SharedRpcHandler};
 use wasmflow_runtime::prelude::*;
 use wasmflow_runtime::NetworkBuilder;
-use wasmflow_transport::TransportMap;
+use wasmflow_sdk::v1::transport::TransportMap;
+use wasmflow_sdk::v1::types::CollectionSignature;
+use wasmflow_sdk::v1::{Entity, InherentData, Invocation};
 
 use crate::{Error, Result};
 
@@ -309,14 +308,15 @@ mod test {
   use std::path::PathBuf;
   use std::str::FromStr;
 
+  use anyhow::Result;
   use http::Uri;
-  use wasmflow_entity::Entity;
   use wasmflow_invocation_server::connect_rpc_client;
   use wasmflow_manifest::host_definition::HttpConfig;
   use wasmflow_rpc::rpc::Invocation;
+  use wasmflow_sdk::v1::Entity;
 
   use super::*;
-  use crate::{HostBuilder, Result};
+  use crate::HostBuilder;
 
   #[test]
   fn builds_default() {

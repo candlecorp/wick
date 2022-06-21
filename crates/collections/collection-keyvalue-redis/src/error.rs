@@ -34,9 +34,6 @@ pub enum Error {
   IoError(#[from] std::io::Error),
 
   #[error(transparent)]
-  ComponentError(#[from] wasmflow_packet::error::Error),
-
-  #[error(transparent)]
   UpstreamError(#[from] BoxedError),
 }
 

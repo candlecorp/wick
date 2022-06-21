@@ -1,4 +1,4 @@
-use wasmflow_sdk::packet::PacketMap;
+use wasmflow_sdk::v1::packet::PacketMap;
 
 pub use crate::components::generated::main::*;
 use crate::components::*;
@@ -6,7 +6,7 @@ use crate::components::*;
 pub(crate) type State = ();
 
 #[async_trait::async_trait]
-impl wasmflow_sdk::sdk::ephemeral::BatchedComponent for Component {
+impl wasmflow_sdk::v1::ephemeral::BatchedComponent for Component {
   type State = State;
   async fn job(
     mut input: Self::Inputs,

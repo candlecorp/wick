@@ -155,7 +155,7 @@ message TypeSignature {
 }
 
 message SimpleType {
-  enum WidlType {
+  enum ApexType {
     I8 = 0;
     U8 = 1;
     I16 = 2;
@@ -172,7 +172,7 @@ message SimpleType {
     BYTES = 13;
     VALUE = 15;
   }
-  WidlType type = 1;
+  ApexType type = 1;
 }
 
 enum InternalType { ComponentInput = 0; }

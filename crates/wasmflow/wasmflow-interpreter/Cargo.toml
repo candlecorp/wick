@@ -6,17 +6,10 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-wasmflow-interface = { path = "../../sdk/wasmflow-interface" }
-wasmflow-invocation = { path = "../../sdk/wasmflow-invocation" }
-wasmflow-collection-link = { path = "../../sdk/wasmflow-collection-link" }
+wasmflow-sdk = { path = "../wasmflow-sdk", features = ["v1"] }
 wasmflow-schematic-graph = { path = "../wasmflow-schematic-graph" }
 wasmflow-manifest = { path = "../wasmflow-manifest" }
 seeded-random = { path = "../../misc/seeded-random" }
-wasmflow-output = { path = "../../sdk/wasmflow-output", features = [] }
-wasmflow-entity = { path = "../../sdk/wasmflow-entity" }
-wasmflow-packet = { path = "../../sdk/wasmflow-packet" }
-wasmflow-transport = { path = "../../sdk/wasmflow-transport" }
-wasmflow-codec = { path = "../../sdk/wasmflow-codec" }
 
 thiserror = "1.0"
 tracing = "0.1"

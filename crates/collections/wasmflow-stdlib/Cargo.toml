@@ -13,10 +13,8 @@ guest = []
 [dependencies]
 wasmflow-rpc = { path = "../../wasmflow/wasmflow-rpc" }
 seeded-random = { path = "../../misc/seeded-random" }
-wasmflow-sdk = { path = "../../sdk/wasmflow-sdk", features = ["v1"] }
-wasmflow-transport = { path = "../../sdk/wasmflow-transport" }
-wasmflow-packet = { path = "../../sdk/wasmflow-packet" }
-wasmflow-entity = { path = "../../sdk/wasmflow-entity" }
+wasmflow-sdk = { path = "../../wasmflow/wasmflow-sdk", features = ["v1"] }
+
 tracing = "0.1"
 serde = { version = "1.0", features = ["derive"] }
 async-trait = "0.1"
@@ -30,6 +28,4 @@ wasmflow-stdlib = { path = ".", features = ["guest"] }
 logger = { path = "../../wasmflow/logger" }
 test-logger = { path = "../../misc/test-logger" }
 futures = "0.3"
-wasmflow-transport = { path = "../../sdk/wasmflow-transport", features = [
-  "all",
-] }
+anyhow = { version = "1.0" }

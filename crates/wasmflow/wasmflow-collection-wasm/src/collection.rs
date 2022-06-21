@@ -4,15 +4,13 @@ use std::sync::Arc;
 use async_trait::async_trait;
 use tokio_stream::StreamExt;
 pub use wapc::WasiParams;
-use wasmflow_codec::{json, messagepack};
-use wasmflow_collection_link::CollectionLink;
-use wasmflow_entity::Entity;
-use wasmflow_invocation::Invocation;
-use wasmflow_packet::{PacketMap, PacketWrapper};
 use wasmflow_rpc::error::RpcError;
 use wasmflow_rpc::{RpcHandler, RpcResult};
-use wasmflow_sdk::types::HostedType;
-use wasmflow_transport::{MessageTransport, Serialized, TransportMap, TransportStream};
+use wasmflow_sdk::v1::codec::{json, messagepack};
+use wasmflow_sdk::v1::packet::{PacketMap, PacketWrapper};
+use wasmflow_sdk::v1::transport::{MessageTransport, Serialized, TransportMap, TransportStream};
+use wasmflow_sdk::v1::types::HostedType;
+use wasmflow_sdk::v1::{CollectionLink, Entity, Invocation};
 
 use crate::error::LinkError;
 use crate::wapc_module::WapcModule;
@@ -149,10 +147,10 @@ fn try_into_messagepack_bytes(payload: TransportMap) -> Result<HashMap<String, V
     let bytes = match v {
       MessageTransport::Success(success) => match success {
         Serialized::MessagePack(bytes) => bytes,
-        Serialized::Struct(v) => messagepack::serialize(&v)?,
+        Serialized::Struct(v) => messagepack::serialize(&v).map_err(|e| Error::SdkError(e.into()))?,
         Serialized::Json(v) => {
-          let value: serde_value::Value = json::deserialize(&v)?;
-          messagepack::serialize(&value)?
+          let value: serde_value::Value = json::deserialize(&v).map_err(|e| Error::SdkError(e.into()))?;
+          messagepack::serialize(&value).map_err(|e| Error::SdkError(e.into()))?
         }
       },
       MessageTransport::Failure(_) => {
@@ -173,8 +171,8 @@ mod tests {
   use std::str::FromStr;
 
   use anyhow::Result as TestResult;
-  use wasmflow_entity::Entity;
-  use wasmflow_packet::PacketMap;
+  use wasmflow_sdk::v1::packet::PacketMap;
+  use wasmflow_sdk::v1::Entity;
 
   use super::*;
 

@@ -6,7 +6,7 @@ use futures::FutureExt;
 use nats::asynk::{Connection, Message, Subscription};
 use serde::Deserialize;
 use tokio::time::timeout;
-use wasmflow_codec::messagepack::{deserialize, serialize};
+use wasmflow_sdk::v1::codec::messagepack::{deserialize, serialize};
 
 use crate::error::MeshError;
 use crate::MeshRpcResponse;

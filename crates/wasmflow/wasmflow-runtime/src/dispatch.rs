@@ -3,7 +3,7 @@ use std::sync::Arc;
 use futures::Stream;
 use parking_lot::{Condvar, Mutex};
 use uuid::Uuid;
-use wasmflow_invocation::Invocation;
+use wasmflow_sdk::v1::Invocation;
 
 use crate::dev::prelude::*;
 
@@ -48,17 +48,17 @@ impl InvocationResponse {
 pub enum DispatchError {
   #[error("Thread died")]
   JoinFailed,
-  #[error("Thread died {0}")]
-  EntityFailure(String),
+  #[error("{0}")]
+  Sdk(String),
   #[error("Entity not available {0}")]
   EntityNotAvailable(Uuid),
   #[error("Call failure {0}")]
   CallFailure(String),
 }
 
-impl From<wasmflow_entity::Error> for DispatchError {
-  fn from(e: wasmflow_entity::Error) -> Self {
-    DispatchError::EntityFailure(e.to_string())
+impl From<wasmflow_sdk::v1::error::Error> for DispatchError {
+  fn from(e: wasmflow_sdk::v1::error::Error) -> Self {
+    DispatchError::Sdk(e.to_string())
   }
 }
 
@@ -119,7 +119,7 @@ pub(crate) fn network_invoke_sync(
 mod tests {
 
   use tokio::sync::oneshot;
-  use wasmflow_packet::PacketMap;
+  use wasmflow_sdk::v1::packet::PacketMap;
 
   use super::*;
   use crate::test::prelude::{assert_eq, *};

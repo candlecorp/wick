@@ -8,16 +8,16 @@
   unused_qualifications
 )]
 
-use wasmflow_sdk::sdk::ephemeral::BatchedJobExecutor;
+use wasmflow_sdk::v1::ephemeral::BatchedJobExecutor;
 
 #[cfg(all(target_arch = "wasm32"))]
-type CallResult = wasmflow_sdk::sdk::BoxedFuture<Result<Vec<u8>, wasmflow_sdk::sdk::BoxedError>>;
+type CallResult = wasmflow_sdk::v1::BoxedFuture<Result<Vec<u8>, wasmflow_sdk::v1::BoxedError>>;
 
 #[cfg(all(target_arch = "wasm32"))]
 #[allow(unsafe_code)]
 #[no_mangle]
 pub(crate) extern "C" fn wapc_init() {
-  wasmflow_sdk::sdk::wasm::runtime::register_dispatcher(Box::new(ComponentDispatcher::default()));
+  wasmflow_sdk::v1::wasm::runtime::register_dispatcher(Box::new(ComponentDispatcher::default()));
 }
 
 pub mod __batch__;
@@ -46,49 +46,49 @@ pub struct ComponentDispatcher {}
 
 #[cfg(target_arch = "wasm32")]
 #[allow(clippy::too_many_lines)]
-impl wasmflow_sdk::sdk::ephemeral::WasmDispatcher for ComponentDispatcher {
+impl wasmflow_sdk::v1::ephemeral::WasmDispatcher for ComponentDispatcher {
   fn dispatch(&self, op: &'static str, payload: &'static [u8]) -> CallResult {
     Box::pin(async move {
       let (mut stream, id) = match op {
         "copy" => {
           crate::components::generated::copy::Component::default()
-            .execute(wasmflow_sdk::sdk::payload::from_buffer(payload)?)
+            .execute(wasmflow_sdk::v1::payload::from_buffer(payload)?)
             .await
         }
         "error" => {
           crate::components::generated::error::Component::default()
-            .execute(wasmflow_sdk::sdk::payload::from_buffer(payload)?)
+            .execute(wasmflow_sdk::v1::payload::from_buffer(payload)?)
             .await
         }
         "reverse" => {
           crate::components::generated::reverse::Component::default()
-            .execute(wasmflow_sdk::sdk::payload::from_buffer(payload)?)
+            .execute(wasmflow_sdk::v1::payload::from_buffer(payload)?)
             .await
         }
         "reverse-uppercase" => {
           crate::components::generated::reverse_uppercase::Component::default()
-            .execute(wasmflow_sdk::sdk::payload::from_buffer(payload)?)
+            .execute(wasmflow_sdk::v1::payload::from_buffer(payload)?)
             .await
         }
         "scratch" => {
           crate::components::generated::scratch::Component::default()
-            .execute(wasmflow_sdk::sdk::payload::from_buffer(payload)?)
+            .execute(wasmflow_sdk::v1::payload::from_buffer(payload)?)
             .await
         }
         "uppercase" => {
           crate::components::generated::uppercase::Component::default()
-            .execute(wasmflow_sdk::sdk::payload::from_buffer(payload)?)
+            .execute(wasmflow_sdk::v1::payload::from_buffer(payload)?)
             .await
         }
         "validate" => {
           crate::components::generated::validate::Component::default()
-            .execute(wasmflow_sdk::sdk::payload::from_buffer(payload)?)
+            .execute(wasmflow_sdk::v1::payload::from_buffer(payload)?)
             .await
         }
-        _ => Err(wasmflow_sdk::error::Error::ComponentNotFound(op.to_owned(), ALL_COMPONENTS.join(", ")).into()),
+        _ => Err(wasmflow_sdk::v1::error::Error::ComponentNotFound(op.to_owned(), ALL_COMPONENTS.join(", ")).into()),
       }?;
-      while let Some(next) = wasmflow_sdk::sdk::StreamExt::next(&mut stream).await {
-        wasmflow_sdk::sdk::wasm::port_send(&next.port, id, next.payload)?;
+      while let Some(next) = wasmflow_sdk::v1::StreamExt::next(&mut stream).await {
+        wasmflow_sdk::v1::wasm::port_send(&next.port, id, next.payload)?;
       }
 
       Ok(Vec::new())
@@ -98,51 +98,51 @@ impl wasmflow_sdk::sdk::ephemeral::WasmDispatcher for ComponentDispatcher {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[allow(clippy::too_many_lines)]
-impl wasmflow_sdk::sdk::ephemeral::NativeDispatcher for ComponentDispatcher {
+impl wasmflow_sdk::v1::ephemeral::NativeDispatcher for ComponentDispatcher {
   fn dispatch(
     &self,
-    invocation: wasmflow_sdk::sdk::Invocation,
-  ) -> wasmflow_sdk::sdk::BoxedFuture<Result<wasmflow_sdk::types::PacketStream, wasmflow_sdk::sdk::BoxedError>> {
+    invocation: wasmflow_sdk::v1::Invocation,
+  ) -> wasmflow_sdk::v1::BoxedFuture<Result<wasmflow_sdk::v1::PacketStream, wasmflow_sdk::v1::BoxedError>> {
     Box::pin(async move {
       let (stream, _id) = match invocation.target.name() {
         "copy" => {
           crate::components::generated::copy::Component::default()
-            .execute(wasmflow_sdk::sdk::payload::from_invocation(invocation)?)
+            .execute(wasmflow_sdk::v1::payload::from_invocation(invocation)?)
             .await
         }
         "error" => {
           crate::components::generated::error::Component::default()
-            .execute(wasmflow_sdk::sdk::payload::from_invocation(invocation)?)
+            .execute(wasmflow_sdk::v1::payload::from_invocation(invocation)?)
             .await
         }
         "reverse" => {
           crate::components::generated::reverse::Component::default()
-            .execute(wasmflow_sdk::sdk::payload::from_invocation(invocation)?)
+            .execute(wasmflow_sdk::v1::payload::from_invocation(invocation)?)
             .await
         }
         "reverse-uppercase" => {
           crate::components::generated::reverse_uppercase::Component::default()
-            .execute(wasmflow_sdk::sdk::payload::from_invocation(invocation)?)
+            .execute(wasmflow_sdk::v1::payload::from_invocation(invocation)?)
             .await
         }
         "scratch" => {
           crate::components::generated::scratch::Component::default()
-            .execute(wasmflow_sdk::sdk::payload::from_invocation(invocation)?)
+            .execute(wasmflow_sdk::v1::payload::from_invocation(invocation)?)
             .await
         }
         "uppercase" => {
           crate::components::generated::uppercase::Component::default()
-            .execute(wasmflow_sdk::sdk::payload::from_invocation(invocation)?)
+            .execute(wasmflow_sdk::v1::payload::from_invocation(invocation)?)
             .await
         }
         "validate" => {
           crate::components::generated::validate::Component::default()
-            .execute(wasmflow_sdk::sdk::payload::from_invocation(invocation)?)
+            .execute(wasmflow_sdk::v1::payload::from_invocation(invocation)?)
             .await
         }
         "__batch__" => {
           crate::components::generated::__batch__::Component::default()
-            .execute(wasmflow_sdk::sdk::payload::from_invocation(invocation)?)
+            .execute(wasmflow_sdk::v1::payload::from_invocation(invocation)?)
             .await
         }
         op => Err(format!("Component not found on this collection: {}", op).into()),
@@ -153,8 +153,8 @@ impl wasmflow_sdk::sdk::ephemeral::NativeDispatcher for ComponentDispatcher {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-pub fn get_signature() -> wasmflow_sdk::types::CollectionSignature {
-  let mut components: std::collections::HashMap<String, wasmflow_sdk::types::ComponentSignature> =
+pub fn get_signature() -> wasmflow_sdk::v1::types::CollectionSignature {
+  let mut components: std::collections::HashMap<String, wasmflow_sdk::v1::types::ComponentSignature> =
     std::collections::HashMap::new();
 
   components.insert("copy".to_owned(), generated::copy::signature());
@@ -168,24 +168,24 @@ pub fn get_signature() -> wasmflow_sdk::types::CollectionSignature {
   components.insert("uppercase".to_owned(), generated::uppercase::signature());
   components.insert("validate".to_owned(), generated::validate::signature());
 
-  wasmflow_sdk::types::CollectionSignature {
+  wasmflow_sdk::v1::types::CollectionSignature {
     name: Some("test-component".to_owned()),
     format: 1,
     version: "0.0.1".to_owned(),
     types: std::collections::HashMap::from([(
       "Unit".to_owned(),
-      wasmflow_sdk::types::TypeDefinition::Enum(wasmflow_sdk::types::EnumSignature {
+      wasmflow_sdk::v1::types::TypeDefinition::Enum(wasmflow_sdk::v1::types::EnumSignature {
         name: "Unit".to_owned(),
         values: vec![
-          wasmflow_sdk::types::EnumVariant::new("0", 0),
-          wasmflow_sdk::types::EnumVariant::new("1", 1),
+          wasmflow_sdk::v1::types::EnumVariant::new("0", 0),
+          wasmflow_sdk::v1::types::EnumVariant::new("1", 1),
         ],
       }),
     )])
     .into(),
     components: components.into(),
     wellknown: Vec::new(),
-    config: wasmflow_sdk::types::TypeMap::new(),
+    config: wasmflow_sdk::v1::types::TypeMap::new(),
   }
 }
 
@@ -202,9 +202,8 @@ pub mod generated {
   // start component copy
   pub mod copy {
     // The user-facing implementation for State and job impl.
-    pub use wasmflow_sdk::console_log;
-    pub use wasmflow_sdk::packet::v1::Packet;
-    pub use wasmflow_sdk::sdk::{ComponentOutput, Writable};
+    pub use wasmflow_sdk::v1::packet::v1::Packet;
+    pub use wasmflow_sdk::v1::{console_log, ComponentOutput, Writable};
 
     // The generated definition of inputs, outputs, config, et al.
     use super::copy as definition;
@@ -216,34 +215,34 @@ pub mod generated {
     #[allow(missing_debug_implementations)]
     pub struct Component {}
 
-    impl wasmflow_sdk::sdk::Component for Component {
+    impl wasmflow_sdk::v1::Component for Component {
       type Inputs = definition::Inputs;
       type Outputs = definition::OutputPorts;
       type Config = integration::Config;
     }
 
-    impl wasmflow_sdk::sdk::ephemeral::BatchedJobExecutor for Component {
+    impl wasmflow_sdk::v1::ephemeral::BatchedJobExecutor for Component {
       #[cfg(not(target_arch = "wasm32"))]
-      type Payload = wasmflow_sdk::packet::v1::PacketMap;
+      type Payload = wasmflow_sdk::v1::packet::v1::PacketMap;
       #[cfg(target_arch = "wasm32")]
-      type Payload = wasmflow_sdk::sdk::wasm::EncodedMap;
+      type Payload = wasmflow_sdk::v1::wasm::EncodedMap;
       type State = implementation::State;
       type Config = Config;
-      type Return = (wasmflow_sdk::types::PacketStream, u32);
+      type Return = (wasmflow_sdk::v1::PacketStream, u32);
 
       fn execute(
         &self,
-        payload: wasmflow_sdk::sdk::IncomingPayload<Self::Payload, Self::Config, Self::State>,
-      ) -> wasmflow_sdk::sdk::BoxedFuture<Result<Self::Return, wasmflow_sdk::sdk::BoxedError>> {
+        payload: wasmflow_sdk::v1::IncomingPayload<Self::Payload, Self::Config, Self::State>,
+      ) -> wasmflow_sdk::v1::BoxedFuture<Result<Self::Return, wasmflow_sdk::v1::BoxedError>> {
         Box::pin(async move {
-          use wasmflow_sdk::sdk::ephemeral::BatchedComponent;
+          use wasmflow_sdk::v1::ephemeral::BatchedComponent;
           let id = payload.id();
           let (outputs, mut stream) = definition::get_outputs(id);
           let (payload, config, state) = payload.into_parts();
           let inputs = definition::convert_inputs(payload)?;
 
           let new_state = Component::job(inputs, outputs, state, config).await?;
-          stream.push(wasmflow_sdk::packet::PacketWrapper::state(
+          stream.push(wasmflow_sdk::v1::packet::PacketWrapper::state(
             Packet::success(&new_state).into(),
           ));
           Ok((stream, id))
@@ -252,8 +251,8 @@ pub mod generated {
     }
 
     #[cfg(all(feature = "host", not(target_arch = "wasm32")))]
-    pub fn signature() -> wasmflow_sdk::types::ComponentSignature {
-      wasmflow_sdk::types::ComponentSignature {
+    pub fn signature() -> wasmflow_sdk::v1::types::ComponentSignature {
+      wasmflow_sdk::v1::types::ComponentSignature {
         name: "copy".to_owned(),
         inputs: inputs_list().into(),
         outputs: outputs_list().into(),
@@ -262,27 +261,27 @@ pub mod generated {
 
     #[cfg(not(target_arch = "wasm32"))]
     pub fn convert_inputs(
-      mut payload: wasmflow_sdk::packet::v1::PacketMap,
+      mut payload: wasmflow_sdk::v1::packet::v1::PacketMap,
     ) -> Result<definition::Inputs, Box<dyn std::error::Error + Send + Sync>> {
       Ok(definition::Inputs {
         input: payload
           .remove("input")
-          .ok_or_else(|| wasmflow_sdk::error::Error::MissingInput("input".to_owned()))?
+          .ok_or_else(|| wasmflow_sdk::v1::error::Error::MissingInput("input".to_owned()))?
           .deserialize()?,
         times: payload
           .remove("times")
-          .ok_or_else(|| wasmflow_sdk::error::Error::MissingInput("times".to_owned()))?
+          .ok_or_else(|| wasmflow_sdk::v1::error::Error::MissingInput("times".to_owned()))?
           .deserialize()?,
       })
     }
 
     #[cfg(target_arch = "wasm32")]
     pub fn convert_inputs(
-      payload: wasmflow_sdk::sdk::wasm::EncodedMap,
+      payload: wasmflow_sdk::v1::wasm::EncodedMap,
     ) -> Result<definition::Inputs, Box<dyn std::error::Error + Send + Sync>> {
       Ok(definition::Inputs {
-        input: wasmflow_sdk::codec::messagepack::deserialize(payload.get("input")?)?,
-        times: wasmflow_sdk::codec::messagepack::deserialize(payload.get("times")?)?,
+        input: wasmflow_sdk::v1::codec::messagepack::deserialize(payload.get("input")?)?,
+        times: wasmflow_sdk::v1::codec::messagepack::deserialize(payload.get("times")?)?,
       })
     }
 
@@ -294,36 +293,36 @@ pub mod generated {
       pub times: i8,
     }
 
-    impl From<Inputs> for wasmflow_sdk::packet::PacketMap {
-      fn from(inputs: Inputs) -> wasmflow_sdk::packet::PacketMap {
+    impl From<Inputs> for wasmflow_sdk::v1::packet::PacketMap {
+      fn from(inputs: Inputs) -> wasmflow_sdk::v1::packet::PacketMap {
         let mut map = std::collections::HashMap::default();
         map.insert(
           "input".to_owned(),
-          wasmflow_sdk::packet::v1::Packet::success(&inputs.input).into(),
+          wasmflow_sdk::v1::packet::v1::Packet::success(&inputs.input).into(),
         );
         map.insert(
           "times".to_owned(),
-          wasmflow_sdk::packet::v1::Packet::success(&inputs.times).into(),
+          wasmflow_sdk::v1::packet::v1::Packet::success(&inputs.times).into(),
         );
-        wasmflow_sdk::packet::PacketMap::new(map)
+        wasmflow_sdk::v1::packet::PacketMap::new(map)
       }
     }
 
     #[must_use]
     #[cfg(all(feature = "host", not(target_arch = "wasm32")))]
-    pub fn inputs_list() -> std::collections::HashMap<String, wasmflow_sdk::types::TypeSignature> {
+    pub fn inputs_list() -> std::collections::HashMap<String, wasmflow_sdk::v1::types::TypeSignature> {
       let mut map = std::collections::HashMap::new();
-      map.insert("input".to_owned(), wasmflow_sdk::types::TypeSignature::String);
-      map.insert("times".to_owned(), wasmflow_sdk::types::TypeSignature::I8);
+      map.insert("input".to_owned(), wasmflow_sdk::v1::types::TypeSignature::String);
+      map.insert("times".to_owned(), wasmflow_sdk::v1::types::TypeSignature::I8);
       map
     }
 
     // A list of ports and their type signatures.
     #[must_use]
     #[cfg(feature = "host")]
-    pub fn outputs_list() -> std::collections::HashMap<String, wasmflow_sdk::types::TypeSignature> {
+    pub fn outputs_list() -> std::collections::HashMap<String, wasmflow_sdk::v1::types::TypeSignature> {
       let mut map = std::collections::HashMap::new();
-      map.insert("output".to_owned(), wasmflow_sdk::types::TypeSignature::String);
+      map.insert("output".to_owned(), wasmflow_sdk::v1::types::TypeSignature::String);
       map
     }
 
@@ -346,7 +345,7 @@ pub mod generated {
     #[derive(Debug)]
     #[cfg(feature = "host")]
     pub struct OutputPortSender {
-      port: wasmflow_sdk::sdk::PortChannel,
+      port: wasmflow_sdk::v1::PortChannel,
       id: u32,
     }
 
@@ -355,18 +354,18 @@ pub mod generated {
       fn new(id: u32) -> Self {
         Self {
           id,
-          port: wasmflow_sdk::sdk::PortChannel::new("output"),
+          port: wasmflow_sdk::v1::PortChannel::new("output"),
         }
       }
     }
 
     #[cfg(all(feature = "host"))]
-    impl wasmflow_sdk::sdk::Writable for OutputPortSender {
+    impl wasmflow_sdk::v1::Writable for OutputPortSender {
       type PayloadType = String;
 
-      fn get_port(&self) -> Result<&wasmflow_sdk::sdk::PortChannel, wasmflow_sdk::sdk::BoxedError> {
+      fn get_port(&self) -> Result<&wasmflow_sdk::v1::PortChannel, wasmflow_sdk::v1::BoxedError> {
         if self.port.is_closed() {
-          Err(Box::new(wasmflow_sdk::error::Error::SendError("@key".to_owned())))
+          Err(Box::new(wasmflow_sdk::v1::error::Error::SendError("@key".to_owned())))
         } else {
           Ok(&self.port)
         }
@@ -382,10 +381,10 @@ pub mod generated {
     }
 
     #[cfg(all(feature = "host"))]
-    pub fn get_outputs(id: u32) -> (OutputPorts, wasmflow_sdk::types::PacketStream) {
+    pub fn get_outputs(id: u32) -> (OutputPorts, wasmflow_sdk::v1::PacketStream) {
       let mut outputs = OutputPorts::new(id);
       let mut ports = vec![&mut outputs.output.port];
-      let stream = wasmflow_sdk::sdk::PortChannel::merge_all(&mut ports);
+      let stream = wasmflow_sdk::v1::PortChannel::merge_all(&mut ports);
       (outputs, stream)
     }
 
@@ -395,9 +394,9 @@ pub mod generated {
     }
 
     impl Outputs {
-      pub async fn output(&mut self) -> Result<wasmflow_sdk::sdk::PortOutput<String>, wasmflow_sdk::error::Error> {
+      pub async fn output(&mut self) -> Result<wasmflow_sdk::v1::PortOutput<String>, wasmflow_sdk::v1::error::Error> {
         let packets = self.packets.drain_port("output").await?;
-        Ok(wasmflow_sdk::sdk::PortOutput::new("output".to_owned(), packets))
+        Ok(wasmflow_sdk::v1::PortOutput::new("output".to_owned(), packets))
       }
     }
 
@@ -407,8 +406,8 @@ pub mod generated {
       }
     }
 
-    impl From<wasmflow_sdk::types::PacketStream> for Outputs {
-      fn from(stream: wasmflow_sdk::types::PacketStream) -> Self {
+    impl From<wasmflow_sdk::v1::PacketStream> for Outputs {
+      fn from(stream: wasmflow_sdk::v1::PacketStream) -> Self {
         Self {
           packets: ComponentOutput::new(stream),
         }
@@ -416,8 +415,8 @@ pub mod generated {
     }
 
     #[cfg(not(target_arch = "wasm32"))]
-    impl From<wasmflow_sdk::types::TransportStream> for Outputs {
-      fn from(stream: wasmflow_sdk::types::TransportStream) -> Self {
+    impl From<wasmflow_sdk::v1::transport::TransportStream> for Outputs {
+      fn from(stream: wasmflow_sdk::v1::transport::TransportStream) -> Self {
         Self {
           packets: ComponentOutput::new_from_ts(stream),
         }
@@ -431,9 +430,8 @@ pub mod generated {
   // start component error
   pub mod error {
     // The user-facing implementation for State and job impl.
-    pub use wasmflow_sdk::console_log;
-    pub use wasmflow_sdk::packet::v1::Packet;
-    pub use wasmflow_sdk::sdk::{ComponentOutput, Writable};
+    pub use wasmflow_sdk::v1::packet::v1::Packet;
+    pub use wasmflow_sdk::v1::{console_log, ComponentOutput, Writable};
 
     // The generated definition of inputs, outputs, config, et al.
     use super::error as definition;
@@ -445,34 +443,34 @@ pub mod generated {
     #[allow(missing_debug_implementations)]
     pub struct Component {}
 
-    impl wasmflow_sdk::sdk::Component for Component {
+    impl wasmflow_sdk::v1::Component for Component {
       type Inputs = definition::Inputs;
       type Outputs = definition::OutputPorts;
       type Config = integration::Config;
     }
 
-    impl wasmflow_sdk::sdk::ephemeral::BatchedJobExecutor for Component {
+    impl wasmflow_sdk::v1::ephemeral::BatchedJobExecutor for Component {
       #[cfg(not(target_arch = "wasm32"))]
-      type Payload = wasmflow_sdk::packet::v1::PacketMap;
+      type Payload = wasmflow_sdk::v1::packet::v1::PacketMap;
       #[cfg(target_arch = "wasm32")]
-      type Payload = wasmflow_sdk::sdk::wasm::EncodedMap;
+      type Payload = wasmflow_sdk::v1::wasm::EncodedMap;
       type State = implementation::State;
       type Config = Config;
-      type Return = (wasmflow_sdk::types::PacketStream, u32);
+      type Return = (wasmflow_sdk::v1::PacketStream, u32);
 
       fn execute(
         &self,
-        payload: wasmflow_sdk::sdk::IncomingPayload<Self::Payload, Self::Config, Self::State>,
-      ) -> wasmflow_sdk::sdk::BoxedFuture<Result<Self::Return, wasmflow_sdk::sdk::BoxedError>> {
+        payload: wasmflow_sdk::v1::IncomingPayload<Self::Payload, Self::Config, Self::State>,
+      ) -> wasmflow_sdk::v1::BoxedFuture<Result<Self::Return, wasmflow_sdk::v1::BoxedError>> {
         Box::pin(async move {
-          use wasmflow_sdk::sdk::ephemeral::BatchedComponent;
+          use wasmflow_sdk::v1::ephemeral::BatchedComponent;
           let id = payload.id();
           let (outputs, mut stream) = definition::get_outputs(id);
           let (payload, config, state) = payload.into_parts();
           let inputs = definition::convert_inputs(payload)?;
 
           let new_state = Component::job(inputs, outputs, state, config).await?;
-          stream.push(wasmflow_sdk::packet::PacketWrapper::state(
+          stream.push(wasmflow_sdk::v1::packet::PacketWrapper::state(
             Packet::success(&new_state).into(),
           ));
           Ok((stream, id))
@@ -481,8 +479,8 @@ pub mod generated {
     }
 
     #[cfg(all(feature = "host", not(target_arch = "wasm32")))]
-    pub fn signature() -> wasmflow_sdk::types::ComponentSignature {
-      wasmflow_sdk::types::ComponentSignature {
+    pub fn signature() -> wasmflow_sdk::v1::types::ComponentSignature {
+      wasmflow_sdk::v1::types::ComponentSignature {
         name: "error".to_owned(),
         inputs: inputs_list().into(),
         outputs: outputs_list().into(),
@@ -491,22 +489,22 @@ pub mod generated {
 
     #[cfg(not(target_arch = "wasm32"))]
     pub fn convert_inputs(
-      mut payload: wasmflow_sdk::packet::v1::PacketMap,
+      mut payload: wasmflow_sdk::v1::packet::v1::PacketMap,
     ) -> Result<definition::Inputs, Box<dyn std::error::Error + Send + Sync>> {
       Ok(definition::Inputs {
         input: payload
           .remove("input")
-          .ok_or_else(|| wasmflow_sdk::error::Error::MissingInput("input".to_owned()))?
+          .ok_or_else(|| wasmflow_sdk::v1::error::Error::MissingInput("input".to_owned()))?
           .deserialize()?,
       })
     }
 
     #[cfg(target_arch = "wasm32")]
     pub fn convert_inputs(
-      payload: wasmflow_sdk::sdk::wasm::EncodedMap,
+      payload: wasmflow_sdk::v1::wasm::EncodedMap,
     ) -> Result<definition::Inputs, Box<dyn std::error::Error + Send + Sync>> {
       Ok(definition::Inputs {
-        input: wasmflow_sdk::codec::messagepack::deserialize(payload.get("input")?)?,
+        input: wasmflow_sdk::v1::codec::messagepack::deserialize(payload.get("input")?)?,
       })
     }
 
@@ -516,31 +514,31 @@ pub mod generated {
       pub input: String,
     }
 
-    impl From<Inputs> for wasmflow_sdk::packet::PacketMap {
-      fn from(inputs: Inputs) -> wasmflow_sdk::packet::PacketMap {
+    impl From<Inputs> for wasmflow_sdk::v1::packet::PacketMap {
+      fn from(inputs: Inputs) -> wasmflow_sdk::v1::packet::PacketMap {
         let mut map = std::collections::HashMap::default();
         map.insert(
           "input".to_owned(),
-          wasmflow_sdk::packet::v1::Packet::success(&inputs.input).into(),
+          wasmflow_sdk::v1::packet::v1::Packet::success(&inputs.input).into(),
         );
-        wasmflow_sdk::packet::PacketMap::new(map)
+        wasmflow_sdk::v1::packet::PacketMap::new(map)
       }
     }
 
     #[must_use]
     #[cfg(all(feature = "host", not(target_arch = "wasm32")))]
-    pub fn inputs_list() -> std::collections::HashMap<String, wasmflow_sdk::types::TypeSignature> {
+    pub fn inputs_list() -> std::collections::HashMap<String, wasmflow_sdk::v1::types::TypeSignature> {
       let mut map = std::collections::HashMap::new();
-      map.insert("input".to_owned(), wasmflow_sdk::types::TypeSignature::String);
+      map.insert("input".to_owned(), wasmflow_sdk::v1::types::TypeSignature::String);
       map
     }
 
     // A list of ports and their type signatures.
     #[must_use]
     #[cfg(feature = "host")]
-    pub fn outputs_list() -> std::collections::HashMap<String, wasmflow_sdk::types::TypeSignature> {
+    pub fn outputs_list() -> std::collections::HashMap<String, wasmflow_sdk::v1::types::TypeSignature> {
       let mut map = std::collections::HashMap::new();
-      map.insert("output".to_owned(), wasmflow_sdk::types::TypeSignature::String);
+      map.insert("output".to_owned(), wasmflow_sdk::v1::types::TypeSignature::String);
       map
     }
 
@@ -563,7 +561,7 @@ pub mod generated {
     #[derive(Debug)]
     #[cfg(feature = "host")]
     pub struct OutputPortSender {
-      port: wasmflow_sdk::sdk::PortChannel,
+      port: wasmflow_sdk::v1::PortChannel,
       id: u32,
     }
 
@@ -572,18 +570,18 @@ pub mod generated {
       fn new(id: u32) -> Self {
         Self {
           id,
-          port: wasmflow_sdk::sdk::PortChannel::new("output"),
+          port: wasmflow_sdk::v1::PortChannel::new("output"),
         }
       }
     }
 
     #[cfg(all(feature = "host"))]
-    impl wasmflow_sdk::sdk::Writable for OutputPortSender {
+    impl wasmflow_sdk::v1::Writable for OutputPortSender {
       type PayloadType = String;
 
-      fn get_port(&self) -> Result<&wasmflow_sdk::sdk::PortChannel, wasmflow_sdk::sdk::BoxedError> {
+      fn get_port(&self) -> Result<&wasmflow_sdk::v1::PortChannel, wasmflow_sdk::v1::BoxedError> {
         if self.port.is_closed() {
-          Err(Box::new(wasmflow_sdk::error::Error::SendError("@key".to_owned())))
+          Err(Box::new(wasmflow_sdk::v1::error::Error::SendError("@key".to_owned())))
         } else {
           Ok(&self.port)
         }
@@ -599,10 +597,10 @@ pub mod generated {
     }
 
     #[cfg(all(feature = "host"))]
-    pub fn get_outputs(id: u32) -> (OutputPorts, wasmflow_sdk::types::PacketStream) {
+    pub fn get_outputs(id: u32) -> (OutputPorts, wasmflow_sdk::v1::PacketStream) {
       let mut outputs = OutputPorts::new(id);
       let mut ports = vec![&mut outputs.output.port];
-      let stream = wasmflow_sdk::sdk::PortChannel::merge_all(&mut ports);
+      let stream = wasmflow_sdk::v1::PortChannel::merge_all(&mut ports);
       (outputs, stream)
     }
 
@@ -612,9 +610,9 @@ pub mod generated {
     }
 
     impl Outputs {
-      pub async fn output(&mut self) -> Result<wasmflow_sdk::sdk::PortOutput<String>, wasmflow_sdk::error::Error> {
+      pub async fn output(&mut self) -> Result<wasmflow_sdk::v1::PortOutput<String>, wasmflow_sdk::v1::error::Error> {
         let packets = self.packets.drain_port("output").await?;
-        Ok(wasmflow_sdk::sdk::PortOutput::new("output".to_owned(), packets))
+        Ok(wasmflow_sdk::v1::PortOutput::new("output".to_owned(), packets))
       }
     }
 
@@ -624,8 +622,8 @@ pub mod generated {
       }
     }
 
-    impl From<wasmflow_sdk::types::PacketStream> for Outputs {
-      fn from(stream: wasmflow_sdk::types::PacketStream) -> Self {
+    impl From<wasmflow_sdk::v1::PacketStream> for Outputs {
+      fn from(stream: wasmflow_sdk::v1::PacketStream) -> Self {
         Self {
           packets: ComponentOutput::new(stream),
         }
@@ -633,8 +631,8 @@ pub mod generated {
     }
 
     #[cfg(not(target_arch = "wasm32"))]
-    impl From<wasmflow_sdk::types::TransportStream> for Outputs {
-      fn from(stream: wasmflow_sdk::types::TransportStream) -> Self {
+    impl From<wasmflow_sdk::v1::transport::TransportStream> for Outputs {
+      fn from(stream: wasmflow_sdk::v1::transport::TransportStream) -> Self {
         Self {
           packets: ComponentOutput::new_from_ts(stream),
         }
@@ -648,9 +646,8 @@ pub mod generated {
   // start component reverse
   pub mod reverse {
     // The user-facing implementation for State and job impl.
-    pub use wasmflow_sdk::console_log;
-    pub use wasmflow_sdk::packet::v1::Packet;
-    pub use wasmflow_sdk::sdk::{ComponentOutput, Writable};
+    pub use wasmflow_sdk::v1::packet::v1::Packet;
+    pub use wasmflow_sdk::v1::{console_log, ComponentOutput, Writable};
 
     // The generated definition of inputs, outputs, config, et al.
     use super::reverse as definition;
@@ -662,34 +659,34 @@ pub mod generated {
     #[allow(missing_debug_implementations)]
     pub struct Component {}
 
-    impl wasmflow_sdk::sdk::Component for Component {
+    impl wasmflow_sdk::v1::Component for Component {
       type Inputs = definition::Inputs;
       type Outputs = definition::OutputPorts;
       type Config = integration::Config;
     }
 
-    impl wasmflow_sdk::sdk::ephemeral::BatchedJobExecutor for Component {
+    impl wasmflow_sdk::v1::ephemeral::BatchedJobExecutor for Component {
       #[cfg(not(target_arch = "wasm32"))]
-      type Payload = wasmflow_sdk::packet::v1::PacketMap;
+      type Payload = wasmflow_sdk::v1::packet::v1::PacketMap;
       #[cfg(target_arch = "wasm32")]
-      type Payload = wasmflow_sdk::sdk::wasm::EncodedMap;
+      type Payload = wasmflow_sdk::v1::wasm::EncodedMap;
       type State = implementation::State;
       type Config = Config;
-      type Return = (wasmflow_sdk::types::PacketStream, u32);
+      type Return = (wasmflow_sdk::v1::PacketStream, u32);
 
       fn execute(
         &self,
-        payload: wasmflow_sdk::sdk::IncomingPayload<Self::Payload, Self::Config, Self::State>,
-      ) -> wasmflow_sdk::sdk::BoxedFuture<Result<Self::Return, wasmflow_sdk::sdk::BoxedError>> {
+        payload: wasmflow_sdk::v1::IncomingPayload<Self::Payload, Self::Config, Self::State>,
+      ) -> wasmflow_sdk::v1::BoxedFuture<Result<Self::Return, wasmflow_sdk::v1::BoxedError>> {
         Box::pin(async move {
-          use wasmflow_sdk::sdk::ephemeral::BatchedComponent;
+          use wasmflow_sdk::v1::ephemeral::BatchedComponent;
           let id = payload.id();
           let (outputs, mut stream) = definition::get_outputs(id);
           let (payload, config, state) = payload.into_parts();
           let inputs = definition::convert_inputs(payload)?;
 
           let new_state = Component::job(inputs, outputs, state, config).await?;
-          stream.push(wasmflow_sdk::packet::PacketWrapper::state(
+          stream.push(wasmflow_sdk::v1::packet::PacketWrapper::state(
             Packet::success(&new_state).into(),
           ));
           Ok((stream, id))
@@ -698,8 +695,8 @@ pub mod generated {
     }
 
     #[cfg(all(feature = "host", not(target_arch = "wasm32")))]
-    pub fn signature() -> wasmflow_sdk::types::ComponentSignature {
-      wasmflow_sdk::types::ComponentSignature {
+    pub fn signature() -> wasmflow_sdk::v1::types::ComponentSignature {
+      wasmflow_sdk::v1::types::ComponentSignature {
         name: "reverse".to_owned(),
         inputs: inputs_list().into(),
         outputs: outputs_list().into(),
@@ -708,22 +705,22 @@ pub mod generated {
 
     #[cfg(not(target_arch = "wasm32"))]
     pub fn convert_inputs(
-      mut payload: wasmflow_sdk::packet::v1::PacketMap,
+      mut payload: wasmflow_sdk::v1::packet::v1::PacketMap,
     ) -> Result<definition::Inputs, Box<dyn std::error::Error + Send + Sync>> {
       Ok(definition::Inputs {
         input: payload
           .remove("input")
-          .ok_or_else(|| wasmflow_sdk::error::Error::MissingInput("input".to_owned()))?
+          .ok_or_else(|| wasmflow_sdk::v1::error::Error::MissingInput("input".to_owned()))?
           .deserialize()?,
       })
     }
 
     #[cfg(target_arch = "wasm32")]
     pub fn convert_inputs(
-      payload: wasmflow_sdk::sdk::wasm::EncodedMap,
+      payload: wasmflow_sdk::v1::wasm::EncodedMap,
     ) -> Result<definition::Inputs, Box<dyn std::error::Error + Send + Sync>> {
       Ok(definition::Inputs {
-        input: wasmflow_sdk::codec::messagepack::deserialize(payload.get("input")?)?,
+        input: wasmflow_sdk::v1::codec::messagepack::deserialize(payload.get("input")?)?,
       })
     }
 
@@ -733,31 +730,31 @@ pub mod generated {
       pub input: String,
     }
 
-    impl From<Inputs> for wasmflow_sdk::packet::PacketMap {
-      fn from(inputs: Inputs) -> wasmflow_sdk::packet::PacketMap {
+    impl From<Inputs> for wasmflow_sdk::v1::packet::PacketMap {
+      fn from(inputs: Inputs) -> wasmflow_sdk::v1::packet::PacketMap {
         let mut map = std::collections::HashMap::default();
         map.insert(
           "input".to_owned(),
-          wasmflow_sdk::packet::v1::Packet::success(&inputs.input).into(),
+          wasmflow_sdk::v1::packet::v1::Packet::success(&inputs.input).into(),
         );
-        wasmflow_sdk::packet::PacketMap::new(map)
+        wasmflow_sdk::v1::packet::PacketMap::new(map)
       }
     }
 
     #[must_use]
     #[cfg(all(feature = "host", not(target_arch = "wasm32")))]
-    pub fn inputs_list() -> std::collections::HashMap<String, wasmflow_sdk::types::TypeSignature> {
+    pub fn inputs_list() -> std::collections::HashMap<String, wasmflow_sdk::v1::types::TypeSignature> {
       let mut map = std::collections::HashMap::new();
-      map.insert("input".to_owned(), wasmflow_sdk::types::TypeSignature::String);
+      map.insert("input".to_owned(), wasmflow_sdk::v1::types::TypeSignature::String);
       map
     }
 
     // A list of ports and their type signatures.
     #[must_use]
     #[cfg(feature = "host")]
-    pub fn outputs_list() -> std::collections::HashMap<String, wasmflow_sdk::types::TypeSignature> {
+    pub fn outputs_list() -> std::collections::HashMap<String, wasmflow_sdk::v1::types::TypeSignature> {
       let mut map = std::collections::HashMap::new();
-      map.insert("output".to_owned(), wasmflow_sdk::types::TypeSignature::String);
+      map.insert("output".to_owned(), wasmflow_sdk::v1::types::TypeSignature::String);
       map
     }
 
@@ -780,7 +777,7 @@ pub mod generated {
     #[derive(Debug)]
     #[cfg(feature = "host")]
     pub struct OutputPortSender {
-      port: wasmflow_sdk::sdk::PortChannel,
+      port: wasmflow_sdk::v1::PortChannel,
       id: u32,
     }
 
@@ -789,18 +786,18 @@ pub mod generated {
       fn new(id: u32) -> Self {
         Self {
           id,
-          port: wasmflow_sdk::sdk::PortChannel::new("output"),
+          port: wasmflow_sdk::v1::PortChannel::new("output"),
         }
       }
     }
 
     #[cfg(all(feature = "host"))]
-    impl wasmflow_sdk::sdk::Writable for OutputPortSender {
+    impl wasmflow_sdk::v1::Writable for OutputPortSender {
       type PayloadType = String;
 
-      fn get_port(&self) -> Result<&wasmflow_sdk::sdk::PortChannel, wasmflow_sdk::sdk::BoxedError> {
+      fn get_port(&self) -> Result<&wasmflow_sdk::v1::PortChannel, wasmflow_sdk::v1::BoxedError> {
         if self.port.is_closed() {
-          Err(Box::new(wasmflow_sdk::error::Error::SendError("@key".to_owned())))
+          Err(Box::new(wasmflow_sdk::v1::error::Error::SendError("@key".to_owned())))
         } else {
           Ok(&self.port)
         }
@@ -816,10 +813,10 @@ pub mod generated {
     }
 
     #[cfg(all(feature = "host"))]
-    pub fn get_outputs(id: u32) -> (OutputPorts, wasmflow_sdk::types::PacketStream) {
+    pub fn get_outputs(id: u32) -> (OutputPorts, wasmflow_sdk::v1::PacketStream) {
       let mut outputs = OutputPorts::new(id);
       let mut ports = vec![&mut outputs.output.port];
-      let stream = wasmflow_sdk::sdk::PortChannel::merge_all(&mut ports);
+      let stream = wasmflow_sdk::v1::PortChannel::merge_all(&mut ports);
       (outputs, stream)
     }
 
@@ -829,9 +826,9 @@ pub mod generated {
     }
 
     impl Outputs {
-      pub async fn output(&mut self) -> Result<wasmflow_sdk::sdk::PortOutput<String>, wasmflow_sdk::error::Error> {
+      pub async fn output(&mut self) -> Result<wasmflow_sdk::v1::PortOutput<String>, wasmflow_sdk::v1::error::Error> {
         let packets = self.packets.drain_port("output").await?;
-        Ok(wasmflow_sdk::sdk::PortOutput::new("output".to_owned(), packets))
+        Ok(wasmflow_sdk::v1::PortOutput::new("output".to_owned(), packets))
       }
     }
 
@@ -841,8 +838,8 @@ pub mod generated {
       }
     }
 
-    impl From<wasmflow_sdk::types::PacketStream> for Outputs {
-      fn from(stream: wasmflow_sdk::types::PacketStream) -> Self {
+    impl From<wasmflow_sdk::v1::PacketStream> for Outputs {
+      fn from(stream: wasmflow_sdk::v1::PacketStream) -> Self {
         Self {
           packets: ComponentOutput::new(stream),
         }
@@ -850,8 +847,8 @@ pub mod generated {
     }
 
     #[cfg(not(target_arch = "wasm32"))]
-    impl From<wasmflow_sdk::types::TransportStream> for Outputs {
-      fn from(stream: wasmflow_sdk::types::TransportStream) -> Self {
+    impl From<wasmflow_sdk::v1::transport::TransportStream> for Outputs {
+      fn from(stream: wasmflow_sdk::v1::transport::TransportStream) -> Self {
         Self {
           packets: ComponentOutput::new_from_ts(stream),
         }
@@ -865,9 +862,8 @@ pub mod generated {
   // start component reverse-uppercase
   pub mod reverse_uppercase {
     // The user-facing implementation for State and job impl.
-    pub use wasmflow_sdk::console_log;
-    pub use wasmflow_sdk::packet::v1::Packet;
-    pub use wasmflow_sdk::sdk::{ComponentOutput, Writable};
+    pub use wasmflow_sdk::v1::packet::v1::Packet;
+    pub use wasmflow_sdk::v1::{console_log, ComponentOutput, Writable};
 
     // The generated definition of inputs, outputs, config, et al.
     use super::reverse_uppercase as definition;
@@ -879,34 +875,34 @@ pub mod generated {
     #[allow(missing_debug_implementations)]
     pub struct Component {}
 
-    impl wasmflow_sdk::sdk::Component for Component {
+    impl wasmflow_sdk::v1::Component for Component {
       type Inputs = definition::Inputs;
       type Outputs = definition::OutputPorts;
       type Config = integration::Config;
     }
 
-    impl wasmflow_sdk::sdk::ephemeral::BatchedJobExecutor for Component {
+    impl wasmflow_sdk::v1::ephemeral::BatchedJobExecutor for Component {
       #[cfg(not(target_arch = "wasm32"))]
-      type Payload = wasmflow_sdk::packet::v1::PacketMap;
+      type Payload = wasmflow_sdk::v1::packet::v1::PacketMap;
       #[cfg(target_arch = "wasm32")]
-      type Payload = wasmflow_sdk::sdk::wasm::EncodedMap;
+      type Payload = wasmflow_sdk::v1::wasm::EncodedMap;
       type State = implementation::State;
       type Config = Config;
-      type Return = (wasmflow_sdk::types::PacketStream, u32);
+      type Return = (wasmflow_sdk::v1::PacketStream, u32);
 
       fn execute(
         &self,
-        payload: wasmflow_sdk::sdk::IncomingPayload<Self::Payload, Self::Config, Self::State>,
-      ) -> wasmflow_sdk::sdk::BoxedFuture<Result<Self::Return, wasmflow_sdk::sdk::BoxedError>> {
+        payload: wasmflow_sdk::v1::IncomingPayload<Self::Payload, Self::Config, Self::State>,
+      ) -> wasmflow_sdk::v1::BoxedFuture<Result<Self::Return, wasmflow_sdk::v1::BoxedError>> {
         Box::pin(async move {
-          use wasmflow_sdk::sdk::ephemeral::BatchedComponent;
+          use wasmflow_sdk::v1::ephemeral::BatchedComponent;
           let id = payload.id();
           let (outputs, mut stream) = definition::get_outputs(id);
           let (payload, config, state) = payload.into_parts();
           let inputs = definition::convert_inputs(payload)?;
 
           let new_state = Component::job(inputs, outputs, state, config).await?;
-          stream.push(wasmflow_sdk::packet::PacketWrapper::state(
+          stream.push(wasmflow_sdk::v1::packet::PacketWrapper::state(
             Packet::success(&new_state).into(),
           ));
           Ok((stream, id))
@@ -915,8 +911,8 @@ pub mod generated {
     }
 
     #[cfg(all(feature = "host", not(target_arch = "wasm32")))]
-    pub fn signature() -> wasmflow_sdk::types::ComponentSignature {
-      wasmflow_sdk::types::ComponentSignature {
+    pub fn signature() -> wasmflow_sdk::v1::types::ComponentSignature {
+      wasmflow_sdk::v1::types::ComponentSignature {
         name: "reverse-uppercase".to_owned(),
         inputs: inputs_list().into(),
         outputs: outputs_list().into(),
@@ -925,27 +921,27 @@ pub mod generated {
 
     #[cfg(not(target_arch = "wasm32"))]
     pub fn convert_inputs(
-      mut payload: wasmflow_sdk::packet::v1::PacketMap,
+      mut payload: wasmflow_sdk::v1::packet::v1::PacketMap,
     ) -> Result<definition::Inputs, Box<dyn std::error::Error + Send + Sync>> {
       Ok(definition::Inputs {
         input: payload
           .remove("input")
-          .ok_or_else(|| wasmflow_sdk::error::Error::MissingInput("input".to_owned()))?
+          .ok_or_else(|| wasmflow_sdk::v1::error::Error::MissingInput("input".to_owned()))?
           .deserialize()?,
         link: payload
           .remove("link")
-          .ok_or_else(|| wasmflow_sdk::error::Error::MissingInput("link".to_owned()))?
+          .ok_or_else(|| wasmflow_sdk::v1::error::Error::MissingInput("link".to_owned()))?
           .deserialize()?,
       })
     }
 
     #[cfg(target_arch = "wasm32")]
     pub fn convert_inputs(
-      payload: wasmflow_sdk::sdk::wasm::EncodedMap,
+      payload: wasmflow_sdk::v1::wasm::EncodedMap,
     ) -> Result<definition::Inputs, Box<dyn std::error::Error + Send + Sync>> {
       Ok(definition::Inputs {
-        input: wasmflow_sdk::codec::messagepack::deserialize(payload.get("input")?)?,
-        link: wasmflow_sdk::codec::messagepack::deserialize(payload.get("link")?)?,
+        input: wasmflow_sdk::v1::codec::messagepack::deserialize(payload.get("input")?)?,
+        link: wasmflow_sdk::v1::codec::messagepack::deserialize(payload.get("link")?)?,
       })
     }
 
@@ -954,32 +950,32 @@ pub mod generated {
       #[serde(rename = "input")]
       pub input: String,
       #[serde(rename = "link")]
-      pub link: wasmflow_sdk::sdk::CollectionLink,
+      pub link: wasmflow_sdk::v1::CollectionLink,
     }
 
-    impl From<Inputs> for wasmflow_sdk::packet::PacketMap {
-      fn from(inputs: Inputs) -> wasmflow_sdk::packet::PacketMap {
+    impl From<Inputs> for wasmflow_sdk::v1::packet::PacketMap {
+      fn from(inputs: Inputs) -> wasmflow_sdk::v1::packet::PacketMap {
         let mut map = std::collections::HashMap::default();
         map.insert(
           "input".to_owned(),
-          wasmflow_sdk::packet::v1::Packet::success(&inputs.input).into(),
+          wasmflow_sdk::v1::packet::v1::Packet::success(&inputs.input).into(),
         );
         map.insert(
           "link".to_owned(),
-          wasmflow_sdk::packet::v1::Packet::success(&inputs.link).into(),
+          wasmflow_sdk::v1::packet::v1::Packet::success(&inputs.link).into(),
         );
-        wasmflow_sdk::packet::PacketMap::new(map)
+        wasmflow_sdk::v1::packet::PacketMap::new(map)
       }
     }
 
     #[must_use]
     #[cfg(all(feature = "host", not(target_arch = "wasm32")))]
-    pub fn inputs_list() -> std::collections::HashMap<String, wasmflow_sdk::types::TypeSignature> {
+    pub fn inputs_list() -> std::collections::HashMap<String, wasmflow_sdk::v1::types::TypeSignature> {
       let mut map = std::collections::HashMap::new();
-      map.insert("input".to_owned(), wasmflow_sdk::types::TypeSignature::String);
+      map.insert("input".to_owned(), wasmflow_sdk::v1::types::TypeSignature::String);
       map.insert(
         "link".to_owned(),
-        wasmflow_sdk::types::TypeSignature::Link { schemas: vec![] },
+        wasmflow_sdk::v1::types::TypeSignature::Link { schemas: vec![] },
       );
       map
     }
@@ -987,9 +983,9 @@ pub mod generated {
     // A list of ports and their type signatures.
     #[must_use]
     #[cfg(feature = "host")]
-    pub fn outputs_list() -> std::collections::HashMap<String, wasmflow_sdk::types::TypeSignature> {
+    pub fn outputs_list() -> std::collections::HashMap<String, wasmflow_sdk::v1::types::TypeSignature> {
       let mut map = std::collections::HashMap::new();
-      map.insert("output".to_owned(), wasmflow_sdk::types::TypeSignature::String);
+      map.insert("output".to_owned(), wasmflow_sdk::v1::types::TypeSignature::String);
       map
     }
 
@@ -1012,7 +1008,7 @@ pub mod generated {
     #[derive(Debug)]
     #[cfg(feature = "host")]
     pub struct OutputPortSender {
-      port: wasmflow_sdk::sdk::PortChannel,
+      port: wasmflow_sdk::v1::PortChannel,
       id: u32,
     }
 
@@ -1021,18 +1017,18 @@ pub mod generated {
       fn new(id: u32) -> Self {
         Self {
           id,
-          port: wasmflow_sdk::sdk::PortChannel::new("output"),
+          port: wasmflow_sdk::v1::PortChannel::new("output"),
         }
       }
     }
 
     #[cfg(all(feature = "host"))]
-    impl wasmflow_sdk::sdk::Writable for OutputPortSender {
+    impl wasmflow_sdk::v1::Writable for OutputPortSender {
       type PayloadType = String;
 
-      fn get_port(&self) -> Result<&wasmflow_sdk::sdk::PortChannel, wasmflow_sdk::sdk::BoxedError> {
+      fn get_port(&self) -> Result<&wasmflow_sdk::v1::PortChannel, wasmflow_sdk::v1::BoxedError> {
         if self.port.is_closed() {
-          Err(Box::new(wasmflow_sdk::error::Error::SendError("@key".to_owned())))
+          Err(Box::new(wasmflow_sdk::v1::error::Error::SendError("@key".to_owned())))
         } else {
           Ok(&self.port)
         }
@@ -1048,10 +1044,10 @@ pub mod generated {
     }
 
     #[cfg(all(feature = "host"))]
-    pub fn get_outputs(id: u32) -> (OutputPorts, wasmflow_sdk::types::PacketStream) {
+    pub fn get_outputs(id: u32) -> (OutputPorts, wasmflow_sdk::v1::PacketStream) {
       let mut outputs = OutputPorts::new(id);
       let mut ports = vec![&mut outputs.output.port];
-      let stream = wasmflow_sdk::sdk::PortChannel::merge_all(&mut ports);
+      let stream = wasmflow_sdk::v1::PortChannel::merge_all(&mut ports);
       (outputs, stream)
     }
 
@@ -1061,9 +1057,9 @@ pub mod generated {
     }
 
     impl Outputs {
-      pub async fn output(&mut self) -> Result<wasmflow_sdk::sdk::PortOutput<String>, wasmflow_sdk::error::Error> {
+      pub async fn output(&mut self) -> Result<wasmflow_sdk::v1::PortOutput<String>, wasmflow_sdk::v1::error::Error> {
         let packets = self.packets.drain_port("output").await?;
-        Ok(wasmflow_sdk::sdk::PortOutput::new("output".to_owned(), packets))
+        Ok(wasmflow_sdk::v1::PortOutput::new("output".to_owned(), packets))
       }
     }
 
@@ -1073,8 +1069,8 @@ pub mod generated {
       }
     }
 
-    impl From<wasmflow_sdk::types::PacketStream> for Outputs {
-      fn from(stream: wasmflow_sdk::types::PacketStream) -> Self {
+    impl From<wasmflow_sdk::v1::PacketStream> for Outputs {
+      fn from(stream: wasmflow_sdk::v1::PacketStream) -> Self {
         Self {
           packets: ComponentOutput::new(stream),
         }
@@ -1082,8 +1078,8 @@ pub mod generated {
     }
 
     #[cfg(not(target_arch = "wasm32"))]
-    impl From<wasmflow_sdk::types::TransportStream> for Outputs {
-      fn from(stream: wasmflow_sdk::types::TransportStream) -> Self {
+    impl From<wasmflow_sdk::v1::transport::TransportStream> for Outputs {
+      fn from(stream: wasmflow_sdk::v1::transport::TransportStream) -> Self {
         Self {
           packets: ComponentOutput::new_from_ts(stream),
         }
@@ -1097,9 +1093,8 @@ pub mod generated {
   // start component scratch
   pub mod scratch {
     // The user-facing implementation for State and job impl.
-    pub use wasmflow_sdk::console_log;
-    pub use wasmflow_sdk::packet::v1::Packet;
-    pub use wasmflow_sdk::sdk::{ComponentOutput, Writable};
+    pub use wasmflow_sdk::v1::packet::v1::Packet;
+    pub use wasmflow_sdk::v1::{console_log, ComponentOutput, Writable};
 
     // The generated definition of inputs, outputs, config, et al.
     use super::scratch as definition;
@@ -1111,34 +1106,34 @@ pub mod generated {
     #[allow(missing_debug_implementations)]
     pub struct Component {}
 
-    impl wasmflow_sdk::sdk::Component for Component {
+    impl wasmflow_sdk::v1::Component for Component {
       type Inputs = definition::Inputs;
       type Outputs = definition::OutputPorts;
       type Config = integration::Config;
     }
 
-    impl wasmflow_sdk::sdk::ephemeral::BatchedJobExecutor for Component {
+    impl wasmflow_sdk::v1::ephemeral::BatchedJobExecutor for Component {
       #[cfg(not(target_arch = "wasm32"))]
-      type Payload = wasmflow_sdk::packet::v1::PacketMap;
+      type Payload = wasmflow_sdk::v1::packet::v1::PacketMap;
       #[cfg(target_arch = "wasm32")]
-      type Payload = wasmflow_sdk::sdk::wasm::EncodedMap;
+      type Payload = wasmflow_sdk::v1::wasm::EncodedMap;
       type State = implementation::State;
       type Config = Config;
-      type Return = (wasmflow_sdk::types::PacketStream, u32);
+      type Return = (wasmflow_sdk::v1::PacketStream, u32);
 
       fn execute(
         &self,
-        payload: wasmflow_sdk::sdk::IncomingPayload<Self::Payload, Self::Config, Self::State>,
-      ) -> wasmflow_sdk::sdk::BoxedFuture<Result<Self::Return, wasmflow_sdk::sdk::BoxedError>> {
+        payload: wasmflow_sdk::v1::IncomingPayload<Self::Payload, Self::Config, Self::State>,
+      ) -> wasmflow_sdk::v1::BoxedFuture<Result<Self::Return, wasmflow_sdk::v1::BoxedError>> {
         Box::pin(async move {
-          use wasmflow_sdk::sdk::ephemeral::BatchedComponent;
+          use wasmflow_sdk::v1::ephemeral::BatchedComponent;
           let id = payload.id();
           let (outputs, mut stream) = definition::get_outputs(id);
           let (payload, config, state) = payload.into_parts();
           let inputs = definition::convert_inputs(payload)?;
 
           let new_state = Component::job(inputs, outputs, state, config).await?;
-          stream.push(wasmflow_sdk::packet::PacketWrapper::state(
+          stream.push(wasmflow_sdk::v1::packet::PacketWrapper::state(
             Packet::success(&new_state).into(),
           ));
           Ok((stream, id))
@@ -1147,8 +1142,8 @@ pub mod generated {
     }
 
     #[cfg(all(feature = "host", not(target_arch = "wasm32")))]
-    pub fn signature() -> wasmflow_sdk::types::ComponentSignature {
-      wasmflow_sdk::types::ComponentSignature {
+    pub fn signature() -> wasmflow_sdk::v1::types::ComponentSignature {
+      wasmflow_sdk::v1::types::ComponentSignature {
         name: "scratch".to_owned(),
         inputs: inputs_list().into(),
         outputs: outputs_list().into(),
@@ -1157,27 +1152,27 @@ pub mod generated {
 
     #[cfg(not(target_arch = "wasm32"))]
     pub fn convert_inputs(
-      mut payload: wasmflow_sdk::packet::v1::PacketMap,
+      mut payload: wasmflow_sdk::v1::packet::v1::PacketMap,
     ) -> Result<definition::Inputs, Box<dyn std::error::Error + Send + Sync>> {
       Ok(definition::Inputs {
         name: payload
           .remove("name")
-          .ok_or_else(|| wasmflow_sdk::error::Error::MissingInput("name".to_owned()))?
+          .ok_or_else(|| wasmflow_sdk::v1::error::Error::MissingInput("name".to_owned()))?
           .deserialize()?,
         age: payload
           .remove("age")
-          .ok_or_else(|| wasmflow_sdk::error::Error::MissingInput("age".to_owned()))?
+          .ok_or_else(|| wasmflow_sdk::v1::error::Error::MissingInput("age".to_owned()))?
           .deserialize()?,
       })
     }
 
     #[cfg(target_arch = "wasm32")]
     pub fn convert_inputs(
-      payload: wasmflow_sdk::sdk::wasm::EncodedMap,
+      payload: wasmflow_sdk::v1::wasm::EncodedMap,
     ) -> Result<definition::Inputs, Box<dyn std::error::Error + Send + Sync>> {
       Ok(definition::Inputs {
-        name: wasmflow_sdk::codec::messagepack::deserialize(payload.get("name")?)?,
-        age: wasmflow_sdk::codec::messagepack::deserialize(payload.get("age")?)?,
+        name: wasmflow_sdk::v1::codec::messagepack::deserialize(payload.get("name")?)?,
+        age: wasmflow_sdk::v1::codec::messagepack::deserialize(payload.get("age")?)?,
       })
     }
 
@@ -1189,37 +1184,37 @@ pub mod generated {
       pub age: i64,
     }
 
-    impl From<Inputs> for wasmflow_sdk::packet::PacketMap {
-      fn from(inputs: Inputs) -> wasmflow_sdk::packet::PacketMap {
+    impl From<Inputs> for wasmflow_sdk::v1::packet::PacketMap {
+      fn from(inputs: Inputs) -> wasmflow_sdk::v1::packet::PacketMap {
         let mut map = std::collections::HashMap::default();
         map.insert(
           "name".to_owned(),
-          wasmflow_sdk::packet::v1::Packet::success(&inputs.name).into(),
+          wasmflow_sdk::v1::packet::v1::Packet::success(&inputs.name).into(),
         );
         map.insert(
           "age".to_owned(),
-          wasmflow_sdk::packet::v1::Packet::success(&inputs.age).into(),
+          wasmflow_sdk::v1::packet::v1::Packet::success(&inputs.age).into(),
         );
-        wasmflow_sdk::packet::PacketMap::new(map)
+        wasmflow_sdk::v1::packet::PacketMap::new(map)
       }
     }
 
     #[must_use]
     #[cfg(all(feature = "host", not(target_arch = "wasm32")))]
-    pub fn inputs_list() -> std::collections::HashMap<String, wasmflow_sdk::types::TypeSignature> {
+    pub fn inputs_list() -> std::collections::HashMap<String, wasmflow_sdk::v1::types::TypeSignature> {
       let mut map = std::collections::HashMap::new();
-      map.insert("name".to_owned(), wasmflow_sdk::types::TypeSignature::String);
-      map.insert("age".to_owned(), wasmflow_sdk::types::TypeSignature::I64);
+      map.insert("name".to_owned(), wasmflow_sdk::v1::types::TypeSignature::String);
+      map.insert("age".to_owned(), wasmflow_sdk::v1::types::TypeSignature::I64);
       map
     }
 
     // A list of ports and their type signatures.
     #[must_use]
     #[cfg(feature = "host")]
-    pub fn outputs_list() -> std::collections::HashMap<String, wasmflow_sdk::types::TypeSignature> {
+    pub fn outputs_list() -> std::collections::HashMap<String, wasmflow_sdk::v1::types::TypeSignature> {
       let mut map = std::collections::HashMap::new();
-      map.insert("message".to_owned(), wasmflow_sdk::types::TypeSignature::String);
-      map.insert("age".to_owned(), wasmflow_sdk::types::TypeSignature::I64);
+      map.insert("message".to_owned(), wasmflow_sdk::v1::types::TypeSignature::String);
+      map.insert("age".to_owned(), wasmflow_sdk::v1::types::TypeSignature::I64);
       map
     }
 
@@ -1244,7 +1239,7 @@ pub mod generated {
     #[derive(Debug)]
     #[cfg(feature = "host")]
     pub struct MessagePortSender {
-      port: wasmflow_sdk::sdk::PortChannel,
+      port: wasmflow_sdk::v1::PortChannel,
       id: u32,
     }
 
@@ -1253,18 +1248,18 @@ pub mod generated {
       fn new(id: u32) -> Self {
         Self {
           id,
-          port: wasmflow_sdk::sdk::PortChannel::new("message"),
+          port: wasmflow_sdk::v1::PortChannel::new("message"),
         }
       }
     }
 
     #[cfg(all(feature = "host"))]
-    impl wasmflow_sdk::sdk::Writable for MessagePortSender {
+    impl wasmflow_sdk::v1::Writable for MessagePortSender {
       type PayloadType = String;
 
-      fn get_port(&self) -> Result<&wasmflow_sdk::sdk::PortChannel, wasmflow_sdk::sdk::BoxedError> {
+      fn get_port(&self) -> Result<&wasmflow_sdk::v1::PortChannel, wasmflow_sdk::v1::BoxedError> {
         if self.port.is_closed() {
-          Err(Box::new(wasmflow_sdk::error::Error::SendError("@key".to_owned())))
+          Err(Box::new(wasmflow_sdk::v1::error::Error::SendError("@key".to_owned())))
         } else {
           Ok(&self.port)
         }
@@ -1282,7 +1277,7 @@ pub mod generated {
     #[derive(Debug)]
     #[cfg(feature = "host")]
     pub struct AgePortSender {
-      port: wasmflow_sdk::sdk::PortChannel,
+      port: wasmflow_sdk::v1::PortChannel,
       id: u32,
     }
 
@@ -1291,18 +1286,18 @@ pub mod generated {
       fn new(id: u32) -> Self {
         Self {
           id,
-          port: wasmflow_sdk::sdk::PortChannel::new("age"),
+          port: wasmflow_sdk::v1::PortChannel::new("age"),
         }
       }
     }
 
     #[cfg(all(feature = "host"))]
-    impl wasmflow_sdk::sdk::Writable for AgePortSender {
+    impl wasmflow_sdk::v1::Writable for AgePortSender {
       type PayloadType = i64;
 
-      fn get_port(&self) -> Result<&wasmflow_sdk::sdk::PortChannel, wasmflow_sdk::sdk::BoxedError> {
+      fn get_port(&self) -> Result<&wasmflow_sdk::v1::PortChannel, wasmflow_sdk::v1::BoxedError> {
         if self.port.is_closed() {
-          Err(Box::new(wasmflow_sdk::error::Error::SendError("@key".to_owned())))
+          Err(Box::new(wasmflow_sdk::v1::error::Error::SendError("@key".to_owned())))
         } else {
           Ok(&self.port)
         }
@@ -1318,10 +1313,10 @@ pub mod generated {
     }
 
     #[cfg(all(feature = "host"))]
-    pub fn get_outputs(id: u32) -> (OutputPorts, wasmflow_sdk::types::PacketStream) {
+    pub fn get_outputs(id: u32) -> (OutputPorts, wasmflow_sdk::v1::PacketStream) {
       let mut outputs = OutputPorts::new(id);
       let mut ports = vec![&mut outputs.message.port, &mut outputs.age.port];
-      let stream = wasmflow_sdk::sdk::PortChannel::merge_all(&mut ports);
+      let stream = wasmflow_sdk::v1::PortChannel::merge_all(&mut ports);
       (outputs, stream)
     }
 
@@ -1331,13 +1326,13 @@ pub mod generated {
     }
 
     impl Outputs {
-      pub async fn message(&mut self) -> Result<wasmflow_sdk::sdk::PortOutput<String>, wasmflow_sdk::error::Error> {
+      pub async fn message(&mut self) -> Result<wasmflow_sdk::v1::PortOutput<String>, wasmflow_sdk::v1::error::Error> {
         let packets = self.packets.drain_port("message").await?;
-        Ok(wasmflow_sdk::sdk::PortOutput::new("message".to_owned(), packets))
+        Ok(wasmflow_sdk::v1::PortOutput::new("message".to_owned(), packets))
       }
-      pub async fn age(&mut self) -> Result<wasmflow_sdk::sdk::PortOutput<i64>, wasmflow_sdk::error::Error> {
+      pub async fn age(&mut self) -> Result<wasmflow_sdk::v1::PortOutput<i64>, wasmflow_sdk::v1::error::Error> {
         let packets = self.packets.drain_port("age").await?;
-        Ok(wasmflow_sdk::sdk::PortOutput::new("age".to_owned(), packets))
+        Ok(wasmflow_sdk::v1::PortOutput::new("age".to_owned(), packets))
       }
     }
 
@@ -1347,8 +1342,8 @@ pub mod generated {
       }
     }
 
-    impl From<wasmflow_sdk::types::PacketStream> for Outputs {
-      fn from(stream: wasmflow_sdk::types::PacketStream) -> Self {
+    impl From<wasmflow_sdk::v1::PacketStream> for Outputs {
+      fn from(stream: wasmflow_sdk::v1::PacketStream) -> Self {
         Self {
           packets: ComponentOutput::new(stream),
         }
@@ -1356,8 +1351,8 @@ pub mod generated {
     }
 
     #[cfg(not(target_arch = "wasm32"))]
-    impl From<wasmflow_sdk::types::TransportStream> for Outputs {
-      fn from(stream: wasmflow_sdk::types::TransportStream) -> Self {
+    impl From<wasmflow_sdk::v1::transport::TransportStream> for Outputs {
+      fn from(stream: wasmflow_sdk::v1::transport::TransportStream) -> Self {
         Self {
           packets: ComponentOutput::new_from_ts(stream),
         }
@@ -1374,9 +1369,8 @@ pub mod generated {
   // start component uppercase
   pub mod uppercase {
     // The user-facing implementation for State and job impl.
-    pub use wasmflow_sdk::console_log;
-    pub use wasmflow_sdk::packet::v1::Packet;
-    pub use wasmflow_sdk::sdk::{ComponentOutput, Writable};
+    pub use wasmflow_sdk::v1::packet::v1::Packet;
+    pub use wasmflow_sdk::v1::{console_log, ComponentOutput, Writable};
 
     // The generated definition of inputs, outputs, config, et al.
     use super::uppercase as definition;
@@ -1388,34 +1382,34 @@ pub mod generated {
     #[allow(missing_debug_implementations)]
     pub struct Component {}
 
-    impl wasmflow_sdk::sdk::Component for Component {
+    impl wasmflow_sdk::v1::Component for Component {
       type Inputs = definition::Inputs;
       type Outputs = definition::OutputPorts;
       type Config = integration::Config;
     }
 
-    impl wasmflow_sdk::sdk::ephemeral::BatchedJobExecutor for Component {
+    impl wasmflow_sdk::v1::ephemeral::BatchedJobExecutor for Component {
       #[cfg(not(target_arch = "wasm32"))]
-      type Payload = wasmflow_sdk::packet::v1::PacketMap;
+      type Payload = wasmflow_sdk::v1::packet::v1::PacketMap;
       #[cfg(target_arch = "wasm32")]
-      type Payload = wasmflow_sdk::sdk::wasm::EncodedMap;
+      type Payload = wasmflow_sdk::v1::wasm::EncodedMap;
       type State = implementation::State;
       type Config = Config;
-      type Return = (wasmflow_sdk::types::PacketStream, u32);
+      type Return = (wasmflow_sdk::v1::PacketStream, u32);
 
       fn execute(
         &self,
-        payload: wasmflow_sdk::sdk::IncomingPayload<Self::Payload, Self::Config, Self::State>,
-      ) -> wasmflow_sdk::sdk::BoxedFuture<Result<Self::Return, wasmflow_sdk::sdk::BoxedError>> {
+        payload: wasmflow_sdk::v1::IncomingPayload<Self::Payload, Self::Config, Self::State>,
+      ) -> wasmflow_sdk::v1::BoxedFuture<Result<Self::Return, wasmflow_sdk::v1::BoxedError>> {
         Box::pin(async move {
-          use wasmflow_sdk::sdk::ephemeral::BatchedComponent;
+          use wasmflow_sdk::v1::ephemeral::BatchedComponent;
           let id = payload.id();
           let (outputs, mut stream) = definition::get_outputs(id);
           let (payload, config, state) = payload.into_parts();
           let inputs = definition::convert_inputs(payload)?;
 
           let new_state = Component::job(inputs, outputs, state, config).await?;
-          stream.push(wasmflow_sdk::packet::PacketWrapper::state(
+          stream.push(wasmflow_sdk::v1::packet::PacketWrapper::state(
             Packet::success(&new_state).into(),
           ));
           Ok((stream, id))
@@ -1424,8 +1418,8 @@ pub mod generated {
     }
 
     #[cfg(all(feature = "host", not(target_arch = "wasm32")))]
-    pub fn signature() -> wasmflow_sdk::types::ComponentSignature {
-      wasmflow_sdk::types::ComponentSignature {
+    pub fn signature() -> wasmflow_sdk::v1::types::ComponentSignature {
+      wasmflow_sdk::v1::types::ComponentSignature {
         name: "uppercase".to_owned(),
         inputs: inputs_list().into(),
         outputs: outputs_list().into(),
@@ -1434,22 +1428,22 @@ pub mod generated {
 
     #[cfg(not(target_arch = "wasm32"))]
     pub fn convert_inputs(
-      mut payload: wasmflow_sdk::packet::v1::PacketMap,
+      mut payload: wasmflow_sdk::v1::packet::v1::PacketMap,
     ) -> Result<definition::Inputs, Box<dyn std::error::Error + Send + Sync>> {
       Ok(definition::Inputs {
         input: payload
           .remove("input")
-          .ok_or_else(|| wasmflow_sdk::error::Error::MissingInput("input".to_owned()))?
+          .ok_or_else(|| wasmflow_sdk::v1::error::Error::MissingInput("input".to_owned()))?
           .deserialize()?,
       })
     }
 
     #[cfg(target_arch = "wasm32")]
     pub fn convert_inputs(
-      payload: wasmflow_sdk::sdk::wasm::EncodedMap,
+      payload: wasmflow_sdk::v1::wasm::EncodedMap,
     ) -> Result<definition::Inputs, Box<dyn std::error::Error + Send + Sync>> {
       Ok(definition::Inputs {
-        input: wasmflow_sdk::codec::messagepack::deserialize(payload.get("input")?)?,
+        input: wasmflow_sdk::v1::codec::messagepack::deserialize(payload.get("input")?)?,
       })
     }
 
@@ -1459,31 +1453,31 @@ pub mod generated {
       pub input: String,
     }
 
-    impl From<Inputs> for wasmflow_sdk::packet::PacketMap {
-      fn from(inputs: Inputs) -> wasmflow_sdk::packet::PacketMap {
+    impl From<Inputs> for wasmflow_sdk::v1::packet::PacketMap {
+      fn from(inputs: Inputs) -> wasmflow_sdk::v1::packet::PacketMap {
         let mut map = std::collections::HashMap::default();
         map.insert(
           "input".to_owned(),
-          wasmflow_sdk::packet::v1::Packet::success(&inputs.input).into(),
+          wasmflow_sdk::v1::packet::v1::Packet::success(&inputs.input).into(),
         );
-        wasmflow_sdk::packet::PacketMap::new(map)
+        wasmflow_sdk::v1::packet::PacketMap::new(map)
       }
     }
 
     #[must_use]
     #[cfg(all(feature = "host", not(target_arch = "wasm32")))]
-    pub fn inputs_list() -> std::collections::HashMap<String, wasmflow_sdk::types::TypeSignature> {
+    pub fn inputs_list() -> std::collections::HashMap<String, wasmflow_sdk::v1::types::TypeSignature> {
       let mut map = std::collections::HashMap::new();
-      map.insert("input".to_owned(), wasmflow_sdk::types::TypeSignature::String);
+      map.insert("input".to_owned(), wasmflow_sdk::v1::types::TypeSignature::String);
       map
     }
 
     // A list of ports and their type signatures.
     #[must_use]
     #[cfg(feature = "host")]
-    pub fn outputs_list() -> std::collections::HashMap<String, wasmflow_sdk::types::TypeSignature> {
+    pub fn outputs_list() -> std::collections::HashMap<String, wasmflow_sdk::v1::types::TypeSignature> {
       let mut map = std::collections::HashMap::new();
-      map.insert("output".to_owned(), wasmflow_sdk::types::TypeSignature::String);
+      map.insert("output".to_owned(), wasmflow_sdk::v1::types::TypeSignature::String);
       map
     }
 
@@ -1506,7 +1500,7 @@ pub mod generated {
     #[derive(Debug)]
     #[cfg(feature = "host")]
     pub struct OutputPortSender {
-      port: wasmflow_sdk::sdk::PortChannel,
+      port: wasmflow_sdk::v1::PortChannel,
       id: u32,
     }
 
@@ -1515,18 +1509,18 @@ pub mod generated {
       fn new(id: u32) -> Self {
         Self {
           id,
-          port: wasmflow_sdk::sdk::PortChannel::new("output"),
+          port: wasmflow_sdk::v1::PortChannel::new("output"),
         }
       }
     }
 
     #[cfg(all(feature = "host"))]
-    impl wasmflow_sdk::sdk::Writable for OutputPortSender {
+    impl wasmflow_sdk::v1::Writable for OutputPortSender {
       type PayloadType = String;
 
-      fn get_port(&self) -> Result<&wasmflow_sdk::sdk::PortChannel, wasmflow_sdk::sdk::BoxedError> {
+      fn get_port(&self) -> Result<&wasmflow_sdk::v1::PortChannel, wasmflow_sdk::v1::BoxedError> {
         if self.port.is_closed() {
-          Err(Box::new(wasmflow_sdk::error::Error::SendError("@key".to_owned())))
+          Err(Box::new(wasmflow_sdk::v1::error::Error::SendError("@key".to_owned())))
         } else {
           Ok(&self.port)
         }
@@ -1542,10 +1536,10 @@ pub mod generated {
     }
 
     #[cfg(all(feature = "host"))]
-    pub fn get_outputs(id: u32) -> (OutputPorts, wasmflow_sdk::types::PacketStream) {
+    pub fn get_outputs(id: u32) -> (OutputPorts, wasmflow_sdk::v1::PacketStream) {
       let mut outputs = OutputPorts::new(id);
       let mut ports = vec![&mut outputs.output.port];
-      let stream = wasmflow_sdk::sdk::PortChannel::merge_all(&mut ports);
+      let stream = wasmflow_sdk::v1::PortChannel::merge_all(&mut ports);
       (outputs, stream)
     }
 
@@ -1555,9 +1549,9 @@ pub mod generated {
     }
 
     impl Outputs {
-      pub async fn output(&mut self) -> Result<wasmflow_sdk::sdk::PortOutput<String>, wasmflow_sdk::error::Error> {
+      pub async fn output(&mut self) -> Result<wasmflow_sdk::v1::PortOutput<String>, wasmflow_sdk::v1::error::Error> {
         let packets = self.packets.drain_port("output").await?;
-        Ok(wasmflow_sdk::sdk::PortOutput::new("output".to_owned(), packets))
+        Ok(wasmflow_sdk::v1::PortOutput::new("output".to_owned(), packets))
       }
     }
 
@@ -1567,8 +1561,8 @@ pub mod generated {
       }
     }
 
-    impl From<wasmflow_sdk::types::PacketStream> for Outputs {
-      fn from(stream: wasmflow_sdk::types::PacketStream) -> Self {
+    impl From<wasmflow_sdk::v1::PacketStream> for Outputs {
+      fn from(stream: wasmflow_sdk::v1::PacketStream) -> Self {
         Self {
           packets: ComponentOutput::new(stream),
         }
@@ -1576,8 +1570,8 @@ pub mod generated {
     }
 
     #[cfg(not(target_arch = "wasm32"))]
-    impl From<wasmflow_sdk::types::TransportStream> for Outputs {
-      fn from(stream: wasmflow_sdk::types::TransportStream) -> Self {
+    impl From<wasmflow_sdk::v1::transport::TransportStream> for Outputs {
+      fn from(stream: wasmflow_sdk::v1::transport::TransportStream) -> Self {
         Self {
           packets: ComponentOutput::new_from_ts(stream),
         }
@@ -1591,9 +1585,8 @@ pub mod generated {
   // start component validate
   pub mod validate {
     // The user-facing implementation for State and job impl.
-    pub use wasmflow_sdk::console_log;
-    pub use wasmflow_sdk::packet::v1::Packet;
-    pub use wasmflow_sdk::sdk::{ComponentOutput, Writable};
+    pub use wasmflow_sdk::v1::packet::v1::Packet;
+    pub use wasmflow_sdk::v1::{console_log, ComponentOutput, Writable};
 
     // The generated definition of inputs, outputs, config, et al.
     use super::validate as definition;
@@ -1605,34 +1598,34 @@ pub mod generated {
     #[allow(missing_debug_implementations)]
     pub struct Component {}
 
-    impl wasmflow_sdk::sdk::Component for Component {
+    impl wasmflow_sdk::v1::Component for Component {
       type Inputs = definition::Inputs;
       type Outputs = definition::OutputPorts;
       type Config = integration::Config;
     }
 
-    impl wasmflow_sdk::sdk::ephemeral::BatchedJobExecutor for Component {
+    impl wasmflow_sdk::v1::ephemeral::BatchedJobExecutor for Component {
       #[cfg(not(target_arch = "wasm32"))]
-      type Payload = wasmflow_sdk::packet::v1::PacketMap;
+      type Payload = wasmflow_sdk::v1::packet::v1::PacketMap;
       #[cfg(target_arch = "wasm32")]
-      type Payload = wasmflow_sdk::sdk::wasm::EncodedMap;
+      type Payload = wasmflow_sdk::v1::wasm::EncodedMap;
       type State = implementation::State;
       type Config = Config;
-      type Return = (wasmflow_sdk::types::PacketStream, u32);
+      type Return = (wasmflow_sdk::v1::PacketStream, u32);
 
       fn execute(
         &self,
-        payload: wasmflow_sdk::sdk::IncomingPayload<Self::Payload, Self::Config, Self::State>,
-      ) -> wasmflow_sdk::sdk::BoxedFuture<Result<Self::Return, wasmflow_sdk::sdk::BoxedError>> {
+        payload: wasmflow_sdk::v1::IncomingPayload<Self::Payload, Self::Config, Self::State>,
+      ) -> wasmflow_sdk::v1::BoxedFuture<Result<Self::Return, wasmflow_sdk::v1::BoxedError>> {
         Box::pin(async move {
-          use wasmflow_sdk::sdk::ephemeral::BatchedComponent;
+          use wasmflow_sdk::v1::ephemeral::BatchedComponent;
           let id = payload.id();
           let (outputs, mut stream) = definition::get_outputs(id);
           let (payload, config, state) = payload.into_parts();
           let inputs = definition::convert_inputs(payload)?;
 
           let new_state = Component::job(inputs, outputs, state, config).await?;
-          stream.push(wasmflow_sdk::packet::PacketWrapper::state(
+          stream.push(wasmflow_sdk::v1::packet::PacketWrapper::state(
             Packet::success(&new_state).into(),
           ));
           Ok((stream, id))
@@ -1641,8 +1634,8 @@ pub mod generated {
     }
 
     #[cfg(all(feature = "host", not(target_arch = "wasm32")))]
-    pub fn signature() -> wasmflow_sdk::types::ComponentSignature {
-      wasmflow_sdk::types::ComponentSignature {
+    pub fn signature() -> wasmflow_sdk::v1::types::ComponentSignature {
+      wasmflow_sdk::v1::types::ComponentSignature {
         name: "validate".to_owned(),
         inputs: inputs_list().into(),
         outputs: outputs_list().into(),
@@ -1651,22 +1644,22 @@ pub mod generated {
 
     #[cfg(not(target_arch = "wasm32"))]
     pub fn convert_inputs(
-      mut payload: wasmflow_sdk::packet::v1::PacketMap,
+      mut payload: wasmflow_sdk::v1::packet::v1::PacketMap,
     ) -> Result<definition::Inputs, Box<dyn std::error::Error + Send + Sync>> {
       Ok(definition::Inputs {
         input: payload
           .remove("input")
-          .ok_or_else(|| wasmflow_sdk::error::Error::MissingInput("input".to_owned()))?
+          .ok_or_else(|| wasmflow_sdk::v1::error::Error::MissingInput("input".to_owned()))?
           .deserialize()?,
       })
     }
 
     #[cfg(target_arch = "wasm32")]
     pub fn convert_inputs(
-      payload: wasmflow_sdk::sdk::wasm::EncodedMap,
+      payload: wasmflow_sdk::v1::wasm::EncodedMap,
     ) -> Result<definition::Inputs, Box<dyn std::error::Error + Send + Sync>> {
       Ok(definition::Inputs {
-        input: wasmflow_sdk::codec::messagepack::deserialize(payload.get("input")?)?,
+        input: wasmflow_sdk::v1::codec::messagepack::deserialize(payload.get("input")?)?,
       })
     }
 
@@ -1676,31 +1669,31 @@ pub mod generated {
       pub input: String,
     }
 
-    impl From<Inputs> for wasmflow_sdk::packet::PacketMap {
-      fn from(inputs: Inputs) -> wasmflow_sdk::packet::PacketMap {
+    impl From<Inputs> for wasmflow_sdk::v1::packet::PacketMap {
+      fn from(inputs: Inputs) -> wasmflow_sdk::v1::packet::PacketMap {
         let mut map = std::collections::HashMap::default();
         map.insert(
           "input".to_owned(),
-          wasmflow_sdk::packet::v1::Packet::success(&inputs.input).into(),
+          wasmflow_sdk::v1::packet::v1::Packet::success(&inputs.input).into(),
         );
-        wasmflow_sdk::packet::PacketMap::new(map)
+        wasmflow_sdk::v1::packet::PacketMap::new(map)
       }
     }
 
     #[must_use]
     #[cfg(all(feature = "host", not(target_arch = "wasm32")))]
-    pub fn inputs_list() -> std::collections::HashMap<String, wasmflow_sdk::types::TypeSignature> {
+    pub fn inputs_list() -> std::collections::HashMap<String, wasmflow_sdk::v1::types::TypeSignature> {
       let mut map = std::collections::HashMap::new();
-      map.insert("input".to_owned(), wasmflow_sdk::types::TypeSignature::String);
+      map.insert("input".to_owned(), wasmflow_sdk::v1::types::TypeSignature::String);
       map
     }
 
     // A list of ports and their type signatures.
     #[must_use]
     #[cfg(feature = "host")]
-    pub fn outputs_list() -> std::collections::HashMap<String, wasmflow_sdk::types::TypeSignature> {
+    pub fn outputs_list() -> std::collections::HashMap<String, wasmflow_sdk::v1::types::TypeSignature> {
       let mut map = std::collections::HashMap::new();
-      map.insert("output".to_owned(), wasmflow_sdk::types::TypeSignature::String);
+      map.insert("output".to_owned(), wasmflow_sdk::v1::types::TypeSignature::String);
       map
     }
 
@@ -1723,7 +1716,7 @@ pub mod generated {
     #[derive(Debug)]
     #[cfg(feature = "host")]
     pub struct OutputPortSender {
-      port: wasmflow_sdk::sdk::PortChannel,
+      port: wasmflow_sdk::v1::PortChannel,
       id: u32,
     }
 
@@ -1732,18 +1725,18 @@ pub mod generated {
       fn new(id: u32) -> Self {
         Self {
           id,
-          port: wasmflow_sdk::sdk::PortChannel::new("output"),
+          port: wasmflow_sdk::v1::PortChannel::new("output"),
         }
       }
     }
 
     #[cfg(all(feature = "host"))]
-    impl wasmflow_sdk::sdk::Writable for OutputPortSender {
+    impl wasmflow_sdk::v1::Writable for OutputPortSender {
       type PayloadType = String;
 
-      fn get_port(&self) -> Result<&wasmflow_sdk::sdk::PortChannel, wasmflow_sdk::sdk::BoxedError> {
+      fn get_port(&self) -> Result<&wasmflow_sdk::v1::PortChannel, wasmflow_sdk::v1::BoxedError> {
         if self.port.is_closed() {
-          Err(Box::new(wasmflow_sdk::error::Error::SendError("@key".to_owned())))
+          Err(Box::new(wasmflow_sdk::v1::error::Error::SendError("@key".to_owned())))
         } else {
           Ok(&self.port)
         }
@@ -1759,10 +1752,10 @@ pub mod generated {
     }
 
     #[cfg(all(feature = "host"))]
-    pub fn get_outputs(id: u32) -> (OutputPorts, wasmflow_sdk::types::PacketStream) {
+    pub fn get_outputs(id: u32) -> (OutputPorts, wasmflow_sdk::v1::PacketStream) {
       let mut outputs = OutputPorts::new(id);
       let mut ports = vec![&mut outputs.output.port];
-      let stream = wasmflow_sdk::sdk::PortChannel::merge_all(&mut ports);
+      let stream = wasmflow_sdk::v1::PortChannel::merge_all(&mut ports);
       (outputs, stream)
     }
 
@@ -1772,9 +1765,9 @@ pub mod generated {
     }
 
     impl Outputs {
-      pub async fn output(&mut self) -> Result<wasmflow_sdk::sdk::PortOutput<String>, wasmflow_sdk::error::Error> {
+      pub async fn output(&mut self) -> Result<wasmflow_sdk::v1::PortOutput<String>, wasmflow_sdk::v1::error::Error> {
         let packets = self.packets.drain_port("output").await?;
-        Ok(wasmflow_sdk::sdk::PortOutput::new("output".to_owned(), packets))
+        Ok(wasmflow_sdk::v1::PortOutput::new("output".to_owned(), packets))
       }
     }
 
@@ -1784,8 +1777,8 @@ pub mod generated {
       }
     }
 
-    impl From<wasmflow_sdk::types::PacketStream> for Outputs {
-      fn from(stream: wasmflow_sdk::types::PacketStream) -> Self {
+    impl From<wasmflow_sdk::v1::PacketStream> for Outputs {
+      fn from(stream: wasmflow_sdk::v1::PacketStream) -> Self {
         Self {
           packets: ComponentOutput::new(stream),
         }
@@ -1793,8 +1786,8 @@ pub mod generated {
     }
 
     #[cfg(not(target_arch = "wasm32"))]
-    impl From<wasmflow_sdk::types::TransportStream> for Outputs {
-      fn from(stream: wasmflow_sdk::types::TransportStream) -> Self {
+    impl From<wasmflow_sdk::v1::transport::TransportStream> for Outputs {
+      fn from(stream: wasmflow_sdk::v1::transport::TransportStream) -> Self {
         Self {
           packets: ComponentOutput::new_from_ts(stream),
         }
@@ -1807,35 +1800,34 @@ pub mod generated {
   // end component validate
 
   pub mod __batch__ {
-    pub use wasmflow_sdk::console_log;
-    pub use wasmflow_sdk::packet::v1::Packet;
-    pub use wasmflow_sdk::sdk::{ComponentOutput, Writable};
+    pub use wasmflow_sdk::v1::packet::v1::Packet;
+    pub use wasmflow_sdk::v1::{console_log, ComponentOutput, Writable};
 
     use super::{__batch__ as integration, __batch__ as definition};
     use crate::components::__batch__ as implementation;
 
-    impl wasmflow_sdk::sdk::ephemeral::BatchedJobExecutor for Component {
+    impl wasmflow_sdk::v1::ephemeral::BatchedJobExecutor for Component {
       #[cfg(not(target_arch = "wasm32"))]
-      type Payload = wasmflow_sdk::packet::v1::PacketMap;
+      type Payload = wasmflow_sdk::v1::packet::v1::PacketMap;
       #[cfg(target_arch = "wasm32")]
-      type Payload = wasmflow_sdk::sdk::wasm::EncodedMap;
+      type Payload = wasmflow_sdk::v1::wasm::EncodedMap;
       type State = implementation::State;
       type Config = Config;
-      type Return = (wasmflow_sdk::types::PacketStream, u32);
+      type Return = (wasmflow_sdk::v1::PacketStream, u32);
 
       fn execute(
         &self,
-        payload: wasmflow_sdk::sdk::IncomingPayload<Self::Payload, Self::Config, Self::State>,
-      ) -> wasmflow_sdk::sdk::BoxedFuture<Result<Self::Return, wasmflow_sdk::sdk::BoxedError>> {
+        payload: wasmflow_sdk::v1::IncomingPayload<Self::Payload, Self::Config, Self::State>,
+      ) -> wasmflow_sdk::v1::BoxedFuture<Result<Self::Return, wasmflow_sdk::v1::BoxedError>> {
         Box::pin(async move {
-          use wasmflow_sdk::sdk::ephemeral::BatchedComponent;
+          use wasmflow_sdk::v1::ephemeral::BatchedComponent;
           let id = payload.id();
           let (outputs, mut stream) = definition::get_outputs(id);
           let (payload, config, state) = payload.into_parts();
           let inputs = definition::convert_inputs(payload)?;
 
           let new_state = Component::job(inputs, outputs, state, config).await?;
-          stream.push(wasmflow_sdk::packet::PacketWrapper::state(
+          stream.push(wasmflow_sdk::v1::packet::PacketWrapper::state(
             Packet::success(&new_state).into(),
           ));
           Ok((stream, id))
@@ -1881,7 +1873,7 @@ pub mod generated {
     #[allow(missing_debug_implementations)]
     pub struct Component {}
 
-    impl wasmflow_sdk::sdk::Component for Component {
+    impl wasmflow_sdk::v1::Component for Component {
       type Inputs = definition::Inputs;
       type Outputs = definition::OutputPorts;
       type Config = integration::Config;
@@ -1889,9 +1881,9 @@ pub mod generated {
     // A list of ports and their type signatures.
     #[must_use]
     #[cfg(feature = "host")]
-    pub fn outputs_list() -> std::collections::HashMap<String, wasmflow_sdk::types::TypeSignature> {
+    pub fn outputs_list() -> std::collections::HashMap<String, wasmflow_sdk::v1::types::TypeSignature> {
       let mut map = std::collections::HashMap::new();
-      map.insert("result".to_owned(), wasmflow_sdk::types::TypeSignature::Bool);
+      map.insert("result".to_owned(), wasmflow_sdk::v1::types::TypeSignature::Bool);
       map
     }
 
@@ -1914,7 +1906,7 @@ pub mod generated {
     #[derive(Debug)]
     #[cfg(feature = "host")]
     pub struct ResultPortSender {
-      port: wasmflow_sdk::sdk::PortChannel,
+      port: wasmflow_sdk::v1::PortChannel,
       id: u32,
     }
 
@@ -1923,18 +1915,18 @@ pub mod generated {
       fn new(id: u32) -> Self {
         Self {
           id,
-          port: wasmflow_sdk::sdk::PortChannel::new("result"),
+          port: wasmflow_sdk::v1::PortChannel::new("result"),
         }
       }
     }
 
     #[cfg(all(feature = "host"))]
-    impl wasmflow_sdk::sdk::Writable for ResultPortSender {
+    impl wasmflow_sdk::v1::Writable for ResultPortSender {
       type PayloadType = bool;
 
-      fn get_port(&self) -> Result<&wasmflow_sdk::sdk::PortChannel, wasmflow_sdk::sdk::BoxedError> {
+      fn get_port(&self) -> Result<&wasmflow_sdk::v1::PortChannel, wasmflow_sdk::v1::BoxedError> {
         if self.port.is_closed() {
-          Err(Box::new(wasmflow_sdk::error::Error::SendError("@key".to_owned())))
+          Err(Box::new(wasmflow_sdk::v1::error::Error::SendError("@key".to_owned())))
         } else {
           Ok(&self.port)
         }
@@ -1950,10 +1942,10 @@ pub mod generated {
     }
 
     #[cfg(all(feature = "host"))]
-    pub fn get_outputs(id: u32) -> (OutputPorts, wasmflow_sdk::types::PacketStream) {
+    pub fn get_outputs(id: u32) -> (OutputPorts, wasmflow_sdk::v1::PacketStream) {
       let mut outputs = OutputPorts::new(id);
       let mut ports = vec![&mut outputs.result.port];
-      let stream = wasmflow_sdk::sdk::PortChannel::merge_all(&mut ports);
+      let stream = wasmflow_sdk::v1::PortChannel::merge_all(&mut ports);
       (outputs, stream)
     }
 
@@ -1963,9 +1955,9 @@ pub mod generated {
     }
 
     impl Outputs {
-      pub async fn result(&mut self) -> Result<wasmflow_sdk::sdk::PortOutput<bool>, wasmflow_sdk::error::Error> {
+      pub async fn result(&mut self) -> Result<wasmflow_sdk::v1::PortOutput<bool>, wasmflow_sdk::v1::error::Error> {
         let packets = self.packets.drain_port("result").await?;
-        Ok(wasmflow_sdk::sdk::PortOutput::new("result".to_owned(), packets))
+        Ok(wasmflow_sdk::v1::PortOutput::new("result".to_owned(), packets))
       }
     }
 
@@ -1975,8 +1967,8 @@ pub mod generated {
       }
     }
 
-    impl From<wasmflow_sdk::types::PacketStream> for Outputs {
-      fn from(stream: wasmflow_sdk::types::PacketStream) -> Self {
+    impl From<wasmflow_sdk::v1::PacketStream> for Outputs {
+      fn from(stream: wasmflow_sdk::v1::PacketStream) -> Self {
         Self {
           packets: ComponentOutput::new(stream),
         }
@@ -1984,8 +1976,8 @@ pub mod generated {
     }
 
     #[cfg(not(target_arch = "wasm32"))]
-    impl From<wasmflow_sdk::types::TransportStream> for Outputs {
-      fn from(stream: wasmflow_sdk::types::TransportStream) -> Self {
+    impl From<wasmflow_sdk::v1::transport::TransportStream> for Outputs {
+      fn from(stream: wasmflow_sdk::v1::transport::TransportStream) -> Self {
         Self {
           packets: ComponentOutput::new_from_ts(stream),
         }
@@ -1994,22 +1986,22 @@ pub mod generated {
 
     #[cfg(not(target_arch = "wasm32"))]
     pub fn convert_inputs(
-      mut payload: wasmflow_sdk::packet::v1::PacketMap,
+      mut payload: wasmflow_sdk::v1::packet::v1::PacketMap,
     ) -> Result<definition::Inputs, Box<dyn std::error::Error + Send + Sync>> {
       Ok(definition::Inputs {
         inputs: payload
           .remove("inputs")
-          .ok_or_else(|| wasmflow_sdk::error::Error::MissingInput("inputs".to_owned()))?
+          .ok_or_else(|| wasmflow_sdk::v1::error::Error::MissingInput("inputs".to_owned()))?
           .deserialize()?,
       })
     }
 
     #[cfg(target_arch = "wasm32")]
     pub fn convert_inputs(
-      payload: wasmflow_sdk::sdk::wasm::EncodedMap,
+      payload: wasmflow_sdk::v1::wasm::EncodedMap,
     ) -> Result<definition::Inputs, Box<dyn std::error::Error + Send + Sync>> {
       Ok(definition::Inputs {
-        inputs: wasmflow_sdk::codec::messagepack::deserialize(payload.get("inputs")?)?,
+        inputs: wasmflow_sdk::v1::codec::messagepack::deserialize(payload.get("inputs")?)?,
       })
     }
 
@@ -2019,26 +2011,26 @@ pub mod generated {
       pub inputs: Vec<ComponentInputs>,
     }
 
-    impl From<Inputs> for wasmflow_sdk::packet::PacketMap {
-      fn from(inputs: Inputs) -> wasmflow_sdk::packet::PacketMap {
+    impl From<Inputs> for wasmflow_sdk::v1::packet::PacketMap {
+      fn from(inputs: Inputs) -> wasmflow_sdk::v1::packet::PacketMap {
         let mut map = std::collections::HashMap::default();
         map.insert(
           "inputs".to_owned(),
-          wasmflow_sdk::packet::v1::Packet::success(&inputs.inputs).into(),
+          wasmflow_sdk::v1::packet::v1::Packet::success(&inputs.inputs).into(),
         );
-        wasmflow_sdk::packet::PacketMap::new(map)
+        wasmflow_sdk::v1::packet::PacketMap::new(map)
       }
     }
 
     #[must_use]
     #[cfg(all(feature = "host", not(target_arch = "wasm32")))]
-    pub fn inputs_list() -> std::collections::HashMap<String, wasmflow_sdk::types::TypeSignature> {
+    pub fn inputs_list() -> std::collections::HashMap<String, wasmflow_sdk::v1::types::TypeSignature> {
       let mut map = std::collections::HashMap::new();
       map.insert(
         "inputs".to_owned(),
-        wasmflow_sdk::types::TypeSignature::List {
-          element: Box::new(wasmflow_sdk::types::TypeSignature::Internal(
-            wasmflow_sdk::types::InternalType::ComponentInput,
+        wasmflow_sdk::v1::types::TypeSignature::List {
+          element: Box::new(wasmflow_sdk::v1::types::TypeSignature::Internal(
+            wasmflow_sdk::v1::types::InternalType::ComponentInput,
           )),
         },
       );

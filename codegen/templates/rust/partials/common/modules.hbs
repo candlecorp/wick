@@ -27,8 +27,8 @@
 
       {{> imports }}
 
-      pub use wasmflow_sdk::packet::v1::Packet;
-      pub use wasmflow_sdk::console_log;
+      pub use wasmflow_sdk::v1::packet::v1::Packet;
+      pub use wasmflow_sdk::v1::console_log;
 
 
       {{#if ../../implementation}}
@@ -64,8 +64,8 @@ pub mod __batch__ {
 
   {{> imports }}
 
-  pub use wasmflow_sdk::packet::v1::Packet;
-  pub use wasmflow_sdk::console_log;
+  pub use wasmflow_sdk::v1::packet::v1::Packet;
+  pub use wasmflow_sdk::v1::console_log;
 
   {{> job-wrapper . batch=true}}
 

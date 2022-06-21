@@ -2,7 +2,7 @@ use std::io::Read;
 use std::path::Path;
 
 use tar::Header;
-use wasmflow_interface::CollectionSignature;
+use wasmflow_sdk::v1::types::CollectionSignature;
 use wasmflow_wascap::{ClaimsOptions, KeyPair};
 
 use crate::error::ParError;

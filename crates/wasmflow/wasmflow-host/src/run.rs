@@ -73,7 +73,7 @@
 #![allow(missing_docs, clippy::expect_used)] // TODO docs
 
 use wasmflow_manifest::host_definition::HostDefinition;
-use wasmflow_transport::{TransportMap, TransportStream};
+use wasmflow_sdk::v1::transport::{TransportMap, TransportStream};
 
 use crate::HostBuilder;
 
@@ -103,11 +103,12 @@ mod tests {
 
   use std::path::PathBuf;
 
+  use anyhow::Result;
   use wasmflow_manifest::host_definition::HostDefinition;
-  use wasmflow_transport::TransportWrapper;
+  use wasmflow_sdk::v1::transport::TransportWrapper;
 
   #[tokio::test]
-  async fn runs_log_config() -> crate::Result<()> {
+  async fn runs_log_config() -> Result<()> {
     let host_def = HostDefinition::load_from_file(&PathBuf::from("./manifests/logger.yaml"))?;
     let input = vec![("input", "test-input")].into();
 

@@ -2,7 +2,7 @@
 // A list of ports and their type signatures.
 #[must_use]
 #[cfg(feature="host")]
-pub fn outputs_list() -> std::collections::HashMap<String, wasmflow_sdk::types::TypeSignature> {
+pub fn outputs_list() -> std::collections::HashMap<String, wasmflow_sdk::v1::types::TypeSignature> {
   let mut map = std::collections::HashMap::new();
   {{#each .}}
     map.insert("{{@key}}".to_owned(),{{> type-signature .}});
@@ -34,7 +34,7 @@ impl OutputPorts {
 #[derive(Debug)]
 #[cfg(feature = "host")]
 pub struct {{pascalCase @key}}PortSender {
-    port: wasmflow_sdk::sdk::PortChannel,
+    port: wasmflow_sdk::v1::PortChannel,
     id: u32,
 }
 
@@ -43,18 +43,18 @@ impl {{pascalCase @key}}PortSender {
     fn new(id:u32) -> Self {
         Self {
             id,
-            port: wasmflow_sdk::sdk::PortChannel::new("{{@key}}"),
+            port: wasmflow_sdk::v1::PortChannel::new("{{@key}}"),
         }
     }
 }
 
 #[cfg(all(feature = "host"))]
-impl wasmflow_sdk::sdk::Writable for {{pascalCase @key}}PortSender {
+impl wasmflow_sdk::v1::Writable for {{pascalCase @key}}PortSender {
     type PayloadType = {{> expand-type .}};
 
-    fn get_port(&self) -> Result<&wasmflow_sdk::sdk::PortChannel, wasmflow_sdk::sdk::BoxedError> {
+    fn get_port(&self) -> Result<&wasmflow_sdk::v1::PortChannel, wasmflow_sdk::v1::BoxedError> {
       if self.port.is_closed() {
-        Err(Box::new(wasmflow_sdk::error::Error::SendError("@key".to_owned())))
+        Err(Box::new(wasmflow_sdk::v1::error::Error::SendError("@key".to_owned())))
       } else {
         Ok(&self.port)
       }
@@ -72,14 +72,14 @@ impl wasmflow_sdk::sdk::Writable for {{pascalCase @key}}PortSender {
 {{/each}}
 
 #[cfg(all(feature = "host"))]
-pub fn get_outputs(id:u32) -> (OutputPorts, wasmflow_sdk::types::PacketStream) {
+pub fn get_outputs(id:u32) -> (OutputPorts, wasmflow_sdk::v1::PacketStream) {
     let mut outputs = OutputPorts::new(id);
     let mut ports = vec![
     {{#each .}}
     &mut outputs.{{snakeCase @key}}.port,
     {{/each}}
     ];
-    let stream = wasmflow_sdk::sdk::PortChannel::merge_all(&mut ports);
+    let stream = wasmflow_sdk::v1::PortChannel::merge_all(&mut ports);
     (outputs, stream)
 }
 
@@ -90,9 +90,9 @@ pub struct Outputs {
 
 impl Outputs {
   {{#each .}}
-    pub async fn {{snakeCase @key}}(&mut self)-> Result<wasmflow_sdk::sdk::PortOutput<{{> expand-type . }}>, wasmflow_sdk::error::Error> {
+    pub async fn {{snakeCase @key}}(&mut self)-> Result<wasmflow_sdk::v1::PortOutput<{{> expand-type . }}>, wasmflow_sdk::v1::error::Error> {
       let packets = self.packets.drain_port("{{@key}}").await?;
-      Ok(wasmflow_sdk::sdk::PortOutput::new("{{@key}}".to_owned(), packets))
+      Ok(wasmflow_sdk::v1::PortOutput::new("{{@key}}".to_owned(), packets))
     }
   {{/each}}
 }
@@ -103,8 +103,8 @@ impl From<ComponentOutput> for Outputs {
   }
 }
 
-impl From<wasmflow_sdk::types::PacketStream> for Outputs {
-  fn from(stream: wasmflow_sdk::types::PacketStream) -> Self {
+impl From<wasmflow_sdk::v1::PacketStream> for Outputs {
+  fn from(stream: wasmflow_sdk::v1::PacketStream) -> Self {
     Self {
         packets: ComponentOutput::new(stream),
     }
@@ -112,8 +112,8 @@ impl From<wasmflow_sdk::types::PacketStream> for Outputs {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-impl From<wasmflow_sdk::types::TransportStream> for Outputs {
-  fn from(stream: wasmflow_sdk::types::TransportStream) -> Self {
+impl From<wasmflow_sdk::v1::transport::TransportStream> for Outputs {
+  fn from(stream: wasmflow_sdk::v1::transport::TransportStream) -> Self {
     Self {
         packets: ComponentOutput::new_from_ts(stream),
     }

@@ -8,13 +8,7 @@ license = "BSD-3-Clause"
 
 [dependencies]
 wasmflow-rpc = { path = "../wasmflow-rpc" }
-wasmflow-entity = { path = "../../sdk/wasmflow-entity" }
-wasmflow-transport = { path = "../../sdk/wasmflow-transport", features = [
-  "all",
-] }
-wasmflow-interface = { path = "../../sdk/wasmflow-interface" }
-wasmflow-invocation = { path = "../../sdk/wasmflow-invocation" }
-
+wasmflow-sdk = { path = "../wasmflow-sdk", features = ["v1"] }
 
 tonic = { version = "0.7", features = ["tls"] }
 tokio = { version = "1", features = ["macros", "net", "rt-multi-thread"] }

@@ -1,6 +1,6 @@
 use tonic::Status;
 use wasmflow_rpc::rpc::Output;
-use wasmflow_transport::MessageTransport;
+use wasmflow_sdk::v1::transport::MessageTransport;
 
 pub(crate) fn make_output(port: &str, inv_id: &str, payload: MessageTransport) -> Result<Output, Status> {
   Ok(Output {

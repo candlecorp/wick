@@ -1,7 +1,7 @@
 use uuid::Uuid;
 use wasmflow_schematic_graph::{ComponentIndex, PortReference};
-use wasmflow_transport::MessageTransport;
-use wasmflow_invocation::Invocation;
+use wasmflow_sdk::v1::transport::MessageTransport;
+use wasmflow_sdk::v1::Invocation;
 
 pub(crate) use self::error::Error;
 use super::executor::error::ExecutionError;

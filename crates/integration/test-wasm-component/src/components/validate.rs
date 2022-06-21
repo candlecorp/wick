@@ -35,7 +35,7 @@ static MAXIMUM_LENGTH: usize = 512;
 pub(crate) type State = ();
 
 #[async_trait::async_trait]
-impl wasmflow_sdk::sdk::ephemeral::BatchedComponent for Component {
+impl wasmflow_sdk::v1::ephemeral::BatchedComponent for Component {
   type State = State;
   async fn job(
     input: Self::Inputs,

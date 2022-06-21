@@ -45,6 +45,11 @@ impl Packet {
     }
   }
 
+  /// Create a Done signal packet.
+  pub fn done() -> Self {
+    Self::V1(v1::Packet::done())
+  }
+
   /// Convert a messagepack encoded payload into a [Packet]
   pub fn from_messagepack(bytes: &[u8]) -> Self {
     match wasmflow_codec::messagepack::deserialize::<Packet>(bytes) {

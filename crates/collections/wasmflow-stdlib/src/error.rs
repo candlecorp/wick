@@ -3,11 +3,9 @@ use thiserror::Error;
 #[derive(Error, Debug)]
 pub enum NativeError {
   #[error(transparent)]
-  Component(#[from] wasmflow_sdk::error::Error),
+  Component(#[from] wasmflow_sdk::v1::error::Error),
   #[error(transparent)]
   IOError(#[from] std::io::Error),
-  #[error(transparent)]
-  Transport(#[from] wasmflow_transport::error::TransportError),
   #[error(transparent)]
   JoinError(#[from] tokio::task::JoinError),
   #[error("{0}")]
