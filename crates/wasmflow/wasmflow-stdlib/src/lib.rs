@@ -83,14 +83,7 @@
 #![allow(unused_attributes)]
 // !!END_LINTS
 // Add exceptions here
-#![allow(
-  missing_docs,
-  clippy::too_many_lines,
-  missing_copy_implementations,
-  missing_debug_implementations,
-  clippy::let_and_return,
-  clippy::unused_async
-)]
+#![allow(missing_docs)]
 
 pub mod collection;
 pub mod components;

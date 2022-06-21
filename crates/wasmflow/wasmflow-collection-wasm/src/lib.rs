@@ -99,6 +99,3 @@ pub type Error = error::WasmCollectionError;
 
 #[macro_use]
 extern crate tracing;
-
-#[macro_use]
-extern crate derivative;

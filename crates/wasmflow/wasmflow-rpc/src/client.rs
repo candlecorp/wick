@@ -107,10 +107,9 @@ impl RpcClient {
     debug!("List result: {:?}", result);
     let response = result.into_inner();
     let signatures: Result<Vec<HostedType>, _> = response.schemas.into_iter().map(|e| e.try_into()).collect();
-    Ok(
-      signatures
-        .map_err(|_| RpcClientError::ResponseInvalid("Could not convert RPC ListResponse to HostedType".to_owned()))?,
-    )
+
+    signatures
+      .map_err(|_| RpcClientError::ResponseInvalid("Could not convert RPC ListResponse to HostedType".to_owned()))
   }
 
   /// Send an invoke RPC command with a raw RPC [Invocation] object.
@@ -138,11 +137,9 @@ impl RpcClient {
 
   /// Send an invoke RPC command with an [Invocation] object.
   pub async fn invoke(&mut self, invocation: Invocation) -> Result<TransportStream, RpcClientError> {
-    Ok(
-      self
-        .invoke_raw(invocation.try_into().map_err(RpcClientError::ConversionFailed)?)
-        .await?,
-    )
+    self
+      .invoke_raw(invocation.try_into().map_err(RpcClientError::ConversionFailed)?)
+      .await
   }
 
   /// Make an invocation with data passed as a JSON string.

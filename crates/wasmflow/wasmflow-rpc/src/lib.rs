@@ -85,7 +85,7 @@
 #![allow(unused_attributes)]
 // !!END_LINTS
 // Add exceptions here
-#![allow(unused_qualifications, missing_docs)]
+#![allow(missing_docs)]
 
 use std::sync::Arc;
 

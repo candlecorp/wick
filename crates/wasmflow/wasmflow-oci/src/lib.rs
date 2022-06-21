@@ -289,12 +289,11 @@ pub async fn push(
   layers: &[ImageLayer],
 ) -> Result<PushResponse, OciError> {
   let config = Config::new(b"{}".to_vec(), manifest::IMAGE_CONFIG_MEDIA_TYPE.to_owned(), None);
-  Ok(
-    client
-      .push(reference, layers, config, auth, None)
-      .await
-      .map_err(|e| OciError::OciPushFailure(reference.clone(), e.into()))?,
-  )
+
+  client
+    .push(reference, layers, config, auth, None)
+    .await
+    .map_err(|e| OciError::OciPushFailure(reference.clone(), e.into()))
 }
 
 /// Parse a `&str` as a Reference.

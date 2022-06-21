@@ -83,7 +83,7 @@
 #![allow(unused_attributes)]
 // !!END_LINTS
 // Add exceptions here
-#![allow(missing_docs, unreachable_code)]
+#![allow(missing_docs)]
 
 mod error;
 mod performance;

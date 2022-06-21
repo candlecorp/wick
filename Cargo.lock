@@ -3342,17 +3342,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "test-env-log"
-version = "0.2.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "877189d680101869f65ef94168105d6c188b3a143c13a2d42cf8a09c4c704f8a"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn",
-]
-
-[[package]]
 name = "test-interface-keyvalue"
 version = "0.1.0"
 dependencies = [
@@ -3585,7 +3574,7 @@ name = "tokio-test-bin"
 version = "0.3.0"
 dependencies = [
  "env_logger 0.9.0",
- "test-env-log",
+ "test-log",
  "thiserror",
  "tokio",
  "tracing",
@@ -4046,7 +4035,6 @@ dependencies = [
  "serde_json",
  "thiserror",
  "tokio",
- "tonic",
  "tracing",
  "trycmd",
  "wasmflow-collection-cli",
@@ -4442,7 +4430,6 @@ dependencies = [
  "anyhow",
  "async-stream",
  "async-trait",
- "derivative",
  "futures",
  "logger",
  "parking_lot 0.12.0",

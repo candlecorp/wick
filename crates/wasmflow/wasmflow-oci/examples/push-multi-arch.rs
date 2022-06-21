@@ -6,17 +6,19 @@ use wasmflow_oci::{parse_reference, ArchitectureMap, MultiArchManifest};
 
 #[derive(Parser, Default)]
 struct Options {
+  #[clap(action)]
   reference: String,
 
+  #[clap(action)]
   directory: PathBuf,
 
-  #[clap(long)]
+  #[clap(long, action)]
   insecure: Vec<String>,
 
-  #[clap(long, env = "OCI_USERNAME")]
+  #[clap(long, env = "OCI_USERNAME", action)]
   username: Option<String>,
 
-  #[clap(long, env = "OCI_PASSWORD")]
+  #[clap(long, env = "OCI_PASSWORD", action)]
   password: Option<String>,
 }
 

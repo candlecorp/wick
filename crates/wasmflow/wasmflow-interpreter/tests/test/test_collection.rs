@@ -14,6 +14,7 @@ use wasmflow_sdk::v1::{CollectionLink, Invocation};
 
 pub struct TestCollection(CollectionSignature);
 impl TestCollection {
+  #[allow(dead_code)]
   pub fn new() -> Self {
     let sig = serde_json::from_value(json!({
       "name":"test-collection",

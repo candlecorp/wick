@@ -85,7 +85,7 @@
 #![allow(unused_attributes)]
 // !!END_LINTS
 // Add exceptions here
-#![allow(clippy::trivially_copy_pass_by_ref, clippy::needless_borrow)]
+#![allow()]
 
 /// Error module for Logger.
 pub mod error;

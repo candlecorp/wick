@@ -85,7 +85,7 @@
 #![allow(unused_attributes)]
 // !!END_LINTS
 // Add exceptions here
-#![allow(missing_docs, clippy::expect_used)] //todo
+#![allow(missing_docs, clippy::expect_used)]
 
 pub(crate) mod commands;
 pub(crate) mod git_template;

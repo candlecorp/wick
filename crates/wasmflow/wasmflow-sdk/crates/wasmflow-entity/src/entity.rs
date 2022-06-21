@@ -76,7 +76,7 @@ impl FromStr for Entity {
     use url::Url;
     let url = Url::parse(s).map_err(|e| Error::General(e.to_string()))?;
     ensure!(url.scheme() == URL_SCHEME, Error::Scheme(url.scheme().to_owned()));
-    let host = url.host_str().ok_or_else(|| Error::Authority)?;
+    let host = url.host_str().ok_or(Error::Authority)?;
     let (id, kind) = host
       .split_once('.')
       .ok_or_else(|| Error::InvalidAuthority(host.to_owned()))?;

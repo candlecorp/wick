@@ -112,8 +112,8 @@ mod tests {
     Ok(())
   }
 
-  #[test_logger::test(tokio::test)]
-  async fn list() -> Result<()> {
+  #[test_logger::test]
+  fn list() -> Result<()> {
     let collection = Collection::new(Seed::unsafe_new(SEED));
     let signature = crate::components::get_signature();
     let components = signature.components.inner();

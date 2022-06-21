@@ -2,7 +2,7 @@ use std::process::Stdio;
 
 use tokio::io::{AsyncBufReadExt, BufReader};
 
-#[test_env_log::test(tokio::test)]
+#[test_log::test(tokio::test)]
 
 async fn basic_usage() -> Result<(), std::io::Error> {
   let mut child = tokio_test_bin::get_test_bin("test_bin")

@@ -5,7 +5,7 @@ use std::time::Duration;
 
 use wasmflow_sdk::v1 as sdk;
 use wasmflow_sdk::v1::packet::Packet;
-use wasmflow_sdk::v1::transport::{Serialized, TransportMap};
+use wasmflow_sdk::v1::transport::TransportMap;
 use wasmflow_sdk::v1::{types as wasmflow, Entity};
 
 use crate::error::RpcError;
@@ -269,19 +269,19 @@ impl TryFrom<sdk::transport::Serialized> for rpc::Serialized {
   type Error = RpcError;
   fn try_from(v: sdk::transport::Serialized) -> Result<Self> {
     let result = match v {
-      Serialized::MessagePack(v) => rpc::Serialized {
+      sdk::transport::Serialized::MessagePack(v) => rpc::Serialized {
         payload: Some(rpc::PayloadData {
           data: Some(rpc::payload_data::Data::Messagepack(v)),
         }),
       },
-      Serialized::Struct(v) => rpc::Serialized {
+      sdk::transport::Serialized::Struct(v) => rpc::Serialized {
         payload: Some(rpc::PayloadData {
           data: Some(rpc::payload_data::Data::Messagepack(
             sdk::codec::messagepack::serialize(&v).unwrap(),
           )),
         }),
       },
-      Serialized::Json(v) => rpc::Serialized {
+      sdk::transport::Serialized::Json(v) => rpc::Serialized {
         payload: Some(rpc::PayloadData {
           data: Some(rpc::payload_data::Data::Json(v)),
         }),
@@ -297,8 +297,8 @@ impl TryFrom<rpc::Serialized> for sdk::transport::Serialized {
     let data = v.payload.and_then(|v| v.data);
 
     match data {
-      Some(rpc::payload_data::Data::Messagepack(v)) => Ok(Serialized::MessagePack(v)),
-      Some(rpc::payload_data::Data::Json(v)) => Ok(Serialized::Json(v)),
+      Some(rpc::payload_data::Data::Messagepack(v)) => Ok(sdk::transport::Serialized::MessagePack(v)),
+      Some(rpc::payload_data::Data::Json(v)) => Ok(sdk::transport::Serialized::Json(v)),
       None => Err(RpcError::Internal(
         "Invalid RPC message, serialized data did not contain a payload",
       )),

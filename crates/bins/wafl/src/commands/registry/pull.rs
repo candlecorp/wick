@@ -66,7 +66,7 @@ async fn pull(reference: &Reference, opts: &Options, client: &mut Client, auth: 
   let (manifest, _) = client
     .pull_manifest(reference, auth)
     .await
-    .map_err(|e| OciError::OciDistribution(e))?;
+    .map_err(OciError::OciDistribution)?;
   let imagedata = client
     .pull(
       reference,

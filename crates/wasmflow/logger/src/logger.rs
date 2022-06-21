@@ -26,6 +26,7 @@ pub fn init_defaults() -> LoggingGuard {
 
 /// Initialize a logger or panic on failure
 pub fn init(opts: &LoggingOptions) -> LoggingGuard {
+  #![allow(clippy::trivially_copy_pass_by_ref, clippy::needless_borrow)]
   match try_init(&opts, &Environment::Prod) {
     Ok(guard) => guard,
     Err(e) => panic!("Error initializing logger: {}", e),
@@ -35,6 +36,7 @@ pub fn init(opts: &LoggingOptions) -> LoggingGuard {
 /// Initialize a logger for tests
 #[must_use]
 pub fn init_test(opts: &LoggingOptions) -> Option<LoggingGuard> {
+  #![allow(clippy::trivially_copy_pass_by_ref, clippy::needless_borrow)]
   match try_init(&opts, &Environment::Test) {
     Ok(guard) => Some(guard),
     Err(_) => None,

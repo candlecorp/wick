@@ -11,9 +11,9 @@ host = []
 guest = []
 
 [dependencies]
-wasmflow-rpc = { path = "../../wasmflow/wasmflow-rpc" }
+wasmflow-rpc = { path = "../wasmflow-rpc" }
+wasmflow-sdk = { path = "../wasmflow-sdk", features = ["v1"] }
 seeded-random = { path = "../../misc/seeded-random" }
-wasmflow-sdk = { path = "../../wasmflow/wasmflow-sdk", features = ["v1"] }
 
 tracing = "0.1"
 serde = { version = "1.0", features = ["derive"] }
@@ -25,7 +25,7 @@ parking_lot = "0.12"
 
 [dev-dependencies]
 wasmflow-stdlib = { path = ".", features = ["guest"] }
-logger = { path = "../../wasmflow/logger" }
+logger = { path = "../logger" }
 test-logger = { path = "../../misc/test-logger" }
 futures = "0.3"
 anyhow = { version = "1.0" }

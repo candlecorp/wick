@@ -80,10 +80,10 @@
   while_true,
   missing_docs
 )]
-#![allow(unused)]
+#![allow(unused_attributes)]
 // !!END_LINTS
 // Add exceptions here
-#![allow(missing_copy_implementations, missing_docs)]
+#![allow(missing_docs)]
 
 pub mod components;
 pub use components::*;
