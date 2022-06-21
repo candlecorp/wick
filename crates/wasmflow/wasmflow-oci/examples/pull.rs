@@ -6,21 +6,22 @@ use oci_distribution::{Client, Reference};
 
 #[derive(Parser)]
 struct Options {
+  #[clap(action)]
   reference: String,
 
-  #[clap(long)]
+  #[clap(long, action)]
   insecure: Vec<String>,
 
-  #[clap(long)]
+  #[clap(long, action)]
   os: Option<String>,
 
-  #[clap(long)]
+  #[clap(long, action)]
   arch: Option<String>,
 
-  #[clap(long, env = "OCI_USERNAME")]
+  #[clap(long, env = "OCI_USERNAME", action)]
   username: Option<String>,
 
-  #[clap(long, env = "OCI_PASSWORD")]
+  #[clap(long, env = "OCI_PASSWORD", action)]
   password: Option<String>,
 }
 

@@ -83,12 +83,6 @@
 #![allow(unused_attributes)]
 // !!END_LINTS
 // Add exceptions here
-#![allow(
-  clippy::future_not_send,
-  missing_docs, // TODO
-  clippy::expect_used, // because of tokio::main
-  clippy::semicolon_if_nothing_returned, // because of tokio::main
-  unused
-)]
+#![allow(missing_docs)]
 
 pub mod functions;

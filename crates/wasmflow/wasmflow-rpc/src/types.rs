@@ -64,13 +64,11 @@ pub struct DurationStatistics {
 
 impl RpcPacket {
   /// Converts a [RpcPacket] into a [Packet].
-  #[must_use]
   pub fn into_packet(self) -> Packet {
     self.into()
   }
 
   /// Converts a [RpcPacket] into a [MessageTransport].
-  #[must_use]
   pub fn into_transport(self) -> Packet {
     self.into()
   }

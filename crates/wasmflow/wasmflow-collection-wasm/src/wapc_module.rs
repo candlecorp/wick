@@ -4,8 +4,7 @@ use wasmflow_wascap::{Claims, CollectionClaims, Token};
 
 use crate::error::WasmCollectionError;
 
-#[derive(Derivative, Clone)]
-#[derivative(Debug)]
+#[derive(Clone, Debug)]
 pub struct WapcModule {
   pub token: Token<CollectionClaims>,
   pub bytes: Vec<u8>,

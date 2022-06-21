@@ -130,14 +130,14 @@ impl MessageTransport {
     let output = match self {
       MessageTransport::Success(success) => match success {
         Serialized::MessagePack(bytes) => handle_result_conversion(
-          wasmflow_codec::messagepack::deserialize::<serde_json::Value>(&bytes).map_err(|e| e.to_string()),
+          wasmflow_codec::messagepack::deserialize::<serde_json::Value>(bytes).map_err(|e| e.to_string()),
         ),
         Serialized::Struct(v) => handle_result_conversion(
           wasmflow_codec::raw::deserialize::<serde_json::Value>(v.clone()).map_err(|e| e.to_string()),
         ),
-        Serialized::Json(v) => handle_result_conversion(
-          wasmflow_codec::json::deserialize::<serde_json::Value>(&v).map_err(|e| e.to_string()),
-        ),
+        Serialized::Json(v) => {
+          handle_result_conversion(wasmflow_codec::json::deserialize::<serde_json::Value>(v).map_err(|e| e.to_string()))
+        }
       },
       MessageTransport::Failure(failure) => match &failure {
         Failure::Invalid => TransportJson {

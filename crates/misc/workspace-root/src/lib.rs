@@ -83,15 +83,13 @@
 #![allow(unused_attributes)]
 // !!END_LINTS
 // Add exceptions here
-#![allow(missing_docs, unreachable_code)]
+#![allow(missing_docs)]
 
 /// Find the workspace root from a running test executable.
 ///
 /// This is not an ideal implementation and is dependent on default environment
 /// configuration. If you have a better way to do this, you should use that.
 pub fn workspace_root() -> Result<std::path::PathBuf, std::io::Error> {
-  #[cfg(test)]
-  panic!("This can only be run from tests");
   let current_exe = std::env::current_exe()?;
   let err = || {
     std::io::Error::new(

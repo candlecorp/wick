@@ -17,7 +17,6 @@ wasmflow-wascap = { path = "../wasmflow-wascap" }
 wasmflow-loader = { path = "../wasmflow-loader" }
 wasmflow-sdk = { path = "../wasmflow-sdk", features = ["v1"] }
 
-derivative = "2.2"
 tokio = { version = "1", features = ["fs"] }
 parking_lot = "0.12"
 

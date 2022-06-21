@@ -85,7 +85,7 @@
 #![allow(unused_attributes)]
 // !!END_LINTS
 // Add exceptions here
-#![allow(unused_qualifications)]
+#![allow()]
 
 /// Error module.
 pub mod error;
@@ -102,7 +102,7 @@ use wasmflow_rpc::rpc::invocation_service_server::InvocationServiceServer;
 use wasmflow_rpc::SharedRpcHandler;
 use wasmflow_sdk::v1 as sdk;
 
-pub(crate) type Result<T> = std::result::Result<T, error::Error>;
+pub(crate) type Result<T> = std::result::Result<T, Error>;
 
 /// The crate's error type.
 pub use crate::error::Error;

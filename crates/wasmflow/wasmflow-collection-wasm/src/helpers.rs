@@ -15,7 +15,7 @@ pub async fn load_wasm_from_oci(
   allowed_insecure: &[String],
 ) -> Result<WapcModule, WasmCollectionError> {
   let actor_bytes = get_bytes_from_oci(path, allow_latest, allowed_insecure).await?;
-  Ok(WapcModule::from_slice(&actor_bytes)?)
+  WapcModule::from_slice(&actor_bytes)
 }
 
 pub async fn load_wasm(

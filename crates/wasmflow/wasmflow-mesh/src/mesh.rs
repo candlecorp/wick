@@ -216,7 +216,7 @@ impl Mesh {
     debug!(from = invocation.target.namespace(), to = mesh_id, "resolved namespace");
     invocation.target = Entity::component(mesh_id, invocation.target.name());
 
-    let msg = MeshRpcMessage::Invocation(invocation);
+    let msg = MeshRpcMessage::Invocation(Box::new(invocation));
     let payload = serialize(&msg).map_err(|e| MeshError::MessageSerialization(e.to_string()))?;
     let sub = self.nats.request(&topic, &payload).await?;
 
@@ -311,7 +311,7 @@ async fn handle_message(collection: &SharedRpcHandler, nats_msg: NatsMessage, de
     }
     MeshRpcMessage::Invocation(invocation) => {
       let target_url = invocation.target_url();
-      let result = collection.invoke(invocation).await;
+      let result = collection.invoke(*invocation).await;
 
       match result {
         Ok(mut stream) => {
@@ -353,7 +353,7 @@ fn rpc_message_topic(ns: &str) -> String {
 #[derive(Debug, serde::Deserialize, serde::Serialize)]
 pub enum MeshRpcMessage {
   #[serde(rename = "0")]
-  Invocation(Invocation),
+  Invocation(Box<Invocation>),
 
   #[serde(rename = "1")]
   List {
