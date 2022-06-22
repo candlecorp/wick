@@ -3,17 +3,16 @@ pub(crate) mod prelude {
   pub(crate) use pretty_assertions::assert_eq;
 
   pub(crate) use super::*;
-  pub(crate) use crate::dev::prelude::*;
 }
 
-use wasmflow_manifest::HostDefinition;
+use wasmflow_manifest::WasmflowManifest;
 use wasmflow_wascap::KeyPair;
 
 use crate::test::prelude::*;
-use crate::NetworkBuilder;
+use crate::{Network, NetworkBuilder};
 
 pub(crate) async fn init_network_from_yaml(path: &str) -> TestResult<(Network, uuid::Uuid)> {
-  let def = HostDefinition::load_from_file(path)?;
+  let def = WasmflowManifest::load_from_file(path)?;
   let kp = KeyPair::new_server();
 
   let network = NetworkBuilder::from_definition(def, &kp.seed().map_err(|_| crate::Error::NoSeed)?)?

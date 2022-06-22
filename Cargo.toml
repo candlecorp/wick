@@ -12,6 +12,7 @@ readme = "README.md"
 opt-level = 3
 debug = 0
 incremental = true
+codegen-units = 4
 
 [features]
 

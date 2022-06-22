@@ -89,12 +89,19 @@ message Component {
 
 message CollectionSignature {
   string name = 1;
+  CollectionFeatures features = 8;
   string version = 2;
   uint32 format = 6;
   map<string, Component> components = 3;
   map<string, TypeDefinition> types = 4;
   map<string, TypeDefinition> config = 5;
   repeated WellKnownSchema wellknown = 7;
+}
+
+message CollectionFeatures {
+  bool streaming = 1;
+  bool stateful = 2;
+  uint32 version = 3;
 }
 
 message TypeDefinition {

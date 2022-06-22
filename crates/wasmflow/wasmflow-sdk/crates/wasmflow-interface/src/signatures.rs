@@ -27,6 +27,64 @@ impl ComponentSignature {
       ..Default::default()
     }
   }
+
+  /// Add an input port.
+  pub fn add_input(mut self, name: impl AsRef<str>, input_type: TypeSignature) -> Self {
+    self.inputs.insert(name, input_type);
+    self
+  }
+
+  /// Add an input port.
+  pub fn add_output(mut self, name: impl AsRef<str>, input_type: TypeSignature) -> Self {
+    self.outputs.insert(name, input_type);
+    self
+  }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, serde_repr::Deserialize_repr, serde_repr::Serialize_repr)]
+#[must_use]
+#[repr(u32)]
+/// The umbrella version of the collection.
+pub enum CollectionVersion {
+  /// Version 0 Wasmflow collections.
+  V0 = 0,
+}
+
+impl Default for CollectionVersion {
+  fn default() -> Self {
+    Self::V0
+  }
+}
+
+impl From<CollectionVersion> for u32 {
+  fn from(v: CollectionVersion) -> Self {
+    match v {
+      CollectionVersion::V0 => 0,
+    }
+  }
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Copy)]
+#[must_use]
+/// The Wasmflow features this collection supports.
+pub struct CollectionFeatures {
+  /// Whether or not this collection's components accept streaming input or produce streaming output.
+  pub streaming: bool,
+  /// Whether or not this collection has a persistent state or context.
+  pub stateful: bool,
+  /// The version of this component.
+  pub version: CollectionVersion,
+}
+
+impl CollectionFeatures {
+  /// Quickly create a v0 feature set.
+  pub fn v0(stateful: bool, streaming: bool) -> Self {
+    Self {
+      streaming,
+      stateful,
+      version: CollectionVersion::V0,
+    }
+  }
 }
 
 /// Signature for Collections.
@@ -35,6 +93,8 @@ impl ComponentSignature {
 pub struct CollectionSignature {
   /// Name of the collection.
   pub name: Option<String>,
+  /// Component implementation version.
+  pub features: CollectionFeatures,
   /// Schema format version.
   pub format: u32,
   /// Version of the schema.
@@ -63,8 +123,32 @@ impl CollectionSignature {
 
   #[must_use]
   /// Get the [CollectionSignature] for the requested component.
-  pub fn get_component<T: AsRef<str>>(&self, field: T) -> Option<&ComponentSignature> {
-    self.components.get(field.as_ref())
+  pub fn get_component(&self, field: &str) -> Option<&ComponentSignature> {
+    self.components.get(field)
+  }
+
+  /// Add a [ComponentSignature] to the collection.
+  pub fn add_component(mut self, signature: ComponentSignature) -> Self {
+    self.components.insert(signature.name.clone(), signature);
+    self
+  }
+
+  /// Set the version of the [CollectionSignature].
+  pub fn version(mut self, version: impl AsRef<str>) -> Self {
+    self.version = version.as_ref().to_owned();
+    self
+  }
+
+  /// Set the format of the [CollectionSignature].
+  pub fn format(mut self, format: u32) -> Self {
+    self.format = format;
+    self
+  }
+
+  /// Set the features of the [CollectionSignature].
+  pub fn features(mut self, features: CollectionFeatures) -> Self {
+    self.features = features;
+    self
   }
 }
 
@@ -242,7 +326,7 @@ pub enum TypeSignature {
   Struct,
 }
 #[derive(Debug)]
-/// Error returned when attempting to convert an invalid string into a [TypeSignature].
+/// Error returned when attempting to convert an invalid source into a Wasmflow type.
 pub struct ParseError(String);
 impl Error for ParseError {}
 impl std::fmt::Display for ParseError {

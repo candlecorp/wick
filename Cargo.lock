@@ -442,7 +442,6 @@ name = "cli-common"
 version = "0.4.0"
 dependencies = [
  "anyhow",
- "clap 3.2.2",
  "serde_json",
  "tokio-stream",
  "tracing",
@@ -3016,6 +3015,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "serde_repr"
+version = "0.1.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a2ad84e47328a31223de7fed7a4f5087f2d6ddfe586cf3ca25b7a165bc0a5aed"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "serde_urlencoded"
 version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4038,12 +4048,9 @@ dependencies = [
  "tracing",
  "trycmd",
  "wasmflow-collection-cli",
- "wasmflow-host",
- "wasmflow-manifest",
  "wasmflow-oci",
  "wasmflow-par",
  "wasmflow-rpc",
- "wasmflow-runtime",
  "wasmflow-sdk",
  "wasmflow-wascap",
 ]
@@ -4445,6 +4452,7 @@ dependencies = [
  "wapc",
  "wapc-pool",
  "wasmflow-loader",
+ "wasmflow-manifest",
  "wasmflow-rpc",
  "wasmflow-sdk",
  "wasmflow-wascap",
@@ -4516,6 +4524,7 @@ dependencies = [
  "pretty_assertions",
  "serde",
  "serde_json",
+ "serde_repr",
  "test-log",
  "wasmflow-macros",
 ]
@@ -4551,6 +4560,7 @@ dependencies = [
  "tracing-futures",
  "uuid",
  "wasmflow-manifest",
+ "wasmflow-parser",
  "wasmflow-schematic-graph",
  "wasmflow-sdk",
 ]
@@ -4635,7 +4645,6 @@ name = "wasmflow-manifest"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "lazy_static",
  "logger",
  "num-traits",
  "pretty_assertions",
@@ -4649,6 +4658,7 @@ dependencies = [
  "test-logger",
  "thiserror",
  "tracing",
+ "wasmflow-parser",
  "wasmflow-sdk",
 ]
 
@@ -4740,6 +4750,21 @@ dependencies = [
  "tracing",
  "wasmflow-sdk",
  "wasmflow-wascap",
+]
+
+[[package]]
+name = "wasmflow-parser"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "lazy_static",
+ "logger",
+ "pretty_assertions",
+ "regex",
+ "serde",
+ "serde_json",
+ "test-logger",
+ "thiserror",
 ]
 
 [[package]]
@@ -4864,7 +4889,6 @@ dependencies = [
  "async-trait",
  "futures",
  "logger",
- "parking_lot 0.12.0",
  "seeded-random",
  "serde",
  "test-logger",

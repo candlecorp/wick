@@ -1,0 +1,21 @@
+---
+version: 0
+network:
+  collections:
+    - namespace: wasi
+      kind: WaPC
+      reference: ../../integration/test-wasi-component/build/test_wasi_component_s.wasm
+      data:
+        wasi:
+          dirs:
+            "/": "$TEST_TEMPDIR"
+  schematics:
+    - name: wasi_component
+      collections:
+        - wasi
+      instances:
+        read:
+          id: wasi::fs-read
+      connections:
+        - <> => read[filename]
+        - read[contents] => <>

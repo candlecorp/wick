@@ -1,13 +1,13 @@
 use anyhow::Result;
 use wasmflow_host::HostBuilder;
-use wasmflow_manifest::host_definition::HostDefinition;
+use wasmflow_manifest::WasmflowManifest;
 
 use crate::utils::merge_config;
 
 pub(crate) async fn handle_command(opts: super::ServeCommand, bytes: Vec<u8>) -> Result<()> {
-  let manifest = HostDefinition::load_from_bytes(Some(opts.location), &bytes)?;
+  let manifest = WasmflowManifest::load_from_bytes(Some(opts.location), &bytes)?;
 
-  let config = merge_config(manifest, &opts.fetch, Some(opts.cli));
+  let config = merge_config(&manifest, &opts.fetch, Some(opts.cli));
 
   let host_builder = HostBuilder::from_definition(config);
 

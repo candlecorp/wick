@@ -1,0 +1,52 @@
+
+{{#each fields}}
+  {{#if default}}
+#[allow(non_snake_case)]
+fn {{upperCase (snakeCase ../name.value)}}_{{upperCase name.value}}() -> {{> expand-type type }} {
+  {{> expand-value default}}
+}
+  {{/if}}
+{{/each}}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Copy, PartialEq)]
+#[serde(deny_unknown_fields)]
+{{#if description}}
+/// {{{description.value}}}
+{{/if}}
+pub enum {{name.value}} {
+  {{#each values}}
+    {{#if description}}
+    /// {{description.value}}
+    {{/if}}
+    {{#withAnnotation "deprecated"}}
+    #[deprecated()]
+    {{/withAnnotation}}
+    {{name.value}} = {{index.value}},
+  {{/each}}
+}
+
+impl Default for {{name.value}} {
+  fn default() -> Self {
+    Self::from_u16(0).unwrap()
+  }
+}
+
+impl FromPrimitive for {{name.value}} {
+  fn from_i64(n: i64) -> Option<Self> {
+    Some(match n {
+    {{#each values}}
+      {{index.value}} => Self::{{name.value}},
+    {{/each}}
+      _ => {return None;}
+    })
+  }
+
+  fn from_u64(n: u64) -> Option<Self> {
+    Some(match n {
+    {{#each values}}
+      {{index.value}} => Self::{{name.value}},
+    {{/each}}
+      _ => {return None;}
+    })
+  }
+}

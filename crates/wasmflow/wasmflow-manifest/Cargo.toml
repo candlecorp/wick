@@ -7,8 +7,8 @@ version = "0.1.0"
 
 [dependencies]
 wasmflow-sdk = { path = "../wasmflow-sdk", features = ["v1"] }
+wasmflow-parser = { path = "../wasmflow-parser" }
 
-lazy_static = "1.4"
 num-traits = "0.2"
 regex = "1"
 serde = "1.0"

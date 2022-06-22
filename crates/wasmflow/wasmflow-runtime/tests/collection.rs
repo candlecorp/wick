@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use runtime_testutils::*;
 use wasmflow_invocation_server::{bind_new_socket, make_rpc_server};
-use wasmflow_runtime::prelude::TransportWrapper;
+use wasmflow_sdk::v1::transport::TransportWrapper;
 use wasmflow_sdk::v1::Entity;
 type Result<T> = anyhow::Result<T, anyhow::Error>;
 use maplit::hashmap;
@@ -11,7 +11,7 @@ use pretty_assertions::assert_eq;
 use wasmflow_sdk::v1::Invocation;
 #[test_logger::test(tokio::test)]
 async fn native_component() -> Result<()> {
-  let (network, _) = init_network_from_yaml("./manifests/v0/collections/native-component.yaml").await?;
+  let (network, _) = init_network_from_yaml("./manifests/v0/collections/native-component.wafl").await?;
 
   let data = hashmap! {
       "left" => 42,
@@ -42,7 +42,7 @@ async fn native_component() -> Result<()> {
 
 #[test_logger::test(tokio::test)]
 async fn global_collections() -> Result<()> {
-  let (network, _) = init_network_from_yaml("./manifests/v0/global-collection-def.yaml").await?;
+  let (network, _) = init_network_from_yaml("./manifests/v0/global-collection-def.wafl").await?;
 
   let data = hashmap! {
       "input" => "some input",
@@ -87,7 +87,7 @@ async fn global_collections() -> Result<()> {
 
 #[test_logger::test(tokio::test)]
 async fn subnetworks() -> Result<()> {
-  let (network, _) = init_network_from_yaml("./manifests/v0/sub-network-parent.yaml").await?;
+  let (network, _) = init_network_from_yaml("./manifests/v0/sub-network-parent.wafl").await?;
 
   let data = hashmap! {
       "input" => "some input",
@@ -119,7 +119,7 @@ async fn grpc() -> Result<()> {
   let _ = make_rpc_server(socket, Arc::new(test_native_collection::Collection::default()));
   env::set_var("TEST_PORT", port.to_string());
 
-  let (network, _) = init_network_from_yaml("./manifests/v0/collections/grpc.yaml").await?;
+  let (network, _) = init_network_from_yaml("./manifests/v0/collections/grpc.wafl").await?;
   let user_data = "Hello world";
 
   let data = hashmap! {
@@ -148,7 +148,7 @@ async fn grpc() -> Result<()> {
 #[test_logger::test(tokio::test)]
 #[ignore] // Need to automate the creation of par bundles
 async fn par() -> Result<()> {
-  let (network, _) = init_network_from_yaml("./manifests/v0/collections/par.yaml").await?;
+  let (network, _) = init_network_from_yaml("./manifests/v0/collections/par.wafl").await?;
 
   let data = hashmap! {
       "left" => 32,

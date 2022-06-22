@@ -1,0 +1,12 @@
+
+{{#each definitions}}
+  {{#switch kind}}
+    {{#case "TypeDefinition"}}{{> type-definition}}{{/case}}
+    {{#case "NamespaceDefinition"}}{{/case}}
+    {{#case "EnumDefinition"}}{{> enum-definition}}{{/case}}
+    {{#default}}
+    // unhandled
+    panic!()
+    {{/default}}
+  {{/switch}}
+{{/each}}

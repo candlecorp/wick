@@ -7,12 +7,11 @@ use seeded_random::Seed;
 use test::{JsonWriter, TestCollection};
 use wasmflow_interpreter::graph::from_def;
 use wasmflow_interpreter::{HandlerMap, Interpreter, InterpreterOptions, NamespaceHandler};
-use wasmflow_manifest::Loadable;
 use wasmflow_sdk::v1::packet::PacketMap;
 use wasmflow_sdk::v1::{Entity, Invocation};
 
-fn load<T: AsRef<Path>>(path: T) -> Result<wasmflow_manifest::HostManifest> {
-  Ok(wasmflow_manifest::HostManifest::load_from_file(path.as_ref())?)
+fn load<T: AsRef<Path>>(path: T) -> Result<wasmflow_manifest::WasmflowManifest> {
+  Ok(wasmflow_manifest::WasmflowManifest::load_from_file(path.as_ref())?)
 }
 
 const OPTIONS: Option<InterpreterOptions> = Some(InterpreterOptions {
@@ -24,8 +23,8 @@ const OPTIONS: Option<InterpreterOptions> = Some(InterpreterOptions {
 
 #[test_logger::test(tokio::test)]
 async fn test_senders() -> Result<()> {
-  let manifest = load("./tests/manifests/v0/core/senders.yaml")?;
-  let network = from_def(&manifest.network().try_into()?)?;
+  let manifest = load("./tests/manifests/v0/core/senders.wafl")?;
+  let network = from_def(&manifest)?;
   let collections = HandlerMap::new(vec![NamespaceHandler::new("test", Box::new(TestCollection::new()))]);
   let inputs = PacketMap::default();
 
@@ -47,8 +46,8 @@ async fn test_senders() -> Result<()> {
 
 #[test_logger::test(tokio::test)]
 async fn test_merge() -> Result<()> {
-  let manifest = load("./tests/manifests/v0/core/merge.yaml")?;
-  let network = from_def(&manifest.network().try_into()?)?;
+  let manifest = load("./tests/manifests/v0/core/merge.wafl")?;
+  let network = from_def(&manifest)?;
   let collections = HandlerMap::new(vec![NamespaceHandler::new("test", Box::new(TestCollection::new()))]);
   let mut inputs = PacketMap::default();
   inputs.insert("schem_one", "first value");

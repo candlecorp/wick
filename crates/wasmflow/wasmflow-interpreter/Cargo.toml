@@ -9,6 +9,7 @@ edition = "2021"
 wasmflow-sdk = { path = "../wasmflow-sdk", features = ["v1"] }
 wasmflow-schematic-graph = { path = "../wasmflow-schematic-graph" }
 wasmflow-manifest = { path = "../wasmflow-manifest" }
+wasmflow-parser = { path = "../wasmflow-parser" }
 seeded-random = { path = "../../misc/seeded-random" }
 
 thiserror = "1.0"

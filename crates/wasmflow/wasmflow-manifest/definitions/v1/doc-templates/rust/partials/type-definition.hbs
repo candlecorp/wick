@@ -1,0 +1,30 @@
+
+<h2 class="definition-name type-name">
+  <a name="{{name.value}}">{{name.value}}</a>
+</h2>
+
+{{#if description~}}
+<span class="description type-description">{{{description.value}}}</span>
+{{~/if}}
+
+<div class=fields>
+{{#each fields}}
+<div class=field>
+
+<h3 class=field-name>
+  <a name="{{name.value}}">{{name.value}}</a>
+</h3>
+
+{{#if description}}
+<span class="description field-description">{{{description.value}}}</span>
+{{/if}}
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>{{> expand-type type}}</span></span></li>
+{{#withAnnotation "required"}}<li><span class="annotation field-note">Required</span></li>{{/withAnnotation}}
+{{#withAnnotation "deprecated"}}<li><span class="annotation field-note">Deprecated</span></li>{{/withAnnotation}}
+</ul>
+</div>
+{{~/each~}}
+</div>

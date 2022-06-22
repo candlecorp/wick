@@ -10,7 +10,6 @@ license = "BSD-3-Clause"
 
 
 [dependencies]
-clap = { version = "3.0", features = ["derive", "env"] }
 wasmflow-sdk = { path = "../../wasmflow/wasmflow-sdk", features = ["v1"] }
 
 tokio-stream = "0.1.8"

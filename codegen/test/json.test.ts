@@ -26,6 +26,7 @@ describe('json command', function () {
       root,
       schema_dir: root,
       silent: false,
+      stateful: false,
       output: filepath,
     });
     const contents = fs.readFileSync(filepath, 'utf-8');
@@ -36,6 +37,7 @@ describe('json command', function () {
       version: '',
       format: 1,
       config: {},
+      features: { stateful: false, streaming: false, version: 0 },
       wellknown: [],
       types: {
         HttpRequest: {

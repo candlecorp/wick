@@ -50,9 +50,6 @@ pub enum WasmCollectionError {
 
   #[error("Component '{0}' not found. Valid components are: {}", .1.join(", "))]
   ComponentNotFound(String, Vec<String>),
-
-  #[error(transparent)]
-  Wasi(#[from] crate::wasi::error::WasiConfigError),
 }
 
 impl From<serde_json::error::Error> for WasmCollectionError {

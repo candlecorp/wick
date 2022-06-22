@@ -1,0 +1,20 @@
+
+{
+  "v0": {
+  {{~#each definitions~}}
+    {{~#switch kind~}}
+      {{#case "TypeDefinition"}}{{> schema-definition-type}}{{/case}}
+      {{#case "NamespaceDefinition"}}{{/case}}
+      {{#case "EnumDefinition"}}{{> schema-definition-enum}}{{/case}}
+      {{~#case "ImportDefinition"}}
+        {{~#import from.value}}{{~> module ~}}{{~/import~}}
+      {{~/case~}}
+      {{~#default~}}
+      // UNHANDLED
+        {{panic .}}
+      {{~/default~}}
+    {{~/switch~}}
+  {{~/each~}}
+  }
+}
+

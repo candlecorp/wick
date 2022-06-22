@@ -97,6 +97,11 @@ mod tests {
     assert_eq!(response.len(), 1);
     let expected = CollectionSignature {
       format: 1,
+      features: CollectionFeatures {
+        streaming: false,
+        stateful: true,
+        version: CollectionVersion::V0,
+      },
       version: "0.1.0".to_owned(),
       wellknown: vec![],
       name: Some("test-native-collection".to_owned()),

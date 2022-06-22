@@ -3,7 +3,7 @@ use std::time::Duration;
 
 use seeded_random::{Random, Seed};
 use uuid::Uuid;
-use wasmflow_manifest::HostDefinition;
+use wasmflow_manifest::WasmflowManifest;
 use wasmflow_mesh::Mesh;
 use wasmflow_wascap::KeyPair;
 
@@ -24,7 +24,7 @@ pub struct Network {
 #[derive(Debug)]
 #[must_use]
 pub struct NetworkInit {
-  definition: HostDefinition,
+  definition: WasmflowManifest,
   allow_latest: bool,
   allowed_insecure: Vec<String>,
   kp: KeyPair,
@@ -35,7 +35,7 @@ pub struct NetworkInit {
 }
 
 impl Network {
-  pub async fn new_default(definition: HostDefinition, seed: &str) -> Result<Self> {
+  pub async fn new_default(definition: WasmflowManifest, seed: &str) -> Result<Self> {
     NetworkBuilder::from_definition(definition, seed)?.build().await
   }
 
@@ -47,7 +47,7 @@ impl Network {
     let init = Initialize {
       id: rng.uuid(),
       mesh: config.mesh.clone(),
-      manifest: config.definition.clone(),
+      manifest: config.definition,
       allowed_insecure: config.allowed_insecure.clone(),
       allow_latest: config.allow_latest,
       timeout: config.timeout,
@@ -108,7 +108,7 @@ impl Network {
 pub struct NetworkBuilder {
   allow_latest: bool,
   allowed_insecure: Vec<String>,
-  definition: HostDefinition,
+  definition: WasmflowManifest,
   kp: KeyPair,
   mesh: Option<Arc<Mesh>>,
   timeout: Duration,
@@ -118,11 +118,11 @@ pub struct NetworkBuilder {
 
 impl NetworkBuilder {
   /// Creates a new network builder from a [NetworkDefinition]
-  pub fn from_definition(definition: HostDefinition, seed: &str) -> Result<Self> {
+  pub fn from_definition(definition: WasmflowManifest, seed: &str) -> Result<Self> {
     let kp = keypair_from_seed(seed)?;
     Ok(Self {
-      allow_latest: definition.host.allow_latest,
-      allowed_insecure: definition.host.insecure_registries.clone(),
+      allow_latest: definition.allow_latest(),
+      allowed_insecure: definition.insecure_registries().clone(),
       definition,
       timeout: Duration::from_secs(5),
       mesh: None,

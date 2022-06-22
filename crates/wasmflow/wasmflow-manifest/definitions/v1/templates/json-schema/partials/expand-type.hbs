@@ -1,0 +1,39 @@
+{{#switch kind~}}
+  {{#case "MapType"}}
+  "type":"object",
+  "patternProperties": {
+    "[a-zA-Z0-9][a-zA-Z0-9_]*" : { {{> expand-type valueType }} }
+  }
+  {{/case}}
+  {{#case "ListType"}}
+  "type":"array",
+  "items": {
+    {{> expand-type type }}
+  }
+  {{/case}}
+  {{#case "Optional"}}
+    "required" : false,
+    {{> expand-type type }}
+    {{#ifCond type.name.value "==" "ConnectionTargetDefinition"}}
+      #[serde(deserialize_with = "connection_target_shortform")]
+    {{/ifCond}}
+  {{/case}}
+  {{#case "Named"~}}
+    {{#switch name.value~}}
+      {{#case "struct"}}"type":"object"{{/case}}
+      {{#case "string"}}"type":"string"{{/case}}
+      {{#case "i8"}}"type":"number"{{/case}}
+      {{#case "u8"}}"type":"number"{{/case}}
+      {{#case "i16"}}"type":"number"{{/case}}
+      {{#case "u16"}}"type":"number"{{/case}}
+      {{#case "i32"}}"type":"number"{{/case}}
+      {{#case "u32"}}"type":"number"{{/case}}
+      {{#case "i64"}}"type":"number"{{/case}}
+      {{#case "u64"}}"type":"number"{{/case}}
+      {{#case "f32"}}"type":"number"{{/case}}
+      {{#case "f64"}}"type":"number"{{/case}}
+      {{#case "bool"}}"type":"boolean"{{/case}}
+      {{#default}}"$ref":"#/$defs/v1/{{name.value}}"{{/default}}
+    {{~/switch}}
+  {{~/case}}
+{{~/switch}}

@@ -2,6 +2,7 @@ use futures::future::BoxFuture;
 use serde_json::Value;
 use wasmflow_sdk::v1::transport::TransportStream;
 use wasmflow_sdk::v1::types::{
+  CollectionFeatures,
   CollectionSignature,
   ComponentSignature,
   FieldMap,
@@ -26,21 +27,11 @@ pub(crate) struct CoreCollection {
 
 impl CoreCollection {
   pub(crate) fn new(graph: &Network) -> Self {
-    let mut signature: CollectionSignature = serde_json::from_value(serde_json::json!({
-      "name":NS_CORE,
-      "format": 1u8,
-      "version": "0.0.0",
-      "components" : {
-        CORE_ID_SENDER:{
-          "name": CORE_ID_SENDER,
-          "inputs": {},
-          "outputs": {
-            "output": {"type":"value"}
-          }
-        }
-      }
-    }))
-    .unwrap();
+    let mut signature = CollectionSignature::new(NS_CORE)
+      .format(1)
+      .version("0.0.0")
+      .features(CollectionFeatures::v0(false, false))
+      .add_component(ComponentSignature::new(CORE_ID_SENDER).add_output("output", TypeSignature::Value));
 
     for schematic in graph.schematics() {
       for component in schematic.components() {

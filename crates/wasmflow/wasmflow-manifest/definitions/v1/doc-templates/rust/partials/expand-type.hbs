@@ -1,0 +1,32 @@
+
+{{~#switch kind ~}}
+  {{~#case "Named"~}}
+    {{~#switch name.value~}}
+      {{~#case "string"}}{{~name.value~}}{{/case~}}
+      {{~#case "i8"}}{{~name.value~}}{{/case~}}
+      {{~#case "u8"}}{{~name.value~}}{{/case~}}
+      {{~#case "i16"}}{{~name.value~}}{{/case~}}
+      {{~#case "u16"}}{{~name.value~}}{{/case~}}
+      {{~#case "i32"}}{{~name.value~}}{{/case~}}
+      {{~#case "u32"}}{{~name.value~}}{{/case~}}
+      {{~#case "i64"}}{{~name.value~}}{{/case~}}
+      {{~#case "u64"}}{{~name.value~}}{{/case~}}
+      {{~#case "f32"}}{{~name.value~}}{{/case~}}
+      {{~#case "f64"}}{{~name.value~}}{{/case~}}
+      {{~#case "bool"}}{{~name.value~}}{{/case~}}
+      {{~#default~}}<a href="#{{name.value}}">{{~name.value~}}</a>{{~/default~}}
+    {{~/switch~}}
+  {{~/case~}}
+  {{~#case "MapType"~}}
+    Map<{{> expand-type keyType~}}, {{~> expand-type valueType~}}>
+  {{~/case~}}
+  {{~#case "ListType"~}}
+    {{> expand-type type~}}[]
+  {{~/case~}}
+  {{~#case "Optional"~}}
+    {{~>expand-type type~}}<span class=optional>(Optional)</span>
+  {{~/case~}}
+  {{~#default~}}
+  unknown
+  {{~/default~}}
+{{~/switch~}}

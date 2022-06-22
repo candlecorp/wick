@@ -41,12 +41,19 @@ export type TypeSignature = SimpleType | StructType | RefType | ListType | Optio
 
 export interface CollectionSignature {
   name: string;
+  features: CollectionFeatures;
   format: number;
   version: string;
   wellknown?: WellKnownSchema[];
   types: Record<string, RootType>;
   components: Record<string, ComponentSignature>;
   config?: Record<string, StructSignature>;
+}
+
+export interface CollectionFeatures {
+  streaming: boolean;
+  stateful: boolean;
+  version: number;
 }
 
 export interface WellKnownSchema {

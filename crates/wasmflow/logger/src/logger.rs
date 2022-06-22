@@ -44,7 +44,7 @@ pub fn init_test(opts: &LoggingOptions) -> Option<LoggingGuard> {
 }
 
 fn hushed_modules(module: &str) -> bool {
-  ["h2", "tokio_util", "tower", "tonic", "hyper"].contains(&module)
+  ["h2", "tokio_util", "tower", "tonic", "hyper", "wasi_common"].contains(&module)
 }
 
 fn silly_modules(module: &str) -> bool {
