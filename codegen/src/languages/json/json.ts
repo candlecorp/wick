@@ -37,12 +37,19 @@ export const builder = (yargs: yargs.Argv): yargs.Argv => {
       type: 'string',
       description: 'Path to directory containing Apex schema files',
     })
-    .options(outputOpts(parserOpts({})))
+    .options(
+      outputOpts(
+        parserOpts({
+          stateful: { type: 'boolean' },
+        }),
+      ),
+    )
     .example(`${TYPE} schemas/`, 'Prints JSON-ified schema to STDOUT');
 };
 
 export interface Arguments extends CommonOutputOptions, CommonParserOptions {
   name: string;
+  stateful: boolean;
   schema_dir: string;
 }
 
@@ -56,7 +63,7 @@ export async function handler(args: ArgumentsCamelCase<Arguments>): Promise<void
 
   const version = (await cargoVersion(process.cwd())) || '';
 
-  const collectionSignature = await processDir(args.name, args.schema_dir);
+  const collectionSignature = await processDir(args.name, args.schema_dir, { stateful: args.stateful });
 
   collectionSignature.version = version;
 

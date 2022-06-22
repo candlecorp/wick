@@ -12,10 +12,11 @@ wasmtime = ["wasmtime-provider"]
 
 [dependencies]
 wasmflow-rpc = { path = "../wasmflow-rpc" }
-seeded-random = { path = "../../misc/seeded-random" }
 wasmflow-wascap = { path = "../wasmflow-wascap" }
 wasmflow-loader = { path = "../wasmflow-loader" }
 wasmflow-sdk = { path = "../wasmflow-sdk", features = ["v1"] }
+wasmflow-manifest = { path = "../wasmflow-manifest" }
+seeded-random = { path = "../../misc/seeded-random" }
 
 tokio = { version = "1", features = ["fs"] }
 parking_lot = "0.12"

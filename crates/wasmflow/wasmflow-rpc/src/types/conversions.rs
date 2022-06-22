@@ -57,6 +57,11 @@ impl TryFrom<rpc::CollectionSignature> for wasmflow::CollectionSignature {
   fn try_from(v: rpc::CollectionSignature) -> Result<Self> {
     Ok(Self {
       name: Some(v.name),
+      features: v
+        .features
+        .map(|v| v.try_into())
+        .transpose()?
+        .ok_or(RpcError::MissingFeatures)?,
       version: v.version,
       format: v.format,
       wellknown: v
@@ -73,6 +78,36 @@ impl TryFrom<rpc::CollectionSignature> for wasmflow::CollectionSignature {
       components: to_componentmap(v.components)?,
       types: to_typemap(v.types)?,
       config: to_typemap(v.config)?,
+    })
+  }
+}
+
+impl TryFrom<rpc::CollectionFeatures> for wasmflow::CollectionFeatures {
+  type Error = RpcError;
+  fn try_from(v: rpc::CollectionFeatures) -> Result<Self> {
+    Ok(Self {
+      streaming: v.streaming,
+      stateful: v.stateful,
+      version: match v.version {
+        0 => wasmflow::CollectionVersion::V0,
+        _ => {
+          return Err(RpcError::CollectionError(format!(
+            "Invalid collection version ({}) for this runtime",
+            v.version
+          )))
+        }
+      },
+    })
+  }
+}
+
+impl TryFrom<wasmflow::CollectionFeatures> for rpc::CollectionFeatures {
+  type Error = RpcError;
+  fn try_from(v: wasmflow::CollectionFeatures) -> Result<Self> {
+    Ok(Self {
+      streaming: v.streaming,
+      stateful: v.stateful,
+      version: v.version.into(),
     })
   }
 }
@@ -106,6 +141,7 @@ impl TryFrom<wasmflow::CollectionSignature> for rpc::CollectionSignature {
   fn try_from(v: wasmflow::CollectionSignature) -> Result<Self> {
     Ok(Self {
       name: v.name.unwrap_or_default(),
+      features: Some(v.features.try_into()?),
       version: v.version,
       format: v.format,
       wellknown: v

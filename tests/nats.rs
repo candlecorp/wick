@@ -20,7 +20,7 @@ mod test {
       "network-two",
       &[
         "serve",
-        "./tests/manifests/mesh-two.yaml",
+        "./tests/manifests/mesh-two.wafl",
         "--id=network-two",
         "--trace",
         &nats_arg,
@@ -33,7 +33,7 @@ mod test {
       "network-one",
       &[
         "serve",
-        "./tests/manifests/mesh-one.yaml",
+        "./tests/manifests/mesh-one.wafl",
         &nats_arg,
         "--id=network-one",
         "--trace",

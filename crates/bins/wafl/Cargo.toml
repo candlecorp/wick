@@ -11,10 +11,7 @@ license = "BSD-3-Clause"
 cli-common = { path = "../cli-common" }
 wasmflow-sdk = { path = "../../wasmflow/wasmflow-sdk", features = ["v1"] }
 wasmflow-par = { path = "../../wasmflow/wasmflow-par" }
-wasmflow-runtime = { path = "../../wasmflow/wasmflow-runtime" }
-wasmflow-host = { path = "../../wasmflow/wasmflow-host" }
 wasmflow-collection-cli = { path = "../../wasmflow/wasmflow-collection-cli" }
-wasmflow-manifest = { path = "../../wasmflow/wasmflow-manifest" }
 wasmflow-rpc = { path = "../../wasmflow/wasmflow-rpc", features = ["client"] }
 wasmflow-wascap = { path = "../../wasmflow/wasmflow-wascap" }
 logger = { path = "../../wasmflow/logger" }

@@ -2,7 +2,7 @@ use futures::future::BoxFuture;
 use serde_json::Value;
 use wasmflow_schematic_graph::{SCHEMATIC_INPUT, SCHEMATIC_OUTPUT};
 use wasmflow_sdk::v1::transport::TransportStream;
-use wasmflow_sdk::v1::types::CollectionSignature;
+use wasmflow_sdk::v1::types::{CollectionFeatures, CollectionSignature, ComponentSignature, TypeSignature};
 use wasmflow_sdk::v1::Invocation;
 
 use crate::constants::*;
@@ -17,36 +17,19 @@ pub(crate) struct InternalCollection {
 
 impl Default for InternalCollection {
   fn default() -> Self {
-    Self {
-      signature: serde_json::from_value(serde_json::json!({
-        "name": NS_INTERNAL,
-        "format": 1,
-        "version": "0.0.0",
-        "components": {
-          INTERNAL_ID_INHERENT : {
-            "name":INTERNAL_ID_INHERENT,
-            "inputs": {
-              "seed": {
-                "type":"u64",
-              },
-              "timestamp": {
-                "type":"u64",
-              },
-            },
-            "outputs": {
-              "seed": {
-                "type":"u64",
-              },
-              "timestamp": {
-                "type":"u64",
-              },
-            }
+    let signature = CollectionSignature::new(NS_INTERNAL)
+      .format(1)
+      .version("0.0.0")
+      .features(CollectionFeatures::v0(false, false))
+      .add_component(
+        ComponentSignature::new(INTERNAL_ID_INHERENT)
+          .add_input("seed", TypeSignature::U64)
+          .add_input("timestamp", TypeSignature::U64)
+          .add_output("seed", TypeSignature::U64)
+          .add_output("timestamp", TypeSignature::U64),
+      );
 
-          }
-        }
-      }))
-      .unwrap(),
-    }
+    Self { signature }
   }
 }
 

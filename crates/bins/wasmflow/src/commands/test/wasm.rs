@@ -9,7 +9,7 @@ use wasmflow_test::TestSuite;
 pub(crate) async fn handle_command(opts: super::TestCommand, bytes: Vec<u8>) -> Result<()> {
   let component = WapcModule::from_slice(&bytes)?;
 
-  let collection = Collection::try_load(&component, 1, None, Some((&opts.wasi).into()), None)?;
+  let collection = Collection::try_load(&component, 1, None, Some((opts.wasi).into()), None)?;
 
   let mut suite = TestSuite::try_from_file(opts.data_path.clone())?;
 

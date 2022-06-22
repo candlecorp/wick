@@ -2,7 +2,7 @@
   "name": "blog",
   "format": 1,
   "version": "1",
-
+  "features": { "stateful": false, "streaming": false, "version": 0 },
   "types": {
     "Blog": {
       "type": "struct",

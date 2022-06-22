@@ -1,5 +1,10 @@
 wasmflow_sdk::v1::types::CollectionSignature {
   name: {{#if name}}Some("{{name}}".to_owned()){{else}}None{{/if}},
+  features: wasmflow_sdk::v1::types::CollectionFeatures {
+    streaming: false,
+    stateful: {{#if @root.stateful}}true{{else}}false{{/if}},
+    version: wasmflow_sdk::v1::types::CollectionVersion::V0
+  },
   format: 1,
   version: "{{version}}".to_owned(),
   types: std::collections::HashMap::from([

@@ -2,8 +2,7 @@ use std::collections::HashMap;
 
 use runtime_testutils::*;
 use tokio_stream::StreamExt;
-use wasmflow_runtime::prelude::TransportWrapper;
-use wasmflow_sdk::v1::transport::MessageTransport;
+use wasmflow_sdk::v1::transport::{MessageTransport, TransportWrapper};
 use wasmflow_sdk::v1::{Entity, Invocation};
 
 type Result<T> = anyhow::Result<T, anyhow::Error>;
@@ -12,7 +11,7 @@ use pretty_assertions::assert_eq;
 
 #[test_logger::test(tokio::test)]
 async fn simple_schematic() -> Result<()> {
-  let (network, _) = init_network_from_yaml("./manifests/v0/simple.yaml").await?;
+  let (network, _) = init_network_from_yaml("./manifests/v0/simple.wafl").await?;
 
   let data = hashmap! {
       "input" => "simple string",
@@ -42,7 +41,7 @@ async fn simple_schematic() -> Result<()> {
 
 #[test_logger::test(tokio::test)]
 async fn echo() -> Result<()> {
-  let (network, _) = init_network_from_yaml("./manifests/v0/echo.yaml").await?;
+  let (network, _) = init_network_from_yaml("./manifests/v0/echo.wafl").await?;
 
   let data = hashmap! {
       "input" => "test-data",
@@ -73,7 +72,7 @@ async fn echo() -> Result<()> {
 #[test_logger::test(tokio::test)]
 
 async fn senders() -> Result<()> {
-  let (network, _) = init_network_from_yaml("./manifests/v0/senders.yaml").await?;
+  let (network, _) = init_network_from_yaml("./manifests/v0/senders.wafl").await?;
 
   let data: HashMap<String, String> = HashMap::new();
 
@@ -102,7 +101,7 @@ async fn senders() -> Result<()> {
 #[test_logger::test(tokio::test)]
 async fn no_inputs() -> Result<()> {
   println!("Running no_inputs test");
-  let (network, _) = init_network_from_yaml("./manifests/v0/no-inputs.yaml").await?;
+  let (network, _) = init_network_from_yaml("./manifests/v0/no-inputs.wafl").await?;
 
   let data: HashMap<String, String> = HashMap::new();
 
@@ -130,7 +129,7 @@ async fn no_inputs() -> Result<()> {
 
 #[test_logger::test(tokio::test)]
 async fn nested_schematics() -> Result<()> {
-  let (network, _) = init_network_from_yaml("./manifests/v0/nested-schematics.yaml").await?;
+  let (network, _) = init_network_from_yaml("./manifests/v0/nested-schematics.wafl").await?;
 
   let user_data = "user inputted data";
 
@@ -160,7 +159,7 @@ async fn nested_schematics() -> Result<()> {
 
 #[test_logger::test(tokio::test)]
 async fn short_circuit_to_output() -> Result<()> {
-  let (network, _) = init_network_from_yaml("./manifests/v0/short-circuit.yaml").await?;
+  let (network, _) = init_network_from_yaml("./manifests/v0/short-circuit.wafl").await?;
 
   let data = hashmap! {
       "input" => "short",
@@ -189,7 +188,7 @@ async fn short_circuit_to_output() -> Result<()> {
 
 #[test_logger::test(tokio::test)]
 async fn short_circuit_with_default() -> Result<()> {
-  let (network, _) = init_network_from_yaml("./manifests/v0/short-circuit-default.yaml").await?;
+  let (network, _) = init_network_from_yaml("./manifests/v0/short-circuit-default.wafl").await?;
 
   let data = hashmap! {
       "input_port1" => "short",
@@ -221,7 +220,7 @@ async fn short_circuit_with_default() -> Result<()> {
 
 #[test_logger::test(tokio::test)]
 async fn multiple_schematics() -> Result<()> {
-  let (network, _) = init_network_from_yaml("./manifests/v0/multiple-schematics.yaml").await?;
+  let (network, _) = init_network_from_yaml("./manifests/v0/multiple-schematics.wafl").await?;
 
   let data = hashmap! {
       "left" => 42,
@@ -265,7 +264,7 @@ async fn multiple_schematics() -> Result<()> {
 
 #[test_logger::test(tokio::test)]
 async fn subnetworks() -> Result<()> {
-  let (network, _) = init_network_from_yaml("./manifests/v0/sub-network-parent.yaml").await?;
+  let (network, _) = init_network_from_yaml("./manifests/v0/sub-network-parent.wafl").await?;
 
   let data = hashmap! {
       "input" => "some input",

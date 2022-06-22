@@ -1,10 +1,7 @@
 {
-  "title": "JSON schema for Wasmflow host manifests",
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "type": "object",
-  "$defs": {
+  "v0": {
     "HostManifest": {
-      "$anchor": "#HostManifest",
+      "$anchor": "#v0/HostManifest",
       "additionalProperties": false,
       "properties": {
         "version": {
@@ -15,12 +12,12 @@
         "host": {
           "description": "Additional host configuration.",
 
-          "$ref": "#/$defs/HostConfig"
+          "$ref": "#/$defs/v0/HostConfig"
         },
         "network": {
           "description": "The configuration for a Wasmflow network.",
 
-          "$ref": "#/$defs/NetworkManifest"
+          "$ref": "#/$defs/v0/NetworkManifest"
         },
         "default_schematic": {
           "description": "The default schematic to execute if none is provided.",
@@ -33,7 +30,7 @@
     },
 
     "HostConfig": {
-      "$anchor": "#HostConfig",
+      "$anchor": "#v0/HostConfig",
       "additionalProperties": false,
       "properties": {
         "allow_latest": {
@@ -70,26 +67,26 @@
           "description": "The mesh configuration.",
           "required": false,
 
-          "$ref": "#/$defs/MeshConfig"
+          "$ref": "#/$defs/v0/MeshConfig"
         },
         "rpc": {
           "description": "Configuration for the GRPC server.",
           "required": false,
 
-          "$ref": "#/$defs/HttpConfig"
+          "$ref": "#/$defs/v0/HttpConfig"
         },
         "http": {
           "description": "Configuration for the HTTP 1 server (development only).",
           "required": false,
 
-          "$ref": "#/$defs/HttpConfig"
+          "$ref": "#/$defs/v0/HttpConfig"
         }
       },
       "required": []
     },
 
     "HttpConfig": {
-      "$anchor": "#HttpConfig",
+      "$anchor": "#v0/HttpConfig",
       "additionalProperties": false,
       "properties": {
         "enabled": {
@@ -132,7 +129,7 @@
     },
 
     "MeshConfig": {
-      "$anchor": "#MeshConfig",
+      "$anchor": "#v0/MeshConfig",
       "additionalProperties": false,
       "properties": {
         "enabled": {
@@ -162,7 +159,7 @@
     },
 
     "NetworkManifest": {
-      "$anchor": "#NetworkManifest",
+      "$anchor": "#v0/NetworkManifest",
       "additionalProperties": false,
       "properties": {
         "name": {
@@ -184,20 +181,20 @@
           "description": "The collection to use as the entrypoint when running as a standalone process.",
           "required": false,
 
-          "$ref": "#/$defs/EntrypointDefinition"
+          "$ref": "#/$defs/v0/EntrypointDefinition"
         },
         "schematics": {
           "description": "The links between capabilities and components.",
           "type": "array",
           "items": {
-            "$ref": "#/$defs/SchematicManifest"
+            "$ref": "#/$defs/v0/SchematicManifest"
           }
         },
         "collections": {
           "description": "A list of component collections.",
           "type": "array",
           "items": {
-            "$ref": "#/$defs/CollectionDefinition"
+            "$ref": "#/$defs/v0/CollectionDefinition"
           }
         }
       },
@@ -205,11 +202,16 @@
     },
 
     "EntrypointDefinition": {
-      "$anchor": "#EntrypointDefinition",
+      "$anchor": "#v0/EntrypointDefinition",
       "additionalProperties": false,
       "properties": {
         "reference": {
           "description": "The reference/location of the collection.",
+
+          "type": "string"
+        },
+        "component": {
+          "description": "The component to use as the entrypoint.",
 
           "type": "string"
         },
@@ -222,7 +224,7 @@
     },
 
     "CollectionDefinition": {
-      "$anchor": "#CollectionDefinition",
+      "$anchor": "#v0/CollectionDefinition",
       "additionalProperties": false,
       "properties": {
         "namespace": {
@@ -233,7 +235,7 @@
         "kind": {
           "description": "The kind/type of the collection.",
 
-          "$ref": "#/$defs/CollectionKind"
+          "$ref": "#/$defs/v0/CollectionKind"
         },
         "reference": {
           "description": "The reference/location of the collection.",
@@ -249,11 +251,11 @@
     },
 
     "CollectionKind": {
+      "$anchor": "#v0/CollectionKind",
       "enum": ["Native", "GrpcUrl", "WaPC", "Mesh", "Network", "Par"]
     },
-
     "SchematicManifest": {
-      "$anchor": "#SchematicManifest",
+      "$anchor": "#v0/SchematicManifest",
       "additionalProperties": false,
       "properties": {
         "name": {
@@ -273,7 +275,7 @@
           "type": "object",
           "patternProperties": {
             "[a-zA-Z0-9][a-zA-Z0-9_]*": {
-              "$ref": "#/$defs/ComponentDefinition"
+              "$ref": "#/$defs/v0/ComponentDefinition"
             }
           }
         },
@@ -281,7 +283,7 @@
           "description": "A list of connections from component to component.",
           "type": "array",
           "items": {
-            "$ref": "#/$defs/ConnectionDefinition"
+            "$ref": "#/$defs/v0/ConnectionDefinition"
           }
         },
         "constraints": {
@@ -298,7 +300,7 @@
     },
 
     "ComponentDefinition": {
-      "$anchor": "#ComponentDefinition",
+      "$anchor": "#v0/ComponentDefinition",
       "additionalProperties": false,
       "properties": {
         "id": {
@@ -316,18 +318,18 @@
     },
 
     "ConnectionDefinition": {
-      "$anchor": "#ConnectionDefinition",
+      "$anchor": "#v0/ConnectionDefinition",
       "additionalProperties": false,
       "properties": {
         "from": {
           "description": "The originating component from upstream.",
 
-          "$ref": "#/$defs/ConnectionTargetDefinition"
+          "$ref": "#/$defs/v0/ConnectionTargetDefinition"
         },
         "to": {
           "description": "The destination component (downstream).",
 
-          "$ref": "#/$defs/ConnectionTargetDefinition"
+          "$ref": "#/$defs/v0/ConnectionTargetDefinition"
         },
         "default": {
           "description": "The default value to provide in the event of an upstream Error or Exception.",
@@ -340,7 +342,7 @@
     },
 
     "ConnectionTargetDefinition": {
-      "$anchor": "#ConnectionTargetDefinition",
+      "$anchor": "#v0/ConnectionTargetDefinition",
       "additionalProperties": false,
       "properties": {
         "instance": {
@@ -361,6 +363,5 @@
       },
       "required": ["instance", "port"]
     }
-  },
-  "oneOf": [{ "$ref": "#/$defs/HostManifest" }]
+  }
 }

@@ -1,0 +1,21 @@
+# yaml-language-server: $schema=../../../json-schema/manifest.json
+---
+version: 1
+external:
+  foo:
+    kind: Mesh
+    id: bar
+  bar:
+    kind: Wasm
+    reference: bar
+components:
+  logger:
+    instances:
+      logger: wafl::log
+      SENDER:
+        id: core::sender
+        config:
+          output: "123456789"
+          type: string
+    flow:
+      - <>.input -> <>.output

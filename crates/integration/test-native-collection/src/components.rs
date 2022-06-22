@@ -102,6 +102,11 @@ pub fn get_signature() -> wasmflow_sdk::v1::types::CollectionSignature {
 
   wasmflow_sdk::v1::types::CollectionSignature {
     name: Some("test-native-collection".to_owned()),
+    features: wasmflow_sdk::v1::types::CollectionFeatures {
+      streaming: false,
+      stateful: true,
+      version: wasmflow_sdk::v1::types::CollectionVersion::V0,
+    },
     format: 1,
     version: "0.1.0".to_owned(),
     types: std::collections::HashMap::from([]).into(),

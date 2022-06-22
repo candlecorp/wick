@@ -1,21 +1,14 @@
 # Need a Makefile primer? Head over to isaacs's tutorial: https://gist.github.com/isaacs/62a2d1825d04437c6f08
 
-V0 := src/v0.rs
-V0_schema := json-schema/v0/manifest.json
-V0_docs := docs/v0.html
-V0_DEF := definitions/v0
-V0_IDL := $(shell find $(V0_DEF) -type f -name '*.apex')
-V0_TEMPLATES := $(shell find $(V0_DEF)/templates -type f -name '*')
-V0_DOC_TEMPLATES := $(shell find $(V0_DEF)/doc-templates -type f -name '*.hbs')
-V0_SOURCES := $(V0_DEF)/manifest.apex $(V0_IDL) $(V0_TEMPLATES)
+VERSIONS:=v0 v1
 
-CLEAN_FILES:= $(V0) $(V0_schema) $(V0_docs)
+CLEAN_FILES:= $(wildcard docs/**/*) $(wildcard src/v*.rs)  $(wildcard json-schema/**/*)
 
-$(V0): $(V0_SOURCES) $(V0_TEMPLATES)
-	@apex-template $< $(V0_DEF)/templates/rust/root.hbs -p $(V0_DEF)/templates/rust/partials > $@
+src/v%.rs: definitions/v%/manifest.apex definitions/v%/*/*/*
+	@apex-template $< definitions/v$*/templates/rust/root.hbs -p definitions/v$*/templates/rust/partials > $@
 
-$(V0_schema): $(V0_SOURCES) $(V0_TEMPLATES)
-	@apex-template $(V0_DEF)/manifest.apex $(V0_DEF)/templates/$(basename $@).hbs -p $(V0_DEF)/templates/json-schema/partials > $@
+json-schema/v%/manifest.json: definitions/v%/manifest.apex definitions/v%/*/*/*
+	@apex-template $< definitions/v$*/templates/json-schema/manifest.hbs -p definitions/v$*/templates/json-schema/partials > $@
 	@prettier --write $@
 
 .PHONY: clean
@@ -23,12 +16,24 @@ clean:
 	@rm -f $(CLEAN_FILES)
 
 .PHONY: codegen
-codegen: $(V0) $(V0_schema) $(V0_docs)
-	@cargo +nightly fmt
+codegen:
+	@$(MAKE) src/v0.rs
+	@$(MAKE) src/v1.rs
+	@mkdir -p json-schema/v0
+	@$(MAKE) json-schema/v0/manifest.json
+	@mkdir -p json-schema/v1
+	@$(MAKE) json-schema/v1/manifest.json
+	@$(MAKE) json-schema/manifest.json
+	@$(MAKE) docs/v0.html
+	@$(MAKE) docs/v1.html
 
-docs:
-	@mkdir docs
+json-schema/manifest.json: json-schema/v0/manifest.json json-schema/v1/manifest.json
+	@jq  \
+		--slurpfile v0_manifest json-schema/v0/manifest.json \
+		--slurpfile v1_manifest json-schema/v1/manifest.json \
+		'.["$$defs"] += $$v0_manifest[0] + $$v1_manifest[0]' \
+		definitions/json-schema.json.tpl > $@
 
-$(V0_docs): $(V0_SOURCES) $(V0_DOC_TEMPLATES) docs
-	# cargo doc --no-deps
-	@apex-template $< $(V0_DEF)/doc-templates/rust/root.hbs -p $(V0_DEF)/doc-templates/rust/partials > $@
+docs/v%.html: definitions/v%/manifest.apex definitions/v%/*/*/*
+	@mkdir -p docs
+	@apex-template $< definitions/v$*/doc-templates/rust/root.hbs -p definitions/v$*/doc-templates/rust/partials > $@

@@ -33,7 +33,7 @@ mod test {
       "wasmflow",
       &[
         "serve",
-        "./tests/manifests/ns-link-mesh.yaml",
+        "./tests/manifests/ns-link-mesh.wafl",
         "--rpc",
         "--trace",
         "--nats",

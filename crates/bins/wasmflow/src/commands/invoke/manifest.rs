@@ -6,7 +6,7 @@ use tokio::io::{self, AsyncBufReadExt};
 use wasmflow_collection_cli::options::DefaultCliOptions;
 use wasmflow_collection_cli::parse_args;
 use wasmflow_host::HostBuilder;
-use wasmflow_manifest::host_definition::HostDefinition;
+use wasmflow_manifest::WasmflowManifest;
 use wasmflow_sdk::v1::transport::TransportMap;
 
 use crate::utils::merge_config;
@@ -14,19 +14,19 @@ use crate::utils::merge_config;
 pub(crate) async fn handle_command(opts: super::InvokeCommand, bytes: Vec<u8>) -> Result<()> {
   debug!(args = ?opts.args, "rest args");
 
-  let manifest = HostDefinition::load_from_bytes(Some(opts.location), &bytes)?;
+  let manifest = WasmflowManifest::load_from_bytes(Some(opts.location), &bytes)?;
 
   let server_options = DefaultCliOptions {
     mesh: opts.mesh,
     ..Default::default()
   };
 
-  let mut config = merge_config(manifest, &opts.fetch, Some(server_options));
-  if config.default_schematic.is_none() {
-    config.default_schematic = Some(opts.component);
+  let mut config = merge_config(&manifest, &opts.fetch, Some(server_options));
+  if config.default_flow().is_none() {
+    config.set_default_flow(opts.component);
   }
 
-  let default_schematic = config.default_schematic.clone().unwrap();
+  let default_schematic = config.default_flow().clone().unwrap();
 
   let host_builder = HostBuilder::from_definition(config);
 

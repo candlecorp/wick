@@ -21,21 +21,27 @@ executors:
       docker_layer_caching: true
     resource_class: large
     environment:
+      SCCACHE_AZURE_BLOB_CONTAINER: circleci-sccache
+      SCCACHE_ERROR_LOG: /tmp/sccache.log
+      CARGO_PROFILE_RELEASE_DEBUG: "0" # https://doc.rust-lang.org/cargo/reference/profiles.html#debug
+      CARGO_INCREMENTAL: "0" # https://doc.rust-lang.org/cargo/reference/profiles.html#incremental
+      CARGO_PROFILE_RELEASE_LTO: "true" # https://doc.rust-lang.org/cargo/reference/profiles.html#lto
+      CARGO_PROFILE_RELEASE_OPT_LEVEL: "3" # https://doc.rust-lang.org/cargo/reference/profiles.html#opt-level
+      CARGO_PROFILE_RELEASE_CODEGEN_UNITS: "1" # https://doc.rust-lang.org/cargo/reference/profiles.html#codegen-units
+      CARGO_PROFILE_RELEASE_STRIP: "true" # https://doc.rust-lang.org/cargo/reference/unstable.html#profile-strip-option
       RUSTC_WRAPPER: /home/circleci/.cargo/bin/sccache
-      RUSTC_TOOLCHAIN: 1.56.0
-      SCCACHE_AZURE_CONNECTION_STRING: $SCCACHE_AZURE_CONNECTION_STRING
-      SCCACHE_AZURE_BLOB_CONTAINER: sccache
   test-executor:
     docker:
-      - image: candlecorp/build-base:latest
+      - image: candlecorp/ci-test:latest
         auth: *AUTH
     resource_class: xlarge
     environment:
-      CARGO_BUILD_JOBS: 4
       RUSTC_WRAPPER: sccache
-      SCCACHE_AZURE_CONNECTION_STRING: $SCCACHE_AZURE_CONNECTION_STRING
-      SCCACHE_AZURE_BLOB_CONTAINER: sccache
-
+      SCCACHE_AZURE_BLOB_CONTAINER: circleci-sccache
+      SCCACHE_ERROR_LOG: /tmp/sccache.log
+      CARGO_INCREMENTAL: "0" # https://doc.rust-lang.org/cargo/reference/profiles.html#incremental
+      CARGO_PROFILE_TEST_LTO: "off"
+      CARGO_BUILD_JOBS: "4"
 commands:
   install_deps:
     steps:
@@ -45,8 +51,8 @@ commands:
           name: Install cross
           command: |
             # if [[ ! $(command -v cross) ]]; then
-              curl -OL https://github.com/wasmflow/cross/releases/download/v0.2.1-darwin/cross-v0.2.1-x86_64-unknown-linux-gnu.tar.gz
-              tar -zxvf cross-v0.2.1-x86_64-unknown-linux-gnu.tar.gz cross
+              curl -OL https://github.com/wasmflow/cross/releases/download/v0.2.2-darwin/cross_v0.2.2-darwin_x86_64-unknown-linux-musl.tar.gz
+              tar -zxvf cross_v0.2.2-darwin_x86_64-unknown-linux-musl.tar.gz cross
               chmod +x cross
               mv cross $HOME/.cargo/bin/
             # fi
@@ -63,16 +69,20 @@ commands:
           name: Sets up Sccache
           command: |
             [[ ! -f ${RUSTC_WRAPPER} ]] \
-            && curl -L https://github.com/mozilla/sccache/releases/download/\
-            v0.2.15/sccache-v0.2.15-x86_64-unknown-linux-musl.tar.gz \
-            | tar -zxvf - sccache-v0.2.15-x86_64-unknown-linux-musl/sccache \
-            && sudo mv sccache-v0.2.15-x86_64-unknown-linux-musl/sccache ${RUSTC_WRAPPER} \
+            && curl -L https://github.com/mozilla/sccache/releases/download/v0.3.0/sccache-v0.3.0-x86_64-unknown-linux-musl.tar.gz \
+            | tar -zxvf - sccache-v0.3.0-x86_64-unknown-linux-musl/sccache \
+            && sudo mv sccache-v0.3.0-x86_64-unknown-linux-musl/sccache ${RUSTC_WRAPPER} \
             && sudo chmod +x ${RUSTC_WRAPPER}
-            sccache -s
       - save_cache:
           key: sccache-{{ arch }}
           paths:
             - ~/.cargo/bin/sccache
+  sccache_start:
+    steps:
+      - run:
+          name: Starts Sccache
+          command: |
+            ${RUSTC_WRAPPER} -s
   rust_setup:
     description: Sets up Rust Toolchain
     steps:
@@ -98,6 +108,19 @@ commands:
             - ~/.rustup
       - restore_build_cache
       - sccache_setup
+      - sccache_start
+  save_rustup_cache:
+    description: Saves rust toolchain
+    steps:
+      - save_cache:
+          key: rustup-{{ arch }}
+          paths:
+            - /usr/local/rustup/
+  restore_rustup_cache:
+    description: Restores rust toolchain
+    steps:
+      - restore_cache:
+          key: rustup-{{ arch }}
   build_setup:
     description: Sets up environment for future jobs
     steps:
@@ -129,7 +152,7 @@ commands:
 jobs:
   scratch:
     docker:
-      - image: candlecorp/build-base:latest
+      - image: candlecorp/ci-test:latest
         auth: *AUTH
     resource_class: small
     steps:
@@ -141,13 +164,15 @@ jobs:
     executor: test-executor
     steps:
       - checkout_submodules
-      - run: source ./etc/ci-test.env
+      - restore_rustup_cache
+      - sccache_start
       - restore_build_cache
       - run:
           name: Test
           command: "make test"
       - run: sccache -s
       - save_build_cache
+      - save_rustup_cache
   build:
     parameters:
       arch:
@@ -158,8 +183,8 @@ jobs:
     executor: build-executor
     steps:
       - checkout_submodules
+      - restore_rustup_cache
       - build_setup
-      - run: source ./etc/ci-build.env
       - restore_build_cache
       - run:
           name: Build
@@ -171,10 +196,11 @@ jobs:
           paths:
             - ./build/
       - save_build_cache
+      - save_rustup_cache
   deploy:
     parameters:
     docker:
-      - image: candlecorp/ci-env-dev
+      - image: candlecorp/ci-deploy
         auth: *AUTH
         environment:
           AZURE_STORAGE_ACCOUNT: $AZURE_STORAGE_ACCOUNT
@@ -208,7 +234,7 @@ jobs:
             cp /home/candle/project/crates/wasmflow/wasmflow-rpc/proto/wasmflow.proto build/artifacts/wasmflow.proto
             BUILDTAG="nightly-$(date +%F)"
             echo $BUILDTAG > build/artifacts/RELEASE
-            echo << pipeline.git.revision	>> > build/artifacts/RELEASE
+            echo << pipeline.git.revision >> > build/artifacts/RELEASE
             cp build/artifacts/RELEASE build/RELEASE
       - run:
           name: Publish artifacts

@@ -88,48 +88,23 @@
 #[macro_use]
 extern crate tracing;
 
+mod collections;
+pub(crate) mod dev;
 mod dispatch;
 pub mod error;
-mod network;
-pub use collections::network_collection::Collection as NetworkCollection;
-pub use network::{Network, NetworkBuilder};
-mod collections;
 mod json_writer;
+mod network;
 mod network_service;
-pub mod utils;
-
-pub mod prelude {
-  pub use tokio_stream::StreamExt;
-  pub use wasmflow_manifest::NetworkDefinition;
-  pub use wasmflow_sdk::v1::codec::messagepack::{deserialize as mp_deserialize, serialize as mp_serialize};
-  pub use wasmflow_sdk::v1::packet::v1::Packet;
-  pub use wasmflow_sdk::v1::transport::{MessageTransport, TransportStream, TransportWrapper};
-
-  pub use crate::collections::network_collection::Collection as NetworkCollection;
-  pub use crate::dispatch::{DispatchError, InvocationResponse};
-  pub use crate::network::Network;
-  pub use crate::{SCHEMATIC_INPUT, SCHEMATIC_OUTPUT, SELF_NAMESPACE};
-}
-
-pub(crate) mod dev;
-
 #[cfg(test)]
 pub(crate) mod test;
+pub(crate) mod utils;
 
-pub type Error = error::RuntimeError;
 pub use collections::error::CollectionError;
+pub use collections::network_collection::Collection as NetworkCollection;
+pub use network::{Network, NetworkBuilder};
 pub use network_service::error::NetworkError;
 
-/// The reserved reference name for schematic input. Used in schematic manifests to denote schematic input.
-pub const SCHEMATIC_INPUT: &str = "<input>";
-
-/// The reserved reference name for schematic output. Used in schematic manifests to denote schematic output.
-pub const SCHEMATIC_OUTPUT: &str = "<output>";
-
-/// The reserved namespace for references to internal schematics.
-pub const SELF_NAMESPACE: &str = "self";
+pub type Error = error::RuntimeError;
 
 /// The reserved namespace for Wasmflow's initial native API.
 pub const WAFL_V0_NAMESPACE: &str = "wafl";
-
-pub const CORE_PORT_SEED: &str = "seed";

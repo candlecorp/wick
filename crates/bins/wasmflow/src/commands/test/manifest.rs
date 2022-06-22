@@ -4,21 +4,21 @@ use anyhow::Result;
 use seeded_random::Seed;
 use wasmflow_collection_cli::options::DefaultCliOptions;
 use wasmflow_host::HostBuilder;
-use wasmflow_manifest::host_definition::HostDefinition;
+use wasmflow_manifest::WasmflowManifest;
 use wasmflow_test::TestSuite;
 
 use crate::utils::merge_config;
 
 #[allow(clippy::future_not_send, clippy::too_many_lines)]
 pub(crate) async fn handle_command(opts: super::TestCommand, bytes: Vec<u8>) -> Result<()> {
-  let manifest = HostDefinition::load_from_bytes(Some(opts.location), &bytes)?;
+  let manifest = WasmflowManifest::load_from_bytes(Some(opts.location), &bytes)?;
 
   let server_options = DefaultCliOptions {
     mesh: opts.mesh,
     ..Default::default()
   };
 
-  let config = merge_config(manifest, &opts.fetch, Some(server_options));
+  let config = merge_config(&manifest, &opts.fetch, Some(server_options));
 
   let host_builder = HostBuilder::from_definition(config);
 

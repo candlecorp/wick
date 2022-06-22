@@ -4,6 +4,7 @@ use std::sync::Arc;
 use async_trait::async_trait;
 use tokio_stream::StreamExt;
 pub use wapc::WasiParams;
+use wasmflow_manifest::Permissions;
 use wasmflow_rpc::error::RpcError;
 use wasmflow_rpc::{RpcHandler, RpcResult};
 use wasmflow_sdk::v1::codec::{json, messagepack};
@@ -14,7 +15,6 @@ use wasmflow_sdk::v1::{CollectionLink, Entity, Invocation};
 
 use crate::error::LinkError;
 use crate::wapc_module::WapcModule;
-use crate::wasi::config_to_wasi;
 use crate::wasm_host::{WasmHost, WasmHostBuilder};
 use crate::Error;
 
@@ -31,12 +31,25 @@ pub struct Collection {
 
 pub type HostLinkCallback = dyn Fn(&str, &str, PacketMap) -> Result<Vec<PacketWrapper>, LinkError> + Sync + Send;
 
+fn permissions_to_wasi_params(perms: Permissions) -> WasiParams {
+  debug!(params=?perms, "Collection permissions");
+  let preopened_dirs = perms.dirs.values().cloned().collect();
+  let map_dirs = perms.dirs.into_iter().collect();
+  let params = WasiParams {
+    map_dirs,
+    preopened_dirs,
+    ..Default::default()
+  };
+  debug!(?params, "WASI configuration");
+  params
+}
+
 impl Collection {
   pub fn try_load(
     module: &WapcModule,
     max_threads: usize,
-    config: Option<serde_json::Value>,
-    wasi_params: Option<WasiParams>,
+    config: Option<Permissions>,
+    additional_config: Option<Permissions>,
     callback: Option<Box<HostLinkCallback>>,
   ) -> Result<Self, Error> {
     let mut builder = WasmHostBuilder::new();
@@ -45,18 +58,13 @@ impl Collection {
 
     // If we're passed a "wasi" field in the config map...
     if let Some(config) = config {
-      let wasi_cfg = config.get("wasi");
-      if wasi_cfg.is_some() {
-        // extract and merge the wasi config with the passed wasi params.
-        let wasi = config_to_wasi(wasi_cfg.cloned(), wasi_params)?;
-        debug!(id=%name, config=?wasi, "wasi enabled");
-        builder = builder.wasi_params(wasi);
-      }
-    } else if let Some(opts) = wasi_params {
+      debug!(id=%name, config=?config, "wasi enabled");
+      builder = builder.wasi_params(permissions_to_wasi_params(config));
+    } else if let Some(opts) = additional_config {
       // if we were passed wasi params, use those.
       debug!(id=%name, config=?opts, "wasi enabled");
 
-      builder = builder.wasi_params(opts);
+      builder = builder.wasi_params(permissions_to_wasi_params(opts));
     } else {
       debug!(id = %name, "wasi disabled");
     }

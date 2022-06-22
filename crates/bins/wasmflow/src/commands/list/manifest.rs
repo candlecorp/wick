@@ -1,22 +1,22 @@
 use anyhow::Result;
 use wasmflow_collection_cli::options::DefaultCliOptions;
 use wasmflow_host::HostBuilder;
+use wasmflow_manifest::WasmflowManifest;
 use wasmflow_sdk::v1::types::FieldMap;
-use wasmflow_manifest::host_definition::HostDefinition;
 
 use crate::utils::merge_config;
 
 pub(crate) async fn handle_command(opts: super::ListCommand, bytes: Vec<u8>) -> Result<()> {
-  let config = HostDefinition::load_from_bytes(Some(opts.location), &bytes)?;
+  let manifest = WasmflowManifest::load_from_bytes(Some(opts.location), &bytes)?;
 
   let server_options = DefaultCliOptions {
     mesh: opts.mesh,
     ..Default::default()
   };
 
-  let mut config = merge_config(config, &opts.fetch, Some(server_options));
+  let mut config = merge_config(&manifest, &opts.fetch, Some(server_options));
   // Disable everything but the mesh
-  config.host.rpc = None;
+  config.host_mut().rpc = None;
 
   let host_builder = HostBuilder::from_definition(config);
 

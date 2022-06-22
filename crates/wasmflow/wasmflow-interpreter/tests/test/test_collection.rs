@@ -4,142 +4,91 @@ use std::time::Duration;
 use anyhow::Result;
 use futures::future::BoxFuture;
 use seeded_random::{Random, Seed};
-use serde_json::{json, Value};
+use serde_json::Value;
 use tokio::task::JoinHandle;
 use tracing::trace;
 use wasmflow_interpreter::{BoxError, Collection};
 use wasmflow_sdk::v1::transport::{Failure, MessageTransport, TransportStream, TransportWrapper};
-use wasmflow_sdk::v1::types::CollectionSignature;
+use wasmflow_sdk::v1::types::{CollectionFeatures, CollectionSignature, ComponentSignature, TypeSignature};
 use wasmflow_sdk::v1::{CollectionLink, Invocation};
 
 pub struct TestCollection(CollectionSignature);
 impl TestCollection {
   #[allow(dead_code)]
   pub fn new() -> Self {
-    let sig = serde_json::from_value(json!({
-      "name":"test-collection",
-      "format":1,
-      "version": "",
-        "components" : {
-          "echo": {
-            "name": "echo",
-            "inputs": {
-              "input": {"type":"string"},
-            },
-            "outputs": {
-              "output": {"type":"string"},
-            }
-          },
-          "timeout": {
-            "name": "timeout",
-            "inputs": {
-              "input": {"type":"string"},
-            },
-            "outputs": {
-              "output": {"type":"string"},
-            }
-          },
-          "timeout-nodone": {
-            "name": "timeout-nodone",
-            "inputs": {
-              "input": {"type":"string"},
-            },
-            "outputs": {
-              "output": {"type":"string"},
-            }
-          },
-          "concat": {
-            "name": "concat",
-            "inputs": {
-              "left": {"type":"string"},
-              "right": {"type":"string"},
-            },
-            "outputs": {
-              "output": {"type":"string"},
-            }
-          },
-          "concat-five": {
-            "name": "concat-five",
-            "inputs": {
-              "one": {"type":"string"},
-              "two": {"type":"string"},
-              "three": {"type":"string"},
-              "four": {"type":"string"},
-              "five": {"type":"string"},
-            },
-            "outputs": {
-              "output": {"type":"string"},
-            }
-          },
-          "splitter": {
-            "name": "splitter",
-            "inputs": {
-              "input": {"type":"string"},
-            },
-            "outputs": {
-              "rest": {"type":"string"},
-              "vowels": {"type":"string"},
-            }
-          },
-          "ref_to_string": {
-            "name": "ref_to_string",
-            "inputs": {
-              "link": {"type":"link"},
-            },
-            "outputs": {
-              "output": {"type":"string"},
-            }
-          },
-          "exception": {
-            "name": "exception",
-            "inputs": {
-              "input": {"type":"string"},
-            },
-            "outputs": {
-              "output": {"type":"string"},
-            }
-          },
-          "panic": {
-            "name": "panic",
-            "inputs": {
-              "input": {"type":"string"},
-            },
-            "outputs": {
-              "output": {"type":"string"},
-            }
-          },
-          "copy": {
-            "name": "copy",
-            "inputs": {
-              "input": {"type":"string"},
-              "times": {"type":"u64"},
-            },
-            "outputs": {
-              "output": {"type":"string"},
-            }
-          },
-          "reverse": {
-            "name": "reverse",
-            "inputs": {
-              "input": {"type":"string"},
-            },
-            "outputs": {
-              "output": {"type":"string"},
-            }
-          },
-          "render": {
-            "name": "render",
-            "inputs": {
-              "input": {"type":"string"},
-            },
-            "outputs": {
-              "output": {"type":"string"},
-            }
-          }
-        }
-    }))
-    .unwrap();
-    Self(sig)
+    let signature = CollectionSignature::new("test-collection")
+      .format(1)
+      .version("0.0.0")
+      .features(CollectionFeatures::v0(false, false))
+      .add_component(
+        ComponentSignature::new("echo")
+          .add_input("input", TypeSignature::String)
+          .add_output("output", TypeSignature::String),
+      )
+      .add_component(
+        ComponentSignature::new("timeout")
+          .add_input("input", TypeSignature::String)
+          .add_output("output", TypeSignature::String),
+      )
+      .add_component(
+        ComponentSignature::new("timeout-nodone")
+          .add_input("input", TypeSignature::String)
+          .add_output("output", TypeSignature::String),
+      )
+      .add_component(
+        ComponentSignature::new("concat")
+          .add_input("left", TypeSignature::String)
+          .add_input("right", TypeSignature::String)
+          .add_output("output", TypeSignature::String),
+      )
+      .add_component(
+        ComponentSignature::new("concat-five")
+          .add_input("one", TypeSignature::String)
+          .add_input("two", TypeSignature::String)
+          .add_input("three", TypeSignature::String)
+          .add_input("four", TypeSignature::String)
+          .add_input("five", TypeSignature::String)
+          .add_output("output", TypeSignature::String),
+      )
+      .add_component(
+        ComponentSignature::new("splitter")
+          .add_input("input", TypeSignature::String)
+          .add_output("rest", TypeSignature::String)
+          .add_output("vowels", TypeSignature::String),
+      )
+      .add_component(
+        ComponentSignature::new("ref_to_string")
+          .add_input("link", TypeSignature::Link { schemas: vec![] })
+          .add_output("output", TypeSignature::String),
+      )
+      .add_component(
+        ComponentSignature::new("exception")
+          .add_input("input", TypeSignature::String)
+          .add_output("output", TypeSignature::String),
+      )
+      .add_component(
+        ComponentSignature::new("panic")
+          .add_input("input", TypeSignature::String)
+          .add_output("output", TypeSignature::String),
+      )
+      .add_component(
+        ComponentSignature::new("copy")
+          .add_input("input", TypeSignature::String)
+          .add_input("times", TypeSignature::U64)
+          .add_output("output", TypeSignature::String),
+      )
+      .add_component(
+        ComponentSignature::new("reverse")
+          .add_input("input", TypeSignature::String)
+          .add_output("output", TypeSignature::String),
+      )
+      .add_component(
+        ComponentSignature::new("render")
+          .add_input("input", TypeSignature::String)
+          .add_output("output", TypeSignature::String),
+      );
+
+    Self(signature)
   }
 }
 

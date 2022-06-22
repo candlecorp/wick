@@ -1,5 +1,10 @@
 {
   "name": "test-component",
+  "features": {
+    "stateful": false,
+    "streaming": false,
+    "version": 0
+  },
   "version": "0.0.1",
   "format": 1,
   "wellknown": [],
@@ -20,22 +25,6 @@
     }
   },
   "components": {
-    "copy": {
-      "name": "copy",
-      "inputs": {
-        "input": {
-          "type": "string"
-        },
-        "times": {
-          "type": "i8"
-        }
-      },
-      "outputs": {
-        "output": {
-          "type": "string"
-        }
-      }
-    },
     "error": {
       "name": "error",
       "inputs": {

@@ -85,14 +85,14 @@
 // Add exceptions here
 #![allow(missing_docs)]
 
-use wasmflow_manifest::HostDefinition;
+use wasmflow_manifest::WasmflowManifest;
 use wasmflow_runtime::{Network, NetworkBuilder};
 use wasmflow_wascap::KeyPair;
 #[macro_use]
 extern crate tracing;
 
 pub async fn init_network_from_yaml(path: &str) -> anyhow::Result<(Network, uuid::Uuid)> {
-  let host_def = HostDefinition::load_from_file(path)?;
+  let host_def = WasmflowManifest::load_from_file(path)?;
   debug!("Manifest loaded");
   let kp = KeyPair::new_server();
 

@@ -1,0 +1,19 @@
+[package]
+authors = ["Jarrod Overson <jsoverson@gmail.com>"]
+edition = "2021"
+license = "BSD-3-Clause"
+name = "wasmflow-parser"
+version = "0.1.0"
+
+[dependencies]
+lazy_static = "1.4"
+regex = "1"
+serde = { version = "1" }
+serde_json = "1.0"
+thiserror = "1.0"
+
+[dev-dependencies]
+anyhow = "1.0"
+pretty_assertions = "1"
+logger = { path = "../logger" }
+test-logger = { path = "../../misc/test-logger" }

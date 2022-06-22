@@ -4,7 +4,6 @@ use std::path::Path;
 use anyhow::Result;
 use serde_json::Value;
 // use pretty_assertions::assert_eq;
-use wasmflow_manifest::Loadable;
 use wasmflow_schematic_graph::iterators::SchematicHop;
 use wasmflow_schematic_graph::{ComponentReference, Network, PortDirection, Schematic};
 
@@ -69,17 +68,17 @@ impl Counter {
   }
 }
 
-pub fn load<T: AsRef<Path>>(path: T) -> Result<wasmflow_manifest::HostManifest> {
-  Ok(wasmflow_manifest::HostManifest::load_from_file(path.as_ref())?)
+pub fn load<T: AsRef<Path>>(path: T) -> Result<wasmflow_manifest::WasmflowManifest> {
+  Ok(wasmflow_manifest::WasmflowManifest::load_from_file(path.as_ref())?)
 }
 
-pub fn from_manifest(network_def: &wasmflow_manifest::NetworkDefinition) -> Result<Network<Value>> {
-  let mut network = Network::new(network_def.name.clone().unwrap_or_default());
+pub fn from_manifest(network_def: &wasmflow_manifest::WasmflowManifest) -> Result<Network<Value>> {
+  let mut network = Network::new(network_def.name().clone().unwrap_or_default());
 
-  for schem_def in &network_def.schematics {
-    let mut schematic = Schematic::new(schem_def.name.clone());
+  for (name, flow) in network_def.flows() {
+    let mut schematic = Schematic::new(flow.name.clone());
 
-    for (name, def) in schem_def.instances.iter() {
+    for (name, def) in flow.instances.iter() {
       schematic.add_external(
         name,
         ComponentReference::new(&def.namespace, &def.name),
@@ -87,7 +86,7 @@ pub fn from_manifest(network_def: &wasmflow_manifest::NetworkDefinition) -> Resu
       );
     }
 
-    for connection in &schem_def.connections {
+    for connection in &flow.connections {
       println!("{}", connection);
       let from = &connection.from;
       let to = &connection.to;

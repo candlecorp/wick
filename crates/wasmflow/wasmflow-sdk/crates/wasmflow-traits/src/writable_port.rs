@@ -10,6 +10,13 @@ type Error = Box<dyn std::error::Error + Send + Sync>;
 
 type Result = std::result::Result<(), Error>;
 
+fn send_message(port: &PortChannel, name: impl AsRef<str>, packet: Packet) -> Result {
+  port.send(PacketWrapper {
+    payload: packet,
+    port: name.as_ref().to_owned(),
+  })
+}
+
 /// The native PortSender trait. This trait encapsulates sending messages out of native ports.
 pub trait Writable {
   /// The type of data that the port outputs.
@@ -24,59 +31,28 @@ pub trait Writable {
   /// Return the ID of the transaction.
   fn get_id(&self) -> u32;
 
-  /// Send a message.
-  fn send(&self, data: Self::PayloadType) -> Result {
-    self.push(Packet::V1(V1::success(&data)))
-  }
-
   /// Send a message then close the port.
   fn done(&self, data: Self::PayloadType) -> Result {
-    self.send(data)?;
-    self.send_message(Packet::V1(V1::done()))
-  }
-
-  /// Send a complete [Packet].
-  fn push(&self, output: Packet) -> Result {
-    self.get_port()?.send(PacketWrapper {
-      payload: output,
-      port: self.get_port_name().to_owned(),
-    })?;
-    Ok(())
-  }
-
-  /// Send a complete [Packet].
-  fn send_message(&self, packet: Packet) -> Result {
-    self.get_port()?.send(PacketWrapper {
-      payload: packet,
-      port: self.get_port_name().to_owned(),
-    })?;
-    Ok(())
+    let port = self.get_port()?;
+    let name = self.get_port_name();
+    send_message(port, name, Packet::V1(V1::success(&data)))?;
+    send_message(port, name, Packet::V1(V1::done()))
   }
 
   /// Send a payload then close the port.
   fn done_message(&self, packet: Packet) -> Result {
-    self.send_message(packet)?;
-    self.send_message(V1::done().into())
-  }
-
-  /// Send an exception.
-  fn send_exception(&self, payload: String) -> Result {
-    self.get_port()?.send(PacketWrapper {
-      payload: V1::exception(payload).into(),
-      port: self.get_port_name().to_owned(),
-    })?;
-    Ok(())
+    let port = self.get_port()?;
+    let name = self.get_port_name();
+    send_message(port, name, packet)?;
+    send_message(port, name, Packet::V1(V1::done()))
   }
 
   /// Send an exception then close the port.
   fn done_exception(&self, payload: String) -> Result {
-    self.send_exception(payload)?;
-    self.send_message(V1::done().into())
-  }
-
-  /// Signal that a job is finished with the port.
-  fn close(&self) -> Result {
-    self.send_message(V1::done().into())
+    let port = self.get_port()?;
+    let name = self.get_port_name();
+    send_message(port, name, V1::exception(payload).into())?;
+    send_message(port, name, Packet::V1(V1::done()))
   }
 }
 
@@ -141,8 +117,8 @@ impl PortChannel {
 #[cfg(test)]
 mod tests {
 
-  use wasmflow_transport::{TransportStream, TransportWrapper};
   use wasmflow_packet::v1::Packet;
+  use wasmflow_transport::{TransportStream, TransportWrapper};
 
   use super::*;
   struct StringSender {
@@ -195,34 +171,26 @@ mod tests {
 
       let aggregated = PortChannel::merge_all(&mut [&mut port1.port, &mut port2.port]);
 
-      port1.send("First".to_owned())?;
-      port2.send(1i64)?;
-      port1.done("Second".to_owned())?;
-      port2.done(2i64)?;
+      port1.done("First".to_owned())?;
+      port2.done(1i64)?;
 
       aggregated
     };
     let mut aggregated = TransportStream::new(aggregated.map(|pw| pw.into()));
 
     let mut messages = aggregated.drain_port("test1").await?;
-    assert_eq!(messages.len(), 2);
-    assert_eq!(aggregated.buffered_size(), (1, 2));
+    assert_eq!(messages.len(), 1);
+    assert_eq!(aggregated.buffered_size(), (1, 1));
     let payload: String = messages.remove(0).deserialize().unwrap();
     println!("Payload a1: {}", payload);
     assert_eq!(payload, "First");
-    let payload: String = messages.remove(0).deserialize().unwrap();
-    println!("Payload a2: {}", payload);
-    assert_eq!(payload, "Second");
 
     let mut messages = aggregated.drain_port("test2").await?;
-    assert_eq!(messages.len(), 2);
+    assert_eq!(messages.len(), 1);
     assert_eq!(aggregated.buffered_size(), (0, 0));
     let payload: i64 = messages.remove(0).deserialize().unwrap();
     println!("Payload b1: {}", payload);
     assert_eq!(payload, 1);
-    let payload: i64 = messages.remove(0).deserialize().unwrap();
-    println!("Payload b2: {}", payload);
-    assert_eq!(payload, 2);
 
     Ok(())
   }
@@ -234,7 +202,7 @@ mod tests {
     };
     let mut rx = port1.port.open();
 
-    port1.send("first".to_owned())?;
+    port1.done("first".to_owned())?;
 
     let message: TransportWrapper = rx.next().await.unwrap().into();
     let payload: String = message.payload.deserialize().unwrap();
@@ -269,7 +237,7 @@ mod tests {
     };
     let mut rx = port1.port.open();
 
-    port1.send_exception("exc".to_owned())?;
+    port1.done_exception("exc".to_owned())?;
 
     let message = rx.next().await.unwrap();
 
