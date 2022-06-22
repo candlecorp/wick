@@ -5,7 +5,7 @@ use test::*;
 #[test_logger::test(tokio::test)]
 async fn test_multiple_inputs() -> Result<()> {
   let manifest = load("./tests/manifests/v0/negative/multiple-inputs.yaml")?;
-  let result = from_manifest(&manifest.network().try_into()?);
+  let result = from_manifest(&manifest);
   assert!(result.is_err());
 
   Ok(())

@@ -8,13 +8,12 @@ use seeded_random::Seed;
 use test::{JsonWriter, TestCollection};
 use wasmflow_interpreter::graph::from_def;
 use wasmflow_interpreter::{HandlerMap, Interpreter, InterpreterOptions, NamespaceHandler};
-use wasmflow_manifest::Loadable;
 use wasmflow_sdk::v1::packet::PacketMap;
 use wasmflow_sdk::v1::transport::MessageTransport;
 use wasmflow_sdk::v1::{Entity, Invocation};
 
-fn load<T: AsRef<Path>>(path: T) -> Result<wasmflow_manifest::HostManifest> {
-  Ok(wasmflow_manifest::HostManifest::load_from_file(path.as_ref())?)
+fn load<T: AsRef<Path>>(path: T) -> Result<wasmflow_manifest::WasmflowManifest> {
+  Ok(wasmflow_manifest::WasmflowManifest::load_from_file(path.as_ref())?)
 }
 
 const OPTIONS: Option<InterpreterOptions> = Some(InterpreterOptions {
@@ -25,7 +24,7 @@ const OPTIONS: Option<InterpreterOptions> = Some(InterpreterOptions {
 #[test_logger::test(tokio::test)]
 async fn test_panic() -> Result<()> {
   let manifest = load("./tests/manifests/v0/bad-cases/panic.yaml")?;
-  let network = from_def(&manifest.network().try_into()?)?;
+  let network = from_def(&manifest)?;
   let collections = HandlerMap::new(vec![NamespaceHandler::new("test", Box::new(TestCollection::new()))]);
   let inputs = PacketMap::from([("input", "Hello world".to_owned())]);
 
@@ -47,7 +46,7 @@ async fn test_panic() -> Result<()> {
 #[test_logger::test(tokio::test)]
 async fn test_timeout_done_noclose() -> Result<()> {
   let manifest = load("./tests/manifests/v0/bad-cases/timeout-done-noclose.yaml")?;
-  let network = from_def(&manifest.network().try_into()?)?;
+  let network = from_def(&manifest)?;
   let collections = HandlerMap::new(vec![NamespaceHandler::new("test", Box::new(TestCollection::new()))]);
 
   let inputs = PacketMap::from([("input", "hello world".to_owned())]);
@@ -76,7 +75,7 @@ async fn test_timeout_done_noclose() -> Result<()> {
 #[test_logger::test(tokio::test)]
 async fn test_timeout_missingdone() -> Result<()> {
   let manifest = load("./tests/manifests/v0/bad-cases/timeout-missingdone.yaml")?;
-  let network = from_def(&manifest.network().try_into()?)?;
+  let network = from_def(&manifest)?;
   let collections = HandlerMap::new(vec![NamespaceHandler::new("test", Box::new(TestCollection::new()))]);
 
   let inputs = PacketMap::from([("input", "hello world".to_owned())]);

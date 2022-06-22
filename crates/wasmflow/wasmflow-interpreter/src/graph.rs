@@ -46,12 +46,12 @@ impl Reference {
 
 #[instrument(name = "schematic_graph", skip_all, level = "trace")]
 pub fn from_def(
-  network_def: &wasmflow_manifest::NetworkDefinition,
+  manifest: &wasmflow_manifest::WasmflowManifest,
 ) -> Result<Network, wasmflow_schematic_graph::error::Error> {
-  let mut network = Network::new(network_def.name.clone().unwrap_or_default());
+  let mut network = Network::new(manifest.name().clone().unwrap_or_default());
 
-  for schem_def in &network_def.schematics {
-    let mut schematic = Schematic::new(schem_def.name.clone());
+  for (name, flow) in manifest.flows() {
+    let mut schematic = Schematic::new(name.clone());
 
     let index = schematic.add_inherent(
       CORE_ID,
@@ -61,7 +61,7 @@ pub fn from_def(
 
     trace!(index, name = INTERNAL_ID_INHERENT, "added inherent component");
 
-    for (name, def) in schem_def.instances.iter() {
+    for (name, def) in flow.instances.iter() {
       schematic.add_external(
         name,
         ComponentReference::new(&def.namespace, &def.name),
@@ -69,7 +69,7 @@ pub fn from_def(
       );
     }
 
-    for connection in &schem_def.connections {
+    for connection in &flow.connections {
       let from = &connection.from;
       let to = &connection.to;
       let to_port = schematic

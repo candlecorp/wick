@@ -331,7 +331,7 @@ impl FromStr for ConnectionDefinition {
   type Err = crate::Error;
 
   fn from_str(s: &str) -> Result<Self, Self::Err> {
-    crate::parse::parse_connection_v0(s)
+    crate::parse::v0::parse_connection(s)
   }
 }
 
@@ -339,7 +339,7 @@ impl FromStr for ConnectionTargetDefinition {
   type Err = crate::Error;
 
   fn from_str(s: &str) -> Result<Self, Self::Err> {
-    crate::parse::parse_connection_target_v0(s)
+    crate::parse::v0::parse_connection_target(s)
   }
 }
 

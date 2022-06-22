@@ -1,0 +1,31 @@
+
+<h2 class="definition-name type-name">
+  <a name="{{name.value}}">{{name.value}}</a>
+</h2>
+
+{{#if description~}}
+<span class="description enum-description">{{{description.value}}}</span>
+{{~/if}}
+
+<div class=fields>
+{{#each values}}
+<div class=field>
+
+<h3 class=field-name>
+  <a name="{{name.value}}">{{name.value}}</a>
+</h3>
+
+{{#if description}}
+<span class=field-description>{{{description.value}}}</span>
+{{/if}}
+
+
+<ul class="field-notes">
+<li><span class="enum-index field-note">Index: <span class=field-type>{{index.value}}</span></span></li>
+{{#withAnnotation "required"}}<li><span class="annotation field-note">Required</span></li>{{/withAnnotation}}
+{{#withAnnotation "deprecated"}}<li><span class="annotation field-note">Deprecated</span></li>{{/withAnnotation}}
+</ul>
+
+</div>
+{{~/each~}}
+</div>

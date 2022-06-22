@@ -87,6 +87,7 @@
 // Add exceptions here
 #![allow()]
 
+use std::collections::HashMap;
 use std::fs::read_to_string;
 use std::path::Path;
 
@@ -105,27 +106,26 @@ pub mod parse;
 /// Wasmflow Manifest error.
 pub mod error;
 
-/// Version 0 (unstable) manifest.
+/// Version 0 manifest.
 pub mod v0;
+
+/// Version 1 manifest.
+pub mod v1;
 
 /// A version-normalized format of the manifest for development.
 pub mod host_definition;
-pub use host_definition::HostDefinition;
 
 /// A version-normalized format of the network manifest for development.
 pub mod network_definition;
 pub use network_definition::{CollectionDefinition, CollectionKind, NetworkDefinition};
 
 /// A version-normalized format of the schematic manifest for development.
-pub mod schematic_definition;
-pub use parse::parse_id;
-pub use schematic_definition::{
-  ComponentDefinition,
-  ConnectionDefinition,
-  ConnectionTargetDefinition,
-  SchematicDefinition,
-};
+pub mod flow_definition;
+pub use flow_definition::{ComponentDefinition, ConnectionDefinition, ConnectionTargetDefinition, Flow};
+pub use parse::v0::parse_id;
 
+use self::host_definition::HostConfig;
+use self::network_definition::EntrypointDefinition;
 use crate::error::ManifestError;
 
 /// The crate's error type.
@@ -133,130 +133,99 @@ pub type Error = ManifestError;
 
 pub(crate) type Result<T> = std::result::Result<T, Error>;
 
-/// Enum for the possible versions of a Host Manifest.
-#[derive(Debug, Clone)]
-#[must_use]
-pub enum HostManifest {
-  /// Version 0 Host Manifest.
-  V0(v0::HostManifest),
+#[derive(Debug, Clone, Default)]
+/// The internal representation of a Wasmflow manifest.
+pub struct WasmflowManifest {
+  source: Option<String>,
+  version: u8,
+  host: HostConfig,
+  default_flow: Option<String>,
+  name: Option<String>,
+  labels: HashMap<String, String>,
+  triggers: Option<EntrypointDefinition>,
+  collections: HashMap<String, CollectionDefinition>,
+  flows: HashMap<String, Flow>,
 }
 
-impl HostManifest {
-  /// Return the contained [NetworkManifest].
-  pub fn network(&self) -> NetworkManifest {
-    match self {
-      HostManifest::V0(manifest) => NetworkManifest::V0(&manifest.network),
-    }
-  }
+impl TryFrom<v0::HostManifest> for WasmflowManifest {
+  type Error = ManifestError;
 
-  /// Determine if the configuration allows for fetching artifacts with the :latest tag.
-  #[must_use]
-  pub fn allow_latest(&self) -> bool {
-    match self {
-      HostManifest::V0(manifest) => manifest.host.allow_latest,
-    }
-  }
-
-  /// Return the list of insecure registries defined in the manifest
-  #[must_use]
-  pub fn insecure_registries(&self) -> &Vec<String> {
-    match self {
-      HostManifest::V0(manifest) => &manifest.host.insecure_registries,
-    }
-  }
-}
-
-/// Enum for the possible versions of a Network Manifest.
-#[derive(Debug, Clone)]
-#[must_use]
-pub enum NetworkManifest<'manifest> {
-  /// Version 0 Network Manifest.
-  V0(&'manifest v0::NetworkManifest),
-}
-
-impl<'manifest> From<&'manifest v0::NetworkManifest> for NetworkManifest<'manifest> {
-  fn from(v: &'manifest v0::NetworkManifest) -> Self {
-    NetworkManifest::V0(v)
-  }
-}
-
-impl<'manifest> NetworkManifest<'manifest> {
-  #[must_use]
-  /// Get a list of [SchematicManifest]s from the [NetworkManifest]
-  pub fn schematics(&self) -> Vec<SchematicManifest> {
-    match self {
-      NetworkManifest::V0(network) => network.schematics.iter().map(SchematicManifest::V0).collect(),
-    }
-  }
-
-  /// Get a schematic by name
-  #[must_use]
-  pub fn schematic(&self, name: &str) -> Option<SchematicManifest> {
-    match self {
-      NetworkManifest::V0(network) => network
-        .schematics
+  fn try_from(def: v0::HostManifest) -> Result<Self> {
+    let flows: Result<HashMap<String, Flow>> = def
+      .network
+      .schematics
+      .iter()
+      .map(|val| Ok((val.name.clone(), val.try_into()?)))
+      .collect();
+    Ok(WasmflowManifest {
+      source: None,
+      version: def.version,
+      host: def.host.try_into()?,
+      default_flow: def.default_schematic,
+      name: def.network.name,
+      triggers: def.network.triggers.map(|v| v.into()),
+      collections: def
+        .network
+        .collections
         .iter()
-        .find(|s| s.name == name)
-        .map(SchematicManifest::V0),
-    }
+        .map(|val| (val.namespace.clone(), val.into()))
+        .collect(),
+      labels: def.network.labels,
+      flows: flows?,
+    })
   }
 }
 
-/// Enum for the possible versions of a Schematic Manifest.
-#[derive(Debug, Clone)]
-#[must_use]
-pub enum SchematicManifest<'manifest> {
-  /// Version 0 Schematic Manifest.
-  V0(&'manifest v0::SchematicManifest),
-}
+impl TryFrom<v1::WasmflowManifest> for WasmflowManifest {
+  type Error = ManifestError;
 
-impl<'manifest> SchematicManifest<'manifest> {
-  /// Get the schematic name
-  #[must_use]
-  pub fn name(&self) -> &str {
-    match self {
-      SchematicManifest::V0(m) => &m.name,
-    }
+  fn try_from(def: v1::WasmflowManifest) -> Result<Self> {
+    Ok(WasmflowManifest {
+      source: None,
+      version: def.version,
+      host: def.host.try_into()?,
+      default_flow: def.default_flow,
+      name: def.name,
+      triggers: def.unstable_triggers.map(|v| v.into()),
+      collections: def
+        .collections
+        .into_iter()
+        .map(|(k, v)| (k.clone(), (k, v).into()))
+        .collect(),
+      labels: def.labels,
+      flows: def
+        .flows
+        .into_iter()
+        .map(|(k, v)| Ok((k.clone(), (k, v).try_into()?)))
+        .collect::<Result<_>>()?,
+    })
   }
 }
 
-impl<'manifest> From<&'manifest v0::SchematicManifest> for SchematicManifest<'manifest> {
-  fn from(v: &'manifest v0::SchematicManifest) -> Self {
-    SchematicManifest::V0(v)
-  }
-}
-
-/// The Loadable trait can be used for any deserializable struct that can be loaded from.
-pub trait Loadable<T> {
+impl WasmflowManifest {
   /// Load struct from file by trying all the supported file formats.
-  fn load_from_file(path: impl AsRef<Path>) -> Result<T> {
+  pub fn load_from_file(path: impl AsRef<Path>) -> Result<WasmflowManifest> {
     let path = path.as_ref();
     if !path.exists() {
       return Err(Error::FileNotFound(path.to_string_lossy().into()));
     }
     debug!("Reading manifest from {}", path.to_string_lossy());
     let contents = read_to_string(path)?;
-    Self::from_yaml(&contents)
+    let mut manifest = Self::from_yaml(&contents)?;
+    manifest.source = Some(path.to_string_lossy().to_string());
+    Ok(manifest)
   }
+
   /// Load struct from bytes by attempting to parse all the supported file formats.
-  fn load_from_bytes(bytes: &[u8]) -> Result<T> {
+  pub fn load_from_bytes(source: Option<String>, bytes: &[u8]) -> Result<WasmflowManifest> {
     let contents = String::from_utf8_lossy(bytes);
-    Self::from_yaml(&contents)
+    let mut manifest = Self::from_yaml(&contents)?;
+    manifest.source = source;
+    Ok(manifest)
   }
+
   /// Load as YAML.
-  fn from_yaml(src: &str) -> Result<T>;
-}
-
-fn from_yaml<T>(src: &str) -> Result<T>
-where
-  T: DeserializeOwned,
-{
-  let result = serde_yaml::from_str(src).map_err(|e| ManifestError::YamlError(e.to_string()))?;
-  Ok(result)
-}
-
-impl Loadable<HostManifest> for HostManifest {
-  fn from_yaml(src: &str) -> Result<HostManifest> {
+  pub fn from_yaml(src: &str) -> Result<WasmflowManifest> {
     debug!("Trying to parse manifest as yaml");
     let raw: serde_yaml::Value = from_yaml(src)?;
     debug!("Yaml parsed successfully");
@@ -265,23 +234,108 @@ impl Loadable<HostManifest> for HostManifest {
       .as_i64()
       .unwrap_or_else(|| -> i64 { raw_version.as_str().and_then(|s| s.parse::<i64>().ok()).unwrap_or(-1) });
     let manifest = match version {
-      0 => Ok(HostManifest::V0(from_yaml(src)?)),
+      0 => Ok(from_yaml::<v0::HostManifest>(src)?.try_into()?),
+      1 => Ok(from_yaml::<v1::WasmflowManifest>(src)?.try_into()?),
       -1 => Err(Error::NoVersion),
       _ => Err(Error::VersionError(version.to_string())),
     };
+
     debug!("Manifest: {:?}", manifest);
     manifest
   }
-}
 
-impl Loadable<v0::NetworkManifest> for v0::NetworkManifest {
-  fn from_yaml(src: &str) -> Result<v0::NetworkManifest> {
-    from_yaml(src)
+  /// Determine if the configuration allows for fetching artifacts with the :latest tag.
+  pub fn host(&self) -> &HostConfig {
+    &self.host
+  }
+
+  /// Determine if the configuration allows for fetching artifacts with the :latest tag.
+  pub fn host_mut(&mut self) -> &mut HostConfig {
+    &mut self.host
+  }
+
+  /// Determine if the configuration allows for fetching artifacts with the :latest tag.
+  #[must_use]
+  pub fn allow_latest(&self) -> bool {
+    self.host.allow_latest
+  }
+
+  /// Return the list of insecure registries defined in the manifest
+  #[must_use]
+  pub fn insecure_registries(&self) -> &Vec<String> {
+    &self.host.insecure_registries
+  }
+
+  /// Return the underlying version of the source manifest.
+  #[must_use]
+  pub fn version(&self) -> u8 {
+    self.version
+  }
+
+  /// Return the underlying version of the source manifest.
+  #[must_use]
+  pub fn source(&self) -> &Option<String> {
+    &self.source
+  }
+
+  #[must_use]
+  /// Get a map of [Flow]s from the [WasmflowManifest]
+  pub fn flows(&self) -> &HashMap<String, Flow> {
+    &self.flows
+  }
+
+  #[must_use]
+  /// Get the default flow in this manifest.
+  pub fn default_flow(&self) -> &Option<String> {
+    &self.default_flow
+  }
+
+  /// Get the default flow in this manifest.
+  pub fn set_default_flow(&mut self, name: impl AsRef<str>) {
+    self.default_flow = Some(name.as_ref().to_owned());
+  }
+
+  #[must_use]
+  /// Get the name for this manifest.
+  pub fn name(&self) -> &Option<String> {
+    &self.name
+  }
+
+  #[must_use]
+  /// Get the name for this manifest.
+  pub fn labels(&self) -> &HashMap<String, String> {
+    &self.labels
+  }
+
+  #[must_use]
+  /// Get the name for this manifest.
+  pub fn collections(&self) -> &HashMap<String, CollectionDefinition> {
+    &self.collections
+  }
+
+  #[must_use]
+  /// Get the name for this manifest.
+  pub fn collection(&self, namespace: &str) -> Option<&CollectionDefinition> {
+    self.collections.iter().find(|(k, _)| *k == namespace).map(|(_, v)| v)
+  }
+
+  #[must_use]
+  /// Get the name for this manifest.
+  pub fn triggers(&self) -> &Option<EntrypointDefinition> {
+    &self.triggers
+  }
+
+  /// Get a schematic by name
+  #[must_use]
+  pub fn flow(&self, name: &str) -> Option<&Flow> {
+    self.flows.iter().find(|(n, _)| name == *n).map(|(_, v)| v)
   }
 }
 
-impl Loadable<v0::SchematicManifest> for v0::SchematicManifest {
-  fn from_yaml(src: &str) -> Result<v0::SchematicManifest> {
-    from_yaml(src)
-  }
+fn from_yaml<T>(src: &str) -> Result<T>
+where
+  T: DeserializeOwned,
+{
+  let result = serde_yaml::from_str(src).map_err(|e| ManifestError::YamlError(e.to_string()))?;
+  Ok(result)
 }

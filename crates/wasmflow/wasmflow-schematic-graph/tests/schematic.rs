@@ -5,7 +5,7 @@ use test::*;
 #[test_logger::test(tokio::test)]
 async fn test_walking() -> Result<()> {
   let manifest = load("./tests/manifests/v0/echo.yaml")?;
-  let network = from_manifest(&manifest.network().try_into()?)?;
+  let network = from_manifest(&manifest)?;
   let schematic = network.schematic("echo").unwrap();
 
   assert_eq!(schematic.name(), "echo");
@@ -32,7 +32,7 @@ async fn test_walking() -> Result<()> {
 #[test_logger::test(tokio::test)]
 async fn test_iterator() -> Result<()> {
   let manifest = load("./tests/manifests/v0/single-instance.yaml")?;
-  let network = from_manifest(&manifest.network().try_into()?)?;
+  let network = from_manifest(&manifest)?;
   let schematic = network.schematic("single-instance").unwrap();
   println!("components:{:#?}", schematic.components());
 
@@ -59,7 +59,7 @@ async fn test_iterator() -> Result<()> {
 #[test_logger::test(tokio::test)]
 async fn test_spread_io() -> Result<()> {
   let manifest = load("./tests/manifests/v0/spread-io.yaml")?;
-  let network = from_manifest(&manifest.network().try_into()?)?;
+  let network = from_manifest(&manifest)?;
   let schematic = network.schematic("spread-io").unwrap();
 
   let counter = Counter::walk_down(schematic);
@@ -95,7 +95,7 @@ async fn test_spread_io() -> Result<()> {
 #[test_logger::test(tokio::test)]
 async fn test_senders() -> Result<()> {
   let manifest = load("./tests/manifests/v0/senders.yaml")?;
-  let network = from_manifest(&manifest.network().try_into()?)?;
+  let network = from_manifest(&manifest)?;
   let schematic = network.schematic("test").unwrap();
 
   let counter = Counter::walk_up(schematic);
@@ -119,7 +119,7 @@ async fn test_senders() -> Result<()> {
 #[test_logger::test(tokio::test)]
 async fn test_dot() -> Result<()> {
   let manifest = load("./tests/manifests/v0/spread-io.yaml")?;
-  let network = from_manifest(&manifest.network().try_into()?)?;
+  let network = from_manifest(&manifest)?;
   let schematic = network.schematic("spread-io").unwrap();
 
   std::fs::write("./sample.dot", schematic.render_dot())?;

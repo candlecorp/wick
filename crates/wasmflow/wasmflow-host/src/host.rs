@@ -11,7 +11,7 @@ use seeded_random::Seed;
 use uuid::Uuid;
 use wasmflow_collection_cli::options::{MeshOptions, Options as HostOptions, ServerOptions};
 use wasmflow_collection_cli::ServerState;
-use wasmflow_manifest::host_definition::HostDefinition;
+use wasmflow_manifest::WasmflowManifest;
 use wasmflow_mesh::{Mesh, NatsOptions};
 use wasmflow_rpc::{RpcHandler, SharedRpcHandler};
 use wasmflow_runtime::prelude::*;
@@ -41,7 +41,7 @@ pub struct Host {
   kp: KeyPair,
   network: Option<Network>,
   mesh: Option<Arc<Mesh>>,
-  manifest: HostDefinition,
+  manifest: WasmflowManifest,
   server_metadata: Option<ServerState>,
 }
 
@@ -74,7 +74,7 @@ impl Host {
   }
 
   async fn get_mesh(&self) -> Result<Option<Arc<Mesh>>> {
-    if let Some(config) = &self.manifest.host.mesh {
+    if let Some(config) = &self.manifest.host().mesh {
       if config.enabled {
         debug!(address=%config.address,"connecting to mesh");
         let mesh = Mesh::connect(NatsOptions {
@@ -82,7 +82,7 @@ impl Host {
           client_id: self.get_host_id().to_owned(),
           creds_path: config.creds_path.clone(),
           token: config.token.clone(),
-          timeout: self.manifest.host.timeout,
+          timeout: self.manifest.host().timeout,
         })
         .await?;
         Ok(Some(Arc::new(mesh)))
@@ -140,8 +140,8 @@ impl Host {
       network_builder = network_builder.with_seed(seed);
     }
     network_builder = network_builder.namespace(self.get_host_id());
-    network_builder = network_builder.allow_latest(self.manifest.host.allow_latest);
-    network_builder = network_builder.allow_insecure(self.manifest.host.insecure_registries.clone());
+    network_builder = network_builder.allow_latest(self.manifest.host().allow_latest);
+    network_builder = network_builder.allow_insecure(self.manifest.host().insecure_registries.clone());
     if let Some(mesh) = &self.mesh {
       network_builder = network_builder.mesh(mesh.clone());
     }
@@ -157,7 +157,7 @@ impl Host {
 
     #[allow(clippy::manual_map)]
     let options = HostOptions {
-      rpc: match &self.manifest.host.rpc {
+      rpc: match &self.manifest.host().rpc {
         Some(config) => Some(ServerOptions {
           port: config.port,
           address: config.address,
@@ -168,7 +168,7 @@ impl Host {
         }),
         None => None,
       },
-      mesh: match &self.manifest.host.mesh {
+      mesh: match &self.manifest.host().mesh {
         Some(config) => Some(MeshOptions {
           enabled: config.enabled,
           address: config.address.clone(),
@@ -178,7 +178,7 @@ impl Host {
         None => None,
       },
       id: self.get_host_id().to_owned(),
-      timeout: self.manifest.host.timeout,
+      timeout: self.manifest.host().timeout,
     };
 
     let collection = from_registry(nuid);
@@ -228,7 +228,7 @@ impl Host {
 
   #[must_use]
   pub fn get_host_id(&self) -> &str {
-    self.manifest.host.id.as_ref().unwrap_or(&self.id)
+    self.manifest.host().id.as_ref().unwrap_or(&self.id)
   }
 
   #[must_use]
@@ -241,7 +241,7 @@ impl Host {
 #[must_use]
 #[derive(Debug, Clone)]
 pub struct HostBuilder {
-  manifest: HostDefinition,
+  manifest: WasmflowManifest,
 }
 
 impl Default for HostBuilder {
@@ -254,18 +254,18 @@ impl HostBuilder {
   /// Creates a new host builder.
   pub fn new() -> HostBuilder {
     HostBuilder {
-      manifest: HostDefinition::default(),
+      manifest: WasmflowManifest::default(),
     }
   }
 
   pub async fn from_manifest_url(location: &str, allow_latest: bool, insecure_registries: &[String]) -> Result<Self> {
     let manifest_src = wasmflow_loader::get_bytes(location, allow_latest, insecure_registries).await?;
 
-    let manifest = HostDefinition::load_from_bytes(Some(location.to_owned()), &manifest_src)?;
+    let manifest = WasmflowManifest::load_from_bytes(Some(location.to_owned()), &manifest_src)?;
     Ok(Self::from_definition(manifest))
   }
 
-  pub fn from_definition(definition: HostDefinition) -> Self {
+  pub fn from_definition(definition: WasmflowManifest) -> Self {
     HostBuilder { manifest: definition }
   }
 
@@ -289,7 +289,7 @@ impl TryFrom<PathBuf> for HostBuilder {
   type Error = Error;
 
   fn try_from(file: PathBuf) -> Result<Self> {
-    let manifest = HostDefinition::load_from_file(&file)?;
+    let manifest = WasmflowManifest::load_from_file(&file)?;
     Ok(HostBuilder::from_definition(manifest))
   }
 }
@@ -336,7 +336,7 @@ mod test {
   #[test_logger::test(tokio::test)]
   async fn request_direct() -> Result<()> {
     let file = PathBuf::from("manifests/logger.yaml");
-    let manifest = HostDefinition::load_from_file(&file)?;
+    let manifest = WasmflowManifest::load_from_file(&file)?;
     let mut host = HostBuilder::from_definition(manifest).build();
     host.start(None).await?;
     let passed_data = "logging output";
@@ -355,8 +355,8 @@ mod test {
   #[test_logger::test(tokio::test)]
   async fn request_rpc_server() -> Result<()> {
     let file = PathBuf::from("manifests/logger.yaml");
-    let mut def = HostDefinition::load_from_file(&file)?;
-    def.host.rpc = Some(HttpConfig {
+    let mut def = WasmflowManifest::load_from_file(&file)?;
+    def.host_mut().rpc = Some(HttpConfig {
       enabled: true,
       port: None,
       address: Some(Ipv4Addr::from_str("127.0.0.1").unwrap()),

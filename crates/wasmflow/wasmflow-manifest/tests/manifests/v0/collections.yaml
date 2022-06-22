@@ -20,7 +20,7 @@ network:
       namespace: wapc
     - kind: Par
       reference: nothing
-      namespace: wapc
+      namespace: wapc2
       data:
         obj:
           data_prop: data_value

@@ -11,7 +11,7 @@ use parking_lot::Mutex;
 use seeded_random::{Random, Seed};
 use uuid::Uuid;
 use wasmflow_interpreter::{HandlerMap, NamespaceHandler};
-use wasmflow_manifest::HostDefinition;
+use wasmflow_manifest::WasmflowManifest;
 use wasmflow_mesh::Mesh;
 
 use crate::collections::{
@@ -31,7 +31,7 @@ type Result<T> = std::result::Result<T, NetworkError>;
 #[derive(Debug)]
 pub(crate) struct Initialize {
   pub(crate) id: Uuid,
-  pub(crate) manifest: HostDefinition,
+  pub(crate) manifest: WasmflowManifest,
   pub(crate) allowed_insecure: Vec<String>,
   pub(crate) allow_latest: bool,
   pub(crate) mesh: Option<Arc<Mesh>>,
@@ -55,7 +55,7 @@ static HOST_REGISTRY: Lazy<Mutex<ServiceMap>> = Lazy::new(|| Mutex::new(HashMap:
 
 impl NetworkService {
   pub(crate) async fn new(msg: Initialize) -> Result<Arc<Self>> {
-    let graph = wasmflow_interpreter::graph::from_def(msg.manifest.network())?;
+    let graph = wasmflow_interpreter::graph::from_def(&msg.manifest)?;
     let mut collections = HandlerMap::default();
     let rng = Random::from_seed(msg.rng_seed);
 
@@ -63,7 +63,7 @@ impl NetworkService {
 
     collections.add(stdlib);
 
-    for collection in &msg.manifest.network().collections {
+    for collection in msg.manifest.collections().values() {
       let collection_init = CollectionInitOptions {
         rng_seed: rng.seed(),
         network_id: msg.id,
@@ -76,7 +76,7 @@ impl NetworkService {
       collections.add(p);
     }
 
-    let source = msg.manifest.source.clone();
+    let source = msg.manifest.source().clone();
     let mut interpreter = wasmflow_interpreter::Interpreter::new(
       Some(rng.seed()),
       graph,
@@ -90,7 +90,7 @@ impl NetworkService {
       None => interpreter.start(None, None).await,
     }
 
-    let entrypoint = if let Some(entry) = &msg.manifest.network().triggers {
+    let entrypoint = if let Some(entry) = &msg.manifest.triggers() {
       Some(initialize_wasm_entrypoint(entry, msg.id, msg.allow_latest, &msg.allowed_insecure).await?)
     } else {
       None
@@ -128,7 +128,7 @@ impl NetworkService {
   ) -> BoxFuture<Result<Arc<NetworkService>>> {
     Box::pin(async move {
       let bytes = wasmflow_loader::get_bytes(location, opts.allow_latest, &opts.allowed_insecure).await?;
-      let manifest = wasmflow_manifest::HostDefinition::load_from_bytes(Some(location.to_owned()), &bytes)?;
+      let manifest = wasmflow_manifest::WasmflowManifest::load_from_bytes(Some(location.to_owned()), &bytes)?;
 
       let init = Initialize {
         id: uid,
@@ -212,7 +212,7 @@ pub(crate) async fn initialize_collection(
     CollectionKind::Native => unreachable!(), // Should not be handled via this route
     CollectionKind::Par => initialize_par_collection(collection, namespace, opts).await,
     CollectionKind::GrpcUrl => initialize_grpc_collection(collection, namespace).await,
-    CollectionKind::Wapc => initialize_wasm_collection(collection, namespace, opts).await,
+    CollectionKind::Wasm => initialize_wasm_collection(collection, namespace, opts).await,
     CollectionKind::Mesh => initialize_mesh_collection(collection, namespace, opts).await,
   };
   Ok(result?)

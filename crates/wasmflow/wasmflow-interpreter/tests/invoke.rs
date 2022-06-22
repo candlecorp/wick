@@ -8,7 +8,6 @@ use serde_json::Value;
 use test::{JsonWriter, TestCollection};
 use wasmflow_interpreter::graph::from_def;
 use wasmflow_interpreter::{BoxError, Collection, HandlerMap, Interpreter, NamespaceHandler};
-use wasmflow_manifest::Loadable;
 use wasmflow_sdk::v1::packet::PacketMap;
 use wasmflow_sdk::v1::transport::TransportStream;
 use wasmflow_sdk::v1::types::CollectionSignature;
@@ -26,14 +25,14 @@ impl Collection for SignatureTestCollection {
   }
 }
 
-fn load<T: AsRef<Path>>(path: T) -> Result<wasmflow_manifest::HostManifest> {
-  Ok(wasmflow_manifest::HostManifest::load_from_file(path.as_ref())?)
+fn load<T: AsRef<Path>>(path: T) -> Result<wasmflow_manifest::WasmflowManifest> {
+  Ok(wasmflow_manifest::WasmflowManifest::load_from_file(path.as_ref())?)
 }
 
 #[test_logger::test(tokio::test)]
 async fn test_invoke_collection() -> Result<()> {
   let manifest = load("./tests/manifests/v0/external.yaml")?;
-  let network = from_def(&manifest.network().try_into()?)?;
+  let network = from_def(&manifest)?;
   let collections = HandlerMap::new(vec![NamespaceHandler::new("test", Box::new(TestCollection::new()))]);
 
   let inputs = PacketMap::from([("input", "Hello world".to_owned())]);

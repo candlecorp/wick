@@ -10,14 +10,14 @@ use serde_json::Value;
 use wasmflow_sdk::v1::transport::MessageTransport;
 
 use crate::default::{parse_default, process_default};
-use crate::parse::parse_id;
-use crate::{Error, Result, SchematicManifest};
+use crate::parse::v0::parse_id;
+use crate::{Error, Result};
 
 #[derive(Debug, Clone, Default)]
 /// The SchematicDefinition struct is a normalized representation of a Wasmflow [SchematicManifest].
 /// It handles the job of translating manifest versions into a consistent data structure.
 #[must_use]
-pub struct SchematicDefinition {
+pub struct Flow {
   /// The name of the schematic.
   pub name: String,
   /// A mapping of instance names to the components they refer to.
@@ -30,7 +30,7 @@ pub struct SchematicDefinition {
   pub constraints: HashMap<String, String>,
 }
 
-impl SchematicDefinition {
+impl Flow {
   /// Get the name as an owned [String].
   #[must_use]
   pub fn get_name(&self) -> String {
@@ -49,7 +49,7 @@ impl SchematicDefinition {
   }
 }
 
-impl TryFrom<&crate::v0::SchematicManifest> for SchematicDefinition {
+impl TryFrom<&crate::v0::SchematicManifest> for Flow {
   type Error = Error;
 
   fn try_from(manifest: &crate::v0::SchematicManifest) -> Result<Self> {
@@ -70,14 +70,45 @@ impl TryFrom<&crate::v0::SchematicManifest> for SchematicDefinition {
   }
 }
 
-impl TryFrom<SchematicManifest<'_>> for SchematicDefinition {
+impl TryFrom<(String, crate::v1::FlowDefinition)> for Flow {
   type Error = Error;
 
-  fn try_from(manifest: SchematicManifest) -> Result<Self> {
-    let def = match manifest {
-      SchematicManifest::V0(manifest) => manifest.try_into()?,
-    };
-    Ok(def)
+  fn try_from(flow: (String, crate::v1::FlowDefinition)) -> Result<Self> {
+    let instances: Result<HashMap<String, ComponentDefinition>> = flow
+      .1
+      .instances
+      .iter()
+      .map(|(key, val)| Ok((key.clone(), val.try_into()?)))
+      .collect();
+    let connections: Result<Vec<ConnectionDefinition>> = flow.1.flow.iter().map(|def| def.try_into()).collect();
+    Ok(Self {
+      name: flow.0,
+      instances: instances?,
+      connections: connections?,
+      collections: flow.1.collections,
+      constraints: Default::default(),
+    })
+  }
+}
+
+impl TryFrom<(&String, &crate::v1::FlowDefinition)> for Flow {
+  type Error = Error;
+
+  fn try_from(flow: (&String, &crate::v1::FlowDefinition)) -> Result<Self> {
+    let instances: Result<HashMap<String, ComponentDefinition>> = flow
+      .1
+      .instances
+      .iter()
+      .map(|(key, val)| Ok((key.clone(), val.try_into()?)))
+      .collect();
+    let connections: Result<Vec<ConnectionDefinition>> = flow.1.flow.iter().map(|def| def.try_into()).collect();
+    Ok(Self {
+      name: flow.0.clone(),
+      instances: instances?,
+      connections: connections?,
+      collections: flow.1.collections.clone(),
+      constraints: Default::default(),
+    })
   }
 }
 
@@ -130,6 +161,18 @@ impl TryFrom<crate::v0::ComponentDefinition> for ComponentDefinition {
   }
 }
 
+impl TryFrom<crate::v1::ComponentDefinition> for ComponentDefinition {
+  type Error = Error;
+  fn try_from(def: crate::v1::ComponentDefinition) -> Result<Self> {
+    let (ns, name) = parse_id(&def.id)?;
+    Ok(ComponentDefinition {
+      namespace: ns.to_owned(),
+      name: name.to_owned(),
+      data: def.config,
+    })
+  }
+}
+
 impl TryFrom<&crate::v0::ComponentDefinition> for ComponentDefinition {
   type Error = Error;
   fn try_from(def: &crate::v0::ComponentDefinition) -> Result<Self> {
@@ -138,6 +181,18 @@ impl TryFrom<&crate::v0::ComponentDefinition> for ComponentDefinition {
       namespace: ns.to_owned(),
       name: name.to_owned(),
       data: def.data.clone(),
+    })
+  }
+}
+
+impl TryFrom<&crate::v1::ComponentDefinition> for ComponentDefinition {
+  type Error = Error;
+  fn try_from(def: &crate::v1::ComponentDefinition) -> Result<Self> {
+    let (ns, name) = parse_id(&def.id)?;
+    Ok(ComponentDefinition {
+      namespace: ns.to_owned(),
+      name: name.to_owned(),
+      data: def.config.clone(),
     })
   }
 }
@@ -196,7 +251,7 @@ impl ConnectionDefinition {
 
   /// Generate a [ConnectionDefinition] from short form syntax. See [wasmflow.com](https://wasmflow.com/docs/configuration/short-form-syntax/) for more info.
   pub fn from_v0_str(s: &str) -> Result<Self> {
-    let parsed = crate::parse::parse_connection_v0(s)?;
+    let parsed = crate::parse::v0::parse_connection(s)?;
     (&parsed).try_into()
   }
 }
@@ -255,6 +310,17 @@ impl ConnectionTargetDefinition {
         port: port.as_ref().to_owned(),
       },
       data: None,
+    }
+  }
+
+  /// Constructor for a [PortReference]. Used mostly in test code.
+  pub fn new_with_data<T: AsRef<str>, U: AsRef<str>>(instance: T, port: U, data: Value) -> Self {
+    Self {
+      target: PortReference {
+        instance: instance.as_ref().to_owned(),
+        port: port.as_ref().to_owned(),
+      },
+      data: Some(SenderData { inner: data }),
     }
   }
 
@@ -321,7 +387,7 @@ impl ConnectionTargetDefinition {
 
   /// Generate a [ConnectionTargetDefinition] from short form syntax. See [wasmflow.com](https://wasmflow.com/docs/configuration/short-form-syntax/) for more info.
   pub fn from_v0_str(s: &str) -> Result<Self> {
-    let parsed = crate::parse::parse_connection_target_v0(s)?;
+    let parsed = crate::parse::v0::parse_connection_target(s)?;
     parsed.try_into()
   }
 }
@@ -330,6 +396,22 @@ impl TryFrom<&crate::v0::ConnectionDefinition> for ConnectionDefinition {
   type Error = Error;
 
   fn try_from(def: &crate::v0::ConnectionDefinition) -> Result<Self> {
+    let from: ConnectionTargetDefinition = def.from.clone().try_into()?;
+    let to: ConnectionTargetDefinition = def.to.clone().try_into()?;
+    let default = match &def.default {
+      Some(json_str) => {
+        Some(parse_default(json_str).map_err(|e| Error::DefaultsError(from.clone(), to.clone(), e.to_string()))?)
+      }
+      None => None,
+    };
+    Ok(ConnectionDefinition { from, to, default })
+  }
+}
+
+impl TryFrom<&crate::v1::ConnectionDefinition> for ConnectionDefinition {
+  type Error = Error;
+
+  fn try_from(def: &crate::v1::ConnectionDefinition) -> Result<Self> {
     let from: ConnectionTargetDefinition = def.from.clone().try_into()?;
     let to: ConnectionTargetDefinition = def.to.clone().try_into()?;
     let default = match &def.default {
@@ -402,19 +484,25 @@ impl Display for PortReference {
   }
 }
 
-impl From<&crate::v0::ConnectionTargetDefinition> for PortReference {
-  fn from(def: &crate::v0::ConnectionTargetDefinition) -> Self {
-    PortReference {
-      instance: def.instance.clone(),
-      port: def.port.clone(),
-    }
-  }
-}
-
 impl TryFrom<crate::v0::ConnectionTargetDefinition> for ConnectionTargetDefinition {
   type Error = Error;
 
   fn try_from(def: crate::v0::ConnectionTargetDefinition) -> Result<Self> {
+    let data = def.data.map(|json| SenderData { inner: json });
+    Ok(ConnectionTargetDefinition {
+      target: PortReference {
+        instance: def.instance,
+        port: def.port,
+      },
+      data,
+    })
+  }
+}
+
+impl TryFrom<crate::v1::ConnectionTargetDefinition> for ConnectionTargetDefinition {
+  type Error = Error;
+
+  fn try_from(def: crate::v1::ConnectionTargetDefinition) -> Result<Self> {
     let data = def.data.map(|json| SenderData { inner: json });
     Ok(ConnectionTargetDefinition {
       target: PortReference {

@@ -36,11 +36,11 @@ pub enum ManifestError {
   YamlError(String),
 
   /// Default was requested when none present.
-  #[error("Invalid connection target syntax: {0}")]
+  #[error("Invalid connection target syntax: '{0}'")]
   ConnectionTargetSyntax(String),
 
   /// Default was requested when none present.
-  #[error("Invalid connection definition syntax: {0}")]
+  #[error("Invalid connection definition syntax: '{0}'")]
   ConnectionDefinitionSyntax(String),
 
   /// Ambiguous reference in connection shorthand.

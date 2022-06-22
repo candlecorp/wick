@@ -7,13 +7,12 @@ use seeded_random::Seed;
 use test::{JsonWriter, TestCollection};
 use wasmflow_interpreter::graph::from_def;
 use wasmflow_interpreter::{HandlerMap, Interpreter, InterpreterOptions, NamespaceHandler};
-use wasmflow_manifest::Loadable;
 use wasmflow_sdk::v1::packet::PacketMap;
 use wasmflow_sdk::v1::transport::MessageTransport;
 use wasmflow_sdk::v1::{Entity, Invocation};
 
-fn load<T: AsRef<Path>>(path: T) -> Result<wasmflow_manifest::HostManifest> {
-  Ok(wasmflow_manifest::HostManifest::load_from_file(path.as_ref())?)
+fn load<T: AsRef<Path>>(path: T) -> Result<wasmflow_manifest::WasmflowManifest> {
+  Ok(wasmflow_manifest::WasmflowManifest::load_from_file(path.as_ref())?)
 }
 
 const OPTIONS: Option<InterpreterOptions> = Some(InterpreterOptions {
@@ -26,7 +25,7 @@ const OPTIONS: Option<InterpreterOptions> = Some(InterpreterOptions {
 #[test_logger::test(tokio::test)]
 async fn test_echo() -> Result<()> {
   let manifest = load("./tests/manifests/v0/echo.yaml")?;
-  let network = from_def(&manifest.network().try_into()?)?;
+  let network = from_def(&manifest)?;
 
   let inputs = PacketMap::from([("input", "Hello world".to_owned())]);
 
@@ -50,7 +49,7 @@ async fn test_echo() -> Result<()> {
 #[test_logger::test(tokio::test)]
 async fn test_external_collection() -> Result<()> {
   let manifest = load("./tests/manifests/v0/external.yaml")?;
-  let network = from_def(&manifest.network().try_into()?)?;
+  let network = from_def(&manifest)?;
   let collections = HandlerMap::new(vec![NamespaceHandler::new("test", Box::new(TestCollection::new()))]);
 
   let inputs = PacketMap::from([("input", "Hello world".to_owned())]);
@@ -75,7 +74,7 @@ async fn test_external_collection() -> Result<()> {
 #[test_logger::test(tokio::test)]
 async fn test_self() -> Result<()> {
   let manifest = load("./tests/manifests/v0/reference-self.yaml")?;
-  let network = from_def(&manifest.network().try_into()?)?;
+  let network = from_def(&manifest)?;
   let collections = HandlerMap::new(vec![NamespaceHandler::new("test", Box::new(TestCollection::new()))]);
 
   let inputs = PacketMap::from([("parent_input", "Hello world".to_owned())]);
@@ -101,7 +100,7 @@ async fn test_self() -> Result<()> {
 #[test_logger::test(tokio::test)]
 async fn test_exception_default() -> Result<()> {
   let manifest = load("./tests/manifests/v0/exception-default.yaml")?;
-  let network = from_def(&manifest.network().try_into()?)?;
+  let network = from_def(&manifest)?;
   let collections = HandlerMap::new(vec![NamespaceHandler::new("test", Box::new(TestCollection::new()))]);
   let inputs = PacketMap::from([("input", "Hello world".to_owned())]);
 
@@ -126,7 +125,7 @@ async fn test_exception_default() -> Result<()> {
 #[test_logger::test(tokio::test)]
 async fn test_exception_nodefault() -> Result<()> {
   let manifest = load("./tests/manifests/v0/exception-nodefault.yaml")?;
-  let network = from_def(&manifest.network().try_into()?)?;
+  let network = from_def(&manifest)?;
   let collections = HandlerMap::new(vec![NamespaceHandler::new("test", Box::new(TestCollection::new()))]);
   let inputs = PacketMap::from([("input", "Hello world".to_owned())]);
 
@@ -149,7 +148,7 @@ async fn test_exception_nodefault() -> Result<()> {
 #[test_logger::test(tokio::test)]
 async fn test_inherent() -> Result<()> {
   let manifest = load("./tests/manifests/v0/inherent.yaml")?;
-  let network = from_def(&manifest.network().try_into()?)?;
+  let network = from_def(&manifest)?;
   let collections = HandlerMap::new(vec![NamespaceHandler::new("test", Box::new(TestCollection::new()))]);
   let inputs = PacketMap::default();
 
@@ -172,7 +171,7 @@ async fn test_inherent() -> Result<()> {
 #[test_logger::test(tokio::test)]
 async fn test_inherent_nested() -> Result<()> {
   let manifest = load("./tests/manifests/v0/inherent-nested.yaml")?;
-  let network = from_def(&manifest.network().try_into()?)?;
+  let network = from_def(&manifest)?;
   let collections = HandlerMap::new(vec![NamespaceHandler::new("test", Box::new(TestCollection::new()))]);
   let inputs = PacketMap::default();
 
@@ -200,7 +199,7 @@ async fn test_inherent_nested() -> Result<()> {
 #[test_logger::test(tokio::test)]
 async fn test_inherent_disconnected() -> Result<()> {
   let manifest = load("./tests/manifests/v0/inherent-disconnected.yaml")?;
-  let network = from_def(&manifest.network().try_into()?)?;
+  let network = from_def(&manifest)?;
   let collections = HandlerMap::new(vec![NamespaceHandler::new("test", Box::new(TestCollection::new()))]);
   let inputs = PacketMap::from([("input", "Hello world".to_owned())]);
 
@@ -224,7 +223,7 @@ async fn test_inherent_disconnected() -> Result<()> {
 #[test_logger::test(tokio::test)]
 async fn test_stream() -> Result<()> {
   let manifest = load("./tests/manifests/v0/stream.yaml")?;
-  let network = from_def(&manifest.network().try_into()?)?;
+  let network = from_def(&manifest)?;
   let collections = HandlerMap::new(vec![NamespaceHandler::new("test", Box::new(TestCollection::new()))]);
   let input_str = "Hello world".to_owned();
   let inputs = PacketMap::from([("input", input_str.clone())]);
@@ -250,7 +249,7 @@ async fn test_stream() -> Result<()> {
 #[test_logger::test(tokio::test)]
 async fn test_spread() -> Result<()> {
   let manifest = load("./tests/manifests/v0/spread.yaml")?;
-  let network = from_def(&manifest.network().try_into()?)?;
+  let network = from_def(&manifest)?;
   let collections = HandlerMap::new(vec![NamespaceHandler::new("test", Box::new(TestCollection::new()))]);
 
   let inputs = PacketMap::from([("input", "Hello world".to_owned())]);
@@ -277,7 +276,7 @@ async fn test_spread() -> Result<()> {
 #[test_logger::test(tokio::test)]
 async fn test_generator() -> Result<()> {
   let manifest = load("./tests/manifests/v0/generator.yaml")?;
-  let network = from_def(&manifest.network().try_into()?)?;
+  let network = from_def(&manifest)?;
   let collections = HandlerMap::new(vec![NamespaceHandler::new("test", Box::new(TestCollection::new()))]);
 
   let inputs = PacketMap::default();
@@ -300,7 +299,7 @@ async fn test_generator() -> Result<()> {
 #[test_logger::test(tokio::test)]
 async fn test_generator_sibling() -> Result<()> {
   let manifest = load("./tests/manifests/v0/generator-sibling.yaml")?;
-  let network = from_def(&manifest.network().try_into()?)?;
+  let network = from_def(&manifest)?;
   let collections = HandlerMap::new(vec![NamespaceHandler::new("test", Box::new(TestCollection::new()))]);
 
   let inputs = PacketMap::from([("input", "my-input".to_owned())]);
@@ -323,7 +322,7 @@ async fn test_generator_sibling() -> Result<()> {
 #[test_logger::test(tokio::test)]
 async fn test_generator_multi_sibling() -> Result<()> {
   let manifest = load("./tests/manifests/v0/generator-multi-sibling.yaml")?;
-  let network = from_def(&manifest.network().try_into()?)?;
+  let network = from_def(&manifest)?;
   let collections = HandlerMap::new(vec![NamespaceHandler::new("test", Box::new(TestCollection::new()))]);
 
   let inputs = PacketMap::from([
@@ -351,7 +350,7 @@ async fn test_generator_multi_sibling() -> Result<()> {
 #[test_logger::test(tokio::test)]
 async fn test_stream_collection_ref() -> Result<()> {
   let manifest = load("./tests/manifests/v0/stream-collection-ref.yaml")?;
-  let network = from_def(&manifest.network().try_into()?)?;
+  let network = from_def(&manifest)?;
   let collections = HandlerMap::new(vec![NamespaceHandler::new("test", Box::new(TestCollection::new()))]);
 
   let inputs = PacketMap::from([("input", "my-input".to_owned())]);
@@ -375,7 +374,7 @@ async fn test_stream_collection_ref() -> Result<()> {
 #[test_logger::test(tokio::test)]
 async fn test_stream_multi() -> Result<()> {
   let manifest = load("./tests/manifests/v0/stream-multi.yaml")?;
-  let network = from_def(&manifest.network().try_into()?)?;
+  let network = from_def(&manifest)?;
   let collections = HandlerMap::new(vec![NamespaceHandler::new("test", Box::new(TestCollection::new()))]);
 
   let inputs = PacketMap::from([("input", "hello world".to_owned())]);

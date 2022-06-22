@@ -2,8 +2,8 @@ use std::convert::TryInto;
 
 use serde_json::Value;
 
-use crate::schematic_definition::SchematicDefinition;
-use crate::{Error, NetworkManifest};
+use crate::flow_definition::Flow;
+use crate::Error;
 
 #[derive(Debug, Default, Clone)]
 
@@ -16,7 +16,7 @@ pub struct NetworkDefinition {
   /// An optional entrypoint for the network.
   pub triggers: Option<EntrypointDefinition>,
   /// A list of SchematicDefinitions.
-  pub schematics: Vec<SchematicDefinition>,
+  pub schematics: Vec<Flow>,
   /// A list of CollectionDefinitions.
   pub collections: Vec<CollectionDefinition>,
 }
@@ -24,7 +24,7 @@ pub struct NetworkDefinition {
 impl NetworkDefinition {
   /// Get a [SchematicDefinition] by name.
   #[must_use]
-  pub fn schematic(&self, name: &str) -> Option<&SchematicDefinition> {
+  pub fn schematic(&self, name: &str) -> Option<&Flow> {
     self.schematics.iter().find(|s| s.name == name)
   }
 }
@@ -32,7 +32,7 @@ impl NetworkDefinition {
 impl TryFrom<&crate::v0::NetworkManifest> for NetworkDefinition {
   type Error = Error;
   fn try_from(def: &crate::v0::NetworkManifest) -> Result<Self, Error> {
-    let schematics: Result<Vec<SchematicDefinition>, Error> = def.schematics.iter().map(|val| val.try_into()).collect();
+    let schematics: Result<Vec<Flow>, Error> = def.schematics.iter().map(|val| val.try_into()).collect();
     let collections = def.collections.iter().map(|val| val.into()).collect();
     Ok(Self {
       name: def.name.clone(),
@@ -40,15 +40,6 @@ impl TryFrom<&crate::v0::NetworkManifest> for NetworkDefinition {
       triggers: def.triggers.clone().map(EntrypointDefinition::from),
       collections,
     })
-  }
-}
-
-impl TryFrom<NetworkManifest<'_>> for NetworkDefinition {
-  type Error = Error;
-  fn try_from(manifest: NetworkManifest) -> Result<Self, Error> {
-    match manifest {
-      NetworkManifest::V0(manifest) => manifest.try_into(),
-    }
   }
 }
 
@@ -67,6 +58,15 @@ impl From<crate::v0::EntrypointDefinition> for EntrypointDefinition {
     EntrypointDefinition {
       reference: def.reference,
       data: def.data,
+    }
+  }
+}
+
+impl From<crate::v1::EntrypointDefinition> for EntrypointDefinition {
+  fn from(def: crate::v1::EntrypointDefinition) -> Self {
+    EntrypointDefinition {
+      reference: def.reference,
+      data: def.config,
     }
   }
 }
@@ -96,6 +96,17 @@ impl From<&crate::v0::CollectionDefinition> for CollectionDefinition {
   }
 }
 
+impl From<(String, crate::v1::CollectionDefinition)> for CollectionDefinition {
+  fn from(def: (String, crate::v1::CollectionDefinition)) -> Self {
+    CollectionDefinition {
+      namespace: def.0,
+      kind: def.1.kind.into(),
+      reference: def.1.reference,
+      data: def.1.config,
+    }
+  }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 /// The kind of collection.
 pub enum CollectionKind {
@@ -104,7 +115,7 @@ pub enum CollectionKind {
   /// The URL for a separately managed GRPC endpoint.
   GrpcUrl = 1,
   /// A WaPC WebAssembly collection.
-  Wapc = 2,
+  Wasm = 2,
   /// A collection accessible via a connected mesh.
   Mesh = 3,
   /// A local or remote Network definition.
@@ -119,9 +130,22 @@ impl From<crate::v0::CollectionKind> for CollectionKind {
       crate::v0::CollectionKind::Native => CollectionKind::Native,
       crate::v0::CollectionKind::Par => CollectionKind::Par,
       crate::v0::CollectionKind::GrpcUrl => CollectionKind::GrpcUrl,
-      crate::v0::CollectionKind::WaPC => CollectionKind::Wapc,
+      crate::v0::CollectionKind::WaPC => CollectionKind::Wasm,
       crate::v0::CollectionKind::Mesh => CollectionKind::Mesh,
       crate::v0::CollectionKind::Network => CollectionKind::Network,
+    }
+  }
+}
+
+impl From<crate::v1::CollectionKind> for CollectionKind {
+  fn from(def: crate::v1::CollectionKind) -> Self {
+    match def {
+      crate::v1::CollectionKind::Native => CollectionKind::Native,
+      crate::v1::CollectionKind::Par => CollectionKind::Par,
+      crate::v1::CollectionKind::GrpcUrl => CollectionKind::GrpcUrl,
+      crate::v1::CollectionKind::WASM => CollectionKind::Wasm,
+      crate::v1::CollectionKind::Mesh => CollectionKind::Mesh,
+      crate::v1::CollectionKind::Network => CollectionKind::Network,
     }
   }
 }
