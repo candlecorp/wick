@@ -442,7 +442,6 @@ name = "cli-common"
 version = "0.4.0"
 dependencies = [
  "anyhow",
- "clap 3.2.2",
  "serde_json",
  "tokio-stream",
  "tracing",
@@ -4038,12 +4037,9 @@ dependencies = [
  "tracing",
  "trycmd",
  "wasmflow-collection-cli",
- "wasmflow-host",
- "wasmflow-manifest",
  "wasmflow-oci",
  "wasmflow-par",
  "wasmflow-rpc",
- "wasmflow-runtime",
  "wasmflow-sdk",
  "wasmflow-wascap",
 ]
@@ -4369,7 +4365,6 @@ dependencies = [
  "tokio",
  "tokio-stream",
  "wasmflow-codec",
- "wasmflow-component",
  "wasmflow-entity",
  "wasmflow-output",
  "wasmflow-packet",
@@ -4551,6 +4546,7 @@ dependencies = [
  "tracing-futures",
  "uuid",
  "wasmflow-manifest",
+ "wasmflow-parser",
  "wasmflow-schematic-graph",
  "wasmflow-sdk",
 ]
@@ -4635,7 +4631,6 @@ name = "wasmflow-manifest"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "lazy_static",
  "logger",
  "num-traits",
  "pretty_assertions",
@@ -4649,6 +4644,7 @@ dependencies = [
  "test-logger",
  "thiserror",
  "tracing",
+ "wasmflow-parser",
  "wasmflow-sdk",
 ]
 
@@ -4740,6 +4736,21 @@ dependencies = [
  "tracing",
  "wasmflow-sdk",
  "wasmflow-wascap",
+]
+
+[[package]]
+name = "wasmflow-parser"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "lazy_static",
+ "logger",
+ "pretty_assertions",
+ "regex",
+ "serde",
+ "serde_json",
+ "test-logger",
+ "thiserror",
 ]
 
 [[package]]
@@ -4864,7 +4875,6 @@ dependencies = [
  "async-trait",
  "futures",
  "logger",
- "parking_lot 0.12.0",
  "seeded-random",
  "serde",
  "test-logger",

@@ -23,8 +23,8 @@ type WasmflowManifest {
   "A map of namespace to external component collection."
   collections: {string: CollectionDefinition},
 
-  "A map of flow names to their definitions."
-  flows: {string: FlowDefinition},
+  "A map of flow-component names to their definitions."
+  components: {string: FlowDefinition},
 }
 
 "Host configuration options."

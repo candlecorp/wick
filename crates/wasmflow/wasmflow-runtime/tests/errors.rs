@@ -2,8 +2,7 @@ use std::collections::HashMap;
 
 use pretty_assertions::assert_eq;
 use runtime_testutils::*;
-use wasmflow_runtime::prelude::TransportWrapper;
-use wasmflow_sdk::v1::transport::MessageTransport;
+use wasmflow_sdk::v1::transport::{MessageTransport, TransportWrapper};
 use wasmflow_sdk::v1::{Entity, Invocation};
 type Result<T> = anyhow::Result<T, anyhow::Error>;
 

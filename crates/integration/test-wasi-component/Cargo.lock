@@ -709,7 +709,6 @@ dependencies = [
  "serde",
  "tokio-stream",
  "wasmflow-codec",
- "wasmflow-component",
  "wasmflow-entity",
  "wasmflow-output",
  "wasmflow-packet",

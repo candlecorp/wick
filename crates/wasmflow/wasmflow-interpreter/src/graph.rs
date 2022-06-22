@@ -8,7 +8,7 @@ pub mod types {
 }
 
 use types::*;
-use wasmflow_manifest::parse::CORE_ID;
+use wasmflow_parser::parse::CORE_ID;
 use wasmflow_schematic_graph::{ComponentReference, SCHEMATIC_OUTPUT};
 
 use crate::constants::{INTERNAL_ID_INHERENT, NS_COLLECTIONS, NS_CORE, NS_INTERNAL};

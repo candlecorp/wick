@@ -1,3 +1,5 @@
+//! Wasmflow Manifest implementation
+
 // !!START_LINTS
 // Wasmflow lints
 // Do not change anything between the START_LINTS and END_LINTS line.
@@ -83,28 +85,17 @@
 #![allow(unused_attributes)]
 // !!END_LINTS
 // Add exceptions here
-#![allow(missing_docs)] // TODO
+#![allow()]
 
-#[macro_use]
-extern crate tracing;
+/// Module for parsing parts of a manifest.
+pub mod parse;
 
-mod collections;
-pub(crate) mod dev;
-mod dispatch;
+/// Wasmflow Manifest error.
 pub mod error;
-mod json_writer;
-mod network;
-mod network_service;
-#[cfg(test)]
-pub(crate) mod test;
-pub(crate) mod utils;
 
-pub use collections::error::CollectionError;
-pub use collections::network_collection::Collection as NetworkCollection;
-pub use network::{Network, NetworkBuilder};
-pub use network_service::error::NetworkError;
+pub use parse::v0::parse_id;
 
-pub type Error = error::RuntimeError;
+use crate::error::ParserError;
 
-/// The reserved namespace for Wasmflow's initial native API.
-pub const WAFL_V0_NAMESPACE: &str = "wafl";
+/// The crate's error type.
+pub type Error = ParserError;

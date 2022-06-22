@@ -1,32 +1,17 @@
 use std::collections::HashMap;
 use std::str::FromStr;
 
-use regex::Regex;
 use serde::Deserialize;
 
-use crate::{parse, v1, Error};
+use crate::{v1, Error};
 
-lazy_static::lazy_static! {
-    pub(crate) static ref CONNECTION_TARGET_REGEX: Regex = Regex::new(&format!(r"^({}|{}|{}|{}|{}|[a-zA-Z][a-zA-Z0-9_]+)(?:\.(\w+))?$", DEFAULT_ID, parse::SCHEMATIC_INPUT, parse::SCHEMATIC_OUTPUT, parse::NS_LINK, parse::CORE_ID)).unwrap();
-}
-
-pub(crate) static CONNECTION_SEPARATOR: &str = "->";
+type Result<T> = std::result::Result<T, Error>;
 
 /// The reserved identifier representing an as-of-yet-undetermined default value.
 const DEFAULT_ID: &str = "<>";
 
-type Result<T> = std::result::Result<T, Error>;
-
 pub(crate) fn parse_target(s: &str) -> Result<(Option<&str>, Option<&str>)> {
-  CONNECTION_TARGET_REGEX.captures(s.trim()).map_or_else(
-    || Err(Error::ConnectionTargetSyntax(s.to_owned())),
-    |captures| {
-      Ok((
-        captures.get(1).map(|m| m.as_str().trim()),
-        captures.get(2).map(|m| m.as_str().trim()),
-      ))
-    },
-  )
+  Ok(wasmflow_parser::parse::v1::parse_target(s)?)
 }
 
 pub(crate) fn parse_connection_target(s: &str) -> Result<v1::ConnectionTargetDefinition> {
@@ -38,60 +23,25 @@ pub(crate) fn parse_connection_target(s: &str) -> Result<v1::ConnectionTargetDef
   })
 }
 
-fn parse_from_or_sender(from: &str, default_port: Option<&str>) -> Result<v1::ConnectionTargetDefinition> {
-  match parse_target(from) {
-    Ok((from_ref, from_port)) => Ok(v1::ConnectionTargetDefinition {
-      port: from_port
-        .or(default_port)
-        .ok_or_else(|| Error::NoDefaultPort(from.to_owned()))?
-        .to_owned(),
-      instance: match from_ref {
-        Some(DEFAULT_ID) => parse::SCHEMATIC_INPUT,
-        Some(v) => v,
-        None => return Err(Error::NoDefaultReference(from.to_owned())),
-      }
-      .to_owned(),
-      data: None,
-    }),
-    // Validating JSON by parsing into a serde_json::Value is recommended by the docs
-    Err(_e) => match serde_json::from_str::<serde_json::Value>(from) {
-      Ok(_) => Ok(v1::ConnectionTargetDefinition {
-        instance: parse::SENDER_ID.to_owned(),
-        port: parse::SENDER_PORT.to_owned(),
-        data: Some(serde_json::from_str(from.trim()).map_err(|e| Error::InvalidSenderData(e.to_string()))?),
-      }),
-      Err(_e) => Err(Error::ConnectionTargetSyntax(from.to_owned())),
-    },
-  }
+pub(crate) fn parse_connection(s: &str) -> Result<v1::ConnectionDefinition> {
+  let (from, to, data) = wasmflow_parser::parse::v1::parse_connection(s)?;
+  Ok(v1::ConnectionDefinition {
+    from: from.try_into()?,
+    to: to.try_into()?,
+    default: data,
+  })
 }
 
-pub(crate) fn parse_connection(s: &str) -> Result<v1::ConnectionDefinition> {
-  let s = s.trim();
-  s.split_once(CONNECTION_SEPARATOR).map_or_else(
-    || Err(Error::ConnectionDefinitionSyntax(s.to_owned())),
-    |(from, to)| {
-      let (to_ref, to_port) = parse_target(to.trim())?;
-      let from = parse_from_or_sender(from.trim(), to_port)?;
-      let to = v1::ConnectionTargetDefinition {
-        port: to_port
-          .map(|s| s.to_owned())
-          .or_else(|| Some(from.port.clone()))
-          .ok_or_else(|| Error::NoDefaultPort(s.to_owned()))?,
-        instance: match to_ref {
-          Some(DEFAULT_ID) => parse::SCHEMATIC_OUTPUT,
-          Some(v) => v,
-          None => return Err(Error::NoDefaultReference(s.to_owned())),
-        }
-        .to_owned(),
-        data: None,
-      };
-      Ok(v1::ConnectionDefinition {
-        from,
-        to,
-        default: None,
-      })
-    },
-  )
+impl TryFrom<(String, String, Option<serde_json::Value>)> for v1::ConnectionTargetDefinition {
+  type Error = Error;
+
+  fn try_from(value: (String, String, Option<serde_json::Value>)) -> Result<Self> {
+    Ok(Self {
+      instance: value.0,
+      port: value.1,
+      data: value.2,
+    })
+  }
 }
 
 impl FromStr for crate::v1::ComponentDefinition {
@@ -305,6 +255,7 @@ mod tests {
   use anyhow::Result;
   use pretty_assertions::assert_eq;
   use serde_json::Value;
+  use wasmflow_parser::parse;
 
   use super::*;
   #[test_logger::test]

@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-use futures::Stream;
 use parking_lot::{Condvar, Mutex};
 use uuid::Uuid;
 use wasmflow_sdk::v1::Invocation;
@@ -9,34 +8,26 @@ use crate::dev::prelude::*;
 
 #[derive(Debug)]
 #[must_use]
-pub enum InvocationResponse {
-  Stream { tx_id: Uuid, rx: TransportStream },
-  Error { tx_id: Uuid, msg: String },
+pub(crate) enum InvocationResponse {
+  Stream {
+    #[allow(unused)]
+    tx_id: Uuid,
+    rx: TransportStream,
+  },
+  Error {
+    #[allow(unused)]
+    tx_id: Uuid,
+    msg: String,
+  },
 }
 
 impl InvocationResponse {
-  /// Creates a successful invocation response stream. Response include the receiving end.
-  /// of an unbounded channel to listen for future output.
-  pub fn stream(tx_id: Uuid, rx: impl Stream<Item = TransportWrapper> + Send + 'static) -> InvocationResponse {
-    InvocationResponse::Stream {
-      tx_id,
-      rx: TransportStream::new(rx),
-    }
-  }
-
   /// Creates an error response.
-  pub fn error(tx_id: Uuid, msg: String) -> InvocationResponse {
+  pub(crate) fn error(tx_id: Uuid, msg: String) -> InvocationResponse {
     InvocationResponse::Error { tx_id, msg }
   }
 
-  pub fn tx_id(&self) -> &Uuid {
-    match self {
-      InvocationResponse::Stream { tx_id, .. } => tx_id,
-      InvocationResponse::Error { tx_id, .. } => tx_id,
-    }
-  }
-
-  pub fn ok(self) -> Result<TransportStream, InvocationError> {
+  pub(crate) fn ok(self) -> Result<TransportStream, InvocationError> {
     match self {
       InvocationResponse::Stream { rx, .. } => Ok(rx),
       InvocationResponse::Error { msg, .. } => Err(InvocationError(msg)),
@@ -45,7 +36,7 @@ impl InvocationResponse {
 }
 
 #[derive(thiserror::Error, Debug)]
-pub enum DispatchError {
+pub(crate) enum DispatchError {
   #[error("Thread died")]
   JoinFailed,
   #[error("{0}")]

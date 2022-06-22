@@ -101,7 +101,7 @@ mod default;
 pub use default::{parse_default, process_default, ERROR_STR};
 
 /// Module for parsing parts of a manifest.
-pub mod parse;
+pub(crate) mod parse;
 
 /// Wasmflow Manifest error.
 pub mod error;
@@ -117,12 +117,12 @@ pub mod host_definition;
 
 /// A version-normalized format of the network manifest for development.
 pub mod network_definition;
-pub use network_definition::{CollectionDefinition, CollectionKind, NetworkDefinition};
+pub use network_definition::{CollectionDefinition, CollectionKind};
 
 /// A version-normalized format of the schematic manifest for development.
 pub mod flow_definition;
 pub use flow_definition::{ComponentDefinition, ConnectionDefinition, ConnectionTargetDefinition, Flow};
-pub use parse::v0::parse_id;
+pub use wasmflow_parser::parse::v0::parse_id;
 
 use self::host_definition::HostConfig;
 use self::network_definition::EntrypointDefinition;
@@ -194,7 +194,7 @@ impl TryFrom<v1::WasmflowManifest> for WasmflowManifest {
         .collect(),
       labels: def.labels,
       flows: def
-        .flows
+        .components
         .into_iter()
         .map(|(k, v)| Ok((k.clone(), (k, v).try_into()?)))
         .collect::<Result<_>>()?,

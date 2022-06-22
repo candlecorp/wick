@@ -6,8 +6,8 @@ use serde_json::{json, Value};
 use tracing::debug;
 use wasmflow_manifest::error::ManifestError;
 use wasmflow_manifest::flow_definition::{PortReference, SenderData};
-use wasmflow_manifest::parse::{NS_LINK, SCHEMATIC_OUTPUT, SENDER_ID, SENDER_PORT};
 use wasmflow_manifest::*;
+use wasmflow_parser::parse::{NS_LINK, SCHEMATIC_OUTPUT, SENDER_ID, SENDER_PORT};
 
 #[test_logger::test]
 fn test_basics() -> Result<(), ManifestError> {

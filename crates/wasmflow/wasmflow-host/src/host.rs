@@ -14,9 +14,8 @@ use wasmflow_collection_cli::ServerState;
 use wasmflow_manifest::WasmflowManifest;
 use wasmflow_mesh::{Mesh, NatsOptions};
 use wasmflow_rpc::{RpcHandler, SharedRpcHandler};
-use wasmflow_runtime::prelude::*;
-use wasmflow_runtime::NetworkBuilder;
-use wasmflow_sdk::v1::transport::TransportMap;
+use wasmflow_runtime::{Network, NetworkBuilder, NetworkCollection};
+use wasmflow_sdk::v1::transport::{TransportMap, TransportStream};
 use wasmflow_sdk::v1::types::CollectionSignature;
 use wasmflow_sdk::v1::{Entity, InherentData, Invocation};
 

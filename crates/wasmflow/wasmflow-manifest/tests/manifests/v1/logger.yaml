@@ -9,7 +9,7 @@ collections:
     config:
       this: that
       other: 42
-flows:
+components:
   logger:
     instances:
       logger: wafl::log

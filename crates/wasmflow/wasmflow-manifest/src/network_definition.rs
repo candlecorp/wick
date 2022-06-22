@@ -1,47 +1,4 @@
-use std::convert::TryInto;
-
 use serde_json::Value;
-
-use crate::flow_definition::Flow;
-use crate::Error;
-
-#[derive(Debug, Default, Clone)]
-
-/// The NetworkDefinition struct is a normalized representation of a Wasmflow [NetworkManifest].
-/// It handles the job of translating manifest versions into a consistent data structure.
-#[must_use]
-pub struct NetworkDefinition {
-  /// The name of the Network if provided.
-  pub name: Option<String>,
-  /// An optional entrypoint for the network.
-  pub triggers: Option<EntrypointDefinition>,
-  /// A list of SchematicDefinitions.
-  pub schematics: Vec<Flow>,
-  /// A list of CollectionDefinitions.
-  pub collections: Vec<CollectionDefinition>,
-}
-
-impl NetworkDefinition {
-  /// Get a [SchematicDefinition] by name.
-  #[must_use]
-  pub fn schematic(&self, name: &str) -> Option<&Flow> {
-    self.schematics.iter().find(|s| s.name == name)
-  }
-}
-
-impl TryFrom<&crate::v0::NetworkManifest> for NetworkDefinition {
-  type Error = Error;
-  fn try_from(def: &crate::v0::NetworkManifest) -> Result<Self, Error> {
-    let schematics: Result<Vec<Flow>, Error> = def.schematics.iter().map(|val| val.try_into()).collect();
-    let collections = def.collections.iter().map(|val| val.into()).collect();
-    Ok(Self {
-      name: def.name.clone(),
-      schematics: schematics?,
-      triggers: def.triggers.clone().map(EntrypointDefinition::from),
-      collections,
-    })
-  }
-}
 
 #[derive(Debug, Clone)]
 /// A definition of a Wasmflow Collection with its namespace, how to retrieve or access it and its configuration.

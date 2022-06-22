@@ -7,10 +7,10 @@ use std::str::FromStr;
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use wasmflow_parser::parse::v0::parse_id;
 use wasmflow_sdk::v1::transport::MessageTransport;
 
 use crate::default::{parse_default, process_default};
-use crate::parse::v0::parse_id;
 use crate::{Error, Result};
 
 #[derive(Debug, Clone, Default)]

@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use runtime_testutils::*;
 use wasmflow_invocation_server::{bind_new_socket, make_rpc_server};
-use wasmflow_runtime::prelude::TransportWrapper;
+use wasmflow_sdk::v1::transport::TransportWrapper;
 use wasmflow_sdk::v1::Entity;
 type Result<T> = anyhow::Result<T, anyhow::Error>;
 use maplit::hashmap;

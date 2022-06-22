@@ -2,27 +2,18 @@
 authors = ["Jarrod Overson <jsoverson@gmail.com>"]
 edition = "2021"
 license = "BSD-3-Clause"
-name = "wasmflow-manifest"
+name = "wasmflow-parser"
 version = "0.1.0"
 
 [dependencies]
-wasmflow-sdk = { path = "../wasmflow-sdk", features = ["v1"] }
-wasmflow-parser = { path = "../wasmflow-parser" }
-
-num-traits = "0.2"
+lazy_static = "1.4"
 regex = "1"
-serde = "1.0"
-serde-value = "0.7"
-serde-with-expand-env = "1.1"
+serde = { version = "1" }
 serde_json = "1.0"
-serde_yaml = "0.8"
 thiserror = "1.0"
-tracing = "0.1"
-shellexpand = "2.1"
 
 [dev-dependencies]
 anyhow = "1.0"
-
 pretty_assertions = "1"
 logger = { path = "../logger" }
 test-logger = { path = "../../misc/test-logger" }

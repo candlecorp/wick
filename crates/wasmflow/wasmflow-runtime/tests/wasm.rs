@@ -2,8 +2,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use runtime_testutils::*;
 use tracing::debug;
-use wasmflow_runtime::prelude::TransportWrapper;
-use wasmflow_sdk::v1::transport::MessageTransport;
+use wasmflow_sdk::v1::transport::{MessageTransport, TransportWrapper};
 use wasmflow_sdk::v1::{Entity, Invocation};
 type Result<T> = anyhow::Result<T, anyhow::Error>;
 use maplit::hashmap;
