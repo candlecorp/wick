@@ -22,7 +22,6 @@ executors:
     resource_class: large
     environment:
       RUSTC_WRAPPER: /home/circleci/.cargo/bin/sccache
-      RUSTC_TOOLCHAIN: 1.56.0
       SCCACHE_AZURE_CONNECTION_STRING: $SCCACHE_AZURE_CONNECTION_STRING
       SCCACHE_AZURE_BLOB_CONTAINER: sccache
   test-executor:
@@ -63,10 +62,9 @@ commands:
           name: Sets up Sccache
           command: |
             [[ ! -f ${RUSTC_WRAPPER} ]] \
-            && curl -L https://github.com/mozilla/sccache/releases/download/\
-            v0.2.15/sccache-v0.2.15-x86_64-unknown-linux-musl.tar.gz \
-            | tar -zxvf - sccache-v0.2.15-x86_64-unknown-linux-musl/sccache \
-            && sudo mv sccache-v0.2.15-x86_64-unknown-linux-musl/sccache ${RUSTC_WRAPPER} \
+            && curl -L https://github.com/mozilla/sccache/releases/download/v0.3.0/sccache-v0.3.0-x86_64-unknown-linux-musl.tar.gz \
+            | tar -zxvf - sccache-v0.3.0-x86_64-unknown-linux-musl/sccache \
+            && sudo mv sccache-v0.3.0-x86_64-unknown-linux-musl/sccache ${RUSTC_WRAPPER} \
             && sudo chmod +x ${RUSTC_WRAPPER}
             sccache -s
       - save_cache:
@@ -141,6 +139,7 @@ jobs:
     executor: test-executor
     steps:
       - checkout_submodules
+      - sccache_setup
       - run: source ./etc/ci-test.env
       - restore_build_cache
       - run:
