@@ -1,7 +1,16 @@
 "{{name.value}}": {
-  "$anchor": "#{{name.value}}",
+  "$anchor": "#v1/{{name.value}}",
   "additionalProperties": false,
   "properties": {
+    {{#withAnnotation "internal_tag"}}
+    {{#ifCond name.value '===' 'internal_tag'}}
+    "{{arguments.0.value.value}}": {
+      "type": "string",
+      "description": "The kind of the collection",
+      "enum": ["{{arguments.1.value.value}}"]
+    },
+    {{/ifCond}}
+    {{/withAnnotation}}
     {{#join fields "," ~}}
     "{{name.value}}" : {
       {{#if description}}

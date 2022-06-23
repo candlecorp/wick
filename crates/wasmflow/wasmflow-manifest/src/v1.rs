@@ -24,9 +24,9 @@
 use serde::{Deserialize, Serialize};
 use serde_with_expand_env::with_expand_envs;
 use std::collections::HashMap;
-use num_traits::FromPrimitive;
 use serde_json::Value;
 
+    
     
     
     
@@ -152,6 +152,35 @@ pub struct WasmflowManifest {
     
     
     
+    
+    
+    
+    
+
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+#[serde(tag = "kind")]
+/// The possible types of collections.
+pub enum CollectionDefinition {
+    /// A variant representing a [WasmCollection] type.
+    #[serde(rename = "Wasm")]
+    WasmCollection(WasmCollection),
+    /// A variant representing a [GrpcUrlCollection] type.
+    #[serde(rename = "GrpcUrl")]
+    GrpcUrlCollection(GrpcUrlCollection),
+    /// A variant representing a [GrpcTarCollection] type.
+    #[serde(rename = "GrpcTar")]
+    GrpcTarCollection(GrpcTarCollection),
+    /// A variant representing a [MeshCollection] type.
+    #[serde(rename = "Mesh")]
+    MeshCollection(MeshCollection),
+    /// A variant representing a [ManifestCollection] type.
+    #[serde(rename = "Manifest")]
+    ManifestCollection(ManifestCollection),
+}
+
+    
 #[allow(non_snake_case)]
 pub(crate) fn HOST_CONFIG_TIMEOUT() -> 
       
@@ -259,6 +288,7 @@ pub struct HostConfig {
     
     
     
+    
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
@@ -334,6 +364,7 @@ pub struct HttpConfig {
     
     
     
+    
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
@@ -403,6 +434,7 @@ pub struct MeshConfig {
     
     
     
+    
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
@@ -429,58 +461,7 @@ pub struct EntrypointDefinition {
       String
       
 ,
-    /// Data or configuration used to initialize the collection.
-      #[serde(default)]
-          
-          
-          
-          
-          
-          
-          
-          
-          
-          
-          
-          
-          #[serde(deserialize_with = "crate::helpers::deserialize_json_env")]
-          
-    pub config: 
-      Value
-      
-      
-,
-}
-    
-    
-    
-
-#[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
-#[serde(deny_unknown_fields)]
-/// A collection definition.
-pub struct CollectionDefinition {
-    /// The kind/type of the collection.
-      #[serde(default)]
-          
-          
-          
-          
-          
-          
-          
-          
-          
-          
-          
-          
-          
-          
-    pub kind: 
-      
-      
-      CollectionKind
-,
-    /// The reference/location of the collection.
+    /// The component to use as the entrypoint.
       #[serde(default)]
           #[serde(deserialize_with="with_expand_envs")]
           
@@ -496,7 +477,7 @@ pub struct CollectionDefinition {
           
           
           
-    pub reference: 
+    pub component: 
       
       String
       
@@ -522,62 +503,336 @@ pub struct CollectionDefinition {
       
       
 ,
+    /// Permissions to give this collection
+      #[serde(default)]
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+    pub permissions: 
+      
+      
+      Permissions
+,
 }
     
     
     
     
-    
 
-#[derive(Debug, Clone, Serialize, Deserialize, Copy, PartialEq)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
-/// Kind of collection.
-pub enum CollectionKind {
-    /// Native collections included at compile-time in a Wasmflow host.
-    Native = 0,
-    /// The URL to an external collection via the GRPC interface.
-    GrpcUrl = 1,
-    /// A WebAssembly collection.
-    WASM = 2,
-    /// A collection accessible in a Wasmflow mesh.
-    Mesh = 3,
-    /// A local or remote Wasmflow manifest.
-    Network = 4,
-    /// A native binary archive that contains a GRPC-capable collection.
-    Par = 5,
+/// A WebAssembly collection.
+pub struct WasmCollection {
+    /// The URL (and optional tag) or local file path to find the .wasm module.
+      #[serde(default)]
+          #[serde(deserialize_with="with_expand_envs")]
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+    pub reference: 
+      
+      String
+      
+,
+    /// Permissions to give this collection
+      #[serde(default)]
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+    pub permissions: 
+      
+      
+      Permissions
+,
+    /// Per-collection configuration.
+      #[serde(default)]
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          #[serde(deserialize_with = "crate::helpers::deserialize_json_env")]
+          
+    pub config: 
+      Value
+      
+      
+,
 }
+    
+    
+    
+    
 
-impl Default for CollectionKind {
-  fn default() -> Self {
-    Self::from_u16(0).unwrap()
-  }
+#[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+/// Per-collection permissions configuration.
+pub struct Permissions {
+    /// A map of from internal directory to external directory that this collection should be able to access.
+      #[serde(default)]
+      #[serde(skip_serializing_if = "HashMap::is_empty")]
+    pub dirs: 
+    HashMap<
+      
+      String
+      
+, 
+      
+      String
+      
+>
+,
 }
+    
+    
+    
+    
 
-impl FromPrimitive for CollectionKind {
-  fn from_i64(n: i64) -> Option<Self> {
-    Some(match n {
-      0 => Self::Native,
-      1 => Self::GrpcUrl,
-      2 => Self::WASM,
-      3 => Self::Mesh,
-      4 => Self::Network,
-      5 => Self::Par,
-      _ => {return None;}
-    })
-  }
-
-  fn from_u64(n: u64) -> Option<Self> {
-    Some(match n {
-      0 => Self::Native,
-      1 => Self::GrpcUrl,
-      2 => Self::WASM,
-      3 => Self::Mesh,
-      4 => Self::Network,
-      5 => Self::Par,
-      _ => {return None;}
-    })
-  }
+#[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+/// A collection hosted as an independent microservice.
+pub struct GrpcUrlCollection {
+    /// The GRPC URL to connect to.
+      #[serde(default)]
+          #[serde(deserialize_with="with_expand_envs")]
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+    pub url: 
+      
+      String
+      
+,
+    /// Any configuration necessary for the collection.
+      #[serde(default)]
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          #[serde(deserialize_with = "crate::helpers::deserialize_json_env")]
+          
+    pub config: 
+      Value
+      
+      
+,
 }
+    
+    
+    
+    
+
+#[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+/// A collection hosted somewhere on a connected mesh.
+pub struct MeshCollection {
+    /// The ID of the collection.
+      #[serde(default)]
+          #[serde(deserialize_with="with_expand_envs")]
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+    pub id: 
+      
+      String
+      
+,
+    /// Any configuration necessary for the collection.
+      #[serde(default)]
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          #[serde(deserialize_with = "crate::helpers::deserialize_json_env")]
+          
+    pub config: 
+      Value
+      
+      
+,
+}
+    
+    
+    
+    
+
+#[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+/// A native collection that can be extracted and run as a microservice.
+pub struct GrpcTarCollection {
+    /// The URL (and optional tag) or local file path to find the archive.
+      #[serde(default)]
+          #[serde(deserialize_with="with_expand_envs")]
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+    pub reference: 
+      
+      String
+      
+,
+    /// Any configuration necessary for the collection.
+      #[serde(default)]
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          #[serde(deserialize_with = "crate::helpers::deserialize_json_env")]
+          
+    pub config: 
+      Value
+      
+      
+,
+}
+    
+    
+    
+    
+
+#[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+/// A native collection that can be extracted and run as a microservice.
+pub struct ManifestCollection {
+    /// The URL (and optional tag) or local file path to find the manifest.
+      #[serde(default)]
+          #[serde(deserialize_with="with_expand_envs")]
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+    pub reference: 
+      
+      String
+      
+,
+    /// Any configuration necessary for the collection.
+      #[serde(default)]
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          #[serde(deserialize_with = "crate::helpers::deserialize_json_env")]
+          
+    pub config: 
+      Value
+      
+      
+,
+}
+    
+    
+    
     
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
@@ -624,6 +879,7 @@ pub struct FlowDefinition {
     
     
     
+    
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
@@ -659,6 +915,7 @@ pub struct ComponentDefinition {
 >
 ,
 }
+    
     
     
     
@@ -722,6 +979,7 @@ pub struct ConnectionDefinition {
     
     
     
+    
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
@@ -777,6 +1035,7 @@ pub struct ConnectionTargetDefinition {
 >
 ,
 }
+    
     
     
 

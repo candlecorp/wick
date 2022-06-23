@@ -11,7 +11,14 @@ use uuid::Uuid;
 use wasmflow_collection_wasm::collection::HostLinkCallback;
 use wasmflow_collection_wasm::error::LinkError;
 use wasmflow_interpreter::NamespaceHandler;
-use wasmflow_manifest::network_definition::EntrypointDefinition;
+use wasmflow_manifest::collection_definition::{
+  EntrypointDefinition,
+  GrpcTarCollection,
+  GrpcUrlCollection,
+  ManifestCollection,
+  MeshCollection,
+  WasmCollection,
+};
 
 use self::collection_service::NativeCollectionService;
 use crate::dev::prelude::*;
@@ -29,18 +36,18 @@ type CollectionInitResult = Result<NamespaceHandler>;
 
 #[instrument(skip(collection, opts))]
 pub(crate) async fn initialize_par_collection(
-  collection: &CollectionDefinition,
+  collection: &GrpcTarCollection,
   namespace: String,
   opts: CollectionInitOptions,
 ) -> CollectionInitResult {
-  trace!(namespace = %collection.namespace, ?opts, "registering");
+  trace!(namespace = %namespace, ?opts, "registering");
 
   let bytes = wasmflow_loader::get_bytes(&collection.reference, opts.allow_latest, &opts.allowed_insecure).await?;
 
   let service = wasmflow_collection_par::collection::Collection::from_tarbytes(
     collection.reference.clone(),
     &*bytes,
-    Some(collection.data.clone()),
+    Some(collection.config.clone()),
   )
   .await?;
 
@@ -51,12 +58,12 @@ pub(crate) async fn initialize_par_collection(
 
 #[instrument(skip(collection))]
 pub(crate) async fn initialize_grpc_collection(
-  collection: &CollectionDefinition,
+  collection: &GrpcUrlCollection,
   namespace: String,
 ) -> CollectionInitResult {
-  trace!(namespace = %collection.namespace, "registering");
+  trace!(namespace = %namespace, "registering");
 
-  let service = wasmflow_collection_grpc::collection::Collection::new(collection.reference.clone()).await?;
+  let service = wasmflow_collection_grpc::collection::Collection::new(collection.url.clone()).await?;
 
   let service = NativeCollectionService::new(Arc::new(service));
 
@@ -65,11 +72,11 @@ pub(crate) async fn initialize_grpc_collection(
 
 #[instrument(skip(collection, opts))]
 pub(crate) async fn initialize_wasm_collection(
-  collection: &CollectionDefinition,
+  collection: &WasmCollection,
   namespace: String,
   opts: CollectionInitOptions,
 ) -> CollectionInitResult {
-  trace!(namespace = %collection.namespace, ?opts, "registering");
+  trace!(namespace = %namespace, ?opts, "registering");
 
   let component =
     wasmflow_collection_wasm::helpers::load_wasm(&collection.reference, opts.allow_latest, &opts.allowed_insecure)
@@ -79,7 +86,7 @@ pub(crate) async fn initialize_wasm_collection(
   let collection = Arc::new(wasmflow_collection_wasm::collection::Collection::try_load(
     &component,
     5,
-    Some(collection.data.clone()),
+    Some(collection.permissions.clone()),
     None,
     Some(make_link_callback(opts.network_id)),
   )?);
@@ -105,7 +112,7 @@ pub(crate) async fn initialize_wasm_entrypoint(
   let collection = wasmflow_collection_wasm::collection::Collection::try_load(
     &component,
     1,
-    Some(entrypoint.data.clone()),
+    Some(entrypoint.permissions.clone()),
     None,
     Some(make_link_callback(network_id)),
   )?;
@@ -139,11 +146,11 @@ fn make_link_callback(network_id: Uuid) -> Box<HostLinkCallback> {
 
 #[instrument(skip(collection, opts))]
 pub(crate) async fn initialize_network_collection(
-  collection: &CollectionDefinition,
+  collection: &ManifestCollection,
   namespace: String,
   mut opts: CollectionInitOptions,
 ) -> CollectionInitResult {
-  trace!(namespace = %collection.namespace, ?opts, "registering");
+  trace!(namespace = %namespace, ?opts, "registering");
 
   let rng = Random::from_seed(opts.rng_seed);
   opts.rng_seed = rng.seed();
@@ -162,11 +169,11 @@ pub(crate) async fn initialize_network_collection(
 
 #[instrument(skip(collection, opts))]
 pub(crate) async fn initialize_mesh_collection(
-  collection: &CollectionDefinition,
+  collection: &MeshCollection,
   namespace: String,
   opts: CollectionInitOptions,
 ) -> CollectionInitResult {
-  trace!(namespace = %collection.namespace, ?opts, "registering");
+  trace!(namespace = %namespace, ?opts, "registering");
   let mesh = match opts.mesh {
     Some(mesh) => mesh,
     None => {
@@ -176,8 +183,7 @@ pub(crate) async fn initialize_mesh_collection(
     }
   };
 
-  let collection =
-    Arc::new(wasmflow_collection_nats::collection::Collection::new(collection.reference.clone(), mesh).await?);
+  let collection = Arc::new(wasmflow_collection_nats::collection::Collection::new(collection.id.clone(), mesh).await?);
 
   let service = NativeCollectionService::new(collection);
 

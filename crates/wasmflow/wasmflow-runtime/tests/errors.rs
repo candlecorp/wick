@@ -8,7 +8,7 @@ type Result<T> = anyhow::Result<T, anyhow::Error>;
 
 #[test_logger::test(tokio::test)]
 async fn panics() -> Result<()> {
-  let (network, _) = init_network_from_yaml("./manifests/v0/errors/panics.yaml").await?;
+  let (network, _) = init_network_from_yaml("./manifests/v0/errors/panics.wafl").await?;
 
   let mut data = HashMap::new();
   data.insert("input", "input");
@@ -35,7 +35,7 @@ async fn panics() -> Result<()> {
 
 #[test_logger::test(tokio::test)]
 async fn errors() -> Result<()> {
-  let (network, _) = init_network_from_yaml("./manifests/v0/errors/errors.yaml").await?;
+  let (network, _) = init_network_from_yaml("./manifests/v0/errors/errors.wafl").await?;
 
   let mut data = HashMap::new();
   data.insert("input", "input");

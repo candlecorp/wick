@@ -58,7 +58,7 @@ mod tests {
 
   #[test_logger::test(tokio::test)]
   async fn test_component() -> TestResult<()> {
-    let builder = HostBuilder::try_from("./manifests/logger.yaml")?;
+    let builder = HostBuilder::try_from("./manifests/logger.wafl")?;
     let mut host = builder.build();
     host.start(Some(0)).await?;
     let collection: Collection = host.into();

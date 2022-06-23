@@ -31,7 +31,7 @@ fn load<T: AsRef<Path>>(path: T) -> Result<wasmflow_manifest::WasmflowManifest> 
 
 #[test_logger::test(tokio::test)]
 async fn test_invoke_collection() -> Result<()> {
-  let manifest = load("./tests/manifests/v0/external.yaml")?;
+  let manifest = load("./tests/manifests/v0/external.wafl")?;
   let network = from_def(&manifest)?;
   let collections = HandlerMap::new(vec![NamespaceHandler::new("test", Box::new(TestCollection::new()))]);
 

@@ -5,8 +5,9 @@ use wasmflow_manifest::*;
 
 #[test_logger::test]
 fn test_basics() -> Result<(), ManifestError> {
-  let path = PathBuf::from("./tests/manifests/v1/logger.yaml");
+  let path = PathBuf::from("./tests/manifests/v1/logger.wafl");
   let manifest = WasmflowManifest::load_from_file(&path)?;
+  println!("{:?}", manifest);
 
   assert_eq!(manifest.flow("logger").map(|s| s.instances().len()), Some(2));
 

@@ -12,7 +12,7 @@ use wasmflow_sdk::v1::{Entity, InherentData, Invocation};
 pub(crate) async fn handle_command(opts: super::InvokeCommand, bytes: Vec<u8>) -> Result<()> {
   let component = WapcModule::from_slice(&bytes)?;
 
-  let collection = Collection::try_load(&component, 1, None, Some((&opts.wasi).into()), None)?;
+  let collection = Collection::try_load(&component, 1, None, Some((opts.wasi).into()), None)?;
 
   let mut check_stdin = !opts.no_input && opts.data.is_empty() && opts.args.is_empty();
   if let Some(metadata) = component.token.claims.metadata {

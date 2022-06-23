@@ -5,22 +5,6 @@ use thiserror::Error;
 /// Wasmflow Manifest's Errors.
 #[derive(Error, Debug, Clone, PartialEq)]
 pub enum ParserError {
-  /// Invalid version found in the parsed manifest.
-  #[error("Invalid Manifest Version '{0}'")]
-  VersionError(String),
-
-  /// No version found in the parsed manifest.
-  #[error("Manifest needs a version")]
-  NoVersion,
-
-  /// Manifest not found at the specified path.
-  #[error("File not found {0}")]
-  FileNotFound(String),
-
-  /// Could not load file.
-  #[error("Could not read file {0}")]
-  LoadError(String),
-
   /// Component id is not a fully qualified name with a namespace.
   #[error("Component id '{0}' is not a fully qualified name with a namespace")]
   ComponentIdError(String),
@@ -68,10 +52,4 @@ pub enum ParserError {
   /// Miscellaneous error.
   #[error("General error : {0}")]
   Other(String),
-}
-
-impl From<std::io::Error> for ParserError {
-  fn from(e: std::io::Error) -> Self {
-    Self::LoadError(e.to_string())
-  }
 }

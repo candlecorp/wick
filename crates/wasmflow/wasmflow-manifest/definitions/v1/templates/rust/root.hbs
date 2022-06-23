@@ -24,7 +24,6 @@
 use serde::{Deserialize, Serialize};
 use serde_with_expand_env::with_expand_envs;
 use std::collections::HashMap;
-use num_traits::FromPrimitive;
 use serde_json::Value;
 
 {{#each definitions}}
@@ -32,6 +31,7 @@ use serde_json::Value;
     {{#case "TypeDefinition"}}{{> type-definition}}{{/case}}
     {{#case "NamespaceDefinition"}}{{/case}}
     {{#case "EnumDefinition"}}{{> enum-definition}}{{/case}}
+    {{#case "UnionDefinition"}}{{> union-definition}}{{/case}}
     {{#case "ImportDefinition"}}
       {{#import from.value}}{{> module }}{{/import}}
     {{/case}}

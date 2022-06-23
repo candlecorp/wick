@@ -27,6 +27,9 @@ type WasmflowManifest {
   components: {string: FlowDefinition},
 }
 
+"The possible types of collections."
+union CollectionDefinition = WasmCollection | GrpcUrlCollection | GrpcTarCollection | MeshCollection | ManifestCollection
+
 "Host configuration options."
 type HostConfig {
   "Whether or not to allow the :latest tag on remote artifacts."
@@ -92,36 +95,64 @@ type EntrypointDefinition {
   "The reference/location of the collection."
   reference: string,
 
+  "The component to use as the entrypoint."
+  component: string,
+
   "Data or configuration used to initialize the collection."
   config: struct,
+
+  "Permissions to give this collection"
+  permissions: Permissions
 }
 
-"A collection definition."
-type CollectionDefinition {
-  "The kind/type of the collection."
-  kind: CollectionKind,
-
-  "The reference/location of the collection."
+"A WebAssembly collection."
+type WasmCollection @internal_tag("kind", "Wasm") {
+  "The URL (and optional tag) or local file path to find the .wasm module."
   reference: string,
 
-  "Data or configuration used to initialize the collection."
-  config: struct,
+  "Permissions to give this collection"
+  permissions: Permissions
+
+  "Per-collection configuration."
+  config: struct
 }
 
-"Kind of collection."
-enum CollectionKind {
-  "Native collections included at compile-time in a Wasmflow host."
-  Native = 0,
-  "The URL to an external collection via the GRPC interface."
-  GrpcUrl = 1,
-  "A WebAssembly collection."
-  WASM = 2,
-  "A collection accessible in a Wasmflow mesh."
-  Mesh = 3,
-  "A local or remote Wasmflow manifest."
-  Network = 4,
-  "A native binary archive that contains a GRPC-capable collection."
-  Par = 5,
+"Per-collection permissions configuration."
+type Permissions {
+  "A map of from internal directory to external directory that this collection should be able to access."
+  dirs: {string: string}
+}
+
+"A collection hosted as an independent microservice."
+type GrpcUrlCollection  @internal_tag("kind", "GrpcUrl") {
+  "The GRPC URL to connect to."
+  url: string,
+  "Any configuration necessary for the collection."
+  config: struct
+}
+
+"A collection hosted somewhere on a connected mesh."
+type MeshCollection  @internal_tag("kind", "Mesh") {
+  "The ID of the collection."
+  id: string,
+  "Any configuration necessary for the collection."
+  config: struct
+}
+
+"A native collection that can be extracted and run as a microservice."
+type GrpcTarCollection  @internal_tag("kind", "GrpcTar") {
+  "The URL (and optional tag) or local file path to find the archive."
+  reference: string,
+  "Any configuration necessary for the collection."
+  config: struct
+}
+
+"A native collection that can be extracted and run as a microservice."
+type ManifestCollection  @internal_tag("kind", "Manifest") {
+  "The URL (and optional tag) or local file path to find the manifest."
+  reference: string,
+  "Any configuration necessary for the collection."
+  config: struct
 }
 
 "A definition for an single flow."

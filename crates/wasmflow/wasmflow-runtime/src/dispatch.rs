@@ -116,7 +116,7 @@ mod tests {
   use crate::test::prelude::{assert_eq, *};
   #[test_logger::test(tokio::test)]
   async fn invoke_async() -> TestResult<()> {
-    let (_, nuid) = init_network_from_yaml("./manifests/v0/echo.yaml").await?;
+    let (_, nuid) = init_network_from_yaml("./manifests/v0/echo.wafl").await?;
 
     let target = Entity::component("self", "echo");
     let map = PacketMap::from(vec![("input", "hello")]);
@@ -139,7 +139,7 @@ mod tests {
       let system = tokio::runtime::Runtime::new().unwrap();
 
       let (_, nuid) = system
-        .block_on(init_network_from_yaml("./manifests/v0/echo.yaml"))
+        .block_on(init_network_from_yaml("./manifests/v0/echo.wafl"))
         .unwrap();
       let _ = tx.send(nuid);
       let _ = system.block_on(rx2);

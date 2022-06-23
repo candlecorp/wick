@@ -23,7 +23,7 @@ const OPTIONS: Option<InterpreterOptions> = Some(InterpreterOptions {
 
 #[test_logger::test(tokio::test)]
 async fn test_senders() -> Result<()> {
-  let manifest = load("./tests/manifests/v0/core/senders.yaml")?;
+  let manifest = load("./tests/manifests/v0/core/senders.wafl")?;
   let network = from_def(&manifest)?;
   let collections = HandlerMap::new(vec![NamespaceHandler::new("test", Box::new(TestCollection::new()))]);
   let inputs = PacketMap::default();
@@ -46,7 +46,7 @@ async fn test_senders() -> Result<()> {
 
 #[test_logger::test(tokio::test)]
 async fn test_merge() -> Result<()> {
-  let manifest = load("./tests/manifests/v0/core/merge.yaml")?;
+  let manifest = load("./tests/manifests/v0/core/merge.wafl")?;
   let network = from_def(&manifest)?;
   let collections = HandlerMap::new(vec![NamespaceHandler::new("test", Box::new(TestCollection::new()))]);
   let mut inputs = PacketMap::default();

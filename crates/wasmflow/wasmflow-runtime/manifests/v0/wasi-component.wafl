@@ -7,10 +7,8 @@ network:
       reference: ../../integration/test-wasi-component/build/test_wasi_component_s.wasm
       data:
         wasi:
-          preopened_dirs:
-            - "$TEST_TEMPDIR"
-          map_dirs:
-            - ["/", "$TEST_TEMPDIR"]
+          dirs:
+            "/": "$TEST_TEMPDIR"
   schematics:
     - name: wasi_component
       collections:

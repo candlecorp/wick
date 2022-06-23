@@ -1,16 +1,15 @@
 {
   "git.ignoreLimitWarning": true,
   "yaml.schemas": {
-    "crates/wasmflow/wasmflow-manifest/json-schema/v0/manifest.json": [
-      "crates/wasmflow/wasmflow-runtime/manifests/v0/**/*.yaml",
-      "tests/manifests/*.yaml",
-      "crates/wasmflow/wasmflow-manifest/tests/manifests/v0/*.yaml"
-    ]
+    "crates/wasmflow/wasmflow-manifest/json-schema/manifest.json": ["**/*.wafl"]
   },
   "rust-analyzer.cargo.features": [
     "wasmflow-component/guest",
     "wasmflow-stdlib/host"
   ],
+  "files.associations": {
+    "*.wafl": "yaml"
+  },
   "rust-analyzer.rustfmt.overrideCommand": [
     "rustup",
     "run",

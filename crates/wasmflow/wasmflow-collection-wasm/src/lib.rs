@@ -91,7 +91,6 @@ pub mod error;
 pub mod helpers; // TODO ref check and make sure these are used:
 pub mod transaction;
 mod wapc_module;
-pub mod wasi;
 pub mod wasm_host;
 
 pub(crate) type Result<T> = std::result::Result<T, error::WasmCollectionError>;

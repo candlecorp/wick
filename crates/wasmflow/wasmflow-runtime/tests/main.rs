@@ -17,7 +17,7 @@ async fn basic_main_impl() -> Result<()> {
   std::fs::write(&tempfile, &time).unwrap();
   std::env::set_var("TEST_TEMPDIR", tempdir);
 
-  let (network, _) = init_network_from_yaml("./manifests/v0/main.yaml").await?;
+  let (network, _) = init_network_from_yaml("./manifests/v0/main.wafl").await?;
   let result = network.exec_main(argv).await;
 
   std::env::remove_var("TEST_TEMPDIR");
@@ -39,7 +39,7 @@ async fn main_impl_with_network_call() -> Result<()> {
   std::fs::write(&tempfile, &time).unwrap();
   std::env::set_var("TEST_TEMPDIR", tempdir);
 
-  let (network, _) = init_network_from_yaml("./manifests/v0/main-with-network.yaml").await?;
+  let (network, _) = init_network_from_yaml("./manifests/v0/main-with-network.wafl").await?;
   let result = network.exec_main(argv).await;
 
   std::env::remove_var("TEST_TEMPDIR");

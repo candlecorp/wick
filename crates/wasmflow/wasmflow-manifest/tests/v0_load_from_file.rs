@@ -5,13 +5,12 @@ use std::str::FromStr;
 use serde_json::{json, Value};
 use tracing::debug;
 use wasmflow_manifest::error::ManifestError;
-use wasmflow_manifest::flow_definition::{PortReference, SenderData};
 use wasmflow_manifest::*;
 use wasmflow_parser::parse::{NS_LINK, SCHEMATIC_OUTPUT, SENDER_ID, SENDER_PORT};
 
 #[test_logger::test]
 fn test_basics() -> Result<(), ManifestError> {
-  let path = PathBuf::from("./tests/manifests/v0/logger.yaml");
+  let path = PathBuf::from("./tests/manifests/v0/logger.wafl");
   let manifest = WasmflowManifest::load_from_file(&path)?;
 
   assert_eq!(manifest.flow("logger").map(|s| s.instances().len()), Some(2));
@@ -21,7 +20,7 @@ fn test_basics() -> Result<(), ManifestError> {
 
 #[test_logger::test]
 fn load_minimal() -> Result<(), ManifestError> {
-  let path = PathBuf::from("./tests/manifests/v0/minimal.yaml");
+  let path = PathBuf::from("./tests/manifests/v0/minimal.wafl");
   let manifest = WasmflowManifest::load_from_file(&path)?;
 
   assert_eq!(manifest.version(), 0);
@@ -31,7 +30,7 @@ fn load_minimal() -> Result<(), ManifestError> {
 
 #[test_logger::test]
 fn load_noversion_yaml() -> Result<(), ManifestError> {
-  let path = PathBuf::from("./tests/manifests/v0/noversion.yaml");
+  let path = PathBuf::from("./tests/manifests/v0/noversion.wafl");
   let result = WasmflowManifest::load_from_file(&path);
   println!("result: {:?}", result);
   assert!(matches!(result, Err(ManifestError::NoVersion)));
@@ -40,7 +39,7 @@ fn load_noversion_yaml() -> Result<(), ManifestError> {
 
 #[test_logger::test]
 fn load_bad_manifest_yaml() -> Result<(), ManifestError> {
-  let path = PathBuf::from("./tests/manifests/v0/bad-yaml.yaml");
+  let path = PathBuf::from("./tests/manifests/v0/bad-yaml.wafl");
   let manifest = WasmflowManifest::load_from_file(&path);
   if let Err(Error::YamlError(e)) = manifest {
     debug!("{:?}", e);
@@ -53,14 +52,14 @@ fn load_bad_manifest_yaml() -> Result<(), ManifestError> {
 
 #[test_logger::test]
 fn load_collections_yaml() -> Result<(), ManifestError> {
-  let path = PathBuf::from("./tests/manifests/v0/collections.yaml");
+  let path = PathBuf::from("./tests/manifests/v0/collections.wafl");
   let manifest = WasmflowManifest::load_from_file(&path)?;
 
   assert_eq!(manifest.name(), &Some("collections".to_owned()));
   assert_eq!(manifest.collections().len(), 6);
   assert_eq!(
-    manifest.collection("wapc2").unwrap().data,
-    json!({"obj":{"data_prop":"data_value"}})
+    manifest.collection("wapc2").unwrap().config().unwrap(),
+    &json!({"obj":{"data_prop":"data_value"}})
   );
 
   Ok(())
@@ -68,7 +67,7 @@ fn load_collections_yaml() -> Result<(), ManifestError> {
 
 #[test_logger::test]
 fn load_shortform_yaml() -> Result<(), ManifestError> {
-  let path = PathBuf::from("./tests/manifests/v0/logger-shortform.yaml");
+  let path = PathBuf::from("./tests/manifests/v0/logger-shortform.wafl");
   let manifest = WasmflowManifest::load_from_file(&path)?;
 
   assert_eq!(manifest.default_flow(), &Some("logger".to_owned()));
@@ -83,7 +82,7 @@ fn load_shortform_yaml() -> Result<(), ManifestError> {
 #[test_logger::test]
 
 fn load_env() -> Result<(), ManifestError> {
-  let path = PathBuf::from("./tests/manifests/v0/env.yaml");
+  let path = PathBuf::from("./tests/manifests/v0/env.wafl");
   env::set_var("TEST_ENV_VAR", "load_manifest_yaml_with_env");
   let manifest = WasmflowManifest::load_from_file(&path)?;
 
@@ -97,12 +96,13 @@ fn load_env() -> Result<(), ManifestError> {
 
 #[test_logger::test]
 fn load_json_env() -> Result<(), ManifestError> {
-  let path = PathBuf::from("./tests/manifests/v0/json-env.yaml");
+  let path = PathBuf::from("./tests/manifests/v0/json-env.wafl");
   env::set_var("TEST_ENV_VAR_JSON", "load_json_env");
   let manifest = WasmflowManifest::load_from_file(&path)?;
+  // let expected: Permissions = from_value(json!({"json_key": "load_json_env"}))?;
 
   assert_eq!(
-    manifest.triggers().clone().unwrap().data,
+    manifest.triggers().clone().unwrap().config,
     json!({"json_key": "load_json_env"})
   );
 
@@ -111,7 +111,7 @@ fn load_json_env() -> Result<(), ManifestError> {
 
 #[test_logger::test]
 fn load_sender_yaml() -> Result<(), ManifestError> {
-  let path = PathBuf::from("./tests/manifests/v0/sender.yaml");
+  let path = PathBuf::from("./tests/manifests/v0/sender.wafl");
   let manifest = WasmflowManifest::load_from_file(&path)?;
 
   let first_from = &manifest.flow("sender").unwrap().connections[0].from;
@@ -127,7 +127,7 @@ fn load_sender_yaml() -> Result<(), ManifestError> {
 
 #[test_logger::test]
 fn load_ns_link() -> Result<(), ManifestError> {
-  let path = PathBuf::from("./tests/manifests/v0/ns.yaml");
+  let path = PathBuf::from("./tests/manifests/v0/ns.wafl");
   let manifest = WasmflowManifest::load_from_file(&path)?;
 
   let schematic = &manifest.flow("logger").unwrap();

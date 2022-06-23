@@ -4,10 +4,8 @@ network:
     reference: &comp ../../integration/test-main-network-component/build/test_main_network_component_s.wasm
     data:
       wasi:
-        preopened_dirs:
-          - "$TEST_TEMPDIR"
-        map_dirs:
-          - ["/", "$TEST_TEMPDIR"]
+        dirs:
+          "/": "$TEST_TEMPDIR"
   collections:
     - namespace: main
       kind: WaPC

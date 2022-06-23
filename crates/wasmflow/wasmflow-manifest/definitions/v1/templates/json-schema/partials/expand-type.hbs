@@ -33,7 +33,7 @@
       {{#case "f32"}}"type":"number"{{/case}}
       {{#case "f64"}}"type":"number"{{/case}}
       {{#case "bool"}}"type":"boolean"{{/case}}
-      {{#default}}"$ref":"#/$defs/{{name.value}}"{{/default}}
+      {{#default}}"$ref":"#/$defs/v1/{{name.value}}"{{/default}}
     {{~/switch}}
   {{~/case}}
 {{~/switch}}

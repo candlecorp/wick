@@ -36,7 +36,7 @@ impl Collection for SignatureTestCollection {
 
 #[test_logger::test(tokio::test)]
 async fn test_missing_collections() -> Result<()> {
-  let manifest = load("./tests/manifests/v0/external.yaml")?;
+  let manifest = load("./tests/manifests/v0/external.wafl")?;
   let network = from_def(&manifest)?;
   let result: std::result::Result<Interpreter, _> = Interpreter::new(Some(Seed::unsafe_new(1)), network, None, None);
   let validation_errors = ValidationError::MissingCollection("test".to_owned());
@@ -51,7 +51,7 @@ async fn test_missing_collections() -> Result<()> {
 
 #[test_logger::test(tokio::test)]
 async fn test_missing_component() -> Result<()> {
-  let manifest = load("./tests/manifests/v0/external.yaml")?;
+  let manifest = load("./tests/manifests/v0/external.wafl")?;
   let network = from_def(&manifest)?;
 
   let sig = CollectionSignature::default();
@@ -77,7 +77,7 @@ async fn test_missing_component() -> Result<()> {
 
 #[test_logger::test(tokio::test)]
 async fn test_invalid_port() -> Result<()> {
-  let manifest = load("./tests/manifests/v0/external.yaml")?;
+  let manifest = load("./tests/manifests/v0/external.wafl")?;
   let network = from_def(&manifest)?;
 
   let sig = serde_json::from_value(json!({
@@ -119,7 +119,7 @@ async fn test_invalid_port() -> Result<()> {
 
 #[test_logger::test(tokio::test)]
 async fn test_missing_port() -> Result<()> {
-  let manifest = load("./tests/manifests/v0/external.yaml")?;
+  let manifest = load("./tests/manifests/v0/external.wafl")?;
   let network = from_def(&manifest)?;
 
   let sig = serde_json::from_value(json!({

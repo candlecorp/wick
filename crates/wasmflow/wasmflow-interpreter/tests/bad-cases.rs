@@ -23,7 +23,7 @@ const OPTIONS: Option<InterpreterOptions> = Some(InterpreterOptions {
 
 #[test_logger::test(tokio::test)]
 async fn test_panic() -> Result<()> {
-  let manifest = load("./tests/manifests/v0/bad-cases/panic.yaml")?;
+  let manifest = load("./tests/manifests/v0/bad-cases/panic.wafl")?;
   let network = from_def(&manifest)?;
   let collections = HandlerMap::new(vec![NamespaceHandler::new("test", Box::new(TestCollection::new()))]);
   let inputs = PacketMap::from([("input", "Hello world".to_owned())]);
@@ -45,7 +45,7 @@ async fn test_panic() -> Result<()> {
 
 #[test_logger::test(tokio::test)]
 async fn test_timeout_done_noclose() -> Result<()> {
-  let manifest = load("./tests/manifests/v0/bad-cases/timeout-done-noclose.yaml")?;
+  let manifest = load("./tests/manifests/v0/bad-cases/timeout-done-noclose.wafl")?;
   let network = from_def(&manifest)?;
   let collections = HandlerMap::new(vec![NamespaceHandler::new("test", Box::new(TestCollection::new()))]);
 
@@ -74,7 +74,7 @@ async fn test_timeout_done_noclose() -> Result<()> {
 
 #[test_logger::test(tokio::test)]
 async fn test_timeout_missingdone() -> Result<()> {
-  let manifest = load("./tests/manifests/v0/bad-cases/timeout-missingdone.yaml")?;
+  let manifest = load("./tests/manifests/v0/bad-cases/timeout-missingdone.wafl")?;
   let network = from_def(&manifest)?;
   let collections = HandlerMap::new(vec![NamespaceHandler::new("test", Box::new(TestCollection::new()))]);
 

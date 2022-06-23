@@ -59,11 +59,10 @@ impl FromStr for crate::v1::CollectionDefinition {
   type Err = Error;
 
   fn from_str(s: &str) -> Result<Self> {
-    Ok(Self {
-      kind: v1::CollectionKind::WASM,
+    Ok(Self::WasmCollection(crate::v1::WasmCollection {
       reference: s.to_owned(),
-      config: serde_json::Value::Null,
-    })
+      ..Default::default()
+    }))
   }
 }
 

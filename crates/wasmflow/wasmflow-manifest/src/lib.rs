@@ -116,16 +116,16 @@ pub mod v1;
 pub mod host_definition;
 
 /// A version-normalized format of the network manifest for development.
-pub mod network_definition;
-pub use network_definition::{CollectionDefinition, CollectionKind};
+pub mod collection_definition;
+pub use collection_definition::{CollectionDefinition, CollectionKind, Permissions};
 
 /// A version-normalized format of the schematic manifest for development.
 pub mod flow_definition;
 pub use flow_definition::{ComponentDefinition, ConnectionDefinition, ConnectionTargetDefinition, Flow};
 pub use wasmflow_parser::parse::v0::parse_id;
 
+use self::collection_definition::EntrypointDefinition;
 use self::host_definition::HostConfig;
-use self::network_definition::EntrypointDefinition;
 use crate::error::ManifestError;
 
 /// The crate's error type.
@@ -163,13 +163,13 @@ impl TryFrom<v0::HostManifest> for WasmflowManifest {
       host: def.host.try_into()?,
       default_flow: def.default_schematic,
       name: def.network.name,
-      triggers: def.network.triggers.map(|v| v.into()),
+      triggers: def.network.triggers.map(|v| v.try_into()).transpose()?,
       collections: def
         .network
         .collections
         .iter()
-        .map(|val| (val.namespace.clone(), val.into()))
-        .collect(),
+        .map(|val| Ok((val.namespace.clone(), val.try_into()?)))
+        .collect::<Result<HashMap<_, _>>>()?,
       labels: def.network.labels,
       flows: flows?,
     })
@@ -186,7 +186,7 @@ impl TryFrom<v1::WasmflowManifest> for WasmflowManifest {
       host: def.host.try_into()?,
       default_flow: def.default_flow,
       name: def.name,
-      triggers: def.unstable_triggers.map(|v| v.into()),
+      triggers: def.unstable_triggers.map(|v| v.try_into()).transpose()?,
       collections: def
         .collections
         .into_iter()

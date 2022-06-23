@@ -207,13 +207,13 @@ pub(crate) async fn initialize_collection(
 ) -> Result<NamespaceHandler> {
   let namespace = collection.namespace.clone();
 
-  let result = match collection.kind {
-    CollectionKind::Network => initialize_network_collection(collection, namespace, opts).await,
-    CollectionKind::Native => unreachable!(), // Should not be handled via this route
-    CollectionKind::Par => initialize_par_collection(collection, namespace, opts).await,
-    CollectionKind::GrpcUrl => initialize_grpc_collection(collection, namespace).await,
-    CollectionKind::Wasm => initialize_wasm_collection(collection, namespace, opts).await,
-    CollectionKind::Mesh => initialize_mesh_collection(collection, namespace, opts).await,
+  let result = match &collection.kind {
+    CollectionKind::Wasm(v) => initialize_wasm_collection(v, namespace, opts).await,
+    CollectionKind::GrpcTar(v) => initialize_par_collection(v, namespace, opts).await,
+    CollectionKind::GrpcUrl(v) => initialize_grpc_collection(v, namespace).await,
+    CollectionKind::Mesh(v) => initialize_mesh_collection(v, namespace, opts).await,
+    CollectionKind::Manifest(v) => initialize_network_collection(v, namespace, opts).await,
+    _ => todo!(),
   };
   Ok(result?)
 }

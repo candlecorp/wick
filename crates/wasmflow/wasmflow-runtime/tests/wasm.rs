@@ -10,7 +10,7 @@ use pretty_assertions::assert_eq;
 
 #[test_logger::test(tokio::test)]
 async fn good_wapc_component() -> Result<()> {
-  let (network, _) = init_network_from_yaml("./manifests/v0/wapc-component.yaml").await?;
+  let (network, _) = init_network_from_yaml("./manifests/v0/wapc-component.wafl").await?;
 
   let data = hashmap! {
       "input" => "1234567890",
@@ -70,7 +70,7 @@ async fn good_wasi_component() -> Result<()> {
   debug!("Writing '{}' to test file {:?}", time, tempfile);
   std::fs::write(&tempfile, &time).unwrap();
   std::env::set_var("TEST_TEMPDIR", tempdir);
-  let (network, _) = init_network_from_yaml("./manifests/v0/wasi-component.yaml").await?;
+  let (network, _) = init_network_from_yaml("./manifests/v0/wasi-component.wafl").await?;
   std::env::remove_var("TEST_TEMPDIR");
 
   let data = hashmap! {
@@ -100,7 +100,7 @@ async fn good_wasi_component() -> Result<()> {
 
 #[test_logger::test(tokio::test)]
 async fn wapc_stream() -> Result<()> {
-  let (network, _) = init_network_from_yaml("./manifests/v0/wapc-stream.yaml").await?;
+  let (network, _) = init_network_from_yaml("./manifests/v0/wapc-stream.wafl").await?;
 
   let data = hashmap! {
       "input" => "Hello world",
@@ -129,7 +129,7 @@ async fn wapc_stream() -> Result<()> {
 
 #[test_logger::test(tokio::test)]
 async fn bad_wapc_component() -> Result<()> {
-  let (network, _) = init_network_from_yaml("./manifests/v0/bad-wapc-component.yaml").await?;
+  let (network, _) = init_network_from_yaml("./manifests/v0/bad-wapc-component.wafl").await?;
 
   let data = hashmap! {
       "input" => "1234567890",
@@ -157,7 +157,7 @@ async fn bad_wapc_component() -> Result<()> {
 
 #[test_logger::test(tokio::test)]
 async fn wasm_link_call() -> Result<()> {
-  let (network, _) = init_network_from_yaml("./manifests/v0/ns-link-wasm.yaml").await?;
+  let (network, _) = init_network_from_yaml("./manifests/v0/ns-link-wasm.wafl").await?;
 
   let data = hashmap! {
       "input" => "hello world",
@@ -187,7 +187,7 @@ async fn wasm_link_call() -> Result<()> {
 
 #[test_logger::test(tokio::test)]
 async fn subnetwork_link_call() -> Result<()> {
-  let (network, _) = init_network_from_yaml("./manifests/v0/subnetwork-ns-link.yaml").await?;
+  let (network, _) = init_network_from_yaml("./manifests/v0/subnetwork-ns-link.wafl").await?;
 
   let data = hashmap! {
       "input" => "hello world",

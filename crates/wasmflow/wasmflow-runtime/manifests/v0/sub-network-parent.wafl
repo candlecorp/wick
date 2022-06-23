@@ -4,7 +4,7 @@ network:
   collections:
     - namespace: subnet
       kind: Network
-      reference: ./manifests/v0/sub-network-child.yaml
+      reference: ./manifests/v0/sub-network-child.wafl
   schematics:
     - name: parent
       collections:

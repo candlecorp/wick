@@ -1,0 +1,7 @@
+"{{name.value}}": {
+  "oneOf" : [
+    {{#join types "," ~}}
+    {"$ref": "#/$defs/v1/{{name.value}}"}
+    {{~/join}}
+  ]
+},

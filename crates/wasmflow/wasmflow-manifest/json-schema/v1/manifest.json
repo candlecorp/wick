@@ -1,0 +1,454 @@
+{
+  "v1": {
+    "WasmflowManifest": {
+      "$anchor": "#v1/WasmflowManifest",
+      "additionalProperties": false,
+      "properties": {
+        "version": {
+          "description": "The manifest version.",
+
+          "type": "number"
+        },
+        "host": {
+          "description": "Configuration for the host when this manifest is run directly.",
+
+          "$ref": "#/$defs/v1/HostConfig"
+        },
+        "default_flow": {
+          "description": "The default flow to execute if none is provided.",
+          "required": false,
+
+          "type": "string"
+        },
+        "name": {
+          "description": "The unique identifier for this manifest.",
+          "required": false,
+
+          "type": "string"
+        },
+        "labels": {
+          "description": "The labels and values that apply to this manifest.",
+          "type": "object",
+          "patternProperties": {
+            "[a-zA-Z0-9][a-zA-Z0-9_]*": {
+              "type": "string"
+            }
+          }
+        },
+        "unstable_triggers": {
+          "description": "The collection to use as the entrypoint when running as a standalone process.",
+          "required": false,
+
+          "$ref": "#/$defs/v1/EntrypointDefinition"
+        },
+        "collections": {
+          "description": "A map of namespace to external component collection.",
+          "type": "object",
+          "patternProperties": {
+            "[a-zA-Z0-9][a-zA-Z0-9_]*": {
+              "$ref": "#/$defs/v1/CollectionDefinition"
+            }
+          }
+        },
+        "components": {
+          "description": "A map of flow-component names to their definitions.",
+          "type": "object",
+          "patternProperties": {
+            "[a-zA-Z0-9][a-zA-Z0-9_]*": {
+              "$ref": "#/$defs/v1/FlowDefinition"
+            }
+          }
+        }
+      },
+      "required": []
+    },
+
+    "CollectionDefinition": {
+      "oneOf": [
+        { "$ref": "#/$defs/v1/WasmCollection" },
+        { "$ref": "#/$defs/v1/GrpcUrlCollection" },
+        { "$ref": "#/$defs/v1/GrpcTarCollection" },
+        { "$ref": "#/$defs/v1/MeshCollection" },
+        { "$ref": "#/$defs/v1/ManifestCollection" }
+      ]
+    },
+
+    "HostConfig": {
+      "$anchor": "#v1/HostConfig",
+      "additionalProperties": false,
+      "properties": {
+        "allow_latest": {
+          "description": "Whether or not to allow the :latest tag on remote artifacts.",
+
+          "type": "boolean"
+        },
+        "insecure_registries": {
+          "description": "A list of registries to connect to insecurely (over HTTP vs HTTPS).",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "timeout": {
+          "description": "The timeout for network requests (in ms).",
+
+          "type": "number"
+        },
+        "id": {
+          "description": "The ID for this host, used to identify the host over the mesh.",
+          "required": false,
+
+          "type": "string"
+        },
+        "expose": {
+          "description": "The schematics to expose via RPC or the mesh, if any.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "mesh": {
+          "description": "The mesh configuration.",
+          "required": false,
+
+          "$ref": "#/$defs/v1/MeshConfig"
+        },
+        "rpc": {
+          "description": "Configuration for the GRPC server.",
+          "required": false,
+
+          "$ref": "#/$defs/v1/HttpConfig"
+        }
+      },
+      "required": []
+    },
+
+    "HttpConfig": {
+      "$anchor": "#v1/HttpConfig",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "description": "Enable/disable the server.",
+
+          "type": "boolean"
+        },
+        "port": {
+          "description": "The port to bind to.",
+          "required": false,
+
+          "type": "number"
+        },
+        "address": {
+          "description": "The address to bind to.",
+          "required": false,
+
+          "type": "string"
+        },
+        "pem": {
+          "description": "Path to pem file for TLS.",
+          "required": false,
+
+          "type": "string"
+        },
+        "key": {
+          "description": "Path to key file for TLS.",
+          "required": false,
+
+          "type": "string"
+        },
+        "ca": {
+          "description": "Path to CA file.",
+          "required": false,
+
+          "type": "string"
+        }
+      },
+      "required": []
+    },
+
+    "MeshConfig": {
+      "$anchor": "#v1/MeshConfig",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "description": "Enable/disable the mesh connection.",
+
+          "type": "boolean"
+        },
+        "address": {
+          "description": "The address of the NATS server.",
+
+          "type": "string"
+        },
+        "creds_path": {
+          "description": "The path to the NATS credsfile.",
+          "required": false,
+
+          "type": "string"
+        },
+        "token": {
+          "description": "The NATS token.",
+          "required": false,
+
+          "type": "string"
+        }
+      },
+      "required": []
+    },
+
+    "EntrypointDefinition": {
+      "$anchor": "#v1/EntrypointDefinition",
+      "additionalProperties": false,
+      "properties": {
+        "reference": {
+          "description": "The reference/location of the collection.",
+
+          "type": "string"
+        },
+        "component": {
+          "description": "The component to use as the entrypoint.",
+
+          "type": "string"
+        },
+        "config": {
+          "description": "Data or configuration used to initialize the collection.",
+          "type": "object"
+        },
+        "permissions": {
+          "description": "Permissions to give this collection",
+
+          "$ref": "#/$defs/v1/Permissions"
+        }
+      },
+      "required": []
+    },
+
+    "WasmCollection": {
+      "$anchor": "#v1/WasmCollection",
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "type": "string",
+          "description": "The kind of the collection",
+          "enum": ["Wasm"]
+        },
+        "reference": {
+          "description": "The URL (and optional tag) or local file path to find the .wasm module.",
+
+          "type": "string"
+        },
+        "permissions": {
+          "description": "Permissions to give this collection",
+
+          "$ref": "#/$defs/v1/Permissions"
+        },
+        "config": {
+          "description": "Per-collection configuration.",
+          "type": "object"
+        }
+      },
+      "required": []
+    },
+
+    "Permissions": {
+      "$anchor": "#v1/Permissions",
+      "additionalProperties": false,
+      "properties": {
+        "dirs": {
+          "description": "A map of from internal directory to external directory that this collection should be able to access.",
+          "type": "object",
+          "patternProperties": {
+            "[a-zA-Z0-9][a-zA-Z0-9_]*": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "required": []
+    },
+
+    "GrpcUrlCollection": {
+      "$anchor": "#v1/GrpcUrlCollection",
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "type": "string",
+          "description": "The kind of the collection",
+          "enum": ["GrpcUrl"]
+        },
+        "url": {
+          "description": "The GRPC URL to connect to.",
+
+          "type": "string"
+        },
+        "config": {
+          "description": "Any configuration necessary for the collection.",
+          "type": "object"
+        }
+      },
+      "required": []
+    },
+
+    "MeshCollection": {
+      "$anchor": "#v1/MeshCollection",
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "type": "string",
+          "description": "The kind of the collection",
+          "enum": ["Mesh"]
+        },
+        "id": {
+          "description": "The ID of the collection.",
+
+          "type": "string"
+        },
+        "config": {
+          "description": "Any configuration necessary for the collection.",
+          "type": "object"
+        }
+      },
+      "required": []
+    },
+
+    "GrpcTarCollection": {
+      "$anchor": "#v1/GrpcTarCollection",
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "type": "string",
+          "description": "The kind of the collection",
+          "enum": ["GrpcTar"]
+        },
+        "reference": {
+          "description": "The URL (and optional tag) or local file path to find the archive.",
+
+          "type": "string"
+        },
+        "config": {
+          "description": "Any configuration necessary for the collection.",
+          "type": "object"
+        }
+      },
+      "required": []
+    },
+
+    "ManifestCollection": {
+      "$anchor": "#v1/ManifestCollection",
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "type": "string",
+          "description": "The kind of the collection",
+          "enum": ["Manifest"]
+        },
+        "reference": {
+          "description": "The URL (and optional tag) or local file path to find the manifest.",
+
+          "type": "string"
+        },
+        "config": {
+          "description": "Any configuration necessary for the collection.",
+          "type": "object"
+        }
+      },
+      "required": []
+    },
+
+    "FlowDefinition": {
+      "$anchor": "#v1/FlowDefinition",
+      "additionalProperties": false,
+      "properties": {
+        "collections": {
+          "description": "A list of collections the schematic can use.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "instances": {
+          "description": "A map from component reference to its target.",
+          "type": "object",
+          "patternProperties": {
+            "[a-zA-Z0-9][a-zA-Z0-9_]*": {
+              "$ref": "#/$defs/v1/ComponentDefinition"
+            }
+          }
+        },
+        "flow": {
+          "description": "A list of connections from component to component.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/v1/ConnectionDefinition"
+          }
+        }
+      },
+      "required": []
+    },
+
+    "ComponentDefinition": {
+      "$anchor": "#v1/ComponentDefinition",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "description": "The ID of the component (i.e. the alias, key, or namespace).",
+
+          "type": "string"
+        },
+        "config": {
+          "description": "Data to associate with the reference.",
+          "required": false,
+          "type": "object"
+        }
+      },
+      "required": ["id"]
+    },
+
+    "ConnectionDefinition": {
+      "$anchor": "#v1/ConnectionDefinition",
+      "additionalProperties": false,
+      "properties": {
+        "from": {
+          "description": "The originating component from upstream.",
+
+          "$ref": "#/$defs/v1/ConnectionTargetDefinition"
+        },
+        "to": {
+          "description": "The destination component (downstream).",
+
+          "$ref": "#/$defs/v1/ConnectionTargetDefinition"
+        },
+        "default": {
+          "description": "The default value to provide in the event of an upstream Error or Exception.",
+          "required": false,
+
+          "type": "string"
+        }
+      },
+      "required": []
+    },
+
+    "ConnectionTargetDefinition": {
+      "$anchor": "#v1/ConnectionTargetDefinition",
+      "additionalProperties": false,
+      "properties": {
+        "instance": {
+          "description": "The instance name of the referenced component.",
+
+          "type": "string"
+        },
+        "port": {
+          "description": "The component&#x27;s port.",
+
+          "type": "string"
+        },
+        "data": {
+          "description": "The default value to provide on this connection in the event of an error.",
+          "required": false,
+          "type": "object"
+        }
+      },
+      "required": ["instance", "port"]
+    }
+  }
+}

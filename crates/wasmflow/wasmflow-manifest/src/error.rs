@@ -5,7 +5,7 @@ use crate::{ConnectionDefinition, ConnectionTargetDefinition};
 // type BoxedSyncSendError = Box<dyn std::error::Error + Sync + std::marker::Send>;
 
 /// Wasmflow Manifest's Errors.
-#[derive(Error, Debug, Clone, PartialEq)]
+#[derive(Error, Debug)]
 pub enum ManifestError {
   /// Invalid version found in the parsed manifest.
   #[error("Invalid Manifest Version '{0}'")]
@@ -46,6 +46,10 @@ pub enum ManifestError {
   /// IP address in manifest is invalid.
   #[error("Invalid IP Address: {0}")]
   BadIpAddress(String),
+
+  /// Invalid format of passed data. Check the error message for details.
+  #[error("Invalid format: {0}")]
+  Invalid(serde_json::Error),
 
   /// Parser error.
   #[error(transparent)]
