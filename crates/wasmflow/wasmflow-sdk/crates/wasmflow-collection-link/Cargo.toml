@@ -18,6 +18,8 @@ maintenance = { status = "actively-developed" }
 [features]
 default = []
 
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+wasmflow-component = { path = "../wasmflow-component", version = "0.9.0" }
 
 [dependencies]
 wasmflow-packet = { path = "../wasmflow-packet", version = "0.9.0" }

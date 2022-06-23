@@ -66,11 +66,16 @@ commands:
             | tar -zxvf - sccache-v0.3.0-x86_64-unknown-linux-musl/sccache \
             && sudo mv sccache-v0.3.0-x86_64-unknown-linux-musl/sccache ${RUSTC_WRAPPER} \
             && sudo chmod +x ${RUSTC_WRAPPER}
-            sccache -s
       - save_cache:
           key: sccache-{{ arch }}
           paths:
             - ~/.cargo/bin/sccache
+  sccache_start:
+    steps:
+      - run:
+          name: Starts Sccache
+          command: |
+            ${RUSTC_WRAPPER} -s
   rust_setup:
     description: Sets up Rust Toolchain
     steps:
@@ -96,6 +101,7 @@ commands:
             - ~/.rustup
       - restore_build_cache
       - sccache_setup
+      - sccache_start
   build_setup:
     description: Sets up environment for future jobs
     steps:
@@ -139,7 +145,7 @@ jobs:
     executor: test-executor
     steps:
       - checkout_submodules
-      - sccache_setup
+      - sccache_start
       - run: source ./etc/ci-test.env
       - restore_build_cache
       - run:
