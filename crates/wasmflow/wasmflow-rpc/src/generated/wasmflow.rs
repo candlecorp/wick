@@ -149,6 +149,8 @@ pub mod component {
 pub struct CollectionSignature {
     #[prost(string, tag="1")]
     pub name: ::prost::alloc::string::String,
+    #[prost(message, optional, tag="8")]
+    pub features: ::core::option::Option<CollectionFeatures>,
     #[prost(string, tag="2")]
     pub version: ::prost::alloc::string::String,
     #[prost(uint32, tag="6")]
@@ -161,6 +163,15 @@ pub struct CollectionSignature {
     pub config: ::std::collections::HashMap<::prost::alloc::string::String, TypeDefinition>,
     #[prost(message, repeated, tag="7")]
     pub wellknown: ::prost::alloc::vec::Vec<WellKnownSchema>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct CollectionFeatures {
+    #[prost(bool, tag="1")]
+    pub streaming: bool,
+    #[prost(bool, tag="2")]
+    pub stateful: bool,
+    #[prost(uint32, tag="3")]
+    pub version: u32,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TypeDefinition {

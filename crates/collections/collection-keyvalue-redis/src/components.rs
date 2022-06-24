@@ -292,6 +292,11 @@ pub fn get_signature() -> wasmflow_sdk::v1::types::CollectionSignature {
 
   wasmflow_sdk::v1::types::CollectionSignature {
     name: Some("wasmflow-keyvalue-redis".to_owned()),
+    features: wasmflow_sdk::v1::types::CollectionFeatures {
+      streaming: false,
+      stateful: true,
+      version: wasmflow_sdk::v1::types::CollectionVersion::V0,
+    },
     format: 1,
     version: "1".to_owned(),
     types: std::collections::HashMap::from([]).into(),

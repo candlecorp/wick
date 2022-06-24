@@ -348,6 +348,7 @@ async fn test_generator_multi_sibling() -> Result<()> {
 }
 
 #[test_logger::test(tokio::test)]
+#[ignore] // This test won't pass until streaming is re-enabled.
 async fn test_stream_collection_ref() -> Result<()> {
   let manifest = load("./tests/manifests/v0/stream-collection-ref.wafl")?;
   let network = from_def(&manifest)?;
@@ -372,6 +373,7 @@ async fn test_stream_collection_ref() -> Result<()> {
 }
 
 #[test_logger::test(tokio::test)]
+#[ignore] // This test won't pass until streaming is re-enabled.
 async fn test_stream_multi() -> Result<()> {
   let manifest = load("./tests/manifests/v0/stream-multi.wafl")?;
   let network = from_def(&manifest)?;

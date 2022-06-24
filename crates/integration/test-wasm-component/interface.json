@@ -1,5 +1,10 @@
 {
   "name": "test-component",
+  "features": {
+    "stateful": false,
+    "streaming": false,
+    "version": 0
+  },
   "version": "0.0.1",
   "format": 1,
   "wellknown": [],

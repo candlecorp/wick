@@ -79,7 +79,9 @@
 mod signatures;
 
 pub use signatures::{
+  CollectionFeatures,
   CollectionSignature,
+  CollectionVersion,
   ComponentSignature,
   EnumSignature,
   EnumVariant,

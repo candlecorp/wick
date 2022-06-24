@@ -18,7 +18,7 @@ use wasmflow_interpreter::{
   ValidationError,
 };
 use wasmflow_sdk::v1::transport::TransportStream;
-use wasmflow_sdk::v1::types::CollectionSignature;
+use wasmflow_sdk::v1::types::{CollectionFeatures, CollectionSignature, ComponentSignature, TypeSignature};
 use wasmflow_sdk::v1::Invocation;
 fn load<T: AsRef<Path>>(path: T) -> Result<wasmflow_manifest::WasmflowManifest> {
   Ok(wasmflow_manifest::WasmflowManifest::load_from_file(path.as_ref())?)
@@ -79,23 +79,15 @@ async fn test_missing_component() -> Result<()> {
 async fn test_invalid_port() -> Result<()> {
   let manifest = load("./tests/manifests/v0/external.wafl")?;
   let network = from_def(&manifest)?;
+  let signature = CollectionSignature::new("instance")
+    .format(1)
+    .version("0.0.0")
+    .features(CollectionFeatures::v0(false, false))
+    .add_component(ComponentSignature::new("echo"));
 
-  let sig = serde_json::from_value(json!({
-    "name":"instance" ,
-    "format":1,
-    "version":"",
-    "components" : {
-      "echo":{
-        "name": "echo",
-        "inputs": {},
-        "outputs": {}
-      }
-    }
-  }))
-  .unwrap();
   let collections = HandlerMap::new(vec![NamespaceHandler::new(
     "test",
-    Box::new(SignatureTestCollection(sig)),
+    Box::new(SignatureTestCollection(signature)),
   )]);
 
   let result: std::result::Result<Interpreter, _> =
@@ -121,29 +113,21 @@ async fn test_invalid_port() -> Result<()> {
 async fn test_missing_port() -> Result<()> {
   let manifest = load("./tests/manifests/v0/external.wafl")?;
   let network = from_def(&manifest)?;
+  let signature = CollectionSignature::new("test")
+    .format(1)
+    .version("0.0.0")
+    .features(CollectionFeatures::v0(false, false))
+    .add_component(
+      ComponentSignature::new("echo")
+        .add_input("input", TypeSignature::String)
+        .add_input("OTHER_IN", TypeSignature::String)
+        .add_output("output", TypeSignature::String)
+        .add_output("OTHER_OUT", TypeSignature::String),
+    );
 
-  let sig = serde_json::from_value(json!({
-    "name":"test",
-    "format":1,
-    "version":"",
-    "components" : {
-      "echo": {
-        "name": "echo",
-        "inputs": {
-          "input": {"type":"string"},
-          "OTHER_IN": {"type":"string"},
-        },
-        "outputs": {
-          "output": {"type":"string"},
-          "OTHER_OUT": {"type":"string"},
-        }
-      }
-    }
-  }))
-  .unwrap();
   let collections = HandlerMap::new(vec![NamespaceHandler::new(
     "test",
-    Box::new(SignatureTestCollection(sig)),
+    Box::new(SignatureTestCollection(signature)),
   )]);
 
   let result: std::result::Result<Interpreter, _> =

@@ -14,14 +14,26 @@ import {
   StructSignature,
   FieldMap,
   TypeSignature,
+  CollectionFeatures,
 } from './types.js';
 
-export async function processDir(name: string, dir: string): Promise<CollectionSignature> {
+interface Features {
+  stateful?: boolean;
+}
+
+export async function processDir(name: string, dir: string, features: Features): Promise<CollectionSignature> {
   const { components, types, configs } = await processSchemaDir(dir);
+
+  const collectionFeatures: CollectionFeatures = {
+    stateful: !!features.stateful,
+    streaming: false,
+    version: 0,
+  };
 
   const collectionSignature: CollectionSignature = {
     name,
-    version: '1.0.0',
+    features: collectionFeatures,
+    version: '0.0.0',
     format: 1,
     wellknown: [],
     types: Object.fromEntries(types.map(t => [t.name, t])),

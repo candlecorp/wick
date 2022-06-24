@@ -9,7 +9,7 @@ TARGET?=wasm32-unknown-unknown
 
 CLEAN_FILES += $(BUILD_ARTIFACT) $(SIGNED_ARTIFACT)
 
-$(BUILD_ARTIFACT): $(INTERFACE) $(GENERATED_MODULE) $(RUST_SOURCES)
+$(BUILD_ARTIFACT): $(INTERFACE) $(GENERATED_MODULE) $(RUST_SOURCES) components
 	@$(MKDIR) $(ARTIFACT_DIR)
 	@echo Building artifact
 	cargo build --target $(TARGET) --release
