@@ -17,7 +17,6 @@ use crate::constants::*;
 use crate::graph::types::*;
 use crate::interpreter::channel::Event;
 use crate::interpreter::error::StateError;
-use crate::interpreter::executor::transaction::component::check_statuses;
 use crate::interpreter::executor::transaction::component::port::PortStatus;
 use crate::{Collection, HandlerMap, InterpreterDispatchChannel};
 
@@ -119,25 +118,13 @@ impl Transaction {
   }
 
   pub(crate) fn done(&self) -> bool {
-    let output_handler = self.instance(self.schematic.output().index());
-    let status = check_statuses(output_handler.inputs().handlers());
-    let upstreams_done = !status.has_any_open();
     let output_handler = self.output_handler();
     let outputs_closed = output_handler
       .inputs()
       .iter()
       .all(|p| p.status() == PortStatus::DoneClosed);
 
-    let pending_components = self
-      .instances
-      .iter()
-      .filter(|instance| instance.is_pending())
-      .map(|i| format!("{}({})", i.id(), i.entity()))
-      .collect::<Vec<_>>()
-      .join(", ");
-
-    trace!(%pending_components, ?status, upstreams_done, outputs_closed, "checking done");
-    outputs_closed && upstreams_done && pending_components.is_empty()
+    outputs_closed
   }
 
   pub(crate) async fn start(&mut self) -> Result<()> {
