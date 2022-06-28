@@ -189,8 +189,7 @@ jobs:
       - run:
           name: Build
           command: |
-            VERSION="nightly-$(date +%F)"
-            WASMFLOW_VERSION=VERSION WAFL_VERSION=VERSION ARCH=<<parameters.arch>> RELEASE=<<parameters.release>>  make bins
+            WASMFLOW_VERSION="<< pipeline.git.tag >>" WAFL_VERSION="<< pipeline.git.tag >>" ARCH=<<parameters.arch>> RELEASE=<<parameters.release>>  make bins
       - save_cache:
           key: artifacts-<<parameters.arch>>-{{ .Environment.CIRCLE_SHA1 }}
           paths:
@@ -235,15 +234,14 @@ jobs:
             BUILDTAG="nightly-$(date +%F)"
             echo $BUILDTAG > build/artifacts/RELEASE
             echo << pipeline.git.revision >> > build/artifacts/RELEASE
-            cp build/artifacts/RELEASE build/RELEASE
       - run:
           name: Publish artifacts
           no_output_timeout: 2m
           command: |
             cd /home/circleci/project
-            BUILDTAG="nightly-$(date +%F)"
-            echo $BUILDTAG
-            echo WIP
+            VERSION="<< pipeline.git.tag >>"
+            echo $VERSION
+            ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -c ${CIRCLE_SHA1} -delete ${VERSION} build/artifacts/
       - store_artifacts:
           path: ./build/
 
@@ -253,17 +251,15 @@ workflows:
     jobs:
       - test:
           context: build
-  nightly:
-    triggers:
-      - schedule:
-          cron: "0 0 * * *"
-          filters:
-            branches:
-              only:
-                - main
+  deploy:
     jobs:
       - test:
           context: build
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /^release-.*$/
       - build:
           context: build
           matrix:
@@ -271,6 +267,16 @@ workflows:
               arch: *ARCHITECTURES
             alias: release
           requires: [test]
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /^release-.*$/
       - deploy:
           context: build
           requires: [release]
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /^release-.*$/
