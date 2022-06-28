@@ -123,7 +123,7 @@ pub struct WasmflowManifest {
       #[serde(default)]
       #[serde(skip_serializing_if = "HashMap::is_empty")]
         #[serde(deserialize_with = "crate::parse::v1::collection_shortform")]
-    pub collections: 
+    pub external: 
     HashMap<
       
       String

@@ -26,7 +26,7 @@ executors:
       SCCACHE_AZURE_BLOB_CONTAINER: sccache
   test-executor:
     docker:
-      - image: candlecorp/build-base:latest
+      - image: candlecorp/ci-test:latest
         auth: *AUTH
     resource_class: xlarge
     environment:
@@ -44,8 +44,8 @@ commands:
           name: Install cross
           command: |
             # if [[ ! $(command -v cross) ]]; then
-              curl -OL https://github.com/wasmflow/cross/releases/download/v0.2.1-darwin/cross-v0.2.1-x86_64-unknown-linux-gnu.tar.gz
-              tar -zxvf cross-v0.2.1-x86_64-unknown-linux-gnu.tar.gz cross
+              curl -OL https://github.com/wasmflow/cross/releases/download/v0.2.2-darwin/cross_v0.2.2-darwin_x86_64-unknown-linux-musl.tar.gz
+              tar -zxvf cross_v0.2.2-darwin_x86_64-unknown-linux-musl.tar.gz cross
               chmod +x cross
               mv cross $HOME/.cargo/bin/
             # fi
@@ -133,7 +133,7 @@ commands:
 jobs:
   scratch:
     docker:
-      - image: candlecorp/build-base:latest
+      - image: candlecorp/ci-test:latest
         auth: *AUTH
     resource_class: small
     steps:
@@ -179,7 +179,7 @@ jobs:
   deploy:
     parameters:
     docker:
-      - image: candlecorp/ci-env-dev
+      - image: candlecorp/ci-deploy
         auth: *AUTH
         environment:
           AZURE_STORAGE_ACCOUNT: $AZURE_STORAGE_ACCOUNT

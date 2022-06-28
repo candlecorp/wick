@@ -188,7 +188,7 @@ impl TryFrom<v1::WasmflowManifest> for WasmflowManifest {
       name: def.name,
       triggers: def.unstable_triggers.map(|v| v.try_into()).transpose()?,
       collections: def
-        .collections
+        .external
         .into_iter()
         .map(|(k, v)| (k.clone(), (k, v).into()))
         .collect(),

@@ -1,7 +1,7 @@
 # yaml-language-server: $schema=../../../json-schema/manifest.json
 ---
 version: 1
-collections:
+external:
   foo:
     kind: Mesh
     id: bar

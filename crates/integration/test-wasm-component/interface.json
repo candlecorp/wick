@@ -25,22 +25,6 @@
     }
   },
   "components": {
-    "copy": {
-      "name": "copy",
-      "inputs": {
-        "input": {
-          "type": "string"
-        },
-        "times": {
-          "type": "i8"
-        }
-      },
-      "outputs": {
-        "output": {
-          "type": "string"
-        }
-      }
-    },
     "error": {
       "name": "error",
       "inputs": {

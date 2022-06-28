@@ -21,7 +21,7 @@ type WasmflowManifest {
   unstable_triggers: EntrypointDefinition?,
 
   "A map of namespace to external component collection."
-  collections: {string: CollectionDefinition},
+  external: {string: CollectionDefinition},
 
   "A map of flow-component names to their definitions."
   components: {string: FlowDefinition},

@@ -101,6 +101,3 @@ pub use host::{Host, HostBuilder};
 
 pub(crate) type Result<T> = std::result::Result<T, error::HostError>;
 pub type Error = error::HostError;
-
-#[cfg(test)]
-mod test {}

@@ -377,7 +377,7 @@
             "required": false,
             "$ref": "#/$defs/v1/EntrypointDefinition"
           },
-          "collections": {
+          "external": {
             "description": "A map of namespace to external component collection.",
             "type": "object",
             "patternProperties": {

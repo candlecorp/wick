@@ -99,6 +99,8 @@ async fn good_wasi_component() -> Result<()> {
 }
 
 #[test_logger::test(tokio::test)]
+#[ignore]
+/// Streams are disabled until updated wapc protocol
 async fn wapc_stream() -> Result<()> {
   let (network, _) = init_network_from_yaml("./manifests/v0/wapc-stream.wafl").await?;
 
