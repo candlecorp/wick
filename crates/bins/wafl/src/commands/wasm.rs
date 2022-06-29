@@ -5,7 +5,7 @@ pub(crate) mod sign;
 
 #[derive(Subcommand, Debug, Clone)]
 pub(crate) enum SubCommands {
-  /// Sign a WaPC component.
+  /// Sign a WebAssembly module.
   #[clap(name = "sign")]
   Sign(sign::Options),
 
