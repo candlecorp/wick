@@ -12,3 +12,16 @@ image = "candlecorp/cross:x86_64-apple-darwin"
 
 [target.x86_64-pc-windows-gnu]
 image = "candlecorp/cross:x86_64-pc-windows-gnu"
+
+[build.env]
+passthrough = [
+  "WAFL_VERSION",
+  "WASMFLOW_VERSION",
+  "SCCACHE_AZURE_BLOB_CONTAINER",
+  "CARGO_PROFILE_RELEASE_DEBUG",
+  "CARGO_INCREMENTAL",
+  "CARGO_PROFILE_RELEASE_LTO",
+  "CARGO_PROFILE_RELEASE_OPT_LEVEL",
+  "CARGO_PROFILE_RELEASE_CODEGEN_UNITS",
+  "CARGO_PROFILE_RELEASE_STRIP",
+]
