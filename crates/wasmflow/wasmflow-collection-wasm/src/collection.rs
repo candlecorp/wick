@@ -11,7 +11,7 @@ use wasmflow_sdk::v1::codec::{json, messagepack};
 use wasmflow_sdk::v1::packet::{PacketMap, PacketWrapper};
 use wasmflow_sdk::v1::transport::{MessageTransport, Serialized, TransportMap, TransportStream};
 use wasmflow_sdk::v1::types::HostedType;
-use wasmflow_sdk::v1::{CollectionLink, Entity, Invocation};
+use wasmflow_sdk::v1::{BoxedFuture, CollectionLink, Entity, Invocation};
 
 use crate::error::LinkError;
 use crate::wapc_module::WapcModule;
@@ -29,7 +29,8 @@ pub struct Collection {
   pool: Arc<WasmHost>,
 }
 
-pub type HostLinkCallback = dyn Fn(&str, &str, PacketMap) -> Result<Vec<PacketWrapper>, LinkError> + Sync + Send;
+pub type HostLinkCallback =
+  dyn Fn(&str, &str, PacketMap) -> BoxedFuture<Result<Vec<PacketWrapper>, LinkError>> + Send + Sync;
 
 fn permissions_to_wasi_params(perms: Permissions) -> WasiParams {
   debug!(params=?perms, "Collection permissions");
@@ -124,9 +125,8 @@ impl RpcHandler for Collection {
     let pool = self.pool.clone();
 
     let config = invocation.config.map(|v| v.into_messagepack());
-    let state = invocation.state.map(|v| v.into_messagepack());
 
-    let outputs = pool.call(component, &messagepack_map, config, state).await?;
+    let outputs = pool.call(component, &messagepack_map, config).await?;
 
     Ok(outputs)
   }
@@ -196,7 +196,7 @@ mod tests {
       2,
       None,
       None,
-      Some(Box::new(|_origin, _component, _payload| Ok(vec![]))),
+      Some(Box::new(|_origin, _component, _payload| Box::pin(async { Ok(vec![]) }))),
     )?;
     let input = "Hello world";
 

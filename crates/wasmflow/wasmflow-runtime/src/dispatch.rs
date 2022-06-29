@@ -1,6 +1,3 @@
-use std::sync::Arc;
-
-use parking_lot::{Condvar, Mutex};
 use uuid::Uuid;
 use wasmflow_sdk::v1::Invocation;
 
@@ -37,8 +34,6 @@ impl InvocationResponse {
 
 #[derive(thiserror::Error, Debug)]
 pub(crate) enum DispatchError {
-  #[error("Thread died")]
-  JoinFailed,
   #[error("{0}")]
   Sdk(String),
   #[error("Entity not available {0}")]
@@ -77,39 +72,9 @@ pub(crate) async fn network_invoke_async(
   }
 }
 
-#[allow(unused)]
-pub(crate) fn network_invoke_sync(
-  network_id: Uuid,
-  invocation: Invocation,
-) -> Result<Vec<TransportWrapper>, DispatchError> {
-  let pair = Arc::new((Mutex::new(false), Condvar::new()));
-  let inner = Arc::clone(&pair);
-
-  let handle = std::thread::spawn(move || {
-    let system = tokio::runtime::Runtime::new().unwrap();
-    let (lock, cvar) = &*inner;
-    let mut started = lock.lock();
-    *started = true;
-    let re = system.block_on(network_invoke_async(network_id, invocation));
-    cvar.notify_one();
-    re
-  });
-
-  let (lock, cvar) = &*pair;
-  let mut started = lock.lock();
-  while !*started {
-    std::thread::yield_now();
-    cvar.wait(&mut started);
-  }
-
-  let packets = handle.join().map_err(|_| DispatchError::JoinFailed)??;
-  Ok(packets)
-}
-
 #[cfg(test)]
 mod tests {
 
-  use tokio::sync::oneshot;
   use wasmflow_sdk::v1::packet::PacketMap;
 
   use super::*;
@@ -123,36 +88,6 @@ mod tests {
     let invocation = Invocation::new_test(file!(), target, map, None);
 
     let packets = network_invoke_async(nuid, invocation).await?;
-    debug!("{:?}", packets);
-    assert_eq!(packets.len(), 2);
-    let rv: String = packets[0].payload.clone().deserialize()?;
-    assert_eq!(rv, "hello");
-
-    Ok(())
-  }
-
-  #[test_logger::test(tokio::test)]
-  async fn invoke_sync() -> TestResult<()> {
-    let (tx, rx) = oneshot::channel::<Uuid>();
-    let (tx2, rx2) = oneshot::channel::<bool>();
-    std::thread::spawn(|| {
-      let system = tokio::runtime::Runtime::new().unwrap();
-
-      let (_, nuid) = system
-        .block_on(init_network_from_yaml("./manifests/v0/echo.wafl"))
-        .unwrap();
-      let _ = tx.send(nuid);
-      let _ = system.block_on(rx2);
-    });
-    let nuid = rx.await?;
-
-    let target = Entity::component("self", "echo");
-    let map = PacketMap::from(vec![("input", "hello")]);
-    let invocation = Invocation::new_test(file!(), target, map, None);
-
-    let packets = network_invoke_sync(nuid, invocation)?;
-    let _ = tx2.send(true);
-
     debug!("{:?}", packets);
     assert_eq!(packets.len(), 2);
     let rv: String = packets[0].payload.clone().deserialize()?;

@@ -22,7 +22,7 @@ use wasmflow_manifest::collection_definition::{
 
 use self::collection_service::NativeCollectionService;
 use crate::dev::prelude::*;
-use crate::dispatch::network_invoke_sync;
+use crate::dispatch::network_invoke_async;
 use crate::network_service::CollectionInitOptions;
 
 pub(crate) trait InvocationHandler {
@@ -122,25 +122,33 @@ pub(crate) async fn initialize_wasm_entrypoint(
 
 fn make_link_callback(network_id: Uuid) -> Box<HostLinkCallback> {
   Box::new(move |origin_url, target_url, payload| {
-    debug!(
-      origin = origin_url,
-      target = target_url,
-      network_id = %network_id,
-      "link_call"
-    );
+    let origin_url = origin_url.to_owned();
+    let target_url = target_url.to_owned();
+    Box::pin(async move {
+      {
+        debug!(
+          origin = %origin_url,
+          target = %target_url,
+          network_id = %network_id,
+          "link_call"
+        );
 
-    let target = Entity::from_str(target_url).map_err(|e| LinkError::EntityFailure(e.to_string()))?;
-    let origin = Entity::from_str(origin_url).map_err(|e| LinkError::EntityFailure(e.to_string()))?;
-    if let Entity::Component(origin_ns, _) = &origin {
-      if let Entity::Component(target_ns, _) = &target {
-        if target_ns == origin_ns {
-          return Err(LinkError::Circular(target_ns.clone()));
+        let target = Entity::from_str(&target_url).map_err(|e| LinkError::EntityFailure(e.to_string()))?;
+        let origin = Entity::from_str(&origin_url).map_err(|e| LinkError::EntityFailure(e.to_string()))?;
+        if let Entity::Component(origin_ns, _) = &origin {
+          if let Entity::Component(target_ns, _) = &target {
+            if target_ns == origin_ns {
+              return Err(LinkError::Circular(target_ns.clone()));
+            }
+          }
         }
+        let invocation = Invocation::new(origin, target, payload.into(), None);
+        let result = network_invoke_async(network_id, invocation)
+          .await
+          .map_err(|e| LinkError::CallFailure(e.to_string()))?;
+        Ok(result.into_iter().map(|v| v.into()).collect())
       }
-    }
-    let invocation = Invocation::new(origin, target, payload.into(), None);
-    let result = network_invoke_sync(network_id, invocation).map_err(|e| LinkError::CallFailure(e.to_string()))?;
-    Ok(result.into_iter().map(|v| v.into()).collect())
+    })
   })
 }
 

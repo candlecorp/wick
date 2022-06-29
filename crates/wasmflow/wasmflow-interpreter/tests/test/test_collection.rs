@@ -92,20 +92,22 @@ impl TestCollection {
   }
 }
 
-type Sender = Box<dyn Fn(TransportWrapper) -> JoinHandle<()> + Send + Sync>;
+type Sender = Box<dyn FnMut(TransportWrapper) -> JoinHandle<()> + Send + Sync>;
 
-fn stream(seed: u64) -> (Sender, TransportStream) {
+fn stream(_seed: u64) -> (Sender, TransportStream) {
   let (tx, rx) = tokio::sync::mpsc::unbounded_channel();
   let tx = Arc::new(tx);
 
   let stream = TransportStream::new(tokio_stream::wrappers::UnboundedReceiverStream::new(rx));
+  let mut total = 0;
   let sender: Sender = Box::new(move |msg: TransportWrapper| {
-    let rng = Random::from_seed(Seed::unsafe_new(seed));
-    let millis = rng.range(100, 300);
+    let rng = Random::new();
+    let delay = rng.range(10, 200);
+    total += delay;
     let tx = tx.clone();
     tokio::spawn(async move {
-      trace!(millis, "sleeping");
-      tokio::time::sleep(Duration::from_millis(millis.into())).await;
+      trace!(total, "sleeping for delayed send");
+      tokio::time::sleep(Duration::from_millis(total.into())).await;
       let _ = tx.send(msg);
     })
   });
@@ -132,7 +134,7 @@ impl Collection for TestCollection {
       "echo" => {
         let input = invocation.payload.remove("input").unwrap();
 
-        let (send, stream) = stream(1);
+        let (mut send, stream) = stream(1);
 
         defer(vec![
           send(TransportWrapper::new("output", input)),
@@ -146,7 +148,7 @@ impl Collection for TestCollection {
         let right: String = invocation.payload.consume("right").unwrap();
         let result = format!("{}{}", left, right);
 
-        let (send, stream) = stream(1);
+        let (mut send, stream) = stream(1);
 
         defer(vec![
           send(TransportWrapper::new("output", MessageTransport::success(&result))),
@@ -163,7 +165,7 @@ impl Collection for TestCollection {
         let five: String = invocation.payload.consume("five").unwrap();
         let result = format!("{}{}{}{}{}", one, two, three, four, five);
 
-        let (send, stream) = stream(1);
+        let (mut send, stream) = stream(1);
 
         defer(vec![
           send(TransportWrapper::new("output", MessageTransport::success(&result))),
@@ -190,7 +192,7 @@ impl Collection for TestCollection {
         // let stream = TransportStream::new(tokio_stream::wrappers::UnboundedReceiverStream::new(rx));
         // Ok(stream)
 
-        let (send, stream) = stream(1);
+        let (mut send, stream) = stream(1);
 
         defer(vec![
           send(TransportWrapper::new("output", MessageTransport::success(&input))),
@@ -219,7 +221,7 @@ impl Collection for TestCollection {
         // let stream = TransportStream::new(tokio_stream::wrappers::UnboundedReceiverStream::new(rx));
         // Ok(stream)
 
-        let (send, stream) = stream(1);
+        let (mut send, stream) = stream(1);
 
         defer(vec![
           send(TransportWrapper::new("output", MessageTransport::success(&input))),
@@ -239,7 +241,7 @@ impl Collection for TestCollection {
           .filter(|c| !matches!(c, 'a' | 'e' | 'i' | 'o' | 'u'))
           .collect();
 
-        let (send, stream) = stream(1);
+        let (mut send, stream) = stream(1);
 
         // send all the vowels immediately.
         let mut futs = vowels
@@ -277,7 +279,7 @@ impl Collection for TestCollection {
         let link: CollectionLink = invocation.payload.consume("link").unwrap();
         let result = link.to_string();
 
-        let (send, stream) = stream(1);
+        let (mut send, stream) = stream(1);
 
         defer(vec![
           send(TransportWrapper::new("output", MessageTransport::success(&result))),
@@ -290,7 +292,7 @@ impl Collection for TestCollection {
         println!("Reverse payload {:?}", invocation.payload);
         let input: String = invocation.payload.consume("input").unwrap();
 
-        let (send, stream) = stream(1);
+        let (mut send, stream) = stream(1);
 
         defer(vec![
           send(TransportWrapper::new(
@@ -308,7 +310,7 @@ impl Collection for TestCollection {
         let times: u64 = invocation.payload.consume("times").unwrap();
         let mut futs = vec![];
 
-        let (send, stream) = stream(1);
+        let (mut send, stream) = stream(1);
         for _ in 0..times {
           futs.push(send(TransportWrapper::new("output", MessageTransport::success(&input))));
         }
@@ -323,7 +325,7 @@ impl Collection for TestCollection {
         let input = invocation.payload.remove("input").unwrap();
         println!("test::exception got {}", input);
 
-        let (send, stream) = stream(1);
+        let (mut send, stream) = stream(1);
 
         defer(vec![
           send(TransportWrapper::new(

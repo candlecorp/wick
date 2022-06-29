@@ -9,27 +9,23 @@ impl wasmflow_sdk::v1::ephemeral::BatchedJobExecutor for Component {
   type Payload = wasmflow_sdk::v1::packet::v1::PacketMap;
   #[cfg(target_arch = "wasm32")]
   type Payload = wasmflow_sdk::v1::wasm::EncodedMap;
-  type State = implementation::State;
   type Config = Config;
   type Return = (wasmflow_sdk::v1::PacketStream, u32);
   {{#if @root.stateful}}type Context = crate::Context;{{/if}}
 
   fn execute(
     &self,
-    payload: wasmflow_sdk::v1::IncomingPayload<Self::Payload, Self::Config, Self::State>,
+    payload: wasmflow_sdk::v1::IncomingPayload<Self::Payload, Self::Config>,
     {{#if @root.stateful}}context: Self::Context,{{/if}}
   ) -> wasmflow_sdk::v1::BoxedFuture<Result<Self::Return, wasmflow_sdk::v1::BoxedError>> {
     Box::pin(async move {
       use wasmflow_sdk::v1::{{#if @root.stateful}}stateful{{else}}ephemeral{{/if}}::BatchedComponent;
       let id = payload.id();
-      let (outputs, mut stream) = definition::get_outputs(id);
-      let (payload, config, state) = payload.into_parts();
+      let (outputs, stream) = definition::get_outputs(id);
+      let (payload, config) = payload.into_parts();
       let inputs = definition::convert_inputs(payload)?;
 
-      let new_state = Component::job(inputs, outputs, {{#if @root.stateful}}context,{{/if}} state, config).await?;
-      stream.push(wasmflow_sdk::v1::packet::PacketWrapper::state(
-        Packet::success(&new_state).into(),
-      ));
+      Component::job(inputs, outputs, {{#if @root.stateful}}context,{{/if}} config).await?;
       Ok((stream,id))
     })
   }

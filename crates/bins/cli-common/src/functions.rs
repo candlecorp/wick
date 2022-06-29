@@ -9,7 +9,7 @@ pub async fn print_stream_json(mut stream: TransportStream, filter: &[String], t
   }
   while let Some(wrapper) = stream.next().await {
     trace!(message=%wrapper, "output message");
-    if (wrapper.payload.is_signal() || wrapper.is_component_state()) && !raw {
+    if (wrapper.payload.is_signal()) && !raw {
       continue;
     }
     if !filter.is_empty() && !filter.iter().any(|name| name == &wrapper.port) {

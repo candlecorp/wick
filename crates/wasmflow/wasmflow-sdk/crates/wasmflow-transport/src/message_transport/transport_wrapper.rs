@@ -47,12 +47,6 @@ impl TransportWrapper {
     self.port == crate::COMPONENT_ERROR
   }
 
-  /// Returns true if the [TransportWrapper] is a State signal from a component.
-  #[must_use]
-  pub fn is_component_state(&self) -> bool {
-    self.port == wasmflow_packet::PacketWrapper::STATUS
-  }
-
   /// Returns Some(&str) if the [TransportWrapper] contains an error, None otherwise.
   #[must_use]
   pub fn error(&self) -> Option<&str> {

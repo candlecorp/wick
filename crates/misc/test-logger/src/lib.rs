@@ -94,6 +94,7 @@ fn expand_logging_init() -> Tokens {
         let __guard =
           #ident::init_test(&#ident::LoggingOptions {
             trace: true,
+            silly: true,
             app_name: "test".to_owned(),
             ..Default::default()
           });

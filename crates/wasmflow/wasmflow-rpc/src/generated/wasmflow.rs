@@ -51,7 +51,6 @@ pub mod signal {
         Done = 0,
         OpenBracket = 1,
         CloseBracket = 2,
-        State = 3,
     }
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -85,8 +84,6 @@ pub struct Invocation {
     pub inherent: ::core::option::Option<InherentData>,
     #[prost(message, optional, tag="7")]
     pub config: ::core::option::Option<Serialized>,
-    #[prost(message, optional, tag="8")]
-    pub state: ::core::option::Option<Serialized>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct InherentData {

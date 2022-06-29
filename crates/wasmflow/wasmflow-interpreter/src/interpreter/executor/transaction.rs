@@ -1,16 +1,17 @@
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::{Instant, SystemTime};
 
 use parking_lot::Mutex;
 use seeded_random::{Random, Seed};
 use uuid::Uuid;
-use wasmflow_schematic_graph::iterators::{SchematicHop, WalkDirection};
-use wasmflow_schematic_graph::{ComponentIndex, PortDirection, PortReference};
+use wasmflow_schematic_graph::iterators::SchematicHop;
+use wasmflow_schematic_graph::{ComponentIndex, PortReference};
 use wasmflow_sdk::v1::transport::{Failure, MessageTransport, TransportMap, TransportStream, TransportWrapper};
 use wasmflow_sdk::v1::{Entity, InherentData, Invocation};
 
 use self::component::port::port_handler::BufferAction;
-use self::component::{CompletionStatus, InstanceHandler};
+use self::component::InstanceHandler;
 use super::error::ExecutionError;
 use super::output_channel::OutputChannel;
 use crate::constants::*;
@@ -38,6 +39,7 @@ pub struct Transaction {
   id: Uuid,
   start_time: Instant,
   rng: Random,
+  finished: AtomicBool,
   pub(crate) last_access_time: Mutex<SystemTime>,
   pub(crate) stats: TransactionStatistics,
 }
@@ -85,6 +87,7 @@ impl Transaction {
       stats,
       last_access_time: Mutex::new(SystemTime::now()),
       id,
+      finished: AtomicBool::new(false),
       rng,
     }
   }
@@ -119,12 +122,12 @@ impl Transaction {
 
   pub(crate) fn done(&self) -> bool {
     let output_handler = self.output_handler();
-    let outputs_closed = output_handler
+    let outputs_done = output_handler
       .inputs()
       .iter()
-      .all(|p| p.status() == PortStatus::DoneClosed);
+      .all(|p| p.status() == PortStatus::DoneClosed && p.is_empty());
 
-    outputs_closed
+    outputs_done
   }
 
   pub(crate) async fn start(&mut self) -> Result<()> {
@@ -138,6 +141,7 @@ impl Transaction {
     self
       .prime_input_ports(self.schematic.input().index(), &self.invocation.payload)
       .await?;
+    trace!("primed input ports");
 
     let inherent_data = self.invocation.inherent.unwrap_or_else(|| InherentData {
       seed: self.rng.gen(),
@@ -220,13 +224,14 @@ impl Transaction {
   }
 
   pub(crate) fn update_last_access(&self) {
-    let mut lock = self.last_access_time.lock();
-    *lock = SystemTime::now();
+    let now = SystemTime::now();
+    let elapsed = now.duration_since(self.last_access());
+    trace!(?elapsed, "updating last access");
+    *self.last_access_time.lock() = now;
   }
 
   pub(crate) fn last_access(&self) -> SystemTime {
-    let lock = self.last_access_time.lock();
-    *lock
+    *self.last_access_time.lock()
   }
 
   pub(crate) fn finish(mut self) -> Result<TransactionStatistics> {
@@ -240,6 +245,17 @@ impl Transaction {
   pub(crate) async fn emit_output_message(&self, message: TransportWrapper) -> Result<()> {
     debug!(%message, "emitting tx output");
     self.output.push(message).await?;
+    if self.done() {
+      self.emit_done().await?;
+    }
+    Ok(())
+  }
+
+  pub(crate) async fn emit_done(&self) -> Result<()> {
+    if !self.finished.load(Ordering::Relaxed) {
+      self.finished.store(true, Ordering::Relaxed);
+      self.channel.dispatch(Event::tx_done(self.id())).await?;
+    }
     Ok(())
   }
 
@@ -255,27 +271,6 @@ impl Transaction {
   }
 
   pub(crate) async fn take_payload(&self, instance: &InstanceHandler) -> Result<Option<TransportMap>> {
-    for port in instance.inputs().refs() {
-      // check if any of this component's input ports are empty.
-      if instance.is_port_empty(&port) {
-        let walker = self.schematic.walk_from_port(port, WalkDirection::Up);
-        // If any are, walk back up and kick any generators in our upstream.
-        for hop in walker {
-          match hop {
-            // TODO: This is a brute force method of ensuring ports are filled.
-            // It produces too many packets and should be improved.
-            SchematicHop::Component(component) => {
-              let upstream = self.instance(component.index());
-              if upstream.is_static() {
-                trace!(%component,"kicking generator");
-                self.kick_generator(upstream).await?;
-              }
-            }
-            _ => continue,
-          }
-        }
-      }
-    }
     let payload = instance.take_payload()?;
     match payload {
       Some(_) => {
@@ -297,10 +292,15 @@ impl Transaction {
   pub(crate) async fn accept_inputs(&self, port: &PortReference, msgs: Vec<TransportWrapper>) -> Result<()> {
     for payload in msgs {
       let instance = self.instance(port.component_index());
-      let action = instance.buffer_in(port, payload, &self.instances)?;
-      if action == BufferAction::Buffered {
-        self.channel.dispatch(Event::port_data(self.id, *port)).await?;
-      }
+      let action = instance.buffer_in(port, payload)?;
+      match action {
+        BufferAction::Consumed(packet) => {
+          trace!(?packet, "consumed packet");
+        }
+        BufferAction::Buffered => {
+          self.channel.dispatch(Event::port_data(self.id, *port)).await?;
+        }
+      };
     }
 
     Ok(())
@@ -315,14 +315,6 @@ impl Transaction {
       }
     }
     Ok(())
-  }
-
-  pub(crate) fn is_output_port_done<T: AsRef<PortReference>>(&self, port: T) -> Result<bool> {
-    let port_ref = port.as_ref();
-    let instance = self.instance(port_ref.component_index());
-    let status = instance.get_port_status(port_ref);
-    trace!(%status, "port status");
-    Ok(status == PortStatus::DoneClosed || status == PortStatus::DoneYield)
   }
 
   pub(crate) async fn check_hung(&self) -> Result<bool> {
@@ -403,55 +395,6 @@ impl Transaction {
 
     self.emit_output_message(message).await?;
 
-    if self.is_output_port_done(port)? {
-      let name = self.schematic.get_port_name(port);
-      self.emit_output_message(TransportWrapper::done(name)).await?;
-    }
-
-    Ok(())
-  }
-
-  #[async_recursion::async_recursion]
-  pub(crate) async fn propagate_status(&self, port: PortReference) -> Result<()> {
-    debug!(
-      port = %port, "propagating status"
-    );
-    let walker = Port::new(&self.schematic, port);
-
-    match port.direction() {
-      PortDirection::In => {
-        let instance = self.instance(port.component_index());
-        let updated = instance.update_output_statuses(CompletionStatus::Deferred);
-        let output_index = self.output_handler().index();
-
-        for port in updated {
-          debug!(%port,"propagating status downstream");
-          if port.component_index() != output_index {
-            self.propagate_status(port).await?;
-          }
-        }
-      }
-      PortDirection::Out => {
-        for connection in walker.connections() {
-          let downport = connection.to();
-          let instance = self.instance(downport.component().index());
-          let updated = instance.update_input_status(downport.as_ref(), &self.instances);
-          let output_index = self.output_handler().index();
-
-          if let Some(updated) = updated {
-            if updated.component_index() == output_index {
-              // If we updated a schematic output, then we need to generate
-              // a done message explicitly.
-              trace!(%port, "closed output port");
-              let name = self.schematic.get_port_name(updated);
-              self.emit_output_message(TransportWrapper::done(name)).await?;
-            } else {
-              self.propagate_status(*updated).await?;
-            }
-          }
-        }
-      }
-    }
     Ok(())
   }
 

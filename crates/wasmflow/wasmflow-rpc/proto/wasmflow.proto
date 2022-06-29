@@ -34,7 +34,6 @@ message Signal {
     Done = 0;
     OpenBracket = 1;
     CloseBracket = 2;
-    State = 3;
   }
   PayloadData payload = 1;
   OutputSignal type = 2;
@@ -55,7 +54,6 @@ message Invocation {
   string tx_id = 5;
   InherentData inherent = 6;
   Serialized config = 7;
-  Serialized state = 8;
 }
 
 message InherentData {

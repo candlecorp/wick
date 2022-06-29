@@ -9,7 +9,7 @@ pub mod types {
 
 use types::*;
 use wasmflow_parser::parse::CORE_ID;
-use wasmflow_schematic_graph::{ComponentReference, SCHEMATIC_OUTPUT};
+use wasmflow_schematic_graph::ComponentReference;
 
 use crate::constants::{INTERNAL_ID_INHERENT, NS_COLLECTIONS, NS_CORE, NS_INTERNAL};
 
@@ -33,10 +33,6 @@ impl Reference {
 
   pub(crate) fn is_core_component(&self, name: &str) -> bool {
     self.0.namespace() == NS_CORE && self.0.name() == name
-  }
-
-  pub(crate) fn is_schematic_output(&self) -> bool {
-    self.0.namespace() == NS_INTERNAL && self.0.name() == SCHEMATIC_OUTPUT
   }
 
   pub(crate) fn is_static(&self) -> bool {

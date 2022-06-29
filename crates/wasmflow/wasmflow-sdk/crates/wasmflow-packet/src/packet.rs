@@ -108,21 +108,10 @@ pub struct PacketWrapper {
 }
 
 impl PacketWrapper {
-  /// The reserved port name for status messages emitted from a component.
-  pub const STATUS: &'static str = "<status>";
-
   /// Create a new [PacketWrapper] by setting the packet directly.
   pub fn new_raw(port: impl AsRef<str>, packet: Packet) -> Self {
     PacketWrapper {
       port: port.as_ref().to_owned(),
-      payload: packet,
-    }
-  }
-
-  /// Create a special [PacketWrapper] that contains the end state of a component's run.
-  pub fn state(packet: Packet) -> Self {
-    PacketWrapper {
-      port: Self::STATUS.to_owned(),
       payload: packet,
     }
   }

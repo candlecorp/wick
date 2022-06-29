@@ -13,8 +13,6 @@ type Result<T> = std::result::Result<T, ExecutionError>;
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub(crate) enum PortStatus {
   Open,
-  DoneOpen,
-  DoneYield,
   DoneClosing,
   DoneClosed,
 }
@@ -26,8 +24,6 @@ impl std::fmt::Display for PortStatus {
       "{}",
       match self {
         PortStatus::Open => "Open",
-        PortStatus::DoneOpen => "DoneOpen",
-        PortStatus::DoneYield => "DoneYield",
         PortStatus::DoneClosing => "DoneClosing",
         PortStatus::DoneClosed => "DoneClosed",
       }
@@ -49,10 +45,6 @@ impl PortList {
 
   pub(crate) fn refs(&self) -> impl Iterator<Item = PortReference> + '_ {
     self.inner.iter().map(|p| p.port_ref())
-  }
-
-  pub(crate) fn values(&self) -> impl Iterator<Item = &PortHandler> {
-    self.inner.iter()
   }
 
   pub(super) fn receive(&self, port: &PortReference, value: TransportWrapper) -> Result<BufferAction> {
@@ -127,10 +119,6 @@ impl InputPorts {
     }
   }
 
-  pub(crate) fn refs(&self) -> impl Iterator<Item = PortReference> + '_ {
-    self.inner.refs()
-  }
-
   pub(super) fn receive(&self, port: &PortReference, value: TransportWrapper) -> Result<BufferAction> {
     self.inner.receive(port, value)
   }
@@ -149,10 +137,6 @@ impl InputPorts {
 
   pub(crate) fn find_ref(&self, name: &str) -> Option<PortReference> {
     self.inner.find_ref(name)
-  }
-
-  pub(crate) fn handlers(&self) -> impl Iterator<Item = &PortHandler> {
-    self.inner.values()
   }
 
   pub(super) fn collect_payload(&self) -> Result<Option<TransportMap>> {

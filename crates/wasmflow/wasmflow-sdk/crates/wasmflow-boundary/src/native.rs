@@ -5,15 +5,14 @@ pub mod v1 {
   use crate::incoming::IncomingPayload;
 
   /// Convert an [wasmflow_invocation::Invocation] into an [IncomingPayload].
-  pub fn from_invocation<C, S>(
+  pub fn from_invocation<C>(
     invocation: wasmflow_invocation::Invocation,
-  ) -> Result<IncomingPayload<wasmflow_packet::v1::PacketMap, C, S>, Box<dyn std::error::Error + Send + Sync>>
+  ) -> Result<IncomingPayload<wasmflow_packet::v1::PacketMap, C>, Box<dyn std::error::Error + Send + Sync>>
   where
     C: std::fmt::Debug + DeserializeOwned,
-    S: std::fmt::Debug + DeserializeOwned,
   {
-    let (payload, config, state) = invocation.into_v1_parts().map_err(Box::new)?;
+    let (payload, config) = invocation.into_v1_parts().map_err(Box::new)?;
 
-    Ok(IncomingPayload::new(0, payload, config, state))
+    Ok(IncomingPayload::new(0, payload, config))
   }
 }

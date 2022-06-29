@@ -4,17 +4,14 @@ use crate::incoming::IncomingPayload;
 
 /// Convert a MessagePack-ed buffer into an [IncomingPayload].
 
-pub fn from_buffer<C, S>(
-  buffer: &[u8],
-) -> Result<IncomingPayload<EncodedMap, C, S>, Box<dyn std::error::Error + Send + Sync>>
+pub fn from_buffer<C>(buffer: &[u8]) -> Result<IncomingPayload<EncodedMap, C>, Box<dyn std::error::Error + Send + Sync>>
 where
   C: std::fmt::Debug + serde::de::DeserializeOwned,
-  S: std::fmt::Debug + serde::de::DeserializeOwned,
 {
-  let (id, payload, config, state): (u32, HashMap<String, Vec<u8>>, Option<C>, Option<S>) =
+  let (id, payload, config): (u32, HashMap<String, Vec<u8>>, Option<C>) =
     wasmflow_codec::messagepack::deserialize(buffer)?;
 
-  Ok(IncomingPayload::new(id, EncodedMap(payload), config, state))
+  Ok(IncomingPayload::new(id, EncodedMap(payload), config))
 }
 
 /// A map of port names to MessagePack encoded [Packet]s.

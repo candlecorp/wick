@@ -29,8 +29,6 @@ pub trait BatchedJobExecutor {
   type Payload: std::fmt::Debug;
   /// The type of the configuration object passed to the component.
   type Config: std::fmt::Debug;
-  /// The type of the state object passed to and returned from a component.
-  type State: std::fmt::Debug;
   /// The return type of the component.
   type Return: Send + Sync;
 
@@ -38,13 +36,13 @@ pub trait BatchedJobExecutor {
   #[cfg(not(target_arch = "wasm32"))]
   fn execute(
     &self,
-    payload: wasmflow_boundary::IncomingPayload<Self::Payload, Self::Config, Self::State>,
+    payload: wasmflow_boundary::IncomingPayload<Self::Payload, Self::Config>,
   ) -> super::native::BoxedFuture<Result<Self::Return, Box<dyn std::error::Error + Send + Sync>>>;
 
   /// [BatchedJobExecutor::execute] signature for WASM targets that does not require the future to be Send/Sync.
   #[cfg(target_arch = "wasm32")]
   fn execute(
     &self,
-    payload: wasmflow_boundary::IncomingPayload<Self::Payload, Self::Config, Self::State>,
+    payload: wasmflow_boundary::IncomingPayload<Self::Payload, Self::Config>,
   ) -> super::wasm::BoxedFuture<Result<Self::Return, Box<dyn std::error::Error + Send + Sync>>>;
 }

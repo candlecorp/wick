@@ -149,10 +149,6 @@ async fn event_loop(
           }
         }
 
-        if let Err(e) = state.check_done(&tx_id).await {
-          warn!(response_error = %e);
-        }
-
         if let Some(observer) = &observer {
           observer.on_after_event(num, &state);
         }

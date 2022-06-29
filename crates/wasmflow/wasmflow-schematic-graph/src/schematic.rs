@@ -16,7 +16,9 @@ pub type ComponentIndex = usize;
 pub type PortIndex = usize;
 
 pub static SCHEMATIC_INPUT: &str = "<input>";
+pub static SCHEMATIC_INPUT_INDEX: ComponentIndex = 0;
 pub static SCHEMATIC_OUTPUT: &str = "<output>";
+pub static SCHEMATIC_OUTPUT_INDEX: ComponentIndex = 1;
 
 pub static NS_SCHEMATIC: &str = "__schematic__";
 
@@ -43,10 +45,13 @@ where
 {
   pub fn new<T: AsStr>(name: T) -> Self {
     let components = vec![
-      Component::new(SCHEMATIC_INPUT, 0, ComponentKind::input(), None),
-      Component::new(SCHEMATIC_OUTPUT, 1, ComponentKind::output(), None),
+      Component::new(SCHEMATIC_INPUT, SCHEMATIC_INPUT_INDEX, ComponentKind::input(), None),
+      Component::new(SCHEMATIC_OUTPUT, SCHEMATIC_OUTPUT_INDEX, ComponentKind::output(), None),
     ];
-    let component_indices = HashMap::from([(SCHEMATIC_INPUT.to_owned(), 0), (SCHEMATIC_OUTPUT.to_owned(), 1)]);
+    let component_indices = HashMap::from([
+      (SCHEMATIC_INPUT.to_owned(), SCHEMATIC_INPUT_INDEX),
+      (SCHEMATIC_OUTPUT.to_owned(), SCHEMATIC_OUTPUT_INDEX),
+    ]);
 
     Self {
       name: name.as_ref().to_owned(),

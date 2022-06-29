@@ -59,6 +59,7 @@ pub enum Failure {
   Error(String),
 }
 
+#[allow(missing_copy_implementations)]
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 /// Internal signals that need to be handled before propagating to a downstream consumer.
 #[must_use]
@@ -76,10 +77,6 @@ pub enum Signal {
   #[serde(rename = "2")]
   #[doc(hidden)]
   CloseBracket,
-
-  /// The end state of a component.
-  #[serde(rename = "3")]
-  Status(serde_value::Value),
 }
 
 impl Packet {

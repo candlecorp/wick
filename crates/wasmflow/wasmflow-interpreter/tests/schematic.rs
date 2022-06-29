@@ -5,6 +5,7 @@ mod test;
 use anyhow::Result;
 use seeded_random::Seed;
 use test::{JsonWriter, TestCollection};
+use tokio_stream::StreamExt;
 use wasmflow_interpreter::graph::from_def;
 use wasmflow_interpreter::{HandlerMap, Interpreter, InterpreterOptions, NamespaceHandler};
 use wasmflow_sdk::v1::packet::PacketMap;
@@ -32,11 +33,14 @@ async fn test_echo() -> Result<()> {
   let invocation = Invocation::new_test("echo", Entity::local("echo"), inputs, None);
   let mut interpreter = Interpreter::new(Some(Seed::unsafe_new(1)), network, None, None)?;
   interpreter.start(OPTIONS, Some(Box::new(JsonWriter::default()))).await;
-  let mut stream = interpreter.invoke(invocation).await?;
+  let stream = interpreter.invoke(invocation).await?;
 
-  let mut outputs: Vec<_> = stream.drain().await;
+  let mut outputs: Vec<_> = stream.collect().await;
+  // let mut outputs: Vec<_> = stream.drain().await;
   println!("{:#?}", outputs);
+  assert_eq!(outputs.len(), 2);
 
+  let _wrapper = outputs.pop().unwrap(); //done signal
   let wrapper = outputs.pop().unwrap();
   let result: String = wrapper.deserialize()?;
 

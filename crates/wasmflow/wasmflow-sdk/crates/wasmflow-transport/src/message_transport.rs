@@ -111,7 +111,7 @@ impl Failure {
 }
 
 /// Internal signals that need to be handled before propagating to a downstream consumer.
-#[derive(Debug, Clone, Eq, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Copy, Eq, Serialize, Deserialize, PartialEq)]
 pub enum MessageSignal {
   /// Indicates the job that opened this port is finished with it.
   Done,
@@ -121,9 +121,6 @@ pub enum MessageSignal {
 
   /// Indicates a chunked message has been completed.
   CloseBracket,
-
-  /// The end state of a component run.
-  Status(serde_value::Value),
 }
 
 impl MessageTransport {
@@ -258,7 +255,6 @@ impl From<Packet> for MessageTransport {
           wasmflow_packet::v1::Signal::Done => MessageTransport::Signal(MessageSignal::Done),
           wasmflow_packet::v1::Signal::OpenBracket => todo!(),
           wasmflow_packet::v1::Signal::CloseBracket => todo!(),
-          wasmflow_packet::v1::Signal::Status(v) => MessageTransport::Signal(MessageSignal::Status(v)),
         },
       },
     }
@@ -282,7 +278,6 @@ impl From<MessageTransport> for v1::Packet {
         MessageSignal::Done => v1::Packet::Signal(v1::Signal::Done),
         MessageSignal::OpenBracket => v1::Packet::Signal(v1::Signal::OpenBracket),
         MessageSignal::CloseBracket => v1::Packet::Signal(v1::Signal::CloseBracket),
-        MessageSignal::Status(v) => v1::Packet::Signal(v1::Signal::Status(v)),
       },
     }
   }
@@ -318,7 +313,6 @@ impl Display for MessageSignal {
         MessageSignal::Done => "Done",
         MessageSignal::OpenBracket => "OpenBracket",
         MessageSignal::CloseBracket => "CloseBracket",
-        MessageSignal::Status(_) => "Status",
       }
     ))
   }

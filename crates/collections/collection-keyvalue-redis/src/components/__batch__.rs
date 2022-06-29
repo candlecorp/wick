@@ -1,18 +1,16 @@
 use crate::components::generated::__batch__::*;
 
-pub(crate) type State = ();
-
 #[async_trait::async_trait]
 impl wasmflow_sdk::v1::stateful::BatchedComponent for Component {
   type Context = crate::Context;
-  type State = State;
+
   async fn job(
     input: Self::Inputs,
     output: Self::Outputs,
     context: Self::Context,
-    state: Option<Self::State>,
+
     _config: Option<Self::Config>,
-  ) -> Result<Option<Self::State>, Box<dyn std::error::Error + Send + Sync>> {
+  ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let inputs = input.inputs;
     let mut pipe = redis::pipe();
     let mut transaction = pipe.atomic();
@@ -87,6 +85,6 @@ impl wasmflow_sdk::v1::stateful::BatchedComponent for Component {
     trace!(?result, "pipeline result");
     output.result.done(true)?;
 
-    Ok(state)
+    Ok(())
   }
 }

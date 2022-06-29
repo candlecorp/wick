@@ -5,7 +5,7 @@ use std::time::Duration;
 pub use conversions::*;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
-use wasmflow_sdk::v1::codec::{json, messagepack};
+use wasmflow_sdk::v1::codec::json;
 use wasmflow_sdk::v1::packet::Packet;
 use wasmflow_sdk::v1::transport::{Failure, MessageSignal, MessageTransport, Serialized, TransportWrapper};
 pub use wasmflow_sdk::v1::types::*;
@@ -182,14 +182,6 @@ impl From<MessageTransport> for RpcPacket {
         MessageSignal::CloseBracket => rpc_packet::Data::Signal(rpc::Signal {
           r#type: rpc::signal::OutputSignal::CloseBracket.into(),
           payload: None,
-        }),
-        MessageSignal::Status(v) => rpc_packet::Data::Signal(rpc::Signal {
-          r#type: rpc::signal::OutputSignal::State.into(),
-          payload: Some(rpc::PayloadData {
-            data: Some(rpc::payload_data::Data::Messagepack(
-              messagepack::serialize(&v).unwrap(),
-            )),
-          }),
         }),
       },
     };

@@ -85,8 +85,6 @@ pub mod stateful {
 
   #[async_trait::async_trait]
   pub trait BatchedComponent: super::Component {
-    /// The state passed into and returned from the component. Custom per-component.
-    type State;
     /// For stateful components with a persistent context, this is its type.
     type Context;
 
@@ -95,9 +93,8 @@ pub mod stateful {
       inputs: Self::Inputs,
       outputs: Self::Outputs,
       context: Self::Context,
-      state: Option<Self::State>,
       config: Option<Self::Config>,
-    ) -> Result<Option<Self::State>, Box<dyn std::error::Error + Send + Sync>>;
+    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>>;
   }
 }
 
@@ -118,16 +115,12 @@ pub mod ephemeral {
   #[async_trait::async_trait]
   /// Signature trait for a batched component job.
   pub trait BatchedComponent: super::Component {
-    /// The state passed into and returned from the component. Custom per-component.
-    type State;
-
     /// The actual work done when a component is invoked.
     async fn job(
       inputs: Self::Inputs,
       outputs: Self::Outputs,
-      state: Option<Self::State>,
       config: Option<Self::Config>,
-    ) -> Result<Option<Self::State>, Box<dyn std::error::Error + Send + Sync>>;
+    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>>;
   }
 }
 
