@@ -153,7 +153,7 @@ impl WasmHost {
             let now = Instant::now();
             let result = match HostCommand::from_str(&command) {
               Ok(HostCommand::Output) => panic!("output is a synchronous function"),
-              Ok(HostCommand::LinkCall) => handle_link_call(&arg1, &arg2, &payload),
+              Ok(HostCommand::LinkCall) => handle_link_call(&arg1, &arg2, &payload).await,
               Ok(HostCommand::Log) => panic!("logging is synchronous"),
               Err(_) => Err(format!("Invalid command: {}", command).into()),
             };
@@ -224,13 +224,12 @@ impl WasmHost {
     component_name: &str,
     input_map: &HashMap<String, Vec<u8>>,
     config: Option<Vec<u8>>,
-    state: Option<Vec<u8>>,
   ) -> Result<TransportStream> {
     let id = self.new_tx();
 
     debug!(component = component_name, id, payload = ?input_map, "wasm invoke");
 
-    let payload = serialize(&(id, &input_map, config, state)).map_err(|e| Error::SdkError(e.into()))?;
+    let payload = serialize(&(id, &input_map, config)).map_err(|e| Error::SdkError(e.into()))?;
 
     let now = Instant::now();
     let result = self.host.call(component_name, payload).await;

@@ -25,8 +25,6 @@ pub struct Invocation {
   pub inherent: Option<InherentData>,
   /// Configuration associated with the invocation.
   pub config: Option<wasmflow_transport::Serialized>,
-  /// Previous state of the component.
-  pub state: Option<wasmflow_transport::Serialized>,
 }
 
 impl Invocation {
@@ -43,15 +41,13 @@ impl Invocation {
       tx_id,
       inherent,
       config: None,
-      state: None,
     }
   }
 
   /// Creates an invocation with a new transaction id.
-  pub fn into_v1_parts<C, S>(self) -> Result<(wasmflow_packet::v1::PacketMap, Option<C>, Option<S>), Error>
+  pub fn into_v1_parts<C>(self) -> Result<(wasmflow_packet::v1::PacketMap, Option<C>), Error>
   where
     C: std::fmt::Debug + DeserializeOwned,
-    S: std::fmt::Debug + DeserializeOwned,
   {
     let config = match self.config {
       Some(v) => Some(
@@ -60,14 +56,8 @@ impl Invocation {
       ),
       None => None,
     };
-    let state = match self.state {
-      Some(v) => Some(
-        v.deserialize()
-          .map_err(|e| Error::IncomingPayload(format!("could not deserialize state: {}", e)))?,
-      ),
-      None => None,
-    };
-    Ok((self.payload.into_v1_map(), config, state))
+
+    Ok((self.payload.into_v1_map(), config))
   }
 
   /// Creates an invocation with a specific transaction id, to correlate a chain of.
@@ -89,7 +79,6 @@ impl Invocation {
       tx_id,
       inherent,
       config: None,
-      state: None,
     }
   }
 
@@ -112,7 +101,6 @@ impl Invocation {
       tx_id,
       inherent,
       config: None,
-      state: None,
     }
   }
 

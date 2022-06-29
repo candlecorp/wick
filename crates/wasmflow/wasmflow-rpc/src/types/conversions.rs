@@ -247,14 +247,6 @@ impl Into<Packet> for rpc::Packet {
             rpc::signal::OutputSignal::Done => v1::Packet::Signal(v1::Signal::Done),
             rpc::signal::OutputSignal::OpenBracket => v1::Packet::Signal(v1::Signal::OpenBracket),
             rpc::signal::OutputSignal::CloseBracket => v1::Packet::Signal(v1::Signal::CloseBracket),
-            rpc::signal::OutputSignal::State => {
-              let payload = v.payload.and_then(|v| v.data);
-              match payload {
-                Some(rpc::payload_data::Data::Messagepack(v)) => v1::Packet::Success(v1::Serialized::MessagePack(v)),
-                Some(rpc::payload_data::Data::Json(v)) => v1::Packet::Success(v1::Serialized::Json(v)),
-                None => v1::Packet::error("Invalid RPC packet. Received Signal packet but no payload."),
-              }
-            }
           },
         }
       }
@@ -296,7 +288,6 @@ impl TryFrom<sdk::Invocation> for rpc::Invocation {
         timestamp: d.timestamp,
       }),
       config: normalize_serialization_out(inv.config)?,
-      state: normalize_serialization_out(inv.state)?,
     })
   }
 }
@@ -360,7 +351,6 @@ impl TryFrom<rpc::Invocation> for sdk::Invocation {
   type Error = RpcError;
   fn try_from(inv: rpc::Invocation) -> Result<Self> {
     let config = normalize_serialization_in(inv.config)?;
-    let state = normalize_serialization_in(inv.state)?;
     Ok(Self {
       origin: Entity::from_str(&inv.origin).map_err(|e| RpcError::SdkError(e.into()))?,
       target: Entity::from_str(&inv.target).map_err(|e| RpcError::SdkError(e.into()))?,
@@ -372,7 +362,6 @@ impl TryFrom<rpc::Invocation> for sdk::Invocation {
         timestamp: d.timestamp,
       }),
       config,
-      state,
     })
   }
 }

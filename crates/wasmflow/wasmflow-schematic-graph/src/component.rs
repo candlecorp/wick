@@ -338,6 +338,16 @@ impl ComponentPort {
   }
 
   #[must_use]
+  pub fn is_graph_output(&self) -> bool {
+    self.port.component_index == crate::schematic::SCHEMATIC_OUTPUT_INDEX
+  }
+
+  #[must_use]
+  pub fn is_graph_input(&self) -> bool {
+    self.port.component_index == crate::schematic::SCHEMATIC_INPUT_INDEX
+  }
+
+  #[must_use]
   pub fn connections(&self) -> &[ConnectionIndex] {
     &self.connections
   }

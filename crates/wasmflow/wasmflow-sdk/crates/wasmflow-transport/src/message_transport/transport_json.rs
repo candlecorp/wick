@@ -161,7 +161,7 @@ impl MessageTransport {
       },
       MessageTransport::Signal(s) => TransportJson {
         value: serde_json::value::Value::Null,
-        signal: Some(s.clone()),
+        signal: Some(*s),
         error_msg: None,
         error_kind: JsonError::None,
       },

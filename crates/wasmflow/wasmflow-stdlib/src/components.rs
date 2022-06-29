@@ -232,7 +232,7 @@ pub mod generated {
 
     // start component core::error
     pub mod error {
-      // The user-facing implementation for State and job impl.
+      // The user-facing implementation job impl.
       pub use wasmflow_sdk::v1::packet::v1::Packet;
       pub use wasmflow_sdk::v1::{console_log, ComponentOutput, Writable};
 
@@ -257,27 +257,23 @@ pub mod generated {
         type Payload = wasmflow_sdk::v1::packet::v1::PacketMap;
         #[cfg(target_arch = "wasm32")]
         type Payload = wasmflow_sdk::v1::wasm::EncodedMap;
-        type State = implementation::State;
         type Config = Config;
         type Return = (wasmflow_sdk::v1::PacketStream, u32);
         type Context = crate::Context;
 
         fn execute(
           &self,
-          payload: wasmflow_sdk::v1::IncomingPayload<Self::Payload, Self::Config, Self::State>,
+          payload: wasmflow_sdk::v1::IncomingPayload<Self::Payload, Self::Config>,
           context: Self::Context,
         ) -> wasmflow_sdk::v1::BoxedFuture<Result<Self::Return, wasmflow_sdk::v1::BoxedError>> {
           Box::pin(async move {
             use wasmflow_sdk::v1::stateful::BatchedComponent;
             let id = payload.id();
-            let (outputs, mut stream) = definition::get_outputs(id);
-            let (payload, config, state) = payload.into_parts();
+            let (outputs, stream) = definition::get_outputs(id);
+            let (payload, config) = payload.into_parts();
             let inputs = definition::convert_inputs(payload)?;
 
-            let new_state = Component::job(inputs, outputs, context, state, config).await?;
-            stream.push(wasmflow_sdk::v1::packet::PacketWrapper::state(
-              Packet::success(&new_state).into(),
-            ));
+            Component::job(inputs, outputs, context, config).await?;
             Ok((stream, id))
           })
         }
@@ -450,7 +446,7 @@ pub mod generated {
     // end component core::error
     // start component core::log
     pub mod log {
-      // The user-facing implementation for State and job impl.
+      // The user-facing implementation job impl.
       pub use wasmflow_sdk::v1::packet::v1::Packet;
       pub use wasmflow_sdk::v1::{console_log, ComponentOutput, Writable};
 
@@ -475,27 +471,23 @@ pub mod generated {
         type Payload = wasmflow_sdk::v1::packet::v1::PacketMap;
         #[cfg(target_arch = "wasm32")]
         type Payload = wasmflow_sdk::v1::wasm::EncodedMap;
-        type State = implementation::State;
         type Config = Config;
         type Return = (wasmflow_sdk::v1::PacketStream, u32);
         type Context = crate::Context;
 
         fn execute(
           &self,
-          payload: wasmflow_sdk::v1::IncomingPayload<Self::Payload, Self::Config, Self::State>,
+          payload: wasmflow_sdk::v1::IncomingPayload<Self::Payload, Self::Config>,
           context: Self::Context,
         ) -> wasmflow_sdk::v1::BoxedFuture<Result<Self::Return, wasmflow_sdk::v1::BoxedError>> {
           Box::pin(async move {
             use wasmflow_sdk::v1::stateful::BatchedComponent;
             let id = payload.id();
-            let (outputs, mut stream) = definition::get_outputs(id);
-            let (payload, config, state) = payload.into_parts();
+            let (outputs, stream) = definition::get_outputs(id);
+            let (payload, config) = payload.into_parts();
             let inputs = definition::convert_inputs(payload)?;
 
-            let new_state = Component::job(inputs, outputs, context, state, config).await?;
-            stream.push(wasmflow_sdk::v1::packet::PacketWrapper::state(
-              Packet::success(&new_state).into(),
-            ));
+            Component::job(inputs, outputs, context, config).await?;
             Ok((stream, id))
           })
         }
@@ -668,7 +660,7 @@ pub mod generated {
     // end component core::log
     // start component core::panic
     pub mod panic {
-      // The user-facing implementation for State and job impl.
+      // The user-facing implementation job impl.
       pub use wasmflow_sdk::v1::packet::v1::Packet;
       pub use wasmflow_sdk::v1::{console_log, ComponentOutput, Writable};
 
@@ -693,27 +685,23 @@ pub mod generated {
         type Payload = wasmflow_sdk::v1::packet::v1::PacketMap;
         #[cfg(target_arch = "wasm32")]
         type Payload = wasmflow_sdk::v1::wasm::EncodedMap;
-        type State = implementation::State;
         type Config = Config;
         type Return = (wasmflow_sdk::v1::PacketStream, u32);
         type Context = crate::Context;
 
         fn execute(
           &self,
-          payload: wasmflow_sdk::v1::IncomingPayload<Self::Payload, Self::Config, Self::State>,
+          payload: wasmflow_sdk::v1::IncomingPayload<Self::Payload, Self::Config>,
           context: Self::Context,
         ) -> wasmflow_sdk::v1::BoxedFuture<Result<Self::Return, wasmflow_sdk::v1::BoxedError>> {
           Box::pin(async move {
             use wasmflow_sdk::v1::stateful::BatchedComponent;
             let id = payload.id();
-            let (outputs, mut stream) = definition::get_outputs(id);
-            let (payload, config, state) = payload.into_parts();
+            let (outputs, stream) = definition::get_outputs(id);
+            let (payload, config) = payload.into_parts();
             let inputs = definition::convert_inputs(payload)?;
 
-            let new_state = Component::job(inputs, outputs, context, state, config).await?;
-            stream.push(wasmflow_sdk::v1::packet::PacketWrapper::state(
-              Packet::success(&new_state).into(),
-            ));
+            Component::job(inputs, outputs, context, config).await?;
             Ok((stream, id))
           })
         }
@@ -892,7 +880,7 @@ pub mod generated {
 
     // start component math::add
     pub mod add {
-      // The user-facing implementation for State and job impl.
+      // The user-facing implementation job impl.
       pub use wasmflow_sdk::v1::packet::v1::Packet;
       pub use wasmflow_sdk::v1::{console_log, ComponentOutput, Writable};
 
@@ -917,27 +905,23 @@ pub mod generated {
         type Payload = wasmflow_sdk::v1::packet::v1::PacketMap;
         #[cfg(target_arch = "wasm32")]
         type Payload = wasmflow_sdk::v1::wasm::EncodedMap;
-        type State = implementation::State;
         type Config = Config;
         type Return = (wasmflow_sdk::v1::PacketStream, u32);
         type Context = crate::Context;
 
         fn execute(
           &self,
-          payload: wasmflow_sdk::v1::IncomingPayload<Self::Payload, Self::Config, Self::State>,
+          payload: wasmflow_sdk::v1::IncomingPayload<Self::Payload, Self::Config>,
           context: Self::Context,
         ) -> wasmflow_sdk::v1::BoxedFuture<Result<Self::Return, wasmflow_sdk::v1::BoxedError>> {
           Box::pin(async move {
             use wasmflow_sdk::v1::stateful::BatchedComponent;
             let id = payload.id();
-            let (outputs, mut stream) = definition::get_outputs(id);
-            let (payload, config, state) = payload.into_parts();
+            let (outputs, stream) = definition::get_outputs(id);
+            let (payload, config) = payload.into_parts();
             let inputs = definition::convert_inputs(payload)?;
 
-            let new_state = Component::job(inputs, outputs, context, state, config).await?;
-            stream.push(wasmflow_sdk::v1::packet::PacketWrapper::state(
-              Packet::success(&new_state).into(),
-            ));
+            Component::job(inputs, outputs, context, config).await?;
             Ok((stream, id))
           })
         }
@@ -1122,7 +1106,7 @@ pub mod generated {
     // end component math::add
     // start component math::subtract
     pub mod subtract {
-      // The user-facing implementation for State and job impl.
+      // The user-facing implementation job impl.
       pub use wasmflow_sdk::v1::packet::v1::Packet;
       pub use wasmflow_sdk::v1::{console_log, ComponentOutput, Writable};
 
@@ -1147,27 +1131,23 @@ pub mod generated {
         type Payload = wasmflow_sdk::v1::packet::v1::PacketMap;
         #[cfg(target_arch = "wasm32")]
         type Payload = wasmflow_sdk::v1::wasm::EncodedMap;
-        type State = implementation::State;
         type Config = Config;
         type Return = (wasmflow_sdk::v1::PacketStream, u32);
         type Context = crate::Context;
 
         fn execute(
           &self,
-          payload: wasmflow_sdk::v1::IncomingPayload<Self::Payload, Self::Config, Self::State>,
+          payload: wasmflow_sdk::v1::IncomingPayload<Self::Payload, Self::Config>,
           context: Self::Context,
         ) -> wasmflow_sdk::v1::BoxedFuture<Result<Self::Return, wasmflow_sdk::v1::BoxedError>> {
           Box::pin(async move {
             use wasmflow_sdk::v1::stateful::BatchedComponent;
             let id = payload.id();
-            let (outputs, mut stream) = definition::get_outputs(id);
-            let (payload, config, state) = payload.into_parts();
+            let (outputs, stream) = definition::get_outputs(id);
+            let (payload, config) = payload.into_parts();
             let inputs = definition::convert_inputs(payload)?;
 
-            let new_state = Component::job(inputs, outputs, context, state, config).await?;
-            stream.push(wasmflow_sdk::v1::packet::PacketWrapper::state(
-              Packet::success(&new_state).into(),
-            ));
+            Component::job(inputs, outputs, context, config).await?;
             Ok((stream, id))
           })
         }
@@ -1358,7 +1338,7 @@ pub mod generated {
 
     // start component rand::bytes
     pub mod bytes {
-      // The user-facing implementation for State and job impl.
+      // The user-facing implementation job impl.
       pub use wasmflow_sdk::v1::packet::v1::Packet;
       pub use wasmflow_sdk::v1::{console_log, ComponentOutput, Writable};
 
@@ -1383,27 +1363,23 @@ pub mod generated {
         type Payload = wasmflow_sdk::v1::packet::v1::PacketMap;
         #[cfg(target_arch = "wasm32")]
         type Payload = wasmflow_sdk::v1::wasm::EncodedMap;
-        type State = implementation::State;
         type Config = Config;
         type Return = (wasmflow_sdk::v1::PacketStream, u32);
         type Context = crate::Context;
 
         fn execute(
           &self,
-          payload: wasmflow_sdk::v1::IncomingPayload<Self::Payload, Self::Config, Self::State>,
+          payload: wasmflow_sdk::v1::IncomingPayload<Self::Payload, Self::Config>,
           context: Self::Context,
         ) -> wasmflow_sdk::v1::BoxedFuture<Result<Self::Return, wasmflow_sdk::v1::BoxedError>> {
           Box::pin(async move {
             use wasmflow_sdk::v1::stateful::BatchedComponent;
             let id = payload.id();
-            let (outputs, mut stream) = definition::get_outputs(id);
-            let (payload, config, state) = payload.into_parts();
+            let (outputs, stream) = definition::get_outputs(id);
+            let (payload, config) = payload.into_parts();
             let inputs = definition::convert_inputs(payload)?;
 
-            let new_state = Component::job(inputs, outputs, context, state, config).await?;
-            stream.push(wasmflow_sdk::v1::packet::PacketWrapper::state(
-              Packet::success(&new_state).into(),
-            ));
+            Component::job(inputs, outputs, context, config).await?;
             Ok((stream, id))
           })
         }
@@ -1590,7 +1566,7 @@ pub mod generated {
     // end component rand::bytes
     // start component rand::string
     pub mod string {
-      // The user-facing implementation for State and job impl.
+      // The user-facing implementation job impl.
       pub use wasmflow_sdk::v1::packet::v1::Packet;
       pub use wasmflow_sdk::v1::{console_log, ComponentOutput, Writable};
 
@@ -1615,27 +1591,23 @@ pub mod generated {
         type Payload = wasmflow_sdk::v1::packet::v1::PacketMap;
         #[cfg(target_arch = "wasm32")]
         type Payload = wasmflow_sdk::v1::wasm::EncodedMap;
-        type State = implementation::State;
         type Config = Config;
         type Return = (wasmflow_sdk::v1::PacketStream, u32);
         type Context = crate::Context;
 
         fn execute(
           &self,
-          payload: wasmflow_sdk::v1::IncomingPayload<Self::Payload, Self::Config, Self::State>,
+          payload: wasmflow_sdk::v1::IncomingPayload<Self::Payload, Self::Config>,
           context: Self::Context,
         ) -> wasmflow_sdk::v1::BoxedFuture<Result<Self::Return, wasmflow_sdk::v1::BoxedError>> {
           Box::pin(async move {
             use wasmflow_sdk::v1::stateful::BatchedComponent;
             let id = payload.id();
-            let (outputs, mut stream) = definition::get_outputs(id);
-            let (payload, config, state) = payload.into_parts();
+            let (outputs, stream) = definition::get_outputs(id);
+            let (payload, config) = payload.into_parts();
             let inputs = definition::convert_inputs(payload)?;
 
-            let new_state = Component::job(inputs, outputs, context, state, config).await?;
-            stream.push(wasmflow_sdk::v1::packet::PacketWrapper::state(
-              Packet::success(&new_state).into(),
-            ));
+            Component::job(inputs, outputs, context, config).await?;
             Ok((stream, id))
           })
         }
@@ -1820,7 +1792,7 @@ pub mod generated {
     // end component rand::string
     // start component rand::uuid
     pub mod uuid {
-      // The user-facing implementation for State and job impl.
+      // The user-facing implementation job impl.
       pub use wasmflow_sdk::v1::packet::v1::Packet;
       pub use wasmflow_sdk::v1::{console_log, ComponentOutput, Writable};
 
@@ -1845,27 +1817,23 @@ pub mod generated {
         type Payload = wasmflow_sdk::v1::packet::v1::PacketMap;
         #[cfg(target_arch = "wasm32")]
         type Payload = wasmflow_sdk::v1::wasm::EncodedMap;
-        type State = implementation::State;
         type Config = Config;
         type Return = (wasmflow_sdk::v1::PacketStream, u32);
         type Context = crate::Context;
 
         fn execute(
           &self,
-          payload: wasmflow_sdk::v1::IncomingPayload<Self::Payload, Self::Config, Self::State>,
+          payload: wasmflow_sdk::v1::IncomingPayload<Self::Payload, Self::Config>,
           context: Self::Context,
         ) -> wasmflow_sdk::v1::BoxedFuture<Result<Self::Return, wasmflow_sdk::v1::BoxedError>> {
           Box::pin(async move {
             use wasmflow_sdk::v1::stateful::BatchedComponent;
             let id = payload.id();
-            let (outputs, mut stream) = definition::get_outputs(id);
-            let (payload, config, state) = payload.into_parts();
+            let (outputs, stream) = definition::get_outputs(id);
+            let (payload, config) = payload.into_parts();
             let inputs = definition::convert_inputs(payload)?;
 
-            let new_state = Component::job(inputs, outputs, context, state, config).await?;
-            stream.push(wasmflow_sdk::v1::packet::PacketWrapper::state(
-              Packet::success(&new_state).into(),
-            ));
+            Component::job(inputs, outputs, context, config).await?;
             Ok((stream, id))
           })
         }
@@ -2044,7 +2012,7 @@ pub mod generated {
 
     // start component string::concat
     pub mod concat {
-      // The user-facing implementation for State and job impl.
+      // The user-facing implementation job impl.
       pub use wasmflow_sdk::v1::packet::v1::Packet;
       pub use wasmflow_sdk::v1::{console_log, ComponentOutput, Writable};
 
@@ -2069,27 +2037,23 @@ pub mod generated {
         type Payload = wasmflow_sdk::v1::packet::v1::PacketMap;
         #[cfg(target_arch = "wasm32")]
         type Payload = wasmflow_sdk::v1::wasm::EncodedMap;
-        type State = implementation::State;
         type Config = Config;
         type Return = (wasmflow_sdk::v1::PacketStream, u32);
         type Context = crate::Context;
 
         fn execute(
           &self,
-          payload: wasmflow_sdk::v1::IncomingPayload<Self::Payload, Self::Config, Self::State>,
+          payload: wasmflow_sdk::v1::IncomingPayload<Self::Payload, Self::Config>,
           context: Self::Context,
         ) -> wasmflow_sdk::v1::BoxedFuture<Result<Self::Return, wasmflow_sdk::v1::BoxedError>> {
           Box::pin(async move {
             use wasmflow_sdk::v1::stateful::BatchedComponent;
             let id = payload.id();
-            let (outputs, mut stream) = definition::get_outputs(id);
-            let (payload, config, state) = payload.into_parts();
+            let (outputs, stream) = definition::get_outputs(id);
+            let (payload, config) = payload.into_parts();
             let inputs = definition::convert_inputs(payload)?;
 
-            let new_state = Component::job(inputs, outputs, context, state, config).await?;
-            stream.push(wasmflow_sdk::v1::packet::PacketWrapper::state(
-              Packet::success(&new_state).into(),
-            ));
+            Component::job(inputs, outputs, context, config).await?;
             Ok((stream, id))
           })
         }
@@ -2287,27 +2251,23 @@ pub mod generated {
       type Payload = wasmflow_sdk::v1::packet::v1::PacketMap;
       #[cfg(target_arch = "wasm32")]
       type Payload = wasmflow_sdk::v1::wasm::EncodedMap;
-      type State = implementation::State;
       type Config = Config;
       type Return = (wasmflow_sdk::v1::PacketStream, u32);
       type Context = crate::Context;
 
       fn execute(
         &self,
-        payload: wasmflow_sdk::v1::IncomingPayload<Self::Payload, Self::Config, Self::State>,
+        payload: wasmflow_sdk::v1::IncomingPayload<Self::Payload, Self::Config>,
         context: Self::Context,
       ) -> wasmflow_sdk::v1::BoxedFuture<Result<Self::Return, wasmflow_sdk::v1::BoxedError>> {
         Box::pin(async move {
           use wasmflow_sdk::v1::stateful::BatchedComponent;
           let id = payload.id();
-          let (outputs, mut stream) = definition::get_outputs(id);
-          let (payload, config, state) = payload.into_parts();
+          let (outputs, stream) = definition::get_outputs(id);
+          let (payload, config) = payload.into_parts();
           let inputs = definition::convert_inputs(payload)?;
 
-          let new_state = Component::job(inputs, outputs, context, state, config).await?;
-          stream.push(wasmflow_sdk::v1::packet::PacketWrapper::state(
-            Packet::success(&new_state).into(),
-          ));
+          Component::job(inputs, outputs, context, config).await?;
           Ok((stream, id))
         })
       }

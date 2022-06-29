@@ -7,12 +7,16 @@ use parking_lot::RwLock;
 use wasmflow_sdk::v1::codec::messagepack::{deserialize, serialize};
 use wasmflow_sdk::v1::packet::Packet;
 use wasmflow_sdk::v1::runtime::{LogLevel, OutputSignal};
+use wasmflow_sdk::v1::BoxedFuture;
 
 use crate::collection::HostLinkCallback;
 use crate::transaction::Transaction;
 
 type InvocationFn =
   dyn Fn(&str, &str, &[u8]) -> Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>> + 'static + Sync + Send;
+
+type AsyncInvocationFn =
+  dyn Fn(&str, &str, &[u8]) -> BoxedFuture<Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>>> + Send + Sync;
 
 pub(crate) fn create_log_handler() -> Arc<InvocationFn> {
   Arc::new(move |level: &str, msg: &str, _: &[u8]| {
@@ -36,39 +40,46 @@ pub(crate) fn create_log_handler() -> Arc<InvocationFn> {
   })
 }
 
-pub(crate) fn create_link_handler(callback: Arc<Option<Box<HostLinkCallback>>>) -> Arc<InvocationFn> {
-  Arc::new(
-    move |origin: &str, target: &str, payload: &[u8]| match callback.as_ref() {
-      Some(cb) => {
-        trace!(origin, target, "wasm link call");
-        let now = Instant::now();
-        let result = (cb)(
-          origin,
-          target,
-          deserialize::<wasmflow_sdk::v1::packet::PacketMap>(payload)?,
-        );
-        let micros = now.elapsed().as_micros();
-        trace!(origin, target, durasion_us = %micros, ?result, "wasm link call result");
+pub(crate) fn create_link_handler(callback: Arc<Option<Box<HostLinkCallback>>>) -> Arc<AsyncInvocationFn> {
+  Arc::new(move |origin: &str, target: &str, payload: &[u8]| {
+    let origin = origin.to_owned();
+    let target = target.to_owned();
+    let payload = payload.to_vec();
+    let callback = callback.clone();
+    Box::pin(async move {
+      match callback.as_ref() {
+        Some(cb) => {
+          trace!(%origin, %target, "wasm link call");
+          let now = Instant::now();
+          let result = (cb)(
+            &origin,
+            &target,
+            deserialize::<wasmflow_sdk::v1::packet::PacketMap>(&payload)?,
+          )
+          .await;
+          let micros = now.elapsed().as_micros();
+          trace!(%origin, %target, durasion_us = %micros, ?result, "wasm link call result");
 
-        match result {
-          Ok(packets) => {
-            // ensure all packets are messagepack-ed
-            let packets: Vec<_> = packets
-              .into_iter()
-              .map(|mut p| {
-                p.payload.to_messagepack();
-                p
-              })
-              .collect();
-            trace!(origin, target, ?payload, "wasm link call payload");
-            Ok(serialize(&packets)?)
+          match result {
+            Ok(packets) => {
+              // ensure all packets are messagepack-ed
+              let packets: Vec<_> = packets
+                .into_iter()
+                .map(|mut p| {
+                  p.payload.to_messagepack();
+                  p
+                })
+                .collect();
+              trace!(%origin, %target, ?payload, "wasm link call payload");
+              Ok(serialize(&packets)?)
+            }
+            Err(e) => Err(e.into()),
           }
-          Err(e) => Err(e.into()),
         }
+        None => Err("Host link called with no callback provided in the WaPC host.".into()),
       }
-      None => Err("Host link called with no callback provided in the WaPC host.".into()),
-    },
-  )
+    })
+  })
 }
 
 pub(crate) fn create_output_handler(tx_map: Arc<RwLock<HashMap<u32, RwLock<Transaction>>>>) -> Arc<InvocationFn> {

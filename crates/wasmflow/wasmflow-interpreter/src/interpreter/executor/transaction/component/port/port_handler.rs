@@ -8,9 +8,9 @@ use crate::graph::types::ComponentPort;
 use crate::ExecutionError;
 type Result<T> = std::result::Result<T, ExecutionError>;
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub(crate) enum BufferAction {
-  Consumed,
+  Consumed(TransportWrapper),
   Buffered,
 }
 
@@ -20,7 +20,7 @@ impl std::fmt::Display for BufferAction {
       f,
       "{}",
       match self {
-        BufferAction::Consumed => "consumed",
+        BufferAction::Consumed(_) => "consumed",
         BufferAction::Buffered => "buffered",
       }
     )
@@ -62,20 +62,21 @@ impl PortHandler {
   }
 
   pub(crate) fn set_status(&self, status: PortStatus) {
-    let mut lock = self.status.lock();
-
-    let real_status = if status == PortStatus::DoneClosed && !self.is_empty() {
+    let new_status = if status == PortStatus::DoneClosed && !self.is_empty() {
       PortStatus::DoneClosing
     } else {
       status
     };
-    if *lock != real_status {
-      trace!(old_status=%lock, new_status=%real_status, port=%self.port, name =self.name(), "setting port status");
+
+    let curr_status = self.get_status();
+
+    if curr_status != new_status {
+      trace!(old_status=%curr_status, new_status=%new_status, port=%self.port, name =self.name(), "setting port status");
       assert!(
-        !(*lock == PortStatus::DoneClosed && status != PortStatus::DoneClosed),
+        !(curr_status == PortStatus::DoneClosed && status != PortStatus::DoneClosed),
         "trying to set new status on closed port"
       );
-      *lock = real_status;
+      *self.status.lock() = new_status;
     }
   }
 
@@ -87,20 +88,30 @@ impl PortHandler {
     &self.name
   }
 
+  pub(crate) fn get_status(&self) -> PortStatus {
+    *self.status.lock()
+  }
+
   pub(super) fn buffer(&self, value: TransportWrapper) -> Result<BufferAction> {
-    let status = self.status.lock();
     assert!(
-      *status != PortStatus::DoneClosed,
-      "port should never be pushed to after DoneClosed."
+      self.get_status() != PortStatus::DoneClosed,
+      "port should never be pushed to after being closed."
     );
 
     let action = if value.payload == MessageTransport::Signal(MessageSignal::Done) {
-      if self.port.direction() == &PortDirection::Out {
-        self.buffer.push(value);
-        BufferAction::Buffered
+      let action = match self.port.direction() {
+        PortDirection::In if !self.port.is_graph_output() => BufferAction::Consumed(value),
+        PortDirection::In | PortDirection::Out => {
+          self.buffer.push(value);
+          BufferAction::Buffered
+        }
+      };
+      if !self.is_empty() {
+        self.set_status(PortStatus::DoneClosing);
       } else {
-        BufferAction::Consumed
+        self.set_status(PortStatus::DoneClosed);
       }
+      action
     } else {
       self.buffer.push(value);
       BufferAction::Buffered
@@ -113,9 +124,8 @@ impl PortHandler {
     let result = self.buffer.take();
     debug!(port=%self.port,payload=?result, "taking message from buffer");
 
-    let status = self.status.lock();
-    if self.is_empty() && *status == PortStatus::DoneClosing {
-      drop(status);
+    let status = self.get_status();
+    if self.is_empty() && status == PortStatus::DoneClosing {
       self.set_status(PortStatus::DoneClosed);
     }
     result

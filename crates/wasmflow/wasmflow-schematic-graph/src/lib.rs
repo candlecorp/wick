@@ -105,7 +105,9 @@ pub use schematic::{
   Schematic,
   NS_SCHEMATIC,
   SCHEMATIC_INPUT,
+  SCHEMATIC_INPUT_INDEX,
   SCHEMATIC_OUTPUT,
+  SCHEMATIC_OUTPUT_INDEX,
 };
 
 pub(crate) mod util;

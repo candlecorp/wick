@@ -6,10 +6,10 @@ use tokio_stream::StreamExt;
 use tracing_futures::Instrument;
 use uuid::Uuid;
 use wasmflow_schematic_graph::{ComponentIndex, PortDirection, PortReference};
-use wasmflow_sdk::v1::transport::{MessageSignal, MessageTransport, TransportMap, TransportStream, TransportWrapper};
+use wasmflow_sdk::v1::transport::{MessageTransport, TransportMap, TransportStream, TransportWrapper};
 use wasmflow_sdk::v1::{Entity, Invocation};
 
-use self::port::port_handler::{BufferAction, PortHandler};
+use self::port::port_handler::BufferAction;
 use self::port::{InputPorts, OutputPorts, PortStatus};
 use crate::constants::*;
 use crate::graph::types::*;
@@ -91,10 +91,6 @@ impl InstanceHandler {
     self.reference.is_core_component(name)
   }
 
-  pub(crate) fn is_schematic_output(&self) -> bool {
-    self.reference.is_schematic_output()
-  }
-
   pub(crate) fn is_static(&self) -> bool {
     self.reference.is_static()
   }
@@ -130,77 +126,15 @@ impl InstanceHandler {
     Ok(())
   }
 
-  pub(crate) fn update_input_status<'a>(
-    &'_ self,
-    port: &'a PortReference,
-    instances: &'_ [Arc<InstanceHandler>],
-  ) -> Option<&'a PortReference> {
-    let current_status = self.get_port_status(port);
-
-    let component = &self.schematic.components()[port.component_index()];
-    let component_port = &component.inputs()[port.port_index()];
-
-    let upstream_ports = component_port.connections().iter().map(|connection| {
-      let connection = &self.schematic.connections()[*connection];
-      let upstream_instance = &instances[connection.from().component_index()];
-      upstream_instance.outputs.get_handler(connection.from())
-    });
-
-    let breakdown = check_statuses(upstream_ports);
-
-    let num_buffered = self.buffered_packets(port);
-    trace!(count = self.num_pending(), "pending executions");
-    let new_status = if breakdown.has_open || breakdown.has_done_open {
-      PortStatus::DoneOpen
-    } else if breakdown.has_any_generator && !self.is_schematic_output() {
-      PortStatus::DoneYield
-    } else if num_buffered > 0 {
-      PortStatus::DoneClosing
-    } else {
-      PortStatus::DoneClosed
-    };
-
-    if new_status != current_status {
-      self.inputs().get_handler(port).set_status(new_status);
-      Some(port)
-    } else {
-      None
-    }
-  }
-
-  pub(crate) fn buffer_in(
-    &self,
-    port: &PortReference,
-    value: TransportWrapper,
-    instances: &[Arc<InstanceHandler>],
-  ) -> Result<BufferAction> {
+  pub(crate) fn buffer_in(&self, port: &PortReference, value: TransportWrapper) -> Result<BufferAction> {
     trace!(%port, ?value, "buffering input message");
 
-    if value.payload == MessageTransport::Signal(MessageSignal::Done) {
-      self.update_input_status(port, instances);
-      Ok(BufferAction::Consumed)
-    } else {
-      self.inputs.receive(port, value)
-    }
+    self.inputs.receive(port, value)
   }
 
   pub(crate) fn buffer_out(&self, port: &PortReference, value: TransportWrapper) -> Result<BufferAction> {
     trace!(%port, ?value, "buffering output message");
-    if value.payload == MessageTransport::Signal(MessageSignal::Done) {
-      let breakdown = check_statuses(self.inputs.iter());
 
-      trace!(count = self.num_pending(), "pending executions");
-      let new_status = if self.is_static() || breakdown.has_all_generators && !self.is_schematic_output() {
-        PortStatus::DoneYield
-      } else if breakdown.has_any_open() || self.is_pending() {
-        PortStatus::DoneOpen
-      } else if self.buffered_packets(port) > 0 {
-        PortStatus::DoneClosing
-      } else {
-        PortStatus::DoneClosed
-      };
-      self.outputs().get_handler(port).set_status(new_status);
-    }
     self.outputs.receive(port, value)
   }
 
@@ -233,13 +167,6 @@ impl InstanceHandler {
     }
   }
 
-  pub(crate) fn is_port_empty(&self, port: &PortReference) -> bool {
-    match port.direction() {
-      PortDirection::In => self.inputs.get_handler(port).is_empty(),
-      PortDirection::Out => self.outputs.get_handler(port).is_empty(),
-    }
-  }
-
   pub(crate) fn buffered_packets(&self, port: &PortReference) -> usize {
     match port.direction() {
       PortDirection::In => self.inputs.get_handler(port).len(),
@@ -265,35 +192,23 @@ impl InstanceHandler {
     Ok(())
   }
 
-  pub(crate) fn is_pending(&self) -> bool {
-    let num = self.pending.load(Ordering::Relaxed);
-    num > 0
-  }
-
   pub(crate) fn handle_call_complete(&self, status: CompletionStatus) -> Result<Vec<PortReference>> {
     self.decrement_pending()?;
     Ok(self.update_output_statuses(status))
   }
 
   pub(super) fn update_output_statuses(&self, _status: CompletionStatus) -> Vec<PortReference> {
-    let breakdown = check_statuses(self.inputs.handlers());
     let mut changed_statuses = Vec::new();
     for port in self.outputs.iter() {
       let current_status = port.status();
+
       let new_status = match current_status {
-        PortStatus::DoneOpen | PortStatus::Open => {
-          // Leave the port DoneOpen if we have any open inputs or we're still pending
-          // otherwise close it.
+        PortStatus::Open => {
           // Note: A port can still be "Open" after a call if the component panics.
-          // Treat it the same way as DoneOpen
-          if breakdown.has_any_open()
-            || self.is_pending()
-            || breakdown.has_pending_packets
-            || breakdown.has_all_generators
-          {
-            PortStatus::DoneOpen
-          } else {
+          if port.is_empty() {
             PortStatus::DoneClosed
+          } else {
+            PortStatus::DoneClosing
           }
         }
         orig => orig,
@@ -423,10 +338,7 @@ async fn output_handler(
             .await?;
           break CompletionStatus::Error;
         }
-        if message.is_component_state() {
-          // TODO
-          continue;
-        }
+
         let port = instance.find_output(&message.port)?;
 
         trace!(port=%message.port,"received packet");
@@ -459,65 +371,4 @@ pub(crate) enum CompletionStatus {
   Finished,
   Timeout,
   Error,
-  Deferred,
-}
-
-#[derive(Default, Debug)]
-pub(super) struct StatusBreakdown {
-  has_open: bool,
-  has_any_generator: bool,
-  has_all_generators: bool,
-  has_done_open: bool,
-  has_done_closing: bool,
-  has_done_closed: bool,
-  has_pending_packets: bool,
-}
-
-impl StatusBreakdown {
-  pub(super) fn has_any_open(&self) -> bool {
-    self.has_open || self.has_done_open || self.has_done_closing || self.has_pending_packets
-  }
-}
-
-pub(super) fn check_statuses<'a>(ports: impl Iterator<Item = &'a PortHandler>) -> StatusBreakdown {
-  let mut breakdown = StatusBreakdown::default();
-  let mut total_ports = 0;
-
-  let mut ports_open = Vec::new();
-  let mut ports_doneopen = Vec::new();
-  let mut ports_doneyield = Vec::new();
-  let mut ports_doneclosing = Vec::new();
-  let mut ports_doneclosed = Vec::new();
-
-  for port in ports {
-    total_ports += 1;
-    let upstream_status = port.status();
-    trace!(port = port.name(), status = %upstream_status, "port status");
-    // if port is not empty (and is not a generator)
-    if !port.is_empty() && !matches!(upstream_status, PortStatus::DoneYield) {
-      breakdown.has_pending_packets = true;
-    }
-    match upstream_status {
-      PortStatus::Open => ports_open.push(port.name()),
-      PortStatus::DoneOpen => ports_doneopen.push(port.name()),
-      PortStatus::DoneYield => ports_doneyield.push(port.name()),
-      PortStatus::DoneClosing => ports_doneclosing.push(port.name()),
-      PortStatus::DoneClosed => ports_doneclosed.push(port.name()),
-    }
-  }
-  breakdown.has_all_generators = ports_doneyield.len() == total_ports;
-  trace!(
-    open = %ports_open.join(", "),
-    done_open = %ports_doneopen.join(", "),
-    done_yield = %ports_doneyield.join(", "),
-    done_closing = %ports_doneclosing.join(", "),
-    done_closed = %ports_doneclosed.join(", "),
-    all_generators = breakdown.has_all_generators,
-    "port statuses");
-  breakdown.has_open = !ports_open.is_empty();
-  breakdown.has_done_open = !ports_doneopen.is_empty();
-  breakdown.has_any_generator = !ports_doneyield.is_empty();
-  breakdown.has_done_closing = !ports_doneclosing.is_empty();
-  breakdown.has_done_closed = !ports_doneclosed.is_empty();
-  breakdown
 }

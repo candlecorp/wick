@@ -37,6 +37,7 @@ impl State {
     for (tx_id, tx) in self.transactions.iter() {
       let last_update = tx.last_access();
       if last_update.elapsed().unwrap() > EventLoop::HUNG_TX_TIMEOUT {
+        warn!(%tx_id, elapsed=?last_update.elapsed().unwrap(),"hung transaction");
         if panic_on_hung {
           let err = ExecutionError::HungTransaction(*tx_id);
           tx.emit_output_message(TransportWrapper::component_error(MessageTransport::error(
@@ -51,7 +52,7 @@ impl State {
             cleanup.push(*tx_id);
           }
           Ok(false) => {
-            // not hung, transaction will continue as normal.
+            // not hung, continue as normal.
           }
           Err(error) => {
             error!(%error, %tx_id, "stalled transaction generated error determining hung state");
@@ -60,23 +61,14 @@ impl State {
       }
     }
     for tx_id in cleanup {
+      debug!(%tx_id, "transaction hung");
       self.cleanup(&tx_id);
     }
     Ok(())
   }
 
-  pub(super) async fn check_done(&mut self, tx_id: &Uuid) -> Result<(), ExecutionError> {
-    if let Some(tx) = self.transactions.get(tx_id) {
-      if tx.done() {
-        self.handle_transaction_done(*tx_id).await?;
-        self.cleanup(tx_id);
-      }
-    }
-    Ok(())
-  }
-
   fn cleanup(&mut self, tx_id: &Uuid) -> Option<Transaction> {
-    debug!(%tx_id, "cleaning up transaction");
+    trace!(%tx_id, "cleaning up transaction");
     self.transactions.remove(tx_id)
   }
 
@@ -104,14 +96,12 @@ impl State {
 
   pub(super) async fn handle_port_status_change(
     &mut self,
-    tx_id: Uuid,
+    _tx_id: Uuid,
     port: PortReference,
   ) -> Result<(), ExecutionError> {
     debug!(
       port = %port, "handling port status change"
     );
-    let tx = self.get_tx(&tx_id)?;
-    tx.propagate_status(port).await?;
 
     Ok(())
   }
