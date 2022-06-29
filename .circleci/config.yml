@@ -251,27 +251,32 @@ workflows:
     jobs:
       - test:
           context: build
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              ignore: /^r\d+$/
   deploy:
     jobs:
-      # - test:
-      #     context: build
-      #     filters:
-      #       branches:
-      #         ignore: /.*/
-      #       tags:
-      #         only: /^release-.*$/
+      - test:
+          context: build
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /^r\d+$/
       - build:
           context: build
           matrix:
             parameters:
               arch: *ARCHITECTURES
             alias: release
-          # requires: [test]
+          requires: [test]
           filters:
             branches:
               ignore: /.*/
             tags:
-              only: /^release-.*$/
+              only: /^r\d+$/
       - deploy:
           context: build
           requires: [release]
@@ -279,4 +284,4 @@ workflows:
             branches:
               ignore: /.*/
             tags:
-              only: /^release-.*$/
+              only: /^r\d+$/
