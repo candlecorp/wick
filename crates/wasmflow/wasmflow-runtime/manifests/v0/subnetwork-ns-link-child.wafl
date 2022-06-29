@@ -3,10 +3,10 @@ network:
   collections:
     - namespace: wapc
       kind: WaPC
-      reference: ../../integration/test-wasm-component/build/test_component_s.wasm
+      reference: ../../integration/test-wasm-component/build/test_component.signed.wasm
     - namespace: wapc2
       kind: WaPC
-      reference: ../../integration/test-wasm-component/build/test_component_s.wasm
+      reference: ../../integration/test-wasm-component/build/test_component.signed.wasm
   schematics:
     - name: test-child
       collections:

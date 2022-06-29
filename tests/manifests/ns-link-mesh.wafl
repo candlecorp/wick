@@ -6,7 +6,7 @@ network:
   collections:
     - namespace: wapc
       kind: WaPC
-      reference: ./crates/integration/test-wasm-component/build/test_component_s.wasm
+      reference: ./crates/integration/test-wasm-component/build/test_component.signed.wasm
     - namespace: mesh_wapc
       kind: Mesh
       reference: mesh_wapc

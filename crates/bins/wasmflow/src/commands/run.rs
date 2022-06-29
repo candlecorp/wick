@@ -24,7 +24,7 @@ pub(crate) struct RunCommand {
   #[clap(long = "seed", short = 's', env = "WAFL_SEED", action)]
   seed: Option<u64>,
 
-  /// Arguments to pass as inputs to a schematic.
+  /// Arguments to pass as inputs to a component.
   #[clap(last(true), action)]
   args: Vec<String>,
 }
@@ -39,7 +39,7 @@ pub(crate) async fn handle_command(opts: RunCommand) -> Result<()> {
     .context("Could not load from location")?;
 
   if crate::wasm::is_wasm(&bytes) {
-    todo!()
+    todo!("The run command is not yet enabled for wasm modules.");
     // wasm::handle_command(opts, bytes).await
   } else {
     manifest::handle_command(opts, bytes).await

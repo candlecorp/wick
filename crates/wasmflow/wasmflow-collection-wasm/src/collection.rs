@@ -187,7 +187,7 @@ mod tests {
   #[test_logger::test(tokio::test)]
   async fn test_component() -> TestResult<()> {
     let component = crate::helpers::load_wasm_from_file(&PathBuf::from_str(
-      "../../integration/test-wasm-component/build/test_component_s.wasm",
+      "../../integration/test-wasm-component/build/test_component.signed.wasm",
     )?)
     .await?;
 

@@ -4,7 +4,7 @@ network:
   collections:
     - namespace: wasi
       kind: WaPC
-      reference: ../../integration/test-wasi-component/build/test_wasi_component_s.wasm
+      reference: ../../integration/test-wasi-component/build/test_wasi_component.signed.wasm
       data:
         wasi:
           dirs:

@@ -10,16 +10,16 @@ MAKEFILE_PROJECTS=$(foreach makefile,$(MAKEFILES),$(dir $(makefile)))
 ROOT_RUST_CRATES=$(foreach crate,$(wildcard ${CRATES_DIR}/*/Cargo.toml),$(dir $(crate)))
 
 TEST_WASM_DIR=$(CRATES_DIR)/integration/test-wasm-component
-TEST_WASM=$(TEST_WASM_DIR)/build/test_component_s.wasm
+TEST_WASM=$(TEST_WASM_DIR)/build/test_component.signed.wasm
 
 TEST_WASI_DIR=$(CRATES_DIR)/integration/test-wasi-component
-TEST_WASI=$(TEST_WASI_DIR)/build/test_wasi_component_s.wasm
+TEST_WASI=$(TEST_WASI_DIR)/build/test_wasi_component.signed.wasm
 
 TEST_MAIN_COMP_DIR=$(CRATES_DIR)/integration/test-main-component
-TEST_MAIN_COMP=$(TEST_WASI_DIR)/build/test_main_component_s.wasm
+TEST_MAIN_COMP=$(TEST_WASI_DIR)/build/test_main_component.signed.wasm
 
 TEST_MAIN_NETWORK_COMP_DIR=$(CRATES_DIR)/integration/test-main-network-component
-TEST_MAIN_NETWORK_COMP=$(TEST_WASI_DIR)/build/test_main_network_component_s.wasm
+TEST_MAIN_NETWORK_COMP=$(TEST_WASI_DIR)/build/test_main_network_component.signed.wasm
 
 TEST_PAR=crates/wasmflow/wasmflow-runtime/tests/bundle.tar
 TEST_PAR_BIN=crates/wasmflow/wasmflow-collection-par/wasmflow-standalone
@@ -80,18 +80,18 @@ clean:  ## Remove generated artifacts and files
 	done
 	cargo clean
 
-.PHONY: install-release
+.PHONY: install-release deps
 install-release: $(CORE_BINS)  ## Build optimized binaries and install them to your local cargo bin
 	cargo build --workspace --release
 	cp build/local/* ~/.cargo/bin/
 
-.PHONY: install
+.PHONY: install deps
 install: $(CORE_BINS)  ## Build binaries and install them to your local cargo bin
 	cargo build --workspace
 	cp build/local/* ~/.cargo/bin/
 
 .PHONY: build
-build: ./build/local codegen   ## Build the entire project
+build: deps ./build/local codegen   ## Build the entire project
 	cargo build --workspace --all
 
 $(TEST_WASM):
