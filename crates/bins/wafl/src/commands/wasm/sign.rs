@@ -15,26 +15,26 @@ pub(crate) struct Options {
   #[clap(flatten)]
   pub(crate) logging: logger::LoggingOptions,
 
-  /// File to read.
+  /// WebAssembly module location.
   #[clap(action)]
   pub(crate) source: String,
 
-  /// File path to the JSON representation of the actor interface.
+  /// File path to the JSON representation of the module's interface.
   #[clap(action)]
   pub(crate) interface: String,
 
-  /// Destination for signed module. By default the the destination is the same as the input with a "_s" suffix.
+  /// Destination for signed module. If omitted, the signed module will have a .signed.wasm extension.
   #[clap(short = 'd', long = "destination", action)]
   destination: Option<String>,
 
   #[clap(flatten)]
   common: GenerateCommon,
 
-  /// Version to embed in the signed claims.
+  /// Version to embed in the module.
   #[clap(long, action)]
   ver: Option<String>,
 
-  /// Revision number to embed in the signed claims.
+  /// Revision number to embed in the module.
   #[clap(long, action)]
   rev: Option<u32>,
 }
@@ -99,9 +99,9 @@ pub(crate) async fn handle(opts: Options) -> Result<()> {
         .to_owned();
       // If path is empty, user supplied module in current directory
       if path.is_empty() {
-        format!("./{}_s.wasm", module_name)
+        format!("./{}.signed.wasm", module_name)
       } else {
-        format!("{}/{}_s.wasm", path, module_name)
+        format!("{}/{}.signed.wasm", path, module_name)
       }
     }
   };

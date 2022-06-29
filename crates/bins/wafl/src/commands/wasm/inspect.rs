@@ -10,7 +10,7 @@ pub(crate) struct Options {
   #[clap(flatten)]
   pub(crate) logging: logger::LoggingOptions,
 
-  /// File to read.
+  /// WebAssembly module location.
   #[clap(action)]
   pub(crate) module: String,
 }

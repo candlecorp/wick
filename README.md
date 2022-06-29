@@ -1,70 +1,63 @@
-# Wasmflow monorepo
+# Wasmflow
 
-## Prerequisites
+<div align="center">
+<img src="https://github.com/wasmflow/.github/blob/main/assets/wasmflow-logo-color@.5.png?raw=true">
+</div>
 
-Wasmflow depends on (at least) the tools below to build properly.
+Wasmflow is a free and open platform for building applications out of WebAssembly code containers.
 
-### System dependencies
+Wasmflow lets you write code and reuse it easily, everywhere. It's built with Rust and Wasmtime and takes ideas from Docker, Kubernetes, Erlang, Rx, FBP, and more.
 
-These tools are necessary to build the majority of Wasmflow projects, but you need to install them yourself.
+## Getting Started
 
-- rust/cargo
-- node
-- make
-- docker & docker-compose (to run integration tests)
+Visit the docs on [wasmflow.com](https://wasmflow.com) for getting started guides and API documentation.
 
-### Necessary tools
+## Installation
 
-The rest of the dependencies should be installable via:
+Head over to the [releases page](https://github.com/wasmflow/wasmflow/releases) to download precompiled binaries for your platform.
+
+Alternately, install from source with the command:
 
 ```
-make deps
+$ make install
 ```
 
-If you find something that should be added, please submit a PR.
+or for more optimized builds:
 
-#### widl-template
+```sh
+$ make install-release
+```
 
-Used to generated JSON schemas, documentation, and code for host manifests.
+## Prerequisites for building from source
 
-- `npm install -g widl-template`
+Aside from rust & cargo, you'll need node.js & npm to run and build the code generator.
 
-#### wasmflow-codegen
+You can install all the prerequisites for tools that can be installed via rust and npm with the command:
 
-Used to generate collection scaffolding and new component templates
+```sh
+$ make deps
+```
 
-- `npm install -g @wasmflow/codegen`
+### jq
 
-Or from the `dev` branch
+The Makefiles also make use of `jq`. You'll find installation instructions on the `jq` homepage: https://stedolan.github.io/jq/
 
-- `npm install -g "https://github.com/wasmflow/codegen#dev"`
+### cmake
 
-#### tomlq
+The generated protobuf code uses prost which depends on a number of developer tools. Many developer systems will probably have these installed already, but recent macs no longer include `cmake` with the XCode CLI tools. You'll need either the full xcode installation or homebrew to install it.
 
-Used in WASM code generation and Makefiles.
+You can install xcode from the app store or you can install `cmake` via brew with the command:
 
-- `cargo install tomlq`
+```sh
+$ brew install cmake
+```
 
-#### `cargo-deny`
+### Rust nightly
 
-Used to assert dependency licenses
+You'll also need the rust nightly toolchain in addition to stable for some of the dependent tools and code formatting.
 
-- `cargo install cargo-deny`
-
-#### prettier
-
-Used to format JSON
-
-- `npm install -g prettier`
-
-## Using make
-
-Wasmflow uses `Makefile`s extensively, make sure you explore them to understand what you can run as tasks.
-
-Many makefiles have a `help` task to give you a rundown of the important tasks.
-
-```console
-make help
+```
+$ rustup toolchain add nightly
 ```
 
 ## Building Wasmflow
@@ -75,19 +68,13 @@ Build Wasmflow with `make` alone.
 make
 ```
 
-## Install Wasmflow binaries from source
-
-```console
-make install
-```
-
-Alternately, to install optimized release builds:
-
-```console
-make install-release
-```
-
 ## Running tests
+
+Run unit and self-contained integration tests via `make`
+
+```console
+make test
+```
 
 To run the full suite of tests, you'll need a local NATS server, redis instance, and OCI registry. You can run these with the `docker-compose.yml` file in the `/scripts/` directory.
 
@@ -95,38 +82,9 @@ To run the full suite of tests, you'll need a local NATS server, redis instance,
 $ cd scripts && docker-compose up
 ```
 
-Run tests via `make`
-
-```console
-make test
-```
-
-## Doc links
-
-- wasmflow.com/codegen
-- wasmflow.com
-
 ## Need a Makefile primer?
 
-- Check out isaacs's tutorial: https://gist.github.com/isaacs/62a2d1825d04437c6f08
-- Your makefiles are wrong: https://tech.davis-hansson.com/p/make/
+Check out these guides if you need help with `Makefile`s:
 
-## Good first contributions
-
-This is a list of nice-to-haves that would also make good contributions for people looking to get involved with Wasmflow.
-
-### Improving logging & the logger
-
-Logging is an unstructured mix of debug and informational output. It would be better to have a structured logging solution.
-
-### Opportunities for code generation
-
-Wasmflow uses code generation extensively and making it better or adding more opportunities to use generated code is usually welcome. Open an issue first to discuss it to be sure that someone isn't already working on it.
-
-### Rustdoc examples
-
-Rustdoc examples are always helpful. Examples should be written in a way that they can be copy-pasted and executed as-is without hidden context whenever possible.
-
-### FAQ Documentation
-
-As you go work with Wasmflow, what issues pop up that you solve yourself? Those issues could make good FAQ items.
+- [Isaacs's tutorial](https://gist.github.com/isaacs/62a2d1825d04437c6f08)
+- [Your makefiles are wrong](https://tech.davis-hansson.com/p/make/)

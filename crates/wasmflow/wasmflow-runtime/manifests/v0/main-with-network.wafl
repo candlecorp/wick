@@ -1,7 +1,7 @@
 version: 0
 network:
   triggers:
-    reference: &comp ../../integration/test-main-network-component/build/test_main_network_component_s.wasm
+    reference: &comp ../../integration/test-main-network-component/build/test_main_network_component.signed.wasm
     data:
       wasi:
         dirs:

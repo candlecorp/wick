@@ -32,8 +32,7 @@ pub(crate) async fn handle_command(opts: ListCommand) -> Result<()> {
     .context("Could not load from location")?;
 
   if crate::wasm::is_wasm(&bytes) {
-    todo!()
-    // wasm::handle_command(opts, bytes).await
+    todo!("The list command is not yet enabled for wasm modules.");
   } else {
     manifest::handle_command(opts, bytes).await
   }

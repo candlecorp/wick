@@ -44,9 +44,9 @@ pub(crate) async fn handle_command(opts: super::ListCommand, bytes: Vec<u8>) -> 
         .join(", ");
       println!("{}{}({}) -> ({})", indent, label, inputs, outputs);
     }
-    for (_name, schematic) in signature.components.inner().iter() {
-      print!("Schematic: ");
-      print_component(&schematic.name, "", &schematic.inputs, &schematic.outputs);
+    for (_name, component) in signature.components.inner().iter() {
+      print!("Component: ");
+      print_component(&component.name, "", &component.inputs, &component.outputs);
     }
   }
 

@@ -35,7 +35,7 @@ pub(crate) struct TestCommand {
   #[clap(action)]
   pub(crate) location: String,
 
-  /// The test data.
+  /// The test data location.
   #[clap(action)]
   data_path: PathBuf,
 

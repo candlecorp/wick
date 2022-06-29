@@ -15,7 +15,7 @@ mod test {
       "component RPC server",
       &[
         "serve",
-        "./crates/integration/test-wasm-component/build/test_component_s.wasm",
+        "./crates/integration/test-wasm-component/build/test_component.signed.wasm",
         "--mesh",
         "--trace",
         "--rpc",

@@ -3,7 +3,7 @@ ARTIFACT_DIR:=build/
 # Path to copy the build artifact to
 BUILD_ARTIFACT:=$(ARTIFACT_DIR)$(CRATE_FS_NAME).wasm
 # Path for the signed artifact
-SIGNED_ARTIFACT:=$(ARTIFACT_DIR)$(CRATE_FS_NAME)_s.wasm
+SIGNED_ARTIFACT:=$(ARTIFACT_DIR)$(CRATE_FS_NAME).signed.wasm
 
 TARGET?=wasm32-unknown-unknown
 
