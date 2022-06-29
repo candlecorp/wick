@@ -72,7 +72,7 @@ commands:
             && curl -L https://github.com/mozilla/sccache/releases/download/v0.3.0/sccache-v0.3.0-x86_64-unknown-linux-musl.tar.gz \
             | tar -zxvf - sccache-v0.3.0-x86_64-unknown-linux-musl/sccache \
             && sudo mv sccache-v0.3.0-x86_64-unknown-linux-musl/sccache ${RUSTC_WRAPPER} \
-            && sudo chmod +x ${RUSTC_WRAPPER}
+            && sudo chmod +x ${RUSTC_WRAPPER} || echo "${RUSTC_WRAPPER} already exists"
       - save_cache:
           key: sccache-{{ arch }}
           paths:
@@ -253,20 +253,20 @@ workflows:
           context: build
   deploy:
     jobs:
-      - test:
-          context: build
-          filters:
-            branches:
-              ignore: /.*/
-            tags:
-              only: /^release-.*$/
+      # - test:
+      #     context: build
+      #     filters:
+      #       branches:
+      #         ignore: /.*/
+      #       tags:
+      #         only: /^release-.*$/
       - build:
           context: build
           matrix:
             parameters:
               arch: *ARCHITECTURES
             alias: release
-          requires: [test]
+          # requires: [test]
           filters:
             branches:
               ignore: /.*/
