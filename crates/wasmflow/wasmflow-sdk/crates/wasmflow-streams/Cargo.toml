@@ -1,6 +1,6 @@
 [package]
 name = "wasmflow-streams"
-version = "0.9.0"
+version = "0.10.0-beta.1"
 authors = ["Jarrod Overson <jsoverson@gmail.com>"]
 edition = "2021"
 license = "BSD-3-Clause"
@@ -19,8 +19,8 @@ v0 = []
 v1 = []
 
 [dependencies]
-wasmflow-packet = { path = "../wasmflow-packet", version = "0.9.0" }
-wasmflow-transport = { path = "../wasmflow-transport", version = "0.9.0" }
+wasmflow-packet = { path = "../wasmflow-packet", version = "0.10.0-beta.1" }
+wasmflow-transport = { path = "../wasmflow-transport", version = "0.10.0-beta.1" }
 futures = "0.3.21"
 pin-project-lite = "0.2.9"
 
