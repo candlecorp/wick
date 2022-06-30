@@ -230,7 +230,7 @@
           "WaPC",
           "Mesh",
           "Network",
-          "Par"
+          "GrpcTar"
         ]
       },
       "SchematicManifest": {

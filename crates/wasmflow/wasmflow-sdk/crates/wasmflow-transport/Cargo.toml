@@ -17,7 +17,6 @@ maintenance = { status = "actively-developed" }
 [features]
 default = []
 all = ["async"]
-wasm = []
 async = ["tokio", "tokio-stream", "parking_lot"]
 
 [dependencies]

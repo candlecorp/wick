@@ -27,8 +27,8 @@ pub enum CollectionError {
   RpcHandlerError(#[from] Box<wasmflow_rpc::Error>),
 }
 
-impl From<wasmflow_collection_par::Error> for CollectionError {
-  fn from(e: wasmflow_collection_par::Error) -> Self {
+impl From<wasmflow_collection_grpctar::Error> for CollectionError {
+  fn from(e: wasmflow_collection_grpctar::Error) -> Self {
     CollectionError::Downstream(Box::new(e))
   }
 }

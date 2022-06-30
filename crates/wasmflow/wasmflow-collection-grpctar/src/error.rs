@@ -27,7 +27,7 @@ pub enum ParError {
 
   /// Collection Archive Error
   #[error(transparent)]
-  Par(#[from] wasmflow_par::Error),
+  GrpcTar(#[from] wasmflow_grpctar::Error),
 
   #[error(transparent)]
   EnvLookupFailed(#[from] shellexpand::LookupError<VarError>),

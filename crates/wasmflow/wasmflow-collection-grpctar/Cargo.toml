@@ -1,5 +1,5 @@
 [package]
-name = "wasmflow-collection-par"
+name = "wasmflow-collection-grpctar"
 version = "0.1.0"
 edition = "2021"
 
@@ -8,7 +8,7 @@ edition = "2021"
 [features]
 
 [dependencies]
-wasmflow-par = { path = "../wasmflow-par" }
+wasmflow-grpctar = { path = "../wasmflow-grpctar" }
 wasmflow-loader = { path = "../wasmflow-loader" }
 wasmflow-rpc = { path = "../wasmflow-rpc", features = ["client"] }
 wasmflow-sdk = { path = "../wasmflow-sdk", features = ["v1"] }

@@ -164,7 +164,7 @@ impl TryFrom<&crate::v0::CollectionDefinition> for CollectionDefinition {
         reference: def.reference.clone(),
         config: def.data.clone(),
       }),
-      crate::v0::CollectionKind::Par => CollectionKind::GrpcTar(GrpcTarCollection {
+      crate::v0::CollectionKind::GrpcTar => CollectionKind::GrpcTar(GrpcTarCollection {
         reference: def.reference.clone(),
         config: def.data.clone(),
       }),
