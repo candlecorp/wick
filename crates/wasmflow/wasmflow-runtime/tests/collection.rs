@@ -146,9 +146,9 @@ async fn grpc() -> Result<()> {
 }
 
 #[test_logger::test(tokio::test)]
-#[ignore] // Need to automate the creation of par bundles
-async fn par() -> Result<()> {
-  let (network, _) = init_network_from_yaml("./manifests/v0/collections/par.wafl").await?;
+#[ignore] // Need to automate the creation of GrpcTar bundles
+async fn grpctar() -> Result<()> {
+  let (network, _) = init_network_from_yaml("./manifests/v0/collections/grpctar.wafl").await?;
 
   let data = hashmap! {
       "left" => 32,
@@ -157,8 +157,8 @@ async fn par() -> Result<()> {
 
   let mut result = network
     .invoke(Invocation::new(
-      Entity::test("par"),
-      Entity::local("par"),
+      Entity::test("grpctar"),
+      Entity::local("grpctar"),
       data.try_into()?,
       None,
     ))

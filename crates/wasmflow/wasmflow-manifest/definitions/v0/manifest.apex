@@ -137,7 +137,7 @@ enum CollectionKind {
   "A local or remote Network definition."
   Network = 4,
   "A GRPC collection binary."
-  Par = 5,
+  GrpcTar = 5,
 }
 
 

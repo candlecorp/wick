@@ -1,6 +1,7 @@
 pub use crate::v1::BoxedError;
 
 #[derive(Debug)]
+/// Errors that components or component integration generate.
 pub enum Error {
   /// An input the component expects was not found.
   MissingInput(String),
@@ -16,7 +17,7 @@ pub enum Error {
 
   /// An error resulting from deserializing or serializing a payload.
   CodecError(String),
-  /// culling line
+
   /// An error returned from the WaPC host, the system running the WebAssembly module.
   HostError(String),
 

@@ -80,23 +80,10 @@ mod writable_port;
 pub use writable_port::{PortChannel, Writable};
 
 /// Traits for stateful components.
-pub mod stateful {
-  /// Signature trait for a batched component job.
+pub mod stateful;
 
-  #[async_trait::async_trait]
-  pub trait BatchedComponent: super::Component {
-    /// For stateful components with a persistent context, this is its type.
-    type Context;
-
-    /// The actual work done when a component is invoked.
-    async fn job(
-      inputs: Self::Inputs,
-      outputs: Self::Outputs,
-      context: Self::Context,
-      config: Option<Self::Config>,
-    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>>;
-  }
-}
+/// Traits for ephemeral components.
+pub mod ephemeral;
 
 /// The base trait for WasmFlow Components.
 pub trait Component {
@@ -107,21 +94,6 @@ pub trait Component {
 
   /// The configuration for the component. Often generated.
   type Config;
-}
-
-/// Traits for ephemeral components.
-pub mod ephemeral {
-
-  #[async_trait::async_trait]
-  /// Signature trait for a batched component job.
-  pub trait BatchedComponent: super::Component {
-    /// The actual work done when a component is invoked.
-    async fn job(
-      inputs: Self::Inputs,
-      outputs: Self::Outputs,
-      config: Option<Self::Config>,
-    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>>;
-  }
 }
 
 #[doc(hidden)]

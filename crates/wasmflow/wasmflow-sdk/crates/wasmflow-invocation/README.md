@@ -1,7 +1,5 @@
 ![Maintenance](https://img.shields.io/badge/maintenance-activly--developed-brightgreen.svg)
 
-# wasmflow-boundary
+# wasmflow-invocation
 
-Methods associated with translating input and output across the component boundary.
-
-License: BSD-3-Clause
+The `wasmflow-invocation` crate supplies the data structures necessary to invoke Wasmflow components.

@@ -5,10 +5,10 @@ host:
 network:
   collections:
     - namespace: test-namespace
-      kind: Par
+      kind: GrpcTar
       reference: ./tests/bundle.tar
   schematics:
-    - name: par
+    - name: grpctar
       collections:
         - test-namespace
       instances:
