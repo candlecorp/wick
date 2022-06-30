@@ -1,6 +1,6 @@
 [package]
 name = "wasmflow-codec"
-version = "0.9.0"
+version = "0.10.0-beta.4"
 edition = "2021"
 license = "BSD-3-Clause"
 description = "JSON, Messagepack, & Raw serde value encoding/decoding library"

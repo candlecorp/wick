@@ -1,6 +1,6 @@
 [package]
 name = "wasmflow-packet"
-version = "0.9.0"
+version = "0.10.0-beta.4"
 authors = ["Jarrod Overson <jsoverson@gmail.com>"]
 edition = "2021"
 license = "BSD-3-Clause"
@@ -20,8 +20,7 @@ v0 = []
 
 
 [dependencies]
-wasmflow-codec = { path = "../wasmflow-codec", version = "0.9.0", features = [
-] }
+wasmflow-codec = { path = "../wasmflow-codec", version = "0.10.0-beta.4" }
 serde = { version = "1.0", features = ["derive"] }
 serde-value = "0.7"
 
