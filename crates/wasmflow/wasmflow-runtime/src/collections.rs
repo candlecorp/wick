@@ -44,7 +44,7 @@ pub(crate) async fn initialize_par_collection(
 
   let bytes = wasmflow_loader::get_bytes(&collection.reference, opts.allow_latest, &opts.allowed_insecure).await?;
 
-  let service = wasmflow_collection_par::collection::Collection::from_tarbytes(
+  let service = wasmflow_collection_grpctar::collection::Collection::from_tarbytes(
     collection.reference.clone(),
     &*bytes,
     Some(collection.config.clone()),

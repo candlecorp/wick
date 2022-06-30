@@ -15,7 +15,7 @@ wasmflow-manifest = { path = "../wasmflow-manifest" }
 wasmflow-loader = { path = "../wasmflow-loader" }
 wasmflow-collection-wasm = { path = "../wasmflow-collection-wasm" }
 wasmflow-collection-nats = { path = "../wasmflow-collection-nats" }
-wasmflow-collection-par = { path = "../wasmflow-collection-par" }
+wasmflow-collection-grpctar = { path = "../wasmflow-collection-grpctar" }
 wasmflow-collection-grpc = { path = "../wasmflow-collection-grpc" }
 wasmflow-mesh = { path = "../wasmflow-mesh" }
 wasmflow-stdlib = { path = "../wasmflow-stdlib" }

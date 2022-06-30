@@ -1,0 +1,17 @@
+{
+  "git.ignoreLimitWarning": true,
+  "rust-analyzer.cargo.features": ["wasmflow-sdk/v1"],
+  "files.associations": {
+    "*.wafl": "yaml"
+  },
+  "rust-analyzer.rustfmt.overrideCommand": [
+    "rustup",
+    "run",
+    "nightly",
+    "--",
+    "rustfmt",
+    "--edition",
+    "2021",
+    "--"
+  ]
+}

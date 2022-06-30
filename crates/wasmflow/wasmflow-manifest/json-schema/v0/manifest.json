@@ -252,7 +252,7 @@
 
     "CollectionKind": {
       "$anchor": "#v0/CollectionKind",
-      "enum": ["Native", "GrpcUrl", "WaPC", "Mesh", "Network", "Par"]
+      "enum": ["Native", "GrpcUrl", "WaPC", "Mesh", "Network", "GrpcTar"]
     },
     "SchematicManifest": {
       "$anchor": "#v0/SchematicManifest",

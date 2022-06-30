@@ -4058,8 +4058,8 @@ dependencies = [
  "tracing",
  "trycmd",
  "wasmflow-collection-cli",
+ "wasmflow-grpctar",
  "wasmflow-oci",
- "wasmflow-par",
  "wasmflow-rpc",
  "wasmflow-sdk",
  "wasmflow-wascap",
@@ -4376,6 +4376,34 @@ dependencies = [
 ]
 
 [[package]]
+name = "wasmflow-collection-grpctar"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "logger",
+ "parking_lot 0.12.0",
+ "rand 0.8.5",
+ "serde",
+ "serde_json",
+ "shellexpand",
+ "tar",
+ "test-logger",
+ "test-native-collection",
+ "thiserror",
+ "tokio",
+ "tokio-stream",
+ "tracing",
+ "wasmflow-collection-cli",
+ "wasmflow-grpctar",
+ "wasmflow-loader",
+ "wasmflow-rpc",
+ "wasmflow-sdk",
+ "wasmflow-wascap",
+ "workspace-root",
+]
+
+[[package]]
 name = "wasmflow-collection-link"
 version = "0.9.0"
 dependencies = [
@@ -4406,34 +4434,6 @@ dependencies = [
  "wasmflow-mesh",
  "wasmflow-rpc",
  "wasmflow-sdk",
-]
-
-[[package]]
-name = "wasmflow-collection-par"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-trait",
- "logger",
- "parking_lot 0.12.0",
- "rand 0.8.5",
- "serde",
- "serde_json",
- "shellexpand",
- "tar",
- "test-logger",
- "test-native-collection",
- "thiserror",
- "tokio",
- "tokio-stream",
- "tracing",
- "wasmflow-collection-cli",
- "wasmflow-loader",
- "wasmflow-par",
- "wasmflow-rpc",
- "wasmflow-sdk",
- "wasmflow-wascap",
- "workspace-root",
 ]
 
 [[package]]
@@ -4489,6 +4489,26 @@ dependencies = [
  "thiserror",
  "url 2.2.2",
  "wasmflow-macros",
+]
+
+[[package]]
+name = "wasmflow-grpctar"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-recursion",
+ "clap 3.2.2",
+ "env_logger 0.9.0",
+ "logger",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "tar",
+ "test-logger",
+ "thiserror",
+ "tracing",
+ "wasmflow-sdk",
+ "wasmflow-wascap",
 ]
 
 [[package]]
@@ -4701,7 +4721,7 @@ dependencies = [
  "thiserror",
  "tokio",
  "tracing",
- "wasmflow-par",
+ "wasmflow-grpctar",
  "wasmflow-sdk",
  "wasmflow-wascap",
 ]
@@ -4724,26 +4744,6 @@ dependencies = [
  "serde",
  "serde-value",
  "wasmflow-codec",
-]
-
-[[package]]
-name = "wasmflow-par"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-recursion",
- "clap 3.2.2",
- "env_logger 0.9.0",
- "logger",
- "serde",
- "serde_json",
- "serde_yaml",
- "tar",
- "test-logger",
- "thiserror",
- "tracing",
- "wasmflow-sdk",
- "wasmflow-wascap",
 ]
 
 [[package]]
@@ -4826,8 +4826,8 @@ dependencies = [
  "tracing",
  "uuid",
  "wasmflow-collection-grpc",
+ "wasmflow-collection-grpctar",
  "wasmflow-collection-nats",
- "wasmflow-collection-par",
  "wasmflow-collection-wasm",
  "wasmflow-interpreter",
  "wasmflow-invocation-server",

@@ -22,7 +22,7 @@ TEST_MAIN_NETWORK_COMP_DIR=$(CRATES_DIR)/integration/test-main-network-component
 TEST_MAIN_NETWORK_COMP=$(TEST_WASI_DIR)/build/test_main_network_component.signed.wasm
 
 TEST_PAR=crates/wasmflow/wasmflow-runtime/tests/bundle.tar
-TEST_PAR_BIN=crates/wasmflow/wasmflow-collection-par/wasmflow-standalone
+TEST_PAR_BIN=crates/wasmflow/wasmflow-collection-grpctar/wasmflow-standalone
 
 CORE_BINS?=wafl wasmflow
 

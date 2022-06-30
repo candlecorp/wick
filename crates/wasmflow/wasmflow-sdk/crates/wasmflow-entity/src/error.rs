@@ -18,5 +18,5 @@ pub enum ParseError {
   InvalidAuthorityKind(String),
   /// Error parsing an entity URL.
   #[error("{0}")]
-  General(String),
+  Parse(url::ParseError),
 }

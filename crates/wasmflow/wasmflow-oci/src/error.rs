@@ -50,5 +50,5 @@ pub enum OciError {
 
   /// Collection Archive Error
   #[error(transparent)]
-  Par(#[from] wasmflow_par::Error),
+  GrpcTar(#[from] wasmflow_grpctar::Error),
 }

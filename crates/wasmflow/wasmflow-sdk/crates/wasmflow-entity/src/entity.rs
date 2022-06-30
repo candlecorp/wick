@@ -74,7 +74,7 @@ impl FromStr for Entity {
 
   fn from_str(s: &str) -> Result<Self, Self::Err> {
     use url::Url;
-    let url = Url::parse(s).map_err(|e| Error::General(e.to_string()))?;
+    let url = Url::parse(s).map_err(Error::Parse)?;
     ensure!(url.scheme() == URL_SCHEME, Error::Scheme(url.scheme().to_owned()));
     let host = url.host_str().ok_or(Error::Authority)?;
     let (id, kind) = host

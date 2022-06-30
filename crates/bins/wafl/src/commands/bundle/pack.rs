@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use anyhow::Result;
 use clap::Args;
 use nkeys::KeyPairType;
-use wasmflow_par::make_archive;
+use wasmflow_grpctar::make_archive;
 use wasmflow_rpc::CollectionSignature;
 use wasmflow_wascap::ClaimsOptions;
 

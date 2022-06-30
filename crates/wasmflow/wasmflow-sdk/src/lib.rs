@@ -85,7 +85,8 @@
 #![allow(unused_attributes)]
 // !!END_LINTS
 // Add exceptions here
-#![allow(missing_docs)]
+#![allow()]
 
 #[cfg(feature = "v1")]
+/// The module containing APIs for v1 Rust components.
 pub mod v1;
