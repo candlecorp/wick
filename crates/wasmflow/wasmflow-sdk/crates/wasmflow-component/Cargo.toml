@@ -1,6 +1,6 @@
 [package]
 name = "wasmflow-component"
-version = "0.9.0"
+version = "0.10.0-beta.3"
 edition = "2021"
 license = "BSD-3-Clause"
 description = "WaPC-related functions for Wasmflow"
@@ -24,7 +24,7 @@ yielding-executor = { version = "0.10.0", features = [] }
 tokio = { version = "1", features = ["sync"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-wasmflow-invocation = { path = "../wasmflow-invocation", version = "0.9.0" }
+wasmflow-invocation = { path = "../wasmflow-invocation", version = "0.10.0-beta.3" }
 
 [dependencies]
 cfg-if = "1.0.0"
@@ -36,5 +36,5 @@ wasmflow-boundary = { path = "../wasmflow-boundary", version = "0.9.0", features
 ] }
 wasmflow-transport = { path = "../wasmflow-transport", version = "0.9.0", features = [
 ] }
-wasmflow-packet = { path = "../wasmflow-packet", version = "0.9.0" }
+wasmflow-packet = { path = "../wasmflow-packet", version = "0.10.0-beta.3" }
 serde = { version = "1.0", features = ["derive"] }
