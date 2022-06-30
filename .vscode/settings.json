@@ -3,10 +3,7 @@
   "yaml.schemas": {
     "crates/wasmflow/wasmflow-manifest/json-schema/manifest.json": ["**/*.wafl"]
   },
-  "rust-analyzer.cargo.features": [
-    "wasmflow-component/guest",
-    "wasmflow-stdlib/host"
-  ],
+  "rust-analyzer.cargo.features": ["wasmflow-sdk/v1", "wasmflow-stdlib/host"],
   "files.associations": {
     "*.wafl": "yaml"
   },

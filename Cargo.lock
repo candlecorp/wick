@@ -4104,7 +4104,7 @@ dependencies = [
 [[package]]
 name = "wapc"
 version = "1.0.0"
-source = "git+https://github.com/vinodotdev/wapc-rs?branch=master#8ce199cde829b78ccc0d103248ed882c40cba73b"
+source = "git+https://github.com/wasmflow/wapc-rs?branch=master#8ce199cde829b78ccc0d103248ed882c40cba73b"
 dependencies = [
  "futures-core",
  "parking_lot 0.12.0",
@@ -4117,7 +4117,7 @@ dependencies = [
 [[package]]
 name = "wapc-pool"
 version = "1.0.0"
-source = "git+https://github.com/vinodotdev/wapc-rs?branch=master#8ce199cde829b78ccc0d103248ed882c40cba73b"
+source = "git+https://github.com/wasmflow/wapc-rs?branch=master#8ce199cde829b78ccc0d103248ed882c40cba73b"
 dependencies = [
  "crossbeam",
  "log",
@@ -4379,11 +4379,7 @@ dependencies = [
 name = "wasmflow-collection-link"
 version = "0.9.0"
 dependencies = [
- "anyhow",
- "env_logger 0.9.0",
  "serde",
- "test-log",
- "tokio",
  "tokio-stream",
  "wasmflow-codec",
  "wasmflow-component",
@@ -4482,7 +4478,7 @@ dependencies = [
  "wasmflow-packet",
  "wasmflow-streams",
  "wasmflow-transport",
- "yielding-async-executor",
+ "yielding-executor",
 ]
 
 [[package]]
@@ -4529,13 +4525,8 @@ dependencies = [
 name = "wasmflow-interface"
 version = "0.9.0"
 dependencies = [
- "anyhow",
- "env_logger 0.9.0",
- "pretty_assertions",
  "serde",
- "serde_json",
  "serde_repr",
- "test-log",
  "wasmflow-macros",
 ]
 
@@ -4646,9 +4637,6 @@ dependencies = [
 [[package]]
 name = "wasmflow-macros"
 version = "0.9.0"
-dependencies = [
- "anyhow",
-]
 
 [[package]]
 name = "wasmflow-manifest"
@@ -4733,12 +4721,8 @@ dependencies = [
 name = "wasmflow-packet"
 version = "0.9.0"
 dependencies = [
- "anyhow",
- "env_logger 0.9.0",
  "serde",
  "serde-value",
- "test-log",
- "tracing",
  "wasmflow-codec",
 ]
 
@@ -4779,7 +4763,7 @@ dependencies = [
 
 [[package]]
 name = "wasmflow-root"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "anyhow",
  "futures",
@@ -4914,12 +4898,8 @@ dependencies = [
 name = "wasmflow-streams"
 version = "0.9.0"
 dependencies = [
- "anyhow",
- "env_logger 0.9.0",
  "futures",
  "pin-project-lite",
- "test-log",
- "tracing",
  "wasmflow-packet",
  "wasmflow-transport",
 ]
@@ -4945,28 +4925,22 @@ name = "wasmflow-traits"
 version = "0.9.0"
 dependencies = [
  "async-trait",
- "env_logger 0.9.0",
  "serde",
- "test-log",
  "tokio",
  "tokio-stream",
  "tracing",
  "wasmflow-packet",
  "wasmflow-streams",
- "wasmflow-transport",
 ]
 
 [[package]]
 name = "wasmflow-transport"
 version = "0.9.0"
 dependencies = [
- "anyhow",
- "env_logger 0.9.0",
  "parking_lot 0.12.0",
  "serde",
  "serde-value",
  "serde_json",
- "test-log",
  "thiserror",
  "tokio",
  "tokio-stream",
@@ -5146,7 +5120,7 @@ dependencies = [
 [[package]]
 name = "wasmtime-provider"
 version = "1.0.0"
-source = "git+https://github.com/vinodotdev/wapc-rs?branch=master#8ce199cde829b78ccc0d103248ed882c40cba73b"
+source = "git+https://github.com/wasmflow/wapc-rs?branch=master#8ce199cde829b78ccc0d103248ed882c40cba73b"
 dependencies = [
  "cfg-if",
  "futures-core",
@@ -5488,9 +5462,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "09041cd90cf85f7f8b2df60c646f853b7f535ce68f85244eb6731cf89fa498ec"
 
 [[package]]
-name = "yielding-async-executor"
+name = "yielding-executor"
 version = "0.10.0"
-source = "git+https://github.com/vinodotdev/async-executor.git?branch=master#29f9946af2d137c49e8f621a5dbdb198e37c35a9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "48989471ed0e08f52249d7d994f726ef288201430e1286f495bee672d1c8505d"
 dependencies = [
  "futures",
  "pin-project",

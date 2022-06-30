@@ -20,7 +20,7 @@ thread_local! {
 type CallResult = Result<Vec<u8>, BoxedError>;
 
 pub fn exhaust_tasks() {
-  yielding_async_executor::single_threaded::run_while(move || {
+  yielding_executor::single_threaded::run_while(move || {
     let num_in_flight = ASYNC_HOST_CALLS.with(|cell| {
       #[allow(unsafe_code)]
       unsafe {

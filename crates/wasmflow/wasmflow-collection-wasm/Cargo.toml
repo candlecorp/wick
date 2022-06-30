@@ -28,11 +28,11 @@ serde-value = "0.7"
 # wasmtime-provider = { version = "1.0", optional = true, features = ["cache"] }
 # wapc = "1.0"
 # wapc-pool = "1.0"
-wasmtime-provider = { git = "https://github.com/vinodotdev/wapc-rs", branch = "master", optional = true, features = [
+wasmtime-provider = { git = "https://github.com/wasmflow/wapc-rs", branch = "master", optional = true, features = [
   "cache",
 ] }
-wapc = { git = "https://github.com/vinodotdev/wapc-rs", branch = "master" }
-wapc-pool = { git = "https://github.com/vinodotdev/wapc-rs", branch = "master" }
+wapc = { git = "https://github.com/wasmflow/wapc-rs", branch = "master" }
+wapc-pool = { git = "https://github.com/wasmflow/wapc-rs", branch = "master" }
 
 
 tokio-stream = "0.1.7"

@@ -124,12 +124,14 @@ test: codegen wasm $(TEST_PAR) ## Run tests for the entire workspace
 	cargo deny check licenses --hide-inclusion-graph
 	cargo build --workspace # necessary to ensure binaries are built
 	cargo test --workspace -- --skip integration_test
+	cargo test --workspace --manifest-path crates/wasmflow/wasmflow-sdk/Cargo.toml -- --skip integration_test
 
 .PHONY: test-integration
 test-integration: codegen wasm $(TEST_PAR) ## Run all tests for the workspace, including tests that rely on external services
 	cargo deny check licenses --hide-inclusion-graph
 	cargo build --workspace # necessary to ensure binaries are built
 	NATS_URL=$(NATS_URL) cargo test --workspace
+	cargo test --workspace --manifest-path crates/wasmflow/wasmflow-sdk/Cargo.toml
 
 .PHONY: test-bins
 test-bins: codegen wasm $(TEST_PAR) ## Run tests for the main binaries

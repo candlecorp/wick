@@ -1,10 +1,10 @@
 [package]
 name = "wasmflow-root"
-version = "0.1.0"
+version = "0.0.0"
 authors = ["Jarrod Overson <jsoverson@gmail.com>"]
 edition = "2021"
 description = "Application data flow platform"
-repository = "https://github.com/wasmflow/wasmflow-core"
+repository = "https://github.com/wasmflow/wasmflow"
 documentation = "https://wasmflow.com"
 readme = "README.md"
 
@@ -54,6 +54,5 @@ exclude = [
   "crates/integration/test-wasi-component",
   "crates/integration/test-main-component",
   "crates/integration/test-main-network-component",
-  "sdk/",
-  "forks/wapc-rs/",
+  "crates/wasmflow/wasmflow-sdk",
 ]
