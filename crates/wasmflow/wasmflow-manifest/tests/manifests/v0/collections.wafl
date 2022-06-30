@@ -18,7 +18,7 @@ network:
     - kind: WaPC
       reference: nothing
       namespace: wapc
-    - kind: Par
+    - kind: GrpcTar
       reference: nothing
       namespace: wapc2
       data:

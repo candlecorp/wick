@@ -16,9 +16,6 @@ homepage = "https://wasmflow.com"
 maintenance = { status = "actively-developed" }
 
 [features]
-default = []
-v1 = []
-signatures = []
 
 
 [dependencies]

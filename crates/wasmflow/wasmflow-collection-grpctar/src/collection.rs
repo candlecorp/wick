@@ -43,7 +43,7 @@ impl Collection {
     T: Read + Send,
     REF: AsRef<str> + Send,
   {
-    let cachedir = cache_location("par", reference.as_ref());
+    let cachedir = cache_location("grpctar", reference.as_ref());
     unpack(bytes, &cachedir)?;
     let interface_path = cachedir.join("interface.json");
     let binpath = cachedir.join("main.bin");
@@ -73,8 +73,8 @@ pub fn config_to_par_options(
   par_options: Option<ParOptions>,
 ) -> Result<ParOptions, crate::error::ParError> {
   let mut par_options = par_options.unwrap_or_default();
-  trace!(config=?manifest_config, "passed par config" );
-  trace!(config=?par_options, "passed par options");
+  trace!(config=?manifest_config, "passed grpctar config" );
+  trace!(config=?par_options, "passed grpctar options");
   if let Some(v) = manifest_config {
     if v.is_object() {
       let manifest_config = serde_json::from_value::<ParOptions>(v)?;
@@ -85,10 +85,10 @@ pub fn config_to_par_options(
           .insert(shellexpand::env(&env.0)?.into(), shellexpand::env(&env.1)?.into());
       }
     } else {
-      debug!("Invalid PAR options. Using default PPARar options.");
+      debug!("Invalid GRPC Archive options. Using default PPARar options.");
     }
   } else {
-    debug!("No PAR manifest config passed. Using default PAR options.");
+    debug!("No GRPC Archive manifest config passed. Using default GRPC Archive options.");
   }
   Ok(par_options)
 }
@@ -97,7 +97,7 @@ pub fn config_to_par_options(
 impl RpcHandler for Collection {
   async fn invoke(&self, invocation: Invocation) -> RpcResult<TransportStream> {
     let target_url = invocation.target_url();
-    trace!(target = %target_url, "par invoke");
+    trace!(target = %target_url, "grpctar invoke");
 
     let start = Instant::now();
 
@@ -111,7 +111,7 @@ impl RpcHandler for Collection {
     trace!(
       target = %target_url,
       duration_ms = %start.elapsed().as_millis(),
-      "par invoke complete",
+      "grpctar invoke complete",
     );
     Ok(stream)
   }
@@ -123,7 +123,7 @@ impl RpcHandler for Collection {
   async fn shutdown(&self) -> RpcResult<()> {
     let mut child = self.child.lock().await;
     if let Err(error) = child.kill().await {
-      warn!(%error,"error shutting down par binary");
+      warn!(%error,"error shutting down grpctar binary");
     };
     Ok(())
   }
@@ -156,13 +156,13 @@ async fn start_bin(path: &Path, envs: Option<HashMap<String, String>>) -> Result
     tokio::time::sleep(Duration::from_millis(200)).await;
     let uri = format!("http://{}:{}", local_addr, port);
     if let Ok(connection) = wasmflow_rpc::make_rpc_client(uri, None, None, None, None).await {
-      trace!("par connected");
+      trace!("grpctar connected");
       break Ok((child, connection));
     } else if child.try_wait().is_ok() {
-      trace!("par exited");
+      trace!("grpctar exited");
       // try again with a different port
     } else {
-      trace!("par wait");
+      trace!("grpctar wait");
       // still running, wait a little longer
       tokio::time::sleep(Duration::from_millis(1000)).await;
     };
@@ -176,10 +176,10 @@ async fn start_bin(path: &Path, envs: Option<HashMap<String, String>>) -> Result
 }
 
 fn unpack<T: Read + Send>(archive: T, dest: &Path) -> Result<(), Error> {
-  trace!(path = %dest.to_string_lossy(), "par unpack");
+  trace!(path = %dest.to_string_lossy(), "grpctar unpack");
   let mut archive = tar::Archive::new(archive);
   archive.unpack(dest)?;
-  wasmflow_par::validate_collection_dir(dest)?;
+  wasmflow_grpctar::validate_collection_dir(dest)?;
 
   Ok(())
 }
@@ -189,7 +189,7 @@ mod tests {
 
   use anyhow::Result;
   use tokio_stream::StreamExt;
-  use wasmflow_par::make_archive;
+  use wasmflow_grpctar::make_archive;
   use wasmflow_sdk::v1::packet::PacketMap;
   use wasmflow_sdk::v1::Entity;
   use wasmflow_wascap::KeyPair;
@@ -204,7 +204,7 @@ mod tests {
     let collection_bin = workspace_root::workspace_root()?
       .join("crates")
       .join("wasmflow")
-      .join("wasmflow-collection-par")
+      .join("wasmflow-collection-grpctar")
       .join("wasmflow-standalone");
     debug!(
       "Creating collection archive with binary from: {}",
@@ -222,7 +222,7 @@ mod tests {
       &issuer_kp,
     )?;
 
-    let collection = Collection::from_tarbytes("wasmflow-test-par", &*archive_bytes, None).await?;
+    let collection = Collection::from_tarbytes("wasmflow-test-grpctar", &*archive_bytes, None).await?;
     let job_payload = PacketMap::from([("left", 2), ("right", 5)]);
     let invocation = Invocation::new_test(file!(), Entity::local("add"), job_payload, None);
     let stream = collection.invoke(invocation).await?;

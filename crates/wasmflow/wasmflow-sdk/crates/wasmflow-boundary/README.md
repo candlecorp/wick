@@ -3,5 +3,3 @@
 # wasmflow-boundary
 
 Methods associated with translating input and output across the component boundary.
-
-License: BSD-3-Clause

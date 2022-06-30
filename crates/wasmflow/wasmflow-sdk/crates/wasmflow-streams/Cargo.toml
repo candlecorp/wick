@@ -14,13 +14,9 @@ homepage = "https://wasmflow.com"
 
 
 [features]
-default = []
-v0 = []
-v1 = []
 
 [dependencies]
 wasmflow-packet = { path = "../wasmflow-packet", version = "0.9.0" }
-wasmflow-transport = { path = "../wasmflow-transport", version = "0.9.0" }
 futures = "0.3.21"
 pin-project-lite = "0.2.9"
 
