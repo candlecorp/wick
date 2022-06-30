@@ -1,6 +1,6 @@
 [package]
 name = "wasmflow-collection-link"
-version = "0.9.0"
+version = "0.10.0-beta.4"
 edition = "2021"
 license = "BSD-3-Clause"
 description = "SDK for native and WASM Wasmflow components"
@@ -19,13 +19,13 @@ maintenance = { status = "actively-developed" }
 default = []
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
-wasmflow-component = { path = "../wasmflow-component", version = "0.9.0" }
+wasmflow-component = { path = "../wasmflow-component", version = "0.10.0-beta.4" }
 
 [dependencies]
-wasmflow-packet = { path = "../wasmflow-packet", version = "0.9.0" }
-wasmflow-output = { path = "../wasmflow-output", version = "0.9.0" }
-wasmflow-entity = { path = "../wasmflow-entity", version = "0.9.0" }
-wasmflow-codec = { path = "../wasmflow-codec", version = "0.9.0" }
+wasmflow-packet = { path = "../wasmflow-packet", version = "0.10.0-beta.4" }
+wasmflow-output = { path = "../wasmflow-output", version = "0.10.0-beta.4" }
+wasmflow-entity = { path = "../wasmflow-entity", version = "0.10.0-beta.4" }
+wasmflow-codec = { path = "../wasmflow-codec", version = "0.10.0-beta.4" }
 
 serde = { version = "1.0", features = ["derive"] }
 tokio-stream = { version = "0.1", features = [] }
@@ -35,5 +35,4 @@ env_logger = "0.9"
 test-log = "0.2.8"
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 anyhow = "1.0"
-wasmflow-packet = { path = "../wasmflow-packet", version = "0.9.0", features = [
-] }
+wasmflow-packet = { path = "../wasmflow-packet", features = [] }

@@ -1,6 +1,6 @@
 [package]
 name = "wasmflow-interface"
-version = "0.9.0"
+version = "0.10.0-beta.4"
 edition = "2021"
 license = "BSD-3-Clause"
 description = "Types used by the Wasmflow tool chain"
@@ -13,7 +13,7 @@ homepage = "https://wasmflow.com"
 
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }
-wasmflow-macros = { path = "../wasmflow-macros", version = "0.9.0" }
+wasmflow-macros = { path = "../wasmflow-macros", version = "0.10.0-beta.4" }
 serde_repr = "0.1"
 
 [dev-dependencies]
