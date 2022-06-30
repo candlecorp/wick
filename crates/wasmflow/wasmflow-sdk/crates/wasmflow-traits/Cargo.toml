@@ -1,6 +1,6 @@
 [package]
 name = "wasmflow-traits"
-version = "0.9.0"
+version = "0.10.0-beta.2"
 authors = ["Jarrod Overson <jsoverson@gmail.com>"]
 edition = "2021"
 license = "BSD-3-Clause"
@@ -16,8 +16,8 @@ homepage = "https://wasmflow.com"
 [features]
 
 [dependencies]
-wasmflow-packet = { path = "../wasmflow-packet", version = "0.9.0" }
-wasmflow-streams = { path = "../wasmflow-streams", version = "0.9.0" }
+wasmflow-packet = { path = "../wasmflow-packet", version = "0.10.0-beta.2" }
+wasmflow-streams = { path = "../wasmflow-streams", version = "0.10.0-beta.2" }
 serde = { version = "1" }
 async-trait = "0.1"
 tokio-stream = "0.1"
