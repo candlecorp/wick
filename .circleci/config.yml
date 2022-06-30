@@ -251,8 +251,9 @@ workflows:
     jobs:
       - test:
           context: build
-          tags:
-            ignore: /^r\d+$/
+          filters:
+            tags:
+              ignore: /^r\d+$/
   deploy:
     jobs:
       - test:
