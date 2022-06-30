@@ -1,8 +1,10 @@
-# Wasmflow
-
 <div align="center">
-<img src="https://github.com/wasmflow/.github/blob/main/assets/wasmflow-logo-color@.5.png?raw=true">
-</div>
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://github.com/wasmflow/.github/blob/main/assets/wasmflow-logo-white-color@.5.png?raw=true">
+  <img alt="wasmflow logo" width="50%" src="https://github.com/wasmflow/.github/blob/main/assets/wasmflow-logo-color@.5.png?raw=true">
+</picture>
+
+# Wasmflow
 
 Wasmflow is a free and open platform for building applications out of WebAssembly code containers.
 

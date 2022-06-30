@@ -251,18 +251,15 @@ workflows:
     jobs:
       - test:
           context: build
-          filters:
-            branches:
-              ignore: /.*/
-            tags:
-              ignore: /^r\d+$/
+          tags:
+            ignore: /^r\d+$/
   deploy:
     jobs:
       - test:
           context: build
           filters:
             branches:
-              ignore: /.*/
+              only: main
             tags:
               only: /^r\d+$/
       - build:
@@ -274,7 +271,7 @@ workflows:
           requires: [test]
           filters:
             branches:
-              ignore: /.*/
+              only: main
             tags:
               only: /^r\d+$/
       - deploy:
@@ -282,6 +279,6 @@ workflows:
           requires: [release]
           filters:
             branches:
-              ignore: /.*/
+              only: main
             tags:
               only: /^r\d+$/
