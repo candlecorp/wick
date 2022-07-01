@@ -3,7 +3,8 @@ name = "wasmflow-stdlib"
 version = "0.1.0"
 authors = ["Jarrod Overson <jsoverson@gmail.com>"]
 edition = "2021"
-license = "BSD-3-Clause"
+license = "Elastic-2.0"
+publish = false
 
 [features]
 default = ["host"]

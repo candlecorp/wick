@@ -2,6 +2,7 @@
 name = "wasmflow-keyvalue-redis"
 version = "0.0.0"
 edition = "2021"
+license-file = "LICENSE"
 
 [features]
 default = ["host"]

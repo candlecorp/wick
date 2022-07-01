@@ -2,7 +2,7 @@
 name = "wasmflow-interface"
 version = "0.10.0-beta.4"
 edition = "2021"
-license = "BSD-3-Clause"
+license = "Apache-2.0"
 description = "Types used by the Wasmflow tool chain"
 documentation = "https://wasmflow.com"
 keywords = ["types", "wasmflow"]

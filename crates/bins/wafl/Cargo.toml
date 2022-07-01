@@ -3,7 +3,8 @@ name = "wafl"
 version = "0.5.0"
 edition = "2021"
 default-run = "wafl"
-license = "BSD-3-Clause"
+license = "Elastic-2.0"
+publish = false
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

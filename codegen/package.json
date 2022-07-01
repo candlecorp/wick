@@ -30,7 +30,7 @@
     "extends": "./etc/.eslintrc.json"
   },
   "keywords": [],
-  "license": "ISC",
+  "license": "Apache-2.0",
   "devDependencies": {
     "@types/chai": "^4.2.18",
     "@types/chai-as-promised": "^7.1.5",

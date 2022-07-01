@@ -2,7 +2,7 @@
 name = "wasmflow-codec"
 version = "0.10.0-beta.4"
 edition = "2021"
-license = "BSD-3-Clause"
+license = "Apache-2.0"
 description = "JSON, Messagepack, & Raw serde value encoding/decoding library"
 documentation = "https://wasmflow.com"
 keywords = ["serde", "wasmflow", "codec", "json", "messagepack"]
