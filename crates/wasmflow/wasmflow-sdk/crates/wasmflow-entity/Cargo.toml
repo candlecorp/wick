@@ -2,7 +2,7 @@
 name = "wasmflow-entity"
 version = "0.10.0-beta.4"
 edition = "2021"
-license = "BSD-3-Clause"
+license = "Apache-2.0"
 description = "Entities found in a Wasmflow network"
 documentation = "https://wasmflow.com"
 keywords = ["wasmflow", "flow"]
