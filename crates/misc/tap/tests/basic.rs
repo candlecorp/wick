@@ -1,7 +1,7 @@
 use tap::{TestBlock, TestRunner};
 
 #[test]
-fn basics() -> Result<(), tap::TestError> {
+fn basics() -> anyhow::Result<()> {
   let mut runner = TestRunner::new(Some("My test"));
   let mut block = TestBlock::new(Some("My block"));
   block.add_test(
@@ -15,6 +15,9 @@ fn basics() -> Result<(), tap::TestError> {
     Some(vec!["three was not less than two".to_owned()]),
   );
   runner.add_block(block);
+
+  runner.run();
+
   let expected = vec![
     "# My test",
     "1..2",
@@ -23,7 +26,9 @@ fn basics() -> Result<(), tap::TestError> {
     "not ok 2 three is less than two",
     "# three was not less than two",
   ];
+
   let lines = runner.get_tap_lines();
+
   for (i, line) in lines.iter().enumerate() {
     println!("{}", line);
     assert_eq!(line, expected[i]);

@@ -1,4 +1,4 @@
-#![doc(html_logo_url = "https://avatars.githubusercontent.com/u/71604398?s=200&v=4")]
+#![doc(html_logo_url = "https://avatars.githubusercontent.com/u/104781277?s=96&v=4")]
 #![doc = include_str!("../README.md")]
 // !!START_LINTS
 // Wasmflow lints
