@@ -283,7 +283,7 @@ pub async fn run_test(
     let mut diagnostics = vec!["Output: ".to_owned()];
     let mut output_lines: Vec<_> = test.actual.iter().map(|o| format!("{:?}", o)).collect();
     diagnostics.append(&mut output_lines);
-    test_block.diagnostics = diagnostics;
+    test_block.add_diagnostic_messages(diagnostics);
 
     for (j, expected) in test.outputs.iter().cloned().enumerate() {
       if j >= test.actual.len() {

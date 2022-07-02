@@ -1,3 +1,4 @@
+#![doc = include_str!("../README.md")]
 // !!START_LINTS
 // Wasmflow lints
 // Do not change anything between the START_LINTS and END_LINTS line.
@@ -83,15 +84,13 @@
 #![allow(unused_attributes)]
 // !!END_LINTS
 // Add exceptions here
-#![allow(missing_docs)]
+#![allow()]
 
-pub mod error;
-
-pub use error::TestError;
 use testanything::tap_test::TapTest;
 use testanything::tap_test_builder::TapTestBuilder;
 
 #[derive(Default, Debug)]
+/// [TestRunner] is the main way you'll interact with TAP tests.
 pub struct TestRunner {
   desc: Option<String>,
   blocks: Vec<TestBlock>,
@@ -99,6 +98,7 @@ pub struct TestRunner {
 }
 
 impl TestRunner {
+  /// Create a new [TestRunner]
   pub fn new<T: AsRef<str>>(desc: Option<T>) -> Self {
     Self {
       desc: desc.map(|v| v.as_ref().to_owned()),
@@ -107,15 +107,18 @@ impl TestRunner {
     }
   }
 
+  /// Add a [TestBlock] to the runner.
   pub fn add_block(&mut self, block: TestBlock) {
     self.blocks.push(block);
   }
 
   #[must_use]
+  /// Get the TAP output.
   pub fn get_tap_lines(&self) -> &Vec<String> {
     &self.output
   }
 
+  /// Execute the tests.
   pub fn run(&mut self) {
     let description = self
       .desc
@@ -154,6 +157,7 @@ impl TestRunner {
     self.output = all_lines;
   }
 
+  /// Print the TAP output.
   pub fn print(&self) {
     let lines = self.get_tap_lines();
     for line in lines {
@@ -162,6 +166,7 @@ impl TestRunner {
   }
 
   #[must_use]
+  /// Get the number of failed tests.
   pub fn num_failed(&self) -> u32 {
     let lines = self.get_tap_lines();
     let mut num_failed: u32 = 0;
@@ -175,11 +180,11 @@ impl TestRunner {
   }
 }
 
-pub fn format_diagnostic_line<T: AsRef<str>>(line: T) -> String {
+fn format_diagnostic_line<T: AsRef<str>>(line: T) -> String {
   format!("# {}", line.as_ref())
 }
 
-pub fn format_diagnostics<T>(lines: &[T]) -> Vec<String>
+fn format_diagnostics<T>(lines: &[T]) -> Vec<String>
 where
   T: AsRef<str>,
 {
@@ -187,13 +192,15 @@ where
 }
 
 #[derive(Default, Debug)]
+/// A [TestBlock] organizes [TestCase] under one description.
 pub struct TestBlock {
   desc: Option<String>,
   tests: Vec<TestCase>,
-  pub diagnostics: Vec<String>,
+  diagnostics: Vec<String>,
 }
 
 impl TestBlock {
+  /// Create a new [TestBlock].
   pub fn new<T: AsRef<str>>(desc: Option<T>) -> Self {
     Self {
       desc: desc.map(|v| v.as_ref().to_owned()),
@@ -202,6 +209,7 @@ impl TestBlock {
     }
   }
 
+  /// Add a new test case.
   pub fn add_test<T: AsRef<str>>(
     &mut self,
     test: impl FnOnce() -> bool + Sync + Send + 'static,
@@ -216,10 +224,16 @@ impl TestBlock {
     });
   }
 
+  /// Add diagnostic messages to this test block.
+  pub fn add_diagnostic_messages(&mut self, messages: Vec<String>) {
+    self.diagnostics = messages;
+  }
+
   fn num_tests(&self) -> usize {
     self.tests.len()
   }
 
+  /// Execute the [TestBlock]'s [TestCase]s.
   pub fn run(&mut self) -> Vec<TapTest> {
     let mut tests = vec![];
     for test_case in self.tests.iter_mut() {

@@ -27,17 +27,17 @@ impl TransactionStatistics {
   }
   pub fn print(&self) {
     let mut last = None;
-    for event in &self.performance.lock().events {
+    for event in self.performance.lock().events() {
       if last == None {
-        last = Some(event.instant);
+        last = Some(event.instant());
       }
       let compare_to = last.unwrap();
 
-      println!("{}: +{:?}", event.label, event.instant.duration_since(compare_to));
-      last = Some(event.instant);
+      println!("{}: +{:?}", event.label(), event.instant().duration_since(compare_to));
+      last = Some(event.instant());
     }
-    for (name, period) in &self.performance.lock().periods {
-      println!("{}: +{:?}", name, period.duration);
+    for (name, period) in self.performance.lock().periods() {
+      println!("{}: +{:?}", name, period.duration());
     }
   }
 }

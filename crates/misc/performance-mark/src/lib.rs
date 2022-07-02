@@ -1,3 +1,4 @@
+#![doc = include_str!("../README.md")]
 // !!START_LINTS
 // Wasmflow lints
 // Do not change anything between the START_LINTS and END_LINTS line.
@@ -83,7 +84,7 @@
 #![allow(unused_attributes)]
 // !!END_LINTS
 // Add exceptions here
-#![allow(missing_docs)]
+#![allow()]
 
 mod error;
 mod performance;
