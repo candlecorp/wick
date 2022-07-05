@@ -27,13 +27,13 @@ pub(crate) enum CliCommand {
   /// Load a manifest and execute an entrypoint component (temporarily disabled).
   #[clap(name = "run", skip)]
   Run(run::RunCommand),
-  /// Load a manifest and run the default schematic.
+  /// Invoke a component from a manifest or wasm module.
   #[clap(name = "invoke")]
   Invoke(invoke::InvokeCommand),
-  /// Print the schematics and their accessible components for the passed manifest.
+  /// Print the components in a manifest or wasm module.
   #[clap(name = "list")]
   List(list::ListCommand),
-  /// Execute a schematic with test data and assert its output.
+  /// Execute a component with test data and assert its output.
   #[clap(name = "test")]
   Test(test::TestCommand),
 }

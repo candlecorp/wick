@@ -62,7 +62,7 @@ pub(crate) struct InvokeCommand {
   #[clap(long = "seed", short = 's', env = "WAFL_SEED", action)]
   seed: Option<u64>,
 
-  /// Arguments to pass as inputs to a schematic.
+  /// Arguments to pass as inputs to a component.
   #[clap(last(true), action)]
   args: Vec<String>,
 }
