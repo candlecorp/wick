@@ -97,8 +97,11 @@ impl InvocationService for InvocationServer {
     if let Err(e) = entity {
       tx.send(Err(Status::failed_precondition(e.to_string()))).await.unwrap();
     } else {
-      let invocation: wasmflow_sdk::v1::Invocation = invocation.try_into().map_err(|_| {
-        Status::failed_precondition("Could not convert invocation payload into internal data structure.")
+      let invocation: wasmflow_sdk::v1::Invocation = invocation.try_into().map_err(|e| {
+        Status::failed_precondition(format!(
+          "Could not convert invocation payload into internal data structure: {}",
+          e
+        ))
       })?;
       let entity = entity.unwrap();
       let entity_name = entity.name().to_owned();
