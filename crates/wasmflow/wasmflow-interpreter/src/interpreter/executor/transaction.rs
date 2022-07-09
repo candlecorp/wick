@@ -117,7 +117,7 @@ impl Transaction {
   }
 
   pub(crate) fn generators(&self) -> impl Iterator<Item = &Arc<InstanceHandler>> {
-    self.instances.iter().filter(|i| i.is_static())
+    self.instances.iter().filter(|i| i.is_static() || i.inputs().len() == 0)
   }
 
   pub(crate) fn done(&self) -> bool {

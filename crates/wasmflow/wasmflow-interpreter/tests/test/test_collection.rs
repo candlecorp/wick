@@ -77,6 +77,7 @@ impl TestCollection {
           .add_input("times", TypeSignature::U64)
           .add_output("output", TypeSignature::String),
       )
+      .add_component(ComponentSignature::new("no-inputs").add_output("output", TypeSignature::String))
       .add_component(
         ComponentSignature::new("reverse")
           .add_input("input", TypeSignature::String)
@@ -177,21 +178,6 @@ impl Collection for TestCollection {
       "timeout" => {
         let input: String = invocation.payload.consume("input").unwrap();
 
-        // tx.send(TransportWrapper::new("output", MessageTransport::success(&input)))
-        //   .unwrap();
-        // tx.send(TransportWrapper::done("output")).unwrap();
-
-        // // keep the sender hanging around until passed the timeout.
-        // tokio::spawn(async move {
-        //   tokio::time::sleep(Duration::from_millis(2000)).await;
-        //   if tx.is_closed() {
-        //     println!("tx closed");
-        //   }
-        // });
-
-        // let stream = TransportStream::new(tokio_stream::wrappers::UnboundedReceiverStream::new(rx));
-        // Ok(stream)
-
         let (mut send, stream) = stream(1);
 
         defer(vec![
@@ -203,23 +189,6 @@ impl Collection for TestCollection {
       }
       "timeout-nodone" => {
         let input: String = invocation.payload.consume("input").unwrap();
-
-        // let (tx, rx) = tokio::sync::mpsc::unbounded_channel();
-
-        // // Don't send "done"
-        // tx.send(TransportWrapper::new("output", MessageTransport::success(&input)))
-        //   .unwrap();
-
-        // // keep the sender hanging around until passed the timeout.
-        // tokio::spawn(async move {
-        //   tokio::time::sleep(Duration::from_millis(2000)).await;
-        //   if tx.is_closed() {
-        //     println!("tx closed");
-        //   }
-        // });
-
-        // let stream = TransportStream::new(tokio_stream::wrappers::UnboundedReceiverStream::new(rx));
-        // Ok(stream)
 
         let (mut send, stream) = stream(1);
 
@@ -243,7 +212,6 @@ impl Collection for TestCollection {
 
         let (mut send, stream) = stream(1);
 
-        // send all the vowels immediately.
         let mut futs = vowels
           .iter()
           .map(|v| send(TransportWrapper::new("vowels", MessageTransport::success(v))))
@@ -258,21 +226,6 @@ impl Collection for TestCollection {
         futs.push(send(TransportWrapper::done("rest")));
         defer(futs);
 
-        // for vowel in vowels {
-        //   tx.send().unwrap();
-        // }
-        // tx.send(TransportWrapper::done("vowels")).unwrap();
-
-        // send consonants asynchronously with a delay.
-        // tokio::spawn(async move {
-        //   for other in rest {
-        //     tokio::time::sleep(Duration::from_millis(200)).await;
-        //     tx.send(TransportWrapper::new("rest", MessageTransport::success(&other)))
-        //       .unwrap();
-        //   }
-        //   tx.send(TransportWrapper::done("rest")).unwrap();
-        // });
-
         Ok(stream)
       }
       "ref_to_string" => {
@@ -283,6 +236,19 @@ impl Collection for TestCollection {
 
         defer(vec![
           send(TransportWrapper::new("output", MessageTransport::success(&result))),
+          send(TransportWrapper::done("output")),
+        ]);
+
+        Ok(stream)
+      }
+      "no-inputs" => {
+        let (mut send, stream) = stream(1);
+
+        defer(vec![
+          send(TransportWrapper::new(
+            "output",
+            MessageTransport::success(&"Hello world".to_owned()),
+          )),
           send(TransportWrapper::done("output")),
         ]);
 

@@ -410,3 +410,30 @@ async fn test_stream_multi() -> Result<()> {
 
   Ok(())
 }
+
+#[test_logger::test(tokio::test)]
+async fn test_no_inputs() -> Result<()> {
+  let manifest = load("./tests/manifests/v0/no-inputs.wafl")?;
+  let network = from_def(&manifest)?;
+  let collections = HandlerMap::new(vec![NamespaceHandler::new("test", Box::new(TestCollection::new()))]);
+
+  let inputs = PacketMap::default();
+
+  let invocation = Invocation::new_test("no-inputs", Entity::local("test"), inputs, None);
+  let mut interpreter = Interpreter::new(Some(Seed::unsafe_new(1)), network, None, Some(collections))?;
+  interpreter.start(OPTIONS, Some(Box::new(JsonWriter::default()))).await;
+  let stream = interpreter.invoke(invocation).await?;
+
+  let mut outputs: Vec<_> = stream.collect().await;
+  println!("{:#?}", outputs);
+  assert_eq!(outputs.len(), 2);
+
+  let _wrapper = outputs.pop().unwrap(); //done signal
+  let wrapper = outputs.pop().unwrap();
+  let result: String = wrapper.deserialize()?;
+
+  assert_eq!(result, "Hello world".to_owned());
+  interpreter.shutdown().await?;
+
+  Ok(())
+}

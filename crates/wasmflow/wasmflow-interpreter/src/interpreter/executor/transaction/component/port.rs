@@ -131,6 +131,10 @@ impl InputPorts {
     self.inner.inner.iter()
   }
 
+  pub(crate) fn len(&self) -> usize {
+    self.inner.inner.len()
+  }
+
   pub(super) fn get_handler(&self, port: &PortReference) -> &PortHandler {
     self.inner.get_handler(port)
   }
