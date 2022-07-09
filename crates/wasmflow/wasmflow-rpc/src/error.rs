@@ -8,8 +8,8 @@ pub enum RpcError {
   AddrParseError(#[from] std::net::AddrParseError),
 
   /// Error parsing a UUID.
-  #[error(transparent)]
-  UuidParseError(#[from] uuid::Error),
+  #[error("Could not parse UUID '{0}': {1}")]
+  UuidParseError(String, uuid::Error),
 
   /// Upstream error from Tonic.
   #[error(transparent)]
