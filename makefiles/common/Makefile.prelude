@@ -2,6 +2,7 @@ COMMON_PATH := $(abspath $(lastword $(MAKEFILE_LIST)))
 MAKEFILE_DIR := $(dir $(COMMON_PATH))..
 
 .DEFAULT_GOAL:=all
+.SUFFIXES:
 
 ifdef OS
 _OS := $(OS)

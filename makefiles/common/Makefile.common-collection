@@ -5,18 +5,16 @@ COMPONENT_FILES:=$(COMPONENT_FILES:%=$(COMPONENTS_DIR)/%.rs)
 
 SOURCE_FILES += $(GENERATED_MODULE) $(COMPONENT_FILES)
 
+.PHONY: components
+components: $(INTERFACE)
+	@echo Generating component boilerplate
+	@$(MKDIR) $(COMPONENTS_DIR)
+	$(CODEGEN) rust component $(INTERFACE) --all $(STATEFUL) $(WELLKNOWN) -o $(COMPONENTS_DIR)
+
 $(GENERATED_MODULE): $(INTERFACE)
 	@echo Generating $@
 	$(CODEGEN) rust integration $< $(STATEFUL) $(WELLKNOWN) -f -o $@
 
-.PHONY: components
-components: $(INTERFACE)
-	$(MKDIR) $(COMPONENTS_DIR)
-	$(CODEGEN) rust component $(INTERFACE) --all $(STATEFUL) $(WELLKNOWN) -o $(COMPONENTS_DIR)
-
-$(COMPONENT_FILES):
-	$(MAKE) components
-
-CODEGEN_FILES += $(GENERATED_MODULE) $(COMPONENT_FILES)
+CODEGEN_FILES := components $(CODEGEN_FILES)
 RUST_SOURCES += $(COMPONENT_FILES)
 CLEAN_FILES += $(GENERATED_MODULE)

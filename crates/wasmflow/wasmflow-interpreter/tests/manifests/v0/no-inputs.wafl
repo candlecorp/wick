@@ -1,0 +1,10 @@
+---
+version: 0
+network:
+  schematics:
+    - name: test
+      instances:
+        NO_INPUTS:
+          id: test::no-inputs
+      connections:
+        - NO_INPUTS[output] => <>
