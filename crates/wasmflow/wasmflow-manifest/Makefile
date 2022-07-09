@@ -2,7 +2,7 @@
 
 VERSIONS:=v0 v1
 
-CLEAN_FILES:= $(wildcard docs/**/*) $(wildcard src/v*.rs)  $(wildcard json-schema/**/*)
+CLEAN_FILES:= $(wildcard docs/*) $(wildcard src/v*.rs)  $(wildcard json-schema/**/*)
 
 src/v%.rs: definitions/v%/manifest.apex definitions/v%/*/*/*
 	@apex-template $< definitions/v$*/templates/rust/root.hbs -p definitions/v$*/templates/rust/partials > $@
@@ -14,6 +14,10 @@ json-schema/v%/manifest.json: definitions/v%/manifest.apex definitions/v%/*/*/*
 .PHONY: clean
 clean:
 	@rm -f $(CLEAN_FILES)
+
+.PHONY: test
+test:
+	@cargo test
 
 .PHONY: codegen
 codegen:
