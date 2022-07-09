@@ -355,8 +355,8 @@ impl TryFrom<rpc::Invocation> for sdk::Invocation {
       origin: Entity::from_str(&inv.origin).map_err(|e| RpcError::SdkError(e.into()))?,
       target: Entity::from_str(&inv.target).map_err(|e| RpcError::SdkError(e.into()))?,
       payload: convert_messagekind_map(inv.payload),
-      id: uuid::Uuid::from_str(&inv.id)?,
-      tx_id: uuid::Uuid::from_str(&inv.tx_id)?,
+      id: uuid::Uuid::from_str(&inv.id).map_err(|e| RpcError::UuidParseError(inv.id, e))?,
+      tx_id: uuid::Uuid::from_str(&inv.tx_id).map_err(|e| RpcError::UuidParseError(inv.tx_id, e))?,
       inherent: inv.inherent.map(|d| sdk::InherentData {
         seed: d.seed,
         timestamp: d.timestamp,
