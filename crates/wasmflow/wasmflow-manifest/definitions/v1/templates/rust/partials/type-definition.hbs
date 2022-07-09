@@ -30,13 +30,18 @@ pub struct {{name.value}} {
     {{/unlessAnnotation}}
     {{#switch type.kind}}
       {{#case "MapType"}}
-      #[serde(skip_serializing_if = "HashMap::is_empty")]
-      {{#ifCond type.valueType.name.value "==" "ComponentDefinition"}}
-        #[serde(deserialize_with = "crate::parse::v1::map_component_def")]
-      {{/ifCond}}
-      {{#ifCond type.valueType.name.value "==" "CollectionDefinition"}}
-        #[serde(deserialize_with = "crate::parse::v1::collection_shortform")]
-      {{/ifCond}}
+        #[serde(skip_serializing_if = "HashMap::is_empty")]
+        {{#switch type.valueType.name.value}}
+          {{#case "ComponentDefinition"}}
+            #[serde(deserialize_with = "crate::parse::v1::map_component_def")]
+          {{/case}}
+          {{#case "CollectionDefinition"}}
+            #[serde(deserialize_with = "crate::parse::v1::collection_shortform")]
+          {{/case}}
+          {{#case "string"}}
+            #[serde(deserialize_with = "crate::helpers::kv_deserializer")]
+          {{/case}}
+        {{/switch}}
       {{/case}}
       {{#case "ListType"}}
       #[serde(skip_serializing_if = "Vec::is_empty")]

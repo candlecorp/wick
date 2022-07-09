@@ -1,0 +1,10 @@
+# yaml-language-server: $schema=../../../json-schema/manifest.json
+---
+version: 1
+external:
+  test:
+    kind: Wasm
+    reference: bar
+    permissions:
+      dirs:
+        "/": "$PWD"
