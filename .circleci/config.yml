@@ -231,9 +231,10 @@ jobs:
             make-tarball wasmflow ./build/aarch64-apple-darwin darwin.aarch64 build/artifacts
             make-zip ./build/x86_64-pc-windows-gnu wasmflow.win64 build/artifacts
             cp /home/candle/project/crates/wasmflow/wasmflow-rpc/proto/wasmflow.proto build/artifacts/wasmflow.proto
+            cp /home/candle/project/crates/wasmflow/wasmflow-manifest/json-schema/manifest.json build/artifacts/manifest-schema.json
             BUILDTAG="nightly-$(date +%F)"
             echo $BUILDTAG > build/artifacts/RELEASE
-            echo << pipeline.git.revision >> > build/artifacts/RELEASE
+            echo << pipeline.git.revision >> >> build/artifacts/RELEASE
       - run:
           name: Publish artifacts
           no_output_timeout: 2m
