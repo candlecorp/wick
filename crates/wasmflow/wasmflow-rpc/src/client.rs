@@ -1,3 +1,4 @@
+use std::error::Error;
 use std::path::PathBuf;
 use std::time::Duration;
 
@@ -42,7 +43,8 @@ pub async fn make_rpc_client<T: TryInto<Uri> + Send>(
     if let Some(domain) = domain {
       tls = tls.domain_name(domain);
     }
-    builder = builder.tls_config(tls)?;
+
+    builder = builder.tls_config(tls).map_err(|e| RpcClientError::TlsError(e))?;
   } else if let Some(ca) = ca {
     debug!("Using CA from {}", ca.to_string_lossy());
 
@@ -52,15 +54,21 @@ pub async fn make_rpc_client<T: TryInto<Uri> + Send>(
     if let Some(domain) = domain {
       tls = tls.domain_name(domain);
     }
-    builder = builder.tls_config(tls)?;
+    builder = builder.tls_config(tls).map_err(|e| RpcClientError::TlsError(e))?;
   };
 
-  let channel = builder
+  let result = builder
     .timeout(Duration::from_secs(5))
     .rate_limit(5, Duration::from_secs(1))
     .concurrency_limit(256)
     .connect()
-    .await?;
+    .await;
+
+  let channel = result.map_err(|e| {
+    e.source().map_or(RpcClientError::UnspecifiedConnectionError, |e| {
+      RpcClientError::ConnectionError(e.to_string())
+    })
+  })?;
 
   Ok(RpcClient::from_channel(InvocationServiceClient::new(channel)))
 }

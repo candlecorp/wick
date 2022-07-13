@@ -142,9 +142,17 @@ pub enum RpcClientError {
   #[error("I/O error: {0}")]
   IO(std::io::Error),
 
-  /// Error originating from Tonic GRPC server/client implementation
-  #[error("Tonic error: {0}")]
-  TonicError(tonic::transport::Error),
+  /// Error with Tls configuration
+  #[error("Tls error: {0}")]
+  TlsError(tonic::transport::Error),
+
+  /// Error connecting to service
+  #[error("{0}")]
+  ConnectionError(String),
+
+  /// Unspecified error connecting to service
+  #[error("unspecified connection error")]
+  UnspecifiedConnectionError,
 
   /// Connection failed
   #[error("Connection failed: {0}")]
@@ -158,11 +166,5 @@ pub enum RpcClientError {
 impl From<std::io::Error> for RpcClientError {
   fn from(e: std::io::Error) -> Self {
     RpcClientError::IO(e)
-  }
-}
-
-impl From<tonic::transport::Error> for RpcClientError {
-  fn from(e: tonic::transport::Error) -> Self {
-    RpcClientError::TonicError(e)
   }
 }
