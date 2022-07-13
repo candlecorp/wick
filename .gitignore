@@ -9,3 +9,4 @@ crates/wasmflow-rpc/src/generated/wasmflow.rs
 crates/*/**/Cargo.lock
 bundle.tar
 /codegen/dist
+.vscode/*.log
