@@ -80,12 +80,12 @@ clean:  ## Remove generated artifacts and files
 	done
 	cargo clean
 
-.PHONY: install-release deps
+.PHONY: install-release
 install-release: $(CORE_BINS)  ## Build optimized binaries and install them to your local cargo bin
 	cargo build --workspace --release
 	cp build/local/* ~/.cargo/bin/
 
-.PHONY: install deps
+.PHONY: install
 install: $(CORE_BINS)  ## Build binaries and install them to your local cargo bin
 	cargo build --workspace
 	cp build/local/* ~/.cargo/bin/
@@ -121,6 +121,7 @@ wasm: $(TEST_WASM) $(TEST_WASI) $(TEST_MAIN_COMP) $(TEST_MAIN_NETWORK_COMP)   ##
 
 .PHONY: test
 test: codegen wasm $(TEST_PAR) ## Run tests for the entire workspace
+	cargo +nightly fmt --check
 	cargo deny check licenses --hide-inclusion-graph
 	cargo build --workspace # necessary to ensure binaries are built
 	cargo test --workspace -- --skip integration_test
@@ -128,6 +129,7 @@ test: codegen wasm $(TEST_PAR) ## Run tests for the entire workspace
 
 .PHONY: test-integration
 test-integration: codegen wasm $(TEST_PAR) ## Run all tests for the workspace, including tests that rely on external services
+	cargo +nightly fmt --check
 	cargo deny check licenses --hide-inclusion-graph
 	cargo build --workspace # necessary to ensure binaries are built
 	NATS_URL=$(NATS_URL) cargo test --workspace
@@ -140,15 +142,6 @@ test-bins: codegen wasm $(TEST_PAR) ## Run tests for the main binaries
 .PHONY: update-lint
 update-lint:   ## Update the lint configuration for rust projects
 	npm run update-lint
-
-.PHONY: build-tag
-build-tag:   ## Tag a build for release
-ifeq ($(shell git status -s),)
-	@echo Tagging build-$$(date "+%Y-%m-%d")
-	@git tag build-$$(date "+%Y-%m-%d") -f
-else
-	@echo "Check in changes before making a build tag."
-endif
 
 .PHONY: bins
 bins: ./build/$(ARCH)  ## Build binaries (supports ARCH & RELEASE env variables)
