@@ -30,6 +30,7 @@ codegen:
 	@$(MAKE) json-schema/manifest.json
 	@$(MAKE) docs/v0.html
 	@$(MAKE) docs/v1.html
+	@cargo +nightly fmt
 
 json-schema/manifest.json: json-schema/v0/manifest.json json-schema/v1/manifest.json
 	@jq  \

@@ -1,6 +1,6 @@
 # Wasmflow codegen
 
-This is the official code generation utility for [Wasmflow](https://wasmflow.com) components and providers.
+This is the official code generation utility for [Wasmflow](https://wasmflow.com) components and collections.
 
 ## Installation
 
