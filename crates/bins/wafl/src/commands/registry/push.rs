@@ -2,14 +2,13 @@ use std::path::PathBuf;
 
 use anyhow::Result;
 use clap::Args;
-use nkeys::KeyPairType;
 use oci_distribution::client::ImageLayer;
 use oci_distribution::manifest;
 use oci_distribution::secrets::RegistryAuth;
 use wasmflow_wascap::ClaimsOptions;
 
-use crate::io::async_read;
-use crate::keys::{extract_keypair, GenerateCommon};
+use crate::io::read_bytes;
+use crate::keys::{get_module_keys, GenerateCommon};
 #[derive(Debug, Clone, Args)]
 #[clap(rename_all = "kebab-case")]
 pub(crate) struct Options {
@@ -63,17 +62,11 @@ pub(crate) async fn handle(opts: Options) -> Result<()> {
   if opts.bundle {
     info!("Pushing multi-architecture bundle...");
 
-    let subject_kp = extract_keypair(
+    let (account, subject) = get_module_keys(
       Some(opts.source.to_string_lossy().to_string()),
-      opts.common.directory.clone(),
-      KeyPairType::Module,
-    )
-    .await?;
-
-    let issuer_kp = extract_keypair(
-      Some(opts.source.to_string_lossy().to_string()),
-      opts.common.directory.clone(),
-      KeyPairType::Account,
+      opts.common.directory,
+      opts.common.signer,
+      opts.common.subject,
     )
     .await?;
 
@@ -83,10 +76,10 @@ pub(crate) async fn handle(opts: Options) -> Result<()> {
         revision: opts.rev,
         version: opts.ver,
         expires_in_days: opts.common.expires_in_days,
-        not_before_days: opts.common.not_before,
+        not_before_days: opts.common.wait,
       },
-      &subject_kp,
-      &issuer_kp,
+      &subject,
+      &account,
     )
     .await?;
 
@@ -96,7 +89,7 @@ pub(crate) async fn handle(opts: Options) -> Result<()> {
   } else {
     info!("Pushing artifact...");
     let image_ref = wasmflow_oci::parse_reference(&opts.reference)?;
-    let image_bytes = async_read(&opts.source).await?;
+    let image_bytes = read_bytes(&opts.source).await?;
     let extension = opts.source.extension().unwrap_or_default().to_str().unwrap_or_default();
     let media_type = match extension {
       "wasm" => manifest::WASM_LAYER_MEDIA_TYPE.to_owned(),

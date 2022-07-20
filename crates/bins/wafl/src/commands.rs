@@ -1,5 +1,6 @@
 pub(crate) mod bundle;
 pub(crate) mod component;
+pub(crate) mod key;
 pub(crate) mod project;
 pub(crate) mod registry;
 pub(crate) mod rpc;
@@ -22,11 +23,11 @@ pub(crate) struct Cli {
 #[derive(Debug, Clone, Subcommand)]
 pub(crate) enum CliCommand {
   /// Commands to manage projects.
-  #[clap(subcommand, name = "project")]
+  #[clap(subcommand, name = "project", alias = "proj")]
   Project(project::SubCommands),
 
   /// Commands to manage components.
-  #[clap(subcommand, name = "component")]
+  #[clap(subcommand, name = "component", alias = "comp")]
   Component(component::SubCommands),
 
   /// Commands for WebAssembly component.
@@ -37,9 +38,13 @@ pub(crate) enum CliCommand {
   #[clap(subcommand, name = "bundle")]
   Bundle(bundle::SubCommands),
 
-  /// Commands to interact with registries.
-  #[clap(subcommand, name = "registry")]
+  /// Commands to interact with OCI registries.
+  #[clap(subcommand, name = "registry", alias = "reg")]
   Registry(registry::SubCommands),
+
+  /// Commands related to signing keys.
+  #[clap(subcommand, name = "key")]
+  Key(key::SubCommands),
 
   /// Commands to interact with running Wasmflow instances.
   #[clap(subcommand, name = "rpc")]

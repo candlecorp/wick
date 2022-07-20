@@ -1,6 +1,6 @@
 [package]
 name = "wafl"
-version = "0.5.1"
+version = "0.6.0"
 edition = "2021"
 default-run = "wafl"
 license = "Elastic-2.0"
