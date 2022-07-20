@@ -45,6 +45,7 @@ all: build  ## Build everything in this project
 # Defines rules for each of the CORE_BINS to copy them into build/local
 define BUILD_BIN
 $(1): build
+	rm build/local/$$@
 	cp target/debug/$$@ build/local
 endef
 
@@ -83,12 +84,12 @@ clean:  ## Remove generated artifacts and files
 .PHONY: install-release
 install-release: $(CORE_BINS)  ## Build optimized binaries and install them to your local cargo bin
 	cargo build --workspace --release
-	cp build/local/* ~/.cargo/bin/
+	mv build/local/* ~/.cargo/bin/
 
 .PHONY: install
 install: $(CORE_BINS)  ## Build binaries and install them to your local cargo bin
 	cargo build --workspace
-	cp build/local/* ~/.cargo/bin/
+	mv build/local/* ~/.cargo/bin/
 
 .PHONY: build
 build: deps ./build/local codegen   ## Build the entire project
