@@ -13,5 +13,9 @@ fn main() {
     .args(&["+nightly", "fmt", "--", "src/generated/wasmflow.rs"])
     .status()
     .expect("Failed to run cargo fmt on generated protobuf files.");
-  assert!(fmt.success(), "Can't format protobuf files");
+
+  if !fmt.success() {
+    // This can happen on minimally setup machines and is not a problem on its own.
+    println!("Could not format protobuf files");
+  }
 }
