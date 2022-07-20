@@ -19,11 +19,13 @@ pub struct Counter {
   pub components: HashSet<String>,
 }
 
+#[allow(unused)]
 pub fn hash_set(list: &[&str]) -> HashSet<String> {
   list.iter().map(|s| (*s).to_owned()).collect()
 }
 
 impl Counter {
+  #[allow(unused)]
   pub fn walk_down(schematic: &Schematic<Value>) -> Self {
     let mut counter = Counter::default();
     let walker = schematic.walker();
@@ -33,6 +35,7 @@ impl Counter {
     }
     counter
   }
+  #[allow(unused)]
   pub fn walk_up(schematic: &Schematic<Value>) -> Self {
     let mut counter = Counter::default();
     let walker = schematic.walk_from_output();
@@ -42,6 +45,7 @@ impl Counter {
     }
     counter
   }
+  #[allow(unused)]
   pub fn count(&mut self, hop: &SchematicHop<Value>) {
     match hop {
       SchematicHop::Component(v) => {
@@ -75,7 +79,7 @@ pub fn load<T: AsRef<Path>>(path: T) -> Result<wasmflow_manifest::WasmflowManife
 pub fn from_manifest(network_def: &wasmflow_manifest::WasmflowManifest) -> Result<Network<Value>> {
   let mut network = Network::new(network_def.name().clone().unwrap_or_default());
 
-  for (name, flow) in network_def.flows() {
+  for flow in network_def.flows().values() {
     let mut schematic = Schematic::new(flow.name.clone());
 
     for (name, def) in flow.instances.iter() {

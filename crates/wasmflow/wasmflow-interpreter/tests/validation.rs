@@ -5,7 +5,7 @@ mod test;
 use anyhow::Result;
 use futures::future::BoxFuture;
 use seeded_random::Seed;
-use serde_json::{json, Value};
+use serde_json::Value;
 use wasmflow_interpreter::graph::from_def;
 use wasmflow_interpreter::{
   BoxError,

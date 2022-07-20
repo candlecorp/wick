@@ -101,8 +101,8 @@ pub(crate) async fn handle(opts: Options) -> Result<()> {
     let media_type = match extension {
       "wasm" => manifest::WASM_LAYER_MEDIA_TYPE.to_owned(),
       "tar" => manifest::IMAGE_LAYER_MEDIA_TYPE.to_owned(),
-      "yaml" => "application/vnd.wasmflow.manifest.layer.v1+yaml".to_string(),
-      "wafl" => "application/vnd.wasmflow.component.layer.v1+wafl".to_string(),
+      "yaml" => "application/vnd.wasmflow.manifest.layer.v1+yaml".to_owned(),
+      "wafl" => "application/vnd.wasmflow.manifest.layer.v1+wafl".to_owned(),
       unknown => return Err(anyhow::anyhow!("Unknown file type '{}'", unknown)),
     };
 
