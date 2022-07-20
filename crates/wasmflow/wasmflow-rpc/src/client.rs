@@ -44,7 +44,7 @@ pub async fn make_rpc_client<T: TryInto<Uri> + Send>(
       tls = tls.domain_name(domain);
     }
 
-    builder = builder.tls_config(tls).map_err(|e| RpcClientError::TlsError(e))?;
+    builder = builder.tls_config(tls).map_err(RpcClientError::TlsError)?;
   } else if let Some(ca) = ca {
     debug!("Using CA from {}", ca.to_string_lossy());
 
@@ -54,7 +54,7 @@ pub async fn make_rpc_client<T: TryInto<Uri> + Send>(
     if let Some(domain) = domain {
       tls = tls.domain_name(domain);
     }
-    builder = builder.tls_config(tls).map_err(|e| RpcClientError::TlsError(e))?;
+    builder = builder.tls_config(tls).map_err(RpcClientError::TlsError)?;
   };
 
   let result = builder

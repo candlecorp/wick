@@ -21,8 +21,8 @@ TEST_MAIN_COMP=$(TEST_WASI_DIR)/build/test_main_component.signed.wasm
 TEST_MAIN_NETWORK_COMP_DIR=$(CRATES_DIR)/integration/test-main-network-component
 TEST_MAIN_NETWORK_COMP=$(TEST_WASI_DIR)/build/test_main_network_component.signed.wasm
 
-TEST_PAR=crates/wasmflow/wasmflow-runtime/tests/bundle.tar
-TEST_PAR_BIN=crates/wasmflow/wasmflow-collection-grpctar/wasmflow-standalone
+TEST_GTAR=crates/wasmflow/wasmflow-runtime/tests/bundle.tar
+TEST_GTAR_BIN=crates/wasmflow/wasmflow-collection-grpctar/wasmflow-standalone
 
 CORE_BINS?=wafl wasmflow
 
@@ -106,11 +106,11 @@ $(TEST_MAIN_COMP):
 $(TEST_MAIN_NETWORK_COMP):
 	$(MAKE) -C $(TEST_MAIN_NETWORK_COMP_DIR)
 
-$(TEST_PAR_BIN):
+$(TEST_GTAR_BIN):
 	# cargo build -p wasmflow-standalone --release
 	# cp target/release/wasmflow-standalone $@
 
-$(TEST_PAR): $(TEST_PAR_BIN)
+$(TEST_GTAR): $(TEST_GTAR_BIN)
 	# cargo run -p wafl -- bundle pack $< ./crates/integration/test-native-collection/interface.json -o $@
 
 ./build/$(ARCH):
@@ -120,23 +120,25 @@ $(TEST_PAR): $(TEST_PAR_BIN)
 wasm: $(TEST_WASM) $(TEST_WASI) $(TEST_MAIN_COMP) $(TEST_MAIN_NETWORK_COMP)   ## Build the test wasm artifacts
 
 .PHONY: test
-test: codegen wasm $(TEST_PAR) ## Run tests for the entire workspace
+test: codegen wasm $(TEST_GTAR) ## Run tests for the entire workspace
 	cargo +nightly fmt --check
+	cargo clippy --workspace --bins
 	cargo deny check licenses --hide-inclusion-graph
 	cargo build --workspace # necessary to ensure binaries are built
 	cargo test --workspace -- --skip integration_test
 	cargo test --workspace --manifest-path crates/wasmflow/wasmflow-sdk/Cargo.toml -- --skip integration_test
 
 .PHONY: test-integration
-test-integration: codegen wasm $(TEST_PAR) ## Run all tests for the workspace, including tests that rely on external services
+test-integration: codegen wasm $(TEST_GTAR) ## Run all tests for the workspace, including tests that rely on external services
 	cargo +nightly fmt --check
+	cargo clippy --workspace --bins
 	cargo deny check licenses --hide-inclusion-graph
 	cargo build --workspace # necessary to ensure binaries are built
 	NATS_URL=$(NATS_URL) cargo test --workspace
 	cargo test --workspace --manifest-path crates/wasmflow/wasmflow-sdk/Cargo.toml
 
 .PHONY: test-bins
-test-bins: codegen wasm $(TEST_PAR) ## Run tests for the main binaries
+test-bins: codegen wasm $(TEST_GTAR) ## Run tests for the main binaries
 	cargo test -p wafl -p wasmflow
 
 .PHONY: update-lint

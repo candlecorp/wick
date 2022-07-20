@@ -83,6 +83,7 @@ fn expand_jsonval(value: Value) -> Result<Value, shellexpand::LookupError<std::e
   }
 }
 
+#[allow(clippy::needless_pass_by_value)]
 fn expand(value: String) -> Result<String, shellexpand::LookupError<std::env::VarError>> {
   Ok(shellexpand::env(&value)?.into_owned())
 }
