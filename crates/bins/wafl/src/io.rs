@@ -12,7 +12,13 @@ pub(crate) enum IoError {
   CreateDirectory(String, std::io::Error),
 }
 
-pub(crate) async fn async_write(
+/*
+ * These functions exist to generate more helpful error messages.
+ * Do not refactor them out as needless abstraction unless
+ * you address the error message concerns. -jo
+ * */
+
+pub(crate) async fn write_bytes(
   path: impl AsRef<Path> + Send + Sync,
   contents: impl AsRef<[u8]> + Send + Sync,
 ) -> Result<(), IoError> {
@@ -21,19 +27,19 @@ pub(crate) async fn async_write(
     .map_err(|e| IoError::Write(path_to_string(path), e))
 }
 
-pub(crate) async fn async_read(path: impl AsRef<Path> + Send + Sync) -> Result<Vec<u8>, IoError> {
+pub(crate) async fn read_bytes(path: impl AsRef<Path> + Send + Sync) -> Result<Vec<u8>, IoError> {
   tokio::fs::read(path.as_ref())
     .await
     .map_err(|e| IoError::Read(path_to_string(path), e))
 }
 
-pub(crate) async fn async_read_to_string(path: impl AsRef<Path> + Send + Sync) -> Result<String, IoError> {
+pub(crate) async fn read_to_string(path: impl AsRef<Path> + Send + Sync) -> Result<String, IoError> {
   tokio::fs::read_to_string(path.as_ref())
     .await
     .map_err(|e| IoError::Read(path_to_string(path), e))
 }
 
-pub(crate) async fn async_mkdirp(path: impl AsRef<Path> + Send + Sync) -> Result<(), IoError> {
+pub(crate) async fn mkdirp(path: impl AsRef<Path> + Send + Sync) -> Result<(), IoError> {
   tokio::fs::create_dir_all(path.as_ref())
     .await
     .map_err(|e| IoError::CreateDirectory(path_to_string(path), e))

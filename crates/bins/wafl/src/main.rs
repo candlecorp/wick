@@ -125,6 +125,11 @@ async fn main() -> Result<()> {
     CliCommand::Bundle(cmd) => match cmd {
       bundle::SubCommands::Pack(cmd) => commands::bundle::pack::handle(cmd).await,
     },
+    CliCommand::Key(cmd) => match cmd {
+      key::SubCommands::Get(cmd) => commands::key::get::handle(cmd).await,
+      key::SubCommands::Gen(cmd) => commands::key::gen::handle(cmd).await,
+      key::SubCommands::List(cmd) => commands::key::list::handle(cmd).await,
+    },
     CliCommand::Registry(cmd) => match cmd {
       registry::SubCommands::Push(cmd) => commands::registry::push::handle(cmd).await,
       registry::SubCommands::Pull(cmd) => commands::registry::pull::handle(cmd).await,

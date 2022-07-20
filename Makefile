@@ -45,7 +45,7 @@ all: build  ## Build everything in this project
 # Defines rules for each of the CORE_BINS to copy them into build/local
 define BUILD_BIN
 $(1): build
-	rm build/local/$$@
+	rm -f build/local/$$@
 	cp target/debug/$$@ build/local
 endef
 

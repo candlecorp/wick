@@ -7,7 +7,7 @@ use oci_distribution::secrets::RegistryAuth;
 use oci_distribution::{manifest, Client, Reference};
 use wasmflow_oci::error::OciError;
 
-use crate::io::async_write;
+use crate::io::write_bytes;
 #[derive(Debug, Clone, Args)]
 #[clap(rename_all = "kebab-case")]
 pub(crate) struct Options {
@@ -88,10 +88,10 @@ async fn pull(reference: &Reference, opts: &Options, client: &mut Client, auth: 
         let path = opts.output.clone();
         if let Some(Some(annotations)) = manifest.layers.get(i).map(|l| &l.annotations) {
           if let Some(name) = annotations.get("org.opencontainers.image.title") {
-            async_write(path.join(name), layer.data).await?;
+            write_bytes(path.join(name), layer.data).await?;
           }
         } else {
-          async_write(path.join(format!("layer-{}.out", i)), layer.data).await?;
+          write_bytes(path.join(format!("layer-{}.out", i)), layer.data).await?;
         }
       }
       oci_distribution::manifest::OciManifest::ImageIndex(manifest) => {

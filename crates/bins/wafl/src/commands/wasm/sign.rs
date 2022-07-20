@@ -4,11 +4,10 @@ use std::path::PathBuf;
 
 use anyhow::Result;
 use clap::Args;
-use nkeys::KeyPairType;
 use wasmflow_sdk::v1::types::CollectionSignature;
 use wasmflow_wascap::{sign_buffer_with_claims, ClaimsOptions};
 
-use crate::keys::{extract_keypair, GenerateCommon};
+use crate::keys::{get_module_keys, GenerateCommon};
 #[derive(Debug, Clone, Args)]
 #[clap(rename_all = "kebab-case")]
 pub(crate) struct Options {
@@ -50,21 +49,15 @@ pub(crate) async fn handle(opts: Options) -> Result<()> {
 
   let interface: CollectionSignature = serde_json::from_str(&json)?;
 
-  let mut sfile = File::open(&opts.source).unwrap();
+  let mut source_file = File::open(&opts.source).unwrap();
   let mut buf = Vec::new();
-  sfile.read_to_end(&mut buf).unwrap();
+  source_file.read_to_end(&mut buf).unwrap();
 
-  let issuer = extract_keypair(
+  let (account, subject) = get_module_keys(
     Some(opts.source.clone()),
-    opts.common.directory.clone(),
-    KeyPairType::Account,
-  )
-  .await?;
-
-  let subject = extract_keypair(
-    Some(opts.source.clone()),
-    opts.common.directory.clone(),
-    KeyPairType::Module,
+    opts.common.directory,
+    opts.common.signer,
+    opts.common.subject,
   )
   .await?;
 
@@ -73,12 +66,12 @@ pub(crate) async fn handle(opts: Options) -> Result<()> {
     &buf,
     interface,
     &subject,
-    &issuer,
+    &account,
     ClaimsOptions {
       revision: opts.rev,
       version: opts.ver,
       expires_in_days: opts.common.expires_in_days,
-      not_before_days: opts.common.not_before,
+      not_before_days: opts.common.wait,
     },
   )?;
 
