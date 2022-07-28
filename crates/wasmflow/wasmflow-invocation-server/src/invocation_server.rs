@@ -71,6 +71,7 @@ impl InvocationServer {
       let total = durations.total_time + time;
 
       durations.total_time = total;
+
       durations
     } else {
       DurationStatistics {
@@ -157,12 +158,11 @@ impl InvocationService for InvocationServer {
 #[cfg(test)]
 mod tests {
   use std::sync::Arc;
-
   use anyhow::Result;
   use test_native_collection::Collection;
   use tokio_stream::wrappers::ReceiverStream;
   use tonic::Status;
-use wasmflow_rpc::rpc::{Output, StatsResponse};
+  use wasmflow_rpc::rpc::{Output, StatsResponse};
   use wasmflow_sdk::v1::packet::PacketMap;
   use wasmflow_sdk::v1::{Entity, Invocation};
 
