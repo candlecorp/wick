@@ -91,7 +91,7 @@ use std::path::PathBuf;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use sdk::packet::PacketMap;
-use sdk::transport::{Failure, MessageTransport, Serialized, TransportWrapper};
+use sdk::transport::{Failure, MessageTransport, TransportWrapper};
 use sdk::{Entity, InherentData, Invocation};
 use serde::{Deserialize, Serialize};
 use tap::{TestBlock, TestRunner};
@@ -210,7 +210,7 @@ impl TestData {
     let mut payload = PacketMap::default();
     for (k, v) in &self.inputs {
       debug!("Test input for port '{}': {:?}", k, v);
-      payload.insert(k, MessageTransport::Success(Serialized::Struct(v.clone())));
+      payload.insert(k, &v);
     }
 
     if let Some(seed) = self.seed {
@@ -324,8 +324,8 @@ pub async fn run_test(
           format!("Expected: {:?}", expected_value),
         ]);
 
-        info!(i,j,actual=?actual_value, "actual");
-        info!(i,j,expected=?expected_value, "expected");
+        debug!(i,j,actual=?actual_value, "actual");
+        debug!(i,j,expected=?expected_value, "expected");
         test_block.add_test(
           move || match actual_value {
             Ok(val) => eq(val, expected_value),

@@ -16,6 +16,8 @@
   {{#case "raw"}}wasmflow_sdk::v1::types::TypeSignature::Raw{{/case}}
   {{#case "value"}}wasmflow_sdk::v1::types::TypeSignature::Value{{/case}}
 
+  {{#case "ref"}}wasmflow_sdk::v1::types::TypeSignature::Ref{ reference: "{{ref}}".to_owned() }{{/case}}
+
   {{#case "internal"}}
     wasmflow_sdk::v1::types::TypeSignature::Internal(
     {{#switch id }}
@@ -50,7 +52,7 @@
   {{/case}}
 
   {{#default}}
-    {{log .}}
+    {{log "Unknown type >>>" . "<<<"}}
     {{panic "Unknown type..."}}
   {{/default}}
 {{/switch}}
