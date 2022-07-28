@@ -67,9 +67,7 @@ impl InvocationServer {
       }
       let average = ((durations.average_time * (stat.runs - 1)) + time) / stat.runs;
       durations.average_time = average;
-      
       let total = durations.total_time + time;
-
       durations.total_time = total;
 
       durations
@@ -158,6 +156,7 @@ impl InvocationService for InvocationServer {
 #[cfg(test)]
 mod tests {
   use std::sync::Arc;
+
   use anyhow::Result;
   use test_native_collection::Collection;
   use tokio_stream::wrappers::ReceiverStream;
