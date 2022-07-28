@@ -59,11 +59,10 @@ pub struct DurationStatistics {
   pub min_time: Duration,
   /// The average duration.
   #[serde(with = "as_micros")]
-  pub average: Duration,
+  pub average_time: Duration,
   /// The total duration.
   #[serde(with = "as_micros")]
-  pub total: Duration,
-  
+  pub total_time: Duration,
 }
 
 impl RpcPacket {

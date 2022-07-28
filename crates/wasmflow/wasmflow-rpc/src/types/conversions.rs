@@ -187,10 +187,10 @@ impl From<rpc::Statistic> for crate::Statistics {
 impl From<rpc::DurationStatistics> for DurationStatistics {
   fn from(dur: rpc::DurationStatistics) -> Self {
     Self {
-      average: Duration::from_micros(dur.average),
+      average_time: Duration::from_micros(dur.average),
       min_time: Duration::from_micros(dur.min),
       max_time: Duration::from_micros(dur.max),
-      total: Duration::from_micros(dur.total),
+      total_time: Duration::from_micros(dur.total),
     }
   }
 }
@@ -198,10 +198,10 @@ impl From<rpc::DurationStatistics> for DurationStatistics {
 impl From<DurationStatistics> for rpc::DurationStatistics {
   fn from(dur: DurationStatistics) -> Self {
     Self {
-      average: dur.average.as_micros().try_into().unwrap_or(u64::MAX),
+      average: dur.average_time.as_micros().try_into().unwrap_or(u64::MAX),
       min: dur.min_time.as_micros().try_into().unwrap_or(u64::MAX),
       max: dur.max_time.as_micros().try_into().unwrap_or(u64::MAX),
-      total: dur.average.as_micros().try_into().unwrap_or(u64::MAX),
+      total: dur.total_time.as_micros().try_into().unwrap_or(u64::MAX),
     }
   }
 }
