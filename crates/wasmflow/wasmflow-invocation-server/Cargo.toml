@@ -24,3 +24,7 @@ derivative = "2.2"
 parking_lot = "0.12"
 
 [dev-dependencies]
+logger = { path = "../logger" }
+test-logger = { path = "../../misc/test-logger" }
+anyhow = "1.0"
+test-native-collection = { path = "../../integration/test-native-collection" }

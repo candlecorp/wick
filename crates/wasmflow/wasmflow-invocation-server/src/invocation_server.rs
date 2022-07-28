@@ -151,3 +151,52 @@ impl InvocationService for InvocationServer {
     }))
   }
 }
+
+#[cfg(test)]
+mod tests {
+  use std::sync::Arc;
+
+  use anyhow::Result;
+  use test_native_collection::Collection;
+  use tokio_stream::wrappers::ReceiverStream;
+  use tonic::Status;
+  use wasmflow_rpc::rpc::{Output, StatsResponse};
+  use wasmflow_sdk::v1::packet::PacketMap;
+  use wasmflow_sdk::v1::{Entity, Invocation};
+
+  use super::{InvocationServer, InvocationService};
+
+  fn get_server() -> InvocationServer {
+    let collection = Arc::new(Collection::default());
+    InvocationServer::new(collection)
+  }
+
+  async fn make_test_invocation(
+    server: &InvocationServer,
+  ) -> Result<tonic::Response<ReceiverStream<Result<Output, Status>>>> {
+    let payload = PacketMap::from([("input", "hello")]);
+
+    let invocation = Invocation::new_test("stats", Entity::local("test-component"), payload, None);
+    let request = tonic::Request::new(invocation.try_into()?);
+
+    let result = server.invoke(request).await?;
+    Ok(result)
+  }
+
+  async fn get_test_stats() -> Result<StatsResponse> {
+    let server = get_server();
+    let _response = make_test_invocation(&server).await?;
+
+    let stats_request = tonic::Request::new(wasmflow_rpc::rpc::StatsRequest {});
+
+    let stats = server.stats(stats_request).await?;
+    Ok(stats.into_inner())
+  }
+
+  #[test_logger::test(tokio::test)]
+  async fn test_basic() -> Result<()> {
+    let _stats = get_test_stats().await?;
+
+    Ok(())
+  }
+}
