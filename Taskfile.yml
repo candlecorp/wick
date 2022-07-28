@@ -1,0 +1,147 @@
+version: "3"
+
+vars:
+  CRATES_DIR: ./crates
+  TEST_WASM_DIR: "{{ .CRATES_DIR }}/integration/test-wasm-component"
+  TEST_WASM: "{{ .TEST_WASM_DIR }}/build/test_component.signed.wasm"
+  TEST_WASI_DIR: "{{ .CRATES_DIR }}/integration/test-wasi-component"
+  TEST_WASI: "{{ .TEST_WASI_DIR }}/build/test_wasi_component.signed.wasm"
+  TEST_MAIN_COMP_DIR: "{{ .CRATES_DIR }}/integration/test-main-component"
+  TEST_MAIN_COMP: "{{ .TEST_WASI_DIR }}/build/test_main_component.signed.wasm"
+  TEST_MAIN_NETWORK_COMP_DIR: "{{ .CRATES_DIR }}/integration/test-main-network-component"
+  TEST_MAIN_NETWORK_COMP: "{{ .TEST_WASI_DIR }}/build/test_main_network_component.signed.wasm"
+
+tasks:
+  debug:
+    cmds:
+      - echo {{ .CRATES_DIR }}
+
+  check-licenses:
+    cmds:
+      - cargo deny check licenses --hide-inclusion-graph
+
+  check-lint:
+    cmds:
+      - cargo clippy --workspace --bins
+
+  check-fmt:
+    cmds:
+      - cargo +nightly fmt --check
+
+  checks:
+    deps: [check-licenses, check-lint, check-fmt]
+
+  build-all:
+    deps: []
+    cmds:
+      - task: build-workspace
+      - task: build-wasm
+
+  build-workspace:
+    cmds:
+      - cargo build --workspace
+
+  build-wasm:
+    cmds:
+      - make -C {{ .TEST_WASM_DIR }}
+      - make -C {{ .TEST_WASI_DIR }}
+      - make -C {{ .TEST_MAIN_COMP_DIR }}
+      - make -C {{ .TEST_MAIN_NETWORK_COMP_DIR }}
+
+  test:
+    deps: [checks]
+    cmds:
+      - task: build-all
+      - cargo test --workspace -- --skip integration_test
+      - cargo test --workspace --manifest-path crates/wasmflow/wasmflow-sdk/Cargo.toml -- --skip integration_test
+
+  test-integration:
+    deps: [checks]
+    cmds:
+      - task: build-all
+      - cargo test --workspace
+      - cargo test --workspace --manifest-path crates/wasmflow/wasmflow-sdk/Cargo.toml
+
+  codegen:
+    deps: [npm-install]
+    cmds:
+      - |
+        for project in {{.CRATES_DIR}}/*/*/Makefile; do
+          project=$(dirname $project)
+          echo "# Generating code for $project";
+          make -C $project codegen;
+        done
+
+  clean:
+    deps: []
+    cmds:
+      - rm -f {{.TEST_WASI}} {{.TEST_WASM}}
+      - rm -rf ./build/*
+      - |
+        for project in {{.CRATES_DIR}}/*/*/Makefile; do
+          project=$(dirname $project)
+          echo "# Cleaning $project";
+          make -C $project clean;
+        done
+
+  install-debug:
+    deps: []
+    cmds:
+      - cargo install --debug --path {{.CRATES_DIR}}/bins/wafl
+      - cargo install --debug --path {{.CRATES_DIR}}/bins/wasmflow
+
+  install:
+    deps: []
+    cmds:
+      - cargo install --path {{.CRATES_DIR}}/bins/wafl
+      - cargo install --path {{.CRATES_DIR}}/bins/wasmflow
+
+  install-deps:
+    silent: true
+    cmds:
+      - task: npm-dep
+        vars: { PACKAGE: apex-template }
+      - task: npm-dep
+        vars: { PACKAGE: ts-node }
+      - task: npm-dep
+        vars: { PACKAGE: prettier }
+      - task: cargo-dep
+        vars: { PACKAGE: cargo-deny }
+      - task: cargo-dep
+        vars: { PACKAGE: tomlq }
+
+  npm-dep: command -v {{.PACKAGE}} &> /dev/null || npm install -g {{.PACKAGE}}
+  cargo-dep: command -v {{.PACKAGE}} &> /dev/null || cargo install  {{.PACKAGE}}
+  update-lint-config: npm run update-lint
+  npm-install: cd codegen && npm install
+
+  cross:
+    deps: []
+    vars:
+      packages: -p wafl -p wasmflow
+      ARCH: '{{default "local" .ARCH}}'
+      RELEASE: '{{default "false" .RELEASE}}'
+      BIN_SUFFIX:
+        sh: test "{{.ARCH}}" == "x86_64-pc-windows-gnu" && echo ".exe" || echo ''
+    cmds:
+      - echo "Building ARCH={{.ARCH}} RELEASE={{.RELEASE}}"
+      - |
+        DIR="debug"
+        FLAG=""
+        if [ "{{ .RELEASE }}" == "true" ]; then
+          DIR="release"
+          FLAG="--release"
+        fi
+
+        if [ "{{ .ARCH }}" == "local" ]; then
+          cargo build $FLAG {{ .packages }}
+          cp ./target/$DIR/wafl{{ .BIN_SUFFIX }} ./target/$DIR/wasmflow{{ .BIN_SUFFIX }} ./build/{{ .ARCH }}
+        else
+          mkdir -p ./build/{{ .ARCH }}
+          if [ "{{ .ARCH }}" == "x86_64-pc-windows-gnu" ]; then
+            CARGO_PROFILE_RELEASE_LTO=false cross build --target {{ .ARCH }} $FLAG {{ .packages }}
+          else
+            cross build --target {{ .ARCH }} $FLAG {{ .packages }}
+          fi
+          cp ./target/{{ .ARCH }}/$DIR/wafl{{ .BIN_SUFFIX }} ./target/{{ .ARCH }}/$DIR/wasmflow{{ .BIN_SUFFIX }} ./build/{{ .ARCH }}
+        fi
