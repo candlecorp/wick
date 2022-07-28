@@ -4602,12 +4602,16 @@ dependencies = [
 name = "wasmflow-invocation-server"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "async-trait",
  "derivative",
+ "logger",
  "parking_lot 0.12.0",
  "rand 0.8.5",
  "serde",
  "serde_json",
+ "test-logger",
+ "test-native-collection",
  "thiserror",
  "tokio",
  "tokio-stream",

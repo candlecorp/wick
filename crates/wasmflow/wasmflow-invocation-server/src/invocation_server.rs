@@ -65,17 +65,19 @@ impl InvocationServer {
       } else if time > durations.max_time {
         durations.max_time = time;
       }
-      let average = ((durations.average * (stat.runs - 1)) + time) / stat.runs;
-      durations.average = average;
-      let total = durations.total + time;
-      durations.total = total;
+      let average = ((durations.average_time * (stat.runs - 1)) + time) / stat.runs;
+      durations.average_time = average;
+      
+      let total = durations.total_time + time;
+
+      durations.total_time = total;
       durations
     } else {
       DurationStatistics {
         min_time: time,
         max_time: time,
-        average: time,
-        total: time,
+        average_time: time,
+        total_time: time,
       }
     };
     stat.execution_duration.replace(durations);
@@ -160,7 +162,7 @@ mod tests {
   use test_native_collection::Collection;
   use tokio_stream::wrappers::ReceiverStream;
   use tonic::Status;
-  use wasmflow_rpc::rpc::{Output, StatsResponse};
+use wasmflow_rpc::rpc::{Output, StatsResponse};
   use wasmflow_sdk::v1::packet::PacketMap;
   use wasmflow_sdk::v1::{Entity, Invocation};
 
@@ -186,6 +188,8 @@ mod tests {
   async fn get_test_stats() -> Result<StatsResponse> {
     let server = get_server();
     let _response = make_test_invocation(&server).await?;
+    let _response = make_test_invocation(&server).await?;
+    let _response = make_test_invocation(&server).await?;
 
     let stats_request = tonic::Request::new(wasmflow_rpc::rpc::StatsRequest {});
 
@@ -194,8 +198,13 @@ mod tests {
   }
 
   #[test_logger::test(tokio::test)]
-  async fn test_basic() -> Result<()> {
-    let _stats = get_test_stats().await?;
+  async fn test_stats() -> Result<()> {
+    let mut stats = get_test_stats().await?;
+
+    let stat = stats.stats[0].execution_statistics.take().unwrap();
+
+    //three runs must be longer than two runs
+    assert!(stat.total > stat.min + stat.max);
 
     Ok(())
   }
