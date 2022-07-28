@@ -190,6 +190,7 @@ impl From<rpc::DurationStatistics> for DurationStatistics {
       average: Duration::from_micros(dur.average),
       min_time: Duration::from_micros(dur.min),
       max_time: Duration::from_micros(dur.max),
+      total: Duration::from_micros(dur.total),
     }
   }
 }
@@ -200,6 +201,7 @@ impl From<DurationStatistics> for rpc::DurationStatistics {
       average: dur.average.as_micros().try_into().unwrap_or(u64::MAX),
       min: dur.min_time.as_micros().try_into().unwrap_or(u64::MAX),
       max: dur.max_time.as_micros().try_into().unwrap_or(u64::MAX),
+      total: dur.average.as_micros().try_into().unwrap_or(u64::MAX),
     }
   }
 }

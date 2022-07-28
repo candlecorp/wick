@@ -67,12 +67,15 @@ impl InvocationServer {
       }
       let average = ((durations.average * (stat.runs - 1)) + time) / stat.runs;
       durations.average = average;
+      let total = durations.total + time;
+      durations.total = total;
       durations
     } else {
       DurationStatistics {
         min_time: time,
         max_time: time,
         average: time,
+        total: time,
       }
     };
     stat.execution_duration.replace(durations);
