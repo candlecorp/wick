@@ -17,7 +17,7 @@ wasmflow_sdk::v1::types::CollectionSignature {
           name:"{{name}}".to_owned(),
           fields: std::collections::HashMap::from([
           {{#each fields}}
-            ("{{@key}}".to_owned(),{{> type-signature type}}),
+            ("{{@key}}".to_owned(),{{> type-signature .}}),
           {{/each}}
           ]).into()
         })
