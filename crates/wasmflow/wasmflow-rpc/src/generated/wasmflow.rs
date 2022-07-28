@@ -219,6 +219,8 @@ pub struct DurationStatistics {
   pub max: u64,
   #[prost(uint64, tag = "3")]
   pub average: u64,
+  #[prost(uint64, tag = "4")]
+  pub total: u64,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct StructSignature {
