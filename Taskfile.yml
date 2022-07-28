@@ -87,14 +87,14 @@ tasks:
   install-debug:
     deps: []
     cmds:
-      - cargo install --debug --path {{.CRATES_DIR}}/bins/wafl
-      - cargo install --debug --path {{.CRATES_DIR}}/bins/wasmflow
+      - cargo install --force --debug --path {{.CRATES_DIR}}/bins/wafl
+      - cargo install --force --debug --path {{.CRATES_DIR}}/bins/wasmflow
 
   install:
     deps: []
     cmds:
-      - cargo install --path {{.CRATES_DIR}}/bins/wafl
-      - cargo install --path {{.CRATES_DIR}}/bins/wasmflow
+      - cargo install --force --path {{.CRATES_DIR}}/bins/wafl
+      - cargo install --force --path {{.CRATES_DIR}}/bins/wasmflow
 
   install-deps:
     silent: true
