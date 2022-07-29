@@ -1,6 +1,6 @@
 [package]
 name = "wasmflow-packet"
-version = "0.10.0-beta.4"
+version = "0.10.0"
 authors = ["Jarrod Overson <jsoverson@gmail.com>"]
 edition = "2021"
 license = "Apache-2.0"
