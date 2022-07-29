@@ -4041,7 +4041,7 @@ checksum = "49874b5167b65d7193b8aba1567f5c7d93d001cafc34600cee003eda787e483f"
 
 [[package]]
 name = "wafl"
-version = "0.6.0"
+version = "0.6.1"
 dependencies = [
  "anyhow",
  "async-recursion",
@@ -4276,7 +4276,7 @@ checksum = "3d958d035c4438e28c70e4321a2911302f10135ce78a9c7834c0cab4123d06a2"
 
 [[package]]
 name = "wasmflow"
-version = "0.3.1"
+version = "0.4.0"
 dependencies = [
  "anyhow",
  "atty",
