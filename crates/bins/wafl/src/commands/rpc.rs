@@ -1,4 +1,3 @@
-use std::net::Ipv4Addr;
 use std::path::PathBuf;
 
 use clap::{Args, Subcommand};
@@ -30,7 +29,7 @@ pub(crate) struct ConnectOptions {
 
   /// RPC address.
   #[clap(short, long, default_value = "127.0.0.1", env = wasmflow_collection_cli::options::env::WAFL_RPC_ADDRESS,action)]
-  pub(crate) address: Ipv4Addr,
+  pub(crate) address: String,
 
   /// Path to pem file for TLS connections.
   #[clap(long, action)]
