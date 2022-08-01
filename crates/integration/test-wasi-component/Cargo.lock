@@ -694,7 +694,7 @@ checksum = "9c8d87e72b64a3b4db28d11ce29237c246188f4f51057d65a7eab63b7987e423"
 
 [[package]]
 name = "wasmflow-boundary"
-version = "0.10.0-beta.4"
+version = "0.10.0"
 dependencies = [
  "serde",
  "wasmflow-codec",
@@ -704,7 +704,7 @@ dependencies = [
 
 [[package]]
 name = "wasmflow-codec"
-version = "0.10.0-beta.4"
+version = "0.10.0"
 dependencies = [
  "rmp-serde",
  "serde",
@@ -715,7 +715,7 @@ dependencies = [
 
 [[package]]
 name = "wasmflow-collection-link"
-version = "0.10.0-beta.4"
+version = "0.10.0"
 dependencies = [
  "serde",
  "tokio-stream",
@@ -728,7 +728,7 @@ dependencies = [
 
 [[package]]
 name = "wasmflow-component"
-version = "0.10.0-beta.4"
+version = "0.10.0"
 dependencies = [
  "cfg-if",
  "serde",
@@ -744,7 +744,7 @@ dependencies = [
 
 [[package]]
 name = "wasmflow-entity"
-version = "0.10.0-beta.4"
+version = "0.10.0"
 dependencies = [
  "serde",
  "thiserror",
@@ -754,7 +754,7 @@ dependencies = [
 
 [[package]]
 name = "wasmflow-interface"
-version = "0.10.0-beta.4"
+version = "0.10.0"
 dependencies = [
  "serde",
  "serde_repr",
@@ -763,7 +763,7 @@ dependencies = [
 
 [[package]]
 name = "wasmflow-invocation"
-version = "0.10.0-beta.4"
+version = "0.10.0"
 dependencies = [
  "serde",
  "thiserror",
@@ -775,11 +775,11 @@ dependencies = [
 
 [[package]]
 name = "wasmflow-macros"
-version = "0.10.0-beta.4"
+version = "0.10.0"
 
 [[package]]
 name = "wasmflow-output"
-version = "0.10.0-beta.4"
+version = "0.10.0"
 dependencies = [
  "serde",
  "tokio-stream",
@@ -790,7 +790,7 @@ dependencies = [
 
 [[package]]
 name = "wasmflow-packet"
-version = "0.10.0-beta.4"
+version = "0.10.0"
 dependencies = [
  "serde",
  "serde-value",
@@ -799,7 +799,7 @@ dependencies = [
 
 [[package]]
 name = "wasmflow-sdk"
-version = "0.10.0-beta.4"
+version = "0.10.0"
 dependencies = [
  "futures",
  "wasmflow-boundary",
@@ -818,7 +818,7 @@ dependencies = [
 
 [[package]]
 name = "wasmflow-streams"
-version = "0.10.0-beta.4"
+version = "0.10.0"
 dependencies = [
  "futures",
  "pin-project-lite",
@@ -827,7 +827,7 @@ dependencies = [
 
 [[package]]
 name = "wasmflow-traits"
-version = "0.10.0-beta.4"
+version = "0.10.0"
 dependencies = [
  "async-trait",
  "serde",
@@ -839,7 +839,7 @@ dependencies = [
 
 [[package]]
 name = "wasmflow-transport"
-version = "0.10.0-beta.4"
+version = "0.10.0"
 dependencies = [
  "parking_lot",
  "serde",
