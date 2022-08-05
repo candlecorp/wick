@@ -13,7 +13,6 @@ use clap::{AppSettings, Parser, Subcommand};
       global_setting(AppSettings::DeriveDisplayOrder),
       name = crate::BIN_NAME,
       about = crate::BIN_DESC,
-      version = option_env!("WAFL_VERSION").unwrap_or("0.0.0")
     )]
 pub(crate) struct Cli {
   #[clap(subcommand)]
