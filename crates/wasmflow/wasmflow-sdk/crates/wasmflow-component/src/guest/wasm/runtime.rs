@@ -122,7 +122,6 @@ pub fn async_host_call<'a>(binding: &'a str, ns: &'a str, op: &'a str, msg: &'a 
       msg.len(),
     )
   };
-  println!(">> guest: wasm: async host call id: {}", id);
 
   ASYNC_HOST_CALLS.with(|cell| {
     #[allow(unsafe_code)]
@@ -131,9 +130,7 @@ pub fn async_host_call<'a>(binding: &'a str, ns: &'a str, op: &'a str, msg: &'a 
   });
 
   Box::pin(async move {
-    println!(">> guest: inner wasm task awaiting channel recv");
     if id == 0 {
-      println!(">> guest: call failed");
       // call was not successful
       #[allow(unsafe_code)]
       let errlen = unsafe { __host_error_len(id) };
@@ -150,8 +147,7 @@ pub fn async_host_call<'a>(binding: &'a str, ns: &'a str, op: &'a str, msg: &'a 
     } else {
       // call succeeded
       match recv.await {
-        Ok(code) => {
-          println!(">> guest: call succeeded with code: {}", code);
+        Ok(_code) => {
           #[allow(unsafe_code)]
           let len = unsafe { __host_response_len(id) };
 
@@ -163,13 +159,9 @@ pub fn async_host_call<'a>(binding: &'a str, ns: &'a str, op: &'a str, msg: &'a 
             __host_response(id, retptr);
             buf.set_len(len);
           }
-          println!(">> guest: result: {:?}", buf);
           Ok(buf)
         }
-        Err(e) => {
-          println!(">> guest: call failed : {}", e);
-          Err(Error::Async.into())
-        }
+        Err(_) => Err(Error::Async.into()),
       }
     }
   })
