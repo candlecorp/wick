@@ -14,7 +14,7 @@ pub(crate) struct Options {
   /// Option to print raw output.
   #[clap(short = 'r', long = "raw", action)]
   raw_output: bool,
-  
+
   /// Path to JSON, YAML, or TOML file.
   #[clap(action)]
   path: PathBuf,
@@ -54,11 +54,11 @@ pub(crate) async fn handle(opts: Options) -> Result<()> {
 
     for val in out {
       match val {
-        Ok(result) => match result{
-            Val::Str(s) if opts.raw_output => println!("{}", s),
-            _ => {
-                println!("{}", result)
-            }
+        Ok(result) => match result {
+          Val::Str(s) if opts.raw_output => println!("{}", s),
+          _ => {
+            println!("{}", result);
+          }
         },
         Err(e) => error!("Error: {}", e),
       };
