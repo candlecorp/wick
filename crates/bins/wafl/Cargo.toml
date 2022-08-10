@@ -37,6 +37,8 @@ oci-distribution = { version = "0.9", features = [
 ], default-features = false }
 wasmflow-oci = { path = "../../wasmflow/wasmflow-oci" }
 anyhow = "1.0"
+markup-converter = "0.1"
+jaq-core = "0.7"
 
 [dev-dependencies]
 trycmd = "0.13"

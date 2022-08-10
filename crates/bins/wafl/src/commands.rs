@@ -2,6 +2,7 @@ pub(crate) mod bundle;
 pub(crate) mod component;
 pub(crate) mod key;
 pub(crate) mod project;
+pub(crate) mod query;
 pub(crate) mod registry;
 pub(crate) mod rpc;
 pub(crate) mod wasm;
@@ -48,6 +49,10 @@ pub(crate) enum CliCommand {
   /// Commands to interact with running Wasmflow instances.
   #[clap(subcommand, name = "rpc")]
   Rpc(rpc::SubCommands),
+
+  /// Command to query JSON, YAML, or TOML file.
+  #[clap(name = "query")]
+  Query(query::Options),
 }
 
 #[cfg(test)]

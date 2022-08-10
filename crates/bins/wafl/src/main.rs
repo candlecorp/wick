@@ -139,6 +139,7 @@ async fn main() -> Result<()> {
       rpc::SubCommands::List(cmd) => commands::rpc::list::handle(cmd).await,
       rpc::SubCommands::Stats(cmd) => commands::rpc::stats::handle(cmd).await,
     },
+    CliCommand::Query(options) => commands::query::handle(options).await,
   };
 
   std::process::exit(match res {
