@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use pretty_assertions::assert_eq;
 use runtime_testutils::*;
-use wasmflow_sdk::v1::transport::{MessageTransport, TransportWrapper};
+use wasmflow_sdk::v1::transport::{Failure, MessageTransport, TransportWrapper};
 use wasmflow_sdk::v1::{Entity, Invocation};
 type Result<T> = anyhow::Result<T, anyhow::Error>;
 
@@ -29,7 +29,8 @@ async fn panics() -> Result<()> {
 
   let msg: TransportWrapper = messages.pop().unwrap();
   println!("Output: {:?}", msg);
-  assert_eq!(msg.payload, MessageTransport::error("panic"));
+
+  assert!(matches!(msg.payload, MessageTransport::Failure(Failure::Error(_))));
   Ok(())
 }
 
