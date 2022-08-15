@@ -19,8 +19,7 @@ fn basics() -> anyhow::Result<()> {
   runner.run();
 
   let expected = vec![
-    "# My test",
-    "1..2",
+    "1..2 # My test",
     "# My block",
     "ok 1 three is greater than two",
     "not ok 2 three is less than two",

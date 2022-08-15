@@ -130,9 +130,8 @@ impl TestRunner {
       total_tests += block.num_tests();
     }
 
-    let name = format!("# {}", description);
-    let plan_line = format!("1..{}", total_tests);
-    let mut all_lines = vec![name, plan_line];
+    let plan_line = format!("1..{} # {}", total_tests, description);
+    let mut all_lines = vec![plan_line];
 
     let mut test_num = 0;
     for block in self.blocks.iter_mut() {

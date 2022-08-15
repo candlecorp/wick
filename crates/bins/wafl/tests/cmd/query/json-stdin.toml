@@ -1,0 +1,5 @@
+bin.name = "wafl"
+args = "query .name"
+stdin = "{\"name\":\"test-data\"}"
+stdout = "\"test-data\"\n"
+name = "wat"

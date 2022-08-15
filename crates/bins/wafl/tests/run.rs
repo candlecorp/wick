@@ -1,4 +1,4 @@
-#[tokio::test]
-async fn wafl_invoke() {
-  tracing::warn!("TODO");
+#[test]
+fn cli_tests() {
+  trycmd::TestCases::new().case("tests/cmd/**/*.toml");
 }
