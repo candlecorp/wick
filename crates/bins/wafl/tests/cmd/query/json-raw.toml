@@ -1,0 +1,4 @@
+bin.name = "wafl"
+args = "query -r -f tests/cmd/query/_sample.json .name"
+stdout = "test-data\n"
+name = "wat"

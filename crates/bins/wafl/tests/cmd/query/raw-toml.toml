@@ -1,0 +1,4 @@
+bin.name = "wafl"
+args = "query -r -f Cargo.toml .package.name"
+stdout = "wafl\n"
+name = "wat"
