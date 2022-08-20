@@ -14,6 +14,7 @@ use clap::{AppSettings, Parser, Subcommand};
       global_setting(AppSettings::DeriveDisplayOrder),
       name = crate::BIN_NAME,
       about = crate::BIN_DESC,
+      version,
     )]
 pub(crate) struct Cli {
   #[clap(subcommand)]
