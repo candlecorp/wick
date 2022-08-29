@@ -5,6 +5,7 @@ use tracing::debug;
 type Result<T> = anyhow::Result<T, anyhow::Error>;
 use pretty_assertions::assert_eq;
 
+#[ignore = "main implementation is changing. These may be reused or deleted."]
 #[test_logger::test(tokio::test)]
 async fn basic_main_impl() -> Result<()> {
   let argv = vec!["test_file.txt".to_owned()];
@@ -27,6 +28,7 @@ async fn basic_main_impl() -> Result<()> {
   Ok(())
 }
 
+#[ignore = "main implementation is changing. These may be reused or deleted."]
 #[test_logger::test(tokio::test)]
 async fn main_impl_with_network_call() -> Result<()> {
   let argv = vec!["test_file.txt".to_owned()];

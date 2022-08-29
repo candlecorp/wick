@@ -98,7 +98,7 @@ pub fn get_signature() -> wasmflow_sdk::v1::types::CollectionSignature {
   components.insert("main".to_owned(), generated::main::signature());
 
   wasmflow_sdk::v1::types::CollectionSignature {
-    name: Some("test-main-network-component".to_owned()),
+    name: Some("test-cli-channel-component".to_owned()),
     features: wasmflow_sdk::v1::types::CollectionFeatures {
       streaming: false,
       stateful: false,
@@ -395,9 +395,9 @@ pub mod generated {
           .remove("argv")
           .ok_or_else(|| wasmflow_sdk::v1::error::Error::MissingInput("argv".to_owned()))?
           .deserialize()?,
-        network: payload
-          .remove("network")
-          .ok_or_else(|| wasmflow_sdk::v1::error::Error::MissingInput("network".to_owned()))?
+        program: payload
+          .remove("program")
+          .ok_or_else(|| wasmflow_sdk::v1::error::Error::MissingInput("program".to_owned()))?
           .deserialize()?,
       })
     }
@@ -408,7 +408,7 @@ pub mod generated {
     ) -> Result<definition::Inputs, Box<dyn std::error::Error + Send + Sync>> {
       Ok(definition::Inputs {
         argv: wasmflow_sdk::v1::codec::messagepack::deserialize(payload.get("argv")?)?,
-        network: wasmflow_sdk::v1::codec::messagepack::deserialize(payload.get("network")?)?,
+        program: wasmflow_sdk::v1::codec::messagepack::deserialize(payload.get("program")?)?,
       })
     }
 
@@ -416,8 +416,8 @@ pub mod generated {
     pub struct Inputs {
       #[serde(rename = "argv")]
       pub argv: Vec<String>,
-      #[serde(rename = "network")]
-      pub network: wasmflow_sdk::v1::CollectionLink,
+      #[serde(rename = "program")]
+      pub program: Option<wasmflow_sdk::v1::CollectionLink>,
     }
 
     impl From<Inputs> for wasmflow_sdk::v1::packet::PacketMap {
@@ -428,8 +428,8 @@ pub mod generated {
           wasmflow_sdk::v1::packet::v1::Packet::success(&inputs.argv).into(),
         );
         map.insert(
-          "network".to_owned(),
-          wasmflow_sdk::v1::packet::v1::Packet::success(&inputs.network).into(),
+          "program".to_owned(),
+          wasmflow_sdk::v1::packet::v1::Packet::success(&inputs.program).into(),
         );
         wasmflow_sdk::v1::packet::PacketMap::new(map)
       }
@@ -446,8 +446,10 @@ pub mod generated {
         },
       );
       map.insert(
-        "network".to_owned(),
-        wasmflow_sdk::v1::types::TypeSignature::Link { schemas: vec![] },
+        "program".to_owned(),
+        wasmflow_sdk::v1::types::TypeSignature::Optional {
+          option: Box::new(wasmflow_sdk::v1::types::TypeSignature::Link { schemas: vec![] }),
+        },
       );
       map
     }
