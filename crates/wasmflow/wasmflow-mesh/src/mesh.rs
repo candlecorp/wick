@@ -260,7 +260,7 @@ impl Mesh {
     let payload = serialize(&msg).map_err(|e| MeshError::MessageSerialization(e.to_string()))?;
     let sub = self.nats.request(&topic, &payload).await?;
 
-    let components = match sub.next().await? {
+    match sub.next().await? {
       Some(mesh_msg) => match mesh_msg.deserialize::<MeshRpcResponse>() {
         Ok(MeshRpcResponse::List(list)) => Ok(list),
         Ok(MeshRpcResponse::Error(e)) => Err(MeshError::ListFail(e)),
@@ -268,9 +268,7 @@ impl Mesh {
         _ => unreachable!(),
       },
       None => Ok(vec![]),
-    };
-
-    components
+    }
   }
 }
 

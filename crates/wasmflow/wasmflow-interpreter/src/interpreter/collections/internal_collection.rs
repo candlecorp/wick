@@ -40,7 +40,7 @@ impl Collection for InternalCollection {
 
     let is_oneshot = op == SCHEMATIC_INPUT || op == INTERNAL_ID_INHERENT;
     let task = async move {
-      let result = if op == SCHEMATIC_OUTPUT {
+      if op == SCHEMATIC_OUTPUT {
         panic!("Output component should not be executed");
       } else if is_oneshot {
         oneshot::OneShotComponent::default()
@@ -48,8 +48,7 @@ impl Collection for InternalCollection {
           .await
       } else {
         panic!("Internal component {} not handled.", op);
-      };
-      result
+      }
     };
     Box::pin(task)
   }
