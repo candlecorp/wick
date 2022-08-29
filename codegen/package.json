@@ -54,7 +54,7 @@
     "typescript": "^4.7.4"
   },
   "dependencies": {
-    "@apexlang/core": "^0.0.19",
+    "@apexlang/core": "^0.0.26",
     "apex-template": "^1.1.0",
     "change-case-all": "^1.0.14",
     "debug": "^4.3.1",

@@ -1,5 +1,5 @@
 [package]
-name = "test-main-network-component"
+name = "test-cli-channel-component"
 version = "0.0.1"
 description = ""
 authors = [""]

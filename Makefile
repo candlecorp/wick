@@ -15,11 +15,8 @@ TEST_WASM=$(TEST_WASM_DIR)/build/test_component.signed.wasm
 TEST_WASI_DIR=$(CRATES_DIR)/integration/test-wasi-component
 TEST_WASI=$(TEST_WASI_DIR)/build/test_wasi_component.signed.wasm
 
-TEST_MAIN_COMP_DIR=$(CRATES_DIR)/integration/test-main-component
-TEST_MAIN_COMP=$(TEST_WASI_DIR)/build/test_main_component.signed.wasm
-
-TEST_MAIN_NETWORK_COMP_DIR=$(CRATES_DIR)/integration/test-main-network-component
-TEST_MAIN_NETWORK_COMP=$(TEST_WASI_DIR)/build/test_main_network_component.signed.wasm
+TEST_MAIN_COMP_DIR=$(CRATES_DIR)/integration/test-cli-channel-component
+TEST_MAIN_COMP=$(TEST_WASI_DIR)/build/test_cli_channel_component.signed.wasm
 
 TEST_GTAR=crates/wasmflow/wasmflow-runtime/tests/bundle.tar
 TEST_GTAR_BIN=crates/wasmflow/wasmflow-collection-grpctar/wasmflow-standalone
@@ -104,9 +101,6 @@ $(TEST_WASI):
 $(TEST_MAIN_COMP):
 	$(MAKE) -C $(TEST_MAIN_COMP_DIR)
 
-$(TEST_MAIN_NETWORK_COMP):
-	$(MAKE) -C $(TEST_MAIN_NETWORK_COMP_DIR)
-
 $(TEST_GTAR_BIN):
 	# cargo build -p wasmflow-standalone --release
 	# cp target/release/wasmflow-standalone $@
@@ -118,7 +112,7 @@ $(TEST_GTAR): $(TEST_GTAR_BIN)
 	mkdir -p $@
 
 .PHONY: wasm
-wasm: $(TEST_WASM) $(TEST_WASI) $(TEST_MAIN_COMP) $(TEST_MAIN_NETWORK_COMP)   ## Build the test wasm artifacts
+wasm: $(TEST_WASM) $(TEST_WASI) $(TEST_MAIN_COMP)  ## Build the test wasm artifacts
 
 .PHONY: test
 test: codegen wasm $(TEST_GTAR) ## Run tests for the entire workspace

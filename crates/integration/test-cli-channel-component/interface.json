@@ -1,5 +1,5 @@
 {
-  "name": "test-main-network-component",
+  "name": "test-cli-channel-component",
   "features": {
     "stateful": false,
     "streaming": false,
@@ -32,8 +32,11 @@
             "type": "string"
           }
         },
-        "network": {
-          "type": "link"
+        "program": {
+          "type": "optional",
+          "option": {
+            "type": "link"
+          }
         }
       },
       "outputs": {
