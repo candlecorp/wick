@@ -4,6 +4,7 @@
 // Wasmflow lints
 // Do not change anything between the START_LINTS and END_LINTS line.
 // This is automatically generated. Add exceptions after this section.
+#![allow(unknown_lints)]
 #![deny(
   clippy::expect_used,
   clippy::explicit_deref_methods,
@@ -82,7 +83,7 @@
   while_true,
   missing_docs
 )]
-#![allow(unused_attributes)]
+#![allow(unused_attributes, clippy::derive_partial_eq_without_eq)]
 // !!END_LINTS
 // Add exceptions here
 #![allow(missing_docs)]

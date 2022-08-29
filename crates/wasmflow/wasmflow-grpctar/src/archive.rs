@@ -32,7 +32,7 @@ pub fn make_archive<T: Read>(
   debug!(?claims, "oci archive claims");
   let mut bin_bytes = Vec::new();
   binary.read_to_end(&mut bin_bytes)?;
-  let combined_bytes = bin_bytes.chain(&*signature_bytes);
+  let combined_bytes = bin_bytes.chain(signature_bytes);
   let jwt_bytes = wasmflow_wascap::make_jwt(combined_bytes, &claims, issuer_kp)?;
   let mut jwt_header = Header::new_gnu();
   jwt_header.set_path("archive.jwt")?;
