@@ -1,15 +1,16 @@
-use std::{collections::HashMap, fmt, env, sync::Arc};
+use std::collections::HashMap;
+use std::sync::Arc;
+use std::{env, fmt};
+
+use anyhow::{Context, Result};
 use async_trait::async_trait;
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
-use serde::{Serialize, Deserialize};
-use serde_yaml;
-use serde_value;
-use anyhow::{Result, Context};
-
-use crate::dev::prelude::RuntimeError;
+use serde::{Deserialize, Serialize};
+use {serde_value, serde_yaml};
 
 use super::cli::CLI;
+use crate::dev::prelude::RuntimeError;
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -35,7 +36,8 @@ pub fn load_yaml(filename: &String) -> Result<ApplicationConfig> {
 
 pub fn from_reader<R>(reader: R) -> Result<ApplicationConfig>
 where
-    R: std::io::Read {
+  R: std::io::Read,
+{
   let config: ApplicationConfig = serde_yaml::from_reader(reader)?;
   Ok(config)
 }
@@ -46,7 +48,7 @@ pub fn from_string(str: &String) -> Result<ApplicationConfig> {
 }
 
 #[async_trait]
-pub trait Channel{
+pub trait Channel {
   async fn run(&self) -> Result<()>;
   async fn shutdown_gracefully(&self) -> Result<()>;
 }
