@@ -25,7 +25,7 @@ pub(crate) enum CliCommand {
   #[clap(name = "serve")]
   Serve(serve::ServeCommand),
   /// Load a manifest and execute an entrypoint component (temporarily disabled).
-  #[clap(name = "run", skip)]
+  #[clap(name = "run")]
   Run(run::RunCommand),
   /// Invoke a component from a manifest or wasm module.
   #[clap(name = "invoke")]

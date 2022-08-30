@@ -1,8 +1,8 @@
-use anyhow::{Context, Result};
+use anyhow::Result;
 use clap::Args;
+use tokio::task::JoinHandle;
 use wasmflow_collection_cli::options::MeshCliOptions;
-mod manifest;
-mod wasm;
+use wasmflow_runtime::configuration::Channel;
 
 #[derive(Debug, Clone, Args)]
 #[clap(rename_all = "kebab-case")]
@@ -34,14 +34,35 @@ pub(crate) async fn handle_command(opts: RunCommand) -> Result<()> {
 
   debug!(args = ?opts.args, "rest args");
 
-  let bytes = wasmflow_loader::get_bytes(&opts.location, opts.fetch.allow_latest, &opts.fetch.insecure_registries)
-    .await
-    .context("Could not load from location")?;
-
-  if crate::wasm::is_wasm(&bytes) {
-    todo!("The run command is not yet enabled for wasm modules.");
-    // wasm::handle_command(opts, bytes).await
-  } else {
-    manifest::handle_command(opts, bytes).await
+  let app_config = wasmflow_runtime::configuration::load_yaml(&opts.location)?;
+  let mut channels: Vec<Box<dyn Channel + Send + Sync>> = vec![];
+  for (name, channel_config) in app_config.channels.into_iter() {
+    debug!("Loading channel {}", name);
+    match wasmflow_runtime::configuration::get_channel_loader(&channel_config.uses) {
+        Some(loader) => channels.push(loader(channel_config.with)?),
+        _ => bail!("could not find channel {}", &channel_config.uses),
+    };
   }
+
+  let mut tasks: Vec<JoinHandle<Result<(), anyhow::Error>>> = vec![];
+  for channel in channels.into_iter() {
+    let task = tokio::spawn(async move {
+      channel.run().await?;
+      // what to do after?
+      Ok::<(), anyhow::Error>(()) 
+    });
+    tasks.push(task);
+  }
+
+  let (item_resolved, _ready_future_index, _remaining_futures) =
+    futures::future::select_all(tasks).await;
+
+  // TODO: Figure out borrow issue here.
+  // for channel in channels.into_iter() {
+  //   channel.shutdown_gracefully().await;
+  // }
+
+  item_resolved?
+
+  // Ok(())
 }

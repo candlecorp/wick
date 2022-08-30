@@ -78,7 +78,7 @@ pub(crate) async fn handle_command(mut opts: InvokeCommand) -> Result<()> {
     .await
     .context("Could not load from location")?;
 
-  if crate::wasm::is_wasm(&bytes) {
+  if wasmflow_loader::is_wasm(&bytes) {
     wasm::handle_command(opts, bytes).await
   } else {
     manifest::handle_command(opts, bytes).await

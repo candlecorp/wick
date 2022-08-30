@@ -27,6 +27,8 @@ seeded-random = { path = "../../misc/seeded-random" }
 
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+serde_yaml = "0.9.10"
+serde-value = "0.7.0"
 
 futures = "0.3"
 async-trait = "0.1.50"
@@ -42,6 +44,7 @@ tokio = { version = "1", features = [
 tokio-stream = { version = "0.1", features = [] }
 tracing = "0.1"
 uuid = "1.1"
+anyhow = "1.0.62"
 
 [dev-dependencies]
 wasmflow-invocation-server = { path = "../wasmflow-invocation-server" }
