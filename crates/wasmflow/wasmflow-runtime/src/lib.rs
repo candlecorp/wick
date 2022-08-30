@@ -89,15 +89,15 @@
 #[macro_use]
 extern crate tracing;
 
+pub mod cli;
 mod collections;
+pub mod configuration;
 pub(crate) mod dev;
 mod dispatch;
 pub mod error;
 mod json_writer;
 mod network;
 mod network_service;
-pub mod cli;
-pub mod configuration;
 #[cfg(test)]
 pub(crate) mod test;
 pub(crate) mod utils;
