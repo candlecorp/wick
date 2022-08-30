@@ -53,10 +53,7 @@ impl CLI {
 
   async fn handle_command(&self, args: Vec<String>, bytes: Vec<u8>) -> Result<()> {
     let component = WapcModule::from_slice(&bytes)?;
-    let permissions = Permissions {
-      dirs: HashMap::from([(".".to_string(), "/".to_string())]),
-    };
-    let collection = Collection::try_load(&component, 1, None, Some(permissions), None)?;
+    let collection = Collection::try_load(&component, 1, None, None, None)?;
     let inherent_data = InherentData::new(
       0,
       SystemTime::now()

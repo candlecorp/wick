@@ -270,6 +270,7 @@ impl Transaction {
       .ok_or_else(|| ExecutionError::InvalidState(StateError::PayloadMissing(output.id().to_owned())))
   }
 
+  #[allow(clippy::unused_async)]
   pub(crate) async fn take_payload(&self, instance: &InstanceHandler) -> Result<Option<TransportMap>> {
     let payload = instance.take_payload()?;
     match payload {

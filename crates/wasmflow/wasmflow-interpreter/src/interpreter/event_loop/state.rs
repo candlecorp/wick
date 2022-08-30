@@ -85,6 +85,7 @@ impl State {
     }
   }
 
+  #[allow(clippy::unused_async)]
   pub(super) async fn handle_transaction_done(&mut self, tx_id: Uuid) -> Result<(), ExecutionError> {
     let tx = self.cleanup(&tx_id).ok_or(ExecutionError::MissingTx(tx_id))?;
     trace!("handling transaction done");
@@ -94,6 +95,7 @@ impl State {
     Ok(())
   }
 
+  #[allow(clippy::unused_async)]
   pub(super) async fn handle_port_status_change(
     &mut self,
     _tx_id: Uuid,

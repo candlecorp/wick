@@ -25,6 +25,7 @@ pub struct Collection {
 }
 
 impl Collection {
+  #[allow(clippy::unused_async)]
   pub async fn new(mesh_id: String, mesh: Arc<Mesh>) -> Result<Self, Error> {
     Ok(Self { mesh_id, mesh })
   }
