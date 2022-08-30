@@ -42,7 +42,7 @@ where
   Ok(config)
 }
 
-pub fn from_string(str: &String) -> Result<ApplicationConfig> {
+pub fn from_string(str: &str) -> Result<ApplicationConfig> {
   let config: ApplicationConfig = serde_yaml::from_str(str)?;
   Ok(config)
 }
@@ -61,6 +61,7 @@ static CHANNEL_LOADER_REGISTRY: Lazy<Mutex<HashMap<String, ChannelLoader>>> = La
   Mutex::new(m)
 });
 
+#[must_use]
 pub fn get_channel_loader(name: &str) -> Option<ChannelLoader> {
   CHANNEL_LOADER_REGISTRY.lock().get(name).cloned()
 }

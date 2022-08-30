@@ -346,8 +346,8 @@ pub async fn run_test(
 
         test_block.add_test(
           move || match actual_payload {
-            MessageTransport::Failure(Failure::Exception(_)) => (error_kind == "Exception"),
-            MessageTransport::Failure(Failure::Error(_)) => (error_kind == "Error"),
+            MessageTransport::Failure(Failure::Exception(_)) => error_kind == "Exception",
+            MessageTransport::Failure(Failure::Error(_)) => error_kind == "Error",
             _ => false,
           },
           prefix("error_kind"),
@@ -364,8 +364,8 @@ pub async fn run_test(
 
         test_block.add_test(
           move || match actual_payload {
-            MessageTransport::Failure(Failure::Exception(msg)) => (error_msg == msg),
-            MessageTransport::Failure(Failure::Error(msg)) => (error_msg == msg),
+            MessageTransport::Failure(Failure::Exception(msg)) => error_msg == msg,
+            MessageTransport::Failure(Failure::Error(msg)) => error_msg == msg,
             _ => false,
           },
           prefix("error_message"),
