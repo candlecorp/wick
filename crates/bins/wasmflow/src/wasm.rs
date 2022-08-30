@@ -3,12 +3,6 @@ use std::str::FromStr;
 use clap::Args;
 use wasmflow_manifest::Permissions;
 
-pub(crate) fn is_wasm(bytes: &[u8]) -> bool {
-  let is_wasm = bytes.starts_with(&[0x00, 0x61, 0x73, 0x6d]);
-  trace!(is_wasm, bytes = ?bytes[0..4], "bytes include wasm header?");
-  is_wasm
-}
-
 #[derive(Clone, Debug)]
 struct StringPair(String, String);
 

@@ -84,7 +84,7 @@
 #![allow(unused_attributes, clippy::derive_partial_eq_without_eq)]
 // !!END_LINTS
 // Add exceptions here
-#![allow(missing_docs)] // TODO
+#![allow(missing_docs, unused)] // TODO
 
 #[macro_use]
 extern crate tracing;
@@ -96,6 +96,8 @@ pub mod error;
 mod json_writer;
 mod network;
 mod network_service;
+pub mod cli;
+pub mod configuration;
 #[cfg(test)]
 pub(crate) mod test;
 pub(crate) mod utils;
