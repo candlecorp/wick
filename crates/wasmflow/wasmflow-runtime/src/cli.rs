@@ -98,12 +98,15 @@ impl Channel for CLI {
     let insecure: Vec<String> = Vec::new();
     let bytes = wasmflow_loader::get_bytes(&self.location, false, &insecure)
       .await
-      .context("Could not load from location")?;
+      .context(format!("Could not load from location {}", self.location))?;
 
     let mut args: Vec<String> = env::args().collect();
-    args.remove(0);
-    args.remove(0);
-    args.remove(0);
+    while args.len() > 0 && args[0] != "--".to_string() {
+      args.remove(0);
+    }
+    if args.len() > 0 && args[0] == "--".to_string() {
+      args.remove(0);
+    }
 
     self.handle_command(args, bytes).await?;
 

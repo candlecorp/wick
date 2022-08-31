@@ -3467,6 +3467,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "test-cli-channel-component"
+version = "0.0.1"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "env_logger 0.9.0",
+ "serde",
+ "test-log",
+ "tokio",
+ "wasmflow-sdk",
+]
+
+[[package]]
 name = "test-interface-keyvalue"
 version = "0.1.0"
 dependencies = [

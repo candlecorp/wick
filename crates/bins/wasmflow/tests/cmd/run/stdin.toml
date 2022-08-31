@@ -1,0 +1,4 @@
+bin.name = "wasmflow"
+args = "run tests/cmd/run/application.args.yaml -- arg1 22 arg2 33"
+stdin = "Hello\nworld"
+stdout = "[\"arg1\", \"22\", \"arg2\", \"33\"]\nHello\nworld\n"
