@@ -135,6 +135,7 @@ pub type Error = ManifestError;
 pub(crate) type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Debug, Clone, Default)]
+#[must_use]
 /// The internal representation of a Wasmflow manifest.
 pub struct WasmflowManifest {
   source: Option<String>,
@@ -330,6 +331,42 @@ impl WasmflowManifest {
   #[must_use]
   pub fn flow(&self, name: &str) -> Option<&Flow> {
     self.flows.iter().find(|(n, _)| name == *n).map(|(_, v)| v)
+  }
+}
+
+/// WasmflowManifest builder.
+#[derive(Default, Debug, Clone)]
+#[must_use]
+pub struct WasmflowManifestBuilder {
+  collections: HashMap<String, CollectionDefinition>,
+  flows: HashMap<String, Flow>,
+}
+
+impl WasmflowManifestBuilder {
+  /// Create a new [WasmflowManifestBuilder].
+  pub fn new() -> Self {
+    Self::default()
+  }
+
+  /// Add a [CollectionDefinition] to the builder.
+  pub fn add_collection(mut self, name: impl AsRef<str>, collection: CollectionDefinition) -> Self {
+    self.collections.insert(name.as_ref().to_owned(), collection);
+    self
+  }
+
+  /// Add a [Flow] to the builder.
+  pub fn add_flow(mut self, name: impl AsRef<str>, flow: Flow) -> Self {
+    self.flows.insert(name.as_ref().to_owned(), flow);
+    self
+  }
+
+  /// Consume the [WasmflowManifestBuilder] and return a [WasmflowManifest].
+  pub fn build(self) -> WasmflowManifest {
+    WasmflowManifest {
+      version: 1,
+      collections: self.collections,
+      ..Default::default()
+    }
   }
 }
 

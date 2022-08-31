@@ -49,11 +49,9 @@ impl std::fmt::Display for CollectionLink {
 #[cfg(target_arch = "wasm32")]
 async fn link_call(origin: &str, target: &str, payload: &PacketMap) -> Result<ComponentOutput, crate::error::Error> {
   let bytes = wasmflow_codec::messagepack::serialize(payload)?;
-  println!("bytes for host call {:?}", bytes);
   let result = wasmflow_component::guest::wasm::runtime::async_host_call("1", &origin, &target, &bytes)
     .await
     .map_err(crate::error::Error::Protocol)?;
-  println!("post host call {:?}", result);
   let packets: Vec<wasmflow_packet::PacketWrapper> = wasmflow_codec::messagepack::deserialize(&result)?;
   Ok(wasmflow_output::ComponentOutput::new(tokio_stream::iter(packets)))
 }
