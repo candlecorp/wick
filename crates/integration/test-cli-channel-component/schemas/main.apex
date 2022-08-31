@@ -1,8 +1,15 @@
 namespace "main"
 
 type Inputs {
-  argv: [string]
+  args: [string]
+  isInteractive: Interactive
   program: link?
+}
+
+type Interactive {
+  stdin: bool
+  stdout: bool
+  stderr: bool
 }
 
 type Outputs {

@@ -7,6 +7,7 @@ use async_trait::async_trait;
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
 use serde::{Deserialize, Serialize};
+use wasmflow_sdk::v1::InherentData;
 use {serde_value, serde_yaml};
 
 use super::cli::CLI;
@@ -26,6 +27,13 @@ pub struct ApplicationConfig {
 pub struct PluginConfiguration {
   pub uses: String,
   pub with: serde_value::Value,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct ApplicationContext {
+  pub name: String,
+  pub version: String,
+  pub inherent_data: Option<InherentData>,
 }
 
 pub fn load_yaml(filename: &String) -> Result<ApplicationConfig> {
@@ -53,7 +61,8 @@ pub trait Channel {
   async fn shutdown_gracefully(&self) -> Result<()>;
 }
 
-pub type ChannelLoader = Arc<dyn Fn(serde_value::Value) -> Result<Box<dyn Channel + Send + Sync>> + Send + Sync>;
+pub type ChannelLoader =
+  Arc<dyn Fn(ApplicationContext, serde_value::Value) -> Result<Box<dyn Channel + Send + Sync>> + Send + Sync>;
 
 static CHANNEL_LOADER_REGISTRY: Lazy<Mutex<HashMap<String, ChannelLoader>>> = Lazy::new(|| {
   let mut m: HashMap<String, ChannelLoader> = HashMap::new();

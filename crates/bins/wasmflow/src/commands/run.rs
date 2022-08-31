@@ -1,8 +1,11 @@
+use std::time::SystemTime;
+
 use anyhow::Result;
 use clap::Args;
 use tokio::task::JoinHandle;
 use wasmflow_collection_cli::options::MeshCliOptions;
-use wasmflow_runtime::configuration::Channel;
+use wasmflow_runtime::configuration::{ApplicationContext, Channel};
+use wasmflow_sdk::v1::InherentData;
 
 #[derive(Debug, Clone, Args)]
 #[clap(rename_all = "kebab-case")]
@@ -34,12 +37,30 @@ pub(crate) async fn handle_command(opts: RunCommand) -> Result<()> {
 
   debug!(args = ?opts.args, "rest args");
 
+  let inherent_data = opts.seed.map(|seed| {
+    InherentData::new(
+      seed,
+      SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .unwrap()
+        .as_millis()
+        .try_into()
+        .unwrap(),
+    )
+  });
+
   let app_config = wasmflow_runtime::configuration::load_yaml(&opts.location)?;
+  let context = ApplicationContext {
+    name: app_config.name,
+    version: app_config.version,
+    inherent_data,
+  };
+
   let mut channels: Vec<Box<dyn Channel + Send + Sync>> = vec![];
   for (name, channel_config) in app_config.channels {
     debug!("Loading channel {}", name);
     match wasmflow_runtime::configuration::get_channel_loader(&channel_config.uses) {
-      Some(loader) => channels.push(loader(channel_config.with)?),
+      Some(loader) => channels.push(loader(context.clone(), channel_config.with)?),
       _ => bail!("could not find channel {}", &channel_config.uses),
     };
   }

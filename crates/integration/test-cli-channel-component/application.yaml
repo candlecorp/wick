@@ -1,4 +1,4 @@
-name: test
+name: mycli
 version: 1.0.0
 channels:
   cli:
@@ -6,4 +6,6 @@ channels:
     with:
       location: build/test_cli_channel_component.signed.wasm
       component: main
-      link: it_depends
+      link:
+        kind: Manifest
+        reference: ./noop.wafl

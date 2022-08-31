@@ -13,11 +13,12 @@ impl wasmflow_sdk::v1::ephemeral::BatchedComponent for Component {
 
     _config: Option<Self::Config>,
   ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    println!("{:?}", input.argv);
+    let tty = input.is_interactive;
+    println!("args: {:?}, interactive: {{ stdin: {}, stdout: {}, stderr: {} }}",
+      input.args, tty.stdin, tty.stdout, tty.stderr);
 
-    let istty = true; // TODO: Need to detect if STDIN is actually interactive.
-
-    if istty {
+    let isatty = false; // input.is_interactive.stdin
+    if !isatty {
       let reader = BufReader::new(io::stdin());
       let input = reader.lines().collect::<Result<Vec<String>, _>>()?.join("\n");
 

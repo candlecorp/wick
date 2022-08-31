@@ -1,4 +1,4 @@
 bin.name = "wasmflow"
 args = "run tests/cmd/run/application.args.yaml -- arg1 22 arg2 33"
 stdin = "Hello\nworld"
-stdout = "[\"arg1\", \"22\", \"arg2\", \"33\"]\nHello\nworld\n"
+stdout = "args: [\"mycli\", \"arg1\", \"22\", \"arg2\", \"33\"], interactive: { stdin: false, stdout: false, stderr: false }\nHello\nworld\n"
