@@ -8,7 +8,23 @@
   "version": "0.0.1",
   "format": 1,
   "wellknown": [],
-  "types": {},
+  "types": {
+    "Interactive": {
+      "type": "struct",
+      "name": "Interactive",
+      "fields": {
+        "stdin": {
+          "type": "bool"
+        },
+        "stdout": {
+          "type": "bool"
+        },
+        "stderr": {
+          "type": "bool"
+        }
+      }
+    }
+  },
   "components": {
     "byte-count": {
       "name": "byte-count",
@@ -26,11 +42,15 @@
     "main": {
       "name": "main",
       "inputs": {
-        "argv": {
+        "args": {
           "type": "list",
           "element": {
             "type": "string"
           }
+        },
+        "isInteractive": {
+          "type": "ref",
+          "ref": "#/types/Interactive"
         },
         "program": {
           "type": "optional",

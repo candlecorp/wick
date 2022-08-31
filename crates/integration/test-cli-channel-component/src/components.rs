@@ -106,7 +106,19 @@ pub fn get_signature() -> wasmflow_sdk::v1::types::CollectionSignature {
     },
     format: 1,
     version: "0.0.1".to_owned(),
-    types: std::collections::HashMap::from([]).into(),
+    types: std::collections::HashMap::from([(
+      "Interactive".to_owned(),
+      wasmflow_sdk::v1::types::TypeDefinition::Struct(wasmflow_sdk::v1::types::StructSignature {
+        name: "Interactive".to_owned(),
+        fields: std::collections::HashMap::from([
+          ("stdin".to_owned(), wasmflow_sdk::v1::types::TypeSignature::Bool),
+          ("stdout".to_owned(), wasmflow_sdk::v1::types::TypeSignature::Bool),
+          ("stderr".to_owned(), wasmflow_sdk::v1::types::TypeSignature::Bool),
+        ])
+        .into(),
+      }),
+    )])
+    .into(),
     components: components.into(),
     wellknown: Vec::new(),
     config: wasmflow_sdk::v1::types::TypeMap::new(),
@@ -114,7 +126,16 @@ pub fn get_signature() -> wasmflow_sdk::v1::types::CollectionSignature {
 }
 
 pub mod types {
-  // no additional types
+
+  #[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, Clone)]
+  pub struct Interactive {
+    #[serde(rename = "stdin")]
+    pub stdin: bool,
+    #[serde(rename = "stdout")]
+    pub stdout: bool,
+    #[serde(rename = "stderr")]
+    pub stderr: bool,
+  }
 }
 pub mod generated {
 
@@ -391,9 +412,13 @@ pub mod generated {
       mut payload: wasmflow_sdk::v1::packet::v1::PacketMap,
     ) -> Result<definition::Inputs, Box<dyn std::error::Error + Send + Sync>> {
       Ok(definition::Inputs {
-        argv: payload
-          .remove("argv")
-          .ok_or_else(|| wasmflow_sdk::v1::error::Error::MissingInput("argv".to_owned()))?
+        args: payload
+          .remove("args")
+          .ok_or_else(|| wasmflow_sdk::v1::error::Error::MissingInput("args".to_owned()))?
+          .deserialize()?,
+        is_interactive: payload
+          .remove("isInteractive")
+          .ok_or_else(|| wasmflow_sdk::v1::error::Error::MissingInput("isInteractive".to_owned()))?
           .deserialize()?,
         program: payload
           .remove("program")
@@ -407,15 +432,18 @@ pub mod generated {
       payload: wasmflow_sdk::v1::wasm::EncodedMap,
     ) -> Result<definition::Inputs, Box<dyn std::error::Error + Send + Sync>> {
       Ok(definition::Inputs {
-        argv: wasmflow_sdk::v1::codec::messagepack::deserialize(payload.get("argv")?)?,
+        args: wasmflow_sdk::v1::codec::messagepack::deserialize(payload.get("args")?)?,
+        is_interactive: wasmflow_sdk::v1::codec::messagepack::deserialize(payload.get("isInteractive")?)?,
         program: wasmflow_sdk::v1::codec::messagepack::deserialize(payload.get("program")?)?,
       })
     }
 
     #[derive(Debug, serde::Deserialize, serde::Serialize, Clone)]
     pub struct Inputs {
-      #[serde(rename = "argv")]
-      pub argv: Vec<String>,
+      #[serde(rename = "args")]
+      pub args: Vec<String>,
+      #[serde(rename = "isInteractive")]
+      pub is_interactive: crate::components::types::Interactive,
       #[serde(rename = "program")]
       pub program: Option<wasmflow_sdk::v1::CollectionLink>,
     }
@@ -424,8 +452,12 @@ pub mod generated {
       fn from(inputs: Inputs) -> wasmflow_sdk::v1::packet::PacketMap {
         let mut map = std::collections::HashMap::default();
         map.insert(
-          "argv".to_owned(),
-          wasmflow_sdk::v1::packet::v1::Packet::success(&inputs.argv).into(),
+          "args".to_owned(),
+          wasmflow_sdk::v1::packet::v1::Packet::success(&inputs.args).into(),
+        );
+        map.insert(
+          "is_interactive".to_owned(),
+          wasmflow_sdk::v1::packet::v1::Packet::success(&inputs.is_interactive).into(),
         );
         map.insert(
           "program".to_owned(),
@@ -440,9 +472,15 @@ pub mod generated {
     pub fn inputs_list() -> std::collections::HashMap<String, wasmflow_sdk::v1::types::TypeSignature> {
       let mut map = std::collections::HashMap::new();
       map.insert(
-        "argv".to_owned(),
+        "args".to_owned(),
         wasmflow_sdk::v1::types::TypeSignature::List {
           element: Box::new(wasmflow_sdk::v1::types::TypeSignature::String),
+        },
+      );
+      map.insert(
+        "isInteractive".to_owned(),
+        wasmflow_sdk::v1::types::TypeSignature::Ref {
+          reference: "#/types/Interactive".to_owned(),
         },
       );
       map.insert(
