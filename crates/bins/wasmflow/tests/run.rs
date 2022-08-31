@@ -18,3 +18,8 @@ async fn wasmflow_run() {
     "Logger: testing123\n{\"schem_output\":{\"value\":\"testing123\"}}\n"
   );
 }
+
+#[test]
+fn cli_tests() {
+  trycmd::TestCases::new().case("tests/cmd/**/*.toml");
+}
