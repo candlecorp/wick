@@ -1,5 +1,7 @@
 namespace "http-request"
 
+alias Link = string
+
 type Inputs {
   request: HttpRequest
 }
@@ -16,5 +18,5 @@ type HttpResponse {
 type HttpRequest {
   url: string
   method: string
-  link: link @capability("http")
+  link: Link @capability("http")
 }
