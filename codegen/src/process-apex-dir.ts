@@ -107,7 +107,7 @@ function reduceType(type: ast.Type, annotations: ast.Annotation[] = []): TypeSig
         return { type: name.value };
       } else {
         const link = getAnnotation('capability', annotations);
-        if (name.value === 'link') {
+        if (name.value === 'link' || name.value === 'Link') {
           if (link) {
             const collection = link.arguments[0];
             return {
