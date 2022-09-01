@@ -10,6 +10,19 @@ wasmflow_sdk::v1::types::CollectionSignature {
   types: std::collections::HashMap::from([
   {{#each types}}
     {{#switch type}}
+      {{#case "any"}}
+      (
+        "{{@key}}".to_owned(),
+        wasmflow_sdk::v1::types::TypeDefinition::Struct(wasmflow_sdk::v1::types::StructSignature{
+          name:"{{name}}".to_owned(),
+          fields: std::collections::HashMap::from([
+          {{#each fields}}
+            ("{{@key}}".to_owned(),{{> type-signature .}}),
+          {{/each}}
+          ]).into()
+        })
+      ),
+      {{/case}}
       {{#case "struct"}}
       (
         "{{@key}}".to_owned(),

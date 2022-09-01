@@ -4,7 +4,6 @@ use std::net::SocketAddr;
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use nkeys::KeyPair;
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
 use seeded_random::Seed;
@@ -37,7 +36,6 @@ fn from_registry(id: Uuid) -> Arc<dyn RpcHandler + Send + Sync + 'static> {
 #[derive(Debug)]
 pub struct Host {
   id: String,
-  kp: KeyPair,
   network: Option<Network>,
   mesh: Option<Arc<Mesh>>,
   manifest: WasmflowManifest,
@@ -129,9 +127,8 @@ impl Host {
       self.network.is_none(),
       crate::Error::InvalidHostState("Host already has a network running".into())
     );
-    let kp_seed = self.kp.seed()?;
 
-    let mut network_builder = NetworkBuilder::from_definition(self.manifest.clone(), &kp_seed)?;
+    let mut network_builder = NetworkBuilder::from_definition(self.manifest.clone())?;
     if let Some(mesh) = &self.mesh {
       network_builder = network_builder.mesh(mesh.clone());
     }
@@ -205,13 +202,6 @@ impl Host {
     }
   }
 
-  pub async fn exec_main(&self, argv: Vec<String>) -> Result<u32> {
-    match &self.network {
-      Some(network) => Ok(network.exec_main(argv).await),
-      None => Err(crate::Error::InvalidHostState("No network available".into())),
-    }
-  }
-
   pub async fn invoke(&self, invocation: Invocation) -> Result<TransportStream> {
     match &self.network {
       Some(network) => Ok(network.invoke(invocation).await?),
@@ -270,11 +260,9 @@ impl HostBuilder {
 
   /// Constructs an instance of a Wasmflow host.
   pub fn build(self) -> Host {
-    let kp = KeyPair::new_server();
-    let host_id = kp.public_key();
+    let host_id = Uuid::new_v4().to_string();
 
     Host {
-      kp,
       id: host_id,
       network: None,
       mesh: None,

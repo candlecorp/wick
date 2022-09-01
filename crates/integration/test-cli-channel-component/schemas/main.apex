@@ -1,9 +1,11 @@
 namespace "main"
 
+alias Link = string
+
 type Inputs {
   args: [string]
   isInteractive: Interactive
-  program: link?
+  program: Link?
 }
 
 type Interactive {

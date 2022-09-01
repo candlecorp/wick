@@ -23,7 +23,6 @@ wasmflow-invocation-server = { path = "../wasmflow-invocation-server" }
 tracing = "0.1"
 
 thiserror = "1.0"
-nkeys = "0.2"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 async-trait = "0.1"

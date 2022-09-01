@@ -14,8 +14,10 @@ impl wasmflow_sdk::v1::ephemeral::BatchedComponent for Component {
     _config: Option<Self::Config>,
   ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let tty = input.is_interactive;
-    println!("args: {:?}, interactive: {{ stdin: {}, stdout: {}, stderr: {} }}",
-      input.args, tty.stdin, tty.stdout, tty.stderr);
+    println!(
+      "args: {:?}, interactive: {{ stdin: {}, stdout: {}, stderr: {} }}",
+      input.args, tty.stdin, tty.stdout, tty.stderr
+    );
 
     let isatty = false; // input.is_interactive.stdin
     if !isatty {

@@ -106,7 +106,7 @@ type EntrypointDefinition {
   component: string,
 
   "Data or configuration used to initialize the collection."
-  data: struct,
+  data: any,
 }
 
 "A collection definition."
@@ -121,7 +121,7 @@ type CollectionDefinition {
   reference: string,
 
   "Data or configuration used to initialize the collection."
-  data: struct,
+  data: any,
 }
 
 "Kind of collection."
@@ -166,7 +166,7 @@ type ComponentDefinition {
   id: string @required,
 
   "Data to associate with the reference."
-  data: struct?,
+  data: any?,
 }
 
 "A connection between components. This can be specified in short-form syntax (where applicable). See <a href='https://wasmflow.com/docs/configuration/short-form-syntax/'>wasmflow.com</a> for more information."
@@ -188,5 +188,5 @@ type ConnectionTargetDefinition {
   "The component's port."
   port: string @required,
   "Data to associate with a connection."
-  data: struct?,
+  data: any?,
 }

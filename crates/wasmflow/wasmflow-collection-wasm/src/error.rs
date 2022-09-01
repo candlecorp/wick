@@ -45,9 +45,6 @@ pub enum WasmCollectionError {
   #[error("Internal Error : {0}")]
   InternalError(u32),
 
-  #[error("Could not create KeyPair from invalid seed")]
-  KeyPairFailed,
-
   #[error("Component '{0}' not found. Valid components are: {}", .1.join(", "))]
   ComponentNotFound(String, Vec<String>),
 }

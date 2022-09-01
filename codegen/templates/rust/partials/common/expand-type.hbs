@@ -4,6 +4,7 @@
   {{#case "string"}}String{{/case}}
   {{#case "bytes"}}Vec<u8>{{/case}}
   {{#case "raw"}}RawPacket{{/case}}
+  {{#case "any"}}serde_json::Value{{/case}}
   {{#case "struct"}}serde_json::Value{{/case}}
   {{#case "link"}}wasmflow_sdk::v1::CollectionLink{{/case}}
   {{#case "internal"}}

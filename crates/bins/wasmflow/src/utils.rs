@@ -7,7 +7,6 @@ use wasmflow_manifest::WasmflowManifest;
 use crate::commands::FetchOptions;
 
 #[allow(clippy::too_many_lines)]
-#[must_use]
 pub(crate) fn merge_config(
   def: &WasmflowManifest,
   local_cli_opts: &FetchOptions,

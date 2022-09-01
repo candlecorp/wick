@@ -47,7 +47,6 @@ pub(crate) struct NetworkService {
   started_time: std::time::Instant,
   pub(crate) id: Uuid,
   interpreter: Arc<wasmflow_interpreter::Interpreter>,
-  entrypoint: Option<wasmflow_collection_wasm::collection::Collection>,
 }
 
 type ServiceMap = HashMap<Uuid, Arc<NetworkService>>;
@@ -90,16 +89,9 @@ impl NetworkService {
       None => interpreter.start(None, None).await,
     }
 
-    let entrypoint = if let Some(entry) = &msg.manifest.triggers() {
-      Some(initialize_wasm_entrypoint(entry, msg.id, msg.allow_latest, &msg.allowed_insecure).await?)
-    } else {
-      None
-    };
-
     let network = Arc::new(NetworkService {
       started_time: std::time::Instant::now(),
       id: msg.id,
-      entrypoint,
       interpreter: Arc::new(interpreter),
     });
 
@@ -107,17 +99,6 @@ impl NetworkService {
     registry.insert(msg.id, network.clone());
 
     Ok(network)
-  }
-
-  pub(crate) async fn exec_main(&self, argv: Vec<String>) -> u32 {
-    if let Some(entrypoint) = &self.entrypoint {
-      entrypoint
-        .exec_main(Entity::Collection(self.id.to_string()), argv)
-        .await
-    } else {
-      error!("no entrypoint defined for network {}", self.id);
-      99
-    }
   }
 
   pub(crate) fn new_from_manifest(

@@ -20,7 +20,6 @@ wasmflow-collection-grpctar = { path = "../wasmflow-collection-grpctar" }
 wasmflow-collection-grpc = { path = "../wasmflow-collection-grpc" }
 wasmflow-mesh = { path = "../wasmflow-mesh" }
 wasmflow-stdlib = { path = "../wasmflow-stdlib" }
-wasmflow-wascap = { path = "../wasmflow-wascap" }
 wasmflow-rpc = { path = "../wasmflow-rpc" }
 
 seeded-random = { path = "../../misc/seeded-random" }

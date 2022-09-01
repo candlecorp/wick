@@ -125,7 +125,6 @@ pub mod flow_definition;
 pub use flow_definition::{ComponentDefinition, ConnectionDefinition, ConnectionTargetDefinition, Flow};
 pub use wasmflow_parser::parse::v0::parse_id;
 
-use self::collection_definition::EntrypointDefinition;
 use self::host_definition::HostConfig;
 use crate::error::ManifestError;
 
@@ -144,7 +143,6 @@ pub struct WasmflowManifest {
   default_flow: Option<String>,
   name: Option<String>,
   labels: HashMap<String, String>,
-  triggers: Option<EntrypointDefinition>,
   collections: HashMap<String, CollectionDefinition>,
   flows: HashMap<String, Flow>,
 }
@@ -165,7 +163,6 @@ impl TryFrom<v0::HostManifest> for WasmflowManifest {
       host: def.host.try_into()?,
       default_flow: def.default_schematic,
       name: def.network.name,
-      triggers: def.network.triggers.map(|v| v.try_into()).transpose()?,
       collections: def
         .network
         .collections
@@ -188,7 +185,6 @@ impl TryFrom<v1::WasmflowManifest> for WasmflowManifest {
       host: def.host.try_into()?,
       default_flow: def.default_flow,
       name: def.name,
-      triggers: def.unstable_triggers.map(|v| v.try_into()).transpose()?,
       collections: def
         .external
         .into_iter()
@@ -321,12 +317,6 @@ impl WasmflowManifest {
     self.collections.iter().find(|(k, _)| *k == namespace).map(|(_, v)| v)
   }
 
-  #[must_use]
-  /// Get the name for this manifest.
-  pub fn triggers(&self) -> &Option<EntrypointDefinition> {
-    &self.triggers
-  }
-
   /// Get a schematic by name
   #[must_use]
   pub fn flow(&self, name: &str) -> Option<&Flow> {
@@ -338,6 +328,7 @@ impl WasmflowManifest {
 #[derive(Default, Debug, Clone)]
 #[must_use]
 pub struct WasmflowManifestBuilder {
+  base: Option<WasmflowManifest>,
   collections: HashMap<String, CollectionDefinition>,
   flows: HashMap<String, Flow>,
 }
@@ -346,6 +337,14 @@ impl WasmflowManifestBuilder {
   /// Create a new [WasmflowManifestBuilder].
   pub fn new() -> Self {
     Self::default()
+  }
+
+  /// Create a builder with an existing manifest as a base.
+  pub fn with_base(definition: WasmflowManifest) -> Self {
+    Self {
+      base: Some(definition),
+      ..Default::default()
+    }
   }
 
   /// Add a [CollectionDefinition] to the builder.
@@ -362,10 +361,21 @@ impl WasmflowManifestBuilder {
 
   /// Consume the [WasmflowManifestBuilder] and return a [WasmflowManifest].
   pub fn build(self) -> WasmflowManifest {
-    WasmflowManifest {
-      version: 1,
-      collections: self.collections,
-      ..Default::default()
+    if let Some(mut def) = self.base {
+      for (name, collection) in self.collections {
+        def.collections.insert(name, collection);
+      }
+      for (name, flow) in self.flows {
+        def.flows.insert(name, flow);
+      }
+      def
+    } else {
+      WasmflowManifest {
+        version: 1,
+        collections: self.collections,
+        flows: self.flows,
+        ..Default::default()
+      }
     }
   }
 }

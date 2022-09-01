@@ -68,7 +68,7 @@ pub struct {{name.value}} {
           {{#case "f32"}}#[serde(deserialize_with="with_expand_envs")]{{/case}}
           {{#case "f64"}}#[serde(deserialize_with="with_expand_envs")]{{/case}}
           {{#case "bool"}}#[serde(deserialize_with="with_expand_envs")]{{/case}}
-          {{#case "struct"}}#[serde(deserialize_with = "crate::helpers::deserialize_json_env")]{{/case}}
+          {{#case "any"}}#[serde(deserialize_with = "crate::helpers::deserialize_json_env")]{{/case}}
           {{#case "ConnectionTargetDefinition"}}#[serde(deserialize_with = "crate::parse::v1::connection_target_shortform")]{{/case}}
         {{/switch}}
       {{/case}}

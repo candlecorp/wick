@@ -17,9 +17,6 @@ type WasmflowManifest {
   "The labels and values that apply to this manifest."
   labels: {string: string},
 
-  "The collection to use as the entrypoint when running as a standalone process."
-  unstable_triggers: EntrypointDefinition?,
-
   "A map of namespace to external component collection."
   external: {string: CollectionDefinition},
 
@@ -90,21 +87,6 @@ type MeshConfig {
   token: string?,
 }
 
-"A collection definition for the main entrypoint."
-type EntrypointDefinition {
-  "The reference/location of the collection."
-  reference: string,
-
-  "The component to use as the entrypoint."
-  component: string,
-
-  "Data or configuration used to initialize the collection."
-  config: struct,
-
-  "Permissions to give this collection"
-  permissions: Permissions
-}
-
 "A WebAssembly collection."
 type WasmCollection @internal_tag("kind", "Wasm") {
   "The URL (and optional tag) or local file path to find the .wasm module."
@@ -114,7 +96,7 @@ type WasmCollection @internal_tag("kind", "Wasm") {
   permissions: Permissions
 
   "Per-collection configuration."
-  config: struct
+  config: any
 }
 
 "Per-collection permissions configuration."
@@ -128,7 +110,7 @@ type GrpcUrlCollection  @internal_tag("kind", "GrpcUrl") {
   "The GRPC URL to connect to."
   url: string,
   "Any configuration necessary for the collection."
-  config: struct
+  config: any
 }
 
 "A collection hosted somewhere on a connected mesh."
@@ -136,7 +118,7 @@ type MeshCollection  @internal_tag("kind", "Mesh") {
   "The ID of the collection."
   id: string,
   "Any configuration necessary for the collection."
-  config: struct
+  config: any
 }
 
 "A native collection that can be extracted and run as a microservice."
@@ -144,7 +126,7 @@ type GrpcTarCollection  @internal_tag("kind", "GrpcTar") {
   "The URL (and optional tag) or local file path to find the archive."
   reference: string,
   "Any configuration necessary for the collection."
-  config: struct
+  config: any
 }
 
 "A native collection that can be extracted and run as a microservice."
@@ -152,7 +134,7 @@ type ManifestCollection  @internal_tag("kind", "Manifest") {
   "The URL (and optional tag) or local file path to find the manifest."
   reference: string,
   "Any configuration necessary for the collection."
-  config: struct
+  config: any
 }
 
 "A definition for an single flow."
@@ -173,7 +155,7 @@ type ComponentDefinition {
   id: string @required,
 
   "Data to associate with the reference."
-  config: struct?,
+  config: any?,
 }
 
 "A connection between components. This can be specified in short-form syntax (where applicable). See <a href='https://wasmflow.com/docs/configuration/short-form-syntax/'>wasmflow.com</a> for more information."
@@ -197,5 +179,5 @@ type ConnectionTargetDefinition {
   port: string @required,
 
   "The default value to provide on this connection in the event of an error."
-  data: struct?,
+  data: any?,
 }
