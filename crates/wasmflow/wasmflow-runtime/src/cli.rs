@@ -24,7 +24,6 @@ use wasmflow_manifest::{
 use wasmflow_rpc::RpcHandler;
 use wasmflow_sdk::v1::transport::{MessageTransport, Serialized, TransportMap};
 use wasmflow_sdk::v1::{CollectionLink, Entity, InherentData, Invocation};
-use wasmflow_wascap::KeyPair;
 use {serde_value, serde_yaml};
 
 use super::configuration::{ApplicationContext, Channel};
@@ -63,7 +62,6 @@ struct IsInteractive {
 }
 
 impl CLI {
-  #[allow(unused)]
   pub fn load(app: ApplicationContext, with: serde_value::Value) -> Result<Box<dyn Channel + Send + Sync>> {
     Ok(Box::new(CLI::load_impl(app, with)?))
   }
@@ -76,56 +74,25 @@ impl CLI {
   }
 
   async fn handle_command(&self, args: Vec<String>, bytes: Vec<u8>) -> Result<()> {
-    let cli_collection = CollectionDefinition {
-      namespace: "cli".to_owned(),
-      kind: wasmflow_manifest::CollectionKind::Wasm(WasmCollection {
-        reference: self.config.location.clone(),
-        config: serde_json::Value::Null,
-        permissions: Permissions::default(),
-      }),
-    };
-    let linked_collection: CollectionDefinition = ("linked".to_owned(), self.config.link.clone()).try_into()?;
-    let manifest = wasmflow_manifest::WasmflowManifestBuilder::new()
-      .add_collection("cli", cli_collection)
-      .add_collection("linked", linked_collection)
-      .add_flow(
-        "cli-component",
-        Flow {
-          name: "cli-component".to_owned(),
-          instances: HashMap::from([(
-            "cli-instance".to_owned(),
-            ComponentDefinition {
-              name: self.config.component.clone(),
-              namespace: "cli".to_owned(),
-              data: None,
-            },
-          )]),
-          connections: vec![
-            ConnectionDefinition {
-              from: ConnectionTargetDefinition::new("<>", "argv"),
-              to: ConnectionTargetDefinition::new("cli-instance", "argv"),
-              default: None,
-            },
-            ConnectionDefinition {
-              from: ConnectionTargetDefinition::new("<>", "isInteractive"),
-              to: ConnectionTargetDefinition::new("cli-instance", "program"),
-              default: None,
-            },
-            ConnectionDefinition {
-              from: ConnectionTargetDefinition::new("<>", "program"),
-              to: ConnectionTargetDefinition::new("cli-instance", "program"),
-              default: None,
-            },
-          ],
-          ..Default::default()
-        },
-      )
-      .build();
+    let cli_namespace = "cli".to_owned();
+    let linked_namespace = "linked".to_owned();
 
-    let builder = crate::NetworkBuilder::from_definition(manifest, &KeyPair::new_user().seed()?)?;
-    let network = builder.build().await?;
+    let cli_collection = CollectionDefinition::new(
+      &cli_namespace,
+      wasmflow_manifest::CollectionKind::wasm(&self.config.location, None, None),
+    );
+    let linked_collection = CollectionDefinition::new(&linked_namespace, self.config.link.clone().into());
 
-    let link = CollectionLink::new(Entity::component("cli", "cli-instance"), Entity::collection(&"linked"));
+    let network = crate::NetworkBuilder::new()
+      .add_collection(cli_collection)
+      .add_collection(linked_collection)
+      .build()
+      .await?;
+
+    let link = CollectionLink::new(
+      Entity::component(&cli_namespace, &self.config.component),
+      Entity::collection(&linked_namespace),
+    );
     let is_interactive = IsInteractive {
       stdin: atty::is(atty::Stream::Stdin),
       stdout: atty::is(atty::Stream::Stdout),
@@ -149,7 +116,7 @@ impl CLI {
 
     let invocation = Invocation::new(
       Entity::client("cli_channel"),
-      Entity::component("cli", &self.config.component),
+      Entity::component(&cli_namespace, &self.config.component),
       inputs_map,
       self.app.inherent_data,
     );

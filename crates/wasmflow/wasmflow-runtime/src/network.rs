@@ -3,9 +3,8 @@ use std::time::Duration;
 
 use seeded_random::{Random, Seed};
 use uuid::Uuid;
-use wasmflow_manifest::WasmflowManifest;
+use wasmflow_manifest::{Flow, WasmflowManifest, WasmflowManifestBuilder};
 use wasmflow_mesh::Mesh;
-use wasmflow_wascap::KeyPair;
 
 use crate::dev::prelude::*;
 use crate::network_service::Initialize;
@@ -16,8 +15,6 @@ type Result<T> = std::result::Result<T, RuntimeError>;
 pub struct Network {
   pub uid: Uuid,
   inner: Arc<NetworkService>,
-  #[allow(unused)]
-  kp: KeyPair,
   timeout: Duration,
 }
 
@@ -27,7 +24,6 @@ pub struct NetworkInit {
   definition: WasmflowManifest,
   allow_latest: bool,
   allowed_insecure: Vec<String>,
-  kp: KeyPair,
   timeout: Duration,
   mesh: Option<Arc<Mesh>>,
   namespace: Option<String>,
@@ -35,10 +31,6 @@ pub struct NetworkInit {
 }
 
 impl Network {
-  pub async fn new_default(definition: WasmflowManifest, seed: &str) -> Result<Self> {
-    NetworkBuilder::from_definition(definition, seed)?.build().await
-  }
-
   #[instrument(name = "network", skip_all)]
   pub async fn new(config: NetworkInit) -> Result<Self> {
     trace!(?config, "init");
@@ -61,7 +53,6 @@ impl Network {
     Ok(Self {
       uid: service.id,
       inner: service,
-      kp: config.kp,
       timeout: config.timeout,
     })
   }
@@ -76,16 +67,6 @@ impl Network {
     trace!(duration_ms=%time.elapsed().unwrap().as_millis(),"invocation complete");
 
     Ok(response.ok()?)
-  }
-
-  pub async fn exec_main(&self, argv: Vec<String>) -> u32 {
-    let time = std::time::SystemTime::now();
-    trace!("executing main");
-
-    let code = self.inner.exec_main(argv).await;
-    trace!(duration_ms=%time.elapsed().unwrap().as_millis(),"main complete");
-
-    code
   }
 
   pub async fn shutdown(&self) -> Result<()> {
@@ -103,13 +84,12 @@ impl Network {
 }
 
 /// The [NetworkBuilder] builds the configuration for a Wasmflow Network.
-#[derive(Debug)]
+#[derive(Debug, Default)]
 #[must_use]
 pub struct NetworkBuilder {
   allow_latest: bool,
   allowed_insecure: Vec<String>,
-  definition: WasmflowManifest,
-  kp: KeyPair,
+  manifest_builder: WasmflowManifestBuilder,
   mesh: Option<Arc<Mesh>>,
   timeout: Duration,
   rng_seed: Option<Seed>,
@@ -117,19 +97,36 @@ pub struct NetworkBuilder {
 }
 
 impl NetworkBuilder {
+  pub fn new() -> Self {
+    Self {
+      timeout: Duration::from_secs(5),
+      ..Default::default()
+    }
+  }
+
   /// Creates a new network builder from a [NetworkDefinition]
-  pub fn from_definition(definition: WasmflowManifest, seed: &str) -> Result<Self> {
-    let kp = keypair_from_seed(seed)?;
+  pub fn from_definition(definition: WasmflowManifest) -> Result<Self> {
     Ok(Self {
       allow_latest: definition.allow_latest(),
       allowed_insecure: definition.insecure_registries().clone(),
-      definition,
+      manifest_builder: WasmflowManifestBuilder::with_base(definition),
       timeout: Duration::from_secs(5),
       mesh: None,
       namespace: None,
-      kp,
       rng_seed: None,
     })
+  }
+
+  pub fn add_collection(mut self, collection: CollectionDefinition) -> Self {
+    self.manifest_builder = self
+      .manifest_builder
+      .add_collection(collection.namespace.clone(), collection);
+    self
+  }
+
+  pub fn add_flow(mut self, flow: Flow) -> Self {
+    self.manifest_builder = self.manifest_builder.add_flow(flow.name.clone(), flow);
+    self
   }
 
   pub fn timeout(self, timeout: Duration) -> Self {
@@ -170,11 +167,11 @@ impl NetworkBuilder {
 
   /// Constructs an instance of a Wasmflow host.
   pub async fn build(self) -> Result<Network> {
+    let definition = self.manifest_builder.build();
     Network::new(NetworkInit {
-      definition: self.definition,
+      definition,
       allow_latest: self.allow_latest,
       allowed_insecure: self.allowed_insecure,
-      kp: self.kp,
       timeout: self.timeout,
       namespace: self.namespace,
       mesh: self.mesh,

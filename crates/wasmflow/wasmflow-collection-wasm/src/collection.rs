@@ -2,7 +2,6 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use tokio_stream::StreamExt;
 pub use wapc::WasiParams;
 use wasmflow_manifest::Permissions;
 use wasmflow_rpc::error::RpcError;
@@ -11,7 +10,7 @@ use wasmflow_sdk::v1::codec::{json, messagepack};
 use wasmflow_sdk::v1::packet::{PacketMap, PacketWrapper};
 use wasmflow_sdk::v1::transport::{MessageTransport, Serialized, TransportMap, TransportStream};
 use wasmflow_sdk::v1::types::HostedType;
-use wasmflow_sdk::v1::{BoxedFuture, CollectionLink, Entity, Invocation};
+use wasmflow_sdk::v1::{BoxedFuture, Invocation};
 
 use crate::error::LinkError;
 use crate::wapc_module::WapcModule;
@@ -77,41 +76,6 @@ impl Collection {
     let host = builder.build(module)?;
 
     Ok(Self { pool: Arc::new(host) })
-  }
-
-  pub async fn exec_main(&self, origin: Entity, argv: Vec<String>) -> u32 {
-    let mut transport_map = TransportMap::default();
-    transport_map.insert("argv", MessageTransport::success(&argv));
-    let target = Entity::component(origin.namespace(), "main");
-    let link = CollectionLink::new(origin.clone(), target.clone());
-
-    transport_map.insert("network", MessageTransport::success(&link));
-    let invocation = Invocation::new(origin, target, transport_map, None);
-    let result = self.invoke(invocation).await;
-    if let Err(e) = result {
-      error!("main() died with fatal error: {}", e);
-      return 6;
-    }
-    let output = result.unwrap();
-    let packets: Vec<_> = output.collect().await;
-    for packet in packets {
-      if packet.port == "code" {
-        return if let MessageTransport::Failure(err) = packet.payload {
-          error!("main() component returned error: {}", err.message());
-          1
-        } else {
-          match packet.payload.deserialize::<u32>() {
-            Ok(code) => code,
-            Err(e) => {
-              error!("Could not get code from main() component: {}", e);
-              2
-            }
-          }
-        };
-      }
-    }
-    error!("No exit code received");
-    3
   }
 }
 

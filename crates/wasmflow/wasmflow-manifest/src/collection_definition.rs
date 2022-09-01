@@ -28,18 +28,6 @@ impl TryFrom<crate::v0::EntrypointDefinition> for EntrypointDefinition {
   }
 }
 
-impl TryFrom<crate::v1::EntrypointDefinition> for EntrypointDefinition {
-  type Error = crate::Error;
-  fn try_from(def: crate::v1::EntrypointDefinition) -> Result<Self, Self::Error> {
-    Ok(EntrypointDefinition {
-      reference: def.reference,
-      config: def.config,
-      permissions: def.permissions.into(),
-      component: def.component,
-    })
-  }
-}
-
 #[derive(Debug, Clone)]
 /// A definition of a Wasmflow Collection with its namespace, how to retrieve or access it and its configuration.
 #[must_use]
@@ -51,6 +39,14 @@ pub struct CollectionDefinition {
 }
 
 impl CollectionDefinition {
+  /// Create a new [CollectionDefinition] with specified name and type.
+  pub fn new(name: impl AsRef<str>, kind: CollectionKind) -> Self {
+    Self {
+      namespace: name.as_ref().to_owned(),
+      kind,
+    }
+  }
+
   /// Get the configuration object for the collection.
   #[must_use]
   pub fn config(&self) -> Option<&Value> {
@@ -80,6 +76,49 @@ pub enum CollectionKind {
   Mesh(MeshCollection),
   /// External manifests.
   Manifest(ManifestCollection),
+}
+
+impl CollectionKind {
+  /// Create a new [CollectionKind::Wasm] variant.
+  pub fn wasm(reference: impl AsRef<str>, config: Option<Value>, permissions: Option<Permissions>) -> Self {
+    Self::Wasm(WasmCollection {
+      reference: reference.as_ref().to_owned(),
+      config: config.unwrap_or_default(),
+      permissions: permissions.unwrap_or_default(),
+    })
+  }
+
+  /// Create a new [CollectionKind::GrpcUrl] variant.
+  pub fn grpc_url(url: impl AsRef<str>, config: Option<Value>) -> Self {
+    Self::GrpcUrl(GrpcUrlCollection {
+      url: url.as_ref().to_owned(),
+      config: config.unwrap_or_default(),
+    })
+  }
+
+  /// Create a new [CollectionKind::GrpcTar] variant.
+  pub fn grpc_tar(reference: impl AsRef<str>, config: Option<Value>) -> Self {
+    Self::GrpcTar(GrpcTarCollection {
+      reference: reference.as_ref().to_owned(),
+      config: config.unwrap_or_default(),
+    })
+  }
+
+  /// Create a new [CollectionKind::Manifest] variant.
+  pub fn manifest(reference: impl AsRef<str>, config: Option<Value>) -> Self {
+    Self::Manifest(ManifestCollection {
+      reference: reference.as_ref().to_owned(),
+      config: config.unwrap_or_default(),
+    })
+  }
+
+  /// Create a new [CollectionKind::Mesh] variant.
+  pub fn mesh(id: impl AsRef<str>, config: Option<Value>) -> Self {
+    Self::Mesh(MeshCollection {
+      config: config.unwrap_or_default(),
+      id: id.as_ref().to_owned(),
+    })
+  }
 }
 
 /// A native collection compiled and built in to the runtime.
@@ -231,29 +270,35 @@ impl From<(String, crate::v1::CollectionDefinition)> for CollectionDefinition {
   fn from(def: (String, crate::v1::CollectionDefinition)) -> Self {
     CollectionDefinition {
       namespace: def.0,
-      kind: match def.1 {
-        crate::v1::CollectionDefinition::WasmCollection(v) => CollectionKind::Wasm(WasmCollection {
-          reference: v.reference,
-          config: v.config,
-          permissions: v.permissions.into(),
-        }),
-        crate::v1::CollectionDefinition::GrpcUrlCollection(v) => CollectionKind::GrpcUrl(GrpcUrlCollection {
-          url: v.url,
-          config: v.config,
-        }),
-        crate::v1::CollectionDefinition::GrpcTarCollection(v) => CollectionKind::GrpcTar(GrpcTarCollection {
-          reference: v.reference,
-          config: v.config,
-        }),
-        crate::v1::CollectionDefinition::MeshCollection(v) => CollectionKind::Mesh(MeshCollection {
-          id: v.id,
-          config: v.config,
-        }),
-        crate::v1::CollectionDefinition::ManifestCollection(v) => CollectionKind::Manifest(ManifestCollection {
-          reference: v.reference,
-          config: v.config,
-        }),
-      },
+      kind: def.1.into(),
+    }
+  }
+}
+
+impl From<crate::v1::CollectionDefinition> for CollectionKind {
+  fn from(def: crate::v1::CollectionDefinition) -> Self {
+    match def {
+      crate::v1::CollectionDefinition::WasmCollection(v) => CollectionKind::Wasm(WasmCollection {
+        reference: v.reference,
+        config: v.config,
+        permissions: v.permissions.into(),
+      }),
+      crate::v1::CollectionDefinition::GrpcUrlCollection(v) => CollectionKind::GrpcUrl(GrpcUrlCollection {
+        url: v.url,
+        config: v.config,
+      }),
+      crate::v1::CollectionDefinition::GrpcTarCollection(v) => CollectionKind::GrpcTar(GrpcTarCollection {
+        reference: v.reference,
+        config: v.config,
+      }),
+      crate::v1::CollectionDefinition::MeshCollection(v) => CollectionKind::Mesh(MeshCollection {
+        id: v.id,
+        config: v.config,
+      }),
+      crate::v1::CollectionDefinition::ManifestCollection(v) => CollectionKind::Manifest(ManifestCollection {
+        reference: v.reference,
+        config: v.config,
+      }),
     }
   }
 }

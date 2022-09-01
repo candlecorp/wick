@@ -5,7 +5,6 @@ pub(crate) mod prelude {
   pub(crate) use wasmflow_sdk::v1::transport::{TransportStream, TransportWrapper};
   pub(crate) use wasmflow_sdk::v1::types::*;
   pub(crate) use wasmflow_sdk::v1::{Entity, Invocation};
-  pub(crate) use wasmflow_wascap::KeyPair;
 
   pub(crate) use crate::collections::InvocationHandler;
   pub(crate) use crate::dispatch::InvocationResponse;

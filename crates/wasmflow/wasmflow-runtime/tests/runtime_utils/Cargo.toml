@@ -10,7 +10,6 @@ license = "BSD-3-Clause"
 [dependencies]
 wasmflow-runtime = { path = "../../../wasmflow-runtime" }
 wasmflow-mesh = { path = "../../../wasmflow-mesh" }
-wasmflow-wascap = { path = "../../../wasmflow-wascap" }
 wasmflow-manifest = { path = "../../../wasmflow-manifest" }
 tracing = "0.1"
 anyhow = "1.0"

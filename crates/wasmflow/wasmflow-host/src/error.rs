@@ -34,8 +34,6 @@ pub enum HostError {
   ConfigurationDeserialization(String),
   #[error("Async error: {0}")]
   AsyncRT(String),
-  #[error(transparent)]
-  KeyPairError(#[from] nkeys::error::Error),
   #[error("General error : {0}")]
   Other(String),
   #[error("{0}")]

@@ -18,11 +18,6 @@ pub struct InvocationError(pub String);
 
 #[derive(Error, Debug)]
 pub enum RuntimeError {
-  #[error("Provided KeyPair has no associated seed")]
-  NoSeed,
-  #[error("Failed to create KeyPair from seed")]
-  KeyPairFailed,
-
   #[error(transparent)]
   SchematicGraph(#[from] wasmflow_schematic_graph::error::Error),
   #[error(transparent)]

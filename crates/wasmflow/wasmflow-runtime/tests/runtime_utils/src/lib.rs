@@ -87,16 +87,15 @@
 
 use wasmflow_manifest::WasmflowManifest;
 use wasmflow_runtime::{Network, NetworkBuilder};
-use wasmflow_wascap::KeyPair;
+
 #[macro_use]
 extern crate tracing;
 
 pub async fn init_network_from_yaml(path: &str) -> anyhow::Result<(Network, uuid::Uuid)> {
   let host_def = WasmflowManifest::load_from_file(path)?;
   debug!("Manifest loaded");
-  let kp = KeyPair::new_server();
 
-  let builder = NetworkBuilder::from_definition(host_def, &kp.seed()?)?;
+  let builder = NetworkBuilder::from_definition(host_def)?;
 
   let network = builder.build().await?;
 

@@ -1,8 +1,10 @@
 namespace "reverse-uppercase"
 
+alias Link = string
+
 type Inputs {
   input: string
-  link: link
+  link: Link
 }
 
 type Outputs {

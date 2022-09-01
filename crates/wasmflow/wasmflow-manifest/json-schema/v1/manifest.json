@@ -35,12 +35,6 @@
             }
           }
         },
-        "unstable_triggers": {
-          "description": "The collection to use as the entrypoint when running as a standalone process.",
-          "required": false,
-
-          "$ref": "#/$defs/v1/EntrypointDefinition"
-        },
         "external": {
           "description": "A map of namespace to external component collection.",
           "type": "object",
@@ -191,33 +185,6 @@
           "required": false,
 
           "type": "string"
-        }
-      },
-      "required": []
-    },
-
-    "EntrypointDefinition": {
-      "$anchor": "#v1/EntrypointDefinition",
-      "additionalProperties": false,
-      "properties": {
-        "reference": {
-          "description": "The reference/location of the collection.",
-
-          "type": "string"
-        },
-        "component": {
-          "description": "The component to use as the entrypoint.",
-
-          "type": "string"
-        },
-        "config": {
-          "description": "Data or configuration used to initialize the collection.",
-          "type": "object"
-        },
-        "permissions": {
-          "description": "Permissions to give this collection",
-
-          "$ref": "#/$defs/v1/Permissions"
         }
       },
       "required": []

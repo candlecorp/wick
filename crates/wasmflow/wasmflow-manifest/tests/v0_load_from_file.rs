@@ -95,21 +95,6 @@ fn load_env() -> Result<(), ManifestError> {
 }
 
 #[test_logger::test]
-fn load_json_env() -> Result<(), ManifestError> {
-  let path = PathBuf::from("./tests/manifests/v0/json-env.wafl");
-  env::set_var("TEST_ENV_VAR_JSON", "load_json_env");
-  let manifest = WasmflowManifest::load_from_file(&path)?;
-  // let expected: Permissions = from_value(json!({"json_key": "load_json_env"}))?;
-
-  assert_eq!(
-    manifest.triggers().clone().unwrap().config,
-    json!({"json_key": "load_json_env"})
-  );
-
-  Ok(())
-}
-
-#[test_logger::test]
 fn load_sender_yaml() -> Result<(), ManifestError> {
   let path = PathBuf::from("./tests/manifests/v0/sender.wafl");
   let manifest = WasmflowManifest::load_from_file(&path)?;

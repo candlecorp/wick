@@ -49,9 +49,6 @@ pub struct WasmflowManifest {
   #[serde(skip_serializing_if = "HashMap::is_empty")]
   #[serde(deserialize_with = "crate::helpers::kv_deserializer")]
   pub labels: HashMap<String, String>,
-  /// The collection to use as the entrypoint when running as a standalone process.
-  #[serde(default)]
-  pub unstable_triggers: Option<EntrypointDefinition>,
   /// A map of namespace to external component collection.
   #[serde(default)]
   #[serde(skip_serializing_if = "HashMap::is_empty")]
@@ -164,27 +161,6 @@ pub struct MeshConfig {
   /// The NATS token.
   #[serde(default)]
   pub token: Option<String>,
-}
-
-#[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
-#[serde(deny_unknown_fields)]
-/// A collection definition for the main entrypoint.
-pub struct EntrypointDefinition {
-  /// The reference/location of the collection.
-  #[serde(default)]
-  #[serde(deserialize_with = "with_expand_envs")]
-  pub reference: String,
-  /// The component to use as the entrypoint.
-  #[serde(default)]
-  #[serde(deserialize_with = "with_expand_envs")]
-  pub component: String,
-  /// Data or configuration used to initialize the collection.
-  #[serde(default)]
-  #[serde(deserialize_with = "crate::helpers::deserialize_json_env")]
-  pub config: Value,
-  /// Permissions to give this collection
-  #[serde(default)]
-  pub permissions: Permissions,
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]

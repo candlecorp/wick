@@ -2872,7 +2872,6 @@ dependencies = [
  "wasmflow-manifest",
  "wasmflow-mesh",
  "wasmflow-runtime",
- "wasmflow-wascap",
 ]
 
 [[package]]
@@ -4650,7 +4649,6 @@ dependencies = [
  "async-trait",
  "http",
  "logger",
- "nkeys 0.2.0",
  "once_cell",
  "parking_lot 0.12.1",
  "seeded-random",
@@ -4976,7 +4974,6 @@ dependencies = [
  "wasmflow-schematic-graph",
  "wasmflow-sdk",
  "wasmflow-stdlib",
- "wasmflow-wascap",
 ]
 
 [[package]]

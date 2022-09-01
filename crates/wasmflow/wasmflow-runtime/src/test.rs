@@ -6,18 +6,14 @@ pub(crate) mod prelude {
 }
 
 use wasmflow_manifest::WasmflowManifest;
-use wasmflow_wascap::KeyPair;
 
 use crate::test::prelude::*;
 use crate::{Network, NetworkBuilder};
 
 pub(crate) async fn init_network_from_yaml(path: &str) -> TestResult<(Network, uuid::Uuid)> {
   let def = WasmflowManifest::load_from_file(path)?;
-  let kp = KeyPair::new_server();
 
-  let network = NetworkBuilder::from_definition(def, &kp.seed().map_err(|_| crate::Error::NoSeed)?)?
-    .build()
-    .await?;
+  let network = NetworkBuilder::from_definition(def)?.build().await?;
 
   let network_id = network.uid;
   trace!(network_id = %network_id, "network uid");
