@@ -14,17 +14,13 @@ use crate::rpc::invocation_service_client::InvocationServiceClient;
 use crate::rpc::{ListRequest, StatsRequest, StatsResponse};
 
 /// Create an RPC client form common configuration
-pub async fn make_rpc_client<T: TryInto<Uri> + Send>(
-  address: T,
+pub async fn make_rpc_client(
+  uri: Uri,
   pem: Option<PathBuf>,
   key: Option<PathBuf>,
   ca: Option<PathBuf>,
   domain: Option<String>,
 ) -> Result<RpcClient, RpcClientError> {
-  let uri: Uri = address
-    .try_into()
-    .map_err(|_| RpcClientError::Other("Could not parse URI".to_owned()))?;
-
   let mut builder = Channel::builder(uri);
 
   if let (Some(pem), Some(key)) = (pem, key) {

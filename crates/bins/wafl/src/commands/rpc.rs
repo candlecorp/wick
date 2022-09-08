@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use clap::{Args, Subcommand};
-use url::Url;
+use http::Uri;
 
 pub(crate) mod invoke;
 pub(crate) mod list;
@@ -25,8 +25,8 @@ pub(crate) enum SubCommands {
 #[derive(Debug, Clone, Args)]
 pub(crate) struct ConnectOptions {
   /// RPC Url
-  #[clap(short, long)]
-  pub(crate) url: Url,
+  #[clap(short = 'u', long = "url")]
+  pub(crate) uri: Uri,
 
   /// Path to pem file for TLS connections.
   #[clap(long, action)]
@@ -43,14 +43,4 @@ pub(crate) struct ConnectOptions {
   /// The domain to verify against the certificate.
   #[clap(long, action)]
   pub(crate) domain: Option<String>,
-}
-
-impl ConnectOptions {
-  pub(crate) fn host(&self) -> String {
-    self.url.host().unwrap().to_string()
-  }
-
-  pub(crate) fn port(&self) -> u16 {
-    self.url.port().unwrap()
-  }
 }

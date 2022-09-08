@@ -4154,6 +4154,7 @@ dependencies = [
  "clap 3.2.18",
  "cli-common",
  "git2",
+ "http",
  "jaq-core",
  "logger",
  "markup-converter",

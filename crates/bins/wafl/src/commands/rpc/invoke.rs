@@ -53,7 +53,7 @@ pub(crate) async fn handle(opts: Options) -> Result<()> {
   let _guard = crate::utils::init_logger(&opts.logging)?;
 
   let mut client = wasmflow_rpc::make_rpc_client(
-    format!("http://{}:{}", opts.connection.host(), opts.connection.port()),
+    opts.connection.uri,
     opts.connection.pem,
     opts.connection.key,
     opts.connection.ca,

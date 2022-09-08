@@ -27,6 +27,7 @@ async-recursion = "1.0"
 nkeys = "0.2"
 tracing = "0.1"
 clap = { version = "3.0", features = ["derive", "env"] }
+http = "0.2"
 serde_json = "1.0"
 thiserror = "1.0"
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
