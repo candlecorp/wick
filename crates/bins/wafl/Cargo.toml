@@ -39,6 +39,7 @@ wasmflow-oci = { path = "../../wasmflow/wasmflow-oci" }
 anyhow = "1.0"
 markup-converter = "0.2"
 jaq-core = "0.7"
+url = "2.3.0"
 
 [dev-dependencies]
 trycmd = "0.13"

@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 
 use clap::{Args, Subcommand};
+use url::Url;
 
 pub(crate) mod invoke;
 pub(crate) mod list;
@@ -23,13 +24,9 @@ pub(crate) enum SubCommands {
 
 #[derive(Debug, Clone, Args)]
 pub(crate) struct ConnectOptions {
-  /// RPC port.
-  #[clap(short, long, env = wasmflow_collection_cli::options::env::WAFL_RPC_PORT,action)]
-  pub(crate) port: u16,
-
-  /// RPC address.
-  #[clap(short, long, default_value = "127.0.0.1", env = wasmflow_collection_cli::options::env::WAFL_RPC_ADDRESS,action)]
-  pub(crate) address: String,
+  /// RPC Url
+  #[clap(short, long)]
+  pub(crate) url: Url,
 
   /// Path to pem file for TLS connections.
   #[clap(long, action)]
@@ -46,4 +43,14 @@ pub(crate) struct ConnectOptions {
   /// The domain to verify against the certificate.
   #[clap(long, action)]
   pub(crate) domain: Option<String>,
+}
+
+impl ConnectOptions {
+  pub(crate) fn host(&self) -> String {
+    self.url.host().unwrap().to_string()
+  }
+
+  pub(crate) fn port(&self) -> u16 {
+    self.url.port().unwrap()
+  }
 }
