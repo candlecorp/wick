@@ -1,0 +1,1740 @@
+{
+  "name": "customers.v1",
+  "annotations": [
+    {
+      "name": "version",
+      "arguments": [
+        {
+          "name": "value",
+          "value": "0.1.0"
+        }
+      ]
+    },
+    {
+      "name": "path",
+      "arguments": [
+        {
+          "name": "value",
+          "value": "/v1"
+        }
+      ]
+    },
+    {
+      "name": "info",
+      "arguments": [
+        {
+          "name": "title",
+          "value": "Customers API"
+        },
+        {
+          "name": "description",
+          "value": "This API contains operations that an application can perform on customers."
+        },
+        {
+          "name": "version",
+          "value": "1.0"
+        },
+        {
+          "name": "contact",
+          "value": {
+            "email": "apiteam@mycompany.io",
+            "name": "MyCompany API Team",
+            "url": "http://mycompany.io"
+          }
+        },
+        {
+          "name": "license",
+          "value": {
+            "name": "Apache 2.0",
+            "url": "https://www.apache.org/licenses/LICENSE-2.0.html"
+          }
+        }
+      ]
+    },
+    {
+      "name": "host",
+      "arguments": [
+        {
+          "name": "value",
+          "value": "mycompany.io"
+        }
+      ]
+    },
+    {
+      "name": "schemes",
+      "arguments": [
+        {
+          "name": "value",
+          "value": [
+            "https"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "consumes",
+      "arguments": [
+        {
+          "name": "value",
+          "value": [
+            "application/json"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "produces",
+      "arguments": [
+        {
+          "name": "value",
+          "value": [
+            "application/json"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "externalDocs",
+      "arguments": [
+        {
+          "name": "url",
+          "value": "http://mycompany.io/docs"
+        }
+      ]
+    }
+  ],
+  "services": [
+    {
+      "name": "CustomerService",
+      "description": "Operations that can be performed on a customer.",
+      "annotations": [
+        {
+          "name": "service"
+        },
+        {
+          "name": "uses",
+          "arguments": [
+            {
+              "name": "value",
+              "value": [
+                "Outbound"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "path",
+          "arguments": [
+            {
+              "name": "value",
+              "value": "/customers"
+            }
+          ]
+        }
+      ],
+      "operations": [
+        {
+          "name": "createCustomer",
+          "description": "Creates a new customer.",
+          "annotations": [
+            {
+              "name": "POST"
+            },
+            {
+              "name": "response",
+              "arguments": [
+                {
+                  "name": "status",
+                  "value": "CREATED"
+                },
+                {
+                  "name": "description",
+                  "value": "Successful response"
+                },
+                {
+                  "name": "examples",
+                  "value": {
+                    "application/json": "json"
+                  }
+                }
+              ]
+            }
+          ],
+          "unary": true,
+          "parameters": {
+            "name": "Customer",
+            "description": "Customer information.",
+            "fields": [
+              {
+                "name": "id",
+                "description": "The customer identifer",
+                "annotations": [
+                  {
+                    "name": "key"
+                  },
+                  {
+                    "name": "n",
+                    "arguments": [
+                      {
+                        "name": "value",
+                        "value": 1
+                      }
+                    ]
+                  }
+                ],
+                "type": "u64"
+              },
+              {
+                "name": "firstName",
+                "description": "The customer's first name",
+                "annotations": [
+                  {
+                    "name": "n",
+                    "arguments": [
+                      {
+                        "name": "value",
+                        "value": 2
+                      }
+                    ]
+                  }
+                ],
+                "type": "string"
+              },
+              {
+                "name": "middleName",
+                "description": "The customer's middle name",
+                "annotations": [
+                  {
+                    "name": "n",
+                    "arguments": [
+                      {
+                        "name": "value",
+                        "value": 3
+                      }
+                    ]
+                  }
+                ],
+                "type": {
+                  "$optional": "string"
+                }
+              },
+              {
+                "name": "lastName",
+                "description": "The customer's last name",
+                "annotations": [
+                  {
+                    "name": "n",
+                    "arguments": [
+                      {
+                        "name": "value",
+                        "value": 4
+                      }
+                    ]
+                  }
+                ],
+                "type": "string"
+              },
+              {
+                "name": "email",
+                "description": "The customer's email address",
+                "annotations": [
+                  {
+                    "name": "email"
+                  },
+                  {
+                    "name": "n",
+                    "arguments": [
+                      {
+                        "name": "value",
+                        "value": 5
+                      }
+                    ]
+                  }
+                ],
+                "type": "string"
+              },
+              {
+                "name": "phones",
+                "description": "Customer's contact phone numbers",
+                "annotations": [
+                  {
+                    "name": "n",
+                    "arguments": [
+                      {
+                        "name": "value",
+                        "value": 6
+                      }
+                    ]
+                  }
+                ],
+                "type": {
+                  "$list": {
+                    "$type": "Phone"
+                  }
+                }
+              },
+              {
+                "name": "address",
+                "description": "The customer's address",
+                "annotations": [
+                  {
+                    "name": "n",
+                    "arguments": [
+                      {
+                        "name": "value",
+                        "value": 7
+                      }
+                    ]
+                  }
+                ],
+                "type": {
+                  "$type": "Address"
+                }
+              },
+              {
+                "name": "preferences",
+                "description": "The customers application preferences",
+                "annotations": [
+                  {
+                    "name": "n",
+                    "arguments": [
+                      {
+                        "name": "value",
+                        "value": 8
+                      }
+                    ]
+                  }
+                ],
+                "type": {
+                  "$map": {
+                    "keyType": "string",
+                    "valueType": "string"
+                  }
+                }
+              },
+              {
+                "name": "test",
+                "description": "Testing unions",
+                "annotations": [
+                  {
+                    "name": "n",
+                    "arguments": [
+                      {
+                        "name": "value",
+                        "value": 999
+                      }
+                    ]
+                  }
+                ],
+                "type": {
+                  "$union": "Test"
+                }
+              }
+            ]
+          },
+          "returns": {
+            "$type": "Customer"
+          }
+        },
+        {
+          "name": "getCustomer",
+          "description": "Retrieve a customer by id.",
+          "annotations": [
+            {
+              "name": "GET"
+            },
+            {
+              "name": "path",
+              "arguments": [
+                {
+                  "name": "value",
+                  "value": "/{id}"
+                }
+              ]
+            },
+            {
+              "name": "response",
+              "arguments": [
+                {
+                  "name": "status",
+                  "value": "OK"
+                },
+                {
+                  "name": "description",
+                  "value": "Successful response"
+                },
+                {
+                  "name": "examples",
+                  "value": {
+                    "application/json": "json"
+                  }
+                }
+              ]
+            }
+          ],
+          "unary": false,
+          "parameters": {
+            "name": "getCustomerParams",
+            "fields": [
+              {
+                "name": "id",
+                "annotations": [
+                  {
+                    "name": "n",
+                    "arguments": [
+                      {
+                        "name": "value",
+                        "value": 1
+                      }
+                    ]
+                  }
+                ],
+                "type": "u64"
+              }
+            ]
+          },
+          "returns": {
+            "$type": "Customer"
+          }
+        },
+        {
+          "name": "listCustomers",
+          "description": "Return a page of customers using optional search filters.",
+          "annotations": [
+            {
+              "name": "GET"
+            }
+          ],
+          "unary": true,
+          "parameters": {
+            "name": "CustomerQuery",
+            "annotations": [
+              {
+                "name": "query"
+              }
+            ],
+            "fields": [
+              {
+                "name": "id",
+                "description": "The customer identifer",
+                "annotations": [
+                  {
+                    "name": "n",
+                    "arguments": [
+                      {
+                        "name": "value",
+                        "value": 1
+                      }
+                    ]
+                  }
+                ],
+                "type": {
+                  "$optional": "u64"
+                }
+              },
+              {
+                "name": "firstName",
+                "description": "The customer's first name",
+                "annotations": [
+                  {
+                    "name": "n",
+                    "arguments": [
+                      {
+                        "name": "value",
+                        "value": 2
+                      }
+                    ]
+                  }
+                ],
+                "type": {
+                  "$optional": "string"
+                }
+              },
+              {
+                "name": "middleName",
+                "description": "The customer's middle name",
+                "annotations": [
+                  {
+                    "name": "n",
+                    "arguments": [
+                      {
+                        "name": "value",
+                        "value": 3
+                      }
+                    ]
+                  }
+                ],
+                "type": {
+                  "$optional": "string"
+                }
+              },
+              {
+                "name": "lastName",
+                "description": "The customer's last name",
+                "annotations": [
+                  {
+                    "name": "n",
+                    "arguments": [
+                      {
+                        "name": "value",
+                        "value": 4
+                      }
+                    ]
+                  }
+                ],
+                "type": {
+                  "$optional": "string"
+                }
+              },
+              {
+                "name": "email",
+                "description": "The customer's email address",
+                "annotations": [
+                  {
+                    "name": "email"
+                  },
+                  {
+                    "name": "n",
+                    "arguments": [
+                      {
+                        "name": "value",
+                        "value": 5
+                      }
+                    ]
+                  }
+                ],
+                "type": {
+                  "$optional": "string"
+                }
+              },
+              {
+                "name": "offset",
+                "annotations": [
+                  {
+                    "name": "n",
+                    "arguments": [
+                      {
+                        "name": "value",
+                        "value": 10
+                      }
+                    ]
+                  }
+                ],
+                "type": "u64",
+                "defaultValue": 0
+              },
+              {
+                "name": "limit",
+                "annotations": [
+                  {
+                    "name": "n",
+                    "arguments": [
+                      {
+                        "name": "value",
+                        "value": 11
+                      }
+                    ]
+                  }
+                ],
+                "type": "u64",
+                "defaultValue": 100
+              }
+            ]
+          },
+          "returns": {
+            "$type": "CustomerPage"
+          }
+        },
+        {
+          "name": "somethingSimple",
+          "annotations": [
+            {
+              "name": "nocode"
+            }
+          ],
+          "unary": false,
+          "parameters": {
+            "name": "somethingSimpleParams",
+            "fields": [
+              {
+                "name": "customer",
+                "type": {
+                  "$type": "Customer"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "CustomerActor",
+      "description": "Stateful operations that can be performed on a customer.",
+      "annotations": [
+        {
+          "name": "stateful"
+        },
+        {
+          "name": "path",
+          "arguments": [
+            {
+              "name": "value",
+              "value": "/customer-actors/{id}"
+            }
+          ]
+        }
+      ],
+      "operations": [
+        {
+          "name": "createCustomer",
+          "description": "Creates the customer state.",
+          "annotations": [
+            {
+              "name": "POST"
+            }
+          ],
+          "unary": true,
+          "parameters": {
+            "name": "Customer",
+            "description": "Customer information.",
+            "fields": [
+              {
+                "name": "id",
+                "description": "The customer identifer",
+                "annotations": [
+                  {
+                    "name": "key"
+                  },
+                  {
+                    "name": "n",
+                    "arguments": [
+                      {
+                        "name": "value",
+                        "value": 1
+                      }
+                    ]
+                  }
+                ],
+                "type": "u64"
+              },
+              {
+                "name": "firstName",
+                "description": "The customer's first name",
+                "annotations": [
+                  {
+                    "name": "n",
+                    "arguments": [
+                      {
+                        "name": "value",
+                        "value": 2
+                      }
+                    ]
+                  }
+                ],
+                "type": "string"
+              },
+              {
+                "name": "middleName",
+                "description": "The customer's middle name",
+                "annotations": [
+                  {
+                    "name": "n",
+                    "arguments": [
+                      {
+                        "name": "value",
+                        "value": 3
+                      }
+                    ]
+                  }
+                ],
+                "type": {
+                  "$optional": "string"
+                }
+              },
+              {
+                "name": "lastName",
+                "description": "The customer's last name",
+                "annotations": [
+                  {
+                    "name": "n",
+                    "arguments": [
+                      {
+                        "name": "value",
+                        "value": 4
+                      }
+                    ]
+                  }
+                ],
+                "type": "string"
+              },
+              {
+                "name": "email",
+                "description": "The customer's email address",
+                "annotations": [
+                  {
+                    "name": "email"
+                  },
+                  {
+                    "name": "n",
+                    "arguments": [
+                      {
+                        "name": "value",
+                        "value": 5
+                      }
+                    ]
+                  }
+                ],
+                "type": "string"
+              },
+              {
+                "name": "phones",
+                "description": "Customer's contact phone numbers",
+                "annotations": [
+                  {
+                    "name": "n",
+                    "arguments": [
+                      {
+                        "name": "value",
+                        "value": 6
+                      }
+                    ]
+                  }
+                ],
+                "type": {
+                  "$list": {
+                    "$type": "Phone"
+                  }
+                }
+              },
+              {
+                "name": "address",
+                "description": "The customer's address",
+                "annotations": [
+                  {
+                    "name": "n",
+                    "arguments": [
+                      {
+                        "name": "value",
+                        "value": 7
+                      }
+                    ]
+                  }
+                ],
+                "type": {
+                  "$type": "Address"
+                }
+              },
+              {
+                "name": "preferences",
+                "description": "The customers application preferences",
+                "annotations": [
+                  {
+                    "name": "n",
+                    "arguments": [
+                      {
+                        "name": "value",
+                        "value": 8
+                      }
+                    ]
+                  }
+                ],
+                "type": {
+                  "$map": {
+                    "keyType": "string",
+                    "valueType": "string"
+                  }
+                }
+              },
+              {
+                "name": "test",
+                "description": "Testing unions",
+                "annotations": [
+                  {
+                    "name": "n",
+                    "arguments": [
+                      {
+                        "name": "value",
+                        "value": 999
+                      }
+                    ]
+                  }
+                ],
+                "type": {
+                  "$union": "Test"
+                }
+              }
+            ]
+          },
+          "returns": {
+            "$type": "Customer"
+          }
+        },
+        {
+          "name": "getCustomer",
+          "description": "Retrieve the customer state.",
+          "annotations": [
+            {
+              "name": "GET"
+            }
+          ],
+          "unary": false,
+          "parameters": {
+            "name": "getCustomerParams",
+            "fields": []
+          },
+          "returns": {
+            "$type": "Customer"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Outbound",
+      "annotations": [
+        {
+          "name": "provider"
+        }
+      ],
+      "operations": [
+        {
+          "name": "saveCustomer",
+          "description": "Saves a customer to the backend database",
+          "unary": true,
+          "parameters": {
+            "name": "Customer",
+            "description": "Customer information.",
+            "fields": [
+              {
+                "name": "id",
+                "description": "The customer identifer",
+                "annotations": [
+                  {
+                    "name": "key"
+                  },
+                  {
+                    "name": "n",
+                    "arguments": [
+                      {
+                        "name": "value",
+                        "value": 1
+                      }
+                    ]
+                  }
+                ],
+                "type": "u64"
+              },
+              {
+                "name": "firstName",
+                "description": "The customer's first name",
+                "annotations": [
+                  {
+                    "name": "n",
+                    "arguments": [
+                      {
+                        "name": "value",
+                        "value": 2
+                      }
+                    ]
+                  }
+                ],
+                "type": "string"
+              },
+              {
+                "name": "middleName",
+                "description": "The customer's middle name",
+                "annotations": [
+                  {
+                    "name": "n",
+                    "arguments": [
+                      {
+                        "name": "value",
+                        "value": 3
+                      }
+                    ]
+                  }
+                ],
+                "type": {
+                  "$optional": "string"
+                }
+              },
+              {
+                "name": "lastName",
+                "description": "The customer's last name",
+                "annotations": [
+                  {
+                    "name": "n",
+                    "arguments": [
+                      {
+                        "name": "value",
+                        "value": 4
+                      }
+                    ]
+                  }
+                ],
+                "type": "string"
+              },
+              {
+                "name": "email",
+                "description": "The customer's email address",
+                "annotations": [
+                  {
+                    "name": "email"
+                  },
+                  {
+                    "name": "n",
+                    "arguments": [
+                      {
+                        "name": "value",
+                        "value": 5
+                      }
+                    ]
+                  }
+                ],
+                "type": "string"
+              },
+              {
+                "name": "phones",
+                "description": "Customer's contact phone numbers",
+                "annotations": [
+                  {
+                    "name": "n",
+                    "arguments": [
+                      {
+                        "name": "value",
+                        "value": 6
+                      }
+                    ]
+                  }
+                ],
+                "type": {
+                  "$list": {
+                    "$type": "Phone"
+                  }
+                }
+              },
+              {
+                "name": "address",
+                "description": "The customer's address",
+                "annotations": [
+                  {
+                    "name": "n",
+                    "arguments": [
+                      {
+                        "name": "value",
+                        "value": 7
+                      }
+                    ]
+                  }
+                ],
+                "type": {
+                  "$type": "Address"
+                }
+              },
+              {
+                "name": "preferences",
+                "description": "The customers application preferences",
+                "annotations": [
+                  {
+                    "name": "n",
+                    "arguments": [
+                      {
+                        "name": "value",
+                        "value": 8
+                      }
+                    ]
+                  }
+                ],
+                "type": {
+                  "$map": {
+                    "keyType": "string",
+                    "valueType": "string"
+                  }
+                }
+              },
+              {
+                "name": "test",
+                "description": "Testing unions",
+                "annotations": [
+                  {
+                    "name": "n",
+                    "arguments": [
+                      {
+                        "name": "value",
+                        "value": 999
+                      }
+                    ]
+                  }
+                ],
+                "type": {
+                  "$union": "Test"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "fetchCustomer",
+          "description": "Fetches a customer from the backend database",
+          "unary": false,
+          "parameters": {
+            "name": "fetchCustomerParams",
+            "fields": [
+              {
+                "name": "id",
+                "type": "u64"
+              }
+            ]
+          },
+          "returns": {
+            "$type": "Customer"
+          }
+        },
+        {
+          "name": "customerCreated",
+          "description": "Sends a customer creation event",
+          "unary": true,
+          "parameters": {
+            "name": "Customer",
+            "description": "Customer information.",
+            "fields": [
+              {
+                "name": "id",
+                "description": "The customer identifer",
+                "annotations": [
+                  {
+                    "name": "key"
+                  },
+                  {
+                    "name": "n",
+                    "arguments": [
+                      {
+                        "name": "value",
+                        "value": 1
+                      }
+                    ]
+                  }
+                ],
+                "type": "u64"
+              },
+              {
+                "name": "firstName",
+                "description": "The customer's first name",
+                "annotations": [
+                  {
+                    "name": "n",
+                    "arguments": [
+                      {
+                        "name": "value",
+                        "value": 2
+                      }
+                    ]
+                  }
+                ],
+                "type": "string"
+              },
+              {
+                "name": "middleName",
+                "description": "The customer's middle name",
+                "annotations": [
+                  {
+                    "name": "n",
+                    "arguments": [
+                      {
+                        "name": "value",
+                        "value": 3
+                      }
+                    ]
+                  }
+                ],
+                "type": {
+                  "$optional": "string"
+                }
+              },
+              {
+                "name": "lastName",
+                "description": "The customer's last name",
+                "annotations": [
+                  {
+                    "name": "n",
+                    "arguments": [
+                      {
+                        "name": "value",
+                        "value": 4
+                      }
+                    ]
+                  }
+                ],
+                "type": "string"
+              },
+              {
+                "name": "email",
+                "description": "The customer's email address",
+                "annotations": [
+                  {
+                    "name": "email"
+                  },
+                  {
+                    "name": "n",
+                    "arguments": [
+                      {
+                        "name": "value",
+                        "value": 5
+                      }
+                    ]
+                  }
+                ],
+                "type": "string"
+              },
+              {
+                "name": "phones",
+                "description": "Customer's contact phone numbers",
+                "annotations": [
+                  {
+                    "name": "n",
+                    "arguments": [
+                      {
+                        "name": "value",
+                        "value": 6
+                      }
+                    ]
+                  }
+                ],
+                "type": {
+                  "$list": {
+                    "$type": "Phone"
+                  }
+                }
+              },
+              {
+                "name": "address",
+                "description": "The customer's address",
+                "annotations": [
+                  {
+                    "name": "n",
+                    "arguments": [
+                      {
+                        "name": "value",
+                        "value": 7
+                      }
+                    ]
+                  }
+                ],
+                "type": {
+                  "$type": "Address"
+                }
+              },
+              {
+                "name": "preferences",
+                "description": "The customers application preferences",
+                "annotations": [
+                  {
+                    "name": "n",
+                    "arguments": [
+                      {
+                        "name": "value",
+                        "value": 8
+                      }
+                    ]
+                  }
+                ],
+                "type": {
+                  "$map": {
+                    "keyType": "string",
+                    "valueType": "string"
+                  }
+                }
+              },
+              {
+                "name": "test",
+                "description": "Testing unions",
+                "annotations": [
+                  {
+                    "name": "n",
+                    "arguments": [
+                      {
+                        "name": "value",
+                        "value": 999
+                      }
+                    ]
+                  }
+                ],
+                "type": {
+                  "$union": "Test"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "types": [
+    {
+      "name": "Customer",
+      "description": "Customer information.",
+      "fields": [
+        {
+          "name": "id",
+          "description": "The customer identifer",
+          "annotations": [
+            {
+              "name": "key"
+            },
+            {
+              "name": "n",
+              "arguments": [
+                {
+                  "name": "value",
+                  "value": 1
+                }
+              ]
+            }
+          ],
+          "type": "u64"
+        },
+        {
+          "name": "firstName",
+          "description": "The customer's first name",
+          "annotations": [
+            {
+              "name": "n",
+              "arguments": [
+                {
+                  "name": "value",
+                  "value": 2
+                }
+              ]
+            }
+          ],
+          "type": "string"
+        },
+        {
+          "name": "middleName",
+          "description": "The customer's middle name",
+          "annotations": [
+            {
+              "name": "n",
+              "arguments": [
+                {
+                  "name": "value",
+                  "value": 3
+                }
+              ]
+            }
+          ],
+          "type": {
+            "$optional": "string"
+          }
+        },
+        {
+          "name": "lastName",
+          "description": "The customer's last name",
+          "annotations": [
+            {
+              "name": "n",
+              "arguments": [
+                {
+                  "name": "value",
+                  "value": 4
+                }
+              ]
+            }
+          ],
+          "type": "string"
+        },
+        {
+          "name": "email",
+          "description": "The customer's email address",
+          "annotations": [
+            {
+              "name": "email"
+            },
+            {
+              "name": "n",
+              "arguments": [
+                {
+                  "name": "value",
+                  "value": 5
+                }
+              ]
+            }
+          ],
+          "type": "string"
+        },
+        {
+          "name": "phones",
+          "description": "Customer's contact phone numbers",
+          "annotations": [
+            {
+              "name": "n",
+              "arguments": [
+                {
+                  "name": "value",
+                  "value": 6
+                }
+              ]
+            }
+          ],
+          "type": {
+            "$list": {
+              "$type": "Phone"
+            }
+          }
+        },
+        {
+          "name": "address",
+          "description": "The customer's address",
+          "annotations": [
+            {
+              "name": "n",
+              "arguments": [
+                {
+                  "name": "value",
+                  "value": 7
+                }
+              ]
+            }
+          ],
+          "type": {
+            "$type": "Address"
+          }
+        },
+        {
+          "name": "preferences",
+          "description": "The customers application preferences",
+          "annotations": [
+            {
+              "name": "n",
+              "arguments": [
+                {
+                  "name": "value",
+                  "value": 8
+                }
+              ]
+            }
+          ],
+          "type": {
+            "$map": {
+              "keyType": "string",
+              "valueType": "string"
+            }
+          }
+        },
+        {
+          "name": "test",
+          "description": "Testing unions",
+          "annotations": [
+            {
+              "name": "n",
+              "arguments": [
+                {
+                  "name": "value",
+                  "value": 999
+                }
+              ]
+            }
+          ],
+          "type": {
+            "$union": "Test"
+          }
+        }
+      ]
+    },
+    {
+      "name": "CustomerQuery",
+      "fields": [
+        {
+          "name": "id",
+          "description": "The customer identifer",
+          "annotations": [
+            {
+              "name": "n",
+              "arguments": [
+                {
+                  "name": "value",
+                  "value": 1
+                }
+              ]
+            }
+          ],
+          "type": {
+            "$optional": "u64"
+          }
+        },
+        {
+          "name": "firstName",
+          "description": "The customer's first name",
+          "annotations": [
+            {
+              "name": "n",
+              "arguments": [
+                {
+                  "name": "value",
+                  "value": 2
+                }
+              ]
+            }
+          ],
+          "type": {
+            "$optional": "string"
+          }
+        },
+        {
+          "name": "middleName",
+          "description": "The customer's middle name",
+          "annotations": [
+            {
+              "name": "n",
+              "arguments": [
+                {
+                  "name": "value",
+                  "value": 3
+                }
+              ]
+            }
+          ],
+          "type": {
+            "$optional": "string"
+          }
+        },
+        {
+          "name": "lastName",
+          "description": "The customer's last name",
+          "annotations": [
+            {
+              "name": "n",
+              "arguments": [
+                {
+                  "name": "value",
+                  "value": 4
+                }
+              ]
+            }
+          ],
+          "type": {
+            "$optional": "string"
+          }
+        },
+        {
+          "name": "email",
+          "description": "The customer's email address",
+          "annotations": [
+            {
+              "name": "email"
+            },
+            {
+              "name": "n",
+              "arguments": [
+                {
+                  "name": "value",
+                  "value": 5
+                }
+              ]
+            }
+          ],
+          "type": {
+            "$optional": "string"
+          }
+        },
+        {
+          "name": "offset",
+          "annotations": [
+            {
+              "name": "n",
+              "arguments": [
+                {
+                  "name": "value",
+                  "value": 10
+                }
+              ]
+            }
+          ],
+          "type": "u64",
+          "defaultValue": 0
+        },
+        {
+          "name": "limit",
+          "annotations": [
+            {
+              "name": "n",
+              "arguments": [
+                {
+                  "name": "value",
+                  "value": 11
+                }
+              ]
+            }
+          ],
+          "type": "u64",
+          "defaultValue": 100
+        }
+      ]
+    },
+    {
+      "name": "CustomerPage",
+      "fields": [
+        {
+          "name": "offset",
+          "annotations": [
+            {
+              "name": "n",
+              "arguments": [
+                {
+                  "name": "value",
+                  "value": 1
+                }
+              ]
+            }
+          ],
+          "type": "u64"
+        },
+        {
+          "name": "limit",
+          "annotations": [
+            {
+              "name": "n",
+              "arguments": [
+                {
+                  "name": "value",
+                  "value": 2
+                }
+              ]
+            }
+          ],
+          "type": "u64"
+        },
+        {
+          "name": "items",
+          "annotations": [
+            {
+              "name": "n",
+              "arguments": [
+                {
+                  "name": "value",
+                  "value": 3
+                }
+              ]
+            }
+          ],
+          "type": {
+            "$list": {
+              "$type": "Customer"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Nested",
+      "fields": [
+        {
+          "name": "foo",
+          "annotations": [
+            {
+              "name": "n",
+              "arguments": [
+                {
+                  "name": "value",
+                  "value": 1
+                }
+              ]
+            }
+          ],
+          "type": "string"
+        },
+        {
+          "name": "bar",
+          "annotations": [
+            {
+              "name": "n",
+              "arguments": [
+                {
+                  "name": "value",
+                  "value": 2
+                }
+              ]
+            }
+          ],
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "Phone",
+      "fields": [
+        {
+          "name": "type",
+          "type": {
+            "$enum": "PhoneType"
+          }
+        },
+        {
+          "name": "number",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "Address",
+      "description": "Address information.",
+      "fields": [
+        {
+          "name": "line1",
+          "description": "The address line 1",
+          "annotations": [
+            {
+              "name": "n",
+              "arguments": [
+                {
+                  "name": "value",
+                  "value": 1
+                }
+              ]
+            }
+          ],
+          "type": "string"
+        },
+        {
+          "name": "line2",
+          "description": "The address line 2",
+          "annotations": [
+            {
+              "name": "n",
+              "arguments": [
+                {
+                  "name": "value",
+                  "value": 2
+                }
+              ]
+            }
+          ],
+          "type": {
+            "$optional": "string"
+          }
+        },
+        {
+          "name": "city",
+          "description": "The city",
+          "annotations": [
+            {
+              "name": "n",
+              "arguments": [
+                {
+                  "name": "value",
+                  "value": 3
+                }
+              ]
+            }
+          ],
+          "type": "string"
+        },
+        {
+          "name": "state",
+          "description": "The state",
+          "annotations": [
+            {
+              "name": "n",
+              "arguments": [
+                {
+                  "name": "value",
+                  "value": 4
+                }
+              ]
+            },
+            {
+              "name": "length",
+              "arguments": [
+                {
+                  "name": "min",
+                  "value": 2
+                },
+                {
+                  "name": "max",
+                  "value": 2
+                }
+              ]
+            }
+          ],
+          "type": "string"
+        },
+        {
+          "name": "zip",
+          "description": "The zipcode",
+          "annotations": [
+            {
+              "name": "n",
+              "arguments": [
+                {
+                  "name": "value",
+                  "value": 5
+                }
+              ]
+            },
+            {
+              "name": "length",
+              "arguments": [
+                {
+                  "name": "min",
+                  "value": 5
+                }
+              ]
+            }
+          ],
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "Error",
+      "description": "Error response.",
+      "fields": [
+        {
+          "name": "message",
+          "description": "The detailed error message",
+          "annotations": [
+            {
+              "name": "n",
+              "arguments": [
+                {
+                  "name": "value",
+                  "value": 1
+                }
+              ]
+            }
+          ],
+          "type": "string"
+        }
+      ]
+    }
+  ],
+  "enums": [
+    {
+      "name": "PhoneType",
+      "values": [
+        {
+          "name": "home",
+          "stringValue": "Home",
+          "indexValue": 0
+        },
+        {
+          "name": "mobile",
+          "stringValue": "Mobile",
+          "indexValue": 1
+        }
+      ]
+    }
+  ],
+  "unions": [
+    {
+      "name": "Test",
+      "types": [
+        {
+          "$type": "Customer"
+        },
+        {
+          "$type": "Phone"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,4 @@
+FROM gcr.io/distroless/python3
+COPY /dist/linux-darwin_linux_amd64_v1/nanobus /app/nanobus
+WORKDIR /app
+ENTRYPOINT ["/app/nanobus"]

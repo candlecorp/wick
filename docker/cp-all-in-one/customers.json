@@ -1,0 +1,65 @@
+{
+  "type": "record",
+  "name": "Customer",
+  "namespace": "io.nanobus.examples.customers",
+  "fields": [
+    {
+      "name": "id",
+      "type": "long"
+    },
+    {
+      "name": "firstName",
+      "type": "string"
+    },
+    {
+      "name": "middleName",
+      "type": [
+        "null",
+        "string"
+      ],
+      "default": null
+    },
+    {
+      "name": "lastName",
+      "type": "string"
+    },
+    {
+      "name": "email",
+      "type": "string"
+    },
+    {
+      "name": "address",
+      "type": {
+        "type": "record",
+        "name": "Address",
+        "namespace": "io.nanobus.examples.customers",
+        "fields": [
+          {
+            "name": "line1",
+            "type": "string"
+          },
+          {
+            "name": "line2",
+            "type": [
+              "null",
+              "string"
+            ],
+            "default": null
+          },
+          {
+            "name": "city",
+            "type": "string"
+          },
+          {
+            "name": "state",
+            "type": "string"
+          },
+          {
+            "name": "zip",
+            "type": "string"
+          }
+        ]
+      }
+    }
+  ]
+}

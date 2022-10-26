@@ -1,0 +1,381 @@
+{
+  "name": "greetings.v1",
+  "annotations": [
+    {
+      "name": "anno",
+      "arguments": [
+        {
+          "name": "arg1",
+          "value": "val1"
+        },
+        {
+          "name": "arg2",
+          "value": "val2"
+        }
+      ]
+    },
+    {
+      "name": "test",
+      "arguments": [
+        {
+          "name": "arg1",
+          "value": "val1"
+        },
+        {
+          "name": "arg2",
+          "value": "val2"
+        }
+      ]
+    }
+  ],
+  "services": [
+    {
+      "name": "Hello",
+      "description": "Greetings",
+      "annotations": [
+        {
+          "name": "service"
+        },
+        {
+          "name": "test",
+          "arguments": [
+            {
+              "name": "arg1",
+              "value": "val1"
+            },
+            {
+              "name": "arg2",
+              "value": "val2"
+            }
+          ]
+        }
+      ],
+      "operations": [
+        {
+          "name": "sayHello",
+          "description": "Say hello",
+          "annotations": [
+            {
+              "name": "test",
+              "arguments": [
+                {
+                  "name": "arg1",
+                  "value": "val1"
+                },
+                {
+                  "name": "arg2",
+                  "value": "val2"
+                }
+              ]
+            }
+          ],
+          "unary": true,
+          "parameters": {
+            "name": "sayHelloArgs",
+            "description": "arguments for sayHello",
+            "fields": [
+              {
+                "name": "name",
+                "description": "Name of the person to greet",
+                "type": "string",
+                "defaultValue": "World"
+              }
+            ]
+          },
+          "returns": {
+            "$type": "Response"
+          }
+        },
+        {
+          "name": "getAnimal",
+          "description": "Retrieve an animal",
+          "annotations": [
+            {
+              "name": "test",
+              "arguments": [
+                {
+                  "name": "arg1",
+                  "value": "val1"
+                },
+                {
+                  "name": "arg2",
+                  "value": "val2"
+                }
+              ]
+            }
+          ],
+          "unary": false,
+          "parameters": {
+            "name": "getAnimalArgs",
+            "description": "arguments for sayHello",
+            "fields": [
+              {
+                "name": "animalId",
+                "description": "ID of the animal",
+                "type": "string"
+              }
+            ]
+          },
+          "returns": {
+            "$union": "Animal"
+          }
+        }
+      ]
+    }
+  ],
+  "types": [
+    {
+      "name": "Response",
+      "description": "Greeting response",
+      "annotations": [
+        {
+          "name": "test",
+          "arguments": [
+            {
+              "name": "arg1",
+              "value": "val1"
+            },
+            {
+              "name": "arg2",
+              "value": "val2"
+            }
+          ]
+        }
+      ],
+      "fields": [
+        {
+          "name": "message",
+          "description": "The greeting message",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "Dog",
+      "description": "A dog",
+      "annotations": [
+        {
+          "name": "test",
+          "arguments": [
+            {
+              "name": "arg1",
+              "value": "val1"
+            },
+            {
+              "name": "arg2",
+              "value": "val2"
+            }
+          ]
+        }
+      ],
+      "fields": [
+        {
+          "name": "name",
+          "description": "The pet's name",
+          "annotations": [
+            {
+              "name": "test",
+              "arguments": [
+                {
+                  "name": "arg1",
+                  "value": "val1"
+                },
+                {
+                  "name": "arg2",
+                  "value": "val2"
+                }
+              ]
+            }
+          ],
+          "type": "string"
+        },
+        {
+          "name": "breed",
+          "description": "The dog's breed",
+          "annotations": [
+            {
+              "name": "test",
+              "arguments": [
+                {
+                  "name": "arg1",
+                  "value": "val1"
+                },
+                {
+                  "name": "arg2",
+                  "value": "val2"
+                }
+              ]
+            }
+          ],
+          "type": {
+            "$enum": "DogBreed"
+          }
+        },
+        {
+          "name": "parentDogIds",
+          "description": "The dog's parents",
+          "type": {
+            "$list": "string"
+          }
+        },
+        {
+          "name": "birthDate",
+          "description": "The dog's birth date",
+          "type": {
+            "$optional": "datetime"
+          }
+        },
+        {
+          "name": "diet",
+          "description": "The dog's food intake",
+          "type": {
+            "$map": {
+              "keyType": "string",
+              "valueType": "string"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cat",
+      "description": "A cat",
+      "annotations": [
+        {
+          "name": "test",
+          "arguments": [
+            {
+              "name": "arg1",
+              "value": "val1"
+            },
+            {
+              "name": "arg2",
+              "value": "val2"
+            }
+          ]
+        }
+      ],
+      "fields": [
+        {
+          "name": "name",
+          "description": "The pet's name",
+          "annotations": [
+            {
+              "name": "test",
+              "arguments": [
+                {
+                  "name": "arg1",
+                  "value": "val1"
+                },
+                {
+                  "name": "arg2",
+                  "value": "val2"
+                }
+              ]
+            }
+          ],
+          "type": "string"
+        },
+        {
+          "name": "liveRemaining",
+          "description": "How many lives are remaiing",
+          "type": "u8"
+        }
+      ]
+    }
+  ],
+  "enums": [
+    {
+      "name": "DogBreed",
+      "description": "Enumeration for the type of animal",
+      "annotations": [
+        {
+          "name": "test",
+          "arguments": [
+            {
+              "name": "arg1",
+              "value": "val1"
+            },
+            {
+              "name": "arg2",
+              "value": "val2"
+            }
+          ]
+        }
+      ],
+      "values": [
+        {
+          "name": "corgi",
+          "description": "Pembroke Welsh Corgi",
+          "annotations": [
+            {
+              "name": "test",
+              "arguments": [
+                {
+                  "name": "arg1",
+                  "value": "val1"
+                },
+                {
+                  "name": "arg2",
+                  "value": "val2"
+                }
+              ]
+            }
+          ],
+          "stringValue": "Pembroke Welsh Corgi",
+          "indexValue": 1
+        },
+        {
+          "name": "golden_retriever",
+          "description": "Golden Retriever",
+          "annotations": [
+            {
+              "name": "test",
+              "arguments": [
+                {
+                  "name": "arg1",
+                  "value": "val1"
+                },
+                {
+                  "name": "arg2",
+                  "value": "val2"
+                }
+              ]
+            }
+          ],
+          "stringValue": "Golden Retriever",
+          "indexValue": 2
+        }
+      ]
+    }
+  ],
+  "unions": [
+    {
+      "name": "Animal",
+      "description": "A union of animal types",
+      "annotations": [
+        {
+          "name": "test",
+          "arguments": [
+            {
+              "name": "arg1",
+              "value": "val1"
+            },
+            {
+              "name": "arg2",
+              "value": "val2"
+            }
+          ]
+        }
+      ],
+      "types": [
+        {
+          "$type": "Dog"
+        },
+        {
+          "$type": "Cat"
+        }
+      ]
+    }
+  ]
+}

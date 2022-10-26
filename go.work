@@ -1,0 +1,10 @@
+go 1.19
+
+use (
+    .
+    ./components/pubsub.kafka
+    ./components/pubsub.memory
+    ./components/pubsub.redis
+    ./components/state.memory
+    ./components/state.redis
+)

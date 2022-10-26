@@ -1,0 +1,188 @@
+import * from "@apexlang/core"
+import * from "@apexlang/rest"
+import * from "@apexlang/openapi"
+
+namespace "customers.v1"
+  @version("0.1.0")
+  @path("/v1")
+  @info(
+    title: "Customers API",
+    description: """
+    This API contains operations that an application can perform on customers.
+    """,
+    version: "1.0",
+    contact: {
+      name: "MyCompany API Team",
+      email: "apiteam@mycompany.io",
+      url: "http://mycompany.io"
+    },
+    license: {
+      name: "Apache 2.0",
+      url: "https://www.apache.org/licenses/LICENSE-2.0.html"
+    }
+  )
+  @host("mycompany.io")
+  @schemes(["https"])
+  @consumes(["application/json"])
+  @produces(["application/json"])
+  @externalDocs(
+    url: "http://mycompany.io/docs"
+  )
+
+"""
+Operations that can be performed on a customer.
+"""
+interface CustomerService @service @uses([Outbound]) @path("/customers") {
+  """
+  Creates a new customer.
+  """
+  createCustomer[customer: Customer]: Customer
+    @POST
+    @response(
+      status: CREATED,
+      description: "Successful response",
+      examples: {
+        "application/json": "json"
+      }
+    )
+
+  """
+  Retrieve a customer by id.
+  """
+  getCustomer(id: u64 @n(1)): Customer
+    @GET
+    @path("/{id}")
+    @response(
+      status: OK,
+      description: "Successful response",
+      examples: {
+        "application/json": "json"
+      }
+    )
+    @response(
+      status: NOT_FOUND,
+      returns: "Error",
+      description: "No customer with that identifier",
+      examples: {
+        "application/json": "json"
+      }
+    )
+
+  """
+  Return a page of customers using optional search filters.
+  """
+  listCustomers[query: CustomerQuery @query]: CustomerPage
+    @GET
+  
+  somethingSimple(customer: Customer) @nocode
+}
+
+"""
+Stateful operations that can be performed on a customer.
+"""
+interface CustomerActor @stateful @path("/customer-actors/{id}") {
+  """
+  Creates the customer state.
+  """
+  createCustomer[customer: Customer]: Customer @POST
+  """
+  Retrieve the customer state.
+  """
+  getCustomer(): Customer @GET
+}
+
+interface Outbound @provider {
+  "Saves a customer to the backend database"
+  saveCustomer[customer: Customer]
+  "Fetches a customer from the backend database"
+  fetchCustomer(id: u64): Customer
+  "Sends a customer creation event"
+  customerCreated[customer: Customer]
+}
+
+"""
+Customer information.
+"""
+type Customer {
+  "The customer identifer"
+  id: u64 @key @n(1)
+  "The customer's first name"
+  firstName: string @n(2)
+  "The customer's middle name"
+  middleName: string? @n(3)
+  "The customer's last name"
+  lastName: string @n(4)
+  "The customer's email address"
+  email: string @email @n(5)
+  "Customer's contact phone numbers"
+  phones: [Phone] @n(6)
+  "The customer's address"
+  address: Address @n(7)
+  "The customers application preferences"
+  preferences: {string: string} @n(8)
+  "Testing unions"
+  test: Test @n(999)
+}
+
+type CustomerQuery {
+  "The customer identifer"
+  id: u64? @n(1)
+  "The customer's first name"
+  firstName: string? @n(2)
+  "The customer's middle name"
+  middleName: string? @n(3)
+  "The customer's last name"
+  lastName: string? @n(4)
+  "The customer's email address"
+  email: string? @email @n(5)
+  ""
+  offset: u64 = 0 @n(10)
+  limit: u64 = 100 @n(11)
+}
+
+type CustomerPage {
+  offset: u64 @n(1)
+  limit: u64 @n(2)
+  items: [Customer] @n(3)
+}
+
+type Nested {
+  foo: string @n(1)
+  bar: string @n(2)
+}
+
+enum PhoneType {
+  home = 0 as "Home"
+  mobile = 1 as "Mobile"
+}
+
+type Phone {
+  type: PhoneType
+  number: string
+}
+
+union Test = Customer | Phone
+
+"""
+Address information.
+"""
+type Address {
+  "The address line 1"
+  line1: string @n(1)
+  "The address line 2"
+  line2: string? @n(2)
+  "The city"
+  city: string @n(3)
+  "The state"
+  state: string @n(4) @length(min: 2, max: 2)
+  "The zipcode"
+  zip: string @n(5) @length(min: 5)
+}
+
+"""
+Error response.
+"""
+type Error {
+  "The detailed error message"
+  message: string @n(1)
+}
