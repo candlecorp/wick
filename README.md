@@ -73,7 +73,7 @@ cd nanobus
 make install
 ```
 
-Finally, generated projects use `[just](https://github.com/casey/just#packages)`, an alternative to `make`, to build.
+Generated projects use [`just`](https://github.com/casey/just#packages), an alternative to `make`, to build.
 
 ### Create a NanoBus Application
 
