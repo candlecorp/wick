@@ -1,4 +1,4 @@
-.PHONY: clean lint changelog release-dry-run release build-linux-amd64 docker
+.PHONY: clean lint changelog install release-dry-run release build-linux-amd64 docker
 .PHONY: all build
 .PHONY: deps
 
