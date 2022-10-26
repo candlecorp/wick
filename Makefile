@@ -1,4 +1,4 @@
-.PHONY: clean lint changelog snapshot copy-wasmer release-dry-run release build-linux-amd64 docker
+.PHONY: clean lint changelog release-dry-run release build-linux-amd64 docker
 .PHONY: all build
 .PHONY: deps
 
@@ -53,19 +53,6 @@ clean:
 
 changelog:
 	git-chglog $(VERSION) > CHANGELOG.md
-
-snapshot:
-	docker run --rm --privileged \
-		-e PRIVATE_KEY=$(PRIVATE_KEY) \
-		-v $(CURDIR):/golang-cross-example \
-		-v /var/run/docker.sock:/var/run/docker.sock \
-		-v $(GOPATH)/src:/go/src \
-		-w /golang-cross-example \
-		ghcr.io/gythialy/golang-cross:$(GO_BUILDER_VERSION) --snapshot --rm-dist
-
-copy-wasmer:
-	rm -rf $(shell pwd)/lib/
-	cp -R $(GOPATH)/pkg/mod/github.com/wasmerio/wasmer-go@v1.0.4/wasmer/packaged/lib $(shell pwd)
 
 release-dry-run:
 	goreleaser --rm-dist --timeout=60m --skip-validate --skip-publish --snapshot

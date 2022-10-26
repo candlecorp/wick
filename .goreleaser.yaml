@@ -1,25 +1,17 @@
 project_name: nanobus
 builds:
-  - id: linux-darwin
+  - id: nanobus
     main: ./cmd/nanobus
     binary: "{{ .ProjectName }}"
     goos:
       - linux
       - darwin
-    goarch:
-      - amd64
-      - arm64
-    env:
-      - CGO_ENABLED=0
-    flags:
-      - -mod=readonly
-  - id: windows-amd64
-    main: ./cmd/nanobus
-    binary: "{{ .ProjectName }}"
-    goos:
       - windows
     goarch:
       - amd64
+      - arm64
+    ldflags:
+      - -s -w -X main.Version={{.Version}} -X main.Commit={{.Commit}} -X main.Date={{.Date}}
     env:
       - CGO_ENABLED=0
     flags:
@@ -27,8 +19,7 @@ builds:
 archives:
   - id: nanobus
     builds:
-      - linux-darwin
-      - windows-amd64
+      - nanobus
     name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
     format: tar.gz
     format_overrides:
@@ -49,15 +40,15 @@ changelog:
       - '^docs:'
       - '^test:'
 
-brews:
-  - name: NanoBus
-    tap:
-      owner: nanobus
-      name: homebrew-tap
-    folder: Formula
-    homepage: https://nanobus.io
-    description: NanoBus is a lightweight microservice runtime that reduces developer responsibility so that teams can focus on core application logic.
-    license: "ELv2"
+# brews:
+#   - name: NanoBus
+#     tap:
+#       owner: nanobus
+#       name: homebrew-tap
+#     folder: Formula
+#     homepage: https://nanobus.io
+#     description: NanoBus is a lightweight microservice runtime that reduces developer responsibility so that teams can focus on core application logic.
+#     license: "ELv2"
 
 release:
   github:

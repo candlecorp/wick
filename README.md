@@ -52,9 +52,9 @@ To learn more, see the [architecture page](/docs/architecture.md).
 
 ### Install the Apex for Code Generation
 
-NanoBus applications can be created quickly using [Apex](https://apexlang.io). The [Apex CLI](https://apexlang.io/docs/getting-started#cli) must be installed.
+NanoBus are generated using [Apex](https://apexlang.io). The [documentation](https://apexlang.io/docs/getting-started#cli) goes over installation and offers a tutorial.
 
-Next, run the following commands from a terminal to install NanoBus code generators.
+Next, from a terminal, install NanoBus code generators for Apex.
 
 ```cli
 git clone https://github.com/nanobus/iota.git
@@ -64,6 +64,14 @@ just apex-install
 ```
 
 Note: The above step will be simplified once these packages are published to [NPM](https://www.npmjs.com).
+
+Now you'll want to install the NanoBus runtime (this repo). You can build from source or [install a release](./install/README.md).
+
+```cli
+git clone https://github.com/nanobus/nanobus.git
+cd nanobus
+make install
+```
 
 Finally, generated projects use `[just](https://github.com/casey/just#packages)`, an alternative to `make`, to build.
 

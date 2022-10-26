@@ -152,7 +152,13 @@ func main() {
 	args := flag.Args()
 
 	if len(args) == 1 && args[0] == "version" {
-		println(Version + " " + Commit + " " + Date)
+		println("version = " + Version)
+		if Commit != "" {
+			println("commit  = " + Commit)
+		}
+		if Date != "" {
+			println("date    = " + Date)
+		}
 		return
 	}
 
