@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 
+	"github.com/go-logr/logr"
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
@@ -15,6 +16,7 @@ import (
 )
 
 type Config struct {
+	Name       string `mapstructure:"name" validate:"required"`
 	DataSource string `mapstructure:"dataSource" validate:"required"`
 	SourceURL  string `mapstructure:"sourceUrl" validate:"required"`
 }
@@ -29,10 +31,16 @@ func Loader(ctx context.Context, with interface{}, resolver resolve.ResolveAs) (
 		return nil, err
 	}
 
-	return Migrate(&c), nil
+	var logger logr.Logger
+	if err := resolve.Resolve(resolver,
+		"system:logger", &logger); err != nil {
+		return nil, err
+	}
+
+	return Migrate(logger, &c), nil
 }
 
-func Migrate(c *Config) nb_migrate.Migrater {
+func Migrate(log logr.Logger, c *Config) nb_migrate.Migrater {
 	return func(ctx context.Context) error {
 		db, err := sql.Open("postgres", c.DataSource)
 		if err != nil {
@@ -51,6 +59,16 @@ func Migrate(c *Config) nb_migrate.Migrater {
 			return err
 		}
 
-		return m.Up()
+		if err := m.Up(); err != nil {
+			if err != migrate.ErrNoChange {
+				return err
+			}
+
+			log.Info("Migration has no changes", "name", c.Name)
+		} else {
+			log.Info("Migration successful", "name", c.Name)
+		}
+
+		return nil
 	}
 }

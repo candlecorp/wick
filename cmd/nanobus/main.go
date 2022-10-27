@@ -354,11 +354,15 @@ func main() {
 	dependencies["codec:lookup"] = codecs
 	dependencies["codec:byContentType"] = codecsByContentType
 
-	for _, spec := range config.Migrate {
+	for name, spec := range config.Migrate {
+		log.Info("Migrating databas", "name", name)
 		loader, ok := migrateRegistry[spec.Uses]
 		if !ok {
 			log.Error(nil, "could not find migrater", "type", spec.Uses)
 			os.Exit(1)
+		}
+		if m, ok := spec.With.(map[string]interface{}); ok {
+			m["name"] = name
 		}
 		nss, err := loader(ctx, spec.With, resolveAs)
 		if err != nil {
