@@ -89,9 +89,12 @@ import (
 	"github.com/nanobus/nanobus/transport"
 	"github.com/nanobus/nanobus/transport/filter"
 	"github.com/nanobus/nanobus/transport/filter/jwt"
+	"github.com/nanobus/nanobus/transport/filter/session"
 	"github.com/nanobus/nanobus/transport/httprpc"
 	"github.com/nanobus/nanobus/transport/nats"
 	"github.com/nanobus/nanobus/transport/rest"
+	"github.com/nanobus/nanobus/transport/routes"
+	"github.com/nanobus/nanobus/transport/routes/oauth2"
 )
 
 type Runtime struct {
@@ -183,10 +186,17 @@ func main() {
 		spec_apex.Apex,
 	)
 
+	// Routes registration
+	routesRegistry := routes.Registry{}
+	routesRegistry.Register(
+		oauth2.Oauth2,
+	)
+
 	// Filter registration
 	filterRegistry := filter.Registry{}
 	filterRegistry.Register(
 		jwt.JWT,
+		session.Session,
 	)
 
 	// Compute registration
@@ -247,13 +257,13 @@ func main() {
 	env := getEnvironment()
 	namespaces := make(spec.Namespaces)
 	dependencies := map[string]interface{}{
-		"system:logger": log,
-		//"system:tracer":   tracer,
+		"system:logger":   log,
 		"client:http":     httpClient,
 		"codec:json":      jsoncodec,
 		"codec:msgpack":   msgpackcodec,
 		"spec:namespaces": namespaces,
 		"os:env":          env,
+		"registry:routes": routesRegistry,
 	}
 	resolver := func(name string) (interface{}, bool) {
 		dep, ok := dependencies[name]
@@ -400,6 +410,7 @@ func main() {
 		log.Error(err, "Could not create NanoBus runtime")
 		os.Exit(1)
 	}
+	dependencies["system:processor"] = processor
 
 	rt := Runtime{
 		log:        log,

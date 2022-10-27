@@ -16,17 +16,18 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
-	"github.com/nanobus/nanobus/channel"
-	"github.com/nanobus/nanobus/config"
-	"github.com/nanobus/nanobus/resolve"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel/trace"
 
+	"github.com/nanobus/nanobus/channel"
+	"github.com/nanobus/nanobus/config"
 	"github.com/nanobus/nanobus/errorz"
+	"github.com/nanobus/nanobus/resolve"
 	"github.com/nanobus/nanobus/spec"
 	"github.com/nanobus/nanobus/transport"
 	"github.com/nanobus/nanobus/transport/filter"
 	"github.com/nanobus/nanobus/transport/httpresponse"
+	"github.com/nanobus/nanobus/transport/routes"
 )
 
 type Rest struct {
@@ -54,6 +55,7 @@ type queryParam struct {
 type optionsHolder struct {
 	codecs  []channel.Codec
 	filters []filter.Filter
+	routes  []routes.AddRoutes
 }
 
 var rePathParams = regexp.MustCompile(`(?m)\{([^\}]*)\}`)
@@ -77,15 +79,27 @@ func WithFilters(filters ...filter.Filter) Option {
 	}
 }
 
+func WithRoutes(r ...routes.AddRoutes) Option {
+	return func(opts *optionsHolder) {
+		opts.routes = r
+	}
+}
+
 type Configuration struct {
 	Address string       `mapstructure:"address" validate:"required"`
 	Static  []StaticPath `mapstructure:"static"`
+	Routes  []Route      `mapstructure:"routes"`
 }
 
 type StaticPath struct {
 	Dir   string `mapstructure:"dir" validate:"required"`
 	Path  string `mapstructure:"path" validate:"required"`
 	Strip string `mapstructure:"strip"`
+}
+
+type Route struct {
+	Uses string `mapstructure:"uses" validate:"required"`
+	With any    `mapstructure:"with"`
 }
 
 func Load() (string, transport.Loader) {
@@ -101,6 +115,7 @@ func Loader(ctx context.Context, with interface{}, resolver resolve.ResolveAs) (
 	var filters []filter.Filter
 	var log logr.Logger
 	var tracer trace.Tracer
+	var routesRegistry routes.Registry
 	if err := resolve.Resolve(resolver,
 		"codec:json", &jsoncodec,
 		"codec:msgpack", &msgpackcodec,
@@ -109,7 +124,8 @@ func Loader(ctx context.Context, with interface{}, resolver resolve.ResolveAs) (
 		"errors:resolver", &errorResolver,
 		"filter:lookup", &filters,
 		"system:logger", &log,
-		"system:tracer", &tracer); err != nil {
+		"system:tracer", &tracer,
+		"registry:routes", &routesRegistry); err != nil {
 		return nil, err
 	}
 
@@ -118,9 +134,20 @@ func Loader(ctx context.Context, with interface{}, resolver resolve.ResolveAs) (
 		return nil, err
 	}
 
+	routes := make([]routes.AddRoutes, len(c.Routes))
+	for i, route := range c.Routes {
+		r := routesRegistry[route.Uses]
+		addRoutes, err := r(ctx, route.With, resolver)
+		if err != nil {
+			return nil, err
+		}
+		routes[i] = addRoutes
+	}
+
 	return New(log, tracer, c, namespaces, transportInvoker, errorResolver,
 		WithFilters(filters...),
-		WithCodecs(jsoncodec, msgpackcodec))
+		WithCodecs(jsoncodec, msgpackcodec),
+		WithRoutes(routes...))
 }
 
 func New(log logr.Logger, tracer trace.Tracer, config Configuration, namespaces spec.Namespaces, invoker transport.Invoker, errorResolver errorz.Resolver, options ...Option) (transport.Transport, error) {
@@ -138,6 +165,10 @@ func New(log logr.Logger, tracer trace.Tracer, config Configuration, namespaces 
 	r := mux.NewRouter()
 	r.Use(handlers.ProxyHeaders)
 	r.Use(mux.CORSMethodMiddleware(r))
+
+	for _, addRoutes := range opts.routes {
+		addRoutes(r)
+	}
 
 	docsHost := config.Address
 	if strings.HasPrefix(docsHost, ":") {

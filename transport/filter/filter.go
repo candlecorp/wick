@@ -16,5 +16,6 @@ type (
 	Header interface {
 		Get(name string) string
 		Values(name string) []string
+		Set(name, value string)
 	}
 )

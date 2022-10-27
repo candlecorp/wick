@@ -33,6 +33,7 @@ type Config struct {
 	HMACSecretKeyBase64  bool   `mapstructure:"hmacSecretKeyBase64"`
 	HMACSecretKeyString  string `mapstructure:"hmacSecretKeyString"`
 	JWKSURL              string `mapstructure:"jwksUrl"`
+	Debug                bool   `mapstructure:"debug"`
 }
 
 type Settings struct {
@@ -40,6 +41,7 @@ type Settings struct {
 	ECDSAPublicKey *ecdsa.PublicKey
 	HMACSecretKey  []byte
 	KeyFunc        jwt.Keyfunc
+	Debug          bool
 }
 
 // JWT is the NamedLoader for the JWT filter.
@@ -48,11 +50,14 @@ func JWT() (string, filter.Loader) {
 }
 
 func Loader(ctx context.Context, with interface{}, resolver resolve.ResolveAs) (filter.Filter, error) {
-	var settings Settings
 	var c Config
 	err := config.Decode(with, &c)
 	if err != nil {
 		return nil, err
+	}
+
+	settings := Settings{
+		Debug: c.Debug,
 	}
 
 	var logger logr.Logger
@@ -183,7 +188,13 @@ func Filter(log logr.Logger, settings *Settings) filter.Filter {
 
 		if token != nil {
 			if c, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-				ctx = claims.ToContext(ctx, claims.Claims(c))
+				c := claims.Claims(c)
+				ctx = claims.ToContext(ctx, c)
+
+				if settings.Debug {
+					log.Info("Claims debug info [TURN OFF FOR PRODUCTION]",
+						"claims", c)
+				}
 			}
 		}
 
