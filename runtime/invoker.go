@@ -14,6 +14,7 @@ import (
 	"github.com/nanobus/nanobus/actions"
 	"github.com/nanobus/nanobus/channel"
 	"github.com/nanobus/nanobus/compute"
+	"github.com/nanobus/nanobus/security/claims"
 	"github.com/nanobus/nanobus/stream"
 )
 
@@ -94,12 +95,12 @@ func (i *Invoker) Operations() operations.Table {
 }
 
 func (i *Invoker) FireAndForget(ctx context.Context, p payload.Payload) {
-	r, data := i.lookup(p)
+	r, data := i.lookup(ctx, p)
 	go r(ctx, data)
 }
 
 func (i *Invoker) RequestResponse(ctx context.Context, p payload.Payload) mono.Mono[payload.Payload] {
-	r, data := i.lookup(p)
+	r, data := i.lookup(ctx, p)
 	return mono.Create(func(sink mono.Sink[payload.Payload]) {
 		go func() {
 			result, err := r(ctx, data)
@@ -125,7 +126,7 @@ func (i *Invoker) RequestResponse(ctx context.Context, p payload.Payload) mono.M
 }
 
 func (i *Invoker) RequestStream(ctx context.Context, p payload.Payload) flux.Flux[payload.Payload] {
-	r, data := i.lookup(p)
+	r, data := i.lookup(ctx, p)
 	return flux.Create(func(sink flux.Sink[payload.Payload]) {
 		go func() {
 			s := stream.FromSink(sink)
@@ -147,7 +148,7 @@ func (i *Invoker) RequestStream(ctx context.Context, p payload.Payload) flux.Flu
 }
 
 func (i *Invoker) RequestChannel(ctx context.Context, p payload.Payload, in flux.Flux[payload.Payload]) flux.Flux[payload.Payload] {
-	r, data := i.lookup(p)
+	r, data := i.lookup(ctx, p)
 	return flux.Create(func(sink flux.Sink[payload.Payload]) {
 		go func() {
 			streamSink := stream.FromSink(sink)
@@ -171,15 +172,17 @@ func (i *Invoker) RequestChannel(ctx context.Context, p payload.Payload, in flux
 	})
 }
 
-func (i *Invoker) lookup(p payload.Payload) (Runnable, actions.Data) {
+func (i *Invoker) lookup(ctx context.Context, p payload.Payload) (Runnable, actions.Data) {
 	md := p.Metadata()
 	index := binary.BigEndian.Uint32(md)
 	r := i.runnables[index]
 	t := i.targets[index]
 	var input interface{}
 	i.codec.Decode(p.Data(), &input)
+	c := claims.FromContext(ctx)
 	data := actions.Data{
-		"input": input,
+		"input":  input,
+		"claims": c,
 	}
 
 	if jsonBytes, err := json.MarshalIndent(input, "", "  "); err == nil {
