@@ -297,24 +297,24 @@ func New(log logr.Logger, tracer trace.Tracer, config Configuration, namespaces 
 									defaultValue: param.DefaultValue,
 								}
 							} else if t.Type != nil {
-								for _, f := range param.Type.Type.Fields {
-									t := param.Type
+								for _, f := range t.Type.Fields {
+									// t := param.Type
 									required := true
 									isArray := false
-									if t.OptionalType != nil {
-										t = t.OptionalType
-									}
-									if t.ItemType != nil {
-										t = t.ItemType
-										isArray = true
-									}
+									// if t.OptionalType != nil {
+									// 	t = t.OptionalType
+									// }
+									// if t.ItemType != nil {
+									// 	t = t.ItemType
+									// 	isArray = true
+									// }
 
 									queryParams[f.Name] = queryParam{
 										name:         f.Name,
 										arg:          param.Name,
 										required:     required,
 										isArray:      isArray,
-										typeRef:      t,
+										typeRef:      f.Type,
 										defaultValue: f.DefaultValue,
 									}
 								}
@@ -488,6 +488,9 @@ func (t *Rest) handler(namespace, service, operation string, isActor bool,
 							return
 						}
 					}
+					if converted == nil {
+						converted = q.defaultValue
+					}
 					wrapper := input
 					if q.arg != "" {
 						var w interface{}
@@ -504,7 +507,19 @@ func (t *Rest) handler(namespace, service, operation string, isActor bool,
 				} else if q.isArray && q.required {
 					input[name] = []interface{}{}
 				} else if q.defaultValue != nil {
-					input[name] = q.defaultValue
+					wrapper := input
+					if q.arg != "" {
+						var w interface{}
+						found := false
+						if w, found = input[q.arg]; found {
+							wrapper, found = w.(map[string]interface{})
+						}
+						if !found {
+							wrapper = make(map[string]interface{}, len(queryValues))
+							input[q.arg] = wrapper
+						}
+					}
+					wrapper[name] = q.defaultValue
 				}
 			}
 		}
