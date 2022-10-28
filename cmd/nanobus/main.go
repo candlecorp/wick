@@ -664,12 +664,13 @@ func main() {
 				return nil, translateError(err)
 			}
 
-			var resultDecoded interface{}
-			if err := msgpack.Unmarshal(result.Data(), &resultDecoded); err != nil {
-				return nil, translateError(err)
+			if len(result.Data()) > 0 {
+				var resultDecoded interface{}
+				if err := msgpack.Unmarshal(result.Data(), &resultDecoded); err != nil {
+					return nil, translateError(err)
+				}
+				response = resultDecoded
 			}
-
-			response = resultDecoded
 		}
 
 		return response, err
