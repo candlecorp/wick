@@ -166,7 +166,7 @@ func main() {
 	}
 
 	// Load the configuration
-	config, err := loadConfiguration(busFile)
+	config, err := loadConfiguration(busFile, log)
 	if err != nil {
 		log.Error(err, "could not load configuration", "file", busFile)
 		os.Exit(1)
@@ -428,14 +428,7 @@ func main() {
 		return []byte{}, nil
 	}
 
-	if err = processor.Initialize(); err != nil {
-		log.Error(err, "Could not initialize processor")
-		os.Exit(1)
-	}
-
 	m := mesh.New(tracer)
-
-	m.Link(runtime.NewInvoker(log, processor.GetProviders(), msgpackcodec))
 
 	for _, comp := range config.Compute {
 		computeLoader, ok := computeRegistry[comp.Uses]
@@ -451,6 +444,13 @@ func main() {
 		m.Link(invoker)
 	}
 	dependencies["compute:mesh"] = m
+
+	if err = processor.Initialize(); err != nil {
+		log.Error(err, "Could not initialize processor")
+		os.Exit(1)
+	}
+
+	m.Link(runtime.NewInvoker(log, processor.GetProviders(), msgpackcodec))
 
 	for _, subscription := range config.Subscriptions {
 		pubsub, err := resource.Get[proto.PubSubClient](resources, subscription.Resource)
@@ -796,7 +796,7 @@ func main() {
 // 	return output, nil
 // }
 
-func loadConfiguration(filename string) (*runtime.Configuration, error) {
+func loadConfiguration(filename string, log logr.Logger) (*runtime.Configuration, error) {
 	// TODO: Load from file or URI
 	f, err := os.OpenFile(filename, os.O_RDONLY, 0644)
 	if err != nil {
@@ -816,14 +816,17 @@ func loadConfiguration(filename string) (*runtime.Configuration, error) {
 	}
 
 	for _, imp := range c.Import {
+		fileDir := filepath.Dir(imp)
 		path := filepath.Join(baseDir, imp)
+		log.Info("Importing config " + path)
 		dir := filepath.Dir(path)
 		runtime.SetConfigBaseDir(dir)
-		imported, err := loadConfiguration(path)
+		imported, err := loadConfiguration(path, log)
 		if err != nil {
 			return nil, err
 		}
-		runtime.Combine(c, imported)
+		runtime.Combine(c, fileDir, log, imported)
+		runtime.SetConfigBaseDir(baseDir)
 	}
 
 	return c, nil

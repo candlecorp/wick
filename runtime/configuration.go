@@ -11,6 +11,8 @@ import (
 
 	"gopkg.in/yaml.v3"
 
+	"github.com/go-logr/logr"
+	rootConfig "github.com/nanobus/nanobus/config"
 	"github.com/nanobus/nanobus/errorz"
 )
 
@@ -123,16 +125,34 @@ func LoadYAML(in io.Reader) (*Configuration, error) {
 	return &c, nil
 }
 
-func Combine(config *Configuration, configs ...*Configuration) {
+type FilenameConfig struct {
+	Filename string `mapstructure:"filename"`
+}
+
+func NormalizeBaseDir(dir string, with interface{}) interface{} {
+	c := FilenameConfig{
+		Filename: "spec.apexlang",
+	}
+
+	if err := rootConfig.Decode(with, &c); err == nil {
+		c.Filename = filepath.Join(dir, c.Filename)
+		with = c
+	}
+	return with
+}
+
+func Combine(config *Configuration, dir string, log logr.Logger, configs ...*Configuration) {
 	for _, c := range configs {
 		// Compute
-		if len(c.Compute) > 0 {
-			config.Compute = append(config.Compute, c.Compute...)
+		for _, c := range c.Compute {
+			c.With = NormalizeBaseDir(dir, c.With)
+			config.Compute = append(config.Compute, c)
 		}
 
 		// Specs
-		if len(c.Specs) > 0 {
-			config.Specs = append(config.Specs, c.Specs...)
+		for _, spec := range c.Specs {
+			spec.With = NormalizeBaseDir(dir, spec.With)
+			config.Specs = append(config.Specs, spec)
 		}
 
 		// Migrations

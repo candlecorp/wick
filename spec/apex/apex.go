@@ -3,6 +3,7 @@ package apex
 import (
 	"context"
 	"os"
+	"strings"
 
 	"github.com/apexlang/apex-go/ast"
 	"github.com/apexlang/apex-go/parser"
@@ -28,6 +29,7 @@ func Loader(ctx context.Context, with interface{}, resolveAs resolve.ResolveAs) 
 	c := Config{
 		Filename: "spec.apexlang",
 	}
+
 	if err := config.Decode(with, &c); err != nil {
 		return nil, err
 	}
@@ -57,6 +59,15 @@ func Parse(schema []byte) (*spec.Namespace, error) {
 		Options: parser.ParseOptions{
 			NoLocation: true,
 			NoSource:   true,
+			Resolver: func(location string, from string) (string, error) {
+				if strings.HasPrefix(location, "@") {
+					// what do?
+					return "", nil
+				} else {
+					src, err := os.ReadFile(location)
+					return string(src), err
+				}
+			},
 		},
 	})
 	if err != nil {
