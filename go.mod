@@ -11,7 +11,7 @@ require (
 	github.com/apexlang/apex-go v0.1.2
 	github.com/cenkalti/backoff/v4 v4.1.3
 	github.com/dapr/dapr v1.9.1
-	github.com/getkin/kin-openapi v0.106.0
+	github.com/getkin/kin-openapi v0.107.0
 	github.com/go-logr/logr v1.2.3
 	github.com/go-logr/zapr v1.2.3
 	github.com/go-playground/locales v0.14.0
@@ -36,8 +36,8 @@ require (
 	github.com/mattn/anko v0.1.9
 	github.com/mattn/go-colorable v0.1.13
 	github.com/mitchellh/mapstructure v1.5.1-0.20220423185008-bf980b35cac4
-	github.com/nanobus/iota/go v0.0.0-20221026164657-c0c79a536ae3
-	github.com/nats-io/nats.go v1.18.0
+	github.com/nanobus/iota/go v0.0.0-20221029015625-e7ac7d7b433f
+	github.com/nats-io/nats.go v1.19.0
 	github.com/oklog/run v1.1.0
 	github.com/rbretecher/go-postman-collection v0.9.0
 	github.com/sony/gobreaker v0.5.0
@@ -57,8 +57,8 @@ require (
 	go.opentelemetry.io/otel/trace v1.11.1
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.23.0
-	golang.org/x/oauth2 v0.0.0-20221014153046-6fdb5e3db783
-	google.golang.org/genproto v0.0.0-20221025140454-527a21cfbd71
+	golang.org/x/oauth2 v0.1.0
+	google.golang.org/genproto v0.0.0-20221027153422-115e99e71e1c
 	google.golang.org/grpc v1.50.1
 	gopkg.in/yaml.v3 v3.0.1
 	gorm.io/driver/postgres v1.4.5
@@ -97,7 +97,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826 // indirect
-	github.com/nats-io/nats-server/v2 v2.9.3 // indirect
+	github.com/nats-io/nats-server/v2 v2.9.4 // indirect
 	github.com/nats-io/nkeys v0.3.0 // indirect
 	github.com/nats-io/nuid v1.0.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
@@ -114,7 +114,7 @@ require (
 	go.opentelemetry.io/proto/otlp v0.19.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	golang.org/x/crypto v0.1.0 // indirect
-	golang.org/x/exp v0.0.0-20221026153819-32f3d567a233 // indirect
+	golang.org/x/exp v0.0.0-20221028150844-83b7d23a625f // indirect
 	golang.org/x/net v0.1.0 // indirect
 	golang.org/x/sys v0.1.0 // indirect
 	golang.org/x/text v0.4.0 // indirect
