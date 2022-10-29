@@ -22,17 +22,17 @@ From the article mentioned above.
 
 > You might have noticed that there is no dependency between the Bus and the Command, the Query nor the Handlers. This is because they should, in fact, be unaware of each other in order to provide for good decoupling. The way the Bus will know what Handler should handle what Command, or Query, should be set up with mere configuration.
 
-Between your application and adapters, NanoBus passes data through developer-defined pipelines.
+Between your application and adapters, NanoBus passes data through developer-defined pipelines inspired by the [Pipes and Filters pattern](https://www.enterpriseintegrationpatterns.com/PipesAndFilters.html).
 
-![Flow-Based Programming example](images/fbp.svg)
+![Pipelines example](images/pipelines.svg)
 
 Each step in the pipeline can inspect, transform, and augment the data before passing it to the destination component.  Additionally, this mechanism externalizes encoding/decoding, authorization, cryptography and resiliency policies, eliminating the need to update the application internally. The application is only concerned with operations that accept and return strongly typed data structures.
 
-### Onion Architecture
+### Clean Architecture
 
-<img align="right" src="images/onion.svg" alt="The Onion Architecture" width="45%" style="margin: 0 0 1rem 1rem;" />
+<img align="right" src="images/clean-architecture.svg" alt="Clean Architecture" width="45%" style="margin: 0 0 1rem 1rem;" />
 
-NanoBus applications follow the **Onion Architecture**, comprised of concentric layers that interface with each other towards the center. This design greatly improves a system's ability to evolve over time because each layer addresses a separate concern. Here are the layers NanoBus implements:
+NanoBus applications follow **Clean Architecture**, where the software is comprised of concentric layers that have dependencies pointing toward the center. This design greatly improves a system's ability to evolve over time because each layer addresses a separate concern. Here are the layers NanoBus implements:
 
 * **Core Logic** contains the application's business logic, rules, calculations, algorithms, etc.
 * **Provider Services** wrap around ports that invoke pipelines that act as driving adapters for Dapr or other components.
@@ -46,6 +46,6 @@ Another goal of this software composition is abstracting away frameworks. Since 
 
 To tie layers and pipelines together, the developer can *optionally* use an **API-First Approach**, where the operations of your service are described in an API specification that can be shared with other teams.
 
-![IDL code generation](images/idl-codegen.svg)
+![API-First Approach](images/api-first.svg)
 
 NanoBus uses a generic and protocol agnostic Interface Definition Language (IDL). This is input to our code generation tool, which creates RPC-style endpoints that your logic uses to interact with pipelines. NanoBus also uses the IDL to automatically host your services with REST, gRPC, and other protocols. This eliminates the need to write boilerplate code for the Transports, Endpoints, and Stores layers.
