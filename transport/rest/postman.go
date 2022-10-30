@@ -50,7 +50,7 @@ func SpecToPostmanCollection(namespaces spec.Namespaces) ([]byte, error) {
 	}
 
 	for _, ns := range namespaces {
-		c.Info.Name = ns.Name
+		name := ns.Name
 		a, ok := ns.Annotation("info")
 		if ok {
 			var info openapi3.Info
@@ -61,12 +61,15 @@ func SpecToPostmanCollection(namespaces spec.Namespaces) ([]byte, error) {
 			if err := json.Unmarshal(infoMapJSON, &info); err != nil {
 				return nil, err
 			}
-			c.Info.Name = info.Title
-			if len(info.Description) > 0 {
+			name = info.Title
+			if info.Description == "" && len(info.Description) > 0 {
 				c.Info.Description = postman.Description{
 					Content: info.Description,
 				}
 			}
+		}
+		if c.Info.Name == "" {
+			c.Info.Name = name
 		}
 
 		nsPath := getAnotationString(ns, "path")
@@ -141,7 +144,9 @@ func SpecToPostmanCollection(namespaces spec.Namespaces) ([]byte, error) {
 				serviceItem.Items = append(serviceItem.Items, &operItem)
 			}
 
-			c.Items = append(c.Items, &serviceItem)
+			if len(serviceItem.Items) > 0 {
+				c.Items = append(c.Items, &serviceItem)
+			}
 		}
 	}
 

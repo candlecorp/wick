@@ -171,6 +171,14 @@ func (m *Mesh) Link(inst compute.Invoker) {
 	}
 }
 
+func (m *Mesh) Unsatisfied() []operations.Operation {
+	ops := make([]operations.Operation, len(m.unsatisfied))
+	for i, pend := range m.unsatisfied {
+		ops[i] = pend.oper
+	}
+	return ops
+}
+
 func (m *Mesh) linkOperation(inst compute.Invoker, op operations.Operation) bool {
 	ns, ok := m.exports[op.Namespace]
 	if !ok {

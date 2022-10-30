@@ -452,6 +452,16 @@ func main() {
 
 	m.Link(runtime.NewInvoker(log, processor.GetProviders(), msgpackcodec))
 
+	// Check for unsatified imports
+	ops := m.Unsatisfied()
+	if len(ops) > 0 {
+		log.Error(nil, "Halting due to unsatified imports", "count", len(ops))
+		for _, op := range ops {
+			log.Error(nil, "Missing import", "namespace", op.Namespace, "operation", op.Operation)
+		}
+		os.Exit(1)
+	}
+
 	for _, subscription := range config.Subscriptions {
 		pubsub, err := resource.Get[proto.PubSubClient](resources, subscription.Resource)
 		if err != nil {

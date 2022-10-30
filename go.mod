@@ -123,3 +123,6 @@ require (
 )
 
 replace github.com/go-playground/validator/v10 => github.com/nanobus/validator/v10 v10.11.1-0.20220529195924-c104cf34f67b
+
+// Uncomment to refer to iota in your workspace.
+// replace github.com/nanobus/iota/go => ../iota/go
