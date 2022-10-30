@@ -969,8 +969,8 @@ github.com/mwitkow/go-conntrack v0.0.0-20161129095857-cc309e4a2223/go.mod h1:qRW
 github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f/go.mod h1:qRWi+5nqEBWmkhHvq77mSJWrCKwh8bxhgT7d/eI7P4U=
 github.com/mxk/go-flowrate v0.0.0-20140419014527-cca7078d478f/go.mod h1:ZdcZmHo+o7JKHSa8/e818NopupXU1YMK5fe1lsApnBw=
 github.com/nakagami/firebirdsql v0.0.0-20190310045651-3c02a58cfed8/go.mod h1:86wM1zFnC6/uDBfZGNwB65O+pR2OFi5q/YQaEUid1qA=
-github.com/nanobus/iota/go v0.0.0-20221029015625-e7ac7d7b433f h1:h/dcG0FYrx5zCHcvpuR8X8lmBdTpQzYIHUOw18thsAI=
-github.com/nanobus/iota/go v0.0.0-20221029015625-e7ac7d7b433f/go.mod h1:VEGFfA3eK0A3QJW99fwwSJGopIAh0Q6e1rKRdhEqUbM=
+github.com/nanobus/iota/go v0.0.0-20221030002516-67c7602f3f87 h1:WSOyP4EOvFQjq0MLoe6Pra9VMukt6kjneH5qAfWZ2TY=
+github.com/nanobus/iota/go v0.0.0-20221030002516-67c7602f3f87/go.mod h1:iJpR4lRtsc4n6SpPeuXaIhryhG5RtX0WzqdgPazPoSg=
 github.com/nanobus/validator/v10 v10.11.1-0.20220529195924-c104cf34f67b h1:x06N6PaApZEwBoVAAp2yEbEKccsqVKvqSNET5uIDTNw=
 github.com/nanobus/validator/v10 v10.11.1-0.20220529195924-c104cf34f67b/go.mod h1:i+3WkQ1FvaUjjxh1kSvIA4dMGDBiPU55YFDl0WbKdWU=
 github.com/nats-io/jwt/v2 v2.3.0 h1:z2mA1a7tIf5ShggOFlR1oBPgd6hGqcDYsISxZByUzdI=
@@ -1204,8 +1204,8 @@ github.com/syndtr/gocapability v0.0.0-20200815063812-42c35b437635/go.mod h1:hkRG
 github.com/tchap/go-patricia v2.2.6+incompatible/go.mod h1:bmLyhP68RS6kStMGxByiQ23RP/odRBOTVjwp2cDyi6I=
 github.com/tetratelabs/tinymem v0.1.0 h1:Qza1JAg9lquPPJ/CIei5qQYx7t18KLie83O2WR6CM58=
 github.com/tetratelabs/tinymem v0.1.0/go.mod h1:WFFTZFhLod6lTL+UetFAopVbGaB+KFsVcIY+RUv7NeY=
-github.com/tetratelabs/wazero v1.0.0-pre.2 h1:sHYi8DKUL7s7c4sKz6lw0pNqky5EogYK0Iq4pSIsDog=
-github.com/tetratelabs/wazero v1.0.0-pre.2/go.mod h1:M8UDNECGm/HVjOfq0EOe4QfCY9Les1eq54IChMLETbc=
+github.com/tetratelabs/wazero v1.0.0-pre.3 h1:Z5fbogMUGcERzaQb9mQU8+yJSy0bVvv2ce3dfR4wcZg=
+github.com/tetratelabs/wazero v1.0.0-pre.3/go.mod h1:M8UDNECGm/HVjOfq0EOe4QfCY9Les1eq54IChMLETbc=
 github.com/tidwall/pretty v1.0.0/go.mod h1:XNkn88O1ChpSDQmQeStsy+sBenx6DDtFZJxhVysOjyk=
 github.com/tinylib/msgp v1.1.5/go.mod h1:eQsjooMTnV42mHu917E26IogZ2930nFyBQdofk10Udg=
 github.com/tmc/grpc-websocket-proxy v0.0.0-20170815181823-89b8d40f7ca8/go.mod h1:ncp9v5uamzpCO7NfCPTXjqaC+bZgJeR0sMTm6dMHP7U=
@@ -1230,8 +1230,8 @@ github.com/vmihailenco/msgpack/v5 v5.3.5 h1:5gO0H1iULLWGhs2H5tbAHIZTV8/cYafcFOr9
 github.com/vmihailenco/msgpack/v5 v5.3.5/go.mod h1:7xyJ9e+0+9SaZT0Wt1RGleJXzli6Q/V5KbhBonMG9jc=
 github.com/vmihailenco/tagparser/v2 v2.0.0 h1:y09buUbR+b5aycVFQs/g70pqKVZNBmxwAhO7/IwNM9g=
 github.com/vmihailenco/tagparser/v2 v2.0.0/go.mod h1:Wri+At7QHww0WTrCBeu4J6bNtoV6mEfg5OIWRZA9qds=
-github.com/wapc/wapc-go v0.5.4 h1:56vh+reZRH52BSfM1pUzFuL177KKDeRxloucAKtrtJk=
-github.com/wapc/wapc-go v0.5.4/go.mod h1:1EWTDM1d2GbJx2Po0HP8t4xCilgKo+K60xigwHVmzRA=
+github.com/wapc/wapc-go v0.5.5 h1:FVMcscIUvARubkXS5hU2l7Z6k03cRE1mxc7Vpv56fIQ=
+github.com/wapc/wapc-go v0.5.5/go.mod h1:7hCuY3L3Kz0BHzqPzgnkf8tUDRqKP3rfh38jhx5ZI4g=
 github.com/wasmerio/wasmer-go v1.0.4 h1:MnqHoOGfiQ8MMq2RF6wyCeebKOe84G88h5yv+vmxJgs=
 github.com/willf/bitset v1.1.11-0.20200630133818-d5bec3311243/go.mod h1:RjeCKbqT1RxIR/KWY6phxZiaY1IyutSBfGjNPySAYV4=
 github.com/willf/bitset v1.1.11/go.mod h1:83CECat5yLh5zVOf4P1ErAgKA5UDvKtgyUABdr3+MjI=

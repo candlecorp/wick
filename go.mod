@@ -36,7 +36,7 @@ require (
 	github.com/mattn/anko v0.1.9
 	github.com/mattn/go-colorable v0.1.13
 	github.com/mitchellh/mapstructure v1.5.1-0.20220423185008-bf980b35cac4
-	github.com/nanobus/iota/go v0.0.0-20221029015625-e7ac7d7b433f
+	github.com/nanobus/iota/go v0.0.0-20221030002516-67c7602f3f87
 	github.com/nats-io/nats.go v1.19.0
 	github.com/oklog/run v1.1.0
 	github.com/rbretecher/go-postman-collection v0.9.0
@@ -44,7 +44,7 @@ require (
 	github.com/spf13/cast v1.5.0
 	github.com/stretchr/testify v1.8.1
 	github.com/vmihailenco/msgpack/v5 v5.3.5
-	github.com/wapc/wapc-go v0.5.4
+	github.com/wapc/wapc-go v0.5.5
 	github.com/xeipuuv/gojsonschema v1.2.0
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.36.4
 	go.opentelemetry.io/otel v1.11.1
@@ -105,7 +105,7 @@ require (
 	github.com/shopspring/decimal v1.3.1 // indirect
 	github.com/stoewer/go-strcase v1.2.0 // indirect
 	github.com/tetratelabs/tinymem v0.1.0 // indirect
-	github.com/tetratelabs/wazero v1.0.0-pre.2 // indirect
+	github.com/tetratelabs/wazero v1.0.0-pre.3 // indirect
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
 	github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb // indirect
 	github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415 // indirect
