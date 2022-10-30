@@ -103,13 +103,15 @@ func InvokeAction(
 			return nil, err
 		}
 
-		var response interface{}
-		if err := msgpack.Unmarshal(result.Data(), &response); err != nil {
-			return nil, err
-		}
+		if len(result.Data()) > 0 {
+			var response interface{}
+			if err := msgpack.Unmarshal(result.Data(), &response); err != nil {
+				return nil, err
+			}
 
-		if response != nil {
-			return response, nil
+			if response != nil {
+				return response, nil
+			}
 		}
 
 		return nil, nil

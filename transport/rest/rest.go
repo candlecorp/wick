@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"reflect"
 	"regexp"
 	"sort"
 	"strings"
@@ -534,7 +535,7 @@ func (t *Rest) handler(namespace, service, operation string, isActor bool,
 			return
 		}
 
-		if response != nil {
+		if !isNil(response) {
 			header := w.Header()
 			header.Set("Content-Type", codec.ContentType())
 			for k, vals := range resp.Header {
@@ -554,6 +555,12 @@ func (t *Rest) handler(namespace, service, operation string, isActor bool,
 			w.WriteHeader(http.StatusNoContent)
 		}
 	}
+}
+
+func isNil(val interface{}) bool {
+	return val == nil ||
+		(reflect.ValueOf(val).Kind() == reflect.Ptr &&
+			reflect.ValueOf(val).IsNil())
 }
 
 func (t *Rest) handleError(err error, codec channel.Codec, req *http.Request, w http.ResponseWriter, status int) {

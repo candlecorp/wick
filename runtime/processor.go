@@ -120,9 +120,6 @@ func (p *Processor) Service(ctx context.Context, namespace, service, function st
 	}
 
 	output, err := pl(ctx, data)
-	if err == nil && output == nil {
-		output = data["input"]
-	}
 	return output, true, err
 }
 
