@@ -56,6 +56,9 @@ NanoBus are generated using [Apex](https://apexlang.io). The [documentation](htt
 
 Next, from a terminal, install NanoBus code generators for Apex.
 
+To generate projects, use [`just`](https://github.com/casey/just#packages), an alternative to `make`, to build.
+
+
 ```cli
 git clone https://github.com/nanobus/iota.git
 cd iota/codegen
@@ -73,7 +76,7 @@ cd nanobus
 make install
 ```
 
-Generated projects use [`just`](https://github.com/casey/just#packages), an alternative to `make`, to build.
+
 
 ### Create a NanoBus Application
 
