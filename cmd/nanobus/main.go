@@ -669,7 +669,11 @@ func main() {
 			metadata := make([]byte, 8)
 			p := payload.New(payloadData, metadata)
 
-			result, err := m.RequestResponse(ctx, ns, fn, p).Block()
+			future := m.RequestResponse(ctx, ns, fn, p)
+			if future == nil {
+				return nil, errorz.New(errorz.NotFound, fmt.Sprintf("could not find %s::%s", ns, fn))
+			}
+			result, err := future.Block()
 			if err != nil {
 				return nil, translateError(err)
 			}
