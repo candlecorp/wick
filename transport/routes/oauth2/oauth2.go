@@ -7,11 +7,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
 	"time"
 
 	"github.com/go-logr/logr"
+	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"golang.org/x/oauth2"
 
@@ -21,6 +23,10 @@ import (
 	"github.com/nanobus/nanobus/runtime"
 	"github.com/nanobus/nanobus/transport/routes"
 )
+
+type HTTPClient interface {
+	Do(req *http.Request) (*http.Response, error)
+}
 
 type Config struct {
 	LoginPath    string   `mapstructure:"loginPath"`
@@ -35,8 +41,9 @@ type Config struct {
 }
 
 type Endpoint struct {
-	AuthURL  string `mapstructure:"authUrl" validate:"required"`
-	TokenURL string `mapstructure:"tokenUrl" validate:"required"`
+	AuthURL     string `mapstructure:"authUrl" validate:"required"`
+	TokenURL    string `mapstructure:"tokenUrl" validate:"required"`
+	UserInfoURL string `mapstructure:"userInfoUrl"`
 
 	// AuthStyle optionally specifies how the endpoint wants the
 	// client ID & client secret sent. The zero value means to
@@ -78,7 +85,7 @@ func (a *AuthStyle) DecodeString(str string) error {
 	case "inparams":
 		*a = AuthStyleInParams
 	case "inheader":
-		*a = AuthStyleInParams
+		*a = AuthStyleInHeader
 	default:
 		return fmt.Errorf("unknown auth style %q", str)
 	}
@@ -88,9 +95,11 @@ func (a *AuthStyle) DecodeString(str string) error {
 
 type Auth struct {
 	log          logr.Logger
+	httpClient   HTTPClient
 	loginPath    string
 	callbackPath string
 	config       *oauth2.Config
+	userInfoURL  string
 	processor    Processor
 	pipeline     string
 	debug        bool
@@ -111,9 +120,11 @@ func Loader(ctx context.Context, with interface{}, resolver resolve.ResolveAs) (
 
 	var logger logr.Logger
 	var processor Processor
+	var httpClient HTTPClient
 	if err := resolve.Resolve(resolver,
 		"system:logger", &logger,
-		"system:processor", &processor); err != nil {
+		"system:processor", &processor,
+		"client:http", &httpClient); err != nil {
 		return nil, err
 	}
 
@@ -131,9 +142,11 @@ func Loader(ctx context.Context, with interface{}, resolver resolve.ResolveAs) (
 
 	oauth := Auth{
 		log:          logger,
+		httpClient:   httpClient,
 		loginPath:    c.LoginPath,
 		callbackPath: c.CallbackPath,
 		config:       config,
+		userInfoURL:  c.Endpoint.UserInfoURL,
 		processor:    processor,
 		pipeline:     c.Pipeline,
 		debug:        c.Debug,
@@ -173,7 +186,7 @@ func (o *Auth) callback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	claims, err := getClaims(token)
+	claims, err := o.getClaims(token)
 	if err != nil {
 		o.log.Error(err, "could not parse claims")
 		http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
@@ -209,6 +222,63 @@ func (o *Auth) callback(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
 }
 
+func (o *Auth) getClaims(token *oauth2.Token) (map[string]any, error) {
+	var claimsJSON []byte
+
+	if o.userInfoURL != "" {
+		req, err := http.NewRequest("GET", o.userInfoURL, nil)
+		if err != nil {
+			return nil, err
+		}
+		req.Header.Add("Authorization", token.TokenType+" "+token.AccessToken)
+
+		res, err := o.httpClient.Do(req)
+		if err != nil {
+			return nil, err
+		}
+		defer res.Body.Close()
+
+		claimsJSON, err = io.ReadAll(res.Body)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		// Assume we've received a JWT if a user info URL
+		// is not configured.
+		idx := strings.IndexByte(token.AccessToken, '.')
+		if idx < 0 {
+			return nil, errors.New("invalid access token")
+		}
+
+		skipSegment := token.AccessToken[idx+1:]
+
+		idx = strings.IndexByte(skipSegment, '.')
+		if idx < 0 {
+			return nil, errors.New("invalid access token")
+		}
+
+		claimsSegment := skipSegment[:idx]
+		var err error
+		claimsJSON, err = base64.RawURLEncoding.DecodeString(claimsSegment)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	var m map[string]any
+	if err := json.Unmarshal(claimsJSON, &m); err != nil {
+		return nil, err
+	}
+
+	// If the claims don't create a session ID,
+	// generate one as a UUID.
+	if _, exists := m["sid"]; !exists {
+		m["sid"] = uuid.New().String()
+	}
+
+	return m, nil
+}
+
 func generateStateOauthCookie(w http.ResponseWriter) string {
 	var expiration = time.Now().Add(20 * time.Minute)
 
@@ -219,33 +289,6 @@ func generateStateOauthCookie(w http.ResponseWriter) string {
 	http.SetCookie(w, &cookie)
 
 	return state
-}
-
-func getClaims(token *oauth2.Token) (map[string]any, error) {
-	idx := strings.IndexByte(token.AccessToken, '.')
-	if idx < 0 {
-		return nil, errors.New("invalid access token")
-	}
-
-	skipSegment := token.AccessToken[idx+1:]
-
-	idx = strings.IndexByte(skipSegment, '.')
-	if idx < 0 {
-		return nil, errors.New("invalid access token")
-	}
-
-	claimsSegment := skipSegment[:idx]
-	decoded, err := base64.RawURLEncoding.DecodeString(claimsSegment)
-	if err != nil {
-		return nil, err
-	}
-
-	var m map[string]any
-	if err := json.Unmarshal(decoded, &m); err != nil {
-		return nil, err
-	}
-
-	return m, nil
 }
 
 func setSessionCookie(w http.ResponseWriter, token *oauth2.Token, claims map[string]any) error {

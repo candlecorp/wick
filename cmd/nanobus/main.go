@@ -90,6 +90,7 @@ import (
 	"github.com/nanobus/nanobus/transport/filter"
 	"github.com/nanobus/nanobus/transport/filter/jwt"
 	"github.com/nanobus/nanobus/transport/filter/session"
+	"github.com/nanobus/nanobus/transport/filter/userinfo"
 	"github.com/nanobus/nanobus/transport/httprpc"
 	"github.com/nanobus/nanobus/transport/nats"
 	"github.com/nanobus/nanobus/transport/rest"
@@ -197,6 +198,7 @@ func main() {
 	filterRegistry.Register(
 		jwt.JWT,
 		session.Session,
+		userinfo.UserInfo,
 	)
 
 	// Compute registration
