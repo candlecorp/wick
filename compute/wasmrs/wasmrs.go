@@ -13,7 +13,8 @@ import (
 
 type Config struct {
 	// Filename is the file name of the WasmRS module to load.
-	Filename runtime.FilePath `mapstructure:"filename" validate:"required"` // TODO: Load from external location
+	// TODO: Load from external location
+	Filename runtime.FilePath `mapstructure:"filename" validate:"required"`
 }
 
 // WasmRS

@@ -431,6 +431,7 @@ func main() {
 	m := mesh.New(tracer)
 
 	for _, comp := range config.Compute {
+		log.Info("Initializing compute", "type", comp.Uses, "with", comp.With)
 		computeLoader, ok := computeRegistry[comp.Uses]
 		if !ok {
 			log.Error(err, "could not find compute", "type", comp.Uses)
@@ -461,6 +462,8 @@ func main() {
 		}
 		os.Exit(1)
 	}
+
+	// log.Info(strings.TrimSpace(m.DebugInfo()))
 
 	for _, subscription := range config.Subscriptions {
 		pubsub, err := resource.Get[proto.PubSubClient](resources, subscription.Resource)

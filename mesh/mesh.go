@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/binary"
 	"fmt"
+	"strings"
 	"sync/atomic"
 
 	"github.com/nanobus/iota/go/wasmrs/operations"
@@ -169,6 +170,17 @@ func (m *Mesh) Link(inst compute.Invoker) {
 		}
 		m.unsatisfied = filtered
 	}
+}
+
+func (m *Mesh) DebugInfo() string {
+	var buf strings.Builder
+	buf.WriteString("Exports:\n")
+	for namespace, ns := range m.exports {
+		for oper := range ns {
+			buf.WriteString(fmt.Sprintf("- %s::%s\n", namespace, oper))
+		}
+	}
+	return buf.String()
 }
 
 func (m *Mesh) Unsatisfied() []operations.Operation {
