@@ -155,16 +155,6 @@ func Combine(config *Configuration, dir string, log logr.Logger, configs ...*Con
 			config.Specs = append(config.Specs, spec)
 		}
 
-		// Migrations
-		if len(c.Migrate) > 0 && config.Migrate == nil {
-			config.Migrate = make(map[string]Component)
-		}
-		for k, v := range c.Migrate {
-			if _, exists := config.Migrate[k]; !exists {
-				config.Migrate[k] = v
-			}
-		}
-
 		// Resources
 		if len(c.Resources) > 0 && config.Resources == nil {
 			config.Resources = make(map[string]Component)
@@ -296,6 +286,25 @@ func SetConfigBaseDir(path string) {
 }
 
 type FilePath string
+
+func (f *FilePath) Relative() string {
+	if f == nil {
+		return ""
+	}
+
+	p := string(*f)
+	path, err := os.Getwd()
+	if err != nil {
+		return p
+	}
+
+	rel, err := filepath.Rel(path, p)
+	if err != nil {
+		return p
+	}
+
+	return rel
+}
 
 func (f *FilePath) UnmarshalJSON(data []byte) error {
 	var str string

@@ -13,12 +13,14 @@ import (
 	"github.com/nanobus/nanobus/config"
 	nb_migrate "github.com/nanobus/nanobus/migrate"
 	"github.com/nanobus/nanobus/resolve"
+	"github.com/nanobus/nanobus/runtime"
 )
 
 type Config struct {
-	Name       string `mapstructure:"name" validate:"required"`
-	DataSource string `mapstructure:"dataSource" validate:"required"`
-	SourceURL  string `mapstructure:"sourceUrl" validate:"required"`
+	Name       string           `mapstructure:"name" validate:"required"`
+	DataSource string           `mapstructure:"dataSource" validate:"required"`
+	Directory  runtime.FilePath `mapstructure:"directory" validate:"required_without=SourceURL"`
+	SourceURL  string           `mapstructure:"sourceUrl" validate:"required_without=Directory"`
 }
 
 func NamedLoader() (string, nb_migrate.Loader) {
@@ -52,8 +54,13 @@ func Migrate(log logr.Logger, c *Config) nb_migrate.Migrater {
 			return err
 		}
 
+		sourceURL := c.SourceURL
+		if c.Directory != "" {
+			sourceURL = "file://" + c.Directory.Relative()
+		}
+
 		m, err := migrate.NewWithDatabaseInstance(
-			c.SourceURL,
+			sourceURL,
 			"postgres", driver)
 		if err != nil {
 			return err

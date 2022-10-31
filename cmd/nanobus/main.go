@@ -365,7 +365,7 @@ func main() {
 	dependencies["codec:byContentType"] = codecsByContentType
 
 	for name, spec := range config.Migrate {
-		log.Info("Migrating databas", "name", name)
+		log.Info("Migrating database", "name", name)
 		loader, ok := migrateRegistry[spec.Uses]
 		if !ok {
 			log.Error(nil, "could not find migrater", "type", spec.Uses)
@@ -828,7 +828,8 @@ func loadConfiguration(filename string, log logr.Logger) (*runtime.Configuration
 	for _, imp := range c.Import {
 		fileDir := filepath.Dir(imp)
 		path := filepath.Join(baseDir, imp)
-		log.Info("Importing config " + path)
+		rel := runtime.FilePath(path)
+		log.Info("Importing config", "config", rel.Relative())
 		dir := filepath.Dir(path)
 		runtime.SetConfigBaseDir(dir)
 		imported, err := loadConfiguration(path, log)
