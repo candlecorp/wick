@@ -2,14 +2,18 @@ project_name: nanobus
 builds:
   - id: nanobus
     main: ./cmd/nanobus
-    binary: "{{ .ProjectName }}"
+    binary: nanobus
     goos:
       - linux
       - darwin
       - windows
+      - freebsd
     goarch:
       - amd64
       - arm64
+    goarm:
+      - 6
+      - 7
     ldflags:
       - -s -w -X main.Version={{.Version}} -X main.Commit={{.Commit}} -X main.Date={{.Date}}
     env:
@@ -39,6 +43,61 @@ changelog:
     exclude:
       - '^docs:'
       - '^test:'
+
+dockers:
+  - image_templates:
+      - 'nanobus/nanobus:{{ .Tag }}-amd64'
+      # - 'ghcr.io/nanobus/nanobus:{{ .Tag }}-amd64'
+    dockerfile: Dockerfile
+    use: buildx
+    build_flag_templates:
+      - "--pull"
+      - "--label=io.artifacthub.package.readme-url=https://raw.githubusercontent.com/nanobus/nanobus/main/README.md"
+      - "--label=io.artifacthub.package.logo-url=https://raw.githubusercontent.com/nanobus/nanobus/main/logo.png"
+      - "--label=io.artifacthub.package.license=MIT"
+      - "--label=org.opencontainers.image.description=A lightweight microservice runtime that reduces developer responsibility so that teams can focus on core application logic"
+      - "--label=org.opencontainers.image.created={{.Date}}"
+      - "--label=org.opencontainers.image.name={{.ProjectName}}"
+      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+      - "--label=org.opencontainers.image.version={{.Version}}"
+      - "--label=org.opencontainers.image.source={{.GitURL}}"
+      - "--platform=linux/amd64"
+  - image_templates:
+      - 'nanobus/nanobus:{{ .Tag }}-arm64v8'
+      # - 'ghcr.io/nanobus/nanobus:{{ .Tag }}-arm64'
+    dockerfile: Dockerfile
+    use: buildx
+    build_flag_templates:
+      - "--pull"
+      - "--label=io.artifacthub.package.readme-url=https://raw.githubusercontent.com/nanobus/nanobus/main/README.md"
+      - "--label=io.artifacthub.package.logo-url=https://raw.githubusercontent.com/nanobus/nanobus/main/logo.png"
+      - "--label=io.artifacthub.package.license=MIT"
+      - "--label=org.opencontainers.image.description=A lightweight microservice runtime that reduces developer responsibility so that teams can focus on core application logic"
+      - "--label=org.opencontainers.image.created={{.Date}}"
+      - "--label=org.opencontainers.image.name={{.ProjectName}}"
+      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+      - "--label=org.opencontainers.image.version={{.Version}}"
+      - "--label=org.opencontainers.image.source={{.GitURL}}"
+      - "--platform=linux/arm64/v8"
+    goarch: arm64
+
+docker_manifests:
+  - name_template: 'nanobus/nanobus:{{ .Tag }}'
+    image_templates:
+      - 'nanobus/nanobus:{{ .Tag }}-amd64'
+      - 'nanobus/nanobus:{{ .Tag }}-arm64v8'
+  # - name_template: 'ghcr.io/nanobus/nanobus:{{ .Tag }}'
+  #   image_templates:
+  #     - 'ghcr.io/nanobus/nanobus:{{ .Tag }}-amd64'
+  #     - 'ghcr.io/nanobus/nanobus:{{ .Tag }}-arm64v8'
+  - name_template: 'nanobus/nanobus:latest'
+    image_templates:
+      - 'nanobus/nanobus:{{ .Tag }}-amd64'
+      - 'nanobus/nanobus:{{ .Tag }}-arm64v8'
+  # - name_template: 'ghcr.io/nanobus/nanobus:latest'
+  #   image_templates:
+  #     - 'ghcr.io/nanobus/nanobus:{{ .Tag }}-amd64'
+  #     - 'ghcr.io/nanobus/nanobus:{{ .Tag }}-arm64v8'
 
 # brews:
 #   - name: NanoBus

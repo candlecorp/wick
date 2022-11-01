@@ -23,6 +23,15 @@ jobs:
         with:
           fetch-depth: 0
       -
+        name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+      -
+        name: Docker Login
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      -
         name: Set up Go
         uses: actions/setup-go@v3
         with:
