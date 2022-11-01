@@ -786,6 +786,7 @@ func main() {
 	}
 
 	err = g.Run()
+	log.Info("Shutting down")
 	if err != nil {
 		if _, isSignal := err.(run.SignalError); !isSignal {
 			log.Error(err, "unexpected error")

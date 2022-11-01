@@ -87,9 +87,16 @@ func WithRoutes(r ...routes.AddRoutes) Option {
 }
 
 type Configuration struct {
-	Address string       `mapstructure:"address" validate:"required"`
-	Static  []StaticPath `mapstructure:"static"`
-	Routes  []Route      `mapstructure:"routes"`
+	Address       string        `mapstructure:"address" validate:"required"`
+	Static        []StaticPath  `mapstructure:"static"`
+	Routes        []Route       `mapstructure:"routes"`
+	Documentation Documentation `mapstructure:"documentation"`
+}
+
+type Documentation struct {
+	SwaggerUI  bool `mapstructure:"swaggerUI"`
+	Postman    bool `mapstructure:"postman"`
+	RestClient bool `mapstructure:"restClient"`
 }
 
 type StaticPath struct {
@@ -175,20 +182,26 @@ func New(log logr.Logger, tracer trace.Tracer, config Configuration, namespaces 
 	if strings.HasPrefix(docsHost, ":") {
 		docsHost = "localhost" + docsHost
 	}
-	log.Info("Swagger UI", "url", fmt.Sprintf("http://%s/swagger/", docsHost))
-	log.Info("Swagger Spec", "url", fmt.Sprintf("http://%s/swagger/swagger_spec", docsHost))
-	if err := RegisterSwaggerRoutes(r, namespaces); err != nil {
-		return nil, err
+	if config.Documentation.SwaggerUI {
+		log.Info("Swagger UI", "url", fmt.Sprintf("http://%s/swagger/", docsHost))
+		log.Info("Swagger Spec", "url", fmt.Sprintf("http://%s/swagger/swagger_spec", docsHost))
+		if err := RegisterSwaggerRoutes(r, namespaces); err != nil {
+			return nil, err
+		}
 	}
 
-	log.Info("Postman collection", "url", fmt.Sprintf("http://%s/postman/collection", docsHost))
-	if err := RegisterPostmanRoutes(r, namespaces); err != nil {
-		return nil, err
+	if config.Documentation.Postman {
+		log.Info("Postman collection", "url", fmt.Sprintf("http://%s/postman/collection", docsHost))
+		if err := RegisterPostmanRoutes(r, namespaces); err != nil {
+			return nil, err
+		}
 	}
 
-	log.Info("VS Code REST Client", "url", fmt.Sprintf("http://%s/rest-client/service.http", docsHost))
-	if err := RegisterRESTClientRoutes(r, namespaces); err != nil {
-		return nil, err
+	if config.Documentation.RestClient {
+		log.Info("VS Code REST Client", "url", fmt.Sprintf("http://%s/rest-client/service.http", docsHost))
+		if err := RegisterRESTClientRoutes(r, namespaces); err != nil {
+			return nil, err
+		}
 	}
 
 	rest := Rest{
