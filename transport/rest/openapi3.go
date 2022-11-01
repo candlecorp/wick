@@ -97,11 +97,7 @@ func SpecToOpenAPI3(namespaces spec.Namespaces) ([]byte, error) {
 
 			servicePath := getAnotationString(service, "path")
 
-			// Add tag
-			apispec.Tags = append(apispec.Tags, &openapi3.Tag{
-				Name:        service.Name,
-				Description: service.Description,
-			})
+			addTag := false
 
 			for _, oper := range service.Operations {
 				operPath := getAnotationString(oper, "path")
@@ -139,7 +135,16 @@ func SpecToOpenAPI3(namespaces spec.Namespaces) ([]byte, error) {
 				}
 
 				if oper.Parameters != nil {
-					traverseType(foundTypes, oper.Parameters)
+					if oper.Unary {
+						traverseType(foundTypes, oper.Parameters)
+					} else {
+						for _, p := range oper.Parameters.Fields {
+							_, hasQuery := p.Annotation("query")
+							if !hasQuery && p.Type.Type != nil {
+								traverseType(foundTypes, p.Type.Type)
+							}
+						}
+					}
 				}
 
 				if !existingPathItem {
@@ -188,10 +193,20 @@ func SpecToOpenAPI3(namespaces spec.Namespaces) ([]byte, error) {
 				}
 
 				*operPtr = &o
+
+				addTag = true
+			}
+
+			if addTag {
+				// Add tag
+				apispec.Tags = append(apispec.Tags, &openapi3.Tag{
+					Name:        service.Name,
+					Description: service.Description,
+				})
 			}
 		}
 
-		if len(ns.Types) > 0 {
+		if len(apispec.Components.Schemas) == 0 && len(ns.Types) > 0 {
 			apispec.Components.Schemas = openapi3.Schemas{}
 		}
 
