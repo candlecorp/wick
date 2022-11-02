@@ -2,10 +2,10 @@
 
 NanoBus is a lightweight microservice runtime that reduces developer responsibility so that teams can **focus on core application logic**. It streamlines development by:
 
-* Allowing developers to embrace the benefits of an [API-first approach](https://swagger.io/resources/articles/adopting-an-api-first-approach/), namely, having confidence that services are communicating properly and reliably at scale
-* Generating boilerplate code for REST/RPC, workflow, and event-driven applications to eliminate repetitive work and minimize potential for manual errors
-* Simplifying usage of cloud primitives and other microservice dependencies to basic function calls without SDKs or potentially vulerable 3rd party libraries
-* Packaging your application for deployment
+- Allowing developers to embrace the benefits of an [API-first approach](https://swagger.io/resources/articles/adopting-an-api-first-approach/), namely, having confidence that services are communicating properly and reliably at scale
+- Generating boilerplate code for REST/RPC, workflow, and event-driven applications to eliminate repetitive work and minimize potential for manual errors
+- Simplifying usage of cloud primitives and other microservice dependencies to basic function calls without SDKs or potentially vulerable 3rd party libraries
+- Packaging your application for deployment
 
 <!--
 NanoBus is a lightweight microservice runtime layer that simplifies your application's core logic by moving infrastructure concerns to composable pipelines. The primary goal of NanoBus is to codify best practices so developers can **focus on business outcomes, not boilerplate code**.
@@ -52,12 +52,11 @@ To learn more, see the [architecture page](/docs/architecture.md).
 
 ### Install the Apex for Code Generation
 
-NanoBus are generated using [Apex](https://apexlang.io). The [documentation](https://apexlang.io/docs/getting-started#cli) goes over installation and offers a tutorial.
+NanoBus applications are generated using [Apex](https://apexlang.io). The [documentation](https://apexlang.io/docs/getting-started#cli) goes over installation and offers a tutorial.
 
-Next, from a terminal, install NanoBus code generators for Apex.
+Projects use [`just`](https://github.com/casey/just#packages), an alternative to `make`, to run build commands.
 
-To generate projects, use [`just`](https://github.com/casey/just#packages), an alternative to `make`, to build.
-
+From a terminal, install NanoBus code generators for Apex.
 
 ```cli
 git clone https://github.com/nanobus/iota.git
@@ -68,32 +67,33 @@ just apex-install
 
 Note: The above step will be simplified once these packages are published to [NPM](https://www.npmjs.com).
 
-Now you'll want to install the NanoBus runtime (this repo). You can build from source or [install a release](./install/README.md).
+Finally, to install the NanoBus runtime (this repo) you can:
 
-```cli
-git clone https://github.com/nanobus/nanobus.git
-cd nanobus
-make install
-```
+1. [Install a release](./install/README.md); or
+2. Build from source
 
-
+    ```cli
+    git clone https://github.com/nanobus/nanobus.git
+    cd nanobus
+    make install
+    ```
 
 ### Create a NanoBus Application
 
 Choose a currently supported language:
 
-* WASM TinyGo (@nanobus/tinygo)
-* WASM Rust (@nanobus/rust)
+- WASM TinyGo (@nanobus/tinygo)
+- WASM Rust (@nanobus/rust)
 
 Coming soon...
 
-* Node.js
-* C# / .NET
-* Python
-* Golang
-* AssemblyScript (WASM)
-* Java (Reactor)
-* Rust (Native)
+- Node.js
+- C# / .NET
+- Python
+- Golang
+- AssemblyScript (WASM)
+- Java (Reactor)
+- Rust (Native)
 
 ```shell
 apex new @nanobus/tinygo hello_world
