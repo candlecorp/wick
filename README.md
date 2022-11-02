@@ -82,18 +82,20 @@ Finally, to install the NanoBus runtime (this repo) you can:
 
 Choose a currently supported language:
 
-- WASM TinyGo (@nanobus/tinygo)
-- WASM Rust (@nanobus/rust)
+- WASM TinyGo (@nanobus/tinygo) - toolchain: [Go 1.19+](https://go.dev/doc/install), [TinyGo 0.26+](https://tinygo.org/getting-started/install/)
+- WASM Rust (@nanobus/rust) - toolchain: [Rust Setup](https://www.rust-lang.org/tools/install)
 
 Coming soon...
 
 - Node.js
 - C# / .NET
 - Python
-- Golang
+- Go
 - AssemblyScript (WASM)
 - Java (Reactor)
 - Rust (Native)
+
+These commands create and run a new TinyGo project.
 
 ```shell
 apex new @nanobus/tinygo hello_world

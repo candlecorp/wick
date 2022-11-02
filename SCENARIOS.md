@@ -1,4 +1,4 @@
-# Scenarios made easier with FBP
+# Scenarios made easier with pipelines
 
 NanoBus does not aim to be a full no/low code solution.
 Instead, the goal is to strike the right balance between
@@ -37,7 +37,7 @@ Dev Experience / Efficiency
 * write application core logic around strongly typed data structures without serialization/deserialization
 * trace data as it flows through the application (wire tap)
 * mock external dependencies
-* share API documentation that is automatically generated for all the protocol my service supports
+* share API documentation that is automatically generated for all protocols my service supports
 * send data directly from transport to Dapr component (CRUD logic)
 * separate infrastructure concepts from code (separation of concerns)
 * share API specs with partner teams prior to implementation (API-first)
