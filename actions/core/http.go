@@ -8,6 +8,9 @@ import (
 	"io"
 	"net/http"
 
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/propagation"
+
 	"github.com/nanobus/nanobus/actions"
 	"github.com/nanobus/nanobus/coalesce"
 	"github.com/nanobus/nanobus/codec"
@@ -92,6 +95,8 @@ func HTTPAction(
 		if err != nil {
 			return nil, err
 		}
+
+		otel.GetTextMapPropagator().Inject(ctx, propagation.HeaderCarrier(req.Header))
 
 		req.Header.Set("Content-Type", codec.ContentType())
 		if config.Headers != nil {

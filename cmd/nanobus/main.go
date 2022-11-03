@@ -28,6 +28,7 @@ import (
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/propagation"
 	otel_resource "go.opentelemetry.io/otel/sdk/resource"
 	sdk_trace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.12.0"
@@ -80,6 +81,7 @@ import (
 	migrate_postgres "github.com/nanobus/nanobus/migrate/postgres"
 
 	// TELEMETRY / TRACING
+	"github.com/nanobus/nanobus/telemetry/tracing"
 	otel_tracing "github.com/nanobus/nanobus/telemetry/tracing"
 	tracing_jaeger "github.com/nanobus/nanobus/telemetry/tracing/jaeger"
 	tracing_otlp "github.com/nanobus/nanobus/telemetry/tracing/otlp"
@@ -307,6 +309,7 @@ func main() {
 	}
 
 	otel.SetTracerProvider(tp)
+	otel.SetTextMapPropagator(propagation.TraceContext{})
 	tracer := otel.Tracer("NanoBus")
 	dependencies["system:tracer"] = tracer
 
@@ -520,6 +523,11 @@ func main() {
 					})
 					continue
 				}
+				// Extract distributed tracing context
+				// per the the W3C TraceContext standard.
+				if m, ok := input.(map[string]interface{}); ok {
+					ctx = otel.GetTextMapPropagator().Extract(ctx, tracing.MapCarrier(m))
+				}
 
 				data := actions.Data{
 					"input": input,
@@ -530,10 +538,15 @@ func main() {
 					pipelineName = messageType
 				}
 
+				traceName := "events::type=" + pipelineName
 				if jsonBytes, err := json.MarshalIndent(input, "", "  "); err == nil {
-					logInbound(log, "events::type="+pipelineName, string(jsonBytes))
+					logInbound(log, traceName, string(jsonBytes))
 				}
 
+				var span trace.Span
+				ctx, span = tracer.Start(ctx, traceName, trace.WithAttributes(
+					semconv.MessagingOperationProcess,
+				))
 				_, err = processor.Event(ctx, pipelineName, data)
 				if err != nil {
 					log.Error(err, "could not process message")
@@ -543,12 +556,18 @@ func main() {
 							Message: err.Error(),
 						},
 					})
+					span.RecordError(err)
+					span.End()
 					continue
 				}
 
-				pull.Send(&proto.PullMessagesRequest{
+				if err := pull.Send(&proto.PullMessagesRequest{
 					AckMessageId: recv.Id,
-				})
+				}); err != nil {
+					log.Error(err, "could not ack message", "messageId", recv.Id)
+					span.RecordError(err)
+				}
+				span.End()
 			}
 		}(pull, c, subscription)
 	}

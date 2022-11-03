@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	proto "github.com/dapr/dapr/pkg/proto/components/v1"
+	"go.opentelemetry.io/otel"
 
 	"github.com/nanobus/nanobus/actions"
 	"github.com/nanobus/nanobus/codec"
@@ -12,6 +13,7 @@ import (
 	"github.com/nanobus/nanobus/expr"
 	"github.com/nanobus/nanobus/resolve"
 	"github.com/nanobus/nanobus/resource"
+	"github.com/nanobus/nanobus/telemetry/tracing"
 )
 
 type PublishConfig struct {
@@ -29,6 +31,8 @@ type PublishConfig struct {
 	Data *expr.DataExpr `mapstructure:"data"`
 	// Metadata is the input binding metadata
 	Metadata *expr.DataExpr `mapstructure:"metadata"`
+	// PropogateTracing enables/disables propogating the distributed tracing context (e.g. W3C TraceContext standard).
+	PropogateTracing bool `mapstructure:"propogateTracing"`
 }
 
 // Publish is the NamedLoader for the publish action.
@@ -37,7 +41,9 @@ func Publish() (string, actions.Loader) {
 }
 
 func PublishLoader(ctx context.Context, with interface{}, resolver resolve.ResolveAs) (actions.Action, error) {
-	c := PublishConfig{}
+	c := PublishConfig{
+		PropogateTracing: true,
+	}
 	if err := config.Decode(with, &c); err != nil {
 		return nil, err
 	}
@@ -87,15 +93,20 @@ func PublishAction(
 			key = fmt.Sprintf("%v", keyInt)
 		}
 
+		// Propogate distributed tracing fields
+		// per the the W3C TraceContext standard.
+		if config.PropogateTracing {
+			if m, ok := input.(map[string]interface{}); ok {
+				otel.GetTextMapPropagator().Inject(ctx, tracing.MapCarrier(m))
+			}
+		}
+
 		dataBytes, err := codec.Encode(input, config.CodecArgs...)
 		if err != nil {
 			return nil, err
 		}
 
-		metadata := map[string]string{
-			"rawPayload": "true",
-		}
-
+		metadata := map[string]string{}
 		if key != "" {
 			metadata["partitionKey"] = key
 		}
