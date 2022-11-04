@@ -25,5 +25,7 @@ func NewContext(ctx context.Context, resp *Response) context.Context {
 }
 
 func FromContext(ctx context.Context) *Response {
-	return ctx.Value(responseKey{}).(*Response)
+	iface := ctx.Value(responseKey{})
+	response, _ := iface.(*Response)
+	return response
 }

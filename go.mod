@@ -7,6 +7,7 @@ require (
 	github.com/MicahParks/keyfunc v1.5.1
 	github.com/actgardner/gogen-avro/v10 v10.2.1
 	github.com/agrea/ptr v0.0.0-20180711073057-77a518d99b7b
+	github.com/alecthomas/kong v0.7.0
 	github.com/antonmedv/expr v1.9.0
 	github.com/apexlang/apex-go v0.1.2
 	github.com/cenkalti/backoff/v4 v4.1.3
