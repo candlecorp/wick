@@ -1,0 +1,1 @@
+The contents of this directory were retrofitted from [ORAS' CLI code](https://github.com/oras-project/oras/tree/main/cmd/oras). At the time of this commit, the logic we needed was intermixed with CLI logic and not exported. As a result, we copied the code here. Hopefully, the ORAS project refactor this aspect of the CLI and export the specific utility functions we need.

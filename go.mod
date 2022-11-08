@@ -40,6 +40,8 @@ require (
 	github.com/nanobus/iota/go v0.0.0-20221030002516-67c7602f3f87
 	github.com/nats-io/nats.go v1.19.0
 	github.com/oklog/run v1.1.0
+	github.com/opencontainers/go-digest v1.0.0
+	github.com/opencontainers/image-spec v1.1.0-rc2
 	github.com/rbretecher/go-postman-collection v0.9.0
 	github.com/sony/gobreaker v0.5.0
 	github.com/spf13/cast v1.5.0
@@ -64,6 +66,7 @@ require (
 	gopkg.in/yaml.v3 v3.0.1
 	gorm.io/driver/postgres v1.4.5
 	gorm.io/gorm v1.24.1-0.20221019064659-5dd2bb482755
+	oras.land/oras-go/v2 v2.0.0-rc.4
 )
 
 require (
@@ -117,6 +120,7 @@ require (
 	golang.org/x/crypto v0.1.0 // indirect
 	golang.org/x/exp v0.0.0-20221028150844-83b7d23a625f // indirect
 	golang.org/x/net v0.1.0 // indirect
+	golang.org/x/sync v0.0.0-20220601150217-0de741cfad7f // indirect
 	golang.org/x/sys v0.1.0 // indirect
 	golang.org/x/text v0.4.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect

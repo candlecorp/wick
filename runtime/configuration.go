@@ -18,6 +18,7 @@ import (
 
 type Configuration struct {
 	Application   *Application               `json:"application" yaml:"application"`
+	Package       *Package                   `json:"package" yaml:"package"`
 	Import        []string                   `json:"import" yaml:"import"`
 	Transports    map[string]Component       `json:"transports" yaml:"transports"`
 	Tracing       *Component                 `json:"tracing" yaml:"tracing"`
@@ -37,9 +38,15 @@ type Configuration struct {
 }
 
 type Application struct {
+	Registry    string `mapstructure:"registry"`
+	Org         string `mapstructure:"org"`
 	ID          string `mapstructure:"id"`
 	Version     string `mapstructure:"version"`
 	Environment string `mapstructure:"environment"`
+}
+
+type Package struct {
+	Add []string `mapstructure:"add"`
 }
 
 type Subscription struct {
