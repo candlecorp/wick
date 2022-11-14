@@ -86,13 +86,21 @@ import (
 
 	// TRANSPORTS
 	"github.com/nanobus/nanobus/transport"
+	"github.com/nanobus/nanobus/transport/httprpc"
+	"github.com/nanobus/nanobus/transport/nats"
+	"github.com/nanobus/nanobus/transport/rest"
+
+	// TRANSPORT - FILTERS
 	"github.com/nanobus/nanobus/transport/filter"
 	"github.com/nanobus/nanobus/transport/filter/jwt"
 	"github.com/nanobus/nanobus/transport/filter/session"
 	"github.com/nanobus/nanobus/transport/filter/userinfo"
-	"github.com/nanobus/nanobus/transport/httprpc"
-	"github.com/nanobus/nanobus/transport/nats"
-	"github.com/nanobus/nanobus/transport/rest"
+
+	// TRANSPORT - MIDDLEWARE
+	"github.com/nanobus/nanobus/transport/middleware"
+	middleware_cors "github.com/nanobus/nanobus/transport/middleware/cors"
+
+	// TRANSPORT - ROUTES
 	"github.com/nanobus/nanobus/transport/routes"
 	"github.com/nanobus/nanobus/transport/routes/oauth2"
 )
@@ -193,6 +201,11 @@ func Start(info *Info) error {
 		jwt.JWT,
 		session.Session,
 		userinfo.UserInfo,
+	)
+
+	middlewareRegistry := middleware.Registry{}
+	middlewareRegistry.Register(
+		middleware_cors.Cors,
 	)
 
 	// Compute registration
@@ -316,7 +329,7 @@ func Start(info *Info) error {
 		loader, ok := specRegistry[spec.Uses]
 		if !ok {
 			log.Error(nil, "Could not find spec", "type", spec.Uses)
-			return errors.New("Could not find spec")
+			return errors.New("could not find spec")
 		}
 		nss, err := loader(ctx, spec.With, resolveAs)
 		if err != nil {
@@ -586,6 +599,26 @@ func Start(info *Info) error {
 		}
 	}
 	dependencies["filter:lookup"] = filters
+
+	middlewares := []middleware.Middleware{}
+	if configMiddlewares, ok := config.Middleware["http"]; ok {
+		for _, f := range configMiddlewares {
+			middlewareLoader, ok := middlewareRegistry[f.Uses]
+			if !ok {
+				log.Error(nil, "could not find middleware", "type", f.Uses)
+				return errors.New("could not find middleware")
+			}
+
+			middleware, err := middlewareLoader(ctx, f.With, resolveAs)
+			if err != nil {
+				log.Error(err, "could not load middleware", "type", f.Uses)
+				return err
+			}
+
+			middlewares = append(middlewares, middleware)
+		}
+	}
+	dependencies["middleware:lookup"] = middlewares
 
 	translateError := func(err error) *errorz.Error {
 		if errz, ok := err.(*errorz.Error); ok {

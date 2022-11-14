@@ -8,13 +8,13 @@ import (
 	"strconv"
 
 	"github.com/go-logr/logr"
-	"github.com/nanobus/nanobus/channel"
-	"github.com/nanobus/nanobus/config"
-	"github.com/nanobus/nanobus/resolve"
 	"github.com/nats-io/nats.go"
 	"go.uber.org/multierr"
 
+	"github.com/nanobus/nanobus/channel"
+	"github.com/nanobus/nanobus/config"
 	"github.com/nanobus/nanobus/errorz"
+	"github.com/nanobus/nanobus/resolve"
 	"github.com/nanobus/nanobus/spec"
 	"github.com/nanobus/nanobus/transport"
 	"github.com/nanobus/nanobus/transport/filter"

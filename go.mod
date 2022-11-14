@@ -43,6 +43,7 @@ require (
 	github.com/opencontainers/go-digest v1.0.0
 	github.com/opencontainers/image-spec v1.1.0-rc2
 	github.com/rbretecher/go-postman-collection v0.9.0
+	github.com/rs/cors v1.8.2
 	github.com/sony/gobreaker v0.5.0
 	github.com/spf13/cast v1.5.0
 	github.com/stretchr/testify v1.8.1

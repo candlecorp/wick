@@ -302,7 +302,12 @@ func setSessionCookie(w http.ResponseWriter, token *oauth2.Token, claims map[str
 		return errors.New("sid claim is not a string")
 	}
 
-	cookie := http.Cookie{Name: "sid", Value: sid, Expires: token.Expiry, Path: "/"}
+	cookie := http.Cookie{
+		Name:    "sid",
+		Value:   sid,
+		Expires: token.Expiry,
+		Path:    "/",
+	}
 	http.SetCookie(w, &cookie)
 
 	return nil

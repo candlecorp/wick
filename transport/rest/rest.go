@@ -28,6 +28,7 @@ import (
 	"github.com/nanobus/nanobus/transport"
 	"github.com/nanobus/nanobus/transport/filter"
 	"github.com/nanobus/nanobus/transport/httpresponse"
+	"github.com/nanobus/nanobus/transport/middleware"
 	"github.com/nanobus/nanobus/transport/routes"
 )
 
@@ -39,6 +40,7 @@ type Rest struct {
 	invoker       transport.Invoker
 	errorResolver errorz.Resolver
 	codecs        map[string]channel.Codec
+	middlewares   []middleware.Middleware
 	filters       []filter.Filter
 	router        *mux.Router
 	ln            net.Listener
@@ -54,9 +56,10 @@ type queryParam struct {
 }
 
 type optionsHolder struct {
-	codecs  []channel.Codec
-	filters []filter.Filter
-	routes  []routes.AddRoutes
+	codecs      []channel.Codec
+	middlewares []middleware.Middleware
+	filters     []filter.Filter
+	routes      []routes.AddRoutes
 }
 
 var rePathParams = regexp.MustCompile(`(?m)\{([^\}]*)\}`)
@@ -71,6 +74,12 @@ type Option func(opts *optionsHolder)
 func WithCodecs(codecs ...channel.Codec) Option {
 	return func(opts *optionsHolder) {
 		opts.codecs = codecs
+	}
+}
+
+func WithMiddleware(middlewares ...middleware.Middleware) Option {
+	return func(opts *optionsHolder) {
+		opts.middlewares = middlewares
 	}
 }
 
@@ -120,6 +129,7 @@ func Loader(ctx context.Context, with interface{}, resolver resolve.ResolveAs) (
 	var transportInvoker transport.Invoker
 	var namespaces spec.Namespaces
 	var errorResolver errorz.Resolver
+	var middlewares []middleware.Middleware
 	var filters []filter.Filter
 	var log logr.Logger
 	var tracer trace.Tracer
@@ -130,6 +140,7 @@ func Loader(ctx context.Context, with interface{}, resolver resolve.ResolveAs) (
 		"transport:invoker", &transportInvoker,
 		"spec:namespaces", &namespaces,
 		"errors:resolver", &errorResolver,
+		"middleware:lookup", &middlewares,
 		"filter:lookup", &filters,
 		"system:logger", &log,
 		"system:tracer", &tracer,
@@ -137,7 +148,8 @@ func Loader(ctx context.Context, with interface{}, resolver resolve.ResolveAs) (
 		return nil, err
 	}
 
-	var c Configuration
+	// Defaults
+	c := Configuration{}
 	if err := config.Decode(with, &c); err != nil {
 		return nil, err
 	}
@@ -153,6 +165,7 @@ func Loader(ctx context.Context, with interface{}, resolver resolve.ResolveAs) (
 	}
 
 	return New(log, tracer, c, namespaces, transportInvoker, errorResolver,
+		WithMiddleware(middlewares...),
 		WithFilters(filters...),
 		WithCodecs(jsoncodec, msgpackcodec),
 		WithRoutes(routes...))
@@ -172,7 +185,6 @@ func New(log logr.Logger, tracer trace.Tracer, config Configuration, namespaces 
 
 	r := mux.NewRouter()
 	r.Use(handlers.ProxyHeaders)
-	r.Use(mux.CORSMethodMiddleware(r))
 
 	for _, addRoutes := range opts.routes {
 		addRoutes(r)
@@ -212,6 +224,7 @@ func New(log logr.Logger, tracer trace.Tracer, config Configuration, namespaces 
 		invoker:       invoker,
 		errorResolver: errorResolver,
 		codecs:        codecMap,
+		middlewares:   opts.middlewares,
 		filters:       opts.filters,
 		router:        r,
 	}
@@ -399,7 +412,16 @@ func (t *Rest) Listen() error {
 	t.ln = ln
 	t.log.Info("REST server listening", "address", t.address)
 
-	return http.Serve(ln, otelhttp.NewHandler(t.router, "rest"))
+	// Apply middleware in reverse order.
+	var handler http.Handler = t.router
+	if len(t.middlewares) > 0 {
+		for i := len(t.middlewares) - 1; i >= 0; i-- {
+			handler = t.middlewares[i](handler)
+		}
+	}
+
+	handler = otelhttp.NewHandler(handler, "rest")
+	return http.Serve(ln, handler)
 }
 
 func (t *Rest) Close() (err error) {

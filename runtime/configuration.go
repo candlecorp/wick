@@ -23,6 +23,7 @@ type Configuration struct {
 	Transports    map[string]Component       `json:"transports" yaml:"transports"`
 	Tracing       *Component                 `json:"tracing" yaml:"tracing"`
 	Specs         []Component                `json:"specs" yaml:"specs"`
+	Middleware    map[string][]Component     `json:"middleware" yaml:"middleware"`
 	Filters       map[string][]Component     `json:"filters" yaml:"filters"`
 	Codecs        map[string]Component       `json:"codecs" yaml:"codecs"`
 	Resources     map[string]Component       `json:"resources" yaml:"resources"`
