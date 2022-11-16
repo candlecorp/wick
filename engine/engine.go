@@ -722,7 +722,7 @@ func Start(info *Info) error {
 
 			future := m.RequestResponse(ctx, ns, fn, p)
 			if future == nil {
-				return nil, errorz.New(errorz.NotFound, fmt.Sprintf("could not find %s::%s", ns, fn))
+				return nil, errorz.New(errorz.Unimplemented, fmt.Sprintf("%s::%s is not implemented", ns, fn))
 			}
 			result, err := future.Block()
 			if err != nil {
