@@ -7,11 +7,12 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/nanobus/nanobus/expr"
-	"github.com/nanobus/nanobus/spec"
-	"github.com/nanobus/nanobus/spec/apex"
 	"github.com/spf13/cast"
 	"gopkg.in/yaml.v3"
+
+	"github.com/nanobus/nanobus/pkg/expr"
+	"github.com/nanobus/nanobus/pkg/spec"
+	"github.com/nanobus/nanobus/pkg/spec/apex"
 )
 
 type Config struct {

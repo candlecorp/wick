@@ -32,7 +32,7 @@ archives:
     wrap_in_directory: true
     files:
         - README.md
-        - LICENSE.txt
+        - LICENSE
 checksum:
   name_template: 'checksums.txt'
 snapshot:

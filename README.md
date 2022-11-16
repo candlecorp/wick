@@ -119,4 +119,4 @@ Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on the code of conduc
 
 ## License
 
-This project is licensed under the [Elastic License 2.0](https://www.elastic.co/licensing/elastic-license) - see the [LICENSE.txt](LICENSE.txt) file for details
+This project is licensed under the [Mozilla Public License Version 2.0](https://mozilla.org/MPL/2.0/).

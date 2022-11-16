@@ -10,9 +10,9 @@ import (
 
 	"github.com/alecthomas/kong"
 
-	"github.com/nanobus/nanobus/engine"
-	"github.com/nanobus/nanobus/oci"
-	"github.com/nanobus/nanobus/runtime"
+	"github.com/nanobus/nanobus/pkg/engine"
+	"github.com/nanobus/nanobus/pkg/oci"
+	"github.com/nanobus/nanobus/pkg/runtime"
 )
 
 var (
