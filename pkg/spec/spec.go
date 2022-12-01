@@ -15,6 +15,7 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+	"unicode"
 
 	ut "github.com/go-playground/universal-translator"
 	"github.com/go-playground/validator/v10"
@@ -22,6 +23,7 @@ import (
 	"github.com/spf13/cast"
 
 	"github.com/nanobus/nanobus/pkg/coalesce"
+	"github.com/nanobus/nanobus/pkg/errorz"
 	"github.com/nanobus/nanobus/pkg/registry"
 )
 
@@ -29,10 +31,6 @@ type (
 	NamedLoader = registry.NamedLoader[[]*Namespace]
 	Loader      = registry.Loader[[]*Namespace]
 	Registry    = registry.Registry[[]*Namespace]
-
-	// NamedLoader func() (string, Loader)
-	// Loader      func(config interface{}) ([]*Namespace, error)
-	// Registry    map[string]Loader
 )
 
 type (
@@ -73,11 +71,11 @@ type (
 		Name        string     `json:"name"`
 		Description string     `json:"description,omitempty"`
 		Annotated
-		Fields       []*Field          `json:"fields"`
-		fieldsByName map[string]*Field `json:"-"`
+		Fields []*Field `json:"fields"`
 
-		Validations []Validation      `json:"-"`
-		rules       map[string]string `json:"-"`
+		fieldsByName   map[string]*Field
+		requiredFields []*Field
+		rules          map[string]string
 	}
 
 	Field struct {
@@ -86,9 +84,6 @@ type (
 		Annotated
 		Type         *TypeRef    `json:"type"`
 		DefaultValue interface{} `json:"defaultValue,omitempty"`
-
-		Validations []Validation `json:"-"`
-		//Rules       string       `json:"-"`
 	}
 
 	Enum struct {
@@ -147,6 +142,8 @@ type (
 
 	ValidationErrors map[string][]ValidationError
 	ValidationError  struct {
+		Type    string      `json:"type"`
+		Field   string      `json:"field"`
 		Rule    string      `json:"rule"`
 		Message string      `json:"message"`
 		Value   interface{} `json:"value,omitempty"`
@@ -359,13 +356,13 @@ func (o *Operation) AddAnnotation(a *Annotation) *Operation {
 
 func NewType(namespace *Namespace, name string, description string) *Type {
 	return &Type{
-		Namespace:    namespace,
-		Name:         name,
-		Description:  description,
-		Annotated:    newAnnotated(),
-		Fields:       make([]*Field, 0, 10),
-		fieldsByName: make(map[string]*Field),
-		Validations:  []Validation{},
+		Namespace:      namespace,
+		Name:           name,
+		Description:    description,
+		Annotated:      newAnnotated(),
+		Fields:         make([]*Field, 0, 10),
+		fieldsByName:   make(map[string]*Field),
+		requiredFields: make([]*Field, 0, 10),
 	}
 }
 
@@ -382,6 +379,9 @@ func (t *Type) AddField(field *Field) *Type {
 	}
 	t.fieldsByName[field.Name] = field
 	t.Fields = append(t.Fields, field)
+	if field.Type.Kind != KindOptional {
+		t.requiredFields = append(t.requiredFields, field)
+	}
 	return t
 }
 
@@ -424,9 +424,6 @@ func (t *Type) InitValidations() (*Type, error) {
 	t.rules = make(map[string]string, len(t.Fields))
 	for _, f := range t.Fields {
 		var rules []string
-		if f.Type.Kind != KindOptional {
-			rules = append(rules, "required")
-		}
 		for _, a := range f.Annotations {
 			if v, ok := validationRules[a.Name]; ok {
 				tag, err := v(a)
@@ -436,6 +433,7 @@ func (t *Type) InitValidations() (*Type, error) {
 				rules = append(rules, tag)
 			}
 		}
+
 		if len(rules) > 0 {
 			t.rules[f.Name] = strings.Join(rules, ",")
 		}
@@ -445,16 +443,6 @@ func (t *Type) InitValidations() (*Type, error) {
 }
 
 func (f *Field) InitValidations() error {
-	for _, a := range f.Annotations {
-		if v, ok := validators[a.Name]; ok {
-			validation, err := v(nil, f, a)
-			if err != nil {
-				return err
-			}
-			f.Validations = append(f.Validations, validation)
-		}
-	}
-
 	return nil
 }
 
@@ -553,12 +541,14 @@ func (t *TypeRef) IsPrimitive() bool {
 func (t *TypeRef) Coalesce(value interface{}, validate bool) (interface{}, bool, error) {
 	var err error
 	var changed bool
+
 	if value == nil {
 		if validate && t.Kind != KindOptional {
 			return nil, false, fmt.Errorf("value is required")
 		}
 		return nil, false, nil
 	}
+
 	switch t.Kind {
 	case KindOptional:
 		if value == nil {
@@ -675,12 +665,12 @@ func (t *TypeRef) Coalesce(value interface{}, validate bool) (interface{}, bool,
 					vv[i] = val.(map[string]interface{})
 				}
 			}
-		// TODO
-		// case KindEnum:
-		// case KindUnion:
 		default:
 			err = fmt.Errorf("value must be a slice, got %s", reflect.TypeOf(value))
 		}
+		// TODO
+		// case KindEnum:
+		// case KindUnion:
 	}
 
 	return value, changed, err
@@ -732,6 +722,7 @@ func (t *Type) Coalesce(v map[string]interface{}, validate bool) error {
 	if v == nil {
 		return nil
 	}
+
 	for fieldName, value := range v {
 		f, ok := t.fieldsByName[fieldName]
 		if !ok {
@@ -746,52 +737,63 @@ func (t *Type) Coalesce(v map[string]interface{}, validate bool) error {
 	}
 
 	if validate {
-		// var _verrors [25]ValidationError
-		// verrors := _verrors[:0]
 		myErrors := make(ValidationErrors, len(t.rules))
 
-		// for fieldName, f := range t.fieldsByName {
-		// 	_, ok := v[fieldName]
-		// 	if f.Type.Kind != KindOptional && !ok {
-		// 		return fmt.Errorf("missing required field %s in type %s", fieldName, t.Name)
-		// 	}
-		// 	// for _, val := range f.Validations {
-		// 	// 	valErrors, err := val(value)
-		// 	// 	if err != nil {
-		// 	// 		return err
-		// 	// 	}
-		// 	// 	if len(valErrors) > 0 {
-		// 	// 		verrors = append(verrors, valErrors...)
-		// 	// 	}
-		// 	// }
-		// }
+		for _, f := range t.requiredFields {
+			fieldName := f.Name
+			_, ok := v[fieldName]
+			if !ok && f.Type.Kind != KindOptional {
+				if f.DefaultValue != nil {
+					v[fieldName] = f.DefaultValue
+				} else {
+					sfe := fieldError{
+						v:     globalValidate,
+						t:     t,
+						field: fieldName,
+						tag:   "required",
+					}
+					msg := sfe.Translate(translator)
+
+					myErrors[fieldName] = []ValidationError{{
+						Type:    t.Name,
+						Field:   fieldName,
+						Rule:    "required",
+						Message: msg,
+					}}
+				}
+			}
+		}
 
 		valErrors := validateMapCtx(globalValidate, context.Background(), v, t.rules)
 		for name, errs := range valErrors {
 			if verrs, ok := errs.(validator.ValidationErrors); ok {
-				errors := make([]ValidationError, len(verrs))
-				for i, err := range verrs {
-					sfe := specFieldError{err, t, name}
-					msg := sfe.Translate(translator)
-					errors[i] = ValidationError{
+				errors := myErrors[name]
+				if errors == nil {
+					errors = make([]ValidationError, 0, len(verrs))
+				}
+				for _, err := range verrs {
+					msg := err.Translate(translator)
+					errors = append(errors, ValidationError{
+						Type:    t.Name,
+						Field:   name,
 						Rule:    err.Tag(),
 						Message: msg,
 						Value:   err.Value(),
-					}
+					})
 				}
 				myErrors[name] = errors
 			}
 		}
 
-		// if len(myErrors) > 0 {
-		// 	msg := "parameter input is invalid"
-		// 	if unicode.IsUpper([]rune(t.Name)[0]) {
-		// 		msg = fmt.Sprintf("input for %s is invalid", t.Name)
-		// 	}
-		// 	err := errorz.New(errorz.InvalidArgument, msg)
-		// 	err.Details = myErrors
-		// 	return err
-		// }
+		if len(myErrors) > 0 {
+			msg := "parameter input is invalid"
+			if unicode.IsUpper([]rune(t.Name)[0]) {
+				msg = fmt.Sprintf("input for %s is invalid", t.Name)
+			}
+			err := errorz.New(errorz.InvalidArgument, msg)
+			err.Details = myErrors
+			return err
+		}
 	}
 
 	return nil
@@ -806,37 +808,6 @@ func validateMapCtx(v *validator.Validate, ctx context.Context, data map[string]
 		}
 	}
 	return errs
-}
-
-type specFieldError struct {
-	validator.FieldError
-	t     *Type
-	field string
-}
-
-func (e specFieldError) Namespace() string {
-	return e.t.Namespace.Name
-}
-
-func (e specFieldError) StructNamespace() string {
-	return e.t.Namespace.Name
-}
-
-func (e specFieldError) Field() string {
-	return e.field
-}
-
-func (e specFieldError) StructField() string {
-	return e.field
-}
-
-func (e specFieldError) Translate(ut ut.Translator) string {
-	fn, ok := e.Validate().GetValidatorFunc(ut, e.field)
-	if !ok {
-		return e.Error()
-	}
-
-	return fn(ut, e)
 }
 
 func (t *Type) doField(tt *TypeRef, f *Field, fieldName string, v map[string]interface{}, value interface{}, validate bool) (err error) {
@@ -1004,4 +975,71 @@ func (k Kind) IsPrimitive() bool {
 func (k Kind) MarshalJSON() ([]byte, error) {
 	s := k.String()
 	return json.Marshal(s)
+}
+
+type fieldError struct {
+	v     *validator.Validate
+	t     *Type
+	field string
+	tag   string
+	value any
+}
+
+var _ = (validator.FieldError)(fieldError{})
+
+func (e fieldError) Validate() *validator.Validate {
+	return e.v
+}
+
+func (e fieldError) Namespace() string {
+	return e.t.Namespace.Name
+}
+
+func (e fieldError) StructNamespace() string {
+	return e.t.Namespace.Name
+}
+
+func (e fieldError) Field() string {
+	return e.field
+}
+
+func (e fieldError) Value() any {
+	return e.value
+}
+
+func (e fieldError) StructField() string {
+	return e.field
+}
+
+func (e fieldError) Tag() string {
+	return e.tag
+}
+
+func (e fieldError) ActualTag() string {
+	return e.tag
+}
+
+func (e fieldError) Param() string {
+	return ""
+}
+
+func (e fieldError) Kind() reflect.Kind {
+	return 0
+}
+
+func (e fieldError) Type() reflect.Type {
+	return nil
+}
+
+func (e fieldError) Error() string {
+	return fmt.Sprintf("field %q failed validation %q", e.field, e.tag)
+}
+
+func (e fieldError) Translate(ut ut.Translator) string {
+	fn, ok := e.v.GetValidatorFunc(ut, e.tag)
+	if !ok {
+		return e.Error()
+	}
+
+	return fn(ut, e)
 }
