@@ -15,7 +15,6 @@ import (
 	"io"
 	"net"
 	"net/http"
-	"strings"
 
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
@@ -124,8 +123,8 @@ func New(log logr.Logger, address string, namespaces spec.Namespaces, invoker tr
 
 func (t *HTTPRPC) Listen() error {
 	r := mux.NewRouter()
-	r.HandleFunc("/{namespace}/{function}", t.handler).Methods("POST")
-	r.HandleFunc("/{namespace}/{id}/{function}", t.handler).Methods("POST")
+	r.HandleFunc("/{interface}/{operation}", t.handler).Methods("POST")
+	r.HandleFunc("/{interface}/{id}/{operation}", t.handler).Methods("POST")
 	r.Use(mux.CORSMethodMiddleware(r))
 	ln, err := net.Listen("tcp", t.address)
 	if err != nil {
@@ -163,17 +162,9 @@ func (t *HTTPRPC) handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	namespace := mux.Vars(r)["namespace"]
-	function := mux.Vars(r)["function"]
+	iface := mux.Vars(r)["interface"]
+	operation := mux.Vars(r)["operation"]
 	id := mux.Vars(r)["id"]
-
-	lastDot := strings.LastIndexByte(namespace, '.')
-	if lastDot < 0 {
-		t.handleError(ErrInvalidURISyntax, codec, r, w, http.StatusBadRequest)
-		return
-	}
-	service := namespace[lastDot+1:]
-	namespace = namespace[:lastDot]
 
 	for _, filter := range t.filters {
 		var err error
@@ -199,7 +190,7 @@ func (t *HTTPRPC) handler(w http.ResponseWriter, r *http.Request) {
 		input = map[string]interface{}{}
 	}
 
-	response, err := t.invoker(ctx, namespace, service, id, function, input)
+	response, err := t.invoker(ctx, iface, id, operation, input)
 	if err != nil {
 		code := http.StatusInternalServerError
 		if errors.Is(err, transport.ErrBadInput) {

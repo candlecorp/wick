@@ -20,30 +20,16 @@ import (
 
 	"github.com/nanobus/nanobus/pkg/actions"
 	"github.com/nanobus/nanobus/pkg/config"
-	"github.com/nanobus/nanobus/pkg/expr"
 	"github.com/nanobus/nanobus/pkg/resolve"
 )
 
-type ReCaptchaConfig struct {
-	SiteVerifyURL string          `mapstructure:"siteVerifyUrl"`
-	Secret        string          `mapstructure:"secret" validate:"required"`
-	Response      *expr.ValueExpr `mapstructure:"response" validate:"required"`
-	Score         float64         `mapstructure:"score"`
-	Action        string          `mapstructure:"action"`
-}
-
 type SiteVerifyResponse struct {
-	Success     bool      `json:"success"`
-	Score       float64   `json:"score"`
-	Action      string    `json:"action"`
-	ChallengeTS time.Time `json:"challenge_ts"`
-	Hostname    string    `json:"hostname"`
-	ErrorCodes  []string  `json:"error-codes"`
-}
-
-// ReCaptcha is the NamedLoader for the reCaptcha action.
-func ReCaptcha() (string, actions.Loader) {
-	return "recaptcha", ReCaptchaLoader
+	Success     bool      `json:"success" yaml:"success"`
+	Score       float64   `json:"score" yaml:"score"`
+	Action      string    `json:"action" yaml:"action"`
+	ChallengeTs time.Time `json:"challengeTs" yaml:"challengeTs"`
+	Hostname    string    `json:"hostname" yaml:"hostname"`
+	ErrorCodes  []string  `json:"errorCodes" yaml:"errorCodes"`
 }
 
 func ReCaptchaLoader(ctx context.Context, with interface{}, resolver resolve.ResolveAs) (actions.Action, error) {
@@ -115,7 +101,7 @@ func ReCaptchaAction(
 		}
 
 		// Check response action.
-		if config.Action != "" && response.Action != config.Action {
+		if config.Action != nil && response.Action != *config.Action {
 			return nil, errors.New("mismatched recaptcha action")
 		}
 

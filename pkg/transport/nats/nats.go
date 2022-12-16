@@ -168,9 +168,8 @@ func (t *NATS) Close() (merr error) {
 }
 
 func (t *NATS) handler(m *nats.Msg) {
-	service := m.Header.Get("Service")
-	function := m.Header.Get("Function")
-	namespace := m.Header.Get("Namespace")
+	iface := m.Header.Get("Interface")
+	operation := m.Header.Get("Operation")
 	id := m.Header.Get("ID")
 
 	m.Header.Get("Content-Type")
@@ -217,7 +216,7 @@ func (t *NATS) handler(m *nats.Msg) {
 		input = map[string]interface{}{}
 	}
 
-	response, err := t.invoker(ctx, namespace, service, id, function, input)
+	response, err := t.invoker(ctx, iface, id, operation, input)
 	if err != nil {
 		code := http.StatusInternalServerError
 		if errors.Is(err, transport.ErrBadInput) {

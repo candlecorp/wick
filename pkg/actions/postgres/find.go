@@ -17,45 +17,10 @@ import (
 
 	"github.com/nanobus/nanobus/pkg/actions"
 	"github.com/nanobus/nanobus/pkg/config"
-	"github.com/nanobus/nanobus/pkg/expr"
 	"github.com/nanobus/nanobus/pkg/resolve"
 	"github.com/nanobus/nanobus/pkg/resource"
 	"github.com/nanobus/nanobus/pkg/spec"
 )
-
-type FindConfig struct {
-	// Resource is the name of the connection resource to use.
-	Resource string `mapstructure:"resource" validate:"required"`
-	// Namespace is the type namespace to load.
-	Namespace string `mapstructure:"namespace" validate:"required"`
-	// Type is the type name to load.
-	Type string `mapstructure:"type" validate:"required"`
-	// Preload lists the relationship to expand/load.
-	Preload []Preload `mapstructure:"preload"`
-	// Where list the parts of the where clause.
-	Where []Where `mapstructure:"where"`
-	// Pagination is the optional fields to wrap the results with.
-	Pagination *Pagination `mapstructure:"pagination"`
-	// Offset is the query offset.
-	Offset *expr.ValueExpr `mapstructure:"offset"`
-	// Limit is the query limit.
-	Limit *expr.ValueExpr `mapstructure:"limit"`
-}
-
-type Pagination struct {
-	PageIndex string `mapstructure:"pageIndex"`
-	PageCount string `mapstructure:"pageCount"`
-	Offset    string `mapstructure:"offset"`
-	Limit     string `mapstructure:"limit"`
-	Count     string `mapstructure:"count"`
-	Total     string `mapstructure:"total"`
-	Items     string `mapstructure:"items"`
-}
-
-// Find is the NamedLoader for the invoke action.
-func Find() (string, actions.Loader) {
-	return "@postgres/find", FindLoader
-}
 
 func FindLoader(ctx context.Context, with interface{}, resolver resolve.ResolveAs) (actions.Action, error) {
 	c := FindConfig{}
@@ -71,7 +36,7 @@ func FindLoader(ctx context.Context, with interface{}, resolver resolve.ResolveA
 		return nil, err
 	}
 
-	poolI, ok := resources[c.Resource]
+	poolI, ok := resources[string(c.Resource)]
 	if !ok {
 		return nil, fmt.Errorf("resource %q is not registered", c.Resource)
 	}
@@ -145,23 +110,23 @@ func FindAction(
 			wrapper := map[string]interface{}{
 				p.Items: results,
 			}
-			if p.Total != "" {
-				wrapper[p.Total] = total
+			if p.Total != nil {
+				wrapper[*p.Total] = total
 			}
-			if p.Count != "" {
-				wrapper[p.Count] = count
+			if p.Count != nil {
+				wrapper[*p.Count] = count
 			}
-			if p.PageCount != "" {
-				wrapper[p.PageCount] = (count + limit - 1) / limit
+			if p.PageCount != nil {
+				wrapper[*p.PageCount] = (count + limit - 1) / limit
 			}
-			if p.PageIndex != "" {
-				wrapper[p.PageIndex] = offset / limit
+			if p.PageIndex != nil {
+				wrapper[*p.PageIndex] = offset / limit
 			}
-			if p.Offset != "" {
-				wrapper[p.Offset] = offset
+			if p.Offset != nil {
+				wrapper[*p.Offset] = offset
 			}
-			if p.Limit != "" {
-				wrapper[p.Limit] = config.Limit
+			if p.Limit != nil {
+				wrapper[*p.Limit] = config.Limit
 			}
 
 			return wrapper, nil

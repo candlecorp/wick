@@ -22,7 +22,7 @@ type DataExpr struct {
 
 var ErrNotAMap = errors.New("data expression result was not a map")
 
-func (d *DataExpr) DecodeString(value string) error {
+func (d *DataExpr) FromString(value string) error {
 	d.script = value
 
 	return nil

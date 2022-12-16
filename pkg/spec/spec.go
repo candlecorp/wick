@@ -34,6 +34,7 @@ type (
 )
 
 type (
+	Interfaces map[string]map[string]*Operation
 	Namespaces map[string]*Namespace
 
 	Namespace struct {
@@ -153,6 +154,26 @@ type (
 		Annotation(name string) (*Annotation, bool)
 	}
 )
+
+func (ns Namespaces) ToInterfaces() Interfaces {
+	interfaces := make(Interfaces)
+	for _, namespace := range ns {
+		for _, service := range namespace.Services {
+			interfaceName := namespace.Name + "." + service.Name
+			interfaces[interfaceName] = service.operationsByName
+		}
+	}
+	return interfaces
+}
+
+func (is Interfaces) Operation(iface, operation string) (*Operation, bool) {
+	n, ok := is[iface]
+	if !ok {
+		return nil, false
+	}
+	o, ok := n[operation]
+	return o, ok
+}
 
 func (ns Namespaces) AddNamespaces(namespaces ...*Namespace) Namespaces {
 	for _, n := range namespaces {

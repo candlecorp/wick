@@ -1,0 +1,77 @@
+spec: ../../../specs/initialize/postgres.axdl
+generates:
+  migrate_postgres.ts:
+    module: ../../../codegen/config.ts
+    visitorClass: ComponentsVisitor
+---
+spec: ../../../specs/transport/http/cors.axdl
+generates:
+  transport_cors.ts:
+    module: ../../../codegen/config.ts
+    visitorClass: ComponentsVisitor
+---
+spec: ../../../specs/transport/http/oauth2.axdl
+generates:
+  transport_oauth2.ts:
+    module: ../../../codegen/config.ts
+    visitorClass: ComponentsVisitor
+---
+spec: ../../../specs/transport/http/rest.axdl
+generates:
+  transport_rest.ts:
+    module: ../../../codegen/config.ts
+    visitorClass: ComponentsVisitor
+---
+spec: ../../../specs/transport/http/router.axdl
+generates:
+  transport_router.ts:
+    module: ../../../codegen/config.ts
+    visitorClass: ComponentsVisitor
+---
+spec: ../../../specs/transport/http/server.axdl
+generates:
+  transport_server.ts:
+    module: ../../../codegen/config.ts
+    visitorClass: ComponentsVisitor
+---
+spec: ../../../specs/transport/http/static.axdl
+generates:
+  transport_static.ts:
+    module: ../../../codegen/config.ts
+    visitorClass: ComponentsVisitor
+---
+spec: ../../../specs/transport/filter/jwt.axdl
+generates:
+  transport_jwt.ts:
+    module: ../../../codegen/config.ts
+    visitorClass: ComponentsVisitor
+---
+spec: ../../../specs/transport/filter/paseto.axdl
+generates:
+  transport_paseto.ts:
+    module: ../../../codegen/config.ts
+    visitorClass: ComponentsVisitor
+---
+spec: ../../../specs/transport/filter/session.axdl
+generates:
+  transport_session.ts:
+    module: ../../../codegen/config.ts
+    visitorClass: ComponentsVisitor
+---
+spec: ../../../specs/transport/filter/userinfo.axdl
+generates:
+  transport_userinfo.ts:
+    module: ../../../codegen/config.ts
+    visitorClass: ComponentsVisitor
+---
+spec: ../../../specs/actions/core.axdl
+generates:
+  actions_core.ts:
+    module: ../../../codegen/config.ts
+    visitorClass: ComponentsVisitor
+---
+spec: ../../../specs/actions/postgres.axdl
+generates:
+  actions_postgres.ts:
+    module: ../../../codegen/config.ts
+    visitorClass: ComponentsVisitor

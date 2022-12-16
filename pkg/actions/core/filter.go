@@ -14,19 +14,8 @@ import (
 
 	"github.com/nanobus/nanobus/pkg/actions"
 	"github.com/nanobus/nanobus/pkg/config"
-	"github.com/nanobus/nanobus/pkg/expr"
 	"github.com/nanobus/nanobus/pkg/resolve"
 )
-
-type FilterConfig struct {
-	// Condition is the predicate expression for filtering.
-	Condition *expr.ValueExpr `mapstructure:"condition" validate:"required"`
-}
-
-// Filter is the NamedLoader for the filter action.
-func Filter() (string, actions.Loader) {
-	return "filter", FilterLoader
-}
 
 func FilterLoader(ctx context.Context, with interface{}, resolver resolve.ResolveAs) (actions.Action, error) {
 	var c FilterConfig

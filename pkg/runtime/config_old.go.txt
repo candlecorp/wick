@@ -1,0 +1,76 @@
+type Configuration struct {
+	Application   *Application               `json:"application" yaml:"application"`
+	Package       *Package                   `json:"package" yaml:"package"`
+	Import        []string                   `json:"import" yaml:"import"`
+	Transports    map[string]Component       `json:"transports" yaml:"transports"`
+	Tracing       *Component                 `json:"tracing" yaml:"tracing"`
+	Specs         []Component                `json:"specs" yaml:"specs"`
+	Middleware    map[string][]Component     `json:"middleware" yaml:"middleware"`
+	Filters       map[string][]Component     `json:"filters" yaml:"filters"`
+	Codecs        map[string]Component       `json:"codecs" yaml:"codecs"`
+	Resources     map[string]Component       `json:"resources" yaml:"resources"`
+	Migrate       map[string]Component       `json:"migrate" yaml:"migrate"`
+	Compute       []Component                `json:"compute" yaml:"compute"`
+	Resiliency    Resiliency                 `json:"resiliency" yaml:"resiliency"`
+	Services      Services                   `json:"services" yaml:"services"`
+	Providers     Services                   `json:"providers" yaml:"providers"`
+	Events        FunctionPipelines          `json:"events" yaml:"events"`
+	Pipelines     FunctionPipelines          `json:"pipelines" yaml:"pipelines"`
+	Subscriptions []Subscription             `json:"subscriptions" yaml:"subscriptions"`
+	Errors        map[string]errorz.Template `json:"errors" yaml:"errors"`
+}
+
+type Application struct {
+	Registry    string `mapstructure:"registry"`
+	Org         string `mapstructure:"org"`
+	ID          string `mapstructure:"id"`
+	Version     string `mapstructure:"version"`
+	Environment string `mapstructure:"environment"`
+}
+
+type Package struct {
+	Add []string `mapstructure:"add"`
+}
+
+type Subscription struct {
+	Resource  string            `mapstructure:"resource"`
+	Topic     string            `mapstructure:"topic"`
+	Metadata  map[string]string `mapstructure:"metadata"`
+	Codec     string            `mapstructure:"codec"`
+	CodecArgs []interface{}     `mapstructure:"codecArgs"`
+	Function  string            `mapstructure:"function"`
+}
+
+type Component struct {
+	Uses string      `json:"uses" yaml:"uses"`
+	With interface{} `json:"with" yaml:"with"`
+}
+
+type Resiliency struct {
+	Timeouts        map[string]Duration         `json:"timeouts" yaml:"timeouts"`
+	Retries         map[string]ConfigProperties `json:"retries" yaml:"retries"`
+	CircuitBreakers map[string]ConfigProperties `json:"circuitBreakers" yaml:"circuitBreakers"`
+}
+
+type ConfigProperties map[string]interface{}
+
+type Services map[string]FunctionPipelines
+type FunctionPipelines map[string]Pipeline
+
+type Pipeline struct {
+	Name  string `json:"name" yaml:"name"`
+	Call  string `json:"call,omitempty" yaml:"call,omitempty" mapstructure:"call"`
+	Steps []Step `json:"steps,omitempty" yaml:"steps,omitempty"`
+}
+
+type Step struct {
+	Name           string      `json:"name" yaml:"name" mapstructure:"name"`
+	Call           string      `json:"call,omitempty" yaml:"call,omitempty" mapstructure:"call"`
+	Uses           string      `json:"uses,omitempty" yaml:"uses,omitempty" mapstructure:"uses"`
+	With           interface{} `json:"with,omitempty" yaml:"with,omitempty" mapstructure:"with"`
+	Returns        string      `json:"returns,omitempty" yaml:"returns,omitempty" mapstructure:"returns"`
+	Timeout        string      `json:"timeout,omitempty" yaml:"timeout,omitempty" mapstructure:"timeout"`
+	Retry          string      `json:"retry,omitempty" yaml:"retry,omitempty" mapstructure:"retry"`
+	CircuitBreaker string      `json:"circuitBreaker,omitempty" yaml:"circuitBreaker,omitempty" mapstructure:"circuitBreaker"`
+	OnError        *Pipeline   `json:"onError,omitempty" yaml:"onError,omitempty" mapstructure:"onError"`
+}

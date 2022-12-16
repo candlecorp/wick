@@ -1,0 +1,32 @@
+spec: ../../../specs/actions/core.axdl
+config:
+  package: core
+  module: github.com/nanobus/nanobus/pkg/actions/core
+  logger:
+    import: "github.com/go-logr/logr"
+    interface: "logr.Logger"
+  writeTypeInfo: false
+  mapstructureTag: true
+  aliases:
+    Duration:
+      import: time
+      type: time.Duration
+    TextExpr:
+      import: github.com/nanobus/nanobus/pkg/expr
+      type: '*expr.Text'
+    ValueExpr:
+      import: github.com/nanobus/nanobus/pkg/expr
+      type: '*expr.ValueExpr'
+    DataExpr:
+      import: github.com/nanobus/nanobus/pkg/expr
+      type: '*expr.DataExpr'
+    Handler:
+      import: github.com/nanobus/nanobus/pkg/handler
+      type: 'handler.Handler'
+    Step:
+      import: github.com/nanobus/nanobus/pkg/runtime
+      type: 'runtime.Step'
+generates:
+  generated.go:
+    module: ../../../codegen/components.ts
+    visitorClass: ComponentsVisitor

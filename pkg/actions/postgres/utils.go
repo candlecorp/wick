@@ -21,19 +21,8 @@ import (
 	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4/pgxpool"
 
-	"github.com/nanobus/nanobus/pkg/expr"
 	"github.com/nanobus/nanobus/pkg/spec"
 )
-
-type Preload struct {
-	Field   string    `mapstructure:"field"`
-	Preload []Preload `mapstructure:"preload"`
-}
-
-type Where struct {
-	Query string          `mapstructure:"query"`
-	Value *expr.ValueExpr `mapstructure:"value"`
-}
 
 func annotationValue(a spec.Annotator, annotation, argument, defaultValue string) string {
 	if av, ok := a.Annotation(annotation); ok {

@@ -1,0 +1,118 @@
+# Copyright 2022 The NanoBus Authors.
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+namespace "nanobus.actions.postgres"
+
+alias ValueExpr = string
+alias DataExpr = string
+alias ResourceRef = string
+
+type ExecConfig @action("@postgres/exec") {
+	"Resource is the name of the connection resource to use."
+	resource: ResourceRef
+	"Data is the input bindings sent."
+	data: DataExpr?
+	"SQL is the SQL query to execute."
+	sql: string @rename({ go: "SQL"})
+	"Args are the evaluations to use as arguments for the SQL query."
+	args: [ValueExpr]?
+}
+
+type ExecMultiConfig @action("@postgres/exec_multi") {
+	"Resource is the name of the connection resource to use."
+	resource: ResourceRef
+	"Statements are the statements to execute within a single transaction."
+	statements: [Statement]
+}
+
+type Statement {
+	"Data is the input bindings sent."
+	data: DataExpr?
+	"SQL is the SQL query to execute."
+	sql: string @rename({ go: "SQL"})
+	"Args are the evaluations to use as arguments for the SQL query."
+	args: [ValueExpr]?
+}
+
+type FindOneConfig @action("@postgres/find_one") {
+	"Resource is the name of the connection resource to use."
+	resource: ResourceRef
+	"Namespace is the type namespace to load."
+	namespace: string
+	"Type is the type name to load."
+	type: string
+	"Preload lists the relationship to expand/load."
+	preload: [Preload]?
+	"Where list the parts of the where clause."
+	where: [Where]?
+	"NotFoundError is the error to return if the key is not found."
+	notFoundError: string
+}
+
+type Preload {
+	field:   string
+	preload: [Preload]
+}
+
+type Where {
+	query: string
+	value: ValueExpr
+}
+
+type FindConfig @action("@postgres/find") {
+	"Resource is the name of the connection resource to use."
+	resource: ResourceRef
+	"Namespace is the type namespace to load."
+	namespace: string
+	"Type is the type name to load."
+	type: string
+	"Preload lists the relationship to expand/load."
+	preload: [Preload]?
+	"Where list the parts of the where clause."
+	where: [Where]?
+	"Pagination is the optional fields to wrap the results with."
+	pagination: Pagination?
+	"Offset is the query offset."
+	offset: ValueExpr?
+	"Limit is the query limit."
+	limit: ValueExpr?
+}
+
+type Pagination {
+	pageIndex: string?
+	pageCount: string?
+	offset:    string?
+	limit:     string?
+	count:     string?
+	total:     string?
+	items:     string
+}
+
+type LoadConfig @action("@postgres/load") {
+	"Resource is the name of the connection resource to use."
+	resource: ResourceRef
+	"Namespace is the type namespace to load."
+	namespace: string
+	"Type is the type name to load."
+	type: string
+	"ID is the entity identifier expression."
+	key: ValueExpr
+	"Preload lists the relationship to expand/load."
+	preload: [Preload]?
+	"NotFoundError is the error to return if the key is not found."
+	notFoundError: string = "not_found"
+}
+
+type QueryConfig @action("@postgres/query") {
+	"Resource is the name of the connection resource to use."
+	resource: ResourceRef
+	"SQL is the SQL query to execute."
+	sql: string @rename({ go: "SQL"})
+	"Args are the evaluations to use as arguments for the SQL query."
+	args: [ValueExpr]?
+	"Single indicates a single row should be returned if found."
+	single: bool = false
+}

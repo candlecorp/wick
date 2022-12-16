@@ -1,0 +1,381 @@
+# Copyright 2022 The NanoBus Authors.
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+namespace "nanobus.runtime.v1"
+
+alias Duration = string
+alias ValueExpr = string
+alias TextExpr = string
+
+"A mapping of target resource name to source name."
+alias ResourceLinks = { string : string }
+
+"The resource configuration that is tied to an application at runtime."
+type ResourcesConfig {
+  "A mapping of resource name to component configuration."
+  resources: { string : Component }
+  "A mapping of Itoa to resource links."
+  resourceLinks: { string : ResourceLinks }
+}
+
+"The main Iota component/application configuration."
+type BusConfig {
+  "The Iota identifier."
+  applicationId: string
+  "The Iota version."
+  version: string
+  "The main code binary (wasm or native)."
+  main: string
+  "The interface definition."
+  spec: string
+  "Package specifies the contents of the Iota OCI image."
+  package: Package?
+  "Resources are externally configured sources and receivers of data (DB, REST endpoint)."
+  resources: [string]
+  "Other Iotas that this Iota depends on using."
+  includes: { string : Reference }
+  "Tracing configures an Open Telemetry span exporter."
+  tracing: Component?
+  specs: [Component]
+  compute: [Component]
+  "Resiliency defines policies for fault tolerance."
+  resiliency: Resiliency?
+  "Codecs configure how data formats are encoded (and persisted) and decoded (and received)."
+  codecs: { string : Component }
+  "Initializers handle startup and initialization tasks which execute and freed up."
+  initializers: { string : Component }
+  """
+  Transports configure inbound communication mechanisms from clients
+  (e.g. HTTP or gRPC) or event sources (e.g Message brokers).
+  """
+  transports: { string : Component }
+  "Filters process received data immediately after the transports."
+  filters: [Component]
+  "Processing pipeline for pre-authoration actions."
+  preauth: Interfaces?
+  "Authorization rules for interfaces."
+  authorization: Authorizations?
+  "Processing pipeline for post-authoration actions."
+  postauth: Interfaces?
+  "Interface composed from declarative pipelines."
+  interfaces: Interfaces
+  "Pipelines that preform data access (typically using resources) on behalf of the application."
+  providers: Interfaces
+  errors: { string : ErrorTemplate }
+}
+
+"Package defines the contents of the OCI image."
+type Package {
+  "The OCI registry host."
+  registry: string?
+  "The OCI registry organization"
+  org: string?
+  "The files and directories to include."
+  add: [string]
+}
+
+"A reference to another Iota as a dependency."
+type Reference {
+  "The OCI reference or directory."
+  ref: string
+  """
+  Used to pass configured resources to Iota dependencies.
+  It is a mapping of the referred Iota resources to this Iotas resources.
+  """
+  resourceLinks: { string: string }?
+}
+
+"A loadable component and its configuration."
+type Component {
+  "The component name."
+  uses: string
+  "The component's configuration where the structure is defined by the component implementation."
+  with: any?
+}
+
+"A section where resiliency policies are configured and given reusable reference names."
+type Resiliency {
+  "Timeout durations."
+  timeouts: { string : Duration }
+  "Retry handling using constant and exponential backoff policies."
+  retries: { string : Backoff }
+  "Prevent further calls to remote resources that are unavailable or operating abnormally."
+  circuitBreakers: { string : CircuitBreaker }
+}
+
+# One of ConstantBackoff or ExponentialBackoff based on `policy`
+union Backoff = ConstantBackoff | ExponentialBackoff
+
+"A backoff policy that always returns a fixed backoff delay."
+type ConstantBackoff @unionKey("constant") {
+  "The duration to wait between retry attempts."
+  duration: string
+  "The maximum number of retries to attempt. No value denotes an indefinite number of retries."
+  maxRetries: u32?
+}
+
+"""
+A backoff implementation that increases the backoff period
+for each retry attempt using a randomization function that grows exponentially.
+
+The exponential back-off window uses the following formula:
+
+```
+BackOffDuration = PreviousBackOffDuration * (Random value from 0.5 to 1.5) * 1.5
+if BackOffDuration > maxInterval {
+  BackoffDuration = maxInterval
+}
+```
+"""
+type ExponentialBackoff @unionKey("exponential") {
+  "The initial interval."
+  initialInterval: Duration = "500ms"
+  randomizationFactor: f64 = 0.5
+  multiplier: f64 = 1.5
+  """
+  Determines the maximum interval between retries to which the exponential
+  back-off policy can grow. Additional retries always occur after a duration of `maxInterval`.
+  """
+  maxInterval: Duration = "60s"
+  maxElapsedTime: Duration = "15m"
+  "The maximum number of retries to attempt. No value denotes an indefinite number of retries."
+  maxRetries: u32?
+}
+
+type CircuitBreaker {
+  """
+  The maximum number of requests allowed to pass through when the
+  circuit breaker is half-open (recovering from failure).
+  """
+  maxRequests: u32 = 1
+  """
+  The cyclical period of time used by the CB to clear its internal counts.
+  If set to 0 seconds, this never clears.
+  """
+  interval: Duration = "0s"
+  """
+  The period of the open state (directly after failure) until the circuit breaker
+  switches to half-open. Defaults to 60s.
+  """
+  timeout: Duration = "60s"
+  """
+  A Common Expression Language (CEL) statement that is evaluated by the
+  circuit breaker. When the statement evaluates to true, the CB trips and
+  becomes open. Default is consecutiveFailures > 5.
+  """
+  trip: ValueExpr?
+}
+
+"""
+A mapping of interface to operation authorizations.
+"""
+alias Authorizations = { string : AuthOperations }
+"""
+A mapping of operation to authorization rules.
+"""
+alias AuthOperations = { string : Authorization }
+
+"""
+An authorization rule that can assert based on the existence or quality of
+a claim, or through authorization components.
+"""
+type Authorization {
+  """
+  This flag must be explicitly set to `true` if unauthenticated/anonymous access is allowed.
+  """
+  unauthenticated: bool = false
+  has: [string]
+  checks: { string : any }
+  rules: [Component]
+}
+
+"A map of interface name to operation pipelines."
+alias Interfaces = { string : Operations }
+"A map of operation name to pipeline."
+alias Operations = { string : Pipeline }
+
+"A "
+type Pipeline {
+  "The pipeline name."
+  name: string
+  # call: string?
+  steps: [Step]?
+}
+
+type Step {
+  name: string
+  call: string?
+  uses: string
+  with: any?
+  returns: string?
+  timeout: string?
+  retry: string?
+  circuitBreaker: string?
+  onError: Pipeline?
+}
+
+type ErrorTemplate {
+  type: string
+  code: ErrCode
+  status: u32
+  title: TextExpr
+  message: TextExpr
+  path: string?
+  help: TextExpr?
+  locales: { string : Strings }
+}
+
+enum ErrCode {
+  "OK indicates the operation was successful."
+  OK = 0 as "ok"
+
+  "Canceled indicates the operation was canceled (typically by the caller)."
+  Canceled = 1 as "canceled"
+
+  """
+  Unknown error. An example of where this error may be returned is
+  if a Status value received from another address space belongs to
+  an error-space that is not known in this address space. Also
+  errors raised by APIs that do not return enough error information
+  may be converted to this error.
+  """
+  Unknown = 2 as "unknown"
+
+  """
+  InvalidArgument indicates client specified an invalid argument.
+  Note that this differs from FailedPrecondition. It indicates arguments
+  that are problematic regardless of the state of the system
+  (e.g., a malformed file name).
+  """
+  InvalidArgument = 3 as "invalid_argument"
+
+  """
+  DeadlineExceeded means operation expired before completion.
+  For operations that change the state of the system, this error may be
+  returned even if the operation has completed successfully. For
+  example, a successful response from a server could have been delayed
+  long enough for the deadline to expire.
+  """
+  DeadlineExceeded = 4 as "deadline_exceeded"
+
+  """
+  NotFound means some requested entity (e.g., file or directory) was
+  not found.
+  """
+  NotFound = 5 as "not_found"
+
+  """
+  AlreadyExists means an attempt to create an entity failed because one
+  already exists.
+  """
+  AlreadyExists = 6 as "already_exists"
+
+  """
+  PermissionDenied indicates the caller does not have permission to
+  execute the specified operation. It must not be used for rejections
+  caused by exhausting some resource (use ResourceExhausted
+  instead for those errors). It must not be
+  used if the caller cannot be identified (use Unauthenticated
+  instead for those errors).
+  """
+  PermissionDenied = 7 as "permission_denied"
+
+  """
+  ResourceExhausted indicates some resource has been exhausted, perhaps
+  a per-user quota, or perhaps the entire file system is out of space.
+  """
+  ResourceExhausted = 8 as "resource_exhausted"
+
+  """
+  FailedPrecondition indicates operation was rejected because the
+  system is not in a state required for the operation's execution.
+  For example, directory to be deleted may be non-empty, an rmdir
+  operation is applied to a non-directory, etc.
+  
+  A litmus test that may help a service implementor in deciding
+  between FailedPrecondition, Aborted, and Unavailable:
+   (a) Use Unavailable if the client can retry just the failing call.
+   (b) Use Aborted if the client should retry at a higher-level
+       (e.g., restarting a read-modify-write sequence).
+   (c) Use FailedPrecondition if the client should not retry until
+       the system state has been explicitly fixed. E.g., if an "rmdir"
+       fails because the directory is non-empty, FailedPrecondition
+       should be returned since the client should not retry unless
+       they have first fixed up the directory by deleting files from it.
+   (d) Use FailedPrecondition if the client performs conditional
+       Get/Update/Delete on a resource and the resource on the
+       server does not match the condition. E.g., conflicting
+       read-modify-write on the same resource.
+  """
+  FailedPrecondition = 9 as "failed_precondition"
+
+  """
+  Aborted indicates the operation was aborted, typically due to a
+  concurrency issue like sequencer check failures, transaction aborts,
+  etc.
+  
+  See litmus test above for deciding between FailedPrecondition,
+  Aborted, and Unavailable.
+  """
+  Aborted = 10 as "aborted"
+
+  """
+  OutOfRange means operation was attempted past the valid range.
+  E.g., seeking or reading past end of file.
+  
+  Unlike InvalidArgument, this error indicates a problem that may
+  be fixed if the system state changes. For example, a 32-bit file
+  system will generate InvalidArgument if asked to read at an
+  offset that is not in the range [0,2^32-1], but it will generate
+  OutOfRange if asked to read from an offset past the current
+  file size.
+  
+  There is a fair bit of overlap between FailedPrecondition and
+  OutOfRange. We recommend using OutOfRange (the more specific
+  error) when it applies so that callers who are iterating through
+  a space can easily look for an OutOfRange error to detect when
+  they are done.
+  """
+  OutOfRange = 11 as "out_of_range"
+
+  """
+  Unimplemented indicates operation is not implemented or not
+  supported/enabled in this service.
+  """
+  Unimplemented = 12 as "unimplemented"
+
+  """
+  Internal errors. Means some invariants expected by underlying
+  system has been broken. If you see one of these errors,
+  something is very broken.
+  """
+  Internal = 13 as "internal"
+
+  """
+  Unavailable indicates the service is currently unavailable.
+  This is a most likely a transient condition and may be corrected
+  by retrying with a backoff. Note that it is not always safe to retry
+  non-idempotent operations.
+  
+  See litmus test above for deciding between FailedPrecondition,
+  Aborted, and Unavailable.
+  """
+  Unavailable = 14 as "unavailable"
+
+  "DataLoss indicates unrecoverable data loss or corruption."
+  DataLoss = 15 as "data_loss"
+
+  """
+  Unauthenticated indicates the request does not have valid
+  authentication credentials for the operation.
+  """
+  Unauthenticated = 16 as "unauthenticated"
+}
+
+type Strings {
+  title: TextExpr
+  message: TextExpr
+}

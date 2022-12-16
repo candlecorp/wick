@@ -13,7 +13,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"os"
 	"os/exec"
@@ -33,7 +32,6 @@ import (
 	"github.com/vmihailenco/msgpack/v5"
 
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/propagation"
 	otel_resource "go.opentelemetry.io/otel/sdk/resource"
 	sdk_trace "go.opentelemetry.io/otel/sdk/trace"
@@ -41,17 +39,19 @@ import (
 	"go.opentelemetry.io/otel/trace"
 
 	// COMPONENT MODEL / PLUGGABLE COMPONENTS
-	proto "github.com/dapr/dapr/pkg/proto/components/v1"
 
 	// NANOBUS CORE
+	"github.com/nanobus/nanobus/pkg/channel"
 	"github.com/nanobus/nanobus/pkg/coalesce"
 	"github.com/nanobus/nanobus/pkg/errorz"
-	"github.com/nanobus/nanobus/pkg/function"
+	"github.com/nanobus/nanobus/pkg/handler"
+	"github.com/nanobus/nanobus/pkg/initialize"
 	"github.com/nanobus/nanobus/pkg/mesh"
-	"github.com/nanobus/nanobus/pkg/migrate"
+	"github.com/nanobus/nanobus/pkg/oci"
 	"github.com/nanobus/nanobus/pkg/resolve"
 	"github.com/nanobus/nanobus/pkg/resource"
 	"github.com/nanobus/nanobus/pkg/runtime"
+	"github.com/nanobus/nanobus/pkg/security/authorization"
 	"github.com/nanobus/nanobus/pkg/security/claims"
 
 	// CHANNELS
@@ -63,7 +63,7 @@ import (
 	spec_apex "github.com/nanobus/nanobus/pkg/spec/apex"
 
 	// COMPONENTS
-	"github.com/nanobus/iota/go/wasmrs/payload"
+	"github.com/nanobus/iota/go/payload"
 	"github.com/nanobus/nanobus/pkg/compute"
 	compute_wasmrs "github.com/nanobus/nanobus/pkg/compute/wasmrs"
 
@@ -83,8 +83,8 @@ import (
 	codec_msgpack "github.com/nanobus/nanobus/pkg/codec/msgpack"
 	codec_text "github.com/nanobus/nanobus/pkg/codec/text"
 
-	// DB MIGRATION
-	migrate_postgres "github.com/nanobus/nanobus/pkg/migrate/postgres"
+	// INITIALIZERS / DB MIGRATION
+	migrate_postgres "github.com/nanobus/nanobus/pkg/initialize/postgres"
 
 	// TELEMETRY / TRACING
 	otel_tracing "github.com/nanobus/nanobus/pkg/telemetry/tracing"
@@ -94,30 +94,34 @@ import (
 
 	// TRANSPORTS
 	"github.com/nanobus/nanobus/pkg/transport"
-	"github.com/nanobus/nanobus/pkg/transport/httprpc"
-	"github.com/nanobus/nanobus/pkg/transport/nats"
-	"github.com/nanobus/nanobus/pkg/transport/rest"
+	transport_http "github.com/nanobus/nanobus/pkg/transport/http"
+	transport_httprpc "github.com/nanobus/nanobus/pkg/transport/httprpc"
+	transport_nats "github.com/nanobus/nanobus/pkg/transport/nats"
 
 	// TRANSPORT - FILTERS
 	"github.com/nanobus/nanobus/pkg/transport/filter"
 	"github.com/nanobus/nanobus/pkg/transport/filter/jwt"
+	"github.com/nanobus/nanobus/pkg/transport/filter/paseto"
 	"github.com/nanobus/nanobus/pkg/transport/filter/session"
 	"github.com/nanobus/nanobus/pkg/transport/filter/userinfo"
 
-	// TRANSPORT - MIDDLEWARE
-	"github.com/nanobus/nanobus/pkg/transport/middleware"
-	middleware_cors "github.com/nanobus/nanobus/pkg/transport/middleware/cors"
+	// TRANSPORT - HTTP MIDDLEWARE
+	"github.com/nanobus/nanobus/pkg/transport/http/middleware"
+	middleware_cors "github.com/nanobus/nanobus/pkg/transport/http/middleware/cors"
 
-	// TRANSPORT - ROUTES
-	"github.com/nanobus/nanobus/pkg/transport/routes"
-	"github.com/nanobus/nanobus/pkg/transport/routes/oauth2"
+	// TRANSPORT - HTTP ROUTERS
+	"github.com/nanobus/nanobus/pkg/transport/http/router"
+	router_oauth2 "github.com/nanobus/nanobus/pkg/transport/http/router/oauth2"
+	router_rest "github.com/nanobus/nanobus/pkg/transport/http/router/rest"
+	router_router "github.com/nanobus/nanobus/pkg/transport/http/router/router"
+	router_static "github.com/nanobus/nanobus/pkg/transport/http/router/static"
 )
 
 type Runtime struct {
 	log        logr.Logger
-	config     *runtime.Configuration
+	config     *runtime.BusConfig
 	namespaces spec.Namespaces
-	processor  *runtime.Processor
+	processor  runtime.Namespaces
 	resolver   resolve.DependencyResolver
 	resolveAs  resolve.ResolveAs
 	env        runtime.Environment
@@ -131,19 +135,103 @@ const (
 )
 
 type Info struct {
-	Mode    Mode
-	BusFile string
+	Mode          Mode
+	BusFile       string
+	ResourcesFile string
+	DeveloperMode bool
 
 	// Service mode
 	Process []string
 
 	// CLI mode
-	Namespace string
-	Service   string
+	Interface string
 	EntityID  string
 	Operation string
 	Input     any
 	Output    any
+}
+
+type Engine struct {
+	ctx            context.Context
+	log            logr.Logger
+	tracer         trace.Tracer
+	actionRegistry actions.Registry
+	resolver       resolve.DependencyResolver
+	resolveAs      resolve.ResolveAs
+	namespaces     spec.Namespaces
+	m              *mesh.Mesh
+	allNamespaces  runtime.Namespaces
+	codec          channel.Codec
+}
+
+func (e *Engine) LoadConfig(busConfig *runtime.BusConfig) error {
+	// Create processor
+	processor, err := runtime.NewProcessor(e.ctx, e.log, e.tracer, e.actionRegistry, e.resolver)
+	if err != nil {
+		e.log.Error(err, "Could not create NanoBus runtime")
+		return err
+	}
+
+	if busConfig.Spec != "" {
+		e.log.Info("Loading interface specification", "filename", busConfig.Spec)
+		interfaceExt := filepath.Ext(busConfig.Spec)
+		var nss []*spec.Namespace
+		switch interfaceExt {
+		case ".apex", ".axdl", ".aidl", ".apexlang":
+			nss, err = spec_apex.Loader(e.ctx, map[string]interface{}{
+				"filename": busConfig.Spec,
+			}, e.resolveAs)
+		default:
+			e.log.Error(err, "Unknown spec type", "filename", busConfig.Spec)
+			return err
+		}
+		if err != nil {
+			e.log.Error(err, "Error loading spec", "filename", busConfig.Spec)
+			return err
+		}
+		for _, ns := range nss {
+			e.namespaces[ns.Name] = ns
+		}
+	}
+
+	if busConfig.Main != "" {
+		var computeInvoker compute.Invoker
+		mainExt := filepath.Ext(busConfig.Main)
+		e.log.Info("Loading main program", "filename", busConfig.Main)
+		switch mainExt {
+		case ".wasm":
+			computeInvoker, err = compute_wasmrs.Loader(e.ctx, map[string]interface{}{
+				"filename": busConfig.Main,
+			}, e.resolveAs)
+		default:
+			e.log.Error(err, "Unknown program type", "filename", busConfig.Main)
+			return err
+		}
+		if err != nil {
+			e.log.Error(err, "Error loading program", "filename", busConfig.Main)
+			return err
+		}
+		e.m.Link(computeInvoker)
+	}
+
+	if err = processor.Initialize(busConfig); err != nil {
+		e.log.Error(err, "Could not initialize processor")
+		return err
+	}
+
+	// TODO: Figure out how to remove this
+	for k, v := range processor.GetProviders() {
+		e.allNamespaces[k] = v
+	}
+	for k, v := range processor.GetInterfaces() {
+		e.allNamespaces[k] = v
+	}
+
+	// TODO: Lock down proivders
+	e.m.Link(runtime.NewInvoker(e.log, processor.GetProviders(), e.codec))
+	e.m.Link(runtime.NewInvoker(e.log, processor.GetInterfaces(), e.codec))
+
+	return nil
 }
 
 func Start(info *Info) error {
@@ -174,21 +262,36 @@ func Start(info *Info) error {
 	// zapLog := zap.NewExample()
 	log := zapr.NewLogger(zapLog)
 
+	if info.DeveloperMode && info.Mode == ModeService {
+		log.Info("Running in Developer Mode!")
+	}
+
 	// NanoBus flags
 
-	// Load the configuration
-	config, err := loadConfiguration(info.BusFile, log)
+	// Load the bus configuration
+	busConfig, err := loadBusConfig(info.BusFile, log)
 	if err != nil {
 		log.Error(err, "could not load configuration", "file", info.BusFile)
 		return err
 	}
 
+	var resourcesConfig *runtime.ResourcesConfig
+	// Load the resources configuration
+	_, err = os.Stat(info.ResourcesFile)
+	if err == nil {
+		resourcesConfig, err = loadResourcesConfig(info.ResourcesFile, log)
+		if err != nil {
+			log.Error(err, "could not load configuration", "file", info.ResourcesFile)
+			return err
+		}
+	}
+
 	// Transport registration
 	transportRegistry := transport.Registry{}
 	transportRegistry.Register(
-		httprpc.Load,
-		rest.Load,
-		nats.Load,
+		transport_http.HttpServerV1,
+		transport_httprpc.Load,
+		transport_nats.Load,
 	)
 
 	// Spec registration
@@ -197,23 +300,27 @@ func Start(info *Info) error {
 		spec_apex.Apex,
 	)
 
-	// Routes registration
-	routesRegistry := routes.Registry{}
-	routesRegistry.Register(
-		oauth2.Oauth2,
-	)
-
 	// Filter registration
 	filterRegistry := filter.Registry{}
 	filterRegistry.Register(
-		jwt.JWT,
-		session.Session,
-		userinfo.UserInfo,
+		jwt.JWTV1,
+		paseto.PasetoV1,
+		session.SessionV1,
+		userinfo.UserInfoV1,
+	)
+
+	// Router registration
+	routerRegistry := router.Registry{}
+	routerRegistry.Register(
+		router_oauth2.OAuth2V1,
+		router_rest.RestV1,
+		router_router.RouterV1,
+		router_static.StaticV1,
 	)
 
 	middlewareRegistry := middleware.Registry{}
 	middlewareRegistry.Register(
-		middleware_cors.Cors,
+		middleware_cors.CorsV0,
 	)
 
 	// Compute registration
@@ -260,27 +367,27 @@ func Start(info *Info) error {
 	actionRegistry.Register(gorm.All...)
 	actionRegistry.Register(dapr.All...)
 
-	migrateRegistry := migrate.Registry{}
-	migrateRegistry.Register(migrate_postgres.NamedLoader)
+	initializerRegistry := initialize.Registry{}
+	initializerRegistry.Register(migrate_postgres.MigratePostgresV1)
 
 	// Codecs
 	jsoncodec := json_codec.New()
 	msgpackcodec := msgpack_codec.New()
 
 	// Dependencies
-	// var invoker *channel.Invoker
-	// var busInvoker compute.BusInvoker
 	httpClient := getHTTPClient()
 	env := getEnvironment()
 	namespaces := make(spec.Namespaces)
 	dependencies := map[string]interface{}{
-		"system:logger":   log,
-		"client:http":     httpClient,
-		"codec:json":      jsoncodec,
-		"codec:msgpack":   msgpackcodec,
-		"spec:namespaces": namespaces,
-		"os:env":          env,
-		"registry:routes": routesRegistry,
+		"system:logger":       log,
+		"client:http":         httpClient,
+		"codec:json":          jsoncodec,
+		"codec:msgpack":       msgpackcodec,
+		"spec:namespaces":     namespaces,
+		"os:env":              env,
+		"registry:routers":    routerRegistry,
+		"registry:middleware": middlewareRegistry,
+		"developerMode":       info.DeveloperMode,
 	}
 	resolver := func(name string) (interface{}, bool) {
 		dep, ok := dependencies[name]
@@ -289,16 +396,16 @@ func Start(info *Info) error {
 	resolveAs := resolve.ToResolveAs(resolver)
 
 	var spanExporter sdk_trace.SpanExporter
-	if info.Mode == ModeService && config.Tracing != nil {
-		loadable, ok := tracingRegistry[config.Tracing.Uses]
+	if info.Mode == ModeService && busConfig.Tracing != nil {
+		loadable, ok := tracingRegistry[busConfig.Tracing.Uses]
 		if !ok {
-			log.Error(nil, "Could not find codec", "type", config.Tracing.Uses)
+			log.Error(nil, "Could not find codec", "type", busConfig.Tracing.Uses)
 			return errors.New("cound not find codec")
 		}
 		var err error
-		spanExporter, err = loadable(ctx, config.Tracing.With, resolveAs)
+		spanExporter, err = loadable(ctx, busConfig.Tracing.With, resolveAs)
 		if err != nil {
-			log.Error(err, "Error loading codec", "type", config.Tracing.Uses)
+			log.Error(err, "Error loading codec", "type", busConfig.Tracing.Uses)
 			return err
 		}
 	}
@@ -310,7 +417,7 @@ func Start(info *Info) error {
 	} else {
 		ntp := sdk_trace.NewTracerProvider(
 			sdk_trace.WithBatcher(spanExporter),
-			sdk_trace.WithResource(newOtelResource(config.Application)),
+			sdk_trace.WithResource(newOtelResource(busConfig.ApplicationID, busConfig.Version)),
 		)
 		defer func() {
 			if err := ntp.Shutdown(ctx); err != nil {
@@ -325,37 +432,13 @@ func Start(info *Info) error {
 	tracer := otel.Tracer("NanoBus")
 	dependencies["system:tracer"] = tracer
 
-	// if len(config.Specs) == 0 {
-	// 	config.Specs = append(config.Specs, runtime.Component{
-	// 		Uses: "apex",
-	// 		With: map[string]interface{}{
-	// 			"filename": "spec.apexlang",
-	// 		},
-	// 	})
-	// }
-	for _, spec := range config.Specs {
-		loader, ok := specRegistry[spec.Uses]
-		if !ok {
-			log.Error(nil, "Could not find spec", "type", spec.Uses)
-			return errors.New("could not find spec")
-		}
-		nss, err := loader(ctx, spec.With, resolveAs)
-		if err != nil {
-			log.Error(err, "Error loading spec", "type", spec.Uses)
-			return err
-		}
-		for _, ns := range nss {
-			namespaces[ns.Name] = ns
-		}
-	}
-
-	if config.Codecs == nil {
-		config.Codecs = map[string]runtime.Component{}
+	if busConfig.Codecs == nil {
+		busConfig.Codecs = map[string]runtime.Component{}
 	}
 	for name, loadable := range codecRegistry {
 		if loadable.Auto {
-			if _, exists := config.Codecs[name]; !exists {
-				config.Codecs[name] = runtime.Component{
+			if _, exists := busConfig.Codecs[name]; !exists {
+				busConfig.Codecs[name] = runtime.Component{
 					Uses: name,
 				}
 			}
@@ -364,7 +447,7 @@ func Start(info *Info) error {
 
 	codecs := make(codec.Codecs)
 	codecsByContentType := make(codec.Codecs)
-	for name, component := range config.Codecs {
+	for name, component := range busConfig.Codecs {
 		loadable, ok := codecRegistry[component.Uses]
 		if !ok {
 			log.Error(nil, "Could not find codec", "type", component.Uses)
@@ -381,11 +464,27 @@ func Start(info *Info) error {
 	dependencies["codec:lookup"] = codecs
 	dependencies["codec:byContentType"] = codecsByContentType
 
-	for name, spec := range config.Migrate {
-		log.Info("Migrating database", "name", name)
-		loader, ok := migrateRegistry[spec.Uses]
+	authorizers := make(map[string]map[string]authorization.Rule)
+	for iface, operations := range busConfig.Authorization {
+		if len(operations) == 0 {
+			continue
+		}
+		auths := make(map[string]authorization.Rule, len(operations))
+		for operation, auth := range operations {
+			if auth.Unauthenticated {
+				auths[operation] = authorization.Unauthenticated
+			} else {
+				auths[operation] = authorization.NewBasic(auth.Has, auth.Checks)
+			}
+		}
+		authorizers[iface] = auths
+	}
+
+	for name, spec := range busConfig.Initializers {
+		log.Info("Initializer running", "name", name)
+		loader, ok := initializerRegistry[spec.Uses]
 		if !ok {
-			log.Error(nil, "could not find migrater", "type", spec.Uses)
+			log.Error(nil, "could not find initializer", "type", spec.Uses)
 			return err
 		}
 		if m, ok := spec.With.(map[string]interface{}); ok {
@@ -393,240 +492,145 @@ func Start(info *Info) error {
 		}
 		nss, err := loader(ctx, spec.With, resolveAs)
 		if err != nil {
-			log.Error(err, "error loading migrater", "type", spec.Uses)
+			log.Error(err, "error loading initializer", "type", spec.Uses)
 			return err
 		}
 		if err := nss(ctx); err != nil {
-			log.Error(err, "Could not migrate database")
+			log.Error(err, "Could not execute initializer")
 			return err
 		}
 	}
 
 	resources := resource.Resources{}
-	for name, component := range config.Resources {
-		log.Info("Initializing resource", "name", name)
+	if resourcesConfig != nil {
+		for name, component := range resourcesConfig.Resources {
+			log.Info("Initializing resource", "name", name)
 
-		loader, ok := resourceRegistry[component.Uses]
-		if !ok {
-			log.Error(nil, "Could not find resource", "type", component.Uses)
-			return err
-		}
-		c, err := loader(ctx, component.With, resolveAs)
-		if err != nil {
-			log.Error(err, "Error loading resource", "type", component.Uses)
-			return err
-		}
+			loader, ok := resourceRegistry[component.Uses]
+			if !ok {
+				log.Error(nil, "Could not find resource", "type", component.Uses)
+				return err
+			}
+			c, err := loader(ctx, component.With, resolveAs)
+			if err != nil {
+				log.Error(err, "Error loading resource", "type", component.Uses)
+				return err
+			}
 
-		resources[name] = c
+			resources[name] = c
+		}
 	}
 	dependencies["resource:lookup"] = resources
 
-	// Create processor
-	processor, err := runtime.NewProcessor(ctx, log, tracer, config, actionRegistry, resolver)
-	if err != nil {
-		log.Error(err, "Could not create NanoBus runtime")
-		return err
-	}
-	dependencies["system:processor"] = processor
-
-	rt := Runtime{
-		log:        log,
-		config:     config,
-		namespaces: namespaces,
-		processor:  processor,
-		resolver:   resolver,
-		resolveAs:  resolveAs,
-		env:        env,
-	}
-	// busInvoker = rt.BusInvoker
-	// dependencies["bus:invoker"] = busInvoker
 	dependencies["state:invoker"] = func(ctx context.Context, namespace, id, key string) ([]byte, error) {
 		// TODO: Retrieve state
 		return []byte{}, nil
 	}
 
 	m := mesh.New(tracer)
-
-	for _, comp := range config.Compute {
-		log.Info("Initializing compute", "type", comp.Uses, "with", comp.With)
-		computeLoader, ok := computeRegistry[comp.Uses]
-		if !ok {
-			log.Error(err, "could not find compute", "type", comp.Uses)
-			return err
-		}
-		invoker, err := computeLoader(ctx, comp.With, resolveAs)
-		if err != nil {
-			log.Error(err, "could not load compute", "type", comp.Uses)
-			return err
-		}
-		m.Link(invoker)
-	}
 	dependencies["compute:mesh"] = m
 
-	if err = processor.Initialize(); err != nil {
-		log.Error(err, "Could not initialize processor")
+	allNamespaces := make(runtime.Namespaces)
+	dependencies["system:interfaces"] = allNamespaces
+
+	rt := Runtime{
+		log:        log,
+		config:     busConfig,
+		namespaces: namespaces,
+		processor:  allNamespaces,
+		resolver:   resolver,
+		resolveAs:  resolveAs,
+		env:        env,
+	}
+
+	e := Engine{
+		ctx:            ctx,
+		log:            log,
+		tracer:         tracer,
+		actionRegistry: actionRegistry,
+		resolver:       resolver,
+		resolveAs:      resolveAs,
+		namespaces:     namespaces,
+		m:              m,
+		allNamespaces:  allNamespaces,
+		codec:          msgpackcodec,
+	}
+
+	if err := e.LoadConfig(busConfig); err != nil {
 		return err
 	}
 
-	m.Link(runtime.NewInvoker(log, processor.GetProviders(), msgpackcodec))
+	dir, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+	for instanceID, include := range busConfig.Includes {
+		if oci.IsImageReference(include.Ref) {
+			return errors.New("references not currently supported")
+		}
+		log.Info("Loading include", "name", instanceID, "ref", include.Ref)
+		path := filepath.Join(dir, include.Ref)
+		var busFile, parentDir string
+		info, err := os.Stat(path)
+		if err != nil {
+			return err
+		}
+		if info.IsDir() {
+			parentDir = path
+			busFile = filepath.Join(path, "bus.yaml")
+		} else {
+			busFile = path
+			parentDir = filepath.Dir(path)
+		}
+		if err := os.Chdir(parentDir); err != nil {
+			return err
+		}
+
+		// Load the bus configuration
+		includedConfig, err := loadBusConfig(busFile, log)
+		if err != nil {
+			log.Error(err, "could not load configuration", "file", busFile)
+			return err
+		}
+
+		if err := e.LoadConfig(includedConfig); err != nil {
+			return err
+		}
+
+		if err := os.Chdir(dir); err != nil {
+			return err
+		}
+	}
+
+	interfaces := namespaces.ToInterfaces()
 
 	// Check for unsatified imports
 	ops := m.Unsatisfied()
 	if len(ops) > 0 {
 		log.Error(nil, "Halting due to unsatified imports", "count", len(ops))
 		for _, op := range ops {
-			log.Error(nil, "Missing import", "namespace", op.Namespace, "operation", op.Operation)
+			log.Error(nil, "Missing import", "interface", op.Namespace, "operation", op.Operation)
 		}
 		return errors.New("halting due to unsatified imports")
 	}
 
-	// log.Info(strings.TrimSpace(m.DebugInfo()))
+	filters := []filter.Filter{}
+	for _, f := range busConfig.Filters {
+		filterLoader, ok := filterRegistry[f.Uses]
+		if !ok {
+			log.Error(nil, "could not find filter", "type", f.Uses)
+			return errors.New("could not find filter")
+		}
 
-	for _, subscription := range config.Subscriptions {
-		pubsub, err := resource.Get[proto.PubSubClient](resources, subscription.Resource)
+		filter, err := filterLoader(ctx, f.With, resolveAs)
 		if err != nil {
-			log.Error(err, "Could not load resource", "name", subscription.Resource)
+			log.Error(err, "could not load filter", "type", f.Uses)
 			return err
 		}
 
-		c, ok := codecs[subscription.Codec]
-		if !ok {
-			log.Error(nil, "Could not find codec", "name", subscription.Resource)
-			return errors.New("could not find codec")
-		}
-
-		pull, err := pubsub.PullMessages(ctx)
-		if err != nil {
-			log.Error(nil, "Could not pull messages", "name", subscription.Resource)
-			return errors.New("could not pull messages")
-		}
-
-		go func(pull proto.PubSub_PullMessagesClient, c codec.Codec, sub runtime.Subscription) {
-			if err := pull.Send(&proto.PullMessagesRequest{
-				Topic: &proto.Topic{
-					Name:     sub.Topic,
-					Metadata: sub.Metadata,
-				},
-			}); err != nil {
-				log.Error(err, "Error subscribing")
-				return
-			}
-
-			log.Info("Subscribed to pubsub", "resource", sub.Resource, "topic", sub.Topic)
-
-			for {
-				recv, err := pull.Recv()
-				if err == io.EOF || err == context.Canceled {
-					return
-				}
-				if err != nil {
-					log.Error(err, "Error receiving messages")
-					return
-				}
-
-				input, messageType, err := c.Decode(recv.Data, sub.CodecArgs...)
-				if err != nil {
-					log.Error(err, "could not decode message")
-					pull.Send(&proto.PullMessagesRequest{
-						AckMessageId: recv.Id,
-						AckError: &proto.AckMessageError{
-							Message: err.Error(),
-						},
-					})
-					continue
-				}
-				// Extract distributed tracing context
-				// per the the W3C TraceContext standard.
-				if m, ok := input.(map[string]interface{}); ok {
-					ctx = otel.GetTextMapPropagator().Extract(ctx, otel_tracing.MapCarrier(m))
-				}
-
-				data := actions.Data{
-					"input": input,
-				}
-
-				pipelineName := sub.Function
-				if pipelineName == "" {
-					pipelineName = messageType
-				}
-
-				traceName := "events::type=" + pipelineName
-				if jsonBytes, err := json.MarshalIndent(input, "", "  "); err == nil {
-					logInbound(log, traceName, string(jsonBytes))
-				}
-
-				var span trace.Span
-				ctx, span = tracer.Start(ctx, traceName, trace.WithAttributes(
-					semconv.MessagingOperationProcess,
-				))
-				_, err = processor.Event(ctx, pipelineName, data)
-				if err != nil {
-					log.Error(err, "could not process message")
-					pull.Send(&proto.PullMessagesRequest{
-						AckMessageId: recv.Id,
-						AckError: &proto.AckMessageError{
-							Message: err.Error(),
-						},
-					})
-					span.RecordError(err)
-					span.End()
-					continue
-				}
-
-				if err := pull.Send(&proto.PullMessagesRequest{
-					AckMessageId: recv.Id,
-				}); err != nil {
-					log.Error(err, "could not ack message", "messageId", recv.Id)
-					span.RecordError(err)
-				}
-				span.End()
-			}
-		}(pull, c, subscription)
-	}
-
-	// Big 'ol TODO
-	// invoker = computeInstance.Invoker
-	// dependencies["client:invoker"] = invoker
-
-	filters := []filter.Filter{}
-	if configFilters, ok := config.Filters["http"]; ok {
-		for _, f := range configFilters {
-			filterLoader, ok := filterRegistry[f.Uses]
-			if !ok {
-				log.Error(nil, "could not find filter", "type", f.Uses)
-				return errors.New("could not find filter")
-			}
-
-			filter, err := filterLoader(ctx, f.With, resolveAs)
-			if err != nil {
-				log.Error(err, "could not load filter", "type", f.Uses)
-				return err
-			}
-
-			filters = append(filters, filter)
-		}
+		filters = append(filters, filter)
 	}
 	dependencies["filter:lookup"] = filters
-
-	middlewares := []middleware.Middleware{}
-	if configMiddlewares, ok := config.Middleware["http"]; ok {
-		for _, f := range configMiddlewares {
-			middlewareLoader, ok := middlewareRegistry[f.Uses]
-			if !ok {
-				log.Error(nil, "could not find middleware", "type", f.Uses)
-				return errors.New("could not find middleware")
-			}
-
-			middleware, err := middlewareLoader(ctx, f.With, resolveAs)
-			if err != nil {
-				log.Error(err, "could not load middleware", "type", f.Uses)
-				return err
-			}
-
-			middlewares = append(middlewares, middleware)
-		}
-	}
-	dependencies["middleware:lookup"] = middlewares
 
 	translateError := func(err error) *errorz.Error {
 		if errz, ok := err.(*errorz.Error); ok {
@@ -640,7 +644,7 @@ func Start(info *Info) error {
 			te = errorz.ParseTemplateError(err.Error())
 		}
 
-		tmpl, ok := config.Errors[te.Template]
+		tmpl, ok := busConfig.Errors[te.Template]
 		if !ok {
 			// Default error if template matches a code name.
 			if code, ok := errorz.CodeLookup[te.Template]; ok {
@@ -655,13 +659,13 @@ func Start(info *Info) error {
 			message, _ = tmpl.Message.Eval(te.Metadata)
 		}
 
-		e := errorz.New(tmpl.Code, message)
+		e := errorz.New(errorz.ErrCode(tmpl.Code), message)
 		e.Type = te.Template
 		if tmpl.Type != "" {
 			e.Type = tmpl.Type
 		}
 		if tmpl.Status != 0 {
-			e.Status = tmpl.Status
+			e.Status = int(tmpl.Status)
 		}
 		if tmpl.Title != nil {
 			title, _ := tmpl.Title.Eval(te.Metadata)
@@ -685,35 +689,45 @@ func Start(info *Info) error {
 	// 	w.Write([]byte("OK"))
 	// }
 
-	transportInvoker := func(ctx context.Context, namespace, service, id, fn string, input interface{}) (interface{}, error) {
-		if err := coalesceInput(namespaces, namespace, service, fn, input); err != nil {
+	transportInvoker := func(ctx context.Context, iface, id, fn string, input interface{}) (interface{}, error) {
+		if err := coalesceInput(interfaces, iface, fn, input); err != nil {
 			return nil, err
 		}
 
 		claimsMap := claims.FromContext(ctx)
+
+		// Perform authorization first.
+		// Deny by default of no rule is found for the operation.
+		opers, ok := authorizers[iface]
+		if !ok {
+			return nil, errorz.Return("permission_denied", errorz.Metadata{})
+		}
+		oper, ok := opers[fn]
+		if !ok {
+			return nil, errorz.Return("permission_denied", errorz.Metadata{})
+		}
+		if err := oper.Check(claimsMap); err != nil {
+			return nil, err // wrapped by Check
+		}
 
 		data := actions.Data{
 			"claims": claimsMap,
 			"input":  input,
 		}
 
-		ns := namespace
-		if service != "" {
-			ns += "." + service
-		}
-
 		if jsonBytes, err := json.MarshalIndent(input, "", "  "); err == nil {
-			logInbound(rt.log, ns+"/"+fn, string(jsonBytes))
+			logInbound(rt.log, iface+"/"+fn, string(jsonBytes))
 		}
 
 		data["env"] = env
 
-		ctx = function.ToContext(ctx, function.Function{
-			Namespace: ns,
+		ctx = handler.ToContext(ctx, handler.Handler{
+			Interface: iface,
 			Operation: fn,
 		})
 
-		response, ok, err := rt.processor.Service(ctx, namespace, service, fn, data)
+		// TODO: Use merged map of interfaces here
+		response, ok, err := allNamespaces.Invoke(ctx, iface, fn, data)
 		if err != nil {
 			return nil, translateError(err)
 		}
@@ -728,9 +742,9 @@ func Start(info *Info) error {
 			metadata := make([]byte, 8)
 			p := payload.New(payloadData, metadata)
 
-			future := m.RequestResponse(ctx, ns, fn, p)
+			future := m.RequestResponse(ctx, iface, fn, p)
 			if future == nil {
-				return nil, errorz.New(errorz.Unimplemented, fmt.Sprintf("%s::%s is not implemented", ns, fn))
+				return nil, errorz.New(errorz.Unimplemented, fmt.Sprintf("%s::%s is not implemented", iface, fn))
 			}
 			result, err := future.Block()
 			if err != nil {
@@ -752,7 +766,7 @@ func Start(info *Info) error {
 
 	switch info.Mode {
 	case ModeService:
-		if len(config.Transports) == 0 {
+		if len(busConfig.Transports) == 0 {
 			log.Info("Warning: no transports configured")
 		}
 
@@ -787,7 +801,7 @@ func Start(info *Info) error {
 			})
 		}
 
-		for name, comp := range config.Transports {
+		for name, comp := range busConfig.Transports {
 			name := name // Make copy
 			loader, ok := transportRegistry[comp.Uses]
 			if !ok {
@@ -822,8 +836,7 @@ func Start(info *Info) error {
 
 	case ModeInvoke:
 		result, err := transportInvoker(ctx,
-			info.Namespace,
-			info.Service,
+			info.Interface,
 			info.EntityID,
 			info.Operation,
 			info.Input)
@@ -838,7 +851,7 @@ func Start(info *Info) error {
 	return nil
 }
 
-func loadConfiguration(filename string, log logr.Logger) (*runtime.Configuration, error) {
+func loadResourcesConfig(filename string, log logr.Logger) (*runtime.ResourcesConfig, error) {
 	// TODO: Load from file or URI
 	f, err := os.OpenFile(filename, os.O_RDONLY, 0644)
 	if err != nil {
@@ -846,31 +859,47 @@ func loadConfiguration(filename string, log logr.Logger) (*runtime.Configuration
 	}
 	defer f.Close()
 
-	absPath, err := filepath.Abs(filename)
-	if err != nil {
-		return nil, err
-	}
-	baseDir := filepath.Dir(absPath)
-
-	c, err := runtime.LoadYAML(f)
+	c, err := runtime.LoadResourcesYAML(f)
 	if err != nil {
 		return nil, err
 	}
 
-	for _, imp := range c.Import {
-		fileDir := filepath.Dir(imp)
-		path := filepath.Join(baseDir, imp)
-		rel := runtime.FilePath(path)
-		log.Info("Importing config", "config", rel.Relative())
-		dir := filepath.Dir(path)
-		runtime.SetConfigBaseDir(dir)
-		imported, err := loadConfiguration(path, log)
-		if err != nil {
-			return nil, err
-		}
-		runtime.Combine(c, fileDir, log, imported)
-		runtime.SetConfigBaseDir(baseDir)
+	return c, nil
+}
+
+func loadBusConfig(filename string, log logr.Logger) (*runtime.BusConfig, error) {
+	// TODO: Load from file or URI
+	f, err := os.OpenFile(filename, os.O_RDONLY, 0644)
+	if err != nil {
+		return nil, err
 	}
+	defer f.Close()
+
+	// absPath, err := filepath.Abs(filename)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// baseDir := filepath.Dir(absPath)
+
+	c, err := runtime.LoadBusYAML(f)
+	if err != nil {
+		return nil, err
+	}
+
+	// for _, imp := range c.Import {
+	// 	fileDir := filepath.Dir(imp)
+	// 	path := filepath.Join(baseDir, imp)
+	// 	rel := runtime.FilePath(path)
+	// 	log.Info("Importing config", "config", rel.Relative())
+	// 	dir := filepath.Dir(path)
+	// 	runtime.SetConfigBaseDir(dir)
+	// 	imported, err := loadConfiguration(path, log)
+	// 	if err != nil {
+	// 		return nil, err
+	// 	}
+	// 	runtime.Combine(c, fileDir, log, imported)
+	// 	runtime.SetConfigBaseDir(baseDir)
+	// }
 
 	return c, nil
 }
@@ -909,8 +938,8 @@ func environmentToMap(environment []string, getkeyval func(item string) (key, va
 	return items
 }
 
-func coalesceInput(namespaces spec.Namespaces, namespace, service, function string, input interface{}) error {
-	if oper, ok := namespaces.Operation(namespace, service, function); ok {
+func coalesceInput(interfaces spec.Interfaces, iface, operation string, input interface{}) error {
+	if oper, ok := interfaces.Operation(iface, operation); ok {
 		if oper.Parameters != nil {
 			inputMap, ok := coalesce.ToMapSI(input, true)
 			if !ok {
@@ -960,33 +989,16 @@ func logOutbound(log logr.Logger, target string, data string) {
 	if l.Enabled() {
 		l.Info("<== " + target + " " + data)
 	}
-} // )
+}
 
 // newOtelResource returns a resource describing this application.
-func newOtelResource(app *runtime.Application) *otel_resource.Resource {
-	serviceKey := "nanobus"
-	version := ""
-	environment := "non-prod"
-
-	if app != nil {
-		if app.ID != "" {
-			serviceKey = app.ID
-		}
-		if app.Version != "" {
-			version = app.Version
-		}
-		if app.Environment != "" {
-			environment = app.Environment
-		}
-	}
-
+func newOtelResource(applicationID, version string) *otel_resource.Resource {
 	r, _ := otel_resource.Merge(
 		otel_resource.Default(),
 		otel_resource.NewWithAttributes(
 			semconv.SchemaURL,
-			semconv.ServiceNameKey.String(serviceKey),
+			semconv.ServiceNameKey.String(applicationID),
 			semconv.ServiceVersionKey.String(version),
-			attribute.String("environment", environment),
 		),
 	)
 	return r

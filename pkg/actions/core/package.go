@@ -6,6 +6,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+//go:generate apex generate
 package core
 
 import (
@@ -19,7 +20,7 @@ import (
 var All = []actions.NamedLoader{
 	Assign,
 	Authorize,
-	CallPipeline,
+	CallInterface,
 	CallProvider,
 	Decode,
 	Filter,
@@ -35,9 +36,8 @@ var All = []actions.NamedLoader{
 
 type Processor interface {
 	LoadPipeline(pl *runtime.Pipeline) (runtime.Runnable, error)
-	Pipeline(ctx context.Context, name string, data actions.Data) (interface{}, error)
-	Provider(ctx context.Context, namespace, service, function string, data actions.Data) (interface{}, error)
-	Event(ctx context.Context, name string, data actions.Data) (interface{}, error)
+	Interface(ctx context.Context, name, function string, data actions.Data) (interface{}, bool, error)
+	Provider(ctx context.Context, name, function string, data actions.Data) (interface{}, bool, error)
 }
 
 type HTTPClient interface {

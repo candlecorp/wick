@@ -139,8 +139,8 @@ func NotifyRecover(operation backoff.Operation, b backoff.BackOff, notify backof
 	})
 }
 
-// DecodeString handles converting a string value to `p`.
-func (p *PolicyType) DecodeString(value string) error {
+// FromString handles converting a string value to `p`.
+func (p *PolicyType) FromString(value string) error {
 	switch strings.ToLower(value) {
 	case "constant":
 		*p = PolicyConstant

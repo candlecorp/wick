@@ -23,7 +23,7 @@ import (
 
 func TestCircuitBreaker(t *testing.T) {
 	var trip expr.ValueExpr
-	err := trip.DecodeString("consecutiveFailures > 2")
+	err := trip.FromString("consecutiveFailures > 2")
 	require.NoError(t, err)
 	cb := breaker.CircuitBreaker{
 		Name:    "test",

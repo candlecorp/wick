@@ -1,0 +1,18 @@
+# Copyright 2022 The NanoBus Authors.
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+namespace "nanobus.migration.postgres"
+
+alias ValueExpr = string
+alias DataExpr = string
+alias FilePath = string
+
+type MigratePostgresV1Config @initializer("nanobus.migrate.postgres/v1") {
+	name:       string
+	dataSource: string
+	directory:  FilePath? @validate("required_without=SourceURL")
+	sourceUrl:  string? @rename({ go: "SourceURL" }) @validate("required_without=Directory")
+}

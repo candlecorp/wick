@@ -15,23 +15,9 @@ import (
 	"github.com/nanobus/nanobus/pkg/actions"
 	"github.com/nanobus/nanobus/pkg/config"
 	"github.com/nanobus/nanobus/pkg/errorz"
-	"github.com/nanobus/nanobus/pkg/expr"
 	"github.com/nanobus/nanobus/pkg/resolve"
 	"github.com/nanobus/nanobus/pkg/security/claims"
 )
-
-type AuthorizeConfig struct {
-	// Condition is the predicate expression for authorization.
-	Condition *expr.ValueExpr        `mapstructure:"condition"`
-	Has       []string               `mapstructure:"has"`
-	Check     map[string]interface{} `mapstructure:"check"`
-	Error     string                 `mapstructure:"error"`
-}
-
-// Authorize is the NamedLoader for the log action.
-func Authorize() (string, actions.Loader) {
-	return "authorize", AuthorizeLoader
-}
 
 func AuthorizeLoader(ctx context.Context, with interface{}, resolver resolve.ResolveAs) (actions.Action, error) {
 	c := AuthorizeConfig{

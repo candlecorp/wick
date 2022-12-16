@@ -25,25 +25,6 @@ import (
 	"github.com/nanobus/nanobus/pkg/transport/filter"
 )
 
-type Config struct {
-	Audience string `mapstructure:"audience"`
-	Issuer   string `mapstructure:"issuer"`
-
-	V4PublicKey    []byte `mapstructure:"v4PublicKey"`
-	V4PublicKeyHex string `mapstructure:"v4PublicKeyHex"`
-	V3PublicKey    []byte `mapstructure:"v3PublicKey"`
-	V3PublicKeyHex string `mapstructure:"v3PublicKeyHex"`
-	V2PublicKey    []byte `mapstructure:"v2PublicKey"`
-	V2PublicKeyHex string `mapstructure:"v2PublicKeyHex"`
-
-	V4LocalKey    []byte `mapstructure:"v4LocalKey"`
-	V4LocalKeyHex string `mapstructure:"v4LocalKeyHex"`
-	V3LocalKey    []byte `mapstructure:"v3LocalKey"`
-	V3LocalKeyHex string `mapstructure:"v3LocalKeyHex"`
-	V2LocalKey    []byte `mapstructure:"v2LocalKey"`
-	V2LocalKeyHex string `mapstructure:"v2LocalKeyHex"`
-}
-
 type Settings struct {
 	Parser paseto.Parser
 
@@ -74,13 +55,8 @@ var (
 	ErrV2LocalKeyNotConfigued = errors.New("paseto: a v2 local key is not configured")
 )
 
-// Paseto is the NamedLoader for the Paseto filter.
-func Paseto() (string, filter.Loader) {
-	return "paseto", Loader
-}
-
-func Loader(ctx context.Context, with interface{}, resolver resolve.ResolveAs) (filter.Filter, error) {
-	var c Config
+func PasetoV1Loader(ctx context.Context, with interface{}, resolver resolve.ResolveAs) (filter.Filter, error) {
+	var c PasetoV1Config
 	err := config.Decode(with, &c)
 	if err != nil {
 		return nil, err
@@ -93,11 +69,11 @@ func Loader(ctx context.Context, with interface{}, resolver resolve.ResolveAs) (
 	}
 
 	parser := paseto.NewParser()
-	if c.Audience != "" {
-		parser.AddRule(paseto.ForAudience(c.Audience))
+	if c.Audience != nil {
+		parser.AddRule(paseto.ForAudience(*c.Audience))
 	}
-	if c.Issuer != "" {
-		parser.AddRule(paseto.IssuedBy(c.Issuer))
+	if c.Issuer != nil {
+		parser.AddRule(paseto.IssuedBy(*c.Issuer))
 	}
 	parser.AddRule(paseto.NotExpired())
 	parser.AddRule(paseto.ValidAt(time.Now()))
@@ -106,9 +82,9 @@ func Loader(ctx context.Context, with interface{}, resolver resolve.ResolveAs) (
 		Parser: parser,
 	}
 
-	if c.V4PublicKeyHex != "" {
+	if c.V4PublicKeyHex != nil {
 		s.V4PublicEnabled = true
-		s.V4PublicKey, err = paseto.NewV4AsymmetricPublicKeyFromHex(c.V4PublicKeyHex)
+		s.V4PublicKey, err = paseto.NewV4AsymmetricPublicKeyFromHex(*c.V4PublicKeyHex)
 	} else if len(c.V4PublicKey) > 0 {
 		s.V4PublicEnabled = true
 		s.V4PublicKey, err = paseto.NewV4AsymmetricPublicKeyFromBytes(c.V4PublicKey)
@@ -117,9 +93,9 @@ func Loader(ctx context.Context, with interface{}, resolver resolve.ResolveAs) (
 		return nil, fmt.Errorf("invalid v4 public key: %w", err)
 	}
 
-	if c.V3PublicKeyHex != "" {
+	if c.V3PublicKeyHex != nil {
 		s.V3PublicEnabled = true
-		s.V3PublicKey, err = paseto.NewV3AsymmetricPublicKeyFromHex(c.V3PublicKeyHex)
+		s.V3PublicKey, err = paseto.NewV3AsymmetricPublicKeyFromHex(*c.V3PublicKeyHex)
 	} else if len(c.V4PublicKey) > 0 {
 		s.V3PublicEnabled = true
 		s.V3PublicKey, err = paseto.NewV3AsymmetricPublicKeyFromBytes(c.V3PublicKey)
@@ -128,9 +104,9 @@ func Loader(ctx context.Context, with interface{}, resolver resolve.ResolveAs) (
 		return nil, fmt.Errorf("invalid v3 public key: %w", err)
 	}
 
-	if c.V2PublicKeyHex != "" {
+	if c.V2PublicKeyHex != nil {
 		s.V2PublicEnabled = true
-		s.V2PublicKey, err = paseto.NewV2AsymmetricPublicKeyFromHex(c.V2PublicKeyHex)
+		s.V2PublicKey, err = paseto.NewV2AsymmetricPublicKeyFromHex(*c.V2PublicKeyHex)
 	} else if len(c.V4PublicKey) > 0 {
 		s.V2PublicEnabled = true
 		s.V2PublicKey, err = paseto.NewV2AsymmetricPublicKeyFromBytes(c.V2PublicKey)
@@ -139,9 +115,9 @@ func Loader(ctx context.Context, with interface{}, resolver resolve.ResolveAs) (
 		return nil, fmt.Errorf("invalid v2 public key: %w", err)
 	}
 
-	if c.V4LocalKeyHex != "" {
+	if c.V4LocalKeyHex != nil {
 		s.V4LocalEnabled = true
-		s.V4LocalKey, err = paseto.V4SymmetricKeyFromHex(c.V4LocalKeyHex)
+		s.V4LocalKey, err = paseto.V4SymmetricKeyFromHex(*c.V4LocalKeyHex)
 	} else if len(c.V4LocalKey) > 0 {
 		s.V4LocalEnabled = true
 		s.V4LocalKey, err = paseto.V4SymmetricKeyFromBytes(c.V4LocalKey)
@@ -150,9 +126,9 @@ func Loader(ctx context.Context, with interface{}, resolver resolve.ResolveAs) (
 		return nil, fmt.Errorf("invalid v4 local key: %w", err)
 	}
 
-	if c.V3LocalKeyHex != "" {
+	if c.V3LocalKeyHex != nil {
 		s.V3LocalEnabled = true
-		s.V3LocalKey, err = paseto.V3SymmetricKeyFromHex(c.V3LocalKeyHex)
+		s.V3LocalKey, err = paseto.V3SymmetricKeyFromHex(*c.V3LocalKeyHex)
 	} else if len(c.V4LocalKey) > 0 {
 		s.V3LocalEnabled = true
 		s.V3LocalKey, err = paseto.V3SymmetricKeyFromBytes(c.V3LocalKey)
@@ -161,9 +137,9 @@ func Loader(ctx context.Context, with interface{}, resolver resolve.ResolveAs) (
 		return nil, fmt.Errorf("invalid v3 local key: %w", err)
 	}
 
-	if c.V2LocalKeyHex != "" {
+	if c.V2LocalKeyHex != nil {
 		s.V2LocalEnabled = true
-		s.V2LocalKey, err = paseto.V2SymmetricKeyFromHex(c.V2LocalKeyHex)
+		s.V2LocalKey, err = paseto.V2SymmetricKeyFromHex(*c.V2LocalKeyHex)
 	} else if len(c.V4LocalKey) > 0 {
 		s.V2LocalEnabled = true
 		s.V2LocalKey, err = paseto.V2SymmetricKeyFromBytes(c.V2LocalKey)

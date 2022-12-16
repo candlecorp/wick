@@ -41,16 +41,12 @@ func (m *mockProcessor) LoadPipeline(pl *runtime.Pipeline) (runtime.Runnable, er
 	return runnable.Run, m.err
 }
 
-func (m *mockProcessor) Pipeline(ctx context.Context, name string, data actions.Data) (interface{}, error) {
-	return data, nil
+func (m *mockProcessor) Interface(ctx context.Context, name, function string, data actions.Data) (interface{}, bool, error) {
+	return data, true, nil
 }
 
-func (m *mockProcessor) Provider(ctx context.Context, namespace, service, function string, data actions.Data) (interface{}, error) {
-	return data, nil
-}
-
-func (m *mockProcessor) Event(ctx context.Context, name string, data actions.Data) (interface{}, error) {
-	return data, nil
+func (m *mockProcessor) Provider(ctx context.Context, name, function string, data actions.Data) (interface{}, bool, error) {
+	return data, true, nil
 }
 
 type mockRunnable struct {
@@ -191,7 +187,7 @@ func TestRoute(t *testing.T) {
 				"routes":    1234,
 			},
 			data:      actions.Data{},
-			loaderErr: "2 error(s) decoding:\n\n* 'routes': source data must be an array or slice, got int\n* error decoding 'selection': invalid SelectionMode \"invalid\": unexpected selection mode: invalid",
+			loaderErr: "2 error(s) decoding:\n\n* 'routes': source data must be an array or slice, got int\n* error decoding 'selection': invalid SelectionMode \"invalid\": unknown value \"invalid\" for SelectionMode",
 		},
 	}
 

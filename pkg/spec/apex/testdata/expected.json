@@ -408,11 +408,6 @@
           "unary": true,
           "parameters": {
             "name": "CustomerQuery",
-            "annotations": [
-              {
-                "name": "query"
-              }
-            ],
             "fields": [
               {
                 "name": "id",

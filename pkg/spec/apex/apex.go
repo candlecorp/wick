@@ -35,7 +35,7 @@ func Apex() (string, spec.Loader) {
 
 func Loader(ctx context.Context, with interface{}, resolveAs resolve.ResolveAs) ([]*spec.Namespace, error) {
 	c := Config{
-		Filename: "spec.apexlang",
+		Filename: "apex.axdl",
 	}
 
 	if err := config.Decode(with, &c); err != nil {

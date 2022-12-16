@@ -1,0 +1,56 @@
+# Copyright 2022 The NanoBus Authors.
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+namespace "nanobus.transport.http"
+
+alias Handler = string
+
+type OAuth2V1Config @router("nanobus.transport.http.oauth2/v1") {
+  loginPath:    string = "/oauth/login"
+  callbackPath: string = "/oauth/callback"
+  clientId:     string
+  clientSecret: string
+  endpoint:     Endpoint
+  callbackUrl:  string
+  redirectUrl:  string = "/"
+  scopes:       [string]?
+  handler:      Handler?
+}
+
+type Endpoint {
+  authUrl:     string
+  tokenUrl:    string
+  userInfoUrl: string
+  """
+  AuthStyle optionally specifies how the endpoint wants the
+  client ID & client secret sent.
+  """
+  authStyle:   AuthStyle = AutoDetect
+}
+
+"""
+AuthStyle represents how requests for tokens are authenticated
+to the server.
+"""
+enum AuthStyle {
+  """
+  AuthStyleAutoDetect means to auto-detect which authentication
+	style the provider wants by trying both ways and caching
+	the successful way for the future.
+  """
+  AutoDetect = 0 as "auto-detect"
+  """
+  AuthStyleInParams sends the "client_id" and "client_secret"
+	in the POST body as application/x-www-form-urlencoded parameters.
+  """
+  InParams = 1 as "inparams"
+  """
+  AuthStyleInHeader sends the client_id and client_password
+	using HTTP Basic Authorization. This is an optional style
+	described in the OAuth2 RFC 6749 section 2.3.1.
+  """
+  InHeader = 2 as "inheader"
+}

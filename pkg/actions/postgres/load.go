@@ -17,29 +17,28 @@ import (
 	"github.com/nanobus/nanobus/pkg/actions"
 	"github.com/nanobus/nanobus/pkg/config"
 	"github.com/nanobus/nanobus/pkg/errorz"
-	"github.com/nanobus/nanobus/pkg/expr"
 	"github.com/nanobus/nanobus/pkg/resolve"
 	"github.com/nanobus/nanobus/pkg/resource"
 	"github.com/nanobus/nanobus/pkg/spec"
 )
 
-type LoadConfig struct {
-	// Resource is the name of the connection resource to use.
-	Resource string `mapstructure:"resource" validate:"required"`
-	// Namespace is the type namespace to load.
-	Namespace string `mapstructure:"namespace" validate:"required"`
-	// Type is the type name to load.
-	Type string `mapstructure:"type" validate:"required"`
-	// ID is the entity identifier expression.
-	Key *expr.ValueExpr `mapstructure:"key" validate:"required"`
-	// Preload lists the relationship to expand/load.
-	Preload []Preload `mapstructure:"preload"`
-	// NotFoundError is the error to return if the key is not found.
-	NotFoundError string `mapstructure:"notFoundError"`
-}
+// type LoadConfig struct {
+// 	// Resource is the name of the connection resource to use.
+// 	Resource string `mapstructure:"resource" validate:"required"`
+// 	// Namespace is the type namespace to load.
+// 	Namespace string `mapstructure:"namespace" validate:"required"`
+// 	// Type is the type name to load.
+// 	Type string `mapstructure:"type" validate:"required"`
+// 	// ID is the entity identifier expression.
+// 	Key *expr.ValueExpr `mapstructure:"key" validate:"required"`
+// 	// Preload lists the relationship to expand/load.
+// 	Preload []Preload `mapstructure:"preload"`
+// 	// NotFoundError is the error to return if the key is not found.
+// 	NotFoundError string `mapstructure:"notFoundError"`
+// }
 
 // Load is the NamedLoader for the invoke action.
-func Load() (string, actions.Loader) {
+func LoadLeader() (string, actions.Loader) {
 	return "@postgres/load", LoadLoader
 }
 
@@ -59,7 +58,7 @@ func LoadLoader(ctx context.Context, with interface{}, resolver resolve.ResolveA
 		return nil, err
 	}
 
-	poolI, ok := resources[c.Resource]
+	poolI, ok := resources[string(c.Resource)]
 	if !ok {
 		return nil, fmt.Errorf("resource %q is not registered", c.Resource)
 	}

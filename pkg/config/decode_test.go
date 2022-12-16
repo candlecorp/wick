@@ -9,6 +9,7 @@
 package config_test
 
 import (
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
@@ -58,6 +59,8 @@ type testConfig struct { // nolint: maligned
 	DecodedPtr  *Decoded       `mapstructure:"decodedPtr"`
 	Nested      nested         `mapstructure:"nested"`
 	NestedPtr   *nested        `mapstructure:"nestedPtr"`
+	Enum        EnumType       `mapstructure:"enum"`
+	EnumPtr     *EnumType      `mapstructure:"enumPtr"`
 }
 
 type nested struct {
@@ -130,6 +133,8 @@ func TestDecode(t *testing.T) {
 				"integer": 1234,
 				"string":  5678,
 			},
+			"enum":    "value3",
+			"enumPtr": "value3",
 		},
 		"string values": map[string]interface{}{
 			"int":         "-9999",
@@ -174,6 +179,8 @@ func TestDecode(t *testing.T) {
 				"integer": "1234",
 				"string":  "5678",
 			},
+			"enum":    "value3",
+			"enumPtr": "value3",
 		},
 	}
 
@@ -303,6 +310,7 @@ func getTimeVal() time.Time {
 
 func getExpected() testConfig {
 	timeVal := getTimeVal()
+	enumValue := EnumTypeValue3
 
 	return testConfig{
 		Int:         -9999,
@@ -347,5 +355,63 @@ func getExpected() testConfig {
 			Integer: 1234,
 			String:  "5678",
 		},
+		Enum:    EnumTypeValue3,
+		EnumPtr: &enumValue,
 	}
+}
+
+type EnumType int32
+
+const (
+	EnumTypeValue1 EnumType = 1
+	EnumTypeValue2 EnumType = 2
+	EnumTypeValue3 EnumType = 3
+)
+
+var toStringEnumType = map[EnumType]string{
+	EnumTypeValue1: "value1",
+	EnumTypeValue2: "value2",
+	EnumTypeValue3: "value3",
+}
+
+var toIDEnumType = map[string]EnumType{
+	"value1": EnumTypeValue1,
+	"value2": EnumTypeValue2,
+	"value3": EnumTypeValue3,
+}
+
+func (e EnumType) Type() string {
+	return "EnumType"
+}
+
+func (e EnumType) String() string {
+	str, ok := toStringEnumType[e]
+	if !ok {
+		return "unknown"
+	}
+	return str
+}
+
+func (e *EnumType) FromString(str string) error {
+	var ok bool
+	*e, ok = toIDEnumType[str]
+	if !ok {
+		return fmt.Errorf("unknown value %q for EnumType", str)
+	}
+	return nil
+}
+
+// MarshalJSON marshals the enum as a quoted json string
+func (e EnumType) MarshalJSON() ([]byte, error) {
+	return json.Marshal(e.String())
+}
+
+// UnmarshalJSON unmashals a quoted json string to the enum value
+func (e *EnumType) UnmarshalJSON(b []byte) error {
+	var str string
+	err := json.Unmarshal(b, &str)
+	if err != nil {
+		return err
+	}
+	return e.FromString(str)
 }

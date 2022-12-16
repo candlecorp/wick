@@ -25,6 +25,7 @@ var (
 	typeDuration      = reflect.TypeOf(time.Duration(5))             // nolint: gochecknoglobals
 	typeTime          = reflect.TypeOf(time.Time{})                  // nolint: gochecknoglobals
 	typeStringDecoder = reflect.TypeOf((*StringDecoder)(nil)).Elem() // nolint: gochecknoglobals
+	typeFromStringer  = reflect.TypeOf((*FromStringer)(nil)).Elem()  // nolint: gochecknoglobals
 )
 
 // StringDecoder is used as a way for custom types (or alias types) to
@@ -34,6 +35,10 @@ var (
 // Specifying a custom decoding func should be very intentional.
 type StringDecoder interface {
 	DecodeString(value string) error
+}
+
+type FromStringer interface {
+	FromString(str string) error
 }
 
 // Decode decodes generic map values from `input` to `output`, while providing helpful error information.
@@ -78,6 +83,7 @@ func decodeString(
 
 	var result interface{}
 	var decoder StringDecoder
+	var from FromStringer
 
 	if t.Implements(typeStringDecoder) {
 		result = reflect.New(t.Elem()).Interface()
@@ -87,15 +93,28 @@ func decodeString(
 		decoder = result.(StringDecoder)
 	}
 
-	if decoder != nil {
+	if t.Implements(typeFromStringer) {
+		result = reflect.New(t.Elem()).Interface()
+		from = result.(FromStringer)
+	} else if reflect.PtrTo(t).Implements(typeFromStringer) {
+		result = reflect.New(t).Interface()
+		from = result.(FromStringer)
+	}
+
+	if decoder != nil || from != nil {
 		if dataString == "" {
 			return nil, nil
 		}
-		if err := decoder.DecodeString(dataString); err != nil {
-			if t.Kind() == reflect.Ptr {
-				t = t.Elem()
-			}
-
+		var err error
+		if decoder != nil {
+			err = decoder.DecodeString(dataString)
+		} else if from != nil {
+			err = from.FromString(dataString)
+		}
+		if t.Kind() == reflect.Ptr {
+			t = t.Elem()
+		}
+		if err != nil {
 			return nil, fmt.Errorf("invalid %s %q: %w", t.Name(), dataString, err)
 		}
 

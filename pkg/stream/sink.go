@@ -9,8 +9,8 @@
 package stream
 
 import (
-	"github.com/nanobus/iota/go/wasmrs/payload"
-	"github.com/nanobus/iota/go/wasmrs/rx/flux"
+	"github.com/nanobus/iota/go/payload"
+	"github.com/nanobus/iota/go/rx/flux"
 	"github.com/vmihailenco/msgpack/v5"
 
 	"github.com/nanobus/nanobus/pkg/channel/metadata"

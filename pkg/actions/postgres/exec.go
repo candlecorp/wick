@@ -17,26 +17,9 @@ import (
 
 	"github.com/nanobus/nanobus/pkg/actions"
 	"github.com/nanobus/nanobus/pkg/config"
-	"github.com/nanobus/nanobus/pkg/expr"
 	"github.com/nanobus/nanobus/pkg/resolve"
 	"github.com/nanobus/nanobus/pkg/resource"
 )
-
-type ExecConfig struct {
-	// Resource is the name of the connection resource to use.
-	Resource string `mapstructure:"resource" validate:"required"`
-	// Data is the input bindings sent
-	Data *expr.DataExpr `mapstructure:"data"`
-	// SQL is the SQL query to execute.
-	SQL string `mapstructure:"sql" validate:"required"`
-	// Args are the evaluations to use as arguments for the SQL query.
-	Args []*expr.ValueExpr `mapstructure:"args"`
-}
-
-// Exec is the NamedLoader for the invoke action.
-func Exec() (string, actions.Loader) {
-	return "@postgres/exec", ExecLoader
-}
 
 func ExecLoader(ctx context.Context, with interface{}, resolver resolve.ResolveAs) (actions.Action, error) {
 	c := ExecConfig{}
@@ -50,7 +33,7 @@ func ExecLoader(ctx context.Context, with interface{}, resolver resolve.ResolveA
 		return nil, err
 	}
 
-	poolI, ok := resources[c.Resource]
+	poolI, ok := resources[string(c.Resource)]
 	if !ok {
 		return nil, fmt.Errorf("resource %q is not registered", c.Resource)
 	}

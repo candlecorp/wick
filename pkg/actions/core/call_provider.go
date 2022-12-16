@@ -10,25 +10,12 @@ package core
 
 import (
 	"context"
-	"errors"
-	"strings"
+	"fmt"
 
 	"github.com/nanobus/nanobus/pkg/actions"
 	"github.com/nanobus/nanobus/pkg/config"
 	"github.com/nanobus/nanobus/pkg/resolve"
 )
-
-type CallProviderConfig struct {
-	// Namespace is the namespace of the provider to call.
-	Namespace string `mapstructure:"namespace" validate:"required"`
-	// Operation is the operation name of the provider to call.
-	Operation string `mapstructure:"operation" validate:"required"`
-}
-
-// Route is the NamedLoader for the filter action.
-func CallProvider() (string, actions.Loader) {
-	return "call_provider", CallProviderLoader
-}
 
 func CallProviderLoader(ctx context.Context, with interface{}, resolver resolve.ResolveAs) (actions.Action, error) {
 	var c CallProviderConfig
@@ -42,20 +29,17 @@ func CallProviderLoader(ctx context.Context, with interface{}, resolver resolve.
 		return nil, err
 	}
 
-	namespace := c.Namespace
-	i := strings.LastIndex(namespace, ".")
-	if i < 0 {
-		return nil, errors.New("invalid namespace")
-	}
-	service := namespace[i+1:]
-	namespace = namespace[:i]
-
-	return CallProviderAction(namespace, service, c.Operation, processor), nil
+	return CallProviderAction(c.Handler.Interface, c.Handler.Operation, processor), nil
 }
 
 func CallProviderAction(
-	namespace, service, operation string, processor Processor) actions.Action {
+	name, operation string, processor Processor) actions.Action {
 	return func(ctx context.Context, data actions.Data) (output interface{}, err error) {
-		return processor.Provider(ctx, namespace, service, operation, data)
+		var ok bool
+		output, ok, err = processor.Provider(ctx, name, operation, data)
+		if !ok {
+			return nil, fmt.Errorf("could not find provider %s::%s", name, operation)
+		}
+		return
 	}
 }

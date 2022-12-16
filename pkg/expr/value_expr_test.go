@@ -19,7 +19,7 @@ import (
 
 func TestValueExpr(t *testing.T) {
 	var ve expr.ValueExpr
-	err := ve.DecodeString(`input.test != nil && result.test == 5678`)
+	err := ve.FromString(`input.test != nil && result.test == 5678`)
 	require.NoError(t, err)
 	result, err := ve.Eval(map[string]interface{}{
 		"input": map[string]interface{}{
@@ -37,7 +37,7 @@ var result interface{}
 
 func BenchmarkEval(b *testing.B) {
 	var ve expr.ValueExpr
-	err := ve.DecodeString(`input.test != nil && result.test == 5678`)
+	err := ve.FromString(`input.test != nil && result.test == 5678`)
 	require.NoError(b, err)
 	data := map[string]interface{}{
 		"input": map[string]interface{}{

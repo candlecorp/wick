@@ -15,11 +15,11 @@ import (
 	"strings"
 	"sync/atomic"
 
-	"github.com/nanobus/iota/go/wasmrs/operations"
-	"github.com/nanobus/iota/go/wasmrs/payload"
-	"github.com/nanobus/iota/go/wasmrs/rx"
-	"github.com/nanobus/iota/go/wasmrs/rx/flux"
-	"github.com/nanobus/iota/go/wasmrs/rx/mono"
+	"github.com/nanobus/iota/go/operations"
+	"github.com/nanobus/iota/go/payload"
+	"github.com/nanobus/iota/go/rx"
+	"github.com/nanobus/iota/go/rx/flux"
+	"github.com/nanobus/iota/go/rx/mono"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/multierr"
 

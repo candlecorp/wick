@@ -106,7 +106,7 @@ func main() {
 func transform(transform string, payload map[string]interface{}) (map[string]interface{}, error) {
 	if transform != "" {
 		var tx expr.DataExpr
-		if err := tx.DecodeString(transform); err != nil {
+		if err := tx.FromString(transform); err != nil {
 			return nil, err
 		}
 		transformed, err := tx.Eval(payload)

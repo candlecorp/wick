@@ -21,11 +21,6 @@ import (
 	"github.com/nanobus/nanobus/pkg/transport/filter"
 )
 
-type Config struct {
-	Pipeline string `mapstructure:"pipeline" validate:"required"`
-	Debug    bool   `mapstructure:"debug"`
-}
-
 type Processor interface {
 	LoadPipeline(pl *runtime.Pipeline) (runtime.Runnable, error)
 	Pipeline(ctx context.Context, name string, data actions.Data) (interface{}, error)
@@ -33,30 +28,27 @@ type Processor interface {
 	Event(ctx context.Context, name string, data actions.Data) (interface{}, error)
 }
 
-// Session is the NamedLoader for the session filter.
-func Session() (string, filter.Loader) {
-	return "session", Loader
-}
-
-func Loader(ctx context.Context, with interface{}, resolver resolve.ResolveAs) (filter.Filter, error) {
-	var c Config
+func SessionV1Loader(ctx context.Context, with interface{}, resolver resolve.ResolveAs) (filter.Filter, error) {
+	var c SessionV1Config
 	err := config.Decode(with, &c)
 	if err != nil {
 		return nil, err
 	}
 
 	var logger logr.Logger
-	var processor Processor
+	var processor runtime.Namespaces
+	var developerMode bool
 	if err := resolve.Resolve(resolver,
 		"system:logger", &logger,
-		"system:processor", &processor); err != nil {
+		"system:interfaces", &processor,
+		"developerMode", &developerMode); err != nil {
 		return nil, err
 	}
 
-	return Filter(logger, processor, &c), nil
+	return Filter(logger, processor, &c, developerMode), nil
 }
 
-func Filter(log logr.Logger, processor Processor, config *Config) filter.Filter {
+func Filter(log logr.Logger, processor runtime.Namespaces, config *SessionV1Config, developerMode bool) filter.Filter {
 	return func(ctx context.Context, header filter.Header) (context.Context, error) {
 		cookieHeader := header.Get("Cookie")
 		hdr := http.Header{}
@@ -76,7 +68,7 @@ func Filter(log logr.Logger, processor Processor, config *Config) filter.Filter 
 			return ctx, nil
 		}
 
-		result, err := processor.Pipeline(ctx, config.Pipeline, actions.Data{
+		result, _, err := processor.Invoke(ctx, config.Handler.Interface, config.Handler.Operation, actions.Data{
 			"sid": sid,
 		})
 		if err != nil {
@@ -96,7 +88,7 @@ func Filter(log logr.Logger, processor Processor, config *Config) filter.Filter 
 			tokenType, _ = tokenTypeIface.(string)
 		}
 
-		if config.Debug {
+		if developerMode {
 			log.Info("Session debug info [TURN OFF FOR PRODUCTION]",
 				"sid", sid,
 				"token_type", tokenType,

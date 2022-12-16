@@ -26,7 +26,7 @@ type (
 		Close() error
 	}
 
-	Invoker func(ctx context.Context, namespace, service, id, function string, input interface{}) (interface{}, error)
+	Invoker func(ctx context.Context, iface, id, operation string, input interface{}) (interface{}, error)
 
 	Registry map[string]Loader
 )

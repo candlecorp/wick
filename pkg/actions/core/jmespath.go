@@ -16,23 +16,8 @@ import (
 
 	"github.com/nanobus/nanobus/pkg/actions"
 	"github.com/nanobus/nanobus/pkg/config"
-	"github.com/nanobus/nanobus/pkg/expr"
 	"github.com/nanobus/nanobus/pkg/resolve"
 )
-
-type JMESPathConfig struct {
-	// Path is the predicate expression for filtering.
-	Path string `mapstructure:"path" validate:"required"`
-	// Data is the optional data expression to pass to jq.
-	Data *expr.DataExpr `mapstructure:"data"`
-	// Var, if set, is the variable that is set with the result.
-	Var string `mapstructure:"var"`
-}
-
-// JMESPath is the NamedLoader for the jmespath action.
-func JMESPath() (string, actions.Loader) {
-	return "jmespath", JMESPathLoader
-}
 
 func JMESPathLoader(ctx context.Context, with interface{}, resolver resolve.ResolveAs) (actions.Action, error) {
 	var c JMESPathConfig
@@ -65,8 +50,8 @@ func JMESPathAction(
 			return nil, err
 		}
 
-		if config.Var != "" {
-			data[config.Var] = result
+		if config.Var != nil {
+			data[*config.Var] = result
 		}
 
 		return result, nil

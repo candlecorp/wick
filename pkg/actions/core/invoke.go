@@ -12,34 +12,18 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/nanobus/iota/go/wasmrs/payload"
-	"github.com/nanobus/iota/go/wasmrs/rx/mono"
+	"github.com/nanobus/iota/go/payload"
+	"github.com/nanobus/iota/go/rx/mono"
 	"github.com/vmihailenco/msgpack/v5"
 
 	"github.com/nanobus/nanobus/pkg/actions"
 	"github.com/nanobus/nanobus/pkg/config"
-	"github.com/nanobus/nanobus/pkg/expr"
-	"github.com/nanobus/nanobus/pkg/function"
-	"github.com/nanobus/nanobus/pkg/mesh"
+	"github.com/nanobus/nanobus/pkg/handler"
 	"github.com/nanobus/nanobus/pkg/resolve"
 )
 
-type InvokeConfig struct {
-	// Namespace of the service to invoke.
-	Namespace string `mapstructure:"namespace"`
-	// Operation of the service to invoke.
-	Operation string `mapstructure:"operation"`
-	// Input optionally transforms the input sent to the function.
-	Input *expr.DataExpr `mapstructure:"input"`
-}
-
 type Invoker interface {
-	RequestResponse(ctx context.Context, namespace, operation string, p payload.Payload) mono.Mono[payload.Payload]
-}
-
-// Invoke is the NamedLoader for the invoke action.
-func Invoke() (string, actions.Loader) {
-	return "invoke", InvokeLoader
+	RequestResponse(ctx context.Context, iface, operation string, p payload.Payload) mono.Mono[payload.Payload]
 }
 
 func InvokeLoader(ctx context.Context, with interface{}, resolver resolve.ResolveAs) (actions.Action, error) {
@@ -48,7 +32,7 @@ func InvokeLoader(ctx context.Context, with interface{}, resolver resolve.Resolv
 		return nil, err
 	}
 
-	var m *mesh.Mesh
+	var m Invoker
 	if err := resolve.Resolve(resolver,
 		"compute:mesh", &m); err != nil {
 		return nil, err
@@ -81,17 +65,17 @@ func InvokeAction(
 			}
 		}
 
-		namespace := config.Namespace
-		operation := config.Operation
-		namespaceEmpty := namespace == ""
+		iface := orEmpty(config.Interface)
+		operation := orEmpty(config.Operation)
+		ifaceEmpty := iface == ""
 		operationEmpty := operation == ""
 
 		// Grab the incoming function details if needed.
-		if namespaceEmpty || operationEmpty {
-			fn := function.FromContext(ctx)
+		if ifaceEmpty || operationEmpty {
+			fn := handler.FromContext(ctx)
 
-			if namespaceEmpty {
-				namespace = fn.Namespace
+			if ifaceEmpty {
+				iface = fn.Interface
 			}
 			if operationEmpty {
 				operation = fn.Operation
@@ -106,7 +90,7 @@ func InvokeAction(
 		metadata := make([]byte, 8)
 		p := payload.New(payloadData, metadata)
 
-		result, err := invoker.RequestResponse(ctx, namespace, operation, p).Block()
+		result, err := invoker.RequestResponse(ctx, iface, operation, p).Block()
 		if err != nil {
 			return nil, err
 		}
@@ -124,4 +108,11 @@ func InvokeAction(
 
 		return nil, nil
 	}
+}
+
+func orEmpty(value *string) string {
+	if value != nil {
+		return *value
+	}
+	return ""
 }

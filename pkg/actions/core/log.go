@@ -16,23 +16,11 @@ import (
 
 	"github.com/nanobus/nanobus/pkg/actions"
 	"github.com/nanobus/nanobus/pkg/config"
-	"github.com/nanobus/nanobus/pkg/expr"
 	"github.com/nanobus/nanobus/pkg/resolve"
 )
 
-type LogConfig struct {
-	Format string `mapstructure:"format" validate:"required"`
-	// Args are the evaluations to use as arguments into the string format.
-	Args []*expr.ValueExpr `mapstructure:"args"`
-}
-
 type Logger interface {
 	Printf(format string, v ...interface{})
-}
-
-// Log is the NamedLoader for the log action.
-func Log() (string, actions.Loader) {
-	return "log", LogLoader
 }
 
 func LogLoader(ctx context.Context, with interface{}, resolver resolve.ResolveAs) (actions.Action, error) {

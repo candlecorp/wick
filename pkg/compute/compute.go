@@ -12,11 +12,11 @@ import (
 	"context"
 	"io"
 
-	"github.com/nanobus/iota/go/wasmrs/invoke"
-	"github.com/nanobus/iota/go/wasmrs/operations"
-	"github.com/nanobus/iota/go/wasmrs/payload"
-	"github.com/nanobus/iota/go/wasmrs/rx/flux"
-	"github.com/nanobus/iota/go/wasmrs/rx/mono"
+	"github.com/nanobus/iota/go/invoke"
+	"github.com/nanobus/iota/go/operations"
+	"github.com/nanobus/iota/go/payload"
+	"github.com/nanobus/iota/go/rx/flux"
+	"github.com/nanobus/iota/go/rx/mono"
 
 	"github.com/nanobus/nanobus/pkg/registry"
 )

@@ -19,20 +19,6 @@ import (
 	"github.com/nanobus/nanobus/pkg/resolve"
 )
 
-type DecodeConfig struct {
-	TypeField string `mapstructure:"typeField"`
-	DataField string `mapstructure:"dataField"`
-	// Codec is the name of the codec to use for decoing.
-	Codec string `mapstructure:"codec" validate:"required"`
-	// Args are the arguments to pass to the decode function.
-	CodecArgs []interface{} `mapstructure:"codecArgs"`
-}
-
-// Decode is the NamedLoader for the filter action.
-func Decode() (string, actions.Loader) {
-	return "decode", DecodeLoader
-}
-
 func DecodeLoader(ctx context.Context, with interface{}, resolver resolve.ResolveAs) (actions.Action, error) {
 	c := DecodeConfig{
 		TypeField: "type",

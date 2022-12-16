@@ -17,31 +17,9 @@ import (
 
 	"github.com/nanobus/nanobus/pkg/actions"
 	"github.com/nanobus/nanobus/pkg/config"
-	"github.com/nanobus/nanobus/pkg/expr"
 	"github.com/nanobus/nanobus/pkg/resolve"
 	"github.com/nanobus/nanobus/pkg/resource"
 )
-
-type ExecMultiConfig struct {
-	// Resource is the name of the connection resource to use.
-	Resource string `mapstructure:"resource" validate:"required"`
-	// Statements are the statements to execute within a single transaction.
-	Statements []Statement `mapstructure:"statements"`
-}
-
-type Statement struct {
-	// Data is the input bindings sent
-	Data *expr.DataExpr `mapstructure:"data"`
-	// SQL is the SQL query to execute.
-	SQL string `mapstructure:"sql" validate:"required"`
-	// Args are the evaluations to use as arguments for the SQL query.
-	Args []*expr.ValueExpr `mapstructure:"args"`
-}
-
-// ExecMulti is the NamedLoader for the invoke action.
-func ExecMulti() (string, actions.Loader) {
-	return "@postgres/exec_multi", ExecMultiLoader
-}
 
 func ExecMultiLoader(ctx context.Context, with interface{}, resolver resolve.ResolveAs) (actions.Action, error) {
 	c := ExecMultiConfig{}
@@ -55,7 +33,7 @@ func ExecMultiLoader(ctx context.Context, with interface{}, resolver resolve.Res
 		return nil, err
 	}
 
-	poolI, ok := resources[c.Resource]
+	poolI, ok := resources[string(c.Resource)]
 	if !ok {
 		return nil, fmt.Errorf("resource %q is not registered", c.Resource)
 	}

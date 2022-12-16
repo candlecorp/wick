@@ -16,25 +16,9 @@ import (
 
 	"github.com/nanobus/nanobus/pkg/actions"
 	"github.com/nanobus/nanobus/pkg/config"
-	"github.com/nanobus/nanobus/pkg/expr"
 	"github.com/nanobus/nanobus/pkg/resolve"
 	"github.com/nanobus/nanobus/pkg/transport/httpresponse"
 )
-
-type HTTPResponseConfig struct {
-	Status  int                  `mapstructure:"status"`
-	Headers []HTTPResponseHeader `mapstructure:"headers"`
-}
-
-type HTTPResponseHeader struct {
-	Name  string          `mapstructure:"name" validate:"required"`
-	Value *expr.ValueExpr `mapstructure:"value" validate:"required"`
-}
-
-// HTTPResponse is the NamedLoader for Dapr output bindings
-func HTTPResponse() (string, actions.Loader) {
-	return "http_response", HTTPResponseLoader
-}
 
 func HTTPResponseLoader(ctx context.Context, with interface{}, resolver resolve.ResolveAs) (actions.Action, error) {
 	c := HTTPResponseConfig{}
@@ -53,8 +37,8 @@ func HTTPResponseAction(
 			return nil, nil
 		}
 
-		if config.Status > 0 {
-			resp.Status = config.Status
+		if config.Status != nil {
+			resp.Status = int(*config.Status)
 		}
 
 		for _, h := range config.Headers {

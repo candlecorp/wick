@@ -1,10 +1,10 @@
-## Architecture
+# Architecture
 
 NanoBus closely follows the architecture explained in [DDD, Hexagonal, Onion, Clean, CQRS, … How I put it all together](https://herbertograca.com/2017/11/16/explicit-architecture-01-ddd-hexagonal-onion-clean-cqrs-how-i-put-it-all-together/). Its proposed organization of software components is even more relevant now when considered with sidecar technology. The concepts below are paraphrased and sometimes renamed to better fit NanoBus' terminology.
 
 Now we understand Hexagonal/Onion/Clean architecture. Let's break these concepts down as they relate to NanoBus.
 
-### Ports and Adapters
+## Ports and Adapters
 
 **Ports** define the entry and exit points (or interfaces) of the application along with the data structures passed in and returned. **Adapters** are components that allow other systems to communicate with your application and vice-versa.
 
@@ -16,7 +16,7 @@ Conversely, **Secondary/Driven Adapters** allow your application to interact wit
 
 Both Primary and Secondary Adapters are constructed using composable pipelines that interact with the application or a component like a Dapr building block.
 
-### Data Pipelines
+## Data Pipelines
 
 From the article mentioned above.
 
@@ -28,7 +28,7 @@ Between your application and adapters, NanoBus passes data through developer-def
 
 Each step in the pipeline can inspect, transform, and augment the data before passing it to the destination component.  Additionally, this mechanism externalizes encoding/decoding, authorization, cryptography and resiliency policies, eliminating the need to update the application internally. The application is only concerned with operations that accept and return strongly typed data structures.
 
-### Clean Architecture
+## Clean Architecture
 
 <img align="right" src="images/clean-architecture.svg" alt="Clean Architecture" width="45%" style="margin: 0 0 1rem 1rem;" />
 
@@ -42,7 +42,7 @@ Another goal of this software composition is abstracting away frameworks. Since 
 
 <br clear="both"/>
 
-### API-First Approach
+## API-First Approach
 
 To tie layers and pipelines together, the developer can *optionally* use an **API-First Approach**, where the operations of your service are described in an API specification that can be shared with other teams.
 

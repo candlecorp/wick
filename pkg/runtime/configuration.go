@@ -21,124 +21,57 @@ import (
 	"gopkg.in/yaml.v3"
 
 	rootConfig "github.com/nanobus/nanobus/pkg/config"
-	"github.com/nanobus/nanobus/pkg/errorz"
 )
 
-type Configuration struct {
-	Application   *Application               `json:"application" yaml:"application"`
-	Package       *Package                   `json:"package" yaml:"package"`
-	Import        []string                   `json:"import" yaml:"import"`
-	Transports    map[string]Component       `json:"transports" yaml:"transports"`
-	Tracing       *Component                 `json:"tracing" yaml:"tracing"`
-	Specs         []Component                `json:"specs" yaml:"specs"`
-	Middleware    map[string][]Component     `json:"middleware" yaml:"middleware"`
-	Filters       map[string][]Component     `json:"filters" yaml:"filters"`
-	Codecs        map[string]Component       `json:"codecs" yaml:"codecs"`
-	Resources     map[string]Component       `json:"resources" yaml:"resources"`
-	Migrate       map[string]Component       `json:"migrate" yaml:"migrate"`
-	Compute       []Component                `json:"compute" yaml:"compute"`
-	Resiliency    Resiliency                 `json:"resiliency" yaml:"resiliency"`
-	Services      Services                   `json:"services" yaml:"services"`
-	Providers     Services                   `json:"providers" yaml:"providers"`
-	Events        FunctionPipelines          `json:"events" yaml:"events"`
-	Pipelines     FunctionPipelines          `json:"pipelines" yaml:"pipelines"`
-	Subscriptions []Subscription             `json:"subscriptions" yaml:"subscriptions"`
-	Errors        map[string]errorz.Template `json:"errors" yaml:"errors"`
+func DefaultResourcesConfig() ResourcesConfig {
+	return ResourcesConfig{}
 }
 
-type Application struct {
-	Registry    string `mapstructure:"registry"`
-	Org         string `mapstructure:"org"`
-	ID          string `mapstructure:"id"`
-	Version     string `mapstructure:"version"`
-	Environment string `mapstructure:"environment"`
-}
-
-type Package struct {
-	Add []string `mapstructure:"add"`
-}
-
-type Subscription struct {
-	Resource  string            `mapstructure:"resource"`
-	Topic     string            `mapstructure:"topic"`
-	Metadata  map[string]string `mapstructure:"metadata"`
-	Codec     string            `mapstructure:"codec"`
-	CodecArgs []interface{}     `mapstructure:"codecArgs"`
-	Function  string            `mapstructure:"function"`
-}
-
-type Component struct {
-	Uses string      `json:"uses" yaml:"uses"`
-	With interface{} `json:"with" yaml:"with"`
-}
-
-type Resiliency struct {
-	Timeouts        map[string]Duration         `json:"timeouts" yaml:"timeouts"`
-	Retries         map[string]ConfigProperties `json:"retries" yaml:"retries"`
-	CircuitBreakers map[string]ConfigProperties `json:"circuitBreakers" yaml:"circuitBreakers"`
-}
-
-type ConfigProperties map[string]interface{}
-
-type Services map[string]FunctionPipelines
-type FunctionPipelines map[string]Pipeline
-
-type Pipeline struct {
-	Name  string `json:"name" yaml:"name"`
-	Call  string `json:"call,omitempty" yaml:"call,omitempty" mapstructure:"call"`
-	Steps []Step `json:"steps,omitempty" yaml:"steps,omitempty"`
-}
-
-type Step struct {
-	Name           string      `json:"name" yaml:"name" mapstructure:"name"`
-	Call           string      `json:"call,omitempty" yaml:"call,omitempty" mapstructure:"call"`
-	Uses           string      `json:"uses,omitempty" yaml:"uses,omitempty" mapstructure:"uses"`
-	With           interface{} `json:"with,omitempty" yaml:"with,omitempty" mapstructure:"with"`
-	Returns        string      `json:"returns,omitempty" yaml:"returns,omitempty" mapstructure:"returns"`
-	Timeout        string      `json:"timeout,omitempty" yaml:"timeout,omitempty" mapstructure:"timeout"`
-	Retry          string      `json:"retry,omitempty" yaml:"retry,omitempty" mapstructure:"retry"`
-	CircuitBreaker string      `json:"circuitBreaker,omitempty" yaml:"circuitBreaker,omitempty" mapstructure:"circuitBreaker"`
-	OnError        *Pipeline   `json:"onError,omitempty" yaml:"onError,omitempty" mapstructure:"onError"`
-}
-
-func DefaultConfiguration() Configuration {
-	return Configuration{
-		// Specs: []Component{
-		// 	{
-		// 		Uses: "apex",
-		// 		With: map[string]interface{}{
-		// 			"filename": "spec.apexlang",
-		// 		},
-		// 	},
-		// },
-	}
-}
-
-func LoadYAML(in io.Reader) (*Configuration, error) {
+func LoadResourcesYAML(in io.Reader) (*ResourcesConfig, error) {
 	data, err := io.ReadAll(in)
 	if err != nil {
 		return nil, err
 	}
 
-	// Replaces ${env:var} or $env:var in the string according to the values
-	// of the current environment variables.
-	configString := os.Expand(string(data), func(key string) string {
-		var value string
-		if strings.HasPrefix(key, "env:") {
-			value = os.Getenv(key[4:])
-		}
-		if value == "" {
-			return "$" + key
-		}
-		return value
-	})
-
+	configString := os.Expand(string(data), envReplace)
 	r := strings.NewReader(configString)
-	c := DefaultConfiguration()
+	c := DefaultResourcesConfig()
 	if err := yaml.NewDecoder(r).Decode(&c); err != nil {
 		return nil, err
 	}
 	return &c, nil
+}
+
+func DefaultBusConfig() BusConfig {
+	return BusConfig{}
+}
+
+func LoadBusYAML(in io.Reader) (*BusConfig, error) {
+	data, err := io.ReadAll(in)
+	if err != nil {
+		return nil, err
+	}
+
+	configString := os.Expand(string(data), envReplace)
+	r := strings.NewReader(configString)
+	c := DefaultBusConfig()
+	if err := yaml.NewDecoder(r).Decode(&c); err != nil {
+		return nil, err
+	}
+	return &c, nil
+}
+
+// Replaces ${env:var} or $env:var in the string according to the values
+// of the current environment variables.
+func envReplace(key string) string {
+	var value string
+	if strings.HasPrefix(key, "env:") {
+		value = os.Getenv(key[4:])
+	}
+	if value == "" {
+		return "$" + key
+	}
+	return value
 }
 
 type FilenameConfig struct {
@@ -147,7 +80,7 @@ type FilenameConfig struct {
 
 func NormalizeBaseDir(dir string, with interface{}) interface{} {
 	c := FilenameConfig{
-		Filename: "spec.apexlang",
+		Filename: "apex.axdl",
 	}
 
 	if err := rootConfig.Decode(with, &c); err == nil {
@@ -157,38 +90,44 @@ func NormalizeBaseDir(dir string, with interface{}) interface{} {
 	return with
 }
 
-func Combine(config *Configuration, dir string, log logr.Logger, configs ...*Configuration) {
+func Combine(config *BusConfig, dir string, log logr.Logger, configs ...*BusConfig) {
 	for _, c := range configs {
-		// Compute
-		for _, c := range c.Compute {
-			c.With = NormalizeBaseDir(dir, c.With)
-			config.Compute = append(config.Compute, c)
-		}
+		// // Compute
+		// for _, c := range c.Compute {
+		// 	c.With = NormalizeBaseDir(dir, c.With)
+		// 	config.Compute = append(config.Compute, c)
+		// }
 
-		// Specs
-		for _, spec := range c.Specs {
-			spec.With = NormalizeBaseDir(dir, spec.With)
-			config.Specs = append(config.Specs, spec)
-		}
+		// // Specs
+		// for _, spec := range c.Specs {
+		// 	spec.With = NormalizeBaseDir(dir, spec.With)
+		// 	config.Specs = append(config.Specs, spec)
+		// }
 
 		// Resources
-		if len(c.Resources) > 0 && config.Resources == nil {
-			config.Resources = make(map[string]Component)
-		}
-		for k, v := range c.Resources {
-			if _, exists := config.Resources[k]; !exists {
-				config.Resources[k] = v
-			}
+		// if len(c.Resources) > 0 && config.Resources == nil {
+		// 	config.Resources = make(map[string]Component)
+		// }
+		// for k, v := range c.Resources {
+		// 	if _, exists := config.Resources[k]; !exists {
+		// 		config.Resources[k] = v
+		// 	}
+		// }
+		if len(c.Resources) > 0 {
+			config.Resources = append(config.Resources, c.Resources...)
 		}
 
 		// Filters
-		if len(c.Filters) > 0 && config.Filters == nil {
-			config.Filters = make(map[string][]Component)
-		}
-		for k, v := range c.Filters {
-			if _, exists := config.Filters[k]; !exists {
-				config.Filters[k] = v
-			}
+		// if len(c.Filters) > 0 && config.Filters == nil {
+		// 	config.Filters = make(map[string][]Component)
+		// }
+		// for k, v := range c.Filters {
+		// 	if _, exists := config.Filters[k]; !exists {
+		// 		config.Filters[k] = v
+		// 	}
+		// }
+		if len(c.Filters) > 0 {
+			config.Filters = append(config.Filters, c.Filters...)
 		}
 
 		// Codecs
@@ -212,7 +151,7 @@ func Combine(config *Configuration, dir string, log logr.Logger, configs ...*Con
 		}
 
 		if len(c.Resiliency.Retries) > 0 && config.Resiliency.Retries == nil {
-			config.Resiliency.Retries = make(map[string]ConfigProperties)
+			config.Resiliency.Retries = make(map[string]Backoff)
 		}
 		for k, v := range c.Resiliency.Retries {
 			if _, exists := config.Resiliency.Retries[k]; !exists {
@@ -221,7 +160,7 @@ func Combine(config *Configuration, dir string, log logr.Logger, configs ...*Con
 		}
 
 		if len(c.Resiliency.CircuitBreakers) > 0 && config.Resiliency.CircuitBreakers == nil {
-			config.Resiliency.CircuitBreakers = make(map[string]ConfigProperties)
+			config.Resiliency.CircuitBreakers = make(map[string]CircuitBreaker)
 		}
 		for k, v := range c.Resiliency.CircuitBreakers {
 			if _, exists := config.Resiliency.CircuitBreakers[k]; !exists {
@@ -230,14 +169,14 @@ func Combine(config *Configuration, dir string, log logr.Logger, configs ...*Con
 		}
 
 		// Services
-		if len(c.Services) > 0 && config.Services == nil {
-			config.Services = make(Services)
+		if len(c.Interfaces) > 0 && config.Interfaces == nil {
+			config.Interfaces = make(Interfaces)
 		}
-		for k, v := range c.Services {
-			existing, exists := config.Services[k]
+		for k, v := range c.Interfaces {
+			existing, exists := config.Interfaces[k]
 			if !exists {
-				existing = make(FunctionPipelines)
-				config.Services[k] = existing
+				existing = make(Operations)
+				config.Interfaces[k] = existing
 			}
 			for k, v := range v {
 				if _, exists := existing[k]; !exists {
@@ -248,12 +187,12 @@ func Combine(config *Configuration, dir string, log logr.Logger, configs ...*Con
 
 		// Providers
 		if len(c.Providers) > 0 && config.Providers == nil {
-			config.Providers = make(Services)
+			config.Providers = make(Interfaces)
 		}
 		for k, v := range c.Providers {
 			existing, exists := config.Providers[k]
 			if !exists {
-				existing = make(FunctionPipelines)
+				existing = make(Operations)
 				config.Providers[k] = existing
 			}
 			for k, v := range v {
@@ -263,29 +202,29 @@ func Combine(config *Configuration, dir string, log logr.Logger, configs ...*Con
 			}
 		}
 
-		// Events
-		if len(c.Events) > 0 && config.Events == nil {
-			config.Events = make(FunctionPipelines)
-		}
-		for k, v := range c.Events {
-			if _, exists := config.Events[k]; !exists {
-				config.Events[k] = v
-			}
-		}
+		// // Events
+		// if len(c.Events) > 0 && config.Events == nil {
+		// 	config.Events = make(FunctionPipelines)
+		// }
+		// for k, v := range c.Events {
+		// 	if _, exists := config.Events[k]; !exists {
+		// 		config.Events[k] = v
+		// 	}
+		// }
 
-		// Pipelines
-		if len(c.Pipelines) > 0 && config.Pipelines == nil {
-			config.Pipelines = make(FunctionPipelines)
-		}
-		for k, v := range c.Pipelines {
-			if _, exists := config.Pipelines[k]; !exists {
-				config.Pipelines[k] = v
-			}
-		}
+		// // Pipelines
+		// if len(c.Pipelines) > 0 && config.Pipelines == nil {
+		// 	config.Pipelines = make(FunctionPipelines)
+		// }
+		// for k, v := range c.Pipelines {
+		// 	if _, exists := config.Pipelines[k]; !exists {
+		// 		config.Pipelines[k] = v
+		// 	}
+		// }
 
 		// Errors
 		if len(c.Errors) > 0 && config.Errors == nil {
-			config.Errors = make(map[string]errorz.Template)
+			config.Errors = make(map[string]ErrorTemplate)
 		}
 		for k, v := range c.Errors {
 			if _, exists := config.Errors[k]; !exists {
@@ -328,7 +267,7 @@ func (f *FilePath) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
-	return f.DecodeString(str)
+	return f.FromString(str)
 }
 
 func (f *FilePath) UnmarshalYAML(unmarshal func(interface{}) error) error {
@@ -337,10 +276,10 @@ func (f *FilePath) UnmarshalYAML(unmarshal func(interface{}) error) error {
 		return err
 	}
 
-	return f.DecodeString(str)
+	return f.FromString(str)
 }
 
-func (f *FilePath) DecodeString(value string) error {
+func (f *FilePath) FromString(value string) error {
 	*f = FilePath(filepath.Join(configBaseDir, value))
 
 	return nil
@@ -354,7 +293,7 @@ func (d *Duration) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
-	return d.DecodeString(str)
+	return d.FromString(str)
 }
 
 func (d *Duration) UnmarshalYAML(unmarshal func(interface{}) error) error {
@@ -363,10 +302,10 @@ func (d *Duration) UnmarshalYAML(unmarshal func(interface{}) error) error {
 		return err
 	}
 
-	return d.DecodeString(str)
+	return d.FromString(str)
 }
 
-func (d *Duration) DecodeString(str string) error {
+func (d *Duration) FromString(str string) error {
 	millis, err := strconv.ParseUint(str, 10, 32)
 	if err == nil {
 		*d = Duration(millis) * Duration(time.Millisecond)
@@ -381,4 +320,12 @@ func (d *Duration) DecodeString(str string) error {
 	*d = Duration(dur)
 
 	return nil
+}
+
+func (t *ErrCode) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	var str string
+	if err := unmarshal(&str); err != nil {
+		return err
+	}
+	return t.FromString(str)
 }

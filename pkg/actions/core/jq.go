@@ -16,25 +16,8 @@ import (
 
 	"github.com/nanobus/nanobus/pkg/actions"
 	"github.com/nanobus/nanobus/pkg/config"
-	"github.com/nanobus/nanobus/pkg/expr"
 	"github.com/nanobus/nanobus/pkg/resolve"
 )
-
-type JQConfig struct {
-	// Query is the predicate expression for filtering.
-	Query string `mapstructure:"query" validate:"required"`
-	// Data is the optional data expression to pass to jq.
-	Data *expr.DataExpr `mapstructure:"data"`
-	// Single, if true, returns the first result.
-	Single bool `mapstructure:"single"`
-	// Var, if set, is the variable that is set with the result.
-	Var string `mapstructure:"var"`
-}
-
-// JQ is the NamedLoader for the jq action.
-func JQ() (string, actions.Loader) {
-	return "jq", JQLoader
-}
 
 func JQLoader(ctx context.Context, with interface{}, resolver resolve.ResolveAs) (actions.Action, error) {
 	var c JQConfig
@@ -80,8 +63,8 @@ func JQAction(
 			}
 
 			if config.Single {
-				if config.Var != "" {
-					data[config.Var] = out
+				if config.Var != nil {
+					data[*config.Var] = out
 				}
 				return out, nil
 			}
@@ -93,8 +76,8 @@ func JQAction(
 			return nil, nil
 		}
 
-		if config.Var != "" {
-			data[config.Var] = emitted
+		if config.Var != nil {
+			data[*config.Var] = emitted
 		}
 
 		return emitted, nil

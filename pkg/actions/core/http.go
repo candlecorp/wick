@@ -23,31 +23,8 @@ import (
 	"github.com/nanobus/nanobus/pkg/coalesce"
 	"github.com/nanobus/nanobus/pkg/codec"
 	"github.com/nanobus/nanobus/pkg/config"
-	"github.com/nanobus/nanobus/pkg/expr"
 	"github.com/nanobus/nanobus/pkg/resolve"
 )
-
-type HTTPConfig struct {
-	// URL is HTTP URL to request.
-	URL string `mapstructure:"url" validate:"required"`
-	// Method is the HTTP method.
-	Method string `mapstructure:"method" validate:"required"`
-	// Body is the data to sent as the body payload.
-	Body *expr.DataExpr `mapstructure:"body"`
-	// Metadata is the input binding metadata
-	Headers *expr.DataExpr `mapstructure:"headers"`
-	// Output is an optional transformation to be applied to the response.
-	Output *expr.DataExpr `mapstructure:"output"`
-	// Codec is the name of the codec to use for decoing.
-	Codec string `mapstructure:"codec" validate:"required"`
-	// Args are the arguments to pass to the decode function.
-	CodecArgs []interface{} `mapstructure:"codecArgs"`
-}
-
-// HTTP is the NamedLoader for Dapr output bindings
-func HTTP() (string, actions.Loader) {
-	return "http", HTTPLoader
-}
 
 func HTTPLoader(ctx context.Context, with interface{}, resolver resolve.ResolveAs) (actions.Action, error) {
 	c := HTTPConfig{

@@ -1,3 +1,11 @@
+/*
+ * Copyright 2022 The NanoBus Authors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ */
+
 package main
 
 import (
@@ -44,12 +52,16 @@ func main() {
 	ctx.FatalIfErrorf(err)
 }
 
-type defaultRunCmd struct{}
+type defaultRunCmd struct {
+	DeveloperMode bool `name:"developer-mode" help:"Enables developer mode."`
+}
 
 func (c *defaultRunCmd) Run() error {
 	if err := engine.Start(&engine.Info{
-		Mode:    engine.ModeService,
-		BusFile: "bus.yaml",
+		Mode:          engine.ModeService,
+		BusFile:       "bus.yaml",
+		ResourcesFile: "resources.yaml",
+		DeveloperMode: c.DeveloperMode,
 	}); err != nil {
 		// Error is logged in `Start`.
 		os.Exit(1)
@@ -58,16 +70,19 @@ func (c *defaultRunCmd) Run() error {
 }
 
 type runCmd struct {
-	// Location of the application as a configuration file or OCI image reference.
-	Location string `arg:"" default:"bus.yaml" help:"The NanoBus application configuration or OCI image reference"`
+	DeveloperMode bool `name:"developer-mode" help:"Enables developer mode."`
+	// BusFile of the application as a configuration file or OCI image reference.
+	BusFile string `arg:"" default:"bus.yaml" help:"The application configuration or OCI image reference"`
+	// ResourcesFile is the resources configuration (e.g. databases, message brokers).
+	ResourcesFile string `arg:"" default:"resources.yaml" help:"The resources configuration"`
 	// Args are arguments passed to the application.
 	Args []string `arg:"" optional:"" help:"Arguments to pass to the application"`
 }
 
 func (c *runCmd) Run() error {
-	location := c.Location
-	if oci.IsImageReference(c.Location) {
-		fmt.Printf("Pulling %s...\n", c.Location)
+	location := c.BusFile
+	if oci.IsImageReference(c.BusFile) {
+		fmt.Printf("Pulling %s...\n", c.BusFile)
 		var err error
 		if location, err = oci.Pull(location, "."); err != nil {
 			fmt.Printf("Error pulling image: %s\n", err)
@@ -81,9 +96,11 @@ func (c *runCmd) Run() error {
 	}
 
 	if err := engine.Start(&engine.Info{
-		Mode:    engine.ModeService,
-		BusFile: location,
-		Process: c.Args,
+		Mode:          engine.ModeService,
+		BusFile:       location,
+		ResourcesFile: c.ResourcesFile,
+		Process:       c.Args,
+		DeveloperMode: c.DeveloperMode,
 	}); err != nil {
 		// Error is logged in `Start`.
 		os.Exit(1)
@@ -92,12 +109,13 @@ func (c *runCmd) Run() error {
 }
 
 type invokeCmd struct {
+	DeveloperMode bool `name:"developer-mode" help:"Enables developer mode."`
 	// BusFile is the application configuration (not an OCI image reference).
-	BusFile string `arg:"" required:"" help:"The NanoBus application configuration"`
-	// Namespace is the operation namespace.
-	Namespace string `required:"" help:"The namespace of the operation to invoke"`
-	// Service is the service containing the operation (if any).
-	Service string `optional:"" help:"The service to invoke"`
+	BusFile string `arg:"" default:"bus.yaml" help:"The NanoBus application configuration"`
+	// ResourcesFile is the resources configuration (e.g. databases, message brokers).
+	ResourcesFile string `arg:"" default:"resources.yaml" help:"The resources configuration"`
+	// Interface is the operation's interface.
+	Interface string `required:"" help:"The namespace of the operation to invoke"`
 	// Operation is the operation name.
 	Operation string `required:"" help:"The operation or function invoke"`
 	// EntityID is the entity identifier to invoke.
@@ -128,13 +146,14 @@ func (c *invokeCmd) Run() error {
 	}
 
 	info := engine.Info{
-		Mode:      engine.ModeInvoke,
-		BusFile:   c.BusFile,
-		Namespace: c.Namespace,
-		Service:   c.Service,
-		Operation: c.Operation,
-		EntityID:  c.EntityID,
-		Input:     input,
+		Mode:          engine.ModeInvoke,
+		BusFile:       c.BusFile,
+		ResourcesFile: c.ResourcesFile,
+		Interface:     c.Interface,
+		Operation:     c.Operation,
+		EntityID:      c.EntityID,
+		Input:         input,
+		DeveloperMode: c.DeveloperMode,
 	}
 	if err := engine.Start(&info); err != nil {
 		// Error is logged in `Start`.
@@ -178,13 +197,9 @@ func (c *pushCmd) Run() error {
 	}
 	defer busFile.Close()
 
-	conf, err := runtime.LoadYAML(busFile)
+	conf, err := runtime.LoadBusYAML(busFile)
 	if err != nil {
 		return err
-	}
-
-	if conf.Application == nil {
-		return errors.New("application is not defined in configuration")
 	}
 
 	if conf.Package == nil {
@@ -192,30 +207,30 @@ func (c *pushCmd) Run() error {
 	}
 
 	registry := c.Registry
-	if conf.Application != nil && registry == "" {
-		registry = conf.Application.Registry
+	if conf.Package != nil && conf.Package.Registry != nil && registry == "" {
+		registry = *conf.Package.Registry
 	}
 	if registry == "" {
 		return errors.New("registry is not defined")
 	}
 
 	org := c.Org
-	if conf.Application != nil && org == "" {
-		org = conf.Application.Org
+	if conf.Package != nil && conf.Package.Org != nil && org == "" {
+		org = *conf.Package.Org
 	}
 	if org == "" {
 		return errors.New("organization/project is not defined")
 	}
 
 	applicationID := c.ApplicationID
-	if conf.Application != nil && applicationID == "" {
-		applicationID = conf.Application.ID
+	if conf.ApplicationID != "" && applicationID == "" {
+		applicationID = conf.ApplicationID
 	}
 	if applicationID == "" {
 		return errors.New("application id is not defined")
 	}
 
-	reference := fmt.Sprintf("%s/%s/%s:%s", registry, org, applicationID, conf.Application.Version)
+	reference := fmt.Sprintf("%s/%s/%s:%s", registry, org, applicationID, conf.Version)
 	if c.DryRun {
 		fmt.Printf("Pushing %s (dry run)...\n", reference)
 	} else {

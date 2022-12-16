@@ -12,7 +12,7 @@ import (
 	"context"
 	"os"
 
-	"github.com/nanobus/iota/go/wasmrs/host"
+	"github.com/nanobus/iota/go/transport/wasmrs/host"
 
 	"github.com/nanobus/nanobus/pkg/compute"
 	"github.com/nanobus/nanobus/pkg/config"

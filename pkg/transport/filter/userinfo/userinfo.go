@@ -13,6 +13,7 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"strings"
 
 	"github.com/go-logr/logr"
 
@@ -26,18 +27,8 @@ type HTTPClient interface {
 	Do(req *http.Request) (*http.Response, error)
 }
 
-type Config struct {
-	UserInfoURL string `mapstructure:"userInfoUrl"`
-	Debug       bool   `mapstructure:"debug"`
-}
-
-// UserInfo is the NamedLoader for the UserInfo filter.
-func UserInfo() (string, filter.Loader) {
-	return "userinfo", Loader
-}
-
-func Loader(ctx context.Context, with interface{}, resolver resolve.ResolveAs) (filter.Filter, error) {
-	var c Config
+func UserInfoV1Loader(ctx context.Context, with interface{}, resolver resolve.ResolveAs) (filter.Filter, error) {
+	var c UserInfoV1Config
 	err := config.Decode(with, &c)
 	if err != nil {
 		return nil, err
@@ -45,16 +36,18 @@ func Loader(ctx context.Context, with interface{}, resolver resolve.ResolveAs) (
 
 	var logger logr.Logger
 	var httpClient HTTPClient
+	var developerMode bool
 	if err := resolve.Resolve(resolver,
 		"system:logger", &logger,
-		"client:http", &httpClient); err != nil {
+		"client:http", &httpClient,
+		"developerMode", &developerMode); err != nil {
 		return nil, err
 	}
 
-	return Filter(logger, httpClient, &c), nil
+	return Filter(logger, httpClient, &c, developerMode), nil
 }
 
-func Filter(log logr.Logger, httpClient HTTPClient, config *Config) filter.Filter {
+func Filter(log logr.Logger, httpClient HTTPClient, config *UserInfoV1Config, developerMode bool) filter.Filter {
 	return func(ctx context.Context, header filter.Header) (context.Context, error) {
 		if config.UserInfoURL == "" {
 			return ctx, nil
@@ -63,6 +56,15 @@ func Filter(log logr.Logger, httpClient HTTPClient, config *Config) filter.Filte
 		authorization := header.Get("Authorization")
 		if authorization == "" {
 			return ctx, nil
+		}
+
+		// Ignore JWTs
+		if strings.HasPrefix(authorization, "Bearer ") {
+			tokenString := authorization[7:]
+			// Check for the prefix of all JWTs.
+			if strings.HasPrefix(tokenString, "ey") {
+				return ctx, nil
+			}
 		}
 
 		req, err := http.NewRequest("GET", config.UserInfoURL, nil)
@@ -89,8 +91,9 @@ func Filter(log logr.Logger, httpClient HTTPClient, config *Config) filter.Filte
 
 		ctx = claims.ToContext(ctx, c)
 
-		if config.Debug {
+		if developerMode {
 			log.Info("Claims debug info [TURN OFF FOR PRODUCTION]",
+				"component", "userinfo",
 				"claims", c)
 		}
 

@@ -1,0 +1,142 @@
+# Copyright 2022 The NanoBus Authors.
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+namespace "nanobus.actions.core"
+
+alias ValueExpr = string
+alias DataExpr = string
+alias Handler = string
+
+"An alias for runtime.Step"
+alias Step = any
+
+type AssignConfig @action("assign") {
+  value: ValueExpr?
+  data:  DataExpr?
+  to:    string?
+}
+
+type AuthorizeConfig @action("authorize") {
+  "Condition is the predicate expression for authorization."
+  condition: ValueExpr?
+  has:       [string]?
+  check:     { string : any }?
+  error:     string = "permission_denied"
+}
+
+type CallInterfaceConfig @action("call_interface") {
+  handler: Handler
+}
+
+type CallProviderConfig @action("call_provider") {
+  handler: Handler
+}
+
+type DecodeConfig @action("decode") {
+  typeField: string
+  dataField: string
+  "Codec is the name of the codec to use for decoding."
+  codec:     string
+  "codecArgs are the arguments to pass to the decode function."
+  codecArgs: [any]?
+}
+
+type FilterConfig @action("filter") {
+  "Condition is the predicate expression for filtering."
+  condition: ValueExpr
+}
+
+type HTTPResponseConfig @action("http_response") {
+  status: u32?
+  headers: [HTTPResponseHeader]?
+}
+
+type HTTPResponseHeader {
+  name:  string
+  value: ValueExpr
+}
+
+type HTTPConfig @action("http") {
+  "URL is HTTP URL to request."
+  url: string
+  "Method is the HTTP method."
+  method: string
+  "Body is the data to sent as the body payload."
+  body: DataExpr?
+  "Metadata is the input binding metadata."
+  headers: DataExpr?
+  "Output is an optional transformation to be applied to the response."
+  output: DataExpr?
+  "Codec is the name of the codec to use for decoing."
+  codec: string
+  "Args are the arguments to pass to the decode function."
+  codecArgs: [any]?
+}
+
+type InvokeConfig @action("invoke") {
+  "Name of the interface to invoke."
+  interface: string?
+  "Operation of the interface to invoke."
+  operation: string? 
+  "Input optionally transforms the input sent to the function."
+  input: DataExpr?
+}
+
+type JMESPathConfig @action("jmespath") {
+  "Path is the predicate expression for filtering."
+  path: string
+  "Data is the optional data expression to pass to jq."
+  data: DataExpr?
+  "Var, if set, is the variable that is set with the result."
+  var: string?
+}
+
+type JQConfig @action("jq") {
+  "Query is the predicate expression for filtering."
+  query: string
+  "Data is the optional data expression to pass to jq."
+  data: DataExpr?
+  "Single, if true, returns the first result."
+  single: bool = false
+  "Var, if set, is the variable that is set with the result."
+  var: string?
+}
+
+type LogConfig @action("log") {
+  format: string
+  "Args are the evaluations to use as arguments into the string format."
+  args:  [ValueExpr]?
+}
+
+type ReCaptchaConfig @action("recaptcha") {
+  siteVerifyUrl: string = "https://www.google.com/recaptcha/api/siteverify"
+  secret:        string
+  response:      ValueExpr
+  score:         f64 = 0.5
+  action:        string?
+}
+
+type RouteConfig @action("route") {
+  "Selection defines the selection mode: single or multi."
+  selection: SelectionMode = Single
+  "Routes are the possible runnable routes which conditions for selection."
+  routes: [RouteCondition]
+}
+
+"SelectionMode indicates how many routes can be selected."
+enum SelectionMode {
+  Single = 1 as "single"
+  Multi  = 2 as "multi"
+}
+
+type RouteCondition {
+  "Name if the overall summary of this route."
+  name: string
+  "When is the predicate expression for filtering."
+  when: ValueExpr
+  "Then is the steps to process."
+  then: [Step]
+}

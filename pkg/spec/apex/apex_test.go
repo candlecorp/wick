@@ -11,7 +11,6 @@ package apex_test
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"os"
 	"testing"
 
@@ -37,7 +36,6 @@ func TestParse(t *testing.T) {
 
 	actualBytes, err := json.MarshalIndent(namespaces[0], "", "  ")
 	require.NoError(t, err)
-	fmt.Println(string(actualBytes))
 
 	var expected, actual interface{}
 	require.NoError(t, json.Unmarshal(expectedBytes, &expected))

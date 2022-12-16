@@ -13,35 +13,37 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/nanobus/iota/go/wasmrs/payload"
-	"github.com/nanobus/iota/go/wasmrs/rx/mono"
+	"github.com/nanobus/iota/go/payload"
+	"github.com/nanobus/iota/go/rx/mono"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/nanobus/nanobus/pkg/actions"
 	"github.com/nanobus/nanobus/pkg/actions/core"
-	"github.com/nanobus/nanobus/pkg/function"
+	"github.com/nanobus/nanobus/pkg/handler"
 	"github.com/nanobus/nanobus/pkg/resolve"
 )
 
 type mockInvoker struct {
-	namespace string
+	iface     string
 	operation string
 	input     payload.Payload
 	output    payload.Payload
 	err       error
 }
 
-func (m *mockInvoker) RequestResponse(ctx context.Context, namespace, operation string, p payload.Payload) mono.Mono[payload.Payload] {
-	m.namespace = namespace
+func (m *mockInvoker) RequestResponse(ctx context.Context, iface, operation string, p payload.Payload) mono.Mono[payload.Payload] {
+	m.iface = iface
 	m.operation = operation
 	m.input = p
-	if m.output != nil {
+	if m.err != nil {
+		return mono.Error[payload.Payload](m.err)
+	} else if m.output != nil {
 		return mono.Just(m.output)
 	} else if p != nil {
 		return mono.Just(p)
 	}
-	return mono.Error[payload.Payload](m.err)
+	panic("should return a payload or error")
 }
 
 func TestInvoke(t *testing.T) {
@@ -57,7 +59,7 @@ func TestInvoke(t *testing.T) {
 		resolver resolve.ResolveAs
 
 		data      actions.Data
-		namespace string
+		iface     string
 		operation string
 		output    interface{}
 		loaderErr string
@@ -67,7 +69,7 @@ func TestInvoke(t *testing.T) {
 			name:    "normal input",
 			invoker: &mockInvoker{},
 			config: map[string]interface{}{
-				"namespace": "test.v1",
+				"interface": "test.v1",
 				"operation": "test",
 			},
 			data: actions.Data{
@@ -78,7 +80,7 @@ func TestInvoke(t *testing.T) {
 			output: map[string]interface{}{
 				"test": "test",
 			},
-			namespace: "test.v1",
+			iface:     "test.v1",
 			operation: "test",
 		},
 		{
@@ -88,7 +90,7 @@ func TestInvoke(t *testing.T) {
 				"input": `{
 					"test": input.test + "12345",
 				}`,
-				"namespace": "test.v1",
+				"interface": "test.v1",
 				"operation": "test",
 			},
 			data: actions.Data{
@@ -99,14 +101,14 @@ func TestInvoke(t *testing.T) {
 			output: map[string]interface{}{
 				"test": "test12345",
 			},
-			namespace: "test.v1",
+			iface:     "test.v1",
 			operation: "test",
 		},
 		{
 			name:    "bytes input",
 			invoker: &mockInvoker{},
 			config: map[string]interface{}{
-				"namespace": "test.v1",
+				"interface": "test.v1",
 				"operation": "test",
 			},
 			data: actions.Data{
@@ -115,14 +117,14 @@ func TestInvoke(t *testing.T) {
 			output: map[string]interface{}{
 				"test": "test",
 			},
-			namespace: "test.v1",
+			iface:     "test.v1",
 			operation: "test",
 		},
 		{
 			name:    "string input",
 			invoker: &mockInvoker{},
 			config: map[string]interface{}{
-				"namespace": "test.v1",
+				"interface": "test.v1",
 				"operation": "test",
 			},
 			data: actions.Data{
@@ -131,7 +133,7 @@ func TestInvoke(t *testing.T) {
 			output: map[string]interface{}{
 				"test": "test",
 			},
-			namespace: "test.v1",
+			iface:     "test.v1",
 			operation: "test",
 		},
 		{
@@ -139,7 +141,7 @@ func TestInvoke(t *testing.T) {
 			invoker:   &mockInvoker{},
 			config:    map[string]interface{}{},
 			data:      actions.Data{},
-			namespace: "test.v1",
+			iface:     "test.v1",
 			operation: "test",
 		},
 		{
@@ -149,7 +151,7 @@ func TestInvoke(t *testing.T) {
 			},
 			config:    map[string]interface{}{},
 			data:      actions.Data{},
-			namespace: "test.v1",
+			iface:     "test.v1",
 			operation: "test",
 			actionErr: "test error",
 		},
@@ -159,7 +161,7 @@ func TestInvoke(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			resolver := func(name string, target interface{}) bool {
 				switch name {
-				case "client:invoker":
+				case "compute:mesh":
 					return resolve.As(tt.invoker, target)
 				}
 				return false
@@ -172,8 +174,8 @@ func TestInvoke(t *testing.T) {
 			}
 			require.NoError(t, err, "loader failed")
 
-			fctx := function.ToContext(ctx, function.Function{
-				Namespace: tt.namespace,
+			fctx := handler.ToContext(ctx, handler.Handler{
+				Interface: tt.iface,
 				Operation: tt.operation,
 			})
 			output, err := action(fctx, tt.data)
@@ -182,7 +184,7 @@ func TestInvoke(t *testing.T) {
 				return
 			}
 			require.NoError(t, err, "action failed")
-			assert.Equal(t, tt.namespace, tt.invoker.namespace)
+			assert.Equal(t, tt.iface, tt.invoker.iface)
 			assert.Equal(t, tt.operation, tt.invoker.operation)
 			assert.Equal(t, tt.output, output)
 		})
