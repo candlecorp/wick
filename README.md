@@ -2,7 +2,7 @@
 
 NanoBus is a lightweight application runtime that reduces developer responsibility so that teams can **focus on core logic**.
 
-Fore detailed information see the [overview](./docs/overview.md) and [architecture](./docs/architecture.md) pages.
+For detailed information see the [overview](./docs/overview.md) and [architecture](./docs/architecture.md) pages.
 
 ## Install
 
