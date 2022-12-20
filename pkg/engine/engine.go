@@ -689,25 +689,27 @@ func Start(info *Info) error {
 	// 	w.Write([]byte("OK"))
 	// }
 
-	transportInvoker := func(ctx context.Context, iface, id, fn string, input interface{}) (interface{}, error) {
+	transportInvoker := func(ctx context.Context, iface, id, fn string, input interface{}, authorization transport.Authorization) (interface{}, error) {
 		if err := coalesceInput(interfaces, iface, fn, input); err != nil {
 			return nil, err
 		}
 
 		claimsMap := claims.FromContext(ctx)
 
-		// Perform authorization first.
-		// Deny by default of no rule is found for the operation.
-		opers, ok := authorizers[iface]
-		if !ok {
-			return nil, errorz.Return("permission_denied", errorz.Metadata{})
-		}
-		oper, ok := opers[fn]
-		if !ok {
-			return nil, errorz.Return("permission_denied", errorz.Metadata{})
-		}
-		if err := oper.Check(claimsMap); err != nil {
-			return nil, err // wrapped by Check
+		if authorization != transport.BypassAuthorization {
+			// Perform authorization first.
+			// Deny by default of no rule is found for the operation.
+			opers, ok := authorizers[iface]
+			if !ok {
+				return nil, errorz.Return("permission_denied", errorz.Metadata{})
+			}
+			oper, ok := opers[fn]
+			if !ok {
+				return nil, errorz.Return("permission_denied", errorz.Metadata{})
+			}
+			if err := oper.Check(claimsMap); err != nil {
+				return nil, err // wrapped by Check
+			}
 		}
 
 		data := actions.Data{
@@ -839,7 +841,8 @@ func Start(info *Info) error {
 			info.Interface,
 			info.EntityID,
 			info.Operation,
-			info.Input)
+			info.Input,
+			transport.BypassAuthorization)
 		if err != nil {
 			log.Error(err, "invoke failed")
 			return err

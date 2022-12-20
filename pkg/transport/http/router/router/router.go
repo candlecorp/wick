@@ -163,7 +163,7 @@ func (t *Router) handler(h handler.Handler, desiredCodec channel.Codec) http.Han
 			}
 		}
 
-		response, err := t.invoker(ctx, h.Interface, id, h.Operation, input)
+		response, err := t.invoker(ctx, h.Interface, id, h.Operation, input, transport.PerformAuthorization)
 		if err != nil {
 			code := http.StatusInternalServerError
 			if errors.Is(err, transport.ErrBadInput) {

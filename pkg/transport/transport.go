@@ -26,9 +26,16 @@ type (
 		Close() error
 	}
 
-	Invoker func(ctx context.Context, iface, id, operation string, input interface{}) (interface{}, error)
+	Invoker func(ctx context.Context, iface, id, operation string, input interface{}, authorization Authorization) (interface{}, error)
 
 	Registry map[string]Loader
+)
+
+type Authorization int
+
+const (
+	PerformAuthorization Authorization = 1
+	BypassAuthorization  Authorization = 999
 )
 
 func (r Registry) Register(loaders ...NamedLoader) {

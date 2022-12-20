@@ -35,12 +35,6 @@ Create a file called `bus.yaml` with the following contents:
 ```yaml
 id: hello-world
 version: 0.0.1
-# All operations are authorized before execution
-# and are denied by default.
-authorization:
-  Greeter:
-    sayHello:
-      unauthenticated: true
 interfaces:
   Greeter:
     sayHello:

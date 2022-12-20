@@ -190,7 +190,7 @@ func (t *HTTPRPC) handler(w http.ResponseWriter, r *http.Request) {
 		input = map[string]interface{}{}
 	}
 
-	response, err := t.invoker(ctx, iface, id, operation, input)
+	response, err := t.invoker(ctx, iface, id, operation, input, transport.PerformAuthorization)
 	if err != nil {
 		code := http.StatusInternalServerError
 		if errors.Is(err, transport.ErrBadInput) {

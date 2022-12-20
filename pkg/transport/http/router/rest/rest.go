@@ -440,7 +440,7 @@ func (t *Rest) handler(iface, operation string, isActor bool,
 			}
 		}
 
-		response, err := t.invoker(ctx, iface, id, operation, input)
+		response, err := t.invoker(ctx, iface, id, operation, input, transport.PerformAuthorization)
 		if err != nil {
 			code := http.StatusInternalServerError
 			if errors.Is(err, transport.ErrBadInput) {

@@ -216,7 +216,7 @@ func (t *NATS) handler(m *nats.Msg) {
 		input = map[string]interface{}{}
 	}
 
-	response, err := t.invoker(ctx, iface, id, operation, input)
+	response, err := t.invoker(ctx, iface, id, operation, input, transport.PerformAuthorization)
 	if err != nil {
 		code := http.StatusInternalServerError
 		if errors.Is(err, transport.ErrBadInput) {
