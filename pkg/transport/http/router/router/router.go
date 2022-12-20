@@ -41,7 +41,8 @@ type Router struct {
 	invoker       transport.Invoker
 	errorResolver errorz.Resolver
 	codecs        map[string]channel.Codec
-	filters       []filter.Filter
+
+	filters []filter.Filter
 }
 
 func RouterV1Loader(ctx context.Context, with interface{}, resolver resolve.ResolveAs) (router.Router, error) {
@@ -73,12 +74,14 @@ func RouterV1Loader(ctx context.Context, with interface{}, resolver resolve.Reso
 func NewV1(log logr.Logger, invoker transport.Invoker, codecMap channel.Codecs, config RouterV1Config) router.Router {
 	router := Router{
 		invoker: invoker,
+		codecs:  codecMap,
 	}
 	return func(r *mux.Router, address string) error {
-		sort.Slice(config, func(i, j int) bool {
-			return len(config[i].URI) > len(config[j].URI)
+
+		sort.Slice(config.Routes, func(i, j int) bool {
+			return len(config.Routes[i].URI) > len(config.Routes[j].URI)
 		})
-		for _, path := range config {
+		for _, path := range config.Routes {
 			path := path
 			var desiredCodec channel.Codec
 			if path.Encoding != nil {
@@ -86,10 +89,10 @@ func NewV1(log logr.Logger, invoker transport.Invoker, codecMap channel.Codecs, 
 			}
 			log.Info("Serving route",
 				"uri", path.URI,
-				"methods", path.Methods,
+				"methods", path.Method,
 				"handler", path.Handler)
 			r.HandleFunc(path.URI, router.handler(path.Handler, desiredCodec)).
-				Methods(path.Methods)
+				Methods(path.Method)
 		}
 
 		return nil

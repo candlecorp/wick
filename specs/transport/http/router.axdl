@@ -6,11 +6,14 @@
 
 namespace "nanobus.transport.http"
 
-alias RouterV1Config = [AddRoute] @router("nanobus.transport.http.router/v1")
 alias Handler = string
 
+type RouterV1Config @router("nanobus.transport.http.router/v1") {
+  routes: [AddRoute]
+}
+
 type AddRoute {
-  methods: string
+  method: string
   uri: string
   encoding: string?
   handler: Handler

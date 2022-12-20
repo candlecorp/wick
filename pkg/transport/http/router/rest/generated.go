@@ -15,7 +15,7 @@ func RestV1() (string, router.Loader) {
 }
 
 type Documentation struct {
-	SwaggerUI  bool `json:"swaggerUI" yaml:"swaggerUI" msgpack:"swaggerUI" mapstructure:"swaggerUI" validate:"required"`
-	Postman    bool `json:"postman" yaml:"postman" msgpack:"postman" mapstructure:"postman" validate:"required"`
-	RestClient bool `json:"restClient" yaml:"restClient" msgpack:"restClient" mapstructure:"restClient" validate:"required"`
+	SwaggerUI  *bool `json:"swaggerUI,omitempty" yaml:"swaggerUI,omitempty" msgpack:"swaggerUI,omitempty" mapstructure:"swaggerUI"`
+	Postman    *bool `json:"postman,omitempty" yaml:"postman,omitempty" msgpack:"postman,omitempty" mapstructure:"postman"`
+	RestClient *bool `json:"restClient,omitempty" yaml:"restClient,omitempty" msgpack:"restClient,omitempty" mapstructure:"restClient"`
 }

@@ -138,7 +138,7 @@ func NewV1(log logr.Logger, tracer trace.Tracer, config RestV1Config, namespaces
 		if strings.HasPrefix(docsHost, ":") {
 			docsHost = "localhost" + docsHost
 		}
-		if config.Documentation.SwaggerUI {
+		if config.Documentation.SwaggerUI != nil && *config.Documentation.SwaggerUI {
 			log.Info("Swagger UI", "url", fmt.Sprintf("http://%s/swagger/", docsHost))
 			log.Info("Swagger Spec", "url", fmt.Sprintf("http://%s/swagger/swagger_spec", docsHost))
 			if err := RegisterSwaggerRoutes(r, namespaces); err != nil {
@@ -146,14 +146,14 @@ func NewV1(log logr.Logger, tracer trace.Tracer, config RestV1Config, namespaces
 			}
 		}
 
-		if config.Documentation.Postman {
+		if config.Documentation.Postman != nil && *config.Documentation.Postman {
 			log.Info("Postman collection", "url", fmt.Sprintf("http://%s/postman/collection", docsHost))
 			if err := RegisterPostmanRoutes(r, namespaces); err != nil {
 				return err
 			}
 		}
 
-		if config.Documentation.RestClient {
+		if config.Documentation.RestClient != nil && *config.Documentation.RestClient {
 			log.Info("VS Code REST Client", "url", fmt.Sprintf("http://%s/rest-client/service.http", docsHost))
 			if err := RegisterRESTClientRoutes(r, namespaces); err != nil {
 				return err
