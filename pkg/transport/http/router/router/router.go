@@ -53,11 +53,13 @@ func RouterV1Loader(ctx context.Context, with interface{}, resolver resolve.Reso
 
 	var jsoncodec channel.Codec
 	var msgpackcodec channel.Codec
+	var errorResolver errorz.Resolver
 	var transportInvoker transport.Invoker
 	var logger logr.Logger
 	if err := resolve.Resolve(resolver,
 		"codec:json", &jsoncodec,
 		"codec:msgpack", &msgpackcodec,
+		"errors:resolver", &errorResolver,
 		"transport:invoker", &transportInvoker,
 		"system:logger", &logger); err != nil {
 		return nil, err
@@ -68,13 +70,14 @@ func RouterV1Loader(ctx context.Context, with interface{}, resolver resolve.Reso
 		msgpackcodec.ContentType(): msgpackcodec,
 	}
 
-	return NewV1(logger, transportInvoker, codecMap, c), nil
+	return NewV1(logger, transportInvoker, codecMap, errorResolver, c), nil
 }
 
-func NewV1(log logr.Logger, invoker transport.Invoker, codecMap channel.Codecs, config RouterV1Config) router.Router {
+func NewV1(log logr.Logger, invoker transport.Invoker, codecMap channel.Codecs, errorResolver errorz.Resolver, config RouterV1Config) router.Router {
 	router := Router{
-		invoker: invoker,
-		codecs:  codecMap,
+		invoker:       invoker,
+		errorResolver: errorResolver,
+		codecs:        codecMap,
 	}
 	return func(r *mux.Router, address string) error {
 
