@@ -24,6 +24,7 @@ import (
 	"go.uber.org/multierr"
 
 	"github.com/nanobus/nanobus/pkg/compute"
+	"github.com/nanobus/nanobus/pkg/handler"
 )
 
 type (
@@ -58,13 +59,13 @@ func New(tracer trace.Tracer) *Mesh {
 	}
 }
 
-func (m *Mesh) RequestResponse(ctx context.Context, namespace, operation string, p payload.Payload) mono.Mono[payload.Payload] {
-	ns, ok := m.exports[namespace]
+func (m *Mesh) RequestResponse(ctx context.Context, h handler.Handler, p payload.Payload) mono.Mono[payload.Payload] {
+	ns, ok := m.exports[h.Interface]
 	if !ok {
 		return nil
 	}
 
-	ptr, ok := ns[operation]
+	ptr, ok := ns[h.Operation]
 	if !ok {
 		return nil
 	}
@@ -73,13 +74,13 @@ func (m *Mesh) RequestResponse(ctx context.Context, namespace, operation string,
 	return dest.RequestResponse(ctx, p)
 }
 
-func (m *Mesh) FireAndForget(ctx context.Context, namespace, operation string, p payload.Payload) {
-	ns, ok := m.exports[namespace]
+func (m *Mesh) FireAndForget(ctx context.Context, h handler.Handler, p payload.Payload) {
+	ns, ok := m.exports[h.Interface]
 	if !ok {
 		return
 	}
 
-	ptr, ok := ns[operation]
+	ptr, ok := ns[h.Interface]
 	if !ok {
 		return
 	}
@@ -88,13 +89,13 @@ func (m *Mesh) FireAndForget(ctx context.Context, namespace, operation string, p
 	dest.FireAndForget(ctx, p)
 }
 
-func (m *Mesh) RequestStream(ctx context.Context, namespace, operation string, p payload.Payload) flux.Flux[payload.Payload] {
-	ns, ok := m.exports[namespace]
+func (m *Mesh) RequestStream(ctx context.Context, h handler.Handler, p payload.Payload) flux.Flux[payload.Payload] {
+	ns, ok := m.exports[h.Interface]
 	if !ok {
 		return nil
 	}
 
-	ptr, ok := ns[operation]
+	ptr, ok := ns[h.Operation]
 	if !ok {
 		return nil
 	}
@@ -103,13 +104,13 @@ func (m *Mesh) RequestStream(ctx context.Context, namespace, operation string, p
 	return dest.RequestStream(ctx, p)
 }
 
-func (m *Mesh) RequestChannel(ctx context.Context, namespace, operation string, p payload.Payload, in flux.Flux[payload.Payload]) flux.Flux[payload.Payload] {
-	ns, ok := m.exports[namespace]
+func (m *Mesh) RequestChannel(ctx context.Context, h handler.Handler, p payload.Payload, in flux.Flux[payload.Payload]) flux.Flux[payload.Payload] {
+	ns, ok := m.exports[h.Interface]
 	if !ok {
 		return nil
 	}
 
-	ptr, ok := ns[operation]
+	ptr, ok := ns[h.Operation]
 	if !ok {
 		return nil
 	}

@@ -145,11 +145,10 @@ type Info struct {
 	Process []string
 
 	// CLI mode
-	Interface string
-	EntityID  string
-	Operation string
-	Input     any
-	Output    any
+	EntityID string
+	Handler  handler.Handler
+	Input    any
+	Output   any
 }
 
 type Engine struct {
@@ -691,8 +690,8 @@ func Start(info *Info) error {
 	// 	w.Write([]byte("OK"))
 	// }
 
-	transportInvoker := func(ctx context.Context, iface, id, fn string, input interface{}, authorization transport.Authorization) (interface{}, error) {
-		if err := coalesceInput(interfaces, iface, fn, input); err != nil {
+	transportInvoker := func(ctx context.Context, h handler.Handler, id string, input interface{}, authorization transport.Authorization) (interface{}, error) {
+		if err := coalesceInput(interfaces, h, input); err != nil {
 			return nil, err
 		}
 
@@ -701,11 +700,11 @@ func Start(info *Info) error {
 		if authorization != transport.BypassAuthorization {
 			// Perform authorization first.
 			// Deny by default of no rule is found for the operation.
-			opers, ok := authorizers[iface]
+			opers, ok := authorizers[h.Interface]
 			if !ok {
 				return nil, errorz.Return("permission_denied", errorz.Metadata{})
 			}
-			oper, ok := opers[fn]
+			oper, ok := opers[h.Operation]
 			if !ok {
 				return nil, errorz.Return("permission_denied", errorz.Metadata{})
 			}
@@ -717,21 +716,20 @@ func Start(info *Info) error {
 		data := actions.Data{
 			"claims": claimsMap,
 			"input":  input,
+			"$":      input,
+			"pipe":   input,
 		}
 
 		if jsonBytes, err := json.MarshalIndent(input, "", "  "); err == nil {
-			logInbound(rt.log, iface+"/"+fn, string(jsonBytes))
+			logInbound(rt.log, h, string(jsonBytes))
 		}
 
 		data["env"] = env
 
-		ctx = handler.ToContext(ctx, handler.Handler{
-			Interface: iface,
-			Operation: fn,
-		})
+		ctx = handler.ToContext(ctx, h)
 
 		// TODO: Use merged map of interfaces here
-		response, ok, err := allNamespaces.Invoke(ctx, iface, fn, data)
+		response, ok, err := allNamespaces.Invoke(ctx, h, data)
 		if err != nil {
 			return nil, translateError(err)
 		}
@@ -746,9 +744,9 @@ func Start(info *Info) error {
 			metadata := make([]byte, 8)
 			p := payload.New(payloadData, metadata)
 
-			future := m.RequestResponse(ctx, iface, fn, p)
+			future := m.RequestResponse(ctx, h, p)
 			if future == nil {
-				return nil, errorz.New(errorz.Unimplemented, fmt.Sprintf("%s::%s is not implemented", iface, fn))
+				return nil, errorz.New(errorz.Unimplemented, fmt.Sprintf("%s is not implemented", h))
 			}
 			result, err := future.Block()
 			if err != nil {
@@ -840,9 +838,8 @@ func Start(info *Info) error {
 
 	case ModeInvoke:
 		result, err := transportInvoker(ctx,
-			info.Interface,
+			info.Handler,
 			info.EntityID,
-			info.Operation,
 			info.Input,
 			transport.BypassAuthorization)
 		if err != nil {
@@ -943,8 +940,8 @@ func environmentToMap(environment []string, getkeyval func(item string) (key, va
 	return items
 }
 
-func coalesceInput(interfaces spec.Interfaces, iface, operation string, input interface{}) error {
-	if oper, ok := interfaces.Operation(iface, operation); ok {
+func coalesceInput(interfaces spec.Interfaces, h handler.Handler, input interface{}) error {
+	if oper, ok := interfaces.Operation(h); ok {
 		if oper.Parameters != nil {
 			inputMap, ok := coalesce.ToMapSI(input, true)
 			if !ok {
@@ -982,10 +979,10 @@ func coalesceOutput(namespaces spec.Namespaces, namespace, service, function str
 	return output, err
 }
 
-func logInbound(log logr.Logger, target string, data string) {
+func logInbound(log logr.Logger, h handler.Handler, data string) {
 	l := log //.V(10)
 	if l.Enabled() {
-		l.Info("==> " + target + " " + data)
+		l.Info("==> " + h.String() + " " + data)
 	}
 }
 

@@ -19,6 +19,7 @@ import (
 	"github.com/alecthomas/kong"
 
 	"github.com/nanobus/nanobus/pkg/engine"
+	"github.com/nanobus/nanobus/pkg/handler"
 	"github.com/nanobus/nanobus/pkg/oci"
 	"github.com/nanobus/nanobus/pkg/runtime"
 )
@@ -110,8 +111,6 @@ func (c *runCmd) Run() error {
 
 type invokeCmd struct {
 	DeveloperMode bool `name:"developer-mode" help:"Enables developer mode."`
-	// Interface is the operation's interface.
-	Interface string `arg:"" required:"" help:"The namespace of the operation to invoke"`
 	// Operation is the operation name.
 	Operation string `arg:"" required:"" help:"The operation or function invoke"`
 	// BusFile is the application configuration (not an OCI image reference).
@@ -145,12 +144,16 @@ func (c *invokeCmd) Run() error {
 		return fmt.Errorf("could not parse stdin: %w", err)
 	}
 
+	var h handler.Handler
+	if err := h.FromString(c.Operation); err != nil {
+		return fmt.Errorf("invalid operation %q: %w", c.Operation, err)
+	}
+
 	info := engine.Info{
 		Mode:          engine.ModeInvoke,
 		BusFile:       c.BusFile,
 		ResourcesFile: c.ResourcesFile,
-		Interface:     c.Interface,
-		Operation:     c.Operation,
+		Handler:       h,
 		EntityID:      c.EntityID,
 		Input:         input,
 		DeveloperMode: c.DeveloperMode,

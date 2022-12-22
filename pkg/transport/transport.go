@@ -12,6 +12,7 @@ import (
 	"context"
 	"errors"
 
+	"github.com/nanobus/nanobus/pkg/handler"
 	"github.com/nanobus/nanobus/pkg/resolve"
 )
 
@@ -26,7 +27,7 @@ type (
 		Close() error
 	}
 
-	Invoker func(ctx context.Context, iface, id, operation string, input interface{}, authorization Authorization) (interface{}, error)
+	Invoker func(ctx context.Context, h handler.Handler, id string, input interface{}, authorization Authorization) (interface{}, error)
 
 	Registry map[string]Loader
 )

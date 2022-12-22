@@ -24,6 +24,7 @@ import (
 
 	"github.com/nanobus/nanobus/pkg/coalesce"
 	"github.com/nanobus/nanobus/pkg/errorz"
+	"github.com/nanobus/nanobus/pkg/handler"
 	"github.com/nanobus/nanobus/pkg/registry"
 )
 
@@ -166,12 +167,12 @@ func (ns Namespaces) ToInterfaces() Interfaces {
 	return interfaces
 }
 
-func (is Interfaces) Operation(iface, operation string) (*Operation, bool) {
-	n, ok := is[iface]
+func (is Interfaces) Operation(h handler.Handler) (*Operation, bool) {
+	n, ok := is[h.Interface]
 	if !ok {
 		return nil, false
 	}
-	o, ok := n[operation]
+	o, ok := n[h.Operation]
 	return o, ok
 }
 

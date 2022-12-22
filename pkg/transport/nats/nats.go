@@ -22,6 +22,7 @@ import (
 	"github.com/nanobus/nanobus/pkg/channel"
 	"github.com/nanobus/nanobus/pkg/config"
 	"github.com/nanobus/nanobus/pkg/errorz"
+	"github.com/nanobus/nanobus/pkg/handler"
 	"github.com/nanobus/nanobus/pkg/resolve"
 	"github.com/nanobus/nanobus/pkg/spec"
 	"github.com/nanobus/nanobus/pkg/transport"
@@ -168,7 +169,6 @@ func (t *NATS) Close() (merr error) {
 }
 
 func (t *NATS) handler(m *nats.Msg) {
-	iface := m.Header.Get("Interface")
 	operation := m.Header.Get("Operation")
 	id := m.Header.Get("ID")
 
@@ -194,6 +194,12 @@ func (t *NATS) handler(m *nats.Msg) {
 		return
 	}
 
+	var h handler.Handler
+	if err := h.FromString(operation); err != nil {
+		t.handleError(err, codec, m, http.StatusInternalServerError)
+		return
+	}
+
 	ctx := context.Background()
 
 	for _, filter := range t.filters {
@@ -216,7 +222,7 @@ func (t *NATS) handler(m *nats.Msg) {
 		input = map[string]interface{}{}
 	}
 
-	response, err := t.invoker(ctx, iface, id, operation, input, transport.PerformAuthorization)
+	response, err := t.invoker(ctx, h, id, input, transport.PerformAuthorization)
 	if err != nil {
 		code := http.StatusInternalServerError
 		if errors.Is(err, transport.ErrBadInput) {

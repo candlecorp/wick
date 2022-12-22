@@ -172,9 +172,9 @@ func (o *Auth) callback(w http.ResponseWriter, r *http.Request) {
 			"expiry":        token.Expiry,
 			"refresh_token": token.RefreshToken,
 		}
-		_, ok, err := o.processor.Invoke(r.Context(), o.handler.Interface, o.handler.Operation, data)
+		_, ok, err := o.processor.Invoke(r.Context(), *o.handler, data)
 		if !ok {
-			o.log.Error(err, "could not find handler", "handler", o.handler)
+			o.log.Error(err, "could not find handler", "handler", o.handler.String())
 			http.Redirect(w, r, o.redirectURL, http.StatusTemporaryRedirect)
 			return
 		}

@@ -10,19 +10,6 @@ import {
   ValueExpr
 } from "../nanobus.ts";
 
-export interface AssignConfig {
-  value?: ValueExpr;
-  data?: DataExpr;
-  to?: string;
-}
-
-export function Assign(config: AssignConfig): Component<AssignConfig> {
-  return {
-    uses: "assign",
-    with: config
-  };
-}
-
 export interface AuthorizeConfig {
   // Condition is the predicate expression for authorization.
   condition?: ValueExpr;
@@ -76,6 +63,19 @@ export interface DecodeConfig {
 export function Decode(config: DecodeConfig): Component<DecodeConfig> {
   return {
     uses: "decode",
+    with: config
+  };
+}
+
+export interface ExprConfig {
+  value?: ValueExpr;
+  data?: DataExpr;
+  to?: string;
+}
+
+export function Expr(config: ExprConfig): Component<ExprConfig> {
+  return {
+    uses: "expr",
     with: config
   };
 }
@@ -136,10 +136,8 @@ export function HTTP(config: HTTPConfig): Component<HTTPConfig> {
 }
 
 export interface InvokeConfig {
-  // Name of the interface to invoke.
-  interface?: string;
-  // Operation of the interface to invoke.
-  operation?: string;
+  // Name of the handler to invoke.
+  handler?: Handler;
   // Input optionally transforms the input sent to the function.
   input?: DataExpr;
 }

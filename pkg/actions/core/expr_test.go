@@ -20,10 +20,10 @@ import (
 	"github.com/nanobus/nanobus/pkg/resolve"
 )
 
-func TestAssign(t *testing.T) {
+func TestExpr(t *testing.T) {
 	ctx := context.Background()
-	name, loader := core.Assign()
-	assert.Equal(t, "assign", name)
+	name, loader := core.Expr()
+	assert.Equal(t, "expr", name)
 
 	tests := []struct {
 		name string

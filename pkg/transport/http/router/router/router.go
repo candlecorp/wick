@@ -90,7 +90,7 @@ func NewV1(log logr.Logger, invoker transport.Invoker, codecMap channel.Codecs, 
 			log.Info("Serving route",
 				"uri", path.URI,
 				"methods", path.Method,
-				"handler", path.Handler)
+				"handler", path.Handler.String())
 			r.HandleFunc(path.URI, router.handler(path.Handler, desiredCodec)).
 				Methods(path.Method)
 		}
@@ -166,7 +166,7 @@ func (t *Router) handler(h handler.Handler, desiredCodec channel.Codec) http.Han
 			}
 		}
 
-		response, err := t.invoker(ctx, h.Interface, id, h.Operation, input, transport.PerformAuthorization)
+		response, err := t.invoker(ctx, h, id, input, transport.PerformAuthorization)
 		if err != nil {
 			code := http.StatusInternalServerError
 			if errors.Is(err, transport.ErrBadInput) {

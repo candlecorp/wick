@@ -25,16 +25,14 @@ import (
 )
 
 type mockInvoker struct {
-	iface     string
-	operation string
-	input     payload.Payload
-	output    payload.Payload
-	err       error
+	h      handler.Handler
+	input  payload.Payload
+	output payload.Payload
+	err    error
 }
 
-func (m *mockInvoker) RequestResponse(ctx context.Context, iface, operation string, p payload.Payload) mono.Mono[payload.Payload] {
-	m.iface = iface
-	m.operation = operation
+func (m *mockInvoker) RequestResponse(ctx context.Context, h handler.Handler, p payload.Payload) mono.Mono[payload.Payload] {
+	m.h = h
 	m.input = p
 	if m.err != nil {
 		return mono.Error[payload.Payload](m.err)
@@ -59,8 +57,7 @@ func TestInvoke(t *testing.T) {
 		resolver resolve.ResolveAs
 
 		data      actions.Data
-		iface     string
-		operation string
+		h         handler.Handler
 		output    interface{}
 		loaderErr string
 		actionErr string
@@ -69,8 +66,7 @@ func TestInvoke(t *testing.T) {
 			name:    "normal input",
 			invoker: &mockInvoker{},
 			config: map[string]interface{}{
-				"interface": "test.v1",
-				"operation": "test",
+				"handler": "test.v1::test",
 			},
 			data: actions.Data{
 				"input": map[string]interface{}{
@@ -80,8 +76,10 @@ func TestInvoke(t *testing.T) {
 			output: map[string]interface{}{
 				"test": "test",
 			},
-			iface:     "test.v1",
-			operation: "test",
+			h: handler.Handler{
+				Interface: "test.v1",
+				Operation: "test",
+			},
 		},
 		{
 			name:    "normal input",
@@ -90,8 +88,7 @@ func TestInvoke(t *testing.T) {
 				"input": `{
 					"test": input.test + "12345",
 				}`,
-				"interface": "test.v1",
-				"operation": "test",
+				"handler": "test.v1::test",
 			},
 			data: actions.Data{
 				"input": map[string]interface{}{
@@ -101,15 +98,16 @@ func TestInvoke(t *testing.T) {
 			output: map[string]interface{}{
 				"test": "test12345",
 			},
-			iface:     "test.v1",
-			operation: "test",
+			h: handler.Handler{
+				Interface: "test.v1",
+				Operation: "test",
+			},
 		},
 		{
 			name:    "bytes input",
 			invoker: &mockInvoker{},
 			config: map[string]interface{}{
-				"interface": "test.v1",
-				"operation": "test",
+				"handler": "test.v1::test",
 			},
 			data: actions.Data{
 				"input": []byte(`{ "test": "test" }`),
@@ -117,15 +115,16 @@ func TestInvoke(t *testing.T) {
 			output: map[string]interface{}{
 				"test": "test",
 			},
-			iface:     "test.v1",
-			operation: "test",
+			h: handler.Handler{
+				Interface: "test.v1",
+				Operation: "test",
+			},
 		},
 		{
 			name:    "string input",
 			invoker: &mockInvoker{},
 			config: map[string]interface{}{
-				"interface": "test.v1",
-				"operation": "test",
+				"handler": "test.v1::test",
 			},
 			data: actions.Data{
 				"input": `{ "test": "test" }`,
@@ -133,26 +132,32 @@ func TestInvoke(t *testing.T) {
 			output: map[string]interface{}{
 				"test": "test",
 			},
-			iface:     "test.v1",
-			operation: "test",
+			h: handler.Handler{
+				Interface: "test.v1",
+				Operation: "test",
+			},
 		},
 		{
-			name:      "invoke from context",
-			invoker:   &mockInvoker{},
-			config:    map[string]interface{}{},
-			data:      actions.Data{},
-			iface:     "test.v1",
-			operation: "test",
+			name:    "invoke from context",
+			invoker: &mockInvoker{},
+			config:  map[string]interface{}{},
+			data:    actions.Data{},
+			h: handler.Handler{
+				Interface: "test.v1",
+				Operation: "test",
+			},
 		},
 		{
 			name: "invoke error",
 			invoker: &mockInvoker{
 				err: errors.New("test error"),
 			},
-			config:    map[string]interface{}{},
-			data:      actions.Data{},
-			iface:     "test.v1",
-			operation: "test",
+			config: map[string]interface{}{},
+			data:   actions.Data{},
+			h: handler.Handler{
+				Interface: "test.v1",
+				Operation: "test",
+			},
 			actionErr: "test error",
 		},
 	}
@@ -174,18 +179,14 @@ func TestInvoke(t *testing.T) {
 			}
 			require.NoError(t, err, "loader failed")
 
-			fctx := handler.ToContext(ctx, handler.Handler{
-				Interface: tt.iface,
-				Operation: tt.operation,
-			})
+			fctx := handler.ToContext(ctx, tt.h)
 			output, err := action(fctx, tt.data)
 			if tt.actionErr != "" {
 				require.EqualError(t, err, tt.actionErr, "action error was expected")
 				return
 			}
 			require.NoError(t, err, "action failed")
-			assert.Equal(t, tt.iface, tt.invoker.iface)
-			assert.Equal(t, tt.operation, tt.invoker.operation)
+			assert.Equal(t, tt.h, tt.invoker.h)
 			assert.Equal(t, tt.output, output)
 		})
 	}

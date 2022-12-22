@@ -22,6 +22,7 @@ import (
 	"github.com/nanobus/nanobus/pkg/channel"
 	"github.com/nanobus/nanobus/pkg/config"
 	"github.com/nanobus/nanobus/pkg/errorz"
+	"github.com/nanobus/nanobus/pkg/handler"
 	"github.com/nanobus/nanobus/pkg/resolve"
 	"github.com/nanobus/nanobus/pkg/spec"
 	"github.com/nanobus/nanobus/pkg/transport"
@@ -162,9 +163,14 @@ func (t *HTTPRPC) handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	iface := mux.Vars(r)["interface"]
 	operation := mux.Vars(r)["operation"]
 	id := mux.Vars(r)["id"]
+
+	var h handler.Handler
+	if err := h.FromString(operation); err != nil {
+		t.handleError(err, codec, r, w, http.StatusInternalServerError)
+		return
+	}
 
 	for _, filter := range t.filters {
 		var err error
@@ -190,7 +196,7 @@ func (t *HTTPRPC) handler(w http.ResponseWriter, r *http.Request) {
 		input = map[string]interface{}{}
 	}
 
-	response, err := t.invoker(ctx, iface, id, operation, input, transport.PerformAuthorization)
+	response, err := t.invoker(ctx, h, id, input, transport.PerformAuthorization)
 	if err != nil {
 		code := http.StatusInternalServerError
 		if errors.Is(err, transport.ErrBadInput) {

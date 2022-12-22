@@ -12,16 +12,6 @@ import (
 	"github.com/nanobus/nanobus/pkg/runtime"
 )
 
-type AssignConfig struct {
-	Value *expr.ValueExpr `json:"value,omitempty" yaml:"value,omitempty" msgpack:"value,omitempty" mapstructure:"value"`
-	Data  *expr.DataExpr  `json:"data,omitempty" yaml:"data,omitempty" msgpack:"data,omitempty" mapstructure:"data"`
-	To    *string         `json:"to,omitempty" yaml:"to,omitempty" msgpack:"to,omitempty" mapstructure:"to"`
-}
-
-func Assign() (string, actions.Loader) {
-	return "assign", AssignLoader
-}
-
 type AuthorizeConfig struct {
 	// Condition is the predicate expression for authorization.
 	Condition *expr.ValueExpr        `json:"condition,omitempty" yaml:"condition,omitempty" msgpack:"condition,omitempty" mapstructure:"condition"`
@@ -61,6 +51,16 @@ type DecodeConfig struct {
 
 func Decode() (string, actions.Loader) {
 	return "decode", DecodeLoader
+}
+
+type ExprConfig struct {
+	Value *expr.ValueExpr `json:"value,omitempty" yaml:"value,omitempty" msgpack:"value,omitempty" mapstructure:"value" validate:"required_without=Data"`
+	Data  *expr.DataExpr  `json:"data,omitempty" yaml:"data,omitempty" msgpack:"data,omitempty" mapstructure:"data" validate:"required_without=Value"`
+	To    *string         `json:"to,omitempty" yaml:"to,omitempty" msgpack:"to,omitempty" mapstructure:"to"`
+}
+
+func Expr() (string, actions.Loader) {
+	return "expr", ExprLoader
 }
 
 type FilterConfig struct {
@@ -108,10 +108,8 @@ func HTTP() (string, actions.Loader) {
 }
 
 type InvokeConfig struct {
-	// Name of the interface to invoke.
-	Interface *string `json:"interface,omitempty" yaml:"interface,omitempty" msgpack:"interface,omitempty" mapstructure:"interface"`
-	// Operation of the interface to invoke.
-	Operation *string `json:"operation,omitempty" yaml:"operation,omitempty" msgpack:"operation,omitempty" mapstructure:"operation"`
+	// Name of the handler to invoke.
+	Handler *handler.Handler `json:"handler,omitempty" yaml:"handler,omitempty" msgpack:"handler,omitempty" mapstructure:"handler"`
 	// Input optionally transforms the input sent to the function.
 	Input *expr.DataExpr `json:"input,omitempty" yaml:"input,omitempty" msgpack:"input,omitempty" mapstructure:"input"`
 }

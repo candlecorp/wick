@@ -2,3 +2,4 @@
 /dist
 /lib
 *.pem
+go.work.sum

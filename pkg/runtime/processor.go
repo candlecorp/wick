@@ -20,6 +20,7 @@ import (
 
 	"github.com/nanobus/nanobus/pkg/actions"
 	"github.com/nanobus/nanobus/pkg/config"
+	"github.com/nanobus/nanobus/pkg/handler"
 	"github.com/nanobus/nanobus/pkg/resiliency"
 	"github.com/nanobus/nanobus/pkg/resiliency/breaker"
 	"github.com/nanobus/nanobus/pkg/resiliency/retry"
@@ -45,13 +46,13 @@ type Processor struct {
 type Namespaces map[string]Functions
 type Functions map[string]Runnable
 
-func (ns Namespaces) Invoke(ctx context.Context, name, operation string, data actions.Data) (interface{}, bool, error) {
-	s, ok := ns[name]
+func (ns Namespaces) Invoke(ctx context.Context, h handler.Handler, data actions.Data) (interface{}, bool, error) {
+	s, ok := ns[h.Interface]
 	if !ok {
 		return nil, false, nil
 	}
 
-	pl, ok := s[operation]
+	pl, ok := s[h.Operation]
 	if !ok {
 		return nil, false, nil
 	}
@@ -341,6 +342,10 @@ func (r *runnable) Run(ctx context.Context, data actions.Data) (interface{}, err
 
 		if output != nil {
 			runOutput = output
+
+			// The `$` and `pipe` variables carries on throughout the pipeline.
+			data["$"] = output
+			data["pipe"] = output
 		}
 	}
 

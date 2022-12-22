@@ -23,7 +23,7 @@ import (
 )
 
 type Invoker interface {
-	RequestResponse(ctx context.Context, iface, operation string, p payload.Payload) mono.Mono[payload.Payload]
+	RequestResponse(ctx context.Context, h handler.Handler, p payload.Payload) mono.Mono[payload.Payload]
 }
 
 func InvokeLoader(ctx context.Context, with interface{}, resolver resolve.ResolveAs) (actions.Action, error) {
@@ -65,21 +65,11 @@ func InvokeAction(
 			}
 		}
 
-		iface := orEmpty(config.Interface)
-		operation := orEmpty(config.Operation)
-		ifaceEmpty := iface == ""
-		operationEmpty := operation == ""
-
-		// Grab the incoming function details if needed.
-		if ifaceEmpty || operationEmpty {
-			fn := handler.FromContext(ctx)
-
-			if ifaceEmpty {
-				iface = fn.Interface
-			}
-			if operationEmpty {
-				operation = fn.Operation
-			}
+		var h handler.Handler
+		if config.Handler != nil {
+			h = *config.Handler
+		} else {
+			h = handler.FromContext(ctx)
 		}
 
 		payloadData, err := msgpack.Marshal(input)
@@ -90,7 +80,7 @@ func InvokeAction(
 		metadata := make([]byte, 8)
 		p := payload.New(payloadData, metadata)
 
-		result, err := invoker.RequestResponse(ctx, iface, operation, p).Block()
+		result, err := invoker.RequestResponse(ctx, h, p).Block()
 		if err != nil {
 			return nil, err
 		}

@@ -27,6 +27,7 @@ import (
 	"github.com/nanobus/nanobus/pkg/channel"
 	"github.com/nanobus/nanobus/pkg/config"
 	"github.com/nanobus/nanobus/pkg/errorz"
+	"github.com/nanobus/nanobus/pkg/handler"
 	"github.com/nanobus/nanobus/pkg/resolve"
 	"github.com/nanobus/nanobus/pkg/spec"
 	"github.com/nanobus/nanobus/pkg/transport"
@@ -303,7 +304,10 @@ func NewV1(log logr.Logger, tracer trace.Tracer, config RestV1Config, namespaces
 
 					log.Info("Registering REST handler", "methods", methods, "path", path)
 					r.HandleFunc(path, rest.handler(
-						namespace.Name+"."+service.Name, operation.Name, isActor,
+						handler.Handler{
+							Interface: namespace.Name + "." + service.Name,
+							Operation: operation.Name,
+						}, isActor,
 						hasBody, bodyParamName, queryParams)).Methods(methods...)
 				}
 			}
@@ -313,7 +317,7 @@ func NewV1(log logr.Logger, tracer trace.Tracer, config RestV1Config, namespaces
 	}, nil
 }
 
-func (t *Rest) handler(iface, operation string, isActor bool,
+func (t *Rest) handler(h handler.Handler, isActor bool,
 	hasBody bool, bodyParamName string, queryParams map[string]queryParam) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
@@ -440,7 +444,7 @@ func (t *Rest) handler(iface, operation string, isActor bool,
 			}
 		}
 
-		response, err := t.invoker(ctx, iface, id, operation, input, transport.PerformAuthorization)
+		response, err := t.invoker(ctx, h, id, input, transport.PerformAuthorization)
 		if err != nil {
 			code := http.StatusInternalServerError
 			if errors.Is(err, transport.ErrBadInput) {

@@ -50,9 +50,11 @@ func DecodeAction(
 	return func(ctx context.Context, data actions.Data) (interface{}, error) {
 		parts := strings.Split(config.DataField, ".")
 		var current interface{} = map[string]interface{}(data)
+		var asMap map[string]interface{}
+		var key string
 		for _, part := range parts {
 			var ok bool
-			asMap, ok := current.(map[string]interface{})
+			asMap, ok = current.(map[string]interface{})
 			if !ok {
 				return nil, fmt.Errorf("non-map encountered for property %q", part)
 			}
@@ -60,6 +62,7 @@ func DecodeAction(
 			if !ok {
 				return nil, fmt.Errorf("property %q not set", part)
 			}
+			key = part
 		}
 
 		var dataBytes []byte
@@ -81,7 +84,7 @@ func DecodeAction(
 			data[config.TypeField] = typeName
 		}
 		if config.DataField != "" {
-			data[config.DataField] = decoded
+			asMap[key] = decoded
 		}
 
 		return decoded, nil

@@ -42,15 +42,17 @@ interfaces:
         - name: Return greeting message
           # assign will evaluate a value and assign it
           # to output.
-          uses: assign
+          uses: expr
           with:
-            value: '"Hello, " + input.name'
+            # $ or pipe represent the input data
+            # for this step.
+            value: '"Hello, " + $.name'
 ```
 
 Then run this command from your terminal:
 
 ```shell
-echo '{"name": "World!"}' | nanobus invoke --interface Greeter --operation sayHello
+echo '{"name": "World!"}' | nanobus invoke Greeter::sayHello
 ```
 
 This should return `Hello, World!` is returned as a JSON string. The JSON data returned by NanoBus applications can be piped to other utilities such as [jq](https://stedolan.github.io/jq/).

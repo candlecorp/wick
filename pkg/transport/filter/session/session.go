@@ -68,7 +68,7 @@ func Filter(log logr.Logger, processor runtime.Namespaces, config *SessionV1Conf
 			return ctx, nil
 		}
 
-		result, _, err := processor.Invoke(ctx, config.Handler.Interface, config.Handler.Operation, actions.Data{
+		result, _, err := processor.Invoke(ctx, config.Handler, actions.Data{
 			"sid": sid,
 		})
 		if err != nil {

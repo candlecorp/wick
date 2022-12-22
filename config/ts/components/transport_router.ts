@@ -10,7 +10,9 @@ import {
   ValueExpr
 } from "../nanobus.ts";
 
-export type RouterV1Config = Array<AddRoute>;
+export interface RouterV1Config {
+  routes: AddRoute[];
+}
 
 export function RouterV1(config: RouterV1Config): Component<RouterV1Config> {
   return {
@@ -20,7 +22,7 @@ export function RouterV1(config: RouterV1Config): Component<RouterV1Config> {
 }
 
 export interface AddRoute {
-  methods: string;
+  method: string;
   uri: string;
   encoding?: string;
   handler: Handler;

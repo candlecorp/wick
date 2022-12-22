@@ -13,12 +13,6 @@ alias Handler = string
 "An alias for runtime.Step"
 alias Step = any
 
-type AssignConfig @action("assign") {
-  value: ValueExpr?
-  data:  DataExpr?
-  to:    string?
-}
-
 type AuthorizeConfig @action("authorize") {
   "Condition is the predicate expression for authorization."
   condition: ValueExpr?
@@ -42,6 +36,12 @@ type DecodeConfig @action("decode") {
   codec:     string
   "codecArgs are the arguments to pass to the decode function."
   codecArgs: [any]?
+}
+
+type ExprConfig @action("expr") {
+  value: ValueExpr? @validate("required_without=Data")
+  data:  DataExpr?  @validate("required_without=Value")
+  to:    string?
 }
 
 type FilterConfig @action("filter") {
@@ -77,10 +77,8 @@ type HTTPConfig @action("http") {
 }
 
 type InvokeConfig @action("invoke") {
-  "Name of the interface to invoke."
-  interface: string?
-  "Operation of the interface to invoke."
-  operation: string? 
+  "Name of the handler to invoke."
+  handler: Handler?
   "Input optionally transforms the input sent to the function."
   input: DataExpr?
 }

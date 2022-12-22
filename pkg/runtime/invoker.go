@@ -191,6 +191,8 @@ func (i *Invoker) lookup(ctx context.Context, p payload.Payload) (Runnable, acti
 	c := claims.FromContext(ctx)
 	data := actions.Data{
 		"input":  input,
+		"$":      input,
+		"pipe":   input,
 		"claims": c,
 	}
 
