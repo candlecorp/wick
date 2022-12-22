@@ -97,6 +97,7 @@ import (
 	transport_http "github.com/nanobus/nanobus/pkg/transport/http"
 	transport_httprpc "github.com/nanobus/nanobus/pkg/transport/httprpc"
 	transport_nats "github.com/nanobus/nanobus/pkg/transport/nats"
+	transport_time "github.com/nanobus/nanobus/pkg/transport/time"
 
 	// TRANSPORT - FILTERS
 	"github.com/nanobus/nanobus/pkg/transport/filter"
@@ -292,6 +293,7 @@ func Start(info *Info) error {
 		transport_http.HttpServerV1,
 		transport_httprpc.Load,
 		transport_nats.Load,
+		transport_time.TimeSchedulerV1,
 	)
 
 	// Spec registration

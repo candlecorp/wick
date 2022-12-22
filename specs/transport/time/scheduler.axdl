@@ -1,0 +1,19 @@
+# Copyright 2022 The NanoBus Authors.
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+namespace "nanobus.transport.time"
+
+alias Component = any
+alias Handler = string
+
+type TimeSchedulerV1Config @transport("nanobus.transport.time.scheduler/v1") {
+  schedules: [Schedule]
+}
+
+type Schedule {
+  schedule:    string
+  handler:    Handler
+}
