@@ -3,8 +3,8 @@ config:
   package: runtime
   module: github.com/nanobus/nanobus/pkg/runtime
   logger:
-    import: "github.com/go-logr/logr"
-    interface: "logr.Logger"
+    import: 'github.com/go-logr/logr'
+    interface: 'logr.Logger'
   writeTypeInfo: false
   mapstructureTag: true
   aliases:
@@ -23,3 +23,13 @@ generates:
   generated.go:
     module: ../../codegen/components.ts
     visitorClass: ComponentsVisitor
+  defaults.go:
+    module: ../../codegen/defaults_visitor.ts
+    config:
+      imports:
+        - time
+        - 'gopkg.in/yaml.v3'
+      conversions:
+        - from: StringValue
+          to: Duration
+          do: d,_ := time.ParseDuration(value); return Duration(d)

@@ -153,7 +153,7 @@ func (p *Processor) Initialize(configuration *BusConfig) (err error) {
 		}
 
 		for name, retryMap := range configuration.Resiliency.Retries {
-			retryConfig, err := retry.DecodeConfig(retryMap)
+			retryConfig, err := DecodeConfig(retryMap)
 			if err != nil {
 				return err
 			}
@@ -164,7 +164,7 @@ func (p *Processor) Initialize(configuration *BusConfig) (err error) {
 			cb := breaker.CircuitBreaker{
 				Name: name,
 			}
-			if err := config.Decode(circuitBreaker, &cb); err != nil {
+			if err := config.Decode(circuitBreaker, &cb, DefaultCircuitBreaker()); err != nil {
 				return err
 			}
 			cb.Initialize(p.log)

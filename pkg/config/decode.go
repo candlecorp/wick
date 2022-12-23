@@ -48,10 +48,11 @@ type FromStringer interface {
 //
 // Most of the heavy lifting is handled by the mapstructure library. A custom decoder is used to handle
 // decoding string values to the supported primitives.
-func Decode(input interface{}, output interface{}) error {
+func Decode(input interface{}, output interface{}, defaults ...interface{}) error {
 	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
-		Result:     output,
-		DecodeHook: decodeString,
+		Result:      output,
+		ErrorUnused: true,
+		DecodeHook:  decodeString,
 	})
 	if err != nil {
 		return err
@@ -60,7 +61,10 @@ func Decode(input interface{}, output interface{}) error {
 	if err = decoder.Decode(input); err != nil {
 		return err
 	}
-
+	err = AssertInitialized(output, defaults...)
+	if err != nil {
+		return err
+	}
 	return validate.Struct(output)
 }
 
@@ -123,27 +127,38 @@ func decodeString(
 
 	switch t {
 	case typeDuration:
-		// Check for simple integer values and treat them
-		// as milliseconds
-		if val, err := strconv.Atoi(dataString); err == nil {
-			return time.Duration(val) * time.Millisecond, nil
-		}
-
-		// Convert it by parsing
-		d, err := time.ParseDuration(dataString)
-
-		return d, invalidError(err, "duration", dataString)
+		return DecodeDuration(dataString)
 	case typeTime:
-		// Convert it by parsing
-		t, err := time.Parse(time.RFC3339Nano, dataString)
-		if err == nil {
-			return t, nil
-		}
-		t, err = time.Parse(time.RFC3339, dataString)
-
-		return t, invalidError(err, "time", dataString)
+		return DecodeTime(dataString)
 	}
 
+	return decodeOther(t, data, dataString)
+}
+
+func DecodeDuration(dataString string) (time.Duration, error) {
+	if val, err := strconv.Atoi(dataString); err == nil {
+		return time.Duration(val) * time.Millisecond, nil
+	}
+
+	// Convert it by parsing
+	d, err := time.ParseDuration(dataString)
+
+	return d, invalidError(err, "duration", dataString)
+}
+
+func DecodeTime(dataString string) (time.Time, error) {
+	// Convert it by parsing
+	t, err := time.Parse(time.RFC3339Nano, dataString)
+	if err == nil {
+		return t, nil
+	}
+	t, err = time.Parse(time.RFC3339, dataString)
+
+	return t, invalidError(err, "time", dataString)
+}
+
+func decodeOther(t reflect.Type,
+	data interface{}, dataString string) (interface{}, error) {
 	switch t.Kind() { // nolint: exhaustive
 	case reflect.Uint:
 		val, err := strconv.ParseUint(dataString, 10, 64)

@@ -15,8 +15,6 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
-
-	"github.com/nanobus/nanobus/pkg/config"
 )
 
 // PolicyType denotes if the back off delay should be constant or exponential.
@@ -59,14 +57,6 @@ var DefaultConfig = Config{
 	MaxInterval:         backoff.DefaultMaxInterval,
 	MaxElapsedTime:      backoff.DefaultMaxElapsedTime,
 	MaxRetries:          -1,
-}
-
-// DecodeConfig decodes a Go struct into a `BackOffConfig`.
-func DecodeConfig(input interface{}) (Config, error) {
-	c := DefaultConfig
-	err := config.Decode(input, &c)
-
-	return c, err
 }
 
 // NewBackOff returns a BackOff instance for use with `RetryNotifyRecover`

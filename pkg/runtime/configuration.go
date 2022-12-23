@@ -14,18 +14,12 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/go-logr/logr"
-	"gopkg.in/yaml.v3"
 
 	rootConfig "github.com/nanobus/nanobus/pkg/config"
 )
-
-func DefaultResourcesConfig() ResourcesConfig {
-	return ResourcesConfig{}
-}
 
 func LoadResourcesYAML(in io.Reader) (*ResourcesConfig, error) {
 	data, err := io.ReadAll(in)
@@ -33,17 +27,12 @@ func LoadResourcesYAML(in io.Reader) (*ResourcesConfig, error) {
 		return nil, err
 	}
 
-	configString := os.Expand(string(data), envReplace)
-	r := strings.NewReader(configString)
 	c := DefaultResourcesConfig()
-	if err := yaml.NewDecoder(r).Decode(&c); err != nil {
+
+	if err := rootConfig.LoadYAML(string(data), &c); err != nil {
 		return nil, err
 	}
 	return &c, nil
-}
-
-func DefaultBusConfig() BusConfig {
-	return BusConfig{}
 }
 
 func LoadBusYAML(in io.Reader) (*BusConfig, error) {
@@ -52,26 +41,13 @@ func LoadBusYAML(in io.Reader) (*BusConfig, error) {
 		return nil, err
 	}
 
-	configString := os.Expand(string(data), envReplace)
-	r := strings.NewReader(configString)
 	c := DefaultBusConfig()
-	if err := yaml.NewDecoder(r).Decode(&c); err != nil {
+
+	if err := rootConfig.LoadYAML(string(data), &c); err != nil {
 		return nil, err
 	}
-	return &c, nil
-}
 
-// Replaces ${env:var} or $env:var in the string according to the values
-// of the current environment variables.
-func envReplace(key string) string {
-	var value string
-	if strings.HasPrefix(key, "env:") {
-		value = os.Getenv(key[4:])
-	}
-	if value == "" {
-		return "$" + key
-	}
-	return value
+	return &c, nil
 }
 
 type FilenameConfig struct {
