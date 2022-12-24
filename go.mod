@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	aidanwoods.dev/go-paseto v1.1.3
-	github.com/MicahParks/keyfunc v1.7.0
+	github.com/MicahParks/keyfunc v1.8.0
 	github.com/actgardner/gogen-avro/v10 v10.2.1
 	github.com/agrea/ptr v0.0.0-20180711073057-77a518d99b7b
 	github.com/alecthomas/kong v0.7.1
@@ -12,7 +12,7 @@ require (
 	github.com/apexlang/apex-go v0.1.4
 	github.com/cenkalti/backoff/v4 v4.2.0
 	github.com/dapr/dapr v1.9.5
-	github.com/getkin/kin-openapi v0.110.0
+	github.com/getkin/kin-openapi v0.112.0
 	github.com/go-logr/logr v1.2.3
 	github.com/go-logr/zapr v1.2.3
 	github.com/go-playground/locales v0.14.0
@@ -36,8 +36,8 @@ require (
 	github.com/mattn/anko v0.1.9
 	github.com/mattn/go-colorable v0.1.13
 	github.com/mitchellh/mapstructure v1.5.1-0.20220423185008-bf980b35cac4
-	github.com/nanobus/iota/go v0.0.0-20221209134246-c5a8a0d7235b
-	github.com/nats-io/nats.go v1.21.0
+	github.com/nanobus/iota/go v0.0.0-20221222230328-ee450f4df428
+	github.com/nats-io/nats.go v1.22.1
 	github.com/oklog/run v1.1.0
 	github.com/opencontainers/go-digest v1.0.0
 	github.com/opencontainers/image-spec v1.1.0-rc2
@@ -81,7 +81,7 @@ require (
 	github.com/go-openapi/jsonpointer v0.19.5 // indirect
 	github.com/go-openapi/swag v0.22.3 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
-	github.com/grpc-ecosystem/grpc-gateway/v2 v2.14.0 // indirect
+	github.com/grpc-ecosystem/grpc-gateway/v2 v2.15.0 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/invopop/yaml v0.2.0 // indirect
@@ -103,7 +103,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826 // indirect
-	github.com/nats-io/nats-server/v2 v2.9.9 // indirect
+	github.com/nats-io/nats-server/v2 v2.9.10 // indirect
 	github.com/nats-io/nkeys v0.3.0 // indirect
 	github.com/nats-io/nuid v1.0.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
@@ -112,7 +112,7 @@ require (
 	github.com/shopspring/decimal v1.3.1 // indirect
 	github.com/stoewer/go-strcase v1.2.0 // indirect
 	github.com/tetratelabs/tinymem v0.1.0 // indirect
-	github.com/tetratelabs/wazero v1.0.0-pre.4 // indirect
+	github.com/tetratelabs/wazero v1.0.0-pre.5 // indirect
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
 	github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb // indirect
 	github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415 // indirect

@@ -40,8 +40,8 @@ interfaces:
     sayHello:
       steps:
         - name: Return greeting message
-          # assign will evaluate a value and assign it
-          # to output.
+          # expr will evaluate a value and assign it
+          # to the output of this pipeline.
           uses: expr
           with:
             # $ or pipe represent the input data
