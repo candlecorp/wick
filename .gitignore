@@ -3,3 +3,4 @@
 /lib
 *.pem
 go.work.sum
+/archive
