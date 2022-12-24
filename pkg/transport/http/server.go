@@ -82,8 +82,8 @@ func HttpServerV1Loader(ctx context.Context, with interface{}, resolver resolve.
 		middlewares[i] = middleware
 	}
 
-	routers := make([]router.Router, len(c.Routes))
-	for i, route := range c.Routes {
+	routers := make([]router.Router, len(c.Routers))
+	for i, route := range c.Routers {
 		r := routerRegistry[route.Uses]
 		router, err := r(ctx, route.With, resolver)
 		if err != nil {

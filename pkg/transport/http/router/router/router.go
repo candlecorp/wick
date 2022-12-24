@@ -91,7 +91,11 @@ func NewV1(log logr.Logger, invoker transport.Invoker, codecMap channel.Codecs, 
 				"uri", path.URI,
 				"methods", path.Method,
 				"handler", path.Handler.String())
-			r.HandleFunc(path.URI, router.handler(path.Handler, desiredCodec)).
+			raw := false
+			if path.Raw != nil {
+				raw = *path.Raw
+			}
+			r.HandleFunc(path.URI, router.handler(path.Handler, raw, desiredCodec)).
 				Methods(path.Method)
 		}
 
@@ -99,7 +103,7 @@ func NewV1(log logr.Logger, invoker transport.Invoker, codecMap channel.Codecs, 
 	}
 }
 
-func (t *Router) handler(h handler.Handler, desiredCodec channel.Codec) http.HandlerFunc {
+func (t *Router) handler(h handler.Handler, raw bool, desiredCodec channel.Codec) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		defer r.Body.Close()
@@ -138,17 +142,31 @@ func (t *Router) handler(h handler.Handler, desiredCodec channel.Codec) http.Han
 
 		var body interface{}
 		if len(requestBytes) > 0 {
-			var body interface{}
 			if err := codec.Decode(requestBytes, &body); err != nil {
 				t.handleError(err, codec, r, w, http.StatusInternalServerError)
 				return
 			}
 		}
 
-		input := map[string]interface{}{
-			"path":  vars,
-			"query": queryValues,
-			"body":  body,
+		input := map[string]interface{}{}
+		if raw {
+			input["path"] = vars
+			input["query"] = queryValues
+			input["body"] = body
+		} else {
+			if reflect.TypeOf(body) == reflect.TypeOf(input) {
+				input = body.(map[string]interface{})
+			}
+			for k, v := range queryValues {
+				if len(v) == 1 {
+					input[k] = v[0]
+				} else {
+					input[k] = v
+				}
+			}
+			for k, v := range vars {
+				input[k] = v
+			}
 		}
 
 		if desiredCodec != nil {

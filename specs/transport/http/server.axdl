@@ -11,5 +11,5 @@ alias Component = any
 type HttpServerV1Config @transport("nanobus.transport.http.server/v1") {
   address:    string
   middleware: [Component]?
-  routes:     [Component]?
+  routers:    [Component]?
 }

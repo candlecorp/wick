@@ -19,5 +19,6 @@ type AddRoute struct {
 	Method   string          `json:"method" yaml:"method" msgpack:"method" mapstructure:"method" validate:"required"`
 	URI      string          `json:"uri" yaml:"uri" msgpack:"uri" mapstructure:"uri" validate:"required"`
 	Encoding *string         `json:"encoding,omitempty" yaml:"encoding,omitempty" msgpack:"encoding,omitempty" mapstructure:"encoding"`
+	Raw      *bool           `json:"raw,omitempty" yaml:"raw,omitempty" msgpack:"raw,omitempty" mapstructure:"raw"`
 	Handler  handler.Handler `json:"handler" yaml:"handler" msgpack:"handler" mapstructure:"handler" validate:"required"`
 }

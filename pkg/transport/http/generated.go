@@ -10,7 +10,7 @@ import (
 type HttpServerV1Config struct {
 	Address    string              `json:"address" yaml:"address" msgpack:"address" mapstructure:"address" validate:"required"`
 	Middleware []runtime.Component `json:"middleware,omitempty" yaml:"middleware,omitempty" msgpack:"middleware,omitempty" mapstructure:"middleware"`
-	Routes     []runtime.Component `json:"routes,omitempty" yaml:"routes,omitempty" msgpack:"routes,omitempty" mapstructure:"routes"`
+	Routers    []runtime.Component `json:"routers,omitempty" yaml:"routers,omitempty" msgpack:"routers,omitempty" mapstructure:"routers"`
 }
 
 func HttpServerV1() (string, transport.Loader) {

@@ -16,5 +16,6 @@ type AddRoute {
   method: string
   uri: string
   encoding: string?
+  raw: bool?
   handler: Handler
 }
