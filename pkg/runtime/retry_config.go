@@ -1,6 +1,7 @@
 package runtime
 
 import (
+	"errors"
 	"time"
 
 	"github.com/nanobus/nanobus/pkg/config"
@@ -13,6 +14,7 @@ func DecodeConfig(input interface{}) (retry.Config, error) {
 	c := Backoff{}
 	err := config.Decode(input, &c)
 	if c.Constant != nil {
+		def.Policy = retry.PolicyConstant
 		duration, err := config.DecodeDuration(c.Constant.Duration)
 		if err != nil {
 			return def, nil
@@ -22,6 +24,7 @@ func DecodeConfig(input interface{}) (retry.Config, error) {
 			def.MaxRetries = int64(*c.Constant.MaxRetries)
 		}
 	} else if c.Exponential != nil {
+		def.Policy = retry.PolicyExponential
 		def.InitialInterval = time.Duration(c.Exponential.InitialInterval)
 		def.MaxInterval = time.Duration(c.Exponential.MaxInterval)
 		def.MaxElapsedTime = time.Duration(c.Exponential.MaxElapsedTime)
@@ -31,6 +34,8 @@ func DecodeConfig(input interface{}) (retry.Config, error) {
 		}
 		def.Multiplier = float32(c.Exponential.Multiplier)
 		def.RandomizationFactor = float32(c.Exponential.RandomizationFactor)
+	} else {
+		return def, errors.New("invalid retry policy configuration: not constant or exponential")
 	}
 
 	return def, err
