@@ -34,9 +34,9 @@ type ResourcesConfig struct {
 
 // The main Iota component/application configuration.
 type BusConfig struct {
-	// The Iota identifier.
+	// The Application identifier.
 	ID string `json:"id" yaml:"id" msgpack:"id" mapstructure:"id" validate:"required"`
-	// The Iota version.
+	// The Application version.
 	Version string `json:"version" yaml:"version" msgpack:"version" mapstructure:"version" validate:"required"`
 	// The main code binary (wasm or native).
 	Main *string `json:"main,omitempty" yaml:"main,omitempty" msgpack:"main,omitempty" mapstructure:"main"`
@@ -77,6 +77,28 @@ type BusConfig struct {
 	// application.
 	Providers Interfaces               `json:"providers,omitempty" yaml:"providers,omitempty" msgpack:"providers,omitempty" mapstructure:"providers"`
 	Errors    map[string]ErrorTemplate `json:"errors,omitempty" yaml:"errors,omitempty" msgpack:"errors,omitempty" mapstructure:"errors" validate:"dive"`
+	// If set, the base path or URL with which to resolve relative dependencies
+	BaseURL *string `json:"baseUrl,omitempty" yaml:"baseUrl,omitempty" msgpack:"baseUrl,omitempty" mapstructure:"baseUrl"`
+}
+
+// The configuration for an iota.
+type IotaConfig struct {
+	// The Iota version.
+	Version string `json:"version" yaml:"version" msgpack:"version" mapstructure:"version" validate:"required"`
+	// The iota's executable entrypoint.
+	Main *string `json:"main,omitempty" yaml:"main,omitempty" msgpack:"main,omitempty" mapstructure:"main"`
+	// The iota's interface definition.
+	Spec *string `json:"spec,omitempty" yaml:"spec,omitempty" msgpack:"spec,omitempty" mapstructure:"spec"`
+	// Resources are externally configured sources and receivers of data (DB, REST
+	// endpoint).
+	Resources []string `json:"resources" yaml:"resources" msgpack:"resources" mapstructure:"resources" validate:"required"`
+	// Interface composed from declarative pipelines.
+	Interfaces Interfaces `json:"interfaces" yaml:"interfaces" msgpack:"interfaces" mapstructure:"interfaces" validate:"required"`
+	// Pipelines that preform data access (typically using resources) on behalf of the
+	// application.
+	Providers Interfaces `json:"providers" yaml:"providers" msgpack:"providers" mapstructure:"providers" validate:"required"`
+	// If set, the base path or URL with which to resolve relative dependencies
+	BaseURL *string `json:"baseUrl,omitempty" yaml:"baseUrl,omitempty" msgpack:"baseUrl,omitempty" mapstructure:"baseUrl"`
 }
 
 // Package defines the contents of the OCI image.

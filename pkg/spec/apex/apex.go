@@ -10,6 +10,7 @@ package apex
 
 import (
 	"context"
+	"net/url"
 	"os"
 	"strings"
 
@@ -42,7 +43,12 @@ func Loader(ctx context.Context, with interface{}, resolveAs resolve.ResolveAs) 
 		return nil, err
 	}
 
-	specBytes, err := os.ReadFile(string(c.Filename))
+	targetUrl, err := url.Parse(string(c.Filename))
+	if err != nil {
+		return nil, err
+	}
+	specBytes, err := os.ReadFile(targetUrl.Path)
+
 	if err != nil {
 		return nil, err
 	}

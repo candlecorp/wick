@@ -22,9 +22,7 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
-	"github.com/go-logr/zapr"
 	"github.com/joho/godotenv"
-	"github.com/mattn/go-colorable"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
@@ -43,11 +41,12 @@ import (
 	// NANOBUS CORE
 	"github.com/nanobus/nanobus/pkg/channel"
 	"github.com/nanobus/nanobus/pkg/coalesce"
+	"github.com/nanobus/nanobus/pkg/config"
 	"github.com/nanobus/nanobus/pkg/errorz"
 	"github.com/nanobus/nanobus/pkg/handler"
 	"github.com/nanobus/nanobus/pkg/initialize"
+	"github.com/nanobus/nanobus/pkg/logger"
 	"github.com/nanobus/nanobus/pkg/mesh"
-	"github.com/nanobus/nanobus/pkg/oci"
 	"github.com/nanobus/nanobus/pkg/resolve"
 	"github.com/nanobus/nanobus/pkg/resource"
 	"github.com/nanobus/nanobus/pkg/runtime"
@@ -173,20 +172,25 @@ func (e *Engine) LoadConfig(busConfig *runtime.BusConfig) error {
 	}
 
 	if busConfig.Spec != nil {
-		e.log.Info("Loading interface specification", "filename", *busConfig.Spec)
-		interfaceExt := filepath.Ext(*busConfig.Spec)
+		specFile, err := config.NormalizeUrl(*busConfig.Spec, *busConfig.BaseURL)
+		if err != nil {
+			e.log.Error(err, "Error parsing spec into URI", "input", busConfig.Spec)
+			return err
+		}
+		e.log.Info("Loading interface specification", "filename", specFile)
+		interfaceExt := filepath.Ext(specFile)
 		var nss []*spec.Namespace
 		switch interfaceExt {
 		case ".apex", ".axdl", ".aidl", ".apexlang":
 			nss, err = spec_apex.Loader(e.ctx, map[string]interface{}{
-				"filename": *busConfig.Spec,
+				"filename": specFile,
 			}, e.resolveAs)
 		default:
-			e.log.Error(err, "Unknown spec type", "filename", *busConfig.Spec)
+			e.log.Error(err, "Unknown spec type", "filename", specFile)
 			return err
 		}
 		if err != nil {
-			e.log.Error(err, "Error loading spec", "filename", *busConfig.Spec)
+			e.log.Error(err, "Error loading spec", "filename", specFile)
 			return err
 		}
 		for _, ns := range nss {
@@ -195,20 +199,25 @@ func (e *Engine) LoadConfig(busConfig *runtime.BusConfig) error {
 	}
 
 	if busConfig.Main != nil {
+		file, err := config.NormalizeUrl(*busConfig.Main, *busConfig.BaseURL)
+		if err != nil {
+			e.log.Error(err, "Error parsing spec into URI", "input", busConfig.Main)
+			return err
+		}
 		var computeInvoker compute.Invoker
-		mainExt := filepath.Ext(*busConfig.Main)
-		e.log.Info("Loading main program", "filename", *busConfig.Main)
+		mainExt := filepath.Ext(file)
+		e.log.Info("Loading main program", "filename", file)
 		switch mainExt {
 		case ".wasm":
 			computeInvoker, err = compute_wasmrs.Loader(e.ctx, map[string]interface{}{
-				"filename": *busConfig.Main,
+				"filename": file,
 			}, e.resolveAs)
 		default:
-			e.log.Error(err, "Unknown program type", "filename", *busConfig.Main)
+			e.log.Error(err, "Unknown program type", "filename", file)
 			return err
 		}
 		if err != nil {
-			e.log.Error(err, "Error loading program", "filename", *busConfig.Main)
+			e.log.Error(err, "Error loading program", "filename", file)
 			return err
 		}
 		e.m.Link(computeInvoker)
@@ -246,21 +255,7 @@ func Start(info *Info) error {
 		logLevel = zap.ErrorLevel
 	}
 
-	// Initialize logger
-	zapConfig := zap.NewDevelopmentEncoderConfig()
-	zapConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
-	zapLog := zap.New(zapcore.NewCore(
-		zapcore.NewConsoleEncoder(zapConfig),
-		zapcore.AddSync(colorable.NewColorableStdout()),
-		logLevel,
-	))
-	//zapLog, err := zapConfig.Build()
-	//zapLog, err := zap.NewProduction()
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// zapLog := zap.NewExample()
-	log := zapr.NewLogger(zapLog)
+	log := logger.GetLogger(logLevel)
 
 	if info.DeveloperMode && info.Mode == ModeService {
 		log.Info("Running in Developer Mode!")
@@ -273,6 +268,17 @@ func Start(info *Info) error {
 	if err != nil {
 		log.Error(err, "could not load configuration", "file", info.BusFile)
 		return err
+	}
+
+	if busConfig.BaseURL == nil {
+		// If we don't have a BaseUrl set, use CWD
+		baseUrl, err := os.Getwd()
+		if err != nil {
+			// If we can't get the CWD, set to empty string and let the OS
+			// sort it out
+			baseUrl = ""
+		}
+		busConfig.BaseURL = &baseUrl
 	}
 
 	var resourcesConfig *runtime.ResourcesConfig
@@ -561,44 +567,24 @@ func Start(info *Info) error {
 		return err
 	}
 
-	dir, err := os.Getwd()
-	if err != nil {
-		return err
-	}
-	for instanceID, include := range busConfig.Includes {
-		if oci.IsImageReference(include.Ref) {
-			return errors.New("references not currently supported")
-		}
-		log.Info("Loading include", "name", instanceID, "ref", include.Ref)
-		path := filepath.Join(dir, include.Ref)
-		var busFile, parentDir string
-		info, err := os.Stat(path)
+	for name, include := range busConfig.Includes {
+		config, err := runtime.LoadIotaConfig(include.Ref, *busConfig.BaseURL)
 		if err != nil {
+			log.Error(err, "Could not read Iota config")
 			return err
 		}
-		if info.IsDir() {
-			parentDir = path
-			busFile = filepath.Join(path, "bus.yaml")
-		} else {
-			busFile = path
-			parentDir = filepath.Dir(path)
-		}
-		if err := os.Chdir(parentDir); err != nil {
-			return err
-		}
-
-		// Load the bus configuration
-		includedConfig, err := loadBusConfig(busFile, log)
-		if err != nil {
-			log.Error(err, "could not load configuration", "file", busFile)
-			return err
+		includedConfig := &runtime.BusConfig{
+			ID:         name,
+			Resources:  config.Resources,
+			Version:    config.Version,
+			Main:       config.Main,
+			Spec:       config.Spec,
+			Interfaces: config.Interfaces,
+			Providers:  config.Providers,
+			BaseURL:    config.BaseURL,
 		}
 
 		if err := e.LoadConfig(includedConfig); err != nil {
-			return err
-		}
-
-		if err := os.Chdir(dir); err != nil {
 			return err
 		}
 	}

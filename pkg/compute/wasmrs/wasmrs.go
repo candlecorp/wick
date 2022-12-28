@@ -10,6 +10,7 @@ package wasmrs
 
 import (
 	"context"
+	"net/url"
 	"os"
 
 	"github.com/nanobus/iota/go/transport/wasmrs/host"
@@ -37,7 +38,12 @@ func Loader(ctx context.Context, with interface{}, resolver resolve.ResolveAs) (
 		return nil, err
 	}
 
-	source, err := os.ReadFile(string(c.Filename))
+	targetUrl, err := url.Parse(string(c.Filename))
+	if err != nil {
+		return nil, err
+	}
+
+	source, err := os.ReadFile(targetUrl.Path)
 	if err != nil {
 		return nil, err
 	}
