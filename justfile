@@ -24,6 +24,9 @@ install:
 	CGO_ENABLED=0 go install -buildvcs=false -ldflags="-X 'main.Version={{VERSION}}'" ./cmd/...
 	@echo "Install {{BINARY}} complete. Make sure {{GOPATH}}/bin is in your path."
 
+codegen:
+  for file in `find . -name 'apex.yaml'`; do echo $(cd $(dirname $file); apex generate); done
+
 clean:
 	rm -rf {{BUILDDIR}}
 
