@@ -24,7 +24,7 @@ type ResourcesConfig {
 "The main Iota component/application configuration."
 type BusConfig {
   "The Iota identifier."
-  applicationId: string
+  id: string
   "The Iota version."
   version: string
   "The main code binary (wasm or native)."

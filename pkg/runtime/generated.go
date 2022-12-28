@@ -35,7 +35,7 @@ type ResourcesConfig struct {
 // The main Iota component/application configuration.
 type BusConfig struct {
 	// The Iota identifier.
-	ApplicationID string `json:"applicationId" yaml:"applicationId" msgpack:"applicationId" mapstructure:"applicationId" validate:"required"`
+	ID string `json:"id" yaml:"id" msgpack:"id" mapstructure:"id" validate:"required"`
 	// The Iota version.
 	Version string `json:"version" yaml:"version" msgpack:"version" mapstructure:"version" validate:"required"`
 	// The main code binary (wasm or native).
