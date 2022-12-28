@@ -49,7 +49,7 @@ export default class DefaultsVisitor extends BaseVisitor {
     super.triggerTypeBefore(context);
     this.write(
       formatComment(
-        `//`,
+        `// `,
         `Returns a ${type.name} instance with default fields populated`
       )
     );
@@ -101,10 +101,10 @@ export default class DefaultsVisitor extends BaseVisitor {
     this.write(`
 return obj\n}
 
-func (h *${type.name}) UnmarshalYAML(value *yaml.Node) error {
+func (h *${type.name}) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	type alias ${type.name}
 	raw := alias(Default${type.name}())
-	if err := value.Decode(&raw); err != nil {
+	if err := unmarshal(&raw); err != nil {
 		return err
 	}
 	*h = ${type.name}(raw)

@@ -153,7 +153,7 @@ func (p *Processor) Initialize(configuration *BusConfig) (err error) {
 		}
 
 		for name, retryMap := range configuration.Resiliency.Retries {
-			retryConfig, err := DecodeConfig(retryMap)
+			retryConfig, err := ConvertBackoffConfig(retryMap)
 			if err != nil {
 				return err
 			}

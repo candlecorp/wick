@@ -8,18 +8,23 @@
 
 import {
   Annotated,
+  BaseVisitor,
   Context,
   Kind,
   Named,
+  Optional,
   Primitive,
   PrimitiveName,
   Writer,
 } from "./deps/core.ts";
 import {
+  expandType,
+  fieldName,
   ImportsVisitor,
   InterfacesVisitor,
   StructVisitor,
 } from "./deps/apex.ts";
+import { formatComment, typeName } from "./deps/utils.ts";
 
 interface Validate {
   value: string;
@@ -90,19 +95,27 @@ class ConfigStructVisitor extends StructVisitor {
     field.annotation("validate", (a) => {
       const v = a.convert<Validate>();
       if (validate.length > 0) {
-        validate += " ";
+        validate += ",";
       }
       validate += v.value;
     });
-    if (
-      validate.length == 0 &&
-      field.type.kind != Kind.Optional &&
-      !(
-        field.type.kind == Kind.Primitive &&
-        (field.type as Primitive).name == PrimitiveName.Bool
-      )
-    ) {
-      validate += `required`;
+    if (validate.length == 0) {
+      let t = field.type;
+      if (t.kind == Kind.Optional) {
+        t = (t as Optional).type;
+      } else if (
+        (t.kind == Kind.Primitive &&
+          (t as Primitive).name == PrimitiveName.String)
+      ) {
+        validate += `required`;
+      }
+
+      if (t.kind == Kind.Map || t.kind == Kind.List) {
+        if (validate.length > 0) {
+          validate += ",";
+        }
+        validate += "dive";
+      }
     }
     if (validate.length > 0) {
       tags += ` validate:"${validate}"`;
@@ -111,11 +124,60 @@ class ConfigStructVisitor extends StructVisitor {
   }
 }
 
+interface UnionKey {
+  value: string;
+}
+
+class ConfigUnionVisitor extends BaseVisitor {
+  visitUnion(context: Context): void {
+    const tick = "`";
+    const { union } = context;
+    this.write(formatComment("// ", union.description));
+    this.write(`type ${union.name} struct {\n`);
+    union.types.forEach((t) => {
+      let tname = typeName(t);
+      const annotated = t as Annotated;
+      if (annotated.annotation) {
+        annotated.annotation("unionKey", (a) => {
+          tname = a.convert<UnionKey>().value;
+        });
+      }
+
+      const without = union.types.map((t) => {
+        const annotated = t as Annotated;
+        let tname = typeName(t);
+        if (annotated.annotation) {
+          annotated.annotation("unionKey", (a) => {
+            tname = a.convert<UnionKey>().value;
+          });
+        }
+        return tname;
+      }).filter((t) => t != tname).map((t) =>
+        fieldName(undefined as unknown as Annotated, t)
+      ).join(",");
+
+      const expandedName = expandType(t);
+      this.write(
+        `${
+          fieldName(
+            undefined as unknown as Annotated,
+            tname,
+          )
+        } *${expandedName} ${tick}json:"${tname},omitempty" yaml:"${tname},omitempty" msgpack:"${tname},omitempty" validate:"required_without=${without}`,
+      );
+      this.triggerCallbacks(context, "UnionStructTags");
+      this.write(`"${tick}\n`);
+    });
+    this.write(`}\n\n`);
+  }
+}
+
 export class ComponentsVisitor extends InterfacesVisitor {
   constructor(writer: Writer) {
     super(writer);
     this.importsVisitor = () => new ComponentImportsVisitor(writer);
     this.structVisitor = () => new ConfigStructVisitor(writer);
+    this.unionVisitor = () => new ConfigUnionVisitor(writer);
   }
 
   visitAlias(context: Context): void {

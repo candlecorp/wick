@@ -4,39 +4,32 @@ import (
 	"errors"
 	"time"
 
-	"github.com/nanobus/nanobus/pkg/config"
 	"github.com/nanobus/nanobus/pkg/resiliency/retry"
 )
 
-// DecodeConfig decodes a Go struct into a `BackOffConfig`.
-func DecodeConfig(input interface{}) (retry.Config, error) {
+// ConvertBackoffConfig decodes a Go struct into a `retry.Config`.
+func ConvertBackoffConfig(b Backoff) (retry.Config, error) {
 	def := retry.DefaultConfig
-	c := Backoff{}
-	err := config.Decode(input, &c)
-	if c.Constant != nil {
+	if b.Constant != nil {
 		def.Policy = retry.PolicyConstant
-		duration, err := config.DecodeDuration(c.Constant.Duration)
-		if err != nil {
-			return def, nil
+		def.Duration = time.Duration(b.Constant.Duration)
+		if b.Constant.MaxRetries != nil {
+			def.MaxRetries = int64(*b.Constant.MaxRetries)
 		}
-		def.Duration = duration
-		if c.Constant.MaxRetries != nil {
-			def.MaxRetries = int64(*c.Constant.MaxRetries)
-		}
-	} else if c.Exponential != nil {
+	} else if b.Exponential != nil {
 		def.Policy = retry.PolicyExponential
-		def.InitialInterval = time.Duration(c.Exponential.InitialInterval)
-		def.MaxInterval = time.Duration(c.Exponential.MaxInterval)
-		def.MaxElapsedTime = time.Duration(c.Exponential.MaxElapsedTime)
+		def.InitialInterval = time.Duration(b.Exponential.InitialInterval)
+		def.MaxInterval = time.Duration(b.Exponential.MaxInterval)
+		def.MaxElapsedTime = time.Duration(b.Exponential.MaxElapsedTime)
 
-		if c.Exponential.MaxRetries != nil {
-			def.MaxRetries = int64(*c.Exponential.MaxRetries)
+		if b.Exponential.MaxRetries != nil {
+			def.MaxRetries = int64(*b.Exponential.MaxRetries)
 		}
-		def.Multiplier = float32(c.Exponential.Multiplier)
-		def.RandomizationFactor = float32(c.Exponential.RandomizationFactor)
+		def.Multiplier = float32(b.Exponential.Multiplier)
+		def.RandomizationFactor = float32(b.Exponential.RandomizationFactor)
 	} else {
-		return def, errors.New("invalid retry policy configuration: not constant or exponential")
+		return def, errors.New("constant or exponential must be configured")
 	}
 
-	return def, err
+	return def, nil
 }

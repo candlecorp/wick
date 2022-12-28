@@ -61,10 +61,6 @@ func Decode(input interface{}, output interface{}, defaults ...interface{}) erro
 	if err = decoder.Decode(input); err != nil {
 		return err
 	}
-	err = AssertInitialized(output, defaults...)
-	if err != nil {
-		return err
-	}
 	return validate.Struct(output)
 }
 

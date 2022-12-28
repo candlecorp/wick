@@ -27,9 +27,9 @@ type Operations map[string]Pipeline
 // The resource configuration that is tied to an application at runtime.
 type ResourcesConfig struct {
 	// A mapping of resource name to component configuration.
-	Resources map[string]Component `json:"resources" yaml:"resources" msgpack:"resources" mapstructure:"resources" validate:"required"`
+	Resources map[string]Component `json:"resources" yaml:"resources" msgpack:"resources" mapstructure:"resources" validate:"dive"`
 	// A mapping of Itoa to resource links.
-	ResourceLinks map[string]ResourceLinks `json:"resourceLinks" yaml:"resourceLinks" msgpack:"resourceLinks" mapstructure:"resourceLinks" validate:"required"`
+	ResourceLinks map[string]ResourceLinks `json:"resourceLinks,omitempty" yaml:"resourceLinks,omitempty" msgpack:"resourceLinks,omitempty" mapstructure:"resourceLinks" validate:"dive"`
 }
 
 // The main Iota component/application configuration.
@@ -46,25 +46,25 @@ type BusConfig struct {
 	Package *Package `json:"package,omitempty" yaml:"package,omitempty" msgpack:"package,omitempty" mapstructure:"package"`
 	// Resources are externally configured sources and receivers of data (DB, REST
 	// endpoint).
-	Resources []string `json:"resources" yaml:"resources" msgpack:"resources" mapstructure:"resources" validate:"required"`
+	Resources []string `json:"resources,omitempty" yaml:"resources,omitempty" msgpack:"resources,omitempty" mapstructure:"resources" validate:"dive"`
 	// Other Iotas that this Iota depends on using.
-	Includes map[string]Reference `json:"includes" yaml:"includes" msgpack:"includes" mapstructure:"includes" validate:"required"`
+	Includes map[string]Reference `json:"includes,omitempty" yaml:"includes,omitempty" msgpack:"includes,omitempty" mapstructure:"includes" validate:"dive"`
 	// Tracing configures an Open Telemetry span exporter.
 	Tracing *Component  `json:"tracing,omitempty" yaml:"tracing,omitempty" msgpack:"tracing,omitempty" mapstructure:"tracing"`
-	Specs   []Component `json:"specs" yaml:"specs" msgpack:"specs" mapstructure:"specs" validate:"required"`
-	Compute []Component `json:"compute" yaml:"compute" msgpack:"compute" mapstructure:"compute" validate:"required"`
+	Specs   []Component `json:"specs,omitempty" yaml:"specs,omitempty" msgpack:"specs,omitempty" mapstructure:"specs" validate:"dive"`
+	Compute []Component `json:"compute,omitempty" yaml:"compute,omitempty" msgpack:"compute,omitempty" mapstructure:"compute" validate:"dive"`
 	// Resiliency defines policies for fault tolerance.
 	Resiliency *Resiliency `json:"resiliency,omitempty" yaml:"resiliency,omitempty" msgpack:"resiliency,omitempty" mapstructure:"resiliency"`
 	// Codecs configure how data formats are encoded (and persisted) and decoded (and
 	// received).
-	Codecs map[string]Component `json:"codecs" yaml:"codecs" msgpack:"codecs" mapstructure:"codecs" validate:"required"`
+	Codecs map[string]Component `json:"codecs,omitempty" yaml:"codecs,omitempty" msgpack:"codecs,omitempty" mapstructure:"codecs" validate:"dive"`
 	// Initializers handle startup and initialization tasks which execute and freed up.
-	Initializers map[string]Component `json:"initializers" yaml:"initializers" msgpack:"initializers" mapstructure:"initializers" validate:"required"`
+	Initializers map[string]Component `json:"initializers,omitempty" yaml:"initializers,omitempty" msgpack:"initializers,omitempty" mapstructure:"initializers" validate:"dive"`
 	// Transports configure inbound communication mechanisms from clients (e.g. HTTP or
 	// gRPC) or event sources (e.g Message brokers).
-	Transports map[string]Component `json:"transports" yaml:"transports" msgpack:"transports" mapstructure:"transports" validate:"required"`
+	Transports map[string]Component `json:"transports,omitempty" yaml:"transports,omitempty" msgpack:"transports,omitempty" mapstructure:"transports" validate:"dive"`
 	// Filters process received data immediately after the transports.
-	Filters []Component `json:"filters" yaml:"filters" msgpack:"filters" mapstructure:"filters" validate:"required"`
+	Filters []Component `json:"filters,omitempty" yaml:"filters,omitempty" msgpack:"filters,omitempty" mapstructure:"filters" validate:"dive"`
 	// Processing pipeline for pre-authoration actions.
 	Preauth Interfaces `json:"preauth,omitempty" yaml:"preauth,omitempty" msgpack:"preauth,omitempty" mapstructure:"preauth"`
 	// Authorization rules for interfaces.
@@ -72,11 +72,11 @@ type BusConfig struct {
 	// Processing pipeline for post-authoration actions.
 	Postauth Interfaces `json:"postauth,omitempty" yaml:"postauth,omitempty" msgpack:"postauth,omitempty" mapstructure:"postauth"`
 	// Interface composed from declarative pipelines.
-	Interfaces Interfaces `json:"interfaces" yaml:"interfaces" msgpack:"interfaces" mapstructure:"interfaces" validate:"required"`
+	Interfaces Interfaces `json:"interfaces,omitempty" yaml:"interfaces,omitempty" msgpack:"interfaces,omitempty" mapstructure:"interfaces"`
 	// Pipelines that preform data access (typically using resources) on behalf of the
 	// application.
-	Providers Interfaces               `json:"providers" yaml:"providers" msgpack:"providers" mapstructure:"providers" validate:"required"`
-	Errors    map[string]ErrorTemplate `json:"errors" yaml:"errors" msgpack:"errors" mapstructure:"errors" validate:"required"`
+	Providers Interfaces               `json:"providers,omitempty" yaml:"providers,omitempty" msgpack:"providers,omitempty" mapstructure:"providers"`
+	Errors    map[string]ErrorTemplate `json:"errors,omitempty" yaml:"errors,omitempty" msgpack:"errors,omitempty" mapstructure:"errors" validate:"dive"`
 }
 
 // Package defines the contents of the OCI image.
@@ -86,7 +86,7 @@ type Package struct {
 	// The OCI registry organization
 	Org *string `json:"org,omitempty" yaml:"org,omitempty" msgpack:"org,omitempty" mapstructure:"org"`
 	// The files and directories to include.
-	Add []string `json:"add" yaml:"add" msgpack:"add" mapstructure:"add" validate:"required"`
+	Add []string `json:"add" yaml:"add" msgpack:"add" mapstructure:"add" validate:"dive"`
 }
 
 // A reference to another Iota as a dependency.
@@ -95,7 +95,7 @@ type Reference struct {
 	Ref string `json:"ref" yaml:"ref" msgpack:"ref" mapstructure:"ref" validate:"required"`
 	// Used to pass configured resources to Iota dependencies. It is a mapping of the
 	// referred Iota resources to this Iotas resources.
-	ResourceLinks map[string]string `json:"resourceLinks,omitempty" yaml:"resourceLinks,omitempty" msgpack:"resourceLinks,omitempty" mapstructure:"resourceLinks"`
+	ResourceLinks map[string]string `json:"resourceLinks,omitempty" yaml:"resourceLinks,omitempty" msgpack:"resourceLinks,omitempty" mapstructure:"resourceLinks" validate:"dive"`
 }
 
 // A loadable component and its configuration.
@@ -111,18 +111,18 @@ type Component struct {
 // names.
 type Resiliency struct {
 	// Timeout durations.
-	Timeouts map[string]Duration `json:"timeouts" yaml:"timeouts" msgpack:"timeouts" mapstructure:"timeouts" validate:"required"`
+	Timeouts map[string]Duration `json:"timeouts,omitempty" yaml:"timeouts,omitempty" msgpack:"timeouts,omitempty" mapstructure:"timeouts" validate:"dive"`
 	// Retry handling using constant and exponential backoff policies.
-	Retries map[string]Backoff `json:"retries" yaml:"retries" msgpack:"retries" mapstructure:"retries" validate:"required"`
+	Retries map[string]Backoff `json:"retries,omitempty" yaml:"retries,omitempty" msgpack:"retries,omitempty" mapstructure:"retries" validate:"dive"`
 	// Prevent further calls to remote resources that are unavailable or operating
 	// abnormally.
-	CircuitBreakers map[string]CircuitBreaker `json:"circuitBreakers" yaml:"circuitBreakers" msgpack:"circuitBreakers" mapstructure:"circuitBreakers" validate:"required"`
+	CircuitBreakers map[string]CircuitBreaker `json:"circuitBreakers,omitempty" yaml:"circuitBreakers,omitempty" msgpack:"circuitBreakers,omitempty" mapstructure:"circuitBreakers" validate:"dive"`
 }
 
 // A backoff policy that always returns a fixed backoff delay.
 type ConstantBackoff struct {
 	// The duration to wait between retry attempts.
-	Duration string `json:"duration" yaml:"duration" msgpack:"duration" mapstructure:"duration" validate:"required"`
+	Duration Duration `json:"duration" yaml:"duration" msgpack:"duration" mapstructure:"duration"`
 	// The maximum number of retries to attempt. No value denotes an indefinite number
 	// of retries.
 	MaxRetries *uint32 `json:"maxRetries,omitempty" yaml:"maxRetries,omitempty" msgpack:"maxRetries,omitempty" mapstructure:"maxRetries"`
@@ -137,14 +137,14 @@ type ConstantBackoff struct {
 // 1.5 if BackOffDuration > maxInterval {   BackoffDuration = maxInterval } ```
 type ExponentialBackoff struct {
 	// The initial interval.
-	InitialInterval     Duration `json:"initialInterval" yaml:"initialInterval" msgpack:"initialInterval" mapstructure:"initialInterval" validate:"required"`
-	RandomizationFactor float64  `json:"randomizationFactor" yaml:"randomizationFactor" msgpack:"randomizationFactor" mapstructure:"randomizationFactor" validate:"required"`
-	Multiplier          float64  `json:"multiplier" yaml:"multiplier" msgpack:"multiplier" mapstructure:"multiplier" validate:"required"`
+	InitialInterval     Duration `json:"initialInterval" yaml:"initialInterval" msgpack:"initialInterval" mapstructure:"initialInterval"`
+	RandomizationFactor float64  `json:"randomizationFactor" yaml:"randomizationFactor" msgpack:"randomizationFactor" mapstructure:"randomizationFactor"`
+	Multiplier          float64  `json:"multiplier" yaml:"multiplier" msgpack:"multiplier" mapstructure:"multiplier"`
 	// Determines the maximum interval between retries to which the exponential
 	// back-off policy can grow. Additional retries always occur after a duration of
 	// `maxInterval`.
-	MaxInterval    Duration `json:"maxInterval" yaml:"maxInterval" msgpack:"maxInterval" mapstructure:"maxInterval" validate:"required"`
-	MaxElapsedTime Duration `json:"maxElapsedTime" yaml:"maxElapsedTime" msgpack:"maxElapsedTime" mapstructure:"maxElapsedTime" validate:"required"`
+	MaxInterval    Duration `json:"maxInterval" yaml:"maxInterval" msgpack:"maxInterval" mapstructure:"maxInterval"`
+	MaxElapsedTime Duration `json:"maxElapsedTime" yaml:"maxElapsedTime" msgpack:"maxElapsedTime" mapstructure:"maxElapsedTime"`
 	// The maximum number of retries to attempt. No value denotes an indefinite number
 	// of retries.
 	MaxRetries *uint32 `json:"maxRetries,omitempty" yaml:"maxRetries,omitempty" msgpack:"maxRetries,omitempty" mapstructure:"maxRetries"`
@@ -153,13 +153,13 @@ type ExponentialBackoff struct {
 type CircuitBreaker struct {
 	// The maximum number of requests allowed to pass through when the circuit breaker
 	// is half-open (recovering from failure).
-	MaxRequests uint32 `json:"maxRequests" yaml:"maxRequests" msgpack:"maxRequests" mapstructure:"maxRequests" validate:"required"`
+	MaxRequests uint32 `json:"maxRequests" yaml:"maxRequests" msgpack:"maxRequests" mapstructure:"maxRequests"`
 	// The cyclical period of time used by the CB to clear its internal counts. If set
 	// to 0 seconds, this never clears.
-	Interval Duration `json:"interval" yaml:"interval" msgpack:"interval" mapstructure:"interval" validate:"required"`
+	Interval Duration `json:"interval" yaml:"interval" msgpack:"interval" mapstructure:"interval"`
 	// The period of the open state (directly after failure) until the circuit breaker
 	// switches to half-open. Defaults to 60s.
-	Timeout Duration `json:"timeout" yaml:"timeout" msgpack:"timeout" mapstructure:"timeout" validate:"required"`
+	Timeout Duration `json:"timeout" yaml:"timeout" msgpack:"timeout" mapstructure:"timeout"`
 	// A Common Expression Language (CEL) statement that is evaluated by the circuit
 	// breaker. When the statement evaluates to true, the CB trips and becomes open.
 	// Default is consecutiveFailures > 5.
@@ -172,16 +172,16 @@ type Authorization struct {
 	// This flag must be explicitly set to `true` if unauthenticated/anonymous access
 	// is allowed.
 	Unauthenticated bool                   `json:"unauthenticated" yaml:"unauthenticated" msgpack:"unauthenticated" mapstructure:"unauthenticated"`
-	Has             []string               `json:"has" yaml:"has" msgpack:"has" mapstructure:"has" validate:"required"`
-	Checks          map[string]interface{} `json:"checks" yaml:"checks" msgpack:"checks" mapstructure:"checks" validate:"required"`
-	Rules           []Component            `json:"rules" yaml:"rules" msgpack:"rules" mapstructure:"rules" validate:"required"`
+	Has             []string               `json:"has" yaml:"has" msgpack:"has" mapstructure:"has" validate:"dive"`
+	Checks          map[string]interface{} `json:"checks" yaml:"checks" msgpack:"checks" mapstructure:"checks" validate:"dive"`
+	Rules           []Component            `json:"rules" yaml:"rules" msgpack:"rules" mapstructure:"rules" validate:"dive"`
 }
 
 // A
 type Pipeline struct {
 	// The pipeline name.
 	Name  string `json:"name" yaml:"name" msgpack:"name" mapstructure:"name" validate:"required"`
-	Steps []Step `json:"steps,omitempty" yaml:"steps,omitempty" msgpack:"steps,omitempty" mapstructure:"steps"`
+	Steps []Step `json:"steps,omitempty" yaml:"steps,omitempty" msgpack:"steps,omitempty" mapstructure:"steps" validate:"dive"`
 }
 
 type Step struct {
@@ -198,23 +198,23 @@ type Step struct {
 
 type ErrorTemplate struct {
 	Type    string             `json:"type" yaml:"type" msgpack:"type" mapstructure:"type" validate:"required"`
-	Code    ErrCode            `json:"code" yaml:"code" msgpack:"code" mapstructure:"code" validate:"required"`
-	Status  uint32             `json:"status" yaml:"status" msgpack:"status" mapstructure:"status" validate:"required"`
-	Title   *expr.Text         `json:"title" yaml:"title" msgpack:"title" mapstructure:"title" validate:"required"`
-	Message *expr.Text         `json:"message" yaml:"message" msgpack:"message" mapstructure:"message" validate:"required"`
+	Code    ErrCode            `json:"code" yaml:"code" msgpack:"code" mapstructure:"code"`
+	Status  uint32             `json:"status" yaml:"status" msgpack:"status" mapstructure:"status"`
+	Title   *expr.Text         `json:"title" yaml:"title" msgpack:"title" mapstructure:"title"`
+	Message *expr.Text         `json:"message" yaml:"message" msgpack:"message" mapstructure:"message"`
 	Path    *string            `json:"path,omitempty" yaml:"path,omitempty" msgpack:"path,omitempty" mapstructure:"path"`
 	Help    *expr.Text         `json:"help,omitempty" yaml:"help,omitempty" msgpack:"help,omitempty" mapstructure:"help"`
-	Locales map[string]Strings `json:"locales" yaml:"locales" msgpack:"locales" mapstructure:"locales" validate:"required"`
+	Locales map[string]Strings `json:"locales,omitempty" yaml:"locales,omitempty" msgpack:"locales,omitempty" mapstructure:"locales" validate:"dive"`
 }
 
 type Strings struct {
-	Title   *expr.Text `json:"title" yaml:"title" msgpack:"title" mapstructure:"title" validate:"required"`
-	Message *expr.Text `json:"message" yaml:"message" msgpack:"message" mapstructure:"message" validate:"required"`
+	Title   *expr.Text `json:"title" yaml:"title" msgpack:"title" mapstructure:"title"`
+	Message *expr.Text `json:"message" yaml:"message" msgpack:"message" mapstructure:"message"`
 }
 
 type Backoff struct {
-	Constant    *ConstantBackoff    `json:"constant,omitempty" yaml:"constant,omitempty" msgpack:"constant,omitempty"`
-	Exponential *ExponentialBackoff `json:"exponential,omitempty" yaml:"exponential,omitempty" msgpack:"exponential,omitempty"`
+	Constant    *ConstantBackoff    `json:"constant,omitempty" yaml:"constant,omitempty" msgpack:"constant,omitempty" validate:"required_without=Exponential"`
+	Exponential *ExponentialBackoff `json:"exponential,omitempty" yaml:"exponential,omitempty" msgpack:"exponential,omitempty" validate:"required_without=Constant"`
 }
 
 type ErrCode int32

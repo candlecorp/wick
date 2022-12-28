@@ -28,7 +28,6 @@ generates:
     config:
       imports:
         - time
-        - 'gopkg.in/yaml.v3'
       conversions:
         - from: StringValue
           to: Duration

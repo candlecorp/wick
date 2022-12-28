@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	aidanwoods.dev/go-paseto v1.1.3
-	github.com/MicahParks/keyfunc v1.8.0
+	github.com/MicahParks/keyfunc v1.9.0
 	github.com/actgardner/gogen-avro/v10 v10.2.1
 	github.com/agrea/ptr v0.0.0-20180711073057-77a518d99b7b
 	github.com/alecthomas/kong v0.7.1
@@ -27,7 +27,7 @@ require (
 	github.com/gorilla/mux v1.8.0
 	github.com/hamba/avro v1.8.0
 	github.com/iancoleman/strcase v0.2.0
-	github.com/itchyny/gojq v0.12.10
+	github.com/itchyny/gojq v0.12.11
 	github.com/jackc/pgtype v1.13.0
 	github.com/jackc/pgx/v4 v4.17.2
 	github.com/jmespath/go-jmespath v0.4.0
@@ -36,13 +36,13 @@ require (
 	github.com/mattn/anko v0.1.9
 	github.com/mattn/go-colorable v0.1.13
 	github.com/mitchellh/mapstructure v1.5.1-0.20220423185008-bf980b35cac4
-	github.com/nanobus/iota/go v0.0.0-20221222230328-ee450f4df428
+	github.com/nanobus/iota/go v0.0.0-20221227214841-4dc9ce856c31
 	github.com/nats-io/nats.go v1.22.1
 	github.com/oklog/run v1.1.0
 	github.com/opencontainers/go-digest v1.0.0
 	github.com/opencontainers/image-spec v1.1.0-rc2
 	github.com/rbretecher/go-postman-collection v0.9.0
-	github.com/rs/cors v1.8.2
+	github.com/rs/cors v1.8.3
 	github.com/sony/gobreaker v0.5.0
 	github.com/spf13/cast v1.5.0
 	github.com/stretchr/testify v1.8.1
@@ -61,7 +61,7 @@ require (
 	go.uber.org/multierr v1.9.0
 	go.uber.org/zap v1.24.0
 	golang.org/x/oauth2 v0.3.0
-	google.golang.org/genproto v0.0.0-20221207170731-23e4bf6bdc37
+	google.golang.org/genproto v0.0.0-20221227171554-f9683d7f8bef
 	google.golang.org/grpc v1.51.0
 	gopkg.in/yaml.v3 v3.0.1
 	gorm.io/driver/postgres v1.4.5
@@ -91,7 +91,7 @@ require (
 	github.com/jackc/pgio v1.0.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgproto3/v2 v2.3.1 // indirect
-	github.com/jackc/pgservicefile v0.0.0-20200714003250-2b9c44734f2b // indirect
+	github.com/jackc/pgservicefile v0.0.0-20221227161230-091c0ba34f0a // indirect
 	github.com/jackc/puddle v1.3.0 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
@@ -121,7 +121,7 @@ require (
 	go.opentelemetry.io/proto/otlp v0.19.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	golang.org/x/crypto v0.4.0 // indirect
-	golang.org/x/exp v0.0.0-20221217163422-3c43f8badb15 // indirect
+	golang.org/x/exp v0.0.0-20221227203929-1b447090c38c // indirect
 	golang.org/x/net v0.4.0 // indirect
 	golang.org/x/sync v0.1.0 // indirect
 	golang.org/x/sys v0.3.0 // indirect
@@ -130,7 +130,7 @@ require (
 	google.golang.org/protobuf v1.28.1 // indirect
 )
 
-replace github.com/go-playground/validator/v10 => github.com/nanobus/validator/v10 v10.11.1-0.20220529195924-c104cf34f67b
+replace github.com/go-playground/validator/v10 => github.com/nanobus/validator/v10 v10.11.1-0.20221228024045-3e5ed18e1e95
 
 // Uncomment to refer to iota in your workspace.
 // replace github.com/nanobus/iota/go => ../iota/go

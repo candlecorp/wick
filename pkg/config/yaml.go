@@ -13,11 +13,10 @@ func LoadYAML(src string, obj interface{}) error {
 	r := strings.NewReader(configString)
 	decoder := yaml.NewDecoder(r)
 	decoder.KnownFields(true)
-	err := decoder.Decode(obj)
-	if err != nil {
+	if err := decoder.Decode(obj); err != nil {
 		return err
 	}
-	return AssertInitialized(obj)
+	return validate.Struct(obj)
 }
 
 func LoadYamlFile(filename string, obj interface{}) error {

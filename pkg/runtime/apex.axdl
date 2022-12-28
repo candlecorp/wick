@@ -18,7 +18,7 @@ type ResourcesConfig {
   "A mapping of resource name to component configuration."
   resources: { string : Component }
   "A mapping of Itoa to resource links."
-  resourceLinks: { string : ResourceLinks }
+  resourceLinks: { string : ResourceLinks }?
 }
 
 "The main Iota component/application configuration."
@@ -34,26 +34,26 @@ type BusConfig {
   "Package specifies the contents of the Iota OCI image."
   package: Package?
   "Resources are externally configured sources and receivers of data (DB, REST endpoint)."
-  resources: [string]
+  resources: [string]?
   "Other Iotas that this Iota depends on using."
-  includes: { string : Reference }
+  includes: { string : Reference }?
   "Tracing configures an Open Telemetry span exporter."
   tracing: Component?
-  specs: [Component]
-  compute: [Component]
+  specs: [Component]?
+  compute: [Component]?
   "Resiliency defines policies for fault tolerance."
   resiliency: Resiliency?
   "Codecs configure how data formats are encoded (and persisted) and decoded (and received)."
-  codecs: { string : Component }
+  codecs: { string : Component }?
   "Initializers handle startup and initialization tasks which execute and freed up."
-  initializers: { string : Component }
+  initializers: { string : Component }?
   """
   Transports configure inbound communication mechanisms from clients
   (e.g. HTTP or gRPC) or event sources (e.g Message brokers).
   """
-  transports: { string : Component }
+  transports: { string : Component }?
   "Filters process received data immediately after the transports."
-  filters: [Component]
+  filters: [Component]?
   "Processing pipeline for pre-authoration actions."
   preauth: Interfaces?
   "Authorization rules for interfaces."
@@ -61,10 +61,10 @@ type BusConfig {
   "Processing pipeline for post-authoration actions."
   postauth: Interfaces?
   "Interface composed from declarative pipelines."
-  interfaces: Interfaces
+  interfaces: Interfaces?
   "Pipelines that preform data access (typically using resources) on behalf of the application."
-  providers: Interfaces
-  errors: { string : ErrorTemplate }
+  providers: Interfaces?
+  errors: { string : ErrorTemplate }?
 }
 
 "Package defines the contents of the OCI image."
@@ -99,11 +99,11 @@ type Component {
 "A section where resiliency policies are configured and given reusable reference names."
 type Resiliency {
   "Timeout durations."
-  timeouts: { string : Duration }
+  timeouts: { string : Duration }?
   "Retry handling using constant and exponential backoff policies."
-  retries: { string : Backoff }
+  retries: { string : Backoff }?
   "Prevent further calls to remote resources that are unavailable or operating abnormally."
-  circuitBreakers: { string : CircuitBreaker }
+  circuitBreakers: { string : CircuitBreaker }?
 }
 
 # One of ConstantBackoff or ExponentialBackoff based on `policy`
@@ -112,7 +112,7 @@ union Backoff = ConstantBackoff | ExponentialBackoff
 "A backoff policy that always returns a fixed backoff delay."
 type ConstantBackoff @unionKey("constant") {
   "The duration to wait between retry attempts."
-  duration: string
+  duration: Duration
   "The maximum number of retries to attempt. No value denotes an indefinite number of retries."
   maxRetries: u32?
 }
@@ -225,7 +225,7 @@ type ErrorTemplate {
   message: TextExpr
   path: string?
   help: TextExpr?
-  locales: { string : Strings }
+  locales: { string : Strings }?
 }
 
 enum ErrCode {

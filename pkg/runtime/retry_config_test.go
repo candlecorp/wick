@@ -6,7 +6,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-package runtime
+package runtime_test
 
 import (
 	"testing"
@@ -15,37 +15,32 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/nanobus/nanobus/pkg/resiliency/retry"
+	"github.com/nanobus/nanobus/pkg/runtime"
 )
 
 func TestRetryDecode(t *testing.T) {
 	tests := map[string]struct {
-		config    map[string]interface{}
+		config    runtime.Backoff
 		overrides func(config *retry.Config)
 		err       string
 	}{
 		"invalid policy type": {
-			config: map[string]interface{}{
-				"policy": "invalid",
-			},
+			config:    runtime.Backoff{},
 			overrides: nil,
 			err:       "1 error(s) decoding:\n\n* error decoding 'policy': invalid PolicyType \"invalid\": unexpected back off policy type: invalid",
 		},
-		"default": {
-			config:    map[string]interface{}{},
-			overrides: nil,
-			err:       "",
-		},
 		"constant default": {
-			config: map[string]interface{}{
-				"policy": "constant",
+			config: runtime.Backoff{
+				Constant: &runtime.ConstantBackoff{},
 			},
 			overrides: nil,
 			err:       "",
 		},
 		"constant with duration": {
-			config: map[string]interface{}{
-				"policy":   "constant",
-				"duration": "10s",
+			config: runtime.Backoff{
+				Constant: &runtime.ConstantBackoff{
+					Duration: runtime.Duration(time.Second * 10),
+				},
 			},
 			overrides: func(config *retry.Config) {
 				config.Duration = 10 * time.Second
@@ -53,41 +48,23 @@ func TestRetryDecode(t *testing.T) {
 			err: "",
 		},
 		"exponential default": {
-			config: map[string]interface{}{
-				"policy": "exponential",
+			config: runtime.Backoff{
+				Exponential: &runtime.ExponentialBackoff{},
 			},
 			overrides: func(config *retry.Config) {
 				config.Policy = retry.PolicyExponential
 			},
 			err: "",
 		},
-		"exponential with string settings": {
-			config: map[string]interface{}{
-				"policy":              "exponential",
-				"initialInterval":     "1000", // 1s
-				"randomizationFactor": "1.0",
-				"multiplier":          "2.0",
-				"maxInterval":         "120000",  // 2m
-				"maxElapsedTime":      "1800000", // 30m
-			},
-			overrides: func(config *retry.Config) {
-				config.Policy = retry.PolicyExponential
-				config.InitialInterval = 1 * time.Second
-				config.RandomizationFactor = 1.0
-				config.Multiplier = 2.0
-				config.MaxInterval = 2 * time.Minute
-				config.MaxElapsedTime = 30 * time.Minute
-			},
-			err: "",
-		},
-		"exponential with typed settings": {
-			config: map[string]interface{}{
-				"policy":              "exponential",
-				"initialInterval":     "1000ms", // 1s
-				"randomizationFactor": 1.0,
-				"multiplier":          2.0,
-				"maxInterval":         "120s", // 2m
-				"maxElapsedTime":      "30m",  // 30m
+		"exponential": {
+			config: runtime.Backoff{
+				Exponential: &runtime.ExponentialBackoff{
+					InitialInterval:     runtime.Duration(time.Second * 1), // 1s
+					RandomizationFactor: 1.0,
+					Multiplier:          2.0,
+					MaxInterval:         runtime.Duration(time.Minute * 2),  // 2m
+					MaxElapsedTime:      runtime.Duration(time.Minute * 30), // 30m,
+				},
 			},
 			overrides: func(config *retry.Config) {
 				config.Policy = retry.PolicyExponential
@@ -103,7 +80,7 @@ func TestRetryDecode(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			actual, err := DecodeConfig(tc.config)
+			actual, err := runtime.ConvertBackoffConfig(tc.config)
 			if tc.err != "" {
 				if assert.Error(t, err) {
 					assert.Equal(t, tc.err, err.Error())
