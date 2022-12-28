@@ -25,5 +25,6 @@ export interface AddRoute {
   method: string;
   uri: string;
   encoding?: string;
+  raw?: boolean;
   handler: Handler;
 }
