@@ -226,8 +226,8 @@ func (c *pushCmd) Run() error {
 	}
 
 	applicationID := c.ApplicationID
-	if conf.ApplicationID != "" && applicationID == "" {
-		applicationID = conf.ApplicationID
+	if conf.ID != "" && applicationID == "" {
+		applicationID = conf.ID
 	}
 	if applicationID == "" {
 		return errors.New("application id is not defined")

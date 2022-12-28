@@ -418,7 +418,7 @@ func Start(info *Info) error {
 	} else {
 		ntp := sdk_trace.NewTracerProvider(
 			sdk_trace.WithBatcher(spanExporter),
-			sdk_trace.WithResource(newOtelResource(busConfig.ApplicationID, busConfig.Version)),
+			sdk_trace.WithResource(newOtelResource(busConfig.ID, busConfig.Version)),
 		)
 		defer func() {
 			if err := ntp.Shutdown(ctx); err != nil {
