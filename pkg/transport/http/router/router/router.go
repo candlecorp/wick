@@ -148,10 +148,18 @@ func (t *Router) handler(h handler.Handler, raw bool, desiredCodec channel.Codec
 			}
 		}
 
+		cookies := r.Cookies()
+		cookieMap := map[string]string{}
+		for _, cookie := range cookies {
+			cookieMap[cookie.Name] = cookie.Value
+		}
+
 		input := map[string]interface{}{}
 		if raw {
 			input["path"] = vars
 			input["query"] = queryValues
+			input["headers"] = r.Header
+			input["cookies"] = cookieMap
 			input["body"] = body
 		} else {
 			if reflect.TypeOf(body) == reflect.TypeOf(input) {
