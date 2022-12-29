@@ -14,9 +14,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/go-logr/logr"
 	"github.com/nanobus/nanobus/pkg/config"
-	"github.com/nanobus/nanobus/pkg/logger"
-	"go.uber.org/zap/zapcore"
 
 	"github.com/nanobus/nanobus/pkg/oci"
 )
@@ -37,9 +36,8 @@ func ToContext(ctx context.Context, function IotaConfig) context.Context {
 	return context.WithValue(ctx, iotaKey{}, function)
 }
 
-func LoadIotaConfig(url string, baseUrl string) (IotaConfig, error) {
+func LoadIotaConfig(log logr.Logger, url string, baseUrl string) (IotaConfig, error) {
 	h := IotaConfig{}
-	log := logger.GetLogger(zapcore.DebugLevel)
 	log.Info("Importing configuration from", "location", url)
 
 	var busFile string

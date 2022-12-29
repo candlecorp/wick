@@ -35,7 +35,7 @@ func LoadResourcesYAML(in io.Reader) (*ResourcesConfig, error) {
 	return &c, nil
 }
 
-func LoadBusYAML(in io.Reader) (*BusConfig, error) {
+func LoadBusYAML(baseDir string, in io.Reader) (*BusConfig, error) {
 	data, err := io.ReadAll(in)
 	if err != nil {
 		return nil, err
@@ -44,6 +44,7 @@ func LoadBusYAML(in io.Reader) (*BusConfig, error) {
 	c := DefaultBusConfig()
 
 	if err := rootConfig.LoadYAML(string(data), &c); err != nil {
+		c.BaseURL = &baseDir
 		return nil, err
 	}
 

@@ -200,7 +200,13 @@ func (c *pushCmd) Run() error {
 	}
 	defer busFile.Close()
 
-	conf, err := runtime.LoadBusYAML(busFile)
+	absPath, err := filepath.Abs(c.BusFile)
+	if err != nil {
+		return err
+	}
+	baseDir := filepath.Dir(absPath)
+
+	conf, err := runtime.LoadBusYAML(baseDir, busFile)
 	if err != nil {
 		return err
 	}

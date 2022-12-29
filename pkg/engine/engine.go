@@ -568,7 +568,7 @@ func Start(info *Info) error {
 	}
 
 	for name, include := range busConfig.Includes {
-		config, err := runtime.LoadIotaConfig(include.Ref, *busConfig.BaseURL)
+		config, err := runtime.LoadIotaConfig(log, include.Ref, *busConfig.BaseURL)
 		if err != nil {
 			log.Error(err, "Could not read Iota config")
 			return err
@@ -863,13 +863,13 @@ func loadBusConfig(filename string, log logr.Logger) (*runtime.BusConfig, error)
 	}
 	defer f.Close()
 
-	// absPath, err := filepath.Abs(filename)
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// baseDir := filepath.Dir(absPath)
+	absPath, err := filepath.Abs(filename)
+	if err != nil {
+		return nil, err
+	}
+	baseDir := filepath.Dir(absPath)
 
-	c, err := runtime.LoadBusYAML(f)
+	c, err := runtime.LoadBusYAML(baseDir, f)
 	if err != nil {
 		return nil, err
 	}
