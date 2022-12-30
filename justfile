@@ -15,6 +15,9 @@ deps:
 	go get -u github.com/git-chglog/git-chglog/cmd/git-chglog
 	go get -u golang.org/x/tools/cmd/goimports
 
+test:
+  go test ./pkg/...
+
 build:
 	CGO_ENABLED=0 go build -o {{BUILDDIR}}/{{BINARY}} {{MAIN}}
 	@echo "Build {{BINARY}} complete."
