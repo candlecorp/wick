@@ -164,7 +164,7 @@ func (p *Processor) Initialize(configuration *BusConfig) (err error) {
 			cb := breaker.CircuitBreaker{
 				Name: name,
 			}
-			if err := config.Decode(circuitBreaker, &cb, DefaultCircuitBreaker()); err != nil {
+			if err := config.Decode(circuitBreaker, &cb); err != nil {
 				return err
 			}
 			cb.Initialize(p.log)

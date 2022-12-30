@@ -48,7 +48,7 @@ type FromStringer interface {
 //
 // Most of the heavy lifting is handled by the mapstructure library. A custom decoder is used to handle
 // decoding string values to the supported primitives.
-func Decode(input interface{}, output interface{}, defaults ...interface{}) error {
+func Decode(input interface{}, output interface{}) error {
 	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
 		Result:      output,
 		ErrorUnused: true,

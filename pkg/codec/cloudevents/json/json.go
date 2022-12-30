@@ -23,7 +23,7 @@ import (
 type (
 	Config struct {
 		SpecVersion string `mapstructure:"specversion"`
-		Source      string `mapstructure:"source" structs:"-"`
+		Source      string `mapstructure:"source"`
 	}
 
 	// Codec encodes and decodes Avro records.
