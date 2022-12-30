@@ -27,7 +27,7 @@ func TestRetryDecode(t *testing.T) {
 		"invalid policy type": {
 			config:    runtime.Backoff{},
 			overrides: nil,
-			err:       "1 error(s) decoding:\n\n* error decoding 'policy': invalid PolicyType \"invalid\": unexpected back off policy type: invalid",
+			err:       "constant or exponential must be configured",
 		},
 		"constant default": {
 			config: runtime.Backoff{
