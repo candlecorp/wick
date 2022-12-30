@@ -10,6 +10,7 @@ package http
 
 import (
 	"context"
+	"errors"
 	"net"
 	"net/http"
 
@@ -75,6 +76,9 @@ func HttpServerV1Loader(ctx context.Context, with interface{}, resolver resolve.
 	middlewares := make([]middleware.Middleware, len(c.Middleware))
 	for i, component := range c.Middleware {
 		m := middlewareRegistry[component.Uses]
+		if m == nil {
+			return nil, errors.New("could not find middleware: " + component.Uses)
+		}
 		middleware, err := m(ctx, component.With, resolver)
 		if err != nil {
 			return nil, err
