@@ -44,9 +44,9 @@ func LoadBusYAML(baseDir string, in io.Reader) (*BusConfig, error) {
 	c := DefaultBusConfig()
 
 	if err := rootConfig.LoadYAML(string(data), &c); err != nil {
-		c.BaseURL = &baseDir
 		return nil, err
 	}
+	c.BaseURL = &baseDir
 
 	return &c, nil
 }

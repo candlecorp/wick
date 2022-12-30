@@ -47,7 +47,7 @@ type BusConfig struct {
 	// Resources are externally configured sources and receivers of data (DB, REST
 	// endpoint).
 	Resources []string `json:"resources,omitempty" yaml:"resources,omitempty" msgpack:"resources,omitempty" mapstructure:"resources" validate:"dive"`
-	// Other Iotas that this Iota depends on using.
+	// Imported Iota dependencies.
 	Includes map[string]Reference `json:"includes,omitempty" yaml:"includes,omitempty" msgpack:"includes,omitempty" mapstructure:"includes" validate:"dive"`
 	// Tracing configures an Open Telemetry span exporter.
 	Tracing *Component  `json:"tracing,omitempty" yaml:"tracing,omitempty" msgpack:"tracing,omitempty" mapstructure:"tracing"`
@@ -89,14 +89,16 @@ type IotaConfig struct {
 	Main *string `json:"main,omitempty" yaml:"main,omitempty" msgpack:"main,omitempty" mapstructure:"main"`
 	// The iota's interface definition.
 	Spec *string `json:"spec,omitempty" yaml:"spec,omitempty" msgpack:"spec,omitempty" mapstructure:"spec"`
+	// Imported Iota dependencies.
+	Includes map[string]Reference `json:"includes,omitempty" yaml:"includes,omitempty" msgpack:"includes,omitempty" mapstructure:"includes" validate:"dive"`
 	// Resources are externally configured sources and receivers of data (DB, REST
 	// endpoint).
-	Resources []string `json:"resources" yaml:"resources" msgpack:"resources" mapstructure:"resources" validate:"required"`
+	Resources []string `json:"resources" yaml:"resources" msgpack:"resources" mapstructure:"resources" validate:"dive"`
 	// Interface composed from declarative pipelines.
-	Interfaces Interfaces `json:"interfaces" yaml:"interfaces" msgpack:"interfaces" mapstructure:"interfaces" validate:"required"`
+	Interfaces Interfaces `json:"interfaces" yaml:"interfaces" msgpack:"interfaces" mapstructure:"interfaces"`
 	// Pipelines that preform data access (typically using resources) on behalf of the
 	// application.
-	Providers Interfaces `json:"providers" yaml:"providers" msgpack:"providers" mapstructure:"providers" validate:"required"`
+	Providers Interfaces `json:"providers" yaml:"providers" msgpack:"providers" mapstructure:"providers"`
 	// If set, the base path or URL with which to resolve relative dependencies
 	BaseURL *string `json:"baseUrl,omitempty" yaml:"baseUrl,omitempty" msgpack:"baseUrl,omitempty" mapstructure:"baseUrl"`
 }

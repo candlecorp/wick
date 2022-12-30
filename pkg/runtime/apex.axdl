@@ -35,7 +35,7 @@ type BusConfig {
   package: Package?
   "Resources are externally configured sources and receivers of data (DB, REST endpoint)."
   resources: [string]?
-  "Other Iotas that this Iota depends on using."
+  "Imported Iota dependencies."
   includes: { string : Reference }?
   "Tracing configures an Open Telemetry span exporter."
   tracing: Component?
@@ -77,6 +77,8 @@ type IotaConfig {
   main: string?
   "The iota's interface definition."
   spec: string?
+  "Imported Iota dependencies."
+  includes: { string : Reference }?
   "Resources are externally configured sources and receivers of data (DB, REST endpoint)."
   resources: [string]
   "Interface composed from declarative pipelines."

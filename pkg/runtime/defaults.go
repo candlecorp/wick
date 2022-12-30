@@ -40,6 +40,24 @@ func (h *BusConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	return nil
 }
 
+// Returns a IotaConfig instance with default fields populated
+
+func DefaultIotaConfig() IotaConfig {
+	obj := IotaConfig{}
+
+	return obj
+}
+
+func (h *IotaConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	type alias IotaConfig
+	raw := alias(DefaultIotaConfig())
+	if err := unmarshal(&raw); err != nil {
+		return err
+	}
+	*h = IotaConfig(raw)
+	return nil
+}
+
 // Returns a Package instance with default fields populated
 
 func DefaultPackage() Package {
