@@ -1,0 +1,10 @@
+id: your-app
+version: 0.0.1
+interfaces:
+  Greeter:
+    SayHello:
+      steps:
+        - name: Say Hello!
+          uses: assign
+          with:
+            value: '"Hello, " + input.name'

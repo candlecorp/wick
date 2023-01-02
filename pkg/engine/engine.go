@@ -23,7 +23,6 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/joho/godotenv"
-	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
 	"github.com/oklog/run"
@@ -139,15 +138,13 @@ type Info struct {
 	BusFile       string
 	ResourcesFile string
 	DeveloperMode bool
+	LogLevel      zapcore.Level
 
 	// Service mode
 	Process []string
 
 	// CLI mode
 	EntityID string
-	Handler  handler.Handler
-	Input    any
-	Output   any
 }
 
 type Engine struct {
@@ -243,19 +240,15 @@ func (e *Engine) LoadConfig(busConfig *runtime.BusConfig) error {
 	return nil
 }
 
-func Start(info *Info) error {
+func Start(info *Info) (*Engine, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	// If there is a `.env` file, load its environment variables.
 	godotenv.Load()
 
-	logLevel := zapcore.DebugLevel
-	if info.Mode == ModeInvoke {
-		logLevel = zap.ErrorLevel
-	}
-
-	log := logger.GetLogger(logLevel)
+	logger.SetLogLevel(info.LogLevel)
+	log := logger.GetLogger()
 
 	if info.DeveloperMode && info.Mode == ModeService {
 		log.Info("Running in Developer Mode!")
@@ -267,7 +260,7 @@ func Start(info *Info) error {
 	busConfig, err := loadBusConfig(info.BusFile, log)
 	if err != nil {
 		log.Error(err, "could not load configuration", "file", info.BusFile)
-		return err
+		return nil, err
 	}
 
 	if busConfig.BaseURL == nil {
@@ -288,7 +281,7 @@ func Start(info *Info) error {
 		resourcesConfig, err = loadResourcesConfig(info.ResourcesFile, log)
 		if err != nil {
 			log.Error(err, "could not load configuration", "file", info.ResourcesFile)
-			return err
+			return nil, err
 		}
 	}
 
@@ -407,13 +400,13 @@ func Start(info *Info) error {
 		loadable, ok := tracingRegistry[busConfig.Tracing.Uses]
 		if !ok {
 			log.Error(nil, "Could not find codec", "type", busConfig.Tracing.Uses)
-			return errors.New("cound not find codec")
+			return nil, errors.New("cound not find codec")
 		}
 		var err error
 		spanExporter, err = loadable(ctx, busConfig.Tracing.With, resolveAs)
 		if err != nil {
 			log.Error(err, "Error loading codec", "type", busConfig.Tracing.Uses)
-			return err
+			return nil, err
 		}
 	}
 
@@ -458,12 +451,12 @@ func Start(info *Info) error {
 		loadable, ok := codecRegistry[component.Uses]
 		if !ok {
 			log.Error(nil, "Could not find codec", "type", component.Uses)
-			return errors.New("could not find codec")
+			return nil, errors.New("could not find codec")
 		}
 		c, err := loadable.Loader(component.With, resolveAs)
 		if err != nil {
 			log.Error(err, "Error loading codec", "type", component.Uses)
-			return err
+			return nil, err
 		}
 		codecs[name] = c
 		codecsByContentType[c.ContentType()] = c
@@ -492,7 +485,7 @@ func Start(info *Info) error {
 		loader, ok := initializerRegistry[spec.Uses]
 		if !ok {
 			log.Error(nil, "could not find initializer", "type", spec.Uses)
-			return err
+			return nil, err
 		}
 		if m, ok := spec.With.(map[string]interface{}); ok {
 			m["name"] = name
@@ -500,11 +493,11 @@ func Start(info *Info) error {
 		nss, err := loader(ctx, spec.With, resolveAs)
 		if err != nil {
 			log.Error(err, "error loading initializer", "type", spec.Uses)
-			return err
+			return nil, err
 		}
 		if err := nss(ctx); err != nil {
 			log.Error(err, "Could not execute initializer")
-			return err
+			return nil, err
 		}
 	}
 
@@ -516,12 +509,12 @@ func Start(info *Info) error {
 			loader, ok := resourceRegistry[component.Uses]
 			if !ok {
 				log.Error(nil, "Could not find resource", "type", component.Uses)
-				return err
+				return nil, err
 			}
 			c, err := loader(ctx, component.With, resolveAs)
 			if err != nil {
 				log.Error(err, "Error loading resource", "type", component.Uses)
-				return err
+				return nil, err
 			}
 
 			resources[name] = c
@@ -540,15 +533,17 @@ func Start(info *Info) error {
 	allNamespaces := make(runtime.Namespaces)
 	dependencies["system:interfaces"] = allNamespaces
 
-	rt := Runtime{
-		log:        log,
-		config:     busConfig,
-		namespaces: namespaces,
-		processor:  allNamespaces,
-		resolver:   resolver,
-		resolveAs:  resolveAs,
-		env:        env,
-	}
+	// TODO(jsoverson): Remove. This is now unused. Keeping it for now as it
+	// may have been a WIP
+	// rt := Runtime{
+	// 	log:        log,
+	// 	config:     busConfig,
+	// 	namespaces: namespaces,
+	// 	processor:  allNamespaces,
+	// 	resolver:   resolver,
+	// 	resolveAs:  resolveAs,
+	// 	env:        env,
+	// }
 
 	e := Engine{
 		ctx:            ctx,
@@ -564,14 +559,14 @@ func Start(info *Info) error {
 	}
 
 	if err := e.LoadConfig(busConfig); err != nil {
-		return err
+		return nil, err
 	}
 
-	for name, include := range busConfig.Includes {
+	for name, include := range busConfig.Imports {
 		config, err := runtime.LoadIotaConfig(log, include.Ref, *busConfig.BaseURL)
 		if err != nil {
 			log.Error(err, "Could not read Iota config")
-			return err
+			return nil, err
 		}
 		includedConfig := &runtime.BusConfig{
 			ID:         name,
@@ -585,7 +580,7 @@ func Start(info *Info) error {
 		}
 
 		if err := e.LoadConfig(includedConfig); err != nil {
-			return err
+			return nil, err
 		}
 	}
 
@@ -598,7 +593,7 @@ func Start(info *Info) error {
 		for _, op := range ops {
 			log.Error(nil, "Missing import", "interface", op.Namespace, "operation", op.Operation)
 		}
-		return errors.New("halting due to unsatified imports")
+		return nil, errors.New("halting due to unsatified imports")
 	}
 
 	filters := []filter.Filter{}
@@ -606,13 +601,13 @@ func Start(info *Info) error {
 		filterLoader, ok := filterRegistry[f.Uses]
 		if !ok {
 			log.Error(nil, "could not find filter", "type", f.Uses)
-			return errors.New("could not find filter")
+			return nil, errors.New("could not find filter")
 		}
 
 		filter, err := filterLoader(ctx, f.With, resolveAs)
 		if err != nil {
 			log.Error(err, "could not load filter", "type", f.Uses)
-			return err
+			return nil, err
 		}
 
 		filters = append(filters, filter)
@@ -707,7 +702,7 @@ func Start(info *Info) error {
 		}
 
 		if jsonBytes, err := json.MarshalIndent(input, "", "  "); err == nil {
-			logInbound(rt.log, h, string(jsonBytes))
+			logInbound(h, string(jsonBytes))
 		}
 
 		data["env"] = env
@@ -752,8 +747,7 @@ func Start(info *Info) error {
 	}
 	dependencies["transport:invoker"] = transport.Invoker(transportInvoker)
 
-	switch info.Mode {
-	case ModeService:
+	if info.Mode == ModeService {
 		if len(busConfig.Transports) == 0 {
 			log.Info("Warning: no transports configured")
 		}
@@ -794,13 +788,13 @@ func Start(info *Info) error {
 			loader, ok := transportRegistry[comp.Uses]
 			if !ok {
 				log.Error(nil, "unknown transport", "type", comp.Uses)
-				return err
+				return nil, err
 			}
 			log.Info("Initializing transport", "name", name)
 			t, err := loader(ctx, comp.With, resolveAs)
 			if err != nil {
 				log.Error(err, "could not load transport", "type", comp.Uses)
-				return err
+				return nil, err
 			}
 
 			g.Add(func() error {
@@ -821,22 +815,28 @@ func Start(info *Info) error {
 				log.Error(err, "unexpected error")
 			}
 		}
-
-	case ModeInvoke:
-		result, err := transportInvoker(ctx,
-			info.Handler,
-			info.EntityID,
-			info.Input,
-			transport.BypassAuthorization)
-		if err != nil {
-			log.Error(err, "invoke failed")
-			return err
-		}
-
-		info.Output = result
 	}
 
-	return nil
+	return &e, nil
+}
+
+func (e *Engine) invoke(handler handler.Handler, input any, authmode transport.Authorization) (any, error) {
+	var transportInvoker transport.Invoker
+	if err := resolve.Resolve(e.resolveAs,
+		"transport:invoker", &transportInvoker,
+	); err != nil {
+		return nil, err
+	}
+
+	return transportInvoker(e.ctx, handler, "", input, authmode)
+}
+
+func (e *Engine) InvokeUnsafe(handler handler.Handler, input any) (any, error) {
+	return e.invoke(handler, input, transport.BypassAuthorization)
+}
+
+func (e *Engine) Invoke(handler handler.Handler, input any) (any, error) {
+	return e.invoke(handler, input, transport.PerformAuthorization)
 }
 
 func loadResourcesConfig(filename string, log logr.Logger) (*runtime.ResourcesConfig, error) {
@@ -965,18 +965,12 @@ func coalesceOutput(namespaces spec.Namespaces, namespace, service, function str
 	return output, err
 }
 
-func logInbound(log logr.Logger, h handler.Handler, data string) {
-	l := log //.V(10)
-	if l.Enabled() {
-		l.Info("==> " + h.String() + " " + data)
-	}
+func logInbound(h handler.Handler, data string) {
+	logger.Debug("==> " + h.String() + " " + data)
 }
 
-func logOutbound(log logr.Logger, target string, data string) {
-	l := log //.V(10)
-	if l.Enabled() {
-		l.Info("<== " + target + " " + data)
-	}
+func logOutbound(target string, data string) {
+	logger.Debug("<== " + target + " " + data)
 }
 
 // newOtelResource returns a resource describing this application.

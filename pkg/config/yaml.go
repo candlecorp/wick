@@ -1,12 +1,17 @@
 package config
 
 import (
+	"errors"
+	"fmt"
 	"io"
 	"os"
+	"regexp"
 	"strings"
 
 	"gopkg.in/yaml.v3"
 )
+
+var reYamlError = regexp.MustCompile(`line (\d+): field ([a-zA-Z0-9_-]+) not found .*$`)
 
 func LoadYAML(src string, obj interface{}) error {
 	configString := os.Expand(src, envReplace)
@@ -14,6 +19,20 @@ func LoadYAML(src string, obj interface{}) error {
 	decoder := yaml.NewDecoder(r)
 	decoder.KnownFields(true)
 	if err := decoder.Decode(obj); err != nil {
+		// Test if the error is a yaml TypeError
+		if typeError, ok := err.(*yaml.TypeError); ok {
+			errs := []string{}
+			// Then extract the valuable data from the errors and make them more useful.
+			for _, invalidField := range typeError.Errors {
+				found := reYamlError.FindStringSubmatch(invalidField)
+				if len(found) == 3 {
+					line := found[1]
+					field := found[2]
+					errs = append(errs, fmt.Sprintf("line %s: field '%s' not expected", line, field))
+				}
+			}
+			return errors.New(strings.Join(errs, ", "))
+		}
 		return err
 	}
 	return validate.Struct(obj)

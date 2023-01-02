@@ -17,9 +17,12 @@ import (
 	"path/filepath"
 
 	"github.com/alecthomas/kong"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 
 	"github.com/nanobus/nanobus/pkg/engine"
 	"github.com/nanobus/nanobus/pkg/handler"
+	"github.com/nanobus/nanobus/pkg/logger"
 	"github.com/nanobus/nanobus/pkg/oci"
 	"github.com/nanobus/nanobus/pkg/runtime"
 )
@@ -58,7 +61,7 @@ type defaultRunCmd struct {
 }
 
 func (c *defaultRunCmd) Run() error {
-	if err := engine.Start(&engine.Info{
+	if _, err := engine.Start(&engine.Info{
 		Mode:          engine.ModeService,
 		BusFile:       "bus.yaml",
 		ResourcesFile: "resources.yaml",
@@ -76,6 +79,8 @@ type runCmd struct {
 	BusFile string `name:"bus" default:"bus.yaml" help:"The application configuration or OCI image reference"`
 	// ResourcesFile is the resources configuration (e.g. databases, message brokers).
 	ResourcesFile string `name:"resources" default:"resources.yaml" help:"The resources configuration"`
+	// Turns on debug logging.
+	Debug bool `name:"debug" help:"Turns on debug logging"`
 	// Args are arguments passed to the application.
 	Args []string `arg:"" optional:"" help:"Arguments to pass to the application"`
 }
@@ -95,10 +100,15 @@ func (c *runCmd) Run() error {
 			location = "bus.yaml"
 		}
 	}
+	level := zapcore.InfoLevel
+	if c.Debug {
+		level = zapcore.DebugLevel
+	}
 
-	if err := engine.Start(&engine.Info{
+	if _, err := engine.Start(&engine.Info{
 		Mode:          engine.ModeService,
 		BusFile:       location,
+		LogLevel:      level,
 		ResourcesFile: c.ResourcesFile,
 		Process:       c.Args,
 		DeveloperMode: c.DeveloperMode,
@@ -152,18 +162,23 @@ func (c *invokeCmd) Run() error {
 	info := engine.Info{
 		Mode:          engine.ModeInvoke,
 		BusFile:       c.BusFile,
+		LogLevel:      zapcore.ErrorLevel,
 		ResourcesFile: c.ResourcesFile,
-		Handler:       h,
 		EntityID:      c.EntityID,
-		Input:         input,
 		DeveloperMode: c.DeveloperMode,
 	}
-	if err := engine.Start(&info); err != nil {
+	e, err := engine.Start(&info)
+	if err != nil {
 		// Error is logged in `Start`.
 		os.Exit(1)
 		return nil
 	}
-	result := info.Output
+	var result any
+	result, err = e.InvokeUnsafe(h, input)
+	if err != nil {
+		logger.Error("error invoking operation", zap.Error(err))
+		return nil
+	}
 
 	var jsonBytes []byte
 	if c.Pretty {

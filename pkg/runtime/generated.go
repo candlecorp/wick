@@ -48,7 +48,7 @@ type BusConfig struct {
 	// endpoint).
 	Resources []string `json:"resources,omitempty" yaml:"resources,omitempty" msgpack:"resources,omitempty" mapstructure:"resources" validate:"dive"`
 	// Imported Iota dependencies.
-	Includes map[string]Reference `json:"includes,omitempty" yaml:"includes,omitempty" msgpack:"includes,omitempty" mapstructure:"includes" validate:"dive"`
+	Imports map[string]Reference `json:"imports,omitempty" yaml:"imports,omitempty" msgpack:"imports,omitempty" mapstructure:"imports" validate:"dive"`
 	// Tracing configures an Open Telemetry span exporter.
 	Tracing *Component  `json:"tracing,omitempty" yaml:"tracing,omitempty" msgpack:"tracing,omitempty" mapstructure:"tracing"`
 	Specs   []Component `json:"specs,omitempty" yaml:"specs,omitempty" msgpack:"specs,omitempty" mapstructure:"specs" validate:"dive"`
@@ -90,7 +90,7 @@ type IotaConfig struct {
 	// The iota's interface definition.
 	Spec *string `json:"spec,omitempty" yaml:"spec,omitempty" msgpack:"spec,omitempty" mapstructure:"spec"`
 	// Imported Iota dependencies.
-	Includes map[string]Reference `json:"includes,omitempty" yaml:"includes,omitempty" msgpack:"includes,omitempty" mapstructure:"includes" validate:"dive"`
+	Imports map[string]Reference `json:"imports,omitempty" yaml:"imports,omitempty" msgpack:"imports,omitempty" mapstructure:"imports" validate:"dive"`
 	// Resources are externally configured sources and receivers of data (DB, REST
 	// endpoint).
 	Resources []string `json:"resources" yaml:"resources" msgpack:"resources" mapstructure:"resources" validate:"dive"`

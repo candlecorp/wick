@@ -36,7 +36,7 @@ type BusConfig {
   "Resources are externally configured sources and receivers of data (DB, REST endpoint)."
   resources: [string]?
   "Imported Iota dependencies."
-  includes: { string : Reference }?
+  imports: { string : Reference }?
   "Tracing configures an Open Telemetry span exporter."
   tracing: Component?
   specs: [Component]?
@@ -78,7 +78,7 @@ type IotaConfig {
   "The iota's interface definition."
   spec: string?
   "Imported Iota dependencies."
-  includes: { string : Reference }?
+  imports: { string : Reference }?
   "Resources are externally configured sources and receivers of data (DB, REST endpoint)."
   resources: [string]
   "Interface composed from declarative pipelines."

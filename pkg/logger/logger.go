@@ -8,8 +8,32 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-func GetLogger(logLevel zapcore.Level) logr.Logger {
-	// Initialize logger
+var sugar zap.SugaredLogger = *initLogger()
+var logger logr.Logger
+
+func Debug(msg string, keysAndValues ...interface{}) {
+	sugar.Debug(append([]interface{}{msg}, keysAndValues...)...)
+}
+
+func Info(msg string, keysAndValues ...interface{}) {
+	sugar.Info(append([]interface{}{msg}, keysAndValues...)...)
+}
+
+func Warn(msg string, keysAndValues ...interface{}) {
+	sugar.Warn(append([]interface{}{msg}, keysAndValues...)...)
+}
+
+func Error(msg string, keysAndValues ...interface{}) {
+	sugar.Error(append([]interface{}{msg}, keysAndValues...)...)
+}
+
+func initLogger() *zap.SugaredLogger {
+	zapLog := initZap(zapcore.InfoLevel)
+	logger = zapr.NewLogger(zapLog)
+	return zapLog.Sugar()
+}
+
+func initZap(logLevel zapcore.Level) *zap.Logger {
 	zapConfig := zap.NewDevelopmentEncoderConfig()
 	zapConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
 	zapLog := zap.New(zapcore.NewCore(
@@ -17,12 +41,15 @@ func GetLogger(logLevel zapcore.Level) logr.Logger {
 		zapcore.AddSync(colorable.NewColorableStdout()),
 		logLevel,
 	))
-	//zapLog, err := zapConfig.Build()
-	//zapLog, err := zap.NewProduction()
-	// if err != nil {
-	//      panic(err)
-	// }
-	// zapLog := zap.NewExample()
-	log := zapr.NewLogger(zapLog)
-	return log
+	return zapLog
+}
+
+func SetLogLevel(logLevel zapcore.Level) {
+	zapLog := initZap(logLevel)
+	sugar = *zapLog.Sugar()
+	logger = zapr.NewLogger(zapLog)
+}
+
+func GetLogger() logr.Logger {
+	return logger
 }
