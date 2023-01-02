@@ -12,19 +12,19 @@ var sugar zap.SugaredLogger = *initLogger()
 var logger logr.Logger
 
 func Debug(msg string, keysAndValues ...interface{}) {
-	sugar.Debug(append([]interface{}{msg}, keysAndValues...)...)
+	sugar.Debugw(msg, keysAndValues...)
 }
 
 func Info(msg string, keysAndValues ...interface{}) {
-	sugar.Info(append([]interface{}{msg}, keysAndValues...)...)
+	sugar.Infow(msg, keysAndValues...)
 }
 
 func Warn(msg string, keysAndValues ...interface{}) {
-	sugar.Warn(append([]interface{}{msg}, keysAndValues...)...)
+	sugar.Warnw(msg, keysAndValues...)
 }
 
 func Error(msg string, keysAndValues ...interface{}) {
-	sugar.Error(append([]interface{}{msg}, keysAndValues...)...)
+	sugar.Errorw(msg, keysAndValues...)
 }
 
 func initLogger() *zap.SugaredLogger {

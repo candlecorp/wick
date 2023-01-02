@@ -14,17 +14,16 @@ import (
 	"io"
 	"mime"
 	"net/http"
-	"os"
 	"path/filepath"
 	"sort"
 	"time"
 
 	"github.com/go-logr/logr"
-	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 
 	"github.com/nanobus/nanobus/pkg/config"
 	"github.com/nanobus/nanobus/pkg/resolve"
+	nanohttp "github.com/nanobus/nanobus/pkg/transport/http"
 	"github.com/nanobus/nanobus/pkg/transport/http/router"
 )
 
@@ -67,7 +66,7 @@ func NewV1(log logr.Logger, config StaticV1Config) router.Router {
 			if path.Strip != nil {
 				handler = http.StripPrefix(*path.Strip, handler)
 			}
-			r.PathPrefix(path.Path).Handler(handlers.LoggingHandler(os.Stdout, handler))
+			r.PathPrefix(path.Path).Handler(nanohttp.LoggingHandler(handler))
 		}
 
 		return nil

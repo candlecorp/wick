@@ -28,6 +28,7 @@ import (
 
 	"github.com/nanobus/nanobus/pkg/config"
 	"github.com/nanobus/nanobus/pkg/errorz"
+	"github.com/nanobus/nanobus/pkg/logger"
 	"github.com/nanobus/nanobus/pkg/resolve"
 	"github.com/nanobus/nanobus/pkg/security/claims"
 	"github.com/nanobus/nanobus/pkg/transport/filter"
@@ -175,7 +176,6 @@ func Filter(log logr.Logger, settings *Settings) filter.Filter {
 			return ctx, nil
 		}
 
-		fmt.Println(tokenString)
 		token, err := jwt.Parse(tokenString, settings.KeyFunc)
 		if err != nil {
 			return nil, errorz.Wrap(err, errorz.Unauthenticated, err.Error())
@@ -187,7 +187,7 @@ func Filter(log logr.Logger, settings *Settings) filter.Filter {
 				ctx = claims.ToContext(ctx, c)
 
 				if settings.Debug {
-					log.Info("Claims debug info [TURN OFF FOR PRODUCTION]",
+					logger.Debug("Claims debug info [TURN OFF FOR PRODUCTION]",
 						"component", "jwt",
 						"claims", c)
 				}

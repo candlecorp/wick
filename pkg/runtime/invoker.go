@@ -12,6 +12,7 @@ import (
 	"context"
 	"encoding/binary"
 	"encoding/json"
+	"fmt"
 	"reflect"
 
 	"github.com/go-logr/logr"
@@ -41,6 +42,10 @@ type Invoker struct {
 type Target struct {
 	Namespace string
 	Operation string
+}
+
+func (i Target) String() string {
+	return fmt.Sprintf("%s::%s", i.Namespace, i.Operation)
 }
 
 func NewInvoker(log logr.Logger, ns Namespaces, codec channel.Codec) *Invoker {
@@ -193,7 +198,11 @@ func (i *Invoker) lookup(ctx context.Context, p payload.Payload) (Runnable, acti
 	t := i.targets[index]
 	var input interface{}
 	if err := i.codec.Decode(p.Data(), &input); err != nil {
-		logger.Warn("received error when decoding payload", "error", err)
+		// TODO(jsoverson): improve error logging. This bypasses a log error if we got
+		// no payload data but we should log an error if we expected some.
+		if len(p.Data()) > 0 {
+			logger.Warn("received error when decoding payload", "action", t.String(), "error", err)
+		}
 	}
 	c := claims.FromContext(ctx)
 	data := actions.Data{
