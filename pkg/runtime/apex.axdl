@@ -28,9 +28,9 @@ type BusConfig {
   "The Iota version."
   version: string
   "The main code binary (wasm or native)."
-  main: string
+  main: string?
   "The interface definition."
-  spec: string
+  spec: string?
   "Package specifies the contents of the Iota OCI image."
   package: Package?
   "Resources are externally configured sources and receivers of data (DB, REST endpoint)."

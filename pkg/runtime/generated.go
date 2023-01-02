@@ -39,9 +39,9 @@ type BusConfig struct {
 	// The Iota version.
 	Version string `json:"version" yaml:"version" msgpack:"version" mapstructure:"version" validate:"required"`
 	// The main code binary (wasm or native).
-	Main string `json:"main" yaml:"main" msgpack:"main" mapstructure:"main" validate:"required"`
+	Main *string `json:"main,omitempty" yaml:"main,omitempty" msgpack:"main,omitempty" mapstructure:"main"`
 	// The interface definition.
-	Spec string `json:"spec" yaml:"spec" msgpack:"spec" mapstructure:"spec" validate:"required"`
+	Spec *string `json:"spec,omitempty" yaml:"spec,omitempty" msgpack:"spec,omitempty" mapstructure:"spec"`
 	// Package specifies the contents of the Iota OCI image.
 	Package *Package `json:"package,omitempty" yaml:"package,omitempty" msgpack:"package,omitempty" mapstructure:"package"`
 	// Resources are externally configured sources and receivers of data (DB, REST

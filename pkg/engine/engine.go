@@ -172,21 +172,21 @@ func (e *Engine) LoadConfig(busConfig *runtime.BusConfig) error {
 		return err
 	}
 
-	if busConfig.Spec != "" {
-		e.log.Info("Loading interface specification", "filename", busConfig.Spec)
-		interfaceExt := filepath.Ext(busConfig.Spec)
+	if busConfig.Spec != nil {
+		e.log.Info("Loading interface specification", "filename", *busConfig.Spec)
+		interfaceExt := filepath.Ext(*busConfig.Spec)
 		var nss []*spec.Namespace
 		switch interfaceExt {
 		case ".apex", ".axdl", ".aidl", ".apexlang":
 			nss, err = spec_apex.Loader(e.ctx, map[string]interface{}{
-				"filename": busConfig.Spec,
+				"filename": *busConfig.Spec,
 			}, e.resolveAs)
 		default:
-			e.log.Error(err, "Unknown spec type", "filename", busConfig.Spec)
+			e.log.Error(err, "Unknown spec type", "filename", *busConfig.Spec)
 			return err
 		}
 		if err != nil {
-			e.log.Error(err, "Error loading spec", "filename", busConfig.Spec)
+			e.log.Error(err, "Error loading spec", "filename", *busConfig.Spec)
 			return err
 		}
 		for _, ns := range nss {
@@ -194,21 +194,21 @@ func (e *Engine) LoadConfig(busConfig *runtime.BusConfig) error {
 		}
 	}
 
-	if busConfig.Main != "" {
+	if busConfig.Main != nil {
 		var computeInvoker compute.Invoker
-		mainExt := filepath.Ext(busConfig.Main)
-		e.log.Info("Loading main program", "filename", busConfig.Main)
+		mainExt := filepath.Ext(*busConfig.Main)
+		e.log.Info("Loading main program", "filename", *busConfig.Main)
 		switch mainExt {
 		case ".wasm":
 			computeInvoker, err = compute_wasmrs.Loader(e.ctx, map[string]interface{}{
-				"filename": busConfig.Main,
+				"filename": *busConfig.Main,
 			}, e.resolveAs)
 		default:
-			e.log.Error(err, "Unknown program type", "filename", busConfig.Main)
+			e.log.Error(err, "Unknown program type", "filename", *busConfig.Main)
 			return err
 		}
 		if err != nil {
-			e.log.Error(err, "Error loading program", "filename", busConfig.Main)
+			e.log.Error(err, "Error loading program", "filename", *busConfig.Main)
 			return err
 		}
 		e.m.Link(computeInvoker)
