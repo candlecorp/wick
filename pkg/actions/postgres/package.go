@@ -18,6 +18,7 @@ var All = []actions.NamedLoader{
 	Find,
 	FindOne,
 	Query,
+	QueryOne,
 	Exec,
 	ExecMulti,
 	Test,

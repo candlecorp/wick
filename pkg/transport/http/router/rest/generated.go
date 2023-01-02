@@ -7,7 +7,7 @@ import (
 )
 
 type RestV1Config struct {
-	Documentation Documentation `json:"documentation" yaml:"documentation" msgpack:"documentation" mapstructure:"documentation" validate:"required"`
+	Documentation Documentation `json:"documentation" yaml:"documentation" msgpack:"documentation" mapstructure:"documentation"`
 }
 
 func RestV1() (string, router.Loader) {

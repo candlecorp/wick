@@ -17,6 +17,7 @@ import (
 
 	"github.com/nanobus/nanobus/pkg/actions"
 	"github.com/nanobus/nanobus/pkg/actions/core"
+	"github.com/nanobus/nanobus/pkg/handler"
 	"github.com/nanobus/nanobus/pkg/resolve"
 	"github.com/nanobus/nanobus/pkg/runtime"
 )
@@ -41,11 +42,11 @@ func (m *mockProcessor) LoadPipeline(pl *runtime.Pipeline) (runtime.Runnable, er
 	return runnable.Run, m.err
 }
 
-func (m *mockProcessor) Interface(ctx context.Context, name, function string, data actions.Data) (interface{}, bool, error) {
+func (m *mockProcessor) Interface(ctx context.Context, h handler.Handler, data actions.Data) (interface{}, bool, error) {
 	return data, true, nil
 }
 
-func (m *mockProcessor) Provider(ctx context.Context, name, function string, data actions.Data) (interface{}, bool, error) {
+func (m *mockProcessor) Provider(ctx context.Context, h handler.Handler, data actions.Data) (interface{}, bool, error) {
 	return data, true, nil
 }
 

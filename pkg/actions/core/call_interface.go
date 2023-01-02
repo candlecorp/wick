@@ -35,10 +35,21 @@ func CallInterfaceLoader(ctx context.Context, with interface{}, resolver resolve
 func CallInterfaceAction(
 	config *CallInterfaceConfig, processor Processor) actions.Action {
 	return func(ctx context.Context, data actions.Data) (output interface{}, err error) {
+		if config.Input != nil {
+			input, err := config.Input.Eval(data)
+			if err != nil {
+				return nil, err
+			}
+			data = data.Clone()
+			data["input"] = input
+			data["pipe"] = input
+			data["$"] = input
+		}
+
 		var ok bool
-		output, ok, err = processor.Interface(ctx, config.Handler.Interface, config.Handler.Operation, data)
+		output, ok, err = processor.Interface(ctx, config.Handler, data)
 		if !ok {
-			return nil, fmt.Errorf("could not find interface %s::%s", config.Handler.Interface, config.Handler.Operation)
+			return nil, fmt.Errorf("could not find interface %s", config.Handler)
 		}
 		return
 	}

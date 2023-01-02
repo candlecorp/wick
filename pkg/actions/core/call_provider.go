@@ -29,16 +29,27 @@ func CallProviderLoader(ctx context.Context, with interface{}, resolver resolve.
 		return nil, err
 	}
 
-	return CallProviderAction(c.Handler.Interface, c.Handler.Operation, processor), nil
+	return CallProviderAction(&c, processor), nil
 }
 
 func CallProviderAction(
-	name, operation string, processor Processor) actions.Action {
+	config *CallProviderConfig, processor Processor) actions.Action {
 	return func(ctx context.Context, data actions.Data) (output interface{}, err error) {
+		if config.Input != nil {
+			input, err := config.Input.Eval(data)
+			if err != nil {
+				return nil, err
+			}
+			data = data.Clone()
+			data["input"] = input
+			data["pipe"] = input
+			data["$"] = input
+		}
+
 		var ok bool
-		output, ok, err = processor.Provider(ctx, name, operation, data)
+		output, ok, err = processor.Provider(ctx, config.Handler, data)
 		if !ok {
-			return nil, fmt.Errorf("could not find provider %s::%s", name, operation)
+			return nil, fmt.Errorf("could not find provider %s", &config.Handler)
 		}
 		return
 	}

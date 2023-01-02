@@ -56,11 +56,13 @@ func RouterV1Loader(ctx context.Context, with interface{}, resolver resolve.Reso
 	var errorResolver errorz.Resolver
 	var transportInvoker transport.Invoker
 	var logger logr.Logger
+	var filters []filter.Filter
 	if err := resolve.Resolve(resolver,
 		"codec:json", &jsoncodec,
 		"codec:msgpack", &msgpackcodec,
 		"errors:resolver", &errorResolver,
 		"transport:invoker", &transportInvoker,
+		"filter:lookup", &filters,
 		"system:logger", &logger); err != nil {
 		return nil, err
 	}
@@ -70,14 +72,15 @@ func RouterV1Loader(ctx context.Context, with interface{}, resolver resolve.Reso
 		msgpackcodec.ContentType(): msgpackcodec,
 	}
 
-	return NewV1(logger, transportInvoker, codecMap, errorResolver, c), nil
+	return NewV1(logger, transportInvoker, codecMap, errorResolver, c, filters), nil
 }
 
-func NewV1(log logr.Logger, invoker transport.Invoker, codecMap channel.Codecs, errorResolver errorz.Resolver, config RouterV1Config) router.Router {
+func NewV1(log logr.Logger, invoker transport.Invoker, codecMap channel.Codecs, errorResolver errorz.Resolver, config RouterV1Config, filters []filter.Filter) router.Router {
 	router := Router{
 		invoker:       invoker,
 		errorResolver: errorResolver,
 		codecs:        codecMap,
+		filters:       filters,
 	}
 	return func(r *mux.Router, address string) error {
 
@@ -98,6 +101,7 @@ func NewV1(log logr.Logger, invoker transport.Invoker, codecMap channel.Codecs, 
 			if path.Raw != nil {
 				raw = *path.Raw
 			}
+
 			r.HandleFunc(path.URI, router.handler(path.Handler, raw, desiredCodec)).
 				Methods(path.Method)
 		}

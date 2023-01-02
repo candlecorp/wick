@@ -7,7 +7,7 @@ import (
 )
 
 type StaticV1Config struct {
-	Paths []StaticPath `json:"paths" yaml:"paths" msgpack:"paths" mapstructure:"paths" validate:"required"`
+	Paths []StaticPath `json:"paths" yaml:"paths" msgpack:"paths" mapstructure:"paths" validate:"dive"`
 }
 
 func StaticV1() (string, router.Loader) {

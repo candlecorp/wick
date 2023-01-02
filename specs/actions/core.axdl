@@ -23,10 +23,12 @@ type AuthorizeConfig @action("authorize") {
 
 type CallInterfaceConfig @action("call_interface") {
   handler: Handler
+  input:   DataExpr?
 }
 
 type CallProviderConfig @action("call_provider") {
   handler: Handler
+  input:   DataExpr?
 }
 
 type DecodeConfig @action("decode") {

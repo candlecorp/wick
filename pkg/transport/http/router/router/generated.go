@@ -8,7 +8,7 @@ import (
 )
 
 type RouterV1Config struct {
-	Routes []AddRoute `json:"routes" yaml:"routes" msgpack:"routes" mapstructure:"routes" validate:"required"`
+	Routes []AddRoute `json:"routes" yaml:"routes" msgpack:"routes" mapstructure:"routes" validate:"dive"`
 }
 
 func RouterV1() (string, router.Loader) {

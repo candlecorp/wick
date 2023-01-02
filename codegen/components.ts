@@ -7,6 +7,7 @@
  */
 
 import {
+  Alias,
   Annotated,
   BaseVisitor,
   Context,
@@ -86,6 +87,8 @@ class ComponentImportsVisitor extends ImportsVisitor {
   }
 }
 
+const requiredAliases = ["ValueExpr", "DataExpr", "ResourceRef", "Handler"]
+
 class ConfigStructVisitor extends StructVisitor {
   structTags(context: Context): string {
     const { field } = context;
@@ -108,6 +111,11 @@ class ConfigStructVisitor extends StructVisitor {
           (t as Primitive).name == PrimitiveName.String)
       ) {
         validate += `required`;
+      } else if (t.kind == Kind.Alias) {
+        const a = t as Alias;
+        if (requiredAliases.indexOf(a.name) != -1) {
+          validate += `required`;
+        }
       }
 
       if (t.kind == Kind.Map || t.kind == Kind.List) {

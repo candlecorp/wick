@@ -106,6 +106,15 @@ type LoadConfig @action("@postgres/load") {
 	notFoundError: string = "not_found"
 }
 
+type QueryOneConfig @action("@postgres/query_one") {
+	"Resource is the name of the connection resource to use."
+	resource: ResourceRef
+	"SQL is the SQL query to execute."
+	sql: string @rename({ go: "SQL"})
+	"Args are the evaluations to use as arguments for the SQL query."
+	args: [ValueExpr]?
+}
+
 type QueryConfig @action("@postgres/query") {
 	"Resource is the name of the connection resource to use."
 	resource: ResourceRef

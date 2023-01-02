@@ -112,13 +112,13 @@ func (p *Processor) GetInterfaces() Namespaces {
 	return p.interfaces
 }
 
-func (p *Processor) Interface(ctx context.Context, name, operation string, data actions.Data) (interface{}, bool, error) {
-	s, ok := p.interfaces[name]
+func (p *Processor) Interface(ctx context.Context, h handler.Handler, data actions.Data) (interface{}, bool, error) {
+	s, ok := p.interfaces[h.Interface]
 	if !ok {
 		return nil, false, nil
 	}
 
-	pl, ok := s[operation]
+	pl, ok := s[h.Operation]
 	if !ok {
 		return nil, false, nil
 	}
@@ -131,13 +131,13 @@ func (p *Processor) GetProviders() Namespaces {
 	return p.providers
 }
 
-func (p *Processor) Provider(ctx context.Context, name, operation string, data actions.Data) (interface{}, bool, error) {
-	s, ok := p.providers[name]
+func (p *Processor) Provider(ctx context.Context, h handler.Handler, data actions.Data) (interface{}, bool, error) {
+	s, ok := p.providers[h.Interface]
 	if !ok {
 		return nil, false, nil
 	}
 
-	pl, ok := s[operation]
+	pl, ok := s[h.Operation]
 	if !ok {
 		return nil, false, nil
 	}

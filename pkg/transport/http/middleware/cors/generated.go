@@ -12,18 +12,18 @@ type CorsV0Config struct {
 	// origin may contain a wildcard (*) to replace 0 or more characters (i.e.:
 	// http://*.domain.com). Usage of wildcards implies a small performance penalty.
 	// Only one wildcard can be used per origin. Default value is ["*"]
-	AllowedOrigins []string `json:"allowedOrigins,omitempty" yaml:"allowedOrigins,omitempty" msgpack:"allowedOrigins,omitempty" mapstructure:"allowedOrigins"`
+	AllowedOrigins []string `json:"allowedOrigins,omitempty" yaml:"allowedOrigins,omitempty" msgpack:"allowedOrigins,omitempty" mapstructure:"allowedOrigins" validate:"dive"`
 	// AllowedMethods is a list of methods the client is allowed to use with
 	// cross-domain requests. Default value is simple methods (HEAD, GET and POST).
-	AllowedMethods []string `json:"allowedMethods,omitempty" yaml:"allowedMethods,omitempty" msgpack:"allowedMethods,omitempty" mapstructure:"allowedMethods"`
+	AllowedMethods []string `json:"allowedMethods,omitempty" yaml:"allowedMethods,omitempty" msgpack:"allowedMethods,omitempty" mapstructure:"allowedMethods" validate:"dive"`
 	// AllowedHeaders is list of non simple headers the client is allowed to use with
 	// cross-domain requests. If the special "*" value is present in the list, all
 	// headers will be allowed. Default value is [] but "Origin" is always appended to
 	// the list.
-	AllowedHeaders []string `json:"allowedHeaders,omitempty" yaml:"allowedHeaders,omitempty" msgpack:"allowedHeaders,omitempty" mapstructure:"allowedHeaders"`
+	AllowedHeaders []string `json:"allowedHeaders,omitempty" yaml:"allowedHeaders,omitempty" msgpack:"allowedHeaders,omitempty" mapstructure:"allowedHeaders" validate:"dive"`
 	// ExposedHeaders indicates which headers are safe to expose to the API of a CORS
 	// API specification
-	ExposedHeaders []string `json:"exposedHeaders,omitempty" yaml:"exposedHeaders,omitempty" msgpack:"exposedHeaders,omitempty" mapstructure:"exposedHeaders"`
+	ExposedHeaders []string `json:"exposedHeaders,omitempty" yaml:"exposedHeaders,omitempty" msgpack:"exposedHeaders,omitempty" mapstructure:"exposedHeaders" validate:"dive"`
 	// MaxAge indicates how long (in seconds) the results of a preflight request can be
 	// cached
 	MaxAge *uint32 `json:"maxAge,omitempty" yaml:"maxAge,omitempty" msgpack:"maxAge,omitempty" mapstructure:"maxAge"`
@@ -35,7 +35,7 @@ type CorsV0Config struct {
 	OptionsPassthrough bool `json:"optionsPassthrough" yaml:"optionsPassthrough" msgpack:"optionsPassthrough" mapstructure:"optionsPassthrough"`
 	// Provides a status code to use for successful OPTIONS requests. Default value is
 	// http.StatusNoContent (204).
-	OptionsSuccessStatus uint32 `json:"optionsSuccessStatus" yaml:"optionsSuccessStatus" msgpack:"optionsSuccessStatus" mapstructure:"optionsSuccessStatus" validate:"required"`
+	OptionsSuccessStatus uint32 `json:"optionsSuccessStatus" yaml:"optionsSuccessStatus" msgpack:"optionsSuccessStatus" mapstructure:"optionsSuccessStatus"`
 }
 
 func CorsV0() (string, middleware.Loader) {

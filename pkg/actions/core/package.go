@@ -14,6 +14,7 @@ import (
 	"net/http"
 
 	"github.com/nanobus/nanobus/pkg/actions"
+	"github.com/nanobus/nanobus/pkg/handler"
 	"github.com/nanobus/nanobus/pkg/runtime"
 )
 
@@ -37,8 +38,8 @@ var All = []actions.NamedLoader{
 
 type Processor interface {
 	LoadPipeline(pl *runtime.Pipeline) (runtime.Runnable, error)
-	Interface(ctx context.Context, name, function string, data actions.Data) (interface{}, bool, error)
-	Provider(ctx context.Context, name, function string, data actions.Data) (interface{}, bool, error)
+	Interface(ctx context.Context, h handler.Handler, data actions.Data) (interface{}, bool, error)
+	Provider(ctx context.Context, h handler.Handler, data actions.Data) (interface{}, bool, error)
 }
 
 type HTTPClient interface {

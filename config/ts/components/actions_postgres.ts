@@ -141,6 +141,22 @@ export function Load(config: LoadConfig): Component<LoadConfig> {
   };
 }
 
+export interface QueryOneConfig {
+  // Resource is the name of the connection resource to use.
+  resource: ResourceRef;
+  // SQL is the SQL query to execute.
+  sql: string;
+  // Args are the evaluations to use as arguments for the SQL query.
+  args?: ValueExpr[];
+}
+
+export function QueryOne(config: QueryOneConfig): Component<QueryOneConfig> {
+  return {
+    uses: "@postgres/query_one",
+    with: config
+  };
+}
+
 export interface QueryConfig {
   // Resource is the name of the connection resource to use.
   resource: ResourceRef;

@@ -15,8 +15,8 @@ import (
 type AuthorizeConfig struct {
 	// Condition is the predicate expression for authorization.
 	Condition *expr.ValueExpr        `json:"condition,omitempty" yaml:"condition,omitempty" msgpack:"condition,omitempty" mapstructure:"condition"`
-	Has       []string               `json:"has,omitempty" yaml:"has,omitempty" msgpack:"has,omitempty" mapstructure:"has"`
-	Check     map[string]interface{} `json:"check,omitempty" yaml:"check,omitempty" msgpack:"check,omitempty" mapstructure:"check"`
+	Has       []string               `json:"has,omitempty" yaml:"has,omitempty" msgpack:"has,omitempty" mapstructure:"has" validate:"dive"`
+	Check     map[string]interface{} `json:"check,omitempty" yaml:"check,omitempty" msgpack:"check,omitempty" mapstructure:"check" validate:"dive"`
 	Error     string                 `json:"error" yaml:"error" msgpack:"error" mapstructure:"error" validate:"required"`
 }
 
@@ -26,6 +26,7 @@ func Authorize() (string, actions.Loader) {
 
 type CallInterfaceConfig struct {
 	Handler handler.Handler `json:"handler" yaml:"handler" msgpack:"handler" mapstructure:"handler" validate:"required"`
+	Input   *expr.DataExpr  `json:"input,omitempty" yaml:"input,omitempty" msgpack:"input,omitempty" mapstructure:"input"`
 }
 
 func CallInterface() (string, actions.Loader) {
@@ -34,6 +35,7 @@ func CallInterface() (string, actions.Loader) {
 
 type CallProviderConfig struct {
 	Handler handler.Handler `json:"handler" yaml:"handler" msgpack:"handler" mapstructure:"handler" validate:"required"`
+	Input   *expr.DataExpr  `json:"input,omitempty" yaml:"input,omitempty" msgpack:"input,omitempty" mapstructure:"input"`
 }
 
 func CallProvider() (string, actions.Loader) {
@@ -46,7 +48,7 @@ type DecodeConfig struct {
 	// Codec is the name of the codec to use for decoding.
 	Codec string `json:"codec" yaml:"codec" msgpack:"codec" mapstructure:"codec" validate:"required"`
 	// codecArgs are the arguments to pass to the decode function.
-	CodecArgs []interface{} `json:"codecArgs,omitempty" yaml:"codecArgs,omitempty" msgpack:"codecArgs,omitempty" mapstructure:"codecArgs"`
+	CodecArgs []interface{} `json:"codecArgs,omitempty" yaml:"codecArgs,omitempty" msgpack:"codecArgs,omitempty" mapstructure:"codecArgs" validate:"dive"`
 }
 
 func Decode() (string, actions.Loader) {
@@ -74,7 +76,7 @@ func Filter() (string, actions.Loader) {
 
 type HTTPResponseConfig struct {
 	Status  *uint32              `json:"status,omitempty" yaml:"status,omitempty" msgpack:"status,omitempty" mapstructure:"status"`
-	Headers []HTTPResponseHeader `json:"headers,omitempty" yaml:"headers,omitempty" msgpack:"headers,omitempty" mapstructure:"headers"`
+	Headers []HTTPResponseHeader `json:"headers,omitempty" yaml:"headers,omitempty" msgpack:"headers,omitempty" mapstructure:"headers" validate:"dive"`
 }
 
 func HTTPResponse() (string, actions.Loader) {
@@ -100,7 +102,7 @@ type HTTPConfig struct {
 	// Codec is the name of the codec to use for decoing.
 	Codec string `json:"codec" yaml:"codec" msgpack:"codec" mapstructure:"codec" validate:"required"`
 	// Args are the arguments to pass to the decode function.
-	CodecArgs []interface{} `json:"codecArgs,omitempty" yaml:"codecArgs,omitempty" msgpack:"codecArgs,omitempty" mapstructure:"codecArgs"`
+	CodecArgs []interface{} `json:"codecArgs,omitempty" yaml:"codecArgs,omitempty" msgpack:"codecArgs,omitempty" mapstructure:"codecArgs" validate:"dive"`
 }
 
 func HTTP() (string, actions.Loader) {
@@ -149,7 +151,7 @@ func JQ() (string, actions.Loader) {
 type LogConfig struct {
 	Format string `json:"format" yaml:"format" msgpack:"format" mapstructure:"format" validate:"required"`
 	// Args are the evaluations to use as arguments into the string format.
-	Args []*expr.ValueExpr `json:"args,omitempty" yaml:"args,omitempty" msgpack:"args,omitempty" mapstructure:"args"`
+	Args []*expr.ValueExpr `json:"args,omitempty" yaml:"args,omitempty" msgpack:"args,omitempty" mapstructure:"args" validate:"dive"`
 }
 
 func Log() (string, actions.Loader) {
@@ -160,7 +162,7 @@ type ReCaptchaConfig struct {
 	SiteVerifyURL string          `json:"siteVerifyUrl" yaml:"siteVerifyUrl" msgpack:"siteVerifyUrl" mapstructure:"siteVerifyUrl" validate:"required"`
 	Secret        string          `json:"secret" yaml:"secret" msgpack:"secret" mapstructure:"secret" validate:"required"`
 	Response      *expr.ValueExpr `json:"response" yaml:"response" msgpack:"response" mapstructure:"response" validate:"required"`
-	Score         float64         `json:"score" yaml:"score" msgpack:"score" mapstructure:"score" validate:"required"`
+	Score         float64         `json:"score" yaml:"score" msgpack:"score" mapstructure:"score"`
 	Action        *string         `json:"action,omitempty" yaml:"action,omitempty" msgpack:"action,omitempty" mapstructure:"action"`
 }
 
@@ -170,9 +172,9 @@ func ReCaptcha() (string, actions.Loader) {
 
 type RouteConfig struct {
 	// Selection defines the selection mode: single or multi.
-	Selection SelectionMode `json:"selection" yaml:"selection" msgpack:"selection" mapstructure:"selection" validate:"required"`
+	Selection SelectionMode `json:"selection" yaml:"selection" msgpack:"selection" mapstructure:"selection"`
 	// Routes are the possible runnable routes which conditions for selection.
-	Routes []RouteCondition `json:"routes" yaml:"routes" msgpack:"routes" mapstructure:"routes" validate:"required"`
+	Routes []RouteCondition `json:"routes" yaml:"routes" msgpack:"routes" mapstructure:"routes" validate:"dive"`
 }
 
 func Route() (string, actions.Loader) {
@@ -185,7 +187,7 @@ type RouteCondition struct {
 	// When is the predicate expression for filtering.
 	When *expr.ValueExpr `json:"when" yaml:"when" msgpack:"when" mapstructure:"when" validate:"required"`
 	// Then is the steps to process.
-	Then []runtime.Step `json:"then" yaml:"then" msgpack:"then" mapstructure:"then" validate:"required"`
+	Then []runtime.Step `json:"then" yaml:"then" msgpack:"then" mapstructure:"then" validate:"dive"`
 }
 
 // SelectionMode indicates how many routes can be selected.

@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 /*
  * Copyright 2022 The NanoBus Authors.
  *
@@ -8,10 +9,11 @@
 
 import * as YAML from "https://deno.land/std@0.167.0/encoding/yaml.ts";
 import { Duration as Dur } from "https://deno.land/x/durationjs@v4.0.0/mod.ts";
+import { Claims } from "./claims.ts";
 
 export type ResourceRef = string & { __desc: "Resource" };
 export type Duration = string & { __desc: "Duration" };
-export type ValueExpr = string;
+export type ValueExpr = any;
 export type DataExpr = string;
 export type CodecRef = string & { __desc: "Codec" };
 export type Timeout = Duration;
@@ -144,6 +146,56 @@ interface AppConfig {
 export interface Module {
   initialize(app: Application): void;
 }
+
+export interface FlowClass {
+  done(): Step[];
+}
+
+class FlowBuilder<T> {
+  private steps: Step[] = [];
+
+  constructor(steps: Step[] = []) {
+    this.steps = steps;
+  }
+
+  then<O>(
+    name: string,
+    fn: ($: T) => Partial<ComponentWithOutput<unknown, O>>,
+    ...options: Partial<StepOptionsT<O>>[]
+  ): FlowBuilder<O> {
+    const c = fn(propertyProxy.$ as T);
+    const component = c as Component<unknown>;
+    const s: StepT<unknown> = {
+      name,
+      ...component,
+    };
+    for (const opt of options) {
+      if (opt.timeout) {
+        s.timeout = opt.timeout;
+      }
+      if (opt.retry) {
+        s.retry = opt.retry;
+      }
+      if (opt.circuitBreaker) {
+        s.circuitBreaker = opt.circuitBreaker;
+      }
+      if (opt.returns) {
+        s.returns = opt.returns as string;
+      }
+    }
+    return new FlowBuilder<O>([...this.steps, s]);
+  }
+
+  done(): Step[] {
+    return this.steps;
+  }
+}
+
+export function given<T>(_input: T): FlowBuilder<T> {
+  return new FlowBuilder<T>();
+}
+
+export type Flow<T> = (data: Context<T>, vars: any) => Step[] | FlowClass;
 
 export class Application {
   readonly config: AppConfig;
@@ -284,6 +336,42 @@ export class Application {
     }
   }
 
+  register(
+    handlers: Record<string, Handler>,
+    iface: Record<string, Flow<any>>,
+  ): Application {
+    const impls: Record<Handler, Step[]> = {};
+    for (const funcName of Object.keys(iface)) {
+      impls[handlers[funcName]] = getSteps(iface[funcName]);
+    }
+    this.implement(impls);
+    return this;
+  }
+
+  provide(
+    handlers: Record<string, Handler>,
+    iface: Record<string, Flow<any>>,
+  ): Application {
+    const impls: Record<Handler, Step[]> = {};
+    for (const funcName of Object.keys(iface)) {
+      impls[handlers[funcName]] = getSteps(iface[funcName]);
+    }
+    this.internal(impls);
+    return this;
+  }
+
+  authorize(
+    handlers: Record<string, Handler>,
+    iface: Record<string, Authorization>,
+  ): Application {
+    const auths: Record<Handler, Authorization> = {};
+    for (const funcName of Object.keys(iface)) {
+      auths[handlers[funcName]] = iface[funcName];
+    }
+    this.authorizations(auths);
+    return this;
+  }
+
   implement(handlers: Record<Handler, Step[]>): Application {
     for (const handler of Object.keys(handlers)) {
       const steps = handlers[handler as Handler];
@@ -292,6 +380,22 @@ export class Application {
       if (!pipelines) {
         pipelines = {};
         this.config.interfaces[iface] = pipelines;
+      }
+      pipelines[oper] = {
+        steps: steps,
+      };
+    }
+    return this;
+  }
+
+  internal(handlers: Record<Handler, Step[]>): Application {
+    for (const handler of Object.keys(handlers)) {
+      const steps = handlers[handler as Handler];
+      const [iface, oper] = handler.split("::");
+      let pipelines = this.config.providers[iface];
+      if (!pipelines) {
+        pipelines = {};
+        this.config.providers[iface] = pipelines;
       }
       pipelines[oper] = {
         steps: steps,
@@ -456,6 +560,20 @@ export interface ResiliencyGroup {
   circuitBreaker?: CircuitBreakerRef;
 }
 
+export interface StepOptionsT<T> extends ResiliencyGroup {
+  returns?: T;
+}
+
+export interface StepOptions extends ResiliencyGroup {
+  returns?: any;
+}
+
+export function returns<T>(value: T): Partial<StepOptionsT<T>> {
+  return {
+    returns: value,
+  };
+}
+
 export const unauthenticated: Unauthenticated = { unauthenticated: true };
 
 export type Authorization = Unauthenticated | Secured;
@@ -471,43 +589,255 @@ export interface Secured {
   rules?: [Component<unknown>];
 }
 
-export function step(
-  name: string,
-  // deno-lint-ignore no-explicit-any
-  comp: Component<any>,
-  options: Partial<Step> = {},
-): Step {
-  return {
-    name,
-    ...comp,
-    ...options,
-  };
-}
-
-// deno-lint-ignore no-explicit-any
 export type Step = StepT<any>;
 
-export type StepT<T> = StepWith<T> | StepWithout;
-
-export interface StepWithout extends ResiliencyGroup {
-  name: string;
-  uses: string;
-  returns?: string;
-}
-
-export interface StepWith<T> extends Component<T>, ResiliencyGroup {
+export interface StepT<T> extends Component<T>, ResiliencyGroup {
   name: string;
   returns?: string;
 }
 
 export interface Component<T> {
   uses: string;
-  with: T | undefined;
+  with?: T;
 }
+
+export interface ComponentWithOutput<T, O> extends Component<T> {
+  returns?: O;
+}
+
+export type Response<T> = ComponentWithOutput<unknown, T>
 
 export function component(uses: string, config: unknown): Component<unknown> {
   return {
     uses: uses,
     with: config,
   };
+}
+
+//////////////
+
+export interface Data<T> {
+  /** Security claims */
+  claims: Claims;
+  /** Input from the request */
+  input: T;
+  /** Custom variables */
+  [variable: string]: any;
+}
+
+export interface Context<T> extends Data<T> {
+  flow: FlowBuilder<T>;
+}
+
+const handler = {
+  get(target: any, prop: any, _receiver: unknown): unknown {
+    const value = target[prop];
+    if (value instanceof Function) {
+      return (...args: unknown[]) => {
+        //return value.apply(this === receiver ? target : this, args);
+        return value.apply(target, args);
+      };
+    }
+    if (value) {
+      return value;
+    }
+
+    let parent: string[] = [];
+    if (target instanceof DynamicProperty) {
+      parent = (target as DynamicProperty).prop;
+    }
+
+    if (parent.length > 0 && !isNaN(prop)) {
+      const addIndexer = [...parent];
+      addIndexer[addIndexer.length - 1] += "[" + prop + "]";
+      return new Proxy(new DynamicProperty(addIndexer), handler);
+    }
+
+    return new Proxy(new DynamicProperty([...parent, prop]), handler);
+  },
+};
+
+export class DynamicProperty {
+  prop: string[];
+
+  constructor(prop: string[]) {
+    this.prop = prop;
+  }
+
+  toString(): string {
+    return this.prop.join(".");
+  }
+
+  get [Symbol.toStringTag]() {
+    return this.toString();
+  }
+
+  [Symbol.toPrimitive](hint: any) {
+    if (hint === "string") {
+      return this.toString();
+    }
+    return null;
+  }
+}
+
+export const propertyProxy = new Proxy({}, handler);
+
+export class StepBuilder<T> implements StepT<T> {
+  name: string;
+  uses: string;
+  with?: T;
+  timeout?: TimeoutRef;
+  retry?: RetryRef;
+  circuitBreaker?: CircuitBreakerRef;
+  returns?: string;
+
+  constructor(name: string, comp: Component<T>) {
+    this.name = name;
+    this.uses = comp.uses;
+    this.with = comp.with;
+  }
+
+  withTimeout(timeout: TimeoutRef | undefined): StepBuilder<T> {
+    this.timeout = timeout;
+    return this;
+  }
+
+  withRetry(retry: RetryRef | undefined): StepBuilder<T> {
+    this.retry = retry;
+    return this;
+  }
+
+  withResiliency(resiliency: ResiliencyGroup): StepBuilder<T> {
+    if (resiliency.timeout) {
+      this.timeout = resiliency.timeout;
+    }
+    if (resiliency.retry) {
+      this.retry = resiliency.retry;
+    }
+    if (resiliency.circuitBreaker) {
+      this.circuitBreaker = resiliency.circuitBreaker;
+    }
+    return this;
+  }
+
+  withCircuitBreaker(
+    circuitBreaker: CircuitBreakerRef | undefined,
+  ): StepBuilder<T> {
+    this.circuitBreaker = circuitBreaker;
+    return this;
+  }
+
+  return(variable: any): StepBuilder<T> {
+    const v = variable as unknown;
+    if (v instanceof DynamicProperty) {
+      variable = (v as DynamicProperty).toString();
+    }
+    this.returns = "" + variable;
+    return this;
+  }
+}
+
+export function step<T>(
+  name: string,
+  comp: Component<T>,
+  options?: StepOptions,
+): StepBuilder<T> {
+  replaceFakes(comp as unknown as Record<string, unknown>);
+  const builder = new StepBuilder(name, comp);
+  if (options) {
+    builder.withResiliency(options);
+    if (options.returns) {
+      builder.return(options?.returns);
+    }
+  }
+
+  return builder;
+}
+
+export function getSteps(f: Flow<unknown>): Step[] {
+  const context = new Proxy({
+    flow: new FlowBuilder<unknown>(),
+  }, handler) as Context<unknown>;
+  const stepsOrFlow = f(context, propertyProxy);
+  let steps: Step[];
+  if (stepsOrFlow instanceof FlowBuilder) {
+    steps = (stepsOrFlow as FlowClass).done();
+  } else {
+    steps = stepsOrFlow as Step[];
+  }
+  for (let i = 0; i < steps.length; i++) {
+    steps[i] = { ...steps[i] };
+    scrub(steps[i]);
+  }
+  return steps;
+}
+
+export function toExpr(input: unknown): string {
+  if (input instanceof DynamicProperty) {
+    input = (input as DynamicProperty).toString();
+  }
+  return input as string || "nil";
+}
+
+export function toDataExpr(input: unknown): string {
+  let str = toExpr(input);
+  if (str.startsWith("$.")) {
+    str = "pipe" + str.substring(1);
+  }
+  return str;
+}
+
+export function scrub(data: unknown): void {
+  replaceFakes(data as Record<string, unknown>);
+  removeUndefined(data as Record<string, unknown>);
+  trimStrings(data as Record<string, unknown>);
+}
+
+function replaceFakes(rec: Record<string, unknown>) {
+  for (const key of Object.keys(rec)) {
+    const val = rec[key];
+    if (val instanceof DynamicProperty) {
+      rec[key] = (val as DynamicProperty).toString();
+    }
+    if (val instanceof Object) {
+      replaceFakes(val as Record<string, unknown>);
+    }
+    if (val instanceof String) {
+      rec[key] = (val as string).trim();
+    }
+    if (val instanceof Array) {
+      const ary = val as Array<any>;
+      for (let i = 0; i < ary.length; i++) {
+        const item = ary[i];
+        if (item instanceof DynamicProperty) {
+          ary[i] = (item as DynamicProperty).toString();
+        }
+        if (item instanceof Object) {
+          replaceFakes(item as Record<string, unknown>);
+        }
+      }
+    }
+  }
+}
+
+function trimStrings(rec: Record<string, unknown>) {
+  for (const key of Object.keys(rec)) {
+    const val = rec[key];
+    if (typeof val === "string" || val instanceof String) {
+      rec[key] = (val as string).trim();
+    } else if (val instanceof Array) {
+      const ary = val as Array<any>;
+      for (let i = 0; i < ary.length; i++) {
+        const item = ary[i];
+        if (typeof item === "string" || item instanceof String) {
+          ary[i] = (item as string).trim();
+        }
+        if (item instanceof Object) {
+          trimStrings(item as Record<string, unknown>);
+        }
+      }
+    } else if (val instanceof Object) {
+      trimStrings(val as Record<string, unknown>);
+    }
+  }
 }

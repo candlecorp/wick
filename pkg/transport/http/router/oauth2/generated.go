@@ -15,10 +15,10 @@ type OAuth2V1Config struct {
 	CallbackPath string           `json:"callbackPath" yaml:"callbackPath" msgpack:"callbackPath" mapstructure:"callbackPath" validate:"required"`
 	ClientID     string           `json:"clientId" yaml:"clientId" msgpack:"clientId" mapstructure:"clientId" validate:"required"`
 	ClientSecret string           `json:"clientSecret" yaml:"clientSecret" msgpack:"clientSecret" mapstructure:"clientSecret" validate:"required"`
-	Endpoint     Endpoint         `json:"endpoint" yaml:"endpoint" msgpack:"endpoint" mapstructure:"endpoint" validate:"required"`
+	Endpoint     Endpoint         `json:"endpoint" yaml:"endpoint" msgpack:"endpoint" mapstructure:"endpoint"`
 	CallbackURL  string           `json:"callbackUrl" yaml:"callbackUrl" msgpack:"callbackUrl" mapstructure:"callbackUrl" validate:"required"`
 	RedirectURL  string           `json:"redirectUrl" yaml:"redirectUrl" msgpack:"redirectUrl" mapstructure:"redirectUrl" validate:"required"`
-	Scopes       []string         `json:"scopes,omitempty" yaml:"scopes,omitempty" msgpack:"scopes,omitempty" mapstructure:"scopes"`
+	Scopes       []string         `json:"scopes,omitempty" yaml:"scopes,omitempty" msgpack:"scopes,omitempty" mapstructure:"scopes" validate:"dive"`
 	Handler      *handler.Handler `json:"handler,omitempty" yaml:"handler,omitempty" msgpack:"handler,omitempty" mapstructure:"handler"`
 }
 
@@ -32,7 +32,7 @@ type Endpoint struct {
 	UserInfoURL string `json:"userInfoUrl" yaml:"userInfoUrl" msgpack:"userInfoUrl" mapstructure:"userInfoUrl" validate:"required"`
 	// AuthStyle optionally specifies how the endpoint wants the client ID & client
 	// secret sent.
-	AuthStyle AuthStyle `json:"authStyle" yaml:"authStyle" msgpack:"authStyle" mapstructure:"authStyle" validate:"required"`
+	AuthStyle AuthStyle `json:"authStyle" yaml:"authStyle" msgpack:"authStyle" mapstructure:"authStyle"`
 }
 
 // AuthStyle represents how requests for tokens are authenticated to the server.

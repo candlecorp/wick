@@ -8,7 +8,7 @@ import (
 )
 
 type TimeSchedulerV1Config struct {
-	Schedules []Schedule `json:"schedules" yaml:"schedules" msgpack:"schedules" mapstructure:"schedules" validate:"required"`
+	Schedules []Schedule `json:"schedules" yaml:"schedules" msgpack:"schedules" mapstructure:"schedules" validate:"dive"`
 }
 
 func TimeSchedulerV1() (string, transport.Loader) {

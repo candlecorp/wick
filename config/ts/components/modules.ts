@@ -52,14 +52,14 @@ export class RestModule implements Module {
   }
 
   initialize(app: Application): void {
-    const routes: Component<any>[] = [];
+    const routers: Component<any>[] = [];
     const middleware: Component<any>[] = [];
 
     if (this.options.oauth2) {
-      routes.push(OAuth2V1(this.options.oauth2));
+      routers.push(OAuth2V1(this.options.oauth2));
     }
 
-    routes.push(RestV1({
+    routers.push(RestV1({
       documentation: {
         swaggerUI: true,
         postman: true,
@@ -68,7 +68,7 @@ export class RestModule implements Module {
     }));
 
     if (this.options.static) {
-      routes.push(StaticV1(this.options.static));
+      routers.push(StaticV1(this.options.static));
     }
 
     if (this.options.cors) {
@@ -87,7 +87,7 @@ export class RestModule implements Module {
       HttpServerV1({
         address: this.address,
         middleware: middleware,
-        routes: routes,
+        routers: routers,
       }),
     );
 

@@ -27,6 +27,7 @@ export function Authorize(config: AuthorizeConfig): Component<AuthorizeConfig> {
 
 export interface CallInterfaceConfig {
   handler: Handler;
+  input?: DataExpr;
 }
 
 export function CallInterface(
@@ -40,6 +41,7 @@ export function CallInterface(
 
 export interface CallProviderConfig {
   handler: Handler;
+  input?: DataExpr;
 }
 
 export function CallProvider(
