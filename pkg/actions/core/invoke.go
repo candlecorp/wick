@@ -99,10 +99,3 @@ func InvokeAction(
 		return nil, nil
 	}
 }
-
-func orEmpty(value *string) string {
-	if value != nil {
-		return *value
-	}
-	return ""
-}

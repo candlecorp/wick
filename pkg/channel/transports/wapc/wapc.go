@@ -15,6 +15,7 @@ import (
 	wapc "github.com/wapc/wapc-go"
 
 	functions "github.com/nanobus/nanobus/pkg/channel"
+	"github.com/nanobus/nanobus/pkg/logger"
 )
 
 const DefaultPoolSize = 0
@@ -49,7 +50,12 @@ func (w *WaPC) Invoke(ctx context.Context, receiver functions.Receiver, payload 
 	if err != nil {
 		return nil, err
 	}
-	defer w.pool.Return(instance)
+	defer func() {
+		err := w.pool.Return(instance)
+		if err != nil {
+			logger.Error("could not return WebAssembly module back to the pool", "err", err)
+		}
+	}()
 
 	return instance.Invoke(ctx, receiver.Namespace+"/"+receiver.Operation, payload)
 }

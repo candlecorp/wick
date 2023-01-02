@@ -21,11 +21,13 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
+	"go.uber.org/zap"
 
 	"github.com/nanobus/nanobus/pkg/channel"
 	"github.com/nanobus/nanobus/pkg/config"
 	"github.com/nanobus/nanobus/pkg/errorz"
 	"github.com/nanobus/nanobus/pkg/handler"
+	"github.com/nanobus/nanobus/pkg/logger"
 	"github.com/nanobus/nanobus/pkg/resolve"
 	"github.com/nanobus/nanobus/pkg/transport"
 	"github.com/nanobus/nanobus/pkg/transport/filter"
@@ -223,8 +225,9 @@ func (t *Router) handler(h handler.Handler, raw bool, desiredCodec channel.Codec
 				t.handleError(err, codec, r, w, http.StatusInternalServerError)
 				return
 			}
-
-			w.Write(responseBytes)
+			if _, err := w.Write(responseBytes); err != nil {
+				logger.Error("error writing response", zap.Error(err))
+			}
 		} else {
 			w.WriteHeader(http.StatusNoContent)
 		}
@@ -245,7 +248,9 @@ func (t *Router) handleError(err error, codec channel.Codec, req *http.Request, 
 		fmt.Fprint(w, "unknown error")
 	}
 
-	w.Write(payload)
+	if _, err := w.Write(payload); err != nil {
+		logger.Error("error writing error response", zap.Error(err))
+	}
 }
 
 func isNil(val interface{}) bool {

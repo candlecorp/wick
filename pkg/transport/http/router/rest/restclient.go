@@ -15,7 +15,9 @@ import (
 	"strings"
 
 	"github.com/gorilla/mux"
+	"go.uber.org/zap"
 
+	"github.com/nanobus/nanobus/pkg/logger"
 	"github.com/nanobus/nanobus/pkg/spec"
 )
 
@@ -32,7 +34,11 @@ func RegisterRESTClientRoutes(r *mux.Router, namespaces spec.Namespaces) error {
 			v = "http://" + req.Host
 		}
 		replaced := bytes.Replace(specData, []byte("[REPLACE_HOST]"), []byte(v), 1)
-		w.Write(replaced)
+
+		if _, err := w.Write(replaced); err != nil {
+			logger.Error("error writing restclient response", zap.Error(err))
+		}
+
 	})
 
 	return nil

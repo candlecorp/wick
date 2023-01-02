@@ -101,7 +101,10 @@ func wrap(handler functions.Handler) http.HandlerFunc {
 		}
 
 		w.WriteHeader(http.StatusOK)
-		w.Write(response)
+		if _, err := w.Write(response); err != nil {
+			handleError(err, w, http.StatusInternalServerError)
+			return
+		}
 	}
 }
 
@@ -122,7 +125,10 @@ func wrapMethod(handler functions.StatefulHandler) http.HandlerFunc {
 		}
 
 		w.WriteHeader(http.StatusOK)
-		w.Write(response)
+		if _, err := w.Write(response); err != nil {
+			handleError(err, w, http.StatusInternalServerError)
+			return
+		}
 	}
 }
 

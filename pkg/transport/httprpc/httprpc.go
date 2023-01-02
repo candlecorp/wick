@@ -23,6 +23,7 @@ import (
 	"github.com/nanobus/nanobus/pkg/config"
 	"github.com/nanobus/nanobus/pkg/errorz"
 	"github.com/nanobus/nanobus/pkg/handler"
+	"github.com/nanobus/nanobus/pkg/logger"
 	"github.com/nanobus/nanobus/pkg/resolve"
 	"github.com/nanobus/nanobus/pkg/spec"
 	"github.com/nanobus/nanobus/pkg/transport"
@@ -213,7 +214,9 @@ func (t *HTTPRPC) handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Write(responseBytes)
+	if _, error :=w.Write(responseBytes); error != nil {
+		logger.Error("could not write bytes", "err", err)
+	}
 }
 
 func (t *HTTPRPC) handleError(err error, codec channel.Codec, req *http.Request, w http.ResponseWriter, status int) {
@@ -230,5 +233,7 @@ func (t *HTTPRPC) handleError(err error, codec channel.Codec, req *http.Request,
 		fmt.Fprint(w, "unknown error")
 	}
 
-	w.Write(payload)
+	if _, error :=w.Write(payload); error != nil {
+		logger.Error("could not write payload", "err", err)
+	}
 }

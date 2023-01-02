@@ -11,7 +11,7 @@ package confluentavro_test
 import (
 	"bytes"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"reflect"
 	"strings"
@@ -46,7 +46,7 @@ func dummyHttpHandler(t *testing.T, method, path string, status int, reqBody, re
 		if reqBody != nil {
 			expbs, err := json.Marshal(reqBody)
 			require.NoError(t, err)
-			bs, err := ioutil.ReadAll(req.Body)
+			bs, err := io.ReadAll(req.Body)
 			require.NoError(t, err)
 			mustEqual(t, strings.Trim(string(bs), "\r\n"), strings.Trim(string(expbs), "\r\n"))
 		}
@@ -55,7 +55,7 @@ func dummyHttpHandler(t *testing.T, method, path string, status int, reqBody, re
 		if respBody != nil {
 			bs, err := json.Marshal(respBody)
 			require.NoError(t, err)
-			resp.Body = ioutil.NopCloser(bytes.NewReader(bs))
+			resp.Body = io.NopCloser(bytes.NewReader(bs))
 		}
 		return &resp, nil
 	})

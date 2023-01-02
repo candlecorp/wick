@@ -133,7 +133,10 @@ func (s *ServerFile) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(code)
 
 	if r.Method != "HEAD" {
-		io.CopyN(w, f, size)
+		if _, err := io.CopyN(w, f, size); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 	}
 }
 

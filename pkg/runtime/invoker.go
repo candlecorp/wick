@@ -19,10 +19,12 @@ import (
 	"github.com/nanobus/iota/go/payload"
 	"github.com/nanobus/iota/go/rx/flux"
 	"github.com/nanobus/iota/go/rx/mono"
+	"go.uber.org/zap"
 
 	"github.com/nanobus/nanobus/pkg/actions"
 	"github.com/nanobus/nanobus/pkg/channel"
 	"github.com/nanobus/nanobus/pkg/compute"
+	"github.com/nanobus/nanobus/pkg/logger"
 	"github.com/nanobus/nanobus/pkg/security/claims"
 	"github.com/nanobus/nanobus/pkg/stream"
 )
@@ -105,7 +107,11 @@ func (i *Invoker) Operations() operations.Table {
 
 func (i *Invoker) FireAndForget(ctx context.Context, p payload.Payload) {
 	r, data := i.lookup(ctx, p)
-	go r(ctx, data)
+	go func() {
+		if _, err := r(ctx, data); err != nil {
+			logger.Error("error with FireAndForget request", zap.Error(err))
+		}
+	}()
 }
 
 func (i *Invoker) RequestResponse(ctx context.Context, p payload.Payload) mono.Mono[payload.Payload] {
@@ -187,7 +193,9 @@ func (i *Invoker) lookup(ctx context.Context, p payload.Payload) (Runnable, acti
 	r := i.runnables[index]
 	t := i.targets[index]
 	var input interface{}
-	i.codec.Decode(p.Data(), &input)
+	if err := i.codec.Decode(p.Data(), &input); err != nil {
+		logger.Warn("received error when decoding payload", zap.Error(err))
+	}
 	c := claims.FromContext(ctx)
 	data := actions.Data{
 		"input":  input,
@@ -197,7 +205,7 @@ func (i *Invoker) lookup(ctx context.Context, p payload.Payload) (Runnable, acti
 	}
 
 	if jsonBytes, err := json.MarshalIndent(input, "", "  "); err == nil {
-		logOutbound(i.log, t.Namespace+"/"+t.Operation, string(jsonBytes))
+		logOutbound(t.Namespace+"/"+t.Operation, string(jsonBytes))
 	}
 
 	return r, data
@@ -209,9 +217,6 @@ func isNil(val interface{}) bool {
 			reflect.ValueOf(val).IsNil())
 }
 
-func logOutbound(log logr.Logger, target string, data string) {
-	l := log //.V(10)
-	if l.Enabled() {
-		l.Info("<== " + target + " " + data)
-	}
+func logOutbound(target string, data string) {
+	logger.Debug("<== " + target + " " + data)
 }

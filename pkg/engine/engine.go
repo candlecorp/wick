@@ -23,6 +23,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/joho/godotenv"
+	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
 	"github.com/oklog/run"
@@ -116,15 +117,15 @@ import (
 	router_static "github.com/nanobus/nanobus/pkg/transport/http/router/static"
 )
 
-type Runtime struct {
-	log        logr.Logger
-	config     *runtime.BusConfig
-	namespaces spec.Namespaces
-	processor  runtime.Namespaces
-	resolver   resolve.DependencyResolver
-	resolveAs  resolve.ResolveAs
-	env        runtime.Environment
-}
+// type Runtime struct {
+// 	log        logr.Logger
+// 	config     *runtime.BusConfig
+// 	namespaces spec.Namespaces
+// 	processor  runtime.Namespaces
+// 	resolver   resolve.DependencyResolver
+// 	resolveAs  resolve.ResolveAs
+// 	env        runtime.Environment
+// }
 
 type Mode int
 
@@ -245,7 +246,9 @@ func Start(info *Info) (*Engine, error) {
 	defer cancel()
 
 	// If there is a `.env` file, load its environment variables.
-	godotenv.Load()
+	if err := godotenv.Load(); err != nil {
+		logger.Debug("could not load dotenv file", zap.Error(err))
+	}
 
 	logger.SetLogLevel(info.LogLevel)
 	log := logger.GetLogger()
@@ -771,7 +774,9 @@ func Start(info *Info) (*Engine, error) {
 			}, func(error) {
 				// TODO: send term sig instead
 				if cmd.Process != nil {
-					cmd.Process.Kill()
+					if err := cmd.Process.Kill(); err != nil {
+						logger.Error("Error killing process", zap.Error(err))
+					}
 				}
 			})
 		}
@@ -933,7 +938,6 @@ func coalesceInput(interfaces spec.Interfaces, h handler.Handler, input interfac
 			if !ok {
 				return fmt.Errorf("%w: input is not a map", transport.ErrBadInput)
 			}
-			input = inputMap
 			if err := oper.Parameters.Coalesce(inputMap, true); err != nil {
 				var errz *errorz.Error
 				if errors.As(err, &errz) {
@@ -948,30 +952,34 @@ func coalesceInput(interfaces spec.Interfaces, h handler.Handler, input interfac
 	return nil
 }
 
-func coalesceOutput(namespaces spec.Namespaces, namespace, service, function string, output interface{}) (interface{}, error) {
-	var err error
-	if oper, ok := namespaces.Operation(namespace, service, function); ok {
-		if oper.Returns != nil && output != nil {
-			output, _, err = oper.Returns.Coalesce(output, false)
-			if err != nil {
-				return nil, err
-			}
-		} else {
-			coalesce.Integers(output)
-		}
-	} else {
-		coalesce.Integers(output)
-	}
-	return output, err
-}
+// TODO(jsoverson): Eventually delete or use. Saving to avoid
+// reimplementing if it's used in the near future
+// func coalesceOutput(namespaces spec.Namespaces, namespace, service, function string, output interface{}) (interface{}, error) {
+// 	var err error
+// 	if oper, ok := namespaces.Operation(namespace, service, function); ok {
+// 		if oper.Returns != nil && output != nil {
+// 			output, _, err = oper.Returns.Coalesce(output, false)
+// 			if err != nil {
+// 				return nil, err
+// 			}
+// 		} else {
+// 			coalesce.Integers(output)
+// 		}
+// 	} else {
+// 		coalesce.Integers(output)
+// 	}
+// 	return output, err
+// }
 
 func logInbound(h handler.Handler, data string) {
 	logger.Debug("==> " + h.String() + " " + data)
 }
 
-func logOutbound(target string, data string) {
-	logger.Debug("<== " + target + " " + data)
-}
+// TODO(jsoverson): Eventually delete or use. Saving to avoid
+// reimplementing if it's used in the near future
+// func logOutbound(target string, data string) {
+// 	logger.Debug("<== " + target + " " + data)
+// }
 
 // newOtelResource returns a resource describing this application.
 func newOtelResource(applicationID, version string) *otel_resource.Resource {

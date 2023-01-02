@@ -9,13 +9,10 @@
 package spec
 
 import (
-	"fmt"
-
 	"github.com/go-playground/locales/en"
 	ut "github.com/go-playground/universal-translator"
 	"github.com/go-playground/validator/v10"
 	en_translations "github.com/go-playground/validator/v10/translations/en"
-	"github.com/spf13/cast"
 )
 
 var (
@@ -42,42 +39,44 @@ func init() {
 	}
 }
 
-var validators = map[string]ValidationLoader{
-	"url": func(t *TypeRef, f *Field, a *Annotation) (Validation, error) {
-		return func(v interface{}) ([]ValidationError, error) {
-			val := validator.New()
-			value := cast.ToString(v)
+// TODO(jsoverson): Eventually delete or use. This is currently unused
+// but I'm keeping it to prevent reimplementation.
+// var validators = map[string]ValidationLoader{
+// 	"url": func(t *TypeRef, f *Field, a *Annotation) (Validation, error) {
+// 		return func(v interface{}) ([]ValidationError, error) {
+// 			val := validator.New()
+// 			value := cast.ToString(v)
 
-			if err := val.Var(value, "url"); err != nil {
-				return []ValidationError{
-					{
-						//Fields:  []string{f.Name},
-						Message: fmt.Sprintf("%q is an invalid URL", f.Name),
-					},
-				}, nil
-			}
+// 			if err := val.Var(value, "url"); err != nil {
+// 				return []ValidationError{
+// 					{
+// 						//Fields:  []string{f.Name},
+// 						Message: fmt.Sprintf("%q is an invalid URL", f.Name),
+// 					},
+// 				}, nil
+// 			}
 
-			return nil, nil
-		}, nil
-	},
-	"email": func(t *TypeRef, f *Field, a *Annotation) (Validation, error) {
-		return func(v interface{}) ([]ValidationError, error) {
-			val := validator.New()
-			value := cast.ToString(v)
+// 			return nil, nil
+// 		}, nil
+// 	},
+// 	"email": func(t *TypeRef, f *Field, a *Annotation) (Validation, error) {
+// 		return func(v interface{}) ([]ValidationError, error) {
+// 			val := validator.New()
+// 			value := cast.ToString(v)
 
-			if err := val.Var(value, "email"); err != nil {
-				return []ValidationError{
-					{
-						//Fields:  []string{f.Name},
-						Message: fmt.Sprintf("%q is an invalid E-Mail address", f.Name),
-					},
-				}, nil
-			}
+// 			if err := val.Var(value, "email"); err != nil {
+// 				return []ValidationError{
+// 					{
+// 						//Fields:  []string{f.Name},
+// 						Message: fmt.Sprintf("%q is an invalid E-Mail address", f.Name),
+// 					},
+// 				}, nil
+// 			}
 
-			return nil, nil
-		}, nil
-	},
-}
+// 			return nil, nil
+// 		}, nil
+// 	},
+// }
 
 var validationRules = map[string]func(a *Annotation) (string, error){
 	"url":   func(a *Annotation) (string, error) { return "url", nil },

@@ -23,11 +23,13 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
+	"go.uber.org/zap"
 	"golang.org/x/oauth2"
 
 	"github.com/nanobus/nanobus/pkg/actions"
 	"github.com/nanobus/nanobus/pkg/config"
 	"github.com/nanobus/nanobus/pkg/handler"
+	"github.com/nanobus/nanobus/pkg/logger"
 	"github.com/nanobus/nanobus/pkg/resolve"
 	"github.com/nanobus/nanobus/pkg/runtime"
 	"github.com/nanobus/nanobus/pkg/transport/http/router"
@@ -185,7 +187,9 @@ func (o *Auth) callback(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	setSessionCookie(w, token, claims)
+	if err := setSessionCookie(w, token, claims); err != nil {
+		logger.Error("Could not set session cookie", zap.Error(err))
+	}
 	http.Redirect(w, r, o.redirectURL, http.StatusTemporaryRedirect)
 }
 
@@ -250,7 +254,9 @@ func generateStateOauthCookie(w http.ResponseWriter) string {
 	var expiration = time.Now().Add(20 * time.Minute)
 
 	b := make([]byte, 16)
-	rand.Read(b)
+	if _, err := rand.Read(b); err != nil {
+		logger.Error("error generating randomness for oauth state", zap.Error(err))
+	}
 	state := base64.URLEncoding.EncodeToString(b)
 	cookie := http.Cookie{Name: "oauthstate", Value: state, Expires: expiration}
 	http.SetCookie(w, &cookie)

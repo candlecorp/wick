@@ -464,9 +464,6 @@ func (t *Type) InitValidations() (*Type, error) {
 	return t, nil
 }
 
-func (f *Field) InitValidations() error {
-	return nil
-}
 
 func NewEnum(name string, description string) *Enum {
 	return &Enum{

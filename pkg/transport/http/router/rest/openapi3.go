@@ -20,8 +20,10 @@ import (
 
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/gorilla/mux"
+	"go.uber.org/zap"
 	"gopkg.in/yaml.v3"
 
+	"github.com/nanobus/nanobus/pkg/logger"
 	"github.com/nanobus/nanobus/pkg/spec"
 )
 
@@ -60,7 +62,11 @@ func swaggerSpecHandler(b []byte) http.HandlerFunc {
 			v = "http://" + req.Host
 		}
 		swagger := bytes.Replace(b, []byte("[REPLACE_HOST]"), []byte(v), 1)
-		w.Write(swagger)
+
+		if _, err := w.Write(swagger); err != nil {
+			logger.Error("could not write swagger bytes", zap.Error(err))
+			return
+		}
 	}
 }
 
@@ -250,7 +256,9 @@ func SpecToOpenAPI3(namespaces spec.Namespaces) ([]byte, error) {
 	}
 
 	var specData interface{}
-	json.Unmarshal(specBytes, &specData)
+	if err := json.Unmarshal(specBytes, &specData); err != nil {
+		logger.Warn("failed to decode spec bytes", zap.Error(err))
+	}
 	specBytesIndented, _ := yaml.Marshal(specData)
 
 	return specBytesIndented, nil

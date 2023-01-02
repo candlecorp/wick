@@ -23,11 +23,13 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"go.opentelemetry.io/otel/trace"
+	"go.uber.org/zap"
 
 	"github.com/nanobus/nanobus/pkg/channel"
 	"github.com/nanobus/nanobus/pkg/config"
 	"github.com/nanobus/nanobus/pkg/errorz"
 	"github.com/nanobus/nanobus/pkg/handler"
+	"github.com/nanobus/nanobus/pkg/logger"
 	"github.com/nanobus/nanobus/pkg/resolve"
 	"github.com/nanobus/nanobus/pkg/spec"
 	"github.com/nanobus/nanobus/pkg/transport"
@@ -469,7 +471,11 @@ func (t *Rest) handler(h handler.Handler, isActor bool,
 				return
 			}
 
-			w.Write(responseBytes)
+			if _, err := w.Write(responseBytes); err != nil {
+				t.handleError(err, codec, r, w, http.StatusInternalServerError)
+				return
+			}
+
 		} else {
 			w.WriteHeader(http.StatusNoContent)
 		}
@@ -490,7 +496,9 @@ func (t *Rest) handleError(err error, codec channel.Codec, req *http.Request, w 
 		fmt.Fprint(w, "unknown error")
 	}
 
-	w.Write(payload)
+	if _, err := w.Write(payload); err != nil {
+		logger.Error("error writing error response", zap.Error(err))
+	}
 }
 
 func isNil(val interface{}) bool {

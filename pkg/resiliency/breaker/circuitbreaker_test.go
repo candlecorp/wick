@@ -33,9 +33,10 @@ func TestCircuitBreaker(t *testing.T) {
 	log := logr.Discard()
 	cb.Initialize(log)
 	for i := 0; i < 3; i++ {
-		cb.Execute(func() error {
+		err := cb.Execute(func() error {
 			return errors.New("test")
 		})
+		assert.Error(t, err)
 	}
 	err = cb.Execute(func() error {
 		return nil

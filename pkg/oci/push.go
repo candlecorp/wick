@@ -7,7 +7,9 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/nanobus/nanobus/pkg/logger"
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
+	"go.uber.org/zap"
 	"oras.land/oras-go/v2"
 	"oras.land/oras-go/v2/content"
 	"oras.land/oras-go/v2/content/file"
@@ -112,7 +114,9 @@ func pushArtifact(dst *remote.Repository, pack packFunc, packOpts *oras.PackOpti
 	if err := PrintStatus(root, "Fallback ", verbose); err != nil {
 		return ocispec.Descriptor{}, err
 	}
-	dst.SetReferrersCapability(false)
+	if err := dst.SetReferrersCapability(false); err != nil {
+		logger.Warn("failed to disable referrers capability, falling back to defaults", zap.Error(err))
+	}
 	packOpts.PackImageManifest = true
 	root, err = pack()
 	if err != nil {
