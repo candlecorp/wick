@@ -214,7 +214,7 @@ func (t *HTTPRPC) handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if _, error :=w.Write(responseBytes); error != nil {
+	if _, error := w.Write(responseBytes); error != nil {
 		logger.Error("could not write bytes", "err", err)
 	}
 }
@@ -233,7 +233,7 @@ func (t *HTTPRPC) handleError(err error, codec channel.Codec, req *http.Request,
 		fmt.Fprint(w, "unknown error")
 	}
 
-	if _, error :=w.Write(payload); error != nil {
+	if _, error := w.Write(payload); error != nil {
 		logger.Error("could not write payload", "err", err)
 	}
 }

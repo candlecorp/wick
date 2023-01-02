@@ -21,7 +21,6 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
-	"go.uber.org/zap"
 
 	"github.com/nanobus/nanobus/pkg/channel"
 	"github.com/nanobus/nanobus/pkg/config"
@@ -226,7 +225,7 @@ func (t *Router) handler(h handler.Handler, raw bool, desiredCodec channel.Codec
 				return
 			}
 			if _, err := w.Write(responseBytes); err != nil {
-				logger.Error("error writing response", zap.Error(err))
+				logger.Error("error writing response", "error", err)
 			}
 		} else {
 			w.WriteHeader(http.StatusNoContent)
@@ -249,7 +248,7 @@ func (t *Router) handleError(err error, codec channel.Codec, req *http.Request, 
 	}
 
 	if _, err := w.Write(payload); err != nil {
-		logger.Error("error writing error response", zap.Error(err))
+		logger.Error("error writing error response", "error", err)
 	}
 }
 

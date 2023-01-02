@@ -18,7 +18,6 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/nats-io/nats.go"
 	"go.uber.org/multierr"
-	"go.uber.org/zap"
 
 	"github.com/nanobus/nanobus/pkg/channel"
 	"github.com/nanobus/nanobus/pkg/config"
@@ -146,10 +145,10 @@ func (t *NATS) Listen() error {
 		if err != nil {
 			for _, sub := range subs {
 				if err := sub.Unsubscribe(); err != nil {
-					logger.Error("failed to unsubscribe from NATS", zap.Error(err))
+					logger.Error("failed to unsubscribe from NATS", "error", err)
 				}
 				if err := sub.Drain(); err != nil {
-					logger.Error("failed to drain NATS sub", zap.Error(err))
+					logger.Error("failed to drain NATS sub", "error", err)
 				}
 			}
 			return err
@@ -197,7 +196,7 @@ func (t *NATS) handler(m *nats.Msg) {
 			Data:   []byte(message),
 		}
 		if err := m.RespondMsg(&reply); err != nil {
-			logger.Error("failed to respond to NATS message", zap.Error(err))
+			logger.Error("failed to respond to NATS message", "error", err)
 		}
 		return
 	}
@@ -252,7 +251,7 @@ func (t *NATS) handler(m *nats.Msg) {
 		return
 	}
 	if err := m.RespondMsg(&reply); err != nil {
-		logger.Error("failed to respond to NATS message", zap.Error(err))
+		logger.Error("failed to respond to NATS message", "error", err)
 	}
 }
 
@@ -274,6 +273,6 @@ func (t *NATS) handleError(err error, codec channel.Codec, m *nats.Msg, status i
 		Data:   payload,
 	}
 	if err := m.RespondMsg(&reply); err != nil {
-		logger.Error("failed to respond to NATS message while handling error", zap.Error(err))
+		logger.Error("failed to respond to NATS message while handling error", "error", err)
 	}
 }

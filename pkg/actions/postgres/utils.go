@@ -20,7 +20,6 @@ import (
 	"github.com/iancoleman/strcase"
 	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4/pgxpool"
-	"go.uber.org/zap"
 
 	"github.com/nanobus/nanobus/pkg/logger"
 	"github.com/nanobus/nanobus/pkg/spec"
@@ -447,7 +446,7 @@ func normalizeValue(v interface{}) interface{} {
 	case pgtype.Numeric:
 		var f float64
 		if err := vv.AssignTo(&f); err != nil {
-			logger.Error("postgres: failed to assign numeric to float64", zap.Error(err))
+			logger.Error("postgres: failed to assign numeric to float64", "error", err)
 		}
 		v = f
 	case pgtype.UUID:

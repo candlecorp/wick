@@ -23,7 +23,6 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
-	"go.uber.org/zap"
 	"golang.org/x/oauth2"
 
 	"github.com/nanobus/nanobus/pkg/actions"
@@ -188,7 +187,7 @@ func (o *Auth) callback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := setSessionCookie(w, token, claims); err != nil {
-		logger.Error("Could not set session cookie", zap.Error(err))
+		logger.Error("Could not set session cookie", "error", err)
 	}
 	http.Redirect(w, r, o.redirectURL, http.StatusTemporaryRedirect)
 }
@@ -255,7 +254,7 @@ func generateStateOauthCookie(w http.ResponseWriter) string {
 
 	b := make([]byte, 16)
 	if _, err := rand.Read(b); err != nil {
-		logger.Error("error generating randomness for oauth state", zap.Error(err))
+		logger.Error("error generating randomness for oauth state", "error", err)
 	}
 	state := base64.URLEncoding.EncodeToString(b)
 	cookie := http.Cookie{Name: "oauthstate", Value: state, Expires: expiration}

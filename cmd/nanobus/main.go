@@ -17,7 +17,6 @@ import (
 	"path/filepath"
 
 	"github.com/alecthomas/kong"
-	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
 	"github.com/nanobus/nanobus/pkg/engine"
@@ -176,7 +175,7 @@ func (c *invokeCmd) Run() error {
 	var result any
 	result, err = e.InvokeUnsafe(h, input)
 	if err != nil {
-		logger.Error("error invoking operation", zap.Error(err))
+		logger.Error("error invoking operation", "error", err)
 		return nil
 	}
 

@@ -19,7 +19,6 @@ import (
 	"github.com/nanobus/iota/go/payload"
 	"github.com/nanobus/iota/go/rx/flux"
 	"github.com/nanobus/iota/go/rx/mono"
-	"go.uber.org/zap"
 
 	"github.com/nanobus/nanobus/pkg/actions"
 	"github.com/nanobus/nanobus/pkg/channel"
@@ -109,7 +108,7 @@ func (i *Invoker) FireAndForget(ctx context.Context, p payload.Payload) {
 	r, data := i.lookup(ctx, p)
 	go func() {
 		if _, err := r(ctx, data); err != nil {
-			logger.Error("error with FireAndForget request", zap.Error(err))
+			logger.Error("error with FireAndForget request", "error", err)
 		}
 	}()
 }
@@ -194,7 +193,7 @@ func (i *Invoker) lookup(ctx context.Context, p payload.Payload) (Runnable, acti
 	t := i.targets[index]
 	var input interface{}
 	if err := i.codec.Decode(p.Data(), &input); err != nil {
-		logger.Warn("received error when decoding payload", zap.Error(err))
+		logger.Warn("received error when decoding payload", "error", err)
 	}
 	c := claims.FromContext(ctx)
 	data := actions.Data{

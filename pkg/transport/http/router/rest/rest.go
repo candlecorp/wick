@@ -23,7 +23,6 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"go.opentelemetry.io/otel/trace"
-	"go.uber.org/zap"
 
 	"github.com/nanobus/nanobus/pkg/channel"
 	"github.com/nanobus/nanobus/pkg/config"
@@ -497,7 +496,7 @@ func (t *Rest) handleError(err error, codec channel.Codec, req *http.Request, w 
 	}
 
 	if _, err := w.Write(payload); err != nil {
-		logger.Error("error writing error response", zap.Error(err))
+		logger.Error("error writing error response", "error", err)
 	}
 }
 

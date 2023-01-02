@@ -23,7 +23,6 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/joho/godotenv"
-	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
 	"github.com/oklog/run"
@@ -247,7 +246,7 @@ func Start(info *Info) (*Engine, error) {
 
 	// If there is a `.env` file, load its environment variables.
 	if err := godotenv.Load(); err != nil {
-		logger.Debug("could not load dotenv file", zap.Error(err))
+		logger.Debug("could not load dotenv file", "error", err)
 	}
 
 	logger.SetLogLevel(info.LogLevel)
@@ -775,7 +774,7 @@ func Start(info *Info) (*Engine, error) {
 				// TODO: send term sig instead
 				if cmd.Process != nil {
 					if err := cmd.Process.Kill(); err != nil {
-						logger.Error("Error killing process", zap.Error(err))
+						logger.Error("Error killing process", "error", err)
 					}
 				}
 			})

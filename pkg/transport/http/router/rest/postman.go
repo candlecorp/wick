@@ -19,7 +19,6 @@ import (
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/gorilla/mux"
 	postman "github.com/rbretecher/go-postman-collection"
-	"go.uber.org/zap"
 
 	"github.com/nanobus/nanobus/pkg/logger"
 	"github.com/nanobus/nanobus/pkg/spec"
@@ -39,7 +38,7 @@ func RegisterPostmanRoutes(r *mux.Router, namespaces spec.Namespaces) error {
 		}
 		replaced := bytes.Replace(specData, []byte("[REPLACE_HOST]"), []byte(v), 1)
 		if _, err := w.Write(replaced); err != nil {
-			logger.Error("error writing postman response", zap.Error(err))
+			logger.Error("error writing postman response", "error", err)
 		}
 	})
 

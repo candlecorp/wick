@@ -16,7 +16,12 @@ deps:
 	go get -u golang.org/x/tools/cmd/goimports
 
 test:
+  #!/usr/bin/env bash
+  FILES=$(gofmt -l .); if [[ "$FILES" == "" ]]; then echo 'Formatting is OK'; else echo "The following files need to be formatting: \n$FILES"; exit 1; fi
   go test ./pkg/...
+
+format:
+  go fmt ./pkg/... ./cmd/...
 
 build:
 	CGO_ENABLED=0 go build -o {{BUILDDIR}}/{{BINARY}} {{MAIN}}
