@@ -71,6 +71,8 @@ type BusConfig {
 
 "The configuration for an iota."
 type IotaConfig {
+  "The Iota identifier."
+  id: string
   "The Iota version."
   version: string
   "The iota's executable entrypoint."

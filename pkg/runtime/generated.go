@@ -83,6 +83,8 @@ type BusConfig struct {
 
 // The configuration for an iota.
 type IotaConfig struct {
+	// The Iota identifier.
+	ID string `json:"id" yaml:"id" msgpack:"id" mapstructure:"id" validate:"required"`
 	// The Iota version.
 	Version string `json:"version" yaml:"version" msgpack:"version" mapstructure:"version" validate:"required"`
 	// The iota's executable entrypoint.
