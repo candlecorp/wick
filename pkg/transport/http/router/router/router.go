@@ -18,6 +18,7 @@ import (
 	"net/url"
 	"reflect"
 	"sort"
+	"strings"
 
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
@@ -210,14 +211,21 @@ func (t *Router) handler(h handler.Handler, raw bool, desiredCodec channel.Codec
 			return
 		}
 
-		if !isNil(response) {
-			header := w.Header()
-			header.Set("Content-Type", codec.ContentType())
-			for k, vals := range resp.Header {
-				for _, v := range vals {
-					header.Add(k, v)
-				}
+		scheme := "http"
+		if r.TLS != nil {
+			scheme = "https"
+		}
+		host := scheme + "://" + r.Host
+		header := w.Header()
+		header.Set("Content-Type", codec.ContentType())
+		for k, vals := range resp.Header {
+			for _, v := range vals {
+				v = strings.ReplaceAll(v, "{{host}}", host)
+				header.Add(k, v)
 			}
+		}
+
+		if !isNil(response) {
 			w.WriteHeader(resp.Status)
 			responseBytes, err := codec.Encode(response)
 			if err != nil {
@@ -228,7 +236,11 @@ func (t *Router) handler(h handler.Handler, raw bool, desiredCodec channel.Codec
 				logger.Error("error writing response", "error", err)
 			}
 		} else {
-			w.WriteHeader(http.StatusNoContent)
+			if resp.Status != 200 {
+				w.WriteHeader(resp.Status)
+			} else {
+				w.WriteHeader(http.StatusNoContent)
+			}
 		}
 	}
 }

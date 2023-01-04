@@ -1,0 +1,26 @@
+namespace "nanobus.transport.dapr"
+
+alias Handler = string
+alias CodecRef = string
+
+type DaprServerV1Config @transport("nanobus.transport.dapr/v1") {
+  address: string
+  subscriptions: [Subscription]?
+  bindings: [Binding]?
+}
+
+type Subscription {
+  pubsub: string
+  topic: string
+  metadata: { string : string }
+  types: { string : Handler }?
+  handler: Handler?
+  codec: CodecRef
+  disableTopicValidation: bool = false
+}
+
+type Binding {
+  name: string
+  handler: Handler
+  codec: CodecRef
+}

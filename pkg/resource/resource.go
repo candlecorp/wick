@@ -31,7 +31,11 @@ func Get[T any](r Resources, name string) (res T, err error) {
 	}
 	res, ok = iface.(T)
 	if !ok {
-		return res, fmt.Errorf("resource %q is not a %s", name, reflect.TypeOf(res).Name())
+		t := reflect.TypeOf(res)
+		if t == nil {
+			return res, fmt.Errorf("unknown target type trying to resolve resource %q", name)
+		}
+		return res, fmt.Errorf("resource %q is not a %s", name, t.Name())
 	}
 
 	return res, nil

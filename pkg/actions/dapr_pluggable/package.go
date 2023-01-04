@@ -6,8 +6,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-//go:generate apex generate
-package dapr
+package dapr_pluggable
 
 import (
 	"github.com/nanobus/nanobus/pkg/actions"

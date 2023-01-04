@@ -6,7 +6,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-package dapr
+package dapr_pluggable
 
 import (
 	"context"

@@ -22,6 +22,20 @@ type DataExpr struct {
 
 var ErrNotAMap = errors.New("data expression result was not a map")
 
+func MustParseDataExpr(value string) *DataExpr {
+	de, err := ParseDataExpr(value)
+	if err != nil {
+		panic(err)
+	}
+	return de
+}
+
+func ParseDataExpr(value string) (*DataExpr, error) {
+	var de DataExpr
+	err := de.FromString(value)
+	return &de, err
+}
+
 func (d *DataExpr) FromString(value string) error {
 	d.script = value
 

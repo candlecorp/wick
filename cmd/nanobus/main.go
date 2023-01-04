@@ -57,13 +57,22 @@ func main() {
 
 type defaultRunCmd struct {
 	DeveloperMode bool `name:"developer-mode" help:"Enables developer mode."`
+	// Turns on debug logging.
+	Debug bool `name:"debug" help:"Turns on debug logging"`
 }
 
 func (c *defaultRunCmd) Run() error {
+	// The default command currently does not accept flags.
+	// This flag code still is here in case it does in the future.
+	level := zapcore.InfoLevel
+	if c.Debug {
+		level = zapcore.DebugLevel
+	}
 	if _, err := engine.Start(&engine.Info{
 		Mode:          engine.ModeService,
 		BusFile:       "bus.yaml",
 		ResourcesFile: "resources.yaml",
+		LogLevel:      level,
 		DeveloperMode: c.DeveloperMode,
 	}); err != nil {
 		// Error is logged in `Start`.
@@ -132,6 +141,8 @@ type invokeCmd struct {
 	Input string `arg:"" optional:"" type:"existingfile" help:"File to use as input JSON data"`
 	// Pretty is a flag to pretty print the JSON output.
 	Pretty bool `name:"pretty" default:"false" help:"Pretty print the JSON output"`
+	// Turns on debug logging.
+	Debug bool `name:"debug" help:"Turns on debug logging"`
 }
 
 func (c *invokeCmd) Run() error {
@@ -157,11 +168,15 @@ func (c *invokeCmd) Run() error {
 	if err := h.FromString(c.Operation); err != nil {
 		return fmt.Errorf("invalid operation %q: %w", c.Operation, err)
 	}
+	level := zapcore.ErrorLevel
+	if c.Debug {
+		level = zapcore.DebugLevel
+	}
 
 	info := engine.Info{
 		Mode:          engine.ModeInvoke,
 		BusFile:       c.BusFile,
-		LogLevel:      zapcore.ErrorLevel,
+		LogLevel:      level,
 		ResourcesFile: c.ResourcesFile,
 		EntityID:      c.EntityID,
 		DeveloperMode: c.DeveloperMode,

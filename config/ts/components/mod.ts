@@ -7,18 +7,20 @@
  */
 
 export * from "./actions_core.ts";
-export * as migrate from "./migrate_postgres.ts";
+export * as dapr from "./actions_dapr.ts";
 export * as postgres from "./actions_postgres.ts";
+export * as migrate from "./migrate_postgres.ts";
 export * from "./postgres_actions.ts";
 export * from "./transport_cors.ts";
+export * from "./transport_dapr.ts";
+export * from "./transport_jwt.ts";
 export * from "./transport_oauth2.ts";
+export * from "./transport_paseto.ts";
 export * from "./transport_rest.ts";
 export * from "./transport_router.ts";
 export * from "./transport_server.ts";
-export * from "./transport_static.ts";
-export * from "./transport_jwt.ts";
-export * from "./transport_paseto.ts";
 export * from "./transport_session.ts";
+export * from "./transport_static.ts";
 export * from "./transport_userinfo.ts";
 export * from "./modules.ts";
 export * from "./utilities.ts";

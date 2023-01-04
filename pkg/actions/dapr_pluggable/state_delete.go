@@ -6,24 +6,35 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-package dapr
+package dapr_pluggable
 
 import (
 	"context"
 	"fmt"
 
-	dapr "github.com/dapr/go-sdk/client"
+	proto "github.com/dapr/dapr/pkg/proto/components/v1"
 
 	"github.com/nanobus/nanobus/pkg/actions"
 	"github.com/nanobus/nanobus/pkg/config"
+	"github.com/nanobus/nanobus/pkg/expr"
 	"github.com/nanobus/nanobus/pkg/resolve"
 	"github.com/nanobus/nanobus/pkg/resource"
 )
 
+type DeleteStateConfig struct {
+	// Name is name of binding to invoke.
+	Resource string `mapstructure:"resource" validate:"required"`
+	// Operation is the name of the operation type for the binding to invoke.
+	Key *expr.ValueExpr `mapstructure:"key" validate:"required"`
+}
+
+// DeleteState is the NamedLoader for the Dapr get state operation
+func DeleteState() (string, actions.Loader) {
+	return "@dapr_pluggable/delete_state", DeleteStateLoader
+}
+
 func DeleteStateLoader(ctx context.Context, with interface{}, resolver resolve.ResolveAs) (actions.Action, error) {
-	c := DeleteStateConfig{
-		Resource: "dapr",
-	}
+	c := DeleteStateConfig{}
 	if err := config.Decode(with, &c); err != nil {
 		return nil, err
 	}
@@ -34,7 +45,7 @@ func DeleteStateLoader(ctx context.Context, with interface{}, resolver resolve.R
 		return nil, err
 	}
 
-	client, err := resource.Get[dapr.Client](resources, c.Resource)
+	client, err := resource.Get[proto.StateStoreClient](resources, c.Resource)
 	if err != nil {
 		return nil, err
 	}
@@ -43,7 +54,7 @@ func DeleteStateLoader(ctx context.Context, with interface{}, resolver resolve.R
 }
 
 func DeleteStateAction(
-	client dapr.Client,
+	client proto.StateStoreClient,
 	config *DeleteStateConfig) actions.Action {
 	return func(ctx context.Context, data actions.Data) (interface{}, error) {
 		keyInt, err := config.Key.Eval(data)
@@ -52,28 +63,13 @@ func DeleteStateAction(
 		}
 		key := fmt.Sprintf("%v", keyInt)
 
-		stateOptions := dapr.StateOptions{
-			Concurrency: dapr.StateConcurrency(config.Concurrency),
-			Consistency: dapr.StateConsistency(config.Consistency),
+		_, err = client.Delete(ctx, &proto.DeleteRequest{
+			Key: key,
+		})
+		if err != nil {
+			return nil, err
 		}
 
-		if config.Etag != nil {
-			etagInt, err := config.Etag.Eval(data)
-			if err != nil {
-				return nil, fmt.Errorf("could not evaluate etag: %w", err)
-			}
-			etag := fmt.Sprintf("%v", etagInt)
-			if err = client.DeleteStateWithETag(ctx,
-				config.Store, key,
-				&dapr.ETag{Value: etag}, nil, &stateOptions); err != nil {
-				return nil, err
-			}
-		} else {
-			if err = client.DeleteState(ctx, config.Store, key, nil); err != nil {
-				return nil, err
-			}
-		}
-
-		return nil, nil
+		return nil, err
 	}
 }

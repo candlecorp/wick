@@ -6,7 +6,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-package dapr
+package dapr_pluggable
 
 import (
 	"context"
@@ -19,11 +19,11 @@ import (
 )
 
 // Connection is the NamedLoader for a postgres connection.
-func OutputBinding() (string, resource.Loader) {
-	return "dapr/outputbinding.pluggable.v1", OutputBindingLoader
+func PubSub() (string, resource.Loader) {
+	return "dapr/pubsub.pluggable.v1", PubSubLoader
 }
 
-func OutputBindingLoader(ctx context.Context, with interface{}, resolver resolve.ResolveAs) (interface{}, error) {
+func PubSubLoader(ctx context.Context, with interface{}, resolver resolve.ResolveAs) (interface{}, error) {
 	var c ComponentConfig
 	if err := config.Decode(with, &c); err != nil {
 		return nil, err
@@ -34,8 +34,8 @@ func OutputBindingLoader(ctx context.Context, with interface{}, resolver resolve
 		return nil, err
 	}
 
-	client := proto.NewOutputBindingClient(conn)
-	_, err = client.Init(ctx, &proto.OutputBindingInitRequest{
+	client := proto.NewPubSubClient(conn)
+	_, err = client.Init(ctx, &proto.PubSubInitRequest{
 		Metadata: &proto.MetadataRequest{
 			Properties: c.Properties,
 		},

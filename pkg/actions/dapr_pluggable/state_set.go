@@ -6,76 +6,88 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-package dapr
+package dapr_pluggable
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/cenkalti/backoff/v4"
-	dapr "github.com/dapr/go-sdk/client"
+	proto "github.com/dapr/dapr/pkg/proto/components/v1"
 
 	"github.com/nanobus/nanobus/pkg/actions"
-	"github.com/nanobus/nanobus/pkg/codec"
 	"github.com/nanobus/nanobus/pkg/config"
+	"github.com/nanobus/nanobus/pkg/expr"
 	"github.com/nanobus/nanobus/pkg/resolve"
 	"github.com/nanobus/nanobus/pkg/resource"
 )
 
+type SetStateConfig struct {
+	// Resource is name of state store to invoke.
+	Resource string         `mapstructure:"resource" validate:"required"`
+	Items    []SetStateItem `mapstructure:"items" validate:"required"`
+}
+
+type SetStateItem struct {
+	// Key is the expression to evaluate the key to save.
+	Key *expr.ValueExpr `mapstructure:"key" validate:"required"`
+	// ForEach is an option expression to evaluate a
+	ForEach *expr.ValueExpr `mapstructure:"forEach"`
+	// Value is the optional data expression to tranform the data to set.
+	Value *expr.DataExpr `mapstructure:"value"`
+	// Metadata is the optional data expression for the key's metadata.
+	Metadata *expr.DataExpr `mapstructure:"metadata"`
+}
+
+// SetState is the NamedLoader for the Dapr get state operation
+func SetState() (string, actions.Loader) {
+	return "@dapr_pluggable/set_state", SetStateLoader
+}
+
 func SetStateLoader(ctx context.Context, with interface{}, resolver resolve.ResolveAs) (actions.Action, error) {
-	c := SetStateConfig{
-		Resource: "dapr",
-		Codec:    "json",
-	}
+	var c SetStateConfig
 	if err := config.Decode(with, &c); err != nil {
 		return nil, err
 	}
 
 	var resources resource.Resources
-	var codecs codec.Codecs
 	if err := resolve.Resolve(resolver,
-		"resource:lookup", &resources,
-		"codec:lookup", &codecs); err != nil {
+		"resource:lookup", &resources); err != nil {
 		return nil, err
 	}
 
-	codec, ok := codecs[string(c.Codec)]
-	if !ok {
-		return nil, fmt.Errorf("codec %q not found", c.Codec)
-	}
-
-	client, err := resource.Get[dapr.Client](resources, c.Resource)
+	client, err := resource.Get[proto.StateStoreClient](resources, c.Resource)
 	if err != nil {
 		return nil, err
 	}
 
-	return SetStateAction(client, codec, &c), nil
+	return SetStateAction(client, &c), nil
 }
 
 func SetStateAction(
-	client dapr.Client,
-	codec codec.Codec,
+	client proto.StateStoreClient,
 	config *SetStateConfig) actions.Action {
 	return func(ctx context.Context, data actions.Data) (interface{}, error) {
-		_r := [25]*dapr.SetStateItem{}
+		_r := [25]*proto.SetRequest{}
 		r := _r[0:0]
 
 		for i := range config.Items {
 			configItems := &config.Items[i]
-			var items []any
+			var items []interface{}
 			if configItems.ForEach != nil {
 				itemsInt, err := configItems.ForEach.Eval(data)
 				if err != nil {
 					return nil, backoff.Permanent(fmt.Errorf("could not evaluate data: %w", err))
 				}
 				var ok bool
-				if items, ok = itemsInt.([]any); !ok {
+				if items, ok = itemsInt.([]interface{}); ok {
 					return nil, backoff.Permanent(fmt.Errorf("forEach expression %q did not return a slice of items", configItems.ForEach.Expr()))
 				}
 			}
 
 			if items == nil {
-				it, err := createSetItem(data, nil, configItems, codec, config.CodecArgs)
+				it, err := createSetItem(data, nil, configItems)
 				if err != nil {
 					return nil, err
 				}
@@ -83,7 +95,7 @@ func SetStateAction(
 				r = append(r, it)
 			} else {
 				for _, item := range items {
-					it, err := createSetItem(data, item, configItems, codec, config.CodecArgs)
+					it, err := createSetItem(data, item, configItems)
 					if err != nil {
 						return nil, err
 					}
@@ -93,7 +105,9 @@ func SetStateAction(
 			}
 		}
 
-		err := client.SaveBulkState(ctx, config.Store, r...)
+		_, err := client.BulkSet(ctx, &proto.BulkSetRequest{
+			Items: r,
+		})
 
 		return nil, err
 	}
@@ -101,17 +115,16 @@ func SetStateAction(
 
 func createSetItem(
 	data actions.Data,
-	item any,
-	config *SetStateItem,
-	codec codec.Codec, args []any) (it *dapr.SetStateItem, err error) {
-	variables := make(map[string]any, len(data)+1)
+	item interface{},
+	config *SetStateItem) (it *proto.SetRequest, err error) {
+	variables := make(map[string]interface{}, len(data)+1)
 	for k, v := range data {
 		variables[k] = v
 	}
 	variables["item"] = item
 
-	var value any = variables["input"]
-	it = &dapr.SetStateItem{}
+	var value interface{} = variables["input"]
+	it = &proto.SetRequest{}
 	keyInt, err := config.Key.Eval(variables)
 	if err != nil {
 		return it, backoff.Permanent(fmt.Errorf("could not evaluate key: %w", err))
@@ -128,17 +141,9 @@ func createSetItem(
 			return it, backoff.Permanent(fmt.Errorf("could not evaluate metadata: %w", err))
 		}
 	}
-	if config.Etag != nil {
-		etagInt, err := config.Etag.Eval(variables)
-		if err != nil {
-			return nil, fmt.Errorf("could not evaluate etag: %w", err)
-		}
-		it.Etag = &dapr.ETag{
-			Value: fmt.Sprintf("%v", etagInt),
-		}
-	}
 
-	jsonBytes, err := codec.Encode(value, args...)
+	// TODO: ues codec
+	jsonBytes, err := json.Marshal(value)
 	if err != nil {
 		return it, backoff.Permanent(fmt.Errorf("could not serialize value: %w", err))
 	}

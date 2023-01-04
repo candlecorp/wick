@@ -64,9 +64,21 @@ generates:
     module: ../../../codegen/config.ts
     visitorClass: ComponentsVisitor
 ---
+spec: ../../../specs/transport/dapr/server.axdl
+generates:
+  transport_dapr.ts:
+    module: ../../../codegen/config.ts
+    visitorClass: ComponentsVisitor
+---
 spec: ../../../specs/actions/core.axdl
 generates:
   actions_core.ts:
+    module: ../../../codegen/config.ts
+    visitorClass: ComponentsVisitor
+---
+spec: ../../../specs/actions/dapr.axdl
+generates:
+  actions_dapr.ts:
     module: ../../../codegen/config.ts
     visitorClass: ComponentsVisitor
 ---

@@ -69,6 +69,7 @@ import (
 	"github.com/nanobus/nanobus/pkg/actions"
 	"github.com/nanobus/nanobus/pkg/actions/core"
 	"github.com/nanobus/nanobus/pkg/actions/dapr"
+	"github.com/nanobus/nanobus/pkg/actions/dapr_pluggable"
 	"github.com/nanobus/nanobus/pkg/actions/gorm"
 	"github.com/nanobus/nanobus/pkg/actions/postgres"
 
@@ -92,6 +93,7 @@ import (
 
 	// TRANSPORTS
 	"github.com/nanobus/nanobus/pkg/transport"
+	transport_dapr "github.com/nanobus/nanobus/pkg/transport/dapr"
 	transport_http "github.com/nanobus/nanobus/pkg/transport/http"
 	transport_httprpc "github.com/nanobus/nanobus/pkg/transport/httprpc"
 	transport_nats "github.com/nanobus/nanobus/pkg/transport/nats"
@@ -290,6 +292,7 @@ func Start(info *Info) (*Engine, error) {
 	// Transport registration
 	transportRegistry := transport.Registry{}
 	transportRegistry.Register(
+		transport_dapr.DaprServerV1,
 		transport_http.HttpServerV1,
 		transport_httprpc.Load,
 		transport_nats.Load,
@@ -350,9 +353,10 @@ func Start(info *Info) (*Engine, error) {
 	resourceRegistry.Register(
 		postgres.Connection,
 		gorm.Connection,
-		dapr.PubSub,
-		dapr.StateStore,
-		dapr.OutputBinding,
+		dapr.Client,
+		dapr_pluggable.PubSub,
+		dapr_pluggable.StateStore,
+		dapr_pluggable.OutputBinding,
 	)
 
 	tracingRegistry := otel_tracing.Registry{}
@@ -368,6 +372,7 @@ func Start(info *Info) (*Engine, error) {
 	actionRegistry.Register(postgres.All...)
 	actionRegistry.Register(gorm.All...)
 	actionRegistry.Register(dapr.All...)
+	actionRegistry.Register(dapr_pluggable.All...)
 
 	initializerRegistry := initialize.Registry{}
 	initializerRegistry.Register(migrate_postgres.MigratePostgresV1)

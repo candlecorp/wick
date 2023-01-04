@@ -6,27 +6,50 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-package dapr
+package dapr_pluggable
 
 import (
 	"context"
 	"fmt"
 
-	dapr "github.com/dapr/go-sdk/client"
+	proto "github.com/dapr/dapr/pkg/proto/components/v1"
 	"go.opentelemetry.io/otel"
 
 	"github.com/nanobus/nanobus/pkg/actions"
 	"github.com/nanobus/nanobus/pkg/codec"
 	"github.com/nanobus/nanobus/pkg/config"
+	"github.com/nanobus/nanobus/pkg/expr"
 	"github.com/nanobus/nanobus/pkg/resolve"
 	"github.com/nanobus/nanobus/pkg/resource"
 	"github.com/nanobus/nanobus/pkg/telemetry/tracing"
 )
 
+type PublishConfig struct {
+	// Resource is the name of the connection resource to use.
+	Resource string `mapstructure:"resource" validate:"required"`
+	// Topic is the name of the topic to publish to.
+	Topic string `mapstructure:"topic" validate:"required"`
+	// Codec is the configured codec to use for encoding the message.
+	Codec string `mapstructure:"codec" validate:"required"`
+	// CodecArgs are the arguments for the codec, if any.
+	CodecArgs []interface{} `mapstructure:"codecArgs"`
+	// Key is the optional value to use for the message key (is supported).
+	Key *expr.ValueExpr `mapstructure:"key"`
+	// Data is the input bindings sent
+	Data *expr.DataExpr `mapstructure:"data"`
+	// Metadata is the input binding metadata
+	Metadata *expr.DataExpr `mapstructure:"metadata"`
+	// PropogateTracing enables/disables propogating the distributed tracing context (e.g. W3C TraceContext standard).
+	PropogateTracing bool `mapstructure:"propogateTracing"`
+}
+
+// Publish is the NamedLoader for the publish action.
+func Publish() (string, actions.Loader) {
+	return "@dapr_pluggable/publish", PublishLoader
+}
+
 func PublishLoader(ctx context.Context, with interface{}, resolver resolve.ResolveAs) (actions.Action, error) {
 	c := PublishConfig{
-		Resource:         "dapr",
-		Codec:            "json",
 		PropogateTracing: true,
 	}
 	if err := config.Decode(with, &c); err != nil {
@@ -41,23 +64,23 @@ func PublishLoader(ctx context.Context, with interface{}, resolver resolve.Resol
 		return nil, err
 	}
 
-	codec, ok := codecs[string(c.Codec)]
+	codec, ok := codecs[c.Codec]
 	if !ok {
 		return nil, fmt.Errorf("codec %q not found", c.Codec)
 	}
 
-	client, err := resource.Get[dapr.Client](resources, c.Resource)
+	client, err := resource.Get[proto.PubSubClient](resources, c.Resource)
 	if err != nil {
 		return nil, err
 	}
 
-	return PublishAction(client, &c, codec), nil
+	return PublishAction(&c, codec, client), nil
 }
 
 func PublishAction(
-	client dapr.Client,
 	config *PublishConfig,
-	codec codec.Codec) actions.Action {
+	codec codec.Codec,
+	client proto.PubSubClient) actions.Action {
 	return func(ctx context.Context, data actions.Data) (interface{}, error) {
 		var err error
 
@@ -78,13 +101,6 @@ func PublishAction(
 			key = fmt.Sprintf("%v", keyInt)
 		}
 
-		var metadata map[string]string
-		if config.Metadata != nil {
-			if metadata, err = config.Metadata.EvalMap(data); err != nil {
-				return nil, err
-			}
-		}
-
 		// Propogate distributed tracing fields
 		// per the the W3C TraceContext standard.
 		if config.PropogateTracing {
@@ -98,17 +114,18 @@ func PublishAction(
 			return nil, err
 		}
 
-		if metadata == nil {
-			metadata = make(map[string]string, 2)
-		}
+		metadata := map[string]string{}
 		if key != "" {
 			metadata["partitionKey"] = key
 		}
-		metadata["rawPayload"] = "true"
 
-		err = client.PublishEvent(ctx,
-			config.Pubsub, config.Topic,
-			dataBytes, dapr.PublishEventWithMetadata(metadata))
+		_, err = client.Publish(ctx, &proto.PublishRequest{
+			Data:        dataBytes,
+			PubsubName:  config.Resource,
+			Topic:       config.Topic,
+			Metadata:    metadata,
+			ContentType: codec.ContentType(),
+		})
 
 		return nil, err
 	}

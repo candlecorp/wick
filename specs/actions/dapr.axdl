@@ -1,0 +1,132 @@
+# Copyright 2022 The NanoBus Authors.
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+namespace "nanobus.actions.dapr"
+
+alias ValueExpr = string
+alias DataExpr = string
+alias Handler = string
+alias CodecRef = string
+
+type InvokeBindingConfig @action("@dapr/invoke_binding") {
+  "The name of the Dapr client resource."
+  resource: string
+  "Name of binding to invoke."
+  binding: string
+  "Name of the operation type for the binding to invoke."
+  operation: string
+  "The configured codec to use for encoding the message."
+  codec: CodecRef = "json"
+  "The arguments for the codec, if any."
+  codecArgs: [any]?
+  "Data is the input data sent."
+  data: DataExpr?
+  "Metadata is the input binding metadata."
+  metadata: DataExpr?
+}
+
+type PublishConfig @action("@dapr/publish") {
+  "The name of the Dapr client resource."
+  resource: string
+  "Name of pubsub to invoke."
+  pubsub: string
+  "Topic is the name of the topic to publish to."
+  topic: string
+  "The configured codec to use for encoding the message."
+  codec: CodecRef = "json"
+  "The arguments for the codec, if any."
+  codecArgs: [any]?
+  "optional value to use for the message key (is supported)."
+  key: ValueExpr?
+  "The input bindings sent."
+  data: DataExpr?
+  "The input binding metadata."
+  metadata: DataExpr?
+  "Enables/disables propogating the distributed tracing context (e.g. W3C TraceContext standard)."
+  propogateTracing: bool = true
+}
+
+type DeleteStateConfig @action("@dapr/delete_state") {
+  "The name of the Dapr client resource."
+  resource: string
+  "Name of state store to invoke."
+  store: string
+  "The key to delete."
+  key: ValueExpr
+  "Etag value of the item to delete"
+  etag: ValueExpr?
+  "The desired concurrency level"
+  concurrency: Concurrency = Undefined
+  "The desired consistency level"
+  consistency: Consistency = Undefined
+}
+
+type GetStateConfig @action("@dapr/get_state") {
+  "The name of the Dapr client resource."
+  resource: string
+  "Name of state store to invoke."
+  store: string
+  "The key to get."
+  key: ValueExpr
+  "The configured codec to use for decoding the state."
+  codec: CodecRef = "json"
+  "The arguments for the codec, if any."
+  codecArgs: [any]?
+  "The error to return if the key is not found."
+  notFoundError: string
+  "The desired concurrency level"
+  concurrency: Concurrency = Undefined
+  "The desired consistency level"
+  consistency: Consistency = Undefined
+}
+
+type SetStateConfig @action("@dapr/set_state") {
+  "The name of the Dapr client resource."
+  resource: string
+  "Name of state store to invoke."
+  store: string
+  "The configured codec to use for encoding the state."
+  codec: CodecRef = "json"
+  "The arguments for the codec, if any."
+  codecArgs: [any]?
+  "The items to set in the store."
+  items: [SetStateItem]
+}
+
+type SetStateItem {
+  "The key of the item to set."
+  key: ValueExpr
+  "an option expression to evaluate a."
+  forEach: ValueExpr?
+  "Optional data expression to tranform the data to set."
+  value: DataExpr?
+  "Etag value of the item to set"
+  etag: ValueExpr?
+  "Optional data expression for the key's metadata."
+  metadata: DataExpr?
+  "The desired concurrency level"
+  concurrency: Concurrency = Undefined
+  "The desired consistency level"
+  consistency: Consistency = Undefined
+}
+
+enum Concurrency {
+  "Undefined value for state concurrency"
+  Undefined = 0 as "undefined"
+  "First write concurrency value"
+  FirstWrite = 1 as "firstWrite"
+  "Last write concurrency value"
+  LastWrite = 2 as "lastWrite"
+}
+
+enum Consistency {
+  "Undefined value for state consistency"
+  Undefined = 0 as "undefined"
+  "Eventual state consistency value"
+  Eventual = 1 as "eventual"
+  "Strong state consistency value"
+  Strong = 2 as "strong"
+}

@@ -10,60 +10,56 @@ package dapr
 
 import (
 	"context"
-	"encoding/json"
+	"fmt"
 
-	proto "github.com/dapr/dapr/pkg/proto/components/v1"
+	dapr "github.com/dapr/go-sdk/client"
 
 	"github.com/nanobus/nanobus/pkg/actions"
 	"github.com/nanobus/nanobus/pkg/coalesce"
+	"github.com/nanobus/nanobus/pkg/codec"
 	"github.com/nanobus/nanobus/pkg/config"
-	"github.com/nanobus/nanobus/pkg/expr"
 	"github.com/nanobus/nanobus/pkg/resolve"
 	"github.com/nanobus/nanobus/pkg/resource"
 )
 
-type InvokeBindingConfig struct {
-	// Resource is name of binding to invoke.
-	Resource string `mapstructure:"resource" validate:"required"`
-	// Operation is the name of the operation type for the binding to invoke
-	Operation string `mapstructure:"operation" validate:"required"`
-	// Data is the input bindings sent
-	Data *expr.DataExpr `mapstructure:"data"`
-	// Metadata is the input binding metadata
-	Metadata *expr.DataExpr `mapstructure:"metadata"`
-}
-
-// InvokeBinding is the NamedLoader for Dapr output bindings
-func InvokeBinding() (string, actions.Loader) {
-	return "@dapr/invoke_binding", InvokeBindingLoader
-}
-
 func InvokeBindingLoader(ctx context.Context, with interface{}, resolver resolve.ResolveAs) (actions.Action, error) {
-	var c InvokeBindingConfig
+	c := InvokeBindingConfig{
+		Resource: "dapr",
+		Codec:    "json",
+	}
 	if err := config.Decode(with, &c); err != nil {
 		return nil, err
 	}
 
 	var resources resource.Resources
+	var codecs codec.Codecs
 	if err := resolve.Resolve(resolver,
-		"resource:lookup", &resources); err != nil {
+		"resource:lookup", &resources,
+		"codec:lookup", &codecs); err != nil {
 		return nil, err
 	}
 
-	client, err := resource.Get[proto.OutputBindingClient](resources, c.Resource)
+	codec, ok := codecs[string(c.Codec)]
+	if !ok {
+		return nil, fmt.Errorf("unknown codec %q", c.Codec)
+	}
+
+	client, err := resource.Get[dapr.Client](resources, c.Resource)
 	if err != nil {
 		return nil, err
 	}
 
-	return InvokeBindingAction(client, &c), nil
+	return InvokeBindingAction(client, codec, &c), nil
 }
 
 func InvokeBindingAction(
-	client proto.OutputBindingClient,
+	client dapr.Client,
+	codec codec.Codec,
 	config *InvokeBindingConfig) actions.Action {
 	return func(ctx context.Context, data actions.Data) (interface{}, error) {
 		var bindingData interface{}
-		r := proto.InvokeRequest{
+		r := dapr.InvokeBindingRequest{
+			Name:      config.Binding,
 			Operation: config.Operation,
 		}
 
@@ -79,18 +75,17 @@ func InvokeBindingAction(
 			}
 		}
 
-		// TODO: multi-codec support
-		if r.Data, err = json.Marshal(bindingData); err != nil {
+		if r.Data, err = codec.Encode(bindingData, config.CodecArgs...); err != nil {
 			return nil, err
 		}
 
-		resp, err := client.Invoke(ctx, &r)
+		resp, err := client.InvokeBinding(ctx, &r)
 		if err != nil {
 			return nil, err
 		}
 
 		var response interface{}
-		if len(resp.Data) > 0 {
+		if resp != nil && len(resp.Data) > 0 {
 			err = coalesce.JSONUnmarshal(resp.Data, &response)
 		}
 

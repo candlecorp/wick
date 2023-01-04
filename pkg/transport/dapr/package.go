@@ -6,17 +6,5 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-//go:generate apex generate
+//go:generate go generate
 package dapr
-
-import (
-	"github.com/nanobus/nanobus/pkg/actions"
-)
-
-var All = []actions.NamedLoader{
-	Publish,
-	DeleteState,
-	GetState,
-	SetState,
-	InvokeBinding,
-}
