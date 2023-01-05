@@ -52,6 +52,7 @@ type Auth struct {
 	config       *oauth2.Config
 	redirectURL  string
 	userInfoURL  string
+	cookieDomain string
 	processor    runtime.Namespaces
 	handler      *handler.Handler
 	debug        bool
@@ -109,6 +110,7 @@ func OAuth2V1Loader(ctx context.Context, with interface{}, resolver resolve.Reso
 		config:       config,
 		redirectURL:  c.RedirectURL,
 		userInfoURL:  c.Endpoint.UserInfoURL,
+		cookieDomain: c.CookieDomain,
 		processor:    processor,
 		handler:      c.Handler,
 		debug:        developerMode,
@@ -124,8 +126,12 @@ func (o *Auth) AddRoutes(r *mux.Router, address string) error {
 }
 
 func (o *Auth) login(w http.ResponseWriter, r *http.Request) {
+	domain := r.Host
+	if o.cookieDomain != "" {
+		domain = o.cookieDomain
+	}
 	// Create oauthState cookie
-	oauthState := generateStateOauthCookie(w)
+	oauthState := generateStateOauthCookie(w, domain)
 
 	u := o.config.AuthCodeURL(oauthState)
 	http.Redirect(w, r, u, http.StatusTemporaryRedirect)
@@ -249,7 +255,7 @@ func (o *Auth) getClaims(token *oauth2.Token) (map[string]any, error) {
 	return m, nil
 }
 
-func generateStateOauthCookie(w http.ResponseWriter) string {
+func generateStateOauthCookie(w http.ResponseWriter, domain string) string {
 	var expiration = time.Now().Add(20 * time.Minute)
 
 	b := make([]byte, 16)
@@ -257,7 +263,7 @@ func generateStateOauthCookie(w http.ResponseWriter) string {
 		logger.Error("error generating randomness for oauth state", "error", err)
 	}
 	state := base64.URLEncoding.EncodeToString(b)
-	cookie := http.Cookie{Name: "oauthstate", Value: state, Expires: expiration}
+	cookie := http.Cookie{Name: "oauthstate", Value: state, Expires: expiration, Domain: domain}
 	http.SetCookie(w, &cookie)
 
 	return state
