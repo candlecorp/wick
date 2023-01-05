@@ -130,7 +130,7 @@ interface AppConfig {
   main?: string;
   package?: Package;
   readonly resources: ResourceRef[];
-  readonly includes: { [key: string]: Ref };
+  readonly imports: { [key: string]: Ref };
   readonly resiliency: Resiliency;
   readonly initializers: { [key: string]: Component<unknown> };
   readonly transports: { [key: string]: Component<unknown> };
@@ -208,7 +208,7 @@ export class Application {
       main: undefined,
       package: undefined,
       resources: [],
-      includes: {},
+      imports: {},
       resiliency: {
         timeouts: {},
         retries: {},
@@ -301,12 +301,12 @@ export class Application {
     return name as CircuitBreakerRef;
   }
 
-  include<T>(
+  import<T>(
     instanceId: string,
     iota: Iota<T>,
     options: IncludeOptions = {},
   ): T {
-    this.config.includes[instanceId] = {
+    this.config.imports[instanceId] = {
       ref: iota.$ref,
       ...options,
     };
