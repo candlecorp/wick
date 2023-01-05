@@ -1,2 +1,2 @@
 run:
-  echo '{"name": "World!"}' | nanobus invoke Greeter::SayHello
+  echo '{"name": "World!"}' | nanobus invoke Greeter::sayHello
