@@ -21,7 +21,7 @@ $ just install
 Use the `apex` CLI to start a new project from the starter template:
 
 ```console
-$ apex new git@github.com:nanobus/nanobus.git -p templates/init my-app
+$ apex new https://github.com/nanobus/nanobus.git -p templates/init my-app
 ```
 
 The starter template includes up a nanobus configuration with one sample interface and an action that takes an input named `name`.
@@ -31,7 +31,7 @@ id: "my-app"
 version: 0.0.1
 interfaces:
   Greeter:
-    SayHello:
+    sayHello:
       steps:
         - name: Say Hello!
           uses: expr
@@ -42,7 +42,7 @@ interfaces:
 Run our action with the `nanobus invoke` command with sample input piped from `echo`:
 
 ```console
-$ echo '{"name": "World!"}' | nanobus invoke Greeter SayHello
+$ echo '{"name": "World!"}' | nanobus invoke Greeter::sayHello
 "Hello, World!"
 ```
 
@@ -50,7 +50,7 @@ The starter template also includes a tiny `justfile` with this command set up al
 
 ```console
 $ just run
-echo '{"name": "World!"}' | nanobus invoke Greeter SayHello
+echo '{"name": "World!"}' | nanobus invoke Greeter::sayHello
 "Hello, World!"
 ```
 
@@ -72,7 +72,7 @@ transports:
             routes:
               - method: POST
                 uri: /hello
-                handler: Greeter::SayHello
+                handler: Greeter::sayHello
 ```
 
 Each route is configured with its method, uri, handler and optional encoding. By default, the encoding is set to the content-type or `application/json` but you can specify other formats with the `encoding` property.
@@ -93,10 +93,10 @@ transports:
             routes:
               - method: POST
                 uri: /hello
-                handler: Greeter::SayHello
+                handler: Greeter::sayHello
 interfaces:
   Greeter:
-    SayHello:
+    sayHello:
       steps:
         - name: Say Hello!
           uses: expr
@@ -109,15 +109,21 @@ Start our web service by running `nanobus` and watch nanobus initialize our HTTP
 ```console
 $ nanobus
 INFO	Initializing transport	{"name": "http"}
-INFO	Serving route	{"uri": "/hello", "methods": "POST", "handler": "Greeter::SayHello"}
+INFO	Serving route	{"uri": "/hello", "methods": "POST", "handler": "Greeter::sayHello"}
 INFO	HTTP server listening	{"address": ":8080"}
 ```
 
 Make a request with a tool like curl to see the output:
 
 ```sh
-$ curl 127.0.0.1:8080/hello -H "Content-Type: application/json" \
+curl 127.0.0.1:8080/hello \
+  -H "Content-Type: application/json" \
   -d '{"name": "World!"}'
+```
+
+Output
+
+```
 {"type":"permission_denied","code":"permission_denied","status":403,"path":"/hello","timestamp":"2022-12-21T17:26:56.067483Z"}
 ```
 
@@ -130,7 +136,7 @@ Add an `authorization` block to our configuration and set up our action as unaut
 ```yaml
 authorization:
   Greeter:
-    SayHello:
+    sayHello:
       unauthenticated: true
 ```
 
@@ -150,14 +156,14 @@ transports:
             routes:
               - method: POST
                 uri: /hello
-                handler: Greeter::SayHello
+                handler: Greeter::sayHello
 authorization:
   Greeter:
-    SayHello:
+    sayHello:
       unauthenticated: true
 interfaces:
   Greeter:
-    SayHello:
+    sayHello:
       steps:
         - name: Say Hello!
           uses: expr
@@ -169,7 +175,14 @@ Run it with the command `nanobus` and issue a curl command to see our output.
 
 
 ```sh
-$ curl 127.0.0.1:8080/hello -H "Content-Type: application/json" -d '{"name": "World!"}'
+curl 127.0.0.1:8080/hello \
+  -H "Content-Type: application/json" \
+  -d '{"name": "World!"}'
+```
+
+Output
+
+```
 "Hello, World!"
 ```
 

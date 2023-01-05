@@ -734,7 +734,7 @@ func Start(info *Info) (*Engine, error) {
 
 			future := m.RequestResponse(ctx, h, p)
 			if future == nil {
-				return nil, errorz.New(errorz.Unimplemented, fmt.Sprintf("%s is not implemented", h))
+				return nil, errorz.New(errorz.Unimplemented, fmt.Sprintf("%s is not implemented", h.String()))
 			}
 			result, err := future.Block()
 			if err != nil {
