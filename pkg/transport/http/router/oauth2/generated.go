@@ -18,7 +18,7 @@ type OAuth2V1Config struct {
 	Endpoint     Endpoint         `json:"endpoint" yaml:"endpoint" msgpack:"endpoint" mapstructure:"endpoint"`
 	CallbackURL  string           `json:"callbackUrl" yaml:"callbackUrl" msgpack:"callbackUrl" mapstructure:"callbackUrl" validate:"required"`
 	RedirectURL  string           `json:"redirectUrl" yaml:"redirectUrl" msgpack:"redirectUrl" mapstructure:"redirectUrl" validate:"required"`
-	CookieDomain string           `json:"cookieDomain" yaml:"cookieDomain" msgpack:"cookieDomain" mapstructure:"cookieDomain" validate:"required"`
+	CookieDomain *string          `json:"cookieDomain,omitempty" yaml:"cookieDomain,omitempty" msgpack:"cookieDomain,omitempty" mapstructure:"cookieDomain"`
 	Scopes       []string         `json:"scopes,omitempty" yaml:"scopes,omitempty" msgpack:"scopes,omitempty" mapstructure:"scopes" validate:"dive"`
 	Handler      *handler.Handler `json:"handler,omitempty" yaml:"handler,omitempty" msgpack:"handler,omitempty" mapstructure:"handler"`
 }

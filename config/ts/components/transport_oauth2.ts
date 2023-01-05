@@ -18,6 +18,7 @@ export interface OAuth2V1Config {
   endpoint: Endpoint;
   callbackUrl: string;
   redirectUrl?: string;
+  cookieDomain?: string;
   scopes?: string[];
   handler?: Handler;
 }

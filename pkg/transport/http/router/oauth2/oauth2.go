@@ -52,7 +52,7 @@ type Auth struct {
 	config       *oauth2.Config
 	redirectURL  string
 	userInfoURL  string
-	cookieDomain string
+	cookieDomain *string
 	processor    runtime.Namespaces
 	handler      *handler.Handler
 	debug        bool
@@ -127,8 +127,8 @@ func (o *Auth) AddRoutes(r *mux.Router, address string) error {
 
 func (o *Auth) login(w http.ResponseWriter, r *http.Request) {
 	domain := r.Host
-	if o.cookieDomain != "" {
-		domain = o.cookieDomain
+	if o.cookieDomain != nil {
+		domain = *o.cookieDomain
 	}
 	// Create oauthState cookie
 	oauthState := generateStateOauthCookie(w, domain)
