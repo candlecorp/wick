@@ -1,4 +1,4 @@
-![NanoBus Logo](https://github.com/nanobus/nanobus/blob/main/docs/images/nanobus-logo.svgg)
+![NanoBus Logo](https://github.com/nanobus/nanobus/blob/main/docs/images/nanobus-logo.svg)
 
 NanoBus is a lightweight application runtime that reduces developer responsibility so that teams can **focus on core logic**.
 
