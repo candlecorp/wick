@@ -16,6 +16,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"net"
 	"net/http"
 	"strings"
 	"time"
@@ -130,8 +131,16 @@ func (o *Auth) login(w http.ResponseWriter, r *http.Request) {
 	if o.cookieDomain != nil {
 		domain = *o.cookieDomain
 	}
+
+	// Split the hostname and port
+	host, _, err := net.SplitHostPort(domain)
+	if err != nil {
+		// If there is no port, the host is returned as the first value
+		host = domain
+	}
+
 	// Create oauthState cookie
-	oauthState := generateStateOauthCookie(w, domain)
+	oauthState := generateStateOauthCookie(w, host)
 
 	u := o.config.AuthCodeURL(oauthState)
 	http.Redirect(w, r, u, http.StatusTemporaryRedirect)
