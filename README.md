@@ -1,6 +1,6 @@
 ![NanoBus Logo](https://github.com/nanobus/nanobus/blob/main/docs/images/nanobus-logo.svg)
 
-NanoBus is a lightweight application runtime that reduces developer responsibility so that teams can **focus on core logic**.
+NanoBus is a lightweight framework for building secure and scalable software services.
 
 For detailed information see the [overview](./docs/overview.md) and [architecture](./docs/architecture.md) pages.
 
