@@ -9,21 +9,25 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
+	"reflect"
 
 	"github.com/alecthomas/kong"
 	"go.uber.org/zap/zapcore"
 
+	"github.com/nanobus/nanobus/pkg/channel/metadata"
 	"github.com/nanobus/nanobus/pkg/engine"
 	"github.com/nanobus/nanobus/pkg/handler"
 	"github.com/nanobus/nanobus/pkg/logger"
 	"github.com/nanobus/nanobus/pkg/oci"
 	"github.com/nanobus/nanobus/pkg/runtime"
+	"github.com/nanobus/nanobus/pkg/stream"
 )
 
 var (
@@ -62,29 +66,26 @@ type defaultRunCmd struct {
 }
 
 func (c *defaultRunCmd) Run() error {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	// The default command currently does not accept flags.
 	// This flag code still is here in case it does in the future.
 	level := zapcore.InfoLevel
 	if c.Debug {
 		level = zapcore.DebugLevel
 	}
-	e, err := engine.Start(&engine.Info{
+	if _, err := engine.Start(ctx, &engine.Info{
 		Mode:          engine.ModeService,
 		BusFile:       "bus.yaml",
 		ResourcesFile: "resources.yaml",
 		LogLevel:      level,
 		DeveloperMode: c.DeveloperMode,
-	})
-	if err != nil {
+	}); err != nil {
 		// Error is logged in `Start`.
+		cancel()
 		os.Exit(1)
 	}
-	defer func() {
-		err = e.Stop()
-		if err != nil {
-			logger.Error(err.Error())
-		}
-	}()
 
 	return nil
 }
@@ -102,6 +103,9 @@ type runCmd struct {
 }
 
 func (c *runCmd) Run() error {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	location := c.BusFile
 	if oci.IsImageReference(c.BusFile) {
 		fmt.Printf("Pulling %s...\n", c.BusFile)
@@ -121,24 +125,18 @@ func (c *runCmd) Run() error {
 		level = zapcore.DebugLevel
 	}
 
-	e, err := engine.Start(&engine.Info{
+	if _, err := engine.Start(ctx, &engine.Info{
 		Mode:          engine.ModeService,
 		BusFile:       location,
 		LogLevel:      level,
 		ResourcesFile: c.ResourcesFile,
 		Process:       c.Args,
 		DeveloperMode: c.DeveloperMode,
-	})
-	if err != nil {
+	}); err != nil {
 		// Error is logged in `Start`.
+		cancel()
 		os.Exit(1)
 	}
-	defer func() {
-		err = e.Stop()
-		if err != nil {
-			logger.Error(err.Error())
-		}
-	}()
 
 	return nil
 }
@@ -162,6 +160,9 @@ type invokeCmd struct {
 }
 
 func (c *invokeCmd) Run() error {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	inputFile := os.Stdin
 	if c.Input != "" {
 		f, err := os.Open(c.Input)
@@ -189,6 +190,9 @@ func (c *invokeCmd) Run() error {
 		level = zapcore.DebugLevel
 	}
 
+	sink := &invokeSink{}
+	ctx = stream.SinkNewContext(ctx, sink)
+
 	info := engine.Info{
 		Mode:          engine.ModeInvoke,
 		BusFile:       c.BusFile,
@@ -197,18 +201,12 @@ func (c *invokeCmd) Run() error {
 		EntityID:      c.EntityID,
 		DeveloperMode: c.DeveloperMode,
 	}
-	e, err := engine.Start(&info)
+	e, err := engine.Start(ctx, &info)
 	if err != nil {
 		// Error is logged in `Start`.
+		cancel()
 		os.Exit(1)
-		return nil
 	}
-	defer func() {
-		err = e.Stop()
-		if err != nil {
-			logger.Error(err.Error())
-		}
-	}()
 
 	var result any
 	result, err = e.InvokeUnsafe(h, input)
@@ -217,17 +215,19 @@ func (c *invokeCmd) Run() error {
 		return nil
 	}
 
-	var jsonBytes []byte
-	if c.Pretty {
-		jsonBytes, err = json.MarshalIndent(result, "", "  ")
-	} else {
-		jsonBytes, err = json.Marshal(result)
-	}
-	if err != nil {
-		return fmt.Errorf("error converting output to JSON: %w", err)
-	}
+	if !isNil(result) {
+		var jsonBytes []byte
+		if c.Pretty {
+			jsonBytes, err = json.MarshalIndent(result, "", "  ")
+		} else {
+			jsonBytes, err = json.Marshal(result)
+		}
+		if err != nil {
+			return fmt.Errorf("error converting output to JSON: %w", err)
+		}
 
-	fmt.Println(string(jsonBytes))
+		fmt.Println(string(jsonBytes))
+	}
 
 	return nil
 }
@@ -330,4 +330,35 @@ func (c *versionCmd) Run() error {
 	}
 
 	return nil
+}
+
+type invokeSink struct {
+	pretty bool
+}
+
+func (i *invokeSink) Next(data any, md metadata.MD) (err error) {
+	var jsonBytes []byte
+	if i.pretty {
+		jsonBytes, err = json.MarshalIndent(data, "", "  ")
+	} else {
+		jsonBytes, err = json.Marshal(data)
+	}
+	if err != nil {
+		return fmt.Errorf("error converting output to JSON: %w", err)
+	}
+
+	fmt.Println(string(jsonBytes))
+	return nil
+}
+
+func (i *invokeSink) Complete() {}
+
+func (i *invokeSink) Error(err error) {
+	logger.Error(err.Error())
+}
+
+func isNil(val interface{}) bool {
+	return val == nil ||
+		(reflect.ValueOf(val).Kind() == reflect.Ptr &&
+			reflect.ValueOf(val).IsNil())
 }

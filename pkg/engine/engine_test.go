@@ -9,6 +9,7 @@
 package engine
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
@@ -18,6 +19,7 @@ import (
 )
 
 func TestInvoke(t *testing.T) {
+	ctx := context.Background()
 	var input any = map[string]interface{}{
 		"name": "World",
 	}
@@ -30,7 +32,7 @@ func TestInvoke(t *testing.T) {
 		EntityID:      "nothing",
 		DeveloperMode: false,
 	}
-	engine, err := Start(&info)
+	engine, err := Start(ctx, &info)
 	assert.NoError(t, err)
 	response, err := engine.Invoke(handler, input)
 	assert.Error(t, err)

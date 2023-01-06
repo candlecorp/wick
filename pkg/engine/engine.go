@@ -151,7 +151,6 @@ type Info struct {
 
 type Engine struct {
 	ctx            context.Context
-	cancel         context.CancelFunc
 	log            logr.Logger
 	tracer         trace.Tracer
 	actionRegistry actions.Registry
@@ -245,15 +244,7 @@ func (e *Engine) LoadConfig(busConfig *runtime.BusConfig) error {
 	return nil
 }
 
-func Start(info *Info) (*Engine, error) {
-	keepContext := false
-	ctx, cancel := context.WithCancel(context.Background())
-	defer func() {
-		if !keepContext {
-			cancel()
-		}
-	}()
-
+func Start(ctx context.Context, info *Info) (*Engine, error) {
 	// If there is a `.env` file, load its environment variables.
 	if err := godotenv.Load(); err != nil {
 		logger.Debug("could not load dotenv file", "error", err)
@@ -562,7 +553,6 @@ func Start(info *Info) (*Engine, error) {
 
 	e := Engine{
 		ctx:            ctx,
-		cancel:         cancel,
 		log:            log,
 		tracer:         tracer,
 		actionRegistry: actionRegistry,
@@ -834,16 +824,9 @@ func Start(info *Info) (*Engine, error) {
 				log.Error(err, "unexpected error")
 			}
 		}
-	} else {
-		keepContext = true
 	}
 
 	return &e, nil
-}
-
-func (e *Engine) Stop() error {
-	e.cancel()
-	return nil
 }
 
 func (e *Engine) InvokeUnsafe(handler handler.Handler, input any) (any, error) {

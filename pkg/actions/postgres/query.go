@@ -10,7 +10,6 @@ package postgres
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strings"
 
@@ -54,10 +53,7 @@ func QueryAction(
 	config *QueryConfig,
 	pool *pgxpool.Pool) actions.Action {
 	return func(ctx context.Context, data actions.Data) (interface{}, error) {
-		s, ok := stream.SinkFromContext(ctx)
-		if !config.Single && !ok {
-			return nil, errors.New("stream not in context")
-		}
+		s, _ := stream.SinkFromContext(ctx)
 
 		args := make([]interface{}, len(config.Args))
 		for i, expr := range config.Args {
@@ -89,15 +85,29 @@ func QueryAction(
 				return record, nil
 			}
 		} else {
-			for rows.Next() {
-				record, err := rowsToRecord(rows, fieldNames)
-				if err != nil {
-					return nil, err
+			if s != nil {
+				for rows.Next() {
+					record, err := rowsToRecord(rows, fieldNames)
+					if err != nil {
+						return nil, err
+					}
+
+					if err = s.Next(record, nil); err != nil {
+						return nil, err
+					}
+				}
+			} else {
+				records := make([]any, 0, 20)
+				for rows.Next() {
+					record, err := rowsToRecord(rows, fieldNames)
+					if err != nil {
+						return nil, err
+					}
+
+					records = append(records, record)
 				}
 
-				if err = s.Next(record, nil); err != nil {
-					return nil, err
-				}
+				return records, nil
 			}
 		}
 
