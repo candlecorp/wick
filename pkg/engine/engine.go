@@ -151,6 +151,7 @@ type Info struct {
 
 type Engine struct {
 	ctx            context.Context
+	cancel         context.CancelFunc
 	log            logr.Logger
 	tracer         trace.Tracer
 	actionRegistry actions.Registry
@@ -160,6 +161,8 @@ type Engine struct {
 	m              *mesh.Mesh
 	allNamespaces  runtime.Namespaces
 	codec          channel.Codec
+
+	transportInvoker transport.Invoker
 }
 
 func (e *Engine) LoadConfig(busConfig *runtime.BusConfig) error {
@@ -243,8 +246,13 @@ func (e *Engine) LoadConfig(busConfig *runtime.BusConfig) error {
 }
 
 func Start(info *Info) (*Engine, error) {
+	keepContext := false
 	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	defer func() {
+		if !keepContext {
+			cancel()
+		}
+	}()
 
 	// If there is a `.env` file, load its environment variables.
 	if err := godotenv.Load(); err != nil {
@@ -554,6 +562,7 @@ func Start(info *Info) (*Engine, error) {
 
 	e := Engine{
 		ctx:            ctx,
+		cancel:         cancel,
 		log:            log,
 		tracer:         tracer,
 		actionRegistry: actionRegistry,
@@ -752,6 +761,7 @@ func Start(info *Info) (*Engine, error) {
 
 		return response, err
 	}
+	e.transportInvoker = transportInvoker
 	dependencies["transport:invoker"] = transport.Invoker(transportInvoker)
 
 	if info.Mode == ModeService {
@@ -824,28 +834,24 @@ func Start(info *Info) (*Engine, error) {
 				log.Error(err, "unexpected error")
 			}
 		}
+	} else {
+		keepContext = true
 	}
 
 	return &e, nil
 }
 
-func (e *Engine) invoke(handler handler.Handler, input any, authmode transport.Authorization) (any, error) {
-	var transportInvoker transport.Invoker
-	if err := resolve.Resolve(e.resolveAs,
-		"transport:invoker", &transportInvoker,
-	); err != nil {
-		return nil, err
-	}
-
-	return transportInvoker(e.ctx, handler, "", input, authmode)
+func (e *Engine) Stop() error {
+	e.cancel()
+	return nil
 }
 
 func (e *Engine) InvokeUnsafe(handler handler.Handler, input any) (any, error) {
-	return e.invoke(handler, input, transport.BypassAuthorization)
+	return e.transportInvoker(e.ctx, handler, "", input, transport.BypassAuthorization)
 }
 
 func (e *Engine) Invoke(handler handler.Handler, input any) (any, error) {
-	return e.invoke(handler, input, transport.PerformAuthorization)
+	return e.transportInvoker(e.ctx, handler, "", input, transport.PerformAuthorization)
 }
 
 func loadResourcesConfig(filename string, log logr.Logger) (*runtime.ResourcesConfig, error) {
