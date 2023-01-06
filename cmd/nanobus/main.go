@@ -249,7 +249,7 @@ func (c *pushCmd) Run() error {
 		registry = *conf.Package.Registry
 	}
 	if registry == "" {
-		return errors.New("registry is not defined")
+		registry = "reg.candle.run"
 	}
 
 	org := c.Org
