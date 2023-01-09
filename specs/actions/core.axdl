@@ -42,7 +42,7 @@ interfaces:
             has: "sub"
       """,
       "TypeScript": """
-import { authorize } from "https://deno.land/x/nanobus_config@v0.0.12/mod.ts";
+import { authorize } from "https://deno.land/x/nanobusconfig@v0.0.14/mod.ts";
 
 MyService.register(app, {
   myOperation: ({flow}) =>

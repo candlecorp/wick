@@ -34,7 +34,7 @@ transports:
           handler: Events::onOrder ## Defined in an interface
 """,
       "TypeScript": """
-import { DaprServerV1 } from "https://deno.land/x/nanobus_config@v0.0.12/mod.ts";
+import { DaprServerV1 } from "https://deno.land/x/nanobusconfig@v0.0.14/mod.ts";
 
 app.transport(
   "dapr",
