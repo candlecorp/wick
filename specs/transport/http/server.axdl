@@ -33,7 +33,7 @@ transports:
         ### See routers
 """,
       "TypeScript": """
-import { HttpServerV1 } from "https://deno.land/x/nanobus_config@v0.0.12/mod.ts";
+import { HttpServerV1 } from "https://deno.land/x/nanobusconfig@v0.0.14/mod.ts";
 
 app.transport(
   "http",
