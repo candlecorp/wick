@@ -1,0 +1,282 @@
+---
+title: OAuth 2.0
+sidebar_position: 3
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# nanobus.transport.http.oauth2/v1
+
+<div class="attributes">
+
+### Description
+
+<p>
+  <span className="badge badgeDarkBlue">Security</span>
+  <a href="https://github.com/nanobus/nanobus/blob/main/pkg/transport/http/router/oauth2/oauth2.go" target="_blank" rel="noopener noreferrer">Source code <svg width="13.5" height="13.5" aria-hidden="true" viewBox="0 0 24 24" class="iconExternalLink_node_modules-@docusaurus-theme-classic-lib-theme-Icon-ExternalLink-styles-module"><path fill="currentColor" d="M21 13v10h-21v-19h12v2h-10v15h17v-8h2zm3-12h-10.988l4.035 4-6.977 7.07 2.828 2.828 6.977-7.07 4.125 4.172v-11z"></path></svg></a>
+</p>
+
+</div>
+
+
+
+## Options
+
+<div class="attributes">
+
+### loginPath
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">loginPath <span className="required">*</span>
+      <a class="hash-link" href="#loginpath" title="Direct link to loginPath">​</a>
+    </span>
+    <code>string</code>
+  </header>
+
+
+
+</div>
+
+### callbackPath
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">callbackPath <span className="required">*</span>
+      <a class="hash-link" href="#callbackpath" title="Direct link to callbackPath">​</a>
+    </span>
+    <code>string</code>
+  </header>
+
+
+
+</div>
+
+### clientId
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">clientId <span className="required">*</span>
+      <a class="hash-link" href="#clientid" title="Direct link to clientId">​</a>
+    </span>
+    <code>string</code>
+  </header>
+
+
+
+</div>
+
+### clientSecret
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">clientSecret <span className="required">*</span>
+      <a class="hash-link" href="#clientsecret" title="Direct link to clientSecret">​</a>
+    </span>
+    <code>string</code>
+  </header>
+
+
+
+</div>
+
+### endpoint
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">endpoint <span className="required">*</span>
+      <a class="hash-link" href="#endpoint" title="Direct link to endpoint">​</a>
+    </span>
+    <code><a href="#type-endpoint">Endpoint</a></code>
+  </header>
+
+
+
+</div>
+
+### callbackUrl
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">callbackUrl <span className="required">*</span>
+      <a class="hash-link" href="#callbackurl" title="Direct link to callbackUrl">​</a>
+    </span>
+    <code>string</code>
+  </header>
+
+
+
+</div>
+
+### redirectUrl
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">redirectUrl <span className="required">*</span>
+      <a class="hash-link" href="#redirecturl" title="Direct link to redirectUrl">​</a>
+    </span>
+    <code>string</code>
+  </header>
+
+
+
+</div>
+
+### cookieDomain
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">cookieDomain
+      <a class="hash-link" href="#cookiedomain" title="Direct link to cookieDomain">​</a>
+    </span>
+    <code>string</code>
+  </header>
+
+
+
+</div>
+
+### scopes
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">scopes
+      <a class="hash-link" href="#scopes" title="Direct link to scopes">​</a>
+    </span>
+    <code>string[]</code>
+  </header>
+
+
+
+</div>
+
+### handler
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">handler
+      <a class="hash-link" href="#handler" title="Direct link to handler">​</a>
+    </span>
+    <code>Handler</code>
+  </header>
+
+
+
+</div>
+
+</div>
+
+## type Endpoint
+
+<div class="attributes">
+
+### authUrl
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">authUrl <span className="required">*</span>
+      <a class="hash-link" href="#authurl" title="Direct link to authUrl">​</a>
+    </span>
+    <code>string</code>
+  </header>
+
+
+
+</div>
+
+### tokenUrl
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">tokenUrl <span className="required">*</span>
+      <a class="hash-link" href="#tokenurl" title="Direct link to tokenUrl">​</a>
+    </span>
+    <code>string</code>
+  </header>
+
+
+
+</div>
+
+### userInfoUrl
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">userInfoUrl <span className="required">*</span>
+      <a class="hash-link" href="#userinfourl" title="Direct link to userInfoUrl">​</a>
+    </span>
+    <code>string</code>
+  </header>
+
+
+
+</div>
+
+### authStyle
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">authStyle <span className="required">*</span>
+      <a class="hash-link" href="#authstyle" title="Direct link to authStyle">​</a>
+    </span>
+    <code>AuthStyle</code>
+  </header>
+
+AuthStyle optionally specifies how the endpoint wants the
+client ID & client secret sent.
+
+</div>
+
+</div>
+
+## enum AuthStyle
+
+<div class="attributes">
+
+### auto-detect
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">auto-detect
+      <a class="hash-link" href="#auto-detect" title="Direct link to auto-detect">​</a>
+    </span>
+  </header>
+
+ AuthStyleAutoDetect means to auto-detect which authentication
+style the provider wants by trying both ways and caching
+the successful way for the future.
+
+</div>
+
+### inparams
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">inparams
+      <a class="hash-link" href="#inparams" title="Direct link to inparams">​</a>
+    </span>
+  </header>
+
+ AuthStyleInParams sends the "client_id" and "client_secret"
+in the POST body as application/x-www-form-urlencoded parameters.
+
+</div>
+
+### inheader
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">inheader
+      <a class="hash-link" href="#inheader" title="Direct link to inheader">​</a>
+    </span>
+  </header>
+
+ AuthStyleInHeader sends the client_id and client_password
+using HTTP Basic Authorization. This is an optional style
+described in the OAuth2 RFC 6749 section 2.3.1.
+
+</div>
+
+</div>
+

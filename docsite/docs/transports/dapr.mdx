@@ -1,0 +1,276 @@
+---
+title: Dapr Server
+sidebar_position: 2
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# nanobus.transport.dapr/v1
+
+<div class="attributes">
+
+### Description
+
+<p>
+  <span className="badge badgeDarkBlue">Integration</span>
+  <a href="https://github.com/nanobus/nanobus/blob/main/pkg/transport/dapr/server.go" target="_blank" rel="noopener noreferrer">Source code <svg width="13.5" height="13.5" aria-hidden="true" viewBox="0 0 24 24" class="iconExternalLink_node_modules-@docusaurus-theme-classic-lib-theme-Icon-ExternalLink-styles-module"><path fill="currentColor" d="M21 13v10h-21v-19h12v2h-10v15h17v-8h2zm3-12h-10.988l4.035 4-6.977 7.07 2.828 2.828 6.977-7.07 4.125 4.172v-11z"></path></svg></a>
+</p>
+
+</div>
+
+This transport create a Dapr gRPC server able to receive
+events from Dapr's [PubSub](https://docs.dapr.io/developing-applications/building-blocks/pubsub/pubsub-overview/)
+or [Input Bindings](https://docs.dapr.io/developing-applications/building-blocks/bindings/bindings-overview/) building blocks.
+
+Running Dapr locally with NanoBus
+
+```
+dapr run --app-id hello-world --app-port 19090 --app-protocol grpc -- nanobus run --debug
+```
+
+## Options
+
+<div class="attributes">
+
+### address
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">address <span className="required">*</span>
+      <a class="hash-link" href="#address" title="Direct link to address">​</a>
+    </span>
+    <code>string</code>
+  </header>
+
+
+
+</div>
+
+### subscriptions
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">subscriptions
+      <a class="hash-link" href="#subscriptions" title="Direct link to subscriptions">​</a>
+    </span>
+    <code><a href="#type-subscription">Subscription</a>[]</code>
+  </header>
+
+
+
+</div>
+
+### bindings
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">bindings
+      <a class="hash-link" href="#bindings" title="Direct link to bindings">​</a>
+    </span>
+    <code><a href="#type-binding">Binding</a>[]</code>
+  </header>
+
+
+
+</div>
+
+</div>
+
+## type Subscription
+
+<div class="attributes">
+
+### pubsub
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">pubsub <span className="required">*</span>
+      <a class="hash-link" href="#pubsub" title="Direct link to pubsub">​</a>
+    </span>
+    <code>string</code>
+  </header>
+
+
+
+</div>
+
+### topic
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">topic <span className="required">*</span>
+      <a class="hash-link" href="#topic" title="Direct link to topic">​</a>
+    </span>
+    <code>string</code>
+  </header>
+
+
+
+</div>
+
+### metadata
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">metadata
+      <a class="hash-link" href="#metadata" title="Direct link to metadata">​</a>
+    </span>
+    <code>Map&lt;string,string&gt;</code>
+  </header>
+
+
+
+</div>
+
+### types
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">types
+      <a class="hash-link" href="#types" title="Direct link to types">​</a>
+    </span>
+    <code>Map&lt;string,Handler&gt;</code>
+  </header>
+
+
+
+</div>
+
+### handler
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">handler
+      <a class="hash-link" href="#handler" title="Direct link to handler">​</a>
+    </span>
+    <code>Handler</code>
+  </header>
+
+
+
+</div>
+
+### codec
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">codec <span className="required">*</span>
+      <a class="hash-link" href="#codec" title="Direct link to codec">​</a>
+    </span>
+    <code>CodecRef</code>
+  </header>
+
+
+
+</div>
+
+### disableTopicValidation
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">disableTopicValidation <span className="required">*</span>
+      <a class="hash-link" href="#disabletopicvalidation" title="Direct link to disableTopicValidation">​</a>
+    </span>
+    <code>bool</code>
+  </header>
+
+
+
+</div>
+
+</div>
+
+## type Binding
+
+<div class="attributes">
+
+### name
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">name <span className="required">*</span>
+      <a class="hash-link" href="#name" title="Direct link to name">​</a>
+    </span>
+    <code>string</code>
+  </header>
+
+
+
+</div>
+
+### handler
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">handler <span className="required">*</span>
+      <a class="hash-link" href="#handler" title="Direct link to handler">​</a>
+    </span>
+    <code>Handler</code>
+  </header>
+
+
+
+</div>
+
+### codec
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">codec <span className="required">*</span>
+      <a class="hash-link" href="#codec" title="Direct link to codec">​</a>
+    </span>
+    <code>CodecRef</code>
+  </header>
+
+
+
+</div>
+
+</div>
+
+## Examples
+
+### Basic configuration
+
+<Tabs
+  values={[
+    {label: 'YAML', value: 'yaml'},
+    {label: 'TypeScript', value: 'typescript'},
+  ]}>
+  <TabItem value="yaml">
+
+```yaml
+transports:
+  dapr:
+    uses: nanobus.transport.dapr/v1
+    with:
+      subscriptions:
+        - pubsub: pubsub
+          topic: orders
+          codec: cloudevents+json
+          handler: Events::onOrder ## Defined in an interface
+```
+
+  </TabItem>
+  <TabItem value="typescript">
+
+```typescript
+import { DaprServerV1 } from "https://deno.land/x/nanobus_config@v0.0.12/mod.ts";
+
+app.transport(
+  "dapr",
+  DaprServerV1({
+    subscriptions: [{
+      pubsub: 'pubsub',
+      topic: 'orders',
+      codec: 'cloudevents+json',
+      // Defined in an interface
+      handler: Events.onOrder,
+    }],
+  }),
+);
+```
+
+  </TabItem>
+</Tabs>

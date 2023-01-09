@@ -1,0 +1,8 @@
+{
+  "label": "Initializers",
+  "position": 3,
+  "link": {
+    "type": "generated-index",
+    "description": "Initialize your application before it starts receiving traffic"
+  }
+}

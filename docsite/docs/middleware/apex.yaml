@@ -1,0 +1,5 @@
+spec: ../../../specs/transport/http/cors.axdl
+config:
+  pkg: 'transport/http/middleware/cors'
+plugins:
+  - '../../../codegen/docs-plugin.ts'

@@ -1,0 +1,8 @@
+{
+  "label": "Filters",
+  "position": 7,
+  "link": {
+    "type": "generated-index",
+    "description": "Preform transport agnostic checks prior to passing control to pipelines"
+  }
+}

@@ -1,0 +1,146 @@
+---
+title: load
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# @postgres/load
+
+<div class="attributes">
+
+### Description
+
+<p>
+  <span className="badge badgeDarkBlue">Database</span>
+  <a href="https://github.com/nanobus/nanobus/blob/main/pkg/actions/postgres/load.go" target="_blank" rel="noopener noreferrer">Source code <svg width="13.5" height="13.5" aria-hidden="true" viewBox="0 0 24 24" class="iconExternalLink_node_modules-@docusaurus-theme-classic-lib-theme-Icon-ExternalLink-styles-module"><path fill="currentColor" d="M21 13v10h-21v-19h12v2h-10v15h17v-8h2zm3-12h-10.988l4.035 4-6.977 7.07 2.828 2.828 6.977-7.07 4.125 4.172v-11z"></path></svg></a>
+</p>
+
+</div>
+
+TODO
+
+## Options
+
+<div class="attributes">
+
+### resource
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">resource <span className="required">*</span>
+      <a class="hash-link" href="#resource" title="Direct link to resource">​</a>
+    </span>
+    <code>ResourceRef</code>
+  </header>
+
+Resource is the name of the connection resource to use.
+
+</div>
+
+### namespace
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">namespace <span className="required">*</span>
+      <a class="hash-link" href="#namespace" title="Direct link to namespace">​</a>
+    </span>
+    <code>string</code>
+  </header>
+
+Namespace is the type namespace to load.
+
+</div>
+
+### type
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">type <span className="required">*</span>
+      <a class="hash-link" href="#type" title="Direct link to type">​</a>
+    </span>
+    <code>string</code>
+  </header>
+
+Type is the type name to load.
+
+</div>
+
+### key
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">key <span className="required">*</span>
+      <a class="hash-link" href="#key" title="Direct link to key">​</a>
+    </span>
+    <code>string (Value expression)</code>
+  </header>
+
+ID is the entity identifier expression.
+
+</div>
+
+### preload
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">preload
+      <a class="hash-link" href="#preload" title="Direct link to preload">​</a>
+    </span>
+    <code><a href="#type-preload">Preload</a>[]</code>
+  </header>
+
+Preload lists the relationship to expand/load.
+
+</div>
+
+### notFoundError
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">notFoundError <span className="required">*</span>
+      <a class="hash-link" href="#notfounderror" title="Direct link to notFoundError">​</a>
+    </span>
+    <code>string</code>
+  </header>
+
+NotFoundError is the error to return if the key is not found.
+
+</div>
+
+</div>
+
+## type Preload
+
+<div class="attributes">
+
+### field
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">field <span className="required">*</span>
+      <a class="hash-link" href="#field" title="Direct link to field">​</a>
+    </span>
+    <code>string</code>
+  </header>
+
+
+
+</div>
+
+### preload
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">preload <span className="required">*</span>
+      <a class="hash-link" href="#preload" title="Direct link to preload">​</a>
+    </span>
+    <code><a href="#type-preload">Preload</a>[]</code>
+  </header>
+
+
+
+</div>
+
+</div>
+

@@ -13,8 +13,11 @@ import {
 export type FilePath = string;
 
 export interface MigratePostgresV1Config {
+  // The data source connection string.
   dataSource: string;
+  // The directory to use for migration sources.
   directory?: FilePath;
+  // The directory to use for migration sources.
   sourceUrl?: string;
 }
 

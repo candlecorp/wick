@@ -9,7 +9,44 @@ namespace "nanobus.transport.time"
 alias Component = any
 alias Handler = string
 
-type TimeSchedulerV1Config @transport("nanobus.transport.time.scheduler/v1") {
+type SchedulerV1Config
+  @slug("scheduler") @tags(["Jobs"])
+  @transport("nanobus.transport.time.scheduler/v1")
+  @title("Scheduler")
+  @examples([
+  {
+    title: "Basic configuration",
+    formats: {
+      "YAML": """
+transports:
+  dapr:
+    uses: nanobus.transport.time.scheduler/v1
+    with:
+      schedules:
+        - handler: 'log::helloWorld'
+          schedule: '*/1 * * * *'
+        - handler: 'log::helloMoon'
+          schedule: '*/2 * * * *'
+""",
+      "TypeScript": """
+import { SchedulerV1 } from "https://deno.land/x/nanobus_config@v0.0.12/mod.ts";
+
+app.transport(
+  "dapr",
+  SchedulerV1({
+    schedules: [{
+      handler: log.helloWorld,
+      schedule: '*/1 * * * *',
+    }, {
+      handler: log.helloWorld,
+      schedule: '*/2 * * * *',
+    }],
+  }),
+);
+"""
+    }
+  }
+]) {
   schedules: [Schedule]
 }
 

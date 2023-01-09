@@ -22,5 +22,6 @@ export * from "./transport_server.ts";
 export * from "./transport_session.ts";
 export * from "./transport_static.ts";
 export * from "./transport_userinfo.ts";
+export * from "./transport_scheduler.ts";
 export * from "./modules.ts";
 export * from "./utilities.ts";

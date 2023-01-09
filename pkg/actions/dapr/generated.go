@@ -12,6 +12,7 @@ import (
 
 type CodecRef string
 
+// TODO
 type InvokeBindingConfig struct {
 	// The name of the Dapr client resource.
 	Resource string `json:"resource" yaml:"resource" msgpack:"resource" mapstructure:"resource" validate:"required"`
@@ -33,6 +34,7 @@ func InvokeBinding() (string, actions.Loader) {
 	return "@dapr/invoke_binding", InvokeBindingLoader
 }
 
+// TODO
 type PublishConfig struct {
 	// The name of the Dapr client resource.
 	Resource string `json:"resource" yaml:"resource" msgpack:"resource" mapstructure:"resource" validate:"required"`
@@ -59,6 +61,7 @@ func Publish() (string, actions.Loader) {
 	return "@dapr/publish", PublishLoader
 }
 
+// TODO
 type DeleteStateConfig struct {
 	// The name of the Dapr client resource.
 	Resource string `json:"resource" yaml:"resource" msgpack:"resource" mapstructure:"resource" validate:"required"`
@@ -78,6 +81,7 @@ func DeleteState() (string, actions.Loader) {
 	return "@dapr/delete_state", DeleteStateLoader
 }
 
+// TODO
 type GetStateConfig struct {
 	// The name of the Dapr client resource.
 	Resource string `json:"resource" yaml:"resource" msgpack:"resource" mapstructure:"resource" validate:"required"`
@@ -101,6 +105,7 @@ func GetState() (string, actions.Loader) {
 	return "@dapr/get_state", GetStateLoader
 }
 
+// TODO
 type SetStateConfig struct {
 	// The name of the Dapr client resource.
 	Resource string `json:"resource" yaml:"resource" msgpack:"resource" mapstructure:"resource" validate:"required"`
@@ -118,6 +123,7 @@ func SetState() (string, actions.Loader) {
 	return "@dapr/set_state", SetStateLoader
 }
 
+// TODO
 type SetStateItem struct {
 	// The key of the item to set.
 	Key *expr.ValueExpr `json:"key" yaml:"key" msgpack:"key" mapstructure:"key" validate:"required"`
@@ -135,6 +141,7 @@ type SetStateItem struct {
 	Consistency Consistency `json:"consistency" yaml:"consistency" msgpack:"consistency" mapstructure:"consistency"`
 }
 
+// TODO
 type Concurrency int32
 
 const (
@@ -190,6 +197,7 @@ func (e *Concurrency) UnmarshalJSON(b []byte) error {
 	return e.FromString(str)
 }
 
+// TODO
 type Consistency int32
 
 const (

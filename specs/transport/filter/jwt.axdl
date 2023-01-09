@@ -6,13 +6,16 @@
 
 namespace "nanobus.filter.jwt"
 
-type JWTV1Config @filter("nanobus.filter.jwt/v1") {
-	rsaPublicKeyFile:     string? @rename({go: "RSAPublicKeyFile"})
-	rsaPublicKeyString:   string? @rename({go: "RSAPublicKeyString"})
-	ecdsaPublicKeyFile:   string? @rename({go: "ECDSAPublicKeyFile"})
-	ecdsaPublicKeyString: string? @rename({go: "ECDSAPublicKeyString"})
-	hmacSecretKeyFile:    string? @rename({go: "HMACSecretKeyFile"})
-	hmacSecretKeyBase64:  bool = false @rename({go: "HMACSecretKeyBase64"})
-	hmacSecretKeyString:  string? @rename({go: "HMACSecretKeyString"})
-	jwksUrl:              string? @rename({go: "JWKSURL"})
+type JWTV1Config
+  @slug("jwt") @tags(["Security"])
+  @filter("nanobus.filter.jwt/v1")
+  @title("JWT") {
+  rsaPublicKeyFile:     string? @rename({go: "RSAPublicKeyFile"})
+  rsaPublicKeyString:   string? @rename({go: "RSAPublicKeyString"})
+  ecdsaPublicKeyFile:   string? @rename({go: "ECDSAPublicKeyFile"})
+  ecdsaPublicKeyString: string? @rename({go: "ECDSAPublicKeyString"})
+  hmacSecretKeyFile:    string? @rename({go: "HMACSecretKeyFile"})
+  hmacSecretKeyBase64:  bool = false @rename({go: "HMACSecretKeyBase64"})
+  hmacSecretKeyString:  string? @rename({go: "HMACSecretKeyString"})
+  jwksUrl:              string? @rename({go: "JWKSURL"})
 }

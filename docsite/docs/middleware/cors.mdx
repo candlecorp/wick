@@ -1,0 +1,154 @@
+---
+title: CORS
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# nanobus.transport.http.cors/v0
+
+<div class="attributes">
+
+### Description
+
+<p>
+  <span className="badge badgeDarkBlue">Security</span>
+  <a href="https://github.com/nanobus/nanobus/blob/main/pkg/transport/http/middleware/cors/cors.go" target="_blank" rel="noopener noreferrer">Source code <svg width="13.5" height="13.5" aria-hidden="true" viewBox="0 0 24 24" class="iconExternalLink_node_modules-@docusaurus-theme-classic-lib-theme-Icon-ExternalLink-styles-module"><path fill="currentColor" d="M21 13v10h-21v-19h12v2h-10v15h17v-8h2zm3-12h-10.988l4.035 4-6.977 7.07 2.828 2.828 6.977-7.07 4.125 4.172v-11z"></path></svg></a>
+</p>
+
+</div>
+
+
+
+## Options
+
+<div class="attributes">
+
+### allowedOrigins
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">allowedOrigins
+      <a class="hash-link" href="#allowedorigins" title="Direct link to allowedOrigins">​</a>
+    </span>
+    <code>string[]</code>
+  </header>
+
+AllowedOrigins is a list of origins a cross-domain request can be executed from.
+If the special "*" value is present in the list, all origins will be allowed.
+An origin may contain a wildcard (*) to replace 0 or more characters
+(i.e.: http://*.domain.com). Usage of wildcards implies a small performance penalty.
+Only one wildcard can be used per origin.
+Default value is \["*"\]
+
+</div>
+
+### allowedMethods
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">allowedMethods
+      <a class="hash-link" href="#allowedmethods" title="Direct link to allowedMethods">​</a>
+    </span>
+    <code>string[]</code>
+  </header>
+
+AllowedMethods is a list of methods the client is allowed to use with
+cross-domain requests. Default value is simple methods (HEAD, GET and POST).
+
+</div>
+
+### allowedHeaders
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">allowedHeaders
+      <a class="hash-link" href="#allowedheaders" title="Direct link to allowedHeaders">​</a>
+    </span>
+    <code>string[]</code>
+  </header>
+
+AllowedHeaders is list of non simple headers the client is allowed to use with
+cross-domain requests.
+If the special "*" value is present in the list, all headers will be allowed.
+Default value is [] but "Origin" is always appended to the list.
+
+</div>
+
+### exposedHeaders
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">exposedHeaders
+      <a class="hash-link" href="#exposedheaders" title="Direct link to exposedHeaders">​</a>
+    </span>
+    <code>string[]</code>
+  </header>
+
+ExposedHeaders indicates which headers are safe to expose to the API of a CORS
+API specification
+
+</div>
+
+### maxAge
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">maxAge
+      <a class="hash-link" href="#maxage" title="Direct link to maxAge">​</a>
+    </span>
+    <code>u32</code>
+  </header>
+
+MaxAge indicates how long (in seconds) the results of a preflight request
+can be cached
+
+</div>
+
+### allowCredentials
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">allowCredentials <span className="required">*</span>
+      <a class="hash-link" href="#allowcredentials" title="Direct link to allowCredentials">​</a>
+    </span>
+    <code>bool</code>
+  </header>
+
+AllowCredentials indicates whether the request can include user credentials like
+cookies, HTTP authentication or client side SSL certificates.
+
+</div>
+
+### optionsPassthrough
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">optionsPassthrough <span className="required">*</span>
+      <a class="hash-link" href="#optionspassthrough" title="Direct link to optionsPassthrough">​</a>
+    </span>
+    <code>bool</code>
+  </header>
+
+OptionsPassthrough instructs preflight to let other potential next handlers to
+process the OPTIONS method. Turn this on if your application handles OPTIONS.
+
+</div>
+
+### optionsSuccessStatus
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">optionsSuccessStatus <span className="required">*</span>
+      <a class="hash-link" href="#optionssuccessstatus" title="Direct link to optionsSuccessStatus">​</a>
+    </span>
+    <code>u32</code>
+  </header>
+
+Provides a status code to use for successful OPTIONS requests.
+Default value is http.StatusNoContent (204).
+
+</div>
+
+</div>
+

@@ -1,0 +1,20 @@
+spec: ../../../specs/transport/http/server.axdl
+config:
+  pkg: 'transport/http'
+  position_start: 1
+plugins:
+  - '../../../codegen/docs-plugin.ts'
+---
+spec: ../../../specs/transport/dapr/server.axdl
+config:
+  pkg: 'transport/dapr'
+  position_start: 2
+plugins:
+  - '../../../codegen/docs-plugin.ts'
+---
+spec: ../../../specs/transport/time/scheduler.axdl
+config:
+  pkg: 'transport/time'
+  position_start: 3
+plugins:
+  - '../../../codegen/docs-plugin.ts'

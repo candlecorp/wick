@@ -70,6 +70,12 @@ generates:
     module: ../../../codegen/config.ts
     visitorClass: ComponentsVisitor
 ---
+spec: ../../../specs/transport/time/scheduler.axdl
+generates:
+  transport_scheduler.ts:
+    module: ../../../codegen/config.ts
+    visitorClass: ComponentsVisitor
+---
 spec: ../../../specs/actions/core.axdl
 generates:
   actions_core.ts:

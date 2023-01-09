@@ -6,7 +6,10 @@
 
 namespace "nanobus.transport.http"
 
-type StaticV1Config @router("nanobus.transport.http.static/v1") {
+type StaticV1Config
+  @slug("static") @tags(["User Interface"])
+  @router("nanobus.transport.http.static/v1")
+  @title("Static File Server") {
   paths: [StaticPath]
 }
 

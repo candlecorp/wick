@@ -3,8 +3,56 @@ namespace "nanobus.transport.dapr"
 alias Handler = string
 alias CodecRef = string
 
-type DaprServerV1Config @transport("nanobus.transport.dapr/v1") {
-  address: string
+"""
+This transport create a Dapr gRPC server able to receive
+events from Dapr's [PubSub](https://docs.dapr.io/developing-applications/building-blocks/pubsub/pubsub-overview/)
+or [Input Bindings](https://docs.dapr.io/developing-applications/building-blocks/bindings/bindings-overview/) building blocks.
+
+Running Dapr locally with NanoBus
+
+```
+dapr run --app-id hello-world --app-port 19090 --app-protocol grpc -- nanobus run --debug
+```
+"""
+type DaprServerV1Config
+  @slug("dapr") @filename("server") @tags(["Integration"])
+  @transport("nanobus.transport.dapr/v1")
+  @title("Dapr Server")
+  @examples([
+  {
+    title: "Basic configuration",
+    formats: {
+      "YAML": """
+transports:
+  dapr:
+    uses: nanobus.transport.dapr/v1
+    with:
+      subscriptions:
+        - pubsub: pubsub
+          topic: orders
+          codec: cloudevents+json
+          handler: Events::onOrder ## Defined in an interface
+""",
+      "TypeScript": """
+import { DaprServerV1 } from "https://deno.land/x/nanobus_config@v0.0.12/mod.ts";
+
+app.transport(
+  "dapr",
+  DaprServerV1({
+    subscriptions: [{
+      pubsub: 'pubsub',
+      topic: 'orders',
+      codec: 'cloudevents+json',
+      // Defined in an interface
+      handler: Events.onOrder,
+    }],
+  }),
+);
+"""
+    }
+  }
+]) {
+  address: string = ":19090"
   subscriptions: [Subscription]?
   bindings: [Binding]?
 }
@@ -12,7 +60,7 @@ type DaprServerV1Config @transport("nanobus.transport.dapr/v1") {
 type Subscription {
   pubsub: string
   topic: string
-  metadata: { string : string }
+  metadata: { string : string }?
   types: { string : Handler }?
   handler: Handler?
   codec: CodecRef

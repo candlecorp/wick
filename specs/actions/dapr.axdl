@@ -11,9 +11,15 @@ alias DataExpr = string
 alias Handler = string
 alias CodecRef = string
 
-type InvokeBindingConfig @action("@dapr/invoke_binding") {
+"""
+TODO
+"""
+type InvokeBindingConfig
+  @tags(["Request"])
+  @filename("binding_invoke")
+  @action("@dapr/invoke_binding") {
   "The name of the Dapr client resource."
-  resource: string
+  resource: string = "dapr"
   "Name of binding to invoke."
   binding: string
   "Name of the operation type for the binding to invoke."
@@ -28,9 +34,15 @@ type InvokeBindingConfig @action("@dapr/invoke_binding") {
   metadata: DataExpr?
 }
 
-type PublishConfig @action("@dapr/publish") {
+"""
+TODO
+"""
+type PublishConfig
+  @tags(["Messaging"])
+  @filename("publish")
+  @action("@dapr/publish") {
   "The name of the Dapr client resource."
-  resource: string
+  resource: string = "dapr"
   "Name of pubsub to invoke."
   pubsub: string
   "Topic is the name of the topic to publish to."
@@ -49,9 +61,15 @@ type PublishConfig @action("@dapr/publish") {
   propogateTracing: bool = true
 }
 
-type DeleteStateConfig @action("@dapr/delete_state") {
+"""
+TODO
+"""
+type DeleteStateConfig
+  @tags(["Database"])
+  @filename("state_delete")
+  @action("@dapr/delete_state") {
   "The name of the Dapr client resource."
-  resource: string
+  resource: string = "dapr"
   "Name of state store to invoke."
   store: string
   "The key to delete."
@@ -64,9 +82,15 @@ type DeleteStateConfig @action("@dapr/delete_state") {
   consistency: Consistency = Undefined
 }
 
-type GetStateConfig @action("@dapr/get_state") {
+"""
+TODO
+"""
+type GetStateConfig
+  @tags(["Database"])
+  @filename("state_get")
+  @action("@dapr/get_state") {
   "The name of the Dapr client resource."
-  resource: string
+  resource: string = "dapr"
   "Name of state store to invoke."
   store: string
   "The key to get."
@@ -83,9 +107,15 @@ type GetStateConfig @action("@dapr/get_state") {
   consistency: Consistency = Undefined
 }
 
-type SetStateConfig @action("@dapr/set_state") {
+"""
+TODO
+"""
+type SetStateConfig
+  @tags(["Database"])
+  @filename("state_set")
+  @action("@dapr/set_state") {
   "The name of the Dapr client resource."
-  resource: string
+  resource: string = "dapr"
   "Name of state store to invoke."
   store: string
   "The configured codec to use for encoding the state."
@@ -96,6 +126,9 @@ type SetStateConfig @action("@dapr/set_state") {
   items: [SetStateItem]
 }
 
+"""
+TODO
+"""
 type SetStateItem {
   "The key of the item to set."
   key: ValueExpr
@@ -113,6 +146,9 @@ type SetStateItem {
   consistency: Consistency = Undefined
 }
 
+"""
+TODO
+"""
 enum Concurrency {
   "Undefined value for state concurrency"
   Undefined = 0 as "undefined"
@@ -122,6 +158,9 @@ enum Concurrency {
   LastWrite = 2 as "lastWrite"
 }
 
+"""
+TODO
+"""
 enum Consistency {
   "Undefined value for state consistency"
   Undefined = 0 as "undefined"

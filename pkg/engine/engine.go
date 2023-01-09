@@ -295,7 +295,7 @@ func Start(ctx context.Context, info *Info) (*Engine, error) {
 		transport_http.HttpServerV1,
 		transport_httprpc.Load,
 		transport_nats.Load,
-		transport_time.TimeSchedulerV1,
+		transport_time.SchedulerV1,
 	)
 
 	// Spec registration

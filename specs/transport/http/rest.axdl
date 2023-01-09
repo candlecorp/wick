@@ -6,7 +6,10 @@
 
 namespace "nanobus.transport.http"
 
-type RestV1Config @router("nanobus.transport.http.rest/v1") {
+type RestV1Config
+  @slug("rest") @tags(["API"])
+  @router("nanobus.transport.http.rest/v1")
+  @title("Rest API") {
   documentation: Documentation
 }
 

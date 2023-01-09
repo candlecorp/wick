@@ -34,7 +34,7 @@ type Scheduler struct {
 	schedules   []Schedule
 }
 
-func TimeSchedulerV1Loader(ctx context.Context, with interface{}, resolver resolve.ResolveAs) (transport.Transport, error) {
+func SchedulerV1Loader(ctx context.Context, with interface{}, resolver resolve.ResolveAs) (transport.Transport, error) {
 	var log logr.Logger
 	var tracer trace.Tracer
 	var transportInvoker transport.Invoker
@@ -47,7 +47,7 @@ func TimeSchedulerV1Loader(ctx context.Context, with interface{}, resolver resol
 	}
 
 	// Defaults
-	c := TimeSchedulerV1Config{}
+	c := SchedulerV1Config{}
 	if err := config.Decode(with, &c); err != nil {
 		return nil, err
 	}
@@ -55,7 +55,7 @@ func TimeSchedulerV1Loader(ctx context.Context, with interface{}, resolver resol
 	return NewScheduler(ctx, log, tracer, transportInvoker, c)
 }
 
-func NewScheduler(ctx context.Context, log logr.Logger, tracer trace.Tracer, transportInvoker transport.Invoker, config TimeSchedulerV1Config) (*Scheduler, error) {
+func NewScheduler(ctx context.Context, log logr.Logger, tracer trace.Tracer, transportInvoker transport.Invoker, config SchedulerV1Config) (*Scheduler, error) {
 	return &Scheduler{
 		id:          uuid.New().String(),
 		ctx:         ctx,

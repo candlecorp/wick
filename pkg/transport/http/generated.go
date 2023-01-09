@@ -7,10 +7,15 @@ import (
 	"github.com/nanobus/nanobus/pkg/transport"
 )
 
+// This component provides extensible HTTP server capabilities. The functionality
+// of your application is added by including `routers` and `middleware` components.
 type HttpServerV1Config struct {
-	Address    string              `json:"address" yaml:"address" msgpack:"address" mapstructure:"address" validate:"required"`
+	// The listening address of the server.
+	Address string `json:"address" yaml:"address" msgpack:"address" mapstructure:"address" validate:"required"`
+	// Array of [HTTP Middleware](/category/http-middleware) component configurations.
 	Middleware []runtime.Component `json:"middleware,omitempty" yaml:"middleware,omitempty" msgpack:"middleware,omitempty" mapstructure:"middleware" validate:"dive"`
-	Routers    []runtime.Component `json:"routers,omitempty" yaml:"routers,omitempty" msgpack:"routers,omitempty" mapstructure:"routers" validate:"dive"`
+	// Array of [HTTP Router](/category/http-routers) component configurations.
+	Routers []runtime.Component `json:"routers,omitempty" yaml:"routers,omitempty" msgpack:"routers,omitempty" mapstructure:"routers" validate:"dive"`
 }
 
 func HttpServerV1() (string, transport.Loader) {

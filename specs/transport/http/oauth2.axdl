@@ -8,7 +8,10 @@ namespace "nanobus.transport.http"
 
 alias Handler = string
 
-type OAuth2V1Config @router("nanobus.transport.http.oauth2/v1") {
+type OAuth2V1Config
+  @slug("oauth2") @tags(["Security"])
+  @router("nanobus.transport.http.oauth2/v1")
+  @title("OAuth 2.0") {
   loginPath:    string = "/oauth/login"
   callbackPath: string = "/oauth/callback"
   clientId:     string

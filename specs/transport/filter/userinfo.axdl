@@ -6,6 +6,9 @@
 
 namespace "nanobus.filter.userinfo"
 
-type UserInfoV1Config @filter("nanobus.filter.userinfo/v1") {
-	userInfoUrl: string
+type UserInfoV1Config
+  @slug("userinfo") @tags(["Security"])
+  @filter("nanobus.filter.userinfo/v1")
+  @title("User Info") {
+  userInfoUrl: string
 }

@@ -8,8 +8,57 @@ namespace "nanobus.transport.http"
 
 alias Component = any
 
-type HttpServerV1Config @transport("nanobus.transport.http.server/v1") {
+"""
+This component provides extensible HTTP server capabilities.
+The functionality of your application is added
+by including `routers` and `middleware` components.
+"""
+type HttpServerV1Config
+  @slug("http") @filename("server") @tags(["API"])
+  @transport("nanobus.transport.http.server/v1")
+  @title("HTTP Server")
+  @examples([
+  {
+    title: "Basic configuration",
+    formats: {
+      "YAML": """
+transports:
+  http:
+    uses: "nanobus.transport.http.server/v1"
+    with:
+      address: ':8080'
+      middleware:
+        ### See middleware
+      routers:
+        ### See routers
+""",
+      "TypeScript": """
+import { HttpServerV1 } from "https://deno.land/x/nanobus_config@v0.0.12/mod.ts";
+
+app.transport(
+  "http",
+  HttpServerV1({
+    address: ":8080",
+    // See middleware
+    middleware: [],
+    // See routers
+    routers: [],
+  }),
+);
+"""
+    }
+  }
+]) {
+  """
+  The listening address of the server.
+  """
   address:    string
+  """
+  Array of [HTTP Middleware](/category/http-middleware) component configurations.
+  """
   middleware: [Component]?
+  """
+  Array of [HTTP Router](/category/http-routers) component configurations.
+  """
   routers:    [Component]?
 }

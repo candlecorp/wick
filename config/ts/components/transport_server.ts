@@ -11,8 +11,11 @@ import {
 } from "../nanobus.ts";
 
 export interface HttpServerV1Config {
+  // The listening address of the server.
   address: string;
+  // Array of [HTTP Middleware](/category/http-middleware) component configurations.
   middleware?: Component<any>[];
+  // Array of [HTTP Router](/category/http-routers) component configurations.
   routers?: Component<any>[];
 }
 

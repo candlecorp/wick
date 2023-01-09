@@ -1,0 +1,27 @@
+spec: ../../../specs/transport/http/router.axdl
+config:
+  pkg: 'transport/http/router/router'
+  position_start: 1
+plugins:
+  - '../../../codegen/docs-plugin.ts'
+---
+spec: ../../../specs/transport/http/rest.axdl
+config:
+  pkg: 'transport/http/router/rest'
+  position_start: 2
+plugins:
+  - '../../../codegen/docs-plugin.ts'
+---
+spec: ../../../specs/transport/http/oauth2.axdl
+config:
+  pkg: 'transport/http/router/oauth2'
+  position_start: 3
+plugins:
+  - '../../../codegen/docs-plugin.ts'
+---
+spec: ../../../specs/transport/http/static.axdl
+config:
+  pkg: 'transport/http/router/static'
+  position_start: 4
+plugins:
+  - '../../../codegen/docs-plugin.ts'

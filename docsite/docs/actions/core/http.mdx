@@ -1,0 +1,126 @@
+---
+title: http
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# http
+
+<div class="attributes">
+
+### Description
+
+<p>
+  <span className="badge badgeDarkBlue">Request</span>
+  <a href="https://github.com/nanobus/nanobus/blob/main/pkg/actions/core/http.go" target="_blank" rel="noopener noreferrer">Source code <svg width="13.5" height="13.5" aria-hidden="true" viewBox="0 0 24 24" class="iconExternalLink_node_modules-@docusaurus-theme-classic-lib-theme-Icon-ExternalLink-styles-module"><path fill="currentColor" d="M21 13v10h-21v-19h12v2h-10v15h17v-8h2zm3-12h-10.988l4.035 4-6.977 7.07 2.828 2.828 6.977-7.07 4.125 4.172v-11z"></path></svg></a>
+</p>
+
+</div>
+
+TODO
+
+## Options
+
+<div class="attributes">
+
+### url
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">url <span className="required">*</span>
+      <a class="hash-link" href="#url" title="Direct link to url">​</a>
+    </span>
+    <code>string</code>
+  </header>
+
+URL is HTTP URL to request.
+
+</div>
+
+### method
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">method <span className="required">*</span>
+      <a class="hash-link" href="#method" title="Direct link to method">​</a>
+    </span>
+    <code>string</code>
+  </header>
+
+Method is the HTTP method.
+
+</div>
+
+### body
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">body
+      <a class="hash-link" href="#body" title="Direct link to body">​</a>
+    </span>
+    <code>string (Data expression)</code>
+  </header>
+
+Body is the data to sent as the body payload.
+
+</div>
+
+### headers
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">headers
+      <a class="hash-link" href="#headers" title="Direct link to headers">​</a>
+    </span>
+    <code>string (Data expression)</code>
+  </header>
+
+Metadata is the input binding metadata.
+
+</div>
+
+### output
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">output
+      <a class="hash-link" href="#output" title="Direct link to output">​</a>
+    </span>
+    <code>string (Data expression)</code>
+  </header>
+
+Output is an optional transformation to be applied to the response.
+
+</div>
+
+### codec
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">codec <span className="required">*</span>
+      <a class="hash-link" href="#codec" title="Direct link to codec">​</a>
+    </span>
+    <code>string</code>
+  </header>
+
+Codec is the name of the codec to use for decoing.
+
+</div>
+
+### codecArgs
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">codecArgs
+      <a class="hash-link" href="#codecargs" title="Direct link to codecArgs">​</a>
+    </span>
+    <code>any[]</code>
+  </header>
+
+Args are the arguments to pass to the decode function.
+
+</div>
+
+</div>
+

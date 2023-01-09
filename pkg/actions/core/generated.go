@@ -12,6 +12,14 @@ import (
 	"github.com/nanobus/nanobus/pkg/runtime"
 )
 
+// Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus a tellus nec
+// metus tempus volutpat nec non velit. Nulla feugiat cursus dui, eu consequat enim
+// vestibulum in. Mauris pulvinar posuere interdum. Vivamus pharetra elementum
+// lobortis. Morbi blandit aliquam nisi. In in molestie quam. Interdum et malesuada
+// fames ac ante ipsum primis in faucibus. Nullam vulputate congue viverra.
+// Pellentesque consequat nisi ut ante blandit, nec congue ex tincidunt.
+// Suspendisse ac sem vel velit aliquam bibendum. Phasellus nec mi vitae nulla
+// ultrices maximus a sit amet ipsum.
 type AuthorizeConfig struct {
 	// Condition is the predicate expression for authorization.
 	Condition *expr.ValueExpr        `json:"condition,omitempty" yaml:"condition,omitempty" msgpack:"condition,omitempty" mapstructure:"condition"`
@@ -24,6 +32,7 @@ func Authorize() (string, actions.Loader) {
 	return "authorize", AuthorizeLoader
 }
 
+// TODO
 type CallInterfaceConfig struct {
 	Handler handler.Handler `json:"handler" yaml:"handler" msgpack:"handler" mapstructure:"handler" validate:"required"`
 	Input   *expr.DataExpr  `json:"input,omitempty" yaml:"input,omitempty" msgpack:"input,omitempty" mapstructure:"input"`
@@ -33,6 +42,7 @@ func CallInterface() (string, actions.Loader) {
 	return "call_interface", CallInterfaceLoader
 }
 
+// TODO
 type CallProviderConfig struct {
 	Handler handler.Handler `json:"handler" yaml:"handler" msgpack:"handler" mapstructure:"handler" validate:"required"`
 	Input   *expr.DataExpr  `json:"input,omitempty" yaml:"input,omitempty" msgpack:"input,omitempty" mapstructure:"input"`
@@ -42,6 +52,7 @@ func CallProvider() (string, actions.Loader) {
 	return "call_provider", CallProviderLoader
 }
 
+// TODO
 type DecodeConfig struct {
 	TypeField string `json:"typeField" yaml:"typeField" msgpack:"typeField" mapstructure:"typeField" validate:"required"`
 	DataField string `json:"dataField" yaml:"dataField" msgpack:"dataField" mapstructure:"dataField" validate:"required"`
@@ -55,6 +66,7 @@ func Decode() (string, actions.Loader) {
 	return "decode", DecodeLoader
 }
 
+// TODO
 type ExprConfig struct {
 	Value *expr.ValueExpr `json:"value,omitempty" yaml:"value,omitempty" msgpack:"value,omitempty" mapstructure:"value" validate:"required_without=Data"`
 	Data  *expr.DataExpr  `json:"data,omitempty" yaml:"data,omitempty" msgpack:"data,omitempty" mapstructure:"data" validate:"required_without=Value"`
@@ -65,6 +77,7 @@ func Expr() (string, actions.Loader) {
 	return "expr", ExprLoader
 }
 
+// TODO
 type FilterConfig struct {
 	// Condition is the predicate expression for filtering.
 	Condition *expr.ValueExpr `json:"condition" yaml:"condition" msgpack:"condition" mapstructure:"condition" validate:"required"`
@@ -74,6 +87,7 @@ func Filter() (string, actions.Loader) {
 	return "filter", FilterLoader
 }
 
+// TODO
 type HTTPResponseConfig struct {
 	Status  *uint32              `json:"status,omitempty" yaml:"status,omitempty" msgpack:"status,omitempty" mapstructure:"status"`
 	Headers []HTTPResponseHeader `json:"headers,omitempty" yaml:"headers,omitempty" msgpack:"headers,omitempty" mapstructure:"headers" validate:"dive"`
@@ -83,11 +97,13 @@ func HTTPResponse() (string, actions.Loader) {
 	return "http_response", HTTPResponseLoader
 }
 
+// TODO
 type HTTPResponseHeader struct {
 	Name  string          `json:"name" yaml:"name" msgpack:"name" mapstructure:"name" validate:"required"`
 	Value *expr.ValueExpr `json:"value" yaml:"value" msgpack:"value" mapstructure:"value" validate:"required"`
 }
 
+// TODO
 type HTTPConfig struct {
 	// URL is HTTP URL to request.
 	URL string `json:"url" yaml:"url" msgpack:"url" mapstructure:"url" validate:"required"`
@@ -109,6 +125,7 @@ func HTTP() (string, actions.Loader) {
 	return "http", HTTPLoader
 }
 
+// TODO
 type InvokeConfig struct {
 	// Name of the handler to invoke.
 	Handler *handler.Handler `json:"handler,omitempty" yaml:"handler,omitempty" msgpack:"handler,omitempty" mapstructure:"handler"`
@@ -120,6 +137,7 @@ func Invoke() (string, actions.Loader) {
 	return "invoke", InvokeLoader
 }
 
+// TODO
 type JMESPathConfig struct {
 	// Path is the predicate expression for filtering.
 	Path string `json:"path" yaml:"path" msgpack:"path" mapstructure:"path" validate:"required"`
@@ -133,6 +151,7 @@ func JMESPath() (string, actions.Loader) {
 	return "jmespath", JMESPathLoader
 }
 
+// TODO
 type JQConfig struct {
 	// Query is the predicate expression for filtering.
 	Query string `json:"query" yaml:"query" msgpack:"query" mapstructure:"query" validate:"required"`
@@ -148,6 +167,7 @@ func JQ() (string, actions.Loader) {
 	return "jq", JQLoader
 }
 
+// TODO
 type LogConfig struct {
 	Format string `json:"format" yaml:"format" msgpack:"format" mapstructure:"format" validate:"required"`
 	// Args are the evaluations to use as arguments into the string format.
@@ -158,6 +178,7 @@ func Log() (string, actions.Loader) {
 	return "log", LogLoader
 }
 
+// TODO
 type ReCaptchaConfig struct {
 	SiteVerifyURL string          `json:"siteVerifyUrl" yaml:"siteVerifyUrl" msgpack:"siteVerifyUrl" mapstructure:"siteVerifyUrl" validate:"required"`
 	Secret        string          `json:"secret" yaml:"secret" msgpack:"secret" mapstructure:"secret" validate:"required"`
@@ -170,6 +191,7 @@ func ReCaptcha() (string, actions.Loader) {
 	return "recaptcha", ReCaptchaLoader
 }
 
+// TODO
 type RouteConfig struct {
 	// Selection defines the selection mode: single or multi.
 	Selection SelectionMode `json:"selection" yaml:"selection" msgpack:"selection" mapstructure:"selection"`
@@ -181,6 +203,7 @@ func Route() (string, actions.Loader) {
 	return "route", RouteLoader
 }
 
+// TODO
 type RouteCondition struct {
 	// Name if the overall summary of this route.
 	Name string `json:"name" yaml:"name" msgpack:"name" mapstructure:"name" validate:"required"`

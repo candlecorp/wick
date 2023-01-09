@@ -13,7 +13,7 @@ import {
 export type CodecRef = string;
 
 export interface DaprServerV1Config {
-  address: string;
+  address?: string;
   subscriptions?: Subscription[];
   bindings?: Binding[];
 }
@@ -30,7 +30,7 @@ export function DaprServerV1(
 export interface Subscription {
   pubsub: string;
   topic: string;
-  metadata: { [key: string]: string };
+  metadata?: { [key: string]: string };
   types?: { [key: string]: Handler };
   handler?: Handler;
   codec: CodecRef;

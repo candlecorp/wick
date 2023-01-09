@@ -10,9 +10,29 @@ alias ValueExpr = string
 alias DataExpr = string
 alias FilePath = string
 
-type MigratePostgresV1Config @initializer("nanobus.migrate.postgres/v1") {
+"""
+This component offers database mifrations for Postgres using the
+[golang-migrate/migrate](https://github.com/golang-migrate/migrate) library.
+It reads migrations from sources (`.sql` files with [DDL](https://en.wikipedia.org/wiki/Data_definition_language)) and applies them in correct order to a database.
+"""
+type MigratePostgresV1Config
+  @slug("migrate-postgres") @filename("postgres") @tags(["Database"])
+  @initializer("nanobus.migrate.postgres/v1")
+  @title("Postgres Schema Migration") {
+	"""
+	Name of the SQL driver to open.
+	"""
 	name:       string
+	"""
+	The data source connection string.
+	"""
 	dataSource: string
+	"""
+	The directory to use for migration sources.
+	"""
 	directory:  FilePath? @validate("required_without=SourceURL")
+	"""
+	The directory to use for migration sources.
+	"""
 	sourceUrl:  string? @rename({ go: "SourceURL" }) @validate("required_without=Directory")
 }

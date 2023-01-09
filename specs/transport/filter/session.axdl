@@ -8,6 +8,9 @@ namespace "nanobus.filter.session"
 
 alias Handler = string
 
-type SessionV1Config @filter("nanobus.filter.session/v1") {
-	handler: Handler
+type SessionV1Config
+  @slug("session") @tags(["Security"])
+  @filter("nanobus.filter.session/v1")
+  @title("Session") {
+  handler: Handler
 }

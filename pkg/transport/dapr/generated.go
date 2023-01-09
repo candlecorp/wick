@@ -9,6 +9,16 @@ import (
 
 type CodecRef string
 
+// This transport create a Dapr gRPC server able to receive events from Dapr's
+// [PubSub](https://docs.dapr.io/developing-applications/building-blocks/pubsub/pubsub-overview/)
+// or [Input
+// Bindings](https://docs.dapr.io/developing-applications/building-blocks/bindings/bindings-overview/)
+// building blocks.
+//
+// # Running Dapr locally with NanoBus
+//
+// ``` dapr run --app-id hello-world --app-port 19090 --app-protocol grpc --
+// nanobus run --debug ```
 type DaprServerV1Config struct {
 	Address       string         `json:"address" yaml:"address" msgpack:"address" mapstructure:"address" validate:"required"`
 	Subscriptions []Subscription `json:"subscriptions,omitempty" yaml:"subscriptions,omitempty" msgpack:"subscriptions,omitempty" mapstructure:"subscriptions" validate:"dive"`
@@ -22,7 +32,7 @@ func DaprServerV1() (string, transport.Loader) {
 type Subscription struct {
 	Pubsub                 string                     `json:"pubsub" yaml:"pubsub" msgpack:"pubsub" mapstructure:"pubsub" validate:"required"`
 	Topic                  string                     `json:"topic" yaml:"topic" msgpack:"topic" mapstructure:"topic" validate:"required"`
-	Metadata               map[string]string          `json:"metadata" yaml:"metadata" msgpack:"metadata" mapstructure:"metadata" validate:"dive"`
+	Metadata               map[string]string          `json:"metadata,omitempty" yaml:"metadata,omitempty" msgpack:"metadata,omitempty" mapstructure:"metadata" validate:"dive"`
 	Types                  map[string]handler.Handler `json:"types,omitempty" yaml:"types,omitempty" msgpack:"types,omitempty" mapstructure:"types" validate:"dive"`
 	Handler                *handler.Handler           `json:"handler,omitempty" yaml:"handler,omitempty" msgpack:"handler,omitempty" mapstructure:"handler"`
 	Codec                  CodecRef                   `json:"codec" yaml:"codec" msgpack:"codec" mapstructure:"codec"`

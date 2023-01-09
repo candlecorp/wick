@@ -1,0 +1,5 @@
+spec: ../../../../specs/actions/postgres.axdl
+config:
+  pkg: 'actions/postgres'
+plugins:
+  - '../../../../codegen/docs-plugin.ts'

@@ -1,0 +1,6 @@
+spec: ../../../../specs/actions/dapr.axdl
+config:
+  pkg: 'actions/dapr'
+  position_start: 1
+plugins:
+  - '../../../../codegen/docs-plugin.ts'

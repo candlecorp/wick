@@ -15,7 +15,7 @@ export interface CorsV0Config {
   // If the special "*" value is present in the list, all origins will be allowed. An
   // origin may contain a wildcard (*) to replace 0 or more characters (i.e.:
   // http://*.domain.com). Usage of wildcards implies a small performance penalty.
-  // Only one wildcard can be used per origin. Default value is ["*"]
+  // Only one wildcard can be used per origin. Default value is \["*"\]
   allowedOrigins?: string[];
   // AllowedMethods is a list of methods the client is allowed to use with
   // cross-domain requests. Default value is simple methods (HEAD, GET and POST).

@@ -1,0 +1,27 @@
+spec: ../../../specs/transport/filter/jwt.axdl
+config:
+  pkg: 'transport/filter/jwt'
+  position_start: 1
+plugins:
+  - '../../../codegen/docs-plugin.ts'
+---
+spec: ../../../specs/transport/filter/session.axdl
+config:
+  pkg: 'transport/filter/session'
+  position_start: 2
+plugins:
+  - '../../../codegen/docs-plugin.ts'
+---
+spec: ../../../specs/transport/filter/userinfo.axdl
+config:
+  pkg: 'transport/filter/userinfo'
+  position_start: 3
+plugins:
+  - '../../../codegen/docs-plugin.ts'
+---
+spec: ../../../specs/transport/filter/paseto.axdl
+config:
+  pkg: 'transport/filter/paseto'
+  position_start: 4
+plugins:
+  - '../../../codegen/docs-plugin.ts'

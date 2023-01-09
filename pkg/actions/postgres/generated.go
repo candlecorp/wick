@@ -9,6 +9,7 @@ import (
 
 type ResourceRef string
 
+// TODO
 type ExecConfig struct {
 	// Resource is the name of the connection resource to use.
 	Resource ResourceRef `json:"resource" yaml:"resource" msgpack:"resource" mapstructure:"resource" validate:"required"`
@@ -24,6 +25,7 @@ func Exec() (string, actions.Loader) {
 	return "@postgres/exec", ExecLoader
 }
 
+// TODO
 type ExecMultiConfig struct {
 	// Resource is the name of the connection resource to use.
 	Resource ResourceRef `json:"resource" yaml:"resource" msgpack:"resource" mapstructure:"resource" validate:"required"`
@@ -35,6 +37,7 @@ func ExecMulti() (string, actions.Loader) {
 	return "@postgres/exec_multi", ExecMultiLoader
 }
 
+// TODO
 type Statement struct {
 	// Data is the input bindings sent.
 	Data *expr.DataExpr `json:"data,omitempty" yaml:"data,omitempty" msgpack:"data,omitempty" mapstructure:"data"`
@@ -44,6 +47,7 @@ type Statement struct {
 	Args []*expr.ValueExpr `json:"args,omitempty" yaml:"args,omitempty" msgpack:"args,omitempty" mapstructure:"args" validate:"dive"`
 }
 
+// TODO
 type FindOneConfig struct {
 	// Resource is the name of the connection resource to use.
 	Resource ResourceRef `json:"resource" yaml:"resource" msgpack:"resource" mapstructure:"resource" validate:"required"`
@@ -63,16 +67,19 @@ func FindOne() (string, actions.Loader) {
 	return "@postgres/find_one", FindOneLoader
 }
 
+// TODO
 type Preload struct {
 	Field   string    `json:"field" yaml:"field" msgpack:"field" mapstructure:"field" validate:"required"`
 	Preload []Preload `json:"preload" yaml:"preload" msgpack:"preload" mapstructure:"preload" validate:"dive"`
 }
 
+// TODO
 type Where struct {
 	Query string          `json:"query" yaml:"query" msgpack:"query" mapstructure:"query" validate:"required"`
 	Value *expr.ValueExpr `json:"value" yaml:"value" msgpack:"value" mapstructure:"value" validate:"required"`
 }
 
+// TODO
 type FindConfig struct {
 	// Resource is the name of the connection resource to use.
 	Resource ResourceRef `json:"resource" yaml:"resource" msgpack:"resource" mapstructure:"resource" validate:"required"`
@@ -96,6 +103,7 @@ func Find() (string, actions.Loader) {
 	return "@postgres/find", FindLoader
 }
 
+// TODO
 type Pagination struct {
 	PageIndex *string `json:"pageIndex,omitempty" yaml:"pageIndex,omitempty" msgpack:"pageIndex,omitempty" mapstructure:"pageIndex"`
 	PageCount *string `json:"pageCount,omitempty" yaml:"pageCount,omitempty" msgpack:"pageCount,omitempty" mapstructure:"pageCount"`
@@ -106,6 +114,7 @@ type Pagination struct {
 	Items     string  `json:"items" yaml:"items" msgpack:"items" mapstructure:"items" validate:"required"`
 }
 
+// TODO
 type LoadConfig struct {
 	// Resource is the name of the connection resource to use.
 	Resource ResourceRef `json:"resource" yaml:"resource" msgpack:"resource" mapstructure:"resource" validate:"required"`
@@ -125,6 +134,7 @@ func Load() (string, actions.Loader) {
 	return "@postgres/load", LoadLoader
 }
 
+// TODO
 type QueryOneConfig struct {
 	// Resource is the name of the connection resource to use.
 	Resource ResourceRef `json:"resource" yaml:"resource" msgpack:"resource" mapstructure:"resource" validate:"required"`
@@ -138,6 +148,7 @@ func QueryOne() (string, actions.Loader) {
 	return "@postgres/query_one", QueryOneLoader
 }
 
+// TODO
 type QueryConfig struct {
 	// Resource is the name of the connection resource to use.
 	Resource ResourceRef `json:"resource" yaml:"resource" msgpack:"resource" mapstructure:"resource" validate:"required"`

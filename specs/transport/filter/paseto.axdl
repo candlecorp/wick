@@ -6,21 +6,24 @@
 
 namespace "nanobus.filter.paseto"
 
-type PasetoV1Config @filter("nanobus.filter.paseto/v1") {
-	audience: string?
-	issuer:   string?
+type PasetoV1Config
+  @slug("paseto") @tags(["Security"])
+  @filter("nanobus.filter.paseto/v1")
+  @title("Paseto") {
+  audience: string?
+  issuer:   string?
 
-	v4PublicKey:    bytes?
-	v4PublicKeyHex: string?
-	v3PublicKey:    bytes?
-	v3PublicKeyHex: string?
-	v2PublicKey:    bytes?
-	v2PublicKeyHex: string?
+  v4PublicKey:    bytes?
+  v4PublicKeyHex: string?
+  v3PublicKey:    bytes?
+  v3PublicKeyHex: string?
+  v2PublicKey:    bytes?
+  v2PublicKeyHex: string?
 
-	v4LocalKey:    bytes?
-	v4LocalKeyHex: string?
-	v3LocalKey:    bytes?
-	v3LocalKeyHex: string?
-	v2LocalKey:    bytes?
-	v2LocalKeyHex: string?
+  v4LocalKey:    bytes?
+  v4LocalKeyHex: string?
+  v3LocalKey:    bytes?
+  v3LocalKeyHex: string?
+  v2LocalKey:    bytes?
+  v2LocalKeyHex: string?
 }

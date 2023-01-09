@@ -13,7 +13,50 @@ alias Handler = string
 "An alias for runtime.Step"
 alias Step = any
 
-type AuthorizeConfig @action("authorize") {
+"""
+Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+Phasellus a tellus nec metus tempus volutpat nec non velit.
+Nulla feugiat cursus dui, eu consequat enim vestibulum in.
+Mauris pulvinar posuere interdum. Vivamus pharetra elementum lobortis.
+Morbi blandit aliquam nisi. In in molestie quam. Interdum et
+malesuada fames ac ante ipsum primis in faucibus. Nullam vulputate
+congue viverra. Pellentesque consequat nisi ut ante blandit, nec
+congue ex tincidunt. Suspendisse ac sem vel velit aliquam bibendum.
+Phasellus nec mi vitae nulla ultrices maximus a sit amet ipsum.
+"""
+type AuthorizeConfig
+  @tags(["Security"])
+  @action("authorize")
+  @examples([
+  {
+    title: "Check user authenticated",
+    formats: {
+      "YAML": """
+interfaces:
+  MyService:
+    myOperation:
+      steps:
+        - name: "Check user authenticated"
+          uses: "authorize"
+          with:
+            has: "sub"
+      """,
+      "TypeScript": """
+import { authorize } from "https://deno.land/x/nanobus_config@v0.0.12/mod.ts";
+
+MyService.register(app, {
+  myOperation: ({flow}) =>
+    flow:.then(
+      "Check user authenticated",
+      ($) => authorize({
+        has: "sub",
+      })
+    )
+})
+      """
+    }
+  }
+]) {
   "Condition is the predicate expression for authorization."
   condition: ValueExpr?
   has:       [string]?
@@ -21,17 +64,32 @@ type AuthorizeConfig @action("authorize") {
   error:     string = "permission_denied"
 }
 
-type CallInterfaceConfig @action("call_interface") {
+"""
+TODO
+"""
+type CallInterfaceConfig
+  @tags(["Flow"])
+  @action("call_interface") {
   handler: Handler
   input:   DataExpr?
 }
 
-type CallProviderConfig @action("call_provider") {
+"""
+TODO
+"""
+type CallProviderConfig
+  @tags(["Flow"])
+  @action("call_provider") {
   handler: Handler
   input:   DataExpr?
 }
 
-type DecodeConfig @action("decode") {
+"""
+TODO
+"""
+type DecodeConfig
+  @tags(["Transform"])
+  @action("decode") {
   typeField: string
   dataField: string
   "Codec is the name of the codec to use for decoding."
@@ -40,28 +98,51 @@ type DecodeConfig @action("decode") {
   codecArgs: [any]?
 }
 
-type ExprConfig @action("expr") {
+"""
+TODO
+"""
+type ExprConfig
+  @tags(["Transform"])
+  @action("expr") {
   value: ValueExpr? @validate("required_without=Data")
   data:  DataExpr?  @validate("required_without=Value")
   to:    string?
 }
 
-type FilterConfig @action("filter") {
+"""
+TODO
+"""
+type FilterConfig
+  @tags(["Flow"])
+  @action("filter") {
   "Condition is the predicate expression for filtering."
   condition: ValueExpr
 }
 
-type HTTPResponseConfig @action("http_response") {
+"""
+TODO
+"""
+type HTTPResponseConfig
+  @tags(["HTTP"])
+  @action("http_response") {
   status: u32?
   headers: [HTTPResponseHeader]?
 }
 
+"""
+TODO
+"""
 type HTTPResponseHeader {
   name:  string
   value: ValueExpr
 }
 
-type HTTPConfig @action("http") {
+"""
+TODO
+"""
+type HTTPConfig
+  @tags(["Request"])
+  @action("http") {
   "URL is HTTP URL to request."
   url: string
   "Method is the HTTP method."
@@ -78,14 +159,24 @@ type HTTPConfig @action("http") {
   codecArgs: [any]?
 }
 
-type InvokeConfig @action("invoke") {
+"""
+TODO
+"""
+type InvokeConfig
+  @tags(["Flow"])
+  @action("invoke") {
   "Name of the handler to invoke."
   handler: Handler?
   "Input optionally transforms the input sent to the function."
   input: DataExpr?
 }
 
-type JMESPathConfig @action("jmespath") {
+"""
+TODO
+"""
+type JMESPathConfig
+  @tags(["Transform"])
+  @action("jmespath") {
   "Path is the predicate expression for filtering."
   path: string
   "Data is the optional data expression to pass to jq."
@@ -94,7 +185,12 @@ type JMESPathConfig @action("jmespath") {
   var: string?
 }
 
-type JQConfig @action("jq") {
+"""
+TODO
+"""
+type JQConfig
+  @tags(["Transform"])
+  @action("jq") {
   "Query is the predicate expression for filtering."
   query: string
   "Data is the optional data expression to pass to jq."
@@ -105,13 +201,23 @@ type JQConfig @action("jq") {
   var: string?
 }
 
-type LogConfig @action("log") {
+"""
+TODO
+"""
+type LogConfig
+  @tags(["Observability"])
+  @action("log") {
   format: string
   "Args are the evaluations to use as arguments into the string format."
   args:  [ValueExpr]?
 }
 
-type ReCaptchaConfig @action("recaptcha") {
+"""
+TODO
+"""
+type ReCaptchaConfig
+  @tags(["Security"])
+  @action("recaptcha") {
   siteVerifyUrl: string = "https://www.google.com/recaptcha/api/siteverify"
   secret:        string
   response:      ValueExpr
@@ -119,7 +225,12 @@ type ReCaptchaConfig @action("recaptcha") {
   action:        string?
 }
 
-type RouteConfig @action("route") {
+"""
+TODO
+"""
+type RouteConfig
+  @tags(["Flow"])
+  @action("route") {
   "Selection defines the selection mode: single or multi."
   selection: SelectionMode = Single
   "Routes are the possible runnable routes which conditions for selection."
@@ -132,6 +243,9 @@ enum SelectionMode {
   Multi  = 2 as "multi"
 }
 
+"""
+TODO
+"""
 type RouteCondition {
   "Name if the overall summary of this route."
   name: string

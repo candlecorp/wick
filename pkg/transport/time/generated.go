@@ -7,12 +7,12 @@ import (
 	"github.com/nanobus/nanobus/pkg/transport"
 )
 
-type TimeSchedulerV1Config struct {
+type SchedulerV1Config struct {
 	Schedules []Schedule `json:"schedules" yaml:"schedules" msgpack:"schedules" mapstructure:"schedules" validate:"dive"`
 }
 
-func TimeSchedulerV1() (string, transport.Loader) {
-	return "nanobus.transport.time.scheduler/v1", TimeSchedulerV1Loader
+func SchedulerV1() (string, transport.Loader) {
+	return "nanobus.transport.time.scheduler/v1", SchedulerV1Loader
 }
 
 type Schedule struct {

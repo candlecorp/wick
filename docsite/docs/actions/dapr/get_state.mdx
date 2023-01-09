@@ -1,0 +1,231 @@
+---
+title: get_state
+sidebar_position: 4
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# @dapr/get_state
+
+<div class="attributes">
+
+### Description
+
+<p>
+  <span className="badge badgeDarkBlue">Database</span>
+  <a href="https://github.com/nanobus/nanobus/blob/main/pkg/actions/dapr/state_get.go" target="_blank" rel="noopener noreferrer">Source code <svg width="13.5" height="13.5" aria-hidden="true" viewBox="0 0 24 24" class="iconExternalLink_node_modules-@docusaurus-theme-classic-lib-theme-Icon-ExternalLink-styles-module"><path fill="currentColor" d="M21 13v10h-21v-19h12v2h-10v15h17v-8h2zm3-12h-10.988l4.035 4-6.977 7.07 2.828 2.828 6.977-7.07 4.125 4.172v-11z"></path></svg></a>
+</p>
+
+</div>
+
+TODO
+
+## Options
+
+<div class="attributes">
+
+### resource
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">resource <span className="required">*</span>
+      <a class="hash-link" href="#resource" title="Direct link to resource">​</a>
+    </span>
+    <code>string</code>
+  </header>
+
+The name of the Dapr client resource.
+
+</div>
+
+### store
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">store <span className="required">*</span>
+      <a class="hash-link" href="#store" title="Direct link to store">​</a>
+    </span>
+    <code>string</code>
+  </header>
+
+Name of state store to invoke.
+
+</div>
+
+### key
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">key <span className="required">*</span>
+      <a class="hash-link" href="#key" title="Direct link to key">​</a>
+    </span>
+    <code>string (Value expression)</code>
+  </header>
+
+The key to get.
+
+</div>
+
+### codec
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">codec <span className="required">*</span>
+      <a class="hash-link" href="#codec" title="Direct link to codec">​</a>
+    </span>
+    <code>CodecRef</code>
+  </header>
+
+The configured codec to use for decoding the state.
+
+</div>
+
+### codecArgs
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">codecArgs
+      <a class="hash-link" href="#codecargs" title="Direct link to codecArgs">​</a>
+    </span>
+    <code>any[]</code>
+  </header>
+
+The arguments for the codec, if any.
+
+</div>
+
+### notFoundError
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">notFoundError <span className="required">*</span>
+      <a class="hash-link" href="#notfounderror" title="Direct link to notFoundError">​</a>
+    </span>
+    <code>string</code>
+  </header>
+
+The error to return if the key is not found.
+
+</div>
+
+### concurrency
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">concurrency <span className="required">*</span>
+      <a class="hash-link" href="#concurrency" title="Direct link to concurrency">​</a>
+    </span>
+    <code>Concurrency</code>
+  </header>
+
+The desired concurrency level
+
+</div>
+
+### consistency
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">consistency <span className="required">*</span>
+      <a class="hash-link" href="#consistency" title="Direct link to consistency">​</a>
+    </span>
+    <code>Consistency</code>
+  </header>
+
+The desired consistency level
+
+</div>
+
+</div>
+
+## enum Concurrency
+
+<div class="attributes">
+
+### undefined
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">undefined
+      <a class="hash-link" href="#undefined" title="Direct link to undefined">​</a>
+    </span>
+  </header>
+
+Undefined value for state concurrency
+
+</div>
+
+### firstWrite
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">firstWrite
+      <a class="hash-link" href="#firstwrite" title="Direct link to firstWrite">​</a>
+    </span>
+  </header>
+
+First write concurrency value
+
+</div>
+
+### lastWrite
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">lastWrite
+      <a class="hash-link" href="#lastwrite" title="Direct link to lastWrite">​</a>
+    </span>
+  </header>
+
+Last write concurrency value
+
+</div>
+
+</div>
+
+## enum Consistency
+
+<div class="attributes">
+
+### undefined
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">undefined
+      <a class="hash-link" href="#undefined" title="Direct link to undefined">​</a>
+    </span>
+  </header>
+
+Undefined value for state consistency
+
+</div>
+
+### eventual
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">eventual
+      <a class="hash-link" href="#eventual" title="Direct link to eventual">​</a>
+    </span>
+  </header>
+
+Eventual state consistency value
+
+</div>
+
+### strong
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">strong
+      <a class="hash-link" href="#strong" title="Direct link to strong">​</a>
+    </span>
+  </header>
+
+Strong state consistency value
+
+</div>
+
+</div>
+

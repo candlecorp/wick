@@ -14,7 +14,7 @@ export type CodecRef = string;
 
 export interface InvokeBindingConfig {
   // The name of the Dapr client resource.
-  resource: string;
+  resource?: string;
   // Name of binding to invoke.
   binding: string;
   // Name of the operation type for the binding to invoke.
@@ -40,7 +40,7 @@ export function InvokeBinding(
 
 export interface PublishConfig {
   // The name of the Dapr client resource.
-  resource: string;
+  resource?: string;
   // Name of pubsub to invoke.
   pubsub: string;
   // Topic is the name of the topic to publish to.
@@ -69,7 +69,7 @@ export function Publish(config: PublishConfig): Component<PublishConfig> {
 
 export interface DeleteStateConfig {
   // The name of the Dapr client resource.
-  resource: string;
+  resource?: string;
   // Name of state store to invoke.
   store: string;
   // The key to delete.
@@ -93,7 +93,7 @@ export function DeleteState(
 
 export interface GetStateConfig {
   // The name of the Dapr client resource.
-  resource: string;
+  resource?: string;
   // Name of state store to invoke.
   store: string;
   // The key to get.
@@ -119,7 +119,7 @@ export function GetState(config: GetStateConfig): Component<GetStateConfig> {
 
 export interface SetStateConfig {
   // The name of the Dapr client resource.
-  resource: string;
+  resource?: string;
   // Name of state store to invoke.
   store: string;
   // The configured codec to use for encoding the state.
@@ -154,6 +154,7 @@ export interface SetStateItem {
   consistency?: Consistency;
 }
 
+// TODO
 export enum Concurrency {
   // Undefined value for state concurrency
   Undefined = "undefined",
@@ -163,6 +164,7 @@ export enum Concurrency {
   LastWrite = "lastWrite"
 }
 
+// TODO
 export enum Consistency {
   // Undefined value for state consistency
   Undefined = "undefined",

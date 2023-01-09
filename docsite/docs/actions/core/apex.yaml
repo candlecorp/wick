@@ -1,0 +1,5 @@
+spec: ../../../../specs/actions/core.axdl
+config:
+  pkg: 'actions/core'
+plugins:
+  - '../../../../codegen/docs-plugin.ts'
