@@ -9,7 +9,7 @@ const config = {
   title: 'NanoBus',
   tagline: 'Build production-level software with PoC-level of effort',
   url: 'https://nanobus.io',
-  baseUrl: '/docsite/',
+  baseUrl: '/',
   onBrokenLinks: 'throw',
   onBrokenMarkdownLinks: 'warn',
   favicon: 'img/favicon.ico',
