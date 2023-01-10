@@ -20,11 +20,25 @@
   /* box-shadow: var(--ifm-global-shadow-md); */
 }
 
-.heroBanner h2 {
-  font-size: 3rem !important;
+@media screen and (max-width: 599px) {
+  .heroBanner h2 {
+    font-size: 2rem !important;
+  }
+  .heroBanner p {
+    font-size: 1.5rem !important;
+  }
+  #os-install {
+    display: none;
+  }
 }
-.heroBanner p {
-  font-size: 2rem !important;
+
+@media screen and (min-width: 600px) {
+  .heroBanner h2 {
+    font-size: 3rem !important;
+  }
+  .heroBanner p {
+    font-size: 2rem !important;
+  }
 }
 .heroImage {
   max-height: 50vh;
