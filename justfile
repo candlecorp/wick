@@ -35,6 +35,9 @@ install:
 codegen:
   for file in `find . -name 'apex.yaml'`; do echo $(cd $(dirname $file); apex generate); done
 
+docsite:
+	(cd docsite; npm run start)
+
 clean:
 	rm -rf {{BUILDDIR}}
 

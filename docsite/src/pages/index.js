@@ -37,7 +37,7 @@ function CLIInstall() {
         }
 
         return (
-          <div>
+          <div id="os-install">
             <h4>{cmd[0]} Install</h4>
             <CodeBlock className="codeBlock" language="shell">
               {cmd[1]}
@@ -74,7 +74,6 @@ export default function Home() {
                       styles.button
                     )}
                     to={useBaseUrl('/getting-started')}
-                    style={{ marginTop: 10 }}
                   >
                     Get Started →
                   </Link>
@@ -84,7 +83,6 @@ export default function Home() {
                       styles.button
                     )}
                     to={useBaseUrl('/components')}
-                    style={{ marginTop: 10 }}
                   >
                     Explore Components
                   </Link>

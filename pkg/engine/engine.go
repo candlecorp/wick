@@ -403,6 +403,7 @@ func Start(ctx context.Context, info *Info) (*Engine, error) {
 
 	var spanExporter sdk_trace.SpanExporter
 	if info.Mode == ModeService && busConfig.Tracing != nil {
+		log.Info("Initializing tracer", "type", busConfig.Tracing.Uses)
 		loadable, ok := tracingRegistry[busConfig.Tracing.Uses]
 		if !ok {
 			log.Error(nil, "Could not find codec", "type", busConfig.Tracing.Uses)
@@ -454,6 +455,7 @@ func Start(ctx context.Context, info *Info) (*Engine, error) {
 	codecs := make(codec.Codecs)
 	codecsByContentType := make(codec.Codecs)
 	for name, component := range busConfig.Codecs {
+		log.Info("Initializing codec", "name", name, "type", component.Uses)
 		loadable, ok := codecRegistry[component.Uses]
 		if !ok {
 			log.Error(nil, "Could not find codec", "type", component.Uses)
@@ -487,7 +489,7 @@ func Start(ctx context.Context, info *Info) (*Engine, error) {
 	}
 
 	for name, spec := range busConfig.Initializers {
-		log.Info("Initializer running", "name", name)
+		log.Info("Initializer running", "name", name, "type", spec.Uses)
 		loader, ok := initializerRegistry[spec.Uses]
 		if !ok {
 			log.Error(nil, "could not find initializer", "type", spec.Uses)
@@ -510,7 +512,7 @@ func Start(ctx context.Context, info *Info) (*Engine, error) {
 	resources := resource.Resources{}
 	if resourcesConfig != nil {
 		for name, component := range resourcesConfig.Resources {
-			log.Info("Initializing resource", "name", name)
+			log.Info("Initializing resource", "name", name, "type", component.Uses)
 
 			loader, ok := resourceRegistry[component.Uses]
 			if !ok {

@@ -6,6 +6,15 @@
 
 @import "./variables/colors.modules.css";
 
+@media screen and (max-width: 599px) {
+  #os-install {
+    display: none;
+  }
+  .button_src-pages-styles-module {
+    margin: 10px !important;
+  }
+}
+
 .header-github-link:hover {
   opacity: 0.6;
 }
