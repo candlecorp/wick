@@ -1,0 +1,49 @@
+name: Build and Push Docs Site
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "docs/**"
+
+jobs:
+  build-and-push-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      # use nodejs action
+      - name: Use Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: 18
+      # run npm build on /docs directory
+      - name: Build
+        run: |
+          cd docsites
+          npm install
+          npm run build
+      - name: Generate build ID
+        id: prep
+        run: |
+          branch=${GITHUB_REF##*/}
+          sha=${GITHUB_SHA::8}
+          ts=$(date +%s)
+          echo "::set-output name=BUILD_ID::${branch}-${sha}-${ts}"
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: candlereg.azurecr.io
+          username: ${{ secrets.IMAGE_REGISTRY_USERNAME }}
+          password: ${{ secrets.IMAGE_REGISTRY_PASSWORD }}
+      - name: Build and push
+        uses: docker/build-push-action@v3
+        with:
+          image: candle/site
+          tags: candlereg.azurecr.io/nanobus/docs:${{ steps.prep.outputs.BUILD_ID }}, candlereg.azurecr.io/nanobus/docs:latest
+          registry: candlereg.azurecr.io
+          context: "{{defaultContext}}:docsites"
+          push: true
