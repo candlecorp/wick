@@ -12,4 +12,5 @@ EXPOSE 80
 
 STOPSIGNAL SIGQUIT
 
+#start nginx
 CMD ["nginx", "-g", "daemon off;"]
