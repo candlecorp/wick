@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - fix-docs-action
     paths:
       - "docsite/**"
 
@@ -23,7 +24,7 @@ jobs:
       # run npm build on /docs directory
       - name: Build
         run: |
-          cd docsites
+          cd docsite
           npm install
           npm run build
       - name: Generate build ID
@@ -45,5 +46,5 @@ jobs:
           image: candle/site
           tags: candlereg.azurecr.io/nanobus/docs:${{ steps.prep.outputs.BUILD_ID }}, candlereg.azurecr.io/nanobus/docs:latest
           registry: candlereg.azurecr.io
-          context: "{{defaultContext}}:docsites"
+          context: "{{defaultContext}}:docsite"
           push: true
