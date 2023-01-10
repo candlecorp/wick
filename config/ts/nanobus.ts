@@ -129,6 +129,7 @@ interface AppConfig {
   spec?: string;
   main?: string;
   package?: Package;
+  tracing?: Component<unknown>;
   readonly resources: ResourceRef[];
   readonly imports: { [key: string]: Ref };
   readonly resiliency: Resiliency;
@@ -207,6 +208,7 @@ export class Application {
       spec: undefined,
       main: undefined,
       package: undefined,
+      tracing: undefined,
       resources: [],
       imports: {},
       resiliency: {
@@ -238,6 +240,11 @@ export class Application {
 
   package(pkg: Package): Application {
     this.config.package = pkg;
+    return this;
+  }
+
+  setTracing(component: Component<unknown>): Application {
+    this.config.tracing = component;
     return this;
   }
 
