@@ -46,5 +46,5 @@ jobs:
           image: candle/site
           tags: candlereg.azurecr.io/nanobus/docs:${{ steps.prep.outputs.BUILD_ID }}, candlereg.azurecr.io/nanobus/docs:latest
           registry: candlereg.azurecr.io
-          context: "{{defaultContext}}:docsite"
+          context: "/home/runner/work/nanobus/nanobus/docsite"
           push: true
