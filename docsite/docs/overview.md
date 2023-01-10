@@ -93,4 +93,5 @@ To create services, NanoBus uses succinct yet flexible interface definitions to 
 
 Finally, NanoBus runs code compiled to [WebAssembly](https://webassembly.org). WebAssembly components run in a secure sandbox and insulate core logic from external resources and dependencies.
 
-See the [architecture page](./architecture.md).
+See the [architecture page](./architecture.mdx).
+
