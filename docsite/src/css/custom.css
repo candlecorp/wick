@@ -35,6 +35,11 @@ html[data-theme='dark'] .header-github-link:before {
   margin-right: 20px;
 }
 
+img.image-float-right {
+  margin-left: 1rem;
+  margin-bottom: 1rem;
+}
+
 /* You can override the default Infima variables here. */
 /* :root {
   --ifm-color-primary: #2e8555;
