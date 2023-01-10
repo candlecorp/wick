@@ -2,6 +2,7 @@
 
 // deno-lint-ignore-file no-explicit-any no-unused-vars ban-unused-ignore
 import {
+  CodecRef,
   Component,
   DataExpr,
   Handler,
@@ -9,8 +10,6 @@ import {
   Step,
   ValueExpr
 } from "../nanobus.ts";
-
-export type CodecRef = string;
 
 export interface InvokeBindingConfig {
   // The name of the Dapr client resource.

@@ -2,6 +2,7 @@
 
 // deno-lint-ignore-file no-explicit-any no-unused-vars ban-unused-ignore
 import {
+  CodecRef,
   Component,
   DataExpr,
   Handler,
