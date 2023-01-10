@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - "docs/**"
+      - "docsite/**"
 
 jobs:
   build-and-push-docs:
