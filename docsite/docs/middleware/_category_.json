@@ -1,6 +1,6 @@
 {
   "label": "HTTP Middleware",
-  "position": 5,
+  "position": 13,
   "link": {
     "type": "generated-index",
     "description": "Add any of these to an HTTP Server"
