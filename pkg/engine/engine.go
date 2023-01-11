@@ -46,6 +46,7 @@ import (
 	"github.com/nanobus/nanobus/pkg/initialize"
 	"github.com/nanobus/nanobus/pkg/logger"
 	"github.com/nanobus/nanobus/pkg/mesh"
+	"github.com/nanobus/nanobus/pkg/oci"
 	"github.com/nanobus/nanobus/pkg/resolve"
 	"github.com/nanobus/nanobus/pkg/resource"
 	"github.com/nanobus/nanobus/pkg/runtime"
@@ -137,7 +138,7 @@ const (
 
 type Info struct {
 	Mode          Mode
-	BusFile       string
+	Target        string
 	ResourcesFile string
 	DeveloperMode bool
 	LogLevel      zapcore.Level
@@ -256,13 +257,31 @@ func Start(ctx context.Context, info *Info) (*Engine, error) {
 	if info.DeveloperMode && info.Mode == ModeService {
 		log.Info("Running in Developer Mode!")
 	}
-
 	// NanoBus flags
+	// Pull from registry if PackageFile is set
+	var busFile string
+	if oci.IsImageReference(info.Target) {
+		fmt.Printf("Pulling %s...\n", info.Target)
+		var err error
+		if busFile, err = oci.Pull(info.Target, "."); err != nil {
+			fmt.Printf("Error pulling image: %s\n", err)
+			return nil, err
+		}
+
+		if busFile == "" {
+			fmt.Printf("Error in package: %s\n", "No BusFile returned")
+			return nil, err
+		}
+	}
+
+	if busFile == "" {
+		busFile = info.Target
+	}
 
 	// Load the bus configuration
-	busConfig, err := loadBusConfig(info.BusFile, log)
+	busConfig, err := loadBusConfig(busFile, log)
 	if err != nil {
-		log.Error(err, "could not load configuration", "file", info.BusFile)
+		log.Error(err, "could not load configuration", "file", busFile)
 		return nil, err
 	}
 

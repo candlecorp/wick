@@ -77,7 +77,7 @@ func (c *defaultRunCmd) Run() error {
 	}
 	if _, err := engine.Start(ctx, &engine.Info{
 		Mode:          engine.ModeService,
-		BusFile:       "bus.yaml",
+		Target:        "bus.yaml",
 		ResourcesFile: "resources.yaml",
 		LogLevel:      level,
 		DeveloperMode: c.DeveloperMode,
@@ -91,9 +91,8 @@ func (c *defaultRunCmd) Run() error {
 }
 
 type runCmd struct {
-	DeveloperMode bool `name:"developer-mode" help:"Enables developer mode."`
-	// BusFile of the application as a configuration file or OCI image reference.
-	BusFile string `name:"bus" default:"bus.yaml" help:"The application configuration or OCI image reference"`
+	Target        string `arg:"" default:"bus.yaml" required:"" help:"The application configuration yaml file or OCI image reference."`
+	DeveloperMode bool   `name:"developer-mode" help:"Enables developer mode."`
 	// ResourcesFile is the resources configuration (e.g. databases, message brokers).
 	ResourcesFile string `name:"resources" default:"resources.yaml" help:"The resources configuration"`
 	// Turns on debug logging.
@@ -106,20 +105,6 @@ func (c *runCmd) Run() error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	location := c.BusFile
-	if oci.IsImageReference(c.BusFile) {
-		fmt.Printf("Pulling %s...\n", c.BusFile)
-		var err error
-		if location, err = oci.Pull(location, "."); err != nil {
-			fmt.Printf("Error pulling image: %s\n", err)
-			return err
-		}
-
-		if location == "" {
-			// Fallback to default application config filename.
-			location = "bus.yaml"
-		}
-	}
 	level := zapcore.InfoLevel
 	if c.Debug {
 		level = zapcore.DebugLevel
@@ -127,7 +112,7 @@ func (c *runCmd) Run() error {
 
 	if _, err := engine.Start(ctx, &engine.Info{
 		Mode:          engine.ModeService,
-		BusFile:       location,
+		Target:        c.Target,
 		LogLevel:      level,
 		ResourcesFile: c.ResourcesFile,
 		Process:       c.Args,
@@ -142,11 +127,12 @@ func (c *runCmd) Run() error {
 }
 
 type invokeCmd struct {
-	DeveloperMode bool `name:"developer-mode" help:"Enables developer mode."`
+	// Target is the application configuration yaml file or OCI image reference.
+	Target string `arg:"" required:"" help:"The application configuration yaml file or OCI image reference."`
 	// Operation is the operation name.
 	Operation string `arg:"" required:"" help:"The operation or function invoke"`
-	// BusFile is the application configuration (not an OCI image reference).
-	BusFile string `name:"bus" default:"bus.yaml" help:"The NanoBus application configuration"`
+	// Enable developer mode
+	DeveloperMode bool `name:"developer-mode" help:"Enables developer mode."`
 	// ResourcesFile is the resources configuration (e.g. databases, message brokers).
 	ResourcesFile string `name:"resources" default:"resources.yaml" help:"The resources configuration"`
 	// EntityID is the entity identifier to invoke.
@@ -195,7 +181,7 @@ func (c *invokeCmd) Run() error {
 
 	info := engine.Info{
 		Mode:          engine.ModeInvoke,
-		BusFile:       c.BusFile,
+		Target:        c.Target,
 		LogLevel:      level,
 		ResourcesFile: c.ResourcesFile,
 		EntityID:      c.EntityID,
@@ -293,9 +279,9 @@ func (c *pushCmd) Run() error {
 
 	reference := fmt.Sprintf("%s/%s/%s:%s", registry, org, applicationID, conf.Version)
 	if c.DryRun {
-		fmt.Printf("Pushing %s (dry run)...\n", reference)
+		fmt.Printf("Pushing %s (dry run)\n", reference)
 	} else {
-		fmt.Printf("Pushing %s...\n", reference)
+		fmt.Printf("Pushing %s\n", reference)
 	}
 
 	add := conf.Package.Add
