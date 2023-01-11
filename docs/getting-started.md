@@ -42,7 +42,7 @@ interfaces:
 Run our action with the `nanobus invoke` command with sample input piped from `echo`:
 
 ```console
-$ echo '{"name": "World!"}' | nanobus invoke Greeter::sayHello
+$ echo '{"name": "World!"}' | nanobus invoke bus.yaml Greeter::sayHello
 "Hello, World!"
 ```
 
@@ -50,7 +50,7 @@ The starter template also includes a tiny `justfile` with this command set up al
 
 ```console
 $ just run
-echo '{"name": "World!"}' | nanobus invoke Greeter::sayHello
+echo '{"name": "World!"}' | nanobus invoke bus.yaml Greeter::sayHello
 "Hello, World!"
 ```
 

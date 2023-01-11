@@ -52,7 +52,7 @@ interfaces:
 Then run this command from your terminal:
 
 ```shell
-echo '{"name": "World!"}' | nanobus invoke Greeter::sayHello
+echo '{"name": "World!"}' | nanobus invoke bus.yaml Greeter::sayHello
 ```
 
 This should return `Hello, World!` as a JSON string. The JSON data returned by NanoBus applications can be piped to other utilities such as [jq](https://stedolan.github.io/jq/).
