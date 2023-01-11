@@ -260,24 +260,29 @@ func Start(ctx context.Context, info *Info) (*Engine, error) {
 	}
 	// NanoBus flags
 	// Pull from registry if PackageFile is set
-	var location string
+	var busFile string
 	if oci.IsImageReference(info.PackageFile) {
 		fmt.Printf("Pulling %s...\n", info.PackageFile)
 		var err error
-		if location, err = oci.Pull(info.PackageFile, "."); err != nil {
+		if busFile, err = oci.Pull(info.PackageFile, "."); err != nil {
 			fmt.Printf("Error pulling image: %s\n", err)
 			return nil, err
 		}
-		if location == "" {
-			// Fallback to default application config filename.
-			location = "bus.yaml"
+
+		if busFile == "" {
+			fmt.Printf("Error in package: %s\n", "No BusFile returned")
+			return nil, err
 		}
 	}
 
+	if busFile == "" {
+		busFile = info.BusFile
+	}
+
 	// Load the bus configuration
-	busConfig, err := loadBusConfig(info.BusFile, log)
+	busConfig, err := loadBusConfig(busFile, log)
 	if err != nil {
-		log.Error(err, "could not load configuration", "file", info.BusFile)
+		log.Error(err, "could not load configuration", "file", busFile)
 		return nil, err
 	}
 
