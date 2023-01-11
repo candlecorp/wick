@@ -2,26 +2,26 @@
 
 NanoBus is a lightweight framework for building secure and scalable software services.
 
-For detailed information see the [overview](./docs/overview.md) and [architecture](./docs/architecture.md) pages.
+For detailed information see the [overview](https://nanobus.io/overview) and [architecture](https://nanobus.io/architecture) pages.
 
 ## Install
 
 **Linux** - Install from Terminal to `/usr/local/bin`:
 
 ```shell
-wget -q https://raw.githubusercontent.com/nanobus/nanobus/main/install/install.sh -O - | /bin/bash
+wget -q https://nanobus.io/install.sh -O - | /bin/bash
 ```
 
 **MacOS** - Install from Terminal to `/usr/local/bin`:
 
 ```shell
-curl -fsSL https://raw.githubusercontent.com/nanobus/nanobus/main/install/install.sh | /bin/bash
+curl -fsSL https://nanobus.io/install.sh | /bin/bash
 ```
 
 **Windows** - Install from Command Prompt:
 
 ```shell
-powershell -Command "iwr -useb https://raw.githubusercontent.com/nanobus/nanobus/main/install/install.ps1 | iex"
+powershell -Command "iwr -useb https://nanobus.io/install.ps1 | iex"
 ```
 
 > **Note**: Updates to PATH might not be visible until you restart your terminal application.
@@ -59,7 +59,7 @@ This should return `Hello, World!` as a JSON string. The JSON data returned by N
 
 ## Tutorials and examples
 
-[Getting started](https://github.com/nanobus/nanobus/blob/main/docs/getting-started.md)<br>
+[Getting started](https://nanobus.io/getting-started)<br>
 [Basic web service](https://github.com/nanobus/examples/tree/main/basic-web-service)<br>
 [WebAssembly-powered web service](https://github.com/nanobus/examples/tree/main/wasm-web-service)<br>
 [Dapr integration](https://github.com/nanobus/examples/tree/main/dapr)<br>
