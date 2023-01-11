@@ -41,7 +41,7 @@ type Context struct{}
 var commands struct {
 	DefaultRun defaultRunCmd `cmd:"" hidden:"" default:""`
 	// Run starts an application from a local configuration or OCI image reference.
-	Run runCmd `cmd:"run" help:"Runs a NanoBus application from a local configuration or OCI image reference"`
+	Run runCmd `cmd:"" help:"Runs a NanoBus application from a local configuration or OCI image reference"`
 	// Invoke runs a single invocation using input from STDIN or a file.
 	Invoke invokeCmd `cmd:"" help:"Runs a single invocation using input from STDIN or a file"`
 	// Push packages and uploads the an application to an OCI registry.
@@ -91,7 +91,7 @@ func (c *defaultRunCmd) Run() error {
 }
 
 type runCmd struct {
-	Target        string `arg:"positional" required:"" help:"The application configuration yaml file or OCI image reference."`
+	Target        string `arg:"" default:"bus.yaml" required:"" help:"The application configuration yaml file or OCI image reference."`
 	DeveloperMode bool   `name:"developer-mode" help:"Enables developer mode."`
 	// ResourcesFile is the resources configuration (e.g. databases, message brokers).
 	ResourcesFile string `name:"resources" default:"resources.yaml" help:"The resources configuration"`
@@ -105,13 +105,6 @@ func (c *runCmd) Run() error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	var reference string
-	if oci.IsImageReference(c.Target) {
-		reference = c.Target
-	} else {
-		reference = "bus.yaml"
-	}
-
 	level := zapcore.InfoLevel
 	if c.Debug {
 		level = zapcore.DebugLevel
@@ -119,7 +112,7 @@ func (c *runCmd) Run() error {
 
 	if _, err := engine.Start(ctx, &engine.Info{
 		Mode:          engine.ModeService,
-		Target:        reference,
+		Target:        c.Target,
 		LogLevel:      level,
 		ResourcesFile: c.ResourcesFile,
 		Process:       c.Args,
@@ -134,10 +127,12 @@ func (c *runCmd) Run() error {
 }
 
 type invokeCmd struct {
-	Target        string `arg:"positional" required:"" help:"The application configuration yaml file or OCI image reference."`
-	DeveloperMode bool   `name:"developer-mode" help:"Enables developer mode."`
+	// Target is the application configuration yaml file or OCI image reference.
+	Target string `arg:"" required:"" help:"The application configuration yaml file or OCI image reference."`
 	// Operation is the operation name.
 	Operation string `arg:"" required:"" help:"The operation or function invoke"`
+	// Enable developer mode
+	DeveloperMode bool `name:"developer-mode" help:"Enables developer mode."`
 	// ResourcesFile is the resources configuration (e.g. databases, message brokers).
 	ResourcesFile string `name:"resources" default:"resources.yaml" help:"The resources configuration"`
 	// EntityID is the entity identifier to invoke.
