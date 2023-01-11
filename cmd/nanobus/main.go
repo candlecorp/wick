@@ -286,6 +286,12 @@ func (c *pushCmd) Run() error {
 
 	add := conf.Package.Add
 	add = append(add, filepath.Clean(c.BusFile)+":"+oci.AppMediaType)
+	if conf.Spec != nil {
+		add = append(add, filepath.Clean(*conf.Spec))
+	}
+	if conf.Main != nil {
+		add = append(add, filepath.Clean(*conf.Main))
+	}
 
 	return oci.Push(reference, ".", add, c.DryRun)
 }

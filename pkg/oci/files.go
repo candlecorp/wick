@@ -4,28 +4,51 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 	"oras.land/oras-go/v2/content/file"
 )
 
+const (
+	AppMediaType        = "application/vnd.nanobus.app"
+	ApexMediaType       = "application/vnd.apexlang.apex"
+	ApexConfigMediaType = "application/vnd.apexlang.config"
+	WasmMediaType       = "application/wasm"
+)
+
+var mediaTypeExts = map[string]string{
+	".apex": AppMediaType,
+	".wasm": WasmMediaType,
+}
+
+var mediaTypeFilenames = map[string]string{
+	"apex.yaml": ApexConfigMediaType,
+}
+
+var reImageReference = regexp.MustCompile(`(?m)^([a-zA-Z0-9\-\.]+)\/([a-zA-Z0-9\-\.]+)\/([a-zA-Z0-9\-\.]+):([a-zA-Z0-9\-\.]+)$`)
+
+// IsImageReference tests if a string is an OCI image reference.
+func IsImageReference(location string) bool {
+	return reImageReference.MatchString(location)
+}
+
 func loadFiles(ctx context.Context, store *file.Store, annotations map[string]map[string]string, base string, fileRefs []string, verbose bool) ([]ocispec.Descriptor, error) {
 	var files []ocispec.Descriptor
 	for _, fileRef := range fileRefs {
 		filename, mediaType := parseFileReference(fileRef, "")
 		if mediaType == "" {
+			// Media types based on file extension
 			ext := filepath.Ext(filename)
-			f := filepath.Base(filename)
-			switch ext {
-			case ".apex":
-				mediaType = "application/vnd.apexlang.apex"
-			case ".wasm":
-				mediaType = "application/wasm"
+			if mt, ok := mediaTypeExts[ext]; ok {
+				mediaType = mt
 			}
-			switch f {
-			case "apex.yaml":
-				mediaType = "application/vnd.apexlang.config"
+
+			// Media types based on entire filename
+			f := filepath.Base(filename)
+			if mt, ok := mediaTypeFilenames[f]; ok {
+				mediaType = mt
 			}
 		}
 
