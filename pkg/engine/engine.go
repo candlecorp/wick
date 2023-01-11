@@ -138,9 +138,8 @@ const (
 
 type Info struct {
 	Mode          Mode
-	BusFile       string
+	Target        string
 	ResourcesFile string
-	PackageFile   string
 	DeveloperMode bool
 	LogLevel      zapcore.Level
 
@@ -261,10 +260,10 @@ func Start(ctx context.Context, info *Info) (*Engine, error) {
 	// NanoBus flags
 	// Pull from registry if PackageFile is set
 	var busFile string
-	if oci.IsImageReference(info.PackageFile) {
-		fmt.Printf("Pulling %s...\n", info.PackageFile)
+	if oci.IsImageReference(info.Target) {
+		fmt.Printf("Pulling %s...\n", info.Target)
 		var err error
-		if busFile, err = oci.Pull(info.PackageFile, "."); err != nil {
+		if busFile, err = oci.Pull(info.Target, "."); err != nil {
 			fmt.Printf("Error pulling image: %s\n", err)
 			return nil, err
 		}
@@ -276,7 +275,7 @@ func Start(ctx context.Context, info *Info) (*Engine, error) {
 	}
 
 	if busFile == "" {
-		busFile = info.BusFile
+		busFile = info.Target
 	}
 
 	// Load the bus configuration

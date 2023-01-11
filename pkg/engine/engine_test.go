@@ -27,9 +27,8 @@ func TestInvoke(t *testing.T) {
 	info := Info{
 		Mode:          ModeInvoke,
 		LogLevel:      zapcore.ErrorLevel,
-		BusFile:       "test-data/greeter.yaml",
+		Target:        "test-data/greeter.yaml",
 		ResourcesFile: "",
-		PackageFile:   "",
 		EntityID:      "nothing",
 		DeveloperMode: false,
 	}

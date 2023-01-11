@@ -77,9 +77,8 @@ func (c *defaultRunCmd) Run() error {
 	}
 	if _, err := engine.Start(ctx, &engine.Info{
 		Mode:          engine.ModeService,
-		BusFile:       "bus.yaml",
+		Target:        "bus.yaml",
 		ResourcesFile: "resources.yaml",
-		PackageFile:   "",
 		LogLevel:      level,
 		DeveloperMode: c.DeveloperMode,
 	}); err != nil {
@@ -92,14 +91,10 @@ func (c *defaultRunCmd) Run() error {
 }
 
 type runCmd struct {
-	Target        string `arg:"positional" optional:"" help:"The application configuration yaml file or OCI image reference."`
+	Target        string `arg:"positional" required:"" help:"The application configuration yaml file or OCI image reference."`
 	DeveloperMode bool   `name:"developer-mode" help:"Enables developer mode."`
-	// BusFile of the application as a configuration yaml file.
-	BusFile string `name:"bus" default:"bus.yaml" help:"The application configuration yaml file."`
 	// ResourcesFile is the resources configuration (e.g. databases, message brokers).
 	ResourcesFile string `name:"resources" default:"resources.yaml" help:"The resources configuration"`
-	// PackageFile is the resources configuration (e.g. databases, message brokers).
-	PackageFile string `name:"package" optional:"" help:"The registry hosted pacakage containing a packaged NanoBus application"`
 	// Turns on debug logging.
 	Debug bool `name:"debug" help:"Turns on debug logging"`
 	// Args are arguments passed to the application.
@@ -113,6 +108,8 @@ func (c *runCmd) Run() error {
 	var reference string
 	if oci.IsImageReference(c.Target) {
 		reference = c.Target
+	} else {
+		reference = "bus.yaml"
 	}
 
 	level := zapcore.InfoLevel
@@ -122,10 +119,9 @@ func (c *runCmd) Run() error {
 
 	if _, err := engine.Start(ctx, &engine.Info{
 		Mode:          engine.ModeService,
-		BusFile:       c.BusFile,
+		Target:        reference,
 		LogLevel:      level,
 		ResourcesFile: c.ResourcesFile,
-		PackageFile:   reference,
 		Process:       c.Args,
 		DeveloperMode: c.DeveloperMode,
 	}); err != nil {
@@ -138,15 +134,12 @@ func (c *runCmd) Run() error {
 }
 
 type invokeCmd struct {
-	DeveloperMode bool `name:"developer-mode" help:"Enables developer mode."`
+	Target        string `arg:"positional" required:"" help:"The application configuration yaml file or OCI image reference."`
+	DeveloperMode bool   `name:"developer-mode" help:"Enables developer mode."`
 	// Operation is the operation name.
 	Operation string `arg:"" required:"" help:"The operation or function invoke"`
-	// BusFile is the application configuration (not an OCI image reference).
-	BusFile string `name:"bus" default:"bus.yaml" help:"The NanoBus application configuration"`
 	// ResourcesFile is the resources configuration (e.g. databases, message brokers).
 	ResourcesFile string `name:"resources" default:"resources.yaml" help:"The resources configuration"`
-	// PackageFile is the resources configuration (e.g. databases, message brokers).
-	PackageFile string `name:"package" optional:"" help:"The registry hosted pacakage containing a packaged NanoBus application"`
 	// EntityID is the entity identifier to invoke.
 	EntityID string `name:"id" optional:"" help:"The entity ID to invoke (e.g. actor ID)"`
 	// Input is the file to use as JSON input.
@@ -193,10 +186,9 @@ func (c *invokeCmd) Run() error {
 
 	info := engine.Info{
 		Mode:          engine.ModeInvoke,
-		BusFile:       c.BusFile,
+		Target:        c.Target,
 		LogLevel:      level,
 		ResourcesFile: c.ResourcesFile,
-		PackageFile:   c.PackageFile,
 		EntityID:      c.EntityID,
 		DeveloperMode: c.DeveloperMode,
 	}
