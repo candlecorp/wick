@@ -126,6 +126,7 @@ func (c *runCmd) Run() error {
 		LogLevel:      level,
 		ResourcesFile: c.ResourcesFile,
 		PackageFile:   reference,
+		Process:       c.Args,
 		DeveloperMode: c.DeveloperMode,
 	}); err != nil {
 		// Error is logged in `Start`.
