@@ -79,6 +79,7 @@ func (c *defaultRunCmd) Run() error {
 		Mode:          engine.ModeService,
 		BusFile:       "bus.yaml",
 		ResourcesFile: "resources.yaml",
+		PackageFile:   "",
 		LogLevel:      level,
 		DeveloperMode: c.DeveloperMode,
 	}); err != nil {
@@ -96,6 +97,8 @@ type runCmd struct {
 	BusFile string `name:"bus" default:"bus.yaml" help:"The application configuration or OCI image reference"`
 	// ResourcesFile is the resources configuration (e.g. databases, message brokers).
 	ResourcesFile string `name:"resources" default:"resources.yaml" help:"The resources configuration"`
+	// PackageFile is the resources configuration (e.g. databases, message brokers).
+	PackageFile string `name:"package" optional:"" help:"The registry hosted pacakage containing a packaged NanoBus application"`
 	// Turns on debug logging.
 	Debug bool `name:"debug" help:"Turns on debug logging"`
 	// Args are arguments passed to the application.
@@ -130,6 +133,7 @@ func (c *runCmd) Run() error {
 		BusFile:       location,
 		LogLevel:      level,
 		ResourcesFile: c.ResourcesFile,
+		PackageFile:   c.PackageFile,
 		Process:       c.Args,
 		DeveloperMode: c.DeveloperMode,
 	}); err != nil {
@@ -149,6 +153,8 @@ type invokeCmd struct {
 	BusFile string `name:"bus" default:"bus.yaml" help:"The NanoBus application configuration"`
 	// ResourcesFile is the resources configuration (e.g. databases, message brokers).
 	ResourcesFile string `name:"resources" default:"resources.yaml" help:"The resources configuration"`
+	// PackageFile is the resources configuration (e.g. databases, message brokers).
+	PackageFile string `name:"package" optional:"" help:"The registry hosted pacakage containing a packaged NanoBus application"`
 	// EntityID is the entity identifier to invoke.
 	EntityID string `name:"id" optional:"" help:"The entity ID to invoke (e.g. actor ID)"`
 	// Input is the file to use as JSON input.
@@ -198,6 +204,7 @@ func (c *invokeCmd) Run() error {
 		BusFile:       c.BusFile,
 		LogLevel:      level,
 		ResourcesFile: c.ResourcesFile,
+		PackageFile:   c.PackageFile,
 		EntityID:      c.EntityID,
 		DeveloperMode: c.DeveloperMode,
 	}
@@ -293,9 +300,9 @@ func (c *pushCmd) Run() error {
 
 	reference := fmt.Sprintf("%s/%s/%s:%s", registry, org, applicationID, conf.Version)
 	if c.DryRun {
-		fmt.Printf("Pushing %s (dry run)...\n", reference)
+		fmt.Printf("Pushing %s (dry run)\n", reference)
 	} else {
-		fmt.Printf("Pushing %s...\n", reference)
+		fmt.Printf("Pushing %s\n", reference)
 	}
 
 	add := conf.Package.Add

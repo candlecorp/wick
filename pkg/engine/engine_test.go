@@ -29,6 +29,7 @@ func TestInvoke(t *testing.T) {
 		LogLevel:      zapcore.ErrorLevel,
 		BusFile:       "test-data/greeter.yaml",
 		ResourcesFile: "",
+		PackageFile:   "",
 		EntityID:      "nothing",
 		DeveloperMode: false,
 	}

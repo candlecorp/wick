@@ -46,6 +46,7 @@ import (
 	"github.com/nanobus/nanobus/pkg/initialize"
 	"github.com/nanobus/nanobus/pkg/logger"
 	"github.com/nanobus/nanobus/pkg/mesh"
+	"github.com/nanobus/nanobus/pkg/oci"
 	"github.com/nanobus/nanobus/pkg/resolve"
 	"github.com/nanobus/nanobus/pkg/resource"
 	"github.com/nanobus/nanobus/pkg/runtime"
@@ -139,6 +140,7 @@ type Info struct {
 	Mode          Mode
 	BusFile       string
 	ResourcesFile string
+	PackageFile   string
 	DeveloperMode bool
 	LogLevel      zapcore.Level
 
@@ -256,8 +258,21 @@ func Start(ctx context.Context, info *Info) (*Engine, error) {
 	if info.DeveloperMode && info.Mode == ModeService {
 		log.Info("Running in Developer Mode!")
 	}
-
 	// NanoBus flags
+	// Pull from registry if PackageFile is set
+	var location string
+	if oci.IsImageReference(info.PackageFile) {
+		fmt.Printf("Pulling %s...\n", info.PackageFile)
+		var err error
+		if location, err = oci.Pull(info.PackageFile, "."); err != nil {
+			fmt.Printf("Error pulling image: %s\n", err)
+			return nil, err
+		}
+		if location == "" {
+			// Fallback to default application config filename.
+			location = "bus.yaml"
+		}
+	}
 
 	// Load the bus configuration
 	busConfig, err := loadBusConfig(info.BusFile, log)
