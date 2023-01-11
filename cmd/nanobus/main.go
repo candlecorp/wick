@@ -92,7 +92,7 @@ func (c *defaultRunCmd) Run() error {
 }
 
 type runCmd struct {
-	Target        string `arg:"positional" required:"" help:"The application configuration yaml file or OCI image reference."`
+	Target        string `arg:"positional" optional:"" help:"The application configuration yaml file or OCI image reference."`
 	DeveloperMode bool   `name:"developer-mode" help:"Enables developer mode."`
 	// BusFile of the application as a configuration yaml file.
 	BusFile string `name:"bus" default:"bus.yaml" help:"The application configuration yaml file."`
