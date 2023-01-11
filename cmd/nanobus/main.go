@@ -41,7 +41,7 @@ type Context struct{}
 var commands struct {
 	DefaultRun defaultRunCmd `cmd:"" hidden:"" default:""`
 	// Run starts an application from a local configuration or OCI image reference.
-	Run runCmd `cmd:"" help:"Runs a NanoBus application from a local configuration or OCI image reference"`
+	Run runCmd `cmd:"run" help:"Runs a NanoBus application from a local configuration or OCI image reference"`
 	// Invoke runs a single invocation using input from STDIN or a file.
 	Invoke invokeCmd `cmd:"" help:"Runs a single invocation using input from STDIN or a file"`
 	// Push packages and uploads the an application to an OCI registry.
@@ -92,9 +92,10 @@ func (c *defaultRunCmd) Run() error {
 }
 
 type runCmd struct {
-	DeveloperMode bool `name:"developer-mode" help:"Enables developer mode."`
-	// BusFile of the application as a configuration file or OCI image reference.
-	BusFile string `name:"bus" default:"bus.yaml" help:"The application configuration or OCI image reference"`
+	Target        string `arg:"positional" required:"" help:"The application configuration yaml file or OCI image reference."`
+	DeveloperMode bool   `name:"developer-mode" help:"Enables developer mode."`
+	// BusFile of the application as a configuration yaml file.
+	BusFile string `name:"bus" default:"bus.yaml" help:"The application configuration yaml file."`
 	// ResourcesFile is the resources configuration (e.g. databases, message brokers).
 	ResourcesFile string `name:"resources" default:"resources.yaml" help:"The resources configuration"`
 	// PackageFile is the resources configuration (e.g. databases, message brokers).
@@ -109,20 +110,11 @@ func (c *runCmd) Run() error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	location := c.BusFile
-	if oci.IsImageReference(c.BusFile) {
-		fmt.Printf("Pulling %s...\n", c.BusFile)
-		var err error
-		if location, err = oci.Pull(location, "."); err != nil {
-			fmt.Printf("Error pulling image: %s\n", err)
-			return err
-		}
-
-		if location == "" {
-			// Fallback to default application config filename.
-			location = "bus.yaml"
-		}
+	var reference string
+	if oci.IsImageReference(c.Target) {
+		reference = c.Target
 	}
+
 	level := zapcore.InfoLevel
 	if c.Debug {
 		level = zapcore.DebugLevel
@@ -130,11 +122,10 @@ func (c *runCmd) Run() error {
 
 	if _, err := engine.Start(ctx, &engine.Info{
 		Mode:          engine.ModeService,
-		BusFile:       location,
+		BusFile:       c.BusFile,
 		LogLevel:      level,
 		ResourcesFile: c.ResourcesFile,
-		PackageFile:   c.PackageFile,
-		Process:       c.Args,
+		PackageFile:   reference,
 		DeveloperMode: c.DeveloperMode,
 	}); err != nil {
 		// Error is logged in `Start`.
