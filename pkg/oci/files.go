@@ -13,7 +13,7 @@ import (
 
 const (
 	AppMediaType        = "application/vnd.nanobus.app"
-	ApexMediaType       = "application/vnd.apexlang.apex"
+	ApexMediaType       = "application/vnd.apexlang"
 	ApexConfigMediaType = "application/vnd.apexlang.config"
 	WasmMediaType       = "application/wasm"
 )
