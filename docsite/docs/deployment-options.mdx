@@ -1,0 +1,118 @@
+---
+sidebar_position: 5
+---
+
+# Deployment Options
+
+NanoBus is able to run in almost any type of deployment environment.
+
+# Binary
+```
+nanobus run <OCI Package Reference or Path to bus.yaml>
+```
+
+# Docker
+```
+docker run -it -p 8080:8080 -v $(pwd):/app/ nanobus/nanobus:latest run <OCI Package Reference or Path to bus.yaml>
+```
+
+# Docker Compose
+```
+version: "3"
+
+services:
+  nanobus:
+    image: nanobus/nanobus:latest
+    args: 
+      - "run"
+      - <OCI Package Reference or Path to bus.yaml>
+    volumes:
+      - ./:/app/
+    ports:
+      - "8080:8080"
+```
+
+# Kubernetes
+```
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nanobus-app
+spec:
+  selector:
+    matchLabels:
+      app: nanobus-app
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: nanobus-app
+    spec:
+      containers:
+        - name: nanobus-app
+          resources:
+            limits:
+              memory: "128Mi"
+              cpu: "100m"
+          image: nanobus/nanobus:latest
+          args:
+            - "run"
+            - "OCI package reference"
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+```
+
+# Nomad
+In Nomad, it can be run as a container or as an exec job.
+
+## Nomad - Docker
+```
+job "nanobus" {
+  datacenters = ["dc1"]
+  type = "service"
+  
+  task "nanobus" {
+    driver = "docker"
+    config {
+      image = "nanobus/nanobus:latest"
+      args = ["run","<OCI Package Reference or Path to bus.yaml>"]
+    }
+
+    ports {
+        http = 8080
+    }
+
+    resources {
+      cpu = 100
+      memory = 128
+    }
+  }
+}
+```
+
+## Nomad - Exec
+
+```
+job "nanobus" {
+    datacenters = ["dc1"]
+    type = "service"
+
+    task "nanobus" {
+        driver = "exec"
+        config {
+            command = "/path/to/nanobus"
+            args = ["run", "<OCI Package Reference or Path to bus.yaml>"]
+        }
+
+        ports {
+            http = 8080
+        }
+
+        resources {
+            cpu = 100
+            memory = 128
+        }
+    }
+}
+```
