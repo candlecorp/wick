@@ -26,24 +26,9 @@ jobs:
           cd docsite
           npm install
           npm run build
-      - name: Generate build ID
-        id: prep
-        run: |
-          branch=${GITHUB_REF##*/}
-          sha=${GITHUB_SHA::8}
-          ts=$(date +%s)
-          echo "::set-output name=BUILD_ID::${branch}-${sha}-${ts}"
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@v2
+      - name: Package and push
+        uses: nanobus/push-action@v1
         with:
-          registry: candlereg.azurecr.io
-          username: ${{ secrets.IMAGE_REGISTRY_USERNAME }}
-          password: ${{ secrets.IMAGE_REGISTRY_PASSWORD }}
-      - name: Build and push
-        uses: docker/build-push-action@v3
-        with:
-          image: candle/site
-          tags: candlereg.azurecr.io/nanobus/docs:${{ steps.prep.outputs.BUILD_ID }}, candlereg.azurecr.io/nanobus/docs:latest
-          registry: candlereg.azurecr.io
-          context: "/home/runner/work/nanobus/nanobus/docsite"
-          push: true
+          path: "docsite/bus.yaml"
+          username: ${{ secrets.CANDLE_REG_USERNAME }}
+          password: ${{ secrets.CANDLE_REG_PASSWORD }}
