@@ -87,6 +87,18 @@ const config = {
             className: 'header-github-link',
             'aria-label': 'GitHub repository',
           },
+          {
+            href: 'https://discord.gg/candle',
+            className: 'header-discord-link',
+            position: 'right',
+            'aria-label': 'Discord server',
+          },
+          {
+            href: 'https://twitter.com/nanobusdev',
+            className: 'header-twitter-link',
+            position: 'right',
+            'aria-label': 'Twitter feed',
+          },
         ],
       },
       footer: {
