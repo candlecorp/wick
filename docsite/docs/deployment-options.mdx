@@ -6,17 +6,20 @@ sidebar_position: 5
 
 NanoBus is able to run in almost any type of deployment environment.
 
-# Binary
+## Binary
+
 ```
 nanobus run <OCI Package Reference or Path to bus.yaml>
 ```
 
-# Docker
+## Docker
+
 ```
 docker run -it -p 8080:8080 -v $(pwd):/app/ nanobus/nanobus:latest run <OCI Package Reference or Path to bus.yaml>
 ```
 
-# Docker Compose
+## Docker Compose
+
 ```
 version: "3"
 
@@ -32,7 +35,8 @@ services:
       - "8080:8080"
 ```
 
-# Kubernetes
+## Kubernetes
+
 ```
 apiVersion: apps/v1
 kind: Deployment
@@ -63,10 +67,12 @@ spec:
             - containerPort: 8080
 ```
 
-# Nomad
+## Nomad
+
 In Nomad, it can be run as a container or as an exec job.
 
-## Nomad - Docker
+### Nomad - Docker
+
 ```
 job "nanobus" {
   datacenters = ["dc1"]
@@ -91,7 +97,7 @@ job "nanobus" {
 }
 ```
 
-## Nomad - Exec
+### Nomad - Exec
 
 ```
 job "nanobus" {
