@@ -57,7 +57,7 @@ func getRepository(reference string) (*remote.Repository, error) {
 			}
 		}
 	} else if os.IsNotExist(err) {
-		fmt.Println(configFile, " does not exist.")
+		fmt.Println(configFile, " does not exist. Checking for environment variables.")
 	} else {
 		fmt.Println("Error checking ", configFile, err)
 	}
@@ -74,6 +74,7 @@ func getRepository(reference string) (*remote.Repository, error) {
 			password := os.Getenv(registry + "_PASSWORD")
 
 			if hostname != "" && username != "" && password != "" {
+				fmt.Println("Adding ", hostname, " credentials from ENV")
 				if _, ok := repos[hostname]; ok {
 					fmt.Println("ENV Registry credentials overwriting config file credentials for: ", registry)
 				}
