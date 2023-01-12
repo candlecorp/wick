@@ -41,30 +41,42 @@ services:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: nanobus-app
+  name: candle-site
+  namespace: candle-site
 spec:
   selector:
     matchLabels:
-      app: nanobus-app
-  replicas: 1
+      app: candle-site
+  replicas: 2
   template:
     metadata:
       labels:
-        app: nanobus-app
+        app: candle-site
     spec:
+      nodeSelector:
+        agentpool: platpool
       containers:
-        - name: nanobus-app
+        - name: candle-site
           resources:
             limits:
               memory: "128Mi"
-              cpu: "100m"
-          image: nanobus/nanobus:latest
+              cpu: "500m"
+          image: nanobus/nanobus:v0.0.16
           args:
             - "run"
-            - "OCI package reference"
+            - "reg.candle.run/candlecorp/candle-site:0.0.0"
           imagePullPolicy: Always
           ports:
             - containerPort: 8080
+          #The following is only needed if you are trying to download from a private project/org on your registry.
+          volumeMounts:
+            - mountPath: /.docker/config.json
+              name: docker-config
+              subPath: .dockerconfigjson
+      volumes: 
+        - name: docker-config
+          secret:
+            secretName: registry-secret #created using "kubectl create secret docker-registry"
 ```
 
 ## Nomad

@@ -26,7 +26,11 @@ package:
 
 ## Credentials / Pushing
 
-Currently, you need to have the credentials stored as environment variables (if you are not using the GitHub action).
+### Docker Config File
+NanoBus will by default read the credentials if any are stored in your `$HOME/.docker/config.json` file.
+
+### ENV Variables
+If there are any credentials stored in the config file, they will be used first.  If you want to override the config file, you can set the following environment variables:
 ```
 export OCI_REGISTRIES=MYREG
 export MYREG_HOSTNAME=reg.candle.run
