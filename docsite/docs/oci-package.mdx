@@ -10,7 +10,8 @@ OCI registry architecture and standards. Any standards-compliant OCI registry is
 NanoBus application packages. For anyone without access to a standards-compliant OCI registry, Candle
 offers a free NanoBus compatible registry at https://reg.candle.run.
 
-# Package Spec
+## Package Spec
+
 The package details are defined in the bus.yaml file of the application.
 
 ```
@@ -23,7 +24,8 @@ package:
     - migrations/sql          #Any initializers / migration files need to be in the `add` section.
 ```
 
-# Credentials / Pushing
+## Credentials / Pushing
+
 Currently, you need to have the credentials stored as environment variables (if you are not using the GitHub action).
 ```
 export OCI_REGISTRIES=MYREG
@@ -42,5 +44,6 @@ If the `id` of an app was `example` and `version` was `0.1.0`, and contained the
 reg.candle.run/myorg/example:0.1.0
 ```
 
-# Push GitHub action
+## Push GitHub action
+
 A github action is available for adding the Package + Push functionality directly into your CI flow: https://github.com/marketplace/actions/nanobus-push
