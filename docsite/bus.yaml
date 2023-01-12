@@ -1,0 +1,26 @@
+id: nanodocs
+version: 0.0.1
+transports:
+  http:
+    uses: nanobus.transport.http.server/v1
+    with:
+      address: ":8080"
+      routers:
+        - uses: nanobus.transport.http.static/v1
+          with:
+            paths:
+              - dir: build
+                path: /
+package:
+  registry: reg.candle.run
+  org: nanobus
+  add:
+    - build/
+
+  #Credentials.  Add these to your environment.  replace regcandlerun with your registry host name.
+  #If you are going to use candle registry, make a free account at https://reg.candle.run
+  #you can only push to orgs that you own and already exist so feel free to make an org ("Project") for yourself.
+  #export OCI_REGISTRIES=CANDLE
+  #export CANDLE_HOSTNAME=reg.candle.run
+  #export CANDLE_USERNAME=<your registry username>
+  #export CANDLE_PASSWORD=<your registry password>
