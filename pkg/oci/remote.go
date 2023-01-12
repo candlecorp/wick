@@ -37,19 +37,19 @@ func getRepository(reference string) (*remote.Repository, error) {
 	if _, err := os.Stat(configFile); err == nil {
 		contents, err := os.ReadFile(configFile)
 		if err != nil {
-			fmt.Println("Error reading config file:", err)
+			fmt.Println("Error reading ", configFile, err)
 			return nil, err
 		}
 
 		var config configs
 		if err := json.Unmarshal(contents, &config); err != nil {
-			fmt.Println("Error parsing config file:", err)
+			fmt.Println("Error parsing ", configFile, err)
 			return nil, err
 		}
 
 		for registry, authconfigs := range config.Auths {
 			if authconfigs.Username != "" && authconfigs.Password != "" {
-				fmt.Println("Adding registry credentials from file: ", registry)
+				fmt.Println("Adding ", registry, " credentials from ", configFile)
 				repos[registry] = auth.Credential{
 					Username: authconfigs.Username,
 					Password: authconfigs.Password,
@@ -57,9 +57,9 @@ func getRepository(reference string) (*remote.Repository, error) {
 			}
 		}
 	} else if os.IsNotExist(err) {
-		fmt.Println(configFile, "file does not exist.")
+		fmt.Println(configFile, " does not exist.")
 	} else {
-		fmt.Println("Error checking config file:", err)
+		fmt.Println("Error checking ", configFile, err)
 	}
 
 	registriesString := os.Getenv("OCI_REGISTRIES")
@@ -74,7 +74,7 @@ func getRepository(reference string) (*remote.Repository, error) {
 			password := os.Getenv(registry + "_PASSWORD")
 
 			if hostname != "" && username != "" && password != "" {
-				if repos[hostname].Username != "" {
+				if _, ok := repos[hostname]; ok {
 					fmt.Println("ENV Registry credentials overwriting config file credentials for: ", registry)
 				}
 				repos[hostname] = auth.Credential{
