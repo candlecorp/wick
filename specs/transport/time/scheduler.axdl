@@ -51,6 +51,7 @@ app.transport(
 }
 
 type Schedule {
-  schedule:    string
-  handler:    Handler
+  schedule:     string
+  handler:      Handler
+  repeat:       u8 = 0 # 0 = infinite
 }

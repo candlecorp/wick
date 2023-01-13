@@ -18,4 +18,5 @@ func SchedulerV1() (string, transport.Loader) {
 type Schedule struct {
 	Schedule string          `json:"schedule" yaml:"schedule" msgpack:"schedule" mapstructure:"schedule" validate:"required"`
 	Handler  handler.Handler `json:"handler" yaml:"handler" msgpack:"handler" mapstructure:"handler" validate:"required"`
+	Repeat   uint8           `json:"repeat" yaml:"repeat" msgpack:"repeat" mapstructure:"repeat"`
 }

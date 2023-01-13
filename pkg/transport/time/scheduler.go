@@ -76,7 +76,7 @@ func (t *Scheduler) Listen() error {
 	for _, sched := range t.schedules {
 		if err := func(sched Schedule) error {
 			t.log.Info("Scheduling", "schedule", sched.Schedule, "handler", sched.Handler)
-			_, err := s.Cron(sched.Schedule).Do(func() {
+			_, err := s.Cron(sched.Schedule).LimitRunsTo(int(sched.Repeat)).Do(func() {
 				_, err := t.invoker(t.ctx, sched.Handler, t.id, input, transport.BypassAuthorization)
 				if err != nil {
 					t.log.Error(err, "Error in %q", sched.Handler)
