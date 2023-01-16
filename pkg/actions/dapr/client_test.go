@@ -48,6 +48,11 @@ type mockClient struct {
 	// Save State
 	saveName  string
 	saveItems []*dapr.SetStateItem
+
+	// Invoke actor
+	actorReq  *dapr.InvokeActorRequest
+	actorResp *dapr.InvokeActorResponse
+	actorErr  error
 }
 
 func (m *mockClient) InvokeBinding(ctx context.Context, req *dapr.InvokeBindingRequest) (out *dapr.BindingEvent, err error) {
@@ -90,6 +95,11 @@ func (m *mockClient) SaveBulkState(ctx context.Context, storeName string, items 
 	m.saveName = storeName
 	m.saveItems = items
 	return nil
+}
+
+func (m *mockClient) InvokeActor(ctx context.Context, req *dapr.InvokeActorRequest) (*dapr.InvokeActorResponse, error) {
+	m.actorReq = req
+	return m.actorResp, m.actorErr
 }
 
 func getMockClient(m *mockClient) resolve.ResolveAs {

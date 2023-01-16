@@ -448,8 +448,10 @@ func typeFormat(t *spec.TypeRef) *openapi3.Schema {
 		if t.ValueType.Kind == spec.KindType {
 			return &openapi3.Schema{
 				Type: "object",
-				AdditionalProperties: &openapi3.SchemaRef{
-					Ref: "#/components/schemas/" + t.ValueType.Type.Name,
+				AdditionalProperties: openapi3.AdditionalProperties{
+					Schema: &openapi3.SchemaRef{
+						Ref: "#/components/schemas/" + t.ValueType.Type.Name,
+					},
 				},
 			}
 		}

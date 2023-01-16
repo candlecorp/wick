@@ -9,7 +9,6 @@
 import {
   Alias,
   Annotated,
-  BaseVisitor,
   Context,
   Kind,
   Named,
@@ -17,11 +16,12 @@ import {
   Primitive,
   PrimitiveName,
   Writer,
-} from "./deps/core.ts";
+} from "./deps/model.ts";
 import {
   expandType,
   fieldName,
-  ImportsVisitor,
+  getImporter,
+  GoVisitor,
   InterfacesVisitor,
   StructVisitor,
 } from "./deps/apex.ts";
@@ -35,59 +35,22 @@ interface Component {
   value: string;
 }
 
-class ComponentImportsVisitor extends ImportsVisitor {
-  visitAlias(context: Context): void {
-    super.visitAlias(context);
-    const { alias } = context;
-    this.doImports(alias);
-  }
+const IMPORTS = {
+  initialize: "github.com/nanobus/nanobus/pkg/initialize",
+  transport: "github.com/nanobus/nanobus/pkg/transport",
+  router: "github.com/nanobus/nanobus/pkg/transport/http/router",
+  middleware: "github.com/nanobus/nanobus/pkg/transport/http/middleware",
+  filter: "github.com/nanobus/nanobus/pkg/transport/filter",
+  actions: "github.com/nanobus/nanobus/pkg/actions",
+};
 
-  visitType(context: Context): void {
-    const { type } = context;
-    this.doImports(type);
-  }
-
-  doImports(annotated: Annotated): void {
-    annotated.annotation("initializer", (_a) => {
-      this.addType("initialize", {
-        type: "initialize",
-        import: "github.com/nanobus/nanobus/pkg/initialize",
-      });
-    });
-    annotated.annotation("transport", (_a) => {
-      this.addType("transport", {
-        type: "transport",
-        import: "github.com/nanobus/nanobus/pkg/transport",
-      });
-    });
-    annotated.annotation("router", (_a) => {
-      this.addType("router", {
-        type: "router",
-        import: "github.com/nanobus/nanobus/pkg/transport/http/router",
-      });
-    });
-    annotated.annotation("middleware", (_a) => {
-      this.addType("middleware", {
-        type: "middleware",
-        import: "github.com/nanobus/nanobus/pkg/transport/http/middleware",
-      });
-    });
-    annotated.annotation("filter", (_a) => {
-      this.addType("filter", {
-        type: "filter",
-        import: "github.com/nanobus/nanobus/pkg/transport/filter",
-      });
-    });
-    annotated.annotation("action", (_a) => {
-      this.addType("action", {
-        type: "actions",
-        import: "github.com/nanobus/nanobus/pkg/actions",
-      });
-    });
-  }
-}
-
-const requiredAliases = ["ValueExpr", "DataExpr", "ResourceRef", "Handler"]
+const requiredAliases = [
+  "ValueExpr",
+  "DataExpr",
+  "ResourceRef",
+  "Handler",
+  "Entity",
+];
 
 class ConfigStructVisitor extends StructVisitor {
   structTags(context: Context): string {
@@ -136,7 +99,7 @@ interface UnionKey {
   value: string;
 }
 
-class ConfigUnionVisitor extends BaseVisitor {
+class ConfigUnionVisitor extends GoVisitor {
   visitUnion(context: Context): void {
     const tick = "`";
     const { union } = context;
@@ -183,7 +146,6 @@ class ConfigUnionVisitor extends BaseVisitor {
 export class ComponentsVisitor extends InterfacesVisitor {
   constructor(writer: Writer) {
     super(writer);
-    this.importsVisitor = () => new ComponentImportsVisitor(writer);
     this.structVisitor = () => new ConfigStructVisitor(writer);
     this.unionVisitor = () => new ConfigUnionVisitor(writer);
   }
@@ -191,21 +153,22 @@ export class ComponentsVisitor extends InterfacesVisitor {
   visitAlias(context: Context): void {
     super.visitAlias(context);
     const { alias } = context;
-    this.doLoader(alias, alias);
+    this.doLoader(context, alias, alias);
   }
 
   visitTypeAfter(context: Context): void {
     const { type } = context;
-    this.doLoader(type, type);
+    this.doLoader(context, type, type);
   }
 
-  doLoader(named: Named, annotated: Annotated): void {
+  doLoader(context: Context, named: Named, annotated: Annotated): void {
+    const $ = getImporter(context, IMPORTS);
     const name = named.name.replaceAll(/(Config|Configuration|Settings)$/g, "");
 
     annotated.annotation("initializer", (a) => {
       const component = a.convert<Component>();
       this.write(`
-func ${name}() (string, initialize.Loader) {
+func ${name}() (string, ${$.initialize}.Loader) {
   return "${component.value}", ${name}Loader
 }\n\n`);
     });
@@ -213,7 +176,7 @@ func ${name}() (string, initialize.Loader) {
     annotated.annotation("transport", (a) => {
       const component = a.convert<Component>();
       this.write(`
-func ${name}() (string, transport.Loader) {
+func ${name}() (string, ${$.transport}.Loader) {
   return "${component.value}", ${name}Loader
 }\n\n`);
     });
@@ -221,7 +184,7 @@ func ${name}() (string, transport.Loader) {
     annotated.annotation("router", (a) => {
       const component = a.convert<Component>();
       this.write(`
-func ${name}() (string, router.Loader) {
+func ${name}() (string, ${$.router}.Loader) {
   return "${component.value}", ${name}Loader
 }\n\n`);
     });
@@ -229,7 +192,7 @@ func ${name}() (string, router.Loader) {
     annotated.annotation("middleware", (a) => {
       const component = a.convert<Component>();
       this.write(`
-func ${name}() (string, middleware.Loader) {
+func ${name}() (string, ${$.middleware}.Loader) {
   return "${component.value}", ${name}Loader
 }\n\n`);
     });
@@ -237,7 +200,7 @@ func ${name}() (string, middleware.Loader) {
     annotated.annotation("filter", (a) => {
       const component = a.convert<Component>();
       this.write(`
-func ${name}() (string, filter.Loader) {
+func ${name}() (string, ${$.filter}.Loader) {
   return "${component.value}", ${name}Loader
 }\n\n`);
     });
@@ -245,7 +208,7 @@ func ${name}() (string, filter.Loader) {
     annotated.annotation("action", (a) => {
       const component = a.convert<Component>();
       this.write(`
-func ${name}() (string, actions.Loader) {
+func ${name}() (string, ${$.actions}.Loader) {
   return "${component.value}", ${name}Loader
 }\n\n`);
     });

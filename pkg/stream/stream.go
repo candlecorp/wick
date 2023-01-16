@@ -16,6 +16,7 @@ import (
 
 type Source interface {
 	Next(data any, md *metadata.MD) error
+	Cancel()
 }
 
 type sourceKey struct{}

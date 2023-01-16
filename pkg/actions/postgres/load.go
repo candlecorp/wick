@@ -67,13 +67,13 @@ func LoadLoader(ctx context.Context, with interface{}, resolver resolve.ResolveA
 		return nil, fmt.Errorf("resource %q is not a *pgxpool.Pool", c.Resource)
 	}
 
-	ns, ok := namespaces[c.Namespace]
+	ns, ok := namespaces[c.Entity.Namespace]
 	if !ok {
-		return nil, fmt.Errorf("namespace %q is not found", c.Namespace)
+		return nil, fmt.Errorf("namespace %q is not found", c.Entity.Namespace)
 	}
-	t, ok := ns.Type(c.Type)
+	t, ok := ns.Type(c.Entity.Type)
 	if !ok {
-		return nil, fmt.Errorf("type %q is not found", c.Type)
+		return nil, fmt.Errorf("type %q is not found", c.Entity.Type)
 	}
 
 	return LoadAction(&c, t, ns, pool), nil

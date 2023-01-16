@@ -21,6 +21,11 @@ import (
 	rootConfig "github.com/nanobus/nanobus/pkg/config"
 )
 
+type Application struct {
+	ID      string
+	Version string
+}
+
 func LoadResourcesYAML(in io.Reader) (*ResourcesConfig, error) {
 	data, err := io.ReadAll(in)
 	if err != nil {

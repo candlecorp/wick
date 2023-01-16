@@ -4,7 +4,7 @@ package oauth2
 
 import (
 	"encoding/json"
-	"fmt"
+	"errors"
 
 	"github.com/nanobus/nanobus/pkg/handler"
 	"github.com/nanobus/nanobus/pkg/transport/http/router"
@@ -77,7 +77,7 @@ func (e *AuthStyle) FromString(str string) error {
 	var ok bool
 	*e, ok = toIDAuthStyle[str]
 	if !ok {
-		return fmt.Errorf("unknown value %q for AuthStyle", str)
+		return errors.New("unknown value \"" + str + "\" for AuthStyle")
 	}
 	return nil
 }

@@ -169,3 +169,21 @@ enum Consistency {
   "Strong state consistency value"
   Strong = 2 as "strong"
 }
+
+type InvokeActorConfig
+  @tags(["Request"])
+  @filename("binding_invoke")
+  @action("@dapr/invoke_actor") {
+  "The name of the Dapr client resource."
+  resource: string = "dapr"
+  "The actor handler (type::method)"
+  handler: Handler
+  "The actor identifier"
+  id: ValueExpr
+  "The input sent."
+  data: DataExpr?
+  "The configured codec to use for encoding the message."
+  codec: CodecRef = "json"
+  "The arguments for the codec, if any."
+  codecArgs: [any]?
+}

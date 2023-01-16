@@ -6,6 +6,7 @@ import {
   Component,
   DataExpr,
   Handler,
+  Entity,
   ResourceRef,
   Step,
   ValueExpr

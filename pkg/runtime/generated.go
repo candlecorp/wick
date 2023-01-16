@@ -4,7 +4,7 @@ package runtime
 
 import (
 	"encoding/json"
-	"fmt"
+	"errors"
 
 	"github.com/nanobus/nanobus/pkg/expr"
 )
@@ -387,7 +387,7 @@ func (e *ErrCode) FromString(str string) error {
 	var ok bool
 	*e, ok = toIDErrCode[str]
 	if !ok {
-		return fmt.Errorf("unknown value %q for ErrCode", str)
+		return errors.New("unknown value \"" + str + "\" for ErrCode")
 	}
 	return nil
 }

@@ -1,0 +1,6 @@
+spec: ../../../specs/actions/blob.axdl
+config:
+  package: blob
+  module: github.com/nanobus/nanobus/pkg/actions/blob
+plugins:
+  - ../../../codegen/plugin.ts

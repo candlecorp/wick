@@ -1,2 +1,0 @@
-run:
-  echo '{"name": "World!"}' | nanobus invoke bus.yaml Greeter::sayHello

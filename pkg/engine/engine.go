@@ -9,10 +9,12 @@
 package engine
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"os/exec"
@@ -54,6 +56,7 @@ import (
 	"github.com/nanobus/nanobus/pkg/security/claims"
 
 	// CHANNELS
+	bytes_codec "github.com/nanobus/nanobus/pkg/channel/codecs/bytes"
 	json_codec "github.com/nanobus/nanobus/pkg/channel/codecs/json"
 	msgpack_codec "github.com/nanobus/nanobus/pkg/channel/codecs/msgpack"
 
@@ -68,14 +71,14 @@ import (
 
 	// ACTIONS
 	"github.com/nanobus/nanobus/pkg/actions"
+	"github.com/nanobus/nanobus/pkg/actions/blob"
 	"github.com/nanobus/nanobus/pkg/actions/core"
 	"github.com/nanobus/nanobus/pkg/actions/dapr"
-	"github.com/nanobus/nanobus/pkg/actions/dapr_pluggable"
-	"github.com/nanobus/nanobus/pkg/actions/gorm"
 	"github.com/nanobus/nanobus/pkg/actions/postgres"
 
 	// CODECS
 	"github.com/nanobus/nanobus/pkg/codec"
+	codec_bytes "github.com/nanobus/nanobus/pkg/codec/bytes"
 	cloudevents_avro "github.com/nanobus/nanobus/pkg/codec/cloudevents/avro"
 	cloudevents_json "github.com/nanobus/nanobus/pkg/codec/cloudevents/json"
 	"github.com/nanobus/nanobus/pkg/codec/confluentavro"
@@ -365,16 +368,23 @@ func Start(ctx context.Context, info *Info) (*Engine, error) {
 		cloudevents_json.CloudEventsJSON,
 		codec_text.Plain,
 		codec_text.HTML,
+		codec_bytes.Bytes,
 	)
 
 	resourceRegistry := resource.Registry{}
 	resourceRegistry.Register(
 		postgres.Connection,
-		gorm.Connection,
+		// gorm.Connection,
 		dapr.Client,
-		dapr_pluggable.PubSub,
-		dapr_pluggable.StateStore,
-		dapr_pluggable.OutputBinding,
+		// dapr_pluggable.PubSub,
+		// dapr_pluggable.StateStore,
+		// dapr_pluggable.OutputBinding,
+		blob.URLBlob,
+		blob.AzureBlob,
+		blob.FSBlob,
+		blob.GCSBlob,
+		blob.MemBlob,
+		blob.S3Blob,
 	)
 
 	tracingRegistry := otel_tracing.Registry{}
@@ -387,10 +397,11 @@ func Start(ctx context.Context, info *Info) (*Engine, error) {
 	// Action registration
 	actionRegistry := actions.Registry{}
 	actionRegistry.Register(core.All...)
+	actionRegistry.Register(blob.All...)
 	actionRegistry.Register(postgres.All...)
-	actionRegistry.Register(gorm.All...)
+	// actionRegistry.Register(gorm.All...)
 	actionRegistry.Register(dapr.All...)
-	actionRegistry.Register(dapr_pluggable.All...)
+	//actionRegistry.Register(dapr_pluggable.All...)
 
 	initializerRegistry := initialize.Registry{}
 	initializerRegistry.Register(migrate_postgres.MigratePostgresV1)
@@ -398,16 +409,22 @@ func Start(ctx context.Context, info *Info) (*Engine, error) {
 	// Codecs
 	jsoncodec := json_codec.New()
 	msgpackcodec := msgpack_codec.New()
+	bytescodec := bytes_codec.New()
 
 	// Dependencies
 	httpClient := getHTTPClient()
 	env := getEnvironment()
 	namespaces := make(spec.Namespaces)
 	dependencies := map[string]interface{}{
-		"system:logger":       log,
+		"system:logger": log,
+		"system:application": &runtime.Application{
+			ID:      busConfig.ID,
+			Version: busConfig.Version,
+		},
 		"client:http":         httpClient,
 		"codec:json":          jsoncodec,
 		"codec:msgpack":       msgpackcodec,
+		"codec:bytes":         bytescodec,
 		"spec:namespaces":     namespaces,
 		"os:env":              env,
 		"registry:routers":    routerRegistry,
@@ -875,12 +892,22 @@ func loadResourcesConfig(filename string, log logr.Logger) (*runtime.ResourcesCo
 }
 
 func loadBusConfig(filename string, log logr.Logger) (*runtime.BusConfig, error) {
-	// TODO: Load from file or URI
-	f, err := os.OpenFile(filename, os.O_RDONLY, 0644)
-	if err != nil {
-		return nil, err
+	var in io.Reader
+	if strings.HasSuffix(filename, ".ts") {
+		out, err := exec.Command("deno", "run", "--allow-run", "--unstable", filename).Output()
+		if err != nil {
+			return nil, fmt.Errorf("error running bus program: %w", err)
+		}
+		in = bytes.NewReader(out)
+	} else {
+		// TODO: Load from file or URI
+		f, err := os.OpenFile(filename, os.O_RDONLY, 0644)
+		if err != nil {
+			return nil, err
+		}
+		in = f
+		defer f.Close()
 	}
-	defer f.Close()
 
 	absPath, err := filepath.Abs(filename)
 	if err != nil {
@@ -888,7 +915,7 @@ func loadBusConfig(filename string, log logr.Logger) (*runtime.BusConfig, error)
 	}
 	baseDir := filepath.Dir(absPath)
 
-	c, err := runtime.LoadBusYAML(baseDir, f)
+	c, err := runtime.LoadBusYAML(baseDir, in)
 	if err != nil {
 		return nil, err
 	}

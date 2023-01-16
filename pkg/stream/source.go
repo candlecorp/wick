@@ -10,17 +10,21 @@ package stream
 
 import (
 	"io"
+	"sync/atomic"
 
 	"github.com/nanobus/iota/go/payload"
+	"github.com/nanobus/iota/go/rx"
 	"github.com/nanobus/iota/go/rx/flux"
-	"github.com/vmihailenco/msgpack/v5"
 
+	"github.com/nanobus/nanobus/pkg/channel"
 	"github.com/nanobus/nanobus/pkg/channel/metadata"
 )
 
 type source struct {
-	f  flux.Flux[payload.Payload]
-	ch chan value
+	codec    channel.Codec
+	f        flux.Flux[payload.Payload]
+	ch       chan value
+	canceled atomic.Bool
 }
 
 type value struct {
@@ -28,8 +32,13 @@ type value struct {
 	err error
 }
 
-func SourceFromFlux(f flux.Flux[payload.Payload]) Source {
+func SourceFromFlux(codec channel.Codec, f flux.Flux[payload.Payload]) Source {
 	ch := make(chan value, 100)
+	s := &source{
+		codec: codec,
+		f:     f,
+		ch:    ch,
+	}
 	f.Subscribe(flux.Subscribe[payload.Payload]{
 		OnNext: func(p payload.Payload) {
 			ch <- value{p: p}
@@ -41,11 +50,15 @@ func SourceFromFlux(f flux.Flux[payload.Payload]) Source {
 			ch <- value{err: err}
 			close(ch)
 		},
+		OnRequest: func(sub rx.Subscription) {
+			if s.canceled.Load() {
+				sub.Cancel()
+			} else {
+				sub.Request(100)
+			}
+		},
 	})
-	return &source{
-		f:  f,
-		ch: ch,
-	}
+	return s
 }
 
 func (s *source) Next(data any, md *metadata.MD) error {
@@ -54,8 +67,12 @@ func (s *source) Next(data any, md *metadata.MD) error {
 		return val.err
 	}
 	if ok && val.p != nil {
-		return msgpack.Unmarshal(val.p.Data(), data)
+		return s.codec.Decode(val.p.Data(), data)
 	}
 
 	return io.EOF
+}
+
+func (s *source) Cancel() {
+	s.canceled.Store(true)
 }

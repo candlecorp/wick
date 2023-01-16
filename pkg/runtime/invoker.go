@@ -172,7 +172,7 @@ func (i *Invoker) RequestChannel(ctx context.Context, p payload.Payload, in flux
 		go func() {
 			streamSink := stream.FromSink(sink)
 			ctx = stream.SinkNewContext(ctx, streamSink)
-			streamSource := stream.SourceFromFlux(in)
+			streamSource := stream.SourceFromFlux(i.codec, in)
 			ctx = stream.SourceNewContext(ctx, streamSource)
 
 			result, err := r(ctx, data)

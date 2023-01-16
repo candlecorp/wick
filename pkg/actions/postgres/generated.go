@@ -4,6 +4,7 @@ package postgres
 
 import (
 	"github.com/nanobus/nanobus/pkg/actions"
+	"github.com/nanobus/nanobus/pkg/entity"
 	"github.com/nanobus/nanobus/pkg/expr"
 )
 
@@ -51,16 +52,14 @@ type Statement struct {
 type FindOneConfig struct {
 	// Resource is the name of the connection resource to use.
 	Resource ResourceRef `json:"resource" yaml:"resource" msgpack:"resource" mapstructure:"resource" validate:"required"`
-	// Namespace is the type namespace to load.
-	Namespace string `json:"namespace" yaml:"namespace" msgpack:"namespace" mapstructure:"namespace" validate:"required"`
-	// Type is the type name to load.
-	Type string `json:"type" yaml:"type" msgpack:"type" mapstructure:"type" validate:"required"`
+	// The entity type to find.
+	Entity entity.Entity `json:"entity" yaml:"entity" msgpack:"entity" mapstructure:"entity" validate:"required"`
 	// Preload lists the relationship to expand/load.
 	Preload []Preload `json:"preload,omitempty" yaml:"preload,omitempty" msgpack:"preload,omitempty" mapstructure:"preload" validate:"dive"`
 	// Where list the parts of the where clause.
 	Where []Where `json:"where,omitempty" yaml:"where,omitempty" msgpack:"where,omitempty" mapstructure:"where" validate:"dive"`
 	// NotFoundError is the error to return if the key is not found.
-	NotFoundError string `json:"notFoundError" yaml:"notFoundError" msgpack:"notFoundError" mapstructure:"notFoundError" validate:"required"`
+	NotFoundError *string `json:"notFoundError,omitempty" yaml:"notFoundError,omitempty" msgpack:"notFoundError,omitempty" mapstructure:"notFoundError"`
 }
 
 func FindOne() (string, actions.Loader) {
@@ -70,7 +69,7 @@ func FindOne() (string, actions.Loader) {
 // TODO
 type Preload struct {
 	Field   string    `json:"field" yaml:"field" msgpack:"field" mapstructure:"field" validate:"required"`
-	Preload []Preload `json:"preload" yaml:"preload" msgpack:"preload" mapstructure:"preload" validate:"dive"`
+	Preload []Preload `json:"preload,omitempty" yaml:"preload,omitempty" msgpack:"preload,omitempty" mapstructure:"preload" validate:"dive"`
 }
 
 // TODO
@@ -83,10 +82,8 @@ type Where struct {
 type FindConfig struct {
 	// Resource is the name of the connection resource to use.
 	Resource ResourceRef `json:"resource" yaml:"resource" msgpack:"resource" mapstructure:"resource" validate:"required"`
-	// Namespace is the type namespace to load.
-	Namespace string `json:"namespace" yaml:"namespace" msgpack:"namespace" mapstructure:"namespace" validate:"required"`
-	// Type is the type name to load.
-	Type string `json:"type" yaml:"type" msgpack:"type" mapstructure:"type" validate:"required"`
+	// The entity type to find.
+	Entity entity.Entity `json:"entity" yaml:"entity" msgpack:"entity" mapstructure:"entity" validate:"required"`
 	// Preload lists the relationship to expand/load.
 	Preload []Preload `json:"preload,omitempty" yaml:"preload,omitempty" msgpack:"preload,omitempty" mapstructure:"preload" validate:"dive"`
 	// Where list the parts of the where clause.
@@ -118,10 +115,8 @@ type Pagination struct {
 type LoadConfig struct {
 	// Resource is the name of the connection resource to use.
 	Resource ResourceRef `json:"resource" yaml:"resource" msgpack:"resource" mapstructure:"resource" validate:"required"`
-	// Namespace is the type namespace to load.
-	Namespace string `json:"namespace" yaml:"namespace" msgpack:"namespace" mapstructure:"namespace" validate:"required"`
-	// Type is the type name to load.
-	Type string `json:"type" yaml:"type" msgpack:"type" mapstructure:"type" validate:"required"`
+	// The entity type to load.
+	Entity entity.Entity `json:"entity" yaml:"entity" msgpack:"entity" mapstructure:"entity" validate:"required"`
 	// ID is the entity identifier expression.
 	Key *expr.ValueExpr `json:"key" yaml:"key" msgpack:"key" mapstructure:"key" validate:"required"`
 	// Preload lists the relationship to expand/load.

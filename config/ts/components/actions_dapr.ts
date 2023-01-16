@@ -6,6 +6,7 @@ import {
   Component,
   DataExpr,
   Handler,
+  Entity,
   ResourceRef,
   Step,
   ValueExpr
@@ -151,6 +152,30 @@ export interface SetStateItem {
   concurrency?: Concurrency;
   // The desired consistency level
   consistency?: Consistency;
+}
+
+export interface InvokeActorConfig {
+  // The name of the Dapr client resource.
+  resource?: string;
+  // The actor handler (type::method)
+  handler: Handler;
+  // The actor identifier
+  id: ValueExpr;
+  // The input sent.
+  data?: DataExpr;
+  // The configured codec to use for encoding the message.
+  codec?: CodecRef;
+  // The arguments for the codec, if any.
+  codecArgs?: any[];
+}
+
+export function InvokeActor(
+  config: InvokeActorConfig
+): Component<InvokeActorConfig> {
+  return {
+    uses: "@dapr/invoke_actor",
+    with: config
+  };
 }
 
 // TODO

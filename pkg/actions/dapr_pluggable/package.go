@@ -8,14 +8,14 @@
 
 package dapr_pluggable
 
-import (
-	"github.com/nanobus/nanobus/pkg/actions"
-)
+// import (
+// 	"github.com/nanobus/nanobus/pkg/actions"
+// )
 
-var All = []actions.NamedLoader{
-	Publish,
-	DeleteState,
-	GetState,
-	SetState,
-	InvokeBinding,
-}
+// var All = []actions.NamedLoader{
+// 	Publish,
+// 	DeleteState,
+// 	GetState,
+// 	SetState,
+// 	InvokeBinding,
+// }

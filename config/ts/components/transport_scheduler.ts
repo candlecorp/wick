@@ -6,6 +6,7 @@ import {
   Component,
   DataExpr,
   Handler,
+  Entity,
   ResourceRef,
   Step,
   ValueExpr
@@ -27,4 +28,5 @@ export function SchedulerV1(
 export interface Schedule {
   schedule: string;
   handler: Handler;
+  repeat?: number;
 }

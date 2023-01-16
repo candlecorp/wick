@@ -45,13 +45,13 @@ func FindOneLoader(ctx context.Context, with interface{}, resolver resolve.Resol
 		return nil, fmt.Errorf("resource %q is not a *pgxpool.Pool", c.Resource)
 	}
 
-	ns, ok := namespaces[c.Namespace]
+	ns, ok := namespaces[c.Entity.Namespace]
 	if !ok {
-		return nil, fmt.Errorf("3namespace %q is not found", c.Namespace)
+		return nil, fmt.Errorf("namespace %q is not found", c.Entity.Namespace)
 	}
-	t, ok := ns.Type(c.Type)
+	t, ok := ns.Type(c.Entity.Type)
 	if !ok {
-		return nil, fmt.Errorf("type %q is not found", c.Type)
+		return nil, fmt.Errorf("type %q is not found", c.Entity.Type)
 	}
 
 	return FindOneAction(&c, t, ns, pool), nil
@@ -72,8 +72,8 @@ func FindOneAction(
 			return nil, err
 		}
 
-		if result == nil && config.NotFoundError != "" {
-			return nil, errorz.Return(config.NotFoundError, errorz.Metadata{
+		if result == nil && config.NotFoundError != nil {
+			return nil, errorz.Return(*config.NotFoundError, errorz.Metadata{
 				"resource": config.Resource,
 			})
 		}

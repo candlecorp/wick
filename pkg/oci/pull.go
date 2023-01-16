@@ -96,7 +96,10 @@ func Pull(reference, target string) (string, error) {
 	}
 
 	appFile := ""
-	var dst = file.New(target)
+	dst, err := file.New(target)
+	if err != nil {
+		return "", err
+	}
 
 	pulledEmpty := true
 	copyOptions.PreCopy = func(ctx context.Context, desc ocispec.Descriptor) error {

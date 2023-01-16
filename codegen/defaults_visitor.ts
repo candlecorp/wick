@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import { Context, Writer, BaseVisitor } from './deps/core.ts';
+import { Context, Writer, BaseVisitor } from './deps/model.ts';
 import { Kind } from './deps/ast.ts';
 import { formatComment, isNamed } from './deps/utils.ts';
 import { expandType, fieldName, translateAlias } from './deps/apex.ts';

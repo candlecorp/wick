@@ -17,7 +17,7 @@ import {
   Named,
   Optional,
   Type,
-} from "./deps/core.ts";
+} from "./deps/model.ts";
 
 const ticks = "```";
 

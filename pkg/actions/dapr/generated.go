@@ -4,10 +4,11 @@ package dapr
 
 import (
 	"encoding/json"
-	"fmt"
+	"errors"
 
 	"github.com/nanobus/nanobus/pkg/actions"
 	"github.com/nanobus/nanobus/pkg/expr"
+	"github.com/nanobus/nanobus/pkg/handler"
 )
 
 type CodecRef string
@@ -141,6 +142,25 @@ type SetStateItem struct {
 	Consistency Consistency `json:"consistency" yaml:"consistency" msgpack:"consistency" mapstructure:"consistency"`
 }
 
+type InvokeActorConfig struct {
+	// The name of the Dapr client resource.
+	Resource string `json:"resource" yaml:"resource" msgpack:"resource" mapstructure:"resource" validate:"required"`
+	// The actor handler (type::method)
+	Handler handler.Handler `json:"handler" yaml:"handler" msgpack:"handler" mapstructure:"handler" validate:"required"`
+	// The actor identifier
+	ID *expr.ValueExpr `json:"id" yaml:"id" msgpack:"id" mapstructure:"id" validate:"required"`
+	// The input sent.
+	Data *expr.DataExpr `json:"data,omitempty" yaml:"data,omitempty" msgpack:"data,omitempty" mapstructure:"data"`
+	// The configured codec to use for encoding the message.
+	Codec CodecRef `json:"codec" yaml:"codec" msgpack:"codec" mapstructure:"codec"`
+	// The arguments for the codec, if any.
+	CodecArgs []interface{} `json:"codecArgs,omitempty" yaml:"codecArgs,omitempty" msgpack:"codecArgs,omitempty" mapstructure:"codecArgs" validate:"dive"`
+}
+
+func InvokeActor() (string, actions.Loader) {
+	return "@dapr/invoke_actor", InvokeActorLoader
+}
+
 // TODO
 type Concurrency int32
 
@@ -177,7 +197,7 @@ func (e *Concurrency) FromString(str string) error {
 	var ok bool
 	*e, ok = toIDConcurrency[str]
 	if !ok {
-		return fmt.Errorf("unknown value %q for Concurrency", str)
+		return errors.New("unknown value \"" + str + "\" for Concurrency")
 	}
 	return nil
 }
@@ -233,7 +253,7 @@ func (e *Consistency) FromString(str string) error {
 	var ok bool
 	*e, ok = toIDConsistency[str]
 	if !ok {
-		return fmt.Errorf("unknown value %q for Consistency", str)
+		return errors.New("unknown value \"" + str + "\" for Consistency")
 	}
 	return nil
 }

@@ -1,0 +1,14 @@
+module {{.module}}
+
+go 1.19
+
+require (
+	github.com/nanobus/iota/go main
+	github.com/google/uuid v1.3.0
+)
+
+require golang.org/x/exp v0.0.0-20221019170559-20944726eadf // indirect
+
+replace (
+	github.com/google/uuid v1.3.0 => github.com/nanobus/iota/go/types/uuid main
+)

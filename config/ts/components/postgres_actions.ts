@@ -1,4 +1,4 @@
-import { Component, ResourceRef, ValueExpr } from "../nanobus.ts";
+import { Component, Entity, ResourceRef, ValueExpr } from "../nanobus.ts";
 import {
   ExecConfig,
   ExecMultiConfig,
@@ -14,10 +14,8 @@ import {
 import * as postgres from "./actions_postgres.ts";
 
 export interface Load {
-  // Namespace is the type namespace to load.
-  namespace: string;
-  // Type is the type name to load.
-  type: string;
+  // Entity is the type entity to load.
+  entity: Entity;
   // ID is the entity identifier expression.
   key: ValueExpr;
   // Preload lists the relationship to expand/load.
@@ -27,10 +25,8 @@ export interface Load {
 }
 
 export interface FindOne {
-  // Namespace is the type namespace to load.
-  namespace: string;
-  // Type is the type name to load.
-  type: string;
+  // Entity is the type entity to find.
+  entity: Entity;
   // Preload lists the relationship to expand/load.
   preload?: Preload[];
   // Where list the parts of the where clause.
@@ -40,10 +36,8 @@ export interface FindOne {
 }
 
 export interface Find {
-  // Namespace is the type namespace to load.
-  namespace: string;
-  // Type is the type name to load.
-  type: string;
+  // Entity is the type entity to find.
+  entity: Entity;
   // Preload lists the relationship to expand/load.
   preload?: Preload[];
   // Where list the parts of the where clause.

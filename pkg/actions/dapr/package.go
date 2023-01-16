@@ -18,5 +18,6 @@ var All = []actions.NamedLoader{
 	DeleteState,
 	GetState,
 	SetState,
+	InvokeActor,
 	InvokeBinding,
 }
