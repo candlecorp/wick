@@ -27,7 +27,7 @@ func TestBytes(t *testing.T) {
 	c := bytes.New()
 
 	var actual []byte
-	c.Decode(value, &actual)
+	require.NoError(t, c.Decode(value, &actual))
 	assert.Equal(t, value, actual)
 
 	out, err := c.Encode(actual)
@@ -40,7 +40,7 @@ func TestString(t *testing.T) {
 	c := bytes.New()
 
 	var actual string
-	c.Decode(value, &actual)
+	require.NoError(t, c.Decode(value, &actual))
 	assert.Equal(t, "test", actual)
 
 	out, err := c.Encode(actual)
