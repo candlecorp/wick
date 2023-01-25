@@ -23,11 +23,11 @@ const template: Template = {
         ".vscode/settings.json",
         ".vscode/tasks.json",
         "apex.axdl",
-        "apex.yaml",
       ],
       templates: {
         "tmpl": [
-          "bus.yaml.tmpl",
+          "apex.yaml.tmpl",
+          "bus.ts.tmpl",
         ],
       },
     };
