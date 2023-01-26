@@ -1,0 +1,10 @@
+id: "{{ .name }}"
+version: 0.0.1
+interfaces:
+  Greeter:
+    sayHello:
+      steps:
+        - name: Say Hello!
+          uses: expr
+          with:
+            value: '"Hello, " + input.name'

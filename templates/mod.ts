@@ -1,6 +1,6 @@
 import {
   Template,
-} from "https://deno.land/x/apex_cli@v0.0.15/src/config.ts";
+} from "https://deno.land/x/apex_cli@v0.0.16/src/config.ts";
 
 const template: Template = {
   info: {
@@ -10,6 +10,7 @@ const template: Template = {
 
   templates: [
     "./init/template.ts",
+    "./init-ts/template.ts",
     "./tinygo/template.ts",
   ],
 };

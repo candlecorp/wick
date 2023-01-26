@@ -6,7 +6,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-import { Configuration } from "https://deno.land/x/apex_cli@v0.0.15/src/config.ts";
+import { Configuration } from "https://deno.land/x/apex_cli@v0.0.16/src/config.ts";
 import * as apex from "./deps/core.ts";
 
 interface Slug {

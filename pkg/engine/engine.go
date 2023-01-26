@@ -282,7 +282,7 @@ func Start(ctx context.Context, info *Info) (*Engine, error) {
 	}
 
 	// Load the bus configuration
-	busConfig, err := loadBusConfig(busFile, log)
+	busConfig, err := loadBusConfig(busFile, info.DeveloperMode, log)
 	if err != nil {
 		log.Error(err, "could not load configuration", "file", busFile)
 		return nil, err
@@ -374,11 +374,7 @@ func Start(ctx context.Context, info *Info) (*Engine, error) {
 	resourceRegistry := resource.Registry{}
 	resourceRegistry.Register(
 		postgres.Connection,
-		// gorm.Connection,
 		dapr.Client,
-		// dapr_pluggable.PubSub,
-		// dapr_pluggable.StateStore,
-		// dapr_pluggable.OutputBinding,
 		blob.URLBlob,
 		blob.AzureBlob,
 		blob.FSBlob,
@@ -399,9 +395,7 @@ func Start(ctx context.Context, info *Info) (*Engine, error) {
 	actionRegistry.Register(core.All...)
 	actionRegistry.Register(blob.All...)
 	actionRegistry.Register(postgres.All...)
-	// actionRegistry.Register(gorm.All...)
 	actionRegistry.Register(dapr.All...)
-	//actionRegistry.Register(dapr_pluggable.All...)
 
 	initializerRegistry := initialize.Registry{}
 	initializerRegistry.Register(migrate_postgres.MigratePostgresV1)
@@ -891,9 +885,12 @@ func loadResourcesConfig(filename string, log logr.Logger) (*runtime.ResourcesCo
 	return c, nil
 }
 
-func loadBusConfig(filename string, log logr.Logger) (*runtime.BusConfig, error) {
+func loadBusConfig(filename string, developerMode bool, log logr.Logger) (*runtime.BusConfig, error) {
 	var in io.Reader
 	if strings.HasSuffix(filename, ".ts") {
+		if !developerMode {
+			return nil, errors.New("loading configuration directly from TypeScript is only allowed in developer mode")
+		}
 		out, err := exec.Command("deno", "run", "--allow-run", "--unstable", filename).Output()
 		if err != nil {
 			return nil, fmt.Errorf("error running bus program: %w", err)

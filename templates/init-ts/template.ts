@@ -6,8 +6,8 @@ import {
 
 const template: Template = {
   info: {
-    name: "@nanobus/init",
-    description: "NanoBus barebones Iota",
+    name: "@nanobus/init-ts",
+    description: "NanoBus barebones Iota with TypeScript",
   },
 
   async process(_vars): Promise<FSStructure> {
@@ -22,10 +22,12 @@ const template: Template = {
         ".vscode/extensions.json",
         ".vscode/settings.json",
         ".vscode/tasks.json",
+        "apex.axdl",
       ],
       templates: {
         "tmpl": [
-          "bus.yaml.tmpl",
+          "apex.yaml.tmpl",
+          "bus.ts.tmpl",
         ],
       },
     };
