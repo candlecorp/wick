@@ -77,6 +77,7 @@ func SpecToOpenAPI3(namespaces spec.Namespaces) ([]byte, error) {
 				URL: "[REPLACE_HOST]",
 			},
 		},
+		Components: &openapi3.Components{},
 	}
 
 	foundTypes := make(map[string]struct{})
