@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/go-logr/logr"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gocloud.dev/blob/memblob"
@@ -22,6 +23,7 @@ import (
 
 func TestWriteSingle(t *testing.T) {
 	ctx := context.Background()
+	logger := logr.Discard()
 
 	m := memblob.OpenBucket(&memblob.Options{})
 	resources := resource.Resources{
@@ -34,6 +36,8 @@ func TestWriteSingle(t *testing.T) {
 
 	resolver := func(name string, target interface{}) bool {
 		switch name {
+		case "system:logger":
+			return resolve.As(logger, target)
 		case "resource:lookup":
 			return resolve.As(resources, target)
 		case "codec:lookup":
@@ -74,6 +78,8 @@ func TestWriteSingle(t *testing.T) {
 
 func TestWriteStream(t *testing.T) {
 	ctx := context.Background()
+	logger := logr.Discard()
+
 	ch := make(chan any, 1000)
 	mstr := &mockStream{
 		ch: ch,
@@ -91,6 +97,8 @@ func TestWriteStream(t *testing.T) {
 
 	resolver := func(name string, target interface{}) bool {
 		switch name {
+		case "system:logger":
+			return resolve.As(logger, target)
 		case "resource:lookup":
 			return resolve.As(resources, target)
 		case "codec:lookup":
