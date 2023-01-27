@@ -193,6 +193,7 @@ func (c *invokeCmd) Run() error {
 		cancel()
 		os.Exit(1)
 	}
+	defer e.Shutdown()
 
 	var result any
 	result, err = e.InvokeUnsafe(h, input)

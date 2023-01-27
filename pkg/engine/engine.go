@@ -166,6 +166,7 @@ type Engine struct {
 	codec          channel.Codec
 
 	transportInvoker transport.Invoker
+	resources        resource.Resources
 }
 
 func (e *Engine) LoadConfig(busConfig *runtime.BusConfig) error {
@@ -559,20 +560,6 @@ func Start(ctx context.Context, info *Info) (*Engine, error) {
 		}
 	}
 	dependencies["resource:lookup"] = resources
-	defer func() {
-		for name, r := range resources {
-			switch c := r.(type) {
-			case io.Closer:
-				log.Info("closing resource", "name", name)
-				if err := c.Close(); err != nil {
-					log.Error(err, "could not close resource %s", name)
-				}
-			case closable:
-				log.Info("closing resource", "name", name)
-				c.Close()
-			}
-		}
-	}()
 
 	dependencies["state:invoker"] = func(ctx context.Context, namespace, id, key string) ([]byte, error) {
 		// TODO: Retrieve state
@@ -608,6 +595,7 @@ func Start(ctx context.Context, info *Info) (*Engine, error) {
 		m:              m,
 		allNamespaces:  allNamespaces,
 		codec:          msgpackcodec,
+		resources:      resources,
 	}
 
 	if err := e.LoadConfig(busConfig); err != nil {
@@ -864,7 +852,7 @@ func Start(ctx context.Context, info *Info) (*Engine, error) {
 		}
 
 		err = g.Run()
-		log.Info("Shutting down")
+		e.Shutdown()
 		if err != nil {
 			if _, isSignal := err.(run.SignalError); !isSignal {
 				log.Error(err, "unexpected error")
@@ -881,6 +869,22 @@ func (e *Engine) InvokeUnsafe(handler handler.Handler, input any) (any, error) {
 
 func (e *Engine) Invoke(handler handler.Handler, input any) (any, error) {
 	return e.transportInvoker(e.ctx, handler, "", input, transport.PerformAuthorization)
+}
+
+func (e *Engine) Shutdown() {
+	e.log.Info("Shutting down")
+	for name, r := range e.resources {
+		switch c := r.(type) {
+		case io.Closer:
+			e.log.Info("closing resource", "name", name)
+			if err := c.Close(); err != nil {
+				e.log.Error(err, "could not close resource %s", name)
+			}
+		case closable:
+			e.log.Info("closing resource", "name", name)
+			c.Close()
+		}
+	}
 }
 
 func loadResourcesConfig(filename string, log logr.Logger) (*runtime.ResourcesConfig, error) {
