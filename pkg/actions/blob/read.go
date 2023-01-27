@@ -10,6 +10,7 @@ package blob
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/cenkalti/backoff/v4"
@@ -57,6 +58,9 @@ func ReadAction(
 		keyInt, err := config.Key.Eval(data)
 		if err != nil {
 			return nil, backoff.Permanent(fmt.Errorf("could not evaluate key: %w", err))
+		}
+		if isNil(keyInt) {
+			return nil, backoff.Permanent(errors.New("key is nil"))
 		}
 		key := fmt.Sprintf("%v", keyInt)
 

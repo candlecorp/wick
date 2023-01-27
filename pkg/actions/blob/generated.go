@@ -34,7 +34,9 @@ type WriteConfig struct {
 	// Codec is the name of the codec to use for decoding.
 	Codec string `json:"codec" yaml:"codec" msgpack:"codec" mapstructure:"codec" validate:"required"`
 	// codecArgs are the arguments to pass to the decode function.
-	CodecArgs []interface{} `json:"codecArgs,omitempty" yaml:"codecArgs,omitempty" msgpack:"codecArgs,omitempty" mapstructure:"codecArgs" validate:"dive"`
+	CodecArgs       []interface{} `json:"codecArgs,omitempty" yaml:"codecArgs,omitempty" msgpack:"codecArgs,omitempty" mapstructure:"codecArgs" validate:"dive"`
+	DelimiterString *string       `json:"delimiterString,omitempty" yaml:"delimiterString,omitempty" msgpack:"delimiterString,omitempty" mapstructure:"delimiterString"`
+	DelimiterBytes  []byte        `json:"delimiterBytes,omitempty" yaml:"delimiterBytes,omitempty" msgpack:"delimiterBytes,omitempty" mapstructure:"delimiterBytes"`
 }
 
 func Write() (string, actions.Loader) {

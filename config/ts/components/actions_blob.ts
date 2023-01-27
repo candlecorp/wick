@@ -41,6 +41,8 @@ export interface WriteConfig {
   codec: string;
   // codecArgs are the arguments to pass to the decode function.
   codecArgs?: any[];
+  delimiterString?: string;
+  delimiterBytes?: ArrayBuffer;
 }
 
 export function Write(config: WriteConfig): Component<WriteConfig> {

@@ -792,7 +792,7 @@ function replaceFakes(rec: Record<string, unknown>) {
     if (val instanceof Object) {
       replaceFakes(val as Record<string, unknown>);
     }
-    if (val instanceof String) {
+    if (key == "sql" && val instanceof String) {
       rec[key] = (val as string).trim();
     }
     if (val instanceof Array) {
@@ -813,7 +813,7 @@ function replaceFakes(rec: Record<string, unknown>) {
 function trimStrings(rec: Record<string, unknown>) {
   for (const key of Object.keys(rec)) {
     const val = rec[key];
-    if (typeof val === "string" || val instanceof String) {
+    if (key == "sql" && (typeof val === "string" || val instanceof String)) {
       rec[key] = (val as string).trim();
     } else if (val instanceof Array) {
       const ary = val as Array<any>;

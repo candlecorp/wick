@@ -1,4 +1,4 @@
-import { Component, DataExpr, ResourceRef, ValueExpr } from "../nanobus.ts";
+import { Component, ResourceRef, ValueExpr } from "../nanobus.ts";
 import * as blob from "./actions_blob.ts";
 
 export class BlobActions {
@@ -8,7 +8,11 @@ export class BlobActions {
     this.bucket = bucket;
   }
 
-  read(key: ValueExpr, codec: string, ...codecArgs: unknown[]): Component<blob.ReadConfig> {
+  read(
+    key: ValueExpr,
+    codec: string,
+    ...codecArgs: unknown[]
+  ): Component<blob.ReadConfig> {
     return blob.Read({
       resource: this.bucket,
       key,
@@ -17,13 +21,16 @@ export class BlobActions {
     });
   }
 
-  write(key: ValueExpr, data: DataExpr | undefined, codec: string, ...codecArgs: unknown[]): Component<blob.WriteConfig> {
+  write(
+    key: ValueExpr,
+    codec: string,
+    options: Omit<blob.WriteConfig, "resource" | "key" | "codec">,
+  ): Component<blob.WriteConfig> {
     return blob.Write({
       resource: this.bucket,
       key,
-      data,
       codec,
-      codecArgs,
+      ...options,
     });
   }
 }

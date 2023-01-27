@@ -213,7 +213,7 @@ func (i *Invoker) lookup(ctx context.Context, p payload.Payload) (Runnable, acti
 	}
 
 	if jsonBytes, err := json.MarshalIndent(input, "", "  "); err == nil {
-		logOutbound(t.Namespace+"/"+t.Operation, string(jsonBytes))
+		logOutbound(t.String(), string(jsonBytes))
 	}
 
 	return r, data

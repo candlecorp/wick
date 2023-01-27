@@ -559,6 +559,20 @@ func Start(ctx context.Context, info *Info) (*Engine, error) {
 		}
 	}
 	dependencies["resource:lookup"] = resources
+	defer func() {
+		for name, r := range resources {
+			switch c := r.(type) {
+			case io.Closer:
+				log.Info("closing resource", "name", name)
+				if err := c.Close(); err != nil {
+					log.Error(err, "could not close resource %s", name)
+				}
+			case closable:
+				log.Info("closing resource", "name", name)
+				c.Close()
+			}
+		}
+	}()
 
 	dependencies["state:invoker"] = func(ctx context.Context, namespace, id, key string) ([]byte, error) {
 		// TODO: Retrieve state
@@ -1030,4 +1044,8 @@ func newOtelResource(applicationID, version string) *otel_resource.Resource {
 		),
 	)
 	return r
+}
+
+type closable interface {
+	Close()
 }
