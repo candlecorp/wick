@@ -18,9 +18,10 @@ export interface ReadConfig {
   // The key to read.
   key: ValueExpr;
   // Codec is the name of the codec to use for decoding.
-  codec: string;
+  codec?: string;
   // codecArgs are the arguments to pass to the decode function.
   codecArgs?: any[];
+  bufferSize?: number;
 }
 
 export function Read(config: ReadConfig): Component<ReadConfig> {
@@ -38,7 +39,7 @@ export interface WriteConfig {
   // The data to write.
   data?: DataExpr;
   // Codec is the name of the codec to use for decoding.
-  codec: string;
+  codec?: string;
   // codecArgs are the arguments to pass to the decode function.
   codecArgs?: any[];
   delimiterString?: string;

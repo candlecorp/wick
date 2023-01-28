@@ -12,6 +12,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 
 	"github.com/cenkalti/backoff/v4"
 	"gocloud.dev/blob"
@@ -21,10 +22,14 @@ import (
 	"github.com/nanobus/nanobus/pkg/config"
 	"github.com/nanobus/nanobus/pkg/resolve"
 	"github.com/nanobus/nanobus/pkg/resource"
+	"github.com/nanobus/nanobus/pkg/stream"
 )
 
 func ReadLoader(ctx context.Context, with interface{}, resolver resolve.ResolveAs) (actions.Action, error) {
-	c := ReadConfig{}
+	c := ReadConfig{
+		Codec:      "bytes",
+		BufferSize: 1024,
+	}
 	if err := config.Decode(with, &c); err != nil {
 		return nil, err
 	}
@@ -64,13 +69,47 @@ func ReadAction(
 		}
 		key := fmt.Sprintf("%v", keyInt)
 
-		dataBytes, err := bucket.ReadAll(ctx, key)
-		if err != nil {
-			return nil, fmt.Errorf("could not read key: %w", err)
+		s, _ := stream.SinkFromContext(ctx)
+		if s != nil {
+			reader, err := bucket.NewReader(ctx, key, nil)
+			if err != nil {
+				return nil, fmt.Errorf("could not open reader for key %s: %w", key, err)
+			}
+			defer reader.Close()
+
+			for {
+				buf := make([]byte, config.BufferSize)
+				n, err := reader.Read(buf)
+				if err != nil {
+					if err == io.EOF {
+						s.Complete()
+						return nil, nil
+					}
+					return nil, err
+				}
+
+				if n == 0 {
+					return nil, nil
+				}
+
+				if err := s.Next(buf[0:n], nil); err != nil {
+					s.Error(err)
+					return nil, err
+				}
+
+				if uint32(n) < config.BufferSize {
+					return nil, nil
+				}
+			}
+		} else {
+			dataBytes, err := bucket.ReadAll(ctx, key)
+			if err != nil {
+				return nil, fmt.Errorf("could not read key: %w", err)
+			}
+
+			result, _, err := codec.Decode(dataBytes, config.CodecArgs...)
+
+			return result, err
 		}
-
-		result, _, err := codec.Decode(dataBytes, config.CodecArgs...)
-
-		return result, err
 	}
 }

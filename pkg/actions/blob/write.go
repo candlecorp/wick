@@ -28,7 +28,9 @@ import (
 )
 
 func WriteLoader(ctx context.Context, with interface{}, resolver resolve.ResolveAs) (actions.Action, error) {
-	c := WriteConfig{}
+	c := WriteConfig{
+		Codec: "bytes",
+	}
 	if err := config.Decode(with, &c); err != nil {
 		return nil, err
 	}

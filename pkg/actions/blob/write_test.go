@@ -81,7 +81,7 @@ func TestWriteStream(t *testing.T) {
 	logger := logr.Discard()
 
 	ch := make(chan any, 1000)
-	mstr := &mockStream{
+	mstr := &mockSource{
 		ch: ch,
 	}
 	ctx = stream.SourceNewContext(ctx, mstr)
@@ -138,13 +138,13 @@ func TestWriteStream(t *testing.T) {
 	assert.Equal(t, expected, actual)
 }
 
-type mockStream struct {
+type mockSource struct {
 	stream.Source
 	ch  chan any
 	err error
 }
 
-func (m *mockStream) Next(data any, md *metadata.MD) error {
+func (m *mockSource) Next(data any, md *metadata.MD) error {
 	if m.err != nil {
 		return m.err
 	}
@@ -169,5 +169,5 @@ func (m *mockStream) Next(data any, md *metadata.MD) error {
 	return nil
 }
 
-func (m *mockStream) Cancel() {
+func (m *mockSource) Cancel() {
 }
