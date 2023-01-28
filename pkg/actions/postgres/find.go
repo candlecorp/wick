@@ -20,6 +20,7 @@ import (
 	"github.com/nanobus/nanobus/pkg/resolve"
 	"github.com/nanobus/nanobus/pkg/resource"
 	"github.com/nanobus/nanobus/pkg/spec"
+	"github.com/nanobus/nanobus/pkg/stream"
 )
 
 func FindLoader(ctx context.Context, with interface{}, resolver resolve.ResolveAs) (actions.Action, error) {
@@ -90,48 +91,58 @@ func FindAction(
 			}
 		}
 
-		err := pool.AcquireFunc(ctx, func(conn *pgxpool.Conn) (err error) {
-			if config.Pagination != nil {
-				total, err = getCount(ctx, conn, t, data, config.Where)
-				if err != nil {
-					return err
+		s, _ := stream.SinkFromContext(ctx)
+
+		if s != nil {
+			if err := streamMany(ctx, s, pool, t, data, config.Where, config.Preload, offset, limit); err != nil {
+				return nil, err
+			}
+
+			return nil, nil
+		} else {
+			err := pool.AcquireFunc(ctx, func(conn *pgxpool.Conn) (err error) {
+				if config.Pagination != nil {
+					total, err = getCount(ctx, conn, t, data, config.Where)
+					if err != nil {
+						return err
+					}
 				}
+				results, err = getMany(ctx, conn, t, data, config.Where, config.Preload, offset, limit)
+				return err
+			})
+			if err != nil {
+				return nil, err
 			}
-			results, err = getMany(ctx, conn, t, data, config.Where, config.Preload, offset, limit)
-			return err
-		})
-		if err != nil {
-			return nil, err
+
+			if config.Pagination != nil {
+				p := config.Pagination
+				count := int64(len(results))
+				wrapper := map[string]interface{}{
+					p.Items: results,
+				}
+				if p.Total != nil {
+					wrapper[*p.Total] = total
+				}
+				if p.Count != nil {
+					wrapper[*p.Count] = count
+				}
+				if p.PageCount != nil {
+					wrapper[*p.PageCount] = (count + limit - 1) / limit
+				}
+				if p.PageIndex != nil {
+					wrapper[*p.PageIndex] = offset / limit
+				}
+				if p.Offset != nil {
+					wrapper[*p.Offset] = offset
+				}
+				if p.Limit != nil {
+					wrapper[*p.Limit] = config.Limit
+				}
+
+				return wrapper, nil
+			}
+
+			return results, nil
 		}
-
-		if config.Pagination != nil {
-			p := config.Pagination
-			count := int64(len(results))
-			wrapper := map[string]interface{}{
-				p.Items: results,
-			}
-			if p.Total != nil {
-				wrapper[*p.Total] = total
-			}
-			if p.Count != nil {
-				wrapper[*p.Count] = count
-			}
-			if p.PageCount != nil {
-				wrapper[*p.PageCount] = (count + limit - 1) / limit
-			}
-			if p.PageIndex != nil {
-				wrapper[*p.PageIndex] = offset / limit
-			}
-			if p.Offset != nil {
-				wrapper[*p.Offset] = offset
-			}
-			if p.Limit != nil {
-				wrapper[*p.Limit] = config.Limit
-			}
-
-			return wrapper, nil
-		}
-
-		return results, nil
 	}
 }
