@@ -25,13 +25,13 @@ import {
   Authorization,
   callInterface,
   callProvider,
+  Entity,
   Flow,
   Handler,
-  Entity,
-  Response,
-  toDataExpr,
   Operations,
+  Response,
   Step,
+  toDataExpr,
 } from "${mod}";\n\n`);
 
     const types = new TypesVisitor(this.writer);
@@ -102,8 +102,11 @@ class ArgsVisitor extends BaseVisitor {
     }
     const args = convertOperationToType(context.getType, iface, operation);
 
-    const types = new TypeVisitor(this.writer);
-    args.accept(context.clone({ type: args }), types);
+    if (args.fields.length > 0) {
+      const types = new TypeVisitor(this.writer);
+      args.accept(context.clone({ type: args }), types);
+    }
+
     super.triggerOperation(context);
   }
 }
@@ -141,11 +144,14 @@ class OpersVisitor extends BaseVisitor {
   visitOperation(context: Context): void {
     const { interface: iface, operation } = context;
     const optionalSuffix = iface.annotation("service") ? "?" : "";
+    const params = operation.parameters.filter((p) =>
+      p.type.kind != Kind.Stream
+    );
     const input = !operation.isUnary()
-      ? operation.parameters.length == 0
+      ? params.length == 0
         ? "void"
         : capitalize(iface.name) + capitalize(operation.name) + "Args"
-      : expandType(operation.parameters[0].type, false);
+      : expandType(params[0].type, false);
     this.write(formatComment("  // ", operation.description));
     this.write(
       `  ${operation.name}${optionalSuffix}: Flow<${input}> | Step[],\n`,
@@ -240,9 +246,9 @@ class ClientVisitor extends BaseVisitor {
     }
     this.write(`): Response<${expandType(operation.type, true)}> {\n`);
     this.write("  const dataExpr = `{\n");
-    operation.parameters.forEach(p => {
-      this.write(` "${p.name}": \${toDataExpr(${p.name})}\n`)
-    })
+    operation.parameters.forEach((p) => {
+      this.write(` "${p.name}": \${toDataExpr(${p.name})}\n`);
+    });
     this.write("}`;\n");
     this.write(
       `  return ${call}(${iface.name}.${operation.name}, dataExpr) as Response<${
