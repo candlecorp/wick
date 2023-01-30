@@ -10,6 +10,7 @@ alias ValueExpr = string
 alias DataExpr = string
 alias Handler = string
 alias CodecRef = string
+alias ResourceRef = string
 
 """
 TODO
@@ -19,7 +20,7 @@ type InvokeBindingConfig
   @filename("binding_invoke")
   @action("@dapr/invoke_binding") {
   "The name of the Dapr client resource."
-  resource: string = "dapr"
+  resource: ResourceRef = "dapr"
   "Name of binding to invoke."
   binding: string
   "Name of the operation type for the binding to invoke."
@@ -42,7 +43,7 @@ type PublishConfig
   @filename("publish")
   @action("@dapr/publish") {
   "The name of the Dapr client resource."
-  resource: string = "dapr"
+  resource: ResourceRef = "dapr"
   "Name of pubsub to invoke."
   pubsub: string
   "Topic is the name of the topic to publish to."
@@ -69,7 +70,7 @@ type DeleteStateConfig
   @filename("state_delete")
   @action("@dapr/delete_state") {
   "The name of the Dapr client resource."
-  resource: string = "dapr"
+  resource: ResourceRef = "dapr"
   "Name of state store to invoke."
   store: string
   "The key to delete."
@@ -90,7 +91,7 @@ type GetStateConfig
   @filename("state_get")
   @action("@dapr/get_state") {
   "The name of the Dapr client resource."
-  resource: string = "dapr"
+  resource: ResourceRef = "dapr"
   "Name of state store to invoke."
   store: string
   "The key to get."
@@ -115,7 +116,7 @@ type SetStateConfig
   @filename("state_set")
   @action("@dapr/set_state") {
   "The name of the Dapr client resource."
-  resource: string = "dapr"
+  resource: ResourceRef = "dapr"
   "Name of state store to invoke."
   store: string
   "The configured codec to use for encoding the state."
@@ -175,7 +176,7 @@ type InvokeActorConfig
   @filename("binding_invoke")
   @action("@dapr/invoke_actor") {
   "The name of the Dapr client resource."
-  resource: string = "dapr"
+  resource: ResourceRef = "dapr"
   "The actor handler (type::method)"
   handler: Handler
   "The actor identifier"

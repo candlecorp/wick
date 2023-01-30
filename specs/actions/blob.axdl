@@ -6,6 +6,7 @@
 
 namespace "nanobus.actions.blob"
 
+alias ResourceRef = string
 alias ValueExpr = string
 alias DataExpr = string
 alias Handler = string
@@ -17,7 +18,7 @@ type ReadConfig
   @tags(["Store"])
   @action("@blob/read") {
   "The blob store resource to read."
-  resource: string
+  resource: ResourceRef
   "The key to read."
   key: ValueExpr
   "Codec is the name of the codec to use for decoding."
@@ -36,7 +37,7 @@ type WriteConfig
   @tags(["Store"])
   @action("@blob/write") {
   "The blob store resource to write."
-  resource: string
+  resource: ResourceRef
   "The key to write."
   key: ValueExpr
   "The data to write."

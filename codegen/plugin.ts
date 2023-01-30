@@ -71,6 +71,10 @@ export default function (
     import: "github.com/nanobus/nanobus/pkg/entity",
     type: "entity.Entity",
   };
+  aliases["ResourceRef"] = {
+    import: "github.com/nanobus/nanobus/pkg/resource",
+    type: "resource.Ref",
+  };
 
   generates["generated.go"] = {
     module: urlify("./components.ts"),

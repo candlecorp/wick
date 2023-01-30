@@ -14,7 +14,7 @@ import {
 
 export interface ReadConfig {
   // The blob store resource to read.
-  resource: string;
+  resource: ResourceRef;
   // The key to read.
   key: ValueExpr;
   // Codec is the name of the codec to use for decoding.
@@ -35,7 +35,7 @@ export function Read(config: ReadConfig): Component<ReadConfig> {
 
 export interface WriteConfig {
   // The blob store resource to write.
-  resource: string;
+  resource: ResourceRef;
   // The key to write.
   key: ValueExpr;
   // The data to write.

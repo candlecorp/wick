@@ -16,6 +16,8 @@ import (
 )
 
 type (
+	Ref string
+
 	NamedLoader = registry.NamedLoader[any]
 	Loader      = registry.Loader[any]
 	Registry    = registry.Registry[any]
@@ -23,9 +25,9 @@ type (
 	Resources map[string]interface{}
 )
 
-func Get[T any](r Resources, name string) (res T, err error) {
+func Get[T any](r Resources, name Ref) (res T, err error) {
 	var iface interface{}
-	iface, ok := r[name]
+	iface, ok := r[string(name)]
 	if !ok {
 		return res, fmt.Errorf("resource %q is not registered", name)
 	}

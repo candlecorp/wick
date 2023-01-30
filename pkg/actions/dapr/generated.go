@@ -9,6 +9,7 @@ import (
 	"github.com/nanobus/nanobus/pkg/actions"
 	"github.com/nanobus/nanobus/pkg/expr"
 	"github.com/nanobus/nanobus/pkg/handler"
+	"github.com/nanobus/nanobus/pkg/resource"
 )
 
 type CodecRef string
@@ -16,7 +17,7 @@ type CodecRef string
 // TODO
 type InvokeBindingConfig struct {
 	// The name of the Dapr client resource.
-	Resource string `json:"resource" yaml:"resource" msgpack:"resource" mapstructure:"resource" validate:"required"`
+	Resource resource.Ref `json:"resource" yaml:"resource" msgpack:"resource" mapstructure:"resource" validate:"required"`
 	// Name of binding to invoke.
 	Binding string `json:"binding" yaml:"binding" msgpack:"binding" mapstructure:"binding" validate:"required"`
 	// Name of the operation type for the binding to invoke.
@@ -38,7 +39,7 @@ func InvokeBinding() (string, actions.Loader) {
 // TODO
 type PublishConfig struct {
 	// The name of the Dapr client resource.
-	Resource string `json:"resource" yaml:"resource" msgpack:"resource" mapstructure:"resource" validate:"required"`
+	Resource resource.Ref `json:"resource" yaml:"resource" msgpack:"resource" mapstructure:"resource" validate:"required"`
 	// Name of pubsub to invoke.
 	Pubsub string `json:"pubsub" yaml:"pubsub" msgpack:"pubsub" mapstructure:"pubsub" validate:"required"`
 	// Topic is the name of the topic to publish to.
@@ -65,7 +66,7 @@ func Publish() (string, actions.Loader) {
 // TODO
 type DeleteStateConfig struct {
 	// The name of the Dapr client resource.
-	Resource string `json:"resource" yaml:"resource" msgpack:"resource" mapstructure:"resource" validate:"required"`
+	Resource resource.Ref `json:"resource" yaml:"resource" msgpack:"resource" mapstructure:"resource" validate:"required"`
 	// Name of state store to invoke.
 	Store string `json:"store" yaml:"store" msgpack:"store" mapstructure:"store" validate:"required"`
 	// The key to delete.
@@ -85,7 +86,7 @@ func DeleteState() (string, actions.Loader) {
 // TODO
 type GetStateConfig struct {
 	// The name of the Dapr client resource.
-	Resource string `json:"resource" yaml:"resource" msgpack:"resource" mapstructure:"resource" validate:"required"`
+	Resource resource.Ref `json:"resource" yaml:"resource" msgpack:"resource" mapstructure:"resource" validate:"required"`
 	// Name of state store to invoke.
 	Store string `json:"store" yaml:"store" msgpack:"store" mapstructure:"store" validate:"required"`
 	// The key to get.
@@ -109,7 +110,7 @@ func GetState() (string, actions.Loader) {
 // TODO
 type SetStateConfig struct {
 	// The name of the Dapr client resource.
-	Resource string `json:"resource" yaml:"resource" msgpack:"resource" mapstructure:"resource" validate:"required"`
+	Resource resource.Ref `json:"resource" yaml:"resource" msgpack:"resource" mapstructure:"resource" validate:"required"`
 	// Name of state store to invoke.
 	Store string `json:"store" yaml:"store" msgpack:"store" mapstructure:"store" validate:"required"`
 	// The configured codec to use for encoding the state.
@@ -144,7 +145,7 @@ type SetStateItem struct {
 
 type InvokeActorConfig struct {
 	// The name of the Dapr client resource.
-	Resource string `json:"resource" yaml:"resource" msgpack:"resource" mapstructure:"resource" validate:"required"`
+	Resource resource.Ref `json:"resource" yaml:"resource" msgpack:"resource" mapstructure:"resource" validate:"required"`
 	// The actor handler (type::method)
 	Handler handler.Handler `json:"handler" yaml:"handler" msgpack:"handler" mapstructure:"handler" validate:"required"`
 	// The actor identifier

@@ -6,14 +6,13 @@ import (
 	"github.com/nanobus/nanobus/pkg/actions"
 	"github.com/nanobus/nanobus/pkg/entity"
 	"github.com/nanobus/nanobus/pkg/expr"
+	"github.com/nanobus/nanobus/pkg/resource"
 )
-
-type ResourceRef string
 
 // TODO
 type ExecConfig struct {
 	// Resource is the name of the connection resource to use.
-	Resource ResourceRef `json:"resource" yaml:"resource" msgpack:"resource" mapstructure:"resource" validate:"required"`
+	Resource resource.Ref `json:"resource" yaml:"resource" msgpack:"resource" mapstructure:"resource" validate:"required"`
 	// Data is the input bindings sent.
 	Data *expr.DataExpr `json:"data,omitempty" yaml:"data,omitempty" msgpack:"data,omitempty" mapstructure:"data"`
 	// SQL is the SQL query to execute.
@@ -29,7 +28,7 @@ func Exec() (string, actions.Loader) {
 // TODO
 type ExecMultiConfig struct {
 	// Resource is the name of the connection resource to use.
-	Resource ResourceRef `json:"resource" yaml:"resource" msgpack:"resource" mapstructure:"resource" validate:"required"`
+	Resource resource.Ref `json:"resource" yaml:"resource" msgpack:"resource" mapstructure:"resource" validate:"required"`
 	// Statements are the statements to execute within a single transaction.
 	Statements []Statement `json:"statements" yaml:"statements" msgpack:"statements" mapstructure:"statements" validate:"dive"`
 }
@@ -51,7 +50,7 @@ type Statement struct {
 // TODO
 type FindOneConfig struct {
 	// Resource is the name of the connection resource to use.
-	Resource ResourceRef `json:"resource" yaml:"resource" msgpack:"resource" mapstructure:"resource" validate:"required"`
+	Resource resource.Ref `json:"resource" yaml:"resource" msgpack:"resource" mapstructure:"resource" validate:"required"`
 	// The entity type to find.
 	Entity entity.Entity `json:"entity" yaml:"entity" msgpack:"entity" mapstructure:"entity" validate:"required"`
 	// Preload lists the relationship to expand/load.
@@ -81,7 +80,7 @@ type Where struct {
 // TODO
 type FindConfig struct {
 	// Resource is the name of the connection resource to use.
-	Resource ResourceRef `json:"resource" yaml:"resource" msgpack:"resource" mapstructure:"resource" validate:"required"`
+	Resource resource.Ref `json:"resource" yaml:"resource" msgpack:"resource" mapstructure:"resource" validate:"required"`
 	// The entity type to find.
 	Entity entity.Entity `json:"entity" yaml:"entity" msgpack:"entity" mapstructure:"entity" validate:"required"`
 	// Preload lists the relationship to expand/load.
@@ -114,7 +113,7 @@ type Pagination struct {
 // TODO
 type LoadConfig struct {
 	// Resource is the name of the connection resource to use.
-	Resource ResourceRef `json:"resource" yaml:"resource" msgpack:"resource" mapstructure:"resource" validate:"required"`
+	Resource resource.Ref `json:"resource" yaml:"resource" msgpack:"resource" mapstructure:"resource" validate:"required"`
 	// The entity type to load.
 	Entity entity.Entity `json:"entity" yaml:"entity" msgpack:"entity" mapstructure:"entity" validate:"required"`
 	// ID is the entity identifier expression.
@@ -132,7 +131,7 @@ func Load() (string, actions.Loader) {
 // TODO
 type QueryOneConfig struct {
 	// Resource is the name of the connection resource to use.
-	Resource ResourceRef `json:"resource" yaml:"resource" msgpack:"resource" mapstructure:"resource" validate:"required"`
+	Resource resource.Ref `json:"resource" yaml:"resource" msgpack:"resource" mapstructure:"resource" validate:"required"`
 	// SQL is the SQL query to execute.
 	SQL string `json:"sql" yaml:"sql" msgpack:"sql" mapstructure:"sql" validate:"required"`
 	// Args are the evaluations to use as arguments for the SQL query.
@@ -146,7 +145,7 @@ func QueryOne() (string, actions.Loader) {
 // TODO
 type QueryConfig struct {
 	// Resource is the name of the connection resource to use.
-	Resource ResourceRef `json:"resource" yaml:"resource" msgpack:"resource" mapstructure:"resource" validate:"required"`
+	Resource resource.Ref `json:"resource" yaml:"resource" msgpack:"resource" mapstructure:"resource" validate:"required"`
 	// SQL is the SQL query to execute.
 	SQL string `json:"sql" yaml:"sql" msgpack:"sql" mapstructure:"sql" validate:"required"`
 	// Args are the evaluations to use as arguments for the SQL query.

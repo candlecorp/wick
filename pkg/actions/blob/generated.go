@@ -5,12 +5,13 @@ package blob
 import (
 	"github.com/nanobus/nanobus/pkg/actions"
 	"github.com/nanobus/nanobus/pkg/expr"
+	"github.com/nanobus/nanobus/pkg/resource"
 )
 
 // Reads data and decodes it from a Blob store.
 type ReadConfig struct {
 	// The blob store resource to read.
-	Resource string `json:"resource" yaml:"resource" msgpack:"resource" mapstructure:"resource" validate:"required"`
+	Resource resource.Ref `json:"resource" yaml:"resource" msgpack:"resource" mapstructure:"resource" validate:"required"`
 	// The key to read.
 	Key *expr.ValueExpr `json:"key" yaml:"key" msgpack:"key" mapstructure:"key" validate:"required"`
 	// Codec is the name of the codec to use for decoding.
@@ -29,7 +30,7 @@ func Read() (string, actions.Loader) {
 // Encodes data and writes it to a Blob store.
 type WriteConfig struct {
 	// The blob store resource to write.
-	Resource string `json:"resource" yaml:"resource" msgpack:"resource" mapstructure:"resource" validate:"required"`
+	Resource resource.Ref `json:"resource" yaml:"resource" msgpack:"resource" mapstructure:"resource" validate:"required"`
 	// The key to write.
 	Key *expr.ValueExpr `json:"key" yaml:"key" msgpack:"key" mapstructure:"key" validate:"required"`
 	// The data to write.
