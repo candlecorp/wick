@@ -7,9 +7,11 @@
  */
 
 export * from "./actions_core.ts";
+export * from "./actions_blob.ts";
 export * as dapr from "./actions_dapr.ts";
 export * as postgres from "./actions_postgres.ts";
 export * as migrate from "./migrate_postgres.ts";
+export * from "./blob_actions.ts";
 export * from "./postgres_actions.ts";
 export * from "./transport_cors.ts";
 export * from "./transport_dapr.ts";

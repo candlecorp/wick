@@ -1,0 +1,6 @@
+#!/usr/bin/env -S deno run
+import { Application } from "./iota.ts";
+
+const app = new Application("{{ .name }}", "0.0.1")
+  .spec("apex.axdl")
+  .use(new RestModule(":8080"));

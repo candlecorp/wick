@@ -2,31 +2,5 @@ spec: ../../../specs/transport/http/server.axdl
 config:
   package: http
   module: github.com/nanobus/nanobus/pkg/transport/http
-  logger:
-    import: "github.com/go-logr/logr"
-    interface: "logr.Logger"
-  writeTypeInfo: false
-  mapstructureTag: true
-  aliases:
-    Duration:
-      import: time
-      type: time.Duration
-    TextExpr:
-      import: github.com/nanobus/nanobus/pkg/expr
-      type: '*expr.Text'
-    ValueExpr:
-      import: github.com/nanobus/nanobus/pkg/expr
-      type: '*expr.ValueExpr'
-    DataExpr:
-      import: github.com/nanobus/nanobus/pkg/expr
-      type: '*expr.DataExpr'
-    Handler:
-      import: github.com/nanobus/nanobus/pkg/handler
-      type: 'handler.Handler'
-    Component:
-      import: github.com/nanobus/nanobus/pkg/runtime
-      type: 'runtime.Component'
-generates:
-  generated.go:
-    module: ../../../codegen/components.ts
-    visitorClass: ComponentsVisitor
+plugins:
+  - ../../../codegen/plugin.ts

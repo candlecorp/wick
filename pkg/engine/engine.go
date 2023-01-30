@@ -9,10 +9,12 @@
 package engine
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"os/exec"
@@ -54,6 +56,7 @@ import (
 	"github.com/nanobus/nanobus/pkg/security/claims"
 
 	// CHANNELS
+	bytes_codec "github.com/nanobus/nanobus/pkg/channel/codecs/bytes"
 	json_codec "github.com/nanobus/nanobus/pkg/channel/codecs/json"
 	msgpack_codec "github.com/nanobus/nanobus/pkg/channel/codecs/msgpack"
 
@@ -68,14 +71,14 @@ import (
 
 	// ACTIONS
 	"github.com/nanobus/nanobus/pkg/actions"
+	"github.com/nanobus/nanobus/pkg/actions/blob"
 	"github.com/nanobus/nanobus/pkg/actions/core"
 	"github.com/nanobus/nanobus/pkg/actions/dapr"
-	"github.com/nanobus/nanobus/pkg/actions/dapr_pluggable"
-	"github.com/nanobus/nanobus/pkg/actions/gorm"
 	"github.com/nanobus/nanobus/pkg/actions/postgres"
 
 	// CODECS
 	"github.com/nanobus/nanobus/pkg/codec"
+	codec_bytes "github.com/nanobus/nanobus/pkg/codec/bytes"
 	cloudevents_avro "github.com/nanobus/nanobus/pkg/codec/cloudevents/avro"
 	cloudevents_json "github.com/nanobus/nanobus/pkg/codec/cloudevents/json"
 	"github.com/nanobus/nanobus/pkg/codec/confluentavro"
@@ -163,6 +166,7 @@ type Engine struct {
 	codec          channel.Codec
 
 	transportInvoker transport.Invoker
+	resources        resource.Resources
 }
 
 func (e *Engine) LoadConfig(busConfig *runtime.BusConfig) error {
@@ -279,7 +283,7 @@ func Start(ctx context.Context, info *Info) (*Engine, error) {
 	}
 
 	// Load the bus configuration
-	busConfig, err := loadBusConfig(busFile, log)
+	busConfig, err := loadBusConfig(busFile, info.DeveloperMode, log)
 	if err != nil {
 		log.Error(err, "could not load configuration", "file", busFile)
 		return nil, err
@@ -365,16 +369,19 @@ func Start(ctx context.Context, info *Info) (*Engine, error) {
 		cloudevents_json.CloudEventsJSON,
 		codec_text.Plain,
 		codec_text.HTML,
+		codec_bytes.Bytes,
 	)
 
 	resourceRegistry := resource.Registry{}
 	resourceRegistry.Register(
 		postgres.Connection,
-		gorm.Connection,
 		dapr.Client,
-		dapr_pluggable.PubSub,
-		dapr_pluggable.StateStore,
-		dapr_pluggable.OutputBinding,
+		blob.URLBlob,
+		blob.AzureBlob,
+		blob.FSBlob,
+		blob.GCSBlob,
+		blob.MemBlob,
+		blob.S3Blob,
 	)
 
 	tracingRegistry := otel_tracing.Registry{}
@@ -387,10 +394,9 @@ func Start(ctx context.Context, info *Info) (*Engine, error) {
 	// Action registration
 	actionRegistry := actions.Registry{}
 	actionRegistry.Register(core.All...)
+	actionRegistry.Register(blob.All...)
 	actionRegistry.Register(postgres.All...)
-	actionRegistry.Register(gorm.All...)
 	actionRegistry.Register(dapr.All...)
-	actionRegistry.Register(dapr_pluggable.All...)
 
 	initializerRegistry := initialize.Registry{}
 	initializerRegistry.Register(migrate_postgres.MigratePostgresV1)
@@ -398,16 +404,22 @@ func Start(ctx context.Context, info *Info) (*Engine, error) {
 	// Codecs
 	jsoncodec := json_codec.New()
 	msgpackcodec := msgpack_codec.New()
+	bytescodec := bytes_codec.New()
 
 	// Dependencies
 	httpClient := getHTTPClient()
 	env := getEnvironment()
 	namespaces := make(spec.Namespaces)
 	dependencies := map[string]interface{}{
-		"system:logger":       log,
+		"system:logger": log,
+		"system:application": &runtime.Application{
+			ID:      busConfig.ID,
+			Version: busConfig.Version,
+		},
 		"client:http":         httpClient,
 		"codec:json":          jsoncodec,
 		"codec:msgpack":       msgpackcodec,
+		"codec:bytes":         bytescodec,
 		"spec:namespaces":     namespaces,
 		"os:env":              env,
 		"registry:routers":    routerRegistry,
@@ -583,6 +595,7 @@ func Start(ctx context.Context, info *Info) (*Engine, error) {
 		m:              m,
 		allNamespaces:  allNamespaces,
 		codec:          msgpackcodec,
+		resources:      resources,
 	}
 
 	if err := e.LoadConfig(busConfig); err != nil {
@@ -839,7 +852,7 @@ func Start(ctx context.Context, info *Info) (*Engine, error) {
 		}
 
 		err = g.Run()
-		log.Info("Shutting down")
+		e.Shutdown()
 		if err != nil {
 			if _, isSignal := err.(run.SignalError); !isSignal {
 				log.Error(err, "unexpected error")
@@ -858,6 +871,22 @@ func (e *Engine) Invoke(handler handler.Handler, input any) (any, error) {
 	return e.transportInvoker(e.ctx, handler, "", input, transport.PerformAuthorization)
 }
 
+func (e *Engine) Shutdown() {
+	e.log.Info("Shutting down")
+	for name, r := range e.resources {
+		switch c := r.(type) {
+		case io.Closer:
+			e.log.Info("closing resource", "name", name)
+			if err := c.Close(); err != nil {
+				e.log.Error(err, "could not close resource %s", name)
+			}
+		case closable:
+			e.log.Info("closing resource", "name", name)
+			c.Close()
+		}
+	}
+}
+
 func loadResourcesConfig(filename string, log logr.Logger) (*runtime.ResourcesConfig, error) {
 	// TODO: Load from file or URI
 	f, err := os.OpenFile(filename, os.O_RDONLY, 0644)
@@ -874,13 +903,26 @@ func loadResourcesConfig(filename string, log logr.Logger) (*runtime.ResourcesCo
 	return c, nil
 }
 
-func loadBusConfig(filename string, log logr.Logger) (*runtime.BusConfig, error) {
-	// TODO: Load from file or URI
-	f, err := os.OpenFile(filename, os.O_RDONLY, 0644)
-	if err != nil {
-		return nil, err
+func loadBusConfig(filename string, developerMode bool, log logr.Logger) (*runtime.BusConfig, error) {
+	var in io.Reader
+	if strings.HasSuffix(filename, ".ts") {
+		if !developerMode {
+			return nil, errors.New("loading configuration directly from TypeScript is only allowed in developer mode")
+		}
+		out, err := exec.Command("deno", "run", "--allow-run", "--unstable", filename).Output()
+		if err != nil {
+			return nil, fmt.Errorf("error running bus program: %w", err)
+		}
+		in = bytes.NewReader(out)
+	} else {
+		// TODO: Load from file or URI
+		f, err := os.OpenFile(filename, os.O_RDONLY, 0644)
+		if err != nil {
+			return nil, err
+		}
+		in = f
+		defer f.Close()
 	}
-	defer f.Close()
 
 	absPath, err := filepath.Abs(filename)
 	if err != nil {
@@ -888,7 +930,7 @@ func loadBusConfig(filename string, log logr.Logger) (*runtime.BusConfig, error)
 	}
 	baseDir := filepath.Dir(absPath)
 
-	c, err := runtime.LoadBusYAML(baseDir, f)
+	c, err := runtime.LoadBusYAML(baseDir, in)
 	if err != nil {
 		return nil, err
 	}
@@ -1006,4 +1048,8 @@ func newOtelResource(applicationID, version string) *otel_resource.Resource {
 		),
 	)
 	return r
+}
+
+type closable interface {
+	Close()
 }

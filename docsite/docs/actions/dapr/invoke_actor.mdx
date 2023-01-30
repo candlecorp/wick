@@ -1,0 +1,113 @@
+---
+title: invoke_actor
+sidebar_position: 6
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# @dapr/invoke_actor
+
+<div class="attributes">
+
+### Description
+
+<p>
+  <span className="badge badgeDarkBlue">Request</span>
+  <a href="https://github.com/nanobus/nanobus/blob/main/pkg/actions/dapr/binding_invoke.go" target="_blank" rel="noopener noreferrer">Source code <svg width="13.5" height="13.5" aria-hidden="true" viewBox="0 0 24 24" class="iconExternalLink_node_modules-@docusaurus-theme-classic-lib-theme-Icon-ExternalLink-styles-module"><path fill="currentColor" d="M21 13v10h-21v-19h12v2h-10v15h17v-8h2zm3-12h-10.988l4.035 4-6.977 7.07 2.828 2.828 6.977-7.07 4.125 4.172v-11z"></path></svg></a>
+</p>
+
+</div>
+
+
+
+## Options
+
+<div class="attributes">
+
+### resource
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">resource <span className="required">*</span>
+      <a class="hash-link" href="#resource" title="Direct link to resource">​</a>
+    </span>
+    <code>ResourceRef</code>
+  </header>
+
+The name of the Dapr client resource.
+
+</div>
+
+### handler
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">handler <span className="required">*</span>
+      <a class="hash-link" href="#handler" title="Direct link to handler">​</a>
+    </span>
+    <code>Handler</code>
+  </header>
+
+The actor handler (type::method)
+
+</div>
+
+### id
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">id <span className="required">*</span>
+      <a class="hash-link" href="#id" title="Direct link to id">​</a>
+    </span>
+    <code>string (Value expression)</code>
+  </header>
+
+The actor identifier
+
+</div>
+
+### data
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">data
+      <a class="hash-link" href="#data" title="Direct link to data">​</a>
+    </span>
+    <code>string (Data expression)</code>
+  </header>
+
+The input sent.
+
+</div>
+
+### codec
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">codec <span className="required">*</span>
+      <a class="hash-link" href="#codec" title="Direct link to codec">​</a>
+    </span>
+    <code>CodecRef</code>
+  </header>
+
+The configured codec to use for encoding the message.
+
+</div>
+
+### codecArgs
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">codecArgs
+      <a class="hash-link" href="#codecargs" title="Direct link to codecArgs">​</a>
+    </span>
+    <code>any[]</code>
+  </header>
+
+The arguments for the codec, if any.
+
+</div>
+
+</div>
+

@@ -16,6 +16,8 @@ import (
 
 	"github.com/nanobus/nanobus/pkg/actions"
 	"github.com/nanobus/nanobus/pkg/config"
+	"github.com/nanobus/nanobus/pkg/expr"
+	"github.com/nanobus/nanobus/pkg/resiliency"
 	"github.com/nanobus/nanobus/pkg/resolve"
 	"github.com/nanobus/nanobus/pkg/resource"
 )
@@ -46,11 +48,10 @@ func DeleteStateAction(
 	client dapr.Client,
 	config *DeleteStateConfig) actions.Action {
 	return func(ctx context.Context, data actions.Data) (interface{}, error) {
-		keyInt, err := config.Key.Eval(data)
+		key, err := expr.EvalAsStringE(config.Key, data)
 		if err != nil {
 			return nil, err
 		}
-		key := fmt.Sprintf("%v", keyInt)
 
 		stateOptions := dapr.StateOptions{
 			Concurrency: dapr.StateConcurrency(config.Concurrency),
@@ -58,19 +59,19 @@ func DeleteStateAction(
 		}
 
 		if config.Etag != nil {
-			etagInt, err := config.Etag.Eval(data)
+			etag, err := expr.EvalAsStringE(config.Etag, data)
 			if err != nil {
 				return nil, fmt.Errorf("could not evaluate etag: %w", err)
 			}
-			etag := fmt.Sprintf("%v", etagInt)
+
 			if err = client.DeleteStateWithETag(ctx,
 				config.Store, key,
 				&dapr.ETag{Value: etag}, nil, &stateOptions); err != nil {
-				return nil, err
+				return nil, resiliency.Retriable(err)
 			}
 		} else {
 			if err = client.DeleteState(ctx, config.Store, key, nil); err != nil {
-				return nil, err
+				return nil, resiliency.Retriable(err)
 			}
 		}
 

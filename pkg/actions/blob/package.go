@@ -6,16 +6,14 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-package dapr_pluggable
+//go:generate apex generate
+package blob
 
 import (
 	"github.com/nanobus/nanobus/pkg/actions"
 )
 
 var All = []actions.NamedLoader{
-	Publish,
-	DeleteState,
-	GetState,
-	SetState,
-	InvokeBinding,
+	Read,
+	Write,
 }

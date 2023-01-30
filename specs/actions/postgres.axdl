@@ -9,6 +9,7 @@ namespace "nanobus.actions.postgres"
 alias ValueExpr = string
 alias DataExpr = string
 alias ResourceRef = string
+alias Entity = string
 
 """
 TODO
@@ -61,16 +62,14 @@ type FindOneConfig
   @action("@postgres/find_one") {
   "Resource is the name of the connection resource to use."
   resource: ResourceRef
-  "Namespace is the type namespace to load."
-  namespace: string
-  "Type is the type name to load."
-  type: string
+  "The entity type to find."
+  entity: Entity
   "Preload lists the relationship to expand/load."
   preload: [Preload]?
   "Where list the parts of the where clause."
   where: [Where]?
   "NotFoundError is the error to return if the key is not found."
-  notFoundError: string
+  notFoundError: string?
 }
 
 """
@@ -78,7 +77,7 @@ TODO
 """
 type Preload {
   field:   string
-  preload: [Preload]
+  preload: [Preload]?
 }
 
 """
@@ -98,10 +97,8 @@ type FindConfig
   @action("@postgres/find") {
   "Resource is the name of the connection resource to use."
   resource: ResourceRef
-  "Namespace is the type namespace to load."
-  namespace: string
-  "Type is the type name to load."
-  type: string
+  "The entity type to find."
+  entity: Entity
   "Preload lists the relationship to expand/load."
   preload: [Preload]?
   "Where list the parts of the where clause."
@@ -136,10 +133,8 @@ type LoadConfig
   @action("@postgres/load") {
   "Resource is the name of the connection resource to use."
   resource: ResourceRef
-  "Namespace is the type namespace to load."
-  namespace: string
-  "Type is the type name to load."
-  type: string
+  "The entity type to load."
+  entity: Entity
   "ID is the entity identifier expression."
   key: ValueExpr
   "Preload lists the relationship to expand/load."

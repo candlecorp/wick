@@ -82,12 +82,6 @@ const config = {
             label: 'Components',
           },
           {
-            href: 'https://github.com/nanobus',
-            position: 'right',
-            className: 'header-github-link',
-            'aria-label': 'GitHub repository',
-          },
-          {
             href: 'https://discord.gg/candle',
             className: 'header-discord-link',
             position: 'right',
@@ -98,6 +92,12 @@ const config = {
             className: 'header-twitter-link',
             position: 'right',
             'aria-label': 'Twitter feed',
+          },
+          {
+            href: 'https://github.com/nanobus/nanobus',
+            className: 'header-stars-link',
+            position: 'right',
+            'aria-label': 'GitHub repository',
           },
         ],
       },

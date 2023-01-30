@@ -19,7 +19,10 @@ import (
 const artifactType = "application/vnd.nanobus.iota.v1+json"
 
 func Push(reference, base string, fileRefs []string, dryRun bool) error {
-	store := file.New("")
+	store, err := file.New("")
+	if err != nil {
+		return err
+	}
 	defer store.Close()
 
 	ctx := context.Background()

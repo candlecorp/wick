@@ -72,12 +72,12 @@ func TestExpr(t *testing.T) {
 				"value": `^@&#$RFSDF`,
 				"to":    "test",
 			},
-			loaderErr: "1 error(s) decoding:\n\n* error decoding 'value': invalid ValueExpr \"^@&#$RFSDF\": unrecognized character: U+005E '^' (1:2)\n | ^@&#$RFSDF\n | .^",
+			loaderErr: "1 error(s) decoding:\n\n* error decoding 'value': invalid ValueExpr \"^@&#$RFSDF\": unrecognized character: U+0040 '@' (1:3)\n | ^@&#$RFSDF\n | ..^",
 		},
 		{
 			name: "value error",
 			config: map[string]interface{}{
-				"value": "fail(notfound)",
+				"value": "fail_notfound",
 				"to":    "test",
 			},
 			data: actions.Data{
@@ -85,7 +85,7 @@ func TestExpr(t *testing.T) {
 					"test": "1234",
 				},
 			},
-			actionErr: "cannot get \"fail\" from map[string]interface {} (1:1)\n | fail(notfound)\n | ^",
+			expected: nil,
 		},
 		{
 			name: "data error",

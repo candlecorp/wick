@@ -14,6 +14,7 @@ import (
 
 	"github.com/nanobus/nanobus/pkg/actions"
 	"github.com/nanobus/nanobus/pkg/config"
+	"github.com/nanobus/nanobus/pkg/expr"
 	"github.com/nanobus/nanobus/pkg/resolve"
 )
 
@@ -29,14 +30,9 @@ func FilterLoader(ctx context.Context, with interface{}, resolver resolve.Resolv
 func FilterAction(
 	config *FilterConfig) actions.Action {
 	return func(ctx context.Context, data actions.Data) (interface{}, error) {
-		resultInt, err := config.Condition.Eval(data)
+		result, err := expr.EvalAsBoolE(config.Condition, data)
 		if err != nil {
-			return nil, err
-		}
-
-		result, ok := resultInt.(bool)
-		if !ok {
-			return nil, fmt.Errorf("expression %q did not evaluate a boolean", config.Condition.Expr())
+			return nil, fmt.Errorf("expression %q did not evaluate a boolean: %w", config.Condition.Expr(), err)
 		}
 
 		if !result {

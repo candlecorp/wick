@@ -6,8 +6,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-import { Configuration } from "https://deno.land/x/apex_cli@v0.0.6/src/config.ts";
-import * as apex from "https://deno.land/x/apex_core@v0.1.0/mod.ts";
+import { Configuration } from "https://deno.land/x/apex_cli@v0.0.18/src/config.ts";
+import * as apex from "./deps/core.ts";
 
 interface Slug {
   value: string;
@@ -16,9 +16,7 @@ interface Slug {
 const importUrl = new URL(".", import.meta.url);
 
 function urlify(relpath: string): string {
-  const url = new URL(relpath, importUrl).toString();
-  console.error(url);
-  return url;
+  return new URL(relpath, importUrl).toString();
 }
 
 const docsMod = urlify("./docs.ts");
@@ -47,6 +45,8 @@ function addComponentType(
   vars: Record<string, unknown>,
   type: string,
 ) {
+  const generates = config.generates ||= {};
+
   const actions = doc.definitions
     .filter((def) => def.isKind(apex.ast.Kind.TypeDefinition))
     .map((def) => def as apex.ast.TypeDefinition)
@@ -70,7 +70,7 @@ function addComponentType(
     a.annotation('slug', a => {
       filename = a.convert<Slug>().value;
     })
-    config.generates[`./${filename}.mdx`] = {
+    generates[`./${filename}.mdx`] = {
       module: docsMod,
       visitorClass: "DocVisitor",
       config: {

@@ -7,7 +7,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-import * as YAML from "https://deno.land/std@0.167.0/encoding/yaml.ts";
+import * as YAML from "https://deno.land/std@0.171.0/encoding/yaml.ts";
 import { Duration as Dur } from "https://deno.land/x/durationjs@v4.0.0/mod.ts";
 import { Claims } from "./claims.ts";
 
@@ -18,10 +18,11 @@ export type DataExpr = string;
 export type CodecRef = string & { __desc: "Codec" };
 export type Timeout = Duration;
 export type Handler = string & { __desc: "Handler" };
+export type Entity = string & { __desc: "Entity" };
 
-type Operations = {
-  [operation: string]: Step[];
-};
+export type Operation<T> = Flow<T> | Step[];
+export type Operations = Record<string, Operation<any>>;
+export type OperationNames = Record<string, any>;
 
 type Pipelines = {
   [operation: string]: Pipeline;
@@ -59,6 +60,10 @@ type CircuitBreakerRefs<Type> = {
   [Property in keyof Type]: CircuitBreakerRef;
 };
 
+type AuthorizationRefs<Type> = {
+  [Property in keyof Type]: Authorization;
+};
+
 function isInteger(str: string) {
   if (typeof str !== "string") {
     return false;
@@ -90,6 +95,7 @@ export const codecs: { [name: string]: CodecRef } = {
   JSON: "json" as CodecRef,
   MsgPack: "msgpack" as CodecRef,
   CloudEventsJSON: "cloudevents+json" as CodecRef,
+  CloudEventsAvro: "cloudevents+avro" as CodecRef,
 };
 
 export interface IncludeOptions {
@@ -226,6 +232,10 @@ export class Application {
       providers: {},
       errors: {},
     };
+
+    globalThis.addEventListener("unload", () => {
+      this.emit();
+    });
   }
 
   spec(spec: string): Application {
@@ -343,100 +353,63 @@ export class Application {
     }
   }
 
-  register(
-    handlers: Record<string, Handler>,
-    iface: Record<string, Flow<any>>,
+  authorize<T extends OperationNames>(
+    iface: string | T,
+    authorizations: AuthorizationRefs<T>,
   ): Application {
-    const impls: Record<Handler, Step[]> = {};
-    for (const funcName of Object.keys(iface)) {
-      impls[handlers[funcName]] = getSteps(iface[funcName]);
+    const name = (typeof iface === "string" || iface instanceof String)
+      ? iface as string
+      : (iface as any).$interface;
+    let a = this.config.authorization[name];
+    if (!a) {
+      a = {};
+      this.config.authorization[name] = a;
     }
-    this.implement(impls);
-    return this;
-  }
-
-  provide(
-    handlers: Record<string, Handler>,
-    iface: Record<string, Flow<any>>,
-  ): Application {
-    const impls: Record<Handler, Step[]> = {};
-    for (const funcName of Object.keys(iface)) {
-      impls[handlers[funcName]] = getSteps(iface[funcName]);
-    }
-    this.internal(impls);
-    return this;
-  }
-
-  authorize(
-    handlers: Record<string, Handler>,
-    iface: Record<string, Authorization>,
-  ): Application {
-    const auths: Record<Handler, Authorization> = {};
-    for (const funcName of Object.keys(iface)) {
-      auths[handlers[funcName]] = iface[funcName];
-    }
-    this.authorizations(auths);
-    return this;
-  }
-
-  implement(handlers: Record<Handler, Step[]>): Application {
-    for (const handler of Object.keys(handlers)) {
-      const steps = handlers[handler as Handler];
-      const [iface, oper] = handler.split("::");
-      let pipelines = this.config.interfaces[iface];
-      if (!pipelines) {
-        pipelines = {};
-        this.config.interfaces[iface] = pipelines;
-      }
-      pipelines[oper] = {
-        steps: steps,
-      };
+    for (const funcName of Object.keys(authorizations)) {
+      a[funcName] = authorizations[funcName];
     }
     return this;
   }
 
-  internal(handlers: Record<Handler, Step[]>): Application {
-    for (const handler of Object.keys(handlers)) {
-      const steps = handlers[handler as Handler];
-      const [iface, oper] = handler.split("::");
-      let pipelines = this.config.providers[iface];
-      if (!pipelines) {
-        pipelines = {};
-        this.config.providers[iface] = pipelines;
-      }
-      pipelines[oper] = {
-        steps: steps,
-      };
-    }
-    return this;
-  }
-
-  interface<T extends Operations>(name: string, arg: T): Handlers<T> {
+  interface<T extends Operations>(
+    iface: string,
+    flows: T,
+  ): Handlers<T> {
     const ret: { [name: string]: Handler } = {};
-    const pipelines: Pipelines = {};
-    for (const key of Object.keys(arg)) {
-      const steps = arg[key];
-      ret[key] = (name + "::" + key) as Handler;
-      if (steps != undefined && steps.length > 0) {
-        pipelines[key] = {
-          steps: arg[key],
-        };
-      }
+    let pipelines = this.config.interfaces[iface];
+    if (!pipelines) {
+      pipelines = {};
+      this.config.interfaces[iface] = pipelines;
     }
-    this.config.interfaces[name] = pipelines;
+    for (const funcName of Object.keys(flows)) {
+      ret[funcName] = (iface + "::" + funcName) as Handler;
+      const flowOrSteps = flows[funcName];
+      pipelines[funcName] = {
+        steps: getSteps(flowOrSteps),
+      };
+    }
+    (ret as any).$interface = iface;
     return ret as Handlers<T>;
   }
 
-  provider<T extends Operations>(name: string, arg: T): Handlers<T> {
+  provider<T extends Operations>(
+    iface: string,
+    flows: T,
+  ): Handlers<T> {
     const ret: { [name: string]: Handler } = {};
-    const pipelines: Pipelines = {};
-    for (const key of Object.keys(arg)) {
-      ret[key] = (name + "::" + key) as Handler;
-      pipelines[key] = {
-        steps: arg[key],
+    let pipelines = this.config.providers[iface];
+    if (!pipelines) {
+      pipelines = {};
+      this.config.providers[iface] = pipelines;
+    }
+    for (const funcName of Object.keys(flows)) {
+      ret[funcName] = (iface + "::" + funcName) as Handler;
+      const flowOrSteps = flows[funcName];
+      pipelines[funcName] = {
+        steps: getSteps(flowOrSteps),
       };
     }
-    this.config.providers[name] = pipelines;
+    (ret as any).$interface = iface;
     return ret as Handlers<T>;
   }
 
@@ -466,7 +439,12 @@ export class Application {
   }
 
   emit(): void {
-    console.log(this.asYAML());
+    const content = this.asYAML();
+    if (Deno.args.length == 1) {
+      Deno.writeTextFileSync(Deno.args[0], content);
+    } else {
+      console.log(content);
+    }
   }
 }
 
@@ -612,7 +590,7 @@ export interface ComponentWithOutput<T, O> extends Component<T> {
   returns?: O;
 }
 
-export type Response<T> = ComponentWithOutput<unknown, T>
+export type Response<T> = ComponentWithOutput<unknown, T>;
 
 export function component(uses: string, config: unknown): Component<unknown> {
   return {
@@ -761,16 +739,21 @@ export function step<T>(
   return builder;
 }
 
-export function getSteps(f: Flow<unknown>): Step[] {
-  const context = new Proxy({
-    flow: new FlowBuilder<unknown>(),
-  }, handler) as Context<unknown>;
-  const stepsOrFlow = f(context, propertyProxy);
+export function getSteps(f: Operation<unknown>): Step[] {
   let steps: Step[];
-  if (stepsOrFlow instanceof FlowBuilder) {
-    steps = (stepsOrFlow as FlowClass).done();
+  if (f instanceof Array) {
+    steps = f as Step[];
   } else {
-    steps = stepsOrFlow as Step[];
+    const context = new Proxy({
+      flow: new FlowBuilder<unknown>(),
+    }, handler) as Context<unknown>;
+    const stepsOrFlow = f(context, propertyProxy);
+
+    if (stepsOrFlow instanceof FlowBuilder) {
+      steps = (stepsOrFlow as FlowClass).done();
+    } else {
+      steps = stepsOrFlow as Step[];
+    }
   }
   for (let i = 0; i < steps.length; i++) {
     steps[i] = { ...steps[i] };
@@ -809,7 +792,7 @@ function replaceFakes(rec: Record<string, unknown>) {
     if (val instanceof Object) {
       replaceFakes(val as Record<string, unknown>);
     }
-    if (val instanceof String) {
+    if (key == "sql" && val instanceof String) {
       rec[key] = (val as string).trim();
     }
     if (val instanceof Array) {
@@ -830,7 +813,7 @@ function replaceFakes(rec: Record<string, unknown>) {
 function trimStrings(rec: Record<string, unknown>) {
   for (const key of Object.keys(rec)) {
     const val = rec[key];
-    if (typeof val === "string" || val instanceof String) {
+    if (key == "sql" && (typeof val === "string" || val instanceof String)) {
       rec[key] = (val as string).trim();
     } else if (val instanceof Array) {
       const ary = val as Array<any>;

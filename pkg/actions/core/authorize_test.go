@@ -141,7 +141,7 @@ func TestAuthorize(t *testing.T) {
 				"condition": "claims.test == true",
 			},
 			data:      actions.Data{},
-			actionErr: "cannot fetch test from <nil> (1:8)\n | claims.test == true\n | .......^",
+			actionErr: "expression \"claims.test == true\" did not evaluate a boolean: cannot fetch test from <nil> (1:8)\n | claims.test == true\n | .......^",
 		},
 		{
 			name: "non-boolean expression",
@@ -156,7 +156,7 @@ func TestAuthorize(t *testing.T) {
 					"test": true,
 				},
 			},
-			actionErr: "expression \"12345\" did not evaluate a boolean",
+			actionErr: "expression \"12345\" did not evaluate a boolean: unable to cast 12345 of type int to bool",
 		},
 	}
 

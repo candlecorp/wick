@@ -33,7 +33,7 @@ install:
 	@echo "Install {{BINARY}} complete. Make sure {{GOPATH}}/bin is in your path."
 
 codegen:
-  for file in `find . -name 'apex.yaml'`; do echo $(cd $(dirname $file); apex generate); done
+  for file in `find . -name 'apex.yaml'`; do echo $file && echo $(cd $(dirname $file); apex generate); done
 
 docsite:
 	(cd docsite; npm run start)

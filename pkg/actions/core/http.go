@@ -23,6 +23,7 @@ import (
 	"github.com/nanobus/nanobus/pkg/coalesce"
 	"github.com/nanobus/nanobus/pkg/codec"
 	"github.com/nanobus/nanobus/pkg/config"
+	"github.com/nanobus/nanobus/pkg/resiliency"
 	"github.com/nanobus/nanobus/pkg/resolve"
 )
 
@@ -96,7 +97,7 @@ func HTTPAction(
 
 		resp, err := httpClient.Do(req)
 		if err != nil {
-			return nil, err
+			return nil, resiliency.Retriable(err)
 		}
 		defer resp.Body.Close()
 

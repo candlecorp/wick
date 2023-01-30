@@ -12,7 +12,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -20,6 +19,8 @@ import (
 
 	"github.com/nanobus/nanobus/pkg/actions"
 	"github.com/nanobus/nanobus/pkg/config"
+	"github.com/nanobus/nanobus/pkg/expr"
+	"github.com/nanobus/nanobus/pkg/resiliency"
 	"github.com/nanobus/nanobus/pkg/resolve"
 )
 
@@ -57,12 +58,10 @@ func ReCaptchaAction(
 	httpClient HTTPClient,
 	config *ReCaptchaConfig) actions.Action {
 	return func(ctx context.Context, data actions.Data) (interface{}, error) {
-		// Get challenge response
-		responseIface, err := config.Response.Eval(data)
+		responseVal, err := expr.EvalAsStringE(config.Response, data)
 		if err != nil {
 			return nil, err
 		}
-		responseVal := fmt.Sprintf("%v", responseIface)
 
 		req, err := http.NewRequest(http.MethodPost, config.SiteVerifyURL, nil)
 		if err != nil {
@@ -78,7 +77,7 @@ func ReCaptchaAction(
 		// Make request
 		resp, err := httpClient.Do(req)
 		if err != nil {
-			return nil, err
+			return nil, resiliency.Retriable(err)
 		}
 		defer resp.Body.Close()
 

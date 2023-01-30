@@ -12,8 +12,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/cenkalti/backoff/v4"
-
 	"github.com/nanobus/nanobus/pkg/actions"
 	"github.com/nanobus/nanobus/pkg/config"
 	"github.com/nanobus/nanobus/pkg/resolve"
@@ -44,7 +42,7 @@ func HTTPResponseAction(
 		for _, h := range config.Headers {
 			val, err := h.Value.Eval(data)
 			if err != nil {
-				return nil, backoff.Permanent(err)
+				return nil, err
 			}
 			resp.Header.Add(h.Name, fmt.Sprintf("%v", val))
 		}

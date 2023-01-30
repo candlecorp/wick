@@ -6,6 +6,7 @@ import {
   Component,
   DataExpr,
   Handler,
+  Entity,
   ResourceRef,
   Step,
   ValueExpr
@@ -13,7 +14,7 @@ import {
 
 export interface InvokeBindingConfig {
   // The name of the Dapr client resource.
-  resource?: string;
+  resource?: ResourceRef;
   // Name of binding to invoke.
   binding: string;
   // Name of the operation type for the binding to invoke.
@@ -39,7 +40,7 @@ export function InvokeBinding(
 
 export interface PublishConfig {
   // The name of the Dapr client resource.
-  resource?: string;
+  resource?: ResourceRef;
   // Name of pubsub to invoke.
   pubsub: string;
   // Topic is the name of the topic to publish to.
@@ -68,7 +69,7 @@ export function Publish(config: PublishConfig): Component<PublishConfig> {
 
 export interface DeleteStateConfig {
   // The name of the Dapr client resource.
-  resource?: string;
+  resource?: ResourceRef;
   // Name of state store to invoke.
   store: string;
   // The key to delete.
@@ -92,7 +93,7 @@ export function DeleteState(
 
 export interface GetStateConfig {
   // The name of the Dapr client resource.
-  resource?: string;
+  resource?: ResourceRef;
   // Name of state store to invoke.
   store: string;
   // The key to get.
@@ -118,7 +119,7 @@ export function GetState(config: GetStateConfig): Component<GetStateConfig> {
 
 export interface SetStateConfig {
   // The name of the Dapr client resource.
-  resource?: string;
+  resource?: ResourceRef;
   // Name of state store to invoke.
   store: string;
   // The configured codec to use for encoding the state.
@@ -151,6 +152,30 @@ export interface SetStateItem {
   concurrency?: Concurrency;
   // The desired consistency level
   consistency?: Consistency;
+}
+
+export interface InvokeActorConfig {
+  // The name of the Dapr client resource.
+  resource?: ResourceRef;
+  // The actor handler (type::method)
+  handler: Handler;
+  // The actor identifier
+  id: ValueExpr;
+  // The input sent.
+  data?: DataExpr;
+  // The configured codec to use for encoding the message.
+  codec?: CodecRef;
+  // The arguments for the codec, if any.
+  codecArgs?: any[];
+}
+
+export function InvokeActor(
+  config: InvokeActorConfig
+): Component<InvokeActorConfig> {
+  return {
+    uses: "@dapr/invoke_actor",
+    with: config
+  };
 }
 
 // TODO

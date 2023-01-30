@@ -1,0 +1,25 @@
+#!/usr/bin/env -S deno run
+import { Application, RestModule, Expr, unauthenticated } from "./iota.ts";
+import { Greeter } from "./iota.ts";
+
+const app = new Application("{{ .name }}", "0.0.1")
+  .spec("apex.axdl")
+  .use(new RestModule(":8080"));
+
+Greeter.authorize(app, {
+  sayHello: unauthenticated,
+});
+
+Greeter.register(app, {
+  sayHello: ({ flow }) =>
+    flow.then(
+      // Call provider to load the URL.
+      "Say Hello!",
+      ($) =>
+        Expr({
+          value: `"Hello, " + ${$.name}`,
+        })
+    ),
+});
+
+app.emit();

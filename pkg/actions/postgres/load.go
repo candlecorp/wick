@@ -22,21 +22,6 @@ import (
 	"github.com/nanobus/nanobus/pkg/spec"
 )
 
-// type LoadConfig struct {
-// 	// Resource is the name of the connection resource to use.
-// 	Resource string `mapstructure:"resource" validate:"required"`
-// 	// Namespace is the type namespace to load.
-// 	Namespace string `mapstructure:"namespace" validate:"required"`
-// 	// Type is the type name to load.
-// 	Type string `mapstructure:"type" validate:"required"`
-// 	// ID is the entity identifier expression.
-// 	Key *expr.ValueExpr `mapstructure:"key" validate:"required"`
-// 	// Preload lists the relationship to expand/load.
-// 	Preload []Preload `mapstructure:"preload"`
-// 	// NotFoundError is the error to return if the key is not found.
-// 	NotFoundError string `mapstructure:"notFoundError"`
-// }
-
 // Load is the NamedLoader for the invoke action.
 func LoadLeader() (string, actions.Loader) {
 	return "@postgres/load", LoadLoader
@@ -67,13 +52,13 @@ func LoadLoader(ctx context.Context, with interface{}, resolver resolve.ResolveA
 		return nil, fmt.Errorf("resource %q is not a *pgxpool.Pool", c.Resource)
 	}
 
-	ns, ok := namespaces[c.Namespace]
+	ns, ok := namespaces[c.Entity.Namespace]
 	if !ok {
-		return nil, fmt.Errorf("namespace %q is not found", c.Namespace)
+		return nil, fmt.Errorf("namespace %q is not found", c.Entity.Namespace)
 	}
-	t, ok := ns.Type(c.Type)
+	t, ok := ns.Type(c.Entity.Type)
 	if !ok {
-		return nil, fmt.Errorf("type %q is not found", c.Type)
+		return nil, fmt.Errorf("type %q is not found", c.Entity.Type)
 	}
 
 	return LoadAction(&c, t, ns, pool), nil

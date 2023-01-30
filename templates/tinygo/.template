@@ -1,0 +1,13 @@
+name: '@nanobus/tinygo'
+description: TinyGo Iota module project
+variables:
+
+- name: module
+  description: The module name
+  prompt: Please enter the module name (e.g. github.com/myorg/myservice)
+  default: github.com/myorg/myservice
+
+- name: package
+  description: The main package name
+  prompt: Please enter the main package name (e.g. myservice)
+  default: myservice

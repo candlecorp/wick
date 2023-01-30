@@ -4,7 +4,7 @@ package core
 
 import (
 	"encoding/json"
-	"fmt"
+	"errors"
 
 	"github.com/nanobus/nanobus/pkg/actions"
 	"github.com/nanobus/nanobus/pkg/expr"
@@ -243,7 +243,7 @@ func (e *SelectionMode) FromString(str string) error {
 	var ok bool
 	*e, ok = toIDSelectionMode[str]
 	if !ok {
-		return fmt.Errorf("unknown value %q for SelectionMode", str)
+		return errors.New("unknown value \"" + str + "\" for SelectionMode")
 	}
 	return nil
 }

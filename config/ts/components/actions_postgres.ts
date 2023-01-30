@@ -6,6 +6,7 @@ import {
   Component,
   DataExpr,
   Handler,
+  Entity,
   ResourceRef,
   Step,
   ValueExpr
@@ -55,16 +56,14 @@ export interface Statement {
 export interface FindOneConfig {
   // Resource is the name of the connection resource to use.
   resource: ResourceRef;
-  // Namespace is the type namespace to load.
-  namespace: string;
-  // Type is the type name to load.
-  type: string;
+  // The entity type to find.
+  entity: Entity;
   // Preload lists the relationship to expand/load.
   preload?: Preload[];
   // Where list the parts of the where clause.
   where?: Where[];
   // NotFoundError is the error to return if the key is not found.
-  notFoundError: string;
+  notFoundError?: string;
 }
 
 export function FindOne(config: FindOneConfig): Component<FindOneConfig> {
@@ -76,7 +75,7 @@ export function FindOne(config: FindOneConfig): Component<FindOneConfig> {
 
 export interface Preload {
   field: string;
-  preload: Preload[];
+  preload?: Preload[];
 }
 
 export interface Where {
@@ -87,10 +86,8 @@ export interface Where {
 export interface FindConfig {
   // Resource is the name of the connection resource to use.
   resource: ResourceRef;
-  // Namespace is the type namespace to load.
-  namespace: string;
-  // Type is the type name to load.
-  type: string;
+  // The entity type to find.
+  entity: Entity;
   // Preload lists the relationship to expand/load.
   preload?: Preload[];
   // Where list the parts of the where clause.
@@ -123,10 +120,8 @@ export interface Pagination {
 export interface LoadConfig {
   // Resource is the name of the connection resource to use.
   resource: ResourceRef;
-  // Namespace is the type namespace to load.
-  namespace: string;
-  // Type is the type name to load.
-  type: string;
+  // The entity type to load.
+  entity: Entity;
   // ID is the entity identifier expression.
   key: ValueExpr;
   // Preload lists the relationship to expand/load.

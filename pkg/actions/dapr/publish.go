@@ -18,6 +18,8 @@ import (
 	"github.com/nanobus/nanobus/pkg/actions"
 	"github.com/nanobus/nanobus/pkg/codec"
 	"github.com/nanobus/nanobus/pkg/config"
+	"github.com/nanobus/nanobus/pkg/expr"
+	"github.com/nanobus/nanobus/pkg/resiliency"
 	"github.com/nanobus/nanobus/pkg/resolve"
 	"github.com/nanobus/nanobus/pkg/resource"
 	"github.com/nanobus/nanobus/pkg/telemetry/tracing"
@@ -71,11 +73,10 @@ func PublishAction(
 
 		var key string
 		if config.Key != nil {
-			keyInt, err := config.Key.Eval(data)
+			key, err = expr.EvalAsStringE(config.Key, data)
 			if err != nil {
 				return nil, err
 			}
-			key = fmt.Sprintf("%v", keyInt)
 		}
 
 		var metadata map[string]string
@@ -110,6 +111,6 @@ func PublishAction(
 			config.Pubsub, config.Topic,
 			dataBytes, dapr.PublishEventWithMetadata(metadata))
 
-		return nil, err
+		return nil, resiliency.Retriable(err)
 	}
 }

@@ -33,6 +33,15 @@ html[data-theme='dark'] .header-github-link:before {
     no-repeat;
 }
 
+.header-stars-link::before {
+	background: url("https://img.shields.io/github/stars/nanobus?style=social&logo=''&label=NanoBus%20Org%20Stars")
+		no-repeat;
+	content: '';
+	display: flex;
+	height: 20px;
+	width: 150px;
+}
+
 /* discord */
 .header-discord-link:hover {
   opacity: 0.6;

@@ -1,0 +1,8 @@
+import * from "@apexlang/core"
+import * from "@apexlang/rest"
+
+namespace "greeting.v1"
+
+interface Greeter @service {
+  sayHello(firstName: string, lastName: string): string @POST @path("/hello")
+}

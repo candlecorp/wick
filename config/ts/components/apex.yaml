@@ -82,6 +82,12 @@ generates:
     module: ../../../codegen/config.ts
     visitorClass: ComponentsVisitor
 ---
+spec: ../../../specs/actions/blob.axdl
+generates:
+  actions_blob.ts:
+    module: ../../../codegen/config.ts
+    visitorClass: ComponentsVisitor
+---
 spec: ../../../specs/actions/dapr.axdl
 generates:
   actions_dapr.ts:

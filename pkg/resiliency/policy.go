@@ -10,6 +10,7 @@ package resiliency
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
@@ -74,14 +75,30 @@ func Policy(log logr.Logger, operationName string, t time.Duration, r *retry.Con
 		// Use retry/back off
 		b := r.NewBackOffWithContext(ctx)
 		err := retry.NotifyRecover(func() error {
-			return operation(ctx)
+			err := operation(ctx)
+			if err != nil {
+				var perm *backoff.PermanentError
+				if errors.As(err, &perm) {
+					return err
+				}
+				var retriable *RetriableError
+				if errors.As(err, &retriable) {
+					return retriable.Err
+				}
+
+				// By default, errors are permanent errors
+				// unless wrapped by RetriableError.
+				err = backoff.Permanent(err)
+			}
+			return err
 		}, b, func(err error, _ time.Duration) {
 			log.Error(err, "Error processing operation. Retrying...", "operation", operationName)
 		}, func() {
 			log.Info("Recovered processing operation.", "operation", operationName)
 		})
 		if err != nil {
-			if perr, ok := err.(*backoff.PermanentError); ok {
+			var perr *backoff.PermanentError
+			if errors.As(err, &perr) {
 				err = perr.Err
 			}
 		}

@@ -17,9 +17,11 @@ import (
 
 	"github.com/nanobus/nanobus/pkg/actions"
 	"github.com/nanobus/nanobus/pkg/config"
+	"github.com/nanobus/nanobus/pkg/expr"
 	"github.com/nanobus/nanobus/pkg/resolve"
 	"github.com/nanobus/nanobus/pkg/resource"
 	"github.com/nanobus/nanobus/pkg/spec"
+	"github.com/nanobus/nanobus/pkg/stream"
 )
 
 func FindLoader(ctx context.Context, with interface{}, resolver resolve.ResolveAs) (actions.Action, error) {
@@ -45,13 +47,13 @@ func FindLoader(ctx context.Context, with interface{}, resolver resolve.ResolveA
 		return nil, fmt.Errorf("resource %q is not a *pgxpool.Pool", c.Resource)
 	}
 
-	ns, ok := namespaces[c.Namespace]
+	ns, ok := namespaces[string(c.Entity.Namespace)]
 	if !ok {
-		return nil, fmt.Errorf("namespace %q is not found", c.Namespace)
+		return nil, fmt.Errorf("namespace %q is not found", c.Entity.Namespace)
 	}
-	t, ok := ns.Type(c.Type)
+	t, ok := ns.Type(c.Entity.Type)
 	if !ok {
-		return nil, fmt.Errorf("type %q is not found", c.Type)
+		return nil, fmt.Errorf("type %q is not found", c.Entity.Type)
 	}
 
 	return FindAction(&c, t, ns, pool), nil
@@ -62,7 +64,7 @@ func FindAction(
 	t *spec.Type,
 	ns *spec.Namespace,
 	pool *pgxpool.Pool) actions.Action {
-	return func(ctx context.Context, data actions.Data) (interface{}, error) {
+	return func(ctx context.Context, data actions.Data) (_ interface{}, err error) {
 		var results []map[string]interface{}
 		var total int64
 		offset := int64(0)
@@ -80,58 +82,64 @@ func FindAction(
 		}
 
 		if config.Limit != nil {
-			v, err := config.Limit.Eval(data)
-			if err != nil {
-				return nil, err
-			}
-			limit, err = cast.ToInt64E(v)
+			limit, err = expr.EvalAsInt64E(config.Limit, data)
 			if err != nil {
 				return nil, err
 			}
 		}
 
-		err := pool.AcquireFunc(ctx, func(conn *pgxpool.Conn) (err error) {
-			if config.Pagination != nil {
-				total, err = getCount(ctx, conn, t, data, config.Where)
-				if err != nil {
-					return err
+		s, _ := stream.SinkFromContext(ctx)
+
+		if s != nil {
+			if err := streamMany(ctx, s, pool, t, data, config.Where, config.Preload, offset, limit); err != nil {
+				return nil, err
+			}
+
+			return nil, nil
+		} else {
+			err := pool.AcquireFunc(ctx, func(conn *pgxpool.Conn) (err error) {
+				if config.Pagination != nil {
+					total, err = getCount(ctx, conn, t, data, config.Where)
+					if err != nil {
+						return err
+					}
 				}
+				results, err = getMany(ctx, conn, t, data, config.Where, config.Preload, offset, limit)
+				return err
+			})
+			if err != nil {
+				return nil, err
 			}
-			results, err = getMany(ctx, conn, t, data, config.Where, config.Preload, offset, limit)
-			return err
-		})
-		if err != nil {
-			return nil, err
+
+			if config.Pagination != nil {
+				p := config.Pagination
+				count := int64(len(results))
+				wrapper := map[string]interface{}{
+					p.Items: results,
+				}
+				if p.Total != nil {
+					wrapper[*p.Total] = total
+				}
+				if p.Count != nil {
+					wrapper[*p.Count] = count
+				}
+				if p.PageCount != nil {
+					wrapper[*p.PageCount] = (count + limit - 1) / limit
+				}
+				if p.PageIndex != nil {
+					wrapper[*p.PageIndex] = offset / limit
+				}
+				if p.Offset != nil {
+					wrapper[*p.Offset] = offset
+				}
+				if p.Limit != nil {
+					wrapper[*p.Limit] = config.Limit
+				}
+
+				return wrapper, nil
+			}
+
+			return results, nil
 		}
-
-		if config.Pagination != nil {
-			p := config.Pagination
-			count := int64(len(results))
-			wrapper := map[string]interface{}{
-				p.Items: results,
-			}
-			if p.Total != nil {
-				wrapper[*p.Total] = total
-			}
-			if p.Count != nil {
-				wrapper[*p.Count] = count
-			}
-			if p.PageCount != nil {
-				wrapper[*p.PageCount] = (count + limit - 1) / limit
-			}
-			if p.PageIndex != nil {
-				wrapper[*p.PageIndex] = offset / limit
-			}
-			if p.Offset != nil {
-				wrapper[*p.Offset] = offset
-			}
-			if p.Limit != nil {
-				wrapper[*p.Limit] = config.Limit
-			}
-
-			return wrapper, nil
-		}
-
-		return results, nil
 	}
 }

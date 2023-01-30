@@ -1,0 +1,8 @@
+spec: apex.axdl
+config:
+  name: {{ .name }}
+  package: {{ .package }}
+  module: {{ .module }}
+plugins:
+  - 'https://deno.land/x/iota_codegen@v0.0.3/tinygo/plugin.ts'
+  - '{{ .plugin }}'
