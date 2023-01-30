@@ -1,4 +1,4 @@
-import { BaseVisitor, Context, Kind } from "./deps/model.ts";
+import { BaseVisitor, Context, Kind, Parameter } from "./deps/model.ts";
 import {
   AliasVisitor,
   EnumVisitor,
@@ -25,9 +25,11 @@ import {
   Authorization,
   callInterface,
   callProvider,
+  CloudEvent,
   Entity,
   Flow,
   Handler,
+  Handlers,
   Operations,
   Response,
   Step,
@@ -151,12 +153,17 @@ class OpersVisitor extends BaseVisitor {
       ? params.length == 0
         ? "void"
         : capitalize(iface.name) + capitalize(operation.name) + "Args"
-      : expandType(params[0].type, false);
+      : this.doExpandType(params[0]);
     this.write(formatComment("  // ", operation.description));
     this.write(
       `  ${operation.name}${optionalSuffix}: Flow<${input}> | Step[],\n`,
     );
     super.triggerOperation(context);
+  }
+
+  doExpandType(param: Parameter): string {
+    const t = expandType(param.type, false);
+    return param.annotation("cloudevent") ? `CloudEvent<${t}>` : t;
   }
 
   visitInterfaceAfter(context: Context): void {
@@ -205,13 +212,13 @@ class InterfaceVisitor extends BaseVisitor {
 
   visitInterfaceAfter(context: Context): void {
     const { interface: iface } = context;
-    const registerType = iface.annotation("service") ? "interface" : "provider";
-    const as = iface.annotation("service") ? "as" : "as unknown as";
+    const isInterface = iface.annotation("service") || iface.annotation("events");
+    const registerType = isInterface ? "interface" : "provider";
     this.write(`
   register(app: Application, iface: ${iface.name}Oper): void {
     app.${registerType}(
       ${iface.name}.$interface,
-      iface ${as} Operations,
+      iface as unknown as Operations,
     );
   },
 
@@ -236,7 +243,8 @@ class ClientVisitor extends BaseVisitor {
 
   visitOperation(context: Context): void {
     const { interface: iface, operation } = context;
-    const call = iface.annotation("service") ? "callInterface" : "callProvider";
+    const isInterface = iface.annotation("service") || iface.annotation("events");
+    const call = isInterface ? "callInterface" : "callProvider";
     this.write(formatComment("  // ", operation.description));
     this.write(`${operation.name}(`);
     if (operation.isUnary()) {

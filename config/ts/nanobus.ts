@@ -32,7 +32,7 @@ interface Pipeline {
   steps: Step[];
 }
 
-type Handlers<Type> = {
+export type Handlers<Type> = {
   [Property in keyof Type]: Handler;
 };
 
