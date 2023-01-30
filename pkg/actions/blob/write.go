@@ -10,18 +10,17 @@ package blob
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
-	"reflect"
 
-	"github.com/cenkalti/backoff/v4"
 	"github.com/go-logr/logr"
 	"gocloud.dev/blob"
 
 	"github.com/nanobus/nanobus/pkg/actions"
 	"github.com/nanobus/nanobus/pkg/codec"
 	"github.com/nanobus/nanobus/pkg/config"
+	"github.com/nanobus/nanobus/pkg/expr"
+	"github.com/nanobus/nanobus/pkg/resiliency"
 	"github.com/nanobus/nanobus/pkg/resolve"
 	"github.com/nanobus/nanobus/pkg/resource"
 	"github.com/nanobus/nanobus/pkg/stream"
@@ -64,14 +63,10 @@ func WriteAction(
 	codec codec.Codec,
 	config *WriteConfig) actions.Action {
 	return func(ctx context.Context, data actions.Data) (interface{}, error) {
-		keyInt, err := config.Key.Eval(data)
+		key, err := expr.EvalAsStringE(config.Key, data)
 		if err != nil {
-			return nil, backoff.Permanent(fmt.Errorf("could not evaluate key: %w", err))
+			return nil, fmt.Errorf("could not evaluate key: %w", err)
 		}
-		if isNil(keyInt) {
-			return nil, backoff.Permanent(errors.New("key is nil"))
-		}
-		key := fmt.Sprintf("%v", keyInt)
 
 		// Note: writer.Close seems to fail due to "context closed"
 		// if `ctx` is used. Even if the context is not done proir.
@@ -80,7 +75,7 @@ func WriteAction(
 
 		writer, err := bucket.NewWriter(writeCtx, key, nil)
 		if err != nil {
-			return nil, fmt.Errorf("could create writer: %w", err)
+			return nil, resiliency.Retriable(fmt.Errorf("could create writer: %w", err))
 		}
 		defer writer.Close()
 
@@ -128,26 +123,20 @@ func WriteAction(
 			var d any = data["input"]
 			if config.Data != nil {
 				if d, err = config.Data.Eval(data); err != nil {
-					return nil, backoff.Permanent(fmt.Errorf("could not evaluate data: %w", err))
+					return nil, fmt.Errorf("could not evaluate data: %w", err)
 				}
 			}
 
 			dataBytes, err := codec.Encode(d, config.CodecArgs...)
 			if err != nil {
-				return nil, backoff.Permanent(fmt.Errorf("could not encode data: %w", err))
+				return nil, fmt.Errorf("could not encode data: %w", err)
 			}
 
 			if _, err = writer.Write(dataBytes); err != nil {
-				return nil, err
+				return nil, resiliency.Retriable(err)
 			}
 		}
 
 		return nil, nil
 	}
-}
-
-func isNil(val interface{}) bool {
-	return val == nil ||
-		(reflect.ValueOf(val).Kind() == reflect.Ptr &&
-			reflect.ValueOf(val).IsNil())
 }

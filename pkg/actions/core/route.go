@@ -65,14 +65,9 @@ func RouteAction(
 			r := &routes[i]
 
 			if r.When != nil {
-				resultInt, err := r.When.Eval(data)
+				result, err := expr.EvalAsBoolE(r.When, data)
 				if err != nil {
-					return nil, err
-				}
-
-				result, ok := resultInt.(bool)
-				if !ok {
-					return nil, fmt.Errorf("expression %q did not evaluate a boolean", r.When.Expr())
+					return nil, fmt.Errorf("expression %q did not evaluate a boolean: %w", r.When.Expr(), err)
 				}
 
 				if !result {

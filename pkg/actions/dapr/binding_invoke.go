@@ -18,6 +18,7 @@ import (
 	"github.com/nanobus/nanobus/pkg/coalesce"
 	"github.com/nanobus/nanobus/pkg/codec"
 	"github.com/nanobus/nanobus/pkg/config"
+	"github.com/nanobus/nanobus/pkg/resiliency"
 	"github.com/nanobus/nanobus/pkg/resolve"
 	"github.com/nanobus/nanobus/pkg/resource"
 )
@@ -81,7 +82,7 @@ func InvokeBindingAction(
 
 		resp, err := client.InvokeBinding(ctx, &r)
 		if err != nil {
-			return nil, err
+			return nil, resiliency.Retriable(err)
 		}
 
 		var response interface{}

@@ -12,12 +12,12 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/cenkalti/backoff/v4"
 	dapr "github.com/dapr/go-sdk/client"
 
 	"github.com/nanobus/nanobus/pkg/actions"
 	"github.com/nanobus/nanobus/pkg/codec"
 	"github.com/nanobus/nanobus/pkg/config"
+	"github.com/nanobus/nanobus/pkg/resiliency"
 	"github.com/nanobus/nanobus/pkg/resolve"
 	"github.com/nanobus/nanobus/pkg/resource"
 )
@@ -66,11 +66,11 @@ func SetStateAction(
 			if configItems.ForEach != nil {
 				itemsInt, err := configItems.ForEach.Eval(data)
 				if err != nil {
-					return nil, backoff.Permanent(fmt.Errorf("could not evaluate data: %w", err))
+					return nil, fmt.Errorf("could not evaluate data: %w", err)
 				}
 				var ok bool
 				if items, ok = itemsInt.([]any); !ok {
-					return nil, backoff.Permanent(fmt.Errorf("forEach expression %q did not return a slice of items", configItems.ForEach.Expr()))
+					return nil, fmt.Errorf("forEach expression %q did not return a slice of items", configItems.ForEach.Expr())
 				}
 			}
 
@@ -95,7 +95,7 @@ func SetStateAction(
 
 		err := client.SaveBulkState(ctx, config.Store, r...)
 
-		return nil, err
+		return nil, resiliency.Retriable(err)
 	}
 }
 
@@ -114,18 +114,18 @@ func createSetItem(
 	it = &dapr.SetStateItem{}
 	keyInt, err := config.Key.Eval(variables)
 	if err != nil {
-		return it, backoff.Permanent(fmt.Errorf("could not evaluate key: %w", err))
+		return it, fmt.Errorf("could not evaluate key: %w", err)
 	}
 	it.Key = fmt.Sprintf("%v", keyInt)
 
 	if config.Value != nil {
 		if value, err = config.Value.Eval(variables); err != nil {
-			return it, backoff.Permanent(fmt.Errorf("could not evaluate value: %w", err))
+			return it, fmt.Errorf("could not evaluate value: %w", err)
 		}
 	}
 	if config.Metadata != nil {
 		if it.Metadata, err = config.Metadata.EvalMap(variables); err != nil {
-			return it, backoff.Permanent(fmt.Errorf("could not evaluate metadata: %w", err))
+			return it, fmt.Errorf("could not evaluate metadata: %w", err)
 		}
 	}
 	if config.Etag != nil {
@@ -140,7 +140,7 @@ func createSetItem(
 
 	jsonBytes, err := codec.Encode(value, args...)
 	if err != nil {
-		return it, backoff.Permanent(fmt.Errorf("could not serialize value: %w", err))
+		return it, fmt.Errorf("could not serialize value: %w", err)
 	}
 	it.Value = jsonBytes
 

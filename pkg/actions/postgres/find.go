@@ -17,6 +17,7 @@ import (
 
 	"github.com/nanobus/nanobus/pkg/actions"
 	"github.com/nanobus/nanobus/pkg/config"
+	"github.com/nanobus/nanobus/pkg/expr"
 	"github.com/nanobus/nanobus/pkg/resolve"
 	"github.com/nanobus/nanobus/pkg/resource"
 	"github.com/nanobus/nanobus/pkg/spec"
@@ -63,7 +64,7 @@ func FindAction(
 	t *spec.Type,
 	ns *spec.Namespace,
 	pool *pgxpool.Pool) actions.Action {
-	return func(ctx context.Context, data actions.Data) (interface{}, error) {
+	return func(ctx context.Context, data actions.Data) (_ interface{}, err error) {
 		var results []map[string]interface{}
 		var total int64
 		offset := int64(0)
@@ -81,11 +82,7 @@ func FindAction(
 		}
 
 		if config.Limit != nil {
-			v, err := config.Limit.Eval(data)
-			if err != nil {
-				return nil, err
-			}
-			limit, err = cast.ToInt64E(v)
+			limit, err = expr.EvalAsInt64E(config.Limit, data)
 			if err != nil {
 				return nil, err
 			}

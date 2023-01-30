@@ -18,6 +18,8 @@ import (
 	"github.com/nanobus/nanobus/pkg/codec"
 	"github.com/nanobus/nanobus/pkg/config"
 	"github.com/nanobus/nanobus/pkg/errorz"
+	"github.com/nanobus/nanobus/pkg/expr"
+	"github.com/nanobus/nanobus/pkg/resiliency"
 	"github.com/nanobus/nanobus/pkg/resolve"
 	"github.com/nanobus/nanobus/pkg/resource"
 )
@@ -61,16 +63,15 @@ func GetStateAction(
 	codec codec.Codec,
 	config *GetStateConfig) actions.Action {
 	return func(ctx context.Context, data actions.Data) (interface{}, error) {
-		keyInt, err := config.Key.Eval(data)
+		key, err := expr.EvalAsStringE(config.Key, data)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("could not evaluate key: %w", err)
 		}
-		key := fmt.Sprintf("%v", keyInt)
 
 		resp, err := client.GetStateWithConsistency(ctx, config.Store,
 			key, nil, dapr.StateConsistency(config.Consistency))
 		if err != nil {
-			return nil, err
+			return nil, resiliency.Retriable(err)
 		}
 
 		var response interface{}

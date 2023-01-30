@@ -10,18 +10,16 @@ package blob
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 
-	"github.com/cenkalti/backoff/v4"
-	"github.com/spf13/cast"
 	"gocloud.dev/blob"
 
 	"github.com/nanobus/nanobus/pkg/actions"
 	"github.com/nanobus/nanobus/pkg/codec"
 	"github.com/nanobus/nanobus/pkg/config"
 	"github.com/nanobus/nanobus/pkg/expr"
+	"github.com/nanobus/nanobus/pkg/resiliency"
 	"github.com/nanobus/nanobus/pkg/resolve"
 	"github.com/nanobus/nanobus/pkg/resource"
 	"github.com/nanobus/nanobus/pkg/stream"
@@ -62,34 +60,30 @@ func ReadAction(
 	codec codec.Codec,
 	config *ReadConfig) actions.Action {
 	return func(ctx context.Context, data actions.Data) (interface{}, error) {
-		keyInt, err := config.Key.Eval(data)
+		key, err := expr.EvalAsStringE(config.Key, data)
 		if err != nil {
-			return nil, backoff.Permanent(fmt.Errorf("could not evaluate key: %w", err))
+			return nil, fmt.Errorf("could not evaluate key: %w", err)
 		}
-		if isNil(keyInt) {
-			return nil, backoff.Permanent(errors.New("key is nil"))
-		}
-		key := fmt.Sprintf("%v", keyInt)
 
 		offset := int64(0)
 		length := int64(-1)
 
 		if config.Offset != nil {
-			offset, err = evaluateInt64(config.Offset, data)
+			offset, err = expr.EvalAsInt64E(config.Offset, data)
 			if err != nil {
-				return nil, backoff.Permanent(fmt.Errorf("could not evaluate offset: %w", err))
+				return nil, fmt.Errorf("could not evaluate offset: %w", err)
 			}
 		}
 		if config.Length != nil {
-			offset, err = evaluateInt64(config.Length, data)
+			offset, err = expr.EvalAsInt64E(config.Length, data)
 			if err != nil {
-				return nil, backoff.Permanent(fmt.Errorf("could not evaluate length: %w", err))
+				return nil, fmt.Errorf("could not evaluate length: %w", err)
 			}
 		}
 
 		reader, err := bucket.NewRangeReader(ctx, key, offset, length, nil)
 		if err != nil {
-			return nil, fmt.Errorf("could not open reader for key %s: %w", key, err)
+			return nil, resiliency.Retriable(fmt.Errorf("could not open reader for key %s: %w", key, err))
 		}
 		defer reader.Close()
 
@@ -121,7 +115,7 @@ func ReadAction(
 		} else {
 			dataBytes, err := io.ReadAll(reader)
 			if err != nil {
-				return nil, fmt.Errorf("could not read key: %w", err)
+				return nil, resiliency.Retriable(fmt.Errorf("could not read key: %w", err))
 			}
 
 			result, _, err := codec.Decode(dataBytes, config.CodecArgs...)
@@ -129,12 +123,4 @@ func ReadAction(
 			return result, err
 		}
 	}
-}
-
-func evaluateInt64(e *expr.ValueExpr, data map[string]any) (int64, error) {
-	val, err := e.Eval(data)
-	if err != nil {
-		return 0, err
-	}
-	return cast.ToInt64E(val)
 }

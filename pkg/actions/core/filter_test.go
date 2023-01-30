@@ -63,7 +63,7 @@ func TestFilter(t *testing.T) {
 			data: actions.Data{
 				"test": true,
 			},
-			actionErr: "expression \"12345\" did not evaluate a boolean",
+			actionErr: "expression \"12345\" did not evaluate a boolean: unable to cast 12345 of type int to bool",
 		},
 		{
 			name: "loader error",
@@ -78,7 +78,7 @@ func TestFilter(t *testing.T) {
 				"condition": "test.test == true",
 			},
 			data:      actions.Data{},
-			actionErr: "cannot fetch test from <nil> (1:6)\n | test.test == true\n | .....^",
+			actionErr: "expression \"test.test == true\" did not evaluate a boolean: cannot fetch test from <nil> (1:6)\n | test.test == true\n | .....^",
 		},
 	}
 

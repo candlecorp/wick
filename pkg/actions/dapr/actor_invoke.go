@@ -12,12 +12,12 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/cenkalti/backoff/v4"
 	dapr "github.com/dapr/go-sdk/client"
 
 	"github.com/nanobus/nanobus/pkg/actions"
 	"github.com/nanobus/nanobus/pkg/codec"
 	"github.com/nanobus/nanobus/pkg/config"
+	"github.com/nanobus/nanobus/pkg/expr"
 	"github.com/nanobus/nanobus/pkg/resolve"
 	"github.com/nanobus/nanobus/pkg/resource"
 )
@@ -59,14 +59,14 @@ func InvokeActorAction(
 	return func(ctx context.Context, data actions.Data) (interface{}, error) {
 		var inputData interface{}
 
-		idInt, err := config.ID.Eval(data)
+		id, err := expr.EvalAsStringE(config.ID, data)
 		if err != nil {
-			return nil, backoff.Permanent(fmt.Errorf("could not evaluate id: %w", err))
+			return nil, fmt.Errorf("expression %q did not evaluate a string: %w", config.ID.Expr(), err)
 		}
 
 		r := dapr.InvokeActorRequest{
 			ActorType: config.Handler.Interface,
-			ActorID:   fmt.Sprintf("%v", idInt),
+			ActorID:   id,
 			Method:    config.Handler.Operation,
 		}
 

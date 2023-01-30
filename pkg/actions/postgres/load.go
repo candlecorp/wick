@@ -22,21 +22,6 @@ import (
 	"github.com/nanobus/nanobus/pkg/spec"
 )
 
-// type LoadConfig struct {
-// 	// Resource is the name of the connection resource to use.
-// 	Resource string `mapstructure:"resource" validate:"required"`
-// 	// Namespace is the type namespace to load.
-// 	Namespace string `mapstructure:"namespace" validate:"required"`
-// 	// Type is the type name to load.
-// 	Type string `mapstructure:"type" validate:"required"`
-// 	// ID is the entity identifier expression.
-// 	Key *expr.ValueExpr `mapstructure:"key" validate:"required"`
-// 	// Preload lists the relationship to expand/load.
-// 	Preload []Preload `mapstructure:"preload"`
-// 	// NotFoundError is the error to return if the key is not found.
-// 	NotFoundError string `mapstructure:"notFoundError"`
-// }
-
 // Load is the NamedLoader for the invoke action.
 func LoadLeader() (string, actions.Loader) {
 	return "@postgres/load", LoadLoader

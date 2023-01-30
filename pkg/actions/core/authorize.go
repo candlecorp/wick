@@ -15,6 +15,7 @@ import (
 	"github.com/nanobus/nanobus/pkg/actions"
 	"github.com/nanobus/nanobus/pkg/config"
 	"github.com/nanobus/nanobus/pkg/errorz"
+	"github.com/nanobus/nanobus/pkg/expr"
 	"github.com/nanobus/nanobus/pkg/resolve"
 	"github.com/nanobus/nanobus/pkg/security/claims"
 )
@@ -34,14 +35,9 @@ func AuthorizeAction(
 	config *AuthorizeConfig) actions.Action {
 	return func(ctx context.Context, data actions.Data) (interface{}, error) {
 		if config.Condition != nil {
-			resultInt, err := config.Condition.Eval(data)
+			result, err := expr.EvalAsBoolE(config.Condition, data)
 			if err != nil {
-				return nil, err
-			}
-
-			result, ok := resultInt.(bool)
-			if !ok {
-				return nil, fmt.Errorf("expression %q did not evaluate a boolean", config.Condition.Expr())
+				return nil, fmt.Errorf("expression %q did not evaluate a boolean: %w", config.Condition.Expr(), err)
 			}
 
 			if !result {
