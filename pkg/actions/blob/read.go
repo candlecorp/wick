@@ -15,11 +15,13 @@ import (
 	"io"
 
 	"github.com/cenkalti/backoff/v4"
+	"github.com/spf13/cast"
 	"gocloud.dev/blob"
 
 	"github.com/nanobus/nanobus/pkg/actions"
 	"github.com/nanobus/nanobus/pkg/codec"
 	"github.com/nanobus/nanobus/pkg/config"
+	"github.com/nanobus/nanobus/pkg/expr"
 	"github.com/nanobus/nanobus/pkg/resolve"
 	"github.com/nanobus/nanobus/pkg/resource"
 	"github.com/nanobus/nanobus/pkg/stream"
@@ -69,20 +71,35 @@ func ReadAction(
 		}
 		key := fmt.Sprintf("%v", keyInt)
 
+		offset := int64(0)
+		length := int64(-1)
+
+		if config.Offset != nil {
+			offset, err = evaluateInt64(config.Offset, data)
+			if err != nil {
+				return nil, backoff.Permanent(fmt.Errorf("could not evaluate offset: %w", err))
+			}
+		}
+		if config.Length != nil {
+			offset, err = evaluateInt64(config.Length, data)
+			if err != nil {
+				return nil, backoff.Permanent(fmt.Errorf("could not evaluate length: %w", err))
+			}
+		}
+
+		reader, err := bucket.NewRangeReader(ctx, key, offset, length, nil)
+		if err != nil {
+			return nil, fmt.Errorf("could not open reader for key %s: %w", key, err)
+		}
+		defer reader.Close()
+
 		s, _ := stream.SinkFromContext(ctx)
 		if s != nil {
-			reader, err := bucket.NewReader(ctx, key, nil)
-			if err != nil {
-				return nil, fmt.Errorf("could not open reader for key %s: %w", key, err)
-			}
-			defer reader.Close()
-
 			for {
 				buf := make([]byte, config.BufferSize)
 				n, err := reader.Read(buf)
 				if err != nil {
 					if err == io.EOF {
-						s.Complete()
 						return nil, nil
 					}
 					return nil, err
@@ -102,7 +119,7 @@ func ReadAction(
 				}
 			}
 		} else {
-			dataBytes, err := bucket.ReadAll(ctx, key)
+			dataBytes, err := io.ReadAll(reader)
 			if err != nil {
 				return nil, fmt.Errorf("could not read key: %w", err)
 			}
@@ -112,4 +129,12 @@ func ReadAction(
 			return result, err
 		}
 	}
+}
+
+func evaluateInt64(e *expr.ValueExpr, data map[string]any) (int64, error) {
+	val, err := e.Eval(data)
+	if err != nil {
+		return 0, err
+	}
+	return cast.ToInt64E(val)
 }

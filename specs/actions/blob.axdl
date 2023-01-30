@@ -24,6 +24,8 @@ type ReadConfig
   codec:     string = "bytes"
   "codecArgs are the arguments to pass to the decode function."
   codecArgs: [any]?
+  offset: ValueExpr?
+  length: ValueExpr?
   bufferSize: u32 = 1024
 }
 

@@ -16,8 +16,10 @@ type ReadConfig struct {
 	// Codec is the name of the codec to use for decoding.
 	Codec string `json:"codec" yaml:"codec" msgpack:"codec" mapstructure:"codec" validate:"required"`
 	// codecArgs are the arguments to pass to the decode function.
-	CodecArgs  []interface{} `json:"codecArgs,omitempty" yaml:"codecArgs,omitempty" msgpack:"codecArgs,omitempty" mapstructure:"codecArgs" validate:"dive"`
-	BufferSize uint32        `json:"bufferSize" yaml:"bufferSize" msgpack:"bufferSize" mapstructure:"bufferSize"`
+	CodecArgs  []interface{}   `json:"codecArgs,omitempty" yaml:"codecArgs,omitempty" msgpack:"codecArgs,omitempty" mapstructure:"codecArgs" validate:"dive"`
+	Offset     *expr.ValueExpr `json:"offset,omitempty" yaml:"offset,omitempty" msgpack:"offset,omitempty" mapstructure:"offset"`
+	Length     *expr.ValueExpr `json:"length,omitempty" yaml:"length,omitempty" msgpack:"length,omitempty" mapstructure:"length"`
+	BufferSize uint32          `json:"bufferSize" yaml:"bufferSize" msgpack:"bufferSize" mapstructure:"bufferSize"`
 }
 
 func Read() (string, actions.Loader) {

@@ -21,6 +21,8 @@ export interface ReadConfig {
   codec?: string;
   // codecArgs are the arguments to pass to the decode function.
   codecArgs?: any[];
+  offset?: ValueExpr;
+  length?: ValueExpr;
   bufferSize?: number;
 }
 
