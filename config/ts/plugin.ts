@@ -19,11 +19,13 @@ export default function (
   _doc: apex.ast.Document,
   config: Configuration,
 ): Configuration {
+  config.config ||= {};
   config.generates ||= {};
   const generates = config.generates || [];
   config.generates = generates;
 
-  generates[`iota.ts`] = {
+  const file = config.config.iotaTypeScriptPath as string || "iota.ts"
+  generates[file] = {
     module: urlify("./iota_visitor.ts"),
   };
 
