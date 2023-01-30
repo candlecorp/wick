@@ -1,17 +1,17 @@
-import { BaseVisitor, Context, Kind } from "../../codegen/deps/model.ts";
+import { BaseVisitor, Context, Kind } from "./deps/model.ts";
 import {
   AliasVisitor,
   EnumVisitor,
   expandType,
   mapArg,
   mapArgs,
-} from "../../codegen/deps/typescript.ts";
+} from "./deps/typescript.ts";
 import {
   camelCase,
   capitalize,
   convertOperationToType,
   formatComment,
-} from "../../codegen/deps/utils.ts";
+} from "./deps/utils.ts";
 
 const defaultMod = new URL("./mod.ts", import.meta.url).toString();
 

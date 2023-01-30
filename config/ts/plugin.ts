@@ -1,5 +1,5 @@
-import { Configuration } from "https://deno.land/x/apex_cli@v0.0.18/src/config.ts";
-import * as apex from "../../codegen/deps/core.ts";
+import { Configuration } from "./deps/cli.ts";
+import * as apex from "./deps/core.ts";
 
 const importUrl = new URL(".", import.meta.url);
 
