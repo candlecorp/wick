@@ -40,6 +40,11 @@ import {
     context.accept(context, types);
   }
 
+  public visitContextAfter(context: Context): void {
+    const interfaces = new InterfacesVisitor(this.writer);
+    context.accept(context, interfaces);
+  }
+
   visitInterfaceBefore(context: Context): void {
     const args = new ArgsVisitor(this.writer);
     context.interface.accept(context, args);
@@ -270,5 +275,22 @@ class ClientVisitor extends BaseVisitor {
   visitInterfaceAfter(context: Context): void {
     this.write(`}\n\n`);
     super.triggerInterfaceAfter(context);
+  }
+}
+
+class InterfacesVisitor extends BaseVisitor {
+  visitContextBefore(_context: Context): void {
+    this.write("export const interfaces = {\n");
+  }
+
+  visitContextAfter(_context: Context): void {
+    this.write("}\n\n");
+  }
+
+  visitInterface(context: Context): void {
+    const { interface: iface } = context;
+    this.write(
+      `  ${iface.name},\n`,
+    );
   }
 }
