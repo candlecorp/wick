@@ -91,7 +91,7 @@ export function duration(value: string): Duration {
   return s as Duration;
 }
 
-export const codecs: { [name: string]: CodecRef } = {
+export const codecs: Record<string, CodecRef> = {
   JSON: "json" as CodecRef,
   MsgPack: "msgpack" as CodecRef,
   CloudEventsJSON: "cloudevents+json" as CodecRef,
@@ -100,11 +100,6 @@ export const codecs: { [name: string]: CodecRef } = {
 
 export interface IncludeOptions {
   resourceLinks?: { [key: string]: ResourceRef };
-}
-
-export interface Iota<T> {
-  $ref: string;
-  interfaces: T;
 }
 
 // For YAML serialization
@@ -320,14 +315,16 @@ export class Application {
 
   import<T>(
     instanceId: string,
-    iota: Iota<T>,
+    ref: string,
+    iota: T,
     options: IncludeOptions = {},
   ): T {
     this.config.imports[instanceId] = {
-      ref: iota.$ref,
+      ref: ref,
       ...options,
     };
-    return iota.interfaces;
+    // TODO: transfrom based on instanceId.
+    return iota;
   }
 
   initializer(name: string, comp: Component<unknown>): Application {
@@ -439,7 +436,7 @@ export class Application {
   }
 
   emit(): void {
-    const content = this.asYAML();
+    const content = this.asYAML().trim() + "\n";
     if (Deno.args.length == 1) {
       Deno.writeTextFileSync(Deno.args[0], content);
     } else {
