@@ -24,22 +24,25 @@ export default function (
   const generates = config.generates || [];
   config.generates = generates;
 
-  const file = config.config.iotaTypeScriptPath as string || "iota.ts"
+  const mode = config.config.mode as string || "export";
+  const file = config.config.iotaTypeScriptPath as string || "iota.ts";
   generates[file] = {
     module: urlify("./iota_visitor.ts"),
   };
 
-  const tasks = config.tasks ||= {};
-  const names = new Set<string>(Object.keys(tasks).map((k) => taskName(k)));
-  const defaultTasks: Record<string, string[]> = {
-    start: [
-      "deno run --allow-write bus.ts bus.yaml",
-      "nanobus run --debug --developer-mode",
-    ],
-  };
-  for (const key of Object.keys(defaultTasks)) {
-    if (!names.has(taskName(key))) {
-      tasks[key] = defaultTasks[key];
+  if (mode == "export") {
+    const tasks = config.tasks ||= {};
+    const names = new Set<string>(Object.keys(tasks).map((k) => taskName(k)));
+    const defaultTasks: Record<string, string[]> = {
+      start: [
+        "deno run --allow-write bus.ts bus.yaml",
+        "nanobus run --debug --developer-mode",
+      ],
+    };
+    for (const key of Object.keys(defaultTasks)) {
+      if (!names.has(taskName(key))) {
+        tasks[key] = defaultTasks[key];
+      }
     }
   }
 
