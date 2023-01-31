@@ -75,6 +75,7 @@ import (
 	"github.com/nanobus/nanobus/pkg/actions/core"
 	"github.com/nanobus/nanobus/pkg/actions/dapr"
 	"github.com/nanobus/nanobus/pkg/actions/postgres"
+	"github.com/nanobus/nanobus/pkg/actions/redis"
 
 	// CODECS
 	"github.com/nanobus/nanobus/pkg/codec"
@@ -375,6 +376,7 @@ func Start(ctx context.Context, info *Info) (*Engine, error) {
 	resourceRegistry := resource.Registry{}
 	resourceRegistry.Register(
 		postgres.Connection,
+		redis.Connection,
 		dapr.Client,
 		blob.URLBlob,
 		blob.AzureBlob,
@@ -396,6 +398,7 @@ func Start(ctx context.Context, info *Info) (*Engine, error) {
 	actionRegistry.Register(core.All...)
 	actionRegistry.Register(blob.All...)
 	actionRegistry.Register(postgres.All...)
+	actionRegistry.Register(redis.All...)
 	actionRegistry.Register(dapr.All...)
 
 	initializerRegistry := initialize.Registry{}
@@ -541,7 +544,9 @@ func Start(ctx context.Context, info *Info) (*Engine, error) {
 	}
 
 	resources := resource.Resources{}
+	fmt.Println("resources", resourcesConfig.Resources, )
 	if resourcesConfig != nil {
+		fmt.Println("resources", resourcesConfig.Resources, )
 		for name, component := range resourcesConfig.Resources {
 			log.Info("Initializing resource", "name", name, "type", component.Uses)
 

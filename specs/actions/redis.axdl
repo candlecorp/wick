@@ -1,0 +1,56 @@
+# Copyright 2022 The NanoBus Authors.
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+namespace "nanobus.actions.redis"
+
+alias ValueExpr = string
+alias DataExpr = string
+alias ResourceRef = string
+
+"""
+TODO
+"""
+type GetConfig
+  @tags(["Database"])
+  @filename("get")
+  @action("@redis/get") {
+  "Resource is the name of the connection resource to use."
+  resource: ResourceRef
+  "Data is the input bindings sent."
+  key: ValueExpr
+}
+
+type SetConfig
+  @tags(["Database"])
+  @filename("set")
+  @action("@redis/set") {
+  "Resource is the name of the connection resource to use."
+  resource: ResourceRef
+  "Data is the input bindings sent."
+  key: ValueExpr
+  "Data is the input bindings sent."
+  value: DataExpr
+}
+
+type RemoveConfig
+  @tags(["Database"])
+  @filename("remove")
+  @action("@redis/remove") {
+  "Resource is the name of the connection resource to use."
+  resource: ResourceRef
+  "Data is the input bindings sent."
+  key: ValueExpr
+}
+
+# type ListConfig
+#   @tags(["Database"])
+#   @filename("list")
+#   @action("@redis/list") {
+#   "Resource is the name of the connection resource to use."
+#   resource: ResourceRef
+#   "Data is the input bindings sent."
+#   keylist: [string]
+# }

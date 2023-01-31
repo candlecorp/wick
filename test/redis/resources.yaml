@@ -1,0 +1,5 @@
+resources:
+  redisdb:
+    uses: redis
+    with:
+      url: "localhost:6379"

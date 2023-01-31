@@ -1,0 +1,20 @@
+id: redis-test
+version: 0.0.1
+interfaces:
+  redis.v1:
+    getValue:
+      steps:
+        - name: Get a single value
+          uses: "@redis/get"
+          with:
+            resource: redisdb
+            key: "foo"
+    setValue:
+      steps:
+        - name: Get a single value
+          uses: "@redis/set"
+          with:
+            resource: redisdb
+            key: string
+            value: string
+
