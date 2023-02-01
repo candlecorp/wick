@@ -20,6 +20,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
@@ -167,6 +168,8 @@ type Engine struct {
 
 	transportInvoker transport.Invoker
 	resources        resource.Resources
+
+	once sync.Once
 }
 
 func (e *Engine) LoadConfig(busConfig *runtime.BusConfig) error {
@@ -872,19 +875,26 @@ func (e *Engine) Invoke(handler handler.Handler, input any) (any, error) {
 }
 
 func (e *Engine) Shutdown() {
-	e.log.Info("Shutting down")
-	for name, r := range e.resources {
-		switch c := r.(type) {
-		case io.Closer:
-			e.log.Info("closing resource", "name", name)
-			if err := c.Close(); err != nil {
-				e.log.Error(err, "could not close resource %s", name)
+	e.once.Do(func() {
+		e.log.Info("Shutting down")
+
+		// Shutdown mesh
+		e.m.Close()
+
+		// Shutdown resources
+		for name, r := range e.resources {
+			switch c := r.(type) {
+			case io.Closer:
+				e.log.Info("closing resource", "name", name)
+				if err := c.Close(); err != nil {
+					e.log.Error(err, "could not close resource", "name", name)
+				}
+			case closable:
+				e.log.Info("closing resource", "name", name)
+				c.Close()
 			}
-		case closable:
-			e.log.Info("closing resource", "name", name)
-			c.Close()
 		}
-	}
+	})
 }
 
 func loadResourcesConfig(filename string, log logr.Logger) (*runtime.ResourcesConfig, error) {
