@@ -13,6 +13,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"strings"
+	"sync"
 	"sync/atomic"
 
 	"github.com/nanobus/iota/go/operations"
@@ -30,13 +31,19 @@ import (
 type (
 	Mesh struct {
 		tracer      trace.Tracer
-		instances   map[string]compute.Invoker
+		instances   []compute.Invoker
 		exports     map[string]map[string]*atomic.Pointer[destination]
 		unsatisfied []*pending
-		done        chan struct{}
+
+		activeRequests atomic.Int64
+		closing        atomic.Bool
+		closed         chan struct{}
+		once           sync.Once
+		done           chan struct{}
 	}
 
 	destination struct {
+		m        *Mesh
 		tracer   trace.Tracer
 		instance compute.Invoker
 		index    uint32
@@ -52,10 +59,17 @@ type (
 func New(tracer trace.Tracer) *Mesh {
 	return &Mesh{
 		tracer:      tracer,
-		instances:   make(map[string]compute.Invoker),
+		instances:   make([]compute.Invoker, 0, 10),
 		exports:     map[string]map[string]*atomic.Pointer[destination]{},
 		unsatisfied: make([]*pending, 0, 10),
+		closed:      make(chan struct{}),
 		done:        make(chan struct{}),
+	}
+}
+
+func (m *Mesh) reduceActiveRequests() {
+	if m.activeRequests.Add(-1) <= 0 && m.closing.Load() {
+		close(m.closed)
 	}
 }
 
@@ -121,21 +135,33 @@ func (m *Mesh) RequestChannel(ctx context.Context, h handler.Handler, p payload.
 
 func (m *Mesh) Close() error {
 	var merr error
-	for _, inst := range m.instances {
-		if err := inst.Close(); err != nil {
-			merr = multierr.Append(merr, err)
+	m.once.Do(func() {
+		m.closing.Store(true)
+
+		if m.activeRequests.Load() > 0 {
+			<-m.closed
 		}
-	}
-	close(m.done)
+
+		for _, inst := range m.instances {
+			if err := inst.Close(); err != nil {
+				merr = multierr.Append(merr, err)
+			}
+		}
+
+		close(m.done)
+	})
+
 	return merr
 }
 
 func (m *Mesh) WaitUntilShutdown() error {
 	<-m.done
+
 	return nil
 }
 
 func (m *Mesh) Link(inst compute.Invoker) {
+	m.instances = append(m.instances, inst)
 	opers := inst.Operations()
 
 	numExported := 0
@@ -154,6 +180,7 @@ func (m *Mesh) Link(inst compute.Invoker) {
 			}
 
 			ptr.Store(&destination{
+				m:        m,
 				tracer:   m.tracer,
 				instance: inst,
 				index:    op.Index,
@@ -228,6 +255,7 @@ func (m *Mesh) linkOperation(inst compute.Invoker, op operations.Operation) bool
 }
 
 func (d *destination) RequestResponse(ctx context.Context, p payload.Payload) mono.Mono[payload.Payload] {
+	d.m.activeRequests.Add(1)
 	ctx, span := d.tracer.Start(ctx, d.name)
 	md := p.Metadata()
 	if md != nil {
@@ -236,6 +264,7 @@ func (d *destination) RequestResponse(ctx context.Context, p payload.Payload) mo
 	m := d.instance.RequestResponse(ctx, p)
 	m.Notify(func(_ rx.SignalType) {
 		span.End()
+		d.m.reduceActiveRequests()
 	})
 	return m
 }
@@ -251,6 +280,7 @@ func (d *destination) FireAndForget(ctx context.Context, p payload.Payload) {
 }
 
 func (d *destination) RequestStream(ctx context.Context, p payload.Payload) flux.Flux[payload.Payload] {
+	d.m.activeRequests.Add(1)
 	ctx, span := d.tracer.Start(ctx, d.name)
 	md := p.Metadata()
 	if md != nil {
@@ -259,11 +289,13 @@ func (d *destination) RequestStream(ctx context.Context, p payload.Payload) flux
 	f := d.instance.RequestStream(ctx, p)
 	f.Notify(func(_ rx.SignalType) {
 		span.End()
+		d.m.reduceActiveRequests()
 	})
 	return f
 }
 
 func (d *destination) RequestChannel(ctx context.Context, p payload.Payload, in flux.Flux[payload.Payload]) flux.Flux[payload.Payload] {
+	d.m.activeRequests.Add(1)
 	ctx, span := d.tracer.Start(ctx, d.name)
 	md := p.Metadata()
 	if md != nil {
@@ -272,6 +304,7 @@ func (d *destination) RequestChannel(ctx context.Context, p payload.Payload, in 
 	f := d.instance.RequestChannel(ctx, p, in)
 	f.Notify(func(_ rx.SignalType) {
 		span.End()
+		d.m.reduceActiveRequests()
 	})
 	return f
 }
