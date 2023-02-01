@@ -1,0 +1,7 @@
+{
+  "label": "Blob storage",
+  "link": {
+    "type": "generated-index",
+    "description": "Use these actions to store and retrieve data from a blob store like Azure Blob Storage, Google Cloud Storage, or S3"
+  }
+}

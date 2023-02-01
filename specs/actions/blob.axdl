@@ -4,6 +4,9 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
+"""
+Use these actions to store and retrieve data from a blob store like Azure Blob Storage, Google Cloud Storage, or S3.
+"""
 namespace "nanobus.actions.blob"
 
 alias ResourceRef = string

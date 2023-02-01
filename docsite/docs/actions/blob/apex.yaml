@@ -1,0 +1,6 @@
+spec: ../../../../specs/actions/blob.axdl
+config:
+  pkg: 'actions/blob'
+  position_start: 1
+plugins:
+  - '../../../../codegen/docs-plugin.ts'
