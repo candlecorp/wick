@@ -1,0 +1,237 @@
+---
+sidebar_position: 10
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# Understanding Components
+
+Except for Resouces, A NanoBus application configures the component types below in `bus.yaml` (or `bus.ts` if you use TypeScript configuration).
+
+## Initializers
+
+Components that run a task (i.e., database migrations) before your application starts receiving traffic.
+
+<Tabs
+  values={[
+    {label: 'YAML', value: 'yaml'},
+    {label: 'TypeScript', value: 'typescript'},
+  ]}>
+  <TabItem value="yaml">
+
+```yaml title="Posgres database migration"
+initializers:
+  db:
+    uses: nanobus.migrate.postgres/v1
+    with:
+      dataSource: '${env:URLSHORTENER_DB}'
+      sourceUrl: '${env:URLSHORTENER_SQL}'
+```
+
+  </TabItem>
+  <TabItem value="typescript">
+
+```typescript title="Posgres database migration"
+app.initializer(
+  "db",
+  migrate.MigratePostgresV1({
+    dataSource: env("URLSHORTENER_DB"),
+    sourceUrl: env("URLSHORTENER_SQL"),
+  }),
+);
+```
+
+  </TabItem>
+</Tabs>
+
+## Transports
+
+Share your application's functionality over remote protocols, such as an HTTP server or Pub/Sub subscription, so that your application is accessed by users or triggered by events.
+
+### HTTP Middleware and Routers
+
+An HTTP server is a barebones HTTP listener. It must have middleware and routers added to perform its intended functions. These separate components allow for the extensibility and composition of features.
+
+<Tabs
+  values={[
+    {label: 'YAML', value: 'yaml'},
+    {label: 'TypeScript', value: 'typescript'},
+  ]}>
+  <TabItem value="yaml">
+
+```yaml title="REST/HTTP server"
+transports:
+  http:
+    uses: nanobus.transport.http.server/v1
+    with:
+      address: ':8080'
+      middleware: []
+      routers:
+        - uses: nanobus.transport.http.rest/v1
+          with:
+            documentation:
+              swaggerUI: true
+              postman: true
+              restClient: true
+```
+
+  </TabItem>
+  <TabItem value="typescript">
+
+```typescript title="REST/HTTP server"
+// RestModule encapsulates typical configuration for REST services.
+// Organizations can craft custom modules to meet their specific needs.
+app.use(new RestModule(":8080"));
+```
+
+  </TabItem>
+</Tabs>
+
+## Filters
+
+Filters are similar to HTTP middleware except for being transport agnostic. They perform tasks like parsing JWTs and reading claims before passing control to pipelines.
+
+<Tabs
+  values={[
+    {label: 'YAML', value: 'yaml'},
+    {label: 'TypeScript', value: 'typescript'},
+  ]}>
+  <TabItem value="yaml">
+
+```yaml title="Various authorization mechanisms"
+filters:
+  - uses: nanobus.filter.session/v1
+    with:
+      handler: 'security::getAccessToken'
+  - uses: nanobus.filter.userinfo/v1
+    with:
+      userInfoUrl: '${env:USERINFO_URL}'
+  - uses: nanobus.filter.jwt/v1
+    with:
+      jwksUrl: '${env:OAUTH_JWKS_URL}'
+```
+
+  </TabItem>
+  <TabItem value="typescript">
+
+```typescript title="Various authorization mechanisms"
+app.filters(
+  SessionV1({
+    handler: security.getAccessToken,
+  }),
+  UserInfoV1({
+    userInfoUrl: env("USERINFO_URL"),
+  }),
+  JWTV1({
+    jwksUrl: env("OAUTH_JWKS_URL"),
+  }),
+);
+```
+
+  </TabItem>
+</Tabs>
+
+## Actions
+
+Actions are where data from the call map to an operation for a specific resource, such as a database or message queue. They perform the bulk of processing in NanoBus. Actions are chained together in pipelines that make up a call to a provider (or even a no-code interface/service).
+
+<Tabs
+  values={[
+    {label: 'YAML', value: 'yaml'},
+    {label: 'TypeScript', value: 'typescript'},
+  ]}>
+  <TabItem value="yaml">
+
+```yaml title="CRUD database access"
+providers:
+  urlshortener.v1.Repository:
+    loadById:
+      steps:
+        - name: Load by ID
+          uses: '@postgres/load'
+          with:
+            resource: db
+            entity: 'urlshortener.v1::URL'
+            key: $.id
+          retry: database
+          circuitBreaker: database
+    loadByURL:
+      steps:
+        - name: Load by URL
+          uses: '@postgres/find_one'
+          with:
+            resource: db
+            entity: 'urlshortener.v1::URL'
+            where:
+              - query: url = ?
+                value: $.url
+            notFoundError: not_found
+          retry: database
+          circuitBreaker: database
+    storeURL:
+      steps:
+        - name: Store the URL
+          uses: '@postgres/exec'
+          with:
+            resource: db
+            sql: 'INSERT INTO url (id, url) VALUES ($1, $2)'
+            args:
+              - $.id
+              - $.url
+          retry: database
+          circuitBreaker: database
+```
+
+  </TabItem>
+  <TabItem value="typescript">
+
+```typescript title="CRUD database access"
+Repository.register(app, {
+  loadById: ({ flow }) =>
+    flow.then(
+      "Load by ID",
+      ($) => database.load(types.URL, $.id),
+      dbResiliency,
+    ),
+
+  loadByURL: ({ flow }) =>
+    flow.then(
+      "Load by URL",
+      ($) =>
+        database.findOne(types.URL, {
+          where: [
+            {
+              query: "url = ?",
+              value: $.url,
+            },
+          ],
+          notFoundError: "not_found",
+        }),
+      dbResiliency,
+    ),
+
+  storeURL: ({ flow }) =>
+    flow.then(
+      "Store the URL",
+      ($) =>
+        database.exec("INSERT INTO url (id, url) VALUES ($1, $2)", $.id, $.url),
+      dbResiliency,
+    ),
+});
+```
+
+  </TabItem>
+</Tabs>
+
+## Resources
+
+Resources are pluggable components that allow NanoBus to interact with backend databases, message queues, or other systems. Since they plug into an application as dependencies, the system operator configures them in a separate `resourcess.yaml` file.
+
+```yaml title="resources.yaml"
+resources:
+  db:
+    uses: postgres
+    with:
+      url: ${env:URLSHORTENER_DB}
+```
