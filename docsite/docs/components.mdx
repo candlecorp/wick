@@ -187,6 +187,8 @@ providers:
   <TabItem value="typescript">
 
 ```typescript title="CRUD database access"
+const database = new PostgresActions(db);
+
 Repository.register(app, {
   loadById: ({ flow }) =>
     flow.then(
