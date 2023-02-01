@@ -445,7 +445,10 @@ export class Application {
   }
 }
 
-function removeEmpty(rec: Record<string, unknown>) {
+function removeEmpty(rec: Record<string, unknown> | undefined) {
+  if (!rec) {
+    return
+  }
   for (const key of Object.keys(rec)) {
     const val = rec[key];
     if (
@@ -459,7 +462,10 @@ function removeEmpty(rec: Record<string, unknown>) {
   }
 }
 
-function removeUndefined(rec: Record<string, unknown>) {
+function removeUndefined(rec: Record<string, unknown> | undefined) {
+  if (!rec) {
+    return
+  }
   for (const key of Object.keys(rec)) {
     const val = rec[key];
     if (val == undefined) {

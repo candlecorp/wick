@@ -78,8 +78,22 @@ Alternatively, you can also install manually from [releases](https://github.com/
 
 Use the `apex` CLI to start a new project from the starter template:
 
-```console
-$ apex new https://github.com/nanobus/nanobus.git -p templates/init my-app
+```shell
+apex install https://deno.land/x/nanobus_templates/mod.ts
+apex list templates
+```
+
+```shell title="Output"
+┌──────────────────────┬──────────────────────┬─────────────────────────────────────────────┐
+│ Name                 │ Version              │ Description                                 │
+└──────────────────────┴──────────────────────┴─────────────────────────────────────────────┘
+  @nanobus/init          v0.0.22                NanoBus barebones Iota
+  @nanobus/init-ts       v0.0.22                NanoBus barebones Iota with TypeScript
+  @nanobus/tinygo        v0.0.22                NanoBus TinyGo Iota
+```
+
+```shell
+apex new @nanobus/init my-app
 ```
 
 The starter template includes up a nanobus configuration with one sample interface and an action that takes an input named `name`.
@@ -99,16 +113,11 @@ interfaces:
 
 Run our action with the `nanobus invoke` command with sample input piped from `echo`:
 
-```console
-$ echo '{"name": "World!"}' | nanobus invoke bus.yaml Greeter::sayHello
-"Hello, World!"
+```shell
+echo '{"name": "World!"}' | nanobus invoke bus.yaml Greeter::sayHello
 ```
 
-The starter template also includes a tiny `justfile` with this command set up already.
-
-```console
-$ just run
-echo '{"name": "World!"}' | nanobus invoke bus.yaml Greeter::sayHello
+```shell title="Output"
 "Hello, World!"
 ```
 
@@ -164,8 +173,18 @@ interfaces:
 
 Start our web service by running `nanobus` and watch nanobus initialize our HTTP server and routes automatically.
 
-```console
-$ nanobus
+```shell
+nanobus run --debug --developer-mode
+```
+
+```shell title="Output"
+INFO	Running in Developer Mode!
+INFO	Initializing codec	{"name": "text/plain", "type": "text/plain"}
+INFO	Initializing codec	{"name": "text/html", "type": "text/html"}
+INFO	Initializing codec	{"name": "json", "type": "json"}
+INFO	Initializing codec	{"name": "msgpack", "type": "msgpack"}
+INFO	Initializing codec	{"name": "cloudevents+avro", "type": "cloudevents+avro"}
+INFO	Initializing codec	{"name": "cloudevents+json", "type": "cloudevents+json"}
 INFO	Initializing transport	{"name": "http"}
 INFO	Serving route	{"uri": "/hello", "methods": "POST", "handler": "Greeter::sayHello"}
 INFO	HTTP server listening	{"address": ":8080"}
@@ -173,16 +192,20 @@ INFO	HTTP server listening	{"address": ":8080"}
 
 Make a request with a tool like curl to see the output:
 
-```sh
+```shell
 curl 127.0.0.1:8080/hello \
   -H "Content-Type: application/json" \
   -d '{"name": "World!"}'
 ```
 
-Output
-
-```
-{"type":"permission_denied","code":"permission_denied","status":403,"path":"/hello","timestamp":"2022-12-21T17:26:56.067483Z"}
+```shell title="Output (prettified)"
+{
+  "type": "permission_denied",
+  "code": "permission_denied",
+  "status": 403,
+  "path": "/hello",
+  "timestamp": "2023-02-01T15:21:50.067821Z"
+}
 ```
 
 Permission denied!
@@ -232,15 +255,13 @@ interfaces:
 Run it with the command `nanobus` and issue a curl command to see our output.
 
 
-```sh
+```shell
 curl 127.0.0.1:8080/hello \
   -H "Content-Type: application/json" \
   -d '{"name": "World!"}'
 ```
 
-Output
-
-```
+```shell title="Output"
 "Hello, World!"
 ```
 
