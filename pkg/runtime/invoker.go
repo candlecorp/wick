@@ -175,16 +175,15 @@ func (i *Invoker) RequestChannel(ctx context.Context, p payload.Payload, in flux
 			streamSource := stream.SourceFromFlux(i.codec, in)
 			ctx = stream.SourceNewContext(ctx, streamSource)
 
-			result, err := r(ctx, data)
+			_, err := r(ctx, data)
 			if err != nil {
 				sink.Error(err)
 				return
 			}
 
-			if isNil(result) {
-				sink.Next(payload.New(nil))
-				return
-			}
+			// if isNil(result) {
+			// 	sink.Next(payload.New(nil))
+			// }
 
 			sink.Complete()
 		}()

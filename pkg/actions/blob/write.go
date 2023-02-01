@@ -10,6 +10,7 @@ package blob
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 
@@ -69,7 +70,7 @@ func WriteAction(
 		}
 
 		// Note: writer.Close seems to fail due to "context closed"
-		// if `ctx` is used. Even if the context is not done proir.
+		// if `ctx` is used. Even if the context is not done prior.
 		writeCtx, cancelWrite := context.WithCancel(context.Background())
 		defer cancelWrite()
 
@@ -97,7 +98,7 @@ func WriteAction(
 				first = false
 				var record any
 				if err := s.Next(&record, nil); err != nil {
-					if err == io.EOF {
+					if errors.Is(err, io.EOF) {
 						if err = writer.Close(); err != nil {
 							return nil, err
 						}
