@@ -10,7 +10,6 @@ package postgres
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	"github.com/jackc/pgx/v4/pgxpool"
@@ -34,13 +33,9 @@ func QueryOneLoader(ctx context.Context, with interface{}, resolver resolve.Reso
 		return nil, err
 	}
 
-	poolI, ok := resources[string(c.Resource)]
-	if !ok {
-		return nil, fmt.Errorf("resource %q is not registered", c.Resource)
-	}
-	pool, ok := poolI.(*pgxpool.Pool)
-	if !ok {
-		return nil, fmt.Errorf("resource %q is not a *pgxpool.Pool", c.Resource)
+	pool, err := resource.Get[*pgxpool.Pool](resources, c.Resource)
+	if err != nil {
+		return nil, err
 	}
 
 	// Return QueryAction with Single = true.

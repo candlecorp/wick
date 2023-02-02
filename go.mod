@@ -15,6 +15,7 @@ require (
 	github.com/antonmedv/expr v1.10.5
 	github.com/apexlang/apex-go v0.1.5
 	github.com/aws/aws-sdk-go v1.44.191
+	github.com/bwmarrin/discordgo v0.27.0
 	github.com/cenkalti/backoff/v4 v4.2.0
 	github.com/dapr/go-sdk v1.6.0
 	github.com/getkin/kin-openapi v0.113.0
@@ -108,6 +109,7 @@ require (
 	github.com/google/wire v0.5.0 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.2.1 // indirect
 	github.com/googleapis/gax-go/v2 v2.7.0 // indirect
+	github.com/gorilla/websocket v1.5.0 // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8 // indirect
 	go.opencensus.io v0.24.0 // indirect

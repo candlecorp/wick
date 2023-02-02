@@ -7,18 +7,12 @@
  */
 
 //go:generate apex generate
-package postgres
+package discord
 
 import (
 	"github.com/nanobus/nanobus/pkg/actions"
 )
 
 var All = []actions.NamedLoader{
-	Load,
-	Find,
-	FindOne,
-	Query,
-	QueryOne,
-	Exec,
-	ExecMulti,
+	SendMessage,
 }

@@ -99,3 +99,9 @@ generates:
   actions_postgres.ts:
     module: ../../../codegen/config.ts
     visitorClass: ComponentsVisitor
+---
+spec: ../../../specs/actions/discord.axdl
+generates:
+  actions_discord.ts:
+    module: ../../../codegen/config.ts
+    visitorClass: ComponentsVisitor

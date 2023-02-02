@@ -13,6 +13,7 @@ import { HttpServerV1 } from "./transport_server.ts";
 import { OAuth2V1, OAuth2V1Config } from "./transport_oauth2.ts";
 import { StaticPath, StaticV1, StaticV1Config } from "./transport_static.ts";
 import { CorsV0, CorsV0Config } from "./transport_cors.ts";
+import { AddRoute, RouterV1 } from "./transport_router.ts";
 
 export const standardErrors = {
   not_found: {
@@ -36,7 +37,7 @@ export const standardErrors = {
   },
 };
 
-export interface RestModuleOptions {
+export interface HttpModuleOptions {
   oauth2?: OAuth2V1Config;
   static?: StaticV1Config;
   cors?: CorsV0Config;
@@ -44,9 +45,9 @@ export interface RestModuleOptions {
 
 export class RestModule implements Module {
   private address: string;
-  private options: RestModuleOptions;
+  private options: HttpModuleOptions;
 
-  constructor(address: string, options: RestModuleOptions = {}) {
+  constructor(address: string, options: HttpModuleOptions = {}) {
     this.address = address;
     this.options = options;
   }
@@ -87,6 +88,52 @@ export class RestModule implements Module {
       HttpServerV1({
         address: this.address,
         middleware: middleware,
+        routers: routers,
+      }),
+    );
+
+    app.errors(standardErrors);
+  }
+}
+
+export class HttpModule implements Module {
+  private address: string;
+  private options: HttpModuleOptions;
+  private routes: AddRoute[];
+
+  constructor(address: string, options: HttpModuleOptions, ...routes: AddRoute[]) {
+    this.address = address;
+    this.options = options;
+    this.routes = routes;
+  }
+
+  initialize(app: Application): void {
+    const routers: Component<any>[] = [];
+    const middleware: Component<any>[] = [];
+
+    if (this.options.static) {
+      routers.push(StaticV1(this.options.static));
+    }
+
+    routers.push(RouterV1({
+      routes: this.routes,
+    }));
+
+    if (this.options.cors) {
+      middleware.push(
+        CorsV0({
+          // Typical settings for REST API servers.
+          allowedMethods: ["HEAD", "GET", "POST", "PUT", "PATCH", "DELETE"],
+          allowCredentials: true,
+          ...this.options.cors,
+        }),
+      );
+    }
+
+    app.transport(
+      "http",
+      HttpServerV1({
+        address: ":8080",
         routers: routers,
       }),
     );

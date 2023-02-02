@@ -36,13 +36,9 @@ func FindOneLoader(ctx context.Context, with interface{}, resolver resolve.Resol
 		return nil, err
 	}
 
-	poolI, ok := resources[string(c.Resource)]
-	if !ok {
-		return nil, fmt.Errorf("resource %q is not registered", c.Resource)
-	}
-	pool, ok := poolI.(*pgxpool.Pool)
-	if !ok {
-		return nil, fmt.Errorf("resource %q is not a *pgxpool.Pool", c.Resource)
+	pool, err := resource.Get[*pgxpool.Pool](resources, c.Resource)
+	if err != nil {
+		return nil, err
 	}
 
 	ns, ok := namespaces[c.Entity.Namespace]

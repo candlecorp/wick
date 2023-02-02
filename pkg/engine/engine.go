@@ -75,6 +75,7 @@ import (
 	"github.com/nanobus/nanobus/pkg/actions/blob"
 	"github.com/nanobus/nanobus/pkg/actions/core"
 	"github.com/nanobus/nanobus/pkg/actions/dapr"
+	"github.com/nanobus/nanobus/pkg/actions/discord"
 	"github.com/nanobus/nanobus/pkg/actions/postgres"
 
 	// CODECS
@@ -385,6 +386,7 @@ func Start(ctx context.Context, info *Info) (*Engine, error) {
 		blob.GCSBlob,
 		blob.MemBlob,
 		blob.S3Blob,
+		discord.Session,
 	)
 
 	tracingRegistry := otel_tracing.Registry{}
@@ -400,6 +402,7 @@ func Start(ctx context.Context, info *Info) (*Engine, error) {
 	actionRegistry.Register(blob.All...)
 	actionRegistry.Register(postgres.All...)
 	actionRegistry.Register(dapr.All...)
+	actionRegistry.Register(discord.All...)
 
 	initializerRegistry := initialize.Registry{}
 	initializerRegistry.Register(migrate_postgres.MigratePostgresV1)

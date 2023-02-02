@@ -37,9 +37,6 @@ func ConnectionLoader(ctx context.Context, with interface{}, resolver resolve.Re
 	if err != nil {
 		return nil, err
 	}
-	// if len(afterConnect) > 0 {
-	// 	config.AfterConnect = afterConnect[0]
-	// }
 
 	pool, err := pgxpool.ConnectConfig(ctx, config)
 	if err != nil {

@@ -10,7 +10,6 @@ package postgres
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	"github.com/google/uuid"
@@ -37,13 +36,9 @@ func QueryLoader(ctx context.Context, with interface{}, resolver resolve.Resolve
 		return nil, err
 	}
 
-	poolI, ok := resources[string(c.Resource)]
-	if !ok {
-		return nil, fmt.Errorf("resource %q is not registered", c.Resource)
-	}
-	pool, ok := poolI.(*pgxpool.Pool)
-	if !ok {
-		return nil, fmt.Errorf("resource %q is not a *pgxpool.Pool", c.Resource)
+	pool, err := resource.Get[*pgxpool.Pool](resources, c.Resource)
+	if err != nil {
+		return nil, err
 	}
 
 	return QueryAction(&c, pool), nil

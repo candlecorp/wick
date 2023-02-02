@@ -6,6 +6,8 @@ import {
   CallProviderConfig,
   Expr,
   ExprConfig,
+  Filter,
+  FilterConfig,
   Log,
   LogConfig,
 } from "./actions_core.ts";
@@ -40,6 +42,12 @@ export function callProvider(
 
 /// Expr utilities
 
+export function filter(expr: string): Component<FilterConfig> {
+  return Filter({
+    condition: expr,
+  });
+}
+
 export function value(expr: string): Component<ExprConfig> {
   return Expr({
     value: expr,
@@ -57,7 +65,7 @@ export function transform(expr: string): Component<ExprConfig> {
 export function router(...routes: AddRoute[]): Component<RouterV1Config> {
   return RouterV1({
     routes: routes,
-  })
+  });
 }
 
 export function GET(

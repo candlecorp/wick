@@ -1,0 +1,6 @@
+spec: ../../../specs/actions/discord.axdl
+config:
+  package: discord
+  module: github.com/nanobus/nanobus/pkg/actions/discord
+plugins:
+  - ../../../codegen/plugin.ts

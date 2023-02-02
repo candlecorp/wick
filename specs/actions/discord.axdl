@@ -1,0 +1,25 @@
+# Copyright 2022 The NanoBus Authors.
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+namespace "nanobus.actions.discord"
+
+alias ValueExpr = string
+alias DataExpr = string
+alias Handler = string
+alias CodecRef = string
+alias ResourceRef = string
+
+"""
+Sends a message to a Discord channel using it channel ID.
+"""
+type SendMessageConfig
+  @tags(["Chat"])
+  @filename("send_message")
+  @action("@discord/send_message") {
+  resource: ResourceRef = "discord"
+  channelId: ValueExpr
+  content: ValueExpr
+}
