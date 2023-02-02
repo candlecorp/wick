@@ -1,0 +1,5 @@
+spec: ../../../../specs/actions/discord.axdl
+config:
+  pkg: 'actions/discord'
+plugins:
+  - '../../../../codegen/docs-plugin.ts'
