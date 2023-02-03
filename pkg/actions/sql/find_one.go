@@ -6,13 +6,13 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-package postgres
+package sql
 
 import (
 	"context"
 	"fmt"
 
-	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/jmoiron/sqlx"
 
 	"github.com/nanobus/nanobus/pkg/actions"
 	"github.com/nanobus/nanobus/pkg/config"
@@ -22,15 +22,8 @@ import (
 	"github.com/nanobus/nanobus/pkg/spec"
 )
 
-// Load is the NamedLoader for the invoke action.
-func LoadLeader() (string, actions.Loader) {
-	return "@postgres/load", LoadLoader
-}
-
-func LoadLoader(ctx context.Context, with interface{}, resolver resolve.ResolveAs) (actions.Action, error) {
-	c := LoadConfig{
-		NotFoundError: "not_found",
-	}
+func FindOneLoader(ctx context.Context, with interface{}, resolver resolve.ResolveAs) (actions.Action, error) {
+	c := FindOneConfig{}
 	if err := config.Decode(with, &c); err != nil {
 		return nil, err
 	}
@@ -43,13 +36,9 @@ func LoadLoader(ctx context.Context, with interface{}, resolver resolve.ResolveA
 		return nil, err
 	}
 
-	poolI, ok := resources[string(c.Resource)]
-	if !ok {
-		return nil, fmt.Errorf("resource %q is not registered", c.Resource)
-	}
-	pool, ok := poolI.(*pgxpool.Pool)
-	if !ok {
-		return nil, fmt.Errorf("resource %q is not a *pgxpool.Pool", c.Resource)
+	db, err := resource.Get[*sqlx.DB](resources, c.Resource)
+	if err != nil {
+		return nil, err
 	}
 
 	ns, ok := namespaces[c.Entity.Namespace]
@@ -61,32 +50,23 @@ func LoadLoader(ctx context.Context, with interface{}, resolver resolve.ResolveA
 		return nil, fmt.Errorf("type %q is not found", c.Entity.Type)
 	}
 
-	return LoadAction(&c, t, ns, pool), nil
+	return FindOneAction(&c, t, ns, db), nil
 }
 
-func LoadAction(
-	config *LoadConfig,
+func FindOneAction(
+	config *FindOneConfig,
 	t *spec.Type,
 	ns *spec.Namespace,
-	pool *pgxpool.Pool) actions.Action {
+	db *sqlx.DB) actions.Action {
 	return func(ctx context.Context, data actions.Data) (interface{}, error) {
-		keyValue, err := config.Key.Eval(data)
+		result, err := findOne(ctx, db, t, data, config.Where, config.Preload)
 		if err != nil {
 			return nil, err
 		}
 
-		var result map[string]interface{}
-		if err = pool.AcquireFunc(ctx, func(conn *pgxpool.Conn) (err error) {
-			result, err = findById(ctx, conn, t, keyValue, config.Preload)
-			return err
-		}); err != nil {
-			return nil, err
-		}
-
-		if result == nil && config.NotFoundError != "" {
-			return nil, errorz.Return(config.NotFoundError, errorz.Metadata{
+		if result == nil && config.NotFoundError != nil {
+			return nil, errorz.Return(*config.NotFoundError, errorz.Metadata{
 				"resource": config.Resource,
-				"key":      keyValue,
 			})
 		}
 

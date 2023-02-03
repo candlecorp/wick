@@ -76,6 +76,7 @@ import (
 	"github.com/nanobus/nanobus/pkg/actions/core"
 	"github.com/nanobus/nanobus/pkg/actions/dapr"
 	"github.com/nanobus/nanobus/pkg/actions/postgres"
+	"github.com/nanobus/nanobus/pkg/actions/sql"
 
 	// CODECS
 	"github.com/nanobus/nanobus/pkg/codec"
@@ -378,6 +379,7 @@ func Start(ctx context.Context, info *Info) (*Engine, error) {
 	resourceRegistry := resource.Registry{}
 	resourceRegistry.Register(
 		postgres.Connection,
+		sql.Connection,
 		dapr.Client,
 		blob.URLBlob,
 		blob.AzureBlob,
@@ -399,6 +401,7 @@ func Start(ctx context.Context, info *Info) (*Engine, error) {
 	actionRegistry.Register(core.All...)
 	actionRegistry.Register(blob.All...)
 	actionRegistry.Register(postgres.All...)
+	actionRegistry.Register(sql.All...)
 	actionRegistry.Register(dapr.All...)
 
 	initializerRegistry := initialize.Registry{}
