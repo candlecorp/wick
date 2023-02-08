@@ -89,6 +89,7 @@ import (
 	codec_text "github.com/nanobus/nanobus/pkg/codec/text"
 
 	// INITIALIZERS / DB MIGRATION
+	migrate_mssql "github.com/nanobus/nanobus/pkg/initialize/mssql"
 	migrate_postgres "github.com/nanobus/nanobus/pkg/initialize/postgres"
 
 	// TELEMETRY / TRACING
@@ -405,7 +406,9 @@ func Start(ctx context.Context, info *Info) (*Engine, error) {
 	actionRegistry.Register(dapr.All...)
 
 	initializerRegistry := initialize.Registry{}
-	initializerRegistry.Register(migrate_postgres.MigratePostgresV1)
+	initializerRegistry.Register(
+		migrate_mssql.MigrateMSSQLV1,
+		migrate_postgres.MigratePostgresV1)
 
 	// Codecs
 	jsoncodec := json_codec.New()

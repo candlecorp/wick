@@ -1,7 +1,7 @@
-spec: ../../../specs/initialize/postgres.axdl
+spec: ../../../specs/initialize/mssql.axdl
 config:
-  package: postgres
-  module: github.com/nanobus/nanobus/pkg/initialize/postgres
+  package: mssql
+  module: github.com/nanobus/nanobus/pkg/initialize/mssql
   logger:
     import: "github.com/go-logr/logr"
     interface: "logr.Logger"

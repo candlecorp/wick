@@ -18,7 +18,7 @@ import TabItem from '@theme/TabItem';
 
 </div>
 
-This component offers database mifrations for Postgres using the
+This component offers database migrations for Postgres using the
 [golang-migrate/migrate](https://github.com/golang-migrate/migrate) library.
 It reads migrations from sources (`.sql` files with [DDL](https://en.wikipedia.org/wiki/Data_definition_language)) and applies them in correct order to a database.
 
@@ -61,7 +61,7 @@ The data source connection string.
     <span className="badge badgeDarkBlue">directory
       <a class="hash-link" href="#directory" title="Direct link to directory">​</a>
     </span>
-    <code>FilePath</code>
+    <code>string</code>
   </header>
 
 The directory to use for migration sources.
@@ -79,6 +79,104 @@ The directory to use for migration sources.
   </header>
 
 The directory to use for migration sources.
+
+</div>
+
+### migrationsTable
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">migrationsTable
+      <a class="hash-link" href="#migrationstable" title="Direct link to migrationsTable">​</a>
+    </span>
+    <code>string</code>
+  </header>
+
+
+
+</div>
+
+### migrationsTableQuoted
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">migrationsTableQuoted <span className="required">*</span>
+      <a class="hash-link" href="#migrationstablequoted" title="Direct link to migrationsTableQuoted">​</a>
+    </span>
+    <code>bool</code>
+  </header>
+
+
+
+</div>
+
+### multiStatementEnabled
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">multiStatementEnabled <span className="required">*</span>
+      <a class="hash-link" href="#multistatementenabled" title="Direct link to multiStatementEnabled">​</a>
+    </span>
+    <code>bool</code>
+  </header>
+
+
+
+</div>
+
+### databaseName
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">databaseName
+      <a class="hash-link" href="#databasename" title="Direct link to databaseName">​</a>
+    </span>
+    <code>string</code>
+  </header>
+
+
+
+</div>
+
+### schemaName
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">schemaName
+      <a class="hash-link" href="#schemaname" title="Direct link to schemaName">​</a>
+    </span>
+    <code>string</code>
+  </header>
+
+
+
+</div>
+
+### statementTimeout
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">statementTimeout
+      <a class="hash-link" href="#statementtimeout" title="Direct link to statementTimeout">​</a>
+    </span>
+    <code>Duration</code>
+  </header>
+
+
+
+</div>
+
+### multiStatementMaxSize
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">multiStatementMaxSize
+      <a class="hash-link" href="#multistatementmaxsize" title="Direct link to multiStatementMaxSize">​</a>
+    </span>
+    <code>i32</code>
+  </header>
+
+
 
 </div>
 

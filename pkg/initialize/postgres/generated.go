@@ -3,14 +3,32 @@
 package postgres
 
 import (
+	"time"
+
 	"github.com/nanobus/nanobus/pkg/initialize"
 )
 
+// This component offers database migrations for Postgres using the
+// [golang-migrate/migrate](https://github.com/golang-migrate/migrate) library. It
+// reads migrations from sources (`.sql` files with
+// [DDL](https://en.wikipedia.org/wiki/Data_definition_language)) and applies them
+// in correct order to a database.
 type MigratePostgresV1Config struct {
-	Name       string  `json:"name" yaml:"name" msgpack:"name" mapstructure:"name" validate:"required"`
-	DataSource string  `json:"dataSource" yaml:"dataSource" msgpack:"dataSource" mapstructure:"dataSource" validate:"required"`
-	Directory  *string `json:"directory,omitempty" yaml:"directory,omitempty" msgpack:"directory,omitempty" mapstructure:"directory" validate:"required_without=SourceURL"`
-	SourceURL  *string `json:"sourceUrl,omitempty" yaml:"sourceUrl,omitempty" msgpack:"sourceUrl,omitempty" mapstructure:"sourceUrl" validate:"required_without=Directory"`
+	// Name of the SQL driver to open.
+	Name string `json:"name" yaml:"name" msgpack:"name" mapstructure:"name" validate:"required"`
+	// The data source connection string.
+	DataSource string `json:"dataSource" yaml:"dataSource" msgpack:"dataSource" mapstructure:"dataSource" validate:"required"`
+	// The directory to use for migration sources.
+	Directory *string `json:"directory,omitempty" yaml:"directory,omitempty" msgpack:"directory,omitempty" mapstructure:"directory" validate:"required_without=SourceURL"`
+	// The directory to use for migration sources.
+	SourceURL             *string        `json:"sourceUrl,omitempty" yaml:"sourceUrl,omitempty" msgpack:"sourceUrl,omitempty" mapstructure:"sourceUrl" validate:"required_without=Directory"`
+	MigrationsTable       *string        `json:"migrationsTable,omitempty" yaml:"migrationsTable,omitempty" msgpack:"migrationsTable,omitempty" mapstructure:"migrationsTable"`
+	MigrationsTableQuoted bool           `json:"migrationsTableQuoted" yaml:"migrationsTableQuoted" msgpack:"migrationsTableQuoted" mapstructure:"migrationsTableQuoted"`
+	MultiStatementEnabled bool           `json:"multiStatementEnabled" yaml:"multiStatementEnabled" msgpack:"multiStatementEnabled" mapstructure:"multiStatementEnabled"`
+	DatabaseName          *string        `json:"databaseName,omitempty" yaml:"databaseName,omitempty" msgpack:"databaseName,omitempty" mapstructure:"databaseName"`
+	SchemaName            *string        `json:"schemaName,omitempty" yaml:"schemaName,omitempty" msgpack:"schemaName,omitempty" mapstructure:"schemaName"`
+	StatementTimeout      *time.Duration `json:"statementTimeout,omitempty" yaml:"statementTimeout,omitempty" msgpack:"statementTimeout,omitempty" mapstructure:"statementTimeout"`
+	MultiStatementMaxSize *int32         `json:"multiStatementMaxSize,omitempty" yaml:"multiStatementMaxSize,omitempty" msgpack:"multiStatementMaxSize,omitempty" mapstructure:"multiStatementMaxSize"`
 }
 
 func MigratePostgresV1() (string, initialize.Loader) {
