@@ -5,29 +5,37 @@ package redis
 import (
 	"github.com/nanobus/nanobus/pkg/actions"
 	"github.com/nanobus/nanobus/pkg/expr"
+	"github.com/nanobus/nanobus/pkg/resource"
 )
 
-type ResourceRef string
-
-// TODO
+// Reads data and decodes it from a redis store.
 type GetConfig struct {
-	// Resource is the name of the connection resource to use.
-	Resource ResourceRef `json:"resource" yaml:"resource" msgpack:"resource" mapstructure:"resource" validate:"required"`
-	// Data is the input bindings sent.
+	// The redis store resource to read.
+	Resource resource.Ref `json:"resource" yaml:"resource" msgpack:"resource" mapstructure:"resource" validate:"required"`
+	// The key to read.
 	Key *expr.ValueExpr `json:"key" yaml:"key" msgpack:"key" mapstructure:"key" validate:"required"`
+	// Codec is the name of the codec to use for decoding.
+	Codec string `json:"codec" yaml:"codec" msgpack:"codec" mapstructure:"codec" validate:"required"`
+	// codecArgs are the arguments to pass to the decode function.
+	CodecArgs []interface{} `json:"codecArgs,omitempty" yaml:"codecArgs,omitempty" msgpack:"codecArgs,omitempty" mapstructure:"codecArgs" validate:"dive"`
 }
 
 func Get() (string, actions.Loader) {
 	return "@redis/get", GetLoader
 }
 
+// Encodes data and writes it to a Blob store.
 type SetConfig struct {
-	// Resource is the name of the connection resource to use.
-	Resource ResourceRef `json:"resource" yaml:"resource" msgpack:"resource" mapstructure:"resource" validate:"required"`
-	// Data is the input bindings sent.
+	// The redis store resource to write.
+	Resource resource.Ref `json:"resource" yaml:"resource" msgpack:"resource" mapstructure:"resource" validate:"required"`
+	// The key to write.
 	Key *expr.ValueExpr `json:"key" yaml:"key" msgpack:"key" mapstructure:"key" validate:"required"`
-	// Data is the input bindings sent.
-	Value *expr.DataExpr `json:"value" yaml:"value" msgpack:"value" mapstructure:"value" validate:"required"`
+	// The data to write.
+	Data *expr.DataExpr `json:"data,omitempty" yaml:"data,omitempty" msgpack:"data,omitempty" mapstructure:"data"`
+	// Codec is the name of the codec to use for decoding.
+	Codec string `json:"codec" yaml:"codec" msgpack:"codec" mapstructure:"codec" validate:"required"`
+	// codecArgs are the arguments to pass to the decode function.
+	CodecArgs []interface{} `json:"codecArgs,omitempty" yaml:"codecArgs,omitempty" msgpack:"codecArgs,omitempty" mapstructure:"codecArgs" validate:"dive"`
 }
 
 func Set() (string, actions.Loader) {
@@ -36,9 +44,13 @@ func Set() (string, actions.Loader) {
 
 type RemoveConfig struct {
 	// Resource is the name of the connection resource to use.
-	Resource ResourceRef `json:"resource" yaml:"resource" msgpack:"resource" mapstructure:"resource" validate:"required"`
+	Resource resource.Ref `json:"resource" yaml:"resource" msgpack:"resource" mapstructure:"resource" validate:"required"`
 	// Data is the input bindings sent.
 	Key *expr.ValueExpr `json:"key" yaml:"key" msgpack:"key" mapstructure:"key" validate:"required"`
+	// Codec is the name of the codec to use for decoding.
+	Codec string `json:"codec" yaml:"codec" msgpack:"codec" mapstructure:"codec" validate:"required"`
+	// codecArgs are the arguments to pass to the decode function.
+	CodecArgs []interface{} `json:"codecArgs,omitempty" yaml:"codecArgs,omitempty" msgpack:"codecArgs,omitempty" mapstructure:"codecArgs" validate:"dive"`
 }
 
 func Remove() (string, actions.Loader) {

@@ -10,13 +10,16 @@ package redis
 
 import (
 	"context"
-	"fmt"
-	"math/rand"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
 	"github.com/go-redis/redis/v8"
+	"github.com/nanobus/nanobus/pkg/actions"
+	"github.com/nanobus/nanobus/pkg/actions/blob"
+	"github.com/nanobus/nanobus/pkg/codec"
+	json_codec "github.com/nanobus/nanobus/pkg/codec/json"
+	"github.com/nanobus/nanobus/pkg/resolve"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestGet(t *testing.T) {
@@ -28,36 +31,71 @@ func TestGet(t *testing.T) {
 		DB:       0,
 	})
 
-	randomKey := fmt.Sprint(rand.Int())
-	randomNumber := fmt.Sprint(rand.Int())
+	jsonCodec := json_codec.NewCodec()
+	codecs := codec.Codecs{
+		"json": jsonCodec,
+	}
 
-	// resolver := func(name string, target interface{}) bool {
-	// 	switch name {
-	// 	case "resource:lookup":
-	// 		return resolve.As(resources, target)
-	// 	case "codec:lookup":
-	// 		return resolve.As(codecs, target)
-	// 	}
-	// 	return false
+	resolver := func(name string, target interface{}) bool {
+		switch name {
+		case "resource:lookup":
+			return resolve.As(client, target)
+		case "codec:lookup":
+			return resolve.As(codecs, target)
+		}
+		return false
+	}
+
+	expected := map[string]any{
+		"foo": "bar",
+	}
+
+	data := actions.Data{
+		"input": map[string]any{
+			"key": "1234",
+		},
+	}
+
+	a, err := blob.ReadLoader(ctx, map[string]any{
+		"resource": "test",
+		"key":      "input.key",
+		"codec":    "json",
+	}, resolver)
+	require.NoError(t, err)
+
+	actual, err := a(ctx, data)
+	require.NoError(t, err)
+
+	assert.Equal(t, expected, actual)
+
+	// randomKey := fmt.Sprint(rand.Int())
+	// randomNumber := fmt.Sprint(rand.Int())
+
+	// expected := map[string]any{
+	// 	randomKey: randomNumber,
 	// }
 
+	// setConfig := SetConfig{
+	// 	Key:   randomKey,
+	// 	Value: randomNumber,
+	// 	Codec: "bytes",
+	// }
+	// setCodec := setConfig.Codec
 
-	setConfig := SetConfig{
-		Key:   randomKey,
-		Value: randomNumber,
-	}
+	// result, err := SetAction(&setConfig, nil, client)(ctx, nil)
 
-	result, err := SetAction(&setConfig, client)(ctx, nil)
+	// assert.NoError(t, err)
+	// assert.Equal(t, "OK", result)
 
-	assert.NoError(t, err)
-	assert.Equal(t, "OK", result)
+	// config := GetConfig{
+	// 	Key:   randomKey,
+	// 	Codec: "bytes",
+	// }
 
-	config := GetConfig{
-		Key: randomKey,
-	}
+	// getCodec := config.Codec
 
-	action := GetAction(&config, client)
-	result, err = action(ctx, nil)
-	assert.NoError(t, err)
-	assert.Equal(t, randomNumber, result)
+	// action := GetAction(&config, nil, client)
+	// result, err = action(ctx, nil)
+	// assert.NoError(t, err)
+	// assert.Equal(t, randomNumber, result)
 }

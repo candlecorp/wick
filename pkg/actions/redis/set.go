@@ -15,39 +15,66 @@ import (
 	"github.com/go-redis/redis/v8"
 
 	"github.com/nanobus/nanobus/pkg/actions"
+	"github.com/nanobus/nanobus/pkg/codec"
 	"github.com/nanobus/nanobus/pkg/config"
+	"github.com/nanobus/nanobus/pkg/expr"
+	"github.com/nanobus/nanobus/pkg/resiliency"
 	"github.com/nanobus/nanobus/pkg/resolve"
 	"github.com/nanobus/nanobus/pkg/resource"
 )
 
 func SetLoader(ctx context.Context, with interface{}, resolver resolve.ResolveAs) (actions.Action, error) {
-	c := SetConfig{}
+	c := SetConfig{
+		Codec: "bytes",
+	}
 	if err := config.Decode(with, &c); err != nil {
 		return nil, err
 	}
 
 	var resources resource.Resources
+	var codecs codec.Codecs
 	if err := resolve.Resolve(resolver,
 		"resource:lookup", &resources); err != nil {
 		return nil, err
 	}
 
-	poolI, ok := resources[string(c.Resource)]
+	codec, ok := codecs[string(c.Codec)]
 	if !ok {
-		return nil, fmt.Errorf("resource %q is not registered", c.Resource)
-	}
-	pool, ok := poolI.(*redis.Client)
-	if !ok {
-		return nil, fmt.Errorf("resource %q is not a *pgxpool.Pool", c.Resource)
+		return nil, fmt.Errorf("unknown codec %q", c.Codec)
 	}
 
-	return SetAction(&c, pool), nil
+	client, err := resource.Get[*redis.Client](resources, c.Resource)
+	if err != nil {
+		return nil, err
+	}
+
+	return SetAction(&c, codec, client), nil
 }
 
 func SetAction(
 	config *SetConfig,
-	pool *redis.Client) actions.Action {
+	codec codec.Codec,
+	client *redis.Client) actions.Action {
 	return func(ctx context.Context, data actions.Data) (interface{}, error) {
-		return pool.Set(ctx, config.Key, config.Value, 0).Result()
+		key, err := expr.EvalAsStringE(config.Key, data)
+		if err != nil {
+			return nil, fmt.Errorf("could not evaluate key: %w", err)
+		}
+
+		value, err := expr.EvalAsStringE(config.Data, data)
+		if err != nil {
+			return nil, fmt.Errorf("could not evaluate value: %w", err)
+		}
+
+		dataBytes, err := client.Set(ctx, key, value, 0).Result()
+		if err != nil {
+			return nil, resiliency.Retriable(fmt.Errorf("could not read key: %w", err))
+		}
+
+		ans := []byte(dataBytes)
+
+		result, _, err := codec.Decode(ans, config.CodecArgs...)
+
+		return result, err
 	}
 }

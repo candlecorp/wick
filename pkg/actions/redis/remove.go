@@ -15,39 +15,50 @@ import (
 	"github.com/go-redis/redis/v8"
 
 	"github.com/nanobus/nanobus/pkg/actions"
+	"github.com/nanobus/nanobus/pkg/codec"
 	"github.com/nanobus/nanobus/pkg/config"
+	"github.com/nanobus/nanobus/pkg/expr"
 	"github.com/nanobus/nanobus/pkg/resolve"
 	"github.com/nanobus/nanobus/pkg/resource"
 )
 
 func RemoveLoader(ctx context.Context, with interface{}, resolver resolve.ResolveAs) (actions.Action, error) {
-	c := RemoveConfig{}
+	c := RemoveConfig{
+		Codec: "bytes",
+	}
 	if err := config.Decode(with, &c); err != nil {
 		return nil, err
 	}
 
 	var resources resource.Resources
+	var codecs codec.Codecs
 	if err := resolve.Resolve(resolver,
 		"resource:lookup", &resources); err != nil {
 		return nil, err
 	}
 
-	poolI, ok := resources[string(c.Resource)]
+	codec, ok := codecs[string(c.Codec)]
 	if !ok {
-		return nil, fmt.Errorf("resource %q is not registered", c.Resource)
-	}
-	pool, ok := poolI.(*redis.Client)
-	if !ok {
-		return nil, fmt.Errorf("resource %q is not a *pgxpool.Pool", c.Resource)
+		return nil, fmt.Errorf("unknown codec %q", c.Codec)
 	}
 
-	return RemoveAction(&c, pool), nil
+	client, err := resource.Get[*redis.Client](resources, c.Resource)
+	if err != nil {
+		return nil, err
+	}
+
+	return RemoveAction(&c, codec, client), nil
 }
 
 func RemoveAction(
 	config *RemoveConfig,
-	pool *redis.Client) actions.Action {
+	codec codec.Codec,
+	client *redis.Client) actions.Action {
 	return func(ctx context.Context, data actions.Data) (interface{}, error) {
-		return pool.Del(ctx, config.Key).Result()
+		key, err := expr.EvalAsStringE(config.Key, data)
+		if err != nil {
+			return nil, fmt.Errorf("could not evaluate key: %w", err)
+		}
+		return client.Del(ctx, key).Result()
 	}
 }
