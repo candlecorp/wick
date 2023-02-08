@@ -1,0 +1,128 @@
+---
+title: MS SQL Server Schema Migration
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# nanobus.migrate.mssql/v1
+
+<div class="attributes">
+
+### Description
+
+<p>
+  <span className="badge badgeDarkBlue">Database</span>
+  <a href="https://github.com/nanobus/nanobus/blob/main/pkg/initialize/mssql/mssql.go" target="_blank" rel="noopener noreferrer">Source code <svg width="13.5" height="13.5" aria-hidden="true" viewBox="0 0 24 24" class="iconExternalLink_node_modules-@docusaurus-theme-classic-lib-theme-Icon-ExternalLink-styles-module"><path fill="currentColor" d="M21 13v10h-21v-19h12v2h-10v15h17v-8h2zm3-12h-10.988l4.035 4-6.977 7.07 2.828 2.828 6.977-7.07 4.125 4.172v-11z"></path></svg></a>
+</p>
+
+</div>
+
+This component offers database migrations for Postgres using the
+[golang-migrate/migrate](https://github.com/golang-migrate/migrate) library.
+It reads migrations from sources (`.sql` files with [DDL](https://en.wikipedia.org/wiki/Data_definition_language)) and applies them in correct order to a database.
+
+## Options
+
+<div class="attributes">
+
+### name
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">name <span className="required">*</span>
+      <a class="hash-link" href="#name" title="Direct link to name">​</a>
+    </span>
+    <code>string</code>
+  </header>
+
+
+
+</div>
+
+### dataSource
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">dataSource <span className="required">*</span>
+      <a class="hash-link" href="#datasource" title="Direct link to dataSource">​</a>
+    </span>
+    <code>string</code>
+  </header>
+
+
+
+</div>
+
+### directory
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">directory
+      <a class="hash-link" href="#directory" title="Direct link to directory">​</a>
+    </span>
+    <code>string</code>
+  </header>
+
+
+
+</div>
+
+### sourceUrl
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">sourceUrl
+      <a class="hash-link" href="#sourceurl" title="Direct link to sourceUrl">​</a>
+    </span>
+    <code>string</code>
+  </header>
+
+
+
+</div>
+
+### migrationsTable
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">migrationsTable
+      <a class="hash-link" href="#migrationstable" title="Direct link to migrationsTable">​</a>
+    </span>
+    <code>string</code>
+  </header>
+
+
+
+</div>
+
+### databaseName
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">databaseName
+      <a class="hash-link" href="#databasename" title="Direct link to databaseName">​</a>
+    </span>
+    <code>string</code>
+  </header>
+
+
+
+</div>
+
+### schemaName
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">schemaName
+      <a class="hash-link" href="#schemaname" title="Direct link to schemaName">​</a>
+    </span>
+    <code>string</code>
+  </header>
+
+
+
+</div>
+
+</div>
+
