@@ -25,7 +25,7 @@ require (
 	github.com/go-playground/validator/v10 v10.11.2
 	github.com/go-sql-driver/mysql v1.6.0
 	github.com/golang-jwt/jwt/v4 v4.4.3
-	github.com/golang-migrate/migrate/v4 v4.15.2
+	github.com/golang-migrate/migrate/v4 v4.15.3-0.20230111073356-145baa187d61
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da
 	github.com/google/cel-go v0.13.0
 	github.com/google/uuid v1.3.0
@@ -116,7 +116,6 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.14.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sts v1.18.2 // indirect
 	github.com/aws/smithy-go v1.13.5 // indirect
-	github.com/denisenkom/go-mssqldb v0.10.0 // indirect
 	github.com/form3tech-oss/jwt-go v3.2.5+incompatible // indirect
 	github.com/gabriel-vasile/mimetype v1.4.0 // indirect
 	github.com/golang-sql/civil v0.0.0-20190719163853-cb61b32ac6fe // indirect
@@ -201,6 +200,8 @@ require (
 )
 
 replace github.com/go-playground/validator/v10 => github.com/nanobus/validator/v10 v10.11.1-0.20221228024045-3e5ed18e1e95
+
+replace github.com/microsoft/go-mssqldb v0.15.0 => github.com/microsoft/go-mssqldb v0.17.0
 
 // Uncomment to refer to iota in your workspace.
 // replace github.com/nanobus/iota/go => ../iota/go
