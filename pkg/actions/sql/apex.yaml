@@ -1,0 +1,6 @@
+spec: ../../../specs/actions/sql.axdl
+config:
+  package: sql
+  module: github.com/nanobus/nanobus/pkg/actions/sql
+plugins:
+  - ../../../codegen/plugin.ts

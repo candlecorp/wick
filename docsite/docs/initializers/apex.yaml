@@ -3,3 +3,9 @@ config:
   pkg: 'initialize/postgres'
 plugins:
   - '../../../codegen/docs-plugin.ts'
+---
+spec: '../../../specs/initialize/mssql.axdl'
+config:
+  pkg: 'initialize/mssql'
+plugins:
+  - '../../../codegen/docs-plugin.ts'

@@ -99,3 +99,15 @@ generates:
   actions_postgres.ts:
     module: ../../../codegen/config.ts
     visitorClass: ComponentsVisitor
+---
+spec: ../../../specs/initialize/mssql.axdl
+generates:
+  migrate_mssql.ts:
+    module: ../../../codegen/config.ts
+    visitorClass: ComponentsVisitor
+---
+spec: ../../../specs/initialize/postgres.axdl
+generates:
+  migrate_postgres.ts:
+    module: ../../../codegen/config.ts
+    visitorClass: ComponentsVisitor

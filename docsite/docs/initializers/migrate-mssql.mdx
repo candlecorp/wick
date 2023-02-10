@@ -1,11 +1,11 @@
 ---
-title: Postgres Schema Migration
+title: MS SQL Server Schema Migration
 ---
 
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
-# nanobus.migrate.postgres/v1
+# nanobus.migrate.mssql/v1
 
 <div class="attributes">
 
@@ -13,7 +13,7 @@ import TabItem from '@theme/TabItem';
 
 <p>
   <span className="badge badgeDarkBlue">Database</span>
-  <a href="https://github.com/nanobus/nanobus/blob/main/pkg/initialize/postgres/postgres.go" target="_blank" rel="noopener noreferrer">Source code <svg width="13.5" height="13.5" aria-hidden="true" viewBox="0 0 24 24" class="iconExternalLink_node_modules-@docusaurus-theme-classic-lib-theme-Icon-ExternalLink-styles-module"><path fill="currentColor" d="M21 13v10h-21v-19h12v2h-10v15h17v-8h2zm3-12h-10.988l4.035 4-6.977 7.07 2.828 2.828 6.977-7.07 4.125 4.172v-11z"></path></svg></a>
+  <a href="https://github.com/nanobus/nanobus/blob/main/pkg/initialize/mssql/mssql.go" target="_blank" rel="noopener noreferrer">Source code <svg width="13.5" height="13.5" aria-hidden="true" viewBox="0 0 24 24" class="iconExternalLink_node_modules-@docusaurus-theme-classic-lib-theme-Icon-ExternalLink-styles-module"><path fill="currentColor" d="M21 13v10h-21v-19h12v2h-10v15h17v-8h2zm3-12h-10.988l4.035 4-6.977 7.07 2.828 2.828 6.977-7.07 4.125 4.172v-11z"></path></svg></a>
 </p>
 
 </div>
@@ -36,7 +36,7 @@ It reads migrations from sources (`.sql` files with [DDL](https://en.wikipedia.o
     <code>string</code>
   </header>
 
-Name of the SQL driver to open.
+
 
 </div>
 
@@ -50,7 +50,7 @@ Name of the SQL driver to open.
     <code>string</code>
   </header>
 
-The data source connection string.
+
 
 </div>
 
@@ -64,7 +64,7 @@ The data source connection string.
     <code>string</code>
   </header>
 
-The directory to use for migration sources.
+
 
 </div>
 
@@ -78,7 +78,7 @@ The directory to use for migration sources.
     <code>string</code>
   </header>
 
-The directory to use for migration sources.
+
 
 </div>
 
@@ -90,34 +90,6 @@ The directory to use for migration sources.
       <a class="hash-link" href="#migrationstable" title="Direct link to migrationsTable">​</a>
     </span>
     <code>string</code>
-  </header>
-
-
-
-</div>
-
-### migrationsTableQuoted
-
-<div class="attribute">
-  <header>
-    <span className="badge badgeDarkBlue">migrationsTableQuoted <span className="required">*</span>
-      <a class="hash-link" href="#migrationstablequoted" title="Direct link to migrationsTableQuoted">​</a>
-    </span>
-    <code>bool</code>
-  </header>
-
-
-
-</div>
-
-### multiStatementEnabled
-
-<div class="attribute">
-  <header>
-    <span className="badge badgeDarkBlue">multiStatementEnabled <span className="required">*</span>
-      <a class="hash-link" href="#multistatementenabled" title="Direct link to multiStatementEnabled">​</a>
-    </span>
-    <code>bool</code>
   </header>
 
 
@@ -146,34 +118,6 @@ The directory to use for migration sources.
       <a class="hash-link" href="#schemaname" title="Direct link to schemaName">​</a>
     </span>
     <code>string</code>
-  </header>
-
-
-
-</div>
-
-### statementTimeout
-
-<div class="attribute">
-  <header>
-    <span className="badge badgeDarkBlue">statementTimeout
-      <a class="hash-link" href="#statementtimeout" title="Direct link to statementTimeout">​</a>
-    </span>
-    <code>Duration</code>
-  </header>
-
-
-
-</div>
-
-### multiStatementMaxSize
-
-<div class="attribute">
-  <header>
-    <span className="badge badgeDarkBlue">multiStatementMaxSize
-      <a class="hash-link" href="#multistatementmaxsize" title="Direct link to multiStatementMaxSize">​</a>
-    </span>
-    <code>i32</code>
   </header>
 
 
