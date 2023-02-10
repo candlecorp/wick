@@ -6,17 +6,17 @@ import (
 	"net/http"
 
 	"github.com/felixge/httpsnoop"
-	"github.com/go-logr/logr"
+	"github.com/nanobus/nanobus/pkg/logger"
 )
 
 // This logic is largely taken from gorilla (https://github.com/gorilla/handlers/blob/master/logging.go)
 // which is archived and not taking new PRs.
 
-func LoggingHandler(log logr.Logger, next http.Handler) http.Handler {
+func LoggingHandler(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		snoop, w := makeLogger(w)
 		next.ServeHTTP(w, r)
-		log.Info(r.URL.Path, "method", r.Method, "status", snoop.status, "size", snoop.size)
+		logger.Debug(r.Method, "path", r.URL.Path, "status", snoop.status)
 	})
 }
 

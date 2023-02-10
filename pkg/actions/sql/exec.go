@@ -57,7 +57,7 @@ func ExecAction(
 			if err != nil {
 				return nil, err
 			}
-			defer tx.Rollback()
+			defer tx.Rollback() // nolint:errcheck
 
 			for _, item := range multi {
 				if single, ok := item.(map[string]interface{}); ok {

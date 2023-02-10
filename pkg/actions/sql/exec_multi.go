@@ -48,7 +48,7 @@ func ExecMultiAction(
 		if err != nil {
 			return nil, fmt.Errorf("could not start transaction: %w", err)
 		}
-		defer tx.Rollback()
+		defer tx.Rollback() // nolint:errcheck
 
 		for _, stmt := range config.Statements {
 			var err error

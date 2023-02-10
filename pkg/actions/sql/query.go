@@ -119,13 +119,12 @@ func rowsToRecord(rows *sqlx.Rows, fieldNames []string) (any, error) {
 	for i := range values {
 		values[i] = new(interface{})
 	}
-	rows.SliceScan()
 	if err := rows.Scan(values...); err != nil {
 		return nil, err
 	}
 
 	for i, v := range values {
-		v = *(values[i].(*interface{}))
+		v = *(v.(*interface{}))
 		values[i] = v
 		switch vv := v.(type) {
 		// Assume [16]byte are UUID types in Postgres

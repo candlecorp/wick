@@ -1,0 +1,5 @@
+spec: ../../../../specs/actions/sql.axdl
+config:
+  pkg: 'actions/sql'
+plugins:
+  - '../../../../codegen/docs-plugin.ts'
