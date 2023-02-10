@@ -14,13 +14,22 @@ import {
 
 export type FilePath = string;
 
+export type Duration = number;
+
 export interface MigratePostgresV1Config {
   // The data source connection string.
   dataSource: string;
   // The directory to use for migration sources.
-  directory?: FilePath;
+  directory?: string;
   // The directory to use for migration sources.
   sourceUrl?: string;
+  migrationsTable?: string;
+  migrationsTableQuoted?: boolean;
+  multiStatementEnabled?: boolean;
+  databaseName?: string;
+  schemaName?: string;
+  statementTimeout?: Duration;
+  multiStatementMaxSize?: number;
 }
 
 export function MigratePostgresV1(

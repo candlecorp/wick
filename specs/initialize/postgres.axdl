@@ -9,9 +9,10 @@ namespace "nanobus.migration.postgres"
 alias ValueExpr = string
 alias DataExpr = string
 alias FilePath = string
+alias Duration = i64
 
 """
-This component offers database mifrations for Postgres using the
+This component offers database migrations for Postgres using the
 [golang-migrate/migrate](https://github.com/golang-migrate/migrate) library.
 It reads migrations from sources (`.sql` files with [DDL](https://en.wikipedia.org/wiki/Data_definition_language)) and applies them in correct order to a database.
 """
@@ -30,9 +31,17 @@ type MigratePostgresV1Config
 	"""
 	The directory to use for migration sources.
 	"""
-	directory:  FilePath? @validate("required_without=SourceURL")
+	directory:             string? @validate("required_without=SourceURL")
 	"""
 	The directory to use for migration sources.
 	"""
-	sourceUrl:  string? @rename({ go: "SourceURL" }) @validate("required_without=Directory")
+	sourceUrl:             string? @rename({ go: "SourceURL" }) @validate("required_without=Directory")
+
+	migrationsTable:       string?
+	migrationsTableQuoted: bool = false
+	multiStatementEnabled: bool = false
+	databaseName:          string?
+	schemaName:            string?
+	statementTimeout:      Duration?
+	multiStatementMaxSize: i32?
 }

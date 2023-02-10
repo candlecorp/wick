@@ -1,0 +1,298 @@
+---
+title: find
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# @sql/find
+
+<div class="attributes">
+
+### Description
+
+<p>
+  <span className="badge badgeDarkBlue">Database</span>
+  <a href="https://github.com/nanobus/nanobus/blob/main/pkg/actions/sql/find.go" target="_blank" rel="noopener noreferrer">Source code <svg width="13.5" height="13.5" aria-hidden="true" viewBox="0 0 24 24" class="iconExternalLink_node_modules-@docusaurus-theme-classic-lib-theme-Icon-ExternalLink-styles-module"><path fill="currentColor" d="M21 13v10h-21v-19h12v2h-10v15h17v-8h2zm3-12h-10.988l4.035 4-6.977 7.07 2.828 2.828 6.977-7.07 4.125 4.172v-11z"></path></svg></a>
+</p>
+
+</div>
+
+TODO
+
+## Options
+
+<div class="attributes">
+
+### resource
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">resource <span className="required">*</span>
+      <a class="hash-link" href="#resource" title="Direct link to resource">​</a>
+    </span>
+    <code>ResourceRef</code>
+  </header>
+
+Resource is the name of the connection resource to use.
+
+</div>
+
+### entity
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">entity <span className="required">*</span>
+      <a class="hash-link" href="#entity" title="Direct link to entity">​</a>
+    </span>
+    <code>Entity</code>
+  </header>
+
+The entity type to find.
+
+</div>
+
+### preload
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">preload
+      <a class="hash-link" href="#preload" title="Direct link to preload">​</a>
+    </span>
+    <code><a href="#type-preload">Preload</a>[]</code>
+  </header>
+
+Preload lists the relationship to expand/load.
+
+</div>
+
+### where
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">where
+      <a class="hash-link" href="#where" title="Direct link to where">​</a>
+    </span>
+    <code><a href="#type-where">Where</a>[]</code>
+  </header>
+
+Where list the parts of the where clause.
+
+</div>
+
+### pagination
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">pagination
+      <a class="hash-link" href="#pagination" title="Direct link to pagination">​</a>
+    </span>
+    <code><a href="#type-pagination">Pagination</a></code>
+  </header>
+
+Pagination is the optional fields to wrap the results with.
+
+</div>
+
+### offset
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">offset
+      <a class="hash-link" href="#offset" title="Direct link to offset">​</a>
+    </span>
+    <code>string (Value expression)</code>
+  </header>
+
+Offset is the query offset.
+
+</div>
+
+### limit
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">limit
+      <a class="hash-link" href="#limit" title="Direct link to limit">​</a>
+    </span>
+    <code>string (Value expression)</code>
+  </header>
+
+Limit is the query limit.
+
+</div>
+
+</div>
+
+## type Preload
+
+<div class="attributes">
+
+### field
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">field <span className="required">*</span>
+      <a class="hash-link" href="#field" title="Direct link to field">​</a>
+    </span>
+    <code>string</code>
+  </header>
+
+
+
+</div>
+
+### preload
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">preload
+      <a class="hash-link" href="#preload" title="Direct link to preload">​</a>
+    </span>
+    <code><a href="#type-preload">Preload</a>[]</code>
+  </header>
+
+
+
+</div>
+
+</div>
+
+## type Where
+
+<div class="attributes">
+
+### query
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">query <span className="required">*</span>
+      <a class="hash-link" href="#query" title="Direct link to query">​</a>
+    </span>
+    <code>string</code>
+  </header>
+
+
+
+</div>
+
+### value
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">value <span className="required">*</span>
+      <a class="hash-link" href="#value" title="Direct link to value">​</a>
+    </span>
+    <code>string (Value expression)</code>
+  </header>
+
+
+
+</div>
+
+</div>
+
+## type Pagination
+
+<div class="attributes">
+
+### pageIndex
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">pageIndex
+      <a class="hash-link" href="#pageindex" title="Direct link to pageIndex">​</a>
+    </span>
+    <code>string</code>
+  </header>
+
+
+
+</div>
+
+### pageCount
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">pageCount
+      <a class="hash-link" href="#pagecount" title="Direct link to pageCount">​</a>
+    </span>
+    <code>string</code>
+  </header>
+
+
+
+</div>
+
+### offset
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">offset
+      <a class="hash-link" href="#offset" title="Direct link to offset">​</a>
+    </span>
+    <code>string</code>
+  </header>
+
+
+
+</div>
+
+### limit
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">limit
+      <a class="hash-link" href="#limit" title="Direct link to limit">​</a>
+    </span>
+    <code>string</code>
+  </header>
+
+
+
+</div>
+
+### count
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">count
+      <a class="hash-link" href="#count" title="Direct link to count">​</a>
+    </span>
+    <code>string</code>
+  </header>
+
+
+
+</div>
+
+### total
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">total
+      <a class="hash-link" href="#total" title="Direct link to total">​</a>
+    </span>
+    <code>string</code>
+  </header>
+
+
+
+</div>
+
+### items
+
+<div class="attribute">
+  <header>
+    <span className="badge badgeDarkBlue">items <span className="required">*</span>
+      <a class="hash-link" href="#items" title="Direct link to items">​</a>
+    </span>
+    <code>string</code>
+  </header>
+
+
+
+</div>
+
+</div>
+

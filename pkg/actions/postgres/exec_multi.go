@@ -85,8 +85,6 @@ func ExecMultiAction(
 							delete(single, "$root")
 						}
 					}
-
-					return nil
 				} else if single, ok := input.(map[string]interface{}); ok {
 					single["$root"] = data
 					args := make([]interface{}, len(stmt.Args))

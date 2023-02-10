@@ -7,7 +7,7 @@
  */
 
 //go:generate apex generate
-package postgres
+package mssql
 
 import (
 	"context"
@@ -15,17 +15,17 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/golang-migrate/migrate/v4"
-	"github.com/golang-migrate/migrate/v4/database/postgres"
+	"github.com/golang-migrate/migrate/v4/database/sqlserver"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
-	_ "github.com/lib/pq"
+	_ "github.com/microsoft/go-mssqldb"
 
 	"github.com/nanobus/nanobus/pkg/config"
 	"github.com/nanobus/nanobus/pkg/initialize"
 	"github.com/nanobus/nanobus/pkg/resolve"
 )
 
-func MigratePostgresV1Loader(ctx context.Context, with interface{}, resolver resolve.ResolveAs) (initialize.Initializer, error) {
-	var c MigratePostgresV1Config
+func MigrateMSSQLV1Loader(ctx context.Context, with interface{}, resolver resolve.ResolveAs) (initialize.Initializer, error) {
+	var c MigrateMSSQLV1Config
 	if err := config.Decode(with, &c); err != nil {
 		return nil, err
 	}
@@ -39,21 +39,17 @@ func MigratePostgresV1Loader(ctx context.Context, with interface{}, resolver res
 	return Migrate(logger, &c), nil
 }
 
-func Migrate(log logr.Logger, c *MigratePostgresV1Config) initialize.Initializer {
+func Migrate(log logr.Logger, c *MigrateMSSQLV1Config) initialize.Initializer {
 	return func(ctx context.Context) error {
-		db, err := sql.Open("postgres", c.DataSource)
+		db, err := sql.Open("sqlserver", c.DataSource)
 		if err != nil {
 			return err
 		}
 
-		driver, err := postgres.WithInstance(db, &postgres.Config{
-			MigrationsTable:       orEmptyValue(c.MigrationsTable),
-			MigrationsTableQuoted: c.MigrationsTableQuoted,
-			MultiStatementEnabled: c.MultiStatementEnabled,
-			DatabaseName:          orEmptyValue(c.DatabaseName),
-			SchemaName:            orEmptyValue(c.SchemaName),
-			StatementTimeout:      orEmptyValue(c.StatementTimeout),
-			MultiStatementMaxSize: int(orEmptyValue(c.MultiStatementMaxSize)),
+		driver, err := sqlserver.WithInstance(db, &sqlserver.Config{
+			MigrationsTable: orEmptyValue(c.MigrationsTable),
+			DatabaseName:    orEmptyValue(c.DatabaseName),
+			SchemaName:      orEmptyValue(c.SchemaName),
 		})
 		if err != nil {
 			return err
@@ -68,7 +64,7 @@ func Migrate(log logr.Logger, c *MigratePostgresV1Config) initialize.Initializer
 
 		m, err := migrate.NewWithDatabaseInstance(
 			sourceURL,
-			"postgres", driver)
+			"sqlserver", driver)
 		if err != nil {
 			return err
 		}
