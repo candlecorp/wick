@@ -17,5 +17,4 @@ var All = []actions.NamedLoader{
 	Get,
 	Set,
 	Remove,
-	// List,
 }

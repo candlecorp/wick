@@ -34,7 +34,8 @@ func GetLoader(ctx context.Context, with interface{}, resolver resolve.ResolveAs
 	var resources resource.Resources
 	var codecs codec.Codecs
 	if err := resolve.Resolve(resolver,
-		"resource:lookup", &resources); err != nil {
+		"resource:lookup", &resources,
+		"codec:lookup", &codecs); err != nil {
 		return nil, err
 	}
 
@@ -68,6 +69,9 @@ func GetAction(
 		}
 
 		result, _, err := codec.Decode(dataBytes, config.CodecArgs...)
+		if err != nil {
+			return nil, fmt.Errorf("could not get result: %w", err)
+		}
 
 		return result, err
 	}

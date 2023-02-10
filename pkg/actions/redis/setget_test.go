@@ -6,7 +6,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-package redis
+package redis_test
 
 import (
 	"context"
@@ -14,15 +14,19 @@ import (
 
 	"github.com/go-redis/redis/v8"
 	"github.com/nanobus/nanobus/pkg/actions"
-	"github.com/nanobus/nanobus/pkg/actions/blob"
+	nanoredis "github.com/nanobus/nanobus/pkg/actions/redis"
 	"github.com/nanobus/nanobus/pkg/codec"
 	json_codec "github.com/nanobus/nanobus/pkg/codec/json"
 	"github.com/nanobus/nanobus/pkg/resolve"
+	"github.com/nanobus/nanobus/pkg/resource"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestGet(t *testing.T) {
+	if testing.Short() {
+		t.Skip()
+	} else {
 	ctx := context.Background()
 
 	client := redis.NewClient(&redis.Options{
@@ -30,6 +34,10 @@ func TestGet(t *testing.T) {
 		Password: "",
 		DB:       0,
 	})
+
+	resources := resource.Resources{
+		"test": client,
+	}
 
 	jsonCodec := json_codec.NewCodec()
 	codecs := codec.Codecs{
@@ -39,7 +47,7 @@ func TestGet(t *testing.T) {
 	resolver := func(name string, target interface{}) bool {
 		switch name {
 		case "resource:lookup":
-			return resolve.As(client, target)
+			return resolve.As(resources, target)
 		case "codec:lookup":
 			return resolve.As(codecs, target)
 		}
@@ -47,16 +55,34 @@ func TestGet(t *testing.T) {
 	}
 
 	expected := map[string]any{
-		"foo": "bar",
+		"value": "bar",
 	}
 
-	data := actions.Data{
+	inData := actions.Data{
 		"input": map[string]any{
-			"key": "1234",
+			"key":   "foo",
+			"value": "{\"value\":\"bar\"}",
 		},
 	}
 
-	a, err := blob.ReadLoader(ctx, map[string]any{
+	b, err := nanoredis.SetLoader(ctx, map[string]any{
+		"resource": "test",
+		"key":      "input.key",
+		"data":     "input.value",
+		"codec":    "json",
+	}, resolver)
+	require.NoError(t, err)
+
+	_, err = b(ctx, inData)
+	require.NoError(t, err)
+
+	data := actions.Data{
+		"input": map[string]any{
+			"key": "foo",
+		},
+	}
+
+	a, err := nanoredis.GetLoader(ctx, map[string]any{
 		"resource": "test",
 		"key":      "input.key",
 		"codec":    "json",
@@ -67,35 +93,8 @@ func TestGet(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, expected, actual)
+	}
 
-	// randomKey := fmt.Sprint(rand.Int())
-	// randomNumber := fmt.Sprint(rand.Int())
+	
 
-	// expected := map[string]any{
-	// 	randomKey: randomNumber,
-	// }
-
-	// setConfig := SetConfig{
-	// 	Key:   randomKey,
-	// 	Value: randomNumber,
-	// 	Codec: "bytes",
-	// }
-	// setCodec := setConfig.Codec
-
-	// result, err := SetAction(&setConfig, nil, client)(ctx, nil)
-
-	// assert.NoError(t, err)
-	// assert.Equal(t, "OK", result)
-
-	// config := GetConfig{
-	// 	Key:   randomKey,
-	// 	Codec: "bytes",
-	// }
-
-	// getCodec := config.Codec
-
-	// action := GetAction(&config, nil, client)
-	// result, err = action(ctx, nil)
-	// assert.NoError(t, err)
-	// assert.Equal(t, randomNumber, result)
 }

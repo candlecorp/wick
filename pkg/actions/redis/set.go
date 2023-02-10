@@ -18,7 +18,6 @@ import (
 	"github.com/nanobus/nanobus/pkg/codec"
 	"github.com/nanobus/nanobus/pkg/config"
 	"github.com/nanobus/nanobus/pkg/expr"
-	"github.com/nanobus/nanobus/pkg/resiliency"
 	"github.com/nanobus/nanobus/pkg/resolve"
 	"github.com/nanobus/nanobus/pkg/resource"
 )
@@ -34,7 +33,8 @@ func SetLoader(ctx context.Context, with interface{}, resolver resolve.ResolveAs
 	var resources resource.Resources
 	var codecs codec.Codecs
 	if err := resolve.Resolve(resolver,
-		"resource:lookup", &resources); err != nil {
+		"resource:lookup", &resources,
+		"codec:lookup", &codecs); err != nil {
 		return nil, err
 	}
 
@@ -66,15 +66,6 @@ func SetAction(
 			return nil, fmt.Errorf("could not evaluate value: %w", err)
 		}
 
-		dataBytes, err := client.Set(ctx, key, value, 0).Result()
-		if err != nil {
-			return nil, resiliency.Retriable(fmt.Errorf("could not read key: %w", err))
-		}
-
-		ans := []byte(dataBytes)
-
-		result, _, err := codec.Decode(ans, config.CodecArgs...)
-
-		return result, err
+		return client.Set(ctx, key, value, 0).Result()
 	}
 }

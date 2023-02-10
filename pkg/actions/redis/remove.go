@@ -33,7 +33,8 @@ func RemoveLoader(ctx context.Context, with interface{}, resolver resolve.Resolv
 	var resources resource.Resources
 	var codecs codec.Codecs
 	if err := resolve.Resolve(resolver,
-		"resource:lookup", &resources); err != nil {
+		"resource:lookup", &resources,
+		"codec:lookup", &codecs); err != nil {
 		return nil, err
 	}
 
@@ -59,6 +60,7 @@ func RemoveAction(
 		if err != nil {
 			return nil, fmt.Errorf("could not evaluate key: %w", err)
 		}
+
 		return client.Del(ctx, key).Result()
 	}
 }
