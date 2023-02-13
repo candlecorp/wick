@@ -76,8 +76,8 @@ import (
 	"github.com/nanobus/nanobus/pkg/actions/core"
 	"github.com/nanobus/nanobus/pkg/actions/dapr"
 	"github.com/nanobus/nanobus/pkg/actions/postgres"
-	"github.com/nanobus/nanobus/pkg/actions/sql"
 	"github.com/nanobus/nanobus/pkg/actions/redis"
+	"github.com/nanobus/nanobus/pkg/actions/sql"
 
 
 	// CODECS
@@ -556,9 +556,9 @@ func Start(ctx context.Context, info *Info) (*Engine, error) {
 	}
 
 	resources := resource.Resources{}
-	fmt.Println("resources", resourcesConfig.Resources, )
+	fmt.Println("resources", resourcesConfig.Resources)
 	if resourcesConfig != nil {
-		fmt.Println("resources", resourcesConfig.Resources, )
+		fmt.Println("resources", resourcesConfig.Resources)
 		for name, component := range resourcesConfig.Resources {
 			log.Info("Initializing resource", "name", name, "type", component.Uses)
 
