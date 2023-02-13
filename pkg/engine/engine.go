@@ -31,6 +31,8 @@ import (
 	"github.com/oklog/run"
 	"github.com/vmihailenco/msgpack/v5"
 
+	"github.com/nanobus/iota/go/operations"
+	"github.com/nanobus/iota/go/payload"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/propagation"
 	otel_resource "go.opentelemetry.io/otel/sdk/resource"
@@ -66,7 +68,6 @@ import (
 	spec_apex "github.com/nanobus/nanobus/pkg/spec/apex"
 
 	// COMPONENTS
-	"github.com/nanobus/iota/go/payload"
 	"github.com/nanobus/nanobus/pkg/compute"
 	compute_wasmrs "github.com/nanobus/nanobus/pkg/compute/wasmrs"
 
@@ -125,16 +126,6 @@ import (
 	router_static "github.com/nanobus/nanobus/pkg/transport/http/router/static"
 )
 
-// type Runtime struct {
-// 	log        logr.Logger
-// 	config     *runtime.BusConfig
-// 	namespaces spec.Namespaces
-// 	processor  runtime.Namespaces
-// 	resolver   resolve.DependencyResolver
-// 	resolveAs  resolve.ResolveAs
-// 	env        runtime.Environment
-// }
-
 type Mode int
 
 const (
@@ -168,6 +159,7 @@ type Engine struct {
 	allNamespaces  runtime.Namespaces
 	codec          channel.Codec
 
+	processor        *runtime.Processor
 	transportInvoker transport.Invoker
 	resources        resource.Resources
 
@@ -181,6 +173,7 @@ func (e *Engine) LoadConfig(busConfig *runtime.BusConfig) error {
 		e.log.Error(err, "Could not create NanoBus runtime")
 		return err
 	}
+	e.processor = processor
 
 	if busConfig.Spec != nil {
 		specFile, err := config.NormalizeUrl(*busConfig.Spec, *busConfig.BaseURL)
@@ -254,6 +247,171 @@ func (e *Engine) LoadConfig(busConfig *runtime.BusConfig) error {
 	return nil
 }
 
+func (e *Engine) CreateIota(
+	name string, iotaConfig *runtime.IotaConfig,
+	dependencies map[string]any,
+	resourceLinks map[string]string,
+	resiliency *runtime.Resiliency) error {
+
+	m := mesh.New(e.tracer)
+	resources := make(resource.Resources)
+	for target, from := range resourceLinks {
+		resources[target] = e.resources[from]
+	}
+
+	allNamespaces := make(runtime.Namespaces)
+	namespaces := e.namespaces
+
+	depsCopy := make(map[string]any)
+	for name, dep := range dependencies {
+		depsCopy[name] = dep
+	}
+	depsCopy["compute:mesh"] = m
+	depsCopy["system:namespaces"] = namespaces
+	depsCopy["system:interfaces"] = allNamespaces
+	depsCopy["resource:lookup"] = resources
+
+	resolver := func(name string) (interface{}, bool) {
+		dep, ok := depsCopy[name]
+		return dep, ok
+	}
+	resolveAs := resolve.ToResolveAs(resolver)
+
+	// Create processor
+	processor, err := runtime.NewProcessor(e.ctx, e.log, e.tracer, e.actionRegistry, resolver)
+	if err != nil {
+		e.log.Error(err, "Could not create NanoBus runtime")
+		return err
+	}
+
+	iotaEngine := Engine{
+		ctx:            e.ctx,
+		log:            e.log,
+		tracer:         e.tracer,
+		actionRegistry: e.actionRegistry,
+
+		resolver:   resolver,
+		resolveAs:  resolveAs,
+		namespaces: namespaces,
+		m:          m,
+
+		transportInvoker: e.transportInvoker,
+		allNamespaces:    allNamespaces,
+		codec:            e.codec,
+		resources:        resources,
+	}
+
+	if iotaConfig.Spec != nil {
+		specFile, err := config.NormalizeUrl(*iotaConfig.Spec, *iotaConfig.BaseURL)
+		if err != nil {
+			e.log.Error(err, "Error parsing spec into URI", "input", iotaConfig.Spec)
+			return err
+		}
+		e.log.Info("Loading interface specification", "filename", specFile)
+		interfaceExt := filepath.Ext(specFile)
+		var nss []*spec.Namespace
+		switch interfaceExt {
+		case ".apex", ".axdl", ".aidl", ".apexlang":
+			nss, err = spec_apex.Loader(e.ctx, map[string]interface{}{
+				"filename": specFile,
+			}, e.resolveAs)
+		default:
+			e.log.Error(err, "Unknown spec type", "filename", specFile)
+			return err
+		}
+		if err != nil {
+			e.log.Error(err, "Error loading spec", "filename", specFile)
+			return err
+		}
+		for _, ns := range nss {
+			namespaces[ns.Name] = ns
+		}
+	}
+
+	if iotaConfig.Main != nil {
+		file, err := config.NormalizeUrl(*iotaConfig.Main, *iotaConfig.BaseURL)
+		if err != nil {
+			e.log.Error(err, "Error parsing spec into URI", "input", iotaConfig.Main)
+			return err
+		}
+		var computeInvoker compute.Invoker
+		mainExt := filepath.Ext(file)
+		e.log.Info("Loading main program", "filename", file)
+		switch mainExt {
+		case ".wasm":
+			computeInvoker, err = compute_wasmrs.Loader(e.ctx, map[string]interface{}{
+				"filename": file,
+			}, e.resolveAs)
+		default:
+			e.log.Error(err, "Unknown program type", "filename", file)
+			return err
+		}
+		if err != nil {
+			e.log.Error(err, "Error loading program", "filename", file)
+			return err
+		}
+		m.Link(computeInvoker)
+		e.m.Link(exportedInvoker{computeInvoker})
+	}
+
+	processor.SetResiliency(e.processor.Resiliency())
+
+	if err := processor.LoadProviders(iotaConfig.Providers); err != nil {
+		return err
+	}
+	if err := processor.LoadInterfaces(iotaConfig.Interfaces); err != nil {
+		return err
+	}
+
+	providers := processor.GetProviders()
+	interfaces := processor.GetInterfaces()
+
+	// TODO: Figure out how to remove this
+	for k, v := range providers {
+		allNamespaces[k] = v
+	}
+	for k, v := range interfaces {
+		allNamespaces[k] = v
+		e.allNamespaces[k] = v
+	}
+
+	// TODO: Lock down proivders
+	if len(providers) > 0 {
+		m.Link(runtime.NewInvoker(iotaEngine.log, providers, iotaEngine.codec))
+	}
+	if len(interfaces) > 0 {
+		m.Link(runtime.NewInvoker(iotaEngine.log, interfaces, iotaEngine.codec))
+		// Remove this line if the commented block below is used.
+		e.m.Link(runtime.NewInvoker(e.log, interfaces, e.codec))
+	}
+
+	// This logic could be used to limit the interfaces exposed to the parent.
+	// linkedInterfaces := make(runtime.Namespaces)
+	// for _, iface := range interfaceLinks {
+	// 	linked, ok := interfaces[iface]
+	// 	if !ok {
+	// 		return fmt.Errorf("interface %q is not found in Iota %q", iface, name)
+	// 	}
+	// 	linkedInterfaces[iface] = linked
+	// 	e.allNamespaces[iface] = linked
+	// }
+	// if len(interfaces) > 0 {
+	// 	e.m.Link(runtime.NewInvoker(e.log, interfaces, e.codec))
+	// }
+
+	// Check for unsatified imports
+	ops := m.Unsatisfied()
+	if len(ops) > 0 {
+		e.log.Error(nil, "Halting due to unsatified imports", "count", len(ops))
+		for _, op := range ops {
+			e.log.Error(nil, "Missing import", "interface", op.Namespace, "operation", op.Operation)
+		}
+		return errors.New("halting due to unsatified imports")
+	}
+
+	return nil
+}
+
 func Start(ctx context.Context, info *Info) (*Engine, error) {
 	// If there is a `.env` file, load its environment variables.
 	if err := godotenv.Load(); err != nil {
@@ -270,7 +428,7 @@ func Start(ctx context.Context, info *Info) (*Engine, error) {
 	// Pull from registry if PackageFile is set
 	var busFile string
 	if oci.IsImageReference(info.Target) {
-		fmt.Printf("Pulling %s...\n", info.Target)
+		log.Info("Pulling OCI image", "ref", info.Target)
 		var err error
 		if busFile, err = oci.Pull(info.Target, "."); err != nil {
 			fmt.Printf("Error pulling image: %s\n", err)
@@ -581,18 +739,6 @@ func Start(ctx context.Context, info *Info) (*Engine, error) {
 	allNamespaces := make(runtime.Namespaces)
 	dependencies["system:interfaces"] = allNamespaces
 
-	// TODO(jsoverson): Remove. This is now unused. Keeping it for now as it
-	// may have been a WIP
-	// rt := Runtime{
-	// 	log:        log,
-	// 	config:     busConfig,
-	// 	namespaces: namespaces,
-	// 	processor:  allNamespaces,
-	// 	resolver:   resolver,
-	// 	resolveAs:  resolveAs,
-	// 	env:        env,
-	// }
-
 	e := Engine{
 		ctx:            ctx,
 		log:            log,
@@ -617,18 +763,10 @@ func Start(ctx context.Context, info *Info) (*Engine, error) {
 			log.Error(err, "Could not read Iota config")
 			return nil, err
 		}
-		includedConfig := &runtime.BusConfig{
-			ID:         name,
-			Resources:  config.Resources,
-			Version:    config.Version,
-			Main:       config.Main,
-			Spec:       config.Spec,
-			Interfaces: config.Interfaces,
-			Providers:  config.Providers,
-			BaseURL:    config.BaseURL,
-		}
 
-		if err := e.LoadConfig(includedConfig); err != nil {
+		if err := e.CreateIota(name, &config, dependencies,
+			include.ResourceLinks, busConfig.Resiliency); err != nil {
+			log.Error(err, "Create iota failed")
 			return nil, err
 		}
 	}
@@ -1068,4 +1206,20 @@ func newOtelResource(applicationID, version string) *otel_resource.Resource {
 
 type closable interface {
 	Close()
+}
+
+// exportedInvoker exposes only the exposed operations of a `compute.Invoker`.
+type exportedInvoker struct {
+	compute.Invoker
+}
+
+func (e exportedInvoker) Operations() operations.Table {
+	ops := e.Invoker.Operations()
+	exportsOnly := make(operations.Table, 0, len(ops))
+	for _, op := range ops {
+		if op.Direction == operations.Export {
+			exportsOnly = append(exportsOnly, op)
+		}
+	}
+	return exportsOnly
 }

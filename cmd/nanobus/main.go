@@ -285,6 +285,7 @@ func (c *pushCmd) Run() error {
 		fmt.Printf("Pushing %s\n", reference)
 	}
 
+	// TODO(pkedy): Pushing iota.yaml versus bus.yaml?
 	add := conf.Package.Add
 	add = append(add, filepath.Clean(c.BusFile)+":"+oci.AppMediaType)
 	if conf.Spec != nil {

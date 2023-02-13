@@ -30,17 +30,15 @@ import (
 type Environment map[string]string
 
 type Processor struct {
-	ctx             context.Context
-	log             logr.Logger
-	tracer          trace.Tracer
-	registry        actions.Registry
-	resolver        resolve.DependencyResolver
-	resolveAs       resolve.ResolveAs
-	timeouts        map[string]time.Duration
-	retries         map[string]*retry.Config
-	circuitBreakers map[string]*breaker.CircuitBreaker
-	interfaces      Namespaces
-	providers       Namespaces
+	ctx        context.Context
+	log        logr.Logger
+	tracer     trace.Tracer
+	registry   actions.Registry
+	resolver   resolve.DependencyResolver
+	resolveAs  resolve.ResolveAs
+	resiliency *resiliency.Policies
+	interfaces Namespaces
+	providers  Namespaces
 }
 
 type Namespaces map[string]Functions
@@ -79,21 +77,21 @@ type step struct {
 	onError        Runnable
 }
 
-func NewProcessor(ctx context.Context, log logr.Logger, tracer trace.Tracer, registry actions.Registry, resolver resolve.DependencyResolver) (*Processor, error) {
-	timeouts := make(map[string]time.Duration)
-	retries := make(map[string]*retry.Config)
-	circuitBreakers := make(map[string]*breaker.CircuitBreaker)
+var noopResiliency = resiliency.Policies{
+	Timeouts:        make(map[string]time.Duration, 0),
+	Retries:         make(map[string]*retry.Config, 0),
+	CircuitBreakers: make(map[string]*breaker.CircuitBreaker, 0),
+}
 
+func NewProcessor(ctx context.Context, log logr.Logger, tracer trace.Tracer, registry actions.Registry, resolver resolve.DependencyResolver) (*Processor, error) {
 	p := Processor{
-		ctx:             ctx,
-		log:             log,
-		tracer:          tracer,
-		timeouts:        timeouts,
-		retries:         retries,
-		circuitBreakers: circuitBreakers,
-		registry:        registry,
-		interfaces:      make(Namespaces),
-		providers:       make(Namespaces),
+		ctx:        ctx,
+		log:        log,
+		tracer:     tracer,
+		registry:   registry,
+		resiliency: &noopResiliency,
+		interfaces: make(Namespaces),
+		providers:  make(Namespaces),
 	}
 
 	p.resolver = func(name string) (interface{}, bool) {
@@ -146,30 +144,47 @@ func (p *Processor) Provider(ctx context.Context, h handler.Handler, data action
 	return output, true, err
 }
 
+func (r *Resiliency) ToPolicies(log logr.Logger) (*resiliency.Policies, error) {
+	p := resiliency.Policies{
+		Timeouts:        make(map[string]time.Duration),
+		Retries:         make(map[string]*retry.Config),
+		CircuitBreakers: make(map[string]*breaker.CircuitBreaker),
+	}
+
+	if r == nil {
+		return &p, nil
+	}
+
+	for name, d := range r.Timeouts {
+		p.Timeouts[name] = time.Duration(d)
+	}
+
+	for name, retryMap := range r.Retries {
+		retryConfig, err := ConvertBackoffConfig(retryMap)
+		if err != nil {
+			return nil, err
+		}
+		p.Retries[name] = &retryConfig
+	}
+
+	for name, circuitBreaker := range r.CircuitBreakers {
+		cb := breaker.CircuitBreaker{
+			Name: name,
+		}
+		if err := config.Decode(circuitBreaker, &cb); err != nil {
+			return nil, err
+		}
+		cb.Initialize(log)
+		p.CircuitBreakers[name] = &cb
+	}
+
+	return &p, nil
+}
+
 func (p *Processor) Initialize(configuration *BusConfig) (err error) {
-	if configuration.Resiliency != nil {
-		for name, d := range configuration.Resiliency.Timeouts {
-			p.timeouts[name] = time.Duration(d)
-		}
-
-		for name, retryMap := range configuration.Resiliency.Retries {
-			retryConfig, err := ConvertBackoffConfig(retryMap)
-			if err != nil {
-				return err
-			}
-			p.retries[name] = &retryConfig
-		}
-
-		for name, circuitBreaker := range configuration.Resiliency.CircuitBreakers {
-			cb := breaker.CircuitBreaker{
-				Name: name,
-			}
-			if err := config.Decode(circuitBreaker, &cb); err != nil {
-				return err
-			}
-			cb.Initialize(p.log)
-			p.circuitBreakers[name] = &cb
-		}
+	p.resiliency, err = configuration.Resiliency.ToPolicies(p.log)
+	if err != nil {
+		return err
 	}
 
 	providers, err := p.loadInterfaces(configuration.Providers)
@@ -188,6 +203,36 @@ func (p *Processor) Initialize(configuration *BusConfig) (err error) {
 		p.interfaces[k] = v
 	}
 
+	return nil
+}
+
+func (p *Processor) Resiliency() *resiliency.Policies {
+	return p.resiliency
+}
+
+func (p *Processor) SetResiliency(policies *resiliency.Policies) {
+	p.resiliency = policies
+}
+
+func (p *Processor) LoadProviders(ifaces Interfaces) error {
+	providers, err := p.loadInterfaces(ifaces)
+	if err != nil {
+		return err
+	}
+	for k, v := range providers {
+		p.providers[k] = v
+	}
+	return nil
+}
+
+func (p *Processor) LoadInterfaces(ifaces Interfaces) error {
+	interfaces, err := p.loadInterfaces(ifaces)
+	if err != nil {
+		return err
+	}
+	for k, v := range interfaces {
+		p.interfaces[k] = v
+	}
 	return nil
 }
 
@@ -256,7 +301,7 @@ func (p *Processor) loadStep(s *Step) (*step, error) {
 	var retry *retry.Config
 	if s.Retry != nil {
 		var ok bool
-		retry, ok = p.retries[*s.Retry]
+		retry, ok = p.resiliency.Retries[*s.Retry]
 		if !ok {
 			return nil, fmt.Errorf("retry policy %q is not defined", *s.Retry)
 		}
@@ -265,7 +310,7 @@ func (p *Processor) loadStep(s *Step) (*step, error) {
 	var circuitBreaker *breaker.CircuitBreaker
 	if s.CircuitBreaker != nil {
 		var ok bool
-		circuitBreaker, ok = p.circuitBreakers[*s.CircuitBreaker]
+		circuitBreaker, ok = p.resiliency.CircuitBreakers[*s.CircuitBreaker]
 		if !ok {
 			return nil, fmt.Errorf("circuit breaker policy %q is not defined", *s.CircuitBreaker)
 		}
@@ -273,7 +318,7 @@ func (p *Processor) loadStep(s *Step) (*step, error) {
 
 	var timeout time.Duration
 	if s.Timeout != nil {
-		if named, exists := p.timeouts[*s.Timeout]; exists {
+		if named, exists := p.resiliency.Timeouts[*s.Timeout]; exists {
 			timeout = named
 		} else {
 			to, err := time.ParseDuration(*s.Timeout)

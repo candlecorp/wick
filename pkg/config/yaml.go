@@ -13,11 +13,11 @@ import (
 
 var reYamlError = regexp.MustCompile(`line (\d+): field ([a-zA-Z0-9_-]+) not found .*$`)
 
-func LoadYAML(src string, obj interface{}) error {
+func LoadYAML(src string, obj interface{}, knownFields bool) error {
 	configString := os.Expand(src, envReplace)
 	r := strings.NewReader(configString)
 	decoder := yaml.NewDecoder(r)
-	decoder.KnownFields(true)
+	decoder.KnownFields(knownFields)
 	if err := decoder.Decode(obj); err != nil {
 		// Test if the error is a yaml TypeError
 		if typeError, ok := err.(*yaml.TypeError); ok {
@@ -38,7 +38,7 @@ func LoadYAML(src string, obj interface{}) error {
 	return validate.Struct(obj)
 }
 
-func LoadYamlFile(filename string, obj interface{}) error {
+func LoadYamlFile(filename string, obj interface{}, knownFields bool) error {
 	f, err := os.OpenFile(filename, os.O_RDONLY, 0644)
 	if err != nil {
 		return err
@@ -50,7 +50,7 @@ func LoadYamlFile(filename string, obj interface{}) error {
 		return err
 	}
 
-	return LoadYAML(string(data), obj)
+	return LoadYAML(string(data), obj, knownFields)
 }
 
 // Replaces ${env:var} or $env:var in the string according to the values

@@ -36,7 +36,7 @@ func NormalizeUrl(url string, base ...string) (string, error) {
 	if err != nil || normalUrl.Scheme == "" {
 		if strings.HasPrefix(url, "/") {
 			normalUrl, err = URL.Parse(fmt.Sprintf("file:///%s", url))
-		} else if strings.HasPrefix(url, ".") {
+		} else {
 			normalUrl, err = URL.Parse(fmt.Sprintf("file:///%s", path.Join(baseUrl, url)))
 		}
 	}
