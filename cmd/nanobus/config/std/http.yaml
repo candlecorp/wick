@@ -8,3 +8,13 @@ interfaces:
           with:
             url: http://httpbin.org/status/200
             method: GET
+    decode:
+      steps:
+        - uses: http
+          with:
+            url: http://httpbin.org/get?value=test-value
+            method: GET
+          returns: 'response'
+        - uses: expr
+          with:
+            value: 'response.args'

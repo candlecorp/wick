@@ -65,6 +65,12 @@ func TestInvoke(t *testing.T) {
 			input:  nil,
 			output: nil,
 		},
+		{
+			file:   "std/http.yaml",
+			action: "test::decode",
+			input:  nil,
+			output: map[string]interface{}{"value": "test-value"},
+		},
 	}
 	cwd, _ := os.Getwd()
 	for _, test := range tests {
