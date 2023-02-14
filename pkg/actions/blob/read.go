@@ -19,6 +19,7 @@ import (
 	"github.com/nanobus/nanobus/pkg/codec"
 	"github.com/nanobus/nanobus/pkg/config"
 	"github.com/nanobus/nanobus/pkg/expr"
+	"github.com/nanobus/nanobus/pkg/logger"
 	"github.com/nanobus/nanobus/pkg/resiliency"
 	"github.com/nanobus/nanobus/pkg/resolve"
 	"github.com/nanobus/nanobus/pkg/resource"
@@ -64,6 +65,7 @@ func ReadAction(
 		if err != nil {
 			return nil, fmt.Errorf("could not evaluate key: %w", err)
 		}
+		logger.Debug("@blob/read", "key", key)
 
 		offset := int64(0)
 		length := int64(-1)
@@ -83,8 +85,10 @@ func ReadAction(
 
 		reader, err := bucket.NewRangeReader(ctx, key, offset, length, nil)
 		if err != nil {
+			logger.Warn("@blob/read", "key", key, "error", err)
 			return nil, resiliency.Retriable(fmt.Errorf("could not open reader for key %s: %w", key, err))
 		}
+
 		defer reader.Close()
 
 		s, _ := stream.SinkFromContext(ctx)
@@ -94,12 +98,16 @@ func ReadAction(
 				n, err := reader.Read(buf)
 				if err != nil {
 					if err == io.EOF {
+						logger.Debug("@blob/read", "key", key, "eof", true)
 						return nil, nil
 					}
+					logger.Error("@blob/read", "key", key, "error", err)
 					return nil, err
 				}
 
+				logger.Debug("@blob/read", "key", key, "len", n)
 				if n == 0 {
+					logger.Debug("@blob/read read nothing", "key", key)
 					return nil, nil
 				}
 
@@ -108,9 +116,6 @@ func ReadAction(
 					return nil, err
 				}
 
-				if uint32(n) < config.BufferSize {
-					return nil, nil
-				}
 			}
 		} else {
 			dataBytes, err := io.ReadAll(reader)

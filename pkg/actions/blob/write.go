@@ -21,6 +21,7 @@ import (
 	"github.com/nanobus/nanobus/pkg/codec"
 	"github.com/nanobus/nanobus/pkg/config"
 	"github.com/nanobus/nanobus/pkg/expr"
+	"github.com/nanobus/nanobus/pkg/logger"
 	"github.com/nanobus/nanobus/pkg/resiliency"
 	"github.com/nanobus/nanobus/pkg/resolve"
 	"github.com/nanobus/nanobus/pkg/resource"
@@ -68,6 +69,7 @@ func WriteAction(
 		if err != nil {
 			return nil, fmt.Errorf("could not evaluate key: %w", err)
 		}
+		logger.Debug("@blob/write", "key", key)
 
 		// Note: writer.Close seems to fail due to "context closed"
 		// if `ctx` is used. Even if the context is not done prior.
