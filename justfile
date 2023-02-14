@@ -19,6 +19,7 @@ test:
   #!/usr/bin/env bash
   FILES=$(gofmt -l .); if [[ "$FILES" == "" ]]; then echo 'Formatting is OK'; else echo "The following files need to be formatting: \n$FILES"; exit 1; fi
   go test ./pkg/... -test.short
+  go test ./cmd/...
 
 format:
   go fmt ./pkg/... ./cmd/...

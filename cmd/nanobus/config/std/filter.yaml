@@ -1,0 +1,12 @@
+version: 0
+id: test
+interfaces:
+  test:
+    test:
+      steps:
+        - uses: filter
+          with:
+            condition: 'input.condition'
+        - uses: expr
+          with:
+            data: '"return value"'

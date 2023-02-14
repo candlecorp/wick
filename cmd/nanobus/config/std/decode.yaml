@@ -1,0 +1,11 @@
+version: 0
+id: test
+interfaces:
+  test:
+    test:
+      steps:
+        - uses: decode
+          with:
+            typeField: name
+            dataField: 'input.data'
+            codec: json

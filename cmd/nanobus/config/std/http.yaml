@@ -1,0 +1,10 @@
+version: 0
+id: test
+interfaces:
+  test:
+    test:
+      steps:
+        - uses: http
+          with:
+            url: http://httpbin.org/status/200
+            method: GET

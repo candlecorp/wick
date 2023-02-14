@@ -1,0 +1,16 @@
+version: 0
+id: test
+interfaces:
+  test:
+    value:
+      steps:
+        - uses: expr
+          with:
+            value: 'input.data'
+            to: 'input.wat'
+    data:
+      steps:
+        - uses: expr
+          with:
+            data: 'input.data'
+            to: 'input.wat'

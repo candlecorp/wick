@@ -1,0 +1,9 @@
+version: 0
+id: test
+interfaces:
+  test:
+    test:
+      steps:
+        - uses: log
+          with:
+            format: 'Hello World'
