@@ -13,7 +13,6 @@ alias ResourceRef = string
 """
 Reads data and decodes it from a redis store.
 """
-
 type GetConfig
   @tags(["Database"])
   @filename("get")
@@ -29,9 +28,8 @@ type GetConfig
 }
 
 """
-Encodes data and writes it to a Blob store.
+Encodes data and writes it to a Redis store.
 """
-
 type SetConfig
   @tags(["Database"])
   @filename("set")
@@ -48,6 +46,9 @@ type SetConfig
   codecArgs: [any]?
 }
 
+"""
+Removes data from a Redis store.
+"""
 type RemoveConfig
   @tags(["Database"])
   @filename("remove")
@@ -61,13 +62,3 @@ type RemoveConfig
   "codecArgs are the arguments to pass to the decode function."
   codecArgs: [any]?
 }
-
-# type ListConfig
-#   @tags(["Database"])
-#   @filename("list")
-#   @action("@redis/list") {
-#   "Resource is the name of the connection resource to use."
-#   resource: ResourceRef
-#   "Data is the input bindings sent."
-#   keylist: [string]
-# }
