@@ -1,0 +1,64 @@
+# Copyright 2022 The NanoBus Authors.
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+namespace "nanobus.actions.redis"
+
+alias ValueExpr = string
+alias DataExpr = string
+alias ResourceRef = string
+
+"""
+Reads data and decodes it from a redis store.
+"""
+type GetConfig
+  @tags(["Database"])
+  @filename("get")
+  @action("@redis/get") {
+  "The redis store resource to read."
+  resource: ResourceRef
+  "The key to read."
+  key: ValueExpr
+  "Codec is the name of the codec to use for decoding."
+  codec:     string = "bytes"
+  "codecArgs are the arguments to pass to the decode function."
+  codecArgs: [any]?
+}
+
+"""
+Encodes data and writes it to a Redis store.
+"""
+type SetConfig
+  @tags(["Database"])
+  @filename("set")
+  @action("@redis/set") {
+  "The redis store resource to write."
+  resource: ResourceRef
+  "The key to write."
+  key: ValueExpr
+  "The data to write."
+  data: DataExpr?
+  "Codec is the name of the codec to use for decoding."
+  codec:     string = "bytes"
+  "codecArgs are the arguments to pass to the decode function."
+  codecArgs: [any]?
+}
+
+"""
+Removes data from a Redis store.
+"""
+type RemoveConfig
+  @tags(["Database"])
+  @filename("remove")
+  @action("@redis/remove") {
+  "Resource is the name of the connection resource to use."
+  resource: ResourceRef
+  "Data is the input bindings sent."
+  key: ValueExpr
+  "Codec is the name of the codec to use for decoding."
+  codec:     string = "bytes"
+  "codecArgs are the arguments to pass to the decode function."
+  codecArgs: [any]?
+}
