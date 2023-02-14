@@ -25,7 +25,7 @@ import (
 
 func GetLoader(ctx context.Context, with interface{}, resolver resolve.ResolveAs) (actions.Action, error) {
 	c := GetConfig{
-		Codec:      "bytes",
+		Codec: "bytes",
 	}
 	if err := config.Decode(with, &c); err != nil {
 		return nil, err
