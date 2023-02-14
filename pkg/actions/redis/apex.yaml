@@ -1,0 +1,6 @@
+spec: ../../../specs/actions/redis.axdl
+config:
+  package: redis
+  module: github.com/nanobus/nanobus/pkg/actions/redis
+plugins:
+  - ../../../codegen/plugin.ts
