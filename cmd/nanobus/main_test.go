@@ -71,6 +71,12 @@ func TestInvoke(t *testing.T) {
 			input:  nil,
 			output: map[string]interface{}{"value": "test-value"},
 		},
+		{
+			file:   "std/jq.yaml",
+			action: "test::jqtest",
+			input:  nil,
+			output: "test-value",
+		},
 	}
 	cwd, _ := os.Getwd()
 	for _, test := range tests {

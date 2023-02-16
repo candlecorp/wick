@@ -1,0 +1,12 @@
+version: 0
+id: test
+interfaces:
+  test:
+    jqtest:
+      steps:
+        - uses: jq
+          with:
+            query: '.value'
+            data: '{"value":"test-value"}'
+            single: true
+            var: 'result'
