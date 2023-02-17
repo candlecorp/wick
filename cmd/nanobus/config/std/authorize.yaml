@@ -1,0 +1,10 @@
+version: 0
+id: test
+interfaces:
+  test:
+    testAuth:
+      steps:
+        - name: "Check user authenticated"
+          uses: authorize
+          with:
+            has: ["input.sub"]

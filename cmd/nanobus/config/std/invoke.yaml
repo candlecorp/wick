@@ -1,0 +1,10 @@
+version: 0
+id: test
+interfaces:
+  test:
+    test:
+      steps:
+        - uses: invoke
+          with:
+            handler: log
+            input: 'Hello World'

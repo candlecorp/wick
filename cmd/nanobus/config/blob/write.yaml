@@ -1,0 +1,15 @@
+version: 0
+id: test
+interfaces:
+  test:
+    testwrite:
+      steps:
+        - uses: "@blob/write"
+          with:
+            resource: testblob
+            key: 'testKey'
+            data: 'testData'
+            codec: json
+            delimiterString: |+
+
+            

@@ -18,3 +18,35 @@ interfaces:
         - uses: expr
           with:
             value: 'response.args'
+    responseTest:
+      steps:
+        - uses: http
+          with:
+            url: http://httpbin.org/get?value=test-value
+            method: GET
+          returns: 'response'
+        - uses: http_response
+          with:
+            status: 234 
+    # modify:
+    #   steps:
+    #     - uses: http
+    #       with:
+    #         url: http://httpbin.org/get?value=test-value
+    #         method: GET
+    #         output: 'response'
+    #       returns: 'response'
+    #     - uses: expr
+    #       with:
+    #         value: 'response.args'
+    # headBody:
+    #   steps:
+    #     - uses: http
+    #       with:
+    #         url: http://httpbin.org/post
+    #         method: GET
+    #         headers: '{"accept": "application/json"}'
+    #       returns: 'response'
+    #     - uses: expr
+    #       with:
+    #         value: 'response.args'

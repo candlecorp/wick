@@ -77,6 +77,18 @@ func TestInvoke(t *testing.T) {
 			input:  nil,
 			output: "test-value",
 		},
+		// {
+		// 	file:   "postgres/exec.yaml",
+		// 	action: "test::testexec",
+		// 	input:  nil,
+		// 	output: "some_val",
+		// },
+		{
+			file:   "blob/write.yaml",
+			action: "test::testwrite",
+			input:  nil,
+			output: "test-value",
+		},
 	}
 	cwd, _ := os.Getwd()
 	for _, test := range tests {

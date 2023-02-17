@@ -1,0 +1,10 @@
+resources:
+  mydb:
+    uses: postgres
+    with:
+      url: "postgres://postgres:postgres@localhost:5432/blog?sslmode=disable"
+  testblob:
+    uses: nanobus.resource.fsblob/v1
+    with:
+      dir: blobs
+      create: true
