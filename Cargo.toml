@@ -19,7 +19,6 @@ codegen-units = 4
 [dependencies]
 
 [dev-dependencies]
-
 wasmflow-sdk = { path = "./crates/wasmflow/wasmflow-sdk", features = ["v1"] }
 logger = { path = "./crates/wasmflow/logger" }
 test-native-collection = { path = "./crates/integration/test-native-collection" }
@@ -48,7 +47,6 @@ members = [
   "crates/bins/*",
   "crates/wasmflow/*",
 ]
-
 exclude = [
   "crates/integration/test-wasm-component",
   "crates/integration/test-wasi-component",

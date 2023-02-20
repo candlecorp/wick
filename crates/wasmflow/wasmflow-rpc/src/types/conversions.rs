@@ -475,12 +475,12 @@ impl TryFrom<rpc::TypeSignature> for wasmflow::TypeSignature {
         Signature::Link(link) => DestType::Link { schemas: link.schemas },
         Signature::Internal(t) => {
           let t = InternalType::from_i32(t);
-          match t {
-            Some(t) => match t {
+          t.map_or_else(
+            || todo!(),
+            |t| match t {
               InternalType::ComponentInput => DestType::Internal(sdk::types::InternalType::ComponentInput),
             },
-            None => todo!(),
-          }
+          )
         }
         Signature::Struct(_) => DestType::Struct,
       },

@@ -244,7 +244,7 @@ impl<'de> serde::Deserialize<'de> for StringPair {
           .ok_or_else(|| serde::de::Error::invalid_length(1, &self))?;
 
         // This is very important!
-        while let Some(IgnoredAny) = seq.next_element()? {
+        while matches!(seq.next_element()?, Some(IgnoredAny)) {
           // Ignore rest
         }
 

@@ -22,16 +22,18 @@ pub async fn print_stream_json(mut stream: TransportStream, filter: &[String], t
       }
       let mut json = wrapper.payload.as_json();
 
-      match json.as_object_mut().and_then(|o| o.remove("value")) {
-        Some(v) => println!(
-          "{}",
-          match v {
-            serde_json::Value::String(s) => s,
-            v => v.to_string(),
-          }
-        ),
-        None => unreachable!("Message did not have an error nor a value: {}", json),
-      }
+      json.as_object_mut().and_then(|o| o.remove("value")).map_or_else(
+        || unreachable!("Message did not have an error nor a value: {}", json),
+        |v| {
+          println!(
+            "{}",
+            match v {
+              serde_json::Value::String(s) => s,
+              v => v.to_string(),
+            }
+          );
+        },
+      );
     } else {
       println!("{}", wrapper.as_json());
     }

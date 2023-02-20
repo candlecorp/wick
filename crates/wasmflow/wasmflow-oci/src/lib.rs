@@ -51,7 +51,6 @@
   clippy::equatable_if_let,
   bad_style,
   clashing_extern_declarations,
-  const_err,
   dead_code,
   deprecated,
   explicit_outlives_requirements,
@@ -122,15 +121,11 @@ pub async fn fetch_oci_bytes(img: &str, allow_latest: bool, allowed_insecure: &[
 
   let img = parse_reference(img)?;
 
-  let auth = if let Ok(u) = std::env::var(OCI_VAR_USER) {
-    if let Ok(p) = std::env::var(OCI_VAR_PASSWORD) {
+  let auth = std::env::var(OCI_VAR_USER).map_or(oci_distribution::secrets::RegistryAuth::Anonymous, |u| {
+    std::env::var(OCI_VAR_PASSWORD).map_or(oci_distribution::secrets::RegistryAuth::Anonymous, |p| {
       oci_distribution::secrets::RegistryAuth::Basic(u, p)
-    } else {
-      oci_distribution::secrets::RegistryAuth::Anonymous
-    }
-  } else {
-    oci_distribution::secrets::RegistryAuth::Anonymous
-  };
+    })
+  });
 
   let protocol = oci_distribution::client::ClientProtocol::HttpsExcept(allowed_insecure.to_vec());
   let config = oci_distribution::client::ClientConfig {
@@ -221,10 +216,10 @@ pub async fn push_arch(
 
   let archrepo = format!("{}-{}-{}", reference.repository(), entry.os, entry.arch);
 
-  let image_ref = match reference.tag() {
-    Some(t) => Reference::with_tag(reference.registry().to_owned(), archrepo.clone(), t.to_owned()),
-    None => Reference::with_tag(reference.registry().to_owned(), archrepo.clone(), "latest".to_owned()),
-  };
+  let image_ref = reference.tag().map_or_else(
+    || Reference::with_tag(reference.registry().to_owned(), archrepo.clone(), "latest".to_owned()),
+    |t| Reference::with_tag(reference.registry().to_owned(), archrepo.clone(), t.to_owned()),
+  );
   let layers = vec![ImageLayer {
     data: entry.bytes,
     media_type: manifest::IMAGE_LAYER_MEDIA_TYPE.to_owned(),
@@ -335,10 +330,7 @@ impl ArchitectureMap {
     T: AsRef<str>,
     U: AsRef<str>,
   {
-    let media_type = match media_type {
-      Some(v) => v,
-      None => manifest::IMAGE_CONFIG_MEDIA_TYPE.to_owned(),
-    };
+    let media_type = media_type.map_or_else(|| manifest::IMAGE_CONFIG_MEDIA_TYPE.to_owned(), |v| v);
     self.arches.push(ArchitectureEntry {
       os: os.as_ref().to_owned(),
       arch: arch.as_ref().to_owned(),

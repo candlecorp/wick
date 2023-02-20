@@ -38,7 +38,6 @@
   clippy::if_then_some_else_none,
   bad_style,
   clashing_extern_declarations,
-  const_err,
   dead_code,
   deprecated,
   explicit_outlives_requirements,
