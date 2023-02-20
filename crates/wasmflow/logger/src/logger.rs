@@ -37,7 +37,7 @@ pub fn init(opts: &LoggingOptions) -> LoggingGuard {
 #[must_use]
 pub fn init_test(opts: &LoggingOptions) -> Option<LoggingGuard> {
   #![allow(clippy::trivially_copy_pass_by_ref, clippy::needless_borrow)]
-  try_init(&opts, &Environment::Test).map_or_else(|_e| None, |guard| Some(guard))
+  try_init(&opts, &Environment::Test).map_or_else(|_e| None, Some)
 }
 
 fn hushed_modules(module: &str) -> bool {

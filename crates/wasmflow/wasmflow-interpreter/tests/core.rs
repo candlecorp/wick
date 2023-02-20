@@ -1,3 +1,4 @@
+#![allow(unused_attributes, clippy::box_default)]
 use std::path::Path;
 
 mod test;
@@ -51,7 +52,7 @@ async fn test_merge() -> Result<()> {
   let collections = HandlerMap::new(vec![NamespaceHandler::new("test", Box::new(TestCollection::new()))]);
   let mut inputs = PacketMap::default();
   inputs.insert("schem_one", "first value");
-  inputs.insert("schem_two", &2u8);
+  inputs.insert("schem_two", 2u8);
   inputs.insert("schem_three", &["alpha".to_owned(), "beta".to_owned()]);
 
   let invocation = Invocation::new_test("merge", Entity::local("test"), inputs, None);

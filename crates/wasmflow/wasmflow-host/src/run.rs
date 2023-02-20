@@ -108,7 +108,7 @@ mod tests {
 
   #[tokio::test]
   async fn runs_log_config() -> Result<()> {
-    let host_def = WasmflowManifest::load_from_file(&PathBuf::from("./manifests/logger.wafl"))?;
+    let host_def = WasmflowManifest::load_from_file(PathBuf::from("./manifests/logger.wafl"))?;
     let input = vec![("input", "test-input")].into();
 
     let mut result = run(host_def, "logger", input, Some(0)).await?;

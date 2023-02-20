@@ -10,7 +10,7 @@ fn main() {
     .unwrap();
 
   let fmt = Command::new("cargo")
-    .args(&["+nightly", "fmt", "--", "src/generated/wasmflow.rs"])
+    .args(["+nightly", "fmt", "--", "src/generated/wasmflow.rs"])
     .status()
     .expect("Failed to run cargo fmt on generated protobuf files.");
 

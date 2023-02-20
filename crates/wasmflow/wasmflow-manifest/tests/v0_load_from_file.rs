@@ -11,7 +11,7 @@ use wasmflow_parser::parse::{NS_LINK, SCHEMATIC_OUTPUT, SENDER_ID, SENDER_PORT};
 #[test_logger::test]
 fn test_basics() -> Result<(), ManifestError> {
   let path = PathBuf::from("./tests/manifests/v0/logger.wafl");
-  let manifest = WasmflowManifest::load_from_file(&path)?;
+  let manifest = WasmflowManifest::load_from_file(path)?;
 
   assert_eq!(manifest.flow("logger").map(|s| s.instances().len()), Some(2));
 
@@ -21,7 +21,7 @@ fn test_basics() -> Result<(), ManifestError> {
 #[test_logger::test]
 fn load_minimal() -> Result<(), ManifestError> {
   let path = PathBuf::from("./tests/manifests/v0/minimal.wafl");
-  let manifest = WasmflowManifest::load_from_file(&path)?;
+  let manifest = WasmflowManifest::load_from_file(path)?;
 
   assert_eq!(manifest.version(), 0);
 
@@ -31,7 +31,7 @@ fn load_minimal() -> Result<(), ManifestError> {
 #[test_logger::test]
 fn load_noversion_yaml() -> Result<(), ManifestError> {
   let path = PathBuf::from("./tests/manifests/v0/noversion.wafl");
-  let result = WasmflowManifest::load_from_file(&path);
+  let result = WasmflowManifest::load_from_file(path);
   println!("result: {:?}", result);
   assert!(matches!(result, Err(ManifestError::NoVersion)));
   Ok(())
@@ -40,7 +40,7 @@ fn load_noversion_yaml() -> Result<(), ManifestError> {
 #[test_logger::test]
 fn load_bad_manifest_yaml() -> Result<(), ManifestError> {
   let path = PathBuf::from("./tests/manifests/v0/bad-yaml.wafl");
-  let manifest = WasmflowManifest::load_from_file(&path);
+  let manifest = WasmflowManifest::load_from_file(path);
   if let Err(Error::YamlError(e)) = manifest {
     debug!("{:?}", e);
   } else {
@@ -53,7 +53,7 @@ fn load_bad_manifest_yaml() -> Result<(), ManifestError> {
 #[test_logger::test]
 fn load_collections_yaml() -> Result<(), ManifestError> {
   let path = PathBuf::from("./tests/manifests/v0/collections.wafl");
-  let manifest = WasmflowManifest::load_from_file(&path)?;
+  let manifest = WasmflowManifest::load_from_file(path)?;
 
   assert_eq!(manifest.name(), &Some("collections".to_owned()));
   assert_eq!(manifest.collections().len(), 6);
@@ -68,7 +68,7 @@ fn load_collections_yaml() -> Result<(), ManifestError> {
 #[test_logger::test]
 fn load_shortform_yaml() -> Result<(), ManifestError> {
   let path = PathBuf::from("./tests/manifests/v0/logger-shortform.wafl");
-  let manifest = WasmflowManifest::load_from_file(&path)?;
+  let manifest = WasmflowManifest::load_from_file(path)?;
 
   assert_eq!(manifest.default_flow(), &Some("logger".to_owned()));
   let first_from = &manifest.flow("logger").unwrap().connections[0].from;
@@ -84,7 +84,7 @@ fn load_shortform_yaml() -> Result<(), ManifestError> {
 fn load_env() -> Result<(), ManifestError> {
   let path = PathBuf::from("./tests/manifests/v0/env.wafl");
   env::set_var("TEST_ENV_VAR", "load_manifest_yaml_with_env");
-  let manifest = WasmflowManifest::load_from_file(&path)?;
+  let manifest = WasmflowManifest::load_from_file(path)?;
 
   assert_eq!(
     manifest.flow("name_load_manifest_yaml_with_env").unwrap().name,
@@ -97,7 +97,7 @@ fn load_env() -> Result<(), ManifestError> {
 #[test_logger::test]
 fn load_sender_yaml() -> Result<(), ManifestError> {
   let path = PathBuf::from("./tests/manifests/v0/sender.wafl");
-  let manifest = WasmflowManifest::load_from_file(&path)?;
+  let manifest = WasmflowManifest::load_from_file(path)?;
 
   let first_from = &manifest.flow("sender").unwrap().connections[0].from;
   let first_to = &manifest.flow("sender").unwrap().connections[0].to;
@@ -113,7 +113,7 @@ fn load_sender_yaml() -> Result<(), ManifestError> {
 #[test_logger::test]
 fn load_ns_link() -> Result<(), ManifestError> {
   let path = PathBuf::from("./tests/manifests/v0/ns.wafl");
-  let manifest = WasmflowManifest::load_from_file(&path)?;
+  let manifest = WasmflowManifest::load_from_file(path)?;
 
   let schematic = &manifest.flow("logger").unwrap();
   let from = &schematic.connections[0].from;

@@ -20,8 +20,8 @@ pub struct Collection {
   context: Context,
 }
 
-impl Collection {
-  pub fn default() -> Self {
+impl std::default::Default for Collection {
+  fn default() -> Self {
     Self { context: Context {} }
   }
 }

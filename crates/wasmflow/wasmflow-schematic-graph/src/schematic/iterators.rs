@@ -255,10 +255,7 @@ where
   }
 }
 
-fn get_ports_component<'graph, 'b, DATA>(
-  schematic: &'graph Schematic<DATA>,
-  port: &'b PortReference,
-) -> &'graph ComponentPort
+fn get_ports_component<'graph, DATA>(schematic: &'graph Schematic<DATA>, port: &PortReference) -> &'graph ComponentPort
 where
   DATA: Clone,
 {
@@ -268,7 +265,7 @@ where
   }
 }
 
-fn get_port_name<'graph, 'b, DATA>(schematic: &'graph Schematic<DATA>, port: &'b PortReference) -> &'graph str
+fn get_port_name<'graph, DATA>(schematic: &'graph Schematic<DATA>, port: &PortReference) -> &'graph str
 where
   DATA: Clone,
 {
@@ -278,9 +275,9 @@ where
   }
 }
 
-fn get_port_connections<'graph, 'b, DATA>(
+fn get_port_connections<'graph, DATA>(
   schematic: &'graph Schematic<DATA>,
-  port: &'b PortReference,
+  port: &PortReference,
 ) -> Connections<'graph, DATA>
 where
   DATA: Clone,

@@ -28,7 +28,7 @@ impl TransactionStatistics {
   pub fn print(&self) {
     let mut last = None;
     for event in self.performance.lock().events() {
-      if last == None {
+      if last.is_none() {
         last = Some(event.instant());
       }
       let compare_to = last.unwrap();

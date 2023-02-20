@@ -2,7 +2,7 @@
 async fn wasmflow_run() {
   let output = test_bin::get_test_bin("wasmflow")
     .env_clear()
-    .args(&[
+    .args([
       "invoke",
       "./manifests/log.wafl",
       "--data=schem_input=\"testing123\"",

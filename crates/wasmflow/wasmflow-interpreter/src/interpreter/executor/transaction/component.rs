@@ -72,7 +72,7 @@ impl InstanceHandler {
   }
 
   pub(crate) fn entity(&self) -> Entity {
-    Entity::component(self.reference.namespace(), &self.reference.name())
+    Entity::component(self.reference.namespace(), self.reference.name())
   }
 
   pub(crate) fn namespace(&self) -> &str {

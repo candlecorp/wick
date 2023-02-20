@@ -24,7 +24,7 @@ impl wasmflow_sdk::v1::stateful::BatchedComponent for Component {
       .arg("MATCH")
       .arg("*")
       .arg("COUNT")
-      .arg(&input.count);
+      .arg(input.count);
 
     let (cursor, values): (String, Vec<String>) = context.run_cmd(&mut cmd).await?;
     output.values.done(values)?;
