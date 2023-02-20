@@ -80,7 +80,7 @@
   while_true,
   missing_docs
 )]
-#![allow(unused_attributes, clippy::derive_partial_eq_without_eq)]
+#![allow(unused_attributes, clippy::derive_partial_eq_without_eq, clippy::box_default)]
 // !!END_LINTS
 // Add exceptions here
 #![allow(missing_docs)]
@@ -141,7 +141,7 @@ pub fn cache_location(bucket: &str, reference: &str) -> PathBuf {
   let path = path.join(CACHE_ROOT);
   let path = path.join(bucket);
   let _ = ::std::fs::create_dir_all(&path);
-  let reference = reference.replace(':', "_").replace('/', "_").replace('.', "_");
+  let reference = reference.replace([':', '/', '.'], "_");
   let mut path = path.join(reference);
   path.set_extension(CACHE_EXT);
 

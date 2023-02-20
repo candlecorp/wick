@@ -80,7 +80,7 @@
   while_true,
   missing_docs
 )]
-#![allow(unused_attributes, clippy::derive_partial_eq_without_eq)]
+#![allow(unused_attributes, clippy::derive_partial_eq_without_eq, clippy::box_default)]
 // !!END_LINTS
 // Add exceptions here
 #![allow(missing_docs)]
@@ -210,7 +210,7 @@ impl TestData {
     let mut payload = PacketMap::default();
     for (k, v) in &self.inputs {
       debug!("Test input for port '{}': {:?}", k, v);
-      payload.insert(k, &v);
+      payload.insert(k, v);
     }
 
     if let Some(seed) = self.seed {

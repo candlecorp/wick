@@ -14,7 +14,7 @@ impl WapcModule {
   /// Create an actor from the bytes of a signed WebAssembly module. Attempting to load.
   /// an unsigned module, or a module signed improperly, will result in an error.
   pub fn from_slice(buf: &[u8]) -> Result<WapcModule, WasmCollectionError> {
-    let token = wasmflow_wascap::extract_claims(&buf).map_err(|e| WasmCollectionError::ClaimsError(e.to_string()))?;
+    let token = wasmflow_wascap::extract_claims(buf).map_err(|e| WasmCollectionError::ClaimsError(e.to_string()))?;
     token.map_or(Err(WasmCollectionError::ClaimsExtraction), |t| {
       Ok(WapcModule {
         token: t,

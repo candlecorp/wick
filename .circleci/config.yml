@@ -23,12 +23,12 @@ executors:
     environment:
       SCCACHE_AZURE_BLOB_CONTAINER: circleci-sccache
       SCCACHE_ERROR_LOG: /tmp/sccache.log
-      CARGO_PROFILE_RELEASE_DEBUG: "0" # https://doc.rust-lang.org/cargo/reference/profiles.html#debug
-      CARGO_INCREMENTAL: "0" # https://doc.rust-lang.org/cargo/reference/profiles.html#incremental
-      CARGO_PROFILE_RELEASE_LTO: "true" # https://doc.rust-lang.org/cargo/reference/profiles.html#lto
-      CARGO_PROFILE_RELEASE_OPT_LEVEL: "3" # https://doc.rust-lang.org/cargo/reference/profiles.html#opt-level
-      CARGO_PROFILE_RELEASE_CODEGEN_UNITS: "1" # https://doc.rust-lang.org/cargo/reference/profiles.html#codegen-units
-      CARGO_PROFILE_RELEASE_STRIP: "true" # https://doc.rust-lang.org/cargo/reference/unstable.html#profile-strip-option
+      CARGO_PROFILE_RELEASE_DEBUG: '0' # https://doc.rust-lang.org/cargo/reference/profiles.html#debug
+      CARGO_INCREMENTAL: '0' # https://doc.rust-lang.org/cargo/reference/profiles.html#incremental
+      CARGO_PROFILE_RELEASE_LTO: 'true' # https://doc.rust-lang.org/cargo/reference/profiles.html#lto
+      CARGO_PROFILE_RELEASE_OPT_LEVEL: '3' # https://doc.rust-lang.org/cargo/reference/profiles.html#opt-level
+      CARGO_PROFILE_RELEASE_CODEGEN_UNITS: '1' # https://doc.rust-lang.org/cargo/reference/profiles.html#codegen-units
+      CARGO_PROFILE_RELEASE_STRIP: 'true' # https://doc.rust-lang.org/cargo/reference/unstable.html#profile-strip-option
       RUSTC_WRAPPER: /home/circleci/.cargo/bin/sccache
   test-executor:
     docker:
@@ -39,9 +39,9 @@ executors:
       RUSTC_WRAPPER: sccache
       SCCACHE_AZURE_BLOB_CONTAINER: circleci-sccache
       SCCACHE_ERROR_LOG: /tmp/sccache.log
-      CARGO_INCREMENTAL: "0" # https://doc.rust-lang.org/cargo/reference/profiles.html#incremental
-      CARGO_PROFILE_TEST_LTO: "off"
-      CARGO_BUILD_JOBS: "4"
+      CARGO_INCREMENTAL: '0' # https://doc.rust-lang.org/cargo/reference/profiles.html#incremental
+      CARGO_PROFILE_TEST_LTO: 'off'
+      CARGO_BUILD_JOBS: '4'
 commands:
   install_deps:
     steps:
@@ -169,7 +169,7 @@ jobs:
       - restore_build_cache
       - run:
           name: Test
-          command: "make test"
+          command: 'make test'
       - run: sccache -s
       - save_build_cache
       - save_rustup_cache
@@ -197,9 +197,8 @@ jobs:
       - save_build_cache
       - save_rustup_cache
   deploy:
-    parameters:
     docker:
-      - image: candlecorp/ci-deploy
+      - image: candlecorp/ci-deploy:latest
         auth: *AUTH
         environment:
           AZURE_STORAGE_ACCOUNT: $AZURE_STORAGE_ACCOUNT
@@ -247,7 +246,6 @@ jobs:
           path: ./build/
 
 workflows:
-  version: 2
   test:
     jobs:
       - test:

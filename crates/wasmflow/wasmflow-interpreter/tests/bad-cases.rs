@@ -1,3 +1,5 @@
+#![allow(unused_attributes, clippy::box_default)]
+
 use std::path::Path;
 use std::time::SystemTime;
 
