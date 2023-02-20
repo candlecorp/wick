@@ -51,7 +51,6 @@
   clippy::equatable_if_let,
   bad_style,
   clashing_extern_declarations,
-  const_err,
   dead_code,
   deprecated,
   explicit_outlives_requirements,
@@ -112,3 +111,34 @@ pub use claims::{
   sign_buffer_with_claims,
   ClaimsOptions,
 };
+
+#[cfg(test)]
+mod test {
+  use anyhow::Result;
+  use wasmflow_sdk::v1::types::CollectionSignature;
+  static MODULE_BYTES: &[u8] = include_bytes!("../test/test_wasi_component.wasm");
+
+  use super::*;
+
+  #[test]
+  fn test_basic() -> Result<()> {
+    let subject = KeyPair::new_service();
+    let account = KeyPair::new_account();
+    let signed = sign_buffer_with_claims(
+      MODULE_BYTES,
+      CollectionSignature::new("TEST"),
+      &subject,
+      &account,
+      ClaimsOptions {
+        revision: None,
+        version: None,
+        expires_in_days: None,
+        not_before_days: None,
+      },
+    )?;
+    let claims = extract_claims(&signed)?.unwrap();
+    assert_eq!(claims.claims.name(), "TEST");
+
+    Ok(())
+  }
+}

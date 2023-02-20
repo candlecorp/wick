@@ -2,9 +2,10 @@ use std::io::Read;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use data_encoding::HEXUPPER;
-use parity_wasm::elements::{CustomSection, Module, Serialize};
-use parity_wasm::{deserialize_buffer, serialize};
+// use parity_wasm::elements::{CustomSection, Module, Serialize};
+// use parity_wasm::{deserialize_buffer, serialize};
 use ring::digest::{Context, Digest, SHA256};
+use walrus::{CustomSectionId, IdsToIndices, Module, TypedCustomSectionId, UntypedCustomSectionId};
 use wascap::jwt::Token;
 use wascap::prelude::{Claims, KeyPair};
 use wascap::wasm::days_from_now_to_jwt_time;
@@ -28,19 +29,22 @@ pub struct ClaimsOptions {
   pub not_before_days: Option<u64>,
 }
 
+fn deserialize_buffer(buf: &[u8]) -> Result<Module> {
+  walrus::Module::from_buffer(buf).map_err(|e| crate::Error::ParseError(e.to_string()))
+}
+
 /// Extract the claims embedded in a [Token].
 pub fn extract_claims(contents: impl AsRef<[u8]>) -> Result<Option<Token<CollectionClaims>>> {
+  let hash = compute_hash_without_jwt(contents.as_ref())?;
   let module: Module = deserialize_buffer(contents.as_ref())?;
-  let sections: Vec<&CustomSection> = module.custom_sections().filter(|sect| sect.name() == "jwt").collect();
-
-  if sections.is_empty() {
-    Ok(None)
-  } else {
-    let token = decode_token(sections[0].payload().to_vec())?;
-    let hash = compute_hash_without_jwt(module)?;
-    assert_valid_jwt(&token, &hash)?;
-    Ok(Some(token))
+  for (id, section) in module.customs.iter() {
+    if section.name() == "jwt" {
+      let token = decode_token(section.data(&IdsToIndices::default()).into())?;
+      assert_valid_jwt(&token, &hash)?;
+      return Ok(Some(token));
+    }
   }
+  Ok(None)
 }
 
 /// Validate a JWT's hash matches the passed hash.
@@ -69,17 +73,35 @@ pub fn decode_token(jwt_bytes: Vec<u8>) -> Result<Token<CollectionClaims>> {
 /// This function will embed a set of claims inside the bytecode of a WebAssembly module. The claims.
 /// are converted into a JWT and signed using the provided `KeyPair`.
 pub fn embed_claims(orig_bytecode: &[u8], claims: &Claims<CollectionClaims>, kp: &KeyPair) -> Result<Vec<u8>> {
-  let mut module: Module = deserialize_buffer(orig_bytecode)?;
-  module.clear_custom_section("jwt");
-  let cleanbytes = serialize(module)?;
-  let jwt = make_jwt(&*cleanbytes, claims, kp)?;
+  let mut module = deserialize_buffer(orig_bytecode)?;
 
-  let mut m: Module = deserialize_buffer(orig_bytecode)?;
-  m.set_custom_section("jwt", jwt);
-  let mut buf = Vec::new();
-  m.serialize(&mut buf)?;
+  module.customs.remove_raw("jwt");
+  let cleanbytes = module.emit_wasm();
 
-  Ok(buf)
+  let jwt = ClaimsJwt {
+    data: make_jwt(&*cleanbytes, claims, kp)?,
+  };
+
+  // emit_wasm() has side effects on our original `module` so we need to re-serialize it
+  // with the cleanbytes and add our token.
+  let mut module = deserialize_buffer(&cleanbytes)?;
+  module.customs.add(jwt);
+  Ok(module.emit_wasm())
+}
+
+#[derive(Debug)]
+struct ClaimsJwt {
+  data: Vec<u8>,
+}
+
+impl walrus::CustomSection for ClaimsJwt {
+  fn name(&self) -> &str {
+    "jwt"
+  }
+
+  fn data(&self, ids_to_indices: &IdsToIndices) -> std::borrow::Cow<[u8]> {
+    std::borrow::Cow::Borrowed(&self.data)
+  }
 }
 
 /// Create a JWT claims with a hash of the buffer embedded.
@@ -160,10 +182,11 @@ fn sha256_digest<R: Read>(mut reader: R) -> Result<Digest> {
   Ok(context.finish())
 }
 
-fn compute_hash_without_jwt(module: Module) -> Result<String> {
-  let mut refmod = module;
-  refmod.clear_custom_section("jwt");
-  let modbytes = serialize(refmod)?;
+fn compute_hash_without_jwt(module: &[u8]) -> Result<String> {
+  let mut refmod = deserialize_buffer(module)?;
+  refmod.customs.remove_raw("jwt");
+  // refmod.clear_custom_section("jwt");
+  let modbytes = refmod.emit_wasm();
   let hash = hash_bytes(&*modbytes)?;
 
   Ok(hash)

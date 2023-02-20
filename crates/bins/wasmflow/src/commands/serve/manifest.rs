@@ -15,6 +15,7 @@ pub(crate) async fn handle_command(opts: super::ServeCommand, bytes: Vec<u8>) ->
 
   host.start(Some(0)).await?;
   info!("Host started");
+  #[allow(clippy::option_if_let_else)]
   match host.get_server_info() {
     Some(info) => {
       wasmflow_collection_cli::print_info(info);

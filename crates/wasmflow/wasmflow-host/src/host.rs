@@ -153,26 +153,20 @@ impl Host {
 
     #[allow(clippy::manual_map)]
     let options = HostOptions {
-      rpc: match &self.manifest.host().rpc {
-        Some(config) => Some(ServerOptions {
-          port: config.port,
-          address: config.address,
-          pem: config.pem.clone(),
-          key: config.key.clone(),
-          ca: config.ca.clone(),
-          enabled: config.enabled,
-        }),
-        None => None,
-      },
-      mesh: match &self.manifest.host().mesh {
-        Some(config) => Some(MeshOptions {
-          enabled: config.enabled,
-          address: config.address.clone(),
-          creds_path: config.creds_path.clone(),
-          token: config.token.clone(),
-        }),
-        None => None,
-      },
+      rpc: self.manifest.host().rpc.as_ref().map(|config| ServerOptions {
+        port: config.port,
+        address: config.address,
+        pem: config.pem.clone(),
+        key: config.key.clone(),
+        ca: config.ca.clone(),
+        enabled: config.enabled,
+      }),
+      mesh: self.manifest.host().mesh.as_ref().map(|config| MeshOptions {
+        enabled: config.enabled,
+        address: config.address.clone(),
+        creds_path: config.creds_path.clone(),
+        token: config.token.clone(),
+      }),
       id: self.get_host_id().to_owned(),
       timeout: self.manifest.host().timeout,
     };
@@ -276,7 +270,7 @@ impl TryFrom<PathBuf> for HostBuilder {
   type Error = Error;
 
   fn try_from(file: PathBuf) -> Result<Self> {
-    let manifest = WasmflowManifest::load_from_file(&file)?;
+    let manifest = WasmflowManifest::load_from_file(file)?;
     Ok(HostBuilder::from_definition(manifest))
   }
 }

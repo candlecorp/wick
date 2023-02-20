@@ -1,6 +1,6 @@
 use std::string::FromUtf8Error;
 
-use parity_wasm::SerializationError;
+// use parity_wasm::SerializationError;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -22,9 +22,11 @@ pub enum ClaimsError {
   /// Error reading a buffer.
   IoError(#[from] std::io::Error),
 
-  #[error(transparent)]
+  // #[error(transparent)]
   /// Error injecting token into WebAssembly module.
-  SerializationError(#[from] SerializationError),
+  // SerializationError(#[from] SerializationError),
+  #[error("Parse error for wasm module: {0}")]
+  ParseError(String),
 
   #[error("General error : {0}")]
   /// General error.

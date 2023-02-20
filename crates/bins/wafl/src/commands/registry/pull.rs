@@ -97,12 +97,11 @@ async fn pull(reference: &Reference, opts: &Options, client: &mut Client, auth: 
       oci_distribution::manifest::OciManifest::ImageIndex(manifest) => {
         if let (Some(os), Some(arch)) = (&opts.os, &opts.arch) {
           let mut valid_platforms = vec![];
-          let platform_manifest = manifest.manifests.iter().find(|manifest| match &manifest.platform {
-            Some(platform) => {
+          let platform_manifest = manifest.manifests.iter().find(|manifest| {
+            manifest.platform.as_ref().map_or(false, |platform| {
               valid_platforms.push(format!("{}-{}", platform.os, platform.architecture));
               &platform.os == os && &platform.architecture == arch
-            }
-            None => false,
+            })
           });
           if platform_manifest.is_none() {
             println!("Platform {}-{} not found", os, arch);

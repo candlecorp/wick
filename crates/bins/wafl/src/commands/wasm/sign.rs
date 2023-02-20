@@ -61,7 +61,12 @@ pub(crate) async fn handle(opts: Options) -> Result<()> {
   )
   .await?;
 
-  debug!("Signing module with interface : {:?}", interface);
+  debug!(
+    "Signing module (orig: {} bytes) with interface : {:?}",
+    buf.len(),
+    interface
+  );
+
   let signed = sign_buffer_with_claims(
     &buf,
     interface,
