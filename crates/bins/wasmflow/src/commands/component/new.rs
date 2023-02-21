@@ -4,7 +4,7 @@ use anyhow::Result;
 use clap::Args;
 #[derive(Debug, Clone, Args)]
 #[clap(rename_all = "kebab-case")]
-pub(crate) struct Options {
+pub(crate) struct ComponentNewCommand {
   #[clap(flatten)]
   pub(crate) logging: logger::LoggingOptions,
 
@@ -18,7 +18,7 @@ pub(crate) struct Options {
 }
 
 #[allow(clippy::unused_async)]
-pub(crate) async fn handle(opts: Options) -> Result<()> {
+pub(crate) async fn handle(opts: ComponentNewCommand) -> Result<()> {
   let _guard = crate::utils::init_logger(&opts.logging)?;
 
   let path = PathBuf::from(format!("{}/{}.apex", opts.path, opts.name));

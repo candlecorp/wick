@@ -12,12 +12,11 @@ pub(crate) mod serve;
 pub(crate) mod test;
 pub(crate) mod wasm;
 
-use clap::{AppSettings, Args, Parser, Subcommand};
+use clap::{Args, Parser, Subcommand};
 use logger::LoggingOptions;
 
 #[derive(Parser, Debug, Clone)]
 #[clap(
-  global_setting(AppSettings::DeriveDisplayOrder),
   name = crate::BIN_NAME,
   about = crate::BIN_DESC,
   version,
@@ -77,7 +76,7 @@ pub(crate) enum CliCommand {
 
   /// Command to query JSON, YAML, or TOML file.
   #[clap(name = "query")]
-  Query(query::Options),
+  Query(query::QueryCommand),
 }
 
 #[derive(Debug, Clone, Args)]
@@ -93,9 +92,10 @@ pub(crate) struct FetchOptions {
 
 #[cfg(test)]
 mod tests {
+  use clap::CommandFactory;
+
   #[test]
   fn verify_options() {
-    use clap::IntoApp;
     super::Cli::command().debug_assert();
   }
 }

@@ -6,16 +6,14 @@ license = "Elastic-2.0"
 publish = false
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
 tap = { path = "../../misc/tap" }
 wasmflow-sdk = { path = "../wasmflow-sdk", features = ["v1"] }
-
 wasmflow-rpc = { path = "../wasmflow-rpc" }
-serde = { version = "1.0", features = ["derive"] }
-serde-value = "0.7.0"
-serde_yaml = "0.8"
-thiserror = "1.0"
-tokio = { version = "1", features = ["io-std", "macros", "rt-multi-thread"] }
-tokio-stream = "0.1.7"
-tracing = "0.1"
+serde = { workspace = true, features = ["derive"] }
+serde-value = { workspace = true }
+serde_yaml = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true, features = ["io-std", "macros", "rt-multi-thread"] }
+tokio-stream = { workspace = true }
+tracing = { workspace = true }

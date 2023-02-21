@@ -10,29 +10,28 @@ host = []
 
 [dependencies]
 wasmflow-sdk = { path = "../../wasmflow/wasmflow-sdk", features = ["v1"] }
-
 wasmflow-collection-cli = { path = "../../wasmflow/wasmflow-collection-cli" }
 wasmflow-rpc = { path = "../../wasmflow/wasmflow-rpc" }
 wasmflow-interface-keyvalue = { path = "../../interfaces/wasmflow-interface-keyvalue", features = [
   "host",
   "guest",
 ] }
-redis = { version = "0.21", features = ["tokio-comp"] }
-thiserror = "1.0"
-serde = { version = "1.0", features = ["derive"] }
-async-trait = "0.1"
-futures = "0.3"
-tokio = { version = "1", features = ["macros", "sync", "rt-multi-thread"] }
-once_cell = "1.8"
+redis = { version = "0.22", features = ["tokio-comp"] }
+thiserror = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+async-trait = { workspace = true }
+futures = { workspace = true }
+tokio = { workspace = true, features = ["macros", "sync", "rt-multi-thread"] }
+once_cell = { workspace = true }
 tokio-util = { version = "0.7", features = ["codec"] }
-clap = { version = "3.0", features = ["derive", "env"] }
-tracing = "0.1"
-tracing-futures = "0.2"
+clap = { workspace = true, features = ["derive", "env"] }
+tracing = { workspace = true }
+tracing-futures = { workspace = true }
 
 [dev-dependencies]
 logger = { path = "../../wasmflow/logger" }
-serde_json = "1.0"
-tonic = "0.7"
-rand = "0.8"
-anyhow = "1.0"
+serde_json = { workspace = true }
+tonic = { workspace = true }
+rand = { workspace = true }
+anyhow = { workspace = true }
 test-logger = { path = "../../misc/test-logger" }

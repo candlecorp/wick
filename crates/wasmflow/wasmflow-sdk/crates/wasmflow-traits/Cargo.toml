@@ -12,21 +12,20 @@ categories = []
 exclude = ["tests/*", ".github/*", ".gitignore"]
 homepage = "https://wasmflow.com"
 
-
 [features]
 
 [dependencies]
 wasmflow-packet = { path = "../wasmflow-packet", version = "0.10.0-beta.4" }
 wasmflow-streams = { path = "../wasmflow-streams", version = "0.10.0-beta.4" }
-serde = { version = "1" }
-async-trait = "0.1"
-tokio-stream = "0.1"
-tokio = { version = "1", features = [] }
+serde = { workspace = true }
+async-trait = { workspace = true }
+tokio-stream = { workspace = true }
+tokio = { workspace = true, features = [] }
 
 [dev-dependencies]
 test-log = "0.2"
-env_logger = "0.9"
-tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+env_logger = { workspace = true }
+tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
 wasmflow-transport = { path = "../wasmflow-transport", version = "0.10.0-beta.4", features = [
   "async",
 ] }

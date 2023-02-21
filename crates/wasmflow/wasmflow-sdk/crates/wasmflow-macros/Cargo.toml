@@ -17,4 +17,4 @@ maintenance = { status = "actively-developed" }
 [dependencies]
 
 [dev-dependencies]
-anyhow = "1.0"
+anyhow = { workspace = true }

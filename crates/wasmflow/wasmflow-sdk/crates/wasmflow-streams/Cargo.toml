@@ -12,16 +12,15 @@ categories = []
 exclude = ["tests/*", ".github/*", ".gitignore"]
 homepage = "https://wasmflow.com"
 
-
 [features]
 
 [dependencies]
 wasmflow-packet = { path = "../wasmflow-packet", version = "0.10.0-beta.4" }
-futures = "0.3.21"
+futures = { workspace = true }
 pin-project-lite = "0.2.9"
 
 [dev-dependencies]
-env_logger = "0.9"
+env_logger = { workspace = true }
 test-log = "0.2.8"
-anyhow = "1.0"
-tracing = "0.1"
+anyhow = { workspace = true }
+tracing = { workspace = true }

@@ -51,6 +51,21 @@ wasmflow-transport = { path = "./crates/wasmflow-transport", version = "0.10.0-b
 wasmflow-boundary = { path = "./crates/wasmflow-boundary", version = "0.10.0-beta.4", optional = true }
 wasmflow-traits = { path = "./crates/wasmflow-traits", version = "0.10.0-beta.4", optional = true }
 wasmflow-collection-link = { path = "./crates/wasmflow-collection-link", version = "0.10.0-beta.4", optional = true }
-futures = "0.3.21"
+futures = { workspace = true }
 
 [workspace]
+
+[workspace.dependencies]
+env_logger = "0.10.0"
+serde = "1.0"
+tokio = "1"
+serde_json = "1.0"
+futures = "0.3"
+async-trait = "0.1"
+tracing = "0.1"
+serde-value = "0.7"
+thiserror = "1.0"
+uuid = "1.1"
+anyhow = "1.0"
+parking_lot = "0.12"
+tokio-stream = "0.1"

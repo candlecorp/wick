@@ -10,7 +10,7 @@ use wasmflow_oci::error::OciError;
 use crate::io::write_bytes;
 #[derive(Debug, Clone, Args)]
 #[clap(rename_all = "kebab-case")]
-pub(crate) struct Options {
+pub(crate) struct RegistryPullCommand {
   #[clap(flatten)]
   pub(crate) logging: logger::LoggingOptions,
 
@@ -35,7 +35,7 @@ pub(crate) struct Options {
 }
 
 #[allow(clippy::unused_async)]
-pub(crate) async fn handle(opts: Options) -> Result<()> {
+pub(crate) async fn handle(opts: RegistryPullCommand) -> Result<()> {
   let _guard = crate::utils::init_logger(&opts.logging)?;
   debug!("Pull artifact");
   let protocol = oci_distribution::client::ClientProtocol::HttpsExcept(opts.oci_opts.insecure_registries.clone());
@@ -62,7 +62,12 @@ pub(crate) async fn handle(opts: Options) -> Result<()> {
 }
 
 #[async_recursion::async_recursion]
-async fn pull(reference: &Reference, opts: &Options, client: &mut Client, auth: &RegistryAuth) -> Result<()> {
+async fn pull(
+  reference: &Reference,
+  opts: &RegistryPullCommand,
+  client: &mut Client,
+  auth: &RegistryAuth,
+) -> Result<()> {
   let (manifest, _) = client
     .pull_manifest(reference, auth)
     .await

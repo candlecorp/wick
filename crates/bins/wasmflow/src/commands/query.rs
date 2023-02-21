@@ -4,12 +4,12 @@ use std::str::FromStr;
 
 use anyhow::Result;
 use clap::Args;
-use jaq_core::{parse, Ctx, Definitions, Val};
+use jaq_core::{parse, Ctx, Definitions, RcIter, Val};
 use markup_converter::{Format, Transcoder};
 
 #[derive(Debug, Clone, Args)]
 #[clap(rename_all = "kebab-case")]
-pub(crate) struct Options {
+pub(crate) struct QueryCommand {
   #[clap(flatten)]
   pub(crate) logging: logger::LoggingOptions,
 
@@ -51,7 +51,7 @@ impl FromStr for MarkupKind {
 }
 
 #[allow(clippy::unused_async)]
-pub(crate) async fn handle(opts: Options) -> Result<()> {
+pub(crate) async fn handle(opts: QueryCommand) -> Result<()> {
   let input = if let Some(path) = opts.path {
     match opts.kind {
       None => Transcoder::from_path(&path)?.to_json()?,
@@ -98,9 +98,10 @@ pub(crate) async fn handle(opts: Options) -> Result<()> {
     let defs = Definitions::core();
 
     let filters = defs.finish(filters, Vec::new(), &mut errs);
+    let inputs = RcIter::new(core::iter::empty());
 
     // iterator over the output values
-    let out = filters.run(Ctx::new(), Val::from(input));
+    let out = filters.run(Ctx::new([], &inputs), Val::from(input));
 
     for val in out {
       match val {

@@ -11,7 +11,7 @@ use crate::utils;
 
 #[derive(Debug, Clone, Args)]
 #[clap(rename_all = "kebab-case")]
-pub(crate) struct Options {
+pub(crate) struct RpcInvokeCommand {
   #[clap(flatten)]
   pub(crate) logging: logger::LoggingOptions,
 
@@ -51,7 +51,7 @@ pub(crate) struct Options {
   args: Vec<String>,
 }
 
-pub(crate) async fn handle(opts: Options) -> Result<()> {
+pub(crate) async fn handle(opts: RpcInvokeCommand) -> Result<()> {
   let _guard = crate::utils::init_logger(&opts.logging)?;
 
   let mut client = wasmflow_rpc::make_rpc_client(

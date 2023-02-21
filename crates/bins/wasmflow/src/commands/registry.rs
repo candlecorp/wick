@@ -7,9 +7,9 @@ pub(crate) mod push;
 pub(crate) enum SubCommands {
   /// Push an artifact or bundle to an OCI registry.
   #[clap(name = "push")]
-  Push(push::Options),
+  Push(push::RegistryPushCommand),
 
   /// Pull an artifact from an OCI registry.
   #[clap(name = "pull")]
-  Pull(pull::Options),
+  Pull(pull::RegistryPullCommand),
 }

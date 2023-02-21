@@ -21,12 +21,11 @@ v1 = []
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 wasmflow-codec = { path = "../wasmflow-codec", version = "0.10.0-beta.4" }
 
-
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 wasmflow-invocation = { path = "../wasmflow-invocation", version = "0.10.0-beta.4" }
 wasmflow-packet = { path = "../wasmflow-packet", version = "0.10.0-beta.4" }
 
 [dependencies]
-serde = { version = "1.0", features = ["derive"] }
+serde = { workspace = true, features = ["derive"] }
 
 [dev-dependencies]

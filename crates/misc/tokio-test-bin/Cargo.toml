@@ -15,21 +15,20 @@ description = """
 A crate for getting the crate binary in an integration test.
 """
 
-
 [dependencies]
-tokio = { version = "1", features = ["process", "io-util"] }
-thiserror = "1.0"
+tokio = { workspace = true, features = ["process", "io-util"] }
+thiserror = { workspace = true }
 
 [dev-dependencies]
-tokio = { version = "1", features = [
+tokio = { workspace = true, features = [
   "macros",
   "process",
   "net",
   "rt-multi-thread",
 ] }
 test-log = "0.2"
-tracing = "0.1"
-env_logger = "0.9"
+tracing = { workspace = true }
+env_logger = { workspace = true }
 
 [[bin]]
 name = "test_bin"

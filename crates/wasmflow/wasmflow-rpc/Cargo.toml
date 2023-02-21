@@ -6,31 +6,28 @@ license = "Elastic-2.0"
 publish = false
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [features]
 client = ["tokio/fs"]
 
 [dependencies]
 wasmflow-sdk = { path = "../wasmflow-sdk", features = ["v1"] }
-
-tonic = { version = "0.7", features = ["tls"] }
-prost = "0.10"
-prost-types = "0.10"
-tokio = { version = "1", features = ["macros", "net", "rt-multi-thread"] }
-tokio-stream = { version = "0.1", features = ["net"] }
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
+tonic = { workspace = true, features = ["tls"] }
+prost = "0.11"
+prost-types = "0.11"
+tokio = { workspace = true, features = ["macros", "net", "rt-multi-thread"] }
+tokio-stream = { workspace = true, features = ["net"] }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
 async-stream = "0.3.2"
-rand = "0.8"
-tracing = "0.1"
-thiserror = "1.0"
-async-trait = "0.1.50"
+rand = { workspace = true }
+tracing = { workspace = true }
+thiserror = { workspace = true }
+async-trait = { workspace = true }
 dyn-clone = "1.0.4"
-uuid = "1.1"
-
+uuid = { workspace = true }
 
 [build-dependencies]
-tonic-build = { version = "0.7", default-features = false, features = [
+tonic-build = { workspace = true, default-features = false, features = [
   "prost",
   "transport",
 ] }

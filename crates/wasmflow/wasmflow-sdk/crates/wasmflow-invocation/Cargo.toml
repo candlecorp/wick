@@ -23,8 +23,8 @@ wasmflow-packet = { path = "../wasmflow-packet", version = "0.10.0-beta.4", feat
   "all",
 ] }
 wasmflow-entity = { path = "../wasmflow-entity", version = "0.10.0-beta.4" }
-serde = { version = "1.0", features = ["derive"] }
-uuid = { version = "1.1", features = ["v4", "serde"] }
-thiserror = "1.0"
+serde = { workspace = true, features = ["derive"] }
+uuid = { workspace = true, features = ["v4", "serde"] }
+thiserror = { workspace = true }
 
 [dev-dependencies]

@@ -2,7 +2,7 @@ use anyhow::Result;
 use clap::Args;
 #[derive(Debug, Clone, Args)]
 #[clap(rename_all = "kebab-case")]
-pub(crate) struct Options {
+pub(crate) struct ProjectNewCommand {
   #[clap(flatten)]
   pub(crate) logging: logger::LoggingOptions,
 
@@ -21,7 +21,7 @@ enum LanguageOptions {
 }
 
 #[allow(clippy::unused_async)]
-pub(crate) async fn handle(opts: Options) -> Result<()> {
+pub(crate) async fn handle(opts: ProjectNewCommand) -> Result<()> {
   let _guard = crate::utils::init_logger(&opts.logging)?;
 
   let url = match opts.language.as_str() {

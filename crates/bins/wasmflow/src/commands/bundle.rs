@@ -6,5 +6,5 @@ pub(crate) mod pack;
 pub(crate) enum SubCommands {
   /// Create a signed archive bundle.
   #[clap(name = "pack")]
-  Pack(pack::Options),
+  Pack(pack::BundlePackCommand),
 }

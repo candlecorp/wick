@@ -1,3 +1,4 @@
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Packet {
   #[prost(oneof = "packet::Data", tags = "1, 2, 3")]
@@ -5,6 +6,7 @@ pub struct Packet {
 }
 /// Nested message and enum types in `Packet`.
 pub mod packet {
+  #[allow(clippy::derive_partial_eq_without_eq)]
   #[derive(Clone, PartialEq, ::prost::Oneof)]
   pub enum Data {
     #[prost(message, tag = "1")]
@@ -15,11 +17,13 @@ pub mod packet {
     Signal(super::Signal),
   }
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Serialized {
   #[prost(message, optional, tag = "1")]
   pub payload: ::core::option::Option<PayloadData>,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Failure {
   #[prost(string, tag = "1")]
@@ -35,7 +39,28 @@ pub mod failure {
     Error = 0,
     Exception = 1,
   }
+  impl FailureKind {
+    /// String value of the enum field names used in the ProtoBuf definition.
+    ///
+    /// The values are not transformed in any way and thus are considered stable
+    /// (if the ProtoBuf definition does not change) and safe for programmatic use.
+    pub fn as_str_name(&self) -> &'static str {
+      match self {
+        FailureKind::Error => "Error",
+        FailureKind::Exception => "Exception",
+      }
+    }
+    /// Creates an enum from field names used in the ProtoBuf definition.
+    pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
+      match value {
+        "Error" => Some(Self::Error),
+        "Exception" => Some(Self::Exception),
+        _ => None,
+      }
+    }
+  }
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Signal {
   #[prost(message, optional, tag = "1")]
@@ -52,7 +77,30 @@ pub mod signal {
     OpenBracket = 1,
     CloseBracket = 2,
   }
+  impl OutputSignal {
+    /// String value of the enum field names used in the ProtoBuf definition.
+    ///
+    /// The values are not transformed in any way and thus are considered stable
+    /// (if the ProtoBuf definition does not change) and safe for programmatic use.
+    pub fn as_str_name(&self) -> &'static str {
+      match self {
+        OutputSignal::Done => "Done",
+        OutputSignal::OpenBracket => "OpenBracket",
+        OutputSignal::CloseBracket => "CloseBracket",
+      }
+    }
+    /// Creates an enum from field names used in the ProtoBuf definition.
+    pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
+      match value {
+        "Done" => Some(Self::Done),
+        "OpenBracket" => Some(Self::OpenBracket),
+        "CloseBracket" => Some(Self::CloseBracket),
+        _ => None,
+      }
+    }
+  }
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PayloadData {
   #[prost(oneof = "payload_data::Data", tags = "1, 3")]
@@ -60,6 +108,7 @@ pub struct PayloadData {
 }
 /// Nested message and enum types in `PayloadData`.
 pub mod payload_data {
+  #[allow(clippy::derive_partial_eq_without_eq)]
   #[derive(Clone, PartialEq, ::prost::Oneof)]
   pub enum Data {
     #[prost(bytes, tag = "1")]
@@ -68,6 +117,7 @@ pub mod payload_data {
     Json(::prost::alloc::string::String),
   }
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Invocation {
   #[prost(string, tag = "1")]
@@ -85,6 +135,7 @@ pub struct Invocation {
   #[prost(message, optional, tag = "7")]
   pub config: ::core::option::Option<Serialized>,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct InherentData {
   #[prost(uint64, tag = "1")]
@@ -92,6 +143,7 @@ pub struct InherentData {
   #[prost(uint64, tag = "2")]
   pub timestamp: u64,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Output {
   #[prost(string, tag = "1")]
@@ -101,13 +153,16 @@ pub struct Output {
   #[prost(message, optional, tag = "3")]
   pub payload: ::core::option::Option<Packet>,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ListRequest {}
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ListResponse {
   #[prost(message, repeated, tag = "1")]
   pub schemas: ::prost::alloc::vec::Vec<HostedType>,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct HostedType {
   #[prost(oneof = "hosted_type::Type", tags = "1")]
@@ -115,12 +170,14 @@ pub struct HostedType {
 }
 /// Nested message and enum types in `HostedType`.
 pub mod hosted_type {
+  #[allow(clippy::derive_partial_eq_without_eq)]
   #[derive(Clone, PartialEq, ::prost::Oneof)]
   pub enum Type {
     #[prost(message, tag = "1")]
     Collection(super::CollectionSignature),
   }
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Component {
   #[prost(string, tag = "1")]
@@ -140,7 +197,28 @@ pub mod component {
     Component = 0,
     Schematic = 1,
   }
+  impl ComponentKind {
+    /// String value of the enum field names used in the ProtoBuf definition.
+    ///
+    /// The values are not transformed in any way and thus are considered stable
+    /// (if the ProtoBuf definition does not change) and safe for programmatic use.
+    pub fn as_str_name(&self) -> &'static str {
+      match self {
+        ComponentKind::Component => "Component",
+        ComponentKind::Schematic => "Schematic",
+      }
+    }
+    /// Creates an enum from field names used in the ProtoBuf definition.
+    pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
+      match value {
+        "Component" => Some(Self::Component),
+        "Schematic" => Some(Self::Schematic),
+        _ => None,
+      }
+    }
+  }
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct CollectionSignature {
   #[prost(string, tag = "1")]
@@ -160,6 +238,7 @@ pub struct CollectionSignature {
   #[prost(message, repeated, tag = "7")]
   pub wellknown: ::prost::alloc::vec::Vec<WellKnownSchema>,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct CollectionFeatures {
   #[prost(bool, tag = "1")]
@@ -169,6 +248,7 @@ pub struct CollectionFeatures {
   #[prost(uint32, tag = "3")]
   pub version: u32,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TypeDefinition {
   #[prost(oneof = "type_definition::Type", tags = "1, 2")]
@@ -176,6 +256,7 @@ pub struct TypeDefinition {
 }
 /// Nested message and enum types in `TypeDefinition`.
 pub mod type_definition {
+  #[allow(clippy::derive_partial_eq_without_eq)]
   #[derive(Clone, PartialEq, ::prost::Oneof)]
   pub enum Type {
     #[prost(message, tag = "1")]
@@ -184,6 +265,7 @@ pub mod type_definition {
     Enum(super::EnumSignature),
   }
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct WellKnownSchema {
   #[prost(string, repeated, tag = "1")]
@@ -193,13 +275,16 @@ pub struct WellKnownSchema {
   #[prost(message, optional, tag = "3")]
   pub schema: ::core::option::Option<CollectionSignature>,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct StatsRequest {}
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct StatsResponse {
   #[prost(message, repeated, tag = "1")]
   pub stats: ::prost::alloc::vec::Vec<Statistic>,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Statistic {
   #[prost(string, tag = "1")]
@@ -211,6 +296,7 @@ pub struct Statistic {
   #[prost(message, optional, tag = "4")]
   pub execution_statistics: ::core::option::Option<DurationStatistics>,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct DurationStatistics {
   #[prost(uint64, tag = "1")]
@@ -222,6 +308,7 @@ pub struct DurationStatistics {
   #[prost(uint64, tag = "4")]
   pub total: u64,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct StructSignature {
   #[prost(string, tag = "1")]
@@ -229,6 +316,7 @@ pub struct StructSignature {
   #[prost(map = "string, message", tag = "2")]
   pub fields: ::std::collections::HashMap<::prost::alloc::string::String, TypeSignature>,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct EnumSignature {
   #[prost(string, tag = "1")]
@@ -236,6 +324,7 @@ pub struct EnumSignature {
   #[prost(message, repeated, tag = "2")]
   pub values: ::prost::alloc::vec::Vec<EnumVariant>,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct EnumVariant {
   #[prost(string, tag = "1")]
@@ -243,6 +332,7 @@ pub struct EnumVariant {
   #[prost(uint32, tag = "2")]
   pub index: u32,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TypeSignature {
   #[prost(oneof = "type_signature::Signature", tags = "1, 2, 3, 4, 5, 6, 7, 8")]
@@ -250,6 +340,7 @@ pub struct TypeSignature {
 }
 /// Nested message and enum types in `TypeSignature`.
 pub mod type_signature {
+  #[allow(clippy::derive_partial_eq_without_eq)]
   #[derive(Clone, PartialEq, ::prost::Oneof)]
   pub enum Signature {
     #[prost(message, tag = "1")]
@@ -270,6 +361,7 @@ pub mod type_signature {
     Struct(super::StructType),
   }
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SimpleType {
   #[prost(enumeration = "simple_type::ApexType", tag = "1")]
@@ -296,19 +388,69 @@ pub mod simple_type {
     Bytes = 13,
     Value = 15,
   }
+  impl ApexType {
+    /// String value of the enum field names used in the ProtoBuf definition.
+    ///
+    /// The values are not transformed in any way and thus are considered stable
+    /// (if the ProtoBuf definition does not change) and safe for programmatic use.
+    pub fn as_str_name(&self) -> &'static str {
+      match self {
+        ApexType::I8 => "I8",
+        ApexType::U8 => "U8",
+        ApexType::I16 => "I16",
+        ApexType::U16 => "U16",
+        ApexType::I32 => "I32",
+        ApexType::U32 => "U32",
+        ApexType::I64 => "I64",
+        ApexType::U64 => "U64",
+        ApexType::F32 => "F32",
+        ApexType::F64 => "F64",
+        ApexType::Bool => "BOOL",
+        ApexType::String => "STRING",
+        ApexType::Datetime => "DATETIME",
+        ApexType::Bytes => "BYTES",
+        ApexType::Value => "VALUE",
+      }
+    }
+    /// Creates an enum from field names used in the ProtoBuf definition.
+    pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
+      match value {
+        "I8" => Some(Self::I8),
+        "U8" => Some(Self::U8),
+        "I16" => Some(Self::I16),
+        "U16" => Some(Self::U16),
+        "I32" => Some(Self::I32),
+        "U32" => Some(Self::U32),
+        "I64" => Some(Self::I64),
+        "U64" => Some(Self::U64),
+        "F32" => Some(Self::F32),
+        "F64" => Some(Self::F64),
+        "BOOL" => Some(Self::Bool),
+        "STRING" => Some(Self::String),
+        "DATETIME" => Some(Self::Datetime),
+        "BYTES" => Some(Self::Bytes),
+        "VALUE" => Some(Self::Value),
+        _ => None,
+      }
+    }
+  }
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct RefType {
   #[prost(string, tag = "1")]
   pub r#ref: ::prost::alloc::string::String,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct StructType {}
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct LinkType {
   #[prost(string, repeated, tag = "1")]
   pub schemas: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MapType {
   #[prost(message, optional, boxed, tag = "1")]
@@ -316,11 +458,13 @@ pub struct MapType {
   #[prost(message, optional, boxed, tag = "2")]
   pub value_type: ::core::option::Option<::prost::alloc::boxed::Box<TypeSignature>>,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ListType {
   #[prost(message, optional, boxed, tag = "1")]
   pub r#type: ::core::option::Option<::prost::alloc::boxed::Box<TypeSignature>>,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct OptionalType {
   #[prost(message, optional, boxed, tag = "1")]
@@ -331,9 +475,28 @@ pub struct OptionalType {
 pub enum InternalType {
   ComponentInput = 0,
 }
+impl InternalType {
+  /// String value of the enum field names used in the ProtoBuf definition.
+  ///
+  /// The values are not transformed in any way and thus are considered stable
+  /// (if the ProtoBuf definition does not change) and safe for programmatic use.
+  pub fn as_str_name(&self) -> &'static str {
+    match self {
+      InternalType::ComponentInput => "ComponentInput",
+    }
+  }
+  /// Creates an enum from field names used in the ProtoBuf definition.
+  pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
+    match value {
+      "ComponentInput" => Some(Self::ComponentInput),
+      _ => None,
+    }
+  }
+}
 /// Generated client implementations.
 pub mod invocation_service_client {
   #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
+  use tonic::codegen::http::Uri;
   use tonic::codegen::*;
   #[derive(Debug, Clone)]
   pub struct InvocationServiceClient<T> {
@@ -361,6 +524,10 @@ pub mod invocation_service_client {
       let inner = tonic::client::Grpc::new(inner);
       Self { inner }
     }
+    pub fn with_origin(inner: T, origin: Uri) -> Self {
+      let inner = tonic::client::Grpc::with_origin(inner, origin);
+      Self { inner }
+    }
     pub fn with_interceptor<F>(inner: T, interceptor: F) -> InvocationServiceClient<InterceptedService<T, F>>
     where
       F: tonic::service::Interceptor,
@@ -373,19 +540,19 @@ pub mod invocation_service_client {
     {
       InvocationServiceClient::new(InterceptedService::new(inner, interceptor))
     }
-    /// Compress requests with `gzip`.
+    /// Compress requests with the given encoding.
     ///
     /// This requires the server to support it otherwise it might respond with an
     /// error.
     #[must_use]
-    pub fn send_gzip(mut self) -> Self {
-      self.inner = self.inner.send_gzip();
+    pub fn send_compressed(mut self, encoding: CompressionEncoding) -> Self {
+      self.inner = self.inner.send_compressed(encoding);
       self
     }
-    /// Enable decompressing responses with `gzip`.
+    /// Enable decompressing responses.
     #[must_use]
-    pub fn accept_gzip(mut self) -> Self {
-      self.inner = self.inner.accept_gzip();
+    pub fn accept_compressed(mut self, encoding: CompressionEncoding) -> Self {
+      self.inner = self.inner.accept_compressed(encoding);
       self
     }
     pub async fn invoke(
@@ -433,10 +600,10 @@ pub mod invocation_service_client {
 pub mod invocation_service_server {
   #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
   use tonic::codegen::*;
-  ///Generated trait containing gRPC methods that should be implemented for use with InvocationServiceServer.
+  /// Generated trait containing gRPC methods that should be implemented for use with InvocationServiceServer.
   #[async_trait]
   pub trait InvocationService: Send + Sync + 'static {
-    ///Server streaming response type for the Invoke method.
+    /// Server streaming response type for the Invoke method.
     type InvokeStream: futures_core::Stream<Item = Result<super::Output, tonic::Status>> + Send + 'static;
     async fn invoke(
       &self,
@@ -454,8 +621,8 @@ pub mod invocation_service_server {
   #[derive(Debug)]
   pub struct InvocationServiceServer<T: InvocationService> {
     inner: _Inner<T>,
-    accept_compression_encodings: (),
-    send_compression_encodings: (),
+    accept_compression_encodings: EnabledCompressionEncodings,
+    send_compression_encodings: EnabledCompressionEncodings,
   }
   struct _Inner<T>(Arc<T>);
   impl<T: InvocationService> InvocationServiceServer<T> {
@@ -475,6 +642,18 @@ pub mod invocation_service_server {
       F: tonic::service::Interceptor,
     {
       InterceptedService::new(Self::new(inner), interceptor)
+    }
+    /// Enable decompressing requests with the given encoding.
+    #[must_use]
+    pub fn accept_compressed(mut self, encoding: CompressionEncoding) -> Self {
+      self.accept_compression_encodings.enable(encoding);
+      self
+    }
+    /// Compress responses with the given encoding, if the client supports it.
+    #[must_use]
+    pub fn send_compressed(mut self, encoding: CompressionEncoding) -> Self {
+      self.send_compression_encodings.enable(encoding);
+      self
     }
   }
   impl<T, B> tonic::codegen::Service<http::Request<B>> for InvocationServiceServer<T>
@@ -604,7 +783,7 @@ pub mod invocation_service_server {
       write!(f, "{:?}", self.0)
     }
   }
-  impl<T: InvocationService> tonic::transport::NamedService for InvocationServiceServer<T> {
+  impl<T: InvocationService> tonic::server::NamedService for InvocationServiceServer<T> {
     const NAME: &'static str = "wasmflow.InvocationService";
   }
 }

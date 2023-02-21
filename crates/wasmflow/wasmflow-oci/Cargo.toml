@@ -6,28 +6,26 @@ license = "Elastic-2.0"
 publish = false
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
 wasmflow-grpctar = { path = "../wasmflow-grpctar" }
 oci-distribution = { version = "0.9", features = [
   "rustls-tls",
 ], default-features = false }
-thiserror = "1.0"
-tracing = "0.1"
-serde_json = "1"
-serde_yaml = "0.8"
-serde = { version = "1", features = ["derive"] }
-tar = "0.4.38"
-tokio = { version = "1", features = ["fs"] }
-
+thiserror = { workspace = true }
+tracing = { workspace = true }
+serde_json = { workspace = true }
+serde_yaml = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+tar = "0.4"
+tokio = { workspace = true, features = ["fs"] }
 wasmflow-sdk = { path = "../wasmflow-sdk", features = ["v1"] }
 wasmflow-wascap = { path = "../wasmflow-wascap" }
 
 [dev-dependencies]
-tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
+tokio = { workspace = true, features = ["rt-multi-thread", "macros"] }
 test-logger = { path = "../../misc/test-logger" }
 logger = { path = "../logger" }
-clap = { version = "3.0", features = ["derive", "env"] }
-async-recursion = "1.0"
-env_logger = "0.9"
-anyhow = "1.0"
+clap = { workspace = true, features = ["derive", "env"] }
+async-recursion = { workspace = true }
+env_logger = { workspace = true }
+anyhow = { workspace = true }

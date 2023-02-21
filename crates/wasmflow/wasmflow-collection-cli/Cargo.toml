@@ -6,7 +6,6 @@ license = "Elastic-2.0"
 publish = false
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [features]
 default = ['cli']
 reflection = ["tonic-reflection"]
@@ -21,41 +20,34 @@ mesh = ['wasmflow-rpc', 'wasmflow-mesh', 'async-stream']
 
 [dependencies]
 logger = { path = "../logger" }
-
 wasmflow-rpc = { path = "../wasmflow-rpc", optional = true }
 wasmflow-invocation-server = { path = "../wasmflow-invocation-server", optional = true }
 wasmflow-mesh = { path = "../wasmflow-mesh", optional = true }
 wasmflow-sdk = { path = "../wasmflow-sdk", features = ["v1"] }
-
-
 cfg-if = "1.0"
-
-tonic = { version = "0.7", optional = true }
-tonic-reflection = { version = "0.4", default-features = false, optional = true }
-
-tokio = { version = "1", features = [
+tonic = { workspace = true, optional = true }
+tonic-reflection = { version = "0.6", default-features = false, optional = true }
+tokio = { workspace = true, features = [
   "macros",
   "fs",
   "net",
   "signal",
   "rt-multi-thread",
 ] }
-tokio-stream = "0.1.6"
+tokio-stream = { workspace = true }
 async-stream = { version = "0.3.2", optional = true }
-
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
-
-tracing = "0.1"
-thiserror = "1.0"
-clap = { version = "3.0", features = ["derive", "env"] }
-uuid = { version = "1.1", features = ["v4"] }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+tracing = { workspace = true }
+thiserror = { workspace = true }
+clap = { workspace = true, features = ["derive", "env"] }
+uuid = { workspace = true, features = ["v4"] }
 
 [dev-dependencies]
 logger = { path = "../logger" }
 test-logger = { path = "../../misc/test-logger" }
 test-native-collection = { path = "../../integration/test-native-collection" }
-once_cell = "1.8"
+once_cell = { workspace = true }
 reqwest = { version = "0.11", features = ["json"] }
-anyhow = "1.0"
-serde_json = "1.0"
+anyhow = { workspace = true }
+serde_json = { workspace = true }

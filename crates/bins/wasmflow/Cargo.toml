@@ -23,31 +23,31 @@ wasmflow-grpctar = { path = "../../wasmflow/wasmflow-grpctar" }
 logger = { path = "../../wasmflow/logger" }
 seeded-random = { path = "../../misc/seeded-random" }
 tap = { path = "../../misc/tap" }
-tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
-tracing = "0.1"
-clap = { version = "3.0", features = ["derive"] }
+tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
+tracing = { workspace = true }
+serde_json = { workspace = true }
+serde = { workspace = true }
+anyhow = { workspace = true }
+futures = { workspace = true }
+thiserror = { workspace = true }
+clap = { workspace = true, features = ["derive"] }
 nkeys = "0.2"
-serde_json = "1.0"
-serde = "1.0"
 atty = "0.2"
-anyhow = "1.0"
-futures = "0.3.24"
-jaq-core = "0.7"
+jaq-core = "0.9"
 markup-converter = "0.2"
 oci-distribution = { version = "0.9", features = [
   "rustls-tls",
 ], default-features = false }
-thiserror = "1.0"
-async-recursion = "1.0"
-git2 = { version = "0.14", features = [
+async-recursion = { workspace = true }
+git2 = { version = "0.16", features = [
   "ssh",
   "https",
   "vendored-openssl",
 ], default-features = false }
 
 [dev-dependencies]
-test_bin = "0.3"
-trycmd = "0.13"
+test_bin = "0.4"
+trycmd = "0.14"
 
 [[bin]]
 name = "wasmflow"
