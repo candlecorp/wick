@@ -6,7 +6,7 @@ use crate::keys::GenerateCommon;
 
 #[derive(Debug, Clone, Args)]
 #[clap(rename_all = "kebab-case")]
-pub(crate) struct Options {
+pub(crate) struct KeyGenCommand {
   #[clap(flatten)]
   pub(crate) logging: logger::LoggingOptions,
 
@@ -19,7 +19,7 @@ pub(crate) struct Options {
 }
 
 #[allow(clippy::unused_async)]
-pub(crate) async fn handle(opts: Options) -> Result<()> {
+pub(crate) async fn handle(opts: KeyGenCommand) -> Result<()> {
   let _guard = crate::utils::init_logger(&opts.logging)?;
   debug!("Generating {} key", crate::keys::keypair_type_to_string(&opts.keytype));
 

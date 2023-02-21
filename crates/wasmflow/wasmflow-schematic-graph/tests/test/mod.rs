@@ -3,7 +3,6 @@ use std::path::Path;
 
 use anyhow::Result;
 use serde_json::Value;
-// use pretty_assertions::assert_eq;
 use wasmflow_schematic_graph::iterators::SchematicHop;
 use wasmflow_schematic_graph::{ComponentReference, Network, PortDirection, Schematic};
 

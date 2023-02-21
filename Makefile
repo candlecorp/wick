@@ -116,10 +116,14 @@ wasm: $(TEST_WASM) $(TEST_WASI) $(TEST_MAIN_COMP)  ## Build the test wasm artifa
 
 .PHONY: test
 test: codegen wasm $(TEST_GTAR) ## Run tests for the entire workspace
+	$(MAKE) quicktest
+
+.PHONY: quicktest
+quicktest: ## Run tests without rebuilding integration wasm
 	cargo +nightly fmt --check
 	cargo clippy --workspace --bins
 	cargo deny check licenses --hide-inclusion-graph
-	cargo build --workspace # necessary to ensure binaries are built
+	cargo build -p wasmflow
 	cargo test --workspace -- --skip integration_test
 	cargo test --workspace --manifest-path crates/wasmflow/wasmflow-sdk/Cargo.toml -- --skip integration_test
 
@@ -128,7 +132,7 @@ test-integration: codegen wasm $(TEST_GTAR) ## Run all tests for the workspace, 
 	cargo +nightly fmt --check
 	cargo clippy --workspace --bins
 	cargo deny check licenses --hide-inclusion-graph
-	cargo build --workspace # necessary to ensure binaries are built
+	cargo build -p wasmflow
 	NATS_URL=$(NATS_URL) cargo test --workspace
 	cargo test --workspace --manifest-path crates/wasmflow/wasmflow-sdk/Cargo.toml
 

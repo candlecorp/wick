@@ -7,9 +7,9 @@ pub(crate) mod sign;
 pub(crate) enum SubCommands {
   /// Sign a WebAssembly module.
   #[clap(name = "sign")]
-  Sign(sign::Options),
+  Sign(sign::WasmSignCommand),
 
   /// Inspect the claims of a signed WebAssembly module.
   #[clap(name = "inspect")]
-  Inspect(inspect::Options),
+  Inspect(inspect::WasmInspectCommand),
 }

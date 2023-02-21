@@ -6,5 +6,5 @@ pub(crate) mod new;
 pub(crate) enum SubCommands {
   /// Create a new component schema.
   #[clap(name = "new")]
-  New(new::Options),
+  New(new::ComponentNewCommand),
 }

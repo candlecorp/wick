@@ -13,17 +13,17 @@ guest = []
 [dependencies]
 wasmflow-sdk = { path = "../../wasmflow/wasmflow-sdk", features = ["v1"] }
 wasmflow-rpc = { path = "../../wasmflow/wasmflow-rpc" }
-serde = { version = "1.0", features = ["derive"] }
-async-trait = "0.1.50"
-tokio = { version = "1", features = ["rt-multi-thread"] }
-tracing = "0.1"
+serde = { version = "1", features = ["derive"] }
+async-trait = { workspace = true }
+tokio = { workspace = true, features = ["rt-multi-thread"] }
+tracing = { workspace = true }
 
 [dev-dependencies]
-futures = "0.3"
+futures = { workspace = true }
 test-logger = { path = "../../misc/test-logger" }
-tokio = { version = "1", features = ["macros"] }
+tokio = { workspace = true, features = ["macros"] }
 logger = { path = "../../wasmflow/logger" }
 clap = { version = "3.0", features = ["derive", "env"] }
-tracing = "0.1"
+tracing = { workspace = true }
 anyhow = "1.0"
 pretty_assertions = "1.2"

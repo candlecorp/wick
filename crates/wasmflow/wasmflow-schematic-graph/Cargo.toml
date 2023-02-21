@@ -6,16 +6,14 @@ license = "Elastic-2.0"
 publish = false
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
-thiserror = "1.0"
-tracing = "0.1"
+thiserror = { workspace = true }
+tracing = { workspace = true }
 
 [dev-dependencies]
-serde_json = "1.0"
+serde_json = { workspace = true }
 wasmflow-manifest = { path = "../wasmflow-manifest" }
-tokio = { version = "1", features = ["macros", "rt"] }
+tokio = { workspace = true, features = ["macros", "rt"] }
 logger = { path = "../logger" }
 test-logger = { path = "../../misc/test-logger" }
-anyhow = "1.0"
-pretty_assertions = "1.1"
+anyhow = { workspace = true }

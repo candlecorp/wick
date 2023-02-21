@@ -10,7 +10,7 @@ use crate::io::{read_bytes, read_to_string, write_bytes};
 use crate::keys::{get_module_keys, GenerateCommon};
 #[derive(Debug, Clone, Args)]
 #[clap(rename_all = "kebab-case")]
-pub(crate) struct Options {
+pub(crate) struct BundlePackCommand {
   #[clap(flatten)]
   pub(crate) logging: logger::LoggingOptions,
 
@@ -40,7 +40,7 @@ pub(crate) struct Options {
 }
 
 #[allow(clippy::unused_async)]
-pub(crate) async fn handle(opts: Options) -> Result<()> {
+pub(crate) async fn handle(opts: BundlePackCommand) -> Result<()> {
   let _guard = crate::utils::init_logger(&opts.logging)?;
   debug!("Pack artifact");
 

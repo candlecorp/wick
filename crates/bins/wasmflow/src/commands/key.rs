@@ -8,13 +8,13 @@ pub(crate) mod list;
 pub(crate) enum SubCommands {
   /// Generate new signing keys.
   #[clap(name = "gen")]
-  Gen(gen::Options),
+  Gen(gen::KeyGenCommand),
 
   /// List all found keys.
   #[clap(name = "list")]
-  List(list::Options),
+  List(list::KeyListCommand),
 
   /// Read key data.
   #[clap(name = "get")]
-  Get(get::Options),
+  Get(get::KeyGetCommand),
 }

@@ -119,9 +119,10 @@ async fn main() -> Result<(), wasmflow_keyvalue_redis::error::Error> {
 
 #[cfg(test)]
 mod test {
+  use clap::CommandFactory;
+
   #[test]
   fn verify_options() {
-    use clap::IntoApp;
     super::Options::command().debug_assert();
   }
 }

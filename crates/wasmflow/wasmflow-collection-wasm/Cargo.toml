@@ -6,12 +6,11 @@ license = "Elastic-2.0"
 publish = false
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [features]
 default = ["wasmtime"]
 wasmtime = ["wasmtime-provider"]
-# wasm3 = ["wasm3-provider"]
 
+# wasm3 = ["wasm3-provider"]
 [dependencies]
 wasmflow-rpc = { path = "../wasmflow-rpc" }
 wasmflow-wascap = { path = "../wasmflow-wascap" }
@@ -19,14 +18,11 @@ wasmflow-loader = { path = "../wasmflow-loader" }
 wasmflow-sdk = { path = "../wasmflow-sdk", features = ["v1"] }
 wasmflow-manifest = { path = "../wasmflow-manifest" }
 seeded-random = { path = "../../misc/seeded-random" }
-
-tokio = { version = "1", features = ["fs"] }
-parking_lot = "0.12"
-
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
-serde-value = "0.7"
-
+tokio = { workspace = true, features = ["fs"] }
+parking_lot = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+serde-value = { workspace = true }
 # wasmtime-provider = { version = "1.0", optional = true, features = ["cache"] }
 # wapc = "1.0"
 # wapc-pool = "1.0"
@@ -35,16 +31,14 @@ wasmtime-provider = { git = "https://github.com/wasmflow/wapc-rs", branch = "mas
 ] }
 wapc = { git = "https://github.com/wasmflow/wapc-rs", branch = "master" }
 wapc-pool = { git = "https://github.com/wasmflow/wapc-rs", branch = "master" }
-
-
-tokio-stream = "0.1.7"
+tokio-stream = { workspace = true }
 async-stream = "0.3.2"
-tracing = "0.1"
-thiserror = "1.0"
-async-trait = "0.1.50"
+tracing = { workspace = true }
+thiserror = { workspace = true }
+async-trait = { workspace = true }
 
 [dev-dependencies]
 logger = { path = "../logger" }
 test-logger = { path = "../../misc/test-logger" }
-futures = "0.3"
-anyhow = "1.0"
+futures = { workspace = true }
+anyhow = { workspace = true }

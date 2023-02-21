@@ -4,14 +4,13 @@ version = "0.0.1"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [features]
 default = []
 derive_serde = ["serde/derive"]
 
 [dependencies]
-serde = { version = "1.0", optional = true }
+serde = { workspace = true, optional = true }
 
 [dev-dependencies]
-anyhow = "1.0"
-serde_json = "1.0"
+anyhow = { workspace = true }
+serde_json = { workspace = true }

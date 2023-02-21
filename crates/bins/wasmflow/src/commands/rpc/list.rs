@@ -3,7 +3,7 @@ use clap::Args;
 
 #[derive(Debug, Clone, Args)]
 #[clap(rename_all = "kebab-case")]
-pub(crate) struct Options {
+pub(crate) struct RpcListCommand {
   #[clap(flatten)]
   pub(crate) logging: logger::LoggingOptions,
 
@@ -11,7 +11,7 @@ pub(crate) struct Options {
   pub(crate) connection: super::ConnectOptions,
 }
 
-pub(crate) async fn handle(opts: Options) -> Result<()> {
+pub(crate) async fn handle(opts: RpcListCommand) -> Result<()> {
   let _guard = crate::utils::init_logger(&opts.logging)?;
   let mut client = wasmflow_rpc::make_rpc_client(
     format!("http://{}:{}", opts.connection.address, opts.connection.port),

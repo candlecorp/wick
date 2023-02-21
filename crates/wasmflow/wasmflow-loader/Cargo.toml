@@ -6,9 +6,8 @@ license = "Elastic-2.0"
 publish = false
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
-tracing = "0.1"
-thiserror = "1.0"
+tracing = { workspace = true }
+thiserror = { workspace = true }
 wasmflow-oci = { path = "../../wasmflow/wasmflow-oci" }
-tokio = { version = "1", features = ["fs"] }
+tokio = { workspace = true, features = ["fs"] }

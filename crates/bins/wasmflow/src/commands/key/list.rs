@@ -7,7 +7,7 @@ use crate::keys::get_key_files;
 
 #[derive(Debug, Clone, Args)]
 #[clap(rename_all = "kebab-case")]
-pub(crate) struct Options {
+pub(crate) struct KeyListCommand {
   #[clap(flatten)]
   pub(crate) logging: logger::LoggingOptions,
 
@@ -17,7 +17,7 @@ pub(crate) struct Options {
 }
 
 #[allow(clippy::unused_async)]
-pub(crate) async fn handle(opts: Options) -> Result<()> {
+pub(crate) async fn handle(opts: KeyListCommand) -> Result<()> {
   let _guard = crate::utils::init_logger(&opts.logging)?;
 
   debug!("Listing keys");
