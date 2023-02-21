@@ -1,5 +1,0 @@
-bin.name = "wafl"
-args = "query -t yaml .name"
-stdin = "name: test-data\n"
-stdout = "\"test-data\"\n"
-name = "wat"

@@ -18,7 +18,7 @@ $(BUILD_ARTIFACT): $(INTERFACE) $(GENERATED_MODULE) $(RUST_SOURCES) components
 
 $(SIGNED_ARTIFACT): $(BUILD_ARTIFACT)
 	@echo Signing $(BUILD_ARTIFACT)
-	@$(WAFL) wasm sign $(BUILD_ARTIFACT) $(INTERFACE) --ver=$(CRATE_VERSION) --rev=0
+	@$(WASMFLOW) wasm sign $(BUILD_ARTIFACT) $(INTERFACE) --ver=$(CRATE_VERSION) --rev=0
 	@echo Created $(SIGNED_ARTIFACT)
 
 .phony: check

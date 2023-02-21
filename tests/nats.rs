@@ -44,7 +44,7 @@ mod test {
 
     let input_data = "test input";
     let args = vec![format!("parent_input=\"{}\"", input_data)];
-    let actual = wafl_invoke(&port, "schematic-one", args).await?;
+    let actual = wasmflow_invoke(&port, "schematic-one", args).await?;
 
     let expected = hashmap! { "parent_output".to_owned() => TransportJson {
         signal: None,

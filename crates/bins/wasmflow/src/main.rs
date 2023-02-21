@@ -95,8 +95,12 @@ mod commands;
 mod utils;
 mod wasm;
 use clap::Parser;
+mod git_template;
+mod io;
+mod keys;
+mod oci;
 
-use self::commands::{Cli, CliCommand};
+use self::commands::*;
 
 static BIN_NAME: &str = "wasmflow";
 static BIN_DESC: &str = "wasmflow runtime executable";
@@ -111,6 +115,34 @@ async fn main() -> Result<()> {
     CliCommand::Run(cmd) => commands::run::handle_command(cmd).await,
     CliCommand::Invoke(cmd) => commands::invoke::handle_command(cmd).await,
     CliCommand::Test(cmd) => commands::test::handle_command(cmd).await,
+    CliCommand::Project(cmd) => match cmd {
+      commands::project::SubCommands::New(cmd) => commands::project::new::handle(cmd).await,
+    },
+    CliCommand::Component(cmd) => match cmd {
+      commands::component::SubCommands::New(cmd) => commands::component::new::handle(cmd).await,
+    },
+    CliCommand::Wasm(cmd) => match cmd {
+      commands::wasm::SubCommands::Sign(cmd) => commands::wasm::sign::handle(cmd).await,
+      commands::wasm::SubCommands::Inspect(cmd) => commands::wasm::inspect::handle(cmd).await,
+    },
+    CliCommand::Bundle(cmd) => match cmd {
+      commands::bundle::SubCommands::Pack(cmd) => commands::bundle::pack::handle(cmd).await,
+    },
+    CliCommand::Key(cmd) => match cmd {
+      commands::key::SubCommands::Get(cmd) => commands::key::get::handle(cmd).await,
+      commands::key::SubCommands::Gen(cmd) => commands::key::gen::handle(cmd).await,
+      commands::key::SubCommands::List(cmd) => commands::key::list::handle(cmd).await,
+    },
+    CliCommand::Registry(cmd) => match cmd {
+      commands::registry::SubCommands::Push(cmd) => commands::registry::push::handle(cmd).await,
+      commands::registry::SubCommands::Pull(cmd) => commands::registry::pull::handle(cmd).await,
+    },
+    CliCommand::Rpc(cmd) => match cmd {
+      commands::rpc::SubCommands::Invoke(cmd) => commands::rpc::invoke::handle(cmd).await,
+      commands::rpc::SubCommands::List(cmd) => commands::rpc::list::handle(cmd).await,
+      commands::rpc::SubCommands::Stats(cmd) => commands::rpc::stats::handle(cmd).await,
+    },
+    CliCommand::Query(options) => commands::query::handle(options).await,
   };
 
   std::process::exit(match res {

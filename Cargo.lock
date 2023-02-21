@@ -446,17 +446,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "cli-common"
-version = "0.4.0"
-dependencies = [
- "anyhow",
- "serde_json",
- "tokio-stream",
- "tracing",
- "wasmflow-sdk",
-]
-
-[[package]]
 name = "cmake"
 version = "0.1.48"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4027,34 +4016,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "49874b5167b65d7193b8aba1567f5c7d93d001cafc34600cee003eda787e483f"
 
 [[package]]
-name = "wafl"
-version = "0.8.0"
-dependencies = [
- "anyhow",
- "async-recursion",
- "atty",
- "clap",
- "cli-common",
- "git2",
- "jaq-core",
- "logger",
- "markup-converter",
- "nkeys 0.2.0",
- "oci-distribution",
- "serde_json",
- "thiserror",
- "tokio",
- "tracing",
- "trycmd",
- "wasmflow-collection-cli",
- "wasmflow-grpctar",
- "wasmflow-oci",
- "wasmflow-rpc",
- "wasmflow-sdk",
- "wasmflow-wascap",
-]
-
-[[package]]
 name = "wait-timeout"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4303,29 +4264,37 @@ name = "wasmflow"
 version = "0.4.1"
 dependencies = [
  "anyhow",
+ "async-recursion",
  "atty",
  "clap",
- "cli-common",
  "futures",
+ "git2",
+ "jaq-core",
  "logger",
+ "markup-converter",
  "nkeys 0.2.0",
+ "oci-distribution",
  "seeded-random",
  "serde",
  "serde_json",
  "tap",
  "test_bin",
+ "thiserror",
  "tokio",
  "tracing",
  "trycmd",
  "wasmflow-collection-cli",
  "wasmflow-collection-wasm",
+ "wasmflow-grpctar",
  "wasmflow-host",
  "wasmflow-loader",
  "wasmflow-manifest",
+ "wasmflow-oci",
  "wasmflow-rpc",
  "wasmflow-runtime",
  "wasmflow-sdk",
  "wasmflow-test",
+ "wasmflow-wascap",
 ]
 
 [[package]]

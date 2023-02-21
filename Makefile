@@ -21,7 +21,7 @@ TEST_MAIN_COMP=$(TEST_WASI_DIR)/build/test_cli_channel_component.signed.wasm
 TEST_GTAR=crates/wasmflow/wasmflow-runtime/tests/bundle.tar
 TEST_GTAR_BIN=crates/wasmflow/wasmflow-collection-grpctar/wasmflow-standalone
 
-CORE_BINS?=wafl wasmflow
+CORE_BINS?=wasmflow
 
 RELEASE?=false
 ARCH?=local
@@ -106,7 +106,7 @@ $(TEST_GTAR_BIN):
 	# cp target/release/wasmflow-standalone $@
 
 $(TEST_GTAR): $(TEST_GTAR_BIN)
-	# cargo run -p wafl -- bundle pack $< ./crates/integration/test-native-collection/interface.json -o $@
+	# cargo run -p wasmflow -- bundle pack $< ./crates/integration/test-native-collection/interface.json -o $@
 
 ./build/$(ARCH):
 	mkdir -p $@
@@ -134,7 +134,7 @@ test-integration: codegen wasm $(TEST_GTAR) ## Run all tests for the workspace, 
 
 .PHONY: test-bins
 test-bins: codegen wasm $(TEST_GTAR) ## Run tests for the main binaries
-	cargo test -p wafl -p wasmflow
+	cargo test -p wasmflow
 
 .PHONY: update-lint
 update-lint:   ## Update the lint configuration for rust projects

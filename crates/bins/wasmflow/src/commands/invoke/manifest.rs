@@ -9,7 +9,7 @@ use wasmflow_host::HostBuilder;
 use wasmflow_manifest::WasmflowManifest;
 use wasmflow_sdk::v1::transport::TransportMap;
 
-use crate::utils::merge_config;
+use crate::utils::{self, merge_config};
 
 pub(crate) async fn handle_command(opts: super::InvokeCommand, bytes: Vec<u8>) -> Result<()> {
   debug!(args = ?opts.args, "rest args");
@@ -72,7 +72,7 @@ pub(crate) async fn handle_command(opts: super::InvokeCommand, bytes: Vec<u8>) -
 
       let stream = host.request(&default_schematic, payload, inherent_data).await?;
 
-      cli_common::functions::print_stream_json(stream, &opts.filter, opts.short, opts.raw).await?;
+      utils::print_stream_json(stream, &opts.filter, opts.short, opts.raw).await?;
     }
   } else {
     let mut data_map = TransportMap::from_kv_json(&opts.data)?;
@@ -85,7 +85,7 @@ pub(crate) async fn handle_command(opts: super::InvokeCommand, bytes: Vec<u8>) -
     data_map.merge(rest_arg_map);
 
     let stream = host.request(&default_schematic, data_map, inherent_data).await?;
-    cli_common::functions::print_stream_json(stream, &opts.filter, opts.short, opts.raw).await?;
+    utils::print_stream_json(stream, &opts.filter, opts.short, opts.raw).await?;
   }
   host.stop().await;
 

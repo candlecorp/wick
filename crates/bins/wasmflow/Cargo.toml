@@ -7,9 +7,7 @@ license = "Elastic-2.0"
 publish = false
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
-cli-common = { path = "../cli-common" }
 wasmflow-sdk = { path = "../../wasmflow/wasmflow-sdk", features = ["v1"] }
 wasmflow-rpc = { path = "../../wasmflow/wasmflow-rpc" }
 wasmflow-loader = { path = "../../wasmflow/wasmflow-loader" }
@@ -19,9 +17,11 @@ wasmflow-runtime = { path = "../../wasmflow/wasmflow-runtime" }
 wasmflow-host = { path = "../../wasmflow/wasmflow-host" }
 wasmflow-manifest = { path = "../../wasmflow/wasmflow-manifest" }
 wasmflow-test = { path = "../../wasmflow/wasmflow-test" }
+wasmflow-wascap = { path = "../../wasmflow/wasmflow-wascap" }
+wasmflow-oci = { path = "../../wasmflow/wasmflow-oci" }
+wasmflow-grpctar = { path = "../../wasmflow/wasmflow-grpctar" }
 logger = { path = "../../wasmflow/logger" }
 seeded-random = { path = "../../misc/seeded-random" }
-
 tap = { path = "../../misc/tap" }
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 tracing = "0.1"
@@ -32,6 +32,18 @@ serde = "1.0"
 atty = "0.2"
 anyhow = "1.0"
 futures = "0.3.24"
+jaq-core = "0.7"
+markup-converter = "0.2"
+oci-distribution = { version = "0.9", features = [
+  "rustls-tls",
+], default-features = false }
+thiserror = "1.0"
+async-recursion = "1.0"
+git2 = { version = "0.14", features = [
+  "ssh",
+  "https",
+  "vendored-openssl",
+], default-features = false }
 
 [dev-dependencies]
 test_bin = "0.3"

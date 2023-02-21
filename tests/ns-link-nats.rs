@@ -46,7 +46,7 @@ mod test {
     let input = "hello world";
 
     let args = vec![format!("input=\"{}\"", input)];
-    let result = wafl_invoke(&h_port, "ns-link", args).await?;
+    let result = wasmflow_invoke(&h_port, "ns-link", args).await?;
     println!("Result: {:?}", result);
 
     let expected = hashmap! {
