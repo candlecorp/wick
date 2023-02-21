@@ -1,4 +1,4 @@
 [toolchain]
-channel = "nightly"
+channel = "1.67.1"
 components = ["rustfmt", "clippy"]
 targets = ["wasm32-unknown-unknown", "wasm32-wasi"]
