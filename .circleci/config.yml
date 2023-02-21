@@ -98,6 +98,7 @@ commands:
               source $HOME/.cargo/env
               echo 'source $HOME/.cargo/env' >> $HOME/.bashrc
             fi
+            rustup update
             rustup --version
             cargo --version
             rustc --version
