@@ -19,7 +19,7 @@ INTERFACE:=./interface.json
 # All *.rs files in src/
 RUST_SOURCES:=$(wildcard ./src/*.rs) $(wildcard ./src/*/*.rs)
 
-CODEGEN:=ts-node $(MAKEFILE_DIR)/../codegen/src/cli.ts
+CODEGEN:=npx ts-node $(MAKEFILE_DIR)/../codegen/src/cli.ts
 WASMFLOW=cargo run --manifest-path $(MAKEFILE_DIR)/../Cargo.toml -p wasmflow --
 
 CLEAN_FILES := $(GENERATED_MODULE)

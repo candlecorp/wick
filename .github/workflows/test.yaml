@@ -1,0 +1,49 @@
+name: Test project
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+
+      - name: Install latest nightly
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v1
+
+      - name: Install tomlq
+        uses: baptiste0928/cargo-install@v1
+        with:
+          crate: tomlq
+
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 16
+          cache: 'npm'
+
+      - name: Cache npm dependencies
+        uses: actions/cache@v2
+        with:
+          path: ~/.npm
+          key: npm-${{ hashFiles('package-lock.json') }}
+          restore-keys: npm-
+
+      - name: Install nodejs deps
+        run: npm install
+
+      - name: Cache rust artifacts
+        uses: actions/cache@v2
+        with:
+          path: target
+          key: rust-local-${{ hashFiles('Cargo.lock') }}
+          restore-keys: rust-local-
+
+      - name: Run tests
+        run: make test
