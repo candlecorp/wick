@@ -115,13 +115,19 @@ $(TEST_GTAR): $(TEST_GTAR_BIN)
 wasm: $(TEST_WASM) $(TEST_WASI) $(TEST_MAIN_COMP)  ## Build the test wasm artifacts
 
 .PHONY: test
-test: codegen wasm $(TEST_GTAR) quicktest ## Run tests for the entire workspace
+test: early-errors codegen wasm $(TEST_GTAR) test-rust ## Run all tests
 
 .PHONY: quicktest
-quicktest: ## Run tests without rebuilding integration wasm
+quicktest: codegen wasm $(TEST_GTAR) test-rust ## Run tests but skip early error tests
+
+.PHONY: early-errors
+early-errors: ## Run formatting tests and quick checks
 	cargo +nightly fmt --check
 	cargo clippy --workspace --bins
 	cargo deny check licenses --hide-inclusion-graph
+
+.PHONY: test-rust
+test-rust: ## Run only rust tests
 	cargo build -p wasmflow
 	cargo test --workspace -- --skip integration_test
 	cargo test --workspace --manifest-path crates/wasmflow/wasmflow-sdk/Cargo.toml -- --skip integration_test

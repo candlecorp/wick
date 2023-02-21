@@ -1,0 +1,24 @@
+name: Check licenses
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+
+      - name: Install latest nightly
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+
+      - name: Install cargo-deny
+        uses: baptiste0928/cargo-install@v1
+        with:
+          crate: cargo-deny
+
+      - name: Check formatting
+        run: cargo deny check licenses --hide-inclusion-graph
