@@ -3,7 +3,6 @@
 The `wasmflow/wasmflow` monorepo houses four main projects as well as their dependencies:
 
 - The `wasmflow` binary project at `./crates/bins/wasmflow`.
-- The `wafl` binary project at `./crates/bins/wafl`.
 - The `wasmflow-sdk` crate at `./crates/wasmflow/wasmflow-sdk`.
 - The `wasmflow-codegen` executable at `./codegen`.
 
@@ -35,7 +34,7 @@ The first
 
 The wasmflow crates are broken down into several child directories:
 
-- `bins/` - contains the `wasmflow` and `wafl` crates that build their respective binaries.
+- `bins/` - contains the `wasmflow` crate that builds the wasmflow binary
 - `collections/` - contains implementations of native (non-WASM) collections.
 - `interfaces/` - contains well-known interface definitions.
 - `integration/` - contains projects used for integration testing.

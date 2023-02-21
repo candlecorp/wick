@@ -1,4 +1,0 @@
-bin.name = "wafl"
-args = "query -f tests/cmd/query/_sample.yaml .name"
-stdout = "\"test-data\"\n"
-name = "wat"

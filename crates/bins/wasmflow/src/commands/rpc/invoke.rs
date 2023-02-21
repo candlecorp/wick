@@ -7,6 +7,8 @@ use wasmflow_collection_cli::parse_args;
 use wasmflow_sdk::v1::transport::TransportMap;
 use wasmflow_sdk::v1::{Entity, InherentData, Invocation};
 
+use crate::utils;
+
 #[derive(Debug, Clone, Args)]
 #[clap(rename_all = "kebab-case")]
 pub(crate) struct Options {
@@ -61,7 +63,7 @@ pub(crate) async fn handle(opts: Options) -> Result<()> {
   )
   .await?;
 
-  let origin = Entity::client("wafl");
+  let origin = Entity::client(crate::BIN_NAME);
   let target = Entity::local(&opts.component);
 
   let inherent_data = opts.seed.map(|seed| {
@@ -88,7 +90,7 @@ pub(crate) async fn handle(opts: Options) -> Result<()> {
       let stream = client
         .invoke_from_json(origin.clone(), target.clone(), &line, !opts.raw, inherent_data)
         .await?;
-      cli_common::functions::print_stream_json(stream, &opts.filter, opts.short, opts.raw).await?;
+      utils::print_stream_json(stream, &opts.filter, opts.short, opts.raw).await?;
     }
   } else {
     let mut data_map = TransportMap::from_kv_json(&opts.data)?;
@@ -103,7 +105,7 @@ pub(crate) async fn handle(opts: Options) -> Result<()> {
     trace!("issuing invocation");
     let stream = client.invoke(invocation).await?;
     trace!("server responsed");
-    cli_common::functions::print_stream_json(stream, &opts.filter, opts.short, opts.raw).await?;
+    utils::print_stream_json(stream, &opts.filter, opts.short, opts.raw).await?;
   }
 
   Ok(())

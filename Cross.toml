@@ -15,7 +15,6 @@ image = "candlecorp/cross:x86_64-pc-windows-gnu"
 
 [build.env]
 passthrough = [
-  "WAFL_VERSION",
   "WASMFLOW_VERSION",
   "SCCACHE_AZURE_BLOB_CONTAINER",
   "CARGO_PROFILE_RELEASE_DEBUG",

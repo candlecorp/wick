@@ -19,30 +19,33 @@ use tokio::select;
 use tokio::sync::mpsc::{self, Sender};
 use tokio::task::JoinHandle;
 
-pub async fn wafl_invoke(
+pub async fn wasmflow_invoke(
   port: &str,
   name: &str,
   data: Vec<String>,
 ) -> Result<Vec<HashMap<String, TransportJson>>, TestError> {
-  println!("Executing wafl for schematic {}", name);
+  println!("Executing wasmflow for schematic {}", name);
   let inputs = data
     .into_iter()
     .flat_map(|kv| vec!["--data".to_owned(), kv])
     .collect::<Vec<String>>();
   println!("Inputs: {:?}", inputs);
-  let mut bin = tokio_test_bin::get_test_bin("wafl");
+  let mut bin = tokio_test_bin::get_test_bin("wasmflow");
   let proc = bin
     .env_clear()
     .args(["rpc", "invoke", name, "--port", port.to_string().as_str(), "--trace"])
     .args(inputs)
     .stderr(Stdio::inherit());
   println!("Command is {:?}", proc);
-  let wafl_output = proc.output().await?;
+  let wasmflow_output = proc.output().await?;
 
-  println!("wafl STDERR is \n {}", String::from_utf8_lossy(&wafl_output.stderr));
+  println!(
+    "wasmflow STDERR is \n {}",
+    String::from_utf8_lossy(&wasmflow_output.stderr)
+  );
 
-  let string = String::from_utf8_lossy(&wafl_output.stdout);
-  println!("Result from wafl is {:?}", string);
+  let string = String::from_utf8_lossy(&wasmflow_output.stdout);
+  println!("Result from wasmflow is {:?}", string);
   let output: Vec<_> = string.trim().split('\n').collect();
   println!("Num lines:{:?}", output.len());
   let json: Vec<HashMap<String, TransportJson>> = output.iter().map(|l| serde_json::from_str(l).unwrap()).collect();

@@ -9,6 +9,8 @@ use wasmflow_rpc::RpcHandler;
 use wasmflow_sdk::v1::transport::TransportMap;
 use wasmflow_sdk::v1::{Entity, InherentData, Invocation};
 
+use crate::utils;
+
 pub(crate) async fn handle_command(opts: super::InvokeCommand, bytes: Vec<u8>) -> Result<()> {
   let component = WapcModule::from_slice(&bytes)?;
 
@@ -49,7 +51,7 @@ pub(crate) async fn handle_command(opts: super::InvokeCommand, bytes: Vec<u8>) -
       let invocation = Invocation::new(Entity::client("vow"), Entity::local(&opts.component), payload, None);
 
       let stream = collection.invoke(invocation).await.context("Component panicked")?;
-      cli_common::functions::print_stream_json(stream, &opts.filter, opts.short, opts.raw).await?;
+      utils::print_stream_json(stream, &opts.filter, opts.short, opts.raw).await?;
     }
   } else {
     let mut data_map = TransportMap::from_kv_json(&opts.data)?;
@@ -69,7 +71,7 @@ pub(crate) async fn handle_command(opts: super::InvokeCommand, bytes: Vec<u8>) -
     );
 
     let stream = collection.invoke(invocation).await?;
-    cli_common::functions::print_stream_json(stream, &opts.filter, opts.short, opts.raw).await?;
+    utils::print_stream_json(stream, &opts.filter, opts.short, opts.raw).await?;
   }
 
   Ok(())

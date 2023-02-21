@@ -23,7 +23,7 @@ async fn test_vow_serve() -> utils::TestResult<()> {
   let input_data = "test input";
 
   let args = vec![format!("input=\"{}\"", input_data)];
-  let actual = wafl_invoke(&port, "validate", args).await?;
+  let actual = wasmflow_invoke(&port, "validate", args).await?;
 
   let expected = hashmap! { "output".to_owned() => TransportJson {
       signal: None,
