@@ -115,8 +115,7 @@ $(TEST_GTAR): $(TEST_GTAR_BIN)
 wasm: $(TEST_WASM) $(TEST_WASI) $(TEST_MAIN_COMP)  ## Build the test wasm artifacts
 
 .PHONY: test
-test: codegen wasm $(TEST_GTAR) ## Run tests for the entire workspace
-	$(MAKE) quicktest
+test: codegen wasm $(TEST_GTAR) quicktest ## Run tests for the entire workspace
 
 .PHONY: quicktest
 quicktest: ## Run tests without rebuilding integration wasm
