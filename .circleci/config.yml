@@ -98,7 +98,6 @@ commands:
               source $HOME/.cargo/env
               echo 'source $HOME/.cargo/env' >> $HOME/.bashrc
             fi
-            rustup update
             rustup --version
             cargo --version
             rustc --version
@@ -114,14 +113,14 @@ commands:
     description: Saves rust toolchain
     steps:
       - save_cache:
-          key: rustup-{{ arch }}
+          key: rustup-{{checksum "rust-toolchain.toml"}}-{{ arch }}
           paths:
             - /usr/local/rustup/
   restore_rustup_cache:
     description: Restores rust toolchain
     steps:
       - restore_cache:
-          key: rustup-{{ arch }}
+          key: rustup-{{checksum "rust-toolchain.toml"}}-{{ arch }}
   build_setup:
     description: Sets up environment for future jobs
     steps:
@@ -170,7 +169,16 @@ jobs:
       - restore_build_cache
       - run:
           name: Test
-          command: 'make test'
+          command: |-
+            rustup show
+            rustup --version
+            cargo --version
+            rustc --version
+            rustup show home
+            rustup default `tomlq -f rust-toolchain.toml toolchain.channel`
+      - run:
+          name: Test
+          command: 'make quicktest'
       - run: sccache -s
       - save_build_cache
       - save_rustup_cache
@@ -247,6 +255,12 @@ jobs:
           path: ./build/
 
 workflows:
+  test:
+    jobs:
+      - test:
+          filters:
+            branches:
+              ignore: main
   deploy:
     jobs:
       - test:
