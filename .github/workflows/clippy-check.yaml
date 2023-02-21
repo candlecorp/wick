@@ -1,0 +1,23 @@
+name: Clippy check
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+
+      - name: Install latest nightly
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v1
+
+      - name: Clippy check
+        run: cargo clippy --workspace --bins

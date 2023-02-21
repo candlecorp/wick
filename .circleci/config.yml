@@ -247,13 +247,6 @@ jobs:
           path: ./build/
 
 workflows:
-  test:
-    jobs:
-      - test:
-          context: build
-          filters:
-            branches:
-              ignore: main
   deploy:
     jobs:
       - test:

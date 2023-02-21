@@ -46,4 +46,4 @@ jobs:
           restore-keys: rust-local-
 
       - name: Run tests
-        run: make test
+        run: make quicktest
