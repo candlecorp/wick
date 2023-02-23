@@ -22,13 +22,13 @@ Head over to the [releases page](https://github.com/wasmflow/wasmflow/releases) 
 Alternately, install from source with the command:
 
 ```
-$ make install
+$ just install
 ```
 
 or for more optimized builds:
 
 ```sh
-$ make install-release
+$ just install-release
 ```
 
 ## Prerequisites for building from source
@@ -38,12 +38,12 @@ Aside from rust & cargo, you'll need node.js & npm to run and build the code gen
 You can install all the prerequisites for tools that can be installed via rust and npm with the command:
 
 ```sh
-$ make deps
+$ just deps
 ```
 
 ### jq
 
-The Makefiles also make use of `jq`. You'll find installation instructions on the `jq` homepage: https://stedolan.github.io/jq/
+The tasks also make use of `jq`. Find installation instructions on the `jq` homepage: https://stedolan.github.io/jq/
 
 ### cmake
 
@@ -65,29 +65,23 @@ $ rustup toolchain add nightly
 
 ## Building Wasmflow
 
-Build Wasmflow with `make` alone.
+Build Wasmflow with `just` alone.
 
 ```console
-make
+just build
 ```
 
 ## Running tests
 
-Run unit and self-contained integration tests via `make`
+Run unit and self-contained integration tests via `just`
 
 ```console
-make test
+just test
 ```
 
-To run the full suite of tests, you'll need a local NATS server, redis instance, and OCI registry. You can run these with the `docker-compose.yml` file in the `/scripts/` directory.
+To run the full suite of tests, you'll need a local NATS server, redis instance, and OCI registry. You can run these with the `docker-compose.yml` file in the `/etc/` directory.
 
 ```console
 $ cd scripts && docker-compose up
 ```
 
-## Need a Makefile primer?
-
-Check out these guides if you need help with `Makefile`s:
-
-- [Isaacs's tutorial](https://gist.github.com/isaacs/62a2d1825d04437c6f08)
-- [Your makefiles are wrong](https://tech.davis-hansson.com/p/make/)

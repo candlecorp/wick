@@ -90,17 +90,14 @@
 /// Error module.
 pub mod error;
 
-pub(crate) mod conversion;
 mod invocation_server;
 
 pub use invocation_server::InvocationServer;
-use sdk::transport::{MessageTransport, TransportMap};
 use tokio::task::JoinHandle;
 use tonic::transport::{Channel, Server, Uri};
 use wasmflow_rpc::rpc::invocation_service_client::InvocationServiceClient;
 use wasmflow_rpc::rpc::invocation_service_server::InvocationServiceServer;
 use wasmflow_rpc::SharedRpcHandler;
-use wasmflow_sdk::v1 as sdk;
 
 pub(crate) type Result<T> = std::result::Result<T, Error>;
 
@@ -116,14 +113,14 @@ extern crate tracing;
 #[macro_use]
 extern crate derivative;
 
-#[doc(hidden)]
-pub fn make_input<K: AsRef<str>, V: serde::Serialize>(entries: Vec<(K, V)>) -> TransportMap {
-  entries
-    .into_iter()
-    .map(|(k, v)| Ok((k.as_ref().to_owned(), MessageTransport::success(&v))))
-    .filter_map(Result::ok)
-    .collect()
-}
+// #[doc(hidden)]
+// pub fn make_input<K: AsRef<str>, V: serde::Serialize>(entries: Vec<(K, V)>) -> TransportMap {
+//   entries
+//     .into_iter()
+//     .map(|(k, v)| Ok((k.as_ref().to_owned(), MessageTransport::success(&v))))
+//     .filter_map(Result::ok)
+//     .collect()
+// }
 
 /// Build and spawn an RPC server for the passed collection.
 #[must_use]

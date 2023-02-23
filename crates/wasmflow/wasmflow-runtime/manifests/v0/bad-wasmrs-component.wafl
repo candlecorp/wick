@@ -1,0 +1,27 @@
+---
+version: 0
+network:
+  collections:
+    - namespace: wapc
+      kind: WaPC
+      reference: ../../integration/test-baseline-component/build/baseline.signed.wasm
+  schematics:
+    - name: test
+      collections:
+        - wapc
+      instances:
+        error:
+          id: wapc::error
+      connections:
+        - from:
+            instance: <input>
+            port: input
+          to:
+            instance: error
+            port: input
+        - from:
+            instance: error
+            port: output
+          to:
+            instance: <output>
+            port: output

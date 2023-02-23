@@ -4,26 +4,24 @@ use std::time::Duration;
 
 use parking_lot::Mutex;
 use tokio::task::JoinHandle;
-use tracing::Level;
 use tracing_futures::Instrument;
 
-use super::channel::{Event, EventKind, InterpreterChannel};
+use super::channel::{Event, EventKind, InterpreterChannel, InterpreterDispatchChannel};
 use super::error::Error;
 use super::InterpreterOptions;
 use crate::interpreter::event_loop::state::State;
 use crate::interpreter::executor::error::ExecutionError;
-use crate::InterpreterDispatchChannel;
 
 #[derive(Debug)]
-pub struct EventLoop {
+pub(crate) struct EventLoop {
   channel: Option<InterpreterChannel>,
   dispatcher: InterpreterDispatchChannel,
   task: Mutex<Option<JoinHandle<Result<(), ExecutionError>>>>,
 }
 
 impl EventLoop {
-  pub const WAKE_TIMEOUT: Duration = Duration::from_millis(500);
-  pub const HUNG_TX_TIMEOUT: Duration = Duration::from_millis(1000);
+  pub(crate) const WAKE_TIMEOUT: Duration = Duration::from_millis(500);
+  pub(crate) const HUNG_TX_TIMEOUT: Duration = Duration::from_millis(1000);
 
   pub(super) fn new(channel: InterpreterChannel) -> Self {
     let dispatcher = channel.dispatcher();
@@ -38,7 +36,9 @@ impl EventLoop {
     trace!("starting event loop");
     let channel = self.channel.take().unwrap();
 
-    let handle = tokio::spawn(async move { event_loop(channel, options, observer).await });
+    let span = trace_span!("event_loop");
+
+    let handle = tokio::spawn(async move { event_loop(channel, options, observer).instrument(span).await });
     let mut lock = self.task.lock();
     lock.replace(handle);
   }
@@ -53,7 +53,7 @@ impl EventLoop {
     let task = self.steal_task();
     match task {
       Some(task) => {
-        let _ = self.dispatcher.dispatch(Event::close(None)).await;
+        self.dispatcher.dispatch_close(None).await;
         trace!("yielding to loop");
         let timeout = std::time::Duration::from_secs(2);
         let result = tokio::time::timeout(timeout, task).await;
@@ -87,14 +87,13 @@ pub trait Observer {
   fn on_close(&self);
 }
 
-#[instrument(skip_all, name = "event_loop")]
 async fn event_loop(
   mut channel: InterpreterChannel,
   options: InterpreterOptions,
   observer: Option<Box<dyn Observer + Send + Sync>>,
 ) -> Result<(), ExecutionError> {
   trace!(?options, "started");
-  let mut state = State::new();
+  let mut state = State::new(channel.dispatcher());
 
   let mut num: usize = 0;
 
@@ -108,14 +107,14 @@ async fn event_loop(
           observer.on_event(num, &event);
         }
 
-        let span = span!(Level::TRACE, "event", event = event.name(), i = num, %tx_id);
+        let span = trace_span!("event", otel.name = event.name(), i = num, %tx_id);
+        trace!(event = ?event, tx_id = ?tx_id, "iteration");
+        let name = event.name().to_owned();
 
         let result = match event.kind {
-          EventKind::Invocation(index, invocation) => {
-            state
-              .handle_invocation(tx_id, index, *invocation)
-              .instrument(span)
-              .await
+          EventKind::Invocation(_index, _invocation) => {
+            error!("invocation not supported");
+            panic!("invocation not supported")
           }
           EventKind::CallComplete(data) => state.handle_call_complete(tx_id, data).instrument(span).await,
           EventKind::PortData(data) => state.handle_port_data(tx_id, data).instrument(span).await,
@@ -142,11 +141,13 @@ async fn event_loop(
 
         if let Err(e) = result {
           if options.error_on_missing && matches!(e, ExecutionError::MissingTx(_)) {
-            error!(response_error = %e, "closing interpreter");
-            let _ = channel.dispatcher().dispatch(Event::close(Some(e))).await;
+            error!(event = %name, tx_id = ?tx_id, response_error = %e, "iteration:end");
+            channel.dispatcher().dispatch_close(Some(e)).await;
           } else {
-            warn!(response_error = %e);
+            warn!(event = %name, tx_id = ?tx_id, response_error = %e, "iteration:end");
           }
+        } else {
+          trace!(event = %name, tx_id = ?tx_id, "iteration:end");
         }
 
         if let Some(observer) = &observer {
@@ -165,7 +166,7 @@ async fn event_loop(
           .await
         {
           error!(%error,"Error checking hung transactions");
-          let _ = channel.dispatcher().dispatch(Event::close(Some(error))).await;
+          channel.dispatcher().dispatch_close(Some(error)).await;
         };
       }
     }
@@ -178,7 +179,7 @@ async fn event_loop(
 }
 
 #[derive(thiserror::Error, Debug)]
-pub enum EventLoopError {
+pub(crate) enum EventLoopError {
   #[error(transparent)]
   ExecutionError(#[from] ExecutionError),
   #[error(transparent)]

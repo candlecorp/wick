@@ -19,9 +19,9 @@ pub enum RpcError {
   #[error("Internal Error: {0}")]
   InternalError(String),
 
-  /// Upstream Error from [wasmflow_sdk].
-  #[error(transparent)]
-  SdkError(#[from] wasmflow_sdk::v1::error::Error),
+  /// Conversion error between types.
+  #[error("Could not convert type to or from gRPC to wick.")]
+  TypeConversion,
 
   /// Invalid [crate::rpc::component::ComponentKind].
   #[error("Invalid component kind {0}")]
@@ -93,12 +93,6 @@ impl From<Box<dyn std::error::Error + Send + Sync>> for RpcError {
   }
 }
 
-impl From<wasmflow_sdk::v1::error::Error> for Box<RpcError> {
-  fn from(e: wasmflow_sdk::v1::error::Error) -> Self {
-    Box::new(RpcError::SdkError(e))
-  }
-}
-
 impl From<&str> for RpcError {
   fn from(e: &str) -> Self {
     RpcError::General(e.to_owned())
@@ -134,9 +128,9 @@ pub enum RpcClientError {
   #[error(transparent)]
   ConversionFailed(RpcError),
 
-  /// An error related to [wasmflow_sdk].
-  #[error(transparent)]
-  Sdk(#[from] wasmflow_sdk::v1::error::Error),
+  /// Conversion error between types.
+  #[error("Could not convert type to or from gRPC to wick.")]
+  TypeConversion,
 
   /// General IO error
   #[error("I/O error: {0}")]

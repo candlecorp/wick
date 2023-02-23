@@ -21,10 +21,10 @@ async fn test_walking() -> Result<()> {
   let downstream_port = downstream_connection.to();
   assert_eq!(downstream_port.name(), "output");
 
-  let downstream_component = downstream_port.component();
-  assert_eq!(downstream_component.name(), "<output>");
+  let downstream_node = downstream_port.node();
+  assert_eq!(downstream_node.name(), "<output>");
 
-  assert_eq!(schematic_output, downstream_component.inner());
+  assert_eq!(schematic_output, downstream_node.inner());
 
   Ok(())
 }
@@ -34,21 +34,21 @@ async fn test_iterator() -> Result<()> {
   let manifest = load("./tests/manifests/v0/single-instance.wafl")?;
   let network = from_manifest(&manifest)?;
   let schematic = network.schematic("single-instance").unwrap();
-  println!("components:{:#?}", schematic.components());
+  println!("nodes:{:#?}", schematic.nodes());
 
-  assert_eq!(schematic.components().len(), 3);
+  assert_eq!(schematic.nodes().len(), 3);
 
   let counter = Counter::walk_down(schematic);
 
   let expected = Counter {
-    component_visits: 3,
+    node_visits: 3,
     input_visits: 2,
     output_visits: 3,
     num_connections: 2,
     port_visits: 5,
     inputs: hash_set(&["REF_ID_LOGGER.IN.input", "<output>.IN.output"]),
     outputs: hash_set(&["<input>.OUT.input", "REF_ID_LOGGER.OUT.output", "<output>.OUT.output"]),
-    components: hash_set(&["<input>", "REF_ID_LOGGER", "<output>"]),
+    nodes: hash_set(&["<input>", "REF_ID_LOGGER", "<output>"]),
   };
 
   assert_eq!(counter, expected);
@@ -65,7 +65,7 @@ async fn test_spread_io() -> Result<()> {
   let counter = Counter::walk_down(schematic);
 
   let expected = Counter {
-    component_visits: 7,
+    node_visits: 7,
     input_visits: 6,
     output_visits: 7,
     num_connections: 6,
@@ -84,7 +84,7 @@ async fn test_spread_io() -> Result<()> {
       "<input>.OUT.input",
       "COMP2.OUT.output",
     ]),
-    components: hash_set(&["<input>", "COMP1", "ZIP", "<output>", "COMP2"]),
+    nodes: hash_set(&["<input>", "COMP1", "ZIP", "<output>", "COMP2"]),
   };
 
   assert_eq!(counter, expected);
@@ -101,14 +101,14 @@ async fn test_senders() -> Result<()> {
   let counter = Counter::walk_up(schematic);
 
   let expected = Counter {
-    component_visits: 2,
+    node_visits: 2,
     input_visits: 1,
     output_visits: 1,
     num_connections: 1,
     port_visits: 2,
     inputs: hash_set(&["<output>.IN.output"]),
     outputs: hash_set(&["SENDER.OUT.output"]),
-    components: hash_set(&["SENDER", "<output>"]),
+    nodes: hash_set(&["SENDER", "<output>"]),
   };
 
   assert_eq!(counter, expected);

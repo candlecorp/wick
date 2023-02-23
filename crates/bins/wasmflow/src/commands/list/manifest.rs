@@ -1,8 +1,8 @@
 use anyhow::Result;
 use wasmflow_collection_cli::options::DefaultCliOptions;
 use wasmflow_host::HostBuilder;
+use wasmflow_interface::FieldMap;
 use wasmflow_manifest::WasmflowManifest;
-use wasmflow_sdk::v1::types::FieldMap;
 
 use crate::utils::merge_config;
 
@@ -21,7 +21,7 @@ pub(crate) async fn handle_command(opts: super::ListCommand, bytes: Vec<u8>) -> 
   let host_builder = HostBuilder::from_definition(config);
 
   let mut host = host_builder.build();
-  host.connect_to_mesh().await?;
+  // host.connect_to_mesh().await?;
   host.start_network(None).await?;
   let signature = host.get_signature()?;
 
@@ -44,7 +44,7 @@ pub(crate) async fn handle_command(opts: super::ListCommand, bytes: Vec<u8>) -> 
         .join(", ");
       println!("{}{}({}) -> ({})", indent, label, inputs, outputs);
     }
-    for (_name, component) in signature.components.inner().iter() {
+    for (_name, component) in signature.operations.inner().iter() {
       print!("Component: ");
       print_component(&component.name, "", &component.inputs, &component.outputs);
     }

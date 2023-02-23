@@ -1,0 +1,32 @@
+
+clean:
+  rm -f docs/*
+  rm -f src/v*.rs
+  rm -rf json-schema/*
+
+test:
+  cargo test
+
+v0:
+  just version "v0"
+
+version VER="v1":
+  mkdir -p json-schema/{{VER}}
+  apex-template definitions/{{VER}}/manifest.apex definitions/{{VER}}/templates/rust/root.hbs -p definitions/{{VER}}/templates/rust/partials > src/{{VER}}.rs
+  apex-template definitions/{{VER}}/manifest.apex definitions/{{VER}}/templates/json-schema/manifest.hbs -p definitions/{{VER}}/templates/json-schema/partials > json-schema/{{VER}}/manifest.json
+  prettier --write json-schema/{{VER}}/manifest.json
+  apex-template definitions/{{VER}}/manifest.apex definitions/{{VER}}/doc-templates/rust/root.hbs -p definitions/{{VER}}/doc-templates/rust/partials > docs/{{VER}}.html
+
+codegen:
+  mkdir -p docs
+  just version v0
+  just version v1
+  just json-schema
+  cargo +nightly fmt
+
+json-schema:
+  jq  \
+    --slurpfile v0_manifest json-schema/v0/manifest.json \
+    --slurpfile v1_manifest json-schema/v1/manifest.json \
+    '.["$defs"] += $v0_manifest[0] + $v1_manifest[0]' \
+    definitions/json-schema.json.tpl > json-schema/manifest.json

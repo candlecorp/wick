@@ -1,5 +1,6 @@
 use std::path::PathBuf;
 
+use opentelemetry::trace::TracerProvider;
 use tracing_appender::non_blocking::{NonBlocking, WorkerGuard};
 use tracing_bunyan_formatter::{BunyanFormattingLayer, JsonStorageLayer};
 use tracing_subscriber::filter::FilterFn;
@@ -10,7 +11,7 @@ use tracing_subscriber::{filter, Layer};
 use crate::error::LoggerError;
 use crate::LoggingOptions;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 enum Environment {
   Prod,
   Test,
@@ -91,11 +92,37 @@ pub struct LoggingGuard {
   logfile: Option<WorkerGuard>,
   #[allow(unused)]
   console: WorkerGuard,
+  #[allow(unused)]
+  tracer_provider: Option<opentelemetry::sdk::trace::TracerProvider>,
 }
 
 impl LoggingGuard {
-  fn new(logfile: Option<WorkerGuard>, console: WorkerGuard) -> Self {
-    Self { logfile, console }
+  fn new(
+    logfile: Option<WorkerGuard>,
+    console: WorkerGuard,
+    tracer_provider: Option<opentelemetry::sdk::trace::TracerProvider>,
+  ) -> Self {
+    Self {
+      logfile,
+      console,
+      tracer_provider,
+    }
+  }
+  /// Call this function when you are done with the logger.
+  pub fn teardown(&self) {
+    // noop right now
+  }
+}
+
+impl Drop for LoggingGuard {
+  fn drop(&mut self) {
+    if let Some(provider) = &self.tracer_provider {
+      for result in provider.force_flush() {
+        if let Err(_err) = result {
+          println!("error flushing");
+        }
+      }
+    }
   }
 }
 
@@ -143,6 +170,7 @@ fn get_levelfilter(opts: &LoggingOptions) -> tracing::level_filters::LevelFilter
   }
 }
 
+#[allow(clippy::too_many_lines)]
 fn try_init(opts: &LoggingOptions, environment: &Environment) -> Result<LoggingGuard, LoggerError> {
   #[cfg(windows)]
   let with_color = ansi_term::enable_ansi_support().is_ok();
@@ -157,9 +185,38 @@ fn try_init(opts: &LoggingOptions, environment: &Environment) -> Result<LoggingG
   let (log_dir, logfile_writer, logfile_guard) = get_logfile_writer(opts)?;
   let file_layer = BunyanFormattingLayer::new(app_name, logfile_writer).with_filter(wasmflow_filter(opts));
 
+  let needs_simple_tracer = tokio::runtime::Handle::try_current().is_err() || environment == &Environment::Test;
+
+  // Configure a jaeger tracer if we have a configured endpoint.
+  let (otel_layer, tracer_provider) = opts.jaeger_endpoint.as_ref().map_or_else(
+    || (None, None),
+    |jaeger_endpoint| {
+      let tracer_provider = opentelemetry_jaeger::new_agent_pipeline()
+        .with_service_name("wasmflow")
+        .with_endpoint(jaeger_endpoint);
+
+      let tracer_provider = if needs_simple_tracer {
+        tracer_provider.build_simple().unwrap()
+      } else {
+        tracer_provider.build_batch(opentelemetry::runtime::Tokio).unwrap()
+      };
+
+      let tracer = tracer_provider.versioned_tracer("wasmflow", Some(env!("CARGO_PKG_VERSION")), None);
+      let _ = opentelemetry::global::set_tracer_provider(tracer_provider.clone());
+
+      let layer = Some(
+        tracing_opentelemetry::layer()
+          .with_tracer(tracer)
+          .with_filter(get_levelfilter(opts))
+          .with_filter(wasmflow_filter(opts)),
+      );
+      (layer, Some(tracer_provider))
+    },
+  );
+
   // This is ugly. If you can improve it, go for it, but
   // start here to understand why it's laid out like this: https://github.com/tokio-rs/tracing/issues/575
-  let (verbose_layer, normal_layer, json_layer, file_layer, logfile_guard, test_layer) = match environment {
+  let (verbose_layer, normal_layer, json_layer, file_layer, logfile_guard, otel_layer, test_layer) = match environment {
     Environment::Prod => {
       if opts.verbose {
         (
@@ -176,6 +233,7 @@ fn try_init(opts: &LoggingOptions, environment: &Environment) -> Result<LoggingG
           Some(JsonStorageLayer),
           Some(file_layer),
           Some(logfile_guard),
+          Some(otel_layer),
           None,
         )
       } else {
@@ -194,6 +252,7 @@ fn try_init(opts: &LoggingOptions, environment: &Environment) -> Result<LoggingG
           Some(JsonStorageLayer),
           Some(file_layer),
           Some(logfile_guard),
+          Some(otel_layer),
           None,
         )
       }
@@ -204,6 +263,7 @@ fn try_init(opts: &LoggingOptions, environment: &Environment) -> Result<LoggingG
       Some(JsonStorageLayer),
       Some(file_layer),
       Some(logfile_guard),
+      Some(otel_layer),
       Some(
         tracing_subscriber::fmt::layer()
           .with_writer(stderr_writer)
@@ -222,10 +282,11 @@ fn try_init(opts: &LoggingOptions, environment: &Environment) -> Result<LoggingG
     .with(verbose_layer)
     .with(normal_layer)
     .with(json_layer)
+    .with(otel_layer)
     .with(file_layer);
   tracing::subscriber::set_global_default(subscriber)?;
 
   trace!("Logger initialized");
   debug!("Writing logs to {}", log_dir.to_string_lossy());
-  Ok(LoggingGuard::new(logfile_guard, console_guard))
+  Ok(LoggingGuard::new(logfile_guard, console_guard, tracer_provider))
 }

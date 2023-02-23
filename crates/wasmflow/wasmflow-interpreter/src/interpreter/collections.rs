@@ -9,8 +9,8 @@ pub(super) mod schematic_collection;
 
 use futures::future::BoxFuture;
 use serde_json::Value;
-use wasmflow_sdk::v1::transport::{TransportMap, TransportStream};
-use wasmflow_sdk::v1::types::{CollectionMap, CollectionSignature};
+use wasmflow_interface::{CollectionMap, CollectionSignature};
+use wasmflow_packet_stream::{Invocation, PacketStream, StreamMap};
 
 use self::core_collection::CoreCollection;
 use self::internal_collection::InternalCollection;
@@ -71,7 +71,6 @@ impl HandlerMap {
 
   #[must_use]
   pub fn get(&self, namespace: &str) -> Option<&NamespaceHandler> {
-    trace!(namespace, "retrieving collection");
     self.collections.get(namespace)
   }
 
@@ -121,9 +120,10 @@ impl Debug for NamespaceHandler {
 pub trait Collection {
   fn handle(
     &self,
-    invocation: wasmflow_sdk::v1::Invocation,
+    invocation: Invocation,
+    stream: PacketStream,
     data: Option<Value>,
-  ) -> BoxFuture<Result<TransportStream, BoxError>>;
+  ) -> BoxFuture<Result<PacketStream, BoxError>>;
   fn list(&self) -> &CollectionSignature;
   fn shutdown(&self) -> BoxFuture<Result<(), BoxError>> {
     // Override if you need a more explicit shutdown.
@@ -131,6 +131,6 @@ pub trait Collection {
   }
 }
 
-pub trait Component {
-  fn handle(&self, payload: TransportMap, data: Option<Value>) -> BoxFuture<Result<TransportStream, BoxError>>;
+pub trait Operation {
+  fn handle(&self, payload: StreamMap, data: Option<Value>) -> BoxFuture<Result<PacketStream, BoxError>>;
 }

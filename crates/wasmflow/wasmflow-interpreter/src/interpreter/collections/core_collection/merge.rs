@@ -1,7 +1,8 @@
 use std::collections::HashMap;
 
+use futures::StreamExt;
 use serde_json::Value;
-use wasmflow_sdk::v1::transport::{MessageTransport, TransportStream, TransportWrapper};
+use tracing::Instrument;
 
 use crate::{Component, ExecutionError};
 
@@ -10,34 +11,55 @@ pub(crate) struct MergeComponent {}
 
 #[derive(serde::Deserialize)]
 pub(crate) struct MergeConfig {
-  inputs: wasmflow_sdk::v1::types::FieldMap,
+  inputs: wasmflow_interface::FieldMap,
 }
 
 impl Component for MergeComponent {
   fn handle(
     &self,
-    mut payload: wasmflow_sdk::v1::transport::TransportMap,
+    mut payload: wasmflow_packet_stream::StreamMap,
     data: Option<Value>,
-  ) -> futures::future::BoxFuture<Result<TransportStream, crate::BoxError>> {
+  ) -> futures::future::BoxFuture<Result<FrameStream, crate::BoxError>> {
     let task = async move {
       let data = data.ok_or(ExecutionError::InvalidMergeConfig)?;
       let data: MergeConfig = serde_json::from_value(data).map_err(|_| ExecutionError::InvalidMergeConfig)?;
       let mut map = HashMap::new();
-      let span = trace_span!("aggregating inputs");
-      let _guard = span.enter();
+      let mut streams = Vec::new();
       for field in data.inputs.inner().keys() {
-        let payload: serde_value::Value = payload.consume(field)?;
+        let stream = payload.take(field)?;
+        streams.push(stream);
+        while let next = stream.next().await {
+          if next.is_done() {
+            break;
+          }
+        }
+        let payload: serde_value::Value = payload.take(field)?;
         trace!(input=%field,?payload,"merging");
         map.insert(field.clone(), payload);
       }
+      loop {
+        let futures = streams.iter_mut().map(|s| s.next());
+        let results = futures::future::join_all(futures).await;
+        let mut merged = HashMap::new();
+        for (field, result) in data.inputs.inner().keys().zip(results) {
+          if result.is_none() {
+
+          }
+          let payload: serde_value::Value = result?;
+          trace!(input=%field,?payload,"merging");
+          merged.insert(field.clone(), payload);
+        }
+        let final = results.into_iter().map(|r| r.map(|r|{}));
+      }
+
       let messages = vec![
         TransportWrapper::new("output", MessageTransport::success(&map)),
         TransportWrapper::done("output"),
       ];
 
-      let stream = TransportStream::new(tokio_stream::iter(messages.into_iter()));
+      let stream = FrameStream::new(tokio_stream::iter(messages.into_iter()));
       Ok(stream)
     };
-    Box::pin(task)
+    Box::pin(task.instrument(trace_span!("aggregating inputs")))
   }
 }

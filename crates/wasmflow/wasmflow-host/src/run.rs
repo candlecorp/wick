@@ -72,16 +72,16 @@
 #![allow(missing_docs, clippy::expect_used)] // TODO docs
 
 use wasmflow_manifest::WasmflowManifest;
-use wasmflow_sdk::v1::transport::{TransportMap, TransportStream};
+use wasmflow_packet_stream::PacketStream;
 
 use crate::HostBuilder;
 
 pub async fn run(
   manifest: WasmflowManifest,
   schematic: &str,
-  data: TransportMap,
+  stream: PacketStream,
   seed: Option<u64>,
-) -> crate::Result<TransportStream> {
+) -> crate::Result<PacketStream> {
   let host_builder = HostBuilder::from_definition(manifest);
 
   let mut host = host_builder.build();
@@ -92,7 +92,7 @@ pub async fn run(
 
   info!("manifest applied");
 
-  let raw_result = host.request(schematic, data, None).await?;
+  let raw_result = host.request(schematic, stream, None).await?;
 
   Ok(raw_result)
 }
@@ -102,20 +102,21 @@ mod tests {
   use std::path::PathBuf;
 
   use anyhow::Result;
-  use wasmflow_sdk::v1::transport::TransportWrapper;
+  use futures::StreamExt;
+  use wasmflow_packet_stream::{packet_stream, Packet};
 
   use super::*;
 
   #[tokio::test]
   async fn runs_log_config() -> Result<()> {
     let host_def = WasmflowManifest::load_from_file(PathBuf::from("./manifests/logger.wafl"))?;
-    let input = vec![("input", "test-input")].into();
+    let input = packet_stream![("input", "test-input")];
 
-    let mut result = run(host_def, "logger", input, Some(0)).await?;
-    let mut messages: Vec<TransportWrapper> = result.drain_port("output").await?;
-    let output: String = messages.remove(0).payload.deserialize()?;
+    let result = run(host_def, "logger", input, Some(0)).await?;
+    let mut messages: Vec<_> = result.collect().await;
+    let output = messages.remove(0).unwrap();
 
-    assert_eq!(output, "test-input");
+    assert_eq!(output, Packet::encode("output", "test-input"));
     Ok(())
   }
 }

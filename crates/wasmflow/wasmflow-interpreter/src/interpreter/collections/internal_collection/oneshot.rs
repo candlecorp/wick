@@ -1,20 +1,42 @@
 use futures::future::BoxFuture;
+use futures::StreamExt;
 use serde_json::Value;
-use wasmflow_sdk::v1::transport::{TransportMap, TransportStream, TransportWrapper};
+use wasmflow_packet_stream::{Packet, PacketStream, PayloadFlux};
+use wasmrs_rx::Observer;
 
-use crate::{BoxError, Component};
+use crate::{BoxError, Operation};
 
 #[derive(Default, Debug, Clone, Copy)]
 pub struct OneShotComponent {}
 
-impl Component for OneShotComponent {
-  fn handle(&self, payload: TransportMap, _data: Option<Value>) -> BoxFuture<Result<TransportStream, BoxError>> {
-    let mut messages = Vec::new();
-    for wrapper in payload {
-      let name = wrapper.port.clone();
-      messages.push(wrapper);
-      messages.push(TransportWrapper::done(name));
-    }
-    Box::pin(async move { Ok(TransportStream::new(tokio_stream::iter(messages.into_iter()))) })
+impl Operation for OneShotComponent {
+  fn handle(
+    &self,
+    payload: wasmflow_packet_stream::StreamMap,
+    _data: Option<Value>,
+  ) -> BoxFuture<Result<PacketStream, BoxError>> {
+    let task = async move {
+      let flux = PayloadFluxChannel::new();
+      let mut futs = Vec::new();
+      for (port, mut stream) in payload.into_iter() {
+        futs.push(async move { (port, stream.next().await) });
+      }
+      let fut = futures::future::join_all(futs).await;
+      for (port, message) in fut {
+        match message {
+          Some(Ok(message)) => {
+            flux.send(message);
+            flux.send(Packet::done(port));
+          }
+          Some(Err(_e)) => {
+            flux.send(Packet::component_error("Error sending oneshot payload"));
+          }
+          None => todo!(),
+        }
+      }
+      Ok(PacketStream::new(flux.take_rx().unwrap()))
+    };
+
+    Box::pin(task)
   }
 }

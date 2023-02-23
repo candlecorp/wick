@@ -1,7 +1,7 @@
 use thiserror::Error;
-use wasmflow_interpreter::BoxError;
 
 use crate::dev::prelude::*;
+use crate::BoxError;
 
 #[derive(Error, Debug)]
 pub enum CollectionError {
@@ -27,17 +27,17 @@ pub enum CollectionError {
   RpcHandlerError(#[from] Box<wasmflow_rpc::Error>),
 }
 
-impl From<wasmflow_collection_grpctar::Error> for CollectionError {
-  fn from(e: wasmflow_collection_grpctar::Error) -> Self {
-    CollectionError::Downstream(Box::new(e))
-  }
-}
+// impl From<wasmflow_collection_grpctar::Error> for CollectionError {
+//   fn from(e: wasmflow_collection_grpctar::Error) -> Self {
+//     CollectionError::Downstream(Box::new(e))
+//   }
+// }
 
-impl From<wasmflow_collection_grpc::Error> for CollectionError {
-  fn from(e: wasmflow_collection_grpc::Error) -> Self {
-    CollectionError::Downstream(Box::new(e))
-  }
-}
+// impl From<wasmflow_collection_grpc::Error> for CollectionError {
+//   fn from(e: wasmflow_collection_grpc::Error) -> Self {
+//     CollectionError::Downstream(Box::new(e))
+//   }
+// }
 
 impl From<wasmflow_collection_wasm::Error> for CollectionError {
   fn from(e: wasmflow_collection_wasm::Error) -> Self {
@@ -45,11 +45,11 @@ impl From<wasmflow_collection_wasm::Error> for CollectionError {
   }
 }
 
-impl From<wasmflow_collection_nats::error::MeshError> for CollectionError {
-  fn from(e: wasmflow_collection_nats::error::MeshError) -> Self {
-    CollectionError::Mesh(e.to_string())
-  }
-}
+// impl From<wasmflow_collection_nats::error::MeshError> for CollectionError {
+//   fn from(e: wasmflow_collection_nats::error::MeshError) -> Self {
+//     CollectionError::Mesh(e.to_string())
+//   }
+// }
 
 impl From<BoxError> for CollectionError {
   fn from(e: BoxError) -> Self {

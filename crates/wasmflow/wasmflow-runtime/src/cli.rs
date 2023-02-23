@@ -9,7 +9,8 @@ use once_cell::sync::Lazy;
 use parking_lot::Mutex;
 use serde::{Deserialize, Serialize};
 use wasmflow_collection_wasm::collection::Collection;
-use wasmflow_collection_wasm::helpers::WapcModule;
+use wasmflow_collection_wasm::helpers::WickWasmModule;
+use wasmflow_entity::Entity;
 use wasmflow_manifest::collection_definition::WasmCollection;
 use wasmflow_manifest::flow_definition::PortReference;
 use wasmflow_manifest::host_definition::HostConfig;
@@ -21,9 +22,8 @@ use wasmflow_manifest::{
   Flow,
   Permissions,
 };
+use wasmflow_packet_stream::{CollectionLink, Invocation, Observer, Packet, PacketStream};
 use wasmflow_rpc::RpcHandler;
-use wasmflow_sdk::v1::transport::{MessageTransport, Serialized, TransportMap};
-use wasmflow_sdk::v1::{CollectionLink, Entity, InherentData, Invocation};
 use {serde_value, serde_yaml};
 
 use super::configuration::{ApplicationContext, Channel};
@@ -90,7 +90,7 @@ impl CLI {
       .await?;
 
     let link = CollectionLink::new(
-      Entity::component(&cli_namespace, &self.config.component),
+      Entity::operation(&cli_namespace, &self.config.component),
       Entity::collection(&linked_namespace),
     );
     let is_interactive = IsInteractive {
@@ -99,29 +99,18 @@ impl CLI {
       stderr: atty::is(atty::Stream::Stderr),
     };
 
-    let mut inputs_map = TransportMap::default();
-    inputs_map.insert(
-      "args",
-      MessageTransport::Success(Serialized::Json(serde_json::to_string(&args)?)),
-    );
-    inputs_map.insert(
-      "isInteractive",
-      MessageTransport::Success(Serialized::Json(serde_json::to_string(&is_interactive)?)),
-    );
-    inputs_map.insert(
-      "program",
-      MessageTransport::Success(Serialized::Json(serde_json::to_string(&link)?)),
-    );
-    inputs_map.transpose_output_name();
+    let (tx, packet_stream) = PacketStream::new_channels();
+    tx.send(Packet::encode("args", &args));
+    tx.send(Packet::encode("isInteractive", &is_interactive));
+    tx.send(Packet::encode("program", &link));
 
     let invocation = Invocation::new(
       Entity::client("cli_channel"),
-      Entity::component(&cli_namespace, &self.config.component),
-      inputs_map,
+      Entity::operation(&cli_namespace, &self.config.component),
       self.app.inherent_data,
     );
 
-    let _response = network.invoke(invocation).await?;
+    let _response = network.invoke(invocation, packet_stream).await?;
 
     Ok(())
   }

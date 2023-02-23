@@ -1,7 +1,40 @@
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
+pub struct InvocationRequest {
+  #[prost(oneof = "invocation_request::Data", tags = "1, 2")]
+  pub data: ::core::option::Option<invocation_request::Data>,
+}
+/// Nested message and enum types in `InvocationRequest`.
+pub mod invocation_request {
+  #[allow(clippy::derive_partial_eq_without_eq)]
+  #[derive(Clone, PartialEq, ::prost::Oneof)]
+  pub enum Data {
+    #[prost(message, tag = "1")]
+    Invocation(super::Invocation),
+    #[prost(message, tag = "2")]
+    Packet(super::Packet),
+  }
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct Invocation {
+  #[prost(string, tag = "1")]
+  pub origin: ::prost::alloc::string::String,
+  #[prost(string, tag = "2")]
+  pub target: ::prost::alloc::string::String,
+  #[prost(string, tag = "4")]
+  pub id: ::prost::alloc::string::String,
+  #[prost(string, tag = "5")]
+  pub tx_id: ::prost::alloc::string::String,
+  #[prost(message, optional, tag = "6")]
+  pub inherent: ::core::option::Option<InherentData>,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Packet {
-  #[prost(oneof = "packet::Data", tags = "1, 2, 3")]
+  #[prost(message, optional, tag = "1")]
+  pub metadata: ::core::option::Option<Metadata>,
+  #[prost(oneof = "packet::Data", tags = "2, 3, 4")]
   pub data: ::core::option::Option<packet::Data>,
 }
 /// Nested message and enum types in `Packet`.
@@ -9,105 +42,32 @@ pub mod packet {
   #[allow(clippy::derive_partial_eq_without_eq)]
   #[derive(Clone, PartialEq, ::prost::Oneof)]
   pub enum Data {
-    #[prost(message, tag = "1")]
-    Success(super::Serialized),
     #[prost(message, tag = "2")]
-    Failure(super::Failure),
+    Ok(super::Ok),
     #[prost(message, tag = "3")]
-    Signal(super::Signal),
+    Err(super::Err),
+    #[prost(bool, tag = "4")]
+    Done(bool),
   }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct Serialized {
-  #[prost(message, optional, tag = "1")]
-  pub payload: ::core::option::Option<PayloadData>,
-}
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct Failure {
+pub struct Metadata {
   #[prost(string, tag = "1")]
-  pub payload: ::prost::alloc::string::String,
-  #[prost(enumeration = "failure::FailureKind", tag = "2")]
-  pub r#type: i32,
-}
-/// Nested message and enum types in `Failure`.
-pub mod failure {
-  #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
-  #[repr(i32)]
-  pub enum FailureKind {
-    Error = 0,
-    Exception = 1,
-  }
-  impl FailureKind {
-    /// String value of the enum field names used in the ProtoBuf definition.
-    ///
-    /// The values are not transformed in any way and thus are considered stable
-    /// (if the ProtoBuf definition does not change) and safe for programmatic use.
-    pub fn as_str_name(&self) -> &'static str {
-      match self {
-        FailureKind::Error => "Error",
-        FailureKind::Exception => "Exception",
-      }
-    }
-    /// Creates an enum from field names used in the ProtoBuf definition.
-    pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
-      match value {
-        "Error" => Some(Self::Error),
-        "Exception" => Some(Self::Exception),
-        _ => None,
-      }
-    }
-  }
+  pub port: ::prost::alloc::string::String,
+  #[prost(uint32, tag = "2")]
+  pub index: u32,
+  #[prost(bool, tag = "3")]
+  pub done: bool,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct Signal {
-  #[prost(message, optional, tag = "1")]
-  pub payload: ::core::option::Option<PayloadData>,
-  #[prost(enumeration = "signal::OutputSignal", tag = "2")]
-  pub r#type: i32,
+pub struct Ok {
+  #[prost(oneof = "ok::Data", tags = "1, 3")]
+  pub data: ::core::option::Option<ok::Data>,
 }
-/// Nested message and enum types in `Signal`.
-pub mod signal {
-  #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
-  #[repr(i32)]
-  pub enum OutputSignal {
-    Done = 0,
-    OpenBracket = 1,
-    CloseBracket = 2,
-  }
-  impl OutputSignal {
-    /// String value of the enum field names used in the ProtoBuf definition.
-    ///
-    /// The values are not transformed in any way and thus are considered stable
-    /// (if the ProtoBuf definition does not change) and safe for programmatic use.
-    pub fn as_str_name(&self) -> &'static str {
-      match self {
-        OutputSignal::Done => "Done",
-        OutputSignal::OpenBracket => "OpenBracket",
-        OutputSignal::CloseBracket => "CloseBracket",
-      }
-    }
-    /// Creates an enum from field names used in the ProtoBuf definition.
-    pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
-      match value {
-        "Done" => Some(Self::Done),
-        "OpenBracket" => Some(Self::OpenBracket),
-        "CloseBracket" => Some(Self::CloseBracket),
-        _ => None,
-      }
-    }
-  }
-}
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct PayloadData {
-  #[prost(oneof = "payload_data::Data", tags = "1, 3")]
-  pub data: ::core::option::Option<payload_data::Data>,
-}
-/// Nested message and enum types in `PayloadData`.
-pub mod payload_data {
+/// Nested message and enum types in `Ok`.
+pub mod ok {
   #[allow(clippy::derive_partial_eq_without_eq)]
   #[derive(Clone, PartialEq, ::prost::Oneof)]
   pub enum Data {
@@ -119,21 +79,11 @@ pub mod payload_data {
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct Invocation {
+pub struct Err {
   #[prost(string, tag = "1")]
-  pub origin: ::prost::alloc::string::String,
-  #[prost(string, tag = "2")]
-  pub target: ::prost::alloc::string::String,
-  #[prost(map = "string, message", tag = "3")]
-  pub payload: ::std::collections::HashMap<::prost::alloc::string::String, Packet>,
-  #[prost(string, tag = "4")]
-  pub id: ::prost::alloc::string::String,
-  #[prost(string, tag = "5")]
-  pub tx_id: ::prost::alloc::string::String,
-  #[prost(message, optional, tag = "6")]
-  pub inherent: ::core::option::Option<InherentData>,
-  #[prost(message, optional, tag = "7")]
-  pub config: ::core::option::Option<Serialized>,
+  pub message: ::prost::alloc::string::String,
+  #[prost(uint32, tag = "2")]
+  pub code: u32,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -142,16 +92,6 @@ pub struct InherentData {
   pub seed: u64,
   #[prost(uint64, tag = "2")]
   pub timestamp: u64,
-}
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct Output {
-  #[prost(string, tag = "1")]
-  pub port: ::prost::alloc::string::String,
-  #[prost(string, tag = "2")]
-  pub invocation_id: ::prost::alloc::string::String,
-  #[prost(message, optional, tag = "3")]
-  pub payload: ::core::option::Option<Packet>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -188,6 +128,8 @@ pub struct Component {
   pub inputs: ::std::collections::HashMap<::prost::alloc::string::String, TypeSignature>,
   #[prost(map = "string, message", tag = "4")]
   pub outputs: ::std::collections::HashMap<::prost::alloc::string::String, TypeSignature>,
+  #[prost(uint32, tag = "5")]
+  pub index: u32,
 }
 /// Nested message and enum types in `Component`.
 pub mod component {
@@ -335,7 +277,7 @@ pub struct EnumVariant {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TypeSignature {
-  #[prost(oneof = "type_signature::Signature", tags = "1, 2, 3, 4, 5, 6, 7, 8")]
+  #[prost(oneof = "type_signature::Signature", tags = "1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11")]
   pub signature: ::core::option::Option<type_signature::Signature>,
 }
 /// Nested message and enum types in `TypeSignature`.
@@ -348,9 +290,9 @@ pub mod type_signature {
     #[prost(message, tag = "2")]
     Map(::prost::alloc::boxed::Box<super::MapType>),
     #[prost(message, tag = "3")]
-    List(::prost::alloc::boxed::Box<super::ListType>),
+    List(::prost::alloc::boxed::Box<super::InnerType>),
     #[prost(message, tag = "4")]
-    Optional(::prost::alloc::boxed::Box<super::OptionalType>),
+    Optional(::prost::alloc::boxed::Box<super::InnerType>),
     #[prost(message, tag = "5")]
     Ref(super::RefType),
     #[prost(message, tag = "6")]
@@ -359,19 +301,31 @@ pub mod type_signature {
     Internal(i32),
     #[prost(message, tag = "8")]
     Struct(super::StructType),
+    #[prost(message, tag = "9")]
+    Stream(::prost::alloc::boxed::Box<super::InnerType>),
+    #[prost(message, tag = "10")]
+    AnonymousStruct(super::AnonymousStruct),
+    #[prost(string, tag = "11")]
+    Custom(::prost::alloc::string::String),
   }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
+pub struct AnonymousStruct {
+  #[prost(map = "string, message", tag = "1")]
+  pub fields: ::std::collections::HashMap<::prost::alloc::string::String, TypeSignature>,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SimpleType {
-  #[prost(enumeration = "simple_type::ApexType", tag = "1")]
+  #[prost(enumeration = "simple_type::PrimitiveType", tag = "1")]
   pub r#type: i32,
 }
 /// Nested message and enum types in `SimpleType`.
 pub mod simple_type {
   #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
   #[repr(i32)]
-  pub enum ApexType {
+  pub enum PrimitiveType {
     I8 = 0,
     U8 = 1,
     I16 = 2,
@@ -388,28 +342,28 @@ pub mod simple_type {
     Bytes = 13,
     Value = 15,
   }
-  impl ApexType {
+  impl PrimitiveType {
     /// String value of the enum field names used in the ProtoBuf definition.
     ///
     /// The values are not transformed in any way and thus are considered stable
     /// (if the ProtoBuf definition does not change) and safe for programmatic use.
     pub fn as_str_name(&self) -> &'static str {
       match self {
-        ApexType::I8 => "I8",
-        ApexType::U8 => "U8",
-        ApexType::I16 => "I16",
-        ApexType::U16 => "U16",
-        ApexType::I32 => "I32",
-        ApexType::U32 => "U32",
-        ApexType::I64 => "I64",
-        ApexType::U64 => "U64",
-        ApexType::F32 => "F32",
-        ApexType::F64 => "F64",
-        ApexType::Bool => "BOOL",
-        ApexType::String => "STRING",
-        ApexType::Datetime => "DATETIME",
-        ApexType::Bytes => "BYTES",
-        ApexType::Value => "VALUE",
+        PrimitiveType::I8 => "I8",
+        PrimitiveType::U8 => "U8",
+        PrimitiveType::I16 => "I16",
+        PrimitiveType::U16 => "U16",
+        PrimitiveType::I32 => "I32",
+        PrimitiveType::U32 => "U32",
+        PrimitiveType::I64 => "I64",
+        PrimitiveType::U64 => "U64",
+        PrimitiveType::F32 => "F32",
+        PrimitiveType::F64 => "F64",
+        PrimitiveType::Bool => "BOOL",
+        PrimitiveType::String => "STRING",
+        PrimitiveType::Datetime => "DATETIME",
+        PrimitiveType::Bytes => "BYTES",
+        PrimitiveType::Value => "VALUE",
       }
     }
     /// Creates an enum from field names used in the ProtoBuf definition.
@@ -460,13 +414,7 @@ pub struct MapType {
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct ListType {
-  #[prost(message, optional, boxed, tag = "1")]
-  pub r#type: ::core::option::Option<::prost::alloc::boxed::Box<TypeSignature>>,
-}
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct OptionalType {
+pub struct InnerType {
   #[prost(message, optional, boxed, tag = "1")]
   pub r#type: ::core::option::Option<::prost::alloc::boxed::Box<TypeSignature>>,
 }
@@ -557,8 +505,8 @@ pub mod invocation_service_client {
     }
     pub async fn invoke(
       &mut self,
-      request: impl tonic::IntoRequest<super::Invocation>,
-    ) -> Result<tonic::Response<tonic::codec::Streaming<super::Output>>, tonic::Status> {
+      request: impl tonic::IntoStreamingRequest<Message = super::InvocationRequest>,
+    ) -> Result<tonic::Response<tonic::codec::Streaming<super::Packet>>, tonic::Status> {
       self
         .inner
         .ready()
@@ -566,7 +514,10 @@ pub mod invocation_service_client {
         .map_err(|e| tonic::Status::new(tonic::Code::Unknown, format!("Service was not ready: {}", e.into())))?;
       let codec = tonic::codec::ProstCodec::default();
       let path = http::uri::PathAndQuery::from_static("/wasmflow.InvocationService/Invoke");
-      self.inner.server_streaming(request.into_request(), path, codec).await
+      self
+        .inner
+        .streaming(request.into_streaming_request(), path, codec)
+        .await
     }
     pub async fn list(
       &mut self,
@@ -604,10 +555,10 @@ pub mod invocation_service_server {
   #[async_trait]
   pub trait InvocationService: Send + Sync + 'static {
     /// Server streaming response type for the Invoke method.
-    type InvokeStream: futures_core::Stream<Item = Result<super::Output, tonic::Status>> + Send + 'static;
+    type InvokeStream: futures_core::Stream<Item = Result<super::Packet, tonic::Status>> + Send + 'static;
     async fn invoke(
       &self,
-      request: tonic::Request<super::Invocation>,
+      request: tonic::Request<tonic::Streaming<super::InvocationRequest>>,
     ) -> Result<tonic::Response<Self::InvokeStream>, tonic::Status>;
     async fn list(
       &self,
@@ -674,11 +625,11 @@ pub mod invocation_service_server {
         "/wasmflow.InvocationService/Invoke" => {
           #[allow(non_camel_case_types)]
           struct InvokeSvc<T: InvocationService>(pub Arc<T>);
-          impl<T: InvocationService> tonic::server::ServerStreamingService<super::Invocation> for InvokeSvc<T> {
-            type Response = super::Output;
+          impl<T: InvocationService> tonic::server::StreamingService<super::InvocationRequest> for InvokeSvc<T> {
+            type Response = super::Packet;
             type ResponseStream = T::InvokeStream;
             type Future = BoxFuture<tonic::Response<Self::ResponseStream>, tonic::Status>;
-            fn call(&mut self, request: tonic::Request<super::Invocation>) -> Self::Future {
+            fn call(&mut self, request: tonic::Request<tonic::Streaming<super::InvocationRequest>>) -> Self::Future {
               let inner = self.0.clone();
               let fut = async move { (*inner).invoke(request).await };
               Box::pin(fut)
@@ -693,7 +644,7 @@ pub mod invocation_service_server {
             let codec = tonic::codec::ProstCodec::default();
             let mut grpc = tonic::server::Grpc::new(codec)
               .apply_compression_config(accept_compression_encodings, send_compression_encodings);
-            let res = grpc.server_streaming(method, req).await;
+            let res = grpc.streaming(method, req).await;
             Ok(res)
           };
           Box::pin(fut)

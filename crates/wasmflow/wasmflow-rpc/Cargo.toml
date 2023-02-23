@@ -10,7 +10,10 @@ publish = false
 client = ["tokio/fs"]
 
 [dependencies]
-wasmflow-sdk = { path = "../wasmflow-sdk", features = ["v1"] }
+wasmflow-packet-stream = { path = "../wasmflow-packet-stream", features = [] }
+wasmrs-rx = { workspace = true, features = [] }
+wasmflow-interface = { path = "../wasmflow-interface" }
+wasmflow-entity = { path = "../wasmflow-entity" }
 tonic = { workspace = true, features = ["tls"] }
 prost = "0.11"
 prost-types = "0.11"

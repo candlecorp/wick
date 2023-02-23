@@ -9,7 +9,7 @@ use walrus::{CustomSectionId, IdsToIndices, Module, TypedCustomSectionId, Untype
 use wascap::jwt::Token;
 use wascap::prelude::{Claims, KeyPair};
 use wascap::wasm::days_from_now_to_jwt_time;
-use wasmflow_sdk::v1::types::CollectionSignature;
+use wasmflow_interface::CollectionSignature;
 
 use crate::component::CollectionClaims;
 use crate::error;

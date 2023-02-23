@@ -4,18 +4,18 @@ use std::path::Path;
 use anyhow::Result;
 use serde_json::Value;
 use wasmflow_schematic_graph::iterators::SchematicHop;
-use wasmflow_schematic_graph::{ComponentReference, Network, PortDirection, Schematic};
+use wasmflow_schematic_graph::{Network, NodeReference, PortDirection, Schematic};
 
 #[derive(Debug, Default, PartialEq, Eq)]
 pub struct Counter {
-  pub component_visits: usize,
+  pub node_visits: usize,
   pub input_visits: usize,
   pub output_visits: usize,
   pub num_connections: usize,
   pub port_visits: usize,
   pub inputs: HashSet<String>,
   pub outputs: HashSet<String>,
-  pub components: HashSet<String>,
+  pub nodes: HashSet<String>,
 }
 
 #[allow(unused)]
@@ -47,9 +47,9 @@ impl Counter {
   #[allow(unused)]
   pub fn count(&mut self, hop: &SchematicHop<Value>) {
     match hop {
-      SchematicHop::Component(v) => {
-        self.component_visits += 1;
-        self.components.insert(v.name().to_owned());
+      SchematicHop::Node(v) => {
+        self.node_visits += 1;
+        self.nodes.insert(v.name().to_owned());
       }
       SchematicHop::Port(v) => {
         match v.direction() {
@@ -82,26 +82,22 @@ pub fn from_manifest(network_def: &wasmflow_manifest::WasmflowManifest) -> Resul
     let mut schematic = Schematic::new(flow.name.clone());
 
     for (name, def) in flow.instances.iter() {
-      schematic.add_external(
-        name,
-        ComponentReference::new(&def.namespace, &def.name),
-        def.data.clone(),
-      );
+      schematic.add_external(name, NodeReference::new(&def.namespace, &def.name), def.data.clone());
     }
 
     for connection in &flow.connections {
       println!("{}", connection);
       let from = &connection.from;
       let to = &connection.to;
-      let to_port = if let Some(component) = schematic.find_mut(to.get_instance()) {
-        println!("{:?}", component);
-        component.add_input(to.get_port())
+      let to_port = if let Some(node) = schematic.find_mut(to.get_instance()) {
+        println!("{:?}", node);
+        node.add_input(to.get_port())
       } else {
         panic!();
       };
-      if let Some(component) = schematic.find_mut(from.get_instance()) {
-        println!("{:?}", component);
-        let from_port = component.add_output(from.get_port());
+      if let Some(node) = schematic.find_mut(from.get_instance()) {
+        println!("{:?}", node);
+        let from_port = node.add_output(from.get_port());
         schematic.connect(from_port, to_port, connection.default.clone())?;
       } else {
         // panic!();

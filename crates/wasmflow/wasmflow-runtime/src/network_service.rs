@@ -12,17 +12,10 @@ use seeded_random::{Random, Seed};
 use uuid::Uuid;
 use wasmflow_interpreter::{HandlerMap, NamespaceHandler};
 use wasmflow_manifest::WasmflowManifest;
-use wasmflow_mesh::Mesh;
+// use wasmflow_mesh::Mesh;
+use wasmflow_packet_stream::{Invocation, PacketStream};
 
-use crate::collections::{
-  initialize_grpc_collection,
-  initialize_mesh_collection,
-  initialize_native_collection,
-  initialize_network_collection,
-  initialize_par_collection,
-  initialize_wasm_collection,
-  initialize_wasm_entrypoint,
-};
+use crate::collections::{initialize_native_collection, initialize_network_collection, initialize_wasm_collection};
 use crate::dev::prelude::*;
 use crate::json_writer::JsonWriter;
 use crate::WAFL_V0_NAMESPACE;
@@ -34,7 +27,7 @@ pub(crate) struct Initialize {
   pub(crate) manifest: WasmflowManifest,
   pub(crate) allowed_insecure: Vec<String>,
   pub(crate) allow_latest: bool,
-  pub(crate) mesh: Option<Arc<Mesh>>,
+  // pub(crate) mesh: Option<Arc<Mesh>>,
   pub(crate) timeout: Duration,
   pub(crate) rng_seed: Seed,
   pub(crate) namespace: Option<String>,
@@ -66,7 +59,7 @@ impl NetworkService {
       let collection_init = CollectionInitOptions {
         rng_seed: rng.seed(),
         network_id: msg.id,
-        mesh: msg.mesh.clone(),
+        // mesh: msg.mesh.clone(),
         allow_latest: msg.allow_latest,
         allowed_insecure: msg.allowed_insecure.clone(),
         timeout: msg.timeout,
@@ -116,7 +109,7 @@ impl NetworkService {
         manifest,
         allowed_insecure: opts.allowed_insecure,
         allow_latest: opts.allow_latest,
-        mesh: opts.mesh,
+        // mesh: opts.mesh,
         timeout: opts.timeout,
         rng_seed: opts.rng_seed,
         namespace,
@@ -149,10 +142,11 @@ impl InvocationHandler for NetworkService {
   fn invoke(
     &self,
     msg: Invocation,
+    stream: PacketStream,
   ) -> std::result::Result<BoxFuture<std::result::Result<InvocationResponse, CollectionError>>, CollectionError> {
     let tx_id = msg.tx_id;
 
-    let fut = self.interpreter.invoke(msg);
+    let fut = self.interpreter.invoke(msg, stream);
 
     Ok(
       async move {
@@ -176,7 +170,7 @@ impl InvocationHandler for NetworkService {
 pub(crate) struct CollectionInitOptions {
   pub(crate) rng_seed: Seed,
   pub(crate) network_id: Uuid,
-  pub(crate) mesh: Option<Arc<Mesh>>,
+  // pub(crate) mesh: Option<Arc<Mesh>>,
   pub(crate) allow_latest: bool,
   pub(crate) allowed_insecure: Vec<String>,
   pub(crate) timeout: Duration,
@@ -190,9 +184,9 @@ pub(crate) async fn initialize_collection(
 
   let result = match &collection.kind {
     CollectionKind::Wasm(v) => initialize_wasm_collection(v, namespace, opts).await,
-    CollectionKind::GrpcTar(v) => initialize_par_collection(v, namespace, opts).await,
-    CollectionKind::GrpcUrl(v) => initialize_grpc_collection(v, namespace).await,
-    CollectionKind::Mesh(v) => initialize_mesh_collection(v, namespace, opts).await,
+    // CollectionKind::GrpcTar(v) => initialize_par_collection(v, namespace, opts).await,
+    // CollectionKind::GrpcUrl(v) => initialize_grpc_collection(v, namespace).await,
+    // CollectionKind::Mesh(v) => initialize_mesh_collection(v, namespace, opts).await,
     CollectionKind::Manifest(v) => initialize_network_collection(v, namespace, opts).await,
     _ => todo!(),
   };

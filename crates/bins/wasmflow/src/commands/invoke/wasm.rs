@@ -1,24 +1,24 @@
+use std::collections::HashSet;
 use std::time::SystemTime;
 
-use anyhow::{Context, Result};
-use tokio::io::{self, AsyncBufReadExt};
+use anyhow::Result;
 use wasmflow_collection_cli::parse_args;
 use wasmflow_collection_wasm::collection::Collection;
-use wasmflow_collection_wasm::helpers::WapcModule;
+use wasmflow_collection_wasm::helpers::WickWasmModule;
+use wasmflow_entity::Entity;
+use wasmflow_packet_stream::{InherentData, Invocation, Observer, Packet, PacketStream};
 use wasmflow_rpc::RpcHandler;
-use wasmflow_sdk::v1::transport::TransportMap;
-use wasmflow_sdk::v1::{Entity, InherentData, Invocation};
 
 use crate::utils;
 
 pub(crate) async fn handle_command(opts: super::InvokeCommand, bytes: Vec<u8>) -> Result<()> {
-  let component = WapcModule::from_slice(&bytes)?;
+  let component = WickWasmModule::from_slice(&bytes)?;
 
   let collection = Collection::try_load(&component, 1, None, Some((opts.wasi).into()), None)?;
 
   let mut check_stdin = !opts.no_input && opts.data.is_empty() && opts.args.is_empty();
   if let Some(metadata) = component.token.claims.metadata {
-    let target_component = metadata.interface.components.get(&opts.component);
+    let target_component = metadata.interface.operations.get(&opts.component);
 
     if let Some(target_component) = target_component {
       if target_component.inputs.is_empty() {
@@ -38,39 +38,47 @@ pub(crate) async fn handle_command(opts: super::InvokeCommand, bytes: Vec<u8>) -
     )
   });
   if check_stdin {
-    if atty::is(atty::Stream::Stdin) {
-      eprintln!("No input passed, reading from <STDIN>. Pass --no-input to disable.");
-    }
-    let reader = io::BufReader::new(io::stdin());
-    let mut lines = reader.lines();
-    while let Some(line) = lines.next_line().await? {
-      debug!("STDIN:'{}'", line);
-      let mut payload = TransportMap::from_json_output(&line)?;
-      payload.transpose_output_name();
+    todo!();
+    // if atty::is(atty::Stream::Stdin) {
+    //   eprintln!("No input passed, reading from <STDIN>. Pass --no-input to disable.");
+    // }
+    // let reader = io::BufReader::new(io::stdin());
+    // let mut lines = reader.lines();
+    // while let Some(line) = lines.next_line().await? {
+    //   debug!("STDIN:'{}'", line);
+    //   let mut payload = TransportMap::from_json_output(&line)?;
+    //   payload.transpose_output_name();
 
-      let invocation = Invocation::new(Entity::client("vow"), Entity::local(&opts.component), payload, None);
+    //   let invocation = Invocation::new(Entity::client("vow"), Entity::local(&opts.component), payload, None);
 
-      let stream = collection.invoke(invocation).await.context("Component panicked")?;
-      utils::print_stream_json(stream, &opts.filter, opts.short, opts.raw).await?;
-    }
+    //   let stream = collection.invoke(invocation).await.context("Component panicked")?;
+    //   utils::print_stream_json(stream, &opts.filter, opts.short, opts.raw).await?;
+    // }
   } else {
-    let mut data_map = TransportMap::from_kv_json(&opts.data)?;
+    let data = Packet::from_kv_json(&opts.data)?;
 
-    let mut rest_arg_map = parse_args(&opts.args)?;
-    if !opts.raw {
-      data_map.transpose_output_name();
-      rest_arg_map.transpose_output_name();
+    let args = parse_args(&opts.args)?;
+    let (tx, stream) = PacketStream::new_channels();
+    let mut seen_ports = HashSet::new();
+    for packet in args {
+      seen_ports.insert(packet.port_name().to_owned());
+      tx.send(packet)?;
     }
-    data_map.merge(rest_arg_map);
+    for packet in data {
+      seen_ports.insert(packet.port_name().to_owned());
+      tx.send(packet)?;
+    }
+    for port in seen_ports {
+      tx.send(Packet::done(port))?;
+    }
 
     let invocation = Invocation::new(
-      Entity::client("vow"),
+      Entity::client("wasmflow"),
       Entity::local(&opts.component),
-      data_map,
       inherent_data,
     );
 
-    let stream = collection.invoke(invocation).await?;
+    let stream = collection.invoke(invocation, stream).await?;
     utils::print_stream_json(stream, &opts.filter, opts.short, opts.raw).await?;
   }
 

@@ -90,14 +90,13 @@ use std::fs::read_to_string;
 use std::path::PathBuf;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use sdk::packet::PacketMap;
-use sdk::transport::{Failure, MessageTransport, TransportWrapper};
-use sdk::{Entity, InherentData, Invocation};
 use serde::{Deserialize, Serialize};
 use tap::{TestBlock, TestRunner};
+use tokio_stream::wrappers::UnboundedReceiverStream;
 use tokio_stream::StreamExt;
+use wasmflow_entity::Entity;
+use wasmflow_packet_stream::{InherentData, Invocation, Packet, PacketPayload, PacketStream};
 use wasmflow_rpc::SharedRpcHandler;
-use wasmflow_sdk::v1 as sdk;
 
 use self::error::TestError;
 
@@ -183,11 +182,18 @@ pub struct TestData {
   #[serde(default)]
   pub seed: Option<u64>,
   #[serde(default)]
-  pub inputs: HashMap<String, serde_value::Value>,
+  pub inputs: Vec<PacketData>,
   #[serde(default)]
   pub outputs: Vec<OutputData>,
   #[serde(skip)]
-  pub actual: Vec<TransportWrapper>,
+  pub actual: Vec<Packet>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(deny_unknown_fields)]
+pub struct PacketData {
+  port: String,
+  payload: HashMap<String, serde_value::Value>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -206,16 +212,20 @@ pub struct SerializedTransport {
 }
 
 impl TestData {
-  pub fn get_payload(&self) -> (PacketMap, Option<InherentData>) {
-    let mut payload = PacketMap::default();
-    for (k, v) in &self.inputs {
-      debug!("Test input for port '{}': {:?}", k, v);
-      payload.insert(k, v);
+  pub fn get_payload(&self) -> (PacketStream, Option<InherentData>) {
+    let (tx, rx) = tokio::sync::mpsc::unbounded_channel();
+    for packet in &self.inputs {
+      debug!("Test input for port {:?}", packet);
+      tx.send(Ok(Packet::new_for_port(
+        &packet.port,
+        PacketPayload::Ok(wasmrs_codec::messagepack::serialize(&packet.payload).unwrap().into()),
+      )))
+      .unwrap();
     }
-
+    let stream = PacketStream::new(Box::new(UnboundedReceiverStream::new(rx)));
     if let Some(seed) = self.seed {
       (
-        payload,
+        stream,
         Some(InherentData::new(
           seed,
           SystemTime::now()
@@ -227,7 +237,7 @@ impl TestData {
         )),
       )
     } else {
-      (payload, None)
+      (stream, None)
     }
   }
 
@@ -239,7 +249,7 @@ impl TestData {
 }
 
 #[allow(clippy::too_many_lines)]
-#[instrument(skip_all, name = "test_run")]
+// #[instrument(skip_all, name = "test_run")]
 pub async fn run_test(
   name: String,
   expected: Vec<&mut TestData>,
@@ -248,17 +258,16 @@ pub async fn run_test(
   let mut harness = TestRunner::new(Some(name));
 
   for (i, test) in expected.into_iter().enumerate() {
-    let (payload, inherent) = test.get_payload();
+    let (stream, inherent) = test.get_payload();
     let entity = Entity::local(test.component.clone());
     let test_name = test.get_description();
     let mut test_block = TestBlock::new(Some(test_name.clone()));
     let prefix = |msg: &str| format!("{}:{}", test_name, msg);
 
     trace!(i, %entity, "invoke");
-    trace!(i, ?payload, "payload");
-    let invocation = Invocation::new_test(&test_name, entity, payload, inherent);
+    let invocation = Invocation::new(Entity::test(&test_name), entity, inherent);
     let result = collection
-      .invoke(invocation)
+      .invoke(invocation, stream)
       .await
       .map_err(|e| Error::InvocationFailed(e.to_string()));
 
@@ -274,11 +283,7 @@ pub async fn run_test(
 
     let stream = result.unwrap();
 
-    let outputs: Vec<_> = stream
-      .filter(|msg| !msg.payload.is_signal())
-      .map(TransportWrapper::from)
-      .collect()
-      .await;
+    let outputs: Vec<_> = stream.filter(|msg| msg.is_ok()).map(|msg| msg.unwrap()).collect().await;
     test.actual = outputs;
     let mut diagnostics = vec!["Output: ".to_owned()];
     let mut output_lines: Vec<_> = test.actual.iter().map(|o| format!("{:?}", o)).collect();
@@ -298,9 +303,9 @@ pub async fn run_test(
         break;
       }
       let actual = &test.actual[j];
-      let result = actual.port == expected.port;
+      let result = actual.port_name() == expected.port;
       let diag = Some(vec![
-        format!("Actual: {}", actual.port),
+        format!("Actual: {}", actual.port_name()),
         format!("Expected: {}", expected.port),
       ]);
       test_block.add_test(move || result, prefix(&format!("output[{}]", expected.port)), diag);
@@ -344,11 +349,7 @@ pub async fn run_test(
         )]);
 
         test_block.add_test(
-          move || match actual_payload {
-            MessageTransport::Failure(Failure::Exception(_)) => error_kind == "Exception",
-            MessageTransport::Failure(Failure::Error(_)) => error_kind == "Error",
-            _ => false,
-          },
+          move || matches!(actual_payload, PacketPayload::Err(_)),
           prefix("error_kind"),
           diag,
         );
@@ -362,11 +363,7 @@ pub async fn run_test(
         )]);
 
         test_block.add_test(
-          move || match actual_payload {
-            MessageTransport::Failure(Failure::Exception(msg)) => error_msg == msg,
-            MessageTransport::Failure(Failure::Error(msg)) => error_msg == msg,
-            _ => false,
-          },
+          move || matches!(actual_payload, PacketPayload::Err(_)),
           prefix("error_message"),
           diag,
         );
@@ -376,7 +373,7 @@ pub async fn run_test(
     let mut missed = vec![];
     for i in num_tested..test.actual.len() {
       if let Some(output) = test.actual.get(i) {
-        if !matches!(output.payload, MessageTransport::Signal(_)) {
+        if !matches!(output.payload, PacketPayload::Done) {
           debug!(?output, "test missed");
           missed.push(output);
         }

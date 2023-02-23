@@ -1,12 +1,12 @@
-mod component;
 mod connection;
+mod node;
 mod port;
 
-pub use component::*;
 pub use connection::*;
+pub use node::*;
 pub use port::*;
 
-use crate::component::ComponentPort;
+use crate::node::NodePort;
 use crate::port::PortDirection;
 use crate::{Connection, ConnectionIndex, PortReference, Schematic};
 
@@ -15,7 +15,7 @@ pub enum SchematicHop<'graph, DATA>
 where
   DATA: Clone,
 {
-  Component(ComponentHop<'graph, DATA>),
+  Node(NodeHop<'graph, DATA>),
   Port(Port<'graph, DATA>),
   Ports(Ports<'graph, DATA>),
   Connections(Connections<'graph, DATA>),
@@ -31,7 +31,7 @@ where
       f,
       "{}",
       match self {
-        SchematicHop::Component(v) => format!("Component:{}", v.name()),
+        SchematicHop::Node(v) => format!("Node:{}", v.name()),
         SchematicHop::Port(v) => format!("Port:{}", v),
         SchematicHop::Ports(v) => format!("Ports:{}", v),
         SchematicHop::Connections(v) => format!("Connections:{}", v),
@@ -41,12 +41,12 @@ where
   }
 }
 
-impl<'graph, DATA> From<ComponentHop<'graph, DATA>> for SchematicHop<'graph, DATA>
+impl<'graph, DATA> From<NodeHop<'graph, DATA>> for SchematicHop<'graph, DATA>
 where
   DATA: Clone,
 {
-  fn from(component: ComponentHop<'graph, DATA>) -> Self {
-    Self::Component(component)
+  fn from(node: NodeHop<'graph, DATA>) -> Self {
+    Self::Node(node)
   }
 }
 
@@ -74,7 +74,7 @@ where
   DATA: Clone,
 {
   pub fn new_from_input(schematic: &'graph Schematic<DATA>) -> Self {
-    let inputs = ComponentHop::new(schematic, schematic.input).into_inputs();
+    let inputs = NodeHop::new(schematic, schematic.input).into_inputs();
     let hop_queue = vec![SchematicHop::Ports(inputs)];
     Self {
       schematic,
@@ -85,7 +85,7 @@ where
   }
 
   pub fn new_from_output(schematic: &'graph Schematic<DATA>) -> Self {
-    let hop_queue = vec![SchematicHop::Component(ComponentHop::new(schematic, schematic.output))];
+    let hop_queue = vec![SchematicHop::Node(NodeHop::new(schematic, schematic.output))];
     Self {
       schematic,
       last_hop: None,
@@ -138,7 +138,7 @@ where
 {
   match hop {
     Some(hop) => match hop {
-      SchematicHop::Component(v) => {
+      SchematicHop::Node(v) => {
         let ports = match direction {
           WalkDirection::Up => v.into_inputs(),
           WalkDirection::Down => v.into_outputs(),
@@ -152,13 +152,13 @@ where
       SchematicHop::Port(v) => match direction {
         WalkDirection::Down => match v.port.direction {
           PortDirection::In => {
-            let component = ComponentHop::new(schematic, v.port.component_index);
-            (Some(component.into()), None)
+            let node = NodeHop::new(schematic, v.port.node_index);
+            (Some(node.into()), None)
           }
           PortDirection::Out => {
             let connections = schematic
-              .get(v.port.component_index)
-              .and_then(|component| component.output_connections(v.port.port_index))
+              .get(v.port.node_index)
+              .and_then(|node| node.output_connections(v.port.port_index))
               .map(|indices| Connections::new(schematic, indices.clone()))
               .unwrap();
 
@@ -172,8 +172,8 @@ where
         WalkDirection::Up => match v.port.direction {
           PortDirection::In => {
             let connections = schematic
-              .get(v.port.component_index)
-              .and_then(|component| component.input_connections(v.port.port_index))
+              .get(v.port.node_index)
+              .and_then(|node| node.input_connections(v.port.port_index))
               .map(|indices| Connections::new(schematic, indices.clone()))
               .unwrap();
 
@@ -184,8 +184,8 @@ where
             }
           }
           PortDirection::Out => {
-            let component = ComponentHop::new(schematic, v.port.component_index);
-            (Some(component.into()), None)
+            let node = NodeHop::new(schematic, v.port.node_index);
+            (Some(node.into()), None)
           }
         },
       },
@@ -206,14 +206,14 @@ where
               (result.map(SchematicHop::Port), rest)
             }
             PortDirection::Out => {
-              let component = ComponentHop::new(schematic, v.component_index);
-              (Some(component.into()), None)
+              let node = NodeHop::new(schematic, v.node_index);
+              (Some(node.into()), None)
             }
           },
           WalkDirection::Down => match port_direction {
             PortDirection::In => {
-              let component = ComponentHop::new(schematic, v.component_index);
-              (Some(component.into()), None)
+              let node = NodeHop::new(schematic, v.node_index);
+              (Some(node.into()), None)
             }
             PortDirection::Out => {
               let result = v.next();
@@ -255,13 +255,13 @@ where
   }
 }
 
-fn get_ports_component<'graph, DATA>(schematic: &'graph Schematic<DATA>, port: &PortReference) -> &'graph ComponentPort
+fn get_ports_node<'graph, DATA>(schematic: &'graph Schematic<DATA>, port: &PortReference) -> &'graph NodePort
 where
   DATA: Clone,
 {
   match port.direction {
-    PortDirection::In => &schematic.components[port.component_index].inputs()[port.port_index],
-    PortDirection::Out => &schematic.components[port.component_index].outputs()[port.port_index],
+    PortDirection::In => &schematic.nodes[port.node_index].inputs()[port.port_index],
+    PortDirection::Out => &schematic.nodes[port.node_index].outputs()[port.port_index],
   }
 }
 
@@ -270,8 +270,8 @@ where
   DATA: Clone,
 {
   match port.direction {
-    PortDirection::In => schematic.components[port.component_index].inputs()[port.port_index].name(),
-    PortDirection::Out => schematic.components[port.component_index].outputs()[port.port_index].name(),
+    PortDirection::In => schematic.nodes[port.node_index].inputs()[port.port_index].name(),
+    PortDirection::Out => schematic.nodes[port.node_index].outputs()[port.port_index].name(),
   }
 }
 
@@ -284,10 +284,10 @@ where
 {
   let direction = port.direction;
   schematic
-    .get(port.component_index)
-    .and_then(|component| match direction {
-      PortDirection::In => component.input_connections(port.port_index),
-      PortDirection::Out => component.output_connections(port.port_index),
+    .get(port.node_index)
+    .and_then(|node| match direction {
+      PortDirection::In => node.input_connections(port.port_index),
+      PortDirection::Out => node.output_connections(port.port_index),
     })
     .map(|indices| Connections::new(schematic, indices.clone()))
     .unwrap()

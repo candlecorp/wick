@@ -214,7 +214,7 @@ impl Mesh {
 
     let topic = rpc_message_topic(mesh_id);
     debug!(from = invocation.target.namespace(), to = mesh_id, "resolved namespace");
-    invocation.target = Entity::component(mesh_id, invocation.target.name());
+    invocation.target = Entity::operation(mesh_id, invocation.target.name());
 
     let msg = MeshRpcMessage::Invocation(Box::new(invocation));
     let payload = serialize(&msg).map_err(|e| MeshError::MessageSerialization(e.to_string()))?;
@@ -410,9 +410,9 @@ mod test_integration {
   use pretty_assertions::assert_eq;
   use test_native_collection::Collection;
   use tracing::*;
+  use wasmflow_interface::{CollectionSignature, HostedType, OperationMap, OperationSignature};
   use wasmflow_sdk::v1::packet::PacketMap;
   use wasmflow_sdk::v1::transport::MessageTransport;
-  use wasmflow_sdk::v1::types::{CollectionSignature, ComponentMap, ComponentSignature, HostedType};
   use wasmflow_sdk::v1::Invocation;
 
   use super::{Mesh, MeshBuilder};
@@ -434,7 +434,7 @@ mod test_integration {
     let (mesh, mesh_id) = get_mesh().await?;
     let component_name = "test-component";
     let user_input = String::from("Hello world");
-    let entity = wasmflow_sdk::v1::Entity::component("arbitrary_ns", component_name);
+    let entity = wasmflow_entity::Entity::operation("arbitrary_ns", component_name);
     let mut payload = PacketMap::default();
     payload.insert("input", &user_input);
     println!("Sending payload: {:?}", payload);
@@ -470,7 +470,7 @@ mod test_integration {
     let (mesh, mesh_id) = get_mesh().await?;
     let component_name = "error";
     let user_input = String::from("Hello world");
-    let entity = wasmflow_sdk::v1::Entity::component("arbitrary_ns", component_name);
+    let entity = wasmflow_entity::Entity::operation("arbitrary_ns", component_name);
     let mut payload = PacketMap::default();
     payload.insert("input", &user_input);
     debug!("Sending payload: {:?}", payload);
@@ -491,10 +491,10 @@ mod test_integration {
     let (mesh, namespace) = get_mesh().await?;
     let schemas = mesh.list_components(namespace).await?;
     debug!("Hosted schemas on namespace: {:#?}", schemas);
-    let mut components = ComponentMap::default();
+    let mut components = OperationMap::default();
     components.insert(
       "error",
-      ComponentSignature {
+      OperationSignature {
         name: "error".to_owned(),
         inputs: vec![("input", "string")].try_into()?,
         outputs: vec![("output", "string")].try_into()?,
@@ -502,7 +502,7 @@ mod test_integration {
     );
     components.insert(
       "test-component",
-      ComponentSignature {
+      OperationSignature {
         name: "test-component".to_owned(),
         inputs: vec![("input", "string")].try_into()?,
         outputs: vec![("output", "string")].try_into()?,
@@ -513,7 +513,7 @@ mod test_integration {
       name: Some("test-native-collection".to_owned()),
       format: 1,
       version: "0.1.0".to_owned(),
-      components,
+      operations,
       ..Default::default()
     });
 

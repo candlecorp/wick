@@ -5,7 +5,7 @@ use logger::{LoggingGuard, LoggingOptions};
 use wasmflow_collection_cli::options::DefaultCliOptions;
 use wasmflow_manifest::host_definition::{HttpConfig, MeshConfig};
 use wasmflow_manifest::WasmflowManifest;
-use wasmflow_sdk::v1::transport::{MessageTransport, TransportStream};
+use wasmflow_packet_stream::PacketStream;
 
 use crate::commands::FetchOptions;
 
@@ -102,7 +102,7 @@ pub(crate) fn init_logger(opts: &LoggingOptions) -> crate::Result<LoggingGuard> 
 }
 
 pub(crate) async fn print_stream_json(
-  mut stream: TransportStream,
+  mut stream: PacketStream,
   filter: &[String],
   terse: bool,
   raw: bool,
@@ -110,35 +110,37 @@ pub(crate) async fn print_stream_json(
   if !filter.is_empty() {
     trace!("filtering only {:?}", filter);
   }
-  while let Some(wrapper) = stream.next().await {
-    trace!(message=%wrapper, "output message");
-    if (wrapper.payload.is_signal()) && !raw {
+  while let Some(Ok(packet)) = stream.next().await {
+    trace!(message = ?packet, "output");
+    if (packet.is_done()) && !raw {
       continue;
     }
-    if !filter.is_empty() && !filter.iter().any(|name| name == &wrapper.port) {
-      tracing::debug!(port = %wrapper.port, "filtering out");
+    if !filter.is_empty() && !filter.iter().any(|name| name == packet.port_name()) {
+      tracing::debug!(port = %packet.port_name(), "filtering out");
       continue;
     }
+    // TODO print actual json again
     if terse {
-      if let MessageTransport::Failure(err) = &wrapper.payload {
-        return Err(anyhow::Error::msg(err.message().to_owned()));
-      }
-      let mut json = wrapper.payload.as_json();
 
-      json.as_object_mut().and_then(|o| o.remove("value")).map_or_else(
-        || unreachable!("Message did not have an error nor a value: {}", json),
-        |v| {
-          println!(
-            "{}",
-            match v {
-              serde_json::Value::String(s) => s,
-              v => v.to_string(),
-            }
-          );
-        },
-      );
+      // if let MessageTransport::Failure(err) = &packet.payload {
+      //   return Err(anyhow::Error::msg(err.message().to_owned()));
+      // }
+      // let mut json = packet.payload.as_json();
+
+      // json.as_object_mut().and_then(|o| o.remove("value")).map_or_else(
+      //   || unreachable!("Message did not have an error nor a value: {}", json),
+      //   |v| {
+      //     println!(
+      //       "{}",
+      //       match v {
+      //         serde_json::Value::String(s) => s,
+      //         v => v.to_string(),
+      //       }
+      //     );
+      //   },
+      // );
     } else {
-      println!("{}", wrapper.as_json());
+      println!("{}", serde_json::to_string(&packet)?);
     }
   }
   trace!("stream complete");

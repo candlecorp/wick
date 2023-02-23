@@ -9,16 +9,18 @@ publish = false
 [features]
 
 [dependencies]
-wasmflow-sdk = { path = "../wasmflow-sdk", features = ["v1"] }
+wasmflow-packet-stream = { path = "../wasmflow-packet-stream", features = [] }
 wasmflow-schematic-graph = { path = "../wasmflow-schematic-graph" }
 wasmflow-interpreter = { path = "../wasmflow-interpreter" }
+wasmflow-interface = { path = "../wasmflow-interface" }
+wasmflow-entity = { path = "../wasmflow-entity" }
 wasmflow-manifest = { path = "../wasmflow-manifest" }
 wasmflow-loader = { path = "../wasmflow-loader" }
 wasmflow-collection-wasm = { path = "../wasmflow-collection-wasm" }
-wasmflow-collection-nats = { path = "../wasmflow-collection-nats" }
-wasmflow-collection-grpctar = { path = "../wasmflow-collection-grpctar" }
-wasmflow-collection-grpc = { path = "../wasmflow-collection-grpc" }
-wasmflow-mesh = { path = "../wasmflow-mesh" }
+# wasmflow-collection-nats = { path = "../wasmflow-collection-nats" }
+# wasmflow-collection-grpctar = { path = "../wasmflow-collection-grpctar" }
+# wasmflow-collection-grpc = { path = "../wasmflow-collection-grpc" }
+# wasmflow-mesh = { path = "../wasmflow-mesh" }
 wasmflow-stdlib = { path = "../wasmflow-stdlib" }
 wasmflow-rpc = { path = "../wasmflow-rpc" }
 seeded-random = { path = "../../misc/seeded-random" }
@@ -48,8 +50,8 @@ wasmflow-invocation-server = { path = "../wasmflow-invocation-server" }
 test-native-collection = { path = "../../integration/test-native-collection" }
 logger = { path = "../logger" }
 test-logger = { path = "../../misc/test-logger" }
-maplit = "1.0"
 pretty_assertions = "1"
 lazy_static = "1.4"
 anyhow = { workspace = true }
 runtime-testutils = { path = "./tests/runtime_utils" }
+futures = { workspace = true }

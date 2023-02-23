@@ -6,7 +6,7 @@ pub enum NetworkError {
   #[error(transparent)]
   SchematicGraph(#[from] wasmflow_schematic_graph::error::Error),
   #[error("Could not start interpreter from '{0}': {1}")]
-  InterpreterInit(String, wasmflow_interpreter::InterpreterError),
+  InterpreterInit(String, wasmflow_interpreter::error::InterpreterError),
   #[error(transparent)]
   Loading(#[from] wasmflow_loader::Error),
   #[error(transparent)]

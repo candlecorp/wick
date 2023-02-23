@@ -60,7 +60,7 @@ impl Observer for JsonWriter {
           "tx_id": tx_id.to_string(),
           "dir":port.direction().to_string(),
           "port_index":port.port_index(),
-          "component_index":port.component_index()
+          "component_index":port.node_index()
         })
       }
       EventKind::PortStatusChange(port) => {
@@ -70,7 +70,7 @@ impl Observer for JsonWriter {
           "tx_id": tx_id.to_string(),
           "dir":port.direction().to_string(),
           "port_index":port.port_index(),
-          "component_index":port.component_index()
+          "component_index":port.node_index()
         })
       }
       EventKind::Close(error) => {
@@ -86,9 +86,9 @@ impl Observer for JsonWriter {
   }
 
   fn on_after_event(&self, _index: usize, state: &wasmflow_interpreter::State) {
-    let state = serde_json::Value::Array(state.json_transactions());
-    let mut lock = self.states.lock();
-    lock.push(state);
+    // let state = serde_json::Value::Array(state.json_transactions());
+    // let mut lock = self.states.lock();
+    // lock.push(state);
   }
 
   fn on_close(&self) {

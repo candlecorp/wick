@@ -1,23 +1,22 @@
 use futures::future::BoxFuture;
 use serde_json::Value;
-use wasmflow_sdk::v1::transport::TransportStream;
-use wasmflow_sdk::v1::types::{
+use wasmflow_interface::{
   CollectionFeatures,
   CollectionSignature,
-  ComponentSignature,
   FieldMap,
+  OperationSignature,
   StructSignature,
   TypeDefinition,
   TypeSignature,
 };
-use wasmflow_sdk::v1::Invocation;
+use wasmflow_packet_stream::{Invocation, PacketStream, StreamMap};
 
 use crate::constants::*;
 use crate::graph::types::Network;
 use crate::interpreter::collections::dyn_component_id;
-use crate::{BoxError, Collection, Component};
+use crate::{BoxError, Collection, Operation};
 
-mod merge;
+// mod merge;
 mod sender;
 
 #[derive(Debug)]
@@ -31,10 +30,10 @@ impl CoreCollection {
       .format(1)
       .version("0.0.0")
       .features(CollectionFeatures::v0(false, false))
-      .add_component(ComponentSignature::new(CORE_ID_SENDER).add_output("output", TypeSignature::Value));
+      .add_component(OperationSignature::new(CORE_ID_SENDER).add_output("output", TypeSignature::Value));
 
     for schematic in graph.schematics() {
-      for component in schematic.components() {
+      for component in schematic.nodes() {
         // only handle core:: components
         if component.cref().namespace() != NS_CORE {
           continue;
@@ -48,7 +47,7 @@ impl CoreCollection {
             component.id()
           );
 
-          let result = serde_json::from_value::<ComponentSignature>(component.data().clone().unwrap());
+          let result = serde_json::from_value::<OperationSignature>(component.data().clone().unwrap());
           if let Err(e) = result {
             panic!("Configuration for dynamic merge component invalid: {}", e);
           }
@@ -65,7 +64,7 @@ impl CoreCollection {
             .outputs
             .insert("output", TypeSignature::Ref { reference: id.clone() });
           debug!(%id,"adding dynamic component");
-          signature.components.insert(id, component_signature);
+          signature.operations.insert(id, component_signature);
         }
       }
     }
@@ -77,19 +76,24 @@ impl CoreCollection {
 }
 
 impl Collection for CoreCollection {
-  fn handle(&self, invocation: Invocation, data: Option<Value>) -> BoxFuture<Result<TransportStream, BoxError>> {
-    trace!(target = %invocation.target, id=%invocation.id, namespace = NS_CORE);
+  fn handle(
+    &self,
+    invocation: Invocation,
+    _stream: PacketStream,
+    data: Option<Value>,
+  ) -> BoxFuture<Result<PacketStream, BoxError>> {
+    trace!(target = %invocation.target, namespace = NS_CORE);
 
     let task = async move {
       match invocation.target.name() {
         CORE_ID_SENDER => {
-          sender::SenderComponent::default()
-            .handle(invocation.payload, data)
-            .await
+          let map = StreamMap::default();
+          sender::SenderOperation::default().handle(map, data).await
         }
-        CORE_ID_MERGE => merge::MergeComponent::default().handle(invocation.payload, data).await,
+        // TODO re-evaluate merge component
+        // CORE_ID_MERGE => merge::MergeComponent::default().handle(invocation.payload, data).await,
         _ => {
-          panic!("Core component {} not handled.", invocation.target.name());
+          panic!("Core operation {} not handled.", invocation.target.name());
         }
       }
     };

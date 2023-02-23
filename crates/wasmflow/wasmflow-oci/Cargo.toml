@@ -18,7 +18,7 @@ serde_yaml = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 tar = "0.4"
 tokio = { workspace = true, features = ["fs"] }
-wasmflow-sdk = { path = "../wasmflow-sdk", features = ["v1"] }
+wasmflow-interface = { path = "../wasmflow-interface" }
 wasmflow-wascap = { path = "../wasmflow-wascap" }
 
 [dev-dependencies]

@@ -1,30 +1,33 @@
 use serde_json::Value;
-use wasmflow_sdk::v1::transport::{MessageTransport, TransportStream, TransportWrapper};
+use wasmflow_packet_stream::{Packet, PacketStream};
+use wasmrs_rx::{FluxChannel, Observer};
 
-use crate::{Component, ExecutionError};
+use crate::interpreter::executor::error::ExecutionError;
+use crate::Operation;
 
 #[derive(Default)]
-pub(crate) struct SenderComponent {}
+pub(crate) struct SenderOperation {}
 
 #[derive(serde::Deserialize)]
 pub(crate) struct SenderData {
   output: Value,
 }
 
-impl Component for SenderComponent {
+impl Operation for SenderOperation {
   fn handle(
     &self,
-    _payload: wasmflow_sdk::v1::transport::TransportMap,
+    _payload: wasmflow_packet_stream::StreamMap,
     data: Option<Value>,
-  ) -> futures::future::BoxFuture<Result<TransportStream, crate::BoxError>> {
+  ) -> futures::future::BoxFuture<Result<PacketStream, crate::BoxError>> {
     let task = async move {
       let value = data.ok_or(ExecutionError::InvalidSenderData)?;
       let data: SenderData = serde_json::from_value(value).map_err(|_| ExecutionError::InvalidSenderData)?;
-      let packet = MessageTransport::success(&data.output);
-      let transport = TransportWrapper::new("output", packet);
-      let messages = vec![transport, TransportWrapper::done("output")];
-      let stream = TransportStream::new(tokio_stream::iter(messages.into_iter()));
-      Ok(stream)
+      let outstream = FluxChannel::new();
+
+      outstream.send(Packet::encode("output", data.output))?;
+      outstream.send(Packet::done("output"))?;
+
+      Ok(PacketStream::new(Box::new(outstream)))
     };
     Box::pin(task)
   }

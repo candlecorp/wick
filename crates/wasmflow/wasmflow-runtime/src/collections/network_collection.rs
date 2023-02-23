@@ -1,6 +1,7 @@
 use async_trait::async_trait;
 use tracing::Instrument;
 use uuid::Uuid;
+use wasmflow_packet_stream::{Invocation, PacketStream};
 use wasmflow_rpc::error::RpcError;
 use wasmflow_rpc::{RpcHandler, RpcResult};
 
@@ -23,7 +24,7 @@ impl Collection {
 
 #[async_trait]
 impl RpcHandler for Collection {
-  async fn invoke(&self, invocation: Invocation) -> RpcResult<TransportStream> {
+  async fn invoke(&self, invocation: Invocation, stream: PacketStream) -> RpcResult<PacketStream> {
     let target_url = invocation.target_url();
 
     let span = debug_span!(
@@ -38,7 +39,7 @@ impl RpcHandler for Collection {
     trace!(target = %target_url, "invoking");
 
     let result: InvocationResponse = network
-      .invoke(invocation)
+      .invoke(invocation, stream)
       .map_err(|e| RpcError::CollectionError(e.to_string()))?
       .instrument(span)
       .await
@@ -70,24 +71,25 @@ impl RpcHandler for Collection {
 #[cfg(test)]
 mod tests {
 
-  use wasmflow_sdk::v1::packet::PacketMap;
+  use wasmflow_packet_stream::{packet_stream, Packet};
 
   use super::*;
   use crate::test::prelude::{assert_eq, *};
   type Result<T> = anyhow::Result<T>;
 
   async fn request_log(collection: &Collection, data: &str) -> Result<String> {
-    let job_payload = PacketMap::from([("input", data)]);
+    let stream = packet_stream!(("input", data));
 
-    let invocation = Invocation::new_test(file!(), Entity::local("simple"), job_payload, None);
-    let mut outputs = collection.invoke(invocation).await?;
-    let output = outputs.drain_port("output").await?[0].clone();
-    println!("payload from [{}]: {:?}", output.port, output.payload);
-    let output_data: String = output.payload.deserialize()?;
+    let invocation = Invocation::new(Entity::test(file!()), Entity::local("simple"), None);
+    let mut outputs = collection.invoke(invocation, stream).await?;
+    let mut packets: Vec<_> = outputs.collect().await;
+    println!("packets: {:#?}", packets);
+    let _ = packets.pop();
+    let actual = packets.pop().unwrap().unwrap();
 
-    println!("doc_id: {:?}", output_data);
-    assert_eq!(output_data, data);
-    Ok(output_data)
+    println!("doc_id: {:?}", actual);
+    assert_eq!(actual, Packet::encode("output", data));
+    Ok(actual.payload.deserialize().unwrap())
   }
 
   #[test_logger::test(tokio::test)]

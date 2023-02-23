@@ -1,0 +1,40 @@
+[package]
+name = "wasmflow-packet-stream"
+version = "0.10.0"
+edition = "2021"
+license = "Apache-2.0"
+description = "SDK for native and WASM Wasmflow components"
+documentation = "https://wasmflow.com"
+keywords = ["wasm", "wasmflow", "actor", "flow"]
+categories = ["wasm"]
+exclude = ["tests/*", ".github/*", ".gitignore"]
+authors = ["Jarrod Overson <jsoverson@gmail.com>"]
+repository = "https://github.com/wasmflow/wasmflow-sdk"
+homepage = "https://wasmflow.com"
+
+[badges]
+maintenance = { status = "actively-developed" }
+
+[features]
+default = ["invocation"]
+invocation = ["uuid"]
+
+[dependencies]
+tracing = { workspace = true }
+wasmflow-entity = { path = "../wasmflow-entity", version = "0.10.0-beta.4" }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+uuid = { workspace = true, features = ["v4", "serde"], optional = true }
+thiserror = { workspace = true }
+wasmrs = { workspace = true }
+wasmrs-frames = { workspace = true, features = ["derive_serde"] }
+wasmrs-rx = { workspace = true }
+wasmrs-codec = { workspace = true }
+futures = { workspace = true }
+pin-project-lite = "0.2.9"
+# TODO asssess if this is needed here or if the payload error + metadata concept gets rolled into wasmrs
+bytes = { workspace = true, features = ["serde"] }
+parking_lot = { workspace = true }
+
+[dev-dependencies]
+anyhow = { workspace = true }

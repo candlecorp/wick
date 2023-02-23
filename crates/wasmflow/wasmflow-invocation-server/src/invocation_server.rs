@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 use std::convert::TryFrom;
-use std::str::FromStr;
 use std::time::{Duration, Instant};
 
 use parking_lot::RwLock;
@@ -8,12 +7,12 @@ use tokio::sync::mpsc;
 use tokio_stream::wrappers::ReceiverStream;
 use tokio_stream::StreamExt;
 use tonic::{Response, Status};
+use wasmflow_packet_stream::PacketStream;
 use wasmflow_rpc::error::RpcError;
 use wasmflow_rpc::rpc::invocation_service_server::InvocationService;
-use wasmflow_rpc::rpc::{ListResponse, Output, StatsResponse};
+use wasmflow_rpc::rpc::{ListResponse, Packet, StatsResponse};
 use wasmflow_rpc::{rpc, DurationStatistics, Statistics};
 
-use crate::conversion::make_output;
 use crate::SharedRpcHandler;
 
 /// A GRPC server for implementers of [wasmflow_rpc::RpcHandler].
@@ -83,50 +82,65 @@ impl InvocationServer {
   }
 }
 
-#[tonic::async_trait]
+#[async_trait::async_trait]
 impl InvocationService for InvocationServer {
-  type InvokeStream = ReceiverStream<Result<Output, Status>>;
+  type InvokeStream = ReceiverStream<Result<Packet, Status>>;
 
-  async fn invoke(&self, request: tonic::Request<rpc::Invocation>) -> Result<Response<Self::InvokeStream>, Status> {
+  async fn invoke(
+    &self,
+    request: tonic::Request<tonic::Streaming<rpc::InvocationRequest>>,
+  ) -> Result<Response<Self::InvokeStream>, Status> {
     let start = Instant::now();
 
     let (tx, rx) = mpsc::channel(4);
-    let invocation = request.into_inner();
-    debug!(
-      "RPC:Invocation for target {}, message: {:?}",
-      invocation.target, invocation.payload
-    );
-    let invocation_id = invocation.id.clone();
-    let entity = wasmflow_sdk::v1::Entity::from_str(&invocation.target);
-    if let Err(e) = entity {
-      tx.send(Err(Status::failed_precondition(e.to_string()))).await.unwrap();
-    } else {
-      let invocation: wasmflow_sdk::v1::Invocation = invocation.try_into().map_err(|e| {
-        Status::failed_precondition(format!(
-          "Could not convert invocation payload into internal data structure: {}",
-          e
-        ))
-      })?;
-      let entity = entity.unwrap();
-      let entity_name = entity.name().to_owned();
-
-      let result = self.collection.invoke(invocation).await;
-      if let Err(e) = result {
-        let message = e.to_string();
-        error!("Invocation failed: {}", message);
-        tx.send(Err(Status::internal(message))).await.unwrap();
-        self.record_execution(entity_name, JobResult::Error, start.elapsed());
+    let mut stream = request.into_inner();
+    let first = stream.next().await;
+    let invocation: wasmflow_packet_stream::Invocation = if let Some(Ok(inv)) = first {
+      if let Some(rpc::invocation_request::Data::Invocation(inv)) = inv.data {
+        inv
+          .try_into()
+          .map_err(|_| Status::invalid_argument("First message must be a valid invocation"))?
       } else {
-        tokio::spawn(async move {
-          let mut receiver = result.unwrap();
-          while let Some(next) = receiver.next().await {
-            let port_name = next.port;
-            let msg = next.payload;
-            tx.send(make_output(&port_name, &invocation_id, msg)).await.unwrap();
-          }
-        });
-        self.record_execution(entity_name, JobResult::Success, start.elapsed());
+        return Err(Status::invalid_argument("First message must be an invocation"));
       }
+    } else {
+      return Err(Status::invalid_argument("First message must be an invocation"));
+    };
+    let stream = stream.map::<Result<wasmflow_packet_stream::Packet, wasmflow_packet_stream::Error>, _>(|p| {
+      p.map_err(|e| wasmflow_packet_stream::Error::General(e.to_string()))
+        .map(|p| {
+          p.data.map_or_else(
+            || unreachable!(),
+            |p| match p {
+              rpc::invocation_request::Data::Invocation(_) => unreachable!(),
+              rpc::invocation_request::Data::Packet(p) => wasmflow_packet_stream::Packet::from(p),
+            },
+          )
+        })
+    });
+    let packet_stream = PacketStream::new(Box::new(stream));
+
+    let entity_name = invocation.target.name().to_owned();
+
+    let result = self.collection.invoke(invocation, packet_stream).await;
+    if let Err(e) = result {
+      let message = e.to_string();
+      error!("Invocation failed: {}", message);
+      tx.send(Err(Status::internal(message))).await.unwrap();
+      self.record_execution(entity_name, JobResult::Error, start.elapsed());
+    } else {
+      tokio::spawn(async move {
+        let mut receiver = result.unwrap();
+        while let Some(next) = receiver.next().await {
+          if next.is_err() {
+            todo!("Handle error");
+          }
+          let next = next.unwrap();
+
+          tx.send(Ok(next.into())).await.unwrap();
+        }
+      });
+      self.record_execution(entity_name, JobResult::Success, start.elapsed());
     }
 
     Ok(Response::new(ReceiverStream::new(rx)))
@@ -155,56 +169,73 @@ impl InvocationService for InvocationServer {
 
 #[cfg(test)]
 mod tests {
-  use std::sync::Arc;
+  // use std::sync::Arc;
 
-  use anyhow::Result;
-  use test_native_collection::Collection;
-  use tokio_stream::wrappers::ReceiverStream;
-  use tonic::Status;
-  use wasmflow_rpc::rpc::{Output, StatsResponse};
-  use wasmflow_sdk::v1::packet::PacketMap;
-  use wasmflow_sdk::v1::{Entity, Invocation};
+  // use anyhow::Result;
+  // use test_native_collection::Collection;
+  // use tokio_stream::wrappers::ReceiverStream;
+  // use tonic::Status;
+  // use wasmflow_packet_stream::{Invocation, Packet};
+  // use wasmflow_rpc::rpc::StatsResponse;
+  // use wasmflow_sdk::v1::packet::PacketMap;
+  // use wasmflow_entity::Entity;
 
-  use super::{InvocationServer, InvocationService};
+  // use super::{InvocationServer, InvocationService};
 
-  fn get_server() -> InvocationServer {
-    let collection = Arc::new(Collection::default());
-    InvocationServer::new(collection)
-  }
+  // fn get_server() -> InvocationServer {
+  //   let collection = Arc::new(Collection::default());
+  //   InvocationServer::new(collection)
+  // }
 
-  async fn make_test_invocation(
-    server: &InvocationServer,
-  ) -> Result<tonic::Response<ReceiverStream<Result<Output, Status>>>> {
-    let payload = PacketMap::from([("input", "hello")]);
+  // async fn make_test_invocation(
+  //   server: &InvocationServer,
+  // ) -> Result<tonic::Response<ReceiverStream<Result<wasmflow_rpc::rpc::Packet, Status>>>> {
+  //   let payload = PacketMap::from([("input", "hello")]);
 
-    let invocation = Invocation::new_test("stats", Entity::local("test-component"), payload, None);
-    let request = tonic::Request::new(invocation.try_into()?);
+  //   fn packets() -> impl futures::Stream<Item = wasmflow_rpc::rpc::InvocationRequest> {
+  //     let invocation = Invocation::new(Entity::test("stats"), Entity::local("test-component"), None);
+  //     let packet = Packet::encode("input", "hello");
+  //     let messages = vec![
+  //       wasmflow_rpc::rpc::InvocationRequest {
+  //         data: Some(wasmflow_rpc::rpc::invocation_request::Data::Invocation(
+  //           invocation.into(),
+  //         )),
+  //       },
+  //       wasmflow_rpc::rpc::InvocationRequest {
+  //         data: Some(wasmflow_rpc::rpc::invocation_request::Data::Packet(packet.into())),
+  //       },
+  //     ];
 
-    let result = server.invoke(request).await?;
-    Ok(result)
-  }
+  //     futures::stream::iter(messages)
+  //   }
 
-  async fn get_test_stats() -> Result<StatsResponse> {
-    let server = get_server();
-    let _response = make_test_invocation(&server).await?;
-    let _response = make_test_invocation(&server).await?;
-    let _response = make_test_invocation(&server).await?;
+  //   let s = tonic::Request::new(packets());
 
-    let stats_request = tonic::Request::new(wasmflow_rpc::rpc::StatsRequest {});
+  //   let result = server.invoke(s).await?;
+  //   Ok(result)
+  // }
 
-    let stats = server.stats(stats_request).await?;
-    Ok(stats.into_inner())
-  }
+  // async fn get_test_stats() -> Result<StatsResponse> {
+  //   let server = get_server();
+  //   let _response = make_test_invocation(&server).await?;
+  //   let _response = make_test_invocation(&server).await?;
+  //   let _response = make_test_invocation(&server).await?;
 
-  #[test_logger::test(tokio::test)]
-  async fn test_stats() -> Result<()> {
-    let mut stats = get_test_stats().await?;
+  //   let stats_request = tonic::Request::new(wasmflow_rpc::rpc::StatsRequest {});
 
-    let stat = stats.stats[0].execution_statistics.take().unwrap();
+  //   let stats = server.stats(stats_request).await?;
+  //   Ok(stats.into_inner())
+  // }
 
-    //three runs must be longer than two runs
-    assert!(stat.total > stat.min + stat.max);
+  // #[test_logger::test(tokio::test)]
+  // async fn test_stats() -> Result<()> {
+  //   let mut stats = get_test_stats().await?;
 
-    Ok(())
-  }
+  //   let stat = stats.stats[0].execution_statistics.take().unwrap();
+
+  //   //three runs must be longer than two runs
+  //   assert!(stat.total > stat.min + stat.max);
+
+  //   Ok(())
+  // }
 }

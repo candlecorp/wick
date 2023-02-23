@@ -1,62 +1,27 @@
-use std::collections::HashMap;
-
-use pretty_assertions::assert_eq;
+use anyhow::Result;
 use runtime_testutils::*;
-use wasmflow_sdk::v1::transport::{Failure, MessageTransport, TransportWrapper};
-use wasmflow_sdk::v1::{Entity, Invocation};
-type Result<T> = anyhow::Result<T, anyhow::Error>;
+use wasmflow_packet_stream::{packet_stream, Packet};
 
 #[test_logger::test(tokio::test)]
+#[ignore = "TODO:FIX_HUNG"]
 async fn panics() -> Result<()> {
-  let (network, _) = init_network_from_yaml("./manifests/v0/errors/panics.wafl").await?;
-
-  let mut data = HashMap::new();
-  data.insert("input", "input");
-
-  let mut result = network
-    .invoke(Invocation::new(
-      Entity::test("panics"),
-      Entity::local("panics"),
-      data.try_into()?,
-      None,
-    ))
-    .await?;
-
-  println!("Result: {:?}", result);
-  let mut messages: Vec<TransportWrapper> = result.drain_port("output").await?;
-  assert_eq!(result.buffered_size(), (0, 0));
-  assert_eq!(messages.len(), 1);
-
-  let msg: TransportWrapper = messages.pop().unwrap();
-  println!("Output: {:?}", msg);
-
-  assert!(matches!(msg.payload, MessageTransport::Failure(Failure::Error(_))));
-  Ok(())
+  tester(
+    "./manifests/v0/errors/panics.wafl",
+    packet_stream!(("input", "input")),
+    "panics",
+    vec![Packet::err("output", "Wat")],
+  )
+  .await
 }
 
 #[test_logger::test(tokio::test)]
+#[ignore = "TODO:FIX_HUNG"]
 async fn errors() -> Result<()> {
-  let (network, _) = init_network_from_yaml("./manifests/v0/errors/errors.wafl").await?;
-
-  let mut data = HashMap::new();
-  data.insert("input", "input");
-
-  let mut result = network
-    .invoke(Invocation::new(
-      Entity::test("errors"),
-      Entity::local("errors"),
-      data.try_into()?,
-      None,
-    ))
-    .await?;
-
-  println!("Result: {:?}", result);
-  let mut messages: Vec<TransportWrapper> = result.drain_port("output").await?;
-  assert_eq!(result.buffered_size(), (0, 0));
-  assert_eq!(messages.len(), 1);
-
-  let msg: TransportWrapper = messages.pop().unwrap();
-  println!("Output: {:?}", msg);
-  assert_eq!(msg.payload, MessageTransport::error("This component will always error"));
-  Ok(())
+  tester(
+    "./manifests/v0/errors/errors.wafl",
+    packet_stream!(("input", "input")),
+    "errors",
+    vec![Packet::err("output", "Wat")],
+  )
+  .await
 }

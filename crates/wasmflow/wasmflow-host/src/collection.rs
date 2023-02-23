@@ -2,11 +2,10 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use async_trait::async_trait;
+use wasmflow_interface::*;
+use wasmflow_packet_stream::{Invocation, PacketStream};
 use wasmflow_rpc::error::RpcError;
 use wasmflow_rpc::{RpcHandler, RpcResult};
-use wasmflow_sdk::v1::transport::TransportStream;
-use wasmflow_sdk::v1::types::*;
-use wasmflow_sdk::v1::Invocation;
 
 use crate::Host;
 
@@ -31,8 +30,8 @@ impl From<Host> for Collection {
 
 #[async_trait]
 impl RpcHandler for Collection {
-  async fn invoke(&self, invocation: Invocation) -> RpcResult<TransportStream> {
-    let outputs = self.host.invoke(invocation).await.map_err(RpcError::boxed)?;
+  async fn invoke(&self, invocation: Invocation, stream: PacketStream) -> RpcResult<PacketStream> {
+    let outputs = self.host.invoke(invocation, stream).await.map_err(RpcError::boxed)?;
 
     Ok(outputs)
   }
@@ -50,8 +49,8 @@ mod tests {
 
   use anyhow::Result as TestResult;
   use tokio_stream::StreamExt;
-  use wasmflow_sdk::v1::packet::PacketMap;
-  use wasmflow_sdk::v1::Entity;
+  use wasmflow_entity::Entity;
+  use wasmflow_packet_stream::{packet_stream, Packet};
 
   use super::*;
   use crate::HostBuilder;
@@ -64,16 +63,14 @@ mod tests {
     let collection: Collection = host.into();
     let input = "Hello world";
 
-    let job_payload = PacketMap::from(vec![("input", input)]);
+    let job_payload = packet_stream![("input", input)];
 
-    let invocation = Invocation::new_test(file!(), Entity::local("logger"), job_payload, None);
-    let mut outputs = collection.invoke(invocation).await?;
-    let output = outputs.next().await.unwrap();
-    println!("payload from [{}]: {:?}", output.port, output.payload);
-    let output: String = output.payload.deserialize()?;
+    let invocation = Invocation::new(Entity::test(file!()), Entity::local("logger"), None);
+    let mut outputs = collection.invoke(invocation, job_payload).await?;
+    let output = outputs.next().await.unwrap().unwrap();
 
     println!("output: {:?}", output);
-    assert_eq!(output, input);
+    assert_eq!(output, Packet::encode("output", input));
     Ok(())
   }
 }

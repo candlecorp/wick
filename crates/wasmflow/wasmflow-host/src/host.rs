@@ -10,13 +10,13 @@ use seeded_random::Seed;
 use uuid::Uuid;
 use wasmflow_collection_cli::options::{MeshOptions, Options as HostOptions, ServerOptions};
 use wasmflow_collection_cli::ServerState;
+use wasmflow_entity::Entity;
+use wasmflow_interface::CollectionSignature;
 use wasmflow_manifest::WasmflowManifest;
-use wasmflow_mesh::{Mesh, NatsOptions};
+// use wasmflow_mesh::{Mesh, NatsOptions};
+use wasmflow_packet_stream::{InherentData, Invocation, PacketStream};
 use wasmflow_rpc::{RpcHandler, SharedRpcHandler};
 use wasmflow_runtime::{Network, NetworkBuilder, NetworkCollection};
-use wasmflow_sdk::v1::transport::{TransportMap, TransportStream};
-use wasmflow_sdk::v1::types::CollectionSignature;
-use wasmflow_sdk::v1::{Entity, InherentData, Invocation};
 
 use crate::{Error, Result};
 
@@ -37,7 +37,7 @@ fn from_registry(id: Uuid) -> Arc<dyn RpcHandler + Send + Sync + 'static> {
 pub struct Host {
   id: String,
   network: Option<Network>,
-  mesh: Option<Arc<Mesh>>,
+  // mesh: Option<Arc<Mesh>>,
   manifest: WasmflowManifest,
   server_metadata: Option<ServerState>,
 }
@@ -48,7 +48,7 @@ impl Host {
   pub async fn start(&mut self, seed: Option<u64>) -> Result<()> {
     debug!("host starting");
 
-    self.mesh = self.get_mesh().await?;
+    // self.mesh = self.get_mesh().await?;
     self.start_network(seed.map(Seed::unsafe_new)).await?;
     let state = self.start_servers().await?;
     self.server_metadata = Some(state);
@@ -65,31 +65,31 @@ impl Host {
       .and_then(|state| state.rpc.as_ref().map(|rpc| rpc.addr))
   }
 
-  pub async fn connect_to_mesh(&mut self) -> Result<()> {
-    self.mesh = self.get_mesh().await?;
-    Ok(())
-  }
+  // pub async fn connect_to_mesh(&mut self) -> Result<()> {
+  //   self.mesh = self.get_mesh().await?;
+  //   Ok(())
+  // }
 
-  async fn get_mesh(&self) -> Result<Option<Arc<Mesh>>> {
-    if let Some(config) = &self.manifest.host().mesh {
-      if config.enabled {
-        debug!(address=%config.address,"connecting to mesh");
-        let mesh = Mesh::connect(NatsOptions {
-          address: config.address.clone(),
-          client_id: self.get_host_id().to_owned(),
-          creds_path: config.creds_path.clone(),
-          token: config.token.clone(),
-          timeout: self.manifest.host().timeout,
-        })
-        .await?;
-        Ok(Some(Arc::new(mesh)))
-      } else {
-        Ok(None)
-      }
-    } else {
-      Ok(None)
-    }
-  }
+  // async fn get_mesh(&self) -> Result<Option<Arc<Mesh>>> {
+  //   if let Some(config) = &self.manifest.host().mesh {
+  //     if config.enabled {
+  //       debug!(address=%config.address,"connecting to mesh");
+  //       let mesh = Mesh::connect(NatsOptions {
+  //         address: config.address.clone(),
+  //         client_id: self.get_host_id().to_owned(),
+  //         creds_path: config.creds_path.clone(),
+  //         token: config.token.clone(),
+  //         timeout: self.manifest.host().timeout,
+  //       })
+  //       .await?;
+  //       Ok(Some(Arc::new(mesh)))
+  //     } else {
+  //       Ok(None)
+  //     }
+  //   } else {
+  //     Ok(None)
+  //   }
+  // }
 
   pub fn get_signature(&self) -> Result<CollectionSignature> {
     match &self.network {
@@ -109,9 +109,9 @@ impl Host {
     if let Some(network) = self.network {
       let _ = network.shutdown().await;
     }
-    if let Some(mesh) = self.mesh {
-      let _ = mesh.shutdown().await;
-    }
+    // if let Some(mesh) = self.mesh {
+    //   let _ = mesh.shutdown().await;
+    // }
   }
 
   pub fn get_network(&self) -> Result<&Network> {
@@ -129,18 +129,18 @@ impl Host {
     );
 
     let mut network_builder = NetworkBuilder::from_definition(self.manifest.clone())?;
-    if let Some(mesh) = &self.mesh {
-      network_builder = network_builder.mesh(mesh.clone());
-    }
+    // if let Some(mesh) = &self.mesh {
+    //   network_builder = network_builder.mesh(mesh.clone());
+    // }
     if let Some(seed) = seed {
       network_builder = network_builder.with_seed(seed);
     }
     network_builder = network_builder.namespace(self.get_host_id());
     network_builder = network_builder.allow_latest(self.manifest.host().allow_latest);
     network_builder = network_builder.allow_insecure(self.manifest.host().insecure_registries.clone());
-    if let Some(mesh) = &self.mesh {
-      network_builder = network_builder.mesh(mesh.clone());
-    }
+    // if let Some(mesh) = &self.mesh {
+    //   network_builder = network_builder.mesh(mesh.clone());
+    // }
 
     let network = network_builder.build().await?;
 
@@ -184,21 +184,21 @@ impl Host {
   pub async fn request(
     &self,
     schematic: &str,
-    payload: TransportMap,
+    stream: PacketStream,
     data: Option<InherentData>,
-  ) -> Result<TransportStream> {
+  ) -> Result<PacketStream> {
     match &self.network {
       Some(network) => {
-        let invocation = Invocation::new(Entity::host(&self.id), Entity::local(schematic), payload, data);
-        Ok(network.invoke(invocation).await?)
+        let invocation = Invocation::new(Entity::host(&self.id), Entity::local(schematic), data);
+        Ok(network.invoke(invocation, stream).await?)
       }
       None => Err(crate::Error::InvalidHostState("No network available".into())),
     }
   }
 
-  pub async fn invoke(&self, invocation: Invocation) -> Result<TransportStream> {
+  pub async fn invoke(&self, invocation: Invocation, stream: PacketStream) -> Result<PacketStream> {
     match &self.network {
-      Some(network) => Ok(network.invoke(invocation).await?),
+      Some(network) => Ok(network.invoke(invocation, stream).await?),
       None => Err(crate::Error::InvalidHostState("No network available".into())),
     }
   }
@@ -259,7 +259,7 @@ impl HostBuilder {
     Host {
       id: host_id,
       network: None,
-      mesh: None,
+      // mesh: None,
       manifest: self.manifest,
       server_metadata: None,
     }
@@ -290,11 +290,13 @@ mod test {
   use std::str::FromStr;
 
   use anyhow::Result;
+  use futures::StreamExt;
   use http::Uri;
+  // use wasmflow_rpc::rpc::Invocation;
+  use wasmflow_entity::Entity;
   use wasmflow_invocation_server::connect_rpc_client;
   use wasmflow_manifest::host_definition::HttpConfig;
-  use wasmflow_rpc::rpc::Invocation;
-  use wasmflow_sdk::v1::Entity;
+  use wasmflow_packet_stream::{packet_stream, packets, Packet};
 
   use super::*;
   use crate::HostBuilder;
@@ -321,13 +323,15 @@ mod test {
     let mut host = HostBuilder::from_definition(manifest).build();
     host.start(None).await?;
     let passed_data = "logging output";
-    let payload: TransportMap = vec![("input", passed_data)].into();
-    let mut stream = host.request("logger", payload, None).await?;
-    let mut messages: Vec<_> = stream.drain_port("output").await?;
-    assert_eq!(messages.len(), 1);
-    let output = messages.pop().unwrap();
-    let result: String = output.payload.deserialize()?;
-    assert_eq!(result, passed_data);
+    let stream = packet_stream!(("input", passed_data));
+    let stream = host.request("logger", stream, None).await?;
+
+    let mut messages: Vec<_> = stream.collect().await;
+    assert_eq!(messages.len(), 2);
+    messages.pop();
+    let output = messages.pop().unwrap().unwrap();
+
+    assert_eq!(output, Packet::encode("output", passed_data));
     host.stop().await;
 
     Ok(())
@@ -350,12 +354,26 @@ mod test {
     println!("rpc server bound to : {}", address);
 
     let mut client = connect_rpc_client(Uri::from_str(&format!("http://{}", address)).unwrap()).await?;
+    println!("connected to server");
     let passed_data = "logging output";
-    let data = vec![("input", passed_data)].into();
-    let invocation: Invocation = super::Invocation::new(Entity::test("test"), Entity::local("logger"), data, None)
-      .try_into()
-      .unwrap();
-    let mut response = client.invoke(invocation).await.unwrap().into_inner();
+    let packets = packets![("input", passed_data)];
+    let invocation: wasmflow_rpc::rpc::Invocation =
+      super::Invocation::new(Entity::test("test"), Entity::local("logger"), None)
+        .try_into()
+        .unwrap();
+
+    let mut msgs = vec![wasmflow_rpc::rpc::InvocationRequest {
+      data: Some(wasmflow_rpc::rpc::invocation_request::Data::Invocation(invocation)),
+    }];
+
+    for packet in packets {
+      msgs.push(wasmflow_rpc::rpc::InvocationRequest {
+        data: Some(wasmflow_rpc::rpc::invocation_request::Data::Packet(packet.into())),
+      });
+    }
+    println!("invocation stream msgs: {:?}", msgs);
+    let mut response = client.invoke(futures::stream::iter(msgs)).await.unwrap().into_inner();
+    println!("got response");
     let next = response.message().await;
     println!("next: {:?}", next);
     let next = next.unwrap().unwrap();

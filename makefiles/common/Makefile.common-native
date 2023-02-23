@@ -1,3 +1,0 @@
-.phony: check
-check:
-	cargo check

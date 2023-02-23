@@ -1,16 +1,16 @@
 use std::collections::HashSet;
 
+use wasmflow_interface::{CollectionMap, CollectionSignature, OperationSignature, TypeSignature};
 use wasmflow_schematic_graph::iterators::{SchematicHop, WalkDirection};
-use wasmflow_schematic_graph::{ComponentKind, PortDirection};
-use wasmflow_sdk::v1::types::{CollectionMap, CollectionSignature, ComponentSignature, TypeSignature};
+use wasmflow_schematic_graph::{NodeKind, PortDirection};
 
 use crate::constants::*;
+use crate::error::ValidationError;
 use crate::graph::types::*;
 
 pub(crate) mod validator;
 use super::collections::get_id;
 use super::error::Error;
-use crate::ValidationError;
 
 #[must_use]
 #[derive(Debug)]
@@ -54,9 +54,9 @@ fn get_resolution_order(network: &Network) -> Result<Vec<Vec<&Schematic>>, Valid
     for schematic in schematics {
       let mut resolvable = true;
 
-      for component in schematic.components() {
+      for component in schematic.nodes() {
         match component.kind() {
-          ComponentKind::External(ext) => {
+          NodeKind::External(ext) => {
             let references_self = ext.namespace() == NS_SELF;
             let reference_will_have_resolved = will_resolve.contains(ext.name());
 
@@ -106,7 +106,7 @@ fn generate_self_signature(network: &Network, collections: &mut CollectionMap) -
     for schematic in batch {
       let signature = get_schematic_signature(schematic, collections)?;
       let map = collections.get_mut(NS_SELF).unwrap();
-      map.components.insert(schematic.name(), signature);
+      map.operations.insert(schematic.name(), signature);
     }
   }
   Ok(())
@@ -115,8 +115,8 @@ fn generate_self_signature(network: &Network, collections: &mut CollectionMap) -
 fn get_schematic_signature(
   schematic: &Schematic,
   collections: &CollectionMap,
-) -> Result<ComponentSignature, ValidationError> {
-  let mut schematic_signature = ComponentSignature::new(schematic.name());
+) -> Result<OperationSignature, ValidationError> {
+  let mut schematic_signature = OperationSignature::new(schematic.name());
 
   for port in schematic.input().outputs() {
     for hop in schematic.walk_from_port(port, WalkDirection::Down).skip(1) {
@@ -167,40 +167,40 @@ fn get_signature(
   collections: &CollectionMap,
 ) -> Result<Option<TypeSignature>, ValidationError> {
   let name = p.name();
-  match p.component().kind() {
-    ComponentKind::Input(_) => match kind {
+  match p.node().kind() {
+    NodeKind::Input(_) => match kind {
       PortDirection::In => Ok(None),
       PortDirection::Out => Ok(Some(TypeSignature::Value)),
     },
 
-    ComponentKind::Output(_) => match kind {
+    NodeKind::Output(_) => match kind {
       PortDirection::Out => Ok(None),
       PortDirection::In => Ok(Some(TypeSignature::Value)),
     },
-    ComponentKind::External(ext) | ComponentKind::Inherent(ext) => {
+    NodeKind::External(ext) | NodeKind::Inherent(ext) => {
       let ext_collection = collections
         .get(ext.namespace())
         .ok_or_else(|| ValidationError::MissingCollection(ext.namespace().to_owned()))?;
 
-      let component = p.component();
+      let operation = p.node();
 
-      let id = get_id(ext.namespace(), ext.name(), schematic, component.name());
+      let id = get_id(ext.namespace(), ext.name(), schematic, operation.name());
 
-      let component = ext_collection
-        .components
+      let operation = ext_collection
+        .operations
         .get(&id)
-        .ok_or(ValidationError::MissingComponent {
+        .ok_or(ValidationError::MissingOperation {
           namespace: ext.namespace().to_owned(),
           name: id.clone(),
         })?;
 
       let sig = match kind {
-        PortDirection::In => component.inputs.get(name),
-        PortDirection::Out => component.outputs.get(name),
+        PortDirection::In => operation.inputs.get(name),
+        PortDirection::Out => operation.outputs.get(name),
       };
 
       Ok(Some(sig.cloned().ok_or(ValidationError::MissingConnection {
-        component: ext.name().to_owned(),
+        operation: ext.name().to_owned(),
         namespace: ext.namespace().to_owned(),
         port: name.to_owned(),
       })?))

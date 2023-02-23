@@ -18,3 +18,4 @@ anyhow = { workspace = true }
 pretty_assertions = "1"
 logger = { path = "../logger" }
 test-logger = { path = "../../misc/test-logger" }
+tracing = { workspace = true }

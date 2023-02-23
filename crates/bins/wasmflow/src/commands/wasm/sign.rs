@@ -4,7 +4,7 @@ use std::path::PathBuf;
 
 use anyhow::Result;
 use clap::Args;
-use wasmflow_sdk::v1::types::CollectionSignature;
+use wasmflow_interface::CollectionSignature;
 use wasmflow_wascap::{sign_buffer_with_claims, ClaimsOptions};
 
 use crate::keys::{get_module_keys, GenerateCommon};

@@ -5,7 +5,7 @@ use std::time::Instant;
 use redis::aio::Connection;
 use redis::{FromRedisValue, Pipeline};
 use tokio::sync::RwLock;
-use tracing_futures::Instrument;
+use tracing::Instrument;
 use wasmflow_rpc::error::RpcError;
 use wasmflow_rpc::{RpcHandler, RpcResult};
 use wasmflow_sdk::v1::stateful::NativeDispatcher;

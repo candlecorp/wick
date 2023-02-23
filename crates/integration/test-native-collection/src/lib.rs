@@ -1,13 +1,9 @@
 use async_trait::async_trait;
+use futures::StreamExt;
+use wasmflow_interface::{component, HostedType};
+use wasmflow_packet_stream::{fan_out, Invocation, Observer, Packet, PacketStream};
 use wasmflow_rpc::error::RpcError;
-use wasmflow_rpc::{RpcHandler, RpcResult};
-use wasmflow_sdk::v1::stateful::NativeDispatcher;
-use wasmflow_sdk::v1::transport::TransportStream;
-use wasmflow_sdk::v1::types::HostedType;
-use wasmflow_sdk::v1::Invocation;
-
-use self::components::ComponentDispatcher;
-pub mod components;
+use wasmflow_rpc::{dispatch, RpcHandler, RpcResult};
 
 #[macro_use]
 extern crate tracing;
@@ -15,39 +11,59 @@ extern crate tracing;
 #[derive(Clone, Debug)]
 pub struct Context {}
 
-#[derive(Clone)]
-pub struct Collection {
-  context: Context,
-}
-
-impl std::default::Default for Collection {
-  fn default() -> Self {
-    Self { context: Context {} }
-  }
-}
+#[derive(Clone, Default)]
+pub struct Collection {}
 
 #[async_trait]
 impl RpcHandler for Collection {
-  async fn invoke(&self, invocation: Invocation) -> RpcResult<TransportStream> {
+  async fn invoke(&self, invocation: Invocation, stream: PacketStream) -> RpcResult<PacketStream> {
     let target = invocation.target_url();
     trace!("test collection invoke: {}", target);
-    let context = self.context.clone();
-    let dispatcher = ComponentDispatcher::default();
-    let result = dispatcher
-      .dispatch(invocation, context)
-      .await
-      .map_err(|e| RpcError::CollectionError(e.to_string()));
+    let stream = dispatch!(invocation, stream, {
+      "error" => error,
+      "test-component" => test_component,
+    });
     trace!("test collection result: {}", target);
-    let stream = result?;
 
-    Ok(TransportStream::from_packetstream(stream))
+    Ok(stream)
   }
 
   fn get_list(&self) -> RpcResult<Vec<HostedType>> {
     trace!("test collection get list");
-    let signature = components::get_signature();
+    let signature = component! {
+      "test-native-collection" => {
+        version: "0.1.0",
+        operations: {
+          "error" => {
+            inputs: {"input" => "string"},
+            outputs: {"output" => "string"},
+          },
+          "test-component" => {
+            inputs: {"input" => "string"},
+            outputs: {"output" => "string"},
+          }
+        }
+      }
+    };
     Ok(vec![HostedType::Collection(signature)])
   }
+}
+
+async fn error(_input: PacketStream) -> Result<PacketStream, anyhow::Error> {
+  Err(anyhow::anyhow!("Always errors"))
+}
+
+async fn test_component(mut input: PacketStream) -> Result<PacketStream, anyhow::Error> {
+  let (tx, stream) = PacketStream::new_channels();
+  let mut input = fan_out!(input, "input");
+  while let Some(Ok(input)) = input.next().await {
+    let input: String = input.payload.deserialize()?;
+    let output = Packet::encode("output", format!("TEST: {}", input));
+    tx.send(output)?;
+  }
+  tx.complete();
+
+  Ok(stream)
 }
 
 #[cfg(test)]
@@ -56,32 +72,27 @@ mod tests {
 
   use pretty_assertions::assert_eq;
   use tracing::*;
-  use wasmflow_sdk::v1::types::*;
-  use wasmflow_sdk::v1::Entity;
+  use wasmflow_entity::Entity;
+  use wasmflow_interface::*;
+  use wasmflow_packet_stream::packet_stream;
 
   use super::*;
-  use crate::components::test_component;
 
   #[test_logger::test(tokio::test)]
   async fn request() -> anyhow::Result<()> {
     let collection = Collection::default();
     let input = "some_input";
-    let job_payload = test_component::Inputs {
-      input: input.to_owned(),
-    };
+    let input_stream = packet_stream!(("input", input));
 
     let entity = Entity::local("test-component");
-    let invocation = Invocation::new_test(file!(), entity, job_payload, None);
+    let invocation = Invocation::new(Entity::test(file!()), entity, None);
 
-    let mut outputs = collection.invoke(invocation).await?;
-    let packets: Vec<_> = outputs.drain_port("output").await?;
-    let output = packets[0].clone();
+    let outputs = collection.invoke(invocation, input_stream).await?;
+    let mut packets: Vec<_> = outputs.collect().await;
+    let output = packets.pop().unwrap().unwrap();
 
-    println!("Received payload from [{}]", output.port);
-    let payload: String = output.payload.deserialize().unwrap();
-
-    println!("outputs: {:?}", payload);
-    assert_eq!(payload, "TEST: some_input");
+    println!("Received payload {:?}", output);
+    assert_eq!(output, Packet::encode("output", format!("TEST: {}", input)));
 
     Ok(())
   }
@@ -105,10 +116,11 @@ mod tests {
       version: "0.1.0".to_owned(),
       wellknown: vec![],
       name: Some("test-native-collection".to_owned()),
-      components: HashMap::from([
+      operations: HashMap::from([
         (
           "error".to_owned(),
-          ComponentSignature {
+          OperationSignature {
+            index: 0,
             name: "error".to_string(),
             inputs: HashMap::from([("input".to_owned(), TypeSignature::String)]).into(),
             outputs: HashMap::from([("output".to_owned(), TypeSignature::String)]).into(),
@@ -116,7 +128,8 @@ mod tests {
         ),
         (
           "test-component".to_owned(),
-          ComponentSignature {
+          OperationSignature {
+            index: 0,
             name: "test-component".to_string(),
             inputs: HashMap::from([("input".to_owned(), TypeSignature::String)]).into(),
             outputs: HashMap::from([("output".to_owned(), TypeSignature::String)]).into(),

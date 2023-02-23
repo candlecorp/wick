@@ -1,10 +1,9 @@
 pub(crate) mod prelude {
   pub(crate) use futures::FutureExt;
   pub(crate) use tokio_stream::StreamExt;
+  pub(crate) use wasmflow_entity::Entity;
+  pub(crate) use wasmflow_interface::*;
   pub(crate) use wasmflow_manifest::{CollectionDefinition, CollectionKind};
-  pub(crate) use wasmflow_sdk::v1::transport::{TransportStream, TransportWrapper};
-  pub(crate) use wasmflow_sdk::v1::types::*;
-  pub(crate) use wasmflow_sdk::v1::{Entity, Invocation};
 
   pub(crate) use crate::collections::InvocationHandler;
   pub(crate) use crate::dispatch::InvocationResponse;

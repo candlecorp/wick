@@ -1,28 +1,24 @@
+use futures::StreamExt;
 use log::debug;
 use test_native_collection::Collection;
+use wasmflow_entity::Entity;
+use wasmflow_packet_stream::{packet_stream, Invocation, Packet};
 use wasmflow_rpc::RpcHandler;
-use wasmflow_sdk::v1::packet::PacketMap;
 
 #[test_logger::test(tokio::test)]
 async fn request() -> anyhow::Result<()> {
   let collection = Collection::default();
   let input = "some_input";
-  let job_payload: PacketMap = vec![("input", input)].into();
-  let invocation = wasmflow_sdk::v1::Invocation::new_test(
-    file!(),
-    wasmflow_sdk::v1::Entity::local("test-component"),
-    job_payload,
-    None,
-  );
+  let stream = packet_stream![("input", input)];
+  let invocation = Invocation::new(Entity::test(file!()), Entity::local("test-component"), None);
 
-  let mut outputs = collection.invoke(invocation).await?;
-  let packets: Vec<_> = outputs.drain_port("output").await?;
-  let output = packets[0].clone();
-  println!("Received payload from [{}]", output.port);
-  let payload: String = output.payload.deserialize()?;
+  let outputs = collection.invoke(invocation, stream).await?;
+  let mut packets: Vec<_> = outputs.collect().await;
 
-  println!("outputs: {:?}", payload);
-  assert_eq!(payload, "TEST: some_input");
+  let output = packets.pop().unwrap().unwrap();
+  println!("Received payload [{:?}]", output);
+
+  assert_eq!(output, Packet::encode("output", "TEST: some_input"));
 
   Ok(())
 }

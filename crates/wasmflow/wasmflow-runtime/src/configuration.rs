@@ -7,7 +7,7 @@ use async_trait::async_trait;
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
 use serde::{Deserialize, Serialize};
-use wasmflow_sdk::v1::InherentData;
+use wasmflow_packet_stream::InherentData;
 use {serde_value, serde_yaml};
 
 use super::cli::CLI;

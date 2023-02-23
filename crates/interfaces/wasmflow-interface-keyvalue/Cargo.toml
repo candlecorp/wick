@@ -10,7 +10,6 @@ host = []
 guest = []
 
 [dependencies]
-wasmflow-sdk = { path = "../../wasmflow/wasmflow-sdk", features = ["v1"] }
 serde = { workspace = true, features = ["derive"] }
 
 [dev-dependencies]

@@ -1,0 +1,113 @@
+{
+  "name": "test-component",
+  "format": 1,
+  "version": "1",
+  "features": { "stateful": false, "streaming": false, "version": 0 },
+  "operations": {
+    "copy": {
+      "name": "copy",
+      "index": 0,
+      "inputs": {
+        "input": {
+          "type": "string"
+        },
+        "times": {
+          "type": "i8"
+        }
+      },
+      "outputs": {
+        "output": {
+          "type": "string"
+        }
+      }
+    },
+    "error": {
+      "name": "error",
+      "index": 0,
+      "inputs": {
+        "input": {
+          "type": "string"
+        }
+      },
+      "outputs": {
+        "output": {
+          "type": "string"
+        }
+      }
+    },
+    "reverse": {
+      "index": 0,
+      "name": "reverse",
+      "inputs": {
+        "input": {
+          "type": "string"
+        }
+      },
+      "outputs": {
+        "output": {
+          "type": "string"
+        }
+      }
+    },
+    "reverse-uppercase": {
+      "name": "reverse-uppercase",
+      "index": 0,
+      "inputs": {
+        "input": {
+          "type": "string"
+        },
+        "link": {
+          "type": "ref",
+          "ref": "#/types/CollectionLink"
+        }
+      },
+      "outputs": {
+        "output": {
+          "type": "string"
+        }
+      }
+    },
+    "uppercase": {
+      "name": "uppercase",
+      "index": 0,
+      "inputs": {
+        "input": {
+          "type": "string"
+        }
+      },
+      "outputs": {
+        "output": {
+          "type": "string"
+        }
+      }
+    },
+    "validate": {
+      "name": "validate",
+      "index": 0,
+      "inputs": {
+        "input": {
+          "type": "string"
+        }
+      },
+      "outputs": {
+        "output": {
+          "type": "string"
+        }
+      }
+    },
+    "map": {
+      "name": "map",
+      "index": 0,
+      "inputs": {
+        "input": {
+          "type": "struct"
+        }
+      },
+      "outputs": {
+        "output": {
+          "type": "struct"
+        }
+      }
+    }
+  }
+}

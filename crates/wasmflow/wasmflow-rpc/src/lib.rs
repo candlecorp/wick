@@ -108,17 +108,15 @@ pub use dyn_clone::clone_box;
 /// Module with generated Tonic & Protobuf code.
 pub use generated::wasmflow as rpc;
 pub use types::*;
-use wasmflow_sdk::v1::transport::TransportStream;
-use wasmflow_sdk::v1::types::HostedType;
-use wasmflow_sdk::v1::Invocation;
+use wasmflow_interface::HostedType;
 
-pub(crate) type Result<T> = std::result::Result<T, error::RpcError>;
+// pub(crate) type Result<T> = Result<T, error::RpcError>;
 
 /// The crate's error type.
 pub type Error = crate::error::RpcError;
 
 /// The Result type for [RpcHandler] implementations.
-pub type RpcResult<T> = std::result::Result<T, Box<error::RpcError>>;
+pub type RpcResult<T> = Result<T, Box<error::RpcError>>;
 
 /// The type of RpcHandler the default invocation server takes.
 pub type SharedRpcHandler = Arc<dyn RpcHandler + Send + Sync + 'static>;
@@ -133,13 +131,30 @@ where
   Self: 'static,
 {
   /// Handle an incoming request for a target entity.
-  async fn invoke(&self, invocation: Invocation) -> std::result::Result<TransportStream, Box<error::RpcError>>;
+  async fn invoke(
+    &self,
+    invocation: wasmflow_packet_stream::Invocation,
+    stream: wasmflow_packet_stream::PacketStream,
+  ) -> Result<wasmflow_packet_stream::PacketStream, Box<error::RpcError>>;
 
   /// List the entities this [RpcHandler] manages.
-  fn get_list(&self) -> std::result::Result<Vec<HostedType>, Box<error::RpcError>>;
+  fn get_list(&self) -> Result<Vec<HostedType>, Box<error::RpcError>>;
 
   /// Handle an incoming request for a target entity.
-  async fn shutdown(&self) -> std::result::Result<(), Box<error::RpcError>> {
+  async fn shutdown(&self) -> Result<(), Box<error::RpcError>> {
     Ok(())
   }
+}
+
+#[macro_export]
+macro_rules! dispatch {
+  ($inv:expr, $stream:expr, {$($name:expr => $handler:path),*,}) => {
+    {
+      match $inv.target.name() {
+        $($name => $handler($stream).await.map_err(|e| RpcError::ComponentError(e.to_string()))?,)*
+        _ => {
+          unreachable!()
+        }
+      }
+  }};
 }

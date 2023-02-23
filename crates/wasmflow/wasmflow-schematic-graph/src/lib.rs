@@ -87,20 +87,20 @@
 
 pub mod error;
 
-mod component;
 mod connection;
 mod network;
+mod node;
 mod port;
 mod schematic;
 
-pub use component::{Component, ComponentKind, ComponentPort, ComponentReference};
 pub use connection::Connection;
 pub use network::Network;
+pub use node::{Node, NodeKind, NodePort, NodeReference};
 pub use port::{PortDefinition, PortDirection, PortReference};
 pub use schematic::{
   iterators,
-  ComponentIndex,
   ConnectionIndex,
+  NodeIndex,
   PortIndex,
   Schematic,
   NS_SCHEMATIC,

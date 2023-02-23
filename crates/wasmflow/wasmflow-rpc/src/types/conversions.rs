@@ -3,10 +3,9 @@ use std::convert::{TryFrom, TryInto};
 use std::str::FromStr;
 use std::time::Duration;
 
-use wasmflow_sdk::v1 as sdk;
-use wasmflow_sdk::v1::packet::Packet;
-use wasmflow_sdk::v1::transport::TransportMap;
-use wasmflow_sdk::v1::{types as wasmflow, Entity};
+use wasmflow_entity::Entity;
+use wasmflow_interface as wasmflow;
+use wasmflow_packet_stream::{InherentData, Metadata, Packet, WickMetadata};
 
 use crate::error::RpcError;
 use crate::rpc::{InternalType, StructType};
@@ -75,7 +74,7 @@ impl TryFrom<rpc::CollectionSignature> for wasmflow::CollectionSignature {
           })
         })
         .collect::<Result<Vec<_>>>()?,
-      components: to_componentmap(v.components)?,
+      operations: to_componentmap(v.components)?,
       types: to_typemap(v.types)?,
       config: to_typemap(v.config)?,
     })
@@ -112,10 +111,11 @@ impl TryFrom<wasmflow::CollectionFeatures> for rpc::CollectionFeatures {
   }
 }
 
-impl TryFrom<rpc::Component> for wasmflow::ComponentSignature {
+impl TryFrom<rpc::Component> for wasmflow::OperationSignature {
   type Error = RpcError;
   fn try_from(v: rpc::Component) -> Result<Self> {
     Ok(Self {
+      index: v.index,
       name: v.name,
       inputs: to_fieldmap(v.inputs)?,
       outputs: to_fieldmap(v.outputs)?,
@@ -123,11 +123,12 @@ impl TryFrom<rpc::Component> for wasmflow::ComponentSignature {
   }
 }
 
-impl TryFrom<wasmflow::ComponentSignature> for rpc::Component {
+impl TryFrom<wasmflow::OperationSignature> for rpc::Component {
   type Error = RpcError;
-  fn try_from(v: wasmflow::ComponentSignature) -> Result<Self> {
+  fn try_from(v: wasmflow::OperationSignature) -> Result<Self> {
     Ok(Self {
       name: v.name,
+      index: v.index,
       kind: rpc::component::ComponentKind::Component.into(),
       inputs: from_fieldmap(v.inputs)?,
       outputs: from_fieldmap(v.outputs)?,
@@ -155,7 +156,7 @@ impl TryFrom<wasmflow::CollectionSignature> for rpc::CollectionSignature {
           })
         })
         .collect::<Result<Vec<_>>>()?,
-      components: from_componentmap(v.components)?,
+      components: from_componentmap(v.operations)?,
       types: from_typemap(v.types)?,
       config: from_typemap(v.config)?,
     })
@@ -206,164 +207,57 @@ impl From<DurationStatistics> for rpc::DurationStatistics {
   }
 }
 
-#[allow(clippy::from_over_into)]
-impl Into<Packet> for rpc::Packet {
-  fn into(self) -> Packet {
-    use rpc::packet::Data;
-    use wasmflow_sdk::v1::packet::v1;
-
-    if self.data.is_none() {
-      return v1::Packet::error("Invalid RPC packet. Received message but no data.").into();
-    }
-    let data = self.data.unwrap();
-
-    let packet = match data {
-      Data::Success(v) => {
-        let payload = v.payload.and_then(|v| v.data);
-        match payload {
-          Some(rpc::payload_data::Data::Messagepack(v)) => v1::Packet::Success(v1::Serialized::MessagePack(v)),
-          Some(rpc::payload_data::Data::Json(v)) => v1::Packet::Success(v1::Serialized::Json(v)),
-          None => v1::Packet::error("Invalid RPC packet. Received Success packet but no payload."),
-        }
-      }
-      Data::Failure(v) => {
-        let kind = rpc::failure::FailureKind::from_i32(v.r#type);
-        match kind {
-          Some(rpc::failure::FailureKind::Error) => v1::Packet::error(v.payload),
-          Some(rpc::failure::FailureKind::Exception) => v1::Packet::exception(v.payload),
-          None => v1::Packet::error(format!(
-            "Invalid RPC packet. Received Failure packet with invalid kind '{}'.",
-            v.r#type
-          )),
-        }
-      }
-      Data::Signal(v) => {
-        let kind = rpc::signal::OutputSignal::from_i32(v.r#type);
-
-        match kind {
-          None => v1::Packet::error(format!(
-            "Invalid RPC packet. Received Signal packet with invalid kind '{}'.",
-            v.r#type
-          )),
-          Some(kind) => match kind {
-            rpc::signal::OutputSignal::Done => v1::Packet::Signal(v1::Signal::Done),
-            rpc::signal::OutputSignal::OpenBracket => v1::Packet::Signal(v1::Signal::OpenBracket),
-            rpc::signal::OutputSignal::CloseBracket => v1::Packet::Signal(v1::Signal::CloseBracket),
-          },
-        }
-      }
+impl From<Packet> for rpc::Packet {
+  fn from(value: Packet) -> Self {
+    let md = rpc::Metadata {
+      done: value.extra.is_done(),
+      port: value.extra.stream().to_owned(),
+      index: value.metadata.index,
     };
-    packet.into()
+    rpc::Packet {
+      data: Some(value.payload.into()),
+      metadata: Some(md),
+    }
   }
 }
 
-/// Converts a HashMap of [MessageKind] to a [TransportMap].
-pub fn convert_messagekind_map(rpc_map: HashMap<String, rpc::Packet>) -> TransportMap {
-  let mut transport_map = TransportMap::default();
-  for (k, v) in rpc_map {
-    transport_map.insert(k, v.into());
+impl From<rpc::Metadata> for Metadata {
+  fn from(v: rpc::Metadata) -> Self {
+    Self {
+      index: v.index,
+      extra: Some(WickMetadata::new(v.port, false).encode()),
+    }
   }
-  transport_map
 }
 
-/// Converts a [TransportMap] to a HashMap of [MessageKind].
-#[must_use]
-pub fn convert_transport_map(transport_map: TransportMap) -> HashMap<String, rpc::Packet> {
-  let mut rpc_map: HashMap<String, rpc::Packet> = HashMap::new();
-  for (k, v) in transport_map.into_inner() {
-    rpc_map.insert(k, v.clone().into());
-  }
-  rpc_map
-}
-
-impl TryFrom<sdk::Invocation> for rpc::Invocation {
-  type Error = RpcError;
-  fn try_from(inv: sdk::Invocation) -> Result<Self> {
-    Ok(Self {
+impl From<wasmflow_packet_stream::Invocation> for rpc::Invocation {
+  fn from(inv: wasmflow_packet_stream::Invocation) -> Self {
+    Self {
       origin: inv.origin.url(),
       target: inv.target.url(),
-      payload: convert_transport_map(inv.payload),
       id: inv.id.as_hyphenated().to_string(),
       tx_id: inv.tx_id.as_hyphenated().to_string(),
       inherent: inv.inherent.map(|d| rpc::InherentData {
         seed: d.seed,
         timestamp: d.timestamp,
       }),
-      config: normalize_serialization_out(inv.config)?,
-    })
-  }
-}
-
-impl TryFrom<sdk::transport::Serialized> for rpc::Serialized {
-  type Error = RpcError;
-  fn try_from(v: sdk::transport::Serialized) -> Result<Self> {
-    let result = match v {
-      sdk::transport::Serialized::MessagePack(v) => rpc::Serialized {
-        payload: Some(rpc::PayloadData {
-          data: Some(rpc::payload_data::Data::Messagepack(v)),
-        }),
-      },
-      sdk::transport::Serialized::Struct(v) => rpc::Serialized {
-        payload: Some(rpc::PayloadData {
-          data: Some(rpc::payload_data::Data::Messagepack(
-            sdk::codec::messagepack::serialize(&v).unwrap(),
-          )),
-        }),
-      },
-      sdk::transport::Serialized::Json(v) => rpc::Serialized {
-        payload: Some(rpc::PayloadData {
-          data: Some(rpc::payload_data::Data::Json(v)),
-        }),
-      },
-    };
-    Ok(result)
-  }
-}
-
-impl TryFrom<rpc::Serialized> for sdk::transport::Serialized {
-  type Error = RpcError;
-  fn try_from(v: rpc::Serialized) -> Result<Self> {
-    let data = v.payload.and_then(|v| v.data);
-
-    match data {
-      Some(rpc::payload_data::Data::Messagepack(v)) => Ok(sdk::transport::Serialized::MessagePack(v)),
-      Some(rpc::payload_data::Data::Json(v)) => Ok(sdk::transport::Serialized::Json(v)),
-      None => Err(RpcError::Internal(
-        "Invalid RPC message, serialized data did not contain a payload",
-      )),
     }
   }
 }
 
-fn normalize_serialization_in(packet: Option<rpc::Serialized>) -> Result<Option<sdk::transport::Serialized>> {
-  match packet {
-    Some(packet) => Ok(Some(packet.try_into()?)),
-    None => Ok(None),
-  }
-}
-
-fn normalize_serialization_out(packet: Option<sdk::transport::Serialized>) -> Result<Option<rpc::Serialized>> {
-  match packet {
-    Some(packet) => Ok(Some(packet.try_into()?)),
-    None => Ok(None),
-  }
-}
-
-impl TryFrom<rpc::Invocation> for sdk::Invocation {
+impl TryFrom<rpc::Invocation> for wasmflow_packet_stream::Invocation {
   type Error = RpcError;
   fn try_from(inv: rpc::Invocation) -> Result<Self> {
-    let config = normalize_serialization_in(inv.config)?;
     Ok(Self {
-      origin: Entity::from_str(&inv.origin).map_err(|e| RpcError::SdkError(e.into()))?,
-      target: Entity::from_str(&inv.target).map_err(|e| RpcError::SdkError(e.into()))?,
-      payload: convert_messagekind_map(inv.payload),
+      origin: Entity::from_str(&inv.origin).map_err(|_e| RpcError::TypeConversion)?,
+      target: Entity::from_str(&inv.target).map_err(|_e| RpcError::TypeConversion)?,
+
       id: uuid::Uuid::from_str(&inv.id).map_err(|e| RpcError::UuidParseError(inv.id, e))?,
       tx_id: uuid::Uuid::from_str(&inv.tx_id).map_err(|e| RpcError::UuidParseError(inv.tx_id, e))?,
-      inherent: inv.inherent.map(|d| sdk::InherentData {
+      inherent: inv.inherent.map(|d| InherentData {
         seed: d.seed,
         timestamp: d.timestamp,
       }),
-      config,
     })
   }
 }
@@ -371,33 +265,37 @@ impl TryFrom<rpc::Invocation> for sdk::Invocation {
 impl TryFrom<wasmflow::TypeSignature> for rpc::TypeSignature {
   type Error = RpcError;
   fn try_from(t: wasmflow::TypeSignature) -> Result<Self> {
-    use rpc::simple_type::ApexType;
+    use rpc::simple_type::PrimitiveType;
     use rpc::type_signature::Signature;
-    use rpc::{LinkType, ListType, MapType, OptionalType, RefType};
+    use rpc::{InnerType, LinkType, MapType, RefType};
     let sig: Signature = match t {
-      wasmflow::TypeSignature::I8 => ApexType::I8.into(),
-      wasmflow::TypeSignature::I16 => ApexType::I16.into(),
-      wasmflow::TypeSignature::I32 => ApexType::I32.into(),
-      wasmflow::TypeSignature::I64 => ApexType::I64.into(),
-      wasmflow::TypeSignature::U8 => ApexType::U8.into(),
-      wasmflow::TypeSignature::U16 => ApexType::U16.into(),
-      wasmflow::TypeSignature::U32 => ApexType::U32.into(),
-      wasmflow::TypeSignature::U64 => ApexType::U64.into(),
-      wasmflow::TypeSignature::F32 => ApexType::F32.into(),
-      wasmflow::TypeSignature::F64 => ApexType::F64.into(),
-      wasmflow::TypeSignature::Bool => ApexType::Bool.into(),
-      wasmflow::TypeSignature::String => ApexType::String.into(),
-      wasmflow::TypeSignature::Datetime => ApexType::Datetime.into(),
-      wasmflow::TypeSignature::Bytes => ApexType::Bytes.into(),
-      wasmflow::TypeSignature::Value => ApexType::Value.into(),
+      wasmflow::TypeSignature::I8 => PrimitiveType::I8.into(),
+      wasmflow::TypeSignature::I16 => PrimitiveType::I16.into(),
+      wasmflow::TypeSignature::I32 => PrimitiveType::I32.into(),
+      wasmflow::TypeSignature::I64 => PrimitiveType::I64.into(),
+      wasmflow::TypeSignature::U8 => PrimitiveType::U8.into(),
+      wasmflow::TypeSignature::U16 => PrimitiveType::U16.into(),
+      wasmflow::TypeSignature::U32 => PrimitiveType::U32.into(),
+      wasmflow::TypeSignature::U64 => PrimitiveType::U64.into(),
+      wasmflow::TypeSignature::F32 => PrimitiveType::F32.into(),
+      wasmflow::TypeSignature::F64 => PrimitiveType::F64.into(),
+      wasmflow::TypeSignature::Bool => PrimitiveType::Bool.into(),
+      wasmflow::TypeSignature::String => PrimitiveType::String.into(),
+      wasmflow::TypeSignature::Datetime => PrimitiveType::Datetime.into(),
+      wasmflow::TypeSignature::Bytes => PrimitiveType::Bytes.into(),
+      wasmflow::TypeSignature::Value => PrimitiveType::Value.into(),
+      wasmflow::TypeSignature::Custom(v) => Signature::Custom(v),
+      wasmflow::TypeSignature::Stream { item } => Signature::Stream(Box::new(InnerType {
+        r#type: Some(item.try_into()?),
+      })),
       wasmflow::TypeSignature::Internal(t) => match t {
         wasmflow::InternalType::ComponentInput => Signature::Internal(InternalType::ComponentInput.into()),
       },
       wasmflow::TypeSignature::Ref { reference } => Signature::Ref(RefType { r#ref: reference }),
-      wasmflow::TypeSignature::List { element } => Signature::List(Box::new(ListType {
+      wasmflow::TypeSignature::List { element } => Signature::List(Box::new(InnerType {
         r#type: Some(element.try_into()?),
       })),
-      wasmflow::TypeSignature::Optional { option } => Signature::Optional(Box::new(OptionalType {
+      wasmflow::TypeSignature::Optional { option } => Signature::Optional(Box::new(InnerType {
         r#type: Some(option.try_into()?),
       })),
       wasmflow::TypeSignature::Map { key, value } => Signature::Map(Box::new(MapType {
@@ -406,6 +304,14 @@ impl TryFrom<wasmflow::TypeSignature> for rpc::TypeSignature {
       })),
       wasmflow::TypeSignature::Link { schemas } => Signature::Link(LinkType { schemas }),
       wasmflow::TypeSignature::Struct => Signature::Struct(StructType {}),
+      wasmflow::TypeSignature::AnonymousStruct(v) => {
+        let v = v
+          .0
+          .into_iter()
+          .map(|(k, v)| Ok((k, v.try_into()?)))
+          .collect::<Result<_>>()?;
+        Signature::AnonymousStruct(rpc::AnonymousStruct { fields: v })
+      }
     };
     Ok(Self { signature: Some(sig) })
   }
@@ -414,7 +320,7 @@ impl TryFrom<wasmflow::TypeSignature> for rpc::TypeSignature {
 impl TryFrom<rpc::TypeSignature> for wasmflow::TypeSignature {
   type Error = RpcError;
   fn try_from(t: rpc::TypeSignature) -> Result<Self> {
-    use rpc::simple_type::ApexType;
+    use rpc::simple_type::PrimitiveType;
     use rpc::type_signature::Signature;
 
     type DestType = wasmflow::TypeSignature;
@@ -422,31 +328,32 @@ impl TryFrom<rpc::TypeSignature> for wasmflow::TypeSignature {
     let sig = match t.signature {
       Some(sig) => match sig {
         Signature::Simple(t) => {
-          let t = ApexType::from_i32(t.r#type);
+          let t = PrimitiveType::from_i32(t.r#type);
           match t {
             Some(t) => match t {
-              ApexType::I8 => DestType::I8,
-              ApexType::I16 => DestType::I16,
-              ApexType::I32 => DestType::I32,
-              ApexType::I64 => DestType::I64,
+              PrimitiveType::I8 => DestType::I8,
+              PrimitiveType::I16 => DestType::I16,
+              PrimitiveType::I32 => DestType::I32,
+              PrimitiveType::I64 => DestType::I64,
 
-              ApexType::U8 => DestType::U8,
-              ApexType::U16 => DestType::U16,
-              ApexType::U32 => DestType::U32,
-              ApexType::U64 => DestType::U64,
+              PrimitiveType::U8 => DestType::U8,
+              PrimitiveType::U16 => DestType::U16,
+              PrimitiveType::U32 => DestType::U32,
+              PrimitiveType::U64 => DestType::U64,
 
-              ApexType::F32 => DestType::F32,
-              ApexType::F64 => DestType::F64,
+              PrimitiveType::F32 => DestType::F32,
+              PrimitiveType::F64 => DestType::F64,
 
-              ApexType::Bool => DestType::Bool,
-              ApexType::String => DestType::String,
-              ApexType::Datetime => DestType::Datetime,
-              ApexType::Bytes => DestType::Bytes,
-              ApexType::Value => DestType::Value,
+              PrimitiveType::Bool => DestType::Bool,
+              PrimitiveType::String => DestType::String,
+              PrimitiveType::Datetime => DestType::Datetime,
+              PrimitiveType::Bytes => DestType::Bytes,
+              PrimitiveType::Value => DestType::Value,
             },
             None => return err,
           }
         }
+        Signature::Custom(v) => DestType::Custom(v),
         Signature::Map(map) => DestType::Map {
           key: match map.key_type {
             Some(v) => v.try_into()?,
@@ -459,6 +366,12 @@ impl TryFrom<rpc::TypeSignature> for wasmflow::TypeSignature {
         },
         Signature::List(list) => DestType::List {
           element: match list.r#type {
+            Some(v) => v.try_into()?,
+            None => return err,
+          },
+        },
+        Signature::Stream(t) => DestType::Stream {
+          item: match t.r#type {
             Some(v) => v.try_into()?,
             None => return err,
           },
@@ -478,11 +391,18 @@ impl TryFrom<rpc::TypeSignature> for wasmflow::TypeSignature {
           t.map_or_else(
             || todo!(),
             |t| match t {
-              InternalType::ComponentInput => DestType::Internal(sdk::types::InternalType::ComponentInput),
+              InternalType::ComponentInput => DestType::Internal(wasmflow::InternalType::ComponentInput),
             },
           )
         }
         Signature::Struct(_) => DestType::Struct,
+        Signature::AnonymousStruct(v) => DestType::AnonymousStruct(
+          v.fields
+            .into_iter()
+            .map(|(k, v)| Ok((k, v.try_into()?)))
+            .collect::<Result<HashMap<_, wasmflow::TypeSignature>>>()?
+            .into(),
+        ),
       },
       None => return err,
     };
@@ -517,14 +437,14 @@ impl From<rpc::SimpleType> for rpc::type_signature::Signature {
   }
 }
 
-impl From<rpc::simple_type::ApexType> for rpc::SimpleType {
-  fn from(t: rpc::simple_type::ApexType) -> Self {
+impl From<rpc::simple_type::PrimitiveType> for rpc::SimpleType {
+  fn from(t: rpc::simple_type::PrimitiveType) -> Self {
     Self { r#type: t.into() }
   }
 }
 
-impl From<rpc::simple_type::ApexType> for rpc::type_signature::Signature {
-  fn from(t: rpc::simple_type::ApexType) -> Self {
+impl From<rpc::simple_type::PrimitiveType> for rpc::type_signature::Signature {
+  fn from(t: rpc::simple_type::PrimitiveType) -> Self {
     Self::Simple(rpc::SimpleType { r#type: t.into() })
   }
 }
@@ -644,7 +564,7 @@ fn from_typemap(map: wasmflow::TypeMap) -> Result<HashMap<String, rpc::TypeDefin
   Ok(tmap)
 }
 
-fn to_componentmap(map: HashMap<String, rpc::Component>) -> Result<wasmflow::ComponentMap> {
+fn to_componentmap(map: HashMap<String, rpc::Component>) -> Result<wasmflow::OperationMap> {
   let mut tmap = HashMap::new();
   for (k, v) in map {
     tmap.insert(k, v.try_into()?);
@@ -652,7 +572,7 @@ fn to_componentmap(map: HashMap<String, rpc::Component>) -> Result<wasmflow::Com
   Ok(tmap.into())
 }
 
-fn from_componentmap(map: wasmflow::ComponentMap) -> Result<HashMap<String, rpc::Component>> {
+fn from_componentmap(map: wasmflow::OperationMap) -> Result<HashMap<String, rpc::Component>> {
   let mut tmap = HashMap::new();
   for (k, v) in map.into_inner() {
     tmap.insert(k, v.try_into()?);

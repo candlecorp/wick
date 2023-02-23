@@ -1,9 +1,0 @@
-
-
-#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, Clone)]
-pub struct Config {
-  {{#each fields }}
-  #[serde(rename = "{{@key}}")]
-  pub {{snakeCase @key}}: {{> expand-type . }},
-  {{/each}}
-}

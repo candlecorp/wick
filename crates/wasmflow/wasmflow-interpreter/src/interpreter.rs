@@ -9,10 +9,11 @@ use std::sync::Arc;
 
 use seeded_random::{Random, Seed};
 use tracing_futures::Instrument;
-use wasmflow_sdk::v1::transport::TransportStream;
-use wasmflow_sdk::v1::types::CollectionSignature;
-use wasmflow_sdk::v1::{Entity, Invocation};
+use wasmflow_entity::Entity;
+use wasmflow_interface::CollectionSignature;
+use wasmflow_packet_stream::{Invocation, PacketStream};
 
+use self::channel::InterpreterDispatchChannel;
 use self::collections::HandlerMap;
 use self::error::Error;
 use self::event_loop::EventLoop;
@@ -23,7 +24,8 @@ use crate::graph::types::*;
 use crate::interpreter::channel::InterpreterChannel;
 use crate::interpreter::collections::collection_collection::CollectionCollection;
 use crate::interpreter::collections::schematic_collection::SchematicCollection;
-use crate::{Collection, ExecutionError, InterpreterDispatchChannel, NamespaceHandler, Observer};
+use crate::interpreter::executor::error::ExecutionError;
+use crate::{Collection, NamespaceHandler, Observer};
 
 #[must_use]
 #[derive()]
@@ -104,7 +106,7 @@ impl Interpreter {
     })
   }
 
-  async fn invoke_schematic(&self, invocation: Invocation) -> Result<TransportStream, Error> {
+  async fn invoke_schematic(&self, invocation: Invocation, stream: PacketStream) -> Result<PacketStream, Error> {
     let dispatcher = self.dispatcher.clone();
     let name = invocation.target.name().to_owned();
     let schematic = self
@@ -124,15 +126,17 @@ impl Interpreter {
       executor
         .invoke(
           invocation,
+          stream,
           self.rng.seed(),
           self.collections.clone(),
           self.self_collection.clone(),
         )
+        .instrument(tracing::span::Span::current())
         .await?,
     )
   }
 
-  pub async fn invoke(&self, invocation: Invocation) -> Result<TransportStream, Error> {
+  pub async fn invoke(&self, invocation: Invocation, stream: PacketStream) -> Result<PacketStream, Error> {
     let known_targets = || {
       let mut hosted: Vec<_> = self.collections.collections().keys().cloned().collect();
       if let Some(ns) = &self.namespace {
@@ -140,10 +144,12 @@ impl Interpreter {
       }
       hosted
     };
+    let span = debug_span!("invoke");
+
     let stream = match &invocation.target {
-      Entity::Component(ns, _) => {
+      Entity::Operation(ns, _) => {
         if ns == NS_SELF || ns == Entity::LOCAL || Some(ns) == self.namespace.as_ref() {
-          self.invoke_schematic(invocation).await?
+          self.invoke_schematic(invocation, stream).instrument(span).await?
         } else {
           trace!(?invocation);
           self
@@ -151,8 +157,8 @@ impl Interpreter {
             .get(ns)
             .ok_or_else(|| Error::TargetNotFound(invocation.target.clone(), known_targets()))?
             .collection
-            .handle(invocation, None)
-            .instrument(trace_span!("collection invocation"))
+            .handle(invocation, stream, None)
+            .instrument(span)
             .await
             .map_err(ExecutionError::CollectionError)?
         }

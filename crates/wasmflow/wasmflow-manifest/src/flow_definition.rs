@@ -7,8 +7,8 @@ use std::str::FromStr;
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use wasmflow_packet_stream::PacketPayload;
 use wasmflow_parser::parse::v0::parse_id;
-use wasmflow_sdk::v1::transport::MessageTransport;
 
 use crate::default::{parse_default, process_default};
 use crate::{Error, Result};
@@ -264,9 +264,9 @@ pub struct SenderData {
 
 impl SenderData {}
 
-impl From<SenderData> for MessageTransport {
+impl From<SenderData> for PacketPayload {
   fn from(v: SenderData) -> Self {
-    MessageTransport::success(&v.inner)
+    PacketPayload::serialize(v)
   }
 }
 

@@ -1,0 +1,30 @@
+[package]
+name = "wick-wasmrs-macros"
+version = "0.10.0"
+edition = "2021"
+license = "Apache-2.0"
+description = "SDK for native and WASM Wasmflow components"
+documentation = "https://wasmflow.com"
+keywords = ["wasm", "wasmflow", "actor", "flow"]
+categories = ["wasm"]
+exclude = ["tests/*", ".github/*", ".gitignore"]
+authors = ["Jarrod Overson <jsoverson@gmail.com>"]
+repository = "https://github.com/wasmflow/wasmflow-sdk"
+homepage = "https://wasmflow.com"
+
+[badges]
+maintenance = { status = "actively-developed" }
+
+[features]
+
+[dependencies]
+wasmflow-packet-stream = { path = "../wasmflow-packet-stream", default-features = false }
+tracing = { workspace = true }
+wasmrs = { workspace = true }
+wasmrs-runtime = { workspace = true }
+# wasmrs-rx = { workspace = true }
+# wasmrs-codec = { workspace = true }
+futures = { workspace = true }
+tokio = { workspace = true }
+
+[dev-dependencies]

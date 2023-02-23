@@ -85,8 +85,98 @@
 // Add exceptions here
 #![allow(missing_docs)]
 
-pub mod collection;
-pub mod components;
-pub mod error;
-pub use collection::Collection;
-use collection::Context;
+mod macros;
+mod operations;
+use seeded_random::Seed;
+use wasmflow_interface::{component, HostedType};
+use wasmflow_packet_stream::{Invocation, PacketStream};
+use wasmflow_rpc::error::RpcError;
+use wasmflow_rpc::{dispatch, RpcHandler, RpcResult};
+
+#[macro_use]
+extern crate tracing;
+
+#[derive(Clone, Debug, Copy)]
+pub struct Context {}
+
+#[derive(Debug)]
+#[must_use]
+pub struct Collection {
+  #[allow(unused)]
+  seed: Seed,
+}
+
+impl Collection {
+  pub fn new(seed: Seed) -> Self {
+    Self { seed }
+  }
+}
+
+#[async_trait::async_trait]
+impl RpcHandler for Collection {
+  async fn invoke(&self, invocation: Invocation, stream: PacketStream) -> RpcResult<PacketStream> {
+    let target = invocation.target_url();
+    trace!("test collection invoke: {}", target);
+    let stream = dispatch!(invocation, stream, {
+          "core::error" => operations::core::error::job,
+          "core::log" => operations::core::log::job,
+          "core::panic" => operations::core::panic::job,
+          "math::add" => operations::math::add::job,
+          "math::subtract" => operations::math::subtract::job,
+          "rand::bytes" => operations::rand::bytes::job,
+          "rand::string" => operations::rand::string::job,
+          "rand::uuid" => operations::rand::uuid::job,
+          "string::concat" => operations::string::concat::job,
+    });
+    trace!("test collection result: {}", target);
+
+    Ok(stream)
+  }
+
+  fn get_list(&self) -> RpcResult<Vec<HostedType>> {
+    let signature = component! {
+      "wasmflow-stdlib" => {
+        version: "0.1.0",
+        operations: {
+          "core::error" => {
+            inputs: { "input" => "string" },
+            outputs: { "output" => "string" },
+          },
+          "core::log" => {
+            inputs: { "input" => "string" },
+            outputs: { "output" => "string" },
+          },
+          "core::panic" => {
+            inputs: { "input" => "string" },
+            outputs: { "output" => "string" },
+          },
+          "math::add" => {
+            inputs: { "left" => "u64", "right" => "u64" },
+            outputs: { "output" => "u64" },
+          },
+          "math::subtract" => {
+            inputs: { "left" => "u64", "right" => "u64" },
+            outputs: { "output" => "u64" },
+          },
+          "rand::bytes" => {
+            inputs: { "seed" => "u64", "length" => "u32" },
+            outputs: { "output" => "bytes" },
+          },
+          "rand::string" => {
+            inputs: { "seed" => "u64", "length" => "u32" },
+            outputs: { "output" => "string" },
+          },
+          "rand::uuid" => {
+            inputs: { "seed" => "u64" },
+            outputs: { "output" => "string" },
+          },
+          "string::concat" => {
+            inputs: { "left" => "string", "right" => "string" },
+            outputs: { "output" => "string" },
+          }
+        }
+      }
+    };
+    Ok(vec![HostedType::Collection(signature)])
+  }
+}

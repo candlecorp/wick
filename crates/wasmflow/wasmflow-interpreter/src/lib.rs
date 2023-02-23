@@ -87,25 +87,17 @@
 
 pub mod constants;
 mod default;
+pub mod error;
 pub mod graph;
 mod interpreter;
 
-pub use interpreter::channel::error::{Error as ChannelError, RequestError};
-pub use interpreter::channel::{error, Event, EventKind, InterpreterDispatchChannel};
-pub use interpreter::collections::internal_collection::oneshot::OneShotComponent;
-pub use interpreter::collections::{Collection, Component, HandlerMap, NamespaceHandler};
-pub use interpreter::error::Error as InterpreterError;
-pub use interpreter::event_loop::state::{State, TransactionMap};
-pub use interpreter::event_loop::{EventLoop, EventLoopError, Observer};
-pub use interpreter::executor::error::ExecutionError;
-pub use interpreter::executor::transaction::statistics::TransactionStatistics;
-pub use interpreter::executor::transaction::Transaction;
-pub use interpreter::executor::SchematicExecutor;
-pub use interpreter::{Interpreter, InterpreterOptions};
-
-pub use crate::interpreter::program::validator::error::{SchematicInvalid, ValidationError};
-
-pub type BoxError = Box<dyn std::error::Error + Send + Sync>;
+pub(crate) type BoxError = Box<dyn std::error::Error + Send + Sync>;
 
 #[macro_use]
 extern crate tracing;
+
+pub use interpreter::channel::{Event, EventKind};
+pub use interpreter::collections::{Collection, HandlerMap, NamespaceHandler, Operation};
+pub use interpreter::event_loop::state::State;
+pub use interpreter::event_loop::Observer;
+pub use interpreter::{Interpreter, InterpreterOptions};

@@ -1,0 +1,21 @@
+[package]
+name = "wasmflow-entity"
+version = "0.10.0"
+edition = "2021"
+license = "Apache-2.0"
+description = "Entities found in a Wasmflow network"
+documentation = "https://wasmflow.com"
+keywords = ["wasmflow", "flow"]
+exclude = ["tests/*", ".github/*", ".gitignore"]
+repository = "https://github.com/wasmflow/wasmflow-sdk"
+homepage = "https://wasmflow.com"
+
+[badges]
+maintenance = { status = "actively-developed" }
+
+[dependencies]
+serde = { workspace = true, features = ["derive"] }
+thiserror = { workspace = true }
+url = "2.2"
+
+[dev-dependencies]

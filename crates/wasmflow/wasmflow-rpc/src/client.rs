@@ -2,16 +2,16 @@ use std::error::Error;
 use std::path::PathBuf;
 use std::time::Duration;
 
-use tokio_stream::StreamExt;
+use tokio_stream::{Stream, StreamExt};
 use tonic::transport::{Certificate, Channel, ClientTlsConfig, Identity, Uri};
 use tracing::debug;
-use wasmflow_sdk::v1::transport::{MessageTransport, TransportMap, TransportStream, TransportWrapper};
-use wasmflow_sdk::v1::types::HostedType;
-use wasmflow_sdk::v1::{Entity, InherentData, Invocation};
+use wasmflow_interface::HostedType;
+use wasmflow_packet_stream::{Invocation, Packet, PacketStream};
 
 use crate::error::RpcClientError;
+use crate::generated;
 use crate::rpc::invocation_service_client::InvocationServiceClient;
-use crate::rpc::{ListRequest, StatsRequest, StatsResponse};
+use crate::rpc::{InvocationRequest, ListRequest, StatsRequest, StatsResponse};
 
 /// Create an RPC client form common configuration
 pub async fn make_rpc_client<T: TryInto<Uri> + Send>(
@@ -121,8 +121,11 @@ impl RpcClient {
   }
 
   /// Send an invoke RPC command with a raw RPC [Invocation] object.
-  pub async fn invoke_raw(&mut self, request: crate::rpc::Invocation) -> Result<TransportStream, RpcClientError> {
-    debug!("Making invocation: {:?}", request);
+  pub async fn invoke_raw(
+    &mut self,
+    request: impl Stream<Item = InvocationRequest> + Send + Sync + 'static,
+  ) -> Result<PacketStream, RpcClientError> {
+    debug!("Making invocation ");
     let result = self
       .inner
       .invoke(request)
@@ -131,40 +134,57 @@ impl RpcClient {
     debug!("Invocation result: {:?}", result);
     let stream = result.into_inner();
 
-    let mapped = stream.map::<TransportWrapper, _>(|o| -> TransportWrapper {
-      match o {
-        Ok(o) => o.into(),
-        Err(e) => TransportWrapper::component_error(MessageTransport::error(format!(
-          "Error converting RPC output to MessageTransports: {}",
-          e
-        ))),
-      }
+    let mapped = stream.map::<Result<Packet, _>, _>(|o| match o {
+      Ok(o) => Ok(o.into()),
+      Err(e) => Err(wasmflow_packet_stream::Error::General(e.to_string())),
     });
-    Ok(TransportStream::new(mapped))
+    Ok(PacketStream::new(Box::new(mapped)))
   }
 
   /// Send an invoke RPC command with an [Invocation] object.
-  pub async fn invoke(&mut self, invocation: Invocation) -> Result<TransportStream, RpcClientError> {
+  pub async fn invoke(
+    &mut self,
+    invocation: Invocation,
+    mut stream: PacketStream,
+  ) -> Result<PacketStream, RpcClientError> {
+    let (tx, rx) = tokio::sync::mpsc::unbounded_channel();
+    tx.send(InvocationRequest {
+      data: Some(generated::wasmflow::invocation_request::Data::Invocation(
+        invocation.into(),
+      )),
+    })
+    .map_err(|_e| RpcClientError::UnspecifiedConnectionError)?;
+    tokio::spawn(async move {
+      while let Some(packet) = stream.next().await {
+        let packet = packet.map_or_else(|e| Packet::component_error(e.to_string()), |p| p);
+        tx.send(InvocationRequest {
+          data: Some(generated::wasmflow::invocation_request::Data::Packet(packet.into())),
+        })
+        .map_err(|_e| RpcClientError::UnspecifiedConnectionError)?;
+      }
+      Ok::<_, RpcClientError>(())
+    });
+
     self
-      .invoke_raw(invocation.try_into().map_err(RpcClientError::ConversionFailed)?)
+      .invoke_raw(tokio_stream::wrappers::UnboundedReceiverStream::new(rx))
       .await
   }
 
-  /// Make an invocation with data passed as a JSON string.
-  pub async fn invoke_from_json(
-    &mut self,
-    origin: Entity,
-    component: Entity,
-    data: &str,
-    transpose: bool,
-    inherent_data: Option<InherentData>,
-  ) -> Result<TransportStream, RpcClientError> {
-    let mut payload = TransportMap::from_json_output(data).map_err(|e| RpcClientError::Sdk(e.into()))?;
-    if transpose {
-      payload.transpose_output_name();
-    }
-    let invocation = Invocation::new(origin, component, payload, inherent_data);
+  // /// Make an invocation with data passed as a JSON string.
+  // pub async fn invoke_from_json(
+  //   &mut self,
+  //   origin: Entity,
+  //   component: Entity,
+  //   data: &str,
+  //   transpose: bool,
+  //   inherent_data: Option<InherentData>,
+  // ) -> Result<PacketStream, RpcClientError> {
+  //   let mut payload = TransportMap::from_json_output(data).map_err(|e| RpcClientError::Sdk(e.into()))?;
+  //   if transpose {
+  //     payload.transpose_output_name();
+  //   }
+  //   let invocation = Invocation::new(origin, component, payload, inherent_data);
 
-    self.invoke(invocation).await
-  }
+  //   self.invoke(invocation).await
+  // }
 }

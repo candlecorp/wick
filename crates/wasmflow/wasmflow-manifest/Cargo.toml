@@ -7,8 +7,8 @@ version = "0.1.0"
 publish = false
 
 [dependencies]
-wasmflow-sdk = { path = "../wasmflow-sdk", features = ["v1"] }
 wasmflow-parser = { path = "../wasmflow-parser" }
+wasmflow-packet-stream = { path = "../wasmflow-packet-stream" }
 regex = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
