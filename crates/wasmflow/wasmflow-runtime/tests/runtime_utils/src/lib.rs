@@ -84,7 +84,10 @@
 // Add exceptions here
 #![allow(missing_docs)]
 
+use futures::stream::StreamExt;
+use wasmflow_entity::Entity;
 use wasmflow_manifest::WasmflowManifest;
+use wasmflow_packet_stream::{InherentData, Invocation, Packet, PacketStream};
 use wasmflow_runtime::{Network, NetworkBuilder};
 
 #[macro_use]
@@ -100,4 +103,27 @@ pub async fn init_network_from_yaml(path: &str) -> anyhow::Result<(Network, uuid
 
   let nuid = network.uid;
   Ok((network, nuid))
+}
+
+pub async fn tester(path: &str, stream: PacketStream, target: &str, mut expected: Vec<Packet>) -> anyhow::Result<()> {
+  let (network, _) = init_network_from_yaml(path).await?;
+  let inherent = InherentData::new(1, 1000);
+
+  let result = network
+    .invoke(
+      Invocation::new(Entity::test("simple schematic"), Entity::local(target), Some(inherent)),
+      stream,
+    )
+    .await?;
+
+  println!("Result: {:?}", result);
+  let messages: Vec<_> = result.collect().await;
+  assert_eq!(messages.len(), expected.len());
+  expected.reverse();
+  for packet in messages {
+    let expected = expected.pop().unwrap();
+    assert_eq!(packet.unwrap(), expected);
+  }
+
+  Ok(())
 }

@@ -9,13 +9,12 @@ default = ["host"]
 host = []
 
 [dependencies]
-wasmflow-sdk = { path = "../../wasmflow/wasmflow-sdk", features = ["v1"] }
 wasmflow-collection-cli = { path = "../../wasmflow/wasmflow-collection-cli" }
 wasmflow-rpc = { path = "../../wasmflow/wasmflow-rpc" }
-wasmflow-interface-keyvalue = { path = "../../interfaces/wasmflow-interface-keyvalue", features = [
-  "host",
-  "guest",
-] }
+# wasmflow-interface-keyvalue = { path = "../../interfaces/wasmflow-interface-keyvalue", features = [
+#   "host",
+#   "guest",
+# ] }
 redis = { version = "0.22", features = ["tokio-comp"] }
 thiserror = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
@@ -26,7 +25,6 @@ once_cell = { workspace = true }
 tokio-util = { version = "0.7", features = ["codec"] }
 clap = { workspace = true, features = ["derive", "env"] }
 tracing = { workspace = true }
-tracing-futures = { workspace = true }
 
 [dev-dependencies]
 logger = { path = "../../wasmflow/logger" }

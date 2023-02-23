@@ -4,7 +4,7 @@ network:
   collections:
     - namespace: wapc
       kind: WaPC
-      reference: ../../integration/test-wasm-component/build/test_component.signed.wasm
+      reference: ../../integration/test-baseline-component/build/baseline.signed.wasm
   schematics:
     - name: short_circuit
       collections:
@@ -17,7 +17,7 @@ network:
         SENDER:
           id: core::sender
           data:
-            output: "1234512345"
+            output: '1234512345'
       connections:
         - <> => validate_password[input]
         - validate_password[output] => cat[left]

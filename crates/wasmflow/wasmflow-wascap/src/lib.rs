@@ -86,6 +86,7 @@
 // !!END_LINTS
 // Add exceptions here
 #![allow(unused)]
+#![recursion_limit = "512"]
 
 /// The module that contains the component claims definition.
 mod component;
@@ -115,7 +116,7 @@ pub use claims::{
 #[cfg(test)]
 mod test {
   use anyhow::Result;
-  use wasmflow_sdk::v1::types::CollectionSignature;
+  use wasmflow_interface::CollectionSignature;
   static MODULE_BYTES: &[u8] = include_bytes!("../test/test_wasi_component.wasm");
 
   use super::*;

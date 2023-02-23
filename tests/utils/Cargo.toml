@@ -6,8 +6,7 @@ license = "Apache-2.0"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
-wasmflow-sdk = { path = "../../crates/wasmflow/wasmflow-sdk", features = [
-  "v1",
+wasmflow-packet-stream = { path = "../../crates/wasmflow/wasmflow-packet-stream", features = [
 ] }
 anyhow = "1.0"
 maplit = "1.0"

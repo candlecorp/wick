@@ -23,7 +23,7 @@ pub(crate) async fn handle_command(opts: super::TestCommand, bytes: Vec<u8>) -> 
   let host_builder = HostBuilder::from_definition(config);
 
   let mut host = host_builder.build();
-  host.connect_to_mesh().await?;
+  // host.connect_to_mesh().await?;
   host.start_network(opts.seed.map(Seed::unsafe_new)).await?;
 
   let collection: wasmflow_host::Collection = host.into();

@@ -1,14 +1,13 @@
 use futures::future::BoxFuture;
 use serde_json::Value;
+use wasmflow_interface::{CollectionFeatures, CollectionSignature, OperationSignature, TypeSignature};
+use wasmflow_packet_stream::{Invocation, PacketStream};
 use wasmflow_schematic_graph::{SCHEMATIC_INPUT, SCHEMATIC_OUTPUT};
-use wasmflow_sdk::v1::transport::TransportStream;
-use wasmflow_sdk::v1::types::{CollectionFeatures, CollectionSignature, ComponentSignature, TypeSignature};
-use wasmflow_sdk::v1::Invocation;
 
 use crate::constants::*;
-use crate::{BoxError, Collection, Component};
+use crate::{BoxError, Collection};
 
-pub(crate) mod oneshot;
+// pub(crate) mod oneshot;
 
 #[derive(Debug)]
 pub(crate) struct InternalCollection {
@@ -22,7 +21,7 @@ impl Default for InternalCollection {
       .version("0.0.0")
       .features(CollectionFeatures::v0(false, false))
       .add_component(
-        ComponentSignature::new(INTERNAL_ID_INHERENT)
+        OperationSignature::new(INTERNAL_ID_INHERENT)
           .add_input("seed", TypeSignature::U64)
           .add_input("timestamp", TypeSignature::U64)
           .add_output("seed", TypeSignature::U64)
@@ -34,7 +33,12 @@ impl Default for InternalCollection {
 }
 
 impl Collection for InternalCollection {
-  fn handle(&self, invocation: Invocation, data: Option<Value>) -> BoxFuture<Result<TransportStream, BoxError>> {
+  fn handle(
+    &self,
+    invocation: Invocation,
+    stream: PacketStream,
+    _config: Option<Value>,
+  ) -> BoxFuture<Result<PacketStream, BoxError>> {
     trace!(target = %invocation.target, id=%invocation.id,namespace = NS_INTERNAL);
     let op = invocation.target.name().to_owned();
 
@@ -43,9 +47,7 @@ impl Collection for InternalCollection {
       if op == SCHEMATIC_OUTPUT {
         panic!("Output component should not be executed");
       } else if is_oneshot {
-        oneshot::OneShotComponent::default()
-          .handle(invocation.payload, data)
-          .await
+        Ok(stream)
       } else {
         panic!("Internal component {} not handled.", op);
       }

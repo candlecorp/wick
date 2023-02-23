@@ -1,10 +1,10 @@
-use wasmflow_sdk::v1::transport::{MessageTransport, Serialized, TransportMap};
+use wasmflow_packet_stream::Packet;
 
 use crate::Error;
 
-/// Parse CLI arguments into a [TransportMap]
-pub fn parse_args(args: &[String]) -> Result<TransportMap, Error> {
-  let mut map = TransportMap::default();
+/// Parse CLI arguments into a [PacketStream]
+pub fn parse_args(args: &[String]) -> Result<Vec<Packet>, Error> {
+  let mut packets = Vec::new();
   let mut iter = args.iter();
   while let Some(next) = iter.next() {
     if !next.starts_with("--") {
@@ -23,18 +23,21 @@ pub fn parse_args(args: &[String]) -> Result<TransportMap, Error> {
       }
     };
     let payload = if is_valid(value) {
-      MessageTransport::Success(Serialized::Json(value.to_owned()))
+      Packet::encode(name, serde_json::from_str::<serde_json::Value>(value).unwrap())
     } else {
       debug!(
         "Input '{}' for argument '{}' is not valid JSON. Wrapping it with quotes to make it a valid string value.",
         value, name
       );
-      MessageTransport::Success(Serialized::Json(format!("\"{}\"", value)))
+      Packet::encode(
+        name,
+        serde_json::from_str::<serde_json::Value>(&format!("\"{}\"", value)).unwrap(),
+      )
     };
-    map.insert(name, payload);
+    packets.push(payload);
   }
 
-  Ok(map)
+  Ok(packets)
 }
 
 #[must_use]
@@ -61,29 +64,25 @@ mod tests {
   #[test_logger::test]
   fn parse_separate_args() -> Result<()> {
     let args = to_vec(&["--input-a", "value-a"]);
-    let mut map = parse_args(&args)?;
-    let value: String = map.consume("input-a")?;
-    assert_eq!(value, "value-a");
+    let packets = parse_args(&args)?;
+    assert_eq!(packets[0], Packet::encode("input-a", "value-a"));
     Ok(())
   }
 
   #[test_logger::test]
   fn parse_combined_args() -> Result<()> {
     let args = to_vec(&["--input-a=value-a"]);
-    let mut map = parse_args(&args)?;
-    let value: String = map.consume("input-a")?;
-    assert_eq!(value, "value-a");
+    let packets = parse_args(&args)?;
+    assert_eq!(packets[0], Packet::encode("input-a", "value-a"));
     Ok(())
   }
 
   #[test_logger::test]
   fn parse_mixed_args() -> Result<()> {
     let args = to_vec(&["--input-a", "value-a", "--input-b=value-b"]);
-    let mut map = parse_args(&args)?;
-    let value: String = map.consume("input-a")?;
-    assert_eq!(value, "value-a");
-    let value: String = map.consume("input-b")?;
-    assert_eq!(value, "value-b");
+    let packets = parse_args(&args)?;
+    assert_eq!(packets[0], Packet::encode("input-a", "value-a"));
+    assert_eq!(packets[1], Packet::encode("input-b", "value-b"));
     Ok(())
   }
 
@@ -106,9 +105,8 @@ mod tests {
   #[test_logger::test]
   fn parse_arg_numeric() -> Result<()> {
     let args = to_vec(&["--num", "2000"]);
-    let mut map = parse_args(&args)?;
-    let value: i32 = map.consume("num")?;
-    assert_eq!(value, 2000);
+    let packets = parse_args(&args)?;
+    assert_eq!(packets[0], Packet::encode("num", 2000));
     Ok(())
   }
 

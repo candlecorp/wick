@@ -10,7 +10,7 @@ pub enum ValidationError {
   MissingCollection(String),
 
   #[error("Missing component '{name}' on namespace '{namespace}'")]
-  MissingComponent { namespace: String, name: String },
+  MissingOperation { namespace: String, name: String },
 
   #[error("Invalid port '{port}' on component '{namespace}::{component}'")]
   InvalidPort {
@@ -19,11 +19,11 @@ pub enum ValidationError {
     component: String,
   },
 
-  #[error("Input port '{port}' on component '{namespace}::{component}' not connected to anything")]
+  #[error("Input port '{port}' on component '{namespace}::{operation}' not connected to anything")]
   MissingConnection {
     port: String,
     namespace: String,
-    component: String,
+    operation: String,
   },
 
   #[error("Unused output port '{port}' on component '{namespace}::{component}'")]

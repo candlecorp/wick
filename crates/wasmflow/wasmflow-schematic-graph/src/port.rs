@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use crate::schematic::PortIndex;
 use crate::util::AsStr;
-use crate::ComponentIndex;
+use crate::NodeIndex;
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct PortDefinition {
@@ -27,16 +27,16 @@ impl Display for PortDefinition {
 
 #[derive(Debug, Clone, PartialEq, Eq, Copy, Hash)]
 pub struct PortReference {
-  pub(crate) component_index: ComponentIndex,
+  pub(crate) node_index: NodeIndex,
   pub(crate) port_index: PortIndex,
   pub(crate) direction: PortDirection,
 }
 
 impl PortReference {
   #[must_use]
-  pub fn new(component_index: ComponentIndex, port_index: PortIndex, direction: PortDirection) -> Self {
+  pub fn new(node_index: NodeIndex, port_index: PortIndex, direction: PortDirection) -> Self {
     Self {
-      component_index,
+      node_index,
       port_index,
       direction,
     }
@@ -47,8 +47,8 @@ impl PortReference {
   }
 
   #[must_use]
-  pub fn component_index(&self) -> ComponentIndex {
-    self.component_index
+  pub fn node_index(&self) -> NodeIndex {
+    self.node_index
   }
 
   #[must_use]
@@ -66,8 +66,8 @@ impl AsRef<PortReference> for PortReference {
 impl Display for PortReference {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     match self.direction {
-      PortDirection::In => write!(f, "{}.IN.{}", self.component_index, self.port_index),
-      PortDirection::Out => write!(f, "{}.OUT.{}", self.component_index, self.port_index),
+      PortDirection::In => write!(f, "{}.IN.{}", self.node_index, self.port_index),
+      PortDirection::Out => write!(f, "{}.OUT.{}", self.node_index, self.port_index),
     }
   }
 }

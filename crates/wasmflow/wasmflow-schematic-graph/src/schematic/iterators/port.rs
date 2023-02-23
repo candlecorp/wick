@@ -1,7 +1,7 @@
 use super::*;
-use crate::component::ComponentPort;
+use crate::node::NodePort;
 use crate::port::PortDirection;
-use crate::{ComponentIndex, PortReference};
+use crate::{NodeIndex, PortReference};
 
 #[derive(Debug, Clone)]
 #[must_use]
@@ -18,8 +18,8 @@ where
     Self { schematic, port }
   }
 
-  pub fn component(&self) -> ComponentHop<DATA> {
-    ComponentHop::new(self.schematic, self.port.component_index)
+  pub fn node(&self) -> NodeHop<DATA> {
+    NodeHop::new(self.schematic, self.port.node_index)
   }
 
   pub fn connections(&self) -> Connections<DATA> {
@@ -31,8 +31,8 @@ where
     get_port_name(self.schematic, &self.port)
   }
 
-  pub fn inner(&self) -> &ComponentPort {
-    get_ports_component(self.schematic, &self.port)
+  pub fn inner(&self) -> &NodePort {
+    get_ports_node(self.schematic, &self.port)
   }
 
   pub fn direction(&self) -> PortDirection {
@@ -61,21 +61,17 @@ pub struct Ports<'graph, DATA> {
   pub(super) direction: Option<PortDirection>,
   pub(super) ports: Vec<PortReference>,
   pub(super) cur_index: usize,
-  pub(super) component_index: ComponentIndex,
+  pub(super) node_index: NodeIndex,
   schematic: &'graph Schematic<DATA>,
 }
 
 impl<'graph, DATA> Ports<'graph, DATA> {
-  pub(crate) fn new(
-    schematic: &'graph Schematic<DATA>,
-    component_index: ComponentIndex,
-    ports: Vec<PortReference>,
-  ) -> Self {
+  pub(crate) fn new(schematic: &'graph Schematic<DATA>, node_index: NodeIndex, ports: Vec<PortReference>) -> Self {
     Self {
       direction: ports.get(0).map(|p| *p.direction()),
       ports,
       cur_index: 0,
-      component_index,
+      node_index,
       schematic,
     }
   }
@@ -111,12 +107,12 @@ fn display<DATA>(schematic: &Schematic<DATA>, port: &PortReference) -> String
 where
   DATA: Clone,
 {
-  let component = &schematic.components[port.component_index];
+  let node = &schematic.nodes[port.node_index];
   let (port, dir) = match port.direction {
-    PortDirection::In => (&component.inputs()[port.port_index], "IN"),
-    PortDirection::Out => (&component.outputs()[port.port_index], "OUT"),
+    PortDirection::In => (&node.inputs()[port.port_index], "IN"),
+    PortDirection::Out => (&node.outputs()[port.port_index], "OUT"),
   };
-  format!("{}.{}.{}", component, dir, port)
+  format!("{}.{}.{}", node, dir, port)
 }
 
 impl<'graph, DATA> std::fmt::Display for Ports<'graph, DATA>

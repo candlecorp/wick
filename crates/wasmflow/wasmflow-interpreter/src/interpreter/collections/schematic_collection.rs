@@ -5,13 +5,14 @@ use parking_lot::Mutex;
 use seeded_random::{Random, Seed};
 use serde_json::Value;
 use tracing_futures::Instrument;
-use wasmflow_sdk::v1::transport::TransportStream;
-use wasmflow_sdk::v1::types::CollectionSignature;
-use wasmflow_sdk::v1::Invocation;
+use wasmflow_interface::CollectionSignature;
+use wasmflow_packet_stream::{Invocation, PacketStream};
 
 use crate::constants::*;
+use crate::interpreter::channel::InterpreterDispatchChannel;
+use crate::interpreter::executor::SchematicExecutor;
 use crate::interpreter::program::ProgramState;
-use crate::{BoxError, Collection, HandlerMap, InterpreterDispatchChannel, SchematicExecutor};
+use crate::{BoxError, Collection, HandlerMap};
 
 #[derive(thiserror::Error, Debug, Clone, PartialEq, Eq)]
 pub(crate) enum Error {
@@ -68,8 +69,13 @@ impl SchematicCollection {
 }
 
 impl Collection for SchematicCollection {
-  fn handle(&self, invocation: Invocation, _config: Option<Value>) -> BoxFuture<Result<TransportStream, BoxError>> {
-    trace!(target = %invocation.target, id=%invocation.id,namespace = NS_SELF);
+  fn handle(
+    &self,
+    invocation: Invocation,
+    stream: PacketStream,
+    _config: Option<Value>,
+  ) -> BoxFuture<Result<PacketStream, BoxError>> {
+    trace!(target = %invocation.target, namespace = NS_SELF);
 
     let operation = invocation.target.name().to_owned();
     let fut = self
@@ -79,12 +85,14 @@ impl Collection for SchematicCollection {
       .map(|s| {
         s.invoke(
           invocation,
+          stream,
           self.rng.seed(),
           self.collections.clone(),
           self.clone_self_collection(),
         )
       })
       .ok_or_else(|| Error::SchematicNotFound(operation.clone()));
+    trace!(%operation, "operation");
 
     Box::pin(async move {
       let span = trace_span!("ns_self", name = %operation);

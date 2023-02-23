@@ -1,5 +1,5 @@
 use uuid::Uuid;
-use wasmflow_sdk::v1::Invocation;
+use wasmflow_packet_stream::{Invocation, PacketStream};
 
 use crate::dev::prelude::*;
 
@@ -9,7 +9,7 @@ pub(crate) enum InvocationResponse {
   Stream {
     #[allow(unused)]
     tx_id: Uuid,
-    rx: TransportStream,
+    rx: PacketStream,
   },
   Error {
     #[allow(unused)]
@@ -24,7 +24,7 @@ impl InvocationResponse {
     InvocationResponse::Error { tx_id, msg }
   }
 
-  pub(crate) fn ok(self) -> Result<TransportStream, InvocationError> {
+  pub(crate) fn ok(self) -> Result<PacketStream, InvocationError> {
     match self {
       InvocationResponse::Stream { rx, .. } => Ok(rx),
       InvocationResponse::Error { msg, .. } => Err(InvocationError(msg)),
@@ -42,12 +42,6 @@ pub(crate) enum DispatchError {
   CallFailure(String),
 }
 
-impl From<wasmflow_sdk::v1::error::Error> for DispatchError {
-  fn from(e: wasmflow_sdk::v1::error::Error) -> Self {
-    DispatchError::Sdk(e.to_string())
-  }
-}
-
 impl From<CollectionError> for DispatchError {
   fn from(e: CollectionError) -> Self {
     DispatchError::CallFailure(e.to_string())
@@ -57,17 +51,13 @@ impl From<CollectionError> for DispatchError {
 pub(crate) async fn network_invoke_async(
   network_id: Uuid,
   invocation: Invocation,
-) -> Result<Vec<TransportWrapper>, DispatchError> {
+  stream: PacketStream,
+) -> Result<PacketStream, DispatchError> {
   let network = NetworkService::for_id(&network_id).ok_or(DispatchError::EntityNotAvailable(network_id))?;
 
-  let response = network.invoke(invocation)?.await?;
+  let response = network.invoke(invocation, stream)?.await?;
   match response {
-    InvocationResponse::Stream { rx, .. } => {
-      let messages: Vec<TransportWrapper> = rx.collect().await;
-      trace!(num_messages = messages.len(), "link_call response");
-      debug!(?messages, "link call response");
-      Ok(messages)
-    }
+    InvocationResponse::Stream { rx, .. } => Ok(rx),
     InvocationResponse::Error { msg, .. } => Err(DispatchError::CallFailure(msg)),
   }
 }
@@ -75,7 +65,7 @@ pub(crate) async fn network_invoke_async(
 #[cfg(test)]
 mod tests {
 
-  use wasmflow_sdk::v1::packet::PacketMap;
+  use wasmflow_packet_stream::{packet_stream, Packet};
 
   use super::*;
   use crate::test::prelude::{assert_eq, *};
@@ -83,15 +73,17 @@ mod tests {
   async fn invoke_async() -> TestResult<()> {
     let (_, nuid) = init_network_from_yaml("./manifests/v0/echo.wafl").await?;
 
-    let target = Entity::component("self", "echo");
-    let map = PacketMap::from(vec![("input", "hello")]);
-    let invocation = Invocation::new_test(file!(), target, map, None);
+    let target = Entity::operation("self", "echo");
+    let stream = packet_stream![("input", "hello")];
+    let invocation = Invocation::new(Entity::test(file!()), target, None);
 
-    let packets = network_invoke_async(nuid, invocation).await?;
+    let packets = network_invoke_async(nuid, invocation, stream).await?;
+    let mut packets: Vec<_> = packets.collect().await;
     debug!("{:?}", packets);
     assert_eq!(packets.len(), 2);
-    let rv: String = packets[0].payload.clone().deserialize()?;
-    assert_eq!(rv, "hello");
+    let _ = packets.pop();
+    let actual = packets.pop().unwrap().unwrap();
+    assert_eq!(actual, Packet::encode("output", "hello"));
 
     Ok(())
   }

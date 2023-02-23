@@ -11,11 +11,11 @@ use rand::{thread_rng, Rng};
 use tokio::process;
 use tokio::sync::Mutex;
 use wasmflow_collection_cli::options::env;
+use wasmflow_interface::{CollectionSignature, HostedType};
 use wasmflow_loader::cache_location;
 use wasmflow_rpc::error::RpcError;
 use wasmflow_rpc::{RpcClient, RpcHandler, RpcResult};
 use wasmflow_sdk::v1::transport::TransportStream;
-use wasmflow_sdk::v1::types::{CollectionSignature, HostedType};
 use wasmflow_sdk::v1::Invocation;
 
 use crate::Error;
@@ -189,9 +189,9 @@ mod tests {
 
   use anyhow::Result;
   use tokio_stream::StreamExt;
+  use wasmflow_entity::Entity;
   use wasmflow_grpctar::make_archive;
   use wasmflow_sdk::v1::packet::PacketMap;
-  use wasmflow_sdk::v1::Entity;
   use wasmflow_wascap::KeyPair;
 
   use super::*;

@@ -13,133 +13,87 @@
     "core::error": {
       "name": "core::error",
       "inputs": {
-        "input": {
-          "type": "string"
-        }
+        "input": "string"
       },
       "outputs": {
-        "output": {
-          "type": "string"
-        }
+        "output": "string"
       }
     },
     "core::log": {
       "name": "core::log",
       "inputs": {
-        "input": {
-          "type": "string"
-        }
+        "input": "string"
       },
       "outputs": {
-        "output": {
-          "type": "string"
-        }
+        "output": "string"
       }
     },
     "core::panic": {
       "name": "core::panic",
       "inputs": {
-        "input": {
-          "type": "string"
-        }
+        "input": "string"
       },
       "outputs": {
-        "output": {
-          "type": "string"
-        }
+        "output": "string"
       }
     },
     "math::add": {
       "name": "math::add",
       "inputs": {
-        "left": {
-          "type": "u64"
-        },
-        "right": {
-          "type": "u64"
-        }
+        "left": "u64",
+        "right": "u64"
       },
       "outputs": {
-        "output": {
-          "type": "u64"
-        }
+        "output": "u64"
       }
     },
     "math::subtract": {
       "name": "math::subtract",
       "inputs": {
-        "left": {
-          "type": "u64"
-        },
-        "right": {
-          "type": "u64"
-        }
+        "left": "u64",
+        "right": "u64"
       },
       "outputs": {
-        "output": {
-          "type": "u64"
-        }
+        "output": "u64"
       }
     },
     "rand::bytes": {
       "name": "rand::bytes",
       "inputs": {
-        "seed": {
-          "type": "u64"
-        },
-        "length": {
-          "type": "u32"
-        }
+        "seed": "u64",
+        "length": "u32"
       },
       "outputs": {
-        "output": {
-          "type": "bytes"
-        }
+        "output": "bytes"
       }
     },
     "rand::string": {
       "name": "rand::string",
       "inputs": {
-        "seed": {
-          "type": "u64"
-        },
-        "length": {
-          "type": "u32"
-        }
+        "seed": "u64",
+        "length": "u32"
       },
       "outputs": {
-        "output": {
-          "type": "string"
-        }
+        "output": "string"
       }
     },
     "rand::uuid": {
       "name": "rand::uuid",
       "inputs": {
-        "seed": {
-          "type": "u64"
-        }
+        "seed": "u64"
       },
       "outputs": {
-        "output": {
-          "type": "string"
-        }
+        "output": "string"
       }
     },
     "string::concat": {
       "name": "string::concat",
       "inputs": {
-        "left": {
-          "type": "string"
-        },
-        "right": {
-          "type": "string"
-        }
+        "left": "string",
+        "right": "string"
       },
       "outputs": {
-        "output": {
-          "type": "string"
-        }
+        "output": "string"
       }
     }
   },

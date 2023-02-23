@@ -24,8 +24,8 @@ mod generated {
     use super::decr as integration;
 
     #[cfg(all(feature = "host", not(target_arch = "wasm32")))]
-    pub fn signature() -> wasmflow_sdk::v1::types::ComponentSignature {
-      wasmflow_sdk::v1::types::ComponentSignature {
+    pub fn signature() -> wasmflow_sdk::v1::types::OperationSignature {
+      wasmflow_sdk::v1::types::OperationSignature {
         name: "decr".to_owned(),
         inputs: inputs_list().into(),
         outputs: outputs_list().into(),
@@ -212,8 +212,8 @@ mod generated {
     use super::delete as integration;
 
     #[cfg(all(feature = "host", not(target_arch = "wasm32")))]
-    pub fn signature() -> wasmflow_sdk::v1::types::ComponentSignature {
-      wasmflow_sdk::v1::types::ComponentSignature {
+    pub fn signature() -> wasmflow_sdk::v1::types::OperationSignature {
+      wasmflow_sdk::v1::types::OperationSignature {
         name: "delete".to_owned(),
         inputs: inputs_list().into(),
         outputs: outputs_list().into(),
@@ -393,8 +393,8 @@ mod generated {
     use super::exists as integration;
 
     #[cfg(all(feature = "host", not(target_arch = "wasm32")))]
-    pub fn signature() -> wasmflow_sdk::v1::types::ComponentSignature {
-      wasmflow_sdk::v1::types::ComponentSignature {
+    pub fn signature() -> wasmflow_sdk::v1::types::OperationSignature {
+      wasmflow_sdk::v1::types::OperationSignature {
         name: "exists".to_owned(),
         inputs: inputs_list().into(),
         outputs: outputs_list().into(),
@@ -569,8 +569,8 @@ mod generated {
     use super::incr as integration;
 
     #[cfg(all(feature = "host", not(target_arch = "wasm32")))]
-    pub fn signature() -> wasmflow_sdk::v1::types::ComponentSignature {
-      wasmflow_sdk::v1::types::ComponentSignature {
+    pub fn signature() -> wasmflow_sdk::v1::types::OperationSignature {
+      wasmflow_sdk::v1::types::OperationSignature {
         name: "incr".to_owned(),
         inputs: inputs_list().into(),
         outputs: outputs_list().into(),
@@ -757,8 +757,8 @@ mod generated {
     use super::key_get as integration;
 
     #[cfg(all(feature = "host", not(target_arch = "wasm32")))]
-    pub fn signature() -> wasmflow_sdk::v1::types::ComponentSignature {
-      wasmflow_sdk::v1::types::ComponentSignature {
+    pub fn signature() -> wasmflow_sdk::v1::types::OperationSignature {
+      wasmflow_sdk::v1::types::OperationSignature {
         name: "key-get".to_owned(),
         inputs: inputs_list().into(),
         outputs: outputs_list().into(),
@@ -933,8 +933,8 @@ mod generated {
     use super::key_set as integration;
 
     #[cfg(all(feature = "host", not(target_arch = "wasm32")))]
-    pub fn signature() -> wasmflow_sdk::v1::types::ComponentSignature {
-      wasmflow_sdk::v1::types::ComponentSignature {
+    pub fn signature() -> wasmflow_sdk::v1::types::OperationSignature {
+      wasmflow_sdk::v1::types::OperationSignature {
         name: "key-set".to_owned(),
         inputs: inputs_list().into(),
         outputs: outputs_list().into(),
@@ -1133,8 +1133,8 @@ mod generated {
     use super::list_add as integration;
 
     #[cfg(all(feature = "host", not(target_arch = "wasm32")))]
-    pub fn signature() -> wasmflow_sdk::v1::types::ComponentSignature {
-      wasmflow_sdk::v1::types::ComponentSignature {
+    pub fn signature() -> wasmflow_sdk::v1::types::OperationSignature {
+      wasmflow_sdk::v1::types::OperationSignature {
         name: "list-add".to_owned(),
         inputs: inputs_list().into(),
         outputs: outputs_list().into(),
@@ -1326,8 +1326,8 @@ mod generated {
     use super::list_range as integration;
 
     #[cfg(all(feature = "host", not(target_arch = "wasm32")))]
-    pub fn signature() -> wasmflow_sdk::v1::types::ComponentSignature {
-      wasmflow_sdk::v1::types::ComponentSignature {
+    pub fn signature() -> wasmflow_sdk::v1::types::OperationSignature {
+      wasmflow_sdk::v1::types::OperationSignature {
         name: "list-range".to_owned(),
         inputs: inputs_list().into(),
         outputs: outputs_list().into(),
@@ -1533,8 +1533,8 @@ mod generated {
     use super::list_remove as integration;
 
     #[cfg(all(feature = "host", not(target_arch = "wasm32")))]
-    pub fn signature() -> wasmflow_sdk::v1::types::ComponentSignature {
-      wasmflow_sdk::v1::types::ComponentSignature {
+    pub fn signature() -> wasmflow_sdk::v1::types::OperationSignature {
+      wasmflow_sdk::v1::types::OperationSignature {
         name: "list-remove".to_owned(),
         inputs: inputs_list().into(),
         outputs: outputs_list().into(),
@@ -1733,8 +1733,8 @@ mod generated {
     use super::set_add as integration;
 
     #[cfg(all(feature = "host", not(target_arch = "wasm32")))]
-    pub fn signature() -> wasmflow_sdk::v1::types::ComponentSignature {
-      wasmflow_sdk::v1::types::ComponentSignature {
+    pub fn signature() -> wasmflow_sdk::v1::types::OperationSignature {
+      wasmflow_sdk::v1::types::OperationSignature {
         name: "set-add".to_owned(),
         inputs: inputs_list().into(),
         outputs: outputs_list().into(),
@@ -1926,8 +1926,8 @@ mod generated {
     use super::set_contains as integration;
 
     #[cfg(all(feature = "host", not(target_arch = "wasm32")))]
-    pub fn signature() -> wasmflow_sdk::v1::types::ComponentSignature {
-      wasmflow_sdk::v1::types::ComponentSignature {
+    pub fn signature() -> wasmflow_sdk::v1::types::OperationSignature {
+      wasmflow_sdk::v1::types::OperationSignature {
         name: "set-contains".to_owned(),
         inputs: inputs_list().into(),
         outputs: outputs_list().into(),
@@ -2114,8 +2114,8 @@ mod generated {
     use super::set_get as integration;
 
     #[cfg(all(feature = "host", not(target_arch = "wasm32")))]
-    pub fn signature() -> wasmflow_sdk::v1::types::ComponentSignature {
-      wasmflow_sdk::v1::types::ComponentSignature {
+    pub fn signature() -> wasmflow_sdk::v1::types::OperationSignature {
+      wasmflow_sdk::v1::types::OperationSignature {
         name: "set-get".to_owned(),
         inputs: inputs_list().into(),
         outputs: outputs_list().into(),
@@ -2297,8 +2297,8 @@ mod generated {
     use super::set_remove as integration;
 
     #[cfg(all(feature = "host", not(target_arch = "wasm32")))]
-    pub fn signature() -> wasmflow_sdk::v1::types::ComponentSignature {
-      wasmflow_sdk::v1::types::ComponentSignature {
+    pub fn signature() -> wasmflow_sdk::v1::types::OperationSignature {
+      wasmflow_sdk::v1::types::OperationSignature {
         name: "set-remove".to_owned(),
         inputs: inputs_list().into(),
         outputs: outputs_list().into(),
@@ -2490,8 +2490,8 @@ mod generated {
     use super::set_scan as integration;
 
     #[cfg(all(feature = "host", not(target_arch = "wasm32")))]
-    pub fn signature() -> wasmflow_sdk::v1::types::ComponentSignature {
-      wasmflow_sdk::v1::types::ComponentSignature {
+    pub fn signature() -> wasmflow_sdk::v1::types::OperationSignature {
+      wasmflow_sdk::v1::types::OperationSignature {
         name: "set-scan".to_owned(),
         inputs: inputs_list().into(),
         outputs: outputs_list().into(),

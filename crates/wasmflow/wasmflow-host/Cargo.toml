@@ -9,10 +9,11 @@ license = "Elastic-2.0"
 [features]
 
 [dependencies]
-wasmflow-sdk = { path = "../wasmflow-sdk", features = ["v1"] }
 seeded-random = { path = "../../misc/seeded-random" }
+wasmflow-entity = { path = "../wasmflow-entity" }
 wasmflow-runtime = { path = "../wasmflow-runtime" }
-wasmflow-mesh = { path = "../wasmflow-mesh" }
+wasmflow-packet-stream = { path = "../wasmflow-packet-stream" }
+wasmflow-interface = { path = "../wasmflow-interface" }
 wasmflow-manifest = { path = "../wasmflow-manifest" }
 wasmflow-loader = { path = "../wasmflow-loader" }
 wasmflow-collection-cli = { path = "../wasmflow-collection-cli" }
@@ -28,6 +29,7 @@ http = "0.2"
 once_cell = { workspace = true }
 parking_lot = { workspace = true }
 uuid = { workspace = true }
+futures = { workspace = true }
 
 [dev-dependencies]
 logger = { path = "../logger" }

@@ -4,8 +4,9 @@ use std::time::Duration;
 use seeded_random::{Random, Seed};
 use uuid::Uuid;
 use wasmflow_manifest::{Flow, WasmflowManifest, WasmflowManifestBuilder};
-use wasmflow_mesh::Mesh;
+use wasmflow_packet_stream::{Invocation, PacketStream};
 
+// use wasmflow_mesh::Mesh;
 use crate::dev::prelude::*;
 use crate::network_service::Initialize;
 
@@ -25,7 +26,7 @@ pub struct NetworkInit {
   allow_latest: bool,
   allowed_insecure: Vec<String>,
   timeout: Duration,
-  mesh: Option<Arc<Mesh>>,
+  // mesh: Option<Arc<Mesh>>,
   namespace: Option<String>,
   rng_seed: Seed,
 }
@@ -38,7 +39,7 @@ impl Network {
 
     let init = Initialize {
       id: rng.uuid(),
-      mesh: config.mesh.clone(),
+      // mesh: config.mesh.clone(),
       manifest: config.definition,
       allowed_insecure: config.allowed_insecure.clone(),
       allow_latest: config.allow_latest,
@@ -57,11 +58,11 @@ impl Network {
     })
   }
 
-  pub async fn invoke(&self, invocation: Invocation) -> Result<TransportStream> {
+  pub async fn invoke(&self, invocation: Invocation, stream: PacketStream) -> Result<PacketStream> {
     let time = std::time::SystemTime::now();
     trace!(start_time=%time.duration_since(std::time::UNIX_EPOCH).unwrap().as_millis() ,"invocation start");
 
-    let response = tokio::time::timeout(self.timeout, self.inner.invoke(invocation)?)
+    let response = tokio::time::timeout(self.timeout, self.inner.invoke(invocation, stream)?)
       .await
       .map_err(|_| NetworkError::Timeout)??;
     trace!(duration_ms=%time.elapsed().unwrap().as_millis(),"invocation complete");
@@ -90,7 +91,7 @@ pub struct NetworkBuilder {
   allow_latest: bool,
   allowed_insecure: Vec<String>,
   manifest_builder: WasmflowManifestBuilder,
-  mesh: Option<Arc<Mesh>>,
+  // mesh: Option<Arc<Mesh>>,
   timeout: Duration,
   rng_seed: Option<Seed>,
   namespace: Option<String>,
@@ -111,7 +112,7 @@ impl NetworkBuilder {
       allowed_insecure: definition.insecure_registries().clone(),
       manifest_builder: WasmflowManifestBuilder::with_base(definition),
       timeout: Duration::from_secs(5),
-      mesh: None,
+      // mesh: None,
       namespace: None,
       rng_seed: None,
     })
@@ -144,12 +145,12 @@ impl NetworkBuilder {
     }
   }
 
-  pub fn mesh(self, mesh: Arc<Mesh>) -> Self {
-    Self {
-      mesh: Some(mesh),
-      ..self
-    }
-  }
+  // pub fn mesh(self, mesh: Arc<Mesh>) -> Self {
+  //   Self {
+  //     mesh: Some(mesh),
+  //     ..self
+  //   }
+  // }
 
   pub fn with_seed(self, seed: Seed) -> Self {
     Self {
@@ -174,7 +175,7 @@ impl NetworkBuilder {
       allowed_insecure: self.allowed_insecure,
       timeout: self.timeout,
       namespace: self.namespace,
-      mesh: self.mesh,
+      // mesh: self.mesh,
       rng_seed: self.rng_seed.unwrap_or_else(new_seed),
     })
     .await

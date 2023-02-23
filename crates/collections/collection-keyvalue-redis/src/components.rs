@@ -241,7 +241,7 @@ impl wasmflow_sdk::v1::stateful::NativeDispatcher for ComponentDispatcher {
 
 #[cfg(not(target_arch = "wasm32"))]
 pub fn get_signature() -> wasmflow_sdk::v1::types::CollectionSignature {
-  let mut components: std::collections::HashMap<String, wasmflow_sdk::v1::types::ComponentSignature> =
+  let mut components: std::collections::HashMap<String, wasmflow_sdk::v1::types::OperationSignature> =
     std::collections::HashMap::new();
 
   components.insert("decr".to_owned(), wasmflow_interface_keyvalue::decr::signature());
@@ -300,7 +300,7 @@ pub fn get_signature() -> wasmflow_sdk::v1::types::CollectionSignature {
     format: 1,
     version: "1".to_owned(),
     types: std::collections::HashMap::from([]).into(),
-    components: components.into(),
+    operations: components.into(),
     wellknown: Vec::new(),
     config: wasmflow_sdk::v1::types::TypeMap::new(),
   }

@@ -12,14 +12,18 @@ host = []
 guest = []
 
 [dependencies]
+wasmflow-packet-stream = { path = "../wasmflow-packet-stream" }
 wasmflow-rpc = { path = "../wasmflow-rpc" }
-wasmflow-sdk = { path = "../wasmflow-sdk", features = ["v1"] }
+wasmflow-interface = { path = "../wasmflow-interface", features = ["parser"] }
+# wasmflow-interface = { path = "../wasmflow-interface" }
 seeded-random = { path = "../../misc/seeded-random" }
 tracing = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 async-trait = { workspace = true }
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
 thiserror = { workspace = true }
+futures = { workspace = true }
+anyhow = { workspace = true }
 
 [dev-dependencies]
 wasmflow-stdlib = { path = ".", features = ["guest"] }

@@ -1,4 +1,4 @@
-use wasmflow_schematic_graph::ComponentKind;
+use wasmflow_schematic_graph::NodeKind;
 
 use self::error::{SchematicInvalid, ValidationError};
 use super::Program;
@@ -20,10 +20,10 @@ impl Validator {
 
     let collections = &state.collections;
     for schematic in state.network.schematics() {
-      for component in schematic.components() {
+      for component in schematic.nodes() {
         let mut validation_errors = Vec::new();
 
-        if let ComponentKind::External(reference) = component.kind() {
+        if let NodeKind::External(reference) = component.kind() {
           let collection = collections.get(reference.namespace());
           if collection.is_none() {
             validation_errors.push(ValidationError::MissingCollection(reference.namespace().to_owned()));
@@ -38,10 +38,10 @@ impl Validator {
             component.id(),
           );
 
-          let component_def = collection.components.get(&id);
+          let component_def = collection.operations.get(&id);
 
           if component_def.is_none() {
-            validation_errors.push(ValidationError::MissingComponent {
+            validation_errors.push(ValidationError::MissingOperation {
               namespace: reference.namespace().to_owned(),
               name: id.clone(),
             });
@@ -78,7 +78,7 @@ impl Validator {
             if port.is_none() {
               validation_errors.push(ValidationError::MissingConnection {
                 port: name.clone(),
-                component: reference.name().to_owned(),
+                operation: reference.name().to_owned(),
                 namespace: reference.namespace().to_owned(),
               });
               continue;
@@ -89,7 +89,7 @@ impl Validator {
             let port = component.find_output(name);
             if port.is_none() {
               let cref: Reference = component.cref().into();
-              if cref.is_core_component(CORE_ID_SENDER) {
+              if cref.is_core_operation(CORE_ID_SENDER) {
                 validation_errors.push(ValidationError::UnusedSender(component.id().to_owned()));
               }
 

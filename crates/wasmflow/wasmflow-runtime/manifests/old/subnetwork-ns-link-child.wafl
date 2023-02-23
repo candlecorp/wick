@@ -1,0 +1,23 @@
+version: 0
+network:
+  collections:
+    - namespace: wapc
+      kind: WaPC
+      reference: ../../integration/test-baseline-component/build/baseline.signed.wasm
+    - namespace: wapc2
+      kind: WaPC
+      reference: ../../integration/test-baseline-component/build/baseline.signed.wasm
+  schematics:
+    - name: test-child
+      collections:
+        - wapc
+        - wapc2
+      instances:
+        reverse_upper:
+          id: wapc::reverse-uppercase
+        TEST_REF:
+          id: collections::wapc2
+      connections:
+        - <> => reverse_upper[input]
+        - TEST_REF[ref] => reverse_upper[link]
+        - reverse_upper[output] => <>

@@ -68,8 +68,8 @@ impl From<RuntimeError> for HostError {
   }
 }
 
-impl From<wasmflow_mesh::Error> for HostError {
-  fn from(e: wasmflow_mesh::Error) -> Self {
-    HostError::Mesh(e.to_string())
-  }
-}
+// impl From<wasmflow_mesh::Error> for HostError {
+//   fn from(e: wasmflow_mesh::Error) -> Self {
+//     HostError::Mesh(e.to_string())
+//   }
+// }

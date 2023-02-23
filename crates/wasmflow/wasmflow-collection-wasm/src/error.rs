@@ -16,10 +16,7 @@ pub enum WasmCollectionError {
   TxNotFound,
 
   #[error(transparent)]
-  WapcError(#[from] wapc::errors::Error),
-
-  #[error(transparent)]
-  SdkError(#[from] wasmflow_sdk::v1::error::Error),
+  WasmRS(#[from] wasmrs::Error),
 
   #[error(transparent)]
   IoError(#[from] std::io::Error),

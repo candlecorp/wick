@@ -108,5 +108,7 @@ pub use network_service::error::NetworkError;
 
 pub type Error = error::RuntimeError;
 
+pub(crate) type BoxError = Box<dyn std::error::Error + Send + Sync>;
+
 /// The reserved namespace for Wasmflow's initial native API.
 pub const WAFL_V0_NAMESPACE: &str = "wafl";

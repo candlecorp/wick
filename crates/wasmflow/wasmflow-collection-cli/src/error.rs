@@ -29,11 +29,10 @@ pub enum CliError {
   /// An internal error running asynchronous jobs.
   JoinError(#[from] tokio::task::JoinError),
 
-  #[error(transparent)]
-  #[cfg(feature = "mesh")]
-  /// An error connecting or communicating over the mesh.
-  Mesh(#[from] wasmflow_mesh::Error),
-
+  // #[error(transparent)]
+  // #[cfg(feature = "mesh")]
+  // /// An error connecting or communicating over the mesh.
+  // Mesh(#[from] wasmflow_mesh::Error),
   #[error("{0}")]
   /// A general configuration error.
   Configuration(String),

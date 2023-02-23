@@ -4,9 +4,8 @@ use std::sync::Arc;
 use std::time::{Instant, SystemTime};
 
 use parking_lot::RwLock;
-use wasmflow_sdk::v1::codec::messagepack::{deserialize, serialize};
 use wasmflow_sdk::v1::packet::Packet;
-use wasmflow_sdk::v1::runtime::{LogLevel, OutputSignal};
+use wasmflow_sdk::v1::runtime::LogLevel;
 use wasmflow_sdk::v1::BoxedFuture;
 
 use crate::collection::HostLinkCallback;
@@ -76,7 +75,7 @@ pub(crate) fn create_link_handler(callback: Arc<Option<Box<HostLinkCallback>>>) 
             Err(e) => Err(e.into()),
           }
         }
-        None => Err("Host link called with no callback provided in the WaPC host.".into()),
+        None => Err("Host link called with no callback provided in the Wasm host.".into()),
       }
     })
   })

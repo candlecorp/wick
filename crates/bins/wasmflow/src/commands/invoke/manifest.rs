@@ -1,13 +1,13 @@
+use std::collections::HashSet;
 use std::time::SystemTime;
 
 use anyhow::Result;
 use seeded_random::Seed;
-use tokio::io::{self, AsyncBufReadExt};
 use wasmflow_collection_cli::options::DefaultCliOptions;
 use wasmflow_collection_cli::parse_args;
 use wasmflow_host::HostBuilder;
 use wasmflow_manifest::WasmflowManifest;
-use wasmflow_sdk::v1::transport::TransportMap;
+use wasmflow_packet_stream::{InherentData, Observer, Packet, PacketStream};
 
 use crate::utils::{self, merge_config};
 
@@ -31,7 +31,7 @@ pub(crate) async fn handle_command(opts: super::InvokeCommand, bytes: Vec<u8>) -
   let host_builder = HostBuilder::from_definition(config);
 
   let mut host = host_builder.build();
-  host.connect_to_mesh().await?;
+  // host.connect_to_mesh().await?;
   host.start_network(opts.seed.map(Seed::unsafe_new)).await?;
 
   let signature = host.get_signature()?;
@@ -45,7 +45,7 @@ pub(crate) async fn handle_command(opts: super::InvokeCommand, bytes: Vec<u8>) -
   }
 
   let inherent_data = opts.seed.map(|seed| {
-    wasmflow_sdk::v1::InherentData::new(
+    InherentData::new(
       seed,
       SystemTime::now()
         .duration_since(SystemTime::UNIX_EPOCH)
@@ -57,34 +57,43 @@ pub(crate) async fn handle_command(opts: super::InvokeCommand, bytes: Vec<u8>) -
   });
 
   if check_stdin {
-    if atty::is(atty::Stream::Stdin) {
-      eprintln!("No input passed, reading from <STDIN>. Pass --no-input to disable.");
-    }
-    let reader = io::BufReader::new(io::stdin());
-    let mut lines = reader.lines();
+    todo!("STDIN support is not yet implemented.");
+    // if atty::is(atty::Stream::Stdin) {
+    //   eprintln!("No input passed, reading from <STDIN>. Pass --no-input to disable.");
+    // }
+    // let reader = io::BufReader::new(io::stdin());
+    // let mut lines = reader.lines();
 
-    while let Some(line) = lines.next_line().await? {
-      debug!("STDIN:'{}'", line);
-      let mut payload = TransportMap::from_json_output(&line)?;
-      if !opts.raw {
-        payload.transpose_output_name();
-      }
+    // while let Some(line) = lines.next_line().await? {
+    //   debug!("STDIN:'{}'", line);
+    //   let mut payload = TransportMap::from_json_output(&line)?;
+    //   if !opts.raw {
+    //     payload.transpose_output_name();
+    //   }
 
-      let stream = host.request(&default_schematic, payload, inherent_data).await?;
+    //   let stream = host.request(&default_schematic, payload, inherent_data).await?;
 
-      utils::print_stream_json(stream, &opts.filter, opts.short, opts.raw).await?;
-    }
+    //   utils::print_stream_json(stream, &opts.filter, opts.short, opts.raw).await?;
+    // }
   } else {
-    let mut data_map = TransportMap::from_kv_json(&opts.data)?;
+    let data = Packet::from_kv_json(&opts.data)?;
 
-    let mut rest_arg_map = parse_args(&opts.args)?;
-    if !opts.raw {
-      data_map.transpose_output_name();
-      rest_arg_map.transpose_output_name();
+    let args = parse_args(&opts.args)?;
+    let (tx, stream) = PacketStream::new_channels();
+    let mut seen_ports = HashSet::new();
+    for packet in args {
+      seen_ports.insert(packet.port_name().to_owned());
+      tx.send(packet)?;
     }
-    data_map.merge(rest_arg_map);
+    for packet in data {
+      seen_ports.insert(packet.port_name().to_owned());
+      tx.send(packet)?;
+    }
+    for port in seen_ports {
+      tx.send(Packet::done(port))?;
+    }
 
-    let stream = host.request(&default_schematic, data_map, inherent_data).await?;
+    let stream = host.request(&default_schematic, stream, inherent_data).await?;
     utils::print_stream_json(stream, &opts.filter, opts.short, opts.raw).await?;
   }
   host.stop().await;

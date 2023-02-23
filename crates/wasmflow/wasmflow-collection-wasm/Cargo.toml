@@ -7,15 +7,20 @@ publish = false
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [features]
-default = ["wasmtime"]
-wasmtime = ["wasmtime-provider"]
 
 # wasm3 = ["wasm3-provider"]
 [dependencies]
+wasmrs = { workspace = true }
+wasmrs-rx = { workspace = true }
+wasmrs-host = { workspace = true }
+wasmrs-wasmtime = { workspace = true }
+wasmrs-codec = { workspace = true }
+wasmflow-packet-stream = { path = "../wasmflow-packet-stream" }
+wasmflow-entity = { path = "../wasmflow-entity" }
+wasmflow-interface = { path = "../wasmflow-interface" }
 wasmflow-rpc = { path = "../wasmflow-rpc" }
 wasmflow-wascap = { path = "../wasmflow-wascap" }
 wasmflow-loader = { path = "../wasmflow-loader" }
-wasmflow-sdk = { path = "../wasmflow-sdk", features = ["v1"] }
 wasmflow-manifest = { path = "../wasmflow-manifest" }
 seeded-random = { path = "../../misc/seeded-random" }
 tokio = { workspace = true, features = ["fs"] }
@@ -23,14 +28,6 @@ parking_lot = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 serde-value = { workspace = true }
-# wasmtime-provider = { version = "1.0", optional = true, features = ["cache"] }
-# wapc = "1.0"
-# wapc-pool = "1.0"
-wasmtime-provider = { git = "https://github.com/wasmflow/wapc-rs", branch = "master", optional = true, features = [
-  "cache",
-] }
-wapc = { git = "https://github.com/wasmflow/wapc-rs", branch = "master" }
-wapc-pool = { git = "https://github.com/wasmflow/wapc-rs", branch = "master" }
 tokio-stream = { workspace = true }
 async-stream = "0.3.2"
 tracing = { workspace = true }

@@ -19,10 +19,6 @@ pub enum Error {
   #[error("Internal Error: {0}")]
   InternalError(String),
 
-  /// Upstream Error from [wasmflow_sdk].
-  #[error(transparent)]
-  Sdk(#[from] wasmflow_sdk::v1::error::Error),
-
   /// Error used by collections.
   #[error("{0}")]
   CollectionError(String),
@@ -55,11 +51,5 @@ impl From<std::io::Error> for Error {
 impl From<Box<dyn std::error::Error + Send + Sync>> for Error {
   fn from(e: Box<dyn std::error::Error + Send + Sync>) -> Self {
     Error::CollectionError(e.to_string())
-  }
-}
-
-impl From<wasmflow_sdk::v1::error::Error> for Box<Error> {
-  fn from(e: wasmflow_sdk::v1::error::Error) -> Self {
-    Box::new(Error::Sdk(e))
   }
 }

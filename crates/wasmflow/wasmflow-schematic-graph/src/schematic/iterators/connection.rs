@@ -123,9 +123,9 @@ fn display_connection<DATA>(schematic: &Schematic<DATA>, connection: &Connection
 where
   DATA: Clone,
 {
-  let from_component = &schematic.components[connection.from.component_index];
-  let from_port = &from_component.outputs()[connection.from.port_index];
-  let to_component = &schematic.components[connection.to.component_index];
-  let to_port = &to_component.inputs()[connection.to.port_index];
-  format!("{}[{}]=>{}[{}]", from_component, from_port, to_component, to_port)
+  let from_node = &schematic.nodes[connection.from.node_index];
+  let from_port = &from_node.outputs()[connection.from.port_index];
+  let to_node = &schematic.nodes[connection.to.node_index];
+  let to_port = &to_node.inputs()[connection.to.port_index];
+  format!("{}[{}]=>{}[{}]", from_node, from_port, to_node, to_port)
 }

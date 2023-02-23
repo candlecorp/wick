@@ -1,0 +1,61 @@
+{
+  "name": "blog",
+  "format": 1,
+  "version": "1",
+  "features": { "stateful": false, "streaming": false, "version": 0 },
+  "types": {
+    "Blog": {
+      "type": "struct",
+      "name": "Blog",
+      "fields": {
+        "blog_id": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "user_id": {
+          "type": "string"
+        },
+        "body": {
+          "type": "string"
+        },
+        "section_id": {
+          "type": "string"
+        }
+      }
+    }
+  },
+  "operations": {
+    "new": {
+      "name": "new",
+      "index": 0,
+      "inputs": {
+        "blog_id": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "user_id": {
+          "type": "string"
+        },
+        "body": {
+          "type": "string"
+        },
+        "section_id": {
+          "type": "string"
+        },
+        "kv": {
+          "type": "link",
+          "schemas": ["keyvalue"]
+        }
+      },
+      "outputs": {
+        "blog_id": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

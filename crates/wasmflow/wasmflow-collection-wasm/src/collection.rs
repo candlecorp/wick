@@ -2,20 +2,18 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use async_trait::async_trait;
-pub use wapc::WasiParams;
+use wasmflow_interface::HostedType;
 use wasmflow_manifest::Permissions;
-use wasmflow_rpc::error::RpcError;
+use wasmflow_packet_stream::{Invocation, PacketStream};
 use wasmflow_rpc::{RpcHandler, RpcResult};
-use wasmflow_sdk::v1::codec::{json, messagepack};
-use wasmflow_sdk::v1::packet::{PacketMap, PacketWrapper};
-use wasmflow_sdk::v1::transport::{MessageTransport, Serialized, TransportMap, TransportStream};
-use wasmflow_sdk::v1::types::HostedType;
-use wasmflow_sdk::v1::{BoxedFuture, Invocation};
+use wasmrs_host::WasiParams;
 
 use crate::error::LinkError;
-use crate::wapc_module::WapcModule;
+use crate::helpers::WickWasmModule;
 use crate::wasm_host::{WasmHost, WasmHostBuilder};
 use crate::Error;
+
+pub type BoxedFuture<T> = std::pin::Pin<Box<dyn std::future::Future<Output = T> + Send + 'static>>;
 
 #[derive(Debug, Default)]
 pub struct Context {
@@ -29,7 +27,7 @@ pub struct Collection {
 }
 
 pub type HostLinkCallback =
-  dyn Fn(&str, &str, PacketMap) -> BoxedFuture<Result<Vec<PacketWrapper>, LinkError>> + Send + Sync;
+  dyn Fn(&str, &str, PacketStream) -> BoxedFuture<Result<PacketStream, LinkError>> + Send + Sync;
 
 fn permissions_to_wasi_params(perms: Permissions) -> WasiParams {
   debug!(params=?perms, "Collection permissions");
@@ -46,7 +44,7 @@ fn permissions_to_wasi_params(perms: Permissions) -> WasiParams {
 
 impl Collection {
   pub fn try_load(
-    module: &WapcModule,
+    module: &WickWasmModule,
     max_threads: usize,
     config: Option<Permissions>,
     additional_config: Option<Permissions>,
@@ -81,16 +79,11 @@ impl Collection {
 
 #[async_trait]
 impl RpcHandler for Collection {
-  async fn invoke(&self, invocation: Invocation) -> RpcResult<TransportStream> {
+  async fn invoke(&self, invocation: Invocation, stream: PacketStream) -> RpcResult<PacketStream> {
     trace!(target = %invocation.target, "wasm invoke");
     let component = invocation.target.name();
-    let messagepack_map =
-      try_into_messagepack_bytes(invocation.payload).map_err(|e| RpcError::CollectionError(e.to_string()))?;
-    let pool = self.pool.clone();
 
-    let config = invocation.config.map(|v| v.into_messagepack());
-
-    let outputs = pool.call(component, &messagepack_map, config).await?;
+    let outputs = self.pool.call(component, stream, None)?;
 
     Ok(outputs)
   }
@@ -101,7 +94,7 @@ impl RpcHandler for Collection {
     trace!(
       "WASM:COMPONENTS:[{}]",
       signature
-        .components
+        .operations
         .inner()
         .keys()
         .cloned()
@@ -113,45 +106,22 @@ impl RpcHandler for Collection {
   }
 }
 
-fn try_into_messagepack_bytes(payload: TransportMap) -> Result<HashMap<String, Vec<u8>>, Error> {
-  let mut map = HashMap::new();
-  for (k, v) in payload.into_inner() {
-    let bytes = match v {
-      MessageTransport::Success(success) => match success {
-        Serialized::MessagePack(bytes) => bytes,
-        Serialized::Struct(v) => messagepack::serialize(&v).map_err(|e| Error::SdkError(e.into()))?,
-        Serialized::Json(v) => {
-          let value: serde_value::Value = json::deserialize(&v).map_err(|e| Error::SdkError(e.into()))?;
-          messagepack::serialize(&value).map_err(|e| Error::SdkError(e.into()))?
-        }
-      },
-      MessageTransport::Failure(_) => {
-        unreachable!("Failure packets must be handled by the interpreter, not passed to a component")
-      }
-      MessageTransport::Signal(_) => {
-        unreachable!("Signal packets must be handled by the interpreter, not passed to a component")
-      }
-    };
-    map.insert(k, bytes);
-  }
-  Ok(map)
-}
-
 #[cfg(test)]
 mod tests {
   use std::path::PathBuf;
   use std::str::FromStr;
 
   use anyhow::Result as TestResult;
-  use wasmflow_sdk::v1::packet::PacketMap;
-  use wasmflow_sdk::v1::Entity;
+  use futures::StreamExt;
+  use wasmflow_entity::Entity;
+  use wasmflow_packet_stream::{packet_stream, packets, Packet};
 
   use super::*;
 
   #[test_logger::test(tokio::test)]
   async fn test_component() -> TestResult<()> {
     let component = crate::helpers::load_wasm_from_file(&PathBuf::from_str(
-      "../../integration/test-wasm-component/build/test_component.signed.wasm",
+      "../../integration/test-baseline-component/build/baseline.signed.wasm",
     )?)
     .await?;
 
@@ -160,25 +130,25 @@ mod tests {
       2,
       None,
       None,
-      Some(Box::new(|_origin, _component, _payload| Box::pin(async { Ok(vec![]) }))),
+      Some(Box::new(|_origin, _component, _payload| {
+        Box::pin(async { Ok(packet_stream!(("test", "test"))) })
+      })),
     )?;
-    let input = "Hello world";
 
-    let job_payload = PacketMap::from([("input", input)]);
-    debug!("payload: {:?}", job_payload);
-    let entity = Entity::local("validate");
-    let invocation = Invocation::new_test(file!(), entity, job_payload, None);
-    let mut outputs = collection.invoke(invocation).await?;
+    let stream = packets!(("left", 10), ("right", 20));
+    println!("{:#?}", stream);
+    let entity = Entity::local("add");
+    let invocation = Invocation::new(Entity::test(file!()), entity, None);
+    let outputs = collection.invoke(invocation, stream.into()).await?;
     debug!("Invocation complete");
-    let packets: Vec<_> = outputs.drain_port("output").await?;
+    let mut packets: Vec<_> = outputs.collect().await;
     debug!("Output packets: {:?}", packets);
-    let output = packets[0].clone();
 
-    println!("payload from [{}]: {:?}", output.port, output.payload);
-    let output: String = output.payload.deserialize()?;
+    let _ = packets.pop();
+    let output = packets.pop().unwrap().unwrap();
 
     println!("output: {:?}", output);
-    assert_eq!(output, input);
+    assert_eq!(output, Packet::encode("output", 30));
     Ok(())
   }
 }

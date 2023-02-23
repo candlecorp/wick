@@ -2,26 +2,24 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::{Instant, SystemTime};
 
+use futures::StreamExt;
 use parking_lot::Mutex;
 use seeded_random::{Random, Seed};
 use uuid::Uuid;
-use wasmflow_schematic_graph::iterators::SchematicHop;
-use wasmflow_schematic_graph::{ComponentIndex, PortReference};
-use wasmflow_sdk::v1::transport::{Failure, MessageTransport, TransportMap, TransportStream, TransportWrapper};
-use wasmflow_sdk::v1::{Entity, InherentData, Invocation};
+use wasmflow_packet_stream::{InherentData, Invocation, Packet, PacketPayload, PacketStream};
+use wasmflow_schematic_graph::{NodeIndex, PortReference, SCHEMATIC_OUTPUT_INDEX};
+use wasmrs_rx::{FluxChannel, Observer};
 
-use self::component::port::port_handler::BufferAction;
-use self::component::InstanceHandler;
+use self::operation::port::port_handler::BufferAction;
+use self::operation::InstanceHandler;
 use super::error::ExecutionError;
-use super::output_channel::OutputChannel;
-use crate::constants::*;
 use crate::graph::types::*;
-use crate::interpreter::channel::Event;
+use crate::interpreter::channel::InterpreterDispatchChannel;
 use crate::interpreter::error::StateError;
-use crate::interpreter::executor::transaction::component::port::PortStatus;
-use crate::{Collection, HandlerMap, InterpreterDispatchChannel};
+use crate::interpreter::executor::transaction::operation::port::PortStatus;
+use crate::{Collection, HandlerMap};
 
-pub(crate) mod component;
+pub(crate) mod operation;
 
 pub(crate) mod statistics;
 pub(crate) use statistics::TransactionStatistics;
@@ -32,14 +30,16 @@ type Result<T> = std::result::Result<T, ExecutionError>;
 #[must_use]
 pub struct Transaction {
   schematic: Arc<Schematic>,
-  output: OutputChannel,
+  output: FluxChannel<Packet, wasmflow_packet_stream::Error>,
   channel: InterpreterDispatchChannel,
   invocation: Invocation,
+  incoming: Option<PacketStream>,
   instances: Vec<Arc<InstanceHandler>>,
   id: Uuid,
   start_time: Instant,
   rng: Random,
   finished: AtomicBool,
+  span: tracing::Span,
   pub(crate) last_access_time: Mutex<SystemTime>,
   pub(crate) stats: TransactionStatistics,
 }
@@ -51,16 +51,18 @@ impl std::fmt::Debug for Transaction {
 }
 
 impl Transaction {
+  #[instrument(skip_all, name = "tx_new")]
   pub(crate) fn new(
     schematic: Arc<Schematic>,
     mut invocation: Invocation,
+    stream: PacketStream,
     channel: InterpreterDispatchChannel,
     collections: &Arc<HandlerMap>,
     self_collection: &Arc<dyn Collection + Send + Sync>,
     seed: Seed,
   ) -> Self {
     let instances: Vec<_> = schematic
-      .components()
+      .nodes()
       .iter()
       .map(|component| {
         Arc::new(InstanceHandler::new(
@@ -77,16 +79,21 @@ impl Transaction {
     invocation.tx_id = id;
     let stats = TransactionStatistics::new(id);
     stats.mark("new");
+    let span = tracing::Span::current();
+    span.record("tx_id", id.to_string());
+
     Self {
       channel,
       invocation,
+      incoming: Some(stream),
       schematic,
-      output: OutputChannel::default(),
+      output: FluxChannel::new(),
       instances,
       start_time: Instant::now(),
       stats,
       last_access_time: Mutex::new(SystemTime::now()),
       id,
+      span,
       finished: AtomicBool::new(false),
       rng,
     }
@@ -108,16 +115,8 @@ impl Transaction {
     &self.instances[self.schematic.output().index()]
   }
 
-  pub(crate) fn instance(&self, index: ComponentIndex) -> &Arc<InstanceHandler> {
+  pub(crate) fn instance(&self, index: NodeIndex) -> &Arc<InstanceHandler> {
     &self.instances[index]
-  }
-
-  pub(crate) fn senders(&self) -> impl Iterator<Item = &Arc<InstanceHandler>> {
-    self.instances.iter().filter(|i| i.is_core_component(CORE_ID_SENDER))
-  }
-
-  pub(crate) fn generators(&self) -> impl Iterator<Item = &Arc<InstanceHandler>> {
-    self.instances.iter().filter(|i| i.is_static() || i.inputs().len() == 0)
   }
 
   pub(crate) fn done(&self) -> bool {
@@ -130,18 +129,32 @@ impl Transaction {
     outputs_done
   }
 
+  #[instrument(parent = &self.span, skip_all, name = "tx_start", fields(id = %self.id()))]
   pub(crate) async fn start(&mut self) -> Result<()> {
     self.stats.mark("start");
     self.stats.start("execution");
-    let span = trace_span!("transaction", id = %self.id);
-    let _guard = span.enter();
     trace!("starting transaction");
     self.start_time = Instant::now();
 
-    self
-      .prime_input_ports(self.schematic.input().index(), &self.invocation.payload)
-      .await?;
-    trace!("primed input ports");
+    for instance in self.instances.iter() {
+      if instance.index() == SCHEMATIC_OUTPUT_INDEX {
+        continue;
+      }
+      let invocation = Invocation::next_tx(
+        self.id(),
+        self.invocation.origin.clone(),
+        instance.entity(),
+        self.invocation.inherent,
+      );
+      instance
+        .clone()
+        .start(self.id(), invocation, self.channel.clone())
+        .await?;
+    }
+
+    let incoming = self.incoming.take().unwrap();
+
+    self.prime_input_ports(self.schematic.input().index(), incoming)?;
 
     let inherent_data = self.invocation.inherent.unwrap_or_else(|| InherentData {
       seed: self.rng.gen(),
@@ -153,74 +166,42 @@ impl Transaction {
         .unwrap(),
     });
 
-    self.prime_inherent(inherent_data).await?;
+    self.prime_inherent(inherent_data)?;
 
-    self.kick_senders().await?;
-    self.kick_generators().await?;
-
-    trace!("transaction started");
     self.stats.mark("start_done");
     Ok(())
   }
 
-  async fn prime_input_ports(&self, index: ComponentIndex, payload: &TransportMap) -> Result<()> {
-    let input = self.instance(index);
-    input.validate_payload(payload)?;
-    for (name, payload) in payload.inner() {
-      let port = input.find_input(name)?;
-      trace!("priming input port '{}'", name);
-      self
-        .accept_inputs(
-          &port,
-          vec![
-            TransportWrapper::new(name, payload.clone()),
-            TransportWrapper::done(name),
-          ],
-        )
-        .await?;
-    }
+  fn prime_input_ports(&self, index: NodeIndex, mut payloads: PacketStream) -> Result<()> {
+    let input = self.instance(index).clone();
+    let channel = self.channel.clone();
+    let tx_id = self.id();
+
+    tokio::spawn(async move {
+      while let Some(Ok(packet)) = payloads.next().await {
+        let port = input.find_input(packet.port_name()).unwrap();
+        accept_input(tx_id, port, &input, &channel, packet).await;
+      }
+    });
     Ok(())
   }
 
-  async fn prime_inherent(&self, inherent_data: InherentData) -> Result<()> {
-    let inherent = self.instance(INHERENT_COMPONENT);
+  fn prime_inherent(&self, inherent_data: InherentData) -> Result<()> {
+    let inherent = self.instance(INHERENT_COMPONENT).clone();
     let seed_name = "seed";
     if let Ok(port) = inherent.find_input(seed_name) {
       trace!("priming inherent seed");
-      self
-        .accept_inputs(
-          &port,
-          vec![
-            TransportWrapper::new(seed_name, MessageTransport::success(&inherent_data.seed)),
-            TransportWrapper::done(seed_name),
-          ],
-        )
-        .await?;
+
+      let fut = accept_inputs(
+        self.id(),
+        port,
+        inherent,
+        self.channel.clone(),
+        vec![Packet::encode(seed_name, inherent_data.seed), Packet::done(seed_name)],
+      );
+      tokio::spawn(fut);
     }
     Ok(())
-  }
-
-  async fn kick_senders(&self) -> Result<()> {
-    for instance in self.senders() {
-      trace!("readying sender '{}'", instance.id());
-      self
-        .dispatch_invocation(instance.index(), TransportMap::default())
-        .await?;
-    }
-    Ok(())
-  }
-
-  async fn kick_generators(&self) -> Result<()> {
-    for instance in self.generators() {
-      self.kick_generator(instance).await?;
-    }
-    Ok(())
-  }
-
-  async fn kick_generator(&self, instance: &InstanceHandler) -> Result<()> {
-    self
-      .dispatch_invocation(instance.index(), TransportMap::default())
-      .await
   }
 
   pub(crate) fn update_last_access(&self) {
@@ -242,9 +223,12 @@ impl Transaction {
     Ok(self.stats)
   }
 
-  pub(crate) async fn emit_output_message(&self, message: TransportWrapper) -> Result<()> {
-    debug!(%message, "emitting tx output");
-    self.output.push(message).await?;
+  pub(crate) async fn emit_output_message(&self, packets: Vec<Packet>) -> Result<()> {
+    for packet in packets {
+      trace!(?packet, "emitting tx output");
+      self.output.send(packet).map_err(|_e| ExecutionError::ChannelSend)?;
+    }
+
     if self.done() {
       self.emit_done().await?;
     }
@@ -254,226 +238,137 @@ impl Transaction {
   pub(crate) async fn emit_done(&self) -> Result<()> {
     if !self.finished.load(Ordering::Relaxed) {
       self.finished.store(true, Ordering::Relaxed);
-      self.channel.dispatch(Event::tx_done(self.id())).await?;
+      self.channel.dispatch_done(self.id()).await;
     }
     Ok(())
   }
 
-  pub(crate) fn take_stream(&mut self) -> Option<TransportStream> {
-    self.output.detach().map(|rx| TransportStream::new(rx.into_stream()))
+  pub(crate) fn take_stream(&mut self) -> Option<PacketStream> {
+    self.output.take_rx().ok().map(|s| PacketStream::new(Box::new(s)))
   }
 
-  pub(crate) fn take_output(&self, port: &PortReference) -> Result<TransportWrapper> {
+  pub(crate) fn take_output(&self) -> Result<Vec<Packet>> {
     let output = self.output_handler();
     output
-      .take_input(port)
-      .ok_or_else(|| ExecutionError::InvalidState(StateError::PayloadMissing(output.id().to_owned())))
+      .take_packets()
+      .map_err(|_| ExecutionError::InvalidState(StateError::PayloadMissing(output.id().to_owned())))
   }
 
-  #[allow(clippy::unused_async)]
-  pub(crate) async fn take_payload(&self, instance: &InstanceHandler) -> Result<Option<TransportMap>> {
-    let payload = instance.take_payload()?;
-    match payload {
-      Some(_) => {
-        trace!("payload collected");
-      }
-      None => {
-        trace!("payload not ready");
-      }
-    };
-    Ok(payload)
+  pub(crate) fn take_packets(&self, instance: &InstanceHandler) -> Result<Vec<Packet>> {
+    instance.take_packets()
   }
 
-  pub(crate) fn take_component_output(&self, port: &PortReference) -> Option<TransportWrapper> {
-    let instance = self.instance(port.component_index());
+  pub(crate) fn take_component_output(&self, port: &PortReference) -> Option<Packet> {
+    let instance = self.instance(port.node_index());
     instance.take_output(port)
-  }
-
-  #[instrument(name = "downstream-input", skip_all, fields(%port))]
-  pub(crate) async fn accept_inputs(&self, port: &PortReference, msgs: Vec<TransportWrapper>) -> Result<()> {
-    for payload in msgs {
-      let instance = self.instance(port.component_index());
-      let action = instance.buffer_in(port, payload)?;
-      match action {
-        BufferAction::Consumed(packet) => {
-          trace!(?packet, "consumed packet");
-        }
-        BufferAction::Buffered => {
-          self.channel.dispatch(Event::port_data(self.id, *port)).await?;
-        }
-      };
-    }
-
-    Ok(())
-  }
-
-  pub(crate) async fn accept_outputs(&self, port: &PortReference, msgs: Vec<TransportWrapper>) -> Result<()> {
-    let instance = self.instance(port.component_index());
-    for payload in msgs {
-      let action = instance.buffer_out(port, payload)?;
-      if action == BufferAction::Buffered {
-        self.channel.dispatch(Event::port_data(self.id, *port)).await?;
-      }
-    }
-    Ok(())
   }
 
   pub(crate) async fn check_hung(&self) -> Result<bool> {
     if self.done() {
-      self.channel.dispatch(Event::tx_done(self.id())).await?;
+      self.channel.dispatch_done(self.id()).await;
       Ok(false)
     } else {
       warn!(tx_id = %self.id(), "transaction hung");
       self
-        .emit_output_message(TransportWrapper::component_error(MessageTransport::Failure(
-          Failure::Error("Transaction hung".to_owned()),
-        )))
+        .emit_output_message(vec![Packet::component_error("Transaction hung")])
         .await?;
       Ok(true)
     }
   }
 
-  #[instrument(skip(self, err), name = "short_circuit")]
-  pub(crate) async fn handle_short_circuit(&self, index: ComponentIndex, err: MessageTransport) -> Result<()> {
-    self.stats.mark(format!("component:{}:short_circuit", index));
+  pub(crate) fn push_packets(&self, index: NodeIndex, packets: Vec<Packet>) -> Result<()> {
+    let instance = self.instance(index).clone();
+
+    let _ = instance.accept_packets(packets);
+
+    Ok(())
+  }
+
+  pub(crate) async fn handle_schematic_output(&self) -> Result<()> {
+    debug!("schematic output");
+
+    self.emit_output_message(self.take_output()?).await?;
+
+    Ok(())
+  }
+
+  pub(crate) async fn handle_op_err(&self, index: NodeIndex, err: PacketPayload) -> Result<()> {
+    self.stats.mark(format!("component:{}:op_err", index));
     let instance = self.instance(index);
 
     let graph = self.schematic();
 
     for port in instance.outputs().refs() {
       let downport_name = graph.get_port_name(&port);
-      self
-        .accept_outputs(
-          &port,
-          vec![
-            TransportWrapper::new(downport_name, err.clone()),
-            TransportWrapper::done(downport_name),
-          ],
-        )
-        .await?;
+      let down_instance = self.instance(port.node_index());
+      accept_outputs(
+        self.id(),
+        port,
+        down_instance.clone(),
+        self.channel.clone(),
+        vec![
+          Packet::new_for_port(downport_name, err.clone()),
+          Packet::done(downport_name),
+        ],
+      )
+      .await;
     }
     Ok(())
   }
+}
 
-  #[instrument(skip(self, payload), name = "dispatch-invocation")]
-  pub(crate) async fn dispatch_invocation(&self, index: ComponentIndex, payload: TransportMap) -> Result<()> {
-    let tx_id = self.id();
-
-    let instance = self.instance(index).clone();
-    debug!(id = instance.id(), ?payload);
-
-    if payload.has_error() {
-      let err = payload.take_error().unwrap();
-      return self.handle_short_circuit(instance.index(), err).await;
-    }
-
-    let invocation = Invocation::next(
-      self.id(),
-      Entity::local(self.schematic_name()),
-      instance.entity(),
-      payload,
-      self.invocation.inherent,
-    );
-
-    instance
-      .dispatch_invocation(tx_id, invocation, self.channel.clone())
-      .await
+pub(crate) async fn accept_inputs(
+  tx_id: Uuid,
+  port: PortReference,
+  instance: Arc<InstanceHandler>,
+  channel: InterpreterDispatchChannel,
+  msgs: Vec<Packet>,
+) {
+  for payload in msgs {
+    accept_input(tx_id, port, &instance, &channel, payload).await;
   }
+}
 
-  #[instrument(skip(self, invocation), name = "invoke")]
-  pub(crate) async fn invoke(&self, index: ComponentIndex, invocation: Invocation) -> Result<()> {
-    let tx_id = self.id();
+pub(crate) async fn accept_input<'a, 'b>(
+  tx_id: Uuid,
+  port: PortReference,
+  instance: &'a Arc<InstanceHandler>,
+  channel: &'b InterpreterDispatchChannel,
+  payload: Packet,
+) {
+  trace!(?payload, "accepting input");
+  let action = instance.buffer_in(&port, payload);
+  match action {
+    BufferAction::Consumed(packet) => {
+      trace!(?packet, "consumed packet");
+    }
+    BufferAction::Buffered => {
+      channel.dispatch_data(tx_id, port).await;
+    }
+  };
+}
 
-    let instance = self.instance(index).clone();
-
-    instance.invoke(tx_id, invocation, self.channel.clone()).await
+pub(crate) async fn accept_outputs(
+  tx_id: Uuid,
+  port: PortReference,
+  instance: Arc<InstanceHandler>,
+  channel: InterpreterDispatchChannel,
+  msgs: Vec<Packet>,
+) {
+  for payload in msgs {
+    accept_output(tx_id, port, &instance, &channel, payload).await;
   }
-
-  pub(crate) async fn handle_schematic_output(&self, port: &PortReference) -> Result<()> {
-    debug!("schematic output");
-
-    let message = self.take_output(port)?;
-
-    self.emit_output_message(message).await?;
-
-    Ok(())
-  }
-
-  pub(crate) fn json_status(&self) -> Vec<serde_json::Value> {
-    let graph = self.schematic();
-    let mut lines = Vec::new();
-    let mut seen = std::collections::HashSet::new();
-    for hop in graph.walk_from_output() {
-      match hop {
-        SchematicHop::Component(c) => {
-          if !seen.contains(c.name()) {
-            lines.push(serde_json::json!({"type":"component","name":c.name(),"component_index":c.inner().index()}));
-            seen.insert(c.name().to_owned());
-          }
-        }
-        SchematicHop::Port(p) => {
-          if !seen.contains(&p.to_string()) {
-            let instance = self.instance(p.component().index());
-
-            let status = instance.get_port_status(p.as_ref());
-
-            let component = p.component();
-            let component = component.name();
-            let port_ref = p.inner().detached();
-            let pending = instance.buffered_packets(&port_ref);
-            let packets = instance.clone_buffer(&port_ref);
-            lines.push(serde_json::json!({
-              "type":"port",
-              "direction":p.direction().to_string(),
-              "port":p.name(),
-              "component":component,
-              "port_index":port_ref.port_index(),
-              "component_index":port_ref.component_index(),
-              "pending":pending,
-              "packets":packets,
-              "status":status.to_string()
-            }));
-            seen.insert(p.to_string());
-          }
-        }
-        SchematicHop::Connection(c) => {
-          if !seen.contains(&c.to_string()) {
-            lines.push(serde_json::json!({"type":"connection","connection":c.to_string()}));
-            seen.insert(c.to_string());
-          }
-        }
-        _ => {}
-      }
-    }
-    let mut lines: Vec<_> = lines.into_iter().rev().collect();
-
-    let output = self.output_handler();
-    for instance in output.outputs().iter() {
-      let port_ref = instance.port_ref();
-      let status = instance.status();
-      let pending = instance.len();
-      let packets = instance.clone_buffer();
-
-      lines.push(serde_json::json!({
-        "type":"port",
-        "direction":port_ref.direction().to_string(),
-        "port":instance.name(),
-        "component":output.id(),
-        "port_index":port_ref.port_index(),
-        "component_index":port_ref.component_index(),
-        "pending":pending,
-        "packets":packets,
-        "status":status.to_string(),
-      }));
-    }
-
-    for instance in &self.instances {
-      lines.push(serde_json::json!({
-        "type":"pending",
-        "component_index":instance.index(),
-        "num":instance.num_pending()
-      }));
-    }
-    lines
+}
+pub(crate) async fn accept_output<'a, 'b>(
+  tx_id: Uuid,
+  port: PortReference,
+  instance: &'a Arc<InstanceHandler>,
+  channel: &'b InterpreterDispatchChannel,
+  payload: Packet,
+) {
+  trace!(?payload, "accepting output");
+  let action = instance.buffer_out(&port, payload);
+  if action == BufferAction::Buffered {
+    channel.dispatch_data(tx_id, port).await;
   }
 }

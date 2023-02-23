@@ -12,7 +12,6 @@ publish = false
 wasmflow-grpctar = { path = "../wasmflow-grpctar" }
 wasmflow-loader = { path = "../wasmflow-loader" }
 wasmflow-rpc = { path = "../wasmflow-rpc", features = ["client"] }
-wasmflow-sdk = { path = "../wasmflow-sdk", features = ["v1"] }
 wasmflow-collection-cli = { path = "../wasmflow-collection-cli", default-features = false }
 parking_lot = { workspace = true }
 tracing = { workspace = true }

@@ -1,7 +1,6 @@
 use uuid::Uuid;
-use wasmflow_schematic_graph::{ComponentIndex, PortReference};
-use wasmflow_sdk::v1::transport::MessageTransport;
-use wasmflow_sdk::v1::Invocation;
+use wasmflow_packet_stream::{Invocation, PacketPayload};
+use wasmflow_schematic_graph::{NodeIndex, PortReference};
 
 pub(crate) use self::error::Error;
 use super::executor::error::ExecutionError;
@@ -37,45 +36,6 @@ impl Event {
   pub fn kind(&self) -> &EventKind {
     &self.kind
   }
-
-  // constructors
-  pub(crate) fn close(error: Option<ExecutionError>) -> Self {
-    Event::new(CHANNEL_UUID, EventKind::Close(error))
-  }
-
-  pub(crate) fn call_complete(tx_id: Uuid, component_index: ComponentIndex) -> Self {
-    Event::new(tx_id, EventKind::CallComplete(CallComplete::new(component_index)))
-  }
-
-  pub(crate) fn invocation(index: ComponentIndex, invocation: Invocation) -> Self {
-    Event::new(invocation.tx_id, EventKind::Invocation(index, Box::new(invocation)))
-  }
-
-  pub(crate) fn port_status_change(tx_id: Uuid, port_ref: PortReference) -> Self {
-    Event::new(tx_id, EventKind::PortStatusChange(port_ref))
-  }
-
-  pub(crate) fn call_err(tx_id: Uuid, component_index: ComponentIndex, err: MessageTransport) -> Self {
-    Event::new(
-      tx_id,
-      EventKind::CallComplete(CallComplete {
-        index: component_index,
-        err: Some(err),
-      }),
-    )
-  }
-
-  pub(crate) fn port_data(tx_id: Uuid, port: PortReference) -> Self {
-    Event::new(tx_id, EventKind::PortData(port))
-  }
-
-  pub(crate) fn tx_done(tx_id: Uuid) -> Self {
-    Event::new(tx_id, EventKind::TransactionDone)
-  }
-
-  pub(crate) fn tx_start(tx: Box<Transaction>) -> Self {
-    Event::new(tx.id(), EventKind::TransactionStart(tx))
-  }
 }
 
 #[derive(Debug)]
@@ -87,7 +47,7 @@ pub enum EventKind {
   TransactionDone,
   PortData(PortReference),
   PortStatusChange(PortReference),
-  Invocation(ComponentIndex, Box<Invocation>),
+  Invocation(NodeIndex, Box<Invocation>),
   CallComplete(CallComplete),
   Close(Option<ExecutionError>),
 }
@@ -109,21 +69,21 @@ impl EventKind {
 
 #[derive(Debug, Clone)]
 pub struct CallComplete {
-  pub(crate) index: ComponentIndex,
-  pub(crate) err: Option<MessageTransport>,
+  pub(crate) index: NodeIndex,
+  pub(crate) err: Option<PacketPayload>,
 }
 
 impl CallComplete {
-  fn new(component_index: ComponentIndex) -> Self {
+  fn new(component_index: NodeIndex) -> Self {
     Self {
       index: component_index,
       err: None,
     }
   }
-  pub fn index(&self) -> ComponentIndex {
+  pub fn index(&self) -> NodeIndex {
     self.index
   }
-  pub fn err(&self) -> &Option<MessageTransport> {
+  pub fn err(&self) -> &Option<PacketPayload> {
     &self.err
   }
 }
@@ -161,7 +121,7 @@ impl InterpreterChannel {
 }
 
 #[derive(Clone)]
-pub struct InterpreterDispatchChannel {
+pub(crate) struct InterpreterDispatchChannel {
   sender: tokio::sync::mpsc::Sender<Event>,
 }
 
@@ -176,18 +136,57 @@ impl InterpreterDispatchChannel {
     Self { sender }
   }
 
-  pub(crate) async fn dispatch(&self, event: Event) -> Result<(), ExecutionError> {
-    trace!(event = event.name(), "dispatching event");
+  pub(crate) async fn dispatch(&self, event: Event) {
+    trace!(evt = event.name(), "dispatching event");
+    if self.sender.send(event).await.is_err() {
+      warn!("Interpreter channel closed unexpectedly. This is likely due to an intentional shutdown while there are still events processing.");
+    }
+  }
+
+  pub(crate) async fn dispatch_done(&self, tx_id: Uuid) {
+    self.dispatch(Event::new(tx_id, EventKind::TransactionDone)).await;
+  }
+
+  pub(crate) async fn dispatch_data(&self, tx_id: Uuid, port: PortReference) {
+    self.dispatch(Event::new(tx_id, EventKind::PortData(port))).await;
+  }
+
+  pub(crate) async fn dispatch_close(&self, error: Option<ExecutionError>) {
+    self.dispatch(Event::new(CHANNEL_UUID, EventKind::Close(error))).await;
+  }
+
+  pub(crate) async fn dispatch_start(&self, tx: Box<Transaction>) {
     self
-      .sender
-      .send(event)
-      .await
-      .map_err(|_| ExecutionError::ChannelError(Error::Send))?;
-    Ok(())
+      .dispatch(Event::new(tx.id(), EventKind::TransactionStart(tx)))
+      .await;
+  }
+
+  pub(crate) async fn dispatch_status_change(&self, tx_id: Uuid, port: PortReference) {
+    self
+      .dispatch(Event::new(tx_id, EventKind::PortStatusChange(port)))
+      .await;
+  }
+
+  pub(crate) async fn dispatch_call_complete(&self, tx_id: Uuid, op_index: usize) {
+    self
+      .dispatch(Event::new(tx_id, EventKind::CallComplete(CallComplete::new(op_index))))
+      .await;
+  }
+
+  pub(crate) async fn dispatch_op_err(&self, tx_id: Uuid, op_index: usize, signal: PacketPayload) {
+    self
+      .dispatch(Event::new(
+        tx_id,
+        EventKind::CallComplete(CallComplete {
+          index: op_index,
+          err: Some(signal),
+        }),
+      ))
+      .await;
   }
 }
 
-pub mod error {
+pub(crate) mod error {
   #[derive(thiserror::Error, Debug, Clone, Copy, PartialEq, Eq)]
   pub enum Error {
     #[error("Receive failed")]
@@ -245,25 +244,18 @@ mod test {
     tokio::spawn(async move {
       let num = 1;
       println!("Child 1 PING({})", num);
-      child1
-        .dispatch(Event::new(Uuid::new_v4(), EventKind::Ping(num)))
-        .await
-        .unwrap();
+      child1.dispatch(Event::new(Uuid::new_v4(), EventKind::Ping(num))).await;
     })
     .await?;
 
     tokio::spawn(async move {
       let num = 2;
       println!("Child 2 PING({})", num);
-      child2
-        .dispatch(Event::new(Uuid::new_v4(), EventKind::Ping(num)))
-        .await
-        .unwrap();
+      child2.dispatch(Event::new(Uuid::new_v4(), EventKind::Ping(num))).await;
     })
     .await?;
 
-    let result = child3.dispatch(Event::close(None)).await;
-    println!("{:?}", result);
+    child3.dispatch_close(None).await;
     let num_handled = join_handle.await?;
 
     println!("{:?}", num_handled);

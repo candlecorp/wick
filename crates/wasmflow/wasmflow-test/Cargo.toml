@@ -8,7 +8,10 @@ publish = false
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
 tap = { path = "../../misc/tap" }
-wasmflow-sdk = { path = "../wasmflow-sdk", features = ["v1"] }
+wasmflow-packet-stream = { path = "../wasmflow-packet-stream", features = [] }
+wasmrs-codec = { path = "../../../../wasmrs-rust/crates/wasmrs-codec", features = [
+] }
+wasmflow-entity = { path = "../wasmflow-entity"}
 wasmflow-rpc = { path = "../wasmflow-rpc" }
 serde = { workspace = true, features = ["derive"] }
 serde-value = { workspace = true }

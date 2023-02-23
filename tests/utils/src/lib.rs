@@ -1,11 +1,10 @@
 pub use maplit::hashmap;
 pub use pretty_assertions::assert_eq as equals;
 use tokio::time::sleep;
-use wasmflow_sdk::v1::transport::TransportJson;
+use wasmflow_packet_stream::Packet;
 
 pub type TestResult<T> = Result<T, TestError>;
 
-use std::collections::HashMap;
 use std::time::Duration;
 
 pub type TestError = anyhow::Error;
@@ -19,11 +18,7 @@ use tokio::select;
 use tokio::sync::mpsc::{self, Sender};
 use tokio::task::JoinHandle;
 
-pub async fn wasmflow_invoke(
-  port: &str,
-  name: &str,
-  data: Vec<String>,
-) -> Result<Vec<HashMap<String, TransportJson>>, TestError> {
+pub async fn wasmflow_invoke(port: &str, name: &str, data: Vec<String>) -> Result<Vec<Packet>, TestError> {
   println!("Executing wasmflow for schematic {}", name);
   let inputs = data
     .into_iter()
@@ -48,7 +43,7 @@ pub async fn wasmflow_invoke(
   println!("Result from wasmflow is {:?}", string);
   let output: Vec<_> = string.trim().split('\n').collect();
   println!("Num lines:{:?}", output.len());
-  let json: Vec<HashMap<String, TransportJson>> = output.iter().map(|l| serde_json::from_str(l).unwrap()).collect();
+  let json: Vec<Packet> = output.iter().map(|l| serde_json::from_str(l).unwrap()).collect();
 
   println!("JSON Results: {:?}", json);
 

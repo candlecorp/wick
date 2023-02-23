@@ -1,11 +1,11 @@
 #[cfg(feature = "grpc")]
 mod grpc;
-#[cfg(feature = "mesh")]
-mod mesh;
+// #[cfg(feature = "mesh")]
+// mod mesh;
 
 use std::net::SocketAddr;
-use std::sync::Arc;
 
+// use std::sync::Arc;
 use tokio::signal;
 use tokio::sync::mpsc::Sender;
 use wasmflow_rpc::SharedRpcHandler;
@@ -13,8 +13,8 @@ use wasmflow_rpc::SharedRpcHandler;
 use crate::options::Options;
 pub(crate) type Result<T> = std::result::Result<T, crate::error::CliError>;
 
-#[cfg(feature = "mesh")]
-use wasmflow_mesh::Mesh;
+// #[cfg(feature = "mesh")]
+// use wasmflow_mesh::Mesh;
 #[cfg(not(feature = "mesh"))]
 #[derive(Debug, Copy, Clone)]
 pub struct Mesh(); // Dummy struct if "mesh" feature is not enabled
@@ -29,8 +29,8 @@ pub struct ServerState {
   /// The address of the RPC server if it is running.
   pub rpc: Option<ServerControl>,
 
-  /// True if we're connected to the mesh, false otherwise.
-  pub mesh: Option<Arc<Mesh>>,
+  //// True if we're connected to the mesh, false otherwise.
+  // pub mesh: Option<Arc<Mesh>>,
   /// The ID of the server.
   pub id: String,
 }
@@ -76,10 +76,10 @@ pub fn print_info(info: &ServerState) {
     info!("GRPC server bound to {} on port {}", addr.ip(), addr.port());
   }
 
-  if info.mesh.is_some() {
-    something_started = true;
-    info!("Host connected to mesh with id '{}'", info.id);
-  }
+  // if info.mesh.is_some() {
+  //   something_started = true;
+  //   info!("Host connected to mesh with id '{}'", info.id);
+  // }
   if !something_started {
     warn!("No server information available, did you intend to start a host without GRPC or a mesh connection?");
     warn!("If not, try passing the flag --rpc or --mesh to explicitly enable those features.");
@@ -114,29 +114,29 @@ pub async fn start_server(collection: SharedRpcHandler, opts: Option<Options>) -
     }
   };
 
-  cfg_if::cfg_if! {
-    if #[cfg(feature="mesh")] {
-      let mesh = match &opts.mesh {
-        Some(mesh) => {
-          if mesh.enabled {
-            let mesh =
-              mesh::connect_to_mesh(mesh, opts.id.clone(), collection, opts.timeout).await?;
-            Some(mesh)
-          } else {
-            None
-          }
-        }
-        None => None,
-      };
-    } else {
-      let mesh = None;
-    }
-  };
+  // cfg_if::cfg_if! {
+  //   if #[cfg(feature="mesh")] {
+  //     let mesh = match &opts.mesh {
+  //       Some(mesh) => {
+  //         if mesh.enabled {
+  //           let mesh =
+  //             mesh::connect_to_mesh(mesh, opts.id.clone(), collection, opts.timeout).await?;
+  //           Some(mesh)
+  //         } else {
+  //           None
+  //         }
+  //       }
+  //       None => None,
+  //     };
+  //   } else {
+  // let mesh = None;
+  // }
+  // };
 
   Ok(ServerState {
     id: opts.id,
     rpc: ServerControl::maybe_new(rpc_addr),
-    mesh,
+    // mesh,
   })
 }
 

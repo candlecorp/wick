@@ -4,28 +4,30 @@ use uuid::Uuid;
 
 #[derive(Debug)]
 #[must_use]
-pub struct TransactionStatistics {
-  pub id: Uuid,
-  pub performance: Mutex<Performance>,
+pub(crate) struct TransactionStatistics {
+  #[allow(unused)]
+  pub(crate) id: Uuid,
+  pub(crate) performance: Mutex<Performance>,
 }
 
 impl TransactionStatistics {
-  pub fn new(uuid: Uuid) -> Self {
+  pub(crate) fn new(uuid: Uuid) -> Self {
     Self {
       id: uuid,
       performance: Mutex::new(Default::default()),
     }
   }
-  pub fn mark<T: AsRef<str>>(&self, label: T) {
+  pub(crate) fn mark<T: AsRef<str>>(&self, label: T) {
     self.performance.lock().mark(label);
   }
-  pub fn start<T: AsRef<str>>(&self, label: T) {
+  pub(crate) fn start<T: AsRef<str>>(&self, label: T) {
     self.performance.lock().start(label);
   }
-  pub fn end(&mut self, label: &str) {
+  pub(crate) fn end(&mut self, label: &str) {
     let _ = self.performance.lock().end(label);
   }
-  pub fn print(&self) {
+  #[cfg(test)]
+  pub(crate) fn print(&self) {
     let mut last = None;
     for event in self.performance.lock().events() {
       if last.is_none() {

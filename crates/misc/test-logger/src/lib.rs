@@ -83,7 +83,9 @@ fn expand_logging_init() -> Tokens {
     FoundCrate::Itself => quote! {
       let __guard = crate::init_test(&crate::LoggingOptions {
         trace: true,
+        silly: true,
         app_name: "test".to_owned(),
+        jaeger_endpoint: std::env::var("OTEL_EXPORTER_JAEGER_ENDPOINT").ok(),
         ..Default::default()
       });
     },
@@ -96,8 +98,10 @@ fn expand_logging_init() -> Tokens {
             trace: true,
             silly: true,
             app_name: "test".to_owned(),
+            jaeger_endpoint: std::env::var("OTEL_EXPORTER_JAEGER_ENDPOINT").ok(),
             ..Default::default()
           });
+
       }
     }
   }
@@ -108,9 +112,24 @@ fn expand_wrapper(inner_test: &Path, wrappee: &ItemFn) -> TokenStream {
   let attrs = &wrappee.attrs;
   let async_ = &wrappee.sig.asyncness;
   let await_ = if async_.is_some() {
-    quote! {.await}
+    quote! {.instrument(span).await}
   } else {
     quote! {}
+  };
+  let enter_ = if async_.is_some() {
+    quote! {use tracing::Instrument;}
+  } else {
+    quote! {let _guard = span.enter();}
+  };
+  let exit_ = if async_.is_some() {
+    quote! {
+      // TODO Find a better way to ensure the opentel exporter has flushed.
+      tokio::time::sleep(std::time::Duration::from_millis(200)).await;
+    }
+  } else {
+    quote! {
+      drop(_guard);
+    }
   };
   let body = &wrappee.block;
   let test_name = &wrappee.sig.ident;
@@ -131,11 +150,18 @@ fn expand_wrapper(inner_test: &Path, wrappee: &ItemFn) -> TokenStream {
       #async_ fn test_impl() #ret {
         #body
       }
-
       #logging_init
-
-      test_impl()#await_
+      let span = tracing::trace_span!(stringify!(#test_name));
+      #enter_
+      let result = test_impl()#await_;
+      if let Err(e) = &result {
+        tracing::error!(error = ?e, "test failed");
+      }
+      #exit_
+      if let Some(guard) = __guard { guard.teardown() } ;
+      result
     }
   };
+
   result.into()
 }

@@ -20,7 +20,7 @@ The first
 
 `makefiles/` - Core makefiles included by various sub-projects.
 
-`scripts/` - Miscellaneous scripts and files to aid development.
+`etc/` - Miscellaneous scripts and files to aid development.
 
 `tests/` - Integration tests that couldn't fit in sub-crates.
 

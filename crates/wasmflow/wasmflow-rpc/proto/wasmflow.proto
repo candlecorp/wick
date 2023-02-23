@@ -3,68 +3,56 @@ syntax = "proto3";
 package wasmflow;
 
 service InvocationService {
-  rpc Invoke(Invocation) returns (stream Output);
+  rpc Invoke(stream InvocationRequest) returns (stream Packet);
   rpc List(ListRequest) returns (ListResponse);
   rpc Stats(StatsRequest) returns (StatsResponse);
 }
 
-message Packet {
+message InvocationRequest {
   oneof data {
-    Serialized success = 1;
-    Failure failure = 2;
-    Signal signal = 3;
-  }
-}
-
-message Serialized {
-  PayloadData payload = 1;
-}
-
-message Failure {
-  enum FailureKind {
-    Error = 0;
-    Exception = 1;
-  }
-  string payload = 1;
-  FailureKind type = 2;
-}
-
-message Signal {
-  enum OutputSignal {
-    Done = 0;
-    OpenBracket = 1;
-    CloseBracket = 2;
-  }
-  PayloadData payload = 1;
-  OutputSignal type = 2;
-}
-
-message PayloadData {
-  oneof data {
-    bytes messagepack = 1;
-    string json = 3;
+    Invocation invocation = 1;
+    Packet packet = 2;
   }
 }
 
 message Invocation {
   string origin = 1;
   string target = 2;
-  map<string, Packet> payload = 3;
   string id = 4;
   string tx_id = 5;
   InherentData inherent = 6;
-  Serialized config = 7;
+}
+
+message Packet {
+  Metadata metadata = 1;
+  oneof data {
+    Ok ok = 2;
+    Err err = 3;
+    bool done = 4;
+  }
+}
+
+message Metadata {
+  string port = 1;
+  uint32 index = 2;
+  bool done = 3;
+}
+
+message Ok {
+  oneof data {
+    bytes messagepack = 1;
+    string json = 3;
+  }
+}
+
+message Err {
+  string message = 1;
+  uint32 code = 2;
 }
 
 message InherentData {
   uint64 seed = 1;
   uint64 timestamp = 2;
-}
-
-message Output {
-  string port = 1;
-  string invocation_id = 2;
-  Packet payload = 3;
 }
 
 message ListRequest {}
@@ -83,6 +71,7 @@ message Component {
   ComponentKind kind = 2;
   map<string, TypeSignature> inputs = 3;
   map<string, TypeSignature> outputs = 4;
+  uint32 index = 5;
 }
 
 message CollectionSignature {
@@ -151,17 +140,22 @@ message TypeSignature {
   oneof signature {
     SimpleType simple = 1;
     MapType map = 2;
-    ListType list = 3;
-    OptionalType optional = 4;
+    InnerType list = 3;
+    InnerType optional = 4;
     RefType ref = 5;
     LinkType link = 6;
     InternalType internal = 7;
     StructType struct = 8;
+    InnerType stream = 9;
+    AnonymousStruct anonymous_struct = 10;
+    string custom = 11;
   }
 }
 
+message AnonymousStruct { map<string, TypeSignature> fields = 1; }
+
 message SimpleType {
-  enum ApexType {
+  enum PrimitiveType {
     I8 = 0;
     U8 = 1;
     I16 = 2;
@@ -178,10 +172,12 @@ message SimpleType {
     BYTES = 13;
     VALUE = 15;
   }
-  ApexType type = 1;
+  PrimitiveType type = 1;
 }
 
-enum InternalType { ComponentInput = 0; }
+enum InternalType {
+  ComponentInput = 0;
+}
 
 message RefType { string ref = 1; }
 
@@ -194,6 +190,4 @@ message MapType {
   TypeSignature valueType = 2;
 }
 
-message ListType { TypeSignature type = 1; }
-
-message OptionalType { TypeSignature type = 1; }
+message InnerType { TypeSignature type = 1; }

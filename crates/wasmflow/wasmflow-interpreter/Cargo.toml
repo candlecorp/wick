@@ -7,10 +7,16 @@ publish = false
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
-wasmflow-sdk = { path = "../wasmflow-sdk", features = ["v1"] }
+wasmrs = { workspace = true }
+wasmrs-rx = { workspace = true }
+wasmrs-frames = { workspace = true }
+wasmrs-codec = { workspace = true }
+wasmflow-packet-stream = { path = "../wasmflow-packet-stream" }
 wasmflow-schematic-graph = { path = "../wasmflow-schematic-graph" }
 wasmflow-manifest = { path = "../wasmflow-manifest" }
 wasmflow-parser = { path = "../wasmflow-parser" }
+wasmflow-interface = { path = "../wasmflow-interface" }
+wasmflow-entity = { path = "../wasmflow-entity" }
 seeded-random = { path = "../../misc/seeded-random" }
 thiserror = { workspace = true }
 tracing = { workspace = true }
@@ -25,6 +31,7 @@ serde_json = { workspace = true }
 serde-value = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 rand = { workspace = true }
+bytes = { workspace = true }
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
@@ -32,3 +39,4 @@ logger = { path = "../logger" }
 test-logger = { path = "../../misc/test-logger" }
 anyhow = { workspace = true }
 serde_json = { workspace = true }
+rot = { path = "../../misc/rot" }

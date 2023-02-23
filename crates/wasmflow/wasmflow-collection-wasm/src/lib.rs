@@ -85,13 +85,13 @@
 // Add exceptions here
 #![allow(missing_docs)]
 
-pub mod callbacks;
+// pub mod callbacks;
 pub mod collection;
 pub mod error;
 pub mod helpers; // TODO ref check and make sure these are used:
 pub mod transaction;
-mod wapc_module;
 pub mod wasm_host;
+mod wasm_module;
 
 pub(crate) type Result<T> = std::result::Result<T, error::WasmCollectionError>;
 pub type Error = error::WasmCollectionError;

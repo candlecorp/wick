@@ -9,8 +9,12 @@ license = "BSD-3-Clause"
 
 [dependencies]
 wasmflow-runtime = { path = "../../../wasmflow-runtime" }
-wasmflow-mesh = { path = "../../../wasmflow-mesh" }
+wasmflow-entity = { path = "../../../wasmflow-entity" }
+wasmflow-packet-stream = { path = "../../../wasmflow-packet-stream", features = [
+] }
+# wasmflow-mesh = { path = "../../../wasmflow-mesh" }
 wasmflow-manifest = { path = "../../../wasmflow-manifest" }
 tracing = { workspace = true }
 anyhow = { workspace = true }
 uuid = { workspace = true }
+futures = { workspace = true }

@@ -1,8 +1,9 @@
 use futures::future::BoxFuture;
 use serde_json::Value;
-use wasmflow_sdk::v1::transport::{MessageTransport, TransportStream, TransportWrapper};
-use wasmflow_sdk::v1::types::{CollectionSignature, ComponentSignature};
-use wasmflow_sdk::v1::{CollectionLink, Entity, Invocation};
+use wasmflow_entity::Entity;
+use wasmflow_interface::{CollectionSignature, OperationSignature};
+use wasmflow_packet_stream::{CollectionLink, Invocation, Packet, PacketStream};
+use wasmrs_rx::{FluxChannel, Observer};
 
 use crate::constants::*;
 use crate::{BoxError, Collection, HandlerMap};
@@ -22,42 +23,46 @@ impl CollectionCollection {
   pub(crate) fn new(list: &HandlerMap) -> Self {
     let mut signature = CollectionSignature::new("collections");
     for ns in list.collections().keys() {
-      let mut comp_sig = ComponentSignature::new(ns.clone());
+      let mut comp_sig = OperationSignature::new(ns.clone());
       comp_sig
         .outputs
-        .insert("ref", wasmflow_sdk::v1::types::TypeSignature::Link { schemas: vec![] });
-      signature.components.insert(ns.clone(), comp_sig);
+        .insert("ref", wasmflow_interface::TypeSignature::Link { schemas: vec![] });
+      signature.operations.insert(ns.clone(), comp_sig);
     }
     Self { signature }
   }
 }
 
 impl Collection for CollectionCollection {
-  fn handle(&self, invocation: Invocation, _config: Option<Value>) -> BoxFuture<Result<TransportStream, BoxError>> {
-    trace!(target = %invocation.target, id=%invocation.id,namespace = NS_COLLECTIONS);
+  fn handle(
+    &self,
+    invocation: Invocation,
+    _stream: PacketStream,
+    _config: Option<Value>,
+  ) -> BoxFuture<Result<PacketStream, BoxError>> {
+    trace!(target = %invocation.target, namespace = NS_COLLECTIONS);
 
     // This handler handles the NS_COLLECTIONS namespace and outputs the entity
     // to link to.
-    let name = invocation.target.name().to_owned();
-    let entity = Entity::collection(&name);
+    let target_name = invocation.target.name().to_owned();
+    let entity = Entity::collection(invocation.target.name());
 
-    let contains_collection = self.signature.components.contains_key(&name);
-    let all_collections: Vec<_> = self.signature.components.inner().keys().cloned().collect();
+    let contains_collection = self.signature.operations.contains_key(target_name);
+    let all_collections: Vec<_> = self.signature.operations.inner().keys().cloned().collect();
 
     Box::pin(async move {
       let port_name = "ref";
       if !contains_collection {
-        return Err(Error::CollectionNotFound(name, all_collections).into());
+        return Err(Error::CollectionNotFound(entity.name().to_owned(), all_collections).into());
       }
-      let messages = vec![
-        TransportWrapper::new(
-          port_name,
-          MessageTransport::success(&CollectionLink::new(invocation.origin, entity)),
-        ),
-        TransportWrapper::done(port_name),
-      ];
+      let flux = FluxChannel::new();
 
-      Ok(TransportStream::new(tokio_stream::iter(messages.into_iter())))
+      flux.send(Packet::encode(
+        port_name,
+        CollectionLink::new(invocation.origin, entity),
+      ))?;
+
+      Ok(PacketStream::new(Box::new(flux)))
     })
   }
 

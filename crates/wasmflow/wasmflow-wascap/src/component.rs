@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 use wascap::jwt::WascapEntity;
-use wasmflow_sdk::v1::types::CollectionSignature;
+use wasmflow_interface::CollectionSignature;
 
 /// The metadata that corresponds to an actor module.
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]

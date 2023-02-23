@@ -19,7 +19,9 @@ codegen-units = 4
 [dependencies]
 
 [dev-dependencies]
-wasmflow-sdk = { path = "./crates/wasmflow/wasmflow-sdk", features = ["v1"] }
+wasmflow-packet-stream = { path = "./crates/wasmflow/wasmflow-packet-stream", features = [
+] }
+wasmflow-entity = { path = "./crates/wasmflow/wasmflow-entity" }
 logger = { path = "./crates/wasmflow/logger" }
 test-native-collection = { path = "./crates/integration/test-native-collection" }
 wasmflow-rpc = { path = "./crates/wasmflow/wasmflow-rpc" }
@@ -37,26 +39,33 @@ log = "0.4"
 test-logger = { path = "./crates/misc/test-logger" }
 anyhow = { workspace = true }
 serde_json = { workspace = true }
+tracing = { workspace = true }
 
 [workspace]
 members = [
-  "crates/interfaces/*",
-  "crates/integration/*",
+  # "crates/interfaces/*",
+  "crates/integration/test-native-collection",
   "crates/misc/*",
-  "crates/collections/*",
+  # "crates/collections/*",
   "crates/bins/*",
   "crates/wasmflow/*",
 ]
 exclude = [
+  "crates/integration/test-baseline-component",
   "crates/integration/test-wasm-component",
   "crates/integration/test-wasi-component",
   "crates/integration/test-main-component",
   "crates/integration/test-main-network-component",
-  "crates/wasmflow/wasmflow-sdk",
+  "crates/wasmflow/wasmflow-mesh", #TODO: remove/fix
+  "crates/wasmflow/wasmflow-collection-grpc", #TODO: remove/fix
+  "crates/wasmflow/wasmflow-collection-grpctar", #TODO: remove/fix
+  "crates/wasmflow/wasmflow-collection-nats", #TODO: remove/fix
+
 ]
 
 [workspace.dependencies]
 env_logger = "0.10.0"
+bytes = "1.4"
 serde = "1.0"
 serde_json = "1.0"
 serde_yaml = "0.9"
@@ -79,3 +88,11 @@ tonic-build = "0.8"
 rand = "0.8"
 shellexpand = "3.0"
 regex = "1"
+k9 = "0.11"
+wasmrs = { path = "../wasmrs-rust/crates/wasmrs" }
+wasmrs-rx = { path = "../wasmrs-rust/crates/wasmrs-rx" }
+wasmrs-frames = { path = "../wasmrs-rust/crates/wasmrs-frames" }
+wasmrs-codec = { path = "../wasmrs-rust/crates/wasmrs-codec" }
+wasmrs-wasmtime = { path = "../wasmrs-rust/crates/wasmrs-wasmtime" }
+wasmrs-host = { path = "../wasmrs-rust/crates/wasmrs-host" }
+wasmrs-runtime = { path = "../wasmrs-rust/crates/wasmrs-runtime" }

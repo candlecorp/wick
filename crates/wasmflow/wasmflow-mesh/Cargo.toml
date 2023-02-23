@@ -9,7 +9,6 @@ publish = false
 [features]
 
 [dependencies]
-wasmflow-sdk = { path = "../wasmflow-sdk", features = ["v1"] }
 nats = { version = "0.15" }
 tracing = { workspace = true }
 wasmflow-rpc = { path = "../wasmflow-rpc" }

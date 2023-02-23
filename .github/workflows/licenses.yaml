@@ -21,4 +21,4 @@ jobs:
           crate: cargo-deny
 
       - name: Check formatting
-        run: cargo deny check licenses --hide-inclusion-graph
+        run: cargo deny check licenses --config etc/deny.toml --hide-inclusion-graph

@@ -1,18 +1,12 @@
 {
   "git.ignoreLimitWarning": true,
-  "rust-analyzer.checkOnSave.command": "clippy",
   "yaml.schemas": {
     "/home/jsoverson/development/src/vino/crates/vino-manifest/json-schema/v0/manifest.json": [
       "*.vino"
     ],
-    "crates/wasmflow/wasmflow-manifest/json-schema/manifest.json": [
-      "**/*.wafl"
-    ]
+    "crates/wasmflow/wasmflow-manifest/json-schema/manifest.json": ["**/*.wafl"]
   },
-  "rust-analyzer.cargo.features": [
-    "wasmflow-sdk/v1",
-    "wasmflow-stdlib/host"
-  ],
+  "rust-analyzer.cargo.features": ["wasmflow-rpc/client"],
   "files.associations": {
     "*.wafl": "yaml"
   },

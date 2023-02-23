@@ -5,8 +5,8 @@ use anyhow::Result;
 use clap::Args;
 use tokio::task::JoinHandle;
 use wasmflow_collection_cli::options::MeshCliOptions;
+use wasmflow_packet_stream::InherentData;
 use wasmflow_runtime::configuration::{ApplicationContext, Channel};
-use wasmflow_sdk::v1::InherentData;
 
 #[derive(Debug, Clone, Args)]
 #[clap(rename_all = "kebab-case")]

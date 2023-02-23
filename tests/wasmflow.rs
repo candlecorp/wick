@@ -1,19 +1,18 @@
 use std::panic;
 
 use log::{debug, error};
-use serde_json::json;
 use utils::*;
-use wasmflow_sdk::v1::transport::{JsonError, TransportJson};
+use wasmflow_packet_stream::Packet;
 
 #[test_logger::test(tokio::test)]
-async fn test_vow_serve() -> utils::TestResult<()> {
+async fn test_wasmflow_serve() -> utils::TestResult<()> {
   debug!("Starting collection");
   let (p_tx, p_handle, port) = start_collection(
     "wasmflow",
     "component rpc server",
     &[
       "serve",
-      "./crates/integration/test-wasm-component/build/test_component.signed.wasm",
+      "./crates/integration/test-baseline-component/build/baseline.signed.wasm",
       "--trace",
       "--rpc",
     ],
@@ -24,17 +23,10 @@ async fn test_vow_serve() -> utils::TestResult<()> {
 
   let args = vec![format!("input=\"{}\"", input_data)];
   let actual = wasmflow_invoke(&port, "validate", args).await?;
-
-  let expected = hashmap! { "output".to_owned() => TransportJson {
-      signal: None,
-      error_msg: None,
-      error_kind: JsonError::None,
-      value: json!(input_data),
-    }
-  };
+  let expected = vec![Packet::encode("output", input_data)];
 
   let result = panic::catch_unwind(|| {
-    equals!(actual, vec![expected]);
+    equals!(actual, expected);
   });
 
   p_tx.send(Signal::Kill).await?;

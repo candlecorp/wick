@@ -1,11 +1,11 @@
+use std::collections::HashSet;
 use std::time::SystemTime;
 
 use anyhow::Result;
 use clap::Args;
-use tokio::io::{self, AsyncBufReadExt, BufReader};
 use wasmflow_collection_cli::parse_args;
-use wasmflow_sdk::v1::transport::TransportMap;
-use wasmflow_sdk::v1::{Entity, InherentData, Invocation};
+use wasmflow_entity::Entity;
+use wasmflow_packet_stream::{InherentData, Invocation, Observer, Packet, PacketStream};
 
 use crate::utils;
 
@@ -81,29 +81,39 @@ pub(crate) async fn handle(opts: RpcInvokeCommand) -> Result<()> {
   let check_stdin = !opts.no_input && opts.data.is_empty() && opts.args.is_empty();
 
   if check_stdin {
-    if atty::is(atty::Stream::Stdin) {
-      eprintln!("No input passed, reading from <STDIN>. Pass --no-input to disable.");
-    }
-    let reader = BufReader::new(io::stdin());
-    let mut lines = reader.lines();
-    while let Some(line) = lines.next_line().await? {
-      let stream = client
-        .invoke_from_json(origin.clone(), target.clone(), &line, !opts.raw, inherent_data)
-        .await?;
-      utils::print_stream_json(stream, &opts.filter, opts.short, opts.raw).await?;
-    }
+    todo!();
+    // if atty::is(atty::Stream::Stdin) {
+    //   eprintln!("No input passed, reading from <STDIN>. Pass --no-input to disable.");
+    // }
+    // let reader = BufReader::new(io::stdin());
+    // let mut lines = reader.lines();
+    // while let Some(line) = lines.next_line().await? {
+    //   let stream = client
+    //     .invoke_from_json(origin.clone(), target.clone(), &line, !opts.raw, inherent_data)
+    //     .await?;
+    //   utils::print_stream_json(stream, &opts.filter, opts.short, opts.raw).await?;
+    // }
   } else {
-    let mut data_map = TransportMap::from_kv_json(&opts.data)?;
+    let data = Packet::from_kv_json(&opts.data)?;
 
-    let mut rest_arg_map = parse_args(&opts.args)?;
-    if !opts.raw {
-      data_map.transpose_output_name();
-      rest_arg_map.transpose_output_name();
+    let args = parse_args(&opts.args)?;
+    let (tx, stream) = PacketStream::new_channels();
+    let mut seen_ports = HashSet::new();
+    for packet in args {
+      seen_ports.insert(packet.port_name().to_owned());
+      tx.send(packet)?;
     }
-    data_map.merge(rest_arg_map);
-    let invocation = Invocation::new(origin, target, data_map, inherent_data);
+    for packet in data {
+      seen_ports.insert(packet.port_name().to_owned());
+      tx.send(packet)?;
+    }
+    for port in seen_ports {
+      tx.send(Packet::done(port))?;
+    }
+
+    let invocation = Invocation::new(origin, target, inherent_data);
     trace!("issuing invocation");
-    let stream = client.invoke(invocation).await?;
+    let stream = client.invoke(invocation, stream).await?;
     trace!("server responsed");
     utils::print_stream_json(stream, &opts.filter, opts.short, opts.raw).await?;
   }

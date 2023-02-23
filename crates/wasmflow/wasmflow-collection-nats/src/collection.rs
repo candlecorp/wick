@@ -53,7 +53,7 @@ impl RpcHandler for Collection {
     Ok(stream)
   }
 
-  fn get_list(&self) -> RpcResult<Vec<wasmflow_sdk::v1::types::HostedType>> {
+  fn get_list(&self) -> RpcResult<Vec<wasmflow_interface::HostedType>> {
     let components = block_on(self.mesh.list_components(self.mesh_id.clone()))
       .map_err(|e| RpcError::CollectionError(e.to_string()))?;
 
@@ -65,11 +65,11 @@ impl RpcHandler for Collection {
 mod tests {
 
   use anyhow::Result as TestResult;
+  use wasmflow_entity::Entity;
   use wasmflow_mesh::MeshBuilder;
   use wasmflow_rpc::SharedRpcHandler;
   use wasmflow_sdk::v1::packet::PacketMap;
   use wasmflow_sdk::v1::transport::MessageTransport;
-  use wasmflow_sdk::v1::Entity;
 
   use super::*;
 
@@ -89,7 +89,7 @@ mod tests {
     let user_data = "Hello world";
 
     let job_payload = PacketMap::from([("input", user_data)]);
-    let invocation = Invocation::new_test(file!(), Entity::component(ns, "test-component"), job_payload, None);
+    let invocation = Invocation::new_test(file!(), Entity::operation(ns, "test-component"), job_payload, None);
 
     let mut stream = collection.invoke(invocation).await?;
     let output = stream.drain_port("output").await?[0].clone();
@@ -115,7 +115,7 @@ mod tests {
 
     let job_payload = PacketMap::from([("input", user_data)]);
 
-    let invocation = Invocation::new_test(file!(), Entity::component(ns, "error"), job_payload, None);
+    let invocation = Invocation::new_test(file!(), Entity::operation(ns, "error"), job_payload, None);
 
     let mut stream = collection.invoke(invocation).await?;
     let outputs = stream.drain().await;

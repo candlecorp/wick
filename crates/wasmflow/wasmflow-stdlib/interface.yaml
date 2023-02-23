@@ -1,0 +1,32 @@
+---
+name: wasmflow-stdlib
+metadata:
+  version: 1
+operations:
+  core::error:
+    inputs: { input: string }
+    outputs: { output: string }
+  core::log:
+    inputs: { input: string }
+    outputs: { output: string }
+  core::panic:
+    inputs: { input: string }
+    outputs: { output: string }
+  math::add:
+    inputs: { left: u64, right: u64 }
+    outputs: { output: u64 }
+  math::subtract:
+    inputs: { left: u64, right: u64 }
+    outputs: { output: u64 }
+  rand::bytes:
+    inputs: { seed: u64, length: u32 }
+    outputs: { output: bytes }
+  rand::string:
+    inputs: { seed: u64, length: u32 }
+    outputs: { output: string }
+  rand::uuid:
+    inputs: { seed: u64 }
+    outputs: { output: string }
+  string::concat:
+    inputs: { left: string, right: string }
+    outputs: { output: string }
