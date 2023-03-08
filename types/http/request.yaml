@@ -1,13 +1,26 @@
 ---
 apiVersion: wick.candle.dev/v1alpha1
 kind: Type
+imports:
+  - HttpVersion
 HttpRequest:
+  #method from request line
   method: string
+  #scheme from request line
   scheme: string
+  #domain/port and any authentication from request line. Can be empty if no authority
   authority: string
+  #query parameters from request line. Can be null if no query parameters
   queryParameters: { string:string }
+  #path from request line (not including query parameters)
   path: string
+  #full URI from request line
   uri: string
-  version: string
+  #HTTP version enum
+  version: HttpVersion
+  #All request headers. Duplicates are not shown.
   headers: { string:string }
+  #All request headers, as a single string in case duplicate headers exist.
+  headersRaw: string
+  #Request body. Can be empty if no body.
   body: bytes
