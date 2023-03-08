@@ -13,7 +13,7 @@ HttpResponse:
   headers: { string:string }
   #All response headers, as a single string in case duplicate headers exist.
   headersRaw: string
-  #Response
+  #Response body in bytes. optional.
   body: bytes?
 ---
 apiVersion: wick.candle.dev/v1alpha1
@@ -40,4 +40,4 @@ fields:
   - name: body
     type: bytes
     optional: true
-    description: Response
+    description: Response body in bytes. optional.
