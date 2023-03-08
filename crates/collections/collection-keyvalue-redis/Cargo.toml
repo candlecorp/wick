@@ -1,5 +1,5 @@
 [package]
-name = "wasmflow-keyvalue-redis"
+name = "wick-keyvalue-redis"
 version = "0.0.0"
 edition = "2021"
 license-file = "LICENSE"
@@ -9,9 +9,9 @@ default = ["host"]
 host = []
 
 [dependencies]
-wasmflow-collection-cli = { path = "../../wasmflow/wasmflow-collection-cli" }
-wasmflow-rpc = { path = "../../wasmflow/wasmflow-rpc" }
-# wasmflow-interface-keyvalue = { path = "../../interfaces/wasmflow-interface-keyvalue", features = [
+wick-component-cli = { path = "../../wick/wick-component-cli" }
+wick-rpc = { path = "../../wick/wick-rpc" }
+# wick-interface-types-keyvalue = { path = "../../interfaces/wick-interface-types-keyvalue", features = [
 #   "host",
 #   "guest",
 # ] }
@@ -27,7 +27,7 @@ clap = { workspace = true, features = ["derive", "env"] }
 tracing = { workspace = true }
 
 [dev-dependencies]
-logger = { path = "../../wasmflow/logger" }
+logger = { path = "../../wick/logger" }
 serde_json = { workspace = true }
 tonic = { workspace = true }
 rand = { workspace = true }

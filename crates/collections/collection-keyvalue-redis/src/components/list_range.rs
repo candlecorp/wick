@@ -1,6 +1,6 @@
 use std::convert::TryInto;
 
-use wasmflow_interface_keyvalue::list_range::*;
+use wick_interface_types_keyvalue::list_range::*;
 
 use crate::components::generated::list_range::*;
 

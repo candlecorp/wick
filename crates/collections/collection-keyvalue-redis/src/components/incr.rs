@@ -1,4 +1,4 @@
-pub use wasmflow_interface_keyvalue::incr::*;
+pub use wick_interface_types_keyvalue::incr::*;
 
 use crate::components::generated::incr::*;
 

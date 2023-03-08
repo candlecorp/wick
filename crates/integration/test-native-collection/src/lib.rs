@@ -1,9 +1,9 @@
 use async_trait::async_trait;
 use futures::StreamExt;
-use wasmflow_interface::{component, HostedType};
-use wasmflow_packet_stream::{fan_out, Invocation, Observer, Packet, PacketStream};
-use wasmflow_rpc::error::RpcError;
-use wasmflow_rpc::{dispatch, RpcHandler, RpcResult};
+use wick_interface_types::{component, HostedType};
+use wick_packet::{fan_out, Invocation, Observer, Packet, PacketStream};
+use wick_rpc::error::RpcError;
+use wick_rpc::{dispatch, RpcHandler, RpcResult};
 
 #[macro_use]
 extern crate tracing;
@@ -72,9 +72,8 @@ mod tests {
 
   use pretty_assertions::assert_eq;
   use tracing::*;
-  use wasmflow_entity::Entity;
-  use wasmflow_interface::*;
-  use wasmflow_packet_stream::packet_stream;
+  use wick_interface_types::*;
+  use wick_packet::{packet_stream, Entity};
 
   use super::*;
 

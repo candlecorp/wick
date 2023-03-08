@@ -1,4 +1,4 @@
-use wasmflow_interface_keyvalue::key_get::*;
+use wick_interface_types_keyvalue::key_get::*;
 
 use crate::components::generated::key_get::*;
 use crate::error::Exception;

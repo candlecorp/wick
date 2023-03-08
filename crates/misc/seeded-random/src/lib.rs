@@ -1,6 +1,6 @@
 #![doc = include_str!("../README.md")]
 // !!START_LINTS
-// Wasmflow lints
+// Wick lints
 // Do not change anything between the START_LINTS and END_LINTS line.
 // This is automatically generated. Add exceptions after this section.
 #![allow(unknown_lints)]

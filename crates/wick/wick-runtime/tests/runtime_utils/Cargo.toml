@@ -1,0 +1,20 @@
+[package]
+name = "runtime-testutils"
+version = "0.1.0"
+authors = ["Jarrod Overson <jsoverson@gmail.com>"]
+edition = "2021"
+license = "BSD-3-Clause"
+repository = "https://github.com/candlecorp/wick"
+
+
+[features]
+
+[dependencies]
+wick-runtime = { path = "../../../wick-runtime" }
+wick-packet = { path = "../../../wick-packet", features = [
+] }
+wick-config-component = { path = "../../../wick-config-component" }
+tracing = { workspace = true }
+anyhow = { workspace = true }
+uuid = { workspace = true }
+futures = { workspace = true }

@@ -1,5 +1,5 @@
 {
-  "name": "wasmflow-interface-keyvalue",
+  "name": "wick-interface-types-keyvalue",
   "features": {
     "stateful": false,
     "streaming": false,

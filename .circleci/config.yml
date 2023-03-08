@@ -157,7 +157,7 @@ jobs:
     resource_class: small
     steps:
       - slack/notify:
-          channel: wasmflow-ci
+          channel: wick-ci
           custom: Build ready
           event: pass
   test:
@@ -198,7 +198,7 @@ jobs:
       - run:
           name: Build
           command: |
-            WASMFLOW_VERSION="<< pipeline.git.tag >>" WAFL_VERSION="<< pipeline.git.tag >>" ARCH=<<parameters.arch>> RELEASE=<<parameters.release>>  make bins
+            WICK_VERSION="<< pipeline.git.tag >>" WAFL_VERSION="<< pipeline.git.tag >>" ARCH=<<parameters.arch>> RELEASE=<<parameters.release>>  make bins
       - save_cache:
           key: artifacts-<<parameters.arch>>-{{ .Environment.CIRCLE_SHA1 }}
           paths:
@@ -233,13 +233,13 @@ jobs:
           command: |
             cd /home/circleci/project
             mkdir -p ./build/artifacts
-            make-tarball wasmflow ./build/x86_64-unknown-linux-gnu linux.x86_64 build/artifacts
-            make-tarball wasmflow ./build/aarch64-unknown-linux-gnu linux.aarch64 build/artifacts
-            make-tarball wasmflow ./build/x86_64-apple-darwin darwin.x86_64 build/artifacts
-            make-tarball wasmflow ./build/aarch64-apple-darwin darwin.aarch64 build/artifacts
-            make-zip ./build/x86_64-pc-windows-gnu wasmflow.win64 build/artifacts
-            cp /home/candle/project/crates/wasmflow/wasmflow-rpc/proto/wasmflow.proto build/artifacts/wasmflow.proto
-            cp /home/candle/project/crates/wasmflow/wasmflow-manifest/json-schema/manifest.json build/artifacts/manifest-schema.json
+            make-tarball wick ./build/x86_64-unknown-linux-gnu linux.x86_64 build/artifacts
+            make-tarball wick ./build/aarch64-unknown-linux-gnu linux.aarch64 build/artifacts
+            make-tarball wick ./build/x86_64-apple-darwin darwin.x86_64 build/artifacts
+            make-tarball wick ./build/aarch64-apple-darwin darwin.aarch64 build/artifacts
+            make-zip ./build/x86_64-pc-windows-gnu wick.win64 build/artifacts
+            cp /home/candle/project/crates/wick/wick-rpc/proto/wick.proto build/artifacts/wick.proto
+            cp /home/candle/project/crates/wick/wick-config-component/json-schema/manifest.json build/artifacts/manifest-schema.json
             BUILDTAG="nightly-$(date +%F)"
             echo $BUILDTAG > build/artifacts/RELEASE
             echo << pipeline.git.revision >> >> build/artifacts/RELEASE

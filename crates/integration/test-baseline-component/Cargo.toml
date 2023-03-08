@@ -19,5 +19,5 @@ crate-type = ["cdylib"]
 wasmrs-guest = { path = "../../../../wasmrs-rust/crates/wasmrs-guest", features = [
   "logging"
 ] }
-wick-wasmrs-macros = { path = "../../wasmflow/wick-wasmrs-macros" }
+wick-wasmrs-macros = { path = "../../wick/wick-wasmrs-macros" }
 serde = { version = "1", features = ["derive"] }

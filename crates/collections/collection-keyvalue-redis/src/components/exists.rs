@@ -1,4 +1,4 @@
-use wasmflow_interface_keyvalue::exists::*;
+use wick_interface_types_keyvalue::exists::*;
 
 use crate::components::generated::exists::*;
 

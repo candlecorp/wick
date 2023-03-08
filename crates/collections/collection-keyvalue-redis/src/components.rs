@@ -244,50 +244,62 @@ pub fn get_signature() -> wasmflow_sdk::v1::types::CollectionSignature {
   let mut components: std::collections::HashMap<String, wasmflow_sdk::v1::types::OperationSignature> =
     std::collections::HashMap::new();
 
-  components.insert("decr".to_owned(), wasmflow_interface_keyvalue::decr::signature());
+  components.insert("decr".to_owned(), wick_interface_types_keyvalue::decr::signature());
 
-  components.insert("delete".to_owned(), wasmflow_interface_keyvalue::delete::signature());
+  components.insert("delete".to_owned(), wick_interface_types_keyvalue::delete::signature());
 
-  components.insert("exists".to_owned(), wasmflow_interface_keyvalue::exists::signature());
+  components.insert("exists".to_owned(), wick_interface_types_keyvalue::exists::signature());
 
-  components.insert("incr".to_owned(), wasmflow_interface_keyvalue::incr::signature());
+  components.insert("incr".to_owned(), wick_interface_types_keyvalue::incr::signature());
 
-  components.insert("key-get".to_owned(), wasmflow_interface_keyvalue::key_get::signature());
+  components.insert(
+    "key-get".to_owned(),
+    wick_interface_types_keyvalue::key_get::signature(),
+  );
 
-  components.insert("key-set".to_owned(), wasmflow_interface_keyvalue::key_set::signature());
+  components.insert(
+    "key-set".to_owned(),
+    wick_interface_types_keyvalue::key_set::signature(),
+  );
 
   components.insert(
     "list-add".to_owned(),
-    wasmflow_interface_keyvalue::list_add::signature(),
+    wick_interface_types_keyvalue::list_add::signature(),
   );
 
   components.insert(
     "list-range".to_owned(),
-    wasmflow_interface_keyvalue::list_range::signature(),
+    wick_interface_types_keyvalue::list_range::signature(),
   );
 
   components.insert(
     "list-remove".to_owned(),
-    wasmflow_interface_keyvalue::list_remove::signature(),
+    wick_interface_types_keyvalue::list_remove::signature(),
   );
 
-  components.insert("set-add".to_owned(), wasmflow_interface_keyvalue::set_add::signature());
+  components.insert(
+    "set-add".to_owned(),
+    wick_interface_types_keyvalue::set_add::signature(),
+  );
 
   components.insert(
     "set-contains".to_owned(),
-    wasmflow_interface_keyvalue::set_contains::signature(),
+    wick_interface_types_keyvalue::set_contains::signature(),
   );
 
-  components.insert("set-get".to_owned(), wasmflow_interface_keyvalue::set_get::signature());
+  components.insert(
+    "set-get".to_owned(),
+    wick_interface_types_keyvalue::set_get::signature(),
+  );
 
   components.insert(
     "set-remove".to_owned(),
-    wasmflow_interface_keyvalue::set_remove::signature(),
+    wick_interface_types_keyvalue::set_remove::signature(),
   );
 
   components.insert(
     "set-scan".to_owned(),
-    wasmflow_interface_keyvalue::set_scan::signature(),
+    wick_interface_types_keyvalue::set_scan::signature(),
   );
 
   wasmflow_sdk::v1::types::CollectionSignature {
@@ -347,57 +359,57 @@ pub mod generated {
 
     #[derive(Debug, serde::Deserialize, serde::Serialize, Clone)]
     pub enum ComponentInputs {
-      Decr(wasmflow_interface_keyvalue::decr::Inputs),
-      Delete(wasmflow_interface_keyvalue::delete::Inputs),
-      Exists(wasmflow_interface_keyvalue::exists::Inputs),
-      Incr(wasmflow_interface_keyvalue::incr::Inputs),
-      KeyGet(wasmflow_interface_keyvalue::key_get::Inputs),
-      KeySet(wasmflow_interface_keyvalue::key_set::Inputs),
-      ListAdd(wasmflow_interface_keyvalue::list_add::Inputs),
-      ListRange(wasmflow_interface_keyvalue::list_range::Inputs),
-      ListRemove(wasmflow_interface_keyvalue::list_remove::Inputs),
-      SetAdd(wasmflow_interface_keyvalue::set_add::Inputs),
-      SetContains(wasmflow_interface_keyvalue::set_contains::Inputs),
-      SetGet(wasmflow_interface_keyvalue::set_get::Inputs),
-      SetRemove(wasmflow_interface_keyvalue::set_remove::Inputs),
-      SetScan(wasmflow_interface_keyvalue::set_scan::Inputs),
+      Decr(wick_interface_types_keyvalue::decr::Inputs),
+      Delete(wick_interface_types_keyvalue::delete::Inputs),
+      Exists(wick_interface_types_keyvalue::exists::Inputs),
+      Incr(wick_interface_types_keyvalue::incr::Inputs),
+      KeyGet(wick_interface_types_keyvalue::key_get::Inputs),
+      KeySet(wick_interface_types_keyvalue::key_set::Inputs),
+      ListAdd(wick_interface_types_keyvalue::list_add::Inputs),
+      ListRange(wick_interface_types_keyvalue::list_range::Inputs),
+      ListRemove(wick_interface_types_keyvalue::list_remove::Inputs),
+      SetAdd(wick_interface_types_keyvalue::set_add::Inputs),
+      SetContains(wick_interface_types_keyvalue::set_contains::Inputs),
+      SetGet(wick_interface_types_keyvalue::set_get::Inputs),
+      SetRemove(wick_interface_types_keyvalue::set_remove::Inputs),
+      SetScan(wick_interface_types_keyvalue::set_scan::Inputs),
     }
 
     #[cfg(all(feature = "guest"))]
     #[allow(missing_debug_implementations)]
     pub enum ComponentOutputs {
-      Decr(wasmflow_interface_keyvalue::decr::Outputs),
-      Delete(wasmflow_interface_keyvalue::delete::Outputs),
-      Exists(wasmflow_interface_keyvalue::exists::Outputs),
-      Incr(wasmflow_interface_keyvalue::incr::Outputs),
-      KeyGet(wasmflow_interface_keyvalue::key_get::Outputs),
-      KeySet(wasmflow_interface_keyvalue::key_set::Outputs),
-      ListAdd(wasmflow_interface_keyvalue::list_add::Outputs),
-      ListRange(wasmflow_interface_keyvalue::list_range::Outputs),
-      ListRemove(wasmflow_interface_keyvalue::list_remove::Outputs),
-      SetAdd(wasmflow_interface_keyvalue::set_add::Outputs),
-      SetContains(wasmflow_interface_keyvalue::set_contains::Outputs),
-      SetGet(wasmflow_interface_keyvalue::set_get::Outputs),
-      SetRemove(wasmflow_interface_keyvalue::set_remove::Outputs),
-      SetScan(wasmflow_interface_keyvalue::set_scan::Outputs),
+      Decr(wick_interface_types_keyvalue::decr::Outputs),
+      Delete(wick_interface_types_keyvalue::delete::Outputs),
+      Exists(wick_interface_types_keyvalue::exists::Outputs),
+      Incr(wick_interface_types_keyvalue::incr::Outputs),
+      KeyGet(wick_interface_types_keyvalue::key_get::Outputs),
+      KeySet(wick_interface_types_keyvalue::key_set::Outputs),
+      ListAdd(wick_interface_types_keyvalue::list_add::Outputs),
+      ListRange(wick_interface_types_keyvalue::list_range::Outputs),
+      ListRemove(wick_interface_types_keyvalue::list_remove::Outputs),
+      SetAdd(wick_interface_types_keyvalue::set_add::Outputs),
+      SetContains(wick_interface_types_keyvalue::set_contains::Outputs),
+      SetGet(wick_interface_types_keyvalue::set_get::Outputs),
+      SetRemove(wick_interface_types_keyvalue::set_remove::Outputs),
+      SetScan(wick_interface_types_keyvalue::set_scan::Outputs),
     }
 
     #[derive(Debug, serde::Deserialize)]
     pub enum Config {
-      Decr(wasmflow_interface_keyvalue::decr::Config),
-      Delete(wasmflow_interface_keyvalue::delete::Config),
-      Exists(wasmflow_interface_keyvalue::exists::Config),
-      Incr(wasmflow_interface_keyvalue::incr::Config),
-      KeyGet(wasmflow_interface_keyvalue::key_get::Config),
-      KeySet(wasmflow_interface_keyvalue::key_set::Config),
-      ListAdd(wasmflow_interface_keyvalue::list_add::Config),
-      ListRange(wasmflow_interface_keyvalue::list_range::Config),
-      ListRemove(wasmflow_interface_keyvalue::list_remove::Config),
-      SetAdd(wasmflow_interface_keyvalue::set_add::Config),
-      SetContains(wasmflow_interface_keyvalue::set_contains::Config),
-      SetGet(wasmflow_interface_keyvalue::set_get::Config),
-      SetRemove(wasmflow_interface_keyvalue::set_remove::Config),
-      SetScan(wasmflow_interface_keyvalue::set_scan::Config),
+      Decr(wick_interface_types_keyvalue::decr::Config),
+      Delete(wick_interface_types_keyvalue::delete::Config),
+      Exists(wick_interface_types_keyvalue::exists::Config),
+      Incr(wick_interface_types_keyvalue::incr::Config),
+      KeyGet(wick_interface_types_keyvalue::key_get::Config),
+      KeySet(wick_interface_types_keyvalue::key_set::Config),
+      ListAdd(wick_interface_types_keyvalue::list_add::Config),
+      ListRange(wick_interface_types_keyvalue::list_range::Config),
+      ListRemove(wick_interface_types_keyvalue::list_remove::Config),
+      SetAdd(wick_interface_types_keyvalue::set_add::Config),
+      SetContains(wick_interface_types_keyvalue::set_contains::Config),
+      SetGet(wick_interface_types_keyvalue::set_get::Config),
+      SetRemove(wick_interface_types_keyvalue::set_remove::Config),
+      SetScan(wick_interface_types_keyvalue::set_scan::Config),
     }
 
     #[derive(Default, Clone, Copy)]
@@ -569,15 +581,15 @@ pub mod generated {
     }
   }
 
-  // wellknown interface: ../../interfaces/wasmflow-interface-keyvalue/interface.json
+  // wellknown interface: ../../interfaces/wick-interface-types-keyvalue/interface.json
 
   // start component decr
   pub mod decr {
     // The user-facing implementation job impl.
     // The generated definition of inputs, outputs, config, et al.
-    use wasmflow_interface_keyvalue::decr as definition;
     pub use wasmflow_sdk::v1::packet::v1::Packet;
     pub use wasmflow_sdk::v1::{console_log, ComponentOutput, Writable};
+    use wick_interface_types_keyvalue::decr as definition;
 
     // The generated integration code between the definition and the implementation.
     use super::decr as integration;
@@ -628,9 +640,9 @@ pub mod generated {
   pub mod delete {
     // The user-facing implementation job impl.
     // The generated definition of inputs, outputs, config, et al.
-    use wasmflow_interface_keyvalue::delete as definition;
     pub use wasmflow_sdk::v1::packet::v1::Packet;
     pub use wasmflow_sdk::v1::{console_log, ComponentOutput, Writable};
+    use wick_interface_types_keyvalue::delete as definition;
 
     // The generated integration code between the definition and the implementation.
     use super::delete as integration;
@@ -681,9 +693,9 @@ pub mod generated {
   pub mod exists {
     // The user-facing implementation job impl.
     // The generated definition of inputs, outputs, config, et al.
-    use wasmflow_interface_keyvalue::exists as definition;
     pub use wasmflow_sdk::v1::packet::v1::Packet;
     pub use wasmflow_sdk::v1::{console_log, ComponentOutput, Writable};
+    use wick_interface_types_keyvalue::exists as definition;
 
     // The generated integration code between the definition and the implementation.
     use super::exists as integration;
@@ -734,9 +746,9 @@ pub mod generated {
   pub mod incr {
     // The user-facing implementation job impl.
     // The generated definition of inputs, outputs, config, et al.
-    use wasmflow_interface_keyvalue::incr as definition;
     pub use wasmflow_sdk::v1::packet::v1::Packet;
     pub use wasmflow_sdk::v1::{console_log, ComponentOutput, Writable};
+    use wick_interface_types_keyvalue::incr as definition;
 
     // The generated integration code between the definition and the implementation.
     use super::incr as integration;
@@ -787,9 +799,9 @@ pub mod generated {
   pub mod key_get {
     // The user-facing implementation job impl.
     // The generated definition of inputs, outputs, config, et al.
-    use wasmflow_interface_keyvalue::key_get as definition;
     pub use wasmflow_sdk::v1::packet::v1::Packet;
     pub use wasmflow_sdk::v1::{console_log, ComponentOutput, Writable};
+    use wick_interface_types_keyvalue::key_get as definition;
 
     // The generated integration code between the definition and the implementation.
     use super::key_get as integration;
@@ -840,9 +852,9 @@ pub mod generated {
   pub mod key_set {
     // The user-facing implementation job impl.
     // The generated definition of inputs, outputs, config, et al.
-    use wasmflow_interface_keyvalue::key_set as definition;
     pub use wasmflow_sdk::v1::packet::v1::Packet;
     pub use wasmflow_sdk::v1::{console_log, ComponentOutput, Writable};
+    use wick_interface_types_keyvalue::key_set as definition;
 
     // The generated integration code between the definition and the implementation.
     use super::key_set as integration;
@@ -893,9 +905,9 @@ pub mod generated {
   pub mod list_add {
     // The user-facing implementation job impl.
     // The generated definition of inputs, outputs, config, et al.
-    use wasmflow_interface_keyvalue::list_add as definition;
     pub use wasmflow_sdk::v1::packet::v1::Packet;
     pub use wasmflow_sdk::v1::{console_log, ComponentOutput, Writable};
+    use wick_interface_types_keyvalue::list_add as definition;
 
     // The generated integration code between the definition and the implementation.
     use super::list_add as integration;
@@ -946,9 +958,9 @@ pub mod generated {
   pub mod list_range {
     // The user-facing implementation job impl.
     // The generated definition of inputs, outputs, config, et al.
-    use wasmflow_interface_keyvalue::list_range as definition;
     pub use wasmflow_sdk::v1::packet::v1::Packet;
     pub use wasmflow_sdk::v1::{console_log, ComponentOutput, Writable};
+    use wick_interface_types_keyvalue::list_range as definition;
 
     // The generated integration code between the definition and the implementation.
     use super::list_range as integration;
@@ -999,9 +1011,9 @@ pub mod generated {
   pub mod list_remove {
     // The user-facing implementation job impl.
     // The generated definition of inputs, outputs, config, et al.
-    use wasmflow_interface_keyvalue::list_remove as definition;
     pub use wasmflow_sdk::v1::packet::v1::Packet;
     pub use wasmflow_sdk::v1::{console_log, ComponentOutput, Writable};
+    use wick_interface_types_keyvalue::list_remove as definition;
 
     // The generated integration code between the definition and the implementation.
     use super::list_remove as integration;
@@ -1052,9 +1064,9 @@ pub mod generated {
   pub mod set_add {
     // The user-facing implementation job impl.
     // The generated definition of inputs, outputs, config, et al.
-    use wasmflow_interface_keyvalue::set_add as definition;
     pub use wasmflow_sdk::v1::packet::v1::Packet;
     pub use wasmflow_sdk::v1::{console_log, ComponentOutput, Writable};
+    use wick_interface_types_keyvalue::set_add as definition;
 
     // The generated integration code between the definition and the implementation.
     use super::set_add as integration;
@@ -1105,9 +1117,9 @@ pub mod generated {
   pub mod set_contains {
     // The user-facing implementation job impl.
     // The generated definition of inputs, outputs, config, et al.
-    use wasmflow_interface_keyvalue::set_contains as definition;
     pub use wasmflow_sdk::v1::packet::v1::Packet;
     pub use wasmflow_sdk::v1::{console_log, ComponentOutput, Writable};
+    use wick_interface_types_keyvalue::set_contains as definition;
 
     // The generated integration code between the definition and the implementation.
     use super::set_contains as integration;
@@ -1158,9 +1170,9 @@ pub mod generated {
   pub mod set_get {
     // The user-facing implementation job impl.
     // The generated definition of inputs, outputs, config, et al.
-    use wasmflow_interface_keyvalue::set_get as definition;
     pub use wasmflow_sdk::v1::packet::v1::Packet;
     pub use wasmflow_sdk::v1::{console_log, ComponentOutput, Writable};
+    use wick_interface_types_keyvalue::set_get as definition;
 
     // The generated integration code between the definition and the implementation.
     use super::set_get as integration;
@@ -1211,9 +1223,9 @@ pub mod generated {
   pub mod set_remove {
     // The user-facing implementation job impl.
     // The generated definition of inputs, outputs, config, et al.
-    use wasmflow_interface_keyvalue::set_remove as definition;
     pub use wasmflow_sdk::v1::packet::v1::Packet;
     pub use wasmflow_sdk::v1::{console_log, ComponentOutput, Writable};
+    use wick_interface_types_keyvalue::set_remove as definition;
 
     // The generated integration code between the definition and the implementation.
     use super::set_remove as integration;
@@ -1264,9 +1276,9 @@ pub mod generated {
   pub mod set_scan {
     // The user-facing implementation job impl.
     // The generated definition of inputs, outputs, config, et al.
-    use wasmflow_interface_keyvalue::set_scan as definition;
     pub use wasmflow_sdk::v1::packet::v1::Packet;
     pub use wasmflow_sdk::v1::{console_log, ComponentOutput, Writable};
+    use wick_interface_types_keyvalue::set_scan as definition;
 
     // The generated integration code between the definition and the implementation.
     use super::set_scan as integration;

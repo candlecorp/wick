@@ -11,11 +11,10 @@ host = []
 guest = []
 
 [dependencies]
-wasmflow-packet-stream = { path = "../../wasmflow/wasmflow-packet-stream", features = [
+wick-packet = { path = "../../wick/wick-packet", features = [
 ] }
-wasmflow-interface = { path = "../../wasmflow/wasmflow-interface", features=["parser"] }
-wasmflow-entity = { path = "../../wasmflow/wasmflow-entity" }
-wasmflow-rpc = { path = "../../wasmflow/wasmflow-rpc" }
+wick-interface-types = { path = "../../wick/wick-interface-types", features=["parser"] }
+wick-rpc = { path = "../../wick/wick-rpc" }
 serde = { version = "1", features = ["derive"] }
 async-trait = { workspace = true }
 tokio = { workspace = true, features = ["rt-multi-thread"] }
@@ -27,7 +26,7 @@ futures = { workspace = true }
 futures = { workspace = true }
 test-logger = { path = "../../misc/test-logger" }
 tokio = { workspace = true, features = ["macros"] }
-logger = { path = "../../wasmflow/logger" }
+logger = { path = "../../wick/logger" }
 clap = { version = "3.0", features = ["derive", "env"] }
 tracing = { workspace = true }
 anyhow = "1.0"

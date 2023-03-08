@@ -1,7 +1,0 @@
----
-version: 0
-network:
-  schematics:
-    - name: echo
-      connections:
-        - <>[input] => <>[output]

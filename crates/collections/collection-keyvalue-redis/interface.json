@@ -5,9 +5,9 @@
   "wellknown": [
     {
       "capabililities": ["keyvalue"],
-      "url": "../../interfaces/wasmflow-interface-keyvalue/interface.json",
+      "url": "../../interfaces/wick-interface-types-keyvalue/interface.json",
       "schema": {
-        "name": "wasmflow-interface-keyvalue",
+        "name": "wick-interface-types-keyvalue",
         "version": "1.0.0",
         "format": 1,
         "wellknown": [],
