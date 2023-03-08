@@ -5,7 +5,7 @@ pub(crate) mod prelude {
   pub(crate) use super::*;
 }
 
-use wick_config_component::ComponentConfiguration;
+use wick_config::ComponentConfiguration;
 
 use crate::test::prelude::*;
 use crate::{Network, NetworkBuilder};

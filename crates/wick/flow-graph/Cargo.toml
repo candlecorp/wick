@@ -13,7 +13,7 @@ tracing = { workspace = true }
 
 [dev-dependencies]
 serde_json = { workspace = true }
-wick-config-component = { path = "../wick-config-component" }
+wick-config = { path = "../wick-config" }
 tokio = { workspace = true, features = ["macros", "rt"] }
 logger = { path = "../logger" }
 test-logger = { path = "../../misc/test-logger" }

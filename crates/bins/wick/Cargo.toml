@@ -16,7 +16,7 @@ wick-component-wasm = { path = "../../wick/wick-component-wasm" }
 wick-component-cli = { path = "../../wick/wick-component-cli" }
 wick-runtime = { path = "../../wick/wick-runtime" }
 wick-host = { path = "../../wick/wick-host" }
-wick-config-component = { path = "../../wick/wick-config-component" }
+wick-config = { path = "../../wick/wick-config" }
 wick-test = { path = "../../wick/wick-test" }
 wick-wascap = { path = "../../wick/wick-wascap" }
 wick-oci-utils = { path = "../../wick/wick-oci-utils" }

@@ -3,7 +3,7 @@ use std::time::Duration;
 
 use seeded_random::{Random, Seed};
 use uuid::Uuid;
-use wick_config_component::{ComponentConfiguration, ComponentConfigurationBuilder, Flow};
+use wick_config::{ComponentConfiguration, ComponentConfigurationBuilder, Flow};
 use wick_packet::{Invocation, PacketStream};
 
 use crate::dev::prelude::*;
@@ -117,7 +117,7 @@ impl NetworkBuilder {
     })
   }
 
-  pub fn add_collection(mut self, collection: CollectionDefinition) -> Self {
+  pub fn add_collection(mut self, collection: ComponentDefinition) -> Self {
     self.manifest_builder = self
       .manifest_builder
       .add_collection(collection.namespace.clone(), collection);

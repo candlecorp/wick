@@ -1,6 +1,6 @@
 // use std::borrow::Cow;
 
-// use wick_config_component::process_default;
+// use wick_config::process_default;
 
 // pub(crate) fn make_default_transport(json: &serde_json::Value, message: &str) -> Result<Vec<u8>, String> {
 //   process_default(Cow::Borrowed(json), message).map_or(Err("Error processing default value".to_owned()), |result| {

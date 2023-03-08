@@ -27,7 +27,7 @@ pub enum HostError {
   RpcServerError(#[from] wick_invocation_server::Error),
 
   #[error(transparent)]
-  ManifestError(#[from] wick_config_component::Error),
+  ManifestError(#[from] wick_config::Error),
   #[error("Invalid host state for operation: {0}")]
   InvalidHostState(String),
   #[error("Failed to deserialize configuration {0}")]

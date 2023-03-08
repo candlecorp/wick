@@ -52,7 +52,7 @@ fn silly_modules(module: &str) -> bool {
     "wapc",
     "wick_wascap",
     "flow_graph",
-    "wick_config_component",
+    "wick_config",
   ]
   .contains(&module)
 }

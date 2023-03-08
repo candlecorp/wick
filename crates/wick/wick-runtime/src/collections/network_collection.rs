@@ -71,7 +71,7 @@ impl RpcHandler for Collection {
 #[cfg(test)]
 mod tests {
 
-  use wick_packet::{packet_stream, Packet};
+  use wick_packet::{packet_stream, Entity, Packet};
 
   use super::*;
   use crate::test::prelude::{assert_eq, *};
@@ -81,7 +81,7 @@ mod tests {
     let stream = packet_stream!(("input", data));
 
     let invocation = Invocation::new(Entity::test(file!()), Entity::local("simple"), None);
-    let mut outputs = collection.invoke(invocation, stream).await?;
+    let outputs = collection.invoke(invocation, stream).await?;
     let mut packets: Vec<_> = outputs.collect().await;
     println!("packets: {:#?}", packets);
     let _ = packets.pop();

@@ -35,6 +35,9 @@ pin-project-lite = "0.2.9"
 bytes = { workspace = true, features = ["serde"] }
 parking_lot = { workspace = true }
 url = "2.2"
+# TODO make these feature flags
+wasmrs-guest = { workspace = true }
+wasmrs-runtime = { workspace = true }
 
 [dev-dependencies]
 anyhow = { workspace = true }

@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use async_trait::async_trait;
 use wasmrs_host::WasiParams;
-use wick_config_component::Permissions;
+use wick_config::Permissions;
 use wick_interface_types::HostedType;
 use wick_packet::{Invocation, PacketStream};
 use wick_rpc::{RpcHandler, RpcResult};

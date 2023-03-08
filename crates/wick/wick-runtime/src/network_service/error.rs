@@ -10,7 +10,7 @@ pub enum NetworkError {
   #[error(transparent)]
   Loading(#[from] wick_loader_utils::Error),
   #[error(transparent)]
-  Manifest(#[from] wick_config_component::Error),
+  Manifest(#[from] wick_config::Error),
 
   // OLD
   #[error(transparent)]

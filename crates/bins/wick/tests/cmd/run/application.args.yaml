@@ -1,11 +1,11 @@
 name: mycli
-version: 1.0.0
-channels:
-  cli:
-    uses: channels.wick.cli@v1
-    with:
-      location: ../../integration/test-cli-channel-component/build/test_cli_channel_component.signed.wasm
-      component: main
-      link:
-        kind: Manifest
-        reference: ./tests/cmd/run/noop.wafl
+version: 1
+triggers:
+  - kind: wick/trigger/cli@v1
+    component:
+      kind: Wasm
+      reference: ../../integration/test-cli-trigger-component/build/test_cli_trigger_component.signed.wasm
+    operation: main
+    app:
+      kind: Manifest
+      reference: ./tests/cmd/run/noop.wafl

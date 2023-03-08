@@ -3,8 +3,8 @@ use std::time::Duration;
 use futures::StreamExt;
 use logger::{LoggingGuard, LoggingOptions};
 use wick_component_cli::options::DefaultCliOptions;
-use wick_config_component::host_definition::{HttpConfig, MeshConfig};
-use wick_config_component::ComponentConfiguration;
+use wick_config::host_definition::{HttpConfig, MeshConfig};
+use wick_config::ComponentConfiguration;
 use wick_packet::PacketStream;
 
 use crate::commands::FetchOptions;

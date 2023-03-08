@@ -34,8 +34,6 @@ impl InvocationResponse {
 
 #[derive(thiserror::Error, Debug)]
 pub(crate) enum DispatchError {
-  #[error("{0}")]
-  Sdk(String),
   #[error("Entity not available {0}")]
   EntityNotAvailable(Uuid),
   #[error("Call failure {0}")]
@@ -65,7 +63,7 @@ pub(crate) async fn network_invoke_async(
 #[cfg(test)]
 mod tests {
 
-  use wick_packet::{packet_stream, Packet};
+  use wick_packet::{packet_stream, Entity, Packet};
 
   use super::*;
   use crate::test::prelude::{assert_eq, *};

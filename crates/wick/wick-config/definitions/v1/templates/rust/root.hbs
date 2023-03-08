@@ -1,0 +1,45 @@
+#![deny(
+    warnings,
+    missing_debug_implementations,
+    trivial_casts,
+    trivial_numeric_casts,
+    unsafe_code,
+    unstable_features,
+    unused_import_braces,
+    unused_qualifications,
+    unreachable_pub,
+    type_alias_bounds,
+    trivial_bounds,
+    mutable_transmutes,
+    invalid_value,
+    explicit_outlives_requirements,
+    deprecated,
+    clashing_extern_declarations,
+    clippy::expect_used,
+    clippy::explicit_deref_methods,
+    missing_docs
+)]
+#![warn(clippy::cognitive_complexity)]
+#![allow(clippy::large_enum_variant)]
+
+use serde::{Deserialize, Serialize};
+use serde_with_expand_env::with_expand_envs;
+use std::collections::HashMap;
+use serde_json::Value;
+
+{{#each definitions}}
+  {{#switch kind}}
+    {{#case "TypeDefinition"}}{{> type-definition}}{{/case}}
+    {{#case "NamespaceDefinition"}}{{/case}}
+    {{#case "EnumDefinition"}}{{> enum-definition}}{{/case}}
+    {{#case "UnionDefinition"}}{{> union-definition}}{{/case}}
+    {{#case "ImportDefinition"}}
+      {{#import from.value}}{{> module }}{{/import}}
+    {{/case}}
+    {{#default}}
+    {{log "Unhandled type"}}
+    panic!()
+    {{/default}}
+  {{/switch}}
+{{/each}}
+

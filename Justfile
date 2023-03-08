@@ -1,14 +1,15 @@
 
 wasm:
 	just crates/integration/test-baseline-component/build
+	just crates/integration/test-cli-trigger-component/build
 
 clean:
 	cargo clean
 	rm -rf node_modules
-	just crates/wick/wick-config-component/clean
+	just crates/wick/wick-config/clean
 
 codegen:
-	just crates/wick/wick-config-component/codegen
+	just crates/wick/wick-config/codegen
 
 test: codegen early-errors wasm unit-tests
 

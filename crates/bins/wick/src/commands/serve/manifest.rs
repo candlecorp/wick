@@ -1,5 +1,5 @@
 use anyhow::Result;
-use wick_config_component::ComponentConfiguration;
+use wick_config::ComponentConfiguration;
 use wick_host::HostBuilder;
 
 use crate::utils::merge_config;

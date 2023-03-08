@@ -85,7 +85,7 @@ impl Observer for JsonWriter {
     lock.push(entry);
   }
 
-  fn on_after_event(&self, _index: usize, state: &flow_graph_interpreter::State) {
+  fn on_after_event(&self, _index: usize, _state: &flow_graph_interpreter::State) {
     // let state = serde_json::Value::Array(state.json_transactions());
     // let mut lock = self.states.lock();
     // lock.push(state);

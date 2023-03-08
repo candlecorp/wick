@@ -58,7 +58,7 @@ impl Collection for CollectionCollection {
 
       flux.send(Packet::encode(
         port_name,
-        CollectionLink::new(invocation.origin, entity),
+        CollectionLink::new(invocation.origin.url(), entity.namespace()),
       ))?;
 
       Ok(PacketStream::new(Box::new(flux)))

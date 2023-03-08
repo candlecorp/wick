@@ -14,7 +14,7 @@ wasmrs-frames = { workspace = true }
 wasmrs-codec = { workspace = true }
 wick-packet = { path = "../wick-packet" }
 flow-graph = { path = "../flow-graph" }
-wick-config-component = { path = "../wick-config-component" }
+wick-config = { path = "../wick-config" }
 flow-expression-parser = { path = "../flow-expression-parser" }
 wick-interface-types = { path = "../wick-interface-types" }
 seeded-random = { path = "../../misc/seeded-random" }

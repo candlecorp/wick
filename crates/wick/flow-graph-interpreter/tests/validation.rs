@@ -11,10 +11,8 @@ use seeded_random::Seed;
 use serde_json::Value;
 use wick_interface_types::{CollectionFeatures, CollectionSignature, OperationSignature, TypeSignature};
 use wick_packet::{Invocation, PacketStream};
-fn load<T: AsRef<Path>>(path: T) -> Result<wick_config_component::ComponentConfiguration> {
-  Ok(wick_config_component::ComponentConfiguration::load_from_file(
-    path.as_ref(),
-  )?)
+fn load<T: AsRef<Path>>(path: T) -> Result<wick_config::ComponentConfiguration> {
+  Ok(wick_config::ComponentConfiguration::load_from_file(path.as_ref())?)
 }
 struct SignatureTestCollection(CollectionSignature);
 impl Collection for SignatureTestCollection {

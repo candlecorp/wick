@@ -11,15 +11,8 @@ use seeded_random::{Random, Seed};
 use uuid::Uuid;
 use wick_component_wasm::collection::HostLinkCallback;
 use wick_component_wasm::error::LinkError;
-use wick_config_component::collection_definition::{
-  EntrypointDefinition,
-  GrpcTarComponent,
-  GrpcUrlComponent,
-  ManifestComponent,
-  MeshComponent,
-  WasmComponent,
-};
-use wick_packet::{Invocation, PacketStream};
+use wick_config::component_definition::{EntrypointDefinition, ManifestComponent, WasmComponent};
+use wick_packet::{Entity, Invocation, PacketStream};
 
 use self::collection_service::NativeCollectionService;
 use crate::dev::prelude::*;
@@ -88,7 +81,7 @@ pub(crate) async fn initialize_wasm_collection(
     5,
     Some(collection.permissions.clone()),
     None,
-    None,
+    Some(make_link_callback(opts.network_id)),
   )?);
 
   let service = NativeCollectionService::new(collection);
@@ -96,61 +89,62 @@ pub(crate) async fn initialize_wasm_collection(
   Ok(NamespaceHandler::new(namespace, Box::new(service)))
 }
 
-// #[instrument(skip_all)]
-// pub(crate) async fn initialize_wasm_entrypoint(
-//   entrypoint: &EntrypointDefinition,
-//   network_id: Uuid,
-//   allow_latest: bool,
-//   allowed_insecure: &[String],
-// ) -> Result<wick_component_wasm::collection::Collection> {
-//   trace!(%network_id, "registering entrypoint");
+#[instrument(skip_all)]
+pub(crate) async fn initialize_wasm_entrypoint(
+  entrypoint: &EntrypointDefinition,
+  network_id: Uuid,
+  allow_latest: bool,
+  allowed_insecure: &[String],
+) -> Result<wick_component_wasm::collection::Collection> {
+  trace!(%network_id, "registering entrypoint");
 
-//   let component =
-//     wick_component_wasm::helpers::load_wasm(&entrypoint.reference, allow_latest, allowed_insecure).await?;
+  let component =
+    wick_component_wasm::helpers::load_wasm(&entrypoint.reference, allow_latest, allowed_insecure).await?;
 
-//   // TODO take max threads from configuration
-//   let collection = wick_component_wasm::collection::Collection::try_load(
-//     &component,
-//     1,
-//     Some(entrypoint.permissions.clone()),
-//     None,
-//     Some(make_link_callback(network_id)),
-//   )?;
+  // TODO take max threads from configuration
+  let collection = wick_component_wasm::collection::Collection::try_load(
+    &component,
+    1,
+    Some(entrypoint.permissions.clone()),
+    None,
+    Some(make_link_callback(network_id)),
+  )?;
 
-//   Ok(collection)
-// }
+  Ok(collection)
+}
 
-// fn make_link_callback(network_id: Uuid) -> Box<HostLinkCallback> {
-//   Box::new(move |origin_url, target_url, payload| {
-//     let origin_url = origin_url.to_owned();
-//     let target_url = target_url.to_owned();
-//     Box::pin(async move {
-//       {
-//         debug!(
-//           origin = %origin_url,
-//           target = %target_url,
-//           network_id = %network_id,
-//           "link_call"
-//         );
+fn make_link_callback(network_id: Uuid) -> Box<HostLinkCallback> {
+  Box::new(move |origin_url, target_url, stream| {
+    let origin_url = origin_url.to_owned();
+    let target_url = target_url.to_owned();
+    Box::pin(async move {
+      {
+        debug!(
+          origin = %origin_url,
+          target = %target_url,
+          network_id = %network_id,
+          "link_call"
+        );
 
-//         let target = Entity::from_str(&target_url).map_err(|e| LinkError::EntityFailure(e.to_string()))?;
-//         let origin = Entity::from_str(&origin_url).map_err(|e| LinkError::EntityFailure(e.to_string()))?;
-//         if let Entity::Operation(origin_ns, _) = &origin {
-//           if let Entity::Operation(target_ns, _) = &target {
-//             if target_ns == origin_ns {
-//               return Err(LinkError::Circular(target_ns.clone()));
-//             }
-//           }
-//         }
-//         let invocation = Invocation::new(origin, target, payload.into(), None);
-//         let result = network_invoke_async(network_id, invocation)
-//           .await
-//           .map_err(|e| LinkError::CallFailure(e.to_string()))?;
-//         Ok(result.into_iter().map(|v| v.into()).collect())
-//       }
-//     })
-//   })
-// }
+        let target = Entity::from_str(&target_url).map_err(|e| LinkError::EntityFailure(e.to_string()))?;
+        let origin = Entity::from_str(&origin_url).map_err(|e| LinkError::EntityFailure(e.to_string()))?;
+        if let Entity::Operation(origin_ns, _) = &origin {
+          if let Entity::Operation(target_ns, _) = &target {
+            if target_ns == origin_ns {
+              return Err(LinkError::Circular(target_ns.clone()));
+            }
+          }
+        }
+
+        let invocation = Invocation::new(origin, target, None);
+        let result = network_invoke_async(network_id, invocation, stream)
+          .await
+          .map_err(|e| LinkError::CallFailure(e.to_string()))?;
+        Ok(result)
+      }
+    })
+  })
+}
 
 #[instrument(skip(collection, opts))]
 pub(crate) async fn initialize_network_collection(
