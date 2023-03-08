@@ -91,8 +91,8 @@ extern crate tracing;
 use std::sync::Arc;
 
 use clap::Parser;
-use wasmflow_collection_cli::options::DefaultCliOptions;
 use wasmflow_keyvalue_redis::collection::Collection;
+use wick_component_cli::options::DefaultCliOptions;
 
 #[derive(Debug, Clone, Parser)]
 pub struct Options {
@@ -108,12 +108,12 @@ pub struct Options {
 async fn main() -> Result<(), wasmflow_keyvalue_redis::error::Error> {
   let opts = Options::parse();
   let url = opts.url;
-  let _guard = wasmflow_collection_cli::init_logging(&opts.options.logging.name("keyvalue-redis"));
+  let _guard = wick_component_cli::init_logging(&opts.options.logging.name("keyvalue-redis"));
   let collection = Collection::default();
   collection.connect("default".to_owned(), url.clone()).await?;
   trace!("redis collection connected");
 
-  wasmflow_collection_cli::init_cli(Arc::new(collection), Some(opts.options.into())).await?;
+  wick_component_cli::init_cli(Arc::new(collection), Some(opts.options.into())).await?;
   Ok(())
 }
 

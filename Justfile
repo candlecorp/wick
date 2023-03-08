@@ -5,28 +5,32 @@ wasm:
 clean:
 	cargo clean
 	rm -rf node_modules
-	just crates/wasmflow/wasmflow-manifest/clean
+	just crates/wick/wick-config-component/clean
 
 codegen:
-	just crates/wasmflow/wasmflow-manifest/codegen
+	just crates/wick/wick-config-component/codegen
 
 test: codegen early-errors wasm unit-tests
 
-install:
-	cargo build --workspace
-	mv build/local/* ~/.cargo/bin/
+install-release:
+	cargo install --path crates/bins/wick --release
 
-early-errors:
+install:
+	cargo install --path crates/bins/wick
+
+early-errors: licenses
 	cargo +nightly fmt --check
 	cargo clippy --workspace --bins
-	cargo deny check licenses --config etc/deny.toml --hide-inclusion-graph
+
+licenses:
+	cargo deny --workspace check licenses  --config etc/deny.toml --hide-inclusion-graph
 
 unit-tests:
-	cargo build -p wasmflow
+	cargo build -p wick
 	cargo test --workspace -- --skip integration_test
 
 integration-tests:
-	cargo build -p wasmflow
+	cargo build -p wick
 	NATS_URL=$(NATS_URL) cargo test --workspace
 
 deps:

@@ -1,0 +1,41 @@
+[package]
+name = "wick-component-wasm"
+version = "0.1.0"
+edition = "2021"
+license = "Elastic-2.0"
+repository = "https://github.com/candlecorp/wick"
+publish = false
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[features]
+
+# wasm3 = ["wasm3-provider"]
+[dependencies]
+wasmrs = { workspace = true }
+wasmrs-rx = { workspace = true }
+wasmrs-host = { workspace = true }
+wasmrs-wasmtime = { workspace = true }
+wasmrs-codec = { workspace = true }
+wick-packet = { path = "../wick-packet" }
+wick-interface-types = { path = "../wick-interface-types" }
+wick-rpc = { path = "../wick-rpc" }
+wick-wascap = { path = "../wick-wascap" }
+wick-loader-utils = { path = "../wick-loader-utils" }
+wick-config-component = { path = "../wick-config-component" }
+seeded-random = { path = "../../misc/seeded-random" }
+tokio = { workspace = true, features = ["fs"] }
+parking_lot = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+serde-value = { workspace = true }
+tokio-stream = { workspace = true }
+async-stream = "0.3.2"
+tracing = { workspace = true }
+thiserror = { workspace = true }
+async-trait = { workspace = true }
+
+[dev-dependencies]
+logger = { path = "../logger" }
+test-logger = { path = "../../misc/test-logger" }
+futures = { workspace = true }
+anyhow = { workspace = true }

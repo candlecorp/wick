@@ -1,0 +1,23 @@
+[package]
+name = "wick-test"
+version = "0.0.0"
+edition = "2021"
+license = "Elastic-2.0"
+repository = "https://github.com/candlecorp/wick"
+
+publish = false
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[dependencies]
+tap = { path = "../../misc/tap" }
+wick-packet = { path = "../wick-packet", features = [] }
+wasmrs-codec = { path = "../../../../wasmrs-rust/crates/wasmrs-codec", features = [
+] }
+wick-rpc = { path = "../wick-rpc" }
+serde = { workspace = true, features = ["derive"] }
+serde-value = { workspace = true }
+serde_yaml = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true, features = ["io-std", "macros", "rt-multi-thread"] }
+tokio-stream = { workspace = true }
+tracing = { workspace = true }

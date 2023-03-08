@@ -1,0 +1,42 @@
+[package]
+name = "flow-graph-interpreter"
+version = "0.0.0"
+edition = "2021"
+license = "Elastic-2.0"
+repository = "https://github.com/candlecorp/wick"
+publish = false
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[dependencies]
+wasmrs = { workspace = true }
+wasmrs-rx = { workspace = true }
+wasmrs-frames = { workspace = true }
+wasmrs-codec = { workspace = true }
+wick-packet = { path = "../wick-packet" }
+flow-graph = { path = "../flow-graph" }
+wick-config-component = { path = "../wick-config-component" }
+flow-expression-parser = { path = "../flow-expression-parser" }
+wick-interface-types = { path = "../wick-interface-types" }
+seeded-random = { path = "../../misc/seeded-random" }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+tracing-futures = { workspace = true }
+performance-mark = { path = "../../misc/performance-mark" }
+tokio = { workspace = true, features = ["rt-multi-thread", "sync", "macros"] }
+tokio-stream = { workspace = true }
+futures = { workspace = true }
+uuid = { workspace = true, features = ["v4"] }
+parking_lot = { workspace = true }
+serde_json = { workspace = true }
+serde-value = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+rand = { workspace = true }
+bytes = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
+logger = { path = "../logger" }
+test-logger = { path = "../../misc/test-logger" }
+anyhow = { workspace = true }
+serde_json = { workspace = true }
+rot = { path = "../../misc/rot" }

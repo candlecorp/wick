@@ -1,0 +1,46 @@
+[package]
+name = "wick-host"
+version = "0.1.0"
+authors = ["Jarrod Overson <jsoverson@gmail.com>"]
+edition = "2021"
+license = "Elastic-2.0"
+repository = "https://github.com/candlecorp/wick"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[features]
+
+[dependencies]
+seeded-random = { path = "../../misc/seeded-random" }
+wick-runtime = { path = "../wick-runtime" }
+wick-packet = { path = "../wick-packet" }
+wick-interface-types = { path = "../wick-interface-types" }
+wick-config-component = { path = "../wick-config-component" }
+wick-loader-utils = { path = "../wick-loader-utils" }
+wick-component-cli = { path = "../wick-component-cli" }
+wick-rpc = { path = "../wick-rpc" }
+wick-invocation-server = { path = "../wick-invocation-server" }
+tracing = { workspace = true }
+thiserror = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+async-trait = { workspace = true }
+tokio = { workspace = true, features = ["macros", "net", "rt-multi-thread"] }
+http = "0.2"
+once_cell = { workspace = true }
+parking_lot = { workspace = true }
+uuid = { workspace = true }
+futures = { workspace = true }
+
+[dev-dependencies]
+logger = { path = "../logger" }
+test-logger = { path = "../../misc/test-logger" }
+tokio = { workspace = true, features = [
+  "net",
+  "rt-multi-thread",
+  "time",
+  "io-std",
+  "io-util",
+  "macros",
+] }
+anyhow = { workspace = true }
+tokio-stream = { workspace = true }

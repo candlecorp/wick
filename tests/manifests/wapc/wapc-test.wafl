@@ -1,6 +1,0 @@
----
-- component: wapc_component
-  inputs:
-    input: "generic data"
-  outputs:
-    - { port: "output", payload: { value: "generic data" } }

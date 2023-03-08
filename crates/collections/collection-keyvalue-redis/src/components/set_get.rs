@@ -1,4 +1,4 @@
-use wasmflow_interface_keyvalue::set_get::*;
+use wick_interface_types_keyvalue::set_get::*;
 
 use crate::components::generated::set_get::*;
 

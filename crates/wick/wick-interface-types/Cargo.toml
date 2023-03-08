@@ -1,0 +1,28 @@
+[package]
+name = "wick-interface-types"
+version = "0.10.0"
+edition = "2021"
+license = "Apache-2.0"
+repository = "https://github.com/candlecorp/wick"
+description = "Types used by Wick components"
+documentation = "https://candle.dev"
+keywords = ["types", "wick", "wasmflow"]
+categories = []
+exclude = ["tests/*", ".github/*", ".gitignore"]
+homepage = "https://candle.dev"
+
+[features]
+default = []
+parser = ["nom"]
+
+[dependencies]
+serde = { workspace = true, features = ["derive"] }
+serde_repr = "0.1"
+nom = { version = "7.1", optional = true }
+
+[dev-dependencies]
+anyhow = { workspace = true }
+test-log = "0.2.8"
+env_logger = { workspace = true }
+pretty_assertions = "1.2"
+serde_json = { workspace = true }

@@ -1,0 +1,36 @@
+[package]
+name = "logger"
+version = "0.1.0"
+authors = ["Jarrod Overson <jsoverson@gmail.com>"]
+edition = "2021"
+license = "Elastic-2.0"
+repository = "https://github.com/candlecorp/wick"
+publish = false
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[dependencies]
+tracing = { workspace = true }
+tracing-log = "0.1"
+tracing-subscriber = { version = "0.3", features = [
+  "env-filter",
+  "fmt",
+  "json",
+  "time",
+] }
+tracing-bunyan-formatter = "0.3"
+tracing-appender = "0.2"
+xdg = "2.4"
+time = { version = "0.3", features = ["formatting"] }
+ansi_term = "0.12"
+serde = { workspace = true, features = ["derive"] }
+clap = { workspace = true, features = ["derive", "env"] }
+thiserror = { workspace = true }
+tracing-opentelemetry = "0.18.0"
+tokio = { workspace = true, features = ["rt"] }
+opentelemetry = { version = "0.18.0", features = ["rt-tokio"] }
+opentelemetry-jaeger = { version = "0.17.0", features = [
+  "rt-tokio",
+  "hyper_collector_client",
+  "collector_client"
+] }
+opentelemetry-otlp = { version = "0.11", features = ["grpc-sys"] }

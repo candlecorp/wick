@@ -1,0 +1,22 @@
+[package]
+name = "flow-expression-parser"
+version = "0.1.0"
+authors = ["Jarrod Overson <jsoverson@gmail.com>"]
+edition = "2021"
+license = "Elastic-2.0"
+repository = "https://github.com/candlecorp/wick"
+publish = false
+
+[dependencies]
+lazy_static = "1.4"
+regex = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+anyhow = { workspace = true }
+pretty_assertions = "1"
+logger = { path = "../logger" }
+test-logger = { path = "../../misc/test-logger" }
+tracing = { workspace = true }

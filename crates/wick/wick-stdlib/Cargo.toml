@@ -1,0 +1,36 @@
+[package]
+name = "wick-stdlib"
+version = "0.1.0"
+authors = ["Jarrod Overson <jsoverson@gmail.com>"]
+edition = "2021"
+license = "Elastic-2.0"
+repository = "https://github.com/candlecorp/wick"
+publish = false
+
+[features]
+default = ["host"]
+host = []
+guest = []
+
+[dependencies]
+wick-packet = { path = "../wick-packet" }
+wick-rpc = { path = "../wick-rpc" }
+wick-interface-types = { path = "../wick-interface-types", features = [
+  "parser"
+] }
+# wick-interface-types = { path = "../wick-interface-types" }
+seeded-random = { path = "../../misc/seeded-random" }
+tracing = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+async-trait = { workspace = true }
+tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
+thiserror = { workspace = true }
+futures = { workspace = true }
+anyhow = { workspace = true }
+
+[dev-dependencies]
+wick-stdlib = { path = ".", features = ["guest"] }
+logger = { path = "../logger" }
+test-logger = { path = "../../misc/test-logger" }
+futures = { workspace = true }
+anyhow = { version = "1.0" }

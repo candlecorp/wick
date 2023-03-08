@@ -6,12 +6,12 @@ use redis::aio::Connection;
 use redis::{FromRedisValue, Pipeline};
 use tokio::sync::RwLock;
 use tracing::Instrument;
-use wasmflow_rpc::error::RpcError;
-use wasmflow_rpc::{RpcHandler, RpcResult};
 use wasmflow_sdk::v1::stateful::NativeDispatcher;
 use wasmflow_sdk::v1::transport::TransportStream;
 use wasmflow_sdk::v1::types::HostedType;
 use wasmflow_sdk::v1::Invocation;
+use wick_rpc::error::RpcError;
+use wick_rpc::{RpcHandler, RpcResult};
 
 use crate::components::ComponentDispatcher;
 use crate::error::Error;
@@ -122,8 +122,8 @@ mod integration {
 
   use anyhow::Result;
   use rand::Rng;
-  use wasmflow_interface_keyvalue::*;
   use wasmflow_sdk::v1::Entity;
+  use wick_interface_types_keyvalue::*;
 
   use super::*;
   use crate::components::generated::__batch__::{self, ComponentInputs};

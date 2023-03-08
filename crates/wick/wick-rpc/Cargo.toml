@@ -1,0 +1,38 @@
+[package]
+name = "wick-rpc"
+version = "0.1.0"
+edition = "2021"
+license = "Elastic-2.0"
+repository = "https://github.com/candlecorp/wick"
+publish = false
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[features]
+client = ["tokio/fs"]
+
+[dependencies]
+wick-packet = { path = "../wick-packet", features = [] }
+wasmrs-rx = { workspace = true, features = [] }
+wick-interface-types = { path = "../wick-interface-types" }
+tonic = { workspace = true, features = ["tls"] }
+prost = "0.11"
+prost-types = "0.11"
+tokio = { workspace = true, features = ["macros", "net", "rt-multi-thread"] }
+tokio-stream = { workspace = true, features = ["net"] }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+async-stream = "0.3.2"
+rand = { workspace = true }
+tracing = { workspace = true }
+thiserror = { workspace = true }
+async-trait = { workspace = true }
+dyn-clone = "1.0.4"
+uuid = { workspace = true }
+
+[build-dependencies]
+tonic-build = { workspace = true, default-features = false, features = [
+  "prost",
+  "transport",
+] }
+
+[dev-dependencies]

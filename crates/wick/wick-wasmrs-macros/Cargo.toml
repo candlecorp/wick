@@ -1,0 +1,27 @@
+[package]
+name = "wick-wasmrs-macros"
+version = "0.10.0"
+edition = "2021"
+license = "Apache-2.0"
+repository = "https://github.com/candlecorp/wick"
+description = "Macros used to convert between wick and wasmrs types."
+keywords = ["wasm", "wasmflow", "actor", "flow"]
+categories = ["wasm"]
+exclude = ["tests/*", ".github/*", ".gitignore"]
+authors = ["Jarrod Overson <jsoverson@gmail.com>"]
+homepage = "https://candle.dev"
+
+[badges]
+maintenance = { status = "actively-developed" }
+
+[features]
+
+[dependencies]
+wick-packet = { path = "../wick-packet", default-features = false }
+tracing = { workspace = true }
+wasmrs = { workspace = true }
+wasmrs-runtime = { workspace = true }
+futures = { workspace = true }
+tokio = { workspace = true }
+
+[dev-dependencies]

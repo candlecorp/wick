@@ -2,7 +2,8 @@ use std::fmt::Display;
 
 use guest::*;
 use wasmrs_guest as guest;
-use wick_wasmrs_macros::{payload_fan_out, wasmflow_packet_stream::Packet};
+use wick_wasmrs_macros::payload_fan_out;
+use wick_wasmrs_macros::wick_packet::Packet;
 
 #[no_mangle]
 extern "C" fn __wasmrs_init(guest_buffer_size: u32, host_buffer_size: u32, max_host_frame_len: u32) {

@@ -1,4 +1,4 @@
-pub use wasmflow_interface_keyvalue::decr::*;
+pub use wick_interface_types_keyvalue::decr::*;
 
 use crate::components::generated::decr::*;
 pub use crate::components::generated::decr::*;

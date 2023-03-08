@@ -5,11 +5,11 @@
 </picture>
 </div>
 
-# Wasmflow
+# Wick
 
-Wasmflow is a free and open platform for building applications out of WebAssembly code containers.
+Wick is a free and open platform for building applications out of WebAssembly code containers.
 
-Wasmflow lets you write code and reuse it easily, everywhere. It's built with Rust and Wasmtime and takes ideas from Docker, Kubernetes, Erlang, Rx, FBP, and more.
+Wick lets you write code and reuse it easily, everywhere. It's built with Rust and Wasmtime and takes ideas from Docker, Kubernetes, Erlang, Rx, FBP, and more.
 
 ## Getting Started
 
@@ -63,9 +63,9 @@ You'll also need the rust nightly toolchain in addition to stable for some of th
 $ rustup toolchain add nightly
 ```
 
-## Building Wasmflow
+## Building Wick
 
-Build Wasmflow with `just` alone.
+Build Wick with `just` alone.
 
 ```console
 just build

@@ -1,0 +1,32 @@
+[package]
+name = "wick-oci-utils"
+version = "0.1.0"
+edition = "2021"
+license = "Elastic-2.0"
+repository = "https://github.com/candlecorp/wick"
+publish = false
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[dependencies]
+wick-grpctar = { path = "../wick-grpctar" }
+wick-interface-types = { path = "../wick-interface-types" }
+wick-wascap = { path = "../wick-wascap" }
+oci-distribution = { version = "0.9", features = [
+  "rustls-tls",
+], default-features = false }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+serde_json = { workspace = true }
+serde_yaml = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+tar = "0.4"
+tokio = { workspace = true, features = ["fs"] }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["rt-multi-thread", "macros"] }
+test-logger = { path = "../../misc/test-logger" }
+logger = { path = "../logger" }
+clap = { workspace = true, features = ["derive", "env"] }
+async-recursion = { workspace = true }
+env_logger = { workspace = true }
+anyhow = { workspace = true }

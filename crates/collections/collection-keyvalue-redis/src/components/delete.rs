@@ -1,4 +1,4 @@
-use wasmflow_interface_keyvalue::delete::*;
+use wick_interface_types_keyvalue::delete::*;
 
 use crate::components::generated::delete::*;
 

@@ -1,4 +1,4 @@
-use wasmflow_interface_keyvalue::set_scan::*;
+use wick_interface_types_keyvalue::set_scan::*;
 
 use crate::components::generated::set_scan::*;
 use crate::Error;

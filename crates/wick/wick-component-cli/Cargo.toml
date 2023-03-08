@@ -1,0 +1,48 @@
+[package]
+name = "wick-component-cli"
+version = "0.1.0"
+edition = "2021"
+license = "Elastic-2.0"
+repository = "https://github.com/candlecorp/wick"
+publish = false
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[features]
+default = ['cli']
+reflection = ["tonic-reflection"]
+cli = ['grpc', 'mesh']
+grpc = ['wick-rpc', 'tonic/tls', 'wick-invocation-server', 'async-stream']
+mesh = ['wick-rpc', 'async-stream']
+
+[dependencies]
+logger = { path = "../logger" }
+wick-rpc = { path = "../wick-rpc", optional = true }
+wick-packet = { path = "../wick-packet" }
+wick-invocation-server = { path = "../wick-invocation-server", optional = true }
+cfg-if = "1.0"
+tonic = { workspace = true, optional = true }
+tonic-reflection = { version = "0.6", default-features = false, optional = true }
+tokio = { workspace = true, features = [
+  "macros",
+  "fs",
+  "net",
+  "signal",
+  "rt-multi-thread",
+] }
+tokio-stream = { workspace = true }
+async-stream = { version = "0.3.2", optional = true }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+tracing = { workspace = true }
+thiserror = { workspace = true }
+clap = { workspace = true, features = ["derive", "env"] }
+uuid = { workspace = true, features = ["v4"] }
+
+[dev-dependencies]
+logger = { path = "../logger" }
+test-logger = { path = "../../misc/test-logger" }
+test-native-collection = { path = "../../integration/test-native-collection" }
+once_cell = { workspace = true }
+reqwest = { version = "0.11", features = ["json"] }
+anyhow = { workspace = true }
+serde_json = { workspace = true }

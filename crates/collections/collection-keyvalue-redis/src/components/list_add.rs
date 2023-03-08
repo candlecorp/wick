@@ -1,4 +1,4 @@
-use wasmflow_interface_keyvalue::list_add::*;
+use wick_interface_types_keyvalue::list_add::*;
 
 use crate::components::generated::list_add::*;
 

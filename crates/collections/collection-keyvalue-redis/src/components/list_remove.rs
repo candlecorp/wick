@@ -1,6 +1,6 @@
 use std::convert::TryInto;
 
-use wasmflow_interface_keyvalue::list_remove::*;
+use wick_interface_types_keyvalue::list_remove::*;
 
 use crate::components::generated::list_remove::*;
 pub use crate::components::generated::list_remove::*;

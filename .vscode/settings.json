@@ -1,12 +1,9 @@
 {
   "git.ignoreLimitWarning": true,
   "yaml.schemas": {
-    "/home/jsoverson/development/src/vino/crates/vino-manifest/json-schema/v0/manifest.json": [
-      "*.vino"
-    ],
-    "crates/wasmflow/wasmflow-manifest/json-schema/manifest.json": ["**/*.wafl"]
+    "crates/wick/wick-config-component/json-schema/manifest.json": ["**/*.wafl"]
   },
-  "rust-analyzer.cargo.features": ["wasmflow-rpc/client"],
+  "rust-analyzer.cargo.features": ["wick-rpc/client"],
   "files.associations": {
     "*.wafl": "yaml"
   },

@@ -1,0 +1,78 @@
+
+{{#each fields}}
+  {{#if default}}
+#[allow(non_snake_case)]
+pub(crate) fn {{upperCase (snakeCase ../name.value)}}_{{upperCase name.value}}() -> {{> expand-type type }} {
+  {{> expand-value default}}
+}
+  {{/if}}
+{{/each}}
+
+#[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+{{#if description}}
+/// {{{description.value}}}
+{{/if}}
+pub struct {{name.value}} {
+  {{#each fields}}
+    {{#if description}}
+    /// {{description.value}}
+    {{/if}}
+    {{#withAnnotation "deprecated"}}
+    #[deprecated()]
+    {{/withAnnotation}}
+    {{#unlessAnnotation "required"}}
+      {{#if default}}
+      #[serde(default = "{{upperCase (snakeCase ../name.value)}}_{{upperCase name.value}}")]
+      {{else}}
+      #[serde(default)]
+      {{/if}}
+    {{/unlessAnnotation}}
+    {{#switch type.kind}}
+      {{#case "MapType"}}
+        #[serde(skip_serializing_if = "HashMap::is_empty")]
+        {{#switch type.valueType.name.value}}
+          {{#case "InstanceDefinition"}}
+            #[serde(deserialize_with = "crate::parse::v1::map_component_def")]
+          {{/case}}
+          {{#case "ComponentDefinition"}}
+            #[serde(deserialize_with = "crate::parse::v1::component_shortform")]
+          {{/case}}
+          {{#case "string"}}
+            #[serde(deserialize_with = "crate::helpers::kv_deserializer")]
+          {{/case}}
+        {{/switch}}
+      {{/case}}
+      {{#case "ListType"}}
+      #[serde(skip_serializing_if = "Vec::is_empty")]
+        {{#ifCond type.type.name.value "==" "ConnectionDefinition"}}
+          #[serde(deserialize_with = "crate::parse::v1::vec_connection")]
+        {{/ifCond}}
+      {{/case}}
+      {{#case "Optional"}}
+        {{#ifCond type.type.name.value "==" "ConnectionTargetDefinition"}}
+          #[serde(deserialize_with = "crate::parse::v1::connection_target_shortform")]
+        {{/ifCond}}
+      {{/case}}
+      {{#case "Named"}}
+        {{#switch type.name.value}}
+          {{#case "string"}}#[serde(deserialize_with="with_expand_envs")]{{/case}}
+          {{#case "i8"}}#[serde(deserialize_with="with_expand_envs")]{{/case}}
+          {{#case "u8"}}#[serde(deserialize_with="with_expand_envs")]{{/case}}
+          {{#case "i16"}}#[serde(deserialize_with="with_expand_envs")]{{/case}}
+          {{#case "u16"}}#[serde(deserialize_with="with_expand_envs")]{{/case}}
+          {{#case "i32"}}#[serde(deserialize_with="with_expand_envs")]{{/case}}
+          {{#case "u32"}}#[serde(deserialize_with="with_expand_envs")]{{/case}}
+          {{#case "i64"}}#[serde(deserialize_with="with_expand_envs")]{{/case}}
+          {{#case "u64"}}#[serde(deserialize_with="with_expand_envs")]{{/case}}
+          {{#case "f32"}}#[serde(deserialize_with="with_expand_envs")]{{/case}}
+          {{#case "f64"}}#[serde(deserialize_with="with_expand_envs")]{{/case}}
+          {{#case "bool"}}#[serde(deserialize_with="with_expand_envs")]{{/case}}
+          {{#case "any"}}#[serde(deserialize_with = "crate::helpers::deserialize_json_env")]{{/case}}
+          {{#case "ConnectionTargetDefinition"}}#[serde(deserialize_with = "crate::parse::v1::connection_target_shortform")]{{/case}}
+        {{/switch}}
+      {{/case}}
+    {{/switch}}
+    pub {{name.value}}: {{> expand-type type}},
+  {{/each}}
+}

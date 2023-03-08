@@ -1,4 +1,4 @@
-use wasmflow_interface_keyvalue::set_remove::*;
+use wick_interface_types_keyvalue::set_remove::*;
 
 use crate::components::generated::set_remove::*;
 

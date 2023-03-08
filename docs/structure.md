@@ -1,88 +1,70 @@
-# Wasmflow project structure
+# Wick project structure
 
-The `wasmflow/wasmflow` monorepo houses four main projects as well as their dependencies:
+The `candlecorp/wick` monorepo houses four main projects as well as their dependencies:
 
-- The `wasmflow` binary project at `./crates/bins/wasmflow`.
-- The `wasmflow-sdk` crate at `./crates/wasmflow/wasmflow-sdk`.
-- The `wasmflow-codegen` executable at `./codegen`.
+- The `wick` binary project at `./crates/bins/wick`.
 
 The first
 
 ## Directories and their purpose
 
-`codegen/` - Includes the node-based code generator.
-
-`crates` - Wasmflow source crates.
+`crates` - Wick source crates.
 
 `docs/` - Developer documentation.
 
-`etc/` - Miscellaneous configuration
-
-`makefiles/` - Core makefiles included by various sub-projects.
-
 `etc/` - Miscellaneous scripts and files to aid development.
 
-`tests/` - Integration tests that couldn't fit in sub-crates.
-
-`deny.toml` - Configuration for `cargo deny` checks
-
-`Makefile` - The Makefile for the wasmflow project.
-
-`package.json` - Dependencies for node-based support scripts.
+`Justfile` - The Justfile for the wick project.
 
 ## Crates
 
-The wasmflow crates are broken down into several child directories:
+The wick crates are broken down into several child directories:
 
-- `bins/` - contains the `wasmflow` crate that builds the wasmflow binary
+- `bins/` - contains the `wick` crate that builds the wick binary
 - `collections/` - contains implementations of native (non-WASM) collections.
 - `interfaces/` - contains well-known interface definitions.
 - `integration/` - contains projects used for integration testing.
-- `misc/` - support crates that are not specific to wasmflow but are managed within the project.
-- `wasmflow/` - wasmflow libraries.
+- `misc/` - support crates that are not specific to wick but are managed within the project.
+- `wick/` - wick libraries.
 
-### Wasmflow crates
+### Wick crates
 
-`logger/` - The logger used by Wasmflow libraries.
+`logger/` - The logger used by Wick libraries.
 
-`wasmflow-collection-cli` - Common CLI interface, options, and utilities for native based collections and persistent processes.
+`wick-component-cli` - Common CLI interface, options, and utilities for native based collections and persistent processes.
 
-`wasmflow-collection-grpc` - Implementation of a wasmflow collection over GRPC.
+`wick-component-grpc` - Implementation of a wick collection over GRPC.
 
-`wasmflow-collection-grpctar` - Implementation of a GRPC wasmflow collection served as a tarball with an architecture-specific binary.
+`wick-component-grpctar` - Implementation of a GRPC wick collection served as a tarball with an architecture-specific binary.
 
-`wasmflow-collection-nats` - Implementation of a wasmflow collection over NATS message queue.
+`wick-component-nats` - Implementation of a wick collection over NATS message queue.
 
-`wasmflow-collection-wasm` - Implementation of a wasmflow collection as a WASM module.
+`wick-component-wasm` - Implementation of a wick collection as a WASM module.
 
-`wasmflow-grpctar` - Library for archiving/extracting multi-architecture binaries.
+`wick-grpctar` - Library for archiving/extracting multi-architecture binaries.
 
-`wasmflow-host` - Library that encompasses the host logic used by the `wasmflow` binary.
+`wick-host` - Library that encompasses the host logic used by the `wick` binary.
 
-`wasmflow-interpreter` - Library that interprets a wasmflow graph and how data flows across the connections.
+`flow-graph-interpreter` - Library that interprets a wick graph and how data flows across the connections.
 
-`wasmflow-invocation-server` - Library that contains an implementation of the wasmflow invocation service that spins up a GRPC server.
+`wick-invocation-server` - Library that contains an implementation of the wick invocation service that spins up a GRPC server.
 
-`wasmflow-loader` - Utility library for loading wasmflow assets via filepath or OCI reference.
+`wick-loader-utils` - Utility library for loading wick assets via filepath or OCI reference.
 
-`wasmflow-manifest` - Library for loading and normalizing wasmflow manifest files.
+`wick-config-component` - Library for loading and normalizing wick configuration files.
 
-`wasmflow-mesh` - Library that manages connecting to a wasmflow mesh over NATS.
+`wick-oci-utils` - Library for pushing/pulling from OCI registries.
 
-`wasmflow-oci` - Library for pushing/pulling from OCI registries.
+`flow-expression-parser` - Library for parsing the mini-DSL in manifests.
 
-`wasmflow-parser` - Library for parsing the mini-DSL in manifests.
+`wick-rpc` - Library that houses the generated protobuf code for the GRPC service and the translation from protobuf types to wick types.
 
-`wasmflow-rpc` - Library that houses the generated protobuf code for the GRPC service and the translation from protobuf types to wasmflow types.
+`wick-runtime` - The core runtime library for wick.
 
-`wasmflow-runtime` - The core runtime library for wasmflow.
+`flow-graph` - Library that represents the flow graph data structure. Used mainly by the interpreter.
 
-`wasmflow-schematic-graph` - Library that represents the flow graph data structure. Used mainly by the interpreter.
+`wick-stdlib` - The standard components implemented as native code within wick.
 
-`wasmflow-sdk` - Library used by Rust-based WASM components.
+`wick-test` - The TAP test harness and implementation.
 
-`wasmflow-stdlib` - The standard components implemented as native code within wasmflow.
-
-`wasmflow-test` - The TAP test harness and implementation.
-
-`wasmflow-wascap` - Wasmflow-specific WasCap implementations.
+`wick-wascap` - Wick-specific WasCap implementations.

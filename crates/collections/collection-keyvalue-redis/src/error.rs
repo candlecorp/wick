@@ -25,10 +25,10 @@ pub enum Error {
   ShuttingDown,
 
   #[error(transparent)]
-  RpcError(#[from] wasmflow_rpc::Error),
+  RpcError(#[from] wick_rpc::Error),
 
   #[error(transparent)]
-  CliError(#[from] wasmflow_collection_cli::Error),
+  CliError(#[from] wick_component_cli::Error),
 
   #[error(transparent)]
   IoError(#[from] std::io::Error),

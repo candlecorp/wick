@@ -1,0 +1,20 @@
+[package]
+name = "flow-graph"
+version = "0.0.0"
+edition = "2021"
+license = "Elastic-2.0"
+repository = "https://github.com/candlecorp/wick"
+publish = false
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[dependencies]
+thiserror = { workspace = true }
+tracing = { workspace = true }
+
+[dev-dependencies]
+serde_json = { workspace = true }
+wick-config-component = { path = "../wick-config-component" }
+tokio = { workspace = true, features = ["macros", "rt"] }
+logger = { path = "../logger" }
+test-logger = { path = "../../misc/test-logger" }
+anyhow = { workspace = true }
