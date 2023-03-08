@@ -8,10 +8,36 @@ HttpResponse:
   #HTTP version enum
   version: HttpVersion
   #status code enum
-  status: StatusCode
+  status: StatusCode=OK
   #All response headers. Duplicates are not supported.
   headers: { string:string }
   #All response headers, as a single string in case duplicate headers exist.
   headersRaw: string
   #Response
-  body: bytes
+  body: bytes?
+---
+apiVersion: wick.candle.dev/v1alpha1
+kind: Type
+metadata:
+  name: HttpResponse
+imports:
+  - StatusCode
+  - HttpVersion
+fields:
+  - name: version
+    type: HttpVersion
+    description: HTTP version enum
+  - name: status
+    type: StatusCode
+    default: OK
+    description: status code enum
+  - name: headers
+    type: { string:string }
+    description: All response headers. Duplicates are not supported.
+  - name: headersRaw
+    type: string
+    description: All response headers, as a single string in case duplicate headers exist.
+  - name: body
+    type: bytes
+    optional: true
+    description: Response
