@@ -1,0 +1,69 @@
+{
+  "name": "test-component",
+  "features": {
+    "stateful": false,
+    "streaming": false,
+    "version": 0
+  },
+  "version": "0.0.1",
+  "format": 1,
+  "wellknown": [],
+  "types": {
+    "Interactive": {
+      "type": "struct",
+      "name": "Interactive",
+      "fields": {
+        "stdin": {
+          "type": "bool"
+        },
+        "stdout": {
+          "type": "bool"
+        },
+        "stderr": {
+          "type": "bool"
+        }
+      }
+    }
+  },
+  "operations": {
+    "byte-count": {
+      "name": "byte-count",
+      "inputs": {
+        "input": {
+          "type": "string"
+        }
+      },
+      "outputs": {
+        "output": {
+          "type": "u64"
+        }
+      }
+    },
+    "main": {
+      "name": "main",
+      "inputs": {
+        "args": {
+          "type": "list",
+          "element": {
+            "type": "string"
+          }
+        },
+        "isInteractive": {
+          "type": "ref",
+          "ref": "#/types/Interactive"
+        },
+        "program": {
+          "type": "optional",
+          "option": {
+            "type": "link"
+          }
+        }
+      },
+      "outputs": {
+        "code": {
+          "type": "u32"
+        }
+      }
+    }
+  }
+}

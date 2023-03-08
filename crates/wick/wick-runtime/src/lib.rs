@@ -83,14 +83,12 @@
 #![allow(unused_attributes, clippy::derive_partial_eq_without_eq, clippy::box_default)]
 // !!END_LINTS
 // Add exceptions here
-#![allow(missing_docs, unused)] // TODO
+#![allow(missing_docs)]
 
 #[macro_use]
 extern crate tracing;
 
-pub mod cli;
 mod collections;
-pub mod configuration;
 pub(crate) mod dev;
 mod dispatch;
 pub mod error;
@@ -99,12 +97,14 @@ mod network;
 mod network_service;
 #[cfg(test)]
 pub(crate) mod test;
+mod triggers;
 pub(crate) mod utils;
 
 pub use collections::error::CollectionError;
 pub use collections::network_collection::Collection as NetworkCollection;
 pub use network::{Network, NetworkBuilder};
 pub use network_service::error::NetworkError;
+pub use triggers::{get_trigger_loader, Trigger};
 
 pub type Error = error::RuntimeError;
 

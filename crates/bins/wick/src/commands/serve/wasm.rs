@@ -3,7 +3,7 @@ use std::sync::Arc;
 use anyhow::Result;
 use wick_component_wasm::collection::Collection;
 use wick_component_wasm::helpers::WickWasmModule;
-use wick_config_component::Permissions;
+use wick_config::Permissions;
 
 pub(crate) async fn handle_command(opts: super::ServeCommand, bytes: Vec<u8>) -> Result<()> {
   let component = WickWasmModule::from_slice(&bytes)?;

@@ -41,7 +41,7 @@ impl Reference {
 }
 
 #[instrument(name = "graph", skip_all, level = "trace", fields(name=manifest.name()))]
-pub fn from_def(manifest: &wick_config_component::ComponentConfiguration) -> Result<Network, flow_graph::error::Error> {
+pub fn from_def(manifest: &wick_config::ComponentConfiguration) -> Result<Network, flow_graph::error::Error> {
   let mut network = Network::new(manifest.name().clone().unwrap_or_default());
 
   for (name, flow) in manifest.flows() {

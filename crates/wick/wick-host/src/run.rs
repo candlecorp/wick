@@ -71,7 +71,7 @@
 // Add exceptions here
 #![allow(missing_docs, clippy::expect_used)] // TODO docs
 
-use wick_config_component::ComponentConfiguration;
+use wick_config::ComponentConfiguration;
 use wick_packet::PacketStream;
 
 use crate::HostBuilder;

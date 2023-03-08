@@ -5,7 +5,7 @@ use anyhow::Result;
 use seeded_random::Seed;
 use wick_component_cli::options::DefaultCliOptions;
 use wick_component_cli::parse_args;
-use wick_config_component::ComponentConfiguration;
+use wick_config::ComponentConfiguration;
 use wick_host::HostBuilder;
 use wick_packet::{InherentData, Observer, Packet, PacketStream};
 

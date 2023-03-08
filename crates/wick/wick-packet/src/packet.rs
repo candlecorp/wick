@@ -200,19 +200,16 @@ pub fn from_wasmrs(stream: FluxReceiver<Payload, PayloadError>) -> PacketStream 
         Packet::raw_err(wmd.stream, PacketError::new(e.msg))
       },
       |p| {
-        println!("wasmrs payload: {:#?}", p);
         let md = wasmrs::Metadata::decode(&mut p.metadata.unwrap());
         let wmd = md.map_or_else(
           |_e| WickMetadata::default(),
           |m| WickMetadata::decode(m.extra.unwrap()).unwrap(),
         );
-        let p = if wmd.is_done() {
+        if wmd.is_done() {
           Packet::done(wmd.stream)
         } else {
           Packet::new_for_port(wmd.stream, PacketPayload::Ok(p.data.unwrap()))
-        };
-        println!("turned it into : {:#?}", p);
-        p
+        }
       },
     );
     Ok(p)

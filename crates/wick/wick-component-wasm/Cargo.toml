@@ -21,7 +21,7 @@ wick-interface-types = { path = "../wick-interface-types" }
 wick-rpc = { path = "../wick-rpc" }
 wick-wascap = { path = "../wick-wascap" }
 wick-loader-utils = { path = "../wick-loader-utils" }
-wick-config-component = { path = "../wick-config-component" }
+wick-config = { path = "../wick-config" }
 seeded-random = { path = "../../misc/seeded-random" }
 tokio = { workspace = true, features = ["fs"] }
 parking_lot = { workspace = true }

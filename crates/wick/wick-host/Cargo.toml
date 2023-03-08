@@ -14,7 +14,7 @@ seeded-random = { path = "../../misc/seeded-random" }
 wick-runtime = { path = "../wick-runtime" }
 wick-packet = { path = "../wick-packet" }
 wick-interface-types = { path = "../wick-interface-types" }
-wick-config-component = { path = "../wick-config-component" }
+wick-config = { path = "../wick-config" }
 wick-loader-utils = { path = "../wick-loader-utils" }
 wick-component-cli = { path = "../wick-component-cli" }
 wick-rpc = { path = "../wick-rpc" }

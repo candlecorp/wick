@@ -239,7 +239,7 @@ jobs:
             make-tarball wick ./build/aarch64-apple-darwin darwin.aarch64 build/artifacts
             make-zip ./build/x86_64-pc-windows-gnu wick.win64 build/artifacts
             cp /home/candle/project/crates/wick/wick-rpc/proto/wick.proto build/artifacts/wick.proto
-            cp /home/candle/project/crates/wick/wick-config-component/json-schema/manifest.json build/artifacts/manifest-schema.json
+            cp /home/candle/project/crates/wick/wick-config/json-schema/manifest.json build/artifacts/manifest-schema.json
             BUILDTAG="nightly-$(date +%F)"
             echo $BUILDTAG > build/artifacts/RELEASE
             echo << pipeline.git.revision >> >> build/artifacts/RELEASE

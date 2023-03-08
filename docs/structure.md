@@ -51,7 +51,7 @@ The wick crates are broken down into several child directories:
 
 `wick-loader-utils` - Utility library for loading wick assets via filepath or OCI reference.
 
-`wick-config-component` - Library for loading and normalizing wick configuration files.
+`wick-config` - Library for loading and normalizing wick configuration files.
 
 `wick-oci-utils` - Library for pushing/pulling from OCI registries.
 

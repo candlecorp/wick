@@ -11,7 +11,7 @@ use once_cell::sync::Lazy;
 use parking_lot::Mutex;
 use seeded_random::{Random, Seed};
 use uuid::Uuid;
-use wick_config_component::ComponentConfiguration;
+use wick_config::ComponentConfiguration;
 use wick_packet::{Invocation, PacketStream};
 
 use crate::collections::{initialize_native_collection, initialize_network_collection, initialize_wasm_collection};
@@ -100,7 +100,7 @@ impl NetworkService {
   ) -> BoxFuture<Result<Arc<NetworkService>>> {
     Box::pin(async move {
       let bytes = wick_loader_utils::get_bytes(location, opts.allow_latest, &opts.allowed_insecure).await?;
-      let manifest = wick_config_component::ComponentConfiguration::load_from_bytes(Some(location.to_owned()), &bytes)?;
+      let manifest = wick_config::ComponentConfiguration::load_from_bytes(Some(location.to_owned()), &bytes)?;
 
       let init = Initialize {
         id: uid,
@@ -168,24 +168,23 @@ impl InvocationHandler for NetworkService {
 pub(crate) struct CollectionInitOptions {
   pub(crate) rng_seed: Seed,
   pub(crate) network_id: Uuid,
-  // pub(crate) mesh: Option<Arc<Mesh>>,
   pub(crate) allow_latest: bool,
   pub(crate) allowed_insecure: Vec<String>,
   pub(crate) timeout: Duration,
 }
 
 pub(crate) async fn initialize_collection(
-  collection: &CollectionDefinition,
+  collection: &ComponentDefinition,
   opts: CollectionInitOptions,
 ) -> Result<NamespaceHandler> {
   let namespace = collection.namespace.clone();
 
   let result = match &collection.kind {
-    CollectionKind::Wasm(v) => initialize_wasm_collection(v, namespace, opts).await,
+    ComponentKind::Wasm(v) => initialize_wasm_collection(v, namespace, opts).await,
     // CollectionKind::GrpcTar(v) => initialize_par_collection(v, namespace, opts).await,
     // CollectionKind::GrpcUrl(v) => initialize_grpc_collection(v, namespace).await,
     // CollectionKind::Mesh(v) => initialize_mesh_collection(v, namespace, opts).await,
-    CollectionKind::Manifest(v) => initialize_network_collection(v, namespace, opts).await,
+    ComponentKind::Manifest(v) => initialize_network_collection(v, namespace, opts).await,
     _ => todo!(),
   };
   Ok(result?)

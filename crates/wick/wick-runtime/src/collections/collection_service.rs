@@ -100,13 +100,13 @@ impl InvocationHandler for NativeCollectionService {
 #[cfg(test)]
 mod test {
 
-  use std::sync::Arc;
+  // use std::sync::Arc;
 
-  use anyhow::Result;
-  use seeded_random::Seed;
+  // use anyhow::Result;
+  // use seeded_random::Seed;
 
-  use super::*;
-  use crate::test::prelude::assert_eq;
+  // use super::*;
+  // use crate::test::prelude::assert_eq;
 
   // #[test_logger::test(tokio::test)]
   // async fn test_collection_component() -> Result<()> {

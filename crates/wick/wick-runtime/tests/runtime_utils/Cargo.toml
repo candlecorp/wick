@@ -13,7 +13,7 @@ repository = "https://github.com/candlecorp/wick"
 wick-runtime = { path = "../../../wick-runtime" }
 wick-packet = { path = "../../../wick-packet", features = [
 ] }
-wick-config-component = { path = "../../../wick-config-component" }
+wick-config = { path = "../../../wick-config" }
 tracing = { workspace = true }
 anyhow = { workspace = true }
 uuid = { workspace = true }

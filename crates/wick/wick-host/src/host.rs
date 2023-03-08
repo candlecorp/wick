@@ -10,7 +10,7 @@ use seeded_random::Seed;
 use uuid::Uuid;
 use wick_component_cli::options::{MeshOptions, Options as HostOptions, ServerOptions};
 use wick_component_cli::ServerState;
-use wick_config_component::ComponentConfiguration;
+use wick_config::ComponentConfiguration;
 use wick_interface_types::CollectionSignature;
 use wick_packet::{Entity, InherentData, Invocation, PacketStream};
 use wick_rpc::{RpcHandler, SharedRpcHandler};
@@ -290,7 +290,7 @@ mod test {
   use anyhow::Result;
   use futures::StreamExt;
   use http::Uri;
-  use wick_config_component::host_definition::HttpConfig;
+  use wick_config::host_definition::HttpConfig;
   use wick_invocation_server::connect_rpc_client;
   // use wick_rpc::rpc::Invocation;
   use wick_packet::Entity;

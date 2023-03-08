@@ -1059,7 +1059,7 @@ dependencies = [
  "thiserror",
  "tokio",
  "tracing",
- "wick-config-component",
+ "wick-config",
 ]
 
 [[package]]
@@ -1091,7 +1091,7 @@ dependencies = [
  "wasmrs-codec",
  "wasmrs-frames",
  "wasmrs-rx",
- "wick-config-component",
+ "wick-config",
  "wick-interface-types",
  "wick-packet",
 ]
@@ -2887,7 +2887,7 @@ dependencies = [
  "futures",
  "tracing",
  "uuid",
- "wick-config-component",
+ "wick-config",
  "wick-packet",
  "wick-runtime",
 ]
@@ -4388,6 +4388,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "wasmrs-guest"
+version = "0.4.0"
+dependencies = [
+ "bytes",
+ "cfg-if",
+ "futures-executor",
+ "futures-util",
+ "serde",
+ "serde_json",
+ "tracing",
+ "wasmrs",
+ "wasmrs-codec",
+ "wasmrs-frames",
+ "wasmrs-runtime",
+ "wasmrs-rx",
+]
+
+[[package]]
 name = "wasmrs-host"
 version = "0.4.0"
 dependencies = [
@@ -4767,7 +4785,7 @@ dependencies = [
  "trycmd",
  "wick-component-cli",
  "wick-component-wasm",
- "wick-config-component",
+ "wick-config",
  "wick-grpctar",
  "wick-host",
  "wick-interface-types",
@@ -4831,7 +4849,7 @@ dependencies = [
  "wasmrs-host",
  "wasmrs-rx",
  "wasmrs-wasmtime",
- "wick-config-component",
+ "wick-config",
  "wick-interface-types",
  "wick-loader-utils",
  "wick-packet",
@@ -4840,7 +4858,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "wick-config-component"
+name = "wick-config"
 version = "0.1.0"
 dependencies = [
  "anyhow",
@@ -4902,7 +4920,7 @@ dependencies = [
  "tracing",
  "uuid",
  "wick-component-cli",
- "wick-config-component",
+ "wick-config",
  "wick-interface-types",
  "wick-invocation-server",
  "wick-loader-utils",
@@ -5000,6 +5018,8 @@ dependencies = [
  "wasmrs",
  "wasmrs-codec",
  "wasmrs-frames",
+ "wasmrs-guest",
+ "wasmrs-runtime",
  "wasmrs-rx",
 ]
 
@@ -5056,7 +5076,7 @@ dependencies = [
  "tracing",
  "uuid",
  "wick-component-wasm",
- "wick-config-component",
+ "wick-config",
  "wick-interface-types",
  "wick-invocation-server",
  "wick-loader-utils",

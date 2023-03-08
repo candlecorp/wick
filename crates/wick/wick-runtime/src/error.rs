@@ -1,4 +1,5 @@
 use thiserror::Error;
+use wick_config::TriggerKind;
 
 pub use crate::collections::error::CollectionError;
 pub use crate::network_service::error::NetworkError;
@@ -20,6 +21,10 @@ pub struct InvocationError(pub String);
 pub enum RuntimeError {
   #[error(transparent)]
   SchematicGraph(#[from] flow_graph::error::Error),
+
+  #[error("Invalid trigger configuration, expected configuration for {0}")]
+  InvalidTriggerConfig(TriggerKind),
+
   #[error(transparent)]
   InvocationError(#[from] InvocationError),
 

@@ -85,7 +85,7 @@
 #![allow(missing_docs)]
 
 use futures::stream::StreamExt;
-use wick_config_component::ComponentConfiguration;
+use wick_config::ComponentConfiguration;
 use wick_packet::{Entity, InherentData, Invocation, Packet, PacketStream};
 use wick_runtime::{Network, NetworkBuilder};
 
