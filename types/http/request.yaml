@@ -1,26 +1,3 @@
-apiVersion: wick.candle.dev/v1alpha1
-kind: Type
-metadata:
-  name: HttpRequest
-fields:
-  - name: method
-    type: string
-  - name: scheme
-    type: string
-  - name: authority
-    type: string
-  - name: queryParameters
-    type: { string:string }
-  - name: path
-    type: string
-  - name: uri
-    type: string
-  - name: version
-    type: string
-  - name: headers
-    type: { string:string }
-  - name: body
-    type: bytes
 ---
 apiVersion: wick.candle.dev/v1alpha1
 kind: Type
