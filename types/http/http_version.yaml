@@ -5,3 +5,15 @@ HttpVersion:
   HTTP10: "HTTP/1.0"
   HTTP11: "HTTP/1.1"
   HTTP20: "HTTP/2.0"
+---
+apiVersion: wick.candle.dev/v1alpha1
+kind: Enum
+metadata:
+  name: HttpVersion
+fields:
+  - name: HTTP10
+    value: "HTTP/1.0"
+  - name: HTTP11
+    value: "HTTP/1.1"
+  - name: HTTP20
+    value: "HTTP/2.0"
