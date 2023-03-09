@@ -1,0 +1,33 @@
+---
+apiVersion: wick.candle.dev/v1alpha1
+kind: Type
+metadata:
+  name: DateTime
+fields:
+  - name: year
+    type: int
+    description: Year of the date
+    optional: true
+  - name: month
+    type: int
+    description: Month of the date
+  - name: day
+    type: int
+    description: Day of the date
+  - name: hour
+    type: int
+    description: Hour of the date
+  - name: minute
+    type: int
+    description: Minute of the date
+  - name: second
+    type: int
+    description: Second of the date
+  - name: nanosecond
+    type: int
+    description: Nanosecond of the date
+    default: 0
+  - name: offset
+    type: Duration
+    description: "Timezone offset of the date. Can be positive or negative. a UTC offset of -1:00 would be: {seconds: -3600, nanoseconds: 0}"
+    default: { seconds: 0, nanoseconds: 0 }

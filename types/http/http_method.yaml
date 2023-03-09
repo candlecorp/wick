@@ -1,0 +1,14 @@
+---
+apiVersion: wick.candle.dev/v1alpha1
+kind: Enum
+metadata:
+  name: HttpMethod
+fields:
+  - name: GET
+  - name: POST
+  - name: PUT
+  - name: DELETE
+  - name: PATCH
+  - name: HEAD
+  - name: OPTIONS
+  - name: TRACE

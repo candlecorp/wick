@@ -1,0 +1,13 @@
+---
+apiVersion: wick.candle.dev/v1alpha1
+kind: Type
+metadata:
+  name: Duration
+fields:
+  - name: seconds
+    type: i64
+    description: number of seconds for the duration
+  - name: nanoseconds
+    type: int
+    description: number of nanoseconds in addition to the seconds
+    default: 0

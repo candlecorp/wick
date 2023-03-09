@@ -1,0 +1,8 @@
+---
+apiVersion: wick.candle.dev/v1alpha1
+kind: Enum
+metadata:
+  name: HttpScheme
+fields:
+  - name: HTTP
+  - name: HTTPS
