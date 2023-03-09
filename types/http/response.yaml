@@ -15,8 +15,8 @@ fields:
     default: OK
     description: status code enum
   - name: headers
-    type: { string:string }
-    description: All response headers. Duplicates are not supported.
+    type: { string:[string] }
+    description: All response headers. Supports duplicates.
   - name: headersRaw
     type: string
     description: All response headers, as a single string in case duplicate headers exist.

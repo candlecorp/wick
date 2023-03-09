@@ -5,19 +5,21 @@ metadata:
   name: HttpRequest
 imports:
   - HttpVersion
+  - HttpMethod
+  - HttpScheme
 fields:
   - name: method
-    type: string
-    description: method from request line
+    type: HttpMethod
+    description: method from request line enum
   - name: scheme
-    type: string
-    description: scheme from request line
+    type: HttpScheme
+    description: scheme from request line enum
   - name: authority
     type: string
     required: false
     description: domain/port and any authentication from request line. optional
   - name: queryParameters
-    type: { string:string }
+    type: { string:[string] }
     required: false
     description: query parameters from request line. optional
   - name: path
@@ -30,11 +32,11 @@ fields:
     type: HttpVersion
     description: HTTP version enum
   - name: headers
-    type: { string:string }
-    description: All request headers. Duplicates are not shown.
+    type: { string:[string] }
+    description: All request headers. Duplicates are comma separated.
   - name: headersRaw
     type: string
-    description: All request headers, as a single string in case duplicate headers exist.
+    description: All request headers, as a single string.
   - name: body
     type: bytes
     required: false
