@@ -31,6 +31,11 @@ These charts will be updated as more language codegens are created.
 | `array` | `[]`  | A dynamically-sized list | `Vec<T>`        |
 | `map`   | `{}`  | A key-value map          | `HashMap<K, V>` |
 
+## Other Operators
+| Name    | Alias | Description              | Rust Type       |
+| ------- | ----- | ------------------------ | --------------- |
+| `union` | `|`   | There must be one type returned. However, the type can be one of many types separated by a `|`.  In protobuf, this is `oneof` and in typescript it is also called a `union`. |   `Enum`  |
+
 ## Wick Host types
 These are the types that will be used by the Wick Host to communicate with the Wick Components when using triggers and resources.
 

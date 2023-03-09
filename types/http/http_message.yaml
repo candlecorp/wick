@@ -1,0 +1,12 @@
+---
+apiVersion: wick.candle.dev/v1alpha1
+kind: Type
+metadata:
+  name: HttpMessage
+imports:
+  - HttpRequest
+  - HttpResponse
+fields:
+  - name: message
+    type: HttpRequest | HttpResponse
+    description: Can be either HTTP Request or Http Response.
