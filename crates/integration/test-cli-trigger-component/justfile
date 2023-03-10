@@ -1,11 +1,11 @@
 build: setup
     cargo build --release --target=wasm32-wasi
     cp ./target/wasm32-wasi/release/*.wasm ./build/
-    wick wasm sign ./build/test_cli_trigger_component.wasm interface.json
+    cargo run --manifest-path ../../bins/wick/Cargo.toml -- wasm sign ./build/test_cli_trigger_component.wasm interface.json
 debug: setup
-    cargo +nightly build --target=wasm32-wasi
+    cargo build --target=wasm32-wasi
     cp ./target/wasm32-wasi/debug/*.wasm ./build/
-    wick wasm sign ./build/test_cli_trigger_component.wasm interface.json
+    cargo run --manifest-path ../../bins/wick/Cargo.toml -- wasm sign ./build/test_cli_trigger_component.wasm interface.json
 setup:
     mkdir -p build
 clean:
