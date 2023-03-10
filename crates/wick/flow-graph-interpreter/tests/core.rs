@@ -7,15 +7,11 @@ use flow_graph_interpreter::graph::from_def;
 use rot::assert_equal;
 use seeded_random::Seed;
 use test::JsonWriter;
-use wick_packet::{Packet, PacketStream};
+use wick_packet::Packet;
 
 #[test_logger::test(tokio::test)]
 async fn test_senders() -> Result<()> {
-  let (interpreter, mut outputs) = interp!(
-    "./tests/manifests/v0/core/senders.wafl",
-    "test",
-    PacketStream::default()
-  );
+  let (interpreter, mut outputs) = interp!("./tests/manifests/v0/core/senders.wafl", "test", Vec::new());
 
   assert_equal!(outputs.len(), 2);
 

@@ -10,27 +10,6 @@ use crate::graph::types::OperationPort;
 
 type PacketType = Packet;
 
-#[derive(Debug, Clone, PartialEq)]
-pub(crate) enum BufferAction {
-  // Todo: get rid of BufferAction if it's not used anymore.
-  #[allow(unused)]
-  Consumed(PacketType),
-  Buffered,
-}
-
-impl std::fmt::Display for BufferAction {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    write!(
-      f,
-      "{}",
-      match self {
-        BufferAction::Consumed(_) => "consumed",
-        BufferAction::Buffered => "buffered",
-      }
-    )
-  }
-}
-
 #[derive()]
 #[must_use]
 pub(crate) struct PortHandler {
@@ -38,6 +17,12 @@ pub(crate) struct PortHandler {
   buffer: PortBuffer,
   status: Mutex<PortStatus>,
   port: OperationPort,
+}
+
+impl std::fmt::Display for PortHandler {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    write!(f, "{}[{}]", self.name, self.get_status())
+  }
 }
 
 impl std::fmt::Debug for PortHandler {
@@ -96,18 +81,16 @@ impl PortHandler {
     *self.status.lock()
   }
 
-  pub(super) fn buffer(&self, value: PacketType) -> BufferAction {
+  pub(super) fn buffer(&self, value: PacketType) {
     assert!(
       self.get_status() != PortStatus::DoneClosed,
       "port should never be pushed to after being closed."
     );
 
-    let action = if value.is_done() {
-      let action = match self.port.direction() {
-        // PortDirection::In if !self.port.is_graph_output() => BufferAction::Consumed(value),
+    if value.is_done() {
+      match self.port.direction() {
         PortDirection::In | PortDirection::Out => {
           self.buffer.push(value);
-          BufferAction::Buffered
         }
       };
       if !self.is_empty() {
@@ -115,13 +98,9 @@ impl PortHandler {
       } else {
         self.set_status(PortStatus::DoneClosed);
       }
-      action
     } else {
       self.buffer.push(value);
-      BufferAction::Buffered
     };
-    trace!(%action, "incoming message");
-    action
   }
 
   pub(super) fn take(&self) -> Option<PacketType> {

@@ -141,7 +141,7 @@ enum CollectionKind {
 }
 
 
-"A definition for an individual Wasmflow schematic."
+"A definition for an individual Wick schematic."
 type SchematicManifest {
   "Schematic name."
   name: string @required,
@@ -169,7 +169,7 @@ type ComponentDefinition {
   data: any?,
 }
 
-"A connection between components. This can be specified in short-form syntax (where applicable). See <a href='https://wasmflow.com/docs/configuration/short-form-syntax/'>wasmflow.com</a> for more information."
+"A connection between components. This can be specified in short-form syntax (where applicable)."
 type ConnectionDefinition {
   "The originating component from upstream."
   from: ConnectionTargetDefinition,
@@ -181,7 +181,7 @@ type ConnectionDefinition {
   default: string?
 }
 
-"A connection target e.g. a port on a reference. This can be specified in short-form syntax (where applicable).  See <a href='https://wasmflow.com/docs/configuration/short-form-syntax/'>wasmflow.com</a> for more information."
+"A connection target e.g. a port on a reference. This can be specified in short-form syntax (where applicable)."
 type ConnectionTargetDefinition {
   "The instance name of the referenced component."
   instance: string @required,

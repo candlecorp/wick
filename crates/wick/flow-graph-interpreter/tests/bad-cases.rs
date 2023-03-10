@@ -5,43 +5,47 @@ use anyhow::Result;
 use flow_graph_interpreter::graph::from_def;
 use rot::*;
 use seeded_random::Seed;
-use test::JsonWriter;
-use wick_packet::{packet_stream, PacketPayload};
+use wick_packet::{packets, Packet, PacketPayload};
 
 #[test_logger::test(tokio::test)]
 async fn test_panic() -> Result<()> {
   let (interpreter, mut outputs) = interp!(
     "./tests/manifests/v0/bad-cases/panic.wafl",
     "test",
-    packet_stream!(("input", "Hello world"))
+    packets!(("input", "Hello world"))
   );
 
   assert_equal!(outputs.len(), 2);
 
   outputs.pop();
   let p = outputs.pop().unwrap().unwrap();
-  assert!(matches!(p.payload, PacketPayload::Err(_)));
+  assert_eq!(p, Packet::err("output", "Operation wafl://test.coll/panic panicked"));
 
   interpreter.shutdown().await?;
 
   Ok(())
 }
 
-// TODO
 #[test_logger::test(tokio::test)]
-#[ignore]
+// #[ignore]
 async fn test_timeout_done_noclose() -> Result<()> {
   let (interpreter, mut outputs) = interp!(
     "./tests/manifests/v0/bad-cases/timeout-done-noclose.wafl",
     "test",
-    packet_stream!(("input", "Hello world"))
+    packets!(("input", "Hello world"))
   );
 
   assert_equal!(outputs.len(), 2);
 
   outputs.pop();
   let p = outputs.pop().unwrap().unwrap();
-  assert!(matches!(p.payload, PacketPayload::Err(_)));
+  assert_eq!(
+    p,
+    Packet::err(
+      "output",
+      "Operation wafl://test.coll/echo timed out waiting for upstream data."
+    )
+  );
 
   interpreter.shutdown().await?;
 

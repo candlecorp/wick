@@ -211,7 +211,7 @@ type InstanceDefinition {
   config: any?,
 }
 
-"A connection between Operations and their ports. This can be specified in short-form syntax (where applicable). See <a href='https://wasmflow.com/docs/configuration/short-form-syntax/'>wasmflow.com</a> for more information."
+"A connection between Operations and their ports. This can be specified in short-form syntax (where applicable)."
 type ConnectionDefinition {
   "The upstream operation port."
   from: ConnectionTargetDefinition,
@@ -223,7 +223,7 @@ type ConnectionDefinition {
   default: string?
 }
 
-"A connection target e.g. a port on a reference. This can be specified in short-form syntax (where applicable).  See <a href='https://wasmflow.com/docs/configuration/short-form-syntax/'>wasmflow.com</a> for more information."
+"A connection target e.g. a port on a reference. This can be specified in short-form syntax (where applicable)."
 type ConnectionTargetDefinition {
   "The instance ID of the operation."
   instance: string @required,

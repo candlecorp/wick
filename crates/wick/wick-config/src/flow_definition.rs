@@ -249,7 +249,7 @@ impl ConnectionDefinition {
       .map_err(|e| Error::DefaultsError(self.from.clone(), self.to.clone(), e.to_string()))
   }
 
-  /// Generate a [ConnectionDefinition] from short form syntax. See [wasmflow.com](https://wasmflow.com/docs/configuration/short-form-syntax/) for more info.
+  /// Generate a [ConnectionDefinition] from short form syntax.
   pub fn from_v0_str(s: &str) -> Result<Self> {
     let parsed = crate::parse::v0::parse_connection(s)?;
     (&parsed).try_into()
@@ -385,7 +385,7 @@ impl ConnectionTargetDefinition {
     self.target.port.clone()
   }
 
-  /// Generate a [ConnectionTargetDefinition] from short form syntax. See [wasmflow.com](https://wasmflow.com/docs/configuration/short-form-syntax/) for more info.
+  /// Generate a [ConnectionTargetDefinition] from short form syntax.
   pub fn from_v0_str(s: &str) -> Result<Self> {
     let parsed = crate::parse::v0::parse_connection_target(s)?;
     parsed.try_into()

@@ -11,7 +11,6 @@ request_response!(job, minijob => {
   output: "output",
 });
 
-#[allow(clippy::unused_async)]
-pub(crate) async fn minijob(left: u64, right: u64) -> Result<u64, wick_packet::Error> {
+pub(crate) fn minijob(left: u64, right: u64) -> Result<u64, wick_packet::Error> {
   Ok(left - right)
 }

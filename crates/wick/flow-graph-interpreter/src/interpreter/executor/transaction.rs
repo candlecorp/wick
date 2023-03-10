@@ -8,9 +8,8 @@ use parking_lot::Mutex;
 use seeded_random::{Random, Seed};
 use uuid::Uuid;
 use wasmrs_rx::{FluxChannel, Observer};
-use wick_packet::{InherentData, Invocation, Packet, PacketPayload, PacketStream};
+use wick_packet::{InherentData, Invocation, Packet, PacketError, PacketStream};
 
-use self::operation::port::port_handler::BufferAction;
 use self::operation::InstanceHandler;
 use super::error::ExecutionError;
 use crate::graph::types::*;
@@ -140,12 +139,9 @@ impl Transaction {
       if instance.index() == SCHEMATIC_OUTPUT_INDEX {
         continue;
       }
-      let invocation = Invocation::next_tx(
-        self.id(),
-        self.invocation.origin.clone(),
-        instance.entity(),
-        self.invocation.inherent,
-      );
+      let invocation = self
+        .invocation
+        .next_tx(self.invocation.origin.clone(), instance.entity());
       instance
         .clone()
         .start(self.id(), invocation, self.channel.clone())
@@ -200,6 +196,8 @@ impl Transaction {
         vec![Packet::encode(seed_name, inherent_data.seed), Packet::done(seed_name)],
       );
       tokio::spawn(fut);
+    } else {
+      inherent.cleanup();
     }
     Ok(())
   }
@@ -292,7 +290,7 @@ impl Transaction {
     Ok(())
   }
 
-  pub(crate) async fn handle_op_err(&self, index: NodeIndex, err: PacketPayload) -> Result<()> {
+  pub(crate) async fn handle_op_err(&self, index: NodeIndex, err: PacketError) -> Result<()> {
     self.stats.mark(format!("component:{}:op_err", index));
     let instance = self.instance(index);
 
@@ -306,10 +304,7 @@ impl Transaction {
         port,
         down_instance.clone(),
         self.channel.clone(),
-        vec![
-          Packet::new_for_port(downport_name, err.clone()),
-          Packet::done(downport_name),
-        ],
+        vec![Packet::raw_err(downport_name, err.clone()), Packet::done(downport_name)],
       )
       .await;
     }
@@ -337,15 +332,8 @@ pub(crate) async fn accept_input<'a, 'b>(
   payload: Packet,
 ) {
   trace!(?payload, "accepting input");
-  let action = instance.buffer_in(&port, payload);
-  match action {
-    BufferAction::Consumed(packet) => {
-      trace!(?packet, "consumed packet");
-    }
-    BufferAction::Buffered => {
-      channel.dispatch_data(tx_id, port).await;
-    }
-  };
+  instance.buffer_in(&port, payload);
+  channel.dispatch_data(tx_id, port).await;
 }
 
 pub(crate) async fn accept_outputs(
@@ -367,8 +355,6 @@ pub(crate) async fn accept_output<'a, 'b>(
   payload: Packet,
 ) {
   trace!(?payload, "accepting output");
-  let action = instance.buffer_out(&port, payload);
-  if action == BufferAction::Buffered {
-    channel.dispatch_data(tx_id, port).await;
-  }
+  instance.buffer_out(&port, payload);
+  channel.dispatch_data(tx_id, port).await;
 }

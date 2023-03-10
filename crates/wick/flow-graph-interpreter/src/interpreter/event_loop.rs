@@ -118,7 +118,6 @@ async fn event_loop(
           }
           EventKind::CallComplete(data) => state.handle_call_complete(tx_id, data).instrument(span).await,
           EventKind::PortData(data) => state.handle_port_data(tx_id, data).instrument(span).await,
-          EventKind::PortStatusChange(port) => state.handle_port_status_change(tx_id, port).instrument(span).await,
           EventKind::TransactionDone => state.handle_transaction_done(tx_id).instrument(span).await,
           EventKind::TransactionStart(transaction) => {
             state.handle_transaction_start(*transaction).instrument(span).await

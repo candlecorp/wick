@@ -251,7 +251,7 @@ impl FromPrimitive for CollectionKind {
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
-/// A definition for an individual Wasmflow schematic.
+/// A definition for an individual Wick schematic.
 pub struct SchematicManifest {
   /// Schematic name.
   #[serde(deserialize_with = "with_expand_envs")]
@@ -290,7 +290,7 @@ pub struct ComponentDefinition {
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
-/// A connection between components. This can be specified in short-form syntax (where applicable). See <a href='https://wasmflow.com/docs/configuration/short-form-syntax/'>wasmflow.com</a> for more information.
+/// A connection between components. This can be specified in short-form syntax (where applicable).
 pub struct ConnectionDefinition {
   /// The originating component from upstream.
   #[serde(default)]
@@ -307,7 +307,7 @@ pub struct ConnectionDefinition {
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
-/// A connection target e.g. a port on a reference. This can be specified in short-form syntax (where applicable).  See <a href='https://wasmflow.com/docs/configuration/short-form-syntax/'>wasmflow.com</a> for more information.
+/// A connection target e.g. a port on a reference. This can be specified in short-form syntax (where applicable).
 pub struct ConnectionTargetDefinition {
   /// The instance name of the referenced component.
   #[serde(deserialize_with = "with_expand_envs")]

@@ -1,0 +1,20 @@
+version: 0
+network:
+  schematics:
+    - name: parent
+      instances:
+        uppercase:
+          id: test::uppercase
+        child_ref:
+          id: self::child
+      connections:
+        - <>[parent_input] => uppercase[input]
+        - uppercase[output] => child_ref[child_input]
+        - child_ref[child_output] => <>[parent_output]
+    - name: child
+      instances:
+        reverse:
+          id: test::reverse
+      connections:
+        - <>[child_input] => reverse[input]
+        - reverse[output] => <>[child_output]

@@ -1,24 +1,23 @@
-use std::fmt::Display;
 use std::io::{self, BufRead, BufReader};
 
 use guest::*;
 use wasmrs_guest as guest;
 use wick_wasmrs_macros::payload_fan_out;
-use wick_wasmrs_macros::wick_packet::{packet_stream, CollectionLink, Packet, PacketStream};
+use wick_wasmrs_macros::wick_packet::{CollectionLink, Packet};
 
 #[no_mangle]
 extern "C" fn __wasmrs_init(guest_buffer_size: u32, host_buffer_size: u32, max_host_frame_len: u32) {
   guest::init(guest_buffer_size, host_buffer_size, max_host_frame_len);
 
-  guest::register_request_channel("wick", "byteCount", byteCount);
+  guest::register_request_channel("wick", "byteCount", byte_count);
   guest::register_request_channel("wick", "main", main);
   guest::add_import(0, OperationType::RequestChannel, "wick", "link_call");
 }
 
-fn byteCount(
-  mut input: FluxReceiver<ParsedPayload, PayloadError>,
-) -> Result<FluxReceiver<Payload, PayloadError>, GenericError> {
-  let (channel, rx) = FluxChannel::<Payload, PayloadError>::new_parts();
+fn byte_count(
+  mut input: FluxReceiver<Payload, PayloadError>,
+) -> Result<FluxReceiver<RawPayload, PayloadError>, GenericError> {
+  let (channel, rx) = FluxChannel::<RawPayload, PayloadError>::new_parts();
 
   spawn(async move {
     let (mut left, mut right) = payload_fan_out!(input, "left", "right");
@@ -45,9 +44,9 @@ pub struct Interactive {
 }
 
 fn main(
-  mut input: FluxReceiver<ParsedPayload, PayloadError>,
-) -> Result<FluxReceiver<Payload, PayloadError>, GenericError> {
-  let (channel, rx) = FluxChannel::<Payload, PayloadError>::new_parts();
+  mut input: FluxReceiver<Payload, PayloadError>,
+) -> Result<FluxReceiver<RawPayload, PayloadError>, GenericError> {
+  let (channel, rx) = FluxChannel::<RawPayload, PayloadError>::new_parts();
 
   spawn(async move {
     let (mut input, mut is_interactive, mut program) = payload_fan_out!(input, "args", "isInteractive", "program");
@@ -56,7 +55,7 @@ fn main(
     {
       let args: Vec<String> = input.deserialize().unwrap();
       let tty: Interactive = is_interactive.deserialize().unwrap();
-      let app: CollectionLink = program.deserialize().unwrap();
+      let _app: CollectionLink = program.deserialize().unwrap();
       // let stream = app.call("hello", PacketStream::default()).await.unwrap();
 
       println!(
@@ -67,8 +66,14 @@ fn main(
       let isatty = tty.stdin;
       if !isatty {
         let reader = BufReader::new(io::stdin());
-        let input = reader.lines().collect::<Result<Vec<String>, _>>().unwrap().join("\n");
-        println!("{}", input);
+        let lines = reader.lines().collect::<Result<Vec<String>, _>>().unwrap();
+        if lines.is_empty() {
+          println!("STDIN is non-interactive but had no input.");
+        } else {
+          println!("<STDIN>{}</STDIN>", lines.join("NL"));
+        }
+      } else {
+        println!("not reading from STDIN, stdin is interactive.");
       }
     }
     let _ = channel.send_result(Packet::encode("code", 0).into());

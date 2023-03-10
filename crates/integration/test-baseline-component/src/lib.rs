@@ -14,10 +14,8 @@ extern "C" fn __wasmrs_init(guest_buffer_size: u32, host_buffer_size: u32, max_h
   guest::register_request_channel("wick", "error", error);
 }
 
-fn add(
-  mut input: FluxReceiver<ParsedPayload, PayloadError>,
-) -> Result<FluxReceiver<Payload, PayloadError>, GenericError> {
-  let (channel, rx) = FluxChannel::<Payload, PayloadError>::new_parts();
+fn add(mut input: FluxReceiver<Payload, PayloadError>) -> Result<FluxReceiver<RawPayload, PayloadError>, GenericError> {
+  let (channel, rx) = FluxChannel::<RawPayload, PayloadError>::new_parts();
 
   spawn(async move {
     let (mut left, mut right) = payload_fan_out!(input, "left", "right");
@@ -63,22 +61,28 @@ static MINIMUM_LENGTH: usize = 8;
 static MAXIMUM_LENGTH: usize = 512;
 
 fn validate(
-  mut input: FluxReceiver<ParsedPayload, PayloadError>,
-) -> Result<FluxReceiver<Payload, PayloadError>, GenericError> {
-  let (channel, rx) = FluxChannel::<Payload, PayloadError>::new_parts();
+  mut input: FluxReceiver<Payload, PayloadError>,
+) -> Result<FluxReceiver<RawPayload, PayloadError>, GenericError> {
+  let (channel, rx) = FluxChannel::<RawPayload, PayloadError>::new_parts();
 
   spawn(async move {
     let (mut input) = payload_fan_out!(input, "input");
     while let (Some(Ok(input))) = (input.next().await) {
       let password: String = input.deserialize().unwrap();
+      println!("Checking password {}", password);
+
       if password.len() < MINIMUM_LENGTH {
+        println!("Too short!");
         let _ = channel.send_result(Packet::err("output", LengthError::TooShort.to_string()).into());
       } else if password.len() > MAXIMUM_LENGTH {
+        println!("Too long!!");
         let _ = channel.send_result(Packet::err("output", LengthError::TooLong.to_string()).into());
       } else {
+        println!("Just right!");
         let _ = channel.send_result(Packet::encode("output", password).into());
       }
     }
+    println!("Done checking!");
     let _ = channel.send_result(Packet::done("output").into());
   });
 
@@ -86,9 +90,9 @@ fn validate(
 }
 
 fn error(
-  mut input: FluxReceiver<ParsedPayload, PayloadError>,
-) -> Result<FluxReceiver<Payload, PayloadError>, GenericError> {
-  let (channel, rx) = FluxChannel::<Payload, PayloadError>::new_parts();
+  mut input: FluxReceiver<Payload, PayloadError>,
+) -> Result<FluxReceiver<RawPayload, PayloadError>, GenericError> {
+  let (channel, rx) = FluxChannel::<RawPayload, PayloadError>::new_parts();
 
   spawn(async move {
     let (mut input) = payload_fan_out!(input, "input");

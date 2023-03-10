@@ -9,11 +9,20 @@ macro_rules! request_response {
       let ($(mut $ikey),*) = fan_out!(stream, $(stringify!($ikey)),*);
       let (tx, rx) = PacketStream::new_channels();
       tokio::spawn(async move {
-      #[allow(unused_parens)]
-        while let ($(Some(Ok($ikey))),*) = ($($ikey.next().await),*) {
-          $(let $ikey = $ikey.deserialize::<$ity>()?;)*
-          let output = $handler($($ikey,)*).await?;
-          tx.send(Packet::encode($okey, output))?;
+        let error = loop {
+          #[allow(unused_parens)]
+          let ($($ikey),*) = ($($ikey.next().await),*);
+          #[allow(unused_parens)]
+          if let ($(Some(Ok($ikey))),*) = ($($ikey),*) {
+            $(let $ikey = match $ikey.deserialize::<$ity>(){Ok(v)=>v,Err(e)=>break Some(e)};)*
+            let output = $handler($($ikey,)*)?;
+            tx.send(Packet::encode($okey, output))?;
+          } else {
+            break None;
+          }
+        };
+        if let Some(error) = error {
+          tx.send(Packet::err($okey, error.to_string()))?;
         }
         tx.send(Packet::done($okey))?;
         Ok::<_, wick_packet::Error>(())

@@ -115,8 +115,8 @@ pub async fn tester(path: &str, stream: PacketStream, target: &str, mut expected
     )
     .await?;
 
-  println!("Result: {:?}", result);
   let messages: Vec<_> = result.collect().await;
+  println!("Result: {:?}", messages);
   assert_eq!(messages.len(), expected.len());
   expected.reverse();
   for packet in messages {

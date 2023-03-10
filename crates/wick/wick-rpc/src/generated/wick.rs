@@ -34,7 +34,7 @@ pub struct Invocation {
 pub struct Packet {
   #[prost(message, optional, tag = "1")]
   pub metadata: ::core::option::Option<Metadata>,
-  #[prost(oneof = "packet::Data", tags = "2, 3, 4")]
+  #[prost(oneof = "packet::Data", tags = "2, 3")]
   pub data: ::core::option::Option<packet::Data>,
 }
 /// Nested message and enum types in `Packet`.
@@ -46,8 +46,6 @@ pub mod packet {
     Ok(super::Ok),
     #[prost(message, tag = "3")]
     Err(super::Err),
-    #[prost(bool, tag = "4")]
-    Done(bool),
   }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -57,8 +55,8 @@ pub struct Metadata {
   pub port: ::prost::alloc::string::String,
   #[prost(uint32, tag = "2")]
   pub index: u32,
-  #[prost(bool, tag = "3")]
-  pub done: bool,
+  #[prost(uint32, tag = "3")]
+  pub flags: u32,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]

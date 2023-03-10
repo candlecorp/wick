@@ -7,14 +7,14 @@ use flow_graph_interpreter::graph::from_def;
 use rot::*;
 use seeded_random::Seed;
 use test::JsonWriter;
-use wick_packet::{packet_stream, Packet};
+use wick_packet::{packets, Packet};
 
 #[test_logger::test(tokio::test)]
 async fn test_echo() -> Result<()> {
   let (interpreter, mut outputs) = interp!(
     "./tests/manifests/v0/echo.wafl",
     "echo",
-    packet_stream!(("input", "hello world"))
+    packets!(("input", "hello world"))
   );
 
   assert_equal!(outputs.len(), 2);
@@ -30,11 +30,70 @@ async fn test_echo() -> Result<()> {
 }
 
 #[test_logger::test(tokio::test)]
+async fn test_renamed_ports() -> Result<()> {
+  let (interpreter, mut outputs) = interp!(
+    "./tests/manifests/v0/reverse.wafl",
+    "test",
+    packets!(("PORT_IN", "hello world"))
+  );
+
+  assert_equal!(outputs.len(), 2);
+
+  let _wrapper = outputs.pop().unwrap(); //done signal
+  let wrapper = outputs.pop().unwrap();
+  let expected = Packet::encode("PORT_OUT", "dlrow olleh");
+
+  assert_equal!(wrapper.unwrap(), expected);
+  interpreter.shutdown().await?;
+
+  Ok(())
+}
+
+#[test_logger::test(tokio::test)]
+async fn test_parent_child() -> Result<()> {
+  let (interpreter, mut outputs) = interp!(
+    "./tests/manifests/v0/parent-child.wafl",
+    "parent",
+    packets!(("parent_input", "hello world"))
+  );
+
+  assert_equal!(outputs.len(), 2);
+
+  let _wrapper = outputs.pop().unwrap(); //done signal
+  let wrapper = outputs.pop().unwrap();
+  let expected = Packet::encode("parent_output", "DLROW OLLEH");
+
+  assert_equal!(wrapper.unwrap(), expected);
+  interpreter.shutdown().await?;
+
+  Ok(())
+}
+
+#[test_logger::test(tokio::test)]
+async fn test_parent_child_simple() -> Result<()> {
+  let (interpreter, mut outputs) = interp!(
+    "./tests/manifests/v0/parent-child-simple.wafl",
+    "nested_parent",
+    packets!(("parent_input", "hello world"))
+  );
+
+  assert_equal!(outputs.len(), 2);
+
+  let _wrapper = outputs.pop().unwrap(); //done signal
+  let wrapper = outputs.pop().unwrap();
+  let expected = Packet::encode("parent_output", "hello world");
+
+  assert_equal!(wrapper.unwrap(), expected);
+  interpreter.shutdown().await?;
+
+  Ok(())
+}
+#[test_logger::test(tokio::test)]
 async fn test_external_collection() -> Result<()> {
   let (interpreter, mut outputs) = interp!(
     "./tests/manifests/v0/external.wafl",
     "test",
-    packet_stream!(("input", "hello world"))
+    packets!(("input", "hello world"))
   );
 
   let _ = outputs.pop();
@@ -52,7 +111,7 @@ async fn test_self() -> Result<()> {
   let (interpreter, mut outputs) = interp!(
     "./tests/manifests/v0/reference-self.wafl",
     "test",
-    packet_stream!(("parent_input", "Hello world"))
+    packets!(("parent_input", "Hello world"))
   );
 
   assert_equal!(outputs.len(), 2);
@@ -72,7 +131,7 @@ async fn test_spread() -> Result<()> {
   let (interpreter, mut outputs) = interp!(
     "./tests/manifests/v0/spread.wafl",
     "test",
-    packet_stream!(("input", "Hello world"))
+    packets!(("input", "Hello world"))
   );
 
   assert_equal!(outputs.len(), 4);
@@ -95,7 +154,7 @@ async fn test_stream() -> Result<()> {
   let (interpreter, mut outputs) = interp!(
     "./tests/manifests/v0/stream.wafl",
     "test",
-    packet_stream!(("input", "Hello world"))
+    packets!(("input", "Hello world"))
   );
 
   assert_equal!(outputs.len(), 6);
@@ -110,13 +169,33 @@ async fn test_stream() -> Result<()> {
 
   Ok(())
 }
+#[test_logger::test(tokio::test)]
+async fn test_multiple_inputs() -> Result<()> {
+  let (interpreter, mut outputs) = interp!(
+    "./tests/manifests/v0/multiple-inputs.wafl",
+    "test",
+    packets!(("left", 40), ("right", 10020))
+  );
+
+  assert_equal!(outputs.len(), 2);
+
+  let _ = outputs.pop();
+  let wrapper = outputs.pop().unwrap().unwrap();
+  let expected = Packet::encode("output", 10060);
+
+  assert_equal!(wrapper, expected);
+
+  interpreter.shutdown().await?;
+
+  Ok(())
+}
 
 #[test_logger::test(tokio::test)]
 async fn test_stream_multi() -> Result<()> {
   let (interpreter, outputs) = interp!(
     "./tests/manifests/v0/stream-multi.wafl",
     "test",
-    packet_stream!(("input", "hello world"))
+    packets!(("input", "hello world"))
   );
   assert_equal!(outputs.len(), 13);
 

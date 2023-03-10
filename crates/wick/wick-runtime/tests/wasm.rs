@@ -15,13 +15,18 @@ async fn good_wasm_component() -> Result<()> {
 }
 
 #[test_logger::test(tokio::test)]
-#[ignore = "TODO:FIX TRANSACTION_MISSING"]
 async fn bad_wasm_component() -> Result<()> {
   tester(
     "./manifests/v0/bad-wasmrs-component.wafl",
     packet_stream!(("input", "1234567890")),
     "test",
-    vec![Packet::err("output", "wat")],
+    vec![
+      Packet::err(
+        "output",
+        "Operation wafl://wapc.coll/error timed out waiting for upstream data.",
+      ),
+      Packet::done("output"),
+    ],
   )
   .await
 }

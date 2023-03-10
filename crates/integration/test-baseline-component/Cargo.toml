@@ -16,8 +16,6 @@ panic = "abort"
 crate-type = ["cdylib"]
 
 [dependencies]
-wasmrs-guest = { path = "../../../../wasmrs-rust/crates/wasmrs-guest", features = [
-  "logging"
-] }
+wasmrs-guest = { version = "0.5", features = ["logging"] }
 wick-wasmrs-macros = { path = "../../wick/wick-wasmrs-macros" }
 serde = { version = "1", features = ["derive"] }

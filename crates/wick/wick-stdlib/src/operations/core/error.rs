@@ -10,8 +10,8 @@ request_response!(job, minijob => {
   output: "output",
 });
 
-#[allow(clippy::unused_async)]
-pub(crate) async fn minijob(_input: String) -> Result<String, wick_packet::Error> {
+#[allow(clippy::needless_pass_by_value)]
+pub(crate) fn minijob(_input: String) -> Result<String, wick_packet::Error> {
   Err(wick_packet::Error::General(
     "This component will always error".to_owned(),
   ))

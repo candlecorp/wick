@@ -27,6 +27,22 @@ impl TestCollection {
           .add_output("output", TypeSignature::String),
       )
       .add_component(
+        OperationSignature::new("uppercase")
+          .add_input("input", TypeSignature::String)
+          .add_output("output", TypeSignature::String),
+      )
+      .add_component(
+        OperationSignature::new("reverse")
+          .add_input("input", TypeSignature::String)
+          .add_output("output", TypeSignature::String),
+      )
+      .add_component(
+        OperationSignature::new("add")
+          .add_input("left", TypeSignature::U64)
+          .add_input("right", TypeSignature::U64)
+          .add_output("output", TypeSignature::U64),
+      )
+      .add_component(
         OperationSignature::new("timeout")
           .add_input("input", TypeSignature::String)
           .add_output("output", TypeSignature::String),
@@ -105,11 +121,6 @@ impl TestCollection {
       )
       .add_component(OperationSignature::new("no-inputs").add_output("output", TypeSignature::String))
       .add_component(
-        OperationSignature::new("reverse")
-          .add_input("input", TypeSignature::String)
-          .add_output("output", TypeSignature::String),
-      )
-      .add_component(
         OperationSignature::new("render")
           .add_input("input", TypeSignature::String)
           .add_output("output", TypeSignature::String),
@@ -134,7 +145,7 @@ fn stream(_seed: u64) -> (Sender, PacketStream) {
     tokio::spawn(async move {
       trace!(total, "sleeping for delayed send");
       tokio::time::sleep(Duration::from_millis(total.into())).await;
-      tx.send(msg).unwrap();
+      let _ = tx.send(msg);
     })
   });
   (sender, stream)
@@ -161,7 +172,7 @@ impl Collection for TestCollection {
   ) -> BoxFuture<Result<PacketStream, Box<dyn std::error::Error + Send + Sync>>> {
     let operation = invocation.target.name();
     println!("got op {} in echo test collection", operation);
-    Box::pin(async move { Ok(handler(invocation, stream).await?) })
+    Box::pin(async move { Ok(handler(invocation, stream)?) })
   }
 
   fn list(&self) -> &CollectionSignature {
@@ -169,7 +180,7 @@ impl Collection for TestCollection {
   }
 }
 
-async fn handler(invocation: Invocation, mut payload_stream: PacketStream) -> anyhow::Result<PacketStream> {
+fn handler(invocation: Invocation, mut payload_stream: PacketStream) -> anyhow::Result<PacketStream> {
   let operation = invocation.target.name();
   match operation {
     "echo" => {
@@ -181,6 +192,52 @@ async fn handler(invocation: Invocation, mut payload_stream: PacketStream) -> an
         while let Some(Ok(payload)) = input.next().await {
           println!("got echo: got payload");
           defer(vec![send(payload.set_port("output"))]);
+        }
+        defer(vec![send(Packet::done("output"))]);
+      });
+      Ok(stream)
+    }
+    "reverse" => {
+      let (mut send, stream) = stream(1);
+      println!("got reverse");
+      spawn(async move {
+        let mut input = fan_out!(payload_stream, "input");
+        println!("got reverse: waiting for payload");
+        while let Some(Ok(payload)) = input.next().await {
+          println!("got reverse: got payload");
+          let msg: String = payload.deserialize().unwrap();
+          defer(vec![send(Packet::encode(
+            "output",
+            &msg.chars().rev().collect::<String>(),
+          ))]);
+        }
+        defer(vec![send(Packet::done("output"))]);
+      });
+      Ok(stream)
+    }
+    "uppercase" => {
+      let (mut send, stream) = stream(1);
+      println!("got uppercase");
+      spawn(async move {
+        let mut input = fan_out!(payload_stream, "input");
+        println!("got uppercase: waiting for payload");
+        while let Some(Ok(payload)) = input.next().await {
+          println!("got uppercase: got payload");
+          let msg: String = payload.deserialize().unwrap();
+          defer(vec![send(Packet::encode("output", &msg.to_ascii_uppercase()))]);
+        }
+        defer(vec![send(Packet::done("output"))]);
+      });
+      Ok(stream)
+    }
+    "add" => {
+      let (mut send, stream) = stream(1);
+      spawn(async move {
+        let (mut left, mut right) = fan_out!(payload_stream, "left", "right");
+        while let (Some(Ok(left)), Some(Ok(right))) = (left.next().await, right.next().await) {
+          let left: u64 = left.deserialize().unwrap();
+          let right: u64 = right.deserialize().unwrap();
+          defer(vec![send(Packet::encode("output", left + right))]);
         }
         defer(vec![send(Packet::done("output"))]);
       });

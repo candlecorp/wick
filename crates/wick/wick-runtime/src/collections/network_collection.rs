@@ -78,7 +78,7 @@ mod tests {
   type Result<T> = anyhow::Result<T>;
 
   async fn request_log(collection: &Collection, data: &str) -> Result<String> {
-    let stream = packet_stream!(("input", data));
+    let stream = packet_stream!(("MAIN_IN", data));
 
     let invocation = Invocation::new(Entity::test(file!()), Entity::local("simple"), None);
     let outputs = collection.invoke(invocation, stream).await?;
@@ -88,7 +88,7 @@ mod tests {
     let actual = packets.pop().unwrap().unwrap();
 
     println!("doc_id: {:?}", actual);
-    assert_eq!(actual, Packet::encode("output", data));
+    assert_eq!(actual, Packet::encode("MAIN_OUT", data));
     Ok(actual.payload.deserialize().unwrap())
   }
 

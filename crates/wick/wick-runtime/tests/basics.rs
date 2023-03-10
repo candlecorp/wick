@@ -7,9 +7,9 @@ type Result<T> = anyhow::Result<T, anyhow::Error>;
 async fn simple_schematic() -> Result<()> {
   tester(
     "./manifests/v0/simple.wafl",
-    packet_stream!(("input", "simple string")),
+    packet_stream!(("MAIN_IN", "simple string")),
     "simple",
-    vec![Packet::encode("output", "simple string"), Packet::done("output")],
+    vec![Packet::encode("MAIN_OUT", "simple string"), Packet::done("MAIN_OUT")],
   )
   .await
 }
@@ -51,25 +51,29 @@ async fn no_inputs() -> Result<()> {
 }
 
 #[test_logger::test(tokio::test)]
-#[ignore = "TODO:IMPORTANT"]
 async fn nested_schematics() -> Result<()> {
   tester(
     "./manifests/v0/nested-schematics.wafl",
     packet_stream!(("parent_input", "simple string")),
     "nested_parent",
-    vec![Packet::encode("parent_output", "simple string"), Packet::done("output")],
+    vec![
+      Packet::encode("parent_output", "simple string"),
+      Packet::done("parent_output"),
+    ],
   )
   .await
 }
 
 #[test_logger::test(tokio::test)]
-#[ignore = "TODO:FIX_HUNG"]
 async fn short_circuit_to_output() -> Result<()> {
   tester(
     "./manifests/v0/short-circuit.wafl",
     packet_stream!(("input", "short")),
     "short_circuit",
-    vec![Packet::err("output", "udnno")],
+    vec![
+      Packet::err("output", "Needs to be longer than 8 characters"),
+      Packet::done("output"),
+    ],
   )
   .await
 }
@@ -87,12 +91,11 @@ async fn short_circuit_with_default() -> Result<()> {
 }
 
 #[test_logger::test(tokio::test)]
-#[ignore = "TODO:FIX_SEND_AFTER_DONE"]
-async fn multiple_schematics() -> Result<()> {
+async fn multiple_inputs() -> Result<()> {
   tester(
-    "./manifests/v0/multiple-schematics.wafl",
+    "./manifests/v0/multiple-inputs.wafl",
     packet_stream!(("left", 42), ("right", 302309)),
-    "first_schematic",
+    "test",
     vec![Packet::encode("output", 42 + 302309), Packet::done("output")],
   )
   .await

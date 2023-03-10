@@ -7,5 +7,5 @@ network:
         REF_ID_LOGGER:
           id: wafl::core::log
       connections:
-        - <> => REF_ID_LOGGER[input]
-        - REF_ID_LOGGER[output] => <>
+        - <>[MAIN_IN] => REF_ID_LOGGER[input]
+        - REF_ID_LOGGER[output] => <>[MAIN_OUT]
