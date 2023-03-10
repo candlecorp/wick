@@ -1,6 +1,6 @@
 
 wasm:
-	just crates/integration/test-baseline-component/debug
+	just crates/integration/test-baseline-component/build
 	just crates/integration/test-cli-trigger-component/build
 
 clean:
@@ -26,7 +26,7 @@ early-errors: licenses
 licenses:
 	cargo deny --workspace check licenses  --config etc/deny.toml --hide-inclusion-graph
 
-unit-tests:
+unit-tests: wasm
 	cargo build -p wick
 	cargo test --workspace -- --skip integration_test
 

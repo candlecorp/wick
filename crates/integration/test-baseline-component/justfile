@@ -1,11 +1,11 @@
 build: setup
     cargo build --release --target=wasm32-unknown-unknown
     cp ./target/wasm32-unknown-unknown/release/*.wasm ./build/
-    wick wasm sign ./build/baseline.wasm interface.json
+    cargo run --manifest-path ../../bins/wick/Cargo.toml -- wasm sign ./build/baseline.wasm interface.json
 debug: setup
     cargo +nightly build --target=wasm32-wasi
     cp ./target/wasm32-wasi/debug/*.wasm ./build/
-    wick wasm sign ./build/baseline.wasm interface.json
+    cargo run --manifest-path ../../bins/wick/Cargo.toml -- wasm sign ./build/baseline.wasm interface.json
 setup:
     mkdir -p build
 clean:
