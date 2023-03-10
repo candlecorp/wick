@@ -11,8 +11,7 @@ request_response!(job, minijob => {
   output: "output",
 });
 
-#[allow(clippy::unused_async)]
-pub(crate) async fn minijob(seed: u64) -> Result<String, wick_packet::Error> {
+pub(crate) fn minijob(seed: u64) -> Result<String, wick_packet::Error> {
   let rng = Random::from_seed(seeded_random::Seed::unsafe_new(seed));
   Ok(rng.uuid().as_hyphenated().to_string())
 }

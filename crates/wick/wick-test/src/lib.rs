@@ -215,11 +215,7 @@ impl TestData {
     let (tx, rx) = tokio::sync::mpsc::unbounded_channel();
     for packet in &self.inputs {
       debug!("Test input for port {:?}", packet);
-      tx.send(Ok(Packet::new_for_port(
-        &packet.port,
-        PacketPayload::Ok(wasmrs_codec::messagepack::serialize(&packet.payload).unwrap().into()),
-      )))
-      .unwrap();
+      tx.send(Ok(Packet::encode(&packet.port, &packet.payload))).unwrap();
     }
     let stream = PacketStream::new(Box::new(UnboundedReceiverStream::new(rx)));
     if let Some(seed) = self.seed {
@@ -372,7 +368,7 @@ pub async fn run_test(
     let mut missed = vec![];
     for i in num_tested..test.actual.len() {
       if let Some(output) = test.actual.get(i) {
-        if !matches!(output.payload, PacketPayload::Done) {
+        if output.is_done() {
           debug!(?output, "test missed");
           missed.push(output);
         }

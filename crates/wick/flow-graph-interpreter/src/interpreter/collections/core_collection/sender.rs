@@ -1,6 +1,5 @@
 use serde_json::Value;
-use wasmrs_rx::{FluxChannel, Observer};
-use wick_packet::{Packet, PacketStream};
+use wick_packet::{packet_stream, PacketStream};
 
 use crate::interpreter::executor::error::ExecutionError;
 use crate::Operation;
@@ -22,12 +21,7 @@ impl Operation for SenderOperation {
     let task = async move {
       let value = data.ok_or(ExecutionError::InvalidSenderData)?;
       let data: SenderData = serde_json::from_value(value).map_err(|_| ExecutionError::InvalidSenderData)?;
-      let outstream = FluxChannel::new();
-
-      outstream.send(Packet::encode("output", data.output))?;
-      outstream.send(Packet::done("output"))?;
-
-      Ok(PacketStream::new(Box::new(outstream)))
+      Ok(packet_stream!(("output", data.output)))
     };
     Box::pin(task)
   }

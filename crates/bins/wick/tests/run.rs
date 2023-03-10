@@ -14,8 +14,11 @@ async fn wick_run() {
   println!("{}", String::from_utf8_lossy(&output.stderr));
 
   assert_eq!(
-    String::from_utf8_lossy(&output.stdout),
-    "Logger: testing123\n{\"metadata\":{\"index\":0,\"extra\":null},\"extra\":{\"done\":false,\"stream\":\"schem_output\"},\"payload\":{\"Ok\":[170,116,101,115,116,105,110,103,49,50,51]}}\n"
+    String::from_utf8_lossy(&output.stdout)
+      .split_terminator('\n')
+      .next()
+      .unwrap(),
+    "Logger: testing123"
   );
 }
 

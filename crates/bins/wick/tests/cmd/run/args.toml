@@ -1,3 +1,12 @@
+#:schema https://raw.githubusercontent.com/assert-rs/trycmd/main/schema.json
 bin.name = "wick"
-args = "run tests/cmd/run/application.args.yaml -- arg1 22 arg2 33"
-stdout = "args: [\"mycli\", \"arg1\", \"22\", \"arg2\", \"33\"], interactive: { stdin: false, stdout: false, stderr: false }\n\n"
+args = [
+  "run",
+  "tests/cmd/run/application.args.yaml",
+  "--",
+  "arg1",
+  "22",
+  "arg2",
+  "33"
+]
+stdout = "args: [\"mycli\", \"arg1\", \"22\", \"arg2\", \"33\"], interactive: { stdin: false, stdout: false, stderr: false }\nSTDIN is non-interactive but had no input.\n"

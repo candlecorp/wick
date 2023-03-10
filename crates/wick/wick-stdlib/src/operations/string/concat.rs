@@ -11,7 +11,7 @@ request_response!(job, minijob => {
   output: "output",
 });
 
-#[allow(clippy::unused_async)]
-async fn minijob(left: String, right: String) -> Result<String, wick_packet::Error> {
+#[allow(clippy::needless_pass_by_value)]
+fn minijob(left: String, right: String) -> Result<String, wick_packet::Error> {
   Ok(format!("{}{}", left, right))
 }

@@ -385,7 +385,7 @@ pub struct InstanceDefinition {
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
-/// A connection between Operations and their ports. This can be specified in short-form syntax (where applicable). See <a href='https://wasmflow.com/docs/configuration/short-form-syntax/'>wasmflow.com</a> for more information.
+/// A connection between Operations and their ports. This can be specified in short-form syntax (where applicable).
 pub struct ConnectionDefinition {
   /// The upstream operation port.
   #[serde(default)]
@@ -402,7 +402,7 @@ pub struct ConnectionDefinition {
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
-/// A connection target e.g. a port on a reference. This can be specified in short-form syntax (where applicable).  See <a href='https://wasmflow.com/docs/configuration/short-form-syntax/'>wasmflow.com</a> for more information.
+/// A connection target e.g. a port on a reference. This can be specified in short-form syntax (where applicable).
 pub struct ConnectionTargetDefinition {
   /// The instance ID of the operation.
   #[serde(deserialize_with = "with_expand_envs")]

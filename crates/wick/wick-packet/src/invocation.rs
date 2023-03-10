@@ -1,3 +1,5 @@
+use std::time::SystemTime;
+
 use uuid::Uuid;
 
 use crate::{Entity, InherentData};
@@ -35,15 +37,21 @@ impl Invocation {
 
   /// Creates an invocation with a specific transaction id, to correlate a chain of
   /// invocations.
-  pub fn next_tx(tx_id: Uuid, origin: Entity, target: Entity, inherent: Option<InherentData>) -> Invocation {
+  pub fn next_tx(&self, origin: Entity, target: Entity) -> Invocation {
     let invocation_id = get_uuid();
 
     Invocation {
       origin,
       target,
       id: invocation_id,
-      tx_id,
-      inherent,
+      tx_id: self.tx_id,
+      inherent: self.inherent.map(|i| InherentData {
+        seed: seeded_random::Seed::unsafe_new(i.seed).rng().gen(),
+        timestamp: SystemTime::now()
+          .duration_since(SystemTime::UNIX_EPOCH)
+          .unwrap()
+          .as_millis() as u64,
+      }),
     }
   }
 

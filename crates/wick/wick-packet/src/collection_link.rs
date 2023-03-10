@@ -2,7 +2,8 @@ use std::pin::Pin;
 
 use futures::{Future, StreamExt};
 use serde::{Deserialize, Serialize};
-use wasmrs::{Metadata, Payload, PayloadError, RSocket};
+use wasmrs::{Metadata, PayloadError, RSocket};
+use wasmrs_frames::RawPayload;
 use wasmrs_guest::{FluxChannel, Observer};
 
 use crate::{from_wasmrs, Entity, PacketStream};
@@ -54,12 +55,12 @@ impl std::fmt::Display for CollectionLink {
 
 // #[cfg(target_arch = "wasm32")]
 async fn link_call(origin: &str, target: &str, mut input: PacketStream) -> Result<PacketStream, crate::error::Error> {
-  let (host_tx, host_rx) = FluxChannel::<Payload, PayloadError>::new_parts();
+  let (host_tx, host_rx) = FluxChannel::<RawPayload, PayloadError>::new_parts();
   let host_stream = wasmrs_guest::Host::default().request_channel(Box::new(host_rx));
   let md = Metadata::new(0);
   let invocation = wasmrs_codec::messagepack::serialize(&(origin, target)).unwrap();
   host_tx
-    .send(Payload::new_data(Some(md.encode()), Some(invocation.into())))
+    .send(RawPayload::new_data(Some(md.encode()), Some(invocation.into())))
     .unwrap();
 
   wasmrs_runtime::spawn(async move {

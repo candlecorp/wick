@@ -209,7 +209,7 @@ impl From<DurationStatistics> for rpc::DurationStatistics {
 impl From<Packet> for rpc::Packet {
   fn from(value: Packet) -> Self {
     let md = rpc::Metadata {
-      done: value.extra.is_done(),
+      flags: value.extra.flags().into(),
       port: value.extra.stream().to_owned(),
       index: value.metadata.index,
     };
@@ -224,7 +224,7 @@ impl From<rpc::Metadata> for Metadata {
   fn from(v: rpc::Metadata) -> Self {
     Self {
       index: v.index,
-      extra: Some(WickMetadata::new(v.port, false).encode()),
+      extra: Some(WickMetadata::new(v.port, 0).encode()),
     }
   }
 }

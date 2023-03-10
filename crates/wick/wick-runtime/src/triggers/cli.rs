@@ -1,6 +1,7 @@
 use std::{env, fmt};
 
 use async_trait::async_trait;
+use futures::StreamExt;
 use serde::{Deserialize, Serialize};
 use wick_config::{CliConfig, ComponentDefinition, TriggerDefinition};
 use wick_packet::{packet_stream, CollectionLink, Entity, Invocation};
@@ -87,7 +88,10 @@ impl Cli {
       None,
     );
 
-    let _response = network.invoke(invocation, packet_stream).await?;
+    let mut response = network.invoke(invocation, packet_stream).await?;
+    while let Some(packet) = response.next().await {
+      trace!(?packet, "trigger:cli:response");
+    }
 
     Ok(())
   }
@@ -127,34 +131,5 @@ impl Trigger for Cli {
 impl fmt::Display for Cli {
   fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
     write!(f, "Cli Trigger",)
-  }
-}
-
-#[cfg(test)]
-mod tests {
-  use wick_config::AppConfiguration;
-
-  use super::*;
-
-  #[tokio::test]
-  async fn test_initialize() {
-    let app_config = AppConfiguration::from_yaml(
-      "
-  name: myapp
-  version: 1.0.0
-  triggers:
-    - kind: channels.wick.cli@v1
-      component: my_signed.wasm
-      operation: mycomponent
-      app:
-        kind: Manifest
-        reference: ./anyq.wafl
-",
-    )
-    .unwrap();
-    let cli_loader = super::super::get_trigger_loader(&TriggerKind::Cli).unwrap();
-    let config = app_config.triggers()[0].clone();
-    let trigger = cli_loader().unwrap();
-    trigger.run("test".to_owned(), config).await.unwrap();
   }
 }

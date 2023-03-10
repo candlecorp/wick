@@ -116,7 +116,7 @@ impl Collection {
 impl RpcHandler for Collection {
   async fn invoke(&self, invocation: Invocation, stream: PacketStream) -> RpcResult<PacketStream> {
     let target = invocation.target_url();
-    trace!("test collection invoke: {}", target);
+    trace!("stdlib invoke: {}", target);
     let stream = dispatch!(invocation, stream, {
           "core::error" => operations::core::error::job,
           "core::log" => operations::core::log::job,
@@ -128,7 +128,7 @@ impl RpcHandler for Collection {
           "rand::uuid" => operations::rand::uuid::job,
           "string::concat" => operations::string::concat::job,
     });
-    trace!("test collection result: {}", target);
+    trace!("stdlib result: {}", target);
 
     Ok(stream)
   }

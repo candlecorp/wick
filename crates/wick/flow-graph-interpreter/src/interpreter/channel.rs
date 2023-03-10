@@ -46,7 +46,6 @@ pub enum EventKind {
   TransactionStart(Box<Transaction>),
   TransactionDone,
   PortData(PortReference),
-  PortStatusChange(PortReference),
   Invocation(NodeIndex, Box<Invocation>),
   CallComplete(CallComplete),
   Close(Option<ExecutionError>),
@@ -58,7 +57,6 @@ impl EventKind {
       EventKind::Ping(_) => "ping",
       EventKind::TransactionStart(_) => "tx_start",
       EventKind::TransactionDone => "tx_done",
-      EventKind::PortStatusChange(_) => "port_status_change",
       EventKind::PortData(_) => "port_data",
       EventKind::Invocation(_, _) => "invocation",
       EventKind::CallComplete(_) => "call_complete",
@@ -158,12 +156,6 @@ impl InterpreterDispatchChannel {
   pub(crate) async fn dispatch_start(&self, tx: Box<Transaction>) {
     self
       .dispatch(Event::new(tx.id(), EventKind::TransactionStart(tx)))
-      .await;
-  }
-
-  pub(crate) async fn dispatch_status_change(&self, tx_id: Uuid, port: PortReference) {
-    self
-      .dispatch(Event::new(tx_id, EventKind::PortStatusChange(port)))
       .await;
   }
 

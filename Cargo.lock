@@ -2885,6 +2885,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "futures",
+ "tokio",
  "tracing",
  "uuid",
  "wick-config",
@@ -4351,7 +4352,9 @@ dependencies = [
 
 [[package]]
 name = "wasmrs"
-version = "0.4.0"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a87dbc71543d3a13125858027277a6da605431a18d47dea771d90deccee53ac8"
 dependencies = [
  "bytes",
  "crossbeam-channel",
@@ -4371,7 +4374,9 @@ dependencies = [
 
 [[package]]
 name = "wasmrs-codec"
-version = "0.4.1"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1ca60ec765a9309b303dd3b995aa6cc68bb4b7cc3e09d3a6dddca4d1ce887e95"
 dependencies = [
  "heapless",
  "serde",
@@ -4381,7 +4386,9 @@ dependencies = [
 
 [[package]]
 name = "wasmrs-frames"
-version = "0.4.0"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fb481eeab30d2ab5c71c31ca56dc646f3c431ed3481fc6abd1683beb60ef3f16"
 dependencies = [
  "bytes",
  "serde",
@@ -4389,7 +4396,9 @@ dependencies = [
 
 [[package]]
 name = "wasmrs-guest"
-version = "0.4.0"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d1bff20015c5dd9c06ca39e7bf6d02b2089bc3620c7db0efd5a183141e8a5e81"
 dependencies = [
  "bytes",
  "cfg-if",
@@ -4407,7 +4416,9 @@ dependencies = [
 
 [[package]]
 name = "wasmrs-host"
-version = "0.4.0"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7dddf50a88edae103947ecdb1ac4272867d0297ec656e0b35609b255337ef39e"
 dependencies = [
  "bytes",
  "dashmap",
@@ -4426,7 +4437,9 @@ dependencies = [
 
 [[package]]
 name = "wasmrs-runtime"
-version = "0.4.0"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a8661867abb3edea0873dfd1a289558d25a80ac3d98b4b03cc0eb32619681211"
 dependencies = [
  "bytes",
  "crossbeam-channel",
@@ -4442,7 +4455,9 @@ dependencies = [
 
 [[package]]
 name = "wasmrs-rx"
-version = "0.4.0"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c6409519166b5c611dc6b0d92d9f0aeb32743c61a1c48f02e7a7884f8ab64447"
 dependencies = [
  "async-trait",
  "bytes",
@@ -4459,7 +4474,9 @@ dependencies = [
 
 [[package]]
 name = "wasmrs-wasmtime"
-version = "0.4.0"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e9ec9b0a59238e22079151e0cfb4d561c52d3cb5c13d6a5387db45e3f8563f4e"
 dependencies = [
  "anyhow",
  "bytes",
@@ -5009,6 +5026,7 @@ dependencies = [
  "futures",
  "parking_lot 0.12.1",
  "pin-project-lite",
+ "seeded-random",
  "serde",
  "serde_json",
  "thiserror",

@@ -9,7 +9,6 @@ use uuid::Uuid;
 use wasmrs_rx::{FluxChannel, Observer};
 use wick_packet::{Entity, Invocation, Packet, PacketError, PacketPayload, PacketSender, PacketStream};
 
-use self::port::port_handler::BufferAction;
 use self::port::{InputPorts, OutputPorts, PortStatus};
 use crate::constants::*;
 use crate::graph::types::*;
@@ -98,14 +97,14 @@ impl InstanceHandler {
   //   self.reference.is_static()
   // }
 
-  pub(crate) fn done(&self) -> bool {
-    for port in self.inputs.iter() {
-      if port.status() != PortStatus::DoneClosed {
-        return false;
-      }
-    }
-    true
-  }
+  // pub(crate) fn done(&self) -> bool {
+  //   for port in self.inputs.iter() {
+  //     if port.status() != PortStatus::DoneClosed {
+  //       return false;
+  //     }
+  //   }
+  //   true
+  // }
 
   pub(super) fn take_packets(&self) -> Result<Vec<Packet>> {
     self.inputs.take_packets()
@@ -113,6 +112,10 @@ impl InstanceHandler {
 
   pub(super) fn take_output(&self, port: &PortReference) -> Option<Packet> {
     self.outputs.take(port)
+  }
+
+  pub(super) fn cleanup(&self) {
+    self.sender.complete();
   }
 
   // pub(super) fn take_input(&self, port: &PortReference) -> Option<Packet> {
@@ -128,16 +131,16 @@ impl InstanceHandler {
   //   Ok(())
   // }
 
-  pub(crate) fn buffer_in(&self, port: &PortReference, value: Packet) -> BufferAction {
+  pub(crate) fn buffer_in(&self, port: &PortReference, value: Packet) {
     trace!(%port, ?value, "buffering input message");
 
-    self.inputs.receive(port, value)
+    self.inputs.receive(port, value);
   }
 
-  pub(crate) fn buffer_out(&self, port: &PortReference, value: Packet) -> BufferAction {
+  pub(crate) fn buffer_out(&self, port: &PortReference, value: Packet) {
     trace!(%port, ?value, "buffering output message");
 
-    self.outputs.receive(port, value)
+    self.outputs.receive(port, value);
   }
 
   pub(crate) fn find_input(&self, name: &str) -> Result<PortReference> {
@@ -194,12 +197,12 @@ impl InstanceHandler {
     Ok(())
   }
 
-  pub(crate) fn handle_call_complete(&self, status: CompletionStatus) -> Result<Vec<PortReference>> {
+  pub(crate) fn handle_stream_complete(&self, status: CompletionStatus) -> Result<Vec<PortReference>> {
     self.decrement_pending()?;
-    Ok(self.update_output_statuses(status))
+    Ok(self.set_outputs_closed(status))
   }
 
-  pub(super) fn update_output_statuses(&self, _status: CompletionStatus) -> Vec<PortReference> {
+  pub(super) fn set_outputs_closed(&self, _status: CompletionStatus) -> Vec<PortReference> {
     let mut changed_statuses = Vec::new();
     for port in self.outputs.iter() {
       let current_status = port.status();
@@ -207,11 +210,11 @@ impl InstanceHandler {
       let new_status = match current_status {
         PortStatus::Open => {
           // Note: A port can still be "Open" after a call if the operation panics.
-          if port.is_empty() {
-            PortStatus::DoneClosed
-          } else {
-            PortStatus::DoneClosing
-          }
+          // if port.is_empty() {
+          //   PortStatus::DoneClosed
+          // } else {
+          PortStatus::DoneClosing
+          // }
         }
         orig => orig,
       };
@@ -278,21 +281,25 @@ impl InstanceHandler {
       })
     };
 
-    let outer_result = fut
-      .instrument(span)
-      .await
-      .map_err(|e| ExecutionError::CollectionError(Box::new(e)));
+    let outer_result = fut.instrument(span).await.map_err(ExecutionError::OperationFailure);
 
     let stream = match outer_result {
       Ok(Ok(result)) => result,
       Ok(Err(error)) | Err(error) => {
-        warn!(%error, "component error");
+        let msg = if let ExecutionError::OperationFailure(e) = error {
+          if e.is_panic() {
+            format!("Operation {} panicked", entity)
+          } else {
+            format!("Operation {} cancelled", entity)
+          }
+        } else {
+          format!("Operation {} failed", entity)
+        };
+
+        warn!(%msg, "component error");
+
         channel
-          .dispatch_op_err(
-            tx_id,
-            self.index(),
-            PacketPayload::Err(PacketError::new(error.to_string())),
-          )
+          .dispatch_op_err(tx_id, self.index(), PacketPayload::Err(PacketError::new(msg)))
           .await;
         return Ok(());
       }
@@ -348,13 +355,15 @@ async fn output_handler(
 
         trace!(port=%message.port_name(),"received packet");
 
-        let action = instance.buffer_out(&port, message);
-        if action == BufferAction::Buffered {
-          channel.dispatch_data(tx_id, port).await;
-        }
+        instance.buffer_out(&port, message);
+        channel.dispatch_data(tx_id, port).await;
       }
       Err(error) => {
         warn!(%error,"timeout");
+        let msg = format!("Operation {} timed out waiting for upstream data.", instance.entity());
+        channel
+          .dispatch_op_err(tx_id, instance.index(), PacketPayload::fatal_error(msg))
+          .await;
         break CompletionStatus::Timeout;
       }
       Ok(None) => {
@@ -363,11 +372,7 @@ async fn output_handler(
       }
     }
   };
-  let ports = instance.handle_call_complete(reason)?;
-  trace!(?ports, "ports to update");
-  for port in ports {
-    channel.dispatch_status_change(tx_id, port).await;
-  }
+  instance.handle_stream_complete(reason)?;
   channel.dispatch_call_complete(tx_id, instance.index()).await;
   Ok(())
 }

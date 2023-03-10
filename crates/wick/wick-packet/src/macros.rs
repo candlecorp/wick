@@ -34,9 +34,9 @@ macro_rules! fan_out {
           senders.insert($port, streams.init($port));
         )*
         tokio::spawn(async move {
-          while let Some(Ok(payload)) = $stream.next().await {
+            while let Some(Ok(payload)) = $stream.next().await {
             let sender = senders.get_mut(payload.port_name()).unwrap();
-            if matches!(payload.payload, wick_packet::PacketPayload::Done) {
+            if payload.is_done() {
               sender.complete();
               continue;
             }

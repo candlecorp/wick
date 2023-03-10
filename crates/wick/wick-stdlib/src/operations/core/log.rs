@@ -10,8 +10,7 @@ request_response!(job, minijob => {
   output: "output",
 });
 
-#[allow(clippy::unused_async)]
-pub(crate) async fn minijob(input: String) -> Result<String, wick_packet::Error> {
+pub(crate) fn minijob(input: String) -> Result<String, wick_packet::Error> {
   println!("Logger: {}", input);
   Ok(input)
 }

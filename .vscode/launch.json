@@ -1,16 +1,14 @@
 {
-  // Use IntelliSense to learn about possible attributes.
-  // Hover to view descriptions of existing attributes.
-  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
-  "version": "0.2.0",
   "configurations": [
     {
       "type": "lldb",
       "request": "launch",
-      "name": "Debug",
-      "program": "${workspaceFolder}/<executable file>",
-      "args": [],
-      "cwd": "${workspaceFolder}"
+      "name": "Cargo test",
+      "cargo": {
+        "args": ["test", "-p", "wick-runtime", "--no-run", "--test", "basics"]
+      },
+      "cwd": "${workspaceFolder}/crates/wick/wick-runtime",
+      "args": ["nested", "--nocapture"]
     }
   ]
 }

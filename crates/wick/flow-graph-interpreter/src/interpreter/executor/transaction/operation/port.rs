@@ -4,7 +4,7 @@ use wick_packet::Packet;
 mod port_buffer;
 pub(crate) mod port_handler;
 
-use self::port_handler::{BufferAction, PortHandler};
+use self::port_handler::PortHandler;
 use crate::graph::types::OperationPort;
 use crate::interpreter::executor::error::ExecutionError;
 type Result<T> = std::result::Result<T, ExecutionError>;
@@ -47,8 +47,8 @@ impl PortList {
     self.inner.iter().map(|p| p.port_ref())
   }
 
-  pub(super) fn receive(&self, port: &PortReference, value: PacketType) -> BufferAction {
-    self.inner[port.port_index()].buffer(value)
+  pub(super) fn receive(&self, port: &PortReference, value: PacketType) {
+    self.inner[port.port_index()].buffer(value);
   }
 
   pub(super) fn take(&self, port: &PortReference) -> Option<PacketType> {
@@ -86,8 +86,8 @@ impl OutputPorts {
     self.inner.refs()
   }
 
-  pub(super) fn receive(&self, port: &PortReference, value: PacketType) -> BufferAction {
-    self.inner.receive(port, value)
+  pub(super) fn receive(&self, port: &PortReference, value: PacketType) {
+    self.inner.receive(port, value);
   }
 
   pub(super) fn take(&self, port: &PortReference) -> Option<PacketType> {
@@ -119,8 +119,8 @@ impl InputPorts {
     }
   }
 
-  pub(super) fn receive(&self, port: &PortReference, value: PacketType) -> BufferAction {
-    self.inner.receive(port, value)
+  pub(super) fn receive(&self, port: &PortReference, value: PacketType) {
+    self.inner.receive(port, value);
   }
 
   // pub(super) fn take(&self, port: &PortReference) -> Option<PacketType> {

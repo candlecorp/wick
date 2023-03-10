@@ -1,3 +1,4 @@
+use tokio::task::JoinError;
 use uuid::Uuid;
 
 use crate::interpreter::error::StateError;
@@ -19,6 +20,9 @@ pub enum ExecutionError {
   MissingTx(Uuid),
   #[error("{0}")]
   CollectionError(Box<dyn std::error::Error + Send + Sync>),
+
+  #[error("{0}")]
+  OperationFailure(JoinError),
 
   #[error("Sender configuration did not include valid data")]
   InvalidSenderData,

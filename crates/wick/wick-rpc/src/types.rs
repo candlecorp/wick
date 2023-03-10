@@ -64,53 +64,14 @@ impl RpcPacket {
   pub fn into_packet(self) -> Packet {
     self.into()
   }
-
-  /// Utility function to determine if [RpcPacket] is a Signal.
-  #[must_use]
-  pub fn is_signal(&self) -> bool {
-    assert!(self.data.is_some(), "Invalid RPC message contains no data");
-    let data = self.data.as_ref().unwrap();
-    matches!(data, rpc_packet::Data::Done(_))
-  }
 }
-
-// impl Output {
-//   /// Utility function to determine if [RpcPacket] is a Signal.
-//   #[must_use]
-//   pub fn is_signal(&self) -> bool {
-//     assert!(
-//       self.payload.is_some(),
-//       "Invalid packet in Output stream, contains no data"
-//     );
-//     let packet = self.payload.as_ref().unwrap();
-
-//     matches!(packet.data, Some(rpc_packet::Data::Signal(_)))
-//   }
-
-//   /// Convert the Output to JSON object value. This will not fail. If there is an error, the return value will be a serialized wrapper for a [MessageTransport::Error].
-//   #[must_use]
-//   pub fn into_json(self) -> serde_json::Value {
-//     let transport: TransportWrapper = self.into();
-//     transport.as_json()
-//   }
-
-//   /// Attempt to deserialize the payload into the destination type
-//   pub fn try_into<T: DeserializeOwned>(self) -> Result<T> {
-//     let transport: TransportWrapper = self.into();
-//     transport.deserialize().map_err(|e| RpcError::General(e.to_string()))
-//   }
-
-//   /// Convert the RPC output into a [TransportWrapper]
-//   pub fn into_transport_wrapper(self) -> TransportWrapper {
-//     self.into()
-//   }
-// }
 
 impl From<RpcPacket> for Packet {
   fn from(v: RpcPacket) -> Self {
-    let (op, port, done) = v
-      .metadata
-      .map_or_else(|| (0, "<component>".to_owned(), true), |m| (m.index, m.port, m.done));
+    let (op, port, done) = v.metadata.map_or_else(
+      || (0, "<component>".to_owned(), 0_u8),
+      |m| (m.index, m.port, m.flags.try_into().unwrap()),
+    );
     Self {
       // todo figure out operation indexes still
       metadata: Metadata::new(op),
@@ -132,7 +93,6 @@ impl From<rpc_packet::Data> for PacketPayload {
       }),
 
       rpc_packet::Data::Err(v) => PacketPayload::Err(PacketError::new(v.message)),
-      rpc_packet::Data::Done(_) => PacketPayload::Done,
     }
   }
 }
@@ -147,7 +107,6 @@ impl From<PacketPayload> for rpc_packet::Data {
         message: e.msg().to_owned(),
         code: 513,
       }),
-      PacketPayload::Done => rpc_packet::Data::Done(true),
     }
   }
 }

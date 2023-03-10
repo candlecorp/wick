@@ -3,13 +3,12 @@ use runtime_testutils::*;
 use wick_packet::{packet_stream, Packet};
 
 #[test_logger::test(tokio::test)]
-#[ignore = "TODO:FIX_SEND_AFTER_DONE"]
 async fn simple_schematic() -> Result<()> {
   tester(
     "./manifests/v0/collections/native-component.wafl",
     packet_stream!(("left", 42), ("right", 302309)),
     "native_component",
-    vec![Packet::encode("output", 42 + 302309), Packet::done("output")],
+    vec![Packet::encode("output", 42 + 302309 + 302309), Packet::done("output")],
   )
   .await
 }

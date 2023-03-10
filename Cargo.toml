@@ -44,11 +44,11 @@ rand = "0.8"
 shellexpand = "3.0"
 regex = "1"
 k9 = "0.11"
-wasmrs = { path = "../wasmrs-rust/crates/wasmrs" }
-wasmrs-rx = { path = "../wasmrs-rust/crates/wasmrs-rx" }
-wasmrs-frames = { path = "../wasmrs-rust/crates/wasmrs-frames" }
-wasmrs-codec = { path = "../wasmrs-rust/crates/wasmrs-codec" }
-wasmrs-wasmtime = { path = "../wasmrs-rust/crates/wasmrs-wasmtime" }
-wasmrs-host = { path = "../wasmrs-rust/crates/wasmrs-host" }
-wasmrs-runtime = { path = "../wasmrs-rust/crates/wasmrs-runtime" }
-wasmrs-guest = { path = "../wasmrs-rust/crates/wasmrs-guest" }
+wasmrs = { version = "0.5" }
+wasmrs-rx = { version = "0.5" }
+wasmrs-frames = { version = "0.5" }
+wasmrs-codec = { version = "0.5" }
+wasmrs-wasmtime = { version = "0.5" }
+wasmrs-host = { version = "0.5" }
+wasmrs-runtime = { version = "0.5" }
+wasmrs-guest = { version = "0.5" }

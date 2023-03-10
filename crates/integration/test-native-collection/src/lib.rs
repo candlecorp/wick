@@ -55,13 +55,15 @@ async fn error(_input: PacketStream) -> Result<PacketStream, anyhow::Error> {
 
 async fn test_component(mut input: PacketStream) -> Result<PacketStream, anyhow::Error> {
   let (tx, stream) = PacketStream::new_channels();
-  let mut input = fan_out!(input, "input");
-  while let Some(Ok(input)) = input.next().await {
-    let input: String = input.payload.deserialize()?;
-    let output = Packet::encode("output", format!("TEST: {}", input));
-    tx.send(output)?;
-  }
-  tx.complete();
+  tokio::spawn(async move {
+    let mut input = fan_out!(input, "input");
+    while let Some(Ok(input)) = input.next().await {
+      let input: String = input.payload.deserialize().unwrap();
+      let output = Packet::encode("output", format!("TEST: {}", input));
+      tx.send(output).unwrap();
+    }
+    tx.complete();
+  });
 
   Ok(stream)
 }

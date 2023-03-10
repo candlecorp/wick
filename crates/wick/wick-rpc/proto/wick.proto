@@ -28,14 +28,13 @@ message Packet {
   oneof data {
     Ok ok = 2;
     Err err = 3;
-    bool done = 4;
   }
 }
 
 message Metadata {
   string port = 1;
   uint32 index = 2;
-  bool done = 3;
+  uint32 flags = 3;
 }
 
 message Ok {

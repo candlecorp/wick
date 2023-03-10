@@ -2,12 +2,11 @@ use std::collections::HashMap;
 
 use flow_graph::{PortDirection, PortReference};
 use uuid::Uuid;
-use wick_packet::Packet;
+use wick_packet::{Packet, PacketPayload};
 
 use super::EventLoop;
 use crate::interpreter::channel::{CallComplete, InterpreterDispatchChannel};
 use crate::interpreter::executor::error::ExecutionError;
-use crate::interpreter::executor::transaction::operation::CompletionStatus;
 use crate::interpreter::executor::transaction::{accept_input, Transaction};
 
 #[derive(Debug)]
@@ -95,19 +94,6 @@ impl State {
     Ok(())
   }
 
-  #[allow(clippy::unused_async)]
-  pub(super) async fn handle_port_status_change(
-    &mut self,
-    _tx_id: Uuid,
-    port: PortReference,
-  ) -> Result<(), ExecutionError> {
-    debug!(
-      port = %port, "handling port status change"
-    );
-
-    Ok(())
-  }
-
   async fn handle_input_data(&mut self, tx_id: Uuid, port: PortReference) -> Result<(), ExecutionError> {
     debug!(
       port = %port, "handling port input"
@@ -126,12 +112,11 @@ impl State {
 
     let is_schematic_output = port.node_index() == graph.output().index();
 
-    if instance.done() {
-      warn!(instance = instance.id(), "component finished but still receiving input");
-    } else if is_schematic_output {
+    if is_schematic_output {
       tx.handle_schematic_output().await?;
     } else {
       let packets = tx.take_packets(instance)?;
+
       if !packets.is_empty() {
         tx.push_packets(port.node_index(), packets)?;
       }
@@ -187,18 +172,19 @@ impl State {
     }
   }
 
+  #[allow(clippy::unused_async)]
   pub(super) async fn handle_call_complete(&self, tx_id: Uuid, data: CallComplete) -> Result<(), ExecutionError> {
     let tx = self.get_tx(&tx_id)?;
     let instance = tx.instance(data.index);
     debug!(component = instance.id(), entity = %instance.entity(), "call complete");
 
-    if let Some(err) = data.err {
+    if let Some(PacketPayload::Err(err)) = data.err {
       warn!(?err, "op:error");
       // If the call contains an error, then the component panicked.
       // We need to propagate the error downward...
       tx.handle_op_err(data.index, err).await?;
       // ...and clean up the call.
-      instance.handle_call_complete(CompletionStatus::Error)?;
+      // instance.handle_stream_complete(CompletionStatus::Error)?;
     }
 
     Ok(())

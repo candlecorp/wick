@@ -63,16 +63,6 @@ impl Observer for JsonWriter {
           "component_index":port.node_index()
         })
       }
-      EventKind::PortStatusChange(port) => {
-        serde_json::json!({
-          "type":event.name(),
-          "index": index,
-          "tx_id": tx_id.to_string(),
-          "dir":port.direction().to_string(),
-          "port_index":port.port_index(),
-          "component_index":port.node_index()
-        })
-      }
       EventKind::Close(error) => {
         serde_json::json!({
           "type":event.name(),

@@ -24,8 +24,9 @@ macro_rules! interp {
     )]);
     let invocation = Invocation::new(Entity::test("test"), Entity::local($op), None);
     let mut interpreter = Interpreter::new(Some(Seed::unsafe_new(1)), network, None, Some(collections))?;
-    interpreter.start(OPTIONS, Some(Box::new(JsonWriter::default()))).await;
-    let stream = interpreter.invoke(invocation, $stream).await?;
+    interpreter.start(OPTIONS, None).await;
+    let stream = wick_packet::PacketStream::new(Box::new(futures::stream::iter($stream.into_iter().map(Ok))));
+    let stream = interpreter.invoke(invocation, stream).await?;
     let outputs: Vec<_> = stream.collect().await;
     println!("{:#?}", outputs);
     (interpreter, outputs)

@@ -1,0 +1,11 @@
+version: 0
+network:
+  schematics:
+    - name: test
+      instances:
+        add:
+          id: test::add
+      connections:
+        - <>[left] => add[left]
+        - <>[right] => add[right]
+        - add[output] => <>[output]
