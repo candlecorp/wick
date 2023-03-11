@@ -38,7 +38,7 @@ impl Validator {
             component.id(),
           );
 
-          let component_def = collection.operations.get(&id);
+          let component_def = collection.operations.iter().find(|op| op.name == id);
 
           if component_def.is_none() {
             validation_errors.push(ValidationError::MissingOperation {
@@ -50,7 +50,7 @@ impl Validator {
 
           let component_def = component_def.unwrap();
           for port in component.inputs() {
-            let port_def = component_def.inputs.get(port.name());
+            let port_def = component_def.inputs.iter().find(|p| p.name == port.name());
             if port_def.is_none() {
               validation_errors.push(ValidationError::InvalidPort {
                 port: port.name().to_owned(),
@@ -62,7 +62,7 @@ impl Validator {
           }
 
           for port in component.outputs() {
-            let port_def = component_def.outputs.get(port.name());
+            let port_def = component_def.outputs.iter().find(|p| p.name == port.name());
             if port_def.is_none() {
               validation_errors.push(ValidationError::InvalidPort {
                 port: port.name().to_owned(),
@@ -73,11 +73,11 @@ impl Validator {
             }
           }
 
-          for name in component_def.inputs.inner().keys() {
-            let port = component.find_input(name);
+          for field in &component_def.inputs {
+            let port = component.find_input(&field.name);
             if port.is_none() {
               validation_errors.push(ValidationError::MissingConnection {
-                port: name.clone(),
+                port: field.name.clone(),
                 operation: reference.name().to_owned(),
                 namespace: reference.namespace().to_owned(),
               });
@@ -85,8 +85,8 @@ impl Validator {
             }
           }
 
-          for name in component_def.outputs.inner().keys() {
-            let port = component.find_output(name);
+          for field in &component_def.outputs {
+            let port = component.find_output(&field.name);
             if port.is_none() {
               let cref: Reference = component.cref().into();
               if cref.is_core_operation(CORE_ID_SENDER) {
@@ -94,7 +94,7 @@ impl Validator {
               }
 
               validation_errors.push(ValidationError::UnusedOutput {
-                port: name.clone(),
+                port: field.name.clone(),
                 component: reference.name().to_owned(),
                 namespace: reference.namespace().to_owned(),
               });

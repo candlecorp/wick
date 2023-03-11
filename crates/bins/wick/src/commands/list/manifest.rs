@@ -2,7 +2,7 @@ use anyhow::Result;
 use wick_component_cli::options::DefaultCliOptions;
 use wick_config::ComponentConfiguration;
 use wick_host::HostBuilder;
-use wick_interface_types::FieldMap;
+use wick_interface_types::Field;
 
 use crate::utils::merge_config;
 
@@ -29,24 +29,14 @@ pub(crate) async fn handle_command(opts: super::ListCommand, bytes: Vec<u8>) -> 
     let json = serde_json::to_string(&signature)?;
     println!("{}", json);
   } else {
-    fn print_component(label: &str, indent: &str, inputs: &FieldMap, outputs: &FieldMap) {
-      let inputs = inputs
-        .inner()
-        .iter()
-        .map(|(name, _type)| format!("{}: {:?}", name, _type))
-        .collect::<Vec<_>>()
-        .join(", ");
-      let outputs = outputs
-        .inner()
-        .iter()
-        .map(|(name, _type)| format!("{}: {:?}", name, _type))
-        .collect::<Vec<_>>()
-        .join(", ");
+    fn print_component(label: &str, indent: &str, inputs: &[Field], outputs: &[Field]) {
+      let inputs = inputs.iter().map(|f| f.to_string()).collect::<Vec<_>>().join(", ");
+      let outputs = outputs.iter().map(|f| f.to_string()).collect::<Vec<_>>().join(", ");
       println!("{}{}({}) -> ({})", indent, label, inputs, outputs);
     }
-    for (_name, component) in signature.operations.inner().iter() {
+    for op in signature.operations {
       print!("Component: ");
-      print_component(&component.name, "", &component.inputs, &component.outputs);
+      print_component(&op.name, "", &op.inputs, &op.outputs);
     }
   }
 

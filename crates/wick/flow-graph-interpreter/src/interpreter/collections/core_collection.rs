@@ -2,8 +2,8 @@ use futures::future::BoxFuture;
 use serde_json::Value;
 use wick_interface_types::{
   CollectionFeatures,
-  CollectionSignature,
-  FieldMap,
+  ComponentSignature,
+  Field,
   OperationSignature,
   StructSignature,
   TypeDefinition,
@@ -21,12 +21,12 @@ mod sender;
 
 #[derive(Debug)]
 pub(crate) struct CoreCollection {
-  signature: CollectionSignature,
+  signature: ComponentSignature,
 }
 
 impl CoreCollection {
   pub(crate) fn new(graph: &Network) -> Self {
-    let mut signature = CollectionSignature::new(NS_CORE)
+    let mut signature = ComponentSignature::new(NS_CORE)
       .format(1)
       .version("0.0.0")
       .features(CollectionFeatures::v0(false, false))
@@ -53,18 +53,18 @@ impl CoreCollection {
           }
           let id = dyn_component_id(CORE_ID_MERGE, schematic.name(), component.id());
           let mut component_signature = result.unwrap();
-          let output_type = FieldMap::new();
+          let output_type = Vec::new();
           let mut output_signature = StructSignature::new(&id, output_type);
-          for (name, type_sig) in component_signature.inputs.inner() {
-            output_signature.fields.insert(name, type_sig.clone());
+          for field in &component_signature.inputs {
+            output_signature.fields.push(field.clone());
           }
-          signature.types.insert(&id, TypeDefinition::Struct(output_signature));
+          signature.types.push(TypeDefinition::Struct(output_signature));
 
           component_signature
             .outputs
-            .insert("output", TypeSignature::Ref { reference: id.clone() });
+            .push(Field::new("output", TypeSignature::Ref { reference: id.clone() }));
           debug!(%id,"adding dynamic component");
-          signature.operations.insert(id, component_signature);
+          signature.operations.push(component_signature);
         }
       }
     }
@@ -100,7 +100,7 @@ impl Collection for CoreCollection {
     Box::pin(task)
   }
 
-  fn list(&self) -> &CollectionSignature {
+  fn list(&self) -> &ComponentSignature {
     &self.signature
   }
 }

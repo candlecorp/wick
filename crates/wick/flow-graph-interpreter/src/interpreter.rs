@@ -9,7 +9,7 @@ use std::sync::Arc;
 
 use seeded_random::{Random, Seed};
 use tracing_futures::Instrument;
-use wick_interface_types::CollectionSignature;
+use wick_interface_types::ComponentSignature;
 use wick_packet::{Entity, Invocation, PacketStream};
 
 use self::channel::InterpreterDispatchChannel;
@@ -32,7 +32,7 @@ pub struct Interpreter {
   rng: Random,
   program: Program,
   event_loop: EventLoop,
-  signature: CollectionSignature,
+  signature: ComponentSignature,
   collections: Arc<HandlerMap>,
   self_collection: Arc<SchematicCollection>,
   dispatcher: InterpreterDispatchChannel,
@@ -168,7 +168,7 @@ impl Interpreter {
     Ok(stream)
   }
 
-  pub fn get_export_signature(&self) -> &CollectionSignature {
+  pub fn get_export_signature(&self) -> &ComponentSignature {
     &self.signature
   }
 

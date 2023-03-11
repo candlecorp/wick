@@ -116,7 +116,7 @@ pub use claims::{
 #[cfg(test)]
 mod test {
   use anyhow::Result;
-  use wick_interface_types::CollectionSignature;
+  use wick_interface_types::ComponentSignature;
   static MODULE_BYTES: &[u8] = include_bytes!("../test/test_wasi_component.wasm");
 
   use super::*;
@@ -127,7 +127,7 @@ mod test {
     let account = KeyPair::new_account();
     let signed = sign_buffer_with_claims(
       MODULE_BYTES,
-      CollectionSignature::new("TEST"),
+      ComponentSignature::new("TEST"),
       &subject,
       &account,
       ClaimsOptions {

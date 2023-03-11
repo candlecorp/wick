@@ -85,10 +85,11 @@ mod signatures;
 
 pub use signatures::{
   CollectionFeatures,
-  CollectionSignature,
   CollectionVersion,
+  ComponentSignature,
   EnumSignature,
   EnumVariant,
+  Field,
   HostedType,
   InternalType,
   OperationSignature,
@@ -104,4 +105,4 @@ mod macros;
 /// Map-related structures holding signatures and other types.
 pub mod maps;
 
-pub use maps::{CollectionMap, FieldMap, OperationMap, TypeMap};
+pub use maps::CollectionMap;

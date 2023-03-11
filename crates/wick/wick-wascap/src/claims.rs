@@ -9,7 +9,7 @@ use walrus::{CustomSectionId, IdsToIndices, Module, TypedCustomSectionId, Untype
 use wascap::jwt::Token;
 use wascap::prelude::{Claims, KeyPair};
 use wascap::wasm::days_from_now_to_jwt_time;
-use wick_interface_types::CollectionSignature;
+use wick_interface_types::ComponentSignature;
 
 use crate::component::CollectionClaims;
 use crate::error;
@@ -126,7 +126,7 @@ pub fn hash_bytes<R: Read>(buffer: R) -> Result<String> {
 /// Build collection claims from passed values
 #[must_use]
 pub fn build_collection_claims(
-  interface: CollectionSignature,
+  interface: ComponentSignature,
   subject_kp: &KeyPair,
   issuer_kp: &KeyPair,
   options: ClaimsOptions,
@@ -152,7 +152,7 @@ pub fn build_collection_claims(
 /// Sign WebAssembly bytes with the passed claims.
 pub fn sign_buffer_with_claims(
   buf: impl AsRef<[u8]>,
-  interface: CollectionSignature,
+  interface: ComponentSignature,
   mod_kp: &KeyPair,
   acct_kp: &KeyPair,
   options: ClaimsOptions,

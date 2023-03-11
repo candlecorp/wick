@@ -2,7 +2,7 @@ use std::io::Read;
 use std::path::Path;
 
 use tar::Header;
-use wick_interface_types::CollectionSignature;
+use wick_interface_types::ComponentSignature;
 use wick_wascap::{ClaimsOptions, KeyPair};
 
 use crate::error::ParError;
@@ -10,7 +10,7 @@ use crate::error::ParError;
 /// Make a collection archive for the passed binary and signature
 pub fn make_archive<T: Read>(
   mut binary: T,
-  signature: &CollectionSignature,
+  signature: &ComponentSignature,
   claims_options: ClaimsOptions,
   subject_kp: &KeyPair,
   issuer_kp: &KeyPair,
@@ -91,7 +91,7 @@ mod tests {
 
   #[test_logger::test]
   fn test_archive_validation() -> Result<()> {
-    let signature = CollectionSignature::default();
+    let signature = ComponentSignature::default();
     let bin_bytes = b"0123456".to_vec();
     let claims = ClaimsOptions::default();
     let subject_kp = KeyPair::new_module();

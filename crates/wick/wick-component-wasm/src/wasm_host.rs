@@ -4,7 +4,7 @@ use std::time::Instant;
 use parking_lot::Mutex;
 use wasmrs::RSocket;
 use wasmrs_host::{Host, WasiParams};
-use wick_interface_types::CollectionSignature;
+use wick_interface_types::ComponentSignature;
 use wick_packet::{from_wasmrs, into_wasmrs, PacketStream};
 use wick_wascap::{Claims, CollectionClaims};
 
@@ -150,7 +150,7 @@ impl WasmHost {
     Ok(from_wasmrs(out))
   }
 
-  pub fn get_components(&self) -> &CollectionSignature {
+  pub fn get_operations(&self) -> &ComponentSignature {
     let claims = &self.claims;
     &claims.metadata.as_ref().unwrap().interface
   }

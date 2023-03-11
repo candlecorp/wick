@@ -8,62 +8,68 @@
   "version": "0.0.1",
   "format": 1,
   "wellknown": [],
-  "types": {
-    "Interactive": {
+  "types": [
+    {
       "type": "struct",
       "name": "Interactive",
-      "fields": {
-        "stdin": {
+      "fields": [
+        {
+          "name": "stdin",
           "type": "bool"
         },
-        "stdout": {
+        {
+          "name": "stdout",
           "type": "bool"
         },
-        "stderr": {
+        {
+          "name": "stderr",
           "type": "bool"
         }
-      }
+      ]
     }
-  },
-  "operations": {
-    "byte-count": {
+  ],
+  "operations": [
+    {
       "name": "byte-count",
-      "inputs": {
-        "input": {
+      "inputs": [
+        {
+          "name": "input",
           "type": "string"
         }
-      },
-      "outputs": {
-        "output": {
+      ],
+      "outputs": [
+        {
+          "name": "output",
           "type": "u64"
         }
-      }
+      ]
     },
-    "main": {
+    {
       "name": "main",
-      "inputs": {
-        "args": {
-          "type": "list",
-          "element": {
-            "type": "string"
+      "inputs": [
+        {
+          "name": "args",
+          "type": {
+            "list": {
+              "type": "string"
+            }
           }
         },
-        "isInteractive": {
-          "type": "ref",
-          "ref": "#/types/Interactive"
+        {
+          "name": "isInteractive",
+          "type": { "ref": { "ref": "#/types/Interactive" } }
         },
-        "program": {
-          "type": "optional",
-          "option": {
-            "type": "link"
-          }
+        {
+          "name": "program",
+          "type": { "optional": { "type": { "link": {} } } }
         }
-      },
-      "outputs": {
-        "code": {
+      ],
+      "outputs": [
+        {
+          "name": "output",
           "type": "u32"
         }
-      }
+      ]
     }
-  }
+  ]
 }

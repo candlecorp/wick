@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::convert::{TryFrom, TryInto};
 use std::str::FromStr;
 use std::time::Duration;
@@ -12,7 +11,7 @@ use crate::{rpc, DurationStatistics};
 
 type Result<T> = std::result::Result<T, RpcError>;
 
-impl TryFrom<wick::HostedType> for rpc::CollectionSignature {
+impl TryFrom<wick::HostedType> for rpc::ComponentSignature {
   type Error = RpcError;
 
   fn try_from(v: wick::HostedType) -> Result<Self> {
@@ -29,7 +28,7 @@ impl TryFrom<wick::HostedType> for rpc::HostedType {
     use rpc::hosted_type::Type;
     Ok(match value {
       wick::HostedType::Collection(p) => Self {
-        r#type: Some(Type::Collection(p.try_into()?)),
+        r#type: Some(Type::Component(p.try_into()?)),
       },
     })
   }
@@ -42,17 +41,17 @@ impl TryFrom<rpc::HostedType> for wick::HostedType {
     use rpc::hosted_type::Type;
     match value.r#type {
       Some(v) => match v {
-        Type::Collection(sig) => Ok(wick::HostedType::Collection(sig.try_into()?)),
+        Type::Component(sig) => Ok(wick::HostedType::Collection(sig.try_into()?)),
       },
       None => Err(RpcError::InvalidSignature),
     }
   }
 }
 
-impl TryFrom<rpc::CollectionSignature> for wick::CollectionSignature {
+impl TryFrom<rpc::ComponentSignature> for wick::ComponentSignature {
   type Error = RpcError;
 
-  fn try_from(v: rpc::CollectionSignature) -> Result<Self> {
+  fn try_from(v: rpc::ComponentSignature) -> Result<Self> {
     Ok(Self {
       name: Some(v.name),
       features: v
@@ -73,16 +72,16 @@ impl TryFrom<rpc::CollectionSignature> for wick::CollectionSignature {
           })
         })
         .collect::<Result<Vec<_>>>()?,
-      operations: to_componentmap(v.components)?,
-      types: to_typemap(v.types)?,
-      config: to_typemap(v.config)?,
+      operations: convert_list(v.operations)?,
+      types: convert_list(v.types)?,
+      config: convert_list(v.config)?,
     })
   }
 }
 
-impl TryFrom<rpc::CollectionFeatures> for wick::CollectionFeatures {
+impl TryFrom<rpc::ComponentFeatures> for wick::CollectionFeatures {
   type Error = RpcError;
-  fn try_from(v: rpc::CollectionFeatures) -> Result<Self> {
+  fn try_from(v: rpc::ComponentFeatures) -> Result<Self> {
     Ok(Self {
       streaming: v.streaming,
       stateful: v.stateful,
@@ -99,7 +98,7 @@ impl TryFrom<rpc::CollectionFeatures> for wick::CollectionFeatures {
   }
 }
 
-impl TryFrom<wick::CollectionFeatures> for rpc::CollectionFeatures {
+impl TryFrom<wick::CollectionFeatures> for rpc::ComponentFeatures {
   type Error = RpcError;
   fn try_from(v: wick::CollectionFeatures) -> Result<Self> {
     Ok(Self {
@@ -110,35 +109,33 @@ impl TryFrom<wick::CollectionFeatures> for rpc::CollectionFeatures {
   }
 }
 
-impl TryFrom<rpc::Component> for wick::OperationSignature {
+impl TryFrom<rpc::Operation> for wick::OperationSignature {
   type Error = RpcError;
-  fn try_from(v: rpc::Component) -> Result<Self> {
+  fn try_from(v: rpc::Operation) -> Result<Self> {
     Ok(Self {
-      index: v.index,
       name: v.name,
-      inputs: to_fieldmap(v.inputs)?,
-      outputs: to_fieldmap(v.outputs)?,
+      inputs: convert_list(v.inputs)?,
+      outputs: convert_list(v.outputs)?,
     })
   }
 }
 
-impl TryFrom<wick::OperationSignature> for rpc::Component {
+impl TryFrom<wick::OperationSignature> for rpc::Operation {
   type Error = RpcError;
   fn try_from(v: wick::OperationSignature) -> Result<Self> {
     Ok(Self {
       name: v.name,
-      index: v.index,
-      kind: rpc::component::ComponentKind::Component.into(),
-      inputs: from_fieldmap(v.inputs)?,
-      outputs: from_fieldmap(v.outputs)?,
+      kind: rpc::operation::OperationKind::Operation.into(),
+      inputs: convert_list(v.inputs)?,
+      outputs: convert_list(v.outputs)?,
     })
   }
 }
 
-impl TryFrom<wick::CollectionSignature> for rpc::CollectionSignature {
+impl TryFrom<wick::ComponentSignature> for rpc::ComponentSignature {
   type Error = RpcError;
 
-  fn try_from(v: wick::CollectionSignature) -> Result<Self> {
+  fn try_from(v: wick::ComponentSignature) -> Result<Self> {
     Ok(Self {
       name: v.name.unwrap_or_default(),
       features: Some(v.features.try_into()?),
@@ -155,9 +152,9 @@ impl TryFrom<wick::CollectionSignature> for rpc::CollectionSignature {
           })
         })
         .collect::<Result<Vec<_>>>()?,
-      components: from_componentmap(v.operations)?,
-      types: from_typemap(v.types)?,
-      config: from_typemap(v.config)?,
+      operations: convert_list(v.operations)?,
+      types: convert_list(v.types)?,
+      config: convert_list(v.config)?,
     })
   }
 }
@@ -284,18 +281,18 @@ impl TryFrom<wick::TypeSignature> for rpc::TypeSignature {
       wick::TypeSignature::Bytes => PrimitiveType::Bytes.into(),
       wick::TypeSignature::Value => PrimitiveType::Value.into(),
       wick::TypeSignature::Custom(v) => Signature::Custom(v),
-      wick::TypeSignature::Stream { item } => Signature::Stream(Box::new(InnerType {
-        r#type: Some(item.try_into()?),
+      wick::TypeSignature::Stream { ty } => Signature::Stream(Box::new(InnerType {
+        r#type: Some(ty.try_into()?),
       })),
       wick::TypeSignature::Internal(t) => match t {
-        wick::InternalType::ComponentInput => Signature::Internal(InternalType::ComponentInput.into()),
+        wick::InternalType::OperationInput => Signature::Internal(InternalType::OperationInput.into()),
       },
       wick::TypeSignature::Ref { reference } => Signature::Ref(RefType { r#ref: reference }),
-      wick::TypeSignature::List { element } => Signature::List(Box::new(InnerType {
-        r#type: Some(element.try_into()?),
+      wick::TypeSignature::List { ty } => Signature::List(Box::new(InnerType {
+        r#type: Some(ty.try_into()?),
       })),
-      wick::TypeSignature::Optional { option } => Signature::Optional(Box::new(InnerType {
-        r#type: Some(option.try_into()?),
+      wick::TypeSignature::Optional { ty } => Signature::Optional(Box::new(InnerType {
+        r#type: Some(ty.try_into()?),
       })),
       wick::TypeSignature::Map { key, value } => Signature::Map(Box::new(MapType {
         key_type: Some(key.try_into()?),
@@ -303,14 +300,9 @@ impl TryFrom<wick::TypeSignature> for rpc::TypeSignature {
       })),
       wick::TypeSignature::Link { schemas } => Signature::Link(LinkType { schemas }),
       wick::TypeSignature::Struct => Signature::Struct(StructType {}),
-      wick::TypeSignature::AnonymousStruct(v) => {
-        let v = v
-          .0
-          .into_iter()
-          .map(|(k, v)| Ok((k, v.try_into()?)))
-          .collect::<Result<_>>()?;
-        Signature::AnonymousStruct(rpc::AnonymousStruct { fields: v })
-      }
+      wick::TypeSignature::AnonymousStruct(v) => Signature::AnonymousStruct(rpc::AnonymousStruct {
+        fields: convert_list(v)?,
+      }),
     };
     Ok(Self { signature: Some(sig) })
   }
@@ -364,19 +356,19 @@ impl TryFrom<rpc::TypeSignature> for wick::TypeSignature {
           },
         },
         Signature::List(list) => DestType::List {
-          element: match list.r#type {
+          ty: match list.r#type {
             Some(v) => v.try_into()?,
             None => return err,
           },
         },
         Signature::Stream(t) => DestType::Stream {
-          item: match t.r#type {
+          ty: match t.r#type {
             Some(v) => v.try_into()?,
             None => return err,
           },
         },
         Signature::Optional(opt) => DestType::Optional {
-          option: match opt.r#type {
+          ty: match opt.r#type {
             Some(v) => v.try_into()?,
             None => return err,
           },
@@ -390,18 +382,12 @@ impl TryFrom<rpc::TypeSignature> for wick::TypeSignature {
           t.map_or_else(
             || todo!(),
             |t| match t {
-              InternalType::ComponentInput => DestType::Internal(wick::InternalType::ComponentInput),
+              InternalType::OperationInput => DestType::Internal(wick::InternalType::OperationInput),
             },
           )
         }
         Signature::Struct(_) => DestType::Struct,
-        Signature::AnonymousStruct(v) => DestType::AnonymousStruct(
-          v.fields
-            .into_iter()
-            .map(|(k, v)| Ok((k, v.try_into()?)))
-            .collect::<Result<HashMap<_, wick::TypeSignature>>>()?
-            .into(),
-        ),
+        Signature::AnonymousStruct(v) => DestType::AnonymousStruct(convert_list(v.fields)?),
       },
       None => return err,
     };
@@ -448,28 +434,19 @@ impl From<rpc::simple_type::PrimitiveType> for rpc::type_signature::Signature {
   }
 }
 
-fn to_fieldmap(map: HashMap<String, rpc::TypeSignature>) -> Result<wick::FieldMap> {
-  let mut tmap = HashMap::new();
-  for (k, v) in map {
-    tmap.insert(k, v.try_into()?);
-  }
-  Ok(tmap.into())
-}
-
-fn from_fieldmap(map: wick::FieldMap) -> Result<HashMap<String, rpc::TypeSignature>> {
-  let mut tmap = HashMap::new();
-  for (k, v) in map.into_inner() {
-    tmap.insert(k, v.try_into()?);
-  }
-  Ok(tmap)
-}
+// impl TryFrom<rpc::Field> for wick::Field {
+//   type Error = RpcError;
+//   fn try_from(t: rpc::Field) -> std::result::Result<Self, Self::Error> {
+//     Ok(Self::new(t.name, t.r#type.try_into()?))
+//   }
+// }
 
 impl TryFrom<rpc::StructSignature> for wick::StructSignature {
   type Error = RpcError;
   fn try_from(v: rpc::StructSignature) -> Result<Self> {
     Ok(Self {
       name: v.name,
-      fields: to_fieldmap(v.fields)?,
+      fields: convert_list(v.fields)?,
     })
   }
 }
@@ -511,18 +488,31 @@ impl TryFrom<rpc::EnumSignature> for wick::EnumSignature {
   }
 }
 
+impl TryFrom<rpc::Field> for wick::Field {
+  type Error = RpcError;
+  fn try_from(v: rpc::Field) -> Result<Self> {
+    Ok(wick::Field::new(
+      v.name,
+      v.r#type.ok_or(RpcError::Internal("No type passed"))?.try_into()?,
+    ))
+  }
+}
+
+impl TryFrom<wick::Field> for rpc::Field {
+  type Error = RpcError;
+  fn try_from(v: wick::Field) -> Result<Self> {
+    Ok(rpc::Field {
+      name: v.name,
+      r#type: Some(v.ty.try_into()?),
+    })
+  }
+}
+
 impl TryFrom<rpc::EnumVariant> for wick::EnumVariant {
   type Error = RpcError;
   fn try_from(v: rpc::EnumVariant) -> Result<Self> {
     Ok(wick::EnumVariant::new(v.name, v.index))
   }
-}
-fn to_typemap(map: HashMap<String, rpc::TypeDefinition>) -> Result<wick::TypeMap> {
-  let mut tmap = HashMap::new();
-  for (k, v) in map {
-    tmap.insert(k, v.try_into()?);
-  }
-  Ok(tmap.into())
 }
 
 impl TryFrom<wick::StructSignature> for rpc::StructSignature {
@@ -530,7 +520,7 @@ impl TryFrom<wick::StructSignature> for rpc::StructSignature {
   fn try_from(v: wick::StructSignature) -> Result<Self> {
     Ok(Self {
       name: v.name,
-      fields: from_fieldmap(v.fields)?,
+      fields: convert_list(v.fields)?,
     })
   }
 }
@@ -555,26 +545,9 @@ impl TryFrom<wick::EnumVariant> for rpc::EnumVariant {
   }
 }
 
-fn from_typemap(map: wick::TypeMap) -> Result<HashMap<String, rpc::TypeDefinition>> {
-  let mut tmap = HashMap::new();
-  for (k, v) in map.into_inner() {
-    tmap.insert(k, v.try_into()?);
-  }
-  Ok(tmap)
-}
-
-fn to_componentmap(map: HashMap<String, rpc::Component>) -> Result<wick::OperationMap> {
-  let mut tmap = HashMap::new();
-  for (k, v) in map {
-    tmap.insert(k, v.try_into()?);
-  }
-  Ok(tmap.into())
-}
-
-fn from_componentmap(map: wick::OperationMap) -> Result<HashMap<String, rpc::Component>> {
-  let mut tmap = HashMap::new();
-  for (k, v) in map.into_inner() {
-    tmap.insert(k, v.try_into()?);
-  }
-  Ok(tmap)
+fn convert_list<TO>(list: Vec<impl TryInto<TO>>) -> Result<Vec<TO>> {
+  list
+    .into_iter()
+    .map(|v| v.try_into().map_err(|_| RpcError::TypeConversion))
+    .collect()
 }

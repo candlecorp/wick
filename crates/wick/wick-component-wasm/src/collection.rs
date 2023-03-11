@@ -89,15 +89,14 @@ impl RpcHandler for Collection {
   }
 
   fn get_list(&self) -> RpcResult<Vec<HostedType>> {
-    let signature = self.pool.get_components();
+    let signature = self.pool.get_operations();
 
     trace!(
       "WASM:COMPONENTS:[{}]",
       signature
         .operations
-        .inner()
-        .keys()
-        .cloned()
+        .iter()
+        .map(|op| op.name.clone())
         .collect::<Vec<_>>()
         .join(",")
     );

@@ -58,33 +58,37 @@ message ListRequest {}
 message ListResponse { repeated HostedType schemas = 1; }
 
 message HostedType {
-  oneof type { CollectionSignature collection = 1; }
+  oneof type { ComponentSignature component = 1; }
 }
 
-message Component {
-  enum ComponentKind {
-    Component = 0;
+message Operation {
+  enum OperationKind {
+    Operation = 0;
     Schematic = 1;
   }
   string name = 1;
-  ComponentKind kind = 2;
-  map<string, TypeSignature> inputs = 3;
-  map<string, TypeSignature> outputs = 4;
-  uint32 index = 5;
+  OperationKind kind = 2;
+  repeated Field inputs = 3;
+  repeated Field outputs = 4;
 }
 
-message CollectionSignature {
+message Field {
   string name = 1;
-  CollectionFeatures features = 8;
+  TypeSignature type = 2;
+}
+
+message ComponentSignature {
+  string name = 1;
+  ComponentFeatures features = 8;
   string version = 2;
   uint32 format = 6;
-  map<string, Component> components = 3;
-  map<string, TypeDefinition> types = 4;
-  map<string, TypeDefinition> config = 5;
+  repeated Operation operations = 3;
+  repeated TypeDefinition types = 4;
+  repeated TypeDefinition config = 5;
   repeated WellKnownSchema wellknown = 7;
 }
 
-message CollectionFeatures {
+message ComponentFeatures {
   bool streaming = 1;
   bool stateful = 2;
   uint32 version = 3;
@@ -100,7 +104,7 @@ message TypeDefinition {
 message WellKnownSchema {
   repeated string capabilities = 1;
   string url = 2;
-  CollectionSignature schema = 3;
+  ComponentSignature schema = 3;
 }
 
 message StatsRequest {}
@@ -122,7 +126,7 @@ message DurationStatistics {
 
 message StructSignature {
   string name = 1;
-  map<string, TypeSignature> fields = 2;
+  repeated Field fields = 2;
 }
 
 message EnumSignature {
@@ -151,7 +155,7 @@ message TypeSignature {
   }
 }
 
-message AnonymousStruct { map<string, TypeSignature> fields = 1; }
+message AnonymousStruct { repeated Field fields = 1; }
 
 message SimpleType {
   enum PrimitiveType {
@@ -175,7 +179,7 @@ message SimpleType {
 }
 
 enum InternalType {
-  ComponentInput = 0;
+  OperationInput = 0;
 }
 
 message RefType { string ref = 1; }

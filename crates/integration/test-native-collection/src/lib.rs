@@ -31,7 +31,7 @@ impl RpcHandler for Collection {
   fn get_list(&self) -> RpcResult<Vec<HostedType>> {
     trace!("test collection get list");
     let signature = component! {
-      "test-native-collection" => {
+        name: "test-native-collection",
         version: "0.1.0",
         operations: {
           "error" => {
@@ -43,7 +43,7 @@ impl RpcHandler for Collection {
             outputs: {"output" => "string"},
           }
         }
-      }
+
     };
     Ok(vec![HostedType::Collection(signature)])
   }
@@ -107,7 +107,7 @@ mod tests {
     debug!("list response : {:?}", response);
 
     assert_eq!(response.len(), 1);
-    let expected = CollectionSignature {
+    let expected = ComponentSignature {
       format: 1,
       features: CollectionFeatures {
         streaming: false,
@@ -117,29 +117,20 @@ mod tests {
       version: "0.1.0".to_owned(),
       wellknown: vec![],
       name: Some("test-native-collection".to_owned()),
-      operations: HashMap::from([
-        (
-          "error".to_owned(),
-          OperationSignature {
-            index: 0,
-            name: "error".to_string(),
-            inputs: HashMap::from([("input".to_owned(), TypeSignature::String)]).into(),
-            outputs: HashMap::from([("output".to_owned(), TypeSignature::String)]).into(),
-          },
-        ),
-        (
-          "test-component".to_owned(),
-          OperationSignature {
-            index: 0,
-            name: "test-component".to_string(),
-            inputs: HashMap::from([("input".to_owned(), TypeSignature::String)]).into(),
-            outputs: HashMap::from([("output".to_owned(), TypeSignature::String)]).into(),
-          },
-        ),
-      ])
-      .into(),
-      types: TypeMap::new(),
-      config: TypeMap::new(),
+      operations: vec![
+        OperationSignature {
+          name: "error".to_string(),
+          inputs: vec![Field::new("input", TypeSignature::String)],
+          outputs: vec![Field::new("output", TypeSignature::String)],
+        },
+        OperationSignature {
+          name: "test-component".to_string(),
+          inputs: vec![Field::new("input", TypeSignature::String)],
+          outputs: vec![Field::new("output", TypeSignature::String)],
+        },
+      ],
+      types: Vec::new(),
+      config: Vec::new(),
     };
     assert_eq!(response[0], HostedType::Collection(expected));
     Ok(())

@@ -11,7 +11,7 @@ use crate::BoxError;
 type Result<T> = std::result::Result<T, CollectionError>;
 
 pub(crate) struct NativeCollectionService {
-  signature: CollectionSignature,
+  signature: ComponentSignature,
   collection: SharedRpcHandler,
 }
 
@@ -55,7 +55,7 @@ impl Collection for NativeCollectionService {
     .boxed()
   }
 
-  fn list(&self) -> &CollectionSignature {
+  fn list(&self) -> &ComponentSignature {
     &self.signature
   }
 
@@ -69,7 +69,7 @@ impl Collection for NativeCollectionService {
 }
 
 impl InvocationHandler for NativeCollectionService {
-  fn get_signature(&self) -> Result<CollectionSignature> {
+  fn get_signature(&self) -> Result<ComponentSignature> {
     let collection = self.collection.clone();
 
     let mut list = collection.get_list()?;

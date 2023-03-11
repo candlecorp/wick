@@ -135,7 +135,7 @@ impl RpcHandler for Collection {
 
   fn get_list(&self) -> RpcResult<Vec<HostedType>> {
     let signature = component! {
-      "wick-stdlib" => {
+        name: "wick-stdlib",
         version: "0.1.0",
         operations: {
           "core::error" => {
@@ -175,7 +175,6 @@ impl RpcHandler for Collection {
             outputs: { "output" => "string" },
           }
         }
-      }
     };
     Ok(vec![HostedType::Collection(signature)])
   }

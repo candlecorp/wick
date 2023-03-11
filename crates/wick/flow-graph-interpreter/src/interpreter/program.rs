@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use flow_graph::iterators::{SchematicHop, WalkDirection};
 use flow_graph::{NodeKind, PortDirection};
-use wick_interface_types::{CollectionMap, CollectionSignature, OperationSignature, TypeSignature};
+use wick_interface_types::{CollectionMap, ComponentSignature, Field, OperationSignature, TypeSignature};
 
 use crate::constants::*;
 use crate::error::ValidationError;
@@ -98,7 +98,7 @@ fn get_resolution_order(network: &Network) -> Result<Vec<Vec<&Schematic>>, Valid
 }
 
 fn generate_self_signature(network: &Network, collections: &mut CollectionMap) -> Result<(), ValidationError> {
-  let map = CollectionSignature::new(NS_SELF);
+  let map = ComponentSignature::new(NS_SELF);
   collections.insert(NS_SELF, map);
   let resolution_order = get_resolution_order(network)?;
 
@@ -106,7 +106,7 @@ fn generate_self_signature(network: &Network, collections: &mut CollectionMap) -
     for schematic in batch {
       let signature = get_schematic_signature(schematic, collections)?;
       let map = collections.get_mut(NS_SELF).unwrap();
-      map.operations.insert(schematic.name(), signature);
+      map.operations.push(signature);
     }
   }
   Ok(())
@@ -134,7 +134,7 @@ fn get_schematic_signature(
         }
         _ => continue,
       };
-      schematic_signature.inputs.insert(port.name(), signature);
+      schematic_signature.inputs.push(Field::new(port.name(), signature));
     }
   }
 
@@ -154,7 +154,7 @@ fn get_schematic_signature(
         }
         _ => continue,
       };
-      schematic_signature.outputs.insert(port.name(), signature);
+      schematic_signature.outputs.push(Field::new(port.name(), signature));
     }
   }
   Ok(schematic_signature)
@@ -186,20 +186,22 @@ fn get_signature(
 
       let id = get_id(ext.namespace(), ext.name(), schematic, operation.name());
 
-      let operation = ext_collection
-        .operations
-        .get(&id)
-        .ok_or(ValidationError::MissingOperation {
-          namespace: ext.namespace().to_owned(),
-          name: id.clone(),
-        })?;
+      let operation =
+        ext_collection
+          .operations
+          .iter()
+          .find(|op| op.name == id)
+          .ok_or(ValidationError::MissingOperation {
+            namespace: ext.namespace().to_owned(),
+            name: id.clone(),
+          })?;
 
       let sig = match kind {
-        PortDirection::In => operation.inputs.get(name),
-        PortDirection::Out => operation.outputs.get(name),
+        PortDirection::In => operation.inputs.iter().find(|p| p.name == name).map(|p| p.ty.clone()),
+        PortDirection::Out => operation.outputs.iter().find(|p| p.name == name).map(|p| p.ty.clone()),
       };
 
-      Ok(Some(sig.cloned().ok_or(ValidationError::MissingConnection {
+      Ok(Some(sig.ok_or(ValidationError::MissingConnection {
         operation: ext.name().to_owned(),
         namespace: ext.namespace().to_owned(),
         port: name.to_owned(),
