@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 pub struct Field {
   pub name: String,
   #[serde(rename = "type")]
+  #[cfg_attr(feature = "yaml", serde(with = "serde_yaml::with::singleton_map"))]
   pub ty: TypeSignature,
 }
 
@@ -70,45 +71,43 @@ impl OperationSignature {
 #[must_use]
 #[repr(u32)]
 /// The umbrella version of the collection.
-pub enum CollectionVersion {
+pub enum ComponentVersion {
   /// Version 0 Wick collections.
   V0 = 0,
 }
 
-impl Default for CollectionVersion {
+impl Default for ComponentVersion {
   fn default() -> Self {
     Self::V0
   }
 }
 
-impl From<CollectionVersion> for u32 {
-  fn from(v: CollectionVersion) -> Self {
+impl From<ComponentVersion> for u32 {
+  fn from(v: ComponentVersion) -> Self {
     match v {
-      CollectionVersion::V0 => 0,
+      ComponentVersion::V0 => 0,
     }
   }
 }
 
-#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Copy)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[must_use]
 /// The Wick features this collection supports.
-pub struct CollectionFeatures {
-  /// Whether or not this collection's components accept streaming input or produce streaming output.
-  pub streaming: bool,
-  /// Whether or not this collection has a persistent state or context.
-  pub stateful: bool,
-  /// The version of this component.
-  pub version: CollectionVersion,
+pub struct ComponentMetadata {
+  /// Version of the component.
+  pub version: Option<String>,
 }
 
-impl CollectionFeatures {
+impl ComponentMetadata {
   /// Quickly create a v0 feature set.
-  pub fn v0(stateful: bool, streaming: bool) -> Self {
-    Self {
-      streaming,
-      stateful,
-      version: CollectionVersion::V0,
-    }
+  pub fn v0() -> Self {
+    Self { version: None }
+  }
+}
+
+impl Default for ComponentMetadata {
+  fn default() -> Self {
+    Self::v0()
   }
 }
 
@@ -118,27 +117,32 @@ impl CollectionFeatures {
 pub struct ComponentSignature {
   /// Name of the collection.
   pub name: Option<String>,
+
+  /// The format of the component signature.
+  pub format: ComponentVersion,
+
   /// Component implementation version.
-  pub features: CollectionFeatures,
-  /// Schema format version.
-  pub format: u32,
-  /// Version of the schema.
-  pub version: String,
+  #[serde(default)]
+  pub metadata: ComponentMetadata,
+
   /// A map of type signatures referenced elsewhere.
   #[serde(default, skip_serializing_if = "Vec::is_empty")]
   pub wellknown: Vec<WellKnownSchema>,
+
   /// A map of type signatures referenced elsewhere.
   #[serde(default, skip_serializing_if = "Vec::is_empty")]
   pub types: Vec<TypeDefinition>,
+
   /// A list of [OperationSignature]s in this component.
   pub operations: Vec<OperationSignature>,
   /// The component's configuration for this implementation.
+
   #[serde(default, skip_serializing_if = "Vec::is_empty")]
   pub config: Vec<TypeDefinition>,
 }
 
 impl ComponentSignature {
-  /// Create a new [CollectionSignature] with the passed name.
+  /// Create a new [ComponentSignature] with the passed name.
   pub fn new<T: AsRef<str>>(name: T) -> Self {
     Self {
       name: Some(name.as_ref().to_owned()),
@@ -147,7 +151,7 @@ impl ComponentSignature {
   }
 
   #[must_use]
-  /// Get the [CollectionSignature] for the requested component.
+  /// Get the [ComponentSignature] for the requested component.
   pub fn get_component(&self, field: &str) -> Option<&OperationSignature> {
     self.operations.iter().find(|op| op.name == field)
   }
@@ -158,21 +162,21 @@ impl ComponentSignature {
     self
   }
 
-  /// Set the version of the [CollectionSignature].
+  /// Set the version of the [ComponentSignature].
   pub fn version(mut self, version: impl AsRef<str>) -> Self {
-    self.version = version.as_ref().to_owned();
+    self.metadata.version = Some(version.as_ref().to_owned());
     self
   }
 
-  /// Set the format of the [CollectionSignature].
-  pub fn format(mut self, format: u32) -> Self {
+  /// Set the format of the [ComponentSignature].
+  pub fn format(mut self, format: ComponentVersion) -> Self {
     self.format = format;
     self
   }
 
-  /// Set the features of the [CollectionSignature].
-  pub fn features(mut self, features: CollectionFeatures) -> Self {
-    self.features = features;
+  /// Set the features of the [ComponentSignature].
+  pub fn metadata(mut self, features: ComponentMetadata) -> Self {
+    self.metadata = features;
     self
   }
 }
@@ -330,25 +334,30 @@ pub enum TypeSignature {
   Stream {
     /// The inner type
     #[serde(rename = "type")]
+    #[cfg_attr(feature = "yaml", serde(with = "serde_yaml::with::singleton_map"))]
     ty: Box<TypeSignature>,
   },
   /// A list type
   List {
     /// The type of the list's elements
     #[serde(rename = "type")]
+    #[cfg_attr(feature = "yaml", serde(with = "serde_yaml::with::singleton_map"))]
     ty: Box<TypeSignature>,
   },
   /// A type representing an optional value.
   Optional {
     /// The actual type that is optional.
     #[serde(rename = "type")]
+    #[cfg_attr(feature = "yaml", serde(with = "serde_yaml::with::singleton_map"))]
     ty: Box<TypeSignature>,
   },
   /// A HashMap-like type.
   Map {
     /// The type of the map's keys.
+    #[cfg_attr(feature = "yaml", serde(with = "serde_yaml::with::singleton_map"))]
     key: Box<TypeSignature>,
     /// The type of the map's values.
+    #[cfg_attr(feature = "yaml", serde(with = "serde_yaml::with::singleton_map"))]
     value: Box<TypeSignature>,
   },
   /// A type representing a link to another collection.

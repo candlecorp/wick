@@ -169,12 +169,10 @@ pub struct Field {
 pub struct ComponentSignature {
   #[prost(string, tag = "1")]
   pub name: ::prost::alloc::string::String,
-  #[prost(message, optional, tag = "8")]
-  pub features: ::core::option::Option<ComponentFeatures>,
-  #[prost(string, tag = "2")]
-  pub version: ::prost::alloc::string::String,
-  #[prost(uint32, tag = "6")]
+  #[prost(uint32, tag = "2")]
   pub format: u32,
+  #[prost(message, optional, tag = "8")]
+  pub metadata: ::core::option::Option<ComponentMetadata>,
   #[prost(message, repeated, tag = "3")]
   pub operations: ::prost::alloc::vec::Vec<Operation>,
   #[prost(message, repeated, tag = "4")]
@@ -186,13 +184,9 @@ pub struct ComponentSignature {
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct ComponentFeatures {
-  #[prost(bool, tag = "1")]
-  pub streaming: bool,
-  #[prost(bool, tag = "2")]
-  pub stateful: bool,
-  #[prost(uint32, tag = "3")]
-  pub version: u32,
+pub struct ComponentMetadata {
+  #[prost(string, tag = "2")]
+  pub version: ::prost::alloc::string::String,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]

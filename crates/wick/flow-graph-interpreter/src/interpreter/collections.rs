@@ -9,7 +9,7 @@ pub(super) mod schematic_collection;
 
 use futures::future::BoxFuture;
 use serde_json::Value;
-use wick_interface_types::{CollectionMap, ComponentSignature};
+use wick_interface_types::ComponentSignature;
 use wick_packet::{Invocation, PacketStream, StreamMap};
 
 use self::core_collection::CoreCollection;
@@ -17,6 +17,8 @@ use self::internal_collection::InternalCollection;
 use crate::constants::*;
 use crate::graph::types::Network;
 use crate::BoxError;
+
+pub(crate) type CollectionMap = HashMap<String, ComponentSignature>;
 
 #[derive(Debug)]
 #[must_use]
@@ -60,13 +62,13 @@ impl HandlerMap {
     &self.collections
   }
 
+  #[must_use]
   pub fn collection_signatures(&self) -> CollectionMap {
     self
       .collections
       .iter()
       .map(|(name, p)| (name.clone(), p.collection.list().clone()))
       .collect::<HashMap<String, ComponentSignature>>()
-      .into()
   }
 
   #[must_use]

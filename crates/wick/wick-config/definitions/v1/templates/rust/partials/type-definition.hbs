@@ -73,6 +73,10 @@ pub struct {{name.value}} {
         {{/switch}}
       {{/case}}
     {{/switch}}
+    {{#ifCond ../name.value '==' 'MapType'}}
+    pub {{name.value}}: Box<{{> expand-type type}}>,
+    {{else}}
     pub {{name.value}}: {{> expand-type type}},
+    {{/ifCond}}
   {{/each}}
 }

@@ -78,7 +78,7 @@ pub fn load<T: AsRef<Path>>(path: T) -> Result<wick_config::ComponentConfigurati
 pub fn from_manifest(network_def: &wick_config::ComponentConfiguration) -> Result<Network<Value>> {
   let mut network = Network::new(network_def.name().clone().unwrap_or_default());
 
-  for flow in network_def.flows().values() {
+  for flow in network_def.operations().values() {
     let mut schematic = Schematic::new(flow.name.clone());
 
     for (name, def) in flow.instances.iter() {

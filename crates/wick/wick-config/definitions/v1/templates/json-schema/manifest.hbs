@@ -9,6 +9,7 @@
       {{#case "NamespaceDefinition"}}{{/case}}
       {{#case "EnumDefinition"}}{{> schema-definition-enum}}{{/case}}
       {{#case "UnionDefinition"}}{{> schema-definition-union}}{{/case}}
+      {{#case "AliasDefinition"}}{{> schema-definition-alias}}{{/case}}
       {{#default}}
       // UNHANDLED
         {{panic .}}

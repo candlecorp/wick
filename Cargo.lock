@@ -4792,6 +4792,7 @@ dependencies = [
  "seeded-random",
  "serde",
  "serde_json",
+ "serde_yaml",
  "tap",
  "test-logger",
  "test_bin",
@@ -4893,6 +4894,7 @@ dependencies = [
  "test-logger",
  "thiserror",
  "tracing",
+ "wick-interface-types",
  "wick-packet",
 ]
 
@@ -4957,6 +4959,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_repr",
+ "serde_yaml",
  "test-log",
 ]
 

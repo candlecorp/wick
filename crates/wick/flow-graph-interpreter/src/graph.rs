@@ -44,7 +44,7 @@ impl Reference {
 pub fn from_def(manifest: &wick_config::ComponentConfiguration) -> Result<Network, flow_graph::error::Error> {
   let mut network = Network::new(manifest.name().clone().unwrap_or_default());
 
-  for (name, flow) in manifest.flows() {
+  for (name, flow) in manifest.operations() {
     let mut schematic = Schematic::new(name.clone());
 
     let index = schematic.add_inherent(CORE_ID, NodeReference::new(NS_INTERNAL, INTERNAL_ID_INHERENT), None);

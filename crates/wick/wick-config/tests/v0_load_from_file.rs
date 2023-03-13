@@ -23,7 +23,7 @@ fn load_minimal() -> Result<(), ManifestError> {
   let path = PathBuf::from("./tests/manifests/v0/minimal.wafl");
   let manifest = ComponentConfiguration::load_from_file(path)?;
 
-  assert_eq!(manifest.version(), 0);
+  assert_eq!(manifest.format(), 0);
 
   Ok(())
 }
@@ -33,7 +33,7 @@ fn load_noversion_yaml() -> Result<(), ManifestError> {
   let path = PathBuf::from("./tests/manifests/v0/noversion.wafl");
   let result = ComponentConfiguration::load_from_file(path);
   println!("result: {:?}", result);
-  assert!(matches!(result, Err(ManifestError::NoVersion)));
+  assert!(matches!(result, Err(ManifestError::NoFormat)));
   Ok(())
 }
 
@@ -56,9 +56,9 @@ fn load_collections_yaml() -> Result<(), ManifestError> {
   let manifest = ComponentConfiguration::load_from_file(path)?;
 
   assert_eq!(manifest.name(), &Some("collections".to_owned()));
-  assert_eq!(manifest.collections().len(), 6);
+  assert_eq!(manifest.components().len(), 6);
   assert_eq!(
-    manifest.collection("wapc2").unwrap().config().unwrap(),
+    manifest.component("wapc2").unwrap().config().unwrap(),
     &json!({"obj":{"data_prop":"data_value"}})
   );
 
@@ -70,7 +70,6 @@ fn load_shortform_yaml() -> Result<(), ManifestError> {
   let path = PathBuf::from("./tests/manifests/v0/logger-shortform.wafl");
   let manifest = ComponentConfiguration::load_from_file(path)?;
 
-  assert_eq!(manifest.default_flow(), &Some("logger".to_owned()));
   let first_from = &manifest.flow("logger").unwrap().connections[0].from;
   let first_to = &manifest.flow("logger").unwrap().connections[0].to;
   assert_eq!(first_from, &ConnectionTargetDefinition::new("<input>", "input"));

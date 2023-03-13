@@ -8,9 +8,13 @@
         "$anchor": "#v0/HostManifest",
         "additionalProperties": false,
         "properties": {
-          "version": {
-            "description": "The manifest version.",
+          "format": {
+            "description": "The configuration manifest format.",
             "type": "number"
+          },
+          "version": {
+            "description": "The version of the configuration.",
+            "type": "string"
           },
           "host": {
             "description": "Additional host configuration.",
@@ -27,7 +31,7 @@
           }
         },
         "required": [
-          "version"
+          "format"
         ]
       },
       "HostConfig": {
@@ -355,9 +359,14 @@
         "$anchor": "#v1/AppConfiguration",
         "additionalProperties": false,
         "properties": {
-          "version": {
+          "format": {
             "description": "The configuration version.",
             "type": "number"
+          },
+          "metadata": {
+            "description": "Associated metadata for this component.",
+            "required": false,
+            "$ref": "#/$defs/v1/AppMetadata"
           },
           "name": {
             "description": "The application&#x27;s name.",
@@ -387,6 +396,19 @@
             "items": {
               "$ref": "#/$defs/v1/TriggerDefinition"
             }
+          }
+        },
+        "required": [
+          "format"
+        ]
+      },
+      "AppMetadata": {
+        "$anchor": "#v1/AppMetadata",
+        "additionalProperties": false,
+        "properties": {
+          "version": {
+            "description": "The version of the application.",
+            "type": "string"
           }
         },
         "required": []
@@ -484,23 +506,23 @@
         "$anchor": "#v1/ComponentConfiguration",
         "additionalProperties": false,
         "properties": {
-          "version": {
-            "description": "The manifest version.",
+          "name": {
+            "description": "The name of this component.",
+            "required": false,
+            "type": "string"
+          },
+          "format": {
+            "description": "The component manifest format version",
             "type": "number"
+          },
+          "metadata": {
+            "description": "Associated metadata for this component.",
+            "required": false,
+            "$ref": "#/$defs/v1/ComponentMetadata"
           },
           "host": {
             "description": "Configuration for the host when this manifest is run directly.",
             "$ref": "#/$defs/v1/HostConfig"
-          },
-          "default_flow": {
-            "description": "The default flow to execute if none is provided.",
-            "required": false,
-            "type": "string"
-          },
-          "name": {
-            "description": "The unique identifier for this manifest.",
-            "required": false,
-            "type": "string"
           },
           "labels": {
             "description": "The labels and values that apply to this manifest.",
@@ -511,8 +533,15 @@
               }
             }
           },
-          "external": {
-            "description": "A map of namespace to external components.",
+          "types": {
+            "description": "Additional types to export and make available to the component.",
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/v1/TypeDefinition"
+            }
+          },
+          "import": {
+            "description": "Components to import into the application&#x27;s scope.",
             "type": "object",
             "patternProperties": {
               "[a-zA-Z0-9][a-zA-Z0-9_]*": {
@@ -522,12 +551,23 @@
           },
           "operations": {
             "description": "A map of operation names to their definitions.",
-            "type": "object",
-            "patternProperties": {
-              "[a-zA-Z0-9][a-zA-Z0-9_]*": {
-                "$ref": "#/$defs/v1/FlowDefinition"
-              }
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/v1/OperationDefinition"
             }
+          }
+        },
+        "required": [
+          "format"
+        ]
+      },
+      "ComponentMetadata": {
+        "$anchor": "#v1/ComponentMetadata",
+        "additionalProperties": false,
+        "properties": {
+          "version": {
+            "description": "The version of the component.",
+            "type": "string"
           }
         },
         "required": []
@@ -786,10 +826,28 @@
         },
         "required": []
       },
-      "FlowDefinition": {
-        "$anchor": "#v1/FlowDefinition",
+      "OperationDefinition": {
+        "$anchor": "#v1/OperationDefinition",
         "additionalProperties": false,
         "properties": {
+          "name": {
+            "description": "The name of the operation.",
+            "type": "string"
+          },
+          "inputs": {
+            "description": "Types of the inputs to the operation.",
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/v1/Field"
+            }
+          },
+          "outputs": {
+            "description": "Types of the outputs to the operation.",
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/v1/Field"
+            }
+          },
           "components": {
             "description": "A list of components the schematic can use.",
             "type": "array",
@@ -815,6 +873,12 @@
           }
         },
         "required": []
+      },
+      "Field": {
+        "type": "object"
+      },
+      "TypeDefinition": {
+        "type": "object"
       },
       "InstanceDefinition": {
         "$anchor": "#v1/InstanceDefinition",

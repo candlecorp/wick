@@ -1,8 +1,8 @@
 {
   "name": "blog",
-  "format": 1,
-  "version": "1",
-  "features": { "stateful": false, "streaming": false, "version": 0 },
+  "format": 0,
+
+  "metadata": { "version": "0" },
   "types": [
     {
       "type": "struct",

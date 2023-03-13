@@ -1,4 +1,4 @@
-version: 0
+format: 0
 network:
   schematics:
     - name: test
@@ -6,6 +6,6 @@ network:
         SENDER:
           id: core::sender
           data:
-            output: "Hello world"
+            output: 'Hello world'
       connections:
         - SENDER[output] => <>

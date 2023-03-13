@@ -5,6 +5,7 @@ async fn wick_run() {
     .args([
       "invoke",
       "./manifests/log.wafl",
+      "logger",
       "--data=schem_input=\"testing123\"",
       "--trace",
     ])

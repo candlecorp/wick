@@ -9,7 +9,7 @@ use flow_graph_interpreter::{Collection, HandlerMap, Interpreter, NamespaceHandl
 use futures::future::BoxFuture;
 use seeded_random::Seed;
 use serde_json::Value;
-use wick_interface_types::{CollectionFeatures, ComponentSignature, OperationSignature, TypeSignature};
+use wick_interface_types::{ComponentMetadata, ComponentSignature, OperationSignature, TypeSignature};
 use wick_packet::{Invocation, PacketStream};
 fn load<T: AsRef<Path>>(path: T) -> Result<wick_config::ComponentConfiguration> {
   Ok(wick_config::ComponentConfiguration::load_from_file(path.as_ref())?)
@@ -77,9 +77,8 @@ async fn test_missing_component() -> Result<()> {
 #[test_logger::test(tokio::test)]
 async fn test_invalid_port() -> Result<()> {
   let signature = ComponentSignature::new("instance")
-    .format(1)
     .version("0.0.0")
-    .features(CollectionFeatures::v0(false, false))
+    .metadata(ComponentMetadata::default())
     .add_component(OperationSignature::new("echo"));
 
   let result = interp("./tests/manifests/v0/external.wafl", signature);
@@ -103,9 +102,8 @@ async fn test_invalid_port() -> Result<()> {
 #[test_logger::test(tokio::test)]
 async fn test_missing_port() -> Result<()> {
   let signature = ComponentSignature::new("test")
-    .format(1)
     .version("0.0.0")
-    .features(CollectionFeatures::v0(false, false))
+    .metadata(ComponentMetadata::default())
     .add_component(
       OperationSignature::new("echo")
         .add_input("input", TypeSignature::String)

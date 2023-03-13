@@ -1,7 +1,7 @@
 use flow_graph::{SCHEMATIC_INPUT, SCHEMATIC_OUTPUT};
 use futures::future::BoxFuture;
 use serde_json::Value;
-use wick_interface_types::{CollectionFeatures, ComponentSignature, OperationSignature, TypeSignature};
+use wick_interface_types::{ComponentMetadata, ComponentSignature, OperationSignature, TypeSignature};
 use wick_packet::{Invocation, PacketStream};
 
 use crate::constants::*;
@@ -17,9 +17,8 @@ pub(crate) struct InternalCollection {
 impl Default for InternalCollection {
   fn default() -> Self {
     let signature = ComponentSignature::new(NS_INTERNAL)
-      .format(1)
       .version("0.0.0")
-      .features(CollectionFeatures::v0(false, false))
+      .metadata(ComponentMetadata::v0())
       .add_component(
         OperationSignature::new(INTERNAL_ID_INHERENT)
           .add_input("seed", TypeSignature::U64)

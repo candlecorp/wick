@@ -1,11 +1,11 @@
-version: 0
+format: 0
 network:
   triggers:
     reference: &comp ../../integration/test-main-component/build/test_main_component.signed.wasm
     data:
       wasi:
         dirs:
-          "/": "$TEST_TEMPDIR"
+          '/': '$TEST_TEMPDIR'
   collections:
     - namespace: main
       kind: WaPC

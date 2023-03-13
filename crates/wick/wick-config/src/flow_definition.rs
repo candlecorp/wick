@@ -17,7 +17,7 @@ use crate::{Error, Result};
 /// The SchematicDefinition struct is a normalized representation of a Wick [SchematicManifest].
 /// It handles the job of translating manifest versions into a consistent data structure.
 #[must_use]
-pub struct Flow {
+pub struct FlowOperation {
   /// The name of the schematic.
   pub name: String,
   /// A mapping of instance names to the components they refer to.
@@ -30,7 +30,7 @@ pub struct Flow {
   pub constraints: HashMap<String, String>,
 }
 
-impl Flow {
+impl FlowOperation {
   /// Get the name as an owned [String].
   #[must_use]
   pub fn get_name(&self) -> String {
@@ -49,7 +49,7 @@ impl Flow {
   }
 }
 
-impl TryFrom<&crate::v0::SchematicManifest> for Flow {
+impl TryFrom<&crate::v0::SchematicManifest> for FlowOperation {
   type Error = Error;
 
   fn try_from(manifest: &crate::v0::SchematicManifest) -> Result<Self> {
@@ -70,31 +70,30 @@ impl TryFrom<&crate::v0::SchematicManifest> for Flow {
   }
 }
 
-impl TryFrom<(String, crate::v1::FlowDefinition)> for Flow {
+impl TryFrom<crate::v1::OperationDefinition> for FlowOperation {
   type Error = Error;
 
-  fn try_from(flow: (String, crate::v1::FlowDefinition)) -> Result<Self> {
-    let instances: Result<HashMap<String, InstanceReference>> = flow
-      .1
+  fn try_from(op: crate::v1::OperationDefinition) -> Result<Self> {
+    let instances: Result<HashMap<String, InstanceReference>> = op
       .instances
       .iter()
       .map(|(key, val)| Ok((key.clone(), val.try_into()?)))
       .collect();
-    let connections: Result<Vec<ConnectionDefinition>> = flow.1.flow.iter().map(|def| def.try_into()).collect();
+    let connections: Result<Vec<ConnectionDefinition>> = op.flow.iter().map(|def| def.try_into()).collect();
     Ok(Self {
-      name: flow.0,
+      name: op.name,
       instances: instances?,
       connections: connections?,
-      collections: flow.1.components,
+      collections: op.components,
       constraints: Default::default(),
     })
   }
 }
 
-impl TryFrom<(&String, &crate::v1::FlowDefinition)> for Flow {
+impl TryFrom<(&String, &crate::v1::OperationDefinition)> for FlowOperation {
   type Error = Error;
 
-  fn try_from(flow: (&String, &crate::v1::FlowDefinition)) -> Result<Self> {
+  fn try_from(flow: (&String, &crate::v1::OperationDefinition)) -> Result<Self> {
     let instances: Result<HashMap<String, InstanceReference>> = flow
       .1
       .instances

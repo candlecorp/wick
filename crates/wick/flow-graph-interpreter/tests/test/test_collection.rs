@@ -10,7 +10,7 @@ use tokio::spawn;
 use tokio::task::JoinHandle;
 use tracing::trace;
 use wasmrs_rx::{FluxChannel, Observer};
-use wick_interface_types::{CollectionFeatures, ComponentSignature, OperationSignature, TypeSignature};
+use wick_interface_types::{ComponentSignature, OperationSignature, TypeSignature};
 use wick_packet::{fan_out, Invocation, Packet, PacketPayload, PacketStream};
 
 pub struct TestCollection(ComponentSignature);
@@ -18,9 +18,8 @@ impl TestCollection {
   #[allow(dead_code)]
   pub fn new() -> Self {
     let signature = ComponentSignature::new("test-collection")
-      .format(1)
       .version("0.0.0")
-      .features(CollectionFeatures::v0(false, false))
+      .metadata(Default::default())
       .add_component(
         OperationSignature::new("echo")
           .add_input("input", TypeSignature::String)

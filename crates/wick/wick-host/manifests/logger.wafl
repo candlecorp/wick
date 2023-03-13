@@ -1,6 +1,6 @@
 ---
-version: "0"
-default_schematic: "logger"
+format: 0
+default_schematic: 'logger'
 network:
   schematics:
     - name: logger

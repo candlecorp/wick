@@ -1,5 +1,4 @@
 #![cfg(feature = "parser")]
-use std::collections::HashMap;
 
 use anyhow::Result;
 use wick_interface_types::{
@@ -7,9 +6,6 @@ use wick_interface_types::{
   fields,
   operation,
   parse,
-  // typemap,
-  CollectionFeatures,
-  CollectionVersion,
   ComponentSignature,
   Field,
   OperationSignature,
@@ -85,17 +81,8 @@ fn test_component_macro() -> Result<()> {
 
   let expected = ComponentSignature {
     name: Some("test-native-collection".to_owned()),
-    features: CollectionFeatures {
-      streaming: false,
-      stateful: true,
-      version: CollectionVersion::V0,
-    },
-    format: 1,
-    version: "0.1.0".to_owned(),
-    types: Vec::new(),
     operations: opmap,
-    wellknown: Vec::new(),
-    config: Vec::new(),
+    ..Default::default()
   };
   let actual = component! {
       name: "test-native-collection",

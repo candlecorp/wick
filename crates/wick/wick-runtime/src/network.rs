@@ -3,7 +3,7 @@ use std::time::Duration;
 
 use seeded_random::{Random, Seed};
 use uuid::Uuid;
-use wick_config::{ComponentConfiguration, ComponentConfigurationBuilder, Flow};
+use wick_config::{ComponentConfiguration, ComponentConfigurationBuilder, FlowOperation};
 use wick_packet::{Invocation, PacketStream};
 
 use crate::dev::prelude::*;
@@ -124,7 +124,7 @@ impl NetworkBuilder {
     self
   }
 
-  pub fn add_flow(mut self, flow: Flow) -> Self {
+  pub fn add_flow(mut self, flow: FlowOperation) -> Self {
     self.manifest_builder = self.manifest_builder.add_flow(flow.name.clone(), flow);
     self
   }
