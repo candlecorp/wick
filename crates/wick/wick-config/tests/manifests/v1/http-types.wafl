@@ -1,0 +1,185 @@
+---
+format: 1
+types:
+  - type: enum
+    name: HttpMethod
+    variants:
+      - name: GET
+      - name: POST
+      - name: PUT
+      - name: DELETE
+      - name: PATCH
+      - name: HEAD
+      - name: OPTIONS
+      - name: TRACE
+  - name: HttpScheme
+    type: enum
+    variants:
+      - name: HTTP
+      - name: HTTPS
+  - name: HttpVersion
+    type: enum
+    variants:
+      - name: HTTP_1_0
+        value: '1.0'
+      - name: HTTP_1_1
+        value: '1.1'
+      - name: HTTP_2_0
+        value: '2.0'
+  - name: StatusCode
+    type: enum
+    variants:
+      - name: Continue
+        value: '100'
+      - name: SwitchingProtocols
+        value: '101'
+      - name: OK
+        value: '200'
+      - name: Created
+        value: '201'
+      - name: Accepted
+        value: '202'
+      - name: NonAuthoritativeInformation
+        value: '203'
+      - name: NoContent
+        value: '204'
+      - name: ResetContent
+        value: '205'
+      - name: PartialContent
+        value: '206'
+      - name: MultipleChoices
+        value: '300'
+      - name: MovedPermanently
+        value: '301'
+      - name: Found
+        value: '302'
+      - name: SeeOther
+        value: '303'
+      - name: NotModified
+        value: '304'
+      - name: TemporaryRedirect
+        value: '307'
+      - name: PermanentRedirect
+        value: '308'
+      - name: BadRequest
+        value: '400'
+      - name: Unauthorized
+        value: '401'
+      - name: PaymentRequired
+        value: '402'
+      - name: Forbidden
+        value: '403'
+      - name: NotFound
+        value: '404'
+      - name: MethodNotAllowed
+        value: '405'
+      - name: NotAcceptable
+        value: '406'
+      - name: ProxyAuthenticationRequired
+        value: '407'
+      - name: RequestTimeout
+        value: '408'
+      - name: Conflict
+        value: '409'
+      - name: Gone
+        value: '410'
+      - name: LengthRequired
+        value: '411'
+      - name: PreconditionFailed
+        value: '412'
+      - name: PayloadTooLarge
+        value: '413'
+      - name: URITooLong
+        value: '414'
+      - name: UnsupportedMediaType
+        value: '415'
+      - name: RangeNotSatisfiable
+        value: '416'
+      - name: ExpectationFailed
+        value: '417'
+      - name: ImATeapot
+        value: '418'
+      - name: UnprocessableEntity
+        value: '422'
+      - name: Locked
+        value: '423'
+      - name: FailedDependency
+        value: '424'
+      - name: TooManyRequests
+        value: '429'
+      - name: InternalServerError
+        value: '500'
+      - name: NotImplemented
+        value: '501'
+      - name: BadGateway
+        value: '502'
+      - name: ServiceUnavailable
+        value: '503'
+      - name: GatewayTimeout
+        value: '504'
+      - name: HTTPVersionNotSupported
+        value: '505'
+  - name: HttpResponse
+    type: struct
+    fields:
+      - name: version
+        type: HttpVersion
+        description: HTTP version enum
+      - name: status
+        type: StatusCode
+        default: OK
+        description: status code enum
+      - name: headers
+        type:
+          map:
+            key: string
+            value: { list: { type: string } }
+        description: All response headers. Supports duplicates.
+      - name: headersRaw
+        type: string
+        description: All response headers, as a single string in case duplicate headers exist.
+      - name: body
+        type: bytes
+        description: Response body in bytes. optional.
+  - name: HttpRequest
+    type: struct
+    fields:
+      - name: method
+        type: HttpMethod
+        description: method from request line enum
+      - name: scheme
+        type: HttpScheme
+        description: scheme from request line enum
+      - name: authority
+        type: string
+        required: false
+        description: domain/port and any authentication from request line. optional
+      - name: queryParameters
+        type:
+          map:
+            key: string
+            value: { list: { type: string } }
+        required: false
+        description: query parameters from request line. optional
+      - name: path
+        type: string
+        description: path from request line (not including query parameters)
+      - name: uri
+        type: string
+        description: full URI from request line
+      - name: version
+        type: HttpVersion
+        description: HTTP version enum
+      - name: headers
+        type:
+          map:
+            key: string
+            value: { list: { type: string } }
+        description: All request headers. Duplicates are comma separated.
+      - name: headersRaw
+        type: string
+        description: All request headers, as a single string.
+      - name: body
+        type: bytes
+        required: false
+        description: Request body. optional

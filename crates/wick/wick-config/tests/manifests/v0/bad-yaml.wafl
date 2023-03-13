@@ -1,5 +1,5 @@
 ---
-format: '0'
+format: 0
 default_schematic: 'logger'
 manifest:
   schematics:

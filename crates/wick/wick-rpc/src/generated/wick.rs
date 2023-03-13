@@ -185,8 +185,8 @@ pub struct ComponentSignature {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ComponentMetadata {
-  #[prost(string, tag = "2")]
-  pub version: ::prost::alloc::string::String,
+  #[prost(string, optional, tag = "2")]
+  pub version: ::core::option::Option<::prost::alloc::string::String>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -269,8 +269,10 @@ pub struct EnumSignature {
 pub struct EnumVariant {
   #[prost(string, tag = "1")]
   pub name: ::prost::alloc::string::String,
-  #[prost(uint32, tag = "2")]
-  pub index: u32,
+  #[prost(uint32, optional, tag = "2")]
+  pub index: ::core::option::Option<u32>,
+  #[prost(string, optional, tag = "3")]
+  pub value: ::core::option::Option<::prost::alloc::string::String>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]

@@ -15,7 +15,7 @@ use wick_interface_types::{
 
 #[test_log::test]
 fn test_deserialize() -> Result<()> {
-  let src = read_to_string("./tests/interface.json")?;
+  let src = read_to_string("./tests/testdata/interface.json")?;
 
   let sig: ComponentSignature = serde_json::from_str(&src)?;
   assert_eq!(sig.name, Some("blog".to_owned()));
@@ -30,8 +30,25 @@ fn test_deserialize() -> Result<()> {
 }
 
 #[test_log::test]
+fn test_deserialize_yaml() -> Result<()> {
+  let src = read_to_string("./tests/testdata/http-types.yaml")?;
+
+  let sig: crate::ComponentSignature = serde_yaml::from_str(&src)?;
+  let rt = serde_yaml::to_string(&sig)?;
+
+  assert_eq!(sig.types.len(), 6);
+
+  let actual_as_value: crate::ComponentSignature = serde_yaml::from_str(&rt)?;
+  let expected_as_value: crate::ComponentSignature = serde_yaml::from_str(&src)?;
+
+  assert_eq!(actual_as_value, expected_as_value);
+
+  Ok(())
+}
+
+#[test_log::test]
 fn test_deserialize2() -> Result<()> {
-  let src = read_to_string("./tests/interface-test.json")?;
+  let src = read_to_string("./tests/testdata/interface-test.json")?;
 
   let sig: ComponentSignature = serde_json::from_str(&src)?;
   assert_eq!(sig.name, Some("test-component".to_owned()));
@@ -93,7 +110,10 @@ fn test_serde_rt() -> Result<()> {
   let mut sig = ComponentSignature::new("test-sig");
   sig.types.push(TypeDefinition::Enum(EnumSignature::new(
     "Unit",
-    vec![EnumVariant::new("millis", 0), EnumVariant::new("micros", 1)],
+    vec![
+      EnumVariant::new("millis", Some(0), None),
+      EnumVariant::new("micros", Some(1), None),
+    ],
   )));
   let mut compsig = OperationSignature::new("my_component");
   compsig.inputs.push(Field::new("input1", TypeSignature::String));
@@ -122,7 +142,10 @@ fn test_serde_yaml_rt() -> Result<()> {
   let mut sig = ComponentSignature::new("test-sig");
   sig.types.push(TypeDefinition::Enum(EnumSignature::new(
     "Unit",
-    vec![EnumVariant::new("millis", 0), EnumVariant::new("micros", 1)],
+    vec![
+      EnumVariant::new("millis", Some(0), None),
+      EnumVariant::new("micros", Some(1), None),
+    ],
   )));
   let mut compsig = OperationSignature::new("my_component");
   compsig.inputs.push(Field::new("input1", TypeSignature::String));

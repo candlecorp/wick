@@ -22,10 +22,10 @@ fn test_parser() -> Result<()> {
     }
   );
   let fields = vec![Field::new("myBool", TypeSignature::Bool)];
-  assert_eq!(
-    parse("{ myBool : bool }")?,
-    TypeSignature::AnonymousStruct(fields.into())
-  );
+  assert_eq!(parse("{ myBool : bool }")?, TypeSignature::AnonymousStruct(fields));
+
+  let custom = TypeSignature::Custom("some_struct".to_owned());
+  assert_eq!(parse("some_struct")?, custom);
 
   Ok(())
 }

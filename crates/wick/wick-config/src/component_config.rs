@@ -3,6 +3,7 @@ use std::fs::read_to_string;
 use std::path::Path;
 
 use tracing::debug;
+use wick_interface_types::TypeDefinition;
 
 use crate::error::ManifestError;
 use crate::host_definition::HostConfig;
@@ -18,6 +19,7 @@ pub struct ComponentConfiguration {
   version: String,
   host: HostConfig,
   name: Option<String>,
+  types: Vec<TypeDefinition>,
   labels: HashMap<String, String>,
   import: HashMap<String, ComponentDefinition>,
   operations: HashMap<String, FlowOperation>,
@@ -37,6 +39,7 @@ impl TryFrom<v0::HostManifest> for ComponentConfiguration {
       source: None,
       format: def.format,
       version: def.version,
+      types: Default::default(),
       host: def.host.try_into()?,
       name: def.network.name,
       import: def
@@ -58,6 +61,7 @@ impl TryFrom<v1::ComponentConfiguration> for ComponentConfiguration {
     Ok(ComponentConfiguration {
       source: None,
       format: def.format,
+      types: def.types,
       version: def.metadata.unwrap_or(ComponentMetadata::default()).version,
       host: def.host.try_into()?,
       name: def.name,
@@ -174,6 +178,11 @@ impl ComponentConfiguration {
   /// Get the name for this manifest.
   pub fn labels(&self) -> &HashMap<String, String> {
     &self.labels
+  }
+
+  /// Get the name for this manifest.
+  pub fn types(&self) -> &[TypeDefinition] {
+    &self.types
   }
 
   #[must_use]
