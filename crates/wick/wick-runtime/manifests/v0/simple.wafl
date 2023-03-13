@@ -1,5 +1,5 @@
 ---
-version: 0
+format: 0
 network:
   schematics:
     - name: simple

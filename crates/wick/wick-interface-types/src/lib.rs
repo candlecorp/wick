@@ -84,9 +84,9 @@ pub use parser::parse;
 mod signatures;
 
 pub use signatures::{
-  CollectionFeatures,
-  CollectionVersion,
+  ComponentMetadata,
   ComponentSignature,
+  ComponentVersion,
   EnumSignature,
   EnumVariant,
   Field,
@@ -101,8 +101,3 @@ pub use signatures::{
 
 #[macro_use]
 mod macros;
-
-/// Map-related structures holding signatures and other types.
-pub mod maps;
-
-pub use maps::CollectionMap;

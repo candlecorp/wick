@@ -16,6 +16,6 @@ pub enum {{name.value}} {
     {{#ifCond ../name.value '===' "ComponentDefinition"}}
     #[serde(rename = "{{replace name.value 'Component' ''}}")]
     {{/ifCond}}
-    {{name.value}}({{name.value}}),
+    {{pascalCase name.value}}({{> expand-type .}}),
   {{/each}}
 }

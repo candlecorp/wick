@@ -146,17 +146,8 @@ macro_rules! component {
 
     $crate::ComponentSignature {
       name: Some($name.to_owned()),
-      features: $crate::CollectionFeatures {
-        streaming: false,
-        stateful: true,
-        version: $crate::CollectionVersion::V0,
-      },
-      format: 1,
-      version: $version.to_owned(),
-      types: Vec::new(),
       operations: ops,
-      wellknown: Vec::new(),
-      config: Vec::new(),
+      ..Default::default()
     }
   }};
 }

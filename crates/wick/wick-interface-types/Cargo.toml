@@ -12,13 +12,15 @@ exclude = ["tests/*", ".github/*", ".gitignore"]
 homepage = "https://candle.dev"
 
 [features]
-default = []
+default = ["yaml"]
 parser = ["nom"]
+yaml = ["serde_yaml"]
 
 [dependencies]
 serde = { workspace = true, features = ["derive"] }
 serde_repr = "0.1"
 nom = { version = "7.1", optional = true }
+serde_yaml = { workspace = true, optional = true }
 
 [dev-dependencies]
 anyhow = { workspace = true }
@@ -26,3 +28,4 @@ test-log = "0.2.8"
 env_logger = { workspace = true }
 pretty_assertions = "1.2"
 serde_json = { workspace = true }
+serde_yaml = { workspace = true }

@@ -44,9 +44,12 @@ pub enum WickConfig {
 /// The Application configuration defines a standalone Wick application.
 pub struct AppConfiguration {
   /// The configuration version.
-  #[serde(default)]
+
   #[serde(deserialize_with = "with_expand_envs")]
-  pub version: u8,
+  pub format: u32,
+  /// Associated metadata for this component.
+  #[serde(default)]
+  pub metadata: Option<AppMetadata>,
   /// The application&#x27;s name.
   #[serde(default)]
   #[serde(deserialize_with = "with_expand_envs")]
@@ -64,6 +67,16 @@ pub struct AppConfiguration {
   #[serde(default)]
   #[serde(skip_serializing_if = "Vec::is_empty")]
   pub triggers: Vec<TriggerDefinition>,
+}
+
+#[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+/// Metadata for the application.
+pub struct AppMetadata {
+  /// The version of the application.
+  #[serde(default)]
+  #[serde(deserialize_with = "with_expand_envs")]
+  pub version: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -135,33 +148,47 @@ pub struct UdpPort {
 #[serde(deny_unknown_fields)]
 /// A manifest defines the starting state of a Wick host and network.
 pub struct ComponentConfiguration {
-  /// The manifest version.
+  /// The name of this component.
   #[serde(default)]
+  pub name: Option<String>,
+  /// The component manifest format version
+
   #[serde(deserialize_with = "with_expand_envs")]
-  pub version: u8,
+  pub format: u32,
+  /// Associated metadata for this component.
+  #[serde(default)]
+  pub metadata: Option<ComponentMetadata>,
   /// Configuration for the host when this manifest is run directly.
   #[serde(default)]
   pub host: HostConfig,
-  /// The default flow to execute if none is provided.
-  #[serde(default)]
-  pub default_flow: Option<String>,
-  /// The unique identifier for this manifest.
-  #[serde(default)]
-  pub name: Option<String>,
   /// The labels and values that apply to this manifest.
   #[serde(default)]
   #[serde(skip_serializing_if = "HashMap::is_empty")]
   #[serde(deserialize_with = "crate::helpers::kv_deserializer")]
   pub labels: HashMap<String, String>,
-  /// A map of namespace to external components.
+  /// Additional types to export and make available to the component.
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub types: Vec<wick_interface_types::TypeDefinition>,
+  /// Components to import into the application&#x27;s scope.
   #[serde(default)]
   #[serde(skip_serializing_if = "HashMap::is_empty")]
   #[serde(deserialize_with = "crate::parse::v1::component_shortform")]
-  pub external: HashMap<String, ComponentDefinition>,
+  pub import: HashMap<String, ComponentDefinition>,
   /// A map of operation names to their definitions.
   #[serde(default)]
-  #[serde(skip_serializing_if = "HashMap::is_empty")]
-  pub operations: HashMap<String, FlowDefinition>,
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub operations: Vec<OperationDefinition>,
+}
+
+#[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+/// Metadata for the component.
+pub struct ComponentMetadata {
+  /// The version of the component.
+  #[serde(default)]
+  #[serde(deserialize_with = "with_expand_envs")]
+  pub version: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -354,7 +381,19 @@ pub struct ManifestComponent {
 #[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
 /// A definition for an single flow.
-pub struct FlowDefinition {
+pub struct OperationDefinition {
+  /// The name of the operation.
+  #[serde(default)]
+  #[serde(deserialize_with = "with_expand_envs")]
+  pub name: String,
+  /// Types of the inputs to the operation.
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub inputs: Vec<wick_interface_types::Field>,
+  /// Types of the outputs to the operation.
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub outputs: Vec<wick_interface_types::Field>,
   /// A list of components the schematic can use.
   #[serde(default)]
   #[serde(skip_serializing_if = "Vec::is_empty")]

@@ -1,10 +1,13 @@
 # yaml-language-server: $schema=../../../json-schema/manifest.json
 ---
-version: 1
-external:
+format: 1
+metadata:
+  version: '1'
+import:
   test:
     kind: Wasm
     reference: bar
     permissions:
       dirs:
-        "/": "$PWD"
+        '/': '$PWD'
+operations: []

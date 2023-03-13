@@ -1,5 +1,6 @@
 ---
 name: wick-stdlib
+format: 0
 metadata:
   version: 1
 operations:

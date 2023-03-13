@@ -53,7 +53,7 @@ impl NetworkService {
 
     collections.add(stdlib);
 
-    for collection in msg.manifest.collections().values() {
+    for collection in msg.manifest.components().values() {
       let collection_init = CollectionInitOptions {
         rng_seed: rng.seed(),
         network_id: msg.id,

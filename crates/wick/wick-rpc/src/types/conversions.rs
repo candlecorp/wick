@@ -54,13 +54,20 @@ impl TryFrom<rpc::ComponentSignature> for wick::ComponentSignature {
   fn try_from(v: rpc::ComponentSignature) -> Result<Self> {
     Ok(Self {
       name: Some(v.name),
-      features: v
-        .features
+      format: match v.format {
+        0 => wick::ComponentVersion::V0,
+        _ => {
+          return Err(RpcError::CollectionError(format!(
+            "Invalid collection version ({}) for this runtime",
+            v.format
+          )))
+        }
+      },
+      metadata: v
+        .metadata
         .map(|v| v.try_into())
         .transpose()?
         .ok_or(RpcError::MissingFeatures)?,
-      version: v.version,
-      format: v.format,
       wellknown: v
         .wellknown
         .into_iter()
@@ -79,32 +86,20 @@ impl TryFrom<rpc::ComponentSignature> for wick::ComponentSignature {
   }
 }
 
-impl TryFrom<rpc::ComponentFeatures> for wick::CollectionFeatures {
+impl TryFrom<rpc::ComponentMetadata> for wick::ComponentMetadata {
   type Error = RpcError;
-  fn try_from(v: rpc::ComponentFeatures) -> Result<Self> {
+  fn try_from(v: rpc::ComponentMetadata) -> Result<Self> {
     Ok(Self {
-      streaming: v.streaming,
-      stateful: v.stateful,
-      version: match v.version {
-        0 => wick::CollectionVersion::V0,
-        _ => {
-          return Err(RpcError::CollectionError(format!(
-            "Invalid collection version ({}) for this runtime",
-            v.version
-          )))
-        }
-      },
+      version: Some(v.version),
     })
   }
 }
 
-impl TryFrom<wick::CollectionFeatures> for rpc::ComponentFeatures {
+impl TryFrom<wick::ComponentMetadata> for rpc::ComponentMetadata {
   type Error = RpcError;
-  fn try_from(v: wick::CollectionFeatures) -> Result<Self> {
+  fn try_from(v: wick::ComponentMetadata) -> Result<Self> {
     Ok(Self {
-      streaming: v.streaming,
-      stateful: v.stateful,
-      version: v.version.into(),
+      version: v.version.unwrap_or_default(),
     })
   }
 }
@@ -138,9 +133,8 @@ impl TryFrom<wick::ComponentSignature> for rpc::ComponentSignature {
   fn try_from(v: wick::ComponentSignature) -> Result<Self> {
     Ok(Self {
       name: v.name.unwrap_or_default(),
-      features: Some(v.features.try_into()?),
-      version: v.version,
-      format: v.format,
+      format: v.format.into(),
+      metadata: Some(v.metadata.try_into()?),
       wellknown: v
         .wellknown
         .into_iter()

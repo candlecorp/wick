@@ -116,3 +116,46 @@ fn test_serde_rt() -> Result<()> {
 
   Ok(())
 }
+
+#[test_log::test]
+fn test_serde_yaml_rt() -> Result<()> {
+  let mut sig = ComponentSignature::new("test-sig");
+  sig.types.push(TypeDefinition::Enum(EnumSignature::new(
+    "Unit",
+    vec![EnumVariant::new("millis", 0), EnumVariant::new("micros", 1)],
+  )));
+  let mut compsig = OperationSignature::new("my_component");
+  compsig.inputs.push(Field::new("input1", TypeSignature::String));
+  compsig.inputs.push(Field::new("input2", TypeSignature::U64));
+  compsig.inputs.push(Field::new(
+    "map1",
+    TypeSignature::Map {
+      key: Box::new(TypeSignature::String),
+      value: Box::new(TypeSignature::String),
+    },
+  ));
+  compsig.inputs.push(Field::new(
+    "list1",
+    TypeSignature::List {
+      ty: Box::new(TypeSignature::String),
+    },
+  ));
+
+  compsig.outputs.push(Field::new("output1", TypeSignature::String));
+  compsig.outputs.push(Field::new("output2", TypeSignature::U64));
+  compsig.outputs.push(Field::new(
+    "output2",
+    TypeSignature::Ref {
+      reference: "MYREF".to_owned(),
+    },
+  ));
+
+  sig.operations.push(compsig);
+
+  let json = serde_yaml::to_string(&sig)?;
+  eprintln!("{}", json);
+  let actual: ComponentSignature = serde_yaml::from_str(&json)?;
+  assert_eq!(actual, sig);
+
+  Ok(())
+}

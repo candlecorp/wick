@@ -1,5 +1,5 @@
 ---
-version: 0
+format: 0
 network:
   collections:
     - namespace: wasi
@@ -8,7 +8,7 @@ network:
       data:
         wasi:
           dirs:
-            "/": "$TEST_TEMPDIR"
+            '/': '$TEST_TEMPDIR'
   schematics:
     - name: wasi_component
       collections:

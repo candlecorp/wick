@@ -44,10 +44,10 @@ pub(crate) async fn handle(opts: WasmSignCommand) -> Result<()> {
   debug!("Signing module");
 
   debug!("Reading from {}", opts.interface);
-  let json = std::fs::read_to_string(opts.interface)?;
-  debug!("Read {} bytes", json.len());
+  let component_yaml = std::fs::read_to_string(opts.interface)?;
+  debug!("Read {} bytes", component_yaml.len());
 
-  let interface: ComponentSignature = serde_json::from_str(&json)?;
+  let interface: ComponentSignature = serde_yaml::from_str(&component_yaml)?;
 
   let mut source_file = File::open(&opts.source).unwrap();
   let mut buf = Vec::new();

@@ -4,10 +4,15 @@
       "$anchor": "#v0/HostManifest",
       "additionalProperties": false,
       "properties": {
-        "version": {
-          "description": "The manifest version.",
+        "format": {
+          "description": "The configuration manifest format.",
 
           "type": "number"
+        },
+        "version": {
+          "description": "The version of the configuration.",
+
+          "type": "string"
         },
         "host": {
           "description": "Additional host configuration.",
@@ -26,7 +31,7 @@
           "type": "string"
         }
       },
-      "required": ["version"]
+      "required": ["format"]
     },
 
     "HostConfig": {

@@ -1,0 +1,42 @@
+# yaml-language-server: $schema=../../wick/wick-config/json-schema/manifest.json
+---
+name: test-component
+format: 0
+metadata:
+  version: '1'
+types:
+  - type: struct
+    name: Interactive
+    fields:
+      - name: stdin
+        type: bool
+      - name: stdout
+        type: bool
+      - name: stderr
+        type: bool
+operations:
+  - name: byte-count
+    inputs:
+      - name: input
+        type: string
+    outputs:
+      - name: output
+        type: u64
+  - name: main
+    inputs:
+      - name: args
+        type:
+          list:
+            type: string
+      - name: isInteractive
+        type:
+          ref:
+            ref: '#/types/Interactive'
+      - name: program
+        type:
+          optional:
+            type:
+              link: {}
+    outputs:
+      - name: output
+        type: u32

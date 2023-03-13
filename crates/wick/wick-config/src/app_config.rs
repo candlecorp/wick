@@ -15,7 +15,8 @@ use crate::{from_yaml, v1, ComponentKind, Error, Result};
 /// The internal representation of a Wick manifest.
 pub struct AppConfiguration {
   source: Option<String>,
-  version: u8,
+  format: u32,
+  version: String,
   name: String,
   import: HashMap<String, ComponentKind>,
   resources: HashMap<String, ResourceDefinition>,
@@ -28,7 +29,8 @@ impl TryFrom<v1::AppConfiguration> for AppConfiguration {
   fn try_from(def: v1::AppConfiguration) -> Result<Self> {
     Ok(AppConfiguration {
       source: None,
-      version: def.version,
+      format: def.format,
+      version: def.metadata.unwrap_or_default().version,
       name: def.name,
       import: def.import.into_iter().map(|(k, v)| (k, v.into())).collect(),
       resources: def.resources.into_iter().map(|(k, v)| (k, v.into())).collect(),
@@ -64,14 +66,14 @@ impl AppConfiguration {
     debug!("Trying to parse manifest as yaml");
     let raw: serde_yaml::Value = from_yaml(src)?;
     debug!("Yaml parsed successfully");
-    let raw_version = raw.get("version").ok_or(Error::NoVersion)?;
+    let raw_version = raw.get("format").ok_or(Error::NoFormat)?;
     let version = raw_version
       .as_i64()
       .unwrap_or_else(|| -> i64 { raw_version.as_str().and_then(|s| s.parse::<i64>().ok()).unwrap_or(-1) });
     let manifest = match version {
       0 => panic!("no v0 implemented for app configuration"),
       1 => Ok(from_yaml::<v1::AppConfiguration>(src)?.try_into()?),
-      -1 => Err(Error::NoVersion),
+      -1 => Err(Error::NoFormat),
       _ => Err(Error::VersionError(version.to_string())),
     };
 
@@ -81,8 +83,14 @@ impl AppConfiguration {
 
   /// Return the underlying version of the source manifest.
   #[must_use]
-  pub fn version(&self) -> u8 {
-    self.version
+  pub fn version(&self) -> &str {
+    &self.version
+  }
+
+  /// Return the underlying version of the application.
+  #[must_use]
+  pub fn format(&self) -> u32 {
+    self.format
   }
 
   /// Return the underlying version of the source manifest.

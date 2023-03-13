@@ -1,4 +1,4 @@
-version: 0
+format: 0
 network:
   collections:
     - namespace: child

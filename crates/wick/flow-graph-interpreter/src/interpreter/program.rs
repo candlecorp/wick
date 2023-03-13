@@ -2,14 +2,14 @@ use std::collections::HashSet;
 
 use flow_graph::iterators::{SchematicHop, WalkDirection};
 use flow_graph::{NodeKind, PortDirection};
-use wick_interface_types::{CollectionMap, ComponentSignature, Field, OperationSignature, TypeSignature};
+use wick_interface_types::{ComponentSignature, Field, OperationSignature, TypeSignature};
 
 use crate::constants::*;
 use crate::error::ValidationError;
 use crate::graph::types::*;
 
 pub(crate) mod validator;
-use super::collections::get_id;
+use super::collections::{get_id, CollectionMap};
 use super::error::Error;
 
 #[must_use]
@@ -99,7 +99,7 @@ fn get_resolution_order(network: &Network) -> Result<Vec<Vec<&Schematic>>, Valid
 
 fn generate_self_signature(network: &Network, collections: &mut CollectionMap) -> Result<(), ValidationError> {
   let map = ComponentSignature::new(NS_SELF);
-  collections.insert(NS_SELF, map);
+  collections.insert(NS_SELF.to_owned(), map);
   let resolution_order = get_resolution_order(network)?;
 
   for batch in resolution_order {

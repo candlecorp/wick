@@ -1,5 +1,5 @@
 ---
-version: 0
+format: 0
 host:
   allow_latest: true
 network:

@@ -1,7 +1,9 @@
 # yaml-language-server: $schema=../../../json-schema/manifest.json
 ---
-version: 1
-external:
+format: 1
+metadata:
+  version: '1'
+import:
   foo:
     kind: Mesh
     id: bar
@@ -9,7 +11,7 @@ external:
     kind: Wasm
     reference: bar
 operations:
-  logger:
+  - name: logger
     instances:
       logger: wafl::log
       SENDER:

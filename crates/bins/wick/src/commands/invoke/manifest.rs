@@ -21,12 +21,9 @@ pub(crate) async fn handle_command(opts: super::InvokeCommand, bytes: Vec<u8>) -
     ..Default::default()
   };
 
-  let mut config = merge_config(&manifest, &opts.fetch, Some(server_options));
-  if config.default_flow().is_none() {
-    config.set_default_flow(opts.component);
-  }
+  let config = merge_config(&manifest, &opts.fetch, Some(server_options));
 
-  let default_schematic = config.default_flow().clone().unwrap();
+  let component = opts.component;
 
   let host_builder = HostBuilder::from_definition(config);
 
@@ -35,7 +32,7 @@ pub(crate) async fn handle_command(opts: super::InvokeCommand, bytes: Vec<u8>) -
   host.start_network(opts.seed.map(Seed::unsafe_new)).await?;
 
   let signature = host.get_signature()?;
-  let target_schematic = signature.get_component(&default_schematic);
+  let target_schematic = signature.get_component(&component);
 
   let mut check_stdin = !opts.no_input && opts.data.is_empty() && opts.args.is_empty();
   if let Some(target_schematic) = target_schematic {
@@ -93,7 +90,7 @@ pub(crate) async fn handle_command(opts: super::InvokeCommand, bytes: Vec<u8>) -
       tx.send(Packet::done(port))?;
     }
 
-    let stream = host.request(&default_schematic, stream, inherent_data).await?;
+    let stream = host.request(&component, stream, inherent_data).await?;
     utils::print_stream_json(stream, &opts.filter, opts.short, opts.raw).await?;
   }
   host.stop().await;

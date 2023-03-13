@@ -36,6 +36,7 @@ use serde_json::Value;
     {{#case "ImportDefinition"}}
       {{#import from.value}}{{> module }}{{/import}}
     {{/case}}
+    {{#case "AliasDefinition"}}{{/case}}
     {{#default}}
     {{log "Unhandled type"}}
     panic!()

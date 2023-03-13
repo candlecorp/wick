@@ -1,0 +1,30 @@
+# yaml-language-server: $schema=../../wick/wick-config/json-schema/manifest.json
+---
+name: test-component
+format: 0
+metadata:
+  version: '1'
+operations:
+  - name: add
+    inputs:
+      - name: left
+        type: u64
+      - name: right
+        type: u64
+    outputs:
+      - name: output
+        type: u64
+  - name: error
+    inputs:
+      - name: input
+        type: string
+    outputs:
+      - name: output
+        type: string
+  - name: validate
+    inputs:
+      - name: input
+        type: string
+    outputs:
+      - name: output
+        type: string

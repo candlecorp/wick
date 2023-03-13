@@ -33,10 +33,14 @@ use serde_with_expand_env::with_expand_envs;
 #[serde(deny_unknown_fields)]
 /// A manifest defines the starting state of a Wick host and network.
 pub struct HostManifest {
-  /// The manifest version.
+  /// The configuration manifest format.
 
   #[serde(deserialize_with = "with_expand_envs")]
-  pub version: u8,
+  pub format: u32,
+  /// The version of the configuration.
+  #[serde(default)]
+  #[serde(deserialize_with = "with_expand_envs")]
+  pub version: String,
   /// Additional host configuration.
   #[serde(default)]
   pub host: HostConfig,

@@ -6,7 +6,10 @@ union WickConfig = AppConfiguration | ComponentConfiguration
 "The Application configuration defines a standalone Wick application."
 type AppConfiguration {
   "The configuration version."
-  version: u8,
+  format: u32 @required,
+
+  "Associated metadata for this component."
+  metadata: AppMetadata?,
 
   "The application's name."
   name: string,
@@ -19,6 +22,12 @@ type AppConfiguration {
 
   "Configured triggers that drive the application's behavior."
   triggers: [TriggerDefinition],
+}
+
+"Metadata for the application."
+type AppMetadata {
+  "The version of the application."
+  version: string,
 }
 
 "The possible types of resources."
@@ -55,26 +64,35 @@ type UdpPort @internal_tag("kind", "wick/udp:v1") {
 
 "A manifest defines the starting state of a Wick host and network."
 type ComponentConfiguration {
-  "The manifest version."
-  version: u8,
+  "The name of this component."
+  name: string?,
+
+  "The component manifest format version"
+  format: u32 @required,
+
+  "Associated metadata for this component."
+  metadata: ComponentMetadata?,
 
   "Configuration for the host when this manifest is run directly."
   host: HostConfig,
 
-  "The default flow to execute if none is provided."
-  default_flow: string?,
-
-  "The unique identifier for this manifest."
-  name: string?,
-
   "The labels and values that apply to this manifest."
   labels: {string: string},
 
-  "A map of namespace to external components."
-  external: {string: ComponentDefinition},
+  "Additional types to export and make available to the component."
+  types: [TypeDefinition],
+
+  "Components to import into the application's scope."
+  import: {string: ComponentDefinition},
 
   "A map of operation names to their definitions."
-  operations: {string: FlowDefinition},
+  operations: [OperationDefinition],
+}
+
+"Metadata for the component."
+type ComponentMetadata {
+  "The version of the component."
+  version: string,
 }
 
 "The possible types of components."
@@ -191,7 +209,16 @@ type ManifestComponent  @internal_tag("kind", "Manifest") {
 }
 
 "A definition for an single flow."
-type FlowDefinition {
+type OperationDefinition {
+  "The name of the operation."
+  name: string,
+
+  "Types of the inputs to the operation."
+  inputs: [Field],
+
+  "Types of the outputs to the operation."
+  outputs: [Field],
+
   "A list of components the schematic can use."
   components: [string],
 
@@ -201,6 +228,12 @@ type FlowDefinition {
   "A list of connections from operation to operation."
   flow: [ConnectionDefinition],
 }
+
+"Field definition. This is not technically an any type, it is a wick interface type field."
+alias Field = any
+
+"Type definition. This is not technically an any type, it is a wick interface type definition."
+alias TypeDefinition = any
 
 "The ID and configuration for an operation."
 type InstanceDefinition {

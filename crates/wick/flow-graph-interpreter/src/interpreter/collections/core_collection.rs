@@ -1,7 +1,7 @@
 use futures::future::BoxFuture;
 use serde_json::Value;
 use wick_interface_types::{
-  CollectionFeatures,
+  ComponentMetadata,
   ComponentSignature,
   Field,
   OperationSignature,
@@ -27,9 +27,8 @@ pub(crate) struct CoreCollection {
 impl CoreCollection {
   pub(crate) fn new(graph: &Network) -> Self {
     let mut signature = ComponentSignature::new(NS_CORE)
-      .format(1)
       .version("0.0.0")
-      .features(CollectionFeatures::v0(false, false))
+      .metadata(ComponentMetadata::v0())
       .add_component(OperationSignature::new(CORE_ID_SENDER).add_output("output", TypeSignature::Value));
 
     for schematic in graph.schematics() {

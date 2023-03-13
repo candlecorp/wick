@@ -116,7 +116,7 @@ pub use component_definition::{ComponentDefinition, ComponentKind, Permissions};
 
 /// A version-normalized format of the schematic manifest for development.
 pub mod flow_definition;
-pub use flow_definition::{ConnectionDefinition, ConnectionTargetDefinition, Flow, InstanceReference};
+pub use flow_definition::{ConnectionDefinition, ConnectionTargetDefinition, FlowOperation, InstanceReference};
 pub use flow_expression_parser::parse::v0::parse_id;
 
 use crate::error::ManifestError;

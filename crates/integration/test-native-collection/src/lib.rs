@@ -70,7 +70,6 @@ async fn test_component(mut input: PacketStream) -> Result<PacketStream, anyhow:
 
 #[cfg(test)]
 mod tests {
-  use std::collections::HashMap;
 
   use pretty_assertions::assert_eq;
   use tracing::*;
@@ -108,14 +107,6 @@ mod tests {
 
     assert_eq!(response.len(), 1);
     let expected = ComponentSignature {
-      format: 1,
-      features: CollectionFeatures {
-        streaming: false,
-        stateful: true,
-        version: CollectionVersion::V0,
-      },
-      version: "0.1.0".to_owned(),
-      wellknown: vec![],
       name: Some("test-native-collection".to_owned()),
       operations: vec![
         OperationSignature {
@@ -129,8 +120,7 @@ mod tests {
           outputs: vec![Field::new("output", TypeSignature::String)],
         },
       ],
-      types: Vec::new(),
-      config: Vec::new(),
+      ..Default::default()
     };
     assert_eq!(response[0], HostedType::Collection(expected));
     Ok(())
