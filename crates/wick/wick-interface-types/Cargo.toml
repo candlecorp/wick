@@ -12,7 +12,7 @@ exclude = ["tests/*", ".github/*", ".gitignore"]
 homepage = "https://candle.dev"
 
 [features]
-default = ["yaml"]
+default = ["yaml", "parser"]
 parser = ["nom"]
 yaml = ["serde_yaml"]
 

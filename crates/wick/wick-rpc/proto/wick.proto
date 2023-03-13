@@ -87,7 +87,7 @@ message ComponentSignature {
   repeated WellKnownSchema wellknown = 7;
 }
 
-message ComponentMetadata { string version = 2; }
+message ComponentMetadata { optional string version = 2; }
 
 message TypeDefinition {
   oneof type {
@@ -131,7 +131,8 @@ message EnumSignature {
 
 message EnumVariant {
   string name = 1;
-  uint32 index = 2;
+  optional uint32 index = 2;
+  optional string value = 3;
 }
 
 message TypeSignature {

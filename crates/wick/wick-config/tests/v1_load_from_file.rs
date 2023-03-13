@@ -15,6 +15,16 @@ fn test_basics() -> Result<(), ManifestError> {
 }
 
 #[test_logger::test]
+fn test_types() -> Result<(), ManifestError> {
+  let path = PathBuf::from("./tests/manifests/v1/http-types.wafl");
+  let component = ComponentConfiguration::load_from_file(path)?;
+
+  assert_eq!(component.types().len(), 6);
+
+  Ok(())
+}
+
+#[test_logger::test]
 fn regression_issue_42() -> Result<(), ManifestError> {
   let path = PathBuf::from("./tests/manifests/v1/shell-expansion.wafl");
   let manifest = ComponentConfiguration::load_from_file(path)?;

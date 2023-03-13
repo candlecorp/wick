@@ -3,18 +3,45 @@ use std::str::FromStr;
 
 use serde::{Deserialize, Serialize};
 
+#[allow(clippy::trivially_copy_pass_by_ref)]
+fn is_false(b: &bool) -> bool {
+  !(*b)
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Field {
+  /// The name of the field.
   pub name: String,
+
+  /// The type of the field.
   #[serde(rename = "type")]
-  #[cfg_attr(feature = "yaml", serde(with = "serde_yaml::with::singleton_map"))]
+  #[cfg_attr(feature = "parser", serde(deserialize_with = "crate::signatures::type_signature"))]
+  #[cfg_attr(
+    feature = "yaml",
+    serde(serialize_with = "serde_yaml::with::singleton_map::serialize")
+  )]
   pub ty: TypeSignature,
+
+  /// Whether the field is required.
+  #[serde(default, skip_serializing_if = "Option::is_none")]
+  pub default: Option<serde_yaml::Value>,
+
+  /// Whether the field is required.
+  #[serde(default, skip_serializing_if = "is_false")]
+  pub required: bool,
+
+  /// The description of the field.
+  #[serde(default, skip_serializing_if = "Option::is_none")]
+  pub description: Option<String>,
 }
 
 impl Field {
   pub fn new(name: impl AsRef<str>, ty: TypeSignature) -> Self {
     Self {
       name: name.as_ref().to_owned(),
+      description: None,
+      default: None,
+      required: false,
       ty,
     }
   }
@@ -95,6 +122,7 @@ impl From<ComponentVersion> for u32 {
 /// The Wick features this collection supports.
 pub struct ComponentMetadata {
   /// Version of the component.
+  #[serde(skip_serializing_if = "Option::is_none  ")]
   pub version: Option<String>,
 }
 
@@ -134,6 +162,7 @@ pub struct ComponentSignature {
   pub types: Vec<TypeDefinition>,
 
   /// A list of [OperationSignature]s in this component.
+  #[serde(default, skip_serializing_if = "Vec::is_empty")]
   pub operations: Vec<OperationSignature>,
   /// The component's configuration for this implementation.
 
@@ -213,15 +242,15 @@ pub struct EnumSignature {
   pub name: String,
   /// The variants in the enum.
   #[serde(default, skip_serializing_if = "Vec::is_empty")]
-  pub values: Vec<EnumVariant>,
+  pub variants: Vec<EnumVariant>,
 }
 
 impl EnumSignature {
   /// Constructor for [EnumSignature]
-  pub fn new<T: AsRef<str>>(name: T, values: Vec<EnumVariant>) -> Self {
+  pub fn new<T: AsRef<str>>(name: T, variants: Vec<EnumVariant>) -> Self {
     Self {
       name: name.as_ref().to_owned(),
-      values,
+      variants,
     }
   }
 }
@@ -233,15 +262,20 @@ pub struct EnumVariant {
   /// The name of the variant.
   pub name: String,
   /// The index of the variant.
-  pub index: u32,
+  #[serde(default, skip_serializing_if = "Option::is_none")]
+  pub index: Option<u32>,
+  /// The optional value of the variant.
+  #[serde(default, skip_serializing_if = "Option::is_none")]
+  pub value: Option<String>,
 }
 
 impl EnumVariant {
   /// Constructor for [EnumVariant]
-  pub fn new<T: AsRef<str>>(name: T, index: u32) -> Self {
+  pub fn new<T: AsRef<str>>(name: T, index: Option<u32>, value: Option<String>) -> Self {
     Self {
       name: name.as_ref().to_owned(),
       index,
+      value,
     }
   }
 }
@@ -334,30 +368,65 @@ pub enum TypeSignature {
   Stream {
     /// The inner type
     #[serde(rename = "type")]
-    #[cfg_attr(feature = "yaml", serde(with = "serde_yaml::with::singleton_map"))]
+    #[cfg_attr(
+      feature = "parser",
+      serde(deserialize_with = "crate::signatures::box_type_signature")
+    )]
+    #[cfg_attr(
+      feature = "yaml",
+      serde(serialize_with = "serde_yaml::with::singleton_map::serialize")
+    )]
     ty: Box<TypeSignature>,
   },
   /// A list type
   List {
     /// The type of the list's elements
     #[serde(rename = "type")]
-    #[cfg_attr(feature = "yaml", serde(with = "serde_yaml::with::singleton_map"))]
+    #[cfg_attr(
+      feature = "parser",
+      serde(deserialize_with = "crate::signatures::box_type_signature")
+    )]
+    #[cfg_attr(
+      feature = "yaml",
+      serde(serialize_with = "serde_yaml::with::singleton_map::serialize")
+    )]
     ty: Box<TypeSignature>,
   },
   /// A type representing an optional value.
   Optional {
     /// The actual type that is optional.
     #[serde(rename = "type")]
-    #[cfg_attr(feature = "yaml", serde(with = "serde_yaml::with::singleton_map"))]
+    #[cfg_attr(
+      feature = "parser",
+      serde(deserialize_with = "crate::signatures::box_type_signature")
+    )]
+    #[cfg_attr(
+      feature = "yaml",
+      serde(serialize_with = "serde_yaml::with::singleton_map::serialize")
+    )]
     ty: Box<TypeSignature>,
   },
   /// A HashMap-like type.
   Map {
     /// The type of the map's keys.
-    #[cfg_attr(feature = "yaml", serde(with = "serde_yaml::with::singleton_map"))]
+    #[cfg_attr(
+      feature = "parser",
+      serde(deserialize_with = "crate::signatures::box_type_signature")
+    )]
+    #[cfg_attr(
+      feature = "yaml",
+      serde(serialize_with = "serde_yaml::with::singleton_map::serialize")
+    )]
     key: Box<TypeSignature>,
     /// The type of the map's values.
-    #[cfg_attr(feature = "yaml", serde(with = "serde_yaml::with::singleton_map"))]
+    #[cfg_attr(
+      feature = "parser",
+      serde(deserialize_with = "crate::signatures::box_type_signature")
+    )]
+    #[cfg_attr(
+      feature = "yaml",
+      serde(serialize_with = "serde_yaml::with::singleton_map::serialize")
+    )]
     value: Box<TypeSignature>,
   },
   /// A type representing a link to another collection.
@@ -373,6 +442,14 @@ pub enum TypeSignature {
     /// A list of fields in the struct.
     Vec<Field>,
   ),
+}
+
+fn stringify<S>(x: &str, s: S) -> Result<S::Ok, S::Error>
+where
+  S: serde::Serializer,
+{
+  println!("{:?}", x);
+  s.serialize_str(x)
 }
 
 impl std::fmt::Display for TypeSignature {
@@ -417,30 +494,17 @@ impl std::fmt::Display for ParseError {
   }
 }
 
+#[cfg(feature = "parser")]
 impl FromStr for TypeSignature {
   type Err = ParseError;
 
   fn from_str(s: &str) -> Result<Self, Self::Err> {
-    let t = match s {
-      "i8" => Self::I8,
-      "i16" => Self::I16,
-      "i32" => Self::I32,
-      "i64" => Self::I64,
-      "u8" => Self::U8,
-      "u16" => Self::U16,
-      "u32" => Self::U32,
-      "u64" => Self::U64,
-      "f32" => Self::F32,
-      "f64" => Self::F64,
-      "bool" => Self::Bool,
-      "bytes" => Self::Bytes,
-      "value" => Self::Value,
-      "string" => Self::String,
-      "datetime" => Self::Datetime,
-      _ => return Err(ParseError(s.to_owned())),
-    };
-    Ok(t)
+    crate::parser::parse(s).map_err(|e| ParseError(s.to_owned()))
   }
+}
+
+fn is_valid_typeid(name: &str) -> bool {
+  name.chars().all(|c| c.is_alphanumeric() || c == '_')
 }
 
 /// Internal types for use within the Wick runtime
@@ -462,4 +526,70 @@ impl FromStr for InternalType {
     };
     Ok(t)
   }
+}
+
+#[cfg(feature = "parser")]
+pub(crate) fn type_signature<'de, D>(deserializer: D) -> Result<TypeSignature, D::Error>
+where
+  D: serde::Deserializer<'de>,
+{
+  struct TypeSignatureVisitor;
+
+  impl<'de> serde::de::Visitor<'de> for TypeSignatureVisitor {
+    type Value = TypeSignature;
+
+    fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+      formatter.write_str("a TypeSignature definition")
+    }
+
+    fn visit_str<E>(self, s: &str) -> Result<Self::Value, E>
+    where
+      E: serde::de::Error,
+    {
+      TypeSignature::from_str(s).map_err(|e| serde::de::Error::custom(e.to_string()))
+    }
+
+    fn visit_map<A>(self, map: A) -> Result<Self::Value, A::Error>
+    where
+      A: serde::de::MapAccess<'de>,
+    {
+      TypeSignature::deserialize(serde::de::value::MapAccessDeserializer::new(map))
+    }
+  }
+
+  deserializer.deserialize_any(TypeSignatureVisitor)
+}
+
+#[cfg(feature = "parser")]
+pub(crate) fn box_type_signature<'de, D>(deserializer: D) -> Result<Box<TypeSignature>, D::Error>
+where
+  D: serde::Deserializer<'de>,
+{
+  struct TypeSignatureVisitor;
+
+  impl<'de> serde::de::Visitor<'de> for TypeSignatureVisitor {
+    type Value = Box<TypeSignature>;
+
+    fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+      formatter.write_str("a TypeSignature definition")
+    }
+
+    fn visit_str<E>(self, s: &str) -> Result<Self::Value, E>
+    where
+      E: serde::de::Error,
+    {
+      TypeSignature::from_str(s)
+        .map(Box::new)
+        .map_err(|e| serde::de::Error::custom(e.to_string()))
+    }
+
+    fn visit_map<A>(self, map: A) -> Result<Self::Value, A::Error>
+    where
+      A: serde::de::MapAccess<'de>,
+    {
+      TypeSignature::deserialize(serde::de::value::MapAccessDeserializer::new(map)).map(Box::new)
+    }
+  }
+
+  deserializer.deserialize_any(TypeSignatureVisitor)
 }

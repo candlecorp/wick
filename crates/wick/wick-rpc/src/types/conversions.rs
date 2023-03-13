@@ -89,18 +89,14 @@ impl TryFrom<rpc::ComponentSignature> for wick::ComponentSignature {
 impl TryFrom<rpc::ComponentMetadata> for wick::ComponentMetadata {
   type Error = RpcError;
   fn try_from(v: rpc::ComponentMetadata) -> Result<Self> {
-    Ok(Self {
-      version: Some(v.version),
-    })
+    Ok(Self { version: v.version })
   }
 }
 
 impl TryFrom<wick::ComponentMetadata> for rpc::ComponentMetadata {
   type Error = RpcError;
   fn try_from(v: wick::ComponentMetadata) -> Result<Self> {
-    Ok(Self {
-      version: v.version.unwrap_or_default(),
-    })
+    Ok(Self { version: v.version })
   }
 }
 
@@ -505,7 +501,7 @@ impl TryFrom<wick::Field> for rpc::Field {
 impl TryFrom<rpc::EnumVariant> for wick::EnumVariant {
   type Error = RpcError;
   fn try_from(v: rpc::EnumVariant) -> Result<Self> {
-    Ok(wick::EnumVariant::new(v.name, v.index))
+    Ok(wick::EnumVariant::new(v.name, v.index, v.value))
   }
 }
 
@@ -524,7 +520,11 @@ impl TryFrom<wick::EnumSignature> for rpc::EnumSignature {
   fn try_from(v: wick::EnumSignature) -> Result<Self> {
     Ok(Self {
       name: v.name,
-      values: v.values.into_iter().map(|v| v.try_into()).collect::<Result<Vec<_>>>()?,
+      values: v
+        .variants
+        .into_iter()
+        .map(|v| v.try_into())
+        .collect::<Result<Vec<_>>>()?,
     })
   }
 }
@@ -535,6 +535,7 @@ impl TryFrom<wick::EnumVariant> for rpc::EnumVariant {
     Ok(Self {
       name: v.name,
       index: v.index,
+      value: v.value,
     })
   }
 }
