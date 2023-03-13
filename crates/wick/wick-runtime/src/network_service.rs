@@ -130,7 +130,7 @@ impl NetworkService {
 }
 
 impl InvocationHandler for NetworkService {
-  fn get_signature(&self) -> std::result::Result<CollectionSignature, CollectionError> {
+  fn get_signature(&self) -> std::result::Result<ComponentSignature, CollectionError> {
     let mut signature = self.interpreter.get_export_signature().clone();
     signature.name = Some(self.id.as_hyphenated().to_string());
 

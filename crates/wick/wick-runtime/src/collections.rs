@@ -20,7 +20,7 @@ use crate::dispatch::network_invoke_async;
 use crate::network_service::CollectionInitOptions;
 
 pub(crate) trait InvocationHandler {
-  fn get_signature(&self) -> Result<CollectionSignature>;
+  fn get_signature(&self) -> Result<ComponentSignature>;
   fn invoke(&self, msg: Invocation, stream: PacketStream) -> Result<BoxFuture<Result<InvocationResponse>>>;
 }
 

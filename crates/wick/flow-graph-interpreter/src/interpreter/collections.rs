@@ -9,7 +9,7 @@ pub(super) mod schematic_collection;
 
 use futures::future::BoxFuture;
 use serde_json::Value;
-use wick_interface_types::{CollectionMap, CollectionSignature};
+use wick_interface_types::{CollectionMap, ComponentSignature};
 use wick_packet::{Invocation, PacketStream, StreamMap};
 
 use self::core_collection::CoreCollection;
@@ -65,7 +65,7 @@ impl HandlerMap {
       .collections
       .iter()
       .map(|(name, p)| (name.clone(), p.collection.list().clone()))
-      .collect::<HashMap<String, CollectionSignature>>()
+      .collect::<HashMap<String, ComponentSignature>>()
       .into()
   }
 
@@ -124,7 +124,7 @@ pub trait Collection {
     stream: PacketStream,
     data: Option<Value>,
   ) -> BoxFuture<Result<PacketStream, BoxError>>;
-  fn list(&self) -> &CollectionSignature;
+  fn list(&self) -> &ComponentSignature;
   fn shutdown(&self) -> BoxFuture<Result<(), BoxError>> {
     // Override if you need a more explicit shutdown.
     Box::pin(async move { Ok(()) })

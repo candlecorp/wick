@@ -9,12 +9,12 @@ use flow_graph_interpreter::{Collection, HandlerMap, Interpreter, NamespaceHandl
 use futures::future::BoxFuture;
 use seeded_random::Seed;
 use serde_json::Value;
-use wick_interface_types::{CollectionFeatures, CollectionSignature, OperationSignature, TypeSignature};
+use wick_interface_types::{CollectionFeatures, ComponentSignature, OperationSignature, TypeSignature};
 use wick_packet::{Invocation, PacketStream};
 fn load<T: AsRef<Path>>(path: T) -> Result<wick_config::ComponentConfiguration> {
   Ok(wick_config::ComponentConfiguration::load_from_file(path.as_ref())?)
 }
-struct SignatureTestCollection(CollectionSignature);
+struct SignatureTestCollection(ComponentSignature);
 impl Collection for SignatureTestCollection {
   fn handle(
     &self,
@@ -25,19 +25,19 @@ impl Collection for SignatureTestCollection {
     todo!()
   }
 
-  fn list(&self) -> &CollectionSignature {
+  fn list(&self) -> &ComponentSignature {
     &self.0
   }
 }
 
-fn collections(sig: CollectionSignature) -> HandlerMap {
+fn collections(sig: ComponentSignature) -> HandlerMap {
   HandlerMap::new(vec![NamespaceHandler::new(
     "test",
     Box::new(SignatureTestCollection(sig)),
   )])
 }
 
-fn interp(path: &str, sig: CollectionSignature) -> std::result::Result<Interpreter, InterpreterError> {
+fn interp(path: &str, sig: ComponentSignature) -> std::result::Result<Interpreter, InterpreterError> {
   let network = from_def(&load(path).unwrap()).unwrap();
 
   Interpreter::new(Some(Seed::unsafe_new(1)), network, None, Some(collections(sig)))
@@ -60,7 +60,7 @@ async fn test_missing_collections() -> Result<()> {
 
 #[test_logger::test(tokio::test)]
 async fn test_missing_component() -> Result<()> {
-  let result = interp("./tests/manifests/v0/external.wafl", CollectionSignature::default());
+  let result = interp("./tests/manifests/v0/external.wafl", ComponentSignature::default());
   let validation_errors = ValidationError::MissingOperation {
     namespace: "test".to_owned(),
     name: "echo".to_owned(),
@@ -76,7 +76,7 @@ async fn test_missing_component() -> Result<()> {
 
 #[test_logger::test(tokio::test)]
 async fn test_invalid_port() -> Result<()> {
-  let signature = CollectionSignature::new("instance")
+  let signature = ComponentSignature::new("instance")
     .format(1)
     .version("0.0.0")
     .features(CollectionFeatures::v0(false, false))
@@ -102,7 +102,7 @@ async fn test_invalid_port() -> Result<()> {
 
 #[test_logger::test(tokio::test)]
 async fn test_missing_port() -> Result<()> {
-  let signature = CollectionSignature::new("test")
+  let signature = ComponentSignature::new("test")
     .format(1)
     .version("0.0.0")
     .features(CollectionFeatures::v0(false, false))

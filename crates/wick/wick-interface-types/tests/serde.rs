@@ -3,9 +3,10 @@ use std::fs::read_to_string;
 use anyhow::Result;
 use pretty_assertions::assert_eq;
 use wick_interface_types::{
-  CollectionSignature,
+  ComponentSignature,
   EnumSignature,
   EnumVariant,
+  Field,
   InternalType,
   OperationSignature,
   TypeDefinition,
@@ -16,7 +17,7 @@ use wick_interface_types::{
 fn test_deserialize() -> Result<()> {
   let src = read_to_string("./tests/interface.json")?;
 
-  let sig: CollectionSignature = serde_json::from_str(&src)?;
+  let sig: ComponentSignature = serde_json::from_str(&src)?;
   assert_eq!(sig.name, Some("blog".to_owned()));
   let as_json = serde_json::to_string(&sig)?;
   let actual_as_value: serde_json::Value = serde_json::from_str(&as_json)?;
@@ -32,7 +33,7 @@ fn test_deserialize() -> Result<()> {
 fn test_deserialize2() -> Result<()> {
   let src = read_to_string("./tests/interface-test.json")?;
 
-  let sig: CollectionSignature = serde_json::from_str(&src)?;
+  let sig: ComponentSignature = serde_json::from_str(&src)?;
   assert_eq!(sig.name, Some("test-component".to_owned()));
   let as_json = serde_json::to_string(&sig)?;
   let actual_as_value: serde_json::Value = serde_json::from_str(&as_json)?;
@@ -67,14 +68,14 @@ fn test_serde_all() -> Result<()> {
       value: Box::new(TypeSignature::I32),
     },
     TypeSignature::List {
-      element: Box::new(TypeSignature::String),
+      ty: Box::new(TypeSignature::String),
     },
-    TypeSignature::Internal(InternalType::ComponentInput),
+    TypeSignature::Internal(InternalType::OperationInput),
     TypeSignature::Ref {
       reference: "ref-test".to_owned(),
     },
     TypeSignature::Optional {
-      option: Box::new(TypeSignature::String),
+      ty: Box::new(TypeSignature::String),
     },
     TypeSignature::Link {
       schemas: vec!["link-test".to_owned()],
@@ -89,26 +90,29 @@ fn test_serde_all() -> Result<()> {
 
 #[test_log::test]
 fn test_serde_rt() -> Result<()> {
-  let mut sig = CollectionSignature::new("test-sig");
-  sig.types.insert(
+  let mut sig = ComponentSignature::new("test-sig");
+  sig.types.push(TypeDefinition::Enum(EnumSignature::new(
     "Unit",
-    TypeDefinition::Enum(EnumSignature::new(
-      "Unit",
-      vec![EnumVariant::new("millis", 0), EnumVariant::new("micros", 1)],
-    )),
-  );
+    vec![EnumVariant::new("millis", 0), EnumVariant::new("micros", 1)],
+  )));
   let mut compsig = OperationSignature::new("my_component");
-  compsig.inputs.insert("input1", TypeSignature::String);
-  compsig.inputs.insert("input2", TypeSignature::U64);
-  compsig.outputs.insert("output1", TypeSignature::String);
-  compsig.outputs.insert("output2", TypeSignature::U64);
+  compsig.inputs.push(Field::new("input1", TypeSignature::String));
+  compsig.inputs.push(Field::new("input2", TypeSignature::U64));
+  compsig.outputs.push(Field::new("output1", TypeSignature::String));
+  compsig.outputs.push(Field::new("output2", TypeSignature::U64));
+  compsig.outputs.push(Field::new(
+    "output2",
+    TypeSignature::Ref {
+      reference: "MYREF".to_owned(),
+    },
+  ));
 
-  sig.operations.insert(compsig.name.clone(), compsig);
+  sig.operations.push(compsig);
 
   let json = serde_json::to_string(&sig)?;
   eprintln!("{}", json);
-  let actual: CollectionSignature = serde_json::from_str(&json)?;
-  assert_eq!(sig, actual);
+  let actual: ComponentSignature = serde_json::from_str(&json)?;
+  assert_eq!(actual, sig);
 
   Ok(())
 }

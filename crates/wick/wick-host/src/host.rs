@@ -11,7 +11,7 @@ use uuid::Uuid;
 use wick_component_cli::options::{MeshOptions, Options as HostOptions, ServerOptions};
 use wick_component_cli::ServerState;
 use wick_config::ComponentConfiguration;
-use wick_interface_types::CollectionSignature;
+use wick_interface_types::ComponentSignature;
 use wick_packet::{Entity, InherentData, Invocation, PacketStream};
 use wick_rpc::{RpcHandler, SharedRpcHandler};
 use wick_runtime::{Network, NetworkBuilder, NetworkCollection};
@@ -89,7 +89,7 @@ impl Host {
   //   }
   // }
 
-  pub fn get_signature(&self) -> Result<CollectionSignature> {
+  pub fn get_signature(&self) -> Result<ComponentSignature> {
     match &self.network {
       Some(network) => Ok(network.get_signature()?),
       None => Err(Error::NoNetwork),

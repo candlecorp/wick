@@ -12,6 +12,7 @@ use nom::multi::{many0_count, separated_list1};
 use nom::sequence::{delimited, pair, tuple};
 use nom::IResult;
 
+use crate::signatures::Field;
 use crate::TypeSignature;
 
 #[derive(Debug, Clone, Copy)]
@@ -44,8 +45,8 @@ fn square_brackets(input: &str) -> IResult<&str, &str> {
 
 fn struct_type(input: &str) -> IResult<&str, TypeSignature> {
   let (i, (v)) = delimited(char('{'), separated_list1(char(','), ws(key_type_pair)), char('}'))(input)?;
-  let v: HashMap<String, TypeSignature> = v.into_iter().map(|(s, t)| (s.to_owned(), t)).collect();
-  Ok((i, TypeSignature::AnonymousStruct(v.into())))
+  let v: Vec<_> = v.into_iter().map(|(s, t)| Field::new(s, t)).collect();
+  Ok((i, TypeSignature::AnonymousStruct(v)))
 }
 
 fn key_type_pair(input: &str) -> IResult<&str, (&str, TypeSignature)> {
@@ -63,7 +64,7 @@ fn identifier(input: &str) -> IResult<&str, &str> {
 fn list_type(input: &str) -> IResult<&str, TypeSignature> {
   let (i, (t, _)) = pair(identifier, ws(square_brackets))(input)?;
   let (i, t) = typename(t)?;
-  Ok((i, TypeSignature::List { element: Box::new(t) }))
+  Ok((i, TypeSignature::List { ty: Box::new(t) }))
 }
 
 fn typename(input: &str) -> IResult<&str, TypeSignature> {
@@ -95,19 +96,19 @@ fn _parse(input: &str) -> IResult<&str, TypeSignature> {
 }
 
 #[macro_export]
-macro_rules! typemap {
+macro_rules! fields {
   (@single $($x:tt)*) => (());
-  (@count $($rest:expr),*) => (<[()]>::len(&[$($crate::typemap!(@single $rest)),*]));
+  (@count $($rest:expr),*) => (<[()]>::len(&[$($crate::fields!(@single $rest)),*]));
 
   // ($($key:expr => $value:expr,)+) => { $crate::typemap!($($key => $value),+) };
   ($($key:expr => $value:expr),* $(,)?) => {
       {
-          let _cap = $crate::typemap!(@count $(stringify!($key)),*);
-          let mut _map = ::std::collections::HashMap::with_capacity(_cap);
+          let _cap = $crate::fields!(@count $(stringify!($key)),*);
+          let mut _map = ::std::vec::Vec::with_capacity(_cap);
           $(
-              let _ = _map.insert($key.to_owned(), $crate::parse($value).unwrap());
+              let _ = _map.push($crate::Field::new($key, $crate::parse($value).unwrap()));
           )*
-          $crate::FieldMap::from(_map)
+          _map
       }
   };
 }
@@ -119,17 +120,17 @@ macro_rules! operation {
     outputs: {$($okey:expr => $ovalue:expr),* $(,)?},
   }) => {
     $crate::OperationSignature {
-      index: 0,
       name: $name.to_owned(),
-      inputs: $crate::typemap! {$($ikey => $ivalue),*},
-      outputs: $crate::typemap! {$($okey => $ovalue),*},
+      inputs: $crate::fields! {$($ikey => $ivalue),*},
+      outputs: $crate::fields! {$($okey => $ovalue),*},
     }
   };
 }
 
 #[macro_export]
 macro_rules! component {
-  ($name:expr => {
+  (
+    name: $name:expr,
     version: $version:expr,
     operations: {
       $($opname:expr => {
@@ -137,13 +138,13 @@ macro_rules! component {
         outputs: {$($okey:expr => $ovalue:expr),* $(,)?},
       }),* $(,)?
     }
-  }) => {{
-    let mut opmap = $crate::OperationMap::default();
+  ) => {{
+    let mut ops = std::vec::Vec::default();
     $(
-      let _ = opmap.insert($opname.to_owned(), $crate::operation!($opname => {inputs: {$($ikey => $ivalue),*}, outputs: {$($okey => $ovalue),*},}));
+      let _ = ops.push($crate::operation!($opname => {inputs: {$($ikey => $ivalue),*}, outputs: {$($okey => $ovalue),*},}));
     )*;
 
-    $crate::CollectionSignature {
+    $crate::ComponentSignature {
       name: Some($name.to_owned()),
       features: $crate::CollectionFeatures {
         streaming: false,
@@ -152,10 +153,10 @@ macro_rules! component {
       },
       format: 1,
       version: $version.to_owned(),
-      types: std::collections::HashMap::from([]).into(),
-      operations: opmap,
+      types: Vec::new(),
+      operations: ops,
       wellknown: Vec::new(),
-      config: $crate::TypeMap::new(),
+      config: Vec::new(),
     }
   }};
 }
@@ -167,7 +168,7 @@ mod test {
   use anyhow::Result;
 
   use super::*;
-  use crate::FieldMap;
+  use crate::signatures::Field;
 
   #[test]
   fn test_list() -> Result<()> {
@@ -182,7 +183,7 @@ mod test {
     assert_eq!(
       t,
       TypeSignature::List {
-        element: Box::new(TypeSignature::Bool),
+        ty: Box::new(TypeSignature::Bool),
       }
     );
     Ok(())
@@ -198,7 +199,7 @@ mod test {
 
   fn test_struct_variants(input: &'static str) -> Result<()> {
     let (i, t) = struct_type(input)?;
-    let fields: HashMap<String, TypeSignature> = [("myBool".to_owned(), TypeSignature::Bool)].into();
+    let fields = [Field::new("myBool", TypeSignature::Bool)];
     assert_eq!(t, TypeSignature::AnonymousStruct(fields.into()));
     Ok(())
   }

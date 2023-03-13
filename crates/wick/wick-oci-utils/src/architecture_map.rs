@@ -2,7 +2,7 @@ use std::path::{Path, PathBuf};
 
 use serde::{Deserialize, Serialize};
 use wick_grpctar::make_archive;
-use wick_interface_types::CollectionSignature;
+use wick_interface_types::ComponentSignature;
 use wick_wascap::{ClaimsOptions, KeyPair};
 
 use crate::error::OciError;
@@ -56,7 +56,7 @@ pub async fn generate_archmap(
     "archmap interface"
   );
   let interface_bytes = tokio::fs::read(interface_path).await?;
-  let signature: CollectionSignature = serde_json::from_slice(&interface_bytes)?;
+  let signature: ComponentSignature = serde_json::from_slice(&interface_bytes)?;
 
   let mut archmap = ArchitectureMap::default();
   for entry in pushmanifest.artifacts {

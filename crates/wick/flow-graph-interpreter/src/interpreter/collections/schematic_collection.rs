@@ -5,7 +5,7 @@ use parking_lot::Mutex;
 use seeded_random::{Random, Seed};
 use serde_json::Value;
 use tracing_futures::Instrument;
-use wick_interface_types::CollectionSignature;
+use wick_interface_types::ComponentSignature;
 use wick_packet::{Invocation, PacketStream};
 
 use crate::constants::*;
@@ -22,7 +22,7 @@ pub(crate) enum Error {
 
 #[derive(Debug)]
 pub(crate) struct SchematicCollection {
-  signature: CollectionSignature,
+  signature: ComponentSignature,
   schematics: Arc<Vec<SchematicExecutor>>,
   collections: Arc<HandlerMap>,
   self_collection: Mutex<Option<Arc<Self>>>,
@@ -103,7 +103,7 @@ impl Collection for SchematicCollection {
     })
   }
 
-  fn list(&self) -> &CollectionSignature {
+  fn list(&self) -> &ComponentSignature {
     &self.signature
   }
 }

@@ -17,7 +17,11 @@ pub(crate) async fn handle_command(opts: super::InvokeCommand, bytes: Vec<u8>) -
 
   let mut check_stdin = !opts.no_input && opts.data.is_empty() && opts.args.is_empty();
   if let Some(metadata) = component.token.claims.metadata {
-    let target_component = metadata.interface.operations.get(&opts.component);
+    let target_component = metadata
+      .interface
+      .operations
+      .iter()
+      .find(|op| op.name == opts.component);
 
     if let Some(target_component) = target_component {
       if target_component.inputs.is_empty() {

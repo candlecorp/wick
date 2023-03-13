@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use anyhow::Result;
 use clap::Args;
 use wick_grpctar::make_archive;
-use wick_rpc::CollectionSignature;
+use wick_rpc::ComponentSignature;
 use wick_wascap::ClaimsOptions;
 
 use crate::io::{read_bytes, read_to_string, write_bytes};
@@ -54,7 +54,7 @@ pub(crate) async fn handle(opts: BundlePackCommand) -> Result<()> {
 
   let binbytes = read_bytes(&opts.binpath).await?;
   let signature_json = read_to_string(&opts.interface_path).await?;
-  let signature: CollectionSignature = serde_json::from_str(&signature_json)?;
+  let signature: ComponentSignature = serde_json::from_str(&signature_json)?;
   let options = ClaimsOptions {
     revision: opts.rev,
     version: opts.ver,

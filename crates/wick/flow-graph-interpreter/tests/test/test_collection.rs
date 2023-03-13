@@ -10,14 +10,14 @@ use tokio::spawn;
 use tokio::task::JoinHandle;
 use tracing::trace;
 use wasmrs_rx::{FluxChannel, Observer};
-use wick_interface_types::{CollectionFeatures, CollectionSignature, OperationSignature, TypeSignature};
+use wick_interface_types::{CollectionFeatures, ComponentSignature, OperationSignature, TypeSignature};
 use wick_packet::{fan_out, Invocation, Packet, PacketPayload, PacketStream};
 
-pub struct TestCollection(CollectionSignature);
+pub struct TestCollection(ComponentSignature);
 impl TestCollection {
   #[allow(dead_code)]
   pub fn new() -> Self {
-    let signature = CollectionSignature::new("test-collection")
+    let signature = ComponentSignature::new("test-collection")
       .format(1)
       .version("0.0.0")
       .features(CollectionFeatures::v0(false, false))
@@ -73,13 +73,13 @@ impl TestCollection {
           .add_output(
             "rest",
             TypeSignature::Stream {
-              item: Box::new(TypeSignature::String),
+              ty: Box::new(TypeSignature::String),
             },
           )
           .add_output(
             "vowels",
             TypeSignature::Stream {
-              item: Box::new(TypeSignature::String),
+              ty: Box::new(TypeSignature::String),
             },
           ),
       )
@@ -88,7 +88,7 @@ impl TestCollection {
           .add_input(
             "input",
             TypeSignature::Stream {
-              item: Box::new(TypeSignature::String),
+              ty: Box::new(TypeSignature::String),
             },
           )
           .add_output("output", TypeSignature::String),
@@ -115,7 +115,7 @@ impl TestCollection {
           .add_output(
             "output",
             TypeSignature::Stream {
-              item: Box::new(TypeSignature::String),
+              ty: Box::new(TypeSignature::String),
             },
           ),
       )
@@ -175,7 +175,7 @@ impl Collection for TestCollection {
     Box::pin(async move { Ok(handler(invocation, stream)?) })
   }
 
-  fn list(&self) -> &CollectionSignature {
+  fn list(&self) -> &ComponentSignature {
     &self.0
   }
 }

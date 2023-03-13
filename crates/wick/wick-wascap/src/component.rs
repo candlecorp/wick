@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 use wascap::jwt::WascapEntity;
-use wick_interface_types::CollectionSignature;
+use wick_interface_types::ComponentSignature;
 
 /// The metadata that corresponds to an actor module.
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
@@ -16,7 +16,7 @@ pub struct CollectionClaims {
 
   /// The schema for the module
   #[serde(rename = "interface")]
-  pub interface: CollectionSignature,
+  pub interface: ComponentSignature,
 
   /// Indicates a monotonically increasing revision number.  Optional.
   #[serde(rename = "rev", skip_serializing_if = "Option::is_none")]

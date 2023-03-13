@@ -37,7 +37,7 @@ impl RpcHandler for Collection {
   }
 
   fn get_list(&self) -> RpcResult<Vec<HostedType>> {
-    let collection: CollectionSignature = self.host.get_signature().map_err(RpcError::boxed)?;
+    let collection: ComponentSignature = self.host.get_signature().map_err(RpcError::boxed)?;
 
     Ok(vec![HostedType::Collection(collection)])
   }

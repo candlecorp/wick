@@ -112,46 +112,44 @@ pub mod hosted_type {
   #[derive(Clone, PartialEq, ::prost::Oneof)]
   pub enum Type {
     #[prost(message, tag = "1")]
-    Collection(super::CollectionSignature),
+    Component(super::ComponentSignature),
   }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct Component {
+pub struct Operation {
   #[prost(string, tag = "1")]
   pub name: ::prost::alloc::string::String,
-  #[prost(enumeration = "component::ComponentKind", tag = "2")]
+  #[prost(enumeration = "operation::OperationKind", tag = "2")]
   pub kind: i32,
-  #[prost(map = "string, message", tag = "3")]
-  pub inputs: ::std::collections::HashMap<::prost::alloc::string::String, TypeSignature>,
-  #[prost(map = "string, message", tag = "4")]
-  pub outputs: ::std::collections::HashMap<::prost::alloc::string::String, TypeSignature>,
-  #[prost(uint32, tag = "5")]
-  pub index: u32,
+  #[prost(message, repeated, tag = "3")]
+  pub inputs: ::prost::alloc::vec::Vec<Field>,
+  #[prost(message, repeated, tag = "4")]
+  pub outputs: ::prost::alloc::vec::Vec<Field>,
 }
-/// Nested message and enum types in `Component`.
-pub mod component {
+/// Nested message and enum types in `Operation`.
+pub mod operation {
   #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
   #[repr(i32)]
-  pub enum ComponentKind {
-    Component = 0,
+  pub enum OperationKind {
+    Operation = 0,
     Schematic = 1,
   }
-  impl ComponentKind {
+  impl OperationKind {
     /// String value of the enum field names used in the ProtoBuf definition.
     ///
     /// The values are not transformed in any way and thus are considered stable
     /// (if the ProtoBuf definition does not change) and safe for programmatic use.
     pub fn as_str_name(&self) -> &'static str {
       match self {
-        ComponentKind::Component => "Component",
-        ComponentKind::Schematic => "Schematic",
+        OperationKind::Operation => "Operation",
+        OperationKind::Schematic => "Schematic",
       }
     }
     /// Creates an enum from field names used in the ProtoBuf definition.
     pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
       match value {
-        "Component" => Some(Self::Component),
+        "Operation" => Some(Self::Operation),
         "Schematic" => Some(Self::Schematic),
         _ => None,
       }
@@ -160,27 +158,35 @@ pub mod component {
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct CollectionSignature {
+pub struct Field {
+  #[prost(string, tag = "1")]
+  pub name: ::prost::alloc::string::String,
+  #[prost(message, optional, tag = "2")]
+  pub r#type: ::core::option::Option<TypeSignature>,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ComponentSignature {
   #[prost(string, tag = "1")]
   pub name: ::prost::alloc::string::String,
   #[prost(message, optional, tag = "8")]
-  pub features: ::core::option::Option<CollectionFeatures>,
+  pub features: ::core::option::Option<ComponentFeatures>,
   #[prost(string, tag = "2")]
   pub version: ::prost::alloc::string::String,
   #[prost(uint32, tag = "6")]
   pub format: u32,
-  #[prost(map = "string, message", tag = "3")]
-  pub components: ::std::collections::HashMap<::prost::alloc::string::String, Component>,
-  #[prost(map = "string, message", tag = "4")]
-  pub types: ::std::collections::HashMap<::prost::alloc::string::String, TypeDefinition>,
-  #[prost(map = "string, message", tag = "5")]
-  pub config: ::std::collections::HashMap<::prost::alloc::string::String, TypeDefinition>,
+  #[prost(message, repeated, tag = "3")]
+  pub operations: ::prost::alloc::vec::Vec<Operation>,
+  #[prost(message, repeated, tag = "4")]
+  pub types: ::prost::alloc::vec::Vec<TypeDefinition>,
+  #[prost(message, repeated, tag = "5")]
+  pub config: ::prost::alloc::vec::Vec<TypeDefinition>,
   #[prost(message, repeated, tag = "7")]
   pub wellknown: ::prost::alloc::vec::Vec<WellKnownSchema>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct CollectionFeatures {
+pub struct ComponentFeatures {
   #[prost(bool, tag = "1")]
   pub streaming: bool,
   #[prost(bool, tag = "2")]
@@ -213,7 +219,7 @@ pub struct WellKnownSchema {
   #[prost(string, tag = "2")]
   pub url: ::prost::alloc::string::String,
   #[prost(message, optional, tag = "3")]
-  pub schema: ::core::option::Option<CollectionSignature>,
+  pub schema: ::core::option::Option<ComponentSignature>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -253,8 +259,8 @@ pub struct DurationStatistics {
 pub struct StructSignature {
   #[prost(string, tag = "1")]
   pub name: ::prost::alloc::string::String,
-  #[prost(map = "string, message", tag = "2")]
-  pub fields: ::std::collections::HashMap<::prost::alloc::string::String, TypeSignature>,
+  #[prost(message, repeated, tag = "2")]
+  pub fields: ::prost::alloc::vec::Vec<Field>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -310,8 +316,8 @@ pub mod type_signature {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AnonymousStruct {
-  #[prost(map = "string, message", tag = "1")]
-  pub fields: ::std::collections::HashMap<::prost::alloc::string::String, TypeSignature>,
+  #[prost(message, repeated, tag = "1")]
+  pub fields: ::prost::alloc::vec::Vec<Field>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -419,7 +425,7 @@ pub struct InnerType {
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum InternalType {
-  ComponentInput = 0,
+  OperationInput = 0,
 }
 impl InternalType {
   /// String value of the enum field names used in the ProtoBuf definition.
@@ -428,13 +434,13 @@ impl InternalType {
   /// (if the ProtoBuf definition does not change) and safe for programmatic use.
   pub fn as_str_name(&self) -> &'static str {
     match self {
-      InternalType::ComponentInput => "ComponentInput",
+      InternalType::OperationInput => "OperationInput",
     }
   }
   /// Creates an enum from field names used in the ProtoBuf definition.
   pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
     match value {
-      "ComponentInput" => Some(Self::ComponentInput),
+      "OperationInput" => Some(Self::OperationInput),
       _ => None,
     }
   }

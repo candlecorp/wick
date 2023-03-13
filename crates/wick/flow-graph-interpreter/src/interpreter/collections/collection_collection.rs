@@ -1,7 +1,7 @@
 use futures::future::BoxFuture;
 use serde_json::Value;
 use wasmrs_rx::{FluxChannel, Observer};
-use wick_interface_types::{CollectionSignature, OperationSignature};
+use wick_interface_types::{ComponentSignature, Field, OperationSignature};
 use wick_packet::{CollectionLink, Entity, Invocation, Packet, PacketStream};
 
 use crate::constants::*;
@@ -15,18 +15,19 @@ pub(crate) enum Error {
 
 #[derive(Debug)]
 pub(crate) struct CollectionCollection {
-  signature: CollectionSignature,
+  signature: ComponentSignature,
 }
 
 impl CollectionCollection {
   pub(crate) fn new(list: &HandlerMap) -> Self {
-    let mut signature = CollectionSignature::new("collections");
+    let mut signature = ComponentSignature::new("collections");
     for ns in list.collections().keys() {
       let mut comp_sig = OperationSignature::new(ns.clone());
-      comp_sig
-        .outputs
-        .insert("ref", wick_interface_types::TypeSignature::Link { schemas: vec![] });
-      signature.operations.insert(ns.clone(), comp_sig);
+      comp_sig.outputs.push(Field::new(
+        "ref",
+        wick_interface_types::TypeSignature::Link { schemas: vec![] },
+      ));
+      signature.operations.push(comp_sig);
     }
     Self { signature }
   }
@@ -46,8 +47,8 @@ impl Collection for CollectionCollection {
     let target_name = invocation.target.name().to_owned();
     let entity = Entity::collection(invocation.target.name());
 
-    let contains_collection = self.signature.operations.contains_key(target_name);
-    let all_collections: Vec<_> = self.signature.operations.inner().keys().cloned().collect();
+    let contains_collection = self.signature.operations.iter().any(|op| op.name == target_name);
+    let all_collections: Vec<_> = self.signature.operations.iter().map(|op| op.name.clone()).collect();
 
     Box::pin(async move {
       let port_name = "ref";
@@ -65,7 +66,7 @@ impl Collection for CollectionCollection {
     })
   }
 
-  fn list(&self) -> &CollectionSignature {
+  fn list(&self) -> &ComponentSignature {
     &self.signature
   }
 }

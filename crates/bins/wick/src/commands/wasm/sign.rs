@@ -4,7 +4,7 @@ use std::path::PathBuf;
 
 use anyhow::Result;
 use clap::Args;
-use wick_interface_types::CollectionSignature;
+use wick_interface_types::ComponentSignature;
 use wick_wascap::{sign_buffer_with_claims, ClaimsOptions};
 
 use crate::keys::{get_module_keys, GenerateCommon};
@@ -47,7 +47,7 @@ pub(crate) async fn handle(opts: WasmSignCommand) -> Result<()> {
   let json = std::fs::read_to_string(opts.interface)?;
   debug!("Read {} bytes", json.len());
 
-  let interface: CollectionSignature = serde_json::from_str(&json)?;
+  let interface: ComponentSignature = serde_json::from_str(&json)?;
 
   let mut source_file = File::open(&opts.source).unwrap();
   let mut buf = Vec::new();

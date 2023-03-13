@@ -3,23 +3,45 @@ use std::str::FromStr;
 
 use serde::{Deserialize, Serialize};
 
-use crate::maps::{FieldMap, OperationMap, TypeMap};
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct Field {
+  pub name: String,
+  #[serde(rename = "type")]
+  pub ty: TypeSignature,
+}
+
+impl Field {
+  pub fn new(name: impl AsRef<str>, ty: TypeSignature) -> Self {
+    Self {
+      name: name.as_ref().to_owned(),
+      ty,
+    }
+  }
+}
+
+impl std::fmt::Display for Field {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    f.write_str(&self.name);
+    f.write_str(": ")?;
+    self.ty.fmt(f)
+  }
+}
+
 /// The signature of a Wick component, including its input and output types.
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
 #[must_use]
 pub struct OperationSignature {
-  /// The index of the action.
-  #[serde(default)]
-  pub index: u32,
   /// The name of the component.
   #[serde(default)]
   pub name: String,
   /// The component's inputs.
   #[serde(default)]
-  pub inputs: FieldMap,
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub inputs: Vec<Field>,
   /// The component's outputs.
   #[serde(default)]
-  pub outputs: FieldMap,
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub outputs: Vec<Field>,
 }
 
 impl OperationSignature {
@@ -32,14 +54,14 @@ impl OperationSignature {
   }
 
   /// Add an input port.
-  pub fn add_input(mut self, name: impl AsRef<str>, input_type: TypeSignature) -> Self {
-    self.inputs.insert(name, input_type);
+  pub fn add_input(mut self, name: impl AsRef<str>, ty: TypeSignature) -> Self {
+    self.inputs.push(Field::new(name, ty));
     self
   }
 
   /// Add an input port.
-  pub fn add_output(mut self, name: impl AsRef<str>, input_type: TypeSignature) -> Self {
-    self.outputs.insert(name, input_type);
+  pub fn add_output(mut self, name: impl AsRef<str>, ty: TypeSignature) -> Self {
+    self.outputs.push(Field::new(name, ty));
     self
   }
 }
@@ -93,7 +115,7 @@ impl CollectionFeatures {
 /// Signature for Collections.
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
 #[must_use]
-pub struct CollectionSignature {
+pub struct ComponentSignature {
   /// Name of the collection.
   pub name: Option<String>,
   /// Component implementation version.
@@ -106,17 +128,16 @@ pub struct CollectionSignature {
   #[serde(default, skip_serializing_if = "Vec::is_empty")]
   pub wellknown: Vec<WellKnownSchema>,
   /// A map of type signatures referenced elsewhere.
-  #[serde(default, skip_serializing_if = "TypeMap::is_empty")]
-  // #[serde(skip)]
-  pub types: TypeMap,
-  /// A list of [ComponentSignature]s in this collection.
-  pub operations: OperationMap,
+  #[serde(default, skip_serializing_if = "Vec::is_empty")]
+  pub types: Vec<TypeDefinition>,
+  /// A list of [OperationSignature]s in this component.
+  pub operations: Vec<OperationSignature>,
   /// The component's configuration for this implementation.
-  #[serde(default, skip_serializing_if = "TypeMap::is_empty")]
-  pub config: TypeMap,
+  #[serde(default, skip_serializing_if = "Vec::is_empty")]
+  pub config: Vec<TypeDefinition>,
 }
 
-impl CollectionSignature {
+impl ComponentSignature {
   /// Create a new [CollectionSignature] with the passed name.
   pub fn new<T: AsRef<str>>(name: T) -> Self {
     Self {
@@ -128,12 +149,12 @@ impl CollectionSignature {
   #[must_use]
   /// Get the [CollectionSignature] for the requested component.
   pub fn get_component(&self, field: &str) -> Option<&OperationSignature> {
-    self.operations.get(field)
+    self.operations.iter().find(|op| op.name == field)
   }
 
   /// Add a [ComponentSignature] to the collection.
   pub fn add_component(mut self, signature: OperationSignature) -> Self {
-    self.operations.insert(signature.name.clone(), signature);
+    self.operations.push(signature);
     self
   }
 
@@ -164,7 +185,7 @@ pub struct WellKnownSchema {
   /// The location where you can find and validate the schema.
   pub url: String,
   /// The schema itself.
-  pub schema: CollectionSignature,
+  pub schema: ComponentSignature,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -228,12 +249,13 @@ pub struct StructSignature {
   /// The name of the struct.
   pub name: String,
   /// The fields in this struct.
-  pub fields: FieldMap,
+  #[serde(default, skip_serializing_if = "Vec::is_empty")]
+  pub fields: Vec<Field>,
 }
 
 impl StructSignature {
   /// Constructor for [StructSignature]
-  pub fn new<T: AsRef<str>>(name: T, fields: FieldMap) -> Self {
+  pub fn new<T: AsRef<str>>(name: T, fields: Vec<Field>) -> Self {
     Self {
       name: name.as_ref().to_owned(),
       fields,
@@ -246,7 +268,7 @@ impl StructSignature {
 #[must_use]
 pub enum HostedType {
   /// A collection.
-  Collection(CollectionSignature),
+  Collection(ComponentSignature),
 }
 
 impl HostedType {
@@ -260,7 +282,6 @@ impl HostedType {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
-#[serde(tag = "type")]
 #[serde(rename_all = "lowercase")]
 #[must_use]
 /// Enum of valid types.
@@ -308,17 +329,20 @@ pub enum TypeSignature {
   /// A stream type
   Stream {
     /// The inner type
-    item: Box<TypeSignature>,
+    #[serde(rename = "type")]
+    ty: Box<TypeSignature>,
   },
   /// A list type
   List {
     /// The type of the list's elements
-    element: Box<TypeSignature>,
+    #[serde(rename = "type")]
+    ty: Box<TypeSignature>,
   },
   /// A type representing an optional value.
   Optional {
     /// The actual type that is optional.
-    option: Box<TypeSignature>,
+    #[serde(rename = "type")]
+    ty: Box<TypeSignature>,
   },
   /// A HashMap-like type.
   Map {
@@ -337,10 +361,43 @@ pub enum TypeSignature {
   Struct,
   /// An inline, anonymous struct interface.
   AnonymousStruct(
-    /// A map of field names to their types.
-    FieldMap,
+    /// A list of fields in the struct.
+    Vec<Field>,
   ),
 }
+
+impl std::fmt::Display for TypeSignature {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    match self {
+      TypeSignature::I8 => f.write_str("i8"),
+      TypeSignature::I16 => f.write_str("i16"),
+      TypeSignature::I32 => f.write_str("i32"),
+      TypeSignature::I64 => f.write_str("i64"),
+      TypeSignature::U8 => f.write_str("u8"),
+      TypeSignature::U16 => f.write_str("u16"),
+      TypeSignature::U32 => f.write_str("u32"),
+      TypeSignature::U64 => f.write_str("u64"),
+      TypeSignature::F32 => f.write_str("f32"),
+      TypeSignature::F64 => f.write_str("f64"),
+      TypeSignature::Bool => f.write_str("bool"),
+      TypeSignature::String => f.write_str("string"),
+      TypeSignature::Datetime => f.write_str("datetime"),
+      TypeSignature::Bytes => f.write_str("bytes"),
+      TypeSignature::Value => f.write_str("value"),
+      TypeSignature::Custom(_) => todo!(),
+      TypeSignature::Internal(_) => todo!(),
+      TypeSignature::Ref { reference } => todo!(),
+      TypeSignature::Stream { ty } => todo!(),
+      TypeSignature::List { ty } => todo!(),
+      TypeSignature::Optional { ty } => todo!(),
+      TypeSignature::Map { key, value } => todo!(),
+      TypeSignature::Link { schemas } => todo!(),
+      TypeSignature::Struct => todo!(),
+      TypeSignature::AnonymousStruct(_) => todo!(),
+    }
+  }
+}
+
 #[derive(Debug)]
 /// Error returned when attempting to convert an invalid source into a Wick type.
 pub struct ParseError(String);
@@ -383,7 +440,7 @@ impl FromStr for TypeSignature {
 pub enum InternalType {
   /// Represents a complete set of component inputs
   #[serde(rename = "__input__")]
-  ComponentInput,
+  OperationInput,
 }
 
 impl FromStr for InternalType {
@@ -391,7 +448,7 @@ impl FromStr for InternalType {
 
   fn from_str(s: &str) -> Result<Self, Self::Err> {
     let t = match s {
-      "component_input" => Self::ComponentInput,
+      "component_input" => Self::OperationInput,
       _ => return Err(ParseError(s.to_owned())),
     };
     Ok(t)
