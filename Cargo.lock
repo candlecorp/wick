@@ -4644,7 +4644,7 @@ dependencies = [
 
 [[package]]
 name = "wick-config"
-version = "0.20.0"
+version = "0.21.0"
 dependencies = [
  "anyhow",
  "flow-expression-parser",
