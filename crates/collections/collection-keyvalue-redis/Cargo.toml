@@ -9,8 +9,8 @@ default = ["host"]
 host = []
 
 [dependencies]
-wick-component-cli = { path = "../../wick/wick-component-cli" }
-wick-rpc = { path = "../../wick/wick-rpc" }
+wick-component-cli = { workspace = true }
+wick-rpc = { workspace = true }
 # wick-interface-types-keyvalue = { path = "../../interfaces/wick-interface-types-keyvalue", features = [
 #   "host",
 #   "guest",
@@ -27,9 +27,9 @@ clap = { workspace = true, features = ["derive", "env"] }
 tracing = { workspace = true }
 
 [dev-dependencies]
-logger = { path = "../../wick/logger" }
+logger = { workspace = true }
 serde_json = { workspace = true }
 tonic = { workspace = true }
 rand = { workspace = true }
 anyhow = { workspace = true }
-test-logger = { path = "../../misc/test-logger" }
+test-logger = { workspace = true }

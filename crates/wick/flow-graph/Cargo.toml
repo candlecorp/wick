@@ -1,6 +1,6 @@
 [package]
 name = "flow-graph"
-version = "0.0.0"
+version = "0.20.0"
 edition = "2021"
 license = "Elastic-2.0"
 repository = "https://github.com/candlecorp/wick"
@@ -13,8 +13,8 @@ tracing = { workspace = true }
 
 [dev-dependencies]
 serde_json = { workspace = true }
-wick-config = { path = "../wick-config" }
+wick-config = { workspace = true }
 tokio = { workspace = true, features = ["macros", "rt"] }
-logger = { path = "../logger" }
-test-logger = { path = "../../misc/test-logger" }
+logger = { workspace = true }
+test-logger = { workspace = true }
 anyhow = { workspace = true }

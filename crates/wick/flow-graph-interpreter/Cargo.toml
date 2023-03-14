@@ -1,6 +1,6 @@
 [package]
 name = "flow-graph-interpreter"
-version = "0.0.0"
+version = "0.20.0"
 edition = "2021"
 license = "Elastic-2.0"
 repository = "https://github.com/candlecorp/wick"
@@ -12,16 +12,16 @@ wasmrs = { workspace = true }
 wasmrs-rx = { workspace = true }
 wasmrs-frames = { workspace = true }
 wasmrs-codec = { workspace = true }
-wick-packet = { path = "../wick-packet" }
-flow-graph = { path = "../flow-graph" }
-wick-config = { path = "../wick-config" }
-flow-expression-parser = { path = "../flow-expression-parser" }
-wick-interface-types = { path = "../wick-interface-types" }
-seeded-random = { path = "../../misc/seeded-random" }
+wick-packet = { workspace = true }
+flow-graph = { workspace = true }
+wick-config = { workspace = true }
+flow-expression-parser = { workspace = true }
+wick-interface-types = { workspace = true }
+seeded-random = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
 tracing-futures = { workspace = true }
-performance-mark = { path = "../../misc/performance-mark" }
+performance-mark = { workspace = true }
 tokio = { workspace = true, features = ["rt-multi-thread", "sync", "macros"] }
 tokio-stream = { workspace = true }
 futures = { workspace = true }
@@ -35,8 +35,8 @@ bytes = { workspace = true }
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
-logger = { path = "../logger" }
-test-logger = { path = "../../misc/test-logger" }
+logger = { workspace = true }
+test-logger = { workspace = true }
 anyhow = { workspace = true }
 serde_json = { workspace = true }
-rot = { path = "../../misc/rot" }
+rot = { workspace = true }

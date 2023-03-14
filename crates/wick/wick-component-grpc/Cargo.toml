@@ -10,7 +10,7 @@ publish = false
 [features]
 
 [dependencies]
-wick-rpc = { path = "../wick-rpc", features = ["client"] }
+wick-rpc = { workspace = true, features = ["client"] }
 parking_lot = { workspace = true }
 tracing = { workspace = true }
 thiserror = { workspace = true }
@@ -19,13 +19,13 @@ tokio = { workspace = true, features = ["process"] }
 rand = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
-http = "0.2"
+http = { workspace = true }
 
 [dev-dependencies]
-wick-invocation-server = { path = "../../wick/wick-invocation-server" }
-test-native-collection = { path = "../../integration/test-native-collection" }
-test-logger = { path = "../../misc/test-logger" }
-logger = { path = "../logger" }
+wick-invocation-server = { workspace = true }
+test-native-collection = { workspace = true }
+test-logger = { workspace = true }
+logger = { workspace = true }
 tokio = { workspace = true, features = ["macros"] }
 tokio-stream = { workspace = true }
 anyhow = { workspace = true }

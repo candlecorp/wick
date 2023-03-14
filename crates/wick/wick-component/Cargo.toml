@@ -17,13 +17,13 @@ maintenance = { status = "actively-developed" }
 [features]
 
 [dependencies]
-wick-packet = { path = "../wick-packet", default-features = false }
-tracing = { workspace = true }
+wick-packet = { workspace = true, default-features = false }
 wasmrs = { workspace = true }
 wasmrs-runtime = { workspace = true }
+tracing = { workspace = true }
 futures = { workspace = true }
 tokio = { workspace = true }
 anyhow = { workspace = true }
-paste = "1.0"
+paste = { workspace = true }
 
 [dev-dependencies]

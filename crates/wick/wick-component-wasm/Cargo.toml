@@ -16,26 +16,26 @@ wasmrs-rx = { workspace = true }
 wasmrs-host = { workspace = true }
 wasmrs-wasmtime = { workspace = true }
 wasmrs-codec = { workspace = true }
-wick-packet = { path = "../wick-packet" }
-wick-interface-types = { path = "../wick-interface-types" }
-wick-rpc = { path = "../wick-rpc" }
-wick-wascap = { path = "../wick-wascap" }
-wick-loader-utils = { path = "../wick-loader-utils" }
-wick-config = { path = "../wick-config" }
-seeded-random = { path = "../../misc/seeded-random" }
+wick-packet = { workspace = true }
+wick-interface-types = { workspace = true }
+wick-rpc = { workspace = true }
+wick-wascap = { workspace = true }
+wick-loader-utils = { workspace = true }
+wick-config = { workspace = true }
+seeded-random = { workspace = true }
 tokio = { workspace = true, features = ["fs"] }
 parking_lot = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 serde-value = { workspace = true }
 tokio-stream = { workspace = true }
-async-stream = "0.3.2"
+async-stream = { workspace = true }
 tracing = { workspace = true }
 thiserror = { workspace = true }
 async-trait = { workspace = true }
 
 [dev-dependencies]
-logger = { path = "../logger" }
-test-logger = { path = "../../misc/test-logger" }
+logger = { workspace = true }
+test-logger = { workspace = true }
 futures = { workspace = true }
 anyhow = { workspace = true }

@@ -8,22 +8,22 @@ publish = false
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
-wick-packet = { path = "../../wick/wick-packet" }
-wick-interface-types = { path = "../../wick/wick-interface-types" }
-wick-rpc = { path = "../../wick/wick-rpc", features = ["client"] }
-wick-loader-utils = { path = "../../wick/wick-loader-utils" }
-wick-component-wasm = { path = "../../wick/wick-component-wasm" }
-wick-component-cli = { path = "../../wick/wick-component-cli" }
-wick-runtime = { path = "../../wick/wick-runtime" }
-wick-host = { path = "../../wick/wick-host" }
-wick-config = { path = "../../wick/wick-config" }
-wick-test = { path = "../../wick/wick-test" }
-wick-wascap = { path = "../../wick/wick-wascap" }
-wick-oci-utils = { path = "../../wick/wick-oci-utils" }
-wick-grpctar = { path = "../../wick/wick-grpctar" }
-logger = { path = "../../wick/logger" }
-seeded-random = { path = "../../misc/seeded-random" }
-tap = { path = "../../misc/tap" }
+wick-packet = { workspace = true }
+wick-interface-types = { workspace = true }
+wick-rpc = { workspace = true, features = ["client"] }
+wick-loader-utils = { workspace = true }
+wick-component-wasm = { workspace = true }
+wick-component-cli = { workspace = true }
+wick-runtime = { workspace = true }
+wick-host = { workspace = true }
+wick-config = { workspace = true }
+wick-test = { workspace = true }
+wick-wascap = { workspace = true }
+wick-oci-utils = { workspace = true }
+wick-grpctar = { workspace = true }
+logger = { workspace = true }
+seeded-random = { workspace = true }
+tap = { workspace = true }
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
 tracing = { workspace = true }
 serde_json = { workspace = true }
@@ -45,9 +45,8 @@ async-recursion = { workspace = true }
 [dev-dependencies]
 test_bin = "0.4"
 trycmd = "0.14"
-logger = { path = "../../wick/logger" }
-test-logger = { path = "../../misc/test-logger" }
-tokio-test-bin = { path = "../../misc/tokio-test-bin" }
+test-logger = { workspace = true }
+tokio-test-bin = { workspace = true }
 regex = { workspace = true }
 
 [[bin]]

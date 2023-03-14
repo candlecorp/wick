@@ -11,22 +11,22 @@ publish = false
 client = ["tokio/fs"]
 
 [dependencies]
-wick-packet = { path = "../wick-packet", features = [] }
+wick-packet = { workspace = true, features = ["invocation"] }
 wasmrs-rx = { workspace = true, features = [] }
-wick-interface-types = { path = "../wick-interface-types" }
+wick-interface-types = { workspace = true }
 tonic = { workspace = true, features = ["tls"] }
-prost = "0.11"
-prost-types = "0.11"
+prost = { workspace = true }
+prost-types = { workspace = true }
 tokio = { workspace = true, features = ["macros", "net", "rt-multi-thread"] }
 tokio-stream = { workspace = true, features = ["net"] }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
-async-stream = "0.3.2"
+async-stream = { workspace = true }
 rand = { workspace = true }
 tracing = { workspace = true }
 thiserror = { workspace = true }
 async-trait = { workspace = true }
-dyn-clone = "1.0.4"
+dyn-clone = { workspace = true }
 uuid = { workspace = true }
 
 [build-dependencies]

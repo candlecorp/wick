@@ -1,6 +1,6 @@
 [package]
 name = "test-logger"
-version = "0.0.0"
+version = "0.1.0"
 edition = "2021"
 authors = [
   "Daniel Mueller <deso@posteo.net>",
@@ -19,4 +19,4 @@ proc-macro-crate = "1.1"
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
-logger = { path = "../../wick/logger" }
+logger = { workspace = true }

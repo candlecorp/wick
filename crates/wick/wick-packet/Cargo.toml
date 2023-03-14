@@ -16,7 +16,7 @@ homepage = "https://candle.dev"
 maintenance = { status = "actively-developed" }
 
 [features]
-default = ["invocation"]
+default = []
 invocation = ["uuid", "seeded-random"]
 
 [dependencies]
@@ -30,15 +30,13 @@ wasmrs-frames = { workspace = true, features = ["derive_serde"] }
 wasmrs-rx = { workspace = true }
 wasmrs-codec = { workspace = true }
 futures = { workspace = true }
-pin-project-lite = "0.2.9"
-# TODO asssess if this is needed here or if the payload error + metadata concept gets rolled into wasmrs
 bytes = { workspace = true, features = ["serde"] }
 parking_lot = { workspace = true }
-url = "2.2"
+url = { workspace = true }
 # TODO make these feature flags
 wasmrs-guest = { workspace = true }
 wasmrs-runtime = { workspace = true }
-seeded-random = { path = "../../misc/seeded-random", optional = true }
+seeded-random = { workspace = true, optional = true }
 
 [dev-dependencies]
 anyhow = { workspace = true }
