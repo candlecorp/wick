@@ -2,6 +2,9 @@
 name = "wick-component-codegen"
 version = "0.1.0"
 edition = "2021"
+description = "Code generator for wick components"
+repository = "https://github.com/candlecorp/wick"
+license = "Apache-2.0"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
