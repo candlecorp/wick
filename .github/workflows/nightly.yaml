@@ -2,9 +2,43 @@ name: nightly-build
 on:
   schedule:
     - cron: "0 1 * * *" # 1am UTC
+  push:
+    branches:
+      - release-automation
+
+env:
+  SCCACHE_AZURE_BLOB_CONTAINER: ${{ secrets.SCCACHE_AZURE_BLOB_CONTAINER }}
+  SCCACHE_AZURE_CONNECTION_STRING: ${{ secrets.SCCACHE_AZURE_CONNECTION_STRING }}
+  SCCACHE_AZURE_KEY_PREFIX: wick
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
+      - shell: bash
+        run: |
+          docker run --rm \
+          -v $(pwd):/opt/wick \
+          -e SCCACHE_AZURE_BLOB_CONTAINER=$SCCACHE_AZURE_BLOB_CONTAINER \
+          -e SCCACHE_AZURE_CONNECTION_STRING=$SCCACHE_AZURE_CONNECTION_STRING \
+          -e SCCACHE_AZURE_KEY_PREFIX=$SCCACHE_AZURE_KEY_PREFIX \
+          wick-builder \
+          cargo build -p wick --target=x86_64-unknown-linux-gnu --target=aarch64-apple-darwin \
+          --target=aarch64-unknown-linux-gnu --target=x86_64-apple-darwin --target=x86_64-pc-windows-gnu \
+          --release
+      - name: package release assets
+        run: |
+          mkdir _dist
+          cp README.md LICENSE ${{ matrix.config.targetDir }}/spin${{ matrix.config.extension }} _dist/
+          cd _dist
+          tar czf wick-nightly-aarch64-apple-darwin.tar.gz README.md LICENSE wick
+          tar czf wick-nightly-x86_64-apple-darwin.tar.gz README.md LICENSE wick
+          tar czf wick-nightly-aarch64-unknown-linux-gnu.tar.gz README.md LICENSE wick
+          tar czf wick-nightly-x86_64-unknown-linux-gnu.tar.gz README.md LICENSE wick
+          7z a -tzip wick-nightly-x86_64-pc-windows-gnu.zip README.md LICENSE wick.exe
+      - name: Upload a Build Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: wick-nightly
+          path: _dist/
