@@ -100,3 +100,19 @@ jobs:
         with:
           name: wick-nightly
           path: _dist/
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: release
+        uses: pyTooling/Actions/releaser@r0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          rm: true
+          tag: nightly
+          files: |
+            _dist/wick-nightly-win-amd64.zip
+            _dist/wick-nightly-linux-amd64.tar.gz
+            _dist/wick-nightly-linux-aarch64.tar.gz
+            _dist/wick-nightly-macos-amd64.tar.gz
+            _dist/wick-nightly-macos-aarch64.tar.gz
