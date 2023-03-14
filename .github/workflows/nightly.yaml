@@ -47,6 +47,9 @@ jobs:
         uses: arduino/setup-protoc@v1
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: setup nasm for windows
+        if: runner.os == 'Windows'
+        uses: ilammy/setup-nasm@v1
       - name: setup for cross-compiled linux aarch64 build
         if: matrix.config.target == 'aarch64-unknown-linux-gnu'
         run: |
@@ -95,11 +98,6 @@ jobs:
           cp README.md LICENSE target/${{ matrix.config.target }}/release/wick.exe _dist/
           cd _dist
           7z a -tzip wick-nightly-${{ matrix.config.name }}-${{ matrix.config.arch }}.zip README.md LICENSE wick.exe
-      - name: Upload a Build Artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: wick-nightly
-          path: _dist/
   release:
     needs: build
     runs-on: ubuntu-latest
