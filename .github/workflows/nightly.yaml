@@ -1,0 +1,21 @@
+# name: nightly-build
+# on:
+#   schedule:
+#     - cron: "0 1 * * *" # 1am UTC
+
+# jobs:
+#   build:
+#     runs-on: candlecorp/wick-build:latest
+#     steps:
+#       - uses: actions/checkout@v1
+#       - name: Install latest nightly
+#         uses: actions-rs/toolchain@v1
+#         with:
+#           toolchain: nightly
+#           override: true
+#       - name: Install Protoc
+#         uses: arduino/setup-protoc@v1
+#       - name: Build
+#         run: cargo build --workspace --bins
+#       - name: Test
+#         run: cargo test --workspace --bins
