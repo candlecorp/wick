@@ -13,7 +13,7 @@ network:
         validate_password:
           id: wapc::validate
         log2:
-          id: wafl::core::log
+          id: wick::core::log
       connections:
         - from:
             instance: <input>

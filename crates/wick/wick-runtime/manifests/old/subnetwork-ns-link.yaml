@@ -3,7 +3,7 @@ network:
   collections:
     - namespace: child
       kind: Network
-      reference: ./manifests/v0/subnetwork-ns-link-child.wafl
+      reference: ./manifests/v0/subnetwork-ns-link-child.yaml
   schematics:
     - name: test
       collections:

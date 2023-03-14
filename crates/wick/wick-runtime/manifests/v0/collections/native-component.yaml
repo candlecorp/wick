@@ -5,9 +5,9 @@ network:
     - name: native_component
       instances:
         add:
-          id: wafl::math::add
+          id: wick::math::add
         add2:
-          id: wafl::math::add
+          id: wick::math::add
       connections:
         - <> => add[left]
         - <> => add[right]

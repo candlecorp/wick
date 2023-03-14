@@ -109,7 +109,7 @@ mod tests {
 
   #[tokio::test]
   async fn runs_log_config() -> Result<()> {
-    let host_def = ComponentConfiguration::load_from_file(PathBuf::from("./manifests/logger.wafl"))?;
+    let host_def = ComponentConfiguration::load_from_file(PathBuf::from("./manifests/logger.yaml"))?;
     let input = packet_stream![("input", "test-input")];
 
     let result = run(host_def, "logger", input, Some(0)).await?;

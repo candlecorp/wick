@@ -5,7 +5,7 @@ use wick_packet::{packet_stream, Packet};
 #[test_logger::test(tokio::test)]
 async fn simple_schematic() -> Result<()> {
   tester(
-    "./manifests/v0/collections/native-component.wafl",
+    "./manifests/v0/collections/native-component.yaml",
     packet_stream!(("left", 42), ("right", 302309)),
     "native_component",
     vec![Packet::encode("output", 42 + 302309 + 302309), Packet::done("output")],
@@ -16,7 +16,7 @@ async fn simple_schematic() -> Result<()> {
 #[test_logger::test(tokio::test)]
 async fn global_collections() -> Result<()> {
   tester(
-    "./manifests/v0/global-collection-def.wafl",
+    "./manifests/v0/global-collection-def.yaml",
     packet_stream!(("input", "some input")),
     "first_schematic",
     vec![Packet::encode("output", "some input"), Packet::done("output")],
@@ -27,7 +27,7 @@ async fn global_collections() -> Result<()> {
 #[test_logger::test(tokio::test)]
 async fn subnetworks() -> Result<()> {
   tester(
-    "./manifests/v0/sub-network-parent.wafl",
+    "./manifests/v0/sub-network-parent.yaml",
     packet_stream!(("input", "some input")),
     "parent",
     vec![Packet::encode("output", "some input"), Packet::done("output")],
@@ -42,7 +42,7 @@ async fn subnetworks() -> Result<()> {
 //   let _ = make_rpc_server(socket, Arc::new(test_native_collection::Collection::default()));
 //   env::set_var("TEST_PORT", port.to_string());
 
-//   let (network, _) = init_network_from_yaml("./manifests/v0/collections/grpc.wafl").await?;
+//   let (network, _) = init_network_from_yaml("./manifests/v0/collections/grpc.yaml").await?;
 //   let user_data = "Hello world";
 
 //   let data = hashmap! {
@@ -71,7 +71,7 @@ async fn subnetworks() -> Result<()> {
 // #[test_logger::test(tokio::test)]
 // #[ignore] // Need to automate the creation of GrpcTar bundles
 // async fn grpctar() -> Result<()> {
-//   let (network, _) = init_network_from_yaml("./manifests/v0/collections/grpctar.wafl").await?;
+//   let (network, _) = init_network_from_yaml("./manifests/v0/collections/grpctar.yaml").await?;
 
 //   let data = hashmap! {
 //       "left" => 32,

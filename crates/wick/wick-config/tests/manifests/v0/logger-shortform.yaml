@@ -5,7 +5,7 @@ network:
   schematics:
     - name: logger
       instances:
-        logger: wafl::log
+        logger: wick::log
       connections:
         - <> => logger[input]
         - logger[output] => <>

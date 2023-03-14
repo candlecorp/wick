@@ -98,7 +98,7 @@ mod tests {
     let issuer_kp = KeyPair::new_user();
     let archive_bytes = make_archive(&*bin_bytes, &signature, claims, &subject_kp, &issuer_kp)?;
     let mut archive = Archive::new(&*archive_bytes);
-    let tmpdir = std::env::temp_dir().join("wafltest");
+    let tmpdir = std::env::temp_dir().join("archive_test");
     archive.unpack(&tmpdir)?;
 
     validate_collection_dir(&tmpdir)?;

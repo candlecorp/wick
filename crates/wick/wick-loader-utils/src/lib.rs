@@ -132,7 +132,7 @@ pub async fn get_bytes(location: &str, allow_latest: bool, allowed_insecure: &[S
   }
 }
 
-pub const CACHE_ROOT: &str = "wafl";
+pub const CACHE_ROOT: &str = "wick";
 pub const CACHE_EXT: &str = "store";
 
 #[must_use]

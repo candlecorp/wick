@@ -1,14 +1,14 @@
 ---
-default_schematic: "logger"
+default_schematic: 'logger'
 network:
   schematics:
     - name: logger
       instances:
         logger:
-          id: wafl::log
+          id: wick::log
       connections:
         - from:
-            instance: wafl::schematic_input
+            instance: wick::schematic_input
             port: input
           to:
             instance: logger
@@ -17,5 +17,5 @@ network:
             instance: logger
             port: output
           to:
-            instance: wafl::schematic_output
+            instance: wick::schematic_output
             port: output

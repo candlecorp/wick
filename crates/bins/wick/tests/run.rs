@@ -4,7 +4,7 @@ async fn wick_run() {
     .env_clear()
     .args([
       "invoke",
-      "./manifests/log.wafl",
+      "./manifests/log.yaml",
       "logger",
       "--data=schem_input=\"testing123\"",
       "--trace",

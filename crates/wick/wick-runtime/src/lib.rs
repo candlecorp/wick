@@ -111,4 +111,4 @@ pub type Error = error::RuntimeError;
 pub(crate) type BoxError = Box<dyn std::error::Error + Send + Sync>;
 
 /// The reserved namespace for Wick's initial native API.
-pub const WAFL_V0_NAMESPACE: &str = "wafl";
+pub const V0_NAMESPACE: &str = "wick";

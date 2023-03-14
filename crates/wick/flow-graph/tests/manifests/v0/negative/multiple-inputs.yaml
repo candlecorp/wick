@@ -5,7 +5,7 @@ network:
     - name: test
       instances:
         COMP1:
-          id: wafl::core::log
+          id: wick::core::log
       connections:
         - <>[one] => COMP1[input]
         - <>[two] => COMP1[input]

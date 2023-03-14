@@ -24,11 +24,11 @@ pub(crate) enum SubCommands {
 #[derive(Debug, Clone, Args)]
 pub(crate) struct ConnectOptions {
   /// RPC port.
-  #[clap(short, long, env = wick_component_cli::options::env::WAFL_RPC_PORT,action)]
+  #[clap(short, long, env = wick_component_cli::options::env::WICK_RPC_PORT,action)]
   pub(crate) port: u16,
 
   /// RPC address.
-  #[clap(short, long, default_value = "127.0.0.1", env = wick_component_cli::options::env::WAFL_RPC_ADDRESS,action)]
+  #[clap(short, long, default_value = "127.0.0.1", env = wick_component_cli::options::env::WICK_RPC_ADDRESS,action)]
   pub(crate) address: String,
 
   /// Path to pem file for TLS connections.

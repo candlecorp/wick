@@ -94,7 +94,7 @@ mod tests {
 
   #[test_logger::test(tokio::test)]
   async fn test_request_log() -> TestResult<()> {
-    let (_, network_id) = init_network_from_yaml("./manifests/v0/simple.wafl").await?;
+    let (_, network_id) = init_network_from_yaml("./manifests/v0/simple.yaml").await?;
 
     let collection = Collection::new(network_id);
     let user_data = "string to log";
@@ -106,7 +106,7 @@ mod tests {
 
   #[test_logger::test(tokio::test)]
   async fn test_list() -> TestResult<()> {
-    let (_, network_id) = init_network_from_yaml("./manifests/v0/simple.wafl").await?;
+    let (_, network_id) = init_network_from_yaml("./manifests/v0/simple.yaml").await?;
     let collection = Collection::new(network_id);
     let list = collection.get_list()?;
     println!("components on network : {:?}", list);

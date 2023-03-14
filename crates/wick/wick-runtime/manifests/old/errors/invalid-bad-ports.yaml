@@ -1,22 +1,20 @@
----
 format: 0
-default_schematic: 'logger'
 network:
   schematics:
     - name: logger
       instances:
         logger:
-          id: wafl::core::log
+          id: wick::core::log
       connections:
         - from:
             instance: <input>
-            port: input
+            port: schem_input
           to:
             instance: logger
-            port: input
+            port: log_input
         - from:
             instance: logger
-            port: output
+            port: log_output
           to:
             instance: <output>
-            port: output
+            port: schem_output

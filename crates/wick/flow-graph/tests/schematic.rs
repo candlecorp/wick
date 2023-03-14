@@ -4,7 +4,7 @@ use test::*;
 
 #[test_logger::test(tokio::test)]
 async fn test_walking() -> Result<()> {
-  let manifest = load("./tests/manifests/v0/echo.wafl")?;
+  let manifest = load("./tests/manifests/v0/echo.yaml")?;
   let network = from_manifest(&manifest)?;
   let schematic = network.schematic("echo").unwrap();
 
@@ -31,7 +31,7 @@ async fn test_walking() -> Result<()> {
 
 #[test_logger::test(tokio::test)]
 async fn test_iterator() -> Result<()> {
-  let manifest = load("./tests/manifests/v0/single-instance.wafl")?;
+  let manifest = load("./tests/manifests/v0/single-instance.yaml")?;
   let network = from_manifest(&manifest)?;
   let schematic = network.schematic("single-instance").unwrap();
   println!("nodes:{:#?}", schematic.nodes());
@@ -58,7 +58,7 @@ async fn test_iterator() -> Result<()> {
 
 #[test_logger::test(tokio::test)]
 async fn test_spread_io() -> Result<()> {
-  let manifest = load("./tests/manifests/v0/spread-io.wafl")?;
+  let manifest = load("./tests/manifests/v0/spread-io.yaml")?;
   let network = from_manifest(&manifest)?;
   let schematic = network.schematic("spread-io").unwrap();
 
@@ -94,7 +94,7 @@ async fn test_spread_io() -> Result<()> {
 
 #[test_logger::test(tokio::test)]
 async fn test_senders() -> Result<()> {
-  let manifest = load("./tests/manifests/v0/senders.wafl")?;
+  let manifest = load("./tests/manifests/v0/senders.yaml")?;
   let network = from_manifest(&manifest)?;
   let schematic = network.schematic("test").unwrap();
 
@@ -118,7 +118,7 @@ async fn test_senders() -> Result<()> {
 
 #[test_logger::test(tokio::test)]
 async fn test_dot() -> Result<()> {
-  let manifest = load("./tests/manifests/v0/spread-io.wafl")?;
+  let manifest = load("./tests/manifests/v0/spread-io.yaml")?;
   let network = from_manifest(&manifest)?;
   let schematic = network.schematic("spread-io").unwrap();
 

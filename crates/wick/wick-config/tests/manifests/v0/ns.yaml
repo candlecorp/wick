@@ -10,7 +10,7 @@ network:
       collections:
         - schem
       instances:
-        something: wafl::anything
+        something: wick::anything
       connections:
         - <link>[schem] => something[link]
         - something[output] => <>

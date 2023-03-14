@@ -6,7 +6,7 @@ use wick_packet::{packet_stream, Packet};
 #[ignore = "TODO:FIX_HUNG"]
 async fn panics() -> Result<()> {
   tester(
-    "./manifests/v0/errors/panics.wafl",
+    "./manifests/v0/errors/panics.yaml",
     packet_stream!(("input", "input")),
     "panics",
     vec![Packet::err("output", "Wat")],
@@ -18,7 +18,7 @@ async fn panics() -> Result<()> {
 #[ignore = "TODO:FIX_HUNG"]
 async fn errors() -> Result<()> {
   tester(
-    "./manifests/v0/errors/errors.wafl",
+    "./manifests/v0/errors/errors.yaml",
     packet_stream!(("input", "input")),
     "errors",
     vec![Packet::err("output", "Wat")],

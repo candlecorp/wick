@@ -6,7 +6,7 @@ type Result<T> = anyhow::Result<T, anyhow::Error>;
 #[test_logger::test(tokio::test)]
 async fn simple_schematic() -> Result<()> {
   tester(
-    "./manifests/v0/simple.wafl",
+    "./manifests/v0/simple.yaml",
     packet_stream!(("MAIN_IN", "simple string")),
     "simple",
     vec![Packet::encode("MAIN_OUT", "simple string"), Packet::done("MAIN_OUT")],
@@ -17,7 +17,7 @@ async fn simple_schematic() -> Result<()> {
 #[test_logger::test(tokio::test)]
 async fn echo() -> Result<()> {
   tester(
-    "./manifests/v0/echo.wafl",
+    "./manifests/v0/echo.yaml",
     packet_stream!(("input", "simple string")),
     "echo",
     vec![Packet::encode("output", "simple string"), Packet::done("output")],
@@ -28,7 +28,7 @@ async fn echo() -> Result<()> {
 #[test_logger::test(tokio::test)]
 async fn senders() -> Result<()> {
   tester(
-    "./manifests/v0/senders.wafl",
+    "./manifests/v0/senders.yaml",
     PacketStream::default(),
     "senders",
     vec![Packet::encode("output", "1234512345"), Packet::done("output")],
@@ -39,7 +39,7 @@ async fn senders() -> Result<()> {
 #[test_logger::test(tokio::test)]
 async fn no_inputs() -> Result<()> {
   tester(
-    "./manifests/v0/no-inputs.wafl",
+    "./manifests/v0/no-inputs.yaml",
     PacketStream::default(),
     "uuid",
     vec![
@@ -53,7 +53,7 @@ async fn no_inputs() -> Result<()> {
 #[test_logger::test(tokio::test)]
 async fn nested_schematics() -> Result<()> {
   tester(
-    "./manifests/v0/nested-schematics.wafl",
+    "./manifests/v0/nested-schematics.yaml",
     packet_stream!(("parent_input", "simple string")),
     "nested_parent",
     vec![
@@ -67,7 +67,7 @@ async fn nested_schematics() -> Result<()> {
 #[test_logger::test(tokio::test)]
 async fn short_circuit_to_output() -> Result<()> {
   tester(
-    "./manifests/v0/short-circuit.wafl",
+    "./manifests/v0/short-circuit.yaml",
     packet_stream!(("input", "short")),
     "short_circuit",
     vec![
@@ -82,7 +82,7 @@ async fn short_circuit_to_output() -> Result<()> {
 #[ignore = "TODO:FIX_HUNG"]
 async fn short_circuit_with_default() -> Result<()> {
   tester(
-    "./manifests/v0/short-circuit-default.wafl",
+    "./manifests/v0/short-circuit-default.yaml",
     packet_stream!(("input_port1", "short")),
     "short_circuit",
     vec![Packet::err("output", "udnno")],
@@ -93,7 +93,7 @@ async fn short_circuit_with_default() -> Result<()> {
 #[test_logger::test(tokio::test)]
 async fn multiple_inputs() -> Result<()> {
   tester(
-    "./manifests/v0/multiple-inputs.wafl",
+    "./manifests/v0/multiple-inputs.yaml",
     packet_stream!(("left", 42), ("right", 302309)),
     "test",
     vec![Packet::encode("output", 42 + 302309), Packet::done("output")],
@@ -104,7 +104,7 @@ async fn multiple_inputs() -> Result<()> {
 #[test_logger::test(tokio::test)]
 async fn subnetworks() -> Result<()> {
   tester(
-    "./manifests/v0/sub-network-parent.wafl",
+    "./manifests/v0/sub-network-parent.yaml",
     packet_stream!(("input", "some input")),
     "parent",
     vec![Packet::encode("output", "some input"), Packet::done("output")],

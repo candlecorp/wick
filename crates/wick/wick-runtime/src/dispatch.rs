@@ -69,7 +69,7 @@ mod tests {
   use crate::test::prelude::{assert_eq, *};
   #[test_logger::test(tokio::test)]
   async fn invoke_async() -> TestResult<()> {
-    let (_, nuid) = init_network_from_yaml("./manifests/v0/echo.wafl").await?;
+    let (_, nuid) = init_network_from_yaml("./manifests/v0/echo.yaml").await?;
 
     let target = Entity::operation("self", "echo");
     let stream = packet_stream![("input", "hello")];

@@ -316,7 +316,7 @@ mod test {
 
   #[test_logger::test(tokio::test)]
   async fn request_direct() -> Result<()> {
-    let file = PathBuf::from("manifests/logger.wafl");
+    let file = PathBuf::from("manifests/logger.yaml");
     let manifest = ComponentConfiguration::load_from_file(&file)?;
     let mut host = HostBuilder::from_definition(manifest).build();
     host.start(None).await?;
@@ -337,7 +337,7 @@ mod test {
 
   #[test_logger::test(tokio::test)]
   async fn request_rpc_server() -> Result<()> {
-    let file = PathBuf::from("manifests/logger.wafl");
+    let file = PathBuf::from("manifests/logger.yaml");
     let mut def = ComponentConfiguration::load_from_file(&file)?;
     def.host_mut().rpc = Some(HttpConfig {
       enabled: true,
