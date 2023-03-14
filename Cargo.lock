@@ -2756,7 +2756,7 @@ dependencies = [
 
 [[package]]
 name = "seeded-random"
-version = "0.0.0"
+version = "0.1.0"
 dependencies = [
  "parking_lot",
  "rand",
@@ -4555,7 +4555,7 @@ dependencies = [
 
 [[package]]
 name = "wick-component"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "anyhow",
  "futures",
@@ -4596,7 +4596,7 @@ dependencies = [
 
 [[package]]
 name = "wick-component-codegen"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "heck 0.4.1",
@@ -4717,7 +4717,7 @@ dependencies = [
 
 [[package]]
 name = "wick-interface-types"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "anyhow",
  "env_logger 0.10.0",
@@ -4788,7 +4788,7 @@ dependencies = [
 
 [[package]]
 name = "wick-packet"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "anyhow",
  "bytes",
