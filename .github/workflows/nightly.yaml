@@ -1,0 +1,10 @@
+name: nightly-build
+on:
+  schedule:
+    - cron: "0 1 * * *" # 1am UTC
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
