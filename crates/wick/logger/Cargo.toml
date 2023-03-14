@@ -33,4 +33,3 @@ opentelemetry-jaeger = { version = "0.17.0", features = [
   "hyper_collector_client",
   "collector_client"
 ] }
-opentelemetry-otlp = { version = "0.11", features = ["grpc-sys"] }
