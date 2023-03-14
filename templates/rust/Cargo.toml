@@ -16,12 +16,12 @@ panic = "abort"
 crate-type = ["cdylib"]
 
 [dependencies]
-wick-component = { path = "../../wick/wick-component" }
-wasmrs-guest = { version = "0.5", features = [
+wick-component = "*"
+wasmrs-guest = { version = "*", features = [
 # "logging" # Enable logging to get debug traces printed for wasi targets
 ] }
 serde = { version = "1", features = ["derive"] }
 async-trait = "0.1"
 
 [build-dependencies]
-wick-component-codegen = { path = "../../wick/wick-component-codegen" }
+wick-component-codegen = { path = "*" }
