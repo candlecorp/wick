@@ -1,4 +1,5 @@
 pub(crate) mod bundle;
+pub(crate) mod init;
 pub(crate) mod invoke;
 pub(crate) mod key;
 pub(crate) mod list;
@@ -43,7 +44,10 @@ pub(crate) enum CliCommand {
   #[clap(name = "test")]
   Test(test::TestCommand),
 
-  // Commands migrated from external `wafl` cli.
+  /// Initialize a new project.
+  #[clap(name = "init")]
+  Init(init::InitCommand),
+
   /// Commands for WebAssembly component.
   #[clap(subcommand, name = "wasm")]
   Wasm(wasm::SubCommands),

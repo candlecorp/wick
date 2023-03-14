@@ -114,6 +114,7 @@ async fn main() -> Result<()> {
     CliCommand::Run(cmd) => commands::run::handle_command(cmd).await,
     CliCommand::Invoke(cmd) => commands::invoke::handle_command(cmd).await,
     CliCommand::Test(cmd) => commands::test::handle_command(cmd).await,
+    CliCommand::Init(cmd) => commands::init::handle_command(cmd).await,
     CliCommand::Wasm(cmd) => match cmd {
       commands::wasm::SubCommands::Sign(cmd) => commands::wasm::sign::handle(cmd).await,
       commands::wasm::SubCommands::Inspect(cmd) => commands::wasm::inspect::handle(cmd).await,
