@@ -17,5 +17,9 @@ crate-type = ["cdylib"]
 
 [dependencies]
 wasmrs-guest = { version = "0.5", features = ["logging"] }
-wick-wasmrs-macros = { path = "../../wick/wick-wasmrs-macros" }
+wick-component = { path = "../../wick/wick-component" }
 serde = { version = "1", features = ["derive"] }
+async-trait = "0.1"
+
+[build-dependencies]
+wick-component-codegen = { path = "../../wick/wick-component-codegen" }

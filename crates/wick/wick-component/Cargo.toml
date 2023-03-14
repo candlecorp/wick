@@ -1,11 +1,11 @@
 [package]
-name = "wick-wasmrs-macros"
+name = "wick-component"
 version = "0.10.0"
 edition = "2021"
 license = "Apache-2.0"
 repository = "https://github.com/candlecorp/wick"
-description = "Macros used to convert between wick and wasmrs types."
-keywords = ["wasm", "wasmflow", "actor", "flow"]
+description = "Macros and exports used to create Wick components"
+keywords = ["wasm", "wick", "wasmflow", "actor", "flow"]
 categories = ["wasm"]
 exclude = ["tests/*", ".github/*", ".gitignore"]
 authors = ["Jarrod Overson <jsoverson@gmail.com>"]
@@ -23,5 +23,7 @@ wasmrs = { workspace = true }
 wasmrs-runtime = { workspace = true }
 futures = { workspace = true }
 tokio = { workspace = true }
+anyhow = { workspace = true }
+paste = "1.0"
 
 [dev-dependencies]

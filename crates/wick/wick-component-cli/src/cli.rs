@@ -54,9 +54,9 @@ impl ServerControl {
 
 impl ServerState {
   /// Stop the RPC server if it's running.
-  pub fn stop_rpc_server(&self) {
+  pub async fn stop_rpc_server(&self) {
     if let Some(ctl) = self.rpc.as_ref() {
-      let _ = ctl.tx.send(ServerMessage::Close);
+      let _ = ctl.tx.send(ServerMessage::Close).await;
     }
   }
 }
@@ -147,7 +147,7 @@ pub async fn init_cli(collection: SharedRpcHandler, opts: Option<Options>) -> Re
   info!("Waiting for ctrl-C");
   signal::ctrl_c().await?;
   println!(); // start on a new line.
-  state.stop_rpc_server();
+  state.stop_rpc_server().await;
 
   Ok(())
 }

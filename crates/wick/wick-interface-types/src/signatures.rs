@@ -97,15 +97,17 @@ impl OperationSignature {
 #[derive(Debug, Clone, Copy, PartialEq, serde_repr::Deserialize_repr, serde_repr::Serialize_repr)]
 #[must_use]
 #[repr(u32)]
-/// The umbrella version of the collection.
+/// The umbrella version of the component.
 pub enum ComponentVersion {
-  /// Version 0 Wick collections.
+  /// Version 0 Wick components.
   V0 = 0,
+  /// Version 1 Wick components.
+  V1 = 1,
 }
 
 impl Default for ComponentVersion {
   fn default() -> Self {
-    Self::V0
+    Self::V1
   }
 }
 
@@ -113,6 +115,7 @@ impl From<ComponentVersion> for u32 {
   fn from(v: ComponentVersion) -> Self {
     match v {
       ComponentVersion::V0 => 0,
+      ComponentVersion::V1 => 1,
     }
   }
 }

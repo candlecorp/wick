@@ -1,6 +1,6 @@
 {
   "name": "test-component",
-  "format": 0,
+  "format": 1,
   "metadata": { "version": "0" },
   "operations": [
     {

@@ -1,5 +1,5 @@
 ---
-format: 0
+format: 1
 types:
   - type: enum
     name: HttpMethod

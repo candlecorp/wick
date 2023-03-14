@@ -5,7 +5,7 @@ use anyhow::Result;
 use flow_graph_interpreter::graph::from_def;
 use rot::*;
 use seeded_random::Seed;
-use wick_packet::{packets, Packet, PacketPayload};
+use wick_packet::{packets, Packet};
 
 #[test_logger::test(tokio::test)]
 async fn test_panic() -> Result<()> {
