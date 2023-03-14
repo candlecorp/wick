@@ -84,7 +84,7 @@ jobs:
         if: runner.os != 'Windows'
         run: |
           mkdir _dist
-          cp README.md LICENSE /target/${{ matrix.config.targetDir }}/release/wick _dist/
+          cp README.md LICENSE /target/${{ matrix.config.target }}/release/wick _dist/
           cd _dist
           tar czf wick-nightly-${{ matrix.config.name }}-${{ matrix.config.arch }}.tar.gz README.md LICENSE wick
       - name: package release assets
@@ -92,7 +92,7 @@ jobs:
         shell: bash
         run: |
           mkdir _dist
-          cp README.md LICENSE /target/${{ matrix.config.targetDir }}/release/wick.exe _dist/
+          cp README.md LICENSE /target/${{ matrix.config.target }}/release/wick.exe _dist/
           cd _dist
           7z a -tzip wick-nightly-${{ matrix.config.name }}-${{ matrix.config.arch }}.zip README.md LICENSE wick.exe
       - name: Upload a Build Artifact
