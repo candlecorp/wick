@@ -4,11 +4,24 @@
       "type": "lldb",
       "request": "launch",
       "name": "Cargo test",
+      "env": {
+        "SCCACHE_AZURE_KEY_PREFIX": "wick"
+      },
       "cargo": {
-        "args": ["test", "-p", "wick-runtime", "--no-run", "--test", "basics"]
+        "args": [
+          "test",
+          "-p",
+          "wick-runtime",
+          "--no-run",
+          "--test",
+          "basics"
+        ]
       },
       "cwd": "${workspaceFolder}/crates/wick/wick-runtime",
-      "args": ["nested", "--nocapture"]
+      "args": [
+        "nested",
+        "--nocapture"
+      ]
     }
   ]
 }

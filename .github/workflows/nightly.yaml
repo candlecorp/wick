@@ -5,38 +5,75 @@ on:
   push:
     branches:
       - release-automation
-
-env:
-  SCCACHE_AZURE_BLOB_CONTAINER: ${{ secrets.SCCACHE_AZURE_BLOB_CONTAINER }}
-  SCCACHE_AZURE_CONNECTION_STRING: ${{ secrets.SCCACHE_AZURE_CONNECTION_STRING }}
-  SCCACHE_AZURE_KEY_PREFIX: wick
-
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.config.os }}
+    strategy:
+      matrix:
+        config:
+          - {
+              os: "ubuntu-latest",
+              name: "linux",
+              arch: "amd64",
+              target: "x86_64-unknown-linux-gnu",
+            }
+          - {
+              os: "ubuntu-latest",
+              name: "linux",
+              target: "aarch64-unknown-linux-gnu",
+              arch: "aarch64",
+            }
+          - {
+              os: "macos-latest",
+              name: "macos",
+              target: "x86_64-apple-darwin",
+              arch: "amd64",
+            }
+          - {
+              os: "macos-latest",
+              name: "macos",
+              target: "aarch64-apple-darwin",
+              arch: "aarch64",
+            }
+          - {
+              os: "windows-latest",
+              name: "win",
+              target: "x86_64-pc-windows-gnu",
+              arch: "amd64",
+            }
     steps:
       - uses: actions/checkout@v1
-      - shell: bash
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: 1.67.1
+          default: true
+          target: ${{ matrix.config.target }}
+          components: rustfmt, clippy, rustc, cargo, rust-docs, rust-std
+      - name: "rustup updates"
         run: |
-          docker run --rm \
-          -v $(pwd):/opt/wick \
-          -e SCCACHE_AZURE_BLOB_CONTAINER=$SCCACHE_AZURE_BLOB_CONTAINER \
-          -e SCCACHE_AZURE_CONNECTION_STRING=$SCCACHE_AZURE_CONNECTION_STRING \
-          -e SCCACHE_AZURE_KEY_PREFIX=$SCCACHE_AZURE_KEY_PREFIX \
-          ghcr.io/candlecorp/wick-builder:release-automation-ac7f8cac-1678818558 \
-          cargo build -p wick --target=x86_64-unknown-linux-gnu --target=aarch64-apple-darwin \
-          --target=aarch64-unknown-linux-gnu --target=x86_64-apple-darwin --target=x86_64-pc-windows-gnu \
-          --release
+          rustup target add wasm32-unknown-unknown wasm32-wasi
+          cargo install tomlq cargo-deny just
+      - name: "build binary"
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release -p wick --target=${{ matrix.config.target }}
       - name: package release assets
+        if: runner.os != 'Windows'
         run: |
           mkdir _dist
-          cp README.md LICENSE ${{ matrix.config.targetDir }}/spin${{ matrix.config.extension }} _dist/
+          cp README.md LICENSE /target/${{ matrix.config.targetDir }}/release/wick _dist/
           cd _dist
-          tar czf wick-nightly-aarch64-apple-darwin.tar.gz README.md LICENSE target/aarch64-apple-darwin/release/wick
-          tar czf wick-nightly-x86_64-apple-darwin.tar.gz README.md LICENSE target/x86_64-apple-darwin/release/wick
-          tar czf wick-nightly-aarch64-unknown-linux-gnu.tar.gz README.md LICENSE target/aarch64-unknown-linux-gnu/release/wick
-          tar czf wick-nightly-x86_64-unknown-linux-gnu.tar.gz README.md LICENSE target/x86_64-unknown-linux-gnu/release/wick
-          7z a -tzip wick-nightly-x86_64-pc-windows-gnu.zip README.md LICENSE target/x86_64-pc-windows-gnu/release/wick.exe
+          tar czf wick-nightly-${{ matrix.config.name }}-${{ matrix.config.arch }}.tar.gz README.md LICENSE wick
+      - name: package release assets
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          mkdir _dist
+          cp README.md LICENSE /target/${{ matrix.config.targetDir }}/release/wick.exe _dist/
+          cd _dist
+          7z a -tzip wick-nightly-${{ matrix.config.name }}-${{ matrix.config.arch }}.zip README.md LICENSE wick.exe
       - name: Upload a Build Artifact
         uses: actions/upload-artifact@v3
         with:
