@@ -7,7 +7,7 @@ Wick uses the WasmRS protocol to communicate between WebAssembly components. Was
 ## How do I build a Wick component?
 
 ```sh
-cargo generate candlecorp/wick -b init-templates templates/rust
+cargo generate candlecorp/wick -b init-templates templates/rust --name my-component
 ```
 
 ## RequestResponse actions
