@@ -1,11 +1,11 @@
 [package]
 name = "flow-expression-parser"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Jarrod Overson <jsoverson@gmail.com>"]
 edition = "2021"
 license = "Elastic-2.0"
 repository = "https://github.com/candlecorp/wick"
-publish = false
+description = "Parser for flow expressions in the Wick configuration manifest."
 
 [dependencies]
 lazy_static = { workspace = true }

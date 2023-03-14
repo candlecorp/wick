@@ -1,11 +1,11 @@
 [package]
 authors = ["Jarrod Overson <jsoverson@gmail.com>"]
 edition = "2021"
-license = "Elastic-2.0"
+license = "Apache-2.0"
 repository = "https://github.com/candlecorp/wick"
 name = "wick-config"
-version = "0.20.0"
-publish = false
+description = "Wick manifest configuration format."
+version = "0.22.0"
 
 [dependencies]
 flow-expression-parser = { workspace = true }

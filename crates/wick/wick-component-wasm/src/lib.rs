@@ -85,7 +85,6 @@
 // Add exceptions here
 #![allow(missing_docs)]
 
-// pub mod callbacks;
 pub mod collection;
 pub mod error;
 pub mod helpers; // TODO ref check and make sure these are used:

@@ -96,7 +96,24 @@ confidence-threshold = 0.8
 # Allow 1 or more licenses on a per-crate basis, so that particular licenses
 # aren't accepted for every possible crate as with the normal allow list
 exceptions = [
+  # Wick-core is licensed under the Elastic License 2.0
     { name = "wick-host", allow = ["Elastic-2.0"] },
+    { name = "wick-runtime", allow = ["Elastic-2.0"] },
+    { name = "wick", allow = ["Elastic-2.0"] },
+    { name = "wick-test", allow = ["Elastic-2.0"] },
+    { name = "wick-stdlib", allow = ["Elastic-2.0"] },
+    { name = "wick-rpc", allow = ["Elastic-2.0"] },
+    { name = "wick-oci-utils", allow = ["Elastic-2.0"] },
+    { name = "wick-loader-utils", allow = ["Elastic-2.0"] },
+    { name = "wick-invocation-server", allow = ["Elastic-2.0"] },
+    { name = "wick-grpctar", allow = ["Elastic-2.0"] },
+    { name = "wick-component-wasm", allow = ["Elastic-2.0"] },
+    { name = "wick-component-cli", allow = ["Elastic-2.0"] },
+    { name = "logger", allow = ["Elastic-2.0"] },
+    { name = "flow-graph-interpreter", allow = ["Elastic-2.0"] },
+    { name = "flow-graph", allow = ["Elastic-2.0"] },
+    { name = "flow-expression-parser", allow = ["Elastic-2.0"] },
+
 ]
 
 # Some crates don't have (easily) machine readable licensing information,
