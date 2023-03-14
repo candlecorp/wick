@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - main
+      - release-automation
     paths:
       - .github/workflows/builder.yaml
       - docker/Dockerfile.builder
@@ -38,8 +39,4 @@ jobs:
           tags: ghcr.io/candlecorp/wick-builder:${{ steps.prep.outputs.BUILD_ID }}, ghcr.io/candlecorp/wick-builder:latest
           registry: ghcr.io
           file: docker/Dockerfile.builder
-          build-args: |
-            CONTAINER=${{ secrets.SCCACHE_AZURE_BLOB_CONTAINER }}
-            CONTAINER_CONN_STRING=${{ secrets.SCCACHE_AZURE_CONNECTION_STRING }}
-            CACHE_KEY_PREFIX=wick
           push: true
