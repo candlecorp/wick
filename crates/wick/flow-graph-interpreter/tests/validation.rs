@@ -45,7 +45,7 @@ fn interp(path: &str, sig: ComponentSignature) -> std::result::Result<Interprete
 
 #[test_logger::test(tokio::test)]
 async fn test_missing_collections() -> Result<()> {
-  let manifest = load("./tests/manifests/v0/external.wafl")?;
+  let manifest = load("./tests/manifests/v0/external.yaml")?;
   let network = from_def(&manifest)?;
   let result: std::result::Result<Interpreter, _> = Interpreter::new(Some(Seed::unsafe_new(1)), network, None, None);
   let validation_errors = ValidationError::MissingCollection("test".to_owned());
@@ -60,7 +60,7 @@ async fn test_missing_collections() -> Result<()> {
 
 #[test_logger::test(tokio::test)]
 async fn test_missing_component() -> Result<()> {
-  let result = interp("./tests/manifests/v0/external.wafl", ComponentSignature::default());
+  let result = interp("./tests/manifests/v0/external.yaml", ComponentSignature::default());
   let validation_errors = ValidationError::MissingOperation {
     namespace: "test".to_owned(),
     name: "echo".to_owned(),
@@ -81,7 +81,7 @@ async fn test_invalid_port() -> Result<()> {
     .metadata(ComponentMetadata::default())
     .add_component(OperationSignature::new("echo"));
 
-  let result = interp("./tests/manifests/v0/external.wafl", signature);
+  let result = interp("./tests/manifests/v0/external.yaml", signature);
 
   if let Err(InterpreterError::EarlyError(e)) = result {
     assert_eq!(
@@ -112,7 +112,7 @@ async fn test_missing_port() -> Result<()> {
         .add_output("OTHER_OUT", TypeSignature::String),
     );
 
-  let result = interp("./tests/manifests/v0/external.wafl", signature);
+  let result = interp("./tests/manifests/v0/external.yaml", signature);
 
   let errors = vec![
     ValidationError::MissingConnection {

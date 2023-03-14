@@ -1,9 +1,7 @@
 pub(crate) mod bundle;
-pub(crate) mod component;
 pub(crate) mod invoke;
 pub(crate) mod key;
 pub(crate) mod list;
-pub(crate) mod project;
 pub(crate) mod query;
 pub(crate) mod registry;
 pub(crate) mod rpc;
@@ -46,14 +44,6 @@ pub(crate) enum CliCommand {
   Test(test::TestCommand),
 
   // Commands migrated from external `wafl` cli.
-  /// Commands to manage projects.
-  #[clap(subcommand, name = "project", alias = "proj")]
-  Project(project::SubCommands),
-
-  /// Commands to manage components.
-  #[clap(subcommand, name = "component", alias = "comp")]
-  Component(component::SubCommands),
-
   /// Commands for WebAssembly component.
   #[clap(subcommand, name = "wasm")]
   Wasm(wasm::SubCommands),

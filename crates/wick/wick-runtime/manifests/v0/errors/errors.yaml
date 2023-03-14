@@ -5,7 +5,7 @@ network:
     - name: errors
       instances:
         error:
-          id: wafl::core::error
+          id: wick::core::error
       connections:
         - <> => error[input]
         - error[output] => <>

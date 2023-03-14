@@ -119,23 +119,15 @@ pub mod env {
     };
   }
 
-  env_var!(WAFL_COLLECTION_ID);
-  env_var!(WAFL_TIMEOUT);
+  env_var!(WICK_COLLECTION_ID);
+  env_var!(WICK_TIMEOUT);
 
-  env_var!(WAFL_RPC_ENABLED);
-  env_var!(WAFL_RPC_PORT);
-  env_var!(WAFL_RPC_ADDRESS);
-  env_var!(WAFL_RPC_KEY);
-  env_var!(WAFL_RPC_PEM);
-  env_var!(WAFL_RPC_CA);
-
-  // Unused for now.
-  // env_var!(WAFL_HTTP_ENABLED);
-  // env_var!(WAFL_HTTP_PORT);
-  // env_var!(WAFL_HTTP_ADDRESS);
-  // env_var!(WAFL_HTTP_KEY);
-  // env_var!(WAFL_HTTP_PEM);
-  // env_var!(WAFL_HTTP_CA);
+  env_var!(WICK_RPC_ENABLED);
+  env_var!(WICK_RPC_PORT);
+  env_var!(WICK_RPC_ADDRESS);
+  env_var!(WICK_RPC_KEY);
+  env_var!(WICK_RPC_PEM);
+  env_var!(WICK_RPC_CA);
 
   env_var!(NATS_URL);
   env_var!(NATS_CREDSFILE);
@@ -146,11 +138,11 @@ pub mod env {
 /// Command line options for s.
 pub struct DefaultCliOptions {
   /// The unique ID of this client.
-  #[clap(long = "id", env = env::WAFL_COLLECTION_ID, action)]
+  #[clap(long = "id", env = env::WICK_COLLECTION_ID, action)]
   pub id: Option<String>,
 
   /// The timeout for outbound requests in ms.
-  #[clap(long = "timeout", env = env::WAFL_TIMEOUT, action)]
+  #[clap(long = "timeout", env = env::WICK_TIMEOUT, action)]
   pub timeout: Option<u64>,
 
   /// Logging options.
@@ -162,27 +154,27 @@ pub struct DefaultCliOptions {
   pub mesh: MeshCliOptions,
 
   /// Enable the rpc server.
-  #[clap(long = "rpc",  env = env::WAFL_RPC_ENABLED, action)]
+  #[clap(long = "rpc",  env = env::WICK_RPC_ENABLED, action)]
   pub rpc_enabled: bool,
 
   /// Port to listen on for GRPC server.
-  #[clap(long = "rpc-port", env = env::WAFL_RPC_PORT, action)]
+  #[clap(long = "rpc-port", env = env::WICK_RPC_PORT, action)]
   pub rpc_port: Option<u16>,
 
   /// IP address to bind to for GRPC server.
-  #[clap(long = "rpc-address", env = env::WAFL_RPC_ADDRESS, action)]
+  #[clap(long = "rpc-address", env = env::WICK_RPC_ADDRESS, action)]
   pub rpc_address: Option<Ipv4Addr>,
 
   /// Path to pem file for TLS for GRPC server.
-  #[clap(long = "rpc-pem", env = env::WAFL_RPC_PEM, action)]
+  #[clap(long = "rpc-pem", env = env::WICK_RPC_PEM, action)]
   pub rpc_pem: Option<PathBuf>,
 
   /// Path to key file for TLS for GRPC server.
-  #[clap(long = "rpc-key", env = env::WAFL_RPC_KEY, action)]
+  #[clap(long = "rpc-key", env = env::WICK_RPC_KEY, action)]
   pub rpc_key: Option<PathBuf>,
 
   /// Path to certificate authority for GRPC server.
-  #[clap(long = "rpc-ca", env = env::WAFL_RPC_CA, action)]
+  #[clap(long = "rpc-ca", env = env::WICK_RPC_CA, action)]
   pub rpc_ca: Option<PathBuf>,
 }
 

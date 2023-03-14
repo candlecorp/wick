@@ -4,7 +4,7 @@ network:
   schematics:
     - name: uuid
       instances:
-        uuid: wafl::rand::uuid
+        uuid: wick::rand::uuid
       connections:
         - <core>[seed] => uuid[seed]
         - uuid[output] => <>

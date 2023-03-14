@@ -42,7 +42,7 @@ pub(crate) struct RpcInvokeCommand {
   short: bool,
 
   /// Pass a seed along with the invocation.
-  #[clap(long = "seed", short = 's', env = "WAFL_SEED", action)]
+  #[clap(long = "seed", short = 's', env = "WICK_SEED", action)]
   seed: Option<u64>,
 
   /// Arguments to pass as inputs to a component.

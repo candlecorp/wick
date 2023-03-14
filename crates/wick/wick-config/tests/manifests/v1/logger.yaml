@@ -13,7 +13,7 @@ import:
 operations:
   - name: logger
     instances:
-      logger: wafl::log
+      logger: wick::log
       SENDER:
         id: core::sender
         config:

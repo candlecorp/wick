@@ -11,7 +11,7 @@ network:
     - name: child
       instances:
         log:
-          id: wafl::core::log
+          id: wick::core::log
       connections:
         - <>[child_input] => log[input]
         - log[output] => <>[child_output]

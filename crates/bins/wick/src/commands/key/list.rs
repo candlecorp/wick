@@ -11,8 +11,8 @@ pub(crate) struct KeyListCommand {
   #[clap(flatten)]
   pub(crate) logging: logger::LoggingOptions,
 
-  /// Location of key files. Defaults to $WAFL_KEYS ($HOME/.wafl/keys or %USERPROFILE%/.wafl/keys).
-  #[clap(long = "directory", env = "WAFL_KEYS", action)]
+  /// Location of key files. Defaults to $WICK_KEYS ($HOME/.wick/keys or %USERPROFILE%/.wick/keys).
+  #[clap(long = "directory", env = "WICK_KEYS", action)]
   pub(crate) directory: Option<PathBuf>,
 }
 

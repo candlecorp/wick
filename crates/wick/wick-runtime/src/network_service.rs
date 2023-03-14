@@ -17,7 +17,7 @@ use wick_packet::{Invocation, PacketStream};
 use crate::collections::{initialize_native_collection, initialize_network_collection, initialize_wasm_collection};
 use crate::dev::prelude::*;
 use crate::json_writer::JsonWriter;
-use crate::WAFL_V0_NAMESPACE;
+use crate::V0_NAMESPACE;
 
 type Result<T> = std::result::Result<T, NetworkError>;
 #[derive(Debug)]
@@ -49,7 +49,7 @@ impl NetworkService {
     let mut collections = HandlerMap::default();
     let rng = Random::from_seed(msg.rng_seed);
 
-    let stdlib = initialize_native_collection(WAFL_V0_NAMESPACE.to_owned(), rng.seed())?;
+    let stdlib = initialize_native_collection(V0_NAMESPACE.to_owned(), rng.seed())?;
 
     collections.add(stdlib);
 

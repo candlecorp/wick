@@ -10,7 +10,7 @@ use wick_packet::Packet;
 
 #[test_logger::test(tokio::test)]
 async fn test_senders() -> Result<()> {
-  let (interpreter, mut outputs) = interp!("./tests/manifests/v0/core/senders.wafl", "test", Vec::new());
+  let (interpreter, mut outputs) = interp!("./tests/manifests/v0/core/senders.yaml", "test", Vec::new());
 
   assert_equal!(outputs.len(), 2);
 
@@ -25,7 +25,7 @@ async fn test_senders() -> Result<()> {
 
 // #[test_logger::test(tokio::test)]
 // async fn test_merge() -> Result<()> {
-//   let manifest = load("./tests/manifests/v0/core/merge.wafl")?;
+//   let manifest = load("./tests/manifests/v0/core/merge.yaml")?;
 //   let network = from_def(&manifest)?;
 //   let collections = HandlerMap::new(vec![NamespaceHandler::new("test", Box::new(TestCollection::new()))]);
 //   let mut inputs = PacketMap::default();

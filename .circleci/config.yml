@@ -175,7 +175,6 @@ jobs:
             cargo --version
             rustc --version
             rustup show home
-            rustup default `tomlq -f rust-toolchain.toml toolchain.channel`
       - run:
           name: Test
           command: 'just ci-tests'
@@ -198,7 +197,7 @@ jobs:
       - run:
           name: Build
           command: |
-            WICK_VERSION="<< pipeline.git.tag >>" WAFL_VERSION="<< pipeline.git.tag >>" ARCH=<<parameters.arch>> RELEASE=<<parameters.release>>  make bins
+            WICK_VERSION="<< pipeline.git.tag >>" ARCH=<<parameters.arch>> RELEASE=<<parameters.release>>  make bins
       - save_cache:
           key: artifacts-<<parameters.arch>>-{{ .Environment.CIRCLE_SHA1 }}
           paths:

@@ -31,7 +31,7 @@ pub struct LoggingOptions {
   pub log_json: bool,
 
   /// The directory to store log files.
-  #[clap(long = "log-dir", env = "WAFL_LOG_DIR", action)]
+  #[clap(long = "log-dir", env = "WICK_LOG_DIR", action)]
   pub log_dir: Option<PathBuf>,
 
   /// The endpoint to send jaeger-format traces.

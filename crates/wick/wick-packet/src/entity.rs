@@ -67,7 +67,7 @@ impl Display for Entity {
   }
 }
 
-pub(crate) const URL_SCHEME: &str = "wafl";
+pub(crate) const URL_SCHEME: &str = "wick";
 
 impl FromStr for Entity {
   type Err = Error;
@@ -220,25 +220,25 @@ mod tests {
   use super::*;
   #[test]
   fn test() -> Result<(), Error> {
-    let entity = Entity::from_str("wafl://namespace.coll/comp_name")?;
+    let entity = Entity::from_str("wick://namespace.coll/comp_name")?;
     assert_eq!(entity, Entity::operation("namespace", "comp_name"));
 
-    let entity = Entity::from_str("wafl://some_ns.coll/")?;
+    let entity = Entity::from_str("wick://some_ns.coll/")?;
     assert_eq!(entity, Entity::collection("some_ns"));
 
-    let entity = Entity::from_str("wafl://host_id.host/")?;
+    let entity = Entity::from_str("wick://host_id.host/")?;
     assert_eq!(entity, Entity::host("host_id"));
 
-    let entity = Entity::from_str("wafl://host_id.ref/")?;
+    let entity = Entity::from_str("wick://host_id.ref/")?;
     assert_eq!(entity, Entity::reference("host_id"));
 
-    let entity = Entity::from_str("wafl://client_id.client/")?;
+    let entity = Entity::from_str("wick://client_id.client/")?;
     assert_eq!(entity, Entity::client("client_id"));
 
-    let entity = Entity::from_str("wafl://test.sys/?msg=Hello")?;
+    let entity = Entity::from_str("wick://test.sys/?msg=Hello")?;
     assert_eq!(entity, Entity::test("Hello"));
 
-    let entity = Entity::from_str("wafl://other.sys/?msg=Else")?;
+    let entity = Entity::from_str("wick://other.sys/?msg=Else")?;
     assert_eq!(
       entity,
       Entity::System(SystemEntity {

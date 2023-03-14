@@ -10,7 +10,7 @@ use wick_packet::{packets, Packet};
 #[test_logger::test(tokio::test)]
 async fn test_panic() -> Result<()> {
   let (interpreter, mut outputs) = interp!(
-    "./tests/manifests/v0/bad-cases/panic.wafl",
+    "./tests/manifests/v0/bad-cases/panic.yaml",
     "test",
     packets!(("input", "Hello world"))
   );
@@ -19,7 +19,7 @@ async fn test_panic() -> Result<()> {
 
   outputs.pop();
   let p = outputs.pop().unwrap().unwrap();
-  assert_eq!(p, Packet::err("output", "Operation wafl://test.coll/panic panicked"));
+  assert_eq!(p, Packet::err("output", "Operation wick://test.coll/panic panicked"));
 
   interpreter.shutdown().await?;
 
@@ -30,7 +30,7 @@ async fn test_panic() -> Result<()> {
 // #[ignore]
 async fn test_timeout_done_noclose() -> Result<()> {
   let (interpreter, mut outputs) = interp!(
-    "./tests/manifests/v0/bad-cases/timeout-done-noclose.wafl",
+    "./tests/manifests/v0/bad-cases/timeout-done-noclose.yaml",
     "test",
     packets!(("input", "Hello world"))
   );
@@ -43,7 +43,7 @@ async fn test_timeout_done_noclose() -> Result<()> {
     p,
     Packet::err(
       "output",
-      "Operation wafl://test.coll/echo timed out waiting for upstream data."
+      "Operation wick://test.coll/echo timed out waiting for upstream data."
     )
   );
 
@@ -54,7 +54,7 @@ async fn test_timeout_done_noclose() -> Result<()> {
 
 // #[test_logger::test(tokio::test)]
 // async fn test_timeout_missingdone() -> Result<()> {
-//   let manifest = load("./tests/manifests/v0/bad-cases/timeout-missingdone.wafl")?;
+//   let manifest = load("./tests/manifests/v0/bad-cases/timeout-missingdone.yaml")?;
 //   let network = from_def(&manifest)?;
 //   let collections = HandlerMap::new(vec![NamespaceHandler::new("test", Box::new(TestCollection::new()))]);
 

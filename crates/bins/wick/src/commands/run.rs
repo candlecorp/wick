@@ -19,12 +19,12 @@ pub(crate) struct RunCommand {
   #[clap(flatten)]
   pub(crate) fetch: super::FetchOptions,
 
-  /// The path or OCI URL to a wafl manifest or wasm file.
+  /// The path or OCI URL to a wick manifest or wasm file.
   #[clap(action)]
   path: String,
 
   /// Pass a seed along with the invocation.
-  #[clap(long = "seed", short = 's', env = "WAFL_SEED", action)]
+  #[clap(long = "seed", short = 's', env = "WICK_SEED", action)]
   seed: Option<u64>,
 
   /// Arguments to pass as inputs to a component.

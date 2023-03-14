@@ -6,7 +6,7 @@ type Result<T> = anyhow::Result<T, anyhow::Error>;
 #[test_logger::test(tokio::test)]
 async fn good_wasm_component() -> Result<()> {
   tester(
-    "./manifests/v0/wasmrs-component.wafl",
+    "./manifests/v0/wasmrs-component.yaml",
     packet_stream!(("input", "1234567890")),
     "test",
     vec![Packet::encode("output", "1234567890"), Packet::done("output")],
@@ -17,13 +17,13 @@ async fn good_wasm_component() -> Result<()> {
 #[test_logger::test(tokio::test)]
 async fn bad_wasm_component() -> Result<()> {
   tester(
-    "./manifests/v0/bad-wasmrs-component.wafl",
+    "./manifests/v0/bad-wasmrs-component.yaml",
     packet_stream!(("input", "1234567890")),
     "test",
     vec![
       Packet::err(
         "output",
-        "Operation wafl://wapc.coll/error timed out waiting for upstream data.",
+        "Operation wick://wapc.coll/error timed out waiting for upstream data.",
       ),
       Packet::done("output"),
     ],
@@ -40,7 +40,7 @@ async fn bad_wasm_component() -> Result<()> {
 //   debug!("Writing '{}' to test file {:?}", time, tempfile);
 //   std::fs::write(&tempfile, &time).unwrap();
 //   std::env::set_var("TEST_TEMPDIR", tempdir);
-//   let (network, _) = init_network_from_yaml("./manifests/v0/wasi-component.wafl").await?;
+//   let (network, _) = init_network_from_yaml("./manifests/v0/wasi-component.yaml").await?;
 //   std::env::remove_var("TEST_TEMPDIR");
 
 //   let data = hashmap! {
@@ -70,7 +70,7 @@ async fn bad_wasm_component() -> Result<()> {
 
 // #[test_logger::test(tokio::test)]
 // async fn subnetwork_link_call() -> Result<()> {
-//   let (network, _) = init_network_from_yaml("./manifests/v0/subnetwork-ns-link.wafl").await?;
+//   let (network, _) = init_network_from_yaml("./manifests/v0/subnetwork-ns-link.yaml").await?;
 
 //   let data = hashmap! {
 //       "input" => "hello world",

@@ -13,7 +13,7 @@ network:
         validate_password:
           id: wapc::validate
         cat:
-          id: wafl::string::concat
+          id: wick::string::concat
         SENDER:
           id: core::sender
           data:

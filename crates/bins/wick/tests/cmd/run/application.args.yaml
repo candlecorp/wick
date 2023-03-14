@@ -8,4 +8,4 @@ triggers:
     operation: main
     app:
       kind: Manifest
-      reference: ./tests/cmd/run/noop.wafl
+      reference: ./tests/cmd/run/noop.yaml

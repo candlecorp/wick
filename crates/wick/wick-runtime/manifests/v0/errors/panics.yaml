@@ -5,7 +5,7 @@ network:
     - name: panics
       instances:
         panic:
-          id: wafl::core::panic
+          id: wick::core::panic
       connections:
         - <> => panic[input]
         - panic[output] => <>

@@ -13,7 +13,7 @@ network:
         validate:
           id: wapc::validate
         log:
-          id: wafl::core::log
+          id: wick::core::log
       connections:
         - <>[input] => log[input]
         - log[output] => validate[input]

@@ -4,7 +4,7 @@ network:
     - name: test
       instances:
         add:
-          id: wafl::math::add
+          id: wick::math::add
       connections:
         - <>[left] => add[left]
         - <>[right] => add[right]

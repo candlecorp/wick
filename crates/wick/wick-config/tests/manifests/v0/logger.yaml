@@ -6,11 +6,16 @@ network:
     - name: logger
       instances:
         logger:
-          id: wafl::core::log
+          id: wick::log
+        SENDER:
+          id: core::sender
+          data:
+            output: '123456789'
+            type: string
       connections:
         - from:
-            instance: <input>
-            port: schem_input
+            instance: wick::schematic_input
+            port: input
           to:
             instance: logger
             port: input
@@ -18,5 +23,5 @@ network:
             instance: logger
             port: output
           to:
-            instance: <output>
-            port: schem_output
+            instance: wick::schematic_output
+            port: output
