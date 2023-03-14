@@ -95,7 +95,6 @@ mod commands;
 mod utils;
 mod wasm;
 use clap::Parser;
-mod git_template;
 mod io;
 mod keys;
 mod oci;

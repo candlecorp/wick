@@ -1,4 +1,4 @@
 [toolchain]
-channel = "1.67.1" #if this changes, change it in docker/Dockerfile.builder
+channel = "1.68.0"
 components = ["rustfmt", "clippy"]
 targets = ["wasm32-unknown-unknown", "wasm32-wasi"]

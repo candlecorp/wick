@@ -1,0 +1,20 @@
+[package]
+name = "wick-component-codegen"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[dependencies]
+quote = "1.0.26"
+serde_yaml = { workspace = true }
+syn = "1.0.109"
+wick-config = { path = "../wick-config" }
+wick-interface-types = { path = "../wick-interface-types" }
+proc-macro2 = "1.0"
+anyhow = { workspace = true }
+heck = "0.4"
+
+[dev-dependencies]
+anyhow = { workspace = true }
+logger = { path = "../logger" }
+test-logger = { path = "../../misc/test-logger" }

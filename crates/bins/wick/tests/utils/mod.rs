@@ -52,7 +52,7 @@ pub enum Signal {
 }
 
 impl Signal {
-  pub fn to_port(self) -> String {
+  pub fn into_port(self) -> String {
     match self {
       Signal::Continue(s) => s,
       _ => panic!("not a continuation"),
@@ -135,5 +135,5 @@ pub async fn start_collection(
   let port = rx2.recv().await.unwrap();
   println!("{} started, continuing", name);
 
-  Ok((tx, handle, port.to_port()))
+  Ok((tx, handle, port.into_port()))
 }

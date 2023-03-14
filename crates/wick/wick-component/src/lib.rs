@@ -75,4 +75,4 @@
 #![allow(missing_docs)]
 
 mod macros;
-pub use {wasmrs, wasmrs_runtime, wick_packet};
+pub use {anyhow, paste, wasmrs, wasmrs_runtime as runtime, wick_packet as packet};

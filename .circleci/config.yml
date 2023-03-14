@@ -178,7 +178,7 @@ jobs:
             rustup default `tomlq -f rust-toolchain.toml toolchain.channel`
       - run:
           name: Test
-          command: 'just unit-tests'
+          command: 'just ci-tests'
       - run: sccache -s
       - save_build_cache
       - save_rustup_cache

@@ -3,6 +3,10 @@ wasm:
 	just crates/integration/test-baseline-component/build
 	just crates/integration/test-cli-trigger-component/build
 
+debug-wasm:
+	just crates/integration/test-baseline-component/debug
+	just crates/integration/test-cli-trigger-component/debug
+
 clean:
 	cargo clean
 	rm -rf node_modules
@@ -26,9 +30,12 @@ early-errors: licenses
 licenses:
 	cargo deny --workspace check licenses  --config etc/deny.toml --hide-inclusion-graph
 
-unit-tests: wasm
+unit-tests:
 	cargo build -p wick
 	cargo test --workspace -- --skip integration_test
+
+ci-tests: wasm
+  just unit-tests
 
 integration-tests:
 	cargo build -p wick
@@ -40,3 +47,6 @@ deps:
 
 update-lints:
   ts-node ./etc/update-lints.ts
+
+publish-sdk VERSION="minor":
+  cargo release {{VERSION}} -p wick-packet wick-codegen wick-interface-types wick-component

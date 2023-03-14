@@ -1,4 +1,4 @@
-# yaml-language-server: $schema=../../wick/wick-config/json-schema/manifest.json
+# yaml-language-server: $schema=../../../wick-config/json-schema/manifest.json
 ---
 name: test-component
 format: 1

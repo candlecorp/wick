@@ -8,6 +8,7 @@ use std::str::FromStr;
 use flow_expression_parser::parse::v0::parse_id;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use wick_interface_types::Field;
 use wick_packet::PacketPayload;
 
 use crate::default::{parse_default, process_default};
@@ -20,12 +21,22 @@ use crate::{Error, Result};
 pub struct FlowOperation {
   /// The name of the schematic.
   pub name: String,
+
+  /// A list of the input types for the operation.
+  pub inputs: Vec<Field>,
+
+  /// A list of the input types for the operation.
+  pub outputs: Vec<Field>,
+
   /// A mapping of instance names to the components they refer to.
   pub instances: HashMap<String, InstanceReference>,
+
   /// A list of connections from and to ports on instances defined in the instance map.
   pub connections: Vec<ConnectionDefinition>,
+
   /// A list of collection namespaces to expose to this schematic.
   pub collections: Vec<String>,
+
   /// Reserved.
   pub constraints: HashMap<String, String>,
 }
@@ -62,6 +73,8 @@ impl TryFrom<&crate::v0::SchematicManifest> for FlowOperation {
       manifest.connections.iter().map(|def| def.try_into()).collect();
     Ok(Self {
       name: manifest.name.clone(),
+      inputs: Default::default(),
+      outputs: Default::default(),
       instances: instances?,
       connections: connections?,
       collections: manifest.collections.clone(),
@@ -82,30 +95,11 @@ impl TryFrom<crate::v1::OperationDefinition> for FlowOperation {
     let connections: Result<Vec<ConnectionDefinition>> = op.flow.iter().map(|def| def.try_into()).collect();
     Ok(Self {
       name: op.name,
+      inputs: op.inputs,
+      outputs: op.outputs,
       instances: instances?,
       connections: connections?,
       collections: op.components,
-      constraints: Default::default(),
-    })
-  }
-}
-
-impl TryFrom<(&String, &crate::v1::OperationDefinition)> for FlowOperation {
-  type Error = Error;
-
-  fn try_from(flow: (&String, &crate::v1::OperationDefinition)) -> Result<Self> {
-    let instances: Result<HashMap<String, InstanceReference>> = flow
-      .1
-      .instances
-      .iter()
-      .map(|(key, val)| Ok((key.clone(), val.try_into()?)))
-      .collect();
-    let connections: Result<Vec<ConnectionDefinition>> = flow.1.flow.iter().map(|def| def.try_into()).collect();
-    Ok(Self {
-      name: flow.0.clone(),
-      instances: instances?,
-      connections: connections?,
-      collections: flow.1.components.clone(),
       constraints: Default::default(),
     })
   }

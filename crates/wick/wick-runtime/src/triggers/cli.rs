@@ -100,6 +100,7 @@ impl Cli {
 #[async_trait]
 impl Trigger for Cli {
   async fn run(&self, name: String, config: TriggerDefinition) -> Result<(), RuntimeError> {
+    #[allow(irrefutable_let_patterns)]
     let config = if let TriggerDefinition::Cli(config) = config {
       config
     } else {

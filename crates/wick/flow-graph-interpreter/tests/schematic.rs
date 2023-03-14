@@ -6,7 +6,6 @@ use anyhow::Result;
 use flow_graph_interpreter::graph::from_def;
 use rot::*;
 use seeded_random::Seed;
-use test::JsonWriter;
 use wick_packet::{packets, Packet};
 
 #[test_logger::test(tokio::test)]

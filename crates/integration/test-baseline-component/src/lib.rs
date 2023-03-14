@@ -1,35 +1,55 @@
 use std::fmt::Display;
 
-use guest::*;
-use wasmrs_guest as guest;
-use wick_wasmrs_macros::payload_fan_out;
-use wick_wasmrs_macros::wick_packet::Packet;
+use wasmrs_guest::*;
+mod wick {
+  wick_component::wick_import!();
+}
+use wick::*;
 
-#[no_mangle]
-extern "C" fn __wasmrs_init(guest_buffer_size: u32, host_buffer_size: u32, max_host_frame_len: u32) {
-  guest::init(guest_buffer_size, host_buffer_size, max_host_frame_len);
-
-  guest::register_request_channel("wick", "add", add);
-  guest::register_request_channel("wick", "validate", validate);
-  guest::register_request_channel("wick", "error", error);
+#[cfg_attr(target_family = "wasm",async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait(Send))]
+impl OpAdd for TestComponent {
+  async fn add(mut left: WickStream<u64>, mut right: WickStream<u64>, mut outputs: OpAddOutputs) -> wick::Result<()> {
+    while let (Some(Ok(left)), Some(Ok(right))) = (left.next().await, right.next().await) {
+      outputs.output.send(left + right);
+    }
+    outputs.output.done();
+    Ok(())
+  }
 }
 
-fn add(mut input: FluxReceiver<Payload, PayloadError>) -> Result<FluxReceiver<RawPayload, PayloadError>, GenericError> {
-  let (channel, rx) = FluxChannel::<RawPayload, PayloadError>::new_parts();
+#[cfg_attr(target_family = "wasm",async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait(Send))]
+impl OpError for TestComponent {
+  async fn error(mut input: WickStream<String>, _outputs: OpErrorOutputs) -> wick::Result<()> {
+    while let Some(Ok(_)) = input.next().await {
+      panic!("This component always panics");
+    }
+    Ok(())
+  }
+}
 
-  spawn(async move {
-    let (mut left, mut right) = payload_fan_out!(input, "left", "right");
-    while let (Some(Ok(left)), Some(Ok(right))) = (left.next().await, right.next().await) {
-      let left: u64 = left.deserialize().unwrap();
-      let right: u64 = right.deserialize().unwrap();
-      if let Err(e) = channel.send_result(Packet::encode("output", left + right).into()) {
-        println!("{}", e);
+#[cfg_attr(target_family = "wasm",async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait(Send))]
+impl OpValidate for TestComponent {
+  async fn validate(mut input: WickStream<String>, mut outputs: OpValidateOutputs) -> Result<()> {
+    while let Some(Ok(password)) = input.next().await {
+      println!("Checking password {}", password);
+
+      if password.len() < MINIMUM_LENGTH {
+        println!("Too short!");
+        outputs.output.error(LengthError::TooShort.to_string());
+      } else if password.len() > MAXIMUM_LENGTH {
+        println!("Too long!!");
+        outputs.output.error(LengthError::TooLong.to_string());
+      } else {
+        println!("Just right!");
+        outputs.output.send(password);
       }
     }
-    let _ = channel.send_result(Packet::done("output").into());
-  });
-
-  Ok(rx)
+    outputs.output.done();
+    Ok(())
+  }
 }
 
 #[derive(Debug)]
@@ -59,48 +79,3 @@ impl std::error::Error for LengthError {
 
 static MINIMUM_LENGTH: usize = 8;
 static MAXIMUM_LENGTH: usize = 512;
-
-fn validate(
-  mut input: FluxReceiver<Payload, PayloadError>,
-) -> Result<FluxReceiver<RawPayload, PayloadError>, GenericError> {
-  let (channel, rx) = FluxChannel::<RawPayload, PayloadError>::new_parts();
-
-  spawn(async move {
-    let (mut input) = payload_fan_out!(input, "input");
-    while let (Some(Ok(input))) = (input.next().await) {
-      let password: String = input.deserialize().unwrap();
-      println!("Checking password {}", password);
-
-      if password.len() < MINIMUM_LENGTH {
-        println!("Too short!");
-        let _ = channel.send_result(Packet::err("output", LengthError::TooShort.to_string()).into());
-      } else if password.len() > MAXIMUM_LENGTH {
-        println!("Too long!!");
-        let _ = channel.send_result(Packet::err("output", LengthError::TooLong.to_string()).into());
-      } else {
-        println!("Just right!");
-        let _ = channel.send_result(Packet::encode("output", password).into());
-      }
-    }
-    println!("Done checking!");
-    let _ = channel.send_result(Packet::done("output").into());
-  });
-
-  Ok(rx)
-}
-
-fn error(
-  mut input: FluxReceiver<Payload, PayloadError>,
-) -> Result<FluxReceiver<RawPayload, PayloadError>, GenericError> {
-  let (channel, rx) = FluxChannel::<RawPayload, PayloadError>::new_parts();
-
-  spawn(async move {
-    let (mut input) = payload_fan_out!(input, "input");
-    while let (Some(Ok(input))) = (input.next().await) {
-      panic!("This component always panics");
-    }
-    let _ = channel.send_result(Packet::done("output").into());
-  });
-
-  Ok(rx)
-}
