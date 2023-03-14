@@ -16,14 +16,17 @@ use wick_rpc::{rpc, DurationStatistics, Statistics};
 use crate::SharedRpcHandler;
 
 /// A GRPC server for implementers of [wick_rpc::RpcHandler].
-#[derive(Derivative)]
-#[derivative(Debug)]
 pub struct InvocationServer {
   /// The collection that will handle incoming requests.
-  #[derivative(Debug = "ignore")]
   pub collection: SharedRpcHandler,
 
   stats: RwLock<HashMap<String, Statistics>>,
+}
+
+impl std::fmt::Debug for InvocationServer {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    f.debug_struct("InvocationServer").field("stats", &self.stats).finish()
+  }
 }
 
 impl InvocationServer {

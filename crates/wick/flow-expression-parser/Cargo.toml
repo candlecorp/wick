@@ -8,7 +8,7 @@ repository = "https://github.com/candlecorp/wick"
 publish = false
 
 [dependencies]
-lazy_static = "1.4"
+lazy_static = { workspace = true }
 regex = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
@@ -16,7 +16,7 @@ thiserror = { workspace = true }
 
 [dev-dependencies]
 anyhow = { workspace = true }
-pretty_assertions = "1"
-logger = { path = "../logger" }
-test-logger = { path = "../../misc/test-logger" }
+pretty_assertions = { workspace = true }
+logger = { workspace = true }
+test-logger = { workspace = true }
 tracing = { workspace = true }

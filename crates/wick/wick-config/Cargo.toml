@@ -4,13 +4,13 @@ edition = "2021"
 license = "Elastic-2.0"
 repository = "https://github.com/candlecorp/wick"
 name = "wick-config"
-version = "0.1.0"
+version = "0.20.0"
 publish = false
 
 [dependencies]
-flow-expression-parser = { path = "../flow-expression-parser" }
-wick-packet = { path = "../wick-packet" }
-wick-interface-types = { path = "../wick-interface-types", features = ["yaml"] }
+flow-expression-parser = { workspace = true }
+wick-packet = { workspace = true, default-features = false }
+wick-interface-types = { workspace = true, features = ["yaml"] }
 regex = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
@@ -19,11 +19,11 @@ thiserror = { workspace = true }
 tracing = { workspace = true }
 shellexpand = { workspace = true }
 serde-value = { workspace = true }
-num-traits = "0.2"
-serde-with-expand-env = "1.1"
+num-traits = { workspace = true }
+serde-with-expand-env = { workspace = true }
 
 [dev-dependencies]
 anyhow = { workspace = true }
-pretty_assertions = "1"
-logger = { path = "../logger" }
-test-logger = { path = "../../misc/test-logger" }
+pretty_assertions = { workspace = true }
+logger = { workspace = true }
+test-logger = { workspace = true }

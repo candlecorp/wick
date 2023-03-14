@@ -8,10 +8,10 @@ publish = false
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
-wick-grpctar = { path = "../wick-grpctar" }
-wick-interface-types = { path = "../wick-interface-types" }
-wick-wascap = { path = "../wick-wascap" }
-oci-distribution = { version = "0.9", features = [
+wick-grpctar = { workspace = true }
+wick-interface-types = { workspace = true }
+wick-wascap = { workspace = true }
+oci-distribution = { workspace = true, features = [
   "rustls-tls",
 ], default-features = false }
 thiserror = { workspace = true }
@@ -19,13 +19,13 @@ tracing = { workspace = true }
 serde_json = { workspace = true }
 serde_yaml = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
-tar = "0.4"
+tar = { workspace = true }
 tokio = { workspace = true, features = ["fs"] }
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["rt-multi-thread", "macros"] }
-test-logger = { path = "../../misc/test-logger" }
-logger = { path = "../logger" }
+test-logger = { workspace = true }
+logger = { workspace = true }
 clap = { workspace = true, features = ["derive", "env"] }
 async-recursion = { workspace = true }
 env_logger = { workspace = true }

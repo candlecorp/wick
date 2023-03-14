@@ -8,10 +8,10 @@ publish = false
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
-tap = { path = "../../misc/tap" }
-wick-packet = { path = "../wick-packet", features = [] }
+tap = { workspace = true }
+wick-packet = { workspace = true, features = [] }
 wasmrs-codec = { workspace = true }
-wick-rpc = { path = "../wick-rpc" }
+wick-rpc = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde-value = { workspace = true }
 serde_yaml = { workspace = true }

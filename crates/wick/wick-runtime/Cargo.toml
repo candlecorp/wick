@@ -1,6 +1,6 @@
 [package]
 name = "wick-runtime"
-version = "0.1.0"
+version = "0.20.0"
 authors = ["Jarrod Overson <jsoverson@gmail.com>"]
 edition = "2021"
 license = "Elastic-2.0"
@@ -10,16 +10,16 @@ publish = false
 [features]
 
 [dependencies]
-wick-packet = { path = "../wick-packet", features = [] }
-flow-graph = { path = "../flow-graph" }
-flow-graph-interpreter = { path = "../flow-graph-interpreter" }
-wick-interface-types = { path = "../wick-interface-types" }
-wick-config = { path = "../wick-config" }
-wick-loader-utils = { path = "../wick-loader-utils" }
-wick-component-wasm = { path = "../wick-component-wasm" }
-wick-stdlib = { path = "../wick-stdlib" }
-wick-rpc = { path = "../wick-rpc" }
-seeded-random = { path = "../../misc/seeded-random" }
+wick-packet = { workspace = true }
+flow-graph = { workspace = true }
+flow-graph-interpreter = { workspace = true }
+wick-interface-types = { workspace = true }
+wick-config = { workspace = true }
+wick-loader-utils = { workspace = true }
+wick-component-wasm = { workspace = true }
+wick-stdlib = { workspace = true }
+wick-rpc = { workspace = true }
+seeded-random = { workspace = true }
 tokio = { workspace = true, features = [
   "macros",
   "time",
@@ -38,15 +38,17 @@ thiserror = { workspace = true }
 tokio-stream = { workspace = true }
 tracing = { workspace = true }
 uuid = { workspace = true }
-atty = "0.2"
+atty = { workspace = true }
 
 [dev-dependencies]
-wick-invocation-server = { path = "../wick-invocation-server" }
-test-native-collection = { path = "../../integration/test-native-collection" }
-logger = { path = "../logger" }
-test-logger = { path = "../../misc/test-logger" }
-pretty_assertions = "1"
-lazy_static = "1.4"
+wick-invocation-server = { workspace = true }
+test-native-collection = { workspace = true }
+logger = { workspace = true }
+test-logger = { workspace = true }
+pretty_assertions = { workspace = true }
+lazy_static = { workspace = true }
 anyhow = { workspace = true }
-runtime-testutils = { path = "./tests/runtime_utils" }
 futures = { workspace = true }
+tracing = { workspace = true }
+uuid = { workspace = true }
+tokio = { workspace = true, features = ["time"] }

@@ -1,5 +1,6 @@
 use anyhow::Result;
-use runtime_testutils::*;
+mod utils;
+use utils::*;
 use wick_packet::{packet_stream, Packet};
 
 #[test_logger::test(tokio::test)]

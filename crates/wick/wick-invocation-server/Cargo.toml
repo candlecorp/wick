@@ -8,7 +8,7 @@ publish = false
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
-wick-rpc = { path = "../wick-rpc" }
+wick-rpc = { workspace = true }
 tonic = { workspace = true, features = ["tls"] }
 tokio = { workspace = true, features = ["macros", "net", "rt-multi-thread"] }
 tokio-stream = { workspace = true, features = ["net"] }
@@ -18,13 +18,12 @@ rand = { workspace = true }
 tracing = { workspace = true }
 thiserror = { workspace = true }
 async-trait = { workspace = true }
-derivative = "2.2"
 parking_lot = { workspace = true }
-wick-packet = { path = "../wick-packet", features = [] }
+wick-packet = { workspace = true }
 
 [dev-dependencies]
-logger = { path = "../logger" }
-test-logger = { path = "../../misc/test-logger" }
+logger = { workspace = true }
+test-logger = { workspace = true }
 anyhow = { workspace = true }
-test-native-collection = { path = "../../integration/test-native-collection" }
+test-native-collection = { workspace = true }
 futures = { workspace = true }

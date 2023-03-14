@@ -49,4 +49,4 @@ update-lints:
   ts-node ./etc/update-lints.ts
 
 publish-sdk VERSION="minor":
-  cargo release {{VERSION}} -p wick-packet wick-codegen wick-interface-types wick-component
+  cargo release {{VERSION}} -p wick-packet -p wick-codegen -p wick-interface-types -p wick-component -p seeded-random

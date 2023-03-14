@@ -13,13 +13,10 @@ host = []
 guest = []
 
 [dependencies]
-wick-packet = { path = "../wick-packet" }
-wick-rpc = { path = "../wick-rpc" }
-wick-interface-types = { path = "../wick-interface-types", features = [
-  "parser"
-] }
-# wick-interface-types = { path = "../wick-interface-types" }
-seeded-random = { path = "../../misc/seeded-random" }
+wick-packet = { workspace = true }
+wick-rpc = { workspace = true }
+wick-interface-types = { workspace = true, features = ["parser"] }
+seeded-random = { workspace = true }
 tracing = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 async-trait = { workspace = true }
@@ -29,8 +26,7 @@ futures = { workspace = true }
 anyhow = { workspace = true }
 
 [dev-dependencies]
-wick-stdlib = { path = ".", features = ["guest"] }
-logger = { path = "../logger" }
-test-logger = { path = "../../misc/test-logger" }
+logger = { workspace = true }
+test-logger = { workspace = true }
 futures = { workspace = true }
-anyhow = { version = "1.0" }
+anyhow = { workspace = true }

@@ -768,17 +768,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "derivative"
-version = "2.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fcc3dd5e9e9c0b295d6e1e4d811fb6f157d5ffd784b8d202fc62eac8035a770b"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn",
-]
-
-[[package]]
 name = "diff"
 version = "0.1.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1012,7 +1001,7 @@ dependencies = [
 
 [[package]]
 name = "flow-graph"
-version = "0.0.0"
+version = "0.20.0"
 dependencies = [
  "anyhow",
  "logger",
@@ -1026,7 +1015,7 @@ dependencies = [
 
 [[package]]
 name = "flow-graph-interpreter"
-version = "0.0.0"
+version = "0.20.0"
 dependencies = [
  "anyhow",
  "bytes",
@@ -2645,20 +2634,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "runtime-testutils"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "futures",
- "tokio",
- "tracing",
- "uuid",
- "wick-config",
- "wick-packet",
- "wick-runtime",
-]
-
-[[package]]
 name = "rustc-demangle"
 version = "0.1.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3239,7 +3214,7 @@ dependencies = [
 
 [[package]]
 name = "test-logger"
-version = "0.0.0"
+version = "0.1.0"
 dependencies = [
  "logger",
  "proc-macro-crate",
@@ -4669,7 +4644,7 @@ dependencies = [
 
 [[package]]
 name = "wick-config"
-version = "0.1.0"
+version = "0.20.0"
 dependencies = [
  "anyhow",
  "flow-expression-parser",
@@ -4761,7 +4736,6 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-trait",
- "derivative",
  "futures",
  "logger",
  "parking_lot",
@@ -4820,7 +4794,6 @@ dependencies = [
  "bytes",
  "futures",
  "parking_lot",
- "pin-project-lite",
  "seeded-random",
  "serde",
  "serde_json",
@@ -4862,7 +4835,7 @@ dependencies = [
 
 [[package]]
 name = "wick-runtime"
-version = "0.1.0"
+version = "0.20.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -4875,7 +4848,6 @@ dependencies = [
  "once_cell",
  "parking_lot",
  "pretty_assertions",
- "runtime-testutils",
  "seeded-random",
  "serde",
  "serde-value",
@@ -4915,7 +4887,6 @@ dependencies = [
  "wick-interface-types",
  "wick-packet",
  "wick-rpc",
- "wick-stdlib",
 ]
 
 [[package]]

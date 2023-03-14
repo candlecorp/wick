@@ -1,4 +1,5 @@
-use runtime_testutils::*;
+mod utils;
+use utils::*;
 type Result<T> = anyhow::Result<T, anyhow::Error>;
 
 #[test_logger::test(tokio::test)]

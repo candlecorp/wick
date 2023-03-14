@@ -110,18 +110,6 @@ pub type InvocationClient = InvocationServiceClient<Channel>;
 #[macro_use]
 extern crate tracing;
 
-#[macro_use]
-extern crate derivative;
-
-// #[doc(hidden)]
-// pub fn make_input<K: AsRef<str>, V: serde::Serialize>(entries: Vec<(K, V)>) -> TransportMap {
-//   entries
-//     .into_iter()
-//     .map(|(k, v)| Ok((k.as_ref().to_owned(), MessageTransport::success(&v))))
-//     .filter_map(Result::ok)
-//     .collect()
-// }
-
 /// Build and spawn an RPC server for the passed collection.
 #[must_use]
 pub fn make_rpc_server(

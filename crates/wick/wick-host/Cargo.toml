@@ -10,30 +10,30 @@ repository = "https://github.com/candlecorp/wick"
 [features]
 
 [dependencies]
-seeded-random = { path = "../../misc/seeded-random" }
-wick-runtime = { path = "../wick-runtime" }
-wick-packet = { path = "../wick-packet" }
-wick-interface-types = { path = "../wick-interface-types" }
-wick-config = { path = "../wick-config" }
-wick-loader-utils = { path = "../wick-loader-utils" }
-wick-component-cli = { path = "../wick-component-cli" }
-wick-rpc = { path = "../wick-rpc" }
-wick-invocation-server = { path = "../wick-invocation-server" }
+seeded-random = { workspace = true }
+wick-runtime = { workspace = true }
+wick-packet = { workspace = true }
+wick-interface-types = { workspace = true }
+wick-config = { workspace = true }
+wick-loader-utils = { workspace = true }
+wick-component-cli = { workspace = true }
+wick-rpc = { workspace = true }
+wick-invocation-server = { workspace = true }
 tracing = { workspace = true }
 thiserror = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 async-trait = { workspace = true }
 tokio = { workspace = true, features = ["macros", "net", "rt-multi-thread"] }
-http = "0.2"
+http = { workspace = true }
 once_cell = { workspace = true }
 parking_lot = { workspace = true }
 uuid = { workspace = true }
 futures = { workspace = true }
 
 [dev-dependencies]
-logger = { path = "../logger" }
-test-logger = { path = "../../misc/test-logger" }
+logger = { workspace = true }
+test-logger = { workspace = true }
 tokio = { workspace = true, features = [
   "net",
   "rt-multi-thread",

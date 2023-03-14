@@ -19,7 +19,45 @@ exclude = [
 ]
 
 [workspace.dependencies]
-env_logger = "0.10.0"
+wick-packet = { path = "./crates/wick/wick-packet", version = "0.10.0" }
+wick-stdlib = { path = "./crates/wick/wick-stdlib", version = "0.1.0" }
+wick-interface-types = { path = "./crates/wick/wick-interface-types", version = "0.10.0" }
+wick-invocation-server = { path = "./crates/wick/wick-invocation-server", version = "0.1.0" }
+wick-rpc = { path = "./crates/wick/wick-rpc", version = "0.1.0" }
+wick-loader-utils = { path = "./crates/wick/wick-loader-utils" }
+wick-component = { path = "./crates/wick/wick-component", version = "0.0.0" }
+wick-component-codegen = { path = "./crates/wick/wick-component-codegen", version = "0.0.0" }
+wick-component-wasm = { path = "./crates/wick/wick-component-wasm", version = "0.1.0" }
+wick-component-cli = { path = "./crates/wick/wick-component-cli", version = "0.1.0" }
+wick-runtime = { path = "./crates/wick/wick-runtime", version = "0.20.0" }
+wick-host = { path = "./crates/wick/wick-host", version = "0.1.0" }
+wick-config = { path = "./crates/wick/wick-config", version = "0.20.0" }
+wick-test = { path = "./crates/wick/wick-test", version = "0.0.0" }
+wick-wascap = { path = "./crates/wick/wick-wascap", version = "0.1.0" }
+wick-oci-utils = { path = "./crates/wick/wick-oci-utils", version = "0.1.0" }
+wick-grpctar = { path = "./crates/wick/wick-grpctar", version = "0.1.0" }
+flow-expression-parser = { path = "./crates/wick/flow-expression-parser", version = "0.1.0" }
+flow-graph-interpreter = { path = "./crates/wick/flow-graph-interpreter", version = "0.20.0" }
+flow-graph = { path = "./crates/wick/flow-graph", version = "0.20.0" }
+logger = { path = "./crates/wick/logger", version = "0.1.0" }
+seeded-random = { path = "./crates/misc/seeded-random", version = "0.0.0" }
+tap = { path = "./crates/misc/tap", version = "0.0.0" }
+rot = { path = "./crates/misc/rot", version = "0.1.0" }
+performance-mark = { path = "./crates/misc/performance-mark", version = "0.0.1" }
+test-logger = { path = "./crates/misc/test-logger", version = "0.1.0" }
+tokio-test-bin = { path = "./crates/misc/tokio-test-bin", version = "0.3.0" }
+test-native-collection = { path = "./crates/integration/test-native-collection", version = "0.1.0" }
+quote = "1.0.26"
+syn = "1.0.109"
+proc-macro2 = "1.0"
+heck = "0.4"
+tar = "0.4"
+serde-with-expand-env = "1.1"
+http = "0.2"
+cfg-if = "1.0"
+async-stream = "0.3"
+env_logger = "0.10"
+num-traits = "0.2"
 bytes = "1.4"
 serde = "1.0"
 serde_json = "1.0"
@@ -40,10 +78,17 @@ async-recursion = "1.0"
 clap = "4.1"
 tonic = "0.8"
 tonic-build = "0.8"
+tonic-reflection = "0.6"
+reqwest = "0.11"
 rand = "0.8"
 shellexpand = "3.0"
 regex = "1"
 k9 = "0.11"
+lazy_static = "1.4"
+test-log = "0.2"
+nom = "7.1"
+serde_repr = "0.1"
+pretty_assertions = "1.3"
 wasmrs = { version = "0.5" }
 wasmrs-rx = { version = "0.5" }
 wasmrs-frames = { version = "0.5" }
@@ -52,3 +97,16 @@ wasmrs-wasmtime = { version = "0.5" }
 wasmrs-host = { version = "0.5" }
 wasmrs-runtime = { version = "0.5" }
 wasmrs-guest = { version = "0.5" }
+rand_chacha = "0.3"
+oci-distribution = "0.9"
+url = "2.3"
+dyn-clone = "1.0"
+prost = "0.11"
+prost-types = "0.11"
+atty = "0.2"
+wascap = "0.8"
+walrus = "0.19"
+data-encoding = "2.3.2"
+ring = "0.16"
+nuid = "0.4"
+paste = "1.0"

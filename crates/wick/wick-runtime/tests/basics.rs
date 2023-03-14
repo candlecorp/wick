@@ -1,4 +1,5 @@
-use runtime_testutils::*;
+mod utils;
+use utils::*;
 use wick_packet::{packet_stream, Packet, PacketStream};
 
 type Result<T> = anyhow::Result<T, anyhow::Error>;

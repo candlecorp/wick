@@ -14,7 +14,7 @@ guest = []
 wick-packet = { path = "../../wick/wick-packet", features = [
 ] }
 wick-interface-types = { path = "../../wick/wick-interface-types", features=["parser"] }
-wick-rpc = { path = "../../wick/wick-rpc" }
+wick-rpc = { workspace = true }
 serde = { version = "1", features = ["derive"] }
 async-trait = { workspace = true }
 tokio = { workspace = true, features = ["rt-multi-thread"] }
@@ -24,7 +24,7 @@ futures = { workspace = true }
 
 [dev-dependencies]
 futures = { workspace = true }
-test-logger = { path = "../../misc/test-logger" }
+test-logger = { workspace = true }
 tokio = { workspace = true, features = ["macros"] }
 logger = { path = "../../wick/logger" }
 clap = { version = "3.0", features = ["derive", "env"] }

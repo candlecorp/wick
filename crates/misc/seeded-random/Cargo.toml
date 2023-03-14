@@ -3,10 +3,12 @@ name = "seeded-random"
 version = "0.0.0"
 edition = "2021"
 license = "Apache-2.0"
+description = "A utility library for deterministic randomness."
+repository = "https://github.com/candlecorp/wick"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
 rand = { workspace = true }
-rand_chacha = "0.3"
+rand_chacha = { workspace = true }
 parking_lot = { workspace = true }
 uuid = { workspace = true, features = ["v4"] }
