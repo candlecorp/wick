@@ -114,7 +114,7 @@ jobs:
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: wick-nightly-${{ matrix.config.name }}-${{ matrix.config.arch }}.*
+          file: _dist/wick-nightly-${{ matrix.config.name }}-${{ matrix.config.arch }}.*
           tag: nightly
           overwrite: true
           file_glob: true
