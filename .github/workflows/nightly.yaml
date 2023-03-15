@@ -12,8 +12,19 @@ env:
   SCCACHE_AZURE_CONNECTION_STRING: ${{ secrets.SCCACHE_AZURE_CONNECTION_STRING }}
   SCCACHE_AZURE_PREFIX: "wick"
 jobs:
+  tag:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - name: Update Nightly Tag
+        uses: richardsimko/update-tag@v1
+        with:
+          tag_name: nightly
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   build:
     runs-on: ${{ matrix.config.os }}
+    needs: tag
     strategy:
       matrix:
         config:
