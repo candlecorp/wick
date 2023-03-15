@@ -58,9 +58,7 @@ jobs:
         uses: lukka/get-cmake@latest
       - name: Install Visual Studio Build Tools
         if: runner.os == 'Windows'
-        uses: microsoft/setup-msvc@v1
-        with:
-          msvc-version: latest
+        uses: microsoft/setup-msbuild@v1
       - name: setup for cross-compiled linux aarch64 build
         if: matrix.config.target == 'aarch64-unknown-linux-gnu'
         run: |
