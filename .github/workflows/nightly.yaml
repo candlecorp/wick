@@ -56,6 +56,11 @@ jobs:
       - name: setup windows sdk
         if: runner.os == 'Windows'
         uses: lukka/get-cmake@latest
+      - name: Install Visual Studio Build Tools
+        if: runner.os == 'Windows'
+        uses: microsoft/setup-msvc@v1
+        with:
+          msvc-version: latest
       - name: setup for cross-compiled linux aarch64 build
         if: matrix.config.target == 'aarch64-unknown-linux-gnu'
         run: |
