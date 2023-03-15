@@ -1,12 +1,9 @@
 use std::pin::Pin;
 
-use futures::{Future, StreamExt};
+use futures::Future;
 use serde::{Deserialize, Serialize};
-use wasmrs::{Metadata, PayloadError, RSocket};
-use wasmrs_frames::RawPayload;
-use wasmrs_guest::{FluxChannel, Observer};
 
-use crate::{from_wasmrs, Entity, PacketStream};
+use crate::{Entity, PacketStream};
 
 /// An implementation that encapsulates a collection link that components use to call out to components on other Wick collections.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -53,14 +50,21 @@ impl std::fmt::Display for CollectionLink {
   }
 }
 
-// #[cfg(target_arch = "wasm32")]
+#[cfg(target_family = "wasm")]
 async fn link_call(origin: &str, target: &str, mut input: PacketStream) -> Result<PacketStream, crate::error::Error> {
-  let (host_tx, host_rx) = FluxChannel::<RawPayload, PayloadError>::new_parts();
+  use futures::StreamExt;
+  use wasmrs::RSocket;
+  use wasmrs_guest::Observer;
+
+  let (host_tx, host_rx) = wasmrs_guest::FluxChannel::<wasmrs_frames::RawPayload, wasmrs::PayloadError>::new_parts();
   let host_stream = wasmrs_guest::Host::default().request_channel(Box::new(host_rx));
-  let md = Metadata::new(0);
+  let md = wasmrs::Metadata::new(0);
   let invocation = wasmrs_codec::messagepack::serialize(&(origin, target)).unwrap();
   host_tx
-    .send(RawPayload::new_data(Some(md.encode()), Some(invocation.into())))
+    .send(wasmrs_frames::RawPayload::new_data(
+      Some(md.encode()),
+      Some(invocation.into()),
+    ))
     .unwrap();
 
   wasmrs_runtime::spawn(async move {
@@ -69,10 +73,10 @@ async fn link_call(origin: &str, target: &str, mut input: PacketStream) -> Resul
     }
   });
 
-  Ok(from_wasmrs(host_stream))
+  Ok(crate::from_wasmrs(host_stream))
 }
 
-// #[cfg(not(target_arch = "wasm32"))]
-// async fn link_call(_origin: &str, _target: &str, _payload: PacketStream) -> Result<PacketStream, crate::error::Error> {
-//   unimplemented!("Link calls from native collections is not implemented yet")
-// }
+#[cfg(not(target_family = "wasm"))]
+async fn link_call(_origin: &str, _target: &str, _payload: PacketStream) -> Result<PacketStream, crate::error::Error> {
+  unimplemented!("Link calls from native components is not implemented yet")
+}
