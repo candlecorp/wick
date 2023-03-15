@@ -120,8 +120,8 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           rm: true
           tag: nightly
+          #add _dist/wick-nightly-win-amd64.zip when windows is building
           files: |
-            _dist/wick-nightly-win-amd64.zip
             _dist/wick-nightly-linux-amd64.tar.gz
             _dist/wick-nightly-linux-aarch64.tar.gz
             _dist/wick-nightly-macos-amd64.tar.gz
