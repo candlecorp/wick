@@ -96,8 +96,10 @@ jobs:
       - name: Install sccache (macos-latest)
         if: matrix.config.os == 'macos-latest'
         run: |
-          brew update
-          brew install sccache
+          mkdir -p $HOME/.local/bin
+          curl -L "https://github.com/mozilla/sccache/releases/download/v0.3.3/sccache-v0.3.3-x86_64-apple-darwin.tar.gz" | tar xz
+          mv -f sccache-v0.3.3-x86_64-apple-darwin/sccache $HOME/.local/bin/sccache
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
       - name: cargo cache
         uses: actions/cache@v3
         with:
