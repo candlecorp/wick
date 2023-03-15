@@ -5,6 +5,13 @@ on:
   push:
     branches:
       - release-automation
+permissions:
+  contents: write
+env:
+  SCCACHE_AZURE_BLOB_CONTAINER: ${{ secrets.SCCACHE_AZURE_BLOB_CONTAINER }}
+  SCCACHE_AZURE_CONNECTION_STRING: ${{ secrets.SCCACHE_AZURE_CONNECTION_STRING }}
+  SCCACHE_AZURE_PREFIX: "wick"
+  RUSTC_WRAPPER: "sccache"
 jobs:
   build:
     runs-on: ${{ matrix.config.os }}
@@ -89,7 +96,7 @@ jobs:
       - name: "rustup updates"
         run: |
           rustup target add wasm32-unknown-unknown wasm32-wasi
-          cargo install tomlq cargo-deny just
+          cargo install tomlq cargo-deny just sccache
       - name: "build binary"
         uses: actions-rs/cargo@v1
         with:
