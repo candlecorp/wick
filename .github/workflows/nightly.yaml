@@ -63,14 +63,12 @@ jobs:
         if: matrix.config.target == 'aarch64-unknown-linux-gnu'
         run: |
           sudo apt update
-          sudo apt install gcc-aarch64-linux-gnu g++-aarch64-linux-gnu libssl-dev pkg-config
+          sudo apt install gcc-aarch64-linux-gnu g++-aarch64-linux-gnu pkg-config
           echo '[target.aarch64-unknown-linux-gnu]' >> ${HOME}/.cargo/config.toml
           echo 'linker = "aarch64-linux-gnu-gcc"' >> ${HOME}/.cargo/config.toml
           echo "PKG_CONFIG_SYSROOT_DIR=/usr/aarch64-linux-gnu" >> $GITHUB_ENV
           echo "PKG_CONFIG_PATH=/usr/lib/aarch64-linux-gnu/pkgconfig" >> $GITHUB_ENV
           echo "PKG_CONFIG_ALLOW_CROSS=1" >> $GITHUB_ENV
-          echo "OPENSSL_LIB_DIR=/usr/aarch64-linux-gnu/lib" >> $GITHUB_ENV
-          echo "OPENSSL_INCLUDE_DIR=/usr/aarch64-linux-gnu/include" >> $GITHUB_ENV
       - name: cargo cache
         uses: actions/cache@v3
         with:
@@ -98,7 +96,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: build
-          args: --release -p wick --target=${{ matrix.config.target }}
+          args: --release -p wick --target=${{ matrix.config.target }} --features openssl/vendored
       - name: package release assets
         if: runner.os != 'Windows'
         run: |
