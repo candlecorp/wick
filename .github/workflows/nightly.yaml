@@ -7,6 +7,7 @@ on:
       - release-automation
 permissions:
   contents: write
+  packages: write
 env:
   SCCACHE_AZURE_BLOB_CONTAINER: ${{ secrets.SCCACHE_AZURE_BLOB_CONTAINER }}
   SCCACHE_AZURE_CONNECTION_STRING: ${{ secrets.SCCACHE_AZURE_CONNECTION_STRING }}
@@ -108,6 +109,7 @@ jobs:
           rustup target add wasm32-unknown-unknown wasm32-wasi
           cargo install tomlq cargo-deny just sccache
           export RUSTC_WRAPPER="sccache"
+      #Updating rustup updates means that the github cache needs to be manually deleted.
       - name: "build binary"
         uses: actions-rs/cargo@v1
         with:
@@ -136,3 +138,22 @@ jobs:
           tag: nightly
           overwrite: true
           file_glob: true
+  docker:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v1
+      - name: ghcr login
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: build and push
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: ./docker/Dockerfile.nightly
+          push: true
+          tags: ghcr.io/candlecorp/wick:nightly
+          platforms: linux/amd64,linux/arm64
