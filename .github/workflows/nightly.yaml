@@ -36,9 +36,9 @@ jobs:
               arch: "aarch64",
             }
           - {
-              os: "windows-latest",
+              os: "ubuntu-latest",
               name: "win",
-              target: "x86_64-pc-windows-msvc",
+              target: "x86_64-pc-windows-gnu",
               arch: "amd64",
             }
     steps:
@@ -47,18 +47,6 @@ jobs:
         uses: arduino/setup-protoc@v1
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
-      - name: setup nasm for windows
-        if: runner.os == 'Windows'
-        uses: ilammy/setup-nasm@v1
-      - name: setup windows sdk
-        if: runner.os == 'Windows'
-        uses: ilammy/msvc-dev-cmd@v1
-      - name: setup windows sdk
-        if: runner.os == 'Windows'
-        uses: lukka/get-cmake@latest
-      - name: Install Visual Studio Build Tools
-        if: runner.os == 'Windows'
-        uses: microsoft/setup-msbuild@v1
       - name: setup for cross-compiled linux aarch64 build
         if: matrix.config.target == 'aarch64-unknown-linux-gnu'
         run: |
@@ -68,6 +56,16 @@ jobs:
           echo 'linker = "aarch64-linux-gnu-gcc"' >> ${HOME}/.cargo/config.toml
           echo "PKG_CONFIG_SYSROOT_DIR=/usr/aarch64-linux-gnu" >> $GITHUB_ENV
           echo "PKG_CONFIG_PATH=/usr/lib/aarch64-linux-gnu/pkgconfig" >> $GITHUB_ENV
+          echo "PKG_CONFIG_ALLOW_CROSS=1" >> $GITHUB_ENV
+      - name: setup for cross-compiled windows build
+        if: matrix.config.target == 'x86_64-pc-windows-gnu'
+        run: |
+          sudo apt update
+          sudo apt install mingw-w64
+          echo '[target.x86_64-pc-windows-gnu]' >> ${HOME}/.cargo/config.toml
+          echo 'linker = "x86_64-w64-mingw32-gcc"' >> ${HOME}/.cargo/config.toml
+          echo "PKG_CONFIG_SYSROOT_DIR=/usr/x86_64-w64-mingw32" >> $GITHUB_ENV
+          echo "PKG_CONFIG_PATH=/usr/lib/x86_64-w64-mingw32/pkgconfig" >> $GITHUB_ENV
           echo "PKG_CONFIG_ALLOW_CROSS=1" >> $GITHUB_ENV
       - name: cargo cache
         uses: actions/cache@v3
@@ -98,14 +96,14 @@ jobs:
           command: build
           args: --release -p wick --target=${{ matrix.config.target }} --features openssl/vendored
       - name: package release assets
-        if: runner.os != 'Windows'
+        if: matrix.config.target != 'x86_64-pc-windows-gnu'
         run: |
           mkdir _dist
           cp README.md LICENSE target/${{ matrix.config.target }}/release/wick _dist/
           cd _dist
           tar czf wick-nightly-${{ matrix.config.name }}-${{ matrix.config.arch }}.tar.gz README.md LICENSE wick
       - name: package release assets
-        if: runner.os == 'Windows'
+        if: matrix.config.target == 'x86_64-pc-windows-gnu'
         shell: bash
         run: |
           mkdir _dist
