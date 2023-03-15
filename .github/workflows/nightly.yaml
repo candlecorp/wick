@@ -2,9 +2,6 @@ name: nightly-build
 on:
   schedule:
     - cron: "0 1 * * *" # 1am UTC
-  push:
-    branches:
-      - release-automation
 permissions:
   contents: write
   packages: write
