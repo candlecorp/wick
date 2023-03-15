@@ -50,6 +50,9 @@ jobs:
       - name: setup nasm for windows
         if: runner.os == 'Windows'
         uses: ilammy/setup-nasm@v1
+      - name: setup windows sdk
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
       - name: setup for cross-compiled linux aarch64 build
         if: matrix.config.target == 'aarch64-unknown-linux-gnu'
         run: |
