@@ -40,6 +40,7 @@ oci-distribution = { version = "0.9", features = [
   "rustls-tls",
 ], default-features = false }
 async-recursion = { workspace = true }
+openssl = { version = "0.10" } #required for cross compilation (don't remove)
 
 [dev-dependencies]
 test_bin = "0.4"
