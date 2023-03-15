@@ -4577,6 +4577,7 @@ dependencies = [
  "clap 4.1.8",
  "logger",
  "once_cell",
+ "openssl",
  "reqwest",
  "serde",
  "serde_json",

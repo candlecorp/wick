@@ -110,4 +110,3 @@ data-encoding = "2.3.2"
 ring = "0.16"
 nuid = "0.4"
 paste = "1.0"
-openssl = { version = "0.10" } #required for cross compilation (don't remove)
