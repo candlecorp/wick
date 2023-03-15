@@ -81,7 +81,7 @@ jobs:
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: 1.67.1
+          toolchain: 1.68.0
           default: true
           target: ${{ matrix.config.target }}
           components: rustfmt, clippy, rustc, cargo, rust-docs, rust-std
