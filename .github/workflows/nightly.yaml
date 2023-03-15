@@ -25,7 +25,7 @@ jobs:
     env:
       SCCACHE_AZURE_BLOB_CONTAINER: ${{ secrets.SCCACHE_AZURE_BLOB_CONTAINER }}
       SCCACHE_AZURE_CONNECTION_STRING: ${{ secrets.SCCACHE_AZURE_CONNECTION_STRING }}
-      SCCACHE_AZURE_PREFIX: "wick-github-actions"
+      SCCACHE_AZURE_KEY_PREFIX: "wick-github-actions"
       RUSTC_WRAPPER: "sccache"
     strategy:
       matrix:
