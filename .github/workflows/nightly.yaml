@@ -35,12 +35,12 @@ jobs:
               target: "aarch64-apple-darwin",
               arch: "aarch64",
             }
-          - {
-              os: "ubuntu-latest",
-              name: "win",
-              target: "x86_64-pc-windows-gnu",
-              arch: "amd64",
-            }
+          # - {
+          #     os: "ubuntu-latest",
+          #     name: "win",
+          #     target: "x86_64-pc-windows-gnu",
+          #     arch: "amd64",
+          #   }
     steps:
       - uses: actions/checkout@v1
       - name: install protobuf
