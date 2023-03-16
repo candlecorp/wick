@@ -1,7 +1,7 @@
 <div align="center">
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://github.com/wasmflow/.github/blob/main/assets/wasmflow-logo-white-color@.5.png?raw=true">
-  <img alt="wasmflow logo" width="50%" src="https://github.com/wasmflow/.github/blob/main/assets/wasmflow-logo-color@.5.png?raw=true">
+  <source media="(prefers-color-scheme: dark)" srcset="https://github.com/candlecorp/.github/blob/main/assets/wick_logo.png?raw=true">
+  <img alt="wick logo" width="50%" src="https://github.com/candlecorp/.github/blob/main/assets/wick_logo.png@.5.png?raw=true">
 </picture>
 </div>
 
@@ -13,13 +13,37 @@ Wick lets you write code and reuse it easily, everywhere. It's built with Rust a
 
 ## Getting Started
 
-Visit the docs on [wasmflow.com](https://wasmflow.com) for getting started guides and API documentation.
+Visit the docs on [candle.dev](https://candle.dev/wick.html) for getting started guides and API documentation.
 
-## Installation
+## Quick Install - Mac and Linux
+Mac and Linux users can install the latest stable version of Wick with the following command:
+```sh
+curl -sSL sh.wick.run | bash
+```
 
-Head over to the [releases page](https://github.com/wasmflow/wasmflow/releases) to download precompiled binaries for your platform.
+To download and install the nightly version, or other releases of wick, pass a single argument of the desired release.
+```sh
+curl -sSL sh.wick.run | bash -s -- nightly
+```
 
-Alternately, install from source with the command:
+## Quick Install - Windows
+Windows users can install the latest stable version of Wick with the following command:
+```sh
+curl -sSL ps.wick.run | powershell
+```
+
+To download and install the nightly version, or other releases of wick, pass a single argument of the desired release.
+```sh
+curl -sSL ps.wick.run | powershell -Command - -ReleaseVersion "nightly"
+```
+
+## Manual Install
+If you want to set it up manually, you can go to the [releases page](https://github.com/candlecorp/wick/releases) to download precompiled binaries for your platform.
+
+Make sure you add the binary location to your path.
+
+## Compile from Source
+Clone the repository and run the install task with `just`, you will need to ensure the path is updated appropriately for your system:
 
 ```
 $ just install

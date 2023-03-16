@@ -4,10 +4,10 @@ RUN apt-get update && apt-get install -y ca-certificates curl
 WORKDIR /opt
 RUN case "${TARGETARCH}" in \
     amd64) \
-    curl -L -o wick-nightly.tar.gz "https://github.com/candlecorp/wick/releases/download/nightly/wick-nightly-linux-amd64.tar.gz" \
+    curl -L -o wick.tar.gz "https://github.com/candlecorp/wick/releases/download/nightly/wick-linux-amd64.tar.gz" \
     ;; \
     arm64) \
-    curl -L -o wick-nightly.tar.gz "https://github.com/candlecorp/wick/releases/download/nightly/wick-nightly-linux-aarch64.tar.gz" \
+    curl -L -o wick.tar.gz "https://github.com/candlecorp/wick/releases/download/nightly/wick-linux-aarch64.tar.gz" \
     ;; \
     *) \
     echo "Unsupported architecture " \
@@ -15,7 +15,7 @@ RUN case "${TARGETARCH}" in \
     ;; \
     esac
 
-RUN tar -xzf wick-nightly.tar.gz
+RUN tar -xzf wick.tar.gz
 
 FROM ubuntu:latest
 LABEL org.opencontainers.image.source="https://github.com/candlecorp/wick"

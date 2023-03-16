@@ -138,7 +138,7 @@ jobs:
           mkdir -p _dist
           cp README.md LICENSE target/${{ matrix.config.target }}/release/wick _dist/
           cd _dist
-          tar czf wick-nightly-${{ matrix.config.name }}-${{ matrix.config.arch }}.tar.gz README.md LICENSE wick
+          tar czf wick-${{ matrix.config.name }}-${{ matrix.config.arch }}.tar.gz README.md LICENSE wick
       - name: package release assets
         if: matrix.config.target == 'x86_64-pc-windows-gnu'
         shell: bash
@@ -146,12 +146,12 @@ jobs:
           mkdir -p _dist
           cp README.md LICENSE target/${{ matrix.config.target }}/release/wick.exe _dist/
           cd _dist
-          7z a -tzip wick-nightly-${{ matrix.config.name }}-${{ matrix.config.arch }}.zip README.md LICENSE wick.exe
+          7z a -tzip wick-${{ matrix.config.name }}-${{ matrix.config.arch }}.zip README.md LICENSE wick.exe
       - name: upload release assets
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: _dist/wick-nightly-${{ matrix.config.name }}-${{ matrix.config.arch }}.*
+          file: _dist/wick-${{ matrix.config.name }}-${{ matrix.config.arch }}.*
           tag: nightly
           overwrite: true
           file_glob: true
