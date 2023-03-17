@@ -9,9 +9,9 @@ use wick_interface_types::HostedType;
 use wick_packet::{Invocation, Packet, PacketStream};
 
 use crate::error::RpcClientError;
-use crate::generated;
 use crate::rpc::invocation_service_client::InvocationServiceClient;
 use crate::rpc::{InvocationRequest, ListRequest, StatsRequest, StatsResponse};
+use crate::{convert_tonic_streaming, generated};
 
 /// Create an RPC client form common configuration
 pub async fn make_rpc_client<T: TryInto<Uri> + Send>(
@@ -132,13 +132,11 @@ impl RpcClient {
       .await
       .map_err(RpcClientError::InvocationFailed)?;
     debug!("Invocation result: {:?}", result);
-    let stream = result.into_inner();
 
-    let mapped = stream.map::<Result<Packet, _>, _>(|o| match o {
-      Ok(o) => Ok(o.into()),
-      Err(e) => Err(wick_packet::Error::General(e.to_string())),
-    });
-    Ok(PacketStream::new(Box::new(mapped)))
+    // Need to do this because tonic::decode::Decoder is not Sync and can't be turned into a PacketStream.
+    let stream = convert_tonic_streaming(result.into_inner());
+
+    Ok(stream)
   }
 
   /// Send an invoke RPC command with an [Invocation] object.

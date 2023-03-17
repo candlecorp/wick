@@ -1,11 +1,10 @@
-use futures::future::BoxFuture;
 use serde_json::Value;
 use wasmrs_rx::{FluxChannel, Observer};
 use wick_interface_types::{ComponentSignature, Field, OperationSignature};
 use wick_packet::{CollectionLink, Entity, Invocation, Packet, PacketStream};
 
 use crate::constants::*;
-use crate::{BoxError, Collection, HandlerMap};
+use crate::{BoxError, BoxFuture, Component, HandlerMap};
 
 #[derive(thiserror::Error, Debug, Clone, PartialEq, Eq)]
 pub(crate) enum Error {
@@ -33,7 +32,7 @@ impl CollectionCollection {
   }
 }
 
-impl Collection for CollectionCollection {
+impl Component for CollectionCollection {
   fn handle(
     &self,
     invocation: Invocation,

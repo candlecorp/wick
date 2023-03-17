@@ -2,7 +2,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
   println!("cargo:rerun-if-changed=component.yaml");
   wick_component_codegen::configure().generate("component.yaml")?;
 
-  // wick_codegen::configure()
+  // wick_component_codegen::configure()
   //   .out_dir("src/generated")
   //   .generate("component.yaml")?;
 

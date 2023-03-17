@@ -7,8 +7,8 @@ use tracing::debug;
 
 pub use self::resources::*;
 pub use self::triggers::*;
-use crate::error::ManifestError;
-use crate::{from_yaml, v1, ComponentKind, Error, Result};
+use crate::error::{ManifestError, ReferenceError};
+use crate::{from_yaml, v1, BoundComponent, ComponentDefinition, Error, Result};
 
 #[derive(Debug, Clone, Default)]
 #[must_use]
@@ -18,8 +18,8 @@ pub struct AppConfiguration {
   format: u32,
   version: String,
   name: String,
-  import: HashMap<String, ComponentKind>,
-  resources: HashMap<String, ResourceDefinition>,
+  import: HashMap<String, BoundComponent>,
+  resources: HashMap<String, BoundResource>,
   triggers: Vec<TriggerDefinition>,
 }
 
@@ -32,8 +32,8 @@ impl TryFrom<v1::AppConfiguration> for AppConfiguration {
       format: def.format,
       version: def.metadata.unwrap_or_default().version,
       name: def.name,
-      import: def.import.into_iter().map(|(k, v)| (k, v.into())).collect(),
-      resources: def.resources.into_iter().map(|(k, v)| (k, v.into())).collect(),
+      import: def.import.into_iter().map(|v| (v.name.clone(), v.into())).collect(),
+      resources: def.resources.into_iter().map(|v| (v.name.clone(), v.into())).collect(),
       triggers: def.triggers.into_iter().map(|v| v.into()).collect(),
     })
   }
@@ -81,6 +81,15 @@ impl AppConfiguration {
     manifest
   }
 
+  /// Get the configuration item a binding points to.
+  #[must_use]
+  pub fn resolve_binding(&self, name: &str) -> Option<ConfigurationItem> {
+    if let Some(component) = self.import.get(name) {
+      return Some(ConfigurationItem::Component(&component.kind));
+    }
+    None
+  }
+
   /// Return the underlying version of the source manifest.
   #[must_use]
   pub fn version(&self) -> &str {
@@ -107,13 +116,13 @@ impl AppConfiguration {
 
   #[must_use]
   /// Get the application's imports.
-  pub fn imports(&self) -> &HashMap<String, ComponentKind> {
+  pub fn imports(&self) -> &HashMap<String, BoundComponent> {
     &self.import
   }
 
   #[must_use]
   /// Get the application's resources.
-  pub fn resources(&self) -> &HashMap<String, ResourceDefinition> {
+  pub fn resources(&self) -> &HashMap<String, BoundResource> {
     &self.resources
   }
 
@@ -121,5 +130,25 @@ impl AppConfiguration {
   /// Get the application's triggers.
   pub fn triggers(&self) -> &Vec<TriggerDefinition> {
     &self.triggers
+  }
+}
+
+/// A configuration item
+#[derive(Debug, Clone, PartialEq)]
+#[must_use]
+pub enum ConfigurationItem<'a> {
+  /// A component definition.
+  Component(&'a ComponentDefinition),
+  /// A resource definition.
+  Resource(&'a ResourceDefinition),
+}
+
+impl<'a> ConfigurationItem<'a> {
+  /// Get the component definition or return an error.
+  pub fn component(&self) -> std::result::Result<&'a ComponentDefinition, ReferenceError> {
+    match self {
+      ConfigurationItem::Component(c) => Ok(c),
+      _ => Err(ReferenceError::Component),
+    }
   }
 }

@@ -10,7 +10,7 @@ use tonic::{Response, Status};
 use wick_packet::PacketStream;
 use wick_rpc::error::RpcError;
 use wick_rpc::rpc::invocation_service_server::InvocationService;
-use wick_rpc::rpc::{ListResponse, Packet, StatsResponse};
+use wick_rpc::rpc::{InvocationRequest, ListResponse, Packet, StatsResponse};
 use wick_rpc::{rpc, DurationStatistics, Statistics};
 
 use crate::SharedRpcHandler;
@@ -85,13 +85,34 @@ impl InvocationServer {
   }
 }
 
+fn convert_invocation_stream(mut streaming: tonic::Streaming<InvocationRequest>) -> PacketStream {
+  let (tx, rx) = tokio::sync::mpsc::unbounded_channel();
+  tokio::spawn(async move {
+    while let Some(p) = streaming.next().await {
+      let result = p.map_err(|e| wick_packet::Error::General(e.to_string())).map(|p| {
+        p.data.map_or_else(
+          || unreachable!(),
+          |p| match p {
+            rpc::invocation_request::Data::Invocation(_) => unreachable!(),
+            rpc::invocation_request::Data::Packet(p) => wick_packet::Packet::from(p),
+          },
+        )
+      });
+
+      let _ = tx.send(result);
+    }
+  });
+
+  wick_packet::PacketStream::new(Box::new(tokio_stream::wrappers::UnboundedReceiverStream::new(rx)))
+}
+
 #[async_trait::async_trait]
 impl InvocationService for InvocationServer {
   type InvokeStream = ReceiverStream<Result<Packet, Status>>;
 
   async fn invoke(
     &self,
-    request: tonic::Request<tonic::Streaming<rpc::InvocationRequest>>,
+    request: tonic::Request<tonic::Streaming<InvocationRequest>>,
   ) -> Result<Response<Self::InvokeStream>, Status> {
     let start = Instant::now();
 
@@ -109,17 +130,7 @@ impl InvocationService for InvocationServer {
     } else {
       return Err(Status::invalid_argument("First message must be an invocation"));
     };
-    let stream = stream.map::<Result<wick_packet::Packet, wick_packet::Error>, _>(|p| {
-      p.map_err(|e| wick_packet::Error::General(e.to_string())).map(|p| {
-        p.data.map_or_else(
-          || unreachable!(),
-          |p| match p {
-            rpc::invocation_request::Data::Invocation(_) => unreachable!(),
-            rpc::invocation_request::Data::Packet(p) => wick_packet::Packet::from(p),
-          },
-        )
-      })
-    });
+    let stream = convert_invocation_stream(stream);
     let packet_stream = PacketStream::new(Box::new(stream));
 
     let entity_name = invocation.target.name().to_owned();

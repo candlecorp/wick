@@ -1,10 +1,12 @@
 
 wasm:
 	just crates/integration/test-baseline-component/build
+	just crates/integration/test-http-trigger-component/build
 	just crates/integration/test-cli-trigger-component/build
 
 debug-wasm:
 	just crates/integration/test-baseline-component/debug
+	just crates/integration/test-http-trigger-component/debug
 	just crates/integration/test-cli-trigger-component/debug
 
 clean:

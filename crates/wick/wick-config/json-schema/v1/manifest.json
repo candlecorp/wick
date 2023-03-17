@@ -29,24 +29,23 @@
         },
         "import": {
           "description": "Components to import into the application&#x27;s scope.",
-          "type": "object",
-          "patternProperties": {
-            "[a-zA-Z0-9][a-zA-Z0-9_]*": {
-              "$ref": "#/$defs/v1/ComponentDefinition"
-            }
+
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/v1/ComponentBinding"
           }
         },
         "resources": {
           "description": "Resources that the application can access.",
-          "type": "object",
-          "patternProperties": {
-            "[a-zA-Z0-9][a-zA-Z0-9_]*": {
-              "$ref": "#/$defs/v1/ResourceDefinition"
-            }
+
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/v1/ResourceBinding"
           }
         },
         "triggers": {
           "description": "Configured triggers that drive the application&#x27;s behavior.",
+
           "type": "array",
           "items": {
             "$ref": "#/$defs/v1/TriggerDefinition"
@@ -70,7 +69,10 @@
     },
 
     "TriggerDefinition": {
-      "oneOf": [{ "$ref": "#/$defs/v1/CliTrigger" }]
+      "oneOf": [
+        { "$ref": "#/$defs/v1/CliTrigger" },
+        { "$ref": "#/$defs/v1/HttpTrigger" }
+      ]
     },
 
     "CliTrigger": {
@@ -80,27 +82,126 @@
         "kind": {
           "type": "string",
           "description": "The kind of the collection",
-          "enum": ["wick/trigger/cli:v1"]
-        },
-        "component": {
-          "description": "The component to import for the handler.",
-          "required": false,
-
-          "$ref": "#/$defs/v1/ComponentDefinition"
+          "enum": ["wick/trigger/cli@v1"]
         },
         "operation": {
-          "description": "The handler on the component that accepts the CLI context.",
+          "description": "The operation that will act as the main entrypoint for this trigger.",
 
-          "type": "string"
+          "$ref": "#/$defs/v1/ComponentOperationExpression"
         },
         "app": {
           "description": "The component that provides additional logic.",
           "required": false,
+          "oneOf": [
+            { "type": "string" },
+            {
+              "$ref": "#/$defs/v1/ComponentDefinition"
+            }
+          ]
+        }
+      },
+      "required": ["operation"]
+    },
+
+    "ComponentOperationExpression": {
+      "$anchor": "#v1/ComponentOperationExpression",
+      "additionalProperties": false,
+      "properties": {
+        "component": {
+          "description": "The component that exports the operation.",
+          "oneOf": [
+            { "type": "string" },
+            {
+              "$ref": "#/$defs/v1/ComponentDefinition"
+            }
+          ]
+        },
+        "operation": {
+          "description": "The operation to call.",
+
+          "type": "string"
+        }
+      },
+      "required": ["component", "operation"]
+    },
+
+    "HttpTrigger": {
+      "$anchor": "#v1/HttpTrigger",
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "type": "string",
+          "description": "The kind of the collection",
+          "enum": ["wick/trigger/http@v1"]
+        },
+        "resource": {
+          "description": "The TcpPort reference to listen on for connections.",
+
+          "type": "string"
+        },
+        "routers": {
+          "description": "The HttpRouters that should handle incoming requests",
+
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/v1/HttpRouter"
+          }
+        }
+      },
+      "required": []
+    },
+
+    "HttpRouter": {
+      "oneOf": [
+        { "$ref": "#/$defs/v1/RawRouter" },
+        { "$ref": "#/$defs/v1/RestRouter" }
+      ]
+    },
+
+    "RestRouter": {
+      "$anchor": "#v1/RestRouter",
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "type": "string",
+          "description": "The kind of the collection",
+          "enum": ["wick/router/rest@v1"]
+        },
+        "path": {
+          "description": "The path to start serving this router from.",
+
+          "type": "string"
+        },
+        "component": {
+          "description": "The component to expose as a Rest API.",
 
           "$ref": "#/$defs/v1/ComponentDefinition"
         }
       },
-      "required": []
+      "required": ["path", "component"]
+    },
+
+    "RawRouter": {
+      "$anchor": "#v1/RawRouter",
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "type": "string",
+          "description": "The kind of the collection",
+          "enum": ["wick/router/raw@v1"]
+        },
+        "path": {
+          "description": "The path to start serving this router from.",
+
+          "type": "string"
+        },
+        "operation": {
+          "description": "The operation that handles HTTP requests.",
+
+          "$ref": "#/$defs/v1/ComponentOperationExpression"
+        }
+      },
+      "required": ["path", "operation"]
     },
 
     "ResourceDefinition": {
@@ -117,7 +218,7 @@
         "kind": {
           "type": "string",
           "description": "The kind of the collection",
-          "enum": ["wick/tcp:v1"]
+          "enum": ["wick/resource/tcpport@v1"]
         },
         "port": {
           "description": "The port to bind to.",
@@ -140,7 +241,7 @@
         "kind": {
           "type": "string",
           "description": "The kind of the collection",
-          "enum": ["wick/udp:v1"]
+          "enum": ["wick/resource/udpport@v1"]
         },
         "port": {
           "description": "The port to bind to.",
@@ -184,6 +285,7 @@
         },
         "labels": {
           "description": "The labels and values that apply to this manifest.",
+
           "type": "object",
           "patternProperties": {
             "[a-zA-Z0-9][a-zA-Z0-9_]*": {
@@ -193,6 +295,7 @@
         },
         "types": {
           "description": "Additional types to export and make available to the component.",
+
           "type": "array",
           "items": {
             "$ref": "#/$defs/v1/TypeDefinition"
@@ -200,15 +303,15 @@
         },
         "import": {
           "description": "Components to import into the application&#x27;s scope.",
-          "type": "object",
-          "patternProperties": {
-            "[a-zA-Z0-9][a-zA-Z0-9_]*": {
-              "$ref": "#/$defs/v1/ComponentDefinition"
-            }
+
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/v1/ComponentBinding"
           }
         },
         "operations": {
           "description": "A map of operation names to their definitions.",
+
           "type": "array",
           "items": {
             "$ref": "#/$defs/v1/OperationDefinition"
@@ -231,14 +334,67 @@
       "required": []
     },
 
+    "ResourceBinding": {
+      "$anchor": "#v1/ResourceBinding",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "description": "The name of the binding.",
+
+          "type": "string"
+        },
+        "resource": {
+          "description": "The resource to bind to.",
+
+          "$ref": "#/$defs/v1/ResourceDefinition"
+        }
+      },
+      "required": ["name", "resource"]
+    },
+
+    "ComponentBinding": {
+      "$anchor": "#v1/ComponentBinding",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "description": "The name of the binding.",
+
+          "type": "string"
+        },
+        "component": {
+          "description": "The component to bind to.",
+
+          "$ref": "#/$defs/v1/ComponentDefinition"
+        }
+      },
+      "required": ["name", "component"]
+    },
+
     "ComponentDefinition": {
       "oneOf": [
         { "$ref": "#/$defs/v1/WasmComponent" },
         { "$ref": "#/$defs/v1/GrpcUrlComponent" },
-        { "$ref": "#/$defs/v1/GrpcTarComponent" },
-        { "$ref": "#/$defs/v1/MeshComponent" },
-        { "$ref": "#/$defs/v1/ManifestComponent" }
+        { "$ref": "#/$defs/v1/ManifestComponent" },
+        { "$ref": "#/$defs/v1/ComponentReference" }
       ]
+    },
+
+    "ComponentReference": {
+      "$anchor": "#v1/ComponentReference",
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "type": "string",
+          "description": "The kind of the collection",
+          "enum": ["Reference"]
+        },
+        "id": {
+          "description": "The id of the component to reference.",
+
+          "type": "string"
+        }
+      },
+      "required": ["id"]
     },
 
     "HostConfig": {
@@ -252,6 +408,7 @@
         },
         "insecure_registries": {
           "description": "A list of registries to connect to insecurely (over HTTP vs HTTPS).",
+
           "type": "array",
           "items": {
             "type": "string"
@@ -270,6 +427,7 @@
         },
         "expose": {
           "description": "The schematics to expose via RPC or the mesh, if any.",
+
           "type": "array",
           "items": {
             "type": "string"
@@ -373,7 +531,7 @@
           "description": "The kind of the collection",
           "enum": ["Wasm"]
         },
-        "reference": {
+        "ref": {
           "description": "The URL (and optional tag) or local file path to find the .wasm module.",
 
           "type": "string"
@@ -385,10 +543,11 @@
         },
         "config": {
           "description": "Per-component configuration.",
+
           "type": "object"
         }
       },
-      "required": []
+      "required": ["ref"]
     },
 
     "Permissions": {
@@ -397,6 +556,7 @@
       "properties": {
         "dirs": {
           "description": "A map of from internal directory to external directory that this component should be able to access.",
+
           "type": "object",
           "patternProperties": {
             "[a-zA-Z0-9][a-zA-Z0-9_]*": {
@@ -424,54 +584,11 @@
         },
         "config": {
           "description": "Any configuration necessary for the component.",
+
           "type": "object"
         }
       },
-      "required": []
-    },
-
-    "MeshComponent": {
-      "$anchor": "#v1/MeshComponent",
-      "additionalProperties": false,
-      "properties": {
-        "kind": {
-          "type": "string",
-          "description": "The kind of the collection",
-          "enum": ["Mesh"]
-        },
-        "id": {
-          "description": "The ID of the component.",
-
-          "type": "string"
-        },
-        "config": {
-          "description": "Any configuration necessary for the component.",
-          "type": "object"
-        }
-      },
-      "required": []
-    },
-
-    "GrpcTarComponent": {
-      "$anchor": "#v1/GrpcTarComponent",
-      "additionalProperties": false,
-      "properties": {
-        "kind": {
-          "type": "string",
-          "description": "The kind of the collection",
-          "enum": ["GrpcTar"]
-        },
-        "reference": {
-          "description": "The URL (and optional tag) or local file path to find the archive.",
-
-          "type": "string"
-        },
-        "config": {
-          "description": "Any configuration necessary for the component.",
-          "type": "object"
-        }
-      },
-      "required": []
+      "required": ["url"]
     },
 
     "ManifestComponent": {
@@ -483,17 +600,18 @@
           "description": "The kind of the collection",
           "enum": ["Manifest"]
         },
-        "reference": {
+        "ref": {
           "description": "The URL (and optional tag) or local file path to find the manifest.",
 
           "type": "string"
         },
         "config": {
           "description": "Any configuration necessary for the component.",
+
           "type": "object"
         }
       },
-      "required": []
+      "required": ["ref"]
     },
 
     "OperationDefinition": {
@@ -507,6 +625,7 @@
         },
         "inputs": {
           "description": "Types of the inputs to the operation.",
+
           "type": "array",
           "items": {
             "$ref": "#/$defs/v1/Field"
@@ -514,6 +633,7 @@
         },
         "outputs": {
           "description": "Types of the outputs to the operation.",
+
           "type": "array",
           "items": {
             "$ref": "#/$defs/v1/Field"
@@ -521,6 +641,7 @@
         },
         "components": {
           "description": "A list of components the schematic can use.",
+
           "type": "array",
           "items": {
             "type": "string"
@@ -528,6 +649,7 @@
         },
         "instances": {
           "description": "A map of IDs to specific operation.",
+
           "type": "object",
           "patternProperties": {
             "[a-zA-Z0-9][a-zA-Z0-9_]*": {
@@ -537,6 +659,7 @@
         },
         "flow": {
           "description": "A list of connections from operation to operation.",
+
           "type": "array",
           "items": {
             "$ref": "#/$defs/v1/ConnectionDefinition"
@@ -566,6 +689,7 @@
         "config": {
           "description": "Data to associate with the reference.",
           "required": false,
+
           "type": "object"
         }
       },
@@ -593,7 +717,7 @@
           "type": "string"
         }
       },
-      "required": []
+      "required": ["from", "to"]
     },
 
     "ConnectionTargetDefinition": {
@@ -613,6 +737,7 @@
         "data": {
           "description": "The default value to provide on this connection in the event of an error.",
           "required": false,
+
           "type": "object"
         }
       },

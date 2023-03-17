@@ -24,6 +24,9 @@ pub enum HostError {
   RuntimeError(#[from] Box<wick_runtime::Error>),
 
   #[error(transparent)]
+  Resource(#[from] wick_runtime::resources::ResourceError),
+
+  #[error(transparent)]
   RpcServerError(#[from] wick_invocation_server::Error),
 
   #[error(transparent)]

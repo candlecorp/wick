@@ -1,0 +1,5 @@
+{{#if description}}
+/// {{{description.value}}}
+{{/if}}
+#[allow(unused)]
+pub(crate) type {{name.value}} = {{> expand-type type}};

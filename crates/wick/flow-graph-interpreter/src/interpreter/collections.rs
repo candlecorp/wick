@@ -7,7 +7,6 @@ pub(super) mod core_collection;
 pub(crate) mod internal_collection;
 pub(super) mod schematic_collection;
 
-use futures::future::BoxFuture;
 use serde_json::Value;
 use wick_interface_types::ComponentSignature;
 use wick_packet::{Invocation, PacketStream, StreamMap};
@@ -16,7 +15,7 @@ use self::core_collection::CoreCollection;
 use self::internal_collection::InternalCollection;
 use crate::constants::*;
 use crate::graph::types::Network;
-use crate::BoxError;
+use crate::{BoxError, BoxFuture};
 
 pub(crate) type CollectionMap = HashMap<String, ComponentSignature>;
 
@@ -76,9 +75,9 @@ impl HandlerMap {
     self.collections.get(namespace)
   }
 
-  pub fn add(&mut self, collection: NamespaceHandler) {
-    trace!(namespace = %collection.namespace, "adding collection");
-    self.collections.insert(collection.namespace.clone(), collection);
+  pub fn add(&mut self, component: NamespaceHandler) {
+    trace!(namespace = %component.namespace, "adding component");
+    self.collections.insert(component.namespace.clone(), component);
   }
 }
 
@@ -98,11 +97,11 @@ pub(crate) fn get_id(ns: &str, name: &str, schematic: &str, instance: &str) -> S
 #[must_use]
 pub struct NamespaceHandler {
   pub(crate) namespace: String,
-  pub(crate) collection: Arc<Box<dyn Collection + Send + Sync>>,
+  pub(crate) collection: Arc<Box<dyn Component + Send + Sync>>,
 }
 
 impl NamespaceHandler {
-  pub fn new<T: AsRef<str>>(namespace: T, collection: Box<dyn Collection + Send + Sync>) -> Self {
+  pub fn new<T: AsRef<str>>(namespace: T, collection: Box<dyn Component + Send + Sync>) -> Self {
     Self {
       namespace: namespace.as_ref().to_owned(),
       collection: Arc::new(collection),
@@ -119,7 +118,7 @@ impl Debug for NamespaceHandler {
   }
 }
 
-pub trait Collection {
+pub trait Component {
   fn handle(
     &self,
     invocation: Invocation,

@@ -91,13 +91,14 @@ extern crate tracing;
 #[macro_use]
 pub(crate) mod macros;
 
+mod app_host;
+pub use app_host::{AppHost, AppHostBuilder, TriggerState};
 pub mod collection;
+mod component_host;
 mod error;
-mod host;
-pub mod run;
 
 pub use collection::Collection;
-pub use host::{Host, HostBuilder};
+pub use component_host::{ComponentHost, ComponentHostBuilder};
 
 pub(crate) type Result<T> = std::result::Result<T, error::HostError>;
 pub type Error = error::HostError;

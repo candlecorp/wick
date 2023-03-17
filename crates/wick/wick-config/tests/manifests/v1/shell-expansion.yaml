@@ -4,10 +4,11 @@ format: 1
 metadata:
   version: '1'
 import:
-  test:
-    kind: Wasm
-    reference: bar
-    permissions:
-      dirs:
-        '/': '$PWD'
+  - name: test
+    component:
+      kind: Wasm
+      ref: bar
+      permissions:
+        dirs:
+          '/': '$PWD'
 operations: []

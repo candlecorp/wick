@@ -4,7 +4,7 @@ namespace "wick-config::v1"
 union WickConfig = AppConfiguration | ComponentConfiguration
 
 "The Application configuration defines a standalone Wick application."
-type AppConfiguration {
+type AppConfiguration @default {
   "The configuration version."
   format: u32 @required,
 
@@ -15,39 +15,73 @@ type AppConfiguration {
   name: string,
 
   "Components to import into the application's scope."
-  import: {string: ComponentDefinition},
+  import: [ComponentBinding],
 
   "Resources that the application can access."
-  resources: {string: ResourceDefinition},
+  resources: [ResourceBinding],
 
   "Configured triggers that drive the application's behavior."
   triggers: [TriggerDefinition],
 }
 
 "Metadata for the application."
-type AppMetadata {
+type AppMetadata @default {
   "The version of the application."
   version: string,
 }
 
 "The possible types of resources."
-union TriggerDefinition = CliTrigger
+union TriggerDefinition = CliTrigger | HttpTrigger
 
 "A trigger called with a CLI context."
-type CliTrigger @internal_tag("kind", "wick/trigger/cli:v1") {
-  "The component to import for the handler."
-  component: ComponentDefinition?
-  "The handler on the component that accepts the CLI context."
-  operation: string
+type CliTrigger @internal_tag("kind", "wick/trigger/cli@v1") {
+  "The operation that will act as the main entrypoint for this trigger."
+  operation: ComponentOperationExpression @required
   "The component that provides additional logic."
-  app: ComponentDefinition?
+  app: ComponentDefinition? @shortform
+}
+
+"A reference to an operation with an explicit component definition."
+type ComponentOperationExpression {
+  "The component that exports the operation."
+  component: ComponentDefinition @required @shortform
+  "The operation to call."
+  operation: string @required
+}
+
+"An HTTP server that delegates to HTTP routers upon requests."
+type HttpTrigger @internal_tag("kind", "wick/trigger/http@v1") {
+  "The TcpPort reference to listen on for connections."
+  resource: string
+
+  "The HttpRouters that should handle incoming requests"
+  routers: [HttpRouter]
+}
+
+union HttpRouter = RawRouter | RestRouter
+
+type RestRouter @internal_tag("kind", "wick/router/rest@v1") {
+  "The path to start serving this router from."
+  path: string @required
+
+  "The component to expose as a Rest API."
+  component: ComponentDefinition @required
+}
+
+"A RawHttpRouter delegates raw requests and bodies to operations based on the request path."
+type RawRouter @internal_tag("kind", "wick/router/raw@v1") {
+  "The path to start serving this router from."
+  path: string @required
+
+  "The operation that handles HTTP requests."
+  operation: ComponentOperationExpression @required
 }
 
 "The possible types of resources."
 union ResourceDefinition = TcpPort | UdpPort
 
 "A WebAssembly component."
-type TcpPort @internal_tag("kind", "wick/tcp:v1") {
+type TcpPort @internal_tag("kind", "wick/resource/tcpport@v1") {
   "The port to bind to."
   port: u16
   "The address to bind to."
@@ -55,7 +89,7 @@ type TcpPort @internal_tag("kind", "wick/tcp:v1") {
 }
 
 "A WebAssembly component."
-type UdpPort @internal_tag("kind", "wick/udp:v1") {
+type UdpPort @internal_tag("kind", "wick/resource/udpport@v1") {
   "The port to bind to."
   port: u16
   "The address to bind to."
@@ -83,23 +117,45 @@ type ComponentConfiguration {
   types: [TypeDefinition],
 
   "Components to import into the application's scope."
-  import: {string: ComponentDefinition},
+  import: [ComponentBinding],
 
   "A map of operation names to their definitions."
   operations: [OperationDefinition],
 }
 
 "Metadata for the component."
-type ComponentMetadata {
+type ComponentMetadata @default {
   "The version of the component."
   version: string,
 }
 
+"An identifier bound to a resource."
+type ResourceBinding {
+  "The name of the binding."
+  name: string @required
+  "The resource to bind to."
+  resource: ResourceDefinition @required
+}
+
+"An identifier bound to a component."
+type ComponentBinding {
+  "The name of the binding."
+  name: string @required
+  "The component to bind to."
+  component: ComponentDefinition @required
+}
+
 "The possible types of components."
-union ComponentDefinition = WasmComponent | GrpcUrlComponent | GrpcTarComponent | MeshComponent | ManifestComponent
+union ComponentDefinition = WasmComponent | GrpcUrlComponent | ManifestComponent | ComponentReference
+
+"A reference to a component in the application's scope."
+type ComponentReference  @internal_tag("kind", "Reference") {
+  "The id of the component to reference."
+  id: string  @required
+}
 
 "Host configuration options."
-type HostConfig {
+type HostConfig @default {
   "Whether or not to allow the :latest tag on remote artifacts."
   allow_latest: bool,
 
@@ -161,7 +217,7 @@ type MeshConfig {
 "A WebAssembly component."
 type WasmComponent @internal_tag("kind", "Wasm") {
   "The URL (and optional tag) or local file path to find the .wasm module."
-  reference: string,
+  ref: string @rename("reference") @required
 
   "Permissions to give this component"
   permissions: Permissions
@@ -171,39 +227,24 @@ type WasmComponent @internal_tag("kind", "Wasm") {
 }
 
 "Per-component permissions configuration."
-type Permissions {
+type Permissions @default {
   "A map of from internal directory to external directory that this component should be able to access."
   dirs: {string: string}
 }
 
 "A component hosted as an independent microservice."
-type GrpcUrlComponent  @internal_tag("kind", "GrpcUrl") {
+type GrpcUrlComponent @internal_tag("kind", "GrpcUrl") {
   "The GRPC URL to connect to."
-  url: string,
-  "Any configuration necessary for the component."
-  config: any
-}
+  url: string @required
 
-"A component hosted somewhere on a connected mesh."
-type MeshComponent  @internal_tag("kind", "Mesh") {
-  "The ID of the component."
-  id: string,
   "Any configuration necessary for the component."
   config: any
 }
 
 "A native component that can be extracted and run as a microservice."
-type GrpcTarComponent  @internal_tag("kind", "GrpcTar") {
-  "The URL (and optional tag) or local file path to find the archive."
-  reference: string,
-  "Any configuration necessary for the component."
-  config: any
-}
-
-"A native component that can be extracted and run as a microservice."
-type ManifestComponent  @internal_tag("kind", "Manifest") {
+type ManifestComponent @internal_tag("kind", "Manifest") {
   "The URL (and optional tag) or local file path to find the manifest."
-  reference: string,
+  ref: string @rename("reference")  @required
   "Any configuration necessary for the component."
   config: any
 }
@@ -247,10 +288,10 @@ type InstanceDefinition {
 "A connection between Operations and their ports. This can be specified in short-form syntax (where applicable)."
 type ConnectionDefinition {
   "The upstream operation port."
-  from: ConnectionTargetDefinition,
+  from: ConnectionTargetDefinition @required
 
   "The downstream operation port."
-  to: ConnectionTargetDefinition,
+  to: ConnectionTargetDefinition @required
 
   "The default value to provide in the event of an upstream Error or Exception."
   default: string?

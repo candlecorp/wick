@@ -1,7 +1,6 @@
 use anyhow::{Context, Result};
 use clap::Args;
 use logger::LoggingOptions;
-use wick_component_cli::options::MeshCliOptions;
 mod manifest;
 mod wasm;
 
@@ -16,9 +15,6 @@ pub(crate) struct ListCommand {
 
   #[clap(flatten)]
   pub(crate) logging: LoggingOptions,
-
-  #[clap(flatten)]
-  pub(crate) mesh: MeshCliOptions,
 
   #[clap(long = "json", action)]
   pub(crate) json: bool,

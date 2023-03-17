@@ -6,14 +6,6 @@ macro_rules! wick_import {
 }
 
 #[macro_export]
-macro_rules! operation {
-    () => {
-      #[cfg_attr(target_family = "wasm",async_trait::async_trait(?Send))]
-      #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait(Send))]
-    };
-}
-
-#[macro_export]
 macro_rules! payloads {
     ($(($port:expr, $value:expr)),*) => {
       {

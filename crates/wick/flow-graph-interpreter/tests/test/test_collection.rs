@@ -1,8 +1,8 @@
 use std::time::Duration;
 
 use anyhow::Result;
-use flow_graph_interpreter::Collection;
-use futures::future::BoxFuture;
+use flow_graph_interpreter::Component;
+type BoxFuture<'a, T> = std::pin::Pin<Box<dyn futures::Future<Output = T> + Send + Sync + 'a>>;
 use futures::{Future, StreamExt};
 use seeded_random::{Random, Seed};
 use serde_json::Value;
@@ -162,7 +162,7 @@ fn defer(futs: Vec<impl Future<Output = Result<(), impl std::error::Error + Send
   });
 }
 
-impl Collection for TestCollection {
+impl Component for TestCollection {
   fn handle(
     &self,
     invocation: Invocation,

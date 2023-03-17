@@ -16,7 +16,19 @@
       {{#if description}}
       "description": "{{description.value}}",
       {{/if}}
+      {{#ifCond type.kind "===" "Optional"}}
+      "required" : false,
+      {{/ifCond}}
+      {{#withAnnotation "shortform" ~}}
+        "oneOf" : [
+        { "type":"string" },
+        {{#with "{"}}{{.}}{{/with}}
+      {{~/withAnnotation}}
       {{> expand-type type }}
+      {{#withAnnotation "shortform" ~}}
+        {{#with "}"}}{{.}}{{/with}}
+      ]
+      {{~/withAnnotation}}
     }
     {{~/join}}
   },

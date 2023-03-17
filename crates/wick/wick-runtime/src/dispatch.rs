@@ -40,8 +40,8 @@ pub(crate) enum DispatchError {
   CallFailure(String),
 }
 
-impl From<CollectionError> for DispatchError {
-  fn from(e: CollectionError) -> Self {
+impl From<ComponentError> for DispatchError {
+  fn from(e: ComponentError) -> Self {
     DispatchError::CallFailure(e.to_string())
   }
 }
@@ -63,12 +63,13 @@ pub(crate) async fn network_invoke_async(
 #[cfg(test)]
 mod tests {
 
+  use anyhow::Result;
   use wick_packet::{packet_stream, Entity, Packet};
 
   use super::*;
   use crate::test::prelude::{assert_eq, *};
   #[test_logger::test(tokio::test)]
-  async fn invoke_async() -> TestResult<()> {
+  async fn invoke_async() -> Result<()> {
     let (_, nuid) = init_network_from_yaml("./manifests/v0/echo.yaml").await?;
 
     let target = Entity::operation("self", "echo");
@@ -83,6 +84,18 @@ mod tests {
     let actual = packets.pop().unwrap().unwrap();
     assert_eq!(actual, Packet::encode("output", "hello"));
 
+    Ok(())
+  }
+
+  fn sync_send<T>()
+  where
+    T: Sync + Send,
+  {
+  }
+
+  #[test_logger::test]
+  fn test_sync_send() -> Result<()> {
+    sync_send::<InvocationResponse>();
     Ok(())
   }
 }

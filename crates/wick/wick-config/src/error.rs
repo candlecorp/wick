@@ -51,6 +51,10 @@ pub enum ManifestError {
   #[error("Invalid format: {0}")]
   Invalid(serde_json::Error),
 
+  /// Invalid operation expression. Must be in the form component_name::operation_name.
+  #[error("Invalid operation expression '{0}'. Must be in the form component_name::operation_name.")]
+  InvalidOperationExpression(String),
+
   /// Parser error.
   #[error(transparent)]
   Parser(#[from] flow_expression_parser::Error),
@@ -64,4 +68,12 @@ impl From<std::io::Error> for ManifestError {
   fn from(e: std::io::Error) -> Self {
     Self::LoadError(e.to_string())
   }
+}
+
+#[derive(Error, Debug, Clone, Copy)]
+/// Errors that can occur when trying to dereference a configuration name or id.
+pub enum ReferenceError {
+  /// The referenced item was not a component.
+  #[error("Referenced item is not a component")]
+  Component,
 }

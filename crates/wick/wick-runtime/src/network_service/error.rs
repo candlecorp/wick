@@ -14,7 +14,7 @@ pub enum NetworkError {
 
   // OLD
   #[error(transparent)]
-  CollectionError(#[from] CollectionError),
+  CollectionError(#[from] ComponentError),
 
   #[error(transparent)]
   RpcHandlerError(#[from] Box<wick_rpc::Error>),
@@ -23,8 +23,8 @@ pub enum NetworkError {
   Timeout,
 }
 
-impl From<NetworkError> for CollectionError {
+impl From<NetworkError> for ComponentError {
   fn from(e: NetworkError) -> Self {
-    CollectionError::NetworkError(e.to_string())
+    ComponentError::NetworkError(e.to_string())
   }
 }

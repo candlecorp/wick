@@ -13,7 +13,7 @@ pub(crate) fn {{upperCase (snakeCase ../name.value)}}_{{upperCase name.value}}()
 {{#if description}}
 /// {{{description.value}}}
 {{/if}}
-pub struct {{name.value}} {
+pub(crate) struct {{name.value}} {
   {{#each fields}}
     {{#if description}}
     /// {{description.value}}
@@ -65,6 +65,6 @@ pub struct {{name.value}} {
         {{/switch}}
       {{/case}}
     {{/switch}}
-    pub {{name.value}}: {{> expand-type type}},
+    pub(crate) {{name.value}}: {{> expand-type type}},
   {{/each}}
 }

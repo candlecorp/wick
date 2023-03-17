@@ -30,7 +30,7 @@ fn regression_issue_42() -> Result<(), ManifestError> {
   let manifest = ComponentConfiguration::load_from_file(path)?;
   println!("{:?}", manifest);
   let coll = manifest.component("test").unwrap();
-  if let ComponentKind::Wasm(module) = &coll.kind {
+  if let ComponentDefinition::Wasm(module) = &coll.kind {
     let value = module.permissions.dirs.get("/").unwrap();
     assert_ne!(value, "$PWD");
   } else {

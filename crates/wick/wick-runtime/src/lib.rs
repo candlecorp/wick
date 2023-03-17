@@ -88,20 +88,22 @@
 #[macro_use]
 extern crate tracing;
 
-mod collections;
+#[cfg(test)]
+pub(crate) mod test;
+
+mod components;
 pub(crate) mod dev;
 mod dispatch;
 pub mod error;
 mod json_writer;
 mod network;
 mod network_service;
-#[cfg(test)]
-pub(crate) mod test;
+pub mod resources;
 mod triggers;
 pub(crate) mod utils;
 
-pub use collections::error::CollectionError;
-pub use collections::network_collection::Collection as NetworkCollection;
+pub use components::error::ComponentError;
+pub use components::network_component::Component as NetworkCollection;
 pub use network::{Network, NetworkBuilder};
 pub use network_service::error::NetworkError;
 pub use triggers::{get_trigger_loader, Trigger};
@@ -112,3 +114,6 @@ pub(crate) type BoxError = Box<dyn std::error::Error + Send + Sync>;
 
 /// The reserved namespace for Wick's initial native API.
 pub const V0_NAMESPACE: &str = "wick";
+
+type BoxFuture<'a, T> = std::pin::Pin<Box<dyn futures::Future<Output = T> + Send + Sync + 'a>>;
+// type BoxFuture<'a, T> = futures::future::BoxFuture<'a, T>;

@@ -2,47 +2,83 @@ use serde::de::{IgnoredAny, SeqAccess, Visitor};
 use serde::Deserializer;
 use serde_json::Value;
 
-#[derive(Debug, Clone)]
-/// A definition of a Wick Collection with its namespace, how to retrieve or access it and its configuration.
-#[must_use]
-pub struct EntrypointDefinition {
-  /// The reference/location of the collection.
-  pub reference: String,
-  /// Data or configuration to pass to the collection initialization.
-  pub config: Value,
-  /// Permissions for this collection
-  pub permissions: Permissions,
-  /// The component to use as the entrypoint
-  pub component: String,
+use crate::v1;
+
+/// A reference to an operation.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ComponentOperationExpression {
+  /// The operation ID.
+  pub(crate) operation: String,
+  /// The component referenced by identifier or anonymously.
+  pub(crate) component: ComponentDefinition,
 }
 
-impl TryFrom<crate::v0::EntrypointDefinition> for EntrypointDefinition {
-  type Error = crate::Error;
-  fn try_from(def: crate::v0::EntrypointDefinition) -> Result<Self, Self::Error> {
-    Ok(EntrypointDefinition {
-      permissions: json_struct_to_permissions(def.data.get("wasi")).unwrap_or_default(),
-      reference: def.reference,
-      config: def.data,
-      component: def.component,
+impl ComponentOperationExpression {
+  /// Create a new [ComponentOperationExpression] with specified operation and component.
+  pub fn new(operation: impl AsRef<str>, component: ComponentDefinition) -> Self {
+    Self {
+      operation: operation.as_ref().to_owned(),
+      component,
+    }
+  }
+
+  /// Returns the operation ID.
+  pub fn operation(&self) -> &str {
+    &self.operation
+  }
+
+  /// Returns the component definition.
+  pub fn component(&self) -> &ComponentDefinition {
+    &self.component
+  }
+}
+
+impl std::str::FromStr for ComponentOperationExpression {
+  type Err = crate::Error;
+
+  fn from_str(s: &str) -> Result<Self, Self::Err> {
+    let mut parts = s.split("::");
+
+    let operation = parts
+      .next()
+      .ok_or_else(|| crate::Error::InvalidOperationExpression(s.to_owned()))?
+      .to_owned();
+    let component = parts
+      .next()
+      .ok_or_else(|| crate::Error::InvalidOperationExpression(s.to_owned()))?
+      .to_owned();
+
+    Ok(Self {
+      operation,
+      component: ComponentDefinition::Reference(ComponentReference { id: component }),
     })
   }
 }
 
-#[derive(Debug, Clone)]
-/// A definition of a Wick Collection with its namespace, how to retrieve or access it and its configuration.
-#[must_use]
-pub struct ComponentDefinition {
-  /// The namespace to reference the collection's components on.
-  pub namespace: String,
-  /// The kind/type of the collection.
-  pub kind: ComponentKind,
+impl From<v1::ComponentOperationExpression> for ComponentOperationExpression {
+  fn from(literal: v1::ComponentOperationExpression) -> Self {
+    Self {
+      operation: literal.operation,
+      component: literal.component.into(),
+    }
+  }
 }
 
-impl ComponentDefinition {
+#[derive(Debug, Clone, PartialEq)]
+/// A definition of a Wick Collection with its namespace, how to retrieve or access it and its configuration.
+#[must_use]
+pub struct BoundComponent {
+  /// The namespace to reference the collection's components on.
+  pub id: String,
+  /// The kind/type of the collection.
+  pub kind: ComponentDefinition,
+}
+
+impl BoundComponent {
   /// Create a new [CollectionDefinition] with specified name and type.
-  pub fn new(name: impl AsRef<str>, kind: ComponentKind) -> Self {
+  pub fn new(name: impl AsRef<str>, kind: ComponentDefinition) -> Self {
     Self {
-      namespace: name.as_ref().to_owned(),
+      id: name.as_ref().to_owned(),
       kind,
     }
   }
@@ -51,36 +87,53 @@ impl ComponentDefinition {
   #[must_use]
   pub fn config(&self) -> Option<&Value> {
     match &self.kind {
-      ComponentKind::Native(_) => None,
-      ComponentKind::Wasm(v) => Some(&v.config),
-      ComponentKind::GrpcTar(v) => Some(&v.config),
-      ComponentKind::GrpcUrl(v) => Some(&v.config),
-      ComponentKind::Mesh(v) => Some(&v.config),
-      ComponentKind::Manifest(v) => Some(&v.config),
+      ComponentDefinition::Native(_) => None,
+      ComponentDefinition::Wasm(v) => Some(&v.config),
+      // ComponentDefinition::GrpcTar(v) => Some(&v.config),
+      ComponentDefinition::GrpcUrl(v) => Some(&v.config),
+      // ComponentDefinition::Mesh(v) => Some(&v.config),
+      ComponentDefinition::Manifest(v) => Some(&v.config),
+      ComponentDefinition::Reference(_) => panic!("Cannot get config for a reference"),
     }
   }
 }
 
 #[derive(Debug, Clone, PartialEq)]
 /// The kinds of collections that can operate in a flow.
-pub enum ComponentKind {
+pub enum ComponentDefinition {
   #[doc(hidden)]
   Native(NativeComponent),
   /// WebAssembly Collections.
   Wasm(WasmComponent),
-  /// Archived, native binaries that Wick can fetch, extract, and run as a microservice.
-  GrpcTar(GrpcTarComponent),
+  /// WebAssembly Collections.
+  Reference(ComponentReference),
+  // /// Archived, native binaries that Wick can fetch, extract, and run as a microservice.
+  // GrpcTar(GrpcTarComponent),
   /// Separate microservices that Wick can connect to.
   GrpcUrl(GrpcUrlComponent),
-  /// Collections that exist over a connected mesh.
-  Mesh(MeshComponent),
+  // /// Collections that exist over a connected mesh.
+  // Mesh(MeshComponent),
   /// External manifests.
   Manifest(ManifestComponent),
 }
 
-impl ComponentKind {
+#[derive(Debug, Clone, PartialEq)]
+/// A reference to a component by id.
+pub struct ComponentReference {
+  id: String,
+}
+
+impl ComponentReference {
+  /// Get the id of the referenced component.
+  #[must_use]
+  pub fn id(&self) -> &str {
+    &self.id
+  }
+}
+
+impl ComponentDefinition {
   /// Instantiate a new [CollectionKind].
-  pub fn new(def: impl TryInto<ComponentKind>) -> Result<Self, crate::Error> {
+  pub fn new(def: impl TryInto<ComponentDefinition>) -> Result<Self, crate::Error> {
     match def.try_into() {
       Ok(v) => Ok(v),
       Err(_e) => Err(crate::Error::Other("Could not load collection definition".to_owned())),
@@ -104,14 +157,6 @@ impl ComponentKind {
     })
   }
 
-  /// Create a new [CollectionKind::GrpcTar] variant.
-  pub fn grpc_tar(reference: impl AsRef<str>, config: Option<Value>) -> Self {
-    Self::GrpcTar(GrpcTarComponent {
-      reference: reference.as_ref().to_owned(),
-      config: config.unwrap_or_default(),
-    })
-  }
-
   /// Create a new [CollectionKind::Manifest] variant.
   pub fn manifest(reference: impl AsRef<str>, config: Option<Value>) -> Self {
     Self::Manifest(ManifestComponent {
@@ -120,12 +165,10 @@ impl ComponentKind {
     })
   }
 
-  /// Create a new [CollectionKind::Mesh] variant.
-  pub fn mesh(id: impl AsRef<str>, config: Option<Value>) -> Self {
-    Self::Mesh(MeshComponent {
-      config: config.unwrap_or_default(),
-      id: id.as_ref().to_owned(),
-    })
+  /// Returns true if the definition is a reference to another component.
+  #[must_use]
+  pub fn is_reference(&self) -> bool {
+    matches!(self, ComponentDefinition::Reference(_))
   }
 }
 
@@ -153,29 +196,11 @@ pub struct Permissions {
   pub dirs: std::collections::HashMap<String, String>,
 }
 
-/// A native binary that can be run as a GRPC microservice.
-#[derive(Debug, Clone, PartialEq)]
-pub struct GrpcTarComponent {
-  /// The OCI reference/local path of the collection.
-  pub reference: String,
-  /// The configuration for the collection
-  pub config: Value,
-}
-
 /// A collection exposed as an external microservice.
 #[derive(Debug, Clone, PartialEq)]
 pub struct GrpcUrlComponent {
   /// The URL to connect to .
   pub url: String,
-  /// The configuration for the collection
-  pub config: Value,
-}
-
-/// A collection exposed over the connected mesh.
-#[derive(Debug, Clone, PartialEq)]
-pub struct MeshComponent {
-  /// The ID of the collection on the mesh.
-  pub id: String,
   /// The configuration for the collection
   pub config: Value,
 }
@@ -193,33 +218,22 @@ impl TryFrom<&crate::v0::CollectionDefinition> for ComponentDefinition {
   type Error = crate::Error;
   fn try_from(def: &crate::v0::CollectionDefinition) -> Result<Self, Self::Error> {
     let kind = match def.kind {
-      crate::v0::CollectionKind::Native => ComponentKind::Native(NativeComponent {}),
-      crate::v0::CollectionKind::GrpcUrl => ComponentKind::GrpcUrl(GrpcUrlComponent {
+      crate::v0::CollectionKind::Native => ComponentDefinition::Native(NativeComponent {}),
+      crate::v0::CollectionKind::GrpcUrl => ComponentDefinition::GrpcUrl(GrpcUrlComponent {
         url: def.reference.clone(),
         config: def.data.clone(),
       }),
-      crate::v0::CollectionKind::WaPC => ComponentKind::Wasm(WasmComponent {
+      crate::v0::CollectionKind::WaPC => ComponentDefinition::Wasm(WasmComponent {
         reference: def.reference.clone(),
         permissions: json_struct_to_permissions(def.data.get("wasi"))?,
         config: def.data.clone(),
       }),
-      crate::v0::CollectionKind::Mesh => ComponentKind::Mesh(MeshComponent {
-        id: def.reference.clone(),
-        config: def.data.clone(),
-      }),
-      crate::v0::CollectionKind::Network => ComponentKind::Manifest(ManifestComponent {
-        reference: def.reference.clone(),
-        config: def.data.clone(),
-      }),
-      crate::v0::CollectionKind::GrpcTar => ComponentKind::GrpcTar(GrpcTarComponent {
+      crate::v0::CollectionKind::Network => ComponentDefinition::Manifest(ManifestComponent {
         reference: def.reference.clone(),
         config: def.data.clone(),
       }),
     };
-    Ok(ComponentDefinition {
-      namespace: def.namespace.clone(),
-      kind,
-    })
+    Ok(kind)
   }
 }
 
@@ -274,39 +288,25 @@ fn json_struct_to_permissions(json_perms: Option<&Value>) -> Result<Permissions,
   Ok(perms)
 }
 
-impl From<(String, crate::v1::ComponentDefinition)> for ComponentDefinition {
-  fn from(def: (String, crate::v1::ComponentDefinition)) -> Self {
-    ComponentDefinition {
-      namespace: def.0,
-      kind: def.1.into(),
-    }
-  }
-}
-
-impl From<crate::v1::ComponentDefinition> for ComponentKind {
+impl From<crate::v1::ComponentDefinition> for ComponentDefinition {
   fn from(def: crate::v1::ComponentDefinition) -> Self {
     match def {
-      crate::v1::ComponentDefinition::WasmComponent(v) => ComponentKind::Wasm(WasmComponent {
+      crate::v1::ComponentDefinition::WasmComponent(v) => ComponentDefinition::Wasm(WasmComponent {
         reference: v.reference,
         config: v.config,
         permissions: v.permissions.into(),
       }),
-      crate::v1::ComponentDefinition::GrpcUrlComponent(v) => ComponentKind::GrpcUrl(GrpcUrlComponent {
+      crate::v1::ComponentDefinition::GrpcUrlComponent(v) => ComponentDefinition::GrpcUrl(GrpcUrlComponent {
         url: v.url,
         config: v.config,
       }),
-      crate::v1::ComponentDefinition::GrpcTarComponent(v) => ComponentKind::GrpcTar(GrpcTarComponent {
+      crate::v1::ComponentDefinition::ManifestComponent(v) => ComponentDefinition::Manifest(ManifestComponent {
         reference: v.reference,
         config: v.config,
       }),
-      crate::v1::ComponentDefinition::MeshComponent(v) => ComponentKind::Mesh(MeshComponent {
-        id: v.id,
-        config: v.config,
-      }),
-      crate::v1::ComponentDefinition::ManifestComponent(v) => ComponentKind::Manifest(ManifestComponent {
-        reference: v.reference,
-        config: v.config,
-      }),
+      crate::v1::ComponentDefinition::ComponentReference(v) => {
+        ComponentDefinition::Reference(ComponentReference { id: v.id })
+      }
     }
   }
 }

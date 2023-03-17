@@ -1,5 +1,8 @@
 "{{name.value}}": {
   "oneOf" : [
+    {{#withAnnotation "shortform" ~}}
+    { "type":"string" },
+    {{~/withAnnotation}}
     {{#join types "," ~}}
     {"$ref": "#/$defs/v1/{{name.value}}"}
     {{~/join}}
