@@ -42,11 +42,14 @@ integration-tests:
 	NATS_URL=$(NATS_URL) cargo test --workspace
 
 deps:
-	npm install -g apex-template prettier ts-node
+	npm install -g apex-template prettier ts-node commitlint conventional-changelog-conventionalcommits
 	cargo install cargo-deny
 
 update-lints:
   ts-node ./etc/update-lints.ts
+
+lint-commits:
+  npx commitlint --config ./etc/commitlint.config.js --from $(git describe --all origin --abbrev=0) --to HEAD --verbose
 
 publish-sdk VERSION="minor":
   cargo release {{VERSION}} -p wick-packet -p wick-component-codegen -p wick-interface-types -p wick-component -p seeded-random -p wick-config -p flow-expression-parser
