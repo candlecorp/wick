@@ -6,7 +6,7 @@ use seeded_random::Seed;
 use wick_component_cli::options::DefaultCliOptions;
 use wick_component_cli::parse_args;
 use wick_config::ComponentConfiguration;
-use wick_host::HostBuilder;
+use wick_host::ComponentHostBuilder;
 use wick_packet::{InherentData, Observer, Packet, PacketStream};
 
 use crate::utils::{self, merge_config};
@@ -16,16 +16,13 @@ pub(crate) async fn handle_command(opts: super::InvokeCommand, bytes: Vec<u8>) -
 
   let manifest = ComponentConfiguration::load_from_bytes(Some(opts.location), &bytes)?;
 
-  let server_options = DefaultCliOptions {
-    mesh: opts.mesh,
-    ..Default::default()
-  };
+  let server_options = DefaultCliOptions { ..Default::default() };
 
   let config = merge_config(&manifest, &opts.fetch, Some(server_options));
 
   let component = opts.component;
 
-  let host_builder = HostBuilder::from_definition(config);
+  let host_builder = ComponentHostBuilder::from_definition(config);
 
   let mut host = host_builder.build();
   // host.connect_to_mesh().await?;

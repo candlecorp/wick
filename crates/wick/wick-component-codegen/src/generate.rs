@@ -10,7 +10,7 @@ use quote::quote;
 use syn::parse::{Parse, ParseStream};
 use syn::{parse_macro_input, Expr, Lit, LitStr};
 use wick_config::FlowOperation;
-use wick_interface_types::{EnumSignature, StructSignature, TypeDefinition};
+use wick_interface_types::{EnumSignature, EnumVariant, StructSignature, TypeDefinition};
 
 fn snake(s: &str) -> String {
   AsSnakeCase(s).to_string()
@@ -33,6 +33,10 @@ fn structdef_name(ty: &StructSignature) -> String {
 }
 
 fn enumdef_name(ty: &EnumSignature) -> String {
+  pascal(&ty.name)
+}
+
+fn enumvariant_name(ty: &EnumVariant) -> String {
   pascal(&ty.name)
 }
 
@@ -78,7 +82,7 @@ fn expand_type(ty: &wick_interface_types::TypeSignature) -> TokenStream {
     wick_interface_types::TypeSignature::Map { key, value } => {
       let key = expand_type(key);
       let value = expand_type(value);
-      quote! { HashMap<#key,#value> }
+      quote! { std::collections::HashMap<#key,#value> }
     }
     wick_interface_types::TypeSignature::Link { schemas } => quote! {wick_component::packet::CollectionLink},
     wick_interface_types::TypeSignature::Datetime => todo!(),
@@ -108,15 +112,71 @@ fn gen_enum(ty: &EnumSignature) -> TokenStream {
     .variants
     .iter()
     .map(|v| {
-      let name = Ident::new(&snake(&v.name), Span::call_site());
+      let name = Ident::new(&enumvariant_name(v), Span::call_site());
       quote! {#name}
+    })
+    .collect::<Vec<_>>();
+  let display_match_arms = ty
+    .variants
+    .iter()
+    .map(|v| {
+      let identname = Ident::new(&enumvariant_name(v), Span::call_site());
+      let name = v.name.clone();
+      quote! {Self::#identname => f.write_str(#name)}
+    })
+    .collect::<Vec<_>>();
+  let value_match_arms = ty
+    .variants
+    .iter()
+    .map(|v| {
+      let identname = Ident::new(&enumvariant_name(v), Span::call_site());
+      let name = v.value.as_ref().map_or_else(|| quote! {None}, |v| quote! { Some(#v) });
+      quote! {Self::#identname => #name}
+    })
+    .collect::<Vec<_>>();
+
+  let fromstr_match_arms = ty
+    .variants
+    .iter()
+    .map(|v| {
+      let identname = Ident::new(&enumvariant_name(v), Span::call_site());
+      let name = v.name.clone();
+      quote! {#name => Ok(Self::#identname)}
     })
     .collect::<Vec<_>>();
 
   quote! {
-    #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+    #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq)]
     pub enum #name {
       #(#variants,)*
+    }
+
+    impl #name {
+      #[allow(unused)]
+      pub fn value(&self) -> Option<&'static str> {
+        match self {
+          #(#value_match_arms,)*
+        }
+      }
+    }
+
+    impl std::str::FromStr for #name {
+      type Err = String;
+
+      fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+          #(#fromstr_match_arms,)*
+          _ => Err(s.to_owned())
+        }
+      }
+    }
+
+    impl std::fmt::Display for #name {
+      fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+          #(#display_match_arms,)*
+        }
+      }
     }
   }
 }
@@ -134,7 +194,7 @@ fn gen_struct(ty: &StructSignature) -> TokenStream {
     .collect::<Vec<_>>();
 
   quote! {
-    #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+    #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq)]
     pub struct #name {
       #(#fields,)*
     }
@@ -179,7 +239,7 @@ fn gen_wrapper_fn(component: &Ident, op: &FlowOperation) -> TokenStream {
       let outputs = #outputs_name::new(channel);
 
       spawn(async move {
-        let #sanitized_input_names = payload_fan_out!(input, [#(#input_pairs,)*]);
+        let #sanitized_input_names = wick_component::payload_fan_out!(input, [#(#input_pairs,)*]);
         if let Err(e) = #component::#impl_name(#(#inputs,)* outputs).await {
           panic!("{}: {}", #string, e);
         }
@@ -217,7 +277,7 @@ fn gen_trait_signature(component: &Ident, op: &FlowOperation) -> TokenStream {
       let port_name = &i.name;
       let port_field_name = Ident::new(&snake(&i.name), Span::call_site());
       let port_type = expand_type(&i.ty);
-      quote! {#port_field_name: Output<#port_type>}
+      quote! {pub(crate) #port_field_name: Output<#port_type>}
     })
     .collect::<Vec<_>>();
   let output_ports_new = op
@@ -227,7 +287,7 @@ fn gen_trait_signature(component: &Ident, op: &FlowOperation) -> TokenStream {
       let port_name = &i.name;
       let port_field_name = Ident::new(&snake(&i.name), Span::call_site());
       let port_type = expand_type(&i.ty);
-      quote! {#port_field_name: Output::new(#port_name, channel)}
+      quote! {#port_field_name: Output::new(#port_name, channel.clone())}
     })
     .collect::<Vec<_>>();
 
@@ -243,7 +303,8 @@ fn gen_trait_signature(component: &Ident, op: &FlowOperation) -> TokenStream {
 
   quote! {
     pub struct #outputs_name {
-      pub(crate) #(#output_ports,)*
+      #[allow(unused)]
+      #(#output_ports,)*
     }
     impl #outputs_name {
       pub fn new(channel: FluxChannel<RawPayload, PayloadError>) -> Self {
@@ -273,18 +334,22 @@ fn codegen(config: &config::Config) -> Result<String> {
   let typedefs = gen_types(component.types().iter());
 
   let expanded = quote! {
+    #[allow(unused)]
     use guest::*;
     use wasmrs_guest as guest;
-    use wick_component::payload_fan_out;
     use wick_component::packet::{Packet};
+    #[allow(unused)]
     pub(crate) type WickStream<T> = FluxReceiver<T, wick_component::anyhow::Error>;
     pub use wick_component::anyhow::Result;
+
 
     pub(crate) struct Output<T> where T: serde::Serialize{
       channel: FluxChannel<RawPayload, PayloadError>,
       name: String,
       _phantom: std::marker::PhantomData<T>
     }
+
+    #[allow(unused)]
     impl<T> Output<T>  where T: serde::Serialize{
       pub fn new(name: impl AsRef<str>, channel: FluxChannel<RawPayload, PayloadError>) -> Self {
         Self {
@@ -293,12 +358,15 @@ fn codegen(config: &config::Config) -> Result<String> {
           _phantom:Default::default()
         }
       }
+      #[allow(unused)]
       pub fn send(&mut self, value: T) {
         let _ = self.channel.send_result(Packet::encode(&self.name, value).into());
       }
+      #[allow(unused)]
       pub fn done(&mut self) {
         let _ = self.channel.send_result(Packet::done(&self.name).into());
       }
+      #[allow(unused)]
       pub fn error(&mut self, err: impl AsRef<str>) {
         let _ = self.channel.send_result(Packet::err(&self.name, err).into());
       }

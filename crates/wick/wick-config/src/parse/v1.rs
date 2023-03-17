@@ -3,7 +3,8 @@ use std::str::FromStr;
 
 use serde::Deserialize;
 
-use crate::{v1, Error};
+use crate::app_config::BoundResource;
+use crate::{v1, BoundComponent, Error};
 
 type Result<T> = std::result::Result<T, Error>;
 
@@ -52,17 +53,6 @@ impl FromStr for crate::v1::InstanceDefinition {
       id: s.to_owned(),
       config: None,
     })
-  }
-}
-
-impl FromStr for crate::v1::ComponentDefinition {
-  type Err = Error;
-
-  fn from_str(s: &str) -> Result<Self> {
-    Ok(Self::WasmComponent(crate::v1::WasmComponent {
-      reference: s.to_owned(),
-      ..Default::default()
-    }))
   }
 }
 
@@ -202,49 +192,121 @@ where
   deserializer.deserialize_any(ConnectionTargetVisitor)
 }
 
-pub(crate) fn component_shortform<'de, D>(
+pub(crate) fn component_operation_syntax<'de, D>(
   deserializer: D,
-) -> std::result::Result<HashMap<String, crate::v1::ComponentDefinition>, D::Error>
+) -> std::result::Result<crate::v1::ComponentOperationExpression, D::Error>
 where
   D: serde::Deserializer<'de>,
 {
-  struct ComponentDefinitionVisitor;
-  impl<'de> serde::de::Visitor<'de> for ComponentDefinitionVisitor {
-    type Value = HashMap<String, crate::v1::ComponentDefinition>;
-    fn expecting(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-      write!(f, "a map of instances to their components")
+  struct ComponentOperationExpressionVisitor;
+
+  impl<'de> serde::de::Visitor<'de> for ComponentOperationExpressionVisitor {
+    type Value = crate::v1::ComponentOperationExpression;
+
+    fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+      formatter.write_str("a connection target definition")
     }
 
-    fn visit_map<M>(self, mut access: M) -> std::result::Result<Self::Value, M::Error>
+    fn visit_str<E>(self, s: &str) -> std::result::Result<Self::Value, E>
     where
-      M: serde::de::MapAccess<'de>,
+      E: serde::de::Error,
     {
-      let mut map = HashMap::with_capacity(access.size_hint().unwrap_or(0));
+      crate::v1::ComponentOperationExpression::from_str(s).map_err(|e| serde::de::Error::custom(e.to_string()))
+    }
 
-      while let Some((key, value)) = access.next_entry::<String, serde_value::Value>()? {
-        let result = match value {
-          serde_value::Value::String(s) => {
-            crate::v1::ComponentDefinition::from_str(&s).map_err(|e| serde::de::Error::custom(e.to_string()))?
-          }
-          serde_value::Value::Map(map) => crate::v1::ComponentDefinition::deserialize(
-            serde_value::ValueDeserializer::new(serde_value::Value::Map(map)),
-          )?,
-          _ => {
-            return Err(serde::de::Error::invalid_type(
-              serde::de::Unexpected::Other("other"),
-              &self,
-            ))
-          }
-        };
-
-        map.insert(key, result);
-      }
-
-      Ok(map)
+    fn visit_map<A>(self, map: A) -> std::result::Result<Self::Value, A::Error>
+    where
+      A: serde::de::MapAccess<'de>,
+    {
+      crate::v1::ComponentOperationExpression::deserialize(serde::de::value::MapAccessDeserializer::new(map))
     }
   }
 
-  deserializer.deserialize_map(ComponentDefinitionVisitor)
+  deserializer.deserialize_any(ComponentOperationExpressionVisitor)
+}
+
+impl FromStr for crate::v1::ComponentOperationExpression {
+  type Err = Error;
+
+  fn from_str(s: &str) -> Result<Self> {
+    let mut parts = s.split("::");
+
+    let operation = parts
+      .next()
+      .ok_or_else(|| crate::Error::InvalidOperationExpression(s.to_owned()))?
+      .to_owned();
+    let id = parts
+      .next()
+      .ok_or_else(|| crate::Error::InvalidOperationExpression(s.to_owned()))?
+      .to_owned();
+
+    Ok(Self {
+      operation,
+      component: crate::v1::ComponentDefinition::ComponentReference(crate::v1::ComponentReference { id }),
+    })
+  }
+}
+
+impl Default for crate::v1::ComponentDefinition {
+  fn default() -> Self {
+    Self::ComponentReference(crate::v1::ComponentReference {
+      id: "<anonymous>".to_owned(),
+    })
+  }
+}
+
+pub(crate) fn component_shortform<'de, D>(
+  deserializer: D,
+) -> std::result::Result<crate::v1::ComponentDefinition, D::Error>
+where
+  D: serde::Deserializer<'de>,
+{
+  struct Visitor;
+  impl<'de> serde::de::Visitor<'de> for Visitor {
+    type Value = crate::v1::ComponentDefinition;
+    fn expecting(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+      write!(
+        f,
+        "a component definition structure or path pointing to a WebAssembly module"
+      )
+    }
+
+    fn visit_str<E>(self, s: &str) -> std::result::Result<Self::Value, E>
+    where
+      E: serde::de::Error,
+    {
+      Ok(crate::v1::ComponentDefinition::ComponentReference(
+        crate::v1::ComponentReference { id: s.to_owned() },
+      ))
+    }
+
+    fn visit_map<A>(self, map: A) -> std::result::Result<Self::Value, A::Error>
+    where
+      A: serde::de::MapAccess<'de>,
+    {
+      crate::v1::ComponentDefinition::deserialize(serde::de::value::MapAccessDeserializer::new(map))
+    }
+  }
+
+  deserializer.deserialize_map(Visitor)
+}
+
+impl From<v1::ComponentBinding> for BoundComponent {
+  fn from(value: v1::ComponentBinding) -> Self {
+    Self {
+      id: value.name,
+      kind: value.component.into(),
+    }
+  }
+}
+
+impl From<v1::ResourceBinding> for BoundResource {
+  fn from(value: v1::ResourceBinding) -> Self {
+    Self {
+      id: value.name,
+      kind: value.resource.into(),
+    }
+  }
 }
 
 #[cfg(test)]

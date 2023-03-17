@@ -1,12 +1,11 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use async_trait::async_trait;
 use wasmrs_host::WasiParams;
 use wick_config::Permissions;
 use wick_interface_types::HostedType;
 use wick_packet::{Invocation, PacketStream};
-use wick_rpc::{RpcHandler, RpcResult};
+use wick_rpc::{BoxFuture, RpcHandler, RpcResult};
 
 use crate::error::LinkError;
 use crate::helpers::WickWasmModule;
@@ -77,15 +76,14 @@ impl Collection {
   }
 }
 
-#[async_trait]
 impl RpcHandler for Collection {
-  async fn invoke(&self, invocation: Invocation, stream: PacketStream) -> RpcResult<PacketStream> {
+  fn invoke(&self, invocation: Invocation, stream: PacketStream) -> BoxFuture<RpcResult<PacketStream>> {
     trace!(target = %invocation.target, "wasm invoke");
     let component = invocation.target.name();
 
-    let outputs = self.pool.call(component, stream, None)?;
+    let outputs = self.pool.call(component, stream, None);
 
-    Ok(outputs)
+    Box::pin(async move { Ok(outputs?) })
   }
 
   fn get_list(&self) -> RpcResult<Vec<HostedType>> {
@@ -101,7 +99,7 @@ impl RpcHandler for Collection {
         .join(",")
     );
 
-    Ok(vec![HostedType::Collection(signature.clone())])
+    Ok(vec![HostedType::Component(signature.clone())])
   }
 }
 

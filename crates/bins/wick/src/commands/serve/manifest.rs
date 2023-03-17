@@ -1,6 +1,6 @@
 use anyhow::Result;
 use wick_config::ComponentConfiguration;
-use wick_host::HostBuilder;
+use wick_host::ComponentHostBuilder;
 
 use crate::utils::merge_config;
 
@@ -9,7 +9,7 @@ pub(crate) async fn handle_command(opts: super::ServeCommand, bytes: Vec<u8>) ->
 
   let config = merge_config(&manifest, &opts.fetch, Some(opts.cli));
 
-  let host_builder = HostBuilder::from_definition(config);
+  let host_builder = ComponentHostBuilder::from_definition(config);
 
   let mut host = host_builder.build();
 

@@ -2,7 +2,6 @@ use std::path::PathBuf;
 
 use anyhow::{Context, Result};
 use clap::Args;
-use wick_component_cli::options::MeshCliOptions;
 use wick_component_cli::LoggingOptions;
 
 mod manifest;
@@ -13,9 +12,6 @@ mod wasm;
 pub(crate) struct TestCommand {
   #[clap(flatten)]
   pub(crate) logging: LoggingOptions,
-
-  #[clap(flatten)]
-  pub(crate) mesh: MeshCliOptions,
 
   #[clap(flatten)]
   pub(crate) fetch: super::FetchOptions,

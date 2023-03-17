@@ -54,7 +54,7 @@ impl From<serde_json::error::Error> for WasmCollectionError {
 
 impl From<WasmCollectionError> for Box<RpcError> {
   fn from(e: WasmCollectionError) -> Self {
-    Box::new(RpcError::CollectionError(e.to_string()))
+    Box::new(RpcError::Component(e.to_string()))
   }
 }
 

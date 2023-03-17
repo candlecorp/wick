@@ -3,7 +3,7 @@ use futures::StreamExt;
 use wick_interface_types::{component, HostedType};
 use wick_packet::{fan_out, Invocation, Observer, Packet, PacketStream};
 use wick_rpc::error::RpcError;
-use wick_rpc::{dispatch, RpcHandler, RpcResult};
+use wick_rpc::{dispatch, BoxFuture, RpcHandler, RpcResult};
 
 #[macro_use]
 extern crate tracing;
@@ -14,18 +14,17 @@ pub struct Context {}
 #[derive(Clone, Default)]
 pub struct Collection {}
 
-#[async_trait]
 impl RpcHandler for Collection {
-  async fn invoke(&self, invocation: Invocation, stream: PacketStream) -> RpcResult<PacketStream> {
+  fn invoke(&self, invocation: Invocation, stream: PacketStream) -> BoxFuture<RpcResult<PacketStream>> {
     let target = invocation.target_url();
     trace!("test collection invoke: {}", target);
-    let stream = dispatch!(invocation, stream, {
-      "error" => error,
-      "test-component" => test_component,
-    });
-    trace!("test collection result: {}", target);
-
-    Ok(stream)
+    Box::pin(async move {
+      let stream = dispatch!(invocation, stream, {
+        "error" => error,
+        "test-component" => test_component,
+      });
+      Ok(stream)
+    })
   }
 
   fn get_list(&self) -> RpcResult<Vec<HostedType>> {
@@ -45,7 +44,7 @@ impl RpcHandler for Collection {
         }
 
     };
-    Ok(vec![HostedType::Collection(signature)])
+    Ok(vec![HostedType::Component(signature)])
   }
 }
 
@@ -122,7 +121,7 @@ mod tests {
       ],
       ..Default::default()
     };
-    assert_eq!(response[0], HostedType::Collection(expected));
+    assert_eq!(response[0], HostedType::Component(expected));
     Ok(())
   }
 }

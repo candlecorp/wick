@@ -58,7 +58,7 @@
 
 
 <ul class="field-notes">
-<li><span class="type field-note">Type: <span class=field-type>Map<string,<a href="#ComponentDefinition">ComponentDefinition</a>></span></span></li>
+<li><span class="type field-note">Type: <span class=field-type><a href="#ComponentBinding">ComponentBinding</a>[]</span></span></li>
 
 
 </ul>
@@ -72,7 +72,7 @@
 
 
 <ul class="field-notes">
-<li><span class="type field-note">Type: <span class=field-type>Map<string,<a href="#ResourceDefinition">ResourceDefinition</a>></span></span></li>
+<li><span class="type field-note">Type: <span class=field-type><a href="#ResourceBinding">ResourceBinding</a>[]</span></span></li>
 
 
 </ul>
@@ -122,29 +122,15 @@
 <div class=field>
 
 <h3 class=field-name>
-  <a name="component">component</a>
-</h3>
-
-<span class="description field-description">The component to import for the handler.</span>
-
-
-<ul class="field-notes">
-<li><span class="type field-note">Type: <span class=field-type><a href="#ComponentDefinition">ComponentDefinition</a><span class=optional>(Optional)</span></span></span></li>
-
-
-</ul>
-</div><div class=field>
-
-<h3 class=field-name>
   <a name="operation">operation</a>
 </h3>
 
-<span class="description field-description">The handler on the component that accepts the CLI context.</span>
+<span class="description field-description">The operation that will act as the main entrypoint for this trigger.</span>
 
 
 <ul class="field-notes">
-<li><span class="type field-note">Type: <span class=field-type>string</span></span></li>
-
+<li><span class="type field-note">Type: <span class=field-type><a href="#ComponentOperationExpression">ComponentOperationExpression</a></span></span></li>
+<li><span class="annotation field-note">Required</span></li>
 
 </ul>
 </div><div class=field>
@@ -159,6 +145,147 @@
 <ul class="field-notes">
 <li><span class="type field-note">Type: <span class=field-type><a href="#ComponentDefinition">ComponentDefinition</a><span class=optional>(Optional)</span></span></span></li>
 
+
+</ul>
+</div></div></div><div class="definition">
+<h2 class="definition-name type-name">
+  <a name="ComponentOperationExpression">ComponentOperationExpression</a>
+</h2>
+
+<span class="description type-description">A reference to an operation with an explicit component definition.</span>
+<div class=fields>
+<div class=field>
+
+<h3 class=field-name>
+  <a name="component">component</a>
+</h3>
+
+<span class="description field-description">The component that exports the operation.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#ComponentDefinition">ComponentDefinition</a></span></span></li>
+<li><span class="annotation field-note">Required</span></li>
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="operation">operation</a>
+</h3>
+
+<span class="description field-description">The operation to call.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string</span></span></li>
+<li><span class="annotation field-note">Required</span></li>
+
+</ul>
+</div></div></div><div class="definition">
+<h2 class="definition-name type-name">
+  <a name="HttpTrigger">HttpTrigger</a>
+</h2>
+
+<span class="description type-description">An HTTP server that delegates to HTTP routers upon requests.</span>
+<div class=fields>
+<div class=field>
+
+<h3 class=field-name>
+  <a name="resource">resource</a>
+</h3>
+
+<span class="description field-description">The TcpPort reference to listen on for connections.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string</span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="routers">routers</a>
+</h3>
+
+<span class="description field-description">The HttpRouters that should handle incoming requests</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#HttpRouter">HttpRouter</a>[]</span></span></li>
+
+
+</ul>
+</div></div></div><div class="definition">## unhandled
+    panic!()</div><div class="definition">
+<h2 class="definition-name type-name">
+  <a name="RestRouter">RestRouter</a>
+</h2>
+
+
+<div class=fields>
+<div class=field>
+
+<h3 class=field-name>
+  <a name="path">path</a>
+</h3>
+
+<span class="description field-description">The path to start serving this router from.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string</span></span></li>
+<li><span class="annotation field-note">Required</span></li>
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="component">component</a>
+</h3>
+
+<span class="description field-description">The component to expose as a Rest API.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#ComponentDefinition">ComponentDefinition</a></span></span></li>
+<li><span class="annotation field-note">Required</span></li>
+
+</ul>
+</div></div></div><div class="definition">
+<h2 class="definition-name type-name">
+  <a name="RawRouter">RawRouter</a>
+</h2>
+
+<span class="description type-description">A RawHttpRouter delegates raw requests and bodies to operations based on the request path.</span>
+<div class=fields>
+<div class=field>
+
+<h3 class=field-name>
+  <a name="path">path</a>
+</h3>
+
+<span class="description field-description">The path to start serving this router from.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string</span></span></li>
+<li><span class="annotation field-note">Required</span></li>
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="operation">operation</a>
+</h3>
+
+<span class="description field-description">The operation that handles HTTP requests.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#ComponentOperationExpression">ComponentOperationExpression</a></span></span></li>
+<li><span class="annotation field-note">Required</span></li>
 
 </ul>
 </div></div></div><div class="definition">## unhandled
@@ -333,7 +460,7 @@
 
 
 <ul class="field-notes">
-<li><span class="type field-note">Type: <span class=field-type>Map<string,<a href="#ComponentDefinition">ComponentDefinition</a>></span></span></li>
+<li><span class="type field-note">Type: <span class=field-type><a href="#ComponentBinding">ComponentBinding</a>[]</span></span></li>
 
 
 </ul>
@@ -372,8 +499,99 @@
 
 
 </ul>
+</div></div></div><div class="definition">
+<h2 class="definition-name type-name">
+  <a name="ResourceBinding">ResourceBinding</a>
+</h2>
+
+<span class="description type-description">An identifier bound to a resource.</span>
+<div class=fields>
+<div class=field>
+
+<h3 class=field-name>
+  <a name="name">name</a>
+</h3>
+
+<span class="description field-description">The name of the binding.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string</span></span></li>
+<li><span class="annotation field-note">Required</span></li>
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="resource">resource</a>
+</h3>
+
+<span class="description field-description">The resource to bind to.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#ResourceDefinition">ResourceDefinition</a></span></span></li>
+<li><span class="annotation field-note">Required</span></li>
+
+</ul>
+</div></div></div><div class="definition">
+<h2 class="definition-name type-name">
+  <a name="ComponentBinding">ComponentBinding</a>
+</h2>
+
+<span class="description type-description">An identifier bound to a component.</span>
+<div class=fields>
+<div class=field>
+
+<h3 class=field-name>
+  <a name="name">name</a>
+</h3>
+
+<span class="description field-description">The name of the binding.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string</span></span></li>
+<li><span class="annotation field-note">Required</span></li>
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="component">component</a>
+</h3>
+
+<span class="description field-description">The component to bind to.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#ComponentDefinition">ComponentDefinition</a></span></span></li>
+<li><span class="annotation field-note">Required</span></li>
+
+</ul>
 </div></div></div><div class="definition">## unhandled
     panic!()</div><div class="definition">
+<h2 class="definition-name type-name">
+  <a name="ComponentReference">ComponentReference</a>
+</h2>
+
+<span class="description type-description">A reference to a component in the application's scope.</span>
+<div class=fields>
+<div class=field>
+
+<h3 class=field-name>
+  <a name="id">id</a>
+</h3>
+
+<span class="description field-description">The id of the component to reference.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string</span></span></li>
+<li><span class="annotation field-note">Required</span></li>
+
+</ul>
+</div></div></div><div class="definition">
 <h2 class="definition-name type-name">
   <a name="HostConfig">HostConfig</a>
 </h2>
@@ -642,7 +860,7 @@
 <div class=field>
 
 <h3 class=field-name>
-  <a name="reference">reference</a>
+  <a name="ref">ref</a>
 </h3>
 
 <span class="description field-description">The URL (and optional tag) or local file path to find the .wasm module.</span>
@@ -650,7 +868,7 @@
 
 <ul class="field-notes">
 <li><span class="type field-note">Type: <span class=field-type>string</span></span></li>
-
+<li><span class="annotation field-note">Required</span></li>
 
 </ul>
 </div><div class=field>
@@ -720,77 +938,7 @@
 
 <ul class="field-notes">
 <li><span class="type field-note">Type: <span class=field-type>string</span></span></li>
-
-
-</ul>
-</div><div class=field>
-
-<h3 class=field-name>
-  <a name="config">config</a>
-</h3>
-
-<span class="description field-description">Any configuration necessary for the component.</span>
-
-
-<ul class="field-notes">
-<li><span class="type field-note">Type: <span class=field-type><a href="#any">any</a></span></span></li>
-
-
-</ul>
-</div></div></div><div class="definition">
-<h2 class="definition-name type-name">
-  <a name="MeshComponent">MeshComponent</a>
-</h2>
-
-<span class="description type-description">A component hosted somewhere on a connected mesh.</span>
-<div class=fields>
-<div class=field>
-
-<h3 class=field-name>
-  <a name="id">id</a>
-</h3>
-
-<span class="description field-description">The ID of the component.</span>
-
-
-<ul class="field-notes">
-<li><span class="type field-note">Type: <span class=field-type>string</span></span></li>
-
-
-</ul>
-</div><div class=field>
-
-<h3 class=field-name>
-  <a name="config">config</a>
-</h3>
-
-<span class="description field-description">Any configuration necessary for the component.</span>
-
-
-<ul class="field-notes">
-<li><span class="type field-note">Type: <span class=field-type><a href="#any">any</a></span></span></li>
-
-
-</ul>
-</div></div></div><div class="definition">
-<h2 class="definition-name type-name">
-  <a name="GrpcTarComponent">GrpcTarComponent</a>
-</h2>
-
-<span class="description type-description">A native component that can be extracted and run as a microservice.</span>
-<div class=fields>
-<div class=field>
-
-<h3 class=field-name>
-  <a name="reference">reference</a>
-</h3>
-
-<span class="description field-description">The URL (and optional tag) or local file path to find the archive.</span>
-
-
-<ul class="field-notes">
-<li><span class="type field-note">Type: <span class=field-type>string</span></span></li>
-
+<li><span class="annotation field-note">Required</span></li>
 
 </ul>
 </div><div class=field>
@@ -817,7 +965,7 @@
 <div class=field>
 
 <h3 class=field-name>
-  <a name="reference">reference</a>
+  <a name="ref">ref</a>
 </h3>
 
 <span class="description field-description">The URL (and optional tag) or local file path to find the manifest.</span>
@@ -825,7 +973,7 @@
 
 <ul class="field-notes">
 <li><span class="type field-note">Type: <span class=field-type>string</span></span></li>
-
+<li><span class="annotation field-note">Required</span></li>
 
 </ul>
 </div><div class=field>
@@ -988,7 +1136,7 @@
 
 <ul class="field-notes">
 <li><span class="type field-note">Type: <span class=field-type><a href="#ConnectionTargetDefinition">ConnectionTargetDefinition</a></span></span></li>
-
+<li><span class="annotation field-note">Required</span></li>
 
 </ul>
 </div><div class=field>
@@ -1002,7 +1150,7 @@
 
 <ul class="field-notes">
 <li><span class="type field-note">Type: <span class=field-type><a href="#ConnectionTargetDefinition">ConnectionTargetDefinition</a></span></span></li>
-
+<li><span class="annotation field-note">Required</span></li>
 
 </ul>
 </div><div class=field>

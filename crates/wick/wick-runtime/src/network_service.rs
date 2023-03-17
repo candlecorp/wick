@@ -6,18 +6,18 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use flow_graph_interpreter::{HandlerMap, NamespaceHandler};
-use futures::future::BoxFuture;
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
 use seeded_random::{Random, Seed};
+use tracing::Instrument;
 use uuid::Uuid;
 use wick_config::ComponentConfiguration;
 use wick_packet::{Invocation, PacketStream};
 
-use crate::collections::{initialize_native_collection, initialize_network_collection, initialize_wasm_collection};
+use crate::components::{initialize_native_component, initialize_network_collection, initialize_wasm_component};
 use crate::dev::prelude::*;
 use crate::json_writer::JsonWriter;
-use crate::V0_NAMESPACE;
+use crate::{BoxFuture, V0_NAMESPACE};
 
 type Result<T> = std::result::Result<T, NetworkError>;
 #[derive(Debug)]
@@ -30,6 +30,7 @@ pub(crate) struct Initialize {
   pub(crate) rng_seed: Seed,
   pub(crate) namespace: Option<String>,
   pub(crate) event_log: Option<PathBuf>,
+  pub(crate) span: tracing::Span,
 }
 
 #[derive(Debug)]
@@ -45,24 +46,27 @@ static HOST_REGISTRY: Lazy<Mutex<ServiceMap>> = Lazy::new(|| Mutex::new(HashMap:
 
 impl NetworkService {
   pub(crate) async fn new(msg: Initialize) -> Result<Arc<Self>> {
+    debug!("initializing network service");
     let graph = flow_graph_interpreter::graph::from_def(&msg.manifest)?;
     let mut collections = HandlerMap::default();
     let rng = Random::from_seed(msg.rng_seed);
 
-    let stdlib = initialize_native_collection(V0_NAMESPACE.to_owned(), rng.seed())?;
+    let span = debug_span!(parent: &msg.span, "components:init");
 
+    let stdlib = initialize_native_component(V0_NAMESPACE.to_owned(), rng.seed(), &span)?;
     collections.add(stdlib);
 
+    let span = debug_span!(parent: &msg.span, "components:init");
     for collection in msg.manifest.components().values() {
-      let collection_init = CollectionInitOptions {
+      let collection_init = ComponentInitOptions {
         rng_seed: rng.seed(),
         network_id: msg.id,
-        // mesh: msg.mesh.clone(),
         allow_latest: msg.allow_latest,
         allowed_insecure: msg.allowed_insecure.clone(),
         timeout: msg.timeout,
+        span: &span,
       };
-      let p = initialize_collection(collection, collection_init).await?;
+      let p = initialize_component(collection, collection_init).await?;
       collections.add(p);
     }
 
@@ -92,12 +96,15 @@ impl NetworkService {
     Ok(network)
   }
 
-  pub(crate) fn new_from_manifest(
+  pub(crate) fn new_from_manifest<'a, 'b>(
     uid: Uuid,
-    location: &str,
+    location: &'a str,
     namespace: Option<String>,
-    opts: CollectionInitOptions,
-  ) -> BoxFuture<Result<Arc<NetworkService>>> {
+    opts: ComponentInitOptions<'b>,
+  ) -> BoxFuture<'b, Result<Arc<NetworkService>>>
+  where
+    'a: 'b,
+  {
     Box::pin(async move {
       let bytes = wick_loader_utils::get_bytes(location, opts.allow_latest, &opts.allowed_insecure).await?;
       let manifest = wick_config::ComponentConfiguration::load_from_bytes(Some(location.to_owned()), &bytes)?;
@@ -107,11 +114,11 @@ impl NetworkService {
         manifest,
         allowed_insecure: opts.allowed_insecure,
         allow_latest: opts.allow_latest,
-        // mesh: opts.mesh,
         timeout: opts.timeout,
         rng_seed: opts.rng_seed,
         namespace,
         event_log: None,
+        span: debug_span!("engine:new"),
       };
       NetworkService::new(init).await
     })
@@ -130,7 +137,7 @@ impl NetworkService {
 }
 
 impl InvocationHandler for NetworkService {
-  fn get_signature(&self) -> std::result::Result<ComponentSignature, CollectionError> {
+  fn get_signature(&self) -> std::result::Result<ComponentSignature, ComponentError> {
     let mut signature = self.interpreter.get_export_signature().clone();
     signature.name = Some(self.id.as_hyphenated().to_string());
 
@@ -141,51 +148,49 @@ impl InvocationHandler for NetworkService {
     &self,
     msg: Invocation,
     stream: PacketStream,
-  ) -> std::result::Result<BoxFuture<std::result::Result<InvocationResponse, CollectionError>>, CollectionError> {
+  ) -> std::result::Result<BoxFuture<std::result::Result<InvocationResponse, ComponentError>>, ComponentError> {
     let tx_id = msg.tx_id;
 
     let fut = self.interpreter.invoke(msg, stream);
-
-    Ok(
-      async move {
-        match fut.await {
-          Ok(response) => Ok(InvocationResponse::Stream { tx_id, rx: response }),
-          Err(e) => {
-            error!("{}", e);
-            Ok(InvocationResponse::error(
-              tx_id,
-              format!("Internal error invoking schematic: {}", e),
-            ))
-          }
+    let task = async move {
+      match fut.await {
+        Ok(response) => Ok(InvocationResponse::Stream { tx_id, rx: response }),
+        Err(e) => {
+          error!("{}", e);
+          Ok(InvocationResponse::error(
+            tx_id,
+            format!("Internal error invoking schematic: {}", e),
+          ))
         }
       }
-      .boxed(),
-    )
+    };
+    Ok(Box::pin(task))
   }
 }
 
 #[derive(Debug)]
-pub(crate) struct CollectionInitOptions {
+pub(crate) struct ComponentInitOptions<'a> {
   pub(crate) rng_seed: Seed,
   pub(crate) network_id: Uuid,
   pub(crate) allow_latest: bool,
   pub(crate) allowed_insecure: Vec<String>,
   pub(crate) timeout: Duration,
+  #[allow(unused)]
+  pub(crate) span: &'a tracing::Span,
 }
 
-pub(crate) async fn initialize_collection(
-  collection: &ComponentDefinition,
-  opts: CollectionInitOptions,
+pub(crate) async fn initialize_component<'a, 'b>(
+  collection: &'a BoundComponent,
+  opts: ComponentInitOptions<'b>,
 ) -> Result<NamespaceHandler> {
-  let namespace = collection.namespace.clone();
-
+  debug!(?collection, ?opts, "initializing component");
+  let namespace = collection.id.clone();
+  let span = opts.span.clone();
   let result = match &collection.kind {
-    ComponentKind::Wasm(v) => initialize_wasm_collection(v, namespace, opts).await,
-    // CollectionKind::GrpcTar(v) => initialize_par_collection(v, namespace, opts).await,
+    ComponentDefinition::Wasm(v) => initialize_wasm_component(v, namespace, opts).instrument(span).await,
     // CollectionKind::GrpcUrl(v) => initialize_grpc_collection(v, namespace).await,
-    // CollectionKind::Mesh(v) => initialize_mesh_collection(v, namespace, opts).await,
-    ComponentKind::Manifest(v) => initialize_network_collection(v, namespace, opts).await,
-    _ => todo!(),
+    ComponentDefinition::Manifest(v) => initialize_network_collection(v, namespace, opts).instrument(span).await,
+    _ => unimplemented!(),
   };
   Ok(result?)
 }

@@ -7,7 +7,7 @@ use self::error::ExecutionError;
 use self::transaction::Transaction;
 use super::channel::InterpreterDispatchChannel;
 use crate::graph::types::*;
-use crate::{Collection, HandlerMap};
+use crate::{Component, HandlerMap};
 
 pub(crate) mod error;
 // mod output_channel;
@@ -40,7 +40,7 @@ impl SchematicExecutor {
     stream: PacketStream,
     seed: Seed,
     collections: Arc<HandlerMap>,
-    self_collection: Arc<dyn Collection + Send + Sync>,
+    self_collection: Arc<dyn Component + Send + Sync>,
   ) -> Result<PacketStream> {
     debug!(schematic = self.name(), ?invocation,);
 

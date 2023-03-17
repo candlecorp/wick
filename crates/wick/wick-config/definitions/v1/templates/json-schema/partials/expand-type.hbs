@@ -1,3 +1,4 @@
+
 {{#switch kind~}}
   {{#case "MapType"}}
   "type":"object",
@@ -12,11 +13,7 @@
   }
   {{/case}}
   {{#case "Optional"}}
-    "required" : false,
     {{> expand-type type }}
-    {{#ifCond type.name.value "==" "ConnectionTargetDefinition"}}
-      #[serde(deserialize_with = "connection_target_shortform")]
-    {{/ifCond}}
   {{/case}}
   {{#case "Named"~}}
     {{#switch name.value~}}

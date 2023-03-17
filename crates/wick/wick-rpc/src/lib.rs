@@ -87,9 +87,8 @@
 // Add exceptions here
 #![allow(missing_docs)]
 
+use std::future::Future;
 use std::sync::Arc;
-
-use async_trait::async_trait;
 
 #[cfg(feature = "client")]
 mod client;
@@ -107,6 +106,7 @@ pub mod types;
 pub use dyn_clone::clone_box;
 /// Module with generated Tonic & Protobuf code.
 pub use generated::wick as rpc;
+use tokio_stream::StreamExt;
 pub use types::*;
 use wick_interface_types::HostedType;
 
@@ -124,26 +124,43 @@ pub type SharedRpcHandler = Arc<dyn RpcHandler + Send + Sync + 'static>;
 /// A function that produces a BoxedRpcHandler.
 pub type RpcFactory = Box<dyn Fn() -> SharedRpcHandler + Send + Sync + 'static>;
 
+/// A boxed, sync+send future.
+pub type BoxFuture<'a, T> = std::pin::Pin<Box<dyn Future<Output = T> + Send + Sync + 'a>>;
+
 /// A trait that implementers of the RPC interface should implement.
-#[async_trait]
 pub trait RpcHandler: Sync
 where
   Self: 'static,
 {
   /// Handle an incoming request for a target entity.
-  async fn invoke(
+  fn invoke(
     &self,
     invocation: wick_packet::Invocation,
     stream: wick_packet::PacketStream,
-  ) -> Result<wick_packet::PacketStream, Box<error::RpcError>>;
+  ) -> BoxFuture<Result<wick_packet::PacketStream, Box<error::RpcError>>>;
 
   /// List the entities this [RpcHandler] manages.
   fn get_list(&self) -> Result<Vec<HostedType>, Box<error::RpcError>>;
 
   /// Handle an incoming request for a target entity.
-  async fn shutdown(&self) -> Result<(), Box<error::RpcError>> {
-    Ok(())
+  fn shutdown(&self) -> BoxFuture<Result<(), Box<error::RpcError>>> {
+    Box::pin(async move { Ok(()) })
   }
+}
+
+pub fn convert_tonic_streaming(mut streaming: tonic::Streaming<rpc::Packet>) -> wick_packet::PacketStream {
+  let (tx, rx) = tokio::sync::mpsc::unbounded_channel();
+  tokio::spawn(async move {
+    while let Some(packet) = streaming.next().await {
+      let result: Result<wick_packet::Packet, wick_packet::Error> = match packet {
+        Ok(o) => Ok(o.into()),
+        Err(e) => Err(wick_packet::Error::General(e.to_string())),
+      };
+      let _ = tx.send(result);
+    }
+  });
+
+  wick_packet::PacketStream::new(Box::new(tokio_stream::wrappers::UnboundedReceiverStream::new(rx)))
 }
 
 #[macro_export]
@@ -151,7 +168,7 @@ macro_rules! dispatch {
   ($inv:expr, $stream:expr, {$($name:expr => $handler:path),*,}) => {
     {
       match $inv.target.name() {
-        $($name => $handler($stream).await.map_err(|e| RpcError::ComponentError(e.to_string()))?,)*
+        $($name => $handler($stream).await.map_err(|e| RpcError::Operation(e.to_string()))?,)*
         _ => {
           unreachable!()
         }

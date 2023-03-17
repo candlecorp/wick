@@ -4,12 +4,14 @@ format: 1
 metadata:
   version: '1'
 import:
-  foo:
-    kind: Mesh
-    id: bar
-  bar:
-    kind: Wasm
-    reference: bar
+  - name: foo
+    component:
+      kind: Manifest
+      ref: hey
+  - name: bar
+    component:
+      kind: Wasm
+      ref: bar
 operations:
   - name: logger
     instances:

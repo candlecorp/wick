@@ -16,7 +16,7 @@ impl TryFrom<wick::HostedType> for rpc::ComponentSignature {
 
   fn try_from(v: wick::HostedType) -> Result<Self> {
     Ok(match v {
-      wick::HostedType::Collection(v) => v.try_into()?,
+      wick::HostedType::Component(v) => v.try_into()?,
     })
   }
 }
@@ -27,7 +27,7 @@ impl TryFrom<wick::HostedType> for rpc::HostedType {
   fn try_from(value: wick::HostedType) -> Result<Self> {
     use rpc::hosted_type::Type;
     Ok(match value {
-      wick::HostedType::Collection(p) => Self {
+      wick::HostedType::Component(p) => Self {
         r#type: Some(Type::Component(p.try_into()?)),
       },
     })
@@ -41,7 +41,7 @@ impl TryFrom<rpc::HostedType> for wick::HostedType {
     use rpc::hosted_type::Type;
     match value.r#type {
       Some(v) => match v {
-        Type::Component(sig) => Ok(wick::HostedType::Collection(sig.try_into()?)),
+        Type::Component(sig) => Ok(wick::HostedType::Component(sig.try_into()?)),
       },
       None => Err(RpcError::InvalidSignature),
     }
@@ -57,7 +57,7 @@ impl TryFrom<rpc::ComponentSignature> for wick::ComponentSignature {
       format: match v.format {
         0 => wick::ComponentVersion::V0,
         _ => {
-          return Err(RpcError::CollectionError(format!(
+          return Err(RpcError::Component(format!(
             "Invalid collection version ({}) for this runtime",
             v.format
           )))

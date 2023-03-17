@@ -8,16 +8,22 @@ pub(crate) fn {{upperCase (snakeCase ../name.value)}}_{{upperCase name.value}}()
   {{/if}}
 {{/each}}
 
+
+{{#withAnnotation "default"}}
 #[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
+{{else}}
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+{{/withAnnotation}}
 #[serde(deny_unknown_fields)]
 {{#if description}}
 /// {{{description.value}}}
 {{/if}}
-pub struct {{name.value}} {
+pub(crate) struct {{name.value}} {
   {{#each fields}}
     {{#if description}}
     /// {{description.value}}
     {{/if}}
+
     {{#withAnnotation "deprecated"}}
     #[deprecated()]
     {{/withAnnotation}}
@@ -69,14 +75,26 @@ pub struct {{name.value}} {
           {{#case "f64"}}#[serde(deserialize_with="with_expand_envs")]{{/case}}
           {{#case "bool"}}#[serde(deserialize_with="with_expand_envs")]{{/case}}
           {{#case "any"}}#[serde(deserialize_with = "crate::helpers::deserialize_json_env")]{{/case}}
+          {{#case "ComponentOperationExpression"}}#[serde(deserialize_with = "crate::parse::v1::component_operation_syntax")]{{/case}}
           {{#case "ConnectionTargetDefinition"}}#[serde(deserialize_with = "crate::parse::v1::connection_target_shortform")]{{/case}}
+          {{#case "ComponentDefinition"}}#[serde(deserialize_with = "crate::parse::v1::component_shortform")]{{/case}}
+          {{#case "ComponentKind"}}#[serde(deserialize_with = "crate::parse::v1::componentkind_shortform")]{{/case}}
         {{/switch}}
       {{/case}}
     {{/switch}}
-    {{#ifCond ../name.value '==' 'MapType'}}
-    pub {{name.value}}: Box<{{> expand-type type}}>,
+    {{#withAnnotation "rename"}}
+    {{#ifCond name.value '===' 'rename'}}
+    #[serde(rename="{{../name.value}}")]
+    pub(crate) {{arguments.0.value.value}}:
+    {{/ifCond}}
     {{else}}
-    pub {{name.value}}: {{> expand-type type}},
+    pub(crate) {{name.value}}:
+    {{/withAnnotation}}
+
+    {{#ifCond ../name.value '==' 'MapType'}}
+    Box<{{> expand-type type}}>,
+    {{else}}
+    {{> expand-type type}},
     {{/ifCond}}
   {{/each}}
 }

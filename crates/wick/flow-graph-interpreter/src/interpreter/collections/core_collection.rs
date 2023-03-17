@@ -1,4 +1,3 @@
-use futures::future::BoxFuture;
 use serde_json::Value;
 use wick_interface_types::{
   ComponentMetadata,
@@ -14,7 +13,7 @@ use wick_packet::{Invocation, PacketStream, StreamMap};
 use crate::constants::*;
 use crate::graph::types::Network;
 use crate::interpreter::collections::dyn_component_id;
-use crate::{BoxError, Collection, Operation};
+use crate::{BoxError, BoxFuture, Component, Operation};
 
 // mod merge;
 mod sender;
@@ -74,7 +73,7 @@ impl CoreCollection {
   }
 }
 
-impl Collection for CoreCollection {
+impl Component for CoreCollection {
   fn handle(
     &self,
     invocation: Invocation,

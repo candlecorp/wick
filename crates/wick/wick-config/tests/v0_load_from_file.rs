@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use std::str::FromStr;
 
 use flow_expression_parser::parse::{NS_LINK, SCHEMATIC_OUTPUT, SENDER_ID, SENDER_PORT};
-use serde_json::{json, Value};
+use serde_json::Value;
 use tracing::debug;
 use wick_config::error::ManifestError;
 use wick_config::*;
@@ -56,11 +56,7 @@ fn load_collections_yaml() -> Result<(), ManifestError> {
   let manifest = ComponentConfiguration::load_from_file(path)?;
 
   assert_eq!(manifest.name(), &Some("collections".to_owned()));
-  assert_eq!(manifest.components().len(), 6);
-  assert_eq!(
-    manifest.component("wapc2").unwrap().config().unwrap(),
-    &json!({"obj":{"data_prop":"data_value"}})
-  );
+  assert_eq!(manifest.components().len(), 4);
 
   Ok(())
 }

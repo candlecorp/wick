@@ -11,8 +11,6 @@ use serde::{Deserialize, Serialize};
 pub struct Options {
   /// RPC server options.
   pub rpc: Option<ServerOptions>,
-  /// Mesh options.
-  pub mesh: Option<MeshOptions>,
   /// The ID of the server.
   pub id: String,
   /// The timeout for network requests.
@@ -24,7 +22,6 @@ impl Default for Options {
     Self {
       id: uuid::Uuid::new_v4().as_hyphenated().to_string(),
       rpc: Default::default(),
-      mesh: Default::default(),
       timeout: Default::default(),
     }
   }
@@ -79,18 +76,6 @@ impl From<DefaultCliOptions> for Options {
       ca: opts.rpc_ca,
     });
 
-    #[allow(clippy::option_if_let_else)]
-    let mesh = if let Some(url) = opts.mesh.nats_url {
-      Some(MeshOptions {
-        enabled: opts.mesh.mesh_enabled,
-        address: url,
-        creds_path: opts.mesh.nats_credsfile,
-        token: opts.mesh.nats_token,
-      })
-    } else {
-      None
-    };
-
     let id = opts
       .id
       .unwrap_or_else(|| uuid::Uuid::new_v4().as_hyphenated().to_string());
@@ -99,7 +84,6 @@ impl From<DefaultCliOptions> for Options {
       rpc,
       timeout: Duration::from_millis(opts.timeout.unwrap_or(5000)),
       id,
-      mesh,
     }
   }
 }
@@ -149,10 +133,6 @@ pub struct DefaultCliOptions {
   #[clap(flatten)]
   pub logging: LoggingOptions,
 
-  #[clap(flatten)]
-  /// Options for connecting to a mesh.
-  pub mesh: MeshCliOptions,
-
   /// Enable the rpc server.
   #[clap(long = "rpc",  env = env::WICK_RPC_ENABLED, action)]
   pub rpc_enabled: bool,
@@ -176,24 +156,4 @@ pub struct DefaultCliOptions {
   /// Path to certificate authority for GRPC server.
   #[clap(long = "rpc-ca", env = env::WICK_RPC_CA, action)]
   pub rpc_ca: Option<PathBuf>,
-}
-
-#[derive(Debug, Clone, Default, Args, Serialize, Deserialize)]
-/// Command line options for mesh connections.
-pub struct MeshCliOptions {
-  /// Enable the mesh connection.
-  #[clap(long = "mesh", action)]
-  pub mesh_enabled: bool,
-
-  /// The url of the NATS server (in IP:PORT format).
-  #[clap(long = "nats", env = env::NATS_URL, action)]
-  pub nats_url: Option<String>,
-
-  /// The path to the NATS credsfile.
-  #[clap(long = "nats-credsfile", env = env::NATS_CREDSFILE, action)]
-  pub nats_credsfile: Option<PathBuf>,
-
-  /// The NATS token.
-  #[clap(long = "nats-token", env = env::NATS_TOKEN, hide_env_values = true, action)]
-  pub nats_token: Option<String>,
 }

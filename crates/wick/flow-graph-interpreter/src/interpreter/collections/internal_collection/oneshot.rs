@@ -1,10 +1,9 @@
-use futures::future::BoxFuture;
 use futures::StreamExt;
 use serde_json::Value;
 use wasmrs_rx::Observer;
 use wick_packet::{Packet, PacketStream, PayloadFlux};
 
-use crate::{BoxError, Operation};
+use crate::{BoxError, BoxFuture, Operation};
 
 #[derive(Default, Debug, Clone, Copy)]
 pub struct OneShotComponent {}

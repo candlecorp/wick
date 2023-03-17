@@ -85,7 +85,7 @@
 #![allow(unused_attributes, clippy::derive_partial_eq_without_eq, clippy::box_default)]
 // !!END_LINTS
 // Add exceptions here
-#![allow()]
+#![allow(missing_docs)]
 
 use serde::de::DeserializeOwned;
 
@@ -101,21 +101,17 @@ pub(crate) mod parse;
 /// Wick Manifest error.
 pub mod error;
 
-/// Version 0 manifest.
-pub mod v0;
+pub(crate) mod v0;
 
-/// Version 1 manifest.
-pub mod v1;
+pub(crate) mod v1;
 
-/// A version-normalized format of the manifest for development.
-pub mod host_definition;
+mod host_definition;
+pub use host_definition::HttpConfig;
 
-/// A version-normalized format of the network manifest for development.
-pub mod component_definition;
-pub use component_definition::{ComponentDefinition, ComponentKind, Permissions};
+mod component_definition;
+pub use component_definition::{BoundComponent, ComponentDefinition, ManifestComponent, Permissions, WasmComponent};
 
-/// A version-normalized format of the schematic manifest for development.
-pub mod flow_definition;
+mod flow_definition;
 pub use flow_definition::{ConnectionDefinition, ConnectionTargetDefinition, FlowOperation, InstanceReference};
 pub use flow_expression_parser::parse::v0::parse_id;
 
@@ -128,7 +124,12 @@ mod app_config;
 pub use app_config::{
   AppConfiguration,
   CliConfig,
+  ConfigurationItem,
+  HttpRouterConfig,
+  HttpTriggerConfig,
+  RawRouterConfig,
   ResourceDefinition,
+  RestRouterConfig,
   TcpPort,
   TriggerDefinition,
   TriggerKind,
@@ -138,6 +139,30 @@ mod component_config;
 pub use component_config::{ComponentConfiguration, ComponentConfigurationBuilder};
 
 pub(crate) type Result<T> = std::result::Result<T, Error>;
+
+#[derive(Debug, Clone, Copy)]
+pub enum ConfigurationKind {
+  App,
+  Component,
+}
+
+#[derive(Debug, Clone)]
+pub enum ConfigurationSource {
+  Component(ComponentConfiguration),
+  App(AppConfiguration),
+}
+
+impl ConfigurationSource {
+  pub fn load_from_bytes(source: Option<String>, bytes: &[u8], kind: ConfigurationKind) -> Result<Self> {
+    let config = match kind {
+      ConfigurationKind::App => ConfigurationSource::App(AppConfiguration::load_from_bytes(source, bytes)?),
+      ConfigurationKind::Component => {
+        ConfigurationSource::Component(ComponentConfiguration::load_from_bytes(source, bytes)?)
+      }
+    };
+    Ok(config)
+  }
+}
 
 fn from_yaml<T>(src: &str) -> Result<T>
 where
