@@ -20,7 +20,7 @@
     missing_docs
 )]
 #![warn(clippy::cognitive_complexity)]
-#![allow(clippy::large_enum_variant)]
+#![allow(clippy::large_enum_variant,missing_copy_implementations)]
 
 use serde::{Deserialize, Serialize};
 use serde_with_expand_env::with_expand_envs;
@@ -36,7 +36,7 @@ use serde_json::Value;
     {{#case "ImportDefinition"}}
       {{#import from.value}}{{> module }}{{/import}}
     {{/case}}
-    {{#case "AliasDefinition"}}{{/case}}
+    {{#case "AliasDefinition"}}{{> alias-definition}}{{/case}}
     {{#default}}
     {{log "Unhandled type"}}
     panic!()

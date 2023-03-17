@@ -4717,6 +4717,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "wick-interface-http"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "bytes",
+ "futures",
+ "serde",
+ "serde_json",
+ "wasmrs-guest",
+ "wick-component",
+ "wick-component-codegen",
+]
+
+[[package]]
 name = "wick-interface-types"
 version = "0.12.0"
 dependencies = [
@@ -4841,14 +4855,17 @@ dependencies = [
  "anyhow",
  "async-trait",
  "atty",
+ "bytes",
  "flow-graph",
  "flow-graph-interpreter",
  "futures",
+ "hyper",
  "lazy_static",
  "logger",
  "once_cell",
  "parking_lot",
  "pretty_assertions",
+ "reqwest",
  "seeded-random",
  "serde",
  "serde-value",
@@ -4859,10 +4876,14 @@ dependencies = [
  "thiserror",
  "tokio",
  "tokio-stream",
+ "tower",
  "tracing",
+ "url",
  "uuid",
+ "wasmrs-codec",
  "wick-component-wasm",
  "wick-config",
+ "wick-interface-http",
  "wick-interface-types",
  "wick-invocation-server",
  "wick-loader-utils",

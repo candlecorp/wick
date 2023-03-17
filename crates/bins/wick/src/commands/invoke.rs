@@ -1,6 +1,5 @@
 use anyhow::{Context, Result};
 use clap::Args;
-use wick_component_cli::options::MeshCliOptions;
 
 mod manifest;
 mod wasm;
@@ -10,9 +9,6 @@ mod wasm;
 pub(crate) struct InvokeCommand {
   #[clap(flatten)]
   pub(crate) logging: super::LoggingOptions,
-
-  #[clap(flatten)]
-  pub(crate) mesh: MeshCliOptions,
 
   #[clap(flatten)]
   wasi: crate::wasm::WasiOptions,

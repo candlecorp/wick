@@ -1,0 +1,10 @@
+name: mycli
+format: 1
+triggers:
+  - kind: wick/trigger/cli@v1
+    operation:
+      operation: main
+      component: ../../integration/test-cli-trigger-component/build/test_cli_trigger_component.signed.wasm
+    app:
+      kind: Manifest
+      ref: ./tests/cmd/run/noop.yaml

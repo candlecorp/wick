@@ -8,7 +8,7 @@ use wick_interface_types::TypeDefinition;
 use crate::error::ManifestError;
 use crate::host_definition::HostConfig;
 use crate::v1::ComponentMetadata;
-use crate::{from_yaml, v0, v1, ComponentDefinition, Error, FlowOperation, Result};
+use crate::{from_yaml, v0, v1, BoundComponent, Error, FlowOperation, Result};
 
 #[derive(Debug, Clone, Default)]
 #[must_use]
@@ -21,7 +21,7 @@ pub struct ComponentConfiguration {
   name: Option<String>,
   types: Vec<TypeDefinition>,
   labels: HashMap<String, String>,
-  import: HashMap<String, ComponentDefinition>,
+  import: HashMap<String, BoundComponent>,
   operations: HashMap<String, FlowOperation>,
 }
 
@@ -46,7 +46,12 @@ impl TryFrom<v0::HostManifest> for ComponentConfiguration {
         .network
         .collections
         .iter()
-        .map(|val| Ok((val.namespace.clone(), val.try_into()?)))
+        .map(|val| {
+          Ok((
+            val.namespace.clone(),
+            BoundComponent::new(val.namespace.clone(), val.try_into()?),
+          ))
+        })
         .collect::<Result<HashMap<_, _>>>()?,
       labels: def.network.labels,
       operations: flows?,
@@ -65,11 +70,7 @@ impl TryFrom<v1::ComponentConfiguration> for ComponentConfiguration {
       version: def.metadata.unwrap_or(ComponentMetadata::default()).version,
       host: def.host.try_into()?,
       name: def.name,
-      import: def
-        .import
-        .into_iter()
-        .map(|(k, v)| (k.clone(), (k, v).into()))
-        .collect(),
+      import: def.import.into_iter().map(|v| (v.name.clone(), v.into())).collect(),
       labels: def.labels,
       operations: def
         .operations
@@ -187,13 +188,13 @@ impl ComponentConfiguration {
 
   #[must_use]
   /// Get the name for this manifest.
-  pub fn components(&self) -> &HashMap<String, ComponentDefinition> {
+  pub fn components(&self) -> &HashMap<String, BoundComponent> {
     &self.import
   }
 
   #[must_use]
   /// Get the name for this manifest.
-  pub fn component(&self, namespace: &str) -> Option<&ComponentDefinition> {
+  pub fn component(&self, namespace: &str) -> Option<&BoundComponent> {
     self.import.iter().find(|(k, _)| *k == namespace).map(|(_, v)| v)
   }
 
@@ -210,7 +211,7 @@ impl ComponentConfiguration {
 pub struct ComponentConfigurationBuilder {
   version: Option<String>,
   base: Option<ComponentConfiguration>,
-  components: HashMap<String, ComponentDefinition>,
+  components: HashMap<String, BoundComponent>,
   flows: HashMap<String, FlowOperation>,
 }
 
@@ -235,7 +236,7 @@ impl ComponentConfigurationBuilder {
   }
 
   /// Add a [CollectionDefinition] to the builder.
-  pub fn add_collection(mut self, name: impl AsRef<str>, collection: ComponentDefinition) -> Self {
+  pub fn add_collection(mut self, name: impl AsRef<str>, collection: BoundComponent) -> Self {
     self.components.insert(name.as_ref().to_owned(), collection);
     self
   }

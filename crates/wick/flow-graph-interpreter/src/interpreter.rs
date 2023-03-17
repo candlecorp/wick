@@ -24,7 +24,7 @@ use crate::interpreter::channel::InterpreterChannel;
 use crate::interpreter::collections::collection_collection::CollectionCollection;
 use crate::interpreter::collections::schematic_collection::SchematicCollection;
 use crate::interpreter::executor::error::ExecutionError;
-use crate::{Collection, NamespaceHandler, Observer};
+use crate::{Component, NamespaceHandler, Observer};
 
 #[must_use]
 #[derive()]

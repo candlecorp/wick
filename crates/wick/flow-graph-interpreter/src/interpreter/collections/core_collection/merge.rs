@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use futures::StreamExt;
 use serde_json::Value;
 use tracing::Instrument;
-
+use crate::BoxFuture;
 use crate::{Component, ExecutionError};
 
 #[derive(Default)]
@@ -19,7 +19,7 @@ impl Component for MergeComponent {
     &self,
     mut payload: wick_packet::StreamMap,
     data: Option<Value>,
-  ) -> futures::future::BoxFuture<Result<FrameStream, crate::BoxError>> {
+  ) -> BoxFuture<Result<FrameStream, crate::BoxError>> {
     let task = async move {
       let data = data.ok_or(ExecutionError::InvalidMergeConfig)?;
       let data: MergeConfig = serde_json::from_value(data).map_err(|_| ExecutionError::InvalidMergeConfig)?;

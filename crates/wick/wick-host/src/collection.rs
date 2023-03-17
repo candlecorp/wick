@@ -1,13 +1,12 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use async_trait::async_trait;
 use wick_interface_types::*;
 use wick_packet::{Invocation, PacketStream};
 use wick_rpc::error::RpcError;
-use wick_rpc::{RpcHandler, RpcResult};
+use wick_rpc::{BoxFuture, RpcHandler, RpcResult};
 
-use crate::Host;
+use crate::ComponentHost;
 
 #[derive(Debug, Default)]
 pub struct Context {
@@ -17,29 +16,32 @@ pub struct Context {
 
 #[derive(Clone, Debug)]
 pub struct Collection {
-  host: Arc<Host>,
+  host: Arc<ComponentHost>,
 }
 
 impl Collection {}
 
-impl From<Host> for Collection {
-  fn from(host: Host) -> Self {
+impl From<ComponentHost> for Collection {
+  fn from(host: ComponentHost) -> Self {
     Self { host: Arc::new(host) }
   }
 }
 
-#[async_trait]
 impl RpcHandler for Collection {
-  async fn invoke(&self, invocation: Invocation, stream: PacketStream) -> RpcResult<PacketStream> {
-    let outputs = self.host.invoke(invocation, stream).await.map_err(RpcError::boxed)?;
+  fn invoke(&self, invocation: Invocation, stream: PacketStream) -> BoxFuture<RpcResult<PacketStream>> {
+    let fut = self.host.invoke(invocation, stream);
 
-    Ok(outputs)
+    Box::pin(async move {
+      let outputs = fut.await.map_err(RpcError::boxed)?;
+
+      Ok(outputs)
+    })
   }
 
   fn get_list(&self) -> RpcResult<Vec<HostedType>> {
     let collection: ComponentSignature = self.host.get_signature().map_err(RpcError::boxed)?;
 
-    Ok(vec![HostedType::Collection(collection)])
+    Ok(vec![HostedType::Component(collection)])
   }
 }
 
@@ -52,11 +54,11 @@ mod tests {
   use wick_packet::{packet_stream, Entity, Packet};
 
   use super::*;
-  use crate::HostBuilder;
+  use crate::ComponentHostBuilder;
 
   #[test_logger::test(tokio::test)]
   async fn test_component() -> TestResult<()> {
-    let builder = HostBuilder::try_from("./manifests/logger.yaml")?;
+    let builder = ComponentHostBuilder::try_from("./manifests/logger.yaml")?;
     let mut host = builder.build();
     host.start(Some(0)).await?;
     let collection: Collection = host.into();

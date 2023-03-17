@@ -5,8 +5,8 @@ mod test;
 use anyhow::Result;
 use flow_graph_interpreter::error::{InterpreterError, SchematicInvalid, ValidationError};
 use flow_graph_interpreter::graph::from_def;
-use flow_graph_interpreter::{Collection, HandlerMap, Interpreter, NamespaceHandler};
-use futures::future::BoxFuture;
+use flow_graph_interpreter::{Component, HandlerMap, Interpreter, NamespaceHandler};
+type BoxFuture<'a, T> = std::pin::Pin<Box<dyn futures::Future<Output = T> + Send + Sync + 'a>>;
 use seeded_random::Seed;
 use serde_json::Value;
 use wick_interface_types::{ComponentMetadata, ComponentSignature, OperationSignature, TypeSignature};
@@ -15,7 +15,7 @@ fn load<T: AsRef<Path>>(path: T) -> Result<wick_config::ComponentConfiguration> 
   Ok(wick_config::ComponentConfiguration::load_from_file(path.as_ref())?)
 }
 struct SignatureTestCollection(ComponentSignature);
-impl Collection for SignatureTestCollection {
+impl Component for SignatureTestCollection {
   fn handle(
     &self,
     _invocation: Invocation,

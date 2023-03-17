@@ -16,7 +16,7 @@ use crate::graph::types::*;
 use crate::interpreter::channel::InterpreterDispatchChannel;
 use crate::interpreter::error::StateError;
 use crate::interpreter::executor::transaction::operation::port::PortStatus;
-use crate::{Collection, HandlerMap};
+use crate::{Component, HandlerMap};
 
 pub(crate) mod operation;
 
@@ -57,7 +57,7 @@ impl Transaction {
     stream: PacketStream,
     channel: InterpreterDispatchChannel,
     collections: &Arc<HandlerMap>,
-    self_collection: &Arc<dyn Collection + Send + Sync>,
+    self_collection: &Arc<dyn Component + Send + Sync>,
     seed: Seed,
   ) -> Self {
     let instances: Vec<_> = schematic

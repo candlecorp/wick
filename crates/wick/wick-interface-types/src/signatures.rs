@@ -309,7 +309,7 @@ impl StructSignature {
 #[must_use]
 pub enum HostedType {
   /// A collection.
-  Collection(ComponentSignature),
+  Component(ComponentSignature),
 }
 
 impl HostedType {
@@ -317,7 +317,7 @@ impl HostedType {
   #[must_use]
   pub fn get_name(&self) -> &Option<String> {
     match self {
-      HostedType::Collection(s) => &s.name,
+      HostedType::Component(s) => &s.name,
     }
   }
 }

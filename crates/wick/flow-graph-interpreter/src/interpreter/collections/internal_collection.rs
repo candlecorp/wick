@@ -1,11 +1,10 @@
 use flow_graph::{SCHEMATIC_INPUT, SCHEMATIC_OUTPUT};
-use futures::future::BoxFuture;
 use serde_json::Value;
 use wick_interface_types::{ComponentMetadata, ComponentSignature, OperationSignature, TypeSignature};
 use wick_packet::{Invocation, PacketStream};
 
 use crate::constants::*;
-use crate::{BoxError, Collection};
+use crate::{BoxError, BoxFuture, Component};
 
 // pub(crate) mod oneshot;
 
@@ -31,7 +30,7 @@ impl Default for InternalCollection {
   }
 }
 
-impl Collection for InternalCollection {
+impl Component for InternalCollection {
   fn handle(
     &self,
     invocation: Invocation,

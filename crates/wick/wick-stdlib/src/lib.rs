@@ -91,7 +91,7 @@ use seeded_random::Seed;
 use wick_interface_types::{component, HostedType};
 use wick_packet::{Invocation, PacketStream};
 use wick_rpc::error::RpcError;
-use wick_rpc::{dispatch, RpcHandler, RpcResult};
+use wick_rpc::{dispatch, BoxFuture, RpcHandler, RpcResult};
 
 #[macro_use]
 extern crate tracing;
@@ -112,25 +112,25 @@ impl Collection {
   }
 }
 
-#[async_trait::async_trait]
 impl RpcHandler for Collection {
-  async fn invoke(&self, invocation: Invocation, stream: PacketStream) -> RpcResult<PacketStream> {
+  fn invoke(&self, invocation: Invocation, stream: PacketStream) -> BoxFuture<RpcResult<PacketStream>> {
     let target = invocation.target_url();
     trace!("stdlib invoke: {}", target);
-    let stream = dispatch!(invocation, stream, {
-          "core::error" => operations::core::error::job,
-          "core::log" => operations::core::log::job,
-          "core::panic" => operations::core::panic::job,
-          "math::add" => operations::math::add::job,
-          "math::subtract" => operations::math::subtract::job,
-          "rand::bytes" => operations::rand::bytes::job,
-          "rand::string" => operations::rand::string::job,
-          "rand::uuid" => operations::rand::uuid::job,
-          "string::concat" => operations::string::concat::job,
-    });
-    trace!("stdlib result: {}", target);
 
-    Ok(stream)
+    Box::pin(async move {
+      let stream = dispatch!(invocation, stream, {
+            "core::error" => operations::core::error::job,
+            "core::log" => operations::core::log::job,
+            "core::panic" => operations::core::panic::job,
+            "math::add" => operations::math::add::job,
+            "math::subtract" => operations::math::subtract::job,
+            "rand::bytes" => operations::rand::bytes::job,
+            "rand::string" => operations::rand::string::job,
+            "rand::uuid" => operations::rand::uuid::job,
+            "string::concat" => operations::string::concat::job,
+      });
+      Ok(stream)
+    })
   }
 
   fn get_list(&self) -> RpcResult<Vec<HostedType>> {
@@ -176,6 +176,6 @@ impl RpcHandler for Collection {
           }
         }
     };
-    Ok(vec![HostedType::Collection(signature)])
+    Ok(vec![HostedType::Component(signature)])
   }
 }

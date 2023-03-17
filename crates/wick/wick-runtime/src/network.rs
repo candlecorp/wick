@@ -46,6 +46,7 @@ impl Network {
       namespace: config.namespace,
       rng_seed: rng.seed(),
       event_log: None,
+      span: debug_span!("engine:new"),
     };
     let service = NetworkService::new(init)
       .await
@@ -117,10 +118,8 @@ impl NetworkBuilder {
     })
   }
 
-  pub fn add_collection(mut self, collection: ComponentDefinition) -> Self {
-    self.manifest_builder = self
-      .manifest_builder
-      .add_collection(collection.namespace.clone(), collection);
+  pub fn add_component(mut self, collection: BoundComponent) -> Self {
+    self.manifest_builder = self.manifest_builder.add_collection(collection.id.clone(), collection);
     self
   }
 

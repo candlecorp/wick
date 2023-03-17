@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-use futures::future::BoxFuture;
 use parking_lot::Mutex;
 use seeded_random::{Random, Seed};
 use serde_json::Value;
@@ -12,7 +11,7 @@ use crate::constants::*;
 use crate::interpreter::channel::InterpreterDispatchChannel;
 use crate::interpreter::executor::SchematicExecutor;
 use crate::interpreter::program::ProgramState;
-use crate::{BoxError, Collection, HandlerMap};
+use crate::{BoxError, BoxFuture, Component, HandlerMap};
 
 #[derive(thiserror::Error, Debug, Clone, PartialEq, Eq)]
 pub(crate) enum Error {
@@ -68,7 +67,7 @@ impl SchematicCollection {
   }
 }
 
-impl Collection for SchematicCollection {
+impl Component for SchematicCollection {
   fn handle(
     &self,
     invocation: Invocation,

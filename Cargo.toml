@@ -1,6 +1,6 @@
 [workspace]
 members = [
-  # "crates/interfaces/*",
+  "crates/interfaces/*",
   "crates/integration/test-native-collection",
   "crates/misc/*",
   # "crates/collections/*",
@@ -10,15 +10,13 @@ members = [
 exclude = [
   "crates/integration/test-baseline-component",
   "crates/integration/test-cli-trigger-component",
-  "crates/integration/test-wasm-component",
-  "crates/integration/test-wasi-component",
-  "crates/integration/test-main-component",
-  "crates/integration/test-main-network-component",
+  "crates/integration/test-http-trigger-component",
   "crates/wick/wick-component-grpc", #TODO: remove/fix
 
 ]
 
 [workspace.dependencies]
+wick-interface-http = { path = "./crates/interfaces/wick-interface-http", version = "0.1.0" }
 wick-packet = { path = "./crates/wick/wick-packet", version = "0.12.0" }
 wick-stdlib = { path = "./crates/wick/wick-stdlib", version = "0.1.0" }
 wick-interface-types = { path = "./crates/wick/wick-interface-types", version = "0.12.0" }
@@ -26,7 +24,7 @@ wick-invocation-server = { path = "./crates/wick/wick-invocation-server", versio
 wick-rpc = { path = "./crates/wick/wick-rpc", version = "0.1.0" }
 wick-loader-utils = { path = "./crates/wick/wick-loader-utils" }
 wick-component = { path = "./crates/wick/wick-component", version = "0.12.0" }
-wick-component-codegen = { path = "./crates/wick/wick-component-codegen", version = "0.0.0" }
+wick-component-codegen = { path = "./crates/wick/wick-component-codegen", version = "0.1.0" }
 wick-component-wasm = { path = "./crates/wick/wick-component-wasm", version = "0.1.0" }
 wick-component-cli = { path = "./crates/wick/wick-component-cli", version = "0.1.0" }
 wick-runtime = { path = "./crates/wick/wick-runtime", version = "0.20.0" }
@@ -110,3 +108,5 @@ data-encoding = "2.3.2"
 ring = "0.16"
 nuid = "0.4"
 paste = "1.0"
+hyper = "0.14"
+tower = "0.4"

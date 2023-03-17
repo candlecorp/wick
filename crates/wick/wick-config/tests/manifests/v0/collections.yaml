@@ -9,18 +9,9 @@ network:
     - kind: GrpcUrl
       reference: nothing
       namespace: grpc
-    - kind: Mesh
-      reference: nothing
-      namespace: mesh
     - kind: Native
       reference: nothing
       namespace: native
     - kind: WaPC
       reference: nothing
       namespace: wapc
-    - kind: GrpcTar
-      reference: nothing
-      namespace: wapc2
-      data:
-        obj:
-          data_prop: data_value

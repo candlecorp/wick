@@ -135,12 +135,8 @@ enum CollectionKind {
   GrpcUrl = 1,
   "A WaPC WebAssembly collection."
   WaPC = 2,
-  "A collection accessible via a connected mesh."
-  Mesh = 3,
   "A local or remote Network definition."
   Network = 4,
-  "A GRPC collection binary."
-  GrpcTar = 5,
 }
 
 

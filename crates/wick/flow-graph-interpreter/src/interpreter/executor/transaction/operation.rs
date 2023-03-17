@@ -16,7 +16,7 @@ use crate::graph::Reference;
 use crate::interpreter::channel::InterpreterDispatchChannel;
 use crate::interpreter::error::StateError;
 use crate::interpreter::executor::error::ExecutionError;
-use crate::{Collection, HandlerMap};
+use crate::{Component, HandlerMap};
 type Result<T> = std::result::Result<T, ExecutionError>;
 
 pub(crate) mod port;
@@ -33,7 +33,7 @@ pub(crate) struct InstanceHandler {
   schematic: Arc<Schematic>,
   pending: AtomicU32,
   collections: Arc<HandlerMap>,
-  self_collection: Arc<dyn Collection + Send + Sync>,
+  self_collection: Arc<dyn Component + Send + Sync>,
 }
 
 impl std::fmt::Debug for InstanceHandler {
@@ -53,7 +53,7 @@ impl InstanceHandler {
     schematic: Arc<Schematic>,
     operation: &Operation,
     collections: Arc<HandlerMap>,
-    self_collection: Arc<dyn Collection + Send + Sync>,
+    self_collection: Arc<dyn Component + Send + Sync>,
   ) -> Self {
     let inputs = operation.inputs().to_vec();
     let outputs = operation.outputs().to_vec();

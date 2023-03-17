@@ -3,8 +3,7 @@ use std::time::Duration;
 use futures::StreamExt;
 use logger::{LoggingGuard, LoggingOptions};
 use wick_component_cli::options::DefaultCliOptions;
-use wick_config::host_definition::{HttpConfig, MeshConfig};
-use wick_config::ComponentConfiguration;
+use wick_config::{ComponentConfiguration, HttpConfig};
 use wick_packet::PacketStream;
 
 use crate::commands::FetchOptions;
@@ -64,29 +63,6 @@ pub(crate) fn merge_config(
         ca: cli_opts.rpc_ca,
       });
     };
-
-    if let Some(mut manifest_opts) = host_config.mesh.as_mut() {
-      if !manifest_opts.enabled {
-        log_override("mesh.enabled", &mut manifest_opts.enabled, cli_opts.mesh.mesh_enabled);
-      }
-      if let Some(to) = cli_opts.mesh.nats_url {
-        log_override("mesh.address", &mut manifest_opts.address, to);
-      }
-      if let Some(to) = cli_opts.mesh.nats_credsfile {
-        log_override("mesh.creds_path", &mut manifest_opts.creds_path, Some(to));
-      }
-      if let Some(to) = cli_opts.mesh.nats_token {
-        debug!("Overriding manifest value for 'host.mesh.token'");
-        manifest_opts.token = Some(to);
-      }
-    } else if let Some(url) = cli_opts.mesh.nats_url {
-      host_config.mesh = Some(MeshConfig {
-        enabled: cli_opts.mesh.mesh_enabled,
-        address: url,
-        creds_path: cli_opts.mesh.nats_credsfile,
-        token: cli_opts.mesh.nats_token,
-      });
-    }
   }
   merged_manifest
 }

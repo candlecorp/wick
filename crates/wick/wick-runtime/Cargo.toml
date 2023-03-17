@@ -25,6 +25,7 @@ tokio = { workspace = true, features = [
   "sync",
   "rt-multi-thread",
 ] }
+wick-interface-http = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 serde_yaml = { workspace = true }
@@ -38,6 +39,10 @@ tokio-stream = { workspace = true }
 tracing = { workspace = true }
 uuid = { workspace = true }
 atty = { workspace = true }
+hyper = { workspace = true, features = ["runtime", "server"] }
+tower = { workspace = true, features = ["make"], default-features = false }
+url = { workspace = true }
+bytes = { workspace = true }
 
 [dev-dependencies]
 wick-invocation-server = { workspace = true }
@@ -51,3 +56,5 @@ futures = { workspace = true }
 tracing = { workspace = true }
 uuid = { workspace = true }
 tokio = { workspace = true, features = ["time"] }
+reqwest = { workspace = true }
+wasmrs-codec = { workspace = true }
