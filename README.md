@@ -13,7 +13,7 @@ Wick lets you write code and reuse it easily, everywhere. It's built with Rust a
 
 ## Getting Started
 
-Visit the docs on [candle.dev](https://candle.dev/wick.html) for getting started guides and API documentation.
+Visit the docs in the [Wick Wiki](https://github.com/candlecorp/wick/wiki) for the getting started guide and API documentation.
 
 ## Quick Install - Mac and Linux
 Mac and Linux users can install the latest stable version of Wick with the following command:
@@ -29,12 +29,12 @@ curl -sSL sh.wick.run | bash -s -- nightly
 ## Quick Install - Windows
 Windows users can install the latest stable version of Wick with the following command:
 ```sh
-curl -sSL ps.wick.run | powershell
+curl https://ps.wick.run -UseBasicParsing | Invoke-Expression
 ```
 
 To download and install the nightly version, or other releases of wick, pass a single argument of the desired release.
 ```sh
-curl -sSL ps.wick.run | powershell -Command - -ReleaseVersion "nightly"
+curl https://ps.wick.run -OutFile setup-wick.ps1; .\setup-wick.ps1 -ReleaseVersion "nightly"; rm setup-wick.ps1;
 ```
 
 ## Manual Install
