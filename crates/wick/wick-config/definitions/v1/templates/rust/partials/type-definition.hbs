@@ -39,10 +39,10 @@ pub(crate) struct {{name.value}} {
         #[serde(skip_serializing_if = "HashMap::is_empty")]
         {{#switch type.valueType.name.value}}
           {{#case "InstanceDefinition"}}
-            #[serde(deserialize_with = "crate::parse::v1::map_component_def")]
+            #[serde(deserialize_with = "crate::v1::parse::map_component_def")]
           {{/case}}
           {{#case "ComponentDefinition"}}
-            #[serde(deserialize_with = "crate::parse::v1::component_shortform")]
+            #[serde(deserialize_with = "crate::v1::parse::component_shortform")]
           {{/case}}
           {{#case "string"}}
             #[serde(deserialize_with = "crate::helpers::kv_deserializer")]
@@ -52,12 +52,12 @@ pub(crate) struct {{name.value}} {
       {{#case "ListType"}}
       #[serde(skip_serializing_if = "Vec::is_empty")]
         {{#ifCond type.type.name.value "==" "ConnectionDefinition"}}
-          #[serde(deserialize_with = "crate::parse::v1::vec_connection")]
+          #[serde(deserialize_with = "crate::v1::parse::vec_connection")]
         {{/ifCond}}
       {{/case}}
       {{#case "Optional"}}
         {{#ifCond type.type.name.value "==" "ConnectionTargetDefinition"}}
-          #[serde(deserialize_with = "crate::parse::v1::connection_target_shortform")]
+          #[serde(deserialize_with = "crate::v1::parse::connection_target_shortform")]
         {{/ifCond}}
       {{/case}}
       {{#case "Named"}}
@@ -75,10 +75,10 @@ pub(crate) struct {{name.value}} {
           {{#case "f64"}}#[serde(deserialize_with="with_expand_envs")]{{/case}}
           {{#case "bool"}}#[serde(deserialize_with="with_expand_envs")]{{/case}}
           {{#case "any"}}#[serde(deserialize_with = "crate::helpers::deserialize_json_env")]{{/case}}
-          {{#case "ComponentOperationExpression"}}#[serde(deserialize_with = "crate::parse::v1::component_operation_syntax")]{{/case}}
-          {{#case "ConnectionTargetDefinition"}}#[serde(deserialize_with = "crate::parse::v1::connection_target_shortform")]{{/case}}
-          {{#case "ComponentDefinition"}}#[serde(deserialize_with = "crate::parse::v1::component_shortform")]{{/case}}
-          {{#case "ComponentKind"}}#[serde(deserialize_with = "crate::parse::v1::componentkind_shortform")]{{/case}}
+          {{#case "ComponentOperationExpression"}}#[serde(deserialize_with = "crate::v1::parse::component_operation_syntax")]{{/case}}
+          {{#case "ConnectionTargetDefinition"}}#[serde(deserialize_with = "crate::v1::parse::connection_target_shortform")]{{/case}}
+          {{#case "ComponentDefinition"}}#[serde(deserialize_with = "crate::v1::parse::component_shortform")]{{/case}}
+          {{#case "ComponentKind"}}#[serde(deserialize_with = "crate::v1::parse::componentkind_shortform")]{{/case}}
         {{/switch}}
       {{/case}}
     {{/switch}}

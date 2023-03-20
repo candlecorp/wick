@@ -1,5 +1,5 @@
 use crate::component_definition::ComponentOperationExpression;
-use crate::{v1, ComponentDefinition};
+use crate::ComponentDefinition;
 
 #[derive(Debug, Clone)]
 /// Normalized representation of a trigger definition.
@@ -42,15 +42,15 @@ impl std::fmt::Display for TriggerKind {
 #[derive(Debug, Clone, PartialEq)]
 /// Normalized representation of a CLI trigger configuration.
 pub struct CliConfig {
-  operation: ComponentOperationExpression,
-  app: Option<ComponentDefinition>,
+  pub(crate) operation: ComponentOperationExpression,
+  pub(crate) app: Option<ComponentDefinition>,
 }
 
 #[derive(Debug, Clone)]
 #[must_use]
 pub struct HttpTriggerConfig {
-  resource: String,
-  routers: Vec<HttpRouterConfig>,
+  pub(crate) resource: String,
+  pub(crate) routers: Vec<HttpRouterConfig>,
 }
 
 impl HttpTriggerConfig {
@@ -66,8 +66,8 @@ impl HttpTriggerConfig {
 #[derive(Debug, Clone)]
 #[must_use]
 pub struct RawRouterConfig {
-  path: String,
-  operation: ComponentOperationExpression,
+  pub(crate) path: String,
+  pub(crate) operation: ComponentOperationExpression,
 }
 
 impl RawRouterConfig {
@@ -84,8 +84,8 @@ impl RawRouterConfig {
 #[derive(Debug, Clone)]
 #[must_use]
 pub struct RestRouterConfig {
-  path: String,
-  component: ComponentDefinition,
+  pub(crate) path: String,
+  pub(crate) component: ComponentDefinition,
 }
 
 impl RestRouterConfig {
@@ -99,41 +99,11 @@ impl RestRouterConfig {
   }
 }
 
-impl From<v1::TriggerDefinition> for TriggerDefinition {
-  fn from(trigger: v1::TriggerDefinition) -> Self {
-    match trigger {
-      v1::TriggerDefinition::CliTrigger(cli) => Self::Cli(CliConfig {
-        operation: cli.operation.into(),
-        app: cli.app.map(|v| v.into()),
-      }),
-      v1::TriggerDefinition::HttpTrigger(v) => Self::Http(HttpTriggerConfig {
-        resource: v.resource,
-        routers: v.routers.into_iter().map(|v| v.into()).collect(),
-      }),
-    }
-  }
-}
-
 #[derive(Debug, Clone)]
 #[must_use]
 pub enum HttpRouterConfig {
   RawRouter(RawRouterConfig),
   RestRouter(RestRouterConfig),
-}
-
-impl From<v1::HttpRouter> for HttpRouterConfig {
-  fn from(router: v1::HttpRouter) -> Self {
-    match router {
-      v1::HttpRouter::RawRouter(v) => Self::RawRouter(RawRouterConfig {
-        path: v.path,
-        operation: v.operation.into(),
-      }),
-      v1::HttpRouter::RestRouter(v) => Self::RestRouter(RestRouterConfig {
-        path: v.path,
-        component: v.component.into(),
-      }),
-    }
-  }
 }
 
 impl CliConfig {

@@ -22,6 +22,9 @@
 #![warn(clippy::cognitive_complexity)]
 #![allow(clippy::large_enum_variant,missing_copy_implementations)]
 
+pub(crate) mod conversions;
+pub(crate) mod parse;
+
 use serde::{Deserialize, Serialize};
 use serde_with_expand_env::with_expand_envs;
 use std::collections::HashMap;

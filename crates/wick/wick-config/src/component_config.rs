@@ -5,80 +5,22 @@ use std::path::Path;
 use tracing::debug;
 use wick_interface_types::TypeDefinition;
 
-use crate::error::ManifestError;
 use crate::host_definition::HostConfig;
-use crate::v1::ComponentMetadata;
 use crate::{from_yaml, v0, v1, BoundComponent, Error, FlowOperation, Result};
 
 #[derive(Debug, Clone, Default)]
 #[must_use]
 /// The internal representation of a Wick manifest.
 pub struct ComponentConfiguration {
-  source: Option<String>,
-  format: u32,
-  version: String,
-  host: HostConfig,
-  name: Option<String>,
-  types: Vec<TypeDefinition>,
-  labels: HashMap<String, String>,
-  import: HashMap<String, BoundComponent>,
-  operations: HashMap<String, FlowOperation>,
-}
-
-impl TryFrom<v0::HostManifest> for ComponentConfiguration {
-  type Error = ManifestError;
-
-  fn try_from(def: v0::HostManifest) -> Result<Self> {
-    let flows: Result<HashMap<String, FlowOperation>> = def
-      .network
-      .schematics
-      .iter()
-      .map(|val| Ok((val.name.clone(), val.try_into()?)))
-      .collect();
-    Ok(ComponentConfiguration {
-      source: None,
-      format: def.format,
-      version: def.version,
-      types: Default::default(),
-      host: def.host.try_into()?,
-      name: def.network.name,
-      import: def
-        .network
-        .collections
-        .iter()
-        .map(|val| {
-          Ok((
-            val.namespace.clone(),
-            BoundComponent::new(val.namespace.clone(), val.try_into()?),
-          ))
-        })
-        .collect::<Result<HashMap<_, _>>>()?,
-      labels: def.network.labels,
-      operations: flows?,
-    })
-  }
-}
-
-impl TryFrom<v1::ComponentConfiguration> for ComponentConfiguration {
-  type Error = ManifestError;
-
-  fn try_from(def: v1::ComponentConfiguration) -> Result<Self> {
-    Ok(ComponentConfiguration {
-      source: None,
-      format: def.format,
-      types: def.types,
-      version: def.metadata.unwrap_or(ComponentMetadata::default()).version,
-      host: def.host.try_into()?,
-      name: def.name,
-      import: def.import.into_iter().map(|v| (v.name.clone(), v.into())).collect(),
-      labels: def.labels,
-      operations: def
-        .operations
-        .into_iter()
-        .map(|op| Ok((op.name.clone(), op.try_into()?)))
-        .collect::<Result<_>>()?,
-    })
-  }
+  pub name: Option<String>,
+  pub(crate) source: Option<String>,
+  pub(crate) format: u32,
+  pub(crate) version: String,
+  pub(crate) host: HostConfig,
+  pub(crate) types: Vec<TypeDefinition>,
+  pub(crate) labels: HashMap<String, String>,
+  pub(crate) import: HashMap<String, BoundComponent>,
+  pub(crate) operations: HashMap<String, FlowOperation>,
 }
 
 impl ComponentConfiguration {

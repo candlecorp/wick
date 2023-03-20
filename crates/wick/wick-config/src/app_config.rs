@@ -7,36 +7,20 @@ use tracing::debug;
 
 pub use self::resources::*;
 pub use self::triggers::*;
-use crate::error::{ManifestError, ReferenceError};
+use crate::error::ReferenceError;
 use crate::{from_yaml, v1, BoundComponent, ComponentDefinition, Error, Result};
 
 #[derive(Debug, Clone, Default)]
 #[must_use]
 /// The internal representation of a Wick manifest.
 pub struct AppConfiguration {
-  source: Option<String>,
-  format: u32,
-  version: String,
-  name: String,
-  import: HashMap<String, BoundComponent>,
-  resources: HashMap<String, BoundResource>,
-  triggers: Vec<TriggerDefinition>,
-}
-
-impl TryFrom<v1::AppConfiguration> for AppConfiguration {
-  type Error = ManifestError;
-
-  fn try_from(def: v1::AppConfiguration) -> Result<Self> {
-    Ok(AppConfiguration {
-      source: None,
-      format: def.format,
-      version: def.metadata.unwrap_or_default().version,
-      name: def.name,
-      import: def.import.into_iter().map(|v| (v.name.clone(), v.into())).collect(),
-      resources: def.resources.into_iter().map(|v| (v.name.clone(), v.into())).collect(),
-      triggers: def.triggers.into_iter().map(|v| v.into()).collect(),
-    })
-  }
+  pub name: String,
+  pub(crate) source: Option<String>,
+  pub(crate) format: u32,
+  pub(crate) version: String,
+  pub(crate) import: HashMap<String, BoundComponent>,
+  pub(crate) resources: HashMap<String, BoundResource>,
+  pub(crate) triggers: Vec<TriggerDefinition>,
 }
 
 impl AppConfiguration {
