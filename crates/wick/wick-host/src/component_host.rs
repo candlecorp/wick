@@ -176,7 +176,7 @@ impl ComponentHost {
 
   #[must_use]
   pub fn get_host_id(&self) -> &str {
-    self.manifest.host().id.as_ref().unwrap_or(&self.id)
+    &self.id
   }
 
   #[must_use]

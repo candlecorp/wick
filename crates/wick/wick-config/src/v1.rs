@@ -232,7 +232,7 @@ pub(crate) struct UdpPort {
   pub(crate) address: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
 /// A manifest defines the starting state of a Wick host and network.
 pub(crate) struct ComponentConfiguration {
@@ -369,19 +369,6 @@ pub(crate) struct HostConfig {
   #[serde(default = "HOST_CONFIG_TIMEOUT")]
   #[serde(deserialize_with = "with_expand_envs")]
   pub(crate) timeout: u64,
-  /// The ID for this host, used to identify the host over the mesh.
-
-  #[serde(default)]
-  pub(crate) id: Option<String>,
-  /// The schematics to expose via RPC or the mesh, if any.
-
-  #[serde(default)]
-  #[serde(skip_serializing_if = "Vec::is_empty")]
-  pub(crate) expose: Vec<String>,
-  /// The mesh configuration.
-
-  #[serde(default)]
-  pub(crate) mesh: Option<MeshConfig>,
   /// Configuration for the GRPC server.
 
   #[serde(default)]
@@ -417,30 +404,6 @@ pub(crate) struct HttpConfig {
 
   #[serde(default)]
   pub(crate) ca: Option<String>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-#[serde(deny_unknown_fields)]
-/// Configuration used to connect to the mesh.
-pub(crate) struct MeshConfig {
-  /// Enable/disable the mesh connection.
-
-  #[serde(default)]
-  #[serde(deserialize_with = "with_expand_envs")]
-  pub(crate) enabled: bool,
-  /// The address of the NATS server.
-
-  #[serde(default)]
-  #[serde(deserialize_with = "with_expand_envs")]
-  pub(crate) address: String,
-  /// The path to the NATS credsfile.
-
-  #[serde(default)]
-  pub(crate) creds_path: Option<String>,
-  /// The NATS token.
-
-  #[serde(default)]
-  pub(crate) token: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
