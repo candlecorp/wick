@@ -3229,7 +3229,6 @@ name = "test-native-collection"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "async-trait",
  "clap 3.2.23",
  "futures",
  "logger",
@@ -4876,7 +4875,6 @@ dependencies = [
  "thiserror",
  "tokio",
  "tokio-stream",
- "tower",
  "tracing",
  "url",
  "uuid",

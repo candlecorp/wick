@@ -53,13 +53,13 @@ impl AppHost {
     assert!(self.triggers.is_none(), "triggers already started");
     let resources = Arc::new(resources);
     let mut triggers = TriggerState::new();
-    for channel_config in self.manifest.triggers() {
-      debug!("Loading channel {:?}", channel_config);
-      let config = channel_config.clone();
+    for trigger_config in self.manifest.triggers() {
+      debug!(?trigger_config, "loading trigger");
+      let config = trigger_config.clone();
       let name = self.manifest.name().to_owned();
       let app_config = self.manifest.clone();
 
-      match wick_runtime::get_trigger_loader(&channel_config.kind()) {
+      match wick_runtime::get_trigger_loader(&trigger_config.kind()) {
         Some(loader) => {
           let loader = loader()?;
           let inner = loader.clone();
@@ -73,8 +73,8 @@ impl AppHost {
         _ => {
           return Err(Error::RuntimeError(Box::new(
             wick_runtime::error::RuntimeError::InitializationFailed(format!(
-              "could not find channel {:?}",
-              &channel_config
+              "could not find trigger {}",
+              &trigger_config.kind()
             )),
           )))
         }
