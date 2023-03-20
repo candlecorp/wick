@@ -117,6 +117,7 @@ impl Service<Request<Body>> for ResponseService {
     trace!(?router, "http:trigger:request");
 
     Box::pin(async move {
+      let (tx, rx) = PacketStream::new_channels();
       let handler = match router {
         Some(h) => {
           let invocation = Invocation::new(
@@ -124,25 +125,26 @@ impl Service<Request<Body>> for ResponseService {
             Entity::operation(&h.component, &h.operation),
             None,
           );
+          let stream = network.invoke(invocation, rx);
           match convert_request(req) {
             Ok((req, mut body)) => {
               let packets = packets!(("request", req));
-              let (tx, rx) = PacketStream::new_channels();
               for packet in packets {
                 let _ = tx.send(packet);
               }
-              while let Some(bytes) = body.next().await {
-                match bytes {
-                  Ok(b) => {
-                    let _ = tx.send(Packet::encode("body", b));
-                  }
-                  Err(e) => {
-                    let _ = tx.send(Packet::err("body", e.to_string()));
+              tokio::spawn(async move {
+                while let Some(bytes) = body.next().await {
+                  match bytes {
+                    Ok(b) => {
+                      let _ = tx.send(Packet::encode("body", b));
+                    }
+                    Err(e) => {
+                      let _ = tx.send(Packet::err("body", e.to_string()));
+                    }
                   }
                 }
-              }
-              let _ = tx.send(Packet::done("body"));
-              let stream = network.invoke(invocation, rx);
+                let _ = tx.send(Packet::done("body"));
+              });
               Ok(stream)
             }
             Err(e) => Err(e),

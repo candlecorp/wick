@@ -23,6 +23,7 @@ tokio = { workspace = true, features = [
   "macros",
   "time",
   "sync",
+  "signal",
   "rt-multi-thread",
 ] }
 wick-interface-http = { workspace = true }
@@ -40,7 +41,6 @@ tracing = { workspace = true }
 uuid = { workspace = true }
 atty = { workspace = true }
 hyper = { workspace = true, features = ["runtime", "server"] }
-tower = { workspace = true, features = ["make"], default-features = false }
 url = { workspace = true }
 bytes = { workspace = true }
 
