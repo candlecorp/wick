@@ -21,6 +21,9 @@
 )]
 #![warn(clippy::cognitive_complexity)]
 
+pub(crate) mod conversions;
+pub(crate) mod parse;
+
 use std::collections::HashMap;
 use std::str::FromStr;
 
@@ -331,7 +334,7 @@ impl FromStr for ConnectionDefinition {
   type Err = crate::Error;
 
   fn from_str(s: &str) -> Result<Self, Self::Err> {
-    crate::parse::v0::parse_connection(s)
+    crate::v0::parse::parse_connection(s)
   }
 }
 
@@ -339,7 +342,7 @@ impl FromStr for ConnectionTargetDefinition {
   type Err = crate::Error;
 
   fn from_str(s: &str) -> Result<Self, Self::Err> {
-    crate::parse::v0::parse_connection_target(s)
+    crate::v0::parse::parse_connection_target(s)
   }
 }
 

@@ -22,6 +22,9 @@
 #![warn(clippy::cognitive_complexity)]
 #![allow(clippy::large_enum_variant, missing_copy_implementations)]
 
+pub(crate) mod conversions;
+pub(crate) mod parse;
+
 use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
@@ -105,7 +108,7 @@ pub(crate) enum TriggerDefinition {
 pub(crate) struct CliTrigger {
   /// The operation that will act as the main entrypoint for this trigger.
 
-  #[serde(deserialize_with = "crate::parse::v1::component_operation_syntax")]
+  #[serde(deserialize_with = "crate::v1::parse::component_operation_syntax")]
   pub(crate) operation: ComponentOperationExpression,
   /// The component that provides additional logic.
 
@@ -119,7 +122,7 @@ pub(crate) struct CliTrigger {
 pub(crate) struct ComponentOperationExpression {
   /// The component that exports the operation.
 
-  #[serde(deserialize_with = "crate::parse::v1::component_shortform")]
+  #[serde(deserialize_with = "crate::v1::parse::component_shortform")]
   pub(crate) component: ComponentDefinition,
   /// The operation to call.
 
@@ -164,7 +167,7 @@ pub(crate) struct RestRouter {
   pub(crate) path: String,
   /// The component to expose as a Rest API.
 
-  #[serde(deserialize_with = "crate::parse::v1::component_shortform")]
+  #[serde(deserialize_with = "crate::v1::parse::component_shortform")]
   pub(crate) component: ComponentDefinition,
 }
 
@@ -178,7 +181,7 @@ pub(crate) struct RawRouter {
   pub(crate) path: String,
   /// The operation that handles HTTP requests.
 
-  #[serde(deserialize_with = "crate::parse::v1::component_operation_syntax")]
+  #[serde(deserialize_with = "crate::v1::parse::component_operation_syntax")]
   pub(crate) operation: ComponentOperationExpression,
 }
 
@@ -305,7 +308,7 @@ pub(crate) struct ComponentBinding {
   pub(crate) name: String,
   /// The component to bind to.
 
-  #[serde(deserialize_with = "crate::parse::v1::component_shortform")]
+  #[serde(deserialize_with = "crate::v1::parse::component_shortform")]
   pub(crate) component: ComponentDefinition,
 }
 
@@ -531,13 +534,13 @@ pub(crate) struct OperationDefinition {
 
   #[serde(default)]
   #[serde(skip_serializing_if = "HashMap::is_empty")]
-  #[serde(deserialize_with = "crate::parse::v1::map_component_def")]
+  #[serde(deserialize_with = "crate::v1::parse::map_component_def")]
   pub(crate) instances: HashMap<String, InstanceDefinition>,
   /// A list of connections from operation to operation.
 
   #[serde(default)]
   #[serde(skip_serializing_if = "Vec::is_empty")]
-  #[serde(deserialize_with = "crate::parse::v1::vec_connection")]
+  #[serde(deserialize_with = "crate::v1::parse::vec_connection")]
   pub(crate) flow: Vec<ConnectionDefinition>,
 }
 
@@ -569,11 +572,11 @@ pub(crate) struct InstanceDefinition {
 pub(crate) struct ConnectionDefinition {
   /// The upstream operation port.
 
-  #[serde(deserialize_with = "crate::parse::v1::connection_target_shortform")]
+  #[serde(deserialize_with = "crate::v1::parse::connection_target_shortform")]
   pub(crate) from: ConnectionTargetDefinition,
   /// The downstream operation port.
 
-  #[serde(deserialize_with = "crate::parse::v1::connection_target_shortform")]
+  #[serde(deserialize_with = "crate::v1::parse::connection_target_shortform")]
   pub(crate) to: ConnectionTargetDefinition,
   /// The default value to provide in the event of an upstream Error or Exception.
 

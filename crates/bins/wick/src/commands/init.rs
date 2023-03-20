@@ -24,11 +24,11 @@ pub(crate) async fn handle_command(mut opts: InitCommand) -> Result<()> {
   let _guard = logger::init(&logging.name(crate::BIN_NAME));
 
   let (file, contents) = if opts.component {
-    let mut config = wick_config::v1::ComponentConfiguration::default();
+    let mut config = wick_config::ComponentConfiguration::default();
     config.name = Some(opts.name);
     ("component.yaml", serde_yaml::to_string(&config)?)
   } else {
-    let mut config = wick_config::v1::AppConfiguration::default();
+    let mut config = wick_config::AppConfiguration::default();
     config.name = opts.name;
     ("app.yaml", serde_yaml::to_string(&config)?)
   };

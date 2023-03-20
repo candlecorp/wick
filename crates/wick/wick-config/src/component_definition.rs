@@ -2,8 +2,6 @@ use serde::de::{IgnoredAny, SeqAccess, Visitor};
 use serde::Deserializer;
 use serde_json::Value;
 
-use crate::v1;
-
 /// A reference to an operation.
 #[derive(Debug, Clone, PartialEq)]
 pub struct ComponentOperationExpression {
@@ -52,15 +50,6 @@ impl std::str::FromStr for ComponentOperationExpression {
       operation,
       component: ComponentDefinition::Reference(ComponentReference { id: component }),
     })
-  }
-}
-
-impl From<v1::ComponentOperationExpression> for ComponentOperationExpression {
-  fn from(literal: v1::ComponentOperationExpression) -> Self {
-    Self {
-      operation: literal.operation,
-      component: literal.component.into(),
-    }
   }
 }
 
@@ -114,7 +103,7 @@ pub enum ComponentDefinition {
 #[derive(Debug, Clone, PartialEq)]
 /// A reference to a component by id.
 pub struct ComponentReference {
-  id: String,
+  pub(crate) id: String,
 }
 
 impl ComponentReference {
@@ -208,29 +197,6 @@ pub struct ManifestComponent {
   pub config: Value,
 }
 
-impl TryFrom<&crate::v0::CollectionDefinition> for ComponentDefinition {
-  type Error = crate::Error;
-  fn try_from(def: &crate::v0::CollectionDefinition) -> Result<Self, Self::Error> {
-    let kind = match def.kind {
-      crate::v0::CollectionKind::Native => ComponentDefinition::Native(NativeComponent {}),
-      crate::v0::CollectionKind::GrpcUrl => ComponentDefinition::GrpcUrl(GrpcUrlComponent {
-        url: def.reference.clone(),
-        config: def.data.clone(),
-      }),
-      crate::v0::CollectionKind::WaPC => ComponentDefinition::Wasm(WasmComponent {
-        reference: def.reference.clone(),
-        permissions: json_struct_to_permissions(def.data.get("wasi"))?,
-        config: def.data.clone(),
-      }),
-      crate::v0::CollectionKind::Network => ComponentDefinition::Manifest(ManifestComponent {
-        reference: def.reference.clone(),
-        config: def.data.clone(),
-      }),
-    };
-    Ok(kind)
-  }
-}
-
 #[derive(Default, Debug)]
 struct StringPair(String, String);
 
@@ -269,44 +235,5 @@ impl<'de> serde::Deserialize<'de> for StringPair {
     }
 
     deserializer.deserialize_seq(StringPairVisitor)
-  }
-}
-
-fn json_struct_to_permissions(json_perms: Option<&Value>) -> Result<Permissions, crate::Error> {
-  let perms = if let Some(json_perms) = json_perms {
-    serde_json::from_value(json_perms.clone()).map_err(crate::Error::Invalid)?
-  } else {
-    Permissions::default()
-  };
-
-  Ok(perms)
-}
-
-impl From<crate::v1::ComponentDefinition> for ComponentDefinition {
-  fn from(def: crate::v1::ComponentDefinition) -> Self {
-    match def {
-      crate::v1::ComponentDefinition::WasmComponent(v) => ComponentDefinition::Wasm(WasmComponent {
-        reference: v.reference,
-        config: v.config,
-        permissions: v.permissions.into(),
-      }),
-      crate::v1::ComponentDefinition::GrpcUrlComponent(v) => ComponentDefinition::GrpcUrl(GrpcUrlComponent {
-        url: v.url,
-        config: v.config,
-      }),
-      crate::v1::ComponentDefinition::ManifestComponent(v) => ComponentDefinition::Manifest(ManifestComponent {
-        reference: v.reference,
-        config: v.config,
-      }),
-      crate::v1::ComponentDefinition::ComponentReference(v) => {
-        ComponentDefinition::Reference(ComponentReference { id: v.id })
-      }
-    }
-  }
-}
-
-impl From<crate::v1::Permissions> for Permissions {
-  fn from(def: crate::v1::Permissions) -> Self {
-    Self { dirs: def.dirs }
   }
 }

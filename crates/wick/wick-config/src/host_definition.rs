@@ -1,11 +1,6 @@
-use std::convert::{TryFrom, TryInto};
 use std::net::Ipv4Addr;
 use std::path::PathBuf;
-use std::str::FromStr;
 use std::time::Duration;
-
-use crate::error::ManifestError;
-use crate::Result;
 
 #[derive(Debug, Clone, Default)]
 #[must_use]
@@ -66,98 +61,4 @@ pub struct MeshConfig {
 
   /// The NATS token.
   pub token: Option<String>,
-}
-
-impl TryFrom<crate::v0::HostConfig> for HostConfig {
-  type Error = ManifestError;
-  fn try_from(def: crate::v0::HostConfig) -> Result<Self> {
-    Ok(Self {
-      allow_latest: def.allow_latest,
-      insecure_registries: def.insecure_registries,
-      timeout: Duration::from_millis(def.timeout),
-      id: def.id,
-      mesh: def.mesh.and_then(|v| v.try_into().ok()),
-      rpc: def.rpc.and_then(|v| v.try_into().ok()),
-    })
-  }
-}
-
-impl TryFrom<crate::v1::HostConfig> for HostConfig {
-  type Error = ManifestError;
-  fn try_from(def: crate::v1::HostConfig) -> Result<Self> {
-    Ok(Self {
-      allow_latest: def.allow_latest,
-      insecure_registries: def.insecure_registries,
-      timeout: Duration::from_millis(def.timeout),
-      id: def.id,
-      mesh: def.mesh.and_then(|v| v.try_into().ok()),
-      rpc: def.rpc.and_then(|v| v.try_into().ok()),
-    })
-  }
-}
-
-impl TryFrom<crate::v0::MeshConfig> for MeshConfig {
-  type Error = ManifestError;
-  fn try_from(def: crate::v0::MeshConfig) -> Result<Self> {
-    Ok(Self {
-      enabled: def.enabled,
-      address: def.address,
-      creds_path: opt_str_to_pathbuf(&def.creds_path)?,
-      token: def.token,
-    })
-  }
-}
-
-impl TryFrom<crate::v1::MeshConfig> for MeshConfig {
-  type Error = ManifestError;
-  fn try_from(def: crate::v1::MeshConfig) -> Result<Self> {
-    Ok(Self {
-      enabled: def.enabled,
-      address: def.address,
-      creds_path: opt_str_to_pathbuf(&def.creds_path)?,
-      token: def.token,
-    })
-  }
-}
-
-impl TryFrom<crate::v0::HttpConfig> for HttpConfig {
-  type Error = ManifestError;
-  fn try_from(def: crate::v0::HttpConfig) -> Result<Self> {
-    Ok(Self {
-      enabled: def.enabled,
-      port: def.port,
-      address: opt_str_to_ipv4addr(&def.address)?,
-      pem: opt_str_to_pathbuf(&def.pem)?,
-      key: opt_str_to_pathbuf(&def.key)?,
-      ca: opt_str_to_pathbuf(&def.ca)?,
-    })
-  }
-}
-
-impl TryFrom<crate::v1::HttpConfig> for HttpConfig {
-  type Error = ManifestError;
-  fn try_from(def: crate::v1::HttpConfig) -> Result<Self> {
-    Ok(Self {
-      enabled: def.enabled,
-      port: def.port,
-      address: opt_str_to_ipv4addr(&def.address)?,
-      pem: opt_str_to_pathbuf(&def.pem)?,
-      key: opt_str_to_pathbuf(&def.key)?,
-      ca: opt_str_to_pathbuf(&def.ca)?,
-    })
-  }
-}
-
-fn opt_str_to_pathbuf(v: &Option<String>) -> Result<Option<PathBuf>> {
-  Ok(match v {
-    Some(v) => Some(PathBuf::from_str(v).map_err(|e| ManifestError::BadPath(e.to_string()))?),
-    None => None,
-  })
-}
-
-fn opt_str_to_ipv4addr(v: &Option<String>) -> Result<Option<Ipv4Addr>> {
-  Ok(match v {
-    Some(v) => Some(Ipv4Addr::from_str(v).map_err(|e| ManifestError::BadIpAddress(e.to_string()))?),
-    None => None,
-  })
 }

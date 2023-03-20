@@ -3,8 +3,7 @@ use std::str::FromStr;
 
 use serde::Deserialize;
 
-use crate::app_config::BoundResource;
-use crate::{v1, BoundComponent, Error};
+use crate::{v1, Error};
 
 type Result<T> = std::result::Result<T, Error>;
 
@@ -225,7 +224,7 @@ where
   deserializer.deserialize_any(ComponentOperationExpressionVisitor)
 }
 
-impl FromStr for crate::v1::ComponentOperationExpression {
+impl FromStr for v1::ComponentOperationExpression {
   type Err = Error;
 
   fn from_str(s: &str) -> Result<Self> {
@@ -247,7 +246,7 @@ impl FromStr for crate::v1::ComponentOperationExpression {
   }
 }
 
-impl Default for crate::v1::ComponentDefinition {
+impl Default for v1::ComponentDefinition {
   fn default() -> Self {
     Self::ComponentReference(crate::v1::ComponentReference {
       id: "<anonymous>".to_owned(),
@@ -289,24 +288,6 @@ where
   }
 
   deserializer.deserialize_map(Visitor)
-}
-
-impl From<v1::ComponentBinding> for BoundComponent {
-  fn from(value: v1::ComponentBinding) -> Self {
-    Self {
-      id: value.name,
-      kind: value.component.into(),
-    }
-  }
-}
-
-impl From<v1::ResourceBinding> for BoundResource {
-  fn from(value: v1::ResourceBinding) -> Self {
-    Self {
-      id: value.name,
-      kind: value.resource.into(),
-    }
-  }
 }
 
 #[cfg(test)]

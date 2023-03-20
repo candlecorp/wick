@@ -21,6 +21,9 @@
 )]
 #![warn(clippy::cognitive_complexity)]
 
+pub(crate) mod conversions;
+pub(crate) mod parse;
+
 use serde::{Deserialize, Serialize};
 use serde_with_expand_env::with_expand_envs;
 use std::{collections::HashMap, str::FromStr};
@@ -57,7 +60,7 @@ impl FromStr for ConnectionDefinition {
   type Err = crate::Error;
 
   fn from_str(s: &str) -> Result<Self, Self::Err> {
-    crate::parse::v0::parse_connection(s)
+    crate::v0::parse::parse_connection(s)
   }
 }
 
@@ -65,7 +68,7 @@ impl FromStr for ConnectionTargetDefinition {
   type Err = crate::Error;
 
   fn from_str(s: &str) -> Result<Self, Self::Err> {
-    crate::parse::v0::parse_connection_target(s)
+    crate::v0::parse::parse_connection_target(s)
   }
 }
 

@@ -95,9 +95,6 @@ mod helpers;
 mod default;
 pub use default::{parse_default, process_default, ERROR_STR};
 
-/// Module for parsing parts of a manifest.
-pub(crate) mod parse;
-
 /// Wick Manifest error.
 pub mod error;
 
@@ -106,10 +103,19 @@ pub(crate) mod v0;
 pub(crate) mod v1;
 
 mod host_definition;
+mod utils;
 pub use host_definition::HttpConfig;
 
 mod component_definition;
-pub use component_definition::{BoundComponent, ComponentDefinition, ManifestComponent, Permissions, WasmComponent};
+pub use component_definition::{
+  BoundComponent,
+  ComponentDefinition,
+  ComponentReference,
+  GrpcUrlComponent,
+  ManifestComponent,
+  Permissions,
+  WasmComponent,
+};
 
 mod flow_definition;
 pub use flow_definition::{ConnectionDefinition, ConnectionTargetDefinition, FlowOperation, InstanceReference};
@@ -171,3 +177,8 @@ where
   let result = serde_yaml::from_str(src).map_err(|e| ManifestError::YamlError(e.to_string()))?;
   Ok(result)
 }
+
+/// The reserved name for components that send static data.
+pub(crate) static SENDER_ID: &str = "core::sender";
+/// The name of SENDER's output port.
+pub(crate) static SENDER_PORT: &str = "output";

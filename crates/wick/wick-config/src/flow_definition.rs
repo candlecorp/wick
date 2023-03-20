@@ -1,17 +1,16 @@
 use std::borrow::Cow;
 use std::collections::HashMap;
-use std::convert::{TryFrom, TryInto};
+use std::convert::TryInto;
 use std::fmt::Display;
 use std::hash::Hash;
 use std::str::FromStr;
 
-use flow_expression_parser::parse::v0::parse_id;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use wick_interface_types::Field;
 use wick_packet::PacketPayload;
 
-use crate::default::{parse_default, process_default};
+use crate::default::process_default;
 use crate::{Error, Result};
 
 #[derive(Debug, Clone, Default)]
@@ -60,51 +59,6 @@ impl FlowOperation {
   }
 }
 
-impl TryFrom<&crate::v0::SchematicManifest> for FlowOperation {
-  type Error = Error;
-
-  fn try_from(manifest: &crate::v0::SchematicManifest) -> Result<Self> {
-    let instances: Result<HashMap<String, InstanceReference>> = manifest
-      .instances
-      .iter()
-      .map(|(key, val)| Ok((key.clone(), val.try_into()?)))
-      .collect();
-    let connections: Result<Vec<ConnectionDefinition>> =
-      manifest.connections.iter().map(|def| def.try_into()).collect();
-    Ok(Self {
-      name: manifest.name.clone(),
-      inputs: Default::default(),
-      outputs: Default::default(),
-      instances: instances?,
-      connections: connections?,
-      collections: manifest.collections.clone(),
-      constraints: manifest.constraints.clone().into_iter().collect(),
-    })
-  }
-}
-
-impl TryFrom<crate::v1::OperationDefinition> for FlowOperation {
-  type Error = Error;
-
-  fn try_from(op: crate::v1::OperationDefinition) -> Result<Self> {
-    let instances: Result<HashMap<String, InstanceReference>> = op
-      .instances
-      .iter()
-      .map(|(key, val)| Ok((key.clone(), val.try_into()?)))
-      .collect();
-    let connections: Result<Vec<ConnectionDefinition>> = op.flow.iter().map(|def| def.try_into()).collect();
-    Ok(Self {
-      name: op.name,
-      inputs: op.inputs,
-      outputs: op.outputs,
-      instances: instances?,
-      connections: connections?,
-      collections: op.components,
-      constraints: Default::default(),
-    })
-  }
-}
-
 #[derive(Debug, Clone, PartialEq)]
 /// A definition of a component used to reference a component registered under a collection.
 /// Note: [InstanceReference] include embed the concept of a namespace so two identical.
@@ -139,54 +93,6 @@ impl InstanceReference {
 impl Display for InstanceReference {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     write!(f, "{}", self.id())
-  }
-}
-
-impl TryFrom<crate::v0::ComponentDefinition> for InstanceReference {
-  type Error = Error;
-  fn try_from(def: crate::v0::ComponentDefinition) -> Result<Self> {
-    let (ns, name) = parse_id(&def.id)?;
-    Ok(InstanceReference {
-      namespace: ns.to_owned(),
-      name: name.to_owned(),
-      data: def.data,
-    })
-  }
-}
-
-impl TryFrom<crate::v1::InstanceDefinition> for InstanceReference {
-  type Error = Error;
-  fn try_from(def: crate::v1::InstanceDefinition) -> Result<Self> {
-    let (ns, name) = parse_id(&def.id)?;
-    Ok(InstanceReference {
-      namespace: ns.to_owned(),
-      name: name.to_owned(),
-      data: def.config,
-    })
-  }
-}
-
-impl TryFrom<&crate::v0::ComponentDefinition> for InstanceReference {
-  type Error = Error;
-  fn try_from(def: &crate::v0::ComponentDefinition) -> Result<Self> {
-    let (ns, name) = parse_id(&def.id)?;
-    Ok(InstanceReference {
-      namespace: ns.to_owned(),
-      name: name.to_owned(),
-      data: def.data.clone(),
-    })
-  }
-}
-
-impl TryFrom<&crate::v1::InstanceDefinition> for InstanceReference {
-  type Error = Error;
-  fn try_from(def: &crate::v1::InstanceDefinition) -> Result<Self> {
-    let (ns, name) = parse_id(&def.id)?;
-    Ok(InstanceReference {
-      namespace: ns.to_owned(),
-      name: name.to_owned(),
-      data: def.config.clone(),
-    })
   }
 }
 
@@ -244,7 +150,7 @@ impl ConnectionDefinition {
 
   /// Generate a [ConnectionDefinition] from short form syntax.
   pub fn from_v0_str(s: &str) -> Result<Self> {
-    let parsed = crate::parse::v0::parse_connection(s)?;
+    let parsed = crate::v0::parse::parse_connection(s)?;
     (&parsed).try_into()
   }
 }
@@ -252,7 +158,7 @@ impl ConnectionDefinition {
 /// Configuration specific to a [ConnectionTargetDefinition].
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SenderData {
-  inner: Value,
+  pub(crate) inner: Value,
 }
 
 impl SenderData {}
@@ -276,8 +182,8 @@ impl FromStr for SenderData {
 /// A [ConnectionTargetDefinition] is a wrapper around an [Option<PortReference>].
 #[must_use]
 pub struct ConnectionTargetDefinition {
-  target: PortReference,
-  data: Option<SenderData>,
+  pub(crate) target: PortReference,
+  pub(crate) data: Option<SenderData>,
 }
 
 impl Hash for ConnectionTargetDefinition {
@@ -321,8 +227,8 @@ impl ConnectionTargetDefinition {
   pub fn sender(config: Option<SenderData>) -> Self {
     Self {
       target: PortReference {
-        instance: crate::parse::SENDER_ID.to_owned(),
-        port: crate::parse::SENDER_PORT.to_owned(),
+        instance: crate::SENDER_ID.to_owned(),
+        port: crate::SENDER_PORT.to_owned(),
       },
       data: config,
     }
@@ -380,40 +286,8 @@ impl ConnectionTargetDefinition {
 
   /// Generate a [ConnectionTargetDefinition] from short form syntax.
   pub fn from_v0_str(s: &str) -> Result<Self> {
-    let parsed = crate::parse::v0::parse_connection_target(s)?;
+    let parsed = crate::v0::parse::parse_connection_target(s)?;
     parsed.try_into()
-  }
-}
-
-impl TryFrom<&crate::v0::ConnectionDefinition> for ConnectionDefinition {
-  type Error = Error;
-
-  fn try_from(def: &crate::v0::ConnectionDefinition) -> Result<Self> {
-    let from: ConnectionTargetDefinition = def.from.clone().try_into()?;
-    let to: ConnectionTargetDefinition = def.to.clone().try_into()?;
-    let default = match &def.default {
-      Some(json_str) => {
-        Some(parse_default(json_str).map_err(|e| Error::DefaultsError(from.clone(), to.clone(), e.to_string()))?)
-      }
-      None => None,
-    };
-    Ok(ConnectionDefinition { from, to, default })
-  }
-}
-
-impl TryFrom<&crate::v1::ConnectionDefinition> for ConnectionDefinition {
-  type Error = Error;
-
-  fn try_from(def: &crate::v1::ConnectionDefinition) -> Result<Self> {
-    let from: ConnectionTargetDefinition = def.from.clone().try_into()?;
-    let to: ConnectionTargetDefinition = def.to.clone().try_into()?;
-    let default = match &def.default {
-      Some(json_str) => {
-        Some(parse_default(json_str).map_err(|e| Error::DefaultsError(from.clone(), to.clone(), e.to_string()))?)
-      }
-      None => None,
-    };
-    Ok(ConnectionDefinition { from, to, default })
   }
 }
 
@@ -477,38 +351,10 @@ impl Display for PortReference {
   }
 }
 
-impl TryFrom<crate::v0::ConnectionTargetDefinition> for ConnectionTargetDefinition {
-  type Error = Error;
-
-  fn try_from(def: crate::v0::ConnectionTargetDefinition) -> Result<Self> {
-    let data = def.data.map(|json| SenderData { inner: json });
-    Ok(ConnectionTargetDefinition {
-      target: PortReference {
-        instance: def.instance,
-        port: def.port,
-      },
-      data,
-    })
-  }
-}
-
-impl TryFrom<crate::v1::ConnectionTargetDefinition> for ConnectionTargetDefinition {
-  type Error = Error;
-
-  fn try_from(def: crate::v1::ConnectionTargetDefinition) -> Result<Self> {
-    let data = def.data.map(|json| SenderData { inner: json });
-    Ok(ConnectionTargetDefinition {
-      target: PortReference {
-        instance: def.instance,
-        port: def.port,
-      },
-      data,
-    })
-  }
-}
-
 #[cfg(test)]
 mod tests {
+  use flow_expression_parser::parse_id;
+
   use super::*;
   #[test_logger::test]
   fn test_parse_id() -> Result<()> {
