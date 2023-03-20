@@ -1,4 +1,3 @@
-use async_trait::async_trait;
 use futures::StreamExt;
 use wick_interface_types::{component, HostedType};
 use wick_packet::{fan_out, Invocation, Observer, Packet, PacketStream};

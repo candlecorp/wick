@@ -89,9 +89,7 @@ impl BoundComponent {
     match &self.kind {
       ComponentDefinition::Native(_) => None,
       ComponentDefinition::Wasm(v) => Some(&v.config),
-      // ComponentDefinition::GrpcTar(v) => Some(&v.config),
       ComponentDefinition::GrpcUrl(v) => Some(&v.config),
-      // ComponentDefinition::Mesh(v) => Some(&v.config),
       ComponentDefinition::Manifest(v) => Some(&v.config),
       ComponentDefinition::Reference(_) => panic!("Cannot get config for a reference"),
     }
@@ -107,12 +105,8 @@ pub enum ComponentDefinition {
   Wasm(WasmComponent),
   /// WebAssembly Collections.
   Reference(ComponentReference),
-  // /// Archived, native binaries that Wick can fetch, extract, and run as a microservice.
-  // GrpcTar(GrpcTarComponent),
   /// Separate microservices that Wick can connect to.
   GrpcUrl(GrpcUrlComponent),
-  // /// Collections that exist over a connected mesh.
-  // Mesh(MeshComponent),
   /// External manifests.
   Manifest(ManifestComponent),
 }
