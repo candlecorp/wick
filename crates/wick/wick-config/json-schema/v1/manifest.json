@@ -419,26 +419,6 @@
 
           "type": "number"
         },
-        "id": {
-          "description": "The ID for this host, used to identify the host over the mesh.",
-          "required": false,
-
-          "type": "string"
-        },
-        "expose": {
-          "description": "The schematics to expose via RPC or the mesh, if any.",
-
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "mesh": {
-          "description": "The mesh configuration.",
-          "required": false,
-
-          "$ref": "#/$defs/v1/MeshConfig"
-        },
         "rpc": {
           "description": "Configuration for the GRPC server.",
           "required": false,
@@ -484,36 +464,6 @@
         },
         "ca": {
           "description": "Path to CA file.",
-          "required": false,
-
-          "type": "string"
-        }
-      },
-      "required": []
-    },
-
-    "MeshConfig": {
-      "$anchor": "#v1/MeshConfig",
-      "additionalProperties": false,
-      "properties": {
-        "enabled": {
-          "description": "Enable/disable the mesh connection.",
-
-          "type": "boolean"
-        },
-        "address": {
-          "description": "The address of the NATS server.",
-
-          "type": "string"
-        },
-        "creds_path": {
-          "description": "The path to the NATS credsfile.",
-          "required": false,
-
-          "type": "string"
-        },
-        "token": {
-          "description": "The NATS token.",
           "required": false,
 
           "type": "string"

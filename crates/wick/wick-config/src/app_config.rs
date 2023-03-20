@@ -10,7 +10,7 @@ pub use self::triggers::*;
 use crate::error::ReferenceError;
 use crate::{from_yaml, v1, BoundComponent, ComponentDefinition, Error, Result};
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 #[must_use]
 /// The internal representation of a Wick manifest.
 pub struct AppConfiguration {
@@ -21,6 +21,20 @@ pub struct AppConfiguration {
   pub(crate) import: HashMap<String, BoundComponent>,
   pub(crate) resources: HashMap<String, BoundResource>,
   pub(crate) triggers: Vec<TriggerDefinition>,
+}
+
+impl Default for AppConfiguration {
+  fn default() -> Self {
+    Self {
+      name: "".to_owned(),
+      source: None,
+      format: 1,
+      version: "0.0.1".to_owned(),
+      import: HashMap::new(),
+      resources: HashMap::new(),
+      triggers: vec![],
+    }
+  }
 }
 
 impl AppConfiguration {
@@ -114,6 +128,11 @@ impl AppConfiguration {
   /// Get the application's triggers.
   pub fn triggers(&self) -> &Vec<TriggerDefinition> {
     &self.triggers
+  }
+
+  pub fn into_v1_yaml(self) -> Result<String> {
+    let v1_manifest: v1::AppConfiguration = self.try_into()?;
+    Ok(serde_yaml::to_string(&v1_manifest).unwrap())
   }
 }
 

@@ -97,7 +97,7 @@ type UdpPort @internal_tag("kind", "wick/resource/udpport@v1") {
 }
 
 "A manifest defines the starting state of a Wick host and network."
-type ComponentConfiguration {
+type ComponentConfiguration @default {
   "The name of this component."
   name: string?,
 
@@ -165,15 +165,6 @@ type HostConfig @default {
   "The timeout for network requests (in ms)."
   timeout: u64 = 5000,
 
-  "The ID for this host, used to identify the host over the mesh."
-  id: string?,
-
-  "The schematics to expose via RPC or the mesh, if any."
-  expose: [string]
-
-  "The mesh configuration."
-  mesh: MeshConfig?
-
   "Configuration for the GRPC server."
   rpc: HttpConfig?
 }
@@ -197,21 +188,6 @@ type HttpConfig {
 
   "Path to CA file."
   ca: string?,
-}
-
-"Configuration used to connect to the mesh."
-type MeshConfig {
-  "Enable/disable the mesh connection."
-  enabled: bool,
-
-  "The address of the NATS server."
-  address: string,
-
-  "The path to the NATS credsfile."
-  creds_path: string?,
-
-  "The NATS token."
-  token: string?,
 }
 
 "A WebAssembly component."

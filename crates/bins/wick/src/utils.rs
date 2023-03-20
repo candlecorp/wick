@@ -30,9 +30,6 @@ pub(crate) fn merge_config(
     if let Some(to) = cli_opts.timeout {
       log_override("timeout", &mut host_config.timeout, Duration::from_millis(to));
     }
-    if let Some(to) = cli_opts.id {
-      log_override("id", &mut host_config.id, Some(to));
-    }
     #[allow(clippy::option_if_let_else)]
     if let Some(manifest_opts) = host_config.rpc.as_mut() {
       if !manifest_opts.enabled {

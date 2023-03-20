@@ -8,7 +8,7 @@ use wick_interface_types::TypeDefinition;
 use crate::host_definition::HostConfig;
 use crate::{from_yaml, v0, v1, BoundComponent, Error, FlowOperation, Result};
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 #[must_use]
 /// The internal representation of a Wick manifest.
 pub struct ComponentConfiguration {
@@ -21,6 +21,22 @@ pub struct ComponentConfiguration {
   pub(crate) labels: HashMap<String, String>,
   pub(crate) import: HashMap<String, BoundComponent>,
   pub(crate) operations: HashMap<String, FlowOperation>,
+}
+
+impl Default for ComponentConfiguration {
+  fn default() -> Self {
+    Self {
+      name: None,
+      source: None,
+      format: 1,
+      version: "0.0.1".to_owned(),
+      host: HostConfig::default(),
+      types: vec![],
+      labels: HashMap::new(),
+      import: HashMap::new(),
+      operations: HashMap::new(),
+    }
+  }
 }
 
 impl ComponentConfiguration {
@@ -144,6 +160,11 @@ impl ComponentConfiguration {
   #[must_use]
   pub fn flow(&self, name: &str) -> Option<&FlowOperation> {
     self.operations.iter().find(|(n, _)| name == *n).map(|(_, v)| v)
+  }
+
+  pub fn into_v1_yaml(self) -> Result<String> {
+    let v1_manifest: v1::ComponentConfiguration = self.try_into()?;
+    Ok(serde_yaml::to_string(&v1_manifest).unwrap())
   }
 }
 

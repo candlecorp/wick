@@ -7,7 +7,7 @@ use serde_json::Value;
 use crate::component_definition::{GrpcUrlComponent, NativeComponent};
 use crate::error::ManifestError;
 use crate::flow_definition::{PortReference, SenderData};
-use crate::host_definition::{HostConfig, MeshConfig};
+use crate::host_definition::HostConfig;
 use crate::utils::{opt_str_to_ipv4addr, opt_str_to_pathbuf};
 use crate::{
   parse_default,
@@ -178,21 +178,7 @@ impl TryFrom<crate::v0::HostConfig> for HostConfig {
       allow_latest: def.allow_latest,
       insecure_registries: def.insecure_registries,
       timeout: Duration::from_millis(def.timeout),
-      id: def.id,
-      mesh: def.mesh.and_then(|v| v.try_into().ok()),
       rpc: def.rpc.and_then(|v| v.try_into().ok()),
-    })
-  }
-}
-
-impl TryFrom<crate::v0::MeshConfig> for MeshConfig {
-  type Error = ManifestError;
-  fn try_from(def: crate::v0::MeshConfig) -> Result<Self> {
-    Ok(Self {
-      enabled: def.enabled,
-      address: def.address,
-      creds_path: opt_str_to_pathbuf(&def.creds_path)?,
-      token: def.token,
     })
   }
 }

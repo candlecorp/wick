@@ -26,11 +26,11 @@ pub(crate) async fn handle_command(mut opts: InitCommand) -> Result<()> {
   let (file, contents) = if opts.component {
     let mut config = wick_config::ComponentConfiguration::default();
     config.name = Some(opts.name);
-    ("component.yaml", serde_yaml::to_string(&config)?)
+    ("component.yaml", config.into_v1_yaml()?)
   } else {
     let mut config = wick_config::AppConfiguration::default();
     config.name = opts.name;
-    ("app.yaml", serde_yaml::to_string(&config)?)
+    ("app.yaml", config.into_v1_yaml()?)
   };
 
   let dir = std::env::current_dir()?;
