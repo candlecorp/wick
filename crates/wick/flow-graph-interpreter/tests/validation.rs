@@ -48,7 +48,7 @@ async fn test_missing_collections() -> Result<()> {
   let manifest = load("./tests/manifests/v0/external.yaml")?;
   let network = from_def(&manifest)?;
   let result: std::result::Result<Interpreter, _> = Interpreter::new(Some(Seed::unsafe_new(1)), network, None, None);
-  let validation_errors = ValidationError::MissingCollection("test".to_owned());
+  let validation_errors = ValidationError::MissingComponent("test".to_owned());
   if let Err(InterpreterError::EarlyError(e)) = result {
     assert_eq!(e, validation_errors);
   } else {
@@ -62,7 +62,7 @@ async fn test_missing_collections() -> Result<()> {
 async fn test_missing_component() -> Result<()> {
   let result = interp("./tests/manifests/v0/external.yaml", ComponentSignature::default());
   let validation_errors = ValidationError::MissingOperation {
-    namespace: "test".to_owned(),
+    component: "test".to_owned(),
     name: "echo".to_owned(),
   };
   if let Err(InterpreterError::EarlyError(e)) = result {
@@ -89,7 +89,7 @@ async fn test_invalid_port() -> Result<()> {
       ValidationError::MissingConnection {
         port: "input".to_owned(),
         operation: "echo".to_owned(),
-        namespace: "test".to_owned(),
+        component: "test".to_owned(),
       }
     );
   } else {
@@ -117,13 +117,13 @@ async fn test_missing_port() -> Result<()> {
   let errors = vec![
     ValidationError::MissingConnection {
       port: "OTHER_IN".to_owned(),
-      namespace: "test".to_owned(),
+      component: "test".to_owned(),
       operation: "echo".to_owned(),
     },
     ValidationError::UnusedOutput {
       port: "OTHER_OUT".to_owned(),
-      namespace: "test".to_owned(),
-      component: "echo".to_owned(),
+      component: "test".to_owned(),
+      operation: "echo".to_owned(),
     },
   ];
 

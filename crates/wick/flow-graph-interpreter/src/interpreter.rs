@@ -143,7 +143,7 @@ impl Interpreter {
       }
       hosted
     };
-    let span = debug_span!("invoke");
+    let span = trace_span!("invoke");
 
     let stream = match &invocation.target {
       Entity::Operation(ns, _) => {

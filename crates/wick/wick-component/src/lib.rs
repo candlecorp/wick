@@ -74,5 +74,6 @@
 // Add exceptions here
 #![allow(missing_docs)]
 
-mod macros;
-pub use {anyhow, paste, wasmrs, wasmrs_runtime as runtime, wick_packet as packet};
+pub mod macros;
+pub use futures::stream::StreamExt;
+pub use {anyhow, paste, wasmrs, wasmrs_runtime as runtime, wasmrs_rx, wick_packet as packet};

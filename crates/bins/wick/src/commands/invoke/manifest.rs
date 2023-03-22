@@ -20,7 +20,7 @@ pub(crate) async fn handle_command(opts: super::InvokeCommand, bytes: Vec<u8>) -
 
   let config = merge_config(&manifest, &opts.fetch, Some(server_options));
 
-  let component = opts.component;
+  let component = opts.operation;
 
   let host_builder = ComponentHostBuilder::from_definition(config);
 
@@ -76,11 +76,11 @@ pub(crate) async fn handle_command(opts: super::InvokeCommand, bytes: Vec<u8>) -
     let (tx, stream) = PacketStream::new_channels();
     let mut seen_ports = HashSet::new();
     for packet in args {
-      seen_ports.insert(packet.port_name().to_owned());
+      seen_ports.insert(packet.port().to_owned());
       tx.send(packet)?;
     }
     for packet in data {
-      seen_ports.insert(packet.port_name().to_owned());
+      seen_ports.insert(packet.port().to_owned());
       tx.send(packet)?;
     }
     for port in seen_ports {

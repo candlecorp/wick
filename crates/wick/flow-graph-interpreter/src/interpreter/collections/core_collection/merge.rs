@@ -60,6 +60,6 @@ impl Component for MergeComponent {
       let stream = FrameStream::new(tokio_stream::iter(messages.into_iter()));
       Ok(stream)
     };
-    Box::pin(task.instrument(trace_span!("aggregating inputs")))
+    Box::pin(task)
   }
 }

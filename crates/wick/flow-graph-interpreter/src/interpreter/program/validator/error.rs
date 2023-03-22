@@ -6,31 +6,34 @@ pub enum ValidationError {
   #[error("Network contains circular references: {:?}", .0)]
   NetworkUnresolvable(Vec<String>),
 
-  #[error("Missing collection namespace '{0}'")]
-  MissingCollection(String),
+  #[error("Missing component with id '{0}'")]
+  MissingComponent(String),
 
-  #[error("Missing component '{name}' on namespace '{namespace}'")]
-  MissingOperation { namespace: String, name: String },
+  #[error("Could not find component referenced by id '{0}'")]
+  ComponentIdNotFound(String),
 
-  #[error("Invalid port '{port}' on component '{namespace}::{component}'")]
+  #[error("Missing operation '{name}' on component '{component}'")]
+  MissingOperation { component: String, name: String },
+
+  #[error("Invalid port '{port}' on operation '{component}::{operation}'")]
   InvalidPort {
     port: String,
-    namespace: String,
     component: String,
-  },
-
-  #[error("Input port '{port}' on component '{namespace}::{operation}' not connected to anything")]
-  MissingConnection {
-    port: String,
-    namespace: String,
     operation: String,
   },
 
-  #[error("Unused output port '{port}' on component '{namespace}::{component}'")]
+  #[error("Input port '{port}' on operation '{component}::{operation}' not connected to anything")]
+  MissingConnection {
+    port: String,
+    component: String,
+    operation: String,
+  },
+
+  #[error("Unused output port '{port}' on component '{component}::{operation}'")]
   UnusedOutput {
     port: String,
-    namespace: String,
     component: String,
+    operation: String,
   },
 }
 

@@ -201,7 +201,7 @@ async fn test_stream_multi() -> Result<()> {
   let (mut vowels, mut rest): (Vec<_>, Vec<_>) = outputs
     .into_iter()
     .map(|p| p.unwrap())
-    .partition(|wrapper| wrapper.port_name() == "vowels");
+    .partition(|wrapper| wrapper.port() == "vowels");
   vowels.pop();
   rest.pop();
 

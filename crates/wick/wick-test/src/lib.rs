@@ -298,9 +298,9 @@ pub async fn run_test(
         break;
       }
       let actual = &test.actual[j];
-      let result = actual.port_name() == expected.port;
+      let result = actual.port() == expected.port;
       let diag = Some(vec![
-        format!("Actual: {}", actual.port_name()),
+        format!("Actual: {}", actual.port()),
         format!("Expected: {}", expected.port),
       ]);
       test_block.add_test(move || result, prefix(&format!("output[{}]", expected.port)), diag);

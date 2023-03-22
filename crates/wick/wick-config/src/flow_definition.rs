@@ -64,29 +64,19 @@ impl FlowOperation {
 /// Note: [InstanceReference] include embed the concept of a namespace so two identical.
 /// components registered on different namespaces will not be equal.
 pub struct InstanceReference {
-  /// The component's name.
+  /// The operation's name.
   pub name: String,
-  /// The namespace the component was registered under.
-  pub namespace: String,
+  /// The id of the component.
+  pub component_id: String,
   /// Data associated with the component instance.
   pub data: Option<Value>,
 }
 
 impl InstanceReference {
-  /// Quick way to create a [InstanceReference] from code. Used mostly in testing.
-  #[must_use]
-  pub fn new(namespace: &str, name: &str, data: Option<Value>) -> Self {
-    Self {
-      name: name.to_owned(),
-      namespace: namespace.to_owned(),
-      data,
-    }
-  }
-
   /// Returns the fully qualified ID for the component, i.e. namespace::name.
   #[must_use]
   pub fn id(&self) -> String {
-    format!("{}::{}", self.namespace, self.name)
+    format!("{}::{}", self.component_id, self.name)
   }
 }
 

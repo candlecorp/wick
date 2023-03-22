@@ -3,7 +3,7 @@ format: 1
 triggers:
   - kind: wick/trigger/cli@v1
     operation:
-      operation: main
+      name: main
       component:
         kind: Wasm
         ref: ../../integration/test-cli-trigger-component/build/test_cli_trigger_component.signed.wasm

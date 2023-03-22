@@ -46,7 +46,7 @@ type ComponentOperationExpression {
   "The component that exports the operation."
   component: ComponentDefinition @required @shortform
   "The operation to call."
-  operation: string @required
+  name: string @required
 }
 
 "An HTTP server that delegates to HTTP routers upon requests."
@@ -240,7 +240,7 @@ type OperationDefinition {
   components: [string],
 
   "A map of IDs to specific operation."
-  instances: {string: InstanceDefinition},
+  instances: [InstanceBinding]
 
   "A list of connections from operation to operation."
   flow: [ConnectionDefinition],
@@ -252,12 +252,13 @@ alias Field = any
 "Type definition. This is not technically an any type, it is a wick interface type definition."
 alias TypeDefinition = any
 
-"The ID and configuration for an operation."
-type InstanceDefinition {
-  "The ID to assign to this instance of the operation."
-  id: string @required,
-
-  "Data to associate with the reference."
+"An identifier bound to a component's operation."
+type InstanceBinding {
+  "The name of the binding."
+  name: string @required
+  "The operation to bind to."
+  operation: ComponentOperationExpression @required
+  "Data to associate with the reference, if any."
   config: any?,
 }
 

@@ -1,8 +1,7 @@
 use std::collections::HashMap;
 use std::time::Duration;
 
-use flow_expression_parser::parse_id;
-
+// use flow_expression_parser::parse_id;
 use crate::app_config::BoundResource;
 use crate::component_definition::ComponentOperationExpression;
 use crate::error::ManifestError;
@@ -84,7 +83,7 @@ impl TryFrom<ComponentConfiguration> for v1::ComponentConfiguration {
 impl From<v1::ComponentOperationExpression> for ComponentOperationExpression {
   fn from(literal: v1::ComponentOperationExpression) -> Self {
     Self {
-      operation: literal.operation,
+      operation: literal.name,
       component: literal.component.into(),
     }
   }
@@ -178,7 +177,7 @@ impl From<RestRouterConfig> for v1::RestRouter {
 impl From<ComponentOperationExpression> for v1::ComponentOperationExpression {
   fn from(value: ComponentOperationExpression) -> Self {
     Self {
-      operation: value.operation,
+      name: value.operation,
       component: value.component.into(),
     }
   }
@@ -216,8 +215,8 @@ impl TryFrom<crate::v1::OperationDefinition> for FlowOperation {
   fn try_from(op: crate::v1::OperationDefinition) -> Result<Self> {
     let instances: Result<HashMap<String, InstanceReference>> = op
       .instances
-      .iter()
-      .map(|(key, val)| Ok((key.clone(), val.try_into()?)))
+      .into_iter()
+      .map(|v| Ok((v.name.clone(), v.try_into()?)))
       .collect();
     let connections: Result<Vec<ConnectionDefinition>> = op.flow.iter().map(|def| def.try_into()).collect();
     Ok(Self {
@@ -305,10 +304,10 @@ impl TryFrom<FlowOperation> for v1::OperationDefinition {
   type Error = ManifestError;
 
   fn try_from(value: FlowOperation) -> std::result::Result<Self, Self::Error> {
-    let instances: Result<HashMap<String, v1::InstanceDefinition>> = value
+    let instances: Result<Vec<v1::InstanceBinding>> = value
       .instances
       .into_iter()
-      .map(|(key, val)| Ok((key, val.try_into()?)))
+      .map(|(id, val)| (id, val).try_into())
       .collect();
     let connections: Result<Vec<v1::ConnectionDefinition>> =
       value.connections.into_iter().map(|def| def.try_into()).collect();
@@ -347,12 +346,18 @@ impl TryFrom<ConnectionTargetDefinition> for v1::ConnectionTargetDefinition {
   }
 }
 
-impl TryFrom<InstanceReference> for v1::InstanceDefinition {
+impl TryFrom<(String, InstanceReference)> for v1::InstanceBinding {
   type Error = ManifestError;
 
-  fn try_from(value: InstanceReference) -> std::result::Result<Self, Self::Error> {
+  fn try_from(value: (String, InstanceReference)) -> std::result::Result<Self, Self::Error> {
+    let id = value.0;
+    let value = value.1;
     Ok(Self {
-      id: value.name,
+      name: id,
+      operation: v1::ComponentOperationExpression {
+        name: value.name,
+        component: v1::ComponentDefinition::ComponentReference(v1::ComponentReference { id: value.component_id }),
+      },
       config: value.data,
     })
   }
@@ -387,26 +392,15 @@ impl From<v1::Permissions> for Permissions {
   }
 }
 
-impl TryFrom<crate::v1::InstanceDefinition> for InstanceReference {
+impl TryFrom<crate::v1::InstanceBinding> for InstanceReference {
   type Error = ManifestError;
-  fn try_from(def: crate::v1::InstanceDefinition) -> Result<Self> {
-    let (ns, name) = parse_id(&def.id)?;
+  fn try_from(def: crate::v1::InstanceBinding) -> Result<Self> {
+    let ns = def.operation.component.component_id().unwrap_or("<anonymous>");
+    let name = def.operation.name;
     Ok(InstanceReference {
-      namespace: ns.to_owned(),
-      name: name.to_owned(),
+      component_id: ns.to_owned(),
+      name,
       data: def.config,
-    })
-  }
-}
-
-impl TryFrom<&crate::v1::InstanceDefinition> for InstanceReference {
-  type Error = ManifestError;
-  fn try_from(def: &crate::v1::InstanceDefinition) -> Result<Self> {
-    let (ns, name) = parse_id(&def.id)?;
-    Ok(InstanceReference {
-      namespace: ns.to_owned(),
-      name: name.to_owned(),
-      data: def.config.clone(),
     })
   }
 }

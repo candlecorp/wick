@@ -82,7 +82,7 @@ pub fn from_manifest(network_def: &wick_config::ComponentConfiguration) -> Resul
     let mut schematic = Schematic::new(flow.name.clone());
 
     for (name, def) in flow.instances.iter() {
-      schematic.add_external(name, NodeReference::new(&def.namespace, &def.name), def.data.clone());
+      schematic.add_external(name, NodeReference::new(&def.component_id, &def.name), def.data.clone());
     }
 
     for connection in &flow.connections {

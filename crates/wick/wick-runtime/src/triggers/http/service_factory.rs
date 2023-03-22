@@ -73,7 +73,7 @@ async fn respond(stream: Result<PacketStream, RuntimeError>) -> Result<Response<
   while let Some(packet) = stream.next().await {
     match packet {
       Ok(p) => {
-        if p.port_name() == "response" {
+        if p.port() == "response" {
           if p.is_done() {
             continue;
           }
@@ -81,7 +81,7 @@ async fn respond(stream: Result<PacketStream, RuntimeError>) -> Result<Response<
             .deserialize()
             .map_err(|e| HttpError::Deserialize("response".to_owned(), e.to_string()))?;
           builder = convert_response(builder, response)?;
-        } else if p.port_name() == "body" {
+        } else if p.port() == "body" {
           if p.is_done() {
             continue;
           }

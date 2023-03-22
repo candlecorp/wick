@@ -43,7 +43,7 @@ impl SchematicCollection {
         .map(|s| SchematicExecutor::new(s.clone(), dispatcher.clone()))
         .collect(),
     );
-    let signature = state.collections.get(NS_SELF).unwrap().clone();
+    let signature = state.components.get(NS_SELF).unwrap().clone();
     let collection = Arc::new(Self {
       signature,
       schematics,

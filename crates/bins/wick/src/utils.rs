@@ -88,8 +88,8 @@ pub(crate) async fn print_stream_json(
     if (packet.is_done()) && !raw {
       continue;
     }
-    if !filter.is_empty() && !filter.iter().any(|name| name == packet.port_name()) {
-      tracing::debug!(port = %packet.port_name(), "filtering out");
+    if !filter.is_empty() && !filter.iter().any(|name| name == packet.port()) {
+      tracing::debug!(port = %packet.port(), "filtering out");
       continue;
     }
     // TODO print actual json again
