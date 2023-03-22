@@ -8,7 +8,6 @@ repository = "https://github.com/candlecorp/wick"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [features]
 
-# wasm3 = ["wasm3-provider"]
 [dependencies]
 wasmrs = { workspace = true }
 wasmrs-rx = { workspace = true }

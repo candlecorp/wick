@@ -350,7 +350,7 @@ fn gen_trait_signature(config: &config::Config, component: &Ident, op: &FlowOper
       }
     }
     #[cfg_attr(target_family = "wasm",async_trait::async_trait(?Send))]
-    #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait(Send))]
+    #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
     pub trait #trait_name {
       #[allow(unused)]
       async fn #impl_name(#(#inputs),*, outputs: #outputs_name) -> Result<()> {unimplemented!()}
