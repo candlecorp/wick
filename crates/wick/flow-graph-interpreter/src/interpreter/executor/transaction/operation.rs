@@ -342,7 +342,7 @@ async fn output_handler(
   trace!("starting output task");
 
   // TODO: make this timeout configurable from instance configuration.
-  let timeout = Duration::from_millis(2000);
+  let timeout = Duration::from_millis(10000);
 
   let mut num_received = 0;
   let reason = loop {

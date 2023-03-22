@@ -17,9 +17,7 @@ crate-type = ["cdylib"]
 
 [dependencies]
 wick-component = "*"
-wasmrs-guest = { version = "*", features = [
-# "logging" # Enable logging to get debug traces printed for wasi targets
-] }
+wasmrs-guest = { version = "*", features = [] }
 serde = { version = "1", features = ["derive"] }
 async-trait = "0.1"
 
