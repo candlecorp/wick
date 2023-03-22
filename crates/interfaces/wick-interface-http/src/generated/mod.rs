@@ -1,43 +1,9 @@
 #[allow(unused)]
 use guest::*;
 use wasmrs_guest as guest;
-use wick_component::packet::Packet;
 #[allow(unused)]
 pub(crate) type WickStream<T> = FluxReceiver<T, wick_component::anyhow::Error>;
 pub use wick_component::anyhow::Result;
-pub(crate) struct Output<T>
-where
-  T: serde::Serialize,
-{
-  channel: FluxChannel<RawPayload, PayloadError>,
-  name: String,
-  _phantom: std::marker::PhantomData<T>,
-}
-#[allow(unused)]
-impl<T> Output<T>
-where
-  T: serde::Serialize,
-{
-  pub fn new(name: impl AsRef<str>, channel: FluxChannel<RawPayload, PayloadError>) -> Self {
-    Self {
-      channel,
-      name: name.as_ref().to_owned(),
-      _phantom: Default::default(),
-    }
-  }
-  #[allow(unused)]
-  pub fn send(&mut self, value: T) {
-    let _ = self.channel.send_result(Packet::encode(&self.name, value).into());
-  }
-  #[allow(unused)]
-  pub fn done(&mut self) {
-    let _ = self.channel.send_result(Packet::done(&self.name).into());
-  }
-  #[allow(unused)]
-  pub fn error(&mut self, err: impl AsRef<str>) {
-    let _ = self.channel.send_result(Packet::err(&self.name, err).into());
-  }
-}
 #[no_mangle]
 extern "C" fn __wasmrs_init(guest_buffer_size: u32, host_buffer_size: u32, max_host_frame_len: u32) {
   guest::init(guest_buffer_size, host_buffer_size, max_host_frame_len);

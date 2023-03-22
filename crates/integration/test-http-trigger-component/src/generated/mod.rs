@@ -1,43 +1,9 @@
 #[allow(unused)]
 use guest::*;
 use wasmrs_guest as guest;
-use wick_component::packet::Packet;
 #[allow(unused)]
 pub(crate) type WickStream<T> = FluxReceiver<T, wick_component::anyhow::Error>;
 pub use wick_component::anyhow::Result;
-pub(crate) struct Output<T>
-where
-  T: serde::Serialize,
-{
-  channel: FluxChannel<RawPayload, PayloadError>,
-  name: String,
-  _phantom: std::marker::PhantomData<T>,
-}
-#[allow(unused)]
-impl<T> Output<T>
-where
-  T: serde::Serialize,
-{
-  pub fn new(name: impl AsRef<str>, channel: FluxChannel<RawPayload, PayloadError>) -> Self {
-    Self {
-      channel,
-      name: name.as_ref().to_owned(),
-      _phantom: Default::default(),
-    }
-  }
-  #[allow(unused)]
-  pub fn send(&mut self, value: T) {
-    let _ = self.channel.send_result(Packet::encode(&self.name, value).into());
-  }
-  #[allow(unused)]
-  pub fn done(&mut self) {
-    let _ = self.channel.send_result(Packet::done(&self.name).into());
-  }
-  #[allow(unused)]
-  pub fn error(&mut self, err: impl AsRef<str>) {
-    let _ = self.channel.send_result(Packet::err(&self.name, err).into());
-  }
-}
 #[no_mangle]
 extern "C" fn __wasmrs_init(guest_buffer_size: u32, host_buffer_size: u32, max_host_frame_len: u32) {
   guest::init(guest_buffer_size, host_buffer_size, max_host_frame_len);
@@ -391,14 +357,14 @@ pub struct HttpRequest {
 }
 pub struct OpHttpHandlerOutputs {
   #[allow(unused)]
-  pub(crate) body: Output<bytes::Bytes>,
-  pub(crate) response: Output<HttpResponse>,
+  pub(crate) body: wick_component::packet::Output<bytes::Bytes>,
+  pub(crate) response: wick_component::packet::Output<HttpResponse>,
 }
 impl OpHttpHandlerOutputs {
   pub fn new(channel: FluxChannel<RawPayload, PayloadError>) -> Self {
     Self {
-      body: Output::new("body", channel.clone()),
-      response: Output::new("response", channel.clone()),
+      body: wick_component::packet::Output::new("body", channel.clone()),
+      response: wick_component::packet::Output::new("response", channel.clone()),
     }
   }
 }
@@ -423,8 +389,7 @@ impl HttpRouter {
     let (channel, rx) = FluxChannel::<RawPayload, PayloadError>::new_parts();
     let outputs = OpHttpHandlerOutputs::new(channel);
     spawn(async move {
-      let (request, body) =
-        wick_component::payload_fan_out!(input, [("request", HttpRequest), ("body", bytes::Bytes),]);
+      let (request, body) = wick_component :: payload_fan_out ! (input , raw : false , [("request" , HttpRequest) , ("body" , bytes :: Bytes) ,]);
       if let Err(e) = HttpRouter::http_handler(request, body, outputs).await {
         panic!("{}: {}", "http_handler", e);
       }

@@ -7,13 +7,13 @@ use wasmrs::{Metadata, Payload, PayloadError, RawPayload};
 use wasmrs_rx::FluxReceiver;
 
 use crate::metadata::DONE_FLAG;
-use crate::{Error, PacketStream, WickMetadata};
+use crate::{Error, PacketStream, WickMetadata, CLOSE_BRACKET, OPEN_BRACKET};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[must_use]
 pub struct Packet {
-  pub metadata: Metadata,
-  pub extra: WickMetadata,
+  pub(crate) metadata: Metadata,
+  pub(crate) extra: WickMetadata,
   pub payload: PacketPayload,
 }
 
@@ -30,9 +30,13 @@ impl PartialEq for Packet {
 }
 
 impl Packet {
-  // pub fn new(payload: PacketPayload, metadata: Metadata) -> Self {
-  //   Self { payload, metadata }
-  // }
+  pub fn new_raw(payload: PacketPayload, wasmrs: Metadata, metadata: WickMetadata) -> Self {
+    Self {
+      payload,
+      metadata: wasmrs,
+      extra: metadata,
+    }
+  }
 
   pub fn new_for_port(port: impl AsRef<str>, payload: PacketPayload, flags: u8) -> Self {
     let md = Metadata::new(0);
@@ -64,11 +68,27 @@ impl Packet {
     Self::new_for_port(port, PacketPayload::Ok(Default::default()), DONE_FLAG)
   }
 
+  pub fn open_bracket(port: impl AsRef<str>) -> Self {
+    Self::new_for_port(port, PacketPayload::Ok(Default::default()), OPEN_BRACKET)
+  }
+
+  pub fn close_bracket(port: impl AsRef<str>) -> Self {
+    Self::new_for_port(port, PacketPayload::Ok(Default::default()), CLOSE_BRACKET)
+  }
+
   pub fn encode<T: Serialize>(port: impl AsRef<str>, data: T) -> Self {
     match wasmrs_codec::messagepack::serialize(&data) {
       Ok(bytes) => Self::new_for_port(port, PacketPayload::Ok(bytes.into()), 0),
       Err(err) => Self::new_for_port(port, PacketPayload::Err(PacketError::new(err.to_string())), 0),
     }
+  }
+
+  pub fn flags(&self) -> u8 {
+    self.extra.flags
+  }
+
+  pub fn index(&self) -> u32 {
+    self.metadata.index
   }
 
   /// Try to deserialize a [Packet] into the target type
@@ -86,7 +106,7 @@ impl Packet {
     self
   }
 
-  pub fn port_name(&self) -> &str {
+  pub fn port(&self) -> &str {
     &self.extra.port
   }
 
@@ -96,6 +116,14 @@ impl Packet {
 
   pub fn is_done(&self) -> bool {
     self.extra.is_done()
+  }
+
+  pub fn is_open_bracket(&self) -> bool {
+    self.extra.is_open_bracket()
+  }
+
+  pub fn is_close_bracket(&self) -> bool {
+    self.extra.is_close_bracket()
   }
 
   pub fn from_kv_json(values: &[String]) -> Result<Vec<Packet>, Error> {
@@ -205,11 +233,7 @@ pub fn from_wasmrs(stream: FluxReceiver<RawPayload, PayloadError>) -> PacketStre
           |_e| WickMetadata::default(),
           |m| WickMetadata::decode(m.extra.unwrap()).unwrap(),
         );
-        if wmd.is_done() {
-          Packet::done(wmd.port)
-        } else {
-          Packet::new_for_port(wmd.port, PacketPayload::Ok(p.data.unwrap()), 0)
-        }
+        Packet::new_for_port(wmd.port(), PacketPayload::Ok(p.data.unwrap()), wmd.flags())
       },
     );
     Ok(p)

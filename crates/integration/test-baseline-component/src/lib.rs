@@ -11,7 +11,7 @@ use wick::*;
 impl OpAdd for TestComponent {
   async fn add(mut left: WickStream<u64>, mut right: WickStream<u64>, mut outputs: OpAddOutputs) -> wick::Result<()> {
     while let (Some(Ok(left)), Some(Ok(right))) = (left.next().await, right.next().await) {
-      outputs.output.send(left + right);
+      outputs.output.send(&(left + right));
     }
     outputs.output.done();
     Ok(())
@@ -44,7 +44,7 @@ impl OpValidate for TestComponent {
         outputs.output.error(LengthError::TooLong.to_string());
       } else {
         println!("Just right!");
-        outputs.output.send(password);
+        outputs.output.send(&password);
       }
     }
     outputs.output.done();
