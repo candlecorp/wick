@@ -354,5 +354,5 @@ pub struct HttpRequest {
   pub headers: std::collections::HashMap<String, Vec<String>>,
 }
 #[derive(Default, Clone)]
-pub struct Http;
-impl Http {}
+pub struct Component;
+impl Component {}

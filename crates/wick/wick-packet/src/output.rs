@@ -36,7 +36,6 @@ where
   }
 
   pub fn send_raw(&mut self, value: Packet) {
-    println!("Sending packet: {:?}", value);
     if let Err(e) = self.channel.send_result(value.into()) {
       warn!(
         port = self.name,
@@ -59,6 +58,6 @@ where
   }
 
   pub fn error(&mut self, err: impl AsRef<str>) {
-    let _ = self.send_raw(Packet::err(&self.name, err));
+    self.send_raw(Packet::err(&self.name, err));
   }
 }

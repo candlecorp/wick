@@ -8,7 +8,7 @@ use wick::*;
 
 #[cfg_attr(target_family = "wasm",async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait(Send))]
-impl OpAdd for TestComponent {
+impl OpAdd for Component {
   async fn add(mut left: WickStream<u64>, mut right: WickStream<u64>, mut outputs: OpAddOutputs) -> wick::Result<()> {
     while let (Some(Ok(left)), Some(Ok(right))) = (left.next().await, right.next().await) {
       outputs.output.send(&(left + right));
@@ -20,7 +20,7 @@ impl OpAdd for TestComponent {
 
 #[cfg_attr(target_family = "wasm",async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait(Send))]
-impl OpError for TestComponent {
+impl OpError for Component {
   async fn error(mut input: WickStream<String>, _outputs: OpErrorOutputs) -> wick::Result<()> {
     while let Some(Ok(_)) = input.next().await {
       panic!("This component always panics");
@@ -31,7 +31,7 @@ impl OpError for TestComponent {
 
 #[cfg_attr(target_family = "wasm",async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait(Send))]
-impl OpValidate for TestComponent {
+impl OpValidate for Component {
   async fn validate(mut input: WickStream<String>, mut outputs: OpValidateOutputs) -> Result<()> {
     while let Some(Ok(password)) = input.next().await {
       println!("Checking password {}", password);
