@@ -662,12 +662,6 @@
           "description": "The downstream operation port.",
 
           "$ref": "#/$defs/v1/ConnectionTargetDefinition"
-        },
-        "default": {
-          "description": "The default value to provide in the event of an upstream Error or Exception.",
-          "required": false,
-
-          "type": "string"
         }
       },
       "required": ["from", "to"]

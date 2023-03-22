@@ -1,4 +1,3 @@
-use std::borrow::Cow;
 use std::collections::HashMap;
 use std::convert::TryInto;
 use std::fmt::Display;
@@ -10,7 +9,6 @@ use serde_json::Value;
 use wick_interface_types::Field;
 use wick_packet::PacketPayload;
 
-use crate::default::process_default;
 use crate::{Error, Result};
 
 #[derive(Debug, Clone, Default)]
@@ -95,8 +93,6 @@ pub struct ConnectionDefinition {
   pub from: ConnectionTargetDefinition,
   /// The downstream [ConnectionTargetDefinition] (port).
   pub to: ConnectionTargetDefinition,
-  /// The default data to use in the case of an Error, represented as a JSON string.
-  pub default: Option<Value>,
 }
 
 impl Hash for ConnectionDefinition {
@@ -118,24 +114,7 @@ impl ConnectionDefinition {
   /// Constructor for a [ConnectionDefinition]. This is mostly used in tests,.
   /// the most common way to get a [ConnectionDefinition] is by parsing a manifest.
   pub fn new(from: ConnectionTargetDefinition, to: ConnectionTargetDefinition) -> Self {
-    Self {
-      from,
-      to,
-      default: None,
-    }
-  }
-
-  #[must_use]
-  /// Returns true if the [ConnectionDefinition] has a default value set.
-  pub fn has_default(&self) -> bool {
-    self.default.is_some()
-  }
-
-  /// Render default JSON template with the passed message.
-  pub fn process_default(&self, err: &str) -> Result<Cow<Value>> {
-    let json = self.default.as_ref().ok_or_else(|| Error::NoDefault(self.clone()))?;
-    process_default(Cow::Borrowed(json), err)
-      .map_err(|e| Error::DefaultsError(self.from.clone(), self.to.clone(), e.to_string()))
+    Self { from, to }
   }
 
   /// Generate a [ConnectionDefinition] from short form syntax.

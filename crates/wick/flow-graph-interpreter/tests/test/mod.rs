@@ -1,8 +1,8 @@
 mod observer;
-mod test_collection;
+mod test_component;
 
 pub use observer::JsonWriter;
-pub use test_collection::TestCollection;
+pub use test_component::TestComponent;
 
 #[macro_export]
 macro_rules! interp {
@@ -20,7 +20,7 @@ macro_rules! interp {
     let network = from_def(&def)?;
     let collections = HandlerMap::new(vec![NamespaceHandler::new(
       "test",
-      Box::new(test::TestCollection::new()),
+      Box::new(test::TestComponent::new()),
     )]);
     let invocation = Invocation::new(Entity::test("test"), Entity::local($op), None);
     let mut interpreter = Interpreter::new(Some(Seed::unsafe_new(1)), network, None, Some(collections))?;

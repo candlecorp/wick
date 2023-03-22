@@ -335,12 +335,6 @@
           "description": "The destination component (downstream).",
 
           "$ref": "#/$defs/v0/ConnectionTargetDefinition"
-        },
-        "default": {
-          "description": "The default value to provide in the event of an upstream Error or Exception.",
-          "required": false,
-
-          "type": "string"
         }
       },
       "required": []

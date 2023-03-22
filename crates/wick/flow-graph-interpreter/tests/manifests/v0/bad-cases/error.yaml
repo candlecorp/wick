@@ -1,0 +1,11 @@
+---
+format: 0
+network:
+  schematics:
+    - name: test
+      instances:
+        ALWAYS_PANICS:
+          id: test::error
+      connections:
+        - <> => ALWAYS_PANICS[input]
+        - ALWAYS_PANICS[output] => <>

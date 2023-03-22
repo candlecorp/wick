@@ -71,7 +71,7 @@ pub fn from_def(manifest: &wick_config::ComponentConfiguration) -> Result<Networ
 
       if let Some(component) = schematic.find_mut(from.get_instance()) {
         let from_port = component.add_output(from.get_port());
-        schematic.connect(from_port, to_port, connection.default.clone())?;
+        schematic.connect(from_port, to_port, None)?;
       } else {
         panic!("Can't find component {}", from.get_instance());
       }

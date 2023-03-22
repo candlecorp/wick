@@ -73,7 +73,7 @@ fn parse_from_or_sender(from: &str, default_port: Option<&str>) -> Result<Connec
 }
 
 /// Parse a string as a connection and return its parts.
-pub fn parse_connection(s: &str) -> Result<(ConnectionDefinitionParts, ConnectionDefinitionParts, Option<String>)> {
+pub fn parse_connection(s: &str) -> Result<(ConnectionDefinitionParts, ConnectionDefinitionParts)> {
   let s = s.trim();
   s.split_once(CONNECTION_SEPARATOR).map_or_else(
     || Err(Error::ConnectionDefinitionSyntax(s.to_owned())),
@@ -93,7 +93,7 @@ pub fn parse_connection(s: &str) -> Result<(ConnectionDefinitionParts, Connectio
           .ok_or_else(|| Error::NoDefaultPort(s.to_owned()))?,
         None,
       );
-      Ok((from, to, None))
+      Ok((from, to))
     },
   )
 }
@@ -143,7 +143,6 @@ mod tests {
       (
         ("ref1".to_owned(), "in".to_owned(), None,),
         ("ref2".to_owned(), "out".to_owned(), None,),
-        None
       )
     );
     Ok(())
@@ -163,7 +162,6 @@ mod tests {
           Some(num.into()),
         ),
         ("ref2".to_owned(), "out".to_owned(), None,),
-        None
       )
     );
     Ok(())
@@ -177,7 +175,6 @@ mod tests {
       (
         (parse::SCHEMATIC_INPUT.to_owned(), "in".to_owned(), None,),
         ("ref2".to_owned(), "out".to_owned(), None,),
-        None
       )
     );
     Ok(())
@@ -191,7 +188,6 @@ mod tests {
       (
         ("ref1".to_owned(), "in".to_owned(), None,),
         (parse::SCHEMATIC_OUTPUT.to_owned(), "out".to_owned(), None,),
-        None
       )
     );
     Ok(())
@@ -205,7 +201,6 @@ mod tests {
       (
         ("ref1".to_owned(), "port".to_owned(), None,),
         (parse::SCHEMATIC_OUTPUT.to_owned(), "port".to_owned(), None,),
-        None
       )
     );
     Ok(())
@@ -219,7 +214,6 @@ mod tests {
       (
         (parse::SCHEMATIC_INPUT.to_owned(), "port".to_owned(), None,),
         ("ref1".to_owned(), "port".to_owned(), None,),
-        None
       )
     );
     Ok(())
@@ -237,7 +231,6 @@ mod tests {
           Some(Value::from_str(r#""default""#)?),
         ),
         ("ref1".to_owned(), "port".to_owned(), None,),
-        None
       )
     );
     Ok(())
@@ -255,7 +248,6 @@ mod tests {
           Some(Value::from_str(r#""1234512345""#)?),
         ),
         (parse::SCHEMATIC_OUTPUT.to_owned(), "output".to_owned(), None,),
-        None
       )
     );
     Ok(())

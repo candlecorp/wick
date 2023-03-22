@@ -176,8 +176,6 @@ type ConnectionDefinition {
   "The destination component (downstream)."
   to: ConnectionTargetDefinition,
 
-  "The default value to provide in the event of an upstream Error or Exception."
-  default: string?
 }
 
 "A connection target e.g. a port on a reference. This can be specified in short-form syntax (where applicable)."

@@ -27,6 +27,31 @@ async fn test_panic() -> Result<()> {
 }
 
 #[test_logger::test(tokio::test)]
+async fn test_error() -> Result<()> {
+  let (interpreter, mut outputs) = interp!(
+    "./tests/manifests/v0/bad-cases/error.yaml",
+    "test",
+    packets!(("input", "Hello world"))
+  );
+
+  assert_equal!(outputs.len(), 2);
+
+  outputs.pop();
+  let p = outputs.pop().unwrap().unwrap();
+  assert_eq!(
+    p,
+    Packet::err(
+      "output",
+      "Operation wick://test.coll/error failed: This operation always errors"
+    )
+  );
+
+  interpreter.shutdown().await?;
+
+  Ok(())
+}
+
+#[test_logger::test(tokio::test)]
 // #[ignore]
 async fn test_timeout_done_noclose() -> Result<()> {
   let (interpreter, mut outputs) = interp!(

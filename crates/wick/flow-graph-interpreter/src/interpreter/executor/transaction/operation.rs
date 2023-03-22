@@ -299,7 +299,7 @@ impl InstanceHandler {
             format!("Operation {} cancelled", entity)
           }
         } else {
-          format!("Operation {} failed", entity)
+          format!("Operation {} failed: {}", entity, error)
         };
 
         warn!(%msg, "component error");
@@ -344,10 +344,12 @@ async fn output_handler(
   // TODO: make this timeout configurable from instance configuration.
   let timeout = Duration::from_millis(2000);
 
+  let mut num_received = 0;
   let reason = loop {
     let response = tokio::time::timeout(timeout, stream.next());
     match response.await {
       Ok(Some(message)) => {
+        num_received += 1;
         if let Err(e) = message {
           warn!(error=?e,"component-wide error");
           channel
@@ -373,6 +375,14 @@ async fn output_handler(
         break CompletionStatus::Timeout;
       }
       Ok(None) => {
+        if num_received == 0 && instance.outputs().len() > 0 {
+          let err = "component failed to produce output";
+          warn!(error = err, "stream complete");
+          channel
+            .dispatch_op_err(tx_id, instance.index(), PacketPayload::fatal_error(err))
+            .await;
+          break CompletionStatus::Error;
+        }
         trace!("stream complete");
         break CompletionStatus::Finished;
       }
