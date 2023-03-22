@@ -2,7 +2,6 @@ use std::io::{self, BufRead, BufReader};
 
 use futures::TryStreamExt;
 use wasmrs_guest::StreamExt;
-use wick_component::packet::CollectionLink;
 mod generated;
 use generated as wick;
 // mod wick {
@@ -22,7 +21,7 @@ struct Response {
 
 #[cfg_attr(target_family = "wasm",async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-impl OpHttpHandler for HttpRouter {
+impl OpHttpHandler for Component {
   async fn http_handler(
     mut request: WickStream<HttpRequest>,
     body: WickStream<bytes::Bytes>,
@@ -57,8 +56,8 @@ impl OpHttpHandler for HttpRouter {
       .insert("Content-Length".to_owned(), vec![res_body.len().to_string()]);
 
     println!("SENDING RESPONSE BODY {:#?}", res_body);
-    outputs.response.send(res);
-    outputs.body.send(res_body);
+    outputs.response.send(&res);
+    outputs.body.send(&res_body);
     outputs.response.done();
     outputs.body.done();
     Ok(())

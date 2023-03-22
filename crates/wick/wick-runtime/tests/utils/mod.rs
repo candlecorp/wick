@@ -16,6 +16,7 @@ pub async fn init_network_from_yaml(path: &str) -> anyhow::Result<(Network, uuid
   Ok((network, nuid))
 }
 
+#[allow(unused)]
 pub async fn tester(path: &str, stream: PacketStream, target: &str, mut expected: Vec<Packet>) -> anyhow::Result<()> {
   let (network, _) = init_network_from_yaml(path).await?;
   let inherent = InherentData::new(1, 1000);

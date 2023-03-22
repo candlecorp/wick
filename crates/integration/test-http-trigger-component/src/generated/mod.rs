@@ -7,7 +7,7 @@ pub use wick_component::anyhow::Result;
 #[no_mangle]
 extern "C" fn __wasmrs_init(guest_buffer_size: u32, host_buffer_size: u32, max_host_frame_len: u32) {
   guest::init(guest_buffer_size, host_buffer_size, max_host_frame_len);
-  guest::register_request_channel("wick", "http_handler", HttpRouter::http_handler_wrapper);
+  guest::register_request_channel("wick", "http_handler", Component::http_handler_wrapper);
 }
 #[derive(Debug, Clone, serde :: Serialize, serde :: Deserialize, PartialEq)]
 pub enum HttpMethod {
@@ -381,17 +381,17 @@ pub trait OpHttpHandler {
   }
 }
 #[derive(Default, Clone)]
-pub struct HttpRouter;
-impl HttpRouter {
+pub struct Component;
+impl Component {
   fn http_handler_wrapper(
     mut input: FluxReceiver<Payload, PayloadError>,
   ) -> std::result::Result<FluxReceiver<RawPayload, PayloadError>, Box<dyn std::error::Error + Send + Sync>> {
     let (channel, rx) = FluxChannel::<RawPayload, PayloadError>::new_parts();
-    let outputs = OpHttpHandlerOutputs::new(channel);
+    let outputs = OpHttpHandlerOutputs::new(channel.clone());
     spawn(async move {
       let (request, body) = wick_component :: payload_fan_out ! (input , raw : false , [("request" , HttpRequest) , ("body" , bytes :: Bytes) ,]);
-      if let Err(e) = HttpRouter::http_handler(request, body, outputs).await {
-        panic!("{}: {}", "http_handler", e);
+      if let Err(e) = Component::http_handler(request, body, outputs).await {
+        let _ = channel.send_result(wick_component::packet::Packet::component_error(e.to_string()).into());
       }
     });
     Ok(rx)

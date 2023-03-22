@@ -64,13 +64,7 @@ async fn test_timeout_done_noclose() -> Result<()> {
 
   outputs.pop();
   let p = outputs.pop().unwrap().unwrap();
-  assert_eq!(
-    p,
-    Packet::err(
-      "output",
-      "Operation wick://test.coll/echo timed out waiting for upstream data."
-    )
-  );
+  assert_eq!(p, Packet::err("output", "component failed to produce output"));
 
   interpreter.shutdown().await?;
 

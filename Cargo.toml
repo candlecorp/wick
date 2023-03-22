@@ -95,14 +95,14 @@ pretty_assertions = "1.3"
 # wasmrs-host = { path = "../wasmrs-rust/crates/wasmrs-host" }
 # wasmrs-runtime = { path = "../wasmrs-rust/crates/wasmrs-runtime" }
 # wasmrs-guest = { path = "../wasmrs-rust/crates/wasmrs-guest" }
-wasmrs = { version = "0.7" }
-wasmrs-rx = { version = "0.7" }
-wasmrs-frames = { version = "0.7" }
-wasmrs-codec = { version = "0.7" }
-wasmrs-wasmtime = { version = "0.7" }
-wasmrs-host = { version = "0.7" }
-wasmrs-runtime = { version = "0.7" }
-wasmrs-guest = { version = "0.7" }
+wasmrs = { version = "0.8" }
+wasmrs-rx = { version = "0.8" }
+wasmrs-frames = { version = "0.8" }
+wasmrs-codec = { version = "0.8" }
+wasmrs-wasmtime = { version = "0.8" }
+wasmrs-host = { version = "0.8" }
+wasmrs-runtime = { version = "0.8" }
+wasmrs-guest = { version = "0.8" }
 rand_chacha = "0.3"
 oci-distribution = "0.9"
 url = "2.3"

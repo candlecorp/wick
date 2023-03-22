@@ -360,10 +360,7 @@ fn gen_trait_signature(config: &config::Config, component: &Ident, op: &FlowOper
 
 fn codegen(config: &config::Config) -> Result<String> {
   let component = wick_config::ComponentConfiguration::load_from_file(&config.spec).unwrap();
-  let component_name = Ident::new(
-    pascal(&component.name().clone().unwrap_or("component".to_owned())).as_ref(),
-    Span::call_site(),
-  );
+  let component_name = Ident::new("Component", Span::call_site());
   let register_stmts = gen_register_channels(config, &component_name, component.operations().values());
   let wrapper_fns = gen_wrapper_fns(config, &component_name, component.operations().values());
   let trait_defs = gen_trait_fns(config, &component_name, component.operations().values());
@@ -412,12 +409,13 @@ mod test {
   use super::*;
   use crate::Config;
 
+  // TODO: make better tests for the codegen. This one's pretty bad.
   #[test]
   fn test_build() -> Result<()> {
     let config = Config::new().spec("./tests/testdata/component.yaml");
     let src = codegen(&config)?;
 
-    assert!(src.contains("pub struct TestComponent"));
+    assert!(src.contains("pub struct Component"));
 
     Ok(())
   }

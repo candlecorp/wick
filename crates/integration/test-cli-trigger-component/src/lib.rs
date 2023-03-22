@@ -10,7 +10,7 @@ use wick::*;
 
 #[cfg_attr(target_family = "wasm",async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-impl OpMain for TestComponent {
+impl OpMain for Component {
   async fn main(
     mut args: WickStream<Vec<String>>,
     mut is_interactive: WickStream<Interactive>,
@@ -41,7 +41,7 @@ impl OpMain for TestComponent {
       }
     }
 
-    let _ = outputs.code.send(0);
+    let _ = outputs.code.send(&0);
     let _ = outputs.code.done();
     Ok(())
   }
