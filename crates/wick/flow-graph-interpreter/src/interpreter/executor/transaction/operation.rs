@@ -48,6 +48,12 @@ impl std::fmt::Debug for InstanceHandler {
   }
 }
 
+impl std::fmt::Display for InstanceHandler {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    write!(f, "{}::{}", self.namespace(), self.id())
+  }
+}
+
 impl InstanceHandler {
   pub(super) fn new(
     schematic: Arc<Schematic>,
@@ -118,9 +124,9 @@ impl InstanceHandler {
     self.sender.complete();
   }
 
-  // pub(super) fn take_input(&self, port: &PortReference) -> Option<Packet> {
-  //   self.inputs.take(port)
-  // }
+  pub(super) fn take_input(&self, port: &PortReference) -> Option<Packet> {
+    self.inputs.take(port)
+  }
 
   // pub(crate) fn validate_payload(&self, payload: &TransportMap) -> Result<()> {
   //   for input in self.inputs.iter() {
@@ -132,13 +138,13 @@ impl InstanceHandler {
   // }
 
   pub(crate) fn buffer_in(&self, port: &PortReference, value: Packet) {
-    trace!(%port, ?value, "buffering input message");
+    trace!(operation=%self, port=self.inputs.get_handler(port).name(), ?value, "buffering input message");
 
     self.inputs.receive(port, value);
   }
 
   pub(crate) fn buffer_out(&self, port: &PortReference, value: Packet) {
-    trace!(%port, ?value, "buffering output message");
+    trace!(operation=%self, port=self.outputs.get_handler(port).name(), ?value, "buffering output message");
 
     self.outputs.receive(port, value);
   }
@@ -336,7 +342,7 @@ async fn output_handler(
   trace!("starting output task");
 
   // TODO: make this timeout configurable from instance configuration.
-  let timeout = Duration::from_millis(1000);
+  let timeout = Duration::from_millis(2000);
 
   let reason = loop {
     let response = tokio::time::timeout(timeout, stream.next());
@@ -351,9 +357,9 @@ async fn output_handler(
         }
         let message = message.unwrap();
 
-        let port = instance.find_output(message.port_name())?;
+        let port = instance.find_output(message.port())?;
 
-        trace!(port=%message.port_name(),"received packet");
+        trace!(port=%message.port(),"received packet");
 
         instance.buffer_out(&port, message);
         channel.dispatch_data(tx_id, port).await;

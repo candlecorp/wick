@@ -7,7 +7,7 @@ use wick_packet::{Packet, PacketPayload};
 use super::EventLoop;
 use crate::interpreter::channel::{CallComplete, InterpreterDispatchChannel};
 use crate::interpreter::executor::error::ExecutionError;
-use crate::interpreter::executor::transaction::{accept_input, Transaction};
+use crate::interpreter::executor::transaction::Transaction;
 
 #[derive(Debug)]
 pub struct State {
@@ -95,17 +95,28 @@ impl State {
   }
 
   async fn handle_input_data(&mut self, tx_id: Uuid, port: PortReference) -> Result<(), ExecutionError> {
-    debug!(
-      port = %port, "handling port input"
-    );
-    let tx = self.get_tx(&tx_id)?;
+    let tx = match self.get_tx(&tx_id) {
+      Ok(tx) => tx,
+      Err(e) => {
+        error!(
+          port = %port, error=%e, "error handling port input"
+        );
+        return Err(e);
+      }
+    };
+
     let graph = tx.schematic();
     let port_name = graph.get_port_name(&port);
+    let instance = tx.instance(port.node_index());
+
+    debug!(
+      operation = %instance,
+      port = port_name,
+      "handling port input"
+    );
 
     tx.stats
       .mark(format!("input:{}:{}:ready", port.node_index(), port.port_index()));
-
-    let instance = tx.instance(port.node_index());
 
     let span = trace_span!("input", port = port_name, component = instance.id());
     let _guard = span.enter();
@@ -114,26 +125,33 @@ impl State {
 
     if is_schematic_output {
       tx.handle_schematic_output().await?;
-    } else {
-      let packets = tx.take_packets(instance)?;
-
-      if !packets.is_empty() {
-        tx.push_packets(port.node_index(), packets)?;
-      }
+    } else if let Some(packet) = tx.take_component_input(&port) {
+      tx.push_packets(port.node_index(), vec![packet])?;
     }
-
     Ok(())
   }
 
   async fn handle_output_data(&mut self, tx_id: Uuid, port: PortReference) -> Result<(), ExecutionError> {
-    debug!(
-      port = %port, "handling port output"
-    );
-    let tx = self.get_tx(&tx_id)?;
+    let tx = match self.get_tx(&tx_id) {
+      Ok(tx) => tx,
+      Err(e) => {
+        error!(
+          port = %port, error=%e, "error handling port output"
+        );
+        return Err(e);
+      }
+    };
+
     let graph = tx.schematic();
     let port_name = graph.get_port_name(&port);
 
     let instance = tx.instance(port.node_index());
+
+    debug!(
+      operation = %instance,
+      port = port_name,
+      "handling port output"
+    );
 
     let span = trace_span!("output", port = port_name, component = instance.id());
     let _guard = span.enter();
@@ -148,12 +166,13 @@ impl State {
         let downport = *connection.to();
         let name = graph.get_port_name(&downport);
 
-        trace!(%connection, "delivering packet",);
         let channel = self.channel.clone();
         let downstream_instance = tx.instance(downport.node_index()).clone();
         let message = message.clone().set_port(name);
+        trace!(%connection, ?message, "delivering packet",);
+        downstream_instance.buffer_in(&downport, message);
         tokio::spawn(async move {
-          accept_input(tx_id, downport, &downstream_instance, &channel, message).await;
+          channel.dispatch_data(tx_id, downport).await;
         });
       }
     } else {

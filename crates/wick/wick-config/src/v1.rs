@@ -23,6 +23,7 @@
 #![allow(clippy::large_enum_variant, missing_copy_implementations)]
 
 pub(crate) mod conversions;
+pub(crate) mod impls;
 pub(crate) mod parse;
 
 use std::collections::HashMap;
@@ -127,7 +128,7 @@ pub(crate) struct ComponentOperationExpression {
   /// The operation to call.
 
   #[serde(deserialize_with = "with_expand_envs")]
-  pub(crate) operation: String,
+  pub(crate) name: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -496,9 +497,8 @@ pub(crate) struct OperationDefinition {
   /// A map of IDs to specific operation.
 
   #[serde(default)]
-  #[serde(skip_serializing_if = "HashMap::is_empty")]
-  #[serde(deserialize_with = "crate::v1::parse::map_component_def")]
-  pub(crate) instances: HashMap<String, InstanceDefinition>,
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub(crate) instances: Vec<InstanceBinding>,
   /// A list of connections from operation to operation.
 
   #[serde(default)]
@@ -517,13 +517,17 @@ pub(crate) type TypeDefinition = Value;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
-/// The ID and configuration for an operation.
-pub(crate) struct InstanceDefinition {
-  /// The ID to assign to this instance of the operation.
+/// An identifier bound to a component's operation.
+pub(crate) struct InstanceBinding {
+  /// The name of the binding.
 
   #[serde(deserialize_with = "with_expand_envs")]
-  pub(crate) id: String,
-  /// Data to associate with the reference.
+  pub(crate) name: String,
+  /// The operation to bind to.
+
+  #[serde(deserialize_with = "crate::v1::parse::component_operation_syntax")]
+  pub(crate) operation: ComponentOperationExpression,
+  /// Data to associate with the reference, if any.
 
   #[serde(default)]
   pub(crate) config: Option<Value>,

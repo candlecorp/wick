@@ -49,7 +49,7 @@ fn silly_modules(module: &str) -> bool {
   [
     "flow_graph_interpreter",
     "wasmtime_provider",
-    "wapc",
+    "wasmrs",
     "wick_wascap",
     "flow_graph",
     "wick_config",

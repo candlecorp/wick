@@ -21,7 +21,7 @@ pub(crate) struct EventLoop {
 
 impl EventLoop {
   pub(crate) const WAKE_TIMEOUT: Duration = Duration::from_millis(500);
-  pub(crate) const HUNG_TX_TIMEOUT: Duration = Duration::from_millis(1000);
+  pub(crate) const HUNG_TX_TIMEOUT: Duration = Duration::from_millis(2000);
 
   pub(super) fn new(channel: InterpreterChannel) -> Self {
     let dispatcher = channel.dispatcher();
@@ -92,7 +92,7 @@ async fn event_loop(
   options: InterpreterOptions,
   observer: Option<Box<dyn Observer + Send + Sync>>,
 ) -> Result<(), ExecutionError> {
-  trace!(?options, "started");
+  debug!(?options, "started");
   let mut state = State::new(channel.dispatcher());
 
   let mut num: usize = 0;
@@ -108,7 +108,7 @@ async fn event_loop(
         }
 
         let span = trace_span!("event", otel.name = event.name(), i = num, %tx_id);
-        trace!(event = ?event, tx_id = ?tx_id, "iteration");
+        debug!(event = ?event, tx_id = ?tx_id, "iteration");
         let name = event.name().to_owned();
 
         let result = match event.kind {
@@ -159,11 +159,7 @@ async fn event_loop(
         break Ok(());
       }
       Err(_) => {
-        if let Err(error) = state
-          .check_hung(options.error_on_hung)
-          .instrument(trace_span!("check_hung"))
-          .await
-        {
+        if let Err(error) = state.check_hung(options.error_on_hung).await {
           error!(%error,"Error checking hung transactions");
           channel.dispatcher().dispatch_close(Some(error)).await;
         };

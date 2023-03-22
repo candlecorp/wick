@@ -55,9 +55,9 @@ impl PortList {
     self.inner[port.port_index()].take()
   }
 
-  // pub(super) fn get_handler(&self, port: &PortReference) -> &PortHandler {
-  //   &self.inner[port.port_index()]
-  // }
+  pub(super) fn get_handler(&self, port: &PortReference) -> &PortHandler {
+    &self.inner[port.port_index()]
+  }
 
   pub(crate) fn find_ref(&self, name: &str) -> Option<PortReference> {
     for handler in &self.inner {
@@ -98,9 +98,9 @@ impl OutputPorts {
     self.inner.inner.iter()
   }
 
-  // pub(super) fn get_handler(&self, port: &PortReference) -> &PortHandler {
-  //   self.inner.get_handler(port)
-  // }
+  pub(super) fn get_handler(&self, port: &PortReference) -> &PortHandler {
+    self.inner.get_handler(port)
+  }
 
   pub(crate) fn find_ref(&self, name: &str) -> Option<PortReference> {
     self.inner.find_ref(name)
@@ -123,9 +123,9 @@ impl InputPorts {
     self.inner.receive(port, value);
   }
 
-  // pub(super) fn take(&self, port: &PortReference) -> Option<PacketType> {
-  //   self.inner.take(port)
-  // }
+  pub(super) fn take(&self, port: &PortReference) -> Option<PacketType> {
+    self.inner.take(port)
+  }
 
   pub(crate) fn iter(&self) -> impl Iterator<Item = &PortHandler> {
     self.inner.inner.iter()
@@ -135,9 +135,9 @@ impl InputPorts {
   //   self.inner.inner.len()
   // }
 
-  // pub(super) fn get_handler(&self, port: &PortReference) -> &PortHandler {
-  //   self.inner.get_handler(port)
-  // }
+  pub(super) fn get_handler(&self, port: &PortReference) -> &PortHandler {
+    self.inner.get_handler(port)
+  }
 
   pub(crate) fn find_ref(&self, name: &str) -> Option<PortReference> {
     self.inner.find_ref(name)

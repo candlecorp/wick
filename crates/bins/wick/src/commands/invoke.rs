@@ -24,15 +24,9 @@ pub(crate) struct InvokeCommand {
   #[clap(action)]
   location: String,
 
-  // *****************************************************************
-  // Everything below is copied from common-cli-options::RunOptions
-  // Flatten doesn't work with positional args...
-  //
-  // TODO: Eliminate the need for copy/pasting
-  // *****************************************************************
-  /// Name of the component to execute.
+  /// Name of the operation to execute.
   #[clap(default_value = "default", action)]
-  component: String,
+  operation: String,
 
   /// Don't read input from STDIN.
   #[clap(long = "no-input", action)]
@@ -68,6 +62,7 @@ pub(crate) async fn handle_command(mut opts: InvokeCommand) -> Result<()> {
   if !(opts.info || logging.trace || logging.debug) {
     logging.quiet = true;
   }
+
   let _guard = logger::init(&logging.name(crate::BIN_NAME));
 
   let bytes = wick_loader_utils::get_bytes(&opts.location, opts.fetch.allow_latest, &opts.fetch.insecure_registries)

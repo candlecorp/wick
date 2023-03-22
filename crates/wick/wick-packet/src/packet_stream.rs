@@ -58,6 +58,7 @@ impl Stream for PacketStream {
   type Item = Result<Packet, crate::Error>;
 
   fn poll_next(self: Pin<&mut Self>, cx: &mut std::task::Context<'_>) -> std::task::Poll<Option<Self::Item>> {
+    cx.waker().wake_by_ref();
     let mut inner = self.inner.lock();
     let pinned = Pin::new(&mut *inner);
     pinned.poll_next(cx)

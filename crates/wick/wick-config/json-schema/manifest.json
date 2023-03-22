@@ -464,14 +464,14 @@
               }
             ]
           },
-          "operation": {
+          "name": {
             "description": "The operation to call.",
             "type": "string"
           }
         },
         "required": [
           "component",
-          "operation"
+          "name"
         ]
       },
       "HttpTrigger": {
@@ -939,11 +939,9 @@
           },
           "instances": {
             "description": "A map of IDs to specific operation.",
-            "type": "object",
-            "patternProperties": {
-              "[a-zA-Z0-9][a-zA-Z0-9_]*": {
-                "$ref": "#/$defs/v1/InstanceDefinition"
-              }
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/v1/InstanceBinding"
             }
           },
           "flow": {
@@ -962,22 +960,27 @@
       "TypeDefinition": {
         "type": "object"
       },
-      "InstanceDefinition": {
-        "$anchor": "#v1/InstanceDefinition",
+      "InstanceBinding": {
+        "$anchor": "#v1/InstanceBinding",
         "additionalProperties": false,
         "properties": {
-          "id": {
-            "description": "The ID to assign to this instance of the operation.",
+          "name": {
+            "description": "The name of the binding.",
             "type": "string"
           },
+          "operation": {
+            "description": "The operation to bind to.",
+            "$ref": "#/$defs/v1/ComponentOperationExpression"
+          },
           "config": {
-            "description": "Data to associate with the reference.",
+            "description": "Data to associate with the reference, if any.",
             "required": false,
             "type": "object"
           }
         },
         "required": [
-          "id"
+          "name",
+          "operation"
         ]
       },
       "ConnectionDefinition": {

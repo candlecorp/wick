@@ -196,9 +196,9 @@ impl From<DurationStatistics> for rpc::DurationStatistics {
 impl From<Packet> for rpc::Packet {
   fn from(value: Packet) -> Self {
     let md = rpc::Metadata {
-      flags: value.extra.flags().into(),
-      port: value.extra.stream().to_owned(),
-      index: value.metadata.index,
+      flags: value.flags().into(),
+      port: value.port().to_owned(),
+      index: value.index(),
     };
     rpc::Packet {
       data: Some(value.payload.into()),

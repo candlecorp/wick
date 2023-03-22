@@ -28,11 +28,11 @@ impl Reference {
     self.0.name()
   }
   pub(crate) fn namespace(&self) -> &str {
-    self.0.namespace()
+    self.0.component_id()
   }
 
   pub(crate) fn is_core_operation(&self, name: &str) -> bool {
-    self.0.namespace() == NS_CORE && self.0.name() == name
+    self.0.component_id() == NS_CORE && self.0.name() == name
   }
 
   // pub(crate) fn is_static(&self) -> bool {
@@ -52,7 +52,7 @@ pub fn from_def(manifest: &wick_config::ComponentConfiguration) -> Result<Networ
     trace!(index, name = INTERNAL_ID_INHERENT, "added inherent component");
 
     for (name, def) in flow.instances.iter() {
-      schematic.add_external(name, NodeReference::new(&def.namespace, &def.name), def.data.clone());
+      schematic.add_external(name, NodeReference::new(&def.component_id, &def.name), def.data.clone());
     }
 
     for connection in &flow.connections {

@@ -24,4 +24,4 @@ serde = { version = "1", features = ["derive"] }
 async-trait = "0.1"
 
 [build-dependencies]
-wick-component-codegen = { path = "*" }
+wick-component-codegen = { version = "*" }

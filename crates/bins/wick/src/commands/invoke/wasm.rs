@@ -21,7 +21,7 @@ pub(crate) async fn handle_command(opts: super::InvokeCommand, bytes: Vec<u8>) -
       .interface
       .operations
       .iter()
-      .find(|op| op.name == opts.component);
+      .find(|op| op.name == opts.operation);
 
     if let Some(target_component) = target_component {
       if target_component.inputs.is_empty() {
@@ -64,18 +64,18 @@ pub(crate) async fn handle_command(opts: super::InvokeCommand, bytes: Vec<u8>) -
     let (tx, stream) = PacketStream::new_channels();
     let mut seen_ports = HashSet::new();
     for packet in args {
-      seen_ports.insert(packet.port_name().to_owned());
+      seen_ports.insert(packet.port().to_owned());
       tx.send(packet)?;
     }
     for packet in data {
-      seen_ports.insert(packet.port_name().to_owned());
+      seen_ports.insert(packet.port().to_owned());
       tx.send(packet)?;
     }
     for port in seen_ports {
       tx.send(Packet::done(port))?;
     }
 
-    let invocation = Invocation::new(Entity::client("wick"), Entity::local(&opts.component), inherent_data);
+    let invocation = Invocation::new(Entity::client("wick"), Entity::local(&opts.operation), inherent_data);
 
     let stream = collection.invoke(invocation, stream).await?;
     utils::print_stream_json(stream, &opts.filter, opts.short, opts.raw).await?;

@@ -15,9 +15,10 @@ import:
 operations:
   - name: logger
     instances:
-      logger: wick::log
-      SENDER:
-        id: core::sender
+      - name: logger
+        operation: 'wick::log'
+      - name: SENDER
+        operation: 'core::sender'
         config:
           output: '123456789'
           type: string

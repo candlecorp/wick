@@ -35,7 +35,7 @@ macro_rules! fan_out {
         )*
         tokio::spawn(async move {
             while let Some(Ok(payload)) = $stream.next().await {
-            let sender = senders.get_mut(payload.port_name()).unwrap();
+            let sender = senders.get_mut(payload.port()).unwrap();
             if payload.is_done() {
               sender.complete();
               continue;

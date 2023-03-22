@@ -82,10 +82,9 @@ impl PortHandler {
   }
 
   pub(super) fn buffer(&self, value: PacketType) {
-    assert!(
-      self.get_status() != PortStatus::DoneClosed,
-      "port should never be pushed to after being closed."
-    );
+    if self.get_status() == PortStatus::DoneClosed {
+      warn!(port=%self.port, "trying to buffer on closed port");
+    }
 
     if value.is_done() {
       match self.port.direction() {

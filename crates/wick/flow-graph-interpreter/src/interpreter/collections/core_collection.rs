@@ -33,7 +33,7 @@ impl CoreCollection {
     for schematic in graph.schematics() {
       for component in schematic.nodes() {
         // only handle core:: components
-        if component.cref().namespace() != NS_CORE {
+        if component.cref().component_id() != NS_CORE {
           continue;
         }
         // set up dynamic merge components

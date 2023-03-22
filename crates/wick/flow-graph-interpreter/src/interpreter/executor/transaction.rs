@@ -175,7 +175,7 @@ impl Transaction {
 
     tokio::spawn(async move {
       while let Some(Ok(packet)) = payloads.next().await {
-        let port = input.find_input(packet.port_name()).unwrap();
+        let port = input.find_input(packet.port()).unwrap();
         accept_input(tx_id, port, &input, &channel, packet).await;
       }
     });
@@ -245,20 +245,25 @@ impl Transaction {
     self.output.take_rx().ok().map(|s| PacketStream::new(Box::new(s)))
   }
 
-  pub(crate) fn take_output(&self) -> Result<Vec<Packet>> {
+  pub(crate) fn take_tx_output(&self) -> Result<Vec<Packet>> {
     let output = self.output_handler();
     output
       .take_packets()
       .map_err(|_| ExecutionError::InvalidState(StateError::PayloadMissing(output.id().to_owned())))
   }
 
-  pub(crate) fn take_packets(&self, instance: &InstanceHandler) -> Result<Vec<Packet>> {
+  pub(crate) fn _take_packets(&self, instance: &InstanceHandler) -> Result<Vec<Packet>> {
     instance.take_packets()
   }
 
   pub(crate) fn take_component_output(&self, port: &PortReference) -> Option<Packet> {
     let instance = self.instance(port.node_index());
     instance.take_output(port)
+  }
+
+  pub(crate) fn take_component_input(&self, port: &PortReference) -> Option<Packet> {
+    let instance = self.instance(port.node_index());
+    instance.take_input(port)
   }
 
   pub(crate) async fn check_hung(&self) -> Result<bool> {
@@ -285,7 +290,7 @@ impl Transaction {
   pub(crate) async fn handle_schematic_output(&self) -> Result<()> {
     debug!("schematic output");
 
-    self.emit_output_message(self.take_output()?).await?;
+    self.emit_output_message(self.take_tx_output()?).await?;
 
     Ok(())
   }
@@ -331,7 +336,6 @@ pub(crate) async fn accept_input<'a, 'b>(
   channel: &'b InterpreterDispatchChannel,
   payload: Packet,
 ) {
-  trace!(?payload, "accepting input");
   instance.buffer_in(&port, payload);
   channel.dispatch_data(tx_id, port).await;
 }
@@ -354,7 +358,6 @@ pub(crate) async fn accept_output<'a, 'b>(
   channel: &'b InterpreterDispatchChannel,
   payload: Packet,
 ) {
-  trace!(?payload, "accepting output");
   instance.buffer_out(&port, payload);
   channel.dispatch_data(tx_id, port).await;
 }

@@ -9,7 +9,7 @@ use crate::error::ValidationError;
 use crate::graph::types::*;
 
 pub(crate) mod validator;
-use super::collections::{get_id, CollectionMap};
+use super::collections::{get_id, ComponentMap};
 use super::error::Error;
 
 #[must_use]
@@ -19,7 +19,7 @@ pub(crate) struct Program {
 }
 
 impl Program {
-  pub(crate) fn new(network: Network, mut collections: CollectionMap) -> Result<Self, Error> {
+  pub(crate) fn new(network: Network, mut collections: ComponentMap) -> Result<Self, Error> {
     generate_self_signature(&network, &mut collections).map_err(Error::EarlyError)?;
 
     let program = Self {
@@ -57,7 +57,7 @@ fn get_resolution_order(network: &Network) -> Result<Vec<Vec<&Schematic>>, Valid
       for component in schematic.nodes() {
         match component.kind() {
           NodeKind::External(ext) => {
-            let references_self = ext.namespace() == NS_SELF;
+            let references_self = ext.component_id() == NS_SELF;
             let reference_will_have_resolved = will_resolve.contains(ext.name());
 
             if references_self && !reference_will_have_resolved {
@@ -97,7 +97,7 @@ fn get_resolution_order(network: &Network) -> Result<Vec<Vec<&Schematic>>, Valid
   }
 }
 
-fn generate_self_signature(network: &Network, collections: &mut CollectionMap) -> Result<(), ValidationError> {
+fn generate_self_signature(network: &Network, collections: &mut ComponentMap) -> Result<(), ValidationError> {
   let map = ComponentSignature::new(NS_SELF);
   collections.insert(NS_SELF.to_owned(), map);
   let resolution_order = get_resolution_order(network)?;
@@ -114,7 +114,7 @@ fn generate_self_signature(network: &Network, collections: &mut CollectionMap) -
 
 fn get_schematic_signature(
   schematic: &Schematic,
-  collections: &CollectionMap,
+  collections: &ComponentMap,
 ) -> Result<OperationSignature, ValidationError> {
   let mut schematic_signature = OperationSignature::new(schematic.name());
 
@@ -164,7 +164,7 @@ fn get_signature(
   schematic: &str,
   p: &Port,
   kind: PortDirection,
-  collections: &CollectionMap,
+  components: &ComponentMap,
 ) -> Result<Option<TypeSignature>, ValidationError> {
   let name = p.name();
   match p.node().kind() {
@@ -178,13 +178,13 @@ fn get_signature(
       PortDirection::In => Ok(Some(TypeSignature::Value)),
     },
     NodeKind::External(ext) | NodeKind::Inherent(ext) => {
-      let ext_collection = collections
-        .get(ext.namespace())
-        .ok_or_else(|| ValidationError::MissingCollection(ext.namespace().to_owned()))?;
+      let ext_collection = components
+        .get(ext.component_id())
+        .ok_or_else(|| ValidationError::ComponentIdNotFound(ext.component_id().to_owned()))?;
 
       let operation = p.node();
 
-      let id = get_id(ext.namespace(), ext.name(), schematic, operation.name());
+      let id = get_id(ext.component_id(), ext.name(), schematic, operation.name());
 
       let operation =
         ext_collection
@@ -192,7 +192,7 @@ fn get_signature(
           .iter()
           .find(|op| op.name == id)
           .ok_or(ValidationError::MissingOperation {
-            namespace: ext.namespace().to_owned(),
+            component: ext.component_id().to_owned(),
             name: id.clone(),
           })?;
 
@@ -203,7 +203,7 @@ fn get_signature(
 
       Ok(Some(sig.ok_or(ValidationError::MissingConnection {
         operation: ext.name().to_owned(),
-        namespace: ext.namespace().to_owned(),
+        component: ext.component_id().to_owned(),
         port: name.to_owned(),
       })?))
     }
@@ -214,11 +214,11 @@ fn get_signature(
 #[derive(Debug)]
 pub(crate) struct ProgramState {
   pub(crate) network: Network,
-  pub(crate) collections: CollectionMap,
+  pub(crate) components: ComponentMap,
 }
 
 impl ProgramState {
-  pub(crate) fn new(network: Network, collections: CollectionMap) -> Self {
-    Self { network, collections }
+  pub(crate) fn new(network: Network, components: ComponentMap) -> Self {
+    Self { network, components }
   }
 }

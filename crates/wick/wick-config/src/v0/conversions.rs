@@ -121,7 +121,7 @@ impl TryFrom<crate::v0::ComponentDefinition> for InstanceReference {
   fn try_from(def: crate::v0::ComponentDefinition) -> Result<Self> {
     let (ns, name) = parse_id(&def.id)?;
     Ok(InstanceReference {
-      namespace: ns.to_owned(),
+      component_id: ns.to_owned(),
       name: name.to_owned(),
       data: def.data,
     })
@@ -133,7 +133,7 @@ impl TryFrom<&crate::v0::ComponentDefinition> for InstanceReference {
   fn try_from(def: &crate::v0::ComponentDefinition) -> Result<Self> {
     let (ns, name) = parse_id(&def.id)?;
     Ok(InstanceReference {
-      namespace: ns.to_owned(),
+      component_id: ns.to_owned(),
       name: name.to_owned(),
       data: def.data.clone(),
     })

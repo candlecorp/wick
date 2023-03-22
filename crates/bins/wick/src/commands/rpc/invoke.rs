@@ -99,11 +99,11 @@ pub(crate) async fn handle(opts: RpcInvokeCommand) -> Result<()> {
     let (tx, stream) = PacketStream::new_channels();
     let mut seen_ports = HashSet::new();
     for packet in args {
-      seen_ports.insert(packet.port_name().to_owned());
+      seen_ports.insert(packet.port().to_owned());
       tx.send(packet)?;
     }
     for packet in data {
-      seen_ports.insert(packet.port_name().to_owned());
+      seen_ports.insert(packet.port().to_owned());
       tx.send(packet)?;
     }
     for port in seen_ports {

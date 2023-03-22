@@ -17,7 +17,7 @@ use crate::constants::*;
 use crate::graph::types::Network;
 use crate::{BoxError, BoxFuture};
 
-pub(crate) type CollectionMap = HashMap<String, ComponentSignature>;
+pub(crate) type ComponentMap = HashMap<String, ComponentSignature>;
 
 #[derive(Debug)]
 #[must_use]
@@ -32,12 +32,11 @@ impl Default for HandlerMap {
 }
 
 impl HandlerMap {
-  pub fn new(collections: Vec<NamespaceHandler>) -> Self {
-    trace_span!("collections", collection_len = collections.len());
+  pub fn new(components: Vec<NamespaceHandler>) -> Self {
     let mut map = Self {
       collections: Default::default(),
     };
-    for collection in collections {
+    for collection in components {
       map.add(collection);
     }
 
@@ -62,7 +61,7 @@ impl HandlerMap {
   }
 
   #[must_use]
-  pub fn collection_signatures(&self) -> CollectionMap {
+  pub fn collection_signatures(&self) -> ComponentMap {
     self
       .collections
       .iter()

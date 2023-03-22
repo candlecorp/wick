@@ -18,13 +18,13 @@ impl NodeKind {
   pub fn input() -> Self {
     NodeKind::Input(NodeReference {
       name: crate::SCHEMATIC_INPUT.to_owned(),
-      namespace: crate::NS_SCHEMATIC.to_owned(),
+      component_id: crate::NS_SCHEMATIC.to_owned(),
     })
   }
   pub fn output() -> Self {
     NodeKind::Output(NodeReference {
       name: crate::SCHEMATIC_OUTPUT.to_owned(),
-      namespace: crate::NS_SCHEMATIC.to_owned(),
+      component_id: crate::NS_SCHEMATIC.to_owned(),
     })
   }
   pub fn cref(&self) -> &NodeReference {
@@ -41,20 +41,20 @@ impl NodeKind {
 #[must_use]
 pub struct NodeReference {
   name: String,
-  namespace: String,
+  component_id: String,
 }
 
 impl NodeReference {
-  pub fn new<T: AsStr, U: AsStr>(namespace: T, name: U) -> Self {
+  pub fn new<T: AsStr, U: AsStr>(component_id: T, name: U) -> Self {
     Self {
       name: name.as_ref().to_owned(),
-      namespace: namespace.as_ref().to_owned(),
+      component_id: component_id.as_ref().to_owned(),
     }
   }
 
   #[must_use]
-  pub fn namespace(&self) -> &str {
-    &self.namespace
+  pub fn component_id(&self) -> &str {
+    &self.component_id
   }
 
   #[must_use]
@@ -65,7 +65,7 @@ impl NodeReference {
 
 impl std::fmt::Display for NodeReference {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    write!(f, "{}::{}", self.namespace, self.name)
+    write!(f, "{}::{}", self.component_id, self.name)
   }
 }
 

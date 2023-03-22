@@ -72,14 +72,12 @@ impl From<RpcPacket> for Packet {
       || (0, "<component>".to_owned(), 0_u8),
       |m| (m.index, m.port, m.flags.try_into().unwrap()),
     );
-    Self {
-      // todo figure out operation indexes still
-      metadata: Metadata::new(op),
-      extra: WickMetadata::new(port, done),
-      payload: v
-        .data
+    Self::new_raw(
+      v.data
         .map_or(PacketPayload::fatal_error("Could not decode RPC message"), |p| p.into()),
-    }
+      Metadata::new(op),
+      WickMetadata::new(port, done),
+    )
   }
 }
 

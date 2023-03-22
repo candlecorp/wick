@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::str::FromStr;
 
 use serde::Deserialize;
@@ -44,16 +43,16 @@ impl TryFrom<(String, String, Option<serde_json::Value>)> for v1::ConnectionTarg
   }
 }
 
-impl FromStr for crate::v1::InstanceDefinition {
-  type Err = Error;
+// impl FromStr for crate::v1::InstanceDefinition {
+//   type Err = Error;
 
-  fn from_str(s: &str) -> Result<Self> {
-    Ok(Self {
-      id: s.to_owned(),
-      config: None,
-    })
-  }
-}
+//   fn from_str(s: &str) -> Result<Self> {
+//     Ok(Self {
+//       id: s.to_owned(),
+//       config: None,
+//     })
+//   }
+// }
 
 impl FromStr for crate::v1::ConnectionDefinition {
   type Err = Error;
@@ -69,51 +68,6 @@ impl FromStr for crate::v1::ConnectionTargetDefinition {
   fn from_str(s: &str) -> Result<Self> {
     parse_connection_target(s)
   }
-}
-
-pub(crate) fn map_component_def<'de, D>(
-  deserializer: D,
-) -> std::result::Result<HashMap<String, crate::v1::InstanceDefinition>, D::Error>
-where
-  D: serde::Deserializer<'de>,
-{
-  struct InstanceDefinitionVisitor;
-  impl<'de> serde::de::Visitor<'de> for InstanceDefinitionVisitor {
-    type Value = HashMap<String, crate::v1::InstanceDefinition>;
-    fn expecting(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-      write!(f, "a map of instances to their components")
-    }
-
-    fn visit_map<M>(self, mut access: M) -> std::result::Result<Self::Value, M::Error>
-    where
-      M: serde::de::MapAccess<'de>,
-    {
-      let mut map = HashMap::with_capacity(access.size_hint().unwrap_or(0));
-
-      while let Some((key, value)) = access.next_entry::<String, serde_value::Value>()? {
-        let result = match value {
-          serde_value::Value::String(s) => {
-            crate::v1::InstanceDefinition::from_str(&s).map_err(|e| serde::de::Error::custom(e.to_string()))?
-          }
-          serde_value::Value::Map(map) => crate::v1::InstanceDefinition::deserialize(
-            serde_value::ValueDeserializer::new(serde_value::Value::Map(map)),
-          )?,
-          _ => {
-            return Err(serde::de::Error::invalid_type(
-              serde::de::Unexpected::Other("other"),
-              &self,
-            ))
-          }
-        };
-
-        map.insert(key, result);
-      }
-
-      Ok(map)
-    }
-  }
-
-  deserializer.deserialize_map(InstanceDefinitionVisitor)
 }
 
 pub(crate) fn vec_connection<'de, D>(
@@ -230,17 +184,17 @@ impl FromStr for v1::ComponentOperationExpression {
   fn from_str(s: &str) -> Result<Self> {
     let mut parts = s.split("::");
 
-    let operation = parts
+    let id = parts
       .next()
       .ok_or_else(|| crate::Error::InvalidOperationExpression(s.to_owned()))?
       .to_owned();
-    let id = parts
+    let operation = parts
       .next()
       .ok_or_else(|| crate::Error::InvalidOperationExpression(s.to_owned()))?
       .to_owned();
 
     Ok(Self {
-      operation,
+      name: operation,
       component: crate::v1::ComponentDefinition::ComponentReference(crate::v1::ComponentReference { id }),
     })
   }
