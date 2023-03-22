@@ -23,29 +23,28 @@ pub(crate) async fn handle_command(mut opts: InitCommand) -> Result<()> {
   let logging = &mut opts.logging;
   let _guard = logger::init(&logging.name(crate::BIN_NAME));
 
-  let (file, contents) = if opts.component {
+  let files: Vec<(PathBuf, String)> = if opts.component {
+    info!("Initializing wick component project: {}", opts.name);
     let mut config = wick_config::ComponentConfiguration::default();
     config.name = Some(opts.name);
-    ("component.yaml", config.into_v1_yaml()?)
+    vec![("component.yaml".into(), config.into_v1_yaml()?)]
   } else {
+    info!("Initializing wick application: {}", opts.name);
     let mut config = wick_config::AppConfiguration::default();
     config.name = opts.name;
-    ("app.yaml", config.into_v1_yaml()?)
+    vec![("app.yaml".into(), config.into_v1_yaml()?)]
   };
 
-  let dir = std::env::current_dir()?;
-  let currdir_files: Vec<_> = std::fs::read_dir(dir)?.collect();
-
-  if !currdir_files.is_empty() {
-    anyhow::bail!("Current directory is not empty. Aborting.");
+  for (file, _) in &files {
+    if file.exists() {
+      anyhow::bail!("File already exists: {}", file.display());
+    }
   }
 
-  let path = PathBuf::from(file);
-  if path.exists() {
-    anyhow::bail!("File already exists: {}", file);
+  for (file, contents) in files {
+    info!("Writing file: {}", file.display());
+    crate::io::write_bytes(file, contents.as_bytes()).await?;
   }
-
-  crate::io::write_bytes(path, contents.as_bytes()).await?;
 
   Ok(())
 }

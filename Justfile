@@ -20,7 +20,7 @@ codegen:
 test: codegen early-errors wasm unit-tests
 
 install-debug:
-	cargo install --path crates/bins/wick --profile=dev
+	cargo install --path crates/bins/wick --debug
 
 install:
 	cargo install --path crates/bins/wick

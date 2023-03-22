@@ -16,7 +16,7 @@ panic = "abort"
 crate-type = ["cdylib"]
 
 [dependencies]
-wasmrs-guest = { version = "0.5", features = ["logging"] }
+wasmrs-guest = { version = "0.7", features = ["logging"] }
 wick-component = { path = "../../wick/wick-component" }
 serde = { version = "1", features = ["derive"] }
 async-trait = "0.1"

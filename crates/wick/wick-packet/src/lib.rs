@@ -82,6 +82,7 @@ mod inherent;
 mod invocation;
 mod macros;
 mod metadata;
+mod output;
 mod packet;
 mod packet_stream;
 mod stream_map;
@@ -92,7 +93,8 @@ pub use error::{Error, ParseError};
 pub use inherent::InherentData;
 #[cfg(feature = "invocation")]
 pub use invocation::Invocation;
-pub use metadata::{Flags, WickMetadata, DONE_FLAG};
+pub use metadata::{Flags, WickMetadata, CLOSE_BRACKET, DONE_FLAG, OPEN_BRACKET};
+pub use output::Output;
 pub use packet::{from_wasmrs, into_wasmrs, Packet, PacketError, PacketPayload};
 pub use packet_stream::{PacketSender, PacketStream};
 pub use stream_map::StreamMap;

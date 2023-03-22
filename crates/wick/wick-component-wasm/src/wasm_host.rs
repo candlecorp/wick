@@ -136,7 +136,7 @@ impl WasmHost {
     debug!(component = component_name, "wasm invoke");
 
     let now = Instant::now();
-    let ctx = self.host.lock().new_context().unwrap();
+    let ctx = self.host.lock().new_context(128 * 1024, 128 * 1024).unwrap();
     let index = ctx
       .get_export("wick", component_name)
       .map_err(|e| crate::Error::ComponentNotFound(e.to_string(), ctx.get_exports()))?;

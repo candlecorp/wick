@@ -40,7 +40,11 @@ fn enumvariant_name(ty: &EnumVariant) -> String {
   pascal(&ty.name)
 }
 
-fn gen_register_channels<'a>(component: &Ident, op: impl Iterator<Item = &'a FlowOperation>) -> Vec<TokenStream> {
+fn gen_register_channels<'a>(
+  config: &config::Config,
+  component: &Ident,
+  op: impl Iterator<Item = &'a FlowOperation>,
+) -> Vec<TokenStream> {
   op.map(|op| {
     let name = Ident::new(&op_wrapper_name(op), Span::call_site());
     let string = &op.name;
@@ -52,7 +56,16 @@ fn gen_register_channels<'a>(component: &Ident, op: impl Iterator<Item = &'a Flo
   .collect()
 }
 
-fn expand_type(ty: &wick_interface_types::TypeSignature) -> TokenStream {
+#[derive(Debug, Clone, Copy, PartialEq)]
+enum Direction {
+  In,
+  Out,
+}
+
+fn expand_type(config: &config::Config, dir: Direction, ty: &wick_interface_types::TypeSignature) -> TokenStream {
+  if config.raw && dir != Direction::Out {
+    return quote! { wick_component::packet::Packet };
+  }
   match ty {
     wick_interface_types::TypeSignature::Bool => quote! { bool },
     wick_interface_types::TypeSignature::U8 => quote! { u8 },
@@ -67,46 +80,54 @@ fn expand_type(ty: &wick_interface_types::TypeSignature) -> TokenStream {
     wick_interface_types::TypeSignature::F64 => quote! { f64 },
     wick_interface_types::TypeSignature::String => quote! { String },
     wick_interface_types::TypeSignature::List { ty } => {
-      let ty = expand_type(ty);
+      let ty = expand_type(config, dir, ty);
       quote! { Vec<#ty> }
     }
-    wick_interface_types::TypeSignature::Bytes => quote! {bytes::Bytes},
+    wick_interface_types::TypeSignature::Bytes => {
+      quote! {bytes::Bytes}
+    }
     wick_interface_types::TypeSignature::Custom(name) => {
       let ty = Ident::new(name, Span::call_site());
       quote! {#ty}
     }
     wick_interface_types::TypeSignature::Optional { ty } => {
-      let ty = expand_type(ty);
+      let ty = expand_type(config, dir, ty);
       quote! { Option<#ty> }
     }
     wick_interface_types::TypeSignature::Map { key, value } => {
-      let key = expand_type(key);
-      let value = expand_type(value);
+      let key = expand_type(config, dir, key);
+      let value = expand_type(config, dir, value);
       quote! { std::collections::HashMap<#key,#value> }
     }
     wick_interface_types::TypeSignature::Link { schemas } => quote! {wick_component::packet::CollectionLink},
-    wick_interface_types::TypeSignature::Datetime => todo!(),
-    wick_interface_types::TypeSignature::Value => todo!(),
-    wick_interface_types::TypeSignature::Internal(_) => todo!(),
-    wick_interface_types::TypeSignature::Ref { reference } => todo!(),
-    wick_interface_types::TypeSignature::Stream { ty } => todo!(),
-    wick_interface_types::TypeSignature::Struct => todo!(),
-    wick_interface_types::TypeSignature::AnonymousStruct(_) => todo!(),
+    wick_interface_types::TypeSignature::Datetime => todo!("implement datetime in new codegen"),
+    wick_interface_types::TypeSignature::Value => todo!("implement value in new codegen"),
+    wick_interface_types::TypeSignature::Internal(_) => todo!("implement internal types in new codegen"),
+    wick_interface_types::TypeSignature::Ref { reference } => todo!("implement ref in new codegen"),
+    wick_interface_types::TypeSignature::Stream { ty } => {
+      let ty = expand_type(config, dir, ty);
+      quote! { WickStream<#ty> }
+    }
+    wick_interface_types::TypeSignature::Struct => todo!("implement struct in new codegen"),
+    wick_interface_types::TypeSignature::AnonymousStruct(_) => todo!("implement anonymous struct in new codegen"),
   }
 }
 
-fn gen_types<'a>(ty: impl Iterator<Item = &'a TypeDefinition>) -> Vec<TokenStream> {
-  ty.map(gen_type).collect::<Vec<_>>().into_iter().collect()
+fn gen_types<'a>(config: &config::Config, ty: impl Iterator<Item = &'a TypeDefinition>) -> Vec<TokenStream> {
+  ty.map(|v| gen_type(config, v))
+    .collect::<Vec<_>>()
+    .into_iter()
+    .collect()
 }
 
-fn gen_type(ty: &TypeDefinition) -> TokenStream {
+fn gen_type(config: &config::Config, ty: &TypeDefinition) -> TokenStream {
   match ty {
-    TypeDefinition::Enum(ty) => gen_enum(ty),
-    TypeDefinition::Struct(ty) => gen_struct(ty),
+    TypeDefinition::Enum(ty) => gen_enum(config, ty),
+    TypeDefinition::Struct(ty) => gen_struct(config, ty),
   }
 }
 
-fn gen_enum(ty: &EnumSignature) -> TokenStream {
+fn gen_enum(config: &config::Config, ty: &EnumSignature) -> TokenStream {
   let name = Ident::new(&enumdef_name(ty), Span::call_site());
   let variants = ty
     .variants
@@ -181,14 +202,14 @@ fn gen_enum(ty: &EnumSignature) -> TokenStream {
   }
 }
 
-fn gen_struct(ty: &StructSignature) -> TokenStream {
+fn gen_struct(config: &config::Config, ty: &StructSignature) -> TokenStream {
   let name = Ident::new(&structdef_name(ty), Span::call_site());
   let fields = ty
     .fields
     .iter()
     .map(|f| {
       let name = Ident::new(&snake(&f.name), Span::call_site());
-      let ty = expand_type(&f.ty);
+      let ty = expand_type(config, Direction::In, &f.ty);
       quote! {pub #name: #ty}
     })
     .collect::<Vec<_>>();
@@ -201,14 +222,18 @@ fn gen_struct(ty: &StructSignature) -> TokenStream {
   }
 }
 
-fn gen_wrapper_fns<'a>(component: &Ident, op: impl Iterator<Item = &'a FlowOperation>) -> Vec<TokenStream> {
-  op.map(|op| gen_wrapper_fn(component, op))
+fn gen_wrapper_fns<'a>(
+  config: &config::Config,
+  component: &Ident,
+  op: impl Iterator<Item = &'a FlowOperation>,
+) -> Vec<TokenStream> {
+  op.map(|op| gen_wrapper_fn(config, component, op))
     .collect::<Vec<_>>()
     .into_iter()
     .collect()
 }
 
-fn gen_wrapper_fn(component: &Ident, op: &FlowOperation) -> TokenStream {
+fn gen_wrapper_fn(config: &config::Config, component: &Ident, op: &FlowOperation) -> TokenStream {
   let impl_name = Ident::new(&snake(&op.name), Span::call_site());
   let wrapper_name = Ident::new(&op_wrapper_name(op), Span::call_site());
   let string = &snake(&op.name);
@@ -217,7 +242,7 @@ fn gen_wrapper_fn(component: &Ident, op: &FlowOperation) -> TokenStream {
     .iter()
     .map(|i| {
       let port_name = &i.name;
-      let port_type = expand_type(&i.ty);
+      let port_type = expand_type(config, Direction::In, &i.ty);
       quote! {(#port_name, #port_type)}
     })
     .collect::<Vec<_>>();
@@ -233,15 +258,23 @@ fn gen_wrapper_fn(component: &Ident, op: &FlowOperation) -> TokenStream {
     quote! {(#(#inputs,)*)}
   };
 
+  let raw = if config.raw {
+    quote! {raw:true}
+  } else {
+    quote! {raw:false}
+  };
+
   quote! {
     fn #wrapper_name(mut input: FluxReceiver<Payload, PayloadError>) -> std::result::Result<FluxReceiver<RawPayload, PayloadError>,Box<dyn std::error::Error + Send + Sync>> {
       let (channel, rx) = FluxChannel::<RawPayload, PayloadError>::new_parts();
-      let outputs = #outputs_name::new(channel);
+      let outputs = #outputs_name::new(channel.clone());
 
       spawn(async move {
-        let #sanitized_input_names = wick_component::payload_fan_out!(input, [#(#input_pairs,)*]);
+        let #sanitized_input_names = wick_component::payload_fan_out!(input, #raw, [#(#input_pairs,)*]);
         if let Err(e) = #component::#impl_name(#(#inputs,)* outputs).await {
-          panic!("{}: {}", #string, e);
+          let _ = channel.send_result(
+            wick_component::packet::Packet::component_error(e.to_string()).into(),
+          );
         }
       });
 
@@ -250,14 +283,18 @@ fn gen_wrapper_fn(component: &Ident, op: &FlowOperation) -> TokenStream {
   }
 }
 
-fn gen_trait_fns<'a>(component: &Ident, op: impl Iterator<Item = &'a FlowOperation>) -> Vec<TokenStream> {
-  op.map(|op| gen_trait_signature(component, op))
+fn gen_trait_fns<'a>(
+  config: &config::Config,
+  component: &Ident,
+  op: impl Iterator<Item = &'a FlowOperation>,
+) -> Vec<TokenStream> {
+  op.map(|op| gen_trait_signature(config, component, op))
     .collect::<Vec<_>>()
     .into_iter()
     .collect()
 }
 
-fn gen_trait_signature(component: &Ident, op: &FlowOperation) -> TokenStream {
+fn gen_trait_signature(config: &config::Config, component: &Ident, op: &FlowOperation) -> TokenStream {
   let outputs_name = Ident::new(&op_outputs_name(op), Span::call_site());
   let trait_name = Ident::new(&format!("Op{}", &pascal(&op.name)), Span::call_site());
   let impl_name = Ident::new(&snake(&op.name), Span::call_site());
@@ -266,7 +303,7 @@ fn gen_trait_signature(component: &Ident, op: &FlowOperation) -> TokenStream {
     .iter()
     .map(|i| {
       let port_name = &i.name;
-      let port_type = expand_type(&i.ty);
+      let port_type = expand_type(config, Direction::In, &i.ty);
       quote! {(#port_name, #port_type)}
     })
     .collect::<Vec<_>>();
@@ -276,8 +313,8 @@ fn gen_trait_signature(component: &Ident, op: &FlowOperation) -> TokenStream {
     .map(|i| {
       let port_name = &i.name;
       let port_field_name = Ident::new(&snake(&i.name), Span::call_site());
-      let port_type = expand_type(&i.ty);
-      quote! {pub(crate) #port_field_name: Output<#port_type>}
+      let port_type = expand_type(config, Direction::Out, &i.ty);
+      quote! {pub(crate) #port_field_name: wick_component::packet::Output<#port_type>}
     })
     .collect::<Vec<_>>();
   let output_ports_new = op
@@ -286,8 +323,7 @@ fn gen_trait_signature(component: &Ident, op: &FlowOperation) -> TokenStream {
     .map(|i| {
       let port_name = &i.name;
       let port_field_name = Ident::new(&snake(&i.name), Span::call_site());
-      let port_type = expand_type(&i.ty);
-      quote! {#port_field_name: Output::new(#port_name, channel.clone())}
+      quote! {#port_field_name: wick_component::packet::Output::new(#port_name, channel.clone())}
     })
     .collect::<Vec<_>>();
 
@@ -296,7 +332,7 @@ fn gen_trait_signature(component: &Ident, op: &FlowOperation) -> TokenStream {
     .iter()
     .map(|i| {
       let port_name = Ident::new(&snake(&i.name), Span::call_site());
-      let port_type = expand_type(&i.ty);
+      let port_type = expand_type(config, Direction::In, &i.ty);
       quote! {#port_name: WickStream<#port_type>}
     })
     .collect::<Vec<_>>();
@@ -328,49 +364,18 @@ fn codegen(config: &config::Config) -> Result<String> {
     pascal(&component.name().clone().unwrap_or("component".to_owned())).as_ref(),
     Span::call_site(),
   );
-  let register_stmts = gen_register_channels(&component_name, component.operations().values());
-  let wrapper_fns = gen_wrapper_fns(&component_name, component.operations().values());
-  let trait_defs = gen_trait_fns(&component_name, component.operations().values());
-  let typedefs = gen_types(component.types().iter());
+  let register_stmts = gen_register_channels(config, &component_name, component.operations().values());
+  let wrapper_fns = gen_wrapper_fns(config, &component_name, component.operations().values());
+  let trait_defs = gen_trait_fns(config, &component_name, component.operations().values());
+  let typedefs = gen_types(config, component.types().iter());
 
   let expanded = quote! {
     #[allow(unused)]
     use guest::*;
     use wasmrs_guest as guest;
-    use wick_component::packet::{Packet};
     #[allow(unused)]
     pub(crate) type WickStream<T> = FluxReceiver<T, wick_component::anyhow::Error>;
     pub use wick_component::anyhow::Result;
-
-
-    pub(crate) struct Output<T> where T: serde::Serialize{
-      channel: FluxChannel<RawPayload, PayloadError>,
-      name: String,
-      _phantom: std::marker::PhantomData<T>
-    }
-
-    #[allow(unused)]
-    impl<T> Output<T>  where T: serde::Serialize{
-      pub fn new(name: impl AsRef<str>, channel: FluxChannel<RawPayload, PayloadError>) -> Self {
-        Self {
-          channel,
-          name: name.as_ref().to_owned(),
-          _phantom:Default::default()
-        }
-      }
-      #[allow(unused)]
-      pub fn send(&mut self, value: T) {
-        let _ = self.channel.send_result(Packet::encode(&self.name, value).into());
-      }
-      #[allow(unused)]
-      pub fn done(&mut self) {
-        let _ = self.channel.send_result(Packet::done(&self.name).into());
-      }
-      #[allow(unused)]
-      pub fn error(&mut self, err: impl AsRef<str>) {
-        let _ = self.channel.send_result(Packet::err(&self.name, err).into());
-      }
-    }
 
     #[no_mangle]
     extern "C" fn __wasmrs_init(guest_buffer_size: u32, host_buffer_size: u32, max_host_frame_len: u32) {

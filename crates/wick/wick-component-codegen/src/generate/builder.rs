@@ -9,6 +9,7 @@ pub fn configure() -> Builder {
 #[must_use]
 pub struct Builder {
   out_dir: Option<PathBuf>,
+  raw: bool,
 }
 
 impl Builder {
@@ -24,6 +25,12 @@ impl Builder {
     self
   }
 
+  /// Generates code that does not automatically deserialize the packet.
+  pub fn raw(mut self) -> Self {
+    self.raw = true;
+    self
+  }
+
   pub fn generate(self, spec: impl AsRef<Path>) -> anyhow::Result<()> {
     let mut config = super::config::Config::new();
     let out_dir = self.out_dir.as_ref().map_or_else(
@@ -31,7 +38,7 @@ impl Builder {
       |out_dir| out_dir.clone(),
     );
 
-    let config = config.out_dir(out_dir).spec(spec);
+    let config = config.out_dir(out_dir).raw(self.raw).spec(spec);
 
     super::build(config)?;
 

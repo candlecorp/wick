@@ -2,7 +2,9 @@ use bytes::{Buf, BufMut, Bytes, BytesMut};
 use serde::{Deserialize, Serialize};
 use wasmrs_frames::ex_err;
 
-pub const DONE_FLAG: u8 = 0b1000_0000;
+pub const DONE_FLAG: u8 = /******/ 0b1000_0000;
+pub const OPEN_BRACKET: u8 = /***/ 0b0100_0000;
+pub const CLOSE_BRACKET: u8 = /**/ 0b0010_0000;
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
 pub enum Flags {
@@ -26,16 +28,10 @@ impl Default for WickMetadata {
 }
 
 impl WickMetadata {
-  pub fn new(stream: impl AsRef<str>, flags: u8) -> Self {
+  pub fn new(port: impl AsRef<str>, flags: u8) -> Self {
     Self {
       flags,
-      port: stream.as_ref().to_owned(),
-    }
-  }
-  pub fn new_done(stream: impl AsRef<str>) -> Self {
-    Self {
-      flags: DONE_FLAG,
-      port: stream.as_ref().to_owned(),
+      port: port.as_ref().to_owned(),
     }
   }
 
@@ -45,7 +41,7 @@ impl WickMetadata {
   }
 
   #[must_use]
-  pub fn stream(&self) -> &str {
+  pub fn port(&self) -> &str {
     &self.port
   }
 
@@ -54,14 +50,24 @@ impl WickMetadata {
     self.flags & DONE_FLAG == DONE_FLAG
   }
 
+  #[must_use]
+  pub fn is_open_bracket(&self) -> bool {
+    self.flags & OPEN_BRACKET == OPEN_BRACKET
+  }
+
+  #[must_use]
+  pub fn is_close_bracket(&self) -> bool {
+    self.flags & CLOSE_BRACKET == CLOSE_BRACKET
+  }
+
   pub fn decode(mut bytes: Bytes) -> Result<Self, wasmrs_frames::Error> {
     let flags = bytes.get_u8();
     let name_len = bytes.get_u16();
     let name_bytes = bytes
       .get(0..(name_len as _))
-      .ok_or_else(|| ex_err("Could not read stream name bytes"))?;
-    let stream_name = String::from_utf8(name_bytes.to_vec()).map_err(|_| ex_err("Could not parse stream name"))?;
-    Ok(WickMetadata::new(stream_name, flags))
+      .ok_or_else(|| ex_err("Could not read port name bytes"))?;
+    let port_name = String::from_utf8(name_bytes.to_vec()).map_err(|_| ex_err("Could not parse port name"))?;
+    Ok(WickMetadata::new(port_name, flags))
   }
 
   #[must_use]
@@ -83,13 +89,14 @@ mod test {
 
   #[test]
   fn test_metadata_decode() -> Result<()> {
-    let md = WickMetadata::new("left", DONE_FLAG);
+    let md = WickMetadata::new("left", DONE_FLAG | CLOSE_BRACKET);
     println!("md: {:?}", md);
     let bytes = md.encode();
     println!("bytes: {:02x?}", bytes.to_vec());
     let meta = WickMetadata::decode(bytes)?;
     assert_eq!(meta.port, "left");
     assert!(meta.is_done());
+    assert!(meta.is_close_bracket());
     Ok(())
   }
 }
