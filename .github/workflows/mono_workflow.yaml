@@ -1,0 +1,394 @@
+name: mono-workflow
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to release"
+        required: true
+  schedule:
+    - cron: "0 1 * * *" # 1am UTC
+  pull_request:
+    branches:
+      - main
+permissions:
+  contents: write
+  packages: write
+  actions: read
+jobs:
+  test:
+    runs-on: ${{ matrix.config.os }}
+    # env:
+    #   SCCACHE_AZURE_BLOB_CONTAINER: ${{ secrets.SCCACHE_AZURE_BLOB_CONTAINER }}
+    #   SCCACHE_AZURE_CONNECTION_STRING: ${{ secrets.SCCACHE_AZURE_CONNECTION_STRING }}
+    #   SCCACHE_AZURE_KEY_PREFIX: "wick-github-actions-test"
+    #   RUSTC_WRAPPER: "sccache"
+    strategy:
+      matrix:
+        config:
+          - {
+              os: "ubuntu-latest",
+              name: "linux",
+              arch: "amd64",
+              target: "x86_64-unknown-linux-gnu",
+            }
+          # - {
+          #     os: "ubuntu-latest",
+          #     name: "linux",
+          #     target: "aarch64-unknown-linux-gnu",
+          #     arch: "aarch64",
+          #   }
+          # - {
+          #     os: "macos-latest",
+          #     name: "macos",
+          #     target: "x86_64-apple-darwin",
+          #     arch: "amd64",
+          #   }
+          # - {
+          #     os: "macos-latest",
+          #     name: "macos",
+          #     target: "aarch64-apple-darwin",
+          #     arch: "aarch64",
+          #   }
+          # - {
+          #     os: "ubuntu-latest",
+          #     name: "win",
+          #     target: "x86_64-pc-windows-gnu",
+          #     arch: "amd64",
+          #   }
+    steps:
+      - name: make space
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf "/usr/local/share/boost"
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+      - uses: actions/checkout@v1
+      - name: install protobuf
+        uses: arduino/setup-protoc@v1
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: setup for cross-compiled linux aarch64 build
+        if: matrix.config.target == 'aarch64-unknown-linux-gnu'
+        run: |
+          sudo apt update
+          sudo apt install gcc-aarch64-linux-gnu g++-aarch64-linux-gnu pkg-config
+          echo '[target.aarch64-unknown-linux-gnu]' >> ${HOME}/.cargo/config.toml
+          echo 'linker = "aarch64-linux-gnu-gcc"' >> ${HOME}/.cargo/config.toml
+          echo "PKG_CONFIG_SYSROOT_DIR=/usr/aarch64-linux-gnu" >> $GITHUB_ENV
+          echo "PKG_CONFIG_PATH=/usr/lib/aarch64-linux-gnu/pkgconfig" >> $GITHUB_ENV
+          echo "PKG_CONFIG_ALLOW_CROSS=1" >> $GITHUB_ENV
+      - name: setup for cross-compiled windows build
+        if: matrix.config.target == 'x86_64-pc-windows-gnu'
+        run: |
+          sudo apt update
+          sudo apt install mingw-w64
+          echo '[target.x86_64-pc-windows-gnu]' >> ${HOME}/.cargo/config.toml
+          echo 'linker = "x86_64-w64-mingw32-gcc"' >> ${HOME}/.cargo/config.toml
+          echo "PKG_CONFIG_SYSROOT_DIR=/usr/x86_64-w64-mingw32" >> $GITHUB_ENV
+          echo "PKG_CONFIG_PATH=/usr/lib/x86_64-w64-mingw32/pkgconfig" >> $GITHUB_ENV
+          echo "PKG_CONFIG_ALLOW_CROSS=1" >> $GITHUB_ENV
+      # - name: Install sccache (ubuntu-latest)
+      #   if: matrix.config.os == 'ubuntu-latest'
+      #   run: |
+      #     mkdir -p $HOME/.local/bin
+      #     curl -L "https://github.com/mozilla/sccache/releases/download/v0.3.3/sccache-v0.3.3-x86_64-unknown-linux-musl.tar.gz" | tar xz
+      #     mv -f sccache-v0.3.3-x86_64-unknown-linux-musl/sccache $HOME/.local/bin/sccache
+      #     echo "$HOME/.local/bin" >> $GITHUB_PATH
+      # - name: Install sccache (macos-latest)
+      #   if: matrix.config.os == 'macos-latest'
+      #   run: |
+      #     mkdir -p $HOME/.local/bin
+      #     curl -L "https://github.com/mozilla/sccache/releases/download/v0.3.3/sccache-v0.3.3-x86_64-apple-darwin.tar.gz" | tar xz
+      #     mv -f sccache-v0.3.3-x86_64-apple-darwin/sccache $HOME/.local/bin/sccache
+      #     echo "$HOME/.local/bin" >> $GITHUB_PATH
+      - name: cargo cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/.crates.toml
+            ~/.cargo/.crates2.json
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-${{ matrix.config.target }}-cargo-test-${{ hashFiles('**/Cargo.lock') }}
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: 1.68.0
+          default: true
+          target: ${{ matrix.config.target }}
+          components: rustfmt, clippy, rustc, cargo, rust-docs, rust-std
+      - name: "rustup updates"
+        run: |
+          rustup target add wasm32-unknown-unknown wasm32-wasi
+          cargo install tomlq cargo-deny just
+      #Updating rustup updates means that the github cache needs to be manually deleted.
+      - name: Run just ci-tests
+        id: just-ci-test
+        run: |
+          just ci-tests
+  build:
+    runs-on: ${{ matrix.config.os }}
+    if: github.event_name != 'pull_request'
+    env:
+      SCCACHE_AZURE_BLOB_CONTAINER: ${{ secrets.SCCACHE_AZURE_BLOB_CONTAINER }}
+      SCCACHE_AZURE_CONNECTION_STRING: ${{ secrets.SCCACHE_AZURE_CONNECTION_STRING }}
+      SCCACHE_AZURE_KEY_PREFIX: "wick-github-actions"
+      RUSTC_WRAPPER: "sccache"
+      CARGO_PROFILE_RELEASE_DEBUG: "0" # https://doc.rust-lang.org/cargo/reference/profiles.html#debug
+      CARGO_INCREMENTAL: "true" # https://doc.rust-lang.org/cargo/reference/profiles.html#incremental
+      CARGO_PROFILE_RELEASE_LTO: "true" # https://doc.rust-lang.org/cargo/reference/profiles.html#lto
+      CARGO_PROFILE_RELEASE_OPT_LEVEL: "3" # https://doc.rust-lang.org/cargo/reference/profiles.html#opt-level
+      CARGO_PROFILE_RELEASE_CODEGEN_UNITS: "1" # https://doc.rust-lang.org/cargo/reference/profiles.html#codegen-units
+      CARGO_PROFILE_RELEASE_STRIP: "true" # https://doc.rust-lang.org/cargo/reference/unstable.html#profile-strip-option
+    strategy:
+      matrix:
+        config:
+          - {
+              os: "ubuntu-latest",
+              name: "linux",
+              arch: "amd64",
+              target: "x86_64-unknown-linux-gnu",
+            }
+          - {
+              os: "ubuntu-latest",
+              name: "linux",
+              target: "aarch64-unknown-linux-gnu",
+              arch: "aarch64",
+            }
+          - {
+              os: "macos-latest",
+              name: "macos",
+              target: "x86_64-apple-darwin",
+              arch: "amd64",
+            }
+          - {
+              os: "macos-latest",
+              name: "macos",
+              target: "aarch64-apple-darwin",
+              arch: "aarch64",
+            }
+          # - {
+          #     os: "ubuntu-latest",
+          #     name: "win",
+          #     target: "x86_64-pc-windows-gnu",
+          #     arch: "amd64",
+          #   }
+    steps:
+      - uses: actions/checkout@v1
+      - name: install protobuf
+        uses: arduino/setup-protoc@v1
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: setup for cross-compiled linux aarch64 build
+        if: matrix.config.target == 'aarch64-unknown-linux-gnu'
+        run: |
+          sudo apt update
+          sudo apt install gcc-aarch64-linux-gnu g++-aarch64-linux-gnu pkg-config
+          echo '[target.aarch64-unknown-linux-gnu]' >> ${HOME}/.cargo/config.toml
+          echo 'linker = "aarch64-linux-gnu-gcc"' >> ${HOME}/.cargo/config.toml
+          echo "PKG_CONFIG_SYSROOT_DIR=/usr/aarch64-linux-gnu" >> $GITHUB_ENV
+          echo "PKG_CONFIG_PATH=/usr/lib/aarch64-linux-gnu/pkgconfig" >> $GITHUB_ENV
+          echo "PKG_CONFIG_ALLOW_CROSS=1" >> $GITHUB_ENV
+      - name: setup for cross-compiled windows build
+        if: matrix.config.target == 'x86_64-pc-windows-gnu'
+        run: |
+          sudo apt update
+          sudo apt install mingw-w64
+          echo '[target.x86_64-pc-windows-gnu]' >> ${HOME}/.cargo/config.toml
+          echo 'linker = "x86_64-w64-mingw32-gcc"' >> ${HOME}/.cargo/config.toml
+          echo "PKG_CONFIG_SYSROOT_DIR=/usr/x86_64-w64-mingw32" >> $GITHUB_ENV
+          echo "PKG_CONFIG_PATH=/usr/lib/x86_64-w64-mingw32/pkgconfig" >> $GITHUB_ENV
+          echo "PKG_CONFIG_ALLOW_CROSS=1" >> $GITHUB_ENV
+      - name: Install sccache (ubuntu-latest)
+        if: matrix.config.os == 'ubuntu-latest'
+        run: |
+          mkdir -p $HOME/.local/bin
+          curl -L "https://github.com/mozilla/sccache/releases/download/v0.3.3/sccache-v0.3.3-x86_64-unknown-linux-musl.tar.gz" | tar xz
+          mv -f sccache-v0.3.3-x86_64-unknown-linux-musl/sccache $HOME/.local/bin/sccache
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+      - name: Install sccache (macos-latest)
+        if: matrix.config.os == 'macos-latest'
+        run: |
+          mkdir -p $HOME/.local/bin
+          curl -L "https://github.com/mozilla/sccache/releases/download/v0.3.3/sccache-v0.3.3-x86_64-apple-darwin.tar.gz" | tar xz
+          mv -f sccache-v0.3.3-x86_64-apple-darwin/sccache $HOME/.local/bin/sccache
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+      - name: cargo cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/.crates.toml
+            ~/.cargo/.crates2.json
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-${{ matrix.config.target }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: 1.68.0
+          default: true
+          target: ${{ matrix.config.target }}
+          components: rustfmt, clippy, rustc, cargo, rust-docs, rust-std
+      - name: "rustup updates"
+        run: |
+          rustup target add wasm32-unknown-unknown wasm32-wasi
+          cargo install tomlq cargo-deny just
+      #Updating rustup updates means that the github cache needs to be manually deleted.
+      - name: "build binary"
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release -p wick --target=${{ matrix.config.target }} --features openssl/vendored
+      - name: package release assets
+        if: matrix.config.target != 'x86_64-pc-windows-gnu'
+        run: |
+          mkdir -p _dist
+          cp README.md LICENSE target/${{ matrix.config.target }}/release/wick _dist/
+          cd _dist
+          tar czf wick-${{ matrix.config.name }}-${{ matrix.config.arch }}.tar.gz README.md LICENSE wick
+      - name: Upload artifacts
+        if: matrix.config.target != 'x86_64-pc-windows-gnu'
+        uses: actions/upload-artifact@v2
+        with:
+          name: wick-${{ matrix.config.name }}-${{ matrix.config.arch }}.tar.gz
+          path: _dist/wick-${{ matrix.config.name }}-${{ matrix.config.arch }}.tar.gz
+      - name: package release assets (windows)
+        if: matrix.config.target == 'x86_64-pc-windows-gnu'
+        shell: bash
+        run: |
+          mkdir -p _dist
+          cp README.md LICENSE target/${{ matrix.config.target }}/release/wick.exe _dist/
+          cd _dist
+          7z a -tzip wick-${{ matrix.config.name }}-${{ matrix.config.arch }}.zip README.md LICENSE wick.exe
+      - name: Upload artifacts (windows)
+        if: matrix.config.target == 'x86_64-pc-windows-gnu'
+        uses: actions/upload-artifact@v2
+        with:
+          name: wick-${{ matrix.config.name }}-${{ matrix.config.arch }}.zip
+          path: _dist/wick-${{ matrix.config.name }}-${{ matrix.config.arch }}.zip
+  tag:
+    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request'
+    needs: [test, build]
+    outputs:
+      tag: ${{ steps.version.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v1
+      # use output from previous step to update tag
+      - name: Update Nightly Tag
+        if: github.event_name == 'schedule'
+        uses: richardsimko/update-tag@v1
+        with:
+          tag_name: nightly
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          runs-on: ubuntu-latest
+      - uses: denolib/setup-deno@v2
+        if: github.event_name == 'workflow_dispatch'
+      - name: Update version and README.md
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          VERSION: ${{ inputs.version }}
+          FILES: "crates/bins/wick/Cargo.toml"
+        run: |
+          deno run --allow-run --allow-env --allow-write --allow-read ./.github/workflows/release.ts
+      - name: Commit and tag release
+        if: github.event_name == 'workflow_dispatch'
+        uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: ${{ inputs.version }} release
+          tagging_message: ${{ inputs.version }}
+      - name: Create Release
+        if: steps.trigger.outputs.tag == 'workflow_dispatch'
+        uses: ncipollo/release-action@v1.12.0
+        with:
+          generateReleaseNotes: true
+          makeLatest: true
+          tag: ${{ inputs.version }}
+      - name: Check if github trigger is schedule or workflow_dispatch
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            echo "tag=nightly" >> $GITHUB_OUTPUT
+          elif [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "tag=${{ inputs.version }}" >> $GITHUB_OUTPUT
+          fi
+  release:
+    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request'
+    needs: tag
+    steps:
+      - uses: actions/checkout@v1
+      - name: Install jq
+        run: sudo apt-get install -y jq
+      - name: Download artifacts into a single directory
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        working-directory: ${{ github.workspace }}
+        run: |
+          mkdir -p _dist
+          ARTIFACTS_URL=$(curl -s -H "Authorization: token $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" https://api.github.com/repos/candlecorp/wick/actions/runs/4485720507/artifacts | jq -r '.artifacts[].archive_download_url')
+
+          # Print the URLs of the artifacts
+          echo "Downloading artifacts from the following URLs:"
+          echo "$ARTIFACTS_URL"
+
+          for url in $ARTIFACTS_URL; do
+            curl -L -H "Authorization: token $GITHUB_TOKEN" $url -o artifact.zip
+            
+            echo "Downloaded artifact:"
+            ls -la artifact.zip
+
+            # Print the contents of the downloaded archive file
+            echo "Contents of artifact.zip:"
+            unzip -l artifact.zip
+
+            unzip -j artifact.zip -d _dist
+            rm artifact.zip
+          done
+
+          # Print the contents of the _dist directory
+          echo "Contents of _dist directory:"
+          ls -la _dist
+      - name: upload release assets
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: _dist/*
+          tag: ${{ needs.tag.outputs.tag }}
+          overwrite: true
+          file_glob: true
+      - name: ghcr login
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v1
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+      - name: build and push
+        uses: docker/build-push-action@v2
+        if: ${{ needs.tag.outputs.tag }} == 'nightly'
+        with:
+          context: .
+          file: ./docker/Dockerfile.nightly
+          push: true
+          tags: ghcr.io/candlecorp/wick:nightly
+          platforms: linux/amd64,linux/arm64
+      - name: build and push
+        uses: docker/build-push-action@v2
+        if: github.event_name == 'workflow_dispatch'
+        with:
+          context: .
+          file: ./docker/Dockerfile.latest
+          push: true
+          tags: ghcr.io/candlecorp/wick:latest, ghcr.io/candlecorp/wick:${{ inputs.version }}
+          platforms: linux/amd64,linux/arm64

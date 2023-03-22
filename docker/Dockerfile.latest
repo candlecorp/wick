@@ -1,0 +1,28 @@
+FROM ubuntu:latest as builder
+ARG TARGETARCH
+RUN apt-get update && apt-get install -y ca-certificates curl
+WORKDIR /opt
+RUN case "${TARGETARCH}" in \
+    amd64) \
+    curl -L -o wick.tar.gz "https://github.com/candlecorp/wick/releases/latest/download/wick-linux-amd64.tar.gz" \
+    ;; \
+    arm64) \
+    curl -L -o wick.tar.gz "https://github.com/candlecorp/wick/releases/latest/download/wick-linux-aarch64.tar.gz" \
+    ;; \
+    *) \
+    echo "Unsupported architecture " \
+    exit 1 \
+    ;; \
+    esac
+
+RUN tar -xzf wick.tar.gz
+
+FROM ubuntu:latest
+LABEL org.opencontainers.image.source="https://github.com/candlecorp/wick"
+
+COPY --from=builder /usr/share/ca-certificates /usr/share/ca-certificates
+COPY --from=builder /opt/wick /usr/bin/wick
+RUN chmod +x /usr/bin/wick
+WORKDIR /app
+COPY --from=builder /opt/LICENSE /app/LICENSE
+ENTRYPOINT ["/usr/bin/wick"]
