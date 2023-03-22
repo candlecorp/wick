@@ -80,18 +80,6 @@ async fn short_circuit_to_output() -> Result<()> {
 }
 
 #[test_logger::test(tokio::test)]
-#[ignore = "TODO:FIX_HUNG"]
-async fn short_circuit_with_default() -> Result<()> {
-  tester(
-    "./manifests/v0/short-circuit-default.yaml",
-    packet_stream!(("input_port1", "short")),
-    "short_circuit",
-    vec![Packet::err("output", "udnno")],
-  )
-  .await
-}
-
-#[test_logger::test(tokio::test)]
 async fn multiple_inputs() -> Result<()> {
   tester(
     "./manifests/v0/multiple-inputs.yaml",

@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use flow_graph_interpreter::Component;
 type BoxFuture<'a, T> = std::pin::Pin<Box<dyn futures::Future<Output = T> + Send + Sync + 'a>>;
 use futures::{Future, StreamExt};
@@ -13,11 +13,11 @@ use wasmrs_rx::{FluxChannel, Observer};
 use wick_interface_types::{ComponentSignature, OperationSignature, TypeSignature};
 use wick_packet::{fan_out, Invocation, Packet, PacketPayload, PacketStream};
 
-pub struct TestCollection(ComponentSignature);
-impl TestCollection {
+pub struct TestComponent(ComponentSignature);
+impl TestComponent {
   #[allow(dead_code)]
   pub fn new() -> Self {
-    let signature = ComponentSignature::new("test-collection")
+    let signature = ComponentSignature::new("test-component")
       .version("0.0.0")
       .metadata(Default::default())
       .add_component(
@@ -108,6 +108,11 @@ impl TestCollection {
           .add_output("output", TypeSignature::String),
       )
       .add_component(
+        OperationSignature::new("error")
+          .add_input("input", TypeSignature::String)
+          .add_output("output", TypeSignature::String),
+      )
+      .add_component(
         OperationSignature::new("copy")
           .add_input("input", TypeSignature::String)
           .add_input("times", TypeSignature::U64)
@@ -162,7 +167,7 @@ fn defer(futs: Vec<impl Future<Output = Result<(), impl std::error::Error + Send
   });
 }
 
-impl Component for TestCollection {
+impl Component for TestComponent {
   fn handle(
     &self,
     invocation: Invocation,
@@ -303,6 +308,7 @@ fn handler(invocation: Invocation, mut payload_stream: PacketStream) -> anyhow::
       // println!("test::panic got {}", input);
       panic!();
     }
+    "error" => Err(anyhow!("This operation always errors")),
     "timeout-nodone" => {
       let mut input = fan_out!(payload_stream, "input");
       let (mut send, stream) = stream(1);

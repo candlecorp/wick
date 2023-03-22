@@ -48,7 +48,7 @@ impl ComponentConfiguration {
     }
     debug!("Reading manifest from {}", path.to_string_lossy());
     let contents = read_to_string(path)?;
-    let mut manifest = Self::from_yaml(&contents)?;
+    let mut manifest = Self::from_yaml(&contents, &Some(path.to_string_lossy().to_string()))?;
     manifest.source = Some(path.to_string_lossy().to_string());
     Ok(manifest)
   }
@@ -56,23 +56,23 @@ impl ComponentConfiguration {
   /// Load struct from bytes by attempting to parse all the supported file formats.
   pub fn load_from_bytes(source: Option<String>, bytes: &[u8]) -> Result<ComponentConfiguration> {
     let contents = String::from_utf8_lossy(bytes);
-    let mut manifest = Self::from_yaml(&contents)?;
+    let mut manifest = Self::from_yaml(&contents, &source)?;
     manifest.source = source;
     Ok(manifest)
   }
 
   /// Load as YAML.
-  pub fn from_yaml(src: &str) -> Result<ComponentConfiguration> {
+  pub fn from_yaml(src: &str, path: &Option<String>) -> Result<ComponentConfiguration> {
     debug!("Trying to parse manifest as yaml");
-    let raw: serde_yaml::Value = from_yaml(src)?;
+    let raw: serde_yaml::Value = from_yaml(src, path)?;
     debug!("Yaml parsed successfully");
     let raw_version = raw.get("format").ok_or(Error::NoFormat)?;
     let version = raw_version
       .as_i64()
       .unwrap_or_else(|| -> i64 { raw_version.as_str().and_then(|s| s.parse::<i64>().ok()).unwrap_or(-1) });
     let manifest = match version {
-      0 => Ok(from_yaml::<v0::HostManifest>(src)?.try_into()?),
-      1 => Ok(from_yaml::<v1::ComponentConfiguration>(src)?.try_into()?),
+      0 => Ok(from_yaml::<v0::HostManifest>(src, path)?.try_into()?),
+      1 => Ok(from_yaml::<v1::ComponentConfiguration>(src, path)?.try_into()?),
       -1 => Err(Error::NoFormat),
       _ => Err(Error::VersionError(version.to_string())),
     };

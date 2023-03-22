@@ -24,8 +24,8 @@ pub enum ManifestError {
   LoadError(String),
 
   /// Error deserializing YAML manifest.
-  #[error("Could not parse manifest as YAML: {0}")]
-  YamlError(String),
+  #[error("Could not parse manifest {0} as YAML: {1}")]
+  YamlError(String, String),
 
   /// Default was requested when none present.
   #[error("Connection '{0}' does not have a default but one was requested")]

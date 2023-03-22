@@ -41,8 +41,8 @@ fn load_noversion_yaml() -> Result<(), ManifestError> {
 fn load_bad_manifest_yaml() -> Result<(), ManifestError> {
   let path = PathBuf::from("./tests/manifests/v0/bad-yaml.yaml");
   let manifest = ComponentConfiguration::load_from_file(path);
-  if let Err(Error::YamlError(e)) = manifest {
-    debug!("{:?}", e);
+  if let Err(Error::YamlError(p, e)) = manifest {
+    debug!("{}, {:?}", p, e);
   } else {
     panic!("Should have failed with YamlError but got : {:?}", manifest);
   }

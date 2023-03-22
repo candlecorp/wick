@@ -98,7 +98,7 @@ pub fn from_manifest(network_def: &wick_config::ComponentConfiguration) -> Resul
       if let Some(node) = schematic.find_mut(from.get_instance()) {
         println!("{:?}", node);
         let from_port = node.add_output(from.get_port());
-        schematic.connect(from_port, to_port, connection.default.clone())?;
+        schematic.connect(from_port, to_port, None)?;
       } else {
         // panic!();
       }

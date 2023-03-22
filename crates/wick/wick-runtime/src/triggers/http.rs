@@ -210,8 +210,7 @@ mod test {
 
   #[test_logger::test(tokio::test)]
   async fn test_basic() -> Result<()> {
-    let app_config = AppConfiguration::from_yaml(
-      "
+    let yaml = "
 ---
 format: 1
 resources:
@@ -227,12 +226,12 @@ triggers:
         - kind: wick/router/raw@v1
           path: /
           operation:
-            operation: http_handler
+            name: http_handler
             component:
               kind: Wasm
               ref: ../../integration/test-http-trigger-component/build/test_http_trigger_component.signed.wasm
-",
-    )?;
+    ";
+    let app_config = AppConfiguration::from_yaml(yaml, &None)?;
     let trigger = Http::load_impl()?;
     let resource = Resource::new(app_config.resources().get("http").as_ref().unwrap().kind.clone())?;
     let resources = Arc::new([("http".to_owned(), resource)].iter().cloned().collect());

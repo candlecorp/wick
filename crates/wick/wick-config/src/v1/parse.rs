@@ -23,11 +23,10 @@ pub(crate) fn parse_connection_target(s: &str) -> Result<v1::ConnectionTargetDef
 }
 
 pub(crate) fn parse_connection(s: &str) -> Result<v1::ConnectionDefinition> {
-  let (from, to, data) = flow_expression_parser::parse::v1::parse_connection(s)?;
+  let (from, to) = flow_expression_parser::parse::v1::parse_connection(s)?;
   Ok(v1::ConnectionDefinition {
     from: from.try_into()?,
     to: to.try_into()?,
-    default: data,
   })
 }
 
@@ -298,7 +297,6 @@ mod tests {
           port: "out".to_owned(),
           data: None,
         },
-        default: None
       }
     );
     Ok(())
@@ -321,7 +319,6 @@ mod tests {
           port: "out".to_owned(),
           data: None,
         },
-        default: None
       }
     );
     Ok(())
@@ -343,7 +340,6 @@ mod tests {
           port: "out".to_owned(),
           data: None,
         },
-        default: None
       }
     );
     Ok(())
@@ -365,7 +361,6 @@ mod tests {
           port: "out".to_owned(),
           data: None,
         },
-        default: None
       }
     );
     Ok(())
@@ -387,7 +382,6 @@ mod tests {
           port: "port".to_owned(),
           data: None,
         },
-        default: None
       }
     );
     Ok(())
@@ -409,7 +403,6 @@ mod tests {
           port: "port".to_owned(),
           data: None,
         },
-        default: None
       }
     );
     Ok(())
@@ -431,7 +424,6 @@ mod tests {
           port: "port".to_owned(),
           data: None,
         },
-        default: None
       }
     );
     Ok(())
@@ -453,7 +445,6 @@ mod tests {
           port: "output".to_owned(),
           data: None,
         },
-        default: None
       }
     );
     Ok(())

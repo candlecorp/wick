@@ -47,6 +47,11 @@ impl PortList {
     self.inner.iter().map(|p| p.port_ref())
   }
 
+  #[allow(unused)]
+  pub(crate) fn len(&self) -> usize {
+    self.inner.len()
+  }
+
   pub(super) fn receive(&self, port: &PortReference, value: PacketType) {
     self.inner[port.port_index()].buffer(value);
   }
@@ -84,6 +89,10 @@ impl OutputPorts {
 
   pub(crate) fn refs(&self) -> impl Iterator<Item = PortReference> + '_ {
     self.inner.refs()
+  }
+
+  pub(crate) fn len(&self) -> usize {
+    self.inner.inner.len()
   }
 
   pub(super) fn receive(&self, port: &PortReference, value: PacketType) {
@@ -131,9 +140,10 @@ impl InputPorts {
     self.inner.inner.iter()
   }
 
-  // pub(crate) fn len(&self) -> usize {
-  //   self.inner.inner.len()
-  // }
+  #[allow(unused)]
+  pub(crate) fn len(&self) -> usize {
+    self.inner.inner.len()
+  }
 
   pub(super) fn get_handler(&self, port: &PortReference) -> &PortHandler {
     self.inner.get_handler(port)

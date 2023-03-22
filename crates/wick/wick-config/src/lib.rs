@@ -170,11 +170,12 @@ impl ConfigurationSource {
   }
 }
 
-fn from_yaml<T>(src: &str) -> Result<T>
+fn from_yaml<T>(src: &str, path: &Option<String>) -> Result<T>
 where
   T: DeserializeOwned,
 {
-  let result = serde_yaml::from_str(src).map_err(|e| ManifestError::YamlError(e.to_string()))?;
+  let result = serde_yaml::from_str(src)
+    .map_err(|e| ManifestError::YamlError(path.clone().unwrap_or("<raw source>".to_owned()), e.to_string()))?;
   Ok(result)
 }
 

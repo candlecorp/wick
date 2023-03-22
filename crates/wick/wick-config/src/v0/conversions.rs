@@ -10,7 +10,6 @@ use crate::flow_definition::{PortReference, SenderData};
 use crate::host_definition::HostConfig;
 use crate::utils::{opt_str_to_ipv4addr, opt_str_to_pathbuf};
 use crate::{
-  parse_default,
   v0,
   BoundComponent,
   ComponentConfiguration,
@@ -146,13 +145,7 @@ impl TryFrom<&crate::v0::ConnectionDefinition> for ConnectionDefinition {
   fn try_from(def: &crate::v0::ConnectionDefinition) -> Result<Self> {
     let from: ConnectionTargetDefinition = def.from.clone().try_into()?;
     let to: ConnectionTargetDefinition = def.to.clone().try_into()?;
-    let default = match &def.default {
-      Some(json_str) => Some(
-        parse_default(json_str).map_err(|e| ManifestError::DefaultsError(from.clone(), to.clone(), e.to_string()))?,
-      ),
-      None => None,
-    };
-    Ok(ConnectionDefinition { from, to, default })
+    Ok(ConnectionDefinition { from, to })
   }
 }
 

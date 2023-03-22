@@ -545,10 +545,6 @@ pub(crate) struct ConnectionDefinition {
 
   #[serde(deserialize_with = "crate::v1::parse::connection_target_shortform")]
   pub(crate) to: ConnectionTargetDefinition,
-  /// The default value to provide in the event of an upstream Error or Exception.
-
-  #[serde(default)]
-  pub(crate) default: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]

@@ -48,7 +48,7 @@ async fn test_missing_collections() -> Result<()> {
   let manifest = load("./tests/manifests/v0/external.yaml")?;
   let network = from_def(&manifest)?;
   let result: std::result::Result<Interpreter, _> = Interpreter::new(Some(Seed::unsafe_new(1)), network, None, None);
-  let validation_errors = ValidationError::MissingComponent("test".to_owned());
+  let validation_errors = ValidationError::ComponentIdNotFound("test".to_owned());
   if let Err(InterpreterError::EarlyError(e)) = result {
     assert_eq!(e, validation_errors);
   } else {
