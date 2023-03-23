@@ -23,8 +23,8 @@ jobs:
         run: |
           if [ "${{ github.event_name }}" = "schedule" ]; then
             echo "tag=nightly" >> $GITHUB_OUTPUT
-          elif [ "${{ github.event_name }}" = "tag" ]; then
-            echo "tag=${{ github.ref }}" >> $GITHUB_OUTPUT
+          elif [ ${{ startsWith(github.ref, 'refs/tags/') }} = true ]; then
+            echo "tag=${{ basename(github.ref) }}" >> $GITHUB_OUTPUT
           fi
       - name: Update Nightly Tag
         if: github.event_name == 'schedule'
@@ -34,10 +34,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Checkout code
-        if: github.event_name == 'tag'
+        if: startsWith(github.ref, 'refs/tags/') == true
         uses: actions/checkout@v3
       - name: Search for version
-        if: github.event_name == 'tag'
+        if: startsWith(github.ref, 'refs/tags/') == true
         run: |
           cd crates/bins/wick
           if grep -q "version = '${{ env.GITHUB_REF }}'" Cargo.toml; then
@@ -167,7 +167,7 @@ jobs:
   build:
     needs: tag
     runs-on: ${{ matrix.config.os }}
-    if: github.event_name == 'schedule' || github.event_name == 'tag'
+    if: github.event_name == 'schedule' || startsWith(github.ref, 'refs/tags/') == true
     env:
       SCCACHE_AZURE_BLOB_CONTAINER: ${{ secrets.SCCACHE_AZURE_BLOB_CONTAINER }}
       SCCACHE_AZURE_CONNECTION_STRING: ${{ secrets.SCCACHE_AZURE_CONNECTION_STRING }}
@@ -310,7 +310,7 @@ jobs:
           path: _dist/wick-${{ matrix.config.name }}-${{ matrix.config.arch }}.zip
   release:
     runs-on: ubuntu-latest
-    if: github.event_name == 'schedule' || github.event_name == 'tag'
+    if: github.event_name == 'schedule' || startsWith(github.ref, 'refs/tags/') == true
     needs: [test, build]
     steps:
       - uses: actions/checkout@v3
