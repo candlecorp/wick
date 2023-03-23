@@ -29,7 +29,7 @@ pub(crate) async fn handle_command(opts: super::InvokeCommand, bytes: Vec<u8>) -
   host.start_network(opts.seed.map(Seed::unsafe_new)).await?;
 
   let signature = host.get_signature()?;
-  let target_schematic = signature.get_component(&component);
+  let target_schematic = signature.get_operation(&component);
 
   let mut check_stdin = !opts.no_input && opts.data.is_empty() && opts.args.is_empty();
   if let Some(target_schematic) = target_schematic {

@@ -77,7 +77,7 @@ pub(crate) fn init_logger(opts: &LoggingOptions) -> crate::Result<LoggingGuard> 
 pub(crate) async fn print_stream_json(
   mut stream: PacketStream,
   filter: &[String],
-  terse: bool,
+  _terse: bool,
   raw: bool,
 ) -> crate::Result<()> {
   if !filter.is_empty() {
@@ -92,29 +92,7 @@ pub(crate) async fn print_stream_json(
       tracing::debug!(port = %packet.port(), "filtering out");
       continue;
     }
-    // TODO print actual json again
-    if terse {
-
-      // if let MessageTransport::Failure(err) = &packet.payload {
-      //   return Err(anyhow::Error::msg(err.message().to_owned()));
-      // }
-      // let mut json = packet.payload.as_json();
-
-      // json.as_object_mut().and_then(|o| o.remove("value")).map_or_else(
-      //   || unreachable!("Message did not have an error nor a value: {}", json),
-      //   |v| {
-      //     println!(
-      //       "{}",
-      //       match v {
-      //         serde_json::Value::String(s) => s,
-      //         v => v.to_string(),
-      //       }
-      //     );
-      //   },
-      // );
-    } else {
-      println!("{}", serde_json::to_string(&packet)?);
-    }
+    println!("{}", packet.to_json());
   }
   trace!("stream complete");
   Ok(())

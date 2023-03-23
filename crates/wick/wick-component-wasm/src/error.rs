@@ -42,8 +42,8 @@ pub enum WasmCollectionError {
   #[error("Internal Error : {0}")]
   InternalError(u32),
 
-  #[error("Component '{0}' not found. Valid components are: {}", .1.join(", "))]
-  ComponentNotFound(String, Vec<String>),
+  #[error("Operation '{0}' not found. Valid operations are: {}", .1.join(", "))]
+  OperationNotFound(String, Vec<String>),
 }
 
 impl From<serde_json::error::Error> for WasmCollectionError {

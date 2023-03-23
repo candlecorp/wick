@@ -24,7 +24,7 @@ async fn test_wick_serve() -> utils::TestResult<()> {
 
   let args = vec![format!("input=\"{}\"", input_data)];
   let actual = wick_invoke(&port, "validate", args).await?;
-  let expected = vec![Packet::encode("output", input_data)];
+  let expected = vec![Packet::encode("output", input_data).to_json()];
 
   let result = panic::catch_unwind(|| {
     assert_eq!(actual, expected);

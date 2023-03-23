@@ -126,6 +126,21 @@ impl Packet {
     self.extra.is_close_bracket()
   }
 
+  pub fn to_json(&self) -> serde_json::Value {
+    if self.flags() > 0 {
+      serde_json::json!({
+        "flags": self.flags(),
+        "port": self.port(),
+        "payload": self.payload.to_json(),
+      })
+    } else {
+      serde_json::json!({
+        "port": self.port(),
+        "payload": self.payload.to_json(),
+      })
+    }
+  }
+
   pub fn from_kv_json(values: &[String]) -> Result<Vec<Packet>, Error> {
     let mut packets = Vec::new();
 
@@ -179,6 +194,23 @@ impl PacketPayload {
         Err(err) => Err(crate::Error::Codec(err.to_string())),
       },
       Self::Err(err) => Err(crate::Error::PayloadError(err)),
+    }
+  }
+
+  pub fn bytes(&self) -> Option<&Bytes> {
+    match self {
+      Self::Ok(b) => Some(b),
+      _ => None,
+    }
+  }
+
+  pub fn to_json(&self) -> serde_json::Value {
+    match self {
+      Self::Ok(b) => match wasmrs_codec::messagepack::deserialize::<serde_json::Value>(b) {
+        Ok(data) => serde_json::json!({ "value": data }),
+        Err(err) => serde_json::json! ({"error" : crate::Error::Codec(err.to_string()).to_string()}),
+      },
+      Self::Err(err) => serde_json::json! ({"error" : crate::Error::PayloadError(err.clone()).to_string()}),
     }
   }
 }

@@ -20,44 +20,44 @@ impl TestComponent {
     let signature = ComponentSignature::new("test-component")
       .version("0.0.0")
       .metadata(Default::default())
-      .add_component(
+      .add_operation(
         OperationSignature::new("echo")
           .add_input("input", TypeSignature::String)
           .add_output("output", TypeSignature::String),
       )
-      .add_component(
+      .add_operation(
         OperationSignature::new("uppercase")
           .add_input("input", TypeSignature::String)
           .add_output("output", TypeSignature::String),
       )
-      .add_component(
+      .add_operation(
         OperationSignature::new("reverse")
           .add_input("input", TypeSignature::String)
           .add_output("output", TypeSignature::String),
       )
-      .add_component(
+      .add_operation(
         OperationSignature::new("add")
           .add_input("left", TypeSignature::U64)
           .add_input("right", TypeSignature::U64)
           .add_output("output", TypeSignature::U64),
       )
-      .add_component(
+      .add_operation(
         OperationSignature::new("timeout")
           .add_input("input", TypeSignature::String)
           .add_output("output", TypeSignature::String),
       )
-      .add_component(
+      .add_operation(
         OperationSignature::new("timeout-nodone")
           .add_input("input", TypeSignature::String)
           .add_output("output", TypeSignature::String),
       )
-      .add_component(
+      .add_operation(
         OperationSignature::new("concat")
           .add_input("left", TypeSignature::String)
           .add_input("right", TypeSignature::String)
           .add_output("output", TypeSignature::String),
       )
-      .add_component(
+      .add_operation(
         OperationSignature::new("concat-five")
           .add_input("one", TypeSignature::String)
           .add_input("two", TypeSignature::String)
@@ -66,7 +66,7 @@ impl TestComponent {
           .add_input("five", TypeSignature::String)
           .add_output("output", TypeSignature::String),
       )
-      .add_component(
+      .add_operation(
         OperationSignature::new("splitter")
           .add_input("input", TypeSignature::String)
           .add_output(
@@ -82,7 +82,7 @@ impl TestComponent {
             },
           ),
       )
-      .add_component(
+      .add_operation(
         OperationSignature::new("join")
           .add_input(
             "input",
@@ -92,27 +92,27 @@ impl TestComponent {
           )
           .add_output("output", TypeSignature::String),
       )
-      .add_component(
+      .add_operation(
         OperationSignature::new("ref_to_string")
           .add_input("link", TypeSignature::Link { schemas: vec![] })
           .add_output("output", TypeSignature::String),
       )
-      .add_component(
+      .add_operation(
         OperationSignature::new("exception")
           .add_input("input", TypeSignature::String)
           .add_output("output", TypeSignature::String),
       )
-      .add_component(
+      .add_operation(
         OperationSignature::new("panic")
           .add_input("input", TypeSignature::String)
           .add_output("output", TypeSignature::String),
       )
-      .add_component(
+      .add_operation(
         OperationSignature::new("error")
           .add_input("input", TypeSignature::String)
           .add_output("output", TypeSignature::String),
       )
-      .add_component(
+      .add_operation(
         OperationSignature::new("copy")
           .add_input("input", TypeSignature::String)
           .add_input("times", TypeSignature::U64)
@@ -123,8 +123,8 @@ impl TestComponent {
             },
           ),
       )
-      .add_component(OperationSignature::new("no-inputs").add_output("output", TypeSignature::String))
-      .add_component(
+      .add_operation(OperationSignature::new("no-inputs").add_output("output", TypeSignature::String))
+      .add_operation(
         OperationSignature::new("render")
           .add_input("input", TypeSignature::String)
           .add_output("output", TypeSignature::String),
