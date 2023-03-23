@@ -953,7 +953,7 @@ checksum = "0ce7134b9999ecaf8bcd65542e436736ef32ddca1b3e06094cb6ec5755203b80"
 
 [[package]]
 name = "flow-expression-parser"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "anyhow",
  "lazy_static",
@@ -4566,7 +4566,7 @@ dependencies = [
 
 [[package]]
 name = "wick-component"
-version = "0.13.0"
+version = "0.14.0"
 dependencies = [
  "anyhow",
  "futures",
@@ -4608,7 +4608,7 @@ dependencies = [
 
 [[package]]
 name = "wick-component-codegen"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "heck 0.4.1",
@@ -4656,7 +4656,7 @@ dependencies = [
 
 [[package]]
 name = "wick-config"
-version = "0.23.0"
+version = "0.24.0"
 dependencies = [
  "anyhow",
  "flow-expression-parser",
@@ -4743,7 +4743,7 @@ dependencies = [
 
 [[package]]
 name = "wick-interface-types"
-version = "0.13.0"
+version = "0.14.0"
 dependencies = [
  "anyhow",
  "env_logger 0.10.0",
@@ -4814,7 +4814,7 @@ dependencies = [
 
 [[package]]
 name = "wick-packet"
-version = "0.13.0"
+version = "0.14.0"
 dependencies = [
  "anyhow",
  "bytes",
