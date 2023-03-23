@@ -17,28 +17,28 @@ exclude = [
 
 [workspace.dependencies]
 wick-interface-http = { path = "./crates/interfaces/wick-interface-http", version = "0.1.0" }
-wick-packet = { path = "./crates/wick/wick-packet", version = "0.12.0" }
+wick-packet = { path = "./crates/wick/wick-packet", version = "0.13.0" }
 wick-stdlib = { path = "./crates/wick/wick-stdlib", version = "0.1.0" }
-wick-interface-types = { path = "./crates/wick/wick-interface-types", version = "0.12.0" }
+wick-interface-types = { path = "./crates/wick/wick-interface-types", version = "0.13.0" }
 wick-invocation-server = { path = "./crates/wick/wick-invocation-server", version = "0.1.0" }
 wick-rpc = { path = "./crates/wick/wick-rpc", version = "0.1.0" }
 wick-loader-utils = { path = "./crates/wick/wick-loader-utils" }
-wick-component = { path = "./crates/wick/wick-component", version = "0.12.0" }
-wick-component-codegen = { path = "./crates/wick/wick-component-codegen", version = "0.1.0" }
+wick-component = { path = "./crates/wick/wick-component", version = "0.13.0" }
+wick-component-codegen = { path = "./crates/wick/wick-component-codegen", version = "0.2.0" }
 wick-component-wasm = { path = "./crates/wick/wick-component-wasm", version = "0.1.0" }
 wick-component-cli = { path = "./crates/wick/wick-component-cli", version = "0.1.0" }
 wick-runtime = { path = "./crates/wick/wick-runtime", version = "0.20.0" }
 wick-host = { path = "./crates/wick/wick-host", version = "0.1.0" }
-wick-config = { path = "./crates/wick/wick-config", version = "0.22.0" }
+wick-config = { path = "./crates/wick/wick-config", version = "0.23.0" }
 wick-test = { path = "./crates/wick/wick-test", version = "0.0.0" }
 wick-wascap = { path = "./crates/wick/wick-wascap", version = "0.1.0" }
 wick-oci-utils = { path = "./crates/wick/wick-oci-utils", version = "0.1.0" }
 wick-grpctar = { path = "./crates/wick/wick-grpctar", version = "0.1.0" }
-flow-expression-parser = { path = "./crates/wick/flow-expression-parser", version = "0.2.0" }
+flow-expression-parser = { path = "./crates/wick/flow-expression-parser", version = "0.3.0" }
 flow-graph-interpreter = { path = "./crates/wick/flow-graph-interpreter", version = "0.20.0" }
 flow-graph = { path = "./crates/wick/flow-graph", version = "0.20.0" }
 logger = { path = "./crates/wick/logger", version = "0.1.0" }
-seeded-random = { path = "./crates/misc/seeded-random", version = "0.2.0" }
+seeded-random = { path = "./crates/misc/seeded-random", version = "0.3.0" }
 tap = { path = "./crates/misc/tap", version = "0.0.0" }
 rot = { path = "./crates/misc/rot", version = "0.1.0" }
 performance-mark = { path = "./crates/misc/performance-mark", version = "0.0.1" }
