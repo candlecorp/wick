@@ -62,7 +62,7 @@ jobs:
           sudo rm -rf /opt/ghc
           sudo rm -rf "/usr/local/share/boost"
           sudo rm -rf "$AGENT_TOOLSDIRECTORY"
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v3
       - name: install protobuf
         uses: arduino/setup-protoc@v1
         with:
@@ -177,7 +177,7 @@ jobs:
           #     arch: "amd64",
           #   }
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v3
       - name: install protobuf
         uses: arduino/setup-protoc@v1
         with:
@@ -279,7 +279,9 @@ jobs:
     outputs:
       tag: ${{ steps.version.outputs.tag }}
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v3
+        with:
+          ref: ${{ env.GITHUB_REF }}
       # use output from previous step to update tag
       - name: Update Nightly Tag
         if: github.event_name == 'schedule'
@@ -302,6 +304,7 @@ jobs:
         if: github.event_name == 'workflow_dispatch'
         uses: stefanzweifel/git-auto-commit-action@v4
         with:
+          branch: main
           commit_message: ${{ inputs.version }} release
           tagging_message: ${{ inputs.version }}
       - name: Create Release
@@ -324,7 +327,7 @@ jobs:
     if: github.event_name != 'pull_request'
     needs: tag
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v3
       - name: Install jq
         run: sudo apt-get install -y jq
       - name: Download artifacts into a single directory
