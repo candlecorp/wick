@@ -16,7 +16,7 @@ use tokio::select;
 use tokio::sync::mpsc::{self, Sender};
 use tokio::task::JoinHandle;
 
-pub async fn wick_invoke(port: &str, name: &str, data: Vec<String>) -> Result<Vec<Packet>, TestError> {
+pub async fn wick_invoke(port: &str, name: &str, data: Vec<String>) -> Result<Vec<serde_json::Value>, TestError> {
   println!("Executing wick for schematic {}", name);
   let inputs = data
     .into_iter()
@@ -38,7 +38,7 @@ pub async fn wick_invoke(port: &str, name: &str, data: Vec<String>) -> Result<Ve
   println!("Result from wick is {:?}", string);
   let output: Vec<_> = string.trim().split('\n').collect();
   println!("Num lines:{:?}", output.len());
-  let json: Vec<Packet> = output.iter().map(|l| serde_json::from_str(l).unwrap()).collect();
+  let json: Vec<serde_json::Value> = output.iter().map(|l| serde_json::from_str(l).unwrap()).collect();
 
   println!("JSON Results: {:?}", json);
 

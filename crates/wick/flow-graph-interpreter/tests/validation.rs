@@ -79,7 +79,7 @@ async fn test_invalid_port() -> Result<()> {
   let signature = ComponentSignature::new("instance")
     .version("0.0.0")
     .metadata(ComponentMetadata::default())
-    .add_component(OperationSignature::new("echo"));
+    .add_operation(OperationSignature::new("echo"));
 
   let result = interp("./tests/manifests/v0/external.yaml", signature);
 
@@ -104,7 +104,7 @@ async fn test_missing_port() -> Result<()> {
   let signature = ComponentSignature::new("test")
     .version("0.0.0")
     .metadata(ComponentMetadata::default())
-    .add_component(
+    .add_operation(
       OperationSignature::new("echo")
         .add_input("input", TypeSignature::String)
         .add_input("OTHER_IN", TypeSignature::String)

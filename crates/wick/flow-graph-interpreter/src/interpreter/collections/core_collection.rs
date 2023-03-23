@@ -28,7 +28,7 @@ impl CoreCollection {
     let mut signature = ComponentSignature::new(NS_CORE)
       .version("0.0.0")
       .metadata(ComponentMetadata::v0())
-      .add_component(OperationSignature::new(CORE_ID_SENDER).add_output("output", TypeSignature::Value));
+      .add_operation(OperationSignature::new(CORE_ID_SENDER).add_output("output", TypeSignature::Value));
 
     for schematic in graph.schematics() {
       for component in schematic.nodes() {

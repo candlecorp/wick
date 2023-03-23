@@ -139,7 +139,7 @@ impl WasmHost {
     let ctx = self.host.lock().new_context(128 * 1024, 128 * 1024).unwrap();
     let index = ctx
       .get_export("wick", component_name)
-      .map_err(|e| crate::Error::ComponentNotFound(e.to_string(), ctx.get_exports()))?;
+      .map_err(|_| crate::Error::OperationNotFound(component_name.to_owned(), ctx.get_exports()))?;
     let s = into_wasmrs(index, stream);
     let out = ctx.request_channel(Box::new(s));
     trace!(

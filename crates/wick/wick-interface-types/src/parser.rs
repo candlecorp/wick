@@ -85,6 +85,7 @@ fn typename(input: &str) -> IResult<&str, TypeSignature> {
     "value" => TypeSignature::Value,
     "string" => TypeSignature::String,
     "datetime" => TypeSignature::Datetime,
+    "struct" => TypeSignature::Struct,
     x => TypeSignature::Custom(x.to_owned()),
   };
   Ok((i, t))

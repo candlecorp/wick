@@ -108,7 +108,9 @@ fn expand_type(config: &config::Config, dir: Direction, ty: &wick_interface_type
       let ty = expand_type(config, dir, ty);
       quote! { WickStream<#ty> }
     }
-    wick_interface_types::TypeSignature::Struct => todo!("implement struct in new codegen"),
+    wick_interface_types::TypeSignature::Struct => {
+      quote! { wasmrs_guest::Value }
+    }
     wick_interface_types::TypeSignature::AnonymousStruct(_) => todo!("implement anonymous struct in new codegen"),
   }
 }
@@ -405,6 +407,7 @@ pub fn build(config: config::Config) -> Result<()> {
 #[cfg(test)]
 mod test {
   use anyhow::Result;
+  use wick_interface_types::TypeSignature;
 
   use super::*;
   use crate::Config;
@@ -416,6 +419,18 @@ mod test {
     let src = codegen(&config)?;
 
     assert!(src.contains("pub struct Component"));
+
+    Ok(())
+  }
+
+  // TODO: make better tests for the codegen. This one's pretty bad.
+  #[test]
+  fn test_expand_type() -> Result<()> {
+    let config = Config::default();
+    let ty = TypeSignature::Struct;
+    let src = expand_type(&config, Direction::In, &ty);
+
+    assert_eq!(&src.to_string(), "wasmrs_guest :: Value");
 
     Ok(())
   }

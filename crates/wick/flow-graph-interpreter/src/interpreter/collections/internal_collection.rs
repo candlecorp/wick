@@ -18,7 +18,7 @@ impl Default for InternalCollection {
     let signature = ComponentSignature::new(NS_INTERNAL)
       .version("0.0.0")
       .metadata(ComponentMetadata::v0())
-      .add_component(
+      .add_operation(
         OperationSignature::new(INTERNAL_ID_INHERENT)
           .add_input("seed", TypeSignature::U64)
           .add_input("timestamp", TypeSignature::U64)

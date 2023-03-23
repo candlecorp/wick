@@ -183,13 +183,13 @@ impl ComponentSignature {
   }
 
   #[must_use]
-  /// Get the [ComponentSignature] for the requested component.
-  pub fn get_component(&self, field: &str) -> Option<&OperationSignature> {
+  /// Get the [OperationSignature] for the requested component.
+  pub fn get_operation(&self, field: &str) -> Option<&OperationSignature> {
     self.operations.iter().find(|op| op.name == field)
   }
 
-  /// Add a [ComponentSignature] to the collection.
-  pub fn add_component(mut self, signature: OperationSignature) -> Self {
+  /// Add a [OperationSignature] to the collection.
+  pub fn add_operation(mut self, signature: OperationSignature) -> Self {
     self.operations.push(signature);
     self
   }
@@ -595,4 +595,21 @@ where
   }
 
   deserializer.deserialize_any(TypeSignatureVisitor)
+}
+
+#[cfg(test)]
+mod test {
+  use anyhow::Result;
+
+  use super::*;
+
+  #[test]
+  fn test_decode() -> Result<()> {
+    let ty: TypeSignature = serde_json::from_str(r#""struct""#)?;
+    assert_eq!(ty, TypeSignature::Struct);
+    let ty: Field = serde_json::from_str(r#"{"name": "foo", "type": "struct"}"#)?;
+    assert_eq!(ty.name, "foo");
+    assert_eq!(ty.ty, TypeSignature::Struct);
+    Ok(())
+  }
 }
