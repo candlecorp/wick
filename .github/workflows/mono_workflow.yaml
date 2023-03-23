@@ -1,10 +1,8 @@
 name: mono-workflow
 on:
-  workflow_dispatch:
-    inputs:
-      version:
-        description: "Version to release"
-        required: true
+  push:
+    tags:
+      - "[0-9]+.[0-9]+.[0-9]+" # matches 0.1.0, 0.2.1, etc.
   schedule:
     - cron: "0 1 * * *" # 1am UTC
   pull_request:
@@ -15,7 +13,44 @@ permissions:
   packages: write
   actions: read
 jobs:
+  tag:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.version.outputs.tag }}
+    steps:
+      - name: Check if github trigger is schedule or pr or tag
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            echo "tag=nightly" >> $GITHUB_OUTPUT
+          elif [ "${{ github.event_name }}" = "tag" ]; then
+            echo "tag=${{ github.ref }}" >> $GITHUB_OUTPUT
+          fi
+      - name: Update Nightly Tag
+        if: github.event_name == 'schedule'
+        uses: richardsimko/update-tag@v1
+        with:
+          tag_name: nightly
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Checkout code
+        if: github.event_name == 'tag'
+        uses: actions/checkout@v3
+      - name: Search for version
+        if: github.event_name == 'tag'
+        run: |
+          cd crates/bins/wick
+          if grep -q "version = '${{ env.GITHUB_REF }}'" Cargo.toml; then
+            echo "Match found!"
+          else
+            echo "No match found."
+            exit 1
+          fi
+        env:
+          GITHUB_REF: ${{ github.ref }}
   test:
+    needs: tag
+    if: github.event_name != 'push'
     runs-on: ${{ matrix.config.os }}
     env:
       SCCACHE_AZURE_BLOB_CONTAINER: ${{ secrets.SCCACHE_AZURE_BLOB_CONTAINER }}
@@ -130,8 +165,9 @@ jobs:
         run: |
           just ci-tests
   build:
+    needs: tag
     runs-on: ${{ matrix.config.os }}
-    if: github.event_name != 'pull_request'
+    if: github.event_name == 'schedule' || github.event_name == 'tag'
     env:
       SCCACHE_AZURE_BLOB_CONTAINER: ${{ secrets.SCCACHE_AZURE_BLOB_CONTAINER }}
       SCCACHE_AZURE_CONNECTION_STRING: ${{ secrets.SCCACHE_AZURE_CONNECTION_STRING }}
@@ -272,60 +308,10 @@ jobs:
         with:
           name: wick-${{ matrix.config.name }}-${{ matrix.config.arch }}.zip
           path: _dist/wick-${{ matrix.config.name }}-${{ matrix.config.arch }}.zip
-  tag:
-    runs-on: ubuntu-latest
-    if: github.event_name != 'pull_request'
-    needs: [test, build]
-    outputs:
-      tag: ${{ steps.version.outputs.tag }}
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          ref: ${{ env.GITHUB_REF }}
-      # use output from previous step to update tag
-      - name: Update Nightly Tag
-        if: github.event_name == 'schedule'
-        uses: richardsimko/update-tag@v1
-        with:
-          tag_name: nightly
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          runs-on: ubuntu-latest
-      - uses: denolib/setup-deno@v2
-        if: github.event_name == 'workflow_dispatch'
-      - name: Update version and README.md
-        if: github.event_name == 'workflow_dispatch'
-        env:
-          VERSION: ${{ inputs.version }}
-          FILES: "crates/bins/wick/Cargo.toml"
-        run: |
-          deno run --allow-run --allow-env --allow-write --allow-read ./.github/workflows/release.ts
-      - name: Commit and tag release
-        if: github.event_name == 'workflow_dispatch'
-        uses: stefanzweifel/git-auto-commit-action@v4
-        with:
-          branch: main
-          commit_message: ${{ inputs.version }} release
-          tagging_message: ${{ inputs.version }}
-      - name: Create Release
-        if: steps.trigger.outputs.tag == 'workflow_dispatch'
-        uses: ncipollo/release-action@v1.12.0
-        with:
-          generateReleaseNotes: true
-          makeLatest: true
-          tag: ${{ inputs.version }}
-      - name: Check if github trigger is schedule or workflow_dispatch
-        id: version
-        run: |
-          if [ "${{ github.event_name }}" = "schedule" ]; then
-            echo "tag=nightly" >> $GITHUB_OUTPUT
-          elif [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "tag=${{ inputs.version }}" >> $GITHUB_OUTPUT
-          fi
   release:
     runs-on: ubuntu-latest
-    if: github.event_name != 'pull_request'
-    needs: tag
+    if: github.event_name == 'schedule' || github.event_name == 'tag'
+    needs: [test, build]
     steps:
       - uses: actions/checkout@v3
       - name: Install jq
