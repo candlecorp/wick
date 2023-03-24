@@ -15,17 +15,7 @@ permissions:
 jobs:
   tag:
     runs-on: ubuntu-latest
-    outputs:
-      tag: ${{ steps.version.outputs.tag }}
     steps:
-      - name: Check if github trigger is schedule or pr or tag
-        id: version
-        run: |
-          if [ "${{ github.event_name }}" = "schedule" ]; then
-            echo "tag=nightly" >> $GITHUB_OUTPUT
-          elif [ ${{ startsWith(github.ref, 'refs/tags/') }} = true ]; then
-            echo "tag=${{ basename(github.ref) }}" >> $GITHUB_OUTPUT
-          fi
       - name: Update Nightly Tag
         if: github.event_name == 'schedule'
         uses: richardsimko/update-tag@v1
@@ -40,17 +30,17 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/') == true
         run: |
           cd crates/bins/wick
-          if grep -q "version = '${{ env.GITHUB_REF }}'" Cargo.toml; then
+          if grep -q "version = \"${{ env.GITHUB_REF }}\"" Cargo.toml; then
             echo "Match found!"
           else
             echo "No match found."
             exit 1
           fi
         env:
-          GITHUB_REF: ${{ github.ref }}
+          GITHUB_REF: ${{ github.ref_name }}
   test:
     needs: tag
-    if: github.event_name != 'push'
+    if: github.event_name == 'schedule' || startsWith(github.ref, 'refs/tags/') == true
     runs-on: ${{ matrix.config.os }}
     env:
       SCCACHE_AZURE_BLOB_CONTAINER: ${{ secrets.SCCACHE_AZURE_BLOB_CONTAINER }}
@@ -304,7 +294,7 @@ jobs:
           7z a -tzip wick-${{ matrix.config.name }}-${{ matrix.config.arch }}.zip README.md LICENSE wick.exe
       - name: Upload artifacts (windows)
         if: matrix.config.target == 'x86_64-pc-windows-gnu'
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: wick-${{ matrix.config.name }}-${{ matrix.config.arch }}.zip
           path: _dist/wick-${{ matrix.config.name }}-${{ matrix.config.arch }}.zip
@@ -316,44 +306,37 @@ jobs:
       - uses: actions/checkout@v3
       - name: Install jq
         run: sudo apt-get install -y jq
-      - name: Download artifacts into a single directory
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Download artifacts
+        uses: actions/download-artifact@v3
+        with:
+          path: artifacts
+      - name: Move artifacts to _dist
         working-directory: ${{ github.workspace }}
         run: |
           mkdir -p _dist
-          ARTIFACTS_URL=$(curl -s -H "Authorization: token $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" https://api.github.com/repos/candlecorp/wick/actions/runs/4485720507/artifacts | jq -r '.artifacts[].archive_download_url')
-
-          # Print the URLs of the artifacts
-          echo "Downloading artifacts from the following URLs:"
-          echo "$ARTIFACTS_URL"
-
-          for url in $ARTIFACTS_URL; do
-            curl -L -H "Authorization: token $GITHUB_TOKEN" $url -o artifact.zip
-            
-            echo "Downloaded artifact:"
-            ls -la artifact.zip
-
-            # Print the contents of the downloaded archive file
-            echo "Contents of artifact.zip:"
-            unzip -l artifact.zip
-
-            unzip -j artifact.zip -d _dist
-            rm artifact.zip
+          for dir in artifacts/*/; do
+            # Move the contents of each directory to the destination folder
+            echo "Moving {$dir}"
+            mv "$dir"* _dist/
           done
-
           #Copy the schema manifest into the dist directory
           cp crates/wick/wick-config/json-schema/manifest.json _dist/schema.json
-
-          # Print the contents of the _dist directory
-          echo "Contents of _dist directory:"
           ls -la _dist
-      - name: upload release assets
+      - name: upload release assets (tag)
+        uses: svenstaro/upload-release-action@v2
+        if: startsWith(github.ref, 'refs/tags/') == true
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: _dist/*
+          tag: ${{ github.ref }}
+          overwrite: true
+          file_glob: true
+      - name: upload release assets (nightly)
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: _dist/*
-          tag: ${{ needs.tag.outputs.tag }}
+          tag: nightly
           overwrite: true
           file_glob: true
       - name: ghcr login
@@ -368,7 +351,6 @@ jobs:
         uses: docker/setup-buildx-action@v1
       - name: build and push
         uses: docker/build-push-action@v2
-        if: ${{ needs.tag.outputs.tag }} == 'nightly'
         with:
           context: .
           file: ./docker/Dockerfile.nightly
@@ -377,10 +359,10 @@ jobs:
           platforms: linux/amd64,linux/arm64
       - name: build and push
         uses: docker/build-push-action@v2
-        if: github.event_name == 'workflow_dispatch'
+        if: startsWith(github.ref, 'refs/tags/') == true
         with:
           context: .
           file: ./docker/Dockerfile.latest
           push: true
-          tags: ghcr.io/candlecorp/wick:latest, ghcr.io/candlecorp/wick:${{ inputs.version }}
+          tags: ghcr.io/candlecorp/wick:latest, ghcr.io/candlecorp/wick:${{ github.ref_name }}
           platforms: linux/amd64,linux/arm64
