@@ -82,77 +82,28 @@
   while_true,
   missing_docs
 )]
-#![allow(unused_attributes, clippy::derive_partial_eq_without_eq, clippy::box_default)]
+#![allow(clippy::derive_partial_eq_without_eq, clippy::box_default)]
 // !!END_LINTS
 // Add exceptions here
 #![allow(missing_docs)]
 
-use serde::de::DeserializeOwned;
-
-mod helpers;
-
 /// Module for processing JSON templates used for default values.
 mod default;
+mod helpers;
 pub use default::{parse_default, process_default, ERROR_STR};
-
+pub mod config;
 /// Wick Manifest error.
 pub mod error;
-
+mod utils;
 pub(crate) mod v0;
-
 pub(crate) mod v1;
 
-mod host_definition;
-mod utils;
-pub use host_definition::HttpConfig;
-
-mod component_definition;
-pub use component_definition::{
-  BoundComponent,
-  ComponentDefinition,
-  ComponentImplementation,
-  ComponentReference,
-  GrpcUrlComponent,
-  ManifestComponent,
-  Permissions,
-  WasmComponent,
-};
-
-mod test_case;
-pub use test_case::*;
-
-mod flow_definition;
-pub use flow_definition::{ConnectionDefinition, ConnectionTargetDefinition, FlowOperation, InstanceReference};
-pub use flow_expression_parser::parse::v0::parse_id;
-
-use crate::error::ManifestError;
-
 /// The crate's error type.
-pub type Error = ManifestError;
+pub type Error = crate::error::ManifestError;
 
-pub use config::{app_config, component_config, WickConfiguration};
-
-pub mod config;
+pub use config::{app_config, common, component_config, test_config, types_config, WickConfiguration};
 
 pub(crate) type Result<T> = std::result::Result<T, Error>;
-
-fn from_yaml<T>(src: &str, path: &Option<String>) -> Result<T>
-where
-  T: DeserializeOwned,
-{
-  let result = serde_yaml::from_str(src)
-    .map_err(|e| ManifestError::YamlError(path.clone().unwrap_or("<raw source>".to_owned()), e.to_string()))?;
-  Ok(result)
-}
-
-fn from_bytes<T>(src: &[u8], path: &Option<String>) -> Result<T>
-where
-  T: DeserializeOwned,
-{
-  let result = serde_yaml::from_slice(src)
-    .map_err(|e| ManifestError::YamlError(path.clone().unwrap_or("<raw source>".to_owned()), e.to_string()))?;
-  Ok(result)
-}
 
 /// The reserved name for components that send static data.
 pub(crate) static SENDER_ID: &str = "core::sender";

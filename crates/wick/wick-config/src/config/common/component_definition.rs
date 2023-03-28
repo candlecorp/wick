@@ -21,6 +21,7 @@ impl ComponentOperationExpression {
   }
 
   /// Returns the operation ID.
+  #[must_use]
   pub fn operation(&self) -> &str {
     &self.operation
   }
@@ -87,13 +88,7 @@ impl BoundComponent {
 
 #[derive(Debug, Clone, PartialEq)]
 /// The kinds of collections that can operate in a flow.
-pub enum ComponentImplementation {
-  /// WebAssembly Collections.
-  Wasm(WasmComponent),
-}
-
-#[derive(Debug, Clone, PartialEq)]
-/// The kinds of collections that can operate in a flow.
+#[must_use]
 pub enum ComponentDefinition {
   #[doc(hidden)]
   Native(NativeComponent),

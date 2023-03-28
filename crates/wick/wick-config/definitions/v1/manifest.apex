@@ -5,9 +5,6 @@ union WickConfig = AppConfiguration | ComponentConfiguration | TypesConfiguratio
 
 "The Application configuration defines a standalone Wick application."
 type AppConfiguration @default @tagged("wick/app@v1") {
-  "The configuration version."
-  format: u32 @required @discriminant(1),
-
   "Associated metadata for this component."
   metadata: AppMetadata?,
 
@@ -105,9 +102,6 @@ type TypesConfiguration @tagged("wick/types@v1") {
   "The name of this component."
   name: string?
 
-  "The component manifest format version"
-  format: u32 @required @discriminant(1)
-
   "Additional types to export and make available to the component."
   types: [TypeDefinition]
 }
@@ -116,9 +110,6 @@ type TypesConfiguration @tagged("wick/types@v1") {
 type TestConfiguration @tagged("wick/tests@v1") {
   "The name of this component."
   name: string?
-
-  "The component manifest format version"
-  format: u32 @required @discriminant(1)
 
   "Unit tests to run against components and operations."
   tests: [TestDefinition]
@@ -129,9 +120,6 @@ type TestConfiguration @tagged("wick/tests@v1") {
 type ComponentConfiguration @tagged("wick/component@v1") {
   "The name of this component."
   name: string?
-
-  "The component manifest format version"
-  format: u32 @required @discriminant(1)
 
   "Associated metadata for this component."
   metadata: ComponentMetadata?

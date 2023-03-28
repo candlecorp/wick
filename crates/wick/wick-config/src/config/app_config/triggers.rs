@@ -1,5 +1,4 @@
-use crate::component_definition::ComponentOperationExpression;
-use crate::ComponentDefinition;
+use crate::config::*;
 
 #[derive(Debug, Clone)]
 /// Normalized representation of a trigger definition.
@@ -93,7 +92,6 @@ impl RestRouterConfig {
   pub fn path(&self) -> &str {
     &self.path
   }
-  #[must_use]
   pub fn component(&self) -> &ComponentDefinition {
     &self.component
   }
@@ -108,7 +106,6 @@ pub enum HttpRouterConfig {
 
 impl CliConfig {
   /// Returns the component id for the CLI trigger.
-  #[must_use]
   pub fn component(&self) -> &ComponentDefinition {
     &self.operation.component
   }

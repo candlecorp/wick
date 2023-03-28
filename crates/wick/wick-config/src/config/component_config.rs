@@ -5,8 +5,7 @@ use std::collections::HashMap;
 pub use composite::CompositeComponentConfiguration;
 pub use wasm::{OperationSignature, WasmComponentConfiguration};
 
-use crate::host_definition::HostConfig;
-use crate::{v1, Error, Result, TestCase};
+use crate::{config, v1, Error, Result};
 
 #[derive(Debug, Clone, Copy)]
 #[must_use]
@@ -46,11 +45,10 @@ impl ComponentImplementation {
 pub struct ComponentConfiguration {
   pub name: Option<String>,
   pub(crate) source: Option<String>,
-  pub(crate) format: u32,
   pub(crate) version: String,
-  pub(crate) host: HostConfig,
+  pub(crate) host: config::HostConfig,
   pub(crate) labels: HashMap<String, String>,
-  pub(crate) tests: Vec<TestCase>,
+  pub(crate) tests: Vec<config::TestCase>,
   pub(crate) component: ComponentImplementation,
 }
 
@@ -107,12 +105,12 @@ impl ComponentConfiguration {
   }
 
   /// Determine if the configuration allows for fetching artifacts with the :latest tag.
-  pub fn host(&self) -> &HostConfig {
+  pub fn host(&self) -> &config::HostConfig {
     &self.host
   }
 
   /// Determine if the configuration allows for fetching artifacts with the :latest tag.
-  pub fn host_mut(&mut self) -> &mut HostConfig {
+  pub fn host_mut(&mut self) -> &mut config::HostConfig {
     &mut self.host
   }
 
@@ -138,15 +136,9 @@ impl ComponentConfiguration {
     &self.host.insecure_registries
   }
 
-  /// Return the underlying version of the source manifest.
-  #[must_use]
-  pub fn format(&self) -> u32 {
-    self.format
-  }
-
   /// Return the list of tests defined in the manifest.
   #[must_use]
-  pub fn tests(&self) -> &[TestCase] {
+  pub fn tests(&self) -> &[config::TestCase] {
     &self.tests
   }
 
@@ -187,10 +179,9 @@ pub struct ComponentConfigurationBuilder {
   version: Option<String>,
   name: Option<String>,
   source: Option<String>,
-  format: u32,
-  host: HostConfig,
+  host: config::HostConfig,
   labels: HashMap<String, String>,
-  tests: Vec<TestCase>,
+  tests: Vec<config::TestCase>,
   component: ComponentImplementation,
 }
 
@@ -201,7 +192,6 @@ impl ComponentConfigurationBuilder {
       version: Default::default(),
       name: Default::default(),
       source: Default::default(),
-      format: 1,
       host: Default::default(),
       labels: Default::default(),
       tests: Default::default(),
@@ -234,7 +224,6 @@ impl ComponentConfigurationBuilder {
       component: self.component,
       name: self.name,
       source: self.source,
-      format: self.format,
       version: self.version.unwrap_or_else(|| "0.0.0".to_owned()),
       host: self.host,
       labels: self.labels,

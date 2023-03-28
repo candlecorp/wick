@@ -1,7 +1,6 @@
 ---
-name: 'jinja'
-format: 1
 kind: wick/component@v1
+name: 'jinja'
 metadata:
   version: '0.0.2'
 component:

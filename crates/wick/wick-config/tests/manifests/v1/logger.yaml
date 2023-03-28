@@ -1,6 +1,5 @@
 # yaml-language-server: $schema=../../../json-schema/manifest.json
 ---
-format: 1
 kind: wick/component@v1
 metadata:
   version: '1'
