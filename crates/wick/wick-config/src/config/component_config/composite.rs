@@ -2,7 +2,8 @@ use std::collections::HashMap;
 
 use wick_interface_types::TypeDefinition;
 
-use crate::{BoundComponent, FlowOperation};
+use crate::config::common::component_definition::BoundComponent;
+use crate::config::common::flow_definition::FlowOperation;
 
 #[derive(Debug, Clone)]
 #[must_use]

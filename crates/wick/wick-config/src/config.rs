@@ -1,4 +1,5 @@
 pub mod app_config;
+pub mod common;
 pub mod component_config;
 pub mod test_config;
 pub mod types_config;
@@ -6,13 +7,15 @@ pub mod types_config;
 use std::fs::read_to_string;
 use std::path::Path;
 
-pub use app_config::AppConfiguration;
-pub use component_config::ComponentConfiguration;
-pub use test_config::TestConfiguration;
+pub use app_config::*;
+pub use common::*;
+pub use component_config::*;
+pub use test_config::*;
 use tracing::debug;
-pub use types_config::TypesConfiguration;
+pub use types_config::*;
 
-use crate::{from_bytes, from_yaml, v0, v1, Error};
+use crate::utils::{from_bytes, from_yaml};
+use crate::{v0, v1, Error};
 
 #[derive(Debug, Clone, Copy)]
 #[must_use]
@@ -136,10 +139,17 @@ impl WickConfiguration {
 
 fn resolve_configuration(raw: serde_yaml::Value, source: &Option<String>) -> Result<WickConfiguration, Error> {
   debug!("Yaml parsed successfully");
-  let raw_version = raw.get("format").ok_or(Error::NoFormat)?;
-  let version = raw_version
-    .as_i64()
-    .unwrap_or_else(|| -> i64 { raw_version.as_str().and_then(|s| s.parse::<i64>().ok()).unwrap_or(-1) });
+  let raw_version = raw.get("format");
+  let raw_kind = raw.get("kind");
+  let version = if raw_kind.is_some() {
+    1
+  } else {
+    let raw_version = raw_version.ok_or(Error::NoFormat)?;
+    raw_version
+      .as_i64()
+      .unwrap_or_else(|| -> i64 { raw_version.as_str().and_then(|s| s.parse::<i64>().ok()).unwrap_or(-1) })
+  };
+
   let manifest = match version {
     0 => {
       let host_config = serde_yaml::from_value::<v0::HostManifest>(raw)

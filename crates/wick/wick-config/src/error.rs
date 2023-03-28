@@ -1,8 +1,6 @@
 use thiserror::Error;
 
-use crate::component_config::ComponentKind;
-use crate::config::ConfigurationKind;
-use crate::{ConnectionDefinition, ConnectionTargetDefinition};
+use crate::config::{self};
 
 // type BoxedSyncSendError = Box<dyn std::error::Error + Sync + std::marker::Send>;
 
@@ -13,8 +11,8 @@ pub enum ManifestError {
   #[error("Invalid Manifest Version '{0}'")]
   VersionError(String),
 
-  /// No version found in the parsed manifest.
-  #[error("Manifest needs a format version")]
+  /// No format version or kind found in the parsed manifest.
+  #[error("Manifest needs a format version (v0) or kind (v1+)")]
   NoFormat,
 
   /// Manifest not found at the specified path.
@@ -27,11 +25,11 @@ pub enum ManifestError {
 
   /// Thrown when a specific type of configuration was expected but a different type was found.
   #[error("Expected a {0} configuration but got a {1} configuration")]
-  UnexpectedConfigurationKind(ConfigurationKind, ConfigurationKind),
+  UnexpectedConfigurationKind(config::ConfigurationKind, config::ConfigurationKind),
 
   /// Thrown when a specific type of component was expected but a different type was found.
   #[error("Expected a {0} component but got a {1} component")]
-  UnexpectedComponentType(ComponentKind, ComponentKind),
+  UnexpectedComponentType(config::ComponentKind, config::ComponentKind),
 
   /// Error deserializing YAML manifest.
   #[error("Could not parse manifest {0} as YAML: {1}")]
@@ -39,11 +37,15 @@ pub enum ManifestError {
 
   /// Default was requested when none present.
   #[error("Connection '{0}' does not have a default but one was requested")]
-  NoDefault(ConnectionDefinition),
+  NoDefault(config::ConnectionDefinition),
 
   /// Error deserializing default value.
   #[error("Error deserializing default value for connection: {0}=>{1} - Error was: '{2}'")]
-  DefaultsError(ConnectionTargetDefinition, ConnectionTargetDefinition, String),
+  DefaultsError(
+    config::ConnectionTargetDefinition,
+    config::ConnectionTargetDefinition,
+    String,
+  ),
 
   /// Error parsing or serializing Sender data.
   #[error("Error parsing or serializing Sender data: {0}")]

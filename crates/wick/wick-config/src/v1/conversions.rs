@@ -21,30 +21,22 @@ use crate::component_config::{
   OperationSignature,
   WasmComponentConfiguration,
 };
-use crate::component_definition::ComponentOperationExpression;
-use crate::config::{test_config, types_config, ComponentConfiguration};
-use crate::error::ManifestError;
-use crate::flow_definition::{PortReference, SenderData};
-use crate::host_definition::HostConfig;
-use crate::utils::{opt_str_to_ipv4addr, opt_str_to_pathbuf};
-use crate::{
-  test_case,
-  v1,
+use crate::config::common::component_definition::{
   BoundComponent,
   ComponentDefinition,
+  ComponentOperationExpression,
   ComponentReference,
-  ConnectionDefinition,
-  ConnectionTargetDefinition,
-  FlowOperation,
   GrpcUrlComponent,
-  HttpConfig,
-  InstanceReference,
   ManifestComponent,
-  Permissions,
-  Result,
   WasmComponent,
-  WickConfiguration,
 };
+use crate::config::common::flow_definition::{PortReference, SenderData};
+use crate::config::common::host_definition::HostConfig;
+use crate::config::common::test_case;
+use crate::config::{self, test_config, types_config, ComponentConfiguration};
+use crate::error::ManifestError;
+use crate::utils::{opt_str_to_ipv4addr, opt_str_to_pathbuf};
+use crate::{v1, Result, WickConfiguration};
 
 impl TryFrom<v1::WickConfig> for WickConfiguration {
   type Error = ManifestError;
@@ -86,7 +78,6 @@ impl TryFrom<v1::ComponentConfiguration> for ComponentConfiguration {
   fn try_from(def: v1::ComponentConfiguration) -> Result<Self> {
     Ok(ComponentConfiguration {
       source: None,
-      format: def.format,
       version: def.metadata.unwrap_or(v1::ComponentMetadata::default()).version,
       host: def.host.try_into()?,
       name: def.name,
@@ -102,7 +93,6 @@ impl TryFrom<ComponentConfiguration> for v1::ComponentConfiguration {
 
   fn try_from(def: ComponentConfiguration) -> Result<Self> {
     Ok(v1::ComponentConfiguration {
-      format: def.format,
       metadata: Some(v1::ComponentMetadata { version: def.version }),
       host: def.host.try_into()?,
       name: def.name,
@@ -188,7 +178,6 @@ impl TryFrom<v1::AppConfiguration> for AppConfiguration {
   fn try_from(def: v1::AppConfiguration) -> Result<Self> {
     Ok(AppConfiguration {
       source: None,
-      format: def.format,
       version: def.metadata.unwrap_or_default().version,
       name: def.name,
       host: def.host.try_into()?,
@@ -204,7 +193,6 @@ impl TryFrom<AppConfiguration> for v1::AppConfiguration {
 
   fn try_from(value: AppConfiguration) -> std::result::Result<Self, Self::Error> {
     Ok(Self {
-      format: value.format,
       metadata: Some(v1::AppMetadata { version: value.version }),
       name: value.name,
       import: value.import.into_values().map(|v| v.into()).collect(),
@@ -305,16 +293,16 @@ impl From<TcpPort> for v1::TcpPort {
   }
 }
 
-impl TryFrom<crate::v1::CompositeOperationDefinition> for FlowOperation {
+impl TryFrom<crate::v1::CompositeOperationDefinition> for config::FlowOperation {
   type Error = ManifestError;
 
   fn try_from(op: crate::v1::CompositeOperationDefinition) -> Result<Self> {
-    let instances: Result<HashMap<String, InstanceReference>> = op
+    let instances: Result<HashMap<String, config::InstanceReference>> = op
       .instances
       .into_iter()
       .map(|v| Ok((v.name.clone(), v.try_into()?)))
       .collect();
-    let connections: Result<Vec<ConnectionDefinition>> = op.flow.iter().map(|def| def.try_into()).collect();
+    let connections: Result<Vec<config::ConnectionDefinition>> = op.flow.iter().map(|def| def.try_into()).collect();
     Ok(Self {
       name: op.name,
       inputs: op.inputs,
@@ -433,16 +421,16 @@ impl From<GrpcUrlComponent> for v1::GrpcUrlComponent {
   }
 }
 
-impl From<Permissions> for v1::Permissions {
-  fn from(value: Permissions) -> Self {
+impl From<config::Permissions> for v1::Permissions {
+  fn from(value: config::Permissions) -> Self {
     Self { dirs: value.dirs }
   }
 }
 
-impl TryFrom<FlowOperation> for v1::CompositeOperationDefinition {
+impl TryFrom<config::FlowOperation> for v1::CompositeOperationDefinition {
   type Error = ManifestError;
 
-  fn try_from(value: FlowOperation) -> std::result::Result<Self, Self::Error> {
+  fn try_from(value: config::FlowOperation) -> std::result::Result<Self, Self::Error> {
     let instances: Vec<v1::InstanceBinding> = value.instances.into_iter().map(|(id, val)| (id, val).into()).collect();
     let connections: Result<Vec<v1::ConnectionDefinition>> =
       value.connections.into_iter().map(|def| def.try_into()).collect();
@@ -457,10 +445,10 @@ impl TryFrom<FlowOperation> for v1::CompositeOperationDefinition {
   }
 }
 
-impl TryFrom<ConnectionDefinition> for v1::ConnectionDefinition {
+impl TryFrom<config::ConnectionDefinition> for v1::ConnectionDefinition {
   type Error = ManifestError;
 
-  fn try_from(value: ConnectionDefinition) -> std::result::Result<Self, Self::Error> {
+  fn try_from(value: config::ConnectionDefinition) -> std::result::Result<Self, Self::Error> {
     Ok(Self {
       from: value.from.try_into()?,
       to: value.to.try_into()?,
@@ -468,10 +456,10 @@ impl TryFrom<ConnectionDefinition> for v1::ConnectionDefinition {
   }
 }
 
-impl TryFrom<ConnectionTargetDefinition> for v1::ConnectionTargetDefinition {
+impl TryFrom<config::ConnectionTargetDefinition> for v1::ConnectionTargetDefinition {
   type Error = ManifestError;
 
-  fn try_from(value: ConnectionTargetDefinition) -> std::result::Result<Self, Self::Error> {
+  fn try_from(value: config::ConnectionTargetDefinition) -> std::result::Result<Self, Self::Error> {
     Ok(Self {
       data: value.data.map(|v| v.inner),
       instance: value.target.instance,
@@ -480,8 +468,8 @@ impl TryFrom<ConnectionTargetDefinition> for v1::ConnectionTargetDefinition {
   }
 }
 
-impl From<(String, InstanceReference)> for v1::InstanceBinding {
-  fn from(value: (String, InstanceReference)) -> Self {
+impl From<(String, config::InstanceReference)> for v1::InstanceBinding {
+  fn from(value: (String, config::InstanceReference)) -> Self {
     let id = value.0;
     let value = value.1;
     Self {
@@ -514,18 +502,18 @@ impl From<crate::v1::ComponentDefinition> for ComponentDefinition {
   }
 }
 
-impl From<v1::Permissions> for Permissions {
+impl From<v1::Permissions> for config::Permissions {
   fn from(def: crate::v1::Permissions) -> Self {
     Self { dirs: def.dirs }
   }
 }
 
-impl TryFrom<crate::v1::InstanceBinding> for InstanceReference {
+impl TryFrom<crate::v1::InstanceBinding> for config::InstanceReference {
   type Error = ManifestError;
   fn try_from(def: crate::v1::InstanceBinding) -> Result<Self> {
     let ns = def.operation.component.component_id().unwrap_or("<anonymous>");
     let name = def.operation.name;
-    Ok(InstanceReference {
+    Ok(config::InstanceReference {
       component_id: ns.to_owned(),
       name,
       data: def.config,
@@ -533,13 +521,13 @@ impl TryFrom<crate::v1::InstanceBinding> for InstanceReference {
   }
 }
 
-impl TryFrom<&crate::v1::ConnectionDefinition> for ConnectionDefinition {
+impl TryFrom<&crate::v1::ConnectionDefinition> for config::ConnectionDefinition {
   type Error = ManifestError;
 
   fn try_from(def: &crate::v1::ConnectionDefinition) -> Result<Self> {
-    let from: ConnectionTargetDefinition = def.from.clone().try_into()?;
-    let to: ConnectionTargetDefinition = def.to.clone().try_into()?;
-    Ok(ConnectionDefinition { from, to })
+    let from: config::ConnectionTargetDefinition = def.from.clone().try_into()?;
+    let to: config::ConnectionTargetDefinition = def.to.clone().try_into()?;
+    Ok(config::ConnectionDefinition { from, to })
   }
 }
 
@@ -567,7 +555,7 @@ impl TryFrom<HostConfig> for crate::v1::HostConfig {
   }
 }
 
-impl TryFrom<crate::v1::HttpConfig> for HttpConfig {
+impl TryFrom<crate::v1::HttpConfig> for config::HttpConfig {
   type Error = ManifestError;
   fn try_from(def: crate::v1::HttpConfig) -> Result<Self> {
     Ok(Self {
@@ -581,9 +569,9 @@ impl TryFrom<crate::v1::HttpConfig> for HttpConfig {
   }
 }
 
-impl TryFrom<HttpConfig> for crate::v1::HttpConfig {
+impl TryFrom<config::HttpConfig> for crate::v1::HttpConfig {
   type Error = ManifestError;
-  fn try_from(def: HttpConfig) -> Result<Self> {
+  fn try_from(def: config::HttpConfig) -> Result<Self> {
     Ok(Self {
       enabled: def.enabled,
       port: def.port,
@@ -595,12 +583,12 @@ impl TryFrom<HttpConfig> for crate::v1::HttpConfig {
   }
 }
 
-impl TryFrom<crate::v1::ConnectionTargetDefinition> for ConnectionTargetDefinition {
+impl TryFrom<crate::v1::ConnectionTargetDefinition> for config::ConnectionTargetDefinition {
   type Error = ManifestError;
 
   fn try_from(def: crate::v1::ConnectionTargetDefinition) -> Result<Self> {
     let data = def.data.map(|json| SenderData { inner: json });
-    Ok(ConnectionTargetDefinition {
+    Ok(config::ConnectionTargetDefinition {
       target: PortReference {
         instance: def.instance,
         port: def.port,
@@ -703,7 +691,7 @@ impl From<v1::PacketData> for test_case::TestPacket {
   }
 }
 
-impl From<v1::PayloadData> for crate::test_case::SuccessPayload {
+impl From<v1::PayloadData> for config::SuccessPayload {
   fn from(value: v1::PayloadData) -> Self {
     Self {
       port: value.name,
@@ -713,7 +701,7 @@ impl From<v1::PayloadData> for crate::test_case::SuccessPayload {
   }
 }
 
-impl From<v1::ErrorData> for crate::test_case::ErrorPayload {
+impl From<v1::ErrorData> for config::ErrorPayload {
   fn from(value: v1::ErrorData) -> Self {
     Self {
       port: value.name,
@@ -723,7 +711,7 @@ impl From<v1::ErrorData> for crate::test_case::ErrorPayload {
   }
 }
 
-impl From<v1::PacketFlags> for crate::test_case::PacketFlags {
+impl From<v1::PacketFlags> for config::PacketFlags {
   fn from(value: v1::PacketFlags) -> Self {
     Self {
       done: value.done,
@@ -733,7 +721,7 @@ impl From<v1::PacketFlags> for crate::test_case::PacketFlags {
   }
 }
 
-impl From<v1::InherentData> for crate::test_case::InherentConfig {
+impl From<v1::InherentData> for config::InherentConfig {
   fn from(value: v1::InherentData) -> Self {
     Self {
       seed: value.seed,

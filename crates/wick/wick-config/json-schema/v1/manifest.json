@@ -18,10 +18,6 @@
           "description": "The kind of the collection",
           "enum": ["wick/app@v1"]
         },
-        "format": {
-          "description": "The configuration version.",
-          "enum": [1]
-        },
         "metadata": {
           "description": "Associated metadata for this component.",
           "required": false,
@@ -63,7 +59,7 @@
           }
         }
       },
-      "required": ["format"]
+      "required": []
     },
 
     "AppMetadata": {
@@ -283,10 +279,6 @@
 
           "type": "string"
         },
-        "format": {
-          "description": "The component manifest format version",
-          "enum": [1]
-        },
         "types": {
           "description": "Additional types to export and make available to the component.",
 
@@ -296,7 +288,7 @@
           }
         }
       },
-      "required": ["format"]
+      "required": []
     },
 
     "TestConfiguration": {
@@ -314,10 +306,6 @@
 
           "type": "string"
         },
-        "format": {
-          "description": "The component manifest format version",
-          "enum": [1]
-        },
         "tests": {
           "description": "Unit tests to run against components and operations.",
 
@@ -327,7 +315,7 @@
           }
         }
       },
-      "required": ["format"]
+      "required": []
     },
 
     "ComponentConfiguration": {
@@ -344,10 +332,6 @@
           "required": false,
 
           "type": "string"
-        },
-        "format": {
-          "description": "The component manifest format version",
-          "enum": [1]
         },
         "metadata": {
           "description": "Associated metadata for this component.",
@@ -384,7 +368,7 @@
           }
         }
       },
-      "required": ["format", "component"]
+      "required": ["component"]
     },
 
     "ComponentKind": {

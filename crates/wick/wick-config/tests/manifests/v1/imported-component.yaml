@@ -1,6 +1,5 @@
 name: mycli
 kind: wick/app@v1
-format: 1
 import:
   - name: main
     component:

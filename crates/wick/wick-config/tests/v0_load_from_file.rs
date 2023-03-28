@@ -6,6 +6,7 @@ use flow_expression_parser::parse::{NS_LINK, SCHEMATIC_OUTPUT, SENDER_ID, SENDER
 use serde_json::Value;
 use tracing::debug;
 use wick_config::component_config::{ComponentImplementation, CompositeComponentConfiguration};
+use wick_config::config::ConnectionTargetDefinition;
 use wick_config::error::ManifestError;
 use wick_config::*;
 

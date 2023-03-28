@@ -367,12 +367,6 @@
               "wick/app@v1"
             ]
           },
-          "format": {
-            "description": "The configuration version.",
-            "enum": [
-              1
-            ]
-          },
           "metadata": {
             "description": "Associated metadata for this component.",
             "required": false,
@@ -408,9 +402,7 @@
             }
           }
         },
-        "required": [
-          "format"
-        ]
+        "required": []
       },
       "AppMetadata": {
         "$anchor": "#v1/AppMetadata",
@@ -645,12 +637,6 @@
             "required": false,
             "type": "string"
           },
-          "format": {
-            "description": "The component manifest format version",
-            "enum": [
-              1
-            ]
-          },
           "types": {
             "description": "Additional types to export and make available to the component.",
             "type": "array",
@@ -659,9 +645,7 @@
             }
           }
         },
-        "required": [
-          "format"
-        ]
+        "required": []
       },
       "TestConfiguration": {
         "$anchor": "#v1/TestConfiguration",
@@ -679,12 +663,6 @@
             "required": false,
             "type": "string"
           },
-          "format": {
-            "description": "The component manifest format version",
-            "enum": [
-              1
-            ]
-          },
           "tests": {
             "description": "Unit tests to run against components and operations.",
             "type": "array",
@@ -693,9 +671,7 @@
             }
           }
         },
-        "required": [
-          "format"
-        ]
+        "required": []
       },
       "ComponentConfiguration": {
         "$anchor": "#v1/ComponentConfiguration",
@@ -712,12 +688,6 @@
             "description": "The name of this component.",
             "required": false,
             "type": "string"
-          },
-          "format": {
-            "description": "The component manifest format version",
-            "enum": [
-              1
-            ]
           },
           "metadata": {
             "description": "Associated metadata for this component.",
@@ -750,7 +720,6 @@
           }
         },
         "required": [
-          "format",
           "component"
         ]
       },

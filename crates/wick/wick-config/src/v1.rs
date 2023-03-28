@@ -55,10 +55,6 @@ pub(crate) enum WickConfig {
 #[serde(deny_unknown_fields)]
 /// The Application configuration defines a standalone Wick application.
 pub(crate) struct AppConfiguration {
-  /// The configuration version.
-
-  #[serde(deserialize_with = "with_expand_envs")]
-  pub(crate) format: u32,
   /// Associated metadata for this component.
 
   #[serde(default)]
@@ -249,10 +245,6 @@ pub(crate) struct TypesConfiguration {
 
   #[serde(default)]
   pub(crate) name: Option<String>,
-  /// The component manifest format version
-
-  #[serde(deserialize_with = "with_expand_envs")]
-  pub(crate) format: u32,
   /// Additional types to export and make available to the component.
 
   #[serde(default)]
@@ -268,10 +260,6 @@ pub(crate) struct TestConfiguration {
 
   #[serde(default)]
   pub(crate) name: Option<String>,
-  /// The component manifest format version
-
-  #[serde(deserialize_with = "with_expand_envs")]
-  pub(crate) format: u32,
   /// Unit tests to run against components and operations.
 
   #[serde(default)]
@@ -287,10 +275,6 @@ pub(crate) struct ComponentConfiguration {
 
   #[serde(default)]
   pub(crate) name: Option<String>,
-  /// The component manifest format version
-
-  #[serde(deserialize_with = "with_expand_envs")]
-  pub(crate) format: u32,
   /// Associated metadata for this component.
 
   #[serde(default)]

@@ -2,6 +2,7 @@ use core::panic;
 use std::path::PathBuf;
 
 use wick_config::component_config::{ComponentKind, CompositeComponentConfiguration};
+use wick_config::config::ComponentDefinition;
 use wick_config::error::ManifestError;
 use wick_config::*;
 
