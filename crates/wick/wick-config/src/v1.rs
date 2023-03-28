@@ -20,7 +20,7 @@
   missing_docs
 )]
 #![warn(clippy::cognitive_complexity)]
-#![allow(clippy::large_enum_variant, missing_copy_implementations)]
+#![allow(clippy::large_enum_variant, missing_copy_implementations, clippy::enum_variant_names)]
 
 pub(crate) mod conversions;
 pub(crate) mod impls;
@@ -37,18 +37,24 @@ use serde_with_expand_env::with_expand_envs;
 #[serde(tag = "kind")]
 /// Configuration for Wick applications and components.
 pub(crate) enum WickConfig {
-  /// A variant representing a [V1AppConfiguration] type.
+  /// A variant representing a [AppConfiguration] type.
   #[serde(rename = "wick/app@v1")]
-  V1AppConfiguration(V1AppConfiguration),
-  /// A variant representing a [V1ComponentConfiguration] type.
+  AppConfiguration(AppConfiguration),
+  /// A variant representing a [ComponentConfiguration] type.
   #[serde(rename = "wick/component@v1")]
-  V1ComponentConfiguration(V1ComponentConfiguration),
+  ComponentConfiguration(ComponentConfiguration),
+  /// A variant representing a [TypesConfiguration] type.
+  #[serde(rename = "wick/types@v1")]
+  TypesConfiguration(TypesConfiguration),
+  /// A variant representing a [TestConfiguration] type.
+  #[serde(rename = "wick/tests@v1")]
+  TestConfiguration(TestConfiguration),
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
 /// The Application configuration defines a standalone Wick application.
-pub(crate) struct V1AppConfiguration {
+pub(crate) struct AppConfiguration {
   /// The configuration version.
 
   #[serde(deserialize_with = "with_expand_envs")]
@@ -235,18 +241,52 @@ pub(crate) struct UdpPort {
   pub(crate) address: String,
 }
 
-#[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
 /// A configuration for a Wick Component
-pub(crate) struct V1ComponentConfiguration {
+pub(crate) struct TypesConfiguration {
   /// The name of this component.
 
   #[serde(default)]
   pub(crate) name: Option<String>,
-  /// An optional reference to a local implementation (e.g. a WebAssembly module)
+  /// The component manifest format version
+
+  #[serde(deserialize_with = "with_expand_envs")]
+  pub(crate) format: u32,
+  /// Additional types to export and make available to the component.
 
   #[serde(default)]
-  pub(crate) main: Option<LocalDefinition>,
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub(crate) types: Vec<wick_interface_types::TypeDefinition>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+/// A configuration for a Wick Component
+pub(crate) struct TestConfiguration {
+  /// The name of this component.
+
+  #[serde(default)]
+  pub(crate) name: Option<String>,
+  /// The component manifest format version
+
+  #[serde(deserialize_with = "with_expand_envs")]
+  pub(crate) format: u32,
+  /// Unit tests to run against components and operations.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub(crate) tests: Vec<TestDefinition>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+/// A configuration for a Wick Component
+pub(crate) struct ComponentConfiguration {
+  /// The name of this component.
+
+  #[serde(default)]
+  pub(crate) name: Option<String>,
   /// The component manifest format version
 
   #[serde(deserialize_with = "with_expand_envs")]
@@ -265,21 +305,8 @@ pub(crate) struct V1ComponentConfiguration {
   #[serde(skip_serializing_if = "HashMap::is_empty")]
   #[serde(deserialize_with = "crate::helpers::kv_deserializer")]
   pub(crate) labels: HashMap<String, String>,
-  /// Additional types to export and make available to the component.
-
-  #[serde(default)]
-  #[serde(skip_serializing_if = "Vec::is_empty")]
-  pub(crate) types: Vec<wick_interface_types::TypeDefinition>,
-  /// Components to import into the application&#x27;s scope.
-
-  #[serde(default)]
-  #[serde(skip_serializing_if = "Vec::is_empty")]
-  pub(crate) import: Vec<ComponentBinding>,
-  /// A map of operation names to their definitions.
-
-  #[serde(default)]
-  #[serde(skip_serializing_if = "Vec::is_empty")]
-  pub(crate) operations: Vec<OperationDefinition>,
+  /// Configuration specific to different kinds of components.
+  pub(crate) component: ComponentKind,
   /// Assertions that can be run against the component to validate its behavior.
 
   #[serde(default)]
@@ -290,11 +317,55 @@ pub(crate) struct V1ComponentConfiguration {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
 #[serde(tag = "kind")]
-/// A reference to a local implementation (e.g. a WebAssembly module)
-pub(crate) enum LocalDefinition {
-  /// A variant representing a [WasmRsComponent] type.
+pub(crate) enum ComponentKind {
+  /// A variant representing a [WasmComponentConfiguration] type.
   #[serde(rename = "wick/component/wasmrs@v1")]
-  WasmRsComponent(WasmRsComponent),
+  WasmComponentConfiguration(WasmComponentConfiguration),
+  /// A variant representing a [CompositeComponentConfiguration] type.
+  #[serde(rename = "wick/component/composite@v1")]
+  CompositeComponentConfiguration(CompositeComponentConfiguration),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+/// A component made out of other components
+pub(crate) struct CompositeComponentConfiguration {
+  /// Additional types to export and make available to the component.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub(crate) types: Vec<wick_interface_types::TypeDefinition>,
+  /// Components to import into the application&#x27;s scope.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub(crate) import: Vec<ComponentBinding>,
+  /// A list of operations implemented by the Composite component.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub(crate) operations: Vec<CompositeOperationDefinition>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+/// A component made out of other components
+pub(crate) struct WasmComponentConfiguration {
+  /// A reference to a local WebAssembly implementation
+
+  #[serde(deserialize_with = "with_expand_envs")]
+  #[serde(rename = "ref")]
+  pub(crate) reference: String,
+  /// Additional types to export and make available to the component.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub(crate) types: Vec<wick_interface_types::TypeDefinition>,
+  /// A list of operations implemented by the WebAssembly module.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub(crate) operations: Vec<OperationDefinition>,
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
@@ -489,8 +560,8 @@ pub(crate) struct ManifestComponent {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
-/// A definition for an single flow.
-pub(crate) struct OperationDefinition {
+/// A definition for an single composite operation.
+pub(crate) struct CompositeOperationDefinition {
   /// The name of the operation.
 
   #[serde(default)]
@@ -522,6 +593,27 @@ pub(crate) struct OperationDefinition {
   #[serde(skip_serializing_if = "Vec::is_empty")]
   #[serde(deserialize_with = "crate::v1::parse::vec_connection")]
   pub(crate) flow: Vec<ConnectionDefinition>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+/// An operation name and its input and output signatures
+pub(crate) struct OperationDefinition {
+  /// The name of the operation.
+
+  #[serde(default)]
+  #[serde(deserialize_with = "with_expand_envs")]
+  pub(crate) name: String,
+  /// Types of the inputs to the operation.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub(crate) inputs: Vec<wick_interface_types::Field>,
+  /// Types of the outputs to the operation.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub(crate) outputs: Vec<wick_interface_types::Field>,
 }
 
 /// Field definition. This is not technically an any type, it is a wick interface type field.

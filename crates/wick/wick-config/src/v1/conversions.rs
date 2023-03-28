@@ -2,8 +2,27 @@ use std::collections::HashMap;
 use std::time::Duration;
 
 // use flow_expression_parser::parse_id;
-use crate::app_config::BoundResource;
-use crate::component_definition::{ComponentImplementation, ComponentOperationExpression};
+use crate::app_config::{
+  AppConfiguration,
+  BoundResource,
+  CliConfig,
+  HttpRouterConfig,
+  HttpTriggerConfig,
+  RawRouterConfig,
+  ResourceDefinition,
+  RestRouterConfig,
+  TcpPort,
+  TriggerDefinition,
+  UdpPort,
+};
+use crate::component_config::{
+  ComponentImplementation,
+  CompositeComponentConfiguration,
+  OperationSignature,
+  WasmComponentConfiguration,
+};
+use crate::component_definition::ComponentOperationExpression;
+use crate::config::{test_config, types_config, ComponentConfiguration};
 use crate::error::ManifestError;
 use crate::flow_definition::{PortReference, SenderData};
 use crate::host_definition::HostConfig;
@@ -11,10 +30,7 @@ use crate::utils::{opt_str_to_ipv4addr, opt_str_to_pathbuf};
 use crate::{
   test_case,
   v1,
-  AppConfiguration,
   BoundComponent,
-  CliConfig,
-  ComponentConfiguration,
   ComponentDefinition,
   ComponentReference,
   ConnectionDefinition,
@@ -22,64 +38,137 @@ use crate::{
   FlowOperation,
   GrpcUrlComponent,
   HttpConfig,
-  HttpRouterConfig,
-  HttpTriggerConfig,
   InstanceReference,
   ManifestComponent,
   Permissions,
-  RawRouterConfig,
-  ResourceDefinition,
-  RestRouterConfig,
   Result,
-  TcpPort,
-  TriggerDefinition,
-  UdpPort,
   WasmComponent,
+  WickConfiguration,
 };
 
-impl TryFrom<v1::V1ComponentConfiguration> for ComponentConfiguration {
+impl TryFrom<v1::WickConfig> for WickConfiguration {
   type Error = ManifestError;
 
-  fn try_from(def: v1::V1ComponentConfiguration) -> Result<Self> {
+  fn try_from(def: v1::WickConfig) -> Result<Self> {
+    let new = match def {
+      v1::WickConfig::AppConfiguration(v) => WickConfiguration::App(v.try_into()?),
+      v1::WickConfig::ComponentConfiguration(v) => WickConfiguration::Component(v.try_into()?),
+      v1::WickConfig::TypesConfiguration(v) => WickConfiguration::Types(v.try_into()?),
+      v1::WickConfig::TestConfiguration(v) => WickConfiguration::Tests(v.try_into()?),
+    };
+    Ok(new)
+  }
+}
+
+impl TryFrom<v1::TestConfiguration> for test_config::TestConfiguration {
+  type Error = ManifestError;
+
+  fn try_from(value: v1::TestConfiguration) -> std::result::Result<Self, Self::Error> {
+    Ok(Self {
+      tests: value.tests.into_iter().map(|v| v.into()).collect(),
+      source: None,
+    })
+  }
+}
+impl TryFrom<v1::TypesConfiguration> for types_config::TypesConfiguration {
+  type Error = ManifestError;
+
+  fn try_from(value: v1::TypesConfiguration) -> std::result::Result<Self, Self::Error> {
+    Ok(Self {
+      types: value.types,
+      source: None,
+    })
+  }
+}
+impl TryFrom<v1::ComponentConfiguration> for ComponentConfiguration {
+  type Error = ManifestError;
+
+  fn try_from(def: v1::ComponentConfiguration) -> Result<Self> {
     Ok(ComponentConfiguration {
       source: None,
       format: def.format,
-      main: def.main.map(|v| v.into()),
-      types: def.types,
       version: def.metadata.unwrap_or(v1::ComponentMetadata::default()).version,
       host: def.host.try_into()?,
       name: def.name,
-      import: def.import.into_iter().map(|v| (v.name.clone(), v.into())).collect(),
       labels: def.labels,
       tests: def.tests.into_iter().map(|v| v.into()).collect(),
-      operations: def
-        .operations
-        .into_iter()
-        .map(|op| Ok((op.name.clone(), op.try_into()?)))
-        .collect::<Result<_>>()?,
+      component: def.component.try_into()?,
     })
   }
 }
 
-impl TryFrom<ComponentConfiguration> for v1::V1ComponentConfiguration {
+impl TryFrom<ComponentConfiguration> for v1::ComponentConfiguration {
   type Error = ManifestError;
 
   fn try_from(def: ComponentConfiguration) -> Result<Self> {
-    Ok(v1::V1ComponentConfiguration {
+    Ok(v1::ComponentConfiguration {
       format: def.format,
-      types: def.types,
-      main: def.main.map(|v| v.into()),
       metadata: Some(v1::ComponentMetadata { version: def.version }),
       host: def.host.try_into()?,
       name: def.name,
-      import: def.import.into_values().map(|v| v.into()).collect(),
       labels: def.labels,
       tests: def.tests.into_iter().map(|v| v.into()).collect(),
-      operations: def
+      component: def.component.try_into()?,
+    })
+  }
+}
+
+impl TryFrom<v1::WasmComponentConfiguration> for WasmComponentConfiguration {
+  type Error = ManifestError;
+  fn try_from(value: v1::WasmComponentConfiguration) -> Result<Self> {
+    Ok(Self {
+      reference: value.reference,
+      operations: value
+        .operations
+        .into_iter()
+        .map(|op| Ok((op.name.clone(), op.try_into()?)))
+        .collect::<Result<_>>()?,
+      types: value.types,
+    })
+  }
+}
+
+impl TryFrom<v1::CompositeComponentConfiguration> for CompositeComponentConfiguration {
+  type Error = ManifestError;
+  fn try_from(value: v1::CompositeComponentConfiguration) -> Result<Self> {
+    Ok(Self {
+      operations: value
+        .operations
+        .into_iter()
+        .map(|op| Ok((op.name.clone(), op.try_into()?)))
+        .collect::<Result<_>>()?,
+      types: value.types,
+      import: value.import.into_iter().map(|v| (v.name.clone(), v.into())).collect(),
+    })
+  }
+}
+
+impl TryFrom<CompositeComponentConfiguration> for v1::CompositeComponentConfiguration {
+  type Error = ManifestError;
+  fn try_from(value: CompositeComponentConfiguration) -> Result<Self> {
+    Ok(Self {
+      operations: value
         .operations
         .into_values()
         .map(|op| op.try_into())
         .collect::<Result<_>>()?,
+      types: value.types,
+      import: value.import.into_values().map(|v| v.into()).collect(),
+    })
+  }
+}
+
+impl TryFrom<WasmComponentConfiguration> for v1::WasmComponentConfiguration {
+  type Error = ManifestError;
+  fn try_from(value: WasmComponentConfiguration) -> Result<Self> {
+    Ok(Self {
+      operations: value
+        .operations
+        .into_values()
+        .map(|op| op.try_into())
+        .collect::<Result<_>>()?,
+      types: value.types,
+      reference: value.reference,
     })
   }
 }
@@ -93,10 +182,10 @@ impl From<v1::ComponentOperationExpression> for ComponentOperationExpression {
   }
 }
 
-impl TryFrom<v1::V1AppConfiguration> for AppConfiguration {
+impl TryFrom<v1::AppConfiguration> for AppConfiguration {
   type Error = ManifestError;
 
-  fn try_from(def: v1::V1AppConfiguration) -> Result<Self> {
+  fn try_from(def: v1::AppConfiguration) -> Result<Self> {
     Ok(AppConfiguration {
       source: None,
       format: def.format,
@@ -110,7 +199,7 @@ impl TryFrom<v1::V1AppConfiguration> for AppConfiguration {
   }
 }
 
-impl TryFrom<AppConfiguration> for v1::V1AppConfiguration {
+impl TryFrom<AppConfiguration> for v1::AppConfiguration {
   type Error = ManifestError;
 
   fn try_from(value: AppConfiguration) -> std::result::Result<Self, Self::Error> {
@@ -215,10 +304,11 @@ impl From<TcpPort> for v1::TcpPort {
     }
   }
 }
-impl TryFrom<crate::v1::OperationDefinition> for FlowOperation {
+
+impl TryFrom<crate::v1::CompositeOperationDefinition> for FlowOperation {
   type Error = ManifestError;
 
-  fn try_from(op: crate::v1::OperationDefinition) -> Result<Self> {
+  fn try_from(op: crate::v1::CompositeOperationDefinition) -> Result<Self> {
     let instances: Result<HashMap<String, InstanceReference>> = op
       .instances
       .into_iter()
@@ -231,8 +321,51 @@ impl TryFrom<crate::v1::OperationDefinition> for FlowOperation {
       outputs: op.outputs,
       instances: instances?,
       connections: connections?,
-      collections: op.components,
-      constraints: Default::default(),
+      components: op.components,
+    })
+  }
+}
+
+impl TryFrom<v1::ComponentKind> for ComponentImplementation {
+  type Error = ManifestError;
+  fn try_from(value: v1::ComponentKind) -> Result<Self> {
+    Ok(match value {
+      v1::ComponentKind::CompositeComponentConfiguration(v) => ComponentImplementation::Composite(v.try_into()?),
+      v1::ComponentKind::WasmComponentConfiguration(v) => ComponentImplementation::Wasm(v.try_into()?),
+    })
+  }
+}
+
+impl TryFrom<ComponentImplementation> for v1::ComponentKind {
+  type Error = ManifestError;
+  fn try_from(value: ComponentImplementation) -> Result<Self> {
+    Ok(match value {
+      ComponentImplementation::Composite(v) => v1::ComponentKind::CompositeComponentConfiguration(v.try_into()?),
+      ComponentImplementation::Wasm(v) => v1::ComponentKind::WasmComponentConfiguration(v.try_into()?),
+    })
+  }
+}
+
+impl TryFrom<crate::v1::OperationDefinition> for OperationSignature {
+  type Error = ManifestError;
+
+  fn try_from(op: crate::v1::OperationDefinition) -> Result<Self> {
+    Ok(Self {
+      name: op.name,
+      inputs: op.inputs,
+      outputs: op.outputs,
+    })
+  }
+}
+
+impl TryFrom<OperationSignature> for crate::v1::OperationDefinition {
+  type Error = ManifestError;
+
+  fn try_from(op: OperationSignature) -> Result<Self> {
+    Ok(Self {
+      name: op.name,
+      inputs: op.inputs,
+      outputs: op.outputs,
     })
   }
 }
@@ -306,24 +439,20 @@ impl From<Permissions> for v1::Permissions {
   }
 }
 
-impl TryFrom<FlowOperation> for v1::OperationDefinition {
+impl TryFrom<FlowOperation> for v1::CompositeOperationDefinition {
   type Error = ManifestError;
 
   fn try_from(value: FlowOperation) -> std::result::Result<Self, Self::Error> {
-    let instances: Result<Vec<v1::InstanceBinding>> = value
-      .instances
-      .into_iter()
-      .map(|(id, val)| (id, val).try_into())
-      .collect();
+    let instances: Vec<v1::InstanceBinding> = value.instances.into_iter().map(|(id, val)| (id, val).into()).collect();
     let connections: Result<Vec<v1::ConnectionDefinition>> =
       value.connections.into_iter().map(|def| def.try_into()).collect();
     Ok(Self {
       name: value.name,
       inputs: value.inputs,
       outputs: value.outputs,
-      instances: instances?,
+      instances,
       flow: connections?,
-      components: value.collections,
+      components: value.components,
     })
   }
 }
@@ -351,20 +480,18 @@ impl TryFrom<ConnectionTargetDefinition> for v1::ConnectionTargetDefinition {
   }
 }
 
-impl TryFrom<(String, InstanceReference)> for v1::InstanceBinding {
-  type Error = ManifestError;
-
-  fn try_from(value: (String, InstanceReference)) -> std::result::Result<Self, Self::Error> {
+impl From<(String, InstanceReference)> for v1::InstanceBinding {
+  fn from(value: (String, InstanceReference)) -> Self {
     let id = value.0;
     let value = value.1;
-    Ok(Self {
+    Self {
       name: id,
       operation: v1::ComponentOperationExpression {
         name: value.name,
         component: v1::ComponentDefinition::ComponentReference(v1::ComponentReference { id: value.component_id }),
       },
       config: value.data,
-    })
+    }
   }
 }
 
@@ -675,27 +802,12 @@ impl From<test_case::TestPacket> for v1::PacketData {
   }
 }
 
-impl From<v1::LocalDefinition> for ComponentImplementation {
-  fn from(value: v1::LocalDefinition) -> Self {
-    match value {
-      v1::LocalDefinition::WasmRsComponent(v) => Self::Wasm(v.into()),
-    }
-  }
-}
-
 impl From<v1::WasmRsComponent> for WasmComponent {
   fn from(value: v1::WasmRsComponent) -> Self {
     Self {
       reference: value.reference,
       config: value.config,
       permissions: value.permissions.into(),
-    }
-  }
-}
-impl From<ComponentImplementation> for v1::LocalDefinition {
-  fn from(value: ComponentImplementation) -> Self {
-    match value {
-      ComponentImplementation::Wasm(v) => Self::WasmRsComponent(v.into()),
     }
   }
 }

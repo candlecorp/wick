@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 use std::fs::read_to_string;
 use std::path::Path;
-mod resources;
-mod triggers;
+pub mod resources;
+pub mod triggers;
 use tracing::debug;
 
 pub use self::resources::*;
@@ -73,7 +73,7 @@ impl AppConfiguration {
       .unwrap_or_else(|| -> i64 { raw_version.as_str().and_then(|s| s.parse::<i64>().ok()).unwrap_or(-1) });
     let manifest = match version {
       0 => panic!("no v0 implemented for app configuration"),
-      1 => Ok(from_yaml::<v1::V1AppConfiguration>(src, path)?.try_into()?),
+      1 => Ok(from_yaml::<v1::AppConfiguration>(src, path)?.try_into()?),
       -1 => Err(Error::NoFormat),
       _ => Err(Error::VersionError(version.to_string())),
     };
@@ -134,7 +134,7 @@ impl AppConfiguration {
   }
 
   pub fn into_v1_yaml(self) -> Result<String> {
-    let v1_manifest: v1::V1AppConfiguration = self.try_into()?;
+    let v1_manifest: v1::AppConfiguration = self.try_into()?;
     Ok(serde_yaml::to_string(&v1_manifest).unwrap())
   }
 }

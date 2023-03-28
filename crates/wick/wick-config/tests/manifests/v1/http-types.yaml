@@ -1,5 +1,6 @@
 ---
 format: 1
+kind: wick/types@v1
 types:
   - type: enum
     name: HttpMethod

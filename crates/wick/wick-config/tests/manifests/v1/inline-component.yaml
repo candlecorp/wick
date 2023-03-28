@@ -1,4 +1,5 @@
 name: mycli
+kind: wick/app@v1
 format: 1
 triggers:
   - kind: wick/trigger/cli@v1

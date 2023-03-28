@@ -1,12 +1,12 @@
 namespace "wick-config::v1"
 
 "Configuration for Wick applications and components."
-union WickConfig = V1AppConfiguration | V1ComponentConfiguration
+union WickConfig = AppConfiguration | ComponentConfiguration | TypesConfiguration | TestConfiguration
 
 "The Application configuration defines a standalone Wick application."
-type V1AppConfiguration @default @tagged("wick/app@v1") {
+type AppConfiguration @default @tagged("wick/app@v1") {
   "The configuration version."
-  format: u32 @required,
+  format: u32 @required @discriminant(1),
 
   "Associated metadata for this component."
   metadata: AppMetadata?,
@@ -99,59 +99,82 @@ type UdpPort @tagged("wick/resource/udpport@v1") {
   address: string
 }
 
-"A configuration for a Wick Component"
-type V1ComponentConfiguration @default @tagged("wick/component@v1") {
-  "The name of this component."
-  name: string?,
 
-  "An optional reference to a local implementation (e.g. a WebAssembly module)"
-  main: LocalDefinition?
+"A configuration for a Wick Component"
+type TypesConfiguration @tagged("wick/types@v1") {
+  "The name of this component."
+  name: string?
 
   "The component manifest format version"
-  format: u32 @required,
-
-  "Associated metadata for this component."
-  metadata: ComponentMetadata?,
-
-  "Configuration for when wick hosts this component as a service."
-  host: HostConfig,
-
-  "The labels and values that apply to this manifest."
-  labels: {string: string},
+  format: u32 @required @discriminant(1)
 
   "Additional types to export and make available to the component."
-  types: [TypeDefinition],
-
-  "Components to import into the application's scope."
-  import: [ComponentBinding],
-
-  "A map of operation names to their definitions."
-  operations: [OperationDefinition],
-
-  "Assertions that can be run against the component to validate its behavior."
-  tests: [TestDefinition],
+  types: [TypeDefinition]
 }
 
-# "A manifest defines the starting state of a Wick host and network."
-# type V1CompositeComponentConfiguration @tagged("wick/component/composite@v1") {
-#   "The name of this component."
-#   name: string?,
+"A configuration for a Wick Component"
+type TestConfiguration @tagged("wick/tests@v1") {
+  "The name of this component."
+  name: string?
 
-#   "Additional types to export and make available to the component."
-#   types: [TypeDefinition],
+  "The component manifest format version"
+  format: u32 @required @discriminant(1)
 
-#   "Components to import into the application's scope."
-#   import: [ComponentBinding],
+  "Unit tests to run against components and operations."
+  tests: [TestDefinition]
+}
 
-#   "A map of operation names to their definitions."
-#   operations: [OperationDefinition],
 
-#   "Assertions that can be run against the component to validate its behavior."
-#   tests: [TestDefinition],
-# }
+"A configuration for a Wick Component"
+type ComponentConfiguration @tagged("wick/component@v1") {
+  "The name of this component."
+  name: string?
 
-"A reference to a local implementation (e.g. a WebAssembly module)"
-union LocalDefinition = WasmRsComponent
+  "The component manifest format version"
+  format: u32 @required @discriminant(1)
+
+  "Associated metadata for this component."
+  metadata: ComponentMetadata?
+
+  "Configuration for when wick hosts this component as a service."
+  host: HostConfig
+
+  "The labels and values that apply to this manifest."
+  labels: {string: string}
+
+  "Configuration specific to different kinds of components."
+  component: ComponentKind @required
+
+  "Assertions that can be run against the component to validate its behavior."
+  tests: [TestDefinition]
+}
+
+union ComponentKind = WasmComponentConfiguration | CompositeComponentConfiguration
+
+"A component made out of other components"
+type CompositeComponentConfiguration @tagged("wick/component/composite@v1") {
+  "Additional types to export and make available to the component."
+  types: [TypeDefinition]
+
+  "Components to import into the application's scope."
+  import: [ComponentBinding]
+
+  "A list of operations implemented by the Composite component."
+  operations: [CompositeOperationDefinition]
+}
+
+"A component made out of other components"
+type WasmComponentConfiguration @tagged("wick/component/wasmrs@v1") {
+  "A reference to a local WebAssembly implementation"
+  ref: string @rename("reference") @required
+
+  "Additional types to export and make available to the component."
+  types: [TypeDefinition]
+
+  "A list of operations implemented by the WebAssembly module."
+  operations: [OperationDefinition]
+
+}
 
 "Metadata for the component."
 type ComponentMetadata @default {
@@ -255,8 +278,8 @@ type ManifestComponent @tagged("wick/component/manifest@v1") {
   config: any
 }
 
-"A definition for an single flow."
-type OperationDefinition {
+"A definition for an single composite operation."
+type CompositeOperationDefinition {
   "The name of the operation."
   name: string,
 
@@ -274,6 +297,18 @@ type OperationDefinition {
 
   "A list of connections from operation to operation."
   flow: [ConnectionDefinition],
+}
+
+"An operation name and its input and output signatures"
+type OperationDefinition {
+  "The name of the operation."
+  name: string,
+
+  "Types of the inputs to the operation."
+  inputs: [Field],
+
+  "Types of the outputs to the operation."
+  outputs: [Field],
 }
 
 "Field definition. This is not technically an any type, it is a wick interface type field."

@@ -1,5 +1,7 @@
 use thiserror::Error;
 
+use crate::component_config::ComponentKind;
+use crate::config::ConfigurationKind;
 use crate::{ConnectionDefinition, ConnectionTargetDefinition};
 
 // type BoxedSyncSendError = Box<dyn std::error::Error + Sync + std::marker::Send>;
@@ -22,6 +24,14 @@ pub enum ManifestError {
   /// Could not load file.
   #[error("Could not read file {0}")]
   LoadError(String),
+
+  /// Thrown when a specific type of configuration was expected but a different type was found.
+  #[error("Expected a {0} configuration but got a {1} configuration")]
+  UnexpectedConfigurationKind(ConfigurationKind, ConfigurationKind),
+
+  /// Thrown when a specific type of component was expected but a different type was found.
+  #[error("Expected a {0} component but got a {1} component")]
+  UnexpectedComponentType(ComponentKind, ComponentKind),
 
   /// Error deserializing YAML manifest.
   #[error("Could not parse manifest {0} as YAML: {1}")]
