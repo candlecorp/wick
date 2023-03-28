@@ -5,7 +5,7 @@ use wick_interface_types::TypeDefinition;
 use crate::config::common::component_definition::BoundComponent;
 use crate::config::common::flow_definition::FlowOperation;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Default, Clone)]
 #[must_use]
 /// The internal representation of a Wick manifest.
 pub struct CompositeComponentConfiguration {
@@ -16,8 +16,8 @@ pub struct CompositeComponentConfiguration {
 
 impl CompositeComponentConfiguration {
   /// Add a [BoundComponent] to the configuration.
-  pub fn add_import(mut self, name: impl AsRef<str>, component: BoundComponent) -> Self {
-    self.import.insert(name.as_ref().to_owned(), component);
+  pub fn add_import(mut self, component: BoundComponent) -> Self {
+    self.import.insert(component.id.clone(), component);
     self
   }
 

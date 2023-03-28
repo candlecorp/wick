@@ -1,7 +1,7 @@
 use std::net::{IpAddr, SocketAddr};
 use std::str::FromStr;
 
-use wick_config::{ResourceDefinition, TcpPort, UdpPort};
+use wick_config::config::{ResourceDefinition, TcpPort, UdpPort};
 
 #[derive(thiserror::Error, Debug)]
 pub enum ResourceError {

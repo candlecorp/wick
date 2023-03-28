@@ -27,7 +27,7 @@ pub(crate) async fn handle(opts: WasmInspectCommand) -> Result<()> {
   let claims = wick_wascap::extract_claims(&buf)?;
   match claims {
     Some(claims) => println!("{}", serde_json::to_string(&claims)?),
-    None => error!("Error extracting claims"),
+    None => error!("Could not find any claims in the passed module"),
   }
 
   Ok(())

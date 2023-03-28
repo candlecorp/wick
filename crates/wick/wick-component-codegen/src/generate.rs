@@ -9,7 +9,7 @@ use proc_macro2::{Ident, Literal, Span, TokenStream};
 use quote::quote;
 use syn::parse::{Parse, ParseStream};
 use syn::{parse_macro_input, Expr, Lit, LitStr};
-use wick_config::FlowOperation;
+use wick_config::config::{FlowOperation, OperationSignature};
 use wick_interface_types::{EnumSignature, EnumVariant, StructSignature, TypeDefinition};
 
 fn snake(s: &str) -> String {
@@ -20,11 +20,11 @@ fn pascal(s: &str) -> String {
   AsPascalCase(s).to_string()
 }
 
-fn op_wrapper_name(op: &FlowOperation) -> String {
+fn op_wrapper_name(op: &OperationSignature) -> String {
   snake(&format!("{}_wrapper", op.name))
 }
 
-fn op_outputs_name(op: &FlowOperation) -> String {
+fn op_outputs_name(op: &OperationSignature) -> String {
   format!("Op{}Outputs", pascal(&op.name))
 }
 
@@ -43,7 +43,7 @@ fn enumvariant_name(ty: &EnumVariant) -> String {
 fn gen_register_channels<'a>(
   config: &config::Config,
   component: &Ident,
-  op: impl Iterator<Item = &'a FlowOperation>,
+  op: impl Iterator<Item = &'a OperationSignature>,
 ) -> Vec<TokenStream> {
   op.map(|op| {
     let name = Ident::new(&op_wrapper_name(op), Span::call_site());
@@ -227,7 +227,7 @@ fn gen_struct(config: &config::Config, ty: &StructSignature) -> TokenStream {
 fn gen_wrapper_fns<'a>(
   config: &config::Config,
   component: &Ident,
-  op: impl Iterator<Item = &'a FlowOperation>,
+  op: impl Iterator<Item = &'a OperationSignature>,
 ) -> Vec<TokenStream> {
   op.map(|op| gen_wrapper_fn(config, component, op))
     .collect::<Vec<_>>()
@@ -235,7 +235,7 @@ fn gen_wrapper_fns<'a>(
     .collect()
 }
 
-fn gen_wrapper_fn(config: &config::Config, component: &Ident, op: &FlowOperation) -> TokenStream {
+fn gen_wrapper_fn(config: &config::Config, component: &Ident, op: &OperationSignature) -> TokenStream {
   let impl_name = Ident::new(&snake(&op.name), Span::call_site());
   let wrapper_name = Ident::new(&op_wrapper_name(op), Span::call_site());
   let string = &snake(&op.name);
@@ -288,7 +288,7 @@ fn gen_wrapper_fn(config: &config::Config, component: &Ident, op: &FlowOperation
 fn gen_trait_fns<'a>(
   config: &config::Config,
   component: &Ident,
-  op: impl Iterator<Item = &'a FlowOperation>,
+  op: impl Iterator<Item = &'a OperationSignature>,
 ) -> Vec<TokenStream> {
   op.map(|op| gen_trait_signature(config, component, op))
     .collect::<Vec<_>>()
@@ -296,7 +296,7 @@ fn gen_trait_fns<'a>(
     .collect()
 }
 
-fn gen_trait_signature(config: &config::Config, component: &Ident, op: &FlowOperation) -> TokenStream {
+fn gen_trait_signature(config: &config::Config, component: &Ident, op: &OperationSignature) -> TokenStream {
   let outputs_name = Ident::new(&op_outputs_name(op), Span::call_site());
   let trait_name = Ident::new(&format!("Op{}", &pascal(&op.name)), Span::call_site());
   let impl_name = Ident::new(&snake(&op.name), Span::call_site());
@@ -361,12 +361,21 @@ fn gen_trait_signature(config: &config::Config, component: &Ident, op: &FlowOper
 }
 
 fn codegen(config: &config::Config) -> Result<String> {
-  let component = wick_config::ComponentConfiguration::load_from_file(&config.spec).unwrap();
+  let wick_config = wick_config::WickConfiguration::load_from_file(&config.spec).unwrap();
+  let (ops, types) = match wick_config {
+    wick_config::WickConfiguration::Component(config) => {
+      let config = config.try_wasm().unwrap().clone();
+      (config.operations().clone(), config.types().to_vec())
+    }
+    wick_config::WickConfiguration::Types(config) => (std::collections::HashMap::default(), config.types().to_vec()),
+    _ => panic!("Code generation only supports `wick/component` and `wick/types` configurations"),
+  };
+
   let component_name = Ident::new("Component", Span::call_site());
-  let register_stmts = gen_register_channels(config, &component_name, component.operations().values());
-  let wrapper_fns = gen_wrapper_fns(config, &component_name, component.operations().values());
-  let trait_defs = gen_trait_fns(config, &component_name, component.operations().values());
-  let typedefs = gen_types(config, component.types().iter());
+  let register_stmts = gen_register_channels(config, &component_name, ops.values());
+  let wrapper_fns = gen_wrapper_fns(config, &component_name, ops.values());
+  let trait_defs = gen_trait_fns(config, &component_name, ops.values());
+  let typedefs = gen_types(config, types.iter());
 
   let expanded = quote! {
     #[allow(unused)]

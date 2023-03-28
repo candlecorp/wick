@@ -13,7 +13,7 @@ async fn test_wick_serve() -> utils::TestResult<()> {
     "component rpc server",
     &[
       "serve",
-      "../../integration/test-baseline-component/build/baseline.signed.wasm",
+      "../../integration/test-baseline-component/component.yaml",
       "--trace",
       "--rpc",
     ],

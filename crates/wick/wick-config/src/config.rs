@@ -119,10 +119,10 @@ impl WickConfiguration {
 
   pub fn set_source(&mut self, src: impl AsRef<str>) {
     match self {
-      WickConfiguration::Component(v) => v.source = Some(src.as_ref().to_owned()),
-      WickConfiguration::App(v) => v.source = Some(src.as_ref().to_owned()),
-      WickConfiguration::Types(v) => v.source = Some(src.as_ref().to_owned()),
-      WickConfiguration::Tests(v) => v.source = Some(src.as_ref().to_owned()),
+      WickConfiguration::Component(v) => v.set_source(src),
+      WickConfiguration::App(v) => v.set_source(src),
+      WickConfiguration::Types(v) => v.set_source(src),
+      WickConfiguration::Tests(v) => v.set_source(src),
     }
   }
 

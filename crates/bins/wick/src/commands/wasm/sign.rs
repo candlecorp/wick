@@ -4,7 +4,7 @@ use std::path::PathBuf;
 
 use anyhow::Result;
 use clap::Args;
-use wick_interface_types::ComponentSignature;
+use wick_config::WickConfiguration;
 use wick_wascap::{sign_buffer_with_claims, ClaimsOptions};
 
 use crate::keys::{get_module_keys, GenerateCommon};
@@ -44,10 +44,7 @@ pub(crate) async fn handle(opts: WasmSignCommand) -> Result<()> {
   debug!("Signing module");
 
   debug!("Reading from {}", opts.interface);
-  let component_yaml = std::fs::read_to_string(opts.interface)?;
-  debug!("Read {} bytes", component_yaml.len());
-
-  let interface: ComponentSignature = serde_yaml::from_str(&component_yaml)?;
+  let interface = WickConfiguration::load_from_file(&opts.interface)?.try_component_config()?;
 
   let mut source_file = File::open(&opts.source).unwrap();
   let mut buf = Vec::new();
@@ -69,7 +66,7 @@ pub(crate) async fn handle(opts: WasmSignCommand) -> Result<()> {
 
   let signed = sign_buffer_with_claims(
     &buf,
-    interface,
+    interface.try_into()?,
     &subject,
     &account,
     ClaimsOptions {

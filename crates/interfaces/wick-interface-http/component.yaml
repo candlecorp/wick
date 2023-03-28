@@ -1,9 +1,7 @@
 # yaml-language-server: $schema=../../wick/wick-config/json-schema/manifest.json
 ---
 name: http
-format: 1
-metadata:
-  version: '1'
+kind: wick/types@v1
 types:
   - type: enum
     name: HttpMethod

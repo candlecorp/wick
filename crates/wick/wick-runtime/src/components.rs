@@ -10,7 +10,7 @@ use seeded_random::{Random, Seed};
 use uuid::Uuid;
 use wick_component_wasm::component::HostLinkCallback;
 use wick_component_wasm::error::LinkError;
-use wick_config::{ManifestComponent, WasmComponent};
+use wick_config::config::{ManifestComponent, WasmComponent};
 use wick_packet::{Entity, Invocation, PacketStream};
 
 use self::component_service::NativeComponentService;

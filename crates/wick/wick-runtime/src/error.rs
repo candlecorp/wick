@@ -1,5 +1,5 @@
 use thiserror::Error;
-use wick_config::TriggerKind;
+use wick_config::config::TriggerKind;
 
 pub use crate::components::error::ComponentError;
 pub use crate::network_service::error::NetworkError;

@@ -3,7 +3,7 @@ use std::time::Duration;
 use futures::StreamExt;
 use logger::{LoggingGuard, LoggingOptions};
 use wick_component_cli::options::DefaultCliOptions;
-use wick_config::{ComponentConfiguration, HttpConfig};
+use wick_config::config::{ComponentConfiguration, HttpConfig};
 use wick_packet::PacketStream;
 
 use crate::commands::FetchOptions;

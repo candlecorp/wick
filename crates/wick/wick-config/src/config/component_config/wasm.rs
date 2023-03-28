@@ -29,3 +29,22 @@ pub struct OperationSignature {
   /// A list of the input types for the operation.
   pub outputs: Vec<Field>,
 }
+
+impl WasmComponentConfiguration {
+  /// Get the operations implemented by this component.
+  #[must_use]
+  pub fn operations(&self) -> &HashMap<String, OperationSignature> {
+    &self.operations
+  }
+
+  /// Get the reference location to the component.
+  #[must_use]
+  pub fn reference(&self) -> &str {
+    &self.reference
+  }
+
+  /// Get the types used by the component's operations.
+  pub fn types(&self) -> &[TypeDefinition] {
+    &self.types
+  }
+}

@@ -7,7 +7,7 @@ pub use self::triggers::*;
 use super::common::component_definition::{BoundComponent, ComponentDefinition};
 use super::common::host_definition::HostConfig;
 use crate::error::ReferenceError;
-use crate::{v1, Result};
+use crate::{config, v1, Result};
 
 #[derive(Debug, Clone)]
 #[must_use]
@@ -15,7 +15,7 @@ use crate::{v1, Result};
 pub struct AppConfiguration {
   pub name: String,
   pub(crate) source: Option<String>,
-  pub(crate) version: String,
+  pub(crate) metadata: Option<config::Metadata>,
   pub(crate) import: HashMap<String, BoundComponent>,
   pub(crate) resources: HashMap<String, BoundResource>,
   pub(crate) triggers: Vec<TriggerDefinition>,
@@ -27,7 +27,7 @@ impl Default for AppConfiguration {
     Self {
       name: "".to_owned(),
       source: None,
-      version: "0.0.1".to_owned(),
+      metadata: None,
       host: HostConfig::default(),
       import: HashMap::new(),
       resources: HashMap::new(),
@@ -44,12 +44,6 @@ impl AppConfiguration {
       return Some(ConfigurationItem::Component(&component.kind));
     }
     None
-  }
-
-  /// Return the underlying version of the source manifest.
-  #[must_use]
-  pub fn version(&self) -> &str {
-    &self.version
   }
 
   /// Return the underlying version of the source manifest.

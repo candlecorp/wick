@@ -6,9 +6,9 @@ mod http;
 use async_trait::async_trait;
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
-use wick_config::{AppConfiguration, ComponentDefinition, TriggerDefinition, TriggerKind};
+use wick_config::config::{AppConfiguration, ComponentDefinition, TriggerDefinition, TriggerKind};
 
-use crate::dev::prelude::RuntimeError;
+use crate::dev::prelude::*;
 use crate::resources::Resource;
 
 #[async_trait]

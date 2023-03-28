@@ -3,8 +3,6 @@ use std::time::Duration;
 
 use seeded_random::{Random, Seed};
 use uuid::Uuid;
-use wick_config::{ComponentConfiguration, ComponentConfigurationBuilder, FlowOperation};
-use wick_packet::{Invocation, PacketStream};
 
 use crate::dev::prelude::*;
 use crate::network_service::Initialize;
@@ -21,7 +19,7 @@ pub struct Network {
 #[derive(Debug)]
 #[must_use]
 pub struct NetworkInit {
-  definition: ComponentConfiguration,
+  definition: config::ComponentConfiguration,
   allow_latest: bool,
   allowed_insecure: Vec<String>,
   timeout: Duration,
@@ -88,7 +86,7 @@ impl Network {
 pub struct NetworkBuilder {
   allow_latest: bool,
   allowed_insecure: Vec<String>,
-  manifest_builder: ComponentConfigurationBuilder,
+  manifest_builder: config::ComponentConfigurationBuilder,
   // mesh: Option<Arc<Mesh>>,
   timeout: Duration,
   rng_seed: Option<Seed>,
@@ -104,11 +102,11 @@ impl NetworkBuilder {
   }
 
   /// Creates a new network builder from a [NetworkDefinition]
-  pub fn from_definition(definition: ComponentConfiguration) -> Result<Self> {
+  pub fn from_definition(definition: config::ComponentConfiguration) -> Result<Self> {
     Ok(Self {
       allow_latest: definition.allow_latest(),
       allowed_insecure: definition.insecure_registries().clone(),
-      manifest_builder: ComponentConfigurationBuilder::with_base(definition),
+      manifest_builder: config::ComponentConfigurationBuilder::with_base(definition),
       timeout: Duration::from_secs(5),
       // mesh: None,
       namespace: None,
@@ -116,13 +114,8 @@ impl NetworkBuilder {
     })
   }
 
-  pub fn add_component(mut self, collection: BoundComponent) -> Self {
-    self.manifest_builder = self.manifest_builder.add_collection(collection.id.clone(), collection);
-    self
-  }
-
-  pub fn add_flow(mut self, flow: FlowOperation) -> Self {
-    self.manifest_builder = self.manifest_builder.add_flow(flow.name.clone(), flow);
+  pub fn add_import(mut self, collection: config::BoundComponent) -> Self {
+    self.manifest_builder = self.manifest_builder.add_import(collection);
     self
   }
 

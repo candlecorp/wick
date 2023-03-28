@@ -78,7 +78,7 @@ impl TryFrom<v1::ComponentConfiguration> for ComponentConfiguration {
   fn try_from(def: v1::ComponentConfiguration) -> Result<Self> {
     Ok(ComponentConfiguration {
       source: None,
-      version: def.metadata.unwrap_or(v1::ComponentMetadata::default()).version,
+      metadata: def.metadata.map(|m| m.into()),
       host: def.host.try_into()?,
       name: def.name,
       labels: def.labels,
@@ -93,7 +93,7 @@ impl TryFrom<ComponentConfiguration> for v1::ComponentConfiguration {
 
   fn try_from(def: ComponentConfiguration) -> Result<Self> {
     Ok(v1::ComponentConfiguration {
-      metadata: Some(v1::ComponentMetadata { version: def.version }),
+      metadata: def.metadata.map(|m| m.into()),
       host: def.host.try_into()?,
       name: def.name,
       labels: def.labels,
@@ -178,7 +178,7 @@ impl TryFrom<v1::AppConfiguration> for AppConfiguration {
   fn try_from(def: v1::AppConfiguration) -> Result<Self> {
     Ok(AppConfiguration {
       source: None,
-      version: def.metadata.unwrap_or_default().version,
+      metadata: def.metadata.map(|m| m.into()),
       name: def.name,
       host: def.host.try_into()?,
       import: def.import.into_iter().map(|v| (v.name.clone(), v.into())).collect(),
@@ -193,7 +193,7 @@ impl TryFrom<AppConfiguration> for v1::AppConfiguration {
 
   fn try_from(value: AppConfiguration) -> std::result::Result<Self, Self::Error> {
     Ok(Self {
-      metadata: Some(v1::AppMetadata { version: value.version }),
+      metadata: value.metadata.map(|m| m.into()),
       name: value.name,
       import: value.import.into_values().map(|v| v.into()).collect(),
       resources: value.resources.into_values().map(|v| v.into()).collect(),
@@ -796,6 +796,34 @@ impl From<v1::WasmRsComponent> for WasmComponent {
       reference: value.reference,
       config: value.config,
       permissions: value.permissions.into(),
+    }
+  }
+}
+
+impl From<v1::Metadata> for config::Metadata {
+  fn from(value: v1::Metadata) -> Self {
+    Self {
+      version: value.version,
+      authors: value.authors,
+      vendors: value.vendors,
+      description: value.description,
+      documentation: value.documentation,
+      licenses: value.licenses,
+      icon: value.icon,
+    }
+  }
+}
+
+impl From<config::Metadata> for v1::Metadata {
+  fn from(value: config::Metadata) -> Self {
+    Self {
+      version: value.version,
+      authors: value.authors,
+      vendors: value.vendors,
+      description: value.description,
+      documentation: value.documentation,
+      licenses: value.licenses,
+      icon: value.icon,
     }
   }
 }
