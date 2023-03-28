@@ -40,7 +40,7 @@ async fn subnetworks() -> Result<()> {
 // async fn grpc() -> Result<()> {
 //   let socket = bind_new_socket()?;
 //   let port = socket.local_addr()?.port();
-//   let _ = make_rpc_server(socket, Arc::new(test_native_collection::Collection::default()));
+//   let _ = make_rpc_server(socket, Arc::new(test_native_component::Collection::default()));
 //   env::set_var("TEST_PORT", port.to_string());
 
 //   let (network, _) = init_network_from_yaml("./manifests/v0/collections/grpc.yaml").await?;

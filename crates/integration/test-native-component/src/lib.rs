@@ -11,9 +11,9 @@ extern crate tracing;
 pub struct Context {}
 
 #[derive(Clone, Default)]
-pub struct Collection {}
+pub struct Component {}
 
-impl RpcHandler for Collection {
+impl RpcHandler for Component {
   fn invoke(&self, invocation: Invocation, stream: PacketStream) -> BoxFuture<RpcResult<PacketStream>> {
     let target = invocation.target_url();
     trace!("test collection invoke: {}", target);
@@ -29,7 +29,7 @@ impl RpcHandler for Collection {
   fn get_list(&self) -> RpcResult<Vec<HostedType>> {
     trace!("test collection get list");
     let signature = component! {
-        name: "test-native-collection",
+        name: "test-native-component",
         version: "0.1.0",
         operations: {
           "error" => {
@@ -78,7 +78,7 @@ mod tests {
 
   #[test_logger::test(tokio::test)]
   async fn request() -> anyhow::Result<()> {
-    let collection = Collection::default();
+    let collection = Component::default();
     let input = "some_input";
     let input_stream = packet_stream!(("input", input));
 
@@ -97,7 +97,7 @@ mod tests {
 
   #[test_logger::test(tokio::test)]
   async fn list() -> anyhow::Result<()> {
-    let collection = Collection::default();
+    let collection = Component::default();
 
     let response = collection.get_list()?;
 
@@ -105,7 +105,7 @@ mod tests {
 
     assert_eq!(response.len(), 1);
     let expected = ComponentSignature {
-      name: Some("test-native-collection".to_owned()),
+      name: Some("test-native-component".to_owned()),
       operations: vec![
         OperationSignature {
           name: "error".to_string(),

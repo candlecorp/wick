@@ -19,6 +19,10 @@ pub enum Error {
   #[error("{0}")]
   General(String),
 
+  /// Payload was successful but no data was provided.
+  #[error("No data in payload")]
+  NoData,
+
   /// An error that wraps a PayloadError.
   #[error("{}", .0.msg())]
   PayloadError(PacketError),

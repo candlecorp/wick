@@ -6,5 +6,5 @@ triggers:
       name: main
       component: ../../integration/test-cli-trigger-component/build/test_cli_trigger_component.signed.wasm
     app:
-      kind: Manifest
+      kind: wick/component/manifest@v1
       ref: ./tests/cmd/run/noop.yaml

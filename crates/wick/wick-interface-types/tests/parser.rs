@@ -80,12 +80,12 @@ fn test_component_macro() -> Result<()> {
   });
 
   let expected = ComponentSignature {
-    name: Some("test-native-collection".to_owned()),
+    name: Some("test-native-component".to_owned()),
     operations: opmap,
     ..Default::default()
   };
   let actual = component! {
-      name: "test-native-collection",
+      name: "test-native-component",
       version: "0.1.0",
       operations: {
         "test-component" => {

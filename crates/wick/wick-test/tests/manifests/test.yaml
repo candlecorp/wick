@@ -1,0 +1,11 @@
+---
+format: 1
+tests:
+  - name: test
+    operation: test-component
+    input:
+      - name: input
+        data: test
+    output:
+      - name: output
+        data: 'TEST: test'

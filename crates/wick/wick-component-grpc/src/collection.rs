@@ -59,7 +59,7 @@ mod test {
   use std::sync::Arc;
 
   use anyhow::Result;
-  use test_native_collection::Collection as TestCollection;
+  use test_native_component::Collection as TestCollection;
   use wasmflow_sdk::v1::packet::PacketMap;
   use wick_invocation_server::{bind_new_socket, make_rpc_server};
   use wick_packet::Entity;

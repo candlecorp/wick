@@ -1,5 +1,4 @@
 use tokio::time::sleep;
-use wick_packet::Packet;
 
 pub type TestResult<T> = Result<T, TestError>;
 

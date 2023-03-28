@@ -8,7 +8,7 @@ use std::sync::Arc;
 use flow_graph_interpreter::NamespaceHandler;
 use seeded_random::{Random, Seed};
 use uuid::Uuid;
-use wick_component_wasm::collection::HostLinkCallback;
+use wick_component_wasm::component::HostLinkCallback;
 use wick_component_wasm::error::LinkError;
 use wick_config::{ManifestComponent, WasmComponent};
 use wick_packet::{Entity, Invocation, PacketStream};
@@ -26,20 +26,20 @@ pub(crate) trait InvocationHandler {
 
 type Result<T> = std::result::Result<T, ComponentError>;
 
-type CollectionInitResult = Result<NamespaceHandler>;
+type ComponentInitResult = Result<NamespaceHandler>;
 
-pub(crate) async fn initialize_wasm_component<'a, 'b>(
+pub(crate) async fn init_wasm_component<'a, 'b>(
   kind: &'a WasmComponent,
   namespace: String,
   opts: ComponentInitOptions<'b>,
-) -> CollectionInitResult {
+) -> ComponentInitResult {
   trace!(namespace = %namespace, ?opts, "registering");
 
   let component =
     wick_component_wasm::helpers::load_wasm(&kind.reference, opts.allow_latest, &opts.allowed_insecure).await?;
 
   // TODO take max threads from configuration
-  let collection = Arc::new(wick_component_wasm::collection::Collection::try_load(
+  let collection = Arc::new(wick_component_wasm::component::Component::try_load(
     &component,
     5,
     Some(kind.permissions.clone()),
@@ -86,11 +86,11 @@ fn make_link_callback(network_id: Uuid) -> Box<HostLinkCallback> {
 }
 
 // #[instrument(parent=opts.span, skip(kind, opts))]
-pub(crate) async fn initialize_network_collection<'a, 'b>(
+pub(crate) async fn init_manifest_component<'a, 'b>(
   kind: &'a ManifestComponent,
   namespace: String,
   mut opts: ComponentInitOptions<'b>,
-) -> CollectionInitResult {
+) -> ComponentInitResult {
   trace!(namespace = %namespace, ?opts, "registering");
 
   let rng = Random::from_seed(opts.rng_seed);
@@ -108,11 +108,7 @@ pub(crate) async fn initialize_network_collection<'a, 'b>(
   Ok(NamespaceHandler::new(namespace, Box::new(service)))
 }
 
-pub(crate) fn initialize_native_component(
-  namespace: String,
-  seed: Seed,
-  _span: &tracing::Span,
-) -> CollectionInitResult {
+pub(crate) fn initialize_native_component(namespace: String, seed: Seed, _span: &tracing::Span) -> ComponentInitResult {
   trace!("registering");
   let collection = Arc::new(wick_stdlib::Collection::new(seed));
   let service = NativeComponentService::new(collection);

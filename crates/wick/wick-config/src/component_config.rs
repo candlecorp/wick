@@ -5,8 +5,9 @@ use std::path::Path;
 use tracing::debug;
 use wick_interface_types::TypeDefinition;
 
+use crate::component_definition::ComponentImplementation;
 use crate::host_definition::HostConfig;
-use crate::{from_yaml, v0, v1, BoundComponent, Error, FlowOperation, Result};
+use crate::{from_yaml, v0, v1, BoundComponent, Error, FlowOperation, Result, TestCase};
 
 #[derive(Debug, Clone)]
 #[must_use]
@@ -14,6 +15,7 @@ use crate::{from_yaml, v0, v1, BoundComponent, Error, FlowOperation, Result};
 pub struct ComponentConfiguration {
   pub name: Option<String>,
   pub(crate) source: Option<String>,
+  pub(crate) main: Option<ComponentImplementation>,
   pub(crate) format: u32,
   pub(crate) version: String,
   pub(crate) host: HostConfig,
@@ -21,6 +23,7 @@ pub struct ComponentConfiguration {
   pub(crate) labels: HashMap<String, String>,
   pub(crate) import: HashMap<String, BoundComponent>,
   pub(crate) operations: HashMap<String, FlowOperation>,
+  pub(crate) tests: Vec<TestCase>,
 }
 
 impl Default for ComponentConfiguration {
@@ -28,6 +31,7 @@ impl Default for ComponentConfiguration {
     Self {
       name: None,
       source: None,
+      main: None,
       format: 1,
       version: "0.0.1".to_owned(),
       host: HostConfig::default(),
@@ -35,6 +39,7 @@ impl Default for ComponentConfiguration {
       labels: HashMap::new(),
       import: HashMap::new(),
       operations: HashMap::new(),
+      tests: Vec::new(),
     }
   }
 }
@@ -72,7 +77,7 @@ impl ComponentConfiguration {
       .unwrap_or_else(|| -> i64 { raw_version.as_str().and_then(|s| s.parse::<i64>().ok()).unwrap_or(-1) });
     let manifest = match version {
       0 => Ok(from_yaml::<v0::HostManifest>(src, path)?.try_into()?),
-      1 => Ok(from_yaml::<v1::ComponentConfiguration>(src, path)?.try_into()?),
+      1 => Ok(from_yaml::<v1::V1ComponentConfiguration>(src, path)?.try_into()?),
       -1 => Err(Error::NoFormat),
       _ => Err(Error::VersionError(version.to_string())),
     };
@@ -91,6 +96,12 @@ impl ComponentConfiguration {
     &mut self.host
   }
 
+  /// Get the `main:` implementation references if it exists.
+  #[must_use]
+  pub fn main(&self) -> Option<&ComponentImplementation> {
+    self.main.as_ref()
+  }
+
   /// Determine if the configuration allows for fetching artifacts with the :latest tag.
   #[must_use]
   pub fn allow_latest(&self) -> bool {
@@ -107,6 +118,12 @@ impl ComponentConfiguration {
   #[must_use]
   pub fn format(&self) -> u32 {
     self.format
+  }
+
+  /// Return the list of tests defined in the manifest.
+  #[must_use]
+  pub fn tests(&self) -> &[TestCase] {
+    &self.tests
   }
 
   /// Return the version of the component.
@@ -163,7 +180,7 @@ impl ComponentConfiguration {
   }
 
   pub fn into_v1_yaml(self) -> Result<String> {
-    let v1_manifest: v1::ComponentConfiguration = self.try_into()?;
+    let v1_manifest: v1::V1ComponentConfiguration = self.try_into()?;
     Ok(serde_yaml::to_string(&v1_manifest).unwrap())
   }
 }

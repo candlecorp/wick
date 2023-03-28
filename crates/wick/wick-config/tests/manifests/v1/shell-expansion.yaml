@@ -6,7 +6,7 @@ metadata:
 import:
   - name: test
     component:
-      kind: Wasm
+      kind: wick/component/wasmrs@v1
       ref: bar
       permissions:
         dirs:

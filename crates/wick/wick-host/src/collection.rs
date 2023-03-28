@@ -15,19 +15,19 @@ pub struct Context {
 }
 
 #[derive(Clone, Debug)]
-pub struct Collection {
+pub struct Component {
   host: Arc<ComponentHost>,
 }
 
-impl Collection {}
+impl Component {}
 
-impl From<ComponentHost> for Collection {
+impl From<ComponentHost> for Component {
   fn from(host: ComponentHost) -> Self {
     Self { host: Arc::new(host) }
   }
 }
 
-impl RpcHandler for Collection {
+impl RpcHandler for Component {
   fn invoke(&self, invocation: Invocation, stream: PacketStream) -> BoxFuture<RpcResult<PacketStream>> {
     let fut = self.host.invoke(invocation, stream);
 
@@ -61,7 +61,7 @@ mod tests {
     let builder = ComponentHostBuilder::try_from("./manifests/logger.yaml")?;
     let mut host = builder.build();
     host.start(Some(0)).await?;
-    let collection: Collection = host.into();
+    let collection: Component = host.into();
     let input = "Hello world";
 
     let job_payload = packet_stream![("input", input)];

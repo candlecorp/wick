@@ -1,6 +1,6 @@
 use thiserror::Error;
 
-#[derive(Error, Debug)]
+#[derive(Error, Debug, PartialEq)]
 pub enum TestError {
   #[error("Could not read file : {0}")]
   ReadFailed(String),

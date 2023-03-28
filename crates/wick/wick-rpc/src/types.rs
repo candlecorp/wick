@@ -85,7 +85,7 @@ impl From<rpc_packet::Data> for PacketPayload {
   fn from(v: rpc_packet::Data) -> Self {
     match v {
       rpc_packet::Data::Ok(v) => PacketPayload::Ok(match v.data {
-        Some(rpc::ok::Data::Messagepack(v)) => v.into(),
+        Some(rpc::ok::Data::Messagepack(v)) => Some(v.into()),
         Some(rpc::ok::Data::Json(_v)) => todo!(),
         None => unreachable!(),
       }),
@@ -99,7 +99,7 @@ impl From<PacketPayload> for rpc_packet::Data {
   fn from(v: PacketPayload) -> Self {
     match v {
       PacketPayload::Ok(v) => rpc_packet::Data::Ok(rpc::Ok {
-        data: Some(rpc::ok::Data::Messagepack(v.to_vec())),
+        data: Some(rpc::ok::Data::Messagepack(v.map_or_else(Vec::new, |v| v.to_vec()))),
       }),
       PacketPayload::Err(e) => rpc_packet::Data::Err(rpc::Err {
         message: e.msg().to_owned(),

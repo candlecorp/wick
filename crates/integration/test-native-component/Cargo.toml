@@ -1,5 +1,5 @@
 [package]
-name = "test-native-collection"
+name = "test-native-component"
 version = "0.1.0"
 authors = ["Jarrod Overson <jsoverson@gmail.com>"]
 edition = "2021"

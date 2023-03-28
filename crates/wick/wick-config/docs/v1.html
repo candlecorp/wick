@@ -1,7 +1,7 @@
 <div class=manifest><div class="definition"></div><div class="definition">## unhandled
     panic!()</div><div class="definition">
 <h2 class="definition-name type-name">
-  <a name="AppConfiguration">AppConfiguration</a>
+  <a name="V1AppConfiguration">V1AppConfiguration</a>
 </h2>
 
 <span class="description type-description">The Application configuration defines a standalone Wick application.</span>
@@ -45,6 +45,20 @@
 
 <ul class="field-notes">
 <li><span class="type field-note">Type: <span class=field-type>string</span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="host">host</a>
+</h3>
+
+<span class="description field-description">Configuration that controls how this application runs within a host.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#HostConfig">HostConfig</a></span></span></li>
 
 
 </ul>
@@ -361,10 +375,10 @@
 </ul>
 </div></div></div><div class="definition">
 <h2 class="definition-name type-name">
-  <a name="ComponentConfiguration">ComponentConfiguration</a>
+  <a name="V1ComponentConfiguration">V1ComponentConfiguration</a>
 </h2>
 
-<span class="description type-description">A manifest defines the starting state of a Wick host and network.</span>
+<span class="description type-description">A configuration for a Wick Component</span>
 <div class=fields>
 <div class=field>
 
@@ -377,6 +391,20 @@
 
 <ul class="field-notes">
 <li><span class="type field-note">Type: <span class=field-type>string<span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="main">main</a>
+</h3>
+
+<span class="description field-description">An optional reference to a local implementation (e.g. a WebAssembly module)</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#LocalDefinition">LocalDefinition</a><span class=optional>(Optional)</span></span></span></li>
 
 
 </ul>
@@ -414,7 +442,7 @@
   <a name="host">host</a>
 </h3>
 
-<span class="description field-description">Configuration for the host when this manifest is run directly.</span>
+<span class="description field-description">Configuration for when wick hosts this component as a service.</span>
 
 
 <ul class="field-notes">
@@ -478,7 +506,22 @@
 
 
 </ul>
-</div></div></div><div class="definition">
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="tests">tests</a>
+</h3>
+
+<span class="description field-description">Assertions that can be run against the component to validate its behavior.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#TestDefinition">TestDefinition</a>[]</span></span></li>
+
+
+</ul>
+</div></div></div><div class="definition">## unhandled
+    panic!()</div><div class="definition">
 <h2 class="definition-name type-name">
   <a name="ComponentMetadata">ComponentMetadata</a>
 </h2>
@@ -747,7 +790,7 @@
 </ul>
 </div></div></div><div class="definition">
 <h2 class="definition-name type-name">
-  <a name="WasmComponent">WasmComponent</a>
+  <a name="WasmRsComponent">WasmRsComponent</a>
 </h2>
 
 <span class="description type-description">A WebAssembly component.</span>
@@ -1108,6 +1151,266 @@
 
 <ul class="field-notes">
 <li><span class="type field-note">Type: <span class=field-type><a href="#any">any</a><span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
+</div></div></div><div class="definition">
+<h2 class="definition-name type-name">
+  <a name="TestDefinition">TestDefinition</a>
+</h2>
+
+<span class="description type-description">A test case for a component.</span>
+<div class=fields>
+<div class=field>
+
+<h3 class=field-name>
+  <a name="name">name</a>
+</h3>
+
+<span class="description field-description">The name of the test.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string</span></span></li>
+<li><span class="annotation field-note">Required</span></li>
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="operation">operation</a>
+</h3>
+
+<span class="description field-description">The operaton to test.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string</span></span></li>
+<li><span class="annotation field-note">Required</span></li>
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="inherent">inherent</a>
+</h3>
+
+<span class="description field-description">Inherent data to use for the test.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#InherentData">InherentData</a><span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="input">input</a>
+</h3>
+
+<span class="description field-description">The inputs to the test.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#PacketData">PacketData</a>[]</span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="output">output</a>
+</h3>
+
+<span class="description field-description">The expected outputs of the operation.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#PacketData">PacketData</a>[]</span></span></li>
+
+
+</ul>
+</div></div></div><div class="definition">
+<h2 class="definition-name type-name">
+  <a name="InherentData">InherentData</a>
+</h2>
+
+<span class="description type-description">Data inherent to transactions.</span>
+<div class=fields>
+<div class=field>
+
+<h3 class=field-name>
+  <a name="seed">seed</a>
+</h3>
+
+<span class="description field-description">An RNG seed.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>u64<span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="timestamp">timestamp</a>
+</h3>
+
+<span class="description field-description">A timestamp.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>u64<span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
+</div></div></div><div class="definition">## unhandled
+    panic!()</div><div class="definition">
+<h2 class="definition-name type-name">
+  <a name="PayloadData">PayloadData</a>
+</h2>
+
+<span class="description type-description">A simplified representation of a Wick data packet & payload, used to write tests.</span>
+<div class=fields>
+<div class=field>
+
+<h3 class=field-name>
+  <a name="name">name</a>
+</h3>
+
+<span class="description field-description">The name of the port to send the data to.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string</span></span></li>
+<li><span class="annotation field-note">Required</span></li>
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="flags">flags</a>
+</h3>
+
+<span class="description field-description">Any flags set on the packet.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#PacketFlags">PacketFlags</a><span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="data">data</a>
+</h3>
+
+<span class="description field-description">The data to send.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#any">any</a><span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
+</div></div></div><div class="definition">
+<h2 class="definition-name type-name">
+  <a name="ErrorData">ErrorData</a>
+</h2>
+
+
+<div class=fields>
+<div class=field>
+
+<h3 class=field-name>
+  <a name="name">name</a>
+</h3>
+
+<span class="description field-description">The name of the port to send the data to.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string</span></span></li>
+<li><span class="annotation field-note">Required</span></li>
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="flags">flags</a>
+</h3>
+
+<span class="description field-description">Any flags set on the packet.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#PacketFlags">PacketFlags</a><span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="message">message</a>
+</h3>
+
+<span class="description field-description">The error message.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string</span></span></li>
+<li><span class="annotation field-note">Required</span></li>
+
+</ul>
+</div></div></div><div class="definition">
+<h2 class="definition-name type-name">
+  <a name="PacketFlags">PacketFlags</a>
+</h2>
+
+<span class="description type-description">Flags set on a packet.</span>
+<div class=fields>
+<div class=field>
+
+<h3 class=field-name>
+  <a name="done">done</a>
+</h3>
+
+<span class="description field-description">When set, indicates the port should be considered closed.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>bool</span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="open">open</a>
+</h3>
+
+<span class="description field-description">When set, indicates the opening of a new substream context within the parent stream.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>bool</span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="close">close</a>
+</h3>
+
+<span class="description field-description">When set, indicates the closing of a substream context within the parent stream.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>bool</span></span></li>
 
 
 </ul>

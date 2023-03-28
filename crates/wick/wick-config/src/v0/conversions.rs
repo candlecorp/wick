@@ -39,9 +39,11 @@ impl TryFrom<v0::HostManifest> for ComponentConfiguration {
       source: None,
       format: def.format,
       version: def.version,
+      main: None,
       types: Default::default(),
       host: def.host.try_into()?,
       name: def.network.name,
+      tests: Vec::new(),
       import: def
         .network
         .collections

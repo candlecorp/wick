@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use serde_json::Value;
 
+#[allow(clippy::too_many_lines)]
 pub(crate) fn deserialize_json_env<'de, D>(deserializer: D) -> Result<Value, D::Error>
 where
   D: serde::de::Deserializer<'de>,
@@ -59,10 +60,135 @@ where
       // from errors deserializing the json string
       serde_json::from_str(v).map_err(E::custom)
     }
+
+    fn visit_string<E>(self, v: String) -> Result<Self::Value, E>
+    where
+      E: serde::de::Error,
+    {
+      self.visit_str(&v)
+    }
+
+    fn visit_bool<E>(self, v: bool) -> Result<Self::Value, E>
+    where
+      E: serde::de::Error,
+    {
+      Ok(Value::Bool(v))
+    }
+
+    fn visit_i8<E>(self, v: i8) -> Result<Self::Value, E>
+    where
+      E: serde::de::Error,
+    {
+      self.visit_i64(v as i64)
+    }
+
+    fn visit_i16<E>(self, v: i16) -> Result<Self::Value, E>
+    where
+      E: serde::de::Error,
+    {
+      self.visit_i64(v as i64)
+    }
+
+    fn visit_i32<E>(self, v: i32) -> Result<Self::Value, E>
+    where
+      E: serde::de::Error,
+    {
+      self.visit_i64(v as i64)
+    }
+
+    fn visit_i64<E>(self, v: i64) -> Result<Self::Value, E>
+    where
+      E: serde::de::Error,
+    {
+      Err(serde::de::Error::invalid_type(serde::de::Unexpected::Signed(v), &self))
+    }
+
+    fn visit_u8<E>(self, v: u8) -> Result<Self::Value, E>
+    where
+      E: serde::de::Error,
+    {
+      self.visit_u64(v as u64)
+    }
+
+    fn visit_u16<E>(self, v: u16) -> Result<Self::Value, E>
+    where
+      E: serde::de::Error,
+    {
+      self.visit_u64(v as u64)
+    }
+
+    fn visit_u32<E>(self, v: u32) -> Result<Self::Value, E>
+    where
+      E: serde::de::Error,
+    {
+      self.visit_u64(v as u64)
+    }
+
+    fn visit_u64<E>(self, v: u64) -> Result<Self::Value, E>
+    where
+      E: serde::de::Error,
+    {
+      Ok(Value::Number(serde_json::Number::from(v)))
+    }
+
+    fn visit_f32<E>(self, v: f32) -> Result<Self::Value, E>
+    where
+      E: serde::de::Error,
+    {
+      self.visit_f64(v as f64)
+    }
+
+    fn visit_f64<E>(self, v: f64) -> Result<Self::Value, E>
+    where
+      E: serde::de::Error,
+    {
+      serde_json::Number::from_f64(v).map_or_else(
+        || Err(serde::de::Error::invalid_type(serde::de::Unexpected::Float(v), &self)),
+        |n| Ok(Value::Number(n)),
+      )
+    }
+
+    fn visit_borrowed_str<E>(self, v: &'de str) -> Result<Self::Value, E>
+    where
+      E: serde::de::Error,
+    {
+      self.visit_str(v)
+    }
+
+    fn visit_none<E>(self) -> Result<Self::Value, E>
+    where
+      E: serde::de::Error,
+    {
+      Ok(Value::Null)
+    }
+
+    fn visit_some<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
+    where
+      D: serde::Deserializer<'de>,
+    {
+      deserializer.deserialize_any(self)
+    }
+
+    fn visit_unit<E>(self) -> Result<Self::Value, E>
+    where
+      E: serde::de::Error,
+    {
+      Ok(Value::Null)
+    }
+
+    fn visit_enum<A>(self, data: A) -> Result<Self::Value, A::Error>
+    where
+      A: serde::de::EnumAccess<'de>,
+    {
+      let _ = data;
+      Err(serde::de::Error::invalid_type(serde::de::Unexpected::Enum, &self))
+    }
   }
 
   // use our visitor to deserialize an `ActualValue`
-  deserializer.deserialize_any(JsonStringVisitor)
+  let a = deserializer.deserialize_any(JsonStringVisitor);
+  println!("Ok did something: {:?}", a);
+  a
 }
 
 fn expand_jsonval(value: Value) -> Result<Value, shellexpand::LookupError<std::env::VarError>> {

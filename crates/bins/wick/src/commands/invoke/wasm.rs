@@ -3,7 +3,7 @@ use std::time::SystemTime;
 
 use anyhow::Result;
 use wick_component_cli::parse_args;
-use wick_component_wasm::collection::Collection;
+use wick_component_wasm::component::Component;
 use wick_component_wasm::helpers::WickWasmModule;
 use wick_packet::{Entity, InherentData, Invocation, Observer, Packet, PacketStream};
 use wick_rpc::RpcHandler;
@@ -13,7 +13,7 @@ use crate::utils;
 pub(crate) async fn handle_command(opts: super::InvokeCommand, bytes: Vec<u8>) -> Result<()> {
   let component = WickWasmModule::from_slice(&bytes)?;
 
-  let collection = Collection::try_load(&component, 1, None, Some((opts.wasi).into()), None)?;
+  let collection = Component::try_load(&component, 1, None, Some((opts.wasi).into()), None)?;
 
   let mut check_stdin = !opts.no_input && opts.data.is_empty() && opts.args.is_empty();
   if let Some(metadata) = component.token.claims.metadata {

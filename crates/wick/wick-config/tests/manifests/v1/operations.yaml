@@ -1,0 +1,12 @@
+---
+format: 1
+operations:
+  - name: test-component
+    inputs:
+      - name: input
+        type: string
+    outputs:
+      - name: output
+        type: string
+    flow:
+      - <>.input -> <>.output

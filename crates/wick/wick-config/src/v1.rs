@@ -37,16 +37,18 @@ use serde_with_expand_env::with_expand_envs;
 #[serde(tag = "kind")]
 /// Configuration for Wick applications and components.
 pub(crate) enum WickConfig {
-  /// A variant representing a [AppConfiguration] type.
-  AppConfiguration(AppConfiguration),
-  /// A variant representing a [ComponentConfiguration] type.
-  ComponentConfiguration(ComponentConfiguration),
+  /// A variant representing a [V1AppConfiguration] type.
+  #[serde(rename = "wick/app@v1")]
+  V1AppConfiguration(V1AppConfiguration),
+  /// A variant representing a [V1ComponentConfiguration] type.
+  #[serde(rename = "wick/component@v1")]
+  V1ComponentConfiguration(V1ComponentConfiguration),
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
 /// The Application configuration defines a standalone Wick application.
-pub(crate) struct AppConfiguration {
+pub(crate) struct V1AppConfiguration {
   /// The configuration version.
 
   #[serde(deserialize_with = "with_expand_envs")]
@@ -60,6 +62,10 @@ pub(crate) struct AppConfiguration {
   #[serde(default)]
   #[serde(deserialize_with = "with_expand_envs")]
   pub(crate) name: String,
+  /// Configuration that controls how this application runs within a host.
+
+  #[serde(default)]
+  pub(crate) host: HostConfig,
   /// Components to import into the application&#x27;s scope.
 
   #[serde(default)]
@@ -94,11 +100,9 @@ pub(crate) struct AppMetadata {
 /// The possible types of resources.
 pub(crate) enum TriggerDefinition {
   /// A variant representing a [CliTrigger] type.
-
   #[serde(rename = "wick/trigger/cli@v1")]
   CliTrigger(CliTrigger),
   /// A variant representing a [HttpTrigger] type.
-
   #[serde(rename = "wick/trigger/http@v1")]
   HttpTrigger(HttpTrigger),
 }
@@ -192,11 +196,9 @@ pub(crate) struct RawRouter {
 /// The possible types of resources.
 pub(crate) enum ResourceDefinition {
   /// A variant representing a [TcpPort] type.
-
   #[serde(rename = "wick/resource/tcpport@v1")]
   TcpPort(TcpPort),
   /// A variant representing a [UdpPort] type.
-
   #[serde(rename = "wick/resource/udpport@v1")]
   UdpPort(UdpPort),
 }
@@ -235,12 +237,16 @@ pub(crate) struct UdpPort {
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
-/// A manifest defines the starting state of a Wick host and network.
-pub(crate) struct ComponentConfiguration {
+/// A configuration for a Wick Component
+pub(crate) struct V1ComponentConfiguration {
   /// The name of this component.
 
   #[serde(default)]
   pub(crate) name: Option<String>,
+  /// An optional reference to a local implementation (e.g. a WebAssembly module)
+
+  #[serde(default)]
+  pub(crate) main: Option<LocalDefinition>,
   /// The component manifest format version
 
   #[serde(deserialize_with = "with_expand_envs")]
@@ -249,7 +255,7 @@ pub(crate) struct ComponentConfiguration {
 
   #[serde(default)]
   pub(crate) metadata: Option<ComponentMetadata>,
-  /// Configuration for the host when this manifest is run directly.
+  /// Configuration for when wick hosts this component as a service.
 
   #[serde(default)]
   pub(crate) host: HostConfig,
@@ -274,6 +280,21 @@ pub(crate) struct ComponentConfiguration {
   #[serde(default)]
   #[serde(skip_serializing_if = "Vec::is_empty")]
   pub(crate) operations: Vec<OperationDefinition>,
+  /// Assertions that can be run against the component to validate its behavior.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub(crate) tests: Vec<TestDefinition>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+#[serde(tag = "kind")]
+/// A reference to a local implementation (e.g. a WebAssembly module)
+pub(crate) enum LocalDefinition {
+  /// A variant representing a [WasmRsComponent] type.
+  #[serde(rename = "wick/component/wasmrs@v1")]
+  WasmRsComponent(WasmRsComponent),
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
@@ -318,21 +339,17 @@ pub(crate) struct ComponentBinding {
 #[serde(tag = "kind")]
 /// The possible types of components.
 pub(crate) enum ComponentDefinition {
-  /// A variant representing a [WasmComponent] type.
-
-  #[serde(rename = "Wasm")]
-  WasmComponent(WasmComponent),
+  /// A variant representing a [WasmRsComponent] type.
+  #[serde(rename = "wick/component/wasmrs@v1")]
+  WasmRsComponent(WasmRsComponent),
   /// A variant representing a [GrpcUrlComponent] type.
-
-  #[serde(rename = "GrpcUrl")]
+  #[serde(rename = "wick/component/grpc@v1")]
   GrpcUrlComponent(GrpcUrlComponent),
   /// A variant representing a [ManifestComponent] type.
-
-  #[serde(rename = "Manifest")]
+  #[serde(rename = "wick/component/manifest@v1")]
   ManifestComponent(ManifestComponent),
   /// A variant representing a [ComponentReference] type.
-
-  #[serde(rename = "Reference")]
+  #[serde(rename = "wick/component/reference@v1")]
   ComponentReference(ComponentReference),
 }
 
@@ -410,7 +427,7 @@ pub(crate) struct HttpConfig {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
 /// A WebAssembly component.
-pub(crate) struct WasmComponent {
+pub(crate) struct WasmRsComponent {
   /// The URL (and optional tag) or local file path to find the .wasm module.
 
   #[serde(deserialize_with = "with_expand_envs")]
@@ -563,4 +580,113 @@ pub(crate) struct ConnectionTargetDefinition {
 
   #[serde(default)]
   pub(crate) data: Option<Value>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+/// A test case for a component.
+pub(crate) struct TestDefinition {
+  /// The name of the test.
+
+  #[serde(deserialize_with = "with_expand_envs")]
+  pub(crate) name: String,
+  /// The operaton to test.
+
+  #[serde(deserialize_with = "with_expand_envs")]
+  pub(crate) operation: String,
+  /// Inherent data to use for the test.
+
+  #[serde(default)]
+  pub(crate) inherent: Option<InherentData>,
+  /// The inputs to the test.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub(crate) input: Vec<PacketData>,
+  /// The expected outputs of the operation.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub(crate) output: Vec<PacketData>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+/// Data inherent to transactions.
+pub(crate) struct InherentData {
+  /// An RNG seed.
+
+  #[serde(default)]
+  pub(crate) seed: Option<u64>,
+  /// A timestamp.
+
+  #[serde(default)]
+  pub(crate) timestamp: Option<u64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+#[serde(untagged)]
+/// Either a success packet or an error packet.
+pub(crate) enum PacketData {
+  /// A variant representing a [PayloadData] type.
+  PayloadData(PayloadData),
+  /// A variant representing a [ErrorData] type.
+  ErrorData(ErrorData),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+/// A simplified representation of a Wick data packet & payload, used to write tests.
+pub(crate) struct PayloadData {
+  /// The name of the port to send the data to.
+
+  #[serde(deserialize_with = "with_expand_envs")]
+  pub(crate) name: String,
+  /// Any flags set on the packet.
+
+  #[serde(default)]
+  pub(crate) flags: Option<PacketFlags>,
+  /// The data to send.
+
+  #[serde(default)]
+  pub(crate) data: Option<Value>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct ErrorData {
+  /// The name of the port to send the data to.
+
+  #[serde(deserialize_with = "with_expand_envs")]
+  pub(crate) name: String,
+  /// Any flags set on the packet.
+
+  #[serde(default)]
+  pub(crate) flags: Option<PacketFlags>,
+  /// The error message.
+
+  #[serde(deserialize_with = "with_expand_envs")]
+  pub(crate) message: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+/// Flags set on a packet.
+pub(crate) struct PacketFlags {
+  /// When set, indicates the port should be considered closed.
+
+  #[serde(default)]
+  #[serde(deserialize_with = "with_expand_envs")]
+  pub(crate) done: bool,
+  /// When set, indicates the opening of a new substream context within the parent stream.
+
+  #[serde(default)]
+  #[serde(deserialize_with = "with_expand_envs")]
+  pub(crate) open: bool,
+  /// When set, indicates the closing of a substream context within the parent stream.
+
+  #[serde(default)]
+  #[serde(deserialize_with = "with_expand_envs")]
+  pub(crate) close: bool,
 }

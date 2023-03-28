@@ -1,7 +1,7 @@
 [workspace]
 members = [
   "crates/interfaces/*",
-  "crates/integration/test-native-collection",
+  "crates/integration/test-native-component",
   "crates/misc/*",
   # "crates/collections/*",
   "crates/bins/*",
@@ -44,7 +44,7 @@ rot = { path = "./crates/misc/rot", version = "0.1.0" }
 performance-mark = { path = "./crates/misc/performance-mark", version = "0.0.1" }
 test-logger = { path = "./crates/misc/test-logger", version = "0.1.0" }
 tokio-test-bin = { path = "./crates/misc/tokio-test-bin", version = "0.3.0" }
-test-native-collection = { path = "./crates/integration/test-native-collection", version = "0.1.0" }
+test-native-component = { path = "./crates/integration/test-native-component", version = "0.1.0" }
 quote = "1.0.26"
 syn = "1.0.109"
 proc-macro2 = "1.0"

@@ -1,10 +1,10 @@
 namespace "wick-config::v1"
 
 "Configuration for Wick applications and components."
-union WickConfig = AppConfiguration | ComponentConfiguration
+union WickConfig = V1AppConfiguration | V1ComponentConfiguration
 
 "The Application configuration defines a standalone Wick application."
-type AppConfiguration @default {
+type V1AppConfiguration @default @tagged("wick/app@v1") {
   "The configuration version."
   format: u32 @required,
 
@@ -13,6 +13,9 @@ type AppConfiguration @default {
 
   "The application's name."
   name: string,
+
+  "Configuration that controls how this application runs within a host."
+  host: HostConfig,
 
   "Components to import into the application's scope."
   import: [ComponentBinding],
@@ -34,7 +37,7 @@ type AppMetadata @default {
 union TriggerDefinition = CliTrigger | HttpTrigger
 
 "A trigger called with a CLI context."
-type CliTrigger @internal_tag("kind", "wick/trigger/cli@v1") {
+type CliTrigger @tagged("wick/trigger/cli@v1") {
   "The operation that will act as the main entrypoint for this trigger."
   operation: ComponentOperationExpression @required
   "The component that provides additional logic."
@@ -50,7 +53,7 @@ type ComponentOperationExpression {
 }
 
 "An HTTP server that delegates to HTTP routers upon requests."
-type HttpTrigger @internal_tag("kind", "wick/trigger/http@v1") {
+type HttpTrigger @tagged("wick/trigger/http@v1") {
   "The TcpPort reference to listen on for connections."
   resource: string
 
@@ -60,7 +63,7 @@ type HttpTrigger @internal_tag("kind", "wick/trigger/http@v1") {
 
 union HttpRouter = RawRouter | RestRouter
 
-type RestRouter @internal_tag("kind", "wick/router/rest@v1") {
+type RestRouter @tagged("wick/router/rest@v1") {
   "The path to start serving this router from."
   path: string @required
 
@@ -69,7 +72,7 @@ type RestRouter @internal_tag("kind", "wick/router/rest@v1") {
 }
 
 "A RawHttpRouter delegates raw requests and bodies to operations based on the request path."
-type RawRouter @internal_tag("kind", "wick/router/raw@v1") {
+type RawRouter @tagged("wick/router/raw@v1") {
   "The path to start serving this router from."
   path: string @required
 
@@ -81,7 +84,7 @@ type RawRouter @internal_tag("kind", "wick/router/raw@v1") {
 union ResourceDefinition = TcpPort | UdpPort
 
 "A WebAssembly component."
-type TcpPort @internal_tag("kind", "wick/resource/tcpport@v1") {
+type TcpPort @tagged("wick/resource/tcpport@v1") {
   "The port to bind to."
   port: u16
   "The address to bind to."
@@ -89,17 +92,20 @@ type TcpPort @internal_tag("kind", "wick/resource/tcpport@v1") {
 }
 
 "A WebAssembly component."
-type UdpPort @internal_tag("kind", "wick/resource/udpport@v1") {
+type UdpPort @tagged("wick/resource/udpport@v1") {
   "The port to bind to."
   port: u16
   "The address to bind to."
   address: string
 }
 
-"A manifest defines the starting state of a Wick host and network."
-type ComponentConfiguration @default {
+"A configuration for a Wick Component"
+type V1ComponentConfiguration @default @tagged("wick/component@v1") {
   "The name of this component."
   name: string?,
+
+  "An optional reference to a local implementation (e.g. a WebAssembly module)"
+  main: LocalDefinition?
 
   "The component manifest format version"
   format: u32 @required,
@@ -107,7 +113,7 @@ type ComponentConfiguration @default {
   "Associated metadata for this component."
   metadata: ComponentMetadata?,
 
-  "Configuration for the host when this manifest is run directly."
+  "Configuration for when wick hosts this component as a service."
   host: HostConfig,
 
   "The labels and values that apply to this manifest."
@@ -121,7 +127,31 @@ type ComponentConfiguration @default {
 
   "A map of operation names to their definitions."
   operations: [OperationDefinition],
+
+  "Assertions that can be run against the component to validate its behavior."
+  tests: [TestDefinition],
 }
+
+# "A manifest defines the starting state of a Wick host and network."
+# type V1CompositeComponentConfiguration @tagged("wick/component/composite@v1") {
+#   "The name of this component."
+#   name: string?,
+
+#   "Additional types to export and make available to the component."
+#   types: [TypeDefinition],
+
+#   "Components to import into the application's scope."
+#   import: [ComponentBinding],
+
+#   "A map of operation names to their definitions."
+#   operations: [OperationDefinition],
+
+#   "Assertions that can be run against the component to validate its behavior."
+#   tests: [TestDefinition],
+# }
+
+"A reference to a local implementation (e.g. a WebAssembly module)"
+union LocalDefinition = WasmRsComponent
 
 "Metadata for the component."
 type ComponentMetadata @default {
@@ -146,10 +176,10 @@ type ComponentBinding {
 }
 
 "The possible types of components."
-union ComponentDefinition = WasmComponent | GrpcUrlComponent | ManifestComponent | ComponentReference
+union ComponentDefinition = WasmRsComponent | GrpcUrlComponent | ManifestComponent | ComponentReference
 
 "A reference to a component in the application's scope."
-type ComponentReference  @internal_tag("kind", "Reference") {
+type ComponentReference  @tagged("wick/component/reference@v1") {
   "The id of the component to reference."
   id: string  @required
 }
@@ -191,7 +221,7 @@ type HttpConfig {
 }
 
 "A WebAssembly component."
-type WasmComponent @internal_tag("kind", "Wasm") {
+type WasmRsComponent @tagged("wick/component/wasmrs@v1") {
   "The URL (and optional tag) or local file path to find the .wasm module."
   ref: string @rename("reference") @required
 
@@ -209,7 +239,7 @@ type Permissions @default {
 }
 
 "A component hosted as an independent microservice."
-type GrpcUrlComponent @internal_tag("kind", "GrpcUrl") {
+type GrpcUrlComponent @tagged("wick/component/grpc@v1") {
   "The GRPC URL to connect to."
   url: string @required
 
@@ -218,7 +248,7 @@ type GrpcUrlComponent @internal_tag("kind", "GrpcUrl") {
 }
 
 "A native component that can be extracted and run as a microservice."
-type ManifestComponent @internal_tag("kind", "Manifest") {
+type ManifestComponent @tagged("wick/component/manifest@v1") {
   "The URL (and optional tag) or local file path to find the manifest."
   ref: string @rename("reference")  @required
   "Any configuration necessary for the component."
@@ -281,4 +311,62 @@ type ConnectionTargetDefinition {
 
   "The default value to provide on this connection in the event of an error."
   data: any?,
+}
+
+"A test case for a component."
+type TestDefinition {
+  "The name of the test."
+  name: string @required
+
+  "The operaton to test."
+  operation: string @required
+
+  "Inherent data to use for the test."
+  inherent: InherentData?
+
+  "The inputs to the test."
+  input: [PacketData]
+
+  "The expected outputs of the operation."
+  output: [PacketData]
+}
+
+"Data inherent to transactions."
+type InherentData {
+  "An RNG seed."
+  seed: u64?
+  "A timestamp."
+  timestamp: u64?
+}
+
+"Either a success packet or an error packet."
+union PacketData @untagged = PayloadData | ErrorData
+
+"A simplified representation of a Wick data packet & payload, used to write tests."
+type PayloadData {
+  "The name of the port to send the data to."
+  name: string @required
+  "Any flags set on the packet."
+  flags: PacketFlags?
+  "The data to send."
+  data: any? @skip_env
+}
+
+type ErrorData {
+  "The name of the port to send the data to."
+  name: string @required
+  "Any flags set on the packet."
+  flags: PacketFlags?
+  "The error message."
+  message: string @required
+}
+
+"Flags set on a packet."
+type PacketFlags {
+  "When set, indicates the port should be considered closed."
+  done: bool
+  "When set, indicates the opening of a new substream context within the parent stream."
+  open: bool
+  "When set, indicates the closing of a substream context within the parent stream."
+  close: bool
 }
