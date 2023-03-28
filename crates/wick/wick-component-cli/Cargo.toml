@@ -40,7 +40,7 @@ uuid = { workspace = true, features = ["v4"] }
 [dev-dependencies]
 logger = { workspace = true }
 test-logger = { workspace = true }
-test-native-collection = { workspace = true }
+test-native-component = { workspace = true }
 once_cell = { workspace = true }
 reqwest = { workspace = true, features = ["json"] }
 anyhow = { workspace = true }

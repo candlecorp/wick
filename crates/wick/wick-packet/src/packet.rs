@@ -53,7 +53,7 @@ impl Packet {
   }
 
   pub fn ok(port: impl AsRef<str>, payload: RawPayload) -> Self {
-    Self::new_for_port(port, PacketPayload::Ok(payload.data.unwrap()), 0)
+    Self::new_for_port(port, PacketPayload::Ok(payload.data), 0)
   }
 
   pub fn raw_err(port: impl AsRef<str>, payload: PacketError) -> Self {
@@ -65,20 +65,20 @@ impl Packet {
   }
 
   pub fn done(port: impl AsRef<str>) -> Self {
-    Self::new_for_port(port, PacketPayload::Ok(Default::default()), DONE_FLAG)
+    Self::new_for_port(port, PacketPayload::Ok(None), DONE_FLAG)
   }
 
   pub fn open_bracket(port: impl AsRef<str>) -> Self {
-    Self::new_for_port(port, PacketPayload::Ok(Default::default()), OPEN_BRACKET)
+    Self::new_for_port(port, PacketPayload::Ok(None), OPEN_BRACKET)
   }
 
   pub fn close_bracket(port: impl AsRef<str>) -> Self {
-    Self::new_for_port(port, PacketPayload::Ok(Default::default()), CLOSE_BRACKET)
+    Self::new_for_port(port, PacketPayload::Ok(None), CLOSE_BRACKET)
   }
 
   pub fn encode<T: Serialize>(port: impl AsRef<str>, data: T) -> Self {
     match wasmrs_codec::messagepack::serialize(&data) {
-      Ok(bytes) => Self::new_for_port(port, PacketPayload::Ok(bytes.into()), 0),
+      Ok(bytes) => Self::new_for_port(port, PacketPayload::Ok(Some(bytes.into())), 0),
       Err(err) => Self::new_for_port(port, PacketPayload::Err(PacketError::new(err.to_string())), 0),
     }
   }
@@ -93,14 +93,9 @@ impl Packet {
 
   /// Try to deserialize a [Packet] into the target type
   pub fn deserialize<T: DeserializeOwned>(self) -> Result<T, Error> {
-    match self.payload {
-      PacketPayload::Ok(bytes) => match wasmrs_codec::messagepack::deserialize(&bytes) {
-        Ok(data) => Ok(data),
-        Err(err) => Err(crate::Error::Codec(err.to_string())),
-      },
-      PacketPayload::Err(err) => Err(crate::Error::PayloadError(err)),
-    }
+    self.payload.deserialize()
   }
+
   pub fn set_port(mut self, port: impl AsRef<str>) -> Self {
     self.extra.port = port.as_ref().to_owned();
     self
@@ -170,7 +165,7 @@ impl PartialEq for PacketPayload {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum PacketPayload {
-  Ok(Bytes),
+  Ok(Option<Bytes>),
   Err(PacketError),
 }
 
@@ -181,7 +176,7 @@ impl PacketPayload {
 
   pub fn serialize<T: Serialize>(data: T) -> Self {
     match wasmrs_codec::messagepack::serialize(&data) {
-      Ok(bytes) => Self::Ok(bytes.into()),
+      Ok(bytes) => Self::Ok(Some(bytes.into())),
       Err(err) => Self::Err(PacketError::new(err.to_string())),
     }
   }
@@ -189,27 +184,29 @@ impl PacketPayload {
   /// Try to deserialize a [Packet] into the target type
   pub fn deserialize<T: DeserializeOwned>(self) -> Result<T, Error> {
     match self {
-      Self::Ok(bytes) => match wasmrs_codec::messagepack::deserialize(&bytes) {
+      PacketPayload::Ok(Some(bytes)) => match wasmrs_codec::messagepack::deserialize(&bytes) {
         Ok(data) => Ok(data),
         Err(err) => Err(crate::Error::Codec(err.to_string())),
       },
-      Self::Err(err) => Err(crate::Error::PayloadError(err)),
+      PacketPayload::Ok(None) => Err(crate::Error::NoData),
+      PacketPayload::Err(err) => Err(crate::Error::PayloadError(err)),
     }
   }
 
   pub fn bytes(&self) -> Option<&Bytes> {
     match self {
-      Self::Ok(b) => Some(b),
+      Self::Ok(b) => b.as_ref(),
       _ => None,
     }
   }
 
   pub fn to_json(&self) -> serde_json::Value {
     match self {
-      Self::Ok(b) => match wasmrs_codec::messagepack::deserialize::<serde_json::Value>(b) {
+      Self::Ok(Some(b)) => match wasmrs_codec::messagepack::deserialize::<serde_json::Value>(b) {
         Ok(data) => serde_json::json!({ "value": data }),
         Err(err) => serde_json::json! ({"error" : crate::Error::Codec(err.to_string()).to_string()}),
       },
+      Self::Ok(None) => serde_json::Value::Null,
       Self::Err(err) => serde_json::json! ({"error" : crate::Error::PayloadError(err.clone()).to_string()}),
     }
   }
@@ -238,7 +235,7 @@ pub fn into_wasmrs(index: u32, stream: PacketStream) -> Box<dyn wasmrs::Flux<Raw
     p.map(|p| {
       let md = wasmrs::Metadata::new_extra(index, p.extra.encode()).encode();
       match p.payload {
-        PacketPayload::Ok(b) => Ok(wasmrs::RawPayload::new_data(Some(md), Some(b))),
+        PacketPayload::Ok(b) => Ok(wasmrs::RawPayload::new_data(Some(md), b)),
         PacketPayload::Err(e) => Err(wasmrs::PayloadError::application_error(e.msg(), Some(md))),
       }
     })
@@ -265,7 +262,10 @@ pub fn from_wasmrs(stream: FluxReceiver<RawPayload, PayloadError>) -> PacketStre
           |_e| WickMetadata::default(),
           |m| WickMetadata::decode(m.extra.unwrap()).unwrap(),
         );
-        Packet::new_for_port(wmd.port(), PacketPayload::Ok(p.data.unwrap()), wmd.flags())
+        // Potential danger zone: this converts empty payload to None which *should* be the
+        // same thing. Calling this out as a potential source for weird bugs if they pop up.
+        let data = p.data.and_then(|b| (!b.is_empty()).then_some(b));
+        Packet::new_for_port(wmd.port(), PacketPayload::Ok(data), wmd.flags())
       },
     );
     Ok(p)
@@ -279,7 +279,7 @@ impl From<Payload> for Packet {
     Self {
       extra: WickMetadata::decode(ex.unwrap()).unwrap(),
       metadata: value.metadata,
-      payload: PacketPayload::Ok(value.data),
+      payload: PacketPayload::Ok(Some(value.data)),
     }
   }
 }
@@ -289,7 +289,7 @@ impl From<Packet> for Result<RawPayload, PayloadError> {
     let mut md = value.metadata;
     md.extra = Some(value.extra.encode());
     match value.payload {
-      PacketPayload::Ok(b) => Ok(RawPayload::new(md.encode(), b)),
+      PacketPayload::Ok(b) => Ok(RawPayload::new_data(Some(md.encode()), b)),
       PacketPayload::Err(e) => Err(PayloadError::application_error(e.msg(), Some(md.encode()))),
     }
   }

@@ -25,7 +25,6 @@ pub struct NetworkInit {
   allow_latest: bool,
   allowed_insecure: Vec<String>,
   timeout: Duration,
-  // mesh: Option<Arc<Mesh>>,
   namespace: Option<String>,
   rng_seed: Seed,
 }
@@ -38,7 +37,6 @@ impl Network {
 
     let init = Initialize {
       id: rng.uuid(),
-      // mesh: config.mesh.clone(),
       manifest: config.definition,
       allowed_insecure: config.allowed_insecure.clone(),
       allow_latest: config.allow_latest,

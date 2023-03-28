@@ -85,41 +85,41 @@
 // Add exceptions here
 #![allow(missing_docs)]
 
-use std::collections::HashMap;
-use std::fs::read_to_string;
-use std::path::PathBuf;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use serde::{Deserialize, Serialize};
+use serde_value::Value;
 use tap::{TestBlock, TestRunner};
 use tokio_stream::wrappers::UnboundedReceiverStream;
 use tokio_stream::StreamExt;
+use wick_config::TestCase;
 use wick_packet::{Entity, InherentData, Invocation, Packet, PacketPayload, PacketStream};
 use wick_rpc::SharedRpcHandler;
 
 use self::error::TestError;
+use crate::utils::gen_packet;
 
 pub mod error;
 pub use error::TestError as Error;
+mod utils;
 
 #[macro_use]
 extern crate tracing;
 
 #[derive(Debug)]
 #[must_use]
-pub struct TestSuite {
-  tests: Vec<TestData>,
+pub struct TestSuite<'a> {
+  tests: Vec<UnitTest<'a>>,
   name: String,
   filters: Vec<String>,
 }
 
-impl Default for TestSuite {
+impl<'a> Default for TestSuite<'a> {
   fn default() -> Self {
     Self::new("Test")
   }
 }
 
-impl TestSuite {
+impl<'a> TestSuite<'a> {
   pub fn new<T: AsRef<str>>(name: T) -> Self {
     Self {
       tests: Vec::new(),
@@ -128,27 +128,33 @@ impl TestSuite {
     }
   }
 
-  pub fn try_from_file(file: PathBuf) -> Result<Self, TestError> {
-    let contents = read_to_string(file).map_err(|e| TestError::ReadFailed(e.to_string()))?;
-    let data: Vec<TestData> = serde_yaml::from_str(&contents).map_err(|e| TestError::ParseFailed(e.to_string()))?;
-
-    Ok(TestSuite::from_tests(data))
-  }
-
-  pub fn from_tests(tests: Vec<TestData>) -> Self {
+  pub fn from_test_cases<'b>(tests: &'b [TestCase]) -> Self
+  where
+    'b: 'a,
+  {
+    let defs: Vec<UnitTest<'b>> = tests
+      .iter()
+      .map(|test| UnitTest {
+        test,
+        actual: Vec::new(),
+      })
+      .collect();
     Self {
-      tests,
+      tests: defs,
       ..Default::default()
     }
   }
 
-  pub fn get_tests(&mut self) -> Vec<&mut TestData> {
+  pub fn get_tests<'b>(&'a mut self) -> Vec<&'a mut UnitTest<'b>>
+  where
+    'a: 'b,
+  {
     let filters = &self.filters;
     if !filters.is_empty() {
       self
         .tests
         .iter_mut()
-        .filter(|test| filters.iter().any(|filter| test.get_description().contains(filter)))
+        .filter(|test| filters.iter().any(|filter| get_description(test).contains(filter)))
         .collect()
     } else {
       self.tests.iter_mut().collect()
@@ -165,61 +171,37 @@ impl TestSuite {
     self
   }
 
-  pub async fn run(&mut self, collection: SharedRpcHandler) -> Result<TestRunner, TestError> {
+  pub async fn run(
+    &'a mut self,
+    collection_id: Option<&str>,
+    collection: SharedRpcHandler,
+  ) -> Result<TestRunner, TestError> {
     let name = self.name.clone();
     let tests = self.get_tests();
-    run_test(name, tests, collection).await
+    run_test(name, tests, collection_id, collection).await
   }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
-#[serde(deny_unknown_fields)]
-pub struct TestData {
-  pub component: String,
-  #[serde(default)]
-  pub description: String,
-  #[serde(default)]
-  pub seed: Option<u64>,
-  #[serde(default)]
-  pub inputs: Vec<PacketData>,
-  #[serde(default)]
-  pub outputs: Vec<OutputData>,
-  #[serde(skip)]
+#[derive(Debug, Clone)]
+pub struct UnitTest<'a> {
+  pub test: &'a TestCase,
   pub actual: Vec<Packet>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
-#[serde(deny_unknown_fields)]
-pub struct PacketData {
-  port: String,
-  payload: HashMap<String, serde_value::Value>,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-#[serde(deny_unknown_fields)]
-pub struct OutputData {
-  pub port: String,
-  pub payload: SerializedTransport,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-#[serde(deny_unknown_fields)]
-pub struct SerializedTransport {
-  pub value: Option<serde_value::Value>,
-  pub error_kind: Option<String>,
-  pub error_msg: Option<String>,
-}
-
-impl TestData {
-  pub fn get_payload(&self) -> (PacketStream, Option<InherentData>) {
-    let (tx, rx) = tokio::sync::mpsc::unbounded_channel();
-    for packet in &self.inputs {
-      debug!("Test input for port {:?}", packet);
-      tx.send(Ok(Packet::encode(&packet.port, &packet.payload))).unwrap();
-    }
-    let stream = PacketStream::new(Box::new(UnboundedReceiverStream::new(rx)));
-    if let Some(seed) = self.seed {
-      (
+pub(crate) fn get_payload(test: &UnitTest) -> (PacketStream, Option<InherentData>) {
+  let (tx, rx) = tokio::sync::mpsc::unbounded_channel();
+  for packet in &test.test.inputs {
+    debug!("Test input for port {:?}", packet);
+    tx.send(
+      gen_packet(packet)
+        .map_err(|e| wick_packet::Error::General(format!("could not convert test packet to real packet: {}", e))),
+    )
+    .unwrap();
+  }
+  let stream = PacketStream::new(Box::new(UnboundedReceiverStream::new(rx)));
+  if let Some(inherent) = test.test.inherent {
+    if let Some(seed) = inherent.seed {
+      return (
         stream,
         Some(InherentData::new(
           seed,
@@ -230,169 +212,192 @@ impl TestData {
             .try_into()
             .unwrap(),
         )),
-      )
-    } else {
-      (stream, None)
+      );
     }
   }
-
-  #[must_use]
-  pub fn get_description(&self) -> String {
-    let separator = if self.description.is_empty() { "" } else { " : " };
-    format!("{}{}{}", self.component, separator, self.description)
-  }
+  (stream, None)
 }
 
-#[allow(clippy::too_many_lines)]
-// #[instrument(skip_all, name = "test_run")]
-pub async fn run_test(
-  name: String,
-  expected: Vec<&mut TestData>,
+#[must_use]
+pub fn get_description(test: &UnitTest) -> String {
+  format!("{}: test operation '{}'", test.test.name, test.test.operation)
+}
+
+pub async fn run_test<'a>(
+  name: impl AsRef<str> + Sync + Send,
+  defs: Vec<&'a mut UnitTest<'a>>,
+  id: Option<&str>,
   collection: SharedRpcHandler,
 ) -> Result<TestRunner, Error> {
   let mut harness = TestRunner::new(Some(name));
 
-  for (i, test) in expected.into_iter().enumerate() {
-    let (stream, inherent) = test.get_payload();
-    let entity = Entity::local(test.component.clone());
-    let test_name = test.get_description();
-    let mut test_block = TestBlock::new(Some(test_name.clone()));
-    let prefix = |msg: &str| format!("{}:{}", test_name, msg);
-
-    trace!(i, %entity, "invoke");
-    let invocation = Invocation::new(Entity::test(&test_name), entity, inherent);
-    let result = collection
-      .invoke(invocation, stream)
-      .await
-      .map_err(|e| Error::InvocationFailed(e.to_string()));
-
-    if let Err(e) = result {
-      test_block.add_test(
-        || false,
-        prefix("invocation"),
-        Some(vec![format!("Invocation failed: {}", e)]),
-      );
-      harness.add_block(test_block);
-      continue;
-    }
-
-    let stream = result.unwrap();
-
-    let outputs: Vec<_> = stream.filter(|msg| msg.is_ok()).map(|msg| msg.unwrap()).collect().await;
-    test.actual = outputs;
-    let mut diagnostics = vec!["Output: ".to_owned()];
-    let mut output_lines: Vec<_> = test.actual.iter().map(|o| format!("{:?}", o)).collect();
-    diagnostics.append(&mut output_lines);
-    test_block.add_diagnostic_messages(diagnostics);
-
-    for (j, expected) in test.outputs.iter().cloned().enumerate() {
-      if j >= test.actual.len() {
-        let diag = Some(vec![
-          format!("Trying to test output {:?}", expected),
-          format!(
-            "But component did not produce any more output. Component produced {} total packets.",
-            test.actual.len()
-          ),
-        ]);
-        test_block.add_test(|| false, prefix("stream_length"), diag);
-        break;
-      }
-      let actual = &test.actual[j];
-      let result = actual.port() == expected.port;
-      let diag = Some(vec![
-        format!("Actual: {}", actual.port()),
-        format!("Expected: {}", expected.port),
-      ]);
-      test_block.add_test(move || result, prefix(&format!("output[{}]", expected.port)), diag);
-
-      if let Some(value) = &expected.payload.value {
-        let actual_payload = actual.payload.clone();
-
-        let actual_value: Result<serde_value::Value, Error> = actual_payload
-          .deserialize()
-          .map_err(|e| Error::ConversionFailed(e.to_string()));
-        let expected_value = value.clone();
-
-        let diagnostic = Some(vec![
-          format!(
-            "Actual: {:?}",
-            match &actual_value {
-              Ok(v) => format!("{:?}", v),
-              Err(e) => format!("Could not deserialize payload, message was : {}", e),
-            }
-          ),
-          format!("Expected: {:?}", expected_value),
-        ]);
-
-        debug!(i,j,actual=?actual_value, "actual");
-        debug!(i,j,expected=?expected_value, "expected");
-        test_block.add_test(
-          move || match actual_value {
-            Ok(val) => eq(val, expected_value),
-            Err(_e) => false,
-          },
-          prefix("payload"),
-          diagnostic,
-        );
-      }
-      if let Some(error_kind) = expected.payload.error_kind {
-        let actual_payload = actual.payload.clone();
-
-        let diag = Some(vec![format!(
-          "Expected an {} error kind, but payload was: {:?}",
-          error_kind, actual_payload
-        )]);
-
-        test_block.add_test(
-          move || matches!(actual_payload, PacketPayload::Err(_)),
-          prefix("error_kind"),
-          diag,
-        );
-      }
-      if let Some(error_msg) = expected.payload.error_msg {
-        let actual_payload = actual.payload.clone();
-
-        let diag = Some(vec![format!(
-          "Expected error message '{}', but payload was: {:?}",
-          error_msg, actual_payload
-        )]);
-
-        test_block.add_test(
-          move || matches!(actual_payload, PacketPayload::Err(_)),
-          prefix("error_message"),
-          diag,
-        );
-      }
-    }
-    let num_tested = test.outputs.len();
-    let mut missed = vec![];
-    for i in num_tested..test.actual.len() {
-      if let Some(output) = test.actual.get(i) {
-        if output.is_done() {
-          debug!(?output, "test missed");
-          missed.push(output);
-        }
-      }
-    }
-    let num_missed = missed.len();
-    test_block.add_test(
-      move || num_missed == 0,
-      prefix("total_outputs"),
-      Some(missed.into_iter().map(|p| format!("{:?}", p)).collect()),
-    );
-
-    harness.add_block(test_block);
+  for (i, def) in defs.into_iter().enumerate() {
+    let block = run_unit(i, def, id, collection.clone()).await?;
+    harness.add_block(block);
   }
+
   harness.run();
   Ok(harness)
 }
 
-fn eq(left: serde_value::Value, right: serde_value::Value) -> bool {
+#[allow(clippy::too_many_lines)]
+async fn run_unit<'a>(
+  i: usize,
+  def: &'a mut UnitTest<'a>,
+  collection_id: Option<&str>,
+  collection: SharedRpcHandler,
+) -> Result<TestBlock, TestError> {
+  let (stream, inherent) = get_payload(def);
+  let entity = collection_id.map_or_else(
+    || Entity::local(&def.test.operation),
+    |id| Entity::operation(id, &def.test.operation),
+  );
+  let test_name = get_description(def);
+  let mut test_block = TestBlock::new(Some(test_name.clone()));
+  let prefix = |msg: &str| format!("{}: {}", test_name, msg);
+
+  trace!(i, %entity, "invoke");
+  let invocation = Invocation::new(Entity::test(&test_name), entity, inherent);
+  let result = collection
+    .invoke(invocation, stream)
+    .await
+    .map_err(|e| Error::InvocationFailed(e.to_string()));
+
+  if let Err(e) = result {
+    test_block.add_test(
+      || false,
+      prefix("invocation"),
+      Some(vec![format!("Invocation failed: {}", e)]),
+    );
+    return Ok(test_block);
+  }
+
+  let stream = result.unwrap();
+
+  let outputs: Vec<_> = stream.filter(|msg| msg.is_ok()).map(|msg| msg.unwrap()).collect().await;
+  def.actual = outputs;
+  let mut diagnostics = vec!["Output: ".to_owned()];
+  let mut output_lines: Vec<_> = def.actual.iter().map(|o| format!("{:?}", o)).collect();
+  diagnostics.append(&mut output_lines);
+  test_block.add_diagnostic_messages(diagnostics);
+
+  for (j, expected) in def.test.outputs.iter().cloned().enumerate() {
+    if j >= def.actual.len() {
+      let diag = Some(vec![
+        format!("Trying to test output {:?}", expected),
+        format!(
+          "But component did not produce any more output. Component produced {} total packets.",
+          def.actual.len()
+        ),
+      ]);
+      test_block.add_test(|| false, prefix("stream_length"), diag);
+      break;
+    }
+    let actual = &def.actual[j];
+    let result = actual.port() == expected.port();
+    let diag = diag_compare(actual.port(), expected.port());
+    test_block.add_test(
+      move || result,
+      prefix(&format!("correct port? ('{}' == '{}')", actual.port(), expected.port())),
+      diag,
+    );
+    let expected = gen_packet(&expected)?;
+
+    let actual_payload = actual.payload.clone();
+
+    if actual.flags() > 0 && actual_payload.bytes().map_or(true, |v| v.is_empty()) {
+      let diagnostic = diag_compare(diag_packet(actual), diag_packet(&expected));
+
+      debug!(i,j,actual=?actual, "actual");
+      debug!(i,j,expected=?expected, "expected");
+      let e_inner = expected.clone();
+      let a_inner = actual.clone();
+      test_block.add_test(
+        move || packet_eq(a_inner, e_inner),
+        prefix("actual raw packet == expected raw packet?"),
+        diagnostic,
+      );
+    } else {
+      let actual_value: Result<Value, Error> = actual_payload
+        .deserialize()
+        .map_err(|e| Error::ConversionFailed(e.to_string()));
+      let expected_value: Result<Value, Error> = expected
+        .deserialize()
+        .map_err(|e| Error::ConversionFailed(e.to_string()));
+
+      let diagnostic = diag_compare(diag_value(&actual_value), diag_value(&expected_value));
+
+      debug!(i,j,actual=?actual_value, "actual");
+      debug!(i,j,expected=?expected_value, "expected");
+      test_block.add_test(
+        move || match (actual_value, expected_value) {
+          (Ok(actual), Ok(expected)) => eq(actual, expected),
+          (Err(actual), Err(expected)) => err_eq(actual, expected),
+          _ => false,
+        },
+        prefix("actual deserialized payload == expected deserialized payload?"),
+        diagnostic,
+      );
+    }
+  }
+
+  let num_tested = def.test.outputs.len();
+  let mut missed = vec![];
+
+  for i in num_tested..def.actual.len() {
+    if let Some(output) = def.actual.get(i) {
+      if output.is_done() {
+        debug!(?output, "test missed");
+        missed.push(output);
+      }
+    }
+  }
+  let num_missed = missed.len();
+  test_block.add_test(
+    move || num_missed == 0,
+    prefix("total_outputs"),
+    Some(missed.into_iter().map(|p| format!("{:?}", p)).collect()),
+  );
+
+  Ok(test_block)
+}
+
+fn diag_value(result: &Result<Value, TestError>) -> String {
+  match result {
+    Ok(v) => format!("{:?}", v),
+    Err(e) => format!("Could not deserialize payload, message was : {}", e),
+  }
+}
+
+fn diag_packet(packet: &Packet) -> String {
+  match &packet.payload {
+    PacketPayload::Ok(v) => format!("Ok: {:?} (flags: {:08b})", v, packet.flags()),
+    PacketPayload::Err(e) => format!("Err: {} (flags: {:08b})", e.msg(), packet.flags()),
+  }
+}
+
+fn diag_compare(actual: impl AsRef<str>, expected: impl AsRef<str>) -> Option<Vec<String>> {
+  Some(vec![
+    format!("Actual: {}", actual.as_ref()),
+    format!("Expected: {}", expected.as_ref()),
+  ])
+}
+
+fn eq(left: Value, right: Value) -> bool {
   promote_val(left) == promote_val(right)
 }
 
-fn promote_val(val: serde_value::Value) -> serde_value::Value {
-  use serde_value::Value;
+#[allow(clippy::needless_pass_by_value)]
+fn packet_eq(left: Packet, right: Packet) -> bool {
+  left == right
+}
+
+#[allow(clippy::needless_pass_by_value)]
+fn err_eq(left: Error, right: Error) -> bool {
+  left == right
+}
+
+fn promote_val(val: Value) -> Value {
   match val {
     Value::U8(n) => Value::U64(n.into()),
     Value::U16(n) => Value::U64(n.into()),
@@ -403,5 +408,35 @@ fn promote_val(val: serde_value::Value) -> serde_value::Value {
     Value::F32(n) => Value::F64(n.into()),
     Value::Char(n) => Value::String(n.into()),
     x => x,
+  }
+}
+
+#[cfg(test)]
+mod test {
+  use std::sync::Arc;
+
+  use anyhow::Result;
+  use test_native_component::Component;
+  use wick_config::ComponentConfiguration;
+
+  use super::*;
+
+  fn get_component() -> SharedRpcHandler {
+    Arc::new(Component::default())
+  }
+
+  #[test_logger::test(tokio::test)]
+  async fn test_basic() -> Result<()> {
+    let config = include_str!("../tests/manifests/test.yaml");
+    let config = ComponentConfiguration::from_yaml(config, &None)?;
+    let mut unit_tests = TestSuite::from_test_cases(config.tests());
+    let results = unit_tests.run(None, get_component()).await;
+    assert!(results.is_ok());
+    let results = results.unwrap();
+    let lines = results.get_tap_lines();
+    println!("{}", lines.join("\n"));
+    assert_eq!(results.num_failed(), 0);
+
+    Ok(())
   }
 }

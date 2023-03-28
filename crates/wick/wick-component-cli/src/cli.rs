@@ -159,7 +159,7 @@ mod tests {
   use std::time::Duration;
 
   use anyhow::Result;
-  use test_native_collection::Collection;
+  use test_native_component::Component;
   use tokio::time::sleep;
   use tonic::transport::Uri;
   use wick_invocation_server::connect_rpc_client;
@@ -168,8 +168,8 @@ mod tests {
   use super::*;
   use crate::options::ServerOptions;
 
-  fn get_collection() -> SharedRpcHandler {
-    Arc::new(Collection::default())
+  fn get_component() -> SharedRpcHandler {
+    Arc::new(Component::default())
   }
 
   #[test_logger::test(tokio::test)]
@@ -180,7 +180,7 @@ mod tests {
       ..Default::default()
     };
     options.rpc = Some(rpc_opts);
-    let config = start_server(get_collection(), Some(options)).await?;
+    let config = start_server(get_component(), Some(options)).await?;
     let rpc = config.rpc.unwrap();
     debug!("Waiting for server to start");
     sleep(Duration::from_millis(100)).await;

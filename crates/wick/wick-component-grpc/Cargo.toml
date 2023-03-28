@@ -22,7 +22,7 @@ http = { workspace = true }
 
 [dev-dependencies]
 wick-invocation-server = { workspace = true }
-test-native-collection = { workspace = true }
+test-native-component = { workspace = true }
 test-logger = { workspace = true }
 logger = { workspace = true }
 tokio = { workspace = true, features = ["macros"] }

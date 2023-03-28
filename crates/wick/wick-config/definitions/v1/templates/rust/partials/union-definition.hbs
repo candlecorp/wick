@@ -3,26 +3,22 @@
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
+{{#withAnnotation "untagged"}}
+#[serde(untagged)]
+{{else}}
 #[serde(tag = "kind")]
+{{/withAnnotation}}
 {{#if description}}
 /// {{{description.value}}}
 {{/if}}
 pub(crate) enum {{name.value}} {
   {{#each types}}
     /// A variant representing a [{{{name.value}}}] type.
-    {{#ifCond ../name.value '===' "HttpRouter"}}
-    #[serde(rename = "wick/router/{{lowerCase (replace name.value 'Router' '') }}@v1")]
-    {{/ifCond}}
-
-    {{#ifCond ../name.value '===' "ResourceDefinition"}}
-    #[serde(rename = "wick/resource/{{lowerCase (replace name.value 'Resource' '') }}@v1")]
-    {{/ifCond}}
-    {{#ifCond ../name.value '===' "TriggerDefinition"}}
-    #[serde(rename = "wick/trigger/{{lowerCase (replace name.value 'Trigger' '') }}@v1")]
-    {{/ifCond}}
-    {{#ifCond ../name.value '===' "ComponentDefinition"}}
-    #[serde(rename = "{{replace name.value 'Component' ''}}")]
-    {{/ifCond}}
+    {{#withType .}}
+      {{#withAnnotation "tagged"}}
+        #[serde(rename = "{{arguments.0.value.value}}")]
+      {{/withAnnotation}}
+    {{/withType}}
     {{#ifCond name.value '===' "ComponentOperationExpression"}}
     {{pascalCase name.value}}(#[serde(rename = "{{replace name.value 'Component' ''}}")]{{> expand-type .}}),
     {{else}}

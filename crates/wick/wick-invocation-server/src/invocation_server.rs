@@ -185,7 +185,7 @@ mod tests {
   // use std::sync::Arc;
 
   // use anyhow::Result;
-  // use test_native_collection::Collection;
+  // use test_native_component::Collection;
   // use tokio_stream::wrappers::ReceiverStream;
   // use tonic::Status;
   // use wick_packet::{Invocation, Packet};

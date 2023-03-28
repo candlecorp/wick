@@ -87,6 +87,13 @@ impl BoundComponent {
 
 #[derive(Debug, Clone, PartialEq)]
 /// The kinds of collections that can operate in a flow.
+pub enum ComponentImplementation {
+  /// WebAssembly Collections.
+  Wasm(WasmComponent),
+}
+
+#[derive(Debug, Clone, PartialEq)]
+/// The kinds of collections that can operate in a flow.
 pub enum ComponentDefinition {
   #[doc(hidden)]
   Native(NativeComponent),

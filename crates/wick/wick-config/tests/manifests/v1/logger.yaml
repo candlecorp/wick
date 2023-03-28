@@ -6,11 +6,11 @@ metadata:
 import:
   - name: foo
     component:
-      kind: Manifest
+      kind: wick/component/manifest@v1
       ref: hey
   - name: bar
     component:
-      kind: Wasm
+      kind: wick/component/wasmrs@v1
       ref: bar
 operations:
   - name: logger

@@ -8,6 +8,7 @@ use tracing::debug;
 pub use self::resources::*;
 pub use self::triggers::*;
 use crate::error::ReferenceError;
+use crate::host_definition::HostConfig;
 use crate::{from_yaml, v1, BoundComponent, ComponentDefinition, Error, Result};
 
 #[derive(Debug, Clone)]
@@ -21,6 +22,7 @@ pub struct AppConfiguration {
   pub(crate) import: HashMap<String, BoundComponent>,
   pub(crate) resources: HashMap<String, BoundResource>,
   pub(crate) triggers: Vec<TriggerDefinition>,
+  pub(crate) host: HostConfig,
 }
 
 impl Default for AppConfiguration {
@@ -30,6 +32,7 @@ impl Default for AppConfiguration {
       source: None,
       format: 1,
       version: "0.0.1".to_owned(),
+      host: HostConfig::default(),
       import: HashMap::new(),
       resources: HashMap::new(),
       triggers: vec![],
@@ -70,7 +73,7 @@ impl AppConfiguration {
       .unwrap_or_else(|| -> i64 { raw_version.as_str().and_then(|s| s.parse::<i64>().ok()).unwrap_or(-1) });
     let manifest = match version {
       0 => panic!("no v0 implemented for app configuration"),
-      1 => Ok(from_yaml::<v1::AppConfiguration>(src, path)?.try_into()?),
+      1 => Ok(from_yaml::<v1::V1AppConfiguration>(src, path)?.try_into()?),
       -1 => Err(Error::NoFormat),
       _ => Err(Error::VersionError(version.to_string())),
     };
@@ -131,7 +134,7 @@ impl AppConfiguration {
   }
 
   pub fn into_v1_yaml(self) -> Result<String> {
-    let v1_manifest: v1::AppConfiguration = self.try_into()?;
+    let v1_manifest: v1::V1AppConfiguration = self.try_into()?;
     Ok(serde_yaml::to_string(&v1_manifest).unwrap())
   }
 }

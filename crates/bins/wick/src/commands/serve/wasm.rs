@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use anyhow::Result;
-use wick_component_wasm::collection::Collection;
+use wick_component_wasm::component::Component;
 use wick_component_wasm::helpers::WickWasmModule;
 use wick_config::Permissions;
 
@@ -10,7 +10,7 @@ pub(crate) async fn handle_command(opts: super::ServeCommand, bytes: Vec<u8>) ->
 
   let perms: Permissions = (opts.wasi).into();
   let collection = Arc::new(
-    match Collection::try_load(&component, 1, None, Some(perms.clone()), None) {
+    match Component::try_load(&component, 1, None, Some(perms.clone()), None) {
       Ok(collection) => collection,
       Err(e) => {
         error!("Error starting WebAssembly collection: {}", e);

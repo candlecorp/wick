@@ -254,7 +254,7 @@ fn handler(invocation: Invocation, mut payload_stream: PacketStream) -> anyhow::
         while let (Some(input), Some(times)) = (input.next().await, times.next().await) {
           let input = input?;
           let times = times?;
-          if let (PacketPayload::Ok(input), PacketPayload::Ok(times)) = (input.payload, times.payload) {
+          if let (PacketPayload::Ok(Some(input)), PacketPayload::Ok(Some(times))) = (input.payload, times.payload) {
             let input: String = wasmrs_codec::messagepack::deserialize(&input)?;
             let times: u64 = wasmrs_codec::messagepack::deserialize(&times)?;
             let mut messages = Vec::new();
@@ -276,7 +276,7 @@ fn handler(invocation: Invocation, mut payload_stream: PacketStream) -> anyhow::
       let task = async move {
         while let Some(input) = input.next().await {
           let input = input?;
-          if let PacketPayload::Ok(input) = input.payload {
+          if let PacketPayload::Ok(Some(input)) = input.payload {
             let input: String = wasmrs_codec::messagepack::deserialize(&input)?;
             let vowels: Vec<_> = input
               .chars()

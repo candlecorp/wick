@@ -97,7 +97,7 @@ pub mod collection;
 mod component_host;
 mod error;
 
-pub use collection::Collection;
+pub use collection::Component;
 pub use component_host::{ComponentHost, ComponentHostBuilder};
 
 pub(crate) type Result<T> = std::result::Result<T, error::HostError>;

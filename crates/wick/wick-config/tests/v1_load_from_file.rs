@@ -25,6 +25,36 @@ fn test_types() -> Result<(), ManifestError> {
 }
 
 #[test_logger::test]
+fn test_tests() -> Result<(), ManifestError> {
+  let path = PathBuf::from("./tests/manifests/v1/tests.yaml");
+  let component = ComponentConfiguration::load_from_file(path)?;
+
+  assert_eq!(component.tests().len(), 1);
+
+  Ok(())
+}
+
+#[test_logger::test]
+fn test_operations() -> Result<(), ManifestError> {
+  let path = PathBuf::from("./tests/manifests/v1/operations.yaml");
+  let component = ComponentConfiguration::load_from_file(path)?;
+
+  assert_eq!(component.operations().len(), 1);
+
+  Ok(())
+}
+
+#[test_logger::test]
+fn test_main() -> Result<(), ManifestError> {
+  let path = PathBuf::from("./tests/manifests/v1/main.yaml");
+  let component = ComponentConfiguration::load_from_file(path)?;
+
+  assert!(component.main().is_some());
+
+  Ok(())
+}
+
+#[test_logger::test]
 fn regression_issue_42() -> Result<(), ManifestError> {
   let path = PathBuf::from("./tests/manifests/v1/shell-expansion.yaml");
   let manifest = ComponentConfiguration::load_from_file(path)?;

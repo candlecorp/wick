@@ -21,7 +21,7 @@ pub struct Context {
 }
 
 #[derive(Debug)]
-pub struct Collection {
+pub struct Component {
   pool: Arc<WasmHost>,
 }
 
@@ -41,7 +41,7 @@ fn permissions_to_wasi_params(perms: Permissions) -> WasiParams {
   params
 }
 
-impl Collection {
+impl Component {
   pub fn try_load(
     module: &WickWasmModule,
     max_threads: usize,
@@ -76,7 +76,7 @@ impl Collection {
   }
 }
 
-impl RpcHandler for Collection {
+impl RpcHandler for Component {
   fn invoke(&self, invocation: Invocation, stream: PacketStream) -> BoxFuture<RpcResult<PacketStream>> {
     trace!(target = %invocation.target, "wasm invoke");
     let component = invocation.target.name();
@@ -121,7 +121,7 @@ mod tests {
     )?)
     .await?;
 
-    let collection = Collection::try_load(
+    let collection = Component::try_load(
       &component,
       2,
       None,

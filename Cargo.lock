@@ -3201,7 +3201,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "test-native-collection"
+name = "test-native-component"
 version = "0.1.0"
 dependencies = [
  "anyhow",
@@ -4593,7 +4593,7 @@ dependencies = [
  "serde",
  "serde_json",
  "test-logger",
- "test-native-collection",
+ "test-native-component",
  "thiserror",
  "tokio",
  "tokio-stream",
@@ -4769,7 +4769,7 @@ dependencies = [
  "serde",
  "serde_json",
  "test-logger",
- "test-native-collection",
+ "test-native-component",
  "thiserror",
  "tokio",
  "tokio-stream",
@@ -4883,7 +4883,7 @@ dependencies = [
  "serde_json",
  "serde_yaml",
  "test-logger",
- "test-native-collection",
+ "test-native-component",
  "thiserror",
  "tokio",
  "tokio-stream",
@@ -4925,15 +4925,20 @@ dependencies = [
 name = "wick-test"
 version = "0.0.0"
 dependencies = [
+ "anyhow",
+ "logger",
  "serde",
  "serde-value",
  "serde_yaml",
  "tap",
+ "test-logger",
+ "test-native-component",
  "thiserror",
  "tokio",
  "tokio-stream",
  "tracing",
  "wasmrs-codec",
+ "wick-config",
  "wick-packet",
  "wick-rpc",
 ]

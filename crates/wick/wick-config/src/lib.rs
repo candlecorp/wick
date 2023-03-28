@@ -110,12 +110,16 @@ mod component_definition;
 pub use component_definition::{
   BoundComponent,
   ComponentDefinition,
+  ComponentImplementation,
   ComponentReference,
   GrpcUrlComponent,
   ManifestComponent,
   Permissions,
   WasmComponent,
 };
+
+mod test_case;
+pub use test_case::*;
 
 mod flow_definition;
 pub use flow_definition::{ConnectionDefinition, ConnectionTargetDefinition, FlowOperation, InstanceReference};

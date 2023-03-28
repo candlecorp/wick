@@ -8,7 +8,7 @@ use wick_interface_types::ComponentSignature;
 use wick_packet::{from_wasmrs, into_wasmrs, PacketStream};
 use wick_wascap::{Claims, CollectionClaims};
 
-use crate::collection::HostLinkCallback;
+use crate::component::HostLinkCallback;
 use crate::error::WasmCollectionError;
 use crate::wasm_module::WickWasmModule;
 use crate::{Error, Result};

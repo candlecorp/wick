@@ -2,12 +2,12 @@
   "$anchor": "#v1/{{name.value}}",
   "additionalProperties": false,
   "properties": {
-    {{#withAnnotation "internal_tag"}}
-    {{#ifCond name.value '===' 'internal_tag'}}
-    "{{arguments.0.value.value}}": {
+    {{#withAnnotation "tagged"}}
+    {{#ifCond name.value '===' 'tagged'}}
+    "kind": {
       "type": "string",
       "description": "The kind of the collection",
-      "enum": ["{{arguments.1.value.value}}"]
+      "enum": ["{{arguments.0.value.value}}"]
     },
     {{/ifCond}}
     {{/withAnnotation}}

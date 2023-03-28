@@ -80,9 +80,6 @@ impl ComponentHost {
     if let Some(network) = self.network {
       let _ = network.shutdown().await;
     }
-    // if let Some(mesh) = self.mesh {
-    //   let _ = mesh.shutdown().await;
-    // }
   }
 
   pub fn get_network(&self) -> Result<&Network> {
@@ -100,18 +97,12 @@ impl ComponentHost {
     );
 
     let mut network_builder = NetworkBuilder::from_definition(self.manifest.clone())?;
-    // if let Some(mesh) = &self.mesh {
-    //   network_builder = network_builder.mesh(mesh.clone());
-    // }
     if let Some(seed) = seed {
       network_builder = network_builder.with_seed(seed);
     }
     network_builder = network_builder.namespace(self.get_host_id());
     network_builder = network_builder.allow_latest(self.manifest.host().allow_latest);
     network_builder = network_builder.allow_insecure(self.manifest.host().insecure_registries.clone());
-    // if let Some(mesh) = &self.mesh {
-    //   network_builder = network_builder.mesh(mesh.clone());
-    // }
 
     let network = network_builder.build().await?;
 
@@ -224,7 +215,6 @@ impl ComponentHostBuilder {
     ComponentHost {
       id: host_id,
       network: None,
-      // mesh: None,
       manifest: self.manifest,
       server_metadata: None,
     }

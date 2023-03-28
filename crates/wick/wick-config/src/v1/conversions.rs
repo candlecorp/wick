@@ -3,12 +3,13 @@ use std::time::Duration;
 
 // use flow_expression_parser::parse_id;
 use crate::app_config::BoundResource;
-use crate::component_definition::ComponentOperationExpression;
+use crate::component_definition::{ComponentImplementation, ComponentOperationExpression};
 use crate::error::ManifestError;
 use crate::flow_definition::{PortReference, SenderData};
 use crate::host_definition::HostConfig;
 use crate::utils::{opt_str_to_ipv4addr, opt_str_to_pathbuf};
 use crate::{
+  test_case,
   v1,
   AppConfiguration,
   BoundComponent,
@@ -36,19 +37,21 @@ use crate::{
   WasmComponent,
 };
 
-impl TryFrom<v1::ComponentConfiguration> for ComponentConfiguration {
+impl TryFrom<v1::V1ComponentConfiguration> for ComponentConfiguration {
   type Error = ManifestError;
 
-  fn try_from(def: v1::ComponentConfiguration) -> Result<Self> {
+  fn try_from(def: v1::V1ComponentConfiguration) -> Result<Self> {
     Ok(ComponentConfiguration {
       source: None,
       format: def.format,
+      main: def.main.map(|v| v.into()),
       types: def.types,
       version: def.metadata.unwrap_or(v1::ComponentMetadata::default()).version,
       host: def.host.try_into()?,
       name: def.name,
       import: def.import.into_iter().map(|v| (v.name.clone(), v.into())).collect(),
       labels: def.labels,
+      tests: def.tests.into_iter().map(|v| v.into()).collect(),
       operations: def
         .operations
         .into_iter()
@@ -58,18 +61,20 @@ impl TryFrom<v1::ComponentConfiguration> for ComponentConfiguration {
   }
 }
 
-impl TryFrom<ComponentConfiguration> for v1::ComponentConfiguration {
+impl TryFrom<ComponentConfiguration> for v1::V1ComponentConfiguration {
   type Error = ManifestError;
 
   fn try_from(def: ComponentConfiguration) -> Result<Self> {
-    Ok(v1::ComponentConfiguration {
+    Ok(v1::V1ComponentConfiguration {
       format: def.format,
       types: def.types,
+      main: def.main.map(|v| v.into()),
       metadata: Some(v1::ComponentMetadata { version: def.version }),
       host: def.host.try_into()?,
       name: def.name,
       import: def.import.into_values().map(|v| v.into()).collect(),
       labels: def.labels,
+      tests: def.tests.into_iter().map(|v| v.into()).collect(),
       operations: def
         .operations
         .into_values()
@@ -88,15 +93,16 @@ impl From<v1::ComponentOperationExpression> for ComponentOperationExpression {
   }
 }
 
-impl TryFrom<v1::AppConfiguration> for AppConfiguration {
+impl TryFrom<v1::V1AppConfiguration> for AppConfiguration {
   type Error = ManifestError;
 
-  fn try_from(def: v1::AppConfiguration) -> Result<Self> {
+  fn try_from(def: v1::V1AppConfiguration) -> Result<Self> {
     Ok(AppConfiguration {
       source: None,
       format: def.format,
       version: def.metadata.unwrap_or_default().version,
       name: def.name,
+      host: def.host.try_into()?,
       import: def.import.into_iter().map(|v| (v.name.clone(), v.into())).collect(),
       resources: def.resources.into_iter().map(|v| (v.name.clone(), v.into())).collect(),
       triggers: def.triggers.into_iter().map(|v| v.into()).collect(),
@@ -104,7 +110,7 @@ impl TryFrom<v1::AppConfiguration> for AppConfiguration {
   }
 }
 
-impl TryFrom<AppConfiguration> for v1::AppConfiguration {
+impl TryFrom<AppConfiguration> for v1::V1AppConfiguration {
   type Error = ManifestError;
 
   fn try_from(value: AppConfiguration) -> std::result::Result<Self, Self::Error> {
@@ -115,6 +121,7 @@ impl TryFrom<AppConfiguration> for v1::AppConfiguration {
       import: value.import.into_values().map(|v| v.into()).collect(),
       resources: value.resources.into_values().map(|v| v.into()).collect(),
       triggers: value.triggers.into_iter().map(|v| v.into()).collect(),
+      host: value.host.try_into()?,
     })
   }
 }
@@ -251,7 +258,7 @@ impl From<BoundResource> for v1::ResourceBinding {
 impl From<ComponentDefinition> for v1::ComponentDefinition {
   fn from(kind: ComponentDefinition) -> Self {
     match kind {
-      ComponentDefinition::Wasm(wasm) => Self::WasmComponent(wasm.into()),
+      ComponentDefinition::Wasm(wasm) => Self::WasmRsComponent(wasm.into()),
       ComponentDefinition::GrpcUrl(grpc) => Self::GrpcUrlComponent(grpc.into()),
       ComponentDefinition::Native(_) => todo!(),
       ComponentDefinition::Reference(v) => Self::ComponentReference(v.into()),
@@ -268,7 +275,7 @@ impl From<ManifestComponent> for v1::ManifestComponent {
     }
   }
 }
-impl From<WasmComponent> for v1::WasmComponent {
+impl From<WasmComponent> for v1::WasmRsComponent {
   fn from(def: WasmComponent) -> Self {
     Self {
       reference: def.reference,
@@ -364,11 +371,7 @@ impl TryFrom<(String, InstanceReference)> for v1::InstanceBinding {
 impl From<crate::v1::ComponentDefinition> for ComponentDefinition {
   fn from(def: crate::v1::ComponentDefinition) -> Self {
     match def {
-      crate::v1::ComponentDefinition::WasmComponent(v) => ComponentDefinition::Wasm(WasmComponent {
-        reference: v.reference,
-        config: v.config,
-        permissions: v.permissions.into(),
-      }),
+      crate::v1::ComponentDefinition::WasmRsComponent(v) => ComponentDefinition::Wasm(v.into()),
       crate::v1::ComponentDefinition::GrpcUrlComponent(v) => ComponentDefinition::GrpcUrl(GrpcUrlComponent {
         url: v.url,
         config: v.config,
@@ -548,6 +551,151 @@ impl From<v1::ResourceBinding> for BoundResource {
     Self {
       id: value.name,
       kind: value.resource.into(),
+    }
+  }
+}
+
+impl From<v1::TestDefinition> for test_case::TestCase {
+  fn from(value: v1::TestDefinition) -> Self {
+    Self {
+      name: value.name,
+      operation: value.operation,
+      inputs: value.input.into_iter().map(|v| v.into()).collect(),
+      outputs: value.output.into_iter().map(|v| v.into()).collect(),
+      inherent: value.inherent.map(|v| v.into()),
+    }
+  }
+}
+
+impl From<v1::PacketData> for test_case::TestPacket {
+  fn from(value: v1::PacketData) -> Self {
+    match value {
+      v1::PacketData::PayloadData(v) => test_case::TestPacket::PayloadData(v.into()),
+      v1::PacketData::ErrorData(v) => test_case::TestPacket::ErrorData(v.into()),
+    }
+  }
+}
+
+impl From<v1::PayloadData> for crate::test_case::SuccessPayload {
+  fn from(value: v1::PayloadData) -> Self {
+    Self {
+      port: value.name,
+      flags: value.flags.map(|v| v.into()),
+      data: value.data,
+    }
+  }
+}
+
+impl From<v1::ErrorData> for crate::test_case::ErrorPayload {
+  fn from(value: v1::ErrorData) -> Self {
+    Self {
+      port: value.name,
+      flags: value.flags.map(|v| v.into()),
+      message: value.message,
+    }
+  }
+}
+
+impl From<v1::PacketFlags> for crate::test_case::PacketFlags {
+  fn from(value: v1::PacketFlags) -> Self {
+    Self {
+      done: value.done,
+      open: value.open,
+      close: value.close,
+    }
+  }
+}
+
+impl From<v1::InherentData> for crate::test_case::InherentConfig {
+  fn from(value: v1::InherentData) -> Self {
+    Self {
+      seed: value.seed,
+      timestamp: value.timestamp,
+    }
+  }
+}
+
+impl From<test_case::TestCase> for v1::TestDefinition {
+  fn from(value: test_case::TestCase) -> Self {
+    Self {
+      name: value.name,
+      operation: value.operation,
+      input: value.inputs.into_iter().map(|v| v.into()).collect(),
+      output: value.outputs.into_iter().map(|v| v.into()).collect(),
+      inherent: value.inherent.map(|v| v.into()),
+    }
+  }
+}
+
+impl From<test_case::ErrorPayload> for v1::ErrorData {
+  fn from(value: test_case::ErrorPayload) -> Self {
+    Self {
+      name: value.port,
+      flags: value.flags.map(|v| v.into()),
+      message: value.message,
+    }
+  }
+}
+
+impl From<test_case::SuccessPayload> for v1::PayloadData {
+  fn from(value: test_case::SuccessPayload) -> Self {
+    Self {
+      name: value.port,
+      flags: value.flags.map(|v| v.into()),
+      data: value.data,
+    }
+  }
+}
+
+impl From<test_case::PacketFlags> for v1::PacketFlags {
+  fn from(value: test_case::PacketFlags) -> Self {
+    Self {
+      done: value.done,
+      open: value.open,
+      close: value.close,
+    }
+  }
+}
+
+impl From<test_case::InherentConfig> for v1::InherentData {
+  fn from(value: test_case::InherentConfig) -> Self {
+    Self {
+      seed: value.seed,
+      timestamp: value.timestamp,
+    }
+  }
+}
+
+impl From<test_case::TestPacket> for v1::PacketData {
+  fn from(value: test_case::TestPacket) -> Self {
+    match value {
+      test_case::TestPacket::PayloadData(v) => v1::PacketData::PayloadData(v.into()),
+      test_case::TestPacket::ErrorData(v) => v1::PacketData::ErrorData(v.into()),
+    }
+  }
+}
+
+impl From<v1::LocalDefinition> for ComponentImplementation {
+  fn from(value: v1::LocalDefinition) -> Self {
+    match value {
+      v1::LocalDefinition::WasmRsComponent(v) => Self::Wasm(v.into()),
+    }
+  }
+}
+
+impl From<v1::WasmRsComponent> for WasmComponent {
+  fn from(value: v1::WasmRsComponent) -> Self {
+    Self {
+      reference: value.reference,
+      config: value.config,
+      permissions: value.permissions.into(),
+    }
+  }
+}
+impl From<ComponentImplementation> for v1::LocalDefinition {
+  fn from(value: ComponentImplementation) -> Self {
+    match value {
+      ComponentImplementation::Wasm(v) => Self::WasmRsComponent(v.into()),
     }
   }
 }

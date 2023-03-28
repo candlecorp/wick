@@ -1,5 +1,5 @@
 {
-  "title": "JSON schema for Wick host manifests",
+  "title": "JSON schema for Wick applications and components",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
   "$defs": {
@@ -341,17 +341,24 @@
       "WickConfig": {
         "oneOf": [
           {
-            "$ref": "#/$defs/v1/AppConfiguration"
+            "$ref": "#/$defs/v1/V1AppConfiguration"
           },
           {
-            "$ref": "#/$defs/v1/ComponentConfiguration"
+            "$ref": "#/$defs/v1/V1ComponentConfiguration"
           }
         ]
       },
-      "AppConfiguration": {
-        "$anchor": "#v1/AppConfiguration",
+      "V1AppConfiguration": {
+        "$anchor": "#v1/V1AppConfiguration",
         "additionalProperties": false,
         "properties": {
+          "kind": {
+            "type": "string",
+            "description": "The kind of the collection",
+            "enum": [
+              "wick/app@v1"
+            ]
+          },
           "format": {
             "description": "The configuration version.",
             "type": "number"
@@ -364,6 +371,10 @@
           "name": {
             "description": "The application&#x27;s name.",
             "type": "string"
+          },
+          "host": {
+            "description": "Configuration that controls how this application runs within a host.",
+            "$ref": "#/$defs/v1/HostConfig"
           },
           "import": {
             "description": "Components to import into the application&#x27;s scope.",
@@ -608,14 +619,26 @@
         },
         "required": []
       },
-      "ComponentConfiguration": {
-        "$anchor": "#v1/ComponentConfiguration",
+      "V1ComponentConfiguration": {
+        "$anchor": "#v1/V1ComponentConfiguration",
         "additionalProperties": false,
         "properties": {
+          "kind": {
+            "type": "string",
+            "description": "The kind of the collection",
+            "enum": [
+              "wick/component@v1"
+            ]
+          },
           "name": {
             "description": "The name of this component.",
             "required": false,
             "type": "string"
+          },
+          "main": {
+            "description": "An optional reference to a local implementation (e.g. a WebAssembly module)",
+            "required": false,
+            "$ref": "#/$defs/v1/LocalDefinition"
           },
           "format": {
             "description": "The component manifest format version",
@@ -627,7 +650,7 @@
             "$ref": "#/$defs/v1/ComponentMetadata"
           },
           "host": {
-            "description": "Configuration for the host when this manifest is run directly.",
+            "description": "Configuration for when wick hosts this component as a service.",
             "$ref": "#/$defs/v1/HostConfig"
           },
           "labels": {
@@ -659,10 +682,24 @@
             "items": {
               "$ref": "#/$defs/v1/OperationDefinition"
             }
+          },
+          "tests": {
+            "description": "Assertions that can be run against the component to validate its behavior.",
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/v1/TestDefinition"
+            }
           }
         },
         "required": [
           "format"
+        ]
+      },
+      "LocalDefinition": {
+        "oneOf": [
+          {
+            "$ref": "#/$defs/v1/WasmRsComponent"
+          }
         ]
       },
       "ComponentMetadata": {
@@ -715,7 +752,7 @@
       "ComponentDefinition": {
         "oneOf": [
           {
-            "$ref": "#/$defs/v1/WasmComponent"
+            "$ref": "#/$defs/v1/WasmRsComponent"
           },
           {
             "$ref": "#/$defs/v1/GrpcUrlComponent"
@@ -736,7 +773,7 @@
             "type": "string",
             "description": "The kind of the collection",
             "enum": [
-              "Reference"
+              "wick/component/reference@v1"
             ]
           },
           "id": {
@@ -811,15 +848,15 @@
         },
         "required": []
       },
-      "WasmComponent": {
-        "$anchor": "#v1/WasmComponent",
+      "WasmRsComponent": {
+        "$anchor": "#v1/WasmRsComponent",
         "additionalProperties": false,
         "properties": {
           "kind": {
             "type": "string",
             "description": "The kind of the collection",
             "enum": [
-              "Wasm"
+              "wick/component/wasmrs@v1"
             ]
           },
           "ref": {
@@ -831,8 +868,7 @@
             "$ref": "#/$defs/v1/Permissions"
           },
           "config": {
-            "description": "Per-component configuration.",
-            "type": "object"
+            "description": "Per-component configuration."
           }
         },
         "required": [
@@ -863,7 +899,7 @@
             "type": "string",
             "description": "The kind of the collection",
             "enum": [
-              "GrpcUrl"
+              "wick/component/grpc@v1"
             ]
           },
           "url": {
@@ -871,8 +907,7 @@
             "type": "string"
           },
           "config": {
-            "description": "Any configuration necessary for the component.",
-            "type": "object"
+            "description": "Any configuration necessary for the component."
           }
         },
         "required": [
@@ -887,7 +922,7 @@
             "type": "string",
             "description": "The kind of the collection",
             "enum": [
-              "Manifest"
+              "wick/component/manifest@v1"
             ]
           },
           "ref": {
@@ -895,8 +930,7 @@
             "type": "string"
           },
           "config": {
-            "description": "Any configuration necessary for the component.",
-            "type": "object"
+            "description": "Any configuration necessary for the component."
           }
         },
         "required": [
@@ -969,8 +1003,7 @@
           },
           "config": {
             "description": "Data to associate with the reference, if any.",
-            "required": false,
-            "type": "object"
+            "required": false
           }
         },
         "required": [
@@ -1010,14 +1043,141 @@
           },
           "data": {
             "description": "The default value to provide on this connection in the event of an error.",
-            "required": false,
-            "type": "object"
+            "required": false
           }
         },
         "required": [
           "instance",
           "port"
         ]
+      },
+      "TestDefinition": {
+        "$anchor": "#v1/TestDefinition",
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "description": "The name of the test.",
+            "type": "string"
+          },
+          "operation": {
+            "description": "The operaton to test.",
+            "type": "string"
+          },
+          "inherent": {
+            "description": "Inherent data to use for the test.",
+            "required": false,
+            "$ref": "#/$defs/v1/InherentData"
+          },
+          "input": {
+            "description": "The inputs to the test.",
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/v1/PacketData"
+            }
+          },
+          "output": {
+            "description": "The expected outputs of the operation.",
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/v1/PacketData"
+            }
+          }
+        },
+        "required": [
+          "name",
+          "operation"
+        ]
+      },
+      "InherentData": {
+        "$anchor": "#v1/InherentData",
+        "additionalProperties": false,
+        "properties": {
+          "seed": {
+            "description": "An RNG seed.",
+            "required": false,
+            "type": "number"
+          },
+          "timestamp": {
+            "description": "A timestamp.",
+            "required": false,
+            "type": "number"
+          }
+        },
+        "required": []
+      },
+      "PacketData": {
+        "oneOf": [
+          {
+            "$ref": "#/$defs/v1/PayloadData"
+          },
+          {
+            "$ref": "#/$defs/v1/ErrorData"
+          }
+        ]
+      },
+      "PayloadData": {
+        "$anchor": "#v1/PayloadData",
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "description": "The name of the port to send the data to.",
+            "type": "string"
+          },
+          "flags": {
+            "description": "Any flags set on the packet.",
+            "required": false,
+            "$ref": "#/$defs/v1/PacketFlags"
+          },
+          "data": {
+            "description": "The data to send.",
+            "required": false
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "ErrorData": {
+        "$anchor": "#v1/ErrorData",
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "description": "The name of the port to send the data to.",
+            "type": "string"
+          },
+          "flags": {
+            "description": "Any flags set on the packet.",
+            "required": false,
+            "$ref": "#/$defs/v1/PacketFlags"
+          },
+          "message": {
+            "description": "The error message.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "message"
+        ]
+      },
+      "PacketFlags": {
+        "$anchor": "#v1/PacketFlags",
+        "additionalProperties": false,
+        "properties": {
+          "done": {
+            "description": "When set, indicates the port should be considered closed.",
+            "type": "boolean"
+          },
+          "open": {
+            "description": "When set, indicates the opening of a new substream context within the parent stream.",
+            "type": "boolean"
+          },
+          "close": {
+            "description": "When set, indicates the closing of a substream context within the parent stream.",
+            "type": "boolean"
+          }
+        },
+        "required": []
       }
     }
   },

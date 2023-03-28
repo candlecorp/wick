@@ -85,7 +85,7 @@
 // Add exceptions here
 #![allow(missing_docs)]
 
-pub mod collection;
+pub mod component;
 pub mod error;
 pub mod helpers; // TODO ref check and make sure these are used:
 pub mod transaction;

@@ -24,5 +24,5 @@ wick-packet = { workspace = true }
 logger = { workspace = true }
 test-logger = { workspace = true }
 anyhow = { workspace = true }
-test-native-collection = { workspace = true }
+test-native-component = { workspace = true }
 futures = { workspace = true }

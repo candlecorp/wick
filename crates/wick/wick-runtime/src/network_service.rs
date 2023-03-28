@@ -14,7 +14,7 @@ use uuid::Uuid;
 use wick_config::ComponentConfiguration;
 use wick_packet::{Invocation, PacketStream};
 
-use crate::components::{initialize_native_component, initialize_network_collection, initialize_wasm_component};
+use crate::components::{init_manifest_component, init_wasm_component, initialize_native_component};
 use crate::dev::prelude::*;
 use crate::json_writer::JsonWriter;
 use crate::{BoxFuture, V0_NAMESPACE};
@@ -48,16 +48,11 @@ impl NetworkService {
   pub(crate) async fn new(msg: Initialize) -> Result<Arc<Self>> {
     debug!("initializing network service");
     let graph = flow_graph_interpreter::graph::from_def(&msg.manifest)?;
-    let mut collections = HandlerMap::default();
+    let mut components = HandlerMap::default();
     let rng = Random::from_seed(msg.rng_seed);
 
-    let span = debug_span!(parent: &msg.span, "components:init");
-
-    let stdlib = initialize_native_component(V0_NAMESPACE.to_owned(), rng.seed(), &span)?;
-    collections.add(stdlib);
-
-    let span = debug_span!(parent: &msg.span, "components:init");
-    for collection in msg.manifest.components().values() {
+    if let Some(main) = msg.manifest.main() {
+      let span = debug_span!(parent: &msg.span, "main:init");
       let collection_init = ComponentInitOptions {
         rng_seed: rng.seed(),
         network_id: msg.id,
@@ -66,8 +61,36 @@ impl NetworkService {
         timeout: msg.timeout,
         span: &span,
       };
-      let p = initialize_component(collection, collection_init).await?;
-      collections.add(p);
+
+      let component = match main {
+        wick_config::ComponentImplementation::Wasm(c) => {
+          BoundComponent::new("__main", ComponentDefinition::Wasm(c.clone()))
+        }
+      };
+      let main_component = initialize_component(&component, collection_init).await?;
+      components.add(main_component);
+      if !msg.manifest.components().is_empty() {
+        warn!("main implementation specified, ignoring component definitions only used for flow-based components");
+      }
+    } else {
+      let span = debug_span!(parent: &msg.span, "components:init");
+
+      let stdlib = initialize_native_component(V0_NAMESPACE.to_owned(), rng.seed(), &span)?;
+      components.add(stdlib);
+
+      let span = debug_span!(parent: &msg.span, "components:init");
+      for collection in msg.manifest.components().values() {
+        let collection_init = ComponentInitOptions {
+          rng_seed: rng.seed(),
+          network_id: msg.id,
+          allow_latest: msg.allow_latest,
+          allowed_insecure: msg.allowed_insecure.clone(),
+          timeout: msg.timeout,
+          span: &span,
+        };
+        let p = initialize_component(collection, collection_init).await?;
+        components.add(p);
+      }
     }
 
     let source = msg.manifest.source().clone();
@@ -75,7 +98,7 @@ impl NetworkService {
       Some(rng.seed()),
       graph,
       Some(msg.namespace.unwrap_or_else(|| msg.id.to_string())),
-      Some(collections),
+      Some(components),
     )
     .map_err(|e| NetworkError::InterpreterInit(source.unwrap_or_else(|| "unknown".to_owned()), e))?;
 
@@ -184,12 +207,12 @@ pub(crate) async fn initialize_component<'a, 'b>(
   opts: ComponentInitOptions<'b>,
 ) -> Result<NamespaceHandler> {
   debug!(?collection, ?opts, "initializing component");
-  let namespace = collection.id.clone();
+  let id = collection.id.clone();
   let span = opts.span.clone();
   let result = match &collection.kind {
-    ComponentDefinition::Wasm(v) => initialize_wasm_component(v, namespace, opts).instrument(span).await,
+    ComponentDefinition::Wasm(v) => init_wasm_component(v, id, opts).instrument(span).await,
     // CollectionKind::GrpcUrl(v) => initialize_grpc_collection(v, namespace).await,
-    ComponentDefinition::Manifest(v) => initialize_network_collection(v, namespace, opts).instrument(span).await,
+    ComponentDefinition::Manifest(v) => init_manifest_component(v, id, opts).instrument(span).await,
     _ => unimplemented!(),
   };
   Ok(result?)
