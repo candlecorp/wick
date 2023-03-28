@@ -11,10 +11,9 @@ use async_trait::async_trait;
 use hyper::Server;
 use parking_lot::Mutex;
 use tokio::task::JoinHandle;
-use wick_config::{AppConfiguration, BoundComponent, HttpRouterConfig, HttpTriggerConfig, TriggerDefinition};
 
 use super::{resolve_ref, Trigger, TriggerKind};
-use crate::dev::prelude::RuntimeError;
+use crate::dev::prelude::{RuntimeError, *};
 use crate::resources::{Resource, ResourceKind};
 use crate::triggers::http::service_factory::ServiceFactory;
 use crate::Network;
@@ -104,20 +103,20 @@ impl Http {
 
   async fn handle_command(
     &self,
-    app_config: AppConfiguration,
-    config: HttpTriggerConfig,
+    app_config: config::AppConfiguration,
+    config: config::HttpTriggerConfig,
     socket: &SocketAddr,
   ) -> Result<HttpInstance, RuntimeError> {
     let mut network = crate::NetworkBuilder::new();
     let mut routers = Vec::new();
     for (i, router) in config.routers().iter().enumerate() {
       let router = match router {
-        HttpRouterConfig::RawRouter(r) => r,
+        config::HttpRouterConfig::RawRouter(r) => r,
         _ => unimplemented!(),
       };
       let router_component = resolve_ref(&app_config, router.operation().component())?;
-      let router_binding = BoundComponent::new(i.to_string(), router_component);
-      network = network.add_component(router_binding);
+      let router_binding = config::BoundComponent::new(i.to_string(), router_component);
+      network = network.add_import(router_binding);
       routers.push(HttpRouter {
         path: router.path().to_owned(),
         operation: router.operation().operation().to_owned(),
@@ -138,12 +137,12 @@ impl Trigger for Http {
   async fn run(
     &self,
     _name: String,
-    app_config: AppConfiguration,
-    config: TriggerDefinition,
+    app_config: config::AppConfiguration,
+    config: config::TriggerDefinition,
     resources: Arc<HashMap<String, Resource>>,
   ) -> Result<(), RuntimeError> {
     debug!(kind = %TriggerKind::Http, "trigger:run");
-    let config = if let TriggerDefinition::Http(config) = config {
+    let config = if let config::TriggerDefinition::Http(config) = config {
       config
     } else {
       return Err(RuntimeError::InvalidTriggerConfig(TriggerKind::Http));
@@ -231,7 +230,7 @@ triggers:
               kind: wick/component/wasmrs@v1
               ref: ../../integration/test-http-trigger-component/build/test_http_trigger_component.signed.wasm
     ";
-    let app_config = AppConfiguration::from_yaml(yaml, &None)?;
+    let app_config = config::WickConfiguration::from_yaml(yaml, &None)?.try_app_config()?;
     let trigger = Http::load_impl()?;
     let resource = Resource::new(app_config.resources().get("http").as_ref().unwrap().kind.clone())?;
     let resources = Arc::new([("http".to_owned(), resource)].iter().cloned().collect());

@@ -58,7 +58,7 @@ pub(crate) struct AppConfiguration {
   /// Associated metadata for this component.
 
   #[serde(default)]
-  pub(crate) metadata: Option<AppMetadata>,
+  pub(crate) metadata: Option<Metadata>,
   /// The application&#x27;s name.
 
   #[serde(default)]
@@ -87,13 +87,41 @@ pub(crate) struct AppConfiguration {
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
-/// Metadata for the application.
-pub(crate) struct AppMetadata {
-  /// The version of the application.
+/// Metadata for the component or application.
+pub(crate) struct Metadata {
+  /// The version of the component or application.
 
   #[serde(default)]
   #[serde(deserialize_with = "with_expand_envs")]
   pub(crate) version: String,
+  /// The authors of the component or application.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub(crate) authors: Vec<String>,
+  /// Any vendors associated with the component or application.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub(crate) vendors: Vec<String>,
+  /// A short description of the component or application.
+
+  #[serde(default)]
+  pub(crate) description: Option<String>,
+  /// Where to find documentation for the component or application.
+
+  #[serde(default)]
+  pub(crate) documentation: Option<String>,
+  /// The license(s) for the component or application.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub(crate) licenses: Vec<String>,
+  /// The icon for the component or application.
+
+  #[serde(default)]
+  #[serde(deserialize_with = "with_expand_envs")]
+  pub(crate) icon: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -278,7 +306,7 @@ pub(crate) struct ComponentConfiguration {
   /// Associated metadata for this component.
 
   #[serde(default)]
-  pub(crate) metadata: Option<ComponentMetadata>,
+  pub(crate) metadata: Option<Metadata>,
   /// Configuration for when wick hosts this component as a service.
 
   #[serde(default)]
@@ -350,17 +378,6 @@ pub(crate) struct WasmComponentConfiguration {
   #[serde(default)]
   #[serde(skip_serializing_if = "Vec::is_empty")]
   pub(crate) operations: Vec<OperationDefinition>,
-}
-
-#[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
-#[serde(deny_unknown_fields)]
-/// Metadata for the component.
-pub(crate) struct ComponentMetadata {
-  /// The version of the component.
-
-  #[serde(default)]
-  #[serde(deserialize_with = "with_expand_envs")]
-  pub(crate) version: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]

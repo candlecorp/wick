@@ -11,8 +11,8 @@ use parking_lot::Mutex;
 use seeded_random::{Random, Seed};
 use tracing::Instrument;
 use uuid::Uuid;
-use wick_config::ComponentConfiguration;
-use wick_packet::{Invocation, PacketStream};
+use wick_config::config::ComponentImplementation;
+use wick_config::WickConfiguration;
 
 use crate::components::{init_manifest_component, init_wasm_component, initialize_native_component};
 use crate::dev::prelude::*;
@@ -23,7 +23,7 @@ type Result<T> = std::result::Result<T, NetworkError>;
 #[derive(Debug)]
 pub(crate) struct Initialize {
   pub(crate) id: Uuid,
-  pub(crate) manifest: ComponentConfiguration,
+  pub(crate) manifest: config::ComponentConfiguration,
   pub(crate) allowed_insecure: Vec<String>,
   pub(crate) allow_latest: bool,
   pub(crate) timeout: Duration,
@@ -51,7 +51,7 @@ impl NetworkService {
     let mut components = HandlerMap::default();
     let rng = Random::from_seed(msg.rng_seed);
 
-    if let Some(main) = msg.manifest.main() {
+    if let ComponentImplementation::Wasm(comp) = msg.manifest.component() {
       let span = debug_span!(parent: &msg.span, "main:init");
       let collection_init = ComponentInitOptions {
         rng_seed: rng.seed(),
@@ -62,24 +62,24 @@ impl NetworkService {
         span: &span,
       };
 
-      let component = match main {
-        wick_config::ComponentImplementation::Wasm(c) => {
-          BoundComponent::new("__main", ComponentDefinition::Wasm(c.clone()))
-        }
-      };
+      let component = config::BoundComponent::new(
+        "__main",
+        config::ComponentDefinition::Wasm(config::WasmComponent {
+          reference: comp.reference().to_owned(),
+          config: Default::default(),
+          permissions: Default::default(),
+        }),
+      );
       let main_component = initialize_component(&component, collection_init).await?;
       components.add(main_component);
-      if !msg.manifest.components().is_empty() {
-        warn!("main implementation specified, ignoring component definitions only used for flow-based components");
-      }
-    } else {
+    } else if let ComponentImplementation::Composite(comp) = msg.manifest.component() {
       let span = debug_span!(parent: &msg.span, "components:init");
 
       let stdlib = initialize_native_component(V0_NAMESPACE.to_owned(), rng.seed(), &span)?;
       components.add(stdlib);
 
       let span = debug_span!(parent: &msg.span, "components:init");
-      for collection in msg.manifest.components().values() {
+      for collection in comp.components().values() {
         let collection_init = ComponentInitOptions {
           rng_seed: rng.seed(),
           network_id: msg.id,
@@ -130,7 +130,7 @@ impl NetworkService {
   {
     Box::pin(async move {
       let bytes = wick_loader_utils::get_bytes(location, opts.allow_latest, &opts.allowed_insecure).await?;
-      let manifest = wick_config::ComponentConfiguration::load_from_bytes(Some(location.to_owned()), &bytes)?;
+      let manifest = WickConfiguration::load_from_bytes(&bytes, &Some(location.to_owned()))?.try_component_config()?;
 
       let init = Initialize {
         id: uid,
@@ -203,16 +203,16 @@ pub(crate) struct ComponentInitOptions<'a> {
 }
 
 pub(crate) async fn initialize_component<'a, 'b>(
-  collection: &'a BoundComponent,
+  collection: &'a config::BoundComponent,
   opts: ComponentInitOptions<'b>,
 ) -> Result<NamespaceHandler> {
   debug!(?collection, ?opts, "initializing component");
   let id = collection.id.clone();
   let span = opts.span.clone();
   let result = match &collection.kind {
-    ComponentDefinition::Wasm(v) => init_wasm_component(v, id, opts).instrument(span).await,
+    config::ComponentDefinition::Wasm(v) => init_wasm_component(v, id, opts).instrument(span).await,
     // CollectionKind::GrpcUrl(v) => initialize_grpc_collection(v, namespace).await,
-    ComponentDefinition::Manifest(v) => init_manifest_component(v, id, opts).instrument(span).await,
+    config::ComponentDefinition::Manifest(v) => init_manifest_component(v, id, opts).instrument(span).await,
     _ => unimplemented!(),
   };
   Ok(result?)

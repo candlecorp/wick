@@ -10,7 +10,8 @@ use seeded_random::Seed;
 use uuid::Uuid;
 use wick_component_cli::options::{Options as HostOptions, ServerOptions};
 use wick_component_cli::ServerState;
-use wick_config::ComponentConfiguration;
+use wick_config::config::ComponentConfiguration;
+use wick_config::WickConfiguration;
 use wick_interface_types::ComponentSignature;
 use wick_packet::{Entity, InherentData, Invocation, PacketStream};
 use wick_rpc::{RpcHandler, SharedRpcHandler};
@@ -200,7 +201,8 @@ impl ComponentHostBuilder {
   pub async fn from_manifest_url(location: &str, allow_latest: bool, insecure_registries: &[String]) -> Result<Self> {
     let manifest_src = wick_loader_utils::get_bytes(location, allow_latest, insecure_registries).await?;
 
-    let manifest = ComponentConfiguration::load_from_bytes(Some(location.to_owned()), &manifest_src)?;
+    let manifest =
+      WickConfiguration::load_from_bytes(&manifest_src, &Some(location.to_owned()))?.try_component_config()?;
     Ok(Self::from_definition(manifest))
   }
 
@@ -225,7 +227,7 @@ impl TryFrom<PathBuf> for ComponentHostBuilder {
   type Error = Error;
 
   fn try_from(file: PathBuf) -> Result<Self> {
-    let manifest = ComponentConfiguration::load_from_file(file)?;
+    let manifest = WickConfiguration::load_from_file(file)?.try_component_config()?;
     Ok(ComponentHostBuilder::from_definition(manifest))
   }
 }
@@ -247,7 +249,7 @@ mod test {
   use anyhow::Result;
   use futures::StreamExt;
   use http::Uri;
-  use wick_config::HttpConfig;
+  use wick_config::config::HttpConfig;
   use wick_invocation_server::connect_rpc_client;
   use wick_packet::{packet_stream, packets, Entity, Packet};
 
@@ -272,7 +274,7 @@ mod test {
   #[test_logger::test(tokio::test)]
   async fn request_direct() -> Result<()> {
     let file = PathBuf::from("manifests/logger.yaml");
-    let manifest = ComponentConfiguration::load_from_file(&file)?;
+    let manifest = WickConfiguration::load_from_file(&file)?.try_component_config()?;
     let mut host = ComponentHostBuilder::from_definition(manifest).build();
     host.start(None).await?;
     let passed_data = "logging output";
@@ -293,7 +295,7 @@ mod test {
   #[test_logger::test(tokio::test)]
   async fn request_rpc_server() -> Result<()> {
     let file = PathBuf::from("manifests/logger.yaml");
-    let mut def = ComponentConfiguration::load_from_file(&file)?;
+    let mut def = WickConfiguration::load_from_file(&file)?.try_component_config()?;
     def.host_mut().rpc = Some(HttpConfig {
       enabled: true,
       port: None,

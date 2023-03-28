@@ -91,7 +91,7 @@ use serde_value::Value;
 use tap::{TestBlock, TestRunner};
 use tokio_stream::wrappers::UnboundedReceiverStream;
 use tokio_stream::StreamExt;
-use wick_config::TestCase;
+use wick_config::config::TestCase;
 use wick_packet::{Entity, InherentData, Invocation, Packet, PacketPayload, PacketStream};
 use wick_rpc::SharedRpcHandler;
 
@@ -417,7 +417,7 @@ mod test {
 
   use anyhow::Result;
   use test_native_component::Component;
-  use wick_config::ComponentConfiguration;
+  use wick_config::WickConfiguration;
 
   use super::*;
 
@@ -428,7 +428,7 @@ mod test {
   #[test_logger::test(tokio::test)]
   async fn test_basic() -> Result<()> {
     let config = include_str!("../tests/manifests/test.yaml");
-    let config = ComponentConfiguration::from_yaml(config, &None)?;
+    let config = WickConfiguration::from_yaml(config, &None)?.try_component_config()?;
     let mut unit_tests = TestSuite::from_test_cases(config.tests());
     let results = unit_tests.run(None, get_component()).await;
     assert!(results.is_ok());

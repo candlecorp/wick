@@ -10,6 +10,7 @@ pub mod types {
 use flow_expression_parser::parse::CORE_ID;
 use flow_graph::NodeReference;
 use types::*;
+use wick_config::config::ComponentImplementation;
 
 use crate::constants::{INTERNAL_ID_INHERENT, NS_CORE, NS_INTERNAL};
 
@@ -41,42 +42,45 @@ impl Reference {
 }
 
 #[instrument(name = "graph", skip_all, level = "trace", fields(name=manifest.name()))]
-pub fn from_def(manifest: &wick_config::ComponentConfiguration) -> Result<Network, flow_graph::error::Error> {
+pub fn from_def(manifest: &wick_config::config::ComponentConfiguration) -> Result<Network, flow_graph::error::Error> {
   let mut network = Network::new(manifest.name().clone().unwrap_or_default());
 
-  for (name, flow) in manifest.operations() {
-    let mut schematic = Schematic::new(name.clone());
+  if let ComponentImplementation::Composite(composite) = manifest.component() {
+    for (name, flow) in composite.operations() {
+      let mut schematic = Schematic::new(name.clone());
 
-    let index = schematic.add_inherent(CORE_ID, NodeReference::new(NS_INTERNAL, INTERNAL_ID_INHERENT), None);
+      let index = schematic.add_inherent(CORE_ID, NodeReference::new(NS_INTERNAL, INTERNAL_ID_INHERENT), None);
 
-    trace!(index, name = INTERNAL_ID_INHERENT, "added inherent component");
+      trace!(index, name = INTERNAL_ID_INHERENT, "added inherent component");
 
-    for (name, def) in flow.instances.iter() {
-      schematic.add_external(name, NodeReference::new(&def.component_id, &def.name), def.data.clone());
-    }
-
-    for connection in &flow.connections {
-      let from = &connection.from;
-      let to = &connection.to;
-      let to_port = schematic
-        .find_mut(to.get_instance())
-        .map(|component| component.add_input(to.get_port()));
-
-      assert!(
-        to_port.is_some(),
-        "Could not find downstream instance '{}'",
-        to.get_instance(),
-      );
-      let to_port = to_port.unwrap();
-
-      if let Some(component) = schematic.find_mut(from.get_instance()) {
-        let from_port = component.add_output(from.get_port());
-        schematic.connect(from_port, to_port, None)?;
-      } else {
-        panic!("Can't find component {}", from.get_instance());
+      for (name, def) in flow.instances.iter() {
+        schematic.add_external(name, NodeReference::new(&def.component_id, &def.name), def.data.clone());
       }
+
+      for connection in &flow.connections {
+        let from = &connection.from;
+        let to = &connection.to;
+        let to_port = schematic
+          .find_mut(to.get_instance())
+          .map(|component| component.add_input(to.get_port()));
+
+        assert!(
+          to_port.is_some(),
+          "Could not find downstream instance '{}'",
+          to.get_instance(),
+        );
+        let to_port = to_port.unwrap();
+
+        if let Some(component) = schematic.find_mut(from.get_instance()) {
+          let from_port = component.add_output(from.get_port());
+          schematic.connect(from_port, to_port, None)?;
+        } else {
+          panic!("Can't find component {}", from.get_instance());
+        }
+      }
+      network.add_schematic(schematic);
     }
-    network.add_schematic(schematic);
   }
+
   Ok(network)
 }

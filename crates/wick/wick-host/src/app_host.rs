@@ -4,7 +4,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 use tokio::task::{JoinError, JoinHandle};
-use wick_config::AppConfiguration;
+use wick_config::config::{AppConfiguration, WickConfiguration};
 use wick_runtime::error::RuntimeError;
 use wick_runtime::resources::Resource;
 use wick_runtime::Trigger;
@@ -94,14 +94,14 @@ impl AppHost {
   }
 }
 
+type SharedTrigger = Arc<dyn Trigger + Send + Sync>;
+type TriggerTask = JoinHandle<std::result::Result<(), RuntimeError>>;
+
 #[derive(Default)]
 #[must_use]
 #[allow(missing_debug_implementations)]
 pub struct TriggerState {
-  triggers: Vec<(
-    Arc<dyn Trigger + Send + Sync>,
-    Option<JoinHandle<std::result::Result<(), RuntimeError>>>,
-  )>,
+  triggers: Vec<(SharedTrigger, Option<TriggerTask>)>,
 }
 
 impl TriggerState {
@@ -154,7 +154,7 @@ impl AppHostBuilder {
   pub async fn from_manifest_url(location: &str, allow_latest: bool, insecure_registries: &[String]) -> Result<Self> {
     let manifest_src = wick_loader_utils::get_bytes(location, allow_latest, insecure_registries).await?;
 
-    let manifest = AppConfiguration::load_from_bytes(Some(location.to_owned()), &manifest_src)?;
+    let manifest = WickConfiguration::load_from_bytes(&manifest_src, &Some(location.to_owned()))?.try_app_config()?;
     Ok(Self::from_definition(manifest))
   }
 
@@ -175,7 +175,7 @@ impl TryFrom<PathBuf> for AppHostBuilder {
   type Error = Error;
 
   fn try_from(file: PathBuf) -> Result<Self> {
-    let manifest = AppConfiguration::load_from_file(file)?;
+    let manifest = WickConfiguration::load_from_file(file)?.try_app_config()?;
     Ok(AppHostBuilder::from_definition(manifest))
   }
 }

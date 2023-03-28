@@ -3,14 +3,15 @@ use std::sync::Arc;
 use std::{env, fmt};
 
 use async_trait::async_trait;
-use futures::StreamExt;
+use config::{AppConfiguration, BoundComponent, CliConfig, TriggerDefinition};
+// use futures::StreamExt;
 use parking_lot::Mutex;
 use serde::{Deserialize, Serialize};
-use wick_config::{AppConfiguration, BoundComponent, CliConfig, TriggerDefinition};
+use tokio_stream::StreamExt;
 use wick_packet::{packet_stream, CollectionLink, Entity, Invocation};
 
 use super::{resolve_ref, Trigger, TriggerKind};
-use crate::dev::prelude::RuntimeError;
+use crate::dev::prelude::*;
 use crate::resources::Resource;
 
 #[derive(Debug)]
@@ -64,10 +65,9 @@ impl Cli {
       Entity::operation(&cli_binding.id, config.operation()),
       None,
     );
-
     let network = crate::NetworkBuilder::new()
-      .add_component(cli_binding)
-      .add_component(app_binding)
+      .add_import(cli_binding)
+      .add_import(app_binding)
       .build()
       .await?;
 

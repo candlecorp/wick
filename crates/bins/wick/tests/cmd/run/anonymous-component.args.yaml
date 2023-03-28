@@ -1,5 +1,5 @@
 name: mycli
-format: 1
+kind: wick/app@v1
 triggers:
   - kind: wick/trigger/cli@v1
     operation:

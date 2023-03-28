@@ -1,11 +1,11 @@
 use futures::stream::StreamExt;
 use tracing::debug;
-use wick_config::ComponentConfiguration;
+use wick_config::WickConfiguration;
 use wick_packet::{Entity, InherentData, Invocation, Packet, PacketStream};
 use wick_runtime::{Network, NetworkBuilder};
 
 pub async fn init_network_from_yaml(path: &str) -> anyhow::Result<(Network, uuid::Uuid)> {
-  let host_def = ComponentConfiguration::load_from_file(path)?;
+  let host_def = WickConfiguration::load_from_file(path)?.try_component_config()?;
   debug!("Manifest loaded");
 
   let builder = NetworkBuilder::from_definition(host_def)?;

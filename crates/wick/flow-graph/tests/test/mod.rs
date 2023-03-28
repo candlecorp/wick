@@ -71,12 +71,13 @@ impl Counter {
   }
 }
 
-pub fn load<T: AsRef<Path>>(path: T) -> Result<wick_config::ComponentConfiguration> {
-  Ok(wick_config::ComponentConfiguration::load_from_file(path.as_ref())?)
+pub fn load<T: AsRef<Path>>(path: T) -> Result<wick_config::config::ComponentConfiguration> {
+  Ok(wick_config::WickConfiguration::load_from_file(path.as_ref())?.try_component_config()?)
 }
 
-pub fn from_manifest(network_def: &wick_config::ComponentConfiguration) -> Result<Network<Value>> {
+pub fn from_manifest(network_def: &wick_config::config::ComponentConfiguration) -> Result<Network<Value>> {
   let mut network = Network::new(network_def.name().clone().unwrap_or_default());
+  let network_def = network_def.try_composite()?;
 
   for flow in network_def.operations().values() {
     let mut schematic = Schematic::new(flow.name.clone());

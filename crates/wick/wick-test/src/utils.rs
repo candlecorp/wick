@@ -1,5 +1,5 @@
 use wasmrs_codec::messagepack;
-use wick_config::{PacketFlags, TestPacket};
+use wick_config::config::{PacketFlags, TestPacket};
 use wick_packet::{Packet, PacketError, PacketPayload, CLOSE_BRACKET, DONE_FLAG, OPEN_BRACKET};
 
 use crate::error::TestError;

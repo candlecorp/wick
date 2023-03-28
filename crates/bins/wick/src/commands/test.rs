@@ -5,7 +5,7 @@ use clap::Args;
 use seeded_random::Seed;
 use wick_component_cli::options::DefaultCliOptions;
 use wick_component_cli::LoggingOptions;
-use wick_config::ComponentConfiguration;
+use wick_config::WickConfiguration;
 use wick_host::ComponentHostBuilder;
 use wick_test::TestSuite;
 
@@ -48,7 +48,7 @@ pub(crate) async fn handle_command(opts: TestCommand) -> Result<()> {
     .await
     .context("Could not load from location")?;
 
-  let config = ComponentConfiguration::load_from_bytes(Some(opts.location), &bytes)?;
+  let config = WickConfiguration::load_from_bytes(&bytes, &Some(opts.location))?.try_component_config()?;
   let mut suite = TestSuite::from_test_cases(config.tests());
   let server_options = DefaultCliOptions { ..Default::default() };
 

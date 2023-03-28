@@ -35,12 +35,12 @@ impl TryFrom<v0::HostManifest> for config::ComponentConfiguration {
     };
     Ok(config::ComponentConfiguration {
       source: None,
-      version: def.version,
       component: config::ComponentImplementation::Composite(composite),
       host: def.host.try_into()?,
       name: def.network.name,
       tests: Vec::new(),
       labels: def.network.labels,
+      metadata: None,
     })
   }
 }

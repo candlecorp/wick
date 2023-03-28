@@ -6,7 +6,7 @@ union WickConfig = AppConfiguration | ComponentConfiguration | TypesConfiguratio
 "The Application configuration defines a standalone Wick application."
 type AppConfiguration @default @tagged("wick/app@v1") {
   "Associated metadata for this component."
-  metadata: AppMetadata?,
+  metadata: Metadata?,
 
   "The application's name."
   name: string,
@@ -24,10 +24,22 @@ type AppConfiguration @default @tagged("wick/app@v1") {
   triggers: [TriggerDefinition],
 }
 
-"Metadata for the application."
-type AppMetadata @default {
-  "The version of the application."
+"Metadata for the component or application."
+type Metadata @default {
+  "The version of the component or application."
   version: string,
+  "The authors of the component or application."
+  authors: [string],
+  "Any vendors associated with the component or application."
+  vendors: [string],
+  "A short description of the component or application."
+  description: string?,
+  "Where to find documentation for the component or application."
+  documentation: string?,
+  "The license(s) for the component or application."
+  licenses: [string],
+  "The icon for the component or application."
+  icon: string,
 }
 
 "The possible types of resources."
@@ -122,7 +134,7 @@ type ComponentConfiguration @tagged("wick/component@v1") {
   name: string?
 
   "Associated metadata for this component."
-  metadata: ComponentMetadata?
+  metadata: Metadata?
 
   "Configuration for when wick hosts this component as a service."
   host: HostConfig
@@ -162,12 +174,6 @@ type WasmComponentConfiguration @tagged("wick/component/wasmrs@v1") {
   "A list of operations implemented by the WebAssembly module."
   operations: [OperationDefinition]
 
-}
-
-"Metadata for the component."
-type ComponentMetadata @default {
-  "The version of the component."
-  version: string,
 }
 
 "An identifier bound to a resource."

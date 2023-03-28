@@ -22,7 +22,7 @@
           "description": "Associated metadata for this component.",
           "required": false,
 
-          "$ref": "#/$defs/v1/AppMetadata"
+          "$ref": "#/$defs/v1/Metadata"
         },
         "name": {
           "description": "The application&#x27;s name.",
@@ -62,12 +62,53 @@
       "required": []
     },
 
-    "AppMetadata": {
-      "$anchor": "#v1/AppMetadata",
+    "Metadata": {
+      "$anchor": "#v1/Metadata",
       "additionalProperties": false,
       "properties": {
         "version": {
-          "description": "The version of the application.",
+          "description": "The version of the component or application.",
+
+          "type": "string"
+        },
+        "authors": {
+          "description": "The authors of the component or application.",
+
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "vendors": {
+          "description": "Any vendors associated with the component or application.",
+
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "description": {
+          "description": "A short description of the component or application.",
+          "required": false,
+
+          "type": "string"
+        },
+        "documentation": {
+          "description": "Where to find documentation for the component or application.",
+          "required": false,
+
+          "type": "string"
+        },
+        "licenses": {
+          "description": "The license(s) for the component or application.",
+
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "icon": {
+          "description": "The icon for the component or application.",
 
           "type": "string"
         }
@@ -337,7 +378,7 @@
           "description": "Associated metadata for this component.",
           "required": false,
 
-          "$ref": "#/$defs/v1/ComponentMetadata"
+          "$ref": "#/$defs/v1/Metadata"
         },
         "host": {
           "description": "Configuration for when wick hosts this component as a service.",
@@ -447,19 +488,6 @@
         }
       },
       "required": ["ref"]
-    },
-
-    "ComponentMetadata": {
-      "$anchor": "#v1/ComponentMetadata",
-      "additionalProperties": false,
-      "properties": {
-        "version": {
-          "description": "The version of the component.",
-
-          "type": "string"
-        }
-      },
-      "required": []
     },
 
     "ResourceBinding": {

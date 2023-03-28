@@ -1,40 +1,43 @@
 # yaml-language-server: $schema=../../wick/wick-config/json-schema/manifest.json
 ---
 name: test-component
-format: 1
+kind: wick/component@v1
 metadata:
   version: '1'
-types:
-  - type: struct
-    name: Interactive
-    fields:
-      - name: stdin
-        type: bool
-      - name: stdout
-        type: bool
-      - name: stderr
-        type: bool
-operations:
-  # - name: byte-count
-  #   inputs:
-  #     - name: input
-  #       type: string
-  #   outputs:
-  #     - name: output
-  #       type: u64
-  - name: main
-    inputs:
-      - name: args
-        type:
-          list:
-            type: string
-      - name: isInteractive
-        type: Interactive
-      - name: program
-        type:
-          optional:
-            type:
-              link: {}
-    outputs:
-      - name: code
-        type: u32
+component:
+  kind: wick/component/wasmrs@v1
+  ref: ./build/test_cli_trigger_component.signed.wasm
+  types:
+    - type: struct
+      name: Interactive
+      fields:
+        - name: stdin
+          type: bool
+        - name: stdout
+          type: bool
+        - name: stderr
+          type: bool
+  operations:
+    # - name: byte-count
+    #   inputs:
+    #     - name: input
+    #       type: string
+    #   outputs:
+    #     - name: output
+    #       type: u64
+    - name: main
+      inputs:
+        - name: args
+          type:
+            list:
+              type: string
+        - name: isInteractive
+          type: Interactive
+        - name: program
+          type:
+            optional:
+              type:
+                link: {}
+      outputs:
+        - name: code
+          type: u32
