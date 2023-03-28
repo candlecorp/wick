@@ -19,16 +19,20 @@
       {{#ifCond type.kind "===" "Optional"}}
       "required" : false,
       {{/ifCond}}
-      {{#withAnnotation "shortform" ~}}
-        "oneOf" : [
-        { "type":"string" },
-        {{#with "{"}}{{.}}{{/with}}
-      {{~/withAnnotation}}
-      {{> expand-type type }}
-      {{#withAnnotation "shortform" ~}}
-        {{#with "}"}}{{.}}{{/with}}
-      ]
-      {{~/withAnnotation}}
+      {{#withAnnotation "discriminant"}}
+      "enum": [{{arguments.0.value.value}}]
+      {{else}}
+        {{#withAnnotation "shortform" ~}}
+          "oneOf" : [
+          { "type":"string" },
+          {{#with "{"}}{{.}}{{/with}}
+        {{~/withAnnotation}}
+        {{> expand-type type }}
+        {{#withAnnotation "shortform" ~}}
+          {{#with "}"}}{{.}}{{/with}}
+        ]
+        {{~/withAnnotation}}
+      {{/withAnnotation}}
     }
     {{~/join}}
   },

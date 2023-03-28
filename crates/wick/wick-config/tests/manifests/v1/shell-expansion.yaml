@@ -3,12 +3,16 @@
 format: 1
 metadata:
   version: '1'
-import:
-  - name: test
-    component:
-      kind: wick/component/wasmrs@v1
-      ref: bar
-      permissions:
-        dirs:
-          '/': '$PWD'
-operations: []
+
+kind: wick/component@v1
+component:
+  kind: wick/component/composite@v1
+  import:
+    - name: test
+      component:
+        kind: wick/component/wasmrs@v1
+        ref: bar
+        permissions:
+          dirs:
+            '/': '$PWD'
+  operations: []

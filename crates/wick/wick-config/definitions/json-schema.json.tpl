@@ -4,7 +4,10 @@
   "type": "object",
   "$defs": {},
   "oneOf": [
-    { "$ref": "#/$defs/v1/WickConfig" },
+    { "$ref": "#/$defs/v1/AppConfiguration" },
+    { "$ref": "#/$defs/v1/ComponentConfiguration" },
+    { "$ref": "#/$defs/v1/TypesConfiguration" },
+    { "$ref": "#/$defs/v1/TestConfiguration" },
     { "$ref": "#/$defs/v0/HostManifest" }
   ]
 }

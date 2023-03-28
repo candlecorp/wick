@@ -31,11 +31,8 @@ pub struct FlowOperation {
   /// A list of connections from and to ports on instances defined in the instance map.
   pub connections: Vec<ConnectionDefinition>,
 
-  /// A list of collection namespaces to expose to this schematic.
-  pub collections: Vec<String>,
-
-  /// Reserved.
-  pub constraints: HashMap<String, String>,
+  /// A list of component IDs to expose to this schematic.
+  pub components: Vec<String>,
 }
 
 impl FlowOperation {

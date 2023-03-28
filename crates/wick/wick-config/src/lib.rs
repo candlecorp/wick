@@ -130,55 +130,26 @@ use crate::error::ManifestError;
 /// The crate's error type.
 pub type Error = ManifestError;
 
-mod app_config;
-pub use app_config::{
-  AppConfiguration,
-  CliConfig,
-  ConfigurationItem,
-  HttpRouterConfig,
-  HttpTriggerConfig,
-  RawRouterConfig,
-  ResourceDefinition,
-  RestRouterConfig,
-  TcpPort,
-  TriggerDefinition,
-  TriggerKind,
-  UdpPort,
-};
-mod component_config;
-pub use component_config::{ComponentConfiguration, ComponentConfigurationBuilder};
+pub use config::{app_config, component_config, WickConfiguration};
+
+pub mod config;
 
 pub(crate) type Result<T> = std::result::Result<T, Error>;
-
-#[derive(Debug, Clone, Copy)]
-pub enum ConfigurationKind {
-  App,
-  Component,
-}
-
-#[derive(Debug, Clone)]
-pub enum ConfigurationSource {
-  Component(ComponentConfiguration),
-  App(AppConfiguration),
-}
-
-impl ConfigurationSource {
-  pub fn load_from_bytes(source: Option<String>, bytes: &[u8], kind: ConfigurationKind) -> Result<Self> {
-    let config = match kind {
-      ConfigurationKind::App => ConfigurationSource::App(AppConfiguration::load_from_bytes(source, bytes)?),
-      ConfigurationKind::Component => {
-        ConfigurationSource::Component(ComponentConfiguration::load_from_bytes(source, bytes)?)
-      }
-    };
-    Ok(config)
-  }
-}
 
 fn from_yaml<T>(src: &str, path: &Option<String>) -> Result<T>
 where
   T: DeserializeOwned,
 {
   let result = serde_yaml::from_str(src)
+    .map_err(|e| ManifestError::YamlError(path.clone().unwrap_or("<raw source>".to_owned()), e.to_string()))?;
+  Ok(result)
+}
+
+fn from_bytes<T>(src: &[u8], path: &Option<String>) -> Result<T>
+where
+  T: DeserializeOwned,
+{
+  let result = serde_yaml::from_slice(src)
     .map_err(|e| ManifestError::YamlError(path.clone().unwrap_or("<raw source>".to_owned()), e.to_string()))?;
   Ok(result)
 }

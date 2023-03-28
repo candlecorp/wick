@@ -4,7 +4,9 @@ use std::time::Duration;
 use flow_expression_parser::parse_id;
 use serde_json::Value;
 
+use crate::component_config::{ComponentImplementation, CompositeComponentConfiguration};
 use crate::component_definition::{GrpcUrlComponent, NativeComponent};
+use crate::config::ComponentConfiguration;
 use crate::error::ManifestError;
 use crate::flow_definition::{PortReference, SenderData};
 use crate::host_definition::HostConfig;
@@ -12,7 +14,6 @@ use crate::utils::{opt_str_to_ipv4addr, opt_str_to_pathbuf};
 use crate::{
   v0,
   BoundComponent,
-  ComponentConfiguration,
   ComponentDefinition,
   ConnectionDefinition,
   ConnectionTargetDefinition,
@@ -35,15 +36,8 @@ impl TryFrom<v0::HostManifest> for ComponentConfiguration {
       .iter()
       .map(|val| Ok((val.name.clone(), val.try_into()?)))
       .collect();
-    Ok(ComponentConfiguration {
-      source: None,
-      format: def.format,
-      version: def.version,
-      main: None,
+    let composite = CompositeComponentConfiguration {
       types: Default::default(),
-      host: def.host.try_into()?,
-      name: def.network.name,
-      tests: Vec::new(),
       import: def
         .network
         .collections
@@ -55,8 +49,17 @@ impl TryFrom<v0::HostManifest> for ComponentConfiguration {
           ))
         })
         .collect::<Result<HashMap<_, _>>>()?,
-      labels: def.network.labels,
       operations: flows?,
+    };
+    Ok(ComponentConfiguration {
+      source: None,
+      format: def.format,
+      version: def.version,
+      component: ComponentImplementation::Composite(composite),
+      host: def.host.try_into()?,
+      name: def.network.name,
+      tests: Vec::new(),
+      labels: def.network.labels,
     })
   }
 }
@@ -111,8 +114,7 @@ impl TryFrom<&crate::v0::SchematicManifest> for FlowOperation {
       outputs: Default::default(),
       instances: instances?,
       connections: connections?,
-      collections: manifest.collections.clone(),
-      constraints: manifest.constraints.clone().into_iter().collect(),
+      components: manifest.collections.clone(),
     })
   }
 }

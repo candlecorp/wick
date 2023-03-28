@@ -1,7 +1,7 @@
 <div class=manifest><div class="definition"></div><div class="definition">## unhandled
     panic!()</div><div class="definition">
 <h2 class="definition-name type-name">
-  <a name="V1AppConfiguration">V1AppConfiguration</a>
+  <a name="AppConfiguration">AppConfiguration</a>
 </h2>
 
 <span class="description type-description">The Application configuration defines a standalone Wick application.</span>
@@ -375,7 +375,7 @@
 </ul>
 </div></div></div><div class="definition">
 <h2 class="definition-name type-name">
-  <a name="V1ComponentConfiguration">V1ComponentConfiguration</a>
+  <a name="TypesConfiguration">TypesConfiguration</a>
 </h2>
 
 <span class="description type-description">A configuration for a Wick Component</span>
@@ -397,14 +397,98 @@
 </div><div class=field>
 
 <h3 class=field-name>
-  <a name="main">main</a>
+  <a name="format">format</a>
 </h3>
 
-<span class="description field-description">An optional reference to a local implementation (e.g. a WebAssembly module)</span>
+<span class="description field-description">The component manifest format version</span>
 
 
 <ul class="field-notes">
-<li><span class="type field-note">Type: <span class=field-type><a href="#LocalDefinition">LocalDefinition</a><span class=optional>(Optional)</span></span></span></li>
+<li><span class="type field-note">Type: <span class=field-type>u32</span></span></li>
+<li><span class="annotation field-note">Required</span></li>
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="types">types</a>
+</h3>
+
+<span class="description field-description">Additional types to export and make available to the component.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#TypeDefinition">TypeDefinition</a>[]</span></span></li>
+
+
+</ul>
+</div></div></div><div class="definition">
+<h2 class="definition-name type-name">
+  <a name="TestConfiguration">TestConfiguration</a>
+</h2>
+
+<span class="description type-description">A configuration for a Wick Component</span>
+<div class=fields>
+<div class=field>
+
+<h3 class=field-name>
+  <a name="name">name</a>
+</h3>
+
+<span class="description field-description">The name of this component.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string<span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="format">format</a>
+</h3>
+
+<span class="description field-description">The component manifest format version</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>u32</span></span></li>
+<li><span class="annotation field-note">Required</span></li>
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="tests">tests</a>
+</h3>
+
+<span class="description field-description">Unit tests to run against components and operations.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#TestDefinition">TestDefinition</a>[]</span></span></li>
+
+
+</ul>
+</div></div></div><div class="definition">
+<h2 class="definition-name type-name">
+  <a name="ComponentConfiguration">ComponentConfiguration</a>
+</h2>
+
+<span class="description type-description">A configuration for a Wick Component</span>
+<div class=fields>
+<div class=field>
+
+<h3 class=field-name>
+  <a name="name">name</a>
+</h3>
+
+<span class="description field-description">The name of this component.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string<span class=optional>(Optional)</span></span></span></li>
 
 
 </ul>
@@ -467,6 +551,42 @@
 </div><div class=field>
 
 <h3 class=field-name>
+  <a name="component">component</a>
+</h3>
+
+<span class="description field-description">Configuration specific to different kinds of components.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#ComponentKind">ComponentKind</a></span></span></li>
+<li><span class="annotation field-note">Required</span></li>
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="tests">tests</a>
+</h3>
+
+<span class="description field-description">Assertions that can be run against the component to validate its behavior.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#TestDefinition">TestDefinition</a>[]</span></span></li>
+
+
+</ul>
+</div></div></div><div class="definition">## unhandled
+    panic!()</div><div class="definition">
+<h2 class="definition-name type-name">
+  <a name="CompositeComponentConfiguration">CompositeComponentConfiguration</a>
+</h2>
+
+<span class="description type-description">A component made out of other components</span>
+<div class=fields>
+<div class=field>
+
+<h3 class=field-name>
   <a name="types">types</a>
 </h3>
 
@@ -498,7 +618,56 @@
   <a name="operations">operations</a>
 </h3>
 
-<span class="description field-description">A map of operation names to their definitions.</span>
+<span class="description field-description">A list of operations implemented by the Composite component.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#CompositeOperationDefinition">CompositeOperationDefinition</a>[]</span></span></li>
+
+
+</ul>
+</div></div></div><div class="definition">
+<h2 class="definition-name type-name">
+  <a name="WasmComponentConfiguration">WasmComponentConfiguration</a>
+</h2>
+
+<span class="description type-description">A component made out of other components</span>
+<div class=fields>
+<div class=field>
+
+<h3 class=field-name>
+  <a name="ref">ref</a>
+</h3>
+
+<span class="description field-description">A reference to a local WebAssembly implementation</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string</span></span></li>
+<li><span class="annotation field-note">Required</span></li>
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="types">types</a>
+</h3>
+
+<span class="description field-description">Additional types to export and make available to the component.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#TypeDefinition">TypeDefinition</a>[]</span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="operations">operations</a>
+</h3>
+
+<span class="description field-description">A list of operations implemented by the WebAssembly module.</span>
 
 
 <ul class="field-notes">
@@ -506,22 +675,7 @@
 
 
 </ul>
-</div><div class=field>
-
-<h3 class=field-name>
-  <a name="tests">tests</a>
-</h3>
-
-<span class="description field-description">Assertions that can be run against the component to validate its behavior.</span>
-
-
-<ul class="field-notes">
-<li><span class="type field-note">Type: <span class=field-type><a href="#TestDefinition">TestDefinition</a>[]</span></span></li>
-
-
-</ul>
-</div></div></div><div class="definition">## unhandled
-    panic!()</div><div class="definition">
+</div></div></div><div class="definition">
 <h2 class="definition-name type-name">
   <a name="ComponentMetadata">ComponentMetadata</a>
 </h2>
@@ -930,10 +1084,10 @@
 </ul>
 </div></div></div><div class="definition">
 <h2 class="definition-name type-name">
-  <a name="OperationDefinition">OperationDefinition</a>
+  <a name="CompositeOperationDefinition">CompositeOperationDefinition</a>
 </h2>
 
-<span class="description type-description">A definition for an single flow.</span>
+<span class="description type-description">A definition for an single composite operation.</span>
 <div class=fields>
 <div class=field>
 
@@ -1016,6 +1170,55 @@
 
 <ul class="field-notes">
 <li><span class="type field-note">Type: <span class=field-type><a href="#ConnectionDefinition">ConnectionDefinition</a>[]</span></span></li>
+
+
+</ul>
+</div></div></div><div class="definition">
+<h2 class="definition-name type-name">
+  <a name="OperationDefinition">OperationDefinition</a>
+</h2>
+
+<span class="description type-description">An operation name and its input and output signatures</span>
+<div class=fields>
+<div class=field>
+
+<h3 class=field-name>
+  <a name="name">name</a>
+</h3>
+
+<span class="description field-description">The name of the operation.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string</span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="inputs">inputs</a>
+</h3>
+
+<span class="description field-description">Types of the inputs to the operation.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#Field">Field</a>[]</span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="outputs">outputs</a>
+</h3>
+
+<span class="description field-description">Types of the outputs to the operation.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#Field">Field</a>[]</span></span></li>
 
 
 </ul>

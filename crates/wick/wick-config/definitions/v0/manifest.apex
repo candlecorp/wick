@@ -3,7 +3,7 @@ namespace "wick-config::v0."
 "A manifest defines the starting state of a Wick host and network."
 type HostManifest {
   "The configuration manifest format."
-  format: u32 @required,
+  format: u32 @required @discriminant(0),
 
   "The version of the configuration."
   version: string,

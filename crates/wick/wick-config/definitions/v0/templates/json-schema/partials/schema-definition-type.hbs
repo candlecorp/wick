@@ -7,7 +7,11 @@
       {{#if description}}
       "description": "{{description.value}}",
       {{/if}}
+      {{#withAnnotation "discriminant"}}
+      "enum": [{{arguments.0.value.value}}]
+      {{else}}
       {{> expand-type type }}
+      {{/withAnnotation}}
     }
     {{~/join}}
   },

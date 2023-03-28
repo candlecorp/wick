@@ -6,8 +6,7 @@
       "properties": {
         "format": {
           "description": "The configuration manifest format.",
-
-          "type": "number"
+          "enum": [0]
         },
         "version": {
           "description": "The version of the configuration.",

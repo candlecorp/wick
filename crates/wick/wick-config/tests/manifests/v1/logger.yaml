@@ -1,26 +1,29 @@
 # yaml-language-server: $schema=../../../json-schema/manifest.json
 ---
 format: 1
+kind: wick/component@v1
 metadata:
   version: '1'
-import:
-  - name: foo
-    component:
-      kind: wick/component/manifest@v1
-      ref: hey
-  - name: bar
-    component:
-      kind: wick/component/wasmrs@v1
-      ref: bar
-operations:
-  - name: logger
-    instances:
-      - name: logger
-        operation: 'wick::log'
-      - name: SENDER
-        operation: 'core::sender'
-        config:
-          output: '123456789'
-          type: string
-    flow:
-      - <>.input -> <>.output
+component:
+  kind: wick/component/composite@v1
+  import:
+    - name: foo
+      component:
+        kind: wick/component/manifest@v1
+        ref: hey
+    - name: bar
+      component:
+        kind: wick/component/wasmrs@v1
+        ref: bar
+  operations:
+    - name: logger
+      instances:
+        - name: logger
+          operation: 'wick::log'
+        - name: SENDER
+          operation: 'core::sender'
+          config:
+            output: '123456789'
+            type: string
+      flow:
+        - <>.input -> <>.output

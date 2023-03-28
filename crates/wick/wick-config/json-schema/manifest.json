@@ -10,7 +10,9 @@
         "properties": {
           "format": {
             "description": "The configuration manifest format.",
-            "type": "number"
+            "enum": [
+              0
+            ]
           },
           "version": {
             "description": "The version of the configuration.",
@@ -341,15 +343,21 @@
       "WickConfig": {
         "oneOf": [
           {
-            "$ref": "#/$defs/v1/V1AppConfiguration"
+            "$ref": "#/$defs/v1/AppConfiguration"
           },
           {
-            "$ref": "#/$defs/v1/V1ComponentConfiguration"
+            "$ref": "#/$defs/v1/ComponentConfiguration"
+          },
+          {
+            "$ref": "#/$defs/v1/TypesConfiguration"
+          },
+          {
+            "$ref": "#/$defs/v1/TestConfiguration"
           }
         ]
       },
-      "V1AppConfiguration": {
-        "$anchor": "#v1/V1AppConfiguration",
+      "AppConfiguration": {
+        "$anchor": "#v1/AppConfiguration",
         "additionalProperties": false,
         "properties": {
           "kind": {
@@ -361,7 +369,9 @@
           },
           "format": {
             "description": "The configuration version.",
-            "type": "number"
+            "enum": [
+              1
+            ]
           },
           "metadata": {
             "description": "Associated metadata for this component.",
@@ -619,8 +629,76 @@
         },
         "required": []
       },
-      "V1ComponentConfiguration": {
-        "$anchor": "#v1/V1ComponentConfiguration",
+      "TypesConfiguration": {
+        "$anchor": "#v1/TypesConfiguration",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "type": "string",
+            "description": "The kind of the collection",
+            "enum": [
+              "wick/types@v1"
+            ]
+          },
+          "name": {
+            "description": "The name of this component.",
+            "required": false,
+            "type": "string"
+          },
+          "format": {
+            "description": "The component manifest format version",
+            "enum": [
+              1
+            ]
+          },
+          "types": {
+            "description": "Additional types to export and make available to the component.",
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/v1/TypeDefinition"
+            }
+          }
+        },
+        "required": [
+          "format"
+        ]
+      },
+      "TestConfiguration": {
+        "$anchor": "#v1/TestConfiguration",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "type": "string",
+            "description": "The kind of the collection",
+            "enum": [
+              "wick/tests@v1"
+            ]
+          },
+          "name": {
+            "description": "The name of this component.",
+            "required": false,
+            "type": "string"
+          },
+          "format": {
+            "description": "The component manifest format version",
+            "enum": [
+              1
+            ]
+          },
+          "tests": {
+            "description": "Unit tests to run against components and operations.",
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/v1/TestDefinition"
+            }
+          }
+        },
+        "required": [
+          "format"
+        ]
+      },
+      "ComponentConfiguration": {
+        "$anchor": "#v1/ComponentConfiguration",
         "additionalProperties": false,
         "properties": {
           "kind": {
@@ -635,14 +713,11 @@
             "required": false,
             "type": "string"
           },
-          "main": {
-            "description": "An optional reference to a local implementation (e.g. a WebAssembly module)",
-            "required": false,
-            "$ref": "#/$defs/v1/LocalDefinition"
-          },
           "format": {
             "description": "The component manifest format version",
-            "type": "number"
+            "enum": [
+              1
+            ]
           },
           "metadata": {
             "description": "Associated metadata for this component.",
@@ -662,6 +737,44 @@
               }
             }
           },
+          "component": {
+            "description": "Configuration specific to different kinds of components.",
+            "$ref": "#/$defs/v1/ComponentKind"
+          },
+          "tests": {
+            "description": "Assertions that can be run against the component to validate its behavior.",
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/v1/TestDefinition"
+            }
+          }
+        },
+        "required": [
+          "format",
+          "component"
+        ]
+      },
+      "ComponentKind": {
+        "oneOf": [
+          {
+            "$ref": "#/$defs/v1/WasmComponentConfiguration"
+          },
+          {
+            "$ref": "#/$defs/v1/CompositeComponentConfiguration"
+          }
+        ]
+      },
+      "CompositeComponentConfiguration": {
+        "$anchor": "#v1/CompositeComponentConfiguration",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "type": "string",
+            "description": "The kind of the collection",
+            "enum": [
+              "wick/component/composite@v1"
+            ]
+          },
           "types": {
             "description": "Additional types to export and make available to the component.",
             "type": "array",
@@ -677,29 +790,47 @@
             }
           },
           "operations": {
-            "description": "A map of operation names to their definitions.",
+            "description": "A list of operations implemented by the Composite component.",
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/v1/CompositeOperationDefinition"
+            }
+          }
+        },
+        "required": []
+      },
+      "WasmComponentConfiguration": {
+        "$anchor": "#v1/WasmComponentConfiguration",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "type": "string",
+            "description": "The kind of the collection",
+            "enum": [
+              "wick/component/wasmrs@v1"
+            ]
+          },
+          "ref": {
+            "description": "A reference to a local WebAssembly implementation",
+            "type": "string"
+          },
+          "types": {
+            "description": "Additional types to export and make available to the component.",
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/v1/TypeDefinition"
+            }
+          },
+          "operations": {
+            "description": "A list of operations implemented by the WebAssembly module.",
             "type": "array",
             "items": {
               "$ref": "#/$defs/v1/OperationDefinition"
             }
-          },
-          "tests": {
-            "description": "Assertions that can be run against the component to validate its behavior.",
-            "type": "array",
-            "items": {
-              "$ref": "#/$defs/v1/TestDefinition"
-            }
           }
         },
         "required": [
-          "format"
-        ]
-      },
-      "LocalDefinition": {
-        "oneOf": [
-          {
-            "$ref": "#/$defs/v1/WasmRsComponent"
-          }
+          "ref"
         ]
       },
       "ComponentMetadata": {
@@ -937,8 +1068,8 @@
           "ref"
         ]
       },
-      "OperationDefinition": {
-        "$anchor": "#v1/OperationDefinition",
+      "CompositeOperationDefinition": {
+        "$anchor": "#v1/CompositeOperationDefinition",
         "additionalProperties": false,
         "properties": {
           "name": {
@@ -978,6 +1109,31 @@
             "type": "array",
             "items": {
               "$ref": "#/$defs/v1/ConnectionDefinition"
+            }
+          }
+        },
+        "required": []
+      },
+      "OperationDefinition": {
+        "$anchor": "#v1/OperationDefinition",
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "description": "The name of the operation.",
+            "type": "string"
+          },
+          "inputs": {
+            "description": "Types of the inputs to the operation.",
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/v1/Field"
+            }
+          },
+          "outputs": {
+            "description": "Types of the outputs to the operation.",
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/v1/Field"
             }
           }
         },
@@ -1183,7 +1339,16 @@
   },
   "oneOf": [
     {
-      "$ref": "#/$defs/v1/WickConfig"
+      "$ref": "#/$defs/v1/AppConfiguration"
+    },
+    {
+      "$ref": "#/$defs/v1/ComponentConfiguration"
+    },
+    {
+      "$ref": "#/$defs/v1/TypesConfiguration"
+    },
+    {
+      "$ref": "#/$defs/v1/TestConfiguration"
     },
     {
       "$ref": "#/$defs/v0/HostManifest"
