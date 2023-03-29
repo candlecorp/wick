@@ -1,0 +1,28 @@
+[package]
+name = "wick-package"
+version = "0.1.0"
+edition = "2021"
+license = "Elastic-2.0"
+repository = "https://github.com/candlecorp/wick"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[dependencies]
+oci-distribution = { workspace = true, features = [
+  "rustls-tls",
+]}
+thiserror = { workspace = true }
+tracing = { workspace = true }
+serde_json = { workspace = true }
+serde_yaml = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+tokio = { workspace = true, features = ["fs"] }
+sha256 = "1.1"
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["rt-multi-thread", "macros"] }
+test-logger = { workspace = true }
+logger = { workspace = true }
+clap = { workspace = true, features = ["derive", "env"] }
+async-recursion = { workspace = true }
+env_logger = { workspace = true }
+anyhow = { workspace = true }
