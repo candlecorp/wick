@@ -1,0 +1,9 @@
+pub const VERSION: &str = "org.opencontainers.image.version";
+pub const ICON: &str = "dev.candle.wick.package.icon";
+pub const TYPE: &str = "dev.candle.wick.type";
+pub const AUTHORS: &str = "org.opencontainers.image.authors";
+pub const VENDORS: &str = "org.opencontainers.image.vendors";
+pub const DESCRIPTION: &str = "org.opencontainers.image.description";
+pub const DOCUMENTATION: &str = "org.opencontainers.image.documentation";
+pub const LICENSES: &str = "org.opencontainers.image.licenses";
+pub const TITLE: &str = "org.opencontainers.image.title";

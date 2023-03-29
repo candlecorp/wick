@@ -32,6 +32,7 @@ wick-config = { path = "./crates/wick/wick-config", version = "0.24.0" }
 wick-test = { path = "./crates/wick/wick-test", version = "0.0.0" }
 wick-wascap = { path = "./crates/wick/wick-wascap", version = "0.1.0" }
 wick-oci-utils = { path = "./crates/wick/wick-oci-utils", version = "0.1.0" }
+wick-package = { path = "./crates/wick/wick-package", version = "0.1.0" }
 wick-grpctar = { path = "./crates/wick/wick-grpctar", version = "0.1.0" }
 flow-expression-parser = { path = "./crates/wick/flow-expression-parser", version = "0.4.0" }
 flow-graph-interpreter = { path = "./crates/wick/flow-graph-interpreter", version = "0.20.0" }
