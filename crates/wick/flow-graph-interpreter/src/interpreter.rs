@@ -114,7 +114,7 @@ impl Interpreter {
       .iter()
       .find(|s| s.name() == name)
       .ok_or_else(|| {
-        Error::SchematicNotFound(
+        Error::OpNotFound(
           invocation.target.clone(),
           self.program.schematics().iter().map(|s| s.name().to_owned()).collect(),
         )

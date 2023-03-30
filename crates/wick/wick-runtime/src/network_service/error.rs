@@ -8,8 +8,6 @@ pub enum NetworkError {
   #[error("Could not start interpreter from '{0}': {1}")]
   InterpreterInit(String, flow_graph_interpreter::error::InterpreterError),
   #[error(transparent)]
-  Loading(#[from] wick_loader_utils::Error),
-  #[error(transparent)]
   Manifest(#[from] wick_config::Error),
 
   // OLD

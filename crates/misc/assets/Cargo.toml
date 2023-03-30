@@ -1,0 +1,22 @@
+[package]
+name = "assets"
+authors = ["Jarrod Overson <jsoverson@gmail.com>"]
+edition = "2021"
+license = "Apache-2.0"
+repository = "https://github.com/candlecorp/wick"
+description = "Manage local and remote assets in your structs "
+version = "0.1.0"
+
+[dependencies]
+thiserror = { workspace = true }
+tracing = { workspace = true }
+futures = { workspace = true }
+
+[dev-dependencies]
+anyhow = { workspace = true }
+logger = { workspace = true }
+test-logger = { workspace = true }
+tokio = { workspace = true, features = ["macros", "rt-multi-thread", "fs"] }
+tokio-util = { workspace = true, features = ["io", "codec"] }
+tokio-stream = { workspace = true }
+bytes = { workspace = true }

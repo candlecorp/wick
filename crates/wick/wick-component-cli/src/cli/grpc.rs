@@ -3,6 +3,7 @@ use std::str::FromStr;
 
 use tokio::sync::mpsc::Sender;
 use tonic::transport::{Certificate, Identity, Server};
+use wick_config::config::FetchOptions;
 use wick_invocation_server::InvocationServer;
 use wick_rpc::rpc::invocation_service_server::InvocationServiceServer;
 
@@ -42,33 +43,34 @@ pub(super) async fn start_rpc_server(
 
   let mut builder = Server::builder();
 
+  let fetch_opts = FetchOptions::new();
+
   if let (Some(pem), Some(key)) = (&options.pem, &options.key) {
-    let server_pem = tokio::fs::read(pem).await?;
-    let server_key = tokio::fs::read(key).await?;
-    let identity = Identity::from_pem(server_pem, server_key);
+    let server_pem = pem.bytes(&fetch_opts).await?;
+    let server_key = key.bytes(&fetch_opts).await?;
+    let identity = Identity::from_pem(&*server_pem, &*server_key);
     let mut tls = tonic::transport::ServerTlsConfig::new().identity(identity);
 
     if let Some(ca) = &options.ca {
-      debug!(ca = %ca.to_string_lossy(),"RPC: Adding CA root");
-      let ca_pem = tokio::fs::read(ca).await?;
-      let ca = Certificate::from_pem(ca_pem);
+      debug!(ca = %ca, "RPC: Adding CA root");
+      let ca_pem = ca.bytes(&fetch_opts).await?;
+      let ca = Certificate::from_pem(&*ca_pem);
       tls = tls.client_ca_root(ca);
     }
 
     builder = builder.tls_config(tls)?;
   } else if let Some(ca) = &options.ca {
-    debug!(ca = %ca.to_string_lossy(),"RPC: Adding CA root");
-    let ca_pem = tokio::fs::read(ca).await?;
-    let ca = Certificate::from_pem(ca_pem);
+    debug!(ca = %ca,"RPC: Adding CA root");
+    let ca_pem = ca.bytes(&fetch_opts).await?;
+    let ca = Certificate::from_pem(&*ca_pem);
     let tls = tonic::transport::ServerTlsConfig::new().client_ca_root(ca);
     builder = builder.tls_config(tls)?;
   }
 
-  let inner = svc.clone();
   #[cfg(feature = "reflection")]
-  let builder = builder.add_service(inner).add_service(reflection);
+  let builder = builder.add_service(svc.clone()).add_service(reflection);
   #[cfg(not(feature = "reflection"))]
-  let builder = builder.add_service(inner);
+  let builder = builder.add_service(svc);
 
   let (tx, mut rx) = tokio::sync::mpsc::channel::<ServerMessage>(1);
   let server = builder.serve_with_incoming_shutdown(stream, async move {

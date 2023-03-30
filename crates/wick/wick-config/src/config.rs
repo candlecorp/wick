@@ -4,13 +4,14 @@ pub mod component_config;
 pub mod test_config;
 pub mod types_config;
 
-use std::fs::read_to_string;
 use std::path::Path;
 
 pub use app_config::*;
+use assets::Asset;
 pub use common::*;
 pub use component_config::*;
 pub use test_config::*;
+use tokio::fs::read_to_string;
 use tracing::debug;
 pub use types_config::*;
 
@@ -37,7 +38,9 @@ impl std::fmt::Display for ConfigurationKind {
   }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, derive_assets::AssetManager)]
+#[asset(LocationReference)]
+
 pub enum WickConfiguration {
   Component(ComponentConfiguration),
   App(AppConfiguration),
@@ -46,6 +49,15 @@ pub enum WickConfiguration {
 }
 
 impl WickConfiguration {
+  pub async fn fetch(url: &str, options: FetchOptions) -> Result<Self, Error> {
+    let location = LocationReference::new(url);
+    let bytes = location
+      .fetch(options)
+      .await
+      .map_err(|e| Error::LoadError(url.to_owned(), e.to_string()))?;
+    WickConfiguration::load_from_bytes(&bytes, &Some(url.to_owned()))
+  }
+
   pub fn load_from_bytes(bytes: &[u8], source: &Option<String>) -> Result<Self, Error> {
     debug!("Trying to parse manifest as yaml");
     let raw: serde_yaml::Value = from_bytes(bytes, source)?;
@@ -105,15 +117,31 @@ impl WickConfiguration {
   }
 
   /// Load struct from file by trying all the supported file formats.
-  pub fn load_from_file(path: impl AsRef<Path>) -> Result<Self, Error> {
+  pub async fn load_from_file(path: impl AsRef<Path> + Send) -> Result<Self, Error> {
     let path = path.as_ref();
+    let pathstr = path.to_string_lossy();
+    if !path.exists() {
+      return Err(Error::FileNotFound(pathstr.to_string()));
+    }
+    debug!("Reading manifest from {}", path.to_string_lossy());
+    let contents = read_to_string(path)
+      .await
+      .map_err(|e| Error::LoadError(pathstr.to_string(), e.to_string()))?;
+    let manifest = Self::from_yaml(&contents, &Some(path.to_string_lossy().to_string()))?;
+    Ok(manifest)
+  }
+
+  #[doc(hidden)]
+  pub fn load_from_file_sync(path: impl AsRef<Path>) -> Result<Self, Error> {
+    let path = path.as_ref();
+    let pathstr = path.to_string_lossy();
+
     if !path.exists() {
       return Err(Error::FileNotFound(path.to_string_lossy().into()));
     }
     debug!("Reading manifest from {}", path.to_string_lossy());
-    let contents = read_to_string(path)?;
-    let mut manifest = Self::from_yaml(&contents, &Some(path.to_string_lossy().to_string()))?;
-    manifest.set_source(&path.to_string_lossy());
+    let contents = std::fs::read_to_string(path).map_err(|e| Error::LoadError(pathstr.to_string(), e.to_string()))?;
+    let manifest = Self::from_yaml(&contents, &Some(path.to_string_lossy().to_string()))?;
     Ok(manifest)
   }
 

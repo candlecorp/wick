@@ -2,6 +2,8 @@ use std::collections::HashMap;
 pub(super) mod resources;
 pub(super) mod triggers;
 
+use assets::AssetManager;
+
 pub use self::resources::*;
 pub use self::triggers::*;
 use super::common::component_definition::{BoundComponent, ComponentDefinition};
@@ -9,16 +11,22 @@ use super::common::host_definition::HostConfig;
 use crate::error::ReferenceError;
 use crate::{config, v1, Result};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, derive_assets::AssetManager)]
+#[asset(config::LocationReference)]
 #[must_use]
 /// The internal representation of a Wick manifest.
 pub struct AppConfiguration {
+  #[asset(skip)]
   pub name: String,
+  #[asset(skip)]
   pub(crate) source: Option<String>,
+  #[asset(skip)]
   pub(crate) metadata: Option<config::Metadata>,
   pub(crate) import: HashMap<String, BoundComponent>,
+  #[asset(skip)]
   pub(crate) resources: HashMap<String, BoundResource>,
   pub(crate) triggers: Vec<TriggerDefinition>,
+  #[asset(skip)]
   pub(crate) host: HostConfig,
 }
 
@@ -50,6 +58,12 @@ impl AppConfiguration {
   #[must_use]
   pub fn source(&self) -> &Option<String> {
     &self.source
+  }
+
+  /// Set the source location of the configuration.
+  pub fn set_source(&mut self, source: impl AsRef<str>) {
+    self.source = Some(source.as_ref().to_owned());
+    self.set_baseurl(source.as_ref());
   }
 
   #[must_use]

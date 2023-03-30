@@ -1,4 +1,4 @@
-use anyhow::{Context, Result};
+use anyhow::Result;
 use clap::Args;
 use wick_component_cli::options::DefaultCliOptions;
 use wick_config::WickConfiguration;
@@ -25,11 +25,13 @@ pub(crate) struct ServeCommand {
 pub(crate) async fn handle_command(opts: ServeCommand) -> Result<()> {
   let _guard = logger::init(&opts.cli.logging.name(crate::BIN_NAME));
 
-  let bytes = wick_loader_utils::get_bytes(&opts.location, opts.fetch.allow_latest, &opts.fetch.insecure_registries)
-    .await
-    .context("Could not load from location")?;
+  let fetch_options = wick_config::config::FetchOptions::new()
+    .allow_latest(opts.fetch.allow_latest)
+    .allow_insecure(&opts.fetch.insecure_registries);
 
-  let manifest = WickConfiguration::load_from_bytes(&bytes, &Some(opts.location))?.try_component_config()?;
+  let manifest = WickConfiguration::fetch(&opts.location, fetch_options)
+    .await?
+    .try_component_config()?;
 
   let config = merge_config(&manifest, &opts.fetch, Some(opts.cli));
 

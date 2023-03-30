@@ -18,7 +18,6 @@ wick-packet = { workspace = true }
 wick-interface-types = { workspace = true }
 wick-rpc = { workspace = true }
 wick-wascap = { workspace = true }
-wick-loader-utils = { workspace = true }
 wick-config = { workspace = true }
 seeded-random = { workspace = true }
 tokio = { workspace = true, features = ["fs"] }

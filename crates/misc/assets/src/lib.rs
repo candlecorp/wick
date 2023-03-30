@@ -1,3 +1,5 @@
+//! Assets
+
 // !!START_LINTS
 // Wick lints
 // Do not change anything between the START_LINTS and END_LINTS line.
@@ -80,77 +82,16 @@
   while_true,
   missing_docs
 )]
-#![allow(unused_attributes, clippy::derive_partial_eq_without_eq, clippy::box_default)]
+#![allow(clippy::derive_partial_eq_without_eq, clippy::box_default)]
 // !!END_LINTS
 // Add exceptions here
 #![allow(missing_docs)]
 
+/// Error module for this crate.
 pub mod error;
 
-pub(crate) type Result<T> = std::result::Result<T, error::LoadError>;
-pub type Error = error::LoadError;
+pub mod assets;
+pub use crate::assets::*;
 
-#[macro_use]
-extern crate tracing;
-
-use std::io::{Read, Write};
-use std::path::{Path, PathBuf};
-
-pub async fn get_bytes_from_file(path: &Path) -> Result<Vec<u8>> {
-  Ok(tokio::fs::read(path).await?)
-}
-
-pub async fn get_bytes_from_oci(path: &str, allow_latest: bool, allowed_insecure: &[String]) -> Result<Vec<u8>> {
-  Ok(wick_oci_utils::fetch_oci_bytes(path, allow_latest, allowed_insecure).await?)
-}
-
-pub async fn get_bytes(location: &str, allow_latest: bool, allowed_insecure: &[String]) -> Result<Vec<u8>> {
-  let path = Path::new(&location);
-  if path.exists() {
-    debug!(location, "load as file");
-    Ok(get_bytes_from_file(path).await?)
-  } else {
-    let cache_path = cache_location("ocicache", location);
-    if cache_path.exists() {
-      debug!(
-        path = %cache_path.to_string_lossy(),
-        "load from cache"
-      );
-
-      let mut buf = vec![];
-      let mut f = std::fs::File::open(cache_path)?;
-      f.read_to_end(&mut buf)?;
-      Ok(buf)
-    } else {
-      debug!(location, "load as OCI");
-      let bytes = get_bytes_from_oci(location, allow_latest, allowed_insecure).await?;
-      let mut f = std::fs::File::create(cache_path)?;
-      f.write_all(&bytes)?;
-      f.flush()?;
-      Ok(bytes)
-    }
-  }
-}
-
-pub const CACHE_ROOT: &str = "wick";
-pub const CACHE_EXT: &str = "store";
-
-#[must_use]
-pub fn cache_location(bucket: &str, reference: &str) -> PathBuf {
-  let path = std::env::temp_dir();
-  let path = path.join(CACHE_ROOT);
-  let path = path.join(bucket);
-  let _ = ::std::fs::create_dir_all(&path);
-  let reference = reference.replace([':', '/', '.'], "_");
-  let mut path = path.join(reference);
-  path.set_extension(CACHE_EXT);
-
-  path
-}
-
-#[must_use]
-pub fn is_wasm(bytes: &[u8]) -> bool {
-  let is_wasm = bytes.starts_with(&[0x00, 0x61, 0x73, 0x6d]);
-  trace!(is_wasm, bytes = ?bytes[0..4], "bytes include wasm header?");
-  is_wasm
-}
+/// The crate's error type.
+pub type Error = crate::error::Error;

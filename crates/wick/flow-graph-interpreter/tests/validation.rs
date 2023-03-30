@@ -3,7 +3,7 @@ use std::path::Path;
 mod test;
 
 use anyhow::Result;
-use flow_graph_interpreter::error::{InterpreterError, SchematicInvalid, ValidationError};
+use flow_graph_interpreter::error::{InterpreterError, OperationInvalid, ValidationError};
 use flow_graph_interpreter::graph::from_def;
 use flow_graph_interpreter::{Component, HandlerMap, Interpreter, NamespaceHandler};
 type BoxFuture<'a, T> = std::pin::Pin<Box<dyn futures::Future<Output = T> + Send + Sync + 'a>>;
@@ -12,7 +12,7 @@ use serde_json::Value;
 use wick_interface_types::{ComponentMetadata, ComponentSignature, OperationSignature, TypeSignature};
 use wick_packet::{Invocation, PacketStream};
 fn load<T: AsRef<Path>>(path: T) -> Result<wick_config::config::ComponentConfiguration> {
-  Ok(wick_config::WickConfiguration::load_from_file(path.as_ref())?.try_component_config()?)
+  Ok(wick_config::WickConfiguration::load_from_file_sync(path.as_ref())?.try_component_config()?)
 }
 
 struct SignatureTestCollection(ComponentSignature);
@@ -129,7 +129,7 @@ async fn test_missing_port() -> Result<()> {
   ];
 
   if let Err(InterpreterError::ValidationError(e)) = result {
-    assert_eq!(e, vec![SchematicInvalid::new("test".to_owned(), errors)]);
+    assert_eq!(e, vec![OperationInvalid::new("test".to_owned(), errors)]);
   } else {
     panic!()
   }

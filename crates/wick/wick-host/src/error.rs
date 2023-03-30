@@ -19,8 +19,6 @@ pub enum HostError {
   #[error("Could not start host: {0}")]
   HostStartFailure(String),
   #[error(transparent)]
-  LoadFailed(#[from] wick_loader_utils::Error),
-  #[error(transparent)]
   RuntimeError(#[from] Box<wick_runtime::Error>),
 
   #[error(transparent)]

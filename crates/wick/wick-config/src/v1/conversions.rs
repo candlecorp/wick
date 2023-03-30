@@ -35,7 +35,7 @@ use crate::config::common::host_definition::HostConfig;
 use crate::config::common::test_case;
 use crate::config::{self, test_config, types_config, ComponentConfiguration};
 use crate::error::ManifestError;
-use crate::utils::{opt_str_to_ipv4addr, opt_str_to_pathbuf};
+use crate::utils::opt_str_to_ipv4addr;
 use crate::{v1, Result, WickConfiguration};
 
 impl TryFrom<v1::WickConfig> for WickConfiguration {
@@ -107,7 +107,7 @@ impl TryFrom<v1::WasmComponentConfiguration> for WasmComponentConfiguration {
   type Error = ManifestError;
   fn try_from(value: v1::WasmComponentConfiguration) -> Result<Self> {
     Ok(Self {
-      reference: value.reference,
+      reference: value.reference.into(),
       operations: value
         .operations
         .into_iter()
@@ -158,7 +158,7 @@ impl TryFrom<WasmComponentConfiguration> for v1::WasmComponentConfiguration {
         .map(|op| op.try_into())
         .collect::<Result<_>>()?,
       types: value.types,
-      reference: value.reference,
+      reference: value.reference.into(),
     })
   }
 }
@@ -391,7 +391,7 @@ impl From<ComponentDefinition> for v1::ComponentDefinition {
 impl From<ManifestComponent> for v1::ManifestComponent {
   fn from(def: ManifestComponent) -> Self {
     Self {
-      reference: def.reference,
+      reference: def.reference.into(),
       config: def.config,
     }
   }
@@ -399,7 +399,7 @@ impl From<ManifestComponent> for v1::ManifestComponent {
 impl From<WasmComponent> for v1::WasmRsComponent {
   fn from(def: WasmComponent) -> Self {
     Self {
-      reference: def.reference,
+      reference: def.reference.into(),
       config: def.config,
       permissions: def.permissions.into(),
     }
@@ -492,7 +492,7 @@ impl From<crate::v1::ComponentDefinition> for ComponentDefinition {
         config: v.config,
       }),
       crate::v1::ComponentDefinition::ManifestComponent(v) => ComponentDefinition::Manifest(ManifestComponent {
-        reference: v.reference,
+        reference: v.reference.into(),
         config: v.config,
       }),
       crate::v1::ComponentDefinition::ComponentReference(v) => {
@@ -562,9 +562,9 @@ impl TryFrom<crate::v1::HttpConfig> for config::HttpConfig {
       enabled: def.enabled,
       port: def.port,
       address: opt_str_to_ipv4addr(&def.address)?,
-      pem: opt_str_to_pathbuf(&def.pem)?,
-      key: opt_str_to_pathbuf(&def.key)?,
-      ca: opt_str_to_pathbuf(&def.ca)?,
+      pem: def.pem.map(|v| v.into()),
+      key: def.key.map(|v| v.into()),
+      ca: def.ca.map(|v| v.into()),
     })
   }
 }
@@ -576,9 +576,9 @@ impl TryFrom<config::HttpConfig> for crate::v1::HttpConfig {
       enabled: def.enabled,
       port: def.port,
       address: def.address.map(|v| v.to_string()),
-      pem: def.pem.map(|v| v.to_string_lossy().to_string()),
-      key: def.key.map(|v| v.to_string_lossy().to_string()),
-      ca: def.ca.map(|v| v.to_string_lossy().to_string()),
+      pem: def.pem.map(|v| v.into()),
+      key: def.key.map(|v| v.into()),
+      ca: def.ca.map(|v| v.into()),
     })
   }
 }
@@ -790,10 +790,22 @@ impl From<test_case::TestPacket> for v1::PacketData {
   }
 }
 
+impl From<v1::helpers::LocationReference> for config::LocationReference {
+  fn from(value: v1::helpers::LocationReference) -> Self {
+    Self::new(value.0)
+  }
+}
+
+impl From<config::LocationReference> for v1::helpers::LocationReference {
+  fn from(value: config::LocationReference) -> Self {
+    Self(value.location)
+  }
+}
+
 impl From<v1::WasmRsComponent> for WasmComponent {
   fn from(value: v1::WasmRsComponent) -> Self {
     Self {
-      reference: value.reference,
+      reference: value.reference.into(),
       config: value.config,
       permissions: value.permissions.into(),
     }

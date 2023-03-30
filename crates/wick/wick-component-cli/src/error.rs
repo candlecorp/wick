@@ -21,6 +21,10 @@ pub enum CliError {
   IOError(#[from] std::io::Error),
 
   #[error(transparent)]
+  /// Error related to configuration or asset loading.
+  Config(#[from] wick_config::Error),
+
+  #[error(transparent)]
   #[cfg(feature = "grpc")]
   /// An upstream error from [tonic].
   TransportError(#[from] tonic::transport::Error),

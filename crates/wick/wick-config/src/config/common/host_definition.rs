@@ -1,6 +1,7 @@
 use std::net::Ipv4Addr;
-use std::path::PathBuf;
 use std::time::Duration;
+
+use crate::config;
 
 #[derive(Debug, Clone, Default)]
 #[must_use]
@@ -32,11 +33,11 @@ pub struct HttpConfig {
   pub address: Option<Ipv4Addr>,
 
   /// Path to pem file for TLS.
-  pub pem: Option<PathBuf>,
+  pub pem: Option<config::LocationReference>,
 
   /// Path to key file for TLS.
-  pub key: Option<PathBuf>,
+  pub key: Option<config::LocationReference>,
 
   /// Path to CA file.
-  pub ca: Option<PathBuf>,
+  pub ca: Option<config::LocationReference>,
 }

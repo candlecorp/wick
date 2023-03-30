@@ -18,6 +18,7 @@
   {{#case "Named"~}}
     {{#switch name.value~}}
       {{#case "any"}}{{/case}}
+      {{#case "LocationReference"}}"type":"string"{{/case}}
       {{#case "string"}}"type":"string"{{/case}}
       {{#case "i8"}}"type":"number"{{/case}}
       {{#case "u8"}}"type":"number"{{/case}}

@@ -22,7 +22,6 @@ wick-stdlib = { path = "./crates/wick/wick-stdlib", version = "0.1.0" }
 wick-interface-types = { path = "./crates/wick/wick-interface-types", version = "0.14.0" }
 wick-invocation-server = { path = "./crates/wick/wick-invocation-server", version = "0.1.0" }
 wick-rpc = { path = "./crates/wick/wick-rpc", version = "0.1.0" }
-wick-loader-utils = { path = "./crates/wick/wick-loader-utils" }
 wick-component = { path = "./crates/wick/wick-component", version = "0.14.0" }
 wick-component-codegen = { path = "./crates/wick/wick-component-codegen", version = "0.3.0" }
 wick-component-wasm = { path = "./crates/wick/wick-component-wasm", version = "0.1.0" }
@@ -41,12 +40,14 @@ logger = { path = "./crates/wick/logger", version = "0.1.0" }
 seeded-random = { path = "./crates/misc/seeded-random", version = "0.3.0" }
 tap = { path = "./crates/misc/tap", version = "0.0.0" }
 rot = { path = "./crates/misc/rot", version = "0.1.0" }
+assets = { path = "./crates/misc/assets", version = "0.1.0" }
+derive-assets = { path = "./crates/misc/derive-assets", version = "0.1.0" }
 performance-mark = { path = "./crates/misc/performance-mark", version = "0.0.1" }
 test-logger = { path = "./crates/misc/test-logger", version = "0.1.0" }
 tokio-test-bin = { path = "./crates/misc/tokio-test-bin", version = "0.3.0" }
 test-native-component = { path = "./crates/integration/test-native-component", version = "0.1.0" }
 quote = "1.0.26"
-syn = "1.0.109"
+syn = "2.0"
 proc-macro2 = "1.0"
 heck = "0.4"
 tar = "0.4"
@@ -63,6 +64,7 @@ serde_yaml = "0.9"
 serde-value = "0.7"
 tokio = "1"
 tokio-stream = "0.1"
+tokio-util = "0.7"
 futures = "0.3"
 tracing = "0.1"
 tracing-futures = "0.2"

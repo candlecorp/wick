@@ -10,44 +10,44 @@ use wick_config::config::ConnectionTargetDefinition;
 use wick_config::error::ManifestError;
 use wick_config::*;
 
-fn load(path: &str) -> Result<WickConfiguration, ManifestError> {
+async fn load(path: &str) -> Result<WickConfiguration, ManifestError> {
   let path = PathBuf::from(path);
-  WickConfiguration::load_from_file(path)
+  WickConfiguration::load_from_file(path).await
 }
 
-fn load_component(path: &str) -> Result<CompositeComponentConfiguration, ManifestError> {
-  Ok(load(path)?.try_component_config()?.try_composite()?.clone())
+async fn load_component(path: &str) -> Result<CompositeComponentConfiguration, ManifestError> {
+  Ok(load(path).await?.try_component_config()?.try_composite()?.clone())
 }
 
-#[test_logger::test]
-fn test_basics() -> Result<(), ManifestError> {
-  let manifest = load_component("./tests/manifests/v0/logger.yaml")?;
+#[test_logger::test(tokio::test)]
+async fn test_basics() -> Result<(), ManifestError> {
+  let manifest = load_component("./tests/manifests/v0/logger.yaml").await?;
 
   assert_eq!(manifest.flow("logger").map(|s| s.instances().len()), Some(2));
 
   Ok(())
 }
 
-#[test_logger::test]
-fn load_minimal() -> Result<(), ManifestError> {
-  let manifest = load("./tests/manifests/v0/minimal.yaml");
+#[test_logger::test(tokio::test)]
+async fn load_minimal() -> Result<(), ManifestError> {
+  let manifest = load("./tests/manifests/v0/minimal.yaml").await;
 
   assert!(manifest.is_ok());
 
   Ok(())
 }
 
-#[test_logger::test]
-fn load_noversion_yaml() -> Result<(), ManifestError> {
-  let result = load("./tests/manifests/v0/noversion.yaml");
+#[test_logger::test(tokio::test)]
+async fn load_noversion_yaml() -> Result<(), ManifestError> {
+  let result = load("./tests/manifests/v0/noversion.yaml").await;
   println!("result: {:?}", result);
   assert!(matches!(result, Err(ManifestError::NoFormat)));
   Ok(())
 }
 
-#[test_logger::test]
-fn load_bad_manifest_yaml() -> Result<(), ManifestError> {
-  let manifest = load("./tests/manifests/v0/bad-yaml.yaml");
+#[test_logger::test(tokio::test)]
+async fn load_bad_manifest_yaml() -> Result<(), ManifestError> {
+  let manifest = load("./tests/manifests/v0/bad-yaml.yaml").await;
   if let Err(Error::YamlError(p, e)) = manifest {
     debug!("{}, {:?}", p, e);
   } else {
@@ -57,9 +57,11 @@ fn load_bad_manifest_yaml() -> Result<(), ManifestError> {
   Ok(())
 }
 
-#[test_logger::test]
-fn load_collections_yaml() -> Result<(), ManifestError> {
-  let manifest = load("./tests/manifests/v0/collections.yaml")?.try_component_config()?;
+#[test_logger::test(tokio::test)]
+async fn load_collections_yaml() -> Result<(), ManifestError> {
+  let manifest = load("./tests/manifests/v0/collections.yaml")
+    .await?
+    .try_component_config()?;
 
   assert_eq!(manifest.name(), &Some("collections".to_owned()));
   if let ComponentImplementation::Composite(component) = manifest.component() {
@@ -71,9 +73,9 @@ fn load_collections_yaml() -> Result<(), ManifestError> {
   Ok(())
 }
 
-#[test_logger::test]
-fn load_shortform_yaml() -> Result<(), ManifestError> {
-  let manifest = load_component("./tests/manifests/v0/logger-shortform.yaml")?;
+#[test_logger::test(tokio::test)]
+async fn load_shortform_yaml() -> Result<(), ManifestError> {
+  let manifest = load_component("./tests/manifests/v0/logger-shortform.yaml").await?;
 
   let first_from = &manifest.flow("logger").unwrap().connections[0].from;
   let first_to = &manifest.flow("logger").unwrap().connections[0].to;
@@ -83,11 +85,10 @@ fn load_shortform_yaml() -> Result<(), ManifestError> {
   Ok(())
 }
 
-#[test_logger::test]
-
-fn load_env() -> Result<(), ManifestError> {
+#[test_logger::test(tokio::test)]
+async fn load_env() -> Result<(), ManifestError> {
   env::set_var("TEST_ENV_VAR", "load_manifest_yaml_with_env");
-  let manifest = load_component("./tests/manifests/v0/env.yaml")?;
+  let manifest = load_component("./tests/manifests/v0/env.yaml").await?;
 
   assert_eq!(
     manifest.flow("name_load_manifest_yaml_with_env").unwrap().name,
@@ -97,9 +98,9 @@ fn load_env() -> Result<(), ManifestError> {
   Ok(())
 }
 
-#[test_logger::test]
-fn load_sender_yaml() -> Result<(), ManifestError> {
-  let manifest = load_component("./tests/manifests/v0/sender.yaml")?;
+#[test_logger::test(tokio::test)]
+async fn load_sender_yaml() -> Result<(), ManifestError> {
+  let manifest = load_component("./tests/manifests/v0/sender.yaml").await?;
 
   let first_from = &manifest.flow("sender").unwrap().connections[0].from;
   let first_to = &manifest.flow("sender").unwrap().connections[0].to;
@@ -112,9 +113,9 @@ fn load_sender_yaml() -> Result<(), ManifestError> {
   Ok(())
 }
 
-#[test_logger::test]
-fn load_ns_link() -> Result<(), ManifestError> {
-  let manifest = load_component("./tests/manifests/v0/ns.yaml")?;
+#[test_logger::test(tokio::test)]
+async fn load_ns_link() -> Result<(), ManifestError> {
+  let manifest = load_component("./tests/manifests/v0/ns.yaml").await?;
 
   let schematic = &manifest.flow("logger").unwrap();
   let from = &schematic.connections[0].from;

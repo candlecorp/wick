@@ -10,12 +10,19 @@ repository = "https://github.com/candlecorp/wick"
 default = ['cli']
 reflection = ["tonic-reflection"]
 cli = ['grpc', 'mesh']
-grpc = ['wick-rpc', 'tonic/tls', 'wick-invocation-server', 'async-stream']
-mesh = ['wick-rpc', 'async-stream']
+grpc = [
+  'wick-rpc',
+  'tonic/tls',
+  'wick-invocation-server',
+  'async-stream',
+  'wick-config'
+]
+mesh = ['wick-rpc', 'async-stream', 'wick-config']
 
 [dependencies]
 logger = { workspace = true }
 wick-rpc = { workspace = true, optional = true }
+wick-config = { workspace = true, optional = true }
 wick-packet = { workspace = true }
 wick-invocation-server = { workspace = true, optional = true }
 cfg-if = { workspace = true }

@@ -72,7 +72,7 @@ impl Counter {
 }
 
 pub fn load<T: AsRef<Path>>(path: T) -> Result<wick_config::config::ComponentConfiguration> {
-  Ok(wick_config::WickConfiguration::load_from_file(path.as_ref())?.try_component_config()?)
+  Ok(wick_config::WickConfiguration::load_from_file_sync(path.as_ref())?.try_component_config()?)
 }
 
 pub fn from_manifest(network_def: &wick_config::config::ComponentConfiguration) -> Result<Network<Value>> {

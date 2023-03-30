@@ -2,6 +2,7 @@ mod composite;
 mod wasm;
 use std::collections::HashMap;
 
+use assets::AssetManager;
 pub use composite::CompositeComponentConfiguration;
 pub use wasm::{OperationSignature, WasmComponentConfiguration};
 use wick_interface_types::{ComponentMetadata, ComponentSignature, ComponentVersion, TypeDefinition};
@@ -25,7 +26,8 @@ impl std::fmt::Display for ComponentKind {
   }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, derive_assets::AssetManager)]
+#[asset(config::LocationReference)]
 #[must_use]
 pub enum ComponentImplementation {
   Wasm(WasmComponentConfiguration),
@@ -54,15 +56,22 @@ impl Default for ComponentImplementation {
   }
 }
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, derive_assets::AssetManager)]
+#[asset(config::LocationReference)]
 #[must_use]
 /// The internal representation of a Wick manifest.
 pub struct ComponentConfiguration {
+  #[asset(skip)]
   pub name: Option<String>,
+  #[asset(skip)]
   pub(crate) source: Option<String>,
+  #[asset(skip)]
   pub(crate) host: config::HostConfig,
+  #[asset(skip)]
   pub(crate) labels: HashMap<String, String>,
+  #[asset(skip)]
   pub(crate) tests: Vec<config::TestCase>,
+  #[asset(skip)]
   pub(crate) metadata: Option<config::Metadata>,
   pub(crate) component: ComponentImplementation,
 }
@@ -86,6 +95,12 @@ impl ComponentConfiguration {
         self.component.kind(),
       )),
     }
+  }
+
+  /// Set the source location of the configuration.
+  pub fn set_source(&mut self, source: impl AsRef<str>) {
+    self.source = Some(source.as_ref().to_owned());
+    self.set_baseurl(source.as_ref());
   }
 
   /// Determine if the configuration allows for fetching artifacts with the :latest tag.

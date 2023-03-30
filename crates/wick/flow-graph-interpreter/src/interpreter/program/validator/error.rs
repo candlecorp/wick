@@ -39,18 +39,18 @@ pub enum ValidationError {
 
 #[derive(thiserror::Error, Debug, Clone, PartialEq, Eq)]
 #[must_use]
-pub struct SchematicInvalid {
+pub struct OperationInvalid {
   errors: Vec<ValidationError>,
   schematic: String,
 }
 
-impl SchematicInvalid {
+impl OperationInvalid {
   pub fn new(schematic: String, errors: Vec<ValidationError>) -> Self {
     Self { schematic, errors }
   }
 }
 
-impl std::fmt::Display for SchematicInvalid {
+impl std::fmt::Display for OperationInvalid {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     write!(
       f,

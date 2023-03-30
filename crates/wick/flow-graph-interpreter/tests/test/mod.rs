@@ -16,7 +16,7 @@ macro_rules! interp {
       // Turn this on to make tests fail in these cases.
       error_on_missing: false,
     });
-    let def = wick_config::WickConfiguration::load_from_file($path)?.try_component_config()?;
+    let def = wick_config::WickConfiguration::load_from_file_sync($path)?.try_component_config()?;
     let network = from_def(&def)?;
     let collections = HandlerMap::new(vec![NamespaceHandler::new(
       "test",

@@ -1,4 +1,4 @@
 #[test]
-fn cli_tests() {
+fn run_tests() {
   trycmd::TestCases::new().case("tests/cmd/run/*.toml");
 }

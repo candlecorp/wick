@@ -15,7 +15,6 @@ wick-runtime = { workspace = true }
 wick-packet = { workspace = true }
 wick-interface-types = { workspace = true }
 wick-config = { workspace = true }
-wick-loader-utils = { workspace = true }
 wick-component-cli = { workspace = true }
 wick-rpc = { workspace = true }
 wick-invocation-server = { workspace = true }

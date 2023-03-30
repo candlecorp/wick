@@ -9,7 +9,7 @@ use serde_json::Value;
 use wick_interface_types::Field;
 use wick_packet::PacketPayload;
 
-use crate::{Error, Result};
+use crate::{config, Error, Result};
 
 #[derive(Debug, Clone, Default)]
 /// The SchematicDefinition struct is a normalized representation of a Wick [SchematicManifest].
@@ -51,6 +51,16 @@ impl FlowOperation {
   #[must_use]
   pub fn instances(&self) -> &HashMap<String, InstanceReference> {
     &self.instances
+  }
+}
+
+impl From<FlowOperation> for config::OperationSignature {
+  fn from(value: FlowOperation) -> Self {
+    Self {
+      name: value.name,
+      inputs: value.inputs,
+      outputs: value.outputs,
+    }
   }
 }
 
