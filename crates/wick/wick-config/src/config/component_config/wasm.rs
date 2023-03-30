@@ -2,17 +2,22 @@ use std::collections::HashMap;
 
 use wick_interface_types::{Field, TypeDefinition};
 
-#[derive(Debug, Clone)]
+use crate::config;
+
+#[derive(Debug, Clone, derive_assets::AssetManager)]
+#[asset(config::LocationReference)]
 #[must_use]
 /// The internal representation of a Wick manifest.
 pub struct WasmComponentConfiguration {
   /// The location of the component.
-  pub(crate) reference: String,
+  pub(crate) reference: config::LocationReference,
 
   /// Types used by the component's operations.
+  #[asset(skip)]
   pub(crate) types: Vec<TypeDefinition>,
 
   /// The operations the component exposes.
+  #[asset(skip)]
   pub(crate) operations: HashMap<String, OperationSignature>,
 }
 
@@ -38,8 +43,7 @@ impl WasmComponentConfiguration {
   }
 
   /// Get the reference location to the component.
-  #[must_use]
-  pub fn reference(&self) -> &str {
+  pub fn reference(&self) -> &config::LocationReference {
     &self.reference
   }
 

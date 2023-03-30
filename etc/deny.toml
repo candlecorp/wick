@@ -104,7 +104,6 @@ exceptions = [
     { name = "wick-stdlib", allow = ["Elastic-2.0"] },
     { name = "wick-rpc", allow = ["Elastic-2.0"] },
     { name = "wick-oci-utils", allow = ["Elastic-2.0"] },
-    { name = "wick-loader-utils", allow = ["Elastic-2.0"] },
     { name = "wick-invocation-server", allow = ["Elastic-2.0"] },
     { name = "wick-grpctar", allow = ["Elastic-2.0"] },
     { name = "wick-component-wasm", allow = ["Elastic-2.0"] },

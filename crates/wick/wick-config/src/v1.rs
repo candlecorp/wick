@@ -23,6 +23,7 @@
 #![allow(clippy::large_enum_variant, missing_copy_implementations, clippy::enum_variant_names)]
 
 pub(crate) mod conversions;
+pub(crate) mod helpers;
 pub(crate) mod impls;
 pub(crate) mod parse;
 
@@ -365,9 +366,8 @@ pub(crate) struct CompositeComponentConfiguration {
 pub(crate) struct WasmComponentConfiguration {
   /// A reference to a local WebAssembly implementation
 
-  #[serde(deserialize_with = "with_expand_envs")]
   #[serde(rename = "ref")]
-  pub(crate) reference: String,
+  pub(crate) reference: crate::v1::helpers::LocationReference,
   /// Additional types to export and make available to the component.
 
   #[serde(default)]
@@ -485,15 +485,15 @@ pub(crate) struct HttpConfig {
   /// Path to pem file for TLS.
 
   #[serde(default)]
-  pub(crate) pem: Option<String>,
+  pub(crate) pem: Option<crate::v1::helpers::LocationReference>,
   /// Path to key file for TLS.
 
   #[serde(default)]
-  pub(crate) key: Option<String>,
+  pub(crate) key: Option<crate::v1::helpers::LocationReference>,
   /// Path to CA file.
 
   #[serde(default)]
-  pub(crate) ca: Option<String>,
+  pub(crate) ca: Option<crate::v1::helpers::LocationReference>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -502,9 +502,8 @@ pub(crate) struct HttpConfig {
 pub(crate) struct WasmRsComponent {
   /// The URL (and optional tag) or local file path to find the .wasm module.
 
-  #[serde(deserialize_with = "with_expand_envs")]
   #[serde(rename = "ref")]
-  pub(crate) reference: String,
+  pub(crate) reference: crate::v1::helpers::LocationReference,
   /// Permissions to give this component
 
   #[serde(default)]
@@ -549,9 +548,8 @@ pub(crate) struct GrpcUrlComponent {
 pub(crate) struct ManifestComponent {
   /// The URL (and optional tag) or local file path to find the manifest.
 
-  #[serde(deserialize_with = "with_expand_envs")]
   #[serde(rename = "ref")]
-  pub(crate) reference: String,
+  pub(crate) reference: crate::v1::helpers::LocationReference,
   /// Any configuration necessary for the component.
 
   #[serde(default)]

@@ -428,7 +428,7 @@ mod test {
   #[test_logger::test(tokio::test)]
   async fn test_basic() -> Result<()> {
     let config = include_str!("../tests/manifests/test.yaml");
-    let config = WickConfiguration::from_yaml(config, &None)?.try_component_config()?;
+    let config = WickConfiguration::from_yaml(config, &None)?.try_test_config()?;
     let mut unit_tests = TestSuite::from_test_cases(config.tests());
     let results = unit_tests.run(None, get_component()).await;
     assert!(results.is_ok());

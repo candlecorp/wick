@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use thiserror::Error;
 
 use crate::config::{self};
@@ -11,6 +13,14 @@ pub enum ManifestError {
   #[error("Invalid Manifest Version '{0}'")]
   VersionError(String),
 
+  /// Could not create package cache.
+  #[error("Could not create package cache at '{path}': {error}")]
+  PackageCacheError { path: PathBuf, error: std::io::Error },
+
+  /// No data stored in the current location reference.
+  #[error("No data available in the location reference at {0}")]
+  NoData(String),
+
   /// No format version or kind found in the parsed manifest.
   #[error("Manifest needs a format version (v0) or kind (v1+)")]
   NoFormat,
@@ -20,8 +30,8 @@ pub enum ManifestError {
   FileNotFound(String),
 
   /// Could not load file.
-  #[error("Could not read file {0}")]
-  LoadError(String),
+  #[error("Could not read file {0}: {1}")]
+  LoadError(String, String),
 
   /// Thrown when a specific type of configuration was expected but a different type was found.
   #[error("Expected a {0} configuration but got a {1} configuration")]
@@ -74,12 +84,6 @@ pub enum ManifestError {
   /// Miscellaneous error.
   #[error("General error : {0}")]
   Other(String),
-}
-
-impl From<std::io::Error> for ManifestError {
-  fn from(e: std::io::Error) -> Self {
-    Self::LoadError(e.to_string())
-  }
 }
 
 #[derive(Error, Debug, Clone, Copy)]

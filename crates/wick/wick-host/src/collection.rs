@@ -47,7 +47,6 @@ impl RpcHandler for Component {
 
 #[cfg(test)]
 mod tests {
-  use std::convert::TryFrom;
 
   use anyhow::Result as TestResult;
   use tokio_stream::StreamExt;
@@ -58,7 +57,7 @@ mod tests {
 
   #[test_logger::test(tokio::test)]
   async fn test_component() -> TestResult<()> {
-    let builder = ComponentHostBuilder::try_from("./manifests/logger.yaml")?;
+    let builder = ComponentHostBuilder::from_manifest_url("./manifests/logger.yaml", false, &[]).await?;
     let mut host = builder.build();
     host.start(Some(0)).await?;
     let collection: Component = host.into();

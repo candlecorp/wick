@@ -1,6 +1,4 @@
 use std::collections::HashMap;
-use std::convert::TryFrom;
-use std::path::PathBuf;
 use std::sync::Arc;
 
 use tokio::task::{JoinError, JoinHandle};
@@ -152,9 +150,13 @@ impl AppHostBuilder {
   }
 
   pub async fn from_manifest_url(location: &str, allow_latest: bool, insecure_registries: &[String]) -> Result<Self> {
-    let manifest_src = wick_loader_utils::get_bytes(location, allow_latest, insecure_registries).await?;
+    let fetch_options = wick_config::config::FetchOptions::new()
+      .allow_latest(allow_latest)
+      .allow_insecure(insecure_registries);
 
-    let manifest = WickConfiguration::load_from_bytes(&manifest_src, &Some(location.to_owned()))?.try_app_config()?;
+    let manifest = WickConfiguration::fetch(location, fetch_options)
+      .await?
+      .try_app_config()?;
     Ok(Self::from_definition(manifest))
   }
 
@@ -168,23 +170,6 @@ impl AppHostBuilder {
       manifest: self.manifest,
       triggers: None,
     }
-  }
-}
-
-impl TryFrom<PathBuf> for AppHostBuilder {
-  type Error = Error;
-
-  fn try_from(file: PathBuf) -> Result<Self> {
-    let manifest = WickConfiguration::load_from_file(file)?.try_app_config()?;
-    Ok(AppHostBuilder::from_definition(manifest))
-  }
-}
-
-impl TryFrom<&str> for AppHostBuilder {
-  type Error = Error;
-
-  fn try_from(value: &str) -> Result<Self> {
-    AppHostBuilder::try_from(PathBuf::from(value))
   }
 }
 

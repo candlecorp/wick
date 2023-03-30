@@ -52,7 +52,6 @@ fn silly_modules(module: &str) -> bool {
     "wasmrs",
     "wick_wascap",
     "flow_graph",
-    "wick_config",
   ]
   .contains(&module)
 }

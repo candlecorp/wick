@@ -211,7 +211,7 @@ mod test {
   async fn test_basic() -> Result<()> {
     let yaml = "
 ---
-format: 1
+kind: wick/app@v1
 resources:
     - name: http
       resource:

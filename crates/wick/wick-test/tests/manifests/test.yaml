@@ -1,5 +1,5 @@
 ---
-format: 1
+kind: wick/tests@v1
 tests:
   - name: test
     operation: test-component

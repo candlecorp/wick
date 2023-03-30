@@ -11,7 +11,7 @@ use parking_lot::Mutex;
 use seeded_random::{Random, Seed};
 use tracing::Instrument;
 use uuid::Uuid;
-use wick_config::config::ComponentImplementation;
+use wick_config::config::{ComponentImplementation, FetchOptions, LocationReference};
 use wick_config::WickConfiguration;
 
 use crate::components::{init_manifest_component, init_wasm_component, initialize_native_component};
@@ -65,7 +65,7 @@ impl NetworkService {
       let component = config::BoundComponent::new(
         "__main",
         config::ComponentDefinition::Wasm(config::WasmComponent {
-          reference: comp.reference().to_owned(),
+          reference: comp.reference().clone(),
           config: Default::default(),
           permissions: Default::default(),
         }),
@@ -121,7 +121,7 @@ impl NetworkService {
 
   pub(crate) fn new_from_manifest<'a, 'b>(
     uid: Uuid,
-    location: &'a str,
+    location: &'a LocationReference,
     namespace: Option<String>,
     opts: ComponentInitOptions<'b>,
   ) -> BoxFuture<'b, Result<Arc<NetworkService>>>
@@ -129,8 +129,14 @@ impl NetworkService {
     'a: 'b,
   {
     Box::pin(async move {
-      let bytes = wick_loader_utils::get_bytes(location, opts.allow_latest, &opts.allowed_insecure).await?;
-      let manifest = WickConfiguration::load_from_bytes(&bytes, &Some(location.to_owned()))?.try_component_config()?;
+      let options = FetchOptions::new()
+        .allow_latest(opts.allow_latest)
+        .allow_insecure(&opts.allowed_insecure);
+      let manifest = WickConfiguration::load_from_bytes(
+        &location.bytes(&options).await.map_err(NetworkError::Manifest)?,
+        &Some(location.location().to_owned()),
+      )?
+      .try_component_config()?;
 
       let init = Initialize {
         id: uid,

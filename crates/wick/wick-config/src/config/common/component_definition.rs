@@ -2,10 +2,15 @@ use serde::de::{IgnoredAny, SeqAccess, Visitor};
 use serde::Deserializer;
 use serde_json::Value;
 
+use crate::config;
+
 /// A reference to an operation.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, derive_assets::AssetManager)]
+#[asset(config::LocationReference)]
+
 pub struct ComponentOperationExpression {
   /// The operation ID.
+  #[asset(skip)]
   pub(crate) operation: String,
   /// The component referenced by identifier or anonymously.
   pub(crate) component: ComponentDefinition,
@@ -54,11 +59,13 @@ impl std::str::FromStr for ComponentOperationExpression {
   }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, derive_assets::AssetManager)]
+#[asset(config::LocationReference)]
 /// A definition of a Wick Collection with its namespace, how to retrieve or access it and its configuration.
 #[must_use]
 pub struct BoundComponent {
   /// The namespace to reference the collection's components on.
+  #[asset(skip)]
   pub id: String,
   /// The kind/type of the collection.
   pub kind: ComponentDefinition,
@@ -86,17 +93,21 @@ impl BoundComponent {
   }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, derive_assets::AssetManager)]
+#[asset(config::LocationReference)]
 /// The kinds of collections that can operate in a flow.
 #[must_use]
 pub enum ComponentDefinition {
   #[doc(hidden)]
+  #[asset(skip)]
   Native(NativeComponent),
   /// WebAssembly Collections.
   Wasm(WasmComponent),
   /// WebAssembly Collections.
+  #[asset(skip)]
   Reference(ComponentReference),
   /// Separate microservices that Wick can connect to.
+  #[asset(skip)]
   GrpcUrl(GrpcUrlComponent),
   /// External manifests.
   Manifest(ManifestComponent),
@@ -125,31 +136,6 @@ impl ComponentDefinition {
     }
   }
 
-  /// Create a new [CollectionKind::Wasm] variant.
-  pub fn wasm(reference: impl AsRef<str>, config: Option<Value>, permissions: Option<Permissions>) -> Self {
-    Self::Wasm(WasmComponent {
-      reference: reference.as_ref().to_owned(),
-      config: config.unwrap_or_default(),
-      permissions: permissions.unwrap_or_default(),
-    })
-  }
-
-  /// Create a new [CollectionKind::GrpcUrl] variant.
-  pub fn grpc_url(url: impl AsRef<str>, config: Option<Value>) -> Self {
-    Self::GrpcUrl(GrpcUrlComponent {
-      url: url.as_ref().to_owned(),
-      config: config.unwrap_or_default(),
-    })
-  }
-
-  /// Create a new [CollectionKind::Manifest] variant.
-  pub fn manifest(reference: impl AsRef<str>, config: Option<Value>) -> Self {
-    Self::Manifest(ManifestComponent {
-      reference: reference.as_ref().to_owned(),
-      config: config.unwrap_or_default(),
-    })
-  }
-
   /// Returns true if the definition is a reference to another component.
   #[must_use]
   pub fn is_reference(&self) -> bool {
@@ -163,13 +149,16 @@ impl ComponentDefinition {
 pub struct NativeComponent {}
 
 /// A WebAssembly collection.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, derive_assets::AssetManager)]
+#[asset(config::LocationReference)]
 pub struct WasmComponent {
   /// The OCI reference/local path of the collection.
-  pub reference: String,
+  pub reference: config::LocationReference,
   /// The configuration for the collection
+  #[asset(skip)]
   pub config: Value,
   /// Permissions for this collection
+  #[asset(skip)]
   pub permissions: Permissions,
 }
 
@@ -191,11 +180,13 @@ pub struct GrpcUrlComponent {
 }
 
 /// A separate Wick manifest to use as a collection.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, derive_assets::AssetManager)]
+#[asset(config::LocationReference)]
 pub struct ManifestComponent {
   /// The OCI reference/local path of the manifest to use as a collection.
-  pub reference: String,
+  pub reference: config::LocationReference,
   /// The configuration for the collection
+  #[asset(skip)]
   pub config: Value,
 }
 

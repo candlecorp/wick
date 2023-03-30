@@ -8,7 +8,6 @@ use wick_packet::PacketStream;
 
 use crate::commands::FetchOptions;
 
-#[allow(clippy::too_many_lines)]
 pub(crate) fn merge_config(
   def: &ComponentConfiguration,
   local_cli_opts: &FetchOptions,
@@ -42,22 +41,22 @@ pub(crate) fn merge_config(
         log_override("rpc.port", &mut manifest_opts.port, Some(to));
       }
       if let Some(to) = cli_opts.rpc_pem {
-        log_override("rpc.pem", &mut manifest_opts.pem, Some(to));
+        log_override("rpc.pem", &mut manifest_opts.pem, Some(to.into()));
       }
       if let Some(to) = cli_opts.rpc_ca {
-        log_override("rpc.ca", &mut manifest_opts.ca, Some(to));
+        log_override("rpc.ca", &mut manifest_opts.ca, Some(to.into()));
       }
       if let Some(to) = cli_opts.rpc_key {
-        log_override("rpc.key", &mut manifest_opts.key, Some(to));
+        log_override("rpc.key", &mut manifest_opts.key, Some(to.into()));
       }
     } else {
       host_config.rpc = Some(HttpConfig {
         enabled: cli_opts.rpc_enabled,
         port: cli_opts.rpc_port,
         address: cli_opts.rpc_address,
-        pem: cli_opts.rpc_pem,
-        key: cli_opts.rpc_key,
-        ca: cli_opts.rpc_ca,
+        pem: cli_opts.rpc_pem.map(Into::into),
+        key: cli_opts.rpc_key.map(Into::into),
+        ca: cli_opts.rpc_ca.map(Into::into),
       });
     };
   }

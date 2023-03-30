@@ -44,7 +44,9 @@ pub(crate) async fn handle(opts: WasmSignCommand) -> Result<()> {
   debug!("Signing module");
 
   debug!("Reading from {}", opts.interface);
-  let interface = WickConfiguration::load_from_file(&opts.interface)?.try_component_config()?;
+  let interface = WickConfiguration::load_from_file(&opts.interface)
+    .await?
+    .try_component_config()?;
 
   let mut source_file = File::open(&opts.source).unwrap();
   let mut buf = Vec::new();

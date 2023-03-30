@@ -11,6 +11,7 @@ version = "0.24.0"
 flow-expression-parser = { workspace = true }
 wick-packet = { workspace = true, default-features = false }
 wick-interface-types = { workspace = true, features = ["yaml"] }
+wick-oci-utils = { workspace = true }
 regex = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
@@ -21,9 +22,20 @@ shellexpand = { workspace = true }
 serde-value = { workspace = true }
 num-traits = { workspace = true }
 serde-with-expand-env = { workspace = true }
+futures = { workspace = true }
+assets = { workspace = true }
+derive-assets = { workspace = true }
+bytes = { workspace = true }
+async-stream = { workspace = true }
+tokio = { workspace = true, features = ["sync"] }
+tokio-stream = { workspace = true }
+parking_lot = { workspace = true }
+url.workspace = true
 
 [dev-dependencies]
 anyhow = { workspace = true }
 pretty_assertions = { workspace = true }
 logger = { workspace = true }
 test-logger = { workspace = true }
+tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
+assets = { workspace = true }

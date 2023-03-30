@@ -1,5 +1,5 @@
 pub use crate::interpreter::error::Error as InterpreterError;
-pub use crate::interpreter::program::validator::error::{SchematicInvalid, ValidationError};
+pub use crate::interpreter::program::validator::error::{OperationInvalid, ValidationError};
 
 #[cfg(test)]
 mod test {
@@ -18,7 +18,7 @@ mod test {
   #[test]
   fn test_sync_send() -> Result<()> {
     sync_send::<InterpreterError>();
-    sync_send::<SchematicInvalid>();
+    sync_send::<OperationInvalid>();
     sync_send::<ValidationError>();
     sync_send::<ExecutionError>();
     sync_send::<InterpreterError>();

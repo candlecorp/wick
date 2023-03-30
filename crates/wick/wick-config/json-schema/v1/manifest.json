@@ -9,6 +9,10 @@
       ]
     },
 
+    "LocationReference": {
+      "type": "object"
+    },
+
     "AppConfiguration": {
       "$anchor": "#v1/AppConfiguration",
       "additionalProperties": false,

@@ -3,6 +3,9 @@ namespace "wick-config::v1"
 "Configuration for Wick applications and components."
 union WickConfig = AppConfiguration | ComponentConfiguration | TypesConfiguration | TestConfiguration
 
+"A reference to a location on disk, URL, or registry."
+alias LocationReference = string @skip
+
 "The Application configuration defines a standalone Wick application."
 type AppConfiguration @default @tagged("wick/app@v1") {
   "Associated metadata for this component."
@@ -166,7 +169,7 @@ type CompositeComponentConfiguration @tagged("wick/component/composite@v1") {
 "A component made out of other components"
 type WasmComponentConfiguration @tagged("wick/component/wasmrs@v1") {
   "A reference to a local WebAssembly implementation"
-  ref: string @rename("reference") @required
+  ref: LocationReference @rename("reference") @required
 
   "Additional types to export and make available to the component."
   types: [TypeDefinition]
@@ -228,19 +231,19 @@ type HttpConfig {
   address: string?
 
   "Path to pem file for TLS."
-  pem: string?,
+  pem: LocationReference?,
 
   "Path to key file for TLS."
-  key: string?,
+  key: LocationReference?,
 
   "Path to CA file."
-  ca: string?,
+  ca: LocationReference?,
 }
 
 "A WebAssembly component."
 type WasmRsComponent @tagged("wick/component/wasmrs@v1") {
   "The URL (and optional tag) or local file path to find the .wasm module."
-  ref: string @rename("reference") @required
+  ref: LocationReference @rename("reference") @required
 
   "Permissions to give this component"
   permissions: Permissions
@@ -267,7 +270,7 @@ type GrpcUrlComponent @tagged("wick/component/grpc@v1") {
 "A native component that can be extracted and run as a microservice."
 type ManifestComponent @tagged("wick/component/manifest@v1") {
   "The URL (and optional tag) or local file path to find the manifest."
-  ref: string @rename("reference")  @required
+  ref: LocationReference @rename("reference")  @required
   "Any configuration necessary for the component."
   config: any
 }

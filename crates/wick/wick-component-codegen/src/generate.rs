@@ -10,6 +10,7 @@ use quote::quote;
 use syn::parse::{Parse, ParseStream};
 use syn::{parse_macro_input, Expr, Lit, LitStr};
 use wick_config::config::{FlowOperation, OperationSignature};
+use wick_config::WickConfiguration;
 use wick_interface_types::{EnumSignature, EnumVariant, StructSignature, TypeDefinition};
 
 fn snake(s: &str) -> String {
@@ -360,22 +361,24 @@ fn gen_trait_signature(config: &config::Config, component: &Ident, op: &Operatio
   }
 }
 
-fn codegen(config: &config::Config) -> Result<String> {
-  let wick_config = wick_config::WickConfiguration::load_from_file(&config.spec).unwrap();
+fn codegen(wick_config: WickConfiguration, gen_config: &config::Config) -> Result<String> {
   let (ops, types) = match wick_config {
-    wick_config::WickConfiguration::Component(config) => {
-      let config = config.try_wasm().unwrap().clone();
-      (config.operations().clone(), config.types().to_vec())
-    }
+    wick_config::WickConfiguration::Component(config) => match config.component() {
+      wick_config::config::ComponentImplementation::Wasm(c) => (c.operations().clone(), c.types().to_vec()),
+      wick_config::config::ComponentImplementation::Composite(c) => (
+        c.operations().clone().into_iter().map(|(k, v)| (k, v.into())).collect(),
+        c.types().to_vec(),
+      ),
+    },
     wick_config::WickConfiguration::Types(config) => (std::collections::HashMap::default(), config.types().to_vec()),
     _ => panic!("Code generation only supports `wick/component` and `wick/types` configurations"),
   };
 
   let component_name = Ident::new("Component", Span::call_site());
-  let register_stmts = gen_register_channels(config, &component_name, ops.values());
-  let wrapper_fns = gen_wrapper_fns(config, &component_name, ops.values());
-  let trait_defs = gen_trait_fns(config, &component_name, ops.values());
-  let typedefs = gen_types(config, types.iter());
+  let register_stmts = gen_register_channels(gen_config, &component_name, ops.values());
+  let wrapper_fns = gen_wrapper_fns(gen_config, &component_name, ops.values());
+  let trait_defs = gen_trait_fns(gen_config, &component_name, ops.values());
+  let typedefs = gen_types(gen_config, types.iter());
 
   let expanded = quote! {
     #[allow(unused)]
@@ -405,7 +408,11 @@ fn codegen(config: &config::Config) -> Result<String> {
 
 #[allow(clippy::needless_pass_by_value)]
 pub fn build(config: config::Config) -> Result<()> {
-  let src = codegen(&config)?;
+  let wick_yaml = std::fs::read_to_string(&config.spec)?;
+  let wick_config =
+    wick_config::WickConfiguration::from_yaml(&wick_yaml, &Some(config.spec.to_string_lossy().to_string()))?;
+
+  let src = codegen(wick_config, &config)?;
   std::fs::create_dir_all(&config.out_dir)?;
   let target = config.out_dir.join("mod.rs");
   println!("Writing to {}", target.display());
@@ -422,10 +429,12 @@ mod test {
   use crate::Config;
 
   // TODO: make better tests for the codegen. This one's pretty bad.
-  #[test]
-  fn test_build() -> Result<()> {
+  #[tokio::test]
+  async fn test_build() -> Result<()> {
     let config = Config::new().spec("./tests/testdata/component.yaml");
-    let src = codegen(&config)?;
+    let wick_config = WickConfiguration::load_from_file(&config.spec).await.unwrap();
+
+    let src = codegen(wick_config, &config)?;
 
     assert!(src.contains("pub struct Component"));
 

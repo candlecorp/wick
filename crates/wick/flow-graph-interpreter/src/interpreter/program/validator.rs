@@ -1,6 +1,6 @@
 use flow_graph::NodeKind;
 
-use self::error::{SchematicInvalid, ValidationError};
+use self::error::{OperationInvalid, ValidationError};
 use super::Program;
 use crate::constants::CORE_ID_SENDER;
 use crate::graph::Reference;
@@ -8,7 +8,7 @@ use crate::interpreter::collections::get_id;
 
 pub(crate) mod error;
 
-type Result = std::result::Result<(), Vec<SchematicInvalid>>;
+type Result = std::result::Result<(), Vec<OperationInvalid>>;
 
 pub(crate) struct Validator {}
 
@@ -105,7 +105,7 @@ impl Validator {
         }
 
         if !validation_errors.is_empty() {
-          errors.push(SchematicInvalid::new(schematic.name().to_owned(), validation_errors));
+          errors.push(OperationInvalid::new(schematic.name().to_owned(), validation_errors));
         }
       }
     }

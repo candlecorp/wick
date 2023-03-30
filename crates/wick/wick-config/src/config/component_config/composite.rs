@@ -5,12 +5,15 @@ use wick_interface_types::TypeDefinition;
 use crate::config::common::component_definition::BoundComponent;
 use crate::config::common::flow_definition::FlowOperation;
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, derive_assets::AssetManager)]
+#[asset(crate::config::LocationReference)]
 #[must_use]
 /// The internal representation of a Wick manifest.
 pub struct CompositeComponentConfiguration {
+  #[asset(skip)]
   pub(crate) types: Vec<TypeDefinition>,
   pub(crate) import: HashMap<String, BoundComponent>,
+  #[asset(skip)]
   pub(crate) operations: HashMap<String, FlowOperation>,
 }
 

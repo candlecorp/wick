@@ -1,4 +1,5 @@
 use thiserror::Error;
+use wick_config::config::LocationReference;
 
 use crate::dev::prelude::*;
 use crate::BoxError;
@@ -13,7 +14,7 @@ pub enum ComponentError {
   #[error("{0}")]
   Mesh(String),
   #[error("Error initializing subnetwork '{0}' : {1}")]
-  SubNetwork(String, String),
+  SubNetwork(LocationReference, String),
 
   #[error("{0}")]
   Downstream(Box<dyn std::error::Error + Send + Sync>),
@@ -22,22 +23,8 @@ pub enum ComponentError {
   InvocationError(#[from] InvocationError),
 
   #[error(transparent)]
-  LoadFailed(#[from] wick_loader_utils::Error),
-  #[error(transparent)]
   RpcHandlerError(#[from] Box<wick_rpc::Error>),
 }
-
-// impl From<wick_component_grpctar::Error> for CollectionError {
-//   fn from(e: wick_component_grpctar::Error) -> Self {
-//     CollectionError::Downstream(Box::new(e))
-//   }
-// }
-
-// impl From<wick_component_grpc::Error> for CollectionError {
-//   fn from(e: wick_component_grpc::Error) -> Self {
-//     CollectionError::Downstream(Box::new(e))
-//   }
-// }
 
 impl From<wick_component_wasm::Error> for ComponentError {
   fn from(e: wick_component_wasm::Error) -> Self {

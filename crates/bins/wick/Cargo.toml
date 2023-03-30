@@ -10,7 +10,6 @@ license = "Elastic-2.0"
 wick-packet = { workspace = true }
 wick-interface-types = { workspace = true }
 wick-rpc = { workspace = true, features = ["client"] }
-wick-loader-utils = { workspace = true }
 wick-component-wasm = { workspace = true }
 wick-component-cli = { workspace = true }
 wick-runtime = { workspace = true }

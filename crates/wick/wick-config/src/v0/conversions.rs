@@ -5,7 +5,7 @@ use flow_expression_parser::parse_id;
 use serde_json::Value;
 
 use crate::error::ManifestError;
-use crate::utils::{opt_str_to_ipv4addr, opt_str_to_pathbuf};
+use crate::utils::opt_str_to_ipv4addr;
 use crate::{config, v0, Result};
 
 impl TryFrom<v0::HostManifest> for config::ComponentConfiguration {
@@ -45,6 +45,12 @@ impl TryFrom<v0::HostManifest> for config::ComponentConfiguration {
   }
 }
 
+impl From<String> for config::LocationReference {
+  fn from(val: String) -> Self {
+    config::LocationReference::new(val)
+  }
+}
+
 impl TryFrom<&crate::v0::CollectionDefinition> for config::ComponentDefinition {
   type Error = crate::Error;
   fn try_from(def: &crate::v0::CollectionDefinition) -> std::result::Result<Self, Self::Error> {
@@ -55,12 +61,12 @@ impl TryFrom<&crate::v0::CollectionDefinition> for config::ComponentDefinition {
         config: def.data.clone(),
       }),
       crate::v0::CollectionKind::WaPC => config::ComponentDefinition::Wasm(config::WasmComponent {
-        reference: def.reference.clone(),
+        reference: def.reference.clone().into(),
         permissions: json_struct_to_permissions(def.data.get("wasi"))?,
         config: def.data.clone(),
       }),
       crate::v0::CollectionKind::Network => config::ComponentDefinition::Manifest(config::ManifestComponent {
-        reference: def.reference.clone(),
+        reference: def.reference.clone().into(),
         config: def.data.clone(),
       }),
     };
@@ -168,9 +174,9 @@ impl TryFrom<crate::v0::HttpConfig> for config::HttpConfig {
       enabled: def.enabled,
       port: def.port,
       address: opt_str_to_ipv4addr(&def.address)?,
-      pem: opt_str_to_pathbuf(&def.pem)?,
-      key: opt_str_to_pathbuf(&def.key)?,
-      ca: opt_str_to_pathbuf(&def.ca)?,
+      pem: def.pem.map(|v| v.into()),
+      key: def.key.map(|v| v.into()),
+      ca: def.ca.map(|v| v.into()),
     })
   }
 }

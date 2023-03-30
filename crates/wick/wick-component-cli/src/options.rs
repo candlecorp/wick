@@ -56,13 +56,16 @@ pub struct ServerOptions {
   pub address: Option<Ipv4Addr>,
 
   /// Path to pem file for TLS.
-  pub pem: Option<PathBuf>,
+  #[cfg(feature = "grpc")]
+  pub pem: Option<wick_config::config::LocationReference>,
 
   /// Path to key file for TLS.
-  pub key: Option<PathBuf>,
+  #[cfg(feature = "grpc")]
+  pub key: Option<wick_config::config::LocationReference>,
 
   /// Path to CA file.
-  pub ca: Option<PathBuf>,
+  #[cfg(feature = "grpc")]
+  pub ca: Option<wick_config::config::LocationReference>,
 }
 
 impl From<DefaultCliOptions> for Options {
@@ -71,9 +74,12 @@ impl From<DefaultCliOptions> for Options {
       enabled: opts.rpc_enabled,
       port: opts.rpc_port,
       address: opts.rpc_address,
-      pem: opts.rpc_pem,
-      key: opts.rpc_key,
-      ca: opts.rpc_ca,
+      #[cfg(feature = "grpc")]
+      pem: opts.rpc_pem.map(Into::into),
+      #[cfg(feature = "grpc")]
+      key: opts.rpc_key.map(Into::into),
+      #[cfg(feature = "grpc")]
+      ca: opts.rpc_ca.map(Into::into),
     });
 
     let id = opts
@@ -147,13 +153,13 @@ pub struct DefaultCliOptions {
 
   /// Path to pem file for TLS for GRPC server.
   #[clap(long = "rpc-pem", env = env::WICK_RPC_PEM, action)]
-  pub rpc_pem: Option<PathBuf>,
+  pub rpc_pem: Option<String>,
 
   /// Path to key file for TLS for GRPC server.
   #[clap(long = "rpc-key", env = env::WICK_RPC_KEY, action)]
-  pub rpc_key: Option<PathBuf>,
+  pub rpc_key: Option<String>,
 
   /// Path to certificate authority for GRPC server.
   #[clap(long = "rpc-ca", env = env::WICK_RPC_CA, action)]
-  pub rpc_ca: Option<PathBuf>,
+  pub rpc_ca: Option<String>,
 }
