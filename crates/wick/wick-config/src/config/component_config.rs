@@ -149,6 +149,12 @@ impl ComponentConfiguration {
     self.metadata.clone().map(|m| m.version).unwrap_or_default()
   }
 
+  /// Return the metadata of the component.
+  #[must_use]
+  pub fn metadata(&self) -> config::Metadata {
+    self.metadata.clone().unwrap()
+  }
+
   /// Return the underlying version of the source manifest.
   #[must_use]
   pub fn source(&self) -> &Option<Url> {
