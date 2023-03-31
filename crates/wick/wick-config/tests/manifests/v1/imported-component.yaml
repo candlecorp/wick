@@ -3,7 +3,7 @@ kind: wick/app@v1
 import:
   - name: main
     component:
-      kind: wick/component/wasmrs@v1
+      kind: wick/component/manifest@v1
       ref: ../../integration/test-cli-trigger-component/build/test_cli_trigger_component.signed.wasm
 triggers:
   - kind: wick/trigger/cli@v1

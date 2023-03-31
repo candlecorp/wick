@@ -19,6 +19,8 @@ pub enum Error {
   CollectionShutdown(String),
   #[error("Shutdown failed: {0}")]
   Shutdown(String),
+  #[error("Namespace '{0}' already exists, can not overwrite")]
+  DuplicateNamespace(String),
 }
 
 #[derive(thiserror::Error, Debug, Clone, PartialEq, Eq)]

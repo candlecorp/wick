@@ -68,6 +68,7 @@ pub struct ServerOptions {
   pub ca: Option<wick_config::config::LocationReference>,
 }
 
+#[allow(clippy::expect_used)]
 impl From<DefaultCliOptions> for Options {
   fn from(opts: DefaultCliOptions) -> Self {
     let rpc = Some(ServerOptions {
@@ -75,11 +76,12 @@ impl From<DefaultCliOptions> for Options {
       port: opts.rpc_port,
       address: opts.rpc_address,
       #[cfg(feature = "grpc")]
-      pem: opts.rpc_pem.map(Into::into),
+      pem: opts.rpc_pem.map(wick_config::config::LocationReference::new),
       #[cfg(feature = "grpc")]
-      key: opts.rpc_key.map(Into::into),
+      key: opts.rpc_key.map(wick_config::config::LocationReference::new),
+
       #[cfg(feature = "grpc")]
-      ca: opts.rpc_ca.map(Into::into),
+      ca: opts.rpc_ca.map(wick_config::config::LocationReference::new),
     });
 
     let id = opts

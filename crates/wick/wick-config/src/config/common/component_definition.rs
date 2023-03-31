@@ -85,6 +85,7 @@ impl BoundComponent {
   pub fn config(&self) -> Option<&Value> {
     match &self.kind {
       ComponentDefinition::Native(_) => None,
+      #[allow(deprecated)]
       ComponentDefinition::Wasm(v) => Some(&v.config),
       ComponentDefinition::GrpcUrl(v) => Some(&v.config),
       ComponentDefinition::Manifest(v) => Some(&v.config),
@@ -102,8 +103,9 @@ pub enum ComponentDefinition {
   #[asset(skip)]
   Native(NativeComponent),
   /// WebAssembly Collections.
+  #[deprecated(note = "Use ManifestComponent instead")]
   Wasm(WasmComponent),
-  /// WebAssembly Collections.
+  /// A component reference.
   #[asset(skip)]
   Reference(ComponentReference),
   /// Separate microservices that Wick can connect to.
@@ -128,14 +130,6 @@ impl ComponentReference {
 }
 
 impl ComponentDefinition {
-  /// Instantiate a new [CollectionKind].
-  pub fn new(def: impl TryInto<ComponentDefinition>) -> Result<Self, crate::Error> {
-    match def.try_into() {
-      Ok(v) => Ok(v),
-      Err(_e) => Err(crate::Error::Other("Could not load collection definition".to_owned())),
-    }
-  }
-
   /// Returns true if the definition is a reference to another component.
   #[must_use]
   pub fn is_reference(&self) -> bool {

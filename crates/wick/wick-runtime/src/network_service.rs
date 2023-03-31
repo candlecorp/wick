@@ -11,8 +11,7 @@ use parking_lot::Mutex;
 use seeded_random::{Random, Seed};
 use tracing::Instrument;
 use uuid::Uuid;
-use wick_config::config::{ComponentImplementation, FetchOptions, LocationReference};
-use wick_config::WickConfiguration;
+use wick_config::config::{ComponentConfiguration, ComponentImplementation};
 
 use crate::components::{init_manifest_component, init_wasm_component, initialize_native_component};
 use crate::dev::prelude::*;
@@ -23,7 +22,7 @@ type Result<T> = std::result::Result<T, NetworkError>;
 #[derive(Debug)]
 pub(crate) struct Initialize {
   pub(crate) id: Uuid,
-  pub(crate) manifest: config::ComponentConfiguration,
+  pub(crate) manifest: ComponentConfiguration,
   pub(crate) allowed_insecure: Vec<String>,
   pub(crate) allow_latest: bool,
   pub(crate) timeout: Duration,
@@ -63,7 +62,11 @@ impl NetworkService {
       };
 
       let component = config::BoundComponent::new(
-        "__main",
+        msg
+          .namespace
+          .as_ref()
+          .map_or_else(|| rng.uuid().to_string(), |v| v.clone()),
+        #[allow(deprecated)]
         config::ComponentDefinition::Wasm(config::WasmComponent {
           reference: comp.reference().clone(),
           config: Default::default(),
@@ -71,12 +74,16 @@ impl NetworkService {
         }),
       );
       let main_component = initialize_component(&component, collection_init).await?;
-      components.add(main_component);
+      components
+        .add(main_component)
+        .map_err(|e| NetworkError::InterpreterInit(msg.manifest.source().clone(), Box::new(e)))?;
     } else if let ComponentImplementation::Composite(comp) = msg.manifest.component() {
       let span = debug_span!(parent: &msg.span, "components:init");
 
       let stdlib = initialize_native_component(V0_NAMESPACE.to_owned(), rng.seed(), &span)?;
-      components.add(stdlib);
+      components
+        .add(stdlib)
+        .map_err(|e| NetworkError::InterpreterInit(msg.manifest.source().clone(), Box::new(e)))?;
 
       let span = debug_span!(parent: &msg.span, "components:init");
       for collection in comp.components().values() {
@@ -89,18 +96,21 @@ impl NetworkService {
           span: &span,
         };
         let p = initialize_component(collection, collection_init).await?;
-        components.add(p);
+        components
+          .add(p)
+          .map_err(|e| NetworkError::InterpreterInit(msg.manifest.source().clone(), Box::new(e)))?;
       }
     }
 
     let source = msg.manifest.source().clone();
+
     let mut interpreter = flow_graph_interpreter::Interpreter::new(
       Some(rng.seed()),
       graph,
       Some(msg.namespace.unwrap_or_else(|| msg.id.to_string())),
       Some(components),
     )
-    .map_err(|e| NetworkError::InterpreterInit(source.unwrap_or_else(|| "unknown".to_owned()), e))?;
+    .map_err(|e| NetworkError::InterpreterInit(source, Box::new(e)))?;
 
     match msg.event_log {
       Some(path) => interpreter.start(None, Some(Box::new(JsonWriter::new(path)))).await,
@@ -121,7 +131,7 @@ impl NetworkService {
 
   pub(crate) fn new_from_manifest<'a, 'b>(
     uid: Uuid,
-    location: &'a LocationReference,
+    manifest: ComponentConfiguration,
     namespace: Option<String>,
     opts: ComponentInitOptions<'b>,
   ) -> BoxFuture<'b, Result<Arc<NetworkService>>>
@@ -129,15 +139,6 @@ impl NetworkService {
     'a: 'b,
   {
     Box::pin(async move {
-      let options = FetchOptions::new()
-        .allow_latest(opts.allow_latest)
-        .allow_insecure(&opts.allowed_insecure);
-      let manifest = WickConfiguration::load_from_bytes(
-        &location.bytes(&options).await.map_err(NetworkError::Manifest)?,
-        &Some(location.location().to_owned()),
-      )?
-      .try_component_config()?;
-
       let init = Initialize {
         id: uid,
         manifest,
@@ -159,7 +160,7 @@ impl NetworkService {
     registry.get(id).cloned()
   }
 
-  pub(crate) async fn shutdown(&self) -> Result<()> {
+  pub(crate) async fn shutdown(&self) -> std::result::Result<(), RuntimeError> {
     let _ = self.interpreter.shutdown().await;
     Ok(())
   }
@@ -215,13 +216,13 @@ pub(crate) async fn initialize_component<'a, 'b>(
   debug!(?collection, ?opts, "initializing component");
   let id = collection.id.clone();
   let span = opts.span.clone();
-  let result = match &collection.kind {
-    config::ComponentDefinition::Wasm(v) => init_wasm_component(v, id, opts).instrument(span).await,
+  match &collection.kind {
+    #[allow(deprecated)]
+    config::ComponentDefinition::Wasm(def) => init_wasm_component(def, id, opts).instrument(span).await,
     // CollectionKind::GrpcUrl(v) => initialize_grpc_collection(v, namespace).await,
-    config::ComponentDefinition::Manifest(v) => init_manifest_component(v, id, opts).instrument(span).await,
+    config::ComponentDefinition::Manifest(def) => init_manifest_component(def, id, opts).instrument(span).await,
     _ => unimplemented!(),
-  };
-  Ok(result?)
+  }
 }
 
 #[cfg(test)]

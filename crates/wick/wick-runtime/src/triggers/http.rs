@@ -227,8 +227,8 @@ triggers:
           operation:
             name: http_handler
             component:
-              kind: wick/component/wasmrs@v1
-              ref: ../../integration/test-http-trigger-component/build/test_http_trigger_component.signed.wasm
+              kind: wick/component/manifest@v1
+              ref: ../../integration/test-http-trigger-component/component.yaml
     ";
     let app_config = config::WickConfiguration::from_yaml(yaml, &None)?.try_app_config()?;
     let trigger = Http::load_impl()?;

@@ -20,17 +20,17 @@ pub(crate) enum Error {
 }
 
 #[derive(Debug)]
-pub(crate) struct SchematicCollection {
+pub(crate) struct SchematicComponent {
   signature: ComponentSignature,
   schematics: Arc<Vec<SchematicExecutor>>,
-  collections: Arc<HandlerMap>,
+  components: Arc<HandlerMap>,
   self_collection: Mutex<Option<Arc<Self>>>,
   rng: Random,
 }
 
-impl SchematicCollection {
+impl SchematicComponent {
   pub(crate) fn new(
-    collections: Arc<HandlerMap>,
+    components: Arc<HandlerMap>,
     state: &ProgramState,
     dispatcher: &InterpreterDispatchChannel,
     seed: Seed,
@@ -48,7 +48,7 @@ impl SchematicCollection {
       signature,
       schematics,
       self_collection: Mutex::new(None),
-      collections,
+      components,
       rng: Random::from_seed(seed),
     });
     collection.update_self_collection();
@@ -67,7 +67,7 @@ impl SchematicCollection {
   }
 }
 
-impl Component for SchematicCollection {
+impl Component for SchematicComponent {
   fn handle(
     &self,
     invocation: Invocation,
@@ -86,7 +86,7 @@ impl Component for SchematicCollection {
           invocation,
           stream,
           self.rng.seed(),
-          self.collections.clone(),
+          self.components.clone(),
           self.clone_self_collection(),
         )
       })

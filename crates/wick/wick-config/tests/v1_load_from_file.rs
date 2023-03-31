@@ -61,13 +61,38 @@ async fn test_main() -> Result<(), ManifestError> {
 }
 
 #[test_logger::test(tokio::test)]
+async fn regression_issue_180() -> Result<(), ManifestError> {
+  let component = load_component("./tests/manifests/v1/shell-expansion.yaml").await?;
+  println!("{:?}", component);
+  let coll = component.component("test").unwrap();
+  #[allow(deprecated)]
+  if let ComponentDefinition::Manifest(module) = &coll.kind {
+    let value = module.reference.path()?;
+    println!("value: {:?}", value);
+    let actual = value.to_file_path().unwrap();
+
+    let mut expected = PathBuf::from(std::env::var("PWD").unwrap());
+
+    expected.push("test.fake.wasm");
+    assert_eq!(actual, expected);
+  } else {
+    panic!("wrong collection kind");
+  }
+
+  Ok(())
+}
+
+#[test_logger::test(tokio::test)]
 async fn regression_issue_42() -> Result<(), ManifestError> {
   let component = load_component("./tests/manifests/v1/shell-expansion.yaml").await?;
   println!("{:?}", component);
   let coll = component.component("test").unwrap();
-  if let ComponentDefinition::Wasm(module) = &coll.kind {
-    let value = module.permissions.dirs.get("/").unwrap();
-    assert_ne!(value, "$PWD");
+  #[allow(deprecated)]
+  if let ComponentDefinition::Manifest(module) = &coll.kind {
+    let value = module.config.get("pwd").unwrap().as_str().unwrap();
+    let expected = std::env::var("PWD").unwrap();
+
+    assert_eq!(value, expected);
   } else {
     panic!("wrong collection kind");
   }

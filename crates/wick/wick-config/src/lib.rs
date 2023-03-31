@@ -109,3 +109,5 @@ pub(crate) type Result<T> = std::result::Result<T, Error>;
 pub(crate) static SENDER_ID: &str = "core::sender";
 /// The name of SENDER's output port.
 pub(crate) static SENDER_PORT: &str = "output";
+
+pub use utils::{path_to_url, str_to_url};

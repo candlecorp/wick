@@ -32,7 +32,7 @@ impl Program {
     &self.state
   }
 
-  pub(crate) fn schematics(&self) -> &[Schematic] {
+  pub(crate) fn operations(&self) -> &[Schematic] {
     self.state.network.schematics()
   }
 

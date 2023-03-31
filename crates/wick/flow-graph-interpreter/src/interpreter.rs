@@ -21,8 +21,8 @@ use self::program::Program;
 use crate::constants::*;
 use crate::graph::types::*;
 use crate::interpreter::channel::InterpreterChannel;
-use crate::interpreter::collections::collection_collection::CollectionCollection;
-use crate::interpreter::collections::schematic_collection::SchematicCollection;
+use crate::interpreter::collections::collection_collection::ComponentComponent;
+use crate::interpreter::collections::schematic_collection::SchematicComponent;
 use crate::interpreter::executor::error::ExecutionError;
 use crate::{Component, NamespaceHandler, Observer};
 
@@ -33,8 +33,8 @@ pub struct Interpreter {
   program: Program,
   event_loop: EventLoop,
   signature: ComponentSignature,
-  collections: Arc<HandlerMap>,
-  self_collection: Arc<SchematicCollection>,
+  components: Arc<HandlerMap>,
+  self_component: Arc<SchematicComponent>,
   dispatcher: InterpreterDispatchChannel,
   namespace: Option<String>,
 }
@@ -45,7 +45,7 @@ impl std::fmt::Debug for Interpreter {
       .field("program", &self.program)
       .field("event_loop", &self.event_loop)
       .field("signature", &self.signature)
-      .field("collections", &self.collections)
+      .field("collections", &self.components)
       .field("dispatcher", &self.dispatcher)
       .finish()
   }
@@ -57,21 +57,18 @@ impl Interpreter {
     seed: Option<Seed>,
     network: Network,
     namespace: Option<String>,
-    collections: Option<HandlerMap>,
+    components: Option<HandlerMap>,
   ) -> Result<Self, Error> {
     debug!("init");
     let rng = seed.map_or_else(Random::new, Random::from_seed);
-    let mut handlers = collections.unwrap_or_default();
-    handlers.add_core(&network);
+    let mut handlers = components.unwrap_or_default();
+    handlers.add_core(&network)?;
 
     // Add the collection:: collection
-    let collection_collection = CollectionCollection::new(&handlers);
-    handlers.add(NamespaceHandler {
-      namespace: NS_COLLECTIONS.to_owned(),
-      collection: Arc::new(Box::new(collection_collection)),
-    });
+    let component_component = ComponentComponent::new(&handlers);
+    handlers.add(NamespaceHandler::new(NS_COMPONENTS, Box::new(component_component)))?;
 
-    let signatures = handlers.collection_signatures();
+    let signatures = handlers.component_signatures();
 
     let program = Program::new(network, signatures)?;
 
@@ -81,16 +78,16 @@ impl Interpreter {
     let dispatcher = channel.dispatcher();
 
     // Make the self:: collection
-    let collections = Arc::new(handlers);
-    let self_collection = SchematicCollection::new(collections.clone(), program.state(), &dispatcher, rng.seed());
-    let self_signature = self_collection.list().clone();
+    let components = Arc::new(handlers);
+    let self_component = SchematicComponent::new(components.clone(), program.state(), &dispatcher, rng.seed());
+    let self_signature = self_component.list().clone();
 
     debug!(?self_signature, "signature");
 
     let event_loop = EventLoop::new(channel);
     debug!(
-      schematics = ?program.schematics().iter().map(|s| s.name()).collect::<Vec<_>>(),
-      "schematics handled by this interpreter"
+      operations = ?program.operations().iter().map(|s| s.name()).collect::<Vec<_>>(),
+      "operations handled by this interpreter"
     );
 
     Ok(Self {
@@ -98,37 +95,37 @@ impl Interpreter {
       program,
       dispatcher,
       signature: self_signature,
-      collections,
-      self_collection,
+      components,
+      self_component,
       event_loop,
       namespace,
     })
   }
 
-  async fn invoke_schematic(&self, invocation: Invocation, stream: PacketStream) -> Result<PacketStream, Error> {
+  async fn invoke_operation(&self, invocation: Invocation, stream: PacketStream) -> Result<PacketStream, Error> {
     let dispatcher = self.dispatcher.clone();
     let name = invocation.target.name().to_owned();
-    let schematic = self
+    let op = self
       .program
-      .schematics()
+      .operations()
       .iter()
       .find(|s| s.name() == name)
       .ok_or_else(|| {
         Error::OpNotFound(
           invocation.target.clone(),
-          self.program.schematics().iter().map(|s| s.name().to_owned()).collect(),
+          self.program.operations().iter().map(|s| s.name().to_owned()).collect(),
         )
       })?;
 
-    let executor = SchematicExecutor::new(schematic.clone(), dispatcher.clone());
+    let executor = SchematicExecutor::new(op.clone(), dispatcher.clone());
     Ok(
       executor
         .invoke(
           invocation,
           stream,
           self.rng.seed(),
-          self.collections.clone(),
-          self.self_collection.clone(),
+          self.components.clone(),
+          self.self_component.clone(),
         )
         .instrument(tracing::span::Span::current())
         .await?,
@@ -137,7 +134,7 @@ impl Interpreter {
 
   pub async fn invoke(&self, invocation: Invocation, stream: PacketStream) -> Result<PacketStream, Error> {
     let known_targets = || {
-      let mut hosted: Vec<_> = self.collections.collections().keys().cloned().collect();
+      let mut hosted: Vec<_> = self.components.collections().keys().cloned().collect();
       if let Some(ns) = &self.namespace {
         hosted.push(ns.clone());
       }
@@ -148,11 +145,11 @@ impl Interpreter {
     let stream = match &invocation.target {
       Entity::Operation(ns, _) => {
         if ns == NS_SELF || ns == Entity::LOCAL || Some(ns) == self.namespace.as_ref() {
-          self.invoke_schematic(invocation, stream).instrument(span).await?
+          self.invoke_operation(invocation, stream).instrument(span).await?
         } else {
           trace!(?invocation);
           self
-            .collections
+            .components
             .get(ns)
             .ok_or_else(|| Error::TargetNotFound(invocation.target.clone(), known_targets()))?
             .collection
@@ -186,7 +183,7 @@ impl Interpreter {
     if let Err(error) = &shutdown {
       error!(%error,"error shutting down event loop");
     };
-    for (ns, collection) in self.collections.collections() {
+    for (ns, collection) in self.components.collections() {
       debug!(namespace = %ns, "shutting down collection");
       if let Err(error) = collection
         .collection

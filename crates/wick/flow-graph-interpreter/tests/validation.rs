@@ -36,6 +36,7 @@ fn collections(sig: ComponentSignature) -> HandlerMap {
     "test",
     Box::new(SignatureTestCollection(sig)),
   )])
+  .unwrap()
 }
 
 fn interp(path: &str, sig: ComponentSignature) -> std::result::Result<Interpreter, InterpreterError> {

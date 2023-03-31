@@ -60,7 +60,7 @@ impl Network {
 
     let response = tokio::time::timeout(self.timeout, self.inner.invoke(invocation, stream)?)
       .await
-      .map_err(|_| NetworkError::Timeout)??;
+      .map_err(|_| RuntimeError::Timeout)??;
     trace!(duration_ms=%time.elapsed().unwrap().as_millis(),"invocation complete");
 
     Ok(response.ok()?)

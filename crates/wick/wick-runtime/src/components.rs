@@ -10,7 +10,8 @@ use seeded_random::{Random, Seed};
 use uuid::Uuid;
 use wick_component_wasm::component::HostLinkCallback;
 use wick_component_wasm::error::LinkError;
-use wick_config::config::{ManifestComponent, WasmComponent};
+use wick_config::config::{FetchOptions, ManifestComponent, WasmComponent};
+use wick_config::WickConfiguration;
 use wick_packet::{Entity, Invocation, PacketStream};
 
 use self::component_service::NativeComponentService;
@@ -26,7 +27,7 @@ pub(crate) trait InvocationHandler {
 
 type Result<T> = std::result::Result<T, ComponentError>;
 
-type ComponentInitResult = Result<NamespaceHandler>;
+type ComponentInitResult = std::result::Result<NamespaceHandler, NetworkError>;
 
 pub(crate) async fn init_wasm_component<'a, 'b>(
   kind: &'a WasmComponent,
@@ -93,19 +94,34 @@ pub(crate) async fn init_manifest_component<'a, 'b>(
 ) -> ComponentInitResult {
   trace!(namespace = %namespace, ?opts, "registering");
 
+  let options = FetchOptions::new()
+    .allow_latest(opts.allow_latest)
+    .allow_insecure(&opts.allowed_insecure);
+  let manifest = WickConfiguration::fetch(kind.reference.path()?, options)
+    .await?
+    .try_component_config()?;
+
   let rng = Random::from_seed(opts.rng_seed);
   opts.rng_seed = rng.seed();
   let uuid = rng.uuid();
 
-  let _network = NetworkService::new_from_manifest(uuid, &kind.reference, Some(namespace.clone()), opts)
-    .await
-    .map_err(|e| ComponentError::SubNetwork(kind.reference.clone(), e.to_string()))?;
+  match manifest.component() {
+    config::ComponentImplementation::Wasm(wasm) => {
+      let wasm = WasmComponent {
+        reference: wasm.reference().clone(),
+        config: Default::default(),
+        permissions: Default::default(),
+      };
+      init_wasm_component(&wasm, namespace, opts).await
+    }
+    config::ComponentImplementation::Composite(_) => {
+      let _network = NetworkService::new_from_manifest(uuid, manifest, Some(namespace.clone()), opts).await?;
 
-  let collection = Arc::new(network_component::Component::new(uuid));
-
-  let service = NativeComponentService::new(collection);
-
-  Ok(NamespaceHandler::new(namespace, Box::new(service)))
+      let collection = Arc::new(network_component::Component::new(uuid));
+      let service = NativeComponentService::new(collection);
+      Ok(NamespaceHandler::new(namespace, Box::new(service)))
+    }
+  }
 }
 
 pub(crate) fn initialize_native_component(namespace: String, seed: Seed, _span: &tracing::Span) -> ComponentInitResult {

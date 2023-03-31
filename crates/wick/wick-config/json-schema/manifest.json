@@ -879,9 +879,6 @@
       "ComponentDefinition": {
         "oneOf": [
           {
-            "$ref": "#/$defs/v1/WasmRsComponent"
-          },
-          {
             "$ref": "#/$defs/v1/GrpcUrlComponent"
           },
           {
@@ -974,33 +971,6 @@
           }
         },
         "required": []
-      },
-      "WasmRsComponent": {
-        "$anchor": "#v1/WasmRsComponent",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "type": "string",
-            "description": "The kind of the collection",
-            "enum": [
-              "wick/component/wasmrs@v1"
-            ]
-          },
-          "ref": {
-            "description": "The URL (and optional tag) or local file path to find the .wasm module.",
-            "type": "string"
-          },
-          "permissions": {
-            "description": "Permissions to give this component",
-            "$ref": "#/$defs/v1/Permissions"
-          },
-          "config": {
-            "description": "Per-component configuration."
-          }
-        },
-        "required": [
-          "ref"
-        ]
       },
       "Permissions": {
         "$anchor": "#v1/Permissions",

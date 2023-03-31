@@ -14,6 +14,7 @@ use wick_packet::{Invocation, PacketStream, StreamMap};
 use self::core_collection::CoreCollection;
 use self::internal_collection::InternalCollection;
 use crate::constants::*;
+use crate::error::InterpreterError;
 use crate::graph::types::Network;
 use crate::{BoxError, BoxFuture};
 
@@ -22,48 +23,45 @@ pub(crate) type ComponentMap = HashMap<String, ComponentSignature>;
 #[derive(Debug)]
 #[must_use]
 pub struct HandlerMap {
-  collections: HashMap<String, NamespaceHandler>,
+  components: HashMap<String, NamespaceHandler>,
 }
 
 impl Default for HandlerMap {
   fn default() -> Self {
-    Self::new(Vec::new())
+    Self::new(Vec::new()).unwrap()
   }
 }
 
 impl HandlerMap {
-  pub fn new(components: Vec<NamespaceHandler>) -> Self {
+  pub fn new(components: Vec<NamespaceHandler>) -> Result<Self, InterpreterError> {
     let mut map = Self {
-      collections: Default::default(),
+      components: Default::default(),
     };
     for collection in components {
-      map.add(collection);
+      map.add(collection)?;
     }
 
-    map.add(NamespaceHandler {
-      namespace: NS_INTERNAL.to_owned(),
-      collection: Arc::new(Box::new(InternalCollection::default())),
-    });
+    map.add(NamespaceHandler::new(
+      NS_INTERNAL,
+      Box::new(InternalCollection::default()),
+    ))?;
 
-    map
+    Ok(map)
   }
 
-  pub fn add_core(&mut self, network: &Network) {
-    self.add(NamespaceHandler {
-      namespace: NS_CORE.to_owned(),
-      collection: Arc::new(Box::new(CoreCollection::new(network))),
-    });
+  pub fn add_core(&mut self, network: &Network) -> Result<(), InterpreterError> {
+    self.add(NamespaceHandler::new(NS_CORE, Box::new(CoreCollection::new(network))))
   }
 
   #[must_use]
   pub fn collections(&self) -> &HashMap<String, NamespaceHandler> {
-    &self.collections
+    &self.components
   }
 
   #[must_use]
-  pub fn collection_signatures(&self) -> ComponentMap {
+  pub fn component_signatures(&self) -> ComponentMap {
     self
-      .collections
+      .components
       .iter()
       .map(|(name, p)| (name.clone(), p.collection.list().clone()))
       .collect::<HashMap<String, ComponentSignature>>()
@@ -71,12 +69,16 @@ impl HandlerMap {
 
   #[must_use]
   pub fn get(&self, namespace: &str) -> Option<&NamespaceHandler> {
-    self.collections.get(namespace)
+    self.components.get(namespace)
   }
 
-  pub fn add(&mut self, component: NamespaceHandler) {
+  pub fn add(&mut self, component: NamespaceHandler) -> Result<(), InterpreterError> {
     trace!(namespace = %component.namespace, "adding component");
-    self.collections.insert(component.namespace.clone(), component);
+    if self.components.contains_key(&component.namespace) {
+      return Err(InterpreterError::DuplicateNamespace(component.namespace));
+    }
+    self.components.insert(component.namespace.clone(), component);
+    Ok(())
   }
 }
 

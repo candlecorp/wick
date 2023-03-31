@@ -12,7 +12,7 @@ component:
         ref: hey
     - name: bar
       component:
-        kind: wick/component/wasmrs@v1
+        kind: wick/component/manifest@v1
         ref: bar
   operations:
     - name: logger

@@ -10,7 +10,7 @@ use quote::quote;
 use syn::parse::{Parse, ParseStream};
 use syn::{parse_macro_input, Expr, Lit, LitStr};
 use wick_config::config::{FlowOperation, OperationSignature};
-use wick_config::WickConfiguration;
+use wick_config::{path_to_url, WickConfiguration};
 use wick_interface_types::{EnumSignature, EnumVariant, StructSignature, TypeDefinition};
 
 fn snake(s: &str) -> String {
@@ -409,8 +409,7 @@ fn codegen(wick_config: WickConfiguration, gen_config: &config::Config) -> Resul
 #[allow(clippy::needless_pass_by_value)]
 pub fn build(config: config::Config) -> Result<()> {
   let wick_yaml = std::fs::read_to_string(&config.spec)?;
-  let wick_config =
-    wick_config::WickConfiguration::from_yaml(&wick_yaml, &Some(config.spec.to_string_lossy().to_string()))?;
+  let wick_config = wick_config::WickConfiguration::from_yaml(&wick_yaml, &Some(path_to_url(&config.spec, None)?))?;
 
   let src = codegen(wick_config, &config)?;
   std::fs::create_dir_all(&config.out_dir)?;

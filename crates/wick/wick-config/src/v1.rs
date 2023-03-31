@@ -411,9 +411,6 @@ pub(crate) struct ComponentBinding {
 #[serde(tag = "kind")]
 /// The possible types of components.
 pub(crate) enum ComponentDefinition {
-  /// A variant representing a [WasmRsComponent] type.
-  #[serde(rename = "wick/component/wasmrs@v1")]
-  WasmRsComponent(WasmRsComponent),
   /// A variant representing a [GrpcUrlComponent] type.
   #[serde(rename = "wick/component/grpc@v1")]
   GrpcUrlComponent(GrpcUrlComponent),
@@ -494,25 +491,6 @@ pub(crate) struct HttpConfig {
 
   #[serde(default)]
   pub(crate) ca: Option<crate::v1::helpers::LocationReference>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-#[serde(deny_unknown_fields)]
-/// A WebAssembly component.
-pub(crate) struct WasmRsComponent {
-  /// The URL (and optional tag) or local file path to find the .wasm module.
-
-  #[serde(rename = "ref")]
-  pub(crate) reference: crate::v1::helpers::LocationReference,
-  /// Permissions to give this component
-
-  #[serde(default)]
-  pub(crate) permissions: Permissions,
-  /// Per-component configuration.
-
-  #[serde(default)]
-  #[serde(deserialize_with = "crate::helpers::deserialize_json_env")]
-  pub(crate) config: Value,
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]

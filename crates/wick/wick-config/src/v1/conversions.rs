@@ -28,7 +28,6 @@ use crate::config::common::component_definition::{
   ComponentReference,
   GrpcUrlComponent,
   ManifestComponent,
-  WasmComponent,
 };
 use crate::config::common::flow_definition::{PortReference, SenderData};
 use crate::config::common::host_definition::HostConfig;
@@ -107,7 +106,7 @@ impl TryFrom<v1::WasmComponentConfiguration> for WasmComponentConfiguration {
   type Error = ManifestError;
   fn try_from(value: v1::WasmComponentConfiguration) -> Result<Self> {
     Ok(Self {
-      reference: value.reference.into(),
+      reference: value.reference.try_into()?,
       operations: value
         .operations
         .into_iter()
@@ -128,7 +127,11 @@ impl TryFrom<v1::CompositeComponentConfiguration> for CompositeComponentConfigur
         .map(|op| Ok((op.name.clone(), op.try_into()?)))
         .collect::<Result<_>>()?,
       types: value.types,
-      import: value.import.into_iter().map(|v| (v.name.clone(), v.into())).collect(),
+      import: value
+        .import
+        .into_iter()
+        .map(|v| Ok((v.name.clone(), v.try_into()?)))
+        .collect::<Result<_>>()?,
     })
   }
 }
@@ -163,12 +166,13 @@ impl TryFrom<WasmComponentConfiguration> for v1::WasmComponentConfiguration {
   }
 }
 
-impl From<v1::ComponentOperationExpression> for ComponentOperationExpression {
-  fn from(literal: v1::ComponentOperationExpression) -> Self {
-    Self {
+impl TryFrom<v1::ComponentOperationExpression> for ComponentOperationExpression {
+  type Error = ManifestError;
+  fn try_from(literal: v1::ComponentOperationExpression) -> Result<Self> {
+    Ok(Self {
       operation: literal.name,
-      component: literal.component.into(),
-    }
+      component: literal.component.try_into()?,
+    })
   }
 }
 
@@ -181,9 +185,13 @@ impl TryFrom<v1::AppConfiguration> for AppConfiguration {
       metadata: def.metadata.map(|m| m.into()),
       name: def.name,
       host: def.host.try_into()?,
-      import: def.import.into_iter().map(|v| (v.name.clone(), v.into())).collect(),
+      import: def
+        .import
+        .into_iter()
+        .map(|v| Ok((v.name.clone(), v.try_into()?)))
+        .collect::<Result<_>>()?,
       resources: def.resources.into_iter().map(|v| (v.name.clone(), v.into())).collect(),
-      triggers: def.triggers.into_iter().map(|v| v.into()).collect(),
+      triggers: def.triggers.into_iter().map(|v| v.try_into()).collect::<Result<_>>()?,
     })
   }
 }
@@ -379,7 +387,10 @@ impl From<BoundResource> for v1::ResourceBinding {
 impl From<ComponentDefinition> for v1::ComponentDefinition {
   fn from(kind: ComponentDefinition) -> Self {
     match kind {
-      ComponentDefinition::Wasm(wasm) => Self::WasmRsComponent(wasm.into()),
+      #[allow(deprecated)]
+      ComponentDefinition::Wasm(_) => unimplemented!(
+        "Wasm component definition is no longer supported in v1 manifests. Use ManifestComponent instead."
+      ),
       ComponentDefinition::GrpcUrl(grpc) => Self::GrpcUrlComponent(grpc.into()),
       ComponentDefinition::Native(_) => todo!(),
       ComponentDefinition::Reference(v) => Self::ComponentReference(v.into()),
@@ -393,15 +404,6 @@ impl From<ManifestComponent> for v1::ManifestComponent {
     Self {
       reference: def.reference.into(),
       config: def.config,
-    }
-  }
-}
-impl From<WasmComponent> for v1::WasmRsComponent {
-  fn from(def: WasmComponent) -> Self {
-    Self {
-      reference: def.reference.into(),
-      config: def.config,
-      permissions: def.permissions.into(),
     }
   }
 }
@@ -483,22 +485,23 @@ impl From<(String, config::InstanceReference)> for v1::InstanceBinding {
   }
 }
 
-impl From<crate::v1::ComponentDefinition> for ComponentDefinition {
-  fn from(def: crate::v1::ComponentDefinition) -> Self {
-    match def {
-      crate::v1::ComponentDefinition::WasmRsComponent(v) => ComponentDefinition::Wasm(v.into()),
+impl TryFrom<crate::v1::ComponentDefinition> for ComponentDefinition {
+  type Error = ManifestError;
+  fn try_from(def: crate::v1::ComponentDefinition) -> Result<Self> {
+    let res = match def {
       crate::v1::ComponentDefinition::GrpcUrlComponent(v) => ComponentDefinition::GrpcUrl(GrpcUrlComponent {
         url: v.url,
         config: v.config,
       }),
       crate::v1::ComponentDefinition::ManifestComponent(v) => ComponentDefinition::Manifest(ManifestComponent {
-        reference: v.reference.into(),
+        reference: v.reference.try_into()?,
         config: v.config,
       }),
       crate::v1::ComponentDefinition::ComponentReference(v) => {
         ComponentDefinition::Reference(ComponentReference { id: v.id })
       }
-    }
+    };
+    Ok(res)
   }
 }
 
@@ -562,9 +565,18 @@ impl TryFrom<crate::v1::HttpConfig> for config::HttpConfig {
       enabled: def.enabled,
       port: def.port,
       address: opt_str_to_ipv4addr(&def.address)?,
-      pem: def.pem.map(|v| v.into()),
-      key: def.key.map(|v| v.into()),
-      ca: def.ca.map(|v| v.into()),
+      pem: match def.pem {
+        Some(v) => Some(v.try_into()?),
+        None => None,
+      },
+      key: match def.key {
+        Some(v) => Some(v.try_into()?),
+        None => None,
+      },
+      ca: match def.ca {
+        Some(v) => Some(v.try_into()?),
+        None => None,
+      },
     })
   }
 }
@@ -623,41 +635,46 @@ impl From<v1::UdpPort> for UdpPort {
   }
 }
 
-impl From<v1::TriggerDefinition> for TriggerDefinition {
-  fn from(trigger: v1::TriggerDefinition) -> Self {
-    match trigger {
+impl TryFrom<v1::TriggerDefinition> for TriggerDefinition {
+  type Error = ManifestError;
+  fn try_from(trigger: v1::TriggerDefinition) -> Result<Self> {
+    let rv = match trigger {
       v1::TriggerDefinition::CliTrigger(cli) => Self::Cli(CliConfig {
-        operation: cli.operation.into(),
-        app: cli.app.map(|v| v.into()),
+        operation: cli.operation.try_into()?,
+        app: cli.app.map(|v| v.try_into()).transpose()?,
       }),
       v1::TriggerDefinition::HttpTrigger(v) => Self::Http(HttpTriggerConfig {
         resource: v.resource,
-        routers: v.routers.into_iter().map(|v| v.into()).collect(),
+        routers: v.routers.into_iter().map(|v| v.try_into()).collect::<Result<_>>()?,
       }),
-    }
+    };
+    Ok(rv)
   }
 }
-impl From<v1::HttpRouter> for HttpRouterConfig {
-  fn from(router: v1::HttpRouter) -> Self {
-    match router {
+impl TryFrom<v1::HttpRouter> for HttpRouterConfig {
+  type Error = ManifestError;
+  fn try_from(router: v1::HttpRouter) -> Result<Self> {
+    let rv = match router {
       v1::HttpRouter::RawRouter(v) => Self::RawRouter(RawRouterConfig {
         path: v.path,
-        operation: v.operation.into(),
+        operation: v.operation.try_into()?,
       }),
       v1::HttpRouter::RestRouter(v) => Self::RestRouter(RestRouterConfig {
         path: v.path,
-        component: v.component.into(),
+        component: v.component.try_into()?,
       }),
-    }
+    };
+    Ok(rv)
   }
 }
 
-impl From<v1::ComponentBinding> for BoundComponent {
-  fn from(value: v1::ComponentBinding) -> Self {
-    Self {
+impl TryFrom<v1::ComponentBinding> for BoundComponent {
+  type Error = ManifestError;
+  fn try_from(value: v1::ComponentBinding) -> Result<Self> {
+    Ok(Self {
       id: value.name,
-      kind: value.component.into(),
-    }
+      kind: value.component.try_into()?,
+    })
   }
 }
 
@@ -790,25 +807,16 @@ impl From<test_case::TestPacket> for v1::PacketData {
   }
 }
 
-impl From<v1::helpers::LocationReference> for config::LocationReference {
-  fn from(value: v1::helpers::LocationReference) -> Self {
-    Self::new(value.0)
+impl TryFrom<v1::helpers::LocationReference> for config::LocationReference {
+  type Error = crate::Error;
+  fn try_from(value: v1::helpers::LocationReference) -> Result<Self> {
+    value.0.try_into()
   }
 }
 
 impl From<config::LocationReference> for v1::helpers::LocationReference {
   fn from(value: config::LocationReference) -> Self {
     Self(value.location)
-  }
-}
-
-impl From<v1::WasmRsComponent> for WasmComponent {
-  fn from(value: v1::WasmRsComponent) -> Self {
-    Self {
-      reference: value.reference.into(),
-      config: value.config,
-      permissions: value.permissions.into(),
-    }
   }
 }
 

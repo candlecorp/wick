@@ -3,6 +3,7 @@ pub(super) mod resources;
 pub(super) mod triggers;
 
 use assets::AssetManager;
+use url::Url;
 
 pub use self::resources::*;
 pub use self::triggers::*;
@@ -19,7 +20,7 @@ pub struct AppConfiguration {
   #[asset(skip)]
   pub name: String,
   #[asset(skip)]
-  pub(crate) source: Option<String>,
+  pub(crate) source: Option<Url>,
   #[asset(skip)]
   pub(crate) metadata: Option<config::Metadata>,
   pub(crate) import: HashMap<String, BoundComponent>,
@@ -56,14 +57,15 @@ impl AppConfiguration {
 
   /// Return the underlying version of the source manifest.
   #[must_use]
-  pub fn source(&self) -> &Option<String> {
+  pub fn source(&self) -> &Option<Url> {
     &self.source
   }
 
   /// Set the source location of the configuration.
-  pub fn set_source(&mut self, source: impl AsRef<str>) {
-    self.source = Some(source.as_ref().to_owned());
-    self.set_baseurl(source.as_ref());
+  pub fn set_source(&mut self, source: Url) {
+    // Source is a file, so our baseurl needs to be the parent directory.
+    self.set_baseurl(source.join("./").unwrap().as_str());
+    self.source = Some(source);
   }
 
   #[must_use]

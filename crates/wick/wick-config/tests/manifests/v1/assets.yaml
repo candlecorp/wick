@@ -9,5 +9,5 @@ component:
   import:
     - name: one
       component:
-        kind: wick/component/wasmrs@v1
+        kind: wick/component/manifest@v1
         ref: assets/test.fake.wasm

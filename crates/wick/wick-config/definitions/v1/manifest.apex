@@ -196,7 +196,7 @@ type ComponentBinding {
 }
 
 "The possible types of components."
-union ComponentDefinition = WasmRsComponent | GrpcUrlComponent | ManifestComponent | ComponentReference
+union ComponentDefinition = GrpcUrlComponent | ManifestComponent | ComponentReference
 
 "A reference to a component in the application's scope."
 type ComponentReference  @tagged("wick/component/reference@v1") {
@@ -238,18 +238,6 @@ type HttpConfig {
 
   "Path to CA file."
   ca: LocationReference?,
-}
-
-"A WebAssembly component."
-type WasmRsComponent @tagged("wick/component/wasmrs@v1") {
-  "The URL (and optional tag) or local file path to find the .wasm module."
-  ref: LocationReference @rename("reference") @required
-
-  "Permissions to give this component"
-  permissions: Permissions
-
-  "Per-component configuration."
-  config: any
 }
 
 "Per-component permissions configuration."

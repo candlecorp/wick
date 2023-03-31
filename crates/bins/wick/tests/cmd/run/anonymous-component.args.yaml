@@ -5,8 +5,8 @@ triggers:
     operation:
       name: main
       component:
-        kind: wick/component/wasmrs@v1
-        ref: ../../../../../integration/test-cli-trigger-component/build/test_cli_trigger_component.signed.wasm
+        kind: wick/component/manifest@v1
+        ref: ../../../../../integration/test-cli-trigger-component/component.yaml
     app:
       kind: wick/component/manifest@v1
       ref: ./noop.yaml
