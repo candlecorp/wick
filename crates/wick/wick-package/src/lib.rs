@@ -104,6 +104,8 @@ use oci_distribution::client::{Client, ClientConfig, ImageLayer};
 use oci_distribution::manifest::{OciDescriptor, OciImageManifest};
 use oci_distribution::secrets::RegistryAuth;
 use oci_distribution::Reference;
+use serde::{Deserialize, Serialize};
+use serde_json;
 use sha256::digest;
 use tokio::fs::{self, File};
 use tokio::io::AsyncWriteExt;
@@ -123,6 +125,7 @@ pub struct WickFile {
 /// Represents a Wick package, including its files and metadata.
 #[derive(Debug)]
 pub struct WickPackage {
+  kind: WickPackageKind,
   #[allow(dead_code)]
   name: String,
   #[allow(dead_code)]
@@ -130,6 +133,22 @@ pub struct WickPackage {
   files: Vec<WickFile>,
   annotations: HashMap<String, String>,
 }
+
+#[derive(Debug, Serialize, Deserialize)]
+struct WickConfig {
+  kind: String,
+}
+
+/// Represents the kind of Wick package.
+/// This is used to determine how to handle the package.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum WickPackageKind {
+  /// A Wick application package.
+  APPLICATION,
+  /// A Wick component package.
+  COMPONENT,
+}
+impl Copy for WickPackageKind {}
 
 impl WickPackage {
   /// Creates a new WickPackage from the provided path.
@@ -148,7 +167,7 @@ impl WickPackage {
       return Err(Error::InvalidWickConfig(path.to_string_lossy().to_string()));
     }
 
-    let (name, version, annotations, parent_dir, media_type, full_path) =
+    let (kind, name, version, annotations, parent_dir, media_type, full_path) =
       if matches!(&config, WickConfiguration::App(_)) {
         let app_config = config.clone().try_app_config().unwrap();
         let name = app_config.name();
@@ -157,7 +176,8 @@ impl WickPackage {
         let full_path = tokio::fs::canonicalize(path).await.unwrap();
         let parent_dir = full_path.parent().unwrap().to_path_buf();
         let media_type = media_types::APPLICATION;
-        (name, version, annotations, parent_dir, media_type, full_path)
+        let kind = WickPackageKind::APPLICATION;
+        (kind, name, version, annotations, parent_dir, media_type, full_path)
       } else if matches!(config, WickConfiguration::Component(_)) {
         let component_config = config.clone().try_component_config().unwrap();
         let name = component_config.name().clone().unwrap();
@@ -166,7 +186,8 @@ impl WickPackage {
         let full_path = tokio::fs::canonicalize(path).await.unwrap();
         let parent_dir = full_path.parent().unwrap().to_path_buf();
         let media_type = media_types::COMPONENT;
-        (name, version, annotations, parent_dir, media_type, full_path)
+        let kind = WickPackageKind::COMPONENT;
+        (kind, name, version, annotations, parent_dir, media_type, full_path)
       } else {
         return Err(Error::InvalidWickConfig(path.to_string_lossy().to_string()));
       };
@@ -239,6 +260,7 @@ impl WickPackage {
     }
 
     Ok(Self {
+      kind: kind,
       name: name.clone(),
       version: version.clone(),
       files: wick_files,
@@ -263,7 +285,18 @@ impl WickPackage {
     insecure: Option<bool>,
   ) -> Result<String, Error> {
     let insecure = insecure.unwrap_or(false);
-    let image_config_contents = "{}"; //this is the config file for the oci image
+
+    let image_config = if self.kind == WickPackageKind::APPLICATION {
+      WickConfig {
+        kind: "Application".to_owned(),
+      }
+    } else {
+      WickConfig {
+        kind: "Component".to_owned(),
+      }
+    };
+
+    let image_config_contents = serde_json::to_string(&image_config).unwrap();
 
     let image_config = oci_distribution::client::Config {
       data: image_config_contents.as_bytes().to_vec(),
@@ -440,12 +473,21 @@ impl WickPackage {
       }
     };
 
-    let download_dir = match create_directory_structure(reference).await {
-      Ok(path) => {
-        println!("Directory created successfully: {}", path.display());
-        path
-      }
-      Err(e) => return Err(Error::DirectoryCreationFailed(e.to_string())),
+    // serialize the config data from bytes available via image_data.config.data.clone()
+    let wick_config: WickConfig = serde_json::from_slice(&image_data.config.data.clone()).unwrap();
+    let kind = wick_config.kind;
+
+    let download_dir = if kind == "Application" {
+      PathBuf::from("./")
+    } else {
+      let path = match create_directory_structure(reference).await {
+        Ok(path) => {
+          println!("Directory created successfully: {}", path.display());
+          path
+        }
+        Err(e) => return Err(Error::DirectoryCreationFailed(e.to_string())),
+      };
+      path
     };
 
     let mut root_file: Option<String> = None;
