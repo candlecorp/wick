@@ -12,6 +12,10 @@ pub enum Error {
   /// Could not load file.
   #[error("Could not read file {0}")]
   LoadError(String),
+
+  /// The location of the asset was in a format the Asset couldn't parse.
+  #[error("Could not parse location format: {0}")]
+  Parse(String),
 }
 
 impl From<std::io::Error> for Error {

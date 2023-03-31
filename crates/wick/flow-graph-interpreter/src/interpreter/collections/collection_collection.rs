@@ -13,11 +13,11 @@ pub(crate) enum Error {
 }
 
 #[derive(Debug)]
-pub(crate) struct CollectionCollection {
+pub(crate) struct ComponentComponent {
   signature: ComponentSignature,
 }
 
-impl CollectionCollection {
+impl ComponentComponent {
   pub(crate) fn new(list: &HandlerMap) -> Self {
     let mut signature = ComponentSignature::new("collections");
     for ns in list.collections().keys() {
@@ -32,14 +32,14 @@ impl CollectionCollection {
   }
 }
 
-impl Component for CollectionCollection {
+impl Component for ComponentComponent {
   fn handle(
     &self,
     invocation: Invocation,
     _stream: PacketStream,
     _config: Option<Value>,
   ) -> BoxFuture<Result<PacketStream, BoxError>> {
-    trace!(target = %invocation.target, namespace = NS_COLLECTIONS);
+    trace!(target = %invocation.target, namespace = NS_COMPONENTS);
 
     // This handler handles the NS_COLLECTIONS namespace and outputs the entity
     // to link to.

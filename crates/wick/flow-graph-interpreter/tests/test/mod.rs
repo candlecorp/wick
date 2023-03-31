@@ -21,7 +21,8 @@ macro_rules! interp {
     let collections = HandlerMap::new(vec![NamespaceHandler::new(
       "test",
       Box::new(test::TestComponent::new()),
-    )]);
+    )])
+    .unwrap();
     let invocation = Invocation::new(Entity::test("test"), Entity::local($op), None);
     let mut interpreter = Interpreter::new(Some(Seed::unsafe_new(1)), network, None, Some(collections))?;
     interpreter.start(OPTIONS, None).await;

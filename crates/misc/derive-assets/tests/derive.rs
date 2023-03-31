@@ -25,8 +25,10 @@ struct InnerStruct {
 struct Struct2 {
   one: TestAsset,
   #[asset(skip)]
+  #[allow(unused)]
   two: TestAsset,
   #[asset(skip)]
+  #[allow(unused)]
   three: String,
 }
 

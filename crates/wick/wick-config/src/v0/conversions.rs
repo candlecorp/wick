@@ -45,9 +45,10 @@ impl TryFrom<v0::HostManifest> for config::ComponentConfiguration {
   }
 }
 
-impl From<String> for config::LocationReference {
-  fn from(val: String) -> Self {
-    config::LocationReference::new(val)
+impl TryFrom<String> for config::LocationReference {
+  type Error = crate::Error;
+  fn try_from(val: String) -> Result<Self> {
+    Ok(config::LocationReference::new(val))
   }
 }
 
@@ -60,13 +61,14 @@ impl TryFrom<&crate::v0::CollectionDefinition> for config::ComponentDefinition {
         url: def.reference.clone(),
         config: def.data.clone(),
       }),
+      #[allow(deprecated)]
       crate::v0::CollectionKind::WaPC => config::ComponentDefinition::Wasm(config::WasmComponent {
-        reference: def.reference.clone().into(),
+        reference: def.reference.clone().try_into()?,
         permissions: json_struct_to_permissions(def.data.get("wasi"))?,
         config: def.data.clone(),
       }),
       crate::v0::CollectionKind::Network => config::ComponentDefinition::Manifest(config::ManifestComponent {
-        reference: def.reference.clone().into(),
+        reference: def.reference.clone().try_into()?,
         config: def.data.clone(),
       }),
     };
@@ -174,9 +176,18 @@ impl TryFrom<crate::v0::HttpConfig> for config::HttpConfig {
       enabled: def.enabled,
       port: def.port,
       address: opt_str_to_ipv4addr(&def.address)?,
-      pem: def.pem.map(|v| v.into()),
-      key: def.key.map(|v| v.into()),
-      ca: def.ca.map(|v| v.into()),
+      pem: match def.pem {
+        Some(v) => Some(v.try_into()?),
+        None => None,
+      },
+      key: match def.key {
+        Some(v) => Some(v.try_into()?),
+        None => None,
+      },
+      ca: match def.ca {
+        Some(v) => Some(v.try_into()?),
+        None => None,
+      },
     })
   }
 }

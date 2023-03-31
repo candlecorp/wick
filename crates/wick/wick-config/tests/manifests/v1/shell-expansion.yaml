@@ -1,17 +1,13 @@
 # yaml-language-server: $schema=../../../json-schema/manifest.json
 ---
-metadata:
-  version: '1'
-
 kind: wick/component@v1
 component:
   kind: wick/component/composite@v1
   import:
     - name: test
       component:
-        kind: wick/component/wasmrs@v1
-        ref: bar
-        permissions:
-          dirs:
-            '/': '$PWD'
+        kind: wick/component/manifest@v1
+        ref: $PWD/test.fake.wasm
+        config:
+          pwd: $PWD
   operations: []
