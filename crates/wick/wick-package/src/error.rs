@@ -18,4 +18,20 @@ pub enum Error {
   /// Failed to parse image reference location
   #[error("Failed to parse the image reference: {0}")]
   InvalidReference(String),
+
+  /// Failed to push package
+  #[error("Failed to push the package: {0}")]
+  PushFailed(String),
+
+  /// Failed to push package
+  #[error("Failed to pull the package: {0}")]
+  PullFailed(String),
+
+  /// Failed to create directory
+  #[error("Failed to create directory: {0}")]
+  DirectoryCreationFailed(String),
+
+  /// Failed to read downloaded package
+  #[error("Failed to read downloaded package: {0}")]
+  PackageReadFailed(String),
 }

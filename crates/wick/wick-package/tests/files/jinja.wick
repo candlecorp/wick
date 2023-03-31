@@ -1,0 +1,13 @@
+---
+kind: wick/component@v1
+name: 'jinja'
+metadata:
+  version: '1'
+  icon: './assets/icon.png'
+component:
+  kind: wick/component/composite@v1
+  import:
+    - name: one
+      component:
+        kind: wick/component/wasmrs@v1
+        ref: assets/test.fake.wasm
