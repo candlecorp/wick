@@ -70,8 +70,20 @@ impl AppConfiguration {
 
   #[must_use]
   /// Get the name for this manifest.
-  pub fn name(&self) -> &str {
-    &self.name
+  pub fn name(&self) -> String {
+    self.name.clone()
+  }
+
+  /// Return the version of the application.
+  #[must_use]
+  pub fn version(&self) -> String {
+    self.metadata.clone().map(|m| m.version).unwrap_or_default()
+  }
+
+  /// Return the metadata of the component.
+  #[must_use]
+  pub fn metadata(&self) -> config::Metadata {
+    self.metadata.clone().unwrap()
   }
 
   #[must_use]
