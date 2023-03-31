@@ -105,11 +105,15 @@ use oci_distribution::manifest::{OciDescriptor, OciImageManifest};
 use oci_distribution::secrets::RegistryAuth;
 use oci_distribution::Reference;
 use sha256::digest;
+use tokio::fs::{self, File};
+use tokio::io::AsyncWriteExt;
 use wick_config::WickConfiguration;
 
 /// Represents a single file in a Wick package.
 #[derive(Debug)]
 pub struct WickFile {
+  #[allow(dead_code)]
+  abs_path: PathBuf,
   path: PathBuf,
   hash: String,
   media_type: String,
@@ -144,28 +148,44 @@ impl WickPackage {
       return Err(Error::InvalidWickConfig(path.to_string_lossy().to_string()));
     }
 
-    let (name, version, annotations, parent_dir) = if matches!(&config, WickConfiguration::App(_)) {
-      let app_config = config.clone().try_app_config().unwrap();
-      let name = app_config.name();
-      let version = app_config.version();
-      let annotations = HashMap::from(&app_config.metadata());
-      let full_path = tokio::fs::canonicalize(path).await.unwrap();
-      let parent_dir = full_path.parent().unwrap().to_path_buf();
-      (name, version, annotations, parent_dir)
-    } else if matches!(config, WickConfiguration::Component(_)) {
-      let component_config = config.clone().try_component_config().unwrap();
-      let name = component_config.name().clone().unwrap();
-      let version = component_config.version();
-      let annotations = HashMap::from(&component_config.metadata());
-      let full_path = tokio::fs::canonicalize(path).await.unwrap();
-      let parent_dir = full_path.parent().unwrap().to_path_buf();
-      (name, version, annotations, parent_dir)
-    } else {
-      return Err(Error::InvalidWickConfig(path.to_string_lossy().to_string()));
-    };
+    let (name, version, annotations, parent_dir, media_type, full_path) =
+      if matches!(&config, WickConfiguration::App(_)) {
+        let app_config = config.clone().try_app_config().unwrap();
+        let name = app_config.name();
+        let version = app_config.version();
+        let annotations = HashMap::from(&app_config.metadata());
+        let full_path = tokio::fs::canonicalize(path).await.unwrap();
+        let parent_dir = full_path.parent().unwrap().to_path_buf();
+        let media_type = media_types::APPLICATION;
+        (name, version, annotations, parent_dir, media_type, full_path)
+      } else if matches!(config, WickConfiguration::Component(_)) {
+        let component_config = config.clone().try_component_config().unwrap();
+        let name = component_config.name().clone().unwrap();
+        let version = component_config.version();
+        let annotations = HashMap::from(&component_config.metadata());
+        let full_path = tokio::fs::canonicalize(path).await.unwrap();
+        let parent_dir = full_path.parent().unwrap().to_path_buf();
+        let media_type = media_types::COMPONENT;
+        (name, version, annotations, parent_dir, media_type, full_path)
+      } else {
+        return Err(Error::InvalidWickConfig(path.to_string_lossy().to_string()));
+      };
 
     let mut assets = config.assets();
     let mut wick_files: Vec<WickFile> = Vec::new();
+
+    let root_bytes = fs::read(path).await.unwrap();
+    let root_hash = format!("sha256:{}", digest(String::from_utf8(root_bytes.clone()).unwrap()));
+
+    let root_file = WickFile {
+      abs_path: full_path,
+      path: PathBuf::from(path.file_name().unwrap()),
+      hash: root_hash,
+      media_type: media_type.to_string(),
+      contents: root_bytes,
+    };
+
+    wick_files.push(root_file);
 
     //populate wick_files
     for asset in assets.iter() {
@@ -209,6 +229,7 @@ impl WickPackage {
       let file_bytes = asset.bytes(&options).await.unwrap();
       let hash = format!("sha256:{}", digest(String::from_utf8(file_bytes.to_vec()).unwrap()));
       let wick_file = WickFile {
+        abs_path: path,
         path: PathBuf::from(location),
         hash: hash,
         media_type: media_type.to_owned(),
@@ -234,7 +255,14 @@ impl WickPackage {
   /// Pushes the WickPackage to a specified registry using the provided reference, username, and password.
   ///
   /// The username and password are optional. If not provided, the function falls back to anonymous authentication.
-  pub async fn push(&self, reference: &str, username: Option<&str>, password: Option<&str>) -> Result<String, Error> {
+  pub async fn push(
+    &self,
+    reference: &str,
+    username: Option<&str>,
+    password: Option<&str>,
+    insecure: Option<bool>,
+  ) -> Result<String, Error> {
+    let insecure = insecure.unwrap_or(false);
     let image_config_contents = "{}"; //this is the config file for the oci image
 
     let image_config = oci_distribution::client::Config {
@@ -300,7 +328,10 @@ impl WickPackage {
     };
 
     let client_config = ClientConfig {
-      protocol: oci_distribution::client::ClientProtocol::Https,
+      protocol: match insecure {
+        true => oci_distribution::client::ClientProtocol::Http,
+        false => oci_distribution::client::ClientProtocol::Https,
+      },
       ..Default::default()
     };
 
@@ -325,7 +356,13 @@ impl WickPackage {
     };
 
     let result = client
-      .push(&image_ref, &image_layers, image_config, &auth, Some(image_manifest))
+      .push(
+        &image_ref,
+        &image_layers,
+        image_config,
+        &auth,
+        Some(image_manifest.clone()),
+      )
       .await;
 
     match result {
@@ -336,9 +373,109 @@ impl WickPackage {
         Ok(push_response.manifest_url)
       }
       Err(e) => {
-        eprintln!("Failed to push the package: {}", e);
-        std::process::exit(1);
+        println!("Push failed: {}", e);
+        println!("Push failed: {}", image_manifest);
+        return Err(Error::PushFailed(e.to_string()));
       }
+    }
+  }
+
+  /// This function pulls a WickPackage from a specified registry using the provided reference, username, and password.
+  pub async fn pull(
+    reference: &str,
+    username: Option<&str>,
+    password: Option<&str>,
+    insecure: Option<bool>,
+  ) -> Result<Self, Error> {
+    let insecure = insecure.unwrap_or(false);
+    let client_config = ClientConfig {
+      protocol: match insecure {
+        true => oci_distribution::client::ClientProtocol::Http,
+        false => oci_distribution::client::ClientProtocol::Https,
+      },
+      ..Default::default()
+    };
+
+    let mut client = Client::new(client_config);
+    let image_ref_result = Reference::from_str(reference);
+    let image_ref = match image_ref_result {
+      Ok(image_ref) => {
+        println!("Pulling package from registry: {}", image_ref);
+        image_ref
+      }
+      Err(_) => {
+        return Err(Error::InvalidReference(reference.to_owned()));
+      }
+    };
+
+    let auth = match (username.as_ref(), password.as_ref()) {
+      (Some(username), Some(password)) => RegistryAuth::Basic((*username).to_owned(), (*password).to_owned()),
+      _ => {
+        println!("Both username and password must be supplied. Falling back to anonymous auth");
+        RegistryAuth::Anonymous
+      }
+    };
+
+    let accepted_media_types = vec![
+      media_types::CONFIG,
+      media_types::MANIFEST,
+      media_types::APPLICATION,
+      media_types::COMPONENT,
+      media_types::TESTS,
+      media_types::TYPES,
+      media_types::WASM,
+      media_types::OTHER,
+    ];
+
+    let result = client.pull(&image_ref, &auth, accepted_media_types).await;
+
+    let image_data = match result {
+      Ok(pull_response) => {
+        println!("Image successfully pulled from the registry.");
+        pull_response
+      }
+      Err(e) => {
+        println!("Pull failed: {}", e);
+        return Err(Error::PullFailed(e.to_string()));
+      }
+    };
+
+    let download_dir = match create_directory_structure(reference).await {
+      Ok(path) => {
+        println!("Directory created successfully: {}", path.display());
+        path
+      }
+      Err(e) => return Err(Error::DirectoryCreationFailed(e.to_string())),
+    };
+
+    let mut root_file: Option<String> = None;
+
+    for layer in image_data.layers {
+      let layer_title = layer.annotations.unwrap()["org.opencontainers.image.title"].clone();
+      let layer_path = download_dir.join(&layer_title);
+      //create any subdirectories if they don't exist.
+      tokio::fs::create_dir_all(layer_path.parent().unwrap()).await.unwrap();
+
+      let mut file = File::create(layer_path).await.unwrap();
+      file.write_all(&layer.data).await.unwrap();
+      if layer.media_type == media_types::APPLICATION.to_owned()
+        || layer.media_type == media_types::COMPONENT.to_owned()
+      {
+        root_file = Some(layer_title);
+      }
+    }
+
+    if let Some(file) = &root_file {
+      println!("Root file: {}", file);
+    } else {
+      return Err(Error::PackageReadFailed("No root file found".to_owned()));
+    }
+
+    let package = Self::from_path(&download_dir.join(Path::new(&root_file.unwrap()))).await;
+
+    match package {
+      Ok(package) => Ok(package),
+      Err(e) => Err(Error::PackageReadFailed(e.to_string())),
     }
   }
 }
@@ -349,12 +486,69 @@ fn ensure_relative_path(base_dir: &PathBuf, path: &Path) -> Result<PathBuf, Erro
     .strip_prefix(base_dir)
     .map_err(|_| Error::InvalidFileLocation(path.to_string_lossy().to_string()))?;
 
-  // Check if the prefix is empty, indicating that the path is not going above the base directory
-  if prefix.as_os_str().is_empty() {
-    // The path is a valid relative path inside the base directory
-    Ok(prefix.to_path_buf())
-  } else {
-    // The path is going above the base directory
-    return Err(Error::InvalidFileLocation(path.to_string_lossy().to_string()));
+  // Return the relative path
+  Ok(prefix.to_path_buf())
+}
+
+async fn create_directory_structure(input: &str) -> Result<PathBuf, Error> {
+  // Parse the input reference
+  let image_ref_result = Reference::from_str(input);
+  let image_ref = match image_ref_result {
+    Ok(image_ref) => image_ref,
+    Err(_) => {
+      return Err(Error::InvalidReference(input.to_owned()));
+    }
+  };
+
+  let registry = image_ref.registry().split(':').collect::<Vec<&str>>()[0];
+  let org = image_ref.repository().split('/').collect::<Vec<&str>>()[0];
+  let repo = image_ref.repository().split('/').collect::<Vec<&str>>()[1];
+  let version = image_ref.tag().unwrap();
+
+  // put these 4 variables in a vector called parts
+  let parts = vec![registry, org, repo, version];
+
+  if parts.len() != 4 {
+    return Err(Error::InvalidReference(input.to_owned()));
+  }
+
+  // Create the wick_components directory if it doesn't exist
+  let base_dir = Path::new("./wick_components");
+  fs::create_dir_all(&base_dir).await.unwrap();
+
+  // Create the required subdirectories
+  let target_dir = base_dir.join(registry).join(org).join(repo).join(version);
+  fs::create_dir_all(&target_dir).await.unwrap();
+
+  println!("Directory created: {}", target_dir.display());
+
+  Ok(target_dir)
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[test]
+  fn test_ensure_relative_path() {
+    let parent_dir = PathBuf::from("/candlecorp/wick/crates/wick/wick-package/tests/files");
+    let path = Path::new("/candlecorp/wick/crates/wick/wick-package/tests/files/assets/test.fake.wasm");
+
+    let result = ensure_relative_path(&parent_dir, &path);
+    assert!(result.is_ok());
+    assert_eq!(result.unwrap(), PathBuf::from("assets/test.fake.wasm"));
+  }
+
+  #[tokio::test]
+  async fn test_create_directory_structure() {
+    let input = "localhost:8888/test/integration:0.0.3";
+    let expected_dir = Path::new("./wick_components/localhost/test/integration/0.0.3");
+    let result = create_directory_structure(input).await.unwrap();
+    assert_eq!(result, expected_dir);
+
+    let input = "example.com/myorg/myrepo:1.0.0";
+    let expected_dir = Path::new("./wick_components/example.com/myorg/myrepo/1.0.0");
+    let result = create_directory_structure(input).await.unwrap();
+    assert_eq!(result, expected_dir);
   }
 }
