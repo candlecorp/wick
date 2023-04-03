@@ -3,7 +3,7 @@ use url::Url;
 use wick_interface_types::TypeDefinition;
 
 #[derive(Debug, Clone, derive_assets::AssetManager)]
-#[asset(crate::config::LocationReference)]
+#[asset(crate::config::AssetReference)]
 #[must_use]
 pub struct TypesConfiguration {
   #[asset(skip)]

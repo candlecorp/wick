@@ -90,10 +90,25 @@
 // Add exceptions here
 #![allow()]
 
-mod annotations;
 mod error;
-mod media_types;
 mod package;
+mod utils;
 
 pub use error::Error;
-pub use package::{WickFile, WickPackage, WickPackageKind};
+pub use package::*;
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Serialize, Deserialize)]
+struct WickConfig {
+  kind: WickPackageKind,
+}
+
+/// Represents the kind of Wick package.
+/// This is used to determine how to handle the package.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub enum WickPackageKind {
+  /// A Wick application package.
+  APPLICATION,
+  /// A Wick component package.
+  COMPONENT,
+}

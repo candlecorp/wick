@@ -6,7 +6,7 @@ use crate::config::common::component_definition::BoundComponent;
 use crate::config::common::flow_definition::FlowOperation;
 
 #[derive(Debug, Default, Clone, derive_assets::AssetManager)]
-#[asset(crate::config::LocationReference)]
+#[asset(crate::config::AssetReference)]
 #[must_use]
 /// The internal representation of a Wick manifest.
 pub struct CompositeComponentConfiguration {

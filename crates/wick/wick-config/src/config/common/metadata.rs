@@ -1,7 +1,7 @@
-use crate::config::LocationReference;
+use crate::config::AssetReference;
 
 #[derive(Debug, Default, Clone, PartialEq, derive_assets::AssetManager)]
-#[asset(LocationReference)]
+#[asset(AssetReference)]
 /// Metadata for the component or application.
 pub struct Metadata {
   /// The version of the component or application.
@@ -23,5 +23,5 @@ pub struct Metadata {
   #[asset(skip)]
   pub licenses: Vec<String>,
   /// The icon for the component or application.
-  pub icon: Option<LocationReference>,
+  pub icon: Option<AssetReference>,
 }

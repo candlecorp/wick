@@ -16,7 +16,7 @@ pub enum WasmCollectionError {
   IoError(#[from] std::io::Error),
 
   #[error(transparent)]
-  Asset(#[from] wick_config::Error),
+  Asset(#[from] wick_config::AssetError),
 
   #[error("JSON Serialization/Deserialization error : {0}")]
   JsonError(String),

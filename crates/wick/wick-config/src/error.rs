@@ -12,13 +12,9 @@ pub enum ManifestError {
   #[error("Invalid Manifest Version '{0}'")]
   VersionError(String),
 
-  /// Location reference was not a URL or package reference
-  #[error("Could not parse {0} as a URL or reference")]
-  BadUrl(String),
-
-  /// Other URL Parsing error.
+  /// Error related to asset references.
   #[error(transparent)]
-  UrlParse(#[from] url::ParseError),
+  AssetReference(#[from] wick_asset_reference::Error),
 
   /// No format version or kind found in the parsed manifest.
   #[error("Manifest needs a format version (v0) or kind (v1+)")]

@@ -4,7 +4,7 @@ use url::Url;
 use crate::config;
 
 #[derive(Debug, Clone, derive_assets::AssetManager)]
-#[asset(crate::config::LocationReference)]
+#[asset(crate::config::AssetReference)]
 #[must_use]
 pub struct TestConfiguration {
   #[asset(skip)]

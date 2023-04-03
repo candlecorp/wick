@@ -20,6 +20,8 @@ serde_yaml = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 tar = { workspace = true }
 tokio = { workspace = true, features = ["fs"] }
+sha256 = { workspace = true }
+bytes = { workspace = true }
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["rt-multi-thread", "macros"] }

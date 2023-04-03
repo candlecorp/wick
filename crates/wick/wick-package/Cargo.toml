@@ -8,6 +8,7 @@ repository = "https://github.com/candlecorp/wick"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
 wick-config = { workspace = true }
+wick-oci-utils = { workspace = true }
 assets = { workspace = true }
 oci-distribution = { workspace = true, features = ["rustls-tls"] }
 thiserror = { workspace = true }

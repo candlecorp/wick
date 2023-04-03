@@ -830,17 +830,17 @@ impl From<test_case::TestPacket> for v1::PacketData {
   }
 }
 
-impl TryFrom<v1::helpers::LocationReference> for config::LocationReference {
+impl TryFrom<v1::helpers::LocationReference> for config::AssetReference {
   type Error = crate::Error;
   fn try_from(value: v1::helpers::LocationReference) -> Result<Self> {
-    value.0.try_into()
+    Ok(value.0.try_into()?)
   }
 }
 
-impl TryFrom<config::LocationReference> for v1::helpers::LocationReference {
+impl TryFrom<config::AssetReference> for v1::helpers::LocationReference {
   type Error = crate::Error;
-  fn try_from(value: config::LocationReference) -> Result<Self> {
-    Ok(Self(value.location))
+  fn try_from(value: config::AssetReference) -> Result<Self> {
+    Ok(Self(value.location().to_owned()))
   }
 }
 

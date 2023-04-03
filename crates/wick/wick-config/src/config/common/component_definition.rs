@@ -6,7 +6,7 @@ use crate::config;
 
 /// A reference to an operation.
 #[derive(Debug, Clone, PartialEq, derive_assets::AssetManager)]
-#[asset(config::LocationReference)]
+#[asset(config::AssetReference)]
 
 pub struct ComponentOperationExpression {
   /// The operation ID.
@@ -60,7 +60,7 @@ impl std::str::FromStr for ComponentOperationExpression {
 }
 
 #[derive(Debug, Clone, PartialEq, derive_assets::AssetManager)]
-#[asset(config::LocationReference)]
+#[asset(config::AssetReference)]
 /// A definition of a Wick Collection with its namespace, how to retrieve or access it and its configuration.
 #[must_use]
 pub struct BoundComponent {
@@ -95,7 +95,7 @@ impl BoundComponent {
 }
 
 #[derive(Debug, Clone, PartialEq, derive_assets::AssetManager)]
-#[asset(config::LocationReference)]
+#[asset(config::AssetReference)]
 /// The kinds of collections that can operate in a flow.
 #[must_use]
 pub enum ComponentDefinition {
@@ -144,10 +144,10 @@ pub struct NativeComponent {}
 
 /// A WebAssembly collection.
 #[derive(Debug, Clone, PartialEq, derive_assets::AssetManager)]
-#[asset(config::LocationReference)]
+#[asset(config::AssetReference)]
 pub struct WasmComponent {
   /// The OCI reference/local path of the collection.
-  pub reference: config::LocationReference,
+  pub reference: config::AssetReference,
   /// The configuration for the collection
   #[asset(skip)]
   pub config: Value,
@@ -175,10 +175,10 @@ pub struct GrpcUrlComponent {
 
 /// A separate Wick manifest to use as a collection.
 #[derive(Debug, Clone, PartialEq, derive_assets::AssetManager)]
-#[asset(config::LocationReference)]
+#[asset(config::AssetReference)]
 pub struct ManifestComponent {
   /// The OCI reference/local path of the manifest to use as a collection.
-  pub reference: config::LocationReference,
+  pub reference: config::AssetReference,
   /// The configuration for the collection
   #[asset(skip)]
   pub config: Value,

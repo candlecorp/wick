@@ -3,7 +3,7 @@ use std::time::Duration;
 use futures::StreamExt;
 use logger::{LoggingGuard, LoggingOptions};
 use wick_component_cli::options::DefaultCliOptions;
-use wick_config::config::{ComponentConfiguration, HttpConfig, LocationReference};
+use wick_config::config::{AssetReference, ComponentConfiguration, HttpConfig};
 use wick_packet::PacketStream;
 
 use crate::commands::FetchOptions;
@@ -41,22 +41,22 @@ pub(crate) fn merge_config(
         log_override("rpc.port", &mut manifest_opts.port, Some(to));
       }
       if let Some(to) = cli_opts.rpc_pem {
-        log_override("rpc.pem", &mut manifest_opts.pem, Some(LocationReference::new(to)));
+        log_override("rpc.pem", &mut manifest_opts.pem, Some(AssetReference::new(to)));
       }
       if let Some(to) = cli_opts.rpc_ca {
-        log_override("rpc.ca", &mut manifest_opts.ca, Some(LocationReference::new(to)));
+        log_override("rpc.ca", &mut manifest_opts.ca, Some(AssetReference::new(to)));
       }
       if let Some(to) = cli_opts.rpc_key {
-        log_override("rpc.key", &mut manifest_opts.key, Some(LocationReference::new(to)));
+        log_override("rpc.key", &mut manifest_opts.key, Some(AssetReference::new(to)));
       }
     } else {
       host_config.rpc = Some(HttpConfig {
         enabled: cli_opts.rpc_enabled,
         port: cli_opts.rpc_port,
         address: cli_opts.rpc_address,
-        pem: cli_opts.rpc_pem.map(LocationReference::new),
-        key: cli_opts.rpc_key.map(LocationReference::new),
-        ca: cli_opts.rpc_ca.map(LocationReference::new),
+        pem: cli_opts.rpc_pem.map(AssetReference::new),
+        key: cli_opts.rpc_key.map(AssetReference::new),
+        ca: cli_opts.rpc_ca.map(AssetReference::new),
       });
     };
   }
