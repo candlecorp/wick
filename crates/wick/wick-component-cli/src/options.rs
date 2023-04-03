@@ -13,7 +13,7 @@ pub struct Options {
   pub rpc: Option<ServerOptions>,
   /// The ID of the server.
   pub id: String,
-  /// The timeout for network requests.
+  /// The timeout for invocations.
   pub timeout: Duration,
 }
 

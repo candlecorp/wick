@@ -5,20 +5,20 @@ use seeded_random::{Random, Seed};
 use uuid::Uuid;
 
 use crate::dev::prelude::*;
-use crate::network_service::Initialize;
+use crate::engine_service::Initialize;
 
 type Result<T> = std::result::Result<T, RuntimeError>;
 #[derive(Debug)]
 #[must_use]
-pub struct Network {
+pub struct Engine {
   pub uid: Uuid,
-  inner: Arc<NetworkService>,
+  inner: Arc<EngineService>,
   timeout: Duration,
 }
 
 #[derive(Debug)]
 #[must_use]
-pub struct NetworkInit {
+pub struct EngineInit {
   definition: config::ComponentConfiguration,
   allow_latest: bool,
   allowed_insecure: Vec<String>,
@@ -27,9 +27,9 @@ pub struct NetworkInit {
   rng_seed: Seed,
 }
 
-impl Network {
-  #[instrument(name = "network", skip_all)]
-  pub async fn new(config: NetworkInit) -> Result<Self> {
+impl Engine {
+  #[instrument(name = "engine", skip_all)]
+  pub async fn new(config: EngineInit) -> Result<Self> {
     trace!(?config, "init");
     let rng = Random::from_seed(config.rng_seed);
 
@@ -44,7 +44,7 @@ impl Network {
       event_log: None,
       span: debug_span!("engine:new"),
     };
-    let service = NetworkService::new(init)
+    let service = EngineService::new(init)
       .await
       .map_err(|e| RuntimeError::InitializationFailed(e.to_string()))?;
     Ok(Self {
@@ -67,7 +67,7 @@ impl Network {
   }
 
   pub async fn shutdown(&self) -> Result<()> {
-    trace!("network shutting down");
+    trace!("engine shutting down");
     self.inner.shutdown().await?;
 
     Ok(())
@@ -75,7 +75,7 @@ impl Network {
 
   pub fn get_signature(&self) -> Result<ComponentSignature> {
     let signature = self.inner.get_signature()?;
-    trace!(?signature, "network signature");
+    trace!(?signature, "engine instance signature");
     Ok(signature)
   }
 
@@ -85,10 +85,10 @@ impl Network {
   }
 }
 
-/// The [NetworkBuilder] builds the configuration for a Wick Network.
+/// The [EngineBuilder] builds the configuration for a Wick [Engine].
 #[derive(Debug, Default)]
 #[must_use]
-pub struct NetworkBuilder {
+pub struct EngineBuilder {
   allow_latest: bool,
   allowed_insecure: Vec<String>,
   manifest_builder: config::ComponentConfigurationBuilder,
@@ -98,7 +98,7 @@ pub struct NetworkBuilder {
   namespace: Option<String>,
 }
 
-impl NetworkBuilder {
+impl EngineBuilder {
   pub fn new() -> Self {
     Self {
       timeout: Duration::from_secs(5),
@@ -106,7 +106,7 @@ impl NetworkBuilder {
     }
   }
 
-  /// Creates a new network builder from a [NetworkDefinition]
+  /// Creates a new [EngineBuilder] from a [config::ComponentConfiguration]
   pub fn from_definition(definition: config::ComponentConfiguration) -> Result<Self> {
     Ok(Self {
       allow_latest: definition.allow_latest(),
@@ -153,9 +153,9 @@ impl NetworkBuilder {
   }
 
   /// Constructs an instance of a Wick host.
-  pub async fn build(self) -> Result<Network> {
+  pub async fn build(self) -> Result<Engine> {
     let definition = self.manifest_builder.build();
-    Network::new(NetworkInit {
+    Engine::new(EngineInit {
       definition,
       allow_latest: self.allow_latest,
       allowed_insecure: self.allowed_insecure,

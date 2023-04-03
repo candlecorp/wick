@@ -170,12 +170,12 @@ fn get_signature(
   match p.node().kind() {
     NodeKind::Input(_) => match kind {
       PortDirection::In => Ok(None),
-      PortDirection::Out => Ok(Some(TypeSignature::Value)),
+      PortDirection::Out => Ok(Some(TypeSignature::Object)),
     },
 
     NodeKind::Output(_) => match kind {
       PortDirection::Out => Ok(None),
-      PortDirection::In => Ok(Some(TypeSignature::Value)),
+      PortDirection::In => Ok(Some(TypeSignature::Object)),
     },
     NodeKind::External(ext) | NodeKind::Inherent(ext) => {
       let ext_collection = components

@@ -199,7 +199,6 @@ type WasmComponentConfiguration @tagged("wick/component/wasmrs@v1") {
 
   "A list of operations implemented by the WebAssembly module."
   operations: [OperationDefinition]
-
 }
 
 "An identifier bound to a resource."
@@ -219,7 +218,7 @@ type ComponentBinding {
 }
 
 "The possible types of components."
-union ComponentDefinition = GrpcUrlComponent | ManifestComponent | ComponentReference
+union ComponentDefinition = GrpcUrlComponent | ManifestComponent | ComponentReference | PostgresComponent
 
 "A reference to a component in the application's scope."
 type ComponentReference  @tagged("wick/component/reference@v1") {
@@ -413,3 +412,43 @@ type PacketFlags {
   "When set, indicates the closing of a substream context within the parent stream."
   close: bool
 }
+
+
+"A component made out of other components"
+type PostgresComponent @tagged("wick/component/postgres@v1") {
+  "The TcpPort reference to listen on for connections."
+  resource: string
+
+  "The username to use when connecting to the postgres database."
+  user: string
+
+  "The password to use when connecting to the postgres database."
+  password: string
+
+  "The database to connect to."
+  database: string
+
+  "Whether or not to use TLS."
+  tls: bool
+
+  "A list of operations to expose on this component."
+  operations: [PostgresOperationDefinition]
+}
+
+type PostgresOperationDefinition {
+  "The name of the operation."
+  name: string
+
+  "Types of the inputs to the operation."
+  inputs: [Field],
+
+  "Types of the outputs to the operation."
+  outputs: [Field],
+
+  "The query to execute."
+  query: string
+
+  "The arguments to the query, defined as a list of input names."
+  arguments: [string]
+}
+

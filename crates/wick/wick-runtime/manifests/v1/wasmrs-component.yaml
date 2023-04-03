@@ -12,7 +12,7 @@ component:
         - name: template
           type: string
         - name: data
-          type: struct
+          type: object
       outputs:
         - name: output
           type: string

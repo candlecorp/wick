@@ -2,7 +2,7 @@ use thiserror::Error;
 
 use crate::dev::prelude::*;
 #[derive(Error, Debug)]
-pub enum NetworkError {
+pub enum EngineError {
   #[error("Could not start interpreter from '{}': {1}", .0.as_ref().map_or_else(|| "<unknown>".into(), |p| p.clone()))]
   InterpreterInit(Option<String>, Box<flow_graph_interpreter::error::InterpreterError>),
 
@@ -22,26 +22,26 @@ pub enum NetworkError {
   Wasm(#[from] Box<wick_component_wasm::Error>),
 }
 
-impl From<NetworkError> for ComponentError {
-  fn from(e: NetworkError) -> Self {
-    ComponentError::NetworkError(e.to_string())
+impl From<EngineError> for ComponentError {
+  fn from(e: EngineError) -> Self {
+    ComponentError::EngineError(e.to_string())
   }
 }
 
-impl From<wick_component_wasm::Error> for NetworkError {
+impl From<wick_component_wasm::Error> for EngineError {
   fn from(e: wick_component_wasm::Error) -> Self {
-    NetworkError::Wasm(Box::new(e))
+    EngineError::Wasm(Box::new(e))
   }
 }
 
-impl From<flow_graph::error::Error> for NetworkError {
+impl From<flow_graph::error::Error> for EngineError {
   fn from(e: flow_graph::error::Error) -> Self {
-    NetworkError::FlowGraph(Box::new(e))
+    EngineError::FlowGraph(Box::new(e))
   }
 }
 
-impl From<wick_config::Error> for NetworkError {
+impl From<wick_config::Error> for EngineError {
   fn from(e: wick_config::Error) -> Self {
-    NetworkError::Manifest(Box::new(e))
+    EngineError::Manifest(Box::new(e))
   }
 }

@@ -7,9 +7,6 @@ license = "Elastic-2.0"
 repository = "https://github.com/candlecorp/wick"
 
 [features]
-default = ["host"]
-host = []
-guest = []
 
 [dependencies]
 wick-packet = { workspace = true }
@@ -20,8 +17,8 @@ tracing = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 async-trait = { workspace = true }
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
-thiserror = { workspace = true }
 futures = { workspace = true }
+thiserror = { workspace = true }
 
 [dev-dependencies]
 logger = { workspace = true }

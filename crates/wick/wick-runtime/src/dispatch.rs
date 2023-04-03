@@ -46,14 +46,14 @@ impl From<ComponentError> for DispatchError {
   }
 }
 
-pub(crate) async fn network_invoke_async(
-  network_id: Uuid,
+pub(crate) async fn engine_invoke_async(
+  engine_id: Uuid,
   invocation: Invocation,
   stream: PacketStream,
 ) -> Result<PacketStream, DispatchError> {
-  let network = NetworkService::for_id(&network_id).ok_or(DispatchError::EntityNotAvailable(network_id))?;
+  let engine = EngineService::for_id(&engine_id).ok_or(DispatchError::EntityNotAvailable(engine_id))?;
 
-  let response = network.invoke(invocation, stream)?.await?;
+  let response = engine.invoke(invocation, stream)?.await?;
   match response {
     InvocationResponse::Stream { rx, .. } => Ok(rx),
     InvocationResponse::Error { msg, .. } => Err(DispatchError::CallFailure(msg)),
@@ -70,13 +70,13 @@ mod tests {
   use crate::test::prelude::{assert_eq, *};
   #[test_logger::test(tokio::test)]
   async fn invoke_async() -> Result<()> {
-    let (_, nuid) = init_network_from_yaml("./manifests/v0/echo.yaml").await?;
+    let (_, nuid) = init_engine_from_yaml("./manifests/v0/echo.yaml").await?;
 
     let target = Entity::operation("self", "echo");
     let stream = packet_stream![("input", "hello")];
     let invocation = Invocation::new(Entity::test(file!()), target, None);
 
-    let packets = network_invoke_async(nuid, invocation, stream).await?;
+    let packets = engine_invoke_async(nuid, invocation, stream).await?;
     let mut packets: Vec<_> = packets.collect().await;
     debug!("{:?}", packets);
     assert_eq!(packets.len(), 2);

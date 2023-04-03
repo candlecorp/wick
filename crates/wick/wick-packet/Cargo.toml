@@ -20,6 +20,7 @@ default = []
 invocation = ["uuid", "seeded-random"]
 
 [dependencies]
+wick-interface-types = { workspace = true, features = ["typeid"] }
 tracing = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
@@ -37,6 +38,7 @@ url = { workspace = true }
 wasmrs-guest = { workspace = true }
 wasmrs-runtime = { workspace = true }
 seeded-random = { workspace = true, optional = true }
+anymap = "0.12"
 
 [dev-dependencies]
 anyhow = { workspace = true }

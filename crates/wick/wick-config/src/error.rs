@@ -66,4 +66,7 @@ pub enum ReferenceError {
   /// The referenced item was not a component.
   #[error("Referenced item is not a component")]
   Component,
+  /// The referenced item was not a resource.
+  #[error("Referenced item is not a resource")]
+  Resource,
 }

@@ -5,7 +5,7 @@ pub(crate) mod prelude {
 
   pub(crate) use crate::components::InvocationHandler;
   pub(crate) use crate::dispatch::InvocationResponse;
+  pub(crate) use crate::engine_service::EngineService;
   pub(crate) use crate::error::*;
-  pub(crate) use crate::network_service::NetworkService;
-  pub(crate) use crate::utils::helpers::*;
+  pub(crate) use crate::utils::*;
 }

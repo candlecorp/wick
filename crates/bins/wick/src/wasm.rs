@@ -1,7 +1,7 @@
 use std::str::FromStr;
 
 use clap::Args;
-use wick_config::config::Permissions;
+use wick_config::config::components::Permissions;
 
 #[derive(Clone, Debug)]
 struct StringPair(String, String);

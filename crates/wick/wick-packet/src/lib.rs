@@ -86,6 +86,7 @@ mod output;
 mod packet;
 mod packet_stream;
 mod stream_map;
+mod wrapped_type;
 
 pub use collection_link::CollectionLink;
 pub use entity::Entity;
@@ -100,3 +101,4 @@ pub use packet_stream::{PacketSender, PacketStream};
 pub use stream_map::StreamMap;
 pub use wasmrs::Metadata;
 pub use wasmrs_rx::*;
+pub use wrapped_type::TypeWrapper;

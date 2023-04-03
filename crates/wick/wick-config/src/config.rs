@@ -1,6 +1,7 @@
 pub mod app_config;
 pub mod common;
 pub mod component_config;
+pub mod components;
 pub mod test_config;
 pub mod types_config;
 

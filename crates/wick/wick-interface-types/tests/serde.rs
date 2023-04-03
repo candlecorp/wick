@@ -76,7 +76,6 @@ fn test_serde_all() -> Result<()> {
     TypeSignature::U64,
     TypeSignature::F32,
     TypeSignature::F64,
-    TypeSignature::Value,
     TypeSignature::Bytes,
     TypeSignature::String,
     TypeSignature::Datetime,
@@ -87,7 +86,6 @@ fn test_serde_all() -> Result<()> {
     TypeSignature::List {
       ty: Box::new(TypeSignature::String),
     },
-    TypeSignature::Internal(InternalType::OperationInput),
     TypeSignature::Ref {
       reference: "ref-test".to_owned(),
     },

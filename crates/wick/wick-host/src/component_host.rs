@@ -13,7 +13,7 @@ use wick_config::WickConfiguration;
 use wick_interface_types::ComponentSignature;
 use wick_packet::{Entity, InherentData, Invocation, PacketStream};
 use wick_rpc::{RpcHandler, SharedRpcHandler};
-use wick_runtime::{Network, NetworkBuilder, NetworkCollection};
+use wick_runtime::{Engine, EngineBuilder, EngineComponent};
 
 use crate::{Error, Result};
 
@@ -22,9 +22,7 @@ static HOST_REGISTRY: Lazy<Mutex<ServiceMap>> = Lazy::new(|| Mutex::new(HashMap:
 
 fn from_registry(id: Uuid) -> Arc<dyn RpcHandler + Send + Sync + 'static> {
   let mut registry = HOST_REGISTRY.lock();
-  let collection = registry
-    .entry(id)
-    .or_insert_with(|| Arc::new(NetworkCollection::new(id)));
+  let collection = registry.entry(id).or_insert_with(|| Arc::new(EngineComponent::new(id)));
   collection.clone()
 }
 
@@ -33,7 +31,7 @@ fn from_registry(id: Uuid) -> Arc<dyn RpcHandler + Send + Sync + 'static> {
 #[derive(Debug)]
 pub struct ComponentHost {
   id: String,
-  network: Option<Network>,
+  engine: Option<Engine>,
   manifest: ComponentConfiguration,
   server_metadata: Option<ServerState>,
 }
@@ -45,7 +43,7 @@ impl ComponentHost {
     debug!("host starting");
 
     // self.mesh = self.get_mesh().await?;
-    self.start_network(seed.map(Seed::unsafe_new)).await?;
+    self.start_engine(seed.map(Seed::unsafe_new)).await?;
     let state = self.start_servers().await?;
     self.server_metadata = Some(state);
 
@@ -62,9 +60,9 @@ impl ComponentHost {
   }
 
   pub fn get_signature(&self) -> Result<ComponentSignature> {
-    match &self.network {
-      Some(network) => Ok(network.get_signature()?),
-      None => Err(Error::NoNetwork),
+    match &self.engine {
+      Some(engine) => Ok(engine.get_signature()?),
+      None => Err(Error::NoEngine),
     }
   }
 
@@ -76,41 +74,41 @@ impl ComponentHost {
   /// Stops a running host.
   pub async fn stop(self) {
     debug!("host stopping");
-    if let Some(network) = self.network {
-      let _ = network.shutdown().await;
+    if let Some(engine) = self.engine {
+      let _ = engine.shutdown().await;
     }
   }
 
-  pub fn get_network(&self) -> Result<&Network> {
-    self.network.as_ref().ok_or(Error::NoNetwork)
+  pub fn get_engine(&self) -> Result<&Engine> {
+    self.engine.as_ref().ok_or(Error::NoEngine)
   }
 
-  pub fn get_network_uid(&self) -> Result<Uuid> {
-    self.network.as_ref().ok_or(Error::NoNetwork).map(|network| network.uid)
+  pub fn get_engine_uid(&self) -> Result<Uuid> {
+    self.engine.as_ref().ok_or(Error::NoEngine).map(|engine| engine.uid)
   }
 
-  pub async fn start_network(&mut self, seed: Option<Seed>) -> Result<()> {
+  pub async fn start_engine(&mut self, seed: Option<Seed>) -> Result<()> {
     ensure!(
-      self.network.is_none(),
-      crate::Error::InvalidHostState("Host already has a network running".into())
+      self.engine.is_none(),
+      crate::Error::InvalidHostState("Host already has a engine running".into())
     );
 
-    let mut network_builder = NetworkBuilder::from_definition(self.manifest.clone())?;
+    let mut engine_builder = EngineBuilder::from_definition(self.manifest.clone())?;
     if let Some(seed) = seed {
-      network_builder = network_builder.with_seed(seed);
+      engine_builder = engine_builder.with_seed(seed);
     }
-    network_builder = network_builder.namespace(self.get_host_id());
-    network_builder = network_builder.allow_latest(self.manifest.host().allow_latest);
-    network_builder = network_builder.allow_insecure(self.manifest.host().insecure_registries.clone());
+    engine_builder = engine_builder.namespace(self.get_host_id());
+    engine_builder = engine_builder.allow_latest(self.manifest.host().allow_latest);
+    engine_builder = engine_builder.allow_insecure(self.manifest.host().insecure_registries.clone());
 
-    let network = network_builder.build().await?;
+    let engine = engine_builder.build().await?;
 
-    self.network = Some(network);
+    self.engine = Some(engine);
     Ok(())
   }
 
   async fn start_servers(&mut self) -> Result<ServerState> {
-    let nuid = self.get_network_uid()?;
+    let nuid = self.get_engine_uid()?;
 
     #[allow(clippy::manual_map)]
     let options = HostOptions {
@@ -142,19 +140,19 @@ impl ComponentHost {
     stream: PacketStream,
     data: Option<InherentData>,
   ) -> Result<PacketStream> {
-    match &self.network {
-      Some(network) => {
-        let invocation = Invocation::new(Entity::host(&self.id), Entity::operation(&self.id, operation), data);
-        Ok(network.invoke(invocation, stream).await?)
+    match &self.engine {
+      Some(engine) => {
+        let invocation = Invocation::new(Entity::server(&self.id), Entity::operation(&self.id, operation), data);
+        Ok(engine.invoke(invocation, stream).await?)
       }
-      None => Err(crate::Error::InvalidHostState("No network available".into())),
+      None => Err(crate::Error::InvalidHostState("No engine available".into())),
     }
   }
 
   pub async fn invoke(&self, invocation: Invocation, stream: PacketStream) -> Result<PacketStream> {
-    match &self.network {
-      Some(network) => Ok(network.invoke(invocation, stream).await?),
-      None => Err(crate::Error::InvalidHostState("No network available".into())),
+    match &self.engine {
+      Some(engine) => Ok(engine.invoke(invocation, stream).await?),
+      None => Err(crate::Error::InvalidHostState("No engine available".into())),
     }
   }
 
@@ -171,7 +169,7 @@ impl ComponentHost {
 
   #[must_use]
   pub fn is_started(&self) -> bool {
-    self.network.is_some()
+    self.engine.is_some()
   }
 }
 
@@ -217,7 +215,7 @@ impl ComponentHostBuilder {
 
     ComponentHost {
       id: host_id,
-      network: None,
+      engine: None,
       manifest: self.manifest,
       server_metadata: None,
     }

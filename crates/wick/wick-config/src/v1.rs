@@ -469,6 +469,9 @@ pub(crate) enum ComponentDefinition {
   /// A variant representing a [ComponentReference] type.
   #[serde(rename = "wick/component/reference@v1")]
   ComponentReference(ComponentReference),
+  /// A variant representing a [PostgresComponent] type.
+  #[serde(rename = "wick/component/postgres@v1")]
+  PostgresComponent(PostgresComponent),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -807,4 +810,70 @@ pub(crate) struct PacketFlags {
   #[serde(default)]
   #[serde(deserialize_with = "with_expand_envs")]
   pub(crate) close: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+/// A component made out of other components
+pub(crate) struct PostgresComponent {
+  /// The TcpPort reference to listen on for connections.
+
+  #[serde(default)]
+  #[serde(deserialize_with = "with_expand_envs")]
+  pub(crate) resource: String,
+  /// The username to use when connecting to the postgres database.
+
+  #[serde(default)]
+  #[serde(deserialize_with = "with_expand_envs")]
+  pub(crate) user: String,
+  /// The password to use when connecting to the postgres database.
+
+  #[serde(default)]
+  #[serde(deserialize_with = "with_expand_envs")]
+  pub(crate) password: String,
+  /// The database to connect to.
+
+  #[serde(default)]
+  #[serde(deserialize_with = "with_expand_envs")]
+  pub(crate) database: String,
+  /// Whether or not to use TLS.
+
+  #[serde(default)]
+  #[serde(deserialize_with = "with_expand_envs")]
+  pub(crate) tls: bool,
+  /// A list of operations to expose on this component.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub(crate) operations: Vec<PostgresOperationDefinition>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct PostgresOperationDefinition {
+  /// The name of the operation.
+
+  #[serde(default)]
+  #[serde(deserialize_with = "with_expand_envs")]
+  pub(crate) name: String,
+  /// Types of the inputs to the operation.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub(crate) inputs: Vec<wick_interface_types::Field>,
+  /// Types of the outputs to the operation.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub(crate) outputs: Vec<wick_interface_types::Field>,
+  /// The query to execute.
+
+  #[serde(default)]
+  #[serde(deserialize_with = "with_expand_envs")]
+  pub(crate) query: String,
+  /// The arguments to the query, defined as a list of input names.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub(crate) arguments: Vec<String>,
 }

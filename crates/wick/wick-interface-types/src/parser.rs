@@ -82,10 +82,9 @@ fn typename(input: &str) -> IResult<&str, TypeSignature> {
     "f32" => TypeSignature::F32,
     "f64" => TypeSignature::F64,
     "bytes" => TypeSignature::Bytes,
-    "value" => TypeSignature::Value,
     "string" => TypeSignature::String,
     "datetime" => TypeSignature::Datetime,
-    "struct" => TypeSignature::Struct,
+    "object" => TypeSignature::Object,
     x => TypeSignature::Custom(x.to_owned()),
   };
   Ok((i, t))

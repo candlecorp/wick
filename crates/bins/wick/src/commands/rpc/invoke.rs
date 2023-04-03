@@ -62,7 +62,7 @@ pub(crate) async fn handle(opts: RpcInvokeCommand) -> Result<()> {
   )
   .await?;
 
-  let origin = Entity::client(crate::BIN_NAME);
+  let origin = Entity::server(crate::BIN_NAME);
   let target = Entity::local(&opts.component);
 
   let inherent_data = opts.seed.map(|seed| {

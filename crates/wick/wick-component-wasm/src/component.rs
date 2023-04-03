@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use wasmrs_host::WasiParams;
-use wick_config::config::Permissions;
+use wick_config::config::components::Permissions;
 use wick_interface_types::HostedType;
 use wick_packet::{Invocation, PacketStream};
 use wick_rpc::{BoxFuture, RpcHandler, RpcResult};

@@ -44,7 +44,7 @@ impl Component for ComponentComponent {
     // This handler handles the NS_COLLECTIONS namespace and outputs the entity
     // to link to.
     let target_name = invocation.target.name().to_owned();
-    let entity = Entity::collection(invocation.target.name());
+    let entity = Entity::component(invocation.target.name());
 
     let contains_collection = self.signature.operations.iter().any(|op| op.name == target_name);
     let all_collections: Vec<_> = self.signature.operations.iter().map(|op| op.name.clone()).collect();

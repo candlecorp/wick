@@ -44,7 +44,7 @@ pub(crate) async fn handle_command(opts: ListCommand) -> Result<()> {
 
   let mut host = host_builder.build();
   // host.connect_to_mesh().await?;
-  host.start_network(None).await?;
+  host.start_engine(None).await?;
   let signature = host.get_signature()?;
 
   if opts.json {

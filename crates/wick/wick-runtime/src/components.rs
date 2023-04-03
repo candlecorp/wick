@@ -1,6 +1,6 @@
 pub(crate) mod component_service;
+pub(crate) mod engine_component;
 pub(crate) mod error;
-pub(crate) mod network_component;
 
 use std::str::FromStr;
 use std::sync::Arc;
@@ -10,14 +10,15 @@ use seeded_random::{Random, Seed};
 use uuid::Uuid;
 use wick_component_wasm::component::HostLinkCallback;
 use wick_component_wasm::error::LinkError;
-use wick_config::config::{FetchOptions, ManifestComponent, WasmComponent};
+use wick_config::config::components::{ManifestComponent, WasmComponent};
+use wick_config::config::FetchOptions;
 use wick_config::WickConfiguration;
 use wick_packet::{Entity, Invocation, PacketStream};
 
 use self::component_service::NativeComponentService;
 use crate::dev::prelude::*;
-use crate::dispatch::network_invoke_async;
-use crate::network_service::ComponentInitOptions;
+use crate::dispatch::engine_invoke_async;
+use crate::engine_service::ComponentInitOptions;
 use crate::BoxFuture;
 
 pub(crate) trait InvocationHandler {
@@ -27,7 +28,7 @@ pub(crate) trait InvocationHandler {
 
 type Result<T> = std::result::Result<T, ComponentError>;
 
-type ComponentInitResult = std::result::Result<NamespaceHandler, NetworkError>;
+type ComponentInitResult = std::result::Result<NamespaceHandler, EngineError>;
 
 pub(crate) async fn init_wasm_component<'a, 'b>(
   kind: &'a WasmComponent,
@@ -45,7 +46,7 @@ pub(crate) async fn init_wasm_component<'a, 'b>(
     5,
     Some(kind.permissions.clone()),
     None,
-    Some(make_link_callback(opts.network_id)),
+    Some(make_link_callback(opts.engine_id)),
   )?);
 
   let service = NativeComponentService::new(collection);
@@ -53,7 +54,7 @@ pub(crate) async fn init_wasm_component<'a, 'b>(
   Ok(NamespaceHandler::new(namespace, Box::new(service)))
 }
 
-fn make_link_callback(network_id: Uuid) -> Box<HostLinkCallback> {
+fn make_link_callback(engine_id: Uuid) -> Box<HostLinkCallback> {
   Box::new(move |origin_url, target_url, stream| {
     let origin_url = origin_url.to_owned();
     let target_url = target_url.to_owned();
@@ -62,7 +63,7 @@ fn make_link_callback(network_id: Uuid) -> Box<HostLinkCallback> {
         debug!(
           origin = %origin_url,
           target = %target_url,
-          network_id = %network_id,
+          engine_id = %engine_id,
           "link_call"
         );
 
@@ -77,7 +78,7 @@ fn make_link_callback(network_id: Uuid) -> Box<HostLinkCallback> {
         }
 
         let invocation = Invocation::new(origin, target, None);
-        let result = network_invoke_async(network_id, invocation, stream)
+        let result = engine_invoke_async(engine_id, invocation, stream)
           .await
           .map_err(|e| LinkError::CallFailure(e.to_string()))?;
         Ok(result)
@@ -114,9 +115,9 @@ pub(crate) async fn init_manifest_component<'a, 'b>(
       init_wasm_component(&wasm, namespace, opts).await
     }
     config::ComponentImplementation::Composite(_) => {
-      let _network = NetworkService::new_from_manifest(uuid, manifest, Some(namespace.clone()), opts).await?;
+      let _engine = EngineService::new_from_manifest(uuid, manifest, Some(namespace.clone()), opts).await?;
 
-      let collection = Arc::new(network_component::Component::new(uuid));
+      let collection = Arc::new(engine_component::Component::new(uuid));
       let service = NativeComponentService::new(collection);
       Ok(NamespaceHandler::new(namespace, Box::new(service)))
     }

@@ -5,9 +5,10 @@ use serde::{Deserialize, Serialize};
 use tracing::debug;
 use wasmrs::{Metadata, Payload, PayloadError, RawPayload};
 use wasmrs_rx::FluxReceiver;
+use wick_interface_types::TypeSignature;
 
 use crate::metadata::DONE_FLAG;
-use crate::{Error, PacketStream, WickMetadata, CLOSE_BRACKET, OPEN_BRACKET};
+use crate::{CollectionLink, Error, PacketStream, TypeWrapper, WickMetadata, CLOSE_BRACKET, OPEN_BRACKET};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[must_use]
@@ -94,6 +95,11 @@ impl Packet {
   /// Try to deserialize a [Packet] into the target type
   pub fn deserialize<T: DeserializeOwned>(self) -> Result<T, Error> {
     self.payload.deserialize()
+  }
+
+  /// Try to deserialize a [Packet] into the target type
+  pub fn deserialize_into(self, ty: TypeSignature) -> Result<TypeWrapper, Error> {
+    self.payload.deserialize_into(ty)
   }
 
   pub fn set_port(mut self, port: impl AsRef<str>) -> Self {
@@ -193,6 +199,42 @@ impl PacketPayload {
     }
   }
 
+  /// Try to deserialize a [Packet] into the target type
+  pub fn deserialize_into(self, sig: TypeSignature) -> Result<TypeWrapper, Error> {
+    let val = match sig {
+      TypeSignature::I8 => TypeWrapper::new(sig, self.deserialize::<i8>()?.into()),
+      TypeSignature::I16 => TypeWrapper::new(sig, self.deserialize::<i16>()?.into()),
+      TypeSignature::I32 => TypeWrapper::new(sig, self.deserialize::<i32>()?.into()),
+      TypeSignature::I64 => TypeWrapper::new(sig, self.deserialize::<i64>()?.into()),
+      TypeSignature::U8 => TypeWrapper::new(sig, self.deserialize::<u8>()?.into()),
+      TypeSignature::U16 => TypeWrapper::new(sig, self.deserialize::<u16>()?.into()),
+      TypeSignature::U32 => TypeWrapper::new(sig, self.deserialize::<u32>()?.into()),
+      TypeSignature::U64 => TypeWrapper::new(sig, self.deserialize::<u64>()?.into()),
+      TypeSignature::F32 => TypeWrapper::new(sig, self.deserialize::<f32>()?.into()),
+      TypeSignature::F64 => TypeWrapper::new(sig, self.deserialize::<f64>()?.into()),
+      TypeSignature::Bool => TypeWrapper::new(sig, self.deserialize::<bool>()?.into()),
+      TypeSignature::String => TypeWrapper::new(sig, self.deserialize::<String>()?.into()),
+      TypeSignature::Datetime => TypeWrapper::new(sig, self.deserialize::<String>()?.into()),
+      TypeSignature::Bytes => TypeWrapper::new(sig, self.deserialize::<Vec<u8>>()?.into()),
+      TypeSignature::Custom(_) => TypeWrapper::new(sig, self.deserialize::<serde_json::Value>()?),
+      TypeSignature::Ref { .. } => unimplemented!(),
+      TypeSignature::Stream { .. } => unimplemented!(),
+      TypeSignature::List { .. } => TypeWrapper::new(sig, self.deserialize::<Vec<serde_json::Value>>()?.into()),
+      TypeSignature::Optional { .. } => TypeWrapper::new(sig, self.deserialize::<Option<serde_json::Value>>()?.into()),
+      TypeSignature::Map { .. } => TypeWrapper::new(
+        sig,
+        serde_json::Value::Object(self.deserialize::<serde_json::Map<String, serde_json::Value>>()?),
+      ),
+      TypeSignature::Link { .. } => TypeWrapper::new(
+        sig,
+        serde_json::Value::String(self.deserialize::<CollectionLink>()?.to_string()),
+      ),
+      TypeSignature::Object => TypeWrapper::new(sig, self.deserialize::<serde_json::Value>()?),
+      TypeSignature::AnonymousStruct(_) => unimplemented!(),
+    };
+    Ok(val)
+  }
+
   pub fn bytes(&self) -> Option<&Bytes> {
     match self {
       Self::Ok(b) => b.as_ref(),
@@ -212,7 +254,7 @@ impl PacketPayload {
   }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct PacketError {
   msg: String,
 }

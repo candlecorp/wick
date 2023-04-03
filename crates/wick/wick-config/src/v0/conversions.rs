@@ -49,31 +49,35 @@ impl TryFrom<&crate::v0::CollectionDefinition> for config::ComponentDefinition {
   type Error = crate::Error;
   fn try_from(def: &crate::v0::CollectionDefinition) -> std::result::Result<Self, Self::Error> {
     let kind = match def.kind {
-      crate::v0::CollectionKind::Native => config::ComponentDefinition::Native(config::NativeComponent {}),
-      crate::v0::CollectionKind::GrpcUrl => config::ComponentDefinition::GrpcUrl(config::GrpcUrlComponent {
-        url: def.reference.clone(),
-        config: def.data.clone(),
-      }),
+      crate::v0::CollectionKind::Native => config::ComponentDefinition::Native(config::components::NativeComponent {}),
+      crate::v0::CollectionKind::GrpcUrl => {
+        config::ComponentDefinition::GrpcUrl(config::components::GrpcUrlComponent {
+          url: def.reference.clone(),
+          config: def.data.clone(),
+        })
+      }
       #[allow(deprecated)]
-      crate::v0::CollectionKind::WaPC => config::ComponentDefinition::Wasm(config::WasmComponent {
+      crate::v0::CollectionKind::WaPC => config::ComponentDefinition::Wasm(config::components::WasmComponent {
         reference: def.reference.clone().try_into()?,
         permissions: json_struct_to_permissions(def.data.get("wasi"))?,
         config: def.data.clone(),
       }),
-      crate::v0::CollectionKind::Network => config::ComponentDefinition::Manifest(config::ManifestComponent {
-        reference: def.reference.clone().try_into()?,
-        config: def.data.clone(),
-      }),
+      crate::v0::CollectionKind::Network => {
+        config::ComponentDefinition::Manifest(config::components::ManifestComponent {
+          reference: def.reference.clone().try_into()?,
+          config: def.data.clone(),
+        })
+      }
     };
     Ok(kind)
   }
 }
 
-fn json_struct_to_permissions(json_perms: Option<&Value>) -> Result<config::Permissions> {
+fn json_struct_to_permissions(json_perms: Option<&Value>) -> Result<config::components::Permissions> {
   let perms = if let Some(json_perms) = json_perms {
     serde_json::from_value(json_perms.clone()).map_err(crate::Error::Invalid)?
   } else {
-    config::Permissions::default()
+    config::components::Permissions::default()
   };
 
   Ok(perms)
