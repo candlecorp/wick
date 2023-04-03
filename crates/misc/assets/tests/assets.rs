@@ -30,7 +30,7 @@ impl LocationReference {
 impl Asset for LocationReference {
   type Options = ();
 
-  fn set_baseurl(&self, baseurl: &str) {
+  fn update_baseurl(&self, baseurl: &str) {
     self.baseurl.lock().unwrap().replace(baseurl.to_owned());
   }
 

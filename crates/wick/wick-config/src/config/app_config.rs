@@ -21,7 +21,6 @@ pub struct AppConfiguration {
   pub name: String,
   #[asset(skip)]
   pub(crate) source: Option<Url>,
-  #[asset(skip)]
   pub(crate) metadata: Option<config::Metadata>,
   pub(crate) import: HashMap<String, BoundComponent>,
   #[asset(skip)]

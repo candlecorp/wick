@@ -5,7 +5,7 @@ metadata:
   version: '0.0.2'
 component:
   kind: wick/component/wasmrs@v1
-  ref: ./build/jinja.signed.wasm
+  ref: ./assets/test.fake.wasm
   operations:
     - name: render
       inputs:

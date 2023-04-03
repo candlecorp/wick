@@ -4889,6 +4889,7 @@ dependencies = [
  "thiserror",
  "tokio",
  "tracing",
+ "url",
  "wick-config",
 ]
 

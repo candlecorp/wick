@@ -448,6 +448,7 @@
           },
           "icon": {
             "description": "The icon for the component or application.",
+            "required": false,
             "type": "string"
           }
         },

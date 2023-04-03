@@ -151,7 +151,7 @@ impl TestAsset {
 impl Asset for TestAsset {
   type Options = ();
 
-  fn set_baseurl(&self, _baseurl: &str) {
+  fn update_baseurl(&self, _baseurl: &str) {
     unimplemented!()
   }
 

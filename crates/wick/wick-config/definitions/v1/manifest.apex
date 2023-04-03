@@ -28,7 +28,7 @@ type AppConfiguration @default @tagged("wick/app@v1") {
 }
 
 "Metadata for the component or application."
-type Metadata @default {
+type Metadata {
   "The version of the component or application."
   version: string,
   "The authors of the component or application."
@@ -42,7 +42,7 @@ type Metadata @default {
   "The license(s) for the component or application."
   licenses: [string],
   "The icon for the component or application."
-  icon: string,
+  icon: LocationReference?,
 }
 
 "The possible types of resources."
