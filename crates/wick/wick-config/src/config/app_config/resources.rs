@@ -36,6 +36,15 @@ impl From<ResourceDefinition> for TcpPort {
   }
 }
 
+impl From<ResourceDefinition> for UdpPort {
+  fn from(value: ResourceDefinition) -> Self {
+    match value {
+      ResourceDefinition::UdpPort(v) => v,
+      _ => panic!("Cannot convert non-udp port to udp port"),
+    }
+  }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 /// Normalized representation of a TCP port configuration.
 pub struct TcpPort {
@@ -45,6 +54,16 @@ pub struct TcpPort {
   pub address: String,
 }
 
+impl TcpPort {
+  /// Create a new TCP port configuration.
+  pub fn new(port: u16, address: impl AsRef<str>) -> Self {
+    Self {
+      port,
+      address: address.as_ref().to_owned(),
+    }
+  }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 /// Normalized representation of a UDP port configuration.
 pub struct UdpPort {
@@ -52,4 +71,14 @@ pub struct UdpPort {
   pub port: u16,
   /// The address to bind to.
   pub address: String,
+}
+
+impl UdpPort {
+  /// Create a new UDP port configuration.
+  pub fn new(port: u16, address: impl AsRef<str>) -> Self {
+    Self {
+      port,
+      address: address.as_ref().to_owned(),
+    }
+  }
 }

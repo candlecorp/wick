@@ -18,7 +18,7 @@ use crate::dev::prelude::*;
 use crate::json_writer::JsonWriter;
 use crate::{BoxFuture, V0_NAMESPACE};
 
-type Result<T> = std::result::Result<T, NetworkError>;
+type Result<T> = std::result::Result<T, EngineError>;
 #[derive(Debug)]
 pub(crate) struct Initialize {
   pub(crate) id: Uuid,
@@ -33,7 +33,7 @@ pub(crate) struct Initialize {
 }
 
 #[derive(Debug)]
-pub(crate) struct NetworkService {
+pub(crate) struct EngineService {
   #[allow(unused)]
   started_time: std::time::Instant,
   pub(crate) id: Uuid,
@@ -41,12 +41,12 @@ pub(crate) struct NetworkService {
   interpreter: Arc<flow_graph_interpreter::Interpreter>,
 }
 
-type ServiceMap = HashMap<Uuid, Arc<NetworkService>>;
+type ServiceMap = HashMap<Uuid, Arc<EngineService>>;
 static HOST_REGISTRY: Lazy<Mutex<ServiceMap>> = Lazy::new(|| Mutex::new(HashMap::new()));
 
-impl NetworkService {
+impl EngineService {
   pub(crate) async fn new(msg: Initialize) -> Result<Arc<Self>> {
-    debug!("initializing network service");
+    debug!("initializing engine service");
     let graph = flow_graph_interpreter::graph::from_def(&msg.manifest)?;
     let mut components = HandlerMap::default();
     let rng = Random::from_seed(msg.rng_seed);
@@ -56,7 +56,7 @@ impl NetworkService {
       let span = debug_span!(parent: &msg.span, "main:init");
       let collection_init = ComponentInitOptions {
         rng_seed: rng.seed(),
-        network_id: msg.id,
+        engine_id: msg.id,
         allow_latest: msg.allow_latest,
         allowed_insecure: msg.allowed_insecure.clone(),
         timeout: msg.timeout,
@@ -66,7 +66,7 @@ impl NetworkService {
       let component = config::BoundComponent::new(
         &ns,
         #[allow(deprecated)]
-        config::ComponentDefinition::Wasm(config::WasmComponent {
+        config::ComponentDefinition::Wasm(config::components::WasmComponent {
           reference: comp.reference().clone(),
           config: Default::default(),
           permissions: Default::default(),
@@ -77,20 +77,20 @@ impl NetworkService {
 
       components
         .add(main_component)
-        .map_err(|e| NetworkError::InterpreterInit(msg.manifest.source().clone(), Box::new(e)))?;
+        .map_err(|e| EngineError::InterpreterInit(msg.manifest.source().clone(), Box::new(e)))?;
     } else if let ComponentImplementation::Composite(comp) = msg.manifest.component() {
       let span = debug_span!(parent: &msg.span, "components:init");
 
       let stdlib = initialize_native_component(V0_NAMESPACE.to_owned(), rng.seed(), &span)?;
       components
         .add(stdlib)
-        .map_err(|e| NetworkError::InterpreterInit(msg.manifest.source().clone(), Box::new(e)))?;
+        .map_err(|e| EngineError::InterpreterInit(msg.manifest.source().clone(), Box::new(e)))?;
 
       let span = debug_span!(parent: &msg.span, "components:init");
       for collection in comp.components().values() {
         let collection_init = ComponentInitOptions {
           rng_seed: rng.seed(),
-          network_id: msg.id,
+          engine_id: msg.id,
           allow_latest: msg.allow_latest,
           allowed_insecure: msg.allowed_insecure.clone(),
           timeout: msg.timeout,
@@ -99,7 +99,7 @@ impl NetworkService {
         let p = initialize_component(collection, collection_init).await?;
         components
           .add(p)
-          .map_err(|e| NetworkError::InterpreterInit(msg.manifest.source().clone(), Box::new(e)))?;
+          .map_err(|e| EngineError::InterpreterInit(msg.manifest.source().clone(), Box::new(e)))?;
       }
     }
 
@@ -107,7 +107,7 @@ impl NetworkService {
 
     let mut interpreter =
       flow_graph_interpreter::Interpreter::new(Some(rng.seed()), graph, Some(ns.clone()), Some(components))
-        .map_err(|e| NetworkError::InterpreterInit(source, Box::new(e)))?;
+        .map_err(|e| EngineError::InterpreterInit(source, Box::new(e)))?;
 
     let options = InterpreterOptions {
       output_timeout: msg.timeout,
@@ -122,7 +122,7 @@ impl NetworkService {
       None => interpreter.start(Some(options), None).await,
     }
 
-    let network = Arc::new(NetworkService {
+    let engine = Arc::new(EngineService {
       started_time: std::time::Instant::now(),
       id: msg.id,
       namespace: ns,
@@ -130,9 +130,9 @@ impl NetworkService {
     });
 
     let mut registry = HOST_REGISTRY.lock();
-    registry.insert(msg.id, network.clone());
+    registry.insert(msg.id, engine.clone());
 
-    Ok(network)
+    Ok(engine)
   }
 
   pub(crate) fn new_from_manifest<'a, 'b>(
@@ -140,7 +140,7 @@ impl NetworkService {
     manifest: ComponentConfiguration,
     namespace: Option<String>,
     opts: ComponentInitOptions<'b>,
-  ) -> BoxFuture<'b, Result<Arc<NetworkService>>>
+  ) -> BoxFuture<'b, Result<Arc<EngineService>>>
   where
     'a: 'b,
   {
@@ -156,12 +156,12 @@ impl NetworkService {
         event_log: None,
         span: debug_span!("engine:new"),
       };
-      NetworkService::new(init).await
+      EngineService::new(init).await
     })
   }
 
   pub(crate) fn for_id(id: &Uuid) -> Option<Arc<Self>> {
-    trace!(%id, "get network");
+    trace!(%id, "get engine service");
     let registry = HOST_REGISTRY.lock();
     registry.get(id).cloned()
   }
@@ -172,7 +172,7 @@ impl NetworkService {
   }
 }
 
-impl InvocationHandler for NetworkService {
+impl InvocationHandler for EngineService {
   fn get_signature(&self) -> std::result::Result<ComponentSignature, ComponentError> {
     let mut signature = self.interpreter.get_export_signature().clone();
     signature.name = Some(self.id.as_hyphenated().to_string());
@@ -207,7 +207,7 @@ impl InvocationHandler for NetworkService {
 #[derive(Debug)]
 pub(crate) struct ComponentInitOptions<'a> {
   pub(crate) rng_seed: Seed,
-  pub(crate) network_id: Uuid,
+  pub(crate) engine_id: Uuid,
   pub(crate) allow_latest: bool,
   pub(crate) allowed_insecure: Vec<String>,
   pub(crate) timeout: Duration,
@@ -225,13 +225,17 @@ pub(crate) async fn initialize_component<'a, 'b>(
   match &collection.kind {
     #[allow(deprecated)]
     config::ComponentDefinition::Wasm(def) => init_wasm_component(def, id, opts).instrument(span).await,
-    // CollectionKind::GrpcUrl(v) => initialize_grpc_collection(v, namespace).await,
     config::ComponentDefinition::Manifest(def) => init_manifest_component(def, id, opts).instrument(span).await,
-    _ => unimplemented!(),
+    config::ComponentDefinition::Reference(_) => unreachable!(),
+    config::ComponentDefinition::GrpcUrl(_) => todo!(), // CollectionKind::GrpcUrl(v) => initialize_grpc_collection(v, namespace).await,
+    config::ComponentDefinition::HighLevelComponent(hlc) => match hlc {
+      config::HighLevelComponent::Postgres(_) => todo!(),
+    },
+    config::ComponentDefinition::Native(_) => unreachable!(),
   }
 }
 
 #[cfg(test)]
 mod test {
-  // You can find many of the network tests in the integration tests
+  // You can find many of the engine tests in the integration tests
 }

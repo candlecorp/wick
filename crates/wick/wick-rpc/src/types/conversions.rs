@@ -6,7 +6,6 @@ use wick_interface_types as wick;
 use wick_packet::{Entity, InherentData, Metadata, Packet, WickMetadata};
 
 use crate::error::RpcError;
-use crate::rpc::{InternalType, StructType};
 use crate::{rpc, DurationStatistics};
 
 type Result<T> = std::result::Result<T, RpcError>;
@@ -269,14 +268,11 @@ impl TryFrom<wick::TypeSignature> for rpc::TypeSignature {
       wick::TypeSignature::String => PrimitiveType::String.into(),
       wick::TypeSignature::Datetime => PrimitiveType::Datetime.into(),
       wick::TypeSignature::Bytes => PrimitiveType::Bytes.into(),
-      wick::TypeSignature::Value => PrimitiveType::Value.into(),
+      wick::TypeSignature::Object => PrimitiveType::Object.into(),
       wick::TypeSignature::Custom(v) => Signature::Custom(v),
       wick::TypeSignature::Stream { ty } => Signature::Stream(Box::new(InnerType {
         r#type: Some(ty.try_into()?),
       })),
-      wick::TypeSignature::Internal(t) => match t {
-        wick::InternalType::OperationInput => Signature::Internal(InternalType::OperationInput.into()),
-      },
       wick::TypeSignature::Ref { reference } => Signature::Ref(RefType { r#ref: reference }),
       wick::TypeSignature::List { ty } => Signature::List(Box::new(InnerType {
         r#type: Some(ty.try_into()?),
@@ -289,7 +285,6 @@ impl TryFrom<wick::TypeSignature> for rpc::TypeSignature {
         value_type: Some(value.try_into()?),
       })),
       wick::TypeSignature::Link { schemas } => Signature::Link(LinkType { schemas }),
-      wick::TypeSignature::Struct => Signature::Struct(StructType {}),
       wick::TypeSignature::AnonymousStruct(v) => Signature::AnonymousStruct(rpc::AnonymousStruct {
         fields: convert_list(v)?,
       }),
@@ -329,7 +324,7 @@ impl TryFrom<rpc::TypeSignature> for wick::TypeSignature {
               PrimitiveType::String => DestType::String,
               PrimitiveType::Datetime => DestType::Datetime,
               PrimitiveType::Bytes => DestType::Bytes,
-              PrimitiveType::Value => DestType::Value,
+              PrimitiveType::Object => DestType::Object,
             },
             None => return err,
           }
@@ -367,16 +362,6 @@ impl TryFrom<rpc::TypeSignature> for wick::TypeSignature {
           reference: reference.r#ref,
         },
         Signature::Link(link) => DestType::Link { schemas: link.schemas },
-        Signature::Internal(t) => {
-          let t = InternalType::from_i32(t);
-          t.map_or_else(
-            || todo!(),
-            |t| match t {
-              InternalType::OperationInput => DestType::Internal(wick::InternalType::OperationInput),
-            },
-          )
-        }
-        Signature::Struct(_) => DestType::Struct,
         Signature::AnonymousStruct(v) => DestType::AnonymousStruct(convert_list(v.fields)?),
       },
       None => return err,

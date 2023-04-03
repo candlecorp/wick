@@ -1,7 +1,7 @@
 use crate::PacketError;
 
 /// Errors originating from WASM components.
-#[derive(Debug, thiserror::Error)]
+#[derive(Debug, thiserror::Error, PartialEq)]
 pub enum Error {
   /// Thrown when a user attempts to retrieve a stream for a port that doesn't exist.
   #[error("No stream found for port '{0}'")]
@@ -50,7 +50,7 @@ impl From<Box<dyn std::error::Error>> for Error {
   }
 }
 
-#[derive(thiserror::Error, Debug, Clone)]
+#[derive(thiserror::Error, Debug)]
 
 /// The error type for Wick Entities.
 pub enum ParseError {
@@ -69,4 +69,7 @@ pub enum ParseError {
   /// Error parsing an entity URL.
   #[error("{0}")]
   Parse(url::ParseError),
+  /// Error converting arguments into an [crate::Entity].
+  #[error(transparent)]
+  Conversion(Box<dyn std::error::Error + Send + Sync>),
 }

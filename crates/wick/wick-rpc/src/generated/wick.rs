@@ -277,7 +277,7 @@ pub struct EnumVariant {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TypeSignature {
-  #[prost(oneof = "type_signature::Signature", tags = "1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11")]
+  #[prost(oneof = "type_signature::Signature", tags = "1, 2, 3, 4, 5, 6, 9, 10, 11")]
   pub signature: ::core::option::Option<type_signature::Signature>,
 }
 /// Nested message and enum types in `TypeSignature`.
@@ -297,10 +297,6 @@ pub mod type_signature {
     Ref(super::RefType),
     #[prost(message, tag = "6")]
     Link(super::LinkType),
-    #[prost(enumeration = "super::InternalType", tag = "7")]
-    Internal(i32),
-    #[prost(message, tag = "8")]
-    Struct(super::StructType),
     #[prost(message, tag = "9")]
     Stream(::prost::alloc::boxed::Box<super::InnerType>),
     #[prost(message, tag = "10")]
@@ -340,7 +336,7 @@ pub mod simple_type {
     String = 11,
     Datetime = 12,
     Bytes = 13,
-    Value = 15,
+    Object = 15,
   }
   impl PrimitiveType {
     /// String value of the enum field names used in the ProtoBuf definition.
@@ -363,7 +359,7 @@ pub mod simple_type {
         PrimitiveType::String => "STRING",
         PrimitiveType::Datetime => "DATETIME",
         PrimitiveType::Bytes => "BYTES",
-        PrimitiveType::Value => "VALUE",
+        PrimitiveType::Object => "OBJECT",
       }
     }
     /// Creates an enum from field names used in the ProtoBuf definition.
@@ -383,7 +379,7 @@ pub mod simple_type {
         "STRING" => Some(Self::String),
         "DATETIME" => Some(Self::Datetime),
         "BYTES" => Some(Self::Bytes),
-        "VALUE" => Some(Self::Value),
+        "OBJECT" => Some(Self::Object),
         _ => None,
       }
     }
@@ -395,9 +391,6 @@ pub struct RefType {
   #[prost(string, tag = "1")]
   pub r#ref: ::prost::alloc::string::String,
 }
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct StructType {}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct LinkType {
@@ -417,29 +410,6 @@ pub struct MapType {
 pub struct InnerType {
   #[prost(message, optional, boxed, tag = "1")]
   pub r#type: ::core::option::Option<::prost::alloc::boxed::Box<TypeSignature>>,
-}
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
-#[repr(i32)]
-pub enum InternalType {
-  OperationInput = 0,
-}
-impl InternalType {
-  /// String value of the enum field names used in the ProtoBuf definition.
-  ///
-  /// The values are not transformed in any way and thus are considered stable
-  /// (if the ProtoBuf definition does not change) and safe for programmatic use.
-  pub fn as_str_name(&self) -> &'static str {
-    match self {
-      InternalType::OperationInput => "OperationInput",
-    }
-  }
-  /// Creates an enum from field names used in the ProtoBuf definition.
-  pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
-    match value {
-      "OperationInput" => Some(Self::OperationInput),
-      _ => None,
-    }
-  }
 }
 /// Generated client implementations.
 pub mod invocation_service_client {

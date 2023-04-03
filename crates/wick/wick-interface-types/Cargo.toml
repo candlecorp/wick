@@ -15,12 +15,14 @@ homepage = "https://candle.dev"
 default = ["yaml", "parser"]
 parser = ["nom"]
 yaml = ["serde_yaml"]
+typeid = ["serde_json"]
 
 [dependencies]
 serde = { workspace = true, features = ["derive"] }
 serde_repr = { workspace = true }
 nom = { workspace = true, optional = true }
 serde_yaml = { workspace = true, optional = true }
+serde_json = { workspace = true, optional = true }
 
 [dev-dependencies]
 anyhow = { workspace = true }

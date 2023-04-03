@@ -102,14 +102,12 @@ fn expand_type(config: &config::Config, dir: Direction, ty: &wick_interface_type
     }
     wick_interface_types::TypeSignature::Link { schemas } => quote! {wick_component::packet::CollectionLink},
     wick_interface_types::TypeSignature::Datetime => todo!("implement datetime in new codegen"),
-    wick_interface_types::TypeSignature::Value => todo!("implement value in new codegen"),
-    wick_interface_types::TypeSignature::Internal(_) => todo!("implement internal types in new codegen"),
     wick_interface_types::TypeSignature::Ref { reference } => todo!("implement ref in new codegen"),
     wick_interface_types::TypeSignature::Stream { ty } => {
       let ty = expand_type(config, dir, ty);
       quote! { WickStream<#ty> }
     }
-    wick_interface_types::TypeSignature::Struct => {
+    wick_interface_types::TypeSignature::Object => {
       quote! { wasmrs_guest::Value }
     }
     wick_interface_types::TypeSignature::AnonymousStruct(_) => todo!("implement anonymous struct in new codegen"),
@@ -444,7 +442,7 @@ mod test {
   #[test]
   fn test_expand_type() -> Result<()> {
     let config = Config::default();
-    let ty = TypeSignature::Struct;
+    let ty = TypeSignature::Object;
     let src = expand_type(&config, Direction::In, &ty);
 
     assert_eq!(&src.to_string(), "wasmrs_guest :: Value");

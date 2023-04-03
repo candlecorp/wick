@@ -61,11 +61,11 @@ impl Cli {
       &app_binding.id,
     );
     let invocation = Invocation::new(
-      Entity::client("cli_channel"),
+      Entity::server("cli_channel"),
       Entity::operation(&cli_binding.id, config.operation()),
       None,
     );
-    let network = crate::NetworkBuilder::new()
+    let engine = crate::EngineBuilder::new()
       .add_import(cli_binding)
       .add_import(app_binding)
       .build()
@@ -79,7 +79,7 @@ impl Cli {
 
     let packet_stream = packet_stream!(("args", args), ("isInteractive", is_interactive), ("program", link));
 
-    let mut response = network.invoke(invocation, packet_stream).await?;
+    let mut response = engine.invoke(invocation, packet_stream).await?;
     while let Some(packet) = response.next().await {
       trace!(?packet, "trigger:cli:response");
     }

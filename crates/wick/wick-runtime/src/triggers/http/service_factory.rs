@@ -13,17 +13,17 @@ use wick_packet::{packets, Entity, Invocation, Observer, Packet, PacketStream};
 use super::{HttpError, HttpRouter};
 use crate::dev::prelude::RuntimeError;
 use crate::triggers::http::conversions::{convert_request, convert_response};
-use crate::Network;
+use crate::Engine;
 
 pub(super) struct ServiceFactory {
-  network: Arc<Network>,
+  engine: Arc<Engine>,
   routers: Arc<Vec<HttpRouter>>,
 }
 
 impl ServiceFactory {
-  pub(super) fn new(network: Network, routers: Vec<HttpRouter>) -> Self {
+  pub(super) fn new(engine: Engine, routers: Vec<HttpRouter>) -> Self {
     Self {
-      network: Arc::new(network),
+      engine: Arc::new(engine),
       routers: Arc::new(routers),
     }
   }
@@ -39,22 +39,22 @@ impl<T> Service<T> for ServiceFactory {
   }
 
   fn call(&mut self, _: T) -> Self::Future {
-    let network = self.network.clone();
+    let engine = self.engine.clone();
     let routers = self.routers.clone();
 
-    let fut = async move { Ok(ResponseService::new(network, routers)) };
+    let fut = async move { Ok(ResponseService::new(engine, routers)) };
     Box::pin(fut)
   }
 }
 
 pub(super) struct ResponseService {
-  network: Arc<Network>,
+  engine: Arc<Engine>,
   routers: Arc<Vec<HttpRouter>>,
 }
 
 impl ResponseService {
-  fn new(network: Arc<Network>, routers: Arc<Vec<HttpRouter>>) -> Self {
-    Self { network, routers }
+  fn new(engine: Arc<Engine>, routers: Arc<Vec<HttpRouter>>) -> Self {
+    Self { engine, routers }
   }
 }
 
@@ -108,7 +108,7 @@ impl Service<Request<Body>> for ResponseService {
 
   fn call(&mut self, req: Request<Body>) -> Self::Future {
     trace!("http:trigger:request");
-    let network = self.network.clone();
+    let engine = self.engine.clone();
     let router = self
       .routers
       .iter()
@@ -121,11 +121,11 @@ impl Service<Request<Body>> for ResponseService {
       let handler = match router {
         Some(h) => {
           let invocation = Invocation::new(
-            Entity::client("http_client"),
+            Entity::server("http_client"),
             Entity::operation(&h.component, &h.operation),
             None,
           );
-          let stream = network.invoke(invocation, rx);
+          let stream = engine.invoke(invocation, rx);
           match convert_request(req) {
             Ok((req, mut body)) => {
               let packets = packets!(("request", req));

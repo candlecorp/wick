@@ -50,6 +50,9 @@ impl AppConfiguration {
     if let Some(component) = self.import.get(name) {
       return Some(ConfigurationItem::Component(&component.kind));
     }
+    if let Some(resource) = self.resources.get(name) {
+      return Some(ConfigurationItem::Resource(&resource.kind));
+    }
     None
   }
 
@@ -104,6 +107,20 @@ impl AppConfiguration {
     &self.resources
   }
 
+  /// Add a resource to the application configuration.
+  pub fn add_resource(&mut self, name: impl AsRef<str>, resource: ResourceDefinition) {
+    self
+      .resources
+      .insert(name.as_ref().to_owned(), BoundResource::new(name.as_ref(), resource));
+  }
+
+  /// Add a component to the application configuration.
+  pub fn add_import(&mut self, name: impl AsRef<str>, component: ComponentDefinition) {
+    self
+      .import
+      .insert(name.as_ref().to_owned(), BoundComponent::new(name.as_ref(), component));
+  }
+
   #[must_use]
   /// Get the application's triggers.
   pub fn triggers(&self) -> &Vec<TriggerDefinition> {
@@ -128,10 +145,17 @@ pub enum ConfigurationItem<'a> {
 
 impl<'a> ConfigurationItem<'a> {
   /// Get the component definition or return an error.
-  pub fn component(&self) -> std::result::Result<&'a ComponentDefinition, ReferenceError> {
+  pub fn try_component(&self) -> std::result::Result<&'a ComponentDefinition, ReferenceError> {
     match self {
       ConfigurationItem::Component(c) => Ok(c),
       _ => Err(ReferenceError::Component),
+    }
+  }
+  /// Get the resource definition or return an error.
+  pub fn try_resource(&self) -> std::result::Result<&'a ResourceDefinition, ReferenceError> {
+    match self {
+      ConfigurationItem::Resource(c) => Ok(c),
+      _ => Err(ReferenceError::Resource),
     }
   }
 }

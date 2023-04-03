@@ -57,7 +57,7 @@ pub(crate) async fn handle_command(opts: TestCommand) -> Result<()> {
   let config = merge_config(&config, &opts.fetch, Some(server_options));
 
   let mut host = ComponentHostBuilder::from_definition(config).build();
-  host.start_network(opts.seed.map(Seed::unsafe_new)).await?;
+  host.start_engine(opts.seed.map(Seed::unsafe_new)).await?;
 
   let component: wick_host::Component = host.into();
 

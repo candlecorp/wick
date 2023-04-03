@@ -1,7 +1,7 @@
 use core::panic;
 use std::path::PathBuf;
 
-use wick_config::component_config::{ComponentKind, CompositeComponentConfiguration};
+use wick_config::component_config::CompositeComponentConfiguration;
 use wick_config::config::ComponentDefinition;
 use wick_config::error::ManifestError;
 use wick_config::*;
@@ -55,7 +55,7 @@ async fn test_main() -> Result<(), ManifestError> {
     .await?
     .try_component_config()?;
 
-  assert!(matches!(component.component().kind(), ComponentKind::Wasm));
+  assert!(matches!(component.component().kind(), config::ComponentKind::Wasm));
 
   Ok(())
 }

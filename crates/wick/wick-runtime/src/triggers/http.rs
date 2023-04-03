@@ -16,7 +16,7 @@ use super::{resolve_ref, Trigger, TriggerKind};
 use crate::dev::prelude::{RuntimeError, *};
 use crate::resources::{Resource, ResourceKind};
 use crate::triggers::http::service_factory::ServiceFactory;
-use crate::Network;
+use crate::Engine;
 
 #[derive(Debug, thiserror::Error)]
 enum HttpError {
@@ -42,11 +42,11 @@ struct HttpInstance {
 }
 
 impl HttpInstance {
-  async fn new(network: Network, routers: Vec<HttpRouter>, socket: &SocketAddr) -> Self {
+  async fn new(engine: Engine, routers: Vec<HttpRouter>, socket: &SocketAddr) -> Self {
     trace!(%socket,"http server starting");
     let (tx, rx) = tokio::sync::oneshot::channel::<()>();
 
-    let server = Server::bind(socket).serve(ServiceFactory::new(network, routers));
+    let server = Server::bind(socket).serve(ServiceFactory::new(engine, routers));
     let handle = tokio::spawn(async move {
       let _ = server
         .with_graceful_shutdown(async move {
@@ -107,7 +107,7 @@ impl Http {
     config: config::HttpTriggerConfig,
     socket: &SocketAddr,
   ) -> Result<HttpInstance, RuntimeError> {
-    let mut network = crate::NetworkBuilder::new();
+    let mut engine = crate::EngineBuilder::new();
     let mut routers = Vec::new();
     for (i, router) in config.routers().iter().enumerate() {
       let router = match router {
@@ -116,7 +116,7 @@ impl Http {
       };
       let router_component = resolve_ref(&app_config, router.operation().component())?;
       let router_binding = config::BoundComponent::new(i.to_string(), router_component);
-      network = network.add_import(router_binding);
+      engine = engine.add_import(router_binding);
       routers.push(HttpRouter {
         path: router.path().to_owned(),
         operation: router.operation().operation().to_owned(),
@@ -124,9 +124,9 @@ impl Http {
       });
     }
     debug!(?routers, "http routers");
-    let network = network.build().await?;
+    let engine = engine.build().await?;
 
-    let instance = HttpInstance::new(network, routers, socket).await;
+    let instance = HttpInstance::new(engine, routers, socket).await;
 
     Ok(instance)
   }

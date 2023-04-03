@@ -1694,5 +1694,173 @@
 
 
 </ul>
+</div></div></div><div class="definition">
+<h2 class="definition-name type-name">
+  <a name="PostgresComponent">PostgresComponent</a>
+</h2>
+
+<span class="description type-description">A component made out of other components</span>
+<div class=fields>
+<div class=field>
+
+<h3 class=field-name>
+  <a name="resource">resource</a>
+</h3>
+
+<span class="description field-description">The TcpPort reference to listen on for connections.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string</span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="user">user</a>
+</h3>
+
+<span class="description field-description">The username to use when connecting to the postgres database.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string</span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="password">password</a>
+</h3>
+
+<span class="description field-description">The password to use when connecting to the postgres database.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string</span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="database">database</a>
+</h3>
+
+<span class="description field-description">The database to connect to.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string</span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="tls">tls</a>
+</h3>
+
+<span class="description field-description">Whether or not to use TLS.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>bool</span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="operations">operations</a>
+</h3>
+
+<span class="description field-description">A list of operations to expose on this component.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#PostgresOperationDefinition">PostgresOperationDefinition</a>[]</span></span></li>
+
+
+</ul>
+</div></div></div><div class="definition">
+<h2 class="definition-name type-name">
+  <a name="PostgresOperationDefinition">PostgresOperationDefinition</a>
+</h2>
+
+
+<div class=fields>
+<div class=field>
+
+<h3 class=field-name>
+  <a name="name">name</a>
+</h3>
+
+<span class="description field-description">The name of the operation.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string</span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="inputs">inputs</a>
+</h3>
+
+<span class="description field-description">Types of the inputs to the operation.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#Field">Field</a>[]</span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="outputs">outputs</a>
+</h3>
+
+<span class="description field-description">Types of the outputs to the operation.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#Field">Field</a>[]</span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="query">query</a>
+</h3>
+
+<span class="description field-description">The query to execute.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string</span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="arguments">arguments</a>
+</h3>
+
+<span class="description field-description">The arguments to the query, defined as a list of input names.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string[]</span></span></li>
+
+
+</ul>
 </div></div></div></div>
 

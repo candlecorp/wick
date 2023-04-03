@@ -9,14 +9,14 @@ pub(crate) mod prelude {
 use wick_config::WickConfiguration;
 
 use crate::test::prelude::*;
-use crate::{Network, NetworkBuilder};
+use crate::{Engine, EngineBuilder};
 
-pub(crate) async fn init_network_from_yaml(path: &str) -> Result<(Network, uuid::Uuid)> {
+pub(crate) async fn init_engine_from_yaml(path: &str) -> Result<(Engine, uuid::Uuid)> {
   let def = WickConfiguration::load_from_file(path).await?.try_component_config()?;
 
-  let network = NetworkBuilder::from_definition(def)?.build().await?;
+  let engine = EngineBuilder::from_definition(def)?.build().await?;
 
-  let network_id = network.uid;
-  trace!(network_id = %network_id, "network uid");
-  Ok((network, network_id))
+  let engine_id = engine.uid;
+  trace!(engine_id = %engine_id, "engine uid");
+  Ok((engine, engine_id))
 }

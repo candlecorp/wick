@@ -16,24 +16,21 @@ use crate::app_config::{
   TriggerDefinition,
   UdpPort,
 };
-use crate::component_config::{
-  ComponentImplementation,
-  CompositeComponentConfiguration,
-  OperationSignature,
-  WasmComponentConfiguration,
-};
-use crate::config::common::component_definition::{
-  BoundComponent,
-  ComponentDefinition,
-  ComponentOperationExpression,
-  ComponentReference,
-  GrpcUrlComponent,
-  ManifestComponent,
-};
+use crate::component_config::{CompositeComponentConfiguration, OperationSignature, WasmComponentConfiguration};
+use crate::config::common::component_definition::{BoundComponent, ComponentDefinition, ComponentOperationExpression};
 use crate::config::common::flow_definition::{PortReference, SenderData};
 use crate::config::common::host_definition::HostConfig;
 use crate::config::common::test_case;
-use crate::config::{self, test_config, types_config, ComponentConfiguration, OperationInputConfig, ScheduleConfig};
+use crate::config::components::{self, ComponentReference, GrpcUrlComponent, ManifestComponent};
+use crate::config::{
+  self,
+  test_config,
+  types_config,
+  ComponentConfiguration,
+  ComponentImplementation,
+  HighLevelComponent,
+  ScheduleConfig,
+};
 use crate::error::ManifestError;
 use crate::utils::opt_str_to_ipv4addr;
 use crate::{v1, Result, WickConfiguration};
@@ -475,6 +472,9 @@ impl TryFrom<ComponentDefinition> for v1::ComponentDefinition {
       ComponentDefinition::Native(_) => todo!(),
       ComponentDefinition::Reference(v) => Self::ComponentReference(v.into()),
       ComponentDefinition::Manifest(v) => Self::ManifestComponent(v.try_into()?),
+      ComponentDefinition::HighLevelComponent(v) => match v {
+        config::HighLevelComponent::Postgres(v) => Self::PostgresComponent(v.try_into()?),
+      },
     };
     Ok(def)
   }
@@ -505,8 +505,8 @@ impl From<GrpcUrlComponent> for v1::GrpcUrlComponent {
   }
 }
 
-impl From<config::Permissions> for v1::Permissions {
-  fn from(value: config::Permissions) -> Self {
+impl From<config::components::Permissions> for v1::Permissions {
+  fn from(value: config::components::Permissions) -> Self {
     Self { dirs: value.dirs }
   }
 }
@@ -571,23 +571,24 @@ impl TryFrom<crate::v1::ComponentDefinition> for ComponentDefinition {
   type Error = ManifestError;
   fn try_from(def: crate::v1::ComponentDefinition) -> Result<Self> {
     let res = match def {
-      crate::v1::ComponentDefinition::GrpcUrlComponent(v) => ComponentDefinition::GrpcUrl(GrpcUrlComponent {
+      v1::ComponentDefinition::GrpcUrlComponent(v) => ComponentDefinition::GrpcUrl(GrpcUrlComponent {
         url: v.url,
         config: v.config,
       }),
-      crate::v1::ComponentDefinition::ManifestComponent(v) => ComponentDefinition::Manifest(ManifestComponent {
+      v1::ComponentDefinition::ManifestComponent(v) => ComponentDefinition::Manifest(ManifestComponent {
         reference: v.reference.try_into()?,
         config: v.config,
       }),
-      crate::v1::ComponentDefinition::ComponentReference(v) => {
-        ComponentDefinition::Reference(ComponentReference { id: v.id })
+      v1::ComponentDefinition::ComponentReference(v) => ComponentDefinition::Reference(ComponentReference { id: v.id }),
+      v1::ComponentDefinition::PostgresComponent(v) => {
+        ComponentDefinition::HighLevelComponent(HighLevelComponent::Postgres(v.try_into()?))
       }
     };
     Ok(res)
   }
 }
 
-impl From<v1::Permissions> for config::Permissions {
+impl From<v1::Permissions> for config::components::Permissions {
   fn from(def: crate::v1::Permissions) -> Self {
     Self { dirs: def.dirs }
   }
@@ -939,6 +940,68 @@ impl TryFrom<config::Metadata> for v1::Metadata {
       documentation: value.documentation,
       licenses: value.licenses,
       icon: value.icon.map(TryInto::try_into).transpose()?,
+    })
+  }
+}
+
+impl TryFrom<v1::PostgresComponent> for components::PostgresComponent {
+  type Error = crate::Error;
+  fn try_from(value: v1::PostgresComponent) -> Result<Self> {
+    Ok(Self {
+      resource: value.resource,
+      user: value.user,
+      password: value.password,
+      database: value.database,
+      tls: value.tls,
+      operations: value
+        .operations
+        .into_iter()
+        .map(TryInto::try_into)
+        .collect::<Result<_>>()?,
+    })
+  }
+}
+
+impl TryFrom<v1::PostgresOperationDefinition> for components::PostgresOperationDefinition {
+  type Error = crate::Error;
+  fn try_from(value: v1::PostgresOperationDefinition) -> Result<Self> {
+    Ok(Self {
+      name: value.name,
+      inputs: value.inputs,
+      outputs: value.outputs,
+      query: value.query,
+      arguments: value.arguments,
+    })
+  }
+}
+
+impl TryFrom<components::PostgresComponent> for v1::PostgresComponent {
+  type Error = crate::Error;
+  fn try_from(value: components::PostgresComponent) -> Result<Self> {
+    Ok(Self {
+      resource: value.resource,
+      user: value.user,
+      password: value.password,
+      database: value.database,
+      tls: value.tls,
+      operations: value
+        .operations
+        .into_iter()
+        .map(TryInto::try_into)
+        .collect::<Result<_>>()?,
+    })
+  }
+}
+
+impl TryFrom<components::PostgresOperationDefinition> for v1::PostgresOperationDefinition {
+  type Error = crate::Error;
+  fn try_from(value: components::PostgresOperationDefinition) -> Result<Self> {
+    Ok(Self {
+      name: value.name,
+      inputs: value.inputs,
+      outputs: value.outputs,
+      query: value.query,
+      arguments: value.arguments,
     })
   }
 }

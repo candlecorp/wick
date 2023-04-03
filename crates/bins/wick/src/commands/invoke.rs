@@ -96,7 +96,7 @@ pub(crate) async fn handle_command(mut opts: InvokeCommand) -> Result<()> {
   let host_builder = ComponentHostBuilder::from_definition(config);
 
   let mut host = host_builder.build();
-  host.start_network(opts.seed.map(Seed::unsafe_new)).await?;
+  host.start_engine(opts.seed.map(Seed::unsafe_new)).await?;
 
   let signature = host.get_signature()?;
   let target_schematic = signature.get_operation(&component);

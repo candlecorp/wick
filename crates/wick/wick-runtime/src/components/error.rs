@@ -9,10 +9,10 @@ pub enum ComponentError {
   ComponentNotFound(String),
 
   #[error("{0}")]
-  NetworkError(String),
+  EngineError(String),
 
-  #[error("Error initializing subnetwork '{0}' : {1}")]
-  SubNetwork(AssetReference, String),
+  #[error("Error initializing inner engine scope '{0}' : {1}")]
+  SubScope(AssetReference, String),
 
   #[error("{0}")]
   Downstream(Box<dyn std::error::Error + Send + Sync>),

@@ -1,3 +1,4 @@
+use std::any::TypeId;
 use std::error::Error;
 use std::str::FromStr;
 
@@ -355,12 +356,8 @@ pub enum TypeSignature {
   Datetime,
   /// Raw bytes.
   Bytes,
-  /// Any valid value.
-  Value,
   /// A custom type name.
   Custom(String),
-  /// An internal type.
-  Internal(InternalType),
   /// A reference to another type.
   Ref {
     #[serde(rename = "ref")]
@@ -439,7 +436,7 @@ pub enum TypeSignature {
     schemas: Vec<String>,
   },
   /// A JSON-like key/value map.
-  Struct,
+  Object,
   /// An inline, anonymous struct interface.
   AnonymousStruct(
     /// A list of fields in the struct.
@@ -453,6 +450,40 @@ where
 {
   println!("{:?}", x);
   s.serialize_str(x)
+}
+
+impl TypeSignature {
+  #[must_use]
+  #[cfg(feature = "typeid")]
+  pub fn to_type_id(&self) -> TypeId {
+    match self {
+      TypeSignature::I8 => TypeId::of::<i8>(),
+      TypeSignature::I16 => TypeId::of::<i16>(),
+      TypeSignature::I32 => TypeId::of::<i32>(),
+      TypeSignature::I64 => TypeId::of::<i64>(),
+      TypeSignature::U8 => TypeId::of::<u8>(),
+      TypeSignature::U16 => TypeId::of::<u16>(),
+      TypeSignature::U32 => TypeId::of::<u32>(),
+      TypeSignature::U64 => TypeId::of::<u64>(),
+      TypeSignature::F32 => TypeId::of::<f32>(),
+      TypeSignature::F64 => TypeId::of::<f64>(),
+      TypeSignature::Bool => TypeId::of::<bool>(),
+      TypeSignature::String => TypeId::of::<String>(),
+      TypeSignature::Datetime => TypeId::of::<String>(),
+      TypeSignature::Bytes => TypeId::of::<Vec<u8>>(),
+      TypeSignature::Custom(_) => TypeId::of::<serde_json::Value>(),
+      TypeSignature::Ref { reference } => unimplemented!(),
+      TypeSignature::Stream { ty } => unimplemented!(),
+      TypeSignature::List { ty } => TypeId::of::<Vec<Box<dyn std::any::Any>>>(),
+      TypeSignature::Optional { ty } => TypeId::of::<Option<Box<dyn std::any::Any>>>(),
+      TypeSignature::Map { key, value } => {
+        TypeId::of::<std::collections::HashMap<Box<dyn std::any::Any>, Box<dyn std::any::Any>>>()
+      }
+      TypeSignature::Link { schemas } => TypeId::of::<serde_json::Value>(),
+      TypeSignature::Object => TypeId::of::<serde_json::Value>(),
+      TypeSignature::AnonymousStruct(_) => unimplemented!(),
+    }
+  }
 }
 
 impl std::fmt::Display for TypeSignature {
@@ -472,16 +503,14 @@ impl std::fmt::Display for TypeSignature {
       TypeSignature::String => f.write_str("string"),
       TypeSignature::Datetime => f.write_str("datetime"),
       TypeSignature::Bytes => f.write_str("bytes"),
-      TypeSignature::Value => f.write_str("value"),
       TypeSignature::Custom(_) => todo!(),
-      TypeSignature::Internal(_) => todo!(),
       TypeSignature::Ref { reference } => todo!(),
       TypeSignature::Stream { ty } => todo!(),
       TypeSignature::List { ty } => todo!(),
       TypeSignature::Optional { ty } => todo!(),
       TypeSignature::Map { key, value } => todo!(),
       TypeSignature::Link { schemas } => todo!(),
-      TypeSignature::Struct => todo!(),
+      TypeSignature::Object => f.write_str("object"),
       TypeSignature::AnonymousStruct(_) => todo!(),
     }
   }
@@ -605,11 +634,11 @@ mod test {
 
   #[test]
   fn test_decode() -> Result<()> {
-    let ty: TypeSignature = serde_json::from_str(r#""struct""#)?;
-    assert_eq!(ty, TypeSignature::Struct);
-    let ty: Field = serde_json::from_str(r#"{"name": "foo", "type": "struct"}"#)?;
+    let ty: TypeSignature = serde_json::from_str(r#""object""#)?;
+    assert_eq!(ty, TypeSignature::Object);
+    let ty: Field = serde_json::from_str(r#"{"name": "foo", "type": "object"}"#)?;
     assert_eq!(ty.name, "foo");
-    assert_eq!(ty.ty, TypeSignature::Struct);
+    assert_eq!(ty.ty, TypeSignature::Object);
     Ok(())
   }
 }

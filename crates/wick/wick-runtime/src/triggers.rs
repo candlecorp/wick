@@ -50,7 +50,7 @@ pub(crate) fn resolve_ref(
       .ok_or_else(|| {
         RuntimeError::InitializationFailed(format!("Could not find a component by the name of {}", cref.id()))
       })?
-      .component()
+      .try_component()
       .map_err(|e| RuntimeError::ReferenceError(cref.id().to_owned(), e))?
       .clone()
   } else {

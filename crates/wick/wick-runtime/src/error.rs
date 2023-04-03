@@ -2,7 +2,7 @@ use thiserror::Error;
 use wick_config::config::TriggerKind;
 
 pub use crate::components::error::ComponentError;
-pub use crate::network_service::error::NetworkError;
+pub use crate::engine_service::error::EngineError;
 use crate::resources::ResourceKind;
 
 #[derive(Error, Debug, Clone, Copy)]

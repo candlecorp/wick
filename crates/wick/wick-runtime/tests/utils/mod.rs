@@ -4,20 +4,20 @@ use futures::stream::StreamExt;
 use tracing::debug;
 use wick_config::WickConfiguration;
 use wick_packet::{Entity, InherentData, Invocation, Packet, PacketStream};
-use wick_runtime::{Network, NetworkBuilder};
+use wick_runtime::{Engine, EngineBuilder};
 
-pub async fn init_network_from_yaml(path: &str, timeout: Duration) -> anyhow::Result<(Network, uuid::Uuid)> {
+pub async fn init_engine_from_yaml(path: &str, timeout: Duration) -> anyhow::Result<(Engine, uuid::Uuid)> {
   let host_def = WickConfiguration::load_from_file(path).await?.try_component_config()?;
   debug!("Manifest loaded");
 
-  let builder = NetworkBuilder::from_definition(host_def)?
+  let builder = EngineBuilder::from_definition(host_def)?
     .namespace("__TEST__")
     .timeout(timeout);
 
-  let network = builder.build().await?;
+  let engine = builder.build().await?;
 
-  let nuid = network.uid;
-  Ok((network, nuid))
+  let nuid = engine.uid;
+  Ok((engine, nuid))
 }
 
 #[allow(unused)]
@@ -37,16 +37,16 @@ pub async fn base_test(
   target: Entity,
   mut expected: Vec<Packet>,
 ) -> anyhow::Result<()> {
-  let (network, _) = init_network_from_yaml(path, Duration::from_secs(1)).await?;
+  let (engine, _) = init_engine_from_yaml(path, Duration::from_secs(1)).await?;
   let inherent = InherentData::new(1, 1000);
 
   let target = if target.namespace() == Entity::LOCAL {
-    Entity::operation(network.namespace(), target.name())
+    Entity::operation(engine.namespace(), target.name())
   } else {
     target
   };
 
-  let result = network
+  let result = engine
     .invoke(
       Invocation::new(Entity::test("simple schematic"), target, Some(inherent)),
       stream,

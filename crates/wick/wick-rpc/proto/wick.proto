@@ -143,8 +143,6 @@ message TypeSignature {
     InnerType optional = 4;
     RefType ref = 5;
     LinkType link = 6;
-    InternalType internal = 7;
-    StructType struct = 8;
     InnerType stream = 9;
     AnonymousStruct anonymous_struct = 10;
     string custom = 11;
@@ -169,18 +167,12 @@ message SimpleType {
     STRING = 11;
     DATETIME = 12;
     BYTES = 13;
-    VALUE = 15;
+    OBJECT = 15;
   }
   PrimitiveType type = 1;
 }
 
-enum InternalType {
-  OperationInput = 0;
-}
-
 message RefType { string ref = 1; }
-
-message StructType {}
 
 message LinkType { repeated string schemas = 1; }
 

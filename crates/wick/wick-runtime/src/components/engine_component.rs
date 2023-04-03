@@ -11,13 +11,13 @@ struct State {}
 
 #[derive(Clone, Copy, Debug)]
 pub struct Component {
-  network_id: Uuid,
+  engine_id: Uuid,
 }
 
 impl Component {
   #[must_use]
-  pub fn new(network_id: Uuid) -> Self {
-    Self { network_id }
+  pub fn new(engine_id: Uuid) -> Self {
+    Self { engine_id }
   }
 }
 
@@ -27,17 +27,17 @@ impl RpcHandler for Component {
 
     let span = debug_span!(
       "invoke",
-      network_id = %self.network_id,
+      engine_id = %self.engine_id,
       target =  %invocation.target
     );
 
     Box::pin(async move {
-      let network = NetworkService::for_id(&self.network_id)
-        .ok_or_else(|| Box::new(RpcError::Component(format!("Network '{}' not found", target_url))))?;
+      let engine = EngineService::for_id(&self.engine_id)
+        .ok_or_else(|| Box::new(RpcError::Component(format!("Engine '{}' not found", target_url))))?;
 
       trace!(target = %target_url, "invoking");
 
-      let result: InvocationResponse = network
+      let result: InvocationResponse = engine
         .invoke(invocation, stream)
         .map_err(|e| RpcError::Component(e.to_string()))?
         .instrument(span)
@@ -52,8 +52,8 @@ impl RpcHandler for Component {
   }
 
   fn get_list(&self) -> RpcResult<Vec<HostedType>> {
-    let addr = NetworkService::for_id(&self.network_id)
-      .ok_or_else(|| Box::new(RpcError::Component(format!("Network '{}' not found", self.network_id))))?;
+    let addr = EngineService::for_id(&self.engine_id)
+      .ok_or_else(|| Box::new(RpcError::Component(format!("Engine '{}' not found", self.engine_id))))?;
     let signature = addr.get_signature().map_err(|e| RpcError::Component(e.to_string()))?;
     Ok(vec![HostedType::Component(signature)])
   }
@@ -86,9 +86,9 @@ mod tests {
 
   #[test_logger::test(tokio::test)]
   async fn test_request_log() -> Result<()> {
-    let (_, network_id) = init_network_from_yaml("./manifests/v0/simple.yaml").await?;
+    let (_, engine_id) = init_engine_from_yaml("./manifests/v0/simple.yaml").await?;
 
-    let component = Component::new(network_id);
+    let component = Component::new(engine_id);
     let user_data = "string to log";
     let result = request_log(&component, user_data).await?;
     print!("Result: {}", result);
@@ -98,10 +98,10 @@ mod tests {
 
   #[test_logger::test(tokio::test)]
   async fn test_list() -> Result<()> {
-    let (_, network_id) = init_network_from_yaml("./manifests/v0/simple.yaml").await?;
-    let component = Component::new(network_id);
+    let (_, engine_id) = init_engine_from_yaml("./manifests/v0/simple.yaml").await?;
+    let component = Component::new(engine_id);
     let list = component.get_list()?;
-    println!("components on network : {:?}", list);
+    println!("components on engine : {:?}", list);
     assert_eq!(list.len(), 1);
     Ok(())
   }
