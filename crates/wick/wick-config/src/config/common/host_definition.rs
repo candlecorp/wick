@@ -33,11 +33,11 @@ pub struct HttpConfig {
   pub address: Option<Ipv4Addr>,
 
   /// Path to pem file for TLS.
-  pub pem: Option<config::LocationReference>,
+  pub pem: Option<config::AssetReference>,
 
   /// Path to key file for TLS.
-  pub key: Option<config::LocationReference>,
+  pub key: Option<config::AssetReference>,
 
   /// Path to CA file.
-  pub ca: Option<config::LocationReference>,
+  pub ca: Option<config::AssetReference>,
 }

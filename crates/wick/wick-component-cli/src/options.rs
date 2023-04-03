@@ -57,15 +57,15 @@ pub struct ServerOptions {
 
   /// Path to pem file for TLS.
   #[cfg(feature = "grpc")]
-  pub pem: Option<wick_config::config::LocationReference>,
+  pub pem: Option<wick_config::config::AssetReference>,
 
   /// Path to key file for TLS.
   #[cfg(feature = "grpc")]
-  pub key: Option<wick_config::config::LocationReference>,
+  pub key: Option<wick_config::config::AssetReference>,
 
   /// Path to CA file.
   #[cfg(feature = "grpc")]
-  pub ca: Option<wick_config::config::LocationReference>,
+  pub ca: Option<wick_config::config::AssetReference>,
 }
 
 #[allow(clippy::expect_used)]
@@ -76,12 +76,12 @@ impl From<DefaultCliOptions> for Options {
       port: opts.rpc_port,
       address: opts.rpc_address,
       #[cfg(feature = "grpc")]
-      pem: opts.rpc_pem.map(wick_config::config::LocationReference::new),
+      pem: opts.rpc_pem.map(wick_config::config::AssetReference::new),
       #[cfg(feature = "grpc")]
-      key: opts.rpc_key.map(wick_config::config::LocationReference::new),
+      key: opts.rpc_key.map(wick_config::config::AssetReference::new),
 
       #[cfg(feature = "grpc")]
-      ca: opts.rpc_ca.map(wick_config::config::LocationReference::new),
+      ca: opts.rpc_ca.map(wick_config::config::AssetReference::new),
     });
 
     let id = opts

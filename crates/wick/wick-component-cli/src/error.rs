@@ -22,7 +22,7 @@ pub enum CliError {
 
   #[error(transparent)]
   /// Error related to configuration or asset loading.
-  Config(#[from] wick_config::Error),
+  Config(#[from] wick_config::AssetError),
 
   #[error(transparent)]
   #[cfg(feature = "grpc")]

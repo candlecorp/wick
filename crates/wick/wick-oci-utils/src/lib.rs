@@ -92,6 +92,9 @@ use std::str::FromStr;
 use crate::error::OciError;
 /// This crate's error module.
 pub mod error;
+/// OCI utilities related to pushing and pulling Wick packages.
+pub mod package;
+mod utils;
 pub use error::OciError as Error;
 mod architecture_map;
 pub use architecture_map::{generate_archmap, MultiArchManifest, MultiArchManifestEntry};

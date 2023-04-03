@@ -1,5 +1,5 @@
 use thiserror::Error;
-use wick_config::config::LocationReference;
+use wick_config::config::AssetReference;
 
 use crate::dev::prelude::*;
 
@@ -12,7 +12,7 @@ pub enum ComponentError {
   NetworkError(String),
 
   #[error("Error initializing subnetwork '{0}' : {1}")]
-  SubNetwork(LocationReference, String),
+  SubNetwork(AssetReference, String),
 
   #[error("{0}")]
   Downstream(Box<dyn std::error::Error + Send + Sync>),

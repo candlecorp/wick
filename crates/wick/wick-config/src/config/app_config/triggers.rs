@@ -1,7 +1,7 @@
 use crate::config::*;
 
 #[derive(Debug, Clone, derive_assets::AssetManager)]
-#[asset(LocationReference)]
+#[asset(AssetReference)]
 
 /// Normalized representation of a trigger definition.
 pub enum TriggerDefinition {
@@ -41,7 +41,7 @@ impl std::fmt::Display for TriggerKind {
 }
 
 #[derive(Debug, Clone, PartialEq, derive_assets::AssetManager)]
-#[asset(LocationReference)]
+#[asset(AssetReference)]
 
 /// Normalized representation of a CLI trigger configuration.
 pub struct CliConfig {
@@ -50,7 +50,7 @@ pub struct CliConfig {
 }
 
 #[derive(Debug, Clone, derive_assets::AssetManager)]
-#[asset(LocationReference)]
+#[asset(AssetReference)]
 #[must_use]
 pub struct HttpTriggerConfig {
   #[asset(skip)]
@@ -69,7 +69,7 @@ impl HttpTriggerConfig {
 }
 
 #[derive(Debug, Clone, derive_assets::AssetManager)]
-#[asset(LocationReference)]
+#[asset(AssetReference)]
 #[must_use]
 pub struct RawRouterConfig {
   #[asset(skip)]
@@ -89,7 +89,7 @@ impl RawRouterConfig {
 }
 
 #[derive(Debug, Clone, derive_assets::AssetManager)]
-#[asset(LocationReference)]
+#[asset(AssetReference)]
 #[must_use]
 pub struct RestRouterConfig {
   #[asset(skip)]
@@ -108,7 +108,7 @@ impl RestRouterConfig {
 }
 
 #[derive(Debug, Clone, derive_assets::AssetManager)]
-#[asset(LocationReference)]
+#[asset(AssetReference)]
 #[must_use]
 pub enum HttpRouterConfig {
   RawRouter(RawRouterConfig),

@@ -15,8 +15,10 @@ use tokio::fs::read_to_string;
 use tracing::debug;
 pub use types_config::*;
 use url::Url;
+use wick_asset_reference::path_to_url;
+pub use wick_asset_reference::{AssetReference, FetchOptions};
 
-use crate::utils::{from_bytes, from_yaml, path_to_url};
+use crate::utils::{from_bytes, from_yaml};
 use crate::{v0, v1, Error};
 
 #[derive(Debug, Clone, Copy)]
@@ -40,7 +42,7 @@ impl std::fmt::Display for ConfigurationKind {
 }
 
 #[derive(Debug, Clone, derive_assets::AssetManager)]
-#[asset(LocationReference)]
+#[asset(AssetReference)]
 
 pub enum WickConfiguration {
   Component(ComponentConfiguration),
@@ -52,7 +54,7 @@ pub enum WickConfiguration {
 impl WickConfiguration {
   pub async fn fetch(path: impl Into<Url> + Send, options: FetchOptions) -> Result<Self, Error> {
     let path = path.into();
-    let location = LocationReference::new(path.as_str());
+    let location = AssetReference::new(path.as_str());
     let bytes = location
       .fetch(options)
       .await

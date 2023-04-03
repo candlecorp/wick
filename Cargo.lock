@@ -4623,6 +4623,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "wick-asset-reference"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "assets",
+ "bytes",
+ "derive-assets",
+ "logger",
+ "parking_lot",
+ "pretty_assertions",
+ "test-logger",
+ "thiserror",
+ "tokio",
+ "tokio-stream",
+ "tracing",
+ "url",
+ "wick-oci-utils",
+]
+
+[[package]]
 name = "wick-component"
 version = "0.14.0"
 dependencies = [
@@ -4719,14 +4739,10 @@ version = "0.24.0"
 dependencies = [
  "anyhow",
  "assets",
- "async-stream",
- "bytes",
  "derive-assets",
  "flow-expression-parser",
- "futures",
  "logger",
  "num-traits",
- "parking_lot",
  "pretty_assertions",
  "regex",
  "serde",
@@ -4741,6 +4757,7 @@ dependencies = [
  "tokio-stream",
  "tracing",
  "url",
+ "wick-asset-reference",
  "wick-interface-types",
  "wick-oci-utils",
  "wick-packet",
@@ -4853,6 +4870,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-recursion",
+ "bytes",
  "clap 4.1.8",
  "env_logger 0.10.0",
  "logger",
@@ -4860,6 +4878,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_yaml",
+ "sha256",
  "tar",
  "test-logger",
  "thiserror",
@@ -4891,6 +4910,7 @@ dependencies = [
  "tracing",
  "url",
  "wick-config",
+ "wick-oci-utils",
 ]
 
 [[package]]

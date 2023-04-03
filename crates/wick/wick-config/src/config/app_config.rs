@@ -13,7 +13,7 @@ use crate::error::ReferenceError;
 use crate::{config, v1, Result};
 
 #[derive(Debug, Clone, derive_assets::AssetManager)]
-#[asset(config::LocationReference)]
+#[asset(config::AssetReference)]
 #[must_use]
 /// The internal representation of a Wick manifest.
 pub struct AppConfiguration {

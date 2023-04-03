@@ -5,12 +5,12 @@ use wick_interface_types::{Field, TypeDefinition};
 use crate::config;
 
 #[derive(Debug, Clone, derive_assets::AssetManager)]
-#[asset(config::LocationReference)]
+#[asset(config::AssetReference)]
 #[must_use]
 /// The internal representation of a Wick manifest.
 pub struct WasmComponentConfiguration {
   /// The location of the component.
-  pub(crate) reference: config::LocationReference,
+  pub(crate) reference: config::AssetReference,
 
   /// Types used by the component's operations.
   #[asset(skip)]
@@ -43,7 +43,7 @@ impl WasmComponentConfiguration {
   }
 
   /// Get the reference location to the component.
-  pub fn reference(&self) -> &config::LocationReference {
+  pub fn reference(&self) -> &config::AssetReference {
     &self.reference
   }
 

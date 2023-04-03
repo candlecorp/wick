@@ -13,6 +13,9 @@ pub enum NetworkError {
   Manifest(#[from] Box<wick_config::Error>),
 
   #[error(transparent)]
+  Asset(#[from] wick_config::AssetError),
+
+  #[error(transparent)]
   NativeComponent(#[from] Box<dyn std::error::Error + Send + Sync>),
 
   #[error(transparent)]

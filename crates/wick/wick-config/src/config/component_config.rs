@@ -28,7 +28,7 @@ impl std::fmt::Display for ComponentKind {
 }
 
 #[derive(Debug, Clone, derive_assets::AssetManager)]
-#[asset(config::LocationReference)]
+#[asset(config::AssetReference)]
 #[must_use]
 pub enum ComponentImplementation {
   Wasm(WasmComponentConfiguration),
@@ -58,7 +58,7 @@ impl Default for ComponentImplementation {
 }
 
 #[derive(Debug, Default, Clone, derive_assets::AssetManager)]
-#[asset(config::LocationReference)]
+#[asset(config::AssetReference)]
 #[must_use]
 /// The internal representation of a Wick manifest.
 pub struct ComponentConfiguration {

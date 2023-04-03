@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use assets::{AssetManager, Status};
-use futures::StreamExt;
+use tokio_stream::StreamExt;
 use wick_config::config::FetchOptions;
 use wick_config::error::ManifestError;
 use wick_config::*;

@@ -1,11 +1,12 @@
+use std::future::Future;
 use std::sync::Arc;
 
 use assets::{Asset, AssetManager, Progress, Status};
 use bytes::{Bytes, BytesMut};
-use futures::Stream;
 use parking_lot::RwLock;
 use tokio::io::AsyncReadExt;
 use tokio_stream::wrappers::UnboundedReceiverStream;
+use tokio_stream::Stream;
 use tracing::{debug, trace};
 use url::Url;
 
@@ -14,12 +15,12 @@ use crate::{str_to_url, Error};
 
 #[derive(Debug, Clone)]
 #[must_use]
-pub struct LocationReference {
+pub struct AssetReference {
   pub(crate) location: String,
   pub(crate) baseurl: Arc<RwLock<Option<Url>>>,
 }
 
-impl std::fmt::Display for LocationReference {
+impl std::fmt::Display for AssetReference {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     write!(f, "{}", self.location)
   }
@@ -48,13 +49,13 @@ impl FetchOptions {
   }
 }
 
-impl PartialEq for LocationReference {
+impl PartialEq for AssetReference {
   fn eq(&self, other: &Self) -> bool {
     self.location == other.location && *self.baseurl.read() == *other.baseurl.read()
   }
 }
 
-impl LocationReference {
+impl AssetReference {
   /// Create a new location reference.
   pub fn new(location: impl AsRef<str>) -> Self {
     Self {
@@ -175,7 +176,7 @@ impl LocationReference {
   }
 }
 
-impl Asset for LocationReference {
+impl Asset for AssetReference {
   type Options = FetchOptions;
 
   #[allow(clippy::expect_used)]
@@ -214,16 +215,18 @@ impl Asset for LocationReference {
           self.retrieve_as_oci_with_progress(options)
         }
       }
-      Err(e) => Box::pin(futures::stream::once(async move {
-        Progress::new(self.location(), Status::Error(e.to_string()))
-      })),
+
+      Err(e) => Box::pin(tokio_stream::once(Progress::new(
+        self.location(),
+        Status::Error(e.to_string()),
+      ))),
     }
   }
 
   fn fetch(
     &self,
     options: FetchOptions,
-  ) -> std::pin::Pin<Box<dyn futures::Future<Output = Result<Vec<u8>, assets::Error>> + Send + Sync>> {
+  ) -> std::pin::Pin<Box<dyn Future<Output = Result<Vec<u8>, assets::Error>> + Send + Sync>> {
     let path = self.path();
     debug!(path = ?path, "fetching asset");
     Box::pin(async move {
@@ -260,11 +263,18 @@ async fn retrieve_as_oci(location: &Url, options: FetchOptions) -> Result<Vec<u8
   }
 }
 
-impl AssetManager for LocationReference {
-  type Asset = LocationReference;
+impl AssetManager for AssetReference {
+  type Asset = AssetReference;
 
   fn assets(&self) -> assets::Assets<Self::Asset> {
     assets::Assets::new(vec![self])
+  }
+}
+
+impl TryFrom<String> for AssetReference {
+  type Error = Error;
+  fn try_from(val: String) -> Result<Self, Error> {
+    Ok(Self::new(val))
   }
 }
 
@@ -279,7 +289,7 @@ mod test {
 
   #[test]
   fn test_no_baseurl() -> Result<()> {
-    let location = LocationReference::new("Cargo.toml");
+    let location = AssetReference::new("Cargo.toml");
     let mut expected = std::env::current_dir().unwrap();
     expected.push("Cargo.toml");
     let expected = Url::from_file_path(expected).unwrap();
@@ -290,7 +300,7 @@ mod test {
 
   #[test]
   fn test_baseurl() -> Result<()> {
-    let location = LocationReference::new("Cargo.toml");
+    let location = AssetReference::new("Cargo.toml");
     location.set_baseurl("/etc");
     let mut expected = PathBuf::from("/etc");
     expected.push("Cargo.toml");
@@ -303,7 +313,7 @@ mod test {
 
   #[test]
   fn test_relative_with_baseurl() -> Result<()> {
-    let location = LocationReference::new("../Cargo.toml");
+    let location = AssetReference::new("../Cargo.toml");
     location.set_baseurl("/this/that/other");
     let mut expected = PathBuf::from("/this/that/other");
     expected.pop();
@@ -316,7 +326,7 @@ mod test {
 
   #[test]
   fn test_relative_with_baseurl2() -> Result<()> {
-    let location = LocationReference::new("../src/utils.rs");
+    let location = AssetReference::new("../src/utils.rs");
     let mut crate_dir = PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").unwrap());
     crate_dir.push("src");
     location.set_baseurl(&crate_dir.to_string_lossy());

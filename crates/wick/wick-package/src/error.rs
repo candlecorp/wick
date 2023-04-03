@@ -73,6 +73,14 @@ pub enum Error {
   #[error(transparent)]
   Url(#[from] url::ParseError),
 
+  /// Errors related to OCI push/pull
+  #[error(transparent)]
+  Oci(#[from] wick_oci_utils::Error),
+
+  /// General URL conversion or parsing error
+  #[error(transparent)]
+  AssetReference(#[from] wick_config::AssetError),
+
   /// Could not parse contents as JSON
   #[error("Could not parse {0} as JSON: {1}")]
   InvalidJson(&'static str, #[source] serde_json::Error),

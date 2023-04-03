@@ -87,30 +87,13 @@
 // Add exceptions here
 #![allow(missing_docs)]
 
-/// Module for processing JSON templates used for default values.
-mod default;
-mod helpers;
-pub use default::{parse_default, process_default, ERROR_STR};
-pub mod config;
+mod asset_reference;
 /// Wick Manifest error.
 pub mod error;
-mod utils;
-pub(crate) mod v0;
-pub(crate) mod v1;
 
 /// The crate's error type.
 pub type Error = crate::error::ManifestError;
 
-pub use config::{app_config, common, component_config, test_config, types_config, WickConfiguration};
-pub use wick_asset_reference::Error as AssetError;
-
-pub(crate) type Result<T> = std::result::Result<T, Error>;
-
-pub use wick_asset_reference::FetchOptions;
-
-/// The reserved name for components that send static data.
-pub(crate) static SENDER_ID: &str = "core::sender";
-/// The name of SENDER's output port.
-pub(crate) static SENDER_PORT: &str = "output";
-
-pub use wick_asset_reference::{path_to_url, str_to_url};
+pub use asset_reference::{AssetReference, FetchOptions};
+mod utils;
+pub use utils::{path_to_url, str_to_url};

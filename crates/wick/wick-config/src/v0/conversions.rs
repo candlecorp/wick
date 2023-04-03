@@ -45,13 +45,6 @@ impl TryFrom<v0::HostManifest> for config::ComponentConfiguration {
   }
 }
 
-impl TryFrom<String> for config::LocationReference {
-  type Error = crate::Error;
-  fn try_from(val: String) -> Result<Self> {
-    Ok(config::LocationReference::new(val))
-  }
-}
-
 impl TryFrom<&crate::v0::CollectionDefinition> for config::ComponentDefinition {
   type Error = crate::Error;
   fn try_from(def: &crate::v0::CollectionDefinition) -> std::result::Result<Self, Self::Error> {
