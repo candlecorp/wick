@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use assets::{Asset, Progress, Status};
+use assets::{Asset, AssetManager, Progress, Status};
 use bytes::{Bytes, BytesMut};
 use futures::Stream;
 use parking_lot::RwLock;
@@ -179,7 +179,7 @@ impl Asset for LocationReference {
   type Options = FetchOptions;
 
   #[allow(clippy::expect_used)]
-  fn set_baseurl(&self, baseurl: &str) {
+  fn update_baseurl(&self, baseurl: &str) {
     let baseurl = if baseurl.starts_with('.') {
       let mut path = std::env::current_dir().expect("failed to get current dir");
       path.push(baseurl);
@@ -257,6 +257,14 @@ async fn retrieve_as_oci(location: &Url, options: FetchOptions) -> Result<Vec<u8
   match wick_oci_utils::fetch_oci_bytes(location.as_str(), options.allow_latest, &options.allow_insecure).await {
     Ok(bytes) => Ok(bytes),
     Err(e) => Err(Error::LoadError(location.clone(), e.to_string())),
+  }
+}
+
+impl AssetManager for LocationReference {
+  type Asset = LocationReference;
+
+  fn assets(&self) -> assets::Assets<Self::Asset> {
+    assets::Assets::new(vec![self])
   }
 }
 

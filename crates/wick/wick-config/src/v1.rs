@@ -86,7 +86,7 @@ pub(crate) struct AppConfiguration {
   pub(crate) triggers: Vec<TriggerDefinition>,
 }
 
-#[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
 /// Metadata for the component or application.
 pub(crate) struct Metadata {
@@ -121,8 +121,7 @@ pub(crate) struct Metadata {
   /// The icon for the component or application.
 
   #[serde(default)]
-  #[serde(deserialize_with = "with_expand_envs")]
-  pub(crate) icon: String,
+  pub(crate) icon: Option<crate::v1::helpers::LocationReference>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]

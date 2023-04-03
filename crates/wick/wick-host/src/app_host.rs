@@ -54,7 +54,7 @@ impl AppHost {
     for trigger_config in self.manifest.triggers() {
       debug!(?trigger_config, "loading trigger");
       let config = trigger_config.clone();
-      let name = self.manifest.name().to_owned();
+      let name = self.manifest.name().clone();
       let app_config = self.manifest.clone();
 
       match wick_runtime::get_trigger_loader(&trigger_config.kind()) {

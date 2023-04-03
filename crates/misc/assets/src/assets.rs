@@ -38,7 +38,7 @@ where
   }
 
   pub fn set_baseurl(&self, baseurl: &str) {
-    self.list.iter().for_each(|asset| asset.set_baseurl(baseurl));
+    self.list.iter().for_each(|asset| asset.update_baseurl(baseurl));
   }
 
   pub fn iter(&mut self) -> impl Iterator<Item = &&'a T> {
@@ -289,7 +289,7 @@ pub trait AssetManager {
   fn set_baseurl(&self, baseurl: &str) {
     let mut assets = self.assets();
     for asset in assets.iter() {
-      asset.set_baseurl(baseurl);
+      asset.update_baseurl(baseurl);
     }
   }
 }
@@ -299,7 +299,7 @@ pub trait Asset {
   fn fetch_with_progress(&self, options: Self::Options) -> Pin<Box<dyn Stream<Item = Progress> + Send + '_>>;
   fn fetch(&self, options: Self::Options) -> Pin<Box<dyn Future<Output = Result<Vec<u8>, Error>> + Send + Sync>>;
   fn name(&self) -> &str;
-  fn set_baseurl(&self, baseurl: &str);
+  fn update_baseurl(&self, baseurl: &str);
 }
 
 impl<T> AssetManager for Option<T>
