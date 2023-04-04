@@ -14,8 +14,6 @@ pub use test_config::*;
 use tokio::fs::read_to_string;
 use tracing::debug;
 pub use types_config::*;
-use url::Url;
-use wick_asset_reference::path_to_url;
 pub use wick_asset_reference::{AssetReference, FetchOptions};
 
 use crate::utils::{from_bytes, from_yaml};
@@ -52,26 +50,27 @@ pub enum WickConfiguration {
 }
 
 impl WickConfiguration {
-  pub async fn fetch(path: impl Into<Url> + Send, options: FetchOptions) -> Result<Self, Error> {
-    let path = path.into();
-    let location = AssetReference::new(path.as_str());
+  pub async fn fetch(path: impl AsRef<str> + Send, options: FetchOptions) -> Result<Self, Error> {
+    let path = path.as_ref();
+    let location = AssetReference::new(path);
     let bytes = location
       .fetch(options)
       .await
-      .map_err(|e| Error::LoadError(path.clone(), e.to_string()))?;
-    WickConfiguration::load_from_bytes(&bytes, &Some(path))
+      .map_err(|e| Error::LoadError(path.to_owned(), e.to_string()))?;
+    let source = location.path().unwrap_or_else(|e| format!("<ERROR:{}>", e));
+    WickConfiguration::load_from_bytes(&bytes, &Some(source))
   }
 
-  pub fn load_from_bytes(bytes: &[u8], source: &Option<Url>) -> Result<Self, Error> {
-    debug!("Trying to parse manifest as yaml");
+  pub fn load_from_bytes(bytes: &[u8], source: &Option<String>) -> Result<Self, Error> {
+    debug!(source=?source,"Trying to parse manifest bytes as yaml");
     let raw: serde_yaml::Value = from_bytes(bytes, source)?;
     resolve_configuration(raw, source)
   }
 
-  pub fn from_yaml(src: &str, path: &Option<Url>) -> Result<Self, Error> {
-    debug!("Trying to parse manifest as yaml");
-    let raw: serde_yaml::Value = from_yaml(src, path)?;
-    resolve_configuration(raw, path)
+  pub fn from_yaml(src: &str, source: &Option<String>) -> Result<Self, Error> {
+    debug!(source=?source,"Trying to parse manifest as yaml");
+    let raw: serde_yaml::Value = from_yaml(src, source)?;
+    resolve_configuration(raw, source)
   }
 
   pub fn kind(&self) -> ConfigurationKind {
@@ -131,11 +130,11 @@ impl WickConfiguration {
     let contents = read_to_string(path).await.map_err(|e| {
       Error::LoadError(
         #[allow(clippy::expect_used)]
-        Url::from_file_path(path).expect("Failed to convert path to url"),
+        path.display().to_string(),
         e.to_string(),
       )
     })?;
-    let manifest = Self::from_yaml(&contents, &Some(path_to_url(path, None)?))?;
+    let manifest = Self::from_yaml(&contents, &Some(pathstr.to_string()))?;
     Ok(manifest)
   }
 
@@ -150,15 +149,15 @@ impl WickConfiguration {
     let contents = std::fs::read_to_string(path).map_err(|e| {
       Error::LoadError(
         #[allow(clippy::expect_used)]
-        Url::from_file_path(path).expect("Failed to convert path to url"),
+        path.display().to_string(),
         e.to_string(),
       )
     })?;
-    let manifest = Self::from_yaml(&contents, &Some(path_to_url(path, None)?))?;
+    let manifest = Self::from_yaml(&contents, &Some(path.display().to_string()))?;
     Ok(manifest)
   }
 
-  pub fn set_source(&mut self, src: Url) {
+  pub fn set_source(&mut self, src: String) {
     match self {
       WickConfiguration::Component(v) => v.set_source(src),
       WickConfiguration::App(v) => v.set_source(src),
@@ -168,7 +167,7 @@ impl WickConfiguration {
   }
 
   #[must_use]
-  pub fn source(&self) -> &Option<Url> {
+  pub fn source(&self) -> &Option<String> {
     match self {
       WickConfiguration::Component(v) => &v.source,
       WickConfiguration::App(v) => &v.source,
@@ -178,7 +177,7 @@ impl WickConfiguration {
   }
 }
 
-fn resolve_configuration(raw: serde_yaml::Value, source: &Option<Url>) -> Result<WickConfiguration, Error> {
+fn resolve_configuration(raw: serde_yaml::Value, source: &Option<String>) -> Result<WickConfiguration, Error> {
   debug!("Yaml parsed successfully");
   let raw_version = raw.get("format");
   let raw_kind = raw.get("kind");

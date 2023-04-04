@@ -1,0 +1,19 @@
+[package]
+name = "wick-xdg"
+version = "0.1.0"
+edition = "2021"
+license = "Elastic-2.0"
+repository = "https://github.com/candlecorp/wick"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[dependencies]
+thiserror = { workspace = true }
+tracing = { workspace = true }
+xdg = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["rt-multi-thread", "macros"] }
+test-logger = { workspace = true }
+logger = { workspace = true }
+env_logger = { workspace = true }
+anyhow = { workspace = true }

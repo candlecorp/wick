@@ -2,18 +2,17 @@
 
 mod test;
 use anyhow::Result;
-use flow_graph_interpreter::graph::from_def;
 use rot::*;
-use seeded_random::Seed;
 use wick_packet::{packets, Packet};
 
 #[test_logger::test(tokio::test)]
 async fn test_panic() -> Result<()> {
-  let (interpreter, mut outputs) = interp!(
+  let (interpreter, mut outputs) = test::common_setup(
     "./tests/manifests/v0/bad-cases/panic.yaml",
     "test",
-    packets!(("input", "Hello world"))
-  );
+    packets!(("input", "Hello world")),
+  )
+  .await?;
 
   assert_equal!(outputs.len(), 2);
 
@@ -28,11 +27,12 @@ async fn test_panic() -> Result<()> {
 
 #[test_logger::test(tokio::test)]
 async fn test_error() -> Result<()> {
-  let (interpreter, mut outputs) = interp!(
+  let (interpreter, mut outputs) = test::common_setup(
     "./tests/manifests/v0/bad-cases/error.yaml",
     "test",
-    packets!(("input", "Hello world"))
-  );
+    packets!(("input", "Hello world")),
+  )
+  .await?;
 
   assert_equal!(outputs.len(), 2);
 
@@ -54,11 +54,12 @@ async fn test_error() -> Result<()> {
 #[test_logger::test(tokio::test)]
 // #[ignore]
 async fn test_timeout_done_noclose() -> Result<()> {
-  let (interpreter, mut outputs) = interp!(
+  let (interpreter, mut outputs) = test::common_setup(
     "./tests/manifests/v0/bad-cases/timeout-done-noclose.yaml",
     "test",
-    packets!(("input", "Hello world"))
-  );
+    packets!(("input", "Hello world")),
+  )
+  .await?;
 
   assert_equal!(outputs.len(), 2);
 

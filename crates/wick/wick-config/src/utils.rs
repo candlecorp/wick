@@ -2,7 +2,6 @@ use std::net::Ipv4Addr;
 use std::str::FromStr;
 
 use serde::de::DeserializeOwned;
-use url::Url;
 
 use crate::error::ManifestError;
 use crate::{Error, Result};
@@ -14,20 +13,18 @@ pub(crate) fn opt_str_to_ipv4addr(v: &Option<String>) -> Result<Option<Ipv4Addr>
   })
 }
 
-pub(crate) fn from_yaml<T>(src: &str, path: &Option<Url>) -> Result<T>
+pub(crate) fn from_yaml<T>(src: &str, path: &Option<String>) -> Result<T>
 where
   T: DeserializeOwned,
 {
-  let result =
-    serde_yaml::from_str(src).map_err(|e| Error::YamlError(path.as_ref().map(|v| v.as_ref().into()), e.to_string()))?;
+  let result = serde_yaml::from_str(src).map_err(|e| Error::YamlError(path.as_ref().cloned(), e.to_string()))?;
   Ok(result)
 }
 
-pub(crate) fn from_bytes<T>(src: &[u8], path: &Option<Url>) -> Result<T>
+pub(crate) fn from_bytes<T>(src: &[u8], path: &Option<String>) -> Result<T>
 where
   T: DeserializeOwned,
 {
-  let result = serde_yaml::from_slice(src)
-    .map_err(|e| Error::YamlError(path.as_ref().map(|v| v.as_ref().into()), e.to_string()))?;
+  let result = serde_yaml::from_slice(src).map_err(|e| Error::YamlError(path.as_ref().cloned(), e.to_string()))?;
   Ok(result)
 }

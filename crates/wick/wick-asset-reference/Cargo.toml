@@ -18,6 +18,7 @@ tokio = { workspace = true, features = ["sync"] }
 tokio-stream = { workspace = true }
 parking_lot = { workspace = true }
 url = { workspace = true }
+normpath = { workspace = true }
 
 [dev-dependencies]
 anyhow = { workspace = true }

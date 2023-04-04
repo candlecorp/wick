@@ -154,7 +154,7 @@ impl AppHostBuilder {
       .allow_latest(allow_latest)
       .allow_insecure(insecure_registries);
 
-    let manifest = WickConfiguration::fetch(wick_config::str_to_url(location, None)?, fetch_options)
+    let manifest = WickConfiguration::fetch(location, fetch_options)
       .await?
       .try_app_config()?;
     Ok(Self::from_definition(manifest))

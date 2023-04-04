@@ -1,4 +1,3 @@
-pub(crate) mod bundle;
 pub(crate) mod init;
 pub(crate) mod invoke;
 pub(crate) mod key;
@@ -51,10 +50,6 @@ pub(crate) enum CliCommand {
   /// Commands for WebAssembly component.
   #[clap(subcommand, name = "wasm")]
   Wasm(wasm::SubCommands),
-
-  /// Commands for multi-architecture bundles.
-  #[clap(subcommand, name = "bundle")]
-  Bundle(bundle::SubCommands),
 
   /// Commands to interact with OCI registries.
   #[clap(subcommand, name = "registry", alias = "reg")]

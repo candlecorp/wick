@@ -6,6 +6,10 @@ use thiserror::Error;
 #[derive(Error, Debug)]
 /// Crate error.
 pub enum OciError {
+  /// Returned when reading an invalid manifest.
+  #[error("Invalid manifest found at {}. Try deleting your cache directory.",.0.display())]
+  InvalidManifest(PathBuf),
+
   /// Error thrown when attempting to fetch an image with :latest when forbidden.
   #[error("Configuration disallows fetching artifacts with the :latest tag ({0})")]
   LatestDisallowed(String),
@@ -109,4 +113,8 @@ pub enum OciError {
   /// Failed to push package
   #[error("Failed to push the package: {0}")]
   PushFailed(String),
+
+  /// Returned when a pull would overwrite existing files and 'overwrite' is not set.
+  #[error("Refusing to overwrite {}. Set 'overwrite' to true to force.", .0.iter().map(|v|v.display().to_string()).collect::<Vec<_>>().join(", "))]
+  WouldOverwrite(Vec<PathBuf>),
 }

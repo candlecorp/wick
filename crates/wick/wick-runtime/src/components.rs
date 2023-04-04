@@ -34,7 +34,7 @@ pub(crate) async fn init_wasm_component<'a, 'b>(
   namespace: String,
   opts: ComponentInitOptions<'b>,
 ) -> ComponentInitResult {
-  trace!(namespace = %namespace, ?opts, "registering");
+  trace!(namespace = %namespace, ?opts, "registering wasm component");
 
   let component =
     wick_component_wasm::helpers::load_wasm(&kind.reference, opts.allow_latest, &opts.allowed_insecure).await?;
@@ -86,13 +86,12 @@ fn make_link_callback(network_id: Uuid) -> Box<HostLinkCallback> {
   })
 }
 
-// #[instrument(parent=opts.span, skip(kind, opts))]
 pub(crate) async fn init_manifest_component<'a, 'b>(
   kind: &'a ManifestComponent,
   namespace: String,
   mut opts: ComponentInitOptions<'b>,
 ) -> ComponentInitResult {
-  trace!(namespace = %namespace, ?opts, "registering");
+  trace!(namespace = %namespace, ?opts, "registering composite component");
 
   let options = FetchOptions::new()
     .allow_latest(opts.allow_latest)

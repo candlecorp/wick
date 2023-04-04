@@ -29,6 +29,8 @@ tokio = { workspace = true, features = ["fs"] }
 url = { workspace = true }
 
 [dev-dependencies]
+wick-package = { workspace = true }
+wick-xdg = { workspace = true }
 anyhow = { workspace = true }
 pretty_assertions = { workspace = true }
 logger = { workspace = true }

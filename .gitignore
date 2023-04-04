@@ -10,3 +10,5 @@ crates/*/**/Cargo.lock
 bundle.tar
 /codegen/dist
 .vscode/*.log
+wick_components/
+.wick/

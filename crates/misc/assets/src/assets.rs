@@ -1,3 +1,4 @@
+use std::path::PathBuf;
 use std::pin::Pin;
 use std::sync::atomic::AtomicBool;
 use std::task::Poll;
@@ -90,6 +91,7 @@ impl std::fmt::Debug for AssetProgress<'_> {
 pub struct AssetFut<'a> {
   name: String,
   progress: Pin<Box<dyn Future<Output = Result<Vec<u8>, Error>> + Send + 'a>>,
+  finished: AtomicBool,
 }
 
 impl std::fmt::Debug for AssetFut<'_> {
@@ -142,6 +144,7 @@ impl<'a> AssetPull<'a> {
       .map(|asset| AssetFut {
         name: asset.name().to_owned(),
         progress: asset.fetch(options.clone()),
+        finished: AtomicBool::new(false),
       })
       .collect();
     Self {
@@ -161,17 +164,15 @@ impl<'a> Future for AssetPull<'a> {
     for asset in this.assets.iter_mut() {
       let name = &asset.name;
       let fut = &mut asset.progress;
+      if asset.finished.load(std::sync::atomic::Ordering::Relaxed) {
+        continue;
+      }
       match fut.poll_unpin(cx) {
-        Poll::Ready(Ok(bytes)) => {
+        Poll::Ready(result) => {
+          asset.finished.store(true, std::sync::atomic::Ordering::Relaxed);
           results.push(CompleteAsset {
             name: name.clone(),
-            result: Ok(bytes),
-          });
-        }
-        Poll::Ready(Err(e)) => {
-          results.push(CompleteAsset {
-            name: name.clone(),
-            result: Err(e),
+            result,
           });
         }
         Poll::Pending => {
@@ -298,6 +299,7 @@ pub trait Asset {
   type Options: Clone;
   fn fetch_with_progress(&self, options: Self::Options) -> Pin<Box<dyn Stream<Item = Progress> + Send + '_>>;
   fn fetch(&self, options: Self::Options) -> Pin<Box<dyn Future<Output = Result<Vec<u8>, Error>> + Send + Sync>>;
+  fn store(&self, options: Self::Options) -> Pin<Box<dyn Future<Output = Result<PathBuf, Error>> + Send + Sync>>;
   fn name(&self) -> &str;
   fn update_baseurl(&self, baseurl: &str);
 }

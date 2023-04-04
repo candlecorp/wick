@@ -3,14 +3,13 @@
 mod test;
 
 use anyhow::Result;
-use flow_graph_interpreter::graph::from_def;
 use rot::assert_equal;
-use seeded_random::Seed;
 use wick_packet::Packet;
 
 #[test_logger::test(tokio::test)]
 async fn test_senders() -> Result<()> {
-  let (interpreter, mut outputs) = interp!("./tests/manifests/v0/core/senders.yaml", "test", Vec::new());
+  let (interpreter, mut outputs) =
+    test::common_setup("./tests/manifests/v0/core/senders.yaml", "test", Vec::new()).await?;
 
   assert_equal!(outputs.len(), 2);
 

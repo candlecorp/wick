@@ -17,7 +17,6 @@ serde_json = { workspace = true }
 serde_yaml = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 tokio = { workspace = true, features = ["fs"] }
-url = { workspace = true }
 sha256 = { workspace = true }
 
 [dev-dependencies]

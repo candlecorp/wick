@@ -4,7 +4,6 @@ use std::collections::HashMap;
 
 use assets::AssetManager;
 pub use composite::CompositeComponentConfiguration;
-use url::Url;
 pub use wasm::{OperationSignature, WasmComponentConfiguration};
 use wick_interface_types::{ComponentMetadata, ComponentSignature, ComponentVersion, TypeDefinition};
 
@@ -65,7 +64,7 @@ pub struct ComponentConfiguration {
   #[asset(skip)]
   pub name: Option<String>,
   #[asset(skip)]
-  pub(crate) source: Option<Url>,
+  pub(crate) source: Option<String>,
   #[asset(skip)]
   pub(crate) host: config::HostConfig,
   #[asset(skip)]
@@ -99,10 +98,18 @@ impl ComponentConfiguration {
   }
 
   /// Set the source location of the configuration.
-  pub fn set_source(&mut self, source: Url) {
+  pub fn set_source(&mut self, source: String) {
     // Source is a file, so our baseurl needs to be the parent directory.
-    self.set_baseurl(source.join("./").unwrap().as_str());
-    self.source = Some(source);
+    // Remove the trailing filename from source.
+    if source.ends_with(std::path::MAIN_SEPARATOR) {
+      self.set_baseurl(&source);
+      self.source = Some(source);
+    } else {
+      let s = source.rfind('/').map_or(source.as_str(), |index| &source[..index]);
+
+      self.set_baseurl(s);
+      self.source = Some(s.to_owned());
+    }
   }
 
   /// Determine if the configuration allows for fetching artifacts with the :latest tag.
@@ -157,7 +164,7 @@ impl ComponentConfiguration {
 
   /// Return the underlying version of the source manifest.
   #[must_use]
-  pub fn source(&self) -> &Option<Url> {
+  pub fn source(&self) -> &Option<String> {
     &self.source
   }
 
@@ -189,7 +196,7 @@ impl ComponentConfiguration {
 #[must_use]
 pub struct ComponentConfigurationBuilder {
   name: Option<String>,
-  source: Option<Url>,
+  source: Option<String>,
   host: config::HostConfig,
   labels: HashMap<String, String>,
   tests: Vec<config::TestCase>,

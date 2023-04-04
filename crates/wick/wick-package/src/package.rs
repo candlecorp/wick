@@ -6,6 +6,7 @@ use tokio::fs;
 use wick_config::WickConfiguration;
 use wick_oci_utils::package::annotations::Annotations;
 use wick_oci_utils::package::{media_types, PackageFile};
+use wick_oci_utils::OciOptions;
 
 use crate::utils::{get_relative_path, metadata_to_annotations};
 use crate::{Error, WickPackageKind};
@@ -36,7 +37,7 @@ impl WickPackage {
     }
 
     let options = wick_config::FetchOptions::default();
-    let config = WickConfiguration::fetch(wick_config::path_to_url(path, None)?, options).await?;
+    let config = WickConfiguration::fetch(&path.to_string_lossy(), options).await?;
     if !matches!(config, WickConfiguration::App(_) | WickConfiguration::Component(_)) {
       return Err(Error::InvalidWickConfig(path.to_string_lossy().to_string()));
     }
@@ -87,16 +88,16 @@ impl WickPackage {
     //populate wick_files
     for asset in assets.iter() {
       let location = asset.location(); // the path specified in the config
-      let asset_url = asset.path()?; // the resolved, abolute path relative to the config location.
+      let asset_path = asset.path()?; // the resolved, abolute path relative to the config location.
 
-      let path = get_relative_path(&parent_dir, &asset_url)?;
+      let path = get_relative_path(&parent_dir, &asset_path)?;
 
       let options = wick_config::FetchOptions::default();
       let media_type: &str;
 
       match path.extension().and_then(|os_str| os_str.to_str()) {
         Some("yaml" | "yml" | "wick") => {
-          let config = WickConfiguration::fetch(asset_url, options.clone()).await;
+          let config = WickConfiguration::fetch(asset_path, options.clone()).await;
           match config {
             Ok(WickConfiguration::App(_)) => {
               media_type = media_types::APPLICATION;
@@ -147,24 +148,17 @@ impl WickPackage {
   /// Pushes the WickPackage to a specified registry using the provided reference, username, and password.
   ///
   /// The username and password are optional. If not provided, the function falls back to anonymous authentication.
-  pub async fn push(
-    &mut self,
-    reference: &str,
-    username: Option<&str>,
-    password: Option<&str>,
-    insecure: Option<bool>,
-  ) -> Result<String, Error> {
+  pub async fn push(&mut self, reference: &str, options: &OciOptions) -> Result<String, Error> {
     let config = crate::WickConfig { kind: self.kind };
     let image_config_contents = serde_json::to_string(&config).unwrap();
     let files = self.files.drain(..).collect();
+
     let push_response = wick_oci_utils::package::push(
       reference,
       image_config_contents,
       files,
       self.annotations.clone(),
-      username,
-      password,
-      insecure,
+      options,
     )
     .await?;
 
@@ -175,13 +169,8 @@ impl WickPackage {
   }
 
   /// This function pulls a WickPackage from a specified registry using the provided reference, username, and password.
-  pub async fn pull(
-    reference: &str,
-    username: Option<&str>,
-    password: Option<&str>,
-    insecure: Option<bool>,
-  ) -> Result<Self, Error> {
-    let result = wick_oci_utils::package::pull(reference, username, password, insecure).await?;
+  pub async fn pull(reference: &str, options: &OciOptions) -> Result<Self, Error> {
+    let result = wick_oci_utils::package::pull(reference, options).await?;
 
     let package = Self::from_path(&result.base_dir.join(Path::new(&result.root_path))).await;
 

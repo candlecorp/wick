@@ -1,4 +1,5 @@
 use std::future::Future;
+use std::path::PathBuf;
 use std::sync::Arc;
 
 use assets::{Asset, AssetManager, Progress, Status};
@@ -8,16 +9,15 @@ use tokio::io::AsyncReadExt;
 use tokio_stream::wrappers::UnboundedReceiverStream;
 use tokio_stream::Stream;
 use tracing::{debug, trace};
-use url::Url;
 
-use crate::error::ManifestError;
 use crate::{str_to_url, Error};
 
 #[derive(Debug, Clone)]
 #[must_use]
 pub struct AssetReference {
   pub(crate) location: String,
-  pub(crate) baseurl: Arc<RwLock<Option<Url>>>,
+  pub(crate) cache_location: Arc<RwLock<Option<PathBuf>>>,
+  pub(crate) baseurl: Arc<RwLock<Option<String>>>,
 }
 
 impl std::fmt::Display for AssetReference {
@@ -31,6 +31,7 @@ impl std::fmt::Display for AssetReference {
 pub struct FetchOptions {
   pub(crate) allow_latest: bool,
   pub(crate) allow_insecure: Vec<String>,
+  pub(crate) artifact_dir: Option<PathBuf>,
 }
 
 impl FetchOptions {
@@ -47,6 +48,26 @@ impl FetchOptions {
     self.allow_insecure = allow_insecure.as_ref().to_owned();
     self
   }
+
+  pub fn artifact_dir(mut self, dir: PathBuf) -> Self {
+    self.artifact_dir = Some(dir);
+    self
+  }
+
+  #[must_use]
+  pub fn get_artifact_dir(&self) -> Option<&PathBuf> {
+    self.artifact_dir.as_ref()
+  }
+
+  #[must_use]
+  pub fn get_allow_latest(&self) -> bool {
+    self.allow_latest
+  }
+
+  #[must_use]
+  pub fn get_allow_insecure(&self) -> &[String] {
+    &self.allow_insecure
+  }
 }
 
 impl PartialEq for AssetReference {
@@ -60,23 +81,26 @@ impl AssetReference {
   pub fn new(location: impl AsRef<str>) -> Self {
     Self {
       location: location.as_ref().to_owned(),
+      cache_location: Default::default(),
       baseurl: Default::default(),
     }
   }
 
   #[must_use]
-  pub fn baseurl(&self) -> Url {
-    self
-      .baseurl
-      .read()
-      .clone()
-      .unwrap_or_else(|| Url::from_file_path(std::env::current_dir().unwrap()).unwrap())
+  pub fn baseurl(&self) -> Option<String> {
+    self.baseurl.read().clone()
   }
 
-  pub fn path(&self) -> Result<Url, ManifestError> {
+  pub fn path(&self) -> Result<String, Error> {
     trace!(baseurl=?self.baseurl.read(), location=?self.location, "asset location");
-    let url = str_to_url(&self.location, Some(self.baseurl()))?;
-    Ok(url)
+    if let Some(cache_loc) = self.cache_location.read().as_ref() {
+      Ok(cache_loc.to_string_lossy().to_string())
+    } else if self.location.starts_with('@') {
+      Ok(self.location.trim_start_matches('@').to_owned())
+    } else {
+      let url = str_to_url(&self.location, self.baseurl())?;
+      Ok(url)
+    }
   }
 
   #[must_use]
@@ -190,28 +214,21 @@ impl Asset for AssetReference {
       baseurl.to_owned()
     };
 
-    let url = match Url::parse(&baseurl) {
-      Ok(url) => url,
-      Err(_e) => match Url::from_file_path(&baseurl) {
-        Ok(url) => url,
-        Err(_e) => panic!("failed to parse baseurl: {}", baseurl),
-      },
-    };
-
-    *self.baseurl.write() = Some(url);
+    *self.baseurl.write() = Some(baseurl);
   }
 
   fn fetch_with_progress(&self, options: FetchOptions) -> std::pin::Pin<Box<dyn Stream<Item = Progress> + Send + '_>> {
     let path = self.path();
 
     debug!(path = ?path, "fetching asset with progress");
-    match self.path() {
+    match path {
       Ok(path) => {
-        if path.scheme() == "file" {
-          debug!(path = %path, "load as file");
+        let path = PathBuf::from(path);
+        if path.exists() {
+          debug!(path = %path.display(), "load as file");
           self.retrieve_as_file()
         } else {
-          debug!(url = %path, "load as oci");
+          debug!(url = %path.display(), "load as oci");
           self.retrieve_as_oci_with_progress(options)
         }
       }
@@ -223,29 +240,44 @@ impl Asset for AssetReference {
     }
   }
 
+  fn store(
+    &self,
+    _options: FetchOptions,
+  ) -> std::pin::Pin<Box<dyn Future<Output = Result<PathBuf, assets::Error>> + Send + Sync>> {
+    todo!()
+    // let mut dir = options.get_artifact_dir().cloned().unwrap_or_default();
+    // let name = self.name().to_owned();
+    // let fut = self.fetch(options);
+    // Box::pin(async move {
+    //   let bytes = fut.await?;
+
+    //   tokio::fs::write(path, contents)
+    //   Ok()
+    // })
+  }
+
   fn fetch(
     &self,
     options: FetchOptions,
   ) -> std::pin::Pin<Box<dyn Future<Output = Result<Vec<u8>, assets::Error>> + Send + Sync>> {
     let path = self.path();
     debug!(path = ?path, "fetching asset");
+    let cache_location = self.cache_location.clone();
     Box::pin(async move {
       let path = path.map_err(|e| assets::Error::Parse(e.to_string()))?;
-      if path.scheme() == "file" {
-        let mut file = tokio::fs::File::open(
-          path
-            .to_file_path()
-            .map_err(|_| assets::Error::FileOpen(path.to_string(), "Invalid URL".to_owned()))?,
-        )
-        .await
-        .map_err(|err| assets::Error::FileOpen(path.to_string(), err.to_string()))?;
+      let pb = PathBuf::from(&path);
+      if pb.exists() {
+        let mut file = tokio::fs::File::open(&path)
+          .await
+          .map_err(|err| assets::Error::FileOpen(path.clone(), err.to_string()))?;
         let mut bytes = Vec::new();
         file.read_to_end(&mut bytes).await?;
         Ok(bytes)
       } else {
-        let bytes = retrieve_as_oci(&path, options)
+        let (cache_loc, bytes) = retrieve_remote(&path, options)
           .await
-          .map_err(|err| assets::Error::FileOpen(path.to_string(), err.to_string()))?;
+          .map_err(|err| assets::Error::FileOpen(path.clone(), err.to_string()))?;
+        *cache_location.write() = Some(cache_loc);
         Ok(bytes)
       }
     })
@@ -256,11 +288,19 @@ impl Asset for AssetReference {
   }
 }
 
-async fn retrieve_as_oci(location: &Url, options: FetchOptions) -> Result<Vec<u8>, Error> {
-  match wick_oci_utils::fetch_oci_bytes(location.as_str(), options.allow_latest, &options.allow_insecure).await {
-    Ok(bytes) => Ok(bytes),
-    Err(e) => Err(Error::LoadError(location.clone(), e.to_string())),
-  }
+async fn retrieve_remote(location: &str, options: FetchOptions) -> Result<(PathBuf, Vec<u8>), Error> {
+  let oci_opts = wick_oci_utils::OciOptions::default()
+    .cache_dir(options.get_artifact_dir().cloned())
+    .allow_insecure(options.allow_insecure)
+    .allow_latest(options.allow_latest);
+  let result = wick_oci_utils::package::pull(location, &oci_opts)
+    .await
+    .map_err(|e| Error::LoadError(location.to_owned(), e.to_string()))?;
+  let cache_location = result.base_dir.join(result.root_path);
+  let bytes = tokio::fs::read(&cache_location)
+    .await
+    .map_err(|e| Error::LoadError(cache_location.display().to_string(), e.to_string()))?;
+  Ok((cache_location, bytes))
 }
 
 impl AssetManager for AssetReference {
@@ -287,44 +327,55 @@ mod test {
 
   use super::*;
 
-  #[test]
+  #[test_logger::test]
   fn test_no_baseurl() -> Result<()> {
     let location = AssetReference::new("Cargo.toml");
+    println!("location: {:?}", location);
     let mut expected = std::env::current_dir().unwrap();
     expected.push("Cargo.toml");
-    let expected = Url::from_file_path(expected).unwrap();
-    assert_eq!(location.path()?.to_string(), expected.to_string());
-    assert!(location.path()?.to_file_path().unwrap().exists());
+    let expected = expected.to_string_lossy();
+    assert_eq!(location.path()?, expected.to_string());
+    assert!(PathBuf::from(location.path()?).exists());
     Ok(())
   }
 
-  #[test]
+  #[test_logger::test]
   fn test_baseurl() -> Result<()> {
     let location = AssetReference::new("Cargo.toml");
-    location.set_baseurl("/etc");
-    let mut expected = PathBuf::from("/etc");
+    let mut root_project_dir = PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").unwrap());
+    root_project_dir.pop();
+    root_project_dir.pop();
+    root_project_dir.pop();
+
+    location.set_baseurl(&root_project_dir.to_string_lossy());
+    let mut expected = root_project_dir;
     expected.push("Cargo.toml");
-    let expected = Url::from_file_path(expected).unwrap();
-    assert_eq!(location.path()?.to_string(), expected.to_string());
-    assert!(!location.path()?.to_file_path().unwrap().exists());
+    let expected = expected.to_string_lossy();
+    assert_eq!(location.path()?, expected.to_string());
+    assert!(PathBuf::from(location.path()?).exists());
 
     Ok(())
   }
 
-  #[test]
+  #[test_logger::test]
   fn test_relative_with_baseurl() -> Result<()> {
     let location = AssetReference::new("../Cargo.toml");
-    location.set_baseurl("/this/that/other");
-    let mut expected = PathBuf::from("/this/that/other");
+    let mut root_project_dir = PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").unwrap());
+
+    root_project_dir.pop();
+    root_project_dir.pop();
+
+    location.set_baseurl(&root_project_dir.to_string_lossy());
+    let mut expected = root_project_dir;
     expected.pop();
     expected.push("Cargo.toml");
-    let expected = Url::from_file_path(expected).unwrap();
-    assert_eq!(location.path()?.to_string(), expected.to_string());
+    let expected = expected.to_string_lossy();
+    assert_eq!(location.path()?, expected.to_string());
 
     Ok(())
   }
 
-  #[test]
+  #[test_logger::test]
   fn test_relative_with_baseurl2() -> Result<()> {
     let location = AssetReference::new("../src/utils.rs");
     let mut crate_dir = PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").unwrap());
@@ -336,8 +387,8 @@ mod test {
     expected.push("../src/utils.rs");
     println!("expected: {}", expected.to_string_lossy());
 
-    let expected = Url::from_file_path(expected.canonicalize().unwrap()).unwrap();
-    assert_eq!(location.path()?.to_string(), expected.to_string());
+    let expected = expected.canonicalize()?;
+    assert_eq!(location.path()?, expected.to_string_lossy().to_string());
 
     Ok(())
   }

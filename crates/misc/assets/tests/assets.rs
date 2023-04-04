@@ -34,6 +34,13 @@ impl Asset for LocationReference {
     self.baseurl.lock().unwrap().replace(baseurl.to_owned());
   }
 
+  fn store(
+    &self,
+    _options: Self::Options,
+  ) -> std::pin::Pin<Box<dyn futures::Future<Output = std::result::Result<PathBuf, assets::Error>> + Send + Sync>> {
+    todo!()
+  }
+
   fn fetch_with_progress(
     &self,
     _options: Self::Options,

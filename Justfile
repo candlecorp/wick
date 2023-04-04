@@ -39,9 +39,16 @@ unit-tests:
 ci-tests: wasm
   just unit-tests
 
-integration-tests:
+integration-tests: integration-setup && integration-teardown
+	DOCKER_HOST=localhost:8888 cargo test --workspace
+
+integration-setup:
+	./etc/integration/build_and_run_registry.sh
 	cargo build -p wick
-	NATS_URL=$(NATS_URL) cargo test --workspace
+	cargo run -p wick -- reg push --debug localhost:8888/test-component/baseline:0.1.0 ./crates/integration/test-baseline-component/component.yaml --insecure=localhost:8888
+
+integration-teardown:
+  docker rm -f simple_registry
 
 deps:
 	npm install -g apex-template prettier ts-node commitlint conventional-changelog-conventionalcommits

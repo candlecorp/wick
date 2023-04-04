@@ -27,6 +27,7 @@ pub(crate) async fn write_bytes(
     .map_err(|e| IoError::Write(path_to_string(path), e))
 }
 
+#[allow(unused)]
 pub(crate) async fn read_bytes(path: impl AsRef<Path> + Send + Sync) -> Result<Vec<u8>, IoError> {
   tokio::fs::read(path.as_ref())
     .await

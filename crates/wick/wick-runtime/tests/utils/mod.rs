@@ -8,7 +8,7 @@ pub async fn init_network_from_yaml(path: &str) -> anyhow::Result<(Network, uuid
   let host_def = WickConfiguration::load_from_file(path).await?.try_component_config()?;
   debug!("Manifest loaded");
 
-  let builder = NetworkBuilder::from_definition(host_def)?;
+  let builder = NetworkBuilder::from_definition(host_def)?.namespace("__TEST__");
 
   let network = builder.build().await?;
 
@@ -17,13 +17,34 @@ pub async fn init_network_from_yaml(path: &str) -> anyhow::Result<(Network, uuid
 }
 
 #[allow(unused)]
-pub async fn tester(path: &str, stream: PacketStream, target: &str, mut expected: Vec<Packet>) -> anyhow::Result<()> {
+pub async fn common_test(
+  path: &str,
+  stream: PacketStream,
+  target: &str,
+  mut expected: Vec<Packet>,
+) -> anyhow::Result<()> {
+  base_test(path, stream, Entity::local(target), expected).await
+}
+
+#[allow(unused)]
+pub async fn base_test(
+  path: &str,
+  stream: PacketStream,
+  target: Entity,
+  mut expected: Vec<Packet>,
+) -> anyhow::Result<()> {
   let (network, _) = init_network_from_yaml(path).await?;
   let inherent = InherentData::new(1, 1000);
 
+  let target = if target.namespace() == Entity::LOCAL {
+    Entity::operation(network.namespace(), target.name())
+  } else {
+    target
+  };
+
   let result = network
     .invoke(
-      Invocation::new(Entity::test("simple schematic"), Entity::local(target), Some(inherent)),
+      Invocation::new(Entity::test("simple schematic"), target, Some(inherent)),
       stream,
     )
     .await?;

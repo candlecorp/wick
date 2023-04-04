@@ -40,7 +40,6 @@ pub(crate) struct TestCommand {
   filter: Vec<String>,
 }
 
-#[allow(clippy::future_not_send, clippy::too_many_lines)]
 pub(crate) async fn handle_command(opts: TestCommand) -> Result<()> {
   let _guard = logger::init(&opts.logging.name(crate::BIN_NAME));
 
@@ -48,7 +47,7 @@ pub(crate) async fn handle_command(opts: TestCommand) -> Result<()> {
     .allow_latest(opts.fetch.allow_latest)
     .allow_insecure(&opts.fetch.insecure_registries);
 
-  let config = WickConfiguration::fetch(wick_config::str_to_url(&opts.location, None)?, fetch_options)
+  let config = WickConfiguration::fetch(&opts.location, fetch_options)
     .await?
     .try_component_config()?;
 
