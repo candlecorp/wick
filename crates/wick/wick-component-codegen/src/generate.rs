@@ -10,7 +10,7 @@ use quote::quote;
 use syn::parse::{Parse, ParseStream};
 use syn::{parse_macro_input, Expr, Lit, LitStr};
 use wick_config::config::{FlowOperation, OperationSignature};
-use wick_config::{path_to_url, WickConfiguration};
+use wick_config::{normalize_path, WickConfiguration};
 use wick_interface_types::{EnumSignature, EnumVariant, StructSignature, TypeDefinition};
 
 fn snake(s: &str) -> String {

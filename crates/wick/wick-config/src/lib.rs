@@ -113,4 +113,4 @@ pub(crate) static SENDER_ID: &str = "core::sender";
 /// The name of SENDER's output port.
 pub(crate) static SENDER_PORT: &str = "output";
 
-pub use wick_asset_reference::{path_to_url, str_to_url};
+pub use wick_asset_reference::{normalize_path, normalize_path_str};

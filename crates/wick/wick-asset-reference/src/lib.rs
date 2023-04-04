@@ -1,4 +1,4 @@
-//! Wick Manifest implementation
+//! Wick Asset Reference implementation
 
 // !!START_LINTS
 // Wick lints
@@ -88,7 +88,7 @@
 #![allow(missing_docs)]
 
 mod asset_reference;
-/// Wick Manifest error.
+/// This crate's error module.
 pub mod error;
 
 /// The crate's error type.
@@ -96,4 +96,4 @@ pub type Error = crate::error::Error;
 
 pub use asset_reference::{AssetReference, FetchOptions};
 mod utils;
-pub use utils::{path_to_url, str_to_url};
+pub use utils::{normalize_path, normalize_path_str};

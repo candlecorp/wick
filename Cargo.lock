@@ -4640,7 +4640,6 @@ dependencies = [
  "anyhow",
  "assets",
  "bytes",
- "derive-assets",
  "logger",
  "normpath",
  "parking_lot",
@@ -4650,7 +4649,6 @@ dependencies = [
  "tokio",
  "tokio-stream",
  "tracing",
- "url",
  "wick-oci-utils",
 ]
 
@@ -4830,7 +4828,6 @@ dependencies = [
 name = "wick-interface-http"
 version = "0.1.0"
 dependencies = [
- "async-trait",
  "bytes",
  "futures",
  "serde",
@@ -5085,7 +5082,6 @@ dependencies = [
  "test-logger",
  "thiserror",
  "tokio",
- "tracing",
  "xdg",
 ]
 

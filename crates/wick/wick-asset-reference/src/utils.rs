@@ -7,13 +7,13 @@ use crate::Error;
 
 type Result<T> = std::result::Result<T, Error>;
 
-pub fn path_to_url(path: &std::path::Path, base: Option<String>) -> Result<String> {
+pub fn normalize_path(path: &std::path::Path, base: Option<String>) -> Result<String> {
   let pathstr = path.to_string_lossy().to_string();
-  str_to_url(&pathstr, base)
+  normalize_path_str(&pathstr, base)
 }
 
 #[allow(clippy::option_if_let_else)]
-pub fn str_to_url(path: &str, base: Option<String>) -> Result<String> {
+pub fn normalize_path_str(path: &str, base: Option<String>) -> Result<String> {
   let url = match base {
     Some(full_url) => {
       trace!("Resolving path to baseurl: {} + {}", full_url, path);

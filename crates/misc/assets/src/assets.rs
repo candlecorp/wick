@@ -1,4 +1,3 @@
-use std::path::PathBuf;
 use std::pin::Pin;
 use std::sync::atomic::AtomicBool;
 use std::task::Poll;
@@ -299,7 +298,6 @@ pub trait Asset {
   type Options: Clone;
   fn fetch_with_progress(&self, options: Self::Options) -> Pin<Box<dyn Stream<Item = Progress> + Send + '_>>;
   fn fetch(&self, options: Self::Options) -> Pin<Box<dyn Future<Output = Result<Vec<u8>, Error>> + Send + Sync>>;
-  fn store(&self, options: Self::Options) -> Pin<Box<dyn Future<Output = Result<PathBuf, Error>> + Send + Sync>>;
   fn name(&self) -> &str;
   fn update_baseurl(&self, baseurl: &str);
 }
