@@ -10,6 +10,7 @@ repository = "https://github.com/candlecorp/wick"
 wick-grpctar = { workspace = true }
 wick-interface-types = { workspace = true }
 wick-wascap = { workspace = true }
+wick-xdg = { workspace = true }
 oci-distribution = { workspace = true, features = [
   "rustls-tls",
 ], default-features = false }
@@ -22,6 +23,8 @@ tar = { workspace = true }
 tokio = { workspace = true, features = ["fs"] }
 sha256 = { workspace = true }
 bytes = { workspace = true }
+regex = { workspace = true }
+once_cell = { workspace = true }
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["rt-multi-thread", "macros"] }

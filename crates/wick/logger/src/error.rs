@@ -15,6 +15,10 @@ pub enum LoggerError {
   #[error("Could not create logfile {0}")]
   NoLogfile(String),
 
+  /// Invalid string passed as the log style.
+  #[error("Error resolving platform-specific configuration: {0}")]
+  Platform(#[from] wick_xdg::error::Error),
+
   /// General initialization error.
   #[error("Could not initialize logger: {0}")]
   InitFailed(String),

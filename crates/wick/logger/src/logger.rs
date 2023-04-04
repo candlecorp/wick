@@ -136,18 +136,7 @@ fn get_logfile_writer(opts: &LoggingOptions) -> Result<(PathBuf, NonBlocking, Wo
 
   let mut log_dir = match &opts.log_dir {
     Some(dir) => dir.clone(),
-    None => {
-      #[cfg(not(target_os = "windows"))]
-      match xdg::BaseDirectories::with_prefix("wick") {
-        Ok(xdg) => xdg.get_state_home(),
-        Err(_) => std::env::current_dir()?,
-      }
-      #[cfg(target_os = "windows")]
-      match std::env::var("LOCALAPPDATA") {
-        Ok(localappdata) => PathBuf::from(format!("{}/wick", localappdata)),
-        Err(_) => std::env::current_dir()?,
-      }
-    }
+    None => wick_xdg::Directories::GlobalState.basedir()?,
   };
   log_dir.push("logs");
 

@@ -1,5 +1,4 @@
 use thiserror::Error;
-use url::Url;
 
 use crate::config::{self};
 
@@ -26,7 +25,7 @@ pub enum ManifestError {
 
   /// Could not load file.
   #[error("Could not read file {0}: {1}")]
-  LoadError(Url, String),
+  LoadError(String, String),
 
   /// Thrown when a specific type of configuration was expected but a different type was found.
   #[error("Expected a {0} configuration but got a {1} configuration")]

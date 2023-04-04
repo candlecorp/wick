@@ -69,6 +69,20 @@ impl Interpreter {
     handlers.add(NamespaceHandler::new(NS_COMPONENTS, Box::new(component_component)))?;
 
     let signatures = handlers.component_signatures();
+    let s: Vec<_> = signatures
+      .iter()
+      .map(|(s, v)| {
+        v.operations
+          .iter()
+          .map(|op| format!("{}::{}", s, op.name))
+          .collect::<Vec<_>>()
+          .join(", ")
+      })
+      .collect();
+    debug!(
+      signatures = ?s,
+      "signatures handled by this interpreter"
+    );
 
     let program = Program::new(network, signatures)?;
 
@@ -145,9 +159,22 @@ impl Interpreter {
     let stream = match &invocation.target {
       Entity::Operation(ns, _) => {
         if ns == NS_SELF || ns == Entity::LOCAL || Some(ns) == self.namespace.as_ref() {
+          if let Some(component) = self.components.get(ns) {
+            if component.is_exposed() {
+              trace!(entity=%invocation.target, "invoke::exposed::operation");
+              return Ok(
+                component
+                  .collection
+                  .handle(invocation, stream, None)
+                  .await
+                  .map_err(ExecutionError::CollectionError)?,
+              );
+            }
+          }
+          trace!(entity=%invocation.target, "invoke::composite::operation");
           self.invoke_operation(invocation, stream).instrument(span).await?
         } else {
-          trace!(?invocation);
+          trace!(entity=%invocation.target, "invoke::instance::operation");
           self
             .components
             .get(ns)

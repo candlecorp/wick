@@ -1,0 +1,33 @@
+---
+name: 'test'
+kind: wick/component@v1
+metadata:
+  version: '0.0.2'
+component:
+  kind: wick/component/wasmrs@v1
+  ref: ../../../../integration/test-baseline-component/build/baseline.signed.wasm
+  operations:
+    - name: render
+      inputs:
+        - name: template
+          type: string
+        - name: data
+          type: struct
+      outputs:
+        - name: output
+          type: string
+tests:
+  - name: basic
+    operation: render
+    input:
+      - name: template
+        data: 'Hello {{ name }}!'
+      - name: data
+        data:
+          name: 'jinja'
+    output:
+      - name: output
+        data: 'Hello jinja!'
+      - name: output
+        flags:
+          done: true

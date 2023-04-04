@@ -82,7 +82,7 @@
   while_true,
   missing_docs
 )]
-#![allow(unused_attributes, clippy::derive_partial_eq_without_eq, clippy::box_default)]
+#![allow(clippy::derive_partial_eq_without_eq, clippy::box_default)]
 // !!END_LINTS
 // Add exceptions here
 
@@ -118,9 +118,6 @@ async fn main() -> Result<()> {
     CliCommand::Wasm(cmd) => match cmd {
       commands::wasm::SubCommands::Sign(cmd) => commands::wasm::sign::handle(cmd).await,
       commands::wasm::SubCommands::Inspect(cmd) => commands::wasm::inspect::handle(cmd).await,
-    },
-    CliCommand::Bundle(cmd) => match cmd {
-      commands::bundle::SubCommands::Pack(cmd) => commands::bundle::pack::handle(cmd).await,
     },
     CliCommand::Key(cmd) => match cmd {
       commands::key::SubCommands::Get(cmd) => commands::key::get::handle(cmd).await,

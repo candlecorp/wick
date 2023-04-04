@@ -1,13 +1,7 @@
 use std::path::PathBuf;
-use std::str::FromStr;
 
 use anyhow::Result;
 use clap::Args;
-use oci_distribution::secrets::RegistryAuth;
-use oci_distribution::{manifest, Client, Reference};
-use wick_oci_utils::error::OciError;
-
-use crate::io::write_bytes;
 #[derive(Debug, Clone, Args)]
 #[clap(rename_all = "kebab-case")]
 pub(crate) struct RegistryPullCommand {
@@ -19,113 +13,47 @@ pub(crate) struct RegistryPullCommand {
   pub(crate) reference: String,
 
   /// Directory to store the pulled artifacts.
-  #[clap(short, long = "output", default_value = ".", action)]
-  pub(crate) output: PathBuf,
+  #[clap(action)]
+  pub(crate) output: Option<PathBuf>,
+
+  /// Force overwriting of files.
+  #[clap(short = 'f', long = "force", action)]
+  pub(crate) force: bool,
 
   #[clap(flatten)]
   pub(crate) oci_opts: crate::oci::Options,
-
-  /// The architecture to pull for multi-architecture artifacts.
-  #[clap(long, env = "OCI_ARCH", action)]
-  pub(crate) arch: Option<String>,
-
-  /// The os to pull for multi-architecture artifacts.
-  #[clap(long, env = "OCI_ARCH", action)]
-  pub(crate) os: Option<String>,
 }
 
 #[allow(clippy::unused_async)]
 pub(crate) async fn handle(opts: RegistryPullCommand) -> Result<()> {
   let _guard = crate::utils::init_logger(&opts.logging)?;
-  debug!("Pull artifact");
-  let protocol = oci_distribution::client::ClientProtocol::HttpsExcept(opts.oci_opts.insecure_registries.clone());
-  let config = oci_distribution::client::ClientConfig {
-    protocol,
-    ..Default::default()
-  };
-  let mut client = Client::new(config);
+  let oci_opts = wick_oci_utils::OciOptions::default()
+    .allow_insecure(opts.oci_opts.insecure_registries)
+    .allow_latest(true)
+    .username(opts.oci_opts.username)
+    .password(opts.oci_opts.password)
+    .overwrite(opts.force)
+    .base_dir(opts.output);
 
-  let auth = match (&opts.oci_opts.username, &opts.oci_opts.password) {
-    (Some(username), Some(password)) => RegistryAuth::Basic(username.clone(), password.clone()),
-    (None, None) => RegistryAuth::Anonymous,
-    _ => {
-      println!("Both username and password must be supplied. Falling back to anonymous auth");
-      RegistryAuth::Anonymous
+  debug!(options=?oci_opts, reference= opts.reference, "pulling reference");
+
+  let pull_result = match wick_package::WickPackage::pull(&opts.reference, &oci_opts).await {
+    Ok(pull_result) => pull_result,
+    Err(e) => {
+      if let wick_package::Error::Oci(wick_oci_utils::error::OciError::WouldOverwrite(files)) = &e {
+        info!("Pulling {} will overwrite the following files", opts.reference);
+        for file in files {
+          info!("{}", file.display());
+        }
+        error!("Refusing to overwrite files, pass --force to ignore.");
+        return Err(anyhow!("Pull failed"));
+      }
+      error!("Failed to pull {}: {}", opts.reference, e);
+      return Err(e.into());
     }
   };
-
-  let reference =
-    Reference::from_str(&opts.reference).map_err(|e| OciError::OCIParseError(opts.reference.clone(), e.to_string()))?;
-
-  pull(&reference, &opts, &mut client, &auth).await?;
-  Ok(())
-}
-
-#[async_recursion::async_recursion]
-async fn pull(
-  reference: &Reference,
-  opts: &RegistryPullCommand,
-  client: &mut Client,
-  auth: &RegistryAuth,
-) -> Result<()> {
-  let (manifest, _) = client
-    .pull_manifest(reference, auth)
-    .await
-    .map_err(OciError::OciDistribution)?;
-  let imagedata = client
-    .pull(
-      reference,
-      auth,
-      vec![
-        manifest::WASM_LAYER_MEDIA_TYPE,
-        manifest::IMAGE_LAYER_MEDIA_TYPE,
-        manifest::IMAGE_LAYER_GZIP_MEDIA_TYPE,
-        manifest::IMAGE_DOCKER_LAYER_TAR_MEDIA_TYPE,
-        manifest::IMAGE_DOCKER_LAYER_GZIP_MEDIA_TYPE,
-      ],
-    )
-    .await
-    .map_err(OciError::OciDistribution)?;
-
-  for (i, layer) in imagedata.layers.into_iter().enumerate() {
-    match &manifest {
-      oci_distribution::manifest::OciManifest::Image(manifest) => {
-        let path = opts.output.clone();
-        if let Some(Some(annotations)) = manifest.layers.get(i).map(|l| &l.annotations) {
-          if let Some(name) = annotations.get("org.opencontainers.image.title") {
-            write_bytes(path.join(name), layer.data).await?;
-          }
-        } else {
-          write_bytes(path.join(format!("layer-{}.out", i)), layer.data).await?;
-        }
-      }
-      oci_distribution::manifest::OciManifest::ImageIndex(manifest) => {
-        if let (Some(os), Some(arch)) = (&opts.os, &opts.arch) {
-          let mut valid_platforms = vec![];
-          let platform_manifest = manifest.manifests.iter().find(|manifest| {
-            manifest.platform.as_ref().map_or(false, |platform| {
-              valid_platforms.push(format!("{}-{}", platform.os, platform.architecture));
-              &platform.os == os && &platform.architecture == arch
-            })
-          });
-          if platform_manifest.is_none() {
-            println!("Platform {}-{} not found", os, arch);
-            println!("Valid platforms are: {:?}", valid_platforms);
-          }
-          let platform_manifest = platform_manifest.unwrap();
-          let reference = Reference::with_digest(
-            reference.registry().to_owned(),
-            reference.repository().to_owned(),
-            platform_manifest.digest.clone(),
-          );
-          println!("Platform reference: {}", reference);
-
-          pull(&reference, opts, client, auth).await?;
-        } else {
-          panic!("You must supply --os and --arch for multi-arch manifests")
-        }
-      }
-    }
+  for file in pull_result.list_files() {
+    info!("Pulled file: {}", file.path().display());
   }
   Ok(())
 }

@@ -5,7 +5,7 @@ use wick_packet::{packet_stream, Packet};
 
 #[test_logger::test(tokio::test)]
 async fn panics() -> Result<()> {
-  tester(
+  common_test(
     "./manifests/v0/errors/panics.yaml",
     packet_stream!(("input", "input")),
     "panics",
@@ -19,7 +19,7 @@ async fn panics() -> Result<()> {
 
 #[test_logger::test(tokio::test)]
 async fn errors() -> Result<()> {
-  tester(
+  common_test(
     "./manifests/v0/errors/errors.yaml",
     packet_stream!(("input", "input")),
     "errors",

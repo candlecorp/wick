@@ -50,7 +50,6 @@ impl FromStr for MarkupKind {
   }
 }
 
-#[allow(clippy::unused_async)]
 pub(crate) async fn handle(opts: QueryCommand) -> Result<()> {
   let input = if let Some(path) = opts.path {
     match opts.kind {

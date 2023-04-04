@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 use std::path::PathBuf;
 
-use url::Url;
 use wick_config::config::Metadata;
 use wick_oci_utils::package::annotations::{self, Annotations};
 
@@ -34,30 +33,21 @@ pub(crate) fn metadata_to_annotations(metadata: Metadata) -> Annotations {
 
   map.insert(
     annotations::ICON.to_owned(),
-    metadata
-      .icon
-      .map(|v| v.path().map(|v| v.to_string()).unwrap_or_default())
-      .unwrap_or_default(),
+    metadata.icon.map(|v| v.path().unwrap_or_default()).unwrap_or_default(),
   );
 
   Annotations::new(map)
 }
 
-pub(crate) fn get_relative_path(base_dir: &PathBuf, url: &Url) -> Result<PathBuf, Error> {
-  if url.scheme() == "file" {
-    // Get the prefix of the path that matches the base directory
-    let path = url
-      .to_file_path()
-      .map_err(|_e| Error::InvalidFileLocation(url.to_string()))?;
-    let relative_part = path
-      .strip_prefix(base_dir)
-      .map_err(|_| Error::InvalidFileLocation(url.to_string()))?;
+pub(crate) fn get_relative_path(base_dir: &PathBuf, path: &str) -> Result<PathBuf, Error> {
+  let path = PathBuf::from(path);
+  // Get the prefix of the path that matches the base directory
+  let relative_part = path
+    .strip_prefix(base_dir)
+    .map_err(|_| Error::InvalidFileLocation(path.display().to_string()))?;
 
-    // Return the relative path
-    Ok(relative_part.to_path_buf())
-  } else {
-    Err(Error::InvalidFileLocation(url.to_string()))
-  }
+  // Return the relative path
+  Ok(relative_part.to_path_buf())
 }
 
 #[cfg(test)]
@@ -67,10 +57,9 @@ mod tests {
   #[test]
   fn test_ensure_relative_path() {
     let parent_dir = PathBuf::from("/candlecorp/wick/crates/wick/wick-package/tests/files");
-    let url =
-      Url::from_file_path("/candlecorp/wick/crates/wick/wick-package/tests/files/assets/test.fake.wasm").unwrap();
+    let path = "/candlecorp/wick/crates/wick/wick-package/tests/files/assets/test.fake.wasm";
 
-    let result = get_relative_path(&parent_dir, &url);
+    let result = get_relative_path(&parent_dir, path);
     assert!(result.is_ok());
     assert_eq!(result.unwrap(), PathBuf::from("assets/test.fake.wasm"));
   }

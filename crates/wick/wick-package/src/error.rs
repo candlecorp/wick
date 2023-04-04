@@ -69,15 +69,11 @@ pub enum Error {
   #[error(transparent)]
   Config(#[from] wick_config::Error),
 
-  /// General URL conversion or parsing error
-  #[error(transparent)]
-  Url(#[from] url::ParseError),
-
   /// Errors related to OCI push/pull
   #[error(transparent)]
   Oci(#[from] wick_oci_utils::Error),
 
-  /// General URL conversion or parsing error
+  /// General asset error
   #[error(transparent)]
   AssetReference(#[from] wick_config::AssetError),
 

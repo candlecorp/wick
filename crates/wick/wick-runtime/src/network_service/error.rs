@@ -3,8 +3,8 @@ use thiserror::Error;
 use crate::dev::prelude::*;
 #[derive(Error, Debug)]
 pub enum NetworkError {
-  #[error("Could not start interpreter from '{}': {1}", .0.as_ref().map_or_else(|| "<unknown>".into(), |p| p.to_string()))]
-  InterpreterInit(Option<url::Url>, Box<flow_graph_interpreter::error::InterpreterError>),
+  #[error("Could not start interpreter from '{}': {1}", .0.as_ref().map_or_else(|| "<unknown>".into(), |p| p.clone()))]
+  InterpreterInit(Option<String>, Box<flow_graph_interpreter::error::InterpreterError>),
 
   #[error(transparent)]
   FlowGraph(#[from] Box<flow_graph::error::Error>),

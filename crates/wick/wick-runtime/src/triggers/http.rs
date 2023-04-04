@@ -216,7 +216,7 @@ resources:
     - name: http
       resource:
         kind: wick/resource/tcpport@v1
-        port: 8888
+        port: 8999
         address: 0.0.0.0
 triggers:
     - kind: wick/trigger/http@v1
@@ -240,7 +240,7 @@ triggers:
       .await?;
     let client = reqwest::Client::new();
     let res = client
-      .post("http://0.0.0.0:8888")
+      .post("http://0.0.0.0:8999")
       .body(r#"{"message": "my json message"}"#)
       .send()
       .await?

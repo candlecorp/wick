@@ -7,6 +7,7 @@ license = "Elastic-2.0"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
+wick-xdg = { workspace = true }
 wick-packet = { workspace = true }
 wick-interface-types = { workspace = true }
 wick-rpc = { workspace = true, features = ["client"] }
@@ -19,6 +20,7 @@ wick-test = { workspace = true }
 wick-wascap = { workspace = true }
 wick-oci-utils = { workspace = true }
 wick-grpctar = { workspace = true }
+wick-package = { workspace = true }
 logger = { workspace = true }
 seeded-random = { workspace = true }
 tap = { workspace = true }

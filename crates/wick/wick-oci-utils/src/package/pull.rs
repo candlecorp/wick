@@ -1,13 +1,11 @@
 use std::path::PathBuf;
-use std::str::FromStr;
 
 use oci_distribution::client::ClientConfig;
-use oci_distribution::secrets::RegistryAuth;
-use oci_distribution::{Client, Reference};
+use oci_distribution::Client;
 
 use super::{annotations, media_types};
-use crate::utils::create_directory_structure;
-use crate::Error;
+use crate::utils::{create_directory_structure, get_cache_directory};
+use crate::{AssetManifest, Error, OciOptions};
 
 /// Result of a pull operation.
 #[derive(Debug, Clone)]
@@ -19,40 +17,31 @@ pub struct PullResult {
 }
 
 /// Pull a Wick package from a registry.
-pub async fn pull(
-  reference: &str,
-  username: Option<&str>,
-  password: Option<&str>,
-  insecure: Option<bool>,
-) -> Result<PullResult, Error> {
-  let insecure = insecure.unwrap_or(false);
+pub async fn pull(reference: &str, options: &OciOptions) -> Result<PullResult, Error> {
+  let (image_ref, protocol) = crate::utils::parse_reference_and_protocol(reference, &options.allow_insecure)?;
+
+  let cache_dir = get_cache_directory(reference, options.get_cache_dir().cloned())?;
+  let download_dir = options.get_base_dir().map_or_else(|| cache_dir, |v| v.clone());
+
+  let manifest_file = download_dir.join(AssetManifest::FILENAME);
+  if manifest_file.exists() {
+    debug!(cache_hit = true, "remote asset");
+    let json = tokio::fs::read_to_string(&manifest_file).await?;
+    let manifest: AssetManifest = serde_json::from_str(&json).map_err(|_| Error::InvalidManifest(manifest_file))?;
+    return Ok(PullResult {
+      base_dir: download_dir,
+      root_path: manifest.root,
+    });
+  }
+  debug!(cache_hit = false, "remote asset");
+
   let client_config = ClientConfig {
-    protocol: match insecure {
-      true => oci_distribution::client::ClientProtocol::Http,
-      false => oci_distribution::client::ClientProtocol::Https,
-    },
+    protocol,
     ..Default::default()
   };
 
   let mut client = Client::new(client_config);
-  let image_ref_result = Reference::from_str(reference);
-  let image_ref = match image_ref_result {
-    Ok(image_ref) => {
-      println!("Pulling package from registry: {}", image_ref);
-      image_ref
-    }
-    Err(_) => {
-      return Err(Error::InvalidReference(reference.to_owned()));
-    }
-  };
-
-  let auth = match (username.as_ref(), password.as_ref()) {
-    (Some(username), Some(password)) => RegistryAuth::Basic((*username).to_owned(), (*password).to_owned()),
-    _ => {
-      println!("Both username and password must be supplied. Falling back to anonymous auth");
-      RegistryAuth::Anonymous
-    }
-  };
+  let auth = options.get_auth();
 
   let accepted_media_types = vec![
     media_types::CONFIG,
@@ -69,24 +58,35 @@ pub async fn pull(
 
   let image_data = match result {
     Ok(pull_response) => {
-      println!("Image successfully pulled from the registry.");
+      debug!("Image successfully pulled from the registry.");
       pull_response
     }
     Err(e) => {
-      println!("Pull failed: {}", e);
       return Err(Error::PullFailed(e.to_string()));
     }
   };
 
-  let download_dir = match create_directory_structure(reference).await {
-    Ok(path) => {
-      println!("Directory created successfully: {}", path.display());
-      path
-    }
-    Err(e) => return Err(Error::DirectoryCreationFailed(e.to_string())),
-  };
+  let download_dir = create_directory_structure(download_dir).await?;
 
   let mut root_file: Option<String> = None;
+
+  let mut would_overwrite: Vec<PathBuf> = Vec::new();
+  for layer in &image_data.layers {
+    let layer_title = layer
+      .annotations
+      .as_ref()
+      .and_then(|v| v.get(annotations::TITLE).cloned())
+      .ok_or(Error::NoTitle)?;
+    let layer_path = download_dir.join(&layer_title);
+
+    // If canonicalize succeeds, the path exists and we would overwrite it.
+    if let Ok(path) = layer_path.canonicalize() {
+      would_overwrite.push(path);
+    }
+  }
+  if !would_overwrite.is_empty() && !options.overwrite {
+    return Err(Error::WouldOverwrite(would_overwrite));
+  }
 
   for layer in image_data.layers {
     let layer_title = layer
@@ -109,7 +109,11 @@ pub async fn pull(
   }
 
   let root_file = root_file.ok_or_else(|| Error::PackageReadFailed("No root file found".to_owned()))?;
-  println!("Root file: {}", root_file);
+  let manifest = AssetManifest::new(PathBuf::from(&root_file));
+  let contents = serde_json::to_string(&manifest).unwrap();
+  tokio::fs::write(download_dir.join(AssetManifest::FILENAME), contents).await?;
+
+  debug!(path = root_file, "Root file");
   Ok(PullResult {
     base_dir: download_dir,
     root_path: PathBuf::from(root_file),

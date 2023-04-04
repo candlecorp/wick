@@ -1,4 +1,5 @@
 use std::collections::HashSet;
+use std::path::PathBuf;
 use std::time::SystemTime;
 
 use anyhow::Result;
@@ -72,11 +73,17 @@ pub(crate) async fn handle_command(mut opts: InvokeCommand) -> Result<()> {
   }
 
   let _guard = logger::init(&logging.name(crate::BIN_NAME));
-  let fetch_options = wick_config::config::FetchOptions::new()
+
+  let fetch_options = if PathBuf::from(&opts.location).exists() {
+    wick_config::config::FetchOptions::new()
+  } else {
+    wick_config::config::FetchOptions::new().artifact_dir(wick_xdg::Directories::GlobalCache.basedir()?)
+  };
+  let fetch_options = fetch_options
     .allow_latest(opts.fetch.allow_latest)
     .allow_insecure(&opts.fetch.insecure_registries);
 
-  let manifest = WickConfiguration::fetch(wick_config::str_to_url(&opts.location, None)?, fetch_options)
+  let manifest = WickConfiguration::fetch(&opts.location, fetch_options)
     .await?
     .try_component_config()?;
 

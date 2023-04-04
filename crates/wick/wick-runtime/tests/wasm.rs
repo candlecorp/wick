@@ -5,8 +5,8 @@ use wick_packet::{packet_stream, Packet};
 type Result<T> = anyhow::Result<T, anyhow::Error>;
 
 #[test_logger::test(tokio::test)]
-async fn good_wasm_component() -> Result<()> {
-  tester(
+async fn good_wasm_component_v0() -> Result<()> {
+  common_test(
     "./manifests/v0/wasmrs-component.yaml",
     packet_stream!(("input", "1234567890")),
     "test",
@@ -16,8 +16,19 @@ async fn good_wasm_component() -> Result<()> {
 }
 
 #[test_logger::test(tokio::test)]
+async fn good_wasm_component_v1() -> Result<()> {
+  common_test(
+    "./manifests/v1/wasmrs-component.yaml",
+    packet_stream!(("left", 10), ("right", 1001)),
+    "add",
+    vec![Packet::encode("output", 1011), Packet::done("output")],
+  )
+  .await
+}
+
+#[test_logger::test(tokio::test)]
 async fn bad_wasm_component() -> Result<()> {
-  tester(
+  common_test(
     "./manifests/v0/bad-wasmrs-component.yaml",
     packet_stream!(("input", "1234567890")),
     "test",

@@ -1,38 +1,40 @@
-use std::str::FromStr;
+use std::path::PathBuf;
 
-use url::Url;
+use normpath::PathExt;
+use tracing::trace;
 
 use crate::Error;
 
 type Result<T> = std::result::Result<T, Error>;
 
-pub fn path_to_url(path: &std::path::Path, base: Option<Url>) -> Result<Url> {
+pub fn path_to_url(path: &std::path::Path, base: Option<String>) -> Result<String> {
   let pathstr = path.to_string_lossy().to_string();
   str_to_url(&pathstr, base)
 }
 
-pub fn str_to_url(path: &str, base: Option<Url>) -> Result<Url> {
+#[allow(clippy::option_if_let_else)]
+pub fn str_to_url(path: &str, base: Option<String>) -> Result<String> {
   let url = match base {
     Some(full_url) => {
-      if !full_url.path().ends_with('/') {
-        let mut url = full_url.clone();
-        url.set_path(&format!("{}/", full_url.path()));
-        url.join(path)?
+      trace!("Resolving path to baseurl: {} + {}", full_url, path);
+      let p = PathBuf::from(&full_url).join(path);
+      p.normalize()
+        .map_err(|e| Error::BaseUrlFailure(full_url, e.to_string()))?
+        .as_path()
+        .to_string_lossy()
+        .to_string()
+    }
+    None => {
+      if !path.starts_with(std::path::MAIN_SEPARATOR) {
+        trace!("Path is relative, converting to absolute path: {}", path);
+        let absolute = std::env::current_dir().unwrap().join(path);
+        absolute.display().to_string()
       } else {
-        full_url.join(path)?
+        trace!("Path is absolute, leaving alone: {}", path);
+
+        path.to_owned()
       }
     }
-    None => match Url::from_str(path) {
-      Ok(url) => url,
-      Err(e) => match e {
-        url::ParseError::RelativeUrlWithoutBase => {
-          let mut cwd = std::env::current_dir().unwrap();
-          cwd.push(path);
-          Url::from_file_path(cwd).map_err(|_| Error::BadUrl(path.to_owned()))?
-        }
-        e => return Err(e.into()),
-      },
-    },
   };
   Ok(url)
 }

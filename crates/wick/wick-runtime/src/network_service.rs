@@ -37,6 +37,7 @@ pub(crate) struct NetworkService {
   #[allow(unused)]
   started_time: std::time::Instant,
   pub(crate) id: Uuid,
+  pub(super) namespace: String,
   interpreter: Arc<flow_graph_interpreter::Interpreter>,
 }
 
@@ -49,6 +50,7 @@ impl NetworkService {
     let graph = flow_graph_interpreter::graph::from_def(&msg.manifest)?;
     let mut components = HandlerMap::default();
     let rng = Random::from_seed(msg.rng_seed);
+    let ns = msg.namespace.unwrap_or_else(|| msg.id.to_string());
 
     if let ComponentImplementation::Wasm(comp) = msg.manifest.component() {
       let span = debug_span!(parent: &msg.span, "main:init");
@@ -62,10 +64,7 @@ impl NetworkService {
       };
 
       let component = config::BoundComponent::new(
-        msg
-          .namespace
-          .as_ref()
-          .map_or_else(|| rng.uuid().to_string(), |v| v.clone()),
+        &ns,
         #[allow(deprecated)]
         config::ComponentDefinition::Wasm(config::WasmComponent {
           reference: comp.reference().clone(),
@@ -74,6 +73,8 @@ impl NetworkService {
         }),
       );
       let main_component = initialize_component(&component, collection_init).await?;
+      main_component.expose();
+
       components
         .add(main_component)
         .map_err(|e| NetworkError::InterpreterInit(msg.manifest.source().clone(), Box::new(e)))?;
@@ -104,13 +105,9 @@ impl NetworkService {
 
     let source = msg.manifest.source().clone();
 
-    let mut interpreter = flow_graph_interpreter::Interpreter::new(
-      Some(rng.seed()),
-      graph,
-      Some(msg.namespace.unwrap_or_else(|| msg.id.to_string())),
-      Some(components),
-    )
-    .map_err(|e| NetworkError::InterpreterInit(source, Box::new(e)))?;
+    let mut interpreter =
+      flow_graph_interpreter::Interpreter::new(Some(rng.seed()), graph, Some(ns.clone()), Some(components))
+        .map_err(|e| NetworkError::InterpreterInit(source, Box::new(e)))?;
 
     match msg.event_log {
       Some(path) => interpreter.start(None, Some(Box::new(JsonWriter::new(path)))).await,
@@ -120,6 +117,7 @@ impl NetworkService {
     let network = Arc::new(NetworkService {
       started_time: std::time::Instant::now(),
       id: msg.id,
+      namespace: ns,
       interpreter: Arc::new(interpreter),
     });
 

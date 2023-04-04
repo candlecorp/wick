@@ -138,13 +138,13 @@ impl ComponentHost {
 
   pub async fn request(
     &self,
-    schematic: &str,
+    operation: &str,
     stream: PacketStream,
     data: Option<InherentData>,
   ) -> Result<PacketStream> {
     match &self.network {
       Some(network) => {
-        let invocation = Invocation::new(Entity::host(&self.id), Entity::local(schematic), data);
+        let invocation = Invocation::new(Entity::host(&self.id), Entity::operation(&self.id, operation), data);
         Ok(network.invoke(invocation, stream).await?)
       }
       None => Err(crate::Error::InvalidHostState("No network available".into())),
@@ -201,7 +201,7 @@ impl ComponentHostBuilder {
       .allow_latest(allow_latest)
       .allow_insecure(insecure_registries);
 
-    let manifest = WickConfiguration::fetch(wick_config::str_to_url(location, None)?, fetch_options)
+    let manifest = WickConfiguration::fetch(location, fetch_options)
       .await?
       .try_component_config()?;
     Ok(Self::from_definition(manifest))
@@ -265,6 +265,7 @@ mod test {
   #[test_logger::test(tokio::test)]
   async fn should_start_and_stop() -> Result<()> {
     let mut host = ComponentHostBuilder::new().build();
+
     host.start(None).await?;
     assert!(host.is_started());
     host.stop().await;

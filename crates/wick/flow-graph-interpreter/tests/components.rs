@@ -3,18 +3,17 @@
 mod test;
 
 use anyhow::Result;
-use flow_graph_interpreter::graph::from_def;
 use rot::*;
-use seeded_random::Seed;
-use wick_packet::{packets, Packet};
+use wick_packet::{packets, Entity, Packet};
 
 #[test_logger::test(tokio::test)]
 async fn test_echo() -> Result<()> {
-  let (interpreter, mut outputs) = interp!(
+  let (interpreter, mut outputs) = test::common_setup(
     "./tests/manifests/v0/echo.yaml",
     "echo",
-    packets!(("input", "hello world"))
-  );
+    packets!(("input", "hello world")),
+  )
+  .await?;
 
   assert_equal!(outputs.len(), 2);
 
@@ -30,11 +29,12 @@ async fn test_echo() -> Result<()> {
 
 #[test_logger::test(tokio::test)]
 async fn test_renamed_ports() -> Result<()> {
-  let (interpreter, mut outputs) = interp!(
+  let (interpreter, mut outputs) = test::common_setup(
     "./tests/manifests/v0/reverse.yaml",
     "test",
-    packets!(("PORT_IN", "hello world"))
-  );
+    packets!(("PORT_IN", "hello world")),
+  )
+  .await?;
 
   assert_equal!(outputs.len(), 2);
 
@@ -50,11 +50,12 @@ async fn test_renamed_ports() -> Result<()> {
 
 #[test_logger::test(tokio::test)]
 async fn test_parent_child() -> Result<()> {
-  let (interpreter, mut outputs) = interp!(
+  let (interpreter, mut outputs) = test::common_setup(
     "./tests/manifests/v0/parent-child.yaml",
     "parent",
-    packets!(("parent_input", "hello world"))
-  );
+    packets!(("parent_input", "hello world")),
+  )
+  .await?;
 
   assert_equal!(outputs.len(), 2);
 
@@ -70,11 +71,12 @@ async fn test_parent_child() -> Result<()> {
 
 #[test_logger::test(tokio::test)]
 async fn test_parent_child_simple() -> Result<()> {
-  let (interpreter, mut outputs) = interp!(
+  let (interpreter, mut outputs) = test::common_setup(
     "./tests/manifests/v0/parent-child-simple.yaml",
     "nested_parent",
-    packets!(("parent_input", "hello world"))
-  );
+    packets!(("parent_input", "hello world")),
+  )
+  .await?;
 
   assert_equal!(outputs.len(), 2);
 
@@ -87,13 +89,34 @@ async fn test_parent_child_simple() -> Result<()> {
 
   Ok(())
 }
+
 #[test_logger::test(tokio::test)]
 async fn test_external_collection() -> Result<()> {
-  let (interpreter, mut outputs) = interp!(
+  let (interpreter, mut outputs) = test::common_setup(
     "./tests/manifests/v0/external.yaml",
     "test",
-    packets!(("input", "hello world"))
-  );
+    packets!(("input", "hello world")),
+  )
+  .await?;
+
+  let _ = outputs.pop();
+  let wrapper = outputs.pop().unwrap().unwrap();
+  let expected = Packet::encode("output", "hello world");
+
+  assert_equal!(wrapper, expected);
+  interpreter.shutdown().await?;
+
+  Ok(())
+}
+
+#[test_logger::test(tokio::test)]
+async fn test_external_direct() -> Result<()> {
+  let (interpreter, mut outputs) = test::base_setup(
+    "./tests/manifests/v0/external.yaml",
+    Entity::operation("test", "echo"),
+    packets!(("input", "hello world")),
+  )
+  .await?;
 
   let _ = outputs.pop();
   let wrapper = outputs.pop().unwrap().unwrap();
@@ -107,11 +130,12 @@ async fn test_external_collection() -> Result<()> {
 
 #[test_logger::test(tokio::test)]
 async fn test_self() -> Result<()> {
-  let (interpreter, mut outputs) = interp!(
+  let (interpreter, mut outputs) = test::common_setup(
     "./tests/manifests/v0/reference-self.yaml",
     "test",
-    packets!(("parent_input", "Hello world"))
-  );
+    packets!(("parent_input", "Hello world")),
+  )
+  .await?;
 
   assert_equal!(outputs.len(), 2);
 
@@ -127,11 +151,12 @@ async fn test_self() -> Result<()> {
 
 #[test_logger::test(tokio::test)]
 async fn test_spread() -> Result<()> {
-  let (interpreter, mut outputs) = interp!(
+  let (interpreter, mut outputs) = test::common_setup(
     "./tests/manifests/v0/spread.yaml",
     "test",
-    packets!(("input", "Hello world"))
-  );
+    packets!(("input", "Hello world")),
+  )
+  .await?;
 
   assert_equal!(outputs.len(), 4);
 
@@ -150,11 +175,12 @@ async fn test_spread() -> Result<()> {
 
 #[test_logger::test(tokio::test)]
 async fn test_stream() -> Result<()> {
-  let (interpreter, mut outputs) = interp!(
+  let (interpreter, mut outputs) = test::common_setup(
     "./tests/manifests/v0/stream.yaml",
     "test",
-    packets!(("input", "Hello world"))
-  );
+    packets!(("input", "Hello world")),
+  )
+  .await?;
 
   assert_equal!(outputs.len(), 6);
 
@@ -170,11 +196,12 @@ async fn test_stream() -> Result<()> {
 }
 #[test_logger::test(tokio::test)]
 async fn test_multiple_inputs() -> Result<()> {
-  let (interpreter, mut outputs) = interp!(
+  let (interpreter, mut outputs) = test::common_setup(
     "./tests/manifests/v0/multiple-inputs.yaml",
     "test",
-    packets!(("left", 40), ("right", 10020))
-  );
+    packets!(("left", 40), ("right", 10020)),
+  )
+  .await?;
 
   assert_equal!(outputs.len(), 2);
 
@@ -191,11 +218,12 @@ async fn test_multiple_inputs() -> Result<()> {
 
 #[test_logger::test(tokio::test)]
 async fn test_stream_multi() -> Result<()> {
-  let (interpreter, outputs) = interp!(
+  let (interpreter, outputs) = test::common_setup(
     "./tests/manifests/v0/stream-multi.yaml",
     "test",
-    packets!(("input", "hello world"))
-  );
+    packets!(("input", "hello world")),
+  )
+  .await?;
   assert_equal!(outputs.len(), 13);
 
   let (mut vowels, mut rest): (Vec<_>, Vec<_>) = outputs
@@ -220,54 +248,6 @@ async fn test_stream_multi() -> Result<()> {
 
   Ok(())
 }
-
-// #[test_logger::test(tokio::test)]
-// async fn test_exception_default() -> Result<()> {
-//   let manifest = load("./tests/manifests/v0/exception-default.yaml")?;
-//   let network = from_def(&manifest)?;
-//   let collections = HandlerMap::new(vec![NamespaceHandler::new("test", Box::new(TestCollection::new()))]);
-//   let inputs = PacketMap::from([("input", "Hello world".to_owned())]);
-
-//   let invocation = invocation("exception-default","test");
-//   let mut interpreter = Interpreter::new(Some(Seed::unsafe_new(1)), network, None, Some(collections))?;
-//   interpreter.start(OPTIONS, Some(Box::new(JsonWriter::default()))).await;
-//   let mut stream = interpreter.invoke(invocation).await?;
-
-//   let mut outputs: Vec<_> = stream.drain().await;
-//   println!("{:#?}", outputs);
-
-//   let wrapper = outputs.pop().unwrap();
-//   let result: String = wrapper.deserialize()?;
-
-//   assert_equal!(result, "eulav tluafeD".to_owned());
-
-//   interpreter.shutdown().await?;
-
-//   Ok(())
-// }
-
-// #[test_logger::test(tokio::test)]
-// async fn test_exception_nodefault() -> Result<()> {
-//   let manifest = load("./tests/manifests/v0/exception-nodefault.yaml")?;
-//   let network = from_def(&manifest)?;
-//   let collections = HandlerMap::new(vec![NamespaceHandler::new("test", Box::new(TestCollection::new()))]);
-//   let inputs = PacketMap::from([("input", "Hello world".to_owned())]);
-
-//   let invocation = invocation("exception-nodefault","test");
-//   let mut interpreter = Interpreter::new(Some(Seed::unsafe_new(1)), network, None, Some(collections))?;
-//   interpreter.start(OPTIONS, Some(Box::new(JsonWriter::default()))).await;
-//   let mut stream = interpreter.invoke(invocation).await?;
-
-//   let mut outputs: Vec<_> = stream.drain().await;
-//   println!("{:#?}", outputs);
-
-//   let wrapper = outputs.pop().unwrap();
-//   assert_true!(matches!(wrapper.payload, MessageTransport::Failure(_)));
-
-//   interpreter.shutdown().await?;
-
-//   Ok(())
-// }
 
 // #[test_logger::test(tokio::test)]
 // async fn test_inherent() -> Result<()> {
@@ -366,80 +346,6 @@ async fn test_stream_multi() -> Result<()> {
 //     assert_equal!(output, input_str);
 //   }
 //   interpreter.shutdown().await?;
-
-//   Ok(())
-// }
-
-// #[test_logger::test(tokio::test)]
-// async fn test_generator() -> Result<()> {
-//   let manifest = load("./tests/manifests/v0/generator.yaml")?;
-//   let network = from_def(&manifest)?;
-//   let collections = HandlerMap::new(vec![NamespaceHandler::new("test", Box::new(TestCollection::new()))]);
-
-//   let inputs = PacketMap::default();
-//   let invocation = invocation("generator","test");
-//   let mut interpreter = Interpreter::new(Some(Seed::unsafe_new(1)), network, None, Some(collections))?;
-//   interpreter.start(OPTIONS, Some(Box::new(JsonWriter::default()))).await;
-//   let mut stream = interpreter.invoke(invocation).await?;
-
-//   let mut outputs: Vec<_> = stream.drain().await;
-//   interpreter.shutdown().await?;
-//   println!("{:#?}", outputs);
-//   assert_equal!(outputs.len(), 1);
-
-//   let wrapper = outputs.pop().unwrap();
-//   assert_true!(matches!(wrapper.payload, MessageTransport::Success(_)));
-
-//   Ok(())
-// }
-
-// #[test_logger::test(tokio::test)]
-// async fn test_generator_sibling() -> Result<()> {
-//   let manifest = load("./tests/manifests/v0/generator-sibling.yaml")?;
-//   let network = from_def(&manifest)?;
-//   let collections = HandlerMap::new(vec![NamespaceHandler::new("test", Box::new(TestCollection::new()))]);
-
-//   let inputs = PacketMap::from([("input", "my-input".to_owned())]);
-//   let invocation = invocation("generator-sibling","test");
-//   let mut interpreter = Interpreter::new(Some(Seed::unsafe_new(1)), network, None, Some(collections))?;
-//   interpreter.start(OPTIONS, Some(Box::new(JsonWriter::default()))).await;
-//   let mut stream = interpreter.invoke(invocation).await?;
-
-//   let mut outputs: Vec<_> = stream.drain().await;
-//   interpreter.shutdown().await?;
-//   println!("{:#?}", outputs);
-//   assert_equal!(outputs.len(), 1);
-
-//   let wrapper = outputs.pop().unwrap();
-//   assert_true!(matches!(wrapper.payload, MessageTransport::Success(_)));
-
-//   Ok(())
-// }
-
-// #[test_logger::test(tokio::test)]
-// async fn test_generator_multi_sibling() -> Result<()> {
-//   let manifest = load("./tests/manifests/v0/generator-multi-sibling.yaml")?;
-//   let network = from_def(&manifest)?;
-//   let collections = HandlerMap::new(vec![NamespaceHandler::new("test", Box::new(TestCollection::new()))]);
-
-//   let inputs = PacketMap::from([
-//     ("one", "one".to_owned()),
-//     ("two", "two".to_owned()),
-//     ("three", "three".to_owned()),
-//     ("four", "four".to_owned()),
-//   ]);
-//   let invocation = invocation("generator-sibling","test");
-//   let mut interpreter = Interpreter::new(Some(Seed::unsafe_new(1)), network, None, Some(collections))?;
-//   interpreter.start(OPTIONS, Some(Box::new(JsonWriter::default()))).await;
-//   let mut stream = interpreter.invoke(invocation).await?;
-
-//   let mut outputs: Vec<_> = stream.drain().await;
-//   interpreter.shutdown().await?;
-//   println!("{:#?}", outputs);
-//   assert_equal!(outputs.len(), 1);
-
-//   let wrapper = outputs.pop().unwrap();
-//   assert_true!(matches!(wrapper.payload, MessageTransport::Success(_)));
 
 //   Ok(())
 // }

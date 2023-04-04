@@ -6,7 +6,7 @@ type Result<T> = anyhow::Result<T, anyhow::Error>;
 
 #[test_logger::test(tokio::test)]
 async fn simple_schematic() -> Result<()> {
-  tester(
+  common_test(
     "./manifests/v0/simple.yaml",
     packet_stream!(("MAIN_IN", "simple string")),
     "simple",
@@ -17,7 +17,7 @@ async fn simple_schematic() -> Result<()> {
 
 #[test_logger::test(tokio::test)]
 async fn echo() -> Result<()> {
-  tester(
+  common_test(
     "./manifests/v0/echo.yaml",
     packet_stream!(("input", "simple string")),
     "echo",
@@ -28,7 +28,7 @@ async fn echo() -> Result<()> {
 
 #[test_logger::test(tokio::test)]
 async fn senders() -> Result<()> {
-  tester(
+  common_test(
     "./manifests/v0/senders.yaml",
     PacketStream::default(),
     "senders",
@@ -39,7 +39,7 @@ async fn senders() -> Result<()> {
 
 #[test_logger::test(tokio::test)]
 async fn no_inputs() -> Result<()> {
-  tester(
+  common_test(
     "./manifests/v0/no-inputs.yaml",
     PacketStream::default(),
     "uuid",
@@ -53,7 +53,7 @@ async fn no_inputs() -> Result<()> {
 
 #[test_logger::test(tokio::test)]
 async fn nested_schematics() -> Result<()> {
-  tester(
+  common_test(
     "./manifests/v0/nested-schematics.yaml",
     packet_stream!(("parent_input", "simple string")),
     "nested_parent",
@@ -67,7 +67,7 @@ async fn nested_schematics() -> Result<()> {
 
 #[test_logger::test(tokio::test)]
 async fn short_circuit_to_output() -> Result<()> {
-  tester(
+  common_test(
     "./manifests/v0/short-circuit.yaml",
     packet_stream!(("input", "short")),
     "short_circuit",
@@ -81,7 +81,7 @@ async fn short_circuit_to_output() -> Result<()> {
 
 #[test_logger::test(tokio::test)]
 async fn multiple_inputs() -> Result<()> {
-  tester(
+  common_test(
     "./manifests/v0/multiple-inputs.yaml",
     packet_stream!(("left", 42), ("right", 302309)),
     "test",
@@ -92,7 +92,7 @@ async fn multiple_inputs() -> Result<()> {
 
 #[test_logger::test(tokio::test)]
 async fn subnetworks() -> Result<()> {
-  tester(
+  common_test(
     "./manifests/v0/sub-network-parent.yaml",
     packet_stream!(("input", "some input")),
     "parent",

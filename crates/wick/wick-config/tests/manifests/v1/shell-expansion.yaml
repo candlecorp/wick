@@ -7,7 +7,7 @@ component:
     - name: test
       component:
         kind: wick/component/manifest@v1
-        ref: $PWD/test.fake.wasm
+        ref: $CARGO_MANIFEST_DIR/Cargo.toml
         config:
-          pwd: $PWD
+          pwd: $CARGO_MANIFEST_DIR
   operations: []

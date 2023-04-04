@@ -155,6 +155,13 @@ impl Asset for TestAsset {
     unimplemented!()
   }
 
+  fn store(
+    &self,
+    _options: Self::Options,
+  ) -> std::pin::Pin<Box<dyn futures::Future<Output = std::result::Result<PathBuf, assets::Error>> + Send + Sync>> {
+    todo!()
+  }
+
   fn fetch_with_progress(
     &self,
     _options: Self::Options,

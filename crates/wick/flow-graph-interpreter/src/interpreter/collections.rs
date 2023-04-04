@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::fmt::Debug;
+use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 
 pub(super) mod collection_collection;
@@ -99,6 +100,7 @@ pub(crate) fn get_id(ns: &str, name: &str, schematic: &str, instance: &str) -> S
 pub struct NamespaceHandler {
   pub(crate) namespace: String,
   pub(crate) collection: Arc<Box<dyn Component + Send + Sync>>,
+  pub(crate) exposed: Arc<AtomicBool>,
 }
 
 impl NamespaceHandler {
@@ -106,7 +108,22 @@ impl NamespaceHandler {
     Self {
       namespace: namespace.as_ref().to_owned(),
       collection: Arc::new(collection),
+      exposed: Arc::new(AtomicBool::new(false)),
     }
+  }
+
+  #[must_use]
+  pub fn component(&self) -> &Arc<Box<dyn Component + Send + Sync>> {
+    &self.collection
+  }
+
+  pub fn expose(&self) {
+    self.exposed.store(true, std::sync::atomic::Ordering::Relaxed);
+  }
+
+  #[must_use]
+  pub fn is_exposed(&self) -> bool {
+    self.exposed.load(std::sync::atomic::Ordering::Relaxed)
   }
 }
 

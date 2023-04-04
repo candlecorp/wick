@@ -78,6 +78,11 @@ impl Network {
     trace!(?signature, "network signature");
     Ok(signature)
   }
+
+  #[must_use]
+  pub fn namespace(&self) -> &str {
+    &self.inner.namespace
+  }
 }
 
 /// The [NetworkBuilder] builds the configuration for a Wick Network.
@@ -108,7 +113,6 @@ impl NetworkBuilder {
       allowed_insecure: definition.insecure_registries().clone(),
       manifest_builder: config::ComponentConfigurationBuilder::with_base(definition),
       timeout: Duration::from_secs(5),
-      // mesh: None,
       namespace: None,
       rng_seed: None,
     })
@@ -133,13 +137,6 @@ impl NetworkBuilder {
       ..self
     }
   }
-
-  // pub fn mesh(self, mesh: Arc<Mesh>) -> Self {
-  //   Self {
-  //     mesh: Some(mesh),
-  //     ..self
-  //   }
-  // }
 
   pub fn with_seed(self, seed: Seed) -> Self {
     Self {

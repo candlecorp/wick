@@ -92,7 +92,7 @@ mod asset_reference;
 pub mod error;
 
 /// The crate's error type.
-pub type Error = crate::error::ManifestError;
+pub type Error = crate::error::Error;
 
 pub use asset_reference::{AssetReference, FetchOptions};
 mod utils;

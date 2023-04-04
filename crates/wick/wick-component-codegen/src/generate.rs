@@ -409,7 +409,7 @@ fn codegen(wick_config: WickConfiguration, gen_config: &config::Config) -> Resul
 #[allow(clippy::needless_pass_by_value)]
 pub fn build(config: config::Config) -> Result<()> {
   let wick_yaml = std::fs::read_to_string(&config.spec)?;
-  let wick_config = wick_config::WickConfiguration::from_yaml(&wick_yaml, &Some(path_to_url(&config.spec, None)?))?;
+  let wick_config = wick_config::WickConfiguration::from_yaml(&wick_yaml, &Some(config.spec.display().to_string()))?;
 
   let src = codegen(wick_config, &config)?;
   std::fs::create_dir_all(&config.out_dir)?;

@@ -69,11 +69,11 @@ async fn regression_issue_180() -> Result<(), ManifestError> {
   if let ComponentDefinition::Manifest(module) = &coll.kind {
     let value = module.reference.path()?;
     println!("value: {:?}", value);
-    let actual = value.to_file_path().unwrap();
+    let actual = PathBuf::from(value);
 
-    let mut expected = PathBuf::from(std::env::var("PWD").unwrap());
+    let mut expected = PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").unwrap());
 
-    expected.push("test.fake.wasm");
+    expected.push("Cargo.toml");
     assert_eq!(actual, expected);
   } else {
     panic!("wrong collection kind");
@@ -90,7 +90,7 @@ async fn regression_issue_42() -> Result<(), ManifestError> {
   #[allow(deprecated)]
   if let ComponentDefinition::Manifest(module) = &coll.kind {
     let value = module.config.get("pwd").unwrap().as_str().unwrap();
-    let expected = std::env::var("PWD").unwrap();
+    let expected = std::env::var("CARGO_MANIFEST_DIR").unwrap();
 
     assert_eq!(value, expected);
   } else {
