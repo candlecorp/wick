@@ -58,10 +58,6 @@ pub enum ManifestError {
   /// Parser error.
   #[error(transparent)]
   Parser(#[from] flow_expression_parser::Error),
-
-  /// Miscellaneous error.
-  #[error("General error : {0}")]
-  Other(String),
 }
 
 #[derive(Error, Debug, Clone, Copy)]

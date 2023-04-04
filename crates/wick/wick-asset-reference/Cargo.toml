@@ -12,12 +12,10 @@ wick-oci-utils = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
 assets = { workspace = true }
-derive-assets = { workspace = true }
 bytes = { workspace = true }
 tokio = { workspace = true, features = ["sync"] }
 tokio-stream = { workspace = true }
 parking_lot = { workspace = true }
-url = { workspace = true }
 normpath = { workspace = true }
 
 [dev-dependencies]

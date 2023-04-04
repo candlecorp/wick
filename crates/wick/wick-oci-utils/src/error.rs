@@ -58,33 +58,17 @@ pub enum OciError {
   #[error(transparent)]
   GrpcTar(#[from] wick_grpctar::Error),
 
-  /// Tried to add a resource file that is not in the same directory (or relative subdirectory) as the component or application file.
-  #[error("Can not create package with file outside of parent directory scope {0}.")]
-  InvalidFileLocation(String),
-
   /// Failed to parse image reference location
   #[error("Failed to parse the image reference: {0}")]
   InvalidReference(String),
-
-  /// Could not parse contents as JSON
-  #[error("Could not parse {0} as JSON: {1}")]
-  InvalidJson(&'static str, #[source] serde_json::Error),
 
   /// Failed to push package
   #[error("Failed to pull the package: {0}")]
   PullFailed(String),
 
-  /// Failed to create directory
-  #[error("Failed to create directory: {0}")]
-  DirectoryCreationFailed(String),
-
   /// Tried to pull a layer that didn't include a title.
   #[error("Wick package layers must contain a title")]
   NoTitle,
-
-  /// Error returned when reading a file
-  #[error("Failed to read file '{0}': {1}")]
-  ReadFile(PathBuf, #[source] std::io::Error),
 
   /// Error returned when creating directories
   #[error("Failed to create directory '{0}': {1}")]
@@ -97,10 +81,6 @@ pub enum OciError {
   /// Tried to publish a component that didn't have a name
   #[error("Published components must be named")]
   NoName,
-
-  /// Tried to pull a package that had no tag.
-  #[error("Package has no tag")]
-  NoTag,
 
   /// Tried to pull a layer that didn't include at least one forward slash in the title.
   #[error("Invalid layer path '{0}', layer path must contain at least one forward slash.")]

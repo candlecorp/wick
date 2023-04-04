@@ -10,7 +10,7 @@ use tokio_stream::wrappers::UnboundedReceiverStream;
 use tokio_stream::Stream;
 use tracing::{debug, trace};
 
-use crate::{str_to_url, Error};
+use crate::{normalize_path_str, Error};
 
 #[derive(Debug, Clone)]
 #[must_use]
@@ -98,7 +98,7 @@ impl AssetReference {
     } else if self.location.starts_with('@') {
       Ok(self.location.trim_start_matches('@').to_owned())
     } else {
-      let url = str_to_url(&self.location, self.baseurl())?;
+      let url = normalize_path_str(&self.location, self.baseurl())?;
       Ok(url)
     }
   }
@@ -238,22 +238,6 @@ impl Asset for AssetReference {
         Status::Error(e.to_string()),
       ))),
     }
-  }
-
-  fn store(
-    &self,
-    _options: FetchOptions,
-  ) -> std::pin::Pin<Box<dyn Future<Output = Result<PathBuf, assets::Error>> + Send + Sync>> {
-    todo!()
-    // let mut dir = options.get_artifact_dir().cloned().unwrap_or_default();
-    // let name = self.name().to_owned();
-    // let fut = self.fetch(options);
-    // Box::pin(async move {
-    //   let bytes = fut.await?;
-
-    //   tokio::fs::write(path, contents)
-    //   Ok()
-    // })
   }
 
   fn fetch(

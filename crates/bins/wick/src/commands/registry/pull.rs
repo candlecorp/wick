@@ -41,9 +41,9 @@ pub(crate) async fn handle(opts: RegistryPullCommand) -> Result<()> {
     Ok(pull_result) => pull_result,
     Err(e) => {
       if let wick_package::Error::Oci(wick_oci_utils::error::OciError::WouldOverwrite(files)) = &e {
-        info!("Pulling {} will overwrite the following files", opts.reference);
+        warn!("Pulling {} will overwrite the following files", opts.reference);
         for file in files {
-          info!("{}", file.display());
+          warn!("{}", file.display());
         }
         error!("Refusing to overwrite files, pass --force to ignore.");
         return Err(anyhow!("Pull failed"));

@@ -73,7 +73,6 @@ pub async fn push(
   };
   let mut client = Client::new(client_config);
   let auth = options.get_auth();
-  println!("auth: {:?}", console::style(&auth).red());
 
   let result = client
     .push(

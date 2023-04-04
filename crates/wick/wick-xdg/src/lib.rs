@@ -1,4 +1,4 @@
-//! OCI fetch and utility package
+//! Cross-platform normalization of directories and other configuration related to Wick.
 
 // !!START_LINTS
 // Wick lints

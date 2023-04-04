@@ -22,7 +22,6 @@ async-trait = { workspace = true }
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
 thiserror = { workspace = true }
 futures = { workspace = true }
-anyhow = { workspace = true }
 
 [dev-dependencies]
 logger = { workspace = true }

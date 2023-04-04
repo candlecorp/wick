@@ -2,4 +2,4 @@
 
 Wick component configuration parsing and normalization.
 
-License: BSD-3-Clause
+License: Apache-2.0
