@@ -1,14 +1,18 @@
+use std::time::Duration;
+
 use futures::stream::StreamExt;
 use tracing::debug;
 use wick_config::WickConfiguration;
 use wick_packet::{Entity, InherentData, Invocation, Packet, PacketStream};
 use wick_runtime::{Network, NetworkBuilder};
 
-pub async fn init_network_from_yaml(path: &str) -> anyhow::Result<(Network, uuid::Uuid)> {
+pub async fn init_network_from_yaml(path: &str, timeout: Duration) -> anyhow::Result<(Network, uuid::Uuid)> {
   let host_def = WickConfiguration::load_from_file(path).await?.try_component_config()?;
   debug!("Manifest loaded");
 
-  let builder = NetworkBuilder::from_definition(host_def)?.namespace("__TEST__");
+  let builder = NetworkBuilder::from_definition(host_def)?
+    .namespace("__TEST__")
+    .timeout(timeout);
 
   let network = builder.build().await?;
 
@@ -33,7 +37,7 @@ pub async fn base_test(
   target: Entity,
   mut expected: Vec<Packet>,
 ) -> anyhow::Result<()> {
-  let (network, _) = init_network_from_yaml(path).await?;
+  let (network, _) = init_network_from_yaml(path, Duration::from_secs(1)).await?;
   let inherent = InherentData::new(1, 1000);
 
   let target = if target.namespace() == Entity::LOCAL {

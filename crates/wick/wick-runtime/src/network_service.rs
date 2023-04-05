@@ -5,7 +5,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
 
-use flow_graph_interpreter::{HandlerMap, NamespaceHandler};
+use flow_graph_interpreter::{HandlerMap, InterpreterOptions, NamespaceHandler};
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
 use seeded_random::{Random, Seed};
@@ -109,9 +109,17 @@ impl NetworkService {
       flow_graph_interpreter::Interpreter::new(Some(rng.seed()), graph, Some(ns.clone()), Some(components))
         .map_err(|e| NetworkError::InterpreterInit(source, Box::new(e)))?;
 
+    let options = InterpreterOptions {
+      output_timeout: msg.timeout,
+      ..Default::default()
+    };
     match msg.event_log {
-      Some(path) => interpreter.start(None, Some(Box::new(JsonWriter::new(path)))).await,
-      None => interpreter.start(None, None).await,
+      Some(path) => {
+        interpreter
+          .start(Some(options), Some(Box::new(JsonWriter::new(path))))
+          .await;
+      }
+      None => interpreter.start(Some(options), None).await,
     }
 
     let network = Arc::new(NetworkService {

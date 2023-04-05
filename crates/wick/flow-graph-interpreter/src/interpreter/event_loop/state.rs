@@ -8,6 +8,7 @@ use super::EventLoop;
 use crate::interpreter::channel::{CallComplete, InterpreterDispatchChannel};
 use crate::interpreter::executor::error::ExecutionError;
 use crate::interpreter::executor::transaction::Transaction;
+use crate::InterpreterOptions;
 
 #[derive(Debug)]
 pub struct State {
@@ -69,8 +70,12 @@ impl State {
     self.transactions.remove(tx_id)
   }
 
-  pub(super) async fn handle_transaction_start(&mut self, mut transaction: Transaction) -> Result<(), ExecutionError> {
-    let result = match transaction.start().await {
+  pub(super) async fn handle_transaction_start(
+    &mut self,
+    mut transaction: Transaction,
+    options: &InterpreterOptions,
+  ) -> Result<(), ExecutionError> {
+    let result = match transaction.start(options).await {
       Ok(_) => {
         self.transactions.init_tx(transaction.id(), transaction);
         Ok(())

@@ -16,7 +16,7 @@ use crate::graph::Reference;
 use crate::interpreter::channel::InterpreterDispatchChannel;
 use crate::interpreter::error::StateError;
 use crate::interpreter::executor::error::ExecutionError;
-use crate::{Component, HandlerMap};
+use crate::{Component, HandlerMap, InterpreterOptions};
 type Result<T> = std::result::Result<T, ExecutionError>;
 
 pub(crate) mod port;
@@ -250,6 +250,7 @@ impl InstanceHandler {
     tx_id: Uuid,
     invocation: Invocation,
     channel: InterpreterDispatchChannel,
+    options: &InterpreterOptions,
   ) -> Result<()> {
     let span = trace_span!("op-start", otel.name=%self.entity());
 
@@ -313,8 +314,12 @@ impl InstanceHandler {
     let span = trace_span!(
       "output_task", component = %format!("{} ({})", identifier, entity)
     );
+    let timeout = options.output_timeout;
     tokio::spawn(async move {
-      if let Err(error) = output_handler(tx_id, &self, stream, channel).instrument(span).await {
+      if let Err(error) = output_handler(tx_id, &self, stream, channel, timeout)
+        .instrument(span)
+        .await
+      {
         error!(%error, "error in output handler");
       }
     });
@@ -338,11 +343,9 @@ async fn output_handler(
   instance: &InstanceHandler,
   mut stream: PacketStream,
   channel: InterpreterDispatchChannel,
+  timeout: Duration,
 ) -> Result<()> {
   trace!("starting output task");
-
-  // TODO: make this timeout configurable from instance configuration.
-  let timeout = Duration::from_millis(10000);
 
   let mut num_received = 0;
   let reason = loop {
