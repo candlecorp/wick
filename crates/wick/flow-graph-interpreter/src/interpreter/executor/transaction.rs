@@ -16,7 +16,7 @@ use crate::graph::types::*;
 use crate::interpreter::channel::InterpreterDispatchChannel;
 use crate::interpreter::error::StateError;
 use crate::interpreter::executor::transaction::operation::port::PortStatus;
-use crate::{Component, HandlerMap};
+use crate::{Component, HandlerMap, InterpreterOptions};
 
 pub(crate) mod operation;
 
@@ -129,7 +129,7 @@ impl Transaction {
   }
 
   #[instrument(parent = &self.span, skip_all, name = "tx_start", fields(id = %self.id()))]
-  pub(crate) async fn start(&mut self) -> Result<()> {
+  pub(crate) async fn start(&mut self, options: &InterpreterOptions) -> Result<()> {
     self.stats.mark("start");
     self.stats.start("execution");
     trace!("starting transaction");
@@ -144,7 +144,7 @@ impl Transaction {
         .next_tx(self.invocation.origin.clone(), instance.entity());
       instance
         .clone()
-        .start(self.id(), invocation, self.channel.clone())
+        .start(self.id(), invocation, self.channel.clone(), options)
         .await?;
     }
 

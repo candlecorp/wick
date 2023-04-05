@@ -6,6 +6,7 @@ pub(crate) mod executor;
 pub(crate) mod program;
 
 use std::sync::Arc;
+use std::time::Duration;
 
 use seeded_random::{Random, Seed};
 use tracing_futures::Instrument;
@@ -211,13 +212,28 @@ impl Interpreter {
   }
 }
 
-#[derive(Default, Debug, Clone)]
+#[derive(Debug, Clone)]
 #[allow(missing_copy_implementations)]
 pub struct InterpreterOptions {
   /// Stop the interpreter and return an error on any hung transactions.
   pub error_on_hung: bool,
   /// Stop the interpreter and return an error if any messages come after a transaction has completed.
   pub error_on_missing: bool,
+  /// Timeout after which a component that has received no output is considered dead.
+  pub output_timeout: Duration,
+  /// Timeout after which a transaction that has had no events is considered hung.
+  pub hung_tx_timeout: Duration,
+}
+
+impl Default for InterpreterOptions {
+  fn default() -> Self {
+    Self {
+      error_on_hung: false,
+      error_on_missing: false,
+      output_timeout: Duration::from_secs(5),
+      hung_tx_timeout: Duration::from_millis(500),
+    }
+  }
 }
 
 #[cfg(test)]

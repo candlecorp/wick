@@ -120,7 +120,10 @@ async fn event_loop(
           EventKind::PortData(data) => state.handle_port_data(tx_id, data).instrument(span).await,
           EventKind::TransactionDone => state.handle_transaction_done(tx_id).instrument(span).await,
           EventKind::TransactionStart(transaction) => {
-            state.handle_transaction_start(*transaction).instrument(span).await
+            state
+              .handle_transaction_start(*transaction, &options)
+              .instrument(span)
+              .await
           }
           EventKind::Ping(ping) => {
             trace!(ping);

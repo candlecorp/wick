@@ -28,11 +28,12 @@ pub(crate) async fn base_setup(
   use flow_graph_interpreter::{HandlerMap, InterpreterOptions, NamespaceHandler};
   use tokio_stream::StreamExt;
   use wick_packet::{Entity, Invocation};
-  const OPTIONS: Option<InterpreterOptions> = Some(InterpreterOptions {
+  let options = Some(InterpreterOptions {
     error_on_hung: true,
     // TODO: improve logic to ensure no remaining packets are sent after completion.
     // Turn this on to make tests fail in these cases.
     error_on_missing: false,
+    ..Default::default()
   });
   let def = wick_config::WickConfiguration::load_from_file_sync(manifest)?.try_component_config()?;
   let network = from_def(&def)?;
@@ -43,7 +44,7 @@ pub(crate) async fn base_setup(
   .unwrap();
   let invocation = Invocation::new(Entity::test("test"), entity, None);
   let mut interpreter = Interpreter::new(Some(Seed::unsafe_new(1)), network, None, Some(collections))?;
-  interpreter.start(OPTIONS, None).await;
+  interpreter.start(options, None).await;
   let stream = wick_packet::PacketStream::new(Box::new(futures::stream::iter(packets.into_iter().map(Ok))));
   let stream = interpreter.invoke(invocation, stream).await?;
   let outputs: Vec<_> = stream.collect().await;
