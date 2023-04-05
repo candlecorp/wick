@@ -4,7 +4,7 @@ use self::error::{OperationInvalid, ValidationError};
 use super::Program;
 use crate::constants::CORE_ID_SENDER;
 use crate::graph::Reference;
-use crate::interpreter::collections::get_id;
+use crate::interpreter::components::get_id;
 
 pub(crate) mod error;
 

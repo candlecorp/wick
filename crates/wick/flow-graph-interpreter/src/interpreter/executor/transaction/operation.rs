@@ -271,20 +271,20 @@ impl InstanceHandler {
         clone
           .handle(invocation, stream, associated_data)
           .await
-          .map_err(ExecutionError::CollectionError)
+          .map_err(ExecutionError::ComponentError)
       })
     } else {
       let clone = self
         .collections
         .get(&namespace)
-        .ok_or_else(|| ExecutionError::InvalidState(StateError::MissingCollection(self.namespace().to_owned())))?
-        .collection
+        .ok_or_else(|| ExecutionError::InvalidState(StateError::MissingComponent(self.namespace().to_owned())))?
+        .component
         .clone();
       tokio::spawn(async move {
         clone
           .handle(invocation, stream, associated_data)
           .await
-          .map_err(ExecutionError::CollectionError)
+          .map_err(ExecutionError::ComponentError)
       })
     };
 

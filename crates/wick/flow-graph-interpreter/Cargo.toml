@@ -31,6 +31,7 @@ serde-value = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 rand = { workspace = true }
 bytes = { workspace = true }
+integra8 = { git = "https://github.com/jamesjharper/integra8.git" }
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
@@ -38,4 +39,4 @@ logger = { workspace = true }
 test-logger = { workspace = true }
 anyhow = { workspace = true }
 serde_json = { workspace = true }
-rot = { workspace = true }
+pretty_assertions = { workspace = true }

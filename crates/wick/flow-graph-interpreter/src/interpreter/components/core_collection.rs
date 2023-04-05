@@ -12,7 +12,7 @@ use wick_packet::{Invocation, PacketStream, StreamMap};
 
 use crate::constants::*;
 use crate::graph::types::Network;
-use crate::interpreter::collections::dyn_component_id;
+use crate::interpreter::components::dyn_component_id;
 use crate::{BoxError, BoxFuture, Component, Operation};
 
 // mod merge;

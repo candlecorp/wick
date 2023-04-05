@@ -22,7 +22,9 @@ pub async fn wick_invoke(port: &str, name: &str, data: Vec<String>) -> Result<Ve
     .flat_map(|kv| vec!["--data".to_owned(), kv])
     .collect::<Vec<String>>();
   println!("Inputs: {:?}", inputs);
-  let mut bin = tokio_test_bin::get_test_bin("wick");
+
+  let mut bin = tokio::process::Command::from(test_bin::get_test_bin("wick"));
+
   let proc = bin
     .env_clear()
     .args(["rpc", "invoke", name, "--port", port.to_string().as_str(), "--trace"])
@@ -67,7 +69,7 @@ pub async fn start_collection(
 ) -> Result<(Sender<Signal>, JoinHandle<Result<()>>, String)> {
   println!("Starting collection bin: {} ({})", binary, name);
 
-  let mut bin = tokio_test_bin::get_test_bin(binary);
+  let mut bin = tokio::process::Command::from(test_bin::get_test_bin(binary));
   let cmd = bin
     .args(args)
     .env_clear()

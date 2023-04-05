@@ -6,7 +6,6 @@ use utils::*;
 use wick_packet::Packet;
 
 #[test_logger::test(tokio::test)]
-#[ignore]
 async fn test_wick_serve() -> utils::TestResult<()> {
   debug!("Starting collection");
   let (p_tx, p_handle, port) = start_collection(

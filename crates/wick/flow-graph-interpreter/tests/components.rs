@@ -3,7 +3,7 @@
 mod test;
 
 use anyhow::Result;
-use rot::*;
+use pretty_assertions::assert_eq;
 use wick_packet::{packets, Entity, Packet};
 
 #[test_logger::test(tokio::test)]
@@ -15,13 +15,13 @@ async fn test_echo() -> Result<()> {
   )
   .await?;
 
-  assert_equal!(outputs.len(), 2);
+  assert_eq!(outputs.len(), 2);
 
   let _wrapper = outputs.pop().unwrap(); //done signal
   let wrapper = outputs.pop().unwrap();
   let expected = Packet::encode("output", "hello world");
 
-  assert_equal!(wrapper.unwrap(), expected);
+  assert_eq!(wrapper.unwrap(), expected);
   interpreter.shutdown().await?;
 
   Ok(())
@@ -36,13 +36,13 @@ async fn test_renamed_ports() -> Result<()> {
   )
   .await?;
 
-  assert_equal!(outputs.len(), 2);
+  assert_eq!(outputs.len(), 2);
 
   let _wrapper = outputs.pop().unwrap(); //done signal
   let wrapper = outputs.pop().unwrap();
   let expected = Packet::encode("PORT_OUT", "dlrow olleh");
 
-  assert_equal!(wrapper.unwrap(), expected);
+  assert_eq!(wrapper.unwrap(), expected);
   interpreter.shutdown().await?;
 
   Ok(())
@@ -57,13 +57,13 @@ async fn test_parent_child() -> Result<()> {
   )
   .await?;
 
-  assert_equal!(outputs.len(), 2);
+  assert_eq!(outputs.len(), 2);
 
   let _wrapper = outputs.pop().unwrap(); //done signal
   let wrapper = outputs.pop().unwrap();
   let expected = Packet::encode("parent_output", "DLROW OLLEH");
 
-  assert_equal!(wrapper.unwrap(), expected);
+  assert_eq!(wrapper.unwrap(), expected);
   interpreter.shutdown().await?;
 
   Ok(())
@@ -78,13 +78,13 @@ async fn test_parent_child_simple() -> Result<()> {
   )
   .await?;
 
-  assert_equal!(outputs.len(), 2);
+  assert_eq!(outputs.len(), 2);
 
   let _wrapper = outputs.pop().unwrap(); //done signal
   let wrapper = outputs.pop().unwrap();
   let expected = Packet::encode("parent_output", "hello world");
 
-  assert_equal!(wrapper.unwrap(), expected);
+  assert_eq!(wrapper.unwrap(), expected);
   interpreter.shutdown().await?;
 
   Ok(())
@@ -103,7 +103,7 @@ async fn test_external_collection() -> Result<()> {
   let wrapper = outputs.pop().unwrap().unwrap();
   let expected = Packet::encode("output", "hello world");
 
-  assert_equal!(wrapper, expected);
+  assert_eq!(wrapper, expected);
   interpreter.shutdown().await?;
 
   Ok(())
@@ -122,7 +122,7 @@ async fn test_external_direct() -> Result<()> {
   let wrapper = outputs.pop().unwrap().unwrap();
   let expected = Packet::encode("output", "hello world");
 
-  assert_equal!(wrapper, expected);
+  assert_eq!(wrapper, expected);
   interpreter.shutdown().await?;
 
   Ok(())
@@ -137,13 +137,13 @@ async fn test_self() -> Result<()> {
   )
   .await?;
 
-  assert_equal!(outputs.len(), 2);
+  assert_eq!(outputs.len(), 2);
 
   let _ = outputs.pop();
   let wrapper = outputs.pop().unwrap().unwrap();
   let expected = Packet::encode("parent_output", "Hello world");
 
-  assert_equal!(wrapper, expected);
+  assert_eq!(wrapper, expected);
   interpreter.shutdown().await?;
 
   Ok(())
@@ -158,16 +158,16 @@ async fn test_spread() -> Result<()> {
   )
   .await?;
 
-  assert_equal!(outputs.len(), 4);
+  assert_eq!(outputs.len(), 4);
 
   let _ = outputs.pop();
   let wrapper = outputs.pop().unwrap().unwrap();
   let expected = Packet::encode("output2", "Hello world");
-  assert_equal!(wrapper, expected);
+  assert_eq!(wrapper, expected);
   let _ = outputs.pop();
   let wrapper = outputs.pop().unwrap().unwrap();
   let expected = Packet::encode("output1", "Hello world");
-  assert_equal!(wrapper, expected);
+  assert_eq!(wrapper, expected);
   interpreter.shutdown().await?;
 
   Ok(())
@@ -182,13 +182,13 @@ async fn test_stream() -> Result<()> {
   )
   .await?;
 
-  assert_equal!(outputs.len(), 6);
+  assert_eq!(outputs.len(), 6);
 
   let _ = outputs.pop();
   let expected = Packet::encode("output", "Hello world");
 
   for wrapper in outputs {
-    assert_equal!(wrapper.unwrap(), expected);
+    assert_eq!(wrapper.unwrap(), expected);
   }
   interpreter.shutdown().await?;
 
@@ -203,13 +203,13 @@ async fn test_multiple_inputs() -> Result<()> {
   )
   .await?;
 
-  assert_equal!(outputs.len(), 2);
+  assert_eq!(outputs.len(), 2);
 
   let _ = outputs.pop();
   let wrapper = outputs.pop().unwrap().unwrap();
   let expected = Packet::encode("output", 10060);
 
-  assert_equal!(wrapper, expected);
+  assert_eq!(wrapper, expected);
 
   interpreter.shutdown().await?;
 
@@ -224,7 +224,7 @@ async fn test_stream_multi() -> Result<()> {
     packets!(("input", "hello world")),
   )
   .await?;
-  assert_equal!(outputs.len(), 13);
+  assert_eq!(outputs.len(), 13);
 
   let (mut vowels, mut rest): (Vec<_>, Vec<_>) = outputs
     .into_iter()
@@ -236,13 +236,13 @@ async fn test_stream_multi() -> Result<()> {
   let mut expected_vowels: Vec<_> = "eoo".chars().collect();
   while let Some(ch) = expected_vowels.pop() {
     let wrapper = vowels.pop().unwrap();
-    assert_equal!(wrapper, Packet::encode("vowels", ch));
+    assert_eq!(wrapper, Packet::encode("vowels", ch));
   }
 
   let mut expected_other: Vec<_> = "hll wrld".chars().collect();
   while let Some(ch) = expected_other.pop() {
     let wrapper = rest.pop().unwrap();
-    assert_equal!(wrapper, Packet::encode("rest", ch));
+    assert_eq!(wrapper, Packet::encode("rest", ch));
   }
   interpreter.shutdown().await?;
 
@@ -314,7 +314,7 @@ async fn test_stream_multi() -> Result<()> {
 
 //   let mut outputs: Vec<_> = stream.drain().await;
 //   println!("{:#?}", outputs);
-//   assert_equal!(outputs.len(), 1);
+//   assert_eq!(outputs.len(), 1);
 
 //   let wrapper = outputs.pop().unwrap();
 //   assert_true!(matches!(wrapper.payload, MessageTransport::Success(_)));
@@ -339,11 +339,11 @@ async fn test_stream_multi() -> Result<()> {
 
 //   let outputs: Vec<_> = stream.drain().await;
 //   println!("{:#?}", outputs);
-//   assert_equal!(outputs.len(), 5);
+//   assert_eq!(outputs.len(), 5);
 
 //   for wrapper in outputs {
 //     let output: String = wrapper.payload.deserialize()?;
-//     assert_equal!(output, input_str);
+//     assert_eq!(output, input_str);
 //   }
 //   interpreter.shutdown().await?;
 
@@ -367,7 +367,7 @@ async fn test_stream_multi() -> Result<()> {
 //   interpreter.shutdown().await?;
 //   println!("{:#?}", outputs);
 
-//   assert_equal!(outputs.len(), 5);
+//   assert_eq!(outputs.len(), 5);
 
 //   for wrapper in outputs {
 //     assert_true!(matches!(wrapper.payload, MessageTransport::Success(_)));
@@ -405,20 +405,20 @@ async fn test_stream_multi() -> Result<()> {
 //   let outputs: Vec<_> = stream.drain().await;
 //   interpreter.shutdown().await?;
 //   println!("{:#?}", outputs);
-//   assert_equal!(outputs.len(), 11);
+//   assert_eq!(outputs.len(), 11);
 
 //   let (mut vowels, mut rest): (Vec<_>, Vec<_>) = outputs.into_iter().partition(|wrapper| wrapper.port == "vowels");
 
 //   let mut expected_vowels: Vec<_> = "eoo".chars().collect();
 //   while let Some(ch) = expected_vowels.pop() {
 //     let wrapper = vowels.pop().unwrap();
-//     assert_equal!(wrapper.payload, MessageTransport::success(&ch));
+//     assert_eq!(wrapper.payload, MessageTransport::success(&ch));
 //   }
 
 //   let mut expected_other: Vec<_> = "hll wrld".chars().collect();
 //   while let Some(ch) = expected_other.pop() {
 //     let wrapper = rest.pop().unwrap();
-//     assert_equal!(wrapper.payload, MessageTransport::success(&ch));
+//     assert_eq!(wrapper.payload, MessageTransport::success(&ch));
 //   }
 
 //   Ok(())
@@ -439,13 +439,13 @@ async fn test_stream_multi() -> Result<()> {
 
 //   let mut outputs: Vec<_> = stream.collect().await;
 //   println!("{:#?}", outputs);
-//   assert_equal!(outputs.len(), 2);
+//   assert_eq!(outputs.len(), 2);
 
 //   let _wrapper = outputs.pop().unwrap(); //done signal
 //   let wrapper = outputs.pop().unwrap();
 //   let result: String = wrapper.deserialize()?;
 
-//   assert_equal!(result, "Hello world".to_owned());
+//   assert_eq!(result, "Hello world".to_owned());
 //   interpreter.shutdown().await?;
 
 //   Ok(())

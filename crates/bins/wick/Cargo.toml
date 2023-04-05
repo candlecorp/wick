@@ -33,22 +33,22 @@ anyhow = { workspace = true }
 futures = { workspace = true }
 thiserror = { workspace = true }
 clap = { workspace = true, features = ["derive"] }
-nkeys = "0.2"
-atty = "0.2"
-jaq-core = "0.9"
-markup-converter = "0.2"
-oci-distribution = { version = "0.9", features = [
+nkeys = { workspace = true }
+atty = { workspace = true }
+jaq-core = { workspace = true }
+markup-converter = { workspace = true }
+oci-distribution = { workspace = true, features = [
   "rustls-tls",
 ], default-features = false }
 async-recursion = { workspace = true }
-openssl = { version = "0.10" } #required for cross compilation (don't remove)
+openssl = { workspace = true } #required for cross compilation (don't remove)
 
 [dev-dependencies]
-test_bin = "0.4"
-trycmd = "0.14"
+test_bin = { workspace = true }
+trycmd = { workspace = true }
 test-logger = { workspace = true }
-tokio-test-bin = { workspace = true }
 regex = { workspace = true }
+tokio = { workspace = true, features = ["process"] }
 
 [[bin]]
 name = "wick"

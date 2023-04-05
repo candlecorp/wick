@@ -3,7 +3,7 @@
 mod test;
 
 use anyhow::Result;
-use rot::assert_equal;
+use pretty_assertions::assert_eq;
 use wick_packet::Packet;
 
 #[test_logger::test(tokio::test)]
@@ -11,12 +11,12 @@ async fn test_senders() -> Result<()> {
   let (interpreter, mut outputs) =
     test::common_setup("./tests/manifests/v0/core/senders.yaml", "test", Vec::new()).await?;
 
-  assert_equal!(outputs.len(), 2);
+  assert_eq!(outputs.len(), 2);
 
   let _ = outputs.pop();
   let wrapper = outputs.pop().unwrap().unwrap();
   let expected = Packet::encode("output", "Hello world");
-  assert_equal!(wrapper, expected);
+  assert_eq!(wrapper, expected);
   interpreter.shutdown().await?;
 
   Ok(())

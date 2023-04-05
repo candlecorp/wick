@@ -97,9 +97,11 @@ pub(crate) type BoxError = Box<dyn std::error::Error + Send + Sync>;
 extern crate tracing;
 
 pub use interpreter::channel::{Event, EventKind};
-pub use interpreter::collections::{Component, HandlerMap, NamespaceHandler, Operation};
+pub use interpreter::components::{Component, HandlerMap, NamespaceHandler, Operation};
 pub use interpreter::event_loop::state::State;
 pub use interpreter::event_loop::Observer;
 pub use interpreter::{Interpreter, InterpreterOptions};
 
 type BoxFuture<'a, T> = std::pin::Pin<Box<dyn futures::Future<Output = T> + Send + Sync + 'a>>;
+
+type SharedHandler = std::sync::Arc<Box<dyn Component + Send + Sync>>;
