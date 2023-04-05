@@ -9,7 +9,7 @@ use crate::error::ValidationError;
 use crate::graph::types::*;
 
 pub(crate) mod validator;
-use super::collections::{get_id, ComponentMap};
+use super::components::{get_id, ComponentMap};
 use super::error::Error;
 
 #[must_use]

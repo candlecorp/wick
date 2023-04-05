@@ -20,7 +20,7 @@ pub(crate) struct ComponentComponent {
 impl ComponentComponent {
   pub(crate) fn new(list: &HandlerMap) -> Self {
     let mut signature = ComponentSignature::new("collections");
-    for ns in list.collections().keys() {
+    for ns in list.inner().keys() {
       let mut comp_sig = OperationSignature::new(ns.clone());
       comp_sig.outputs.push(Field::new(
         "ref",

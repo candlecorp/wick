@@ -1,6 +1,0 @@
----
-interface: ./interface.json
-artifacts:
-  - path: ../../../build/x86_64-unknown-linux-gnu/wasmflow-keyvalue-redis
-    os: linux
-    arch: amd64

@@ -5,7 +5,6 @@ This library is a wrapper to write tests that generate output in the Test Anythi
 ## Usage
 
 ```rust
-
 use tap::{TestBlock, TestRunner};
 
 fn main() -> anyhow::Result<()> {

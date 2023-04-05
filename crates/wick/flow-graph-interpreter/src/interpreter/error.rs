@@ -15,8 +15,8 @@ pub enum Error {
   OpNotFound(Entity, Vec<String>),
   #[error("Could not find target '{}' ({0}). Namespaces handled by this resource are: {}", .0.name(), .1.join(", "))]
   TargetNotFound(Entity, Vec<String>),
-  #[error("Error shutting down collection: {0}")]
-  CollectionShutdown(String),
+  #[error("Error shutting down component: {0}")]
+  ComponentShutdown(String),
   #[error("Shutdown failed: {0}")]
   Shutdown(String),
   #[error("Namespace '{0}' already exists, can not overwrite")]
@@ -31,8 +31,8 @@ pub enum StateError {
     "Could not find port named '{0}'. This can result from providing more input than a schematic has ports for."
   )]
   MissingPortName(String),
-  #[error("Attempted to access nonexistant collection '{0}'")]
-  MissingCollection(String),
+  #[error("Attempted to access nonexistant component '{0}'")]
+  MissingComponent(String),
   #[error("Tried to decrement pending counter for non-existent or zero ID.")]
   TooManyComplete,
 }

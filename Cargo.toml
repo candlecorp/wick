@@ -42,17 +42,17 @@ flow-graph = { path = "./crates/wick/flow-graph", version = "0.20.0" }
 logger = { path = "./crates/wick/logger", version = "0.1.0" }
 seeded-random = { path = "./crates/misc/seeded-random", version = "0.3.0" }
 tap = { path = "./crates/misc/tap", version = "0.0.0" }
-rot = { path = "./crates/misc/rot", version = "0.1.0" }
 assets = { path = "./crates/misc/assets", version = "0.1.0" }
 derive-assets = { path = "./crates/misc/derive-assets", version = "0.1.0" }
 performance-mark = { path = "./crates/misc/performance-mark", version = "0.0.1" }
 test-logger = { path = "./crates/misc/test-logger", version = "0.1.0" }
-tokio-test-bin = { path = "./crates/misc/tokio-test-bin", version = "0.3.0" }
 test-native-component = { path = "./crates/integration/test-native-component", version = "0.1.0" }
 xdg = "2.4"
+jaq-core = "0.10"
 console = "0.15"
 quote = "1.0"
 syn = "2.0"
+nkeys = "0.2"
 proc-macro2 = "1.0"
 heck = "0.4"
 tar = "0.4"
@@ -81,14 +81,13 @@ uuid = "1.1"
 anyhow = "1.0"
 async-recursion = "1.0"
 clap = "4.1"
-tonic = "0.8"
-tonic-build = "0.8"
-tonic-reflection = "0.6"
+tonic = "0.9"
+tonic-build = "0.9"
+tonic-reflection = "0.9"
 reqwest = "0.11"
 rand = "0.8"
 shellexpand = "3.0"
 regex = "1"
-k9 = "0.11"
 lazy_static = "1.4"
 test-log = "0.2"
 nom = "7.1"
@@ -131,3 +130,9 @@ opentelemetry-jaeger = { version = "0.17.0" }
 tracing-log = "0.1"
 tracing-subscriber = "0.3"
 normpath = "1.1"
+openssl = "0.10"
+markup-converter = "0.2"
+test_bin = "0.4"
+trycmd = "0.14"
+testanything = "0.4"
+proc-macro-crate = "1.1"

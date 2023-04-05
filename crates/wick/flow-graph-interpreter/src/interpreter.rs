@@ -1,10 +1,11 @@
 pub(crate) mod channel;
-pub(crate) mod collections;
+pub(crate) mod components;
 pub(crate) mod error;
 pub(crate) mod event_loop;
 pub(crate) mod executor;
 pub(crate) mod program;
 
+use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -14,7 +15,7 @@ use wick_interface_types::ComponentSignature;
 use wick_packet::{Entity, Invocation, PacketStream};
 
 use self::channel::InterpreterDispatchChannel;
-use self::collections::HandlerMap;
+use self::components::HandlerMap;
 use self::error::Error;
 use self::event_loop::EventLoop;
 use self::executor::SchematicExecutor;
@@ -22,10 +23,10 @@ use self::program::Program;
 use crate::constants::*;
 use crate::graph::types::*;
 use crate::interpreter::channel::InterpreterChannel;
-use crate::interpreter::collections::collection_collection::ComponentComponent;
-use crate::interpreter::collections::schematic_collection::SchematicComponent;
+use crate::interpreter::components::component_component::ComponentComponent;
+use crate::interpreter::components::schematic_component::SchematicComponent;
 use crate::interpreter::executor::error::ExecutionError;
-use crate::{Component, NamespaceHandler, Observer};
+use crate::{Component, NamespaceHandler, Observer, SharedHandler};
 
 #[must_use]
 #[derive()]
@@ -38,6 +39,7 @@ pub struct Interpreter {
   self_component: Arc<SchematicComponent>,
   dispatcher: InterpreterDispatchChannel,
   namespace: Option<String>,
+  exposed_ops: HashMap<String, SharedHandler>, // A map from op name to the ns of the handler that exposes it.
 }
 
 impl std::fmt::Debug for Interpreter {
@@ -63,9 +65,18 @@ impl Interpreter {
     debug!("init");
     let rng = seed.map_or_else(Random::new, Random::from_seed);
     let mut handlers = components.unwrap_or_default();
+    let mut exposed_ops = HashMap::new();
+    // Create a map of operation names to the namespace of the handler.
+    for handler in handlers.inner().values() {
+      if handler.is_exposed() {
+        for op in &handler.component.list().operations {
+          exposed_ops.insert(op.name.clone(), handler.component.clone());
+        }
+      }
+    }
     handlers.add_core(&network)?;
 
-    // Add the collection:: collection
+    // Add the component:: component
     let component_component = ComponentComponent::new(&handlers);
     handlers.add(NamespaceHandler::new(NS_COMPONENTS, Box::new(component_component)))?;
 
@@ -77,7 +88,7 @@ impl Interpreter {
     let channel = InterpreterChannel::new();
     let dispatcher = channel.dispatcher();
 
-    // Make the self:: collection
+    // Make the self:: component
     let components = Arc::new(handlers);
     let self_component = SchematicComponent::new(components.clone(), program.state(), &dispatcher, rng.seed());
     let self_signature = self_component.list().clone();
@@ -99,6 +110,7 @@ impl Interpreter {
       self_component,
       event_loop,
       namespace,
+      exposed_ops,
     })
   }
 
@@ -134,7 +146,7 @@ impl Interpreter {
 
   pub async fn invoke(&self, invocation: Invocation, stream: PacketStream) -> Result<PacketStream, Error> {
     let known_targets = || {
-      let mut hosted: Vec<_> = self.components.collections().keys().cloned().collect();
+      let mut hosted: Vec<_> = self.components.inner().keys().cloned().collect();
       if let Some(ns) = &self.namespace {
         hosted.push(ns.clone());
       }
@@ -143,19 +155,17 @@ impl Interpreter {
     let span = trace_span!("invoke");
 
     let stream = match &invocation.target {
-      Entity::Operation(ns, _) => {
+      Entity::Operation(ns, name) => {
         if ns == NS_SELF || ns == Entity::LOCAL || Some(ns) == self.namespace.as_ref() {
-          if let Some(component) = self.components.get(ns) {
-            if component.is_exposed() {
-              trace!(entity=%invocation.target, "invoke::exposed::operation");
-              return Ok(
-                component
-                  .collection
-                  .handle(invocation, stream, None)
-                  .await
-                  .map_err(ExecutionError::CollectionError)?,
-              );
-            }
+          if let Some(component) = self.exposed_ops.get(name) {
+            trace!(entity=%invocation.target, "invoke::exposed::operation");
+            return Ok(
+              component
+                .handle(invocation, stream, None)
+                .instrument(span)
+                .await
+                .map_err(ExecutionError::ComponentError)?,
+            );
           }
           trace!(entity=%invocation.target, "invoke::composite::operation");
           self.invoke_operation(invocation, stream).instrument(span).await?
@@ -165,11 +175,11 @@ impl Interpreter {
             .components
             .get(ns)
             .ok_or_else(|| Error::TargetNotFound(invocation.target.clone(), known_targets()))?
-            .collection
+            .component
             .handle(invocation, stream, None)
             .instrument(span)
             .await
-            .map_err(ExecutionError::CollectionError)?
+            .map_err(ExecutionError::ComponentError)?
         }
       }
       _ => return Err(Error::TargetNotFound(invocation.target, known_targets())),
@@ -196,13 +206,13 @@ impl Interpreter {
     if let Err(error) = &shutdown {
       error!(%error,"error shutting down event loop");
     };
-    for (ns, collection) in self.components.collections() {
+    for (ns, components) in self.components.inner() {
       debug!(namespace = %ns, "shutting down collection");
-      if let Err(error) = collection
-        .collection
+      if let Err(error) = components
+        .component
         .shutdown()
         .await
-        .map_err(|e| Error::CollectionShutdown(e.to_string()))
+        .map_err(|e| Error::ComponentShutdown(e.to_string()))
       {
         warn!(%error,"error during shutdown");
       };

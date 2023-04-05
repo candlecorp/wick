@@ -7,7 +7,9 @@ use proc_macro::TokenStream;
 use proc_macro2::{Ident, Span, TokenStream as Tokens};
 use proc_macro_crate::{crate_name, FoundCrate};
 use quote::quote;
-use syn::{parse_macro_input, parse_quote, AttributeArgs, ItemFn, Meta, NestedMeta, Path, ReturnType};
+use syn::parse::Parser;
+use syn::punctuated::Punctuated;
+use syn::{parse_macro_input, parse_quote, ItemFn, Meta, Path, ReturnType, Token};
 
 /// A procedural macro for the `test` attribute.
 ///
@@ -63,12 +65,17 @@ use syn::{parse_macro_input, parse_quote, AttributeArgs, ItemFn, Meta, NestedMet
 /// ```
 #[proc_macro_attribute]
 pub fn test(attr: TokenStream, item: TokenStream) -> TokenStream {
-  let args = parse_macro_input!(attr as AttributeArgs);
+  let parser = Punctuated::<Meta, Token![,]>::parse_terminated;
+  let args = match parser.parse2(attr.into()) {
+    Ok(args) => args,
+    Err(e) => panic!("{}", e),
+  };
+
   let input = parse_macro_input!(item as ItemFn);
 
-  let inner_test = match args.as_slice() {
+  let inner_test = match args.into_iter().collect::<Vec<_>>().as_slice() {
     [] => parse_quote! { ::core::prelude::v1::test },
-    [NestedMeta::Meta(Meta::Path(path))] => path.clone(),
+    [Meta::Path(path)] => path.clone(),
     _ => panic!("unsupported attributes supplied: {}", quote! { args }),
   };
 

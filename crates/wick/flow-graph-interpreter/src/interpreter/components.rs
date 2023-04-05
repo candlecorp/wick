@@ -3,10 +3,10 @@ use std::fmt::Debug;
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 
-pub(super) mod collection_collection;
+pub(super) mod component_component;
 pub(super) mod core_collection;
 pub(crate) mod internal_collection;
-pub(super) mod schematic_collection;
+pub(super) mod schematic_component;
 
 use serde_json::Value;
 use wick_interface_types::ComponentSignature;
@@ -17,7 +17,7 @@ use self::internal_collection::InternalCollection;
 use crate::constants::*;
 use crate::error::InterpreterError;
 use crate::graph::types::Network;
-use crate::{BoxError, BoxFuture};
+use crate::{BoxError, BoxFuture, SharedHandler};
 
 pub(crate) type ComponentMap = HashMap<String, ComponentSignature>;
 
@@ -55,7 +55,7 @@ impl HandlerMap {
   }
 
   #[must_use]
-  pub fn collections(&self) -> &HashMap<String, NamespaceHandler> {
+  pub fn inner(&self) -> &HashMap<String, NamespaceHandler> {
     &self.components
   }
 
@@ -64,7 +64,7 @@ impl HandlerMap {
     self
       .components
       .iter()
-      .map(|(name, p)| (name.clone(), p.collection.list().clone()))
+      .map(|(name, p)| (name.clone(), p.component.list().clone()))
       .collect::<HashMap<String, ComponentSignature>>()
   }
 
@@ -99,7 +99,7 @@ pub(crate) fn get_id(ns: &str, name: &str, schematic: &str, instance: &str) -> S
 #[must_use]
 pub struct NamespaceHandler {
   pub(crate) namespace: String,
-  pub(crate) collection: Arc<Box<dyn Component + Send + Sync>>,
+  pub(crate) component: SharedHandler,
   pub(crate) exposed: Arc<AtomicBool>,
 }
 
@@ -107,14 +107,14 @@ impl NamespaceHandler {
   pub fn new<T: AsRef<str>>(namespace: T, collection: Box<dyn Component + Send + Sync>) -> Self {
     Self {
       namespace: namespace.as_ref().to_owned(),
-      collection: Arc::new(collection),
+      component: Arc::new(collection),
       exposed: Arc::new(AtomicBool::new(false)),
     }
   }
 
   #[must_use]
-  pub fn component(&self) -> &Arc<Box<dyn Component + Send + Sync>> {
-    &self.collection
+  pub fn component(&self) -> &SharedHandler {
+    &self.component
   }
 
   pub fn expose(&self) {
@@ -131,7 +131,7 @@ impl Debug for NamespaceHandler {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     f.debug_struct("NamespaceHandler")
       .field("namespace", &self.namespace)
-      .field("collection", &self.collection.list())
+      .field("collection", &self.component.list())
       .finish()
   }
 }

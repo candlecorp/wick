@@ -2,7 +2,7 @@
 
 mod test;
 use anyhow::Result;
-use rot::*;
+use pretty_assertions::assert_eq;
 use wick_packet::{packets, Packet};
 
 #[test_logger::test(tokio::test)]
@@ -14,7 +14,7 @@ async fn test_panic() -> Result<()> {
   )
   .await?;
 
-  assert_equal!(outputs.len(), 2);
+  assert_eq!(outputs.len(), 2);
 
   outputs.pop();
   let p = outputs.pop().unwrap().unwrap();
@@ -34,7 +34,7 @@ async fn test_error() -> Result<()> {
   )
   .await?;
 
-  assert_equal!(outputs.len(), 2);
+  assert_eq!(outputs.len(), 2);
 
   outputs.pop();
   let p = outputs.pop().unwrap().unwrap();
@@ -61,7 +61,7 @@ async fn test_timeout_done_noclose() -> Result<()> {
   )
   .await?;
 
-  assert_equal!(outputs.len(), 2);
+  assert_eq!(outputs.len(), 2);
 
   outputs.pop();
   let p = outputs.pop().unwrap().unwrap();

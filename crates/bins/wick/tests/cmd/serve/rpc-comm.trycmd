@@ -1,0 +1,6 @@
+$ stdout='Hello' stderr='Goodbye' bin-fixture
+Hello
+Goodbye
+$ write='file.txt = Goodbye' bin-fixture
+$ cat='file.txt' bin-fixture
+Goodbye

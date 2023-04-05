@@ -19,7 +19,7 @@ pub enum ExecutionError {
   #[error("Transaction '{0}' missing")]
   MissingTx(Uuid),
   #[error("{0}")]
-  CollectionError(Box<dyn std::error::Error + Send + Sync>),
+  ComponentError(Box<dyn std::error::Error + Send + Sync>),
 
   #[error("{0}")]
   OperationFailure(JoinError),
