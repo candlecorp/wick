@@ -2,9 +2,9 @@ name: mono-workflow
 on:
   push:
     tags:
-      - "[0-9]+.[0-9]+.[0-9]+" # matches 0.1.0, 0.2.1, etc.
+      - '[0-9]+.[0-9]+.[0-9]+' # matches 0.1.0, 0.2.1, etc.
   schedule:
-    - cron: "0 1 * * *" # 1am UTC
+    - cron: '0 1 * * *' # 1am UTC
   pull_request:
     branches:
       - main
@@ -45,34 +45,34 @@ jobs:
     env:
       SCCACHE_AZURE_BLOB_CONTAINER: ${{ secrets.SCCACHE_AZURE_BLOB_CONTAINER }}
       SCCACHE_AZURE_CONNECTION_STRING: ${{ secrets.SCCACHE_AZURE_CONNECTION_STRING }}
-      SCCACHE_AZURE_KEY_PREFIX: "wick-github-actions-test"
-      RUSTC_WRAPPER: "sccache"
+      SCCACHE_AZURE_KEY_PREFIX: 'wick-github-actions-test'
+      RUSTC_WRAPPER: 'sccache'
     strategy:
       matrix:
         config:
           - {
-              os: "ubuntu-latest",
-              name: "linux",
-              arch: "amd64",
-              target: "x86_64-unknown-linux-gnu",
+              os: 'ubuntu-latest',
+              name: 'linux',
+              arch: 'amd64',
+              target: 'x86_64-unknown-linux-gnu',
+            }
+          - {
+              os: 'ubuntu-latest',
+              name: 'linux',
+              target: 'aarch64-unknown-linux-gnu',
+              arch: 'aarch64',
             }
           # - {
-          #     os: "ubuntu-latest",
-          #     name: "linux",
-          #     target: "aarch64-unknown-linux-gnu",
-          #     arch: "aarch64",
+          #     os: 'macos-latest',
+          #     name: 'macos',
+          #     target: 'x86_64-apple-darwin',
+          #     arch: 'amd64',
           #   }
           # - {
-          #     os: "macos-latest",
-          #     name: "macos",
-          #     target: "x86_64-apple-darwin",
-          #     arch: "amd64",
-          #   }
-          # - {
-          #     os: "macos-latest",
-          #     name: "macos",
-          #     target: "aarch64-apple-darwin",
-          #     arch: "aarch64",
+          #     os: 'macos-latest',
+          #     name: 'macos',
+          #     target: 'aarch64-apple-darwin',
+          #     arch: 'aarch64',
           #   }
           # - {
           #     os: "ubuntu-latest",
@@ -97,8 +97,6 @@ jobs:
         run: |
           sudo apt update
           sudo apt install gcc-aarch64-linux-gnu g++-aarch64-linux-gnu pkg-config
-          echo '[target.aarch64-unknown-linux-gnu]' >> ${HOME}/.cargo/config.toml
-          echo 'linker = "aarch64-linux-gnu-gcc"' >> ${HOME}/.cargo/config.toml
           echo "PKG_CONFIG_SYSROOT_DIR=/usr/aarch64-linux-gnu" >> $GITHUB_ENV
           echo "PKG_CONFIG_PATH=/usr/lib/aarch64-linux-gnu/pkgconfig" >> $GITHUB_ENV
           echo "PKG_CONFIG_ALLOW_CROSS=1" >> $GITHUB_ENV
@@ -107,8 +105,6 @@ jobs:
         run: |
           sudo apt update
           sudo apt install mingw-w64
-          echo '[target.x86_64-pc-windows-gnu]' >> ${HOME}/.cargo/config.toml
-          echo 'linker = "x86_64-w64-mingw32-gcc"' >> ${HOME}/.cargo/config.toml
           echo "PKG_CONFIG_SYSROOT_DIR=/usr/x86_64-w64-mingw32" >> $GITHUB_ENV
           echo "PKG_CONFIG_PATH=/usr/lib/x86_64-w64-mingw32/pkgconfig" >> $GITHUB_ENV
           echo "PKG_CONFIG_ALLOW_CROSS=1" >> $GITHUB_ENV
@@ -141,14 +137,11 @@ jobs:
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: 1.68.0
-          default: true
           target: ${{ matrix.config.target }}
-          components: rustfmt, clippy, rustc, cargo, rust-docs, rust-std
-      - name: "rustup updates"
+      - name: 'rustup updates'
         run: |
           rustup target add wasm32-unknown-unknown wasm32-wasi
-          cargo install tomlq cargo-deny just
+          cargo install cargo-deny just
       #Updating rustup updates means that the github cache needs to be manually deleted.
       - name: Run just ci-tests
         id: just-ci-test
@@ -161,40 +154,40 @@ jobs:
     env:
       SCCACHE_AZURE_BLOB_CONTAINER: ${{ secrets.SCCACHE_AZURE_BLOB_CONTAINER }}
       SCCACHE_AZURE_CONNECTION_STRING: ${{ secrets.SCCACHE_AZURE_CONNECTION_STRING }}
-      SCCACHE_AZURE_KEY_PREFIX: "wick-github-actions"
-      RUSTC_WRAPPER: "sccache"
-      CARGO_PROFILE_RELEASE_DEBUG: "0" # https://doc.rust-lang.org/cargo/reference/profiles.html#debug
-      CARGO_INCREMENTAL: "true" # https://doc.rust-lang.org/cargo/reference/profiles.html#incremental
-      CARGO_PROFILE_RELEASE_LTO: "true" # https://doc.rust-lang.org/cargo/reference/profiles.html#lto
-      CARGO_PROFILE_RELEASE_OPT_LEVEL: "3" # https://doc.rust-lang.org/cargo/reference/profiles.html#opt-level
-      CARGO_PROFILE_RELEASE_CODEGEN_UNITS: "1" # https://doc.rust-lang.org/cargo/reference/profiles.html#codegen-units
-      CARGO_PROFILE_RELEASE_STRIP: "true" # https://doc.rust-lang.org/cargo/reference/unstable.html#profile-strip-option
+      SCCACHE_AZURE_KEY_PREFIX: 'wick-github-actions'
+      RUSTC_WRAPPER: 'sccache'
+      CARGO_PROFILE_RELEASE_DEBUG: '0' # https://doc.rust-lang.org/cargo/reference/profiles.html#debug
+      CARGO_INCREMENTAL: 'true' # https://doc.rust-lang.org/cargo/reference/profiles.html#incremental
+      CARGO_PROFILE_RELEASE_LTO: 'true' # https://doc.rust-lang.org/cargo/reference/profiles.html#lto
+      CARGO_PROFILE_RELEASE_OPT_LEVEL: '3' # https://doc.rust-lang.org/cargo/reference/profiles.html#opt-level
+      CARGO_PROFILE_RELEASE_CODEGEN_UNITS: '1' # https://doc.rust-lang.org/cargo/reference/profiles.html#codegen-units
+      CARGO_PROFILE_RELEASE_STRIP: 'true' # https://doc.rust-lang.org/cargo/reference/unstable.html#profile-strip-option
     strategy:
       matrix:
         config:
           - {
-              os: "ubuntu-latest",
-              name: "linux",
-              arch: "amd64",
-              target: "x86_64-unknown-linux-gnu",
+              os: 'ubuntu-latest',
+              name: 'linux',
+              arch: 'amd64',
+              target: 'x86_64-unknown-linux-gnu',
             }
           - {
-              os: "ubuntu-latest",
-              name: "linux",
-              target: "aarch64-unknown-linux-gnu",
-              arch: "aarch64",
+              os: 'ubuntu-latest',
+              name: 'linux',
+              target: 'aarch64-unknown-linux-gnu',
+              arch: 'aarch64',
             }
           - {
-              os: "macos-latest",
-              name: "macos",
-              target: "x86_64-apple-darwin",
-              arch: "amd64",
+              os: 'macos-latest',
+              name: 'macos',
+              target: 'x86_64-apple-darwin',
+              arch: 'amd64',
             }
           - {
-              os: "macos-latest",
-              name: "macos",
-              target: "aarch64-apple-darwin",
-              arch: "aarch64",
+              os: 'macos-latest',
+              name: 'macos',
+              target: 'aarch64-apple-darwin',
+              arch: 'aarch64',
             }
           # - {
           #     os: "ubuntu-latest",
@@ -213,8 +206,6 @@ jobs:
         run: |
           sudo apt update
           sudo apt install gcc-aarch64-linux-gnu g++-aarch64-linux-gnu pkg-config
-          echo '[target.aarch64-unknown-linux-gnu]' >> ${HOME}/.cargo/config.toml
-          echo 'linker = "aarch64-linux-gnu-gcc"' >> ${HOME}/.cargo/config.toml
           echo "PKG_CONFIG_SYSROOT_DIR=/usr/aarch64-linux-gnu" >> $GITHUB_ENV
           echo "PKG_CONFIG_PATH=/usr/lib/aarch64-linux-gnu/pkgconfig" >> $GITHUB_ENV
           echo "PKG_CONFIG_ALLOW_CROSS=1" >> $GITHUB_ENV
@@ -223,8 +214,6 @@ jobs:
         run: |
           sudo apt update
           sudo apt install mingw-w64
-          echo '[target.x86_64-pc-windows-gnu]' >> ${HOME}/.cargo/config.toml
-          echo 'linker = "x86_64-w64-mingw32-gcc"' >> ${HOME}/.cargo/config.toml
           echo "PKG_CONFIG_SYSROOT_DIR=/usr/x86_64-w64-mingw32" >> $GITHUB_ENV
           echo "PKG_CONFIG_PATH=/usr/lib/x86_64-w64-mingw32/pkgconfig" >> $GITHUB_ENV
           echo "PKG_CONFIG_ALLOW_CROSS=1" >> $GITHUB_ENV
@@ -257,20 +246,12 @@ jobs:
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: 1.68.0
-          default: true
           target: ${{ matrix.config.target }}
-          components: rustfmt, clippy, rustc, cargo, rust-docs, rust-std
-      - name: "rustup updates"
-        run: |
-          rustup target add wasm32-unknown-unknown wasm32-wasi
-          cargo install tomlq cargo-deny just
-      #Updating rustup updates means that the github cache needs to be manually deleted.
-      - name: "build binary"
+      - name: 'build binary'
         uses: actions-rs/cargo@v1
         with:
           command: build
-          args: --release -p wick --target=${{ matrix.config.target }} --features openssl/vendored
+          args: --release -p wick --target=${{ matrix.config.target }}
       - name: package release assets
         if: matrix.config.target != 'x86_64-pc-windows-gnu'
         run: |
@@ -304,8 +285,6 @@ jobs:
     needs: [test, build]
     steps:
       - uses: actions/checkout@v3
-      - name: Install jq
-        run: sudo apt-get install -y jq
       - name: Download artifacts
         uses: actions/download-artifact@v3
         with:
