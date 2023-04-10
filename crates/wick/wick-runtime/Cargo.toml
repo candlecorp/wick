@@ -55,5 +55,5 @@ futures = { workspace = true }
 tracing = { workspace = true }
 uuid = { workspace = true }
 tokio = { workspace = true, features = ["time"] }
-reqwest = { workspace = true }
+reqwest = { workspace = true, default-features = false }
 wasmrs-codec = { workspace = true }
