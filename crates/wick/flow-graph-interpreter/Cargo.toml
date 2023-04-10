@@ -31,7 +31,6 @@ serde-value = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 rand = { workspace = true }
 bytes = { workspace = true }
-integra8 = { git = "https://github.com/jamesjharper/integra8.git" }
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
