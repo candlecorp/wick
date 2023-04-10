@@ -4851,7 +4851,6 @@ dependencies = [
  "markup-converter",
  "nkeys",
  "oci-distribution",
- "openssl",
  "regex",
  "seeded-random",
  "serde",

@@ -41,7 +41,6 @@ oci-distribution = { workspace = true, features = [
   "rustls-tls",
 ], default-features = false }
 async-recursion = { workspace = true }
-openssl = { workspace = true } #required for cross compilation (don't remove)
 
 [dev-dependencies]
 test_bin = { workspace = true }
