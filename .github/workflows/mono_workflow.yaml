@@ -135,7 +135,7 @@ jobs:
             target/
           key: ${{ runner.os }}-${{ matrix.config.target }}-cargo-test-${{ hashFiles('**/Cargo.lock') }}
       - name: Install Rust toolchain
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@stable
         with:
           target: ${{ matrix.config.target }}
       - name: 'rustup updates'
@@ -244,7 +244,7 @@ jobs:
             target/
           key: ${{ runner.os }}-${{ matrix.config.target }}-cargo-${{ hashFiles('**/Cargo.lock') }}
       - name: Install Rust toolchain
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@stable
         with:
           target: ${{ matrix.config.target }}
       - name: 'build binary'
