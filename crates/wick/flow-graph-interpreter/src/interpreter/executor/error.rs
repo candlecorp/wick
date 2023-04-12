@@ -1,3 +1,4 @@
+use flow_component::ComponentError;
 use tokio::task::JoinError;
 use uuid::Uuid;
 
@@ -19,7 +20,7 @@ pub enum ExecutionError {
   #[error("Transaction '{0}' missing")]
   MissingTx(Uuid),
   #[error("{0}")]
-  ComponentError(Box<dyn std::error::Error + Send + Sync>),
+  ComponentError(ComponentError),
 
   #[error("{0}")]
   OperationFailure(JoinError),

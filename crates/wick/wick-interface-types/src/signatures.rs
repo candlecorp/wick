@@ -539,27 +539,6 @@ fn is_valid_typeid(name: &str) -> bool {
   name.chars().all(|c| c.is_alphanumeric() || c == '_')
 }
 
-/// Internal types for use within the Wick runtime
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Copy)]
-#[serde(tag = "id")]
-pub enum InternalType {
-  /// Represents a complete set of component inputs
-  #[serde(rename = "__input__")]
-  OperationInput,
-}
-
-impl FromStr for InternalType {
-  type Err = ParseError;
-
-  fn from_str(s: &str) -> Result<Self, Self::Err> {
-    let t = match s {
-      "component_input" => Self::OperationInput,
-      _ => return Err(ParseError(s.to_owned())),
-    };
-    Ok(t)
-  }
-}
-
 #[cfg(feature = "parser")]
 pub(crate) fn type_signature<'de, D>(deserializer: D) -> Result<TypeSignature, D::Error>
 where

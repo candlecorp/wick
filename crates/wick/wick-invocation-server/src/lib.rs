@@ -92,12 +92,12 @@ pub mod error;
 
 mod invocation_server;
 
+use flow_component::SharedComponent;
 pub use invocation_server::InvocationServer;
 use tokio::task::JoinHandle;
 use tonic::transport::{Channel, Server, Uri};
 use wick_rpc::rpc::invocation_service_client::InvocationServiceClient;
 use wick_rpc::rpc::invocation_service_server::InvocationServiceServer;
-use wick_rpc::SharedRpcHandler;
 
 pub(crate) type Result<T> = std::result::Result<T, Error>;
 
@@ -114,7 +114,7 @@ extern crate tracing;
 #[must_use]
 pub fn make_rpc_server(
   socket: tokio::net::TcpSocket,
-  collection: SharedRpcHandler,
+  collection: SharedComponent,
 ) -> JoinHandle<std::result::Result<(), tonic::transport::Error>> {
   let component_service = InvocationServer::new(collection);
 

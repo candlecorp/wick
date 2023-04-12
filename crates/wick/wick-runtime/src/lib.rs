@@ -102,7 +102,7 @@ pub mod resources;
 mod triggers;
 pub(crate) mod utils;
 
-pub use components::engine_component::Component as EngineComponent;
+pub use components::engine_component::EngineComponent;
 pub use components::error::ComponentError;
 pub use engine::{Engine, EngineBuilder};
 pub use engine_service::error::EngineError;
@@ -110,10 +110,8 @@ pub use triggers::{get_trigger_loader, Trigger};
 
 pub type Error = error::RuntimeError;
 
-pub(crate) type BoxError = Box<dyn std::error::Error + Send + Sync>;
-
 /// The reserved namespace for Wick's initial native API.
 pub const V0_NAMESPACE: &str = "wick";
 
-type BoxFuture<'a, T> = std::pin::Pin<Box<dyn futures::Future<Output = T> + Send + Sync + 'a>>;
+type BoxFuture<'a, T> = std::pin::Pin<Box<dyn futures::Future<Output = T> + Send + 'a>>;
 // type BoxFuture<'a, T> = futures::future::BoxFuture<'a, T>;

@@ -1,18 +1,18 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
+use flow_component::{BoxFuture, Component, ComponentError, RuntimeCallback};
 use wasmrs_host::WasiParams;
 use wick_config::config::components::Permissions;
-use wick_interface_types::HostedType;
 use wick_packet::{Invocation, PacketStream};
-use wick_rpc::{BoxFuture, RpcHandler, RpcResult};
+use wick_rpc::RpcHandler;
 
-use crate::error::LinkError;
 use crate::helpers::WickWasmModule;
 use crate::wasm_host::{WasmHost, WasmHostBuilder};
 use crate::Error;
 
-pub type BoxedFuture<T> = std::pin::Pin<Box<dyn std::future::Future<Output = T> + Send + 'static>>;
+// pub type BoxedFuture<T> = std::pin::Pin<Box<dyn std::future::Future<Output = T> + Send + 'static>>;
+// pub type BoxFuture<'a, T> = Pin<alloc::boxed::Box<dyn Future<Output = T> + Send + 'a>>;
 
 #[derive(Debug, Default)]
 pub struct Context {
@@ -21,12 +21,9 @@ pub struct Context {
 }
 
 #[derive(Debug)]
-pub struct Component {
+pub struct WasmComponent {
   pool: Arc<WasmHost>,
 }
-
-pub type HostLinkCallback =
-  dyn Fn(&str, &str, PacketStream) -> BoxedFuture<Result<PacketStream, LinkError>> + Send + Sync;
 
 fn permissions_to_wasi_params(perms: Permissions) -> WasiParams {
   debug!(params=?perms, "Collection permissions");
@@ -41,13 +38,13 @@ fn permissions_to_wasi_params(perms: Permissions) -> WasiParams {
   params
 }
 
-impl Component {
+impl WasmComponent {
   pub fn try_load(
     module: &WickWasmModule,
     max_threads: usize,
     config: Option<Permissions>,
     additional_config: Option<Permissions>,
-    callback: Option<Box<HostLinkCallback>>,
+    callback: Option<Arc<RuntimeCallback>>,
   ) -> Result<Self, Error> {
     let mut builder = WasmHostBuilder::new();
 
@@ -76,17 +73,23 @@ impl Component {
   }
 }
 
-impl RpcHandler for Component {
-  fn invoke(&self, invocation: Invocation, stream: PacketStream) -> BoxFuture<RpcResult<PacketStream>> {
+impl Component for WasmComponent {
+  fn handle(
+    &self,
+    invocation: Invocation,
+    stream: PacketStream,
+    _data: Option<serde_json::Value>,
+    _callback: Arc<RuntimeCallback>,
+  ) -> BoxFuture<Result<PacketStream, ComponentError>> {
     trace!(target = %invocation.target, "wasm invoke");
     let component = invocation.target.name();
 
     let outputs = self.pool.call(component, stream, None);
 
-    Box::pin(async move { Ok(outputs?) })
+    Box::pin(async move { outputs.map_err(ComponentError::new) })
   }
 
-  fn get_list(&self) -> RpcResult<Vec<HostedType>> {
+  fn list(&self) -> &wick_interface_types::ComponentSignature {
     let signature = self.pool.get_operations();
 
     trace!(
@@ -98,10 +101,11 @@ impl RpcHandler for Component {
         .collect::<Vec<_>>()
         .join(",")
     );
-
-    Ok(vec![HostedType::Component(signature.clone())])
+    signature
   }
 }
+
+impl RpcHandler for WasmComponent {}
 
 #[cfg(test)]
 mod tests {
@@ -109,6 +113,7 @@ mod tests {
   use std::str::FromStr;
 
   use anyhow::Result as TestResult;
+  use flow_component::panic_callback;
   use futures::StreamExt;
   use wick_packet::{packet_stream, packets, Entity, Packet};
 
@@ -121,12 +126,12 @@ mod tests {
     )?)
     .await?;
 
-    let collection = Component::try_load(
+    let collection = WasmComponent::try_load(
       &component,
       2,
       None,
       None,
-      Some(Box::new(|_origin, _component, _payload| {
+      Some(Arc::new(|_, _, _, _| {
         Box::pin(async { Ok(packet_stream!(("test", "test"))) })
       })),
     )?;
@@ -135,7 +140,9 @@ mod tests {
     println!("{:#?}", stream);
     let entity = Entity::local("add");
     let invocation = Invocation::new(Entity::test(file!()), entity, None);
-    let outputs = collection.invoke(invocation, stream.into()).await?;
+    let outputs = collection
+      .handle(invocation, stream.into(), None, panic_callback())
+      .await?;
     debug!("Invocation complete");
     let mut packets: Vec<_> = outputs.collect().await;
     debug!("Output packets: {:?}", packets);

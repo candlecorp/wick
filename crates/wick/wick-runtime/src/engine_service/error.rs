@@ -16,10 +16,25 @@ pub enum EngineError {
   Asset(#[from] wick_config::AssetError),
 
   #[error(transparent)]
-  NativeComponent(#[from] Box<dyn std::error::Error + Send + Sync>),
+  NativeComponent(#[from] flow_component::ComponentError),
 
   #[error(transparent)]
   Wasm(#[from] Box<wick_component_wasm::Error>),
+
+  #[error("Internal error: {0}")]
+  InternalError(InternalError),
+}
+
+#[repr(u16)]
+#[derive(Debug, Clone, Copy)]
+pub enum InternalError {
+  MissingResolver = 1,
+}
+
+impl std::fmt::Display for InternalError {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    write!(f, "{}", *self as u16)
+  }
 }
 
 impl From<EngineError> for ComponentError {

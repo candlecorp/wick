@@ -9,6 +9,8 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
 
+use flow_component::{Component, RuntimeCallback};
+use parking_lot::Mutex;
 use seeded_random::{Random, Seed};
 use tracing_futures::Instrument;
 use wick_interface_types::ComponentSignature;
@@ -26,7 +28,7 @@ use crate::interpreter::channel::InterpreterChannel;
 use crate::interpreter::components::component_component::ComponentComponent;
 use crate::interpreter::components::schematic_component::SchematicComponent;
 use crate::interpreter::executor::error::ExecutionError;
-use crate::{Component, NamespaceHandler, Observer, SharedHandler};
+use crate::{NamespaceHandler, Observer, SharedHandler};
 
 #[must_use]
 #[derive()]
@@ -39,6 +41,7 @@ pub struct Interpreter {
   self_component: Arc<SchematicComponent>,
   dispatcher: InterpreterDispatchChannel,
   namespace: Option<String>,
+  callback: Arc<RuntimeCallback>,
   exposed_ops: HashMap<String, SharedHandler>, // A map from op name to the ns of the handler that exposes it.
 }
 
@@ -61,12 +64,13 @@ impl Interpreter {
     network: Network,
     namespace: Option<String>,
     components: Option<HandlerMap>,
+    callback: Arc<RuntimeCallback>,
   ) -> Result<Self, Error> {
     debug!("init");
     let rng = seed.map_or_else(Random::new, Random::from_seed);
     let mut handlers = components.unwrap_or_default();
     let mut exposed_ops = HashMap::new();
-    // Create a map of operation names to the namespace of the handler.
+
     for handler in handlers.inner().values() {
       if handler.is_exposed() {
         for op in &handler.component.list().operations {
@@ -111,7 +115,37 @@ impl Interpreter {
       event_loop,
       namespace,
       exposed_ops,
+      callback,
     })
+  }
+
+  fn get_callback(&self) -> Arc<RuntimeCallback> {
+    let outside_callback = self.callback.clone();
+    let internal_components = self.components.clone();
+
+    let cb_container = Arc::new(Mutex::new(None));
+
+    let inner_cb = cb_container.clone();
+    let local_first_callback: Arc<RuntimeCallback> = Arc::new(move |compref, op, stream, inherent| {
+      let internal_components = internal_components.clone();
+      let inner_cb = inner_cb.clone();
+      let outside_callback = outside_callback.clone();
+      Box::pin(async move {
+        trace!(op, %compref, "invoke:component reference");
+        info!("internal components : {:#?}", internal_components);
+        info!("target component ID : {}", compref.get_target_id());
+        if let Some(handler) = internal_components.get(compref.get_target_id()) {
+          trace!(op, %compref, "handling component invocation internal to this interpreter");
+          let cb = inner_cb.lock().clone().unwrap();
+          let invocation = compref.make_invocation(&op, inherent);
+          handler.component().handle(invocation, stream, None, cb).await
+        } else {
+          outside_callback(compref, op, stream, inherent).await
+        }
+      })
+    });
+    cb_container.lock().replace(local_first_callback.clone());
+    local_first_callback
   }
 
   async fn invoke_operation(&self, invocation: Invocation, stream: PacketStream) -> Result<PacketStream, Error> {
@@ -138,6 +172,7 @@ impl Interpreter {
           self.rng.seed(),
           self.components.clone(),
           self.self_component.clone(),
+          self.get_callback(),
         )
         .instrument(tracing::span::Span::current())
         .await?,
@@ -153,6 +188,7 @@ impl Interpreter {
       hosted
     };
     let span = trace_span!("invoke");
+    let cb = self.get_callback();
 
     let stream = match &invocation.target {
       Entity::Operation(ns, name) => {
@@ -161,7 +197,7 @@ impl Interpreter {
             trace!(entity=%invocation.target, "invoke::exposed::operation");
             return Ok(
               component
-                .handle(invocation, stream, None)
+                .handle(invocation, stream, None, cb)
                 .instrument(span)
                 .await
                 .map_err(ExecutionError::ComponentError)?,
@@ -176,7 +212,7 @@ impl Interpreter {
             .get(ns)
             .ok_or_else(|| Error::TargetNotFound(invocation.target.clone(), known_targets()))?
             .component
-            .handle(invocation, stream, None)
+            .handle(invocation, stream, None, cb)
             .instrument(span)
             .await
             .map_err(ExecutionError::ComponentError)?

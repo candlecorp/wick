@@ -91,7 +91,6 @@ pub use signatures::{
   EnumVariant,
   Field,
   HostedType,
-  InternalType,
   OperationSignature,
   StructSignature,
   TypeDefinition,

@@ -3,10 +3,10 @@ mod grpc;
 
 use std::net::SocketAddr;
 
+use flow_component::SharedComponent;
 // use std::sync::Arc;
 use tokio::signal;
 use tokio::sync::mpsc::Sender;
-use wick_rpc::SharedRpcHandler;
 
 use crate::options::Options;
 pub(crate) type Result<T> = std::result::Result<T, crate::error::CliError>;
@@ -81,7 +81,7 @@ pub fn print_info(info: &ServerState) {
 }
 
 /// Starts an RPC server for the passed [wick_rpc::RpcHandler].
-pub async fn start_server(collection: SharedRpcHandler, opts: Option<Options>) -> Result<ServerState> {
+pub async fn start_server(collection: SharedComponent, opts: Option<Options>) -> Result<ServerState> {
   debug!("Starting server with options: {:?}", opts);
 
   let opts = opts.unwrap_or_default();
@@ -140,7 +140,7 @@ enum ServerMessage {
 
 /// Start a server with the passed [wick_rpc::RpcHandler] and keep it.
 /// running until the process receives a SIGINT (^C).
-pub async fn init_cli(collection: SharedRpcHandler, opts: Option<Options>) -> Result<()> {
+pub async fn init_cli(collection: SharedComponent, opts: Option<Options>) -> Result<()> {
   let state = start_server(collection, opts).await?;
   print_info(&state);
 
@@ -159,7 +159,7 @@ mod tests {
   use std::time::Duration;
 
   use anyhow::Result;
-  use test_native_component::Component;
+  use test_native_component::NativeComponent;
   use tokio::time::sleep;
   use tonic::transport::Uri;
   use wick_invocation_server::connect_rpc_client;
@@ -168,8 +168,8 @@ mod tests {
   use super::*;
   use crate::options::ServerOptions;
 
-  fn get_component() -> SharedRpcHandler {
-    Arc::new(Component::default())
+  fn get_component() -> SharedComponent {
+    Arc::new(NativeComponent::default())
   }
 
   #[test_logger::test(tokio::test)]

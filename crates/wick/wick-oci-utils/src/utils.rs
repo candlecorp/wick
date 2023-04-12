@@ -86,7 +86,7 @@ mod tests {
 
   #[test]
   fn test_directory_structure() {
-    let input = "localhost:8888/test/integration:0.0.3";
+    let input = "localhost:5555/test/integration:0.0.3";
 
     let expected_dir = Path::new("/remote/localhost/test/integration/0.0.3");
     let result = get_cache_directory(input, Some("/".into())).unwrap();

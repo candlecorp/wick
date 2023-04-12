@@ -1,6 +1,0 @@
-format: 1
-import:
-  - name: sql
-    component:
-      kind: internal
-      ref: wick/native/sqllite

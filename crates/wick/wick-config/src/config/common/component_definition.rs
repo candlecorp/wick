@@ -1,6 +1,5 @@
 use serde::de::{IgnoredAny, SeqAccess, Visitor};
 use serde::Deserializer;
-use serde_json::Value;
 
 use crate::config;
 
@@ -63,45 +62,9 @@ impl std::str::FromStr for ComponentOperationExpression {
 #[asset(config::AssetReference)]
 /// A definition of a Wick Collection with its namespace, how to retrieve or access it and its configuration.
 #[must_use]
-pub struct BoundComponent {
-  /// The namespace to reference the collection's components on.
-  #[asset(skip)]
-  pub id: String,
-  /// The kind/type of the collection.
-  pub kind: ComponentDefinition,
-}
-
-impl BoundComponent {
-  /// Create a new [CollectionDefinition] with specified name and type.
-  pub fn new(name: impl AsRef<str>, kind: ComponentDefinition) -> Self {
-    Self {
-      id: name.as_ref().to_owned(),
-      kind,
-    }
-  }
-
-  /// Get the configuration object for the collection.
-  #[must_use]
-  pub fn config(&self) -> Option<&Value> {
-    match &self.kind {
-      ComponentDefinition::Native(_) => None,
-      #[allow(deprecated)]
-      ComponentDefinition::Wasm(v) => Some(&v.config),
-      ComponentDefinition::GrpcUrl(v) => Some(&v.config),
-      ComponentDefinition::Manifest(v) => Some(&v.config),
-      ComponentDefinition::HighLevelComponent(_) => None,
-      ComponentDefinition::Reference(_) => None,
-    }
-  }
-}
-
-#[derive(Debug, Clone, PartialEq, derive_assets::AssetManager)]
-#[asset(config::AssetReference)]
-/// A definition of a Wick Collection with its namespace, how to retrieve or access it and its configuration.
-#[must_use]
 pub enum HighLevelComponent {
   #[asset(skip)]
-  Postgres(config::components::PostgresComponent),
+  Postgres(config::components::SqlComponentConfig),
 }
 
 #[derive(Debug, Clone, PartialEq, derive_assets::AssetManager)]

@@ -2,6 +2,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::{Instant, SystemTime};
 
+use flow_component::{Component, RuntimeCallback};
 use flow_graph::{NodeIndex, PortReference, SCHEMATIC_OUTPUT_INDEX};
 use futures::StreamExt;
 use parking_lot::Mutex;
@@ -16,7 +17,7 @@ use crate::graph::types::*;
 use crate::interpreter::channel::InterpreterDispatchChannel;
 use crate::interpreter::error::StateError;
 use crate::interpreter::executor::transaction::operation::port::PortStatus;
-use crate::{Component, HandlerMap, InterpreterOptions};
+use crate::{HandlerMap, InterpreterOptions};
 
 pub(crate) mod operation;
 
@@ -39,6 +40,7 @@ pub struct Transaction {
   rng: Random,
   finished: AtomicBool,
   span: tracing::Span,
+  callback: Arc<RuntimeCallback>,
   pub(crate) last_access_time: Mutex<SystemTime>,
   pub(crate) stats: TransactionStatistics,
 }
@@ -58,6 +60,7 @@ impl Transaction {
     channel: InterpreterDispatchChannel,
     collections: &Arc<HandlerMap>,
     self_collection: &Arc<dyn Component + Send + Sync>,
+    callback: Arc<RuntimeCallback>,
     seed: Seed,
   ) -> Self {
     let instances: Vec<_> = schematic
@@ -95,6 +98,7 @@ impl Transaction {
       span,
       finished: AtomicBool::new(false),
       rng,
+      callback,
     }
   }
 
@@ -144,7 +148,13 @@ impl Transaction {
         .next_tx(self.invocation.origin.clone(), instance.entity());
       instance
         .clone()
-        .start(self.id(), invocation, self.channel.clone(), options)
+        .start(
+          self.id(),
+          invocation,
+          self.channel.clone(),
+          options,
+          self.callback.clone(),
+        )
         .await?;
     }
 

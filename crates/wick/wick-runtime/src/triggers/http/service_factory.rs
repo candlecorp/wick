@@ -100,7 +100,7 @@ async fn respond(stream: Result<PacketStream, RuntimeError>) -> Result<Response<
 impl Service<Request<Body>> for ResponseService {
   type Response = Response<Body>;
   type Error = hyper::Error;
-  type Future = Pin<Box<dyn Future<Output = Result<Self::Response, Self::Error>> + Send + Sync>>;
+  type Future = Pin<Box<dyn Future<Output = Result<Self::Response, Self::Error>> + Send>>;
 
   fn poll_ready(&mut self, _: &mut Context) -> Poll<Result<(), Self::Error>> {
     Poll::Ready(Ok(()))

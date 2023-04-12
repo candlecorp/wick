@@ -87,13 +87,13 @@
 
 use std::time::{SystemTime, UNIX_EPOCH};
 
+use flow_component::SharedComponent;
 use serde_value::Value;
 use tap::{TestBlock, TestRunner};
 use tokio_stream::wrappers::UnboundedReceiverStream;
 use tokio_stream::StreamExt;
 use wick_config::config::TestCase;
 use wick_packet::{Entity, InherentData, Invocation, Packet, PacketPayload, PacketStream};
-use wick_rpc::SharedRpcHandler;
 
 use self::error::TestError;
 use crate::utils::gen_packet;
@@ -174,7 +174,7 @@ impl<'a> TestSuite<'a> {
   pub async fn run(
     &'a mut self,
     collection_id: Option<&str>,
-    collection: SharedRpcHandler,
+    collection: SharedComponent,
   ) -> Result<TestRunner, TestError> {
     let name = self.name.clone();
     let tests = self.get_tests();
@@ -223,16 +223,20 @@ pub fn get_description(test: &UnitTest) -> String {
   format!("{}: test operation '{}'", test.test.name, test.test.operation)
 }
 
-pub async fn run_test<'a>(
+pub async fn run_test<'a, 'b>(
   name: impl AsRef<str> + Sync + Send,
   defs: Vec<&'a mut UnitTest<'a>>,
-  id: Option<&str>,
-  collection: SharedRpcHandler,
+  id: Option<&'b str>,
+  collection: SharedComponent,
 ) -> Result<TestRunner, Error> {
   let mut harness = TestRunner::new(Some(name));
 
   for (i, def) in defs.into_iter().enumerate() {
-    let block = run_unit(i, def, id, collection.clone()).await?;
+    let entity = id.map_or_else(
+      || Entity::local(&def.test.operation),
+      |id| Entity::operation(id, &def.test.operation),
+    );
+    let block = run_unit(i, def, entity, collection.clone()).await?;
     harness.add_block(block);
   }
 
@@ -244,14 +248,10 @@ pub async fn run_test<'a>(
 async fn run_unit<'a>(
   i: usize,
   def: &'a mut UnitTest<'a>,
-  collection_id: Option<&str>,
-  collection: SharedRpcHandler,
+  entity: Entity,
+  collection: SharedComponent,
 ) -> Result<TestBlock, TestError> {
   let (stream, inherent) = get_payload(def);
-  let entity = collection_id.map_or_else(
-    || Entity::local(&def.test.operation),
-    |id| Entity::operation(id, &def.test.operation),
-  );
   let test_name = get_description(def);
   let mut test_block = TestBlock::new(Some(test_name.clone()));
   let prefix = |msg: &str| format!("{}: {}", test_name, msg);
@@ -259,7 +259,7 @@ async fn run_unit<'a>(
   trace!(i, %entity, "invoke");
   let invocation = Invocation::new(Entity::test(&test_name), entity, inherent);
   let result = collection
-    .invoke(invocation, stream)
+    .handle(invocation, stream, None, std::sync::Arc::new(|_, _, _, _| panic!()))
     .await
     .map_err(|e| Error::InvocationFailed(e.to_string()));
 
@@ -416,13 +416,13 @@ mod test {
   use std::sync::Arc;
 
   use anyhow::Result;
-  use test_native_component::Component;
+  use test_native_component::NativeComponent;
   use wick_config::WickConfiguration;
 
   use super::*;
 
-  fn get_component() -> SharedRpcHandler {
-    Arc::new(Component::default())
+  fn get_component() -> SharedComponent {
+    Arc::new(NativeComponent::default())
   }
 
   #[test_logger::test(tokio::test)]

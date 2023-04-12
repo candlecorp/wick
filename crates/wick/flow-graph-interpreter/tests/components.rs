@@ -1,10 +1,8 @@
-#![allow(unused_attributes, clippy::box_default)]
-
 mod test;
 
 use anyhow::Result;
 use pretty_assertions::assert_eq;
-use wick_packet::{packets, Entity, Packet};
+use wick_packet::{packets, CollectionLink, Entity, Packet};
 
 #[test_logger::test(tokio::test)]
 async fn test_echo() -> Result<()> {
@@ -20,6 +18,33 @@ async fn test_echo() -> Result<()> {
   let _wrapper = outputs.pop().unwrap(); //done signal
   let wrapper = outputs.pop().unwrap();
   let expected = Packet::encode("output", "hello world");
+
+  assert_eq!(wrapper.unwrap(), expected);
+  interpreter.shutdown().await?;
+
+  Ok(())
+}
+
+#[test_logger::test(tokio::test)]
+async fn test_call_component() -> Result<()> {
+  let (interpreter, mut outputs) = test::common_setup(
+    "./tests/manifests/v1/component-call.yaml",
+    "test",
+    packets!(
+      ("message", "Hello world!"),
+      (
+        "component",
+        CollectionLink::new(Entity::test("call_component").to_string(), "test")
+      )
+    ),
+  )
+  .await?;
+
+  assert_eq!(outputs.len(), 2);
+
+  let _wrapper = outputs.pop().unwrap(); //done signal
+  let wrapper = outputs.pop().unwrap();
+  let expected = Packet::encode("output", "!dlrow olleH");
 
   assert_eq!(wrapper.unwrap(), expected);
   interpreter.shutdown().await?;

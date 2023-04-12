@@ -8,16 +8,15 @@ pub(super) mod core_collection;
 pub(crate) mod internal_collection;
 pub(super) mod schematic_component;
 
-use serde_json::Value;
+use flow_component::Component;
 use wick_interface_types::ComponentSignature;
-use wick_packet::{Invocation, PacketStream, StreamMap};
 
 use self::core_collection::CoreCollection;
 use self::internal_collection::InternalCollection;
 use crate::constants::*;
 use crate::error::InterpreterError;
 use crate::graph::types::Network;
-use crate::{BoxError, BoxFuture, SharedHandler};
+use crate::SharedHandler;
 
 pub(crate) type ComponentMap = HashMap<String, ComponentSignature>;
 
@@ -134,22 +133,4 @@ impl Debug for NamespaceHandler {
       .field("collection", &self.component.list())
       .finish()
   }
-}
-
-pub trait Component {
-  fn handle(
-    &self,
-    invocation: Invocation,
-    stream: PacketStream,
-    data: Option<Value>,
-  ) -> BoxFuture<Result<PacketStream, BoxError>>;
-  fn list(&self) -> &ComponentSignature;
-  fn shutdown(&self) -> BoxFuture<Result<(), BoxError>> {
-    // Override if you need a more explicit shutdown.
-    Box::pin(async move { Ok(()) })
-  }
-}
-
-pub trait Operation {
-  fn handle(&self, payload: StreamMap, data: Option<Value>) -> BoxFuture<Result<PacketStream, BoxError>>;
 }

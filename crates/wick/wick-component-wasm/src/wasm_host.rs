@@ -1,6 +1,7 @@
 use std::sync::Arc;
 use std::time::Instant;
 
+use flow_component::RuntimeCallback;
 use parking_lot::Mutex;
 use wasmrs::RSocket;
 use wasmrs_host::{Host, WasiParams};
@@ -8,7 +9,6 @@ use wick_interface_types::ComponentSignature;
 use wick_packet::{from_wasmrs, into_wasmrs, PacketStream};
 use wick_wascap::{Claims, CollectionClaims};
 
-use crate::component::HostLinkCallback;
 use crate::error::WasmCollectionError;
 use crate::wasm_module::WickWasmModule;
 use crate::{Error, Result};
@@ -16,7 +16,7 @@ use crate::{Error, Result};
 #[must_use]
 pub struct WasmHostBuilder {
   wasi_params: Option<WasiParams>,
-  callback: Option<Box<HostLinkCallback>>,
+  callback: Option<Arc<RuntimeCallback>>,
   min_threads: usize,
   max_threads: usize,
 }
@@ -44,7 +44,7 @@ impl WasmHostBuilder {
     self
   }
 
-  pub fn link_callback(mut self, callback: Box<HostLinkCallback>) -> Self {
+  pub fn link_callback(mut self, callback: Arc<RuntimeCallback>) -> Self {
     self.callback = Some(callback);
     self
   }
@@ -100,7 +100,7 @@ impl WasmHost {
   pub fn try_load(
     module: &WickWasmModule,
     wasi_options: Option<WasiParams>,
-    _callback: &Option<Box<HostLinkCallback>>,
+    _callback: &Option<Arc<RuntimeCallback>>,
     _min_threads: usize,
     _max_threads: usize,
   ) -> Result<Self> {

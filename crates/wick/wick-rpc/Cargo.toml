@@ -10,6 +10,7 @@ repository = "https://github.com/candlecorp/wick"
 client = ["tokio/fs"]
 
 [dependencies]
+flow-component = { workspace = true }
 wick-packet = { workspace = true, features = ["invocation"] }
 wasmrs-rx = { workspace = true, features = [] }
 wick-interface-types = { workspace = true }
@@ -25,7 +26,6 @@ rand = { workspace = true }
 tracing = { workspace = true }
 thiserror = { workspace = true }
 async-trait = { workspace = true }
-dyn-clone = { workspace = true }
 uuid = { workspace = true }
 
 [build-dependencies]

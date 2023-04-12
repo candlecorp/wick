@@ -491,6 +491,40 @@
 <li><span class="annotation field-note">Required</span></li>
 
 </ul>
+</div></div></div><div class="definition">
+<h2 class="definition-name type-name">
+  <a name="StaticRouter">StaticRouter</a>
+</h2>
+
+<span class="description type-description">A RawHttpRouter delegates raw requests and bodies to operations based on the request path.</span>
+<div class=fields>
+<div class=field>
+
+<h3 class=field-name>
+  <a name="path">path</a>
+</h3>
+
+<span class="description field-description">The path to start serving this router from.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string</span></span></li>
+<li><span class="annotation field-note">Required</span></li>
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="from">from</a>
+</h3>
+
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string</span></span></li>
+<li><span class="annotation field-note">Required</span></li>
+
+</ul>
 </div></div></div><div class="definition">## unhandled
     panic!()</div><div class="definition">
 <h2 class="definition-name type-name">
@@ -723,6 +757,76 @@
 
 
 </ul>
+</div></div></div><div class="definition">
+<h2 class="definition-name type-name">
+  <a name="BoundInterface">BoundInterface</a>
+</h2>
+
+<span class="description type-description">An interface bound to an ID.</span>
+<div class=fields>
+<div class=field>
+
+<h3 class=field-name>
+  <a name="name">name</a>
+</h3>
+
+<span class="description field-description">The name of the interface.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string</span></span></li>
+<li><span class="annotation field-note">Required</span></li>
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="interface">interface</a>
+</h3>
+
+<span class="description field-description">The interface to bind to.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#InterfaceDefinition">InterfaceDefinition</a></span></span></li>
+<li><span class="annotation field-note">Required</span></li>
+
+</ul>
+</div></div></div><div class="definition">
+<h2 class="definition-name type-name">
+  <a name="InterfaceDefinition">InterfaceDefinition</a>
+</h2>
+
+<span class="description type-description">A generic interface definition.</span>
+<div class=fields>
+<div class=field>
+
+<h3 class=field-name>
+  <a name="types">types</a>
+</h3>
+
+<span class="description field-description">Types used by the interface's operations</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#TypeDefinition">TypeDefinition</a>[]</span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="operations">operations</a>
+</h3>
+
+<span class="description field-description">A list of operations defined by this interface.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#OperationDefinition">OperationDefinition</a>[]</span></span></li>
+
+
+</ul>
 </div></div></div><div class="definition">## unhandled
     panic!()</div><div class="definition">
 <h2 class="definition-name type-name">
@@ -773,6 +877,20 @@
 
 
 </ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="requires">requires</a>
+</h3>
+
+<span class="description field-description">Interfaces the component requires to operate.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#BoundInterface">BoundInterface</a>[]</span></span></li>
+
+
+</ul>
 </div></div></div><div class="definition">
 <h2 class="definition-name type-name">
   <a name="WasmComponentConfiguration">WasmComponentConfiguration</a>
@@ -819,6 +937,20 @@
 
 <ul class="field-notes">
 <li><span class="type field-note">Type: <span class=field-type><a href="#OperationDefinition">OperationDefinition</a>[]</span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="requires">requires</a>
+</h3>
+
+<span class="description field-description">Interfaces the component requires to operate.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#BoundInterface">BoundInterface</a>[]</span></span></li>
 
 
 </ul>
@@ -1156,6 +1288,20 @@
 
 <ul class="field-notes">
 <li><span class="type field-note">Type: <span class=field-type><a href="#any">any</a></span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="provide">provide</a>
+</h3>
+
+<span class="description field-description">External components to provide to the referenced component.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>Map<string,string></span></span></li>
 
 
 </ul>
@@ -1696,6 +1842,70 @@
 </ul>
 </div></div></div><div class="definition">
 <h2 class="definition-name type-name">
+  <a name="DatabaseKind">DatabaseKind</a>
+</h2>
+
+
+<div class=fields>
+<div class=field>
+
+<h3 class=field-name>
+  <a name="MsSql">MsSql</a>
+</h3>
+
+
+
+<ul class="field-notes">
+<li><span class="enum-index field-note">Index: <span class=field-type>0</span></span></li>
+
+
+</ul>
+
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="Postgres">Postgres</a>
+</h3>
+
+
+
+<ul class="field-notes">
+<li><span class="enum-index field-note">Index: <span class=field-type>1</span></span></li>
+
+
+</ul>
+
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="Mysql">Mysql</a>
+</h3>
+
+
+
+<ul class="field-notes">
+<li><span class="enum-index field-note">Index: <span class=field-type>2</span></span></li>
+
+
+</ul>
+
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="Sqlite">Sqlite</a>
+</h3>
+
+
+
+<ul class="field-notes">
+<li><span class="enum-index field-note">Index: <span class=field-type>3</span></span></li>
+
+
+</ul>
+
+</div></div>
+</div><div class="definition">
+<h2 class="definition-name type-name">
   <a name="PostgresComponent">PostgresComponent</a>
 </h2>
 
@@ -1712,6 +1922,20 @@
 
 <ul class="field-notes">
 <li><span class="type field-note">Type: <span class=field-type>string</span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="vendor">vendor</a>
+</h3>
+
+<span class="description field-description">The database vendor to load.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#DatabaseKind">DatabaseKind</a></span></span></li>
 
 
 </ul>

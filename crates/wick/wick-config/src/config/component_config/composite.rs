@@ -2,7 +2,8 @@ use std::collections::HashMap;
 
 use wick_interface_types::TypeDefinition;
 
-use crate::config::common::component_definition::BoundComponent;
+use crate::common::BoundInterface;
+use crate::config::common::bindings::BoundComponent;
 use crate::config::common::flow_definition::FlowOperation;
 
 #[derive(Debug, Default, Clone, derive_assets::AssetManager)]
@@ -15,6 +16,8 @@ pub struct CompositeComponentConfiguration {
   pub(crate) import: HashMap<String, BoundComponent>,
   #[asset(skip)]
   pub(crate) operations: HashMap<String, FlowOperation>,
+  #[asset(skip)]
+  pub(crate) requires: HashMap<String, BoundInterface>,
 }
 
 impl CompositeComponentConfiguration {

@@ -18,7 +18,7 @@ async fn test_panic() -> Result<()> {
 
   outputs.pop();
   let p = outputs.pop().unwrap().unwrap();
-  assert_eq!(p, Packet::err("output", "Operation wick://test.coll/panic panicked"));
+  assert_eq!(p, Packet::err("output", "Operation wick://test/panic panicked"));
 
   interpreter.shutdown().await?;
 
@@ -42,7 +42,7 @@ async fn test_error() -> Result<()> {
     p,
     Packet::err(
       "output",
-      "Operation wick://test.coll/error failed: This operation always errors"
+      "Operation wick://test/error failed: Component error: This operation always errors"
     )
   );
 

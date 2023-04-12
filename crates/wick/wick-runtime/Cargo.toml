@@ -14,11 +14,14 @@ chrono = "0.4"
 wick-packet = { workspace = true }
 flow-graph = { workspace = true }
 flow-graph-interpreter = { workspace = true }
+flow-component = { workspace = true }
 wick-interface-types = { workspace = true }
 wick-config = { workspace = true }
 wick-component-wasm = { workspace = true }
 wick-stdlib = { workspace = true }
 wick-rpc = { workspace = true }
+wick-sqlx = { workspace = true }
+wick-interface-http = { workspace = true }
 seeded-random = { workspace = true }
 tokio = { workspace = true, features = [
   "macros",
@@ -27,7 +30,6 @@ tokio = { workspace = true, features = [
   "signal",
   "rt-multi-thread",
 ] }
-wick-interface-http = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 serde_yaml = { workspace = true }

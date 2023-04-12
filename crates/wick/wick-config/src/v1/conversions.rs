@@ -17,7 +17,7 @@ use crate::app_config::{
   UdpPort,
 };
 use crate::component_config::{CompositeComponentConfiguration, OperationSignature, WasmComponentConfiguration};
-use crate::config::common::component_definition::{BoundComponent, ComponentDefinition, ComponentOperationExpression};
+use crate::config::common::component_definition::{ComponentDefinition, ComponentOperationExpression};
 use crate::config::common::flow_definition::{PortReference, SenderData};
 use crate::config::common::host_definition::HostConfig;
 use crate::config::common::test_case;
@@ -105,6 +105,11 @@ impl TryFrom<v1::WasmComponentConfiguration> for WasmComponentConfiguration {
   fn try_from(value: v1::WasmComponentConfiguration) -> Result<Self> {
     Ok(Self {
       reference: value.reference.try_into()?,
+      requires: value
+        .requires
+        .into_iter()
+        .map(|v| Ok((v.name.clone(), v.try_into()?)))
+        .collect::<Result<_>>()?,
       operations: value
         .operations
         .into_iter()
@@ -115,10 +120,41 @@ impl TryFrom<v1::WasmComponentConfiguration> for WasmComponentConfiguration {
   }
 }
 
+impl TryFrom<v1::BoundInterface> for config::BoundInterface {
+  type Error = ManifestError;
+
+  fn try_from(value: v1::BoundInterface) -> std::result::Result<Self, Self::Error> {
+    Ok(Self {
+      id: value.name,
+      kind: value.interface.try_into()?,
+    })
+  }
+}
+
+impl TryFrom<v1::InterfaceDefinition> for config::InterfaceDefinition {
+  type Error = ManifestError;
+
+  fn try_from(value: v1::InterfaceDefinition) -> std::result::Result<Self, Self::Error> {
+    Ok(Self {
+      operations: value
+        .operations
+        .into_iter()
+        .map(|v| Ok((v.name.clone(), v.try_into()?)))
+        .collect::<Result<_>>()?,
+      types: value.types,
+    })
+  }
+}
+
 impl TryFrom<v1::CompositeComponentConfiguration> for CompositeComponentConfiguration {
   type Error = ManifestError;
   fn try_from(value: v1::CompositeComponentConfiguration) -> Result<Self> {
     Ok(Self {
+      requires: value
+        .requires
+        .into_iter()
+        .map(|v| Ok((v.name.clone(), v.try_into()?)))
+        .collect::<Result<_>>()?,
       operations: value
         .operations
         .into_iter()
@@ -144,6 +180,11 @@ impl TryFrom<CompositeComponentConfiguration> for v1::CompositeComponentConfigur
         .map(|op| op.try_into())
         .collect::<Result<_>>()?,
       types: value.types,
+      requires: value
+        .requires
+        .into_values()
+        .map(|op| op.try_into())
+        .collect::<Result<_>>()?,
       import: value
         .import
         .into_values()
@@ -162,8 +203,39 @@ impl TryFrom<WasmComponentConfiguration> for v1::WasmComponentConfiguration {
         .into_values()
         .map(|op| op.try_into())
         .collect::<Result<_>>()?,
+      requires: value
+        .requires
+        .into_values()
+        .map(|op| op.try_into())
+        .collect::<Result<_>>()?,
       types: value.types,
       reference: value.reference.try_into()?,
+    })
+  }
+}
+
+impl TryFrom<config::BoundInterface> for v1::BoundInterface {
+  type Error = ManifestError;
+
+  fn try_from(value: config::BoundInterface) -> std::result::Result<Self, Self::Error> {
+    Ok(Self {
+      name: value.id,
+      interface: value.kind.try_into()?,
+    })
+  }
+}
+
+impl TryFrom<config::InterfaceDefinition> for v1::InterfaceDefinition {
+  type Error = ManifestError;
+
+  fn try_from(value: config::InterfaceDefinition) -> std::result::Result<Self, Self::Error> {
+    Ok(Self {
+      operations: value
+        .operations
+        .into_values()
+        .map(|op| op.try_into())
+        .collect::<Result<_>>()?,
+      types: value.types,
     })
   }
 }
@@ -362,7 +434,7 @@ impl From<UdpPort> for v1::UdpPort {
   fn from(value: UdpPort) -> Self {
     Self {
       port: value.port,
-      address: value.address,
+      address: value.host,
     }
   }
 }
@@ -371,7 +443,7 @@ impl From<TcpPort> for v1::TcpPort {
   fn from(value: TcpPort) -> Self {
     Self {
       port: value.port,
-      address: value.address,
+      address: value.host,
     }
   }
 }
@@ -441,9 +513,9 @@ impl TryFrom<OperationSignature> for crate::v1::OperationDefinition {
   }
 }
 
-impl TryFrom<BoundComponent> for v1::ComponentBinding {
+impl TryFrom<config::BoundComponent> for v1::ComponentBinding {
   type Error = ManifestError;
-  fn try_from(def: BoundComponent) -> Result<Self> {
+  fn try_from(def: config::BoundComponent) -> Result<Self> {
     Ok(Self {
       name: def.id,
       component: def.kind.try_into()?,
@@ -486,6 +558,7 @@ impl TryFrom<ManifestComponent> for v1::ManifestComponent {
     Ok(Self {
       reference: def.reference.try_into()?,
       config: def.config,
+      provide: def.provide,
     })
   }
 }
@@ -578,6 +651,7 @@ impl TryFrom<crate::v1::ComponentDefinition> for ComponentDefinition {
       v1::ComponentDefinition::ManifestComponent(v) => ComponentDefinition::Manifest(ManifestComponent {
         reference: v.reference.try_into()?,
         config: v.config,
+        provide: v.provide,
       }),
       v1::ComponentDefinition::ComponentReference(v) => ComponentDefinition::Reference(ComponentReference { id: v.id }),
       v1::ComponentDefinition::PostgresComponent(v) => {
@@ -705,7 +779,7 @@ impl From<v1::TcpPort> for TcpPort {
   fn from(value: v1::TcpPort) -> Self {
     Self {
       port: value.port,
-      address: value.address,
+      host: value.address,
     }
   }
 }
@@ -713,7 +787,7 @@ impl From<v1::UdpPort> for UdpPort {
   fn from(value: v1::UdpPort) -> Self {
     Self {
       port: value.port,
-      address: value.address,
+      host: value.address,
     }
   }
 }
@@ -761,7 +835,7 @@ impl TryFrom<v1::HttpRouter> for HttpRouterConfig {
   }
 }
 
-impl TryFrom<v1::ComponentBinding> for BoundComponent {
+impl TryFrom<v1::ComponentBinding> for config::BoundComponent {
   type Error = ManifestError;
   fn try_from(value: v1::ComponentBinding) -> Result<Self> {
     Ok(Self {
@@ -944,7 +1018,7 @@ impl TryFrom<config::Metadata> for v1::Metadata {
   }
 }
 
-impl TryFrom<v1::PostgresComponent> for components::PostgresComponent {
+impl TryFrom<v1::PostgresComponent> for components::SqlComponentConfig {
   type Error = crate::Error;
   fn try_from(value: v1::PostgresComponent) -> Result<Self> {
     Ok(Self {
@@ -953,6 +1027,7 @@ impl TryFrom<v1::PostgresComponent> for components::PostgresComponent {
       password: value.password,
       database: value.database,
       tls: value.tls,
+      vendor: value.vendor.into(),
       operations: value
         .operations
         .into_iter()
@@ -962,7 +1037,7 @@ impl TryFrom<v1::PostgresComponent> for components::PostgresComponent {
   }
 }
 
-impl TryFrom<v1::PostgresOperationDefinition> for components::PostgresOperationDefinition {
+impl TryFrom<v1::PostgresOperationDefinition> for components::SqlOperationDefinition {
   type Error = crate::Error;
   fn try_from(value: v1::PostgresOperationDefinition) -> Result<Self> {
     Ok(Self {
@@ -975,15 +1050,16 @@ impl TryFrom<v1::PostgresOperationDefinition> for components::PostgresOperationD
   }
 }
 
-impl TryFrom<components::PostgresComponent> for v1::PostgresComponent {
+impl TryFrom<components::SqlComponentConfig> for v1::PostgresComponent {
   type Error = crate::Error;
-  fn try_from(value: components::PostgresComponent) -> Result<Self> {
+  fn try_from(value: components::SqlComponentConfig) -> Result<Self> {
     Ok(Self {
       resource: value.resource,
       user: value.user,
       password: value.password,
       database: value.database,
       tls: value.tls,
+      vendor: value.vendor.into(),
       operations: value
         .operations
         .into_iter()
@@ -993,9 +1069,9 @@ impl TryFrom<components::PostgresComponent> for v1::PostgresComponent {
   }
 }
 
-impl TryFrom<components::PostgresOperationDefinition> for v1::PostgresOperationDefinition {
+impl TryFrom<components::SqlOperationDefinition> for v1::PostgresOperationDefinition {
   type Error = crate::Error;
-  fn try_from(value: components::PostgresOperationDefinition) -> Result<Self> {
+  fn try_from(value: components::SqlOperationDefinition) -> Result<Self> {
     Ok(Self {
       name: value.name,
       inputs: value.inputs,
@@ -1003,5 +1079,27 @@ impl TryFrom<components::PostgresOperationDefinition> for v1::PostgresOperationD
       query: value.query,
       arguments: value.arguments,
     })
+  }
+}
+
+impl From<v1::DatabaseKind> for config::components::DatabaseKind {
+  fn from(value: v1::DatabaseKind) -> Self {
+    match value {
+      v1::DatabaseKind::Postgres => Self::Postgres,
+      v1::DatabaseKind::MsSql => Self::MsSql,
+      v1::DatabaseKind::Mysql => Self::Mysql,
+      v1::DatabaseKind::Sqlite => Self::Sqlite,
+    }
+  }
+}
+
+impl From<config::components::DatabaseKind> for v1::DatabaseKind {
+  fn from(value: config::components::DatabaseKind) -> Self {
+    match value {
+      config::components::DatabaseKind::Postgres => Self::Postgres,
+      config::components::DatabaseKind::MsSql => Self::MsSql,
+      config::components::DatabaseKind::Mysql => Self::Mysql,
+      config::components::DatabaseKind::Sqlite => Self::Sqlite,
+    }
   }
 }

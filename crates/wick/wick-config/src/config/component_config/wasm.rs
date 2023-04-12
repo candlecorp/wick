@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use wick_interface_types::{Field, TypeDefinition};
 
+use crate::common::BoundInterface;
 use crate::config;
 
 #[derive(Debug, Clone, derive_assets::AssetManager)]
@@ -19,6 +20,10 @@ pub struct WasmComponentConfiguration {
   /// The operations the component exposes.
   #[asset(skip)]
   pub(crate) operations: HashMap<String, OperationSignature>,
+
+  /// The interfaces the component requires.
+  #[asset(skip)]
+  pub(crate) requires: HashMap<String, BoundInterface>,
 }
 
 impl WasmComponentConfiguration {}

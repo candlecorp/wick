@@ -1,0 +1,38 @@
+name: mycli
+kind: wick/app@v1
+resources:
+  - name: DBADDR
+    resource:
+      kind: wick/resource/tcpport@v1
+      port: $POSTGRES_PORT
+      address: $TEST_HOST
+import:
+  - name: MYDB
+    component:
+      kind: wick/component/postgres@v1
+      database: postgres
+      user: postgres
+      password: $TEST_PASSWORD
+      resource: DBADDR
+      tls: false
+      vendor: Postgres
+      operations:
+        - name: get_user
+          inputs:
+            - name: id
+              type: u64
+          outputs:
+            - name: name
+              type: string
+          query: SELECT name FROM users WHERE id = $1
+          arguments:
+            - id
+triggers:
+  - kind: wick/trigger/cli@v1
+    operation:
+      name: main
+      component:
+        kind: wick/component/manifest@v1
+        ref: ../../../../../integration/test-cli-with-db/component.yaml
+        provide:
+          db: MYDB

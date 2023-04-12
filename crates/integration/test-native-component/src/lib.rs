@@ -1,8 +1,10 @@
+use std::sync::Arc;
+
+use flow_component::{BoxFuture, Component, ComponentError, RuntimeCallback, Value};
 use futures::StreamExt;
-use wick_interface_types::{component, HostedType};
+use wick_interface_types::{component, ComponentSignature};
 use wick_packet::{fan_out, Invocation, Observer, Packet, PacketStream};
-use wick_rpc::error::RpcError;
-use wick_rpc::{dispatch, BoxFuture, RpcHandler, RpcResult};
+use wick_rpc::{dispatch, RpcHandler};
 
 #[macro_use]
 extern crate tracing;
@@ -10,11 +12,39 @@ extern crate tracing;
 #[derive(Clone, Debug)]
 pub struct Context {}
 
-#[derive(Clone, Default)]
-pub struct Component {}
+#[derive(Clone)]
+pub struct NativeComponent {
+  signature: ComponentSignature,
+}
 
-impl RpcHandler for Component {
-  fn invoke(&self, invocation: Invocation, stream: PacketStream) -> BoxFuture<RpcResult<PacketStream>> {
+impl Default for NativeComponent {
+  fn default() -> Self {
+    let sig = component! {
+      name: "test-native-component",
+      version: "0.1.0",
+      operations: {
+        "error" => {
+          inputs: {"input" => "string"},
+          outputs: {"output" => "string"},
+        },
+        "test-component" => {
+          inputs: {"input" => "string"},
+          outputs: {"output" => "string"},
+        }
+      }
+    };
+    Self { signature: sig }
+  }
+}
+
+impl Component for NativeComponent {
+  fn handle(
+    &self,
+    invocation: Invocation,
+    stream: PacketStream,
+    _data: Option<Value>,
+    _callback: Arc<RuntimeCallback>,
+  ) -> BoxFuture<Result<PacketStream, ComponentError>> {
     let target = invocation.target_url();
     trace!("test collection invoke: {}", target);
     Box::pin(async move {
@@ -26,32 +56,19 @@ impl RpcHandler for Component {
     })
   }
 
-  fn get_list(&self) -> RpcResult<Vec<HostedType>> {
+  fn list(&self) -> &wick_interface_types::ComponentSignature {
     trace!("test collection get list");
-    let signature = component! {
-        name: "test-native-component",
-        version: "0.1.0",
-        operations: {
-          "error" => {
-            inputs: {"input" => "string"},
-            outputs: {"output" => "string"},
-          },
-          "test-component" => {
-            inputs: {"input" => "string"},
-            outputs: {"output" => "string"},
-          }
-        }
-
-    };
-    Ok(vec![HostedType::Component(signature)])
+    &self.signature
   }
 }
 
-async fn error(_input: PacketStream) -> Result<PacketStream, anyhow::Error> {
-  Err(anyhow::anyhow!("Always errors"))
+impl RpcHandler for NativeComponent {}
+
+async fn error(_input: PacketStream) -> Result<PacketStream, ComponentError> {
+  Err(anyhow::anyhow!("Always errors").into())
 }
 
-async fn test_component(mut input: PacketStream) -> Result<PacketStream, anyhow::Error> {
+async fn test_component(mut input: PacketStream) -> Result<PacketStream, ComponentError> {
   let (tx, stream) = PacketStream::new_channels();
   tokio::spawn(async move {
     let mut input = fan_out!(input, "input");
@@ -69,6 +86,7 @@ async fn test_component(mut input: PacketStream) -> Result<PacketStream, anyhow:
 #[cfg(test)]
 mod tests {
 
+  use flow_component::panic_callback;
   use pretty_assertions::assert_eq;
   use tracing::*;
   use wick_interface_types::*;
@@ -78,14 +96,16 @@ mod tests {
 
   #[test_logger::test(tokio::test)]
   async fn request() -> anyhow::Result<()> {
-    let collection = Component::default();
+    let collection = NativeComponent::default();
     let input = "some_input";
     let input_stream = packet_stream!(("input", input));
 
     let entity = Entity::local("test-component");
     let invocation = Invocation::new(Entity::test(file!()), entity, None);
 
-    let outputs = collection.invoke(invocation, input_stream).await?;
+    let outputs = collection
+      .handle(invocation, input_stream, None, panic_callback())
+      .await?;
     let mut packets: Vec<_> = outputs.collect().await;
     let output = packets.pop().unwrap().unwrap();
 
@@ -97,7 +117,7 @@ mod tests {
 
   #[test_logger::test(tokio::test)]
   async fn list() -> anyhow::Result<()> {
-    let collection = Component::default();
+    let collection = NativeComponent::default();
 
     let response = collection.get_list()?;
 

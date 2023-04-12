@@ -115,6 +115,15 @@ type RawRouter @tagged("wick/router/raw@v1") {
   operation: ComponentOperationExpression @required
 }
 
+
+"A RawHttpRouter delegates raw requests and bodies to operations based on the request path."
+type StaticRouter @tagged("wick/router/static@v1") {
+  "The path to start serving this router from."
+  path: string @required
+
+  from: string @required
+}
+
 "The possible types of resources."
 union ResourceDefinition = TcpPort | UdpPort
 
@@ -175,6 +184,24 @@ type ComponentConfiguration @tagged("wick/component@v1") {
   tests: [TestDefinition]
 }
 
+"An interface bound to an ID."
+type BoundInterface {
+  "The name of the interface."
+  name: string @required
+
+  "The interface to bind to."
+  interface: InterfaceDefinition @required
+}
+
+"A generic interface definition."
+type InterfaceDefinition {
+  "Types used by the interface's operations"
+  types: [TypeDefinition]
+
+  "A list of operations defined by this interface."
+  operations: [OperationDefinition]
+}
+
 union ComponentKind = WasmComponentConfiguration | CompositeComponentConfiguration
 
 "A component made out of other components"
@@ -187,6 +214,9 @@ type CompositeComponentConfiguration @tagged("wick/component/composite@v1") {
 
   "A list of operations implemented by the Composite component."
   operations: [CompositeOperationDefinition]
+
+  "Interfaces the component requires to operate."
+  requires: [BoundInterface]
 }
 
 "A component made out of other components"
@@ -199,6 +229,9 @@ type WasmComponentConfiguration @tagged("wick/component/wasmrs@v1") {
 
   "A list of operations implemented by the WebAssembly module."
   operations: [OperationDefinition]
+
+  "Interfaces the component requires to operate."
+  requires: [BoundInterface]
 }
 
 "An identifier bound to a resource."
@@ -283,6 +316,8 @@ type ManifestComponent @tagged("wick/component/manifest@v1") {
   ref: LocationReference @rename("reference")  @required
   "Any configuration necessary for the component."
   config: any
+  "External components to provide to the referenced component."
+  provide: {string:string}
 }
 
 "A definition for an single composite operation."
@@ -414,10 +449,20 @@ type PacketFlags {
 }
 
 
+enum DatabaseKind {
+  MsSql = 0 as "mssql",
+  Postgres = 1 as "postgres",
+  Mysql = 2 as "mysql",
+  Sqlite = 3 as "sqlite",
+}
+
 "A component made out of other components"
 type PostgresComponent @tagged("wick/component/postgres@v1") {
   "The TcpPort reference to listen on for connections."
   resource: string
+
+  "The database vendor to load."
+  vendor: DatabaseKind
 
   "The username to use when connecting to the postgres database."
   user: string

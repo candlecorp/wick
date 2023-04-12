@@ -35,21 +35,23 @@ impl std::fmt::Display for ResourceKind {
 impl Resource {
   pub fn new(config: ResourceDefinition) -> Result<Self, ResourceError> {
     match config {
-      ResourceDefinition::TcpPort(config) => Self::new_tcp_port(config),
-      ResourceDefinition::UdpPort(config) => Self::new_udp_port(config),
+      ResourceDefinition::TcpPort(config) => Self::new_tcp_port(&config),
+      ResourceDefinition::UdpPort(config) => Self::new_udp_port(&config),
     }
   }
-  pub fn new_tcp_port(config: TcpPort) -> Result<Self, ResourceError> {
+  pub fn new_tcp_port(config: &TcpPort) -> Result<Self, ResourceError> {
     Ok(Self::TcpPort(SocketAddr::new(
-      IpAddr::from_str(&config.address).map_err(|e| ResourceError::InvalidIpAddress(config.address, e.to_string()))?,
-      config.port,
+      IpAddr::from_str(config.host())
+        .map_err(|e| ResourceError::InvalidIpAddress(config.host().to_owned(), e.to_string()))?,
+      config.port(),
     )))
   }
 
-  pub fn new_udp_port(config: UdpPort) -> Result<Self, ResourceError> {
+  pub fn new_udp_port(config: &UdpPort) -> Result<Self, ResourceError> {
     Ok(Self::UdpPort(SocketAddr::new(
-      IpAddr::from_str(&config.address).map_err(|e| ResourceError::InvalidIpAddress(config.address, e.to_string()))?,
-      config.port,
+      IpAddr::from_str(config.host())
+        .map_err(|e| ResourceError::InvalidIpAddress(config.host().to_owned(), e.to_string()))?,
+      config.port(),
     )))
   }
   pub fn kind(&self) -> ResourceKind {
@@ -68,10 +70,7 @@ mod test {
 
   #[test]
   fn test_basic() -> Result<()> {
-    let resource = Resource::new_tcp_port(TcpPort {
-      address: "0.0.0.0".to_owned(),
-      port: 8888,
-    })?;
+    let resource = Resource::new_tcp_port(&TcpPort::new("0.0.0.0", 8888))?;
     assert_eq!(
       resource,
       Resource::TcpPort(SocketAddr::new(IpAddr::from_str("0.0.0.0")?, 8888))

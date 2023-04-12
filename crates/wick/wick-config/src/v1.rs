@@ -29,6 +29,7 @@ pub(crate) mod parse;
 
 use std::collections::HashMap;
 
+use num_traits::FromPrimitive;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use serde_with_expand_env::with_expand_envs;
@@ -272,6 +273,18 @@ pub(crate) struct RawRouter {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
+/// A RawHttpRouter delegates raw requests and bodies to operations based on the request path.
+pub(crate) struct StaticRouter {
+  /// The path to start serving this router from.
+
+  #[serde(deserialize_with = "with_expand_envs")]
+  pub(crate) path: String,
+  #[serde(deserialize_with = "with_expand_envs")]
+  pub(crate) from: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
 #[serde(tag = "kind")]
 /// The possible types of resources.
 pub(crate) enum ResourceDefinition {
@@ -378,6 +391,34 @@ pub(crate) struct ComponentConfiguration {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
+/// An interface bound to an ID.
+pub(crate) struct BoundInterface {
+  /// The name of the interface.
+
+  #[serde(deserialize_with = "with_expand_envs")]
+  pub(crate) name: String,
+  /// The interface to bind to.
+  pub(crate) interface: InterfaceDefinition,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+/// A generic interface definition.
+pub(crate) struct InterfaceDefinition {
+  /// Types used by the interface&#x27;s operations
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub(crate) types: Vec<wick_interface_types::TypeDefinition>,
+  /// A list of operations defined by this interface.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub(crate) operations: Vec<OperationDefinition>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
 #[serde(tag = "kind")]
 pub(crate) enum ComponentKind {
   /// A variant representing a [WasmComponentConfiguration] type.
@@ -407,6 +448,11 @@ pub(crate) struct CompositeComponentConfiguration {
   #[serde(default)]
   #[serde(skip_serializing_if = "Vec::is_empty")]
   pub(crate) operations: Vec<CompositeOperationDefinition>,
+  /// Interfaces the component requires to operate.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub(crate) requires: Vec<BoundInterface>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -427,6 +473,11 @@ pub(crate) struct WasmComponentConfiguration {
   #[serde(default)]
   #[serde(skip_serializing_if = "Vec::is_empty")]
   pub(crate) operations: Vec<OperationDefinition>,
+  /// Interfaces the component requires to operate.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub(crate) requires: Vec<BoundInterface>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -585,6 +636,12 @@ pub(crate) struct ManifestComponent {
   #[serde(default)]
   #[serde(deserialize_with = "crate::helpers::deserialize_json_env")]
   pub(crate) config: Value,
+  /// External components to provide to the referenced component.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "HashMap::is_empty")]
+  #[serde(deserialize_with = "crate::helpers::kv_deserializer")]
+  pub(crate) provide: HashMap<String, String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -812,6 +869,47 @@ pub(crate) struct PacketFlags {
   pub(crate) close: bool,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, Copy, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub(crate) enum DatabaseKind {
+  MsSql = 0,
+  Postgres = 1,
+  Mysql = 2,
+  Sqlite = 3,
+}
+
+impl Default for DatabaseKind {
+  fn default() -> Self {
+    Self::from_u16(0).unwrap()
+  }
+}
+
+impl FromPrimitive for DatabaseKind {
+  fn from_i64(n: i64) -> Option<Self> {
+    Some(match n {
+      0 => Self::MsSql,
+      1 => Self::Postgres,
+      2 => Self::Mysql,
+      3 => Self::Sqlite,
+      _ => {
+        return None;
+      }
+    })
+  }
+
+  fn from_u64(n: u64) -> Option<Self> {
+    Some(match n {
+      0 => Self::MsSql,
+      1 => Self::Postgres,
+      2 => Self::Mysql,
+      3 => Self::Sqlite,
+      _ => {
+        return None;
+      }
+    })
+  }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
 /// A component made out of other components
@@ -821,6 +919,10 @@ pub(crate) struct PostgresComponent {
   #[serde(default)]
   #[serde(deserialize_with = "with_expand_envs")]
   pub(crate) resource: String,
+  /// The database vendor to load.
+
+  #[serde(default)]
+  pub(crate) vendor: DatabaseKind,
   /// The username to use when connecting to the postgres database.
 
   #[serde(default)]

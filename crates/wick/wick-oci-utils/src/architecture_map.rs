@@ -137,7 +137,7 @@ mod integration_tests {
 
   #[test_logger::test(tokio::test)]
   async fn integration_test_push_multi_arch() -> Result<()> {
-    let registry = std::env::var("DOCKER_HOST").unwrap();
+    let registry = std::env::var("DOCKER_REGISTRY").unwrap();
     let protocol = ClientProtocol::Http;
     let config = ClientConfig {
       protocol,

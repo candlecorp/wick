@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::net::SocketAddr;
 use std::sync::Arc;
 
+use flow_component::SharedComponent;
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
 use seeded_random::Seed;
@@ -12,15 +13,14 @@ use wick_config::config::ComponentConfiguration;
 use wick_config::WickConfiguration;
 use wick_interface_types::ComponentSignature;
 use wick_packet::{Entity, InherentData, Invocation, PacketStream};
-use wick_rpc::{RpcHandler, SharedRpcHandler};
 use wick_runtime::{Engine, EngineBuilder, EngineComponent};
 
 use crate::{Error, Result};
 
-type ServiceMap = HashMap<Uuid, SharedRpcHandler>;
+type ServiceMap = HashMap<Uuid, SharedComponent>;
 static HOST_REGISTRY: Lazy<Mutex<ServiceMap>> = Lazy::new(|| Mutex::new(HashMap::new()));
 
-fn from_registry(id: Uuid) -> Arc<dyn RpcHandler + Send + Sync + 'static> {
+fn from_registry(id: Uuid) -> SharedComponent {
   let mut registry = HOST_REGISTRY.lock();
   let collection = registry.entry(id).or_insert_with(|| Arc::new(EngineComponent::new(id)));
   collection.clone()

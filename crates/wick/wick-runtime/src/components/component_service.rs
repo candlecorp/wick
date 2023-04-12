@@ -1,72 +1,53 @@
-use flow_graph_interpreter::Component;
+use flow_component::{panic_callback, Component, RuntimeCallback, SharedComponent};
 use tracing::Instrument;
 use wick_packet::{Invocation, PacketStream};
-use wick_rpc::SharedRpcHandler;
 
 use crate::dev::prelude::*;
-use crate::BoxError;
 type Result<T> = std::result::Result<T, ComponentError>;
 use crate::BoxFuture;
 
 pub(crate) struct NativeComponentService {
   signature: ComponentSignature,
-  component: SharedRpcHandler,
+  component: SharedComponent,
 }
 
 impl NativeComponentService {
-  pub(crate) fn new(component: SharedRpcHandler) -> Self {
-    let HostedType::Component(signature) = &component.get_list().unwrap()[0];
-
+  pub(crate) fn new(component: SharedComponent) -> Self {
     Self {
+      signature: component.list().clone(),
       component,
-      signature: signature.clone(),
     }
   }
 }
 
 impl Component for NativeComponentService {
-  fn handle(
-    &self,
-    invocation: Invocation,
-    stream: PacketStream,
-    _data: Option<serde_json::Value>,
-  ) -> BoxFuture<std::result::Result<PacketStream, BoxError>> {
-    let component = self.component.clone();
-
-    let task = async move { Ok(component.invoke(invocation, stream).await?) };
-    Box::pin(task)
-  }
-
   fn list(&self) -> &ComponentSignature {
     &self.signature
   }
 
-  fn shutdown(&self) -> BoxFuture<std::result::Result<(), BoxError>> {
+  fn handle(
+    &self,
+    invocation: Invocation,
+    stream: PacketStream,
+    data: Option<flow_component::Value>,
+    callback: std::sync::Arc<RuntimeCallback>,
+  ) -> flow_component::BoxFuture<std::result::Result<PacketStream, flow_component::ComponentError>> {
     let component = self.component.clone();
-    let task = async move {
-      component.shutdown().await?;
-      Ok(())
-    };
+
+    let task = async move { component.handle(invocation, stream, data, callback).await };
     Box::pin(task)
   }
 }
 
 impl InvocationHandler for NativeComponentService {
   fn get_signature(&self) -> Result<ComponentSignature> {
-    let component = self.component.clone();
-
-    let mut list = component.get_list()?;
-    drop(component);
-
-    match list.swap_remove(0) {
-      HostedType::Component(sig) => Ok(sig),
-    }
+    Ok(self.signature.clone())
   }
 
   fn invoke(&self, invocation: Invocation, stream: PacketStream) -> Result<BoxFuture<Result<InvocationResponse>>> {
     let tx_id = invocation.tx_id;
     let span = debug_span!("invoke", target =  %invocation.target);
-    let fut = self.handle(invocation, stream, None);
+    let fut = self.handle(invocation, stream, None, panic_callback());
 
     let task = async move {
       Ok(crate::dispatch::InvocationResponse::Stream {

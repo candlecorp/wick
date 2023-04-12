@@ -11,6 +11,7 @@ members = [
 exclude = [
   "crates/integration/test-baseline-component",
   "crates/integration/test-cli-trigger-component",
+  "crates/integration/test-cli-with-db",
   "crates/integration/test-http-trigger-component",
   "crates/wick/wick-component-grpc", #TODO: remove/fix
 
@@ -18,6 +19,7 @@ exclude = [
 
 [workspace.dependencies]
 # crates/wick
+flow-component = { path = "./crates/wick/flow-component", version = "0.4.0" }
 flow-expression-parser = { path = "./crates/wick/flow-expression-parser", version = "0.4.0" }
 flow-graph = { path = "./crates/wick/flow-graph", version = "0.20.0" }
 flow-graph-interpreter = { path = "./crates/wick/flow-graph-interpreter", version = "0.20.0" }
@@ -52,6 +54,8 @@ test-logger = { path = "./crates/misc/test-logger", version = "0.1.0" }
 test-native-component = { path = "./crates/integration/test-native-component", version = "0.1.0" }
 # crates/interfaces
 wick-interface-http = { path = "./crates/interfaces/wick-interface-http", version = "0.1.0" }
+# crates/components
+wick-sqlx = { path = "./crates/components/wick-sqlx", version = "0.1.0" }
 # wasmrs
 wasmrs = { version = "0.8" }
 wasmrs-codec = { version = "0.8" }
@@ -78,6 +82,7 @@ async-trait = "0.1"
 atty = "0.2"
 bytes = "1.4"
 cfg-if = "1.0"
+chrono = "0.4"
 clap = "4.1"
 console = "0.15"
 data-encoding = "2.3.2"
@@ -123,6 +128,8 @@ serde-with-expand-env = "1.1"
 sha256 = "1.1"
 shellexpand = "3.0"
 syn = "2.0"
+sqlx = "0.6"
+# sqlx = "0.7.0-alpha.2"
 tar = "0.4"
 test_bin = "0.4"
 test-log = "0.2"
