@@ -1,8 +1,9 @@
+use flow_component::{ComponentError, Operation};
 use serde_json::Value;
 use wick_packet::{packet_stream, PacketStream};
 
 use crate::interpreter::executor::error::ExecutionError;
-use crate::{BoxFuture, Operation};
+use crate::BoxFuture;
 #[derive(Default)]
 pub(crate) struct SenderOperation {}
 
@@ -16,10 +17,11 @@ impl Operation for SenderOperation {
     &self,
     _payload: wick_packet::StreamMap,
     data: Option<Value>,
-  ) -> BoxFuture<Result<PacketStream, crate::BoxError>> {
+  ) -> BoxFuture<Result<PacketStream, ComponentError>> {
     let task = async move {
-      let value = data.ok_or(ExecutionError::InvalidSenderData)?;
-      let data: SenderData = serde_json::from_value(value).map_err(|_| ExecutionError::InvalidSenderData)?;
+      let value = data.ok_or(ComponentError::new(ExecutionError::InvalidSenderData))?;
+      let data: SenderData =
+        serde_json::from_value(value).map_err(|_| ComponentError::new(ExecutionError::InvalidSenderData))?;
       Ok(packet_stream!(("output", data.output)))
     };
     Box::pin(task)

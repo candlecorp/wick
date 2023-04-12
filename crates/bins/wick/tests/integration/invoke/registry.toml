@@ -1,0 +1,14 @@
+bin.name = "wick"
+args = [
+  "invoke",
+  "--trace",
+  "@localhost:5555/test-component/baseline:0.1.0",
+  "--insecure=localhost:5555",
+  "add",
+  "--",
+  "--left=299999999999",
+  "--right=5",
+]
+stdout = """
+{"payload":{"value":300000000004},"port":"output"}
+"""

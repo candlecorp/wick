@@ -1,11 +1,20 @@
+static DIR: &str = "invoke";
+
 #[test]
 fn invoke_tests() {
-  trycmd::TestCases::new().case("tests/cmd/invoke/unit-*.toml");
+  let kind = "unit";
+  trycmd::TestCases::new()
+    .case(format!("tests/{}/{}/*.toml", kind, DIR))
+    .case(format!("tests/{}/{}/*.trycmd", kind, DIR));
 }
 
 mod integration_tests {
+  use super::DIR;
   #[test]
   fn invoke_tests() {
-    trycmd::TestCases::new().case("tests/cmd/invoke/integration-*.toml");
+    let kind = "integration";
+    trycmd::TestCases::new()
+      .case(format!("tests/{}/{}/*.toml", kind, DIR))
+      .case(format!("tests/{}/{}/*.trycmd", kind, DIR));
   }
 }

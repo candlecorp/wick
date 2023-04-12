@@ -20,6 +20,7 @@ impl TryFrom<v0::HostManifest> for config::ComponentConfiguration {
       .collect();
     let composite = config::CompositeComponentConfiguration {
       types: Default::default(),
+      requires: Default::default(),
       import: def
         .network
         .collections
@@ -66,6 +67,7 @@ impl TryFrom<&crate::v0::CollectionDefinition> for config::ComponentDefinition {
         config::ComponentDefinition::Manifest(config::components::ManifestComponent {
           reference: def.reference.clone().try_into()?,
           config: def.data.clone(),
+          provide: Default::default(),
         })
       }
     };

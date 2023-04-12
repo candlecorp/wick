@@ -1,0 +1,24 @@
+---
+name: 'test'
+kind: wick/component@v1
+metadata:
+  version: '0.0.2'
+component:
+  kind: wick/component/composite@v1
+  operations:
+    - name: test
+      instances:
+        - name: call
+          operation: test::call
+      inputs:
+        - name: message
+          type: string
+        - name: component
+          type: link
+      outputs:
+        - name: output
+          type: string
+      flow:
+        - <> -> call.component
+        - <> -> call.message
+        - call.output -> <>

@@ -35,7 +35,7 @@ async fn bad_wasm_component() -> Result<()> {
     vec![
       Packet::err(
         "output",
-        "Operation wick://wapc.coll/error timed out waiting for upstream data.",
+        "Operation wick://wapc/error timed out waiting for upstream data.",
       ),
       Packet::done("output"),
     ],

@@ -49,18 +49,36 @@ impl From<ResourceDefinition> for UdpPort {
 /// Normalized representation of a TCP port configuration.
 pub struct TcpPort {
   /// The port number.
-  pub port: u16,
+  pub(crate) port: u16,
   /// The address to bind to.
-  pub address: String,
+  pub(crate) host: String,
 }
 
 impl TcpPort {
   /// Create a new TCP port configuration.
-  pub fn new(port: u16, address: impl AsRef<str>) -> Self {
+  pub fn new(host: impl AsRef<str>, port: u16) -> Self {
     Self {
       port,
-      address: address.as_ref().to_owned(),
+      host: host.as_ref().to_owned(),
     }
+  }
+
+  /// Get the port number.
+  #[must_use]
+  pub fn port(&self) -> u16 {
+    self.port
+  }
+
+  /// Get the host address.
+  #[must_use]
+  pub fn host(&self) -> &str {
+    &self.host
+  }
+
+  /// Get the address and port as a string.
+  #[must_use]
+  pub fn address(&self) -> String {
+    format!("{}:{}", self.host, self.port)
   }
 }
 
@@ -68,17 +86,35 @@ impl TcpPort {
 /// Normalized representation of a UDP port configuration.
 pub struct UdpPort {
   /// The port number.
-  pub port: u16,
+  pub(crate) port: u16,
   /// The address to bind to.
-  pub address: String,
+  pub(crate) host: String,
 }
 
 impl UdpPort {
   /// Create a new UDP port configuration.
-  pub fn new(port: u16, address: impl AsRef<str>) -> Self {
+  pub fn new(host: impl AsRef<str>, port: u16) -> Self {
     Self {
       port,
-      address: address.as_ref().to_owned(),
+      host: host.as_ref().to_owned(),
     }
+  }
+
+  /// Get the port number.
+  #[must_use]
+  pub fn port(&self) -> u16 {
+    self.port
+  }
+
+  /// Get the host address.
+  #[must_use]
+  pub fn host(&self) -> &str {
+    &self.host
+  }
+
+  /// Get the address and port as a string.
+  #[must_use]
+  pub fn address(&self) -> String {
+    format!("{}:{}", self.host, self.port)
   }
 }

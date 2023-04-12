@@ -1,8 +1,9 @@
+use std::sync::Arc;
 use std::time::Duration;
 
 use anyhow::{anyhow, Result};
-use flow_graph_interpreter::Component;
-type BoxFuture<'a, T> = std::pin::Pin<Box<dyn futures::Future<Output = T> + Send + Sync + 'a>>;
+type BoxFuture<'a, T> = std::pin::Pin<Box<dyn futures::Future<Output = T> + Send + 'a>>;
+use flow_component::{Component, ComponentError, RuntimeCallback};
 use futures::{Future, StreamExt};
 use seeded_random::{Random, Seed};
 use serde_json::Value;
@@ -11,7 +12,7 @@ use tokio::task::JoinHandle;
 use tracing::trace;
 use wasmrs_rx::{FluxChannel, Observer};
 use wick_interface_types::{ComponentSignature, OperationSignature, TypeSignature};
-use wick_packet::{fan_out, Invocation, Packet, PacketPayload, PacketStream};
+use wick_packet::{fan_out, packet_stream, CollectionLink, Invocation, Packet, PacketPayload, PacketStream};
 
 pub struct TestComponent(ComponentSignature);
 impl TestComponent {
@@ -23,6 +24,12 @@ impl TestComponent {
       .add_operation(
         OperationSignature::new("echo")
           .add_input("input", TypeSignature::String)
+          .add_output("output", TypeSignature::String),
+      )
+      .add_operation(
+        OperationSignature::new("call")
+          .add_input("component", TypeSignature::Link { schemas: vec![] })
+          .add_input("message", TypeSignature::String)
           .add_output("output", TypeSignature::String),
       )
       .add_operation(
@@ -173,10 +180,11 @@ impl Component for TestComponent {
     invocation: Invocation,
     stream: PacketStream,
     _config: Option<Value>,
-  ) -> BoxFuture<Result<PacketStream, Box<dyn std::error::Error + Send + Sync>>> {
+    callback: Arc<RuntimeCallback>,
+  ) -> BoxFuture<Result<PacketStream, ComponentError>> {
     let operation = invocation.target.name();
     println!("got op {} in echo test collection", operation);
-    Box::pin(async move { Ok(handler(invocation, stream)?) })
+    Box::pin(async move { Ok(handler(invocation, stream, callback)?) })
   }
 
   fn list(&self) -> &ComponentSignature {
@@ -184,7 +192,11 @@ impl Component for TestComponent {
   }
 }
 
-fn handler(invocation: Invocation, mut payload_stream: PacketStream) -> anyhow::Result<PacketStream> {
+fn handler(
+  invocation: Invocation,
+  mut payload_stream: PacketStream,
+  callback: Arc<RuntimeCallback>,
+) -> anyhow::Result<PacketStream> {
   let operation = invocation.target.name();
   match operation {
     "echo" => {
@@ -198,6 +210,24 @@ fn handler(invocation: Invocation, mut payload_stream: PacketStream) -> anyhow::
           defer(vec![send(payload.set_port("output"))]);
         }
         defer(vec![send(Packet::done("output"))]);
+      });
+      Ok(stream)
+    }
+    "call" => {
+      let (mut send, stream) = stream(1);
+      println!("got echo");
+      spawn(async move {
+        let (mut message, mut component) = fan_out!(payload_stream, "message", "component");
+        println!("got echo: waiting for payload");
+        while let (Some(Ok(message)), Some(Ok(component))) = (message.next().await, component.next().await) {
+          let link: CollectionLink = component.deserialize().unwrap();
+          let message: String = message.deserialize().unwrap();
+          let packets = packet_stream!(("input", message));
+          let mut response = callback(link, "reverse".to_owned(), packets, None).await.unwrap();
+          while let Some(Ok(res)) = response.next().await {
+            defer(vec![send(res.set_port("output"))]);
+          }
+        }
       });
       Ok(stream)
     }

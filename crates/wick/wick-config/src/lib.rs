@@ -90,6 +90,8 @@
 /// Module for processing JSON templates used for default values.
 mod default;
 mod helpers;
+use std::future::Future;
+
 pub use default::{parse_default, process_default, ERROR_STR};
 pub mod config;
 /// Wick Manifest error.
@@ -114,3 +116,22 @@ pub(crate) static SENDER_ID: &str = "core::sender";
 pub(crate) static SENDER_PORT: &str = "output";
 
 pub use wick_asset_reference::{normalize_path, normalize_path_str};
+
+pub type BoxError = Box<dyn std::error::Error + Send + Sync + 'static>;
+pub type Resolver = Box<dyn Fn(&str) -> Option<config::OwnedConfigurationItem> + Send + Sync>;
+
+pub trait HighLevelComponent {
+  type Config;
+
+  fn validate(
+    &self,
+    config: &Self::Config,
+    resolver: Resolver,
+  ) -> std::result::Result<(), flow_component::ComponentError>;
+
+  fn init(
+    &self,
+    config: Self::Config,
+    resolver: Resolver,
+  ) -> std::pin::Pin<Box<dyn Future<Output = std::result::Result<(), flow_component::ComponentError>> + Send + 'static>>;
+}

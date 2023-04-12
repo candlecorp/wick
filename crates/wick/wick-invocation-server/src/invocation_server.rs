@@ -1,24 +1,22 @@
 use std::collections::HashMap;
-use std::convert::TryFrom;
 use std::time::{Duration, Instant};
 
+use flow_component::{panic_callback, SharedComponent};
 use parking_lot::RwLock;
 use tokio::sync::mpsc;
 use tokio_stream::wrappers::ReceiverStream;
 use tokio_stream::StreamExt;
 use tonic::{Response, Status};
 use wick_packet::PacketStream;
-use wick_rpc::error::RpcError;
+use wick_rpc::rpc::hosted_type::Type;
 use wick_rpc::rpc::invocation_service_server::InvocationService;
-use wick_rpc::rpc::{InvocationRequest, ListResponse, Packet, StatsResponse};
+use wick_rpc::rpc::{HostedType, InvocationRequest, ListResponse, Packet, StatsResponse};
 use wick_rpc::{rpc, DurationStatistics, Statistics};
-
-use crate::SharedRpcHandler;
 
 /// A GRPC server for implementers of [wick_rpc::RpcHandler].
 pub struct InvocationServer {
-  /// The collection that will handle incoming requests.
-  pub collection: SharedRpcHandler,
+  /// The component that will handle incoming requests.
+  pub collection: SharedComponent,
 
   stats: RwLock<HashMap<String, Statistics>>,
 }
@@ -32,7 +30,7 @@ impl std::fmt::Debug for InvocationServer {
 impl InvocationServer {
   /// Constructor.
   #[must_use]
-  pub fn new(collection: SharedRpcHandler) -> Self {
+  pub fn new(collection: SharedComponent) -> Self {
     Self {
       collection,
       stats: RwLock::new(HashMap::new()),
@@ -135,7 +133,10 @@ impl InvocationService for InvocationServer {
 
     let entity_name = invocation.target.name().to_owned();
 
-    let result = self.collection.invoke(invocation, packet_stream).await;
+    let result = self
+      .collection
+      .handle(invocation, packet_stream, None, panic_callback())
+      .await;
     if let Err(e) = result {
       let message = e.to_string();
       error!("Invocation failed: {}", message);
@@ -160,16 +161,10 @@ impl InvocationService for InvocationServer {
   }
 
   async fn list(&self, _request: tonic::Request<rpc::ListRequest>) -> Result<Response<ListResponse>, Status> {
-    trace!("Listing registered components from collection");
-    let list = self
-      .collection
-      .get_list()
-      .map_err(|e| Status::internal(e.to_string()))?;
-    trace!("Server: list is {:?}", list);
-
-    let result: Result<Vec<_>, RpcError> = list.into_iter().map(TryFrom::try_from).collect();
-    let schemas = result.map_err(|e| Status::internal(e.to_string()))?;
-    let response = ListResponse { schemas };
+    let list = HostedType {
+      r#type: Some(Type::Component(self.collection.list().clone().try_into().unwrap())),
+    };
+    let response = ListResponse { schemas: vec![list] };
     Ok(Response::new(response))
   }
 

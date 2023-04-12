@@ -11,6 +11,7 @@ repository = "https://github.com/candlecorp/wick"
 
 [dependencies]
 seeded-random = { workspace = true }
+flow-component = { workspace = true }
 wick-runtime = { workspace = true }
 wick-packet = { workspace = true }
 wick-interface-types = { workspace = true }

@@ -1,28 +1,39 @@
+use flow_component::{Component, RuntimeCallback};
 use tracing::Instrument;
 use uuid::Uuid;
 use wick_packet::{Invocation, PacketStream};
-use wick_rpc::error::RpcError;
-use wick_rpc::{BoxFuture, RpcHandler, RpcResult};
+use wick_rpc::RpcHandler;
 
 use crate::dev::prelude::*;
 
 #[derive(Debug, Default)]
 struct State {}
 
-#[derive(Clone, Copy, Debug)]
-pub struct Component {
+#[derive(Clone, Debug)]
+pub struct EngineComponent {
   engine_id: Uuid,
+  signature: ComponentSignature,
 }
 
-impl Component {
+impl EngineComponent {
   #[must_use]
   pub fn new(engine_id: Uuid) -> Self {
-    Self { engine_id }
+    let addr = EngineService::for_id(&engine_id).unwrap();
+
+    let signature = addr.get_signature().unwrap();
+
+    Self { engine_id, signature }
   }
 }
 
-impl RpcHandler for Component {
-  fn invoke(&self, invocation: Invocation, stream: PacketStream) -> BoxFuture<RpcResult<PacketStream>> {
+impl Component for EngineComponent {
+  fn handle(
+    &self,
+    invocation: Invocation,
+    stream: PacketStream,
+    _data: Option<flow_component::Value>,
+    _callback: std::sync::Arc<RuntimeCallback>,
+  ) -> flow_component::BoxFuture<Result<PacketStream, flow_component::ComponentError>> {
     let target_url = invocation.target_url();
 
     let span = debug_span!(
@@ -33,35 +44,35 @@ impl RpcHandler for Component {
 
     Box::pin(async move {
       let engine = EngineService::for_id(&self.engine_id)
-        .ok_or_else(|| Box::new(RpcError::Component(format!("Engine '{}' not found", target_url))))?;
+        .ok_or_else(|| flow_component::ComponentError::message(&format!("Engine '{}' not found", target_url)))?;
 
       trace!(target = %target_url, "invoking");
 
       let result: InvocationResponse = engine
         .invoke(invocation, stream)
-        .map_err(|e| RpcError::Component(e.to_string()))?
+        .map_err(flow_component::ComponentError::new)?
         .instrument(span)
         .await
-        .map_err(|e| RpcError::Component(e.to_string()))?;
+        .map_err(flow_component::ComponentError::new)?;
 
       match result.ok() {
         Ok(stream) => Ok(stream),
-        Err(msg) => Err(Box::new(RpcError::Component(format!("Invocation failed: {}", msg)))),
+        Err(msg) => Err(flow_component::ComponentError::new(msg)),
       }
     })
   }
 
-  fn get_list(&self) -> RpcResult<Vec<HostedType>> {
-    let addr = EngineService::for_id(&self.engine_id)
-      .ok_or_else(|| Box::new(RpcError::Component(format!("Engine '{}' not found", self.engine_id))))?;
-    let signature = addr.get_signature().map_err(|e| RpcError::Component(e.to_string()))?;
-    Ok(vec![HostedType::Component(signature)])
+  fn list(&self) -> &ComponentSignature {
+    &self.signature
   }
 }
+
+impl RpcHandler for EngineComponent {}
 
 #[cfg(test)]
 mod tests {
 
+  use flow_component::panic_callback;
   use futures::StreamExt;
   use wick_packet::{packet_stream, Entity, Packet};
 
@@ -69,11 +80,11 @@ mod tests {
   use crate::test::prelude::{assert_eq, *};
   type Result<T> = anyhow::Result<T>;
 
-  async fn request_log(component: &Component, data: &str) -> Result<String> {
+  async fn request_log(component: &EngineComponent, data: &str) -> Result<String> {
     let stream = packet_stream!(("MAIN_IN", data));
 
     let invocation = Invocation::new(Entity::test(file!()), Entity::local("simple"), None);
-    let outputs = component.invoke(invocation, stream).await?;
+    let outputs = component.handle(invocation, stream, None, panic_callback()).await?;
     let mut packets: Vec<_> = outputs.collect().await;
     println!("packets: {:#?}", packets);
     let _ = packets.pop();
@@ -88,7 +99,7 @@ mod tests {
   async fn test_request_log() -> Result<()> {
     let (_, engine_id) = init_engine_from_yaml("./manifests/v0/simple.yaml").await?;
 
-    let component = Component::new(engine_id);
+    let component = EngineComponent::new(engine_id);
     let user_data = "string to log";
     let result = request_log(&component, user_data).await?;
     print!("Result: {}", result);
@@ -99,7 +110,7 @@ mod tests {
   #[test_logger::test(tokio::test)]
   async fn test_list() -> Result<()> {
     let (_, engine_id) = init_engine_from_yaml("./manifests/v0/simple.yaml").await?;
-    let component = Component::new(engine_id);
+    let component = EngineComponent::new(engine_id);
     let list = component.get_list()?;
     println!("components on engine : {:?}", list);
     assert_eq!(list.len(), 1);

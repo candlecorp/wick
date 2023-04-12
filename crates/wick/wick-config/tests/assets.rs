@@ -54,7 +54,8 @@ mod integration_test {
   #[test_logger::test(tokio::test)]
   async fn test_remote_asset_fetch() -> Result<()> {
     // Setup: push test-component to local registry
-    let host = std::env::var("DOCKER_HOST").unwrap();
+    let host = std::env::var("DOCKER_REGISTRY").unwrap();
+    let reg_host = host.split(':').next().unwrap();
     let options = wick_oci_utils::OciOptions::default().allow_insecure(vec![host.to_owned()]);
     let test_component = get_relative_path("./assets/test-component/component.wick");
 
@@ -83,10 +84,10 @@ mod integration_test {
 
     let _progress = assets.pull(options).await?;
 
-    let first = basedir.join("localhost/test-component/jinja/0.2.0/component.wick");
+    let first = basedir.join(format!("{}/test-component/jinja/0.2.0/component.wick", reg_host));
     println!("first: {}", first.display());
     assert!(first.exists());
-    let second = basedir.join("localhost/test-component/jinja/0.2.0/assets/test.fake.wasm");
+    let second = basedir.join(format!("{}/test-component/jinja/0.2.0/assets/test.fake.wasm", reg_host));
     println!("second: {}", second.display());
     assert!(second.exists());
 

@@ -2,11 +2,12 @@ use std::path::Path;
 
 mod test;
 use anyhow::Result;
+use flow_component::{Component, ComponentError};
 use flow_graph_interpreter::error::{InterpreterError, OperationInvalid, ValidationError};
 use flow_graph_interpreter::graph::from_def;
-use flow_graph_interpreter::{Component, HandlerMap, Interpreter, NamespaceHandler};
+use flow_graph_interpreter::{HandlerMap, Interpreter, NamespaceHandler};
 use pretty_assertions::assert_eq;
-type BoxFuture<'a, T> = std::pin::Pin<Box<dyn futures::Future<Output = T> + Send + Sync + 'a>>;
+type BoxFuture<'a, T> = std::pin::Pin<Box<dyn futures::Future<Output = T> + Send + 'a>>;
 use seeded_random::Seed;
 use serde_json::Value;
 use wick_interface_types::{ComponentMetadata, ComponentSignature, OperationSignature, TypeSignature};
@@ -22,7 +23,8 @@ impl Component for SignatureTestCollection {
     _invocation: Invocation,
     _stream: PacketStream,
     _config: Option<Value>,
-  ) -> BoxFuture<Result<PacketStream, Box<dyn std::error::Error + Send + Sync>>> {
+    _callback: std::sync::Arc<flow_component::RuntimeCallback>,
+  ) -> BoxFuture<Result<PacketStream, ComponentError>> {
     todo!()
   }
 
@@ -41,15 +43,28 @@ fn collections(sig: ComponentSignature) -> HandlerMap {
 
 fn interp(path: &str, sig: ComponentSignature) -> std::result::Result<Interpreter, InterpreterError> {
   let network = from_def(&load(path).unwrap()).unwrap();
+  let callback = std::sync::Arc::new(|_, _, _, _| panic!());
 
-  Interpreter::new(Some(Seed::unsafe_new(1)), network, None, Some(collections(sig)))
+  Interpreter::new(
+    Some(Seed::unsafe_new(1)),
+    network,
+    None,
+    Some(collections(sig)),
+    callback,
+  )
 }
 
 #[test_logger::test(tokio::test)]
 async fn test_missing_collections() -> Result<()> {
   let manifest = load("./tests/manifests/v0/external.yaml")?;
   let network = from_def(&manifest)?;
-  let result: std::result::Result<Interpreter, _> = Interpreter::new(Some(Seed::unsafe_new(1)), network, None, None);
+  let result: std::result::Result<Interpreter, _> = Interpreter::new(
+    Some(Seed::unsafe_new(1)),
+    network,
+    None,
+    None,
+    std::sync::Arc::new(|_, _, _, _| panic!()),
+  );
   let validation_errors = ValidationError::ComponentIdNotFound("test".to_owned());
   if let Err(InterpreterError::EarlyError(e)) = result {
     assert_eq!(e, validation_errors);

@@ -20,16 +20,16 @@
       {{#case "any"}}{{/case}}
       {{#case "LocationReference"}}"type":"string"{{/case}}
       {{#case "string"}}"type":"string"{{/case}}
-      {{#case "i8"}}"type":"number"{{/case}}
-      {{#case "u8"}}"type":"number"{{/case}}
-      {{#case "i16"}}"type":"number"{{/case}}
-      {{#case "u16"}}"type":"number"{{/case}}
-      {{#case "i32"}}"type":"number"{{/case}}
-      {{#case "u32"}}"type":"number"{{/case}}
-      {{#case "i64"}}"type":"number"{{/case}}
-      {{#case "u64"}}"type":"number"{{/case}}
-      {{#case "f32"}}"type":"number"{{/case}}
-      {{#case "f64"}}"type":"number"{{/case}}
+      {{#case "i8"}}"oneOf" : [{"type":"number"},{"type":"string"}]{{/case}}
+      {{#case "u8"}}"oneOf" : [{"type":"number"},{"type":"string"}]{{/case}}
+      {{#case "i16"}}"oneOf" : [{"type":"number"},{"type":"string"}]{{/case}}
+      {{#case "u16"}}"oneOf" : [{"type":"number"},{"type":"string"}]{{/case}}
+      {{#case "i32"}}"oneOf" : [{"type":"number"},{"type":"string"}]{{/case}}
+      {{#case "u32"}}"oneOf" : [{"type":"number"},{"type":"string"}]{{/case}}
+      {{#case "i64"}}"oneOf" : [{"type":"number"},{"type":"string"}]{{/case}}
+      {{#case "u64"}}"oneOf" : [{"type":"number"},{"type":"string"}]{{/case}}
+      {{#case "f32"}}"oneOf" : [{"type":"number"},{"type":"string"}]{{/case}}
+      {{#case "f64"}}"oneOf" : [{"type":"number"},{"type":"string"}]{{/case}}
       {{#case "bool"}}"type":"boolean"{{/case}}
       {{#default}}"$ref":"#/$defs/v1/{{name.value}}"{{/default}}
     {{~/switch}}

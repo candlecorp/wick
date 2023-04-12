@@ -59,7 +59,7 @@ pub(crate) async fn handle_command(opts: TestCommand) -> Result<()> {
   let mut host = ComponentHostBuilder::from_definition(config).build();
   host.start_engine(opts.seed.map(Seed::unsafe_new)).await?;
 
-  let component: wick_host::Component = host.into();
+  let component = wick_host::HostComponent::new(host);
 
   let harness = suite.run(Some("__main"), Arc::new(component)).await?;
 

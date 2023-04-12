@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use serde_json::Value;
 
 use crate::config;
@@ -11,4 +13,7 @@ pub struct ManifestComponent {
   /// The configuration for the collection
   #[asset(skip)]
   pub config: Value,
+  /// The components to provide to the referenced component.
+  #[asset(skip)]
+  pub(crate) provide: HashMap<String, String>,
 }

@@ -12,9 +12,16 @@ use seeded_random::{Random, Seed};
 use tracing::Instrument;
 use uuid::Uuid;
 use wick_config::config::{ComponentConfiguration, ComponentImplementation};
+use wick_config::{HighLevelComponent, Resolver};
 
-use crate::components::{init_manifest_component, init_wasm_component, initialize_native_component};
+use crate::components::{
+  init_manifest_component,
+  init_wasm_component,
+  initialize_native_component,
+  make_link_callback,
+};
 use crate::dev::prelude::*;
+use crate::engine_service::error::InternalError;
 use crate::json_writer::JsonWriter;
 use crate::{BoxFuture, V0_NAMESPACE};
 
@@ -60,6 +67,7 @@ impl EngineService {
         allow_latest: msg.allow_latest,
         allowed_insecure: msg.allowed_insecure.clone(),
         timeout: msg.timeout,
+        resolver: None,
         span: &span,
       };
 
@@ -93,6 +101,7 @@ impl EngineService {
           engine_id: msg.id,
           allow_latest: msg.allow_latest,
           allowed_insecure: msg.allowed_insecure.clone(),
+          resolver: None,
           timeout: msg.timeout,
           span: &span,
         };
@@ -104,9 +113,10 @@ impl EngineService {
     }
 
     let source = msg.manifest.source().clone();
+    let callback = make_link_callback(msg.id);
 
     let mut interpreter =
-      flow_graph_interpreter::Interpreter::new(Some(rng.seed()), graph, Some(ns.clone()), Some(components))
+      flow_graph_interpreter::Interpreter::new(Some(rng.seed()), graph, Some(ns.clone()), Some(components), callback)
         .map_err(|e| EngineError::InterpreterInit(source, Box::new(e)))?;
 
     let options = InterpreterOptions {
@@ -204,15 +214,28 @@ impl InvocationHandler for EngineService {
   }
 }
 
-#[derive(Debug)]
+#[derive()]
 pub(crate) struct ComponentInitOptions<'a> {
   pub(crate) rng_seed: Seed,
   pub(crate) engine_id: Uuid,
   pub(crate) allow_latest: bool,
   pub(crate) allowed_insecure: Vec<String>,
   pub(crate) timeout: Duration,
+  pub(crate) resolver: Option<Resolver>,
   #[allow(unused)]
   pub(crate) span: &'a tracing::Span,
+}
+
+impl<'a> std::fmt::Debug for ComponentInitOptions<'a> {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    f.debug_struct("ComponentInitOptions")
+      .field("rng_seed", &self.rng_seed)
+      .field("engine_id", &self.engine_id)
+      .field("allow_latest", &self.allow_latest)
+      .field("allowed_insecure", &self.allowed_insecure)
+      .field("timeout", &self.timeout)
+      .finish()
+  }
 }
 
 pub(crate) async fn initialize_component<'a, 'b>(
@@ -229,7 +252,18 @@ pub(crate) async fn initialize_component<'a, 'b>(
     config::ComponentDefinition::Reference(_) => unreachable!(),
     config::ComponentDefinition::GrpcUrl(_) => todo!(), // CollectionKind::GrpcUrl(v) => initialize_grpc_collection(v, namespace).await,
     config::ComponentDefinition::HighLevelComponent(hlc) => match hlc {
-      config::HighLevelComponent::Postgres(_) => todo!(),
+      config::HighLevelComponent::Postgres(config) => {
+        if opts.resolver.is_none() {
+          return Err(EngineError::InternalError(InternalError::MissingResolver));
+        }
+        let resolver = opts.resolver.unwrap();
+        let comp = wick_sqlx::SqlXComponent::default();
+        comp
+          .init(config.clone(), resolver)
+          .await
+          .map_err(EngineError::NativeComponent)?;
+        Ok(NamespaceHandler::new(id, Box::new(comp)))
+      }
     },
     config::ComponentDefinition::Native(_) => unreachable!(),
   }

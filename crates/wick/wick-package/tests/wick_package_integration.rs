@@ -8,11 +8,11 @@ mod integration_test {
 
   #[tokio::test]
   async fn test_push_and_pull_wick_package() {
-    let host = std::env::var("DOCKER_HOST").unwrap();
+    let host = std::env::var("DOCKER_REGISTRY").unwrap();
     let tempdir = std::env::temp_dir();
     let options = OciOptions::default()
       .base_dir(Some(tempdir))
-      .allow_insecure(vec!["localhost:8888".to_owned()]);
+      .allow_insecure(vec![host.to_owned()]);
 
     // Run the push operation
     let package_path = Path::new("./tests/files/jinja.wick");

@@ -2,6 +2,7 @@ use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
 
+use flow_component::{Component, RuntimeCallback};
 use flow_graph::{NodeIndex, PortReference};
 use tokio_stream::StreamExt;
 use tracing_futures::Instrument;
@@ -16,7 +17,7 @@ use crate::graph::Reference;
 use crate::interpreter::channel::InterpreterDispatchChannel;
 use crate::interpreter::error::StateError;
 use crate::interpreter::executor::error::ExecutionError;
-use crate::{Component, HandlerMap, InterpreterOptions};
+use crate::{HandlerMap, InterpreterOptions};
 type Result<T> = std::result::Result<T, ExecutionError>;
 
 pub(crate) mod port;
@@ -251,6 +252,7 @@ impl InstanceHandler {
     invocation: Invocation,
     channel: InterpreterDispatchChannel,
     options: &InterpreterOptions,
+    callback: Arc<RuntimeCallback>,
   ) -> Result<()> {
     let span = trace_span!("op-start", otel.name=%self.entity());
 
@@ -264,12 +266,13 @@ impl InstanceHandler {
 
     self.increment_pending();
     let stream = PacketStream::new(Box::new(self.sender.take_rx().unwrap()));
+    let cb = callback.clone();
 
     let fut = if namespace == NS_SELF {
       let clone = self.self_collection.clone();
       tokio::spawn(async move {
         clone
-          .handle(invocation, stream, associated_data)
+          .handle(invocation, stream, associated_data, cb)
           .await
           .map_err(ExecutionError::ComponentError)
       })
@@ -282,7 +285,7 @@ impl InstanceHandler {
         .clone();
       tokio::spawn(async move {
         clone
-          .handle(invocation, stream, associated_data)
+          .handle(invocation, stream, associated_data, cb)
           .await
           .map_err(ExecutionError::ComponentError)
       })

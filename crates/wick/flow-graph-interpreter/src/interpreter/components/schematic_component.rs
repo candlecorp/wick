@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use flow_component::{Component, ComponentError, RuntimeCallback};
 use parking_lot::Mutex;
 use seeded_random::{Random, Seed};
 use serde_json::Value;
@@ -11,7 +12,7 @@ use crate::constants::*;
 use crate::interpreter::channel::InterpreterDispatchChannel;
 use crate::interpreter::executor::SchematicExecutor;
 use crate::interpreter::program::ProgramState;
-use crate::{BoxError, BoxFuture, Component, HandlerMap};
+use crate::{BoxFuture, HandlerMap};
 
 #[derive(thiserror::Error, Debug, Clone, PartialEq, Eq)]
 pub(crate) enum Error {
@@ -73,7 +74,8 @@ impl Component for SchematicComponent {
     invocation: Invocation,
     stream: PacketStream,
     _config: Option<Value>,
-  ) -> BoxFuture<Result<PacketStream, BoxError>> {
+    callback: Arc<RuntimeCallback>,
+  ) -> BoxFuture<Result<PacketStream, ComponentError>> {
     trace!(target = %invocation.target, namespace = NS_SELF);
 
     let operation = invocation.target.name().to_owned();
@@ -88,6 +90,7 @@ impl Component for SchematicComponent {
           self.rng.seed(),
           self.components.clone(),
           self.clone_self_collection(),
+          callback,
         )
       })
       .ok_or_else(|| Error::SchematicNotFound(operation.clone()));
@@ -96,8 +99,8 @@ impl Component for SchematicComponent {
     Box::pin(async move {
       let span = trace_span!("ns_self", name = %operation);
       match fut {
-        Ok(fut) => fut.instrument(span).await.map_err(|e| e.into()),
-        Err(e) => Err(e.into()),
+        Ok(fut) => fut.instrument(span).await.map_err(ComponentError::new),
+        Err(e) => Err(ComponentError::new(e)),
       }
     })
   }

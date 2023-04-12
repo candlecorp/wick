@@ -7,7 +7,6 @@ use wick_interface_types::{
   EnumSignature,
   EnumVariant,
   Field,
-  InternalType,
   OperationSignature,
   TypeDefinition,
   TypeSignature,

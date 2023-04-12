@@ -321,6 +321,27 @@
       "required": ["path", "operation"]
     },
 
+    "StaticRouter": {
+      "$anchor": "#v1/StaticRouter",
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "type": "string",
+          "description": "The kind of the collection",
+          "enum": ["wick/router/static@v1"]
+        },
+        "path": {
+          "description": "The path to start serving this router from.",
+
+          "type": "string"
+        },
+        "from": {
+          "type": "string"
+        }
+      },
+      "required": ["path", "from"]
+    },
+
     "ResourceDefinition": {
       "oneOf": [
         { "$ref": "#/$defs/v1/TcpPort" },
@@ -340,7 +361,7 @@
         "port": {
           "description": "The port to bind to.",
 
-          "type": "number"
+          "oneOf": [{ "type": "number" }, { "type": "string" }]
         },
         "address": {
           "description": "The address to bind to.",
@@ -363,7 +384,7 @@
         "port": {
           "description": "The port to bind to.",
 
-          "type": "number"
+          "oneOf": [{ "type": "number" }, { "type": "string" }]
         },
         "address": {
           "description": "The address to bind to.",
@@ -481,6 +502,48 @@
       "required": ["component"]
     },
 
+    "BoundInterface": {
+      "$anchor": "#v1/BoundInterface",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "description": "The name of the interface.",
+
+          "type": "string"
+        },
+        "interface": {
+          "description": "The interface to bind to.",
+
+          "$ref": "#/$defs/v1/InterfaceDefinition"
+        }
+      },
+      "required": ["name", "interface"]
+    },
+
+    "InterfaceDefinition": {
+      "$anchor": "#v1/InterfaceDefinition",
+      "additionalProperties": false,
+      "properties": {
+        "types": {
+          "description": "Types used by the interface&#x27;s operations",
+
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/v1/TypeDefinition"
+          }
+        },
+        "operations": {
+          "description": "A list of operations defined by this interface.",
+
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/v1/OperationDefinition"
+          }
+        }
+      },
+      "required": []
+    },
+
     "ComponentKind": {
       "oneOf": [
         { "$ref": "#/$defs/v1/WasmComponentConfiguration" },
@@ -520,6 +583,14 @@
           "items": {
             "$ref": "#/$defs/v1/CompositeOperationDefinition"
           }
+        },
+        "requires": {
+          "description": "Interfaces the component requires to operate.",
+
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/v1/BoundInterface"
+          }
         }
       },
       "required": []
@@ -553,6 +624,14 @@
           "type": "array",
           "items": {
             "$ref": "#/$defs/v1/OperationDefinition"
+          }
+        },
+        "requires": {
+          "description": "Interfaces the component requires to operate.",
+
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/v1/BoundInterface"
           }
         }
       },
@@ -642,7 +721,7 @@
         "timeout": {
           "description": "The timeout for network requests (in ms).",
 
-          "type": "number"
+          "oneOf": [{ "type": "number" }, { "type": "string" }]
         },
         "rpc": {
           "description": "Configuration for the GRPC server.",
@@ -667,7 +746,7 @@
           "description": "The port to bind to.",
           "required": false,
 
-          "type": "number"
+          "oneOf": [{ "type": "number" }, { "type": "string" }]
         },
         "address": {
           "description": "The address to bind to.",
@@ -752,6 +831,16 @@
         },
         "config": {
           "description": "Any configuration necessary for the component."
+        },
+        "provide": {
+          "description": "External components to provide to the referenced component.",
+
+          "type": "object",
+          "patternProperties": {
+            "[a-zA-Z0-9][a-zA-Z0-9_]*": {
+              "type": "string"
+            }
+          }
         }
       },
       "required": ["ref"]
@@ -957,13 +1046,13 @@
           "description": "An RNG seed.",
           "required": false,
 
-          "type": "number"
+          "oneOf": [{ "type": "number" }, { "type": "string" }]
         },
         "timestamp": {
           "description": "A timestamp.",
           "required": false,
 
-          "type": "number"
+          "oneOf": [{ "type": "number" }, { "type": "string" }]
         }
       },
       "required": []
@@ -1046,6 +1135,11 @@
       "required": []
     },
 
+    "DatabaseKind": {
+      "$anchor": "#v1/DatabaseKind",
+      "enum": ["MsSql", "Postgres", "Mysql", "Sqlite"]
+    },
+
     "PostgresComponent": {
       "$anchor": "#v1/PostgresComponent",
       "additionalProperties": false,
@@ -1059,6 +1153,11 @@
           "description": "The TcpPort reference to listen on for connections.",
 
           "type": "string"
+        },
+        "vendor": {
+          "description": "The database vendor to load.",
+
+          "$ref": "#/$defs/v1/DatabaseKind"
         },
         "user": {
           "description": "The username to use when connecting to the postgres database.",

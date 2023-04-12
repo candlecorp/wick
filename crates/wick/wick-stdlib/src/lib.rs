@@ -87,11 +87,11 @@
 
 mod macros;
 mod operations;
+use flow_component::{Component, RuntimeCallback};
 use seeded_random::Seed;
-use wick_interface_types::{component, HostedType};
+use wick_interface_types::{component, ComponentSignature};
 use wick_packet::{Invocation, PacketStream};
-use wick_rpc::error::RpcError;
-use wick_rpc::{dispatch, BoxFuture, RpcHandler, RpcResult};
+use wick_rpc::{dispatch, RpcHandler};
 
 #[macro_use]
 extern crate tracing;
@@ -104,37 +104,12 @@ pub struct Context {}
 pub struct Collection {
   #[allow(unused)]
   seed: Seed,
+  signature: ComponentSignature,
 }
 
 impl Collection {
   pub fn new(seed: Seed) -> Self {
-    Self { seed }
-  }
-}
-
-impl RpcHandler for Collection {
-  fn invoke(&self, invocation: Invocation, stream: PacketStream) -> BoxFuture<RpcResult<PacketStream>> {
-    let target = invocation.target_url();
-    trace!("stdlib invoke: {}", target);
-
-    Box::pin(async move {
-      let stream = dispatch!(invocation, stream, {
-            "core::error" => operations::core::error::job,
-            "core::log" => operations::core::log::job,
-            "core::panic" => operations::core::panic::job,
-            "math::add" => operations::math::add::job,
-            "math::subtract" => operations::math::subtract::job,
-            "rand::bytes" => operations::rand::bytes::job,
-            "rand::string" => operations::rand::string::job,
-            "rand::uuid" => operations::rand::uuid::job,
-            "string::concat" => operations::string::concat::job,
-      });
-      Ok(stream)
-    })
-  }
-
-  fn get_list(&self) -> RpcResult<Vec<HostedType>> {
-    let signature = component! {
+    let sig = component! {
         name: "wick-stdlib",
         version: "0.1.0",
         operations: {
@@ -176,6 +151,40 @@ impl RpcHandler for Collection {
           }
         }
     };
-    Ok(vec![HostedType::Component(signature)])
+    Self { seed, signature: sig }
   }
 }
+
+impl Component for Collection {
+  fn handle(
+    &self,
+    invocation: Invocation,
+    stream: PacketStream,
+    _data: Option<flow_component::Value>,
+    _callback: std::sync::Arc<RuntimeCallback>,
+  ) -> flow_component::BoxFuture<Result<PacketStream, flow_component::ComponentError>> {
+    let target = invocation.target_url();
+    trace!("stdlib invoke: {}", target);
+
+    Box::pin(async move {
+      let stream = dispatch!(invocation, stream, {
+            "core::error" => operations::core::error::job,
+            "core::log" => operations::core::log::job,
+            "core::panic" => operations::core::panic::job,
+            "math::add" => operations::math::add::job,
+            "math::subtract" => operations::math::subtract::job,
+            "rand::bytes" => operations::rand::bytes::job,
+            "rand::string" => operations::rand::string::job,
+            "rand::uuid" => operations::rand::uuid::job,
+            "string::concat" => operations::string::concat::job,
+      });
+      Ok(stream)
+    })
+  }
+
+  fn list(&self) -> &ComponentSignature {
+    &self.signature
+  }
+}
+
+impl RpcHandler for Collection {}

@@ -43,7 +43,8 @@ pub(crate) async fn base_setup(
   )])
   .unwrap();
   let invocation = Invocation::new(Entity::test("test"), entity, None);
-  let mut interpreter = Interpreter::new(Some(Seed::unsafe_new(1)), network, None, Some(collections))?;
+  let callback = std::sync::Arc::new(|_, _, _, _| panic!());
+  let mut interpreter = Interpreter::new(Some(Seed::unsafe_new(1)), network, None, Some(collections), callback)?;
   interpreter.start(options, None).await;
   let stream = wick_packet::PacketStream::new(Box::new(futures::stream::iter(packets.into_iter().map(Ok))));
   let stream = interpreter.invoke(invocation, stream).await?;

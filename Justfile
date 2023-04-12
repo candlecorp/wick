@@ -1,4 +1,7 @@
 
+set dotenv-load
+set export
+
 wasm:
 	just crates/integration/test-baseline-component/build
 	just crates/integration/test-http-trigger-component/build
@@ -39,16 +42,24 @@ unit-tests:
 ci-tests: wasm
   just unit-tests
 
-integration-tests: integration-setup && integration-teardown
-	DOCKER_HOST=localhost:8888 cargo test --workspace
+integration: integration-setup && integration-teardown
+	just integration-tests
+
+integration-tests:
+	cargo test --workspace
 
 integration-setup:
-	./etc/integration/build_and_run_registry.sh
+	./etc/integration/postgres.sh up init
+	./etc/integration/mssql.sh up init
+	./etc/integration/registry.sh up init
 	cargo build -p wick
-	cargo run -p wick -- reg push --debug localhost:8888/test-component/baseline:0.1.0 ./crates/integration/test-baseline-component/component.yaml --insecure=localhost:8888
+	cargo run -p wick -- reg push --debug ${DOCKER_REGISTRY}/test-component/baseline:0.1.0 ./crates/integration/test-baseline-component/component.yaml --insecure=${DOCKER_REGISTRY}
 
 integration-teardown:
-  docker rm -f simple_registry
+	# docker rm -f simple_registry
+	./etc/integration/registry.sh down
+	./etc/integration/postgres.sh down
+	./etc/integration/mssql.sh down
 
 deps:
 	npm install -g apex-template prettier ts-node commitlint conventional-changelog-conventionalcommits

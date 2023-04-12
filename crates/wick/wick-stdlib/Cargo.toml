@@ -10,6 +10,7 @@ repository = "https://github.com/candlecorp/wick"
 
 [dependencies]
 wick-packet = { workspace = true }
+flow-component = { workspace = true }
 wick-rpc = { workspace = true }
 wick-interface-types = { workspace = true, features = ["parser"] }
 seeded-random = { workspace = true }

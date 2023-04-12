@@ -21,6 +21,7 @@ mesh = ['wick-rpc', 'async-stream', 'wick-config']
 
 [dependencies]
 logger = { workspace = true }
+flow-component = { workspace = true }
 wick-rpc = { workspace = true, optional = true }
 wick-config = { workspace = true, optional = true }
 wick-packet = { workspace = true }

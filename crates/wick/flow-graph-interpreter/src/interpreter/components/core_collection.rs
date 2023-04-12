@@ -1,3 +1,4 @@
+use flow_component::{Component, ComponentError, Operation, RuntimeCallback};
 use serde_json::Value;
 use wick_interface_types::{
   ComponentMetadata,
@@ -13,7 +14,7 @@ use wick_packet::{Invocation, PacketStream, StreamMap};
 use crate::constants::*;
 use crate::graph::types::Network;
 use crate::interpreter::components::dyn_component_id;
-use crate::{BoxError, BoxFuture, Component, Operation};
+use crate::BoxFuture;
 
 // mod merge;
 mod sender;
@@ -79,7 +80,8 @@ impl Component for CoreCollection {
     invocation: Invocation,
     _stream: PacketStream,
     data: Option<Value>,
-  ) -> BoxFuture<Result<PacketStream, BoxError>> {
+    _callback: std::sync::Arc<RuntimeCallback>,
+  ) -> BoxFuture<Result<PacketStream, ComponentError>> {
     trace!(target = %invocation.target, namespace = NS_CORE);
 
     let task = async move {

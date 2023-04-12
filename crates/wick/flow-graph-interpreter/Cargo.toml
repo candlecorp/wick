@@ -13,6 +13,7 @@ wasmrs-frames = { workspace = true }
 wasmrs-codec = { workspace = true }
 wick-packet = { workspace = true, features = ["invocation"] }
 flow-graph = { workspace = true }
+flow-component = { workspace = true }
 wick-config = { workspace = true }
 flow-expression-parser = { workspace = true }
 wick-interface-types = { workspace = true }

@@ -1,10 +1,10 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
+use flow_component::{Component, ComponentError, RuntimeCallback};
 use wick_interface_types::*;
 use wick_packet::{Invocation, PacketStream};
-use wick_rpc::error::RpcError;
-use wick_rpc::{BoxFuture, RpcHandler, RpcResult};
+use wick_rpc::RpcHandler;
 
 use crate::ComponentHost;
 
@@ -15,40 +15,52 @@ pub struct Context {
 }
 
 #[derive(Clone, Debug)]
-pub struct Component {
+#[must_use]
+pub struct HostComponent {
   host: Arc<ComponentHost>,
+  signature: ComponentSignature,
 }
 
-impl Component {}
+impl HostComponent {
+  pub fn new(host: ComponentHost) -> Self {
+    let signature: ComponentSignature = host.get_signature().unwrap();
 
-impl From<ComponentHost> for Component {
-  fn from(host: ComponentHost) -> Self {
-    Self { host: Arc::new(host) }
+    Self {
+      host: Arc::new(host),
+      signature,
+    }
   }
 }
 
-impl RpcHandler for Component {
-  fn invoke(&self, invocation: Invocation, stream: PacketStream) -> BoxFuture<RpcResult<PacketStream>> {
+impl Component for HostComponent {
+  fn handle(
+    &self,
+    invocation: Invocation,
+    stream: PacketStream,
+    _data: Option<flow_component::Value>,
+    _callback: Arc<RuntimeCallback>,
+  ) -> flow_component::BoxFuture<Result<PacketStream, ComponentError>> {
     let fut = self.host.invoke(invocation, stream);
 
     Box::pin(async move {
-      let outputs = fut.await.map_err(RpcError::boxed)?;
+      let outputs = fut.await.map_err(ComponentError::new)?;
 
       Ok(outputs)
     })
   }
 
-  fn get_list(&self) -> RpcResult<Vec<HostedType>> {
-    let collection: ComponentSignature = self.host.get_signature().map_err(RpcError::boxed)?;
-
-    Ok(vec![HostedType::Component(collection)])
+  fn list(&self) -> &ComponentSignature {
+    &self.signature
   }
 }
+
+impl RpcHandler for HostComponent {}
 
 #[cfg(test)]
 mod tests {
 
   use anyhow::Result as TestResult;
+  use flow_component::panic_callback;
   use tokio_stream::StreamExt;
   use wick_packet::{packet_stream, Entity, Packet};
 
@@ -60,13 +72,15 @@ mod tests {
     let builder = ComponentHostBuilder::from_manifest_url("./manifests/logger.yaml", false, &[]).await?;
     let mut host = builder.build();
     host.start(Some(0)).await?;
-    let collection: Component = host.into();
+    let collection = HostComponent::new(host);
     let input = "Hello world";
 
     let job_payload = packet_stream![("input", input)];
 
     let invocation = Invocation::new(Entity::test(file!()), Entity::local("logger"), None);
-    let mut outputs = collection.invoke(invocation, job_payload).await?;
+    let mut outputs = collection
+      .handle(invocation, job_payload, None, panic_callback())
+      .await?;
     let output = outputs.next().await.unwrap().unwrap();
 
     println!("output: {:?}", output);

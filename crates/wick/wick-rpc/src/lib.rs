@@ -87,9 +87,6 @@
 // Add exceptions here
 #![allow(missing_docs)]
 
-use std::future::Future;
-use std::sync::Arc;
-
 #[cfg(feature = "client")]
 mod client;
 #[cfg(feature = "client")]
@@ -103,48 +100,24 @@ mod generated;
 /// Utility and conversion types.
 pub mod types;
 
-pub use dyn_clone::clone_box;
+use flow_component::Component;
 /// Module with generated Tonic & Protobuf code.
 pub use generated::wick as rpc;
 use tokio_stream::StreamExt;
 pub use types::*;
 use wick_interface_types::HostedType;
 
-// pub(crate) type Result<T> = Result<T, error::RpcError>;
-
 /// The crate's error type.
 pub type Error = crate::error::RpcError;
 
-/// The Result type for [RpcHandler] implementations.
-pub type RpcResult<T> = Result<T, Box<error::RpcError>>;
-
-/// The type of RpcHandler the default invocation server takes.
-pub type SharedRpcHandler = Arc<dyn RpcHandler + Send + Sync + 'static>;
-
-/// A function that produces a BoxedRpcHandler.
-pub type RpcFactory = Box<dyn Fn() -> SharedRpcHandler + Send + Sync + 'static>;
-
-/// A boxed, sync+send future.
-pub type BoxFuture<'a, T> = std::pin::Pin<Box<dyn Future<Output = T> + Send + Sync + 'a>>;
-
 /// A trait that implementers of the RPC interface should implement.
-pub trait RpcHandler: Sync
+pub trait RpcHandler: Component + Sync
 where
   Self: 'static,
 {
-  /// Handle an incoming request for a target entity.
-  fn invoke(
-    &self,
-    invocation: wick_packet::Invocation,
-    stream: wick_packet::PacketStream,
-  ) -> BoxFuture<Result<wick_packet::PacketStream, Box<error::RpcError>>>;
-
   /// List the entities this [RpcHandler] manages.
-  fn get_list(&self) -> Result<Vec<HostedType>, Box<error::RpcError>>;
-
-  /// Handle an incoming request for a target entity.
-  fn shutdown(&self) -> BoxFuture<Result<(), Box<error::RpcError>>> {
-    Box::pin(async move { Ok(()) })
+  fn get_list(&self) -> Result<Vec<HostedType>, Box<error::RpcError>> {
+    Ok(vec![HostedType::Component(self.list().clone())])
   }
 }
 
@@ -168,7 +141,7 @@ macro_rules! dispatch {
   ($inv:expr, $stream:expr, {$($name:expr => $handler:path),*,}) => {
     {
       match $inv.target.name() {
-        $($name => $handler($stream).await.map_err(|e| RpcError::Operation(e.to_string()))?,)*
+        $($name => $handler($stream).await?,)*
         _ => {
           unreachable!()
         }

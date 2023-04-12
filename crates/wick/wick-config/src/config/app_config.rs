@@ -6,10 +6,11 @@ use assets::AssetManager;
 
 pub use self::resources::*;
 pub use self::triggers::*;
-use super::common::component_definition::{BoundComponent, ComponentDefinition};
+use super::common::component_definition::ComponentDefinition;
 use super::common::host_definition::HostConfig;
+use super::BoundComponent;
 use crate::error::ReferenceError;
-use crate::{config, v1, Result};
+use crate::{config, v1, Resolver, Result};
 
 #[derive(Debug, Clone, derive_assets::AssetManager)]
 #[asset(config::AssetReference)]
@@ -54,6 +55,22 @@ impl AppConfiguration {
       return Some(ConfigurationItem::Resource(&resource.kind));
     }
     None
+  }
+
+  /// Returns a function that resolves a binding to a configuration item.
+  #[must_use]
+  pub fn resolver(&self) -> Resolver {
+    let imports = self.import.clone();
+    let resources = self.resources.clone();
+    Box::new(move |name| {
+      if let Some(component) = imports.get(name) {
+        return Some(OwnedConfigurationItem::Component(component.kind.clone()));
+      }
+      if let Some(resource) = resources.get(name) {
+        return Some(OwnedConfigurationItem::Resource(resource.kind.clone()));
+      }
+      None
+    })
   }
 
   /// Return the underlying version of the source manifest.
@@ -147,14 +164,41 @@ impl<'a> ConfigurationItem<'a> {
   /// Get the component definition or return an error.
   pub fn try_component(&self) -> std::result::Result<&'a ComponentDefinition, ReferenceError> {
     match self {
-      ConfigurationItem::Component(c) => Ok(c),
+      Self::Component(c) => Ok(c),
       _ => Err(ReferenceError::Component),
     }
   }
   /// Get the resource definition or return an error.
   pub fn try_resource(&self) -> std::result::Result<&'a ResourceDefinition, ReferenceError> {
     match self {
-      ConfigurationItem::Resource(c) => Ok(c),
+      Self::Resource(c) => Ok(c),
+      _ => Err(ReferenceError::Resource),
+    }
+  }
+}
+
+/// A configuration item
+#[derive(Debug, Clone, PartialEq)]
+#[must_use]
+pub enum OwnedConfigurationItem {
+  /// A component definition.
+  Component(ComponentDefinition),
+  /// A resource definition.
+  Resource(ResourceDefinition),
+}
+
+impl OwnedConfigurationItem {
+  /// Get the component definition or return an error.
+  pub fn try_component(&self) -> std::result::Result<ComponentDefinition, ReferenceError> {
+    match self {
+      Self::Component(c) => Ok(c.clone()),
+      _ => Err(ReferenceError::Component),
+    }
+  }
+  /// Get the resource definition or return an error.
+  pub fn try_resource(&self) -> std::result::Result<ResourceDefinition, ReferenceError> {
+    match self {
+      Self::Resource(c) => Ok(c.clone()),
       _ => Err(ReferenceError::Resource),
     }
   }

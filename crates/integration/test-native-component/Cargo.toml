@@ -14,6 +14,7 @@ guest = []
 wick-packet = { workspace = true, features = [
 ] }
 wick-interface-types = { workspace = true, features=["parser"] }
+flow-component = { workspace = true }
 wick-rpc = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 tokio = { workspace = true, features = ["rt-multi-thread"] }

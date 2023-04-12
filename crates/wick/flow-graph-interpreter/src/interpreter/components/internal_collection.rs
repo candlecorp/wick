@@ -1,10 +1,11 @@
+use flow_component::{Component, ComponentError, RuntimeCallback};
 use flow_graph::{SCHEMATIC_INPUT, SCHEMATIC_OUTPUT};
 use serde_json::Value;
 use wick_interface_types::{ComponentMetadata, ComponentSignature, OperationSignature, TypeSignature};
 use wick_packet::{Invocation, PacketStream};
 
 use crate::constants::*;
-use crate::{BoxError, BoxFuture, Component};
+use crate::BoxFuture;
 
 // pub(crate) mod oneshot;
 
@@ -36,7 +37,8 @@ impl Component for InternalCollection {
     invocation: Invocation,
     stream: PacketStream,
     _config: Option<Value>,
-  ) -> BoxFuture<Result<PacketStream, BoxError>> {
+    _callback: std::sync::Arc<RuntimeCallback>,
+  ) -> BoxFuture<Result<PacketStream, ComponentError>> {
     trace!(target = %invocation.target, id=%invocation.id,namespace = NS_INTERNAL);
     let op = invocation.target.name().to_owned();
 

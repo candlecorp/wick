@@ -1,10 +1,11 @@
+use flow_component::{Component, ComponentError, RuntimeCallback};
 use serde_json::Value;
 use wasmrs_rx::{FluxChannel, Observer};
 use wick_interface_types::{ComponentSignature, Field, OperationSignature};
 use wick_packet::{CollectionLink, Entity, Invocation, Packet, PacketStream};
 
 use crate::constants::*;
-use crate::{BoxError, BoxFuture, Component, HandlerMap};
+use crate::{BoxFuture, HandlerMap};
 
 #[derive(thiserror::Error, Debug, Clone, PartialEq, Eq)]
 pub(crate) enum Error {
@@ -38,7 +39,8 @@ impl Component for ComponentComponent {
     invocation: Invocation,
     _stream: PacketStream,
     _config: Option<Value>,
-  ) -> BoxFuture<Result<PacketStream, BoxError>> {
+    _callback: std::sync::Arc<RuntimeCallback>,
+  ) -> BoxFuture<Result<PacketStream, ComponentError>> {
     trace!(target = %invocation.target, namespace = NS_COMPONENTS);
 
     // This handler handles the NS_COLLECTIONS namespace and outputs the entity
@@ -52,14 +54,19 @@ impl Component for ComponentComponent {
     Box::pin(async move {
       let port_name = "ref";
       if !contains_collection {
-        return Err(Error::CollectionNotFound(entity.name().to_owned(), all_collections).into());
+        return Err(ComponentError::new(Error::CollectionNotFound(
+          entity.name().to_owned(),
+          all_collections,
+        )));
       }
       let flux = FluxChannel::new();
 
-      flux.send(Packet::encode(
-        port_name,
-        CollectionLink::new(invocation.origin.url(), entity.namespace()),
-      ))?;
+      flux
+        .send(Packet::encode(
+          port_name,
+          CollectionLink::new(invocation.origin.url(), entity.namespace()),
+        ))
+        .map_err(ComponentError::new)?;
 
       Ok(PacketStream::new(Box::new(flux)))
     })

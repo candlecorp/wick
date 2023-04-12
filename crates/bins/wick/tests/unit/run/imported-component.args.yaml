@@ -1,0 +1,13 @@
+name: mycli
+kind: wick/app@v1
+import:
+  - name: main
+    component:
+      kind: wick/component/manifest@v1
+      ref: ../../../../../integration/test-cli-trigger-component/component.yaml
+triggers:
+  - kind: wick/trigger/cli@v1
+    operation: main::main
+    app:
+      kind: wick/component/manifest@v1
+      ref: ./noop.yaml
