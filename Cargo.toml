@@ -2,6 +2,7 @@
 members = [
   "crates/interfaces/*",
   "crates/integration/test-native-component",
+  "crates/integration/test-bdd",
   "crates/misc/*",
   # "crates/collections/*",
   "crates/bins/*",

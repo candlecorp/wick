@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 mod cli;
 mod http;
+mod time;
 
 use async_trait::async_trait;
 use once_cell::sync::Lazy;
@@ -30,6 +31,7 @@ static TRIGGER_LOADER_REGISTRY: Lazy<Mutex<HashMap<TriggerKind, TriggerLoader>>>
   let mut m: HashMap<TriggerKind, TriggerLoader> = HashMap::new();
   m.insert(TriggerKind::Cli, Arc::new(cli::Cli::load));
   m.insert(TriggerKind::Http, Arc::new(http::Http::load));
+  m.insert(TriggerKind::Time, Arc::new(time::Time::load));
   Mutex::new(m)
 });
 

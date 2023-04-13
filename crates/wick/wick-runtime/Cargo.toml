@@ -9,6 +9,8 @@ repository = "https://github.com/candlecorp/wick"
 [features]
 
 [dependencies]
+cron = "0.12"
+chrono = "0.4"
 wick-packet = { workspace = true }
 flow-graph = { workspace = true }
 flow-graph-interpreter = { workspace = true }

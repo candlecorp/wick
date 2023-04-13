@@ -46,7 +46,7 @@ type Metadata {
 }
 
 "The possible types of resources."
-union TriggerDefinition = CliTrigger | HttpTrigger
+union TriggerDefinition = CliTrigger | HttpTrigger | TimeTrigger
 
 "A trigger called with a CLI context."
 type CliTrigger @tagged("wick/trigger/cli@v1") {
@@ -54,6 +54,29 @@ type CliTrigger @tagged("wick/trigger/cli@v1") {
   operation: ComponentOperationExpression @required
   "The component that provides additional logic."
   app: ComponentDefinition? @shortform
+}
+
+"A trigger called with a Time context."
+type TimeTrigger @tagged("wick/trigger/time@v1") {
+  schedule: Schedule @required
+  "The operation that will act as the main entrypoint for this trigger."
+  operation: ComponentOperationExpression @required
+  "Values passed to the operation as inputs"
+  payload: [OperationInput] @required
+}
+
+type OperationInput {
+  "The name of the operation parameter."
+  name: string @required
+  "The value to pass to the operation parameter."
+  value: any @required
+}
+
+type Schedule {
+  "schedule in cron format with second precision"
+  cron: string @required
+  "repeat n times, 0 means forever"
+  repeat: u16 = 0
 }
 
 "A reference to an operation with an explicit component definition."

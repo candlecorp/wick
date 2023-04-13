@@ -135,6 +135,9 @@ pub(crate) enum TriggerDefinition {
   /// A variant representing a [HttpTrigger] type.
   #[serde(rename = "wick/trigger/http@v1")]
   HttpTrigger(HttpTrigger),
+  /// A variant representing a [TimeTrigger] type.
+  #[serde(rename = "wick/trigger/time@v1")]
+  TimeTrigger(TimeTrigger),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -149,6 +152,53 @@ pub(crate) struct CliTrigger {
 
   #[serde(default)]
   pub(crate) app: Option<ComponentDefinition>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+/// A trigger called with a Time context.
+pub(crate) struct TimeTrigger {
+  pub(crate) schedule: Schedule,
+  /// The operation that will act as the main entrypoint for this trigger.
+
+  #[serde(deserialize_with = "crate::v1::parse::component_operation_syntax")]
+  pub(crate) operation: ComponentOperationExpression,
+  /// Values passed to the operation as inputs
+
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub(crate) payload: Vec<OperationInput>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct OperationInput {
+  /// The name of the operation parameter.
+
+  #[serde(deserialize_with = "with_expand_envs")]
+  pub(crate) name: String,
+  /// The value to pass to the operation parameter.
+
+  #[serde(deserialize_with = "crate::helpers::deserialize_json_env")]
+  pub(crate) value: Value,
+}
+
+#[allow(non_snake_case)]
+pub(crate) fn SCHEDULE_REPEAT() -> u16 {
+  0
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct Schedule {
+  /// schedule in cron format with second precision
+
+  #[serde(deserialize_with = "with_expand_envs")]
+  pub(crate) cron: String,
+  /// repeat n times, 0 means forever
+
+  #[serde(default = "SCHEDULE_REPEAT")]
+  #[serde(deserialize_with = "with_expand_envs")]
+  pub(crate) repeat: u16,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
