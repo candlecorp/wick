@@ -1,0 +1,17 @@
+---
+kind: wick/app@v1
+triggers:
+  - kind: wick/trigger/time@v1
+    schedule:
+      cron: "*/1 * * * * *"
+      repeat: 5
+    payload:
+      - name: left
+        value: 2
+      - name: right
+        value: 5
+    operation:
+      name: add
+      component:
+        kind: wick/component/manifest@v1
+        ref: ../../integration/test-baseline-component/component.yaml

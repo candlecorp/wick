@@ -12,6 +12,7 @@ use crate::app_config::{
   ResourceDefinition,
   RestRouterConfig,
   TcpPort,
+  TimeTriggerConfig,
   TriggerDefinition,
   UdpPort,
 };
@@ -32,7 +33,7 @@ use crate::config::common::component_definition::{
 use crate::config::common::flow_definition::{PortReference, SenderData};
 use crate::config::common::host_definition::HostConfig;
 use crate::config::common::test_case;
-use crate::config::{self, test_config, types_config, ComponentConfiguration};
+use crate::config::{self, test_config, types_config, ComponentConfiguration, OperationInputConfig, ScheduleConfig};
 use crate::error::ManifestError;
 use crate::utils::opt_str_to_ipv4addr;
 use crate::{v1, Result, WickConfiguration};
@@ -229,6 +230,64 @@ impl TryFrom<TriggerDefinition> for v1::TriggerDefinition {
     Ok(match value {
       TriggerDefinition::Http(v) => v1::TriggerDefinition::HttpTrigger(v.try_into()?),
       TriggerDefinition::Cli(v) => v1::TriggerDefinition::CliTrigger(v.try_into()?),
+      TriggerDefinition::Time(v) => v1::TriggerDefinition::TimeTrigger(v.try_into()?),
+    })
+  }
+}
+
+impl TryFrom<TimeTriggerConfig> for v1::TimeTrigger {
+  type Error = ManifestError;
+  fn try_from(value: TimeTriggerConfig) -> Result<Self> {
+    let payload: Result<Vec<v1::OperationInput>> = value.payload.into_iter().map(|input| input.try_into()).collect();
+
+    Ok(Self {
+      schedule: value.schedule.try_into()?,
+      operation: value.operation.try_into()?,
+      payload: payload?,
+    })
+  }
+}
+
+impl TryFrom<ScheduleConfig> for v1::Schedule {
+  type Error = ManifestError;
+  fn try_from(value: ScheduleConfig) -> Result<Self> {
+    Ok(Self {
+      cron: value.cron,
+      repeat: value.repeat,
+    })
+  }
+}
+
+impl TryFrom<v1::Schedule> for ScheduleConfig {
+  type Error = ManifestError;
+  fn try_from(value: v1::Schedule) -> Result<Self> {
+    Ok(Self {
+      cron: value.cron,
+      repeat: value.repeat,
+    })
+  }
+}
+
+// Implement conversion from OperationInputConfig to v1::OperationInput
+impl TryFrom<OperationInputConfig> for v1::OperationInput {
+  type Error = ManifestError;
+
+  fn try_from(value: OperationInputConfig) -> Result<Self> {
+    Ok(v1::OperationInput {
+      name: value.name,
+      value: value.value,
+    })
+  }
+}
+
+// Implement conversion from v1::OperationInput to OperationInputConfig
+impl TryFrom<v1::OperationInput> for OperationInputConfig {
+  type Error = ManifestError;
+
+  fn try_from(value: v1::OperationInput) -> Result<Self> {
+    Ok(OperationInputConfig {
+      name: value.name,
+      value: value.value,
     })
   }
 }
@@ -670,10 +729,20 @@ impl TryFrom<v1::TriggerDefinition> for TriggerDefinition {
         resource: v.resource,
         routers: v.routers.into_iter().map(|v| v.try_into()).collect::<Result<_>>()?,
       }),
+      v1::TriggerDefinition::TimeTrigger(time) => Self::Time(TimeTriggerConfig {
+        schedule: time.schedule.try_into()?,
+        operation: time.operation.try_into()?,
+        payload: time
+          .payload
+          .into_iter()
+          .map(|input| input.try_into())
+          .collect::<Result<_>>()?,
+      }),
     };
     Ok(rv)
   }
 }
+
 impl TryFrom<v1::HttpRouter> for HttpRouterConfig {
   type Error = ManifestError;
   fn try_from(router: v1::HttpRouter) -> Result<Self> {

@@ -234,6 +234,124 @@
 </ul>
 </div></div></div><div class="definition">
 <h2 class="definition-name type-name">
+  <a name="TimeTrigger">TimeTrigger</a>
+</h2>
+
+<span class="description type-description">A trigger called with a Time context.</span>
+<div class=fields>
+<div class=field>
+
+<h3 class=field-name>
+  <a name="schedule">schedule</a>
+</h3>
+
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#Schedule">Schedule</a></span></span></li>
+<li><span class="annotation field-note">Required</span></li>
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="operation">operation</a>
+</h3>
+
+<span class="description field-description">The operation that will act as the main entrypoint for this trigger.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#ComponentOperationExpression">ComponentOperationExpression</a></span></span></li>
+<li><span class="annotation field-note">Required</span></li>
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="payload">payload</a>
+</h3>
+
+<span class="description field-description">Values passed to the operation as inputs</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#OperationInput">OperationInput</a>[]</span></span></li>
+<li><span class="annotation field-note">Required</span></li>
+
+</ul>
+</div></div></div><div class="definition">
+<h2 class="definition-name type-name">
+  <a name="OperationInput">OperationInput</a>
+</h2>
+
+
+<div class=fields>
+<div class=field>
+
+<h3 class=field-name>
+  <a name="name">name</a>
+</h3>
+
+<span class="description field-description">The name of the operation parameter.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string</span></span></li>
+<li><span class="annotation field-note">Required</span></li>
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="value">value</a>
+</h3>
+
+<span class="description field-description">The value to pass to the operation parameter.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#any">any</a></span></span></li>
+<li><span class="annotation field-note">Required</span></li>
+
+</ul>
+</div></div></div><div class="definition">
+<h2 class="definition-name type-name">
+  <a name="Schedule">Schedule</a>
+</h2>
+
+
+<div class=fields>
+<div class=field>
+
+<h3 class=field-name>
+  <a name="cron">cron</a>
+</h3>
+
+<span class="description field-description">schedule in cron format with second precision</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string</span></span></li>
+<li><span class="annotation field-note">Required</span></li>
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="repeat">repeat</a>
+</h3>
+
+<span class="description field-description">repeat n times, 0 means forever</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>u16</span></span></li>
+
+
+</ul>
+</div></div></div><div class="definition">
+<h2 class="definition-name type-name">
   <a name="ComponentOperationExpression">ComponentOperationExpression</a>
 </h2>
 

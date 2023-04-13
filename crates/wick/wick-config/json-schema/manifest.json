@@ -461,6 +461,9 @@
           },
           {
             "$ref": "#/$defs/v1/HttpTrigger"
+          },
+          {
+            "$ref": "#/$defs/v1/TimeTrigger"
           }
         ]
       },
@@ -494,6 +497,72 @@
         },
         "required": [
           "operation"
+        ]
+      },
+      "TimeTrigger": {
+        "$anchor": "#v1/TimeTrigger",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "type": "string",
+            "description": "The kind of the collection",
+            "enum": [
+              "wick/trigger/time@v1"
+            ]
+          },
+          "schedule": {
+            "$ref": "#/$defs/v1/Schedule"
+          },
+          "operation": {
+            "description": "The operation that will act as the main entrypoint for this trigger.",
+            "$ref": "#/$defs/v1/ComponentOperationExpression"
+          },
+          "payload": {
+            "description": "Values passed to the operation as inputs",
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/v1/OperationInput"
+            }
+          }
+        },
+        "required": [
+          "schedule",
+          "operation",
+          "payload"
+        ]
+      },
+      "OperationInput": {
+        "$anchor": "#v1/OperationInput",
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "description": "The name of the operation parameter.",
+            "type": "string"
+          },
+          "value": {
+            "description": "The value to pass to the operation parameter."
+          }
+        },
+        "required": [
+          "name",
+          "value"
+        ]
+      },
+      "Schedule": {
+        "$anchor": "#v1/Schedule",
+        "additionalProperties": false,
+        "properties": {
+          "cron": {
+            "description": "schedule in cron format with second precision",
+            "type": "string"
+          },
+          "repeat": {
+            "description": "repeat n times, 0 means forever",
+            "type": "number"
+          }
+        },
+        "required": [
+          "cron"
         ]
       },
       "ComponentOperationExpression": {

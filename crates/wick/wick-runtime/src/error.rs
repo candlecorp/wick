@@ -46,4 +46,13 @@ pub enum RuntimeError {
 
   #[error("Request timeout out")]
   Timeout,
+
+  #[error("Error starting schedule: {0}")]
+  ScheduleStartError(String),
+
+  #[error("Error stopping schedule: {0}")]
+  ScheduleStopError(String),
+
+  #[error("Component not found: {0}")]
+  ComponentNotFound(String),
 }
