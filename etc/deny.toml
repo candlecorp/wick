@@ -69,6 +69,7 @@ allow = [
   "BSD-2-Clause",
   "OpenSSL",
   "Unicode-DFS-2016",
+  "BlueOak-1.0.0"
 ]
 # List of explictly disallowed licenses
 # See https://spdx.org/licenses/ for list of possible licenses
@@ -133,7 +134,7 @@ expression = "MIT AND ISC AND OpenSSL"
 # depending on the rest of your configuration
 license-files = [
   # Each entry is a crate relative path, and the (opaque) hash of its contents
-  { path = "LICENSE", hash = 0xbd0eed23 },
+  { path = "LICENSE", hash = 0xbd0eed23 }
 ]
 
 [licenses.private]
