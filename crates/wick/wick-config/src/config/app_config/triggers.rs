@@ -187,10 +187,12 @@ pub struct OperationInputConfig {
 }
 
 impl OperationInputConfig {
+  #[must_use]
   pub fn name(&self) -> &String {
     &self.name
   }
 
+  #[must_use]
   pub fn value(&self) -> &Value {
     &self.value
   }
@@ -207,10 +209,12 @@ pub struct ScheduleConfig {
 }
 
 impl ScheduleConfig {
+  #[must_use]
   pub fn cron(&self) -> &String {
     &self.cron
   }
 
+  #[must_use]
   pub fn repeat(&self) -> u16 {
     self.repeat
   }

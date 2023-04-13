@@ -62,21 +62,21 @@ async fn create_schedule(
   let mut now = Utc::now();
 
   // Create a scheduler loop
-  let scheduler_task = tokio::spawn(async move {
+  return tokio::spawn(async move {
     let schedule_component = match resolve_ref(&app_config, config.component()) {
       Ok(component) => component,
       Err(err) => panic!("Unable to resolve component: {}", err),
     };
 
     let mut network = crate::NetworkBuilder::new();
-    let schedule_binding = config::BoundComponent::new("0".to_string(), schedule_component);
+    let schedule_binding = config::BoundComponent::new("0".to_owned(), schedule_component);
     network = network.add_import(schedule_binding);
     // needed for invoke command
     let network = network.build().await.unwrap();
 
     let network = Arc::new(network);
-    let operation = Arc::new(config.operation().clone().to_owned());
-    let payload = Arc::new(config.payload().clone().to_owned());
+    let operation = Arc::new(config.operation().to_owned().clone());
+    let payload = Arc::new(config.payload().clone());
 
     let mut current_count: u16 = 0;
 
@@ -114,7 +114,6 @@ async fn create_schedule(
       now = Utc::now();
     }
   });
-  scheduler_task
 }
 
 #[derive(Debug)]
@@ -175,8 +174,7 @@ impl Trigger for Time {
       return Err(RuntimeError::InvalidTriggerConfig(TriggerKind::Time));
     };
 
-    let result = self.handle_command(app_config, config).await;
-    result
+    self.handle_command(app_config, config).await
   }
 
   async fn shutdown_gracefully(self) -> Result<(), RuntimeError> {
@@ -188,10 +186,10 @@ impl Trigger for Time {
     let handler = self.handler.lock().take().unwrap();
     match handler.await {
       Ok(_) => {
-        info!("Cron done")
+        info!("Cron done");
       }
       Err(e) => {
-        error!("Cron error: {}", e)
+        error!("Cron error: {}", e);
       }
     }
     debug!("SIGINT received");
