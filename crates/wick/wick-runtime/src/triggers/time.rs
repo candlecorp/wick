@@ -7,38 +7,27 @@ use async_trait::async_trait;
 use chrono::Utc;
 use config::{AppConfiguration, TimeTriggerConfig, TriggerDefinition};
 use cron::Schedule;
-use futures::Stream;
 use parking_lot::Mutex;
 use tokio::time::Duration;
 use tokio_stream::StreamExt;
-use wick_packet::{Entity, Error, Packet};
+use wick_packet::{Entity, Packet};
 
 use super::{Trigger, TriggerKind};
 use crate::dev::prelude::*;
 use crate::resources::Resource;
 use crate::triggers::resolve_ref;
 
-fn create_boxed_stream(
-  packets: Vec<Packet>,
-) -> Box<dyn Stream<Item = Result<Packet, Error>> + Send + Sync + Unpin + 'static> {
-  // If everything is fine, create the stream and box it
-  let stream = futures::stream::iter(packets.into_iter().map(Ok));
-  let boxed_stream: Box<dyn Stream<Item = Result<Packet, Error>> + Send + Sync + Unpin + 'static> = Box::new(stream);
-
-  boxed_stream
-}
-
 async fn invoke_operation(
   network: Arc<crate::Network>,
   operation: Arc<String>,
   payload: Arc<Vec<config::OperationInputConfig>>,
 ) -> Result<(), RuntimeError> {
-  let packets = payload
+  let packets: Vec<_> = payload
     .iter()
     .map(|packet| Packet::encode(packet.name(), packet.value()))
     .collect();
 
-  let packetstream = PacketStream::new(create_boxed_stream(packets));
+  let packetstream: PacketStream = packets.into();
 
   let invocation = Invocation::new(
     Entity::client("schedule_client"),
@@ -58,33 +47,28 @@ async fn create_schedule(
   app_config: AppConfiguration,
   config: TimeTriggerConfig,
 ) -> tokio::task::JoinHandle<()> {
-  // Get the current time
-  let mut now = Utc::now();
-
   // Create a scheduler loop
-  return tokio::spawn(async move {
+  tokio::spawn(async move {
     let schedule_component = match resolve_ref(&app_config, config.component()) {
       Ok(component) => component,
       Err(err) => panic!("Unable to resolve component: {}", err),
     };
 
     let mut network = crate::NetworkBuilder::new();
-    let schedule_binding = config::BoundComponent::new("0".to_owned(), schedule_component);
+    let schedule_binding = config::BoundComponent::new("0", schedule_component);
     network = network.add_import(schedule_binding);
     // needed for invoke command
     let network = network.build().await.unwrap();
 
     let network = Arc::new(network);
-    let operation = Arc::new(config.operation().to_owned().clone());
+    let operation = Arc::new(config.operation().to_owned());
     let payload = Arc::new(config.payload().clone());
 
     let mut current_count: u16 = 0;
 
     loop {
-      if config.schedule().repeat() > 0 {
-        if current_count >= config.schedule().repeat() {
-          break;
-        }
+      if config.schedule().repeat() > 0 && current_count >= config.schedule().repeat() {
+        break;
       }
 
       current_count += 1;
@@ -93,27 +77,25 @@ async fn create_schedule(
       let next = schedule.upcoming(Utc).next().unwrap();
 
       // Calculate the duration until the next scheduled time
-      let duration = next.signed_duration_since(now);
+      let duration = next.signed_duration_since(Utc::now());
       debug!("duration until next schedule: {:?}", duration);
 
-      // if duration is longer than ten seconds, then sleep for seconds, otherwise sleep for nanoseconds
-      if duration.num_seconds() > 10 {
-        tokio::time::sleep(Duration::from_secs(duration.num_seconds() as u64)).await;
-      } else {
-        tokio::time::sleep(Duration::from_nanos(duration.num_nanoseconds().unwrap() as u64)).await;
-      }
+      tokio::time::sleep(Duration::from_millis(duration.num_milliseconds() as u64)).await;
 
       debug!("done sleeping");
 
-      let network_clone = Arc::clone(&network);
-      let operation_clone = Arc::clone(&operation);
-      let payload_clone = Arc::clone(&payload);
+      let network_clone = network.clone();
+      let operation_clone = operation.clone();
+      let payload_clone = payload.clone();
 
       let fut = invoke_operation(network_clone, operation_clone, payload_clone);
-      tokio::spawn(async move { fut.await.unwrap() });
-      now = Utc::now();
+      tokio::spawn(async move {
+        if let Err(e) = fut.await {
+          error!("Error invoking operation: {}", e);
+        }
+      });
     }
-  });
+  })
 }
 
 #[derive(Debug)]
