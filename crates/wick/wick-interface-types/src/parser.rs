@@ -144,9 +144,21 @@ macro_rules! component {
       let _ = ops.push($crate::operation!($opname => {inputs: {$($ikey => $ivalue),*}, outputs: {$($okey => $ovalue),*},}));
     )*;
 
+    $crate::component! {
+      name: $name,
+      version: $version,
+      operations: ops,
+    }
+  }};
+  (
+    name: $name:expr,
+    version: $version:expr,
+    operations: $ops:expr,
+  ) => {{
     $crate::ComponentSignature {
       name: Some($name.to_owned()),
-      operations: ops,
+      metadata: $crate::ComponentMetadata::new($version),
+      operations: $ops,
       ..Default::default()
     }
   }};
