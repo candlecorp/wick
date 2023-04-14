@@ -9,7 +9,7 @@ fn is_false(b: &bool) -> bool {
   !(*b)
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Field {
   /// The name of the field.
   pub name: String,
@@ -57,7 +57,7 @@ impl std::fmt::Display for Field {
 }
 
 /// The signature of a Wick component, including its input and output types.
-#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, Eq)]
 #[must_use]
 pub struct OperationSignature {
   /// The name of the component.
@@ -71,6 +71,14 @@ pub struct OperationSignature {
   #[serde(default)]
   #[serde(skip_serializing_if = "Vec::is_empty")]
   pub outputs: Vec<Field>,
+}
+
+impl PartialEq for OperationSignature {
+  fn eq(&self, other: &Self) -> bool {
+    self.name == other.name
+      && contents_equal(&self.inputs, &other.inputs)
+      && contents_equal(&self.outputs, &other.outputs)
+  }
 }
 
 impl OperationSignature {
@@ -95,7 +103,7 @@ impl OperationSignature {
   }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, serde_repr::Deserialize_repr, serde_repr::Serialize_repr)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde_repr::Deserialize_repr, serde_repr::Serialize_repr)]
 #[must_use]
 #[repr(u32)]
 /// The umbrella version of the component.
@@ -121,7 +129,7 @@ impl From<ComponentVersion> for u32 {
   }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
 #[must_use]
 /// The Wick features this collection supports.
 pub struct ComponentMetadata {
@@ -131,20 +139,15 @@ pub struct ComponentMetadata {
 }
 
 impl ComponentMetadata {
-  /// Quickly create a v0 feature set.
-  pub fn v0() -> Self {
-    Self { version: None }
-  }
-}
-
-impl Default for ComponentMetadata {
-  fn default() -> Self {
-    Self::v0()
+  pub fn new(version: impl AsRef<str>) -> Self {
+    Self {
+      version: Some(version.as_ref().to_owned()),
+    }
   }
 }
 
 /// Signature for Collections.
-#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, Eq)]
 #[must_use]
 pub struct ComponentSignature {
   /// Name of the collection.
@@ -172,6 +175,36 @@ pub struct ComponentSignature {
 
   #[serde(default, skip_serializing_if = "Vec::is_empty")]
   pub config: Vec<TypeDefinition>,
+}
+
+/// Assert that two lists are equal, regardless of sort order.
+fn contents_equal<T: Eq + std::fmt::Debug>(a: &[T], b: &[T]) -> bool {
+  if a.len() != b.len() {
+    return false;
+  }
+  for i in a {
+    if !b.contains(i) {
+      return false;
+    }
+  }
+  true
+}
+
+impl PartialEq for ComponentSignature {
+  fn eq(&self, other: &Self) -> bool {
+    let types_equal = contents_equal(&self.types, &other.types);
+    let operations_equal = contents_equal(&self.operations, &other.operations);
+    let config_equal = contents_equal(&self.config, &other.config);
+    let wellknown_equal = contents_equal(&self.wellknown, &other.wellknown);
+
+    self.name == other.name
+      && self.format == other.format
+      && self.metadata == other.metadata
+      && types_equal
+      && operations_equal
+      && config_equal
+      && wellknown_equal
+  }
 }
 
 impl ComponentSignature {
@@ -215,7 +248,7 @@ impl ComponentSignature {
 }
 
 /// An entry from a well-known schema
-#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
 pub struct WellKnownSchema {
   /// The capability the schema provides.
   pub capabilities: Vec<String>,
@@ -225,7 +258,7 @@ pub struct WellKnownSchema {
   pub schema: ComponentSignature,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[must_use]
 /// A valid type definition.
 #[serde(tag = "type")]
@@ -239,7 +272,7 @@ pub enum TypeDefinition {
 }
 
 /// Signatures of enum type definitions.
-#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
 #[must_use]
 pub struct EnumSignature {
   /// The name of the enum.
@@ -259,7 +292,7 @@ impl EnumSignature {
   }
 }
 
-#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
 #[must_use]
 /// An enum variant definition
 pub struct EnumVariant {
@@ -285,7 +318,7 @@ impl EnumVariant {
 }
 
 /// Signatures of struct-like type definitions.
-#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, Eq)]
 #[must_use]
 pub struct StructSignature {
   /// The name of the struct.
@@ -293,6 +326,12 @@ pub struct StructSignature {
   /// The fields in this struct.
   #[serde(default, skip_serializing_if = "Vec::is_empty")]
   pub fields: Vec<Field>,
+}
+
+impl PartialEq for StructSignature {
+  fn eq(&self, other: &Self) -> bool {
+    self.name == other.name && contents_equal(&self.fields, &other.fields)
+  }
 }
 
 impl StructSignature {
@@ -323,7 +362,7 @@ impl HostedType {
   }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 #[must_use]
 /// Enum of valid types.
