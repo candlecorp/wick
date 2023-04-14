@@ -5,6 +5,10 @@ edition = "2021"
 default-run = "wick"
 license = "Elastic-2.0"
 
+[features]
+default=[]
+cross=["openssl/vendored"]
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
 wick-xdg = { workspace = true }
@@ -41,6 +45,7 @@ oci-distribution = { workspace = true, features = [
   "rustls-tls",
 ], default-features = false }
 async-recursion = { workspace = true }
+openssl = { workspace = true, features = ["vendored"], optional = true }
 
 [dev-dependencies]
 test_bin = { workspace = true }
