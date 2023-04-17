@@ -6,11 +6,13 @@ wasm:
 	just crates/integration/test-baseline-component/build
 	just crates/integration/test-http-trigger-component/build
 	just crates/integration/test-cli-trigger-component/build
+	just crates/integration/test-cli-with-db/build
 
 debug-wasm:
 	just crates/integration/test-baseline-component/debug
 	just crates/integration/test-http-trigger-component/debug
 	just crates/integration/test-cli-trigger-component/debug
+	just crates/integration/test-cli-with-db/debug
 
 clean:
 	cargo clean
@@ -49,6 +51,7 @@ integration-tests:
 	cargo test --workspace
 
 integration-setup:
+	rm -rf ~/.cache/wick
 	./etc/integration/postgres.sh up init
 	./etc/integration/mssql.sh up init
 	./etc/integration/registry.sh up init

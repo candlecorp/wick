@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
+use futures::FutureExt;
 use tokio::task::{JoinError, JoinHandle};
 use wick_config::config::{AppConfiguration, WickConfiguration};
 use wick_runtime::error::RuntimeError;
@@ -63,7 +64,9 @@ impl AppHost {
           let inner = loader.clone();
           let resources = resources.clone();
           let task = tokio::spawn(async move {
-            inner.run(name, app_config, config, resources).await?;
+            if let Err(e) = inner.run(name, app_config, config, resources).await {
+              error!("trigger failed: {}", e);
+            };
             Ok(())
           });
           triggers.add((loader, task));
@@ -83,10 +86,22 @@ impl AppHost {
     Ok(())
   }
 
+  #[allow(clippy::unused_async)]
   pub async fn wait_for_done(&mut self) -> Result<()> {
     let state = self.triggers.take().unwrap();
-    for trigger in state.triggers {
-      trigger.0.wait_for_done().await;
+    let mut triggers: Vec<_> = state
+      .triggers
+      .iter()
+      .map(|(trigger, task)| (trigger.wait_for_done(), task))
+      .collect();
+
+    loop {
+      let all_done = triggers
+        .iter_mut()
+        .all(|ref mut v| v.1.as_ref().unwrap().is_finished() || (&mut v.0).now_or_never().is_some());
+      if all_done {
+        break;
+      }
     }
     Ok(())
   }

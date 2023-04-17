@@ -78,7 +78,7 @@ impl Component for SchematicComponent {
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
     trace!(target = %invocation.target, namespace = NS_SELF);
 
-    let operation = invocation.target.name().to_owned();
+    let operation = invocation.target.operation_id().to_owned();
     let fut = self
       .schematics
       .iter()

@@ -18,13 +18,6 @@ component:
         - name: stderr
           type: bool
   operations:
-    # - name: byte-count
-    #   inputs:
-    #     - name: input
-    #       type: string
-    #   outputs:
-    #     - name: output
-    #       type: u64
     - name: main
       inputs:
         - name: args
@@ -33,11 +26,6 @@ component:
               type: string
         - name: isInteractive
           type: Interactive
-        - name: program
-          type:
-            optional:
-              type:
-                link: {}
       outputs:
         - name: code
           type: u32

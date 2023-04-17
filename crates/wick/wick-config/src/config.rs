@@ -52,8 +52,11 @@ pub enum WickConfiguration {
 
 impl WickConfiguration {
   pub async fn fetch(path: impl AsRef<str> + Send, options: FetchOptions) -> Result<Self, Error> {
+    debug!("hey1");
     let path = path.as_ref();
+    debug!("hey2");
     let location = AssetReference::new(path);
+    debug!("hey3");
     let bytes = location
       .fetch(options)
       .await

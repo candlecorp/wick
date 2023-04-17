@@ -9,6 +9,9 @@ pub enum ComponentError {
   ComponentNotFound(String),
 
   #[error("{0}")]
+  UnsatisfiedRequirement(String),
+
+  #[error("{0}")]
   EngineError(String),
 
   #[error("Error initializing inner engine scope '{0}' : {1}")]

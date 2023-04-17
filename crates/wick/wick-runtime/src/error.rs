@@ -2,8 +2,8 @@ use thiserror::Error;
 use wick_config::config::TriggerKind;
 
 pub use crate::components::error::ComponentError;
-pub use crate::engine_service::error::EngineError;
 use crate::resources::ResourceKind;
+pub use crate::runtime_service::error::EngineError;
 
 #[derive(Error, Debug, Clone, Copy)]
 pub struct ConversionError(pub &'static str);

@@ -2,7 +2,7 @@ use flow_component::{Component, ComponentError, RuntimeCallback};
 use serde_json::Value;
 use wasmrs_rx::{FluxChannel, Observer};
 use wick_interface_types::{ComponentSignature, Field, OperationSignature};
-use wick_packet::{CollectionLink, Entity, Invocation, Packet, PacketStream};
+use wick_packet::{ComponentReference, Entity, Invocation, Packet, PacketStream};
 
 use crate::constants::*;
 use crate::{BoxFuture, HandlerMap};
@@ -45,8 +45,8 @@ impl Component for ComponentComponent {
 
     // This handler handles the NS_COLLECTIONS namespace and outputs the entity
     // to link to.
-    let target_name = invocation.target.name().to_owned();
-    let entity = Entity::component(invocation.target.name());
+    let target_name = invocation.target.operation_id().to_owned();
+    let entity = Entity::component(invocation.target.operation_id());
 
     let contains_collection = self.signature.operations.iter().any(|op| op.name == target_name);
     let all_collections: Vec<_> = self.signature.operations.iter().map(|op| op.name.clone()).collect();
@@ -55,7 +55,7 @@ impl Component for ComponentComponent {
       let port_name = "ref";
       if !contains_collection {
         return Err(ComponentError::new(Error::CollectionNotFound(
-          entity.name().to_owned(),
+          entity.operation_id().to_owned(),
           all_collections,
         )));
       }
@@ -64,7 +64,7 @@ impl Component for ComponentComponent {
       flux
         .send(Packet::encode(
           port_name,
-          CollectionLink::new(invocation.origin.url(), entity.namespace()),
+          ComponentReference::new(invocation.origin.clone(), Entity::component(entity.component_id())),
         ))
         .map_err(ComponentError::new)?;
 

@@ -15,14 +15,15 @@ use wick_config::config::{ComponentConfiguration, ComponentImplementation};
 use wick_config::{HighLevelComponent, Resolver};
 
 use crate::components::{
+  expect_signature_match,
   init_manifest_component,
   init_wasm_component,
   initialize_native_component,
   make_link_callback,
 };
 use crate::dev::prelude::*;
-use crate::engine_service::error::InternalError;
 use crate::json_writer::JsonWriter;
+use crate::runtime_service::error::InternalError;
 use crate::{BoxFuture, V0_NAMESPACE};
 
 type Result<T> = std::result::Result<T, EngineError>;
@@ -40,7 +41,7 @@ pub(crate) struct Initialize {
 }
 
 #[derive(Debug)]
-pub(crate) struct EngineService {
+pub(crate) struct RuntimeService {
   #[allow(unused)]
   started_time: std::time::Instant,
   pub(crate) id: Uuid,
@@ -48,10 +49,10 @@ pub(crate) struct EngineService {
   interpreter: Arc<flow_graph_interpreter::Interpreter>,
 }
 
-type ServiceMap = HashMap<Uuid, Arc<EngineService>>;
+type ServiceMap = HashMap<Uuid, Arc<RuntimeService>>;
 static HOST_REGISTRY: Lazy<Mutex<ServiceMap>> = Lazy::new(|| Mutex::new(HashMap::new()));
 
-impl EngineService {
+impl RuntimeService {
   pub(crate) async fn new(msg: Initialize) -> Result<Arc<Self>> {
     debug!("initializing engine service");
     let graph = flow_graph_interpreter::graph::from_def(&msg.manifest)?;
@@ -63,11 +64,11 @@ impl EngineService {
       let span = debug_span!(parent: &msg.span, "main:init");
       let collection_init = ComponentInitOptions {
         rng_seed: rng.seed(),
-        engine_id: msg.id,
+        runtime_id: msg.id,
         allow_latest: msg.allow_latest,
         allowed_insecure: msg.allowed_insecure.clone(),
         timeout: msg.timeout,
-        resolver: None,
+        resolver: Some(msg.manifest.resolver()),
         span: &span,
       };
 
@@ -78,34 +79,43 @@ impl EngineService {
           reference: comp.reference().clone(),
           config: Default::default(),
           permissions: Default::default(),
+          provide: Default::default(),
         }),
       );
       let main_component = initialize_component(&component, collection_init).await?;
+      let signed_sig = main_component.component().list();
+      let manifest_sig = msg.manifest.signature();
+
+      expect_signature_match(
+        comp.reference().location(),
+        signed_sig,
+        msg.manifest.source().clone().unwrap_or_else(|| "<Unknown>".to_owned()),
+        &manifest_sig,
+      )?;
       main_component.expose();
 
       components
         .add(main_component)
         .map_err(|e| EngineError::InterpreterInit(msg.manifest.source().clone(), Box::new(e)))?;
     } else if let ComponentImplementation::Composite(comp) = msg.manifest.component() {
-      let span = debug_span!(parent: &msg.span, "components:init");
+      let span = debug_span!(parent: &msg.span, "composite:init");
 
       let stdlib = initialize_native_component(V0_NAMESPACE.to_owned(), rng.seed(), &span)?;
       components
         .add(stdlib)
         .map_err(|e| EngineError::InterpreterInit(msg.manifest.source().clone(), Box::new(e)))?;
 
-      let span = debug_span!(parent: &msg.span, "components:init");
-      for collection in comp.components().values() {
+      for component in comp.components().values() {
         let collection_init = ComponentInitOptions {
           rng_seed: rng.seed(),
-          engine_id: msg.id,
+          runtime_id: msg.id,
           allow_latest: msg.allow_latest,
           allowed_insecure: msg.allowed_insecure.clone(),
-          resolver: None,
+          resolver: Some(msg.manifest.resolver()),
           timeout: msg.timeout,
           span: &span,
         };
-        let p = initialize_component(collection, collection_init).await?;
+        let p = initialize_component(component, collection_init).await?;
         components
           .add(p)
           .map_err(|e| EngineError::InterpreterInit(msg.manifest.source().clone(), Box::new(e)))?;
@@ -132,7 +142,7 @@ impl EngineService {
       None => interpreter.start(Some(options), None).await,
     }
 
-    let engine = Arc::new(EngineService {
+    let engine = Arc::new(RuntimeService {
       started_time: std::time::Instant::now(),
       id: msg.id,
       namespace: ns,
@@ -150,7 +160,7 @@ impl EngineService {
     manifest: ComponentConfiguration,
     namespace: Option<String>,
     opts: ComponentInitOptions<'b>,
-  ) -> BoxFuture<'b, Result<Arc<EngineService>>>
+  ) -> BoxFuture<'b, Result<Arc<RuntimeService>>>
   where
     'a: 'b,
   {
@@ -166,7 +176,7 @@ impl EngineService {
         event_log: None,
         span: debug_span!("engine:new"),
       };
-      EngineService::new(init).await
+      RuntimeService::new(init).await
     })
   }
 
@@ -182,7 +192,7 @@ impl EngineService {
   }
 }
 
-impl InvocationHandler for EngineService {
+impl InvocationHandler for RuntimeService {
   fn get_signature(&self) -> std::result::Result<ComponentSignature, ComponentError> {
     let mut signature = self.interpreter.get_export_signature().clone();
     signature.name = Some(self.id.as_hyphenated().to_string());
@@ -217,7 +227,7 @@ impl InvocationHandler for EngineService {
 #[derive()]
 pub(crate) struct ComponentInitOptions<'a> {
   pub(crate) rng_seed: Seed,
-  pub(crate) engine_id: Uuid,
+  pub(crate) runtime_id: Uuid,
   pub(crate) allow_latest: bool,
   pub(crate) allowed_insecure: Vec<String>,
   pub(crate) timeout: Duration,
@@ -230,7 +240,7 @@ impl<'a> std::fmt::Debug for ComponentInitOptions<'a> {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     f.debug_struct("ComponentInitOptions")
       .field("rng_seed", &self.rng_seed)
-      .field("engine_id", &self.engine_id)
+      .field("runtime_id", &self.runtime_id)
       .field("allow_latest", &self.allow_latest)
       .field("allowed_insecure", &self.allowed_insecure)
       .field("timeout", &self.timeout)
@@ -247,7 +257,11 @@ pub(crate) async fn initialize_component<'a, 'b>(
   let span = opts.span.clone();
   match &collection.kind {
     #[allow(deprecated)]
-    config::ComponentDefinition::Wasm(def) => init_wasm_component(def, id, opts).instrument(span).await,
+    config::ComponentDefinition::Wasm(def) => {
+      init_wasm_component(def, id, opts, Default::default())
+        .instrument(span)
+        .await
+    }
     config::ComponentDefinition::Manifest(def) => init_manifest_component(def, id, opts).instrument(span).await,
     config::ComponentDefinition::Reference(_) => unreachable!(),
     config::ComponentDefinition::GrpcUrl(_) => todo!(), // CollectionKind::GrpcUrl(v) => initialize_grpc_collection(v, namespace).await,

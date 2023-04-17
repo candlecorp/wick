@@ -4,6 +4,7 @@ use std::sync::Arc;
 use flow_component::{BoxFuture, Component, ComponentError, RuntimeCallback};
 use futures::stream::BoxStream;
 use futures::StreamExt;
+use parking_lot::Mutex;
 use serde_json::Value;
 use sqlx::{MssqlPool, PgPool};
 use wick_config::config::components::{SqlComponentConfig, SqlOperationDefinition};
@@ -85,7 +86,7 @@ impl Context {}
 #[derive(Debug, Clone)]
 #[must_use]
 pub struct SqlXComponent {
-  context: Arc<tokio::sync::Mutex<Option<Context>>>,
+  context: Arc<Mutex<Option<Context>>>,
   signature: Arc<ComponentSignature>,
 }
 
@@ -99,11 +100,11 @@ impl SqlXComponent {
   pub fn new() -> Self {
     let sig = component! {
       name: "wick-postgres",
-      version: option_env!("CARGO_PKG_VERSION").unwrap(),
+      version: env!("CARGO_PKG_VERSION"),
       operations: {}
     };
     Self {
-      context: Arc::new(tokio::sync::Mutex::new(None)),
+      context: Arc::new(Mutex::new(None)),
       signature: Arc::new(sig),
     }
   }
@@ -122,57 +123,59 @@ impl Component for SqlXComponent {
     let ctx = self.context.clone();
 
     Box::pin(async move {
-      let lock = ctx.lock().await;
-      if let Some(ctx) = lock.as_ref() {
-        let opdef = ctx
-          .config
-          .operations
-          .iter()
-          .find(|op| op.name == invocation.target.name())
-          .unwrap()
-          .clone();
-        let client = ctx.db.clone();
-        let stmt = ctx.queries.get(invocation.target.name()).unwrap().clone();
+      let (opdef, client, stmt) = match ctx.lock().as_ref() {
+        Some(ctx) => {
+          let opdef = ctx
+            .config
+            .operations
+            .iter()
+            .find(|op| op.name == invocation.target.operation_id())
+            .unwrap()
+            .clone();
+          let client = ctx.db.clone();
+          let stmt = ctx.queries.get(invocation.target.operation_id()).unwrap().clone();
+          (opdef, client, stmt)
+        }
+        None => return Err(ComponentError::message("DB not initialized")),
+      };
 
-        let input_list: Vec<_> = opdef.inputs.iter().map(|i| i.name.clone()).collect();
-        let mut inputs = fan_out(stream, &input_list);
-        let (tx, rx) = PacketStream::new_channels();
-        tokio::spawn(async move {
-          'outer: loop {
-            for input in &mut inputs {
-              let mut results = Vec::new();
-              results.push(input.next().await);
-              let num_done = results.iter().filter(|r| r.is_none()).count();
-              if num_done > 0 {
-                if num_done != opdef.inputs.len() {
-                  let _ = tx.send(Packet::component_error("Missing input"));
-                }
-                break 'outer;
+      let input_list: Vec<_> = opdef.inputs.iter().map(|i| i.name.clone()).collect();
+      let mut inputs = fan_out(stream, &input_list);
+      let (tx, rx) = PacketStream::new_channels();
+      tokio::spawn(async move {
+        'outer: loop {
+          for input in &mut inputs {
+            let mut results = Vec::new();
+            results.push(input.next().await);
+            let num_done = results.iter().filter(|r| r.is_none()).count();
+            if num_done > 0 {
+              if num_done != opdef.inputs.len() {
+                let _ = tx.send(Packet::component_error("Missing input"));
               }
-              let results = results.into_iter().map(|r| r.unwrap()).collect::<Vec<_>>();
-              if let Some(Err(e)) = results.iter().find(|r| r.is_err()) {
-                let _ = tx.send(Packet::component_error(e.to_string()));
-                break 'outer;
-              }
-              let results = results
-                .into_iter()
-                .enumerate()
-                .map(|(i, r)| (opdef.inputs[i].ty.clone(), r.unwrap()))
-                .collect::<Vec<_>>();
-              if results.iter().any(|(_, r)| r.is_done()) {
-                break 'outer;
-              }
+              break 'outer;
+            }
+            let results = results.into_iter().map(|r| r.unwrap()).collect::<Vec<_>>();
+            if let Some(Err(e)) = results.iter().find(|r| r.is_err()) {
+              let _ = tx.send(Packet::component_error(e.to_string()));
+              break 'outer;
+            }
+            let results = results
+              .into_iter()
+              .enumerate()
+              .map(|(i, r)| (opdef.inputs[i].ty.clone(), r.unwrap()))
+              .collect::<Vec<_>>();
+            if results.iter().any(|(_, r)| r.is_done()) {
+              break 'outer;
+            }
 
-              if let Err(e) = exec(client.clone(), tx.clone(), opdef.clone(), results, stmt.clone()).await {
-                error!(error = %e, "error executing postgres query");
-              }
+            if let Err(e) = exec(client.clone(), tx.clone(), opdef.clone(), results, stmt.clone()).await {
+              error!(error = %e, "error executing postgres query");
             }
           }
-        });
+        }
+      });
 
-        return Ok(rx);
-      }
-      Err(ComponentError::message("DB not initialized"))
+      Ok(rx)
     })
   }
 
@@ -196,7 +199,7 @@ impl HighLevelComponent for SqlXComponent {
     Box::pin(async move {
       let new_ctx = init_context.await?;
 
-      ctx.lock().await.replace(new_ctx);
+      ctx.lock().replace(new_ctx);
 
       Ok(())
     })
@@ -290,12 +293,9 @@ async fn exec(
     .map(|i| SqlWrapper(values[i].clone()))
     .collect::<Vec<_>>();
 
-  // let mut query = sqlx::query(&stmt.1);
   let mut result = client.fetch(&stmt.1, args);
 
-  // pin_mut!(result);
   while let Some(row) = result.next().await {
-    info!("got row");
     if let Err(e) = row {
       let _ = tx.send(Packet::component_error(e.to_string()));
       return Err(Error::Fetch(e.to_string()));

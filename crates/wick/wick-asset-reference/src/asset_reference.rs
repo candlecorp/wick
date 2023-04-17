@@ -245,6 +245,7 @@ impl Asset for AssetReference {
     options: FetchOptions,
   ) -> std::pin::Pin<Box<dyn Future<Output = Result<Vec<u8>, assets::Error>> + Send + Sync>> {
     let path = self.path();
+
     debug!(path = ?path, "fetching asset");
     let cache_location = self.cache_location.clone();
     Box::pin(async move {

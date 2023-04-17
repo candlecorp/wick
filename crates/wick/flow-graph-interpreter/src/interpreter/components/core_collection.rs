@@ -1,7 +1,6 @@
 use flow_component::{Component, ComponentError, Operation, RuntimeCallback};
 use serde_json::Value;
 use wick_interface_types::{
-  ComponentMetadata,
   ComponentSignature,
   Field,
   OperationSignature,
@@ -28,7 +27,6 @@ impl CoreCollection {
   pub(crate) fn new(graph: &Network) -> Self {
     let mut signature = ComponentSignature::new(NS_CORE)
       .version("0.0.0")
-      .metadata(ComponentMetadata::v0())
       .add_operation(OperationSignature::new(CORE_ID_SENDER).add_output("output", TypeSignature::Object));
 
     for schematic in graph.schematics() {
@@ -85,7 +83,7 @@ impl Component for CoreCollection {
     trace!(target = %invocation.target, namespace = NS_CORE);
 
     let task = async move {
-      match invocation.target.name() {
+      match invocation.target.operation_id() {
         CORE_ID_SENDER => {
           let map = StreamMap::default();
           sender::SenderOperation::default().handle(map, data).await
@@ -93,7 +91,7 @@ impl Component for CoreCollection {
         // TODO re-evaluate merge component
         // CORE_ID_MERGE => merge::MergeComponent::default().handle(invocation.payload, data).await,
         _ => {
-          panic!("Core operation {} not handled.", invocation.target.name());
+          panic!("Core operation {} not handled.", invocation.target.operation_id());
         }
       }
     };

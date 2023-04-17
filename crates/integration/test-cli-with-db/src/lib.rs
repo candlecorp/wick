@@ -1,16 +1,10 @@
-use std::io::{self, BufRead, BufReader};
-
+use console::set_colors_enabled;
 use wasmrs_guest::StreamExt;
-use wick_component::packet as wick_packet;
-use wick_component::packet::{packet_stream, CollectionLink};
-mod generated;
-use generated as wick;
-// mod wick {
-//   wick_component::wick_import!();
-// }
+use wick_component::packet::{self as wick_packet, packet_stream};
+mod wick {
+  wick_component::wick_import!();
+}
 use wick::*;
-mod manual;
-use manual::*;
 
 #[cfg_attr(target_family = "wasm",async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
@@ -20,14 +14,35 @@ impl OpMain for Component {
     mut is_interactive: WickStream<Interactive>,
     mut outputs: OpMainOutputs,
   ) -> Result<()> {
-    while let (Some(Ok(args)), Some(Ok(tty))) = (args.next().await, is_interactive.next().await) {
-      println!(
-        "args: {:?}, interactive: {{ stdin: {}, stdout: {}, stderr: {} }}",
-        args, tty.stdin, tty.stdout, tty.stderr
-      );
-      let id: u32 = args.get(0).unwrap_or(&"0".to_string()).parse().unwrap();
+    set_colors_enabled(false);
+    println!("\nIn WebAssembly CLI component");
+
+    while let (Some(Ok(args)), Some(Ok(_tty))) = (args.next().await, is_interactive.next().await) {
+      let id: u32 = args.get(0).unwrap_or(&"0".to_string()).parse().unwrap_or(1);
+
+      println!("Looking up user with id: {}.", console::style(id).green());
+
       let packets = packet_stream!(("id", id));
-      let response = get_config().db.call("get_user", packets);
+
+      let provided = get_provided();
+      println!(
+        "Calling provided component operation at URL: {}",
+        console::style(format!("{}get_user", provided.db.component())).green()
+      );
+      let mut response = provided.db.get_user(packets)?;
+
+      println!("Call succeeded, waiting for response...");
+
+      while let Some(packet) = response.next().await {
+        match packet {
+          Ok(packet) => {
+            println!("Row data: {}", console::style(packet).green());
+          }
+          Err(e) => {
+            println!("Got error! {}", console::style(e).red());
+          }
+        }
+      }
     }
 
     let _ = outputs.code.send(&0);

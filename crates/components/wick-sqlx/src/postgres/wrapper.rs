@@ -19,7 +19,7 @@ impl<'q> Encode<'q, Postgres> for SqlWrapper {
       TypeSignature::U8 => convert_int::<i8>(v, buf),
       TypeSignature::U16 => convert_int::<i16>(v, buf),
       TypeSignature::U32 => convert_int::<i32>(v, buf),
-      TypeSignature::U64 => convert_int::<i64>(v, buf),
+      TypeSignature::U64 => panic!("u64 not yet handled"), //convert_int::<i64>(v, buf),
       TypeSignature::F32 => convert_float(v, buf),
       TypeSignature::F64 => convert_float(v, buf),
       TypeSignature::Bool => {

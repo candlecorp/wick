@@ -1,7 +1,7 @@
 use core::panic;
 use std::path::PathBuf;
 
-use wick_config::component_config::CompositeComponentConfiguration;
+use wick_config::component_config::CompositeComponentImplementation;
 use wick_config::config::ComponentDefinition;
 use wick_config::error::ManifestError;
 use wick_config::*;
@@ -11,7 +11,7 @@ async fn load(path: &str) -> Result<WickConfiguration, ManifestError> {
   WickConfiguration::load_from_file(path).await
 }
 
-async fn load_component(path: &str) -> Result<CompositeComponentConfiguration, ManifestError> {
+async fn load_component(path: &str) -> Result<CompositeComponentImplementation, ManifestError> {
   Ok(load(path).await?.try_component_config()?.try_composite()?.clone())
 }
 

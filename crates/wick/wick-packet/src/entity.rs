@@ -146,22 +146,32 @@ impl Entity {
 
   /// The name of the entity.
   #[must_use]
-  pub fn name(&self) -> &str {
+  pub fn operation_id(&self) -> &str {
     match self {
-      Entity::Test(_) => "test",
+      Entity::Test(_) => "",
       Entity::Operation(_, id) => id,
-      Entity::Component(name) => name,
-      Entity::Server(id) => id,
-      Entity::Invalid => "<invalid>",
+      Entity::Component(_) => "",
+      Entity::Server(_) => "",
+      Entity::Invalid => "",
     }
   }
 
-  /// The namespace for the entity.
+  pub fn set_operation(&mut self, id: impl AsRef<str>) {
+    match self {
+      Entity::Test(_) => {}
+      Entity::Operation(_, op_id) => *op_id = id.as_ref().to_owned(),
+      Entity::Component(comp_id) => *self = Entity::operation(comp_id, id.as_ref()),
+      Entity::Server(_) => {}
+      Entity::Invalid => {}
+    }
+  }
+
+  /// The id of the component entity.
   #[must_use]
-  pub fn namespace(&self) -> &str {
+  pub fn component_id(&self) -> &str {
     match self {
       Entity::Test(_) => "test",
-      Entity::Operation(ns, _) => ns,
+      Entity::Operation(id, _) => id,
       Entity::Component(name) => name,
       Entity::Server(id) => id,
       Entity::Invalid => "<invalid>",

@@ -18,7 +18,7 @@ pub struct EngineComponent {
 impl EngineComponent {
   #[must_use]
   pub fn new(engine_id: Uuid) -> Self {
-    let addr = EngineService::for_id(&engine_id).unwrap();
+    let addr = RuntimeService::for_id(&engine_id).unwrap();
 
     let signature = addr.get_signature().unwrap();
 
@@ -43,7 +43,7 @@ impl Component for EngineComponent {
     );
 
     Box::pin(async move {
-      let engine = EngineService::for_id(&self.engine_id)
+      let engine = RuntimeService::for_id(&self.engine_id)
         .ok_or_else(|| flow_component::ComponentError::message(&format!("Engine '{}' not found", target_url)))?;
 
       trace!(target = %target_url, "invoking");

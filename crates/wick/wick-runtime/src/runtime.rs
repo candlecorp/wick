@@ -5,20 +5,20 @@ use seeded_random::{Random, Seed};
 use uuid::Uuid;
 
 use crate::dev::prelude::*;
-use crate::engine_service::Initialize;
+use crate::runtime_service::Initialize;
 
 type Result<T> = std::result::Result<T, RuntimeError>;
 #[derive(Debug)]
 #[must_use]
-pub struct Engine {
+pub struct Runtime {
   pub uid: Uuid,
-  inner: Arc<EngineService>,
+  inner: Arc<RuntimeService>,
   timeout: Duration,
 }
 
 #[derive(Debug)]
 #[must_use]
-pub struct EngineInit {
+pub struct RuntimeInit {
   definition: config::ComponentConfiguration,
   allow_latest: bool,
   allowed_insecure: Vec<String>,
@@ -27,9 +27,9 @@ pub struct EngineInit {
   rng_seed: Seed,
 }
 
-impl Engine {
-  #[instrument(name = "engine", skip_all)]
-  pub async fn new(config: EngineInit) -> Result<Self> {
+impl Runtime {
+  #[instrument(name = "runtime", skip_all)]
+  pub async fn new(config: RuntimeInit) -> Result<Self> {
     trace!(?config, "init");
     let rng = Random::from_seed(config.rng_seed);
 
@@ -42,9 +42,10 @@ impl Engine {
       namespace: config.namespace,
       rng_seed: rng.seed(),
       event_log: None,
-      span: debug_span!("engine:new"),
+      span: debug_span!("runtime:new"),
     };
-    let service = EngineService::new(init)
+
+    let service = RuntimeService::new(init)
       .await
       .map_err(|e| RuntimeError::InitializationFailed(e.to_string()))?;
     Ok(Self {
@@ -67,7 +68,7 @@ impl Engine {
   }
 
   pub async fn shutdown(&self) -> Result<()> {
-    trace!("engine shutting down");
+    trace!("runtime engine shutting down");
     self.inner.shutdown().await?;
 
     Ok(())
@@ -75,7 +76,7 @@ impl Engine {
 
   pub fn get_signature(&self) -> Result<ComponentSignature> {
     let signature = self.inner.get_signature()?;
-    trace!(?signature, "engine instance signature");
+    trace!(?signature, "runtime engine instance signature");
     Ok(signature)
   }
 
@@ -85,10 +86,10 @@ impl Engine {
   }
 }
 
-/// The [EngineBuilder] builds the configuration for a Wick [Engine].
+/// The [RuntimeBuilder] builds the configuration for a Wick [Runtime].
 #[derive(Debug, Default)]
 #[must_use]
-pub struct EngineBuilder {
+pub struct RuntimeBuilder {
   allow_latest: bool,
   allowed_insecure: Vec<String>,
   manifest_builder: config::ComponentConfigurationBuilder,
@@ -98,7 +99,7 @@ pub struct EngineBuilder {
   namespace: Option<String>,
 }
 
-impl EngineBuilder {
+impl RuntimeBuilder {
   pub fn new() -> Self {
     Self {
       timeout: Duration::from_secs(5),
@@ -106,7 +107,7 @@ impl EngineBuilder {
     }
   }
 
-  /// Creates a new [EngineBuilder] from a [config::ComponentConfiguration]
+  /// Creates a new [RuntimeBuilder] from a [config::ComponentConfiguration]
   pub fn from_definition(definition: config::ComponentConfiguration) -> Result<Self> {
     Ok(Self {
       allow_latest: definition.allow_latest(),
@@ -118,8 +119,13 @@ impl EngineBuilder {
     })
   }
 
-  pub fn add_import(mut self, collection: config::BoundComponent) -> Self {
-    self.manifest_builder = self.manifest_builder.add_import(collection);
+  pub fn add_import(mut self, component: config::BoundComponent) -> Self {
+    self.manifest_builder = self.manifest_builder.add_import(component);
+    self
+  }
+
+  pub fn add_resource(mut self, resource: config::BoundResource) -> Self {
+    self.manifest_builder = self.manifest_builder.add_resource(resource);
     self
   }
 
@@ -152,16 +158,15 @@ impl EngineBuilder {
     }
   }
 
-  /// Constructs an instance of a Wick host.
-  pub async fn build(self) -> Result<Engine> {
+  /// Constructs an instance of a Wick [Runtime].
+  pub async fn build(self) -> Result<Runtime> {
     let definition = self.manifest_builder.build();
-    Engine::new(EngineInit {
+    Runtime::new(RuntimeInit {
       definition,
       allow_latest: self.allow_latest,
       allowed_insecure: self.allowed_insecure,
       timeout: self.timeout,
       namespace: self.namespace,
-      // mesh: self.mesh,
       rng_seed: self.rng_seed.unwrap_or_else(new_seed),
     })
     .await

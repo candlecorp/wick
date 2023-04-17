@@ -3,13 +3,14 @@ mod wasm;
 use std::collections::HashMap;
 
 use assets::AssetManager;
-pub use composite::CompositeComponentConfiguration;
+pub use composite::CompositeComponentImplementation;
 use config::{ComponentImplementation, ComponentKind};
-pub use wasm::{OperationSignature, WasmComponentConfiguration};
+pub use wasm::{OperationSignature, WasmComponentImplementation};
 use wick_interface_types::{ComponentMetadata, ComponentSignature, ComponentVersion, TypeDefinition};
 
 use super::BoundComponent;
-use crate::{config, v1, Error, Result};
+use crate::app_config::{BoundResource, OwnedConfigurationItem};
+use crate::{config, v1, Error, Resolver, Result};
 
 #[derive(Debug, Default, Clone, derive_assets::AssetManager)]
 #[asset(config::AssetReference)]
@@ -20,6 +21,8 @@ pub struct ComponentConfiguration {
   pub name: Option<String>,
   #[asset(skip)]
   pub(crate) source: Option<String>,
+  #[asset(skip)]
+  pub(crate) resources: HashMap<String, BoundResource>,
   #[asset(skip)]
   pub(crate) host: config::HostConfig,
   #[asset(skip)]
@@ -32,7 +35,7 @@ pub struct ComponentConfiguration {
 }
 
 impl ComponentConfiguration {
-  pub fn try_composite(&self) -> Result<&CompositeComponentConfiguration> {
+  pub fn try_composite(&self) -> Result<&CompositeComponentImplementation> {
     match &self.component {
       ComponentImplementation::Composite(c) => Ok(c),
       _ => Err(Error::UnexpectedComponentType(
@@ -42,7 +45,7 @@ impl ComponentConfiguration {
     }
   }
 
-  pub fn try_wasm(&self) -> Result<&WasmComponentConfiguration> {
+  pub fn try_wasm(&self) -> Result<&WasmComponentImplementation> {
     match &self.component {
       ComponentImplementation::Wasm(c) => Ok(c),
       _ => Err(Error::UnexpectedComponentType(
@@ -65,6 +68,22 @@ impl ComponentConfiguration {
       self.set_baseurl(s);
       self.source = Some(s.to_owned());
     }
+  }
+
+  /// Returns a function that resolves a binding to a configuration item.
+  #[must_use]
+  pub fn resolver(&self) -> Resolver {
+    let imports = self.component.imports_owned();
+    let resources = self.resources.clone();
+    Box::new(move |name| {
+      if let Some(component) = imports.get(name) {
+        return Some(OwnedConfigurationItem::Component(component.kind.clone()));
+      }
+      if let Some(resource) = resources.get(name) {
+        return Some(OwnedConfigurationItem::Resource(resource.kind.clone()));
+      }
+      None
+    })
   }
 
   /// Determine if the configuration allows for fetching artifacts with the :latest tag.
@@ -128,6 +147,12 @@ impl ComponentConfiguration {
     self.component.types()
   }
 
+  /// Return the resources defined in this component.
+  #[must_use]
+  pub fn resources(&self) -> &HashMap<String, BoundResource> {
+    &self.resources
+  }
+
   #[must_use]
   /// Get the name for this manifest.
   pub fn name(&self) -> &Option<String> {
@@ -138,6 +163,17 @@ impl ComponentConfiguration {
   /// Get the name for this manifest.
   pub fn labels(&self) -> &HashMap<String, String> {
     &self.labels
+  }
+
+  /// Get the component signature for this configuration.
+  pub fn signature(&self) -> ComponentSignature {
+    let mut sig = wick_interface_types::component! {
+      name: self.name().clone().unwrap_or_else(||"".to_owned()),
+      version: self.version(),
+      operations: self.component.operation_signatures(),
+    };
+    sig.types = self.types().to_vec();
+    sig
   }
 
   pub fn into_v1_yaml(self) -> Result<String> {
@@ -157,6 +193,7 @@ pub struct ComponentConfigurationBuilder {
   tests: Vec<config::TestCase>,
   component: ComponentImplementation,
   metadata: Option<config::Metadata>,
+  resources: HashMap<String, BoundResource>,
 }
 
 impl Default for ComponentConfigurationBuilder {
@@ -168,15 +205,16 @@ impl Default for ComponentConfigurationBuilder {
 impl ComponentConfigurationBuilder {
   /// Create a new [ComponentConfigurationBuilder].
   pub fn new() -> Self {
-    let component = CompositeComponentConfiguration::default();
+    let component = CompositeComponentImplementation::default();
     Self {
+      component: ComponentImplementation::Composite(component),
+      resources: Default::default(),
       name: Default::default(),
       source: Default::default(),
       host: Default::default(),
       labels: Default::default(),
       tests: Default::default(),
       metadata: Default::default(),
-      component: ComponentImplementation::Composite(component),
     }
   }
 
@@ -190,6 +228,7 @@ impl ComponentConfigurationBuilder {
       tests: definition.tests,
       metadata: definition.metadata,
       component: definition.component,
+      resources: Default::default(),
     }
   }
 
@@ -198,6 +237,11 @@ impl ComponentConfigurationBuilder {
       ComponentImplementation::Composite(c) => ComponentImplementation::Composite(c.add_import(import)),
       ComponentImplementation::Wasm(_) => panic!("Can not add imports to anything but a Composite component"),
     };
+    self
+  }
+
+  pub fn add_resource(mut self, resource: BoundResource) -> Self {
+    self.resources.insert(resource.id.clone(), resource);
     self
   }
 
@@ -211,6 +255,7 @@ impl ComponentConfigurationBuilder {
       labels: self.labels,
       metadata: self.metadata,
       tests: self.tests,
+      resources: self.resources,
     }
   }
 }

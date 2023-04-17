@@ -88,7 +88,7 @@
 use std::sync::Arc;
 
 use wick_interface_types::ComponentSignature;
-use wick_packet::{CollectionLink, InherentData, Invocation, PacketStream, StreamMap};
+use wick_packet::{ComponentReference, InherentData, Invocation, PacketStream, StreamMap};
 
 pub type SharedComponent = Arc<dyn Component + Send + Sync>;
 
@@ -97,7 +97,7 @@ pub type BoxFuture<'a, T> = std::pin::Pin<Box<dyn futures::Future<Output = T> + 
 pub use serde_json::Value;
 
 pub type RuntimeCallback = dyn Fn(
-    CollectionLink,
+    ComponentReference,
     String,
     PacketStream,
     Option<InherentData>,

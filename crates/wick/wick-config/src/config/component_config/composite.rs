@@ -10,7 +10,7 @@ use crate::config::common::flow_definition::FlowOperation;
 #[asset(crate::config::AssetReference)]
 #[must_use]
 /// The internal representation of a Wick manifest.
-pub struct CompositeComponentConfiguration {
+pub struct CompositeComponentImplementation {
   #[asset(skip)]
   pub(crate) types: Vec<TypeDefinition>,
   pub(crate) import: HashMap<String, BoundComponent>,
@@ -20,7 +20,7 @@ pub struct CompositeComponentConfiguration {
   pub(crate) requires: HashMap<String, BoundInterface>,
 }
 
-impl CompositeComponentConfiguration {
+impl CompositeComponentImplementation {
   /// Add a [BoundComponent] to the configuration.
   pub fn add_import(mut self, component: BoundComponent) -> Self {
     self.import.insert(component.id.clone(), component);
@@ -54,5 +54,27 @@ impl CompositeComponentConfiguration {
   #[must_use]
   pub fn flow(&self, name: &str) -> Option<&FlowOperation> {
     self.operations.iter().find(|(n, _)| name == *n).map(|(_, v)| v)
+  }
+
+  /// Get the required interfaces for this component.
+  #[must_use]
+  pub fn requires(&self) -> &HashMap<String, BoundInterface> {
+    &self.requires
+  }
+
+  /// Get the signature of the component as defined by the manifest.
+  #[must_use]
+  pub fn operation_signatures(&self) -> Vec<wick_interface_types::OperationSignature> {
+    self.operations.values().cloned().map(Into::into).collect()
+  }
+}
+
+impl From<FlowOperation> for wick_interface_types::OperationSignature {
+  fn from(operation: FlowOperation) -> Self {
+    Self {
+      name: operation.name,
+      inputs: operation.inputs,
+      outputs: operation.outputs,
+    }
   }
 }

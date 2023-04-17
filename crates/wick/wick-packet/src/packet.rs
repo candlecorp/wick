@@ -3,12 +3,11 @@ use futures::StreamExt;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use tracing::debug;
-use wasmrs::{Metadata, Payload, PayloadError, RawPayload};
-use wasmrs_rx::FluxReceiver;
+use wasmrs::{BoxFlux, Metadata, Payload, PayloadError, RawPayload};
 use wick_interface_types::TypeSignature;
 
 use crate::metadata::DONE_FLAG;
-use crate::{CollectionLink, Error, PacketStream, TypeWrapper, WickMetadata, CLOSE_BRACKET, OPEN_BRACKET};
+use crate::{ComponentReference, Error, PacketStream, TypeWrapper, WickMetadata, CLOSE_BRACKET, OPEN_BRACKET};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[must_use]
@@ -149,7 +148,8 @@ impl Packet {
       match input.split_once('=') {
         Some((port, value)) => {
           debug!(port, value, "cli:args:port-data");
-          let val: serde_json::Value = serde_json::from_str(value).map_err(|e| crate::Error::Codec(e.to_string()))?;
+          let val: serde_json::Value =
+            serde_json::from_str(value).map_err(|e| crate::Error::Decode(value.as_bytes().to_vec(), e.to_string()))?;
           packets.push(Packet::encode(port, val));
         }
         None => return Err(Error::General(format!("Invalid port=value pair: '{}'", input))),
@@ -192,7 +192,7 @@ impl PacketPayload {
     match self {
       PacketPayload::Ok(Some(bytes)) => match wasmrs_codec::messagepack::deserialize(&bytes) {
         Ok(data) => Ok(data),
-        Err(err) => Err(crate::Error::Codec(err.to_string())),
+        Err(err) => Err(crate::Error::Decode(bytes.into(), err.to_string())),
       },
       PacketPayload::Ok(None) => Err(crate::Error::NoData),
       PacketPayload::Err(err) => Err(crate::Error::PayloadError(err)),
@@ -227,7 +227,7 @@ impl PacketPayload {
       ),
       TypeSignature::Link { .. } => TypeWrapper::new(
         sig,
-        serde_json::Value::String(self.deserialize::<CollectionLink>()?.to_string()),
+        serde_json::Value::String(self.deserialize::<ComponentReference>()?.to_string()),
       ),
       TypeSignature::Object => TypeWrapper::new(sig, self.deserialize::<serde_json::Value>()?),
       TypeSignature::AnonymousStruct(_) => unimplemented!(),
@@ -246,7 +246,7 @@ impl PacketPayload {
     match self {
       Self::Ok(Some(b)) => match wasmrs_codec::messagepack::deserialize::<serde_json::Value>(b) {
         Ok(data) => serde_json::json!({ "value": data }),
-        Err(err) => serde_json::json! ({"error" : crate::Error::Codec(err.to_string()).to_string()}),
+        Err(err) => serde_json::json! ({"error" : crate::Error::Jsonify(err.to_string()).to_string()}),
       },
       Self::Ok(None) => serde_json::Value::Null,
       Self::Err(err) => serde_json::json! ({"error" : crate::Error::PayloadError(err.clone()).to_string()}),
@@ -272,7 +272,8 @@ impl PacketError {
   }
 }
 
-pub fn into_wasmrs(index: u32, stream: PacketStream) -> Box<dyn wasmrs::Flux<RawPayload, PayloadError>> {
+#[must_use]
+pub fn into_wasmrs(index: u32, stream: PacketStream) -> BoxFlux<RawPayload, PayloadError> {
   let s = StreamExt::map(stream, move |p| {
     p.map(|p| {
       let md = wasmrs::Metadata::new_extra(index, p.extra.encode()).encode();
@@ -283,10 +284,10 @@ pub fn into_wasmrs(index: u32, stream: PacketStream) -> Box<dyn wasmrs::Flux<Raw
     })
     .unwrap_or(Err(PayloadError::application_error("failed", None)))
   });
-  Box::new(s)
+  Box::pin(s)
 }
 
-pub fn from_wasmrs(stream: FluxReceiver<RawPayload, PayloadError>) -> PacketStream {
+pub fn from_raw_wasmrs(stream: BoxFlux<RawPayload, PayloadError>) -> PacketStream {
   let s = StreamExt::map(stream, move |p| {
     let p = p.map_or_else(
       |e| {
@@ -308,6 +309,33 @@ pub fn from_wasmrs(stream: FluxReceiver<RawPayload, PayloadError>) -> PacketStre
         // same thing. Calling this out as a potential source for weird bugs if they pop up.
         let data = p.data.and_then(|b| (!b.is_empty()).then_some(b));
         Packet::new_for_port(wmd.port(), PacketPayload::Ok(data), wmd.flags())
+      },
+    );
+    Ok(p)
+  });
+
+  PacketStream::new(Box::new(s))
+}
+
+pub fn from_wasmrs(stream: BoxFlux<Payload, PayloadError>) -> PacketStream {
+  let s = StreamExt::map(stream, move |p| {
+    let p = p.map_or_else(
+      |e| {
+        let md = wasmrs::Metadata::decode(&mut e.metadata.unwrap());
+
+        let wmd = md.map_or_else(
+          |_e| WickMetadata::default(),
+          |m| WickMetadata::decode(m.extra.unwrap()).unwrap(),
+        );
+        Packet::raw_err(wmd.port, PacketError::new(e.msg))
+      },
+      |p| {
+        let md = p.metadata;
+        let wmd = WickMetadata::decode(md.extra.unwrap()).unwrap();
+        // Potential danger zone: this converts empty payload to None which *should* be the
+        // same thing. Calling this out as a potential source for weird bugs if they pop up.
+        let data = p.data;
+        Packet::new_for_port(wmd.port(), PacketPayload::Ok(Some(data)), wmd.flags())
       },
     );
     Ok(p)

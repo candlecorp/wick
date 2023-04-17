@@ -19,7 +19,7 @@ pub fn normalize_path_str(path: &str, base: Option<String>) -> Result<String> {
       trace!("Resolving path to baseurl: {} + {}", full_url, path);
       let p = PathBuf::from(&full_url).join(path);
       p.normalize()
-        .map_err(|e| Error::BaseUrlFailure(full_url, e.to_string()))?
+        .map_err(|e| Error::BaseUrlFailure(p.to_string_lossy().to_string(), e.to_string()))?
         .as_path()
         .to_string_lossy()
         .to_string()

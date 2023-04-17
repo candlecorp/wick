@@ -4,11 +4,11 @@ use std::sync::Arc;
 use flow_component::{BoxFuture, Component, ComponentError, RuntimeCallback};
 use wasmrs_host::WasiParams;
 use wick_config::config::components::Permissions;
-use wick_packet::{Invocation, PacketStream};
+use wick_packet::{Entity, Invocation, PacketStream};
 use wick_rpc::RpcHandler;
 
 use crate::helpers::WickWasmModule;
-use crate::wasm_host::{WasmHost, WasmHostBuilder};
+use crate::wasm_host::{SetupPayload, WasmHost, WasmHostBuilder};
 use crate::Error;
 
 // pub type BoxedFuture<T> = std::pin::Pin<Box<dyn std::future::Future<Output = T> + Send + 'static>>;
@@ -22,7 +22,7 @@ pub struct Context {
 
 #[derive(Debug)]
 pub struct WasmComponent {
-  pool: Arc<WasmHost>,
+  host: Arc<WasmHost>,
 }
 
 fn permissions_to_wasi_params(perms: Permissions) -> WasiParams {
@@ -39,12 +39,13 @@ fn permissions_to_wasi_params(perms: Permissions) -> WasiParams {
 }
 
 impl WasmComponent {
-  pub fn try_load(
+  pub async fn try_load(
     module: &WickWasmModule,
     max_threads: usize,
     config: Option<Permissions>,
     additional_config: Option<Permissions>,
     callback: Option<Arc<RuntimeCallback>>,
+    provided: HashMap<String, String>,
   ) -> Result<Self, Error> {
     let mut builder = WasmHostBuilder::new();
 
@@ -68,8 +69,10 @@ impl WasmComponent {
       builder = builder.link_callback(callback);
     }
     let host = builder.build(module)?;
+    let setup = SetupPayload::new(&Entity::component(module.name().clone().unwrap_or_default()), provided);
+    host.setup(setup).await?;
 
-    Ok(Self { pool: Arc::new(host) })
+    Ok(Self { host: Arc::new(host) })
   }
 }
 
@@ -82,15 +85,15 @@ impl Component for WasmComponent {
     _callback: Arc<RuntimeCallback>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
     trace!(target = %invocation.target, "wasm invoke");
-    let component = invocation.target.name();
+    let operation = invocation.target.operation_id();
 
-    let outputs = self.pool.call(component, stream, None);
+    let outputs = self.host.call(operation, stream, None);
 
     Box::pin(async move { outputs.map_err(ComponentError::new) })
   }
 
   fn list(&self) -> &wick_interface_types::ComponentSignature {
-    let signature = self.pool.get_operations();
+    let signature = self.host.get_operations();
 
     trace!(
       "WASM:COMPONENTS:[{}]",
@@ -134,7 +137,9 @@ mod tests {
       Some(Arc::new(|_, _, _, _| {
         Box::pin(async { Ok(packet_stream!(("test", "test"))) })
       })),
-    )?;
+      Default::default(),
+    )
+    .await?;
 
     let stream = packets!(("left", 10), ("right", 20));
     println!("{:#?}", stream);

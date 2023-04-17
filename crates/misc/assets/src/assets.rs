@@ -252,6 +252,7 @@ impl<'a> Stream for AssetPullWithProgress<'a> {
       self.finished.store(true, std::sync::atomic::Ordering::Relaxed);
       std::task::Poll::Ready(Some(progress))
     } else if progress.is_empty() {
+      cx.waker().wake_by_ref();
       std::task::Poll::Pending
     } else {
       std::task::Poll::Ready(Some(progress))

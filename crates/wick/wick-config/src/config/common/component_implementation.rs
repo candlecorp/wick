@@ -1,13 +1,16 @@
+use std::collections::HashMap;
+
 use wick_interface_types::TypeDefinition;
 
+use super::BoundComponent;
 use crate::config;
 
 #[derive(Debug, Clone, derive_assets::AssetManager)]
 #[asset(config::AssetReference)]
 #[must_use]
 pub enum ComponentImplementation {
-  Wasm(config::WasmComponentConfiguration),
-  Composite(config::CompositeComponentConfiguration),
+  Wasm(config::WasmComponentImplementation),
+  Composite(config::CompositeComponentImplementation),
 }
 
 impl ComponentImplementation {
@@ -24,11 +27,27 @@ impl ComponentImplementation {
       ComponentImplementation::Composite(c) => c.types(),
     }
   }
+
+  #[must_use]
+  pub fn imports_owned(&self) -> HashMap<String, BoundComponent> {
+    match self {
+      ComponentImplementation::Wasm(_w) => HashMap::new(),
+      ComponentImplementation::Composite(c) => c.import.clone(),
+    }
+  }
+
+  #[must_use]
+  pub fn operation_signatures(&self) -> Vec<wick_interface_types::OperationSignature> {
+    match self {
+      ComponentImplementation::Wasm(w) => w.operation_signatures(),
+      ComponentImplementation::Composite(c) => c.operation_signatures(),
+    }
+  }
 }
 
 impl Default for ComponentImplementation {
   fn default() -> Self {
-    ComponentImplementation::Composite(config::CompositeComponentConfiguration::default())
+    ComponentImplementation::Composite(config::CompositeComponentImplementation::default())
   }
 }
 

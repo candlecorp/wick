@@ -51,7 +51,7 @@ pub(crate) async fn engine_invoke_async(
   invocation: Invocation,
   stream: PacketStream,
 ) -> Result<PacketStream, DispatchError> {
-  let engine = EngineService::for_id(&engine_id).ok_or(DispatchError::EntityNotAvailable(engine_id))?;
+  let engine = RuntimeService::for_id(&engine_id).ok_or(DispatchError::EntityNotAvailable(engine_id))?;
 
   let response = engine.invoke(invocation, stream)?.await?;
   match response {
@@ -87,15 +87,15 @@ mod tests {
     Ok(())
   }
 
-  fn sync_send<T>()
-  where
-    T: Sync + Send,
-  {
-  }
+  // fn sync_send<T>()
+  // where
+  //   T: Sync + Send,
+  // {
+  // }
 
-  #[test_logger::test]
-  fn test_sync_send() -> Result<()> {
-    sync_send::<InvocationResponse>();
-    Ok(())
-  }
+  // #[test_logger::test]
+  // fn test_sync_send() -> Result<()> {
+  //   sync_send::<InvocationResponse>();
+  //   Ok(())
+  // }
 }

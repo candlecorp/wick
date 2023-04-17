@@ -8,7 +8,7 @@ use config::{AppConfiguration, BoundComponent, CliConfig, TriggerDefinition};
 use parking_lot::Mutex;
 use serde::{Deserialize, Serialize};
 use tokio_stream::StreamExt;
-use wick_packet::{packet_stream, CollectionLink, Entity, Invocation};
+use wick_packet::{packet_stream, Entity, Invocation};
 
 use super::{resolve_ref, Trigger, TriggerKind};
 use crate::dev::prelude::*;
@@ -46,30 +46,23 @@ impl Cli {
     config: CliConfig,
     args: Vec<String>,
   ) -> Result<(), RuntimeError> {
-    if config.app().is_none() {
-      unimplemented!("CLI App component is required.");
-    }
-
     let cli_component = resolve_ref(&app_config, config.component())?;
     let cli_binding = BoundComponent::new("cli", cli_component);
 
-    let app = config.app().cloned().take().unwrap();
-    let app_binding = BoundComponent::new("app", app);
-
-    let link = CollectionLink::new(
-      Entity::operation(&cli_binding.id, config.operation()).url(),
-      &app_binding.id,
-    );
     let invocation = Invocation::new(
       Entity::server("cli_channel"),
       Entity::operation(&cli_binding.id, config.operation()),
       None,
     );
-    let engine = crate::EngineBuilder::new()
-      .add_import(cli_binding)
-      .add_import(app_binding)
-      .build()
-      .await?;
+
+    let mut runtime = crate::RuntimeBuilder::new().add_import(cli_binding);
+    for import in app_config.imports().values() {
+      runtime = runtime.add_import(import.clone());
+    }
+    for resource in app_config.resources().values() {
+      runtime = runtime.add_resource(resource.clone());
+    }
+    let runtime = runtime.build().await?;
 
     let is_interactive = IsInteractive {
       stdin: atty::is(atty::Stream::Stdin),
@@ -77,9 +70,9 @@ impl Cli {
       stderr: atty::is(atty::Stream::Stderr),
     };
 
-    let packet_stream = packet_stream!(("args", args), ("isInteractive", is_interactive), ("program", link));
+    let packet_stream = packet_stream!(("args", args), ("isInteractive", is_interactive));
 
-    let mut response = engine.invoke(invocation, packet_stream).await?;
+    let mut response = runtime.invoke(invocation, packet_stream).await?;
     while let Some(packet) = response.next().await {
       trace!(?packet, "trigger:cli:response");
     }
