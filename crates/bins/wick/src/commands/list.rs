@@ -1,10 +1,10 @@
 use anyhow::Result;
 use clap::Args;
-use logger::LoggingOptions;
 use wick_component_cli::options::DefaultCliOptions;
 use wick_config::WickConfiguration;
 use wick_host::ComponentHostBuilder;
 use wick_interface_types::Field;
+use wick_logger::LoggingOptions;
 
 use crate::utils::merge_config;
 #[derive(Debug, Clone, Args)]
@@ -24,7 +24,7 @@ pub(crate) struct ListCommand {
 }
 
 pub(crate) async fn handle_command(opts: ListCommand) -> Result<()> {
-  let _guard = logger::init(&opts.logging.name(crate::BIN_NAME));
+  let _guard = wick_logger::init(&opts.logging.name(crate::BIN_NAME));
 
   let fetch_options = wick_config::config::FetchOptions::new()
     .allow_latest(opts.fetch.allow_latest)

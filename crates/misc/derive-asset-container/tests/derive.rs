@@ -2,25 +2,25 @@ use std::io::Read;
 use std::path::{Path, PathBuf};
 
 use anyhow::Result;
-use assets::{Asset, AssetManager, Progress, Status};
+use asset_container::{Asset, AssetManager, Progress, Status};
 use bytes::BytesMut;
 use futures::StreamExt;
 use tokio::io::AsyncReadExt;
 
-#[derive(derive_assets::AssetManager)]
+#[derive(derive_asset_container::AssetManager)]
 #[asset(TestAsset)]
 struct Struct {
   field: TestAsset,
   inner: InnerStruct,
 }
 
-#[derive(derive_assets::AssetManager)]
+#[derive(derive_asset_container::AssetManager)]
 #[asset(TestAsset)]
 struct InnerStruct {
   field: TestAsset,
 }
 
-#[derive(derive_assets::AssetManager)]
+#[derive(derive_asset_container::AssetManager)]
 #[asset(TestAsset)]
 struct Struct2 {
   one: TestAsset,
@@ -109,7 +109,7 @@ async fn test_enums() -> Result<()> {
   Ok(())
 }
 
-#[derive(derive_assets::AssetManager)]
+#[derive(derive_asset_container::AssetManager)]
 #[asset(TestAsset)]
 enum TestEnum {
   One(TestAsset),
@@ -158,7 +158,7 @@ impl Asset for TestAsset {
   fn fetch_with_progress(
     &self,
     _options: Self::Options,
-  ) -> std::pin::Pin<Box<dyn futures::Stream<Item = assets::assets::Progress> + Send + '_>> {
+  ) -> std::pin::Pin<Box<dyn futures::Stream<Item = asset_container::Progress> + Send + '_>> {
     let mut file = match std::fs::File::open(&self.path) {
       Ok(file) => file,
       Err(err) => {
@@ -229,12 +229,14 @@ impl Asset for TestAsset {
   fn fetch(
     &self,
     _options: Self::Options,
-  ) -> std::pin::Pin<Box<dyn futures::Future<Output = std::result::Result<Vec<u8>, assets::Error>> + Send + Sync>> {
+  ) -> std::pin::Pin<
+    Box<dyn futures::Future<Output = std::result::Result<Vec<u8>, asset_container::Error>> + Send + Sync>,
+  > {
     let path = self.path.clone();
     Box::pin(async move {
       let mut file = tokio::fs::File::open(&path)
         .await
-        .map_err(|err| assets::Error::FileOpen(path.to_string_lossy().to_string(), err.to_string()))?;
+        .map_err(|err| asset_container::Error::FileOpen(path.to_string_lossy().to_string(), err.to_string()))?;
       let mut bytes = Vec::new();
       file.read_to_end(&mut bytes).await?;
       Ok(bytes)

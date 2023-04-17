@@ -4,7 +4,7 @@ use serde::Deserializer;
 use crate::config;
 
 /// A reference to an operation.
-#[derive(Debug, Clone, PartialEq, derive_assets::AssetManager)]
+#[derive(Debug, Clone, PartialEq, derive_asset_container::AssetManager)]
 #[asset(config::AssetReference)]
 
 pub struct ComponentOperationExpression {
@@ -58,7 +58,7 @@ impl std::str::FromStr for ComponentOperationExpression {
   }
 }
 
-#[derive(Debug, Clone, PartialEq, derive_assets::AssetManager)]
+#[derive(Debug, Clone, PartialEq, derive_asset_container::AssetManager)]
 #[asset(config::AssetReference)]
 /// A definition of a Wick Collection with its namespace, how to retrieve or access it and its configuration.
 #[must_use]
@@ -67,7 +67,7 @@ pub enum HighLevelComponent {
   Postgres(config::components::SqlComponentConfig),
 }
 
-#[derive(Debug, Clone, PartialEq, derive_assets::AssetManager)]
+#[derive(Debug, Clone, PartialEq, derive_asset_container::AssetManager)]
 #[asset(config::AssetReference)]
 /// The kinds of collections that can operate in a flow.
 #[must_use]

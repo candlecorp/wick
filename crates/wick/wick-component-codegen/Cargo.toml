@@ -18,6 +18,6 @@ proc-macro2 = { workspace = true }
 heck = { workspace = true }
 
 [dev-dependencies]
-logger = { workspace = true }
+wick-logger = { workspace = true }
 test-logger = { workspace = true }
 tokio = { workspace = true, features = ["macros"] }

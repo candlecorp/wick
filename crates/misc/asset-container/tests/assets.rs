@@ -3,7 +3,7 @@ use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
 use anyhow::Result;
-use assets::assets::{Asset, AssetManager, Assets, Progress, Status};
+use asset_container::{Asset, AssetManager, Assets, Progress, Status};
 use bytes::BytesMut;
 use futures::StreamExt;
 use tokio::io::AsyncReadExt;
@@ -37,7 +37,7 @@ impl Asset for LocationReference {
   fn fetch_with_progress(
     &self,
     _options: Self::Options,
-  ) -> std::pin::Pin<Box<dyn futures::Stream<Item = assets::assets::Progress> + Send + '_>> {
+  ) -> std::pin::Pin<Box<dyn futures::Stream<Item = Progress> + Send + '_>> {
     let mut path = self
       .baseurl
       .lock()
@@ -119,7 +119,9 @@ impl Asset for LocationReference {
   fn fetch(
     &self,
     _options: Self::Options,
-  ) -> std::pin::Pin<Box<dyn futures::Future<Output = std::result::Result<Vec<u8>, assets::Error>> + Send + Sync>> {
+  ) -> std::pin::Pin<
+    Box<dyn futures::Future<Output = std::result::Result<Vec<u8>, asset_container::Error>> + Send + Sync>,
+  > {
     let mut path = self
       .baseurl
       .lock()
@@ -130,7 +132,7 @@ impl Asset for LocationReference {
     Box::pin(async move {
       let mut file = tokio::fs::File::open(&path)
         .await
-        .map_err(|err| assets::Error::FileOpen(path.to_string_lossy().to_string(), err.to_string()))?;
+        .map_err(|err| asset_container::Error::FileOpen(path.to_string_lossy().to_string(), err.to_string()))?;
       let mut bytes = Vec::new();
       file.read_to_end(&mut bytes).await?;
       Ok(bytes)

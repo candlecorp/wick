@@ -50,10 +50,6 @@ pub enum OciError {
   #[error(transparent)]
   YamlParseFailed(#[from] serde_yaml::Error),
 
-  /// Wascap Error
-  #[error(transparent)]
-  WasCap(#[from] wick_wascap::Error),
-
   /// Failed to parse image reference location
   #[error("Failed to parse the image reference: {0}")]
   InvalidReference(String),

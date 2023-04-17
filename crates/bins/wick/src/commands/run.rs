@@ -26,7 +26,7 @@ pub(crate) struct RunCommand {
 }
 
 pub(crate) async fn handle_command(opts: RunCommand) -> Result<()> {
-  let _guard = logger::init(&opts.logging.name(crate::BIN_NAME));
+  let _guard = wick_logger::init(&opts.logging.name(crate::BIN_NAME));
 
   debug!(args = ?opts.args, "rest args");
 

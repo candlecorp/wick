@@ -84,7 +84,7 @@ pub fn test(attr: TokenStream, item: TokenStream) -> TokenStream {
 
 /// Expand the initialization code for the `log` crate.
 fn expand_logging_init() -> Tokens {
-  let found_crate = crate_name("logger").expect("logger needs to be added in `Cargo.toml`");
+  let found_crate = crate_name("wick-logger").expect("wick-logger needs to be added in `Cargo.toml`");
 
   match found_crate {
     FoundCrate::Itself => quote! {

@@ -17,6 +17,6 @@ thiserror = { workspace = true }
 [dev-dependencies]
 anyhow = { workspace = true }
 pretty_assertions = { workspace = true }
-logger = { workspace = true }
+wick-logger = { workspace = true }
 test-logger = { workspace = true }
 tracing = { workspace = true }

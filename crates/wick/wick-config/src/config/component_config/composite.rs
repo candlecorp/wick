@@ -6,7 +6,7 @@ use crate::common::BoundInterface;
 use crate::config::common::bindings::BoundComponent;
 use crate::config::common::flow_definition::FlowOperation;
 
-#[derive(Debug, Default, Clone, derive_assets::AssetManager)]
+#[derive(Debug, Default, Clone, derive_asset_container::AssetManager)]
 #[asset(crate::config::AssetReference)]
 #[must_use]
 /// The internal representation of a Wick manifest.

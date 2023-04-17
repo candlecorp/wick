@@ -1,5 +1,5 @@
 [package]
-name = "assets"
+name = "asset-container"
 authors = ["Jarrod Overson <jsoverson@gmail.com>"]
 edition = "2021"
 license = "Apache-2.0"
@@ -13,7 +13,7 @@ futures = { workspace = true }
 
 [dev-dependencies]
 anyhow = { workspace = true }
-logger = { workspace = true }
+wick-logger = { workspace = true }
 test-logger = { workspace = true }
 tokio = { workspace = true, features = ["macros", "rt-multi-thread", "fs"] }
 tokio-util = { workspace = true, features = ["io", "codec"] }

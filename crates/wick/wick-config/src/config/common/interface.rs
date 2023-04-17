@@ -4,7 +4,7 @@ use wick_interface_types::TypeDefinition;
 
 use crate::component_config::OperationSignature;
 
-#[derive(Debug, Default, Clone, derive_assets::AssetManager)]
+#[derive(Debug, Default, Clone, derive_asset_container::AssetManager)]
 #[asset(crate::config::AssetReference)]
 #[must_use]
 /// The Wick representation of an interface.

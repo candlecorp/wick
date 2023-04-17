@@ -6,7 +6,7 @@ use clap::Args;
 #[clap(rename_all = "kebab-case")]
 pub(crate) struct RegistryPullCommand {
   #[clap(flatten)]
-  pub(crate) logging: logger::LoggingOptions,
+  pub(crate) logging: wick_logger::LoggingOptions,
 
   /// OCI reference to pull.
   #[clap(action)]

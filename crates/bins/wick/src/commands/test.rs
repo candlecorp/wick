@@ -41,7 +41,7 @@ pub(crate) struct TestCommand {
 }
 
 pub(crate) async fn handle_command(opts: TestCommand) -> Result<()> {
-  let _guard = logger::init(&opts.logging.name(crate::BIN_NAME));
+  let _guard = wick_logger::init(&opts.logging.name(crate::BIN_NAME));
 
   let fetch_options = wick_config::config::FetchOptions::new()
     .allow_latest(opts.fetch.allow_latest)

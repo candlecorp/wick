@@ -24,8 +24,8 @@ shellexpand = { workspace = true }
 serde-value = { workspace = true }
 num-traits = { workspace = true }
 serde-with-expand-env = { workspace = true }
-assets = { workspace = true }
-derive-assets = { workspace = true }
+asset-container = { workspace = true }
+derive-asset-container = { workspace = true }
 tokio = { workspace = true, features = ["fs"] }
 url = { workspace = true }
 
@@ -34,8 +34,8 @@ wick-package = { workspace = true }
 wick-xdg = { workspace = true }
 anyhow = { workspace = true }
 pretty_assertions = { workspace = true }
-logger = { workspace = true }
+wick-logger = { workspace = true }
 test-logger = { workspace = true }
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
-assets = { workspace = true }
+asset-container = { workspace = true }
 tokio-stream = { workspace = true }

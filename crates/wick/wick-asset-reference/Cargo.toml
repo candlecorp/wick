@@ -11,7 +11,7 @@ version = "0.1.0"
 wick-oci-utils = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
-assets = { workspace = true }
+asset-container = { workspace = true }
 bytes = { workspace = true }
 tokio = { workspace = true, features = ["sync"] }
 tokio-stream = { workspace = true }
@@ -21,7 +21,7 @@ normpath = { workspace = true }
 [dev-dependencies]
 anyhow = { workspace = true }
 pretty_assertions = { workspace = true }
-logger = { workspace = true }
+wick-logger = { workspace = true }
 test-logger = { workspace = true }
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
-assets = { workspace = true }
+asset-container = { workspace = true }

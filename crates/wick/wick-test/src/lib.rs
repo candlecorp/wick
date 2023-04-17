@@ -89,7 +89,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use flow_component::SharedComponent;
 use serde_value::Value;
-use tap::{TestBlock, TestRunner};
+use tap_harness::{TestBlock, TestRunner};
 use tokio_stream::wrappers::UnboundedReceiverStream;
 use tokio_stream::StreamExt;
 use wick_config::config::TestCase;

@@ -33,7 +33,7 @@ uuid = { workspace = true }
 futures = { workspace = true }
 
 [dev-dependencies]
-logger = { workspace = true }
+wick-logger = { workspace = true }
 test-logger = { workspace = true }
 tokio = { workspace = true, features = [
   "net",

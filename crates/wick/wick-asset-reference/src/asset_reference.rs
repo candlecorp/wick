@@ -2,7 +2,7 @@ use std::future::Future;
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use assets::{Asset, AssetManager, Progress, Status};
+use asset_container::{self as assets, Asset, AssetManager, Progress, Status};
 use bytes::{Bytes, BytesMut};
 use parking_lot::RwLock;
 use tokio::io::AsyncReadExt;

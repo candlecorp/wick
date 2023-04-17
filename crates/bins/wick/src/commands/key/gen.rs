@@ -8,7 +8,7 @@ use crate::keys::GenerateCommon;
 #[clap(rename_all = "kebab-case")]
 pub(crate) struct KeyGenCommand {
   #[clap(flatten)]
-  pub(crate) logging: logger::LoggingOptions,
+  pub(crate) logging: wick_logger::LoggingOptions,
 
   /// The type of key to create (e.g. account or module)
   #[clap(action)]

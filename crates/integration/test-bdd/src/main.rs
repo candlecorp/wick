@@ -69,13 +69,13 @@ async fn make_http_call(world: &mut World, step: &Step, method: String, port: u1
 
   assert!(response.status().is_success());
   let response_text = response.text().await.unwrap();
-  world.response_text = Some(response_text.clone());
+  world.response_text = Some(response_text);
 }
 
 #[then(regex = "the response should contain")]
 async fn check_response(world: &mut World, step: &Step) {
   let expected = step.docstring().unwrap();
-  let expected = expected.replace("\n", "");
+  let expected = expected.replace('\n', "");
   let response_text = world.response_text.as_ref().unwrap();
   assert!(response_text.contains(&expected));
 }

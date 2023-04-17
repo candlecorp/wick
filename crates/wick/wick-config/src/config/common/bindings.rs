@@ -3,7 +3,7 @@ use serde_json::Value;
 use super::{ComponentDefinition, InterfaceDefinition};
 use crate::config::{self};
 
-#[derive(Debug, Clone, PartialEq, derive_assets::AssetManager)]
+#[derive(Debug, Clone, PartialEq, derive_asset_container::AssetManager)]
 #[asset(config::AssetReference)]
 /// A definition of a Wick Collection with its namespace, how to retrieve or access it and its configuration.
 #[must_use]
@@ -39,7 +39,7 @@ impl BoundComponent {
   }
 }
 
-#[derive(Debug, Default, Clone, derive_assets::AssetManager)]
+#[derive(Debug, Default, Clone, derive_asset_container::AssetManager)]
 #[asset(crate::config::AssetReference)]
 #[must_use]
 /// The internal representation of a Wick manifest.

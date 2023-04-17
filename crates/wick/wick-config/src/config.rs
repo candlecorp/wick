@@ -8,7 +8,7 @@ pub mod types_config;
 use std::path::Path;
 
 pub use app_config::*;
-use assets::Asset;
+use asset_container::Asset;
 pub use common::*;
 pub use component_config::*;
 pub use test_config::*;
@@ -40,7 +40,7 @@ impl std::fmt::Display for ConfigurationKind {
   }
 }
 
-#[derive(Debug, Clone, derive_assets::AssetManager)]
+#[derive(Debug, Clone, derive_asset_container::AssetManager)]
 #[asset(AssetReference)]
 
 pub enum WickConfiguration {

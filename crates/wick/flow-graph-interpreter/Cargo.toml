@@ -36,7 +36,7 @@ bytes = { workspace = true }
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
-logger = { workspace = true }
+wick-logger = { workspace = true }
 test-logger = { workspace = true }
 anyhow = { workspace = true }
 serde_json = { workspace = true }

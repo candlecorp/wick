@@ -1,8 +1,8 @@
-use assets::AssetManager;
+use asset_container::AssetManager;
 
 use crate::config;
 
-#[derive(Debug, Clone, derive_assets::AssetManager)]
+#[derive(Debug, Clone, derive_asset_container::AssetManager)]
 #[asset(crate::config::AssetReference)]
 #[must_use]
 pub struct TestConfiguration {
