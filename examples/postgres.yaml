@@ -9,7 +9,7 @@ resources:
 import:
   - name: MYDB
     component:
-      kind: wick/component/postgres@v1
+      kind: wick/component/sql@v1
       database: wick_test
       user: postgres
       password: $TEST_PASSWORD
