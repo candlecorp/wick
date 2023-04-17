@@ -4,10 +4,12 @@ version = "0.5.0"
 edition = "2021"
 default-run = "wick"
 license = "Elastic-2.0"
+repository = "https://github.com/candlecorp/wick"
+description = "The binary executable for the Wick project."
 
 [features]
-default=[]
-cross=["openssl/vendored"]
+default = []
+cross = ["openssl/vendored"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
@@ -23,7 +25,6 @@ wick-config = { workspace = true }
 wick-test = { workspace = true }
 wick-wascap = { workspace = true }
 wick-oci-utils = { workspace = true }
-wick-grpctar = { workspace = true }
 wick-package = { workspace = true }
 logger = { workspace = true }
 seeded-random = { workspace = true }

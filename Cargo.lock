@@ -5392,7 +5392,6 @@ dependencies = [
  "wick-component-cli",
  "wick-component-wasm",
  "wick-config",
- "wick-grpctar",
  "wick-host",
  "wick-interface-types",
  "wick-oci-utils",
@@ -5551,26 +5550,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "wick-grpctar"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-recursion",
- "clap 4.1.8",
- "env_logger 0.10.0",
- "logger",
- "serde",
- "serde_json",
- "serde_yaml",
- "tar",
- "test-logger",
- "thiserror",
- "tracing",
- "wick-interface-types",
- "wick-wascap",
-]
-
-[[package]]
 name = "wick-host"
 version = "0.1.0"
 dependencies = [
@@ -5674,7 +5653,6 @@ dependencies = [
  "thiserror",
  "tokio",
  "tracing",
- "wick-grpctar",
  "wick-interface-types",
  "wick-wascap",
  "wick-xdg",

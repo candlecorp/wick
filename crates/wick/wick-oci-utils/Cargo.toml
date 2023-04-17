@@ -4,10 +4,10 @@ version = "0.1.0"
 edition = "2021"
 license = "Elastic-2.0"
 repository = "https://github.com/candlecorp/wick"
+description = "OCI utility library for the Wick project"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
-wick-grpctar = { workspace = true }
 wick-interface-types = { workspace = true }
 wick-wascap = { workspace = true }
 wick-xdg = { workspace = true }

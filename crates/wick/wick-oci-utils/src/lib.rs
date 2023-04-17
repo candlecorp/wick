@@ -87,7 +87,6 @@
 // Add exceptions here
 #![allow(missing_docs)]
 
-mod architecture_map;
 /// This crate's error module.
 pub mod error;
 mod manifest;
@@ -98,13 +97,6 @@ mod pull;
 mod push;
 mod utils;
 
-pub use architecture_map::{
-  generate_archmap,
-  ArchitectureEntry,
-  ArchitectureMap,
-  MultiArchManifest,
-  MultiArchManifestEntry,
-};
 pub use error::OciError as Error;
 pub use manifest::*;
 pub use oci_distribution::client::ClientProtocol;

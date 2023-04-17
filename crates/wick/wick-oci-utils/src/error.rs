@@ -54,10 +54,6 @@ pub enum OciError {
   #[error(transparent)]
   WasCap(#[from] wick_wascap::Error),
 
-  /// Collection Archive Error
-  #[error(transparent)]
-  GrpcTar(#[from] wick_grpctar::Error),
-
   /// Failed to parse image reference location
   #[error("Failed to parse the image reference: {0}")]
   InvalidReference(String),
