@@ -546,7 +546,7 @@ impl TryFrom<ComponentDefinition> for v1::ComponentDefinition {
       ComponentDefinition::Reference(v) => Self::ComponentReference(v.into()),
       ComponentDefinition::Manifest(v) => Self::ManifestComponent(v.try_into()?),
       ComponentDefinition::HighLevelComponent(v) => match v {
-        config::HighLevelComponent::Postgres(v) => Self::PostgresComponent(v.try_into()?),
+        config::HighLevelComponent::Postgres(v) => Self::SqlComponent(v.try_into()?),
       },
     };
     Ok(def)
@@ -655,7 +655,7 @@ impl TryFrom<crate::v1::ComponentDefinition> for ComponentDefinition {
         provide: v.provide,
       }),
       v1::ComponentDefinition::ComponentReference(v) => ComponentDefinition::Reference(ComponentReference { id: v.id }),
-      v1::ComponentDefinition::PostgresComponent(v) => {
+      v1::ComponentDefinition::SqlComponent(v) => {
         ComponentDefinition::HighLevelComponent(HighLevelComponent::Postgres(v.try_into()?))
       }
     };
@@ -1019,9 +1019,9 @@ impl TryFrom<config::Metadata> for v1::Metadata {
   }
 }
 
-impl TryFrom<v1::PostgresComponent> for components::SqlComponentConfig {
+impl TryFrom<v1::SqlComponent> for components::SqlComponentConfig {
   type Error = crate::Error;
-  fn try_from(value: v1::PostgresComponent) -> Result<Self> {
+  fn try_from(value: v1::SqlComponent) -> Result<Self> {
     Ok(Self {
       resource: value.resource,
       user: value.user,
@@ -1038,9 +1038,9 @@ impl TryFrom<v1::PostgresComponent> for components::SqlComponentConfig {
   }
 }
 
-impl TryFrom<v1::PostgresOperationDefinition> for components::SqlOperationDefinition {
+impl TryFrom<v1::SqlOperationDefinition> for components::SqlOperationDefinition {
   type Error = crate::Error;
-  fn try_from(value: v1::PostgresOperationDefinition) -> Result<Self> {
+  fn try_from(value: v1::SqlOperationDefinition) -> Result<Self> {
     Ok(Self {
       name: value.name,
       inputs: value.inputs,
@@ -1051,7 +1051,7 @@ impl TryFrom<v1::PostgresOperationDefinition> for components::SqlOperationDefini
   }
 }
 
-impl TryFrom<components::SqlComponentConfig> for v1::PostgresComponent {
+impl TryFrom<components::SqlComponentConfig> for v1::SqlComponent {
   type Error = crate::Error;
   fn try_from(value: components::SqlComponentConfig) -> Result<Self> {
     Ok(Self {
@@ -1070,7 +1070,7 @@ impl TryFrom<components::SqlComponentConfig> for v1::PostgresComponent {
   }
 }
 
-impl TryFrom<components::SqlOperationDefinition> for v1::PostgresOperationDefinition {
+impl TryFrom<components::SqlOperationDefinition> for v1::SqlOperationDefinition {
   type Error = crate::Error;
   fn try_from(value: components::SqlOperationDefinition) -> Result<Self> {
     Ok(Self {

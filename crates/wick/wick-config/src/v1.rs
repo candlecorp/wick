@@ -175,7 +175,7 @@ pub(crate) struct TimeTrigger {
 pub(crate) struct OperationInput {
   /// The name of the operation parameter.
 
-  #[serde(deserialize_with = "with_expand_envs")]
+  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) name: String,
   /// The value to pass to the operation parameter.
 
@@ -193,7 +193,7 @@ pub(crate) fn SCHEDULE_REPEAT() -> u16 {
 pub(crate) struct Schedule {
   /// schedule in cron format with second precision
 
-  #[serde(deserialize_with = "with_expand_envs")]
+  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) cron: String,
   /// repeat n times, 0 means forever
 
@@ -520,9 +520,9 @@ pub(crate) enum ComponentDefinition {
   /// A variant representing a [ComponentReference] type.
   #[serde(rename = "wick/component/reference@v1")]
   ComponentReference(ComponentReference),
-  /// A variant representing a [PostgresComponent] type.
-  #[serde(rename = "wick/component/postgres@v1")]
-  PostgresComponent(PostgresComponent),
+  /// A variant representing a [SqlComponent] type.
+  #[serde(rename = "wick/component/sql@v1")]
+  SqlComponent(SqlComponent),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -913,7 +913,7 @@ impl FromPrimitive for DatabaseKind {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
 /// A component made out of other components
-pub(crate) struct PostgresComponent {
+pub(crate) struct SqlComponent {
   /// The TcpPort reference to listen on for connections.
 
   #[serde(default)]
@@ -923,12 +923,12 @@ pub(crate) struct PostgresComponent {
 
   #[serde(default)]
   pub(crate) vendor: DatabaseKind,
-  /// The username to use when connecting to the postgres database.
+  /// The username to use when connecting to the database.
 
   #[serde(default)]
   #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) user: String,
-  /// The password to use when connecting to the postgres database.
+  /// The password to use when connecting to the database.
 
   #[serde(default)]
   #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
@@ -947,12 +947,12 @@ pub(crate) struct PostgresComponent {
 
   #[serde(default)]
   #[serde(skip_serializing_if = "Vec::is_empty")]
-  pub(crate) operations: Vec<PostgresOperationDefinition>,
+  pub(crate) operations: Vec<SqlOperationDefinition>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
-pub(crate) struct PostgresOperationDefinition {
+pub(crate) struct SqlOperationDefinition {
   /// The name of the operation.
 
   #[serde(default)]

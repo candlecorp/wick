@@ -214,7 +214,7 @@
         "repeat": {
           "description": "repeat n times, 0 means forever",
 
-          "type": "number"
+          "oneOf": [{ "type": "number" }, { "type": "string" }]
         }
       },
       "required": ["cron"]
@@ -679,7 +679,7 @@
         { "$ref": "#/$defs/v1/GrpcUrlComponent" },
         { "$ref": "#/$defs/v1/ManifestComponent" },
         { "$ref": "#/$defs/v1/ComponentReference" },
-        { "$ref": "#/$defs/v1/PostgresComponent" }
+        { "$ref": "#/$defs/v1/SqlComponent" }
       ]
     },
 
@@ -1140,14 +1140,14 @@
       "enum": ["MsSql", "Postgres", "Mysql", "Sqlite"]
     },
 
-    "PostgresComponent": {
-      "$anchor": "#v1/PostgresComponent",
+    "SqlComponent": {
+      "$anchor": "#v1/SqlComponent",
       "additionalProperties": false,
       "properties": {
         "kind": {
           "type": "string",
           "description": "The kind of the collection",
-          "enum": ["wick/component/postgres@v1"]
+          "enum": ["wick/component/sql@v1"]
         },
         "resource": {
           "description": "The TcpPort reference to listen on for connections.",
@@ -1160,12 +1160,12 @@
           "$ref": "#/$defs/v1/DatabaseKind"
         },
         "user": {
-          "description": "The username to use when connecting to the postgres database.",
+          "description": "The username to use when connecting to the database.",
 
           "type": "string"
         },
         "password": {
-          "description": "The password to use when connecting to the postgres database.",
+          "description": "The password to use when connecting to the database.",
 
           "type": "string"
         },
@@ -1184,15 +1184,15 @@
 
           "type": "array",
           "items": {
-            "$ref": "#/$defs/v1/PostgresOperationDefinition"
+            "$ref": "#/$defs/v1/SqlOperationDefinition"
           }
         }
       },
       "required": []
     },
 
-    "PostgresOperationDefinition": {
-      "$anchor": "#v1/PostgresOperationDefinition",
+    "SqlOperationDefinition": {
+      "$anchor": "#v1/SqlOperationDefinition",
       "additionalProperties": false,
       "properties": {
         "name": {

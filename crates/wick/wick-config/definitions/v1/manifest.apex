@@ -251,7 +251,7 @@ type ComponentBinding {
 }
 
 "The possible types of components."
-union ComponentDefinition = GrpcUrlComponent | ManifestComponent | ComponentReference | PostgresComponent
+union ComponentDefinition = GrpcUrlComponent | ManifestComponent | ComponentReference | SqlComponent
 
 "A reference to a component in the application's scope."
 type ComponentReference  @tagged("wick/component/reference@v1") {
@@ -457,17 +457,17 @@ enum DatabaseKind {
 }
 
 "A component made out of other components"
-type PostgresComponent @tagged("wick/component/postgres@v1") {
+type SqlComponent @tagged("wick/component/sql@v1") {
   "The TcpPort reference to listen on for connections."
   resource: string
 
   "The database vendor to load."
   vendor: DatabaseKind
 
-  "The username to use when connecting to the postgres database."
+  "The username to use when connecting to the database."
   user: string
 
-  "The password to use when connecting to the postgres database."
+  "The password to use when connecting to the database."
   password: string
 
   "The database to connect to."
@@ -477,10 +477,10 @@ type PostgresComponent @tagged("wick/component/postgres@v1") {
   tls: bool
 
   "A list of operations to expose on this component."
-  operations: [PostgresOperationDefinition]
+  operations: [SqlOperationDefinition]
 }
 
-type PostgresOperationDefinition {
+type SqlOperationDefinition {
   "The name of the operation."
   name: string
 

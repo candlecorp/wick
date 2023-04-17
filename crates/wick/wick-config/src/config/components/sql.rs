@@ -7,10 +7,10 @@ pub struct SqlComponentConfig {
   /// The kind of database to connect to.
   pub vendor: DatabaseKind,
 
-  /// The username to use when connecting to the postgres database.
+  /// The username to use when connecting to the database.
   pub user: String,
 
-  /// The password to use when connecting to the postgres database.
+  /// The password to use when connecting to the database.
   pub password: String,
 
   /// The database to connect to.

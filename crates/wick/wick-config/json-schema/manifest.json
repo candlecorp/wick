@@ -558,7 +558,14 @@
           },
           "repeat": {
             "description": "repeat n times, 0 means forever",
-            "type": "number"
+            "oneOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              }
+            ]
           }
         },
         "required": [
@@ -1049,7 +1056,7 @@
             "$ref": "#/$defs/v1/ComponentReference"
           },
           {
-            "$ref": "#/$defs/v1/PostgresComponent"
+            "$ref": "#/$defs/v1/SqlComponent"
           }
         ]
       },
@@ -1511,15 +1518,15 @@
           "Sqlite"
         ]
       },
-      "PostgresComponent": {
-        "$anchor": "#v1/PostgresComponent",
+      "SqlComponent": {
+        "$anchor": "#v1/SqlComponent",
         "additionalProperties": false,
         "properties": {
           "kind": {
             "type": "string",
             "description": "The kind of the collection",
             "enum": [
-              "wick/component/postgres@v1"
+              "wick/component/sql@v1"
             ]
           },
           "resource": {
@@ -1531,11 +1538,11 @@
             "$ref": "#/$defs/v1/DatabaseKind"
           },
           "user": {
-            "description": "The username to use when connecting to the postgres database.",
+            "description": "The username to use when connecting to the database.",
             "type": "string"
           },
           "password": {
-            "description": "The password to use when connecting to the postgres database.",
+            "description": "The password to use when connecting to the database.",
             "type": "string"
           },
           "database": {
@@ -1550,14 +1557,14 @@
             "description": "A list of operations to expose on this component.",
             "type": "array",
             "items": {
-              "$ref": "#/$defs/v1/PostgresOperationDefinition"
+              "$ref": "#/$defs/v1/SqlOperationDefinition"
             }
           }
         },
         "required": []
       },
-      "PostgresOperationDefinition": {
-        "$anchor": "#v1/PostgresOperationDefinition",
+      "SqlOperationDefinition": {
+        "$anchor": "#v1/SqlOperationDefinition",
         "additionalProperties": false,
         "properties": {
           "name": {

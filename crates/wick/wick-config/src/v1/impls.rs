@@ -6,7 +6,7 @@ impl ComponentDefinition {
       ComponentDefinition::GrpcUrlComponent(_) => None,
       ComponentDefinition::ManifestComponent(_) => None,
       ComponentDefinition::ComponentReference(v) => Some(&v.id),
-      ComponentDefinition::PostgresComponent(_) => todo!(),
+      ComponentDefinition::SqlComponent(_) => todo!(),
     }
   }
 }
