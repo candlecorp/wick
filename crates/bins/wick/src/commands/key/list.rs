@@ -9,7 +9,7 @@ use crate::keys::get_key_files;
 #[clap(rename_all = "kebab-case")]
 pub(crate) struct KeyListCommand {
   #[clap(flatten)]
-  pub(crate) logging: logger::LoggingOptions,
+  pub(crate) logging: wick_logger::LoggingOptions,
 
   /// Location of key files. Defaults to $WICK_KEYS ($HOME/.wick/keys or %USERPROFILE%/.wick/keys).
   #[clap(long = "directory", env = "WICK_KEYS", action)]

@@ -110,7 +110,7 @@ exceptions = [
     { name = "wick-sqlx", allow = ["Elastic-2.0"] },
     { name = "wick-component-wasm", allow = ["Elastic-2.0"] },
     { name = "wick-component-cli", allow = ["Elastic-2.0"] },
-    { name = "logger", allow = ["Elastic-2.0"] },
+    { name = "wick-logger", allow = ["Elastic-2.0"] },
     { name = "flow-graph-interpreter", allow = ["Elastic-2.0"] },
     { name = "flow-component", allow = ["Elastic-2.0"] },
     { name = "flow-graph", allow = ["Elastic-2.0"] },

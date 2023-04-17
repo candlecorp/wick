@@ -4,7 +4,7 @@ use quote::quote;
 use syn::{parse_macro_input, Attribute, DataEnum, DataStruct, DeriveInput, Type};
 
 #[proc_macro_derive(AssetManager, attributes(asset_managers, asset))]
-pub fn derive_assets(input: TokenStream) -> TokenStream {
+pub fn derive_asset_container(input: TokenStream) -> TokenStream {
   // Parse the input tokens into a syntax tree.
   let ast = parse_macro_input!(input as DeriveInput);
 
@@ -71,10 +71,10 @@ fn impl_struct(name: &Ident, data: &DataStruct, asset_type: Option<Type>) -> Tok
 
   // Generate an implementation of the Assets trait for the struct.
   let output = quote! {
-      impl assets::AssetManager for #name {
+      impl asset_container::AssetManager for #name {
           type Asset = #asset_type;
-          fn assets(&self) -> assets::Assets<#asset_type> {
-            let mut assets = assets::Assets::default();
+          fn assets(&self) -> asset_container::Assets<#asset_type> {
+            let mut assets = asset_container::Assets::default();
             #(assets.push(&self.#asset_fields);)*
             #(assets.extend(&mut self.#inner_managers.assets());)*
             assets
@@ -107,16 +107,16 @@ fn impl_enum(name: &Ident, data: &DataEnum, asset_type: Option<Type>) -> TokenSt
 
   // Generate an implementation of the Assets trait for the struct.
   let output = quote! {
-      impl assets::AssetManager for #name {
+      impl asset_container::AssetManager for #name {
           type Asset = #asset_type;
-          fn assets(&self) -> assets::Assets<#asset_type> {
-            let mut assets = assets::Assets::default();
+          fn assets(&self) -> asset_container::Assets<#asset_type> {
+            let mut assets = asset_container::Assets::default();
             match self {
               #(Self::#asset_variants(v) => {
                 assets.push(v);
               })*
               #(Self::#inner_managers(v) => {
-                assets.extend(&mut assets::AssetManager::assets(v));
+                assets.extend(&mut asset_container::AssetManager::assets(v));
               })*
               _ => {}
             }

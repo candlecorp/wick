@@ -1,9 +1,9 @@
 use std::time::Duration;
 
 use futures::StreamExt;
-use logger::{LoggingGuard, LoggingOptions};
 use wick_component_cli::options::DefaultCliOptions;
 use wick_config::config::{AssetReference, ComponentConfiguration, HttpConfig};
+use wick_logger::{LoggingGuard, LoggingOptions};
 use wick_packet::PacketStream;
 
 use crate::commands::FetchOptions;
@@ -70,7 +70,7 @@ fn log_override<T: std::fmt::Debug>(field: &str, from: &mut T, to: T) {
 
 #[allow(clippy::trivially_copy_pass_by_ref)]
 pub(crate) fn init_logger(opts: &LoggingOptions) -> crate::Result<LoggingGuard> {
-  Ok(logger::init(&opts.name(crate::BIN_NAME)))
+  Ok(wick_logger::init(&opts.name(crate::BIN_NAME)))
 }
 
 pub(crate) async fn print_stream_json(

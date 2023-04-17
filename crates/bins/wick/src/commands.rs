@@ -11,7 +11,7 @@ pub(crate) mod test;
 pub(crate) mod wasm;
 
 use clap::{Args, Parser, Subcommand};
-use logger::LoggingOptions;
+use wick_logger::LoggingOptions;
 
 #[derive(Parser, Debug, Clone)]
 #[clap(

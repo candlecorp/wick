@@ -2,7 +2,7 @@ use serde_json::Value;
 
 use crate::config::*;
 
-#[derive(Debug, Clone, derive_assets::AssetManager)]
+#[derive(Debug, Clone, derive_asset_container::AssetManager)]
 #[asset(AssetReference)]
 
 /// Normalized representation of a trigger definition.
@@ -48,7 +48,7 @@ impl std::fmt::Display for TriggerKind {
   }
 }
 
-#[derive(Debug, Clone, PartialEq, derive_assets::AssetManager)]
+#[derive(Debug, Clone, PartialEq, derive_asset_container::AssetManager)]
 #[asset(AssetReference)]
 
 /// Normalized representation of a CLI trigger configuration.
@@ -57,7 +57,7 @@ pub struct CliConfig {
   pub(crate) app: Option<ComponentDefinition>,
 }
 
-#[derive(Debug, Clone, derive_assets::AssetManager)]
+#[derive(Debug, Clone, derive_asset_container::AssetManager)]
 #[asset(AssetReference)]
 #[must_use]
 pub struct HttpTriggerConfig {
@@ -76,7 +76,7 @@ impl HttpTriggerConfig {
   }
 }
 
-#[derive(Debug, Clone, derive_assets::AssetManager)]
+#[derive(Debug, Clone, derive_asset_container::AssetManager)]
 #[asset(AssetReference)]
 #[must_use]
 pub struct RawRouterConfig {
@@ -96,7 +96,7 @@ impl RawRouterConfig {
   }
 }
 
-#[derive(Debug, Clone, derive_assets::AssetManager)]
+#[derive(Debug, Clone, derive_asset_container::AssetManager)]
 #[asset(AssetReference)]
 #[must_use]
 pub struct RestRouterConfig {
@@ -115,7 +115,7 @@ impl RestRouterConfig {
   }
 }
 
-#[derive(Debug, Clone, derive_assets::AssetManager)]
+#[derive(Debug, Clone, derive_asset_container::AssetManager)]
 #[asset(AssetReference)]
 #[must_use]
 pub enum HttpRouterConfig {
@@ -142,7 +142,7 @@ impl CliConfig {
   }
 }
 
-#[derive(Debug, Clone, PartialEq, derive_assets::AssetManager)]
+#[derive(Debug, Clone, PartialEq, derive_asset_container::AssetManager)]
 #[asset(AssetReference)]
 /// Normalized representation of a Time trigger configuration.
 pub struct TimeTriggerConfig {
@@ -154,7 +154,6 @@ pub struct TimeTriggerConfig {
 
 impl TimeTriggerConfig {
   /// Returns the component id for the Time trigger.
-  #[must_use]
   pub fn component(&self) -> &ComponentDefinition {
     &self.operation.component
   }
@@ -175,7 +174,7 @@ impl TimeTriggerConfig {
   }
 }
 
-#[derive(Debug, Clone, PartialEq, derive_assets::AssetManager)]
+#[derive(Debug, Clone, PartialEq, derive_asset_container::AssetManager)]
 #[asset(AssetReference)]
 #[must_use]
 
@@ -198,7 +197,7 @@ impl OperationInputConfig {
   }
 }
 
-#[derive(Debug, Clone, PartialEq, derive_assets::AssetManager)]
+#[derive(Debug, Clone, PartialEq, derive_asset_container::AssetManager)]
 #[asset(AssetReference)]
 #[must_use]
 pub struct ScheduleConfig {

@@ -9,7 +9,6 @@ description = "OCI utility library for the Wick project"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
 wick-interface-types = { workspace = true }
-wick-wascap = { workspace = true }
 wick-xdg = { workspace = true }
 oci-distribution = { workspace = true, features = [
   "rustls-tls",
@@ -29,7 +28,7 @@ once_cell = { workspace = true }
 [dev-dependencies]
 tokio = { workspace = true, features = ["rt-multi-thread", "macros"] }
 test-logger = { workspace = true }
-logger = { workspace = true }
+wick-logger = { workspace = true }
 clap = { workspace = true, features = ["derive", "env"] }
 async-recursion = { workspace = true }
 env_logger = { workspace = true }

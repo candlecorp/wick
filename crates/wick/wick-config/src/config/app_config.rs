@@ -2,7 +2,7 @@ use std::collections::HashMap;
 pub(super) mod resources;
 pub(super) mod triggers;
 
-use assets::AssetManager;
+use asset_container::AssetManager;
 
 pub use self::resources::*;
 pub use self::triggers::*;
@@ -12,7 +12,7 @@ use super::BoundComponent;
 use crate::error::ReferenceError;
 use crate::{config, v1, Resolver, Result};
 
-#[derive(Debug, Clone, derive_assets::AssetManager)]
+#[derive(Debug, Clone, derive_asset_container::AssetManager)]
 #[asset(config::AssetReference)]
 #[must_use]
 /// The internal representation of a Wick manifest.

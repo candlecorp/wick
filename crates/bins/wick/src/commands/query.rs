@@ -11,7 +11,7 @@ use markup_converter::{Format, Transcoder};
 #[clap(rename_all = "kebab-case")]
 pub(crate) struct QueryCommand {
   #[clap(flatten)]
-  pub(crate) logging: logger::LoggingOptions,
+  pub(crate) logging: wick_logger::LoggingOptions,
 
   /// Option to print raw output.
   #[clap(short = 'r', long = "raw", action)]

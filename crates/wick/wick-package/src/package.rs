@@ -1,6 +1,6 @@
 use std::path::{Path, PathBuf};
 
-use assets::AssetManager;
+use asset_container::AssetManager;
 use sha256::digest;
 use tokio::fs;
 use wick_config::WickConfiguration;

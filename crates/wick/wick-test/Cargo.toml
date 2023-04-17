@@ -14,7 +14,7 @@ wick-packet = { workspace = true }
 wick-config = { workspace = true }
 wick-rpc = { workspace = true }
 # TAP interface
-tap = { workspace = true }
+tap-harness = { workspace = true }
 # WasmRS
 wasmrs-codec = { workspace = true }
 # Common dependencies
@@ -27,7 +27,7 @@ tokio-stream = { workspace = true }
 tracing = { workspace = true }
 
 [dev-dependencies]
-logger = { workspace = true }
+wick-logger = { workspace = true }
 test-logger = { workspace = true }
 test-native-component = { workspace = true }
 anyhow = { workspace = true }

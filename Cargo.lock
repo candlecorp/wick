@@ -74,19 +74,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "224afbd727c3d6e4b90103ece64b8d1b67fbb1973b1046c2281eed3f3803f800"
 
 [[package]]
-name = "assets"
+name = "asset-container"
 version = "0.1.0"
 dependencies = [
  "anyhow",
  "bytes",
  "futures",
- "logger",
  "test-logger",
  "thiserror",
  "tokio",
  "tokio-stream",
  "tokio-util",
  "tracing",
+ "wick-logger",
 ]
 
 [[package]]
@@ -937,11 +937,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "derive-assets"
+name = "derive-asset-container"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "assets",
+ "asset-container",
  "bytes",
  "futures",
  "proc-macro2",
@@ -1220,13 +1220,13 @@ version = "0.4.0"
 dependencies = [
  "anyhow",
  "futures",
- "logger",
  "serde_json",
  "test-logger",
  "tokio",
  "tracing",
  "wick-config",
  "wick-interface-types",
+ "wick-logger",
  "wick-packet",
 ]
 
@@ -1236,7 +1236,6 @@ version = "0.4.0"
 dependencies = [
  "anyhow",
  "lazy_static",
- "logger",
  "pretty_assertions",
  "regex",
  "serde",
@@ -1244,6 +1243,7 @@ dependencies = [
  "test-logger",
  "thiserror",
  "tracing",
+ "wick-logger",
 ]
 
 [[package]]
@@ -1251,13 +1251,13 @@ name = "flow-graph"
 version = "0.20.0"
 dependencies = [
  "anyhow",
- "logger",
  "serde_json",
  "test-logger",
  "thiserror",
  "tokio",
  "tracing",
  "wick-config",
+ "wick-logger",
 ]
 
 [[package]]
@@ -1270,7 +1270,6 @@ dependencies = [
  "flow-expression-parser",
  "flow-graph",
  "futures",
- "logger",
  "parking_lot 0.12.1",
  "performance-mark",
  "pretty_assertions",
@@ -1292,6 +1291,7 @@ dependencies = [
  "wasmrs-rx",
  "wick-config",
  "wick-interface-types",
+ "wick-logger",
  "wick-packet",
 ]
 
@@ -2126,27 +2126,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "abb12e687cfb44aa40f41fc3978ef76448f9b6038cad6aef4259d3c095a2382e"
 dependencies = [
  "cfg-if",
-]
-
-[[package]]
-name = "logger"
-version = "0.1.0"
-dependencies = [
- "ansi_term",
- "clap 4.1.8",
- "opentelemetry",
- "opentelemetry-jaeger",
- "serde",
- "thiserror",
- "time 0.3.20",
- "tokio",
- "tracing",
- "tracing-appender",
- "tracing-bunyan-formatter",
- "tracing-log",
- "tracing-opentelemetry",
- "tracing-subscriber",
- "wick-xdg",
 ]
 
 [[package]]
@@ -3905,7 +3884,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "tap"
+name = "tap-harness"
 version = "0.0.0"
 dependencies = [
  "anyhow",
@@ -3987,12 +3966,12 @@ dependencies = [
 name = "test-logger"
 version = "0.1.0"
 dependencies = [
- "logger",
  "proc-macro-crate",
  "proc-macro2",
  "quote",
  "syn 2.0.11",
  "tokio",
+ "wick-logger",
 ]
 
 [[package]]
@@ -4003,13 +3982,13 @@ dependencies = [
  "clap 3.2.23",
  "flow-component",
  "futures",
- "logger",
  "pretty_assertions",
  "serde",
  "test-logger",
  "tokio",
  "tracing",
  "wick-interface-types",
+ "wick-logger",
  "wick-packet",
  "wick-rpc",
 ]
@@ -5372,7 +5351,6 @@ dependencies = [
  "clap 4.1.8",
  "futures",
  "jaq-core",
- "logger",
  "markup-converter",
  "nkeys",
  "oci-distribution",
@@ -5382,7 +5360,6 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_yaml",
- "tap",
  "test-logger",
  "test_bin",
  "thiserror",
@@ -5394,6 +5371,7 @@ dependencies = [
  "wick-config",
  "wick-host",
  "wick-interface-types",
+ "wick-logger",
  "wick-oci-utils",
  "wick-package",
  "wick-packet",
@@ -5409,9 +5387,8 @@ name = "wick-asset-reference"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "assets",
+ "asset-container",
  "bytes",
- "logger",
  "normpath",
  "parking_lot 0.12.1",
  "pretty_assertions",
@@ -5420,6 +5397,7 @@ dependencies = [
  "tokio",
  "tokio-stream",
  "tracing",
+ "wick-logger",
  "wick-oci-utils",
 ]
 
@@ -5447,7 +5425,6 @@ dependencies = [
  "cfg-if",
  "clap 4.1.8",
  "flow-component",
- "logger",
  "once_cell",
  "reqwest",
  "serde",
@@ -5463,6 +5440,7 @@ dependencies = [
  "uuid",
  "wick-config",
  "wick-invocation-server",
+ "wick-logger",
  "wick-packet",
  "wick-rpc",
 ]
@@ -5473,7 +5451,6 @@ version = "0.3.0"
 dependencies = [
  "anyhow",
  "heck 0.4.1",
- "logger",
  "proc-macro2",
  "quote",
  "serde_yaml",
@@ -5482,6 +5459,7 @@ dependencies = [
  "tokio",
  "wick-config",
  "wick-interface-types",
+ "wick-logger",
 ]
 
 [[package]]
@@ -5493,7 +5471,6 @@ dependencies = [
  "async-trait",
  "flow-component",
  "futures",
- "logger",
  "parking_lot 0.12.1",
  "seeded-random",
  "serde",
@@ -5511,6 +5488,7 @@ dependencies = [
  "wasmrs-wasmtime",
  "wick-config",
  "wick-interface-types",
+ "wick-logger",
  "wick-packet",
  "wick-rpc",
  "wick-wascap",
@@ -5521,11 +5499,10 @@ name = "wick-config"
 version = "0.24.0"
 dependencies = [
  "anyhow",
- "assets",
- "derive-assets",
+ "asset-container",
+ "derive-asset-container",
  "flow-component",
  "flow-expression-parser",
- "logger",
  "num-traits",
  "pretty_assertions",
  "regex",
@@ -5543,6 +5520,7 @@ dependencies = [
  "url",
  "wick-asset-reference",
  "wick-interface-types",
+ "wick-logger",
  "wick-oci-utils",
  "wick-package",
  "wick-packet",
@@ -5558,7 +5536,6 @@ dependencies = [
  "flow-component",
  "futures",
  "http",
- "logger",
  "once_cell",
  "parking_lot 0.12.1",
  "seeded-random",
@@ -5574,6 +5551,7 @@ dependencies = [
  "wick-config",
  "wick-interface-types",
  "wick-invocation-server",
+ "wick-logger",
  "wick-packet",
  "wick-rpc",
  "wick-runtime",
@@ -5615,7 +5593,6 @@ dependencies = [
  "async-trait",
  "flow-component",
  "futures",
- "logger",
  "parking_lot 0.12.1",
  "rand",
  "serde",
@@ -5627,8 +5604,30 @@ dependencies = [
  "tokio-stream",
  "tonic",
  "tracing",
+ "wick-logger",
  "wick-packet",
  "wick-rpc",
+]
+
+[[package]]
+name = "wick-logger"
+version = "0.1.0"
+dependencies = [
+ "ansi_term",
+ "clap 4.1.8",
+ "opentelemetry",
+ "opentelemetry-jaeger",
+ "serde",
+ "thiserror",
+ "time 0.3.20",
+ "tokio",
+ "tracing",
+ "tracing-appender",
+ "tracing-bunyan-formatter",
+ "tracing-log",
+ "tracing-opentelemetry",
+ "tracing-subscriber",
+ "wick-xdg",
 ]
 
 [[package]]
@@ -5640,7 +5639,6 @@ dependencies = [
  "bytes",
  "clap 4.1.8",
  "env_logger 0.10.0",
- "logger",
  "oci-distribution",
  "once_cell",
  "regex",
@@ -5654,7 +5652,7 @@ dependencies = [
  "tokio",
  "tracing",
  "wick-interface-types",
- "wick-wascap",
+ "wick-logger",
  "wick-xdg",
 ]
 
@@ -5663,11 +5661,10 @@ name = "wick-package"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "assets",
+ "asset-container",
  "async-recursion",
  "clap 4.1.8",
  "env_logger 0.10.0",
- "logger",
  "oci-distribution",
  "serde",
  "serde_json",
@@ -5678,6 +5675,7 @@ dependencies = [
  "tokio",
  "tracing",
  "wick-config",
+ "wick-logger",
  "wick-oci-utils",
 ]
 
@@ -5746,7 +5744,6 @@ dependencies = [
  "futures",
  "hyper",
  "lazy_static",
- "logger",
  "once_cell",
  "parking_lot 0.12.1",
  "pretty_assertions",
@@ -5770,6 +5767,7 @@ dependencies = [
  "wick-interface-http",
  "wick-interface-types",
  "wick-invocation-server",
+ "wick-logger",
  "wick-packet",
  "wick-rpc",
  "wick-sqlx",
@@ -5786,7 +5784,6 @@ dependencies = [
  "chrono",
  "flow-component",
  "futures",
- "logger",
  "openssl",
  "parking_lot 0.12.1",
  "pretty_assertions",
@@ -5799,6 +5796,7 @@ dependencies = [
  "tracing",
  "wick-config",
  "wick-interface-types",
+ "wick-logger",
  "wick-packet",
  "wick-rpc",
 ]
@@ -5811,7 +5809,6 @@ dependencies = [
  "async-trait",
  "flow-component",
  "futures",
- "logger",
  "seeded-random",
  "serde",
  "test-logger",
@@ -5819,6 +5816,7 @@ dependencies = [
  "tokio",
  "tracing",
  "wick-interface-types",
+ "wick-logger",
  "wick-packet",
  "wick-rpc",
 ]
@@ -5829,11 +5827,10 @@ version = "0.0.0"
 dependencies = [
  "anyhow",
  "flow-component",
- "logger",
  "serde",
  "serde-value",
  "serde_yaml",
- "tap",
+ "tap-harness",
  "test-logger",
  "test-native-component",
  "thiserror",
@@ -5842,6 +5839,7 @@ dependencies = [
  "tracing",
  "wasmrs-codec",
  "wick-config",
+ "wick-logger",
  "wick-packet",
  "wick-rpc",
 ]
@@ -5868,10 +5866,10 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "env_logger 0.10.0",
- "logger",
  "test-logger",
  "thiserror",
  "tokio",
+ "wick-logger",
  "xdg",
 ]
 

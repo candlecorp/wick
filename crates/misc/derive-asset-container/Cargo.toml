@@ -1,5 +1,5 @@
 [package]
-name = "derive-assets"
+name = "derive-asset-container"
 version = "0.1.0"
 edition = "2021"
 license = "Apache-2.0"
@@ -14,7 +14,7 @@ proc-macro = true
 proc-macro2 = { workspace = true }
 quote = { workspace = true }
 syn = { workspace = true, features = ["parsing", "extra-traits"] }
-assets = { workspace = true }
+asset-container = { workspace = true }
 
 [dev-dependencies]
 anyhow = { workspace = true }

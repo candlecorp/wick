@@ -22,7 +22,7 @@ pub(crate) struct InitCommand {
 #[allow(clippy::field_reassign_with_default)]
 pub(crate) async fn handle_command(mut opts: InitCommand) -> Result<()> {
   let logging = &mut opts.logging;
-  let _guard = logger::init(&logging.name(crate::BIN_NAME));
+  let _guard = wick_logger::init(&logging.name(crate::BIN_NAME));
 
   let files: Vec<(PathBuf, String)> = if opts.component {
     info!("Initializing wick component project: {}", opts.name);

@@ -90,7 +90,7 @@
 /// Error module for this crate.
 pub mod error;
 
-pub mod assets;
+mod assets;
 pub use crate::assets::*;
 
 /// The crate's error type.

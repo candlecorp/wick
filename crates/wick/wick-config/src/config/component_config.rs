@@ -2,7 +2,7 @@ mod composite;
 mod wasm;
 use std::collections::HashMap;
 
-use assets::AssetManager;
+use asset_container::AssetManager;
 pub use composite::CompositeComponentImplementation;
 use config::{ComponentImplementation, ComponentKind};
 pub use wasm::{OperationSignature, WasmComponentImplementation};
@@ -12,7 +12,7 @@ use super::BoundComponent;
 use crate::app_config::{BoundResource, OwnedConfigurationItem};
 use crate::{config, v1, Error, Resolver, Result};
 
-#[derive(Debug, Default, Clone, derive_assets::AssetManager)]
+#[derive(Debug, Default, Clone, derive_asset_container::AssetManager)]
 #[asset(config::AssetReference)]
 #[must_use]
 /// The internal representation of a Wick manifest.

@@ -1,6 +1,6 @@
 use crate::config::AssetReference;
 
-#[derive(Debug, Default, Clone, PartialEq, derive_assets::AssetManager)]
+#[derive(Debug, Default, Clone, PartialEq, derive_asset_container::AssetManager)]
 #[asset(AssetReference)]
 /// Metadata for the component or application.
 pub struct Metadata {

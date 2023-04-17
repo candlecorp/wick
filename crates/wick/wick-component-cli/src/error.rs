@@ -14,7 +14,7 @@ pub enum CliError {
 
   #[error(transparent)]
   /// An error from the logger.
-  LoggerError(#[from] logger::error::LoggerError),
+  LoggerError(#[from] wick_logger::error::LoggerError),
 
   #[error(transparent)]
   /// An IO error binding to a port or similar.

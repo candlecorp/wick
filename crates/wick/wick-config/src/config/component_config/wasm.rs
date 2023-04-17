@@ -5,7 +5,7 @@ use wick_interface_types::{Field, TypeDefinition};
 use crate::common::BoundInterface;
 use crate::config;
 
-#[derive(Debug, Clone, derive_assets::AssetManager)]
+#[derive(Debug, Clone, derive_asset_container::AssetManager)]
 #[asset(config::AssetReference)]
 #[must_use]
 /// The internal representation of a Wick manifest.

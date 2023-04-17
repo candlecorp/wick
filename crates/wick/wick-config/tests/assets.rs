@@ -2,7 +2,7 @@ mod integration_test {
   use std::path::PathBuf;
 
   use anyhow::Result;
-  use assets::{AssetManager, Status};
+  use asset_container::{AssetManager, Status};
   use tokio_stream::StreamExt;
   use wick_config::config::FetchOptions;
   use wick_config::error::ManifestError;

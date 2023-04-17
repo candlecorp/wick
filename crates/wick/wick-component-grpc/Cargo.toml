@@ -24,7 +24,7 @@ http = { workspace = true }
 wick-invocation-server = { workspace = true }
 test-native-component = { workspace = true }
 test-logger = { workspace = true }
-logger = { workspace = true }
+wick-logger = { workspace = true }
 tokio = { workspace = true, features = ["macros"] }
 tokio-stream = { workspace = true }
 anyhow = { workspace = true }

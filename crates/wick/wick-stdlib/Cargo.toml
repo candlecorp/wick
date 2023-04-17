@@ -23,7 +23,7 @@ futures = { workspace = true }
 thiserror = { workspace = true }
 
 [dev-dependencies]
-logger = { workspace = true }
+wick-logger = { workspace = true }
 test-logger = { workspace = true }
 futures = { workspace = true }
 anyhow = { workspace = true }

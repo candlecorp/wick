@@ -3,8 +3,8 @@ use std::path::PathBuf;
 use std::time::Duration;
 
 use clap::Args;
-use logger::LoggingOptions;
 use serde::{Deserialize, Serialize};
+use wick_logger::LoggingOptions;
 
 #[derive(Debug)]
 /// Server configuration options.

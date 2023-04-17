@@ -1,4 +1,4 @@
-use tap::{TestBlock, TestRunner};
+use tap_harness::{TestBlock, TestRunner};
 
 #[test]
 fn basics() -> anyhow::Result<()> {

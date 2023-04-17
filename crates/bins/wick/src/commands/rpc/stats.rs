@@ -7,7 +7,7 @@ use wick_rpc::Statistics;
 #[clap(rename_all = "kebab-case")]
 pub(crate) struct RpcStatsCommand {
   #[clap(flatten)]
-  pub(crate) logging: logger::LoggingOptions,
+  pub(crate) logging: wick_logger::LoggingOptions,
 
   #[clap(flatten)]
   pub(crate) connection: super::ConnectOptions,

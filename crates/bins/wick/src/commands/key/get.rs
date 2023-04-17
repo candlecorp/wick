@@ -7,7 +7,7 @@ use clap::Args;
 #[clap(rename_all = "kebab-case")]
 pub(crate) struct KeyGetCommand {
   #[clap(flatten)]
-  pub(crate) logging: logger::LoggingOptions,
+  pub(crate) logging: wick_logger::LoggingOptions,
 
   /// The filename to read (without path).
   #[clap(action)]

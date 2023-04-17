@@ -23,7 +23,7 @@ parking_lot = { workspace = true }
 wick-packet = { workspace = true }
 
 [dev-dependencies]
-logger = { workspace = true }
+wick-logger = { workspace = true }
 test-logger = { workspace = true }
 anyhow = { workspace = true }
 test-native-component = { workspace = true }

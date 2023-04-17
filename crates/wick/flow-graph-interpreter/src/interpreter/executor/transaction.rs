@@ -51,6 +51,7 @@ impl std::fmt::Debug for Transaction {
   }
 }
 
+#[allow(clippy::too_many_arguments)]
 impl Transaction {
   #[instrument(skip_all, name = "tx_new")]
   pub(crate) fn new(

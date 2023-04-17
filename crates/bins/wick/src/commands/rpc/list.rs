@@ -5,7 +5,7 @@ use clap::Args;
 #[clap(rename_all = "kebab-case")]
 pub(crate) struct RpcListCommand {
   #[clap(flatten)]
-  pub(crate) logging: logger::LoggingOptions,
+  pub(crate) logging: wick_logger::LoggingOptions,
 
   #[clap(flatten)]
   pub(crate) connection: super::ConnectOptions,

@@ -22,4 +22,4 @@ proc-macro-crate = { workspace = true }
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
-logger = { workspace = true }
+wick-logger = { workspace = true }

@@ -21,7 +21,7 @@ grpc = [
 mesh = ['wick-rpc', 'async-stream', 'wick-config']
 
 [dependencies]
-logger = { workspace = true }
+wick-logger = { workspace = true }
 flow-component = { workspace = true }
 wick-rpc = { workspace = true, optional = true }
 wick-config = { workspace = true, optional = true }
@@ -47,7 +47,7 @@ clap = { workspace = true, features = ["derive", "env"] }
 uuid = { workspace = true, features = ["v4"] }
 
 [dev-dependencies]
-logger = { workspace = true }
+wick-logger = { workspace = true }
 test-logger = { workspace = true }
 test-native-component = { workspace = true }
 once_cell = { workspace = true }

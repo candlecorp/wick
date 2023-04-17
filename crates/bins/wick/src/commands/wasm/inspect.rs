@@ -8,7 +8,7 @@ use clap::Args;
 #[clap(rename_all = "kebab-case")]
 pub(crate) struct WasmInspectCommand {
   #[clap(flatten)]
-  pub(crate) logging: logger::LoggingOptions,
+  pub(crate) logging: wick_logger::LoggingOptions,
 
   /// WebAssembly module location.
   #[clap(action)]

@@ -15,6 +15,6 @@ tracing = { workspace = true }
 serde_json = { workspace = true }
 wick-config = { workspace = true }
 tokio = { workspace = true, features = ["macros", "rt"] }
-logger = { workspace = true }
+wick-logger = { workspace = true }
 test-logger = { workspace = true }
 anyhow = { workspace = true }

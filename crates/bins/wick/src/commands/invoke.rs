@@ -72,7 +72,7 @@ pub(crate) async fn handle_command(mut opts: InvokeCommand) -> Result<()> {
     logging.quiet = true;
   }
 
-  let _guard = logger::init(&logging.name(crate::BIN_NAME));
+  let _guard = wick_logger::init(&logging.name(crate::BIN_NAME));
 
   let fetch_options = if PathBuf::from(&opts.location).exists() {
     wick_config::config::FetchOptions::new()

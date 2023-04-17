@@ -1,11 +1,11 @@
-# tap
+# tap-harness
 
 This library is a wrapper to write tests that generate output in the Test Anything Protocol (TAP) format.
 
 ## Usage
 
 ```rust
-use tap::{TestBlock, TestRunner};
+use tap_harness::{TestBlock, TestRunner};
 
 fn main() -> anyhow::Result<()> {
   let mut runner = TestRunner::new(Some("My test"));

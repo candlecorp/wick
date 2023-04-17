@@ -28,7 +28,7 @@ futures = { workspace = true }
 futures = { workspace = true }
 test-logger = { workspace = true }
 tokio = { workspace = true, features = ["macros"] }
-logger = { workspace = true }
+wick-logger = { workspace = true }
 clap = { version = "3.0", features = ["derive", "env"] }
 tracing = { workspace = true }
 anyhow = { workspace = true }

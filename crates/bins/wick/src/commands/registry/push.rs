@@ -8,7 +8,7 @@ use crate::keys::GenerateCommon;
 #[clap(rename_all = "kebab-case")]
 pub(crate) struct RegistryPushCommand {
   #[clap(flatten)]
-  pub(crate) logging: logger::LoggingOptions,
+  pub(crate) logging: wick_logger::LoggingOptions,
 
   /// OCI reference to push to.
   #[clap(action)]
