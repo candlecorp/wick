@@ -39,7 +39,7 @@ licenses:
 
 unit-tests:
 	cargo build -p wick
-	cargo test --workspace -- --skip integration_test
+	cargo test --workspace -- --skip integration_test --test-threads=6
 
 ci-tests: wasm
   just unit-tests
