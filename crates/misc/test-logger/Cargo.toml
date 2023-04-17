@@ -7,6 +7,9 @@ authors = [
   "Jarrod Overson <jsoverson@gmail.com>",
 ]
 include = ["src/lib.rs", "LICENSE-*", "README.md"]
+license = "Apache-2.0"
+repository = "https://github.com/candlecorp/wick"
+description = "Logging-enabled test harness for the wick logging library"
 
 [lib]
 proc-macro = true

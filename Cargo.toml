@@ -30,7 +30,6 @@ wick-component-cli = { path = "./crates/wick/wick-component-cli", version = "0.1
 wick-component-codegen = { path = "./crates/wick/wick-component-codegen", version = "0.3.0" }
 wick-component-wasm = { path = "./crates/wick/wick-component-wasm", version = "0.1.0" }
 wick-config = { path = "./crates/wick/wick-config", version = "0.24.0" }
-wick-grpctar = { path = "./crates/wick/wick-grpctar", version = "0.1.0" }
 wick-host = { path = "./crates/wick/wick-host", version = "0.1.0" }
 wick-interface-types = { path = "./crates/wick/wick-interface-types", version = "0.14.0" }
 wick-invocation-server = { path = "./crates/wick/wick-invocation-server", version = "0.1.0" }
